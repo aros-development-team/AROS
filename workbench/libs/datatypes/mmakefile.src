@@ -1,101 +1,56 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES = -I.. -I.
 
-LIBNAME 	:= datatypes
-ULIBNAME	:= DataTypes
+MODNAME 	:= datatypes
+MODTYPE		:= library
 
-# BEGIN_DESC{makefile}
-# This is the makefile for datatypes.library. Use it if you want to compile
-# only this part of AROS.
-# END_DESC{makefile}
+FILES := helpfuncs class classfuncs
+FUNCS := adddtobject \
+	 copydtmethods \
+	 copydttriggermethods \
+	 disposedtobject \
+	 doasynclayout \
+	 dodtdomaina \
+	 dodtmethoda \
+	 drawdtobjecta \
+	 findmethod \
+	 findtoolnodea \
+	 findtriggermethod \
+	 freedtmethods \
+	 getdtattrsa \
+	 getdtmethods \
+	 getdtstring \
+	 getdttriggermethods \
+	 getdttriggermethoddataflags \
+	 launchtoola \
+	 lockdatatype \
+	 newdtobjecta \
+	 obtaindatatypea \
+	 obtaindtdrawinfoa \
+	 printdtobjecta \
+	 refreshdtobjecta \
+	 releasedatatype \
+	 releasedtdrawinfo \
+	 removedtobject \
+	 savedtobjecta \
+	 setdtattrsa \
+	 startdragselect
 
-# BEGIN_DESC{localmakevar}
-# \item{FILES} This is a list of all files (without the .c) which
-#	contain internal functions of the library (eg. libinit(),
-#	libopen(), libexpunge() and the function table).
-#
-# \item{FUNCTIONS} This is a list of all files (without the .c)
-#	with public functions of the library. The makefile will
-#	strip all files from this list for which a special
-#	version for this CPU does exist.
-#
-# END_DESC{localmakevar}
+INCLUDE_FILES := $(wildcard include/*.h)
 
-FILES := functable helpfuncs class classfuncs
+USE_ROMLIB := yes
+USE_AMIGALIB := yes
 
-FUNCTIONS := 	 adddtobject \
-		 copydtmethods \
-		 copydttriggermethods \
-		 disposedtobject \
-		 doasynclayout \
-		 dodtdomaina \
-		 dodtmethoda \
-		 drawdtobjecta \
-		 findmethod \
-		 findtoolnodea \
-		 findtriggermethod \
-		 freedtmethods \
-		 getdtattrsa \
-		 getdtmethods \
-		 getdtstring \
-		 getdttriggermethods \
-		 getdttriggermethoddataflags \
-		 launchtoola \
-		 lockdatatype \
-		 newdtobjecta \
-		 obtaindatatypea \
-		 obtaindtdrawinfoa \
-		 printdtobjecta \
-		 refreshdtobjecta \
-		 releasedatatype \
-		 releasedtdrawinfo \
-		 removedtobject \
-		 savedtobjecta \
-		 setdtattrsa \
-		 startdragselect
+#MM- workbench-libs-datatypes : setup includes linklibs workbench-libs-datatypes-module
+%make_module_setup mmake=workbench-libs-datatypes
+%make_module_cpak
+%make_module mmake=workbench-libs-datatypes
+%make_lib_includes
 
-%define_libs prelibs=-l$(LIBNAME)
-
-%genlib_cpak
-
-#MM workbench-libs-datatypes : setup includes linklibs
-workbench-libs-datatypes : $(SLIB)
-	@$(NOP)
-
-#MM workbench-libs-datatypes-quick :
-workbench-libs-datatypes-quick : $(SLIB)
-	@$(NOP)
-
-
-#MM
-setup-includes :
-	%mkdirs_q  $(GENINCDIR) $(INCDIR) $(GENINCDIR)/datatypes $(INCDIR)/datatypes
-
-MY_INCLS := $(wildcard include/*.h)
-DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/datatypes/$(notdir $f))
-GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/datatypes/$(notdir $f))
-
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
-	@$(NOP)
-
-$(INCDIR)/datatypes/%.h : include/%.h 
-	@$(CP) include/$(notdir $<) $@
-
-$(GENINCDIR)/datatypes/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
-
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
-
+#MM copy-includes
+%copy_lib_includes path=datatypes
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(notdir $(END_FILE)) $(FILES) functions,$(OBJDIR)/$(f).d)
+%include_deps

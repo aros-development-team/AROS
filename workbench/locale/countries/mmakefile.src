@@ -1,14 +1,5 @@
-# $Id$
-CURDIR=workbench/countries
-
+#   $Id$
 include $(TOP)/config/make.cfg
-
-OBJDIR=$(GENDIR)/workbench/locale/countries
-LOCALEDIR=$(BINDIR)/Locale
-COUNTRYDIR=$(LOCALEDIR)/Countries
-DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a
-LIBS=-L$(LIBDIR) -lamiga -larosc -larosm
-MAKECOUNTRY=$(OBJDIR)/makecountry
 
 COUNTRIES := australia belgie belgique canada canada_français \
     	     danmark deutschland españa france great_britain \
@@ -16,36 +7,40 @@ COUNTRIES := australia belgie belgique canada canada_français \
 	     schweiz suisse suomi sverige svizzera united_kingdom \
 	     united_states
 
-COUNTIFF=$(foreach f, $(COUNTRIES), $(COUNTRYDIR)/$(f).country)
+COUNTRYDIR := $(AROS_LOCALE)/Countries
+MAKECOUNTRY=$(OBJDIR)/makecountry
+OBJDIR := $(GENDIR)/$(CURDIR)
+COUNTIFF=$(foreach f,$(COUNTRIES),$(COUNTRYDIR)/$(f).country)
 
-#MM workbench-locale : setup includes
-workbench-locale: $(MAKECOUNTRY) $(COUNTIFF)
-	@$(NOP)
+#MM- workbench-locale : workbench-locale-countries
+#MM workbench-locale-countries : setup includes
 
-#MM workbench-locale-quick :
-workbench-locale-quick : $(MAKECOUNTRY) $(COUNTIFF)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LOCALEDIR) $(COUNTRYDIR)
+workbench-locale-countries: $(MAKECOUNTRY) $(COUNTIFF)
 
 #MM
-clean ::
-	$(RM)   $(OBJDIR) *.err
+workbench-locale-countries-quick : workbench-locale-countries
 
 $(COUNTRYDIR)/%.country : $(OBJDIR)/%.o
-	@echo "Making $(notdir $@)..."
-	@$(MAKECOUNTRY) $(COUNTRYDIR)/ $(notdir $(basename $@))
+	@$(ECHO) "Making $(notdir $@)..."
+	@$(MAKECOUNTRY) $(COUNTRYDIR)/ $*
 
 $(MAKECOUNTRY) : $(OBJDIR)/makecountry.o $(foreach f, $(COUNTRIES),$(OBJDIR)/$(f).o)
-	$(CC) $(CFLAGS) $^ -o $@
+	@$(ECHO) "Making $(@F)..."
+	@$(HOST_LD) $(HOST_LDFLAGS) $^ -o $@
 
 $(OBJDIR)/%.o : %.c
-	%compile_q
+	%compile_q cmd=$(HOST_CC) opt="$(HOST_CFLAGS) -I$(AROS_INCLUDES)"
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(AROS_LOCALE) $(COUNTRYDIR)
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err
 
 %common
 %include_deps $(foreach f,makecountry $(COUNTRIES),$(OBJDIR)/$(f).d)

@@ -1,38 +1,23 @@
-# $Id$
+#    $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+USER_INCLUDES	:= -I.
 
-LIBNAME 	:= mathieeesingtrans
-ULIBNAME	:= Mathieeesingtrans
+MODNAME	    :=	mathieeesingtrans
+MODTYPE	    :=	library
 
-FILES		:= \
+FILES	:= \
 	intern_ieeespisodd \
 	intern_ieeespld
 
-ARCHIVE		:= mathieeesingtrans.arch
+ARCHIVE	:= mathieeesingtrans.arch
 
-%define_libs prelibs=-l$(LIBNAME)
-
-%genlib_arch
-
-#MM workbench-libs-mathieeesingtrans : setup includes linklibs
-workbench-libs-mathieeesingtrans : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
-
-
-%additional_objs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- workbench-libs-mathieeesingtrans : setup includes \
+#MM	workbench-libs-mathieeesingtrans-module
+%make_module_setup mmake=workbench-libs-mathieeesingtrans
+%make_module_archtool
+%make_module mmake=workbench-libs-mathieeesingtrans
+%make_lib_incl_arch
 
 %common
-%include_deps $(foreach f,$(SYS_FILES) $(FILES) functions $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
+%include_deps

@@ -1,61 +1,30 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(TOP)/rom/devs
+OBJDIR := $(GENDIR)/rom/gameport
 
-DEVS    := $(DEVSDIR)/gameport.device
-FILES	:= gameport
-OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-LIB	:= $(LIBDIR)/libgameport.a
+MODNAME := gameport
+MODTYPE := device
 
-MY_INCLS := $(wildcard include/*.h)
-DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/devices/$(notdir $f))
-GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/devices/$(notdir $f))
+INIT_FILE := gameport
+FILES :=
+FUNCS :=
 
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
-	@$(NOP)
+USE_ENDTAG := no
 
-$(INCDIR)/devices/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
+INCLUDE_FILES := $(wildcard include/*.h)
 
-$(GENINCDIR)/devices/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
+MAKE_SHLIB := $(SHARED_GAMEPORT)
 
-#MM
-setup-includes :
-	%mkdirs_q  $(GENINCDIR) $(INCDIR) $(GENINCDIR)/devices $(INCDIR)/devices
+#XXX Get rid of the next line.
+#MM- kernel-devs : kernel-gameport-linklib
+#MM- kernel-gameport : setup includes linklibs
+%make_module_setup mmake=kernel-gameport
+%make_module mmake=kernel-gameport
 
-%define_libs
-
-%make_common_setup
-
-#MM
-kernel-devs-$(ARCH)-$(CPU) : $(LIB)
-	@$(NOP)
-
-$(LIB) : $(OBJS)
-	%mklib_q
-
-#MM kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
-kernel-devs : $(DEVS)
-
-#MM
-clean ::
-	$(RM) $(OBJS) $(LIB) $(OBJDIR)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR)
-
-$(DEVSDIR)/gameport.device : $(OBJDIR)/gameport.o
-	%link_q startup=
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS)"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM includes-copy
+%copy_includes path=devices
 
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+%include_deps

@@ -1,53 +1,35 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
-FILES	:= cdinputhandler console rawkeyconvert support \
-	   consoleclass stdconclass consoletask
-OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-LIB	:= $(LIBDIR)/libconsole.a
+# This directory has things in a funny place.
+OBJDIR := $(GENDIR)/rom/console
+USER_INCLUDES := -I.
 
-MY_INCLS := $(wildcard include/*.h)
-DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/devices/$(notdir $f))
-GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/devices/$(notdir $f))
+MODNAME := console
+MODTYPE := device
 
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
-	@$(NOP)
+INIT_FILE := console
+FILES	:=  support consoleclass stdconclass consoletask
+FUNCS	:=  cdinputhandler rawkeyconvert
 
-$(INCDIR)/devices/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
+INCLUDE_FILES := $(wildcard include/*.h)
+USE_FUNCTABLE := no
 
-$(GENINCDIR)/devices/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
+USE_ROMLIB := yes
+USE_AMIGALIB := yes
 
-#MM
-setup-includes :
-	%mkdirs_q  $(GENINCDIR) $(INCDIR) $(GENINCDIR)/devices $(INCDIR)/devices
+#XXX Remove the next line eventually
+#MM- kernel-devs : kernel-console-linklib
 
-#MM
-kernel-devs-$(ARCH)-$(CPU) : $(LIB)
-	@$(NOP)
+MAKE_SHLIB := $(SHARED_CONSOLE)
 
-$(LIB) : $(OBJS)
-	%mklib_q
+#MM- kernel-console : setup includes linklibs
+%make_module_setup mmake=kernel-console
+%make_module_cpak
+%make_module mmake=kernel-console
 
-#MM- kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
-
-#MM kernel-devs-quick : kernel-devs-$(ARCH)-$(CPU)
-
-#MM
-clean ::
-	$(RM) $(OBJS) $(LIB) $(OBJDIR)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM includes-copy
+%copy_includes path=devices
 
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+%include_deps

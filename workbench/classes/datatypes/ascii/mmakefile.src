@@ -1,32 +1,21 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
+
+MODNAME := ascii
+MODTYPE := datatype
 
 USER_INCLUDES := -I.
 
-LIBNAME  := ascii
-ULIBNAME := Ascii
-LIBPOST	 := datatype
-DESTDIR  := $(DATATYPESDIR)
+FILES := asciiclass libfunc
+FUNCS := obtainengine
 
-FILES := ascii_init asciiclass libfunc
+USE_AMIGALIB := yes
 
-FUNCTIONS := \
-	obtainengine
+#MM workbench-datatypes-ascii : setup includes linklibs
+workbench-datatypes-ascii : workbench-datatypes-ascii-module
 
-%define_libs prelibs=-l$(LIBNAME)
-
-%genlib_cpak
-
-#MM workbench-classes-datatypes-ascii : setup includes
-workbench-classes-datatypes-ascii : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(DATATYPESDIR) $(DESTDIRS)
-
-#MM 
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+%make_module_setup mmake=workbench-datatypes-ascii
+%make_module mmake=workbench-datatypes-ascii
 
 %common
+%include_deps

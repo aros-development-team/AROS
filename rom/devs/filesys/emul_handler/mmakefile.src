@@ -1,37 +1,24 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
-OS_INCLUDES	:= -I$(GENINCDIR)
-OBJDIR		:= $(GENDIR)/filesys
-FILES		:= emul_handler
-OBJS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-DEPS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-LIB		:= $(OBJDIR)/emul_handler.a
+OS_INCLUDES := -I$(GENINCDIR)
 
-#MM
-kernel-filesys-$(ARCH)-$(CPU) : $(LIB)
-	@$(NOP)
+MODNAME := emul
+MODTYPE := handler
 
-#MM kernel-filesys : setup includes kernel-filesys-$(ARCH)-$(CPU)
-kernel-filesys :
-	@$(NOP)
+INIT_FILE := emul_handler
+FILES :=
+FUNCS :=
 
-#MM
-setup :
-	%mkdirs_q $(OBJDIR)
+USE_LIBDEFS := no
 
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err
+# This requires linking against system libraries, do not build a module.
+NO_MODULE := yes
 
-$(LIB) : $(OBJS)
-	%mklib_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- kernel-filesys : kernel-fs-emul
+#MM- kernel-fs-emul : setup includes linklibs kernel-fs-emul-linklib
+%make_module_setup mmake=kernel-fs-emul
+%make_module mmake=kernel-fs-emul
 
 %common
 %include_deps

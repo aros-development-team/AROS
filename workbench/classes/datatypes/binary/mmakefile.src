@@ -1,32 +1,21 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
+
+MODNAME := binary
+MODTYPE := datatype
 
 USER_INCLUDES := -I.
 
-LIBNAME  := binary
-ULIBNAME := Binary
-LIBPOST	 := datatype
-DESTDIR  := $(DATATYPESDIR)
+FILES := binaryclass libfunc
+FUNCS := obtainengine
 
-FILES := binary_init binaryclass libfunc
+USE_AMIGALIB := yes
 
-FUNCTIONS := \
-	obtainengine
+#MM workbench-datatypes-binary : setup includes linklibs
+workbench-datatypes-binary : workbench-datatypes-binary-module
 
-%define_libs prelibs=-l$(LIBNAME)
-
-%genlib_cpak
-
-#MM workbench-classes-datatypes-binary : setup includes
-workbench-classes-datatypes-binary : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(DATATYPESDIR) $(DESTDIRS)
-
-#MM 
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+%make_module_setup mmake=workbench-datatypes-binary
+%make_module mmake=workbench-datatypes-binary
 
 %common
+%include_deps

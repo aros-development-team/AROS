@@ -1,73 +1,60 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-LIBNAME   := camd
-ULIBNAME  := Camd
-LIBPOST   := library
-DESTDIR   := $(SLIBDIR)
+MODNAME   := camd
+MODTYPE	  := library
 
-FILES     := camd_init drivers clusters init camdwait mididistr midifromdriver midimsgtype2 miditodriver receiverproc strings sysexdistr unlinkmidilink getmidilinkfromownernode
+FILES :=    drivers clusters init camdwait mididistr midifromdriver \
+	    midimsgtype2 miditodriver receiverproc strings sysexdistr \
+	    unlinkmidilink getmidilinkfromownernode
 
-FUNCTIONS := \
-lockcamd \
-unlockcamd \
-createmidia \
-deletemidi \
-setmidiattrsa \
-getmidiattrsa \
-nextmidi \
-findmidi  \
-flushmidi \
-addmidilinka \
-removemidilink \
-setmidilinkattrsa \
-getmidilinkattrsa \
-nextclusterlink \
-nextmidilink \
-midilinkconnected \
-nextcluster \
-findcluster \
-putmidi \
-getmidi \
-waitmidi \
-putsysex \
-getsysex \
-querysysex \
-skipsysex \
-getmidierr \
-midimsgtype \
-midimsglen \
-parsemidi \
-openmididevice \
-closemididevice \
-rethinkcamd \
-startclusternotify \
-endclusternotify \
-goodputmidi \
-midi2driver
+FUNCS := \
+    lockcamd \
+    unlockcamd \
+    createmidia \
+    deletemidi \
+    setmidiattrsa \
+    getmidiattrsa \
+    nextmidi \
+    findmidi  \
+    flushmidi \
+    addmidilinka \
+    removemidilink \
+    setmidilinkattrsa \
+    getmidilinkattrsa \
+    nextclusterlink \
+    nextmidilink \
+    midilinkconnected \
+    nextcluster \
+    findcluster \
+    putmidi \
+    getmidi \
+    waitmidi \
+    putsysex \
+    getsysex \
+    querysysex \
+    skipsysex \
+    getmidierr \
+    midimsgtype \
+    midimsglen \
+    parsemidi \
+    openmididevice \
+    closemididevice \
+    rethinkcamd \
+    startclusternotify \
+    endclusternotify \
+    goodputmidi \
+    midi2driver
 
-%define_libs prelibs=-l$(LIBNAME)
+USE_AMIGALIB := yes
 
-%genlib_cpak
-
-#MM workbench-libs-camd : setup includes
-workbench-libs-camd : $(SLIB)
-	@$(NOP)
-
-#MM workbench-libs-camd-quick :
-workbench-libs-camd-quick : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
-	$(END_FILE).c $(LIB) $(SLIB)
+#MM- workbench-libs-camd : setup includes linklibs workbench-libs-camd-module
+%make_module_setup mmake=workbench-libs-camd
+%make_module_cpak
+%make_module mmake=workbench-libs-camd
+%make_lib_includes
 
 %common
-
+%include_deps

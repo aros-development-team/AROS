@@ -1,33 +1,15 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES = -I. -I..
 
-LIBNAME 	:= iffparse
-ULIBNAME	:= IFFParse
+MODNAME	    := iffparse
+MODTYPE	    := library
 
-# BEGIN_DESC{makefile}
-# This is the makefile for iffparse.library. Use it if you want to compile
-# only this part of AROS.
-# END_DESC{makefile}
+FILES :=    basicfuncs bufferingfuncs clipboardfuncs collectionhooks \
+	    prophooks stophook dosstreamhandler
 
-# BEGIN_DESC{localmakevar}
-# \item{FILES} This is a list of all files (without the .c) which
-#	contain internal functions of the library (eg. libinit(),
-#	libopen(), libexpunge() and the function table).
-#
-# \item{FUNCTIONS} This is a list of all files (without the .c)
-#	with public functions of the library. The makefile will
-#	strip all files from this list for which a special
-#	version for this CPU does exist.
-#
-# END_DESC{localmakevar}
-
-FILES := functable basicfuncs bufferingfuncs \
-	clipboardfuncs collectionhooks prophooks stophook \
-	dosstreamhandler
-
-FUNCTIONS := \
+FUNCS := \
 	allociff \
 	alloclocalitem \
 	closeclipboard \
@@ -69,25 +51,13 @@ FUNCTIONS := \
 	writechunkbytes \
 	writechunkrecords
 
-%define_libs prelibs=-l$(LIBNAME)
+USE_AMIGALIB := yes
 
-%genlib_cpak
-
-#MM workbench-libs-iffparse : setup includes linklibs
-workbench-libs-iffparse : $(SLIB)
-	@$(NOP)
-
-#MM workbench-libs-iffparse-quick :
-workbench-libs-iffparse-quick : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+#MM- workbench-libs-iffparse : setup includes linklibs workbench-libs-iffparse-module
+%make_module_setup mmake=workbench-libs-iffparse
+%make_module_cpak
+%make_module mmake=workbench-libs-iffparse
+%make_lib_includes
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(notdir $(END_FILE)) $(FILES) functions,$(OBJDIR)/$(f).d)
+%include_deps

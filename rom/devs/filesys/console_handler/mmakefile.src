@@ -1,43 +1,21 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
-OS_INCLUDES	:= -I$(GENINCDIR)
-OBJDIR		:= $(GENDIR)/filesys
-FILES		:= con_handler con_task support
-OBJS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-DEPS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-LIB		:= $(LIBDIR)/libcon_handler.a
+MODNAME := con
+MODTYPE := handler
 
-#MM
-kernel-filesys-$(ARCH)-$(CPU) : $(LIB)
-	@$(NOP)
+INIT_FILE := con_handler
+FILES := con_task support
+FUNCS := 
 
-#MM kernel-filesys : setup includes kernel-filesys-$(ARCH)-$(CPU)
-kernel-filesys :
-	@$(NOP)
+USE_LIBDEFS := no
+USE_ROMLIB := yes
+USE_MLIB := yes
 
-# HACK TO AVOID DEPENDENCY CHECKING
-
-#MM kernel-filesys-quick : kernel-filesys-$(ARCH)-$(CPU)
-kernel-filesys-quick :
-	@$(NOP) 
-	
-#MM
-setup :
-	%mkdirs_q $(OBJDIR)
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err
-
-$(LIB) : $(OBJS)
-	%mklib_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- kernel-filesys : kernel-fs-con
+#MM- kernel-fs-con : setup includes linklibs kernel-fs-con-linklib
+%make_module_setup mmake=kernel-fs-con
+%make_module mmake=kernel-fs-con
 
 %common
 %include_deps

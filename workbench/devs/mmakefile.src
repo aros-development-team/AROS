@@ -1,51 +1,71 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR := $(GENDIR)/$(CURDIR)
-USER_CFLAGS := -O2 -fomit-frame-pointer
+# Unfortunately I can't use one of the fancy make templates because we have
+# two different forms of device here.
 
-%define_libs
-%make_common_setup
+MODULES := \
+	ram.handler \
+	nil.handler \
+	ffs.handler \
+	pipefs.handler \
+	fdsk.device \
+	ramdrive.device \
+#	rootfs.handler
 
-DEVS := $(DEVSDIR)/ram.handler    \
-	$(DEVSDIR)/nil.handler    \
-	$(DEVSDIR)/ffs.handler    \
-	$(DEVSDIR)/pipefs.handler \
-	$(DEVSDIR)/fdsk.device    \
-	$(DEVSDIR)/ramdrive.device
+DEVS := $(foreach f,$(filter %.device,$(MODULES)),$(AROS_DEVS)/$(f))
+FS := $(foreach f,$(filter %.handler,$(MODULES)),$(AROS_DEVS)/$(f))
+DEPS :=	$(foreach f,$(MODULES),$(f:.=_).d)
 
-# 	$(DEVSDIR)/rootfs.handler 
+USE_ROMLIB := yes
+USE_AROSLIB := yes
+USE_AMIGALIB := yes
 
-#MM workbench-devs : setup includes
-workbench-devs : $(DEVS) $(DEVSDIR)/Mountlist
-	@$(NOP)
+#MM- workbench-devs-complete : workbench-devs workbench-fs
+#MM workbench-devs : setup includes linklibs
+workbench-devs : $(DEVS) $(AROS_DEVS)/Mountlist
 
 #MM workbench-devs-quick :
-workbench-devs-quick : $(DEVS) $(DEVSDIR)/Mountlist
-	@$(NOP)
+workbench-devs-quick : workbench-devs
+
+#MM workbench-fs : setup includes linklibs
+workbench-fs : $(FS)
+
+#MM workbench-fs-quick :
+workbench-fs-quick : workbench-fs
+
+%make_common_setup
+%make_use_linklibs
+
+CFLAGS := $(USER_CFLAGS) $(TARGET_CFLAGS) $(INCLUDES) -I$(AROS_INCLUDES)
+LDFLAGS := $(USER_LDFLAGS) $(TARGET_LDFLAGS)
+
+$(AROS_DEVS)/Mountlist : Mountlist
+	@$(CP) $< $@
+
+$(OBJDIR)/%.o : %.c
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS)
+
+$(AROS_FS)/%.handler : $(OBJDIR)/%_handler.o
+	%link_module_q objs=$<
+
+$(AROS_DEVS)/%.device : $(OBJDIR)/%_device.o
+	%link_module_q objs=$<
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+# Force the modules to depend upon the linklibraries as well.
+$(AROS_DEVS)/%.device : $(DEPLIBS)
+$(AROS_FS)/%.handler : $(DEPLIBS)
 
 #MM
 setup :
-	%mkdirs_q $(OBJDIR) $(DEVSDIR) $(AROSDIR)/DiskImages
+	%mkdirs_q $(OBJDIR) $(AROS_DEVS) $(AROS_FS) $(AROSDIR)/DiskImages
 
 #MM
 clean ::
 	-$(RM) $(DEVSDIR) *.err
 
-$(DEVSDIR)/Mountlist : Mountlist
-	@$(CP) $< $@
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(DEVSDIR)/%.handler : $(OBJDIR)/%_handler.o
-	%link_q startup=
-
-$(DEVSDIR)/%.device : $(OBJDIR)/%_device.o
-	%link_q startup=
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
 %common
-%include_deps $(OBJDIR)/ram_handler.d $(OBJDIR)/nil_handler.d $(OBJDIR)/ffs_handler.d $(OBJDIR)/rootfs_handler.d $(OBJDIR)/fdsk_device.d
+%include_deps

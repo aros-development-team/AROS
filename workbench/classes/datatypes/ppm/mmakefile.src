@@ -1,32 +1,21 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-LIBNAME  := ppm
-ULIBNAME := PPM
-LIBPOST  := datatype
-DESTDIR  := $(DATATYPESDIR)
+MODNAME := ppm
+MODTYPE := datatype
 
-FILES := ppm_init ppmclass libfunc
+FILES := ppmclass libfunc
+FUNCS := obtainengine
 
-FUNCTIONS := \
-	obtainengine
+USE_AMIGALIB := yes
 
-%define_libs prelibs=-l$(LIBNAME)
+#MM workbench-datatypes-ppm : setup includes linklibs
+workbench-datatypes-ppm : workbench-datatypes-ppm-module
 
-%genlib_cpak
-
-#MM workbench-classes-datatypes-ppm : setup includes
-workbench-classes-datatypes-ppm : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(DATATYPESDIR) $(DESTDIRS)
-
-#MM 
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+%make_module_setup mmake=workbench-datatypes-ppm
+%make_module mmake=workbench-datatypes-ppm
 
 %common
+%include_deps

@@ -1,8 +1,5 @@
 # $Id$
 
-# The workbench-classes target points back to config/$(ARCH)/mmakefile:
-#MM- workbench-classes : workbench-classes-$(ARCH)
-
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.
 #MM- workbench-classes-gadgets-complete : workbench-classes-aroscheckbox \
@@ -13,5 +10,3 @@
 #MM	    workbench-classes-arospalette \
 #MM         workbench-classes-gadgets-colorwheel \
 #MM	    workbench-classes-gradientslider 
-
-#MM- workbench-complete : workbench-classes-complete

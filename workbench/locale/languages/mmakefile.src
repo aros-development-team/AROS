@@ -1,45 +1,18 @@
-# $Id$
-TOP=../../..
-
+#   $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR=$(GENDIR)/workbench/locale/languages
-LOCALEDIR=$(BINDIR)/Locale
-LANGDIR=$(LOCALEDIR)/Languages
+LANGUAGES = dansk deutsch español français italiano nederlands norsk \
+	    piglatin polski português suomi svenska 
 
-# should be %define_libs, but we need to link without a startup file
-LIBS = -L$(LIBDIR) -larossupport -lamiga -larosc -larosm
-DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
-	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a
+MODULES := $(foreach f,$(LANGUAGES),$(AROS_LOCALE)/Languages/$(f).language)
+MODTYPE := language
 
-LANGUAGES = dansk deutsch español français italiano nederlands norsk piglatin polski \
-	    português suomi svenska 
+#MM- workbench-locale : workbench-locale-languages
+#MM workbench-locale-languages : setup includes linklibs
+workbench-locale-languages : $(MODULES)
 
-LANGFILE=$(foreach f, $(LANGUAGES), $(LANGDIR)/$(f).language)
-
-%make_common_setup
-
-#MM workbench-locale : setup
-workbench-locale : setup $(LANGFILE)
-	@$(NOP)
-
-#MM workbench-locale-quick :
-workbench-locale-quick : $(LANGFILE)
-	@$(NOP)
-
-setup:
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR); else true; fi
-	@if [ ! -d $(LOCALEDIR) ]; then $(MKDIR) $(LOCALEDIR); else true; fi
-	@if [ ! -d $(LANGDIR) ]; then $(MKDIR) $(LANGDIR); else true; fi
-
-$(LANGDIR)/%.language : $(OBJDIR)/%.o $(DEPLIBS)
-	%link_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+%make_module_setup mmake=workbench-locale-languages
+%make_module_single mmake=workbench-locale-languages
 
 %common
 %include_deps $(foreach f,$(LANGUAGES),$(OBJDIR)/$(f).d)

@@ -1,16 +1,18 @@
+#   $Id$
 include $(TOP)/config/make.cfg
 
 DTDIR 		:= $(DEVSDIR)/DataTypes
 FILES 		:= FTXT PPM
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 
-#MM workbench-devs : setup
-workbench-devs : $(DTFILES)
-	@$(NOP)
+#MM- workbench-devs-complete : workbench-devs-datatypes
+#MM workbench-devs-datatypes : setup
 
 #MM
 workbench-devs-datatypes : $(DTFILES)
-	@$(NOP)
+
+#MM
+workbench-devs-datatypes-quick : workbench-devs-datatypes
 
 #MM
 setup :
@@ -20,4 +22,3 @@ $(DTDIR)/% : %.dtd
 	@cd $(DTDIR) && $(CREATEDTDESC) $(TOP)/$(CURDIR)/$<
 	
 %common
-

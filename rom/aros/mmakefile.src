@@ -18,7 +18,9 @@ MAKE_SHLIB := $(SHARED_AROS)
 #MM- kernel-aros : setup includes linklibs
 
 %make_module_setup mmake=kernel-aros
+%make_module_cpak
 %make_module mmake=kernel-aros
+
 %make_lib_includes
 
 %common

@@ -1,16 +1,13 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-LIBNAME   := bsdsocket
-ULIBNAME  := BSDSocket
-LIBPOST   := library
-DESTDIR   := $(SLIBDIR)
+MODNAME	:= bsdsocket
+MODTYPE := library
 
-FILES     := bsdsocket_init
-
-FUNCTIONS := \
+FUNCS :=
+FUNCS := \
     accept \
     bind \
     closesocket \
@@ -58,20 +55,11 @@ FUNCTIONS := \
     vsyslog \
     waitselect
 
-%define_libs prelibs=-l$(LIBNAME)
-
-%genlib_cpak
-
-#MM workbench-libs-bsdsocket : setup includes network-includes
-workbench-libs-bsdsocket : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+#MM- workbench-libs-bsdsocket : setup includes linklibs workbench-libs-bsdsocket-module
+%make_module_setup mmake=workbench-libs-bsdsocket
+%make_module_cpak
+%make_module mmake=workbench-libs-bsdsocket
+%make_lib_includes
 
 %common
+%include_deps

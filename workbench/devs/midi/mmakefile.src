@@ -6,11 +6,9 @@ FILES := debugdriver
 EXEDIR := $(DEVSDIR)/Midi
 EXE    := $(EXEDIR)/debugdriver
 
-USE_CLIB_STATIC := yes
+USE_ROMLIB := yes
 USE_MLIB := yes
 USE_AROSLIB := yes
-
-USER_CFLAGS := -O2 -Wunused -Wall
 
 #MM workbench-devs-midi : setup includes linklibs
 workbench-devs-midi: $(EXE)

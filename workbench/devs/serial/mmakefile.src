@@ -1,37 +1,20 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR := $(GENDIR)/$(CURDIR)
+MODNAME := serial
+MODTYPE := device
 
-%define_libs
-%make_common_setup
+FILES := serial_support serial_interrupthandlers
+FUNCS := 
 
-DEVS    := $(DEVSDIR)/serial.device
-INIT    := serial_init
-FILES	:= serial_support serial_interrupthandlers
-OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-LIBS    := $(LIBS) -lhiddserialstubs
+USE_LIBDEFS := no
+USE_ROMLIB := yes
+USE_HIDDSTUBS := yes
 
-#MM workbench-devs : setup includes linklibs workbench-devs-$(ARCH)-$(CPU) hidd-serial-module
-workbench-devs : $(OBJDIR)/$(INIT).o $(OBJS) $(DEVS)
-	@$(NOP)
-
-#MM
-clean ::
-	$(RM) $(DEVSDIR) *.err
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(DEVSDIR)
-
-$(DEVS) : $(OBJS) $(INIT).c
-	%link_q startup=$(OBJDIR)/$(INIT).o $(OBJS)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- workbench-devs-complete : workbench-devs-serial
+#MM- workbench-devs-serial : setup include linklibs workbench-devs-serial-module
+%make_module_setup mmake=workbench-devs-serial
+%make_module mmake=workbench-devs-serial
 
 %common
-%include_deps $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+%include_deps
