@@ -1,0 +1,10 @@
+# $id$
+
+#MM- kernel-devs : \
+#MM    kernel-console-kobj \
+#MM    kernel-gameport-kobj \
+#MM    kernel-input-kobj \
+#MM    kernel-keyboard-kobj \
+#MM    kernel-fs-con-kobj \
+#MM    workbench-fs-nil-kobj \
+#MM    workbench-fs-ram-kobj
