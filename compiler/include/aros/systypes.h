@@ -33,7 +33,7 @@
 #define _AROS_CLOCK_T_	    unsigned long
 #define _AROS_OFF_T_	    LONG	/* XXX Large Files? */
 #define _AROS_PID_T_	    IPTR
-#define _AROS_PTRDIFF_T_    unsigned long
+#define _AROS_PTRDIFF_T_    signed   long
 #define _AROS_SIZE_T_	    unsigned int
 #define _AROS_SOCKLEN_T_    ULONG
 #define _AROS_SSIZE_T_	    int
