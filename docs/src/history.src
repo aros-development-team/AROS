@@ -1,10 +1,24 @@
 \chapter{History}
 
-\section{AROS 1.10 (current)}
+\section{AROS 1.11 (current)}
 
 NOTE: This is beta. If you want this code, then have a look at our
 \lref{Links}{Links} See also the
 \lref{Section about CVS}{CVS}.
+
+Things we currently work on:
+
+\begin{itemize}
+\item ANSI C library for AROS
+\item A own C compiler for AROS (VBCC)
+\item diskfont.library and icon.library
+\item AROS on Amiga (maybe even bootable)
+\item CLI commands
+\item Splitting AROS into small packages
+\item Small developer package for Amiga
+\end{itemize}
+
+\section{AROS 1.10}
 
 \begin{itemize}
 \item Bugfixes
@@ -16,16 +30,8 @@ NOTE: This is beta. If you want this code, then have a look at our
 	connected to AROS. See the README in the directory
 	\filename{AROS/compiler/vbcc/}.
 \item iffparse.library completed
-\end{itemize}
-
-Things we currently work on:
-
-\begin{itemize}
-\item ANSI C library for AROS
-\item A own C compiler for AROS (VBCC)
-\item diskfont.library and icon.library
-\item AROS on Amiga (maybe even bootable)
-\item CLI commands
+\item Exec 90% completed, DOS 50% completed, Graphics 15%, Intuition 25%.
+    All in all 30% of the whole work is completed.
 \end{itemize}
 
 \section{AROS 1.9}
