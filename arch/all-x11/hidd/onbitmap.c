@@ -242,7 +242,7 @@ UX11
 	    struct MsgPort 	*port;	    
 	    struct notify_msg 	*msg;
     	    Pixmap icon;
-	    
+
 LX11
 	    XStoreName   (GetSysDisplay(), MASTERWIN(data), "AROS");
 	    XSetIconName (GetSysDisplay(), MASTERWIN(data), "AROS Screen");
@@ -320,7 +320,10 @@ UX11
 		msg->bmobj = o;
 		msg->execmsg.mn_ReplyPort = port;
 		
+LX11
 		XSync(GetSysDisplay(), FALSE);
+UX11
+
 		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
 				
 		/* Wait for the reply, so we are sure that the x11 task
@@ -329,7 +332,6 @@ UX11
 		WaitPort(port);
 		GetMsg(port);
 		
-
 		/* Send a message to the X11 task to ask when the window has been mapped */
 		
    		msg->xdisplay = GetSysDisplay();
@@ -338,12 +340,13 @@ UX11
 		msg->notify_type = NOTY_MAPWINDOW;
 		msg->execmsg.mn_ReplyPort = port;
 
+LX11
 		XSync(GetSysDisplay(), FALSE);
+UX11
 		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
 
 		/* Wait for result */
-		WaitPort(port);
-		
+		WaitPort(port);		
 		GetMsg(port);
 
 kprintf("NOTY_MAPWINDOW request returned\n");		
