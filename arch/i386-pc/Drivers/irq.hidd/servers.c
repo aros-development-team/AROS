@@ -19,6 +19,7 @@
 #include <hardware/intbits.h>
 
 #include <asm/ptrace.h>
+#include <asm/irq.h>
 
 #include <proto/exec.h>
 #include <proto/oop.h>
@@ -29,38 +30,71 @@
 #undef SysBase
 #endif /* SysBase */
 
-void global_server(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd);
+void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *regs);
 
-void SaveRegs(struct Task *task, struct pt_regs *regs);
-void RestoreRegs(struct Task *task, struct pt_regs *regs);
-
-struct irqaction timer_int = { global_server, "timer", NULL, NULL};
-struct irqaction kbd_int = { global_server, "keyboard", NULL, NULL};
-struct irqaction com1_int = { global_server, "serial 1", NULL, NULL};
-struct irqaction com2_int = { global_server, "serial 2", NULL, NULL};
-struct irqaction floppy_int = { global_server, "floppy", NULL, NULL};
-struct irqaction rtc_int = { global_server, "rtc", NULL, NULL};
-struct irqaction mice_int = { global_server, "ps/2 mouse", NULL, NULL};
-struct irqaction ide0_int = { global_server, "ide0", NULL, NULL};
-struct irqaction ide1_int = { global_server, "ide1", NULL, NULL};
+struct irqServer timer_int = { global_server, "timer", NULL};
+struct irqServer kbd_int = { global_server, "keyboard", NULL};
+struct irqServer com1_int = { global_server, "serial 1", NULL};
+struct irqServer com2_int = { global_server, "serial 2", NULL};
+struct irqServer floppy_int = { global_server, "floppy", NULL};
+struct irqServer rtc_int = { global_server, "rtc", NULL};
+struct irqServer mouse_int = { global_server, "ps/2 mouse", NULL};
+struct irqServer ide0_int = { global_server, "ide0", NULL};
+struct irqServer ide1_int = { global_server, "ide1", NULL};
 
 void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 
+/*******************************************************************************
+    Two special irq handlers. As we don't need these two interrupts we define
+    here dummy handlers.
+*******************************************************************************/
+
+void no_action(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd) { }
+
+static void math_error_irq(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd)
+{
+	outb(0,0xF0);
+}
+
+static struct irqServer irq13 = { math_error_irq, "fpu", NULL};
+
+/*
+ * IRQ2 is cascade interrupt to second interrupt controller
+ */
+
+static struct irqServer irq2  = { no_action, "cascade", NULL};
+
 #define SysBase (isd->sysbase)
+
+void irqSet(int, struct irqServer *);
 
 void init_Servers(struct irq_staticdata *isd)
 {
     HIDDT_IRQ_Handler	*timer;
 
-    setup_x86_irq(0, &timer_int);
-    setup_x86_irq(1, &kbd_int);
-    setup_x86_irq(3, &com2_int);
-    setup_x86_irq(4, &com1_int);
-    setup_x86_irq(6, &floppy_int);
-    setup_x86_irq(8, &rtc_int);
-    setup_x86_irq(12, &mice_int);
-    setup_x86_irq(14, &ide0_int);
-    setup_x86_irq(15, &ide1_int);
+    timer_int.is_UserData = isd;
+    irq2.is_UserData = isd;
+    kbd_int.is_UserData = isd;
+    com1_int.is_UserData = isd;
+    com2_int.is_UserData = isd;
+    floppy_int.is_UserData = isd;
+    rtc_int.is_UserData = isd;
+    mouse_int.is_UserData = isd;
+    irq13.is_UserData = isd;
+    ide0_int.is_UserData = isd;
+    ide1_int.is_UserData = isd;
+
+    irqSet(0, &timer_int);
+    irqSet(1, &kbd_int);
+    irqSet(2, &irq2);
+    irqSet(3, &com2_int);
+    irqSet(4, &com1_int);
+    irqSet(6, &floppy_int);
+    irqSet(8, &rtc_int);
+    irqSet(12, &mouse_int);
+    irqSet(13, &irq13);
+    irqSet(14, &ide0_int);
+    irqSet(15, &ide1_int);
     
     /* Install timer interrupt */
     timer = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
@@ -85,6 +119,7 @@ void init_Servers(struct irq_staticdata *isd)
 void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     struct IntVector *iv = irq->h_Data;
+
     if (iv->iv_Code)
     {
 	/*  Call it. I call with all these parameters for a reason.
@@ -111,6 +146,13 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    AROS_UFCA(struct ExecBase *, hw->sysBase, A6)
 	);
     }
+
+    if (SysBase->Elapsed == 0)
+    {
+	SysBase->SysFlags |= 0x2000;
+	SysBase->AttnResched |= 0x80;
+    }
+    else SysBase->Elapsed--;
 }
 
 /*******************************************************************************
@@ -124,10 +166,7 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 #undef SysBase
 #define SysBase (isd->sysbase)
 
-#define SC_ENABLE(regs)		(regs->eflags |= 0x200)
-#define SC_DISABLE(regs)	(regs->eflags &= ~0x200)
-
-void global_server(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd)
+void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *regs)
 {
     HIDDT_IRQ_Id	id;
     HIDDT_IRQ_HwInfo	hwinfo;
@@ -180,40 +219,5 @@ void global_server(int cpl, void *dev_id, struct pt_regs *regs, struct irq_stati
 	handler->h_Code(handler, &hwinfo);
     }
 
-    /* Has an interrupt told us to dispatch when leaving */
-    if (SysBase->AttnResched & 0x8000)
-    {
-        SysBase->AttnResched &= ~0x8000;
-
-        /* Save registers for this task (if there is one...) */
-        if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
-            SaveRegs(SysBase->ThisTask, regs);
-
-        /* Tell exec that we have actually switched tasks... */
-        Dispatch ();
-
-        /* Get the registers of the old task */
-        RestoreRegs(SysBase->ThisTask, regs);
-
-        /* Make sure that the state of the interrupts is what the task
-           expects.
-        */
-        if (SysBase->IDNestCnt < 0)
-            SC_ENABLE(regs);
-        else
-            SC_DISABLE(regs);
-
-        /* Ok, the next step is to either drop back to the new task, or
-            give it its Exception() if it wants one... */
-
-        if (SysBase->ThisTask->tc_Flags & TF_EXCEPT)
-        {
-            Disable();
-            Exception();
-            Enable();
-        }
-    }
-
     /* Leave the interrupt. */
-
 }

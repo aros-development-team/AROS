@@ -85,8 +85,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 
                 if(isd->irqclass)
                 {
-					Disable();
-                    init_IRQ(isd);		/* Prepare IRQs */
+		    Disable();
                     init_Servers(isd);	/* Initialize all known IRQ servers */
                     Enable();		/* Turn interrupts on */
 
