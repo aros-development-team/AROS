@@ -13,7 +13,7 @@
 #include <aros/libcall.h>
 #include <dos/dos.h>
 #include <exec/execbase.h>
-#include "mathffp_intern.h"
+#include "mathieeesp_intern.h"
 #include "libdefs.h"
 
 static const char name[];
@@ -28,16 +28,16 @@ extern int  driver_open (struct LIBBASETYPE *);
 extern void driver_close (struct LIBBASETYPE *);
 extern void driver_expunge (struct LIBBASETYPE *);
 
-int MathFFP_entry(void)
+int MathIEEESPBase_entry(void)
 {
     /* If the library was executed by accident return error code. */
     return -1;
 }
 
-const struct Resident Mathffp_resident=
+const struct Resident Mathieeespbas_resident=
 {
     RTC_MATCHWORD,
-    (struct Resident *)&Mathffp_resident,
+    (struct Resident *)&Mathieeespbas_resident,
     (APTR)&END,
     RTF_AUTOINIT,
     39,
@@ -48,7 +48,7 @@ const struct Resident Mathffp_resident=
     (ULONG *)inittabl
 };
 
-static const char name[]=MATHFFPNAME;
+static const char name[]=MATHIEEESPBASNAME;
 
 static const char version[]=VERSION;
 
@@ -63,15 +63,15 @@ static const APTR inittabl[4]=
 AROS_LH2(struct LIBBASETYPE *, init,
  AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
-	   struct ExecBase *, sysBase, 0, BASENAME)
+           struct ExecBase *, sysBase, 0, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
     Disable();
     if (!driver_init (LIBBASE))
     {
-	Enable();
-	return NULL;
+        Enable();
+        return NULL;
     }
     Enable();
 
@@ -82,7 +82,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
 AROS_LH1(struct LIBBASETYPE *, open,
  AROS_LHA(ULONG, version, D0),
-	   struct LIBBASETYPE *, LIBBASE, 1, Mathffp)
+           struct LIBBASETYPE *, LIBBASE, 1, Mathieeespbas)
 {
     AROS_LIBFUNC_INIT
 
@@ -92,8 +92,8 @@ AROS_LH1(struct LIBBASETYPE *, open,
     Disable();
     if (!driver_open (LIBBASE))
     {
-	Enable();
-	return NULL;
+        Enable();
+        return NULL;
     }
     Enable();
 
@@ -107,33 +107,33 @@ AROS_LH1(struct LIBBASETYPE *, open,
 }
 
 AROS_LH0(BPTR, close,
-	   struct LIBBASETYPE *, LIBBASE, 2, Mathffp)
+           struct LIBBASETYPE *, LIBBASE, 2, Mathieeespbas)
 {
     AROS_LIBFUNC_INIT
 
     /* I have one fewer opener. */
     if(!--LIBBASE->LibNode.lib_OpenCnt)
     {
-	driver_close (LIBBASE);
+        driver_close (LIBBASE);
 
-	/* Delayed expunge pending? */
-	if(LIBBASE->LibNode.lib_Flags&LIBF_DELEXP)
-	    /* Then expunge the library */
-	    return expunge();
+        /* Delayed expunge pending? */
+        if(LIBBASE->LibNode.lib_Flags&LIBF_DELEXP)
+            /* Then expunge the library */
+            return expunge();
     }
     return 0;
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH0(BPTR, expunge,
-	   struct LIBBASETYPE *, LIBBASE, 3, Mathffp)
+           struct LIBBASETYPE *, LIBBASE, 3, Mathieeespbas)
 {
     AROS_LIBFUNC_INIT
 #ifndef DISK_BASED
     if (!(LIBBASE->LibNode.lib_OpenCnt) )
     {
-	/* Allow the driver to release uneccessary memory */
-	driver_expunge (LIBBASE);
+        /* Allow the driver to release uneccessary memory */
+        driver_expunge (LIBBASE);
     }
 
     /* Don't delete this library. It's in ROM and therefore cannot be
@@ -145,9 +145,9 @@ AROS_LH0(BPTR, expunge,
     /* Test for openers. */
     if (LIBBASE->LibNode.lib_OpenCnt)
     {
-	/* Set the delayed expunge flag and return. */
-	LIBBASE->LibNode.lib_Flags|=LIBF_DELEXP;
-	return 0;
+        /* Set the delayed expunge flag and return. */
+        LIBBASE->LibNode.lib_Flags|=LIBF_DELEXP;
+        return 0;
     }
 
     /* Get rid of the library. Remove it from the list. */
@@ -158,7 +158,7 @@ AROS_LH0(BPTR, expunge,
 
     /* Free the memory. */
     FreeMem((char *)LIBBASE-LIBBASE->LibNode.lib_NegSize,
-	    LIBBASE->LibNode.lib_NegSize+LIBBASE->LibNode.lib_PosSize);
+            LIBBASE->LibNode.lib_NegSize+LIBBASE->LibNode.lib_PosSize);
 
     return ret;
 #endif
@@ -166,7 +166,7 @@ AROS_LH0(BPTR, expunge,
 }
 
 AROS_LH0I(int, null,
-	    struct LIBBASETYPE *, LIBBASE, 4, Mathffp)
+            struct LIBBASETYPE *, LIBBASE, 4, Mathieeespbas)
 {
     AROS_LIBFUNC_INIT
     return 0;

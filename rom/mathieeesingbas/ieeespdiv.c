@@ -1,44 +1,38 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.2  1997/06/25 21:36:44  bergers
-    *** empty log message ***
-
-    Revision 1.1  1997/05/30 20:50:57  aros
-    *** empty log message ***
-
 
     Desc:
-    Lang: english
+    Lang:
 */
-#include <libraries/mathffp.h>
+
+#include <libraries/mathieeesp.h>
 #include <aros/libcall.h>
-#include <proto/mathffp.h>
+#include <proto/mathieeesingbas.h>
 #include <proto/exec.h>
 #include <exec/types.h>
-#include "mathffp_intern.h"
+#include "mathieeesp_intern.h"
 
 /*****************************************************************************
 
     NAME */
 
-        AROS_LH2(LONG, SPDiv,
+        AROS_LH2(LONG, IEEESPDiv,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, fnum1, D1),
-        AROS_LHA(LONG, fnum2, D0),
+        AROS_LHA(LONG, y, D0),
+        AROS_LHA(LONG, z, D1),
 
 /*  LOCATION */
-        struct MathBase *, MathBase, 14, Mathffp)
+        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 14, Mathieeespbas)
 
 /*  FUNCTION
-        Divide two ffp numbers
-        fnum = fnum2 / fnum1;
+        Divide two IEEE single precision floating point numbers
+        x = y / z;
 
     INPUTS
-        fnum1  - ffp number
-        fnum2  - ffp number
+        y  - IEEE single precision floating point
+        z  - IEEE single precision floating point
 
     RESULT
 
@@ -60,33 +54,35 @@
       ALGORITHM:
         Check if fnum2 == 0: result = 0;
         Check if fnum1 == 0: result = overflow;
-        The further algorithm comes down to a pen & paper division
-
+        The further algorithm comes down to a pen & paper division.
     HISTORY
 
 ******************************************************************************/
 
 {
   LONG Res = 0;
-  char Exponent = ((char) fnum2 & FFPExponent_Mask) -
-                  ((char) fnum1 & FFPExponent_Mask) + 0x41;
+  LONG Exponent = (y & IEEESPExponent_Mask) -
+                  (z & IEEESPExponent_Mask) + 0x3f800000;
 
-  LONG Mant2 = ((ULONG)fnum2 & FFPMantisse_Mask);
-  LONG Mant1 = ((ULONG)fnum1 & FFPMantisse_Mask);
+  LONG Mant2 = ((y & IEEESPMantisse_Mask) | 0x00800000) << 8;
+  LONG Mant1 = ((z & IEEESPMantisse_Mask) | 0x00800000) << 8;
   ULONG Bit_Mask = 0x80000000;
 
+        if (0 == z && 0 == y)
+                return 0x7f880000;
+
   /* check if the dividend is zero */
-  if (0 == fnum2)
+  if (0 == z)
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
+    return (IEEESPExponent_Mask | ((y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask)));
   }
 
   /* check for division by zero */
-  if (0 == fnum1)
+  if (0 == y)
   {
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
+    return (y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask);
   }
 
   while (Bit_Mask >= 0x40 && Mant2 != 0)
@@ -119,24 +115,24 @@
   while (Res > 0)
   {
     Res += Res;
-    Exponent --;
+    Exponent -=0x00800000;
   }
 
-  if ((char) Res < 0)
+        if ((char) Res < 0)
     Res += 0x00000100;
 
+        Res >>= 8;
 
-
-  Res &= FFPMantisse_Mask;
+  Res &= IEEESPMantisse_Mask;
   Res |= Exponent;
-  Res |= (fnum1 & FFPSign_Mask) ^ (fnum2 & FFPSign_Mask);
+  Res |= (y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask);
 
-  if ((char) Res < 0)
+  if (Res < 0)
     SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
 
-  if ((char) Exponent < 0)
+  if (Exponent < 0)
     SetSR(Overflow_Bit, Negative_Bit | Overflow_Bit);
 
   return Res;
-} /* SPDiv */
+} /* IEEESPDiv */
 

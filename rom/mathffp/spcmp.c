@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/06/25 21:36:44  bergers
+    *** empty log message ***
+
     Revision 1.1  1997/05/30 20:50:57  aros
     *** empty log message ***
 
@@ -27,7 +30,7 @@
         AROS_LHA(LONG, fnum2, D1),
 
 /*  LOCATION */
-        struct MathffpBase *, MathBase, 7, Mathffp)
+        struct MathBase *, MathBase, 7, Mathffp)
 
 /*  FUNCTION
         Compares two ffp numbers
@@ -57,12 +60,7 @@
 
 
     INTERNALS
-
-    HISTORY
-
-******************************************************************************/
-/*
-    ALGORITHM
+      ALGORITHM:
         1st case:
           fnum1 is negative and fnum2 is positive
             or
@@ -86,44 +84,50 @@
 
         final case:
           fnum1 > fnum2
-*/
+    HISTORY
+
+******************************************************************************/
+
 {
-  //fnum1 is negative and fnum2 is positive
-  // or
-  //exponent of fnum1 is less than the exponent of fnum2
-  // => fnum1 < fnum2
+  /* fnum1 is negative and fnum2 is positive
+  **  or
+  ** exponent of fnum1 is less than the exponent of fnum2
+  ** => fnum1 < fnum2
+  */
   if ( (char)fnum1 < (char)fnum2 )
   {
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return -1;
   }
 
-  //fnum1 is positive and fnum2 is negative
-  // or
-  //exponent of fnum1 is greater tban the exponent if fnum2
-  // => fnum1 > fnum2
+  /* fnum1 is positive and fnum2 is negative
+  **  or
+  ** exponent of fnum1 is greater tban the exponent if fnum2
+  ** => fnum1 > fnum2
+  */
   if ((char) fnum1 > (char) fnum2 )
   {
     SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
     return 1;
   }
 
-  //the signs and exponents of fnum1 and fnum2 must now be equal
-  //fnum1 == fnum2
+  /*the signs and exponents of fnum1 and fnum2 must now be equal
+  **fnum1 == fnum2
+  */
   if (fnum1 == fnum2)
   {
     SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
     return 0;
   }
 
-  //mantisse(fnum1) < mantisse(fnum2)
+  /* mantisse(fnum1) < mantisse(fnum2) */
   if (fnum1 < fnum2)
   {
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return -1;
   }
 
-  //Mantisse(fnum1) > mantisse(fnum2)
+  /* Mantisse(fnum1) > mantisse(fnum2) */
   SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
   return 1;
 

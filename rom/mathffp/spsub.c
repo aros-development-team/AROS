@@ -2,6 +2,9 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/06/25 21:36:44  bergers
+    *** empty log message ***
+
     Revision 1.1  1997/05/30 20:50:59  aros
     *** empty log message ***
 
@@ -27,7 +30,7 @@
         AROS_LHA(LONG, fnum2, D1),
 
 /*  LOCATION */
-        struct MathffpBase *, MathBase, 12, Mathffp)
+        struct MathBase *, MathBase, 12, Mathffp)
 
 /*  FUNCTION
         Subtract two floating point numbers
@@ -54,18 +57,13 @@
 
 
     INTERNALS
+      ALGORITHM:
+        fnum = fnum2 + (-fnum1).
 
     HISTORY
 
 ******************************************************************************/
-/*
-    ALGORITHM
-        fnum = fnum2 + (-fnum1).
-        Use the SPAdd-Function for the subtraction. Therefore just flip the
-        sign-bit of fnum2
 
-
-*/
 {
   return SPAdd(fnum2, fnum1 ^ FFPSign_Mask);
 } /* SPSub */

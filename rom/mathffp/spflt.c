@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/06/25 21:36:44  bergers
+    *** empty log message ***
+
     Revision 1.1  1997/05/30 20:50:59  aros
     *** empty log message ***
 
@@ -26,7 +29,7 @@
         AROS_LHA(LONG, inum, D0),
 
 /*  LOCATION */
-        struct MathffpBase *, MathBase, 6, Mathffp)
+        struct MathBase *, MathBase, 6, Mathffp)
 
 /*  FUNCTION
 
@@ -86,21 +89,21 @@
     Res = FFPSign_Mask;
     inum = -inum;
   }
-  // find out which is the number of the highes set bit
+  /* find out which is the number of the highes set bit */
   while (TestMask & inum)
   {
     Exponent ++;
     TestMask <<= 1;
   }
 
-  //Exponent = number of highest set bit + 1
+  /* Exponent = number of highest set bit + 1 */
 
   inum <<= (32 - Exponent);
   if ((char) inum < 0)
     inum +=0x100;
   inum &= FFPMantisse_Mask;
 
-  //adapt the exponent to the ffp format
+  /* adapt the exponent to the ffp format */
   Exponent += 0x40;
   Res |= inum | Exponent;
   if ((char) Res < 0)

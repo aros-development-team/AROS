@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/06/25 21:36:44  bergers
+    *** empty log message ***
+
     Revision 1.1  1997/05/30 20:50:57  aros
     *** empty log message ***
 
@@ -27,7 +30,7 @@
         AROS_LHA(LONG, fnum2, D0),
 
 /*  LOCATION */
-        struct MathffpBase *, MathBase, 11, Mathffp)
+        struct MathBase *, MathBase, 11, Mathffp)
 
 /*  FUNCTION
         Calculate the sum of two ffp numbers
@@ -54,16 +57,11 @@
 
 
     INTERNALS
-
-    HISTORY
-
-******************************************************************************/
-/*
-    ALGORITHM
+      ALGORITHM:
         Adapt the exponent of the ffp-number with the smaller
         exponent to the ffp-number with the larger exponent.
         Therefore rotate the mantisse of the ffp-number with the
-        smaller exponents by n bits, wheres n is the absolute value
+        smaller exponents by n bits, where n is the absolute value
         of the difference of the exponents.
         The exponent of the target ffp-number is set to the larger
         exponent plus 1.
@@ -85,7 +83,11 @@
         rotation.
         Test the exponent of the result for an overflow.
         That`s it!
-*/
+
+    HISTORY
+
+******************************************************************************/
+
 {
   LONG Res;
   ULONG Mant1, Mant2;
@@ -112,9 +114,10 @@
     Exponent = (fnum2 & FFPExponent_Mask) + 1;
   }
 
-  // sign(fnum1) == sign(fnum2)
-  // simple addition
-  // 0.5 <= res < 2
+  /* sign(fnum1) == sign(fnum2)
+  ** simple addition
+  ** 0.5 <= res < 2
+  */
   if ( ((BYTE) fnum1 & FFPSign_Mask) - ((BYTE) fnum2 & FFPSign_Mask) == 0)
   {
     Res = fnum1 & FFPSign_Mask;
@@ -132,15 +135,16 @@
     }
 
   }
-    // second case: sign(fnum1) != sign(fnum2)
-    // -1 <= res < 1
+    /* second case: sign(fnum1) != sign(fnum2)
+    ** -1 <= res < 1
+    */
   else
   {
     if ((char) fnum1 < 0)
       Mant1 = Mant2 - Mant1;
-    else // fnum2 < 0
+    else /* fnum2 < 0 */
       Mant1 = Mant1 - Mant2;
-    //if the result is below zero
+    /* if the result is below zero */
     if ((LONG) Mant1 < 0)
     {
       Res = FFPSign_Mask;
@@ -150,17 +154,18 @@
     else
       Res = 0;
       
-    // test the result for zero, has to be done before normalizing
-    // the mantisse
+    /* test the result for zero, has to be done before normalizing
+    ** the mantisse
+    */
     if (0 == Mant1)
     {
       SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
       return 0;
     }
-    //normalize the mantisse
+    /* normalize the mantisse */
       while ((LONG) Mant1 > 0)
       {
-        Mant1 += Mant1;  //one bit to the left.
+        Mant1 += Mant1;  /* one bit to the left. */
         Exponent --;
       }
 
@@ -168,7 +173,8 @@
 
   if ((char) Exponent < 0)
   {
-    SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit); //do not change Negative_Bit!
+    SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit);
+    /* do NOT change Negative_Bit! */
     return (Res | (FFPMantisse_Mask | FFPExponent_Mask));
   }
 

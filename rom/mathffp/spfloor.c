@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/06/25 21:36:44  bergers
+    *** empty log message ***
+
     Revision 1.1  1997/05/30 20:50:58  aros
     *** empty log message ***
 
@@ -26,7 +29,7 @@
         AROS_LHA(LONG, y, D0),
 
 /*  LOCATION */
-        struct MathffpBase *, MathBase, 15, Mathffp)
+        struct MathBase *, MathBase, 15, Mathffp)
 
 /*  FUNCTION
         Calculate the largest integer ffp-number less than or equal to
@@ -58,23 +61,23 @@
 
 
     INTERNALS
+      ALGORITHM:
+        The integer part of a ffp number are the left "exponent"-bits
+        of the mantisse!
+        Therefore:
+        Test the exponent for <= 0. This has to be done separately!
+        If the sign is negative then return -1 otherwise return 0.
+
+        Generate a mask of exponent(y) (where y is the given ffp-number)
+        bits starting with bit 31.
+        If y < 0 then test whether it is already an integer. If not
+        then y = y - 1 and generate that mask again. Use the
+        mask on the mantisse.
 
     HISTORY
 
 ******************************************************************************/
-/*
-    ALGORITHM
-   The integer part of a ffp number are the left "exponent"-bits
-   of the mantisse!
-   Therefore:
-   Test the exponent for <= 0. This has to be handled separately!
-   If the sign is negative then return -1 otherwise return 0.
 
-   Generate a mask of exponent(y) bits starting with bit 31.
-   If fnum < 0 then test whether it is already an integer. If not
-   then y = y - 1 and generate that mask again. Use the
-   mask on the mantisse.
-*/
 {
   LONG Mask = 0x80000000;
 
@@ -83,7 +86,7 @@
     if ((char)y < 0)
     {
       SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 0x800000C1; // -1
+      return 0x800000C1; /* -1 */
     }
     else
     {
@@ -92,17 +95,17 @@
     }
   }
 
-  // |fnum| >= 1
+  /* |fnum| >= 1 */
   Mask >>= ( ((char) y & FFPExponent_Mask) - 0x41);
   Mask |= FFPSign_Mask | FFPExponent_Mask;
 
-  // fnum is negative
+  /* fnum is negative */
   if ((char) y < 0)
-  // is there anything behind the dot?
+  /* is there anything behind the dot? */
     if (0 != (y & (~Mask)) )
     {
       Mask = 0x80000000;
-      y    = SPAdd(y, 0x800000c1); // fnum = fnum -1;
+      y    = SPAdd(y, 0x800000c1); /* y = y -1; */
       Mask >>= ((char) y & FFPExponent_Mask) - 0x41;
       Mask |= FFPSign_Mask | FFPExponent_Mask;
     }

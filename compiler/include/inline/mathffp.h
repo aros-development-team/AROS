@@ -6,7 +6,7 @@
 #endif
 
 #ifndef MATHFFP_BASE_NAME
-#define MATHFFP_BASE_NAME MathffpBase
+#define MATHFFP_BASE_NAME MathBase
 #endif
 
 #define SPAbs(fnum1) \

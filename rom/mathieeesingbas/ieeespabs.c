@@ -1,43 +1,37 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.2  1997/06/25 21:36:43  bergers
-    *** empty log message ***
-
-    Revision 1.1  1997/05/30 20:50:57  aros
-    *** empty log message ***
-
 
     Desc:
-    Lang: english
+    Lang:
 */
-#include <libraries/mathffp.h>
+
+#include <libraries/mathieeesp.h>
 #include <aros/libcall.h>
-#include <proto/mathffp.h>
+#include <proto/mathieeesingbas.h>
 #include <proto/exec.h>
 #include <exec/types.h>
-#include "mathffp_intern.h"
+#include "mathieeesp_intern.h"
 
 /*****************************************************************************
 
     NAME */
 
-        AROS_LH1(LONG, SPAbs,
+        AROS_LH1(LONG, IEEESPAbs,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, fnum1, D0),
+        AROS_LHA(LONG, y, D0),
 
 /*  LOCATION */
-        struct MathBase *, MathBase, 9, Mathffp)
+        struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 9, Mathieeespbas)
 
 /*  FUNCTION
         Calculate the absolute value of a given floating point number
     INPUTS
-        fnum1  - ffp number
+        y  - ieeesp number
 
     RESULT
-        absolute value of fnum1
+        absolute value of y
 
         Flags:
           zero     : result is zero
@@ -62,16 +56,15 @@
 ******************************************************************************/
 
 {
-    if (0 == fnum1)
+    if (0 == y)
       /* value is 0 -> set the Zero Flag */
       SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
     else
     {
-      fnum1 &= (FFPMantisse_Mask | FFPExponent_Mask);
       /* set the sign-bit to zero */
+      y &= (IEEESPMantisse_Mask | IEEESPExponent_Mask);
       SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
     }
-    return fnum1;
-
-} /* SPAbs */
+    return y;
+} /* IEEESPAbs */
 

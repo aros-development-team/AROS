@@ -2,6 +2,9 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/06/25 21:36:44  bergers
+    *** empty log message ***
+
     Revision 1.1  1997/05/30 20:50:59  aros
     *** empty log message ***
 
@@ -27,7 +30,7 @@
         AROS_LHA(LONG, fnum2, D0),
 
 /*  LOCATION */
-        struct MathffpBase *, MathBase, 13, Mathffp)
+        struct MathBase *, MathBase, 13, Mathffp)
 
 /*  FUNCTION
         Multiply two ffp numbers
@@ -54,15 +57,13 @@
 
 
     INTERNALS
+      ALGORITHM:
+        Pen and paper algorithm.
 
     HISTORY
 
 ******************************************************************************/
-/*
-    ALGORITHM
-        Description will follow!
 
-*/
 {
   char Exponent = ((char) fnum1 & FFPExponent_Mask) +
                   ((char) fnum2 & FFPExponent_Mask) -1 - 0x40;
@@ -84,9 +85,9 @@
     Count ++;
   }
 
-  //Bit 32 is not set
+  /* Bit 32 is not set */
   if ((LONG)Res > 0)
-    Res <<= 1; //rotate the mantisse by one bit to the left
+    Res <<= 1; /* rotate the mantisse by one bit to the left */
   else
     Exponent ++;
 

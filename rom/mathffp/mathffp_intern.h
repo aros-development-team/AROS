@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/06/25 21:36:43  bergers
+    *** empty log message ***
+
     Revision 1.1  1997/05/30 20:50:57  aros
     *** empty log message ***
 
@@ -40,26 +43,26 @@
     use the mathffp.library functions to get information.
 */
 
-struct MathffpBase
+struct MathBase
 {
     struct Library LibNode;
 };
 
 
-#define FFPMantisse_Mask 0xFFFFFF00 // 24 bit for the mantisse
-#define FFPExponent_Mask 0x0000007F //  7 bit for the exponent
-#define FFPSign_Mask     0x00000080 //  1 bit for the sign
+#define FFPMantisse_Mask 0xFFFFFF00 /* 24 bit for the mantisse    */
+#define FFPExponent_Mask 0x0000007F /*  7 bit for the exponent    */
+#define FFPSign_Mask     0x00000080 /*  1 bit for the sign        */
 
-#define IEEESPMantisse_Mask 0x007FFFFF // 23 bit for the mantisse
-#define IEEESPExponent_Mask 0x7F800000 //  8 bit for the exponent
-#define IEEESPSign_Mask     0x80000000 //  1 bit for the sign
+#define IEEESPMantisse_Mask 0x007FFFFF /* 23 bit for the mantisse */
+#define IEEESPExponent_Mask 0x7F800000 /*  8 bit for the exponent */
+#define IEEESPSign_Mask     0x80000000 /*  1 bit for the sign     */
 
-#define Zero_Bit     0x00000004  // Flags of the 680xx CPU
-#define Negative_Bit 0x00000008  //
-#define Overflow_Bit 0x00000002  //
+#define Zero_Bit     0x00000004  /* Flags of the 680xx CPU */
+#define Negative_Bit 0x00000008  
+#define Overflow_Bit 0x00000002  
 
 #define expunge() \
- AROS_LC0(BPTR, expunge, struct MathffpBase *, MathffpBase, 3, Mathffp)
+ AROS_LC0(BPTR, expunge, struct MathBase *, MathBase, 3, Mathffp)
 
 #endif /* __MATHFFP_INTERN_H__  */
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/06/25 21:36:44  bergers
+    *** empty log message ***
+
     Revision 1.1  1997/05/30 20:50:57  aros
     *** empty log message ***
 
@@ -26,7 +29,7 @@
         AROS_LHA(LONG, y, D0),
 
 /*  LOCATION */
-        struct MathffpBase *, MathBase, 16, Mathffp)
+        struct MathBase *, MathBase, 16, Mathffp)
 
 /*  FUNCTION
         Calculate the least integer ffp-number greater than or equal to
@@ -54,17 +57,15 @@
         SPFloor()
 
     INTERNALS
+      ALGORITHM:
+         Ceil(y) = - Floor(-y)
 
     HISTORY
 
 ******************************************************************************/
-/*
-    ALGORITHM
-         Ceil(y) = - Floor(-y)
 
-*/
 {
-  // Ceil(y) = -Floor(-y);
+  /* Ceil(y) = -Floor(-y) */
   y = SPFloor(y ^ FFPSign_Mask);
   return (y ^ FFPSign_Mask);
 
