@@ -54,7 +54,7 @@ void ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadgets)
     MUI_RequestA(application, window, 0, title, gadgets, text, NULL);
 }
 
-void Cleanup(STRPTR message)
+void Cleanup(CONST_STRPTR message)
 {
     if(message != NULL)
     {
@@ -106,11 +106,11 @@ static void GetArguments(void)
 
 int main(void)
 {
-    if (!Locale_Initialize()) exit(20);
+    Locale_Initialize();
     GetArguments();
     
     application = ApplicationObject,
-        SubWindow, (IPTR) window = WindowObject,
+        SubWindow, (IPTR) (window = WindowObject,
             MUIA_Window_Title,    (IPTR) MSG(MSG_WINDOW_TITLE),
             MUIA_Window_Activate,        TRUE,
             MUIA_Window_NoMenus,         TRUE,
@@ -121,7 +121,7 @@ int main(void)
             
             WindowContents, (IPTR) ClockObject,
             End,
-        End,
+        End),
     End;
 
     if (application)
