@@ -30,9 +30,15 @@ extern struct Library *MUIMasterBase;
 struct MUI_ImageadjustData
 {
     Object *bitmap_string;
+
     Object *pattern_image[18];
     int last_pattern_selected;
     struct Hook pattern_select_hook;
+
+    Object *vector_image[24];
+    int last_vector_selected;
+    struct Hook vector_select_hook;
+
     char *imagespec;
 };
 
@@ -50,6 +56,22 @@ AROS_UFH3(VOID,Pattern_Select_Function,
 
     if (data->last_pattern_selected != -1) set(data->pattern_image[data->last_pattern_selected],MUIA_Selected,FALSE);
     data->last_pattern_selected = new_selected;
+}
+
+#ifndef _AROS
+static __asm VOID Vector_Select_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
+#else
+AROS_UFH3(VOID,Vector_Select_Function,
+	AROS_UFHA(struct Hook *, hook,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(void **, msg,  A1))
+#endif
+{
+    struct MUI_ImageadjustData *data = (struct MUI_ImageadjustData *)hook->h_Data;
+    int new_selected = (int)msg[0];
+
+    if (data->last_vector_selected != -1) set(data->vector_image[data->last_vector_selected],MUIA_Selected,FALSE);
+    data->last_vector_selected = new_selected;
 }
 
 /**************************************************************************
@@ -75,6 +97,20 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct MUI_ImageadjustData *da
 			set(data->pattern_image[pat],MUIA_Selected,TRUE);
 			set(obj,MUIA_Group_ActivePage,0);
 		    }
+		}
+		break;
+
+	case	'1':
+		{
+		    LONG vect;
+		    StrToLong(s+2,&vect);
+
+             	    if (vect >= 0 && vect < 24)
+             	    {
+			set(data->vector_image[vect],MUIA_Selected,TRUE);
+			set(obj,MUIA_Group_ActivePage,1);
+		    }
+
 		}
 		break;
 
@@ -119,6 +155,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	    *tag, *tags;
     static const char *labels[] = {"Pattern","Vector", "Color", "Bitmap", "External",NULL};
     Object *pattern_group;
+    Object *vector_group;
     Object *bitmap_string;
     char *spec=NULL;
     int i;
@@ -126,7 +163,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNew(cl, obj,
     	MUIA_Register_Titles, labels,
 	Child, pattern_group = ColGroup(6), End,
-	Child, HVSpace,
+	Child, vector_group = ColGroup(6), End,
 	Child, HVSpace,
 	Child, PopaslObject,
 	    MUIA_Popstring_String, bitmap_string = StringObject, StringFrame, End,
@@ -150,12 +187,38 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    MUIA_InputMode, MUIV_InputMode_Immediate,
 	    MUIA_Image_FreeVert, TRUE,
 	    MUIA_Image_FreeHoriz, TRUE,
+	    MUIA_FixWidth, 20,
 	    End;
 
 	if (data->pattern_image[i])
 	{
 	    DoMethod(pattern_group,OM_ADDMEMBER,data->pattern_image[i]);
 	    DoMethod(data->pattern_image[i],MUIM_Notify,MUIA_Selected,TRUE,obj,3,MUIM_CallHook,&data->pattern_select_hook,i);
+	}
+    }
+
+    data->last_vector_selected = -1;
+    data->vector_select_hook.h_Data = data;
+    data->vector_select_hook.h_Entry = (HOOKFUNC)Vector_Select_Function;
+
+
+    for (i=0;i<24;i++)
+    {
+    	char spec[10];
+    	sprintf(spec,"1:%ld",i);
+
+    	data->vector_image[i] = ImageObject,
+    	    ButtonFrame,
+	    MUIA_Image_Spec, spec,
+	    MUIA_InputMode, MUIV_InputMode_Immediate,
+	    MUIA_Image_FreeVert, TRUE,
+	    MUIA_Image_FreeHoriz, TRUE,
+	    End;
+
+	if (data->vector_image[i])
+	{
+	    DoMethod(vector_group,OM_ADDMEMBER,data->vector_image[i]);
+	    DoMethod(data->vector_image[i],MUIM_Notify,MUIA_Selected,TRUE,obj,3,MUIM_CallHook,&data->vector_select_hook,i);
 	}
     }
 
@@ -237,8 +300,18 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 				{
 				    if (data->last_pattern_selected != -1)
 					sprintf(data->imagespec,"0:%ld",data->last_pattern_selected+128);
+				    else strcpy(data->imagespec,"0:128");
 				}
 		    		break;
+
+			case	1:
+				if ((data->imagespec = AllocVec(20,0)))
+				{
+				    if (data->last_vector_selected != -1)
+					sprintf(data->imagespec,"1:%ld",data->last_vector_selected);
+				    else strcpy(data->imagespec,"0:128");
+				}
+				break;
 
 			case    3: /* Bitmap */
 				{
