@@ -141,7 +141,7 @@ UWORD FindMenuShortCut(struct Menu *menu, UBYTE key, BOOL do_click_op,
 		       struct IntuitionBase *IntuitionBase)
 {
     struct MenuItem *item, *sub;     
-    UWORD menunum, itemnum, subnum;
+    UWORD menunum, itemnum = 0, subnum = 0;
     BOOL found = FALSE;
 
     key = ToUpper(key);

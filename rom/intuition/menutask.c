@@ -155,9 +155,9 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
 {
     struct IntuitionBase    *IntuitionBase = taskparams->IntuitionBase;
     
-    struct MenuHandlerData  *mhd;
+    struct MenuHandlerData  *mhd = NULL;
     UBYTE   	    	    *mem;
-    struct MsgPort  	    *port;
+    struct MsgPort  	    *port =  NULL;
      
     BOOL    	    	    success = FALSE;
     
