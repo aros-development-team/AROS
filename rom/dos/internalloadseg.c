@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: DOS function InternalLoadSeg()
@@ -8,11 +8,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
-/* iaint: This is really annoying me...
-#undef DEBUG
-#define DEBUG 1
-*/
-#	include <aros/debug.h>
+#include <aros/debug.h>
 #include "dos_intern.h"
 
 BPTR InternalLoadSeg_AOS(BPTR file,
@@ -135,4 +131,4 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   /* And return */
   return segs;
   AROS_LIBFUNC_EXIT
-} /* LoadSeg */
+} /* InternalLoadSeg */
