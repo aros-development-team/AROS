@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,6 +7,7 @@
 
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/times.h>
 #include <sys/mount.h>
 #include <sys/wait.h>
 
