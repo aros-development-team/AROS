@@ -8,14 +8,15 @@
 
 /****************************************************************************************/
 
-#include <aros/debug.h>
-#include "diskfont_intern.h"
+#define AROS_ALMOST_COMPATIBLE
 #include <diskfont/diskfont.h>
 #include <utility/tagitem.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <string.h>
+#include <aros/debug.h>
+#include "diskfont_intern.h"
 
 /****************************************************************************************/
 
