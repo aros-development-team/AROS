@@ -69,6 +69,7 @@ struct uioMsgAbortAsyncIO
 #define vHidd_UnixIO_Write      0x2
 #define vHidd_UnixIO_RW         (vHidd_UnixIO_Read | vHidd_UnixIO_Write)
 #define vHidd_UnixIO_Abort	0x4
+#define vHidd_UnixIO_Keep       0x8
 
 /* Stubs */
 IPTR Hidd_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode, APTR callback,  APTR callbackdata, struct ExecBase *);

@@ -181,7 +181,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
               error = Hidd_UnixIO_AsyncIO(data->unixio_read,
                                           data->filedescriptor,
                                           data->replyport_read,
-                                          vHidd_UnixIO_RW,
+                                          vHidd_UnixIO_RW | vHidd_UnixIO_Keep,
                                           SysBase);
               goto exit;
 
@@ -612,9 +612,10 @@ AROS_UFH3(void, serialunit_receive_data,
   error = Hidd_UnixIO_AsyncIO(data->unixio_read,
                               data->filedescriptor,
                               data->replyport_read,
-                              vHidd_UnixIO_Read,
+                              vHidd_UnixIO_RW,
                               SysBase);
 #endif
+
   AROS_USERFUNC_EXIT
 }
 

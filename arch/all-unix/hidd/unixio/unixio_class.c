@@ -309,10 +309,12 @@ reply:
 /*
 kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags : 0x%0x)\n",((struct Task *)((struct Message *)msg)->mn_ReplyPort->mp_SigTask)->tc_Node.ln_Name,((struct Message *)msg)->mn_ReplyPort->mp_SigTask,((struct Message *)msg)->mn_ReplyPort,((struct Message *)msg)->mn_ReplyPort->mp_Flags);
 */
-		    Remove ((struct Node *)msg);
-		    flags = fcntl (msg->fd, F_GETFL);
-		    fcntl (msg->fd, F_SETFL, flags & ~FASYNC);
-		    ReplyMsg ((struct Message *)msg);
+		    if (0 == (msg->mode & vHidd_UnixIO_Keep)) {
+			Remove ((struct Node *)msg);
+			flags = fcntl (msg->fd, F_GETFL);
+			fcntl (msg->fd, F_SETFL, flags & ~FASYNC);
+			ReplyMsg ((struct Message *)msg);
+		    }
 		}
 	    }
 	}
