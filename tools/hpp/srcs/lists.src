@@ -11,16 +11,13 @@
      mlab="list"
      returntype="void"
      funcname="AddHead"
+     funcflags="I"
      libname="Exec"
      offset="40"
      libbasename="SysBase"
      libbasetype="struct ExecBase *"
-     internals=""
-     local_includes=""
+     numargs=2
 >
-<BLOCK local_includes>
-    #include <assert.h>
-</BLOCK>
 <BLOCK includes>
     #include <exec/lists.h>
     #include <proto/exec.h>
@@ -69,3 +66,67 @@
     list->lh_Head	   = node;
 </BLOCK>
 </TEMPLATE>
+
+<TEMPLATE NAME="$functiontmpl">
+<SET desc="Add a node at the end of a list"
+     lang="english"
+     mlab="list"
+     returntype="void"
+     funcname="AddTail"
+     funcflags="I"
+     libname="Exec"
+     offset="41"
+     libbasename="SysBase"
+     libbasetype="struct ExecBase *"
+     numargs=2
+>
+<BLOCK includes>
+    #include <exec/lists.h>
+    #include <proto/exec.h>
+</BLOCK>
+<BLOCK synopsis>
+    <aros_lha type="struct List *" name="list" reg="A0">,
+    <aros_lha type="struct Node *" name="node" reg="A1">
+</BLOCK>
+<BLOCK function>
+    Insert node <C>node</C> at the end of the list <C>list</C>.
+</BLOCK>
+<BLOCK inputs>
+    <arg name=list> The list to insert the node into
+    <arg name=node> This node is to be inserted
+</BLOCK>
+<BLOCK example>
+    #include <exec/lists.h>
+    #include <proto/exec.h>
+
+    struct List list;
+    struct Node node;
+
+    /* Insert Node at the end */
+    NewList (&list);
+    AddTail (&list, &node);
+</BLOCK>
+<BLOCK seealso>
+    <mref name=list>
+</BLOCK>
+<BLOCK source>
+    assert (node);
+    assert (list);
+
+    /*
+	Make the node point to the old first node in the list and to the
+	head of the list.
+    */
+    node->ln_Succ = (struct Node *)&list->lh_Tail;
+    node->ln_Pred = list->lh_TailPred;
+
+    /*
+	Now we let the old first node point to us and replace it in the
+	list header.
+    */
+    list->lh_TailPred->ln_Succ = node;
+    list->lh_TailPred	       = node;
+</BLOCK>
+</TEMPLATE>
+
+
