@@ -5,7 +5,13 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= \
+    Else \
+    EndIf \
+    EndSkip \
     If \
+    Lab \
+    Prompt \
+    Quit \
     Set \
     Setenv \
     Unset \
