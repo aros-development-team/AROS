@@ -7,6 +7,7 @@
 */
 #include "dos_intern.h"
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <string.h>
 
 /*****************************************************************************
@@ -15,28 +16,28 @@
 #include <proto/dos.h>
 #include <dos/var.h>
 
-	AROS_LH2(struct LocalVar *, FindVar,
+        AROS_LH2(struct LocalVar *, FindVar,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
-	AROS_LHA(ULONG , type, D2),
+        AROS_LHA(STRPTR, name, D1),
+        AROS_LHA(ULONG , type, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 153, Dos)
+        struct DosLibrary *, DOSBase, 153, Dos)
 
 /*  FUNCTION
-	Finds a local variable structure.
+        Finds a local variable structure.
 
     INPUTS
-	name    -   the name of the variable you wish to find. Note that
-		    variable names follow the same syntax and semantics
-		    as filesystem names.
-	type    -   The type of variable to be found (see <dos/var.h>).
+        name    -   the name of the variable you wish to find. Note that
+                    variable names follow the same syntax and semantics
+                    as filesystem names.
+        type    -   The type of variable to be found (see <dos/var.h>).
 
     RESULT
-	A pointer to the LocalVar structure for that variable if it was
-	found. If the variable wasn't found, or was of the wrong type
-	NULL will be returned.
+        A pointer to the LocalVar structure for that variable if it was
+        found. If the variable wasn't found, or was of the wrong type
+        NULL will be returned.
 
     NOTES
 
@@ -45,47 +46,50 @@
     BUGS
 
     SEE ALSO
-	DeleteVar(), GetVar(), SetVar()
+        DeleteVar(), GetVar(), SetVar()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
+        27-11-96    digulla automatically created from
+                            dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    if(name)
-    {
-	/* We scan through the process->pr_LocalVars list */
-	struct LocalVar *var;
+  /* only the lowest 8 Bits are valid here */
+  type &= 0xFF;
 
-	var = (struct LocalVar *)
-		((struct Process *)FindTask(NULL))->pr_LocalVars.mlh_Head;
+  if(name)
+  {
+    /* We scan through the process->pr_LocalVars list */
+    struct LocalVar *var;
+    
+    var = (struct LocalVar *)
+          ((struct Process *)FindTask(NULL))->pr_LocalVars.mlh_Head;
 
-	while(var->lv_Node.ln_Succ)
-	{
-	    ULONG res;
-	    if(var->lv_Node.ln_Type == type)
-	    {
-		/* The list is alphabetically sorted. */
-		res = strcasecmp(name, var->lv_Node.ln_Name);
+    while(var->lv_Node.ln_Succ)
+    { 
+      ULONG res;
+      if(var->lv_Node.ln_Type == type)
+      {
+        /* The list is alphabetically sorted. */
+        res = Stricmp(name, var->lv_Node.ln_Name);
+        
+        /* Found it */
+        if(res == 0)
+          return var;
 
-		/* Found it */
-		if(res == 0)
-		    return var;
-
-		/* We have gone too far through the sorted list. */
-		else if(res > 0)
-		    return NULL;
-	    }
-	    var = (struct LocalVar *)var->lv_Node.ln_Succ;
-	}
+        /* We have gone too far through the sorted list. */
+        else if(res > 0)
+          return NULL;
+      }
+      var = (struct LocalVar *)var->lv_Node.ln_Succ;
     }
-    return NULL;
+  }
+  return NULL;
 
-    AROS_LIBFUNC_EXIT
+  AROS_LIBFUNC_EXIT
 } /* FindVar */
