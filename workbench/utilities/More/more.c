@@ -307,8 +307,13 @@ static BOOL OpenFile(void)
 	return FALSE;
     }
 
-    Seek(fh, 0, OFFSET_END);
-    new_filelen = Seek(fh, 0, OFFSET_BEGINNING);
+    if (IsFileSystem(filename))
+    {
+	Seek(fh, 0, OFFSET_END);
+	new_filelen = Seek(fh, 0, OFFSET_BEGINNING);
+    }
+    else
+	new_filelen = 0x10000;
 
     if (new_filelen < 0)
     {
@@ -328,9 +333,7 @@ static BOOL OpenFile(void)
 	Cleanup(MSG(MSG_NO_MEM));
     }
 
-    new_filebuffer[new_filelen] = '\0';
-
-    if (Read(fh, new_filebuffer, new_filelen) != new_filelen)
+    if ((flen=Read(fh, new_filebuffer, new_filelen)) != new_filelen && IsFileSystem(filename))
     {
         FreeVec(new_filebuffer);
         Close(fh); fh = 0;
@@ -338,10 +341,12 @@ static BOOL OpenFile(void)
 	return FALSE;
     }
 
+    new_filelen = flen;
+    new_filebuffer[new_filelen] = '\0';
+
     Close(fh);fh = 0;
     
     filepos = new_filebuffer;
-    flen = new_filelen;
 
     new_num_lines = 1;
 
