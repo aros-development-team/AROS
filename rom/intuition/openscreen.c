@@ -821,8 +821,23 @@ AROS_LH1(struct Screen *, OpenScreen,
     /* First Init the RastPort then get the BitPlanes!! */
 
     modetags[0].ti_Data = ns.Depth;
-    modetags[1].ti_Data = ns.Width;
-    modetags[2].ti_Data = ns.Height;
+    if (ns.Width != STDSCREENWIDTH)
+    {
+    	modetags[1].ti_Data = ns.Width;
+    }
+    else
+    {
+    	modetags[1].ti_Tag = TAG_IGNORE;
+    }
+    
+    if (ns.Height != STDSCREENHEIGHT)
+    {
+    	modetags[2].ti_Data = ns.Height;
+    }
+    else
+    {
+    	modetags[2].ti_Tag = TAG_IGNORE;
+    }
 
 #ifdef __MORPHOS__
     // if default HIRES_KEY or HIRESLACE_KEY is passed, make sure we find a replacement
