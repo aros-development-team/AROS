@@ -227,6 +227,7 @@ endif
 %(targetdir)/clib/%(modname)_protos.h %(targetdir)/defines/%(modname).h \
 %(targetdir)/proto/%(modname).h : %(conffile) $(GENMODULEDUMMY)
 	@$(ECHO) "Generating $(notdir $@)"
+	%mkdirs_q dirs="%(targetdir) %(targetdir)/clib %(targetdir)/defines %(targetdir)/proto"
 	@$(GENMODULEDUMMY) %(modname) %(modtype) %(conffile) %(targetdir)
 %end
 #------------------------------------------------------------------------------
@@ -248,7 +249,7 @@ GENFILES_TMP += %(objdir)/%(modname)_autoinit.c %(objdir)/%(modname)_stubs.c \
 endif
 
 ifeq (%(modtype),mcc)
-GENFILES_TMP += %(objdir)/%(modname)_stubs.c
+GENFILES_TMP += %(objdir)/%(modname)_stubs.c %(objdir)/%(modname)_mcc_query.c
 endif
 
 $(GENFILES_TMP) : %(conffile) $(GENMODULE) %(reffile)
@@ -328,13 +329,12 @@ endif
 ifeq ($(findstring $(BD_MODTYPE$(BDID)),library mcc),)
     $(error unhandled MODTYPE X %(modtype))
 endif
-
 ifeq ($(BD_MODTYPE$(BDID)),library)
   BD_MODDIR$(BDID)       := $(AROS_LIBS)
-  BD_EXTRAFILES$(BDID)   := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.c 
-  BD_EXTRAOBJS$(BDID)    := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .o,$(BD_LIBFILES$(BDID)))) \
+  BD_LINKLIBFILES$(BDID)   := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.c 
+  BD_LINKLIBOBJS$(BDID)    := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .o,$(BD_LIBFILES$(BDID)))) \
   	                    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.o 
-  BD_EXTRAGENFILES$(BDID):= $(LIBDIR)/lib%(linklibname).a
+  BD_LINKLIBGENFILES$(BDID):= $(LIBDIR)/lib%(linklibname).a
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit \
   		targetdir=$(BD_OBJDIR$(BDID)) \
 		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
@@ -342,23 +342,26 @@ endif
 
 ifeq ($(BD_MODTYPE$(BDID)),mcc)
   BD_MODDIR$(BDID)       := $(AROS_CLASSES)/Zune
-  BD_EXTRAFILES$(BDID)   := 
-  BD_EXTRAOBJS$(BDID)    := 
-  BD_EXTRAGENFILES$(BDID):= 
+  BD_SRCS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.c
+  BD_OBJS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.o
+  BD_LINKLIBGENFILES$(BDID):= 
+  %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query \
+  		targetdir=$(BD_OBJDIR$(BDID)) \
+		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 endif
 
 ifneq ($(findstring $(BD_MODTYPE$(BDID)),library mcc),)
-  BD_EXTRAFILES$(BDID)   += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
-  BD_EXTRAOBJS$(BDID)    += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.o
-  BD_EXTRADEPS$(BDID)    := $(patsubst %.o,%.d,$(BD_EXTRAOBJS$(BDID))) 
+  BD_LINKLIBFILES$(BDID)   += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
+  BD_LINKLIBOBJS$(BDID)    += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.o
+  BD_LINKLIBDEPS$(BDID)    := $(patsubst %.o,%.d,$(BD_LINKLIBOBJS$(BDID))) 
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs \
   		targetdir=$(BD_OBJDIR$(BDID)) \
 		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 endif
 
 BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
-BD_GENFILES$(BDID)  := $(BD_MODULE$(BDID)) $(BD_EXTRAGENFILES$(BDID))
-BD_DEPS$(BDID)      += $(BD_EXTRADEPS$(BDID))
+BD_GENFILES$(BDID)  := $(BD_MODULE$(BDID)) $(BD_LINKLIBGENFILES$(BDID))
+BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
 
 # What are the files that need to be generated before the .d and .ref files
 # can be generated ?
@@ -380,7 +383,7 @@ endif
 	    $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .c,$(BD_GENFILES$(BDID)))) \
 	    $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) \
 	    $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) \
-	    $(BD_EXTRAFILES$(BDID)) $(BD_EXTRAOBJS$(BDID)) $(BD_LIBDEFSINC$(BDID)) \
+	    $(BD_LINKLIBFILES$(BDID)) $(BD_LINKLIBOBJS$(BDID)) $(BD_LIBDEFSINC$(BDID)) \
 	    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
 	    $(addsuffix .c,$(BD_STARTFILE$(BDID)) $(BD_ENDFILE$(BDID))) \
 	    $(BD_STARTOBJ$(BDID)) $(BD_ENDOBJ$(BDID))
@@ -431,7 +434,7 @@ endif
 
 # For a shared library also build a static link lib
 ifeq ($(BD_MODTYPE$(BDID)),library)
-$(LIBDIR)/lib%(linklibname).a : $(BD_EXTRAOBJS$(BDID))
+$(LIBDIR)/lib%(linklibname).a : $(BD_LINKLIBOBJS$(BDID))
 	%mklib_q from=$^
 endif
 
