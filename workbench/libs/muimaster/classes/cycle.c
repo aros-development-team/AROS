@@ -17,6 +17,8 @@
 #include <proto/muimaster.h>
 #endif
 
+#include <string.h>
+
 #include "debug.h"
 
 #include "mui.h"

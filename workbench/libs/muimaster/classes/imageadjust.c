@@ -21,6 +21,8 @@
 #include <proto/muimaster.h>
 #endif
 
+#include <string.h>
+
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
