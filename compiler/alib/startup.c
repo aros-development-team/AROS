@@ -243,7 +243,7 @@ error:
     if (WBenchMsg)
     {
 	Forbid();
-	ReplyMsg(WBenchMsg);
+	ReplyMsg((struct Message *)WBenchMsg);
     }
 
     return __startup_error;
