@@ -743,7 +743,7 @@ int numparams=0;
         fprintf( fdo, "AROS_%s%d(%s, %s, \\\n", macro[0], numparams, type[0], name[0] );
         for( i = 1 ; i <= numparams ; i++ )
         {
-          fprintf( fdo, "%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
+          fprintf( fdo, "AROS_%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
         }
         fprintf( fdo, "LIBBASETYPEPTR, LIBBASE, %s, BASENAME)\n", reg[0] );
         fprintf( fdo, "{\n    AROS_LIBFUNC_INIT\n\n" );
