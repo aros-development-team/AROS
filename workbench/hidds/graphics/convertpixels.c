@@ -6,7 +6,7 @@
 
 /*** BitMap::ConvertPixels() **********************************************/
 #define SHIFT_PIX(pix, shift)	\
-	(( (shift) < 0) ? (pix) << (shift) : (pix) >> (shift) )
+	(( (shift) < 0) ? (pix) << (-shift) : (pix) >> (shift) )
 
 
 
@@ -92,7 +92,21 @@ static VOID true_to_true(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels
     red_diff 	= srcfmt->red_shift 	- dstfmt->red_shift;
     green_diff  = srcfmt->green_shift	- dstfmt->green_shift;
     blue_diff	= srcfmt->blue_shift	- dstfmt->blue_shift;
-    
+
+
+kprintf("true_to_true()\n: src = %x  dest = %x srcfmt = %d %d %d %d [%d] destfmt = %d %d %d %d [%d]\n",
+	src, dst, srcfmt->alpha_shift, srcfmt->red_shift, srcfmt->green_shift, srcfmt->blue_shift, srcfmt->bytes_per_pixel,
+		  dstfmt->alpha_shift, dstfmt->red_shift, dstfmt->green_shift, dstfmt->blue_shift, srcfmt->bytes_per_pixel);
+kprintf("destmasks = %x %x %x %x  diffs = %d %d %d %d\n",
+	dstfmt->alpha_mask,
+	dstfmt->red_mask,
+	dstfmt->green_mask,
+	dstfmt->blue_mask,
+	alpha_diff,
+	red_diff,
+	green_diff,
+	blue_diff);
+	    
     for (y = 0; y < msg->height; y ++)
     {
     	APTR s = src;
