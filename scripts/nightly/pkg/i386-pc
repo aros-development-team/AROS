@@ -36,8 +36,8 @@ if [ -f $ARCHIVE_ROOT/$VERSION/Binaries/AROS-$VERSION-i386-all-contrib.tar.bz2 ]
     echo "--- Binary contrib package found, unarchiving..."
     cd      $BUILD_BASE/AROS/bin/pc-i386/AROS
     execute tar xjf $CONTRIB_ARCHIVE
-    delete  contrib
-    move    AROS-$VERSION-i386-all-contrib contrib
+    delete  Contrib
+    move    AROS-$VERSION-i386-all-contrib Contrib
 else
     echo "--- Binary contrib package not found, skipping..."
 fi
