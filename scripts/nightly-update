@@ -1,0 +1,59 @@
+#!/bin/zsh
+
+# Script that runs from cron every 30 minutes on the SourceForge shell server
+# and moves nightly build files from the uploads directory to the download
+# directory. Checks the integrity of files before moving, so incomplete or
+# broken files are not available for download.
+
+#-- Configuration ------------------------------------------------------------
+#ROOT=/home/groups/a/ar/aros
+ROOT=/home/adam/aros
+SRC=$ROOT/uploads/nightly
+DST=$ROOT/htdocs/downloads/nightly
+
+#-- Support functions --------------------------------------------------------
+function md5check()
+{
+    # Description:
+    # Check MD5 sum of the given file. Will return failure if the MD5 sum is
+    # incorrect, the file is missing, or the MD5 sum file is missing. 
+    #
+    # The MD5 sum must be stored in a separate file with the same name as the 
+    # file to be tested, with ".md5" appended. Eg., if the file is "foo.txt",
+    # then the MD5 sum must be stored in "foo.txt.md5". The format of the file
+    # is that of the output from the 'md5sum' command.
+    #
+    # Inputs:
+    # $1 - path to file to check.
+    # 
+    # Outputs:
+    # $? - 0 if file is OK, !0 if FAILED.
+    
+    oldpwd=$PWD
+    cd "$(dirname $1)"
+    
+    md5sum -c "$(basename $1).md5" >/dev/null 2>&1; rc=$?
+    
+    cd "$oldpwd"
+    return $rc
+}
+
+cd $SRC
+
+IFS=";"
+for file in $(find . -type f -not -name "*.md5" -printf "%p;"); do
+    if [ ! -z "$file" ]; then
+        md5check "$file"
+        if [ $? = 0 ]; then
+            echo "> $file"
+            
+            dst="$DST/$(dirname $file)"
+            mkdir -p $dst
+            mv "$file" $dst
+            mv "$file.md5" $dst
+        else
+            echo "! $file"
+        fi
+    fi
+done
+
