@@ -26,13 +26,14 @@ struct PartitionTableNode {
 	struct HDUnitNode *hd;
 	struct List pl;             /* partition list */
 	struct List *typelist;      /* list of partition types */
-	ULONG flags;
-	ULONG *tattrlist;
-	ULONG *pattrlist;
+	struct PartitionType defaulttype; /* default type of new partitions */
 	struct DosEnvec de;
-	ULONG reserved;
-	ULONG maxpartitions;
-	ULONG type;
+	ULONG *tattrlist;           /* supported partition table attributes */
+	ULONG *pattrlist;           /* supported partition attributes */
+	ULONG flags;
+	ULONG reserved;             /* nr of reserved blocks */
+	ULONG maxpartitions;        /* max usable partitions */
+	ULONG type;                 /* type of partition table */
 };
 
 #define PNF_TABLE_CHANGED (1<<0) /* partition table has been changed */

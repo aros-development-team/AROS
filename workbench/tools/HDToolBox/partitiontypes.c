@@ -4,6 +4,7 @@
 */
 
 #include <strings.h>
+#include <proto/exec.h>
 #include "platform.h"
 #define DEBUG 1
 #include "debug.h"
@@ -147,9 +148,13 @@ void setPartitionType(struct PartitionTableNode *table) {
 	{
 	case PHPTT_RDB:
 		table->typelist = &rdbtypelist;
+		CopyMem(table->defaulttype.id, "DOS\002", 4);
+		table->defaulttype.id_len = 4;
 		break;
 	case PHPTT_MBR:
 		table->typelist = &mbrtypelist;
+		table->defaulttype.id[0] = 0x30;
+		table->defaulttype.id_len = 1;
 		break;
 	}
 }
