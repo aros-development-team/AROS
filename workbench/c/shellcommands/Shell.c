@@ -112,7 +112,7 @@
 
 #define SET_HOMEDIR 1
 
-#define  P(x)		/* Debug macro */
+#define  P(x)           /* Debug macro */
 #define  P2(x) 		/* Debug macro */
 
 
@@ -450,7 +450,7 @@ LONG interact(void)
 		"AROS is licensed under the terms of the AROS Public License (APL),\n"
 		"a copy of which you should have received with this distribution.\n"
 		"Visit http://www.aros.org/ for more information.\n"
-	    );    
+	    );
 	}
 	else
 	{
@@ -695,13 +695,13 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 
 	if(item == '|')
 	{
-	    BOOL ret;
+            BPTR pipefhs[2] = {0, 0};
 	    int i;
 	    struct TagItem tags[] =
     	    {
 		{ SYS_Input   , NULL                                            },
-		{ SYS_Output  , NULL                             	    	},
-		{ SYS_Error   , NULL                                            },
+		{ SYS_Output  , SYS_DupStream                        	    	},
+		{ SYS_Error   , SYS_DupStream                                   },
 		{ SYS_Asynch  , TRUE    	    	    	    	    	},
 		{ NP_StackSize, Cli()->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT },
 		{ TAG_DONE    , 0 	    	    	    	    	    	}
@@ -729,40 +729,28 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 
 	    P(kprintf("commannd = %S\n", &item+1));
 
-	    tags[1].ti_Data = (IPTR)DupFH(Output(), MODE_READWRITE);
-	    tags[2].ti_Data = (IPTR)DupFH(Error(), MODE_READWRITE);
-
 	    if(rd->haveOutRD)
 	    {
-		tags[0].ti_Data = (IPTR)Open("NIL:", MODE_OLDFILE);
-		ret = SystemTagList(&item+1, tags);
+	        if (SystemTagList(&item+1, tags) == -1)
+	            return FALSE;
 	    }
 	    else
 	    {
-	        BPTR pipefhs[2];
-
-		if (!Pipe(pipefhs))
+	        if (!Pipe(pipefhs))
 	            return FALSE;
 
-		tags[0].ti_Data = (IPTR)pipefhs[0];
-		ret = SystemTagList(&item+1, tags);
+	        tags[0].ti_Data = (IPTR)pipefhs[0];
 
-		if (ret == -1)
-		    Close(pipefhs[1]);
-		else
+	        if (SystemTagList(&item+1, tags) == -1)
 		{
-		    rd->oldOut = SelectOutput(pipefhs[1]);
-		    rd->newOut = pipefhs[1];
+		    Close(pipefhs[0]);
+		    Close(pipefhs[1]);
+		    
+		    return FALSE;
 		}
-
-	    }
-
-	    if (ret == -1)
-	    {
-	       if (tags[0].ti_Data) Close((BPTR)tags[0].ti_Data);
-	       if (tags[1].ti_Data) Close((BPTR)tags[1].ti_Data);
-	       if (tags[2].ti_Data) Close((BPTR)tags[2].ti_Data);
-	       return FALSE;
+		    
+		rd->oldOut = SelectOutput(pipefhs[1]);
+		rd->newOut = pipefhs[1];
 	    }
         }
 	else
