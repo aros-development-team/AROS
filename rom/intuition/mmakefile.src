@@ -57,6 +57,7 @@ FUNCTIONS := \
 	buildsysrequest \
 	changescreenbuffer \
 	changewindowbox \
+	changewindowshape \
 	cleardmrequest \
 	clearmenustrip \
 	clearpointer \

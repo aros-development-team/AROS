@@ -387,6 +387,11 @@ struct IntuiActionMessage
 	{
 	    int			yesno;
 	} 			iam_showwindow;
+	struct
+	{
+	    struct Region   	* shape;
+	    struct Hook     	* callback;
+	}   	    	    	iam_changewindowshape;
 	
     } 				iam;    
 };
@@ -399,6 +404,7 @@ struct IntuiActionMessage
 #define	iam_SizeWindow		iam.iam_sizewindow
 #define iam_ScreenDepth		iam.iam_screendepth
 #define iam_ShowWindow		iam.iam_showwindow
+#define iam_ChangeWindowShape	iam.iam_changewindowshape
 
 enum
 {
@@ -416,7 +422,8 @@ enum
     AMCODE_ACTIVATEGADGET,
     AMCODE_SCREENSHOWTITLE,
     AMCODE_SCREENDEPTH,
-    AMCODE_SHOWWINDOW
+    AMCODE_SHOWWINDOW,
+    AMCODE_CHANGEWINDOWSHAPE
 };
 
 /* Flag definitions for MoreFlags */

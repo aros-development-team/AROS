@@ -944,6 +944,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
 #ifdef ChangeLayerVisibility
 	    case AMCODE_SHOWWINDOW:
+	    	LOCK_REFRESH(targetscreen);
+		
                 if (IS_GZZWINDOW(targetwindow))
 		{
                     ChangeLayerVisibility(targetwindow->BorderRPort->Layer, am->iam_ShowWindow.yesno);
@@ -962,11 +964,38 @@ void HandleIntuiActions(struct IIHData *iihdata,
 		else
 		{
 		    /* Since the window has been made invisible, all the layers behind might have been damaged */
-		    L = targetwindow->WLayer;
-		    CheckLayersBehind = TRUE;
+		    CheckLayerRefreshBehind(targetlayer->back, targetscreen, IntuitionBase);
 		}
+		
+		UNLOCK_REFRESH(targetscreen);
 	        break;
 #endif
+
+#ifdef ChangeLayerShape
+    	    case AMCODE_CHANGEWINDOWSHAPE:
+	    	/* Note: for now GZZ windows are not supported. See ChangeWindowShape */
+
+		LOCK_ACTIONS();
+		Remove(&am->ExecMessage.mn_Node);
+		UNLOCK_ACTIONS();
+		
+		remove_am = FALSE;
+		free_am = FALSE;
+
+	    	LOCK_REFRESH(targetscreen);
+		
+		am->iam_ChangeWindowShape.shape = ChangeLayerShape(targetlayer,
+		    	    	    	    	    	    	   am->iam_ChangeWindowShape.shape,
+								   am->iam_ChangeWindowShape.callback);
+		
+		CheckLayerRefreshBehind(targetlayer, targetscreen, IntuitionBase);
+		
+		UNLOCK_REFRESH(targetscreen);
+		
+		Signal(am->Task, SIGF_INTUITION);
+		break;
+#endif
+		
 	}
 
  	/* targetwindow might be invalid here (AM_CLOSEWINDOW) !!!!!!!!! */
