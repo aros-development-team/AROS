@@ -1,17 +1,9 @@
 #!/usr/local/Hughes/bin/lite
 
-$sock = msqlConnect("aros.fh-konstanz.de");
+$sock = OpenDB ("aros.fh-konstanz.de", "jobserv");
 
 if ($sock < 0)
 {
-	echo ("Can't connect to server!\n");
-	exit (10);
-}
-
-if (msqlSelectDB ($sock,"jobserv") < 0)
-{
-	echo ("Can't open database!\n");
-	msqlClose ($sock);
 	exit (10);
 }
 
