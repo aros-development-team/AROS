@@ -13,6 +13,8 @@ struct RDArgs * getArguments(void)
 
  /* Let's clear the array. Do we really need this or will ReadArgs() set
  every non given argument pointer to NULL? Check it up! */
+ /*yes, you need it :) [by falemagn] */
+
  for(a = 0; a < NUM_ARGS; a++)
   argArray[a] = NULL;
 
