@@ -203,7 +203,7 @@ IPTR Clock__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
     
     if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
 
-    DoMethod(_app(obj), MUIM_Application_AddInputHandler, &data->ihn);
+    DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
     
     data->editpen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
     	    	    	    	  0xFFFFFFFF,
@@ -234,7 +234,7 @@ IPTR Clock__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 	data->clockbm = NULL;
 	data->clockraster = NULL;
     }
-    DoMethod(_app(obj), MUIM_Application_RemInputHandler, &data->ihn);
+    DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
     
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -312,7 +312,7 @@ IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     struct RastPort 	 *obj_rp;
     struct Region   	 *region;
     struct Rectangle	 rect;
-    APTR    	    	 clip;
+    APTR    	    	 clip = NULL;
     WORD    	    	 r, x, y, x2, y2, i, cx, cy, c;
     WORD    	    	 new_clockbmw, new_clockbmh;
     WORD    	    	 clock_posx, clock_posy;
