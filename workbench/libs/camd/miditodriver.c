@@ -95,7 +95,7 @@ __inline void IncBuffer_rt(struct DriverData *data,UBYTE **buffer_rt){
 /* Transmitter functions. */
 
 ULONG Transmit_SysEx(struct DriverData *driverdata){
-	ULONG ret=driverdata->buffer_sx[driverdata->buffercurrsend_sx];
+	UBYTE ret=driverdata->buffer_sx[driverdata->buffercurrsend_sx];
 	driverdata->buffercurrsend_sx++;
 	if(ret==0xf7){
 		driverdata->realtimesysx=0;
@@ -143,8 +143,10 @@ ULONG Transmit_Status(struct DriverData *driverdata){
 		driverdata->status=0;	// (Realtime messages never come here.)
 
 		if(ret==0xf0){
-			driverdata->transmitfunc=Transmit_SysEx;
-			return Transmit_SysEx(driverdata);
+		  IncBuffer(driverdata,&driverdata->buffercurrsend);
+		  driverdata->unsent--;
+		  driverdata->transmitfunc=Transmit_SysEx;
+		  return Transmit_SysEx(driverdata);
 		}
 
 		if(len==0){
@@ -301,12 +303,12 @@ BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer){
 	if(buffer[1]!=0x7f){
 		ObtainSemaphore(&driverdata->sendsemaphore);
 		if(
-			driverdata->unsent==OUTBUFFERSIZE-2
+			driverdata->unsent>=OUTBUFFERSIZE-2
 		){
 			ReleaseSemaphore(&driverdata->sendsemaphore);
 			return FALSE;
 		}
-		*driverdata->buffercurr=0xf0000000;
+		*driverdata->buffercurr=0xf00000f0;
 		driverdata->unsent++;
 		IncBuffer(driverdata,&driverdata->buffercurr);
 
