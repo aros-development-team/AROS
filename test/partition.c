@@ -120,7 +120,7 @@ struct PartitionHandle *root;
 char *device = "fdsk.device";
 ULONG unit = 1;
 
-	PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 41);
+	PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 1);
 	if (PartitionBase)
 	{
 		root = OpenRootPartition(device, unit);
