@@ -160,7 +160,6 @@ struct DataTypesBase
     struct Library  *dtb_IFFParseBase;
     struct Library  *dtb_RexxSysBase;
     struct Library  *dtb_LocaleBase;
-    struct Library  *dtb_IconBase;
     struct Library  *dtb_WorkbenchBase;
     struct Catalog  *dtb_LibsCatalog;
     
@@ -247,7 +246,6 @@ typedef struct IntuitionBase IntuiBase;
 #define IFFParseBase ((struct DataTypesBase *)DataTypesBase)->dtb_IFFParseBase
 #define LocaleBase (GPB(DataTypesBase)->dtb_LocaleBase)
 #define GfxBase (GPB(DataTypesBase)->dtb_GfxBase)
-#define IconBase (GPB(DataTypesBase)->dtb_IconBase)
 #define WorkbenchBase (GPB(DataTypesBase)->dtb_WorkbenchBase)
 
 #define expunge() \

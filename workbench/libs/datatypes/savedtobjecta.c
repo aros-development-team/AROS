@@ -73,14 +73,19 @@ STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase);
     ULONG            err;
     struct dtWrite   write;
     struct DataType *dt;
-    struct TagItem   tags[2] = { { DTA_DataType, (STACKIPTR)&dt  },
-			         { TAG_DONE    , (STACKIPTR)NULL } };
-    ULONG            ret;
-
+    ULONG            rc       = 0;
+    struct Library  *IconBase = OpenLibrary("icon.library", 39L);
+    struct TagItem   tags[2]  =
+    { 
+        { DTA_DataType, (STACKIPTR)&dt  },
+        { TAG_DONE    , (STACKIPTR)NULL } 
+    };
+    
     if(o == NULL || file == NULL)
     {
 	SetIoErr(ERROR_REQUIRED_ARG_MISSING);
-	return 0;
+	rc = 0;
+        goto cleanup;
     }
 
     write.MethodID     = DTM_WRITE;
@@ -91,37 +96,40 @@ STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase);
     if(GetDTAttrsA(o, (struct TagItem *)&tags) == 0)
     {
 	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-	return 0;
+	rc = 0;
+        goto cleanup;
     }
 
     write.dtw_FileHandle = Open(file, MODE_NEWFILE);
-
-    if(write.dtw_FileHandle == NULL)
-	return 0;
-
-    ret = DoDTMethodA(o, win, req, (Msg)&write);
+    if (write.dtw_FileHandle == NULL)
+    {
+        rc = 0;
+	goto cleanup;
+    }
+    
+    rc = DoDTMethodA(o, win, req, (Msg)&write);
 
     /* Save possible error */
     err = IoErr();
 
-    if(Close(write.dtw_FileHandle) == DOSFALSE)
+    if (Close(write.dtw_FileHandle) == DOSFALSE)
     {
-	if(ret != 0)
-	    SetIoErr(err);
-	else
-	    DeleteFile(file);
-
-	return 0;
+	if(rc != 0) SetIoErr(err);
+	else        DeleteFile(file);
+        
+        rc = 0;
+	goto cleanup;
     }
 
     /* If the DTM_WRITE didn't succeed, we delete the file */
-    if(ret == 0)
+    if(rc == 0)
     {
 	DeleteFile(file);
-	return 0;
+	rc = 0;
+        goto cleanup;
     }
 
-    if (saveicon)
+    if (saveicon && IconBase != NULL)
     {
 	struct DiskObject *icon = GetDiskObjectNew(file);
 
@@ -132,7 +140,10 @@ STRPTR CreateIconName(STRPTR name, struct Library *DataTypesBase);
 	}
     }    
 
-    return ret;
+cleanup:
+    if (IconBase != NULL) CloseLibrary(IconBase);
+
+    return rc;
 
     AROS_LIBFUNC_EXIT
 } /* SaveDTObjectA() */
