@@ -11,7 +11,7 @@
 #define MUIC_IconList "IconList.mui"
 
 /*** Identifier base ********************************************************/
-#define MUIB_IconList                   (MUIB_ZUNE | 0x00003200)
+#define MUIB_IconList                   (MUIB_ZUNE | 0x00004200)
 
 /*** Methods ****************************************************************/
 #define MUIM_IconList_Clear             (MUIB_IconList | 0x00000000) /* Zune: V1 */
@@ -58,7 +58,7 @@ struct IconList_Click
 #define MUIC_IconDrawerList         "IconDrawerList.mui"
 
 /*** Identifier base ********************************************************/
-#define MUIB_IconDrawerList         (MUIB_ZUNE | 0x00003300)  
+#define MUIB_IconDrawerList         (MUIB_ZUNE | 0x00004300)  
 
 /*** Attributes *************************************************************/
 #define MUIA_IconDrawerList_Drawer  (MUIB_IconDrawerList | 0x00000000) /* Zune: V1  isg LONG     */
@@ -70,7 +70,7 @@ struct IconList_Click
 #define MUIC_IconVolumeList         "IconVolumneList.mui"
 
 /*** Identifier base ********************************************************/
-#define MUIB_IconVolumeList         (MUIB_ZUNE | 0x00003400)  
+#define MUIB_IconVolumeList         (MUIB_ZUNE | 0x00004400)  
 
 
 

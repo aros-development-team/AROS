@@ -10,7 +10,7 @@
 #define MUIC_Scrollbutton             "Scrollbutton.mui"
 
 /*** Identifier base ********************************************************/
-#define MUIB_Scrollbutton             (MUIB_ZUNE | 0x00003100)  
+#define MUIB_Scrollbutton             (MUIB_ZUNE | 0x00004100)  
 
 /*** Attributes *************************************************************/
 #define MUIA_Scrollbutton_NewPosition (MUIB_Scrollbutton | 0x00000000) /* --G  ULONG (2 x WORD) */
