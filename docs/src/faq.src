@@ -105,9 +105,10 @@ and/or warn you about such code.
 
 \section{For what kinds of hardware is AROS available ?}
 
-Currently AROS is only available for Intel PCs with Linux (Linux/i386).
-We are working on versions for Linux/m68k (ie. Amiga, Mac and Atari with
-Linux) and of course on the Amiga version.
+Currently AROS is available for Intel PCs with Linux (Linux/i386) or
+FreeBSD and Amiga with AmigaOS and Linux/m68. We are working on versions
+for SPARC, HPUX, Alpha, PIOS ONE/transAm and any other available
+hardware if someone wants to do that.
 
 \section{How about UAE ?}
 
