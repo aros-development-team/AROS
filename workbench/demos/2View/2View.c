@@ -321,7 +321,7 @@ int main(int argc, char ** argv)
 	 /*there are still files to display*/
       for(c=0;!ExitFlag && picFilename!=NULL;c++)
       {
-	 if((iff->iff_Stream=Open(picFilename,MODE_OLDFILE))==NULL)
+	 if((iff->iff_Stream=(IPTR)Open(picFilename,MODE_OLDFILE))==NULL)
 	 {     /*If the ILBM file can't be opened...*/
 
 	       /*Print an error...*/
@@ -341,7 +341,7 @@ int main(int argc, char ** argv)
 
 	 CloseIFF(iff);          /*Release iffparse's hold on the file*/
 
-	 Close(iff->iff_Stream); /*Close the file*/
+	 Close((BPTR)iff->iff_Stream); /*Close the file*/
 
 	    /*Get the next filename, either from Workbench,*/
 	 if(WBenchMsg!=NULL)

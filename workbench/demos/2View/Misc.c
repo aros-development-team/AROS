@@ -144,7 +144,7 @@ void getBMHD(UBYTE * ptr)
 struct RDArgs ra=
 {
    {NULL,0,0},
-   NULL,
+   0L,
    trashBuf,
    512,
    "FILE/A/M,SECS=SECONDS/K/N,TICKS/K/N,LOOP/S,FROM/K,PRINT/S"
@@ -318,10 +318,10 @@ void cleanup()
       CloseLibrary(IFFParseBase);
 
    if(IntuitionBase!=NULL)
-      CloseLibrary(IntuitionBase);
+      CloseLibrary((struct Library *)IntuitionBase);
 
    if(GfxBase!=NULL)
-      CloseLibrary(GfxBase);
+      CloseLibrary((struct Library *)GfxBase);
 }
 
 /*Print the specified RastPort (whose ViewPort is pointed to by vp*/
