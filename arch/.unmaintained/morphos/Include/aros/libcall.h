@@ -61,14 +61,13 @@
 
 #include <aros/config.h>
 
-#define AROS_LIBFUNC_INIT
-//int NBDEBUG = dprintf("locale.library.elf: %s\n", __FUNCTION__);
-#define AROS_LIBFUNC_EXIT	}
-#define AROS_LIBBASE_EXT_DECL(type, base)
-#define AROS_SLIB_ENTRY(n,s)	LIB_##n
-
 #ifdef __MORPHOS__
 #define Xj(a,b) a##b
+#define AROS_LIBFUNC_INIT
+//int NBDEBUG = dprintf("icon.library.elf: %s\n", __FUNCTION__);
+#define AROS_LIBFUNC_EXIT	}
+#define AROS_LIBBASE_EXT_DECL(type, base)
+#define AROS_SLIB_ENTRY(n,s)	Xj(LIB_,n)
 #define TRAPIT(n,s)  \
 struct EmulLibEntry Xj(LIB_##n,_Gate) = { TRAP_LIB, 0, (void (*)(void)) LIB_##n }
 #define AROS_SLIB_ENTRY_GATED(n,s) Xj(LIB_##n,_Gate)
