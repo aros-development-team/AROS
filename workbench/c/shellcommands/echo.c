@@ -15,7 +15,7 @@
 
 
 AROS_SH5(Echo, 41.1,
-AROS_SHA(STRPTR *, , STRING, /M,   NULL),
+AROS_SHA(STRPTR *, , , /M,   NULL),
 AROS_SHA(BOOL,     , NOLINE, /S,   FALSE),
 AROS_SHA(ULONG *,  , FIRST,  /K/N, NULL),
 AROS_SHA(ULONG *,  , LEN,    /K/N, NULL),
@@ -40,7 +40,7 @@ AROS_SHA(STRPTR,   , TO,     /K,   NULL))
 	    ERROR(RETURN_ERROR);
     }
 
-    a=SHArg(STRING);
+    a=SHArg();
     while(*a!=NULL)
     {
 	b=*a;
