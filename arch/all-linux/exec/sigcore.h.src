@@ -59,7 +59,7 @@
 /* Type of the values which can be stored on the stack. A variable
    which is to be used as a stack pointer must be declared as
    "SP_TYPE *". */
-#define SP_TYPE	    long
+#define SP_TYPE     long
 
 /* How many general purpose registers are to be saved on the stack
    when a task switch happens */
@@ -74,9 +74,9 @@ struct AROS_cpu_context
 };
 
 #define SIZEOF_ALL_REGISTERS	(sizeof (struct AROS_cpu_context))
-#define GetCpuContext(task)	((struct AROS_cpu_context *)\
+#define GetCpuContext(task)     ((struct AROS_cpu_context *)\
 				(GetIntETask(task)->iet_Context))
-#define GetSP(task)		((SP_TYPE*)(task->tc_SPReg))
+#define GetSP(task)             ((SP_TYPE*)(task->tc_SPReg))
 
 /*
     Macros to access the stack pointer, frame pointer and program
@@ -281,7 +281,7 @@ struct AROS_cpu_context
 	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
 		"    R4=%08lx  R5=%08lx\n" \
-	    , (ULONG)(GetSP(task))) \
+	    , (ULONG)(GetSP(task)) \
 	    , GetSP(task)[-1] \
 	    , GetSP(task)[-2] \
 	    , GetCpuContext(task)->regs[0] \
