@@ -32,6 +32,7 @@ FILES     := support \
 	     prefs \
 	     imspec \
 	     dragndrop \
+             menu \
 	     $(CLASSFILES)
     	    
 FUNCS := \
