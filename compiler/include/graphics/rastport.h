@@ -55,7 +55,7 @@ struct RastPort
 {
     struct Layer    * Layer;
     struct BitMap   * BitMap;
-    UWORD           * AreaPtrn;
+    const UWORD     * AreaPtrn;
     struct TmpRas   * TmpRas;
     struct AreaInfo * AreaInfo;
     struct GelsInfo * GelsInfo;
