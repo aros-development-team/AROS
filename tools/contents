@@ -1,0 +1,31 @@
+FlexCat/ - Catalog maker
+
+MetaMake/ - The main building tool. MetaMake allows to specify targets
+	in different makefiles which will be done at the same time.
+	MetaMake will search by itself for all Makefiles, collect all
+	metatargets and build them just as make would do with a single
+	big makefile.
+
+archtools/ - Utility to build a library or something similar form a set
+	of files which contain functions.
+
+buildshared/ - This should become the main build tool for shared libraries,
+	devices, HIDDs, etc.
+
+commonlib/ - All functions which are often used (e.g. strlen()) are put
+	here. Other libraries which offer these functions should use the
+	code in here.
+
+cpak/ - The first version of archtool.
+
+crypt.c - This is a small program which allows you to create a password if
+	you want to use the CVS server (prefered). See the section about
+	\lref{CVS}{CVS} for how it works.
+
+genmf/ - Helper to create MetaMakefiles by filling in templates.
+
+hpp/ - Very simple tool to preprocess HTML files.
+
+toollib/ - Functions used by several tools in this directory.
+
+xil/ - Enhanced HTML/XML preprocessor.
