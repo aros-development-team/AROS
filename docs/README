@@ -18,6 +18,7 @@ New this time:
 - GadTools
 - AROS uses almost no assembler code anymore
 - Added a small mini kernel to ease porting
+- Added mathffp.library
 
 HOW TO USE THIS
 ---------------

@@ -288,7 +288,8 @@ includes: \
 	    $(CLIBDIR)/intuition_protos.h \
 	    $(CLIBDIR)/console_protos.h \
 	    $(CLIBDIR)/icon_protos.h \
-	    $(CLIBDIR)/iffparse_protos.h
+	    $(CLIBDIR)/iffparse_protos.h \
+	    $(CLIBDIR)/mathffp_protos.h
 
 $(CLIBDIR)/exec_protos.h: $(wildcard config/$(KERNEL)/*.s \
 	    config/$(KERNEL)/*.c config/$(ARCH)/*.c rom/exec/*.c) \
@@ -327,6 +328,9 @@ $(CLIBDIR)/icon_protos.h: $(wildcard workbench/libs/icon/*.c) scripts/genprotos.
 $(CLIBDIR)/iffparse_protos.h: $(wildcard workbench/libs/iffparse/*.c) scripts/genprotos.h
 	$(GENPROTOS) IFFParse "$(TOP)" \
 	    workbench/libs/iffparse/*.c
+
+$(CLIBDIR)/mathffp_protos.h: $(wildcard rom/mathffp/*.c) scripts/genprotos.h
+	$(GENPROTOS) Mathffp "$(TOP)" rom/mathffp/*.c
 
 $(GENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@
