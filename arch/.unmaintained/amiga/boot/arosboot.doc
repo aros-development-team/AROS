@@ -1,4 +1,4 @@
-$VER: arosboot.doc 41.6 (21.3.97)
+$VER: arosboot.doc 41.7 (29.3.97)
 
 *****************************************************************************
                           AROS Native Boot Program
@@ -9,7 +9,7 @@ $VER: arosboot.doc 41.6 (21.3.97)
                                  Written by
                   Lennard voor den Dag <ldp@worldonline.nl>
 
-                        Last revised: March 22, 1997
+                        Last revised: March 29, 1997
 *****************************************************************************
 
 
@@ -122,6 +122,12 @@ arosboot CONFIGFILE,CHIP/S,FAST/S,KICK/S,LOCAL/S,CLEAR/S,CO=CLEARONLY/S,
   Quiet
 
     Be quiet.
+
+
+All file operations (reading the config file and loading the modules) will be
+done relative to the directory where arosboot itself is located. This means
+you don't have to CD into arosboot's directory but can just run arosboot from
+anywhere and it will behave as if you CD'd into it's directory yourself.
 
 
 =============================================================================
