@@ -25,6 +25,9 @@ include $(TOP)/config/make.cfg
 
 # DISABLED: rootfs.handler
 
+#MM- includes : \
+#MM      workbench-devs-input-includes
+
 %build_module_macro mmake=workbench-devs-fdsk \
   modname=fdsk modtype=device \
   initfile=fdsk_device \

@@ -11,3 +11,6 @@
 #MM	    workbench-gadgets-arospalette \
 #MM         workbench-gadgets-colorwheel \
 #MM	    workbench-gadgets-gradientslider 
+
+#MM- includes : \
+#MM      workbench-gadgets-colorwheel-includes
