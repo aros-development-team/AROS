@@ -129,15 +129,19 @@ AROS_UFH3(IPTR, ASLLVRenderHook,
      	    	
 		if (node) if (node->ln_Name)
 		{
+		    UWORD len = strlen(node->ln_Name);
+		    
     	    	    numfit = TextFit(rp,
 				     node->ln_Name,
-				     strlen(node->ln_Name),
+				     len,
     	    			     &te,
 				     NULL,
 				     1,
 				     max_x - min_x + 1 - BORDERLVITEMSPACINGX * 2, 
 				     max_y - min_y + 1);
 
+    	    	    if (numfit < len) numfit++;
+		    
 	    	    SetAPen(rp, dri->dri_Pens[textpen]);
 
     	    	    /* Render text */
@@ -869,22 +873,26 @@ static IPTR asllistview_handleinput(Class *cl, Object *o, struct gpInput *msg)
 			    data->active = n;
 			}
 
-			if ((n < data->top) || (n >= data->top + data->visible))
+			if ((n * data->lineheight < data->toppixel) ||
+			    (n * data->lineheight > data->toppixel + data->visiblepixels - data->lineheight))
 			{
 			    struct RastPort *rp;
 
-			    if (n < data->top)
+			    if (n * data->lineheight < data->toppixel)
 			    {
-			        data->top--;
-				data->scroll = data->top * data->lineheight - data->toppixel;				
+			    	LONG newtop = n * data->lineheight;
+				data->scroll = newtop - data->toppixel;				
+				data->toppixel = newtop;
+				data->top = newtop / data->lineheight;
 			    }
 			    else
 			    {
-			        data->top++;
-				data->scroll = data->top * data->lineheight - data->toppixel;
+			    	LONG newtop = n * data->lineheight - (data->visiblepixels - data->lineheight);
+				
+				data->scroll = newtop - data->toppixel;
+				data->toppixel = newtop;
+				data->top = newtop / data->lineheight;
                             }
-
-			    data->toppixel = data->top * data->lineheight;
 			    
 			    if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
 			    {		    
