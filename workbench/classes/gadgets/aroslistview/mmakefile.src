@@ -29,6 +29,10 @@ endif
 workbench-classes-aroslistview : $(SLIB)
 	@$(NOP)
 
+#MM workbench-classes-aroslistview-quick :
+workbench-classes-aroslistview-quick : $(SLIB)
+	@$(NOP)
+
 #MM workbench-classes-setup
 workbench-classes-setup : setup
 #MM clean
