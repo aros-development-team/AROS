@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/19 17:11:07  aros
+    Moved ALLOCVEC_TOTAL to machine.h because it's used many times.
+
     Revision 1.2  1996/08/01 17:41:27  digulla
     Added standard header for all files
 
@@ -38,10 +41,6 @@ DOUBLEALIGN:sizeof(struct MemChunk))
 /* This allows to take the end of the MemHeader as the first MemChunk. */
 #define MEMHEADER_TOTAL \
 ((sizeof(struct MemHeader)+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1))
-
-/* This is the extra memory needed by AllocVec() */
-#define ALLOCVEC_TOTAL \
-(DOUBLEALIGN>sizeof(ULONG)?DOUBLEALIGN:sizeof(ULONG))
 
 struct Pool /* Private Pool structure */
 {
