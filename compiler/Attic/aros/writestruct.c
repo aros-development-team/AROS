@@ -31,8 +31,8 @@ struct WriteLevel
 
 /*  SYNOPSIS */
 	BPTR   fh,
-	IPTR * sd,
-	APTR   data)
+	APTR   data,
+	IPTR * sd)
 
 /*  FUNCTION
 	Writes one big endian structure to a file.
@@ -436,7 +436,7 @@ int main (int argc, char ** argv)
 	    0046 01:88 88 44 22 11	    ml_Level1Ptr
     */
 
-    if (!WriteStruct (fh, MainDesc, &demo))
+    if (!WriteStruct (fh, &demo, MainDesc))
     {
 	PrintFault (IoErr(), "Failed to write to file\n");
     }

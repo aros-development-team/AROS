@@ -31,8 +31,8 @@ struct ReadLevel
 
 /*  SYNOPSIS */
 	BPTR   fh,
-	IPTR * sd,
-	APTR * dataptr)
+	APTR * dataptr,
+	IPTR * sd)
 
 /*  FUNCTION
 	Reads one big endian structure from a file.
@@ -182,13 +182,13 @@ struct ReadLevel
 	    aptr = ((APTR *)(curr->s + IDESC));
 	    desc = (IPTR *)IDESC;
 
-	    curr->pos -= 3;
-
 	    if (!ReadByte (fh, &valid_ptr))
 		goto error;
 
 	    if (valid_ptr)
 	    {
+		curr->pos -= 3;
+
 		if (!(next = AllocMem (sizeof (struct ReadLevel), MEMF_ANY)) )
 		    goto error;
 
@@ -479,7 +479,7 @@ int main (int argc, char ** argv)
 	    0046 01:88 88 44 22 11	    ml_Level1Ptr
     */
 
-    if (!WriteStruct (fh, MainDesc, &demo))
+    if (!WriteStruct (fh, &demo, MainDesc))
     {
 	PrintFault (IoErr(), "Failed to write to file\n");
     }
@@ -498,7 +498,7 @@ int main (int argc, char ** argv)
 	return 10;
     }
 
-    if (!ReadStruct (fh, MainDesc, (APTR *)&readback))
+    if (!ReadStruct (fh, (APTR *)&readback, MainDesc))
     {
 	PrintFault (IoErr(), "Failed to read from file\n");
     }
@@ -557,6 +557,8 @@ int main (int argc, char ** argv)
 	    , (UBYTE)readback->ml_Level1Ptr->l1_Byte
 	    , readback->ml_Level1Ptr->l1_Long
 	);
+
+	FreeStruct (readback, MainDesc);
     }
 
     if (!Close (fh))

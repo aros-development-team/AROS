@@ -55,21 +55,21 @@ APTR NewObject (struct IClass * classPtr, UBYTE * classID, ULONG tag1, ...);
 struct Window * OpenWindowTags (struct NewWindow * newWindow, ULONG tag1, ...);
 struct Screen * OpenScreenTags (struct NewScreen * newScreen, ULONG tag1, ...);
 
-BOOL ReadByte	(BPTR fh, UBYTE  * dataptr);
-BOOL ReadWord	(BPTR fh, UWORD  * dataptr);
-BOOL ReadLong	(BPTR fh, ULONG  * dataptr);
-BOOL ReadFloat	(BPTR fh, FLOAT  * dataptr);
-BOOL ReadDouble (BPTR fh, DOUBLE * dataptr);
-BOOL ReadString (BPTR fh, STRPTR * dataptr);
-BOOL ReadStruct (BPTR fh, IPTR * desc, APTR * dataptr);
+BOOL ReadByte	 (BPTR fh, UBYTE  * dataptr);
+BOOL ReadWord	 (BPTR fh, UWORD  * dataptr);
+BOOL ReadLong	 (BPTR fh, ULONG  * dataptr);
+BOOL ReadFloat	 (BPTR fh, FLOAT  * dataptr);
+BOOL ReadDouble  (BPTR fh, DOUBLE * dataptr);
+BOOL ReadString  (BPTR fh, STRPTR * dataptr);
+BOOL ReadStruct  (BPTR fh, APTR   * dataptr, IPTR * desc);
 BOOL WriteByte	 (BPTR fh, UBYTE  data);
 BOOL WriteWord	 (BPTR fh, UWORD  data);
 BOOL WriteLong	 (BPTR fh, ULONG  data);
 BOOL WriteFloat  (BPTR fh, FLOAT  data);
 BOOL WriteDouble (BPTR fh, DOUBLE data);
 BOOL WriteString (BPTR fh, STRPTR data);
-BOOL WriteStruct (BPTR fh, IPTR * desc, APTR data);
-void FreeStruct (APTR s, IPTR * desc);
+BOOL WriteStruct (BPTR fh, APTR   data, IPTR * desc);
+void FreeStruct  (APTR s,  IPTR * desc);
 
 AROS_UFH3(IPTR, HookEntry,
     AROS_UFHA(struct Hook *, hook,  A0),
