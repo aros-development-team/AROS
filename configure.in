@@ -412,7 +412,7 @@ if test ! -d bin/${aros_arch}-${aros_cpu}/AROS/include/aros ; then
     ${MKDIR} bin/${aros_arch}-${aros_cpu}/AROS/include/aros
 fi
 
-AC_OUTPUT(Makefile config/config.h config/host.cfg)
+AC_OUTPUT(Makefile config/config.h config/host.cfg mmake.config)
 
 dnl This is in order to not defined SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags

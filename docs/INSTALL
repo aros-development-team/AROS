@@ -4,6 +4,7 @@ Basic Installation of AROS-SOURCES
 ----------------------------------
 
 1. Get the source tree.
+
 	At the moment you have to be an AROS-developer to get the sources
 	due to our status with Amiga Inc., which says that we must have a
 	licence.
@@ -12,18 +13,27 @@ Basic Installation of AROS-SOURCES
 	To obtain a recent version, do a "cvs update -d", so you get all
 	new files and directories.
 
+
 2. Install the tree, say in "/usr/src" or anything apropriate.
+
 	It is possible to build AROS in your main cvs-copy, as all
 	generated files should be ignored by the CVS server, but I think
 	it is better to leave your copy clean, if you can afford the disk
 	space. A complete compilation has over 6000 files and ~50MB
 	for -O2 optimized binaries!
 
-3. Build all the necessary tools for compilation.
-	Get all non-AROS tools,
-	i.e. get a c-compiler (gcc recommended), binutils, gawk, etc.
-	Now compile AROS' tools.
-	Run "autogen.sh" with possible options as mentioned below.
+
+3. Make sure you have all the necessary tools for compilation.
+
+	i.e. a c-compiler (gcc/egcs recommended), binutils, gawk, etc.
+
+
+4. Run "autoconf".
+
+	This generates the configure script from configure.in.
+
+
+5. Run "./configure" with possible options:
 
 	* '--enable-gfxhidd' / '--disable-gfxhidd'
 	  This determines whether you want to enable gfx via the
@@ -34,21 +44,33 @@ Basic Installation of AROS-SOURCES
 	  configure again with the new option (this will require
 	  to recompile major parts of AROS, though).
 
+	* Supported targets
+
+	  On Linux or FreeBSD PC's the default is an emulation
+	  environment based on top of Linux/FreeBSD and X11
+
+	  additional target:
+	  '--target=native-i386'
+	  AROS bootable from floppy disk
+
+
 	Use "./configure --help" for all possible options.
 
 
-	We're heading for "autoconf ; configure ; make" builds, but
-	right now some other things have to be initialized.
-
-	That's it. And now for the most important step:
-
 5. Compile your sources.
-	Call the wrapper Makefile with 'make' or
-	if you have the .mmake.config in your $HOME dir, and adjusted
-	the "top" variable in it, just call mmake.
 
-Now everything should compile well, and your binaries are placed in
-AROS/bin/(os)-(cpu-type)/AROS.
-If you have compiled AROS as an emulation, cd into this dir, start
-arosshell and enjoy!
+	Call the wrapper Makefile with 'make'
+
+
+6. Install the package.
+
+	If you compiled AROS as an emulation then all binaries are placed
+	in AROS/bin/$(os)-$(cpu)/AROS. To start AROS 'cd' into this dir,
+	start arosshell and enjoy!
+
+	If you compiled AROS as stand alone (native), then do a
+	'make install' to write the boot image to a floppy disk.
+	Then leave the disk in /dev/fd0 (Drive A:) and reboot your
+	machine and enjoy!
+
 
