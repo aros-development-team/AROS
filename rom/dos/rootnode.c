@@ -1,4 +1,10 @@
+/*
+    Copyright (C) 2001 AROS - The Amiga Research OS
+    $Id$
 
+    Desc: Miscellaneous functions for dealing with DOS rootnode.
+    Lang:
+*/
 #ifndef AROS_ALMOST_COMPATIBLE
     #define AROS_ALMOST_COMPATIBLE
 #endif
@@ -29,7 +35,7 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
 
     struct CLIInfo *ci;
 
-    kprintf("Calling addprocesstoroot() with cli = %p\n", cli);
+    D(bug("Calling addprocesstoroot() with cli = %p\n", cli));
 
     if(cli == NULL)
 	return;
@@ -75,7 +81,7 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
 
 	    ReleaseSemaphore(&root->rn_RootLock);
 
-	    kprintf("Returning from addprocesstoroot() -- 1\n");
+	    D(bug("Returning from addprocesstoroot() -- 1\n"));
 	    
 	    return;
 	}

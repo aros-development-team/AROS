@@ -314,7 +314,7 @@ void internal_ChildFree(APTR tid);
 
     /* Set the name of this program */
     internal_SetProgramName(cli, name);
-    kprintf("Calling internal_SetProgramName() with name = %s\n", name);
+    D(bug("Calling internal_SetProgramName() with name = %s\n", name));
 
     process->pr_PktWait = NULL;
     process->pr_WindowPtr = (struct Window *)defaults[17].ti_Data; 
