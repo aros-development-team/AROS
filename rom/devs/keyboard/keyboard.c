@@ -44,7 +44,7 @@
 #define min(a,b)  ((a) < (b)) ? (a) : (b)
 #define ALIGN(x)  ((((x) + (__AROS_STRUCTURE_ALIGNMENT - 1)) / __AROS_STRUCTURE_ALIGNMENT) * __AROS_STRUCTURE_ALIGNMENT)
 
-#define isQualifier(x)   (((x) >= AKC_QUALIFIERS_FIRST) && ((x) <= AKC_QUALIFIERS_LAST))
+#define isQualifier(x)   ((((x) & ~KEYUPMASK) >= AKC_QUALIFIERS_FIRST) && (((x) & ~KEYUPMASK) <= AKC_QUALIFIERS_LAST))
 
 /* Temporary - we should make a bit vector of this to check for numeric pad keys */
 #define isNumericPad(x)  ((x) == AKC_NUM_1 || (x) == AKC_NUM_2 || \
@@ -484,7 +484,8 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	    /* Key released ? ... */
 	    if(code & KEYUPMASK)
 	    {
-		kbUn->kbu_Qualifiers |= 1 << (trueCode - AKC_QUALIFIERS_FIRST);
+		/* kbUn->kbu_Qualifiers |= 1 << (trueCode - AKC_QUALIFIERS_FIRST);*/
+		kbUn->kbu_Qualifiers &= ~(1 << (trueCode - AKC_QUALIFIERS_FIRST));
 	    }
 	    else  /* ... or pressed? */
 	    {
@@ -495,7 +496,8 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 		}
 		else
 		{
-		    kbUn->kbu_Qualifiers &= ~(1 << (trueCode - AKC_QUALIFIERS_FIRST));
+		    /* kbUn->kbu_Qualifiers &= ~(1 << (trueCode - AKC_QUALIFIERS_FIRST)); */
+		    kbUn->kbu_Qualifiers |= 1 << (trueCode - AKC_QUALIFIERS_FIRST); 
 		}
 	    }
 	}
