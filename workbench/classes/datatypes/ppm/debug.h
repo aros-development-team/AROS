@@ -11,7 +11,7 @@
 #ifdef __AROS__
 
 #undef DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #else /* __AROS__ */
