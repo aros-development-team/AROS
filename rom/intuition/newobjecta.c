@@ -78,21 +78,41 @@
     Object * object;
 
     EnterFunc(bug("intuition::NewObjectA()\n"));
+ 
+    /* Lock the list */
+    ObtainSemaphoreShared (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
     /* No classPtr ? */
     if (!classPtr)
 	classPtr = FindClass (classID);
+
+    if (classPtr)
+    {
+    	/* To prevent class from being flushed we increase cl_ObjectCount [1] */
+	
+    	#warning "Use atomic macros for this once we have some"
+    	Forbid();
+	classPtr->cl_ObjectCount ++;
+	Permit();
+    }
+    
+    ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
     if (!classPtr)
 	return (NULL); /* Nothing found */
 
     D(bug("classPtr: %p\n", classPtr));
 
-    /* Try to create a new object */
-    if ((object = (Object *) CoerceMethod (classPtr, (Object *)classPtr, OM_NEW,
-	    tagList, NULL)))
-	classPtr->cl_ObjectCount ++;
-
+    /* Try to create a new object. This will also increase cl_ObjectCount in rootclass */
+    object = (Object *) CoerceMethod (classPtr, (Object *)classPtr, OM_NEW, tagList, NULL);
+    
+    /* Now we can undo what we did here [1] */
+    
+    #warning "Use atomic macros for this once we have some"
+    Forbid();
+    classPtr->cl_ObjectCount --;
+    Permit();
+    
     ReturnPtr("intuition::NewObjectA()", Object *, object);
 
 #else
