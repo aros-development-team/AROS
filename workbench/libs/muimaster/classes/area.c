@@ -809,7 +809,6 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	if (!(data->mad_Flags & MADF_SELECTED) || !(data->mad_Flags & MADF_SHOWSELSTATE)) background = data->mad_Background;
 	else background = data->mad_SelBack;
 
-
 	left = _left(obj);
 	top = _top(obj);
 	width = _width(obj);

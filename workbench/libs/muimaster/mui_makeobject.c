@@ -200,7 +200,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 //		    MUIA_Text_Contents, "C",
 	            MUIA_InputMode, MUIV_InputMode_Toggle,
 	            MUIA_Image_FreeVert, TRUE,
-	            MUIA_Image_FreeHoriz, TRUE,
+//	            MUIA_Image_FreeHoriz, TRUE,
 
 //	            MUIA_Frame, MUIV_Frame_None,
 	            MUIA_ShowSelState, FALSE,

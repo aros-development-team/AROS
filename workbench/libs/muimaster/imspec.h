@@ -35,6 +35,10 @@ void zune_draw_image (struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img,
 
 /****/
 
+
+int zune_imspec_get_minwidth(struct MUI_ImageSpec *spec);
+int zune_imspec_get_minheight(struct MUI_ImageSpec *spec);
+
 struct MUI_ImageSpec *zune_imspec_link_new(struct MUI_ImageSpec *linked);
 
 void zune_link_rebind (struct MUI_ImageSpec *img, struct MUI_ImageSpec *new_link);

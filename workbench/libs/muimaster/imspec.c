@@ -2011,6 +2011,25 @@ void zune_imspec_cleanup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri
     }
 }
 
+/* This is very very uneligant but only a test */
+int zune_imspec_get_minwidth(struct MUI_ImageSpec *spec)
+{
+    if (spec->type == IST_VECTOR && spec->vectortype == 4)
+    {
+	return 16;
+    }
+    return 0;
+}
+
+int zune_imspec_get_minheight(struct MUI_ImageSpec *spec)
+{
+    if (spec->type == IST_VECTOR && spec->vectortype == 4)
+    {
+	return 10;
+    }
+    return 0;
+}
+
 void zune_imspec_show(struct MUI_ImageSpec *spec, Object *obj)
 {
 }
