@@ -69,7 +69,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 
  
 #ifdef MYDEBUG
- struct TagItem *Attrs;
+ const struct TagItem *Attrs;
  struct TagItem *ti;
  int Known;
 
@@ -114,7 +114,7 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
  }
 
  Attrs=((struct opSet *) msg)->ops_AttrList;
- Title=(char *) GetTagData(DTA_Name, NULL, Attrs);
+ Title=(char *) GetTagData(DTA_Name, (IPTR) NULL, Attrs);
  D(bug("ppm.datatype/OM_NEW: Title: %s\n", Title?Title:"[none]"));
 #endif /* MYDEBUG */
 
