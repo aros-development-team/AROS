@@ -163,7 +163,7 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                 //if (mousecode == AUX_ACK)
                 //{
                     D(bug("                             Got a mouse ACK!\n"));
-                //    data->u.ps2.expected_mouse_acks--;
+                    data->u.ps2.expected_mouse_acks--;
                 //}
                 //else data->u.ps2.expected_mouse_acks = 0;
             }
