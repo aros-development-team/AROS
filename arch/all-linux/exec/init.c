@@ -8,6 +8,7 @@
 
 #include <exec/types.h>
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
 
@@ -123,12 +124,46 @@ static const struct Resident *romtagList[] =
 };
 
 /* So we can examine the memory */
-struct MemHeader *mh;
+static struct MemHeaderExt mhe;
+struct MemHeader *mh  = &mhe.mhe_MemHeader;
 UBYTE *memory, *space;
 int memSize = 8;
 
 extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
+
+static APTR myAlloc(struct MemHeaderExt *mhe, ULONG size, ULONG *flags)
+{
+    APTR ret;
+    
+    if (flags && (*flags & MEMF_CLEAR))
+        ret = calloc(1, size);
+    else
+        ret = malloc(size);
+    
+    if (ret)
+    {
+        if (flags) *flags &= ~MEMF_CLEAR;
+        mhe->mhe_MemHeader.mh_Free -= size;
+    }
+
+    return ret;
+}
+
+static VOID myFree(struct MemHeaderExt *mhe, APTR mem, ULONG size)
+{
+    mhe->mhe_MemHeader.mh_Free += size;
+
+    return free(mem);    
+}
+
+static ULONG myAvail(struct MemHeaderExt *mhe, ULONG flags)
+{
+    if (flags & MEMF_TOTAL)
+        return memSize << 20;
+	 
+    return mhe->mhe_MemHeader.mh_Free;
+}
 
 /*
     This is where AROS is first called by whatever system loaded it,
@@ -137,6 +172,8 @@ extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
     For boot loaded $(ARCH), you don't need to define main() like this,
     you can have it anyway your bootloader likes.
 */
+
+extern char _start, _end;
 
 int main(int argc, char **argv)
 {
@@ -154,22 +191,30 @@ int main(int argc, char **argv)
     struct termios t;
     int psize = 0;
     int i = 0, x;
-    BOOL mapSysBase = FALSE;
+    BOOL use_hostmem = FALSE;
+    BOOL mapSysBase  = FALSE;
 
     while (i < argc)
     {
       if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
       {
-        printf("AROS for Linux\n");
-        printf("usage: %s [options]\n",argv[0]);
-        printf(" -h                 show this page\n");
-        printf(" -m <size>          allocate <size> Megabytes of memory for AROS\n");
-        printf(" -M                 allows programs to read SysBase from Address $4; SysBase is");
-        printf("                     found there in big endian format\n");
-        printf(" --help             same as '-h'\n");
-        printf(" --memsize <size>   same as '-m <size>'\n");
-        printf(" --mapsysbase       same as '-M'\n");
-        printf("\nPlease report bugs to the AROS development team. http://www.aros.org\n");
+        printf
+	(
+	    "AROS for Linux\n"
+            "usage: %s [options]\n"
+            " -h                 show this page\n"
+            " -m <size>          allocate <size> Megabytes of memory for AROS\n"
+            " -M                 allows programs to read SysBase from Address $4; SysBase is"
+            "                    found there in big endian format\n"
+            " --help             same as '-h'\n"
+            " --memsize <size>   same as '-m <size>'\n"
+            " --mapsysbase       same as '-M'\n"
+	    " --hostmem          Let AROS use the host operating system's facilities to\n"
+	    "                    manage memory, rather than the AROS' builtin ones.\n"
+            "\n"
+	    "Please report bugs to the AROS development team. http://www.aros.org/\n",
+	    argv[0]
+	);
         return 0;
       }
       else
@@ -189,6 +234,11 @@ int main(int argc, char **argv)
       if (!strcmp(argv[i], "--mapsysbase") || !strcmp(argv[i], "-M"))
       {
         mapSysBase = TRUE;
+        i++;
+      }
+      if (!strcmp(argv[i], "--hostmem"))
+      {
+        use_hostmem = TRUE;
         i++;
       }
       else
@@ -228,6 +278,7 @@ int main(int argc, char **argv)
 /*
 #else
 */
+    if (!use_hostmem)
     {
       /* We allocate memSize megabytes */
       memory = malloc((memSize << 20));
@@ -241,18 +292,34 @@ int main(int argc, char **argv)
 #endif
 */
     /* Prepare the first mem header */
-    mh = (struct MemHeader *)memory;
-    mh->mh_Node.ln_Type = NT_MEMORY;
-    mh->mh_Node.ln_Name = "chip memory";
-    mh->mh_Node.ln_Pri = -5;
-    mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL |
-			MEMF_24BITDMA | MEMF_KICK;
-    mh->mh_First = (struct MemChunk *)((UBYTE *)mh+MEMHEADER_TOTAL);
-    mh->mh_First->mc_Next = NULL;
-    mh->mh_First->mc_Bytes = (memSize << 20) - MEMHEADER_TOTAL - psize;
-    mh->mh_Lower = mh->mh_First;
-    mh->mh_Upper = (APTR)(memory + (memSize << 20) - psize);
-    mh->mh_Free = mh->mh_First->mc_Bytes;
+    mh->mh_Node.ln_Type  = NT_MEMORY;
+    mh->mh_Node.ln_Name  = "chip memory";
+    mh->mh_Node.ln_Pri   = -5;
+    mh->mh_Attributes    = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL |
+			   MEMF_24BITDMA | MEMF_KICK;
+			    
+    if (use_hostmem)
+    {
+        mh->mh_Attributes |= MEMF_MANAGED;
+        mh->mh_First       = NULL;
+	mh->mh_Lower       = (char *)&_end + 1;
+	mh->mh_Upper       = (APTR)(~(IPTR)0 / 2); /* Should use getrlimit here. */
+	mh->mh_Free        = memSize << 20;
+	
+	((struct MemHeaderExt *)mh)->mhe_Alloc = myAlloc;
+        ((struct MemHeaderExt *)mh)->mhe_Free  = myFree;
+        ((struct MemHeaderExt *)mh)->mhe_Avail = myAvail;
+    }
+    else
+    {
+        mh->mh_First           = (struct MemChunk *)memory;
+        mh->mh_First->mc_Next  = NULL;
+        mh->mh_First->mc_Bytes = (memSize << 20) - psize;
+        
+	mh->mh_Lower           = mh->mh_First;
+        mh->mh_Upper           = (APTR)(memory + (memSize << 20) - psize);
+        mh->mh_Free            = mh->mh_First->mc_Bytes;
+    }
 
     /*
 	This will prepare enough of ExecBase to allow us to
@@ -266,8 +333,6 @@ int main(int argc, char **argv)
     if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
     {
 	/* These symbols are provided by the linker on most platforms */
-	extern char _start, _end;
-
 	mh->mh_Node.ln_Type = NT_MEMORY;
 	mh->mh_Node.ln_Name = "rom memory";
 	mh->mh_Node.ln_Pri = -128;
@@ -279,7 +344,6 @@ int main(int argc, char **argv)
 	Forbid();
 	Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
-
     /* Ok, lets start up the kernel, we are probably using the UNIX
        kernel, or a variant of that (see config/unix).
     */
