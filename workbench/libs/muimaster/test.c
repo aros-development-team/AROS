@@ -182,12 +182,15 @@ void add_child_function(void)
 {
     int act = xget(list2,MUIA_List_Active);
 
+#ifndef COMPILE_WITH_MUI
     DoMethod(list2,MUIM_List_InsertSingleAsTree, id++, act /* parent */, MUIV_List_InsertSingleAsTree_Bottom, 0);
+#endif
 }
 
 /* IconList callbacks */
 void volume_doubleclicked(void)
 {
+#ifndef COMPILE_WITH_MUI
     char buf[200];
     struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
     DoMethod(volume_iconlist, MUIM_IconList_NextSelected, &ent);
@@ -196,16 +199,19 @@ void volume_doubleclicked(void)
     strcpy(buf,ent->label);
     strcat(buf,":");
     set(drawer_iconlist,MUIA_IconDrawerList_Drawer,buf);
+#endif
 }
 
 void drawer_doubleclicked(void)
 {
+#ifndef COMPILE_WITH_MUI
     static char buf[1024];
     struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
 
     DoMethod(drawer_iconlist, MUIM_IconList_NextSelected, &ent);
     if ((int)ent == MUIV_IconList_NextSelected_End) return;
     set(drawer_iconlist,MUIA_IconDrawerList_Drawer,ent->filename);
+#endif
 }
 
 /* The custom class */
@@ -557,10 +563,18 @@ End,
 	                End,
 
 /* iconlist */
+#ifndef COMPILE_WITH_MUI
+
 	            Child, HGroup,
 	            	Child, volume_iconlist = MUI_NewObject(MUIC_IconVolumeList, GroupFrame, TAG_DONE),
 	            	Child, drawer_iconlist = MUI_NewObject(MUIC_IconDrawerList, GroupFrame, MUIA_IconDrawerList_Drawer,"SYS:",TAG_DONE),
 	            	End,
+#else
+		    Child, HGroup,
+			TAG_IGNORE,volume_iconlist = drawer_iconlist = NULL,
+			Child, HVSpace,
+			End,
+#endif
 
 	            End,
 	         
@@ -646,8 +660,10 @@ End,
 	DoMethod(country_radio[1], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[0], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
 
         /* iconlist */
+#ifndef COMPILE_WITH_MUI
         DoMethod(volume_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, volume_iconlist, 3, MUIM_CallHook, &hook_standard, volume_doubleclicked);
         DoMethod(drawer_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, drawer_iconlist, 3, MUIM_CallHook, &hook_standard, drawer_doubleclicked);
+#endif
 
 	set(wnd,MUIA_Window_Open,TRUE);
 
