@@ -78,6 +78,7 @@
 #include <exec/types.h>
 
 #include <utility/tagitem.h>
+#include <stdio.h>
 
 #define ARG_TEMPLATE    "NAME,STRING/F"
 #define ARG_NAME        0
@@ -88,15 +89,11 @@ static const char version[] = "$VER: Setenv 41.1 (13.08.1997)\n";
 
 int main(int argc, char *argv[])
 {
-	struct RDArgs       * rda;
-	struct ExAllControl * eac;
-    struct ExAllData    * ead;
-    struct ExAllData    * eaData;
-    IPTR                * args[TOTAL_ARGS] = { NULL, NULL };
-    int                   Return_Value;
-    BOOL                  Success;
-    BOOL                  More;
-    BPTR                  Lock;
+    struct RDArgs	* rda;
+    IPTR		* args[TOTAL_ARGS] = { NULL, NULL };
+    int			  Return_Value;
+    BOOL		  Success;
+    BPTR		  lock;
 
     Return_Value = RETURN_OK;
 
@@ -128,55 +125,25 @@ int main(int argc, char *argv[])
         {
             /* Display a list of global variables.
              */
-            Lock = Lock("ENV:", ACCESS_READ);
-            if (Lock)
+            lock = Lock("ENV:", ACCESS_READ);
+            if (lock)
             {
-                eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
-                if (eac)
-                {
-                    eaData = AllocMem(4096, MEMF_ANY | MEMF_CLEAR);
-                    if (eaData)
-                    {
-                        eac->eac_LastKey = 0;
-                        
-                        do
-                        {
-                            More = ExAll(Lock, eaData, 4096, ED_TYPE, eac);
-                            if ((!More) && (IoErr() != ERROR_NO_MORE_ENTRIES))
-                            {
-                                /* Failed abnormally
-                                 */
-                                break;
-                            }
-
-                            if (eac->eac_Entries == 0)
-                            {
-                                /* Failed normally.
-                                 */
-                                continue;
-                            }
-
-                            ead = (struct ExAllData *)eaData;
-                            do
-                            {
-                                if (ead->ed_Type < 0)
-                                {
-                                    FPuts(Output(), ead->ed_Name);
-                                    FPutC(Output(), '\n');
-                                }
-                                ead = ead->ed_Next;
-                            }
-                            while (ead);
-                        }
-                        while (More);
-                        
-                        FreeMem(ead, 4096);
-                    }
-                
-                    FreeDosObject(DOS_EXALLCONTROL, eac);
+		struct FileInfoBlock * FIB = AllocVec(sizeof(struct FileInfoBlock), MEMF_CLEAR);
+		BOOL success;
+		if (FIB)
+		{
+		  success = Examine(lock, FIB);
+		  success = ExNext(lock, FIB);
+                  while (success != DOSFALSE)
+                  {
+                    /* don't show dirs */
+                    if (FIB->fib_DirEntryType < 0)
+                       printf("%s\n",FIB->fib_FileName);
+		    success = ExNext(lock, FIB);
+                  }
+                  FreeVec(FIB);
                 }
-            
-                UnLock(Lock);
+                UnLock(lock);
             }
             else
             {
