@@ -1,27 +1,20 @@
 # $Id$
-TOP=../..
+TOP=../../..
 
 USER_INCLUDES = -I..
 
 include $(TOP)/config/make.cfg
 
-# Use OS's own includes over the ones from AROS
-ifeq ("$(SHARED_MATHTRANS)","yes")
-SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
-else
-SPECIAL_CFLAGS=-I/usr/include
-endif
-
 LIBNAME = mathtrans
 
-OBJDIR=$(OSGENDIR)/$(LIBNAME)
-LIB=$(LIBDIR)/lib$(LIBNAME).so
+%define_libs prelibs=-l$(LIBNAME)
 
-%prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
+OBJDIR=$(OSGENDIR)/$(LIBNAME)
+LIB=$(LIBDIR)/lib$(LIBNAME).a
 
 INIT_FILE = $(LIBNAME)_init
 
-FILES = $(LIBNAME)_functable intern_spld 
+FILES = $(LIBNAME)_functable intern_spld
 
 END_FILE = $(LIBNAME)_endtag
 
@@ -44,23 +37,32 @@ FUNCTIONS = \
 	spcos \
 	sptan
 
+INITFUNC = $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC = $(OBJDIR)/$(END_FILE).o
 
-ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
+ALL_FILES = $(FILES) $(FUNCTIONS)
 
 OBJS=$(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
-all: setup $(LIB)
+all: setup $(SLIBDIR)/$(LIBNAME).library
+
+$(SLIBDIR)/$(LIBNAME).library: $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.map
+	%checkuds
+	@if test ! -s $(LIBNAME)lib.map; then $(RM) $(LIBNAME)lib.map ; else true ; fi
 
 $(LIB) : $(OBJS)
-	%mklib_q
-	@$(RM) $(RMLIB)
+	@echo "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
 
 setup :
 	%mkdirs_q $(OBJDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
 clean::
-	$(RM) $(OBJDIR) *.err $(LIB)
+	$(RM) $(OBJDIR) *.err $(LIB) $(SLIBDIR)/$(LIBNAME).library
 
 $(OBJDIR)/%.o: %.c
 	%compile_q
@@ -68,7 +70,7 @@ $(OBJDIR)/%.o: %.c
 $(LIBNAME)_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	%mkfunctable_q Mathtrans
-	
+
 
 $(LIBNAME)_endtag.c: $(TOP)/scripts/makeendtag.awk
 	%mkendtag_q Mathtrans
