@@ -96,25 +96,23 @@
 
 #include "shcommands.h"
 
-AROS_SH0(If, 41.1)
+AROS_SH10(If, 41.1,
+AROS_SHA(BOOL, ,NOT,/S, FALSE),
+AROS_SHA(BOOL, ,WARN,/S,FALSE),
+AROS_SHA(BOOL, ,ERROR,/S, FALSE),
+AROS_SHA(BOOL, ,FAIL,/S,FALSE),
+AROS_SHA(STRPTR *, , , ,NULL),
+AROS_SHA(STRPTR, ,EQ,/K,NULL),
+AROS_SHA(STRPTR, ,GT,/K,NULL),
+AROS_SHA(STRPTR, ,GE,/K,NULL),
+AROS_SHA(BOOL, ,VAL,/S,FALSE),
+AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 {
     AROS_SHCOMMAND_INIT
 
     BOOL result = FALSE;
 
-    IPTR args[] = { FALSE,
-		    FALSE,
-		    FALSE,
-		    FALSE,
-		    NULL,	/* Multiple */
-		    NULL,
-		    NULL,
-		    NULL,
-		    FALSE,
-		    NULL };
-
-    struct RDArgs *rda;
-    struct UtilityBase *UtilityBase = (struct Library *)OpenLibrary("utility.library", 39);
+    struct UtilityBase *UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
     if (!UtilityBase)
         return RETURN_FAIL;
 
@@ -125,16 +123,12 @@ AROS_SH0(If, 41.1)
 	D(bug("Current input = %p, Standard input = %p\n",
 	      cli->cli_CurrentInput, cli->cli_StandardInput));
 
-	rda = ReadArgs("NOT/S,WARN/S,ERROR/S,FAIL/S,,EQ/K,GT/K,GE/K,VAL/S,EXISTS/K",
-		       args, NULL);
-
-	if(rda != NULL)
 	{
 
-	    STRPTR *argArray  = (STRPTR *)args[4];
+	    STRPTR *argArray  = SHArg();
 	    STRPTR *argArray2 = argArray;
 
-	    if(args[4])		/* Multiple arguments... */
+	    if(SHArg())		/* Multiple arguments... */
 	    {
 		int i = 0;
 
@@ -143,58 +137,57 @@ AROS_SH0(If, 41.1)
 
 		if(i != 2)	/* ...there must be exactly two of them. */
 		{
-		    FreeArgs(rda);
 		    PrintFault(ERROR_TOO_MANY_ARGS, "If");
 		    CloseLibrary((struct Library *)UtilityBase);
 		    return RETURN_ERROR;
 		}
 	    }
 
-	    if(args[1])	/* WARN */
+	    if(SHArg(WARN))
 	    {
 		if(cli->cli_ReturnCode >= RETURN_WARN)
 		    result = TRUE;
 	    }
-	    else if(args[2])	/* ERROR */
+	    else if(SHArg(ERROR))
 	    {
 		if(cli->cli_ReturnCode >= RETURN_ERROR)
 		    result = TRUE;
 	    }
-	    else if(args[3])	/* FAIL */
+	    else if(SHArg(FAIL))
 	    {
 		if(cli->cli_ReturnCode >= RETURN_FAIL)
 		    result = TRUE;
 	    }
-	    else if(args[5] || args[6] || args[7])	/* EQ, GT, GE */
+	    else if(SHArg(EQ) || SHArg(GT) || SHArg(GE))	/* EQ, GT, GE */
 	    {
-		if(args[8])
+		if(SHArg(VAL))
 		{
 		    LONG val1, val2;
 
 		    StrToLong(argArray[0], (LONG *)&val1);
 		    StrToLong(argArray[1], (LONG *)&val2);
 
-		    if(args[5] && (val1 == val2))
+		    if(SHArg(EQ) && (val1 == val2))
 			result = TRUE;
 
-		    if(args[6] && (val1 > val2))
+		    if(SHArg(GT) && (val1 > val2))
 			result = TRUE;
 
-		    if(args[7] && (val1 >= val2))
+		    if(SHArg(GE) && (val1 >= val2))
 			result = TRUE;
 		}
 		else
 		{
 		    LONG res = Stricmp(argArray[0], argArray[1]);
 
-		    result = (args[5] && (res == 0)) ||
-		             (args[6] && (res >  0)) ||
-			     (args[7] && (res >= 0));
+		    result = (SHArg(EQ) && (res == 0)) ||
+		             (SHArg(GT) && (res >  0)) ||
+			     (SHArg(GE) && (res >= 0));
 		}
 	    }
-	    else if(args[9])		/* EXISTS */
+	    else if(SHArg(EXISTS))
 	    {
-		BPTR lock = Lock((STRPTR)args[9], SHARED_LOCK);
+		BPTR lock = Lock(SHArg(EXISTS), SHARED_LOCK);
 
 		if(lock != NULL)
 		    result = TRUE;
@@ -202,7 +195,7 @@ AROS_SH0(If, 41.1)
 		UnLock(lock);
 	    }
 
-	    if(args[0])		       /* NOT */
+	    if(SHArg(NOT))		       /* NOT */
 		result = !result;
 
 
@@ -252,19 +245,17 @@ AROS_SH0(If, 41.1)
 			    found = TRUE;
 			break;
 		    }
-		    
+
 		    /* Take care of long lines */
 		    do
 		    {
 			a = FGetC(Input());
 		    } while (a != '\n' && a != ENDSTREAMCH);
 		}
-		
+
 		if(!found)
 		    PrintFault(ERROR_NO_MATCHING_ELSEENDIF, "If");
 	    }
-
-	    FreeArgs(rda);
 	}
     }
     else
