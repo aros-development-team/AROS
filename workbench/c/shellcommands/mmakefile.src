@@ -40,10 +40,11 @@ FILES	:= \
 
 USER_CFLAGS := -I$(TOP)/rom/dos
 
-#MM- workbench : workbench-c
-#MM workbench-c : includes linklibs
+#MM- workbench-c : workbench-c-shellcommands
+#MM- workbench-c-quick : workbench-c-shellcommands-quick
+#MM- workbench-c-shellcommands : includes linklibs
 
-%build_progs mmake=workbench-c \
+%build_progs mmake=workbench-c-shellcommands \
     files=$(FILES) targetdir=$(AROS_C) \
     uselibs="arossupport amiga rom m" \
     usestartup=no
