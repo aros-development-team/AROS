@@ -29,8 +29,8 @@ BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *
 	driverdata->midiportdata=(*driverdata->mididevicedata->OpenPort)(
 		driverdata->mididevicedata,
 		driverdata->portnum,
-		Transmitter,
-		Receiver,
+		(ULONG (* ASM)(APTR REG(a2)))Transmitter,
+		(void (* ASM)(UWORD REG(d0),APTR REG(a2))) Receiver,
 		driverdata
 	);
 	D(bug("Finished to open port\n"));
@@ -223,7 +223,7 @@ void LoadDriver(char *name,
 	if(mididevicedata==NULL) return;
 
 #ifdef _AROS
-	if(mididevicedata->Flags&1==0){
+	if((mididevicedata->Flags&1)==0){
 		D(bug("%s: mididevicedata->Flags&1==0 is not not supported for AROS!\n",name));
 		Camd_CloseMidiDevice(mididevicedata,CamdBase);
 		return;
