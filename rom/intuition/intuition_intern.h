@@ -234,9 +234,11 @@ extern struct IntuitionBase * IntuitionBase;
 /* stegerg: one can have sysgadgets outside of window border! All sysgadgets in window
             border must have set GACT_???BORDER and, if they are in a gzz window, also
 	    GTYP_GZZGADGET */
-	    
+
+#define IS_GZZ_GADGET(gad) (((gad)->GadgetType) & GTYP_GZZGADGET)  
+
 #define IS_BORDER_GADGET(gad) \
-	((((gad)->GadgetType) & GTYP_GZZGADGET) \
+	(IS_GZZ_GADGET(gad) \
 	|| ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER)))
 	
 /*#define IS_BORDER_GADGET(gad) \
@@ -311,15 +313,11 @@ struct IntWindow
 };
 
 
-/* IMCODE_WBENCHMESSAGE parameter structs
-NOTE: The first two fields of these MUST be the
-same as the first ones in IntuiMessage.
+#define IS_NOCAREREFRESH(win) (((win)->Flags & WFLG_NOCAREREFRESH) ? TRUE  : FALSE)
+#define IS_DOCAREREFRESH(win) (((win)->Flags & WFLG_NOCAREREFRESH) ? FALSE : TRUE )
+#define IS_GZZWINDOW(win)     (((win)->Flags & WFLG_GIMMEZEROZERO) ? TRUE  : FALSE)
 
-However we could instead use another message port in
-the inputhandler to handle these messages and then add
-a pointer to this one in struct IntWindow above.
-
-
+/* 
 
 Another note: Maybe use a union here to save space.
 
@@ -405,7 +403,7 @@ extern void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionB
 extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);
 extern void SendDeferedActionMsg(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase);
-
+extern void UpdateMouseCoords(struct Window *win);
 
 /* Replacement for dos.library/DisplayError() */
 AROS_UFP3(LONG, Intuition_DisplayError,
