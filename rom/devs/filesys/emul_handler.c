@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/09/11 14:40:10  digulla
+    Integrated patch by I. Templeton: Under FreeBSD, there is a clash with
+    	struct timeval
+
     Revision 1.6  1996/09/11 13:05:34  digulla
     Own function to open a file (M. Fleischer)
 
@@ -34,9 +38,18 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#if defined(FreeBSD)
+#define timeval _timeval
 #include <sys/stat.h>
+#define tv_sec tv_secs
+#define tv_usec tv_micros
+#undef timeval
+#else
+#include <sys/stat.h>
+#endif
 #ifdef __GNUC__
     #include "emul_handler_gcc.h"
 #endif
