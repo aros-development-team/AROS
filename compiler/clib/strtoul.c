@@ -82,81 +82,113 @@
 {
     GETUSER;
 
-    unsigned long val   = 0;
-    int           digit;
-    char          c = 0;
+    unsigned long   val   = 0;
+    int             digit;
+    char            c = 0;
+    unsigned long   cutoff;
+    int             cutlim;
+    int		    any;
 
     if (base < 0 || base == 1 || base > 36)
     {
-	errno = EINVAL;
+        errno = EINVAL;
 
-	if (endptr)
-	    *endptr = (char *)str;
+        if (endptr)
+            *endptr = (char *)str;
 
-	return 0;
+        return 0;
     }
 
     while (isspace (*str))
-	str ++;
+        str ++;
+
 
     if (*str)
     {
-	if (*str == '+' || *str == '-')
-	    c = *str ++;
+        if (*str == '+' || *str == '-')
+            c = *str ++; 
 
-	/* Assume base ? */
-	if (!base)
-	{
-	    if (*str == '0') /* Base 8 or 16 */
-	    {
+        /* Assume base ? */
+        if (base == 0)
+        {
+            if (*str == '0') /* Base 8 or 16 */
+            {
 		str++;
-		if (tolower(*str) == 'x')
-		{
-		    str++;
-		    base = 16;
-		}
-		else
-		    base = 8;
-	    }
-	    else /* Any other digit: Base 10 (decimal) */
-		base = 10;
-	}
+                if (*str == 'x' || *str == 'X')
+                {
+                    str++;
+                    base = 16;
+                }
+                else
+                    base = 8;
+            }
+            else /* Any other digit: Base 10 (decimal) */
+                base = 10;
+        }
 
-	while (*str)
-	{
-	    if (isalnum (*str))
+        /*
+            Conversion loop, from FreeBSD's src/lib/libc/stdlib/strtoul.c
+
+            The previous AROS loop was
+            a) inefficient - it did a division each time around.
+            b) buggy - it returned the wrong value in endptr on overflow.
+        */
+        cutoff = (unsigned long)ULONG_MAX / (unsigned long)base;
+        cutlim = (unsigned long)ULONG_MAX % (unsigned long)base;
+        val = 0;
+        any = 0;
+
+        while (*str)
+        {
+            digit = *str;
+
+            if (!isascii(digit))
+                break;
+
+            if (isdigit(digit))
 	    {
-		digit = tolower (*str) - '0';
-
-		if (digit > 9)
-		    digit -= 'a' - '0' - 10;
-
-		if (digit >= base)
-		    break;
-
-		if (val > ((ULONG_MAX - digit) / base)
-		    || (val * base) > (ULONG_MAX - digit)
-		)
-		{
-		    errno = ERANGE;
-		    val = ULONG_MAX;
-		    break;
-		}
-
-		val = (val * base) + digit;
+		digit -= '0';
 	    }
-	    else
-		break;
+            else if (isalpha(digit))
+	    {
+		digit -= isupper(digit) ? 'A' - 10 : 'a' - 10;
+	    }
+            else
+                break;
 
-	    str ++;
-	}
+            if (digit > base)
+                break;
 
-	if (c == '-')
-	    val = -val;
+            /*
+                any < 0 when we have overflowed. We still need to find the
+                end of the subject sequence
+            */
+            if (any < 0 || val > cutoff || (val == cutoff && digit > cutlim))
+            {
+                any = -1;
+            }
+            else
+            {
+                any = 1;
+                val = (val * base) + digit;
+            }
+
+            str++;
+        }
+
+        /* Range overflow */
+        if (any < 0)
+        {
+            val = ULONG_MAX;
+            errno = ERANGE;
+        }
+
+        if (c == '-')
+            val = -val;
     }
 
-    if (endptr)
-	*endptr = (char *)str;
+    if (endptr) 
+        *endptr = (char *)str;
 
     return val;
 } /* strtoul */
