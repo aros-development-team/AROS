@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS
+    Copyright (C) 1995-2001 AROS
     $Id$
 
     Desc: Internal definitions for the locale.library.
@@ -75,19 +75,31 @@ struct IntLocale
 
 struct CatStr
 {
-    struct CatStr       *cs_Next;
-    ULONG                cs_Id;
-    UBYTE                cs_Data[1];
+    STRPTR  	    	cs_String;
+    ULONG               cs_Id;
+};
+
+/* see Amiga Developer CD 2.1:NDK/NDK_3.1/Examples1/locale/SelfLoad/catalog.c */
+
+struct CodeSet
+{
+    ULONG cs_CodeSet;
+    ULONG cs_Reserved[7];
 };
 
 struct IntCatalog
 {
     struct Catalog      ic_Catalog;
-    struct CatStr      *ic_First;
+    struct CodeSet  	ic_CodeSet;
+    struct CatStr      *ic_CatStrings;
+    UBYTE   	       *ic_StringChunk;
+    ULONG   	    	ic_NumStrings;
     ULONG		ic_DataSize;
     UWORD		ic_UseCount;
     ULONG		ic_Flags;
-    STRPTR		ic_Name; // name of the file as passed to OpenCatalogA
+    UBYTE   	    	ic_LanguageName[30];
+    UBYTE   	    	ic_Name[0]; // name of the file as passed to OpenCatalogA
+    /* structure sizes depends on length of ic_Name string */
 };
 
 /* Catalog strings are in order, so we don't have to search them all */
