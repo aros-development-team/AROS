@@ -63,3 +63,9 @@ BUG000006
 klaus21@t-online.de
 "dir :" does nothing.
 
+BUG000007
+digulla@wi-pc44.fh-konstanz.de
+forkbomb cannot be called from the shell (one has to cut&paste one of
+the lines of the script) and it runs only about 1000 times before it
+GURUs with AN_MemCorrupt (81000005). Does not happen every time, though :-/
+
