@@ -116,7 +116,7 @@ BOOL HandleCheckItem(struct MenuHandlerData *mhd, struct SmallMenuEntry *entry,
                             struct IntuitionBase *IntuitionBase);
 #else
 void AddToSelection(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
-void HandleCheckItem(struct Window *win, struct MenuItem *item, WORD itemnum,
+void HandleCheckItem(struct Window *win, struct MenuItem *item,
                             struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 
 #endif
