@@ -25,6 +25,7 @@
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
 #define LC_NO_EXPUNGELIB
+#define LC_STATIC_INITLIB
 
 #include <libcore/libheader.c>
 
@@ -49,7 +50,7 @@ struct ExecBase *SysBase = 0L;
 
 #define SetFunc(a,b) SetFunction((struct Library *)LIBBASETYPE, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility))
 
-ULONG SAVEDS STDARGS L_InitLib (LIBBASETYPEPTR LIBBASE)
+ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 {
 #ifdef _DCC
     SysBase = GetIntUtilityBase(LIBBASE)->ub_SysBase;

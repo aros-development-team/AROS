@@ -16,17 +16,18 @@
 #endif
 
 /* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)	(((struct IntBOOPSIBase *)(lib))->bb_SysBase)
-#define LC_SEGLIST_FIELD(lib)	(((struct IntBOOPSIBase *)(lib))->bb_SegList)
-#define LC_RESIDENTNAME		BOOPSI_resident
+#define LC_SYSBASE_FIELD(lib)   (((struct IntBOOPSIBase *)(lib))->bb_SysBase)
+#define LC_SEGLIST_FIELD(lib)   (((struct IntBOOPSIBase *)(lib))->bb_SegList)
+#define LC_RESIDENTNAME 	BOOPSI_resident
 #define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
 #define LC_RESIDENTPRI		95
 #define LC_LIBBASESIZE		sizeof(struct IntBOOPSIBase)
 #define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)	(((struct IntBOOPSIBase *)(lib))->bb_LibNode)
+#define LC_LIB_FIELD(lib)       (((struct IntBOOPSIBase *)(lib))->bb_LibNode)
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
 #define LC_NO_EXPUNGELIB
+#define LC_STATIC_INITLIB
 
 #include <libcore/libheader.c>
 
@@ -46,7 +47,7 @@ static void FreeAllClasses(struct Library *BOOPSIBase)
     }
 }
 
-static ULONG SAVEDS STDARGS L_InitLib (LIBBASETYPEPTR LIBBASE)
+static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 {
     Class *cl;
     /* All we have to do is to set up the pre-existing classes. */
