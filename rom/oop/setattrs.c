@@ -62,15 +62,16 @@
     static MethodID mid = 0UL;
     
     EnterFunc(bug("SetAttrs())\n"));
+    ASSERT_VALID_PTR(object);
+    ASSERT_VALID_PTR(attrList);
     
     if (!mid)
     	mid = GetMethodID(IID_Root, moRoot_Set);
-	
+
     p.mID	= mid;
     p.attrList	= attrList;
-    
-    /* Call the Get() method on the object */
-    
+
+    /* Call the Get() method on the object */ 
     ReturnPtr ("SetAttrs", IPTR, DoMethod(object, (Msg)&p));
     
     AROS_LIBFUNC_EXIT
