@@ -389,7 +389,7 @@ static int relocate
            performances. More infos here: http://www.lysator.liu.se/c/duffs-device.html
         */ 
          
-        register unsigned long j = (num_relocs + 7) / 8;
+        register long j = (num_relocs + 7) / 8;
             
         switch (num_relocs % 8)
         {
