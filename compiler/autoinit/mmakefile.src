@@ -18,6 +18,7 @@ LIBBASEFILES := \
 	icon \
 	iffparse \
 	intuition \
+        keymap \
 	layers \
 	locale \
         partition \

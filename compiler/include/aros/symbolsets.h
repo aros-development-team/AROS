@@ -118,20 +118,21 @@ const ULONG bname##_version = ver
 /* some already allocated priorities for library opening/closing */
 #define LIBSET_EXEC_PRI          0
 #define LIBSET_DOS_PRI           1
-#define LIBSET_INTUITION_PRI     2
-#define LIBSET_LAYERS_PRI        3
-#define LIBSET_GRAPHICS_PRI      4
-#define LIBSET_UTILITY_PRI       5
-#define LIBSET_IFFPARSE_PRI      6
-#define LIBSET_CYBERGRAPHICS_PRI 7
-#define LIBSET_DISKFONT_PRI      8
-#define LIBSET_LOCALE_PRI        9
-#define LIBSET_ASL_PRI           10
-#define LIBSET_GADTOOLS_PRI 	 11
-#define LIBSET_REALTIME_PRI 	 12
-#define LIBSET_ICON_PRI 	 13
-#define LIBSET_WORKBENCH_PRI 	 14
-#define LIBSET_DATATYPES_PRI 	 15
+#define LIBSET_KEYMAP_PRI        2
+#define LIBSET_INTUITION_PRI     3
+#define LIBSET_LAYERS_PRI        4
+#define LIBSET_GRAPHICS_PRI      5
+#define LIBSET_UTILITY_PRI       6
+#define LIBSET_IFFPARSE_PRI      7
+#define LIBSET_CYBERGRAPHICS_PRI 8
+#define LIBSET_DISKFONT_PRI      9
+#define LIBSET_LOCALE_PRI        10
+#define LIBSET_ASL_PRI           11
+#define LIBSET_GADTOOLS_PRI 	 12
+#define LIBSET_REALTIME_PRI 	 13
+#define LIBSET_ICON_PRI 	 14
+#define LIBSET_WORKBENCH_PRI 	 15
+#define LIBSET_DATATYPES_PRI 	 16
 
 #define LIBSET_AROSC_PRI         20
 
