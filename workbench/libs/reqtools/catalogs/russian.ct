@@ -1,0 +1,203 @@
+;******************
+;
+;   ReqTools V38
+;
+;   Russian
+;
+;******************
+;
+; Done by Oleg Sergeev
+;
+## version $VER: reqtools.catalog 38.8 (26.1.97)
+## codeset 0
+## language russian
+;
+; *** General ***
+;
+; Note: there are two spaces around the Ok string to make it 4 chars wide.
+MSG_OK
+ НЙ \
+
+;
+MSG_CANCEL
+Нслдмa
+;
+; *** EZRequester ***
+;
+MSG_OK_BAR_CANCEL
+ НЙ |Нслдмa
+;
+MSG_LAST_BAR_CANCEL
+Онркдгмзи|Нслдмa
+;
+MSG_REQUEST
+Жaопнр
+;Begдran, Anhеllan, Efterfrеgan
+;
+MSG_INFORMATION
+Змунплaхзю
+;
+; *** GetLong Requester ***
+;
+; Note: there are two spaces around the next three strings!
+MSG_MIN_FMT
+ Лзм.: %ld \
+;
+MSG_MAX_FMT
+ Maйр.: %ld \
+;
+MSG_MIN_MAX_FMT
+ Лзм. %ld, Лaйр.: %ld \
+;
+MSG_TOO_SMALL
+Лaкн!
+;
+MSG_TOO_BIG
+Лмнвн!
+;
+; *** Palette Requester ***
+;
+MSG_PALETTE_COLORS
+Хбдсa оaкзспъ:
+;
+MSG_RED
+Йпaрмъи:
+;
+MSG_GREEN
+ЖдкЅмъи:
+;
+MSG_BLUE
+Рзмзи:
+;
+MSG_COPY
+Йнозпнбaсы
+;
+MSG_SWAP
+Налдмюсы
+;
+MSG_SPREAD
+Пaропнрспaмзсы
+;
+MSG_UNDO
+Бнжбпaс
+;
+; ** 2.5 **
+;
+MSG_COPY_TITLE
+Рйнозпнбaсы б...
+; Copy to
+;
+MSG_SWAP_TITLE
+Налдмюсы р...
+; Swap with
+;
+MSG_SPREAD_TITLE
+Пaропнрспaмзсы мa...
+; Spread to
+;
+; *** File Requester ***
+;
+MSG_CREATE_DRAWER
+Йaсaкнв "%s" мд ртщдрсбтдс.\nРнжгaсы двн?
+;
+MSG_DIR_ERROR
+Ншзайa йaсaкнвa!
+;
+MSG_MATCH_WINTITLE
+Рнбоaгдмзд...
+;
+MSG_DRAWER
+Йaсaкнв
+;
+MSG_ASSIGN
+К. Злю
+;
+MSG_ALL
+Брд
+;
+MSG_MATCH
+Рнбоaгдмзд...
+;
+MSG_CLEAR
+Нцзрсйa
+;
+MSG_VOLUMES
+Снлa
+;
+MSG_PARENT
+Мaжaг
+;
+MSG_PATTERN
+Шaакнм:
+;
+MSG_GET
+Рцзсaсы
+;
+MSG_DOT_INFO
+зйнмйз
+;
+MSG_SELECTED
+Бъапaмн:
+;
+MSG_FULL
+Жaмюсн %ld%%
+;
+; *** Font Requester ***
+;
+MSG_COULDNT_OPEN_FONT
+Мд лнвт нсйпъсы шпзус!
+;
+MSG_BOLD
+Езпмъи
+;
+MSG_ITALIC
+Мaйкнммъи
+;
+MSG_UNDERLINE
+ОнгцЅпймтсъи
+;
+; *** ScreenMode Requester ***
+;
+MSG_DASH_INTERLACED
+-Цдпдррспнцмъи
+;
+MSG_DASH_HAM
+-HAM
+;
+MSG_DASH_EHB
+-EHB
+;
+MSG_REGULAR_SIZE
+Наъцмъи пaжлдп
+;
+MSG_TEXT_SIZE
+Сдйрснбъи пaжлдп
+;
+MSG_GFX_SIZE
+Впaузцдрйзи пaжлдп
+;
+MSG_MAX_SIZE
+Лaйрзлaкымъи пaжлдп
+;
+MSG_OVERSCAN
+Вaаaпзсъ:
+;
+MSG_WIDTH
+Шзпзмa:
+;
+MSG_HEIGHT
+Бърнсa:
+;
+;
+MSG_DEFAULT
+Он тлнкцaмзэ
+;
+MSG_COLORS
+Хбдсa:
+;
+MSG_MAX
+Лaйр.:
+;
+MSG_AUTOSCROLL
+Aбснопнйптсйa:
+;

@@ -1,0 +1,196 @@
+;******************
+;
+;   ReqTools V38
+;
+;******************
+;
+## version $VER: reqtools.catalog 38.4 (2.1.94)
+## codeset 0
+## language deutsch
+;
+; *** General ***
+;
+; Note: there are two spaces around the Ok string to make it 4 chars wide.
+MSG_OK
+ _Ok
+;
+MSG_CANCEL
+_Abbruch
+;
+MSG_OK_BAR_CANCEL
+ _Ok |_Abbruch
+;
+; *** EZRequester ***
+;
+MSG_LAST_BAR_CANCEL
+_Letztes|_Abbruch
+;
+MSG_REQUEST
+Meldung
+;Eingabeaufforderung
+; Das ist zu lang / It's too long and clumpsy
+;
+MSG_INFORMATION
+Information
+;
+; *** GetLong Requester ***
+;
+; Note: there are two spaces around the next three strings!
+MSG_MIN_FMT
+ Min: %ld
+;
+MSG_MAX_FMT
+ Max: %ld
+;
+MSG_MIN_MAX_FMT
+ Min: %ld, Max: %ld
+;
+MSG_TOO_SMALL
+Zu klein!
+;
+MSG_TOO_BIG
+Zu groß!
+;
+; *** Palette Requester ***
+;
+MSG_PALETTE_COLORS
+_Farben:
+;
+MSG_RED
+_Rot:
+;
+MSG_GREEN
+_Grün:
+;
+MSG_BLUE
+_Blau:
+;
+MSG_COPY
+_Kopieren
+;
+MSG_SWAP
+_Wechseln
+;
+MSG_SPREAD
+_Verlauf
+;
+MSG_UNDO
+Rü_ckgängig
+;
+; ** 2.5 **
+;
+MSG_COPY_TITLE
+Copy to...
+;
+MSG_SWAP_TITLE
+Swap with...
+;
+MSG_SPREAD_TITLE
+Spread to...
+;
+; *** File Requester ***
+;
+MSG_CREATE_DRAWER
+Schublade '%s' existiert\nnicht, neu anlegen?
+;
+MSG_DIR_ERROR
+Falsche Schublade!
+;
+MSG_MATCH_WINTITLE
+Muster...
+;
+MSG_DRAWER
+Schublade
+;
+MSG_ASSIGN
+Assign
+;
+MSG_ALL
+All_e
+;
+MSG_MATCH
+M_uster..
+;
+MSG_CLEAR
+_Keine
+;
+MSG_VOLUMES
+_Laufw.
+;
+MSG_PARENT
+_Mutterv.
+;
+MSG_PATTERN
+Mus_ter:
+;
+MSG_GET
+_Neu
+;
+MSG_DOT_INFO
+._info
+;
+MSG_SELECTED
+Angewählt:
+;
+MSG_FULL
+%ld%% voll
+;
+; *** Font Requester ***
+;
+MSG_COULDNT_OPEN_FONT
+Kann Font nicht öffnen!
+;
+MSG_BOLD
+_Fett
+;
+MSG_ITALIC
+_Kursiv
+;
+MSG_UNDERLINE
+_Unterstr.
+;
+; *** ScreenMode Requester ***
+;
+MSG_DASH_INTERLACED
+-Interlace
+;
+MSG_DASH_HAM
+-HAM
+;
+MSG_DASH_EHB
+-EHB
+;
+MSG_REGULAR_SIZE
+Normale Abmessung
+;
+MSG_TEXT_SIZE
+Text-Abmessung
+;
+MSG_GFX_SIZE
+Grafik-Abmessung
+;
+MSG_MAX_SIZE
+Maximale Abmessung
+;
+MSG_OVERSCAN
+O_verscan:
+;
+MSG_WIDTH
+_Breite:
+;
+MSG_HEIGHT
+_Höhe:
+;
+;
+MSG_DEFAULT
+Vorgabe
+;
+MSG_COLORS
+_Farben:
+;
+MSG_MAX
+Max:
+;
+MSG_AUTOSCROLL
+A_uto-Rollen:
+;
