@@ -23,4 +23,8 @@
 #define RPTAG_FgColor	 0x80000081
 #define RPTAG_BgColor	 0x80000082
 
+/* Extensions invented by AROS */
+#define RPTAG_PatternOriginX 0x800000C0
+#define RPTAG_PatternOriginY 0x800000C1
+
 #endif /* GRAPHICS_RPATTR_H */
