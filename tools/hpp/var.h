@@ -1,8 +1,14 @@
 #ifndef VAR_H
 #define VAR_H
 
-#ifndef _TOOLLIB_H
-#   include <toollib.h>
+#ifndef TOOLLIB_TOOLLIB_H
+#   include <toollib/toollib.h>
+#endif
+#ifndef TOOLLIB_VSTRING_H
+#   include <toollib/vstring.h>
+#endif
+#ifndef TOOLLIB_CALLBACK_H
+#   include <toollib/callback.h>
 #endif
 
 typedef struct
@@ -15,10 +21,10 @@ Var;
 typedef struct
 {
     Node   node;
-    int    type;
-    void * value;
+    CB	   cb;
+    CBD    cbd;
 }
-TVar;
+Function;
 
 typedef struct
 {
@@ -37,5 +43,9 @@ extern void   Var_PushLevel PARAMS ((void));
 extern VarLevel * Var_PopLevel PARAMS ((void));
 extern void Var_FreeLevel PARAMS ((VarLevel *));
 extern void Var_Free PARAMS ((Var *));
+extern String Var_Subst PARAMS ((const char * str));
+
+extern void Func_Add PARAMS ((const char * name, CB cb, CBD cbd));
+extern Function * Func_Find PARAMS ((const char * name));
 
 #endif /* VAR_H */

@@ -11,24 +11,24 @@
 
 <DEF NAME="filename" OPTION="text">
     <filename>
-    <IF EXPR="$checkdb(filenames,$text)">
+    <IF COND="$checkdb(filenames,$text)">
 	<LINK NAME="$text" REF="$querydb(filenames,$text)">
     <ELSE>
 	$text
-    <IF>
+    </IF>
     </filename>
 </DEF>
 
 This is a filename <filename text="test.src">.
 
-<BDEF NAME="code" OPTION="type" DEFAULT="c">
+<BDEF NAME="code" OPTION="type">
     <ENV NAME="code">
     <FILTER CMD="format -type $type -style $outputStyle $infilename"
-	OPTION="VerbatimInput InputFile ProcessOutput">
+	VerbatimInput InputFile ProcessOutput>
     </ENV>
 </BDEF>
 
-<code>
+<code type="c">
 #include <stdio.h>
 
 int a;

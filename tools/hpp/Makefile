@@ -1,11 +1,11 @@
 PURIFY	= /home/digulla/AROS/compiler/purify/purify
 CC	 = gcc
 #CC	  = $(PURIFY) gcc
-CFLAGS	 = -g -Wall -O -I../toollib
+CFLAGS	 = -g -Wall -O -I..
 DEPLIBS  = ../toollib/libtoollib.a
 LIBS	 = -L../toollib -ltoollib
 
-OBJS	 = parse_html.o html.o main.o var.o
+OBJS	 = parse_html.o html.o main.o var.o db.o
 
 all : hpp
 
@@ -21,9 +21,61 @@ htmlparsetest : test_parse_html.o $(DEPLIBS)
 test_%.o : %.c
 	$(CC) -DTEST $(CFLAGS) -c $< -o $@
 
-parse_html.o : parse_html.h ../toollib/callback.h ../toollib/toollib.h \
-	../toollib/hash.h ../toollib/vstring.h ../toollib/stdiocb.h
-test_parse_html.o : parse_html.h ../toollib/callback.h ../toollib/toollib.h \
-	../toollib/hash.h ../toollib/vstring.h ../toollib/stdiocb.h \
-	../toollib/stringcb.h
+depend :
+	makedepend -- $(CFLAGS) -- *.c
 
+# DO NOT DELETE
+
+db.o: /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h
+db.o: /usr/include/sys/cdefs.h ../toollib/error.h ../toollib/toollib.h
+db.o: /usr/include/sys/types.h /usr/include/linux/types.h
+db.o: /usr/include/linux/posix_types.h /usr/include/asm/posix_types.h
+db.o: /usr/include/asm/types.h /usr/include/sys/bitypes.h
+db.o: /usr/include/stdarg.h /usr/include/stdlib.h /usr/include/features.h
+db.o: /usr/include/stddef.h /usr/include/errno.h /usr/include/linux/errno.h
+db.o: /usr/include/asm/errno.h /usr/include/alloca.h ../toollib/hash.h
+db.o: ../toollib/callback.h db.h var.h ../toollib/vstring.h
+html.o: /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h
+html.o: /usr/include/sys/cdefs.h /usr/include/string.h
+html.o: /usr/include/features.h /usr/include/stddef.h /usr/include/ctype.h
+html.o: /usr/include/endian.h /usr/include/bytesex.h ../toollib/toollib.h
+html.o: /usr/include/sys/types.h /usr/include/linux/types.h
+html.o: /usr/include/linux/posix_types.h /usr/include/asm/posix_types.h
+html.o: /usr/include/asm/types.h /usr/include/sys/bitypes.h
+html.o: /usr/include/stdarg.h /usr/include/stdlib.h /usr/include/errno.h
+html.o: /usr/include/linux/errno.h /usr/include/asm/errno.h
+html.o: /usr/include/alloca.h ../toollib/mystream.h ../toollib/callback.h
+html.o: ../toollib/stringcb.h ../toollib/vstring.h ../toollib/error.h parse.h
+html.o: parse_html.h var.h html.h
+main.o: /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h
+main.o: /usr/include/sys/cdefs.h ../toollib/stdiocb.h ../toollib/toollib.h
+main.o: /usr/include/sys/types.h /usr/include/linux/types.h
+main.o: /usr/include/linux/posix_types.h /usr/include/asm/posix_types.h
+main.o: /usr/include/asm/types.h /usr/include/sys/bitypes.h
+main.o: /usr/include/stdarg.h /usr/include/stdlib.h /usr/include/features.h
+main.o: /usr/include/stddef.h /usr/include/errno.h /usr/include/linux/errno.h
+main.o: /usr/include/asm/errno.h /usr/include/alloca.h ../toollib/mystream.h
+main.o: ../toollib/callback.h ../toollib/error.h html.h parse.h var.h
+main.o: ../toollib/vstring.h db.h
+parse_html.o: /usr/include/stdio.h /usr/include/libio.h
+parse_html.o: /usr/include/_G_config.h /usr/include/sys/cdefs.h
+parse_html.o: /usr/include/ctype.h /usr/include/features.h
+parse_html.o: /usr/include/endian.h /usr/include/bytesex.h
+parse_html.o: /usr/include/assert.h /usr/include/string.h
+parse_html.o: /usr/include/stddef.h parse_html.h parse.h ../toollib/hash.h
+parse_html.o: ../toollib/callback.h ../toollib/error.h ../toollib/toollib.h
+parse_html.o: /usr/include/sys/types.h /usr/include/linux/types.h
+parse_html.o: /usr/include/linux/posix_types.h /usr/include/asm/posix_types.h
+parse_html.o: /usr/include/asm/types.h /usr/include/sys/bitypes.h
+parse_html.o: /usr/include/stdarg.h /usr/include/stdlib.h
+parse_html.o: /usr/include/errno.h /usr/include/linux/errno.h
+parse_html.o: /usr/include/asm/errno.h /usr/include/alloca.h
+var.o: /usr/include/ctype.h /usr/include/features.h /usr/include/sys/cdefs.h
+var.o: /usr/include/endian.h /usr/include/bytesex.h ../toollib/error.h
+var.o: ../toollib/toollib.h /usr/include/sys/types.h
+var.o: /usr/include/linux/types.h /usr/include/linux/posix_types.h
+var.o: /usr/include/asm/posix_types.h /usr/include/asm/types.h
+var.o: /usr/include/sys/bitypes.h /usr/include/stdarg.h /usr/include/stdlib.h
+var.o: /usr/include/stddef.h /usr/include/errno.h /usr/include/linux/errno.h
+var.o: /usr/include/asm/errno.h /usr/include/alloca.h var.h
+var.o: ../toollib/vstring.h

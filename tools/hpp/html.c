@@ -1,11 +1,13 @@
-#include <toollib.h>
-#include <stringcb.h>
-#include <stdiocb.h>
-#include <error.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
+#include <toollib/toollib.h>
+#include <toollib/mystream.h>
+#include <toollib/stringcb.h>
+#include <toollib/error.h>
 #include "parse.h"
 #include "parse_html.h"
+#include "var.h"
 #include "html.h"
 
 typedef struct
@@ -54,10 +56,88 @@ static List Defs;   /* Macros */
 static List BDefs;  /* Blocks */
 static List EDefs;  /* Environments */
 
-static int HTML_DEF	 PARAMS ((HTMLTag * tag, CB getc, void * stream, CBD data));
-static int HTML_BDEF	 PARAMS ((HTMLTag * tag, CB getc, void * stream, CBD data));
+static int HTML_IF	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
+static int HTML_DEF	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
+static int HTML_BDEF	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
 static int HTML_EDEF	 PARAMS ((HTMLTag * tag));
-static int HTML_OtherTag PARAMS ((HTMLTag * tag, CB getc, void * stream, CBD data));
+static int HTML_OtherTag PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
+
+static int
+HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
+{
+    String	 body;
+    HTMLTagArg * condarg;
+    String	 condstr;
+    int 	 condvalue;
+    char       * elseptr;
+
+    body = HTML_ReadBody (in, data, "IF", 1);
+
+    if (!body)
+    {
+	PushError ("Can't find body to IF");
+	return 0;
+    }
+
+    condarg = (HTMLTagArg *) FindNode (&tag->args, "COND");
+
+    if (!condarg)
+    {
+	PushError ("Can't find condition for IF");
+	return 0;
+    }
+
+    if (!condarg->value)
+	condvalue = 0;
+    else
+    {
+	char * ptr;
+
+	condstr = Var_Subst (condarg->value);
+
+	if (!condstr)
+	{
+	    PushError ("Can't expand condition for IF");
+	    return 0;
+	}
+
+	ptr = condstr->buffer;
+
+	while (isspace (*ptr)) ptr ++;
+
+	if (isdigit (*ptr))
+	    condvalue = (atoi (ptr) != 0);
+	else
+	    condvalue = (*ptr != 0);
+    }
+
+    elseptr = body->buffer;
+
+    while (*elseptr)
+    {
+	if (*elseptr == '<' && !strcasecmp (elseptr+1, "ELSE"))
+	    break;
+    }
+
+    if (!*elseptr)
+	elseptr = NULL;
+
+    if (condvalue)
+    {
+	if (elseptr)
+	    *elseptr = 0;
+
+	Str_Puts (out, body->buffer, data);
+    }
+    else if (elseptr)
+    {
+	while (*elseptr && *elseptr != '>') elseptr ++;
+
+	Str_Puts (out, elseptr, data);
+    }
+
+    return 1;
+}
 
 static void
 HTML_FreeMacro (HTMLMacro * macro)
@@ -80,13 +160,19 @@ HTML_FreeMacro (HTMLMacro * macro)
 }
 
 static int
-HTML_DEF (HTMLTag * tag, CB getc, void * stream, CBD data)
+HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 {
     HTMLMacro  * old,
 	       * macro;
     HTMLTagArg * name,
 	       * arg;
     HTMLOptArg * option;
+
+    if (FindNode (&BDefs, tag->node.name))
+    {
+	PushError ("There is already a block with the same name %s", tag->node.name);
+	return 0;
+    }
 
     old = (HTMLMacro *) FindNode (&Defs, tag->node.name);
 
@@ -161,7 +247,7 @@ HTML_DEF (HTMLTag * tag, CB getc, void * stream, CBD data)
 	}
     }
 
-    macro->body = HTML_ReadBody (getc, stream, data, "DEF", 0);
+    macro->body = HTML_ReadBody (in, data, "DEF", 0);
 
 /* printf ("Value=%s\n", macro->body->buffer); */
 
@@ -191,13 +277,19 @@ HTML_FreeBlock (HTMLBlock * block)
 }
 
 static int
-HTML_BDEF (HTMLTag * tag, CB getc, void * stream, CBD data)
+HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 {
     HTMLBlock  * old,
 	       * block;
     HTMLTagArg * name,
 	       * arg;
     HTMLOptArg * option;
+
+    if (FindNode (&Defs, tag->node.name))
+    {
+	PushError ("There is already a macro with the same name %s", tag->node.name);
+	return 0;
+    }
 
     old = (HTMLBlock *) FindNode (&BDefs, tag->node.name);
 
@@ -272,7 +364,7 @@ HTML_BDEF (HTMLTag * tag, CB getc, void * stream, CBD data)
 	}
     }
 
-    block->body = HTML_ReadBody (getc, stream, data, "BDEF", 0);
+    block->body = HTML_ReadBody (in, data, "BDEF", 0);
 
 /* printf ("Value=%s\n", block->body->buffer); */
 
@@ -349,9 +441,11 @@ HTML_EDEF (HTMLTag * tag)
 }
 
 static int
-HTML_OtherTag (HTMLTag * tag, CB getc, void * stream, CBD data)
+HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 {
-    void       * aptr;
+    HTMLMacro  * macro;
+    HTMLBlock  * block;
+    HTMLEnv    * env;
     HTMLTagArg * arg;
     char       * name;
     int 	 endtag;
@@ -366,22 +460,46 @@ HTML_OtherTag (HTMLTag * tag, CB getc, void * stream, CBD data)
     else
 	endtag = 0;
 
-/* printf ("OtherTag name=%s end=%d\n", name, endtag); */
-
-    if ((aptr = FindNode (&Defs, name)))
+    if (endtag && !IsListEmpty (&tag->args))
     {
-	HTMLMacro * macro = (HTMLMacro *)aptr;
-
-printf ("Found as DEF\n");
-
-	fputs (macro->body->buffer, stdout);
+	Warn ("Unexpected arguments in %s\n", tag->node.name);
     }
-    else if ((aptr = FindNode (&BDefs, name)))
+
+    env = (HTMLEnv *) FindNode (&EDefs, name);
+    macro = (HTMLMacro *) FindNode (&Defs, name);
+    block = (HTMLBlock *) FindNode (&BDefs, name);
+
+    if (env && !IsListEmpty (&tag->args) && !macro && !block)
     {
-	HTMLBlock * block = (HTMLBlock *)aptr;
+	Warn ("Unexpected arguments to ENV %s\n", name);
+    }
+
+    if (env && !IsListEmpty (&tag->args) && (macro || block))
+	env = NULL;
+
+    if (env)
+    {
+	if (!endtag)
+	{
+	    if (env->begin)
+		Str_Puts (out, env->begin, data);
+	}
+	else
+	{
+	    if (env->end)
+		Str_Puts (out, env->end, data);
+	}
+    }
+    else if (macro)
+    {
+	printf ("Found as DEF:");
+	Str_Puts (out, macro->body->buffer, data);
+    }
+    else if (block)
+    {
 	String body;
 
-	body = HTML_ReadBody (getc, stream, data, block->node.name, 1);
+	body = HTML_ReadBody (in, data, block->node.name, 1);
 
 printf ("Found as BDEF.Def=%s\nBody=%s\n",
 	block->body->buffer,
@@ -390,38 +508,25 @@ printf ("Found as BDEF.Def=%s\nBody=%s\n",
 
 	VS_Delete (body);
     }
-    else if ((aptr = FindNode (&EDefs, name)))
-    {
-	HTMLEnv * env = (HTMLEnv *)aptr;
-
-/* printf ("Found as EDEF\n"); */
-
-	if (!endtag)
-	{
-	    if (env->begin)
-		fputs (env->begin, stdout);
-	}
-	else
-	{
-	    if (env->end)
-		fputs (env->end, stdout);
-	}
-    }
     else
     {
 /* printf ("Found as normal tag\n"); */
-	printf ("<%s", tag->node.name);
+	Str_Put (out, '<', data);
+	Str_Puts (out, tag->node.name, data);
 
 	ForeachNode (&tag->args, arg)
 	{
+	    Str_Put (out, ' ', data);
+	    Str_Puts (out, arg->node.name, data);
+
 	    if (arg->value)
-		printf (" %s=%s", arg->node.name, arg->value);
-	    else
-		printf (" %s", arg->node.name);
+	    {
+		Str_Put (out, '=', data);
+		Str_Puts (out, arg->value, data);
+	    }
 	}
 
-	printf (">");
-
+	Str_Put (out, '>', data);
     }
 
     return 1;
@@ -443,21 +548,21 @@ HTML_Exit (void)
 }
 
 int
-HTML_Parse (CB getc, void * stream, CBD data)
+HTML_Parse (MyStream * in, MyStream * out, CBD data)
 {
     int    token;
     String str;
 
     str = VS_New (NULL);
 
-    while ((token = HTML_ScanText (str, StdioGetCharCB, stream, NULL)) != EOF)
+    while ((token = HTML_ScanText (str, in, NULL)) != EOF)
     {
 	/* printf ("%d: %s\n", token, str->buffer); */
 
 	switch (token)
 	{
 	case T_TEXT:
-	    fputs (str->buffer, stdout);
+	    Str_Puts (out, str->buffer, data);
 	    break;
 
 	case T_HTML_TAG:
@@ -465,13 +570,13 @@ HTML_Parse (CB getc, void * stream, CBD data)
 		StringStream * strs = StrStr_New (str->buffer);
 		HTMLTag * tag;
 
-		tag = HTML_ParseTag (StringGetCharCB, strs, NULL);
+		tag = HTML_ParseTag ((MyStream *)strs, NULL);
 
 		/* HTML_PrintTag (tag); */
 
 		if (!strcmp (tag->node.name, "DEF"))
 		{
-		    if (!HTML_DEF (tag, getc, stream, data))
+		    if (!HTML_DEF (tag, in, out, data))
 		    {
 			PushError ("HTML_Parse() failed in DEF");
 			return T_ERROR;
@@ -479,9 +584,17 @@ HTML_Parse (CB getc, void * stream, CBD data)
 		}
 		else if (!strcmp (tag->node.name, "BDEF"))
 		{
-		    if (!HTML_BDEF (tag, getc, stream, data))
+		    if (!HTML_BDEF (tag, in, out, data))
 		    {
 			PushError ("HTML_Parse() failed in BDEF");
+			return T_ERROR;
+		    }
+		}
+		else if (!strcmp (tag->node.name, "IF"))
+		{
+		    if (!HTML_IF (tag, in, out, data))
+		    {
+			PushError ("HTML_Parse() failed in IF");
 			return T_ERROR;
 		    }
 		}
@@ -495,7 +608,7 @@ HTML_Parse (CB getc, void * stream, CBD data)
 		}
 		else
 		{
-		    if (!HTML_OtherTag (tag, getc, stream, data))
+		    if (!HTML_OtherTag (tag, in, out, data))
 		    {
 			PushError ("HTML_Parse() failed in %s", tag->node.name);
 			return T_ERROR;

@@ -1,19 +1,18 @@
 #include <stdio.h>
-#include <hash.h>
-#include <error.h>
 #include <ctype.h>
-#include <stdiocb.h>
 #include <assert.h>
 #include <string.h>
 #include "parse_html.h"
 #include "parse.h"
+#include <toollib/hash.h>
+#include <toollib/error.h>
 
 #define M_EOWS	     0
 #define M_SKIPQUOTE  1
 
 static Hash * HTMLAmpDB;
 
-static int HTML_ScanAmp PARAMS ((String buffer, CB getc, void * stream, CBD data));
+static int HTML_ScanAmp PARAMS ((String buffer, MyStream * stream, CBD data));
 
 void HTML_InitParse (void)
 {
@@ -33,13 +32,13 @@ void HTML_InitParse (void)
 }
 
 static int
-HTML_ScanAmp (String buffer, CB getc, void * stream, CBD data)
+HTML_ScanAmp (String buffer, MyStream * stream, CBD data)
 {
     int c;
 
     VS_Clear (buffer);
 
-    c = CallCB (getc, stream, STRCB_GETCHAR, data);
+    c = Str_Get (stream, data);
 
     if (c == EOF)
     {
@@ -50,7 +49,7 @@ HTML_ScanAmp (String buffer, CB getc, void * stream, CBD data)
     {
 	int val;
 
-	c = CallCB (getc, stream, STRCB_GETCHAR, data);
+	c = Str_Get (stream, data);
 	if (c == EOF)
 	{
 err_amphash:
@@ -58,11 +57,11 @@ err_amphash:
 	    return T_ERROR;
 	}
 	val = hexval (c);
-	c = CallCB (getc, stream, STRCB_GETCHAR, data);
+	c = Str_Get (stream, data);
 	if (c == EOF)
 	    goto err_amphash;
 	val = val * 16 + hexval (c);
-	c = CallCB (getc, stream, STRCB_GETCHAR, data);
+	c = Str_Get (stream, data);
 	if (c != ';')
 	{
 	    PushError ("Missing ; after &#");
@@ -76,7 +75,7 @@ err_amphash:
 	String str2 = VS_New (NULL);
 	char * ptr;
 
-	while ((c = CallCB (getc, stream, STRCB_GETCHAR, data)) != EOF)
+	while ((c = Str_Get (stream, data)) != EOF)
 	{
 	    if (c == ';')
 		break;
@@ -105,13 +104,13 @@ err_amphash:
     return T_OK;
 }
 
-int HTML_ScanText (String buffer, CB getc, void * stream, CBD data)
+int HTML_ScanText (String buffer, MyStream * stream, CBD data)
 {
     int c, mode;
 
     VS_Clear (buffer);
 
-    c = CallCB (getc, stream, STRCB_GETCHAR, data);
+    c = Str_Get (stream, data);
 
     if (c == EOF)
 	return EOF;
@@ -120,7 +119,7 @@ int HTML_ScanText (String buffer, CB getc, void * stream, CBD data)
     {
 	mode = M_EOWS;
 
-	while ((c = CallCB (getc, stream, STRCB_GETCHAR, data)) != EOF)
+	while ((c = Str_Get (stream, data)) != EOF)
 	{
 	    if (mode == M_EOWS && c == '>')
 		break;
@@ -142,11 +141,11 @@ int HTML_ScanText (String buffer, CB getc, void * stream, CBD data)
 
     VS_AppendChar (buffer, c);
 
-    while ((c = CallCB (getc, stream, STRCB_GETCHAR, data)) != EOF)
+    while ((c = Str_Get (stream, data)) != EOF)
     {
 	if (c == '<')
 	{
-	    CallCB (getc, stream, STRCB_UNGETC(c), data);
+	    Str_Unget (stream, c, data);
 	    break;
 	}
 	else if (c == '&')
@@ -154,7 +153,7 @@ int HTML_ScanText (String buffer, CB getc, void * stream, CBD data)
 	    String str = VS_New (NULL);
 	    int    rc;
 
-	    rc = HTML_ScanAmp (str, getc, stream, data);
+	    rc = HTML_ScanAmp (str, stream, data);
 
 	    if (rc == T_ERROR)
 		return T_ERROR;
@@ -171,7 +170,7 @@ int HTML_ScanText (String buffer, CB getc, void * stream, CBD data)
 }
 
 HTMLTag *
-HTML_ParseTag (CB getc, void * stream, CBD data)
+HTML_ParseTag (MyStream * stream, CBD data)
 {
     HTMLTag    * tag;
     HTMLTagArg * arg;
@@ -180,7 +179,7 @@ HTML_ParseTag (CB getc, void * stream, CBD data)
     int 	 c;
     int 	 mode;
 
-    while ((c = CallCB (getc, stream, STRCB_GETCHAR, data)) != EOF)
+    while ((c = Str_Get (stream, data)) != EOF)
     {
 	if (isspace (c))
 	    break;
@@ -201,7 +200,7 @@ HTML_ParseTag (CB getc, void * stream, CBD data)
 
     tag->node.name = xstrdup (str->buffer);
 
-    while ((c = CallCB (getc, stream, STRCB_GETCHAR, data)) != EOF)
+    while ((c = Str_Get (stream, data)) != EOF)
     {
 	if (isspace (c))
 	    continue;
@@ -212,7 +211,7 @@ HTML_ParseTag (CB getc, void * stream, CBD data)
 
 	    mode = M_EOWS;
 
-	    while ((c = CallCB (getc, stream, STRCB_GETCHAR, data)) != EOF)
+	    while ((c = Str_Get (stream, data)) != EOF)
 	    {
 		if (mode == M_EOWS && isspace (c))
 		    break;
@@ -225,7 +224,7 @@ HTML_ParseTag (CB getc, void * stream, CBD data)
 		    String buf = VS_New (NULL);
 		    int    rc;
 
-		    rc = HTML_ScanAmp (buf, getc, stream, data);
+		    rc = HTML_ScanAmp (buf, stream, data);
 
 		    if (rc == T_ERROR)
 		    {
@@ -304,14 +303,14 @@ HTML_PrintTag (HTMLTag * tag)
 }
 
 String
-HTML_ReadBody (CB getc, void * stream, CBD data, const char * name, int allowNest)
+HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
 {
     String str	 = VS_New (NULL);
     int    start = 0;
     int    level = 0;
     int    c;
 
-    while ((c = CallCB (getc, stream, STRCB_GETCHAR, data)) != EOF)
+    while ((c = Str_Get (stream, data)) != EOF)
     {
 	if (c == '<')
 	    start = str->len;
@@ -375,8 +374,7 @@ void main (int argc, char ** argv)
 	    PrintErrorStack ();
 	else
 	{
-
-	    while ((token = HTML_ScanText (str, StdioGetCharCB, ss, NULL)) != EOF)
+	    while ((token = HTML_ScanText (str, ss, NULL)) != EOF)
 	    {
 		printf ("%d: %s\n", token, str->buffer);
 
@@ -387,7 +385,7 @@ void main (int argc, char ** argv)
 			StringStream * strs = StrStr_New (str->buffer);
 			HTMLTag * tag;
 
-			tag = HTML_ParseTag (StringGetCharCB, strs, NULL);
+			tag = HTML_ParseTag (strs, NULL);
 
 			HTML_PrintTag (tag);
 			HTML_FreeTag (tag);
@@ -396,7 +394,7 @@ void main (int argc, char ** argv)
 		    break;
 
 		case T_ERROR:
-		    PushError ("%s:%d:", StdStr_GetName (ss), StdStr_GetLine (ss));
+		    PushError ("%s:%d:", Str_GetName (ss), Str_GetLine (ss));
 		    PrintErrorStack ();
 		    break;
 		}
