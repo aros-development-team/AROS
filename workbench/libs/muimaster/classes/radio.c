@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-/*  #define MYDEBUG 1 */
+#define MYDEBUG 1
 #include "debug.h"
 
 #include "mui.h"
@@ -25,7 +25,6 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_RadioData
 {
-    const char **entries;
     int entries_active;
     int entries_num;
     Object **buttons;
@@ -44,9 +43,12 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     int entries_num;
     struct TagItem *grouptags;
     Object **buttons;
+    Object **childs;
     int state;
+    BOOL horiz_entries = TRUE;
 
     /* parse initial taglist */
+    D(bug("Radio_New\n"));
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
@@ -58,10 +60,20 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_Radio_Active:
 		    entries_active = tag->ti_Data;
 		    break;
+	    case MUIA_Radio_CustomChilds:
+		childs = (Object **)tag->ti_Data;
+		break;
+	    case MUIA_Radio_HorizEntries:
+		if (tag->ti_Data)
+		    horiz_entries = TRUE;
+		else
+		    horiz_entries = FALSE;
+		break;
 	}
     }
 
-    if (!entries)
+    D(bug("Radio_New : entries=%p, childs=%p\n", entries, childs));
+    if (!entries && !childs)
     {
 	D(bug("Radio_New: No Entries specified!\n"));
 	CoerceMethod(cl,obj,OM_DISPOSE);
@@ -69,7 +81,12 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* Count the number of entries */
-    for (i=0;entries[i];i++);
+    if (entries)
+	for (i = 0; entries[i]; i++)
+	    ;
+    else
+	for (i = 0; childs[i]; i++)
+	    ;
 
     entries_num = i;
 
@@ -85,11 +102,31 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	FreeVec(grouptags);
 	return FALSE;
     }
-    for (i=0;entries[i];i++)
+
+    for (i = 0; i < entries_num; i++)
     {
+	Object *child2;
+
 	state = (entries_active == i) ? TRUE : FALSE;
 
-	buttons[i] = HGroup,
+	if (entries)
+	{
+	    child2 = TextObject,
+	        MUIA_InputMode, MUIV_InputMode_Immediate,
+                MUIA_ShowSelState, FALSE,
+	        MUIA_Selected, state,
+	        MUIA_Text_Contents, entries[i],
+	        MUIA_Frame, MUIV_Frame_None,
+	        MUIA_Text_PreParse, (IPTR)"\33l",
+	        End;
+	}
+	else
+	{
+	    child2 = childs[i];
+	}
+
+	buttons[i] = VGroup,
+	    MUIA_Group_Horiz, horiz_entries ? TRUE : FALSE,
 	    Child, (IPTR)ImageObject,
 	        MUIA_Image_FontMatch, TRUE,
 	        MUIA_InputMode, MUIV_InputMode_Immediate,
@@ -98,14 +135,7 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	        MUIA_Image_Spec, MUII_RadioButton,
 	        MUIA_Frame, MUIV_Frame_None,
    	        End,
-	    Child, (IPTR)TextObject,
-	        MUIA_InputMode, MUIV_InputMode_Immediate,
-                MUIA_ShowSelState, FALSE,
-	        MUIA_Selected, state,
-	        MUIA_Text_Contents, entries[i],
-	        MUIA_Frame, MUIV_Frame_None,
-	        MUIA_Text_PreParse, (IPTR)"\33l",
-	        End,
+	    Child, (IPTR)child2,
 	    End;
 
 	grouptags[i].ti_Tag = MUIA_Group_Child;
@@ -124,17 +154,17 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return FALSE;
     }
     data = INST_DATA(cl, obj);
-    data->entries = entries;
     data->entries_active = entries_active;
     data->entries_num = entries_num;
     data->buttons = buttons;
 
-    for (i=0;entries[i];i++)
+    for (i = 0; i < entries_num; i++)
     {
 	DoMethod(buttons[i], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		 (IPTR)obj, 3, MUIM_Set, MUIA_Radio_Active, i);
     }
 /*      set(obj, MUIA_Radio_Active, entries_active); */
+    D(bug("Radio_New => %p\n", obj));
 
     return (IPTR)obj;
 }
