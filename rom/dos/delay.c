@@ -5,9 +5,13 @@
     Desc:
     Lang: english
 */
+
+#define AROS_ALMOST_COMPATIBLE /* NEWLIST */
+
 #include <proto/dos.h>
-#include <unistd.h>
 #include "dos_intern.h"
+#include <devices/timer.h>
+#include <string.h>
 
 /*****************************************************************************
 
@@ -49,8 +53,34 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    /* ADA just to make it work */
-    usleep (timeout * 20000L);
+    struct timerequest  timerio;
+    struct MsgPort 	timermp;
 
+    memset(&timerio, 0, sizeof(timerio));
+    memset(&timermp, 0, sizeof(timermp));
+    
+    SetSignal(0, SIGF_DOS);
+
+    timermp.mp_Node.ln_Type = NT_MSGPORT;
+    timermp.mp_Flags 	    = PA_SIGNAL;
+    timermp.mp_SigBit	    = SIGB_DOS;
+    timermp.mp_SigTask	    = FindTask(NULL);    
+    NEWLIST(&timermp.mp_MsgList);
+    
+    timerio.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+    timerio.tr_node.io_Message.mn_Length       = sizeof(timerio);
+    timerio.tr_node.io_Message.mn_ReplyPort    = &timermp;
+    
+    if (OpenDevice("timer.device", UNIT_VBLANK, &timerio.tr_node, 0) == 0)
+    {
+        timerio.tr_node.io_Command = TR_ADDREQUEST;
+	timerio.tr_time.tv_secs    = timeout / TICKS_PER_SECOND;
+	timerio.tr_time.tv_micro   = 1000000UL / TICKS_PER_SECOND * (timeout % TICKS_PER_SECOND);
+	
+	DoIO(&timerio.tr_node);
+	
+        CloseDevice(&timerio.tr_node);
+    }
+    
     AROS_LIBFUNC_EXIT
 } /* Delay */
