@@ -22,7 +22,7 @@ SRCIMAGES   := $(foreach f, $(IMAGES), pics/$(f).ilbm)
 C_IMAGES    := $(foreach f, $(IMAGES), $(f)_image.c)
 
 #MM
-workbench-prefs-input : $(C_IMAGES)
+workbench-prefs-input-images : $(C_IMAGES)
 
 ./%_image.c : pics/%.ilbm
 	@$(ILBMTOC) $< >$@    	
