@@ -155,6 +155,19 @@
         {
             icon = ReadIcon(file);
             CloseIcon(file);
+            
+            if (icon != NULL)
+            {
+                /* Force the icon type */
+                BPTR lock = LockObject(name, ACCESS_READ);
+                if (lock != NULL)
+                {
+                    LONG type = FindType(lock);
+                    if (type != -1) icon->do_Type = type;
+                    
+                    UnLockObject(lock);
+                }
+            }
         }
         else if (!failIfUnavailable)
         {
@@ -182,8 +195,17 @@
                             (
                                 LB(IconBase)->ib_IdentifyHook, NULL, &iim
                             );
-                            // FIXME: do sanity checks here (we don't trust
-                            // FIXME: the user-provided hook ;-))
+                            
+                            if (icon != NULL)
+                            {
+                                /*
+                                    Sanity check since we don't trust the 
+                                    user-provided hook too much. ;-)
+                                */
+                                
+                                LONG type = FindType(iim.iim_FileLock);
+                                if (type != -1) icon->do_Type = type;
+                            }
                         }
                         
                         if (icon == NULL)
