@@ -211,7 +211,8 @@ struct Task *createConTask(APTR taskparams, struct conbase *conbase)
 
 /******************************************************************************************/
 
-void parse_filename(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs, struct NewWindow *nw)
+void parse_filename(struct conbase *conbase, struct filehandle *fh,
+		    struct IOFileSys *iofs, struct NewWindow *nw)
 {
     UBYTE *filename;
     UBYTE *param, c;
@@ -227,6 +228,23 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh, struct IOFil
     param = filename = iofs->io_Union.io_OPEN.io_Filename;
     ASSERT_VALID_PTR(param);
 
+    if (strncasecmp("RAW:", filename, 4) == 0)
+    {
+	fh->flags |= FHFLG_RAW;
+	filename += 4;
+	kprintf("Raw: stream\n");
+    }
+    else if (strncasecmp("CON:", filename, 4) == 0)
+    {
+	fh->flags &= ~FHFLG_RAW;
+	filename += 4;
+	kprintf("Con: stream\n");
+    }
+    else
+    {
+	kprintf("Major trouble: Con handler got filename %s\n", filename);
+    }
+    
     while (!done)
     {
 	c = *filename++;
