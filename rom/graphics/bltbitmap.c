@@ -52,8 +52,25 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 		to ignore the source and just invert the destination. If
 		you want to calculate other values, then you must know that
 		channel A is set, if you are inside the rectangle, channel
-		B is the source and channels C and C are the destination of
-		the rectangle.
+		B is the source and channel C is the destination of the
+		rectangle.
+
+		Bit	ABC
+		 0	000
+		 1	001
+		 2	010
+		 3	011
+		 4	100
+		 5	101
+		 6	110
+		 7	111
+
+		So 0x00C0 means: D is set if one is inside the rectangle
+		(A is set) and B (the source) is set and cleared otherwise.
+
+		To fill the rectangle, you would want to set D when A is
+		set, so the value is 0x00F0.
+
 	mask - Which planes should be copied. Typically, you should set
 		this to ~0L.
 	tempA - If the copy overlaps exactly to the left or right (i.e. the
@@ -197,31 +214,42 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest, ULONG xdest,
 {
     ULONG sByte, sBit, sSet;
     ULONG dByte, dBit, dSet;
+    BOOL set;
 
     sByte = xsrc / 8;
     sBit = 1L << (xsrc & 7L);
     sSet = (src[sByte] & sBit) != 0;
 
     dByte = xdest / 8;
-    dBit = 1L << (xsrc & 7L);
+    dBit = 1L << (xdest & 7L);
     dSet = (dest[dByte] & dBit) != 0;
 
-    switch (minterm)
+    set = 0;
+
+    if (minterm & 0x0010)
     {
-    case 0x00C0:
-	dest[dByte] = (dest[dByte] & ~dBit)
-		| (sSet ? dBit : 0);
-	break;
-
-    case 0x0030:
-	dest[dByte] = (dest[dByte] & ~dBit)
-		| (!sSet ? dBit : 0);
-	break;
-
-    case 0x0050:
-	dest[dByte] ^= dBit;
-	break;
-
+	if (!sSet && !dSet)
+	    set |= 1;
     }
+    if (minterm & 0x0020)
+    {
+	if (!sSet && dSet)
+	    set |= 1;
+    }
+    if (minterm & 0x0040)
+    {
+	if (sSet && !dSet)
+	    set |= 1;
+    }
+    if (minterm & 0x0080)
+    {
+	if (sSet && dSet)
+	    set |= 1;
+    }
+
+    if (set)
+	dest[dByte] |= dBit;
+    else
+	dest[dByte] &= ~dBit;
 }
 
