@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/12/03 08:43:12  aros
+    Ooops :-) Wrong address
+
     Revision 1.7  1996/10/24 15:50:51  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -114,7 +117,7 @@
     }
 
     lastvec = __AROS_GETJUMPVEC(target,n);
-    n = (IPTR)funcDispBase-(IPTR)lastvec;
+    n = (IPTR)target-(IPTR)lastvec;
 
     /* Clear instruction cache for the whole jumptable */
     CacheClearE(lastvec, n, CACRF_ClearI);
