@@ -134,7 +134,7 @@ IPTR drawerIconObserverExecute(Class *cl, Object *obj, Msg msg)
 		MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Right,
 		End;
 
-	icTags=AllocVec(sizeof(struct TagItem)*5, MEMF_ANY);
+	icTags=AllocVec(sizeof(struct TagItem)*9, MEMF_ANY);
 	icTags[0].ti_Tag=MUIA_FillArea;
 	icTags[0].ti_Data=FALSE;
 	icTags[1].ti_Tag=ICOA_Directory;
@@ -143,8 +143,16 @@ IPTR drawerIconObserverExecute(Class *cl, Object *obj, Msg msg)
 	icTags[2].ti_Data=vert;
 	icTags[3].ti_Tag=ICA_HorizScroller;
 	icTags[3].ti_Data=horiz;
-	icTags[4].ti_Tag=TAG_END;
+	icTags[4].ti_Tag=MUIA_InnerLeft;
 	icTags[4].ti_Data=0;
+	icTags[5].ti_Tag=MUIA_InnerTop;
+	icTags[5].ti_Data=0;
+	icTags[6].ti_Tag=MUIA_InnerRight;
+	icTags[6].ti_Data=0;
+	icTags[7].ti_Tag=MUIA_InnerBottom;
+	icTags[7].ti_Data=0;
+	icTags[8].ti_Tag=TAG_END;
+	icTags[8].ti_Data=0;
 
 	iconcontainer=CreateDesktopObjectA(CDO_IconContainer, icTags);
 

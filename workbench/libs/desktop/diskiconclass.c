@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -104,8 +108,6 @@ AROS_UFH3(IPTR, diskIconDispatcher,
 		case OM_DISPOSE:
 			retval=diskIconDispose(cl, obj, msg);
 			break;
-		case MUIM_Notify:
-			kprintf("DiskObserver/Notify\n");
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);
 			break;
