@@ -84,6 +84,18 @@ static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddGCAttrBase = 0;
 
 
+#define PIXELBUF_SIZE 20000
+
+#define NUMPIX PIXELBUF_SIZE
+
+/* This buffer is used for planar-to-chunky-converion */
+static ULONG pixel_buf[PIXELBUF_SIZE];
+static struct SignalSemaphore pixbuf_sema;
+
+#define LOCK_PIXBUF ObtainSemaphore(&pixbuf_sema);
+#define ULOCK_PIXBUF ReleaseSemaphore(&pixbuf_sema);
+
+
 struct ETextFont
 {
     struct TextFont	etf_Font;
@@ -232,6 +244,11 @@ int driver_init (struct GfxBase * GfxBase)
 {
 
     EnterFunc(bug("driver_init()\n"));
+    
+    /* Initialize the semaphore used for the chunky buffer */
+    InitSemaphore(&pixbuf_sema);
+    
+    
     /* Allocate memory for driver data */
     SDD(GfxBase) = (struct shared_driverdata *)AllocMem(sizeof (struct shared_driverdata), MEMF_ANY|MEMF_CLEAR);
     if ( SDD(GfxBase) )
@@ -2346,7 +2363,6 @@ static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xs
     	x_start, y_start, xsize, ysize, pen);
 */	
 
-// return;
     pre_pixels_to_set  = (7 - (x_start & 0x07)) + 1;
     post_pixels_to_set = ((x_start + xsize - 1) & 0x07) + 1;
     
@@ -2699,7 +2715,7 @@ static VOID buf_to_bitmap(APTR dest_info
 
 }
 
-/* General functions for mving blocks of data to or from HIDDs, be it pixelarrays
+/* General functions for moving blocks of data to or from HIDDs, be it pixelarrays
   or bitmaps. They use a callback-function to get data from amiga/put data to amiga bitmaps/pixelarrays
   
 */	
@@ -2711,11 +2727,8 @@ static VOID amiga2hidd_fast(APTR src_info
 	, VOID (*fillbuf_hook)()
 )
 {
-#define NUMPIX 2000 /* We can chunky2bitmap-convert 2000 pixels before writing pixarray */
-#define DEPTH 8
     
     
-    ULONG temp_buf[NUMPIX];
     ULONG tocopy_w,
     	  tocopy_h;
 	  
@@ -2726,7 +2739,8 @@ static VOID amiga2hidd_fast(APTR src_info
     
     next_x = 0;
     next_y = 0;
-    
+
+LOCK_PIXBUF    
     while (pixels_left_to_process)
     {
 
@@ -2774,13 +2788,13 @@ static VOID amiga2hidd_fast(APTR src_info
 		, current_x + x_dest
 		, current_y + y_dest
 		, tocopy_w, tocopy_h
-		, temp_buf
+		, pixel_buf
 	);
 	
 	/* Put it to the HIDD */
 	D(bug("Putting box\n"));
 	HIDD_BM_PutImage(hidd_bm
-		, temp_buf
+		, pixel_buf
 		, x_dest + current_x
 		, y_dest + current_y
 		, tocopy_w, tocopy_h);
@@ -2791,6 +2805,8 @@ static VOID amiga2hidd_fast(APTR src_info
 	
 	
     } /* while (pixels left to copy) */
+    
+ULOCK_PIXBUF    
     
     return;
     
@@ -2806,7 +2822,6 @@ static VOID hidd2amiga_fast(Object *hidd_bm
 )
 {
 
-    ULONG temp_buf[NUMPIX];
     ULONG tocopy_w, tocopy_h;
     
     LONG pixels_left_to_process = xsize * ysize;
@@ -2814,6 +2829,8 @@ static VOID hidd2amiga_fast(Object *hidd_bm
     
     next_x = 0;
     next_y = 0;
+    
+LOCK_PIXBUF    
 
     while (pixels_left_to_process)
     {
@@ -2854,7 +2871,7 @@ static VOID hidd2amiga_fast(Object *hidd_bm
 	
 	/* Get some more pixels from the HIDD */
 	HIDD_BM_GetImage(hidd_bm
-		, temp_buf
+		, pixel_buf
 		, x_src + current_x
 		, y_src + current_y
 		, tocopy_w, tocopy_h);
@@ -2867,12 +2884,14 @@ static VOID hidd2amiga_fast(Object *hidd_bm
 		, current_x + x_dest
 		, current_y + y_dest
 		, tocopy_w, tocopy_h
-		, temp_buf
+		, pixel_buf
 	);
 	
 	pixels_left_to_process -= (tocopy_w * tocopy_h);
 
     }
+    
+ULOCK_PIXBUF
     
     return;
     
