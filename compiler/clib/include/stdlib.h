@@ -24,6 +24,7 @@ int atoi (const char * str);
 long atol (const char * str);
 long strtol (const char * str, char ** endptr, int base);
 unsigned long strtoul (const char * str, char ** endptr, int base);
+double strtod(const char * str, char ** endptr);
 
 int rand (void);
 void srand (unsigned int seed);
