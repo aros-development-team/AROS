@@ -331,6 +331,31 @@ endif
 
 
 #------------------------------------------------------------------------------
+# Link %(progs) from object in %(objdir) to executables in %(targetdir) using
+# the AROS libraries in %(uselibs) and the host libraries in %(usehostlibs)
+%define rule_link_progs progs=/A targetdir=$(AROSDIR)/$(CURDIR) \
+    objdir=$(GENDIR)/$(CURDIR) ldflags=$(LDFLAGS) uselibs= usehostlibs= \
+    usestartup=yes detach=no
+
+ifeq (%(usestartup),no)
+$(addprefix %(targetdir)/,%(progs)) : STARTUP :=
+else
+ifeq (%(detach),yes)
+$(addprefix %(targetdir)/,%(progs)) : STARTUP := $(AROS_LIB)/detach.o $(AROS_LIB)/startup.o
+else
+$(addprefix %(targetdir)/,%(progs)) : STARTUP := $(AROS_LIB)/startup.o
+endif
+endif
+
+$(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o \
+    $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+	%link_q from=$< opt=%(ldflags) \
+	    libs="$(addprefix -l,%(uselibs)) -llibinit -lautoinit $(addprefix -l,%(usehostlibs))"
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Link the %(objs) to the library %(libdir)/lib%(libname).a in
 %define rule_link_linklib libname=/A objs=/A libdir=$(LIBDIR)
 
@@ -495,6 +520,61 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 
 %rule_link_prog prog=$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) \
     objs=$(BD_OBJS$(BDID)) ldflags=$(BD_LDFLAGS$(BDID)) \
+    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
+    usestartup="%(usestartup)" detach="%(detach)"
+
+endif
+
+%include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Build programs, for every C file an executable will be built with the same
+# 
+%define build_progs mmake=/A files=$(BD_PROGNAME$(BDID)) \
+    objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
+    cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
+    uselibs= usehostlibs= usestartup=yes detach=no
+
+.PHONY : %(mmake) %(mmake)-setup
+
+%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick"
+
+BD_OBJDIR$(BDID)    := %(objdir)
+BD_TARGETDIR$(BDID) := %(targetdir)
+
+BD_FILES$(BDID)     := %(files)
+BD_OBJS$(BDID)      := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
+BD_DEPS$(BDID)      := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
+BD_EXES$(BDID)      := $(addprefix $(BD_TARGETDIR$(BDID))/,$(BD_FILES$(BDID)))
+
+BD_CFLAGS$(BDID)    := %(cflags)
+ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
+BD_CFLAGS$(BDID)    += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
+endif
+BD_DFLAGS$(BDID)    := %(dflags)
+BD_LDFLAGS$(BDID)   := %(ldflags)
+
+#MM %(mmake) : %(mmake)-setup
+
+#MM
+%(mmake)-quick : %(mmake)
+
+%(mmake) : $(BD_EXES$(BDID))
+
+#MM %(mmake)-setup
+%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_TARGETDIR$(BDID))" \
+    setuptarget=%(mmake)-setup
+
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
+%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
+    cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+
+%rule_link_progs progs=$(BD_FILES$(BDID)) \
+    targetdir=$(BD_TARGETDIR$(BDID)) objdir=$(BD_OBJDIR$(BDID)) \
+    ldflags=$(BD_LDFLAGS$(BDID)) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)"
 
