@@ -27,7 +27,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-static const char version[] = "$VER: version 41.3 (01.08.1997)\n";
+static const char version[] = "$VER: version 41.4 (05.08.1997)\n";
 
 static const char ERROR_HEADER[] = "Version";
 
@@ -433,7 +433,7 @@ void printparsedstring()
     args[0] = (IPTR)parsedver.name;
     args[1] = (IPTR)parsedver.version;
     args[2] = (IPTR)parsedver.revision;
-    VPrintf("%s %d.%d\n", args);
+    VPrintf("%s %ld.%ld\n", args);
 }
 
 /* print the full version string */
