@@ -17,7 +17,7 @@
 #endif
 
 /* Library constants */
-#define LIB_VECTSIZE	(sizeof (struct JumpVec))
+/* LIB_VECTSIZE is in aros/machine.h */
 #define LIB_RESERVED	4	/* Exec reserves the first 4 vectors */
 #define LIB_BASE	(-LIB_VECTSIZE)
 #define LIB_USERDEF	(LIB_BASE-(LIB_RESERVED*LIB_VECTSIZE))
