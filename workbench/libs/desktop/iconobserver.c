@@ -16,6 +16,8 @@
 #include <proto/utility.h>
 
 #include "presentation.h"
+#include "observer.h"
+#include "iconclass.h"
 #include "iconobserver.h"
 
 #include "desktop_intern_protos.h"
@@ -25,12 +27,43 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	IPTR retval=0;
 	struct IconObserverClassData *data;
 	struct TagItem *tag;
+	UBYTE *name=NULL, *directory=NULL;
+	BOOL selected=FALSE;
+
+	tag=FindTagItem(IOA_Selected, msg->ops_AttrList);
+	if(tag)
+	{
+		selected=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
+	tag=FindTagItem(IOA_Name, msg->ops_AttrList);
+	if(tag)
+	{
+	kprintf("found NAME\n");
+		name=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
+
+	tag=FindTagItem(IOA_Directory, msg->ops_AttrList);
+	if(tag)
+	{
+		directory=tag->ti_Data;
+		tag->ti_Tag=TAG_IGNORE;
+	}
 
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);
 	if(retval)
 	{
 		obj=(Object*)retval;
 		data=INST_DATA(cl, obj);
+		data->selected=selected;
+		data->name=name;
+		data->directory=directory;
+
+		DoMethod(_presentation(obj), MUIM_Notify, IA_Executed, TRUE, obj, 1, IOM_Execute);
+		DoMethod(_presentation(obj), MUIM_Notify, IA_Selected, MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Selected, MUIV_TriggerValue);
+		DoMethod(_presentation(obj), MUIM_Notify, IA_Directory, MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Directory, MUIV_TriggerValue);
 	}
 
 	return retval;
@@ -83,6 +116,12 @@ IPTR iconObserverDispose(Class *cl, Object *obj, Msg msg)
 	return retval;
 }
 
+IPTR iconObserverExecute(Class *cl, Object *obj, Msg msg)
+{
+	kprintf("IconObserver/Execute\n");
+	return 0;
+}
+
 AROS_UFH3(IPTR, iconObserverDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
@@ -103,6 +142,9 @@ AROS_UFH3(IPTR, iconObserverDispatcher,
 			break;
 		case OM_DISPOSE:
 			retval=iconObserverDispose(cl, obj, msg);
+			break;
+		case IOM_Execute:
+			retval=iconObserverExecute(cl, obj, msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);

@@ -302,6 +302,7 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 	DoMethod(msg->opam_Object, MUIM_ConnectParent, obj);
 
 	DoMethod(msg->opam_Object, MUIM_Notify, IA_Selected, TRUE, obj, 3, MUIM_Set, ICA_JustSelected, TRUE);
+	DoMethod(msg->opam_Object, MUIM_Notify, IA_Executed, TRUE, obj, 3, MUIM_Set, ICA_JustSelected, TRUE);
 
 	DoSetupMethod(msg->opam_Object, muiRenderInfo(obj));
 
@@ -608,7 +609,6 @@ IPTR iconConHandleInput(Class *cl, Object *obj, struct MUIP_HandleInput *msg)
 						else
 							data->justSelected=FALSE;
 					}
-
 				}
 				break;
 			}

@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/icon.h>
 
 #include "desktop_intern.h"
 #include "support.h"
@@ -19,6 +20,9 @@
 #include "worker_protos.h"
 #include "iconcontainerobserver.h"
 
+#include <string.h>
+
+// Handler states
 #define HS_STARTING 1
 #define HS_RUNNING  2
 #define HS_STOPPING 3
@@ -140,6 +144,54 @@ ULONG desktopHandler(void)
 							wmn->wm_Port=startScannerWorker(idCount, scanMsg->hsr_DirLock, DesktopBase->db_HandlerPort);
 
 							replyNow=TRUE;
+
+							break;
+						}
+						case DIMC_TOPLEVEL:
+						{
+							struct TempNode
+							{
+								struct Node t_Node;
+								UBYTE *t_Name;
+							};
+							struct HandlerTopLevelRequest *htl=(struct HandlerTopLevelRequest*)msg;
+							struct DosList *dl;
+							struct TempNode *tn;
+							struct List tnList;
+							UWORD i=0, j=0;
+							struct SingleResult *sr;
+							UBYTE *fullPath;
+
+							NewList(&tnList);
+
+							dl=LockDosList(htl->htl_Types | LDF_READ);
+							while(dl=NextDosEntry(dl, htl->htl_Types))
+							{
+								tn=(struct TempNode*)AllocVec(sizeof(struct TempNode), MEMF_ANY);
+								tn->t_Name=AllocVec(strlen(dl->dol_DevName)+1, MEMF_ANY);
+								strcpy(tn->t_Name, dl->dol_DevName);
+								AddTail(&tnList, (struct Node*)tn);
+								i++;
+							}
+
+							UnLockDosList(htl->htl_Types | LDF_READ);
+
+							sr=(struct SingleResult*)AllocVec(sizeof(struct SingleResult)*i, MEMF_ANY);
+							tn=tnList.lh_Head;
+							while(tn->t_Node.ln_Succ)
+							{
+								sr[j].sr_Name=tn->t_Name;
+								fullPath=AllocVec(strlen(tn->t_Name)+2, MEMF_ANY);
+								strcpy(fullPath, tn->t_Name);
+								strcat(fullPath, ":");
+								kprintf("handler: looking for @%s@\n", fullPath);
+								sr[j].sr_DiskObject=GetDiskObjectNew(fullPath);
+								kprintf("handler: diskobject: %d\n", sr[j].sr_DiskObject);
+								tn=(struct TempNode*)tn->t_Node.ln_Succ;
+								j++;
+							}
+
+							DoMethod(htl->htl_Application, MUIM_Application_PushMethod, htl->htl_CallBack, 3, ICOM_AddIcons, i, sr);
 
 							break;
 						}

@@ -8,11 +8,12 @@
 #define IA_Label      IA_BASE+2
 #define IA_Selected   IA_BASE+3
 #define IA_Executed   IA_BASE+4
+#define IA_Directory  IA_BASE+5
 
 struct IconClassData
 {
 	struct DiskObject *diskObject;
-	UBYTE *label;
+	UBYTE *label, *directory;
 	Object *imagePart;
 	Object *labelPart;
 	BOOL selected;
@@ -28,7 +29,7 @@ struct __dummyIconData__
 #define iconData(obj) (&(((struct __dummyIconData__ *)(obj))->icd))
 
 #define _selected(obj)    (iconData(obj)->selected)
-
+#define _diskobject(obj)  (iconData(obj)->diskObject)
 
 
 

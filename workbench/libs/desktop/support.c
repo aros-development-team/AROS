@@ -123,6 +123,23 @@ struct HandlerScanRequest* createScanMessage(ULONG command, struct MsgPort *repl
 	return hsr;
 }
 
+struct HandlerTopLevelRequest* createTLScanMessage(ULONG command, struct MsgPort *replyPort, ULONG types, Object *callback, Object *app)
+{
+	struct HandlerTopLevelRequest *htl;
+
+	htl=(struct HandlerTopLevelRequest*)AllocVec(sizeof(struct HandlerTopLevelRequest), MEMF_ANY);
+	htl->htl_Message.di_Message.mn_Length=sizeof(struct HandlerScanRequest);
+	htl->htl_Message.di_Message.mn_Node.ln_Type=NT_MESSAGE;
+	htl->htl_Message.di_Message.mn_ReplyPort=replyPort;
+	htl->htl_Message.di_Command=command;
+	htl->htl_Types=types;
+	htl->htl_CallBack=callback;
+	htl->htl_Application=app;
+
+	return htl;
+}
+
+
 struct WorkingMessageNode* findWorkedMessage(struct MinList *list, ULONG id)
 {
 	struct WorkingMessageNode *wmn;

@@ -12,7 +12,7 @@ struct DesktopBase
     struct Library db_Library;
 
 	BPTR db_SegList;
-	
+
 	struct ExecBase *db_SysBase;
 	struct Library *db_DOSBase;
 	struct IntuitionBase *db_IntuitionBase;
@@ -21,6 +21,9 @@ struct DesktopBase
 	struct Library *db_UtilityBase;
 	struct Library *db_MUIMasterBase;
 	struct Library *db_IconBase;
+
+	struct Library *db_InputBase;
+	struct IORequest *db_InputIO;
 
 	struct MUI_CustomClass *db_Observer;
 	struct MUI_CustomClass *db_Presentation;
@@ -38,6 +41,11 @@ struct DesktopBase
 	struct MUI_CustomClass *db_ToolIconObserver;
 	struct MUI_CustomClass *db_ProjectIconObserver;
 	struct MUI_CustomClass *db_TrashcanIconObserver;
+	struct MUI_CustomClass *db_DesktopObserver;
+
+	/* these will be moved into a new desktop context area */
+	struct Class           *db_DefaultWindow;
+	struct TagItem         *db_DefaultWindowArguments;
 
 	struct SignalSemaphore  db_BaseMutex;
 	struct SignalSemaphore  db_HandlerSafety;
@@ -77,6 +85,7 @@ AROS_LC2(ULONG, asl, AROS_LHA(ULONG,a,D0), AROS_LHA(ULONG,b,D1), struct DesktopB
 #define LayersBase DesktopBase->db_LayersBase
 #define UtilityBase DesktopBase->db_UtilityBase
 #define MUIMasterBase DesktopBase->db_MUIMasterBase
+#define InputBase DesktopBase->db_InputBase
 #define IconBase DesktopBase->db_IconBase
 #define IconContainer DesktopBase->db_IconContainer
 #define IconContainerObserver DesktopBase->db_IconContainerObserver
@@ -91,5 +100,6 @@ AROS_LC2(ULONG, asl, AROS_LHA(ULONG,a,D0), AROS_LHA(ULONG,b,D1), struct DesktopB
 #define ToolIconObserver DesktopBase->db_ToolIconObserver
 #define ProjectIconObserver DesktopBase->db_ProjectIconObserver
 #define TrashcanIconObserver DesktopBase->db_TrashcanIconObserver
+#define DesktopObserver DesktopBase->db_DesktopObserver
 
 #endif /* DESKTOP_INTERN_H */
