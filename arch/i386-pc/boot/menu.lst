@@ -7,4 +7,4 @@ fallback 1
 #aros
 title AROS
 #root (fd0)
-kernel /Devs/aros-native-i386.gz
+kernel /boot/aros-pc-i386.gz
