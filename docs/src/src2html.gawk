@@ -504,8 +504,14 @@ BEGIN {
 function yylex() {
     if (yyrest=="")
     {
-	if (getline yyrest <= 0)
-	    return ""; #EOF
+	while (1)
+	{
+	    if (getline yyrest <= 0)
+		return ""; #EOF
+
+	    if (substr (yyrest,1,1) != "%")
+		break;
+	}
 
 	if (yyrest!="")
 	    yyrest=yyrest " ";
@@ -565,6 +571,9 @@ function yylex() {
 		do
 		{
 		    ret=getline yyrest;
+
+		    if (substr (yyrest,1,1) == "%")
+			yyrest = "";
 		}
 		while (yyrest=="" && ret>0);
 
