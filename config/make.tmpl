@@ -174,10 +174,23 @@ endif
 %end
 
 # rule to generate libdefs.h
-%define libdefs_rule
-libdefs.h : lib.conf $(TOP)/scripts/genlibdefs.gawk
+%define libdefs_rule conffile=lib.conf script=$(TOP)/scripts/genlibdefs.gawk dest=libdefs.h
+%(dest) : %(conffile) %(script)
 	@echo "Generating $@..."
-	@$(AWK) -f $(TOP)/scripts/genlibdefs.gawk lib.conf > libdefs.h
+	@$(AWK) -f %(script) $< > $@
+%end
+
+# Rule to create a .library in the local dir
+%define genlib
+libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
+	@echo "Generating $@..."
+	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
+
+FUNCTABLE_SRCS := $(foreach f,$(FUNCTION),$(f).c)
+
+functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk
+	@echo "Generating $@..."
+	@$(AWK) -f $(BINDIR)/scripts/genfunctable.awk $< > $@
 %end
 
 # rule to generate asm files from c files (for debugging purposes)
