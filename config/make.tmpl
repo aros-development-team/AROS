@@ -74,10 +74,10 @@
 
 #------------------------------------------------------------------------------
 # Create the dependency file %(to) for %(from)
-%define mkdepend_q flags=$(CFLAGS) from=$< to=$@
+%define mkdepend_q flags=$(CFLAGS) from=$< to=$@ cc=$(AROS_CC)
 	%mkdir_q dir="$(dir %(to))"
 	@$(ECHO) "Makedepend $(CURDIR)/$(notdir %(from))..."
-	@$(MKDEPEND) %(flags) %(from) -o %(to)
+	@AROS_CC="%(cc)" $(MKDEPEND) %(flags) %(from) -o %(to)
 %end
 #------------------------------------------------------------------------------
 
@@ -218,13 +218,15 @@ ifeq ($(findstring %(compiler),host target),)
 endif
 ifeq (%(compiler),target)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC)
 endif
 ifeq (%(compiler),host)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
 endif
 
 $(TMP_TARGETBASE).o : %(basename).c
-	%compile_q opt=%(cflags) cmd=$(TMP_CMD)
+	%compile_q opt="%(cflags)" cmd=$(TMP_CMD)
 
 ifeq (%(dflags),)
 $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(cflags)
@@ -232,7 +234,7 @@ else
 $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
 endif
 $(TMP_TARGETBASE).d : %(basename).c
-	%mkdepend_q flags=$(TMP_DFLAGS)
+	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
 %end
 #------------------------------------------------------------------------------
 

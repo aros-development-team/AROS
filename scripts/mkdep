@@ -34,7 +34,12 @@ if [ "x$dest" = x ]; then
     exit 1
 fi
 
-CMD="gcc -M $args $files | sed 's#^.*\.o:#`dirname $dest`/&#'"
+if [ "x$AROS_CC" = x ]; then
+    echo "$0: Error: AROS_CC not defined"
+    exit 1
+fi
+
+CMD="$AROS_CC -M $args $files | sed 's#^.*\.o:#`dirname $dest`/&#'"
 #echo $CMD
 
 eval $CMD > $dest
