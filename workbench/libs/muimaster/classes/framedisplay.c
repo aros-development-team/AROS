@@ -115,8 +115,8 @@ static IPTR Framedisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_A
     msg->MinMaxInfo->MinWidth += 8;
     msg->MinMaxInfo->MinHeight += 8;
    
-    msg->MinMaxInfo->DefWidth += 30;
-    msg->MinMaxInfo->DefHeight += 30;
+    msg->MinMaxInfo->DefWidth += 16;
+    msg->MinMaxInfo->DefHeight += 16;
 
     msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
     msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
