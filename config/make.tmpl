@@ -31,10 +31,20 @@
 #------------------------------------------------------------------------------
 # Assemble the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt).
-%define assemble_q cmd=$(AS) opt=$(AFLAGS) from=$< to=$@ err=$*.err
-	@$(ECHO) "Assembling $(CURDIR)/%(from)..."
-	@%(cmd) %(opt) -c %(from) -o %(to) 2>&1|tee %(err)
-	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
+%define assemble_q cmd=$(AS) opt=$(AFLAGS) from=$< to=$@ path=$(CURDIR)/
+	@$(ECHO) "Assembling %(path)%(from)..."
+	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		true ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: %(cmd) %(opt) -c %(from) -o %(to)" 1>&2 ; \
+	    $(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
 %end
 
 #------------------------------------------------------------------------------
@@ -96,7 +106,7 @@
 %end
 
 #------------------------------------------------------------------------------
-%define mklib_arch ar=$(AR) ranlib=$(RANLIB) to=$@ from="$(OBJS)" cmd=$(CC) opt=$(CFLAGS) err=functions.err archive=$(ARCHIVE)
+%define mklib_arch ar=$(AR) ranlib=$(RANLIB) to=$@ from="$(OBJS)" cmd=$(CC) opt=$(CFLAGS) archive=$(ARCHIVE)
 	@$(ECHO) "Creating library %(to)..."
 	@%(ar) %(to) %(from)
 	@%(ranlib) %(to)
@@ -114,7 +124,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 %end
 
 #------------------------------------------------------------------------------
-%define mklib_f ar=$(AR) ranlib=$(RANLIB) to=$@ from="$(OBJS)" cmd=$(CC) opt=$(CFLAGS) err=functions.err functions=$(FUNCTIONS) deplibs="$(DEPLIBS)"
+%define mklib_f ar=$(AR) ranlib=$(RANLIB) to=$@ from="$(OBJS)" cmd=$(CC) opt=$(CFLAGS) functions=$(FUNCTIONS) deplibs="$(DEPLIBS)"
 	@$(ECHO) "Creating library %(to)..."
 	@%(ar) %(to) %(from)
 	@%(ranlib) %(to)
