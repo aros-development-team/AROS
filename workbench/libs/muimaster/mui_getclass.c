@@ -23,7 +23,7 @@ static CONST_STRPTR searchpaths[] = {
     NULL,
 };
 
-static struct IClass *load_external_class(CONST_STRPTR classname)
+static struct IClass *load_external_class(CONST_STRPTR classname, struct Library *MUIMasterBase)
 {
     struct Library *mcclib;
     struct MUI_CustomClass *mcc;
@@ -135,7 +135,7 @@ __asm struct IClass *MUI_GetClass(register __a0 char *classname)
 
     	if (!cl)
 	{
-	    cl = load_external_class(classname);
+	    cl = load_external_class(classname, MUIMasterBase);
 	}
 
 	if (cl)
