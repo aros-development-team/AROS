@@ -23,11 +23,6 @@
 #include "intuition_intern.h"
 #include "propgadgets.h"
 
-#undef DEBUG
-#define DEBUG 0
-
-#include <aros/debug.h>
-
 #undef IntuitionBase
 #define IntuitionBase ((struct IntuitionBase *)(cl->cl_UserData))
 
@@ -170,7 +165,6 @@ STATIC IPTR set_propgclass(Class *cl, Object *o,struct opSet *msg)
     	switch (tag->ti_Tag)
     	{
     	    case PGA_Top:
-		D(bug("propg:PGA_Top set to %d\n", tag->ti_Data));    	    	
 		data->top = tag->ti_Data;
 		NotifyTop(cl, o, msg->ops_GInfo, data->top, TRUE);
  	    	set_flag= TRUE;
@@ -178,16 +172,12 @@ STATIC IPTR set_propgclass(Class *cl, Object *o,struct opSet *msg)
 		break;
     	
     	    case PGA_Visible:
-		D(bug("propg:PGA_Visible set to %d,top=%d,total=%d\n", 
-		tag->ti_Data, data->top, data->total));    	
 		data->visible = tag->ti_Data;
 		set_flag = TRUE;
 		retval = 1UL;
 		break;
     	    
 	    case PGA_Total:
-
-		D(bug("propg:PGA_Total set to %d\n", tag->ti_Data));
 		data->total = tag->ti_Data;
     		set_flag = TRUE;
 		retval = 1UL;
@@ -326,6 +316,14 @@ STATIC IPTR get_propgclass(Class *cl, Object *o,struct opGet *msg)
     {
     	case PGA_Top:
     	    *(msg->opg_Storage) = data->top;
+	    break;
+	    
+	case PGA_Total:
+    	    *(msg->opg_Storage) = data->total;
+	    break;
+
+	case PGA_Visible:
+    	    *(msg->opg_Storage) = data->visible;
 	    break;
 	    
 	case PGA_HorizPot:
@@ -527,8 +525,6 @@ AROS_UFH3(STATIC IPTR, dispatch_propgclass,
 {
     IPTR retval = 0UL;
 
-    D(bug("propg dispatcher: %d\n", msg->MethodID));
-
     switch(msg->MethodID)
     {
     	case GM_RENDER:
@@ -569,8 +565,6 @@ AROS_UFH3(STATIC IPTR, dispatch_propgclass,
 		    struct RastPort *rp = ObtainGIRPort(gi);
 		    if (rp)
 		    {
-		    	D(bug("prop:updating propgadget, win=%s, rp=%p, gi=%p\n",
-		    		gi->gi_Window->Title, rp, gi));
 		    	DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
 		    	ReleaseGIRPort(rp);
 		    } /* if */
@@ -588,7 +582,7 @@ AROS_UFH3(STATIC IPTR, dispatch_propgclass,
 	    break;
     } /* switch */
 
-    ReturnPtr ("propg disp", IPTR, retval);
+    return (retval);
 }  /* dispatch_propgclass */
 
 
