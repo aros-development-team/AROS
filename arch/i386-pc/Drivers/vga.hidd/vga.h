@@ -113,8 +113,11 @@ struct pHidd_Gfx_ShowHide {
     BOOL visible;
 };
 
-
+#if 0
+    /* nlorentz: This function is no lonfger necessary	*/
 BOOL set_pixelformat(Object *);
+
+#endif
 
 Class *init_vgaclass  ( struct vga_staticdata * );
 Class *init_onbmclass  ( struct vga_staticdata * );

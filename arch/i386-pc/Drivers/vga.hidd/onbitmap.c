@@ -68,11 +68,16 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
     if (o)
     {
     	struct bitmap_data *data;
+	
+	Object *pf;
+
+#if 0
+	
 	struct TagItem depth_tags[] = {
 	    { aHidd_BitMap_Depth, 0 },
 	    { TAG_DONE, 0 }
 	};
-	
+#endif	
         IPTR width, height, depth;
 	
         data = INST_DATA(cl, o);
@@ -83,9 +88,15 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	/* Get attr values */
 	GetAttr(o, aHidd_BitMap_Width,		&width);
 	GetAttr(o, aHidd_BitMap_Height, 	&height);
+#if 0
+/* nlorentz: The aHidd_BitMap_Depth attribute no loner exist,, so we must
+	get the depth in two steps: First get pixel format, then get depth */
 	GetAttr(o, aHidd_BitMap_Depth,		&depth);
+#else
+	GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
+	GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
+#endif
 	
-	/* Get the friend bitmap. This should be a displayable bitmap */
 	
 	assert (width != 0 && height != 0 && depth != 0);
 	
@@ -93,16 +104,21 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	   We must only create depths that are supported by the friend drawable
 	   Currently we only support the default depth
 	*/
-	
+/* nlorentz: This test is really not necessary with the new
+    design because the user can only create modes that you supplied
+    in Gfx::New() in vgaclass.c. */
 	if (depth != 4)
 	{
 	    depth = 4;
 	}
 
 	/* Update the depth to the one we use */
+#if 0
+    /* nlorentz: No longer necessary nor possible */
 	depth_tags[0].ti_Data = depth;
 	SetAttrs(o, depth_tags);
-	
+#endif
+
 	data->width = width;
 	data->height = height;
 	data->bpp = depth;
@@ -147,10 +163,18 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 		    ReleaseSemaphore(&XSD(cl)->HW_acc);
 
+#if 0
+    /* nlorentz: No longer necessary nor possible */
 		    set_pixelformat(o);
+#endif
 
+#if 0
+    /* nlorentz: Should only be needed for HIDDs built on top of
+       window environments
+    */
 		    if (XSD(cl)->activecallback)
 			XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
+#endif
 
 		    XSD(cl)->visible = data;	/* Set created object as visible */
 

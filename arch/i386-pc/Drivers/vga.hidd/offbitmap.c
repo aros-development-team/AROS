@@ -60,14 +60,9 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
     if (o)
     {
     	struct bitmap_data *data;
-	struct TagItem depth_tags[] = {
-	    { aHidd_BitMap_Depth, 0 },
-	    { TAG_DONE, 0 }
-	};
-	
         IPTR width, height, depth;
 	
-	Object *friend;
+	Object *friend, *pf;
 	
         data = INST_DATA(cl, o);
 	
@@ -77,7 +72,14 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	/* Get attr values */
 	GetAttr(o, aHidd_BitMap_Width,		&width);
 	GetAttr(o, aHidd_BitMap_Height, 	&height);
+#if 0
+/* nlorentz: The aHidd_BitMap_Depth attribute no loner exist,, so we must
+	get the depth in two steps: First get pixel format, then get depth */
 	GetAttr(o, aHidd_BitMap_Depth,		&depth);
+#else
+	GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
+	GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
+#endif
 	
 	/* Get the friend bitmap. This should be a displayable bitmap */
 	GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
@@ -90,6 +92,7 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    CopyMem(&src->cmap, &data->cmap, 4*16);
 	}
 	
+
 	assert (width != 0 && height != 0 && depth != 0);
 	
 	/* 
@@ -97,15 +100,22 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	   Currently we only support the default depth
 	*/
 	
+/* nlorentz: With the new HIDD design we decided in Gfx::NewBitMap()
+    that we should only create bitmaps that are alike to the friend bitmap.
+    Thus the test below is really not necessary, as we will allways
+    get the same depth
+*/
 	if (depth != 4)
 	{
 //	    depth = 4;	/* Do anything... */
 	}
-	
+
+#if 0
+    /* nlorentz: Not necessary with the new design */	
 	/* Update the depth to the one we use */
 	depth_tags[0].ti_Data = depth;
 	SetAttrs(o, depth_tags);
-	
+#endif
 	data->width = width;
 	data->height = height;
 	data->bpp = depth;
@@ -117,8 +127,10 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
 	    if (data->Regs)
 	    {
+#if 0
+    /* nlorentz: Not necessary nor possible with the new design */
 		set_pixelformat(o);
-
+#endif
 		if (XSD(cl)->activecallback)
 		    XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
 

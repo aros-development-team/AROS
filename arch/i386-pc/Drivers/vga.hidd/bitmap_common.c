@@ -113,8 +113,8 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
     
     pf = BM_PIXFMT(o);
 
-    if (    vHidd_GT_StaticPalette == HIDD_PF_GRAPHTYPE(pf)
-    	 || vHidd_GT_TrueColor == HIDD_PF_GRAPHTYPE(pf) ) {
+    if (    vHidd_ColorModel_StaticPalette == HIDD_PF_COLMODEL(pf)
+    	 || vHidd_ColorModel_TrueColor	   == HIDD_PF_COLMODEL(pf) ) {
 	 
 	 /* Superclass takes care of this case */
 	 
