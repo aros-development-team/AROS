@@ -34,18 +34,20 @@ typedef __int32_t               __blksize_t;
 typedef char *                  __caddr_t;          /* Not POSIX */
 typedef __int32_t               __clockid_t;
 typedef unsigned long           __clock_t;
-typedef __int32_t               __dev_t;
+typedef __uintptr_t             __dev_t;
 typedef __int32_t               __fsblkcnt_t;
 typedef __int32_t               __fsfilcnt_t;
 typedef __uint32_t              __gid_t;
 typedef __uint32_t              __id_t;
-typedef __uint32_t              __ino_t;
+typedef __uintptr_t             __ino_t;
 typedef __int32_t               __key_t;
 typedef __uint16_t              __mode_t;
 typedef __uint16_t              __nlink_t;
 typedef __int32_t               __off_t;            /* XXX Large Files? */
 typedef __uintptr_t             __pid_t;
-typedef long                    __ptrdiff_t;        /* XXX __intptr_t? */
+typedef __intptr_t
+
+              __ptrdiff_t;        /* XXX __intptr_t? */
 typedef __uint8_t               __sa_family_t;
 typedef unsigned int            __size_t;           /* XXX Large Files? */
 typedef __uint32_t              __socklen_t;
