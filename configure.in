@@ -107,6 +107,9 @@ case "$CC" in
 	;;
 esac
 
+dnl Despite the name, this is really a host configuration variable.
+aros_target_cc_includes=""
+
 # This is the main host configuration section. It is where the host
 # can change the values of any variables it needs to change. We do
 # not look at anything that compiles to the target yet, we'll get
@@ -138,6 +141,21 @@ case "$host_os" in
 	aros_host_make="gmake"
 	aros_host_arch="freebsd"
 	aros_host_cpu="i386"
+
+	dnl Need to override this here, it's just too hard later.
+        dnl This shouldn't be here at all...
+	aros_target_cc_includes="/usr/include"
+
+	dnl FreeBSD 5.x has changed the default object format.
+	case $host_os in
+	    freebsd5*)
+		aros_object_format="elf_i386_fbsd"
+		;;
+
+	    *)
+		aros_object_format="elf_i386"
+	esac
+
 	;;
 
     netbsd*)
@@ -289,7 +307,6 @@ aros_kernel_ld="$aros_host_ld"
 
 aros_target_mkdep="$aros_host_mkdep"
 aros_target_incl_def="$aros_host_incl"
-aros_target_cc_includes=""
 
 # The default tools.
 aros_target_ar="ar"
@@ -417,18 +434,6 @@ case "$target_os" in
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
 	gcc_target_cpu="i386"
 
-	dnl FreeBSD 5.x has changed the default object format.
-	case $target_os in
-	    freebsd5*)
-		aros_object_format="elf_i386_fbsd"
-		;;
-
-	    *)
-		aros_object_format="elf_i386"
-	esac
-
-	dnl Need to override this here, it's just too hard later.
-	aros_target_cc_includes="/usr/include"
 	strip_args="-x"
 	;;
 
