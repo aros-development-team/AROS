@@ -103,8 +103,8 @@ void sys_Dispatch(struct pt_regs * regs)
 		return;
 	}
 
+#if 0
 #warning Enabling Multitasking here. Remove this!The Boot Task seems to run under Forbid().
-#if 1
 if (SysBase->TDNestCnt >= 0)
 	SysBase->TDNestCnt = -1;
 #endif
