@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ColorWheel initialization code.
-    Lang: English.
+    ColorWheel initialization code.
 */
 
 #include <stddef.h>
@@ -58,22 +57,22 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!GfxBase)
     	GfxBase = (GraphicsBase *) OpenLibrary ("graphics.library", 37);
     if (!GfxBase)
-	return NULL;
+	return FALSE;
 
     if (!UtilityBase)
 	UtilityBase = OpenLibrary ("utility.library", 37);
     if (!UtilityBase)
-	return NULL;
+	return FALSE;
 
     if (!IntuitionBase)
     	IntuitionBase = (IntuiBase *) OpenLibrary ("intuition.library", 37);
     if (!IntuitionBase)
-	return NULL;
+	return FALSE;
 
     if (!LayersBase)
     	LayersBase = OpenLibrary ("layers.library", 39);
     if (!LayersBase)
-    	return NULL;
+    	return FALSE;
 	
     if (!CyberGfxBase)
         CyberGfxBase = OpenLibrary ("cybergraphics.library", 0);
@@ -82,7 +81,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!ColorWheelBase->classptr)
     	ColorWheelBase->classptr = InitColorWheelClass (ColorWheelBase);
     if (!ColorWheelBase->classptr)
-    	return NULL;
+    	return FALSE;
 
     return TRUE;
 }

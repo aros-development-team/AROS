@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROS colorwheel gadget.
-    Lang: english
+    AROS colorwheel gadget.
 */
 
 #include <exec/types.h>
@@ -124,9 +123,9 @@ STATIC VOID notify_all(Class *cl, Object *o, struct GadgetInfo *gi, BOOL interim
 
 STATIC IPTR colorwheel_set(Class *cl, Object *o, struct opSet *msg)
 {
-    struct TagItem 		*tag, *tstate;
+    const struct TagItem 	*tag, *tstate;
     struct ColorWheelData 	*data 	       = INST_DATA(cl, o);
-    ULONG			old_brightness;
+    ULONG			old_brightness = 0;
     BOOL			do_notify      = FALSE;
     BOOL			disabled;
     
@@ -303,7 +302,7 @@ STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
 	    data->rgb.cw_Blue       = 0;
 	    
 	    data->abbrv    =  (STRPTR) GetTagData(WHEEL_Abbrv         , (IPTR)"GCBMRY", msg->ops_AttrList);
-	    data->donation = (UWORD *) GetTagData(WHEEL_Donation      , NULL          , msg->ops_AttrList);
+	    data->donation = (UWORD *) GetTagData(WHEEL_Donation      , (IPTR) NULL   , msg->ops_AttrList);
 	    data->maxpens  =           GetTagData(WHEEL_MaxPens       , 256	      , msg->ops_AttrList);
 	    
     	    colorwheel_set(cl, o, msg);
@@ -409,7 +408,7 @@ STATIC VOID colorwheel_render(Class *cl, Object *o, struct gpRender *msg)
     struct ColorWheelData 	*data = INST_DATA(cl, o);    
     struct DrawInfo 		*dri = msg->gpr_GInfo->gi_DrInfo;
     struct RastPort 		*rp = msg->gpr_RPort;
-    struct Hook			*hook;
+    struct Hook			*hook = NULL;
     struct IBox			gbox;
     LONG			redraw = msg->gpr_Redraw;
     
@@ -639,7 +638,7 @@ STATIC IPTR colorwheel_handleinput(Class *cl, Object *o, struct gpInput *msg)
 STATIC IPTR colorwheel_domain(Class *cl, Object *o, struct gpDomain *msg)
 {
     struct ColorWheelData *data = INST_DATA(cl, o);
-    UWORD		   width, height;
+    UWORD		   width = 0x7fff, height = 0x7fff;
 
     switch( msg->gpd_Which )
     {
