@@ -15,6 +15,7 @@
 #include <intuition/classusr.h>
 #include <libraries/iffparse.h>
 #include <devices/inputevent.h>
+#include <datatypes/textclass.h>
 #include <utility/hooks.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -29,12 +30,12 @@
 #include <ctype.h>
 
 #undef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************************/
 
-#define ARG_TEMPLATE 	"CLIPUNIT=UNIT/N, OFF/S"
+#define ARG_TEMPLATE 	"CLIPUNIT=UNIT/N,OFF/S"
 #define ARG_CLIPUNIT 	0
 #define ARG_OFF		1
 #define NUM_ARGS	2
@@ -47,8 +48,8 @@
 struct MyEditHookMsg
 {
     struct Message 	msg;
+    struct SGWork	*sgw;
     WORD 		code;
-    STRPTR 		text;
 };
 
 /*****************************************************************************************/
@@ -172,7 +173,7 @@ AROS_UFH3(ULONG, conclipeditfunc,
 	        switch(toupper(sgw->Code))
 		{
 		    case 'C':
-		    	if (!sgw->WorkBuffer[0]) break;
+		    	if (!sgw->NumChars) break;
 			/* fall through */
 			
 		    case 'V':
@@ -195,21 +196,29 @@ AROS_UFH3(ULONG, conclipeditfunc,
 			    msg.msg.mn_Length 		= sizeof(msg);
 			    
 			    msg.code = toupper(sgw->Code);
+			    msg.sgw  = sgw;			    
 			    
-			    switch(msg.code)
+			    if ((msg.code == CODE_COPY) || (sgw->NumChars < sgw->StringInfo->MaxChars - 1))
 			    {
-			        case CODE_COPY:
-				    msg.text = sgw->WorkBuffer;
-				    break;
-				    
-				case CODE_PASTE:
-				    msg.text = NULL;
-				    break;
+				SetSignal(0, SIGF_SINGLE);
+				PutMsg(port, &msg.msg);
+				WaitPort(&replyport);
 			    }
 			    
-			    SetSignal(0, SIGF_SINGLE);
-			    PutMsg(port, &msg.msg);
-			    WaitPort(&replyport);
+			    if (msg.code == CODE_PASTE)
+			    {
+			        WORD len = strlen(sgw->WorkBuffer);
+				
+				if (len != sgw->NumChars)
+				{
+				    sgw->NumChars = len;
+				    sgw->EditOp   = EO_BIGCHANGE;
+				    sgw->Actions  = SGA_USE | SGA_REDISPLAY;
+				    
+				    retcode = 1;
+				}
+				
+			    } /* if (msg.code == CODE_COPY) */
 			    
 			} /* if ((port = FindPort(CONCLIP_PORTNAME))) */
 		
@@ -219,7 +228,8 @@ AROS_UFH3(ULONG, conclipeditfunc,
 		
 	    } /* if (sgw->IEvent->ie_Qualifier & IEQUALIFIER_RCOMMAND) */
     	    break;    
-    }
+	    
+    } /* switch (*command) */
     
     if (calloldhook) retcode = CallHookPkt(oldedithook, sgw, command);
     
@@ -241,7 +251,7 @@ static void installedithook(void)
 /*****************************************************************************************/
 /*****************************************************************************************/
 
-static void savetoclipboard(STRPTR text)
+static void savetoclipboard(struct SGWork *sgw)
 {
     struct IFFHandle *iff;
     
@@ -252,21 +262,88 @@ static void savetoclipboard(STRPTR text)
 	    InitIFFasClip(iff);
 	    if(!OpenIFF(iff,IFFF_WRITE))
 	    {
-		if(!PushChunk(iff, MAKE_ID('F','T','X','T'), ID_FORM, IFFSIZE_UNKNOWN))
+		if(!PushChunk(iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN))
 		{
-		    if(!PushChunk(iff, 0, MAKE_ID('C','H','R','S'), IFFSIZE_UNKNOWN))
+		    if(!PushChunk(iff, ID_FTXT, ID_CHRS, IFFSIZE_UNKNOWN))
 		    {
-		        WriteChunkBytes(iff, text, strlen(text));
+		        WriteChunkBytes(iff, sgw->WorkBuffer, sgw->NumChars);
 			
 			PopChunk(iff);
 			
-		    } /* if(!PushChunk(iff, 0, MAKE_ID('C','H','R','S'), IFFSIZE_UNKNOWN)) */
+		    } /* if(!PushChunk(iff, ID_FTXT, ID_CHRS, IFFSIZE_UNKNOWN)) */
 		    PopChunk(iff);
 		    
-		} /* if(!PushChunk(iff, MAKE_ID('F','T','X','T'), ID_FORM, IFFSIZE_UNKNOWN)) */
+		} /* if(!PushChunk(iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN)) */
 		CloseIFF(iff);
 		
 	    } /* if(!OpenIFF(iff,IFFF_WRITE)) */
+	    CloseClipboard((struct ClipboardHandle*)iff->iff_Stream);
+	    
+	} /* if((iff->iff_Stream = (IPTR)OpenClipboard(clipunit))) */
+	FreeIFF(iff);
+	
+    } /* if((iff = AllocIFF()))) */
+}
+
+/*****************************************************************************************/
+
+static void readfromclipboard(struct SGWork *sgw)
+{
+    struct IFFHandle    *iff;
+    struct ContextNode  *cn;
+    
+    if((iff = AllocIFF()))
+    {
+	D(bug("ConClip/conclipeditfunc: AllocIFF okay\n"));
+	
+	if((iff->iff_Stream = (IPTR)OpenClipboard(clipunit)))
+	{
+	    D(bug("ConClip/conclipeditfunc: OpenClipboard okay\n"));
+	    
+	    InitIFFasClip(iff);
+	    if(!OpenIFF(iff, IFFF_READ))
+	    {
+		D(bug("ConClip/conclipeditfunc: OpenIff okay\n"));
+		
+		if (!(StopChunk(iff, ID_FTXT, ID_CHRS)))
+		{
+		    D(bug("ConClip/conclipeditfunc: StopChunk okay\n"));
+		    
+		    if (!ParseIFF(iff, IFFPARSE_SCAN))
+		    {
+			D(bug("ConClip/conclipeditfunc: ParseIFF okay\n"));
+			
+		        cn = CurrentChunk(iff);
+               		if ((cn->cn_Type == ID_FTXT) && (cn->cn_ID == ID_CHRS) && (cn->cn_Size > 0))
+			{
+			    WORD readsize;
+			    
+    			    D(bug("ConClip: readfromclipboard: Found FTXT CHRS Chunk\n"));
+			    D(bug("ConClip: readfromclipboard: Old text = \"%s\"\n", sgw->WorkBuffer));
+
+			    readsize = sgw->StringInfo->MaxChars - 1 - sgw->BufferPos;
+			    if (cn->cn_Size < readsize) readsize = cn->cn_Size;
+			    if (readsize > 0)
+			    {
+			        memmove(sgw->WorkBuffer + sgw->BufferPos + readsize,
+					sgw->WorkBuffer + sgw->BufferPos,
+					sgw->StringInfo->MaxChars - sgw->BufferPos - readsize);
+			        ReadChunkBytes(iff, sgw->WorkBuffer + sgw->BufferPos, readsize);
+    				
+				D(bug("ConClip: readfromclipboard: New text = \"%s\"\n", sgw->WorkBuffer));
+				
+				sgw->BufferPos += readsize;
+			    }
+			    
+			} /* if ((cn->cn_Type == ID_FTXT) && (cn->cn_ID == ID_CHRS) && (cn->cn_Size > 0)) */
+			
+		    } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
+		    
+		} /* if (!(StopChunk(iff, ID_FTXT, ID_CHRS))) */
+		
+		CloseIFF(iff);
+		
+	    } /* if(!OpenIFF(iff, IFFF_READ)) */
 	    CloseClipboard((struct ClipboardHandle*)iff->iff_Stream);
 	    
 	} /* if((iff->iff_Stream = (IPTR)OpenClipboard(clipunit))) */
@@ -296,11 +373,12 @@ static void handleall(void)
 		{
 		    case CODE_COPY:
 		        D(bug("ConClip: Received CODE_COPY message\n"));
-			savetoclipboard(msg->text);
+			savetoclipboard(msg->sgw);
 			break;
 			
 		    case CODE_PASTE:	
 		    	D(bug("ConClip: Received CODE_PASTE message\n"));
+			readfromclipboard(msg->sgw);
 			break;
 			
 		} /* switch(msg->code) */
@@ -310,7 +388,7 @@ static void handleall(void)
 	    } /* while((msg = (struct MyEditHookMsg *)GetMsg(progport))) */
 	    
 	} /* if (sigs & portmask) */
-	
+
 	if (sigs & SIGBREAKF_CTRL_C) quitme = TRUE;
 	
     } /* while(!quitme) */
