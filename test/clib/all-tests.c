@@ -17,7 +17,7 @@ int main() {
     int i, rc;
     char buffer[128];
 
-    mkdir( "T:TestOutput", 0 );
+    mkdir( "T:TestOutput", 0777 );
 
     for( i = 0; tests[i] != NULL; i++ )
     {
