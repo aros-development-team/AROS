@@ -237,7 +237,7 @@ static void readsectionconfig(void)
 		do {
 		    static const char *optionnames[] =
 		    {
-			"noautolib", "noexpunge"
+			"noautolib", "noexpunge", "noresident"
 		    };
 		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
 		    int optionnum;
@@ -264,6 +264,9 @@ static void readsectionconfig(void)
 			break;
 		    case 2: /* noexpunge */
 			options |= OPTION_NOEXPUNGE;
+			break;
+		    case 3: /* noresident */
+			options |= OPTION_NORESIDENT;
 			break;
 		    }
 		    while (isspace(*s)) s++;

@@ -28,7 +28,16 @@ void writestart(void)
 	    "    *** Automatically generated file. Do not edit ***\n"
 	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
-	    "#include <libcore/libheader.c>\n");
+    );
+    fprintf(out,
+	    "#include <exec/types.h>\n"
+	    "#include <aros/libcall.h>\n"
+	    "#include <aros/asmcall.h>\n"
+    );
+    if (!(options & OPTION_NORESIDENT))
+	fprintf(out, "#include <libcore/libheader.c>\n");
+    else
+	fprintf(out, "#include LC_LIBDEFS_FILE\n");
 
     if (libcall == REGISTER)
     {
@@ -93,19 +102,100 @@ void writestart(void)
 	    break;
 	}
     }
-    
-    fprintf(out,
-	    "\n"
-	    "const APTR %s_functable[]=\n"
-	    "{\n"
-	    "    &AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),\n"
-	    "    &AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),\n"
-	    "    &AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),\n"
-	    "    &AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),\n",
-	    modulename);
 
+    if (!(options & OPTION_NORESIDENT))
+    {
+	fprintf(out,
+		"\n"
+		"const APTR %s_functable[]=\n"
+		"{\n"
+		"    &AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),\n"
+		"    &AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),\n"
+		"    &AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),\n"
+		"    &AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),\n",
+		modulename
+	);
+	funclistit = funclist;
+    }
+    else /* NORESIDENT */
+    {
+	int neednull = 0;
+	struct functionlist *funclistit2;
+	
+	funclistit = funclist;
+	if (funclistit->lvo != 1)
+	{
+	    fprintf(stderr, "Module without a generated resident structure has to provide the Open function (LVO==1)\n");
+	    exit(20);
+	}
+	else
+	    funclistit = funclistit->next;
+	
+	if (funclistit->lvo != 2)
+	{
+	    fprintf(stderr, "Module without a generated resident structure has to provide the Close function (LVO==2)\n");
+	    exit(20);
+	}
+	else
+	    funclistit = funclistit->next;
+	
+	if (funclistit->lvo == 3)
+	    funclistit = funclistit->next;
+	else
+	    neednull = 1;
+	
+	if (funclistit->lvo == 4)
+	    funclistit = funclistit->next;
+	else
+	    neednull = 1;
+
+	if (neednull)
+	    fprintf(out,
+		    "\n"
+		    "AROS_UFH1(static int, %s_null,\n"
+		    "          AROS_UFHA(struct Library *, libbase, A6)\n"
+		    ")\n"
+		    "{\n"
+		    "    AROS_USERFUNC_INIT\n"
+		    "    return 0;\n"
+		    "    AROS_USERFUNC_EXIT\n"
+		    "}\n",
+		    modulename
+	    );
+	
+	funclistit = funclist;
+	funclistit2 = funclistit->next;
+	fprintf(out,
+		"\n"
+		"const APTR %s_functable[]=\n"
+		"{\n"
+		"    &AROS_SLIB_ENTRY(%s,%s),\n"
+		"    &AROS_SLIB_ENTRY(%s,%s),\n",
+		modulename,
+		funclistit->name, basename,
+		funclistit2->name, basename
+	);
+	funclistit = funclistit2->next;
+
+	if (funclistit->lvo == 3)
+	{
+	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->name, basename);
+	    funclistit = funclistit->next;
+	}
+	else
+	    fprintf(out, "    &%s_null,\n", modulename);
+	
+	if (funclistit->lvo == 4)
+	{
+	    fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n", funclistit->name, basename);
+	    funclistit = funclistit->next;
+	}
+	else
+	    fprintf(out, "    &%s_null,\n", modulename);
+    }
+    
     lvo = 4;
-    for (funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
+    while (funclistit != NULL)
     {
 	for (i = lvo+1; i<funclistit->lvo; i++)
 	    fprintf(out, "    NULL,\n");
@@ -127,6 +217,8 @@ void writestart(void)
 	    exit(20);
 	    break;
 	}
+	
+	funclistit = funclistit->next;
     }
 
     fprintf(out, "    (void *)-1\n};\n");
