@@ -358,11 +358,10 @@ static const ULONG coltab[] = {
     {
         D(bug("Loading colors\n"));
 	
-	if (colors32)
-	{
-	    LoadRGB32(&screen->Screen.ViewPort, (const ULONG *)colors32);
-	}
-	else if (colors)
+	/* First load default colors for the screen */
+	LoadRGB32(&screen->Screen.ViewPort, (ULONG *)coltab);
+
+	if (colors)  /* if SA_Colors tag exists */
 	{
 	    for(; colors->ColorIndex != (WORD)~0; colors++)
 	    {
@@ -371,15 +370,14 @@ static const ULONG coltab[] = {
 			colors->Red,
 			colors->Green,
 			colors->Blue);
-			
 	    }
 	}
-	else
-	{
-            /* Load some default colors for the screen */
 
-	    LoadRGB32(&screen->Screen.ViewPort, (ULONG *)coltab);
+	if (colors32)  /* if SA_Colors32 tag exists */
+	{
+	    LoadRGB32(&screen->Screen.ViewPort, (const ULONG *)colors32);
 	}
+
         D(bug("Loaded colors\n"));
 	
 	COPY(LeftEdge);
