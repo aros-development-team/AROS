@@ -69,7 +69,6 @@ static struct IntuiMessage *SendIDCMPUpdate(
 /*****i***********************************************************************
 
     NAME */
-#include <boopsi_private.h>
 
 	AROS_LH4(IPTR, DoNotify,
 

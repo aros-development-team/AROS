@@ -11,7 +11,6 @@
 #include <string.h>
 
 #include "intuition_intern.h"
-#include "intuition_pdefs.h"
 #include <proto/exec.h>
 
 /******************************************************************************/

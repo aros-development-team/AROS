@@ -50,7 +50,6 @@ struct ICData;
 #else
 
 #include "icclass.h"
-#include "intuition_private.h"
 
 #endif
 

@@ -16,7 +16,6 @@
 /*****i***********************************************************************
  
     NAME */
-#include <intuition_private.h>
 
 #include "maybe_boopsi.h"
 

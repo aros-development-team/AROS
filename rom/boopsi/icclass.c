@@ -28,9 +28,6 @@
 #include <proto/boopsi.h>
 #include <clib/intuition_protos.h>	/* UgH - Need DoMethod() etc */
 
-#include "boopsi_private.h"
-#include "boopsi_pdefs.h"
-
 #ifdef __AROS__
 #include <aros/asmcall.h>
 #include <proto/alib.h>

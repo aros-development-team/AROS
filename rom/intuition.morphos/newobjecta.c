@@ -12,7 +12,6 @@
 #include <proto/alib.h>
 #include <proto/utility.h>
 #include "intuition_intern.h"
-#include "intuition_private.h"
 
 /*****************************************************************************
 

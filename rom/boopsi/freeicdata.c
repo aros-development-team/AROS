@@ -15,7 +15,6 @@
 /*****i***********************************************************************
 
     NAME */
-#include <boopsi_private.h>
 
 	AROS_LH1(void, FreeICData,
 

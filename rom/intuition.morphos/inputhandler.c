@@ -36,7 +36,6 @@
 #include "strgadgets.h"
 #include "gadgets.h"
 #include "intuition_intern.h" /* EWFLG_xxx */
-#include "intuition_private.h"
 #include "maybe_boopsi.h"
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
