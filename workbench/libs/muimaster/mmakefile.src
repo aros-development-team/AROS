@@ -14,6 +14,7 @@ CLASSES := \
     bodychunk \
     boopsi \
     chunkyimage \
+    colorfield \
     configdata \
     cycle \
     dataspace \
