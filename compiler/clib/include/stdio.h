@@ -51,9 +51,13 @@
 typedef long fpos_t;
 #endif
 
-#define SEEK_SET    1
-#define SEEK_CUR    0
-#define SEEK_END    -1
+#ifndef _UNISTD_H    /*unistd.h has the same definitions */
+
+#define SEEK_SET    0
+#define SEEK_CUR    1
+#define SEEK_END    2
+
+#endif
 
 extern FILE *stdin, *stdout, *stderr;
 
