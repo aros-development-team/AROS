@@ -33,13 +33,11 @@ FUNCTIONS = \
 	layoutmenuitemsa \
 	layoutmenusa
 
+ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
+
 OBJDIR=$(GENDIR)/workbench/libs/gadtools
 
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
-
-# The init and endskip object filenames
-INITFUNC = $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC = $(OBJDIR)/$(END_FILE).o
+OBJS = $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 all: setup $(SLIBDIR)/gadtools.library
 
@@ -66,7 +64,7 @@ endif
 # The filename of the linklib
 LIB=$(LIBDIR)/libgadtools.a
 
-$(SLIBDIR)/gadtools.library: $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
+$(SLIBDIR)/gadtools.library: $(LIB) $(DEPLIBS) $(OBJS)
 	@echo "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee gadtoolslib.map
 	@if test ! -s gadtoolslib.map; then rm gadtoolslib.map ; else true ; fi
@@ -102,4 +100,4 @@ $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).d)
