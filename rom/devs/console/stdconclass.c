@@ -100,6 +100,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	Console_RenderCursor(o);
 
     	SetAPen(rp, CU(o)->cu_FgPen);
+	SetBPen(rp, CU(o)->cu_BgPen);
     	SetDrMd(rp, JAM2);
     	Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
     	Text(rp, &params[0], 1);
@@ -188,7 +189,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	{
 	    UBYTE dummy;
 	    /* Do carriage return */
-	    Console_DoCommand(o, C_CARRIAGE_RETURN, &dummy);
+	    Console_DoCommand(o, C_CARRIAGE_RETURN, 0, &dummy);
 	}
 	Console_RenderCursor(o);
     	break;
@@ -255,7 +256,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
         UBYTE oldpen = rp->FgPen;
         
     	/* Clear till EOL */
-    	Console_DoCommand(o, C_ERASE_IN_LINE, &param);
+    	Console_DoCommand(o, C_ERASE_IN_LINE, 1, &param);
     	
     	/* Clear rest of area */
 

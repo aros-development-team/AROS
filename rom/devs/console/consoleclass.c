@@ -178,7 +178,7 @@ static VOID console_up(Class *cl, Object *o, struct P_Console_Up *msg)
 	{
     	    UBYTE scroll_param = 1;
 
-	    Console_DoCommand(o, C_SCROLL_DOWN, &scroll_param);
+	    Console_DoCommand(o, C_SCROLL_DOWN, 1, &scroll_param);
 	}
 	YCCP = CHAR_YMAX(o);
     }
@@ -208,7 +208,7 @@ static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
 	{
     	    UBYTE scroll_param = 1;
 
-	    Console_DoCommand(o, C_SCROLL_UP, &scroll_param);
+	    Console_DoCommand(o, C_SCROLL_UP, 1, &scroll_param);
 	}
 	YCCP = CHAR_YMAX(o);
     }
@@ -225,21 +225,61 @@ static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
 static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
 {
     EnterFunc(bug("Console::DoCommand(cmd=%d)\n", msg->Command));
+
     switch (msg->Command)
     {
     	case C_SET_LF_MODE:
-	     D(bug("Set LF mode ON\n"));
-	     /* LF==LF+CR */
-	     ICU(o)->conFlags |= CF_LF_MODE_ON;
-	     break;
+	    D(bug("Set LF mode ON\n"));
+	    /* LF==LF+CR */
+	    ICU(o)->conFlags |= CF_LF_MODE_ON;
+	    break;
 
     	case C_RESET_NEWLINE_MODE:
-	     /* LF==LF */
-	     D(bug("Set LF mode OFF\n"));
-	     ICU(o)->conFlags &= ~CF_LF_MODE_ON;
-	     break;
+	    /* LF==LF */
+	    D(bug("Set LF mode OFF\n"));
+	    ICU(o)->conFlags &= ~CF_LF_MODE_ON;
+	    break;
 	     
-    }
+	case C_SELECT_GRAPHIC_RENDITION:
+	    D(bug("Select graphic Rendition\n"));
+	    {
+	        UBYTE i, param;
+		
+		for(i = 0; i < msg->NumParams; i++)
+		{
+		    param = msg->Params[i];
+
+		    switch(param)
+		    {
+		        case 30:
+			case 31:
+			case 32:
+			case 33:
+			case 34:
+			case 35:
+			case 36:
+			case 37:
+			    CU(o)->cu_FgPen = param - 30;
+			    break;
+			    
+			case 40:
+			case 41:
+			case 42:
+			case 43:
+			case 44:
+			case 45:
+			case 46:
+			case 47:
+			    CU(o)->cu_BgPen = param - 40;
+			    break;
+			    
+		    } /* switch(param) */
+		    
+		} /* for(i = 0; i < msg->NumParams; i++) */
+	    }
+	    break;
+	   
+    } /* switch (msg->Command) */
     
     ReturnVoid("Console::DoCommand");
 }
@@ -280,6 +320,10 @@ static VOID console_getdefaultparams(Class *cl, Object *o, struct P_Console_GetD
 	    
 	case C_CURSOR_BACKTAB:
 	    msg->Params[0] = 1;
+	    break;
+	    
+	case C_SELECT_GRAPHIC_RENDITION:
+	    /* don't do anything, as params may be in any order */
 	    break;
     }
     
@@ -420,7 +464,7 @@ VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr)
 	
 	D(bug("Pos above window\n"));
 	
-    	Console_DoCommand(o, C_SCROLL_DOWN, &scroll_param);
+    	Console_DoCommand(o, C_SCROLL_DOWN, 1, &scroll_param);
 
     	*y_ptr = CHAR_YMIN(o);
     

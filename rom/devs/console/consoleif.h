@@ -34,24 +34,17 @@ enum
     
 };
 
-struct P_Console_Write
-{
-    ULONG	MethodID;
-    BYTE	Command;
-    UBYTE	*Params;
-};
-
 struct P_Console_ScrollDown
 {
-     ULONG MethodID;
-     WORD  LinePos;	/* Lines including this one will be scrolled */
+    ULONG MethodID;
+    WORD  LinePos;	/* Lines including this one will be scrolled */
      
 };
 
 struct P_Console_ScrollUp
 {
-     ULONG MethodID;
-     WORD  LinePos;	/* Lines including this one will be scrolled */
+    ULONG MethodID;
+    WORD  LinePos;	/* Lines including this one will be scrolled */
      
 };
 
@@ -59,6 +52,7 @@ struct P_Console_DoCommand
 {
     ULONG MethodID;
     BYTE Command;	/* Erase in display, scroll, next line etc.. */
+    UBYTE NumParams;
     UBYTE *Params; /* The command's parameters */
 };
 
@@ -109,13 +103,14 @@ struct P_Console_GetDefaultParams
 };
 
 
-#define Console_DoCommand(o, cmd, params)	\
-({						\
-	struct P_Console_Write p;		\
-	p.MethodID = M_Console_DoCommand;	\
-	p.Command = cmd;			\
-	p.Params = params;			\
-	DoMethodA((o), (Msg)&p);		\
+#define Console_DoCommand(o, cmd, numparams, params)	\
+({							\
+	struct P_Console_DoCommand p;			\
+	p.MethodID = M_Console_DoCommand;		\
+	p.Command = cmd;				\
+	p.NumParams = numparams;			\
+	p.Params = params;				\
+	DoMethodA((o), (Msg)&p);			\
 })
 
 #define Console_Left(o, num)		\

@@ -27,8 +27,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE **writestr_ptr, LONG toparse, UBYTE *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
-static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, LONG toparse, UBYTE *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
+static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *numparams_ptr, LONG toparse, UBYTE *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
+static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *numparams_ptr, LONG toparse, UBYTE *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
 
 #define ESC 0x1B
 #define CSI 0x9B
@@ -54,8 +54,13 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, LONG toparse, UB
 **  writeToConsole()  **
 ***********************/
 
-/* SGR is the command with most params: 4 */
-#define MAX_COMMAND_PARAMS 4
+/*
+** SGR is the command with most params: 4
+**   stegerg: RKRMs say it can have any number of parameters in any order. So instead of 4
+**            we assume and hope that there will never be more than 8 params :-\
+*/
+
+#define MAX_COMMAND_PARAMS 8
 
 
 ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite, struct ConsoleBase *ConsoleDevice)
@@ -63,6 +68,7 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite, struct Con
     UBYTE param_tab[MAX_COMMAND_PARAMS];
     
     BYTE command;
+    UBYTE numparams;
     UBYTE *orig_write_str, *write_str;
     LONG written, orig_towrite;
 
@@ -94,11 +100,13 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite, struct Con
     
     while (towrite > 0)
     {
-    	if (!string2command(&command, &write_str, towrite, param_tab, (Object *)unit, ConsoleDevice))
+        numparams = 0;
+	
+    	if (!string2command(&command, &write_str, &numparams, towrite, param_tab, (Object *)unit, ConsoleDevice))
     	    break;
     	
 	
-	Console_DoCommand((Object *)unit, command, param_tab);
+	Console_DoCommand((Object *)unit, command, numparams, param_tab);
 	
 	towrite = orig_towrite - (write_str - orig_write_str);
     	
@@ -141,52 +149,53 @@ static const struct special_cmd_descr
 static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] =
 {
 	
-    "Ascii",		/* C_ASCII = 0	*/
+    "Ascii",			/* C_ASCII = 0	*/
     
-    "Esc",		/* C_ESC	*/
-    "Bell",		/* C_BELL,	*/
-    "Backspace",	/* C_BACKSPACE,	*/
-    "HTab",		/* C_HTAB,	*/
-    "Linefeed",		/* C_LINEFEED,	*/
-    "VTab",		/* C_VTAB,	*/
-    "Formefeed",	/* C_FORMFEED,	*/
-    "Carriage return",	/* C_CARRIAGE_RETURN,	*/
-    "Shift In",		/* C_SHIFT_IN,	*/
-    "Shift Out",	/* C_SHIFT_OUT,	*/
-    "Index",		/* C_INDEX,	*/
-    "Nex Line",		/* C_NEXT_LINE,	*/
-    "Tab set",		/* C_H_TAB_SET, */
-    "Reverse Idx",	/* C_REVERSE_IDX, */
-    "Set LF Mode",	/* C_SET_LF_MODE, */
+    "Esc",			/* C_ESC	*/
+    "Bell",			/* C_BELL,	*/
+    "Backspace",		/* C_BACKSPACE,	*/
+    "HTab",			/* C_HTAB,	*/
+    "Linefeed",			/* C_LINEFEED,	*/
+    "VTab",			/* C_VTAB,	*/
+    "Formefeed",		/* C_FORMFEED,	*/
+    "Carriage return",		/* C_CARRIAGE_RETURN,	*/
+    "Shift In",			/* C_SHIFT_IN,	*/
+    "Shift Out",		/* C_SHIFT_OUT,	*/
+    "Index",			/* C_INDEX,	*/
+    "Nex Line",			/* C_NEXT_LINE,	*/
+    "Tab set",			/* C_H_TAB_SET, */
+    "Reverse Idx",		/* C_REVERSE_IDX, */
+    "Set LF Mode",		/* C_SET_LF_MODE, */
     "Reset Newline Mode",	/* C_RESET_NEWLINE_MODE,	*/
     "Device Status Report",	/* C_DEVICE_STATUS_REPORT,	*/
     
-    "Insert Char",	/* C_INSERT_CHAR, */
-    "Cursor Up",	/* C_CURSOR_UP,		*/
-    "Cursor Down",	/* C_CURSOR_DOWN,	*/
-    "Cursor Forward",	/* C_CURSOR_FORWARD,	*/
-    "Cursor Backward",	/* C_CURSOR_BACKWARD,	*/
-    "Cursor Next Line",	/* C_CURSOR_NEXT_LINE,	*/
-    "Cursor Prev Line",	/* C_CURSOR_PREV_LINE,	*/
-    "Cursor Pos",	/* C_CURSOR_POS,	*/
-    "Cursor HTab",	/* C_CURSOR_HTAB,	*/
-    "Erase In Display",	/* C_ERASE_IN_DISPLAY,	*/
-    "Erase In Line",	/* C_ERASE_IN_LINE,	*/
-    "Insert Line",	/* C_INSERT_LINE,	*/
-    "Delete Line",	/* C_DELETE_LINE,	*/
-    "Delete Char",	/* C_DELETE_CHAR,	*/
-    "Scroll Up",	/* C_SCROLL_UP,		*/
-    "Scroll Down",	/* C_SCROLL_DOWN,	*/
-    "Cursor Tab Ctrl",	/*C_CURSOR_TAB_CTRL,	*/
-    "Cursor Backtab",	/* C_CURSOR_BACKTAB	*/
-    "Select Graphic Rendation",
-    "Cursor Visible",	/* C_CURSOR_VISIBLE     */
-    "Cursor Invisible"	/* C_CURSOR_INVISIBLE   */
+    "Insert Char",		/* C_INSERT_CHAR, */
+    "Cursor Up",		/* C_CURSOR_UP,		*/
+    "Cursor Down",		/* C_CURSOR_DOWN,	*/
+    "Cursor Forward",		/* C_CURSOR_FORWARD,	*/
+    "Cursor Backward",		/* C_CURSOR_BACKWARD,	*/
+    "Cursor Next Line",		/* C_CURSOR_NEXT_LINE,	*/
+    "Cursor Prev Line",		/* C_CURSOR_PREV_LINE,	*/
+    "Cursor Pos",		/* C_CURSOR_POS,	*/
+    "Cursor HTab",		/* C_CURSOR_HTAB,	*/
+    "Erase In Display",		/* C_ERASE_IN_DISPLAY,	*/
+    "Erase In Line",		/* C_ERASE_IN_LINE,	*/
+    "Insert Line",		/* C_INSERT_LINE,	*/
+    "Delete Line",		/* C_DELETE_LINE,	*/
+    "Delete Char",		/* C_DELETE_CHAR,	*/
+    "Scroll Up",		/* C_SCROLL_UP,		*/
+    "Scroll Down",		/* C_SCROLL_DOWN,	*/
+    "Cursor Tab Ctrl",		/*C_CURSOR_TAB_CTRL,	*/
+    "Cursor Backtab",		/* C_CURSOR_BACKTAB	*/
+    "Select Graphic Rendition",
+    "Cursor Visible",		/* C_CURSOR_VISIBLE     */
+    "Cursor Invisible"		/* C_CURSOR_INVISIBLE   */
 };
 #endif
 
 static BOOL string2command( BYTE 	*cmd_ptr
 		, UBYTE 		**writestr_ptr
+		, UBYTE			*numparams_ptr
 		, LONG			toparse
 		, UBYTE 		*p_tab
 		, Object		*unit
@@ -227,30 +236,6 @@ static BOOL string2command( BYTE 	*cmd_ptr
         D(bug("CSI found, getting command\n"));
 	
 	/* Search for the longest commands first */
-
-#define SGR_COMMAND_LEN	9
-	
-	/* SGR needs special handling because of the '>' separator */
-	if (csi_toparse >= SGR_COMMAND_LEN)
-	{
-	    if (    ( csi_str[1] == ';' )
-		 && ((csi_str[2] & 0x30) == 0x30)
-		 && ( csi_str[3] == ';' )
-		 && ((csi_str[4] & 0x40) == 0x40)
-		 && ( csi_str[5] == ';')
-		 && ( csi_str[6] == '>')
-		 && ( csi_str[8] == 0x6D) )
-	    {
-	    	p_tab[0] = csi_str[0];
-		p_tab[1] = csi_str[2] & 0x0F;
-		p_tab[2] = csi_str[4] & 0x0F;
-		p_tab[3] = csi_str[7];
-		
-		*cmd_ptr = C_SELECT_GRAPHIC_RENDATION;
-		
-		found = TRUE;
-	    }
-	}
 	
 	if (!found)
 	{
@@ -280,7 +265,7 @@ static BOOL string2command( BYTE 	*cmd_ptr
 
 	/* A parameter command ? (Ie. one of the commands that takes parameters) */
 	if (!found)
-	    found = getparamcommand(cmd_ptr, &csi_str, csi_toparse, p_tab, unit, ConsoleDevice);
+	    found = getparamcommand(cmd_ptr, &csi_str, numparams_ptr, csi_toparse, p_tab, unit, ConsoleDevice);
 	
     } /* if (CSI was found) */
     
@@ -377,7 +362,7 @@ static BOOL string2command( BYTE 	*cmd_ptr
     	*cmd_ptr = C_ASCII;
 	
 	p_tab[0] = *write_str ++;
-    	
+    	*numparams_ptr = 1;
     	found = TRUE;
     }
 
@@ -405,34 +390,53 @@ static const struct Command
     
 } csi2command[] = {
 
-    { C_INSERT_CHAR,		1 },	/* 0x40 */
-    { C_CURSOR_UP,		1 },	/* 0x41 */
-    { C_CURSOR_DOWN,		1 },	/* 0x41 */
-    { C_CURSOR_FORWARD,		1 },	/* 0x43	*/
-    { C_CURSOR_BACKWARD,	1 },	/* 0x44 */
-    { C_CURSOR_NEXT_LINE,	1 },	/* 0x45 */
-    { C_CURSOR_PREV_LINE,	1 },	/* 0x46 */
-    { -1, },
-    { C_CURSOR_POS,		2 },	/* 0x48 */
-    { C_CURSOR_HTAB,		1 },	/* 0x49 */
+    { C_INSERT_CHAR		, 1 			},	/* 0x40 */
+    { C_CURSOR_UP		, 1 			},	/* 0x41 */
+    { C_CURSOR_DOWN		, 1 			},	/* 0x41 */
+    { C_CURSOR_FORWARD		, 1 			},	/* 0x43	*/
+    { C_CURSOR_BACKWARD		, 1 			},	/* 0x44 */
+    { C_CURSOR_NEXT_LINE	, 1 			},	/* 0x45 */
+    { C_CURSOR_PREV_LINE	, 1 			},	/* 0x46 */
+    { -1			, 			},
+    { C_CURSOR_POS		, 2 			},	/* 0x48 */
+    { C_CURSOR_HTAB		, 1			},	/* 0x49 */
     
-    { C_ERASE_IN_DISPLAY,	0 },	/* 0x4A	*/
-    { C_ERASE_IN_LINE,		0 },	/* 0x4B */
-    { C_INSERT_LINE,		0 },	/* 0x4C */
-    { C_DELETE_LINE,		0 },	/* 0x4D */
-    { -1, },
-    { -1, },
-    { C_DELETE_CHAR,		1 },	/* 0x50 */
-    { -1, },
-    { -1, },
-    { C_SCROLL_UP,		1 },	/* 0x53 */
-    { C_SCROLL_DOWN,		1 },	/* 0x54 */
-    { -1, },
-    { -1, },
-    { C_CURSOR_TAB_CTRL,	1 },	/* 0x57	*/
-    { -1, },
-    { -1, }, 
-    { C_CURSOR_BACKTAB,		1 }	/* 0x5A	*/
+    { C_ERASE_IN_DISPLAY	, 0			},	/* 0x4A	*/
+    { C_ERASE_IN_LINE		, 0			},	/* 0x4B */
+    { C_INSERT_LINE		, 0			},	/* 0x4C */
+    { C_DELETE_LINE		, 0 			},	/* 0x4D */
+    { -1			, 			},
+    { -1			, 			},
+    { C_DELETE_CHAR		, 1 			},	/* 0x50 */
+    { -1			,			},
+    { -1			,			},
+    { C_SCROLL_UP		, 1			},	/* 0x53 */
+    { C_SCROLL_DOWN		, 1 			},	/* 0x54 */
+    { -1			, 			},
+    { -1			, 			},
+    { C_CURSOR_TAB_CTRL		, 1 			},	/* 0x57	*/
+    { -1			, 			},
+    { -1			, 			}, 
+    { C_CURSOR_BACKTAB		, 1 			},	/* 0x5A	*/
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { -1			, 			},
+    { C_SELECT_GRAPHIC_RENDITION, MAX_COMMAND_PARAMS	}	/* 0x6D */
 };
 
 
@@ -460,6 +464,7 @@ struct cmd_params
 
 static BOOL getparamcommand(BYTE 	*cmd_ptr
 		, UBYTE 		**writestr_ptr
+		, UBYTE			*numparams_ptr
 		, LONG 			toparse
 		, UBYTE 		*p_tab
 		, Object 		*unit
@@ -522,7 +527,8 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
     	case 0x53:
     	case 0x54:
     	case 0x57:
-    	case 0x5A: {
+    	case 0x5A:
+	case 0x6D: {
     	    UBYTE idx = *write_str - FIRST_CSI_CMD;
 	    UBYTE maxparams = csi2command[idx].MaxParams;
 	    
@@ -580,6 +586,7 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 	case '7':
 	case '8':
 	case '9':
+	case '>': /* because of SGR background color param :-( */
 	    if (!next_can_be_param)
 	    {
 	    	/* Error */
@@ -599,11 +606,16 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 		params.tab[num_params - 1].val = 0;
 		
 		last_was_param = TRUE;
-	     }
+	    }
 
     	    params.tab[num_params - 1].val *= 10;
-	    params.tab[num_params - 1].val += (*write_str) - '0';
-
+	    if (*write_str == '>')
+	    {
+	        params.tab[num_params - 1].val += 5;
+	    } else {
+	        params.tab[num_params - 1].val += (*write_str) - '0';
+	    }
+	    
 	    next_can_be_separator = TRUE;
 	    next_can_be_commandid = TRUE;
 	    break;
@@ -646,6 +658,8 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 		
 	    p_tab[params.tab[i].paramno] = params.tab[i].val;
 	}
+	
+	*numparams_ptr = params.numparams;
     }
     
     return found;
