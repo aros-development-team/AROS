@@ -1,14 +1,4 @@
-# AROS_PRESET_MENU
-
-default 2
 timeout 5 
-fallback 0
-
-title AROS VGA
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vga lib=vga.hidd
-
-title AROS VMWare
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vmware lib=vmwaregfx.hidd
 
 title AROS VBE 640x480 16
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
@@ -34,3 +24,5 @@ title AROS VBE 1024x768 32
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 1024 768 32
 
+title AROS VMWare
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vmware lib=vmwaregfx.hidd
