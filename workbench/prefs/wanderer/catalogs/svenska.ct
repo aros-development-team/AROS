@@ -1,0 +1,30 @@
+## version $VER: wanderer.catalog 1.0 (14.02.2004)
+## language svenska
+## codeset 0
+;
+;
+MSG_NAME
+Wandererinställningar
+; Wanderer Preferences
+;
+MSG_BACKGROUNDS
+Bakgrunder
+; Backgrounds
+;
+MSG_BACKGROUND_WORKBENCH
+Arbetsbänk
+; Workbench
+;
+MSG_BACKGROUND_DRAWERS
+Lådor
+; Drawers
+;
+MSG_SELECT_WORKBENCH_BACKGROUND
+Välj arbetsbänkens bakgrund
+; Select Workbench Background
+;
+MSG_SELECT_DRAWER_BACKGROUND
+Välj lådornas bakgrund
+; Select Drawer Background
+;
+ 
