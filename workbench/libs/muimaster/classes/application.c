@@ -463,7 +463,7 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 	    if ((child = NextObject(&cstate)))
 	    {
 		D(bug("Application_Dispose(%p) : OM_REMMEMBER(%p)\n", obj, child));
-		DoMethod(obj, OM_REMMEMBER, child);
+		DoMethod(obj, OM_REMMEMBER, (IPTR)child);
 		D(bug("Application_Dispose(%p) : MUI_DisposeObject(%p)\n", obj, child));
 		MUI_DisposeObject(child);
 	    }
@@ -543,7 +543,7 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Application_Configdata:
-		DoMethod(obj, MUIM_Application_PushMethod, obj, 2,
+		DoMethod(obj, MUIM_Application_PushMethod, (IPTR)obj, 2,
 			 MUIM_Application_SetConfigdata, tag->ti_Data);
 		break;
 		
@@ -1078,8 +1078,10 @@ static ULONG Application_AboutMUI(struct IClass *cl, Object *obj, struct MUIP_Ap
 	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Centered,
 	    MUIA_Aboutmui_Application, obj,
 	    End;
+	if (!data->app_AboutWin)
+	    return 0;
 	DoMethod(data->app_AboutWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-		 obj, 3, MUIM_WriteLong, 0L, &data->app_AboutWin);
+		 (IPTR)obj, 3, MUIM_WriteLong, 0L, (IPTR)&data->app_AboutWin);
     } /* if (!data->app_AboutWin) */
 
     if (data->app_AboutWin)
@@ -1110,7 +1112,7 @@ static ULONG Application_SetConfigdata(struct IClass *cl, Object *obj,
     get(data->app_GlobalInfo.mgi_Configdata,MUIA_Configdata_ZunePrefs,
 	&data->app_GlobalInfo.mgi_Prefs);
 
-    DoMethod(obj, MUIM_Application_PushMethod, obj, 1, MUIM_Application_OpenWindows);
+    DoMethod(obj, MUIM_Application_PushMethod, (IPTR)obj, 1, MUIM_Application_OpenWindows);
     return 0;
 }
 
@@ -1128,6 +1130,7 @@ static ULONG Application_OpenWindows(struct IClass *cl, Object *obj,
     {
 	set(child, MUIA_Window_Open, TRUE);
     }
+    return 0;
 }
 
 /*
