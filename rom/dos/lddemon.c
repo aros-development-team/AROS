@@ -1,16 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.13  1997/01/27 13:16:15  digulla
-    The library/device is already added in InitResident(). Don't add it twice.
-
-    Revision 1.12  1997/01/27 00:36:23	ldp
-    Polish
-
-    Revision 1.11  1997/01/16 17:42:13	digulla
-    Polish
-
 
     Desc: Loader for shared libraries and devices
     Lang: english
