@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 #include "dos_intern.h"
 #include <string.h>
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -133,7 +134,14 @@
 	    if (ac->an_Parent)
 	    {
 		CurrentDir(ac->an_Parent->an_Lock);
-		ac->an_Lock = Lock(ac->an_Parent->an_Info.fib_FileName, SHARED_LOCK);
+		if (ac->an_Parent->an_Flags & DDF_PatternBit)
+		{
+		    ac->an_Lock = Lock(ac->an_Parent->an_Info.fib_FileName, SHARED_LOCK);
+		}
+		else
+		{
+		    ac->an_Lock = Lock(ac->an_Parent->an_String, SHARED_LOCK);
+		}
 
 		if (!ac->an_Lock)
 		{
@@ -145,11 +153,13 @@
 	    else
 	    {
 	        ac->an_Lock = DupLock(origdir);
+
 		if (!ac->an_Lock)
 		{
 		    error = IoErr();
 		    goto done;
 		}		
+
 	    }
 #else
 	    /*
@@ -168,7 +178,6 @@
 		** parent directory, so that it then can be traversed with
 		** ExNext
 		*/
-		  
 		if (!Examine(ac->an_Lock, &ac->an_Info))
 		{
 		    error = IoErr();
@@ -229,8 +238,11 @@
 		    ** of empty ac->an_String("") fib_FileName would
 		    ** get parent directory name which it must not!
 		    */
-		       
-		    strcpy(ac->an_Info.fib_FileName, ac->an_String);
+
+		    if (*ac->an_String == '\0')
+		    {
+		    	strcpy(ac->an_Info.fib_FileName, ac->an_String);
+		    }
 		    
 		    ac->an_Flags |= DDF_ExaminedBit;
 
@@ -298,8 +310,20 @@
 		    ** break.
 		    */	
 			       
-		    if (!ac->an_Child) break;
-
+		    if (!ac->an_Child)
+		    {		    	
+		    	break;
+		    }
+    	    	    else
+		    {
+		    	if (ac->an_Info.fib_DirEntryType < 0)
+			{
+			    /* This is a file, no chance to follow child
+			       AChain. Go to top of "for(;;)" loop */
+			    continue;			    
+			}
+		    }
+		    
 		} else {
 		    /* Did not match. Go to top of "for(;;)" loop */
 		    continue;
