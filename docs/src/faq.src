@@ -22,7 +22,7 @@ can port Amiga apps to other OSs (eg. Windows). 1) will have Amiga l&f,
 
 \end{itemize}
 
-\section{Why do you implement the current OS ? *Updated*}
+\section{Why do you implement the current OS ?}
 
 There has been some talks about writing something which is something like
 an advanced OS with the features of the AmigaOS. This has been dropped
@@ -100,7 +100,7 @@ interested in the source for the OS because it could run some apps much
 faster if it could replace the OS calls by native code. On the other hand,
 AROS needs hardware drivers (eg. audio.device).
 
-\section{You should not use Linux or X11 ! *New*}
+\section{You should not use Linux or X11 !}
 
 The final version of AROS will not depend on Linux or X11 anymore (but
 it will run on them if you insist). Currently, we use Linux and X11 to
@@ -108,14 +108,14 @@ speed up development. For example, if I write a new function to open
 a window, I can write that single function and need not wrote hundreds
 of other functions in layers, graphics, etc.
 
-\section{How do you want to make it portable ? *New*}
+\section{How do you want to make it portable ?}
 
 One of the major new features of AROS will be the new Hardware
 Independent Device Drivers (HIDD). They will allow us to port AROS to
 any hardware with almost no fuzz. But that's a bit in the future. So
 don't worry that your old code won't work anymore, say, next month.
 
-\section{AROS won't make it *New*}
+\section{AROS won't make it}
 
 Yeah, we hear that all the day from every person. But most of them
 either don't know what we are doing or they think the Amiga is already dead.
@@ -132,7 +132,7 @@ someone releases something which is a bit like the Amiga back in 1984,
 then that machine will boom again. And who knows, maybe you will get
 a CD along with the machine labeled "AROS" :-)
 
-\section{AROS won't compile *New*}
+\section{AROS won't compile}
 
 We still have trouble generating the distribution lists. So if some
 file is missing, tell us and it will show up on the FTP site as soon
@@ -144,7 +144,7 @@ developer packages pre-installed or at least much more easy to install from
 the Internet, eg. from \link{www.suse.com} {http://www.suse.com} (Germany)
 or \link{www.redhat.com} {http://www.redhat.com} (USA)).
 
-\section{Memory protection, VMM, RT, ... *New*}
+\section{Memory protection, VMM, RT, ... *Update*}
 
 Hot themes. Oh well...
 
@@ -170,4 +170,13 @@ can be sure that you don't continue with corrupted data.
 
 The same with VMM, RT, SMP and RTG. We are currently planning how to
 implement them and we make sure that adding these features will be painless
-but they are no #1 priorities right now.
+but they are no #1 priorities right now. A very basic RT has been added
+recently, though.
+
+\section{Why no AROS on PIOS ONE ? *New*}
+
+Because no one has a PIOS ONE to do it. We are willing to port AROS on
+any available machine but it must be available to us. We got in
+contact with PIOS and talked to them several times and they are willing
+to spare a machine (at least that's what we think they said :-) but
+mailing them that you want to see AROS on PIOS ONE might help :-)
