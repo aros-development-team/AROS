@@ -280,7 +280,7 @@ AROS_LP3(APTR, NewObjectA,
 
 AROS_LP1(APTR, NextObject,
     AROS_LPA(APTR, objectPtrPtr, A0),
-    struct IntuitionBase Ü, IntuitionBase, 111, Intuition)
+    struct IntuitionBase *, IntuitionBase, 111, Intuition)
 
 AROS_LP1(struct RastPort *, ObtainGIRPort,
     AROS_LPA(struct GadgetInfo *, gInfo, A0),
