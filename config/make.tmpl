@@ -1462,6 +1462,10 @@ ifdef USE_SDLLIB
 %(libs) := $(%(libs)) -lSDL
 %(deps) := $(%(deps)) $(LIBDIR)/libSDL.a
 endif
+ifdef USE_RENDERLIB
+%(libs) := $(%(libs)) -lrenderstubs
+%(deps) := $(%(deps)) $(LIBDIR)/librenderstubs.a
+endif
 
 # USE_ROMLIB is a special one to say that this is a shared module, and it
 # should use the restricted c.lib. Currently this includes the static parts
