@@ -1187,8 +1187,7 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 			    if (retval & GMR_REUSE)
 			    	reuse_event = TRUE;
 
-			    if (    (retval & GMR_VERIFY)
-			    	 && (gadget->Activation & GACT_RELVERIFY))
+			    if (retval & GMR_VERIFY)
 			    {
 				im->Class = IDCMP_GADGETUP;
 				im->IAddress = gadget;
@@ -1319,6 +1318,126 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 
 
 		break; /* SELECTUP */
+		
+	    case MENUDOWN:
+	    	im->Class = IDCMP_MOUSEBUTTONS;
+	    	ptr = "MOUSEBUTTONS";
+	    	
+	    	if (gadget)
+	    	{
+	    	    if ( (gadget->GadgetType & GTYP_GTYPEMASK) ==  GTYP_CUSTOMGADGET)
+	    	    {
+
+		    	struct gpInput gpi;
+		    	IPTR retval;
+		    	ULONG termination;
+			
+		    	gettimeofday ((struct sys_timeval *)&ie->ie_TimeStamp, NULL);
+		    	gpi.MethodID	    = GM_HANDLEINPUT;
+		    	gpi.gpi_GInfo	    = gi;
+		    	gpi.gpi_IEvent	    = ie;
+		    	gpi.gpi_Termination = &termination;
+		    	gpi.gpi_Mouse.X	    = im->MouseX;
+		    	gpi.gpi_Mouse.Y	    = im->MouseY;
+		    	gpi.gpi_TabletData  = NULL;
+					
+		    	retval = DoMethodA((Object *)gadget, (Msg)&gpi);
+
+			if (retval != GMR_MEACTIVE)
+			{
+			    struct gpGoInactive gpgi;
+			    
+			    if (retval & GMR_REUSE)
+			    	reuse_event = TRUE;
+
+			    if (    (retval & GMR_VERIFY)
+			    	 && (gadget->Activation & GACT_RELVERIFY))
+			    {
+				im->Class = IDCMP_GADGETUP;
+				im->IAddress = gadget;
+				ptr	 = "GADGETUP";
+				im->Code = termination & 0x0000FFFF;
+			    }
+			    else
+			    {
+			    	im->Class = 0; /* Swallow event */
+			    }
+
+			    gpgi.MethodID = GM_GOINACTIVE;
+			    gpgi.gpgi_GInfo = gi;
+			    gpgi.gpgi_Abort = 0;
+			    
+			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    
+			    gadget = NULL;
+			    
+			} /* if (retval != GMR_MEACTIVE) */
+    	
+	    	    } /* if (active gadget is a BOOPSI gad) */
+	    	    
+	    	} /* if (there is an active gadget) */
+	    	break; /* MENUDOWN */
+	    	
+	    case MENUUP:
+	    	im->Class = IDCMP_MOUSEBUTTONS;
+	    	ptr = "MOUSEBUTTONS";
+	    	
+	    	if (gadget)
+	    	{
+	    	    if ( (gadget->GadgetType & GTYP_GTYPEMASK) ==  GTYP_CUSTOMGADGET)
+	    	    {
+
+		    	struct gpInput gpi;
+		    	IPTR retval;
+		    	ULONG termination;
+			
+		    	gettimeofday ((struct sys_timeval *)&ie->ie_TimeStamp, NULL);
+		    	gpi.MethodID	    = GM_HANDLEINPUT;
+		    	gpi.gpi_GInfo	    = gi;
+		    	gpi.gpi_IEvent	    = ie;
+		    	gpi.gpi_Termination = &termination;
+		    	gpi.gpi_Mouse.X	    = im->MouseX;
+		    	gpi.gpi_Mouse.Y	    = im->MouseY;
+		    	gpi.gpi_TabletData  = NULL;
+					
+		    	retval = DoMethodA((Object *)gadget, (Msg)&gpi);
+
+			if (retval != GMR_MEACTIVE)
+			{
+			    struct gpGoInactive gpgi;
+			    
+			    if (retval & GMR_REUSE)
+			    	reuse_event = TRUE;
+
+			    if (    (retval & GMR_VERIFY)
+			    	 && (gadget->Activation & GACT_RELVERIFY))
+			    {
+				im->Class = IDCMP_GADGETUP;
+				im->IAddress = gadget;
+				ptr	 = "GADGETUP";
+				im->Code = termination & 0x0000FFFF;
+			    }
+			    else
+			    {
+			    	im->Class = 0; /* Swallow event */
+			    }
+
+			    gpgi.MethodID = GM_GOINACTIVE;
+			    gpgi.gpgi_GInfo = gi;
+			    gpgi.gpgi_Abort = 0;
+			    
+			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    
+
+			    gadget = NULL;
+			} /* if (retval != GMR_MEACTIVE) */
+    	
+	    	    } /* if (active gadget is a BOOPSI gad) */
+	    	    
+	    	} /* if (there is an active gadget) */
+			    
+	    	break; /* MENUUP */
+	    	
 		
 	    case IECODE_NOBUTTON: { /* MOUSEMOVE */
 	    	struct IntuiMessage *msg, *succ;
@@ -1611,4 +1730,3 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
     
     ReturnPtr ("IntuiInputHandler", struct InputEvent *, oldchain);
 }				     
-
