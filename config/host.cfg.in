@@ -80,6 +80,7 @@ GUI_CFLAGS	:= @aros_gui_ccflags@
 AR		:= @AR@
 RANLIB		:= @RANLIB@
 NM		:= @NM@
+NM_PLAIN	:= @NM_PLAIN@
 STRIP		:= @STRIP@
 OBJCOPY		:= @OBJCOPY@
 OBJDUMP		:= @OBJDUMP@
