@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/16 14:03:26  digulla
+    NastyFreeMem() should itself call FreeMem, no matter what :)
+
     Revision 1.1  1996/08/15 14:39:42  digulla
     Delete contents of memory before freeing it
 
@@ -17,6 +20,7 @@
 */
 #include <aros/system.h>
 #include <exec/execbase.h>
+#undef FreeMem /* Don't use any kind of macro here :) We want the real thing */
 #include <clib/exec_protos.h>
 
 extern struct ExecBase * SysBase;
