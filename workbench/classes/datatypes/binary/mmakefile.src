@@ -1,0 +1,33 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+LIBNAME  := binary
+ULIBNAME := Binary
+LIBPOST	 := datatype
+DESTDIR  := $(DATATYPESDIR)
+
+FILES := binary_init binaryclass libfunc
+
+FUNCTIONS := \
+	obtainengine
+
+%define_libs prelibs=-l$(LIBNAME)
+
+%genlib_cpak
+
+#MM workbench-classes-datatypes-binary : setup includes
+workbench-classes-datatypes-binary : $(SLIB)
+	@$(NOP)
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(LIBDIR) $(DATATYPESDIR) $(DESTDIRS)
+
+#MM 
+clean ::
+	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
+	$(END_FILE).c $(LIB) $(SLIB)
+
+%common
