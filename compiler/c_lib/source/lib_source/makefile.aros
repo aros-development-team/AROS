@@ -1,3 +1,4 @@
+# Make this point to the place where AROS is installed
 TOP = ../../../..
 
 include $(TOP)/config/make.cfg
@@ -18,6 +19,7 @@ clean :
 
 $(LIB) : $(OBJS) $(DEPLIBS)
 	$(CC) $(ILDFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(CHECKUDS) $@
 
 StartUp.o : StartUp.c SampleFuncs.h compiler.h
 	$(CC) $(CFLAGS) -c StartUp.c
