@@ -60,6 +60,7 @@ static const UBYTE name[] = NAME_STRING;
 static const UBYTE version[] = VERSION_STRING;
 
 extern void debugmem(void);
+extern void idleTask(struct ExecBase *);
 
 #warning FIXME: This is public to allow PrepareExecBase() to work
 struct AROSSupportBase AROSSupportBase;
@@ -145,19 +146,6 @@ AROS_UFH4(int, Dispatcher,
     /* This make the int handler continue with the rest of the ints. */
     return 0;
 } /* Dispatcher */
-
-
-
-
-void idleTask(struct ExecBase *SysBase)
-{
-    while(1)
-    {
-      /* not really much to do here. */
-    }
-}
-
-
 
 AROS_UFH1(void, idleCount,
     AROS_UFHA(struct ExecBase *, SysBase, A6))

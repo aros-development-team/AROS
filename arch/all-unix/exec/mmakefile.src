@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 REP_FILES   := alert cause disable enable preparecontext stackswap switch \
-		rawioinit rawputchar rawmaygetchar
+		rawioinit rawputchar rawmaygetchar idletask
 FILES	    := kernel $(REP_FILES)
 OBJDIR	    := $(OSGENDIR)/exec
 ADD_OBJS    := $(foreach f,$(FILES),rom/exec/$(f))
