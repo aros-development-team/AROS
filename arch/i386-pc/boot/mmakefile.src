@@ -75,8 +75,7 @@ BOOT_TAR_FILES := \
     System System.info \
     Tools/calculator Tools/Editor Tools/HDToolBox Tools/HDToolBox.info \
     Tools/Commodities Tools/Commodities.info Tools.info \
-    Utilities/MultiView Utilities/Multiview.info Utilities.info \
-    Themes
+    Utilities/MultiView Utilities/Multiview.info Utilities.info 
     
 
 BOOT_SRC_DIR    := $(AROSDIR)
