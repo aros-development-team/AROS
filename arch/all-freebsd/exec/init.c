@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <sys/termios.h>
 
+char *malloc_options;
+
 extern const struct Resident
     Expansion_resident,
     Exec_resident,
@@ -137,6 +139,12 @@ int main(int argc, char **argv)
 	    *space++ = 0xDEADBEEF;
     }
 #endif
+    /*
+	Magic, this makes FreeBSD's malloc() print out lots of extra
+	debugging information, and more to the point, call abort()
+	when something naughty happens.
+    */
+    malloc_options = "A";
 
     /* We allocate memSize megabytes, plus a little extra */
     memory = malloc((memSize << 20) + MEMCHUNK_TOTAL);
