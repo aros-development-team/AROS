@@ -888,6 +888,9 @@ $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
 $(OBJDIR)/functions.c : mmakefile.src $(ARCHIVE)
 	@$(ARCHTOOL) -s $(ARCHIVE) $@
 
+$(OBJDIR)/functions.d : $(OBJDIR)/functions.c
+%mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
+
 ALL_FUNCTIONS := $(FUNCTIONS)
 %genlibincludes_arch
 
@@ -958,6 +961,9 @@ ALL_FUNCTIONS := $(FUNCTIONS)
 
 $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
 %compile_q opt="$(CFLAGS) -I$(OBJDIR) -I." path=""
+
+$(OBJDIR)/functions.d : $(OBJDIR)/functions.c
+%mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
 
 $(OBJDIR)/%.o : %.c
 %compile_q
