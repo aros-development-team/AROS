@@ -2,9 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/04 15:33:57  digulla
+    Added a comment
+
     Revision 1.4  1996/10/02 18:12:03  digulla
     Draw text after border for IMAGE and BORDER gadgets and before for HCOMP-type
-    	gadgets (The text of IMAGE-Gadgets was not visible)
+	gadgets (The text of IMAGE-Gadgets was not visible)
 
     Revision 1.3  1996/08/29 13:57:38  digulla
     Commented
@@ -89,7 +92,7 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
     }
 
     return TRUE;
-}
+} /* CalcKnobSize */
 
 /*****************************************************************************
 
