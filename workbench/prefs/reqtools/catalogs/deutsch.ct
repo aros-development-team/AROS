@@ -71,7 +71,7 @@ MSG_PROJECT_QUIT
 Q\0Beenden
 ;
 MSG_EDIT_MENU
-Vorgaben
+Bearbeiten
 ;
 MSG_EDIT_RESET
 Z\0Auf Vorgaben zurücksetzen
@@ -132,7 +132,7 @@ Aufwendiges Farbrad
 ; ** 2.8 **
 ;
 MSG_MMB_PARENT
-MMT für Mutterverzeichnis
+Mittlere Maustaste für übergeordnete Schublade
 ;
 ; *** Requester Type ***
 ;
@@ -146,7 +146,7 @@ MSG_FONTREQ
 Zeichensatz-Auswahlfenster
 ;
 MSG_PALETTEREQ
-Farb-Dialogfenster
+Farb-Auswahlfenster
 ;
 MSG_SCRMODEREQ
 Schirmmodus-Auswahlfenster
@@ -155,7 +155,7 @@ MSG_VOLUMEREQ
 Datenträger-Auswahlfenster
 ;
 MSG_OTHERREQ
-Andere Dialogfenster
+Andere Auswahlfenster
 ;
 ; *** Position ***
 ;
@@ -163,7 +163,7 @@ MSG_POSITION
 Position:
 ;
 MSG_POINTER
-Mauspfeil
+Mauszeiger
 ;
 MSG_CENTERWIN
 Zentrieren im Fenster
@@ -183,7 +183,7 @@ Abstand:
 ; *** Entries ***
 ;
 MSG_NR_OF_ENTRIES
-Anzahl der sichtbaren Einträge:
+Anzahl sichtbarer Einträge:
 ;
 MSG_MIN
 Minimum
@@ -238,7 +238,7 @@ Fehler beim Speichern der Einstellungen!
 ; * 2.7 *
 ;
 MSG_ERROR_ARGS
-Falsches Argument
+Fehlerhaftes Argument
 ;
 MSG_ERROR_LIBRARY
 Konnte %s in der\n\
