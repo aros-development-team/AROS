@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -10,8 +10,8 @@
 
     NAME */
 
+#define AROS_ALMOST_COMPATIBLE
 #include "nvdisk_intern.h"
-
 #include <dos/dos.h>
 #include <exec/memory.h>
 #include <exec/nodes.h>
