@@ -46,7 +46,12 @@
 #    define _DisposeRegionRectangleExtChunk(mem) free(mem)
 
 #    undef  NewRegion
-#    define NewRegion() malloc(sizeof(struct Region))
+#    define NewRegion()                                      \
+     ({                                                      \
+         struct Region *reg = malloc(sizeof(struct Region)); \
+	 reg->RegionRectangle = NULL;                        \
+         reg;                                                \
+     })
 
 #    undef  DisposeRegion
 #    define DisposeRegion(reg) free(reg)
@@ -82,8 +87,9 @@
          }                                                                                                \
      }
 
+     static struct GfxBase *GfxBase;
+
 #    ifndef __AROS__
-         static struct GfxBase *GfxBase;
 #        undef  kprintf
 #        define kprintf(format, x...) printf(format, ##x)
 #    endif
@@ -1292,12 +1298,8 @@ int main(void)
 {
     int i;
 
-    kprintf("-- 0 --\n");
-
     struct Region *R1 = NewRegion();
     struct Region *R2 = NewRegion();
-
-    kprintf("-- 1 --\n");
 
     for (i = 0; i < 10; i++)
     {
@@ -1307,7 +1309,6 @@ int main(void)
         _OrRectRegion(R1, &r, GfxBase);
     }
 
-    kprintf("-- 2 --\n");
     for (i = 0; i < 10; i++)
     {
         int u = i*20;
@@ -1316,7 +1317,6 @@ int main(void)
         _OrRectRegion(R2, &r, GfxBase);
     }
 
-    kprintf("-- 3 --\n");
     for (i = 0; i<100000; i++)
     {
         _XorRegionRegion(R2, R1, GfxBase);
