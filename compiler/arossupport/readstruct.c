@@ -284,7 +284,8 @@ struct ReadLevel
 
 	    uhook = (struct Hook *)IDESC;
 
-	    CallHookA (uhook, hook, &data);
+	    if (!CallHookA (uhook, hook, &data))
+	    	goto error;
 
 	    break; }
 
