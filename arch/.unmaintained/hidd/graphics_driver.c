@@ -4598,7 +4598,7 @@ LONG driver_ReadPixelLine8 (struct RastPort * rp, ULONG xstart,
     
     return driver_ReadPixelArray8(rp
     	, xstart, ystart
-	, xstart + width - 1, 1
+	, xstart + width - 1, ystart
 	, array, temprp
 	, GfxBase
     );
@@ -4615,7 +4615,7 @@ LONG driver_WritePixelLine8 (struct RastPort * rp, ULONG xstart,
      */
     return driver_WritePixelArray8(rp
     	, xstart, ystart
-	, xstart + width - 1, 1
+	, xstart + width - 1, ystart
 	, array, temprp
 	, GfxBase
     );
