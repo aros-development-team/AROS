@@ -161,6 +161,21 @@ DEFINESET(DTORS);
 DEFINESET(INIT);
 DEFINESET(EXIT);
 
+
+/*	Stub function for GCC __main().
+
+	The __main() function is originally used for C++ style constructors
+	and destructors in C. This replacement does nothing and gets rid of
+	linker-errors about references to __main().
+*/
+
+#ifdef AROS_NEEDS___MAIN
+void __main(void)
+{
+/* Do nothing. */
+}
+#endif
+
 #if defined (__ELF__)
 /*
     Include an ELF ABI ".note" section specifying the ABI version.
