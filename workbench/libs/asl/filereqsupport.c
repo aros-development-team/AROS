@@ -375,7 +375,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 	    	{
 		    if (IoErr() == ERROR_NO_MORE_ENTRIES) break;
 		    success = FALSE;
-		    continue;
+		    break;
 	   	}
 
 		/* add to list checks which affect only files */
