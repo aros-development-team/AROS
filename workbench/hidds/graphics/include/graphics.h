@@ -1091,9 +1091,10 @@ enum
     aoHidd_GC_Font,                /* [.SG] Current font                       */
     aoHidd_GC_ColorMask,           /* [.SG] Prevents some color bits from      */
                                    /*       changing                           */
-    aoHidd_GC_LinePattern,         /* [.SG] Pattern for line drawing          */
+    aoHidd_GC_LinePattern,         /* [.SG] Pattern for line drawing           */
+    aoHidd_GC_LinePatternCnt,	   /* [.SG] Pattern start bit for line drawing */
     aoHidd_GC_PlaneMask,           /* [.SG] Shape bitmap                       */
-    aoHidd_GC_ColorExpansionMode,	   /* [.SG] Mode for color expansion */
+    aoHidd_GC_ColorExpansionMode,  /* [.SG] Mode for color expansion 	       */
     
     num_Hidd_GC_Attrs
 };
@@ -1106,6 +1107,7 @@ enum
 #define aHidd_GC_Font        	    (HiddGCAttrBase + aoHidd_GC_Font)
 #define aHidd_GC_ColorMask   	    (HiddGCAttrBase + aoHidd_GC_ColorMask)
 #define aHidd_GC_LinePattern 	    (HiddGCAttrBase + aoHidd_GC_LinePattern)
+#define aHidd_GC_LinePatternCnt	    (HiddGCAttrBase + aoHidd_GC_LinePatternCnt)
 #define aHidd_GC_PlaneMask   	    (HiddGCAttrBase + aoHidd_GC_PlaneMask)
 #define aHidd_GC_ColorExpansionMode  (HiddGCAttrBase + aoHidd_GC_ColorExpansionMode)
 
@@ -1442,6 +1444,7 @@ typedef struct
     APTR    	    font;      /* current fonts                                    */
     ULONG   	    colMask;   /* ColorMask prevents some color bits from changing */
     UWORD   	    linePat;   /* LinePattern                                      */
+    UWORD   	    linePatCnt; /* LinePattern start bit    	    	    	   */
     APTR    	    planeMask; /* Pointer to a shape bitMap                        */
     ULONG   	    colExp;
     
@@ -1461,6 +1464,7 @@ typedef struct
 #define GC_FONT(gc)	    (GCINT(gc)->font)
 #define GC_COLMASK(gc)	    (GCINT(gc)->colMask)
 #define GC_LINEPAT(gc)	    (GCINT(gc)->linePat)
+#define GC_LINEPATCNT(gc)   (GCINT(gc)->linePatCnt)
 #define GC_PLANEMASK(gc)    (GCINT(gc)->planeMask)
 #define GC_COLEXP(gc)	    (GCINT(gc)->colExp)
 
