@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "dos_intern.h"
+#include <dos/dosasl.h>
 
 /*****************************************************************************
 
@@ -21,10 +22,15 @@
 	struct DosLibrary *, DOSBase, 64, Dos)
 
 /*  FUNCTION
+	Lock the directory a file is loacted in.
 
     INPUTS
-
+	fh  - Filhandle of which you want to obtain the parent
+	
     RESULT
+	lock - Lock on the parent directory of the filehandle or
+	       NULL for failure.
+	       
 
     NOTES
 
@@ -33,7 +39,8 @@
     BUGS
 
     SEE ALSO
-
+	Lock(), UnLock(), Parent() 
+	
     INTERNALS
 
     HISTORY
@@ -41,13 +48,53 @@
 			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
-{
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
+{  
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    aros_print_not_implemented ("ParentOfFH");
+  BPTR lock = MKBADDR(NULL); 
+  LONG success = DOSFALSE;
+  char * Buffer;
+  LONG Buffersize = 256;
+  #define DEF_BUFSIZESTEP 128
+  LONG Attempts = 1;
 
-    return NULL;
-    AROS_LIBFUNC_EXIT
+  if (fh != NULL)
+  {
+    /* Attempt to get the string of the file fh */
+    while (DOSFALSE == success && Attempts <= 5)
+    {
+      Buffer = (char *) AllocMem(Buffersize, 0);
+     
+      if (NULL ==  Buffer)
+        return NULL;
+      
+      success = NameFromFH(fh, Buffer, Buffersize);
+      
+      /* did it fail with a buffer overflow?? */
+      if (DOSFALSE == success)
+        if (ERROR_BUFFER_OVERFLOW == IoErr())
+        {
+          Attempts++;
+          FreeMem(Buffer, Buffersize);
+          Buffersize += DEF_BUFSIZESTEP;
+        }
+      else /* another error occured -> exit */
+      {
+        FreeMem(Buffer, Buffersize);
+        return NULL;
+      }
+    }
+    if (DOSTRUE == success)
+    {
+      char * PP = PathPart(Buffer); /* get the path part of the file */
+      *PP = '\0';
+      lock = Lock (Buffer, SHARED_LOCK);
+      FreeMem(Buffer, Buffersize);
+    }    
+  }
+  
+  return lock;
+  
+  AROS_LIBFUNC_EXIT
 } /* ParentOfFH */
