@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright © 1999, David Le Corfec.
     Copyright © 2002, The AROS Development Team.
     All rights reserved.
@@ -45,6 +45,14 @@ static void handle_event(Object *win, struct IntuiMessage *event);
 #ifndef _DRAGNDROP_H
 #include "dragndrop.h"
 #endif
+
+static char *StrDup(char *x)
+{
+    char *dup;
+    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
+    if (dup) CopyMem((x), dup, strlen(x) + 1);
+    return dup;
+}
 
 /* this is for the cycle list */
 struct ObjNode
@@ -1253,15 +1261,16 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-
-//    if (data->wd_Background) zune_imspec_free(data->wd_Background);
-
+    
     if ((data->wd_Flags & MUIWF_OPENED))
-    {
 	set(obj, MUIA_Window_Open, FALSE);
-    }
+
     if (data->wd_RootObject)
 	MUI_DisposeObject(data->wd_RootObject);
+	
+    if (data->wd_Title)
+	FreeVec(data->wd_Title);
+
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -1322,9 +1331,11 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Window_RootObject:
 		window_change_root_object(data, obj, (Object *)tag->ti_Data);
 		break;
-	    case MUIA_Window_Title:
-		data->wd_Title = (STRPTR)tag->ti_Data;
-		break;
+	    
+	    case    MUIA_Window_Title:
+		    if (data->wd_Title) FreeVec(data->wd_Title);
+		    data->wd_Title = StrDup((STRPTR)tag->ti_Data);
+		    break;
 	}
     }
 
