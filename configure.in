@@ -479,7 +479,7 @@ AC_MSG_RESULT("$bochs_hack")
 
 dnl See if the user wants the IDE driver in the native flavour
 AC_MSG_CHECKING([if the ide driver is enabled])
-AC_ARG_ENABLE(ide_driver,[  --enable-ide-driver     Enable IDE driver in native [default=no],ide_driver="yes",ide_driver="no")
+AC_ARG_ENABLE(ide_driver,[  --enable-ide-driver     Enable IDE driver in native [default=no]],ide_driver="yes",ide_driver="no")
 if test "$ide_driver" = "yes" ; then
     aros_ide_driver="1"
 fi
