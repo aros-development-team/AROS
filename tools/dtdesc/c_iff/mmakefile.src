@@ -1,0 +1,37 @@
+include $(TOP)/config/make.cfg
+
+TARGET_CFLAGS := $(subst -O2,,$(TARGET_CFLAGS))
+
+LIB :=	c_iff
+
+FILES := \
+	checkiff \
+	closeiff \
+	endchunk \
+	example \
+	filesize \
+	fixiffsize \
+	newchunk \
+	newiff \
+	newsubform \
+	openiff \
+	readchunkdata \
+	readchunkheader \
+	skipchunkdata \
+	writechunkdata
+
+#MM- linklibs : linklibs-c_iff
+
+%make_linklib_setup mmake=linklibs-c_iff
+%make_linklib
+
+#MM- setup : includes-copy
+
+#MM
+includes-copy : $(INCDIR)/c_iff.h
+
+$(INCDIR)/%.h : %.h
+	$(CP) $< $(INCDIR)
+
+%common
+%include_deps

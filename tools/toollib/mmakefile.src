@@ -1,0 +1,45 @@
+include $(TOP)/config/make.cfg
+
+LIB :=	toollib
+
+HFILES := \
+	callback.h \
+	error.h \
+	filesup.h \
+	hash.h \
+	lineparser.h \
+	mystream.h \
+	stdiocb.h \
+	stringcb.h \
+	toollib.h \
+	vstring.h
+
+TOOLLIBINCS := $(foreach f,$(HFILES),$(INCDIR)/toollib/$(f))
+
+FILES := \
+	error \
+	filesup \
+	hash \
+	lineparser \
+	mystream \
+	stdiocb \
+	stringcb \
+	toollib \
+	vstring
+
+#MM- linklibs : linklibs-toollib
+
+%make_linklib_setup mmake=linklibs-toollib
+%make_linklib
+
+#MM- setup : includes-copy
+
+#MM
+includes-copy : $(TOOLLIBINCS)
+	@$(MKDIR) $(INCDIR)/toollib
+
+$(INCDIR)/toollib/%.h : %.h
+	$(CP) $< $(INCDIR)/toollib
+
+%common
+%include_deps
