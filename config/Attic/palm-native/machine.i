@@ -10,6 +10,7 @@
 #define Alert         -108
 #define Disable       -120
 #define Enable        -126
+#define SetSR         -144
 #define Enqueue       -270
 #define FindTask      -294
 #define CacheControl  -648
