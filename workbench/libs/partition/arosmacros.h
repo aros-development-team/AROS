@@ -29,10 +29,6 @@
 #	define AROS_LE2LONG(l)     AROS_LONG2LE(l)
 #else
 #	include <aros/macros.h>
-#	define AROS_WORD2LE(x) x
-#	define AROS_LONG2LE(x) x
-#	define AROS_LE2WORD(x) x
-#	define AROS_LE2LONG(x) x
 #endif
 
 #endif /* AROSMACROS_H */
