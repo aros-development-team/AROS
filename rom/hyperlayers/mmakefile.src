@@ -99,6 +99,7 @@ FUNCTIONS := \
 	movelayerinfrontof \
 	movesizelayer \
 	newlayerinfo \
+	scalelayer \
 	scrolllayer \
 	sizelayer \
 	sortlayercr \
