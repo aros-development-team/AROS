@@ -55,7 +55,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
-    APTR clip = NULL;
+    APTR clip = (APTR)-1;
     ULONG disabled;
 
     if (!(_flags(obj) & MADF_CANDRAW)) return;
@@ -65,13 +65,11 @@
 /*  	return; */
     _flags(obj) |= MADF_DRAWING;
 
-
     if (_flags(obj) & MADF_INVIRTUALGROUP)
     {
 	Object *wnd;
 	Object *parent;
 	struct Region *region = NULL;
-	struct Rectangle *clip_rect;
 
 	get(obj,MUIA_WindowObject,&wnd);
 	parent = obj;
@@ -103,9 +101,31 @@
 	    }
 	}
 
+    	if (region)
+	{
+	    clip = MUI_AddClipRegion(muiRenderInfo(obj),region);
+	}
+	
+    } /* if object is in a virtual group */
+
+    if (1)
+    {
+    	struct Region *region;
+	struct Rectangle *clip_rect;
+	struct Layer *l;
+	
 	clip_rect = &muiRenderInfo(obj)->mri_ClipRect;
 
-	if (region)
+    	if (muiRenderInfo(obj)->mri_Window)
+	{
+	    l = muiRenderInfo(obj)->mri_Window->WLayer;
+	}
+	else
+	{
+	    l = muiRenderInfo(obj)->mri_RastPort->Layer;
+	}
+	
+	if (l && (region = l->ClipRegion))
 	{
 	    /* Maybe this should went to MUI_AddClipRegion() */
 	    clip_rect->MinX = MAX(_left(obj),region->bounds.MinX);
@@ -113,7 +133,6 @@
 	    clip_rect->MaxX = MIN(_right(obj),region->bounds.MaxX);
 	    clip_rect->MaxY = MIN(_bottom(obj),region->bounds.MaxY);
 
-	    clip = MUI_AddClipRegion(muiRenderInfo(obj),region);
 	} else
 	{
 	    clip_rect->MinX = _left(obj);
@@ -121,8 +140,8 @@
 	    clip_rect->MaxX = _right(obj);
 	    clip_rect->MaxY = _bottom(obj);
 	}
-    } /* if object is in a virtual group */
-
+    }
+    
     DoMethod(obj, MUIM_Draw, flags);
 
     if (get(obj, MUIA_Disabled, &disabled))
@@ -218,7 +237,7 @@
 		 _width(obj), _height(obj), 0xc0);
     }
 
-    if (clip)
+    if (clip != (APTR)-1)
     {
 	/* This call actually also frees the region */
 	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
