@@ -133,7 +133,7 @@ c00044;2;SDuvan;Write C:SetDate
 c00045;2;laguest;Write C:SetEnv
 c00046;1;SDuvan;Write C:Shell
 c00047;2;SDuvan;Write C:Skip
-c00048;1;bergers;Write C:Sort
+c00048;2;bergers;Write C:Sort
 c00049;2;SDuvan;Write C:Stack
 c00050;2;SDuvan;Write C:Status
 c00051;2;matthias;Write C:Type
