@@ -3,6 +3,27 @@ This is a preliminary documentation for HPP, the HTML PreProcessor.
 HPP reads normal HTML files, processes some special tags and outputs
 a new file which need not be in HTML.
 
+Options:
+
+-set varname=value
+
+    Specify a default for varname. Since the defaults for the global
+    variables (see below) already have been set, you can overide
+    them with this option.
+
+-o filename
+-output filename
+
+    Write the resulting file to filename. This is similar to output
+    redirection but with output redirection also warnings will be
+    written into the file.
+
+-nowrap
+
+    HPP tries to keep lines in the output short and therefore
+    converts spaces to newlines. With this option, you can
+    prevent this.
+
 New tags by HPP:
 ------------------------------------------------------------------------------
 <REM remark> and <REM>remark</REM>
