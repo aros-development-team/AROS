@@ -912,12 +912,12 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	if (!background)
 	{
 	    /* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
-	    D(bug(" Area_Draw(%p) MUIM_DrawBackground\n", obj));
+	    D(bug(" Area_Draw(%p):%ld: MUIM_DrawBackground\n", obj, __LINE__));
 	    DoMethod(obj, MUIM_DrawBackground, left, top, width, height, left, top, data->mad_Flags);
 	}
 	else
 	{
-	    D(bug(" Area_Draw(%p) zune_imspec_draw\n", obj));
+	    D(bug(" Area_Draw(%p):%ld: zune_imspec_draw\n", obj, __LINE__));
 	    zune_imspec_draw(background, data->mad_RenderInfo,
 			    left, top, width, height, left, top, 0);
 	}
@@ -1071,13 +1071,15 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
 	return FALSE;
 
-    if ((msg->flags & MADF_SELECTED) && (msg->flags & MADF_SHOWSELSTATE))
+    if ((msg->flags & MADF_SELECTED) && (msg->flags & MADF_SHOWSELSTATE) && data->mad_SelBack)
     { 
+	D(bug("Area_DrawBackground(%p): selected bg\n", obj));
     	bg = data->mad_SelBack;
 	state = IDS_SELECTED;
     }
     else
     {
+	D(bug("Area_DrawBackground(%p): normal bg\n", obj));
 	bg = data->mad_Background;
 	state = IDS_NORMAL;
     }
@@ -1087,13 +1089,20 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
     	Object *parent;
     	get(obj, MUIA_Parent, &parent);
     	if (parent)
+	{
+	    D(bug("Area_DrawBackground(%p): to parent\n", obj));
 	    DoMethodA(parent, (Msg)msg);
+	}
     	else
+	{
+	    D(bug("Area_DrawBackground(%p): MUIM_Window_DrawBackground\n", obj));
 	    DoMethod(_win(obj), MUIM_Window_DrawBackground, msg->left, msg->top,
 		     msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
+	}
     	return TRUE;
     }
 
+    D(bug("Area_DrawBackground(%p): draw bg\n", obj));
     zune_imspec_draw(bg, data->mad_RenderInfo,
 		     msg->left, msg->top, msg->width, msg->height,
 		     msg->xoffset, msg->yoffset, state);
@@ -1465,15 +1474,15 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
     switch (imsg->Code)
     {
 	case	SELECTDOWN:
-		if (data->mad_InputMode == MUIV_InputMode_None) break;
+		if (data->mad_InputMode == MUIV_InputMode_None)
+		    break;
 
 		if (in)
 		{
 //		    set(_win(obj), MUIA_Window_ActiveObject, obj);
 		    data->mad_ClickX = imsg->MouseX;
 		    data->mad_ClickY = imsg->MouseY;
-		    
-		    
+
 		    if ((data->mad_InputMode != MUIV_InputMode_Toggle) && (data->mad_Flags & MADF_SELECTED))
 			break;
 		    nnset(obj,MUIA_Timer,0);
@@ -1488,7 +1497,8 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 		}
 
 	case	SELECTUP:
-		if (data->mad_InputMode == MUIV_InputMode_None) break;
+		if (data->mad_InputMode == MUIV_InputMode_None)
+		    break;
 
 		if (data->mad_ehn.ehn_Events != IDCMP_MOUSEBUTTONS)
 		{
@@ -1606,20 +1616,24 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 	switch (msg->muikey)
 	{
 	    case    MUIKEY_PRESS:
-		    if (data->mad_Flags & MADF_SELECTED) break;
+		    if (data->mad_Flags & MADF_SELECTED)
+			break;
 		    handle_press(cl, obj);
-		    if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+		    if (data->mad_ehn.ehn_Events)
+			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 		    data->mad_ehn.ehn_Events |= IDCMP_RAWKEY;
 		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
 		    return MUI_EventHandlerRC_Eat;
 
 	    case    MUIKEY_TOGGLE:
-		    if (data->mad_InputMode == MUIV_InputMode_Toggle) set(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED));
+		    if (data->mad_InputMode == MUIV_InputMode_Toggle)
+			set(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED));
 		    return MUI_EventHandlerRC_Eat;
 
 	    case    MUIKEY_RELEASE:
 		    handle_release(cl, obj, FALSE /* cancel */);
-		    if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+		    if (data->mad_ehn.ehn_Events)
+			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 		    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
 		    return MUI_EventHandlerRC_Eat;
