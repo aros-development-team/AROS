@@ -178,7 +178,7 @@ static const ULONG coltab[] = {
     
     if(tagList)
     {
-	while((tag = NextTagItem ((const struct TagItem **)&tagList)))
+	while((tag = NextTagItem (&tagList)))
 	{
 	    switch(tag->ti_Tag)
 	    {

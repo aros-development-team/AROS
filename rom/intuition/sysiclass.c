@@ -193,7 +193,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     BOOL unsupported = FALSE;
 
     taglist = msg->ops_AttrList;
-    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
+    while ((tag = NextTagItem(&taglist)))
     {
 	switch(tag->ti_Tag)
 	{

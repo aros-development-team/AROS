@@ -1694,7 +1694,7 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
     
     HIDDT_DPMSLevel hdpms = 0;
     
-    for (tstate = tags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
+    for (tstate = tags; (tag = NextTagItem(&tstate)); ) {
     	switch (tag->ti_Tag) {
 	    case SETVC_DPMSLevel:
 	    	dpmslevel = tag->ti_Data;
@@ -1887,7 +1887,7 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
     	return NULL;
     
     
-    while ((tag = NextTagItem((const struct TagItem **)&tags))) {
+    while ((tag = NextTagItem(&tags))) {
     	switch (tag->ti_Tag) {
 	    case LBMI_BASEADDRESS:
 	    	*((ULONG **)tag->ti_Data) = (ULONG *)baseaddress;
@@ -1937,7 +1937,7 @@ VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Librar
     struct TagItem *tag;
     BOOL reallyunlock = TRUE;
     
-    while ((tag = NextTagItem((const struct TagItem **)&tags))) {
+    while ((tag = NextTagItem(&tags))) {
     	switch (tag->ti_Tag) {
 	    case UBMI_REALLYUNLOCK:
 	    	reallyunlock = (BOOL)tag->ti_Data;

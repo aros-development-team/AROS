@@ -88,7 +88,7 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
     IPTR  tidata;
     ULONG retval = 0UL; /* set to non-zero to signal visual changes */
 
-    while ( (tag = NextTagItem((const struct TagItem **)&tstate)) )
+    while ( (tag = NextTagItem(&tstate)) )
     {
 	tidata = tag->ti_Data;
 
