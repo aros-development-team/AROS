@@ -1,0 +1,85 @@
+#!/bin/bash
+#set -x
+
+CVSDIR=/home/cvs/aros
+AROSDIR=~/packages/AROS
+SIZEDIR=$HOME/www/www.aros.org/data/
+keep=2 # How many days to keep (-1)
+
+# Nothing to change below here
+PATH=/bin:/usr/bin:/usr/bin/X11 ; export PATH
+
+CVSROOT=$CVSDIR/CVSROOT
+AROSROOT=$CVSDIR/AROS
+CONTRIBROOT=$CVSDIR/contrib
+AROS_SIZE=$SIZEDIR/aros.size
+CONTRIB_SIZE=$SIZEDIR/contrib.size
+
+date="`date '+%d %b %Y'`"
+today="`date '+%d.%m.%Y'`"
+
+# Send commitlog
+for file in $CVSROOT/commitlog.new* ; do
+    if [ -s $file ]; then
+	name="`basename $file | cut -d. -f3`"
+	mailx -s "Commitlog $date $name" aros-dev < $file
+	echo -n > $file
+    fi
+done
+
+cvs_update() {
+    cd "$1"
+    nice cvs upd -dP > ~/cvs_update-long.log 2>&1
+    grep -v "^cvs server: Updating " ~/cvs_update-long.log > ~/cvs_update.log
+    if [[ -s ~/cvs_update.log ]]; then
+	echo "cvs update -dP $dir"
+	cat ~/cvs_update.log
+    fi
+}
+
+# Update sources
+cvs_update $AROSDIR/AROS
+cvs_update $AROSDIR/dist/AROS.source
+
+# Update source size (must be done before make all-docs)
+size="`du -s $AROSROOT`"
+echo "$today $size" >> "$AROS_SIZE"
+size="`du -s $CONTRIBROOT`"
+echo "$today $size" >> "$CONTRIB_SIZE"
+
+# Create docs
+#cd $AROSDIR/AROS
+#( autoconf ; ./configure ; 
+#nice make all-docs ) >& ~/nightly_make.log
+#if [ $? -ne 0 ]; then
+#    cat ~/nightly_make.log
+#fi
+
+# Create nightly builds
+cd $AROSDIR/dist
+rel=`date '+%Y%m%d'` ; export rel
+dstdir=~ftp/pub/aros/snapshots ; export dstdir
+find $dstdir -mtime +$keep -print0 | xargs -0 rm -f
+nice ./makedist 2>&1 | mailx -s "Nightly builds" aros-dev
+
+# Mirror disk images
+cd ~ftp/pub/aros/DiskImages
+wget -q --timestamping --no-directories --no-host-directories \
+    -r --accept "*.bz2" --accept readme.txt \
+    http://wh2-315.st.uni-magdeburg.de/~sheutlin/aros
+rm -f robots.txt
+for f in *.bz2 ; do
+    name=$(basename "$f" .bz2)
+    if [ ! -f "$name" -o "$name.bz2" -nt "$name" ]; then
+	bzip2 -cd "$name.bz2" > "$name"
+    fi
+    if [ ! -f "$name.gz" -o "$name" -nt "$name.gz" ]; then
+	gzip -9 < "$name" > "$name.gz"
+    fi
+done
+
+# Update the WWW site
+cd ~/www
+cvs -q upd -dP
+cd www.aros.org/data
+nice make
