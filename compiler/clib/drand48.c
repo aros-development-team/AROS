@@ -18,7 +18,11 @@ __FBSDID("$FreeBSD$");
 
 extern unsigned short _rand48_seed[3];
 
+#ifndef AROS_NOFPU
 double
+#else
+void
+#endif
 drand48(void)
 {
 	return erand48(_rand48_seed);

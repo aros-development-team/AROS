@@ -16,6 +16,11 @@ __FBSDID("$FreeBSD$");
 
 #include "rand48.h"
 
+#ifdef AROS_NOFPU
+void erand48(unsigned short xseed[3])
+{
+}
+#else
 double
 erand48(unsigned short xseed[3])
 {
@@ -24,3 +29,4 @@ erand48(unsigned short xseed[3])
 	       ldexp((double) xseed[1], -32) +
 	       ldexp((double) xseed[2], -16);
 }
+#endif
