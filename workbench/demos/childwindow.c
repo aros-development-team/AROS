@@ -97,6 +97,10 @@ static struct Window * makeparentwin(ULONG visible)
 	{WA_Top     	, 30	    	    	    	    },
 	{WA_Width   	, 400	  	    	    	    },
 	{WA_Height  	, 300 		    	    	    },
+	{WA_MinWidth    , 200                               },
+	{WA_MaxWidth    , 500                               },
+	{WA_MinHeight   , 200                               },
+	{WA_MaxHeight   , 400                               },
 	{WA_Title   	, (IPTR)"Parent window"             },
 	{WA_CloseGadget , TRUE	    	    	    	    },
 	{WA_DepthGadget , TRUE	    	    	    	    },
@@ -104,6 +108,7 @@ static struct Window * makeparentwin(ULONG visible)
 	{WA_IDCMP   	, IDCMP_CLOSEWINDOW 	    	    },
 	{WA_Activate	, TRUE	    	    	    	    },
 	{WA_Visible     , visible                           },
+	{WA_SizeGadget  , TRUE                              },
 	{TAG_DONE                                           }
     };
 
