@@ -14,6 +14,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/intuition.h>
 #include "boopsigadgets.h"
 #include <exec/ports.h>
 
@@ -29,8 +30,6 @@
 /*****************************************************************************
 
     NAME */
-#include <intuition/intuition.h>
-#include <proto/intuition.h>
 
 	AROS_LH1(struct Window *, OpenWindow,
 
@@ -90,6 +89,9 @@
     ULONG lock;
     BOOL driver_init_done = FALSE;
 
+
+    ASSERT_VALID_PTR(newWindow)
+
     D(bug("OpenWindow (%p = { Left=%d Top=%d Width=%d Height=%d })\n"
 	, newWindow
 	, newWindow->LeftEdge
@@ -113,6 +115,8 @@
     {
 	while ((tag = NextTagItem (&tagList)))
 	{
+	    /* ASSERT_VALID_PTR(tag) */
+
 	    switch (tag->ti_Tag)
 	    {
 	    case WA_Left:	nw.LeftEdge     = tag->ti_Data; break;

@@ -8,10 +8,12 @@
 #include "intuition_intern.h"
 #include <exec/memory.h>
 #include <utility/tagitem.h>
+#include <intuition/screens.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include <proto/utility.h>
+#include <proto/intuition.h>
 
 
 #ifndef DEBUG_OpenScreen
@@ -21,7 +23,13 @@
 #if DEBUG_OpenScreen
 #   define DEBUG 1
 #endif
-#	include <aros/debug.h>
+#include <aros/debug.h>
+
+#if DEBUG
+#undef THIS_FILE
+static const char THIS_FILE[] = __FILE__;
+#endif
+
 
 /* Default colors for the new screen */
 
@@ -53,8 +61,6 @@ static const ULONG coltab[] = {
 /*****************************************************************************
 
     NAME */
-#include <intuition/screens.h>
-#include <proto/intuition.h>
 
 	AROS_LH1(struct Screen *, OpenScreen,
 
@@ -88,13 +94,17 @@ static const ULONG coltab[] = {
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    
+
+
     struct NewScreen  ns;
     struct TagItem   *tag, *tagList;
     struct IntScreen *screen;
     int               success;
     struct Hook      *layer_info_hook = NULL;
     ULONG            *errorPtr;	  /* Store error at user specified location */
+
+    ASSERT_VALID_PTR(newScreen);
+
 
 #define COPY(x)     screen->Screen.x = ns.x
 #define SetError(x) if(errorPtr != NULL) *errorPtr = x;
@@ -300,7 +310,7 @@ static const ULONG coltab[] = {
         D(bug("got allocated stuff\n"));	    
 	screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
     }
-    
+ 
     if (screen)
     {
         D(bug("Loading colors\n"));
@@ -346,7 +356,7 @@ static const ULONG coltab[] = {
 	    IntuitionBase->ActiveScreen = &screen->Screen;
 
         D(bug("set active screen\n"));	    
-        
+ 
 	InitLayers(&screen->Screen.LayerInfo);
 	if (NULL != layer_info_hook)
 	  InstallLayerInfoHook(&screen->Screen.LayerInfo, layer_info_hook);
@@ -383,7 +393,7 @@ static const ULONG coltab[] = {
 	screen->Pens[BARDETAILPEN] = 1;
 	screen->Pens[BARBLOCKPEN] = 2;
 	screen->Pens[BARTRIMPEN] = 1;
-	
+
 
         D(bug("callling SetRast()\n"));	    
 	/* Set screen to background color */
@@ -398,7 +408,6 @@ static const ULONG coltab[] = {
 	    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->PubScreenList,
 		    (struct Node *)GetPrivScreen(screen)->pubScrNode);
 	}
-
     }
 
     ReturnPtr ("OpenScreen", struct Screen *, &screen->Screen);

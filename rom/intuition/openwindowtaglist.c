@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.11  2000/01/14 22:23:32  bernie
+    debug assertions on parameters
+
     Revision 1.10  2000/01/07 18:07:31  bernie
     added debug ASSERT()s
 
@@ -44,7 +47,7 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/intuition.h>
+	#include <proto/intuition.h>
 
 	AROS_LH2(struct Window *, OpenWindowTagList,
 
@@ -101,14 +104,14 @@
 
     if (newWindow)
     {
-	ASSERT_VALID_PTR(newWindow);
+	ASSERT_VALID_PTR(newWindow)
 	CopyMem (newWindow, &nw, (newWindow->Flags & WFLG_NW_EXTENDED) ? sizeof (struct ExtNewWindow) :
 									 sizeof (struct NewWindow));
     }
 
     if (tagList)
     {
-	ASSERT_VALID_PTR(tagList);
+	/* ASSERT_VALID_PTR(tagList); */
     	nw.Extension = tagList;
     	nw.Flags |= WFLG_NW_EXTENDED;
     }
