@@ -1713,7 +1713,7 @@ void *params;
 			string = strip_quotes(current->arg);
 
 #warning FIXME: flag must be one of GVF_GLOBAL_ONLY or GVF_LOCAL_ONLY???
-			i = GetVar(string, buffer, 1023, NULL);
+			i = GetVar(string, buffer, 1023, 0);
 
 			FreeVec(string);
 
