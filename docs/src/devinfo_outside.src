@@ -17,7 +17,9 @@ transparent and compatible, others are only compatible and some or not.
 \subsection{Macros}
 
 AROS defines a couple of macros in various header files. To enable them, you
-must define |AROS_ALMOST_COMPATIBLE|.
+must define |AROS_ALMOST_COMPATIBLE|. All macros cast their parameters to
+the correct type, so you must provide a valid input but can safe the
+casts (macros are meant to make life more simple).
 
 \begin{description}
 \item{NEWLIST(list)}
@@ -62,7 +64,7 @@ block doesn't get executed if the list is empty. When the list terminates
 |node| doesn't contain |NULL| but |node->ln_Succ| will be NULL. You
 cannot use this macro if you want to delete the nodes in the list (ie.
 you must not call |Remove()| inside the block of code following the
-macro).
+macro). Use |ForeachNodeSafe()| if you have to delete nodes.
 
 \begin{code}
 /* Iterate through a list with complete nodes and print their names */
@@ -83,6 +85,38 @@ if (node->ln_Succ)
 else
     printf ("The list doesn't contain a node with the name \"end\"\n");
 \end{code}
+
+\item{ForeachNodeSafe(list,node,tmpNode)}
+Compatible: Yes\nl
+Location: \filename{exec/lists.h}
+
+Iterates through a list. A block of code must follow this macro. The
+block doesn't get executed if the list is empty. When the list terminates
+|node| doesn't contain |NULL| but |node->ln_Succ| will be NULL. You
+can use this macro with code that deletes nodes in the list.
+
+\item{SetNodeName(node,name)}
+Compatible: Yes\nl
+Location: \filename{exec/lists.h}
+
+Sets a new name for a node. The name is not copied, the macro will just
+make |ln_Name| point to |name|.
+The macro casts |node| to |struct Node *|
+so you better make sure that |node| is a full featured node.
+
+\item{GetNodeName(node)}
+Compatible: Yes\nl
+Location: \filename{exec/lists.h}
+
+Return the current name of a node.
+The macro casts |node| to |struct Node *|
+so you better make sure that |node| is a full featured node.
+
+\item{ListLength(list,count)}
+Compatible: Yes\nl
+Location: \filename{exec/lists.h}
+
+This puts the number of nodes in |list| into |count|.
 
 \item{INTUITIONNAME}
 Compatible: Yes\nl

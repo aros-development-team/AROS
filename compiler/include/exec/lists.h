@@ -92,6 +92,24 @@ struct MinList
 	for (n=(void *)(((struct List *)(l))->lh_Head); \
 	    ((struct Node *)(n))->ln_Succ; \
 	    n=(void *)(((struct Node *)(n))->ln_Succ))
+
+#   define ForeachNodeSafe(l,n,n2) \
+	for (n=(void *)(((struct List *)(l))->lh_Head); \
+	    n2=(void *)((struct Node *)(n))->ln_Succ; \
+	    n=(void *)n2)
+
+#   define SetNodeName(node,name)   \
+	(((struct Node *)(node))->ln_Name = (char *)(name))
+#   define GetNodeName(node)        \
+	(((struct Node *)(node))->ln_Name
+
+#   define ListLength(list,count)   \
+	do {				    \
+	    struct Node * n;		    \
+	    count = 0;			    \
+	    ForeachNode (list,n) count ++;  \
+	} while (0)
+
 #endif
 
 
