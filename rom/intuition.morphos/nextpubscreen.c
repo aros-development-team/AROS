@@ -4,6 +4,7 @@
     $Id$
 */
 
+#include <string.h>
 #include "intuition_intern.h"
 
 /*****************************************************************************
@@ -57,10 +58,6 @@ AROS_LH2(UBYTE *, NextPubScreen,
     INTERNALS
     
     Maybe we should correct the + 1 stupidity right away?
- 
-    HISTORY
- 
-    21-06-98    SDuvan  Implemented
  
 *****************************************************************************/
 #define GPB(x) GetPrivIBase(x)
