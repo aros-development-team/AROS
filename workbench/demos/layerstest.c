@@ -13,12 +13,17 @@
 #include <proto/intuition.h>
 #include <proto/layers.h>
 
+#define GFX_SYSTEM X11   /* ord HIDD */
+ 
 struct IntuitionBase *IntuitionBase;
 struct Library *GfxBase;
 struct Library *LayersBase;
 struct DosLibrary *DOSBase;
 struct Screen *screen;
+
+#if 0
 struct Window * window;
+#endif
 
 static const char version[] = "$VER: regiontest 41.1 (14.3.1997)\n";
 
@@ -83,12 +88,12 @@ AROS_UFH11(ULONG, MyBltBitMap,
   UBYTE pen;
 
 
-
   InitRastPort(&SrcRastPort);
   InitRastPort(&DstRastPort);
   SrcRastPort.BitMap = SrcBitMap;
   DstRastPort.BitMap = DstBitMap;
   
+
   /* 
     Is the destination BitMap the one of the two (!!) bitmapstructures
     that belongs to my screen?
@@ -129,6 +134,7 @@ AROS_UFH11(ULONG, MyBltBitMap,
   return 0;
 }
 
+
 void init(void)
 {
   /* 
@@ -144,6 +150,7 @@ void restore(void)
   BltBitMapPtr = SetFunction(GfxBase, 5 * (-LIB_VECTSIZE) ,BltBitMapPtr);
 }
 
+
 struct Screen * openscreen(void)
 {
   struct Screen * screen;
@@ -158,6 +165,7 @@ struct Screen * openscreen(void)
                           SA_Width, 800,
                           TAG_END);
 
+#if 0
   window = OpenWindowTags(NULL,
 			  WA_IDCMP, IDCMP_RAWKEY,
                           WA_Height, 600,
@@ -166,6 +174,7 @@ struct Screen * openscreen(void)
 
 
   screen->RastPort.longreserved[0] = window->RPort->longreserved[0];
+#endif
 
   Draw(&screen->RastPort, 100, 100);
 
@@ -174,7 +183,9 @@ struct Screen * openscreen(void)
 
 void closescreen(struct Screen * screen)
 {
+#if 0
   CloseWindow(window);
+#endif  
   CloseScreen(screen);
 }
 
@@ -226,7 +237,9 @@ void createupfrontlayer(void)
            in longreserved[0] of the RastPort of a window (should be found
            in a screen anyway)
 	 */
+#if 0
         layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
+#endif	
         printf("Created layer with ID %d\n",i);
       }
       else
@@ -347,6 +360,8 @@ void DemoA(void)
                                  100,
                                  0, /* LAYER_SMART*/
                                  NULL);
+
+#if 0
   
   /* 
     CHEAT!!!
@@ -355,6 +370,9 @@ void DemoA(void)
     in a screen anyway)
   */
   layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
+
+#endif  
+
   frame(layers[i]);
 
   printf("Creating layer %i.\n",++i);
@@ -367,6 +385,8 @@ void DemoA(void)
                                  150,
                                  0, // LAYER_SMART
                                  NULL);
+
+#if 0
   /* 
     CHEAT!!!
     Still have to copy the X-Window info manually. It is found
@@ -374,6 +394,8 @@ void DemoA(void)
     in a screen anyway)
   */
   layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
+#endif
+  
   frame(layers[i]);
 
   printf("Creating layer %i.\n",++i);
@@ -386,6 +408,8 @@ void DemoA(void)
                                  70,
                                  0, /* LAYER_SMART*/
                                  NULL);
+
+#if 0
   /* 
     CHEAT!!!
     Still have to copy the X-Window info manually. It is found
@@ -393,6 +417,8 @@ void DemoA(void)
     in a screen anyway)
   */
   layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
+#endif
+  
   frame(layers[i]);
 
   printf("Creating layer %i.\n",++i);
@@ -405,6 +431,8 @@ void DemoA(void)
                                  200,
                                  0, // LAYER_SMART
                                  NULL);
+
+#if 0
   /* 
     CHEAT!!!
     Still have to copy the X-Window info manually. It is found
@@ -412,6 +440,8 @@ void DemoA(void)
     in a screen anyway)
   */
   layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
+#endif
+
   frame(layers[i]); 
    
   i = 0;
