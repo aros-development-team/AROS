@@ -1,0 +1,38 @@
+include $(TOP)/config/make.cfg
+
+DESTDIR := $(BINDIR)/Locale/Catalogs
+
+CATALOGS 	:= deutsch
+CATDESC 	:= multiview
+CATSUBDIR	:= Sys/
+CATNAME 	:= MultiView
+INCLUDE1 	:= ../multiview_strings
+
+SRCS    := $(foreach f, $(CATALOGS), $(f).ct)
+OBJS    := $(foreach f, $(CATALOGS), $(DESTDIR)/$(f)/$(CATSUBDIR)$(CATDESC).catalog)
+CATDIRS := $(foreach f, $(CATALOGS), $(DESTDIR)/$(f)/$(CATSUBDIR))
+
+.PHONY : all clean
+
+#MM
+setup-multiview-catalogs : create_dirs create_catalogs create_include
+
+create_catalogs:
+	@$(FOR) dir in $(CATALOGS) ; do \
+	  $(IF) $(FLEXCAT) $(CATDESC).cd $$dir.ct CATALOG=$(DESTDIR)/$$dir/$(CATSUBDIR)$(CATNAME).catalog ; then $(NOP) ; else $(NOP) ; fi ; \
+	done
+
+create_include:
+	@$(ECHO) "Creating include file"
+	@$(FLEXCAT) $(CATDESC).cd $(INCLUDE1).h=$(TOOLDIR)/C_h_orig.sd
+
+create_dirs:
+	@$(FOR) dir in $(CATDIRS) ; do \
+	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+	done
+
+
+# Delete generated makefiles
+clean ::
+	$(RM) mmakefile mmakefile.bak $(OBJS)
+

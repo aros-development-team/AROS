@@ -1,0 +1,82 @@
+;
+MSG_CANT_OPEN_LIB (//)
+Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_IC (//)
+Can't create interconnection objects!
+;
+MSG_CANT_LOCK_SCR (//)
+Can't lock public screen!
+;
+MSG_CANT_GET_DRI (//)
+Can't get DrawInfo!
+;
+MSG_CANT_GET_VI (//)
+Can't get VisualInfo!
+;
+MSG_CANT_CREATE_SYSIMAGE (//)
+Can't create SYSICLASS images!
+;
+MSG_CANT_CREATE_GADGET (//)
+Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS (//)
+Can't create menus!
+;
+MSG_CANT_CREATE_WIN (//)
+Can't create window!
+;
+MSG_MEN_PROJECT (//)
+Project
+;
+MSG_MEN_PROJECT_OPEN (//)
+O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS (//)
+A\0Save as...
+;
+MSG_MEN_PROJECT_PRINT (//)
+P\0Print
+;
+MSG_MEN_PROJECT_ABOUT (//)
+?\0About...
+;
+MSG_MEN_PROJECT_QUIT (//)
+Q\0Quit
+;
+MSG_MEN_EDIT (//)
+Edit
+;
+MSG_MEN_EDIT_MARK (//)
+B\0Mark
+;
+MSG_MEN_EDIT_COPY (//)
+C\0Copy
+;
+MSG_MEN_EDIT_SELECTALL (//)
+[\0Select All
+;
+MSG_MEN_EDIT_CLEARSELECTED (//)
+]\0Clear Selected
+;
+MSG_MEN_WINDOW (//)
+Window
+;
+MSG_MEN_WINDOW_SEPSCREEN (//)
+ \0Use Separate Screen
+;
+MSG_MEN_WINDOW_MINIMIZE (//)
+ \0Minimize
+;
+MSG_MEN_WINDOW_NORMAL (//)
+ \0Normal
+;
+MSG_MEN_WINDOW_MAXIMIZE (//)
+ \0Maximize
+;
+MSG_MEN_SETTINGS (//)
+Settings
+;
+MSG_MEN_SETTINGS_SAVEDEF (//)
+D\0Save As Defaults
+;

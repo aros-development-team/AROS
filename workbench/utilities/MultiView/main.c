@@ -1,0 +1,607 @@
+/*
+    (C) 1997-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc:
+    Lang: English
+*/
+
+/*********************************************************************************************/
+
+#include "global.h"
+
+#include <stdio.h>
+#include <string.h>
+
+#define DEBUG 0
+#include <aros/debug.h>
+
+/*********************************************************************************************/
+
+#define ARG_TEMPLATE 	"FILE,CLIPBOARD/S,CLIPUNIT/K/N,SCREEN/S,PUBSCREEN/K,REQUESTER/S," \
+		     	"BOOKMARK/S,FONTNAME/K,FONTSIZE/K/N,BACKDROP/S,WINDOW/S," \
+		     	"PORTNAME/K,IMMEDIATE/S,REPEAT/S,PRTUNIT/K/N"
+
+#define ARG_FILE	0
+#define ARG_CLIPBOARD	1
+#define ARG_CLIPUNIT	2
+#define ARG_SCREEN	3
+#define ARG_PUBSCREEN	4
+#define ARG_REQUESTER	5
+#define ARG_BOOKMARK	6
+#define ARG_FONTNAME	7
+#define ARG_FONTSIZE	8
+#define ARG_BACKDROP	9
+#define ARG_WINDOW	10
+#define ARG_PORTNAME	11
+#define ARG_IMMEDIATE	12
+#define ARG_REPEAT	13
+#define ARG_PRTUNIT	14
+
+#define NUM_ARGS	15
+
+/*********************************************************************************************/
+
+static struct libinfo
+{
+    APTR 	var;
+    STRPTR	name;
+    WORD	version;
+} libtable[] =
+{
+    {&IntuitionBase	, "intuition.library"		, 39	},
+    {&GfxBase		, "graphics.library"		, 39	},
+    {&CyberGfxBase	, "cybergraphics.library"	, 39	},
+    {&GadToolsBase	, "gadtools.library"		, 39	},
+    {&LayersBase	, "layers.library"		, 39	},
+    {&UtilityBase	, "utility.library"		, 39	},
+    {&KeymapBase	, "keymap.library"		, 39	},
+    {&DataTypesBase	, "datatypes.library"		, 39	},
+    {NULL							}
+};
+
+static struct RDArgs 	*myargs;
+static IPTR 		args[NUM_ARGS];
+static BOOL		model_has_members;
+
+/*********************************************************************************************/
+
+static void CloseLibs(void);
+static void FreeArguments(void);
+static void KillICObjects(void);
+static void FreeVisual(void);
+static void KillGadgets(void);
+static void CloseDTO(void);
+static void KillWindow(void);
+
+/*********************************************************************************************/
+
+void Cleanup(STRPTR msg)
+{
+    if (msg)
+    {
+        if (IntuitionBase)
+	{
+	    struct EasyStruct es;
+	    
+	    es.es_StructSize 	= sizeof(es);
+	    es.es_Flags 	= 0;
+	    es.es_Title 	= "MultiView";
+	    es.es_TextFormat 	= msg;
+	    es.es_GadgetFormat 	= "Ok";
+	    
+	    EasyRequestArgs(NULL, &es, NULL, NULL);
+	    
+	} else {
+	    printf("MultiView: %s\n", msg);
+	}
+    }
+    
+    KillWindow();
+    KillMenus();
+    KillGadgets();
+    FreeVisual();
+    CloseDTO();
+    KillICObjects();
+    CloseLibs();
+    FreeArguments();
+    CleanupLocale();
+    
+    exit(prog_exitcode);
+}
+
+
+/*********************************************************************************************/
+
+static void OpenLibs(void)
+{
+    struct libinfo *li;
+    
+    for(li = libtable; li->var; li++)
+    {
+        if (!((*(struct Library **)li->var) = OpenLibrary(li->name, li->version)))
+	{
+	    sprintf(s, MSG(MSG_CANT_OPEN_LIB), li->name, li->version);
+	    Cleanup(s);
+	}	
+    }
+       
+}
+
+/*********************************************************************************************/
+
+static void CloseLibs(void)
+{
+    struct libinfo *li;
+    
+    for(li = libtable; li->var; li++)
+    {
+        if (*(struct Library **)li->var) CloseLibrary((*(struct Library **)li->var));
+    }
+}
+
+/*********************************************************************************************/
+
+static void GetArguments(void)
+{
+    if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
+    {
+        Fault(IoErr(), 0, s, 256);
+	Cleanup(s);
+    }
+    
+    if (!args[ARG_FILE]) Cleanup(NULL);
+}
+
+/*********************************************************************************************/
+
+static void FreeArguments(void)
+{
+    if (myargs) FreeArgs(myargs);
+}
+
+/*********************************************************************************************/
+
+static void MakeICObjects(void)
+{
+    static const struct TagItem dto_to_vert_map[] =
+    {
+        {DTA_TopVert		, PGA_Top	},
+	{DTA_VisibleVert	, PGA_Visible	},
+	{DTA_TotalVert		, PGA_Total	},
+	{TAG_DONE				}
+    };
+    static const struct TagItem dto_to_horiz_map[] =
+    {
+        {DTA_TopHoriz		, PGA_Top	},
+	{DTA_VisibleHoriz	, PGA_Visible	},
+	{DTA_TotalHoriz		, PGA_Total	},
+	{TAG_DONE				}
+    };
+    static const struct TagItem vert_to_dto_map[] =
+    {
+        {PGA_Top		, DTA_TopVert	},
+	{TAG_DONE				}
+    };
+    static const struct TagItem horiz_to_dto_map[] =
+    {
+        {PGA_Top		, DTA_TopHoriz	},
+	{TAG_DONE				}
+    };
+        
+    model_obj		= NewObject(NULL, MODELCLASS, ICA_TARGET, ICTARGET_IDCMP,
+    					              TAG_DONE);
+    dto_to_vert_ic_obj  = NewObject(NULL, ICCLASS, ICA_MAP, dto_to_vert_map,
+    						   TAG_DONE);
+    dto_to_horiz_ic_obj = NewObject(NULL, ICCLASS, ICA_MAP, dto_to_horiz_map,
+    						   TAG_DONE);
+    vert_to_dto_ic_obj  = NewObject(NULL, ICCLASS, ICA_MAP, vert_to_dto_map,
+    						   TAG_DONE);
+    horiz_to_dto_ic_obj = NewObject(NULL, ICCLASS, ICA_MAP, horiz_to_dto_map,
+    						   TAG_DONE);	
+
+    if (!model_obj || !dto_to_vert_ic_obj || !dto_to_horiz_ic_obj ||
+        !vert_to_dto_ic_obj || !horiz_to_dto_ic_obj)
+    {
+        Cleanup(MSG(MSG_CANT_CREATE_IC));
+    }									   
+
+    DoMethod(model_obj, OM_ADDMEMBER, dto_to_vert_ic_obj);
+    DoMethod(model_obj, OM_ADDMEMBER, dto_to_horiz_ic_obj);
+    
+    model_has_members = TRUE;
+    						 
+}
+
+/*********************************************************************************************/
+
+static void KillICObjects(void)
+{
+    if (!model_has_members)
+    {
+        if (dto_to_vert_ic_obj) DisposeObject(dto_to_vert_ic_obj);
+	if (dto_to_horiz_ic_obj) DisposeObject(dto_to_horiz_ic_obj);
+    }
+    
+    if (model_obj) DisposeObject(model_obj);
+    if (vert_to_dto_ic_obj) DisposeObject(vert_to_dto_ic_obj);
+    if (horiz_to_dto_ic_obj) DisposeObject(horiz_to_dto_ic_obj);
+}
+
+/*********************************************************************************************/
+
+static void GetVisual(void)
+{
+    scr = LockPubScreen(NULL);
+    if (!scr) Cleanup(MSG(MSG_CANT_LOCK_SCR));
+    
+    dri = GetScreenDrawInfo(scr);
+    if (!dri) Cleanup(MSG(MSG_CANT_GET_DRI));
+    
+    vi = GetVisualInfoA(scr, NULL);
+    if (!vi) Cleanup(MSG(MSG_CANT_GET_VI));
+}
+
+/*********************************************************************************************/
+
+static void FreeVisual(void)
+{
+    if (dri) FreeScreenDrawInfo(scr, dri);
+    if (scr) UnlockPubScreen(NULL, scr);
+}
+
+/*********************************************************************************************/
+
+static void MakeGadgets(void)
+{
+    static WORD img2which[] =
+    {
+   	UPIMAGE,
+   	DOWNIMAGE,
+   	LEFTIMAGE,
+   	RIGHTIMAGE,
+   	SIZEIMAGE
+    };
+   
+    IPTR imagew[NUM_IMAGES], imageh[NUM_IMAGES];
+    WORD v_offset, h_offset, btop, i;
+
+    for(i = 0; i < NUM_IMAGES; i++)
+    {
+	img[i] = NewObject(NULL, SYSICLASS, SYSIA_DrawInfo	, dri		,
+				            SYSIA_Which		, img2which[i]	,
+				            TAG_DONE);
+
+	if (!img[i]) Cleanup(MSG(MSG_CANT_CREATE_SYSIMAGE));
+
+	GetAttr(IA_Width,(Object *)img[i],&imagew[i]);
+	GetAttr(IA_Height,(Object *)img[i],&imageh[i]);
+    }
+
+    btop = scr->WBorTop + dri->dri_Font->tf_YSize + 1;
+
+    v_offset = imagew[IMG_DOWNARROW] / 4;
+    h_offset = imageh[IMG_LEFTARROW] / 4;
+
+    gad[GAD_UPARROW] = NewObject(NULL, BUTTONGCLASS,
+	    GA_Image		, img[IMG_UPARROW]							,
+	    GA_RelRight		, -imagew[IMG_UPARROW] + 1						,
+	    GA_RelBottom	, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1	,
+	    GA_ID		, GAD_UPARROW								,
+	    GA_RightBorder	, TRUE									,
+	    GA_Immediate	, TRUE									,
+	    TAG_DONE);
+
+    gad[GAD_DOWNARROW] = NewObject(NULL, BUTTONGCLASS,
+	    GA_Image		, img[IMG_DOWNARROW]				,
+	    GA_RelRight		, -imagew[IMG_UPARROW] + 1			,
+	    GA_RelBottom	, -imageh[IMG_UPARROW] - imageh[IMG_SIZE] + 1	,
+	    GA_ID		, GAD_DOWNARROW					,
+	    GA_RightBorder	, TRUE						,
+	    GA_Previous		, gad[GAD_UPARROW]				,
+	    GA_Immediate	, TRUE						,
+	    TAG_DONE);
+
+    gad[GAD_VERTSCROLL] = NewObject(NULL, PROPGCLASS,
+	    GA_Top		, btop + 1									,
+	    GA_RelRight		, -imagew[IMG_DOWNARROW] + v_offset + 1						,
+	    GA_Width		, imagew[IMG_DOWNARROW] - v_offset * 2						,
+	    GA_RelHeight	, -imageh[IMG_DOWNARROW] - imageh[IMG_UPARROW] - imageh[IMG_SIZE] - btop -2	,
+	    GA_ID		, GAD_VERTSCROLL								,
+	    GA_Previous		, gad[GAD_DOWNARROW]								,
+	    GA_RightBorder	, TRUE										,
+	    GA_RelVerify	, TRUE										,
+	    GA_Immediate	, TRUE										,
+	    PGA_NewLook		, TRUE										,
+	    PGA_Borderless	, TRUE										,
+	    PGA_Total		, 100										,
+	    PGA_Visible		, 100										,
+	    PGA_Freedom		, FREEVERT									,
+	    TAG_DONE);
+
+    gad[GAD_RIGHTARROW] = NewObject(NULL, BUTTONGCLASS,
+	    GA_Image		, img[IMG_RIGHTARROW]				,
+	    GA_RelRight		, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] + 1,
+	    GA_RelBottom	, -imageh[IMG_RIGHTARROW] + 1			,
+	    GA_ID		, GAD_RIGHTARROW				,
+	    GA_BottomBorder	, TRUE						,
+	    GA_Previous		, gad[GAD_VERTSCROLL]				,
+	    GA_Immediate	, TRUE						,
+	    TAG_DONE);
+
+    gad[GAD_LEFTARROW] = NewObject(NULL, BUTTONGCLASS,
+	    GA_Image		, img[IMG_LEFTARROW]							,
+	    GA_RelRight		, -imagew[IMG_SIZE] - imagew[IMG_RIGHTARROW] - imagew[IMG_LEFTARROW] + 1,
+	    GA_RelBottom	, -imageh[IMG_RIGHTARROW] + 1						,
+	    GA_ID		, GAD_LEFTARROW								,
+	    GA_BottomBorder	, TRUE									,
+	    GA_Previous		, gad[GAD_RIGHTARROW]							,
+	    GA_Immediate	, TRUE									,
+	    TAG_DONE);
+
+    gad[GAD_HORIZSCROLL] = NewObject(NULL,PROPGCLASS,
+	    GA_Left		,scr->WBorLeft										,
+	    GA_RelBottom	,-imageh[IMG_LEFTARROW] + h_offset + 1							,
+	    GA_RelWidth		,-imagew[IMG_LEFTARROW] - imagew[IMG_RIGHTARROW] - imagew[IMG_SIZE] - scr->WBorRight - 2,
+	    GA_Height		,imageh[IMG_LEFTARROW] - (h_offset * 2)							,
+	    GA_ID		,GAD_HORIZSCROLL									,
+	    GA_Previous		,gad[GAD_LEFTARROW]									,
+	    GA_BottomBorder	,TRUE											,
+	    GA_RelVerify	,TRUE											,
+	    GA_Immediate	,TRUE											,
+	    PGA_NewLook		,TRUE											,
+	    PGA_Borderless	,TRUE											,
+	    PGA_Total		,100											,
+	    PGA_Visible		,100											,
+	    PGA_Freedom		,FREEHORIZ										,
+	    TAG_DONE);
+
+    for(i = 0;i < NUM_GADGETS;i++)
+    {
+	if (!gad[i]) Cleanup(MSG(MSG_CANT_CREATE_GADGET));
+    }
+    
+    SetAttrs(gad[GAD_VERTSCROLL] , ICA_TARGET, (IPTR)vert_to_dto_ic_obj, TAG_DONE);
+    SetAttrs(gad[GAD_HORIZSCROLL], ICA_TARGET, (IPTR)horiz_to_dto_ic_obj, TAG_DONE);
+    SetAttrs(dto_to_vert_ic_obj  , ICA_TARGET, (IPTR)gad[GAD_VERTSCROLL]);
+    SetAttrs(dto_to_horiz_ic_obj , ICA_TARGET, (IPTR)gad[GAD_HORIZSCROLL]);
+}
+
+/*********************************************************************************************/
+
+static void KillGadgets(void)
+{
+    WORD i;
+    
+    for(i = 0; i < NUM_GADGETS;i++)
+    {
+        if (win) RemoveGadget(win, (struct Gadget *)gad[i]);
+    	if (gad[i]) DisposeObject(gad[i]);
+	gad[i] = NULL;
+    }
+    
+    for(i = 0; i < NUM_IMAGES;i++)
+    {
+	if (img[i]) DisposeObject(img[i]);
+	img[i] = NULL;
+    }
+}
+
+/*********************************************************************************************/
+
+static void OpenDTO(void)
+{
+    old_dto = dto;
+    dto = NewDTObject((STRPTR)args[ARG_FILE], ICA_TARGET, (IPTR)model_obj,
+    					      GA_ID	, 1000		 ,
+    					      TAG_DONE);
+
+    if (!dto)
+    {
+        ULONG errnum = IoErr();
+	
+	if (errnum >= DTERROR_UNKNOWN_DATATYPE)
+	    sprintf(s, GetDTString(errnum), (STRPTR)args[ARG_FILE]);
+	else
+	    Fault(errnum, 0, s, 256);
+	
+	Cleanup(s);
+    }
+    
+    SetAttrs(vert_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
+    SetAttrs(horiz_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
+}
+
+/*********************************************************************************************/
+
+static void CloseDTO(void)
+{
+    if (dto)
+    {
+        if (win) RemoveDTObject(win, dto);
+	DisposeDTObject(dto);
+	dto = NULL;
+    }
+}
+
+/*********************************************************************************************/
+
+static void MakeWindow(void)
+{
+    win = OpenWindowTags(0, WA_PubScreen	, scr			,
+    			    WA_Title		, (IPTR)"MultiView"	,
+			    WA_CloseGadget	, TRUE			,
+			    WA_DepthGadget	, TRUE			,
+			    WA_DragBar		, TRUE			,
+			    WA_SizeGadget	, TRUE			,
+			    WA_Activate		, TRUE			,
+			    WA_SimpleRefresh	, TRUE			,
+			    WA_NoCareRefresh	, TRUE			,
+			    WA_NewLookMenus	, TRUE			,
+			    WA_Left		, 20			,
+			    WA_Top		, 20			,
+			    WA_Width		, 600			,
+			    WA_Height		, 300			,
+			    WA_AutoAdjust	, TRUE			,
+			    WA_MinWidth		, 50			,
+			    WA_MinHeight	, 50			,
+			    WA_MaxWidth		, 16383			,
+			    WA_MaxHeight	, 16383			,
+			    WA_Gadgets		, (IPTR)gad[GAD_UPARROW],
+			    WA_IDCMP		, IDCMP_CLOSEWINDOW |
+			    			  IDCMP_GADGETUP    |
+						  IDCMP_GADGETDOWN  |
+						  IDCMP_MOUSEMOVE   |
+						  IDCMP_VANILLAKEY  |						  
+						  IDCMP_RAWKEY	    |
+						  IDCMP_IDCMPUPDATE |
+						  IDCMP_MENUPICK	,
+			    TAG_DONE);
+
+    if (!win) Cleanup(MSG(MSG_CANT_CREATE_WIN));			    
+
+    SetDTAttrs (dto, NULL, NULL, GA_Left	, win->BorderLeft + 2				,
+				 GA_Top		, win->BorderTop + 2				,
+				 GA_RelWidth	, - win->BorderLeft - win->BorderRight - 4	,
+				 GA_RelHeight	, - win->BorderTop - win->BorderBottom - 4	,
+				 TAG_DONE);
+
+    AddDTObject(win, NULL, dto, -1);
+    RefreshDTObjects(dto, win, NULL, NULL);
+    
+    SetMenuStrip(win, menus);
+}
+
+/*********************************************************************************************/
+
+static void KillWindow(void)
+{
+    if (win)
+    {
+        if (dto) RemoveDTObject(win, dto);
+	if (menus) ClearMenuStrip(win);
+	CloseWindow(win);
+	win = NULL;
+    }
+}
+
+/*********************************************************************************************/
+
+static void HandleAll(void)
+{
+    struct IntuiMessage *msg;
+    struct TagItem	*tstate, *tags, *tag;
+    struct MenuItem	*item;
+    IPTR		tidata;
+    UWORD		men;
+    BOOL 		quitme = FALSE;
+    
+    while (!quitme)
+    {
+        WaitPort(win->UserPort);
+	while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+	{
+	    switch (msg->Class)
+	    {
+	        case IDCMP_CLOSEWINDOW:
+		    quitme = TRUE;
+		    break;
+		
+		case IDCMP_VANILLAKEY:
+		    switch(msg->Code)
+		    {
+		        case 27:
+			    quitme = TRUE;
+			    break;
+		    }
+		    break;
+		
+		case IDCMP_MENUPICK:
+		    men = msg->Code;		
+		    while(men != MENUNULL)
+		    {
+			if ((item = ItemAddress(menus, men)))
+			{
+			    switch((ULONG)GTMENUITEM_USERDATA(item))
+			    {
+			        case MSG_MEN_PROJECT_QUIT:
+				    quitme = TRUE;
+				    break;
+				    
+			    } /* switch(GTMENUITEM_USERDATA(item)) */
+			    
+		            men = item->NextSelect;
+			} else {
+		            men = MENUNULL;
+			}
+			
+		    } /* while(men != MENUNULL) */
+	            break;
+		    
+		case IDCMP_IDCMPUPDATE:
+		    tstate = tags = (struct TagItem *)msg->IAddress;
+		    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+		    {
+			tidata = tag->ti_Data;
+			switch (tag->ti_Tag)
+			{
+			    /* Change in busy state */
+			    case DTA_Busy:
+				if (tidata)
+				    SetWindowPointer (win, WA_BusyPointer, TRUE, TAG_DONE);
+				else
+				    SetWindowPointer (win, WA_Pointer, NULL, TAG_DONE);
+				break;
+
+			    /* Error message */
+			    case DTA_ErrorLevel:
+/*				if (tidata)
+				{
+				    errnum = GetTagData (DTA_ErrorNumber, NULL, tags);
+				    PrintErrorMsg (errnum, (STRPTR) options[OPT_NAME]);
+				}*/
+				break;
+
+			    /* Time to refresh */
+			    case DTA_Sync:
+				/* Refresh the DataType object */
+				RefreshDTObjects (dto, win, NULL, NULL);
+				break;
+					    
+			} /* switch (tag->ti_Tag) */
+			
+		    } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
+		    break;
+		
+	    } /* switch (msg->Class) */
+	    
+	    ReplyMsg((struct Message *)msg);
+	    
+	} /* while((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
+	
+    } /* while (!quitme) */
+}
+
+/*********************************************************************************************/
+
+int main(void)
+{
+    InitLocale("Sys/multiview.catalog", 1);
+    InitMenus();
+    GetArguments();
+    OpenLibs();
+    MakeICObjects();
+    OpenDTO();
+    GetVisual();
+    MakeGadgets();
+    MakeMenus();
+    MakeWindow();
+    HandleAll();
+    Cleanup(NULL);
+    
+    return 0;
+}
+
+/*********************************************************************************************/
+
+
