@@ -144,7 +144,8 @@ binary-native-i386 : build
 
 #MM
 install-native-i386 :
-	@read -p "Insert blank floppy-disk in /dev/fd0 and press enter."
+	@$(ECHO) "Insert blank floppy-disk in /dev/fd0 and press enter."
+	@read
 	@$(ECHO) "Writing AROS Image to floppy..."
 	@dd if=$(OSGENDIR)/boot/aros.bin of=/dev/fd0
 
