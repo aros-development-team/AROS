@@ -16,15 +16,10 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "poppen_private.h"
 
 extern struct Library *MUIMasterBase;
 
-struct Poppen_DATA
-{
-    Object *wnd;
-    Object *penadjust;
-    CONST_STRPTR wintitle;
-};
 
 IPTR Poppen__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {

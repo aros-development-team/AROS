@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "preferenceswindow.h"
+#include "preferenceswindow_private.h"
 
 #define CATCOMP_ARRAY
 #include "strings.h"
@@ -26,7 +27,6 @@
 #include <aros/debug.h>
 
 /*** Locale functions *******************************************************/
-
 STRPTR MSG(struct Catalog *catalog, ULONG id)
 {
     if (catalog != NULL)
@@ -41,15 +41,7 @@ STRPTR MSG(struct Catalog *catalog, ULONG id)
 
 #define _(id) MSG(catalog, id)
 
-/*** Instance data **********************************************************/
-
-struct PreferencesWindow_DATA
-{
-    struct Catalog *pwd_Catalog;
-};
-
 /*** Methods ****************************************************************/
-
 IPTR PreferencesWindow__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message 
@@ -180,7 +172,7 @@ IPTR PreferencesWindow__OM_NEW
         (IPTR) self, 1, MUIM_PreferencesWindow_Cancel
     );
     
-    return self;
+    return (IPTR) self;
     
 error:
     if (catalog != NULL) CloseCatalog(catalog);

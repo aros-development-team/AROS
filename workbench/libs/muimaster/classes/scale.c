@@ -22,18 +22,12 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "scale_private.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
-
-struct Scale_DATA
-{
-    BOOL horiz;
-    LONG label_height;
-    LONG label_minwidth;
-};
 
 
 IPTR Scale__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)

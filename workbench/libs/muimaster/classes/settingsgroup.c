@@ -18,13 +18,10 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "settingsgroup_private.h"
 
 extern struct Library *MUIMasterBase;
 
-struct Settingsgroup_DATA
-{
-    int dummy;
-};
 
 IPTR Settingsgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {

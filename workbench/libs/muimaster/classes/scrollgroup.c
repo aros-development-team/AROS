@@ -20,16 +20,10 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "scrollgroup_private.h"
 
 extern struct Library *MUIMasterBase;
 
-struct Scrollgroup_DATA
-{
-    Object *contents;
-    Object *vert, *horiz, *button;
-    struct Hook hook;
-    struct Hook *layout_hook;
-};
 
 AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),

@@ -11,12 +11,6 @@ struct functionlist *funclist = NULL;
  */
 struct functionlist *methlist;
 
-/* In datastruct we will keep the lines that define the class instancedata
- * struct.
- */
-
-struct linelist *datastruct;
-
 /* In forcelist a list of basenames is present that need to be present in the
  * static link library so that certain libraries are opened by a program
  */

@@ -28,39 +28,9 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "imageadjust_private.h"
 
 extern struct Library *MUIMasterBase;
-
-struct Imageadjust_DATA
-{
-    Object *bitmap_string;
-    Object *bitmap_image;
-    struct Hook bitmap_hook;
-
-    struct Hook gradient_hook;
-    Object *gradient_imagedisplay;
-    Object *gradient_angle_slider;
-    Object *gradient_start_poppen;
-    Object *gradient_end_poppen;
-    char gradient_imagespec[128];
-
-    Object *pattern_image[18];
-    ULONG last_pattern_selected;
-    struct Hook pattern_select_hook;
-
-    Object *vector_image[24];
-    ULONG last_vector_selected;
-    struct Hook vector_select_hook;
-
-    Object *color_group;
-
-    Object *external_list;
-    struct Hook external_display_hook;
-
-    char *imagespec;
-    LONG adjust_type;
-};
-
 
 static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
 {
@@ -373,7 +343,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	        MUIA_Imagedisplay_FreeVert, TRUE,
 	        End),
 	    Child, (IPTR)(gradient_angle_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 359, End),
-	    Child, HGroup,
+	    Child, (IPTR) HGroup,
 		Child, (IPTR)(gradient_start_poppen = PoppenObject, MUIA_Pendisplay_Spec, (IPTR)"r00000000,00000000,00000000", End),
 		Child, (IPTR)(gradient_end_poppen = PoppenObject, MUIA_Pendisplay_Spec, (IPTR)"rffffffff,ffffffff,ffffffff", End),
 		End,

@@ -25,14 +25,10 @@
 #include "support.h"
 #include "support_classes.h"
 #include "frame.h"
+#include "framedisplay_private.h"
 
 extern struct Library *MUIMasterBase;
 
-struct Framedisplay_DATA
-{
-    struct MUI_FrameSpec_intern fs_intern;
-    char spec[8];
-};
 
 IPTR Framedisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {

@@ -25,6 +25,7 @@
 #include <zune/iconimage.h>
 
 #include "aboutwindow.h"
+#include "aboutwindow_private.h"
 
 #define CATCOMP_ARRAY
 #include "strings.h"
@@ -47,32 +48,6 @@ STRPTR MSG(struct Catalog *catalog, ULONG id)
 }
 
 #define _(id) MSG(catalog,id)
-
-
-/*** Instance data **********************************************************/
-
-struct AboutWindow_DATA
-{
-    /*- Private ------------------------------------------------------------*/
-    struct Catalog *awd_Catalog;
-    
-    /*- Protected ----------------------------------------------------------*/
-    Object         *awd_RootGroup,
-                   *awd_ImageGroup,
-                   *awd_ImageObject,
-                   *awd_VersionObject,
-                   *awd_CopyrightObject,
-                   *awd_DescriptionGroup,
-                   *awd_DescriptionObject;
-                   
-    /*- Public -------------------------------------------------------------*/
-    STRPTR          awd_Title,
-                    awd_VersionNumber,
-                    awd_VersionDate,
-                    awd_VersionExtra,
-                    awd_Copyright,
-                    awd_Description;
-};
 
 #define IGNORE ((APTR)(1UL))
 

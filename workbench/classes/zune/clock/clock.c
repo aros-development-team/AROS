@@ -22,32 +22,13 @@
 #include <math.h>
 
 #include "clock.h"
-
+#include "clock_private.h"
 
 #define SHADOW_OFFX 4
 #define SHADOW_OFFY 4
 
-/*** Instance data **********************************************************/
-
-struct Clock_DATA
-{
-    struct MUI_InputHandlerNode ihn;
-    struct ClockData	    	clockdata;
-    struct BitMap   	    	*clockbm;
-    struct RastPort 	    	clockrp;
-    struct AreaInfo 	    	clockai;
-    struct TmpRas   	    	clocktr;
-    APTR    	    	    	clockraster;
-    WORD    	    	    	areabuf[30];
-    WORD    	    	    	clockbmr, clockbmw, clockbmh;
-    WORD    	    	    	edithand;
-    WORD    	    	    	editpen;
-    BOOL    	    	    	frozen;
-};
-
 
 /*** Methods ****************************************************************/
-
 IPTR Clock__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Clock_DATA *data;

@@ -21,25 +21,10 @@
 #include <stdio.h>
 
 #include "calendar.h"
-
+#include "calendar_private.h"
 
 #define CELL_EXTRAWIDTH 6
 #define CELL_EXTRAHEIGHT 4
-
-/*** Instance data **********************************************************/
-
-struct Calendar_DATA
-{
-    struct MUI_EventHandlerNode ehn;
-    struct ClockData	    	clockdata;
-    STRPTR  	    	    	*daylabels;
-    STRPTR  	    	    	defdaylabels[12];
-    WORD    	    	    	cellwidth, base_cellwidth;
-    WORD    	    	    	cellheight, base_cellheight;
-    WORD    	    	    	mwday; /* weekday of 1st of month */
-    WORD    	    	    	old_mday;
-    LONG                        firstweekday;
-};
 
 STRPTR def_daylabels[] =
 {

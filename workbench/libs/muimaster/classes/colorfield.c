@@ -24,6 +24,7 @@
 #include "textengine.h"
 #include "support.h"
 #include "support_classes.h"
+#include "colorfield_private.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
@@ -34,12 +35,6 @@ extern struct Library *MUIMasterBase;
 #define FLAG_PEN_ALLOCATED  2
 #define FLAG_NO_PEN 	    4
 
-struct Colorfield_DATA
-{
-    ULONG rgb[3];
-    UBYTE pen;
-    UBYTE flags;    
-};
 
 IPTR Colorfield__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {

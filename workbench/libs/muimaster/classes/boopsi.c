@@ -17,27 +17,9 @@
 #include "mui.h"
 #include "support_classes.h"
 #include "muimaster_intern.h"
+#include "boopsi_private.h"
 
 extern struct Library *MUIMasterBase;
-
-struct Boopsi_DATA
-{
-    struct TagItem *remember;
-    LONG remember_len;
-
-    struct IClass *boopsi_class;
-    char *boopsi_classid;
-    int boopsi_minwidth,boopsi_minheight;
-    int boopsi_maxwidth,boopsi_maxheight;
-    Object *boopsi_object;
-    ULONG boopsi_tagdrawinfo;
-    ULONG boopsi_tagscreen;
-    ULONG boopsi_tagwindow;
-    ULONG boopsi_smart;
-
-    struct TagItem *boopsi_taglist;
-    struct MUI_EventHandlerNode ehn;
-};
 
 ULONG Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {

@@ -23,28 +23,13 @@
 #include "textengine.h"
 #include "support.h"
 #include "support_classes.h"
+#include "gauge_private.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
-#define GAUGE_BUFSIZE 256
-
-struct Gauge_DATA
-{
-   BOOL horiz;
-   BOOL dupinfo;
-
-   ULONG current; /* (dlc) LONG in MUI, (sba) but MUI seems to handle it like ULONG */
-   ULONG max;
-   ULONG divide;
-   STRPTR info;
-
-   char buf[GAUGE_BUFSIZE];
-   LONG info_width;
-   LONG info_height;
-};
 
 IPTR Gauge__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {

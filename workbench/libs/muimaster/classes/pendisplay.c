@@ -25,19 +25,13 @@
 #include "textengine.h"
 #include "support.h"
 #include "support_classes.h"
+#include "pendisplay_private.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
-struct Pendisplay_DATA
-{
-    struct MUI_PenSpec  penspec;
-    struct MUI_RGBcolor rgb;
-    Object  	    	*refobj;
-    LONG    	    	pen;
-};
 
 IPTR Pendisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {

@@ -21,16 +21,11 @@
 #include <string.h>
 
 #include "iconimage.h"
+#include "iconimage_private.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
 
-/*** Instance data **********************************************************/
-
-struct IconImage_DATA
-{
-    struct DiskObject *iid_DiskObject;
-};
 
 /*** Methods ****************************************************************/
 IPTR IconImage__OM_NEW

@@ -18,16 +18,9 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "popimage_private.h"
 
 extern struct Library *MUIMasterBase;
-
-struct Popimage_DATA
-{
-    Object *wnd;
-    Object *imageadjust;
-    ULONG adjust_type;
-    CONST_STRPTR wintitle;
-};
 
 IPTR Popimage__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
