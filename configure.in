@@ -367,10 +367,10 @@ case "$target_os" in
 
     morphos*)
 	aros_target_arch="morphos"
-    aros_shared_default="no"
+	aros_shared_default="no"
 	aros_target_cpu="ppc"
 	aros_flavour="nativecompat"
-    aros_target_cflags="-O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__"
+	aros_target_cflags="-O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__ -D__NOLIBBASE__"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
 	;;
 
