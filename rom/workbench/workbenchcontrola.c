@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Change global options and control the Workbench in various ways.
     Lang: english
 */
 

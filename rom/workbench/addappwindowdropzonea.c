@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Add a dropzone to an AppWindow's list of AppWindowDropZones.
     Lang: english
 */
 

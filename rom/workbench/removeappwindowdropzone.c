@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Remove a dropzone from a AppWindow's list of AppWindowDropZones.
     Lang: english
 */
 

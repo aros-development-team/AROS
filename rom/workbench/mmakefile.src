@@ -52,7 +52,7 @@ FUNCTIONS := \
     changeworkbenchselectiona \
     makeworkbenchobjectvisiblea \
     registerworkbench \
-    unregisterworkbench
+    unregisterworkbench 
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during

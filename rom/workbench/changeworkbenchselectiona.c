@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Change the selection state of icons in a named drawer.
     Lang: english
 */
 

@@ -2,7 +2,7 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Add an icon to Workbench's list of AppIcons.
     Lang: english
 */
 

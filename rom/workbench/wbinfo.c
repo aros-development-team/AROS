@@ -2,7 +2,7 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Open the icon information window for a specified file.
     Lang: english
 */
 
@@ -21,8 +21,8 @@
 
     AROS_LH3(ULONG, WBInfo,
 /*  SYNOPSIS */
-    AROS_LHA(BPTR,              lock,   A0),
-    AROS_LHA(STRPTR,            name,   A1),
+    AROS_LHA(BPTR,            lock,   A0),
+    AROS_LHA(STRPTR,          name,   A1),
     AROS_LHA(struct Screen *, screen, A2),
 
 /*  LOCATION */

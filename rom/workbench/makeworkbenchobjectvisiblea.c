@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Scroll the contents of a drawer so an specific icon becomes visible.
     Lang: english
 */
 

@@ -17,6 +17,9 @@
 #ifndef EXEC_LISTS_H
 #   include <exec/lists.h>
 #endif
+#ifndef EXEC_SEMAPHORES_H
+#   include <exec/semaphores.h>
+#endif
 #ifndef EXEC_MEMORY_H
 #   include <exec/memory.h>
 #endif
@@ -52,30 +55,38 @@
 */
 
 struct WorkbenchBase {
-    struct Library     LibNode;
-    BPTR               wb_SegList;
+    struct Library          LibNode;
+    BPTR                    wb_SegList;
 
-    struct ExecBase   *wb_SysBase;
-    struct Library    *wb_DOSBase;
-    struct Library    *wb_UtilityBase;
-    struct Library    *wb_IntuitionBase;
+    struct ExecBase        *wb_SysBase;
+    struct Library         *wb_DOSBase;
+    struct Library         *wb_UtilityBase;
+    struct Library         *wb_IntuitionBase;
 
-    struct MsgPort    *wb_HandlerPort;       /* The Workbench Handler's message port. */
-    struct MsgPort    *wb_AppPort;           /* The Workbench App's message port. */
+    struct MsgPort         *wb_HandlerPort;       /* The Workbench Handler's message port. */
+    struct MsgPort         *wb_AppPort;           /* The Workbench App's message port. */
 
-    struct List        wb_AppWindows;
-    struct List        wb_AppIcons;
-    struct List        wb_AppMenuItems;
+    struct List             wb_AppWindows;
+    struct List             wb_AppIcons;
+    struct List             wb_AppMenuItems;
 
-    struct List        wb_HiddenDevices;     /* List of devices that Workbench will not show. */
-    ULONG              wb_DefaultStackSize;
-    ULONG              wb_TypeRestartTime;
+    struct List             wb_HiddenDevices;     /* List of devices that Workbench will not show. */
+    ULONG                   wb_DefaultStackSize;
+    ULONG                   wb_TypeRestartTime;
+
+    struct SignalSemaphore  wb_Semaphore;         /* Semaphore for locking WorkbenchBase. */
+
+    BOOL                    wb_LibsOpened;        /* Are the libraries opened? */
 };
 
 #define SysBase         (WorkbenchBase->wb_SysBase)
 #define UtilityBase     ((struct UtilityBase *)(WorkbenchBase->wb_UtilityBase))
 #define IntuitionBase   ((struct IntuitionBase *)(WorkbenchBase->wb_UtilityBase))
 #define DOSBase         ((struct DosLibrary *)(WorkbenchBase->wb_DOSBase))
+
+/* Quick macros for obtaining and releasing the semaphore. */
+#define LockWorkbench()   (ObtainSemaphore( &(WorkbenchBase->wb_Semaphore) ))
+#define UnlockWorkbench() (ObtainSemaphore( &(WorkbenchBase->wb_Semaphore) ))
 
 /*
  * Defintion of internal structures.
