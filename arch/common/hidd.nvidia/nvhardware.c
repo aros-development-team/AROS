@@ -265,6 +265,11 @@ int NVShowHideCursor (struct staticdata *sd, UBYTE ShowHide)
     VGA_WR08(sd->Card.PCIO, 0x3D4, 0x31);
     VGA_WR08(sd->Card.PCIO, 0x3D5, sd->Card.CurrentState->cursor1);
 
+    if (sd->Card.Architecture == NV_ARCH_40) { /* HW bug */
+       volatile ULONG curpos = sd->Card.PRAMDAC[0x0300/4];
+       sd->Card.PRAMDAC[0x0300/4] = curpos;
+    }
+    
     ReleaseSemaphore(&sd->HWLock);
     return (current & 0x01);
 }
@@ -722,21 +727,6 @@ static void nv10CalcArbitration (
         clwm = us_crt * crtc_drain_rate/(1000*1000);
         clwm++; /* fixed point <= float_point - 1.  Fixes that */
 
-  /*
-          //
-          // Another concern, only for high pclks so don't do this
-          // with video:
-          // What happens if the latency to fetch the cbs is so large that
-          // fifo empties.  In that case we need to have an alternate clwm value
-          // based off the total burst fetch
-          //
-          us_crt = (cbs * 1000 * 1000)/ (8*width)/mclk_freq ;
-          us_crt = us_crt + us_m + us_n + us_p + (4 * 1000 * 1000)/mclk_freq;
-          clwm_mt = us_crt * crtc_drain_rate/(1000*1000);
-          clwm_mt ++;
-          if(clwm_mt > clwm)
-              clwm = clwm_mt;
-  */
           /* Finally, a heuristic check when width == 64 bits */
           if(width == 1){
               nvclk_fill = nvclk_freq * 8;
@@ -834,6 +824,27 @@ static void nv10UpdateArbitrationSettings (
         while (b >>= 1) (*burst)++;
         *lwm   = fifo_data.graphics_lwm >> 3;
     }
+}
+
+static void nv30UpdateArbitrationSettings (
+    NVPtr        pNv,
+    unsigned     *burst,
+    unsigned     *lwm
+)   
+{
+    unsigned int MClk, NVClk;
+    unsigned int fifo_size, burst_size, graphics_lwm;
+
+    fifo_size = 2048;
+    burst_size = 512;
+    graphics_lwm = fifo_size - burst_size;
+
+    nvGetClocks(pNv, &MClk, &NVClk);
+    
+    *burst = 0;
+    burst_size >>= 5;
+    while(burst_size >>= 1) (*burst)++;
+    *lwm = graphics_lwm >> 3;
 }
 
 static void nForceUpdateArbitrationSettings (
@@ -1060,13 +1071,17 @@ void NVCalcStateExt (
                                          &(state->arbitration1),
 					  sd,
                                           pNv);
-            } else {
+            } else if (pNv->Architecture < NV_ARCH_30) {
                 nv10UpdateArbitrationSettings(VClk, 
                                           pixelDepth * 8, 
                                          &(state->arbitration0),
                                          &(state->arbitration1),
                                           pNv);
-            }
+            } else {
+                nv30UpdateArbitrationSettings(pNv,
+                                         &(state->arbitration0),
+                                         &(state->arbitration1));
+    	    }	    
             state->cursor0  = 0x80 | (pNv->CursorStart >> 17);
             state->cursor1  = (pNv->CursorStart >> 11) << 2;
 	    state->cursor2  = pNv->CursorStart >> 24;
@@ -1088,7 +1103,7 @@ void NVCalcStateExt (
 /*
 ** stegerg: Status NVLoadStateExt(): should "match" xfree nv NVLoadStateExt()
 ** in xc/programs/Xserver/hw/xfree86/drivers/nv/nv_hw.c version:
-** 1.8 2004/03/20 01:52:16 mvojkovi
+** 1.12 2004/11/30 23:50:26 mvojkovi
 ** 
 ** Exception: some waitvsyncpossible stuff commented out
 */
@@ -1348,10 +1363,42 @@ void NVLoadStateExt (
               pNv->PGRAPH[0x008C/4] = 0x60de8051; 
               pNv->PGRAPH[0x0090/4] = 0x00008000;
               pNv->PGRAPH[0x0610/4] = 0x00be3c5f;
-              pNv->PGRAPH[0x09b0/4] = 0x83280fff;
-              pNv->PGRAPH[0x09b4/4] = 0x000000a0;
-              pNv->PGRAPH[0x09b8/4] = 0x0078e366;
-              pNv->PGRAPH[0x09bc/4] = 0x0000014c;
+
+              if((pNv->Chipset & 0xfff0) == 0x0040) {
+                 pNv->PGRAPH[0x09b0/4] = 0x83280fff;
+                 pNv->PGRAPH[0x09b4/4] = 0x000000a0;
+              } else {
+                 pNv->PGRAPH[0x0820/4] = 0x83280eff;
+                 pNv->PGRAPH[0x0824/4] = 0x000000a0;
+              }
+
+              switch(pNv->Chipset & 0xfff0) {
+              case 0x0040:	      
+                 pNv->PGRAPH[0x09b8/4] = 0x0078e366;
+                 pNv->PGRAPH[0x09bc/4] = 0x0000014c;
+                 pNv->PFB[0x033C/4] &= 0xffff7fff;
+                 break;
+              case 0x00C0:
+                 pNv->PGRAPH[0x0828/4] = 0x007596ff;
+                 pNv->PGRAPH[0x082C/4] = 0x00000108;
+                 break;
+              case 0x0160:
+                 pNv->PMC[0x1700/4] = pNv->PFB[0x020C/4];
+                 pNv->PMC[0x1704/4] = 0;
+                 pNv->PMC[0x1708/4] = 0;
+                 pNv->PMC[0x170C/4] = pNv->PFB[0x020C/4];
+                 pNv->PGRAPH[0x0860/4] = 0;
+                 pNv->PGRAPH[0x0864/4] = 0;
+                 pNv->PRAMDAC[0x0608/4] |= 0x00100000;
+                 break;
+              case 0x0140:
+                 pNv->PGRAPH[0x0828/4] = 0x0072cb77;
+                 pNv->PGRAPH[0x082C/4] = 0x00000108;
+                 break;
+              default:
+                 break;
+              };
+		 
               pNv->PGRAPH[0x0b38/4] = 0x2ffff800;
               pNv->PGRAPH[0x0b3c/4] = 0x00006000;
               pNv->PGRAPH[0x032C/4] = 0x01000000; 
@@ -1394,24 +1441,42 @@ void NVLoadStateExt (
            for(i = 0; i < 32; i++)
              pNv->PGRAPH[(0x0900/4) + i] = pNv->PFB[(0x0240/4) + i];
 
-           pNv->PGRAPH[0x09A4/4] = pNv->PFB[0x0200/4];
-           pNv->PGRAPH[0x09A8/4] = pNv->PFB[0x0204/4];
-
            if(pNv->Architecture >= NV_ARCH_40) {
-              pNv->PGRAPH[0x69A4/4] = pNv->PFB[0x0200/4];
-              pNv->PGRAPH[0x69A8/4] = pNv->PFB[0x0204/4];
+              if((pNv->Chipset & 0xfff0) == 0x0040) {
+                 pNv->PGRAPH[0x09A4/4] = pNv->PFB[0x0200/4];
+                 pNv->PGRAPH[0x09A8/4] = pNv->PFB[0x0204/4];
+                 pNv->PGRAPH[0x69A4/4] = pNv->PFB[0x0200/4];
+                 pNv->PGRAPH[0x69A8/4] = pNv->PFB[0x0204/4];
+
+                 pNv->PGRAPH[0x0820/4] = 0;
+                 pNv->PGRAPH[0x0824/4] = 0;
+                 pNv->PGRAPH[0x0864/4] = pNv->FrameBufferSize - 1;
+                 pNv->PGRAPH[0x0868/4] = pNv->FrameBufferSize - 1;
+              } else {
+                 pNv->PGRAPH[0x09F0/4] = pNv->PFB[0x0200/4];
+                 pNv->PGRAPH[0x09F4/4] = pNv->PFB[0x0204/4];
+                 pNv->PGRAPH[0x69F0/4] = pNv->PFB[0x0200/4];
+                 pNv->PGRAPH[0x69F4/4] = pNv->PFB[0x0204/4];
+
+                 pNv->PGRAPH[0x0840/4] = 0;
+                 pNv->PGRAPH[0x0844/4] = 0;
+                 pNv->PGRAPH[0x08a0/4] = pNv->FrameBufferSize - 1;
+                 pNv->PGRAPH[0x08a4/4] = pNv->FrameBufferSize - 1;
+              }
            } else {
+              pNv->PGRAPH[0x09A4/4] = pNv->PFB[0x0200/4];
+              pNv->PGRAPH[0x09A8/4] = pNv->PFB[0x0204/4];
               pNv->PGRAPH[0x0750/4] = 0x00EA0000;
               pNv->PGRAPH[0x0754/4] = pNv->PFB[0x0200/4];
               pNv->PGRAPH[0x0750/4] = 0x00EA0004;
               pNv->PGRAPH[0x0754/4] = pNv->PFB[0x0204/4];
+	   
+              pNv->PGRAPH[0x0820/4] = 0;
+              pNv->PGRAPH[0x0824/4] = 0;
+              pNv->PGRAPH[0x0864/4] = pNv->FrameBufferSize - 1;
+              pNv->PGRAPH[0x0868/4] = pNv->FrameBufferSize - 1;
     	   }
 	   
-           pNv->PGRAPH[0x0820/4] = 0;
-           pNv->PGRAPH[0x0824/4] = 0;
-           pNv->PGRAPH[0x0864/4] = pNv->FrameBufferSize - 1;
-           pNv->PGRAPH[0x0868/4] = pNv->FrameBufferSize - 1;
-
            pNv->PGRAPH[0x0B20/4] = 0x00000000;
            pNv->PGRAPH[0x0B04/4] = 0xFFFFFFFF;
        }
@@ -1507,10 +1572,16 @@ void NVLoadStateExt (
     VGA_WR08(pNv->PCIO, 0x03D5, state->pixel);
     VGA_WR08(pNv->PCIO, 0x03D4, 0x2D);
     VGA_WR08(pNv->PCIO, 0x03D5, state->horiz);
+    VGA_WR08(pNv->PCIO, 0x03D4, 0x1C);
+    VGA_WR08(pNv->PCIO, 0x03D5, state->fifo);
     VGA_WR08(pNv->PCIO, 0x03D4, 0x1B);
     VGA_WR08(pNv->PCIO, 0x03D5, state->arbitration0);
     VGA_WR08(pNv->PCIO, 0x03D4, 0x20);
     VGA_WR08(pNv->PCIO, 0x03D5, state->arbitration1);
+    if(pNv->Architecture >= NV_ARCH_30) {
+      VGA_WR08(pNv->PCIO, 0x03D4, 0x47);
+      VGA_WR08(pNv->PCIO, 0x03D5, state->arbitration1 >> 8);
+    }
     VGA_WR08(pNv->PCIO, 0x03D4, 0x30);
     VGA_WR08(pNv->PCIO, 0x03D5, state->cursor0);
     VGA_WR08(pNv->PCIO, 0x03D4, 0x31);
@@ -1531,6 +1602,24 @@ void NVLoadStateExt (
        }
     } else {
        pNv->PRAMDAC[0x0848/4] = state->scale;
+
+
+       /* begin flat panel hacks */
+       /* This is unfortunate, but some chips need this register
+          tweaked or else you get artifacts where adjacent pixels are
+          swapped.  There are no hard rules for what to set here so all
+          we can do is experiment and apply hacks. */
+
+       if(((pNv->Chipset & 0xffff) == 0x0328) && (state->bpp == 32)) {
+          /* At least one NV34 laptop needs this workaround. */
+          pNv->PRAMDAC[0x0828/4] &= ~1;
+       }
+
+       if((pNv->Chipset & 0xfff0) == 0x0310) {
+          pNv->PRAMDAC[0x0828/4] |= 1;
+       }
+
+       /* end flat panel hacks */
     }
     pNv->PRAMDAC[0x0600/4] = state->general;
 
@@ -1543,7 +1632,7 @@ void NVLoadStateExt (
 /*
 ** stegerg: Status NVUnloadStateExt(): should "match" xfree nv NVUnloadStateExt()
 ** in xc/programs/Xserver/hw/xfree86/drivers/nv/nv_hw.c version:
-** 1.8 2004/03/20 01:52:16 mvojkovi
+** 1.12 2004/11/30 23:50:26 mvojkovi
 */
 
 void NVUnloadStateExt
@@ -1562,10 +1651,16 @@ void NVUnloadStateExt
     state->pixel        = VGA_RD08(pNv->PCIO, 0x03D5);
     VGA_WR08(pNv->PCIO, 0x03D4, 0x2D);
     state->horiz        = VGA_RD08(pNv->PCIO, 0x03D5);
+    VGA_WR08(pNv->PCIO, 0x03D4, 0x1C);
+    state->fifo         = VGA_RD08(pNv->PCIO, 0x03D5);
     VGA_WR08(pNv->PCIO, 0x03D4, 0x1B);
     state->arbitration0 = VGA_RD08(pNv->PCIO, 0x03D5);
     VGA_WR08(pNv->PCIO, 0x03D4, 0x20);
     state->arbitration1 = VGA_RD08(pNv->PCIO, 0x03D5);
+    if(pNv->Architecture >= NV_ARCH_30) {
+       VGA_WR08(pNv->PCIO, 0x03D4, 0x47);
+       state->arbitration1 |= (VGA_RD08(pNv->PCIO, 0x03D5) & 1) << 8;
+    }
     VGA_WR08(pNv->PCIO, 0x03D4, 0x30);
     state->cursor0      = VGA_RD08(pNv->PCIO, 0x03D5);
     VGA_WR08(pNv->PCIO, 0x03D4, 0x31);
@@ -1864,6 +1959,9 @@ void InitMode(struct staticdata *sd, struct CardState *state,
     state->vpllB = state->pllB;
     state->vpll2B = state->pllB;
 
+    VGA_WR08(sd->Card.PCIO, 0x03D4, 0x1C);
+    state->fifo = VGA_RD08(sd->Card.PCIO, 0x03D5) & ~(1<<5);
+    
     if(sd->Card.CRTCnumber) {
        state->head  = sd->Card.PCRTC0[0x00000860/4] & ~0x00001000;
        state->head2 = sd->Card.PCRTC0[0x00002860/4] | 0x00001000;
