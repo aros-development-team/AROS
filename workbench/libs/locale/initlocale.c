@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: InitLocale() load locale preferences from a file.
@@ -41,7 +41,7 @@ extern void *__eng_functable[];
 }
 
 /*
-    BOOL SetLocaleLanguage(struct IntLocale *, struct LocaleBase *)
+    void SetLocaleLanguage(struct IntLocale *, struct LocaleBase *)
 
     Try and set up the language of a Locale structure.
 */
