@@ -15,7 +15,6 @@
 				(&(((struct structName *) 0)->structEntry))
 
 #if AROS_BIG_ENDIAN
-#warning Big ENDIAN machine!
 #define INITBYTE(offset,value)  0xe000,(UWORD) (offset),(UWORD) ((value)<<8)
 #define INITWORD(offset,value)  0xd000,(UWORD) (offset),(UWORD) (value)
 #define INITLONG(offset,value)  0xc000,(UWORD) (offset), \
@@ -26,16 +25,15 @@
 				((UWORD) ((offset)>>16)), \
 				((UWORD) (offset)) & 0xffff)
 #else
-#warning LITTLE ENDIAN!
-#define INITBYTE(offset,value)  0x00e0,(UWORD) (offset),(UWORD) ((value)<<8)
-#define INITWORD(offset,value)  0x00d0,(UWORD) (offset),(UWORD) (value)
-#define INITLONG(offset,value)  0x00c0,(UWORD) (offset), \
-				(UWORD) ((value)>>16), \
-				(UWORD) ((value) & 0xffff)
+#define INITBYTE(offset,value)  (0x00e0 | ((((ULONG)offset) & 0xff) << 8)),(UWORD) (((ULONG)offset) >> 8),(UWORD) ((value) & 0xff)
+#define INITWORD(offset,value)  (0x00d0 | ((((ULONG)offset) & 0xff) << 8)),(UWORD) (((ULONG)offset) >> 8),(UWORD) (value)
+#define INITLONG(offset,value)  (0x00c0 | ((((ULONG)offset) & 0xff) << 8)),(UWORD) (((ULONG)offset) >> 8), \
+				(UWORD) ((value) & 0xffff), \
+				(UWORD) ((value) >> 16)
 #define INITSTRUCT(size,offset,value,count) \
-				(UWORD) (0x00c0|(size<<4)|(count<<0)| \
-				((UWORD) ((offset)>>16)), \
-				((UWORD) (offset)) & 0xffff)
+				(UWORD) (0x00c0|((size)<<4)|((count)<<0)| \
+				((UWORD) ((((ULONG)offset) & 0xff) << 8))), \
+				((UWORD) (((ULONG)offset) >> 8))
 #endif
 
 #endif /* EXEC_INITIALIZERS_H */
