@@ -30,12 +30,15 @@
 #   define __LOp(x) *(int*)x
 #endif
 
-#if !defined(__FreeBSD__)
 /* Use non-standard matherr() and smart code */
+#if !defined(__FreeBSD__)
 #define _LIB_VERSION	0
 #define _POSIX_ 	1
 #define _SVID_		2
 #define _IEEE_		3
+#elif defined(__FreeBSD__)
+#undef _LIB_VERSION
+#define _LIB_VERSION 	0
 #endif
 
 /* We only include this section if we don't have glibc v2 or FreeBSD */
