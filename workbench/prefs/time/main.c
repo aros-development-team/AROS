@@ -433,7 +433,7 @@ static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
 	    IPTR number = 0;
 	    
 	    set(obj, MUIA_Clock_Frozen, TRUE);
-	    get(obj, MUIA_Clock_Time, &cd);
+	    get(obj, MUIA_Clock_Time, (IPTR *)&cd);
 	    
 	    cd2 = *cd;
 	    
@@ -542,6 +542,7 @@ static void MakeGUI(void)
 			    Child, yearsubobj = TextObject, /* year [-] gadget */
 			    	ButtonFrame,
 				MUIA_Background, MUII_ButtonBack,
+				MUIA_CycleChain, TRUE,
 				MUIA_Font, MUIV_Font_Button,
 				MUIA_InputMode, MUIV_InputMode_RelVerify,
 				MUIA_Text_Contents, "\033c-",
@@ -549,12 +550,14 @@ static void MakeGUI(void)
 				End,
 			    Child, yearobj = StringObject, /* year gadget */
 				StringFrame,
+				MUIA_CycleChain, TRUE,
 				MUIA_String_Accept, (IPTR)"0123456789",
 				MUIA_FixWidthTxt, (IPTR)"55555",
 				End,
 			    Child, yearaddobj = TextObject, /* year [-] gadget */
 			    	ButtonFrame,
 				MUIA_Background, MUII_ButtonBack,
+				MUIA_CycleChain, TRUE,
 				MUIA_Font, MUIV_Font_Button,
 				MUIA_InputMode, MUIV_InputMode_RelVerify,
 				MUIA_Text_Contents, "\033c+",
@@ -562,6 +565,7 @@ static void MakeGUI(void)
 				End,
 			    End,
     			Child, calobj = CalendarObject,
+			    MUIA_CycleChain, TRUE,
                         End,
                     End,
 		    Child, VGroup, /* Clock box */
@@ -595,18 +599,21 @@ static void MakeGUI(void)
 				End,
 			    Child, hourobj = StringObject, /* hour gadget */
 			    	StringFrame,
+				MUIA_CycleChain, TRUE,
 				MUIA_String_Accept, (IPTR)"0123456789",
 				MUIA_FixWidthTxt, (IPTR)"555",
 				End,
 			    Child, CLabel2(":"),
 			    Child, minobj = StringObject, /* min gadget */
 			    	StringFrame,
+				MUIA_CycleChain, TRUE,
 				MUIA_String_Accept, (IPTR)"0123456789",
 				MUIA_FixWidthTxt, (IPTR)"555",
 				End,
 			    Child, CLabel2(":"),		    
 			    Child, secobj = StringObject, /* sec gadget */
 			    	StringFrame,
+				MUIA_CycleChain, TRUE,
 				MUIA_String_Accept, (IPTR)"0123456789",
 				MUIA_FixWidthTxt, (IPTR)"555",
 				End,
@@ -615,6 +622,7 @@ static void MakeGUI(void)
 				Child,  timesubobj = TextObject, /* time [-] gadget */
 			    	    ButtonFrame,
 				    MUIA_Background, MUII_ButtonBack,
+				    MUIA_CycleChain, TRUE,
 				    MUIA_Font, MUIV_Font_Button,
 				    MUIA_InputMode, MUIV_InputMode_RelVerify,
 				    MUIA_Text_Contents, "\033c-",
@@ -623,6 +631,7 @@ static void MakeGUI(void)
 				Child,  timeaddobj = TextObject, /* time [+] gadget */
 			    	    ButtonFrame,
 				    MUIA_Background, MUII_ButtonBack,
+				    MUIA_CycleChain, TRUE,
 				    MUIA_Font, MUIV_Font_Button,
 				    MUIA_InputMode, MUIV_InputMode_RelVerify,
 				    MUIA_Text_Contents, "\033c+",
