@@ -1,26 +1,41 @@
 # $Id$
 
-#MM- AROS-amiga : setup includes compiler arosboot kernel workbench demos games
+#MM- AROS-amiga : setup includes compiler arosboot kernel workbench demos games utilities
 
-# hidd-graphics target removed from below line because of missing lib.conf file
-#MM kernel-amiga : kernel-hidd kernel-exec-module kernel-aros
-#MM	kernel-amiga : kernel-alerthook-module kernel-boopsi-module kernel-utility-module
-#MM	kernel-amiga : kernel-devs kernel-expansion-module kernel-keymap-module
+# hidd-graphics target removed from below line because of missing lib.conf file (?)
+#MM- kernel-amiga : kernel-hidd \
+#MM	kernel-exec-module kernel-aros \
+#MM	kernel-alerthook-module \
+#MM	kernel-boopsi-module \
+#MM	kernel-utility-module \
+#MM	kernel-devs \
+#MM	kernel-expansion-module \
+#MM	kernel-keymap-module
 
-#MM workbench-amiga : workbench-c workbench-devs workbench-libs
-#MM	workbench-amiga : workbench-classes workbench-s workbench-locale
+#MM- workbench-amiga : workbench-c \
+#MM	workbench-devs \
+#MM	workbench-libs \
+#MM	workbench-classes \
+#MM	workbench-s \
+#MM	workbench-locale
 
-#MM workbench-libs-amiga : workbench-libs-asl workbench-libs-diskfont
-#MM	workbench-libs-amiga : workbench-libs-gadtools workbench-libs-icon
-#MM	workbench-libs-amiga : workbench-libs-iffparse workbench-libs-mathtrans
-#MM	workbench-libs-amiga : workbench-libs-mathieeedoubbas workbench-libs-mathieeedoubtrans
+#MM- workbench-libs-amiga : workbench-libs-asl \
+#MM	workbench-libs-diskfont \
+#MM	workbench-libs-gadtools \
+#MM	workbench-libs-icon \
+#MM	workbench-libs-iffparse \
 
-##MM- workbench-classes-amiga : workbench-classes-complete
+# These targets have been removed because of build problems with egcs 1.0.3
+# workbench-libs-mathtrans \
+# workbench-libs-mathieeedoubbas \
+# workbench-libs-mathieeedoubtrans
+
+#MM- workbench-classes-amiga : workbench-classes-complete
 
 #MM- apps-amiga : fish Moria3D
 
-#MM setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga
-#MM	setup-amiga : setup-layers-amiga setup-hidd-graphics-amiga
+#MM- setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga \
+#MM	setup-layers-amiga setup-hidd-graphics-amiga
 
 #MM- setup-exec-amiga : setup-exec-amiga-$(CPU)
 
