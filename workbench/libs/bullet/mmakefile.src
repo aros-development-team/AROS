@@ -1,0 +1,18 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+MODNAME 	:= bullet
+MODTYPE		:= library
+
+FUNCS := openengine \
+    	 closeengine \
+	 setinfoa \
+	 obtaininfoa \
+	 releaseinfoa
+	 
+%libdefs_rule
+
+%make_module_setup mmake=workbench-libs-asl
+%make_lib_includes
+
+%common
