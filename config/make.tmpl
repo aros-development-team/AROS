@@ -632,21 +632,25 @@ $(OBJDIR)/%.d : %.c
 	@$(MKDEPEND) -f- -p$(@D)/ $(MKDEPEND_FLAGS) -- $(CFLAGS) -- $< > $@
 %end
 
-%define genlibincludes name=$(LIBNAME) functions=$(ALL_FUNCTIONS) prefix=$(TOP)/compiler/include
-includes-generate : setup   %(prefix)/clib/%(name)_protos.h \
-			    %(prefix)/defines/%(name).h
+%define genlibincludes name=$(LIBNAME) functions=$(ALL_FUNCTIONS)
+includes-generate : setup $(OBJDIR)/headers.stamp \
+			    $(INCDIR)/clib/%(name)_protos.h \
+			    $(INCDIR)/defines/%(name).h
 
 FSRCS := $(foreach f,%(functions),$(f).c)
 
-%(prefix)/clib/%(name)_protos.h : $(FSRCS) $(SCRIPTDIR)/genshared \
-				$(SCRIPTDIR)/genclib.awk
-	@$(SCRIPTDIR)/genshared -clib -prefix %(prefix) $(FSRCS)
+$(OBJDIR)/headers.stamp : $(FSRCS) $(SCRIPTDIR)/genshared \
+	    $(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/gendefines.awk
+	@$(SCRIPTDIR)/genshared -clib -prefix $(GENINCDIR) $(FSRCS)
+	@$(SCRIPTDIR)/genshared -defines -prefix $(GENINCDIR) $(FSRCS)
 
-%(prefix)/defines/%(name).h : $(FSRCS) $(SCRIPTDIR)/genshared \
-				$(SCRIPTDIR)/gendefines.awk
-	@$(SCRIPTDIR)/genshared -defines -prefix %(prefix) $(FSRCS)
+$(INCDIR)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
+	$(CP) $< $@
+
+$(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
+	$(CP) $< $@
 %end
-		    
+
 # Used to help with the function replacement mechanism. Use like
 #
 #	%prepare_replace module=os/exec
@@ -704,7 +708,7 @@ INIT_FILE	:= $(LIBNAME)_init
 END_FILE	:= $(LIBNAME)_endtag
 OBJDIR		:= $(GENDIR)/$(CURDIR)
 INITFUNC	:= $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC		:= $(OBJDIR)/$(END_FILE).o
+ENDFUNC 	:= $(OBJDIR)/$(END_FILE).o
 SYS_FILES	:= $(SYS_FILES) $(INIT_FILE) functable
 OBJS		:= $(foreach f,$(FILES) functions $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 SYS_OBJS	:= $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
