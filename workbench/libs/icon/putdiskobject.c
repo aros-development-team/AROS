@@ -3,10 +3,7 @@
     $Id$
 */
 
-#include <proto/arossupport.h>
-
 #include "icon_intern.h"
-#include "support.h"
 
 /*****************************************************************************
 
@@ -43,16 +40,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
     
-    BOOL success = FALSE;
-    BPTR file;
-    
-    if ((file = OpenIcon(name, MODE_NEWFILE)) != NULL)
-    {
-        success = WriteIcon(file, icon);
-        CloseIcon(file);
-    }
-    
-    return success;
+    return PutIconTags
+    (
+        name, icon,
+        ICONPUTA_NotifyWorkbench, TRUE,
+        TAG_DONE
+    );
     
     AROS_LIBFUNC_EXIT
 } /* PutDiskObject() */

@@ -66,13 +66,18 @@ BOOL __CloseIcon_WB(BPTR file, struct IconBase *IconBase)
 
 BPTR __OpenDefaultIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
 {
-    static const char * const paths[] = { "ENV:SYS", "ENVARC:SYS", NULL };
-    CONST_STRPTR              path    = NULL;
-    BPTR                      file    = NULL;
-    UBYTE                     i;
+    static const char * const  readPaths[]  = { "ENV:SYS", "ENVARC:SYS", NULL };
+    static const char * const  writePaths[] = { "ENV:SYS", NULL }; 
+    const char * const        *paths        = NULL;
+    CONST_STRPTR               path         = NULL;
+    BPTR                       file         = NULL;
+    UBYTE                      i;
     
     /* Make sure it's a plain filename; paths are not allowed */
     if (strpbrk(name, "/:") != NULL) return NULL;
+    
+    if (mode == MODE_OLDFILE) paths = readPaths;
+    else                      paths = writePaths;
     
     /* Attempt to open the icon from each path in turn */
     for (i = 0, path = paths[0]; path != NULL; i++, path = paths[i])
@@ -156,26 +161,6 @@ CONST_STRPTR GetDefaultIconName(LONG type)
     }
 }
 
-
-VOID GetDefIconName (LONG def_type, UBYTE * deficonname)
-{
-    UBYTE * extname = NULL;
-
-    strcpy (deficonname,"ENV:Sys/def_");
-
-    switch(def_type)
-    {
-    case WBDISK   : extname = "Disk";     break;
-    case WBDRAWER : extname = "Drawer";   break;
-    case WBTOOL   : extname = "Tool";     break;
-    case WBPROJECT: extname = "Project";  break;
-    case WBGARBAGE: extname = "Trashcan"; break;
-    case WBKICK   : extname = "Kick";     break;
-    default: extname = "Unknown"; break; /* Avoid segmentation faults */
-    }
-
-    strcat (deficonname, extname);
-} /* GetDefIconName */
 
 LONG CalcIconHash(struct DiskObject *dobj)
 {

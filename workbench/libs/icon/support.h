@@ -6,9 +6,6 @@
     $Id$
 */
 
-#include <exec/types.h>
-#include <workbench/icon.h>
-
 #include "icon_intern.h"
 
 /*** Prototypes *************************************************************/
@@ -22,7 +19,6 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct IconBase *IconBas
 
 CONST_STRPTR GetDefaultIconName(LONG type);
 
-VOID GetDefIconName (LONG def_type, UBYTE * deficonname);
 LONG CalcIconHash(struct DiskObject *dobj);
 VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase);
 VOID RemoveIconFromList(struct NativeIcon *icon, struct IconBase *IconBase);
