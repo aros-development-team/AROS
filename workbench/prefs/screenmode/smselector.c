@@ -2,6 +2,7 @@
 #define DEBUG 0
 
 #include <libraries/mui.h>
+#include <utility/hooks.h>
 
 #include <proto/exec.h>
 #include <proto/muimaster.h>
@@ -22,6 +23,26 @@ struct ScreenModeSelector_DATA
     ULONG  *ids_array;
 };
 
+#define HOOK(name) \
+struct Hook 
+
+#define HOOKFUNC(name) IPTR name ## Func(struct Hook *hook, APTR obj, APTR msg)
+
+AROS_UFH3(IPTR, SelectFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR         , obj , A2),
+AROS_UFHA(APTR         , msg , A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct ScreenModeSelector_DATA *data = INST_DATA(OCLASS(obj), obj);    
+
+    return set(obj, MUIA_ScreenModeSelector_Active, data->ids_array[*(IPTR *)msg]);
+    
+    AROS_USERFUNC_EXIT;
+}
+static struct Hook SelectHook = { .h_Entry = SelectFunc };
+
 Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     STRPTR *modes_array;
@@ -38,15 +59,19 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
     num_modes = 0; id = INVALID_ID;
     while ((id = NextDisplayInfo(id)) != INVALID_ID) num_modes++;
 	 
-    modes_array = AllocVec(sizeof(STRPTR) * (num_modes + 1), MEMF_CLEAR);
+    modes_array = AllocVec(sizeof(STRPTR) * (1 + num_modes + 1), MEMF_CLEAR);
     if (!modes_array)
         goto err;
 	
-    ids_array   = AllocVec(sizeof(ULONG) * (num_modes), MEMF_ANY);
+    ids_array   = AllocVec(sizeof(ULONG) * (1 + num_modes + 1), MEMF_ANY);
     if (!ids_array)
         goto err;
 	 
-    cur_mode = 0;
+    modes_array[0]           = "Select a Screen Mode";
+    ids_array[0]             = INVALID_ID;
+    ids_array[num_modes + 1] = INVALID_ID;
+    
+    cur_mode = 1;
     while ((id = NextDisplayInfo(id)) != INVALID_ID)
     {
         if ((id & MONITOR_ID_MASK) == DEFAULT_MONITOR_ID)
@@ -88,7 +113,7 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
         goto err;
 	
     DoMethod(self, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-             (IPTR)self, 3, MUIM_Set, MUIA_ScreenModeSelector_Active, MUIV_TriggerValue);
+             (IPTR)self, 3, MUIM_CallHook, (IPTR)&SelectHook, MUIV_TriggerValue);
  
     data = INST_DATA(CLASS, self);    
     data->modes_array = modes_array;
@@ -110,7 +135,7 @@ IPTR ScreenModeSelector__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 
     if (data->modes_array)
     {
-        for (cur_mode = 0; data->modes_array[cur_mode]; cur_mode++)
+        for (cur_mode = 1; data->modes_array[cur_mode]; cur_mode++)
 	    FreeVec(data->modes_array[cur_mode]);
 		 
 	FreeVec(data->modes_array);
@@ -140,15 +165,23 @@ IPTR ScreenModeSelector__OM_SET(Class *CLASS, Object *self, struct opSet *messag
         {
 	    case MUIA_ScreenModeSelector_Active:
 	    {
-	        ULONG cycle_active = XGET(self, MUIA_Cycle_Active);
-		if (cycle_active != tag->ti_Data)
-		{
-		    NFSET(self, MUIA_Cycle_Active, tag->ti_Data);
-		    cycle_active = XGET(self, MUIA_Cycle_Active);
-		}
+	        int i;
 		
-		tag->ti_Data = data->ids_array[cycle_active];
-		break;		
+		for
+		(
+		    i = 1;
+		    data->ids_array[i] != tag->ti_Data && data->ids_array[i] != INVALID_ID;
+		    i++
+		);
+		kprintf("-- %ld - %d\n", tag->ti_Data, i);
+		
+		if (data->ids_array[i] == INVALID_ID)
+		    tag->ti_Data = INVALID_ID;
+		else
+		if (XGET(self, MUIA_Cycle_Active) != i)
+		    NFSET(self, MUIA_Cycle_Active, i);
+		
+		break;
 	    }
 	}
     }		    

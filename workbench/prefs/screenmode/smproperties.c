@@ -150,7 +150,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 	    
                     width_tags[3].ti_Data  = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
                     height_tags[3].ti_Data = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
-	            depth_tags[3].ti_Data  = 1;
+	            depth_tags[3].ti_Data  = dim.MaxDepth;
                     
 		    id = tag->ti_Data;
 		}
