@@ -623,26 +623,33 @@ exit:
     return result;
 }
 
+static BPTR DupFH(BPTR fh, LONG mode)
+{
+    BPTR ret = NULL;
+
+    if (fh)
+    {
+        BPTR olddir = CurrentDir(fh);
+        ret    = Open("", mode);
+
+        CurrentDir(olddir);
+    }
+
+    return ret;
+}
+
 static BOOL Pipe(BPTR pipefhs[2])
 {
     pipefhs[0] = Open("PIPEFS://unnamedpipe//", FMF_READ|FMF_NONBLOCK);
-    if (pipefhs[0])
+    pipefhs[1] = DupFH(pipefhs[0], FMF_WRITE);
+
+    if (pipefhs[1])
     {
-	BPTR olddir = CurrentDir(pipefhs[0]);
-
-	if
-	(
-	    ChangeMode(CHANGE_FH, pipefhs[0], FMF_READ) == DOSTRUE &&
-	    (pipefhs[1] = Open("", FMF_WRITE))
-	)
-	{
-	    CurrentDir(olddir);
-	    return TRUE;
-	}
-
-	CurrentDir(olddir);
-	Close(pipefhs[0]);
+        ChangeMode(CHANGE_FH, pipefhs[0], FMF_READ);
+	return TRUE;
     }
+
+    Close(pipefhs[0]);
 
     return FALSE;
 }
@@ -692,6 +699,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
     	    {
 		{ SYS_Input   , NULL                                            },
 		{ SYS_Output  , NULL                             	    	},
+		{ SYS_Error   , NULL                                            },
 		{ SYS_Asynch  , TRUE    	    	    	    	    	},
 		{ NP_StackSize, Cli()->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT },
 		{ TAG_DONE    , 0 	    	    	    	    	    	}
@@ -719,7 +727,8 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 
 	    P(kprintf("commannd = %S\n", &item+1));
 
-	    tags[1].ti_Data = (IPTR)Open("*", MODE_NEWFILE);
+	    tags[1].ti_Data = (IPTR)DupFH(Output(), MODE_READWRITE);
+	    tags[2].ti_Data = (IPTR)DupFH(Error(), MODE_READWRITE);
 
 	    if(rd->haveOutRD)
 	    {
@@ -750,6 +759,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    {
 	       if (tags[0].ti_Data) Close((BPTR)tags[0].ti_Data);
 	       if (tags[1].ti_Data) Close((BPTR)tags[1].ti_Data);
+	       if (tags[2].ti_Data) Close((BPTR)tags[2].ti_Data);
 	       return FALSE;
 	    }
         }
@@ -1176,6 +1186,9 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 
     if(module != NULL)
     {
+	struct Task *me = FindTask(NULL);
+	STRPTR oldtaskname = me->tc_Node.ln_Name;
+
 	BPTR seglist = ss.residentCommand ? ((struct Segment *)BADDR(module))->seg_Seg:module;
 	P(kprintf("Command loaded!\n"));
 
@@ -1184,8 +1197,12 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 
 	cli->cli_Module = seglist;
 
+	me->tc_Node.ln_Name = command;
+
 	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 					 commandArgs, strlen(commandArgs));
+
+	me->tc_Node.ln_Name = oldtaskname;
 
 	P(kprintf("Returned from command %s\n", command));
 	unloadCommand(module, &ss);
