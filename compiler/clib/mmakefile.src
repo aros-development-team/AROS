@@ -70,6 +70,7 @@ COMMON	:= \
 	strlcat \
 	strlcpy \
 	strlen \
+	strlwr \
 	strncasecmp \
 	strncat \
 	strncmp \
@@ -81,6 +82,7 @@ COMMON	:= \
 	strstr \
 	strtod \
 	strtok \
+	strupr \
 	swab
 
 
