@@ -189,7 +189,7 @@ void main (int argc, char ** argv)
 	{
 	    outfile = argv[++t];
 	}
-	if (!strcmp (argv[t], "-nowrap"))
+	else if (!strcmp (argv[t], "-nowrap"))
 	{
 	    wraplonglines = 0;
 	}
