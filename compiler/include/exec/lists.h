@@ -152,6 +152,19 @@ struct MinList
         }
 #    endif
 
+#   define REMTAIL(_l)                       \
+    ({                                       \
+	struct List *l = (struct List *)_l;  \
+	struct Node *n;                      \
+	if ((n=GetTail(l)))                  \
+	{                                    \
+	   n->ln_Pred->ln_Succ = n->ln_Succ; \
+	   n->ln_Succ->ln_Pred = n->ln_Pred; \
+	}                                    \
+	n;                                   \
+    })
+
+
 #   define ForeachNode(l,n)                        \
     for                                            \
     (                                              \
