@@ -1,0 +1,76 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR	:= $(GENDIR)/$(CURDIR)
+LIB	:= $(LIBDIR)/libboot.a
+
+# This directory contains a number of modules that only have an effect during
+# boot time. Things such as the system boot strap, the bootmenu and syscheck
+# modules would go in here.
+
+# This is a list of files to choose from, it is only used to compute
+# dependancies. $(OBJS) is initially empty, you should use %add_replace
+# in order to select modules.
+
+FILES	:= strap_emul
+DEF_OBJ :=
+%prepare_replace rom/boot
+
+OBJS	:= $(foreach f, $(ADDITIONAL_OBJS) $(DEF_OBJ), $(OBJDIR)/$(f).o)
+
+%prepare_shlib boot $(SHARED_BOOT)
+
+ifeq ($(FLAVOUR),native)
+# Native/standalone flavour has each module as a separate file
+MODULES := $(foreach f,$(DEF_OBJ) $(ADDITIONAL_OBJS), $(OSMODDIR)/$(f))
+
+#MM
+kernel-boot-module: $(MODULES)
+
+LIBS := -L$(LIBDIR) -lamiga
+LIBLIST := amiga
+LIBDEPS := $(foreach f,$(LIBLIST), $(LIBDIR)/lib$(f).a)
+
+$(OSMODDIR)/% : $(OBJDIR)/%.o
+	@$(ECHO) "Building $(notdir $@)..."
+	@$(CC) $(ILDFLAGS) $(GENMAP) $@.map $(LIBS) $^ -o $@ 2>&1 \
+	    | tee $@.x-err
+	@$(IF) $(TEST) ! -s $@.map; then $(RM) $@.map; else true; fi
+	@$(IF) $(TEST) ! -s $@.x-err; then $(RM) $@.x-err; else true; fi
+	@$(STRIP) $@
+
+else
+# emulated/linklib has modules collected into a linklib
+
+#MM
+kernel-boot-linklib : show-flags $(LIB)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
+endif
+
+#MM kernel-boot : setup includes kernel-boot-$(ARCH)-$(CPU)
+kernel-boot :
+	@$(NOP)
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB) *.s mmakefile
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+%asm_rule "$(FILES)"
+
+%ctoasm_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+show-flags:
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+%common
+%include_deps
