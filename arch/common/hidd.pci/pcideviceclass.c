@@ -19,7 +19,7 @@
 #include "pci.h"
 #include "pciutil.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #ifdef HiddPCIDeviceAttrBase
