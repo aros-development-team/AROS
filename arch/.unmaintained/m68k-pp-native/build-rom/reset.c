@@ -22,7 +22,6 @@ void aros_reset(void)
 	WREG_W(LCWCH) = (10 << 8) | 10;
 	WREG_B(LBLKC) = 0x80 | 0x10;
 	WREG_B(LPICF) = 0x4;
-	clearscreen(0);
 
 #if 0 
 	// DO NOT ACTIVATE THESE! IT STOPS OUTPUT ON XCOPILOT!!
