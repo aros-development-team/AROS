@@ -134,7 +134,7 @@ static struct IntuiMessage *SendIDCMPUpdate(
 
     if( ic->ic_Target != NULL )
     {
-	if( msg->opu_AttrList && msg->opu_GInfo )
+	if( msg->opu_AttrList) /* stegerg: ??? checked also "&& msg->opu_GInfo" ) */
 	{
 	    ic->ic_LoopCounter += 1UL;
 
@@ -150,7 +150,6 @@ static struct IntuiMessage *SendIDCMPUpdate(
 
 		    if( ic->ic_Target != (Object *)ICTARGET_IDCMP)
 		    {
-			
 			DoMethod( ic->ic_Target,
 			    OM_UPDATE,
 			    ic->ic_CloneTags,
