@@ -960,7 +960,7 @@ D(bug("Window: %p\n", w));
 		    if (NULL != L)
 		      CheckLayersBehind = TRUE;
 		    int_closewindow((struct Window *)im->IAddress, IntuitionBase);
-		    break;
+		break;
 		 
 		case IMCODE_WINDOWTOFRONT: {
 		    L = msg->Window->WLayer;
@@ -968,7 +968,7 @@ D(bug("Window: %p\n", w));
 		    {
 		      UpfrontLayer(NULL, L);
 		      
-		      /* onlt this layer needs to be updated */
+		      /* only this layer needs to be updated */
 		      if (0 != (L->Flags & LAYERREFRESH))
 		      {
 		        struct IntuiMessage * IM = alloc_intuimessage(IntuitionBase);
@@ -981,101 +981,101 @@ D(bug("Window: %p\n", w));
 		      }
 		    } 
 		    FreeMem(msg, sizeof(struct shortIntuiMessage));
-		    break; }
+		break; }
 
 		case IMCODE_WINDOWTOBACK: {
-		    /* The layer behind the one to move will be the 
-		       first one to check for damage */
-		       
-		    L = msg->Window->WLayer->back;
 		    /* I don't move backdrop layers! */
 		    if (0 == (L->Flags & LAYERBACKDROP))
 		    {
+		      /* The layer behind the one to move will be the 
+		         first one to check for damage */
+		       
+		      L = msg->Window->WLayer->back;
 		      BehindLayer(NULL, L);
 		      CheckLayersBehind = TRUE;
 		    }
 		    
 		    FreeMem(msg, sizeof(struct shortIntuiMessage));
-		    break; }
+		break; }
 		    
 		case IMCODE_ACTIVATEWINDOW: {
 		    int_activatewindow(msg->Window, IntuitionBase);
 		    
 		    FreeMem(msg, sizeof (struct shortIntuiMessage));
-		    break; }
+		break; }
 
 
-               case IMCODE_MOVEWINDOW: { 
-                    MoveLayer(NULL,
-                              msg->Window->WLayer,
-                              msg->dx,
-                              msg->dy);
+                case IMCODE_MOVEWINDOW: { 
+                     MoveLayer(NULL,
+                               msg->Window->WLayer,
+                               msg->dx,
+                               msg->dy);
 
-                    msg->Window->LeftEdge += msg->dx;
-                    msg->Window->TopEdge  += msg->dy;
+                     msg->Window->LeftEdge += msg->dx;
+                     msg->Window->TopEdge  += msg->dy;
 
-                    CheckLayersBehind = TRUE;
-                    L = msg->Window->WLayer;
+                     CheckLayersBehind = TRUE;
+                     L = msg->Window->WLayer;
                     
-                    FreeMem(msg, sizeof(struct shortIntuiMessage));
-                    break; }
+                     FreeMem(msg, sizeof(struct shortIntuiMessage));
+                break; }
 
-               case IMCODE_MOVEWINDOWINFRONTOF: { 
-                    MoveLayerInFrontOf(msg->      Window->WLayer,
-                                       msg->BehindWindow->WLayer);
-                    CheckLayersBehind = TRUE;
-                    CheckLayersInFront = TRUE;
-                    L = msg->Window->WLayer;
+                case IMCODE_MOVEWINDOWINFRONTOF: { 
+                     MoveLayerInFrontOf(msg->      Window->WLayer,
+                                        msg->BehindWindow->WLayer);
+                     CheckLayersBehind = TRUE;
+                     CheckLayersInFront = TRUE;
+                     L = msg->Window->WLayer;
                     
-                    FreeMem(msg, sizeof(struct shortIntuiMessage));
-                    break; }
+                     FreeMem(msg, sizeof(struct shortIntuiMessage));
+                break; }
                     
-               case IMCODE_SIZEWINDOW: {
-                    SizeLayer(NULL, 
-                              msg->Window->WLayer,
-                              msg->dx,
-                              msg->dy);
+                case IMCODE_SIZEWINDOW: {
+                     SizeLayer(NULL, 
+                               msg->Window->WLayer,
+                               msg->dx,
+                               msg->dy);
 
-                    msg->Window->Width += msg->dx;
-                    msg->Window->Height+= msg->dy;
-                    RefreshWindowFrame(w);
+                     msg->Window->Width += msg->dx;
+                     msg->Window->Height+= msg->dy;
+                     RefreshWindowFrame(w);
 
-                    CheckLayersBehind = TRUE;
-                    L = msg->Window->WLayer;
-                    /* and redraw the window frame */
-                    RefreshWindowFrame(msg->Window);
+                     CheckLayersBehind = TRUE;
+                     L = msg->Window->WLayer;
+                     /* and redraw the window frame */
+                     RefreshWindowFrame(msg->Window);
                
-                    FreeMem(msg, sizeof(struct shortIntuiMessage));
-                    break; }
+                     FreeMem(msg, sizeof(struct shortIntuiMessage));
+                break; }
                          
-               case IMCODE_ZIPWINDOW: {
-                    struct IntWindow * w = (struct IntWindow *)msg->Window;
-                    UWORD OldLeftEdge  = w->window.LeftEdge;
-                    UWORD OldTopEdge   = w->window.TopEdge;
-                    UWORD OldWidth     = w->window.Width;
-                    UWORD OldHeight    = w->window.Height;
+                case IMCODE_ZIPWINDOW: {
+                     struct IntWindow * w = (struct IntWindow *)msg->Window;
+                     UWORD OldLeftEdge  = w->window.LeftEdge;
+                     UWORD OldTopEdge   = w->window.TopEdge;
+                     UWORD OldWidth     = w->window.Width;
+                     UWORD OldHeight    = w->window.Height;
                     
-                    MoveSizeLayer(w->window.WLayer,
-                                  w->ZipLeftEdge - OldLeftEdge,
-                                  w->ZipTopEdge  - OldTopEdge,
-                                  w->ZipWidth    - OldWidth,
-                                  w->ZipHeight   - OldHeight);
+                     MoveSizeLayer(w->window.WLayer,
+                                   w->ZipLeftEdge - OldLeftEdge,
+                                   w->ZipTopEdge  - OldTopEdge,
+                                   w->ZipWidth    - OldWidth,
+                                   w->ZipHeight   - OldHeight);
 
-                    w->window.LeftEdge = w->ZipLeftEdge;
-                    w->window.TopEdge  = w->ZipTopEdge;
-                    w->window.Width    = w->ZipWidth;
-                    w->window.Height   = w->ZipHeight; 
+                     w->window.LeftEdge = w->ZipLeftEdge;
+                     w->window.TopEdge  = w->ZipTopEdge;
+                     w->window.Width    = w->ZipWidth;
+                     w->window.Height   = w->ZipHeight; 
                     
-                    w->ZipLeftEdge = OldLeftEdge;
-                    w->ZipTopEdge  = OldTopEdge;
-                    w->ZipWidth    = OldWidth;
-                    w->ZipHeight   = OldHeight;
+                     w->ZipLeftEdge = OldLeftEdge;
+                     w->ZipTopEdge  = OldTopEdge;
+                     w->ZipWidth    = OldWidth;
+                     w->ZipHeight   = OldHeight;
                     
-                    CheckLayersBehind = TRUE;
-                    L = msg->Window->WLayer;
+                     CheckLayersBehind = TRUE;
+                     L = msg->Window->WLayer;
                     
-                    FreeMem(msg, sizeof(struct shortIntuiMessage));
-                    break; }
+                     FreeMem(msg, sizeof(struct shortIntuiMessage));
+                break; }
 		
 		/* ActivateWindow + other stuff goes here */
 	    }
