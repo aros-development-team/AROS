@@ -19,3 +19,13 @@
 			totally reworked - most parts rewritten. (Developer's release 3)
 0.8 (28.4.2001)		A bug somewhere in "Font" 0.7 caused AROS to crash. The erroneous code was
 			isolated in getArguments() and fixed. (Developer's release 4)
+0.9 (21.9.2001)		"Font" is now localized. A Swedish ("svenska") catalog translation file has
+			been added. (Internal release)
+0.10 (27.9.2001)	More (all?) strings have been added to the catalog description file. "Font"
+			now preforms some basic sanity checks on the preferences input. The
+			library management routines have been changed with inspiration from
+			"Locale" Preferences. The window now sports a zoom gadgets which called
+			for IDCMP_REFRESHWINDOW support. A while ago, a missing memory allocation was
+			found by Georg Steger. Although he commited a fix, new code has been added
+			replacing his (Font should require slightly less stackmemory now)
+			(Developer's release 5)

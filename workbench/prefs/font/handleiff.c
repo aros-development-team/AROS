@@ -7,6 +7,9 @@
 
 #include <stdio.h>
 
+#define CATCOMP_NUMBERS
+#include "fontprefs_strings.h"
+
 /* This structure is AROS custom. Apperantly, Linux GCC aligns everything
    larger than one byte in four byte boundaries - with the sole expection
    of bytes themselves. Therefor, to maintain compatibility we define our
@@ -21,7 +24,9 @@ struct FilePrefHeader
  UBYTE ph_Flags[4];
 };
 
-extern struct Library *IFFParseBase;
+//extern struct Library *IFFParseBase; // Unnecessary, already declared in <proto/iffparse.h>
+extern struct Catalog *catalogPtr;
+extern STRPTR getCatalog(struct Catalog *, ULONG);
 extern void quitApp(UBYTE *, UBYTE);
 struct IFFHandle *iffHandle;
 
@@ -86,10 +91,12 @@ void writeIFF(UBYTE *fileName, struct FontPrefs **fontPrefs)
     PopChunk(iffHandle);
    }
    else
-    printf("Unable to open IFF stream (OpenIFF() returned %d)!\n", b);
+    //printf("Unable to open IFF stream (OpenIFF() returned %d)!\n", b);
+    printf("%s\n", getCatalog(catalogPtr, MSG_CANT_OPEN_STREAM));
   }
   else
-   printf("Unable to open preferences!\n");
+   //printf("Unable to open preferences!\n");
+   printf("%s\n", getCatalog(catalogPtr, MSG_CANT_WRITE_PREFFILE));
 
   CloseIFF(iffHandle);
 
@@ -97,58 +104,81 @@ void writeIFF(UBYTE *fileName, struct FontPrefs **fontPrefs)
    Close((BPTR)iffHandle->iff_Stream); // Why isn't this stored in memory as a "BPTR"? Look up!
  }
  else
-  printf("Can't allocate IFF handle!\n");
+  //printf("Can't allocate IFF handle!\n");
+  // Do something more here - if IFF allocation has failed, something isn't right
+  printf("%s\n", getCatalog(catalogPtr, MSG_CANT_ALLOCATE_IFFPTR));
 
  printf("Finished writing IFF file\n");
 }
 
 void readIFF(UBYTE *fileName, struct FontPrefs **readFontPrefs)
 {
- UBYTE a, b;
+ UBYTE a;
+ LONG error;
  struct ContextNode *conNode;
 
  printf("reading %s preferences...\n", fileName);
 
  if(!(iffHandle = AllocIFF()))
-  quitApp("Unable to allocate IFF handle!", 20);
+  quitApp(getCatalog(catalogPtr, MSG_CANT_ALLOCATE_IFFPTR), 20);
 
  if((iffHandle->iff_Stream = (IPTR)Open(fileName, MODE_OLDFILE))) // Whats up with the "IPTR"? Why not the usual "BPTR"?
  {
   InitIFFasDOS(iffHandle); // No need to check for errors? RKRM:Libraries p. 781
 
-  if(!(b = OpenIFF(iffHandle, IFFF_READ))) // NULL = successful!
+  if(!(error = OpenIFF(iffHandle, IFFF_READ))) // NULL = successful!
   {
    // We want some sanity checking here!
    for(a = 0; a <= 2; a++)
    {
-    printf("StopChunk() returned %ld\n", StopChunk(iffHandle, ID_PREF, ID_FONT));
-    /*printf("StopChunk returned %d. sizeof(FontPrefs) = %d\n", b, sizeof(struct FontPrefs));*/
+    if(0 <= (error = StopChunk(iffHandle, ID_PREF, ID_FONT)))
+    {
+     /*printf("StopChunk returned %d. sizeof(FontPrefs) = %d\n", b, sizeof(struct FontPrefs));*/
+     printf("StopChunk() returned %ld\n", error);
 
-    /*b = ParseIFF(iffHandle, IFFPARSE_SCAN);*/
-    printf("ParseIFF returned %ld\n", ParseIFF(iffHandle, IFFPARSE_SCAN));
-    conNode = CurrentChunk(iffHandle);
-    // printf("chunk size = %ld\n", conNode->cn_Size);
+     if(0 <= (error = ParseIFF(iffHandle, IFFPARSE_SCAN)))
+     {
+      printf("ParseIFF returned %ld\n", error);
+      conNode = CurrentChunk(iffHandle);
+      // printf("chunk size = %ld\n", conNode->cn_Size);
+      // Check what structure goes where!
+      error = ReadChunkBytes(iffHandle, readFontPrefs[a], sizeof(struct FontPrefs));
+      //printf("Read %d bytes\n", b);
 
-    // Check what structure goes where!
-    b = ReadChunkBytes(iffHandle, readFontPrefs[a], sizeof(struct FontPrefs));
-    // printf("Read %d bytes\n", b);
-    readFontPrefs[a]->fp_TextAttr.ta_Name = readFontPrefs[a]->fp_Name;
-    printf("readFontPrefs->YSize = >%d<\n", readFontPrefs[a]->fp_TextAttr.ta_YSize);
+      if(error < 0)
+      printf("Error: ReadChunkBytes() returned %ld!\n", error);
 
-    convertEndian(readFontPrefs[a]);
+      readFontPrefs[a]->fp_TextAttr.ta_Name = readFontPrefs[a]->fp_Name;
+      printf("readFontPrefs->YSize = >%d<\n", readFontPrefs[a]->fp_TextAttr.ta_YSize);
+      convertEndian(readFontPrefs[a]);
+     }
+     else
+     {
+      printf("ParseIFF() failed!\n");
+      printf("ParseIFF() returned %ld\n", error);
+      a = 3; // Bail out!
+     }
+    }
+    else
+    {
+     printf("StopChunk() failed!\n");
+     printf("StopChunk() returned %ld\n", error);
+    }
    }
 
    CloseIFF(iffHandle);
   }
   else
-   printf("OpenIFF() failed!\n");
+   //printf("OpenIFF() failed!\n");
+   printf("%s\n", getCatalog(catalogPtr, MSG_CANT_OPEN_STREAM));
 
   Close((BPTR)iffHandle->iff_Stream);
   printf("Finished reading IFF file\n");
  }
  else
  {
-  printf("Can't open preferences file!\n");
+  //printf("Can't open preferences file!\n");
+  printf("%s\n", getCatalog(catalogPtr, MSG_CANT_READ_PREFFILE));
   CloseIFF(iffHandle);
  }
 }

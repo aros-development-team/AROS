@@ -14,7 +14,7 @@ USE_AMIGALIB := yes
 USE_MLIB := yes
 USE_COOLIMAGESLIB := no
 
-#MM workbench-prefs : includes linklibs
+#MM workbench-prefs : includes linklibs setup-fontprefs-catalogs
 
 %make_prog_setup mmake=workbench-prefs
 
