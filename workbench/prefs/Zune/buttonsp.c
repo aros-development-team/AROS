@@ -49,16 +49,9 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         Child, HGroup,
             Child, VGroup, /* Text Buttons */
                 Child, ColGroup(2),
-                    GroupFrameT("Text Buttons"),
+                    GroupFrameT("General"),
                     MUIA_Group_SameHeight, TRUE,
                     
-                    Child, VGroup,
-                        Child, HVSpace,
-                        Child, MakeLabel("Frame:"),
-                        Child, HVSpace,
-                    End,
-                    Child, d.button_popframe = MakePopframe(),
-    
                     Child, VGroup,
                         Child, HVSpace,
                         Child, MakeLabel("Background:"),
@@ -72,7 +65,18 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                         Child, HVSpace,
                     End,
                     Child, d.text_selbackground_popimage = MakeBackgroundPopimage(),
-        
+                End,
+                Child, ColGroup(2),
+                    GroupFrameT("Text Buttons"),
+                    MUIA_Group_SameHeight, TRUE,
+                    
+                    Child, VGroup,
+                        Child, HVSpace,
+                        Child, MakeLabel("Frame:"),
+                        Child, HVSpace,
+                    End,
+                    Child, d.button_popframe = MakePopframe(),
+                    
                     Child, MakeLabel("Font:"),
                     Child, PopaslObject,
                         MUIA_Popasl_Type, ASL_FontRequest,
