@@ -1,0 +1,53 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES = -I.
+
+LIBNAME  := mathieeedoubtrans
+ULIBNAME := Mathieeedoubtrans
+
+# BEGIN_DESC{makefile}
+# This is the makefile for mathieeedoubtrans.library. Use it if you want to compile
+# only this part of AROS.
+# END_DESC{makefile}
+
+# BEGIN_DESC{localmakevar}
+# \item{FILES} This is a list of all files (without the .c) which
+#	contain internal functions of the library (eg. libinit(),
+#	libopen(), libexpunge() and the function table).
+#
+# \item{FUNCTIONS} This is a list of all files (without the .c)
+#	with public functions of the library. The makefile will
+#	strip all files from this list for which a special
+#	version for this CPU does exist.
+#
+# END_DESC{localmakevar}
+
+FILES := \
+	intern_ieeedpisodd \
+	intern_ieeedpld
+
+FUNCTIONS := \
+	ieeedpcosh \
+	ieeedpexp \
+	ieeedpfieee \
+	ieeedplog \
+	ieeedplog10 \
+	ieeedppow \
+	ieeedpsinh \
+	ieeedpsqrt \
+	ieeedptanh \
+	ieeedptieee 
+
+%define_libs postlibs="-lamiga -lmathieeedoubtrans"
+
+%genlib
+
+# MM workbench-libs-mathieeedoubtrans : setup includes linklibs
+workbench-libs-mathieeedoubtrans : show-flags $(SLIB)
+
+#MM setup
+#MM clean
+
+%common
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
