@@ -259,6 +259,31 @@ void main_cancel_pressed(void)
 
 
 /****************************************************************
+ Deallocates all gui resources
+*****************************************************************/
+void deinit_gui(void)
+{
+    int i;
+
+    if (app)
+	MUI_DisposeObject(app);
+    for (i = 0; main_page_entries[i].name; i++)
+    {
+	if ((main_page_entries[i].group != NULL) &&
+	    (main_page_entries[i].group != main_page_group_displayed))
+	{
+	    DisposeObject(main_page_entries[i].group);
+	    main_page_entries[i].group = NULL;
+	}
+	if (main_page_entries[i].cl != NULL)
+	{
+	    MUI_DeleteCustomClass(main_page_entries[i].cl);
+	    main_page_entries[i].cl = NULL;
+	}
+    }
+}
+
+/****************************************************************
  Allocalte resources for gui
 *****************************************************************/
 int init_gui(void)
@@ -372,14 +397,18 @@ int init_gui(void)
 		 MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_AboutMUI,
 		 (IPTR)main_wnd);
 
-	for (i=0;main_page_entries[i].name;i++)
+	for (i = 0; main_page_entries[i].name != NULL; i++)
 	{
 	    struct page_entry *p = &main_page_entries[i];
 	    if (p->desc)
 	    {
-		if ((p->cl = create_class(p->desc)))
+		if (
+		    !(
+		    (p->cl = create_class(p->desc)) &&
+		    (p->group = NewObject(p->cl->mcc_Class, NULL, TAG_DONE))))
 		{
-		    p->group = NewObject(p->cl->mcc_Class, NULL, TAG_DONE);
+		    deinit_gui();
+		    return 0;
 		}
 	    }
 	    DoMethod(main_page_list, MUIM_List_InsertSingle, (IPTR)p,
@@ -396,14 +425,6 @@ int init_gui(void)
 	return 1;
     }
     return 0;
-}
-
-/****************************************************************
- Deallocates all gui resources
-*****************************************************************/
-void deinit_gui(void)
-{
-    if (app) MUI_DisposeObject(app);
 }
 
 /****************************************************************
