@@ -36,8 +36,8 @@ EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 all: setup $(EXES)
 
 setup :
-	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; fi
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
+	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; else true ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
 	$(RM) $(EXES)
@@ -49,7 +49,7 @@ $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^

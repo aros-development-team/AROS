@@ -15,7 +15,7 @@ all: setup  $(OSGENDIR)/supervisor.o $(OSGENDIR)/switch.o \
 	    $(OSGENDIR)/runprocess.o
 
 setup :
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
 clean:
 	$(RM) $(OSGENDIR) $(LIBDIR)/libkernel.a
@@ -29,7 +29,7 @@ $(OSGENDIR)/%.o: %.c
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(OSGENDIR)/%.d: %.c
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^

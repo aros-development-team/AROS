@@ -9,8 +9,8 @@ FILES = dummy
 all: setup $(foreach f,$(FILES),$(SLIBDIR)/$f.library)
 
 setup :
-	@if [ ! -d $(SLIBDIR) ]; then $(MKDIR) $(SLIBDIR) ; fi
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
+	@if [ ! -d $(SLIBDIR) ]; then $(MKDIR) $(SLIBDIR) ; else true ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
 	$(RM) $(SLIBDIR)/dummy.library $(OBJDIR)

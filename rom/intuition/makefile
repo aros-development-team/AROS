@@ -44,7 +44,7 @@ all: setup \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
 setup :
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
 clean:
 	$(RM) $(OSGENDIR) *.err
@@ -64,7 +64,7 @@ intuition_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $^
 
 $(OSGENDIR)/%.d: %.c
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^

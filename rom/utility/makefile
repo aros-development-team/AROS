@@ -14,7 +14,7 @@ all: setup \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
 setup :
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
 clean:
 	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libutility.a

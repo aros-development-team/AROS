@@ -7,7 +7,7 @@ OBJDIR=$(GENDIR)/m68k-native
 all: setup $(LIBDIR)/libkernel.a
 
 setup :
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
 	$(RM) $(LIBDIR)/libkernel.a

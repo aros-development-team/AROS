@@ -7,7 +7,7 @@ OBJDIR=$(GENDIR)/filesys
 all: setup $(OBJDIR)/emul_handler.o
 
 setup:
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
 	$(RM) $(OBJDIR)
@@ -17,7 +17,7 @@ $(OBJDIR)/%.o: %.c
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^

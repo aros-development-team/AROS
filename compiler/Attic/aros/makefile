@@ -14,7 +14,7 @@ FILES = calcchecksum strcmp \
 all: setup $(LIBDIR)/libaros.a
 
 setup :
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libaros.a
@@ -33,7 +33,7 @@ $(LIBDIR)/libaros.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	$(RANLIB) $@
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
