@@ -581,12 +581,16 @@ int main (int argc, char ** argv)
 	, WA_Top,	    50
 	, WA_Width,	    640
 	, WA_Height,	    512
+	, WA_DragBar,	    TRUE
+	, WA_CloseGadget,   TRUE
+	, WA_DepthGadget,   TRUE
 	, WA_IDCMP,	    IDCMP_RAWKEY
 			    | IDCMP_REFRESHWINDOW
 			    | IDCMP_MOUSEBUTTONS
 			    | IDCMP_MOUSEMOVE
 			    | IDCMP_GADGETDOWN
 			    | IDCMP_GADGETUP
+			    | IDCMP_CLOSEWINDOW
 	, WA_SimpleRefresh, TRUE
 	, WA_Gadgets,	    &ExitGadget
 	, TAG_END
@@ -614,6 +618,9 @@ int main (int argc, char ** argv)
     cont = 1;
     draw = 0;
     prop = 0;
+    
+    /* Refresh the window contents */
+    Refresh(win->RPort);
 
     while (cont)
     {
@@ -622,6 +629,10 @@ int main (int argc, char ** argv)
 	    /* D("Got msg\n"); */
 	    switch (im->Class)
 	    {
+	    case IDCMP_CLOSEWINDOW:
+	    	cont = 0;
+		break;
+		
 	    case IDCMP_RAWKEY: {
 		UBYTE buf[10];
 		int   len;
