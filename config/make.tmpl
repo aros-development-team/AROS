@@ -514,7 +514,7 @@ endif
 # either a '/' (slash) or a ':' (colon), thus simply attach it to the name which has to follow it.
 
 %define build_with_configure mmake=/A configure=$(TOP)/$(CURDIR)/configure prefix= \
-    bindir= libdir= includedir= extraoptions= nix=no
+    bindir= libdir= includedir= extraoptions= nix=no host=no install_target=install
 
 .PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick
 
@@ -531,7 +531,7 @@ endif
 	    if [ $$ret -ne 0 ] ; then \
 	        exit $$ret; \
 	    fi; \
-	    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" -C $(GENDIR)/$(CURDIR) install; \
+	    $(if %(install_target),$(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" -C $(GENDIR)/$(CURDIR) %(install_target);,) \
 	fi
 
 $(TOP)/$(CURDIR)/.files-touched:
@@ -573,6 +573,19 @@ endif
 
 $(GENDIR)/$(CURDIR)/.configured : AR2     := $(firstword $(AR))
 $(GENDIR)/$(CURDIR)/.configured : RANLIB2 := $(firstword $(RANLIB))
+
+ifeq (%(host),yes)
+$(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+	%mkdirs_q $(GENDIR)/$(CURDIR)
+	cd $(GENDIR)/$(CURDIR); \
+	    $(RM) config.cache; \
+	    $(%(mmake)-PATH); \
+	    AR=$(AR2) RANLIB=$(RANLIB2) OBJCOPY="$(OBJCOPY)" \
+	    CC="$(HOST_CC)" \
+	    %(configure) $(%(mmake)-prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	    $(%(mmake)-includedir) %(extraoptions); \
+	$(ECHO) YES > $@
+else
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR); \
@@ -585,6 +598,7 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	    $(%(mmake)-includedir) %(extraoptions) \
 	    --host=$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros; \
 	$(ECHO) YES > $@
+endif
 	
 #MM
 %(mmake)-clean :
