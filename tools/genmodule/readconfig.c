@@ -93,13 +93,21 @@ static void readsectionconfig(void)
 
 	if (strncmp(line, "##", 2)!=0)
 	{
-	    const char *names[] = {"basename", "libbase", "libbasetype", "libbasetypeextern", "version", "date", "libcall", "forcebase" };
+	    const char *names[] = 
+            {
+                "basename", "libbase", "libbasetype", "libbasetypeextern", 
+                "version", "date", "libcall", "forcebase" 
+            };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
 	    
 	    for (i = 0, namenum = 0; namenum==0 && i<namenums; i++)
 	    {
-		if (strncmp(line, names[i], strlen(names[i]))==0 && isspace(*(line+strlen(names[i]))))
+		if 
+                (
+                       strncmp(line, names[i], strlen(names[i]))==0 
+                    && isspace(*(line+strlen(names[i])))
+                )
 		    namenum = i+1;
 	    }
 	    if (namenum==0)
