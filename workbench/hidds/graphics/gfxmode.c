@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    (C) Copyright 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Gfx mode class
@@ -13,7 +13,7 @@
 #include <utility/tagitem.h>
 #include <hidd/graphics.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "graphics_intern.h"
@@ -49,7 +49,7 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 
     gfxhidd = (Object *)GetTagData(aHidd_GfxMode_GfxHidd, NULL, msg->attrList);    
     if (NULL == gfxhidd) {
-	kprintf("!!! NO GFXHIDD SUPPLPIED TO GfxMode::New() !!\n");
+	D(bug("!!! NO GFXHIDD SUPPLPIED TO GfxMode::New() !!\n"));
 	ReturnPtr("GfxMode::New(No gfxhidd supplied)", Object*,  NULL);
     }
     
@@ -71,7 +71,7 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
     }
     
     if (0 == data->numpfs) {
-    	kprintf("!!! NO PIXEL FORMATS SUPPLIED TO GfxMode::New() !!!\n");
+    	D(bug("!!! NO PIXEL FORMATS SUPPLIED TO GfxMode::New() !!!\n"));
 	ok = FALSE;
     }
     
@@ -179,7 +179,7 @@ static VOID gfxmode_get(Class *cl, Object *o, struct pRoot_Get *msg)
     
     ULONG idx;
     
-kprintf("gfxmode::get()\n");
+D(bug("gfxmode::get()\n"));
     data = INST_DATA(cl, o);
     
     if (IS_GFXMODE_ATTR(msg->attrID, idx)) {
@@ -197,7 +197,7 @@ kprintf("gfxmode::get()\n");
 		break;
 		
 	     default:
-	     	kprintf("TRYING TO GET UNKNOWN ATTR FROM GFXMODE CLASS\n");
+	     	D(bug("TRYING TO GET UNKNOWN ATTR FROM GFXMODE CLASS\n"));
     		DoSuperMethod(cl, o, (Msg)msg);
 		break;
 
@@ -218,7 +218,7 @@ Object *gfxmode_lookuppixfmt(Class *cl, Object *o, struct pHidd_GfxMode_LookupPi
     data = INST_DATA(cl, o);
     
     if (msg->pixFmtNo >= data->numpfs) {
-    	kprintf("!!! TO LARGE IDX IN CALL TO GfxMode::LookupPixFmt() !!!\n");
+    	D(bug("!!! TO LARGE IDX IN CALL TO GfxMode::LookupPixFmt() !!!\n"));
 	return NULL;
     }
     
@@ -239,7 +239,7 @@ HIDDT_ModeID gfxmode_getmodeid(Class *cl, Object *o, struct pHidd_GfxMode_GetMod
     data = INST_DATA(cl, o);
     
     if (msg->pixFmtNo >= data->numpfs) {
-	kprintf("!!! TO LARGE IDX IN CALL TO GfxMode::GetModeID() !!!\n");
+	D(bug("!!! TO LARGE IDX IN CALL TO GfxMode::GetModeID() !!!\n"));
     } else {
 	hiddmode = COMPUTE_MODEID(data->gmno, msg->pixFmtNo);
     }

@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    (C) Copyright 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Sync info class
@@ -48,7 +48,7 @@ OOP_Object *sync_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     data = OOP_INST_DATA(cl, o);
     
     if (!parse_sync_tags(msg->attrList, data, ATTRCHECK(sync), CSD(cl) )) {
-	kprintf("!!! ERROR PARSING SYNC ATTRS IN Sync::New() !!!\n");
+	D(bug("!!! ERROR PARSING SYNC ATTRS IN Sync::New() !!!\n"));
     } else {
 	ok = TRUE;
     }
@@ -145,7 +145,7 @@ static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		break;
 		
 	     default:
-	     	kprintf("!!! TRYING TO GET UNKNOWN ATTR FROM SYNC OBJECT !!!\n");
+	     	D(bug("!!! TRYING TO GET UNKNOWN ATTR FROM SYNC OBJECT !!!\n"));
     		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 

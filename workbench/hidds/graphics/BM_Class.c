@@ -1,5 +1,5 @@
 /*
-    (C) 1998-2001 AROS - The Amiga Research OS
+    (C) Copyright 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics bitmap class implementation.
@@ -113,18 +113,18 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 
 	if (0 != OOP_ParseAttrs(msg->attrList, attrs, num_Total_BitMap_Attrs
 			, &ATTRCHECK(bitmap), HiddBitMapAttrBase)) {
-	    kprintf("!!! ERROR PARSING ATTRS IN BitMap::New() !!!\n");
-	    kprintf("!!! NUMBER OF ATTRS IN IF: %d !!!\n", num_Total_BitMap_Attrs);
+	    D(bug("!!! ERROR PARSING ATTRS IN BitMap::New() !!!\n"));
+	    D(bug("!!! NUMBER OF ATTRS IN IF: %d !!!\n", num_Total_BitMap_Attrs));
 	    ok = FALSE;
 	}
 
 	if (ok) {
 	    if (   !GOT_BM_ATTR(GfxHidd) || !GOT_BM_ATTR(Displayable)) {
-    	    	kprintf("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n");
-	    	kprintf("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n");
-	    	kprintf("!!!! has not left it to the baseclass to avtually create the object,\n");
-	    	kprintf("!!!! but rather done it itself. This MUST be corrected in the gfxhidd subclass\n");
-		kprintf("!!!! ATTRCHECK: %p !!!!\n", ATTRCHECK(bitmap));
+    	    	D(bug("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n"));
+	    	D(bug("!!!! The reason for this is that the gfxhidd subclass NewBitmap() method\n"));
+	    	D(bug("!!!! has not left it to the baseclass to avtually create the object,\n"));
+	    	D(bug("!!!! but rather done it itself. This MUST be corrected in the gfxhidd subclass\n"));
+		D(bug("!!!! ATTRCHECK: %p !!!!\n", ATTRCHECK(bitmap)));
 	    
 	    	ok = FALSE;
 	    } else {
@@ -140,7 +140,7 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 	    if ( attrs[AO(Displayable)] ) {
 		/* We should allways get modeid, but we check anyway */
 		if (!GOT_BM_ATTR(ModeID)) {
-		    kprintf("!!! BitMap:New() DID NOT GET MODEID FOR DISPLAYABLE BITMAP !!!\n");
+		    D(bug("!!! BitMap:New() DID NOT GET MODEID FOR DISPLAYABLE BITMAP !!!\n"));
 		    ok = FALSE;
 		} else {
 	    	    HIDDT_ModeID modeid;
@@ -149,7 +149,7 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 		    modeid = (HIDDT_ModeID)attrs[AO(ModeID)];
 	    
 	    	    if (!HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pf)) {
-	    		kprintf("!!! BitMap::New() RECEIVED INVALID MODEID %p\n", modeid);
+	    		D(bug("!!! BitMap::New() RECEIVED INVALID MODEID %p\n", modeid));
 	    		ok = FALSE;
 	    	    } else {
 	    		ULONG width, height;
@@ -175,7 +175,7 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 #warning Find a better way to do this.
 	/* One could maybe fix this by implementing a separate AmigaPitMap class
 	*/
-			kprintf("!!! BitMap:New(): NO PIXFMT FOR NONDISPLAYABLE BITMAP !!!\n");
+			D(bug("!!! BitMap:New(): NO PIXFMT FOR NONDISPLAYABLE BITMAP !!!\n"));
 			ok = FALSE;
 		    }
 		} else {
@@ -318,7 +318,7 @@ static VOID bitmap_get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 	    }
     
             default:
-	    	kprintf("UNKNOWN ATTR IN BITMAP BASECLASS: %d\n", idx);
+	    	D(bug("UNKNOWN ATTR IN BITMAP BASECLASS: %d\n", idx));
 	    	OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
         }
     } else {
@@ -526,7 +526,7 @@ static VOID bitmap_drawline(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
     OOP_Object *gc;
 
 
-/* kprintf("BitMap::DrawLine()\n");
+/* bug("BitMap::DrawLine()\n");
 */    EnterFunc(bug("BitMap::DrawLine() x1: %i, y1: %i x2: %i, y2: %i\n", msg->x1, msg->y1, msg->x2, msg->y2));
     
     gc = msg->gc;
@@ -1127,7 +1127,7 @@ static VOID bitmap_fillpolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 
     EnterFunc(bug("BitMap::FillPolygon()"));
 
-    kprintf("Sorry, FillPolygon() not implemented yet in bitmap baseclasss\n");
+    D(bug("Sorry, FillPolygon() not implemented yet in bitmap baseclasss\n"));
 
     ReturnVoid("BitMap::FillPolygon");
 }
@@ -1301,7 +1301,7 @@ static VOID bitmap_drawfilltext(OOP_Class *cl, OOP_Object *obj, struct pHidd_Bit
 
     EnterFunc(bug("BitMap::DrawFillText()\n"));
 
-    kprintf("Sorry, DrawFillText() not implemented yet in bitmap baseclass\n");
+    D(bug("Sorry, DrawFillText() not implemented yet in bitmap baseclass\n"));
 
     ReturnVoid("BitMap::DrawFillText");
 }
@@ -1440,7 +1440,7 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
 	default:
 	    pf = HIDD_Gfx_GetPixFmt(data->gfxhidd, stdpf);
 	    if (NULL == pf) {
-		kprintf("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", stdpf);
+		D(bug("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", stdpf));
 	    } else {
 		OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bpp);
 	    }
@@ -1467,7 +1467,7 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     
     bpp = getpixfmtbpp(cl, o, msg->pixFmt);
     if (-1 == bpp) {
-	kprintf("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", msg->pixFmt);
+	D(bug("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", msg->pixFmt));
 	return;
     }
     
@@ -1484,7 +1484,7 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 	    switch (bpp) {
 	    	case 1: pix = *((UBYTE *)pixarray) & 0x000000FF; pixarray ++; break;
 		case 2: pix = *((UWORD *)pixarray) & 0x0000FFFF; pixarray += 2; break;
-		case 3: kprintf("PUTIMAGE: 3  BYTESPERPIX NOT HANDLED YET\n");
+		case 3: D(bug("PUTIMAGE: 3  BYTESPERPIX NOT HANDLED YET\n")); break;
 		case 4: pix = *((ULONG *)pixarray); pixarray += 4; break;
 		  
 	    }
@@ -1517,7 +1517,7 @@ static VOID bitmap_blitcolexp(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
     fg	 = GC_FG(gc);
     bg	 = GC_BG(gc);
 
-/* kprintf("------------- Blit_ColExp: (%d, %d, %d, %d, %d, %d) cemd=%d, fg=%p, bg=%p -------------\n"
+/* bug("------------- Blit_ColExp: (%d, %d, %d, %d, %d, %d) cemd=%d, fg=%p, bg=%p -------------\n"
     , msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height
     , cemd, fg, bg);
 */    
@@ -1532,9 +1532,9 @@ static VOID bitmap_blitcolexp(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 
 /*	    
 if (is_set)	
-    kprintf("#");
+    bug("#");
 else
-    kprintf(" "); 
+    bug(" "); 
 */	    
 	    if (is_set) {
 		HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
@@ -1550,7 +1550,7 @@ else
 	    
 	} /* for (each x) */
 /*
-    kprintf("\n");
+    bug("\n");
 */
     } /* for ( each y ) */
     
@@ -1587,7 +1587,7 @@ static ULONG bitmap_bytesperline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 	    
 	    pf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
 	    if (NULL == pf) {
-		kprintf("!!! COULD NOT GET STD PIXFMT IN BitMap::BytesPerLine() !!!\n");
+		D(bug("!!! COULD NOT GET STD PIXFMT IN BitMap::BytesPerLine() !!!\n"));
 		return 0;
 	    }
 	    bpl = ((HIDDT_PixelFormat *)pf)->size * msg->width;
@@ -1631,7 +1631,7 @@ static VOID bitmap_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 #endif
 
 		default:
-		    kprintf("!!! TRYING TO SET NONSETTABLE BITMAP ATTR %d !!!\n", idx);
+		    D(bug("!!! TRYING TO SET NONSETTABLE BITMAP ATTR %d !!!\n", idx));
 		    break;
 
             }
@@ -1723,8 +1723,8 @@ static BOOL bitmap_obtaindirectaccess(OOP_Class *cl, OOP_Object *o, struct pHidd
 }
 static VOID bitmap_releasedirectaccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
 {
-     kprintf("!!! BitMap BaseClasse ReleaseDirectAccess() called !!!\n");
-     kprintf("!!! This should never happen and is probably due to a buggy implementation in the subclass !!!\n");
+     D(bug("!!! BitMap BaseClasse ReleaseDirectAccess() called !!!\n"));
+     D(bug("!!! This should never happen and is probably due to a buggy implementation in the subclass !!!\n"));
      
      return;
 }
@@ -1769,7 +1769,7 @@ static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o, struct pHidd_BitMa
                 accuys += dyd;
             }
             linepattern[count] = ys;
-//kprintf("[%d]=%d\n",count, ys);
+//bug("[%d]=%d\n",count, ys);
             count++;
         }
 
@@ -1796,7 +1796,7 @@ static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o, struct pHidd_BitMa
              */
             for (y = 0; y < bsa->bsa_DestHeight; y++)
             {
-//kprintf("Reading from source at %d/%d\t",xs,linepattern[y]);
+//bug("Reading from source at %d/%d\t",xs,linepattern[y]);
                 pix = HIDD_BM_GetPixel(src, xs, linepattern[y]);
                      
                 if (srcpf == dstpf)
@@ -1806,7 +1806,7 @@ static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o, struct pHidd_BitMa
                      HIDD_BM_UnmapPixel(src,pix,&col);
                      GC_FG(gc) = HIDD_BM_MapColor(src, &col);
                 }
-//kprintf("Writing to destination at %d/%d\n",count,y);
+//bug("Writing to destination at %d/%d\n",count,y);
 
                 HIDD_BM_DrawPixel(dst, gc, count, y);
             } /* for (y =...) */
@@ -1829,7 +1829,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
     if (0 != OOP_ParseAttrs(msg->bitMapTags
     		, attrs, num_Hidd_BitMap_Attrs
 		, &ATTRCHECK(bitmap), HiddBitMapAttrBase)) {
-	kprintf("!!! FAILED PARSING IN BitMap::SetBitMapTags !!!\n");
+	D(bug("!!! FAILED PARSING IN BitMap::SetBitMapTags !!!\n"));
 	return FALSE;
     }
 

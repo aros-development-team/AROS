@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) Copyright 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Pixelformat class
@@ -45,7 +45,7 @@ OOP_Object *pixfmt_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     	ReturnPtr("PixFmt::New(empty)", OOP_Object *, o);
 	
     if (!parse_pixfmt_tags(msg->attrList, &pf, ATTRCHECK(pixfmt), CSD(cl) )) {
-    	kprintf("!!! ERROR PARSINF ATTRS IN PixFmt::New() !!!\n");
+    	D(bug("!!! ERROR PARSINF ATTRS IN PixFmt::New() !!!\n"));
     } else {
 	ok = TRUE;
     }
@@ -137,7 +137,7 @@ static VOID pixfmt_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		break;
 	    
 	    default:
-	    	kprintf("TRYING TO GET UNKNOWN PIXFMT ATTR\n");
+	    	D(bug("TRYING TO GET UNKNOWN PIXFMT ATTR\n"));
     		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
@@ -203,7 +203,7 @@ OOP_Class *init_pixfmtclass(struct class_static_data *csd)
     	    if(NULL != cl)  {
         	D(bug("PixFmt class ok\n"));
         	csd->pixfmtclass = cl;
-kprintf("init_pixfmtclass: csd=%p\n", csd);
+D(bug("init_pixfmtclass: csd=%p\n", csd));
         	cl->UserData     = (APTR) csd;
 		OOP_AddClass(cl);
             

@@ -1,5 +1,5 @@
 /*
-    (C) 1998-2001 AROS - The Amiga Research OS
+    (C) Copyright 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics planar bitmap class implementation.
@@ -23,7 +23,7 @@
 
 #include <string.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -274,7 +274,7 @@ BOOL planarbm_setbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_PlanarBM_SetB
     bm = msg->bitMap;
     
     if (data->planes_alloced) {
-    	kprintf(" !!!!! PlanarBM: Trying to set bitmap in one that allready has planes allocated\n");
+    	D(bug(" !!!!! PlanarBM: Trying to set bitmap in one that allready has planes allocated\n"));
 	return FALSE;
     }
     
