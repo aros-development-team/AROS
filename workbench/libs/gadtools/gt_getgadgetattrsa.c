@@ -65,7 +65,7 @@
     if (gad == NULL || taglist == NULL)
         return 0L;
 
-    while ((tag = NextTagItem(&mytags)))
+    while ((tag = NextTagItem((const struct TagItem **)&mytags)))
         if (GetAttr(tag->ti_Tag, (Object *)gad, (IPTR *)tag->ti_Data))
 	    count++;
 
