@@ -135,8 +135,17 @@ struct IntuiMessage *alloc_intuimessage(struct Window *w,
     {
         if (w)
 	{
-            imsg->MouseX = w->MouseX;
-	    imsg->MouseY = w->MouseY;
+            if (w->IDCMPFlags & IDCMP_DELTAMOVE)
+	    {
+		struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+
+	    	imsg->MouseX = iihd->DeltaMouseX;
+		imsg->MouseY = iihd->DeltaMouseY;
+	    } else {
+		imsg->MouseX = w->MouseX;
+		imsg->MouseY = w->MouseY;
+	    }
+	    
 	    imsg->IDCMPWindow = w;
 	}
     	CurrentTime(&imsg->Seconds, &imsg->Micros);
@@ -147,28 +156,33 @@ struct IntuiMessage *alloc_intuimessage(struct Window *w,
 
 /*********************************************************************/
 
-void fire_intuimessage(struct Window *w,
+BOOL fire_intuimessage(struct Window *w,
                        ULONG Class,
 		       UWORD Code,
 		       APTR IAddress,
 		       struct IntuitionBase *IntuitionBase)
 {
     struct IntuiMessage *imsg;
+    BOOL result = FALSE;
     
     if ((w->IDCMPFlags & Class) && (w->UserPort))
     {
 	if ((imsg = alloc_intuimessage(w, IntuitionBase)))
 	{
-	    struct IIHData *iih = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+	    struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
     	    imsg->Class = Class;
 	    imsg->Code = Code;
-	    imsg->Qualifier = iih->ActQualifier;
+	    imsg->Qualifier = iihd->ActQualifier;
 	    imsg->IAddress = IAddress;
 
 	    send_intuimessage(imsg, w, IntuitionBase);
+
+	    result = TRUE;
 	}
-    }    
+    }
+    
+    return result;
 }
 		       
 /*********************************************************************/
@@ -179,7 +193,7 @@ void fire_intuimessage(struct Window *w,
 IPTR Locked_DoMethodA (Object * obj, Msg message, struct IntuitionBase *IntuitionBase)
 {
     IPTR rc;
-    
+
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
     rc = DoMethodA(obj, message);
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
