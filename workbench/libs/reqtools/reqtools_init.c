@@ -51,8 +51,8 @@ extern const char version[];
 extern const APTR inittabl[4];
 extern void *const LIBFUNCTABLE[];
 extern const struct inittable datatable;
-extern struct IntReqToolsBase *INIT();
-extern struct IntReqToolsBase *AROS_SLIB_ENTRY(open, ReqTools)();
+extern struct ReqToolsBase *INIT();
+extern struct ReqToolsBase *AROS_SLIB_ENTRY(open, ReqTools)();
 extern BPTR AROS_SLIB_ENTRY(close, ReqTools)();
 extern BPTR AROS_SLIB_ENTRY(expunge, ReqTools)();
 extern int AROS_SLIB_ENTRY(null, ReqTools)();
@@ -88,7 +88,7 @@ const char version[] = VERSION_STRING;
 
 const APTR inittabl[4]=
 {
-    (APTR)sizeof(struct IntReqToolsBase),
+    (APTR)sizeof(struct ReqToolsBase),
     (APTR)LIBFUNCTABLE,
     (APTR)&datatable,
     &INIT
@@ -130,8 +130,8 @@ const struct inittable datatable=
 
 /****************************************************************************************/
 
-AROS_LH2(struct IntReqToolsBase *, init,
- AROS_LHA(struct IntReqToolsBase *, RTBase, D0),
+AROS_LH2(struct ReqToolsBase *, init,
+ AROS_LHA(struct ReqToolsBase *, RTBase, D0),
  AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, ReqTools)
 {
@@ -141,20 +141,20 @@ AROS_LH2(struct IntReqToolsBase *, init,
         
     /* This function is single-threaded by exec by calling Forbid. */
 
-    RTBase->rt_SysBase = SysBase = sysBase;
+    SysBase = sysBase;
 
     D(bug("reqtools.library: Inside libinit func\n"));
     
-    return (struct IntReqToolsBase *)RTFuncs_Init(&RTBase->rt, segList);
+    return (struct ReqToolsBase *)RTFuncs_Init(RTBase, segList);
 
     AROS_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH1(struct IntReqToolsBase *, open,
+AROS_LH1(struct ReqToolsBase *, open,
  AROS_LHA(ULONG, version, D0),
-	   struct IntReqToolsBase *, RTBase, 1, ReqTools)
+	   struct ReqToolsBase *, RTBase, 1, ReqTools)
 {
     AROS_LIBFUNC_INIT
     
@@ -171,14 +171,14 @@ AROS_LH1(struct IntReqToolsBase *, open,
 
     D(bug("reqtools.library: Inside libopen func\n"));
     
-    return (struct IntReqToolsBase *)RTFuncs_Open(&RTBase->rt, version);
+    return (struct ReqToolsBase *)RTFuncs_Open(RTBase, version);
 
     AROS_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0(BPTR, close, struct IntReqToolsBase *, RTBase, 2, ReqTools)
+AROS_LH0(BPTR, close, struct ReqToolsBase *, RTBase, 2, ReqTools)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -189,14 +189,14 @@ AROS_LH0(BPTR, close, struct IntReqToolsBase *, RTBase, 2, ReqTools)
 
     D(bug("reqtools.library: Inside libclose func.\n"));
 
-    return RTFuncs_Close(&RTBase->rt);
+    return RTFuncs_Close(RTBase);
     
     AROS_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0(BPTR, expunge, struct IntReqToolsBase *, RTBase, 3, ReqTools)
+AROS_LH0(BPTR, expunge, struct ReqToolsBase *, RTBase, 3, ReqTools)
 {
     AROS_LIBFUNC_INIT
 
@@ -209,18 +209,18 @@ AROS_LH0(BPTR, expunge, struct IntReqToolsBase *, RTBase, 3, ReqTools)
  
     D(bug("reqtools.library: Inside libexpunge func.\n"));
 
-    return RTFuncs_Expunge(&RTBase->rt);
+    return RTFuncs_Expunge(RTBase);
     
     AROS_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0(int, null, struct IntReqToolsBase *, RTBase, 4, ReqTools)
+AROS_LH0(int, null, struct ReqToolsBase *, RTBase, 4, ReqTools)
 {
     AROS_LIBFUNC_INIT
 
-    return RTFuncs_Null(&RTBase->rt);
+    return RTFuncs_Null(RTBase);
     
     AROS_LIBFUNC_EXIT
 }
