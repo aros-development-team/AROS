@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Returns a pointer to the first char of the filename in the given
-	  file part.
-    Lang: english
+    Returns a pointer to the first char of the filename in the give file part.
 */
 #ifndef TEST
 #    include "dos_intern.h"
@@ -28,7 +26,7 @@
 	AROS_LH1(STRPTR, FilePart,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, path, D1),
+	AROS_LHA(CONST_STRPTR, path, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 145, Dos)
