@@ -72,7 +72,7 @@ USER_CFLAGS	:= -O2
 #MM linklibs-jpeg : includes
 #MM includes-copy
 
-%copy_includes path=jpeg dir=
+%copy_includes dir=
 
 %build_linklib mmake=linklibs-jpeg libname=jpeg files=$(FILES)
 
