@@ -246,6 +246,8 @@ struct staticdata {
     OOP_MethodID    	    mid_PutMemPattern8;
     OOP_MethodID    	    mid_PutMemPattern16;
     OOP_MethodID    	    mid_PutMemPattern32;
+    OOP_MethodID    	    mid_CopyLUTMemBox16;
+    OOP_MethodID    	    mid_CopyLUTMemBox32;
     
     BOOL		    gpu_busy;
 
