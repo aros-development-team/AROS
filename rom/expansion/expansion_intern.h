@@ -1,10 +1,13 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal data structures for expansion.library
     Lang: english
 */
+
+#ifndef _EXPANSION_INTERN_H
+#define _EXPANSION_INTERN_H
 
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -41,3 +44,5 @@ struct IntExpansionBase
 
 #define IntExpBase(eb)	((struct IntExpansionBase*)(eb))
 #define SysBase		(((struct IntExpansionBase *)ExpansionBase)->eb_SysBase)
+
+#endif /* _EXPANSION_INTERN_H */

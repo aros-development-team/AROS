@@ -11,12 +11,13 @@ FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 	    readexpansionbyte readexpansionrom releaseconfigbinding \
 	    remconfigdev setcurrentbinding writeexpansionbyte
 
-#MM- kernel-expansion : includes linklibs
+#MM- kernel-expansion : linklibs
 
-%build_module_macro mmake=kernel-expansion \
+#MM- kernel-expansion-includes : \
+#MM      kernel-exec-includes \
+#MM      kernel-dos-includes
+
+%build_module mmake=kernel-expansion \
   modname=expansion modtype=library \
-  funcs=$(FUNCS) \
-  conffile=lib.conf \
+  files="expansion_init $(FUNCS)" \
   uselibs=arosc
-
-%common
