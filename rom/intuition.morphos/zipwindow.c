@@ -84,6 +84,8 @@ static VOID int_zipwindow(struct ZipWindowActionMsg *msg,
     struct IntWindow * w = (struct IntWindow *)window;
     LONG NewLeftEdge, NewTopEdge, NewWidth, NewHeight;
 
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+    
     NewLeftEdge = window->LeftEdge;
     if (w->ZipLeftEdge != ~0)
     {

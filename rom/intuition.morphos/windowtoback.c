@@ -85,7 +85,9 @@ static VOID int_windowtoback(struct WindowToBackActionMsg *msg,
     struct Requester *req;
 
     DEBUG_WINDOWTOBACK(dprintf("IntWindowToBack: Window 0x%lx\n", window));
-
+    
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+    
     if (!(layer->Flags & LAYERBACKDROP))
     {
         //LOCK_REFRESH(screen);

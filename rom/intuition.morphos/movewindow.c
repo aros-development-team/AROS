@@ -87,6 +87,8 @@ static VOID int_movewindow(struct MoveWindowActionMsg *msg,
 {
     struct Window *window = msg->window;
 
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+
     DoMoveSizeWindow(window,
                      window->LeftEdge + msg->dx, window->TopEdge + msg->dy,
                      window->Width, window->Height, FALSE, IntuitionBase);

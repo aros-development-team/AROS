@@ -101,6 +101,8 @@ static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,
     struct Hook *callback = msg->callback;
     struct Screen *screen = window->WScreen;
 
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+    
     LOCK_REFRESH(screen);
     msg->shape = ChangeLayerShape(window->WLayer, shape, callback);
     UNLOCK_REFRESH(screen);
