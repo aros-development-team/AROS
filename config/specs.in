@@ -10,9 +10,6 @@
 *lib:
 %{!static: -larosc_shared} %{static: -larosc} -larosm
 
-*libgcc:
-
-
 *startfile:
 %{detach:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/detach.o} @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/startup.o
 
