@@ -5,6 +5,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -21,6 +22,7 @@
 #include "mainwin.h"
 #include "partitions.h"
 #include "partitiontables.h"
+#include "partitiontypes.h"
 #include "ptclass.h"
 
 #define DEBUG 1
@@ -237,6 +239,14 @@ BOOL running=TRUE;
 							)->LongInt
 						);
 					break;
+				case ID_PCP_BOOTABLE:
+					current_partition->flags |= PNF_FLAGS_CHANGED;
+					if (msg->Code)
+						current_partition->flags |= PNF_BOOTABLE;
+					else
+						current_partition->flags &= ~PNF_BOOTABLE;
+					viewPartitionData(mainwin, current_pt, current_partition);
+					break;
 				case ID_PCP_OK :
 					if (pcp_Ok(current_pt))
 					{
@@ -261,33 +271,117 @@ BOOL running=TRUE;
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					break;
 				case ID_DET_TYPELV :
-					changeType(mainwin, current_partition, msg->Code);
+					{
+					struct PartitionTypeNode *ptypenode;
+
+						ptypenode = (struct PartitionTypeNode *)getNumNode(current_pt->typelist, msg->Code);
+						changeType
+						(
+							mainwin,
+							current_partition,
+							ptypenode->id,
+							ptypenode->id_len
+						);
+					}
 					break;
 				case ID_DET_TYPESTRING :
 					{
-					ULONG val;
-					STRPTR err;
+					UBYTE id[32];
+					UWORD id_len;
 
-						val=typestrtol
+						id_len = ownsprintf
+						(
+							id,
 							(
-								(
-									(struct StringInfo *)
-										((struct Gadget *) msg->IAddress)->SpecialInfo
-								)->Buffer,
-								&err
-							);
-						if (err)
-						{
-							val = current_partition->type;
-						}
+								(struct StringInfo *)
+									((struct Gadget *) msg->IAddress)->SpecialInfo
+							)->Buffer
+						);
 						changeType
 						(
-							mainwin, current_partition, val
+							mainwin, current_partition, id, id_len
 						);
 					}
 					break;
 				case ID_DET_PARTITION_TABLE:
 					setPartitionTable(mainwin, current_partition, msg->Code);
+					break;
+				case ID_DET_BLOCKSIZE:
+					current_partition->de.de_SizeBlock = 1<<(msg->Code+7);
+					current_partition->flags |= PNF_DE_CHANGED;
+					break;
+				case ID_DET_BUFFERS:
+					current_partition->de.de_NumBuffers =
+						(
+							(struct StringInfo *)
+								((struct Gadget *) msg->IAddress)->SpecialInfo
+						)->LongInt;
+					current_partition->flags |= PNF_DE_CHANGED;
+					break;
+				case ID_DET_MASK:
+					current_partition->de.de_Mask = strtoul
+						(
+							(
+								(struct StringInfo *)
+									((struct Gadget *) msg->IAddress)->SpecialInfo
+							)->Buffer,
+							NULL,
+							0
+						);
+					current_partition->flags |= PNF_DE_CHANGED;
+					setDetGadgets(mainwin, current_partition);
+					break;
+				case ID_DET_MAX_TRANSFER:
+					current_partition->de.de_MaxTransfer = strtol
+						(
+							(
+								(struct StringInfo *)
+									((struct Gadget *) msg->IAddress)->SpecialInfo
+							)->Buffer,
+							NULL,
+							0
+						);
+					current_partition->flags |= PNF_DE_CHANGED;
+					setDetGadgets(mainwin, current_partition);
+					break;
+				case ID_DET_AUTOMOUNT:
+					if (msg->Code)
+						current_partition->flags |= PNF_AUTOMOUNT;
+					else
+						current_partition->flags &= ~PNF_AUTOMOUNT;
+					current_partition->flags |= PNF_FLAGS_CHANGED;
+					break;
+				case ID_DET_CUSTBOOT:
+					if (msg->Code)
+						current_partition->de.de_TableSize = DE_BOOTBLOCKS+1;
+					else
+						current_partition->de.de_TableSize = DE_DOSTYPE+1;
+					current_partition->flags |= PNF_DE_CHANGED;
+					setDetGadgets(mainwin, current_partition);
+					break;
+				case ID_DET_CUSTBB:
+					current_partition->de.de_BootBlocks =
+						(
+							(struct StringInfo *)
+								((struct Gadget *) msg->IAddress)->SpecialInfo
+						)->LongInt;
+					current_partition->flags |= PNF_DE_CHANGED;
+					break;
+				case ID_DET_BEGINING:
+					current_partition->de.de_Reserved =
+						(
+							(struct StringInfo *)
+								((struct Gadget *) msg->IAddress)->SpecialInfo
+						)->LongInt;
+					current_partition->flags |= PNF_DE_CHANGED;
+					break;
+				case ID_DET_END:
+					current_partition->de.de_PreAlloc =
+						(
+							(struct StringInfo *)
+								((struct Gadget *) msg->IAddress)->SpecialInfo
+						)->LongInt;
+					current_partition->flags |= PNF_DE_CHANGED;
 					break;
 				case ID_DET_OK:
 					det_Ok(current_partition);
