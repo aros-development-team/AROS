@@ -25,9 +25,17 @@
 
 /*  FUNCTION
 
+    Set the entire contents of a specified RastPort to a specific colour.
+
     INPUTS
 
+    rp   --  pointer to the RastPort in question
+    pen  --  pen number to set the bitmap pixels to
+
     RESULT
+
+    All pixels are set to the colour corresponding to the specified pen
+    number.
 
     NOTES
 
@@ -36,6 +44,8 @@
     BUGS
 
     SEE ALSO
+
+    RectFill(), <graphics/rastport.h>
 
     INTERNALS
 
