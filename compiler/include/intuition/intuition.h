@@ -547,6 +547,11 @@ struct Window
 
     ULONG MoreFlags;
     
+    WORD RelLeftEdge; // relative coordinates of the window
+    WORD RelTopEdge;  // to its parent window. If it is 
+                      // a window on the screen then these
+                      // are the same as LeftEdge and TopEdge.
+    
     struct Window * firstchild;  // pointer to first child
     struct Window * prevchild;   // if window is a child of a window
     struct Window * nextchild;   // then they are concatenated here.
@@ -554,6 +559,7 @@ struct Window
 };
 
 #define HAS_CHILDREN(w) (NULL != w->firstchild)
+#define IS_CHILD(w) (NULL != w->parent)
 
 struct NewWindow
 {
