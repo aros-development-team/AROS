@@ -1,13 +1,17 @@
 /*
     $Id$
     $Log$
-    Revision 1.1  1996/07/28 16:37:22  digulla
-    Initial revision
+    Revision 1.2  1996/07/29 15:16:42  digulla
+    A small hack to make it work until we have timer.device
+
+    Revision 1.1.1.1  1996/07/28 16:37:22  digulla
+    First CVS version of AROS
 
     Desc:
     Lang: english
 */
 #include <clib/dos_protos.h>
+#include <unistd.h>
 
 /*****************************************************************************
 
@@ -46,6 +50,9 @@
 {
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+
+    /* ADA just to make it work */
+    usleep (timeout * 20000L);
 
     __AROS_FUNC_EXIT
 } /* Delay */
