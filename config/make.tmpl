@@ -100,6 +100,23 @@
 %end
 #------------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------
+# Create the function reference file %(to) to %(from)
+%define mkref_q cc=$(AROS_CC) cppflags="-E -C -dD" cflags=$(CFLAGS) from=$< to=$@
+	@$(ECHO) "Generating ref for $(notdir %(from))..."
+	@if $(CXREF) -raw -CPP '%(cc) %(cppflags) %(cflags)' %(from) >%(to) 2>$(GENDIR)/cerrors; \
+	then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+	        $(ECHO) "%(from): $(CXREF) -raw -CPP '%(cc) %(cppflags) %(cflags)' %(from) >%(to)" >> $(GENDIR)/errors ; \
+	        tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Reference generation failed: $(CXREF) -raw -CPP '%(cc) %(cppflags) %(cflags)' %(from) >%(to)" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    $(RM) %(to) ; \
+	    exit 1 ; \
+	fi
+%end
 
 #############################################################################
 #############################################################################
@@ -443,11 +460,10 @@ $(GENFILE_TMP) : CC:=$(HOST_CC)
 endif
 
 $(GENFILE_TMP) : %(basename).c $(CXREF) %(includefile)
-	@$(ECHO) "Generating $(notdir $@)..."
 ifeq (%(includefile),)
-	@$(CXREF) -raw -CPP '$(CC) %(cflags) -E -C -dD' $< >$@
+	%mkref_q cc=$(CC) cflags="%(cflags)"
 else
-	@$(CXREF) -raw -CPP '$(CC) %(cflags) -include %(includefile) -E -C -dD' $< >$@
+	%mkref_q cc=$(CC) cflags="%(cflags) -include %(includefile)"
 endif
 
 %end
