@@ -8,11 +8,6 @@
 #include <exec/lists.h>
 #include <proto/exec.h>
 
-#if DEBUG
-#undef THIS_FILE
-static const char THIS_FILE[] = __FILE__;
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -57,7 +52,7 @@ static const char THIS_FILE[] = __FILE__;
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    ASSERT_VALID_PTR(node);
+//  ASSERT_VALID_PTR(node); argh! TypeOfMem() doesn't know about the data segment!
     ASSERT_VALID_PTR(list);
 
     /*
