@@ -17,7 +17,7 @@ extern struct UtilityBase * UtilityBase;
     NAME */
 #include <utility/tagitem.h>
 #include <utility/name.h>
-#include <proto/utility.h>
+	#include <proto/utility.h>
 
 	struct NamedObject * AllocNamedObject (
 
