@@ -58,6 +58,7 @@
 #define PoppenObject        MUIOBJMACRO_START(MUIC_Poppen)
 /* The following in zune only */
 #define PopimageObject      MUIOBJMACRO_START(MUIC_Popimage)
+#define PopframeObject      MUIOBJMACRO_START(MUIC_Popframe)
 #define AboutmuiObject      MUIOBJMACRO_START(MUIC_Aboutmui)
 #define ScrmodelistObject   MUIOBJMACRO_START(MUIC_Scrmodelist)
 #define KeyentryObject      MUIOBJMACRO_START(MUIC_Keyentry)
@@ -261,7 +262,7 @@
     IPTR  _localstore;                           \
     ULONG _ret;                                  \
     typeof (store) _store = (store);             \
-    extern int GetAttrs__IPTR_storage_size_mismatch[(sizeof(*_store) == sizeof(IPTR))?1:-1] __unused; \
+    struct __foo { int GetAttrs__IPTR_storage_size_mismatch[(sizeof(*_store) == sizeof(IPTR))?1:-1];}; \
     _ret = GetAttr((attr), (obj), &_localstore); \
     *_store = (typeof (*_store)) _localstore;    \
     _ret;                                        \
