@@ -20,6 +20,7 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "prefs.h"
+#include "font.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
@@ -29,8 +30,9 @@ extern struct Library *MUIMasterBase;
 #define INTERTAB 4
 #define TEXTSPACING 4
 #define REGISTERTAB_EXTRA_HEIGHT 7
-#define REGISTER_FRAMEX 4
-#define REGISTER_FRAMEY 4
+#define REGISTER_FRAMEX 7
+#define REGISTER_FRAMEBOTTOM 5
+#define REGISTER_FRAMETOP 4
 
 struct RegisterTabItem
 {
@@ -335,12 +337,13 @@ static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);   
     WORD    	    i, h = 0;
-    
+
     if (!DoSuperMethodA(cl, obj, (Msg)msg))
     {
     	return FALSE;
     }
     
+    _font(obj) = zune_font_get(obj, MUIV_Font_Title);
     data->fonth = _font(obj)->tf_YSize;
     data->fontb = _font(obj)->tf_Baseline;
     
@@ -390,13 +393,13 @@ static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
     }
 
     muiAreaData(obj)->mad_HardILeft  	= REGISTER_FRAMEX;
-    muiAreaData(obj)->mad_HardITop   	= data->tab_height + REGISTER_FRAMEY;
+    muiAreaData(obj)->mad_HardITop   	= data->tab_height + REGISTER_FRAMETOP;
     muiAreaData(obj)->mad_HardIRight  	= REGISTER_FRAMEX;
-    muiAreaData(obj)->mad_HardIBottom 	= REGISTER_FRAMEY;
+    muiAreaData(obj)->mad_HardIBottom 	= REGISTER_FRAMEBOTTOM;
     muiAreaData(obj)->mad_Flags     	|= (MADF_INNERLEFT | MADF_INNERTOP | MADF_INNERRIGHT | MADF_INNERBOTTOM);
         
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-    
+
     return TRUE;
 }
 
