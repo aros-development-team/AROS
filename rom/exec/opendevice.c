@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Open a device.
@@ -43,8 +43,12 @@ char *const inputname = "input.device";
 	struct ExecBase *, SysBase, 74, Exec)
 
 /*  FUNCTION
-	Tries to open a device and fill the iORequest structure.
-	An error is returned if this fails, 0 if all went well.
+	Tries to open a device and fill the iORequest structure.  An error
+	is returned if this fails, 0 if all went well.
+
+	If the device doesn't exist in the current system device list, then
+	first the system ROMtag module list, then if the DOS is running,
+	then the DEVS: directory will be tried.
 
     INPUTS
 	devName    - Pointer to the devices's name.
@@ -65,7 +69,7 @@ char *const inputname = "input.device";
     BUGS
 
     SEE ALSO
-	CloseDevice()
+	OpenDevice()
 
     INTERNALS
 
@@ -119,15 +123,12 @@ char *const inputname = "input.device";
 	    /* Mark request as non-open */
 	    iORequest->io_Device=NULL;
     }
+
     /*
-	else
-	{
-	Under normal circumstances you'd expect the device loading here -
-	but this is only exec which doesn't know anything about the
-	filesystem level. Therefore dos.library has to SetFunction() this vector
-	for the additional functionality.
-	}
-    */
+     *	We cannot handle loading devices from disk. But thankfully this is
+     *	taken care of by dos.library (well lddemon really). It replaces
+     *	this function with one of its own via the SetFunction() call.
+     */
 
     /* All done. */
     Permit();
