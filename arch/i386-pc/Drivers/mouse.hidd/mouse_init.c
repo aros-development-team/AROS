@@ -20,7 +20,7 @@
 /* Customize libheader.c */
 #define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->sysbase)
 #define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->seglist)
-#define LC_RESIDENTNAME     	mouseHidd_resident
+#define LC_RESIDENTNAME         mouseHidd_resident
 #define LC_RESIDENTFLAGS        RTF_AUTOINIT|RTF_COLDSTART
 #define LC_RESIDENTPRI          9
 #define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
@@ -38,7 +38,7 @@ struct mousebase
 {
     struct Library library;
     struct ExecBase *sysbase;
-    BPTR	seglist;
+    BPTR   seglist;
 };
 
 #include <libcore/libheader.c>
@@ -51,7 +51,6 @@ struct mousebase
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 {
     struct mouse_staticdata *msd;
-    int i;
 
     D(bug("_mouse: Initializing\n"));
 
