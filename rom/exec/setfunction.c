@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.11  1997/02/28 00:11:54  ldp
+    AROSfA: Refine way to sign-extend from 16 to 32 bits
+
     Revision 1.10  1997/02/26 01:33:40  ldp
     AROSfA: added hack to keep dos.library patches working. See source for
     extensive comments.
@@ -91,11 +94,11 @@
     EXAMPLE
 
     BUGS
-	On native builds, this contains a hack to fix dos.library attempts to
-	setfunction exec functions. Because of this, a funcOffset of more than
-	32 kB be truncated. This hack will also fix other programs only using
-	the lower 16 bits of funcOffset and leaving garbage in the upper
-	16 bits. These programs should be fixed.
+	On native builds, this contains a hack to fix dos.library/ramlib
+	attempts to setfunction exec functions. Because of this, a funcOffset
+	of more than 32 kB be truncated. This hack will also fix other programs
+	only using the lower 16 bits of funcOffset and leaving garbage in the
+	upper 16 bits. These programs should be fixed.
 
     SEE ALSO
 	MakeLibrary(), MakeFunctions(), SumLibrary().
@@ -110,17 +113,17 @@
     APTR ret;
 
     /*
-	Fix dos.library attempts to SetFunction() CloseDevice/CloseLibrary/
-	RemDevice/RemLibrary/OpenDevice/OpenLibrary.
+	Fix dos.library/ramlib attempts to SetFunction() CloseDevice/
+	CloseLibrary/RemDevice/RemLibrary/OpenDevice/OpenLibrary.
 
 	This also effectively limits the max offset to 32k, but this limit was
 	already in the original, though not really documented.
 
 	What happes is this: the prototype for the funcOffset says it is a
 	long, but the autodoc also says that only a0.w (lower 16 bits) is used.
-	Dos.library only sets the lower 16 bits of a0 to the required offset,
-	without sign-extending to the upper 16 bits, in fact without even
-	clearing them. These high 16 bits will therefore contain garbage:
+	Dos.library/ramlib only sets the lower 16 bits of a0 to the required
+	offset, without sign-extending to the upper 16 bits, in fact without
+	even clearing them. These high 16 bits will therefore contain garbage:
 
 	SetFunction(exec.library, 7804fe3e, fc6524) = 30303030 CloseDevice
 	SetFunction(exec.library, 3030fe62, fc6528) = 30303030 CloseLibrary
@@ -129,17 +132,20 @@
 	SetFunction(exec.library, 3030fe44, fc6564) = 30303030 OpenDevice
 	SetFunction(exec.library, 3030fdd8, fc659a) = 30303030 OpenLibrary
 
-	In asm, I would use "ext.l", but I can't do that in C. Therefore I use	
-	this method of forcibly setting the upper 16-bits. As long as no
-	library has a negsize over 32kB, this will keep working.
-
 	In my [ldp] opinion, the autodoc should never have said that only A0.W
 	is used for the funcOffset, while specifying a "long" in the prototype.
 	This will stay broken and this fix will stay here until we fix
 	dos.library.
     */
 #if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
-    funcOffset |= 0xffff0000;
+    if (funcOffset & 0x00008000)
+    {
+	funcOffset |= 0xffff0000;
+    }
+    else
+    {
+	funcOffset &= 0x0000ffff;
+    }
 #endif
 
     D(bug("SetFunction(%s, %lx, %lx) = ", (ULONG)library->lib_Node.ln_Name, funcOffset, (ULONG)newFunction));
