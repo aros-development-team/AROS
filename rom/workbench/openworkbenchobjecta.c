@@ -256,7 +256,7 @@ STRPTR __CLI_BuildCommandLine
                         STRPTR path = AllocateNameFromLock(lock);
                         if (path != NULL)
                         {
-                            length += 1 /* space */ + strlen(path);
+                            length += 3 /* space + 2 '"' */ + strlen(path);
                             FreeVec(path);
                         }
                         
@@ -300,8 +300,9 @@ STRPTR __CLI_BuildCommandLine
                             STRPTR path = AllocateNameFromLock(lock);
                             if (path != NULL)
                             {
-                                strcat(buffer, " ");
+                                strcat(buffer, " \"");
                                 strcat(buffer, path);
+                                strcat(buffer, "\"");
                                 FreeVec(path);
                             }
                             
