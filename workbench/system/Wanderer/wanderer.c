@@ -4,6 +4,7 @@
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
+#define DEBUG 1
 
 #include <exec/types.h>
 #include <libraries/gadtools.h>
@@ -20,7 +21,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <aros/detach.h>
@@ -700,12 +700,15 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
         
         switch (wbhm->wbhm_Type)
         {
+	    #warning TODO: remember to override MUIA_Application_Iconified when appicon support is implemented.
             case WBHM_TYPE_SHOW:
-                #warning WBHM_TYPE_SHOW not supported
+                D(bug("Wanderer: WBHM_TYPE_SHOW\n"));
+                set(self, MUIA_Application_Iconified, FALSE);
                 break;
             
             case WBHM_TYPE_HIDE:
-                #warning WBHM_TYPE_HIDE not supported
+                D(bug("Wanderer: WBHM_TYPE_HIDE\n"));
+                set(self, MUIA_Application_Iconified, TRUE);
                 break;
                 
             case WBHM_TYPE_UPDATE:
