@@ -10,10 +10,11 @@
 
 #define VENDOR_VMWARE 0x15ad
 #define DEVICE_VMWARE0710   0x0710
+#define DEVICE_VMWARE0405   0x0405
 
 struct HWData  {
-	UWORD indexReg;
-	UWORD valueReg;
+	APTR indexReg;
+	APTR valueReg;
 	ULONG depth;
 	ULONG redmask;
 	ULONG greenmask;
@@ -104,7 +105,7 @@ struct HWData  {
 void vmwareWriteReg(struct HWData *, ULONG, ULONG);
 VOID writeVMWareGfxFIFO(struct HWData *, ULONG);
 VOID syncVMWareGfxFIFO(struct HWData *);
-BOOL initVMWareGfxHW(struct HWData *);
+BOOL initVMWareGfxHW(struct HWData *, HIDDT_PCI_Device *);
 VOID setModeVMWareGfx(struct HWData *, ULONG, ULONG);
 VOID refreshAreaVMWareGfx(struct HWData *, struct Box *);
 VOID rectFillVMWareGfx(struct HWData *, ULONG, LONG, LONG, LONG, LONG);
