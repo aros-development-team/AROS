@@ -14,7 +14,7 @@
 %{detach:@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/detach.o} @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib/startup.o
 
 *predefines:
--D__ELF__ -Dunix -D__@aros_target_cpu@__ -Dlinux -Asystem(posix) -D__AROS__ -D__AROS
+-D__ELF__ -Dunix -D__@aros_target_cpu@__ -Dlinux -Asystem(posix) -D__AROS__ -D__AROS -D_AROS
 
 *cross_compile:
 1
