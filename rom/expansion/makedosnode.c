@@ -1,15 +1,21 @@
 /*
-    Copyright (C) 1997 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: MakeDosNode() - Create a DOS DeviceNode structure.
-    Lang: english
+    Lang: English
 */
+
 #include "expansion_intern.h"
 #include <exec/memory.h>
 #include <dos/dos.h>
+#include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <string.h>
+
+# define  DEBUG 0
+# include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -102,70 +108,99 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExpansionBase *,ExpansionBase)
 
-    if(parmPacket)
+    struct DeviceNode *dn;
+    struct FileSysStartupMsg *fssm;
+    struct DosEnvec *de;
+    STRPTR s1, s2 = 0;
+    int    strLen1, strLen2;
+    int    i;			/* Loop variable */
+
+    if (parmPacket == NULL)
     {
-	struct DeviceNode *dn;
-	struct FileSysStartupMsg *fssm;
-	struct DevEnvec *de;
-	STRPTR s1, s2 = 0;
-	int strLen1, strLen2;
-
-	/* This is the environment structure */
-	de = (struct DevEnvec *)((ULONG *)parmPacket + 4);
-
-	dn = AllocMem(sizeof(struct DeviceNode), MEMF_CLEAR|MEMF_PUBLIC);
-	if( dn == NULL )
-	    return NULL;
-
-	fssm = AllocMem(sizeof(struct FileSysStartupMsg), MEMF_CLEAR|MEMF_PUBLIC);
-	if( fssm == NULL )
-	{
-	    FreeMem(de, sizeof(struct DeviceNode));
-	    return NULL;
-	}
-
-	/* To help prevent fragmentation I will allocate both strings in the
-	   same block of memory.
-
-	   Add for each string, 1 for null-termination
-				1 for BSTR size
-	   For the first string 3 for longword align
-	*/
-	strLen1 = strlen( (STRPTR)((ULONG *)parmPacket)[0] ) + 5;
-	strLen2 = strLen1 + 2 + strlen( (STRPTR)((ULONG *)parmPacket)[1] );
-
-	s1 = AllocVec( strLen2, MEMF_CLEAR|MEMF_PUBLIC );
-	if( s1 == NULL )
-	{
-	    FreeMem( de, sizeof(struct DeviceNode));
-	    FreeMem( fssm, sizeof(struct FileSysStartupMsg));
-	    return NULL;
-	}
-
-	/* We have no more allocations */
-	s2 = (STRPTR)(((ULONG)s1 + strLen1) & ~3);
-
-	CopyMem( (STRPTR)((ULONG *)parmPacket)[0], &s1[1], strLen1 - 5);
-	CopyMem( (STRPTR)((ULONG *)parmPacket)[1], &s2[1], strLen2 - 2);
-
-	/* The NULL termination is there from MEMF_CLEAR */
-	*s1 = (strLen1 - 5) > 255 ? 255 : (strLen1 - 5);
-	*s2 = (strLen2 - 2) > 255 ? 255 : (strLen2 - 2);
-
-	/* Strings are done, now the FileSysStartupMsg */
-	fssm->fssm_Unit = ((ULONG *)parmPacket)[2];
-	fssm->fssm_Device = MKBADDR(s2);
-	fssm->fssm_Environ = MKBADDR(de);
-	fssm->fssm_Flags = ((ULONG *)parmPacket)[3];
-
-	/* FSSM is done, now the DeviceNode */
-	/* Most of this we cannot set up, leave it to the user */
-	dn->dn_Handler = MKBADDR(s1);
-	dn->dn_Startup = MKBADDR(fssm);
-
-	return dn;
+	return NULL;
     }
-    return NULL;
+
+    /* This is the environment structure */
+    de = (struct DosEnvec *)((ULONG *)parmPacket + 4);
+    
+    dn = AllocMem(sizeof(struct DeviceNode), MEMF_CLEAR | MEMF_PUBLIC);
+    
+    if (dn == NULL)
+    {
+	return NULL;
+    }
+    
+    fssm = AllocMem(sizeof(struct FileSysStartupMsg),
+		    MEMF_CLEAR | MEMF_PUBLIC);
+    
+    if (fssm == NULL)
+    {
+	FreeMem(dn, sizeof(struct DeviceNode));
+	
+	return NULL;
+    }
+    
+    /* To help prevent fragmentation I will allocate both strings in the
+       same block of memory.
+       
+       Add for each string, 1 for null-termination
+       1 for BSTR size
+       For the first string 3 for longword align
+    */
+
+    strLen1 = strlen((STRPTR)((ULONG *)parmPacket)[0]) + 5;
+
+    /* There doesn't have to exist an underlying block device */
+    if ((STRPTR)((ULONG *)parmPacket)[1] != NULL)
+    {
+	strLen2 = 2 + strlen((STRPTR)((ULONG *)parmPacket)[1]);
+    }
+    else
+    {
+	strLen2 = 2;
+    }
+    
+    s1 = AllocVec(strLen2 + strLen1, MEMF_CLEAR | MEMF_PUBLIC);
+    
+    if (s1 == NULL)
+    {
+	FreeMem(dn, sizeof(struct DeviceNode));
+	FreeMem(fssm, sizeof(struct FileSysStartupMsg));
+	
+	return NULL;
+    }
+    
+    /* We have no more allocations */
+    s2 = (STRPTR)(((ULONG)s1 + strLen1) & ~3);
+
+    for (i = 0; i < strLen1 - 5; i++)
+    {
+	AROS_BSTR_putchar(s1, i, ((STRPTR)((ULONG *)parmPacket)[0])[i]);
+    }
+
+    for (i = 0; i < strLen2 - 2; i++)
+    {
+	AROS_BSTR_putchar(s2, i, ((STRPTR)((ULONG *)parmPacket)[1])[i]);
+    }
+    
+    AROS_BSTR_setstrlen(s1, (strLen1 - 5) > 255 ? 255 : (strLen1 - 5));
+    AROS_BSTR_setstrlen(s2, (strLen2 - 2) > 255 ? 255 : (strLen2 - 2));
+    
+    /* Strings are done, now the FileSysStartupMsg */
+    fssm->fssm_Unit = ((ULONG *)parmPacket)[2];
+    fssm->fssm_Device = MKBADDR(s2);
+    fssm->fssm_Environ = MKBADDR(de);
+    fssm->fssm_Flags = ((ULONG *)parmPacket)[3];
+    
+    /* FSSM is done, now the DeviceNode */
+    dn->dn_Handler = MKBADDR(s1);
+    dn->dn_Startup = MKBADDR(fssm);
+    dn->dn_Type = DLT_DEVICE;
+
+    /* Sorry, we can't fill in dn_NewName and dn_OldName here, we simply
+       don't have that information */
+
+    return dn;
 
     AROS_LIBFUNC_EXIT
 } /* MakeDosNode */
