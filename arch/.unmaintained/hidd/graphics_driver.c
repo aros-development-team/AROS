@@ -1633,7 +1633,7 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 		CR->lobs));
 		
 	    /* Does this cliprect intersect with area to rectfill ? */
-	    if (andrectrect(&CR->bounds, &torender, &intersect))
+	    if (AndRectRect(&CR->bounds, &torender, &intersect))
 	    {
 	    	LONG xoffset, yoffset;
 		LONG layer_rel_x, layer_rel_y;
@@ -1784,7 +1784,7 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
 		CR->lobs));
 		
 	    /* Does this cliprect intersect with area to rectfill ? */
-	    if (andrectrect(&CR->bounds, &torender, &intersect))
+	    if (AndRectRect(&CR->bounds, &torender, &intersect))
 	    {
 	    	LONG xoffset, yoffset;
 		LONG layer_rel_x, layer_rel_y;
@@ -4222,7 +4222,7 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
 		CR->lobs));
 		
 	    /* Does this cliprect intersect with area to blit ? */
-	    if (andrectrect(&CR->bounds, &toblit, &intersect))
+	    if (AndRectRect(&CR->bounds, &toblit, &intersect))
 	    {
 	        ULONG xoffset = intersect.MinX - toblit.MinX;
 		ULONG yoffset = intersect.MinY - toblit.MinY;
@@ -4571,7 +4571,7 @@ ULONG do_render_func(struct RastPort *rp
 		CR->lobs));
 		
 	    /* Does this cliprect intersect with area to rectfill ? */
-	    if (andrectrect(&CR->bounds, &torender, &intersect))
+	    if (AndRectRect(&CR->bounds, &torender, &intersect))
 	    {
 	    	LONG xoffset, yoffset;
 		
