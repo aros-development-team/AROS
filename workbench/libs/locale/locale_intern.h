@@ -84,6 +84,7 @@ struct IntCatalog
     ULONG		ic_DataSize;
     UWORD		ic_UseCount;
     ULONG		ic_Flags;
+    STRPTR		ic_Name; // name of the file as passed to OpenCatalogA
 };
 
 /* Catalog strings are in order, so we don't have to search them all */

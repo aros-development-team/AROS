@@ -97,6 +97,28 @@ struct header
   {
     struct IFFHandle * iff = NULL;
 
+    /* 
+    ** The wanted catalog might be in the list of catalogs that are
+    ** already loaded. So check that list first.
+    */
+    ObtainSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+    ForeachNode(&IntLB(LocaleBase)->lb_CatalogList,
+                (struct Node *)catalog)
+    {
+      if (catalog->ic_Name && 
+          0 == strcmp(catalog->ic_Name, name) &&
+          catalog->ic_Catalog.cat_Language &&
+          0 == strcmp(catalog->ic_Catalog.cat_Language, language))
+      {
+        ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+        catalog->ic_UseCount++;
+        return (struct Catalog *)catalog;
+      }
+    }
+    
+    ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+    
+
     /* Clear error condition before we start. */
     SetIoErr(0);
 
@@ -146,19 +168,29 @@ struct header
     {
       while (1)
       {
-        ULONG error = ParseIFF(iff, IFFPARSE_RAWSTEP);
+        ULONG error = ParseIFF(iff, IFFPARSE_STEP);
           
         if (IFFERR_EOF == error)
         {
           /* Did everything go fine? */
+          catalog->ic_Name = AllocVec(strlen(name)+1, MEMF_ANY);
+          strcpy(catalog->ic_Name, name);
+
+          catalog->ic_Catalog.cat_Language = AllocVec(strlen(language)+1,MEMF_ANY);
+          strcpy(catalog->ic_Catalog.cat_Language, language);
+
+          /* Connect this catalog to the list of catalogs */
+          ObtainSemaphore (&IntLB(LocaleBase)->lb_CatalogLock);
+          AddHead((struct List *)&IntLB(LocaleBase)->lb_CatalogList, 
+                  &catalog->ic_Catalog.cat_Link);
+          ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+
           return &catalog->ic_Catalog;
         }
-            
-        if (IFFERR_EOC == error)
-        {
+
+        if (IFFERR_EOC == error) /* end of chunk */
           continue;
-        }
-          
+
         if (0 == error)
         {
           struct ContextNode * top = CurrentChunk(iff);

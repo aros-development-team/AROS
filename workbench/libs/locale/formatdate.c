@@ -314,7 +314,7 @@ ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,30
 		PrintDigits(cData.year, '0', 4, hook, locale);
 		break;
 
-            case 'z':
+            case 'Z':
                 /* cuurent time zone Unimplemented in 3.1 */
                 break;
 		

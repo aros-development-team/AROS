@@ -60,7 +60,17 @@
 	/* Decrement the use counter. */
 	IntCat(catalog)->ic_UseCount--;
 
-	/* Gee, that was hard... */
+        if (0 == IntCat(catalog)->ic_UseCount)
+        {
+          ObtainSemaphore (&IntLB(LocaleBase)->lb_CatalogLock);
+          Remove(&catalog->cat_Link);
+          ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+
+          dispose_catalog((struct IntCatalog *)catalog, (struct Library *)LocaleBase);
+          FreeVec(IntCat(catalog)->ic_Name);
+          FreeVec(catalog->cat_Language);
+          FreeMem(catalog, sizeof(struct IntCatalog));
+        }
     }
 
     AROS_LIBFUNC_EXIT
