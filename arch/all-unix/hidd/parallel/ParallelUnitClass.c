@@ -142,7 +142,7 @@ static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot
 							error = Hidd_UnixIO_AsyncIO(data->unixio_read,
 							                            data->filedescriptor,
 							                            data->replyport_read,
-							                            vHidd_UnixIO_Read,
+							                            vHidd_UnixIO_RW | vHidd_UnixIO_Keep,
 							                            SysBase);
 							goto exit;
 
@@ -249,6 +249,7 @@ ULONG parallelunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit
 	            msg->Outbuffer,
 	            msg->Length);
 
+#if 0
 	if (len < msg->Length) {
 
 		// !!!!!! FROM WHAT I CAN TELL THE FOLLOWING LINE
@@ -259,6 +260,7 @@ ULONG parallelunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit
 		                            vHidd_UnixIO_Write,
 		                            SysBase);
 	}
+#endif
 
 	ReturnInt("ParallelUnit::Write()",ULONG, len);
 }
@@ -342,6 +344,7 @@ AROS_UFH3(void, parallelunit_receive_data,
 	if (NULL != data->DataReceivedCallBack)
 		data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 
+#if 0
 	/*
 	** I want to be notified when the next data are coming in.
 	*/
@@ -350,7 +353,7 @@ AROS_UFH3(void, parallelunit_receive_data,
 	                            data->replyport_read,
 	                            vHidd_UnixIO_Read,
 	                            SysBase);
-
+#endif
 	AROS_USERFUNC_EXIT
 }
 
