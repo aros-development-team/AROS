@@ -1,7 +1,7 @@
 include $(TOP)/config/make.cfg
 
 DTDIR 		:= $(DEVSDIR)/DataTypes
-FILES 		:= FTXT
+FILES 		:= FTXT PPM
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 
 #MM workbench-devs : setup $(DTFILES)
