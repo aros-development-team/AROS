@@ -237,7 +237,6 @@ static void make_cvsignore(void)
     	       "*_endtag.c\n"
 	       "*.map\n"
 	       "functable.c\n"
-	       "functions.[ch]\n"
 	       "libdefs.h\n"
 	       "mmakefile\n");
     fclose(f);
