@@ -9,6 +9,7 @@
 #include <graphics/gfx.h>
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
+#include <intuition/gadgetclass.h>
 #include <intuition/extensions.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
@@ -183,7 +184,7 @@ WFLG_WINDOWACTIVE )
          */
         nw.Flags |= (GetTagData(WA_Flags, nw.Flags, tagList) & ~WFLG_PRIVATEFLAGS);
 
-        while ((tag = NextTagItem ((struct TagItem **)&tagList)))
+        while ((tag = NextTagItem (&tagList)))
         {
             /* ASSERT_VALID_PTR_ROMOK(tag); */
 
@@ -1037,7 +1038,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 #endif
 
     if (screenTitle != NULL)
-        SetWindowTitles (w, (UBYTE *)~0L, screenTitle);
+        SetWindowTitles (w, (CONST_STRPTR)~0L, screenTitle);
 
     UpdateMouseCoords(w);
 
@@ -1502,6 +1503,8 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             w->WindowPort = GetPrivIBase(IntuitionBase)->IntuiReplyPort;
 
             UnlockIBase (lock);
+
+            AddResourceToList(w, RESOURCE_WINDOW, IntuitionBase);
 
             if (w->Flags & WFLG_ACTIVATE)
             {
