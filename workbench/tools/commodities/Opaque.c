@@ -31,6 +31,14 @@
 
 /************************************************************************************/
 
+/* Using ChangeWindowBox has the advantage, that one can specify absolute window
+   coords, instead of relative ones as in case of MoveWindow. OTOH it has the
+   disadvantage that it also generates IDCMP_NEWSIZE IntuiMessages. */
+   
+#define USE_CHANGEWINDOWBOX 0
+
+/************************************************************************************/
+
 UBYTE version[] = "$VER: Opaque 0.2 (13.10.2001)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
@@ -84,6 +92,9 @@ static struct RDArgs *myargs;
 static CxObj *cxbroker, *cxcust;
 static ULONG cxmask, actionmask;
 static WORD  winoffx, winoffy, winwidth, winheight;
+#if !USE_CHANGEWINDOWBOX
+static WORD actionstart_winx, actionstart_winy;
+#endif
 static UBYTE actionsig, actiontype;
 static BOOL quitme, disabled;
 
@@ -292,6 +303,10 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 			winoffy   = win->WScreen->MouseY - win->TopEdge;
 			winwidth  = win->Width;
 			winheight = win->Height;
+		    #if !USE_CHANGEWINDOWBOX
+			actionstart_winx = win->LeftEdge;
+			actionstart_winy = win->TopEdge;
+		    #endif
 			DisposeCxMsg(msg);
 		    }
 		    
@@ -357,7 +372,13 @@ static void HandleAction(void)
     	WORD newy = actionwin->WScreen->MouseY - winoffy;
 
     	/* MoveWindow(actionwin, newx - actionwin->LeftEdge, newy - actionwin->TopEdge); */
+    #if USE_CHANGEWINDOWBOX
      	ChangeWindowBox(actionwin, newx, newy, actionwin->Width, actionwin->Height);
+    #else
+    	MoveWindow(actionwin, newx - actionstart_winx, newy - actionstart_winy);
+	actionstart_winx = newx;
+	actionstart_winy = newy;
+    #endif
     }
     else
     {
