@@ -1,5 +1,5 @@
-utility_functable.c
-utility_endtag.c
+functable.c
+endtag.c
 libdefs.h
 *.s
 *.map
