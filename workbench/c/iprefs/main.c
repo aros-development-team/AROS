@@ -303,7 +303,7 @@ static void HandleAll(void)
 
 int __nocommandline = 1;
 
-int __detacher_must_wait_for_signal = 1;
+LONG __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
 struct Process *__detacher_process = NULL;
 
 int main(void)
@@ -319,7 +319,7 @@ int main(void)
     /* If there's a detacher, tell it to go away */
     if (__detacher_process)
     {
-        Signal((struct Task *)__detacher_process, SIGBREAKF_CTRL_F);
+        Signal((struct Task *)__detacher_process, __detacher_must_wait_for_signal);
     }
 
     HandleAll();
