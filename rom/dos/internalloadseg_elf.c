@@ -9,6 +9,8 @@
                 Original file was created by digulla.
 */
 
+#define DEBUG 0
+
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/dosasl.h>
@@ -18,7 +20,7 @@
 #include <aros/machine.h>
 #include "internalloadseg.h"
 #include "dos_intern.h"
-#define DEBUG 1
+
 #include <aros/debug.h>
 #include <string.h>
 #include <stddef.h>
@@ -413,12 +415,14 @@ static int relocate
                 D(bug("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
 		      (STRPTR)sh[shsymtab->link].addr + sym->name,
 		      (STRPTR)sh[eh->shstrndx].addr + toreloc->name));
+                      SetIoErr(ERROR_BAD_HUNK);
                 return 0;
 
             case SHN_COMMON:
                 D(bug("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
 		      (STRPTR)sh[shsymtab->link].addr + sym->name,
 		      (STRPTR)sh[eh->shstrndx].addr + toreloc->name));
+                      SetIoErr(ERROR_BAD_HUNK);
 		      
                 return 0;
 
