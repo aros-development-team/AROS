@@ -29,7 +29,9 @@
 #ifndef EXEC_SEMAPHORES
 #   include <exec/semaphores.h>
 #endif
-#include <devices/timer.h>
+#ifndef DEVICES_TIMER_H
+#    include <devices/timer.h>
+#endif
 #ifndef EXEC_INTERRUPTS_H
 #   include <exec/interrupts.h>
 #endif
@@ -64,6 +66,8 @@ struct DosLibrary
     struct Library	 * dl_IntuitionBase;
 
     /* These are AROS specific extensions. They are all PRIVATE! */
+    struct timerequest	   dl_TimerIO;
+    
     struct SignalSemaphore dl_DosListLock;
     struct DosList	 * dl_DevInfo;
     struct ExecBase	 * dl_SysBase;
