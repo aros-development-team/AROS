@@ -58,3 +58,4 @@ MMAKE    := $(TOOLDIR)/mmake
 ARCHTOOL := $(TOOLDIR)/archtool
 CPAK     := $(TOOLDIR)/cpak
 GENMF    := $(TOOLDIR)/genmf
+FLEXCAT  := $(TOOLDIR)/FlexCat

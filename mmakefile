@@ -17,7 +17,7 @@ shell : $(BINDIR)/arosshell
 	@$(NOP)
 
 #MM
-setup : $(CPAK) $(ARCHTOOL)
+setup : $(CPAK) $(ARCHTOOL) $(FLEXCAT)
 
 
 $(CPAK):
@@ -25,6 +25,9 @@ $(CPAK):
 
 $(ARCHTOOL):
 	$(MAKE) -C tools/archtools TOP=$(TOP)
+
+$(FLEXCAT):
+	$(MAKE) -C tools/FlexCat TOP=$(TOP)
 
 #MM- install : install-$(ARCH)-$(CPU)
 
