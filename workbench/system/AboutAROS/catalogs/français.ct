@@ -1,0 +1,100 @@
+## version $VER: AboutAROS.catalog 1.0 (12.8.2003)
+## language français
+## codeset 0
+;
+MSG_TITLE
+À propos d'AROS
+;
+MSG_PERSONAL_BUILD
+Moutûre personelle
+;
+MSG_NIGHTLY_BUILD
+Moutûre quotidienne
+;
+MSG_SNAPSHOT
+Instantané
+;
+MSG_MILESTONE
+Étape
+;
+MSG_RELEASE
+Édition
+;
+MSG_COPYRIGHT
+Copyright © 1995-2005, The AROS Development Team. Tous droits réservés.
+;
+MSG_LICENSE_1
+Publié sous les termes de la
+;
+MSG_LICENSE_2
+AROS Public License
+;
+MSG_LICENSE_3
+, version 1.1.
+;
+MSG_MORE_INFORMATION
+Visitez http://www.aros.org/ pour plus d'information.
+;
+MSG_PAGE_AUTHORS
+Auteurs
+;
+MSG_PAGE_SPONSORS
+Sponsors
+;
+MSG_PAGE_ACKNOWLEDGEMENTS
+Remerciements
+;
+MSG_SECTION_COORDINATION
+Coordination
+;
+MSG_SECTION_EVANGELISM
+Evangelisme
+;
+MSG_SECTION_HIDD
+HIDD subsystem
+;
+MSG_SECTION_INTUITION
+Intuition
+;
+MSG_SECTION_GRAPHICS
+Graphics
+;
+MSG_SECTION_SHELL_COMMANDS
+Commandes Shell
+;
+MSG_SECTION_WORKBENCH
+Workbench
+;
+MSG_SECTION_TOOLS
+Tools
+;
+MSG_SECTION_PREFERENCES
+Préférences
+;
+MSG_SECTION_BGUI
+BGUI
+;
+MSG_SECTION_ZUNE
+Zune
+;
+MSG_SECTION_KERNEL
+Kernel
+;
+MSG_SECTION_DOS
+DOS
+;
+MSG_SECTION_LIBC_POSIX
+C link library et couche POSIX
+;
+MSG_SECTION_DOCUMENTATION
+Documentation
+;
+MSG_SECTION_TRANSLATION
+Traduction
+;
+MSG_SECTION_ARTISTRY
+Graphismes
+;
+MSG_SECTION_WEBSITE
+Site Web
+;
