@@ -10,6 +10,7 @@
 */
 
 #include <sys/types.h>
+#include <sys/cdefs.h>
 #include <time.h>
 
 struct stat
@@ -79,6 +80,8 @@ struct stat
 #define S_ISSOCK(m)	((m & 0170000) == 0140000)	/* socket */
 #define	S_ISFIFO(m)	((m & 0170000) == 0010000)	/* fifo */
 
+__BEGIN_DECLS
+
 int mkdir(const char *path, mode_t mode);
 
 int stat(const char *path, struct stat *sb);
@@ -92,5 +95,7 @@ int fstat(int fd, struct stat *sb);
 mode_t umask(mode_t numask);
 int chmod(const char *path, mode_t mode);
 int fchmod(int fildes, mode_t mode);
+
+__END_DECLS
 
 #endif /* _SYS_STAT_H */
