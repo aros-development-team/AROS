@@ -56,13 +56,6 @@ klaus21@t-online.de
 "mount devs:ram.handler RAM:" does nothing. Afterwards, no RAM: or RAM::
 is available and no error is printed.
 
-BUG000006
-klaus21@t-online.de
-"dir :" does nothing.
-The problem is that DoName() does not support a lock to the root directory of
-a device. This is due to the fact that this functionality is missing in the
-filehandler system.
-
 BUG000007 partial fix (doesn't crash anymore)
 digulla@wi-pc44.fh-konstanz.de
 forkbomb cannot be called from the shell (one has to cut&paste one of
@@ -101,3 +94,10 @@ BUG000013
 srittau@aros.org
 Moria3D segfaults with a fp exception while "Loading Fading..." on an
 i486 with internal fpu.
+
+BUG000014
+klaus21@t-online.de
+"dir :" does nothing.
+The problem is that DoName() does not support a lock to the root directory of
+a device. This is due to the fact that this functionality is missing in the
+filehandler system.
