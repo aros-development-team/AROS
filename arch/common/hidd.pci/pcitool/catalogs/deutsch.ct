@@ -1,0 +1,157 @@
+## version $VER: pcitool.catalog 1.1 (6.2.2004)
+## language deutsch
+## codeset 0
+;
+;
+MSG_TITLE
+PCI Tool
+; PCI Tool
+;
+MSG_WINTITLE
+PCITool
+; PCI Tool
+;
+MSG_DESCRIPTION
+PCI Abfrage und Management Tool
+; PCI querying and managment
+;
+MSG_ERROR_LOCALE
+Kann locale nicht öffnen
+; Can't open locale
+;
+MSG_ERROR_OK
+OK
+; Ok
+;
+MSG_ERROR_HEADER
+FEHLER
+; ERROR
+;
+MSG_DRIVER_INFO
+Treiber Information:
+;Driver info:
+;
+MSG_DRIVER_NAME
+Treiber Name:
+;Driver name:
+;
+MSG_DIRECT_BUS
+Direkt Bus:
+;Direct bus:
+;
+MSG_HARDWARE_INFO
+Hardware Information:
+;Hardware info:
+;
+MSG_PCI_DEVICE_INFO
+PCI-Geräte Information:
+;PCI device info:
+;
+MSG_DEVICE_DESCRIPTION
+Beschreibung:
+;Description:
+;
+MSG_VENDORNAME
+Herstellername:
+;VendorID:
+;
+MSG_PRODUCTNAME
+Produktname:
+;ProductID:
+;
+MSG_VENDORID
+Hersteller ID:
+;VendorID:
+;
+MSG_PRODUCTID
+Produkt ID:
+;ProductID:
+;
+MSG_REVISIONID
+Revisionsnummer:
+;RevisionID:
+;
+MSG_INTERFACE
+Interface:
+;Interface:
+;
+MSG_CLASS
+Klasse:
+;Class:
+;
+MSG_SUBCLASS
+Unterklasse:
+;Subclass:
+;
+MSG_IRQ
+IRQ:
+;IRQ:
+;
+MSG_ROM_BASE
+ROM Basis:
+;ROM Base
+;
+MSG_ROM_SIZE
+ROM Größe:
+;ROM Size:
+;
+MSG_BRIDGE
+Bridge für Bus %d (ISA %saktiv, VGA %saktiv)
+;Bridge handles bus %d (ISA %senabled, VGA %senabled)
+;
+MSG_MEMORY_RANGE
+Speicherbereich von %08x bis %08x
+;Memory ranges from %08x to %08x
+;
+MSG_PREFETCHABLE_MEMORY
+Prefetchbarer Speicher von %08x bis %08x
+;Prefetchable ranges memory from %08x to %08x
+;
+MSG_IO_RANGE
+E/A von %04x bis %04x
+;IO ranges from %04x to %04x
+;
+MSG_IO_MSG
+E/A: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
+;IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
+;
+MSG_IO
+E/A
+;I/O
+;
+MSG_MEMORY
+Speicher
+;Memory
+;
+MSG_PREFETCHABLE
+Prefetchbar
+;Prefetchable
+;
+MSG_YES
+ja
+;yes
+;
+MSG_NO
+nein
+;no
+;
+MSG_NA
+N/A
+;N/A
+;
+MSG_NOT
+in
+;not
+;
+MSG_SIZE4
+%s%s bei 0x04x (Größe 0x%04x)
+;%s%s at 0x%04x (size 0x%04x)
+;
+MSG_SIZE8
+%s%s bei 0x08x (Größe 0x%08x)
+;%s%s at 0x%08x (size 0x%08x)
+;
+MSG_UNUSED
+unbenutzt
+;--unused--
+;
