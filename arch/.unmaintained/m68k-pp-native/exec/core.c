@@ -224,12 +224,15 @@ extern void sys_Dispatch(struct pt_regs * regs);
 			if (isr & TMR2_F) {
 				volatile UWORD tstat2;
 				treated = TRUE;
+				/*
+				 * Explicitly call the dispatcher here to get Multitasking
+				 * going. Hm, might maybe want to put this into the chain
+				 * of handlers...
+				 */
+				sys_Dispatch(regs);
 				/* This is WRONG, but that's the IRQ I get for timer2 */
-//*(UBYTE *)0xdddddebc = '!';
 				irq_desc[vHidd_IRQ_Timer].id_count++;
 				irq_desc[vHidd_IRQ_Timer].id_handler->ic_handle(vHidd_IRQ_Timer, regs);
-#warning Remove later on - but leave for now to enable multitasking!
-sys_Dispatch(regs);
 				/*
 				 * Leave the following three lines as they are.
 				 * If you remove the D(bug()) then the emulation
