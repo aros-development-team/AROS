@@ -31,18 +31,6 @@
     typedef const void *		        CONST_APTR;	/* const memory pointer */
 #endif
 
-/* An unsigned integer which can store a pointer */
-#ifndef __typedef_IPTR
-#   define __typedef_IPTR
-    typedef unsigned AROS_INTPTR_TYPE	        IPTR;
-#endif
-
-/* A signed type that can store a pointer */
-#ifndef __typedef_SIPTR
-#   define __typedef_SIPTR
-    typedef signed AROS_INTPTR_TYPE	        SIPTR;
-#endif
-
 /* Distinguish between 64 and 32bit systems */
 #ifndef __typedef_LONG
 #   define __typedef_LONG
@@ -73,12 +61,26 @@
     typedef unsigned char			UBYTE;	/* unsigned 8-bit value */
 #endif
 
-/* An integer on the stack which can store a pointer */
-#ifndef __typedef_STACKIPTR
-#   define __typedef_STACKIPTR
-    typedef unsigned AROS_INTPTR_STACKTYPE      STACKIPTR;
-#endif
+/* These have special definitions in <c++/exec/types.h> */
+#if !defined(__cplusplus)
+/* An unsigned integer which can store a pointer */
+#    ifndef __typedef_IPTR
+#       define __typedef_IPTR
+        typedef unsigned AROS_INTPTR_TYPE	IPTR;
+#    endif
 
+/* A signed type that can store a pointer */
+#    ifndef __typedef_SIPTR
+#       define __typedef_SIPTR
+        typedef signed AROS_INTPTR_TYPE	        SIPTR;
+#    endif
+
+/* An integer on the stack which can store a pointer */
+#    ifndef __typedef_STACKIPTR
+#       define __typedef_STACKIPTR
+        typedef unsigned AROS_INTPTR_STACKTYPE  STACKIPTR;
+#    endif
+#endif
 /* Distinguish between 64 and 32bit systems on the stack */
 #ifndef __typedef_STACKLONG
 #   define __typedef_STACKLONG
