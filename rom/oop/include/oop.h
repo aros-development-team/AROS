@@ -28,6 +28,24 @@ typedef ULONG AttrID;
 
 typedef ULONG AttrBase;
 
+typedef ULONG AttrCheck;
+
+#define GOT_ATTR(code, pre_tag, pre_ac)	\
+    ((pre_ac ## _attrcheck & (1L << pre_tag ## _ ## code)) == (1L << pre_tag ## _ ## code))
+
+#define FOUND_ATTR(code, pre_tag, pre_ac)	\
+    pre_ac ## _attrcheck |= (1L << pre_tag ## _ ## code)
+
+#define DECLARE_ATTRCHECK(pre_tag)	\
+    AttrCheck pre_tag ## _attrcheck = 0UL
+    
+#define ATTRCHECK(pre_tag)	\
+    pre_tag ## _attrcheck
+    
+enum {
+    errOOP_ParseAttrs_TooManyAttrs = 1
+};
+
 typedef struct
 {
     MethodID MID;
