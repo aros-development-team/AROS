@@ -23,7 +23,12 @@
 #include "textengine.h"
 #include "support.h"
 
+/*  #define MYDEBUG 1 */
+#include "debug.h"
+
 extern struct Library *MUIMasterBase;
+
+#define GAUGE_BUFSIZE 256
 
 struct MUI_GaugeData
 {
@@ -35,7 +40,7 @@ struct MUI_GaugeData
    ULONG divide;
    STRPTR info;
 
-   char buf[256];
+   char buf[GAUGE_BUFSIZE];
    LONG info_width;
    LONG info_height;
 };
@@ -62,6 +67,13 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
+
+    data->divide = 1;
+    data->max = 100;
+    data->horiz = FALSE;
+    data->current = 0;
+    data->dupinfo = FALSE;
+    data->info = NULL;
 
     /* parse initial taglist */
 
@@ -94,8 +106,10 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (data->info)
     {
-	sprintf(data->buf, data->info, data->current/data->divide);
+	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current/data->divide);
     } else data->buf[0] = 0;
+
+    D(bug("muimaster.library/gauge.c: Gauge Object created at 0x%lx\n",obj));
 
     return (IPTR)obj;
 }
@@ -161,7 +175,7 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	if (data->info)
 	{
-	    sprintf(data->buf, data->info, data->current/data->divide);
+	    snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current/data->divide);
 	} else data->buf[0] = 0;
     }
 
@@ -192,8 +206,16 @@ static IPTR Gauge_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	data->info_height = _font(obj)->tf_YSize;
     } else
     {
-	data->info_width = 0;
-	data->info_height = 6;
+	if (data->horiz)
+	{
+	    data->info_width = 0;
+	    data->info_height = 6;
+	}
+	else
+	{
+	    data->info_width = 6;
+	    data->info_height = 0;
+	}
     }
 
     return 1;
@@ -216,6 +238,15 @@ static IPTR Gauge_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	msg->MinMaxInfo->MaxWidth   = MUI_MAXMAX;
 	msg->MinMaxInfo->MaxHeight += data->info_height + 2;
     }
+    else
+    {
+	msg->MinMaxInfo->MinWidth  += data->info_width + 2;
+	msg->MinMaxInfo->MinHeight += data->info_height;
+	msg->MinMaxInfo->DefWidth  += data->info_width + 2;
+	msg->MinMaxInfo->DefHeight += data->info_height + 10;
+	msg->MinMaxInfo->MaxWidth  += data->info_width + 2;
+	msg->MinMaxInfo->MaxHeight  = MUI_MAXMAX;
+    }
     return 0;
 }
 
@@ -225,18 +256,40 @@ static IPTR Gauge_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_GaugeData *data = INST_DATA(cl,obj);
+    ULONG val;
+
     DoSuperMethodA(cl,obj,(Msg)msg);
+    D(bug("muimaster.library/gauge.c: Draw Gauge Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+
+    val = data->current / data->divide;
+    if (val > data->max) val = data->max;
 
     if (data->horiz)
     {
-    	ULONG val = data->current / data->divide;
-    	ULONG w;
-
-	if (val > data->max) val = data->max;
+	ULONG w;
         w = _mwidth(obj) * val / data->max; /* NOTE: should be 64 bit */
 
     	SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_FILL],0,JAM1);
     	RectFill(_rp(obj),_mleft(obj),_mtop(obj),_mleft(obj) + w - 1, _mbottom(obj));
+
+	if (data->info)
+	{
+	    ZText *ztext = zune_text_new("\33c\0338",data->buf,NULL,0);
+	    if (ztext)
+	    {
+	    	zune_text_get_bounds(ztext, obj);
+		zune_text_draw(ztext, obj, _mleft(obj),_mright(obj),_mtop(obj) + (_mheight(obj) - ztext->height)/2);
+		zune_text_destroy(ztext);
+	    }
+        }
+    }
+    else
+    {
+	ULONG h;
+        h = _mheight(obj) * val / data->max; /* NOTE: should be 64 bit */
+
+    	SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_FILL],0,JAM1);
+    	RectFill(_rp(obj),_mleft(obj),_mbottom(obj) - h + 1, _mright(obj),_mbottom(obj));
 
 	if (data->info)
 	{
