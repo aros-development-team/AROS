@@ -70,6 +70,8 @@ struct IDNode  /* For the gadget ids */
     LONG id;
 };
 
+struct MUI_ImageSpec_intern;
+
 struct MUI_WindowData
 {
     struct MUI_RenderInfo wd_RenderInfo;
@@ -100,7 +102,7 @@ struct MUI_WindowData
     UWORD          wd_innerRight;
     UWORD          wd_innerTop;
     UWORD          wd_innerBottom;
-    struct MUI_ImageSpec *wd_Background;
+    struct MUI_ImageSpec_intern *wd_Background;
     ULONG          wd_DisabledKeys;
 
     Object *       wd_DragObject; /* the object which is being dragged */
@@ -668,9 +670,17 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     	if (imsg->Class == IDCMP_MOUSEMOVE)
     	{
+	    struct Layer *layer;
+	    layer = WhichLayer(&iWin->WScreen->LayerInfo, iWin->LeftEdge + imsg->MouseX, iWin->TopEdge + imsg->MouseY);
+
     	    if (data->wd_DropObject)
     	    {
-		if (imsg->MouseX < _left(data->wd_DropObject) || imsg->MouseX > _right(data->wd_DropObject) || imsg->MouseY < _top(data->wd_DropObject) || imsg->MouseY > _bottom(data->wd_DropObject))
+		struct Window *wnd;
+
+		wnd = _window(data->wd_DropObject);
+		if (imsg->MouseX < _left(data->wd_DropObject) || imsg->MouseX > _right(data->wd_DropObject) ||
+		    imsg->MouseY < _top(data->wd_DropObject) || imsg->MouseY > _bottom(data->wd_DropObject) ||
+		    layer != wnd->WLayer)
 		{
 		    /* We have left the object */
 		    UndrawDragNDrop(data->wd_dnd);
@@ -681,11 +691,10 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     	    if (!data->wd_DropObject)
     	    {
-		struct Layer *l;
 		Object *dest_wnd = NULL;
 
 		/* Find out if app has an openend window at this position */
-		if ((l = WhichLayer(&iWin->WScreen->LayerInfo, iWin->LeftEdge + imsg->MouseX, iWin->TopEdge + imsg->MouseY)))
+		if (layer)
 		{
 		    Object                *cstate;
 		    Object                *child;
@@ -699,7 +708,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 			get(child, MUIA_Window_Window,(ULONG*)&wnd);
 			if (!wnd) continue;
 
-			if (wnd->WLayer == l)
+			if (wnd->WLayer == layer)
 			{
 			    data->wd_DropWindow = wnd;
 			    dest_wnd = child;
@@ -716,8 +725,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    if (root)
 		    {
 			if ((data->wd_DropObject = (Object*)DoMethod(root,MUIM_DragQueryExtended,(IPTR)data->wd_DragObject,
-		    			imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
-		    			imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge)))
+								     imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+								     imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge)))
 		    	{
 			    UndrawDragNDrop(data->wd_dnd);
 			    DoMethod(data->wd_DropObject, MUIM_DragBegin,(IPTR)data->wd_DragObject);
@@ -733,23 +742,23 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    	for (i=0;i<2;i++)
 	    	{
 		    LONG res = DoMethod(data->wd_DropObject,MUIM_DragReport,(IPTR)data->wd_DragObject,
-						imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
-						imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge,update);
+					imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+					imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge,update);
 		    switch (res)
 		    {
 			case    MUIV_DragReport_Abort:
-				UndrawDragNDrop(data->wd_dnd);
-				DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
-				data->wd_DropObject = NULL;
-				i = 1;
-				break;
+			    UndrawDragNDrop(data->wd_dnd);
+			    DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
+			    data->wd_DropObject = NULL;
+			    i = 1;
+			    break;
 
 			case    MUIV_DragReport_Continue: break;
 			case    MUIV_DragReport_Lock: break; /* NYI */
 			case    MUIV_DragReport_Refresh:
-				UndrawDragNDrop(data->wd_dnd);
-				update = 1;
-				break;
+			    UndrawDragNDrop(data->wd_dnd);
+			    update = 1;
+			    break;
 		    }
 	    	}
 	    }
@@ -765,8 +774,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    UndrawDragNDrop(data->wd_dnd);
 		    DoMethod(data->wd_DropObject, MUIM_DragFinish, (IPTR)data->wd_DragObject);
 		    DoMethod(data->wd_DropObject, MUIM_DragDrop, (IPTR)data->wd_DragObject,
-		    		imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
-		    		imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge);
+			     imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
+			     imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge);
 		    data->wd_DropObject = NULL;
 	    	}
 		finish_drag = 1;
@@ -800,152 +809,153 @@ void _zune_window_message(struct IntuiMessage *imsg)
     switch (imsg->Class)
     {
     	case    IDCMP_MOUSEMOVE:
-    		if (ContextMenuUnderPointer(data,data->wd_RootObject,imsg->MouseX,imsg->MouseY)) iWin->Flags |= WFLG_RMBTRAP;
-    		else iWin->Flags &= ~WFLG_RMBTRAP;
-    		break;
+	    if (ContextMenuUnderPointer(data,data->wd_RootObject,imsg->MouseX,imsg->MouseY)) iWin->Flags |= WFLG_RMBTRAP;
+	    else iWin->Flags &= ~WFLG_RMBTRAP;
+	    break;
 
 	case	IDCMP_NEWSIZE:
-	    	{
-		    int hborders = iWin->BorderLeft + iWin->BorderRight;
-    	    	    int vborders = iWin->BorderTop  + iWin->BorderBottom;
+	{
+	    int hborders = iWin->BorderLeft + iWin->BorderRight;
+	    int vborders = iWin->BorderTop  + iWin->BorderBottom;
 
-	             /* set window limits according to window contents */
-            	     WindowLimits(iWin,
-		    		  data->wd_MinMax.MinWidth  + hborders,
-                        	  data->wd_MinMax.MinHeight + vborders,
-                        	  data->wd_MinMax.MaxWidth  + hborders,
-                        	  data->wd_MinMax.MaxHeight + vborders);
-    	    	}
+	    /* set window limits according to window contents */
+	    WindowLimits(iWin,
+			 data->wd_MinMax.MinWidth  + hborders,
+			 data->wd_MinMax.MinHeight + vborders,
+			 data->wd_MinMax.MaxWidth  + hborders,
+			 data->wd_MinMax.MaxHeight + vborders);
+	}
 
-		if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
-		{
-		    data->wd_Width  = iWin->GZZWidth;
-		    data->wd_Height = iWin->GZZHeight;
-		    DoMethod(data->wd_RootObject, MUIM_Hide);
+	if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
+	{
+	    data->wd_Width  = iWin->GZZWidth;
+	    data->wd_Height = iWin->GZZHeight;
+	    DoMethod(data->wd_RootObject, MUIM_Hide);
 
-		    if (data->wd_RenderInfo.mri_Window->Flags & WFLG_SIMPLE_REFRESH)
-		    {
-		        data->wd_Flags |= MUIWF_RESIZING;
-		    } else
-		    {
-		    #if ROOTOBJ_OCCUPIES_FULL_AREA
-			_width(data->wd_RootObject) = data->wd_Width;
-			_height(data->wd_RootObject) = data->wd_Height;
-		    #else
-			_width(data->wd_RootObject) = data->wd_Width - (data->wd_innerLeft + data->wd_innerRight);
-			_height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
-		    #endif
-			DoMethod(data->wd_RootObject, MUIM_Layout);
-			DoMethod(data->wd_RootObject, MUIM_Show);
-			MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-		    }
-		}
-	  	break;
+	    if (data->wd_RenderInfo.mri_Window->Flags & WFLG_SIMPLE_REFRESH)
+	    {
+		data->wd_Flags |= MUIWF_RESIZING;
+	    } else
+	    {
+#if ROOTOBJ_OCCUPIES_FULL_AREA
+		_width(data->wd_RootObject) = data->wd_Width;
+		_height(data->wd_RootObject) = data->wd_Height;
+#else
+		_width(data->wd_RootObject) = data->wd_Width - (data->wd_innerLeft + data->wd_innerRight);
+		_height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
+#endif
+		DoMethod(data->wd_RootObject, MUIM_Layout);
+		DoMethod(data->wd_RootObject, MUIM_Show);
+		MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+	    }
+	}
+	break;
 
 	case	IDCMP_REFRESHWINDOW:
-		if (data->wd_Flags & MUIWF_RESIZING)
+	    if (data->wd_Flags & MUIWF_RESIZING)
+	    {
+		//LONG left,top,right,bottom;
+		if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
 		{
-		    //LONG left,top,right,bottom;
-		    if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
-		    {
-			MUI_EndRefresh(&data->wd_RenderInfo, 0);
-		    }
+		    MUI_EndRefresh(&data->wd_RenderInfo, 0);
+		}
 
-		    data->wd_Flags &= ~MUIWF_RESIZING;
-		#if ROOTOBJ_OCCUPIES_FULL_AREA
-		    _width(data->wd_RootObject) = data->wd_Width;
-		    _height(data->wd_RootObject) = data->wd_Height;
-		#else
-		    _width(data->wd_RootObject) = data->wd_Width - (data->wd_innerLeft + data->wd_innerRight);
-		    _height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
-		#endif
-		    DoMethod(data->wd_RootObject, MUIM_Layout);
-		    DoMethod(data->wd_RootObject, MUIM_Show);
+		data->wd_Flags &= ~MUIWF_RESIZING;
+#if ROOTOBJ_OCCUPIES_FULL_AREA
+		_width(data->wd_RootObject) = data->wd_Width;
+		_height(data->wd_RootObject) = data->wd_Height;
+#else
+		_width(data->wd_RootObject) = data->wd_Width - (data->wd_innerLeft + data->wd_innerRight);
+		_height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
+#endif
+		DoMethod(data->wd_RootObject, MUIM_Layout);
+		DoMethod(data->wd_RootObject, MUIM_Show);
 
-		    {
-			LONG left,top,width,height;
+		{
+		    LONG left,top,width,height;
 
-			left = data->wd_RenderInfo.mri_Window->BorderLeft;
-			top = data->wd_RenderInfo.mri_Window->BorderTop,
+		    left = data->wd_RenderInfo.mri_Window->BorderLeft;
+		    top = data->wd_RenderInfo.mri_Window->BorderTop,
 			width = data->wd_RenderInfo.mri_Window->Width - data->wd_RenderInfo.mri_Window->BorderRight - left;
-			height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top;
+		    height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-			if(data->wd_Flags & MUIWF_ERASEAREA)
-			{
-				zune_draw_image(&data->wd_RenderInfo, data->wd_Background,
-					 left, top, width, height, left, top, 0);
-			}
-			}
-
-		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-		} else
-		{
-		    if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
+		    if(data->wd_Flags & MUIWF_ERASEAREA)
 		    {
-			MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-			MUI_EndRefresh(&data->wd_RenderInfo, 0);
+/*  			D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
+			zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
+					 left, top, width, height, left, top, 0);
 		    }
 		}
-		break;
+
+		MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+	    } else
+	    {
+		if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
+		{
+		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+		    MUI_EndRefresh(&data->wd_RenderInfo, 0);
+		}
+	    }
+	    break;
 
 	case	IDCMP_CLOSEWINDOW:
-		set(oWin, MUIA_Window_CloseRequest, TRUE);
-		nnset(oWin, MUIA_Window_CloseRequest, FALSE); /* I'm not sure here but zune keeps track of old values inside notifyclass */
-		break;
+	    set(oWin, MUIA_Window_CloseRequest, TRUE);
+	    nnset(oWin, MUIA_Window_CloseRequest, FALSE); /* I'm not sure here but zune keeps track of old values inside notifyclass */
+	    break;
 
 	case    IDCMP_MENUPICK:
-		if (data->wd_Menu)
+	    if (data->wd_Menu)
+	    {
+		if (MENUNUM(imsg->Code != NOMENU) && ITEMNUM(imsg->Code) != NOITEM)
 		{
-		    if (MENUNUM(imsg->Code != NOMENU) && ITEMNUM(imsg->Code) != NOITEM)
+		    struct MenuItem *item = ItemAddress(data->wd_Menu,imsg->Code);
+		    if (item)
 		    {
-		    	struct MenuItem *item = ItemAddress(data->wd_Menu,imsg->Code);
-		    	if (item)
-		    	{
-			    Object *item_obj = (Object*)GTMENUITEM_USERDATA(item);
-			    if (item_obj)
-			    {
-			    	Object *app;
-			    	ULONG udata;
+			Object *item_obj = (Object*)GTMENUITEM_USERDATA(item);
+			if (item_obj)
+			{
+			    Object *app;
+			    ULONG udata;
 
-				if (item->Flags & CHECKIT)
-				    set(item_obj, MUIA_Menuitem_Checked, !!(item->Flags & CHECKED));
+			    if (item->Flags & CHECKIT)
+				set(item_obj, MUIA_Menuitem_Checked, !!(item->Flags & CHECKED));
 
-				set(item_obj, MUIA_Menuitem_Trigger, item);
+			    set(item_obj, MUIA_Menuitem_Trigger, item);
 
-				get(oWin, MUIA_ApplicationObject, &app);
-				get(item_obj, MUIA_UserData, &udata);
+			    get(oWin, MUIA_ApplicationObject, &app);
+			    get(item_obj, MUIA_UserData, &udata);
 
-				set(app, MUIA_Application_MenuAction, udata);
-				set(oWin, MUIA_Window_MenuAction, udata);
-				DoMethod(app, MUIM_Application_ReturnID, udata);
-			    }
-		    	}
+			    set(app, MUIA_Application_MenuAction, udata);
+			    set(oWin, MUIA_Window_MenuAction, udata);
+			    DoMethod(app, MUIM_Application_ReturnID, udata);
+			}
 		    }
 		}
-		break;
+	    }
+	    break;
 
 	case    IDCMP_IDCMPUPDATE:
-		if (data->wd_VertProp || data->wd_HorizProp)
+	    if (data->wd_VertProp || data->wd_HorizProp)
+	    {
+		struct TagItem *tag;
+		tag = FindTagItem(GA_ID,(struct TagItem*)imsg->IAddress);
+		if (tag)
 		{
-		    struct TagItem *tag;
-		    tag = FindTagItem(GA_ID,(struct TagItem*)imsg->IAddress);
-		    if (tag)
+		    if (data->wd_VertProp)
 		    {
-		    	if (data->wd_VertProp)
-		    	{
-			    if (tag->ti_Data == GADGETID(data->wd_VertProp));
-			    if (tag->ti_Data == GADGETID(data->wd_UpButton));
-			    if (tag->ti_Data == GADGETID(data->wd_DownButton));
-			}
+			if (tag->ti_Data == GADGETID(data->wd_VertProp));
+			if (tag->ti_Data == GADGETID(data->wd_UpButton));
+			if (tag->ti_Data == GADGETID(data->wd_DownButton));
+		    }
 
-		    	if (data->wd_HorizProp)
-		    	{
-			    if (tag->ti_Data == GADGETID(data->wd_HorizProp));
-			    if (tag->ti_Data == GADGETID(data->wd_LeftButton));
-			    if (tag->ti_Data == GADGETID(data->wd_RightButton));
-			}
+		    if (data->wd_HorizProp)
+		    {
+			if (tag->ti_Data == GADGETID(data->wd_HorizProp));
+			if (tag->ti_Data == GADGETID(data->wd_LeftButton));
+			if (tag->ti_Data == GADGETID(data->wd_RightButton));
 		    }
 		}
+	    }
 
     }
 
@@ -1239,7 +1249,7 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
     if ((ULONG)data->wd_ActiveObject == newval) return;
 
     old_active = data->wd_ActiveObject;
-    old_activenode = FindObjNode(&data->wd_CycleChain,old_active);
+    old_activenode = FindObjNode(&data->wd_CycleChain, old_active);
 
     switch (newval)
     {
@@ -1247,7 +1257,8 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 		data->wd_ActiveObject = NULL;
 		if (old_active)
 		{
-		    if (_flags(old_active)&MADF_CANDRAW) DoMethod(old_active, MUIM_GoInactive);
+		    if (_flags(old_active) & MADF_CANDRAW)
+			DoMethod(old_active, MUIM_GoInactive);
 		}
 		break;
 
@@ -1255,14 +1266,17 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 		if (data->wd_ActiveObject)
 		{
 		    data->wd_ActiveObject = NULL;
-		    if (_flags(old_active)&MADF_CANDRAW) DoMethod(old_active, MUIM_GoInactive);
+		    if (_flags(old_active) & MADF_CANDRAW)
+			DoMethod(old_active, MUIM_GoInactive);
 		    if (old_activenode)
 		    {
-			data->wd_ActiveObject = (old_activenode->node.mln_Succ->mln_Succ)?((struct ObjNode*)old_activenode->node.mln_Succ)->obj:NULL;
+			data->wd_ActiveObject = (old_activenode->node.mln_Succ->mln_Succ) ?
+			    ((struct ObjNode*)old_activenode->node.mln_Succ)->obj : NULL;
 		    }   else
 		    {
 			if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-			    data->wd_ActiveObject = ((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
+			    data->wd_ActiveObject =
+				((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
 		    }
 		}   else
 		{
@@ -1275,19 +1289,23 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 		if (data->wd_ActiveObject)
 		{
 		    data->wd_ActiveObject = NULL;
-		    if (_flags(old_active)&MADF_CANDRAW) DoMethod(old_active, MUIM_GoInactive);
+		    if (_flags(old_active) & MADF_CANDRAW)
+			DoMethod(old_active, MUIM_GoInactive);
 		    if (old_activenode)
 		    {
-			 data->wd_ActiveObject = (old_activenode->node.mln_Pred->mln_Pred)?((struct ObjNode*)old_activenode->node.mln_Pred)->obj:NULL;
+			 data->wd_ActiveObject = (old_activenode->node.mln_Pred->mln_Pred) ?
+			     ((struct ObjNode*)old_activenode->node.mln_Pred)->obj : NULL;
 		    } else
 		    {
 			if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-			    data->wd_ActiveObject = ((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
+			    data->wd_ActiveObject =
+				((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
 		    }
 		}   else
 		{
 		   if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-		       data->wd_ActiveObject = ((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
+		       data->wd_ActiveObject =
+			   ((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
 		}
 		break;
 
@@ -1303,7 +1321,8 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 
     if (data->wd_ActiveObject)
     {
-	if (_flags(data->wd_ActiveObject)&MADF_CANDRAW) DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+	if (_flags(data->wd_ActiveObject) & MADF_CANDRAW)
+	    DoMethod(data->wd_ActiveObject, MUIM_GoActive);
     }
 }
 
@@ -1554,10 +1573,8 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-    /* Background stuff */
-//    data->wd_Background = zune_image_spec_to_structure(MUII_WindowBack);
-
-    D(bug("muimaster.library/window.c: Window Object created at 0x%lx\n",obj));
+    D(bug("muimaster.library/window.c: Window Object created at 0x%lx back=%lx\n",
+	  obj,data->wd_Background));
 
     return (ULONG)obj;
 }
@@ -1866,6 +1883,9 @@ static void window_minmax(Object *obj, struct MUI_WindowData *data)
 
     /* inquire about sizes */
     DoMethod(data->wd_RootObject, MUIM_AskMinMax, (ULONG)&data->wd_MinMax);
+    D(bug("*** root minmax = %ld,%ld => %ld,%ld\n", data->wd_MinMax.MinWidth,
+	  data->wd_MinMax.MinHeight,
+	  data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight));
     __area_finish_minmax(data->wd_RootObject, &data->wd_MinMax);
 
 
@@ -1884,9 +1904,11 @@ static void window_minmax(Object *obj, struct MUI_WindowData *data)
  * An expose event is already queued, it will trigger
  * MUIM_Draw for us when going back to main loop.
  */
-static void window_show (struct MUI_WindowData *data)
+static void window_show (struct IClass *cl, Object *obj)
 {
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct Window *win = data->wd_RenderInfo.mri_Window;
+    D(bug("window_show %s %d\n", __FILE__, __LINE__));
 
 #if ROOTOBJ_OCCUPIES_FULL_AREA
     _left(data->wd_RootObject) = win->BorderLeft;
@@ -1905,7 +1927,8 @@ static void window_show (struct MUI_WindowData *data)
     DoMethod(data->wd_RootObject, MUIM_Layout);
 
     ShowRenderInfo(&data->wd_RenderInfo);
-
+/*      D(bug("zune_imspec_show %s %d\n", __FILE__, __LINE__)); */
+    zune_imspec_show(data->wd_Background, obj);
     DoMethod(data->wd_RootObject, MUIM_Show);
 }
 
@@ -1948,24 +1971,28 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 
     data->wd_Flags |= MUIWF_OPENED;
 
-    window_show(data);
+    window_show(cl, obj);
 
     {
 	LONG left,top,width,height;
 
 	left = data->wd_RenderInfo.mri_Window->BorderLeft;
 	top = data->wd_RenderInfo.mri_Window->BorderTop,
-	width = data->wd_RenderInfo.mri_Window->Width - data->wd_RenderInfo.mri_Window->BorderRight - left;
-	height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top,
+	width = data->wd_RenderInfo.mri_Window->Width
+	    - data->wd_RenderInfo.mri_Window->BorderRight - left;
+	height = data->wd_RenderInfo.mri_Window->Height
+	    - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-	zune_draw_image(&data->wd_RenderInfo, data->wd_Background,
+/*  	D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
+	zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 		 left, top, width, height, left, top, 0);
     }
 
-    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+    MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
 
     /* If object is active send a initial MUIM_GoActive, note that no MUIM_GoInactive is send yet if window closes */
-    if (data->wd_ActiveObject) DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+    if (data->wd_ActiveObject)
+	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
 
     return TRUE;
 }
@@ -1986,6 +2013,7 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
 
     /* remove from window */
     DoMethod(data->wd_RootObject, MUIM_Hide);
+    zune_imspec_hide(data->wd_Background);
     HideRenderInfo(&data->wd_RenderInfo);
 
     /* close here ... */
@@ -2014,7 +2042,7 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
     /* resize window ? */
     window_select_dimensions(data);
     _zune_window_resize(data);
-    window_show(data);
+    window_show(cl, obj);
 
     MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
     return TRUE;
@@ -2056,17 +2084,12 @@ static ULONG Window_RemEventHandler(struct IClass *cl, Object *obj,
 **************************************************************************/
 static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
-    char *background_spec;
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
     if (!SetupRenderInfo(obj, data, &data->wd_RenderInfo))
 	return FALSE;
 
-    DoMethod(obj,MUIM_GetConfigItem, MUICFG_Background_Window, (IPTR)&background_spec);
-    if (!background_spec) background_spec = "0:128"; /* MUII_BACKGROUND */
-
-    data->wd_Background = zune_image_spec_to_structure((IPTR)background_spec,NULL);
-    zune_imspec_setup(&data->wd_Background,&data->wd_RenderInfo);
+    data->wd_Background = zune_imspec_setup(MUII_WindowBack, &data->wd_RenderInfo);
 
     return TRUE;
 }
@@ -2078,9 +2101,7 @@ static ULONG Window_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    zune_imspec_cleanup(&data->wd_Background,&data->wd_RenderInfo);
-    zune_imspec_free(data->wd_Background);
-    data->wd_Background = NULL;
+    zune_imspec_cleanup(data->wd_Background);
 
     if (data->wd_dnd)
     {
@@ -2326,7 +2347,8 @@ static IPTR Window_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Wi
     if (!(data->wd_RenderInfo.mri_Window)) /* not between show/hide */
 	return FALSE;
 
-    zune_draw_image(&data->wd_RenderInfo, data->wd_Background,
+/*      D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
+    zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 		    msg->left, msg->top, msg->width, msg->height,
 		    msg->xoffset, msg->yoffset, 0);
     return 0;
