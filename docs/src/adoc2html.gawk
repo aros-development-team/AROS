@@ -18,6 +18,8 @@ BEGIN {
     LIBS["aros"]="AROS";
     LIBS["arossupport"]="AROS Support";
     LIBS["intuition"]="Intuition";
+    LIBS["exec"]="Exec";
+    LIBS["boopsi"]="BOOPSI";
 
     file=ARGV[1];
     cvslog=ARGV[2];
