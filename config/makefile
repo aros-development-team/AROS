@@ -13,7 +13,7 @@ all: $(TOP)/apps/compiler/include/aros/config.h
 	    then echo -n ; else exit 1 ; fi ; \
 	done
 
-config: config.h
+config: $(TOP)/apps/compiler/include/aros/config.h
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Configuring in $(CURDIR)/$$dir..." ; \
 	    if ( cd $$dir ; \
