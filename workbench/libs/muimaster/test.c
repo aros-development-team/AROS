@@ -424,8 +424,10 @@ End,
 		    Child, VGroup,
 			Child, editor_text = TextObject,
 			    StringFrame,
+#ifndef COMPILE_WITH_MUI
 			    MUIA_Text_Editable, TRUE,
 			    MUIA_Text_Multiline, TRUE,
+#endif
 			    End,
 		    	Child, PopaslObject,
 		    	    ASLFR_DoSaveMode, TRUE,

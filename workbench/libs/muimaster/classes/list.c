@@ -1073,6 +1073,14 @@ static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert
 
     count = msg->count;
 
+    if (count == -1)
+    {
+    	/* Count the number of entries */
+    	for(count=0;msg->entries[count];count++);
+    }
+
+    if (count <= 0) return ~0;
+
     switch (msg->pos)
     {
     	case    MUIV_List_Insert_Top:

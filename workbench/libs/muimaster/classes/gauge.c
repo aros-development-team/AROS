@@ -37,7 +37,7 @@ struct MUI_GaugeData
    BOOL horiz;
    BOOL dupinfo;
 
-   ULONG current; /* (dlc) LONG in MUI */
+   ULONG current; /* (dlc) LONG in MUI, (sba) but MUI seems to handle it like ULONG */
    ULONG max;
    ULONG divide;
    STRPTR info;
@@ -148,9 +148,7 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    case    MUIA_Gauge_Current:
 		    data->current = tag->ti_Data;
-		    if ((LONG)tag->ti_Data < 0)
-		        data->current = 0;
-		    else if (tag->ti_Data > data->max)
+		    if ((ULONG)tag->ti_Data > data->max)
 		        data->current = data->max;
 		    info_changed = 1;
 		    need_redraw = 1;
