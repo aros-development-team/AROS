@@ -17,6 +17,8 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 
+extern struct Library *MUIMasterBase;
+
 /**************************************************************************
  check if region is entirely within given bounds
 **************************************************************************/
