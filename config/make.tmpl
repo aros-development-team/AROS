@@ -167,7 +167,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 
 #------------------------------------------------------------------------------
 # Add section with all necessary libs and dependencies for linking
-%define define_libs prelibs= postlibs= deplibs=
+%define define_libs prelibs=$(PRELIBS) postlibs= deplibs=
 STARTUP = $(LIBDIR)/startup.o
 LIBS = -L$(LIBDIR) %(prelibs) -larossupport -lamiga -larosc -larosm -lautoinit %(postlibs)
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
@@ -1275,7 +1275,7 @@ LDFLAGS := $(TARGET_LDFLAGS) $(STATIC_LDFLAGS) $(USER_LDFLAGS)
 #   be changed later on to support that kind of thing.
 #
 
-%define make_use_linklibs libs=LIBS deps=DEPLIBS prelibs= postlibs= startup=$(LIBDIR)/startup.o
+%define make_use_linklibs libs=LIBS deps=DEPLIBS prelibs=$(PRELIBS) postlibs= startup=$(LIBDIR)/startup.o
 %(libs) := -L$(LIBDIR) %(prelibs)
 %(deps) :=
 STARTUP := %(startup)
