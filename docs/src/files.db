@@ -1,6 +1,0 @@
-exec/lists.h
-srcs/compiler/include/exec/lists.h
-intuition/intuition.h
-srcs/compiler/include/intuition/intuition.h
-aros/rt.h
-srcs/compiler/arossupport/include/rt.h
