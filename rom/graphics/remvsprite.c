@@ -5,6 +5,7 @@
     Desc: Graphics function AddVSprite()
     Lang: english
 */
+#include <proto/graphics.h>
 #include <graphics/gels.h>
 #include "gels_internal.h"
 #include <graphics/rastport.h>
