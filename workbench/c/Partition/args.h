@@ -11,11 +11,11 @@
 /*** Structures *************************************************************/
 enum Argument
 {
-	DEVICE,
-	UNIT,
-    FORCE, /* Don't ask the user for permission */
-    QUIET, /* Don't print anything */
-    COUNT  /* Number of arguments */
+    DEVICE,
+    UNIT,
+    FORCE,  /* Don't ask the user for permission */
+    QUIET,  /* Don't print anything */
+    COUNT   /* Number of arguments */
 };
 
 /*** Prototypes *************************************************************/
