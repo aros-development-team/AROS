@@ -92,6 +92,7 @@
 	if(driverdata==NULL) return;
 
 	driverdata->lastsysex=NULL;
+	driverdata->Input_Treat=Receiver_init;
 
 	while(length>0){
 		data=*buffer;
@@ -115,7 +116,7 @@
 			(*driverdata->Input_Treat)(driverdata,data);
 		}
 
-		if(driverdata->lastsysex!=NULL && data>=0x80 && data<0xf8){
+		if(driverdata->lastsysex!=NULL && data>=0x80 && data<0xf8 && data!=0xf0){
 			if(data==0xf7){
 				ObtainSemaphore(&TOdriverdata->sysexsemaphore);
 
