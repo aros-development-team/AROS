@@ -5,34 +5,6 @@ Yeah, there are some things which are not in this archive for this or
 that reason. Here we go:
 
 \begin{enumeration}
-\item The Amiga system header files are missing for obvious copyright
-reasons. You can use the files which come with your C-Compiler
-(DICE, SAS/C, StormC++ or Maxxon C++) or the ones from the Amiga
-Developer CD 1.1 (that's what I did).
-
-The Developer CD is available at
-
-\begin{example}
-Stefan Ossowskis Schatztruhe
-Gesellschaft für Software mbH
-Veronikastr. 33
-45131 Essen
-Germany
-
-Order Phone: ++49-(0)2 01-78 8778
-
-Fax: ++49-(0)2 01 - 79 84 47
-EMail: stefano@tchest.e.eunet.de
-WWW: \link{http://www.schatztruhe.de/}{http://www.schatztruhe.de/}
-Support-Mailbox: ++49-(0)2 08-20 25 09
-\end{example}
-
-for DM 25.- (about $15) plus P&P. The CD contains all includes you need
-and furthermore you can find valuable information on it like: The autodocs,
-the examples for the various developer disk sets and the Rom Kernel Reference
-Manuals (RKRMs), several tools to help to develop code and more. At the
-price, it's a bargain.
-
 \item Linux 2.0 or better for Intel CPUs (1.2.13 might work, but I haven't
 tried and won't do it).
 
