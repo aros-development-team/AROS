@@ -33,7 +33,9 @@
 
 /* From <sys/syslimits.h> */
 #define NAME_MAX	32	    /* max bytes in a file name */
-#define PATH_MAX	255	    /* max bytes in a pathname */
+#ifndef PATH_MAX
+#   define PATH_MAX	4095	    /* max bytes in a pathname */
+#endif
 #define IOV_MAX		1024	    /* max elements in i/o vector */
 #define LINE_MAX	2048	    /* max bytes in an input line */
 #define MAXPATHLEN	PATH_MAX    /* max path after symlink deref */
