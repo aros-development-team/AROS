@@ -59,13 +59,15 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
-    /* We don't have a clue what 'data' parameter contains, but
-       the graphics driver does.
-    */
-    
-    return driver_LateGfxInit(data, GfxBase);
+    GfxBase->gb_LayersBase = (ULONG *)OpenLibrary("layers.library", 0);
 
-    
+        /* We don't have a clue what 'data' parameter contains, but
+           the graphics driver does.
+        */
+
+    return GfxBase->gb_LayersBase && driver_LateGfxInit(data, GfxBase);
+
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* LateGfxInit */
