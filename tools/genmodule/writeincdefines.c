@@ -1,7 +1,8 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-
-    Desc: function to write defines/modulename.h. Part of genmodule.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+    
+    Function to write defines/modulename.h. Part of genmodule.
 */
 #include "genmodule.h"
 
@@ -25,7 +26,7 @@ void writeincdefines(void)
 	    "\n"
 	    "/*\n"
 	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2002, The AROS Development Team. All rights reserved.\n"
+	    "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
 	    "\n"
 	    "    Desc: Prototype for %s\n"
 	    "*/\n"

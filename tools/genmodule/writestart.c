@@ -1,7 +1,8 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
-
-    Desc: function to write modulename_start.c. Part of genmodule.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+    
+    Function to write modulename_start.c. Part of genmodule.
 */
 #include "genmodule.h"
 
@@ -25,7 +26,7 @@ void writestart(void)
     fprintf(out,
 	    "/*\n"
 	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2002, The AROS Development Team. All rights reserved.\n"
+	    "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
 	    "#include <libcore/libheader.c>\n");
     
