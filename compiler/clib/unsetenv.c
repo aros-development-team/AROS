@@ -13,7 +13,7 @@
     NAME */
 #include <stdlib.h>
 
-	int unsetenv (
+	void unsetenv (
 
 /*  SYNOPSIS */
 	const char *name)
@@ -28,8 +28,7 @@
        Returns zero on success, or -1 if the variable was not found.
 
     NOTES
-        This implementation extends the BSD4.3 one in that it returns a value.
-
+    
     EXAMPLE
 
     BUGS
@@ -42,6 +41,6 @@
 {
 
     __env_delvar(name);
-    return -!DeleteVar(name, GVF_LOCAL_ONLY);
+    DeleteVar(name, GVF_LOCAL_ONLY);
 } /* unsetenv */
 
