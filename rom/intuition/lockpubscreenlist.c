@@ -2,6 +2,9 @@
     (C) 1998 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.3  1999/09/12 01:48:58  bernie
+    more public screens support
+
     Revision 1.2  1999/08/20 16:38:58  SDuvan
     Public screen functions
 
@@ -61,7 +64,7 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     ObtainSemaphore(&GPB(IntuitionBase)->PubScrListLock);
-    return (struct List *)&GPB(IntuitionBase)->PubScreenList;
+    return (struct List *)&(GPB(IntuitionBase)->PubScreenList);
 
     AROS_LIBFUNC_EXIT
 } /* LockPubScreenList */

@@ -75,15 +75,15 @@
 
 	if(screen)
 	{
+	    IntuitionBase->FirstScreen =   
+	    	IntuitionBase->ActiveScreen =   
+		GetPrivIBase(IntuitionBase)->WorkBench = screen;
+
 	    /* Make the Workbench screen public... */
 	    PubScreenStatus(screen, 0);
 
 	    /* ...and make it the default */
 	    SetDefaultPubScreen(NULL);
-
-	    IntuitionBase->FirstScreen =   
-	    	IntuitionBase->ActiveScreen =   
-		GetPrivIBase(IntuitionBase)->WorkBench = screen;
 			
 	    return TRUE;
 	}

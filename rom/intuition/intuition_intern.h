@@ -54,6 +54,7 @@ struct IntIntuitionBase
 
     /* Put local shit here, invisible for the user */
     struct GfxBase	   * GfxBase;
+    struct Library         * LayersBase;
     struct ExecBase	   * SysBase;
     struct UtilityBase	   * UtilBase;
     struct Library	   * BOOPSIBase;
@@ -76,7 +77,6 @@ struct IntIntuitionBase
     BOOL		     InputDeviceOpen;
     struct Interrupt	   * InputHandler;
 
-    
     struct Hook		   *GlobalEditHook;
     /* The default global edit hook */
     struct Hook		   DefaultEditHook;
@@ -88,8 +88,6 @@ struct IntIntuitionBase
     struct MinList	     PubScreenList;
     UWORD                    pubScrGlobalMode;
 
-    struct Library         * LayersBase;
-    
     struct IClass *dragbarclass;
     struct IClass *tbbclass; /* Titlebar button class. (close, zoom, depth) */
 };

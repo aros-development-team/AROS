@@ -2,6 +2,9 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1999/09/12 01:48:58  bernie
+    more public screens support
+
     Revision 1.6  1999/01/16 23:19:48  hkiel
     Added aros_print_not_implemented()
 
@@ -71,19 +74,33 @@
 
 *****************************************************************************/
 {
+    struct List *publist;
+
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    publist = LockPubScreenList();
 
-    if( name != NULL )
+    if (name != NULL)
     {
-	/* Get '(struct Screen*)screen' by its name */
+	struct PubScreenNode *psn;
+
+	/* Get screen by its name */
+        if ((psn = (struct PubScreenNode *)FindName(publist, name)))
+		screen = psn->psn_Screen;
+	else
+		screen = NULL;
     }
 
-    /* Unlock screen */
+    if (screen != NULL)
+    {
+	//ASSERT(GetPrivScreen(screen)->pubScrNode != NULL);
+	//ASSERT(GetPrivScreen(screen)->pubScrNode->psn_VisitorCount > 0);
 
-#warning TODO: Write intuition/UnlockPubScreen()
-    aros_print_not_implemented ("UnlockPubScreen");
+	/* Unlock screen */
+	GetPrivScreen(screen)->pubScrNode->psn_VisitorCount--;
+    }
 
+    UnlockPubScreenList();
     AROS_LIBFUNC_EXIT
 } /* UnlockPubScreen */

@@ -122,7 +122,18 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	return NULL;
 
     InitSemaphore(GetPrivIBase(LIBBASE)->IBaseLock);
+
+    /* Initialize global stringgadget edit hook */
+    GetPrivIBase(LIBBASE)->DefaultEditHook.h_Entry	= (APTR)AROS_ASMSYMNAME(GlobalEditFunc);
+    GetPrivIBase(LIBBASE)->DefaultEditHook.h_SubEntry	= NULL;
+    GetPrivIBase(LIBBASE)->DefaultEditHook.h_Data	= LIBBASE;
+    
+    GetPrivIBase(LIBBASE)->GlobalEditHook = &(GetPrivIBase(LIBBASE)->DefaultEditHook);
+
+    GetPrivIBase(LIBBASE)->DefaultPubScreen = NULL;
+    NEWLIST(&GetPrivIBase(LIBBASE)->PubScreenList);
     InitSemaphore(&GetPrivIBase(LIBBASE)->PubScrListLock);
+
 
     /* Add all other classes */
     InitImageClass (LIBBASE); /* After ROOTCLASS */
@@ -143,15 +154,6 @@ AROS_LH2(struct LIBBASETYPE *, init,
     if (!GetPrivIBase(LIBBASE)->tbbclass)
     	return NULL;
     
-    /* Initialize global stringgadget edit hook */
-    GetPrivIBase(LIBBASE)->DefaultEditHook.h_Entry	= (APTR)AROS_ASMSYMNAME(GlobalEditFunc);
-    GetPrivIBase(LIBBASE)->DefaultEditHook.h_SubEntry	= NULL;
-    GetPrivIBase(LIBBASE)->DefaultEditHook.h_Data	= LIBBASE;
-    
-    GetPrivIBase(LIBBASE)->GlobalEditHook = &(GetPrivIBase(LIBBASE)->DefaultEditHook);
-
-    NEWLIST(&GetPrivIBase(LIBBASE)->PubScreenList);
-
     /* You would return NULL if the init failed */
     return LIBBASE;
     AROS_LIBFUNC_EXIT

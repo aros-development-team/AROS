@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  1999/09/12 01:48:58  bernie
+    more public screens support
+
     Revision 1.5  1998/10/20 16:46:04  hkiel
     Amiga Research OS
 
@@ -60,18 +63,19 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-/*
-    struct PubScreenNode * pscreen;
 
-    if ((pscreen = (struct PubScreenNode *)FindName (
-	    &(GetPrivIBase(IntuitionBase)->PublicScreenList)
-	)
-    ))
+    if (name)
     {
-	GetPrivIBase(IntuitionBase)->DefaultPublicScreen =
-	    pscreen->psn_Screen;
+	struct PubScreenNode * psn;
+
+	if ((psn = (struct PubScreenNode *)FindName (LockPubScreenList(), name)))
+	    GetPrivIBase(IntuitionBase)->DefaultPubScreen = psn->psn_Screen;
+
+	UnlockPubScreenList();
     }
-*/
+    else
+	GetPrivIBase(IntuitionBase)->DefaultPubScreen =
+	    GetPrivIBase(IntuitionBase)->WorkBench;
 
     AROS_LIBFUNC_EXIT
 } /* SetDefaultPubScreen */

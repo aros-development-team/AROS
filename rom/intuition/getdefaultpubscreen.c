@@ -2,6 +2,9 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1999/09/12 01:48:58  bernie
+    more public screens support
+
     Revision 1.6  1999/01/16 23:19:48  hkiel
     Added aros_print_not_implemented()
 
@@ -72,8 +75,10 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/GetDefaultPubScreen()
-    aros_print_not_implemented ("GetDefaultPubScreen");
+    LockPubScreenList();
+    strcpy(nameBuffer, GetPrivScreen(GetPrivIBase(IntuitionBase)->DefaultPubScreen)
+	->pubScrNode->psn_Node.ln_Name);
+    UnlockPubScreenList();
 
     AROS_LIBFUNC_EXIT
 } /* GetDefaultPubScreen */
