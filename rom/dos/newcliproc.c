@@ -19,6 +19,8 @@ AROS_UFHA(char *,argstr,A0),
 AROS_UFHA(ULONG,argsize,D0),
 AROS_UFHA(struct ExecBase *,SysBase,A6))
 {
+    AROS_USERFUNC_INIT
+    
     struct Process *me;
     struct CliStartupMessage *csm;
     LONG rc = RETURN_FAIL;
@@ -98,4 +100,6 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     UnLoadSeg(ShellSeg);
 
     return rc;
+
+    AROS_USERFUNC_EXIT
 }
