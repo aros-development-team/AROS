@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -71,20 +71,29 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct PubScreenNode *ps;
-    struct IntScreen *scr = (struct IntScreen *)screen;
-
-    if(scr == NULL)
-	scr = (struct IntScreen *)GPB(IntuitionBase)->DefaultPubScreen;
-
-    if(scr == NULL)
-	return NULL;
-
-    if(scr->pubScrNode == NULL)
-    	return NULL;     /* This was not a public screen */
+    struct IntScreen 	 *scr = (struct IntScreen *)screen;
+    struct List     	 *list;
     
-    LockPubScreenList();
+    list = LockPubScreenList();   
+     
+    if(scr == NULL)
+    {
+	ps = (struct PubScreenNode *)list->lh_Head;
+	ASSERT(ps != NULL);
+    }
+    else
+    {
+    	ps = scr->pubScrNode;
+	if (!ps) return NULL;
+	
+	ps = (struct PubScreenNode *)ps->psn_Node.ln_Succ;
+	ASSERT(ps != NULL);
+    }
 
-    ps = (struct PubScreenNode *)ps->psn_Node.ln_Succ;
+    /* A "valid" node in a list must have ln_Succ != NULL */
+    
+    if (!ps->psn_Node.ln_Succ) return NULL;
+    
     strcpy(namebuff, ps->psn_Node.ln_Name);
     
     UnlockPubScreenList();
