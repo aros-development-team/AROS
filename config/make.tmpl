@@ -1867,7 +1867,7 @@ else
     %(mmake)-%(subpackage)-archbase  := %(package)-%(version)
 endif
 
-ifneq ($(srcdir),)
+ifneq (%(srcdir),)
     %(mmake)-%(subpackage)-srcdir  := %(srcdir)
 else
     %(mmake)-%(subpackage)-srcdir  := $(%(mmake)-archbase)
