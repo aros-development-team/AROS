@@ -147,7 +147,7 @@ BPTR LoadSeg_ELF (BPTR file)
     struct hunk    * hunks    = NULL;
     struct relo    * reltab   = NULL;
     struct symbol  * symbol;
-    struct sheader * sh;
+    struct sheader * sh       = NULL;  /* satisfy GCC */
 
     ULONG   numsym,
 	    numrel,

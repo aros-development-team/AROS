@@ -69,7 +69,7 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     struct Process *process=NULL;
     BPTR input=0, output=0, curdir=0;
     STRPTR stack=NULL, name=NULL, argptr=NULL;
-    ULONG namesize, argsize=0;
+    ULONG namesize=0, argsize=0;
     struct MemList *memlist=NULL;
     struct CommandLineInterface *cli=NULL;
 

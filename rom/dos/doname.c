@@ -25,6 +25,8 @@ LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase)
     struct FileHandle *fh;
     struct Process *me=(struct Process *)FindTask(NULL);
 
+    s1=NULL; /* keep GCC quiet */
+
     if(!Strnicmp(name,"PROGDIR:",8))
     {
 	cur=me->pr_HomeDir;

@@ -57,6 +57,8 @@ BPTR LoadSeg_AOS(BPTR file)
 #define ERROR(a)    { *error=a; goto end; }
   LONG *error=&((struct Process *)FindTask(NULL))->pr_Result2;
 
+  curhunk = 0; /* keep GCC quiet */
+
   if (Seek(file, 0, OFFSET_BEGINNING) < 0)
     goto end;
   while(!read_block(file, &hunktype, sizeof(hunktype))) {
