@@ -185,7 +185,9 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 	    data->isrendered = FALSE;
 	    
 	    /* Lock all layers while the window is dragged */
-	    LockLayerInfo(&w->WScreen->LayerInfo);
+D(bug("locking all layers\n"));
+	    LockLayers(&w->WScreen->LayerInfo);
+	    
 	
 	    retval = GMR_MEACTIVE;
 	}
@@ -254,7 +256,7 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		/* User throught with drag operation. Unlock layesr and free
 		   rastport clone
 		*/
-		UnlockLayerInfo(&w->WScreen->LayerInfo);
+		UnlockLayers(&w->WScreen->LayerInfo);
 		FreeRastPort(data->rp);
 
 #warning How is window refreshing handled here ? Ie when is IDCMP_REFRESHWINDOW sent ?		
