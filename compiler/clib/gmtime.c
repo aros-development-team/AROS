@@ -92,7 +92,7 @@ static char monthtable[] =
     utim.tm_hour = tim % 24;
     tim = tim / 24 + 719162;
 
-    utim.tm_wday = (tim + 1) % 7 + 1;
+    utim.tm_wday = (tim + 1) % 7;
 
     /* 146097 number of days from 1.1.1 to 1.1.401 */
     utim.tm_year = tim / 146097 * 400 - 1899;
@@ -154,7 +154,7 @@ static char monthtable[] =
 	tim-=monthtable[i];
     }
 
-    utim.tm_mon = i + 1;
+    utim.tm_mon = i;
     utim.tm_mday = tim + 1;
 
     utim.tm_isdst = __dstflag;

@@ -1,9 +1,10 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Convert a broken-down time into calendar time.
 */
+
 
 static char monthtable[] =
 {
@@ -76,9 +77,9 @@ static char monthtable[] =
      */
     year = utim->tm_year-1;
     days = 365*(year-69) + (year-68)/4 - year/100 + (year+300)/400;
-    
+
     /* Add the day of the months before this month */
-    for (i=0; i<utim->tm_mon-1; i++)
+    for (i=0; i<utim->tm_mon; i++)
     {
         days += monthtable[i];
     }
@@ -86,12 +87,12 @@ static char monthtable[] =
     /* Is this a leapyear ? */
     year = utim->tm_year;
     leapyear = year%4==0 && (year%100!=0 || (year+300)%400==0);
-    if (leapyear && utim->tm_mon>2) days++;
+    if (leapyear && utim->tm_mon>1) days++;
 
     /* Add day in the current month */
-    days += utim->tm_mday-1;
-    
-    tt = ( (days*24+utim->tm_hour)*60+utim->tm_min )*60 + utim->tm_sec;
+    days += utim->tm_mday - 1;
+
+    tt = ( (days*24+utim->tm_hour)*60 + utim->tm_min )*60 + utim->tm_sec;
 
     return tt;
 } /* mktime */
