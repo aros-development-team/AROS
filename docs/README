@@ -1,17 +1,10 @@
 Short: AROS - Amiga Replacement OS
 Author:   Aaron "Optimizer" Digulla (digulla@fh-konstanz.de) and many others
 Uploader: Aaron "Optimizer" Digulla (digulla@fh-konstanz.de)
-Version:  1.9
+Version:  1.10
 Type:	  misc/emu
 
 New this time:
-- Real preemptive multitasking like on Amiga
-- Many files were missing in the dev distribution :-(
-- Some bugfixes
-- FreeBSD/i386 support
-- Amiga users can now participate. Read README.CVS for more info.
-- Even more easy to port to a new hardware
-- HTML docs
 
 This project's goal is to provide a public available AmigaOS which
 is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
@@ -58,7 +51,7 @@ may contain quite different contents.
 If you have FTP, you can also get the most recent version as tar.gz files
 from
 
-    ftp://wi-pc44.fh-konstanz.de/pub/aros/
+    ftp://aros.fh-konstanz.de/pub/aros/
 
 This software is subject to the "Standard Amiga FD-Software Copyright Note".
 It is MAILWARE as defined in paragraph 4s.
@@ -70,6 +63,6 @@ following address:
     78467 Konstanz
     Germany
 
-    EMail: digulla@wi-pc44.fh-konstanz.de
+    EMail: digulla@aros.fh-konstanz.de
 
 For more information please read "AFD-COPYRIGHT" (Version 1 or higher).
