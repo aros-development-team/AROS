@@ -149,9 +149,9 @@ VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
 
 VOID BrokerFunc(CxObj *co, struct NewBroker *nbrok, struct Library *CxBase)
 {
-    strncpy(co->co_Ext.co_BExt->bext_Name,  nbrok->nb_Name,  CBD_NAMELEN);
-    strncpy(co->co_Ext.co_BExt->bext_Title, nbrok->nb_Title, CBD_TITLELEN);
-    strncpy(co->co_Ext.co_BExt->bext_Descr, nbrok->nb_Descr, CBD_DESCRLEN);
+    strncpy(co->co_Ext.co_BExt->bext_Name,  nbrok->nb_Name,  CBD_NAMELEN - 1);
+    strncpy(co->co_Ext.co_BExt->bext_Title, nbrok->nb_Title, CBD_TITLELEN - 1);
+    strncpy(co->co_Ext.co_BExt->bext_Descr, nbrok->nb_Descr, CBD_DESCRLEN - 1);
     
     co->co_Ext.co_BExt->bext_Task = FindTask(NULL);
     
