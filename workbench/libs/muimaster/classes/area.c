@@ -760,11 +760,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     if (!(msg->flags & MADF_DRAWOBJECT))
     {
 	/* dont draw bg/frame, let subclass redraw content only
-	** Don't know if MUI handles it like this, or if it
-	** simply return without setting MADF_DRAWOBJECT
 	**/
-	if (msg->flags & MADF_DRAWUPDATE)
-	    msg->flags |= MADF_DRAWOBJECT;
 	return 0;
     }
 
