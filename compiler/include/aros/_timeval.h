@@ -9,7 +9,7 @@
    have the same size, however they can have different signs (as it is
    the case for microseconds).  */
 
-struct timeval
+__extension__ struct timeval
 {
     union  /* Seconds passed. */
     {
