@@ -23,6 +23,8 @@
 
 #include <clib/macros.h>
 
+#include <string.h>
+
 #ifdef _SASC
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -378,13 +380,8 @@ AROS_UFH3(static IPTR, dispatch_gadgetclass,
 	if (retval)
 	{
 	    /* set some defaults */
-	    EG(retval)->NextGadget = NULL;
-	    EG(retval)->LeftEdge   = 0;
-	    EG(retval)->TopEdge    = 0;
-	    EG(retval)->Width      = 6;
-	    EG(retval)->Height     = 4;
+	    memset (EG(retval), 0, sizeof(struct ExtGadget));
 	    EG(retval)->Flags      = GFLG_EXTENDED;
-	    EG(retval)->MoreFlags  = 0UL;
 	    EG(retval)->GadgetType = GTYP_CUSTOMGADGET;
 
 	    /* Handle our special tags - overrides defaults */
