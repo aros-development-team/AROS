@@ -11,14 +11,11 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
 	   $(OSGENDIR)/graphics/dispinfo.o					\
 	   $(OSGENDIR)/graphics/fakegfxhidd.o
 
-#	C/Assign C/CD C/Mount C/Shell \
-
 BOOT_FILES := \
 	C/Mount C/Shell \
-	Libs/arosc.library \
-	Devs/Mountlist Devs/nil.handler Devs/ram.handler Devs/pipefs.handler \
+	Devs/Mountlist Devs/nil.handler Devs/ram.handler\
 	S/Startup-Sequence S/hidd.prefs \
-	contrib/aminet/untar contrib/gnu/gzip \
+	contrib/aminet/untgz \
 	boot/grub/stage1 boot/grub/stage2 boot/grub/menu.lst
 
 BOOT_TAR_FILES := \
