@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 OBJDIR := $(GENDIR)/$(CURDIR)
 
 %define_libs
+%make_common_setup
 
 DEVS    := $(DEVSDIR)/serial.device
 INIT    := serial_init

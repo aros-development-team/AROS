@@ -28,6 +28,7 @@ struct unit
     struct ramdrivebase 	*ramdrivebase;
     ULONG 			unitnum;
     ULONG			usecount;
+    ULONG   	    	    	headpos;
     struct MsgPort 		port;
     UBYTE 			*mem;
 };

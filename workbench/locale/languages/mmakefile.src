@@ -17,6 +17,8 @@ LANGUAGES = dansk deutsch español français italiano nederlands norsk piglatin po
 
 LANGFILE=$(foreach f, $(LANGUAGES), $(LANGDIR)/$(f).language)
 
+%make_common_setup
+
 #MM workbench-locale : setup
 workbench-locale : setup $(LANGFILE)
 	@$(NOP)

@@ -8,7 +8,13 @@
 
 /****************************************************************************************/
 
-#define DISKSIZE (2 * 80 * 11 * 512)
+#define NUM_HEADS   2
+#define NUM_CYL     80
+#define NUM_SECS    11
+#define BLOCKSIZE   512
+
+#define DISKSIZE    (NUM_HEADS * NUM_CYL * NUM_SECS * BLOCKSIZE)
+#define NUM_TRACKS  (NUM_CYL * NUM_HEADS)
 
 /****************************************************************************************/
 
@@ -355,23 +361,67 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
 
-    switch(iotd->iotd_Req.io_Command)
+    switch(iotd->iotd_Req.io_Command & ~TDF_EXTCOM)
     {
-	case CMD_UPDATE:
-	case CMD_CLEAR:
-	case TD_MOTOR:
-	    /* Ignore but don't fail */
+    	case TD_CHANGENUM:
+	    /* result: io_Actual = disk change counter */
+	    
+	case TD_CHANGESTATE:
+	    /* result: io_Actual = disk presence indicator (0 = disk is in drive) */
+	    
+	case TD_PROTSTATUS:
+	    /* result: io_Actual = disk protection status (0 = not protected) */
+	    
+	    iotd->iotd_Req.io_Actual = 0;
 	    iotd->iotd_Req.io_Error = 0;
 	    break;
 	    
+	case CMD_UPDATE:
+	case CMD_CLEAR:
+	case TD_REMOVE:
+	case TD_ADDCHANGEINT:
+	case TD_REMCHANGEINT:
+	    /* Ignore but don't fail */
+	    iotd->iotd_Req.io_Error = 0;
+	    break;
+	
+	case TD_GETDRIVETYPE:
+	    iotd->iotd_Req.io_Actual = DRIVE3_5;
+	    iotd->iotd_Req.io_Error = 0;
+	    break;
+	    
+	case TD_GETNUMTRACKS:
+	    iotd->iotd_Req.io_Actual = NUM_TRACKS;
+	    iotd->iotd_Req.io_Error = 0;
+	    break;
+	    
+	case CMD_FLUSH:
+	    {
+		struct IOExtTD *flushed_iotd;
+    	    	struct unit    *u =(struct unit *)iotd->iotd_Req.io_Unit;
+		Forbid();
+		while((flushed_iotd = (struct IOExtTD *)GetMsg(&u->port)))
+		{
+	    	    flushed_iotd->iotd_Req.io_Error = IOERR_ABORTED;
+		    ReplyMsg(&flushed_iotd->iotd_Req.io_Message);
+		}
+		Permit();
+	    }
+	    break;
+	   
 	case CMD_READ:
 	case CMD_WRITE:
 	case TD_FORMAT:
+	case TD_RAWREAD:
+	case TD_RAWWRITE:
+	case TD_SEEK:
+	case TD_MOTOR:
+	    /* Not done quick */
+	    iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
+
 	    /* Forward to unit thread */
 	    PutMsg(&((struct unit *)iotd->iotd_Req.io_Unit)->port, 
 		   &iotd->iotd_Req.io_Message);
-	    /* Not done quick */
-	    iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
 	    return;
 	    
 	default:
@@ -455,6 +505,8 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
     buf    = iotd->iotd_Req.io_Data;
     offset = iotd->iotd_Req.io_Offset;
     size   = iotd->iotd_Req.io_Length;
+
+    unit->headpos = offset;
     
     if (offset + size > DISKSIZE)
     {
@@ -487,6 +539,8 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
     buf    = iotd->iotd_Req.io_Data;
     offset = iotd->iotd_Req.io_Offset;
     size   = iotd->iotd_Req.io_Length;
+    
+    unit->headpos = offset;
     
     if (offset + size > DISKSIZE)
     {
@@ -564,18 +618,49 @@ AROS_UFH3(LONG, unitentry,
 		return 0;
 	    }
 
- 	    switch(iotd->iotd_Req.io_Command)
+ 	    switch(iotd->iotd_Req.io_Command & ~TDF_EXTCOM)
  	    {
+	    	case TD_RAWREAD:
+	    	    /*
+		    ** same as CMD_READ, but offset does not have to be multiple of
+		    ** BLOCKSIZE
+		    **
+		    ** fall through
+		    */
+		    	    
  		case CMD_READ:
      		    D(bug("ramdrive_device/unitentry: received CMD_READ.\n"));
 		    err = read(unit, iotd);
  		    break;
+		    
+	    	case TD_RAWWRITE:
+	    	    /*
+		    ** same as CMD_WRITE, but offset does not have to be multiple of
+		    ** BLOCKSIZE
+		    **
+		    ** fall through
+		    */
 		    
  		case CMD_WRITE:
  		case TD_FORMAT:
     		    D(bug("ramdrive_device/unitentry: received %s\n", (iotd->iotd_Req.io_Command == CMD_WRITE) ? "CMD_WRITE" : "TD_FORMAT"));
  		    err = write(unit, iotd);
  		    break;
+		    
+		case TD_MOTOR:
+		    /*
+		    ** DOS wants the previous state in io_Actual.
+		    ** We return "!io_Actual"
+		    */
+		    
+		    iotd->iotd_Req.io_Actual = (iotd->iotd_Req.io_Actual == 1) ? 0 : 1;
+		    err = 0;
+		    break;
+		    
+		case TD_SEEK:
+		    unit->headpos = iotd->iotd_Req.io_Actual;
+		    err = 0;
+		    break;
 		    
  	    } /* switch(iotd->iotd_Req.io_Command) */
 	    
