@@ -21,7 +21,12 @@ struct ScaleLayerParam
   struct LayersBase * LayersBase;
 };
 
-struct Region * ScaleLayerCallback();
+AROS_UFP3(struct Region *, ScaleLayerCallback,
+   AROS_UFPA(struct Hook                *, hook     , A0),
+   AROS_UFPA(struct Layer               *, l        , A2),
+   AROS_UFPA(struct ChangeLayerShapeMsg *, clsm     , A1));
+
+//struct Region * ScaleLayerCallback();
 
 /*****************************************************************************
 
@@ -42,13 +47,13 @@ struct Region * ScaleLayerCallback();
         the given newwidth/newheight.
 
     INPUTS
-       L           - pointer to layer 
+       L           - pointer to layer
        newwidth    - new width of the layer
        newheight   - new height of the layer
 
     RESULT
        TRUE if everything went alright, FALSE otherwise
-  
+
     NOTES
 
     EXAMPLE
@@ -79,7 +84,7 @@ struct Region * ScaleLayerCallback();
   /*
    * I must not free oldshape here since it is also the new shape!
    */
-  
+
   return FALSE;
   AROS_LIBFUNC_EXIT
 } /* ScaleLayer */
@@ -99,6 +104,8 @@ AROS_UFH3(struct Region *, ScaleLayerCallback,
    AROS_UFHA(struct Layer               *, l        , A2),
    AROS_UFHA(struct ChangeLayerShapeMsg *, clsm     , A1))
 {
+  AROS_USERFUNC_INIT
+
   struct BitScaleArgs bsa;
   struct BitMap * bm = NULL;
   struct ScaleLayerParam * slp = (struct ScaleLayerParam *)hook->h_Data;
@@ -152,4 +159,6 @@ AROS_UFH3(struct Region *, ScaleLayerCallback,
 kprintf("shaperegion: %p\n",l->shaperegion);
 
   return l->shaperegion;
+
+  AROS_USERFUNC_EXIT
 }

@@ -51,6 +51,8 @@
 
 ******************************************************************************/
 {
+    AROS_LIBFUNC_INIT
+
     struct Task * this = FindTask (NULL);
     BYTE nestCnt;
     ULONG flags;
@@ -88,4 +90,6 @@
     }
 
     SysBase->IDNestCnt = nestCnt;
+
+    AROS_LIBFUNC_EXIT
 } /* Exception */

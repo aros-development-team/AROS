@@ -203,8 +203,6 @@ AROS_UFP2(BOOL, (*CompFunc),
 )
 {
 
-    AROS_USERFUNC_INIT
-
     struct ClipRect *CurCR;
     struct ClipRect *NextCR;
     struct ClipRect **CRptr;
@@ -242,5 +240,4 @@ AROS_UFP2(BOOL, (*CompFunc),
     layer->ClipRect = FirstCR;
 
     return;
-    AROS_USERFUNC_EXIT
 }
