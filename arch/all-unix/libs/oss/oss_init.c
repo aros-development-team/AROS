@@ -9,8 +9,6 @@
 #include <dos/dosextens.h>
 #include <aros/libcall.h>
 #include <aros/debug.h>
-#include <libcore/base.h>
-#include <libcore/compiler.h>
 #include <hidd/unixio.h>
 
 #include <proto/exec.h>
@@ -30,7 +28,7 @@ AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
     
-    SysBase = LIBBASE->lh.lh_SysBase;
+    SysBase = GM_SYSBASE_FIELD(LIBBASE);
  
     if (!(OOPBase = OpenLibrary("oop.library", 0)))
         return FALSE;
