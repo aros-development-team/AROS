@@ -8,8 +8,10 @@
 TOPDIR	:=	$(shell if [ "$$PWD" != "" ]; then echo $$PWD; else pwd; fi)
 TOP	=	$(TOPDIR)/../..
 
+include $(TOP)/config/host.cfg
+
 IPATH	=	$(TOPDIR)/include
-INCLUDE	=	$(TOP)/compiler/include
+INCLUDE =	$(TOP)/bin/$(ARCH)-$(CPU)/gen/include
 OBJDIR	=	$(TOPDIR)/lib
 CC	=	gcc -I$(IPATH) -I$(INCLUDE) -O0 -m486 -mno-fp-ret-in-387 -Wall
 LD	=	ld -Ttext 0x1000 -e startup_32 -N -Map Output.map
@@ -27,13 +29,13 @@ HEADER	=	$(OBJDIR)/header.o
 CORE	=	$(OBJDIR)/core.o
 EXEC	=	$(OBJDIR)/exec.o
 EXPANSION=	$(OBJDIR)/expansion.o
-UTILITY	=	$(OBJDIR)/utility.o
+UTILITY =	$(OBJDIR)/utility.o
 AROS	=	$(OBJDIR)/aros.o
 BOOPSI	=	$(OBJDIR)/boopsi.o
 MATHIEEESINGBAS= $(OBJDIR)/mathieeesingbas.o
 
-OBJECTS	=	$(HEADER) $(CORE) $(EXEC) $(EXPANSION) $(UTILITY) $(AROS) \
-    $(BOOPSI) $(MATHIEEESINGBAS)
+OBJECTS =	$(HEADER) $(CORE) $(EXEC) $(EXPANSION) $(UTILITY) $(AROS) \
+    $(BOOPSI) #$(MATHIEEESINGBAS)
 
 all:	$(IMAGE)
 	@echo
@@ -57,7 +59,7 @@ $(KERNEL): $(OBJECTS)
 	@echo Done!
 
 $(HEADER): $(TOPDIR)/boot/head.S $(TOPDIR)/boot/init.c $(TOPDIR)/boot/logo.c \
-           $(TOPDIR)/boot/text.c
+	   $(TOPDIR)/boot/text.c
 	@echo -n Compiling kernel header...
 	@$(MAKE) -s -C boot $(HEADER)
 	@echo Done!
