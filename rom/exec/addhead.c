@@ -6,12 +6,12 @@
     Lang: english
 */
 #include "exec_intern.h"
+#include <exec/lists.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <exec/lists.h>
-#include <clib/exec_protos.h>
 
 	AROS_LH2I(void, AddHead,
 

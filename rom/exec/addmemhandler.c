@@ -5,13 +5,16 @@
     Desc: Exec function AddeMemHandler()
     Lang: english
 */
+
+#include <exec/execbase.h>
+#include <aros/libcall.h>
+#include <proto/exec.h>
+
 /*****************************************************************************
 
     NAME */
-#include <exec/execbase.h>
-#include <clib/exec_protos.h>
 
-AROS_LH1(void, AddMemHandler,
+	AROS_LH1(void, AddMemHandler,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Interrupt *, memHandler, A1),

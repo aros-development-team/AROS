@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1997/01/01 03:46:16  ldp
+    Committed Amiga native (support) code
+
+    Changed clib to proto
+
     Revision 1.8  1996/12/10 13:51:54  aros
     Moved all #include's in the first column so makedepend can see it.
 
@@ -31,11 +36,11 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/machine.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <clib/exec_protos.h>
 
 	AROS_LH3(APTR, SetFunction,
 
@@ -100,8 +105,12 @@
     /* Write new one. */
     __AROS_SETVECADDR (library, funcOffset, newFunction);
 
-    /* And clear the instructiuon cache. */
-    CacheClearE (__AROS_GETJUMPVEC(library,funcOffset),LIB_VECTSIZE,CACRF_ClearI);
+    /* And clear the instruction cache. */
+    /*
+       Fixed to also flush data cache (very important for CopyBack style
+       caches) [ldp]
+    */
+    CacheClearE (__AROS_GETJUMPVEC(library,funcOffset),LIB_VECTSIZE,CACRF_ClearI|CACRF_ClearD);
 
     /* Arbitration is no longer needed */
     Permit();

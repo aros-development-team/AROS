@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/01/01 03:46:11  ldp
+    Committed Amiga native (support) code
+
+    Changed clib to proto
+
     Revision 1.6  1996/12/10 13:51:46  aros
     Moved all #include's in the first column so makedepend can see it.
 
@@ -22,20 +27,20 @@
 #include <dos/dos.h>
 #include <aros/asmcall.h>
 #include "exec_intern.h"
+#include <exec/resident.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <exec/resident.h>
-#include <clib/exec_protos.h>
 
-AROS_LH2(APTR, InitResident,
+	AROS_LH2(APTR, InitResident,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Resident *, resident, A1),
 	AROS_LHA(BPTR,              segList,  D1),
 
-/* LOCATION */
+/*  LOCATION */
 	struct ExecBase *, SysBase, 17, Exec)
 
 /*  FUNCTION

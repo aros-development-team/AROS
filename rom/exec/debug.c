@@ -5,11 +5,11 @@
     Lang: english
 */
 #include "exec_intern.h"
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <clib/exec_protos.h>
 
 	AROS_LH1(void, Debug,
 

@@ -9,12 +9,12 @@
 #include <aros/libcall.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <exec/alerts.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <exec/alerts.h>
-#include <clib/exec_protos.h>
 
 	AROS_LH1(void, Alert,
 

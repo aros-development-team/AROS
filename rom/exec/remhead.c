@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1997/01/01 03:46:14  ldp
+    Committed Amiga native (support) code
+
+    Changed clib to proto
+
     Revision 1.8  1996/12/10 13:51:51  aros
     Moved all #include's in the first column so makedepend can see it.
 
@@ -22,15 +27,16 @@
     Desc:
     Lang: english
 */
+
 /* I want the macros */
 #define AROS_ALMOST_COMPATIBLE
 #include "exec_intern.h"
+#include <exec/lists.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <exec/lists.h>
-#include <clib/exec_protos.h>
 
 	AROS_LH1I(struct Node *, RemHead,
 

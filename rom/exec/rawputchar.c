@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1997/01/01 03:46:14  ldp
+    Committed Amiga native (support) code
+
+    Changed clib to proto
+
     Revision 1.3  1996/12/10 13:51:50  aros
     Moved all #include's in the first column so makedepend can see it.
 
@@ -18,12 +23,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "exec_intern.h"
+#include <exec/semaphores.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <exec/semaphores.h>
-#include <clib/exec_protos.h>
 
 	AROS_LH1(ULONG, RawPutChar,
 

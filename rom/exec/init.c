@@ -21,7 +21,7 @@
 #include <exec/memory.h>
 #include <exec/devices.h>
 #include <clib/aros_protos.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>

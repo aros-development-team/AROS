@@ -9,11 +9,11 @@
 #include <aros/libcall.h>
 #include <exec/alerts.h>
 #include <aros/machine.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <clib/exec_protos.h>
 
 	AROS_LH3(void, InitStruct,
 

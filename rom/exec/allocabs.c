@@ -9,12 +9,12 @@
 #include <exec/execbase.h>
 #include <aros/machine.h>
 #include "memory.h"
+#include <exec/memory.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <exec/memory.h>
-#include <clib/exec_protos.h>
 
 	AROS_LH2(APTR, AllocAbs,
 

@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1997/01/01 03:46:11  ldp
+    Committed Amiga native (support) code
+
+    Changed clib to proto
+
     Revision 1.8  1996/12/10 13:51:48  aros
     Moved all #include's in the first column so makedepend can see it.
 
@@ -23,12 +28,12 @@
     Lang: english
 */
 #include "exec_intern.h"
+#include <exec/lists.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <exec/lists.h>
-#include <clib/exec_protos.h>
 
 	AROS_LH3I(void, Insert,
 
@@ -91,7 +96,7 @@
 
 	/*
 	    We are the predecessor of the successor of our predecessor
-	    (What ? blblblb... ;) and of out predecessor itself.
+	    (What ? blblblb... ;) and of our predecessor itself.
 	    Note that here the sequence is quite important since
 	    we need ln_Succ in the first expression and change it in
 	    the second.

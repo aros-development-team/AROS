@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/01/01 03:46:03  ldp
+    Committed Amiga native (support) code
+
+    Changed clib to proto
+
     Revision 1.1  1996/11/14 08:51:34  aros
     Some work on the kernel:
     Mapping of Linux-Signals to AROS interrupts
@@ -14,7 +19,7 @@
 */
 #include <exec/execbase.h>
 #include <exec/interrupts.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <aros/libcall.h>
 
 /*****************************************************************************

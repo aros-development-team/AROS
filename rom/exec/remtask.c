@@ -8,6 +8,7 @@
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <aros/libcall.h>
+#include <proto/exec.h>
 
 #include "exec_debug.h"
 #ifndef DEBUG_RemTask
@@ -22,7 +23,6 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/exec_protos.h>
 
 	AROS_LH1(void, RemTask,
 

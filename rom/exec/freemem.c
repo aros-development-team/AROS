@@ -10,6 +10,8 @@
 #include <aros/machine.h>
 #include "memory.h"
 #include <aros/rt.h>
+#include <exec/memory.h>
+#include <proto/exec.h>
 
 #include "exec_debug.h"
 #ifndef DEBUG_FreeMem
@@ -30,8 +32,6 @@ extern void PurgeChunk (ULONG *, ULONG);
 /*****************************************************************************
 
     NAME */
-#include <exec/memory.h>
-#include <clib/exec_protos.h>
 
 	AROS_LH2(void, FreeMem,
 

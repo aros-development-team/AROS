@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1997/01/01 03:46:18  ldp
+    Committed Amiga native (support) code
+
+    Changed clib to proto
+
     Revision 1.3  1996/12/09 10:54:49  aros
     Added (almost empty) versions for all missing functions. If they are called,
     they just print "Functions %s not implemented" and return an error if
@@ -31,8 +36,8 @@
 #ifndef EXEC_EXECBASE_H
 #   include <exec/execbase.h>
 #endif
-#ifndef CLIB_EXEC_PROTOS_H
-#   include <clib/exec_protos.h>
+#ifndef PROTO_EXEC_H
+#   include <proto/exec.h>
 #endif
 
 #if UseLVOs

@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.11  1997/01/01 03:46:05  ldp
+    Committed Amiga native (support) code
+
+    Changed clib to proto
+
     Revision 1.10  1996/12/10 13:51:37  aros
     Moved all #include's in the first column so makedepend can see it.
 
@@ -37,6 +42,8 @@
 #include <aros/rt.h>
 #include <aros/machine.h>
 #include "memory.h"
+#include <exec/memory.h>
+#include <proto/exec.h>
 
 #include "exec_debug.h"
 #ifndef DEBUG_AllocMem
@@ -51,8 +58,6 @@
 /*****************************************************************************
 
     NAME */
-#include <exec/memory.h>
-#include <clib/exec_protos.h>
 
 	AROS_LH2(APTR, AllocMem,
 
