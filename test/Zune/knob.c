@@ -48,6 +48,7 @@ int main(void)
 		Child, HGroup,
 		    Child, HVSpace,
 		    Child, knob = KnobObject,
+		    	MUIA_CycleChain, TRUE,
 		    	MUIA_Numeric_Min, 10,
 		    	MUIA_Numeric_Max, 144,
 		    	End,
@@ -69,7 +70,9 @@ int main(void)
 	
 	DoMethod(slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
 	    	 (IPTR)knob, 3, MUIM_NoNotifySet, MUIA_Numeric_Value, MUIV_TriggerValue);
-		
+	DoMethod(knob, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+	    	 (IPTR)slider, 3, MUIM_NoNotifySet, MUIA_Numeric_Value, MUIV_TriggerValue);
+
 	set(wnd,MUIA_Window_Open,TRUE);
 
 	while (DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs) != MUIV_Application_ReturnID_Quit)
