@@ -55,11 +55,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-
-#warning TODO: Write graphics/GetDisplayInfoData()
-    aros_print_not_implemented ("GetDisplayInfoData");
-
-    return 0;
+    
+    return driver_GetDisplayInfoData(handle, buf, size, tagID, ID, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* GetDisplayInfoData */

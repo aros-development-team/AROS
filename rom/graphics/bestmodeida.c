@@ -48,10 +48,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-#warning TODO: Write graphics/BestModeIDA()
-    aros_print_not_implemented ("BestModeIDA");
-
-    return DEFAULT_MONITOR_ID;
+    return driver_BestModeIDA(TagItems, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* BestModeIDA */

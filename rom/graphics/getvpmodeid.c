@@ -50,11 +50,9 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    
+    return driver_GetVPModeID(vp, GfxBase);
 
-#warning TODO: Write graphics/GetVPModeID()
-    aros_print_not_implemented ("GetVPModeID");
-
-    return DEFAULT_MONITOR_ID;
 
     AROS_LIBFUNC_EXIT
 } /* GetVPModeID */

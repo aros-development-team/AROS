@@ -50,14 +50,11 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    
+#warning Do a real check here    
 
-#warning TODO: Write graphics/ModeNotAvailable()
-    aros_print_not_implemented ("ModeNotAvailable");
+    return 0;
 
-    if (modeID != DEFAULT_MONITOR_ID)
-        return DI_AVAIL_NOMONITOR;
-    else
-        return 0L;
 
     AROS_LIBFUNC_EXIT
 } /* ModeNotAvailable */

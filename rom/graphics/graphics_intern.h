@@ -212,6 +212,8 @@ extern void driver_StripFont(struct TextFont *font, struct tfe_hashnode *hn, str
 extern ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size, ULONG tagid, ULONG id2, struct GfxBase *GfxBase);
 extern DisplayInfoHandle driver_FindDisplayInfo(ULONG id, struct GfxBase *GfxBase);
 extern ULONG driver_NextDisplayInfo(ULONG lastid, struct GfxBase *GfxBase);
+extern ULONG driver_GetVPModeID(struct ViewPort *vp, struct GfxBase *GfxBase);
+extern ULONG driver_BestModeIDA(struct TagItem *tags, struct GfxBase *GfxBase);
 
 
 /* functions in support.c */

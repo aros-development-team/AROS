@@ -49,10 +49,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-#warning TODO: Write graphics/NextDisplayInfo()
-    aros_print_not_implemented ("NextDisplayInfo");
-
-    return INVALID_ID;
+    return driver_NextDisplayInfo(last_ID, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* NextDisplayInfo */
