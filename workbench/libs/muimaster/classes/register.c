@@ -116,51 +116,103 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
     Draw(_rp(obj), x + ri->w - 1 - data->slopew / 2, y + 3 + data->slopew - 1);
     
     /* lower / at left side. */
-    
-    if ((item == 0) || (data->active == item))
     {
-    	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+	int x1 = x, x2 = x + data->slopew / 2 - 1;
+	int y1 = y + ri->h - 2, y2 = y + ri->h - 2 - data->slopew + 1;
+
+	if ((item == 0) || (data->active == item))
+	{
+	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+	    Move(_rp(obj), x1, y1);
+	    Draw(_rp(obj), x2, y2);
+	} else
+	{
+	    int h;
+	    if (x2 < x1)
+	    {
+		h = x2;
+		x2 = x1;
+		x1 = h;
+	    }
+
+	    if (y2 < y1)
+	    {
+		h = y2;
+		y2 = y1;
+		y1 = h;
+	    }
+
+	    DoMethod(obj, MUIM_DrawBackground, x1, y1, x2 - x1 + 1, y2 - y1 + 1, x1, y1,0);
+	}
     }
-    else
-    {
-    	SetAPen(_rp(obj), _pens(obj)[MPEN_BACKGROUND]);
-    }
-    Move(_rp(obj), x, y + ri->h - 2);
-    Draw(_rp(obj), x + data->slopew / 2 - 1, y + ri->h - 2 - data->slopew + 1);
-    
+
     /* lower \ at the lefst side from the previous item */
-    
     if (item > 0)
     {
+    	int x1 = x + data->slopew / 2, x2 = x + data->slopew - 1;
+    	int y1 = y + ri->h - 2 - data->slopew + 1, y2 = y + ri->h - 2;
     	if (data->active == item)
 	{
-    	    SetAPen(_rp(obj), _pens(obj)[MPEN_BACKGROUND]);
+	    int h;
+	    if (x2 < x1)
+	    {
+		h = x2;
+		x2 = x1;
+		x1 = h;
+	    }
+
+	    if (y2 < y1)
+	    {
+		h = y2;
+		y2 = y1;
+		y1 = h;
+	    }
+
+	    DoMethod(obj, MUIM_DrawBackground, x1, y1, x2 - x1 + 1, y2 - y1 + 1, x1, y1,0);
+
 	}
 	else
 	{
     	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+	    Move(_rp(obj), x1, y1);
+	    Draw(_rp(obj), x2, y2);
 	}
-	Move(_rp(obj), x + data->slopew / 2, y + ri->h - 2 - data->slopew + 1);
-	Draw(_rp(obj), x + data->slopew - 1, y + ri->h - 2);
     }
     
     /* lower \ at right side. */
-    
-    if (data->active == item + 1)
     {
-    	SetAPen(_rp(obj), _pens(obj)[MPEN_BACKGROUND]);
+    	int x1 = x + ri->w - 1 - data->slopew / 2 + 1, x2 = x + ri->w - 1;
+    	int y1 = y + ri->h - 2 - data->slopew + 1, y2 = y + ri->h - 2;
+	if (data->active == item + 1)
+	{
+	    int h;
+	    if (x2 < x1)
+	    {
+		h = x2;
+		x2 = x1;
+		x1 = h;
+	    }
+
+	    if (y2 < y1)
+	    {
+		h = y2;
+		y2 = y1;
+		y1 = h;
+	    }
+
+	    DoMethod(obj, MUIM_DrawBackground, x1, y1, x2 - x1 + 1, y2 - y1 + 1, x1, y1,0);
+	}
+	else
+	{
+	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+	    Move(_rp(obj), x1, y1);
+	    Draw(_rp(obj), x2, y2);
+	}
     }
-    else
-    {
-    	SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-    }
-    Move(_rp(obj), x + ri->w - 1 - data->slopew / 2 + 1, y + ri->h - 2 - data->slopew + 1);
-    Draw(_rp(obj), x + ri->w - 1, y + ri->h - 2);
-    
+
     if (data->active == item)
     {
-    	SetAPen(_rp(obj), _pens(obj)[MPEN_BACKGROUND]);
-    	RectFill(_rp(obj), x, y + ri->h - 1, x + ri->w - 1, y + ri->h - 1);
+	DoMethod(obj,MUIM_DrawBackground, x, y + ri->h - 1, ri->w, 1, x, y + ri->h - 1, 0);
     }
     else
     {
@@ -241,6 +293,7 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
     int i;
 
     obj = (Object *)DoSuperNew(cl, obj, MUIA_Group_PageMode, TRUE,
+					MUIA_Background, MUII_RegisterBack,
     	    	    	    	    	TAG_MORE, msg->ops_AttrList);
     if (!obj) return NULL;
 
@@ -463,7 +516,7 @@ static ULONG Register_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
 static ULONG Register_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
-    ULONG retval;
+    ULONG retval = 1;
     
     DoSuperMethodA(cl, obj, (Msg)msg);
     

@@ -432,7 +432,7 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 		    if (_flags(obj) & MADF_SETUP)
 		    {
-			data->mad_Background = zune_image_spec_to_structure(data->mad_BackgroundSpec,obj);
+			data->mad_Background = zune_image_spec_to_structure((IPTR)data->mad_BackgroundSpec,obj);
 			zune_imspec_setup(&data->mad_Background, muiRenderInfo(obj));
 		    }
 
@@ -802,48 +802,32 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     if (data->mad_Flags & MADF_FILLAREA)
     {
 	struct MUI_ImageSpec *background;
+	int left,top,width,height;
 
 	if (!(data->mad_Flags & MADF_SELECTED) || !(data->mad_Flags & MADF_SHOWSELSTATE)) background = data->mad_Background;
 	else background = data->mad_SelBack;
 
-	if (!background)
-	{
-	    /* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
-	    DoMethod(obj,MUIM_DrawBackground, _left(obj), _top(obj), _width(obj), _height(obj),
-			    _left(obj), _top(obj), 0);
-	}
 
-	/* RECHECK: sba: Orginally there was muiRenderInfo(obj)->mri_ClipRect.XXX used
-        ** but this didn't worked, if there are some background problems recheck this
-	*/
+	left = _left(obj);
+	top = _top(obj);
+	width = _width(obj);
+	height = _height(obj);
 
 	if (data->mad_TitleText)
 	{
-	    if (background)
-	    {
-		zune_draw_image(data->mad_RenderInfo, background,
-			    _left(obj), _top(obj), _width(obj), _height(obj),
-			    _left(obj), _top(obj), 0);
-	    }
-
-/*	    int y = MAX(muiRenderInfo(obj)->mri_ClipRect.MinY,
-			_top(obj) + zframe->ythickness
-			+ data->mad_TitleText->height / 2);
-
-
-	    zune_draw_image(data->mad_RenderInfo, background,
-			    _left(obj), y, _width(obj), _height(obj) -  y),
-			    _left(obj), _top(obj) + data->mad_TitleText->height / 2, 0);
-*/
+	    top += data->mad_TitleText->height / 2;
+	    height -= data->mad_TitleText->height / 2;
+	    /* TODO: Fill the Area not covered here */
 	}
-	else
+
+
+	if (!background)
 	{
-	    if (background)
-	    {
-		zune_draw_image(data->mad_RenderInfo, background,
-                           _left(obj),_top(obj),_width(obj),_height(obj),
-			    _left(obj), _top(obj), 0);
-	    }
+	    /* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
+	    DoMethod(obj,MUIM_DrawBackground, left, top, width, height, left,top,0);
+	} else
+	{
+	    zune_draw_image(data->mad_RenderInfo, background, left, top, width, height,left,top,0);
 	}
     }
 
@@ -1043,7 +1027,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     area_update_data(data);
 
-    if (data->mad_Flags & MADF_OWNBG) data->mad_Background = zune_image_spec_to_structure(data->mad_BackgroundSpec,obj);
+    if (data->mad_Flags & MADF_OWNBG) data->mad_Background = zune_image_spec_to_structure((IPTR)data->mad_BackgroundSpec,obj);
     zune_imspec_setup(&data->mad_Background, muiRenderInfo(obj));
 
     if ((data->mad_Flags & MADF_SHOWSELSTATE) && (data->mad_InputMode != MUIV_InputMode_None))
