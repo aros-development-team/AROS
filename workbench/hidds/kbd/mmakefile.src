@@ -1,0 +1,35 @@
+#$Id$
+include $(TOP)/config/make.cfg
+
+#OS_INCLUDES := -I$(GENINCDIR)
+
+MY_INCLS    := $(wildcard include/*.h)
+DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+
+
+# Allways generate module in Sys:Hidds/
+
+
+#MM
+includes-copy : $(DEST_INC) $(GEN_INC)
+	@$(NOP)
+
+$(INCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+$(GENINCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+#MM
+setup-includes :
+	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
+
+
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB) *.s
+
+
+%common
