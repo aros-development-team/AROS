@@ -18,7 +18,7 @@
 #include <aros/machine.h>
 #include "internalloadseg.h"
 #include "dos_intern.h"
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #include <string.h>
 #include <stddef.h>
@@ -383,6 +383,7 @@ static int load_hunk
 
 static int relocate
 (
+  D(struct elfheader  *eh,)
     struct sheader    *sh,
     ULONG              shrel_idx,
     struct DosLibrary *DOSBase
@@ -407,12 +408,18 @@ static int relocate
 
         switch (sym->shindex)
         {
+
             case SHN_UNDEF:
-                D(bug("[ELF Loader] There are undefined symbols\n"));
+                D(bug("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
+		      (STRPTR)sh[shsymtab->link].addr + sym->name,
+		      (STRPTR)sh[eh->shstrndx].addr + toreloc->name));
                 return 0;
 
             case SHN_COMMON:
-                D(bug("[ELF Loader] There are COMMON symbols. This should't happen\n"));
+                D(bug("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
+		      (STRPTR)sh[shsymtab->link].addr + sym->name,
+		      (STRPTR)sh[eh->shstrndx].addr + toreloc->name));
+		      
                 return 0;
 
             case SHN_ABS:
@@ -521,13 +528,13 @@ BPTR InternalLoadSeg_ELF
     for (i = 0; i < eh.shnum; i++)
     {
         /*
-           Load the symbol table(s).
+           Load the symbol and string(if debug is on) table(s).
 
            NOTICE: the ELF standard, at the moment (Nov 2002) explicitely states
                    that only one symbol table per file is allowed. However, it
                    also states that this may change in future... we already handle it.
         */
-        if (sh[i].type == SHT_SYMTAB)
+        if (sh[i].type == SHT_SYMTAB D(|| sh[i].type == SHT_STRTAB))
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr)
@@ -584,7 +591,7 @@ BPTR InternalLoadSeg_ELF
         )
         {
 	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
-            if (!sh[i].addr || !relocate(sh, i, DOSBase))
+            if (!sh[i].addr || !relocate(D(&eh,) sh, i, DOSBase))
                 goto error;
 
             MyFree(sh[i].addr, sh[i].size);
@@ -607,7 +614,7 @@ end:
     /* deallocate the symbol tables */
     for (i = 0; i < eh.shnum; i++)
     {
-        if ((sh[i].type == SHT_SYMTAB) && (sh[i].addr != NULL))
+        if (((sh[i].type == SHT_SYMTAB) D(|| sh[i].type == SHT_STRTAB)) && (sh[i].addr != NULL))
             MyFree(sh[i].addr, sh[i].size);
     }
 
