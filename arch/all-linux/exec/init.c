@@ -65,58 +65,58 @@ extern const struct Resident
     hiddserial_resident,
     hiddparallel_resident,
     boot_resident,
-    con_handler_resident,
-    nil_handler_resident,
-    ram_handler_resident;
+    Con_ROMTag,
+    Nil_ROMTag,
+    Ram_ROMTag;
 
 
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
-    &Expansion_ROMTag,		    /* SingleTask,  110  */
-    &Exec_resident,			    /* SingleTask,  105  */
-    &Utility_ROMTag,			    /* ColdStart,   103  */
-    &Aros_ROMTag,			    /* ColdStart,   102  */
-    &Mathieeesingbas_ROMTag,              /* ColdStart,   101  */
+    &Expansion_ROMTag,			/* SingleTask,  110  */
+    &Exec_resident,			/* SingleTask,  105  */
+    &Utility_ROMTag,			/* ColdStart,   103  */
+    &Aros_ROMTag,			/* ColdStart,   102  */
+    &Mathieeesingbas_ROMTag,            /* ColdStart,   101  */
 #if 0
-    &BOOPSI_resident,			    /* ColdStart,   95	 */
+    &BOOPSI_resident,			/* ColdStart,   95	 */
 #endif
-    &OOP_ROMTag,			    /* ColdStart,   94	 */
-    &HIDD_resident,			    /* ColdStart,   92	 */
-    &UnixIO_resident,			    /* ColdStart,   91	 */
-    &Graphics_ROMTag, 		    /* ColdStart,   65	 */
-    &Layers_ROMTag,			    /* ColdStart,   60   */
-    &Timer_ROMTag,			    /* ColdStart,   50	 */
-    &Battclock_resident,		    /* ColdStart,   45	 */
-    &Keyboard_ROMTag,			    /* ColdStart,   44	 */
-    &Gameport_ROMTag,			    /* ColdStart,   43	 */
-    &Keymap_ROMTag,			    /* ColdStart,   40	 */
-    &Input_ROMTag,			    /* ColdStart,   30	 */
-    &Intuition_ROMTag,		    /* ColdStart,   10	 */
-    &X11Hidd_resident,			    /* ColdStart,   9	 */
-    &LinuxHidd_resident,			    /* ColdStart,   9	 */
-    &Cybergraphics_ROMTag,		    /* ColdStart,   8	 */
-    &Console_ROMTag,			    /* ColdStart,   5	 */
+    &OOP_ROMTag,			/* ColdStart,   94	 */
+    &HIDD_resident,			/* ColdStart,   92	 */
+    &UnixIO_resident,			/* ColdStart,   91	 */
+    &Graphics_ROMTag, 			/* ColdStart,   65	 */
+    &Layers_ROMTag,			/* ColdStart,   60   */
+    &Timer_ROMTag,			/* ColdStart,   50	 */
+    &Battclock_resident,		/* ColdStart,   45	 */
+    &Keyboard_ROMTag,			/* ColdStart,   44	 */
+    &Gameport_ROMTag,			/* ColdStart,   43	 */
+    &Keymap_ROMTag,			/* ColdStart,   40	 */
+    &Input_ROMTag,			/* ColdStart,   30	 */
+    &Intuition_ROMTag,			/* ColdStart,   10	 */
+    &X11Hidd_resident,			/* ColdStart,   9	 */
+    &LinuxHidd_resident,		/* ColdStart,   9	 */
+    &Cybergraphics_ROMTag,		/* ColdStart,   8	 */
+    &Console_ROMTag,			/* ColdStart,   5	 */
 #if ENABLE_DBUS == 1
-    &Dbus_ROMTag,			    /* ColdStart,   0	 */
+    &Dbus_ROMTag,			/* ColdStart,   0	 */
 #endif
-    &emul_handler_resident,		    /* ColdStart,   0	 */
-    &hiddserial_resident,   	    	    /* ColdStart,   0    */
-    &hiddparallel_resident,   	    	    /* ColdStart,   0    */
-    &Workbench_ROMTag,		    /* ColdStart,  -120  */
-    &Mathffp_ROMTag,			    /* ColdStart,  -120  */
+    &emul_handler_resident,		/* ColdStart,   0	 */
+    &hiddserial_resident,   	    	/* ColdStart,   0    */
+    &hiddparallel_resident,   	    	/* ColdStart,   0    */
+    &Workbench_ROMTag,			/* ColdStart,  -120  */
+    &Mathffp_ROMTag,			/* ColdStart,  -120  */
 
     /*
 	NOTE: You must not put anything between these two; the code
         which initialized boot_resident will directly call
         Dos_resident and anything between the two will be skipped.
     */
-    &boot_resident,			    /* ColdStart,  -50	 */
-    &Dos_ROMTag,			    /* None,	   -120  */
-    &LDDemon_resident,			    /* AfterDOS,   -125  */
-    &con_handler_resident,		    /* AfterDOS,   -126  */
-    &nil_handler_resident,		    /* AfterDOS,   -127	 */
-    &ram_handler_resident,		    /* AfterDOS,   -128	 */
+    &boot_resident,			/* ColdStart,  -50	 */
+    &Dos_ROMTag,			/* None,	   -120  */
+    &LDDemon_resident,			/* AfterDOS,   -125  */
+    &Con_ROMTag,			/* AfterDOS,   -126  */
+    &Nil_ROMTag,			/* AfterDOS,   -127	 */
+    &Ram_ROMTag,			/* AfterDOS,   -128	 */
 //    &Partition_ROMTag,                     
 
     NULL

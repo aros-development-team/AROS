@@ -57,9 +57,9 @@ extern const struct Resident
     hiddserial_resident,
     hiddparallel_resident,
     boot_resident,
-    con_handler_resident,
-    nil_handler_resident,
-    ram_handler_resident;
+    Con_ROMTag,
+    Nil_ROMTag,
+    Ram_ROMTag;
 
 
 
@@ -103,9 +103,9 @@ static const struct Resident *romtagList[] =
     &boot_resident,			    /* ColdStart,  -50	 */
     &Dos_ROMTag,			    /* None,	   -120  */
     &LDDemon_resident,			    /* AfterDOS,   -125  */
-    &con_handler_resident,		    /* AfterDOS,   -126  */
-    &nil_handler_resident,		    /* AfterDOS,   -127	 */
-    &ram_handler_resident,		    /* AfterDOS,   -128	 */
+    &Con_ROMTag,			    /* AfterDOS,   -126  */
+    &Nil_ROMTag,			    /* AfterDOS,   -127	 */
+    &Ram_ROMTag,			    /* AfterDOS,   -128	 */
 
     NULL
 };
