@@ -77,6 +77,25 @@ struct __MUIBuiltinClass {
 #endif
 /* END PRIV */
 
+#if !defined(NO_INLINE_STDARG) && !defined(__SASC)
+
+#define MUIOBJMACRO_START(class)    \
+({                                  \
+     STRPTR __class = class;        \
+     IPTR __tags[] = {0
+
+#define MUIOBJMACRO_END                                       \
+     TAG_DONE};                                               \
+     MUI_NewObjectA(__class, (struct TagItem *)(__tags + 1)); \
+})
+
+#else
+
+#define MUIOBJMACRO_START(class) MUI_NewObject(class
+#define MUIOBJMACRO_END TAG_DONE)
+
+#endif
+
 #ifndef _MUI_CLASSES_NOTIFY_H
 #include "classes/notify.h"
 #endif
@@ -651,3 +670,4 @@ struct MUI_Command
 #endif
 
 #endif
+
