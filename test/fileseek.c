@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
+#include <stdlib.h>
 
 int main()
 {

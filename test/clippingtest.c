@@ -9,6 +9,7 @@
 #include <proto/layers.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define ARG_TEMPLATE "SIMPLE/S"
 

@@ -4,6 +4,8 @@
 #include <proto/layers.h>
 #include <proto/exec.h>
 
+#include <stdio.h>
+
 struct Library *LayersBase;
 struct Layer dummy_lay;
 
