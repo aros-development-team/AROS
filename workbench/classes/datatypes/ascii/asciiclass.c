@@ -40,7 +40,7 @@
 
 static IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
 {
-    return DoMethod(o, OM_NOTIFY, &tag1, ginfo, flags);
+    return DoMethod(o, OM_NOTIFY, (IPTR) &tag1, (IPTR) ginfo, flags);
 }
 
 /**************************************************************************************************/

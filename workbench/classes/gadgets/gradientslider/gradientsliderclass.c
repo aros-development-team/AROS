@@ -33,8 +33,6 @@
 
 #define GradientSliderBase ((struct GradientSliderBase_intern *)(cl->cl_UserData))
 
-#include <clib/boopsistubs.h>
-
 #else /* AMIGA */
 
 #include <intuition/icclass.h>
