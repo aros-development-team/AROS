@@ -18,6 +18,25 @@
 
 extern struct Library *MUIMasterBase;
 
+/*
+   sizeof(LONG)*8 gives the size in bits of the LONG type,
+   then 8+1 bits (a color component size in bits, plus one bit
+   to account for the sign of the delta) are subtracted from it,
+   the result is the number of bits which can be used for the fractional
+   part to do fixed point math with the maximum precision.
+
+   Using all the remaining bits for the fractional part, IN THIS SPECIAL CASE,
+   does not incurr in overflow problems for the integer part, for the way
+   we use fractional numbers in this algorithm. Basically, we first scale up
+   a number A, and then we divide A by the number B. Successively,
+   the only operations we do on the number A is adding it to the number C,
+   initially equal to 0, _at maximum_ B times, which means that overflow
+   never happens.
+
+*/
+
+#define SHIFT (sizeof(ULONG)*8 - 9)
+
 STATIC VOID TrueDitherV
 (
     struct RastPort *rp,
@@ -35,19 +54,21 @@ STATIC VOID TrueDitherV
 
     LONG y;
 
+    LONG step_r = (delta_r << SHIFT)/max_delta_y, cur_r = (y1 - oy1)*step_r;
+    LONG step_g = (delta_g << SHIFT)/max_delta_y, cur_g = (y1 - oy1)*step_g;
+    LONG step_b = (delta_b << SHIFT)/max_delta_y, cur_b = (y1 - oy1)*step_b;
+
     for(y = y1; y <= y2; y++)
     {
-        const LONG delta_y = y - oy1;
-
-        LONG red   = start_rgb[0];
-	LONG green = start_rgb[1];
-	LONG blue  = start_rgb[2];
-
-        red   += (delta_y * delta_r)/max_delta_y;
-        green += (delta_y * delta_g)/max_delta_y;
-        blue  += (delta_y * delta_b)/max_delta_y;
+        const LONG red   = start_rgb[0] + (cur_r >> SHIFT);
+	const LONG green = start_rgb[1] + (cur_g >> SHIFT);
+	const LONG blue  = start_rgb[2] + (cur_b >> SHIFT);
 
         FillPixelArray(rp, x1, y, width, 1, (red << 16) + (green << 8) + blue);
+
+        cur_r += step_r;
+        cur_g += step_g;
+        cur_b += step_b;
     }
 }
 
@@ -68,33 +89,21 @@ STATIC VOID TrueDitherH
 
     LONG x;
 
+    LONG step_r = (delta_r << SHIFT)/max_delta_x, cur_r = (x1 - ox1)*step_r;
+    LONG step_g = (delta_g << SHIFT)/max_delta_x, cur_g = (x1 - ox1)*step_g;
+    LONG step_b = (delta_b << SHIFT)/max_delta_x, cur_b = (x1 - ox1)*step_b;
+
     for(x = x1; x <= x2; x++)
     {
-        const LONG delta_x = x - ox1;
-
-        LONG red   = start_rgb[0];
-	LONG green = start_rgb[1];
-	LONG blue  = start_rgb[2];
-
-        red   += (delta_x * delta_r)/max_delta_x;
-        green += (delta_x * delta_g)/max_delta_x;
-        blue  += (delta_x * delta_b)/max_delta_x;
+        const LONG red   = start_rgb[0] + (cur_r >> SHIFT);
+	const LONG green = start_rgb[1] + (cur_g >> SHIFT);
+	const LONG blue  = start_rgb[2] + (cur_b >> SHIFT);
 
         FillPixelArray(rp, x, y1, 1, height, (red << 16) + (green << 8) + blue);
-#if 0
-        kprintf("r = %08lx\n"
-                "g = %08lx\n"
-                "b = %08lx\n"
-                "ox1 = %d\n"
-                "ox2 = %d\n"
-                "x1 = %d\n"
-                "x2 = %d\n"
-                "x   = %ld\n"
-                "max_delta_x = %ld\n"
-                "delta_x     = %ld\n\n", red, green, blue, ox1, ox2, x1, x2, x, max_delta_x, delta_x);
 
-        Delay(100);
-#endif
+        cur_r += step_r;
+        cur_g += step_g;
+        cur_b += step_b;
     }
 }
 
@@ -132,7 +141,6 @@ VOID zune_gradient_draw
                 spec->u.gradient.start_rgb, spec->u.gradient.end_rgb
             );
             break;
-
     } /* switch(orientation) */
 }
 
