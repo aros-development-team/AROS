@@ -1255,7 +1255,6 @@ nonvolatile00003;2;SDuvan;Write DeleteNV
 nonvolatile00004;2;SDuvan;Write GetNVInfo
 nonvolatile00005;2;SDuvan;Write GetNVList
 nonvolatile00006;2;SDuvan;Write SetNVProtection
-nvdisk00000;2;SDuvan;Write Nonvolatile disk based implementation
 potgo00000;0;digulla;Write AllocPotBits
 potgo00001;0;digulla;Write FreePotBits
 potgo00002;0;digulla;Write WritePotgo
@@ -1314,7 +1313,6 @@ rexxsyslib00006;0;digulla;Write FillRexxMsg
 rexxsyslib00007;0;digulla;Write IsRexxMsg
 rexxsyslib00008;0;digulla;Write LockRexxBase
 rexxsyslib00009;0;digulla;Write UnlockRexxBase
-system00000;0;sheutlin;Write System/Format
 timer00000;2;iaint;Write AddTime
 timer00001;2;iaint;Write SubTime
 timer00002;2;iaint;Write CmpTime
@@ -1375,3 +1373,5 @@ wb00012;0;chodorowski;Write MakeWorkbenchObjectVisibleA
 wb00013;0;chodorowski;Write WorkbenchControlA
 wb00014;2;chodorowski;Write RegisterWorkbench
 wb00015;2;chodorowski;Write UnregisterWorkbench
+other00000;2;SDuvan;Write Nonvolatile disk based implementation
+other00001;0;sheutlin;Write System/Format
