@@ -1,8 +1,6 @@
-;
 ; $Id$
 ;
-
-; $VER: AROS Startup-Sequence 0.0 (4.3.2001)
+; $VER: AROS Startup-Sequence 1.39
 
 ;SetPatch QUIET
 
@@ -25,14 +23,12 @@ Assign FONTS:   SYS:Fonts
 Assign HELP:    LOCALE:Help DEFER
 ;Assign PRINTERS: DEVS:Printers
 
-touch PIPEFS:systempipe
+Touch PIPEFS:systempipe
 Assign PIPE:    PIPEFS:systempipe
 
 Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
 
 ;Mount DEVS:DOSDrivers/~(#?.info)
-
-; Activate selected gfx.hidd(s)
 
 SetEnv Workbench $Workbench
 SetEnv Kickstart $Kickstart
@@ -42,7 +38,6 @@ IPrefs
 Run <NIL: >NIL: ConClip
 
 Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
-
 
 
 ; -- BEGIN "AROS under construction" section -------------------------
@@ -56,14 +51,6 @@ If NOT EXISTS SYS:Fonts/_fixfonts_called
   echo "blah" >SYS:Fonts/_fixfonts_called
 EndIf
 
-;SetDefaultFont ttcourier 14
-;SetDefaultFont arial 13 SCREEN
-
-; Setup prompt for the Boot Shell (it doesn't use Shell-Startup).
-
-;Prompt "%N.%S> "
-;Prompt "*E[42m*E[31m%N.*E[44m*E[32m%s*E[42m*E[31m>*E[40m*E[31m "
-
 ; To mount unit /dev/fd0 as drive FDSK: make a link from fdsk/Unit0
 ; to /dev/fd0 (you'll need access rights on the device later -
 ; on most systems this will work only if you are root) then uncomment
@@ -76,14 +63,11 @@ Assign FDSK: SYS:DiskImages
 ;Mount FDSK0:
 
 ; Install a Workbench screen background pattern.
-; The wait is there to make sure, that IPrefs has installed new fonts
-; before screen is opened
-Run <NIL: >NIL: screenpattern
+Run <NIL: >NIL: ScreenPattern
 
 PATH SYS:Demos ADD QUIET
 
 ; -- END "AROS under construction" section ---------------------------
-
 
 
 If EXISTS S:User-Startup
@@ -91,8 +75,6 @@ If EXISTS S:User-Startup
 EndIf
 
 ;LoadWB
-;NewShell CON:0/30/640/300/AROS-Shell/CLOSE
-;NewShell CON:160/300/640/300/AROS-Shell/CLOSE
 
 Execute S:Shell-Startup
 
