@@ -56,6 +56,10 @@ struct CoolImage
 
 /****************************************************************************************/
 
+#ifndef SHARED_COOLIMAGES_LIBRARY
+
+/****************************************************************************************/
+
 extern const struct CoolImage cool_saveimage;
 extern const struct CoolImage cool_loadimage;
 extern const struct CoolImage cool_useimage;
@@ -86,6 +90,10 @@ BOOL InitCoolImageClass(struct Library *CyberGfxBase);
 
 void CleanupCoolButtonClass(void);
 void CleanupCoolImageClass(void);
+
+/****************************************************************************************/
+
+#endif /* SHARED_COOLIMAGES_LIBRARY */
 
 /****************************************************************************************/
 
