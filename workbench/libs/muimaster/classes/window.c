@@ -1659,6 +1659,8 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     ReplyMsg((struct Message*)event);
     event = &imsg_copy;
 
+    //bug("rawkey: code=%lx, qual=%lx\n", event->Code, event->Qualifier);
+
     /* check if imsg translate to predefined keystroke */
     {
 	struct InputEvent ievent;
@@ -1697,6 +1699,46 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 	    muikey = MUIKEY_NONE;
 	}
     } /* check if imsg translate to predefined keystroke */
+
+    if ((muikey != MUIKEY_NONE)
+	&& !(data->wd_DisabledKeys & (1<<muikey)))
+    {
+	D(bug("HandleRawkey: try MUIKEY %ld on window %0x08lx\n", muikey, win));
+	switch (muikey)
+	{
+	    case MUIKEY_PRESS: break;
+	    case MUIKEY_TOGGLE: break;
+	    case MUIKEY_UP: break;
+	    case MUIKEY_DOWN: break;
+	    case MUIKEY_PAGEUP: break;
+	    case MUIKEY_PAGEDOWN: break;
+	    case MUIKEY_TOP: break;
+	    case MUIKEY_BOTTOM: break;
+	    case MUIKEY_LEFT: break;
+	    case MUIKEY_RIGHT: break;
+	    case MUIKEY_WORDLEFT: break;
+	    case MUIKEY_WORDRIGHT: break;
+	    case MUIKEY_LINESTART: break;
+	    case MUIKEY_LINEEND: break;
+	    case MUIKEY_GADGET_NEXT:
+		set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);
+		break;
+	    case MUIKEY_GADGET_PREV:
+		set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);
+		break;
+	    case MUIKEY_GADGET_OFF:
+		set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+		break;
+	    case MUIKEY_WINDOW_CLOSE:
+		set(win, MUIA_Window_CloseRequest, TRUE);
+		break;
+	    case MUIKEY_WINDOW_NEXT: break;
+	    case MUIKEY_WINDOW_PREV: break;
+	    case MUIKEY_HELP: break;
+	    case MUIKEY_POPUP: break;
+	    default: break;
+	}
+    }
 
     active_object = NULL;
     if ((data->wd_ActiveObject != NULL)
@@ -1820,7 +1862,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 		    return;
 	    }
 	}
-
+	
     } /* if ... default object */
 
     D(bug("HandleRawkey: try other handlers\n"));
@@ -1850,6 +1892,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     D(bug("HandleRawkey: try control chars handlers\n"));
 
     /* try Control Chars */
+    //bug("ctrlchar, key='%c' code=0x%08lx\n", key, event->Code);
     if (key)
     {
 	for (mn = data->wd_CCList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
@@ -1865,6 +1908,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 		if (disabled)
 		    continue;
 
+		    //bug("control char\n");
 		if (event->Code & IECODE_UP_PREFIX)
 		{
 		    /* simulate a release */
@@ -1889,47 +1933,6 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 	    }
 	}
     } /* try control chars */
-
-    if ((muikey != MUIKEY_NONE)
-	&& !(data->wd_DisabledKeys & (1<<muikey)))
-    {
-	D(bug("HandleRawkey: try MUIKEY on window\n"));
-	/* nobody has eaten the message so we can try ourself */
-	switch (muikey)
-	{
-	    case MUIKEY_PRESS: break;
-	    case MUIKEY_TOGGLE: break;
-	    case MUIKEY_UP: break;
-	    case MUIKEY_DOWN: break;
-	    case MUIKEY_PAGEUP: break;
-	    case MUIKEY_PAGEDOWN: break;
-	    case MUIKEY_TOP: break;
-	    case MUIKEY_BOTTOM: break;
-	    case MUIKEY_LEFT: break;
-	    case MUIKEY_RIGHT: break;
-	    case MUIKEY_WORDLEFT: break;
-	    case MUIKEY_WORDRIGHT: break;
-	    case MUIKEY_LINESTART: break;
-	    case MUIKEY_LINEEND: break;
-	    case MUIKEY_GADGET_NEXT:
-		set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);
-		break;
-	    case MUIKEY_GADGET_PREV:
-		set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);
-		break;
-	    case MUIKEY_GADGET_OFF:
-		set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
-		break;
-	    case MUIKEY_WINDOW_CLOSE:
-		set(win, MUIA_Window_CloseRequest, TRUE);
-		break;
-	    case MUIKEY_WINDOW_NEXT: break;
-	    case MUIKEY_WINDOW_PREV: break;
-	    case MUIKEY_HELP: break;
-	    case MUIKEY_POPUP: break;
-	    default: break;
-	}
-    }
 }
 
 /* forward non-keystroke events to event handlers */
