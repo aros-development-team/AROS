@@ -125,11 +125,12 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	depth_tags[0].ti_Data = depth;
 	SetAttrs(o, depth_tags);
 #endif
+	width=(width+15) & ~15;
+
 	data->width = width;
 	data->height = height;
 	data->bpp = depth;
 	data->disp = 0;
-	width=(width+15) & ~15;
 	data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
 	if (data->VideoData)
 	{

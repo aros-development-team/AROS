@@ -114,12 +114,13 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	  	 Currently we only support the default depth
 		*/
 
+		width=(width+15) & ~15;
+
 		data->width = width;
 		data->height = height;
 		data->bpp = depth;
 		data->Regs = AllocVec(sizeof(struct DisplayHWRec),MEMF_PUBLIC|MEMF_CLEAR);
 		data->disp = -1;
-		width=(width+15) & ~15;
 
 		/*
 			Here there is brand new method of getting pixelclock data.
