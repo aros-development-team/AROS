@@ -49,7 +49,7 @@ struct Layer
     struct ClipRect * SuperSaveClipRects;
     struct ClipRect * _cliprects;
 
-    struct LayerInfo       * LayerInfo;
+    struct Layer_Info      * LayerInfo;
     struct SignalSemaphore   Lock;
     struct Hook            * BackFill;
 
