@@ -291,7 +291,7 @@ STATIC ULONG list_insert(Class *cl, Object *o, struct AROSP_List_Insert *msg)
 	
     } /* if (pos < 0) */
     
-    else if (pos > data->ld_NumEntries);
+    else if (pos > data->ld_NumEntries)
     {
    	pos = data->ld_NumEntries;
     }
