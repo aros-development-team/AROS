@@ -192,6 +192,7 @@ SHARED	:= \
 	random \
 	read \
 	readdir \
+	readlink \
 	realloc \
         realloc_nocopy \
 	remove \
