@@ -11,6 +11,7 @@
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <dos/dostags.h>
+#include <dos/stdio.h>
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 #include <proto/utility.h>
@@ -268,6 +269,8 @@ void internal_ChildFree(APTR tid);
 	    defaults[6].ti_Data = 0;
 	}
     }
+
+    if (defaults[6].ti_Data) SetVBuf(defaults[6].ti_Data, NULL, BUF_NONE, -1);
 
     /* NP_CurrentDir */
 
