@@ -192,6 +192,8 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /* Now call the super methods new method with additional tags */
     obj = DoSuperNew(cl,obj,
 	MUIA_Window_Title,title,
+	MUIA_Window_Width,300,
+	MUIA_Window_Height,300,
 	WindowContents, VGroup,
 		MUIA_Group_Child, iconlist,
 		End,
