@@ -100,8 +100,8 @@ DOS:
     Fabio Alemagna
     The MorphOS team
 
-libc and Posix layer:
+libc and POSIX layer:
     Aaron Digulla
     Fabio Alemagna
     Iain Templeton
-
+    Henning Kiel
