@@ -151,6 +151,8 @@ struct MUI_InputHandlerNode
 
 extern const struct __MUIBuiltinClass _MUI_Application_desc; /* PRIV */
 
+
+
 struct MUI_GlobalInfo
 {
     ULONG priv0;
@@ -158,6 +160,11 @@ struct MUI_GlobalInfo
 
     /* The following data is private only, might be extented! */
     struct MsgPort *mgi_UserPort; /* application-wide IDCMP port */ /* PRIV */
+    Object *mgi_Configdata; /* The config data */
+    struct ZunePrefsNew *mgi_Prefs; /* For faster access */
+
+/* should be (-MUIV_Font_NegCount) */
+    struct TextFont *mgi_Fonts[9]; /* Opened text fonts, done by zune_get_font() */
 };
 
 

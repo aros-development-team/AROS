@@ -255,9 +255,17 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->app_GlobalInfo.mgi_ApplicationObject = obj;
     if (!(data->app_GlobalInfo.mgi_UserPort = CreateMsgPort()))
     {
-    	CoerceMethod(cl,obj,OM_DISPOSE);
+	CoerceMethod(cl,obj,OM_DISPOSE);
 	return 0;
     }
+
+    data->app_GlobalInfo.mgi_Configdata = MUI_NewObject(MUIC_Configdata, MUIA_Configdata_Application, obj, TAG_DONE);
+    if (!data->app_GlobalInfo.mgi_Configdata)
+    {
+	CoerceMethod(cl,obj,OM_DISPOSE);
+	return 0;
+    }
+    get(data->app_GlobalInfo.mgi_Configdata,MUIA_Configdata_ZunePrefs,&data->app_GlobalInfo.mgi_Prefs);
 
 //    D(bug("muimaster.library/application.c: Message Port created at 0x%lx\n",data->app_GlobalInfo.mgi_UserPort));
 
@@ -393,6 +401,9 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
     }
     if (data->app_TimerPort)
 	DeleteMsgPort(data->app_TimerPort);
+
+    if (data->app_GlobalInfo.mgi_Configdata)
+        MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
 
     if (data->app_GlobalInfo.mgi_UserPort)
     	DeleteMsgPort(data->app_GlobalInfo.mgi_UserPort);

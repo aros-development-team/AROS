@@ -16,6 +16,8 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/diskfont.h>
+#include <proto/dos.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -50,12 +52,52 @@ extern struct Library *MUIMasterBase;
 #define g_free(x) free(x)
 #endif
 
-struct TextFont *zune_font_get (LONG preset)
+/* Returns a given text font, if neccessary it opens the font, should be after MUIM_Setup */
+static struct TextFont *zune_font_get(Object *obj, LONG preset)
 {
+    struct MUI_GlobalInfo *gi = muiGlobalInfo(obj);
+
     if ((preset <= MUIV_Font_Inherit) && (preset >= MUIV_Font_NegCount))
     {
+    	char *name;
 	if (preset > 0) return NULL;
-	return __zprefs.fonts[-preset];
+        name = gi->mgi_Prefs->fonts[-preset];
+
+	if (gi->mgi_Fonts[-preset]) return gi->mgi_Fonts[-preset];
+
+	if (name)
+	{
+	    struct TextAttr ta;
+	    if ((ta.ta_Name = (char*)AllocVec(strlen(name)+10,0)))
+	    {
+	    	char *p;
+	    	LONG size;
+
+	    	strcpy(ta.ta_Name,name);
+	    	StrToLong(FilePart(ta.ta_Name),&size);
+	    	ta.ta_YSize = size;
+		ta.ta_Style = 0;
+		ta.ta_Flags = 0;
+
+		if ((p = PathPart(ta.ta_Name)))
+		    strcpy(p,".font");
+
+		gi->mgi_Fonts[-preset] = OpenDiskFont(&ta);
+
+		FreeVec(ta.ta_Name);
+	    }
+	    
+	}
+
+	if (!gi->mgi_Fonts[-preset])
+	{
+	    struct TextAttr scr_attr;
+	    scr_attr = *(_screen(obj)->Font);
+	    scr_attr.ta_Flags = 0;
+	    gi->mgi_Fonts[-preset] = OpenDiskFont(&scr_attr);
+	    
+	}
+	return gi->mgi_Fonts[-preset];
     }
     return (struct TextFont *)preset;
 }
@@ -643,7 +685,7 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	/* Save the orginal font */
 	struct TextFont *obj_font = _font(obj);
 
-	_font(obj) = zune_font_get(MUIV_Font_Title);
+	_font(obj) = zune_font_get(obj,MUIV_Font_Title);
 	zune_text_get_bounds(data->mad_TitleText, obj);
 
         /* restore the font */
@@ -876,7 +918,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 
 	    /* Title text drawing */
-	    _font(obj) = zune_font_get(MUIV_Font_Title);
+	    _font(obj) = zune_font_get(obj,MUIV_Font_Title);
 
             /* TODO: sba if a TextFit() for zune text is available one could disable the clipping */
 	    textdrawclip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj) + 2, _top(obj),
@@ -1032,9 +1074,9 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (data->mad_FontPreset == MUIV_Font_Inherit)
     {
 	if (_parent(obj) != NULL && _parent(obj) != _win(obj)) data->mad_Font = _font(_parent(obj));
-	else data->mad_Font = zune_font_get(MUIV_Font_Normal);
+	else data->mad_Font = zune_font_get(obj,MUIV_Font_Normal);
     }
-    else data->mad_Font = zune_font_get(data->mad_FontPreset);
+    else data->mad_Font = zune_font_get(obj,data->mad_FontPreset);
 
     if (data->mad_FrameTitle)
     {

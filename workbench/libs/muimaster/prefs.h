@@ -163,6 +163,11 @@ int __zune_prefs_write(struct ZunePrefs *prefs, STRPTR path);
 //BOOL __zune_prefs_spy (struct MUI_ApplicationData *data);
 #endif
 
+struct ZunePrefsNew
+{
+    char *fonts[-MUIV_Font_NegCount];
+};
+
 #endif
 
 
