@@ -63,6 +63,7 @@ struct LayerContext
     struct Region *clipregion;
     WORD scroll_x;
     WORD scroll_y;
+    WORD nestcount;
 };
 
 struct IntIntuitionBase
