@@ -5,46 +5,46 @@ BEGIN {
     lastwaslf=0;
     mode="text";
 
-    special_items["LONG"] = "<A HREF=\"srcs/include/exec/types.h\">LONG</A>";
-    special_items["ULONG"] = "<A HREF=\"srcs/include/exec/types.h\">ULONG</A>";
-    special_items["IPTR"] = "<A HREF=\"srcs/include/exec/types.h\">IPTR</A>";
-    special_items["WORD"] = "<A HREF=\"srcs/include/exec/types.h\">WORD</A>";
-    special_items["UWORD"] = "<A HREF=\"srcs/include/exec/types.h\">UWORD</A>";
-    special_items["BYTE"] = "<A HREF=\"srcs/include/exec/types.h\">BYTE</A>";
-    special_items["UBYTE"] = "<A HREF=\"srcs/include/exec/types.h\">UBYTE</A>";
-    special_items["QUAD"] = "<A HREF=\"srcs/include/exec/types.h\">QUAD</A>";
-    special_items["UQUAD"] = "<A HREF=\"srcs/include/exec/types.h\">UQUAD</A>";
-    special_items["APTR"] = "<A HREF=\"srcs/include/exec/types.h\">APTR</A>";
-    special_items["STACKLONG"] = "<A HREF=\"srcs/include/exec/types.h\">STACKLONG</A>";
-    special_items["STACKULONG"] = "<A HREF=\"srcs/include/exec/types.h\">STACKULONG</A>";
-    special_items["STACKIPTR"] = "<A HREF=\"srcs/include/exec/types.h\">STACKIPTR</A>";
-    special_items["STACKWORD"] = "<A HREF=\"srcs/include/exec/types.h\">STACKWORD</A>";
-    special_items["STACKUWORD"] = "<A HREF=\"srcs/include/exec/types.h\">STACKUWORD</A>";
-    special_items["STACKBYTE"] = "<A HREF=\"srcs/include/exec/types.h\">STACKBYTE</A>";
-    special_items["STACKUBYTE"] = "<A HREF=\"srcs/include/exec/types.h\">STACKUBYTE</A>";
-    special_items["STACKQUAD"] = "<A HREF=\"srcs/include/exec/types.h\">STACKQUAD</A>";
-    special_items["STACKUQUAD"] = "<A HREF=\"srcs/include/exec/types.h\">STACKUQUAD</A>";
-    special_items["STACKFLOAT"] = "<A HREF=\"srcs/include/exec/types.h\">STACKFLOAT</A>";
+    special_items["LONG"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">LONG</A>";
+    special_items["ULONG"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">ULONG</A>";
+    special_items["IPTR"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">IPTR</A>";
+    special_items["WORD"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">WORD</A>";
+    special_items["UWORD"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">UWORD</A>";
+    special_items["BYTE"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">BYTE</A>";
+    special_items["UBYTE"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">UBYTE</A>";
+    special_items["QUAD"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">QUAD</A>";
+    special_items["UQUAD"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">UQUAD</A>";
+    special_items["APTR"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">APTR</A>";
+    special_items["STACKLONG"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">STACKLONG</A>";
+    special_items["STACKULONG"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">STACKULONG</A>";
+    special_items["STACKIPTR"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">STACKIPTR</A>";
+    special_items["STACKWORD"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">STACKWORD</A>";
+    special_items["STACKUWORD"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">STACKUWORD</A>";
+    special_items["STACKBYTE"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">STACKBYTE</A>";
+    special_items["STACKUBYTE"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">STACKUBYTE</A>";
+    special_items["STACKQUAD"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">STACKQUAD</A>";
+    special_items["STACKUQUAD"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">STACKUQUAD</A>";
+    special_items["STACKFLOAT"] = "<A HREF=\"srcs/compiler/include/exec/types.h\">STACKFLOAT</A>";
 
-    special_items["TagItem"] = "<A HREF=\"srcs/include/utility/tagitem.h\">TagItem</A>";
-    special_items["ti_Tag"] = "<A HREF=\"srcs/include/utility/tagitem.h\">ti_Tag</A>";
-    special_items["ti_Data"] = "<A HREF=\"srcs/include/utility/tagitem.h\">ti_Data</A>";
-    special_items["USER_TAG"] = "<A HREF=\"srcs/include/utility/tagitem.h\">USER_TAG</A>";
+    special_items["TagItem"] = "<A HREF=\"srcs/compiler/include/utility/tagitem.h\">TagItem</A>";
+    special_items["ti_Tag"] = "<A HREF=\"srcs/compiler/include/utility/tagitem.h\">ti_Tag</A>";
+    special_items["ti_Data"] = "<A HREF=\"srcs/compiler/include/utility/tagitem.h\">ti_Data</A>";
+    special_items["USER_TAG"] = "<A HREF=\"srcs/compiler/include/utility/tagitem.h\">USER_TAG</A>";
 
-    special_items["CreateRastPort()"] = "<A HREF=\"srcs/graphics/createrastport.c\">CreateRastPort()</A>";
-    special_items["FreeRastPort()"] = "<A HREF=\"srcs/graphics/freerastport.c\">FreeRastPort()</A>";
-    special_items["InitRastPort()"] = "<A HREF=\"srcs/graphics/initrastport.c\">InitRastPort()</A>";
-    special_items["DeinitRastPort()"] = "<A HREF=\"srcs/graphics/deinitrastport.c\">DeinitRastPort()</A>";
-    special_items["CloneRastPort()"] = "<A HREF=\"srcs/graphics/clonerastport.c\">CloneRastPort()</A>";
+    special_items["CreateRastPort()"] = "<A HREF=\"srcs/rom/graphics/createrastport.c\">CreateRastPort()</A>";
+    special_items["FreeRastPort()"] = "<A HREF=\"srcs/rom/graphics/freerastport.c\">FreeRastPort()</A>";
+    special_items["InitRastPort()"] = "<A HREF=\"srcs/rom/graphics/initrastport.c\">InitRastPort()</A>";
+    special_items["DeinitRastPort()"] = "<A HREF=\"srcs/rom/graphics/deinitrastport.c\">DeinitRastPort()</A>";
+    special_items["CloneRastPort()"] = "<A HREF=\"srcs/rom/graphics/clonerastport.c\">CloneRastPort()</A>";
 
-    special_items["DoMethod()"] = "<A HREF=\"srcs/alib/boopsi.c\">DoMethod()</A>";
-    special_items["DoMethodA()"] = "<A HREF=\"srcs/alib/boopsi.c\">DoMethodA()</A>";
+    special_items["DoMethod()"] = "<A HREF=\"srcs/compiler/alib/boopsi.c\">DoMethod()</A>";
+    special_items["DoMethodA()"] = "<A HREF=\"srcs/compiler/alib/boopsi.c\">DoMethodA()</A>";
 
-    special_items["ReadArgs()"] = "<A HREF=\"srcs/dos/readargs.c\">ReadArgs()</A>";
-    special_items["VPrintf()"] = "<A HREF=\"srcs/dos/vprintf.c\">VPrintf()</A>";
-    special_items["VFPrintf()"] = "<A HREF=\"srcs/dos/vfprintf.c\">VFPrintf()</A>";
+    special_items["ReadArgs()"] = "<A HREF=\"srcs/rom/dos/readargs.c\">ReadArgs()</A>";
+    special_items["VPrintf()"] = "<A HREF=\"srcs/rom/dos/vprintf.c\">VPrintf()</A>";
+    special_items["VFPrintf()"] = "<A HREF=\"srcs/rom/dos/vfprintf.c\">VFPrintf()</A>";
 
-    special_items["SMult64()"] = "<A HREF=\"srcs/utility/smult64.c\">SMult64()</A>";
+    special_items["SMult64()"] = "<A HREF=\"srcs/rom/utility/smult64.c\">SMult64()</A>";
 
     cmd="date \"+%d %b %Y\""
     cmd | getline today;
