@@ -93,7 +93,19 @@ Var;
 typedef struct
 {
     Node node;
-    int  updated;
+
+    /* The current target doesn't appear in the Makefile itself; it's
+       just a metatarget. Don't try to run make with it. */
+    int  virtualtarget : 1;
+}
+Makefile;
+
+#define FLAG_VIRTUAL	0x0001
+
+typedef struct
+{
+    Node node;
+    int  updated : 1;
 
     List makefiles;
     List deps;
@@ -204,6 +216,7 @@ int debug = 0;
 #define xstrdup(str)        _xstrdup(str,__FILE__,__LINE__)
 #define xmalloc(size)       _xmalloc(size,__FILE__,__LINE__)
 #define xfree(ptr)          _xfree(ptr,__FILE__,__LINE__)
+#define new(x)              ((x *) xmalloc (sizeof (x)))
 
 /* Prototypes */
 extern int execute PARAMS ((Project * prj, const char * cmd, const char * in,
@@ -255,7 +268,7 @@ _xfree (void * ptr, const char * file, int line)
 	fprintf (stderr, "Illegal free(NULL) in %s:%d", file, line);
 }
 
-Node *
+void *
 FindNode (const List * l, const char * name)
 {
     Node * n;
@@ -325,7 +338,7 @@ newnode (const char * name, const char * value)
 
     assert (name);
 
-    n = (Var *) xmalloc (sizeof (Var));
+    n = new (Var);
     n->value = NULL;
 
     n->node.name = xstrdup (name);
@@ -342,7 +355,7 @@ newdepnode (const char * path)
 
     assert (path);
 
-    n = (Dep *) xmalloc (sizeof (Dep));
+    n = new (Dep);
 
     n->node.name = xstrdup (path);
     lstat (path, &st);
@@ -356,7 +369,7 @@ addnodeonce (List * l, const char * name, const char * value)
 {
     Var * n;
 
-    n = (Var *)FindNode (l, name);
+    n = FindNode (l, name);
 
     if (n)
     {
@@ -376,7 +389,7 @@ char *
 getvar (Project * prj, const char * varname)
 {
     static char buffer[256];
-    Var * var = (Var *)FindNode (&prj->vars, varname);
+    Var * var = FindNode (&prj->vars, varname);
 
     if (var)
 	return var->value;
@@ -490,7 +503,7 @@ getargs (Project * prj, const char * line, int * argc, int subst)
 Project *
 initproject (char * name)
 {
-    Project * prj = (Project *) xmalloc (sizeof (Project));
+    Project * prj = new (Project);
 
     memset (prj, 0, sizeof(Project));
 
@@ -837,7 +850,7 @@ readcachedir (FILE * fh)
     if (len < 0)
 	return NULL;
 
-    node = (DirNode *)xmalloc (sizeof (DirNode));
+    node = new (DirNode);
     NewList(&node->subdirs);
     node->node.name = xmalloc (len+1);
     node->parent = NULL;
@@ -911,7 +924,7 @@ readcache (Project * prj)
 
     if (!fh)
     {
-	prj->topdir = (DirNode *) xmalloc (sizeof (DirNode));
+	prj->topdir = new (DirNode);
 	NewList(&prj->topdir->subdirs);
 	prj->topdir->node.name = xstrdup ("");
 	prj->topdir->parent = NULL;
@@ -955,7 +968,7 @@ finddirnode (Project * prj, const char * path)
 	while (*ptr == '/')
 	    ptr ++;
 
-	subdir = (DirNode *)FindNode (&node->subdirs, dirname);
+	subdir = FindNode (&node->subdirs, dirname);
 
 	if (!subdir)
 	    break;
@@ -1001,11 +1014,11 @@ adddirnode (Project * prj, const char * path)
 	while (*ptr == '/')
 	    ptr ++;
 
-	subdir = (DirNode *)FindNode (&node->subdirs, dirname);
+	subdir = FindNode (&node->subdirs, dirname);
 
 	if (!subdir)
 	{
-	    subdir = (DirNode *) xmalloc (sizeof (DirNode));
+	    subdir = new (DirNode);
 	    NewList (&subdir->subdirs);
 	    subdir->node.name = xstrdup (dirname);
 	    subdir->parent = node;
@@ -1353,19 +1366,20 @@ progress (int max, int curr, int * data)
     }
 }
 
-void
-appendtarget (Project * prj, const char * tname, const char * mf, char ** deps)
+Target *
+appendtarget (Project * prj, const char * tname, const char * mf, char ** deps, int flags)
 {
-    Target * target;
+    Target   * target;
+    Makefile * makefile;
 
     assert (tname);
     assert (mf);
 
-    target = (Target *)FindNode (&prj->targets, tname);
+    target = FindNode (&prj->targets, tname);
 
     if (!target)
     {
-	target = (Target *) xmalloc (sizeof(Target));
+	target = new (Target);
 	target->node.name = strdup (tname);
 	AddTail(&prj->targets, target);
 	NewList(&target->makefiles);
@@ -1373,7 +1387,18 @@ appendtarget (Project * prj, const char * tname, const char * mf, char ** deps)
 	target->updated = 0;
     }
 
-    addnodeonce(&target->makefiles, mf, NULL);
+    if (!(makefile = FindNode (&target->makefiles, mf)) )
+    {
+	makefile = new (Makefile);
+	makefile->node.name = xstrdup (mf);
+	makefile->virtualtarget = ((flags & FLAG_VIRTUAL) != 0);
+
+	AddTail (&target->makefiles, makefile);
+    }
+    else
+    {
+	makefile->virtualtarget = ((flags & FLAG_VIRTUAL) != 0);
+    }
 
 #if 0
 printf ("add %s.%s mf=%s\n", prj->node.name, target->node.name, mf);
@@ -1390,6 +1415,8 @@ printf ("   add dep %s\n", *deps);
 	    deps ++;
 	}
     }
+
+    return target;
 }
 
 void
@@ -1403,11 +1430,11 @@ setvar (Project * prj, const char * name, const char * val)
     printf ("assign %s=%s\n", name, val);
 #endif
 
-    var = (Var *)FindNode (&prj->vars, name);
+    var = FindNode (&prj->vars, name);
 
     if (!var)
     {
-	var = (Var *) xmalloc (sizeof (Var));
+	var = new (Var);
 	var->node.name = xstrdup (name);
 	var->value = NULL;
 	AddTail(&prj->vars, var);
@@ -1443,6 +1470,9 @@ buildtargetlist (Project * prj)
 
     ForeachNode(&prj->makefiles,mfnode)
     {
+	int contline = 0;
+	int flags = 0;
+
 	pos++;
 	progress (max,pos,&data);
 
@@ -1463,6 +1493,8 @@ printf ("Opening %s\n", mfnode->name);
 
 	while (fgets (line, sizeof(line), fh))
 	{
+	    char * targets[64], ** tptr;
+
 	    lineno ++;
 
 	    if (!strncmp (line, "#MM", 3))
@@ -1470,12 +1502,36 @@ printf ("Opening %s\n", mfnode->name);
 		char * ptr;
 		char * depptr, ** deps;
 		int count, depc, t;
+		int cl;
 
 #if 0
 printf ("found #MM in %s\n", mfnode->name);
 #endif
 
-		ptr = substvars (prj, line+3);
+		ptr = line+3;
+
+		if (!contline)
+		{
+		    if (*ptr == '-')
+		    {
+			flags |= FLAG_VIRTUAL;
+			ptr ++;
+		    }
+		    else
+			flags &= ~FLAG_VIRTUAL;
+		}
+
+		depptr = ptr + strlen (ptr) - 2;
+
+		cl = (*depptr == '\\');
+
+		if (cl)
+		    *depptr = 0;
+
+		ptr = substvars (prj, ptr);
+
+		/* Must be *after* substvars() or empty target lines
+		   will cause problems. */
 		while (isspace (*ptr))
 		    ptr ++;
 
@@ -1493,43 +1549,53 @@ printf ("found #MM in %s\n", mfnode->name);
 		    targets = getargs (prj, line, &count, 1);
 
 		    if (count != 0)
-			appendtarget (prj, targets[0], mfnode->name, NULL);
+			appendtarget (prj, targets[0], mfnode->name, NULL, flags);
 		    else
 			printf ("Warning: Can't find metatarget in %s:%d\n", mfnode->name, lineno);
 		}
 		else
 		{
-		    char * targets[64], ** tptr;
 		    char * lptr = ptr;
 
-		    while (*ptr != ':' && *ptr)
-			ptr ++;
-		    if (*ptr)
-			*ptr ++ = 0;
-		    depptr = ptr;
+		    if (!contline)
+		    {
+			while (*ptr != ':' && *ptr)
+			    ptr ++;
+			if (*ptr)
+			    *ptr ++ = 0;
+			depptr = ptr;
 
-		    tptr = getargs (prj, lptr, &count, 1);
-		    for (t=0; t<count; t++)
-			targets[t] = xstrdup (tptr[t]);
+			tptr = getargs (prj, lptr, &count, 1);
+			for (t=0; t<count; t++)
+			    targets[t] = xstrdup (tptr[t]);
+		    }
+		    else
+			depptr = ptr;
+
 		    deps = getargs (prj, depptr, &depc, 1);
 
 		    for (t=0; t<count; t++)
 		    {
-			appendtarget (prj, targets[t], mfnode->name, deps);
+			appendtarget (prj, targets[t], mfnode->name, deps, flags);
 		    }
 
-		    for (t=0; t<count; t++)
-			xfree (targets[t]);
+		    contline = cl;
+
+		    if (!contline)
+		    {
+			for (t=0; t<count; t++)
+			    xfree (targets[t]);
+		    }
 		}
-	    }
-	}
+	    } /* If this is a MetaMake line in the makefile */
+	} /* For all lines in a makefile */
 
 #if 0
 printf ("Read %d lines\n", lineno);
 #endif
 
 	fclose (fh);
-    }
+    } /* For all makefiles in the project */
 
     putchar ('\n');
 
@@ -1832,6 +1898,7 @@ maketarget (char * metatarget)
     Project * prj;
     Target * target, * subtarget;
     Node * node;
+    Makefile * makefile;
 
     pname = ptr = metatarget;
     while (*ptr && *ptr != '.')
@@ -1849,7 +1916,7 @@ maketarget (char * metatarget)
 	pname = prj->node.name;
     }
 
-    prj = (Project *)FindNode (&projects, pname);
+    prj = FindNode (&projects, pname);
 
     if (!prj)
     {
@@ -1868,7 +1935,7 @@ maketarget (char * metatarget)
     buildmflist (prj);
     buildtargetlist (prj);
 
-    target = (Target *)FindNode (&prj->targets, tname);
+    target = FindNode (&prj->targets, tname);
 
     if (!target)
     {
@@ -1880,7 +1947,7 @@ maketarget (char * metatarget)
 
     ForeachNode (&target->deps, node)
     {
-	subtarget = (Target *)FindNode (&prj->targets, node->name);
+	subtarget = FindNode (&prj->targets, node->name);
 
 	if (!subtarget)
 	{
@@ -1896,9 +1963,12 @@ maketarget (char * metatarget)
 	}
     }
 
-    ForeachNode (&target->makefiles, node)
+    ForeachNode (&target->makefiles, makefile)
     {
-	callmake (prj, tname, node->name);
+	if (!makefile->virtualtarget)
+	{
+	    callmake (prj, tname, makefile->node.name);
+	}
     }
 }
 
@@ -1932,6 +2002,11 @@ main (int argc, char ** argv)
 	    else if (!strcmp (argv[t], "--debug"))
 	    {
 		debug = 1;
+	    }
+	    else if (!strcmp (argv[t], "--help"))
+	    {
+		printf ("%s [--version] [-v,--verbose] [--debug] [--help]\n");
+		return 0;
 	    }
 	    else
 	    {

@@ -1,0 +1,27 @@
+# This is an example MetaMake file
+
+# This are lines which MetaMake will examine. The rest of the file is
+# ignored. The '-' means that Demo is a virtual target (ie. one which
+# doesn't exist in the makefile and for which MetaMake mustn't call
+# the maketool). The '\' at the end of the line means that this rule
+# is continued on the next line which must start with #MM.
+#MM- Demo : all \
+#MM	    print
+
+# This is a short-cut: MetaMake will read the next line and use the
+# target there as the name of a MetaTarget. Note that all depends on
+# real-target which MetaMake will ignore; even if real-target exists
+# as a MetaTarget, it won't be considered when MetaMake wants to build
+# "all" in this directory.
+#MM
+all : real-target
+
+# MetaMake will print a warning for the non-existing-target.
+#MM print : non-existing-target
+print :
+	echo Done.
+
+# This is a real target which MetaMake ignores.
+real-target :
+	echo Real target.
+
