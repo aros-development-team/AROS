@@ -661,7 +661,7 @@
     SetWriteMask (rp, rp->Mask);
     D(bug("set pens\n"));
 
-    SetWindowTitles (w, nw.Title, (STRPTR)-1);
+    SetWindowTitles (w, nw.Title, (CONST_STRPTR)-1);
     D(bug("set title\n"));
 
     lock = LockIBase (0);
@@ -739,7 +739,7 @@
     }
     
     if (screenTitle != NULL)
-	SetWindowTitles (w, (UBYTE *)~0L, screenTitle);
+	SetWindowTitles (w, (CONST_STRPTR)~0L, screenTitle);
 
     UpdateMouseCoords(w);
     
