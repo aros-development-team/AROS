@@ -8,26 +8,37 @@ General design goals:
 
 The system should..
 
-1) have fast method invocation. Especially when calling the same method
+- have fast method invocation. Especially when calling the same method
 on the same objetc many times. (Eg. GetPixel()/SetPixel())
 
 
-2) allow non-centralized allocation of IDs. This means that there is no
+- allow non-centralized allocation of IDs. This means that there is no
 agency somewhere in the world where you have to allocate an ID. IDs
 are allocated at runtime.
 
 
-3) be location transparent. Ie. you invoke a
+- be location transparent. Ie. you invoke a
 method the same way as for a local objet, even if
 the object is owned by another task, or is
 located on a different machine.
 
-4) support transparent object migration.
+
+- support transparent object migration. This means that the object, the
+system or the user can decide that the object should be moved or copied
+to another host. Uses: If an object is accessed more often from a remote
+host than locally, it can create a copy of itself. If the object is deleted
+locally, it can move itself to the remote host.
+
+
+- Exceptions.
+
 
 Not-that-important goals.
-5) Meta-classes
+- Meta-classes
+FIXME what are meta classes ?
 
-6) Dynamic methods. (Ability to add methods to a
+
+- Dynamic methods. (Ability to add methods to a
 class at runtime).
 
 
@@ -42,14 +53,13 @@ Example of usage of method objects:
 -------------
 
 struct HIDDP_Gfx_SetPixel sp_msg;
-                    
-struct TagItem mobj_tags[] = 
+
+struct TagItem mobj_tags[] =
 {
-    {A_Method_TargetObject,     (IPTR)gfxhidd },
-    {A_Method_Message,  (IPTR)&sp_msg},
-    {A_Method_MethodID, HIDDM_Gfx_SetPixel},
-    {TAG_DONE,  0UL}
-                
+    {A_Method_TargetObject, (IPTR)gfxhidd },
+    {A_Method_Message,	    (IPTR)&sp_msg},
+    {A_Method_MethodID,     HIDDM_Gfx_SetPixel},
+    {TAG_DONE, }
 };
 ..
 
@@ -69,12 +79,12 @@ for (x = 0; x < 100; x ++)
 {
     for (y = 0; y < 100; y ++)
     {
-          sp_msg.X = x;
-          sp_msg.Y = y;
-	  
+	  sp_msg.X = x;
+	  sp_msg.Y = y;
+
 	  /* CallMethod() might be a macro */
-          CallMethod(spmethod);
-          
+	  CallMethod(spmethod);
+
     }
 };
 
@@ -82,12 +92,12 @@ for (x = 0; x < 100; x ++)
 
 For normal method invocation there are generally two approaches:
 
-I) Hashing single methods.
-II) Hashing interfaces, where an interface
+a) Hashing single methods.
+b) Hashing interfaces, where an interface
 is an array of methods (kinda like a AmigaOS library
 jump table.)
 
-I) is a bit faster than II)
+a) is a bit faster than b)
 
 In order to avoid having to hash the methods, all methods of a class
 are in a single table. This includes the methods of all parent classes
@@ -133,7 +143,7 @@ IDs.
 
 Two ways to allocate IDs:
 
-I)
+a)
 Store interface IDs in global vars, and generate method IDs on the fly as
 sum of interface ID and a offset ID for the method.
 
@@ -155,7 +165,7 @@ Pro:
 Con:
 - uses more CPU time for initialization.
 
-II)
+b)
 Use one global var for each methodID.
 
 Pro:
@@ -189,7 +199,8 @@ check if an attribute is part of the class:
     else
 	... handle attributes of other classes
 
-3) + 4)
+Location Transparent and Object Migration
+-----------------------------------------
 
 To allow these two, we use method objects. Method objects
 contain the following attributes:
@@ -206,4 +217,33 @@ call the method stored in the object.
 
 By overloading DoMethod() of the Method class, you can implement
 thread safe objects, migrate objects to other computers, etc.
+
+
+Exceptions
+----------
+
+The easy part is to create the Exception class and the objects.
+
+Now the hard part:
+
+- How do I get the position information (stack frames, function names,
+local variables (?), line numbers, filename) ?
+
+- How do I "throw" an exception ?
+
+- How do I catch an exception ?
+
+
+On Unix, I can use GNU C extensions for most things. With a special
+assembler, it should be possible to create position information and update
+the call stack.
+
+To throw and catch an exception, I can use a global array which contains
+jmp_bufs and catched exceptions and throw just calls a global function
+which looks through the array for a matching catch and does a longjmp()
+to the place. We can use macros to throw and catch exceptions.
+
+
+On Amiga, we might be able to use similar techniques. The globals
+must be stored in the ETask info.
 
