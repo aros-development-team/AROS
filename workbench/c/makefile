@@ -31,7 +31,8 @@ FILES = helloworld \
 	mount \
 	simpleimage \
 	intuitext \
-	compleximage
+	compleximage \
+	shadowborder
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
