@@ -12,6 +12,8 @@ INCSUBDIRS :=	aros \
 		gadgets \
 		graphics \
 		hardware \
+		hardware/cpu \
+		hardware/acpi \
 		hidd \
 		inline \
 		intuition \
