@@ -66,14 +66,18 @@ struct DiskObject *__alib_dObject = NULL;	/* Used for reading tooltypes */
 
 *****************************************************************************/
 {
+    BPTR olddir;
     struct WBStartup *startup = (struct WBStartup *) argv;
 
     if(argc != 0)
 	return argv;		/* We were called from shell */
 
-    CurrentDir(startup->sm_ArgList[0].wa_Lock);
     if(startup->sm_NumArgs >= 2)
+    {
+	olddir = CurrentDir(startup->sm_ArgList[1].wa_Lock);
 	__alib_dObject = GetDiskObject(startup->sm_ArgList[1].wa_Name);
+	CurrentDir(olddir);
+    }
     else
 	return NULL;
 
