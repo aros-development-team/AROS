@@ -72,25 +72,25 @@ __saveds void repeat_function(void)
 
 __saveds void wheel_function(void)
 {
-    nnset(r_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Red) >> 24) & 0xff);
-    nnset(g_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Green) >> 24) & 0xff);
-    nnset(b_slider,MUIA_Numeric_Value, (xget(wheel,WHEEL_Blue) >> 24) & 0xff);
-    set(hue_gauge, MUIA_Gauge_Current, xget(wheel,WHEEL_Hue));
+    nnset(r_slider,MUIA_Numeric_Value, (XGET(wheel,WHEEL_Red) >> 24) & 0xff);
+    nnset(g_slider,MUIA_Numeric_Value, (XGET(wheel,WHEEL_Green) >> 24) & 0xff);
+    nnset(b_slider,MUIA_Numeric_Value, (XGET(wheel,WHEEL_Blue) >> 24) & 0xff);
+    set(hue_gauge, MUIA_Gauge_Current, XGET(wheel,WHEEL_Hue));
 }
 
 __saveds void slider_function(void)
 {
     struct ColorWheelRGB cw;
-    ULONG red = xget(r_slider,MUIA_Numeric_Value);
-    ULONG green = xget(g_slider,MUIA_Numeric_Value);
-    ULONG blue = xget(b_slider,MUIA_Numeric_Value);
+    ULONG red = XGET(r_slider,MUIA_Numeric_Value);
+    ULONG green = XGET(g_slider,MUIA_Numeric_Value);
+    ULONG blue = XGET(b_slider,MUIA_Numeric_Value);
 
     cw.cw_Red = (red<<24)|(red<<16)|(red<<8)|red;
     cw.cw_Green = (green<<24)|(green<<16)|(green<<8)|green;
     cw.cw_Blue = (blue<<24)|(blue<<16)|(blue<<8)|blue;
 
     nnset(wheel, WHEEL_RGB, &cw);
-    set(hue_gauge, MUIA_Gauge_Current, xget(wheel,WHEEL_Hue));
+    set(hue_gauge, MUIA_Gauge_Current, XGET(wheel,WHEEL_Hue));
 }
 
 __saveds void objects_function(void)
@@ -151,8 +151,8 @@ __saveds __asm void display2_function(register __a0 struct Hook *h, register __a
 
 void save_function(void)
 {
-    char *text = (char*)xget(editor_text, MUIA_Text_Contents);
-    char *filename = (char*)xget(filename_string, MUIA_String_Contents);
+    char *text = (char*)XGET(editor_text, MUIA_Text_Contents);
+    char *filename = (char*)XGET(filename_string, MUIA_String_Contents);
     BPTR fh;
 
     if (!strlen(filename)) return;
@@ -173,7 +173,7 @@ void add_function(void)
 
 void add_child_function(void)
 {
-    int act = xget(list2,MUIA_List_Active);
+    int act = XGET(list2,MUIA_List_Active);
 
 #ifndef COMPILE_WITH_MUI
     DoMethod(list2,MUIM_List_InsertSingleAsTree, id++, act /* parent */, MUIV_List_InsertSingleAsTree_Bottom, 0);

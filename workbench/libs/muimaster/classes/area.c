@@ -1944,7 +1944,7 @@ static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
 				   struct ZuneFrameGfx *zframe)
 {
 
-/*      if (xget(obj, MUIA_UserData) == 42) */
+/*      if (XGET(obj, MUIA_UserData) == 42) */
 /*      { */
 /*  	D(bug("area_update_innersizes(%p) : ileft=%ld itop=%ld\n", obj, zframe->ileft, zframe->itop)); */
 /*      } */

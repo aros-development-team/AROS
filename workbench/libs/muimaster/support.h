@@ -52,7 +52,7 @@ struct MUI_RenderInfo;
 #endif
 
 #ifndef __GNUC__
-IPTR xget(Object *obj, Tag attr);
+IPTR XGET(Object *obj, Tag attr);
 #endif
 
 ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
