@@ -1,14 +1,14 @@
 # $Id$
 TOP=..
 
-include $(TOP)/make.cfg
+USER_INCLUDES=-Iinclude
 
-INCLUDES=-Iinclude
+include $(TOP)/make.cfg
 
 OBJDIR=$(GENDIR)/clib
 
 FILES = ctype printf strcmp stricmp strlen strcpy qsort \
-	strdup malloc free
+	strdup malloc free calloc realloc memcpy
 
 all: setup $(OBJDIR)/links $(LIBDIR)/libarosc.a
 
