@@ -5,8 +5,8 @@
     $Id$
 */
 
-#ifndef _MUI_CLASSES_GAUGE
-#define _MUI_CLASSES_GAUGE
+#ifndef _MUI_CLASSES_GAUGE_H
+#define _MUI_CLASSES_GAUGE_H
 
 #define MUIC_Gauge "Gauge.mui"
 

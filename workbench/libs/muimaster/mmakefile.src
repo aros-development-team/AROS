@@ -33,6 +33,7 @@ CLASSES := \
     prop \
     rectangle \
     register \
+    scale \
     semaphore \
     settingsgroup \
     scrollbar \

@@ -372,7 +372,7 @@ struct MUI_PenSpec {
 #include "classes/menuitem.h"
 #endif
 
-#ifndef _MUI_CLASSES_DATATSPACE_H
+#ifndef _MUI_CLASSES_DATASPACE_H
 #include "classes/dataspace.h"
 #endif
 
@@ -450,6 +450,10 @@ struct MUI_PenSpec {
 
 #ifndef _MUI_CLASSES_POPIMAGE_H
 #include "classes/popimage.h"
+#endif
+
+#ifndef _MUI_CLASSES_SCALE_H
+#include "classes/scale.h"
 #endif
 
 /**************************************************************************
