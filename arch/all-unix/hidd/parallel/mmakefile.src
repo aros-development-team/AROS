@@ -9,7 +9,7 @@ OS_INCLUDES := -I$(SYS_INCLUDES) -I$(GENINCDIR)
   modname=parallel modtype=hidd \
   files=$(FILES) \
   conffile=lib.conf \
-  uselibs="unixiocl amiga hiddstubs" usehostlibs=c \
+  uselibs="amiga hiddstubs" usehostlibs=c \
   genfunctable=yes \
   compiler=host
 
