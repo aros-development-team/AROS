@@ -25,6 +25,8 @@
 #include "config.h"
 #include "version.h"
 
+#define D(x) if (debug) x
+#define bug Printf
 LONG Printf(STRPTR format, ...);
 
 struct Module *LoadModule(char *);
@@ -40,6 +42,7 @@ char *configfile = "boot.config";
 
 ULONG stack = 16384;
 ULONG memtype;
+BOOL debug;
 ULONG ils_table[3];
 struct ilsMemList ils_mem;
 
@@ -48,6 +51,7 @@ char usage[] =
     " -c -- force to chipmem\n"
     " -f -- force to fastmem\n"
     " -k -- force to kickmem\n"
+    " -d -- output debug information\n"
 };
 
 int main(int argc, char **argv)
@@ -56,6 +60,8 @@ int main(int argc, char **argv)
     struct Node *node;
     struct Module *module;
     struct ModuleList ModuleList;
+
+    debug = FALSE;
 
     PutStr("\n" BANNER " " VERSIONSTRING "\n\n");
 
@@ -98,8 +104,12 @@ int main(int argc, char **argv)
 	    case 'k':
 		memtype = MEMF_KICK;
 		break;
+	    case 'd':
+		debug = TRUE;
 	}
     }
+
+    D(bug("Debug mode\n"));
 
     PrintTagPtrs();
 
@@ -172,9 +182,10 @@ int main(int argc, char **argv)
 
 struct Module *LoadModule(char *filename)
 {
-    BPTR fh, seglist;
+    BPTR fh = 0, seglist = 0;
     struct Module *mod = 0;
 
+    D(bug("LoadModule(\"%s\")\n", filename));
     if(!(fh = Open(filename, MODE_OLDFILE)))
     {
 	PrintFault(IoErr(), filename);
@@ -187,20 +198,33 @@ struct Module *LoadModule(char *filename)
 	Close(fh);
 	return 0;
     }
+    D(bug("  module   = 0x%08lx (size %ld)\n", mod, sizeof(struct Module)));
 
     if( (seglist = InternalLoadSeg(fh, NULL, &ils_table[0], &stack)) )
     {
 	mod->m_SegList = seglist;
 	mod->m_Resident = FindResMod(&ils_mem);
     }
-
     Close(fh);
-    return mod;
+    D(bug("  SegList  = 0x%08lx\n", BADDR(mod->m_SegList)));
+    D(bug("  Resident = 0x%08lx\n", mod->m_Resident));
+
+    /*
+	If this module contains a Resident structure, return it.
+    */
+    if ( (mod->m_Resident))
+    {
+	return mod;
+    }
+
+    return 0;
 }
 
 void FreeModules(struct ModuleList *modlist)
 {
     struct Module *mod, *next;
+
+    D(bug("FreeModules(0x%08lx)\n", modlist));
 
     for(mod = (struct Module *)modlist->ml_List.mlh_Head; mod->m_Node.mln_Succ; mod = next)
     {
@@ -218,6 +242,8 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
     ULONG *modarray;
     ULONG i, nummods;
     struct Module *mod;
+
+    D(bug("BuildTagPtrs()\n"));
 
     /*
 	Allocate memory for our KickTagPtr table:
@@ -266,16 +292,20 @@ struct MemList *BuildMemList(struct ilsMemList *prelist,
     struct MemList *memlist;
     struct MemEntry *me;
     struct ilsMemNode *node;
+    UWORD numentries;
+    ULONG size;
 
+    D(bug("BuildMemList()\n"));
     /*
 	Calculate needed number of extra MemEntry fields that need to be
 	appended to the end of our MemList structure. This number+1 (there
 	already is one MemEntry in the MemList) is what we'll be putting in
 	memlist->ml_NumEntries later.
     */
-    UWORD numentries = prelist->iml_Num + 1;
+    numentries = prelist->iml_Num + 1;
+    D(bug(" number of modules = %ld\n", prelist->iml_Num));
 
-    ULONG size = ( sizeof(struct MemList) + (sizeof(struct MemEntry) * numentries) );
+    size = ( sizeof(struct MemList) + (sizeof(struct MemEntry) * numentries) );
 
     /*
 	Allocate memory from the top of the memory list, to keep fragmentation
@@ -337,6 +367,9 @@ struct MemList *BuildMemList(struct ilsMemList *prelist,
 
 void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
 {
+    D(bug("StuffTags(memlist 0x%08lx  modlist 0x%08lx  nummods %ld)\n",
+     memlist, modlist, nummods));
+
     /* Fix 970102 ldp: protect the Kick ptrs with Forbid/Permit */
     Forbid();
 
@@ -376,7 +409,7 @@ void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
     SysBase->KickCheckSum = (APTR)SumKickData();
 
     /*
-	Flush caches (highly recommended).
+	Flush caches.
     */
     CacheClearU();
 
@@ -388,6 +421,8 @@ void *FindResMod(struct ilsMemList *list)
     struct ilsMemNode *node;
     UWORD *ptr;
     ULONG num, counter;
+
+    D(bug("FindResMod() ... "));
 
     /*
 	Search all memory blocks for the Resident struct. Only new nodes
@@ -413,11 +448,13 @@ void *FindResMod(struct ilsMemList *list)
 		*/
 		ils_mem.iml_NewNum = 0;
 
+		D(bug("found at 0x%08lx\n", ptr));
 		return((void *)ptr);
 	    }
 	}
     }
 
+    D(bug("not found\n"));
     return 0;
 }
 

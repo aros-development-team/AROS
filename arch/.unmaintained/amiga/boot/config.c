@@ -17,7 +17,12 @@
 #include <proto/dos.h>
 
 #include "boot.h"
+#include "main.h"
 #include "config.h"
+
+#define D(x) if (debug) x
+#define bug Printf
+LONG Printf(STRPTR format, ...);
 
 char modulestring[] = "MODULE ";
 
@@ -31,6 +36,7 @@ struct FileList *ReadConfig(char *file)
     int i;
     char buffer[80];
 
+    D(bug("Opening config file\n"));
     if( (fh = Open(file, MODE_OLDFILE)) )
     {
 	if( (list = AllocVec(sizeof(struct FileList), MEMF_CLEAR)) )
@@ -56,6 +62,7 @@ struct FileList *ReadConfig(char *file)
 				if('\n' == name[i]) name[i] = '\0';
 			    }
 			    node->ln_Name = name;
+			    D(bug(" Found %s\n", name));
 			    AddTail((struct List *)list, node);
 			    list->fl_Num++;
 			}
@@ -81,6 +88,8 @@ struct FileList *ReadConfig(char *file)
 void FreeConfig(struct FileList *list)
 {
     struct Node *node, *next;
+
+    D(bug("FreeConfig()\n"));
 
     for(node = list->fl_List.lh_Head; node->ln_Succ; node = next)
     {

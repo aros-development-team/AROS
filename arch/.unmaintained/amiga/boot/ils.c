@@ -22,6 +22,10 @@
 #include "boot.h"
 #include "main.h"
 
+#define D(x) if (debug) x
+#define bug Printf
+LONG Printf(STRPTR format, ...);
+
 extern struct ilsMemList ils_mem;
 
 AROS_UFH4(LONG, ils_read,
@@ -30,6 +34,8 @@ AROS_UFH4(LONG, ils_read,
     AROS_UFHA(LONG,                length,  D3),
     AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
+    D(bug(" ils_read: size %ld\n", length));
+
     return( Read(handle, buffer, length) );
 }
 
@@ -39,6 +45,8 @@ AROS_UFH3(void *, ils_alloc,
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     void *result;
+
+    D(bug(" ils_alloc: size %ld == ", size));
 
     /*
 	Memory to be used for Resident modules can not be any kind of memory
@@ -81,9 +89,11 @@ AROS_UFH3(void *, ils_alloc,
 	    */
 	    ils_mem.iml_NewNum++;
 	}
+	D(bug("0x%08lx\n", result));
 	return(result);
     }
 
+    D(bug("0\n"));
     return 0;
 }
 
@@ -94,6 +104,8 @@ AROS_UFH3(void, ils_free,
 {
     void *saveblock = block;
     struct ilsMemNode *node;
+
+    D(bug(" ils_free: block 0x%08lx  size %ld\n", block, size));
 
     FreeMem(block, size);
 
