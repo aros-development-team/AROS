@@ -64,7 +64,7 @@ int i;
 struct Menu * thismenu;
 struct MenuItem * thisitem;
 
-    if ( menunumber == MENUNULL )
+    if ( menunumber == MENUNULL || menustrip == NULL )
     {
 	return NULL;
     }
