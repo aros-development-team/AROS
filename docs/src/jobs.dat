@@ -95,7 +95,7 @@ c00006;2;matthias;Write C:Cd
 c00007;1;hkiel;Write C:Copy
 c00008;1;laguest;Write C:CPU
 c00009;2;srittau;Write C:Date
-c00010;1;laguest;Write C:Delete
+c00010;2;SDuvan;Write C:Delete
 c00011;1;digulla;Write C:Dir
 c00012;2;matthias;Write C:Echo
 c00013;2;SDuvan;Write C:Else
