@@ -116,4 +116,4 @@ fi
 
 echo "MKDEPEND = $MKDEPEND" >> $1
 
-scripts/makelinks $KERNEL include/aros machine.h
+cd config ; make TOP=.. CURDIR=./config config
