@@ -1,10 +1,59 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Join - Create a single file from several.
-    Lang: english
+    Lang: English
 */
+
+/******************************************************************************
+
+
+    NAME
+
+    Join [FILE] {(file | pattern)} AS|TO (filename)
+
+    SYNOPSIS
+
+    FILE/M/A,AS=TO/K/A
+
+    LOCATION
+
+    Workbench:C
+
+    FUNCTION
+
+    Join makes one big file of all listed files by putting them together
+    in the order given. The destination file may not have the same name 
+    as any of input files. You must supply a destination file name. The
+    original files remian unchanged. Any number of files can be Join:ed in
+    one operation.
+
+    INPUTS
+
+    FILE   --  files to join
+    TO=AS  --  the name of the combined file
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+    30.11.2000  SDuvan  added pattern matching support
+
+******************************************************************************/
+
+#define  DEBUG  0
+#include <aros/debug.h>
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -17,9 +66,9 @@
 #include <stdio.h>
 
 #define ARG_TEMPLATE "FILE/M/A,AS=TO/K/A"
-#define ARG_COUNT    2
 #define ARG_FILE     0
 #define ARG_AS       1
+#define ARG_COUNT    2
 
 #define BUFFERSIZE   32768    /* Buffersize used when reading & writing */
 
@@ -40,50 +89,44 @@ static char ERROR_HEADER[]  = "Join";
 
 LONG   append( BPTR destfile , STRPTR srcfilename );
 STRPTR getstring( LONG stringid );
+int doJoin(STRPTR *files, BPTR destfile);
 
 /****** Functions *******************************************************/
 
 int main( void )
 {
-    struct RDArgs     * rda             = NULL ;
-    LONG                args[ARG_COUNT] = { NULL , NULL };
-    STRPTR            * filenameptr;
-    STRPTR              filename;
-    STRPTR              destination;
+    struct RDArgs  *rda = NULL ;
 
-    BPTR                destfile        = NULL;
-
-    LONG                rc              = RETURN_OK;
+    LONG    args[ARG_COUNT] = { NULL , NULL };
+    STRPTR *files;
+    STRPTR  destination;
+    BPTR    destfile = NULL;
+    LONG    rc = RETURN_OK;
 
     if( (rda = ReadArgs( ARG_TEMPLATE , args , NULL )) )
     {
 	if( args[ARG_FILE] && args[ARG_AS] )
 	{
-	    destination = (STRPTR) args[ARG_AS];
-	    filenameptr = (STRPTR *) args[ARG_FILE];
-
+	    destination = (STRPTR)args[ARG_AS];
+	    files = (STRPTR *)args[ARG_FILE];
+	    
 	    if( (destfile = Open( destination , MODE_NEWFILE )) )
 	    {
-		while( (filename = *filenameptr++) )
-		{
-		    if( append( destfile , filename ) != RETURN_OK )
-		    {
-			printf( "%s: %s" , ERROR_HEADER , getstring( STR_ABORTED ) );
-			rc = RETURN_FAIL;
-			break;
-		    }
-		}
+		rc = doJoin(files, destfile);
 
-		Close( destfile );
-		if( rc == RETURN_FAIL )
+		if (rc == RETURN_OK)
 		{
-		    printf( ", %s.\n" , getstring( STR_REMOVINGDEST ) );
-		    DeleteFile( destination );
+		    Close(destfile);
+		}
+		else
+		{
+		    printf(", %s.\n" , getstring(STR_REMOVINGDEST));
+		    DeleteFile(destination);
 		}
 	    }
 	    else
 	    {
-		PrintFault( IoErr() , ERROR_HEADER );
+		PrintFault(IoErr() , ERROR_HEADER);
 		rc = RETURN_FAIL;
 	    }
 	}
@@ -92,87 +135,132 @@ int main( void )
 	    rc = RETURN_FAIL;
 	}
 
-	FreeArgs( rda );
+	FreeArgs(rda);
     }
     else
     {
-	PrintFault( IoErr() , ERROR_HEADER );
+	PrintFault(IoErr(), ERROR_HEADER);
 	rc = RETURN_FAIL;
     }
 
-    return( rc );
+    return rc;
 }
 
-LONG append( BPTR destfile , STRPTR srcfilename )
+
+#define  MAX_PATH_LEN  512
+
+
+int doJoin(STRPTR *files, BPTR destfile)
 {
-    BYTE * buffer       = NULL;
+    struct AnchorPath *ap;
+
+    LONG  i;			/* Loop variable over patterns */
+    LONG  match;		/* Loop variable over files */
+    LONG  rc = RETURN_OK;
+    
+    ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) +
+				       MAX_PATH_LEN, MEMF_CLEAR);
+
+    if (ap == NULL)
+    {
+	SetIoErr(ERROR_NO_FREE_STORE);
+	return RETURN_FAIL;
+    }
+
+    ap->ap_Strlen = MAX_PATH_LEN;
+
+    /* Loop over the arguments */
+    for (i = 0; files[i] != NULL; i++)
+    {
+	for (match = MatchFirst(files[i], ap); match == 0;
+	     match = MatchNext(ap))
+	{	
+	    if(append(destfile, ap->ap_Buf) != RETURN_OK )
+	    {
+		printf("%s: %s", ERROR_HEADER, getstring(STR_ABORTED));
+		rc = RETURN_FAIL;
+		break;
+	    }
+	}
+    }
+
+    FreeVec(ap);
+
+    return rc;
+}
+
+
+LONG append(BPTR destfile, STRPTR srcfilename)
+{
+    BYTE  *buffer       = NULL;
     LONG   actualLength = 0;
     BPTR   srcfile      = NULL;
-
+    
     BOOL   rc           = RETURN_OK;
-
-    if( (buffer = AllocMem( BUFFERSIZE , MEMF_ANY )) )
+    
+    if ( (buffer = AllocMem( BUFFERSIZE , MEMF_ANY )) )
     {
-	if( (srcfile = Open( srcfilename , MODE_OLDFILE )) )
+	if ( (srcfile = Open( srcfilename , MODE_OLDFILE )) )
 	{
-	    while( (actualLength = Read( srcfile , buffer , BUFFERSIZE )) != -1 )
+	    while( (actualLength = Read(srcfile, buffer, BUFFERSIZE)) != -1 )
 	    {
-		if( Write( destfile , buffer , actualLength ) == -1 )
+		if (Write(destfile, buffer, actualLength) == -1 )
 		{
-		    printf( "%s: %s.\n" , ERROR_HEADER , getstring( STR_ERR_WRITING ) );
+		    printf( "%s: %s.\n", ERROR_HEADER,
+			    getstring(STR_ERR_WRITING));
 		    rc = RETURN_FAIL;
-
+		    
 		    break;
 		}
-		if( actualLength < BUFFERSIZE )
+		
+		if (actualLength < BUFFERSIZE)
 		{
 		    break;
 		}
 	    }
-
-	    Close( srcfile );
+	    
+	    Close(srcfile);
 	}
 	else
 	{
-	    printf
-	    (
-		"%s: %s: '%s'\n" ,
-		ERROR_HEADER ,
-		getstring( STR_ERR_OPENREAD ) ,
-		srcfilename
-	    );
-
+	    printf("%s: %s: '%s'\n", ERROR_HEADER,
+		   getstring(STR_ERR_OPENREAD),	srcfilename);
+	    
 	    rc = RETURN_FAIL;
 	}
-
-	FreeMem( buffer , BUFFERSIZE );
+	
+	FreeMem(buffer, BUFFERSIZE);
     }
     else
     {
-	printf( "%s: %s.\n" , ERROR_HEADER , getstring( STR_ERR_NOMEM ) );
+	printf("%s: %s.\n", ERROR_HEADER, getstring(STR_ERR_NOMEM));
 	rc = RETURN_FAIL;
     }
-
-    return( rc );
+    
+    return rc;
 }
 
-STRPTR getstring( LONG stringid )
-{
-    switch( stringid )
-    {
-	case STR_ABORTED:
-	    return( "Aborted" );
-	case STR_REMOVINGDEST:
-	    return( "removed incomplete destination-file" );
-	case STR_ERR_OPENREAD:
-	    return( "Could not open file for reading" );
-	case STR_ERR_NOMEM:
-	    return( "Could not allocate memory" );
-	case STR_ERR_WRITING:
-	    return( "Error while writing" );
 
-	default:
-	    return( "[Error: Unknown StringID]" );
+STRPTR getstring(LONG stringid)
+{
+    switch(stringid)
+    {
+    case STR_ABORTED:
+	return "Aborted";
+
+    case STR_REMOVINGDEST:
+	return "removed incomplete destination-file";
+	    
+    case STR_ERR_OPENREAD:
+	return "Could not open file for reading";
+
+    case STR_ERR_NOMEM:
+	return "Could not allocate memory";
+
+    case STR_ERR_WRITING:
+	return "Error while writing";
+
+    default:
+	return "[Error: Unknown StringID]";
     }
 }
-
