@@ -15,7 +15,9 @@ enum modes
     m_cpp,
     m_identifier,
     m_string,
-    m_header
+    m_header,
+    m_value,
+    m_cppmacro
 };
 
 static const char * ModeDelim[] =
@@ -28,7 +30,12 @@ static const char * ModeDelim[] =
     "cidentifier",
     "cstring",
     "cheader",
+    "cvalue",
+    "cppmacro",
 };
+
+static DB * symbols;
+static int  label = 1;
 
 static void
 emit_html_char (int c, FILE * out)
@@ -61,10 +68,12 @@ main (int argc, char ** argv)
     enum modes mode = m_prespace;
     String ident;
     char * data;
+    int    column;
 
     Var_Init ();
     DB_Init ();
     DB_Add ("c-html", "c-html.db");
+    symbols = DB_New ("symbols");
 
 #define NEWMODE(nm)             \
     if ((nm) != mode)           \
@@ -126,6 +135,7 @@ main (int argc, char ** argv)
     }
 
     ident = VS_New (NULL);
+    column = 1;
 
     while ((c = getc (in)) != EOF)
     {
@@ -134,14 +144,17 @@ main (int argc, char ** argv)
 	case '&':
 	    NEWMODE(m_punct);
 	    fputs ("&amp;", stdout);
+	    column ++;
 	    break;
 	case '<':
 	    NEWMODE(m_punct);
 	    fputs ("&lt;",  stdout);
+	    column ++;
 	    break;
 	case '>':
 	    NEWMODE(m_punct);
 	    fputs ("&gt;",  stdout);
+	    column ++;
 	    break;
 	case '.': case '!': case '^': case '%':
 	case '(': case ')': case '=': case '?': case '{':
@@ -150,6 +163,23 @@ main (int argc, char ** argv)
 	case ';': case '|':
 	    NEWMODE(m_punct);
 	    putchar (c);
+	    column ++;
+	    break;
+
+	case '\'':
+	    NEWMODE(m_value);
+	    putchar (c);
+
+	    while ((c = getc (in)) != EOF)
+	    {
+		emit_html_char (c, stdout);
+		if (c == '\\')
+		{
+		    emit_html_char (getc (in), stdout);
+		}
+		else if (c == '\'')
+		    break;
+	    }
 	    break;
 
 	case ' ':
@@ -163,6 +193,21 @@ main (int argc, char ** argv)
 #endif
 	    {
 		fputs ("&nbsp;", stdout);
+		column ++;
+	    }
+	    break;
+
+	case '\t':
+	    if (!(column % 8) )
+	    {
+		fputs ("&nbsp;", stdout);
+		column ++;
+	    }
+
+	    while (column % 8)
+	    {
+		fputs ("&nbsp;", stdout);
+		column ++;
 	    }
 	    break;
 
@@ -188,12 +233,12 @@ rem_again:
 			}
 			else
 			{
-			    putchar ('/');
+			    emit_html_char ('/', stdout);
 			    goto rem_again;
 			}
 		    }
 		    else
-			putchar (c);
+			emit_html_char (c, stdout);
 		}
 	    }
 	    else
@@ -208,22 +253,29 @@ rem_again:
 	    NEWMODE(m_space);
 	    fputs ("<BR>\n", stdout);
 	    NEWMODE(m_prespace);
+	    column = 1;
 	    break;
 
 	case '"':
 	    NEWMODE(m_string);
-	    putchar (c);
+	    emit_html_char (c, stdout);
+	    column ++;
 
 	    while ((c = getc (in)) != EOF)
 	    {
-		putchar (c);
+		emit_html_char (c, stdout);
+		column ++;
 
 		if (c == '\\')
 		{
 		    c = getc (in);
 		    if (c == '\n')
+		    {
 			fputs ("<BR>", stdout);
-		    putchar (c);
+			column = 1;
+		    }
+		    emit_html_char (c, stdout);
+		    column ++;
 		}
 		else if (c == '"')
 		{
@@ -234,7 +286,6 @@ rem_again:
 	    break;
 
 	case '#':
-
 	    VS_Clear (ident);
 	    VS_AppendChar (ident, c);
 
@@ -255,6 +306,11 @@ rem_again:
 		}
 
 		VS_AppendChar (ident, c);
+	    }
+
+	    if (!strcmp (ident->buffer, "#define"))
+	    {
+		printf ("<A NAME=\"%d\">", label);
 	    }
 
 	    data = DB_FindData ("c-html", ident->buffer);
@@ -307,6 +363,39 @@ rem_again:
 		    emit_html_string (ident->buffer, stdout);
 		}
 	    }
+	    else if (!strcmp (ident->buffer, "#define"))
+	    {
+		char buffer[64];
+
+		putchar (' ');
+		VS_Clear (ident);
+
+		while ((c = getc (in)) != EOF)
+		{
+		    if (!isspace (c))
+			break;
+		}
+
+		VS_AppendChar (ident, c);
+
+		while ((c = getc (in)) != EOF)
+		{
+		    if (!(isalnum (c) || c == '_') )
+		    {
+			ungetc (c, in);
+			break;
+		    }
+
+		    VS_AppendChar (ident, c);
+		}
+
+		sprintf (buffer, "<A HREF=\"#%d\"><cppmacro>%s</cppmacro></A>", label, ident->buffer);
+		DB_AddData (symbols, ident->buffer, buffer);
+		label ++;
+
+		NEWMODE(m_cppmacro);
+		emit_html_string (ident->buffer, stdout);
+	    }
 
 	    break;
 
@@ -327,7 +416,10 @@ rem_again:
 		    VS_AppendChar (ident, c);
 		}
 
-		data = DB_FindData ("c-html", ident->buffer);
+		data = DB_FindData ("symbols", ident->buffer);
+
+		if (!data)
+		    data = DB_FindData ("c-html", ident->buffer);
 
 		if (data)
 		{
@@ -338,6 +430,30 @@ rem_again:
 		{
 		    NEWMODE(m_identifier);
 		    fputs (ident->buffer, stdout);
+		}
+	    }
+	    else if (isdigit (c))
+	    {
+		NEWMODE(m_value);
+		putchar (c);
+
+		while ((c = getc (in)) != EOF)
+		{
+		    if (!(isxdigit (c)
+			|| c == '.'
+			|| c == '+'
+			|| c == '-'
+			|| tolower(c) == 'x'
+			|| tolower(c) == 'l'
+			|| tolower(c) == 'f'
+			|| tolower(c) == 'u'
+		    ) )
+		    {
+			ungetc (c, in);
+			break;
+		    }
+
+		    putchar (c);
 		}
 	    }
 	    else
