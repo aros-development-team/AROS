@@ -1,7 +1,52 @@
 \chapter{MetaMake}
 
+\section{Introduction}
+
 MetaMake is a version of make which allows to recursively build targets
 in the various directories of a project or even another project.
+It searches a directory tree for makefiles and all
+makefiles it finds for "metatargets" and then tries to build all
+metatargets. You can also specify a program which converts "source"
+makefiles into makefiles before MetaMake will invoke make.
+
+We use MetaMake to build AROS - The Amiga Replacement OS. AROS consists of
+many different packages which depend on each other like this:
+
+\begin{example}
+#MM AROS : setup includes kernel workbench apps
+\end{example}
+
+This is a metatarget in a makefile (MetaMake looks for #MM as the first
+thing in a line). It means that AROS depends on setup, includes, etc. as
+you are used to from Make.
+
+The big point is: MetaMake will consider *all makefiles at once* when it
+checks a metatarget. So all metatargets "setup" in all makefiles will be
+build when MetaMake tries to build AROS. MetaMake searches itself for the
+makefiles, so to add a new package, just create a new makefile in that
+directory and invoke MetaMake again.
+
+This also allows to build the project from anywhere. You can invoke
+MetaMake in a subdir or any other directory if you copy the config file to
+$HOME.
+
+MetaMake can also read a file with Make-style variable definitions. This
+allows to build the project depending on some variable, for example:
+
+\begin{example}
+#MM kernel : kernel-$(ARCH)-$(CPU)
+\end{example}
+
+will build kernel-linux-i386 before kernel on Linux/i386 machines.
+
+MetaMake will calculate \shell{$(TOP)} (the path to the top of the project)
+and \shell{CURDIR} (the path to the current directory relative to
+\shell{$(TOP)}) and pass them to make. Also \shell{$(TARGET)} will contain
+the current target but this will not be passed to make automatically. If
+you need the target in the makefile, you can use the \shell{maketool}
+option to change this.
+
+\section{Usage and Config Files}
 
 \shell{Usage: mmake [<options>] [<metatargets>]}
 
@@ -73,6 +118,8 @@ Any option which is not recognised will be added to the list
 of known variables (ie. \shell{foo bar} will create a
 variable \shell{$(foo)} which is expanded to \shell{bar}).
 
+\section{Example}
+
 Here is an example:
 
 \begin{example}
@@ -116,11 +163,3 @@ A metatarget look like so: \shell{project.target}. Example:
 target of the first project in the config file. If the project is specified
 but no target, mmake will make the default target of this project.
 
-mmake will look for all makefiles (regenerating them if necessary), check
-which makefiles provide the metatargets you gave in the command line and on
-which other metatargets that depend on those metatargets and will then
-successively make all metatargets.
-
-MMake will calculate \shell{$(TOP)} (the path to the top of the project)
-and \shell{CURDIR} (the path to the current directory relative to
-\shell{$(TOP)}) to make.
