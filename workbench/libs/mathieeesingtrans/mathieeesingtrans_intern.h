@@ -2,6 +2,9 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1998/05/17 16:17:13  bergers
+    Update
+
     Revision 1.1  1998/02/25 22:41:43  bergers
     Moved functions to new dir. atan.c is new. Library now completed. :-))
 
@@ -66,8 +69,10 @@ extern struct MathIeeeSingBasBase * MathIeeeSingBasBase;
 
 struct MathIeeeSingTransBase
 {
-    struct Library     library;
-    BPTR               seglist;
+    struct Library     LibNode;
+    BPTR               mist_SegList;
+    
+    struct ExecBase *  mist_SysBase;
 };
 
 

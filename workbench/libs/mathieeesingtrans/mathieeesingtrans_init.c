@@ -5,13 +5,20 @@
     Desc: Init of mathieeesingtrans.library
     Lang: english
 */
-#include <utility/utility.h> /* must be include before mathieeesingtrans_intern.h */
-
 #include "mathieeesingtrans_intern.h"
 #include "libdefs.h"
 
-#define LC_NO_EXPUNGELIB
-#define LC_RESIDENTPRI	    -120
+#define LC_SYSBASE_FIELD(lib)	(((LIBBASETYPEPTR       )(lib))->mist_SysBase)
+#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->mist_SegList)
+#define LC_RESIDENTNAME		mathieeesingtrans_resident
+#define LC_RESIDENTFLAGS	RTF_AUTOINIT
+#define LC_RESIDENTPRI		0
+#define LC_LIBBASESIZE		sizeof(LIBBASETYPE)
+#define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
+#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->LibNode)
+
+#define LC_NO_CLOSELIB
+#define LC_NO_OPENLIB
 
 #include <libcore/libheader.c>
 
@@ -24,26 +31,20 @@ struct MathIeeeSingBasBase * MathIeeeSingBasBase;
 
 ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
 {
-    SysBase = lh->lh_SysBase;
+    SysBase = lh->mist_SysBase;
 
-    return TRUE;
-} /* L_InitLib */
-
-ULONG SAVEDS L_OpenLib (LC_LIBHEADERTYPEPTR lh)
-{
     if (!MathIeeeSingBasBase)
 	MathIeeeSingBasBase = (struct MathIeeeSingBasBase *) OpenLibrary ("mathieeesingbas.library", 39);
 
     if (!MathIeeeSingBasBase)
 	return FALSE;
-	
-    return TRUE;
-} /* L_OpenLib */
 
-void SAVEDS L_CloseLib (LC_LIBHEADERTYPEPTR lh)
+    return TRUE;
+} /* L_InitLib */
+
+
+void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
 {
     if (MathIeeeSingBasBase)
 	CloseLibrary ((struct Library *)MathIeeeSingBasBase);
-
-} /* L_CloseLib */
-
+} /* L_ExpungeLib */
