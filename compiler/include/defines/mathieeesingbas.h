@@ -12,73 +12,70 @@
     Defines
 */
 
-#define IEEEIEEESPAbs(FLOAT) \
-    AROS_LC1(FLOAT, IEEEIEEESPAbs, \
+#define IEEESPAbs(y) \
+    AROS_LC1(FLOAT, IEEESPAbs, \
     AROS_LPA(FLOAT, y, D0), \
-    struct Library *, MathIEEEIEEESPBasBase, 9, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 9, Mathieeespbas)
 
-#define IEEESPAdd(FLOAT, FLOAT) \
+#define IEEESPAdd(y, z) \
     AROS_LC2(FLOAT, IEEESPAdd, \
     AROS_LPA(FLOAT, y, D0), \
     AROS_LPA(FLOAT, z, D1), \
-    struct Library *, MathIEEEIEEESPBasBase, 11, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 11, Mathieeespbas)
 
-#define IEEESPCeil(FLOAT) \
+#define IEEESPCeil(y) \
     AROS_LC1(FLOAT, IEEESPCeil, \
     AROS_LPA(FLOAT, y, D0), \
-    struct Library *, MathIEEEIEEESPBasBase, 16, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 16, Mathieeespbas)
 
-#define IEEESPCmp(FLOAT, FLOAT) \
+#define IEEESPCmp(y, z) \
     AROS_LC2(FLOAT, IEEESPCmp, \
     AROS_LPA(FLOAT, y, D0), \
     AROS_LPA(FLOAT, z, D1), \
-    struct Library *, MathIEEEIEEESPBasBase, 7, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 7, Mathieeespbas)
 
-#define IEEESPDiv(FLOAT, FLOAT) \
+#define IEEESPDiv(y, z) \
     AROS_LC2(FLOAT, IEEESPDiv, \
     AROS_LPA(FLOAT, y, D1), \
     AROS_LPA(FLOAT, z, D0), \
-    struct Library *, MathIEEEIEEESPBasBase, 14, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 14, Mathieeespbas)
 
-#define IEEESPFix(FLOAT) \
+#define IEEESPFix(y) \
     AROS_LC1(LONG, IEEESPFix, \
     AROS_LPA(FLOAT, y, D0), \
-    struct Library *, MathIEEEIEEESPBasBase, 5, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 5, Mathieeespbas)
 
-#define IEEESPFloor(FLOAT) \
+#define IEEESPFloor(y) \
     AROS_LC1(FLOAT, IEEESPFloor, \
     AROS_LPA(FLOAT, y, D0), \
-    struct Library *, MathIEEEIEEESPBasBase, 15, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 15, Mathieeespbas)
 
-#define IEEESPFlt(LONG) \
+#define IEEESPFlt(y) \
     AROS_LC1(FLOAT, IEEESPFlt, \
     AROS_LPA(LONG, y, D0), \
-    struct Library *, MathIEEEIEEESPBasBase, 6, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 6, Mathieeespbas)
 
-#define IEEESPMul(FLOAT, FLOAT) \
+#define IEEESPMul(y, z) \
     AROS_LC2(FLOAT, IEEESPMul, \
     AROS_LPA(FLOAT, y, D0), \
     AROS_LPA(FLOAT, z, D1), \
-    struct Library *, MathIEEEIEEESPBasBase, 13, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 13, Mathieeespbas)
 
-#define IEEESPNeg(FLOAT) \
+#define IEEESPNeg(y) \
     AROS_LC1(FLOAT, IEEESPNeg, \
     AROS_LPA(FLOAT, y, D0), \
-    struct Library *, MathIEEEIEEESPBasBase, 10, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 10, Mathieeespbas)
 
-#define IEEESPSub(FLOAT, FLOAT) \
+#define IEEESPSub(y, z) \
     AROS_LC2(FLOAT, IEEESPSub, \
     AROS_LPA(FLOAT, y, D0), \
     AROS_LPA(FLOAT, z, D1), \
-    struct Library *, MathIEEEIEEESPBasBase, 12, MathieeeIEEESPbas)
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 12, Mathieeespbas)
 
-#define IEEESPTst(FLOAT) \
+#define IEEESPTst(y) \
     AROS_LC1(LONG, IEEESPTst, \
     AROS_LPA(FLOAT, y, D0), \
-    struct Library *, MathIEEEIEEESPBasBase, 8, MathieeeIEEESPbas)
-
-#endif /* DEFINES_MathieeeIEEESPbas_H */
-
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 8, Mathieeespbas)
 
 
 #endif /* DEFINES_MATHIEEESINGBAS_H */
