@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Search for a node.
+    Desc: Search for a node by name.
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE

@@ -1,25 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/08 04:07:58  ldp
-    Set port type
 
-    Revision 1.6  1997/01/01 03:46:08  ldp
-    Committed Amiga native (support) code
-
-    Changed clib to proto
-
-    Revision 1.5  1996/12/10 13:51:42  aros
-    Moved all #include's in the first column so makedepend can see it.
-
-    Revision 1.4  1996/10/24 15:50:46  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/08/01 17:41:08  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Create a new message port.
     Lang: english
 */
 #include <exec/memory.h>

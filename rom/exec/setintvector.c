@@ -2,8 +2,8 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
-    Lang:
+    Desc: Install an interrupt handler.
+    Lang: english
 */
 #include <exec/execbase.h>
 #include <exec/interrupts.h>

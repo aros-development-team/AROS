@@ -2,8 +2,8 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
-    Lang:
+    Desc: Allocate memory.
+    Lang: english
 */
 #include <aros/config.h>
 #include "exec_intern.h"

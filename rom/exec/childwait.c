@@ -1,6 +1,7 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
+    $Id$
+
     Desc:
     Lang: english
 */

@@ -1,7 +1,8 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$	 $Log
-    Desc:
+    $Id$
+
+    Desc: Cause an interrupt.
     Lang: english
 */
 #include "exec_intern.h"

@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Initialize a structure.
     Lang: english
 */
 #include "exec_intern.h"

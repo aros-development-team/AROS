@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Patch a library or device function
     Lang: english
 */
 #include <aros/config.h>

@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Close a device.
     Lang: english
 */
 #include <aros/config.h>

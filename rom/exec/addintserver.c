@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Add interrupt client to chain of interrupt server
-    Lang:
+    Lang: english
 */
 #include <aros/config.h>
 #include <exec/execbase.h>

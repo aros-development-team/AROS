@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Remove a library from the list of public libraries.
     Lang: english
 */
 #include <aros/config.h>

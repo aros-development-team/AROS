@@ -1,7 +1,8 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
-    Desc:
+    $Id$
+
+    Desc: Start the internal debugger.
     Lang: english
 */
 #include "exec_intern.h"

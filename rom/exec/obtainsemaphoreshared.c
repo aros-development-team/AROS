@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Get a shared lock on a semaphore.
     Lang: english
 */
 #include "exec_intern.h"

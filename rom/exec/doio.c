@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Start an IO request and wait until it completes.
     Lang: english
 */
 #include <exec/execbase.h>

@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Remove an interrupt handler.
     Lang:
 */
 #include <aros/config.h>
@@ -65,8 +65,8 @@
 #if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
     if(list->lh_TailPred == (struct Node *)list)
     {
-        /* disable interrupts if there are no more nodes on the list */
-        custom->intena = (UWORD)((1<<intNumber));
+	/* disable interrupts if there are no more nodes on the list */
+	custom->intena = (UWORD)((1<<intNumber));
     }
 #endif
 

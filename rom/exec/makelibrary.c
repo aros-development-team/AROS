@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Make a library ready for use.
     Lang: english
 */
 #include <exec/execbase.h>

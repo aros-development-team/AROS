@@ -1,7 +1,8 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
-    Desc:
+    $Id$
+
+    Desc: Obtain and install a Quick Interrupt vector
     Lang: english
 */
 #include "exec_intern.h"

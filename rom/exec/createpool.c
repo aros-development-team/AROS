@@ -2,9 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
-    Lang:
+    Desc: Create a memory pool.
+    Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
 #include "exec_intern.h"
 #include <aros/libcall.h>
 #include <clib/alib_protos.h>
@@ -13,14 +14,11 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 
-#define NEWLIST(l) \
-((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
- (l)->lh_Tail=NULL,                         \
- (l)->lh_TailPred=(struct Node *)(l))
-
 /*****************************************************************************
 
     NAME */
+#include <exec/memory.h>
+#include <proto/exec.h>
 
 	AROS_LH3(APTR, CreatePool,
 

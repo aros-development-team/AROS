@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Exec function Alert()
+    Desc: Display an alert.
     Lang: english
 */
 #include <exec/execbase.h>

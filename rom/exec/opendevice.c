@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Open a device.
     Lang: english
 */
 #include <aros/config.h>
@@ -90,7 +90,7 @@ char *const inputname = "input.device";
 	Kludge for compatibility with V40 kickstart. DO NOT depend on this!
 	See TaggedOpenLibrary() for more info.
     */
-    if     (devName == (STRPTR)0) devName = timername;
+    if	   (devName == (STRPTR)0) devName = timername;
     else if(devName == (STRPTR)1) devName = inputname;
 #endif
 

@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Exec function FreeMem()
+    Desc: Free memory allocated by AllocMem()
     Lang: english
 */
 #include <exec/alerts.h>

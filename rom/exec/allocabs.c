@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Exec function AllocAbs()
+    Desc: Allocate memory at address
     Lang: english
 */
 #include <exec/alerts.h>

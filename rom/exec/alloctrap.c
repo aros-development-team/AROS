@@ -1,7 +1,8 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
-    Desc:
+    $Id$
+
+    Desc: Allocate a trap
     Lang: english
 */
 #include "exec_intern.h"

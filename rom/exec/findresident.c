@@ -1,8 +1,8 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
+    $Id$
 
-    Desc:
+    Desc: Search a resident module by name
     Lang: english
 */
 #include "exec_intern.h"

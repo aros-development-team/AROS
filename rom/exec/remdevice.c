@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Remove a device from the public list of devices.
     Lang: english
 */
 #include <aros/config.h>

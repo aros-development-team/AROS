@@ -2,8 +2,8 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
-    Lang:
+    Desc: Build a library or device from a resident structure.
+    Lang: english
 */
 #include <dos/dos.h>
 #include <aros/asmcall.h>
@@ -26,6 +26,9 @@
 /*****************************************************************************
 
     NAME */
+#include <exec/resident.h>
+#include <dos/bptr.h>
+#include <proto/exec.h>
 
 	AROS_LH2(APTR, InitResident,
 

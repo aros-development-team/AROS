@@ -1,10 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.13  1997/03/19 16:35:43  digulla
-    Removed log
-
 
     Desc: Allocate some memory
     Lang: english

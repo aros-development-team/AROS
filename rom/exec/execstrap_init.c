@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Exec patches for AROS for Amiga
     Lang: english
 */
 
