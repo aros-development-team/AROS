@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <dos/dosextens.h>
+#include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <aros/asmcall.h>
 #include "dos_intern.h"
@@ -31,7 +32,7 @@ LONG DosEntry (
 	   tc_UserData is safe to use because at this point we are out of the process'
 	   main code
 	*/
-        FindTask(NULL)->tc_UserData = result;
+        FindTask(NULL)->tc_UserData = (APTR)result;
 
 	return result;
 }
@@ -43,6 +44,31 @@ struct Process *AddProcess(struct Process *process, STRPTR argPtr,
 			   ULONG argSize, APTR initialPC, APTR finalPC,
 			   struct DosLibrary *DOSBase)
 {
+#if 1
+    struct TagItem tags[] =
+    {
+    	{TASKTAG_ARG1, (IPTR)argPtr 	},
+	{TASKTAG_ARG2, (IPTR)argSize	},
+	{TASKTAG_ARG3, (IPTR)initialPC	},
+	{TASKTAG_ARG4, (IPTR)SysBase	},
+	{TAG_DONE   	    	    	}
+    };
+    
+#if AROS_STACK_GROWS_DOWNWARDS
+    process->pr_Task.tc_SPReg = (STRPTR)process->pr_Task.tc_SPUpper - SP_OFFSET;
+#else
+    process->pr_Task.tc_SPReg = (STRPTR)process->pr_Task.tc_SPLower + SP_OFFSET;
+#endif
+
+    process->pr_ReturnAddr = (APTR *)process->pr_Task.tc_SPReg - 4; /* ???? */
+    process->pr_Task.tc_Flags |= TF_ETASK;
+
+    addprocesstoroot(process, DOSBase);
+
+    return (struct Process *)NewAddTask(&process->pr_Task, (APTR)DosEntry,
+				     	finalPC, tags);
+
+#else
     APTR *sp = process->pr_Task.tc_SPUpper;
 
     *--sp = SysBase;
@@ -59,4 +85,7 @@ struct Process *AddProcess(struct Process *process, STRPTR argPtr,
 
     return (struct Process *)AddTask(&process->pr_Task, (APTR)DosEntry,
 				     finalPC);
+
+#endif
+
 } /* AddProcess */
