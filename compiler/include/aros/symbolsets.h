@@ -41,7 +41,13 @@ extern void * SETNAME(set)[] __attribute__((weak));
 void * SETNAME(set)[] __attribute__((weak))={0,0};
 
 #define ADD2SET(symbol, _set, pri)\
-	static typeof(symbol) * __aros_set_##_set##_##pri##_##symbol __attribute__((section(".aros.set." #_set "." #pri))) __unused = &symbol;
+	static typeof(symbol) * __aros_set_##_set##_##symbol __attribute__((section(".aros.set." #_set "." #pri))) __unused = &symbol;
+
+#define SETELEM(symbol, _set)                  \
+({                                             \
+    extern void *__aros_set_##_set##_##symbol; \
+    &__aros_set_##_set##_##symbol;             \
+})
 
 /*
     ctors and dtors sets are used by c++ to store static constructors/destructors
@@ -56,9 +62,9 @@ void * SETNAME(set)[] __attribute__((weak))={0,0};
 /*
     init and exit sets are like the ctors and dtors sets, except that they take
     precedence on them, that is functions stored in the init set are called
-    before the ones stored in the ctors set, and functions stored in the 
+    before the ones stored in the ctors set, and functions stored in the
     exit set are called after the ones stored in the dtors set.
-    
+
     Moreover, init functions return an int, instead of void like the ctor functions.
     This return value is equal to 0 if the function returned with success, otherwise
     it holds an error code.
@@ -81,7 +87,7 @@ void * SETNAME(set)[] __attribute__((weak))={0,0};
     The calling of the functions in the initlib and the openlib sets stops when
     the first zero value is met. The functions in the expungelib and the
     closelib are always called.
-    
+
     These sets have a lower priority then the INIT and the CTORS sets. So when
     a library is loaded first the init set is called, then the ctors set and
     finally the initlib set.
