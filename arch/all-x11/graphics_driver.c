@@ -40,15 +40,34 @@ AROSFontTable[] =
     { { "helvetica.font", 14, FS_NORMAL, FPF_DISKFONT }, "-adobe-helvetica-medium-r-normal--14-*-100-100-*-*-iso8859-1" },
 };
 
-static const char * sysColName[] = {
+#define PEN_BITS    4
+#define NUM_COLORS  (1L << PEN_BITS)
+#define PEN_MASK    (NUM_COLORS - 1)
+
+static const char * sysColName[NUM_COLORS] =
+{
     "grey70",
     "black",
     "white",
     "orange",
-    NULL
+
+    "blue",
+    "green",
+    "red",
+    "cyan",
+
+    "magenta",
+    "violet",
+    "brown",
+    "bisque",
+
+    "lavender",
+    "navy",
+    "khaki",
+    "sienna",
 };
 
-static long sysCMap[] = { 0, 0, 0, 0, };
+static long sysCMap[NUM_COLORS];
 static unsigned long sysPlaneMask;
 
 struct ETextFont
@@ -83,7 +102,7 @@ int driver_init (struct GfxBase * GfxBase)
 
     sysPlaneMask = 0;
 
-    for (t=0; sysColName[t]; t++)
+    for (t=0; t < NUM_COLORS; t++)
     {
 	if (depth == 1)
 	{
@@ -209,14 +228,14 @@ int GetSysScreen (void)
 
 void driver_SetAPen (struct RastPort * rp, unsigned long pen)
 {
-    pen &= 3L;
+    pen &= PEN_MASK;
 
     XSetForeground (sysDisplay, GetGC (rp), sysCMap[pen]);
 }
 
 void driver_SetBPen (struct RastPort * rp, unsigned long pen)
 {
-    pen &= 3L;
+    pen &= PEN_MASK;
 
     XSetBackground (sysDisplay, GetGC (rp), sysCMap[pen]);
 }
@@ -235,7 +254,7 @@ void driver_RectFill (struct RastPort * rp, long x1, long y1, long x2, long y2)
     {
 	ULONG pen;
 
-	pen = ((ULONG)(rp->FgPen)) & 3L;
+	pen = ((ULONG)(rp->FgPen)) & PEN_MASK;
 
 	XSetForeground (sysDisplay, GetGC (rp), sysPlaneMask);
 
@@ -428,6 +447,8 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 	return (NULL);
     }
 
+    tf->etf_Font.tf_Accessors ++;
+
     return (struct TextFont *)tf;
 }
 
@@ -438,6 +459,8 @@ void driver_CloseFont (struct ETextFont * tf, struct GfxBase * GfxBase)
 	XUnloadFont (sysDisplay, tf->etf_XFS.fid);
 	FreeMem (tf, sizeof (struct ETextFont));
     }
+    else
+	tf->etf_Font.tf_Accessors --;
 }
 
 void driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
