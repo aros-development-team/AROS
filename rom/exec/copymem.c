@@ -53,7 +53,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    UBYTE *src=(UBYTE *)source,*dst=(UBYTE *)dest;
+    UBYTE *src,*dst;
     ULONG mis,low,high;
 
     /*
@@ -61,6 +61,12 @@
 	the misaligned leading bytes of the source first. I use sizeof(LONG)
 	instead of LONGALIGN because it is sometimes faster.
     */
+    
+    if (!size) return;
+    
+    src = (UBYTE *)source;
+    dst = (UBYTE *)dest;
+     
     mis =(IPTR)src&(sizeof(LONG)-1);
     if(mis>size)
 	mis=size;
