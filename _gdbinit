@@ -199,3 +199,30 @@ end
 document findaddr
 Shows the module that contains the given address
 end
+
+define printtaglist
+    set $list = (struct TagItem *)$arg0
+
+    printf "Tag         Data (Hex)     Data (Dec)\n"
+    printf "--------------------------------------\n"
+
+    while $list->ti_Tag != 0
+	# Handle the possible control tag...
+	if $list->ti_Tag == 1
+	    printf "TAG_IGNORE\n"
+	else if $list->ti_Tag == 2
+	    printf "TAG_MORE    0x08%x\n", $list->ti_Data
+	    set $list = (struct TagItem *)$list->ti_Data
+	else if $list->ti_Tag == 3
+	    printf "TAG_SKIP    %d\n", $list->ti_Data
+	    set $list = $list + $list->ti_Tag + 1
+	else
+	    printf "0x%08x  0x%08x      %9lu\n", $list->ti_Tag, $list->ti_Data, $list->ti_Data
+	    set $list = $list + 1
+	end
+    end
+    printf "TAG_DONE\n"
+end
+document printtaglist
+end
+    
