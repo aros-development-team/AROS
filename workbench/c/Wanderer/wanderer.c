@@ -31,10 +31,12 @@
 #else
 #include "mui.h"
 #endif
-struct Library *MUIMasterBase;
+
 
 
 #ifndef _AROS
+struct Library *MUIMasterBase;
+
 /* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
 #include "muimaster_intern.h"
 int openmuimaster(void)
@@ -219,7 +221,6 @@ char *GetScreenTitle(void)
 }
 
 /* Our global variables */
-struct Library *MUIMasterBase;
 
 Object *app;
 Object *root_iconwnd;
@@ -856,16 +857,15 @@ int main(void)
 
     openmuimaster();
 
-/*    MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);*/
-
     if (!MUIMasterBase)
 	return 20;
 
     /* Create the IconWindow class which inherits from MUIC_Window (WindowClass) */
     CL_IconWindow = MUI_CreateCustomClass(NULL,MUIC_Window,NULL,sizeof(struct IconWindow_Data), IconWindow_Dispatcher);
+
     if (!CL_IconWindow)
     {
-	CloseLibrary(MUIMasterBase);
+        closemuimaster();
 	return 20;
     }
 
@@ -874,7 +874,7 @@ int main(void)
     if (!CL_Wanderer)
     {
 	MUI_DeleteCustomClass(CL_IconWindow);
-	CloseLibrary(MUIMasterBase);
+        closemuimaster();
 	return 20;
     }
 
@@ -947,7 +947,6 @@ int main(void)
 
     MUI_DeleteCustomClass(CL_Wanderer);
     MUI_DeleteCustomClass(CL_IconWindow);
-/*    CloseLibrary(MUIMasterBase);*/
     closemuimaster();
     return 0;
 }
