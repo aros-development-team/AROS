@@ -527,16 +527,28 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
     SetFont(rp,_font(obj));
     SetSoftStyle(rp, style, AskSoftStyle(rp));
     
-    for (line_node = (ZTextLine *)text->lines.mlh_Head; line_node->node.mln_Succ ; line_node = (ZTextLine*)line_node->node.mln_Succ)
+    for (line_node = (ZTextLine *)text->lines.mlh_Head;
+	 line_node->node.mln_Succ ;
+	 line_node = (ZTextLine*)line_node->node.mln_Succ)
     {
 	LONG x;
 
-	if (line_node->align == ZTL_CENTER) x = (left + right + 1 - line_node->lwidth) / 2;
-	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth + 1;
-	else x = left;
+	if (line_node->align == ZTL_CENTER)
+	    x = (left + right + 1 - line_node->lwidth) / 2;
+	else if (line_node->align == ZTL_RIGHT)
+	    x = right - line_node->lwidth + 1;
+	else
+	    x = left;
+
+	// like MUI, never truncates the beginning of a line
+	if (x < left)
+	    x = left;
+
 /*  	D(bug("zune_text_draw(%x,%d,%d,%d, align=%d) : x = %d\n", obj, left, right, line_node->lwidth, line_node->align, x)); */
 
-	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head; chunk_node->node.mln_Succ ; chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
+	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head;
+	     chunk_node->node.mln_Succ ;
+	     chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
 	{
 	    /*
 	     * Show/Hide stuff should be put in new api calls
