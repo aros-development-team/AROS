@@ -32,6 +32,338 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/*******************************************************************************************************/
+
+static void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy, 
+				 struct IntuitionBase *IntuitionBase)
+{
+    /* Erase the old frame on the right/lower side if
+       new size is bigger than old size
+    */
+
+    D(bug("********* WindowSizeWillChange ********\n"));
+
+    if ( ((dx > 0) && (targetwindow->BorderRight  > 0)) ||
+	 ((dy > 0) && (targetwindow->BorderBottom > 0)) )
+    {
+        struct RastPort 	*rp = targetwindow->BorderRPort;
+        struct Layer 	*L = rp->Layer;
+        struct Rectangle 	rect;
+        struct Region 	*oldclipregion;
+        WORD 		ScrollX;
+        WORD 		ScrollY;
+
+        /* 
+        ** In case a clip region is installed then I have to 
+        ** install the regular cliprects of the layer
+        ** first. Otherwise the frame might not get cleared correctly.
+        */
+
+        LockLayer(0, L);
+
+        oldclipregion = InstallClipRegion(L, NULL);
+
+	ScrollX = L->Scroll_X;
+        ScrollY = L->Scroll_Y;
+
+	L->Scroll_X = 0;
+        L->Scroll_Y = 0;
+
+        if ((dx > 0) && (targetwindow->BorderRight > 0))
+        {
+	    rect.MinX = targetwindow->Width - targetwindow->BorderRight;
+	    rect.MinY = 0;
+	    rect.MaxX = targetwindow->Width - 1;
+	    rect.MaxY = targetwindow->Height - 1;
+
+            EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+
+	    OrRectRegion(L->DamageList, &rect);
+	    L->Flags |= LAYERREFRESH;
+        }
+
+        if ((dy > 0) && (targetwindow->BorderBottom > 0))
+
+        {
+	    rect.MinX = 0;
+	    rect.MinY = targetwindow->Height - targetwindow->BorderBottom;
+	    rect.MaxX = targetwindow->Width - 1;
+	    rect.MaxY = targetwindow->Height - 1;
+
+            EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+
+	    OrRectRegion(L->DamageList, &rect);
+	    L->Flags |= LAYERREFRESH;
+        }
+
+
+        /*
+        ** Reinstall the clipregions rectangles if there are any.
+        */
+        if (NULL != oldclipregion)
+        {
+             InstallClipRegion(L, oldclipregion);
+        }
+
+	L->Scroll_X = ScrollX;
+        L->Scroll_Y = ScrollY;
+
+	UnlockLayer(L);
+
+    } /* if ( ((dx > 0) && (targetwindow->BorderRight  > 0)) || ((dy > 0) && (targetwindow->BorderBottom > 0)) ) */
+
+    /* Before resizing the layers eraserect the area of all
+       GFLG_REL??? gadgets and add the area to the damagelist */
+
+    EraseRelGadgetArea(targetwindow, FALSE, IntuitionBase);
+	
+}
+
+/*******************************************************************************************************/
+
+static void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
+				 BOOL is_sizewindow, struct IntuitionBase *IntuitionBase)
+{
+    struct Layer *lay;
+    
+    D(bug("********* WindowSizeHasChanged ********\n"));
+
+    /* Relayout GFLG_REL??? gadgets */
+    DoGMLayout(targetwindow->FirstGadget, targetwindow, NULL, -1, FALSE, IntuitionBase);
+
+    /* Add the new area of all GFLG_REL??? gadgets to the damagelist, but
+       don't EraseRect() as the gadgets will be re-rendered at their new
+       position anyway */
+    EraseRelGadgetArea(targetwindow, TRUE, IntuitionBase);
+
+    /* If new size is smaller than old size add right/bottom
+       frame to damagelist */
+    if ( ((dx < 0) && (targetwindow->BorderRight  > 0)) ||
+	 ((dy < 0) && (targetwindow->BorderBottom > 0)) )
+    {
+	struct Rectangle rect;
+
+	lay = targetwindow->BorderRPort->Layer;
+
+	LockLayer(0, lay);
+
+	if ((dx < 0) && (targetwindow->BorderRight > 0))
+	{
+	    rect.MinX = targetwindow->Width - targetwindow->BorderRight;
+	    rect.MinY = 0;
+	    rect.MaxX = targetwindow->Width - 1;
+	    rect.MaxY = targetwindow->Height - 1;
+
+	    OrRectRegion(lay->DamageList, &rect);
+	    lay->Flags |= LAYERREFRESH;
+	}
+
+	if ((dy < 0) && (targetwindow->BorderBottom > 0))
+	{
+	    rect.MinX = 0;
+	    rect.MinY = targetwindow->Height - targetwindow->BorderBottom;
+	    rect.MaxX = targetwindow->Width - 1;
+	    rect.MaxY = targetwindow->Height - 1;
+
+	    OrRectRegion(lay->DamageList, &rect);
+	    lay->Flags |= LAYERREFRESH;
+	}
+
+	UnlockLayer(lay);
+
+    } /* if ( ((dx < 0) && (targetwindow->BorderRight > 0)) || ((dy < 0) && (targetwindow->BorderBottom > 0)) ) */
+
+    if (IS_GZZWINDOW(targetwindow))
+    {
+        lay = targetwindow->BorderRPort->Layer;
+
+	if (lay->Flags & LAYERREFRESH)
+	{
+	    Gad_BeginUpdate(lay, IntuitionBase);	
+	    RefreshWindowFrame(targetwindow);
+	    lay->Flags &= ~LAYERREFRESH;
+	    Gad_EndUpdate(lay, TRUE, IntuitionBase);
+	}
+
+	lay = targetwindow->WLayer;
+
+	if (lay->Flags & LAYERREFRESH)
+	{
+	    Gad_BeginUpdate(lay, IntuitionBase);
+	    int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
+	    Gad_EndUpdate(lay, IS_NOCAREREFRESH(targetwindow), IntuitionBase);
+	}
+
+    } else {
+        lay = targetwindow->WLayer;
+
+	if (lay->Flags & LAYERREFRESH)
+	{
+	    Gad_BeginUpdate(lay, IntuitionBase);
+	    RefreshWindowFrame(targetwindow);
+	    int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
+	    Gad_EndUpdate(lay, IS_NOCAREREFRESH(targetwindow), IntuitionBase);
+	}
+    }
+
+    lay = targetwindow->WLayer;
+
+    if (IS_NOCAREREFRESH(targetwindow))
+    {
+	LockLayer(0, lay);
+        lay->Flags &= ~LAYERREFRESH;
+	UnlockLayer(lay);
+    }
+	    
+    if (is_sizewindow)
+    {
+	/* Send IDCMP_NEWSIZE to resized window */
+
+	ih_fire_intuimessage(targetwindow,
+			     IDCMP_NEWSIZE,
+			     0,
+			     targetwindow,
+			     IntuitionBase);
+    }
+    
+    /* Send IDCMP_CHANGEWINDOW to resized window */
+
+    ih_fire_intuimessage(targetwindow,
+		    	 IDCMP_CHANGEWINDOW,
+			 CWCODE_MOVESIZE,
+			 targetwindow,
+			 IntuitionBase);
+
+    lay = targetwindow->WLayer;
+    
+    if (lay->Flags & LAYERREFRESH)
+    {
+	ih_fire_intuimessage(targetwindow,
+			     IDCMP_REFRESHWINDOW,
+			     0,
+			     targetwindow,
+			     IntuitionBase);
+    }  
+}
+
+/*******************************************************************************************************/
+
+static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD NewTopEdge,
+			     WORD NewWidth, WORD NewHeight, struct Layer **L, BOOL *CheckLayersBehind,
+			     struct IntuitionBase *IntuitionBase)
+{
+    struct IntWindow 	* w 	     = (struct IntWindow *)targetwindow;
+    struct Layer	*targetlayer = targetwindow->WLayer;
+    WORD		OldLeftEdge  = targetwindow->LeftEdge;
+    WORD		OldTopEdge   = targetwindow->TopEdge;
+    WORD 		OldWidth     = targetwindow->Width;
+    WORD 		OldHeight    = targetwindow->Height;
+    WORD 		pos_dx, pos_dy, size_dx, size_dy;
+    		
+    /* correct new window coords if necessary */
+
+    FixWindowCoords(targetwindow, &NewLeftEdge, &NewTopEdge, &NewWidth, &NewHeight);
+
+    pos_dx  = NewLeftEdge - OldLeftEdge;
+    pos_dy  = NewTopEdge  - OldTopEdge;
+    size_dx = NewWidth    - OldWidth;
+    size_dy = NewHeight   - OldHeight;
+
+    if (!pos_dx && !pos_dy && !size_dx && !size_dy) return;
+
+    if (size_dx || size_dy)
+    {
+	WindowSizeWillChange(targetwindow, size_dx, size_dy, IntuitionBase);
+    }
+
+    targetwindow->LeftEdge = NewLeftEdge;
+    targetwindow->TopEdge  = NewTopEdge;
+    targetwindow->Width    = NewWidth;
+    targetwindow->Height   = NewHeight; 
+
+    /* check for GZZ window */
+    if (IS_GZZWINDOW(targetwindow))
+    {
+	/* move outer window first */
+	MoveSizeLayer(targetwindow->BorderRPort->Layer, pos_dx, pos_dy, size_dx, size_dy);
+    }
+
+    MoveSizeLayer(targetlayer, pos_dx, pos_dy, size_dx, size_dy);
+
+    if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = OldLeftEdge;
+    if (w->ZipTopEdge  != ~0) w->ZipTopEdge  = OldTopEdge;
+    if (w->ZipWidth    != ~0) w->ZipWidth    = OldWidth;
+    if (w->ZipHeight   != ~0) w->ZipHeight   = OldHeight;
+
+    if (pos_dx || pos_dy) UpdateMouseCoords(targetwindow);
+
+    if (size_dx || size_dy)
+    {
+	/* This func also takes care of sending IDCMP_CHANGEWINDOW
+	   and IDCMP_REFRESHWINDOW to targetwindow, therefore ... */
+
+	WindowSizeHasChanged(targetwindow, size_dx, size_dy, FALSE, IntuitionBase);
+
+	/* ... start checking refresh behind targetwindow */
+
+	*L = targetwindow->BorderRPort->Layer->back;
+    } else {
+	/* Send IDCMP_CHANGEWINDOW to resized window */
+
+	ih_fire_intuimessage(targetwindow,
+		    	     IDCMP_CHANGEWINDOW,
+			     CWCODE_MOVESIZE,
+			     targetwindow,
+			     IntuitionBase);
+
+	/* Also check targetwindow for refresh */
+
+	*L = targetlayer;
+    }
+
+    if ((size_dx < 0) || (size_dy < 0) || pos_dx || pos_dy)
+    {
+	*CheckLayersBehind = TRUE;
+    }
+
+}
+
+/*******************************************************************************************************/
+
+static void CheckLayerRefresh(struct Layer *lay, struct Screen *targetscreen, struct IntuitionBase *IntuitionBase)
+{   
+    if (lay->Flags & LAYERREFRESH)
+    {
+        struct Window *win = (struct Window *)lay->Window;
+
+	if (lay == targetscreen->BarLayer)
+	{
+	    RenderScreenBar(targetscreen, TRUE, IntuitionBase);
+	}
+	else if (win)
+	{
+	    /* Does it belong to a GZZ window and is it
+	       the outer window of that GZZ window? */
+	    if (IS_GZZWINDOW(win) && (lay == win->BorderRPort->Layer))
+	    {
+	        /* simply refresh that window's frame */
+
+		Gad_BeginUpdate(lay, IntuitionBase);
+	        RefreshWindowFrame(win);
+	        lay->Flags &= ~LAYERREFRESH;
+		Gad_EndUpdate(lay, TRUE, IntuitionBase);
+	    }
+	    else
+	    {
+	        WindowNeedsRefresh(win, IntuitionBase);
+	    }
+	}
+	
+    } /* if (lay->Flags & LAYERREFRESH) */
+}
+
+/*******************************************************************************************************/
+
 void HandleDeferedActions(struct IIHData *iihdata,
 			  struct IntuitionBase *IntuitionBase)
 {
@@ -69,19 +401,19 @@ void HandleDeferedActions(struct IIHData *iihdata,
  	switch (am->Code)
 	{
 	    case AMCODE_CLOSEWINDOW: {
-		if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+		if (!IS_GZZWINDOW(targetwindow))
 		{
-		  /* not a GGZ window */
-		  L = targetlayer->back;
+		    /* not a GGZ window */
+		    L = targetlayer->back;
 		}
 		else
 		{
-		  /* a GZZ window */
-		  L = targetlayer->back->back;
+		    /* a GZZ window */
+		    L = targetlayer->back->back;
 		}
 
 		if (NULL != L)
-		  CheckLayersBehind = TRUE;
+		    CheckLayersBehind = TRUE;
 		
 		ObtainSemaphore(&GetPrivIBase(IntuitionBase)->DeferedActionLock);
 		Remove(&am->ExecMessage.mn_Node);
@@ -94,93 +426,99 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	    break; }
 
 	    case AMCODE_WINDOWTOFRONT: {
-		if (0 == (targetlayer->Flags & LAYERBACKDROP))
+		if (!(targetlayer->Flags & LAYERBACKDROP))
 		{
-		  /* GZZ or regular window? */
-		  if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
-		  {
-		    /* bring outer window to front first!! */
-
-		    UpfrontLayer(NULL, targetwindow->BorderRPort->Layer);
-		    if (targetwindow->BorderRPort->Layer->Flags & LAYERREFRESH)
+		    /* GZZ or regular window? */
+		    if (IS_GZZWINDOW(targetwindow))
 		    {
-			BeginUpdate(targetwindow->BorderRPort->Layer);
-		        RefreshWindowFrame(targetwindow);
-			EndUpdate(targetwindow->BorderRPort->Layer, TRUE);
+			/* bring outer window to front first!! */
 
-			targetwindow->BorderRPort->Layer->Flags &= ~LAYERREFRESH;
+			UpfrontLayer(NULL, targetwindow->BorderRPort->Layer);
+			if (targetwindow->BorderRPort->Layer->Flags & LAYERREFRESH)
+			{
+			    Gad_BeginUpdate(targetwindow->BorderRPort->Layer, IntuitionBase);
+		            RefreshWindowFrame(targetwindow);
+			    targetwindow->BorderRPort->Layer->Flags &= ~LAYERREFRESH;
+			    Gad_EndUpdate(targetwindow->BorderRPort->Layer, TRUE, IntuitionBase);
+			}
 		    }
-		  }
 
-		  UpfrontLayer(NULL, targetlayer);
+		    UpfrontLayer(NULL, targetlayer);
 
-		  /* only this layer (inner window) needs to be updated */
-		  if (0 != (targetlayer->Flags & LAYERREFRESH))
-		  {
-		    /* stegerg */
-
-		    BeginUpdate(targetlayer);
-		    if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+		    /* only this layer (inner window) needs to be updated */
+		    if (targetlayer->Flags & LAYERREFRESH)
 		    {
-			RefreshWindowFrame(targetwindow);
-		    }
-		    RefreshGadgets(targetwindow->FirstGadget, targetwindow, NULL);
-		    EndUpdate(targetlayer, FALSE);
+			Gad_BeginUpdate(targetlayer, IntuitionBase);
+			
+			if (!IS_GZZWINDOW(targetwindow))
+			{
+			    RefreshWindowFrame(targetwindow);
+			}
+			
+			RefreshGadgets(targetwindow->FirstGadget, targetwindow, NULL);
+			
+			if (IS_NOCAREREFRESH(targetwindow))
+			{
+			    targetlayer->Flags &= ~LAYERREFRESH;
+			}
+			
+			Gad_EndUpdate(targetlayer, IS_NOCAREREFRESH(targetwindow), IntuitionBase);
 
-		    targetlayer->Flags &= ~LAYERREFRESH;
-
-		    ih_fire_intuimessage(targetwindow,
-			                 IDCMP_REFRESHWINDOW,
-					 0,
-					 targetwindow,
-					 IntuitionBase);
-
-		  }
-		} 
+			if (!IS_NOCAREREFRESH(targetwindow))
+			{
+			    ih_fire_intuimessage(targetwindow,
+			                	 IDCMP_REFRESHWINDOW,
+						 0,
+						 targetwindow,
+						 IntuitionBase);
+			}
+			
+		    } /* if (targetlayer->Flags & LAYERREFRESH) */
+		    
+		} /* if (!(targetlayer->Flags & LAYERBACKDROP)) */
 		
 		NotifyDepthArrangement(targetwindow, IntuitionBase);
 	    break; }
 
 	    case AMCODE_WINDOWTOBACK: {
 		/* I don't move backdrop layers! */
-		if (0 == (targetlayer->Flags & LAYERBACKDROP))
+		if (!(targetlayer->Flags & LAYERBACKDROP))
 		{
 
-		  BehindLayer(0, targetlayer);
+		    BehindLayer(0, targetlayer);
 
+		    /* GZZ window or regular window? */
+		    if (IS_GZZWINDOW(targetwindow))
+		    {
+			/* move outer window behind! */
+			/* attention: targetlayer->back would not be valid as
+		                      targetlayer already moved!! 
+			*/
+			BehindLayer(0, targetwindow->BorderRPort->Layer);
 
-		  /* GZZ window or regular window? */
-		  if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
-		  {
-		      /* move outer window behind! */
-		      /* attention: targetlayer->back would not be valid as
-		                    targetlayer already moved!! 
-		      */
-		      BehindLayer(0, targetwindow->BorderRPort->Layer);
+			/* 
+                	 * stegerg: check all layers including inner gzz
+			 *          layer because of this: inner layer
+			 *          was moved back first, so it gets 
+			 *          completely under the outer layer.
+			 *          Maybe it would be better to move the
+			 *          outer layer first and then move the
+			 *          inner layer with MoveLayerinfrontof
+			 *          (outerlayer) ????
+			 * 
+                	 */
 
-		      /* 
-                       * stegerg: check all layers including inner gzz
-		       *          layer because of this: inner layer
-		       *          was moved back first, so it gets 
-		       *          completely under the outer layer.
-		       *          Maybe it would be better to move the
-		       *          outer layer first and then move the
-		       *          inner layer with MoveLayerinfrontof
-		       *          (outerlayer) ????
-		       * 
-                       */
+			L = targetlayer; /* targetlayer->front */
+			CheckLayersInFront = TRUE;
 
-		      L = targetlayer; /* targetlayer->front */
-		      CheckLayersInFront = TRUE;
+		    } else {
 
-		  } else {
-
-                      /* 
-                       * Check all layers in front of the layer.
-                       */
-		      L = targetlayer->front;
-		      CheckLayersInFront = TRUE;
-		  }
+                	/* 
+                	 * Check all layers in front of the layer.
+                	 */
+			L = targetlayer->front;
+			CheckLayersInFront = TRUE;
+		    }
 		}
 
 		NotifyDepthArrangement(targetwindow, IntuitionBase);
@@ -247,15 +585,14 @@ void HandleDeferedActions(struct IIHData *iihdata,
                               am->dy);
 
                     /* in case of GZZ windows also move outer window */
-                    if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+                    if (IS_GZZWINDOW(targetwindow))
                     {
-                      MoveLayer(NULL,
-                        	targetwindow->BorderRPort->Layer,
-                        	am->dx,
-                        	am->dy);
-                      RefreshWindowFrame(targetwindow);
+                	MoveLayer(NULL,
+                        	  targetwindow->BorderRPort->Layer,
+                        	  am->dx,
+                        	  am->dy);
+/*                	RefreshWindowFrame(targetwindow);*/
                     }
-
 
                     if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = targetwindow->LeftEdge;
                     if (w->ZipTopEdge  != ~0) w->ZipTopEdge  = targetwindow->TopEdge;
@@ -266,6 +603,8 @@ void HandleDeferedActions(struct IIHData *iihdata,
                     CheckLayersBehind = TRUE;
                     L = targetlayer;
 
+		    UpdateMouseCoords(targetwindow);
+		    
 		    /* Send IDCMP_CHANGEWINDOW to moved window */
 
 		    ih_fire_intuimessage(targetwindow,
@@ -273,498 +612,118 @@ void HandleDeferedActions(struct IIHData *iihdata,
 					 CWCODE_MOVESIZE,
 					 targetwindow,
 					 IntuitionBase);
-
+					 
 		} /* if (am->dx || am->dy) */
 		
             break; }
 
             case AMCODE_MOVEWINDOWINFRONTOF: { 
                 /* If GZZ window then also move outer window */
-                if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
-                {
-                  MoveLayerInFrontOf(targetwindow->BorderRPort->Layer,
-                                     am->BehindWindow->WLayer);
-                  RefreshWindowFrame(targetwindow);
+                if (IS_GZZWINDOW(targetwindow))
+		{
+                    MoveLayerInFrontOf(targetwindow->BorderRPort->Layer,
+                                       am->BehindWindow->WLayer);
+/*                    RefreshWindowFrame(targetwindow);*/
                 }
-                MoveLayerInFrontOf(     targetwindow->WLayer,
+                MoveLayerInFrontOf(targetwindow->WLayer,
                                    am->BehindWindow->WLayer);
 
                 CheckLayersBehind = TRUE;
-                //CheckLayersInFront = TRUE;
                 L = targetlayer;
 
 		NotifyDepthArrangement(targetwindow, IntuitionBase);
             break; }
 
             case AMCODE_SIZEWINDOW: {
-		/* correct dx, dy if necessary */
+                WORD OldLeftEdge  = targetwindow->LeftEdge;
+                WORD OldTopEdge   = targetwindow->TopEdge;
+                WORD OldWidth     = targetwindow->Width;
+                WORD OldHeight    = targetwindow->Height;
+                WORD NewLeftEdge  = OldLeftEdge;
+		WORD NewTopEdge   = OldTopEdge;
+		WORD NewWidth	  = OldWidth + am->dx;
+		WORD NewHeight	  = OldHeight + am->dy;
+		WORD size_dx, size_dy;
 
-		if ((targetwindow->LeftEdge + targetwindow->Width + am->dx) > targetwindow->WScreen->Width)
+                /* correct new window coords if necessary */
+
+		FixWindowCoords(targetwindow, &NewLeftEdge, &NewTopEdge, &NewWidth, &NewHeight);
+		
+		if (NewLeftEdge != OldLeftEdge)
 		{
-		   am->dx = targetwindow->WScreen->Width -
-			    targetwindow->Width -
-			    targetwindow->LeftEdge;
+		    /* am->dx was too big */
+		    NewLeftEdge = OldLeftEdge;
+		    NewWidth    = targetwindow->WScreen->Width - NewLeftEdge;
 		}
-		if ((targetwindow->TopEdge + targetwindow->Height + am->dy) > targetwindow->WScreen->Height)
+		if (NewTopEdge != OldTopEdge)
 		{
-		   am->dy = targetwindow->WScreen->Height -
-			    targetwindow->Height -
-			    targetwindow->TopEdge;
+		    /* am->dy was too big */
+		    NewTopEdge = OldTopEdge;
+		    NewHeight  = targetwindow->WScreen->Height - NewTopEdge;		    
 		}
 
-                /* First erase the old frame on the right side and 
-                   on the lower side if necessary, but only do this
-                   for non-GZZ windows 
-                */
+		size_dx = NewWidth - OldWidth;
+		size_dy = NewHeight - OldHeight;
 
-                if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
-                {
-                  struct RastPort * rp = targetwindow->BorderRPort;
-                  struct Layer * L = rp->Layer;
-                  struct Rectangle rect;
-                  struct Region * oldclipregion;
-                  WORD ScrollX;
-                  WORD ScrollY;
-                  /* 
-                  ** In case a clip region is installed then I have to 
-                  ** install the regular cliprects of the layer
-                  ** first. Otherwise the frame might not get cleared correctly.
-                  */
-                  LockLayer(0, L);
-
-                  oldclipregion = InstallClipRegion(L, NULL);
-
-		  ScrollX = L->Scroll_X;
-                  ScrollY = L->Scroll_Y;
-
-		  L->Scroll_X = 0;
-                  L->Scroll_Y = 0;
-
-                  if ((am->dy > 0) && (targetwindow->BorderBottom > 0))
-
-                  {
-		    rect.MinX = targetwindow->BorderLeft;
-		    rect.MinY = targetwindow->Height - targetwindow->BorderBottom;
-		    rect.MaxX = targetwindow->Width - 1;
-		    rect.MaxY = targetwindow->Height - 1;
-
-                    EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-
-		    if (0 != (L->Flags & LAYERSIMPLE))
-		    {
-			OrRectRegion(L->DamageList, &rect);
-		    }
-                  }
-
-                  if ((am->dx > 0) && (targetwindow->BorderRight > 0))
-                  {
-		    rect.MinX = targetwindow->Width - targetwindow->BorderRight;
-		    rect.MinY = targetwindow->BorderTop;
-		    rect.MaxX = targetwindow->Width - 1;
-		    rect.MaxY = targetwindow->Height - targetwindow->BorderBottom;
-
-                    EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-
-		    if (0 != (L->Flags & LAYERSIMPLE))
-		    {
-			OrRectRegion(L->DamageList, &rect);
-		    }
-                  }
-
-                  /*
-                  ** Reinstall the clipregions rectangles if there are any.
-                  */
-                  if (NULL != oldclipregion)
-                  {
-                    InstallClipRegion(L, oldclipregion);
-                  }
-
-		  L->Scroll_X = ScrollX;
-                  L->Scroll_Y = ScrollY;
-
-		  UnlockLayer(L);
-                }
-
-		/* Before resizing the layers eraserect the area of all
-		   GFLG_REL*** gadgets (except those in the window border */
-	        EraseRelGadgetArea(targetwindow, IntuitionBase);
+		if (!size_dx && !size_dy) break;
+		
+		WindowSizeWillChange(targetwindow, size_dx, size_dy, IntuitionBase);
 
                 ((struct IntWindow *)targetwindow)->ZipWidth  = targetwindow->Width;
                 ((struct IntWindow *)targetwindow)->ZipHeight = targetwindow->Height;
 
-                targetwindow->Width += am->dx;
-                targetwindow->Height+= am->dy;
+                targetwindow->Width  += size_dx;
+                targetwindow->Height += size_dy;
 
                 /* I first resize the outer window if a GZZ window */
-                if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+                if (IS_GZZWINDOW(targetwindow))
                 {
-                  SizeLayer(NULL,
-                            targetwindow->BorderRPort->Layer,
-                            am->dx,
-                            am->dy);
+                    SizeLayer(NULL, targetwindow->BorderRPort->Layer, size_dx, size_dy);
                 }
+                SizeLayer(NULL, targetlayer, size_dx, size_dy);
 
-                SizeLayer(NULL, 
-                          targetlayer,
-                          am->dx,
-                          am->dy);
+		WindowSizeHasChanged(targetwindow, am->dx, am->dy, TRUE, IntuitionBase);				
 
                 /* 
                    Only if the window is smaller now there can be damage
                    to report to layers further behind.
                 */
-                if (am->dx < 0 || am->dy < 0)
+                if ((size_dx < 0) || (size_dy < 0))
                 {
-                  CheckLayersBehind = TRUE;
-                  if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
-                  {
-                    L = targetlayer;
-                  }
-                  else
-                  {
-                    L = targetlayer->back;
-                  }
+                    CheckLayersBehind = TRUE;
+		    L = targetwindow->BorderRPort->Layer->back;
                 }
-		/* Send GM_LAYOUT to all GA_RelS???? BOOPSI gadgets */
 
-		DoGMLayout(targetwindow->FirstGadget, targetwindow, NULL, -1, FALSE, IntuitionBase);
-
-                /* and redraw the window frame */
-		RefreshWindowFrame(targetwindow);
-
-		/* and refresh all gadgets except border gadgets */
-		int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
-		
-		/* Send IDCMP_NEWSIZE to resized window */
-
-		ih_fire_intuimessage(targetwindow,
-			             IDCMP_NEWSIZE,
-				     0,
-				     targetwindow,
-				     IntuitionBase);
-
-		/* Send IDCMP_CHANGEWINDOW to resized window */
-		    
-		ih_fire_intuimessage(targetwindow,
-		    		     IDCMP_CHANGEWINDOW,
-				     CWCODE_MOVESIZE,
-				     targetwindow,
-				     IntuitionBase);
 
             break; }
 
             case AMCODE_ZIPWINDOW: {
                 struct IntWindow * w = (struct IntWindow *)targetwindow;
-                WORD OldLeftEdge  = targetwindow->LeftEdge;
-                WORD OldTopEdge   = targetwindow->TopEdge;
-                WORD OldWidth     = targetwindow->Width;
-                WORD OldHeight    = targetwindow->Height;
                 WORD NewLeftEdge, NewTopEdge, NewWidth, NewHeight;
-		WORD size_dx, size_dy;
 		
-		NewLeftEdge = OldLeftEdge;
+		NewLeftEdge = targetwindow->LeftEdge;
 		if (w->ZipLeftEdge != ~0) NewLeftEdge = w->ZipLeftEdge;
 
-		NewTopEdge = OldTopEdge;
+		NewTopEdge = targetwindow->TopEdge;
 		if (w->ZipTopEdge != ~0) NewTopEdge = w->ZipTopEdge;
 
-		NewWidth = OldWidth;
+		NewWidth = targetwindow->Width;
 		if (w->ZipWidth != ~0) NewWidth = w->ZipWidth;
 
-		NewHeight = OldHeight;
+		NewHeight = targetwindow->Height;
 		if (w->ZipHeight != ~0) NewHeight = w->ZipHeight;
 
-                /* correct new window coords if necessary */
-
-		FixWindowCoords(targetwindow, &NewLeftEdge, &NewTopEdge, &NewWidth, &NewHeight);
+		DoMoveSizeWindow(targetwindow, NewLeftEdge, NewTopEdge, NewWidth, NewHeight,
+					       &L, &CheckLayersBehind, IntuitionBase);
 		
-		size_dx = NewWidth - OldWidth;
-		size_dy = NewHeight - OldHeight;
-		
-		/* First erase the old frame on the right side and 
-        	   on the lower side if necessary, but only do this
-        	   for non-GZZ windows 
-		*/
-
-		if ((size_dx || size_dy) && (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO)))
-		{
-		  struct RastPort * rp = targetwindow->BorderRPort;
-		  struct Layer * L = rp->Layer;
-		  struct Rectangle rect;
-		  struct Region * oldclipregion;
-		  WORD ScrollX;
-		  WORD ScrollY;
-
-		  /* 
-		  ** In case a clip region is installed then I have to 
-		  ** install the regular cliprects of the layer
-		  ** first. Otherwise the frame might not get cleared correctly.
-		  */
-		  LockLayer(0, L);
-
-		  oldclipregion = InstallClipRegion(L, NULL);
-
-		  ScrollX = L->Scroll_X;
-		  ScrollY = L->Scroll_Y;
-
-		  L->Scroll_X = 0;
-		  L->Scroll_Y = 0;
-
-		  if ((size_dy > 0) && (targetwindow->BorderBottom > 0))
-
-		  {
-		    rect.MinX = targetwindow->BorderLeft;
-		    rect.MinY = targetwindow->Height - targetwindow->BorderBottom;
-		    rect.MaxX = targetwindow->Width - 1;
-		    rect.MaxY = targetwindow->Height - 1;
-
-        	    EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-
-		    if (0 != (L->Flags & LAYERSIMPLE))
-		    {
-			OrRectRegion(L->DamageList, &rect);
-		    }
-		  }
-
-		  if ((size_dx > 0) && (targetwindow->BorderRight > 0))
-		  {
-		    rect.MinX = targetwindow->Width - targetwindow->BorderRight;
-		    rect.MinY = targetwindow->BorderTop;
-		    rect.MaxX = targetwindow->Width - 1;
-		    rect.MaxY = targetwindow->Height - targetwindow->BorderBottom;
-
-        	    EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-
-		    if (0 != (L->Flags & LAYERSIMPLE))
-		    {
-			OrRectRegion(L->DamageList, &rect);
-		    }
-		  }
-
-		  /*
-		  ** Reinstall the clipregions rectangles if there are any.
-		  */
-		  if (NULL != oldclipregion)
-		  {
-        	    InstallClipRegion(L, oldclipregion);
-		  }
-
-		  L->Scroll_X = ScrollX;
-		  L->Scroll_Y = ScrollY;
-
-		  UnlockLayer(L);
-		}
-
-		if (size_dx || size_dy)
-		{
-		    /* Before resizing the layers eraserect the area of all
-		       GFLG_REL*** gadgets (except those in the window border */
-		    EraseRelGadgetArea(targetwindow, IntuitionBase);
-		}
-
-                targetwindow->LeftEdge = NewLeftEdge;
-                targetwindow->TopEdge  = NewTopEdge;
-                targetwindow->Width    = NewWidth;
-                targetwindow->Height   = NewHeight; 
-
-                /* check for GZZ window */
-                if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
-                {
-                  /* move outer window first */
-                  MoveSizeLayer(targetwindow->BorderRPort->Layer,
-                                NewLeftEdge - OldLeftEdge,
-                                NewTopEdge  - OldTopEdge,
-                                size_dx,
-                                size_dy);
-                }
-
-                L = targetlayer;
-                CheckLayersBehind = TRUE;
-
-                MoveSizeLayer(targetlayer,
-                              NewLeftEdge - OldLeftEdge,
-                              NewTopEdge  - OldTopEdge,
-                              NewWidth    - OldWidth,
-                              NewHeight   - OldHeight);
-
-                if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = OldLeftEdge;
-                if (w->ZipTopEdge  != ~0) w->ZipTopEdge  = OldTopEdge;
-                if (w->ZipWidth  != ~0) w->ZipWidth    = OldWidth;
-                if (w->ZipHeight != ~0) w->ZipHeight   = OldHeight;
-
-		if (size_dx || size_dy)
-		{
-		    /* Send GM_LAYOUT to all GA_Rel??? BOOPSI gadgets */
-		    DoGMLayout(targetwindow->FirstGadget, targetwindow, NULL, -1, FALSE, IntuitionBase);
-
-		    /* and redraw the window frame */
-		    RefreshWindowFrame(targetwindow);
-
-		    /* and refresh all gadgets except border gadgets */
-		    int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
-		}
-		
-		/* Send IDCMP_CHANGEWINDOW to resized window */
-
-		ih_fire_intuimessage(targetwindow,
-			             IDCMP_CHANGEWINDOW,
-				     CWCODE_MOVESIZE,
-				     targetwindow,
-				     IntuitionBase);
-
             break; }
 
 	    case AMCODE_CHANGEWINDOWBOX: {
-                struct IntWindow * w = (struct IntWindow *)targetwindow;
-                WORD OldLeftEdge  = targetwindow->LeftEdge;
-                WORD OldTopEdge   = targetwindow->TopEdge;
-                WORD OldWidth     = targetwindow->Width;
-                WORD OldHeight    = targetwindow->Height;
-                WORD NewLeftEdge  = am->left;
-		WORD NewTopEdge   = am->top;
-		WORD NewWidth	  = am->width;
-		WORD NewHeight	  = am->height;
-		WORD size_dx, size_dy;
+
+		DoMoveSizeWindow(targetwindow, am->left, am->top, am->width, am->height,
+					       &L, &CheckLayersBehind, IntuitionBase);
 		
-                /* correct new window coords if necessary */
-
-		FixWindowCoords(targetwindow, &NewLeftEdge, &NewTopEdge, &NewWidth, &NewHeight);
-		
-		size_dx = NewWidth - OldWidth;
-		size_dy = NewHeight - OldHeight;
-		
-		/* First erase the old frame on the right side and 
-        	   on the lower side if necessary, but only do this
-        	   for non-GZZ windows 
-		*/
-
-		if ((size_dx || size_dy) && (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO)))
-		{
-		  struct RastPort * rp = targetwindow->BorderRPort;
-		  struct Layer * L = rp->Layer;
-		  struct Rectangle rect;
-		  struct Region * oldclipregion;
-		  WORD ScrollX;
-		  WORD ScrollY;
-
-		  /* 
-		  ** In case a clip region is installed then I have to 
-		  ** install the regular cliprects of the layer
-		  ** first. Otherwise the frame might not get cleared correctly.
-		  */
-		  LockLayer(0, L);
-
-		  oldclipregion = InstallClipRegion(L, NULL);
-
-		  ScrollX = L->Scroll_X;
-		  ScrollY = L->Scroll_Y;
-
-		  L->Scroll_X = 0;
-		  L->Scroll_Y = 0;
-
-		  if ((size_dy > 0) && (targetwindow->BorderBottom > 0))
-
-		  {
-		    rect.MinX = targetwindow->BorderLeft;
-		    rect.MinY = targetwindow->Height - targetwindow->BorderBottom;
-		    rect.MaxX = targetwindow->Width - 1;
-		    rect.MaxY = targetwindow->Height - 1;
-
-        	    EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-
-		    if (0 != (L->Flags & LAYERSIMPLE))
-		    {
-			OrRectRegion(L->DamageList, &rect);
-		    }
-		  }
-
-		  if ((size_dx > 0) && (targetwindow->BorderRight > 0))
-		  {
-		    rect.MinX = targetwindow->Width - targetwindow->BorderRight;
-		    rect.MinY = targetwindow->BorderTop;
-		    rect.MaxX = targetwindow->Width - 1;
-		    rect.MaxY = targetwindow->Height - targetwindow->BorderBottom;
-
-        	    EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-
-		    if (0 != (L->Flags & LAYERSIMPLE))
-		    {
-			OrRectRegion(L->DamageList, &rect);
-		    }
-		  }
-
-		  /*
-		  ** Reinstall the clipregions rectangles if there are any.
-		  */
-		  if (NULL != oldclipregion)
-		  {
-        	    InstallClipRegion(L, oldclipregion);
-		  }
-
-		  L->Scroll_X = ScrollX;
-		  L->Scroll_Y = ScrollY;
-
-		  UnlockLayer(L);
-		}
-
-		if (size_dx || size_dy)
-		{
-		    /* Before resizing the layers eraserect the area of all
-		       GFLG_REL*** gadgets (except those in the window border */
-		    EraseRelGadgetArea(targetwindow, IntuitionBase);
-		}
-
-                targetwindow->LeftEdge = NewLeftEdge;
-                targetwindow->TopEdge  = NewTopEdge;
-                targetwindow->Width    = NewWidth;
-                targetwindow->Height   = NewHeight; 
-
-                /* check for GZZ window */
-                if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
-                {
-                  /* move outer window first */
-                  MoveSizeLayer(targetwindow->BorderRPort->Layer,
-                                NewLeftEdge - OldLeftEdge,
-                                NewTopEdge  - OldTopEdge,
-                                size_dx,
-                                size_dy);
-             	}
-
-                L = targetlayer;
-                CheckLayersBehind = TRUE;
-
-                MoveSizeLayer(targetlayer,
-                              NewLeftEdge - OldLeftEdge,
-                              NewTopEdge  - OldTopEdge,
-                              NewWidth    - OldWidth,
-                              NewHeight   - OldHeight);
-
-                if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = OldLeftEdge;
-                if (w->ZipTopEdge  != ~0) w->ZipTopEdge  = OldTopEdge;
-                if (w->ZipWidth  != ~0) w->ZipWidth    = OldWidth;
-                if (w->ZipHeight != ~0) w->ZipHeight   = OldHeight;
-
-		if (size_dx || size_dy)
-		{
-		    /* Send GM_LAYOUT to all GA_Rel??? BOOPSI gadgets */
-		    DoGMLayout(targetwindow->FirstGadget, targetwindow, NULL, -1, FALSE, IntuitionBase);
-
-		    /* and redraw the window frame */
-		    RefreshWindowFrame(targetwindow);
-
-		    /* and refresh all gadgets except border gadgets */
-		    int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
-		}
-		
-		/* Send IDCMP_CHANGEWINDOW to resized window */
-
-		ih_fire_intuimessage(targetwindow,
-			             IDCMP_CHANGEWINDOW,
-				     CWCODE_MOVESIZE,
-				     targetwindow,
-				     IntuitionBase);
-
-		break; }
+	    break; }
 	
 	    case AMCODE_ACTIVATEGADGET:
 	    	/* Note: This message must not be freed, because
@@ -813,86 +772,35 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	
 	if (TRUE == CheckLayersBehind)
 	{
-	  /* Walk through all layers behind including the layer L
-	     and check whether a layer needs a refresh 
-	  */ 
-	  struct Layer * _L = L;
-	  
-	  while (NULL != _L)
-	  {
-	    /* Does this Layer need a refresh and does it belong
-	       to a Window ?? */
-	    if (0 != (_L->Flags & LAYERREFRESH))
+	    /* Walk through all layers behind including the layer L
+	       and check whether a layer needs a refresh 
+	    */ 
+	    struct Layer * _L = L;
+
+	    while (NULL != _L)
 	    {
-	      if (_L == targetscreen->BarLayer)
-	      {
-	        RenderScreenBar(targetscreen, TRUE, IntuitionBase);
-	      } else if (_L->Window != NULL)
-	      {
-		/* Does it belong to a GZZ window and is it
-	           the outer window of that GZZ window? */
-		if (0  != (((struct Window *)_L->Window)->Flags & WFLG_GIMMEZEROZERO) &&
-	            _L ==  ((struct Window *)_L->Window)->BorderRPort->Layer            )
-		{
-	          /* simply refresh that window's frame */
-
-		  BeginUpdate(_L);
-	          RefreshWindowFrame((struct Window *)_L->Window);
-		  EndUpdate(_L, TRUE);
-	          _L->Flags &= ~LAYERREFRESH;
-		}
-		else
-	          WindowNeedsRefresh((struct Window *)_L->Window,
-	                             IntuitionBase);
-	      }
-	    }
-	   _L = _L->back;
-
-	  } /* while (NULL != _L) */
+		CheckLayerRefresh(_L, targetscreen, IntuitionBase);
+	        _L = _L->back;
+ 
+	    } /* while (NULL != _L) */
 
 	} /* if (TRUE == CheckLayersBehind) */
 
 	if (TRUE == CheckLayersInFront)
 	{
-	  /* Walk through all layers in front of including the layer L
-	     and check whether a layer needs a refresh 
-	  */
+	    /* Walk through all layers in front of including the layer L
+	       and check whether a layer needs a refresh 
+	    */
 
-	  if (TRUE == CheckLayersBehind)
-	    L=L->front; /* the layer L has already been checked */
+	    if (TRUE == CheckLayersBehind)
+		L = L->front; /* the layer L has already been checked */
 
-	  while (NULL != L)
-	  {  
-	    /* Does this Layer need a refresh and does it belong
-	       to a Window ?? */
-	    if (0 != (L->Flags & LAYERREFRESH))
-	    {
-	      if (L == targetscreen->BarLayer)
-	      {
-	        RenderScreenBar(targetscreen, TRUE, IntuitionBase);
-	      } else if (L->Window != NULL) {
-		/* Does it belong to a GZZ window and is it
-	           the outer window of that GZZ window? */
-		if (0  != (((struct Window *)L->Window)->Flags & WFLG_GIMMEZEROZERO) &&
-	            L  ==  ((struct Window *)L->Window)->BorderRPort->Layer            )
-		{
-	          /* simply refresh that window's frame */
+	    while (NULL != L)
+	    {  
+                CheckLayerRefresh(L, targetscreen, IntuitionBase);
+		L = L->front;
 
-		  BeginUpdate(L);
-	          RefreshWindowFrame((struct Window *)L->Window);
-		  EndUpdate(L, TRUE);
-
-	          L->Flags &= ~LAYERREFRESH;
-		}
-		else
-	          WindowNeedsRefresh((struct Window *)L->Window,
-	                             IntuitionBase);
-	      }
-	    }
-
-	    L = L->front;
-
-	  } /* while (NULL != L) */
+	    } /* while (NULL != L) */
 
 	} /* if (TRUE == CheckLayersInFront) */
 
