@@ -11,6 +11,8 @@ assign ENV: RAM:ENV
 assign LIBS: SYS:Classes ADD
 assign FONTS: SYS:Fonts
 
+adddatatypes refresh
+
 path SYS:Utilities SYS:System SYS:Tools SYS:Tools/Commodities ADD QUIET 
 Prompt "%N.%S> "
 
