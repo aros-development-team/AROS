@@ -48,8 +48,12 @@ struct JumpVec
 #define __AROS_INITVEC(lib,n)           __AROS_GETJUMPVEC(lib,n)->jmp = __AROS_ASMJMP, \
 					__AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
-/* ??? */
-#define RDFCALL(hook,data,dptr) ((void(*)(UBYTE,APTR))(hook))(data,dptr);
+/* 
+   We want to activate the execstubs and preserve all registers
+   when calling obtainsemaphore, obtainsemaphoreshared, releasesemaphore,
+   getcc, permit, forbid, enable, disable
+*/
+#define UseExecstubs 
 
 /*
     Find the next valid alignment for a structure if the next x bytes must
