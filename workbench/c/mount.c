@@ -192,7 +192,7 @@ static const UBYTE options[]=
 "BUFFERS/K/N,BUFMEMTYPE/K/N,MAXTRANSFER/K/N,MASK/K/N,BOOTPRI/K/N,"
 "DOSTYPE/K/N,BAUD/K/N,CONTROL/K";
 
-static LONG mount(STRPTR name, STRPTR buf, LONG size, struct IOFileSys *iofs)
+static LONG mount(STRPTR name, STRPTR buf, LONG size)
 {
     IPTR *args[18]=
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
@@ -268,7 +268,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size, struct IOFileSys *iofs)
 	    }
 	    
 	    vec->de_TableSize      = (IPTR)19;
-	    vec->de_SizeBlock      = args[3]  ? (IPTR)*args[3]  : (IPTR)(512/4);
+	    vec->de_SizeBlock      = (IPTR)(args[3]  ? *args[3]  : 512)/4;
 	    vec->de_SegOrg         = args[3]  ? (IPTR)*args[3]  : (IPTR)512;
 	    vec->de_Surfaces       = args[4]  ? (IPTR)*args[4]  : (IPTR)2;
 	    vec->de_BlocksPerTrack = args[5]  ? (IPTR)*args[5]  : (IPTR)11;
@@ -277,7 +277,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size, struct IOFileSys *iofs)
 	    vec->de_LowCyl         = args[8]  ? (IPTR)*args[8]  : (IPTR)0;
 	    vec->de_HighCyl        = args[9]  ? (IPTR)*args[9]  : (IPTR)79;
 	    vec->de_NumBuffers     = args[10] ? (IPTR)*args[10] : (IPTR)20;
-	    vec->de_BufMemTypes    = args[11] ? (IPTR)*args[11] : (IPTR)1;
+	    vec->de_BufMemType     = args[11] ? (IPTR)*args[11] : (IPTR)1;
 	    vec->de_MaxTransfer    = args[12] ? (IPTR)*args[12] : (IPTR)~0ul;
 	    vec->de_Mask           = args[13] ? (IPTR)*args[13] : (IPTR)~0ul;
 	    vec->de_BootPri        = args[14] ? (IPTR)*args[14] : (IPTR)0;
@@ -285,13 +285,10 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size, struct IOFileSys *iofs)
 	    vec->de_Baud           = args[16] ? (IPTR)*args[16] : (IPTR)9600;
 	    vec->de_Control        = args[17] ? (IPTR)*args[17] : (IPTR)"";
 	    vec->de_BootBlocks     = 0;
-	    iofs->io_Union.io_OpenDevice.io_DeviceName = args[1] ? (STRPTR)args[1] : (STRPTR)"trackdisk.device";
-	    iofs->io_Union.io_OpenDevice.io_Unit = (ULONG)args[2] ? *args[2] : 0;
-	    iofs->io_Union.io_OpenDevice.io_Environ = (IPTR *)vec;
 
 	    params[0] = (IPTR)args[0];
 	    params[1] = (IPTR)args[1];
-	    params[2] = (IPTR)args[2];
+	    params[2] = (IPTR)args[2] ? *args[2] : 0;
 	    params[3] = 0;
 
 	    /* NOTE: The 'params' may not be freed! */ 
@@ -353,7 +350,6 @@ int main(int argc, char ** argv)
     LONG    error = 0;
 
     struct RDArgs    *rda;
-    struct IOFileSys *iofs;
     struct Process   *me = (struct Process *)FindTask(NULL);
 
     UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 0);
@@ -372,29 +368,17 @@ int main(int argc, char ** argv)
 		
 		if (!error)
 		{
+		    STRPTR *dev = (STRPTR *)args[0];
 		    preparefile(mem, size);
-		    iofs = (struct IOFileSys *)CreateIORequest(&me->pr_MsgPort,
-							       sizeof(struct IOFileSys));
-		    
-		    if (iofs != NULL)
+
+		    while (*dev)
 		    {
-			STRPTR *dev = (STRPTR *)args[0];
+			error = mount(*dev++, mem, size);
 			
-			while (*dev)
+			if (error)
 			{
-			    error = mount(*dev++, mem, size, iofs);
-			    
-			    if (error)
-			    {
-				break;
-			    }
+			    break;
 			}
-			
-			DeleteIORequest(&iofs->IOFS);
-		    }
-		    else
-		    {
-			error = ERROR_NO_FREE_STORE;
 		    }
 		    
 		    FreeVec(mem);
