@@ -68,8 +68,8 @@ static const int __revision = 1;
  */
 typedef struct NotifyNode {
     struct MinNode nn_Node;
-    IPTR        nn_OldValue; /* save old attrib value to detect endless loop */
-    ULONG       nn_Created; /* is set to one after created, so the next set will cause a notify */
+    BOOL        nn_Active;   /* When TRUE, it means that the notification is currently being handled */
+                             /* It's used to prevent loops */
     ULONG       nn_TrigAttr;
     ULONG       nn_TrigVal;
     APTR        nn_DestObj;
@@ -77,18 +77,17 @@ typedef struct NotifyNode {
     ULONG       *nn_Params; /* FIXME: use nn_Params[1] and tweak stuff below */
 } *NNode;
 
-static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_Notify *msg, ULONG oldval)
+static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_Notify *msg)
 {
     ULONG i;
 
     struct NotifyNode *nnode = mui_alloc_struct(struct NotifyNode);
     if (!nnode) return NULL;
 
-    nnode->nn_OldValue = oldval;
-    nnode->nn_Created = 1;
-    nnode->nn_TrigAttr = msg->TrigAttr;
-    nnode->nn_TrigVal  = msg->TrigVal;
-    nnode->nn_DestObj  = msg->DestObj;
+    nnode->nn_Active    = FALSE;
+    nnode->nn_TrigAttr  = msg->TrigAttr;
+    nnode->nn_TrigVal   = msg->TrigVal;
+    nnode->nn_DestObj   = msg->DestObj;
     nnode->nn_NumParams = msg->FollowParams;
 
     if ((nnode->nn_Params = (ULONG *)mui_alloc(msg->FollowParams * sizeof(ULONG))))
@@ -99,7 +98,9 @@ static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_
 	}
 	return nnode;
     }
+
     mui_free(nnode);
+
     return NULL;
 }
 
@@ -130,20 +131,24 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	case MUIA_HelpLine:
-	    data->mnd_HelpLine = (LONG)tag->ti_Data;
-	    break;
-	case MUIA_HelpNode:
-	    data->mnd_HelpNode = (STRPTR)tag->ti_Data;
-	    break;
-	case MUIA_ObjectID:
-	    data->mnd_ObjectID = (STRPTR)tag->ti_Data;
-	    break;
-	case MUIA_UserData:
-	    data->mnd_UserData = (ULONG)tag->ti_Data;
-	    break;
+	    case MUIA_HelpLine:
+	        data->mnd_HelpLine = (LONG)tag->ti_Data;
+	        break;
+
+	    case MUIA_HelpNode:
+	        data->mnd_HelpNode = (STRPTR)tag->ti_Data;
+	        break;
+
+	    case MUIA_ObjectID:
+	        data->mnd_ObjectID = (STRPTR)tag->ti_Data;
+	        break;
+
+	    case MUIA_UserData:
+	        data->mnd_UserData = (ULONG)tag->ti_Data;
+	        break;
 	}
     }
+
     return (ULONG)obj;
 }
 
@@ -169,33 +174,29 @@ static ULONG mDispose(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-static void check_notify (NNode nnode, Object *obj, struct TagItem *tag, BOOL no_notify)
+static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
 {
-    APTR    destobj;
-    ULONG   backup[8];
-    int     i;
+    STACKULONG newparams[8];
+    STACKULONG *params;
+    APTR       destobj;
+    int        i;
 
     /* is it the good attribute ? */
     if (tag->ti_Tag != nnode->nn_TrigAttr)
 	return;
-      
-    /* value changed since last set ? */
-    if (tag->ti_Data == nnode->nn_OldValue && !nnode->nn_Created)
-	return;
 
-    nnode->nn_OldValue = tag->ti_Data;
-    nnode->nn_Created = 0;
+    /*Is the notification already being performed? */
+    if (nnode->nn_Active)
+        return;
 
-    /* trigger notification for the new value ? */
-
-    if (no_notify)
-	return;
-
-    if ((nnode->nn_TrigVal == tag->ti_Data)
-	|| (nnode->nn_TrigVal == MUIV_EveryTime))
+    if
+    (
+        nnode->nn_TrigVal == tag->ti_Data   ||
+	nnode->nn_TrigVal == MUIV_EveryTime
+    )
     {
 	switch((ULONG)nnode->nn_DestObj)
-	{ 
+	{
 	    case MUIV_Notify_Application:
 		destobj = _app(obj);
 		break;
@@ -208,30 +209,43 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag, BOOL no
 	    default:
 		destobj = nnode->nn_DestObj;
 	}
-	memcpy(backup, nnode->nn_Params,
-	       nnode->nn_NumParams * sizeof(ULONG));
-	for (i = 1; i < nnode->nn_NumParams; i++)
+
+
+	params = nnode->nn_Params;
+	if (nnode->nn_TrigVal == MUIV_EveryTime)
 	{
-	    switch(nnode->nn_Params[i])
+	    newparams[0] = nnode->nn_Params[0];
+
+  	    for (i = 1; i < nnode->nn_NumParams; i++)
 	    {
-		case MUIV_TriggerValue:
-		    nnode->nn_Params[i] = tag->ti_Data;
-		    break;
-		case MUIV_NotTriggerValue:
-		    nnode->nn_Params[i] = !tag->ti_Data;
-		    break;
+	        newparams[i] = nnode->nn_Params[i];
+
+	        switch(newparams[i])
+	        {
+		    case MUIV_TriggerValue:
+		        newparams[i] = tag->ti_Data;
+		        break;
+
+		    case MUIV_NotTriggerValue:
+		        newparams[i] = !tag->ti_Data;
+		        break;
+	        }
 	    }
+
+	    params = newparams;
 	}
+
+	nnode->nn_Active = TRUE;
+
 	/* call method */
-	DoMethodA(destobj, (Msg)nnode->nn_Params);
-	/* restore params in handler */
-	memcpy(nnode->nn_Params, backup,
-	       nnode->nn_NumParams * sizeof(ULONG));
+	DoMethodA(destobj, (Msg)params);
+
+	nnode->nn_Active = FALSE;
     }
 }
 
 /*
- * OM_SET 
+ * OM_SET
  */
 static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -249,37 +263,46 @@ static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	case MUIA_HelpLine:
-	    data->mnd_HelpLine = (LONG)tag->ti_Data;
-	    break;
-	case MUIA_HelpNode:
-	    data->mnd_HelpNode = (STRPTR)tag->ti_Data;
-	    break;
-	case MUIA_NoNotify:
-	    if (tag->ti_Data == TRUE)
-		no_notify = TRUE;
-	    break;
-	case MUIA_ObjectID:
-	    data->mnd_ObjectID = (STRPTR)tag->ti_Data;
-	    break;
-	case MUIA_UserData:
-	    data->mnd_UserData = tag->ti_Data;
-	    break;
+	    case MUIA_HelpLine:
+	        data->mnd_HelpLine = (LONG)tag->ti_Data;
+	        break;
+
+	    case MUIA_HelpNode:
+	        data->mnd_HelpNode = (STRPTR)tag->ti_Data;
+	        break;
+
+	    case MUIA_NoNotify:
+	        if (tag->ti_Data == TRUE)
+		    no_notify = TRUE;
+	        break;
+
+	    case MUIA_ObjectID:
+	        data->mnd_ObjectID = (STRPTR)tag->ti_Data;
+	        break;
+
+	    case MUIA_UserData:
+	        data->mnd_UserData = tag->ti_Data;
+	        break;
 	}
     }
 
     /*
      * check for notifications
      */
-    if (data->mnd_NotifyList == NULL)
+    if (!data->mnd_NotifyList || no_notify)
 	return TRUE;
+
     tags = msg->ops_AttrList;
-    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)))
     {
-	for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ;
-	     node = node->mln_Succ)
+	for
+	(
+	    node = data->mnd_NotifyList->mlh_Head;
+	    node->mln_Succ;
+	    node = node->mln_Succ
+	)
 	{
-	    check_notify((NNode)node, obj, tag, no_notify);
+	    check_notify((NNode)node, obj, tag);
 	}
    }
 
@@ -481,12 +504,8 @@ static ULONG mNotify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
     struct NotifyNode     *nnode;
-    ULONG                 oldval;
 
     if ((msg->FollowParams < 1) || (msg->FollowParams > 8))
-	return FALSE;
-
-    if (!get(obj, msg->TrigAttr, &oldval))
 	return FALSE;
 
     if (data->mnd_NotifyList == NULL)
@@ -496,7 +515,7 @@ static ULONG mNotify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
 	NewList((struct List*)data->mnd_NotifyList);
     }
 
-    nnode = CreateNNode(data, msg, oldval);
+    nnode = CreateNNode(data, msg);
     AddTail((struct List *)data->mnd_NotifyList, (struct Node *)nnode);
     return TRUE;
 }
