@@ -1,3 +1,4 @@
+/* $Id$ */
 #include <proto/intuition.h>
 #include <aros/debug.h>
 
@@ -18,7 +19,7 @@ struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,"Cancel"};
 	else
 	{
 #warning kprintf for error printing when gfx.hidd is not initialized
-		kprintf(string,args);
+		kprintf(string,*args);
 		kprintf("\n");
 	}
 #endif
@@ -39,7 +40,7 @@ char *texts[]={0,
 				"Wrong checksum on block %ld",
 				"Missing some more bitmap blocks",
 				"Wrong blocktype on block %ld",
-				"Read/Write Error",
+				"Read/Write Error (%ld)",
 				0,
 				"Unknown error"
 };
