@@ -16,6 +16,8 @@
 #include <proto/iffparse.h>
 #include <aros/asmcall.h>
 
+#include <aros/debug.h>
+
 extern AROS_UFP4(ULONG, AROS_SLIB_ENTRY(strcompare, english), 
     AROS_UFPA(STRPTR, string1, A0),
     AROS_UFPA(STRPTR, string2, A1),
@@ -50,11 +52,11 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 	STRPTR lName = il->il_Locale.loc_PrefLanguages[i];
 
 	/* Is this english? If not try and load the language */
-	if(
+	if( NULL != lName && 
     	    AROS_UFC4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
 		AROS_UFCA(STRPTR, "english.", A0),
 		AROS_UFCA(STRPTR, lName, A1),
-		AROS_UFCA(ULONG, 10, D0),
+		AROS_UFCA(ULONG, 8, D0),
 		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
 	{
     	    /* Try and open the specified language */
@@ -68,7 +70,6 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 		*/
 		CopyMem("LOCALE:Languages/", fileBuf, 18);
 		AddPart(fileBuf, FilePart(lName), 512);
-
 		lang = OpenLibrary(fileBuf, 0);
 	    }
     	    if(lang == NULL)

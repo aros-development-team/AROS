@@ -347,6 +347,9 @@ AROS_LH4(LONG, strcompare,
 
     const ULONG *colltab;
 
+    if (!string1 || !string2)
+      return 0;
+
     /* Determine which collation table to use... */
     if(type == SC_ASCII)
 	colltab = __eng_to_upper;
@@ -378,12 +381,14 @@ AROS_LH4(LONG, strcompare,
 	}
 	return a - b;
     }
-    else if((type == SC_COLLATE1) || (SC_ASCII))
+    else if((type == SC_COLLATE1) || (type == SC_ASCII))
     {
 	do
 	{
-	    a = colltab[(UBYTE)*string1++];
-	    b = colltab[(UBYTE)*string2++];
+	    a = colltab[(UBYTE)*string1];
+	    b = colltab[(UBYTE)*string2];
+	    string1++;
+	    string2++;
 	} while( (a == b) && --length);
 	return a - b;
     }

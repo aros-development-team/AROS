@@ -85,6 +85,33 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
     NEWLIST(&((struct IntLocaleBase *)LIBBASE)->lb_CatalogList);
 
+    /* We have to open some libraries. */
+    if( IntLB(LIBBASE)->lb_DosBase == NULL )
+    {
+	if(!( IntLB(LIBBASE)->lb_DosBase = 
+		    (struct DosLibrary *)OpenLibrary("dos.library", 37L)))
+	{
+	    return NULL;
+	}
+
+	if(!( IntLB(LIBBASE)->lb_UtilityBase =
+		    OpenLibrary("utility.library", 37L)))
+	{
+	    CloseLibrary((struct Library *)IntLB(LIBBASE)->lb_DosBase);
+	    IntLB(LIBBASE)->lb_DosBase = NULL;
+	    return NULL;
+	}
+
+	if(!( IntLB(LIBBASE)->lb_IFFParseBase =
+		    OpenLibrary("iffparse.library", 37L)))
+	{
+	    CloseLibrary((struct Library *)IntLB(LIBBASE)->lb_DosBase);
+	    CloseLibrary(IntLB(LIBBASE)->lb_UtilityBase);
+	    IntLB(LIBBASE)->lb_DosBase = NULL;
+	    return NULL;
+	}
+    }
+
     def = AllocMem(sizeof(struct IntLocale), MEMF_CLEAR|MEMF_ANY);
     if(def != NULL)
     {
@@ -112,32 +139,6 @@ AROS_LH1(struct LIBBASETYPE *, open,
     /* keep compiler happy */
     version = 0;
 
-    /* We have to open some libraries. */
-    if( IntLB(LIBBASE)->lb_DosBase == NULL )
-    {
-	if(!( IntLB(LIBBASE)->lb_DosBase = 
-		    (struct DosLibrary *)OpenLibrary("dos.library", 37L)))
-	{
-	    return NULL;
-	}
-
-	if(!( IntLB(LIBBASE)->lb_UtilityBase =
-		    OpenLibrary("utility.library", 37L)))
-	{
-	    CloseLibrary((struct Library *)IntLB(LIBBASE)->lb_DosBase);
-	    IntLB(LIBBASE)->lb_DosBase = NULL;
-	    return NULL;
-	}
-
-	if(!( IntLB(LIBBASE)->lb_IFFParseBase =
-		    OpenLibrary("iffparse.library", 37L)))
-	{
-	    CloseLibrary((struct Library *)IntLB(LIBBASE)->lb_DosBase);
-	    CloseLibrary(IntLB(LIBBASE)->lb_UtilityBase);
-	    IntLB(LIBBASE)->lb_DosBase = NULL;
-	    return NULL;
-	}
-    }
 
     /* What else do we have to do? */
     LIBBASE->lb_LibNode.lib_OpenCnt++;

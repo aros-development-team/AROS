@@ -202,9 +202,6 @@ char HEXarray [] = "0123456789ABCDEF";
 #define BUFFERSIZE 128
           char  buf[BUFFERSIZE];
           char  *buffer      = buf;
-          char  *err;
-          char  **endptr = &err;
-          
           
           /*
           ** arg_pos 
@@ -215,21 +212,24 @@ char HEXarray [] = "0123456789ABCDEF";
           if ('0' <= fmtTemplate[template_pos] &&
               '9' >= fmtTemplate[template_pos])
           {
-            tmp = strtoul(&fmtTemplate[template_pos], endptr, 10);
-
-            if ('$' == **endptr)
-            {
-              arg_pos = tmp;
-              //kprintf("Found arg_pos: %d\n",arg_pos);
-              template_pos += ((ULONG)*endptr - (ULONG)&fmtTemplate[template_pos]) + 1;
-              //kprintf("New template_pos: %d\n",template_pos);
-            }
+            ULONG old_template_pos = template_pos;
+            
+            arg_pos = 0;
+            while ('0' <= fmtTemplate[template_pos] &&
+                   '9' >= fmtTemplate[template_pos])
+              arg_pos = arg_pos * 10 + fmtTemplate[template_pos++] - '0';
+            
+            if ('$' == fmtTemplate[template_pos])
+              template_pos++;
             else
+            {
               arg_pos = arg_counter;
+              template_pos = old_template_pos;
+            }
           }
           else
             arg_pos = arg_counter;
-
+          
           /*
           ** flags
           */
@@ -254,30 +254,22 @@ char HEXarray [] = "0123456789ABCDEF";
           if ('0' <= fmtTemplate[template_pos] &&
               '9' >= fmtTemplate[template_pos])
           {
-            tmp = strtoul(&fmtTemplate[template_pos], endptr, 10);
-            if (*endptr != (char *)&fmtTemplate[template_pos])
-            {
-              maxwidth = tmp;
-              template_pos += ((ULONG)*endptr - (ULONG)&fmtTemplate[template_pos]);
-            }
+            minwidth = 0;
+            while ('0' <= fmtTemplate[template_pos] &&
+                   '9' >= fmtTemplate[template_pos])
+              minwidth = minwidth * 10 + fmtTemplate[template_pos++] - '0';
           }
-              
+
           /*
           ** limit
           */
           if ('.' == fmtTemplate[template_pos])
           {
             template_pos++;
-            maxwidth = strtoul(&fmtTemplate[template_pos], endptr, 10);
-            /* 
-            ** Check for an error
-            */
-            if (*endptr == (char *)&fmtTemplate[template_pos] || 
-                '\0' == **endptr)
-            {
-              goto error_exit;
-            }
-            template_pos += ((ULONG)*endptr - (ULONG)&fmtTemplate[template_pos]);
+            maxwidth = 0;
+            while ('0' <= fmtTemplate[template_pos] &&
+                   '9' >= fmtTemplate[template_pos])
+              maxwidth = maxwidth * 10 + fmtTemplate[template_pos++] - '0';
           }
           
           /*
@@ -566,7 +558,6 @@ char HEXarray [] = "0123456789ABCDEF";
                   AROS_UFCA(char,            fill                , A1),
                   AROS_UFCA(struct Locale *, locale              , A2)
                 );
-              
           }
 
           template_pos++;
