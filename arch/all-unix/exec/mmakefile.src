@@ -25,7 +25,7 @@ print-flags :
 	@echo "CFLAGS=$(CFLAGS)"
 	@echo "CFLAGS2=$(CFLAGS2)"
 
-#MM
+#MM setup-exec-unix : setup-exec-$(ARCH)
 setup-exec-unix :
 	%mkdirs_q $(OBJDIR)
 	%add_objects $(ADD_OBJS)
