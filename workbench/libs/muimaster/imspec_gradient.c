@@ -33,9 +33,16 @@ extern struct Library *MUIMasterBase;
    initially equal to 0, _at maximum_ B times, which means that overflow
    never happens.
 
+   UPDATE: I've come up with a solution which makes this algorithm
+           twice as fast as before, by taking advantage of the fact that
+           a + b/c = (ac + b)/c, which means that now the number C is set
+           to an initial value different than 0. There's no need to diminish
+           the number of fractional bits as, for the way the algorithm
+           works, there's still no overflow.
+
 */
 
-#define SHIFT (sizeof(ULONG)*8 - 9)
+#define SHIFT (sizeof(ULONG)*8 - (8 + 1))
 
 STATIC VOID TrueDitherV
 (
@@ -52,23 +59,24 @@ STATIC VOID TrueDitherV
     LONG delta_g = end_rgb[1] - start_rgb[1];
     LONG delta_b = end_rgb[2] - start_rgb[2];
 
+    LONG step_r = (delta_r << SHIFT)/max_delta_y;
+    LONG step_g = (delta_g << SHIFT)/max_delta_y;
+    LONG step_b = (delta_b << SHIFT)/max_delta_y;
+
+    LONG red   = (start_rgb[0] << SHIFT) + (y1 - oy1)*step_r;
+    LONG green = (start_rgb[1] << SHIFT) + (y1 - oy1)*step_g;
+    LONG blue  = (start_rgb[2] << SHIFT) + (y1 - oy1)*step_b;
+
     LONG y;
 
-    LONG step_r = (delta_r << SHIFT)/max_delta_y, cur_r = (y1 - oy1)*step_r;
-    LONG step_g = (delta_g << SHIFT)/max_delta_y, cur_g = (y1 - oy1)*step_g;
-    LONG step_b = (delta_b << SHIFT)/max_delta_y, cur_b = (y1 - oy1)*step_b;
-
-    for(y = y1; y <= y2; y++)
+    for(y = y1; y <=y2; y++)
     {
-        const LONG red   = start_rgb[0] + (cur_r >> SHIFT);
-	const LONG green = start_rgb[1] + (cur_g >> SHIFT);
-	const LONG blue  = start_rgb[2] + (cur_b >> SHIFT);
+        FillPixelArray(rp, x1, y, width, 1,
+                       ((red >> SHIFT) << 16) + ((green >> SHIFT) << 8) + (blue >> SHIFT));
 
-        FillPixelArray(rp, x1, y, width, 1, (red << 16) + (green << 8) + blue);
-
-        cur_r += step_r;
-        cur_g += step_g;
-        cur_b += step_b;
+        red   += step_r;
+        green += step_g;
+        blue  += step_b;
     }
 }
 
@@ -87,23 +95,24 @@ STATIC VOID TrueDitherH
     LONG delta_g = end_rgb[1] - start_rgb[1];
     LONG delta_b = end_rgb[2] - start_rgb[2];
 
-    LONG x;
+    LONG step_r = (delta_r << SHIFT)/max_delta_x;
+    LONG step_g = (delta_g << SHIFT)/max_delta_x;
+    LONG step_b = (delta_b << SHIFT)/max_delta_x;
 
-    LONG step_r = (delta_r << SHIFT)/max_delta_x, cur_r = (x1 - ox1)*step_r;
-    LONG step_g = (delta_g << SHIFT)/max_delta_x, cur_g = (x1 - ox1)*step_g;
-    LONG step_b = (delta_b << SHIFT)/max_delta_x, cur_b = (x1 - ox1)*step_b;
+    LONG red   = (start_rgb[0] << SHIFT) + (x1 - ox1)*step_r;
+    LONG green = (start_rgb[1] << SHIFT) + (x1 - ox1)*step_g;
+    LONG blue  = (start_rgb[2] << SHIFT) + (x1 - ox1)*step_b;
+
+    LONG x;
 
     for(x = x1; x <= x2; x++)
     {
-        const LONG red   = start_rgb[0] + (cur_r >> SHIFT);
-	const LONG green = start_rgb[1] + (cur_g >> SHIFT);
-	const LONG blue  = start_rgb[2] + (cur_b >> SHIFT);
+        FillPixelArray(rp, x, y1, 1, height,
+                       ((red >> SHIFT) << 16) + ((green >> SHIFT) << 8) + (blue >> SHIFT));
 
-        FillPixelArray(rp, x, y1, 1, height, (red << 16) + (green << 8) + blue);
-
-        cur_r += step_r;
-        cur_g += step_g;
-        cur_b += step_b;
+        red   += step_r;
+        green += step_g;
+        blue  += step_b;
     }
 }
 
