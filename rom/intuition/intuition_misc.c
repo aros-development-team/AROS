@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -66,10 +66,9 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
     ** of the default preferences.
     */
     GetPrivIBase(IntuitionBase)->DefaultPreferences =
-        AllocMem(sizeof(struct Preferences),
-                 MEMF_CLEAR);
+        AllocMem(sizeof(struct Preferences), MEMF_CLEAR);
 
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID  = -1UL;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID  = INVALID_ID;
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width  	= AROS_DEFAULT_WBWIDTH;
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height 	= AROS_DEFAULT_WBHEIGHT;
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth  	= AROS_DEFAULT_WBDEPTH;
@@ -77,17 +76,17 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_TimeOut  = 50;
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_MetaDrag = IEQUALIFIER_LCOMMAND;    
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags = ICF_3DMENUS |
-    	    	    	    	    	    	    	  ICF_OFFSCREENLAYERS |
-							  ICF_AVOIDWINBORDERERASE |
-    	    	    					  ICF_MODEPROMOTE | 
-    	    	    					  ICF_MENUSNAP |
-							  ICF_STRGAD_FILTER |
-							  ICF_COERCE_LACE;
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_WBtoFront 	= 'N';
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_FrontToBack 	= 'M';
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue   	= 'V';
-    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse  	= 'B';  
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags    = ICF_3DMENUS |
+    	    	    	    	    	    	    	     ICF_OFFSCREENLAYERS |
+							     ICF_AVOIDWINBORDERERASE |
+    	    	    					     ICF_MODEPROMOTE | 
+    	    	    					     ICF_MENUSNAP |
+							     ICF_STRGAD_FILTER |
+							     ICF_COERCE_LACE;
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_WBtoFront   = 'N';
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_FrontToBack = 'M';
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue     = 'V';
+    GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse    = 'B';  
 
 
     /*
