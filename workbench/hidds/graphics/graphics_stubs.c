@@ -661,6 +661,46 @@ Object * HIDD_BM_SetColorMap(Object *obj, Object *colorMap)
     return (Object *)DoMethod(obj, (Msg)&p);
 }
 
+
+BOOL HIDD_BM_ObtainDirectAccess(Object *obj
+	, UBYTE **addressReturn
+	, ULONG *widthReturn
+	, ULONG *heightReturn
+	, ULONG *bankSizeReturn
+	, ULONG *memSizeReturn )
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_ObtainDirectAccess p;
+
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_ObtainDirectAccess);
+        
+    p.mID = mid;
+    p.addressReturn	= addressReturn;
+    p.widthReturn	= widthReturn;
+    p.heightReturn	= heightReturn;
+    p.bankSizeReturn	= bankSizeReturn;
+    p.memSizeReturn	= memSizeReturn;
+    
+    /* Clear this by default */
+    *addressReturn = NULL;
+    
+    return (BOOL)DoMethod(obj, (Msg)&p);
+}
+
+VOID HIDD_BM_ReleaseDirectAccess(Object *obj)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_ReleaseDirectAccess p;
+
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_ReleaseDirectAccess);
+        
+    p.mID = mid;
+    
+    DoMethod(obj, (Msg)&p);
+	
+    return;
+}
+
 /********* GC *****************************************/
 VOID HIDD_GC_SetClipRect(Object *obj, LONG x1, LONG y1, LONG x2, LONG y2)
 {
