@@ -20,14 +20,14 @@
 #   define _JMPLEN 58
 #endif
 
-typedef struct jmp_buf
+typedef struct __jmp_buf
 {
     unsigned long retaddr;
     unsigned long regs[_JMPLEN];
 } jmp_buf[1];
 
 #if !defined(_ANSI_SOURCE)
-typedef struct sigjmp_buf
+typedef struct __sigjmp_buf
 {
     unsigned long   retaddr;
     unsigned long   regs[_JMPLEN];
