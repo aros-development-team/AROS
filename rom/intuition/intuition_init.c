@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/09/17 18:46:42  digulla
+    Added comment to express the experimental state of inputDevice at this place.
+
     Revision 1.8  1996/09/17 18:07:20  digulla
     DOSBase and SysBase are now declared in the respective header files.
     The type of DOSBase is "struct DosLibrary *". Fixed everywhere
@@ -157,6 +160,7 @@ __AROS_LH2(struct IntuitionBase *, init,
     /* The rootclass is created statically */
     AddClass (&rootclass);
 
+    /* TODO Create input.device. This is a bad hack. */
     inputDevice = CreateNewProc (inputTask);
 
     /* You would return NULL if the init failed */
