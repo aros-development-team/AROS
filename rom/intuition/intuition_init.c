@@ -298,6 +298,9 @@ Class * FindClass (ClassID classID, struct LIBBASETYPE * LIBBASE)
 {
     Class * classPtr;
 
+    if (!classID)
+	return NULL;
+
     /* Lock the list */
     ObtainSemaphoreShared (GetPrivIBase(LIBBASE)->ClassListLock);
 
@@ -363,31 +366,29 @@ found:
 {
     AROS_USERFUNC_INIT
     IPTR retval = 0;
+    Class *objcl;
 
     switch (msg->MethodID)
     {
     case OM_NEW: {
-	cl = _OBJECT(o)->o_Class;
+        objcl = (Class *)o;
 
 	/* Get memory. The objects shows how much is needed.
 	   (The object is not an object, it is a class pointer!) */
-	retval = (IPTR) AllocMem (cl->cl_InstOffset
-		+ cl->cl_InstSize
+	o = (Object *) AllocVec (objcl->cl_InstOffset
+		+ objcl->cl_InstSize
 		+ sizeof (struct _Object)
 	    , MEMF_ANY
 	    );
 
-	retval = (IPTR) BASEOBJECT(retval);
+	((struct _Object *)o)->o_Class = objcl;
+	retval = (IPTR) BASEOBJECT(o);
 	break; }
 
     case OM_DISPOSE:
 	/* Free memory. Caller is responsible that everything else
 	   is already cleared! */
-	FreeMem (_OBJECT(o)
-	    , cl->cl_InstOffset
-		+ cl->cl_InstSize
-		+ sizeof (struct _Object)
-	    );
+	FreeVec (_OBJECT(o));
 	break;
 
     case OM_ADDTAIL:

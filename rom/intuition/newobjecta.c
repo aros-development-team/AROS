@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/07/21 17:41:07  srittau
+    Chenged handling of NewObjectA()/OM_NEW to be more AmigaOS like.
+
     Revision 1.6  1997/03/20 16:05:08  digulla
     Fixed bug: Added FindClass()
 
@@ -76,7 +79,6 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     Object * object;
-    struct _Object carrier;
 
     /* No classPtr ? */
     if (!classPtr)
@@ -85,18 +87,10 @@
     if (!classPtr)
 	return (NULL); /* Nothing found */
 
-    /* Put the classPtr in our dummy object */
-    carrier.o_Class = classPtr;
-
     /* Try to create a new object */
-    if ((object = (Object *) DoMethod (BASEOBJECT(&carrier), OM_NEW,
+    if ((object = (Object *) CoerceMethod (classPtr, (Object *)classPtr, OM_NEW,
 	    tagList, NULL)))
-    {
-	OCLASS(object) = classPtr;
-
-	/* One more object */
 	classPtr->cl_ObjectCount ++;
-    }
 
     return (object);
     AROS_LIBFUNC_EXIT
