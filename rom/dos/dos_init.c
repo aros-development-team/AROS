@@ -2,10 +2,13 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/12 14:52:03  digulla
+    Use correct way to access external names (was missing)
+
     Revision 1.4  1996/09/11 16:54:23  digulla
     Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-    	some systems name an external symbol "x" as "_x" and others as "x".
-    	(The problem arises with assembler symbols which might differ)
+	some systems name an external symbol "x" as "_x" and others as "x".
+	(The problem arises with assembler symbols which might differ)
 
     Revision 1.3  1996/08/13 13:52:53  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
@@ -71,11 +74,11 @@ static const APTR Dos_inittabl[4]=
 };
 
 void LDDemon();
-void Dos_OpenLibrary();
-void Dos_OpenDevice();
-void Dos_CloseLibrary();
-void Dos_CloseDevice();
-void Dos_RemLibrary();
+void __AROS_SLIB_ENTRY(OpenLibrary,Dos)();
+void __AROS_SLIB_ENTRY(OpenDevice,Dos)();
+void __AROS_SLIB_ENTRY(CloseLibrary,Dos)();
+void __AROS_SLIB_ENTRY(CloseDevice,Dos)();
+void __AROS_SLIB_ENTRY(RemLibrary,Dos)();
 void LDFlush();
 
 __AROS_LH2(struct DosLibrary *, init,
@@ -99,18 +102,21 @@ __AROS_LH2(struct DosLibrary *, init,
     {
 	static const struct TagItem tags[]=
 	{
-	    { NP_Entry, (LONG)LDDemon }, { NP_Input, 0 }, { NP_Output, 0 },
-	    { NP_Name, (LONG)"lib & dev loader demon" }, { TAG_END, 0 }
+	    { NP_Entry, (LONG)LDDemon },
+	    { NP_Input, 0 },
+	    { NP_Output, 0 },
+	    { NP_Name, (LONG)"lib & dev loader demon" },
+	    { TAG_END, 0 }
 	};
 	dosBase->dl_LDDemon=CreateNewProc((struct TagItem *)tags);
 	if(dosBase->dl_LDDemon!=NULL)
 	{
-	    (void)SetFunction(&SysBase->LibNode,-92*sizeof(struct JumpVec),Dos_OpenLibrary);
-	    (void)SetFunction(&SysBase->LibNode,-74*sizeof(struct JumpVec),Dos_OpenDevice);
-	    (void)SetFunction(&SysBase->LibNode,-69*sizeof(struct JumpVec),Dos_CloseLibrary);
-	    (void)SetFunction(&SysBase->LibNode,-75*sizeof(struct JumpVec),Dos_CloseDevice);
-	    (void)SetFunction(&SysBase->LibNode,-67*sizeof(struct JumpVec),Dos_RemLibrary);
-	    (void)SetFunction(&SysBase->LibNode,-73*sizeof(struct JumpVec),Dos_RemLibrary);
+	    (void)SetFunction(&SysBase->LibNode,-92*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(OpenLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-74*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(OpenDevice,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-69*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(CloseLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-75*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(CloseDevice,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-67*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(RemLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-73*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(RemLibrary,Dos));
 	    dosBase->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
 	    dosBase->dl_LDHandler.is_Node.ln_Pri=0;
 	    dosBase->dl_LDHandler.is_Code=LDFlush;

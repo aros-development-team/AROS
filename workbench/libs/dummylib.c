@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/12 14:52:04  digulla
+    Use correct way to access external names (was missing)
+
     Revision 1.3  1996/08/13 15:35:11  digulla
     Replaced __AROS_LA by __AROS_LHA
 
@@ -16,7 +19,7 @@
 #include <clib/exec_protos.h>
 #include <aros/libcall.h>
 #ifdef __GNUC__
-    #include "dummylib_gcc.h"
+#   include "dummylib_gcc.h"
 #endif
 #include "initstruct.h"
 
@@ -26,13 +29,13 @@ extern const char version[];
 extern const APTR inittabl[4];
 extern void *const functable[];
 extern const struct inittable datatable;
-extern struct dummybase *dummy_init();
-extern struct dummybase *dummy_open();
-extern BPTR dummy_close();
-extern BPTR dummy_expunge();
-extern int dummy_null();
-extern ULONG dummy_add();
-extern ULONG dummy_asl();
+extern struct dummybase *__AROS_SLIB_ENTRY(init,dummy)();
+extern struct dummybase *__AROS_SLIB_ENTRY(open,dummy)();
+extern BPTR __AROS_SLIB_ENTRY(close,dummy)();
+extern BPTR __AROS_SLIB_ENTRY(expunge,dummy)();
+extern int __AROS_SLIB_ENTRY(null,dummy)();
+extern ULONG __AROS_SLIB_ENTRY(add,dummy)();
+extern ULONG __AROS_SLIB_ENTRY(asl,dummy)();
 extern const char end;
 
 int entry(void)
@@ -64,17 +67,17 @@ const APTR inittabl[4]=
     (APTR)sizeof(struct dummybase),
     (APTR)functable,
     (APTR)&datatable,
-    &dummy_init
+    &__AROS_SLIB_ENTRY(init,dummy)
 };
 
 void *const functable[]=
 {
-    &dummy_open,
-    &dummy_close,
-    &dummy_expunge,
-    &dummy_null,
-    &dummy_add,
-    &dummy_asl,
+    &__AROS_SLIB_ENTRY(open,dummy),
+    &__AROS_SLIB_ENTRY(close,dummy),
+    &__AROS_SLIB_ENTRY(expunge,dummy),
+    &__AROS_SLIB_ENTRY(null,dummy),
+    &__AROS_SLIB_ENTRY(add,dummy),
+    &__AROS_SLIB_ENTRY(asl,dummy),
     (void *)-1
 };
 

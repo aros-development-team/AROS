@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/12 14:52:00  digulla
+    Use correct way to access external names (was missing)
+
     Revision 1.1  1996/09/11 12:52:54  digulla
     Two new devices by M. Fleischer: RAM: and NIL:
 
@@ -24,13 +27,13 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const functable[];
-struct nilbase *nil_handler_init();
-void nil_handler_open();
-BPTR nil_handler_close();
-BPTR nil_handler_expunge();
-int nil_handler_null();
-void nil_handler_beginio();
-LONG nil_handler_abortio();
+struct nilbase *__AROS_SLIB_ENTRY(init,nil_handler)();
+void __AROS_SLIB_ENTRY(open,nil_handler)();
+BPTR __AROS_SLIB_ENTRY(close,nil_handler)();
+BPTR __AROS_SLIB_ENTRY(expunge,nil_handler)();
+int __AROS_SLIB_ENTRY(null,nil_handler)();
+void __AROS_SLIB_ENTRY(beginio,nil_handler)();
+LONG __AROS_SLIB_ENTRY(abortio,nil_handler)();
 static const char end;
 
 struct device
@@ -68,17 +71,17 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct nilbase),
     (APTR)functable,
     NULL,
-    &nil_handler_init
+    &__AROS_SLIB_ENTRY(init,nil_handler)
 };
 
 static void *const functable[]=
 {
-    &nil_handler_open,
-    &nil_handler_close,
-    &nil_handler_expunge,
-    &nil_handler_null,
-    &nil_handler_beginio,
-    &nil_handler_abortio,
+    &__AROS_SLIB_ENTRY(open,nil_handler),
+    &__AROS_SLIB_ENTRY(close,nil_handler),
+    &__AROS_SLIB_ENTRY(expunge,nil_handler),
+    &__AROS_SLIB_ENTRY(null,nil_handler),
+    &__AROS_SLIB_ENTRY(beginio,nil_handler),
+    &__AROS_SLIB_ENTRY(abortio,nil_handler),
     (void *)-1
 };
 
@@ -132,7 +135,7 @@ __AROS_LH1(BPTR, close,
 
     /* Let any following attemps to use the device crash hard. */
     iofs->IOFS.io_Device=(struct Device *)-1;
-    
+
     /* I have one fewer opener. */
     if(!--nilbase->device.dd_Library.lib_OpenCnt)
     {
@@ -255,7 +258,7 @@ __AROS_LH1(void, beginio,
 	    UnLockDosList(LDF_DEVICES|LDF_WRITE);
 	    break;
 
-	case FSA_OPEN:	    
+	case FSA_OPEN:
 	case FSA_OPEN_FILE:
 	    /* No names allowed on NIL: */
 	    if(((STRPTR)iofs->io_Args[0])[0])
@@ -274,30 +277,30 @@ __AROS_LH1(void, beginio,
 
 	case FSA_WRITE:
 	    break;
-		    
+
 	case FSA_SEEK:
 	    iofs->io_Args[0]=0;
 	    iofs->io_Args[1]=0;
 	    break;
-		    
+
 	case FSA_CLOSE:
 	    Forbid();
 	    ((struct device *)iofs->IOFS.io_Unit)->usecount--;
 	    Permit();
 	    break;
-	    
+
 	default:
 	    error=ERROR_NOT_IMPLEMENTED;
 	    break;
     }
-    
+
     /* Set error code */
     iofs->io_DosError=error;
 
     /* If the quick bit is not set send the message to the port */
     if(!(iofs->IOFS.io_Flags&IOF_QUICK))
 	ReplyMsg(&iofs->IOFS.io_Message);
-    
+
     __AROS_FUNC_EXIT
 }
 
