@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Makefile to make More.
+#   Makefile to make Prefs/ReqTools.
 
 include $(TOP)/config/make.cfg
 
