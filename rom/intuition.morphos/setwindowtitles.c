@@ -18,8 +18,8 @@ struct SetWindowTitlesActionMsg
 {
     struct IntuiActionMsg msg;
     struct Window *window;
-    UBYTE * windowTitle;
-    UBYTE * screenTitle;
+    CONST_STRPTR windowTitle;
+    CONST_STRPTR screenTitle;
 };
 
 static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
@@ -33,9 +33,9 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
 AROS_LH3(void, SetWindowTitles,
 
          /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(UBYTE         *, windowTitle, A1),
-         AROS_LHA(UBYTE         *, screenTitle, A2),
+         AROS_LHA(struct Window *, window,      A0),
+         AROS_LHA(CONST_STRPTR,    windowTitle, A1),
+         AROS_LHA(CONST_STRPTR,    screenTitle, A2),
 
          /*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 46, Intuition)
@@ -92,13 +92,13 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
                                struct IntuitionBase *IntuitionBase)
 {
     struct Window *window = msg->window;
-    UBYTE * windowTitle = msg->windowTitle;
-    UBYTE * screenTitle = msg->screenTitle;
+    CONST_STRPTR windowTitle = msg->windowTitle;
+    CONST_STRPTR screenTitle = msg->screenTitle;
     BOOL change = TRUE;
 
     LOCKWINDOWLAYERS(window);
 
-    if (windowTitle == (UBYTE *)~0L)
+    if (windowTitle == (CONST_STRPTR)~0L)
     {
          change = FALSE;
     } else {
@@ -118,7 +118,7 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
     /* Change screen's title */
     change = TRUE;
 
-    if ((screenTitle == window->ScreenTitle) || (screenTitle == (UBYTE *)~0L)) change = FALSE;
+    if ((screenTitle == window->ScreenTitle) || (screenTitle == (CONST_STRPTR)~0L)) change = FALSE;
 
     if (change)
     {
