@@ -11,7 +11,7 @@
 #include "support.h"
 #include "support_builtin.h"
 
-#define DEBUG 1
+#   define DEBUG 1
 #   include <aros/debug.h>
 
 /*****************************************************************************
@@ -159,7 +159,7 @@
             }
         }
     }
-    else
+    else if (name != NULL)
     {
         BPTR file = OpenIcon(name, MODE_OLDFILE);
         
@@ -170,14 +170,73 @@
         }
         else if (!failIfUnavailable)
         {
-            // FIXME: integrate GetDiskObjectNew here
-            SET_ISDEFAULTICON(TRUE);
+            LONG type = -1;
+            BPTR lock = Lock(name, ACCESS_READ);
             
-            icon = GetDiskObjectNew(name);
+            if (lock != NULL)
+            {
+                BPTR parent = ParentDir(lock);
+                
+                if (parent != NULL)
+                {
+                    struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, TAG_DONE);
+                    
+                    if (fib != NULL)
+                    {
+                        if (Examine(lock, fib))
+                        {
+                            if (fib->fib_DirEntryType > 0)
+                            {
+                                type = WBDRAWER;
+                            }
+                            else if (~fib->fib_Protection & FIBF_EXECUTE)
+                            {
+                                type = WBTOOL;
+			    }
+                            else
+                            {
+				type = WBPROJECT;
+                            }
+                        }
+                        
+                        FreeDosObject(DOS_FIB, fib);
+                    }
+                    else
+                    {
+                        SetIoErr(ERROR_NO_FREE_STORE);
+                    }
+                    
+                    UnLock(parent); /* not needed anymore */
+                }
+                else
+                {
+                    type = WBDISK;
+                }
+                
+                UnLock(lock);
+            }
+            else if (strcasecmp(name + strlen(name) - 5, ":Disk") == 0)
+            {
+                type = WBDISK;
+            }
+            
+            if (type != -1)
+            {
+                icon = GetIconTags
+                (
+                    NULL,
+                    ICONGETA_GetDefaultType,        type,
+                    TAG_MORE,                (IPTR) tags
+                );
+            }
         }
     }
     
     return icon;
 
     AROS_LIBFUNC_EXIT
-} /* GetIconRectangle */
+
+#   undef SET_ISDEFAULTICON
+#   undef SET_ERRORCODE
+
+} /* GetIconTagList() */
