@@ -186,7 +186,7 @@ USER_CFLAGS	:= -D_IEEE_LIBM -Dlint
 
 #MM
 arosm-setup-link :
-	@$(RM) $(AROSDIR)/lib/libm.a
-	@ln -s libarosm.a $(AROSDIR)/lib/libm.a
+	@$(RM) $(AROS_LIB)/libm.a
+	@ln -s libarosm.a $(AROS_LIB)/libm.a
 
 %common
