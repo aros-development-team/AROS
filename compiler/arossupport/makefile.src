@@ -9,6 +9,7 @@ FILES = calcchecksum kprintf nastyfreemem \
 	purify removeslist debugmem \
 	_kprintf hexdump \
 	freestruct \
+	isdosentrya \
 	readbyte \
 	readdouble \
 	readfloat \
