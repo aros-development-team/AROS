@@ -1267,7 +1267,6 @@ static VOID bitmap_clear(Class *cl, Object *obj, struct pHidd_BitMap_Clear *msg)
     ReturnVoid("BitMap::Clear");
 }
 
-#warning To save space, msg->pixels could be VOID * and size of each pixel would depend on depth. (Ie. depth 8: msg->pixels is UBYTE[])
 static VOID bitmap_getimage(Class *cl, Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     WORD x, y;
@@ -1299,7 +1298,7 @@ static VOID bitmap_putimage(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
     		, msg->x, msg->y, msg->width, msg->height));
     
     
-    /* Preserver old fg pen */
+    /* Preserve old fg pen */
     GetAttr(o, aHidd_BitMap_Foreground, &old_fg);
     
     
@@ -1386,6 +1385,7 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColo
     ReturnVoid("BitMap::BlitColorExpansion");
     
 }
+
 
 /*** BitMap::Set() *****************************************************/
 
