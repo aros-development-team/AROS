@@ -1,5 +1,8 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    This file is part of the About program, which is distributed under
+    the terms of version 2 of the GNU General Public License.
+    
     $Id$
 */
 
