@@ -10,7 +10,6 @@
 
     NAME */
 
-#define AROS_ALMOST_COMPATIBLE 1
 #include <proto/exec.h>
 #include <exec/libraries.h>
 #include <exec/memory.h>
@@ -40,7 +39,7 @@ struct InputEvent * Console_CDInputHandler(struct InputEvent * events,
 /*************************************************************************
 
     NAME */
-	AROS_LH2(struct InputEvent *, CDInputHandler,
+	AROS_LH2I(struct InputEvent *, CDInputHandler,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct InputEvent *, events, A0),
