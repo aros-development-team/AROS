@@ -3,17 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := About FixFonts FTManager Themes
-ICONDIR   := $(AROSDIR)/System
-ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
+ICONS := About FixFonts FTManager Themes
 
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-system
-#MM
-themes-gorilla-icons-aros-system : setup $(ICONFILES)
-	@$(NOP)
-
-$(ICONDIR)/%.info : %.info.src %.png
-	@$(ILBMTOICON) $+ $@
-
-setup :
-	%mkdirs_q $(ICONDIR)
+%build_icons mmake=themes-gorilla-icons-aros-system icons=$(ICONS) \
+             dir=$(AROS_SYSTEM)

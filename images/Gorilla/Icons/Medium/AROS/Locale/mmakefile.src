@@ -3,17 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Help Catalogs Flags Countries
-ICONDIR   := $(AROSDIR)/Locale
-ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
+ICONS := Help Catalogs Flags Countries
 
-#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros
-#MM
-themes-gorilla-icons-aros-locale : setup $(ICONFILES)
-	@$(NOP)
-
-$(ICONDIR)/%.info : %.info.src %.png
-	@$(ILBMTOICON) $+ $@
-
-setup :
-	%mkdirs_q $(ICONDIR)
+#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-locale
+%build_icons mmake=themes-gorilla-icons-aros-locale icons=$(ICONS) \
+             dir=$(AROS_LOCALE)

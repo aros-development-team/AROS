@@ -3,18 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Time Locale Serial Presets Input IControl Font ReqTools Wanderer \
-             Zune
-ICONDIR   := $(AROSDIR)/Prefs
-ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
+ICONS := Time Locale Serial Presets Input IControl Font ReqTools Wanderer Zune
 
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-prefs
-#MM
-themes-gorilla-icons-aros-prefs : setup $(ICONFILES)
-	@$(NOP)
-
-$(ICONDIR)/%.info : %.info.src %.png
-	@$(ILBMTOICON) $+ $@
-
-setup :
-	%mkdirs_q $(ICONDIR)
+%build_icons mmake=themes-gorilla-icons-aros-prefs icons=$(ICONS) \
+             dir=$(AROS_PREFS)

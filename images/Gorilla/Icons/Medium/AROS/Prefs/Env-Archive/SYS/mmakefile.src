@@ -3,23 +3,13 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := \
+ICONS := \
     def_Disk def_RAM def_Harddisk def_CDROM def_Drawer def_Trashcan \
     def_Project def_Picture def_Text def_Document def_Tool def_Authors \
     def_CSS def_Font def_HTML def_Legal def_Movie def_Music def_PDF def_Patch \
     def_Postscript def_Presentation def_Printer def_ReadMe def_Spreadsheet \
     def_XCF def_Sound def_Keymap def_DVD
 
-ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/SYS
-ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
-
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-prefs-envarc
-#MM
-themes-gorilla-icons-aros-prefs-envarc : setup $(ICONFILES)
-	@$(NOP)
-
-$(ICONDIR)/%.info : %.info.src %.png
-	@$(ILBMTOICON) $+ $@
-
-setup :
-	%mkdirs_q $(ICONDIR)
+%build_icons mmake=themes-gorilla-icons-aros-prefs-envarc icons=$(ICONS) \
+             dir=$(AROS_ENVARC)/SYS 
