@@ -580,9 +580,11 @@ static IPTR aslcycle_goactive(Class * cl, Object * o, struct gpInput *msg)
     WORD 		x, y, x2, y2, gadx, gady, gadw, gadh;
     
     IPTR 		rc = GMR_MEACTIVE;
+
+static int counter = 0;
     
-    if (!data->labels) return GMR_NOREUSE;
-    
+    if (!data->labels || !msg->gpi_IEvent) return GMR_NOREUSE;
+        
     data->popup = FALSE;
     data->sentgadgetup = FALSE;
     data->turbocountdown = TURBOCOUNTDOWN;
@@ -680,7 +682,7 @@ static IPTR aslcycle_handleinput(Class * cl, Object * o, struct gpInput *msg)
 
 	x = msg->gpi_GInfo->gi_Screen->MouseX - data->layerx1;
 	y = msg->gpi_GInfo->gi_Screen->MouseY - data->layery1;
-
+	
 	if ((x < data->menux1) || (x > data->menux2))
 	{
 	    UnselectActiveItem(cl, o, msg->gpi_GInfo->gi_DrInfo);
