@@ -255,7 +255,7 @@ int main()
     /* Enter SAD */
     Debug(0);
 
-#if 0
+#if 1
 
     kprintf("graphics.hidd = %08.8lx\n",OpenLibrary("graphics.hidd",0));
     kprintf("vga.hidd = %08.8lx\n",OpenLibrary("vga.hidd",0));
@@ -310,7 +310,7 @@ int main()
 		{WA_Height,			240},
 		{WA_Left,			100},
 		{WA_Top,			100},
-		{WA_Title, (IPTR)"Sample window..."},
+		{WA_Title,	       (ULONG)text0},
 		{TAG_DONE,			  0}};
 	    OpenWindowTagList(0, tags);
 	}
