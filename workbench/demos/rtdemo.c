@@ -67,12 +67,17 @@ int main (int argc, char ** argv)
 
     FreeVec (illmem);
 
-    IntuitionBase = OpenLibrary (INTUITIONNAME, 0);
+    mem = IntuitionBase = OpenLibrary (INTUITIONNAME, 0);
+
+    printf ("Bug 12: Open a window and forget about it\n");
+    OpenWindowTags (NULL, TAG_END);
 
     printf ("Bug 6: OverWriting IntuitionBase (%p)\n", IntuitionBase);
     IntuitionBase = (struct IntuitionBase *)23;
 
     CloseLibrary (IntuitionBase);
+
+    IntuitionBase = mem;
 
     /* Funny things with files */
     printf ("Bug 7: Open a file with an illegal mode\n");
@@ -102,7 +107,7 @@ int main (int argc, char ** argv)
 	any resources are still allocated, then this will free and print
 	them.
     */
-    printf ("Show Bugs 1, 2, 6 and 11\n");
+    printf ("Show Bugs 1, 2, 6, 11 and 12\n");
     RT_Exit ();
 
     return 0;
