@@ -33,11 +33,12 @@ int fcntl(int fd, int cmd, ...)
 	        va_list ap;
 	        int arg;
     
+	        int oldmode = __oflags2amode(desc->flags & ~(O_NONBLOCK|O_APPEND|O_ASYNC));
+
 	        va_start(ap, cmd);
 	        arg = va_arg(ap, int);
 	        va_end(ap);
   
-	        int oldmode = __oflags2amode(desc->flags & ~(O_NONBLOCK|O_APPEND|O_ASYNC));
 		arg &= (O_NONBLOCK|O_APPEND|O_ASYNC);
 
 		if (ChangeMode(CHANGE_FH, desc->fh, oldmode | __oflags2amode(arg)) == DOSTRUE)
