@@ -5,6 +5,7 @@
 
 #include <aros/macros.h>
 #include <dos/dos.h>
+#include <exec/memory.h>
 #include <prefs/prefhdr.h>
 #include <prefs/font.h>
 

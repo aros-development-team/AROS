@@ -5,6 +5,7 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <exec/memory.h>
 #include <dos/dosextens.h>
 #include <aros/libcall.h>
 #include <aros/debug.h>
