@@ -9,7 +9,7 @@
 /*  INTERNALS
 
   * Currently, there is no protection against stupid users. If you, for
-    instance, installs a broker and attach a custom object to it, and this
+    instance, install a broker and attach a custom object to it, and this
     custom object's function is to Route the messages to the broker, there
     will be a deadlock, as the message list will never get empty.
 	I have no GOOD solution for this, and therefore nothing to prevent
@@ -41,7 +41,8 @@
 #include <aros/asmcall.h>
 #include <stddef.h>
 
-#define  DEBUG 1
+#define  SUPERDEBUG 0
+#define  DEBUG 0
 #include <aros/debug.h>
 
 static void ProduceEvent(CxMsg *, struct CommoditiesBase *CxBase);
@@ -90,10 +91,31 @@ AROS_UFH2(struct InputEvent *, CxTree,
 
     tempMsg = (CxMsg *)CxBase->cx_MessageList.lh_Head;
 
+#if SUPERDEBUG
+    {
+	CxObj *node;
+
+	kprintf("List of brokers:\n");
+
+	ForeachNode(&CxBase->cx_BrokerList, node)
+	{
+	    if(node->co_Node.ln_Type == CX_BROKER)
+		kprintf("B: %s\n", node->co_Ext.co_BExt->bext_Name);
+	    else
+		kprintf("Something else\n");
+	}
+    }
+#endif
+
     co = (CxObj *)GetHead(&CxBase->cx_BrokerList);
+
+#if SUPERDEBUG
+    kprintf("Initial broker: %s\n", co->co_Ext.co_BExt->bext_Name);
+#endif
+
     while(tempMsg != NULL)
     {
-	tempMsg->cxm_Routing = co;
+	ROUTECxMsg(tempMsg, co);
 	tempMsg = (CxMsg *)tempMsg->cxm_Message.mn_Node.ln_Succ;
     }
 
@@ -104,18 +126,41 @@ AROS_UFH2(struct InputEvent *, CxTree,
 
     /* Process the new events */
 
-    while((msg = GetHead(&CxBase->cx_MessageList)) != NULL)
+    while((msg = (CxMsg *)GetHead(&CxBase->cx_MessageList)) != NULL)
     {
-	//	kprintf("Getting message %p\n", msg);
+	//	if(msg->cxm_Data->ie_Class == IECLASS_RAWMOUSE)
+	//	    kprintf("Getting message %p\n", msg);
 
 	co = msg->cxm_Routing;
+
+	// kprintf("Object %p\n", co);
+
+	if(co == NULL)
+	{
+	    //  kprintf("Co was NULL, level = %i\n", msg->cxm_Level);
+
+	    if(msg->cxm_Level != 0)
+	    {
+		//		kprintf("Next level %i\n", msg->cxm_Level-1);
+		
+		msg->cxm_Level--;
+		co = msg->cxm_retObj[msg->cxm_Level];
+		co = (CxObj *)co->co_Node.ln_Succ;
+
+		// kprintf("Found return object %p\n", co);
+	    }
+	}
 
 	if(co != NULL)
 	{
 	    if(co->co_Node.ln_Succ == NULL)
 	    {
+		// kprintf("The succ was NULL\n");
+
 		if(msg->cxm_Level != 0)
 		{
+		    // kprintf("Next level %i\n", msg->cxm_Level-1);
+
 		    msg->cxm_Level--;
 		    co = msg->cxm_retObj[msg->cxm_Level];
 		    co = (CxObj *)co->co_Node.ln_Succ;
@@ -129,9 +174,25 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	    else
 	    /* Route the message to the next broker */
 	    {
-		// kprintf("Routing to next broker %p co = %p\n",
-		//	co->co_Node.ln_Succ, co);
-		msg->cxm_Routing = (CxObj *)co->co_Node.ln_Succ;
+#if DEBUG
+
+		if(msg->cxm_Data->ie_Class == IECLASS_RAWMOUSE)
+		{
+		    if(co->co_Node.ln_Type == CX_BROKER)
+			kprintf("Broker: %s\n", co->co_Ext.co_BExt->bext_Name);
+		    
+		    if(co->co_Node.ln_Succ != NULL &&
+		       co->co_Node.ln_Succ->ln_Type == CX_BROKER)
+			kprintf("Routing to next broker %s (this broker=%s) %p\n",
+				((CxObj *)(co->co_Node.ln_Succ))->co_Ext.co_BExt->bext_Name,
+				co->co_Ext.co_BExt->bext_Name,
+				co);
+		}
+#endif
+
+
+		// kprintf ("This: %p, that %p\n", co, co->co_Node.ln_Succ);
+		ROUTECxMsg(msg, (CxObj *)co->co_Node.ln_Succ);
 	    }
 	}
 
@@ -233,7 +294,8 @@ static void ProduceEvent(CxMsg *msg, struct CommoditiesBase *CxBase)
 	}
 	CxBase->cx_EventExtra = &temp->ie.ie_NextEvent;
 	
-	AddTail((struct List *)&CxBase->cx_GeneratedInputEvents, (struct Node *)&temp->node);
+	AddTail((struct List *)&CxBase->cx_GeneratedInputEvents,
+		(struct Node *)&temp->node);
     }
 
     DisposeCxMsg(msg);
