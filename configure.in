@@ -643,7 +643,8 @@ if [[ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_head
 #include <X11/cursorfont.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include <X11/extensions/XShm.h>],[
+#
+<X11/extensions/XShm.h>],[
 static XShmSegmentInfo shminfo;
 static Display *display;
 XShmAttach(display, &shminfo);
@@ -666,10 +667,13 @@ AC_ARG_ENABLE(includes,
 [aros_target_incl=$enable_includes], [aros_target_incl=$aros_target_incl_def])
 
 dnl find out about the target cc's include path
-AC_MSG_CHECKING([for the target compiler's include path])
-aros_target_cc_includes=`dirname \`${aros_target_cc} -print-libgcc-file-name\``/include
-AC_MSG_RESULT("$aros_target_cc_includes")
-
+if test "$host_os" = "freebsd"; then
+    aros_target_cc_includes='/usr/include'
+else
+    AC_MSG_CHECKING([for the target compiler's include path])
+    aros_target_cc_includes=`dirname \`${aros_target_cc} -print-libgcc-file-name\``/include
+    AC_MSG_RESULT("$aros_target_cc_includes")
+fi
 
 dnl Check if user specified --with-resolution=XRESxYRESxDEPTH
 AC_MSG_CHECKING([for default resolution of WBScreen])
