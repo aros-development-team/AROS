@@ -287,18 +287,25 @@ STATIC ULONG Menuitem_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 #undef STORE
 
 
-#ifndef _AROS
-__asm IPTR Menuitem_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Menuitem_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static ULONG Menuitem_Dispose(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_MenuitemData *data = INST_DATA(cl, obj);
+
+    if (data->newmenu) FreeVec(data->newmenu);
+    
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+
+BOOPSI_DISPATCHER(IPTR, Menuitem_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
 	case OM_NEW: return Menuitem_New(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE: return Menuitem_Dispose(cl, obj, msg);
 	case OM_SET: return Menuitem_Set(cl, obj, (struct opSet *) msg);
 	case OM_GET: return Menuitem_Get(cl, obj, (struct opGet *) msg);
 
