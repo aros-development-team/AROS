@@ -146,7 +146,7 @@ static const char * _errstrings[] =
 	char * strerror (
 
 /*  SYNOPSIS */
-	size_t n)
+	int n)
 
 /*  FUNCTION
 	Returns a readable string for an error number in errno.
