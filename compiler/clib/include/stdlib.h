@@ -60,6 +60,7 @@ char *setenv(const char *name, const char *value, int overwrite);
 int   putenv(const char *string);
 
 char *mktemp(char *buf);
+int system(const char *string);
 
 char *gcvt(double number, size_t ndigit, char *buf);
 
