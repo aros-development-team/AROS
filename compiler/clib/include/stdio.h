@@ -12,12 +12,11 @@
 #include <sys/cdefs.h>
 #include <sys/arosc.h>
 
-#ifndef __AROS_SIZE_T_DECLARED
-#define __AROS_SIZE_T_DECLARED
-typedef __size_t            size_t;
-#endif
+#define __need_size_t
+#define __need_NULL 
+#include <stddef.h>
 
-typedef __off_t             fpos_t;
+typedef __off_t fpos_t;
 
 /*
     We are supposed to declare it, without including the file.
@@ -31,10 +30,6 @@ typedef	_AROS_VA_LIST_	va_list;
 #else
 #include <stdarg.h>
 #endif
-
-#ifndef NULL
-#   define NULL 0
-#endif /* NULL */
 
 /* Need to protect against standard Amiga includes */
 #ifndef EOF
