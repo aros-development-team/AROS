@@ -32,6 +32,7 @@ VAR struct DrawInfo             *dri;
 VAR struct Menu                 *menus;
 VAR APTR                        vi;
 VAR struct Catalog              *catalog;
+VAR struct List     	    	country_list, language_list, pref_language_list;
 VAR WORD    	    	    	pages_left, pages_top, pages_width, pages_height;
 VAR WORD    	    	    	winwidth, winheight, buttonwidth, buttonheight;
 VAR UBYTE   	    	    	s[256];

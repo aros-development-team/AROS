@@ -135,3 +135,36 @@ STRPTR GetFile(void)
 }
 
 /*********************************************************************************************/
+
+struct Node *FindListNode(struct List *list, WORD which)
+{
+    struct Node *node = NULL;
+    
+    if (which >= 0)
+    {
+	for(node = list->lh_Head; node->ln_Succ && which; node = node->ln_Succ, which--)
+	{
+	}
+	if (!node->ln_Succ) node = NULL;
+    }
+    
+    return node;
+}
+
+/*********************************************************************************************/
+
+void SortInNode(struct List *list, struct Node *node)
+{
+    struct Node *sort, *prev = NULL;
+
+    ForeachNode(list, sort)
+    {
+	if (Stricmp(node->ln_Name, sort->ln_Name) < 0) break;
+	prev = sort;
+    }
+
+    Insert(list, node, prev);
+}
+
+/*********************************************************************************************/
+

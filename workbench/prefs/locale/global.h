@@ -11,6 +11,8 @@
 
 /*********************************************************************************************/
 
+#define AROS_ALMOST_COMPATIBLE /* ForeachNode macros */
+
 #ifndef DOS_DOS_H
 #include <dos/dos.h>
 #endif
@@ -162,31 +164,49 @@
 
 /*********************************************************************************************/
 
-#define PAGECMD_INIT         1
-#define PAGECMD_LAYOUT       2
-#define PAGECMD_GETMINWIDTH  3
-#define PAGECMD_GETMINHEIGHT 4
-#define PAGECMD_SETDOMLEFT   5
-#define PAGECMD_SETDOMTOP    6
-#define PAGECMD_SETDOMWIDTH  7
-#define PAGECMD_SETDOMHEIGHT 8
-#define PAGECMD_MAKEGADGETS  9
-#define PAGECMD_ADDGADGETS   10
-#define PAGECMD_REMGADGETS   11
-#define PAGECMD_HANDLEINPUT  12
-#define PAGECMD_CLEANUP      13
+#define PAGECMD_INIT         	1
+#define PAGECMD_LAYOUT       	2
+#define PAGECMD_GETMINWIDTH  	3
+#define PAGECMD_GETMINHEIGHT 	4
+#define PAGECMD_SETDOMLEFT   	5
+#define PAGECMD_SETDOMTOP    	6
+#define PAGECMD_SETDOMWIDTH  	7
+#define PAGECMD_SETDOMHEIGHT 	8
+#define PAGECMD_MAKEGADGETS  	9
+#define PAGECMD_ADDGADGETS   	10
+#define PAGECMD_REMGADGETS   	11
+#define PAGECMD_HANDLEINPUT  	12
+#define PAGECMD_CLEANUP      	13
 
-#define BORDER_X    4
-#define BORDER_Y    4
-#define TABBORDER_X 4
-#define TABBORDER_Y 4
-#define SPACE_X     4
-#define SPACE_Y     4
+#define BORDER_X    	    	4
+#define BORDER_Y    	    	4
+#define TABBORDER_X 	    	8
+#define TABBORDER_Y 	    	8
+#define SPACE_X     	    	4
+#define SPACE_Y     	    	4
 
 #define BUTTON_EXTRAWIDTH   	16
 #define BUTTON_EXTRAHEIGHT  	6
 #define IMBUTTON_EXTRAWIDTH  	4
 #define IMBUTTON_EXTRAHEIGHT 	4
+
+/*********************************************************************************************/
+
+struct ListviewEntry
+{
+    struct Node node;
+    UBYTE   	name[30];
+};
+
+struct CountryEntry
+{
+    struct ListviewEntry lve;
+};
+
+struct LanguageEntry
+{
+    struct ListviewEntry lve;
+};
 
 /*********************************************************************************************/
 
@@ -200,6 +220,9 @@ void InitMenus(void);
 void MakeMenus(void);
 void KillMenus(void);
 void SetMenuFlags(void);
+
+struct Node *FindListNode(struct List *list, WORD which);
+void SortInNode(struct List *list, struct Node *node);
 
 STRPTR GetFile(void);
 
@@ -220,6 +243,11 @@ LONG page_timezone_handler(LONG cmd, IPTR param);
 void InitLocale(STRPTR catname, ULONG version);
 void CleanupLocale(void);
 STRPTR MSG(ULONG id);
+
+/* prefs.c */
+
+void InitPrefs(void);
+void CleanupPrefs(void);
 
 /*********************************************************************************************/
 /*********************************************************************************************/
