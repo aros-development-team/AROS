@@ -319,6 +319,7 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
                             }
                             break;  */
 
+#ifdef __MORPHOS__
                         case IECLASS_NEWTIMER:
                             if (mhd->delayedopen)
                             {
@@ -329,7 +330,7 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
                                 }
                             }
                             break;
-
+#endif /* __MORPHOS__ */
                         }
 
                     } /* if (mhd->active) */

@@ -44,8 +44,11 @@
 #include "inputhandler_support.h"
 #include "inputhandler_actions.h"
 #include "menus.h"
-#include "smallmenu.h"
-#include "intuition_customizesupport.h"
+
+#ifdef SKINS
+#   include "smallmenu.h"
+#   include "intuition_customizesupport.h"
+#endif
 
 #undef DEBUG
 #define DEBUG 0
@@ -2561,6 +2564,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
         case IECLASS_NULL:
             break;
 
+#ifdef __MORPHOS__
         case IECLASS_NEWTIMER:
             if (MENUS_ACTIVE)
             {
@@ -2578,6 +2582,7 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 
             } /* if (gadget) */
             break;
+#endif /* __MORPHOS__ */
 
         default:
             if (MENUS_ACTIVE)
