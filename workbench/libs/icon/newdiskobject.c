@@ -44,6 +44,8 @@
     
 #   warning TODO: Implement icon/NewDiskObject()
     aros_print_not_implemented("icon/NewDiskObject()");
+
+    return NULL;
     
     AROS_LIBFUNC_EXIT
 } /* NewDiskObject() */
