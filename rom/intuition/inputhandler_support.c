@@ -41,32 +41,28 @@ void notify_mousemove_screensandwindows(WORD x,
                                         WORD y, 
                                         struct IntuitionBase * IntuitionBase)
 {
-  struct Screen * scr = IntuitionBase->FirstScreen;
-  while (NULL != scr)
-  {
-    /* 
-    ** Visit all windows of this screen
-    */
-    struct Window * win = scr->FirstWindow;
-    
-    while (NULL != win)
-    {
-      win->MouseX = x - win->LeftEdge;
-      win->MouseY = y - win->TopEdge;
-      
-      /* stegerg: AmigaOS sets this even if window is not GZZ
-         so we do the same as they are handy also for non-GZZ
-	 windows */
-	 
-      win->GZZMouseX = x - (win->LeftEdge + win->BorderLeft);
-      win->GZZMouseY = y - (win->TopEdge  + win->BorderTop);
+    struct Screen * scr = IntuitionBase->FirstScreen;
 
-      win = win -> NextWindow;
+    while (NULL != scr)
+    {
+	struct Window * win = scr->FirstWindow;
+
+	scr->MouseX = x;
+	scr->MouseY = y;
+
+	/* 
+	** Visit all windows of this screen
+	*/
+
+	while (NULL != win)
+	{
+	    UpdateMouseCoords(win);
+
+	    win = win -> NextWindow;
+	}
+
+	scr = scr->NextScreen;
     }
-    scr->MouseX = x;
-    scr->MouseY = y;
-    scr = scr->NextScreen;
-  }
 }
 
 /*********************************************************************
@@ -737,6 +733,9 @@ void FixWindowCoords(struct Window *win, WORD *left, WORD *top, WORD *width, WOR
     if (*width > scr->Width) *width = scr->Width;
     if (*height > scr->Height) *height = scr->Height;
 
+    if (*width < 1) *width = 1;
+    if (*height < 1) *height = 1;
+    
     if ((*left + *width) > scr->Width)
     {
     	*left = scr->Width - *width;
@@ -760,71 +759,85 @@ void FixWindowCoords(struct Window *win, WORD *left, WORD *top, WORD *width, WOR
 void WindowNeedsRefresh(struct Window * w, 
                         struct IntuitionBase * IntuitionBase )
 {
-  /* Supposed to send a message to this window, saying that it needs a
-     refresh. I will check whether there is no such a message queued in
-     its messageport, though. It only needs one such message! 
-  */
-  struct IntuiMessage * IM;
-  BOOL found = FALSE;
+    /* Supposed to send a message to this window, saying that it needs a
+       refresh. I will check whether there is no such a message queued in
+       its messageport, though. It only needs one such message! 
+    */
 
-  if (NULL == w->UserPort)
-    return;
-  
-  
-  /* Refresh the window's gadgetry ... 
-     ... stegerg: and in the actual implementation
-     call RefershWindowFrame first, as the border gadgets don´t
-     cover the whole border area.*/
+    /* Refresh the window's gadgetry ... 
+       ... stegerg: and in the actual implementation
+       call RefershWindowFrame first, as the border gadgets don´t
+       cover the whole border area.*/
 
-  if (FALSE != BeginUpdate(w->WLayer))
-  {
-  
-    if (!(w->Flags & WFLG_GIMMEZEROZERO))
-    {
-      RefreshWindowFrame(w);
-    }
-  
+    Gad_BeginUpdate(w->WLayer, IntuitionBase);
+
+    if (!IS_GZZWINDOW(w)) RefreshWindowFrame(w);
+
     /* refresh all gadgets except border gadgets, because they
        were already refreshed in refreshwindowframe */
     int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
-  }
-  EndUpdate(w->WLayer, FALSE);
-  
-  /* Can use Forbid() for this */
-  Forbid();
-  
-  IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
+    if (IS_NOCAREREFRESH(w)) w->WLayer->Flags &= ~LAYERREFRESH;
 
-  /* reset the flag in the layer */
-  w->WLayer->Flags &= ~LAYERREFRESH;
+    Gad_EndUpdate(w->WLayer, IS_NOCAREREFRESH(w), IntuitionBase);
 
-  ForeachNode(&w->UserPort->mp_MsgList, IM)
-  {
-    /* Does the window already have such a message? */
-    if (IDCMP_REFRESHWINDOW == IM->Class)
+    if (IS_DOCAREREFRESH(w))
     {
-kprintf("Window %s already has a refresh message pending!!\n",w->Title ? w->Title : (STRPTR)"<NONAME>");
-      found = TRUE;break;
-    }
-  }
-  
-  Permit();
+        if (w->UserPort && (w->IDCMPFlags & IDCMP_REFRESHWINDOW))
+	{
+            struct IntuiMessage *IM;
+            BOOL found = FALSE;
 
-  if (!found)
-  {
-kprintf("Sending a refresh message to window %s  %d %d %d %d!!\n",w->Title ? w->Title : (STRPTR)"<NONAME>",
-								w->LeftEdge,
-								w->TopEdge,
-								w->Width,
-								w->Height);
+	    /* Can use Forbid() for this */
+	    Forbid();
 
-    IM = alloc_intuimessage(w, IntuitionBase);
-    if (NULL != IM)
-    {
-      IM->Class = IDCMP_REFRESHWINDOW;
-      send_intuimessage(IM, w, IntuitionBase);
-    }
-  }
+	    IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
+
+	    ForeachNode(&w->UserPort->mp_MsgList, IM)
+	    {
+		/* Does the window already have such a message? */
+		if (IDCMP_REFRESHWINDOW == IM->Class)
+		{
+        	    kprintf("Window %s already has a refresh message pending!!\n",w->Title ? w->Title :
+											     (STRPTR)"<NONAME>");
+		    found = TRUE;break;
+		}
+	    }
+
+	    Permit();
+	
+	    if (!found)
+	    {
+        	kprintf("Sending a refresh message to window %s  %d %d %d %d!!\n",w->Title ? w->Title :
+											     (STRPTR)"<NONAME>",
+										  w->LeftEdge,
+										  w->TopEdge,
+										  w->Width,
+										  w->Height);
+
+		fire_intuimessage(w,
+                		  IDCMP_REFRESHWINDOW,
+				  0, 
+				  w, 
+				  IntuitionBase);
+	    } /* if (!found) */
+	    
+	} /* if (w->UserPort && (w->IDCMPFlags & IDCMP_REFRESHWINDOW)) */
+	else
+	{
+	    struct IIHData *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+	    
+	    if (FindTask(NULL) == iihdata->InputDeviceTask)
+	    {
+	        ih_fire_intuimessage(w,
+				     IDCMP_REFRESHWINDOW,
+				     0,
+				     w,
+				     IntuitionBase);
+	    }
+	}
+	
+    } /* if (!IS_NOCAREREFRESH(w)) */
+    
 }
 
 /***********************
@@ -936,5 +949,25 @@ BOOL FireMenuMessage(WORD code, struct Window *win,
 }
     
 /*********************************************************************/
+
+LONG Gad_BeginUpdate(struct Layer *layer, struct IntuitionBase *IntuitionBase)
+{
+    /* Must lock GadgetLock to avoid deadlocks with ObtainGirPort
+       from other tasks, because ObtainGirPort first obtains
+       GadgetLock and then layer lock through LockLayer!!!! */
+       
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+
+    return BeginUpdate(layer);
+}
+
+/*******************************************************************************************************/
+
+void Gad_EndUpdate(struct Layer *layer, UWORD flag, struct IntuitionBase *IntuitionBase)
+{
+    EndUpdate(layer, flag);
+
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);    
+}
 /*********************************************************************/
 /*********************************************************************/
