@@ -62,15 +62,19 @@
 
     struct TextFont 	* textfont = vinfo->vi_dri->dri_Font;
 
+    /* Set GTMN_Menu to menu, as GTMN_Menu is really just a
+       LayoutMenuItemsA() tag, and should not appear in the
+       taglist passed to LayoutMenusA(). stegerg. */
+    
     struct TagItem 	stdlayouttags[] =
     {
-	{GTMN_Menu		, NULL	},
-	{GTMN_TextAttr		, NULL	},
-	{GTMN_NewLookMenus	, TRUE	},
-	{GTMN_Checkmark		, NULL	},
-	{GTMN_AmigaKey		, NULL	},
-	{GTMN_FrontPen		, 0L	},
-	{TAG_END		, 0L	}
+	{GTMN_Menu		, (IPTR)menu},
+	{GTMN_TextAttr		, NULL	    },
+	{GTMN_NewLookMenus	, TRUE	    },
+	{GTMN_Checkmark		, NULL	    },
+	{GTMN_AmigaKey		, NULL	    },
+	{GTMN_FrontPen		, 0L	    },
+	{TAG_DONE	    	    	    }
     };
 
     if (NULL == textfont)
@@ -149,52 +153,7 @@
     #endif
 
 	menu->Height = textfont->tf_YSize;
-
-    	/* Make sure the menu box is at least as large as the menu title,
-	   otherwise it looks ugly */
-	   
-    	if (menu->FirstItem && menu->FirstItem->Width < menu->Width)
-	{
-	    struct MenuItem *item = menu->FirstItem, *subitem;
-	    LONG    	     diff = menu->Width - item->Width;
-	    
-	    while(item)
-	    {
-	    	item->Width += diff;
-		
-		if (item->Flags & ITEMTEXT)
-		{
-		    struct IntuiText *it = (struct IntuiText *)item->ItemFill;
-		    
-		    if ((it = it->NextText))
-		    {
-		    	it->LeftEdge += diff;
-		    } 
-		}
-		else
-		{
-	    	    struct Image *im = (struct Image *)item->ItemFill;
-		    
-		    if (is_menubarlabelclass_image(im, GadToolsBase))
-		    {
-		    	im->Width += diff;
-		    }
-		}
-		
-		if ((subitem = item->SubItem))
-		{
-		    while(subitem)
-		    {
-		    	subitem->LeftEdge += diff;
-			subitem = subitem->NextItem;
-		    }
-		}
-		
-		item = item->NextItem;
-	    }
-	    
-	}
-	
+    
 	/* Proper layout??? */
 	curX += menu->Width + vinfo->vi_screen->BarHBorder * 2;
 
