@@ -117,6 +117,7 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     LIBBASE->textclass	 = NULL;
     LIBBASE->sliderclass = NULL;
     LIBBASE->scrollerclass = NULL;
+    LIBBASE->arrowclass = NULL;
     LIBBASE->stringclass = NULL;
 
     InitSemaphore(&LIBBASE->bevelsema);
@@ -210,25 +211,35 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
     {
+
 	if (LIBBASE->bevel)
 	    DisposeObject(LIBBASE->bevel);
+	LIBBASE->bevel = NULL;
 
 	if (LIBBASE->buttonclass)
 	    FreeClass(LIBBASE->buttonclass);
+	LIBBASE->buttonclass = NULL;
 
 	if (LIBBASE->textclass)
 	    FreeClass(LIBBASE->textclass);
+	LIBBASE->textclass = NULL;
 
 	if (LIBBASE->sliderclass)
 	    FreeClass(LIBBASE->sliderclass);
+	LIBBASE->sliderclass = NULL;
 	    
 	if (LIBBASE->scrollerclass)
 	    FreeClass(LIBBASE->scrollerclass);
+	LIBBASE->scrollerclass = NULL;
+
+	if (LIBBASE->arrowclass)
+	    FreeClass(LIBBASE->arrowclass);
+	LIBBASE->arrowclass = NULL;
 
 	if (LIBBASE->stringclass)
 	    FreeClass(LIBBASE->stringclass);
+	LIBBASE->stringclass = NULL;
 
-	    
 	if (LIBBASE->arosmxbase)
 	    CloseLibrary(LIBBASE->arosmxbase);
 	if (LIBBASE->aroscybase)
@@ -237,7 +248,7 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 	    CloseLibrary(LIBBASE->aroscbbase);
 	if (LIBBASE->arospabase)
 	    CloseLibrary(LIBBASE->arospabase);
-
+	    
 	if (BOOPSIBase)
 	    CloseLibrary(BOOPSIBase);
 	if (UtilityBase)
