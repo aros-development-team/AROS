@@ -937,9 +937,9 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     /* (xleft,yup)(xright,ydown) defines the rectangle to copy out of */
 
     xleft  = x1 + L->bounds.MinX + xCorr1;
-    xright = x2 + L->bounds.MinX + xCorr2;
+    xright = x2 + L->bounds.MinX - xCorr2; /* stegerg: was + xCorr2; */
     yup    = y1 + L->bounds.MinY + yCorr1;
-    ydown  = y2 + L->bounds.MinY + yCorr2;
+    ydown  = y2 + L->bounds.MinY - yCorr2; /* stegerg: was + yCorr2; */
 
     /* First read all data out of the source area */    
     while (NULL != CR)
@@ -982,8 +982,18 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
         if (NULL != CR->lobs && 
             0 != (L->Flags & LAYERSIMPLE) &&
             TRUE == UpdateDamageList)
-        {
-          if (FALSE == OrRectRegion(R, &Rect))
+        { 
+	  /* stegerg: damage Region coords are relative to layer!! */
+	  struct Rectangle Rect2;
+
+	  Rect2.MinX = Rect.MinX - L->bounds.MinX;
+	  Rect2.MinY = Rect.MinY - L->bounds.MinY;
+	  Rect2.MaxX = Rect.MaxX - L->bounds.MinX;
+	  Rect2.MaxY = Rect.MaxY - L->bounds.MinY;
+
+	  D(bug("adding (%d,%d) - (%d,%d)\n",Rect2.MinX,Rect2.MinY,Rect2.MaxX,Rect2.MaxY));
+	  
+          if (FALSE == OrRectRegion(R, &Rect2))
           {
             /* there's still time to undo this operation */
             DisposeRegion(R);
@@ -1189,7 +1199,16 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
             0 != (L->Flags & LAYERSIMPLE) &&
             TRUE == UpdateDamageList)
         {
-          ClearRectRegion(R, &Rect);
+	  /* stegerg: damage Region coords are relative to layer!! */
+	  struct Rectangle Rect2;
+	  
+	  Rect2.MinX = Rect.MinX - L->bounds.MinX;
+	  Rect2.MinY = Rect.MinY - L->bounds.MinY;
+	  Rect2.MaxX = Rect.MaxX - L->bounds.MinX;
+	  Rect2.MaxY = Rect.MaxY - L->bounds.MinY;
+	  
+	  D(bug("clearing (%d,%d) - (%d,%d)\n",Rect2.MinX,Rect2.MinY,Rect2.MaxX,Rect2.MaxY));
+          ClearRectRegion(R, &Rect2);
         }
         else
         {
