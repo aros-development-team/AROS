@@ -13,16 +13,15 @@
 # and use the options in %(opt).
 %define compile_q cmd=$(TARGET_CC) opt=$(CFLAGS) from=$< to=$@
 	@$(ECHO) "Compiling $(notdir %(from))"
-	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) | tee $(GENDIR)/cerrors 2>&1 ; then \
+	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 		$(ECHO) "%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
-		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
 	    else \
 		$(NOP) ; \
 	    fi ; \
 	else \
 	    $(ECHO) "Compile failed: %(cmd) %(opt) -c %(from) -o %(to)" 1>&2 ; \
-	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi
 %end
