@@ -2128,8 +2128,6 @@ static VOID bitmap_puttemplate(OOP_Class *cl, OOP_Object *o,
 	    {
 	    	WORD height = PIXBUF_LINES_TO_PROCESS;
 		
-    	    	//kprintf("  GetImage at %d  height %d\n", y - msg->y, height);
-		
 		HIDD_BM_GetImage(o,
 	    	    		 (UBYTE *)buf,
 				 msg->width * sizeof(ULONG),
@@ -2241,7 +2239,7 @@ static VOID bitmap_puttemplate(OOP_Class *cl, OOP_Object *o,
 	    if (PIXBUF_TIME_TO_END_PROCESS)
 	    {
 	    	LONG height = PIXBUF_LINES_TO_PROCESS;
-		
+
     	    	//kprintf("  PutImage at %d  height %d  __height %d  __bufy %d  __worky %d\n",
     	    	//  	  y - height + 1 - msg->y, height, __height, __bufy, __worky);
 
@@ -2580,6 +2578,8 @@ static VOID bitmap_putpattern(OOP_Class *cl, OOP_Object *o,
     	type = 4;
     }
     
+    if (msg->patterndepth > 1) type = 6;
+    
     if (msg->invertpattern) type++;
     
     patarray = msg->pattern;
@@ -2787,6 +2787,44 @@ static VOID bitmap_putpattern(OOP_Class *cl, OOP_Object *o,
 		    } /* for(x = 0; x < msg->width; x++) */
 		    break;
     	
+	    	case 6: /* multi color pattern */
+		    for(x = 0; x < msg->width; x++)
+		    {
+		    	if (!maskarray || (maskword & mmask))
+			{
+			    WORD plane;
+			    ULONG pixel = (patword & pmask) ? 1 : 0;
+			    
+			    for(plane = 1; plane < msg->patterndepth; plane++)
+			    {
+			    	UWORD *_parray = parray + plane * msg->patternheight;
+				UWORD _patword = AROS_BE2WORD(*_parray);
+				
+				if (_patword & pmask) pixel |= 1L << plane;				
+			    }
+			    
+			    if (msg->patternlut) pixel = msg->patternlut->pixels[pixel];
+			    
+    	    	    	    xbuf[x] = pixel;
+			}
+    	    	    	
+			if (maskarray)
+			{
+			    mmask >>= 1;
+			    if (!mmask)
+			    {
+			    	mmask = 0x8000;
+			    	marray++;
+			    	maskword = AROS_BE2WORD(*marray);
+			    }
+			}
+			
+			pmask >>= 1;
+			if (!pmask) pmask = 0x8000;
+			
+		    } /* for(x = 0; x < msg->width; x++) */
+		    break;
+		    		    
 	    } /* switch(type) */
 	    
 	    if (PIXBUF_TIME_TO_END_PROCESS)
