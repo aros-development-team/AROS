@@ -1,0 +1,13 @@
+include $(TOP)/config/make.cfg
+
+FILES := install.logo login.logo FloppyWriter.logo
+
+#MM- themes-kalamatee-images : themes-kalamatee-images-logos 
+#MM themes-kalamatee-images-logos : setup
+themes-kalamatee-images-logos : files-copy
+
+%copy_files_q files=$(FILES) dst=$(AROS_IMAGES)/Logos/
+
+%common
+
+

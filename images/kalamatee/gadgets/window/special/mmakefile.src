@@ -1,0 +1,12 @@
+include $(TOP)/config/make.cfg
+
+FILES := win_close win_depth win_size win_zoom \
+        win_close_N win_depth_N win_size_N win_zoom_N
+
+#MM themes-kalamatee-images-gadgets-window-special : setup
+themes-kalamatee-images-gadgets-window-special : files-copy
+
+%copy_files_q files=$(FILES) dst=$(AROS_IMAGES)/Gadgets/Window
+
+%common
+
