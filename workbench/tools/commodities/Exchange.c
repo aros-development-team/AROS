@@ -336,7 +336,7 @@ BOOL getResources(struct ExchangeState *ec)
 	/* TODO: OC_BuiltInLanguage should be NULL, but AROS locale doesn't support
 	   it yet */
 	ec->ec_catalog = OpenCatalog(NULL, "System/Tools/Commodities.catalog",
-				     OC_BuiltInLanguage, "english", TAG_DONE);
+				     OC_BuiltInLanguage, (Tag)"english", TAG_DONE);
 
 	if (ec->ec_catalog == NULL)
 	{
@@ -468,12 +468,12 @@ BOOL getResources(struct ExchangeState *ec)
     
     ec->ec_window = OpenWindowTags(NULL,
 				   WA_PubScreen,    NULL,
-				   WA_Gadgets,      ec->ec_context,
+				   WA_Gadgets,      (Tag)ec->ec_context,
 				   WA_Left,         0,
 				   WA_Top,          0,
 				   WA_Width,        500,
 				   WA_Height,       winHeight,
-				   WA_Title,        getCatalog(ec->ec_catalog, MSG_EXCHANGE_WINTITLE),
+				   WA_Title,        (Tag)getCatalog(ec->ec_catalog, MSG_EXCHANGE_WINTITLE),
  				   WA_IDCMP,        BUTTONIDCMP | CYCLEIDCMP |
 				                    LISTVIEWIDCMP | 
 				                    IDCMP_CLOSEWINDOW |
@@ -688,7 +688,7 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
     ec->ec_cycle = gad = CreateGadget(CYCLE_KIND, gad,
 				      &cycleBut,
 				      GA_Disabled, TRUE,
-				      GTCY_Labels, strings,  /* Temporary */
+				      GTCY_Labels, (Tag)strings,  /* Temporary */
 				      TAG_DONE);
     
     /* NOTE! GadTools bug: The disabled state for cycle gadgets is not
@@ -928,7 +928,7 @@ void switchActive(struct ExchangeState *ec)
     IPTR  whichCycle;
 
     GT_GetGadgetAttrs(ec->ec_cycle, ec->ec_window, NULL,
-		      GTCY_Active, &whichCycle,
+		      GTCY_Active, (Tag)&whichCycle,
 		      TAG_DONE);
     
     if (whichCycle == 0)
@@ -950,7 +950,7 @@ void informBroker(LONG command, struct ExchangeState *ec)
     struct BrokerCopy  *bc;
 
     GT_GetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
-		      GTLV_Selected, &whichGad,
+		      GTLV_Selected, (Tag)&whichGad,
 		      TAG_DONE);
 
     bc = getNth(&ec->ec_brokerList, whichGad);
@@ -982,7 +982,7 @@ void updateInfo(struct ExchangeState *ec)
     IPTR  whichGad;
 
     GT_GetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
-		      GTLV_Selected, &whichGad,
+		      GTLV_Selected, (Tag)&whichGad,
 		      TAG_DONE);
 		      
     if (whichGad == ~0ul)
@@ -1023,7 +1023,7 @@ void updateInfo(struct ExchangeState *ec)
 void setText(struct Gadget *gadget, STRPTR text, struct ExchangeState *ec)
 {
     GT_SetGadgetAttrs(gadget, ec->ec_window, NULL,
-		      GTTX_Text, text,
+		      GTTX_Text, (Tag)text,
 		      TAG_DONE);
 }
 
