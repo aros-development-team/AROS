@@ -43,6 +43,6 @@
 
 ******************************************************************************/
 {
-    return (stream->flags & _STDIO_FILEFLAG_EOF) != 0;
+    return (stream->flags & _STDIO_EOF) != 0;
 } /* feof */
 

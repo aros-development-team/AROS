@@ -12,6 +12,7 @@
 #include <proto/dos.h>
 #include "__errno.h"
 #include "__stdio.h"
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -57,19 +58,27 @@
 ******************************************************************************/
 {
     size_t cnt;
+    fdesc *fdesc = __getfdesc(stream->fd);
 
-    cnt = FRead ((BPTR)stream->fh, buf, size, nblocks);
+    if (!fdesc)
+    {
+	stream->flags |= _STDIO_ERROR;
+	errno = EBADF;
+	return 0;
+    }
+
+    cnt = FRead ((BPTR)fdesc->fh, buf, size, nblocks);
 
     if (cnt == -1)
     {
-		errno = IoErr2errno (IoErr ());
-		stream->flags |= _STDIO_FILEFLAG_ERROR;
+	errno = IoErr2errno (IoErr ());
+	stream->flags |= _STDIO_ERROR;
 
-		cnt = 0;
+	cnt = 0;
     }
     else if (cnt == 0)
     {
-		stream->flags |= _STDIO_FILEFLAG_EOF;
+	stream->flags |= _STDIO_EOF;
     }
 
     return cnt;

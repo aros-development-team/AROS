@@ -11,9 +11,9 @@ LIB		:= $(LIBDIR)/libarosc.a
 FILES := \
 	__assert \
 	__env \
-	__getfilenode4fd \
 	__ioerr2errno \
 	__isinf \
+	__open \
 	__rand48_misc \
 	__stdio \
 	__vcformat \
@@ -36,10 +36,13 @@ FILES := \
 	creat \
 	difftime \
 	drand48 \
+	dup \
+	dup2 \
 	erand48 \
 	errno \
 	exit \
 	fclose \
+	fdopen \
 	feof \
 	ferror \
 	fflush \

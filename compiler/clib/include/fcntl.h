@@ -9,6 +9,10 @@
     Lang: english
 */
 
+/* Prototypes */
+int open  (const char * filename, int flags, ...);
+int creat (const char * filename, int mode);
+
 /* Flags for open */
 #define O_ACCMODE	0x0003
 #define O_RDONLY	0x0000

@@ -10,6 +10,7 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -62,14 +63,26 @@
 
 ******************************************************************************/
 {
-    buffer = FGets ((BPTR)stream->fh, buffer, size);
+    fdesc *fdesc = __getfdesc(stream->fd);
+
+    if (!fdesc)
+    {
+    	errno = EBADF;
+	stream->flags |= _STDIO_ERROR;
+	return NULL;
+    }
+
+    buffer = FGets ((BPTR)fdesc->fh, buffer, size);
 
     if (!buffer)
     {
-		if (IoErr ())
-	    	stream->flags |= _STDIO_FILEFLAG_ERROR;
-		else
-	    	stream->flags |= _STDIO_FILEFLAG_EOF;
+	if (IoErr ())
+	{
+	    errno = IoErr2errno(IoErr());
+	    stream->flags |= _STDIO_ERROR;
+        }
+	else
+	    stream->flags |= _STDIO_EOF;
     }
 
     return buffer;

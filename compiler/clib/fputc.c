@@ -10,6 +10,7 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -47,6 +48,20 @@
 
 ******************************************************************************/
 {
-    return FPutC ((BPTR)stream->fh, c);
+    fdesc *fdesc = __getfdesc(stream->fd);
+
+    if (!fdesc)
+    {
+    	errno = EBADF;
+	return EOF;
+    }
+
+    if (FPutC((BPTR)fdesc->fh, c) == EOF)
+    {
+    	errno = IoErr2errno(IoErr());
+	c = EOF;
+    }
+
+    return c;
 } /* fputc */
 

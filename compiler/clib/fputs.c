@@ -1,10 +1,15 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function fputs()
     Lang: english
 */
+
+#include <proto/dos.h>
+#include <errno.h>
+#include "__errno.h"
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -15,7 +20,7 @@
 
 /*  SYNOPSIS */
 	const char * str,
-	FILE	   * fh)
+	FILE	   * stream)
 
 /*  FUNCTION
 	Write a string to the specified stream.
@@ -43,14 +48,25 @@
 
 ******************************************************************************/
 {
-    while (*str)
-    {
-		if (putc (*str, fh) == EOF)
-	    	return EOF;
+    fdesc *fdesc = __getfdesc(stream->fd);
 
-		str ++;
+    if (!fdesc)
+    {
+    	errno = EBADF;
+	return EOF;
     }
 
-    return 1;
+    while (*str)
+    {
+	if (FPutC((BPTR)fdesc->fh, *str) == EOF)
+	{
+    	    errno = IoErr2errno(IoErr());
+	    return EOF;
+        }
+
+	str++;
+    }
+
+    return 0;
 } /* fputs */
 

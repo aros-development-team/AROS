@@ -10,6 +10,7 @@
 #include <proto/dos.h>
 #include "__errno.h"
 #include "__stdio.h"
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -48,14 +49,21 @@
 {
     long cnt;
     BPTR fh;
+    fdesc *fdesc = __getfdesc(stream->fd);
 
-    fh = (BPTR)(stream->fh);
+    if (!fdesc)
+    {
+	errno = EBADF;
+	return 0;
+    }
+
+    fh = (BPTR)(fdesc->fh);
 
     Flush (fh);
     cnt = Seek (fh, 0, OFFSET_CURRENT);
 
     if (cnt == -1)
-		errno = IoErr2errno (IoErr ());
-    
+	errno = IoErr2errno (IoErr ());
+
     return cnt;
 } /* ftell */

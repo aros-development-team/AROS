@@ -12,6 +12,7 @@
 #include <proto/dos.h>
 #include "__stdio.h"
 #include "__errno.h"
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -51,44 +52,19 @@
 
 ******************************************************************************/
 {
-    BPTR    fh;
     ssize_t cnt;
 
-    switch (fd)
+    fdesc *fdesc = __getfdesc(fd);
+
+    if (!fdesc)
     {
-    case 0: /* Stdin */
-	errno = EINVAL;
-	return EOF;
-
-    case 1: /* Stdout */
-	fh = Output();
-
-    case 2: { /* Stderr */
-	struct Process * me = (struct Process *)FindTask (NULL);
-
-	fh = me->pr_CES ? me->pr_CES : me->pr_COS;
-
-	break; }
-
-    default: {
-	FILENODE * fn;
-
-	fn = GetFilenode4fd (fd);
-
-	if (!fn)
-	{
-	    errno = EINVAL;
-	    return EOF;
-	}
-
-	fh = (BPTR)fn->File.fh;
-
-	break; }
+	errno = EBADF;
+	return -1;
     }
 
-    cnt = Write (fh, (void *)buf, count);
+    cnt = Write ((BPTR)fdesc->fh, (void *)buf, count);
 
-    if (cnt == EOF)
+    if (cnt == -1)
 	errno = IoErr2errno (IoErr ());
 
     return cnt;

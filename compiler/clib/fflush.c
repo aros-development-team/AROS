@@ -5,11 +5,15 @@
     Desc: ANSI C function fflush()
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
 #include <exec/types.h>
+#include <exec/lists.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "__errno.h"
+#include "__stdio.h"
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -48,20 +52,46 @@
 
 ******************************************************************************/
 {
-    BPTR fh;
+    /* flush all streams opened for output */
+    if (!stream)
+    {
+	FILENODE *fn;
 
-#warning TODO: flush all output streams
+	ForeachNode (&__stdio_files, fn)
+	{
+	    if (fn->File.flags & _STDIO_WRITE)
+	    {
+	    	fdesc *fdesc = __getfdesc(fn->File.fd);
 
-	fh = (BPTR)stream->fh;
+		if (!fdesc)
+		{
+		    errno = EBADF;
+		    return EOF;
+      		}
 
-    if (fh && Flush (fh))
-		return 0;
-
-    if (!fh)
-		errno = EINVAL;
+		if (!Flush((BPTR)fdesc->fh))
+		{
+		    errno = IoErr2errno(IoErr());
+		    return EOF;
+      		}
+            }
+        }
+    }
     else
-		errno = IoErr2errno(IoErr());
+    {
+    	fdesc *fdesc = __getfdesc(stream->fd);
 
+	if (!fdesc || !(stream->flags & _STDIO_WRITE))
+	{
+	    errno = EBADF;
+	    return EOF;
+	}
+
+	if (Flush((BPTR)fdesc->fh))
+	    return 0;
+    }
+
+    errno = IoErr2errno(IoErr());
     return EOF;
 } /* fflush */
 

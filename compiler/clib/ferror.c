@@ -41,6 +41,6 @@
 
 ******************************************************************************/
 {
-    return (stream->flags & _STDIO_FILEFLAG_ERROR) != 0;
+    return (stream->flags & _STDIO_ERROR) != 0;
 } /* ferror */
 

@@ -12,20 +12,18 @@
 #include <stddef.h>
 #include <exec/lists.h>
 
-typedef struct __FILENODE
+typedef struct
 {
     struct MinNode Node;
-    int  fd;
     FILE File;
 } FILENODE;
 
 extern struct MinList __stdio_files;
-extern int __stdio_fd;
 
 #define FILENODE2FILE(fn)       (&((fn)->File))
 #define FILE2FILENODE(f)        ((FILENODE *)(((char *)(f))-offsetof(FILENODE,File)))
 
-/* Prototypes */
-FILENODE * GetFilenode4fd (int fd);
+int __smode2oflags(char *mode);
+int __oflags2sflags(int oflags);
 
 #endif /* ___STDIO_H */

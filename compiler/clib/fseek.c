@@ -10,6 +10,7 @@
 #include <proto/dos.h>
 #include "__errno.h"
 #include "__stdio.h"
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -59,6 +60,13 @@
 {
     int  cnt;
     BPTR fh;
+    fdesc *fdesc = __getfdesc(stream->fd);
+
+    if (!fdesc)
+    {
+	errno = EBADF;
+	return 0;
+    }
 
     switch (whence)
     {
@@ -66,12 +74,12 @@
     	case SEEK_CUR: whence = OFFSET_CURRENT; break;
     	case SEEK_END: whence = OFFSET_END; break;
 
-		default:
-			errno = EINVAL;
-			return -1;
+	default:
+	    errno = EINVAL;
+	    return -1;
     }
 
-    fh = (BPTR)(stream->fh);
+    fh = (BPTR)(fdesc->fh);
 
     /* This is buffered IO, flush the buffer before any Seek */
     Flush (fh);
@@ -81,6 +89,6 @@
     	errno = IoErr2errno (IoErr ());
     else
     	cnt = 0;
-    
+
     return cnt;
 } /* fseek */

@@ -53,22 +53,14 @@
 ******************************************************************************/
 {
     FILENODE * fn;
-    int err;
+
+    if (close(stream->fd) == -1)
+    	return EOF;
 
     fn = FILE2FILENODE (stream);
-
     Remove ((struct Node *)fn);
 
-    err = Close ((BPTR)fn->File.fh);
-
-    FreeMem (fn, sizeof (FILENODE));
-
-    if (err == EOF)
-    {
-	errno = IoErr2errno (IoErr ());
-
-	return EOF;
-    }
+    free(fn);
 
     return 0;
 } /* fclose */
