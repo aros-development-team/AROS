@@ -749,13 +749,13 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	return 0;
     }
 
-    if ((data->mad_Flags & MADF_SELECTED) &&
-	!(data->mad_Flags & MADF_SHOWSELSTATE))
-    {
-	if (!(msg->flags & MADF_DRAWALL))
-	    msg->flags &= ~MADF_DRAWOBJECT;
-	return 0;
-    }
+//    if ((data->mad_Flags & MADF_SELECTED) &&
+//	!(data->mad_Flags & MADF_SHOWSELSTATE))
+//    {
+//	if (!(msg->flags & MADF_DRAWALL))
+//	    msg->flags &= ~MADF_DRAWOBJECT;
+//	return 0;
+//    }
 
     zframe = zune_zframe_get (&__zprefs.frames[data->mad_Frame]);
 
@@ -764,7 +764,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     {
 	struct MUI_ImageSpec *background;
 
-	if (!(data->mad_Flags & MADF_SELECTED)) background = data->mad_Background;
+	if (!(data->mad_Flags & MADF_SELECTED) || !(data->mad_Flags & MADF_SHOWSELSTATE)) background = data->mad_Background;
 	else background = data->mad_SelBack;
 
 	/* RECHECK: sba: Orginally there was muiRenderInfo(obj)->mri_ClipRect.XXX used
@@ -800,7 +800,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     if (!(data->mad_Flags & MADF_FRAMEPHANTOM))
     {
 	int state = __zprefs.frames[data->mad_Frame].state;
-	if (data->mad_Flags & MADF_SELECTED)
+	if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
 	    state ^= 1;
 
 	/* set clipping so that frame is not drawn behind title */
