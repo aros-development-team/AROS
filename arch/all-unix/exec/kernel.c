@@ -16,12 +16,12 @@
 #include <aros/config.h>
 #include <hardware/intbits.h>
 
+#define timeval sys_timeval
 #include <sigcore.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
-#define timeval sys_timeval
 #include <sys/time.h>
 #include <stdlib.h>
 #undef timeval
