@@ -56,7 +56,7 @@
     */
 
     if( (this->tc_State == TS_RUN)
-	&& !(me->tc_Flags & TF_EXCEPT) )
+	&& !(this->tc_Flags & TF_EXCEPT) )
     {
 	this->tc_State = TS_READY;
 
