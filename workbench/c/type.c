@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 15:34:04  digulla
+    #include <exec/execbase.h> was missing
+
     Revision 1.2  1996/08/01 17:40:46  digulla
     Added standard header for all files
 
@@ -9,6 +12,7 @@
     Lang:
 */
 #include <exec/memory.h>
+#include <exec/execbase.h>
 #include <clib/exec_protos.h>
 #include <dos/dos.h>
 #include <clib/dos_protos.h>
@@ -27,8 +31,8 @@ LONG entry(struct ExecBase *sysbase)
     DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(DOSBase!=NULL)
     {
-        error=tinymain();
-        CloseLibrary((struct Library *)DOSBase);
+	error=tinymain();
+	CloseLibrary((struct Library *)DOSBase);
     }
     return error;
 }
@@ -224,21 +228,21 @@ void hexdumpfile(struct file *in, struct file *out)
 	if(n==16)
 	{
 	    if(out->cnt>=63)
-	        putlinequick(out,offset,b);
+		putlinequick(out,offset,b);
 	    else
-	        if(putline(out,offset,b,n))
-	            return;
+		if(putline(out,offset,b,n))
+		    return;
 	}else
 	{
 	    if(n)
 		putline(out,offset,b,n);
 	    if(out->cur!=out->buf)
-	    	put(out);
+		put(out);
 	    return;
 	}
 	if(tty)
 	    if(put(out))
-	        return;
+		return;
 	offset+=n;
     }
 }
@@ -247,14 +251,14 @@ LONG dumpfile(struct file *in, struct file *out)
 {
     LONG c;
     if(1/*IsInteractive(out->fd)*/)
-        for(;;)
-        {
-            c=getc(in);
-            if(c<0)
-                return 0;
-            if(putc(out,c)||(c=='\n'&&put(out)))
-                return 1;
-        }
+	for(;;)
+	{
+	    c=getc(in);
+	    if(c<0)
+		return 0;
+	    if(putc(out,c)||(c=='\n'&&put(out)))
+		return 1;
+	}
 }
 
 LONG tinymain(void)
@@ -263,18 +267,18 @@ LONG tinymain(void)
     struct RDArgs *rda;
     struct file *in, *out;
     STRPTR *names;
-    
+
     rda=ReadArgs("FROM/A/M,TO/K,OPT/K,HEX/S,NUMBER/S",args,NULL);
     if(rda==NULL)
     {
-        PrintFault(IoErr(),"Type");
-        return RETURN_FAIL;
+	PrintFault(IoErr(),"Type");
+	return RETURN_FAIL;
     }
     names=(STRPTR *)args[0];
-    
+
     in =AllocMem(sizeof(struct file),MEMF_ANY);
     out=AllocMem(sizeof(struct file),MEMF_ANY);
-    
+
     if(in!=NULL&&out!=NULL)
     {
 	out->cur=out->buf;
@@ -287,20 +291,20 @@ LONG tinymain(void)
 	    {
 		in->cnt=0;
 		if(args[3])
-	            hexdumpfile(in,out);
-	        else
-	            dumpfile(in,out);
-	        Close(in->fd);
+		    hexdumpfile(in,out);
+		else
+		    dumpfile(in,out);
+		Close(in->fd);
 	    }else
 	    {
-	        PrintFault(IoErr(),"Type");
-	        break;
+		PrintFault(IoErr(),"Type");
+		break;
 	    }
 	    names++;
 	}
     }else
-        PrintFault(ERROR_NO_FREE_STORE,"Type");
-            
+	PrintFault(ERROR_NO_FREE_STORE,"Type");
+
     if(in!=NULL)
 	FreeMem(in,sizeof(struct file));
     if(out!=NULL)

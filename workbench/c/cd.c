@@ -2,12 +2,16 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 15:34:04  digulla
+    #include <exec/execbase.h> was missing
+
     Revision 1.2  1996/08/01 17:40:43  digulla
     Added standard header for all files
 
     Desc:
     Lang:
 */
+#include <exec/execbase.h>
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
 #include <dos/dos.h>
@@ -28,8 +32,8 @@ LONG entry(struct ExecBase *sysbase)
     DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(DOSBase!=NULL)
     {
-        error=tinymain();
-        CloseLibrary((struct Library *)DOSBase);
+	error=tinymain();
+	CloseLibrary((struct Library *)DOSBase);
     }
     return error;
 }
@@ -43,7 +47,7 @@ static LONG tinymain(void)
     ULONG i;
     struct FileInfoBlock *fib;
     LONG error=0;
-    
+
     rda=ReadArgs("DIR",(ULONG *)args,NULL);
     if(rda!=NULL)
     {
