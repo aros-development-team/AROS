@@ -168,3 +168,8 @@ define findhit
 
             set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
         end
+    end
+end
+document findhit
+Shows the modules that contains the given address
+end
