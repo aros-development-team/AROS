@@ -54,7 +54,7 @@ AROS_UFH3(void, boot,
     	a) We want to use the XTerm as our boot shell
     	b) Don't have a working console.device/CON: handler.
     */
-    
+
     struct DosLibrary *DOSBase;
     struct emulbase *emulbase;
     struct TagItem fhtags[]= { { TAG_END, 0 } };
@@ -74,6 +74,7 @@ AROS_UFH3(void, boot,
     Forbid();
     emulbase = (struct emulbase *)FindName(&SysBase->DeviceList, "emul.handler");
     Permit();
+
     if( emulbase == NULL )
     {
 	/* BootStrap couldn't open unknown */
@@ -106,6 +107,8 @@ AROS_UFH3(void, boot,
     AROSSupportBase.StdOut = stderr;    
  
     submain(0, NULL);
+
     RemTask(NULL);
+
     /* NOT REACHED */
 }
