@@ -1044,7 +1044,7 @@ D(bug("Window: %p\n", w));
                      L = msg->Window->WLayer;
                      /* and redraw the window frame */
                      RefreshWindowFrame(msg->Window);
-               
+
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
                 break; }
                          
