@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a task.
@@ -280,14 +280,8 @@
 } /* NewAddTask */
 
 /* Default finaliser. */
-AROS_UFH1(void, Exec_TaskFinaliser,
-	  AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
+void Exec_TaskFinaliser(void)
 {
-    AROS_USERFUNC_INIT
-
     /* Get rid of current task. */
     RemTask(SysBase->ThisTask);
-    
-    AROS_USERFUNC_EXIT
 }
