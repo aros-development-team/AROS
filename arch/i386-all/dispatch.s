@@ -55,7 +55,7 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	movl	32(%esp),%ecx
 
 	/* block all signals */
-	call	disable
+	call	_disable
 
 	/* Store sp */
 	movl	ThisTask(%ecx),%edx
