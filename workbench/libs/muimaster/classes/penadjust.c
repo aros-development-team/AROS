@@ -41,7 +41,20 @@ struct MUI_PenadjustData
     Object  	    	    	*listobj;
     Object  	    	    	*sliderobj;
     Object  	    	    	*coloradjobj;
-    
+    struct Hook                 muipen_display_hook;
+};
+
+static const STRPTR muipens[] =
+{
+    "Shine",
+    "Halfshine",
+    "Background",
+    "Halfshadow",
+    "Shadow",
+    "Text",
+    "Fill",
+    "Mark",
+    NULL
 };
 
 static void UpdateState(Object *obj, struct MUI_PenadjustData *data)
@@ -66,7 +79,7 @@ static void UpdateState(Object *obj, struct MUI_PenadjustData *data)
 	    nnset(data->coloradjobj, MUIA_Coloradjust_Blue, data->intpenspec.p_rgb.blue);
 	    
 	    nnset(obj, MUIA_Group_ActivePage, 2);
-	    break;	    
+	    break;
     }  
 }
 
@@ -110,24 +123,40 @@ kprintf(" ## penspec now %s\n", &data->penspec);
 
 }
 
+static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, CONST_STRPTR entry)
+{
+    LONG line;
+    static char buf[16];
+
+    line = (LONG)array[-1];
+    if (line < 0 || line > 7)
+	line = 0;
+    snprintf(buf, sizeof(buf), "\33I[2:m%ld]", line);
+    *array++ = buf;
+    *array++ = "";
+    *array = entry;
+
+    return 0;
+}
+
 /**************************************************************************
  OM_NEW
 **************************************************************************/
 static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     static const char *register_labels[] = {"MUI", "Colormap", "RGB", NULL};
-    static const char *lv_labels[] = {"Shine", "Halfshine", "Background", "Halfshadow", "Shadow", "Text", "Fill", "Mark", NULL};
-
     struct MUI_PenadjustData   *data;
     struct TagItem  	       *tag, *tags;
     Object  	    	    	*listobj, *sliderobj, *coloradjobj;
     
+    
+
     obj = (Object *)DoSuperNew(cl, obj,
     	MUIA_Register_Titles, register_labels,
 	Child, ListviewObject,
 	   MUIA_Listview_List, listobj = ListObject,
 	       InputListFrame,
-	       MUIA_List_SourceArray, lv_labels,
+	       MUIA_List_Format, ",,",
    	       End,
 	    End,
 	Child, sliderobj = SliderObject,
@@ -143,6 +172,13 @@ static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     
+    data->muipen_display_hook.h_Entry = HookEntry;
+    data->muipen_display_hook.h_SubEntry = (HOOKFUNC)MuipenDisplayFunc;
+    data->muipen_display_hook.h_Data = data;
+    set(listobj, MUIA_List_DisplayHook, &data->muipen_display_hook);
+
+    DoMethod(listobj, MUIM_List_Insert, (IPTR)muipens, -1, MUIV_List_Insert_Bottom);
+
     data->inputhook.h_Entry = HookEntry;
     data->inputhook.h_SubEntry = (HOOKFUNC)InputFunc;
     data->inputhook.h_Data = data;
