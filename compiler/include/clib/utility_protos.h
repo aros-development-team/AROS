@@ -93,9 +93,9 @@ AROS_LP1(void, FreeTagItems,
     AROS_LPA(struct TagItem *, tagList, A0),
     struct UtilityBase *, UtilityBase, 13, Utility)
 
-AROS_LP3(ULONG, GetTagData,
+AROS_LP3(IPTR, GetTagData,
     AROS_LPA(Tag             , tagValue, D0),
-    AROS_LPA(ULONG           , defaultVal, D1),
+    AROS_LPA(IPTR            , defaultVal, D1),
     AROS_LPA(struct TagItem *, tagList, A0),
     struct UtilityBase *, UtilityBase, 6, Utility)
 
