@@ -70,7 +70,8 @@ FILES	:= \
     test_text \
     unixio \
     winbackfill \
-    window
+    window \
+    winshape
 endif
 
 EXEDIR := $(AROSDIR)/Demos
