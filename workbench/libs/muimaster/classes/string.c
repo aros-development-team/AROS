@@ -598,6 +598,7 @@ static IPTR String_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
+    D(bug("String_Cleanup %p\n", obj));
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 
     zune_penspec_cleanup(&data->inactive_text);
@@ -1668,7 +1669,7 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 static IPTR String_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
-    STRPTR id;
+    ULONG id;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
@@ -1690,7 +1691,7 @@ static IPTR String_Export(struct IClass *cl, Object *obj, struct MUIP_Export *ms
 **************************************************************************/
 static IPTR String_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
-    STRPTR id;
+    ULONG id;
     STRPTR s;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
