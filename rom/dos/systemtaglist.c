@@ -172,16 +172,11 @@
     }
     else
 #warning implement UserShell and BootShell
-    if (GetTagData(SYS_UserShell, FALSE, tags))
+    if (!GetTagData(SYS_UserShell, FALSE, tags))
     {
-        shellseg = LoadSeg("C:Shell");
-    }
-    else
-    {
-        shellseg = LoadSeg("C:Shell");
 	isBoot   = TRUE;
     }
-
+    shellseg = LoadSeg("C:Shell");
     if (!shellseg)
     {
         goto end;
