@@ -955,7 +955,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    {
 			UBYTE keyBuffer;
 
-			if(MapRawKey(ie, &keyBuffer, 1, NULL) != -1)
+			if(MapRawKey(ie, &keyBuffer, 1, NULL) == 1)
 			{
 			    im->Class = IDCMP_VANILLAKEY;
 			    im->Code  = keyBuffer;
