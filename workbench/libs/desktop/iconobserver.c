@@ -40,7 +40,6 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	tag=FindTagItem(IOA_Name, msg->ops_AttrList);
 	if(tag)
 	{
-	kprintf("found NAME\n");
 		name=tag->ti_Data;
 		tag->ti_Tag=TAG_IGNORE;
 	}
@@ -55,6 +54,8 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);
 	if(retval)
 	{
+		ULONG pah;
+
 		obj=(Object*)retval;
 		data=INST_DATA(cl, obj);
 		data->selected=selected;
@@ -99,6 +100,9 @@ IPTR iconObserverGet(Class *cl, Object *obj, struct opGet *msg)
 
 	switch(msg->opg_AttrID)
 	{
+		case IOA_Name:
+			*msg->opg_Storage=data->name;
+			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, (Msg)msg);
 			break;
@@ -118,7 +122,6 @@ IPTR iconObserverDispose(Class *cl, Object *obj, Msg msg)
 
 IPTR iconObserverExecute(Class *cl, Object *obj, Msg msg)
 {
-	kprintf("IconObserver/Execute\n");
 	return 0;
 }
 

@@ -123,7 +123,6 @@ ULONG desktopHandler(void)
 										running=FALSE;
 										replyNow=FALSE;
 										finalMsg=msg;
-								kprintf("--- lets quit!\n");
 									}
 									else
 										ReleaseSemaphore(&DesktopBase->db_BaseMutex);
@@ -184,9 +183,7 @@ ULONG desktopHandler(void)
 								fullPath=AllocVec(strlen(tn->t_Name)+2, MEMF_ANY);
 								strcpy(fullPath, tn->t_Name);
 								strcat(fullPath, ":");
-								kprintf("handler: looking for @%s@\n", fullPath);
 								sr[j].sr_DiskObject=GetDiskObjectNew(fullPath);
-								kprintf("handler: diskobject: %d\n", sr[j].sr_DiskObject);
 								tn=(struct TempNode*)tn->t_Node.ln_Succ;
 								j++;
 							}
@@ -232,7 +229,7 @@ ULONG desktopHandler(void)
 						break;
 					}
 				}
-				FreeVec(msg);
+//				FreeVec(msg);
 			}
 		}
 	}

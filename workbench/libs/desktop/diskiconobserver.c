@@ -93,40 +93,67 @@ IPTR diskIconObserverExecute(Class *cl, Object *obj, Msg msg)
 {
 	IPTR retval;
 	UBYTE *name;
-	struct TagItem *tags;
+	struct TagItem *icTags;
 	UBYTE *newDir;
+	Object *dirWindow;
+	Object *horiz, *vert;
+	Object *iconcontainer;
 
 	struct DrawerIconObserverClassData *data;
-
-	kprintf("DiskIconObserver/Execute\n");
 
 	data=(struct DrawerIconObserverClassData*)INST_DATA(cl, obj);
 	retval=DoSuperMethodA(cl, obj, msg);
 
-kprintf("dio/e1\n");
-
 	name=_name(obj);
 
-kprintf("dio/e2, name: %s\n", name);
-
-
-	newDir=AllocVec(strlen(name)+1, MEMF_ANY);
+	newDir=AllocVec(strlen(name)+2, MEMF_ANY);
 	strcpy(newDir, name);
+	strcat(newDir, ":");
 
-kprintf("dio/e3\n");
+	horiz=PropObject,
+		MUIA_Prop_Horiz, TRUE,
+		MUIA_Prop_Entries, 0,
+		MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Bottom,
+		End;
+	vert=PropObject,
+		MUIA_Prop_Horiz, FALSE,
+		MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Right,
+		End;
 
-	tags=AllocVec(sizeof(struct TagItem)*2, MEMF_ANY);
-	tags[0].ti_Tag=ICOA_Directory;
-	tags[0].ti_Data=newDir;
-	tags[1].ti_Tag=TAG_END;
-	tags[1].ti_Data=0;
+	icTags=AllocVec(sizeof(struct TagItem)*5, MEMF_ANY);
+	icTags[0].ti_Tag=MUIA_FillArea;
+	icTags[0].ti_Data=FALSE;
+	icTags[1].ti_Tag=ICOA_Directory;
+	icTags[1].ti_Data=newDir;
+	icTags[2].ti_Tag=ICA_VertScroller;
+	icTags[2].ti_Data=vert;
+	icTags[3].ti_Tag=ICA_HorizScroller;
+	icTags[3].ti_Data=horiz;
+	icTags[4].ti_Tag=TAG_END;
+	icTags[4].ti_Data=0;
 
-kprintf("dio/e4\n");
+	iconcontainer=CreateDesktopObjectA(CDO_IconContainer, icTags);
 
+// TEMPORARY!!!!! Use CreateDesktopObjectA(CDO_Window.....) instead!
+	dirWindow=WindowObject,
+		MUIA_Window_Width, 300,
+		MUIA_Window_Height, 140,
+//		MUIA_Window_Menustrip, strip=MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
+		MUIA_Window_UseBottomBorderScroller, TRUE,
+		MUIA_Window_UseRightBorderScroller, TRUE,
+		MUIA_Window_EraseArea, FALSE,
+		WindowContents, iconcontainer,
+//		End,
+	End;
 
-	CreateDesktopObjectA(CDO_DirectoryWindow, tags);
+	DoMethod(_app(_presentation(obj)), OM_ADDMEMBER, dirWindow);
 
-kprintf("dio/e5\n");
+	// a hack!  The container class should deallocate everything
+	DoMethod(dirWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, dirWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+	DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, iconcontainer, 3, MUIM_Set, ICA_ScrollToVert, MUIV_TriggerValue);
+	DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, iconcontainer, 3, MUIM_Set, ICA_ScrollToHoriz, MUIV_TriggerValue);
+
+	SetAttrs(dirWindow, MUIA_Window_Open, TRUE, TAG_END);
 
 	retval=1;
 
