@@ -26,6 +26,8 @@
 #include "mui.h"
 #include "support.h"
 
+#include <string.h>
+
 extern struct Library *MUIMasterBase;
 
 struct MUI_ApplicationData
@@ -370,13 +372,15 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	    nb.nb_Version   	    = NB_VERSION;
 	    nb.nb_Name      	    = data->app_Title ? data->app_Title : (STRPTR)"Unnamed";
-	    nb.nb_Title     	    = data->app_Title ? data->app_Title : (STRPTR)"Unnamed";
+	    nb.nb_Title     	    = data->app_Version ? data->app_Version : (STRPTR)"Unnamed";
 	    nb.nb_Descr     	    = data->app_Description ? data->app_Description : (STRPTR)"?";
 	    nb.nb_Unique    	    = 0;
 	    nb.nb_Flags     	    = COF_SHOW_HIDE;
 	    nb.nb_Pri 	    	    = data->app_BrokerPri;
 	    nb.nb_Port      	    = data->app_BrokerPort;
 	    nb.nb_ReservedChannel   = 0;
+	    
+	    if (strncmp(nb.nb_Title, "$VER: ", 6) == 0) nb.nb_Title += 6;
 	    
 	    data->app_Broker = CxBroker(&nb, 0);
 	    
