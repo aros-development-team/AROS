@@ -6,7 +6,10 @@
     Lang: english
 */
 
-#define setvbuf setvbuf
+#include <dos/stdio.h>
+#include <proto/dos.h>
+#include <errno.h>
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -41,8 +44,39 @@
 
 ******************************************************************************/
 {
+    fdesc *desc;
 
-    return 0;
+    if (!stream)
+    {
+        GETUSER;
 
+	errno = EFAULT;
+	return EOF;
+    }
+
+    switch (mode)
+    {
+        case _IOFBF: mode = BUF_FULL; break;
+	case _IOLBF: mode = BUF_LINE; break;
+	case _IONBF: mode = BUF_NONE; break;
+	default:
+	{
+	    GETUSER;
+
+	    errno = EINVAL;
+	    return EOF;
+	}
+    }
+
+    desc = __getfdesc(stream->fd);
+    if (!desc)
+    {
+	GETUSER;
+
+	errno = EBADF;
+	return EOF;
+    }
+
+    return SetVBuf(desc->fh, buf, mode, size ? size : -1);
 } /* setvbuf */
 
