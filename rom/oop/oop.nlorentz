@@ -7,6 +7,7 @@ database:
       object like a/b/object)
     - Objects have similar attributes as files (ie. a name, a
       size, a creation date and access flags).
+      
 
 #define LISTITEMINTERFACE   "listitem.interface"
 #define FILEINTERFACE 	    "file.interface"
@@ -94,7 +95,7 @@ Class FileClass =
     
     Method *fileMethodTable =
     {
-	// Methods of the File class
+	// Methods of the File interface
 	FM_Read,
 	FM_Write,
 	FM_Seek,
