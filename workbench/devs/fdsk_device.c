@@ -116,7 +116,7 @@ AROS_LH3(void, open,
 	   struct fdskbase *, fdskbase, 1, fdsk)
 {
     AROS_LIBFUNC_INIT
-    
+
     static const struct TagItem tags[]=
     {
     	{ NP_Name, (LONG)"file disk unit process" },
@@ -307,7 +307,7 @@ AROS_LH1(void, beginio,
     /* Finish message */
     if(!(iotd->iotd_Req.io_Flags&IOF_QUICK))
 	ReplyMsg(&iotd->iotd_Req.io_Message);
-    
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -407,16 +407,21 @@ AROS_UFH2(void,putchr,
 #undef SysBase
 #endif
 
-#warning FIXME: This will not work for normal AmigaOS
-/* TODO: This won't work for normal AmigaOS since you can't expect SysBase in A6 */
 AROS_LH0(LONG,entry,struct ExecBase *,SysBase,,)
 {
     UBYTE buf[10+sizeof(LONG)*8*301/1000+1];
     STRPTR ptr=buf;
-    struct Process *me=(struct Process *)FindTask(NULL);
+    struct Process *me;
     LONG err = 0L;
     struct IOExtTD *iotd;
     struct unit *unit;
+
+
+#ifdef _AMIGA
+	SysBase = *((struct ExecBase **)4);
+#endif
+
+	me = (struct Process *)FindTask(NULL);
 
     WaitPort(&me->pr_MsgPort);
     unit=(struct unit *)GetMsg(&me->pr_MsgPort);
@@ -424,7 +429,7 @@ AROS_LH0(LONG,entry,struct ExecBase *,SysBase,,)
     unit->port.mp_Flags=PA_SIGNAL;
 
     (void)RawDoFmt("FDSK:Unit%ld",&unit->unitnum,(VOID_FUNC)putchr,&ptr);
-    
+
     unit->file=Open(buf,MODE_READWRITE);
     if(!unit->file)
     {
