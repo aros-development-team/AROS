@@ -1,0 +1,48 @@
+include $(TOP)/config/make.cfg
+
+OBJDIR := $(GENDIR)/test
+EXEDIR := $(BINDIR)/test
+
+%define_libs
+
+FILES := devicetest \
+	dosvartest \
+	exceptiontest \
+	filetest \
+	initstructtest \
+	messagetest \
+	semaphoretest \
+	signaltest \
+	tasktest \
+	tasktest2
+
+EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+#MM test : setup-test
+test : show-flags $(EXES)
+
+show-flags :
+	@echo "OBJDIR=$(OBJDIR)"
+	@echo "EXEDIR=$(EXEDIR)"
+	@echo "CFLAGS=$(CFLAGS)"
+
+#MM
+setup-test :
+	%mkdirs_q $(OBJDIR) $(EXEDIR)
+
+#MM
+clean ::
+	-$(RM) $(EXES)
+
+$(EXEDIR)/% : $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
+	%link_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(APPCFLAGS)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps

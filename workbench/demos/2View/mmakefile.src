@@ -1,0 +1,35 @@
+include $(TOP)/config/make.cfg
+
+STARTUP := $(LIBDIR)/startup.o
+LIBS	:= -L$(LIBDIR) -larossupport -lamiga -larosc
+DEPLIBS := $(STARTUP) $(LIBDIR)/libarosc.a \
+	    $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
+CFLAGS	:= $(USER_DEFINES) -O2 -Wunused -Wall $(SPECIAL_CFLAGS) $(INCLUDES)
+OBJDIR	:= $(GENDIR)/$(CURDIR)
+DESTDIR := $(BINDIR)/Demos
+
+
+FILES := 2View Misc read
+SRCS := $(foreach f, $(FILES), $(f).c)
+OBJS := $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
+
+EXE := $(DESTDIR)/2View
+
+.PHONY : all clean
+
+#MM demo : demo-setup
+demo : $(OBJS) $(EXE)
+
+#MM
+demo-setup :
+	%mkdirs_q $(DESTDIR) $(OBJDIR)
+
+$(EXE) : $(DESTDIR)/% : $(OBJS) $(DEPLIBS)
+	@$(ECHO) "Linking $@..."
+	@$(CC) $(ILDFLAGS) $(OBJS) -o $@ $(STARTUP) $(LIBS)
+	@$(ECHO) "Checking $@..."
+	@$(CHECKUDS) $@
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(APPCFLAGS)
+
