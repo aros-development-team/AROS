@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Create a hard- or softlink.
     Lang: english
 */
 #include "dos_intern.h"
@@ -16,7 +16,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(STRPTR, name, D1),
-	AROS_LHA(LONG  , dest, D2),
+	AROS_LHA(void *, dest, D2),
 	AROS_LHA(LONG  , soft, D3),
 
 /*  LOCATION */
@@ -49,6 +49,7 @@
     extern void aros_print_not_implemented (char *);
 
     aros_print_not_implemented ("MakeLink");
+    SetIoErr(ERROR_NOT_IMPLEMENTED);
 
     return DOSFALSE;
     AROS_LIBFUNC_EXIT
