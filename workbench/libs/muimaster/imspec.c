@@ -1867,6 +1867,61 @@ void checkbox_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG l
     }
 }
 
+void mx_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+    int bottom = top + height - 1;
+    int right = left + width - 1;
+    int col1;
+    int col2;
+
+    if (state)
+    {
+	col1 = MPEN_SHADOW;
+	col2 = MPEN_SHINE;
+    } else
+    {
+	col1 = MPEN_SHINE;
+	col2 = MPEN_SHADOW;
+    }
+
+    /* Draw checkmark (only if image is in selected state) */
+
+    SetAPen(rport, mri->mri_Pens[col1]);
+    RectFill(rport, left + 3, top, right - 3, top);
+    WritePixel(rport, left + 2, top + 1);
+    RectFill(rport, left + 1, top + 2, left + 1, top + 3);
+    RectFill(rport, left, top + 4, left, bottom - 4);
+    RectFill(rport, left + 1, bottom - 3, left + 1, bottom - 2);
+    WritePixel(rport, left + 2, bottom - 1);
+	
+    SetAPen(rport, mri->mri_Pens[col2]);
+    WritePixel(rport, right - 2, top + 1);
+    RectFill(rport, right - 1, top + 2, right - 1, top + 3);
+    RectFill(rport, right, top + 4, right, bottom - 4);
+    RectFill(rport, right - 1, bottom - 3, right - 1, bottom - 2);
+    WritePixel(rport, right - 2, bottom - 1);
+    RectFill(rport, left + 3, bottom, right - 3, bottom);
+	
+    if (state)
+    {
+	left += 3;right -= 3;width -= 6;
+	top += 3;bottom -= 3;height -= 6;
+	    
+        SetAPen(rport, mri->mri_Pens[MPEN_FILL]);
+	if ((width >= 5) && (height >= 5))
+	{
+	    RectFill(rport, left, top + 2, left, bottom - 2);
+	    RectFill(rport, left + 1, top + 1, left + 1, bottom - 1);
+	    RectFill(rport, left + 2, top, right - 2, bottom);
+	    RectFill(rport, right - 1, top + 1, right - 1, bottom - 1);
+	    RectFill(rport, right, top + 2, right, bottom - 2);
+	} else {
+	    RectFill(rport, left, top, right, bottom);
+	}
+    }
+}
+
 struct vector_image
 {
     int minwidth;
@@ -1881,6 +1936,7 @@ static struct vector_image vector_table[] =
     {8,10,arrowleft_draw},
     {8,10,arrowright_draw},
     {16,10,checkbox_draw},
+    {16,10,mx_draw},
 };
 
 #define VECTOR_TABLE_ENTRIES (sizeof(vector_table)/sizeof(vector_table[0]))
