@@ -13,6 +13,7 @@
 
     NAME */
 #include <stdio.h>
+#include <string.h>
 #include <aros/bigendianio.h>
 #include <proto/alib.h>
 
