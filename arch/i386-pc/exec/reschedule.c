@@ -74,8 +74,10 @@ void Exec_Permit_Supervisor();
 	{
 	    Supervisor(Exec_Permit_Supervisor);
 	}
-	else if (flag & 0x80)		/* Generate software interrupt */
+	else if (!(flag & 0x80))		/* Generate software interrupt */
 	{
+#warning: "This is wrong!!!!!!!! It should cause the software interrupt only once interrupts are enabled again"
+#warning  "but this jumps directly to software interrupt, no matter if interrupts are enabled or not"
 	    __asm__ ("movl $-3,%eax\n\tint $0x80");
 	}
     }
