@@ -13,6 +13,7 @@
 #endif
 
 void __attribute__ ((noreturn)) exit (int code);
+void __attribute__ ((noreturn)) abort (void);
 
 int abs (int j);
 long labs (long j);

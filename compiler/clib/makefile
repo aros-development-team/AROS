@@ -17,6 +17,7 @@ FILES = \
 	__ioerr2errno \
 	__stdio \
 	__vcformat \
+	abort \
 	abs \
 	atoi \
 	atol \
