@@ -690,20 +690,21 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
-	    CC="$(HOST_CC)" \
-	    %(configure) $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	    $(%(mmake)-includedir) %(extraoptions); \
-	$(TOUCH) $@
+	    if CC="$(HOST_CC)" \
+	        %(configure) $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	        $(%(mmake)-includedir) %(extraoptions); then \
+	        $(TOUCH) $@; \
+	    fi
 else
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
-	    CC="$(TARGET_CC) -nix" CC_FOR_BUILD="$(HOST_CC)" \
-	    %(configure) $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	    $(%(mmake)-includedir) %(extraoptions) \
-	    --host=$(AROS_TARGET_CPU)-aros; \
-	$(TOUCH) $@
+	    if CC="$(TARGET_CC) -nix" CC_FOR_BUILD="$(HOST_CC)" \
+	        %(configure) $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	        $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros; then \
+	        $(TOUCH) $@; \
+  	    fi
 endif
 	
 #MM
@@ -1794,6 +1795,6 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #                         The patch_subdir and patch_opt fields are optional.
 
 %define fetch archive_origins=. archive=/A destination=. patches_origins=. patches_specs=::
-	$(FETCH) -ao %(archive_origins) -a %(archive) -d %(destination) -po %(patches_origins) \
+	$(FETCH) -ao "%(archive_origins)" -a %(archive) -d %(destination) -po "%(patches_origins)" \
 	         -p %(patches_specs)
 %end
