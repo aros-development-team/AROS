@@ -1,0 +1,47 @@
+#ifndef HIDD_MOUSE_H
+#define HIDD_MOUSE_H
+/*
+    (C) 1997 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Include for the mouse hidd.
+    Lang: English.
+*/
+
+#ifndef OOP_OOP_H
+#   include <oop/oop.h>
+#endif
+
+#define IID_Hidd_Mouse "hidd.mouse"
+
+#define HiddMouseAB __abHidd_Mouse
+
+extern AttrBase HiddMouseAB;
+
+/* Attrs */
+
+enum {
+
+   aoHidd_Mouse_IrqHandler,
+   aoHidd_Mouse_IrqHandlerData,
+
+   num_Hidd_Mouse_Attrs
+   
+   
+};
+
+
+#define aHidd_Mouse_IrqHandler		(aoHidd_Mouse_IrqHandler     + HiddMouseAB)
+#define aHidd_Mouse_IrqHandlerData	(aoHidd_Mouse_IrqHandlerData + HiddMouseAB)
+
+#define IS_HIDDMOUSE_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddMouseAB, num_Hidd_Mouse_Attrs)
+
+/* Parameter values for the IRQ handler */
+
+enum {
+   vHidd_Mouse_Press,
+   vHidd_Mouse_Release
+};
+
+
+#endif HIDD_MOUSE_H
