@@ -1,4 +1,9 @@
-/* dragndrop.c (c) 1997-2002 by Sebastian Bauer */
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
