@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef GRAPHICS_HIDD_INTERN_H
 #define GRAPHICS_HIDD_INTERN_H
 

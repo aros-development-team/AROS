@@ -1,11 +1,10 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux fbdev gfx HIDD for AROS.
     Lang: English.
 */
-
 
 #include <stddef.h>
 #include <stdio.h>

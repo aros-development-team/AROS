@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG_FreeMem 1
 

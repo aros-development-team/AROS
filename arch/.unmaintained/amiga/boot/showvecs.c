@@ -1,10 +1,11 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: prints Kick Vector pointers
     Lang: english
 */
+
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/resident.h>
