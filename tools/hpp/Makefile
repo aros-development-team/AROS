@@ -1,7 +1,7 @@
 PURIFY	= /home/digulla/AROS/compiler/purify/purify
 CC	 = gcc
 #CC	  = $(PURIFY) gcc
-CFLAGS	 = -g -Wall -O -I.. -DHAVE_VSNPRINT
+CFLAGS	 = -g -Wall -O -I.. -DHAVE_VSNPRINTF
 DEPLIBS  = ../toollib/libtoollib.a
 LIBS	 = -L../toollib -ltoollib
 
@@ -29,21 +29,34 @@ exprtest : test_expr.o $(DEPLIBS)
 test_%.o : %.c
 	$(CC) -DTEST $(CFLAGS) -c $< -o $@
 
-test : test.html background.html background.ps ctest.ps
+test : ctest.html background.html background.ps ctest.ps AddHead.c lists.c \
+	lists.html
 
 %.html : srcs/%.src
 	hpp tohtml.inc $< > $@
 
-ctest.html : srcs/ctest.c ctohtml tohtml.inc
+lists.html : srcs/lists.src hpp
+	hpp -set functiontmpl=amigafunc.tmpl tohtml.inc $< -o $@
+
+AddHead.c : srcs/lists.src toc.inc ssrc.tmpl hpp
+	hpp -set functiontmpl=ssrc.tmpl toc.inc $< -o $@
+
+lists.c : srcs/lists.src toc.inc msrc.tmpl hpp
+	rm lists.h
+	hpp -set functiontmpl=msrc.tmpl toc.inc $< -o $@
+	sed -f toc.filter lists.h > lists.tmp
+	mv lists.tmp lists.h
+
+ctest.html : srcs/ctest.c ctohtml tohtml.inc hpp
 	ctohtml $<
 
-ctest.tex : srcs/ctest.c ctolatex tolatex.inc
+ctest.tex : srcs/ctest.c ctolatex tolatex.inc hpp ctolatex.filter
 	ctolatex $<
 
-%.html : %.c
+%.html : %.c ctohtml hpp tohtml.inc
 	ctohtml $< > $@
 
-%.tex : srcs/%.src
+%.tex : srcs/%.src hpp tolatex.inc
 	hpp tolatex.inc $< > $@
 
 %.dvi : %.tex
