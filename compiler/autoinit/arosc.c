@@ -6,6 +6,9 @@
     Lang: english
 */
 
+#include <dos/dos.h>
+#include <exec/memory.h>
+#include <proto/exec.h>
 #include <aros/symbolsets.h>
 #include <stdio.h>
 #include <setjmp.h>
@@ -25,7 +28,12 @@ extern LONG __startup_error;
 
 static int postopen(void)
 {
-    struct AroscUserdata *userdata = (struct AroscUserdata *)(FindTask(0)->tc_UserData);
+    struct AroscUserData *userdata;
+    int ret;
+
+    userdata = (struct AroscUserData *)AllocVec(sizeof(struct AroscUserData), MEMF_ANY|MEMF_CLEAR);
+    if (!userdata)
+        return RETURN_FAIL;
 
     /* passess these values to the library */
     userdata->errnoptr           = &errno;
@@ -35,17 +43,36 @@ static int postopen(void)
     userdata->startup_jmp_bufptr = &__startup_jmp_buf;
     userdata->startup_errorptr   = &__startup_error;
 
-    /*get these values from the library */
-    __ctype_b       = userdata->ctype_b;
-    __ctype_toupper = userdata->ctype_toupper;
-    __ctype_tolower = userdata->ctype_tolower;
+    /*
+      This will be useful in case the structure will be extended.
+      In this way the library will always know what can "offer" to the
+      program
+    */
+    userdata->usersize           = sizeof(struct AroscUserData);
 
     /* Tell the library it can now initialize its internal stuff */
-    return syscall(arosc_internalinit);
+    ret = syscall(arosc_internalinit, userdata);
+
+    if (!ret)
+    {
+        /*get these values from the library */
+        __ctype_b       = userdata->ctype_b;
+        __ctype_toupper = userdata->ctype_toupper;
+        __ctype_tolower = userdata->ctype_tolower;
+    }
+
+    return ret;
 }
 
 static void preclose(void)
 {
+    /*
+      Let the library free the memory we allocated.
+      It might not seem a good thing, but in this way
+      we can avoid being aware what does the library do
+      with the memory we've allocated and so this code
+      will always work
+    */
     syscall(arosc_internalexit);
 }
 
