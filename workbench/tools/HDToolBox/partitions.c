@@ -18,6 +18,7 @@
 #include "partitions.h"
 #include "gadgets.h"
 #include "hdtoolbox_support.h"
+#include "partitiontypes.h"
 #include "ptclass.h"
 
 extern struct TagItem pcpartitiontags[], pcpaddpartitiontags[],
@@ -25,7 +26,6 @@ extern struct TagItem pcpartitiontags[], pcpaddpartitiontags[],
 		pcptotalcyltags[], pcpsizetags[], pcpnametags[], pcpfilesystemtags[],
 		pcpbootabletags[], pcpbootpritags[], pcpeditarospartitiontags[];
 extern struct creategadget pcpgadgets[];
-extern struct List pctypelist;
 struct List del_list;
 
 
@@ -78,8 +78,6 @@ void setPartitionName(struct PartitionNode *pnode) {
 
 	if (pnode->pos != -1)
 		sprintf(pnode->ln.ln_Name, "Partition %ld", pnode->pos);
-	else if (pnode->type != -1)
-		sprintf(pnode->ln.ln_Name, "Partition %lx", pnode->type);
 	else
 	{
 		sprintf
@@ -100,6 +98,7 @@ struct PartitionNode *newPartition
 	)
 {
 struct PartitionNode *pnode;
+LONG flag;
 
 	pnode = (struct PartitionNode *)AllocMem
 		(sizeof(struct PartitionNode), MEMF_PUBLIC | MEMF_CLEAR);
@@ -112,7 +111,10 @@ struct PartitionNode *pnode;
 			if (existsAttr(table->pattrlist, PTA_TYPE))
 				GetPartitionAttrsA(partition,	PT_TYPE, &pnode->type, TAG_DONE);
 			else
-				pnode->type = -1L;
+			{
+				pnode->type.id[0] = 0;
+				pnode->type.id_len = 0;
+			}
 			if (existsAttr(table->pattrlist, PTA_POSITION))
 				GetPartitionAttrsA(partition,	PT_POSITION, &pnode->pos, TAG_DONE);
 			else
@@ -121,6 +123,18 @@ struct PartitionNode *pnode;
 				GetPartitionAttrsA(partition,	PT_NAME, pnode->ln.ln_Name, TAG_DONE);
 			else
 				setPartitionName(pnode);
+			if (existsAttr(table->pattrlist, PTA_BOOTABLE))
+			{
+				GetPartitionAttrsA(partition, PT_BOOTABLE, &flag, TAG_DONE);
+				if (flag)
+					pnode->flags |= PNF_BOOTABLE;
+			}
+			if (existsAttr(table->pattrlist, PTA_AUTOMOUNT))
+			{
+				GetPartitionAttrsA(partition, PT_AUTOMOUNT, &flag, TAG_DONE);
+				if (flag)
+					pnode->flags |= PNF_AUTOMOUNT;
+			}
 			if (table->maxpartitions)
 			{
 				pnode->ln.ln_Pri = table->maxpartitions-1-pnode->pos;
@@ -268,7 +282,6 @@ void viewPartitionData
 		struct PartitionNode *pn
 	)
 {
-struct Node *fsnode;
 UBYTE str[16];
 ULONG size;
 ULONG disabled = pn ? FALSE : TRUE;
@@ -300,11 +313,13 @@ ULONG disabled = pn ? FALSE : TRUE;
 	pcpsizetags[1].ti_Data = (ULONG)str;
 	pcpnametags[0].ti_Data = existsAttr(table->pattrlist, PTA_NAME)? FALSE: TRUE;
 	pcpnametags[1].ti_Data = (ULONG)(pn ? (ULONG)pn->ln.ln_Name : (ULONG)str);
-	if (existsAttr(table->pattrlist, PTA_DOSENVEC))
+	if (existsAttr(table->pattrlist, PTA_BOOTABLE))
 	{
+
 		pcpbootabletags[0].ti_Data = FALSE;
-#warning "set bootpri gadget"
-		pcpbootpritags[0].ti_Data=(0xFFFFFF00 & pn->de.de_BootPri) ? TRUE : FALSE;
+		pcpbootabletags[1].ti_Data = pn->flags & PNF_BOOTABLE ? TRUE : FALSE;
+		pcpbootpritags[0].ti_Data = pn->flags &PNF_BOOTABLE ? FALSE : TRUE;
+		pcpbootpritags[1].ti_Data = pn->de.de_BootPri;
 	}
 	else
 	{
@@ -313,8 +328,10 @@ ULONG disabled = pn ? FALSE : TRUE;
 	}
 	if (pn)
 	{
-		fsnode = getNumNode(&pctypelist, pn->type);
-		pcpfilesystemtags[1].ti_Data =  (ULONG)fsnode->ln_Name;
+	struct PartitionTypeNode *ptypenode;
+
+		ptypenode = getPartitionTypeNode(table, &pn->type);
+		pcpfilesystemtags[1].ti_Data =  (ULONG)ptypenode->ln.ln_Name;
 	}
 	else
 		pcpfilesystemtags[1].ti_Data =  (ULONG)str;
@@ -428,7 +445,7 @@ struct PartitionNode *pn;
 					(
 						table->ph,
 						PT_DOSENVEC, &pn->de,
-						PT_TYPE, pn->type,
+						PT_TYPE, &pn->type,
 						PT_POSITION, pn->pos,
 						TAG_DONE
 					);
@@ -457,11 +474,24 @@ struct PartitionNode *pn;
 					(
 						pn->ph,
 						PT_DOSENVEC, &pn->de,
-						PT_TYPE, pn->type,
+						PT_TYPE, &pn->type,
 						TAG_DONE
 					);
 					changed = TRUE;
 				}
+			}
+			if (pn->flags & PNF_FLAGS_CHANGED)
+			{
+			LONG flag=FALSE;
+
+				if (pn->flags & PNF_BOOTABLE)
+					flag = TRUE;
+				SetGadgetAttrsA(pn->ph, PT_BOOTABLE, flag, TAG_DONE);
+				flag = FALSE;
+				if (pn->flags & PNF_AUTOMOUNT)
+					flag = TRUE;
+				SetGadgetAttrsA(pn->ph, PT_AUTOMOUNT, flag, TAG_DONE);
+				changed = TRUE;
 			}
 		}
 		pn = (struct PartitionNode *)pn->ln.ln_Succ;

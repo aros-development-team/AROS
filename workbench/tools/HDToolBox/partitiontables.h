@@ -21,7 +21,8 @@ struct HDUnitNode {
 
 struct PartitionTableNode {
 	struct Node ln;
-	struct List pl;
+	struct List pl;             /* partition list */
+	struct List *typelist;      /* list of partition types */
 	struct PartitionHandle *ph;
 	ULONG flags;
 	ULONG *tattrlist;

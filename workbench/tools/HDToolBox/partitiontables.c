@@ -17,6 +17,7 @@
 #include "partitiontables.h"
 #include "gadgets.h"
 #include "hdtoolbox_support.h"
+#include "partitiontypes.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -165,6 +166,7 @@ struct PartitionTableNode *ptn;
 				PTT_MAX_PARTITIONS, &ptn->maxpartitions,
 				TAG_DONE
 			);
+			setPartitionType(ptn);
 			sprintf
 			(
 				ptn->ln.ln_Name, "%s   %04d%04d    0",
