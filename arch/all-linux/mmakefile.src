@@ -34,6 +34,9 @@ CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
 # Setup the CLIB metatargets...
 #MM- setup-clib-linux : setup-clib-linux-$(CPU)
 
+# Setup the ALIB metatargets...
+#MM- setup-alib-linux : setup-alib-linux-$(CPU)
+
 #MM
 kernel :
 	@$(NOP)
@@ -45,7 +48,7 @@ setup-linux :
 	%add_objects rom/boot/strap_emul
 
 # These are the targets to get mmake to do what I want...
-#MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-$(GFXSYSTEM)
+#MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-$(GFXSYSTEM) setup-alib-linux
 
 #MM setup-exec-linux : setup-exec-unix setup-exec-$(CPU)
 setup-exec-linux : $(GENINCDIR)/sigcore.h
@@ -86,6 +89,8 @@ exec-linux : $(OSGENDIR)/exec/init.o
 #MM- check : check-exec-unix
 
 #MM- clib-linux : clib-linux-$(CPU)
+
+#MM- alib-linux : alib-linux-$(CPU)
 
 #MM- includes-linux : includes-copy includes-linux-$(CPU)
 
