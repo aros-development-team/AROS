@@ -48,22 +48,22 @@
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     BOOL killfont = FALSE;
-    
+
     if (!textFont) return;
-    
+
     ASSERT_VALID_PTR(textFont);
 
     Forbid();
     textFont->tf_Accessors--;
     if ((textFont->tf_Accessors == 0) && !(textFont->tf_Flags & FPF_ROMFONT))
     {
-    	Remove(&textFont->tf_Message.mn_Node);
+    	RemFont(textFont);
 	killfont = TRUE;
     }
     Permit();
-    
+
     if (!killfont) return;
-    
+ 
     /* Free font data */
 
     /* !!! NOTE. FreeXXX functions has to match AllocXXX in
