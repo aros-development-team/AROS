@@ -38,14 +38,14 @@ LIBOBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 $(LIB) : $(LIBOBJS)
 	%mklib_q from=$(LIBOBJS)
 
-$(OSGENDIR)/boot/bootsect : bootsect.S $(GENINCDIR)/aros/boot.h
+$(OSGENDIR)/boot/bootsect : bootsect.asm $(GENINCDIR)/aros/boot.h
 	%mkdirs_q $(OBJDIR)
 	$(CC) $(OS_INCLUDES) -E -traditional $< -o bootsect.s
 	$(AS86) -o bootsect.o bootsect.s
 	$(LD86) -s -o $@ bootsect.o
 	$(RM) bootsect.s bootsect.o
 
-$(OSGENDIR)/boot/setup : setup.S $(GENINCDIR)/aros/boot.h
+$(OSGENDIR)/boot/setup : setup.asm $(GENINCDIR)/aros/boot.h
 	%mkdirs_q $(OBJDIR)
 	$(CC) $(OS_INCLUDES) -E -traditional $< -o setup.s
 	$(AS86) -o setup.o setup.s
@@ -59,7 +59,7 @@ $(OBJDIR)/%.o : %.c
 $(OBJDIR)/%.o : %.s
 	%assemble_q opt=$(AFLAGS2)
 
-$(OBJDIR)/%.o : %.S
+$(OBJDIR)/%.o : %.asm
 	%assemble_q opt=$(AFLAGS3)
 
 $(OBJDIR)/%.d : %.c
