@@ -1,11 +1,12 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Read the soft link information.
     Lang: english
 */
 #include "dos_intern.h"
+#include <dos/filesystem.h>
 
 /*****************************************************************************
 
@@ -25,10 +26,21 @@
 	struct DosLibrary *, DOSBase, 73, Dos)
 
 /*  FUNCTION
+	Read the filename referred to by the soft-linked object contained
+	in |path| (relative to the lock |lock|) into the buffer |buffer|.
+	The variable |path| should contain the name of the object that
+	caused the original OBJECT_IS_SOFT_LINK error.
 
     INPUTS
+	port		- The handler to send the request to.
+	lock		- Object that |path| is relative to.
+	path		- Name of the object that caused the error.
+	buffer		- Buffer to fill with resolved filename.
+	size		- Length of the buffer.
 
     RESULT
+	!= 0	success
+	== 0	failure, see IoErr() for more information.
 
     NOTES
 
@@ -37,6 +49,7 @@
     BUGS
 
     SEE ALSO
+	MakeLink()
 
     INTERNALS
 
@@ -48,10 +61,39 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
 
-    aros_print_not_implemented ("ReadLink");
+    struct Process *pr = FindTask(NULL);
+    struct IOFileSys io,*iofs=&io;
+    struct FileHandle *fh = BADDR(lock);	
+    ULONG error = 0;
 
-    return DOSFALSE;
+    iofs->IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+    iofs->IOFS.io_Message.mn_ReplyPort	  = &pr->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length       = sizeof(struct IOFileSys);
+    iofs->IOFS.io_Flags 	= 0;
+    iofs->IOFS.io_Device	= fh->fh_Device;
+    iofs->IOFS.io_Unit		= fh->fh_Unit;
+    iofs->IOFS.io_Command	= FSA_OPEN;
+
+    iofs->io_Union.io_OPEN.io_FileMode = FMF_READ;
+
+    if( (error = DoName(iofs, path, DOSBase)) == 0 )
+    {
+	iofs->io_Command = FSA_READ_SOFTLINK;
+
+	iofs->io_Union.io_READ_SOFTLINK.io_Buffer = buffer;
+    	iofs->io_Union.io_READ_SOFTLINK.io_Size   = size;
+
+    	DoIO(iofs);
+
+	error = iofs->io_DosError;
+
+	iofs->io_Command = FSA_CLOSE;
+	DoIO(iofs);
+
+	SetIoError( error );
+    }
+    return (!error);
+
     AROS_LIBFUNC_EXIT
 } /* ReadLink */
