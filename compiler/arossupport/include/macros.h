@@ -114,7 +114,7 @@
 	)
 #endif
 
-#if defined(__GNUC__) && !defined(__cplusplus)
+#if defined(__GNUC__)
 #   define AROS_MAKE_ALIAS(old, new) \
         typeof(old) new __attribute__((alias(AROS_ASMSYMNAME(#old))))
 #endif
