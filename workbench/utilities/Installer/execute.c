@@ -2634,7 +2634,7 @@ int i, changed = 0, cont = 0;
 #if DEBUG
   if (
 #endif /* DEBUG */
-      Rename( "S:User-Startup.tmp", "User-Startup" )
+      Rename( "S:User-Startup.tmp", "S:User-Startup" )
 #if !DEBUG
 						    ;
 #else /* !DEBUG */
