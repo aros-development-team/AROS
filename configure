@@ -5903,7 +5903,6 @@ aros_cc_pre=""
 aros_target_cc="$aros_host_cc"
 aros_target_as="$aros_host_cc"
 aros_shared_ld="$aros_host_ld"
-aros_static_ld="$aros_host_ld"
 aros_kernel_ld="$aros_host_ld"
 aros_target_ld="/usr/bin/ld"
 
@@ -5922,18 +5921,15 @@ aros_target_strip="strip"
 
 # It is necessary to clear the include and link paths for target
 # commands. This should help clear up problems when cross compiling.
-aros_target_cflags="-Wall -Werror-implicit-function-declaration"
-aros_target_aflags="-Wall -x assembler-with-cpp"
-aros_target_ldflags="-nostartfiles -nostdlib"
+aros_config_cflags="-Wall -Werror-implicit-function-declaration"
+aros_config_aflags="-Wall -x assembler-with-cpp"
+aros_config_ldflags=""
 
 aros_shared_default=yes
 
 aros_shared_cflags="-fPIC"
 aros_shared_aflags=""
 aros_shared_ldflags="-Wl,-rpath,./lib -shared"
-aros_static_cflags=""
-aros_static_aflags=""
-aros_static_ldflags=""
 aros_kernel_ldflags="-Wl,-rpath,./lib"
 
 aros_compiler_libs=
@@ -5982,7 +5978,7 @@ else
     build_type="personal"
 fi
 
-aros_target_cflags="$aros_target_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
+aros_config_cflags="$aros_config_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
 
 echo "$as_me:$LINENO: result: $build_type" >&5
 echo "${ECHO_T}$build_type" >&6
@@ -6182,10 +6178,10 @@ else
   optimization=unknown
 fi;
 if test "$optimization" = "unknown"; then
-        aros_target_cflags="$aros_target_cflags -O2"
+        aros_config_cflags="$aros_config_cflags -O2"
     aros_debug_cflags="$aros_debug_cflags -O0"
 else
-    aros_target_cflags="$aros_target_cflags -O$optimization"
+    aros_config_cflags="$aros_config_cflags -O$optimization"
     aros_debug_cflags="$aros_debug_cflags -O$optimization"
 fi
 echo "$as_me:$LINENO: result: $withval" >&5
@@ -6281,7 +6277,6 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 
     prep)
 	aros_target_arch="prep"
-	aros_target_cflags="$aros_target_cflags -mregnames -mcpu=604e -mno-toc -mprototype -mno-sdata -DADEBUG=0 -DMDEBUG=0"
 	aros_shared_default="no"
 	aros_target_cpu="ppc"
 	aros_object_format="elf32ppc"
@@ -6302,7 +6297,6 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 		aros_target_strip="ppc-linux-strip"
 		aros_target_objcopy="ppc-linux-objcopy"
 		aros_target_objdump="ppc-linux-objdump"
-		aros_static_ld="ppc-linux-ld"
 		aros_shared_ld="ppc-linux-ld"
 		aros_kernel_ld="ppc-linux-ld"
 		;;
@@ -6366,7 +6360,6 @@ echo "$as_me: error: \"Unknown CPU for OpenBSD -- $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
                 ;;
         esac
-	aros_target_cflags="$aros_target_cflags -D$aros_target_cpu"
 	aros_target_genmap="-Wl,-M -Xlinker >"
         aros_target_nm_flags="-u"
 	aros_flavour="emulation"
@@ -6387,7 +6380,7 @@ echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
                 ;;
         esac
-        aros_target_cflags="$aros_target_cflags -D$aros_target_cpu"
+        aros_config_cflags="$aros_config_cflags -D$aros_target_cpu"
         aros_flavour="emulation"
         ;;
 
@@ -6397,7 +6390,6 @@ echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
 	aros_target_cpu="ppc"
 	aros_object_format="elf_ppc"
 	aros_flavour="nativecompat"
-	aros_target_cflags="-O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__ -D__NOLIBBASE__"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
 	gcc_target_cpu="ppc"
 	;;
@@ -6407,22 +6399,18 @@ echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
 	aros_shared_default="no"
 
-	aros_target_cflags="$aros_target_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
+	aros_config_cflags="$aros_config_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
 
 	case "$target_cpu" in
 	    *m68k*)
 		aros_target_cpu="m68k"
 		aros_object_format="m68kelf"
 		aros_flavour="nativecompat"
-		aros_target_cflags="$aros_target_cflags -m68020 -m68881"
-		aros_target_aflags="$aros_target_aflags -m68060"
 		gcc_target_cpu="mc68000"
 		;;
 	    *ppc*)
 		aros_cpu="ppc"
 		aros_flavour="native"
-		aros_target_cflags="$aros_target_cflags -mpowerpc -mcpu=603e"
-		aros_target_aflags="$aros_target_aflags -m603e"
 		gcc_target_cpu="ppc"
 		;;
 	    *)
@@ -6469,7 +6457,6 @@ echo "$as_me: error: \"Unknown CPU for CygWin -- $target_cpu\"" >&2;}
                 aros_target_cc="m68k-elf-gcc -pipe"
                 aros_target_ld="$(which m68k-elf-ld)"
 		aros_target_as="m68k-elf-gcc -pipe"
-		aros_static_ld="m68k-elf-gcc"
 		aros_shared_ld="m68k-elf-gcc"
 		aros_kernel_ld="m68k-elf-gcc"
 		aros_target_ar="m68k-elf-ar"
@@ -6478,17 +6465,11 @@ echo "$as_me: error: \"Unknown CPU for CygWin -- $target_cpu\"" >&2;}
 		aros_target_nm="m68k-elf-nm"
 		aros_target_objcopy="m68k-elf-objcopy"
 		aros_target_objdump="m68k-elf-objdump"
-		aros_target_cflags="$aros_target_cflags -fno-builtin -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -DHAS_OWN_DISPATCHER -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DAROS_NEEDS___MAIN -Dlinux"
-		aros_target_aflags="-Wall -x assembler-with-cpp -mc68000 --short-branchs"
-		aros_target_ldflags="-nostartfiles -nostdlib"
 		aros_compiler_libs="-lgcc1"
 		aros_shared_default=no
 		aros_shared_cflags="-fpic"
 		aros_shared_aflags=""
 		aros_shared_ldflags="-Wl,-rpath,./lib -shared"
-		aros_static_cflags="-Wa,-mc68000"
-		aros_static_aflags="-mc68000"
-		aros_static_ldflags=""
 		aros_kernel_ldflags="-Wl,-rpath,./lib"
 		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000 -Wa,-mc68000"
 		aros_debug_aflags=""
@@ -6540,7 +6521,14 @@ fi
 
 TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc"
 TARGET_AS=$TARGET_CC
-STATIC_LD=$TARGET_CC
+TARGET_LD=$TARGET_CC
+
+NOSTARTUP_LDFLAGS=-nostartfiles
+NIX_LDFLAGS=-nix
+DETACH_LDFLAGS=-detach
+
+
+
 
 
 
@@ -7169,9 +7157,6 @@ fi
 
 
 # Target Related
-
-
-
 
 
 
@@ -7961,7 +7946,10 @@ s,@DISTCC@,$DISTCC,;t t
 s,@CCACHE@,$CCACHE,;t t
 s,@TARGET_CC@,$TARGET_CC,;t t
 s,@TARGET_AS@,$TARGET_AS,;t t
-s,@STATIC_LD@,$STATIC_LD,;t t
+s,@TARGET_LD@,$TARGET_LD,;t t
+s,@NOSTARTUP_LDFLAGS@,$NOSTARTUP_LDFLAGS,;t t
+s,@NIX_LDFLAGS@,$NIX_LDFLAGS,;t t
+s,@DETACH_LDFLAGS@,$DETACH_LDFLAGS,;t t
 s,@aros_cc_pre@,$aros_cc_pre,;t t
 s,@SHARED_LD@,$SHARED_LD,;t t
 s,@KERNEL_LD@,$KERNEL_LD,;t t
@@ -8003,13 +7991,10 @@ s,@aros_target_nm@,$aros_target_nm,;t t
 s,@aros_shared_default@,$aros_shared_default,;t t
 s,@aros_object_format@,$aros_object_format,;t t
 s,@aros_compiler_libs@,$aros_compiler_libs,;t t
-s,@aros_target_cflags@,$aros_target_cflags,;t t
-s,@aros_target_aflags@,$aros_target_aflags,;t t
+s,@aros_config_cflags@,$aros_config_cflags,;t t
+s,@aros_config_aflags@,$aros_config_aflags,;t t
 s,@aros_target_ld@,$aros_target_ld,;t t
-s,@aros_target_ldflags@,$aros_target_ldflags,;t t
-s,@aros_static_cflags@,$aros_static_cflags,;t t
-s,@aros_static_aflags@,$aros_static_aflags,;t t
-s,@aros_static_ldflags@,$aros_static_ldflags,;t t
+s,@aros_config_ldflags@,$aros_config_ldflags,;t t
 s,@aros_shared_cflags@,$aros_shared_cflags,;t t
 s,@aros_shared_aflags@,$aros_shared_aflags,;t t
 s,@aros_shared_ldflags@,$aros_shared_ldflags,;t t
