@@ -13,9 +13,13 @@ OBJDIR=$(OSGENDIR)/intuition
 
 %prepare_shlib intuition $(SHARED_INTUITION)
 
-FILES = intuition_init intuition_functable gadgets \
+INIT_FILE = intuition_init
+
+FILES = intuition_functable gadgets \
 	boolgadgets propgadgets boopsigadgets \
 	imageclass frameiclass icclass buttongclass gadgetclass
+
+END_FILE = intuition_endtag
 
 FUNCTIONS = \
 	activatewindow \
@@ -83,8 +87,9 @@ FUNCTIONS = \
 	windowtoback \
 	windowtofront
 
-OBJS=$(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
-DEPS=$(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
+
+OBJS=$(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
@@ -105,8 +110,15 @@ intuition_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	%mkfunctable_q Intuition
 
+intuition_endtag.c: $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q Intuition
+
+$(OBJDIR)/intuition_init.o: libdefs.h
+
+%libdefs_rule
+
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
 %common
-%include_deps
+%include_deps $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).d)

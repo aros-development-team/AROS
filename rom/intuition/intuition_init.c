@@ -26,14 +26,15 @@
 #endif
 #include <utility/utility.h>
 #include <aros/asmcall.h>
+#include "libdefs.h"
 #include "intuition_intern.h"
 
 static const char name[];
 static const char version[];
 static const APTR inittabl[4];
-static void *const Intuition_functable[];
-struct IntuitionBase *AROS_SLIB_ENTRY(init,Intuition) ();
-extern const char Intuition_end;
+static void *const FUNCTABLE[];
+struct LIBBASETYPE *INIT ();
+extern const char END;
 
 AROS_UFP3(static ULONG, rootDispatcher,
     AROS_UFPA(Class *,  cl,  A0),
@@ -42,11 +43,11 @@ AROS_UFP3(static ULONG, rootDispatcher,
 );
 
 /* There has to be a better way... */
-struct IClass *InitImageClass (struct IntuitionBase * IntuitionBase);
-struct IClass *InitFrameIClass (struct IntuitionBase * IntuitionBase);
-struct IClass *InitICClass (struct IntuitionBase * IntuitionBase);
-struct IClass *InitGadgetClass (struct IntuitionBase * IntuitionBase);
-struct IClass *InitButtonGClass (struct IntuitionBase * IntuitionBase);
+struct IClass *InitImageClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitFrameIClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitICClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitGadgetClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitButtonGClass (struct LIBBASETYPE * LIBBASE);
 
 int Intuition_entry(void)
 {
@@ -58,9 +59,9 @@ const struct Resident Intuition_resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&Intuition_resident,
-    (APTR)&Intuition_end,
+    (APTR)&END,
     RTF_AUTOINIT,
-    39,
+    LIBVERSION,
     NT_LIBRARY,
     0,
     (char *)name,
@@ -70,14 +71,14 @@ const struct Resident Intuition_resident=
 
 static const char name[]=INTUITIONNAME;
 
-static const char version[]="$VER: intuition.library 39.0 (12.8.96)\n\015";
+static const char version[]=VERSION;
 
 static const APTR inittabl[4]=
 {
     (APTR)sizeof(struct IntIntuitionBase),
-    (APTR)Intuition_functable,
+    (APTR)FUNCTABLE,
     NULL,
-    &AROS_SLIB_ENTRY(init,Intuition)
+    &INIT
 };
 
 static Class rootclass =
@@ -99,8 +100,8 @@ void intui_ProcessEvents (void);
 
 struct Process * inputDevice;
 
-AROS_LH2(struct IntuitionBase *, init,
- AROS_LHA(struct IntuitionBase *, IntuitionBase, D0),
+AROS_LH2(struct LIBBASETYPE *, init,
+ AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Intuition)
 {
@@ -109,46 +110,46 @@ AROS_LH2(struct IntuitionBase *, init,
 
     NEWLIST (PublicClassList);
 
-    if (!intui_init (IntuitionBase))
+    if (!intui_init (LIBBASE))
 	return NULL;
 
     /* Create semaphore and initialize it */
-    GetPrivIBase(IntuitionBase)->IBaseLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
+    GetPrivIBase(LIBBASE)->IBaseLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
 
-    if (!GetPrivIBase(IntuitionBase)->IBaseLock)
+    if (!GetPrivIBase(LIBBASE)->IBaseLock)
 	return NULL;
 
-    InitSemaphore (GetPrivIBase(IntuitionBase)->IBaseLock);
+    InitSemaphore (GetPrivIBase(LIBBASE)->IBaseLock);
 
     /* Create semaphore and initialize it */
-    GetPrivIBase(IntuitionBase)->ClassListLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
+    GetPrivIBase(LIBBASE)->ClassListLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
 
-    if (!GetPrivIBase(IntuitionBase)->ClassListLock)
+    if (!GetPrivIBase(LIBBASE)->ClassListLock)
 	return NULL;
 
-    InitSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
+    InitSemaphore (GetPrivIBase(LIBBASE)->ClassListLock);
 
     /* The rootclass is created statically */
-    rootclass.cl_UserData = (IPTR) IntuitionBase;
+    rootclass.cl_UserData = (IPTR) LIBBASE;
     AddClass (&rootclass);
 
     /* Add all other classes */
-    InitImageClass (IntuitionBase); /* After ROOTCLASS */
-    InitFrameIClass (IntuitionBase); /* After IMAGECLASS */
+    InitImageClass (LIBBASE); /* After ROOTCLASS */
+    InitFrameIClass (LIBBASE); /* After IMAGECLASS */
 
-    InitICClass (IntuitionBase); /* After ROOTCLASS */
+    InitICClass (LIBBASE); /* After ROOTCLASS */
 
-    InitGadgetClass (IntuitionBase); /* After ROOTCLASS */
-    InitButtonGClass (IntuitionBase); /* After GADGETCLASS */
+    InitGadgetClass (LIBBASE); /* After ROOTCLASS */
+    InitButtonGClass (LIBBASE); /* After GADGETCLASS */
 
     /* You would return NULL if the init failed */
-    return IntuitionBase;
+    return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(struct IntuitionBase *, open,
+AROS_LH1(struct LIBBASETYPE *, open,
  AROS_LHA(ULONG, version, D0),
-	   struct IntuitionBase *, IntuitionBase, 1, Intuition)
+	   struct LIBBASETYPE *, LIBBASE, 1, Intuition)
 {
     AROS_LIBFUNC_INIT
     struct TagItem screenTags[] =
@@ -175,7 +176,7 @@ AROS_LH1(struct IntuitionBase *, open,
     /* TODO Create input.device. This is a bad hack. */
     if (!inputDevice)
     {
-	inputTask[0].ti_Data = (IPTR)IntuitionBase;
+	inputTask[0].ti_Data = (IPTR)LIBBASE;
 
 	inputDevice = CreateNewProc (inputTask);
 
@@ -195,7 +196,7 @@ AROS_LH1(struct IntuitionBase *, open,
 	    return NULL; /* don't close anything */
     }
 
-    if (!GetPrivIBase(IntuitionBase)->WorkBench)
+    if (!GetPrivIBase(LIBBASE)->WorkBench)
     {
 	struct Screen * screen;
 
@@ -204,35 +205,35 @@ AROS_LH1(struct IntuitionBase *, open,
 	if (!screen)
 	    return NULL;
 
-	IntuitionBase->FirstScreen =
-	    IntuitionBase->ActiveScreen =
-	    GetPrivIBase(IntuitionBase)->WorkBench = screen;
+	LIBBASE->FirstScreen =
+	    LIBBASE->ActiveScreen =
+	    GetPrivIBase(LIBBASE)->WorkBench = screen;
     }
 
-    if (!intui_open (IntuitionBase))
+    if (!intui_open (LIBBASE))
 	return NULL;
 
     /* I have one more opener. */
-    IntuitionBase->LibNode.lib_OpenCnt++;
-    IntuitionBase->LibNode.lib_Flags&=~LIBF_DELEXP;
+    LIBBASE->LibNode.lib_OpenCnt++;
+    LIBBASE->LibNode.lib_Flags&=~LIBF_DELEXP;
 
     /* You would return NULL if the open failed. */
-    return IntuitionBase;
+    return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH0(BPTR, close,
-	   struct IntuitionBase *, IntuitionBase, 2, Intuition)
+	   struct LIBBASETYPE *, LIBBASE, 2, Intuition)
 {
     AROS_LIBFUNC_INIT
 
     /* I have one fewer opener. */
-    if(!--IntuitionBase->LibNode.lib_OpenCnt)
+    if(!--LIBBASE->LibNode.lib_OpenCnt)
     {
-	intui_close (IntuitionBase);
+	intui_close (LIBBASE);
 
 	/* Delayed expunge pending? */
-	if(IntuitionBase->LibNode.lib_Flags&LIBF_DELEXP)
+	if(LIBBASE->LibNode.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
 	    return expunge();
     }
@@ -241,21 +242,21 @@ AROS_LH0(BPTR, close,
 }
 
 AROS_LH0(BPTR, expunge,
-	   struct IntuitionBase *, IntuitionBase, 3, Intuition)
+	   struct LIBBASETYPE *, LIBBASE, 3, Intuition)
 {
     AROS_LIBFUNC_INIT
 
     /* Test for openers. */
-    if(IntuitionBase->LibNode.lib_OpenCnt)
+    if(LIBBASE->LibNode.lib_OpenCnt)
     {
 	/* Set the delayed expunge flag and return. */
-	IntuitionBase->LibNode.lib_Flags|=LIBF_DELEXP;
+	LIBBASE->LibNode.lib_Flags|=LIBF_DELEXP;
 	return 0;
     }
 
     /* Free unecessary memory */
-    if (GetPrivIBase(IntuitionBase)->WorkBench)
-	CloseScreen (GetPrivIBase(IntuitionBase)->WorkBench);
+    if (GetPrivIBase(LIBBASE)->WorkBench)
+	CloseScreen (GetPrivIBase(LIBBASE)->WorkBench);
 
     if (UtilityBase)
 	CloseLibrary ((struct Library *)UtilityBase);
@@ -264,17 +265,17 @@ AROS_LH0(BPTR, expunge,
 	CloseLibrary ((struct Library *)GfxBase);
 
     /* Let the driver do the same */
-    intui_expunge (IntuitionBase);
+    intui_expunge (LIBBASE);
 
 #ifdef DISK_BASED /* Don't remove a ROM library */
     FreeImageClass ();
 
     /* Get rid of the library. Remove it from the list. */
-    Remove(&IntuitionBase->LibNode.lib_Node);
+    Remove(&LIBBASE->LibNode.lib_Node);
 
     /* Free the memory. */
-    FreeMem((char *)IntuitionBase-IntuitionBase->LibNode.lib_NegSize,
-	    IntuitionBase->LibNode.lib_NegSize+IntuitionBase->LibNode.lib_PosSize);
+    FreeMem((char *)LIBBASE-LIBBASE->LibNode.lib_NegSize,
+	    LIBBASE->LibNode.lib_NegSize+LIBBASE->LibNode.lib_PosSize);
 #endif
 
     return 0L;
@@ -282,19 +283,19 @@ AROS_LH0(BPTR, expunge,
 }
 
 AROS_LH0I(int, null,
-	    struct IntuitionBase *, IntuitionBase, 4, Intuition)
+	    struct LIBBASETYPE *, LIBBASE, 4, Intuition)
 {
     AROS_LIBFUNC_INIT
     return 0;
     AROS_LIBFUNC_EXIT
 }
 
-Class * FindClass (ClassID classID, struct IntuitionBase * IntuitionBase)
+Class * FindClass (ClassID classID, struct LIBBASETYPE * LIBBASE)
 {
     Class * classPtr;
 
     /* Lock the list */
-    ObtainSemaphoreShared (GetPrivIBase(IntuitionBase)->ClassListLock);
+    ObtainSemaphoreShared (GetPrivIBase(LIBBASE)->ClassListLock);
 
     /* Search for the class */
     ForeachNode (PublicClassList, classPtr)
@@ -307,13 +308,13 @@ Class * FindClass (ClassID classID, struct IntuitionBase * IntuitionBase)
 
 found:
     /* Unlock list */
-    ReleaseSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
+    ReleaseSemaphore (GetPrivIBase(LIBBASE)->ClassListLock);
 
     return classPtr;
 }
 
 #undef IntuitionBase
-#define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
+#define IntuitionBase	((struct LIBBASETYPE *)(cl->cl_UserData))
 
 /******************************************************************************
 
