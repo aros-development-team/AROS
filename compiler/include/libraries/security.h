@@ -36,7 +36,10 @@
 #include <utility/tagitem.h>
 #endif  /* UTILITY_TAGITEM_H */
 
-#define DEBUG   1
+#define DEBUG                           1
+
+#define TASKHASHVALUE	                23
+#define MEMHASHVALUE                    101
 
 /*
     Reserved users/groups
@@ -195,6 +198,28 @@
 #define secTrgF_PasswdFail              (1<<secTrgB_PasswdFail)
 #define secTrgF_CheckPasswd             (1<<secTrgB_CheckPasswd)
 #define secTrgF_CheckPasswdFail         (1<<secTrgB_CheckPasswdFail)
+
+
+/* Public secMemInfo structure. Don't expect it to remain */
+
+struct secMemInfo 
+{
+	APTR                            Address;
+	ULONG                           Size;
+	struct secMemInfo               *next;
+};
+
+
+/* This is what you get a pointer to from secLocksecBase() */
+
+struct secPointers
+{
+	struct MinList                  *Monitors;
+	struct MinList                  *Segments;
+	struct MinList                  *Sessions;
+	struct MinList                  *Tasks;
+	struct secVolume                *Volumes;
+};
 
 /*
     Public User Information Structure
@@ -416,6 +441,163 @@ struct plugin_userdb_ops
 {
 	struct plugin_ops               ops;
 //	ULONG                           (*getpwent)(void);
+};
+
+/* Volumes */
+
+struct secVolume 
+{
+    struct secVolume                     *Next;
+    struct DosList                      *DosList;			/* DosList for this Volume */
+    struct MsgPort                      *Process;			/* Process for this Volume */
+    
+    /* Extensions from MUFS2 */
+    
+    LONG	                        FS_Flags;			/* Allow set{g,u}id, read-only etc. */
+    
+    /* If FS_Flags == 0, the rest of this structure is ignored; this indicates
+	* that the volume is a true MUFS compatable volume */
+    
+    LONG	                        RootProtection;		        /* Permissions for the root dir */
+    ULONG	                        RootOwner;	                /* UID:GID of owner of root dir */
+
+    STRPTR FS_Name;						        /* So we dont re-run on the same volume */
+    struct MsgPort*	                OrigProc;		        /* The real FS */
+    struct MsgPort*	                RepPort;			/* For talking with the real FS */	
+    struct MinList	                FHCache[TASKHASHVALUE];	        /* HashList of cached FileHandles */
+    struct FileInfoBlock                *fib;
+    LONG	                        PassKey;			/* If non-zero, contains the 32 bit passkey
+									    needed to write enable the filesystem 
+									    with ACTION_WRITE_PROTECT */
+    /* proxy enforcer */
+    struct MinList                      ProxyLocks;	                /* List of locks */
+    struct MinList                      ProxyHandles[TASKHASHVALUE];	/* HashList of proxy filehandles */
+    struct DeviceNode                   *ProxyDosList;	                /* Dos entry created by the proxy filesystem */
+    struct DeviceList                   *ProxyDosListVolume;	        /* Dos entry created by the proxy filesystem */
+    ULONG                               LockCount;			/* Number of proxy locks in existence */
+
+};
+
+/* MultiUser Configuration */
+
+struct secConfig
+{
+    ULONG                               Flags;				/* See definitions below */
+    ULONG                               LogFlags;			/* See definitions below */
+    UWORD                               PasswduidLevel;			/* Lowest uid for users who can */
+									/* change their passwords */
+    UWORD                               PasswdgidLevel;			/* Lowest gid for users who can */
+									/* change their passwords */
+};
+
+/****************************************************************************
+
+                -------------- Library Base  ------------------
+
+ ****************************************************************************/
+
+
+struct secBase 
+{
+    struct Library                      LibNode;
+    UBYTE                               Flags;
+    UBYTE                               Pad;
+    BPTR                                SegList;
+
+	    /* The Server's Process */
+
+    struct Process                      *Server;
+
+	    /* The Server's Packet MsgPort */
+
+    struct MsgPort                      *ServerPort;
+
+	    /* List of sessions */
+
+    struct MinList                      SessionsList;
+
+	    /* List of Tasks and their Owner(s) */
+
+    struct SignalSemaphore              TaskOwnerSem;
+    struct MinList                      TaskOwnerList[TASKHASHVALUE];
+
+	    /* List of memory chunks and address, size, owner.
+                It's using the tasksemaphore since one usually wants that one
+                too when dealing with this list. */
+
+/*	struct MinList                  MemOwnerList[MEMHASHVALUE];*/
+
+	    /* List of Segments and their Owner */
+
+    struct SignalSemaphore              SegOwnerSem;
+    struct MinList                      SegOwnerList;
+
+    /* Configuration */
+
+    struct secConfig                    Config;
+
+    /* Signals for Passwd File Notification and Consistency Check */
+
+    ULONG                               NotifySig;
+    ULONG                               ConsistencySig;
+
+    /* Security violation flag */
+
+    BOOL                                SecurityViolation;
+
+    /* MultiUser Volumes */
+
+    struct SignalSemaphore              VolumesSem;
+    struct secVolume                    *Volumes;
+
+    /* Monitoring */
+
+    struct SignalSemaphore              MonitorSem;
+    struct MinList                      MonitorList;
+    struct MsgPort                      *MonitorPort;
+
+    /* Task Control */
+
+    struct MinList                      Frozen;
+    struct MinList                      Zombies;
+
+    /* LocaleInfo for logfile */
+
+    APTR                                LogInfo;
+
+    /* You must get this one if you intend to get more than one sem. */
+
+    struct SignalSemaphore              SuperSem;
+
+    /* Plugins */
+    
+    struct SignalSemaphore              PluginModuleSem;
+    struct MinList                      PluginModuleList;	/* List of loaded plugin modules */
+
+/** OBSOLETE DEFINITIONS (or they will be once we integrate into aros..) */
+	    /* Old AddTask()/RemTask() */
+
+//    AddTaskFunc		                OLDAddTask;
+//    RemTaskFunc		                OLDRemTask;
+
+	    /* Old AllocMem()/FreeMem() */
+	
+//    AllocMemFunc	                OLDAllocMem;
+//    FreeMemFunc		                OLDFreeMem;
+
+	    /* Old LoadSeg()/NewLoadSeg()/UnLoadSeg()/InternalLoadSeg()/
+                InternalUnLoadSeg()/CreateProc()/CreateNewProc()/RunCommand()/
+                SetProtection()	*/
+
+//    LoadSegFunc				OLDLoadSeg;
+//    NewLoadSegFunc			OLDNewLoadSeg;
+//    UnLoadSegFunc			OLDUnLoadSeg;
+//    InternalLoadSegFunc		        OLDInternalLoadSeg;
+//    InternalUnLoadSegFunc	        OLDInternalUnLoadSeg;
+//    CreateProcFunc			OLDCreateProc;
+//    CreateNewProcFunc			OLDCreateNewProc;
+//    RunCommandFunc			OLDRunCommand;
+//    SetProtectionFunc			OLDSetProtection;
 };
 
 #endif /* _SECURITY_H */
