@@ -9,7 +9,8 @@
 #define _stringify(x) #x
 #define stringify(x) _stringify(x)
 
-#define SHArg(name) ((SHA_##name##_type)__shargs[SHA_##name])
+//#define SHArg(name) ((SHA_##name##_type)__shargs[SHA_##name])
+#define SHArg(name) (*(SHA_##name##_type *)&__shargs[SHA_##name])
 
 #define __SHA_ENUM(type, abbr, name, modf, def, help) SHA_##name
 #define __SHA_DEF(type, abbr, name, modf, def, help) (IPTR)(def)
