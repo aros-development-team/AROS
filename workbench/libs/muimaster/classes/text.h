@@ -28,6 +28,20 @@
 #define MUIA_Text_Editable    (TAG_USER|0x00420d8c)  /* Zune: V1 i.. BOOL */
 #define MUIA_Text_Multiline   (TAG_USER|0x00420d8d)  /* Zune: V1 i.. BOOL */
 
+/* Codes which can be used in text strings */
+
+#define MUIX_L "\033l"	    /* justify left */
+#define MUIX_C "\033c"      /* justify centered */
+#define MUIX_R "\033r"      /* justify right */
+
+#define MUIX_N "\033n"      /* normal style */
+#define MUIX_B "\033b"      /* bold style */
+#define MUIX_I "\033i"      /* italic style */
+#define MUIX_U "\033u"      /* underlined style */
+
+#define MUIX_PT "\0332"     /* use text pen */
+#define MUIX_PH "\0338"     /* use highlight text pen */
+
 extern const struct __MUIBuiltinClass _MUI_Text_desc; /* PRIV */
 
 #endif
