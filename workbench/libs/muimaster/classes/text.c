@@ -36,31 +36,8 @@
 
 extern struct Library *MUIMasterBase;
 
-#define MYDEBUG 1
+#define MYDEBUG 0
 #include "debug.h"
-
-#ifdef _AROS
-#define g_strdup(x) 	    	    	    	    \
-    ({	    	    	    	    	    	    \
-    	UBYTE *dup; 	    	    	    	    \
-	    	    	    	    	    	    \
-	dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC); \
-	if (dup) CopyMem((x), dup, strlen(x) + 1);  \
-	dup; 	    	    	    	    	    \
-    })	
-#define g_free FreeVec
-#else
-
-static char *g_strdup(char *x)
-{
-    char *dup;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
-#define g_free(x) FreeVec(x);
-#endif
 
 extern struct Library *MUIMasterBase;
 
@@ -68,6 +45,14 @@ static const int __version = 1;
 static const int __revision = 1;
 
 static void setup_text (struct MUI_TextData *data, Object *obj);
+
+static char *StrDup(char *x)
+{
+    char *dup;
+    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
+    if (dup) CopyMem((x), dup, strlen(x) + 1);
+    return dup;
+}
 
 /**************************************************************************
  OM_NEW
@@ -84,53 +69,60 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->mtd_Flags = MTDF_SETMIN | MTDF_SETVMAX;
 
-    data->contents = g_strdup("");
-    data->preparse = g_strdup("");
-
     /* parse initial taglist */
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
-	    case MUIA_Text_Contents:
-		if (tag->ti_Data)
-		{
-		    g_free(data->contents);
-		    data->contents = g_strdup((STRPTR)tag->ti_Data);
-		}
-		break;
-	    case MUIA_Text_HiChar:
-		data->hichar = tag->ti_Data;
-		_handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_HICHAR);
-		break;
-	    case MUIA_Text_HiCharIdx:
-		data->hichar = tag->ti_Data;
-		_handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_HICHARIDX);
-		break;
-	    case MUIA_Text_PreParse:
-		if (tag->ti_Data)
-		{
-		    g_free(data->preparse);
-		    data->preparse = g_strdup((STRPTR)tag->ti_Data);
-		}
-		break;
-	    case MUIA_Text_SetMin:
-		_handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETMIN);
-		break;
-	    case MUIA_Text_SetMax:
-		_handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETMAX);
-		break;
-	    case MUIA_Text_SetVMax:
-		_handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETVMAX);
-		break;
-	    case MUIA_Text_Editable:
-	        _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_EDITABLE);
-	        break;
-            case MUIA_String_AdvanceOnCR:
-            	_handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_ADVANCEONCR);
-            	break;
+	    case    MUIA_Text_Contents:
+	    case    MUIA_String_Contents:
+		    if (tag->ti_Data) data->contents = StrDup((STRPTR)tag->ti_Data);
+		    break;
+
+	    case    MUIA_Text_HiChar:
+		    data->hichar = tag->ti_Data;
+		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_HICHAR);
+		    break;
+
+	    case    MUIA_Text_HiCharIdx:
+		    data->hichar = tag->ti_Data;
+		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_HICHARIDX);
+		    break;
+
+	    case    MUIA_Text_PreParse:
+		    data->preparse = StrDup((STRPTR)tag->ti_Data);
+		    break;
+
+	    case    MUIA_Text_SetMin:
+		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETMIN);
+		    break;
+
+	    case    MUIA_Text_SetMax:
+		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETMAX);
+		    break;
+
+	    case    MUIA_Text_SetVMax:
+		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETVMAX);
+		    break;
+
+	    case    MUIA_Text_Editable:
+		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_EDITABLE);
+		    break;
+
+            case    MUIA_String_AdvanceOnCR:
+		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_ADVANCEONCR);
+		    break;
 	}
+    }
+
+    if (!data->preparse) data->preparse = StrDup("");
+    if (!data->contents) data->contents = StrDup("");
+
+    if (!data->contents || !data->preparse)
+    {
+	CoerceMethod(cl, obj, OM_DISPOSE);
+	return NULL;
     }
 
     D(bug("muimaster.library/text.c: Text Object created at 0x%lx\n",obj));
@@ -151,8 +143,8 @@ static ULONG Text_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
-    g_free(data->contents);
-    g_free(data->preparse);
+    if (data->contents) FreeVec(data->contents);
+    if (data->preparse) FreeVec(data->preparse);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -170,29 +162,42 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	    case MUIA_Text_Contents:
-		if (data->ztext)
-		{
-		    zune_text_destroy(data->ztext);
-		    data->ztext = NULL;
-		}
-		if (data->contents)
-		    g_free(data->contents);
-		data->contents = g_strdup((STRPTR)tag->ti_Data);
-		if (_flags(obj) & MADF_SETUP)
-		    setup_text(data, obj);
-		MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
-		break;
-	    case MUIA_Text_PreParse:
-		if (data->ztext)
-		    zune_text_destroy(data->ztext);
-		if (data->preparse)
-		    g_free(data->preparse);
-		data->preparse = g_strdup((STRPTR)tag->ti_Data);
-		if (_flags(obj) & MADF_SETUP)
-		    setup_text(data, obj);
-		MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
-		break;
+	    case    MUIA_String_Contents:
+	    case    MUIA_Text_Contents:
+		    {
+		    	char *new_contents = StrDup(((char*)tag->ti_Data)?(char*)tag->ti_Data:"");
+		    	if (new_contents)
+		    	{
+			    if (data->ztext)
+			    {
+				zune_text_destroy(data->ztext);
+				data->ztext = NULL;
+			    }
+			    if (data->contents) FreeVec(data->contents);
+			    data->contents = new_contents;
+			    if (_flags(obj) & MADF_SETUP) setup_text(data, obj);
+			    MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
+			}
+		    }
+		    break;
+
+	    case    MUIA_Text_PreParse:
+		    {
+		    	char *new_preparse = StrDup(((char*)tag->ti_Data)?(char*)tag->ti_Data:"");
+		    	if (new_preparse)
+		    	{
+			    if (data->ztext)
+			    {
+				zune_text_destroy(data->ztext);
+				data->ztext = NULL;
+			    }
+			    if (data->preparse) FreeVec(data->preparse);
+			    data->preparse = new_preparse;
+			    if (_flags(obj) & MADF_SETUP) setup_text(data, obj);
+			    MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
+			}
+		    }
+		    break;
 	}
     }
 
@@ -210,21 +215,24 @@ static ULONG Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 #define STORE *(msg->opg_Storage)
     switch(msg->opg_AttrID)
     {
-	case MUIA_Text_Contents:
-	    STORE = (ULONG)data->contents;
-	    return(TRUE);
-	case MUIA_Text_PreParse:
-	    STORE = (ULONG)data->preparse;
-	    return(TRUE);
+	case	MUIA_Text_Contents:
+	case	MUIA_String_Contents:
+		STORE = (ULONG)data->contents;
+		return 1;
 
-	case MUIA_Version:
-	    STORE = __version;
-	    return(TRUE);
-	case MUIA_Revision:
-	    STORE = __revision;
-	    return(TRUE);
+	case	MUIA_Text_PreParse:
+		STORE = (ULONG)data->preparse;
+		return 1;
+
+	case	MUIA_Version:
+		STORE = __version;
+		return 1;
+
+	case	MUIA_Revision:
+		STORE = __revision;
+		return 1;
     }
-    return(DoSuperMethodA(cl, obj, (Msg) msg));
+    return DoSuperMethodA(cl, obj, (Msg) msg);
 #undef STORE
 }
 

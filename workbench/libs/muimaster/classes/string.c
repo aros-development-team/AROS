@@ -34,6 +34,8 @@ static ULONG String_New(struct IClass *cl, Object * obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNew(cl, obj,
 	MUIA_Text_Editable, TRUE,
+	MUIA_Text_SetMin, FALSE,
+	MUIA_Text_SetMax, FALSE,
 	TAG_MORE, msg->ops_AttrList);
 
     if (!obj)

@@ -170,6 +170,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 	    return MUI_NewObject(MUIC_Text,
 		MUIA_FramePhantomHoriz, TRUE,
+		MUIA_Text_SetMax, TRUE,
 		(params[1] & 0xff)?MUIA_Text_HiChar:TAG_IGNORE, params[1] & 0xff,
 		(params[1] & 0xff)?TAG_IGNORE:MUIA_Text_HiCharIdx, '_',
 		MUIA_Text_Contents, params[0],
@@ -248,6 +249,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 	    return MUI_NewObject(MUIC_Text,//MUIC_Image,
 	    	ButtonFrame,
 	    	MUIA_Weight,0,
+	    	MUIA_Text_SetVMax,FALSE,
 //		MUIA_Image_Spec, params[0],
 		MUIA_InputMode, MUIV_InputMode_RelVerify,
 		MUIA_Text_Contents, "Pop",
