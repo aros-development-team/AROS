@@ -59,6 +59,9 @@ BEGIN {
 /libbasetype/ {
     libbasetype=$2;
 }
+/libbasetypeptr/ {
+    libbasetypeptr=$2;
+}
 /version/ {
     str=$2;
     n=split(str,a,".");
@@ -73,17 +76,19 @@ END {
 	libbase=basename"Base";
     if (libbasetype=="")
 	libbasetype=basename"Base";
+    if (libbasetypeptr=="")
+	libbasetypeptr="struct "libbasetype" *";
 
-    print "#define LIBNAME      \""libname".library\""
-    print "#define DEVNAME      \""libname".device\""
-    print "#define RESNAME      \""libname".resource\""
-    print "#define LIBBASE      "libbase
-    print "#define LIBBASETYPE  "libbasetype
-    print "#define LIBVERSION   "version
-    print "#define LIBREVISION  "revision
-    print "#define BASENAME     "basename
-    print "#define VERSION      \"$VER: "libname" "version"."revision" ("date")\\n\\r\""
-    print "#define END          "basename"_end"
-    print "#define FUNCTABLE    "basename"_functable"
-    print "#define INIT         AROS_SLIB_ENTRY(init,"basename")"
+    print "#define LIBNAME        \""libname".library\""
+    print "#define DEVNAME        \""libname".device\""
+    print "#define RESNAME        \""libname".resource\""
+    print "#define LIBBASE        "libbase
+    print "#define LIBBASETYPE    "libbasetype
+    print "#define LIBBASETYPEPTR "libbasetypeptr
+    print "#define LIBVERSION     "version
+    print "#define LIBREVISION    "revision
+    print "#define BASENAME       "basename
+    print "#define VERSION        \"$VER: "libname" "version"."revision" ("date")\\n\\r\""
+    print "#define END            "basename"_end"
+    print "#define FUNCTABLE      "basename"_functable"
 }
