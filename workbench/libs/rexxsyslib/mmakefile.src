@@ -1,0 +1,30 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES = -I.
+
+MODNAME	    := rexxsyslib
+MODTYPE	    := library
+
+FUNCS := \
+      	 clearrexxmsg \
+	 createargstring \
+	 createrexxmsg \
+	 deleteargstring \
+	 deleterexxmsg \
+	 fillrexxmsg \
+	 isrexxmsg \
+	 lengthargstring \
+	 lockrexxbase \
+	 unlockrexxbase
+
+USE_AMIGALIB := yes
+
+#MM- workbench-libs-rexxsyslib : setup includes linklibs workbench-libs-rexxsyslib-module
+%make_module_setup mmake=workbench-libs-rexxsyslib
+%make_module_cpak
+%make_module mmake=workbench-libs-rexxsyslib
+%make_lib_includes
+
+%common
+%include_deps
