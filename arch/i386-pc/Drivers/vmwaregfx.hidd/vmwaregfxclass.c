@@ -20,7 +20,7 @@
 #include <hidd/graphics.h>
 #include <oop/oop.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "vmwaregfxclass.h"

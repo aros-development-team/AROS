@@ -8,7 +8,7 @@
 
 
 #include <asm/io.h>
-#define DEBUG 1 /* no SysBase */
+#define DEBUG 0 /* no SysBase */
 #include <aros/debug.h>
 
 #include "hardware.h"

@@ -17,7 +17,7 @@
 #include <graphics/rastport.h>
 #include <hidd/graphics.h>
 #include <oop/oop.h>
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "offbitmap.h"
@@ -117,8 +117,8 @@ struct BitmapData *data = OOP_INST_DATA(cl, o);
 
 #undef SDEBUG
 #undef DEBUG
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 
