@@ -32,7 +32,7 @@
 #include <linux/unistd.h>
 
 #include <asm/setup.h>
-#include <asm/uaccess.h>
+#include <asm/segment.h>
 #include <asm/pgtable.h>
 #include <asm/traps.h>
 
@@ -42,19 +42,16 @@
 
 #define _BLOCKABLE (~(_S(SIGKILL) | _S(SIGSTOP)))
 
-asmlinkage int sys_wait4(pid_t pid, unsigned long *stat_addr,
-			 int options, unsigned long *ru);
-
-/* !!! old functionheader 
+asmlinkage int sys_waitpid(pid_t pid,unsigned long * stat_addr, int options);
+/* !!! old functionheader:
  * asmlinkage int do_signal(unsigned long oldmask, struct pt_regs *regs);
- *
  * new functionheader:
  */
 asmlinkage int do_signal(unsigned long oldmask,
-                         struct switchstack *sw, 
-                         struct pt_regs *regs);
+			 struct switch_stack * sw, 
+			 struct pt_regs *regs);
 
-const int frame_extra_sizes[16] = {
+static const int extra_sizes[16] = {
   0,
   -1, /* sizeof(((struct frame *)0)->un.fmt1), */
   sizeof(((struct frame *)0)->un.fmt2),
@@ -96,7 +93,8 @@ asmlinkage int do_sigsuspend(struct switch_stack * sw, struct pt_regs *regs)
  *		if (do_signal(oldmask, regs))
  * new call to do_signal
  */
- 		if (do_signal(oldmask, sw, regs)		
+		if (do_signal(oldmask, sw, regs))
+/* !!! */
 			return -EINTR;
 	}
 }
@@ -105,7 +103,7 @@ static unsigned char fpu_version = 0;	/* version number of fpu, set by setup_fra
 
 asmlinkage int do_sigreturn(unsigned long __unused)
 {
-	struct sigcontext context;
+	struct sigcontext_struct context;
 	struct pt_regs *regs;
 	struct switch_stack *sw;
 	int fsize = 0;
@@ -122,27 +120,29 @@ asmlinkage int do_sigreturn(unsigned long __unused)
 	regs = (struct pt_regs *) (sw + 1);
 
 	/* get previous context (including pointer to possible extra junk) */
-	if (copy_from_user(&context,(void *)usp, sizeof(context)))
-		goto badframe;
+        if (verify_area(VERIFY_READ, (void *)usp, sizeof(context)))
+                goto badframe;
+
+	memcpy_fromfs(&context,(void *)usp, sizeof(context));
 
 	fp = usp + sizeof (context);
 
 	/* restore signal mask */
 	current->blocked = context.sc_mask & _BLOCKABLE;
-	
-	/* !!! restore registers passed in the extended sigcontext-structure */
-	regs->d2=context.sc_ext_d2
-	regs->d3=context.sc_ext_d3
-	regs->d4=context.sc_ext_d4
-	regs->d5=context.sc_ext_d5
-	regs->a2=context.sc_ext_a2
 
-	sw->d6=context.sc_ext_d6
-	sw->d7=context.sc_ext_d7
-	sw->a3=context.sc_ext_a3
-	sw->a4=context.sc_ext_a4
-	sw->a5=context.sc_ext_a5
-	sw->a6=context.sc_ext_a6
+	/* !!! restore registers passed in the extended sigcontext-structure */
+	regs->d2=context.sc_ext_d2;
+	regs->d3=context.sc_ext_d3;
+	regs->d4=context.sc_ext_d4;
+	regs->d5=context.sc_ext_d5;
+	
+	sw->d6=context.sc_ext_d6;
+	sw->d7=context.sc_ext_d7;
+	sw->a2=context.sc_ext_a2;
+	sw->a3=context.sc_ext_a3;
+	sw->a4=context.sc_ext_a4;
+	sw->a5=context.sc_ext_a5;
+	sw->a6=context.sc_ext_a6;
 	/* !!!  */
 
 	/* restore passed registers */
@@ -161,26 +161,26 @@ asmlinkage int do_sigreturn(unsigned long __unused)
 	    /* Verify the frame format.  */
 	    if (!CPU_IS_060 && (context.sc_fpstate[0] != fpu_version))
 	      goto badframe;
-	    if (m68k_fputype & FPU_68881)
+	    if (boot_info.cputype & FPU_68881)
 	      {
 		if (context.sc_fpstate[1] != 0x18
 		    && context.sc_fpstate[1] != 0xb4)
 		  goto badframe;
 	      }
-	    else if (m68k_fputype & FPU_68882)
+	    else if (boot_info.cputype & FPU_68882)
 	      {
 		if (context.sc_fpstate[1] != 0x38
 		    && context.sc_fpstate[1] != 0xd4)
 		  goto badframe;
 	      }
-	    else if (m68k_fputype & FPU_68040)
+	    else if (boot_info.cputype & FPU_68040)
 	      {
 		if (!(context.sc_fpstate[1] == 0x00 ||
                       context.sc_fpstate[1] == 0x28 ||
                       context.sc_fpstate[1] == 0x60))
 		  goto badframe;
 	      }
-	    else if (m68k_fputype & FPU_68060)
+	    else if (boot_info.cputype & FPU_68060)
 	      {
 		if (!(context.sc_fpstate[3] == 0x00 ||
                       context.sc_fpstate[3] == 0x60 ||
@@ -195,7 +195,7 @@ asmlinkage int do_sigreturn(unsigned long __unused)
 	  }
 	__asm__ volatile ("frestore %0" : : "m" (*context.sc_fpstate));
 
-	fsize = frame_extra_sizes[regs->format];
+	fsize = extra_sizes[regs->format];
 	if (fsize < 0) {
 		/*
 		 * user process trying to return with weird frame format
@@ -208,43 +208,37 @@ asmlinkage int do_sigreturn(unsigned long __unused)
 
 	if (context.sc_usp != fp+fsize)
 		current->flags &= ~PF_ONSIGSTK;
-
+	
 	/* OK.	Make room on the supervisor stack for the extra junk,
 	 * if necessary.
 	 */
 
 	if (fsize) {
+		if (verify_area(VERIFY_READ, (void *)fp, fsize))
+                        goto badframe;
+
 #define frame_offset (sizeof(struct pt_regs)+sizeof(struct switch_stack))
 		__asm__ __volatile__
-			("   movel %0,%/a0\n\t"
-			 "   subl %1,%/a0\n\t"     /* make room on stack */
-			 "   movel %/a0,%/sp\n\t"  /* set stack pointer */
+			("movel %0,%/a0\n\t"
+			 "subl %1,%/a0\n\t"     /* make room on stack */
+			 "movel %/a0,%/sp\n\t"  /* set stack pointer */
 			 /* move switch_stack and pt_regs */
 			 "1: movel %0@+,%/a0@+\n\t"
 			 "   dbra %2,1b\n\t"
-			 "   lea %/sp@(%c3),%/a0\n\t" /* add offset of fmt */
-			 "   lsrl  #2,%1\n\t"
-			 "   subql #1,%1\n\t"
+			 "lea %/sp@(%c3),%/a0\n\t" /* add offset of fmt stuff */
+			 "lsrl  #2,%1\n\t"
+			 "subql #1,%1\n\t"
 			 "2: movesl %4@+,%2\n\t"
-			 "3: movel %2,%/a0@+\n\t"
+			 "   movel %2,%/a0@+\n\t"
 			 "   dbra %1,2b\n\t"
-			 "   bral " SYMBOL_NAME_STR(ret_from_signal) "\n"
-			 "4:\n"
-			 ".section __ex_table,\"a\"\n"
-			 "   .align 4\n"
-			 "   .long 2b,4b\n"
-			 "   .long 3b,4b\n"
-			 ".previous"
+			 "bral " SYMBOL_NAME_STR(ret_from_signal)
 			 : /* no outputs, it doesn't ever return */
 			 : "a" (sw), "d" (fsize), "d" (frame_offset/4-1),
 			   "n" (frame_offset), "a" (fp)
 			 : "a0");
 #undef frame_offset
-		/*
-		 * If we ever get here an exception occured while
-		 * building the above stack-frame.
-		 */
 		goto badframe;
+		/* NOTREACHED */
 	}
 
 	return regs->d0;
@@ -293,20 +287,20 @@ badframe:
  * longwords for format "B".
  */
 
-#define UFRAME_SIZE(fs) (sizeof(struct sigcontext)/4 + 6 + fs/4)
+#define UFRAME_SIZE(fs) (sizeof(struct sigcontext_struct)/4 + 6 + fs/4)
 
-/* old function header:
- * static inline void setup_frame (struct sigaction * sa, struct pt_regs *regs,
- *				  int signr, unsigned long oldmask)
- * new function header:
+/*!!! old functionheader:
+ * static void setup_frame (struct sigaction * sa, struct pt_regs *regs,
+ *			   int signr, unsigned long oldmask)
+ * new functionheader:
  */
-static inline void setup_frame (struct sigaction * sa, struct pt_regs *regs,
-				int signr, unsigned long oldmask,
-				struct switch_stack * sw)
-{
-	struct sigcontext context;
+static void setup_frame (struct sigaction * sa, struct pt_regs *regs,
+			 int signr, unsigned long oldmask,
+			 struct switch_stack * sw)
+ {
+	struct sigcontext_struct context;
 	unsigned long *frame, *tframe;
-	int fsize = frame_extra_sizes[regs->format];
+	int fsize = extra_sizes[regs->format];
 
 	if (fsize < 0) {
 		printk ("setup_frame: Unknown frame format %#x\n",
@@ -321,9 +315,10 @@ static inline void setup_frame (struct sigaction * sa, struct pt_regs *regs,
 	}
 	frame -= UFRAME_SIZE(fsize);
 
+	if (verify_area(VERIFY_WRITE,frame,UFRAME_SIZE(fsize)*4))
+		do_exit(SIGSEGV);
 	if (fsize) {
-		if (copy_to_user (frame + UFRAME_SIZE(0), regs + 1, fsize))
-			do_exit(SIGSEGV);
+		memcpy_tofs (frame + UFRAME_SIZE(0), regs + 1, fsize);
 		regs->stkadj = fsize;
 	}
 
@@ -331,23 +326,20 @@ static inline void setup_frame (struct sigaction * sa, struct pt_regs *regs,
 	tframe = frame;
 
 	/* return address points to code on stack */
-
-	if(put_user((ulong)(frame+4), tframe))
-		do_exit(SIGSEGV);
-	tframe++;
+	put_user((ulong)(frame+4), tframe); tframe++;
 	if (current->exec_domain && current->exec_domain->signal_invmap)
-	    __put_user(current->exec_domain->signal_invmap[signr], tframe);
+	    put_user(current->exec_domain->signal_invmap[signr], tframe);
 	else
-	    __put_user(signr, tframe);
+	    put_user(signr, tframe);
 	tframe++;
 
-	__put_user(regs->vector, tframe); tframe++;
+	put_user(regs->vector, tframe); tframe++;
 	/* "scp" parameter.  points to sigcontext */
-	__put_user((ulong)(frame+6), tframe); tframe++;
+	put_user((ulong)(frame+6), tframe); tframe++;
 
 /* set up the return code... */
-	__put_user(0xdefc0014,tframe); tframe++; /* addaw #20,sp */
-	__put_user(0x70774e40,tframe); tframe++; /* moveq #119,d0; trap #0 */
+	put_user(0xdefc0014,tframe); tframe++; /* addaw #20,sp */
+	put_user(0x70774e40,tframe); tframe++; /* moveq #119,d0; trap #0 */
 
 /* Flush caches so the instructions will be correctly executed. (MA) */
 	cache_push_v ((unsigned long)frame, (int)tframe - (int)frame);
@@ -359,16 +351,15 @@ static inline void setup_frame (struct sigaction * sa, struct pt_regs *regs,
 	context.sc_ext_d3=regs->d3;
 	context.sc_ext_d4=regs->d4;
 	context.sc_ext_d5=regs->d5;
-	context.sc_ext_a2=regs->a2;
 
 	context.sc_ext_d6=sw->d6;
 	context.sc_ext_d7=sw->d7;
+	context.sc_ext_a2=sw->a2;
 	context.sc_ext_a3=sw->a3;
 	context.sc_ext_a4=sw->a4;
 	context.sc_ext_a5=sw->a5;
 	context.sc_ext_a6=sw->a6;
 	/* !!!  */
-
 
 /* setup and copy the sigcontext structure */
 	context.sc_mask       = oldmask;
@@ -390,8 +381,7 @@ static inline void setup_frame (struct sigaction * sa, struct pt_regs *regs,
 				  "m" (*context.sc_fpcntl)
 				  : "memory");
 	}
-	if (copy_to_user (tframe, &context, sizeof(context)))
-		do_exit(SIGSEGV);
+	memcpy_tofs (tframe, &context, sizeof(context));
 
 	/*
 	 * no matter what frame format we were using before, we
@@ -421,15 +411,16 @@ static inline void setup_frame (struct sigaction * sa, struct pt_regs *regs,
 
 /*
  * OK, we're invoking a handler
- */
+ */	
+
 /* !!! old function header:
  * static inline void handle_signal(unsigned long signr, struct sigaction *sa,
  *				    unsigned long oldmask, struct pt_regs *regs)
  * new function header:
  */
-static inline void handle_signal(unsigned long signr, struct sigaction *sa,
-				 unsigned long oldmask, struct pt_regs *regs,
-				 struct switchstack *sw)
+static void handle_signal(unsigned long signr, struct sigaction *sa,
+			  unsigned long oldmask, struct pt_regs *regs,
+			  struct switch_stack *sw)
 {
 	/* are we from a system call? */
 	if (regs->orig_d0 >= 0) {
@@ -476,15 +467,15 @@ static inline void handle_signal(unsigned long signr, struct sigaction *sa,
  * handling stack-frames in one go after that.
  */
 
-
 /* !!! old functionheader: 
  * asmlinkage int do_signal(unsigned long oldmask, struct pt_regs *regs);
  *
  * new functionheader:
  */
+
 asmlinkage int do_signal(unsigned long oldmask,
-                         struct switchstack *sw, 
-                         struct pt_regs *regs);
+			 struct switch_stack *sw, 
+			 struct pt_regs *regs)
 {
 	unsigned long mask = ~current->blocked;
 	unsigned long signr;
@@ -526,7 +517,7 @@ asmlinkage int do_signal(unsigned long oldmask,
 			       isn't restarted (only needed on the
 			       68030).  */
 			    if (regs->format == 10 || regs->format == 11) {
-				regs->stkadj = frame_extra_sizes[regs->format];
+				regs->stkadj = extra_sizes[regs->format];
 				regs->format = 0;
 			    }
 			    continue;
@@ -545,7 +536,7 @@ asmlinkage int do_signal(unsigned long oldmask,
 			if (signr != SIGCHLD)
 				continue;
 			/* check for SIGCHLD: it's special */
-			while (sys_wait4(-1,NULL,WNOHANG, NULL) > 0)
+			while (sys_waitpid(-1,NULL,WNOHANG) > 0)
 				/* nothing */;
 			continue;
 		}
@@ -564,7 +555,7 @@ asmlinkage int do_signal(unsigned long oldmask,
 					continue;
 				current->state = TASK_STOPPED;
 				current->exit_code = signr;
-				if (!(current->p_pptr->sig->action[SIGCHLD-1].sa_flags &
+				if (!(current->p_pptr->sig->action[SIGCHLD-1].sa_flags & 
 				      SA_NOCLDSTOP))
 					notify_parent(current);
 				schedule();
@@ -588,9 +579,8 @@ asmlinkage int do_signal(unsigned long oldmask,
 	 	 *
 	 	 * new call of handle_signal:
 	 	 */
-	 	handle_signal(signr, sa, oldmask, regs, sw);
-	 	/* !!! */
-	 	
+		handle_signal(signr, sa, oldmask, regs, sw);
+		/* !!! */
 		return 1;
 	}
 
