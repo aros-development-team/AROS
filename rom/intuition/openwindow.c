@@ -122,7 +122,7 @@
 
     if (tagList)
     {
-	while ((tag = NextTagItem (&tagList)))
+	while ((tag = NextTagItem ((const struct TagItem **)&tagList)))
 	{
 	    /* ASSERT_VALID_PTR(tag) */
 
