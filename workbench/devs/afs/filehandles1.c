@@ -921,7 +921,7 @@ struct BlockCache *blockbuffer;
 		size=BLOCK_SIZE(ah->volume);
 		if (ah->volume->flags==0)
 			size -= (BLK_DATA_START*4);
-		togo = offset / size;
+		togo = newoffset / size;
 		byte = BLK_TABLE_END(ah->volume)-BLK_TABLE_START+1; /* hashtable size */
 		filekey = BLK_TABLE_END(ah->volume)-(togo % byte);
 		togo /= byte; /* # of extensionblock we need */
