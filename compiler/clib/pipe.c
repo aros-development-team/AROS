@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,7 +32,7 @@ int pipe(int *pipedes)
 	return -1;
     }
 
-    pipedes[0] =  open("PIPEFS://unnamedpipe//", O_RDONLY|O_NONBLOCK);
+    pipedes[0] =  open("PIPEFS:__UNNAMED__", O_RDONLY|O_NONBLOCK);
     if (pipedes[0] != -1)
     {
 	fdesc *desc = __getfdesc(pipedes[0]);

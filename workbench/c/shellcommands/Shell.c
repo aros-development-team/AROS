@@ -638,7 +638,7 @@ static BPTR DupFH(BPTR fh, LONG mode)
 
 static BOOL Pipe(BPTR pipefhs[2])
 {
-    pipefhs[0] = Open("PIPEFS://unnamedpipe//", FMF_READ|FMF_NONBLOCK);
+    pipefhs[0] = Open("PIPEFS:__UNNAMED__", FMF_READ|FMF_NONBLOCK);
     pipefhs[1] = DupFH(pipefhs[0], FMF_WRITE);
 
     if (pipefhs[1])

@@ -46,7 +46,7 @@ int main(void)
     struct MsgPort *port;
     struct IOFileSys *iofs;
     
-    fhin = Open("PIPEFS://unnamedpipe//", FMF_READ|FMF_NONBLOCK);
+    fhin = Open("PIPEFS:__UNNAMED__", FMF_READ|FMF_NONBLOCK);
     fhout = DupFH(fhin, FMF_WRITE);
     assert(fhin!=NULL && fhout!=NULL);
     ChangeMode(CHANGE_FH, fhin, FMF_READ);
