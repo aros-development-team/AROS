@@ -8,11 +8,11 @@
 void writestubs(void)
 {
     FILE *out;
+    char line[256];
     struct functionlist *funclistit;
     struct arglist *arglistit;
-    unsigned int start;
 
-    snprintf(line, slen-1, "%s/%s_stubs.c", gendir, modulename);
+    snprintf(line, 255, "%s/%s_stubs.c", gendir, modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -30,9 +30,7 @@ void writestubs(void)
 	    "#include <aros/libcall.h>\n"
 	    "\n",
 	    modulename);
-    for (funclistit = funclist, start=firstlvo;
-	 funclistit!=NULL;
-	 funclistit = funclistit->next, start++)
+    for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
     {
 	fprintf(out,
 		"\n"
@@ -56,7 +54,8 @@ void writestubs(void)
 	     arglistit = arglistit->next)
 	    fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
 		    arglistit->type, arglistit->name, arglistit->reg);
-	fprintf(out, "                    %s *, %s, %d, %s);\n}\n", libbasetypeextern, libbase, start, basename);
+	fprintf(out, "                    %s *, %s, %u, %s);\n}\n", libbasetypeextern,
+		libbase, funclistit->lvo, basename);
     }
     fclose(out);
 }

@@ -4,27 +4,26 @@
     Desc: function to read in the function reference file. Part of genmodule.
 */
 #include "genmodule.h"
+#include "fileread.h"
 #include <assert.h>
 
 void readref(void)
 {
-    FILE *in;
     struct functionlist *funclistit = NULL;
-    char *begin, *end;
+    char *begin, *end, *line;
     unsigned int len;
 
-    in = fopen(reffile, "r");
-    if (in==NULL)
+    if (!fileopen(reffile))
     {
 	fprintf(stderr, "Could not open %s\n", reffile);
 	exit(20);
     }
-    do
+
+    while ((line=readline())!=NULL)
     {
 	static char infunction=0;
 	static struct arglist **arglistptr;
 	
-	readline(in);
 	if (strlen(line)>0)
 	{
 	    if (infunction &&
@@ -178,8 +177,8 @@ void readref(void)
 		}
 	    }
 	}
-    } while (!feof(in));
-    fclose(in);
+    };
+    fileclose();
 
     /* Checking to see if every function has a prototype */
     for (funclistit = funclist;

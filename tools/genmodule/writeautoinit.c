@@ -8,8 +8,9 @@
 void writeautoinit(void)
 {
     FILE *out;
+    char line[256];
     
-    snprintf(line, slen-1, "%s/%s_autoinit.c", gendir, modulename);
+    snprintf(line, 255, "%s/%s_autoinit.c", gendir, modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {

@@ -8,11 +8,13 @@
 void writestart(void)
 {
     FILE *out;
+    char line[256];
     struct functionlist *funclistit;
     struct arglist *arglistit;
     unsigned int lvo;
+    int i;
     
-    snprintf(line, slen-1, "%s/%s_start.c", gendir, modulename);
+    snprintf(line, 255, "%s/%s_start.c", gendir, modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -35,9 +37,7 @@ void writestart(void)
 		modulename);
     }
     
-    for (funclistit = funclist, lvo=firstlvo;
-	 funclistit != NULL;
-	 funclistit = funclistit->next, lvo++)
+    for (funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
     {
 	switch (libcall)
 	{
@@ -68,7 +68,7 @@ void writestart(void)
 		    "         %s *, %s, %u, %s)\n"
 		    "{\n"
 		    "    return %s(",
-		    libbasetypeextern, libbase, lvo, basename, funclistit->name);
+		    libbasetypeextern, libbase, funclistit->lvo, basename, funclistit->name);
 	    for (arglistit = funclistit->arguments;
 		 arglistit!=NULL;
 		 arglistit = arglistit->next)
@@ -97,10 +97,13 @@ void writestart(void)
 	    "    &AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),\n",
 	    modulename);
 
-    for (funclistit = funclist;
-	 funclistit != NULL;
-	 funclistit = funclistit->next)
+    lvo = firstlvo;
+    for (funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
     {
+	for (i = lvo+1; i<funclistit->lvo; i++)
+	    fprintf(out, "    NULL,\n");
+	lvo = funclistit->lvo;
+	
 	switch (libcall)
 	{
 	case STACK:
