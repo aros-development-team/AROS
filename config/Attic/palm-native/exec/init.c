@@ -240,10 +240,12 @@ int main_init_cont()
 
 		while (1) {
 			ULONG i = 0;
+			Forbid();
 			clearscreen(0);
+			Permit();
 			while (i < 160/2) {
 				drawlinevert(i);
-				drawlinevert(160-1-i);
+				drawlinehoriz(i);
 				i++;
 			}
 		}
