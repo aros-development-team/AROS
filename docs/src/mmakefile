@@ -40,9 +40,12 @@ setup-docs :
 	done
 	cd conv ; make
 
-copy-files : $(DEST)rtdemo.log $(DEST)pubkey.asc
+copy-files : $(DEST)rtdemo.log $(DEST)pubkey.asc $(DEST)license.html
 
 $(DEST)% : %
+	cp $< $@
+
+$(DEST)license.html : $(TOP)/license.html
 	cp $< $@
 
 link-pics :
