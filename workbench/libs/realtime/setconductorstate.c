@@ -30,7 +30,7 @@
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 10, RealTime)
+	struct Library *, RealTimeBase, 10, RealTime)
 
 /*  FUNCTION
 

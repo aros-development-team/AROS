@@ -57,12 +57,12 @@ struct internal_RealTimeBase
     struct Task     *rtb_PulseTask;
 };
 
-#define  UtilityBase  (GPB(RTBase)->rtb_UtilityBase)
-#define  SysBase      (GPB(RTBase)->rtb_SysBase)
-#define  DOSBase      (GPB(RTBase)->rtb_DOSBase)
+#define  UtilityBase  (GPB(RealTimeBase)->rtb_UtilityBase)
+#define  SysBase      (GPB(RealTimeBase)->rtb_SysBase)
+#define  DOSBase      (GPB(RealTimeBase)->rtb_DOSBase)
 
 #define expunge() \
-AROS_LC0(BPTR, expunge, struct RealTimeBase *, RTBase, 3, RealTime)
+AROS_LC0(BPTR, expunge, struct RealTimeBase *, RealTimeBase, 3, RealTime)
 
 #endif /* REALTIME_INTERN_H */
 

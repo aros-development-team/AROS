@@ -34,9 +34,9 @@ AROS_UFH3(void, Pulse,
 {
 #undef SysBase
 #define SysBase sysBase
-    struct internal_RealTimeBase *RTBase = GPB(FindTask(NULL)->tc_UserData);
+    struct internal_RealTimeBase *RealTimeBase = GPB(FindTask(NULL)->tc_UserData);
 #undef SysBase
-#define SysBase (RTBase->rtb_SysBase)
+#define SysBase (RealTimeBase->rtb_SysBase)
 
     struct Conductor *conductor;
     struct Player    *player;
@@ -64,18 +64,18 @@ AROS_UFH3(void, Pulse,
 	/* NOTE! 12 should be 1, but as the timing source is the VBlank
 	         running at 50Hz instead of the real heartbeat running at
 		 600 Hz, we scale things up */
-	GPB(RTBase)->rtb_Time += 12;  /* Not sure about that frac time... maybe
+	GPB(RealTimeBase)->rtb_Time += 12;  /* Not sure about that frac time... maybe
 					 to take care of other sync sources
 					 (not external) whose heartbeats
 					 aliases against 600Hz? */
-	time = GPB(RTBase)->rtb_Time;
+	time = GPB(RealTimeBase)->rtb_Time;
 	
 	timeMsg.pmt_Method = PM_TICK;
 	timeMsg.pmt_Time = time;
 
 	lock = LockRealTime(RT_CONDUCTORS);
 	
-	ForeachNode((struct List *)&GPB(RTBase)->rtb_ConductorList, 
+	ForeachNode((struct List *)&GPB(RealTimeBase)->rtb_ConductorList, 
 		    (struct Node *)conductor)
 	{
 	    if (conductor->cdt_State == CONDSTATE_RUNNING)

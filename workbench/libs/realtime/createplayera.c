@@ -12,7 +12,7 @@
     NAME */
 
 struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
-				  struct Library *RTBase);
+				  struct Library *RealTimeBase);
 
 # define  DEBUG 1
 # include <aros/debug.h>
@@ -33,7 +33,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 7, RealTime)
+	struct Library *, RealTimeBase, 7, RealTime)
 
 /*  FUNCTION
 
@@ -172,7 +172,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 	    {
 		player->pl_Source = createConductor(TRUE, error,
 						    (STRPTR)tag->ti_Data,
-						    RTBase);
+						    RealTimeBase);
 	    }
 	    else
 	    {
@@ -183,7 +183,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 		    D(bug("Trying to create a public conductor.\n"));
 		    player->pl_Source = createConductor(FALSE, error,
 							(STRPTR)tag->ti_Data,
-							RTBase);
+							RealTimeBase);
 		}
 		else
 		{
@@ -226,7 +226,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 
 
 struct Conductor *createConductor(BOOL private, LONG *error, STRPTR name,
-				  struct Library *RTBase)
+				  struct Library *RealTimeBase)
 {
     struct Conductor *cd = AllocMem(sizeof(struct Conductor), 
 				    MEMF_PUBLIC | MEMF_CLEAR);
@@ -247,8 +247,8 @@ struct Conductor *createConductor(BOOL private, LONG *error, STRPTR name,
     InitSemaphore(&cd->cdt_Lock);
 
     /* Initialize conductor clock */
-    cd->cdt_ClockTime = GPB(RTBase)->rtb_Time;
-    cd->cdt_StartTime = GPB(RTBase)->rtb_Time;
+    cd->cdt_ClockTime = GPB(RealTimeBase)->rtb_Time;
+    cd->cdt_StartTime = GPB(RealTimeBase)->rtb_Time;
 
     /* Conductors are created in 'stopped' mode. To make the clock start
        running, call SetConductorState(player, CONDSTATE_RUNNING, _); */
@@ -265,7 +265,7 @@ struct Conductor *createConductor(BOOL private, LONG *error, STRPTR name,
 
 	lock = LockRealTime(RT_CONDUCTORS);
 	
-	AddTail((struct List *)&GPB(RTBase)->rtb_ConductorList,
+	AddTail((struct List *)&GPB(RealTimeBase)->rtb_ConductorList,
 		(struct Node *)cd);
 	
 	UnlockRealTime(lock);

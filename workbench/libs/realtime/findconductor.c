@@ -22,7 +22,7 @@
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 13, RealTime)
+	struct Library *, RealTimeBase, 13, RealTime)
 
 /*  FUNCTION
 
@@ -62,7 +62,7 @@
     AROS_LIBFUNC_INIT
 
     struct Conductor *conductor = (struct Conductor *)
-	FindName((struct List *)&GPB(RTBase)->rtb_ConductorList, name);
+	FindName((struct List *)&GPB(RealTimeBase)->rtb_ConductorList, name);
 
     if (conductor == NULL)
     {

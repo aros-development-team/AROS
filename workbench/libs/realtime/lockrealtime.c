@@ -22,7 +22,7 @@
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 5, RealTime)
+	struct Library *, RealTimeBase, 5, RealTime)
 
 /*  FUNCTION
 
@@ -62,9 +62,9 @@
     if(lockType >= RT_MAXLOCK)
 	return NULL;
 
-    ObtainSemaphore(&GPB(RTBase)->rtb_Locks[lockType]);
+    ObtainSemaphore(&GPB(RealTimeBase)->rtb_Locks[lockType]);
 
-    return (APTR)(&GPB(RTBase)->rtb_Locks[lockType]);
+    return (APTR)(&GPB(RealTimeBase)->rtb_Locks[lockType]);
 
     AROS_LIBFUNC_EXIT
 } /* LockRealTime */
