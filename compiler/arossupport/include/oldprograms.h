@@ -25,5 +25,3 @@
   #define TOPAZ_SIXTY 6
 #endif
 
-#define RASSIZE(w,h)	((ULONG)(h)*( ((ULONG)(w)+15)>>3&0xFFFE))
-
