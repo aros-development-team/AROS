@@ -1483,6 +1483,10 @@ rexxsyslib00006;0;digulla;Write FillRexxMsg
 rexxsyslib00007;0;digulla;Write IsRexxMsg
 rexxsyslib00008;0;digulla;Write LockRexxBase
 rexxsyslib00009;0;digulla;Write UnlockRexxBase
+rexxsyslib00010;0;verhaegs;Write CurrentEnv
+rexxsyslib00011;0;verhaegs;Write SetValue
+rexxsyslib00012;0;verhaegs;Write FetchValue
+rexxsyslib00013;0;verhaegs;Write EnterSymbol
 timer00000;2;iaint;Write AddTime
 timer00001;2;iaint;Write SubTime
 timer00002;2;iaint;Write CmpTime
