@@ -1,18 +1,19 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-99 AROS - The Amiga Research OS
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include "diskfont_intern.h"
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <clib/diskfont_protos.h>
+#include <proto/diskfont.h>
 
-	AROS_LH1(void, DisposeFontContents,
+	AROS_LH1(VOID, DisposeFontContents,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct FontContentsHeader *, fontContentsHeader, A1),
@@ -22,7 +23,12 @@
 
 /*  FUNCTION
 
+    Free a FontContents array obtained from NewFontContents().
+
     INPUTS
+
+    fontContentsHeader  --  Pointer to a struct FontContentsHeader got from
+                            NewFontContents().
 
     RESULT
 
@@ -34,16 +40,20 @@
 
     SEE ALSO
 
+    NewFontContents()
+
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    diskfont_lib.fd and clib/diskfont_protos.h
+
+    5.8.1999  SDuvan  implemented
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,DiskfontBase)
+
+    FreeVec(fontContentsHeader);
 
     AROS_LIBFUNC_EXIT
 } /* DisposeFontContents */
