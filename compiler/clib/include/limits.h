@@ -67,6 +67,8 @@
  *  This is value is borrowed from Linux and may be totally wrong for AROS,
  *  at least it is defined to make some apps happy.
  */
-#define PATH_MAX	4095
+#ifndef PATH_MAX
+#   define PATH_MAX	4095
+#endif
 
 #endif
