@@ -102,6 +102,9 @@ struct ExecBase
     ULONG          ex_Reserved2[3];
     struct MinList ex_MemHandlers;
     APTR           ex_MemHandler;      /* PRIVATE */
+
+/* Additional fields for AROS */
+    struct Library * DebugAROSBase;
 };
 
 /* AttnFlags */
