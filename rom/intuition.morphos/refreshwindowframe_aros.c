@@ -281,7 +281,7 @@ old_clipregion = InstallClipRegion(rp->Layer, NULL);
 #ifdef __MORPHOS__
                     Move(rp, left + 3, dri->dri_Font->tf_Baseline + 1);
 #else
-Move(rp, left + 3, dri->dri_Font->tf_Baseline + 3);
+		    Move(rp, left + 3, dri->dri_Font->tf_Baseline + 2);
 #endif
                     Text(rp, window->Title, textlen);
                 }

@@ -1359,10 +1359,10 @@ AROS_LH1(struct Screen *, OpenScreen,
         screen->Screen.WBorRight  = 4;
         screen->Screen.WBorBottom = 2;
 #else
-        screen->Screen.WBorTop    = 6;  /* Amiga default is 2 */
+        screen->Screen.WBorTop    = 3;  /* Amiga default is 2 */
         screen->Screen.WBorLeft   = 4;
         screen->Screen.WBorRight  = 4;
-        screen->Screen.WBorBottom = 4;  /* Amiga default is 2 */
+        screen->Screen.WBorBottom = 2;  /* Amiga default is 2 */
 #endif
 
         screen->Screen.Title = ns.DefaultTitle;
@@ -1717,9 +1717,9 @@ AROS_LH1(struct Screen *, OpenScreen,
         screen->Screen.MenuVBorder = 2;
         screen->Screen.MenuHBorder = 4;
 #else
-screen->Screen.BarVBorder  = 4; /* on the Amiga it is (usually?) 1 */
+        screen->Screen.BarVBorder  = 1; /* on the Amiga it is (usually?) 1 */
         screen->Screen.BarHBorder  = 5;
-        screen->Screen.MenuVBorder = 4; /* on the Amiga it is (usually?) 2 */
+        screen->Screen.MenuVBorder = 2; /* on the Amiga it is (usually?) 2 */
         screen->Screen.MenuHBorder = 4;
 #endif
 #ifdef TITLEHACK
