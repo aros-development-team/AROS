@@ -80,29 +80,29 @@ struct ButtonInfo
 
 static struct ButtonInfo bi[NUM_BUTTONS] =
 {
-    {"7",		BTYPE_7		,'7',	0	},
-    {"8",		BTYPE_8		,'8',	0	},
-    {"9",		BTYPE_9		,'9', 0	},
-    {"CA",	BTYPE_CA		,'A',	127},
-    {"CE",	BTYPE_CE		,'E',	0	},
+    {"7"	,BTYPE_7	, '7'	, 0	},
+    {"8"	,BTYPE_8	, '8'	, 0	},
+    {"9"	,BTYPE_9	, '9'	, 0	},
+    {"CA"	,BTYPE_CA	, 'A'	, 127	},
+    {"CE"	,BTYPE_CE	, 'E'	, 0	},
     
-    {"4",		BTYPE_4		,'4',	0	},
-    {"5",		BTYPE_5		,'5',	0	},
-    {"6",		BTYPE_6		,'6',	0	},
-    {"×",		BTYPE_MUL	,'*',	'X'},
-    {":",		BTYPE_DIV	,'/',	':'},
+    {"4"	,BTYPE_4	, '4'	, 0	},
+    {"5"	,BTYPE_5	, '5'	, 0	},
+    {"6"	,BTYPE_6	, '6'	, 0	},
+    {"×"	,BTYPE_MUL	, '*'	, 'X'	},
+    {":"	,BTYPE_DIV	, '/'	, ':'	},
     
-    {"1",		BTYPE_1		,'1',	0	},
-    {"2",		BTYPE_2		,'2',	0	},
-    {"3",		BTYPE_3		,'3',	0	},
-    {"+",		BTYPE_ADD	,'+',	0	},
-    {"-",		BTYPE_SUB	,'-',	0	},
+    {"1"	,BTYPE_1	, '1'	, 0	},
+    {"2"	,BTYPE_2	, '2'	, 0	},
+    {"3"	,BTYPE_3	, '3'	, 0	},
+    {"+"	,BTYPE_ADD	, '+'	, 0	},
+    {"-"	,BTYPE_SUB	, '-'	, 0	},
     
-    {"0",		BTYPE_0		,'0',	0	},
-    {".",		BTYPE_COMMA	,'.',	','},
-    {"«",		BTYPE_BS		,8	 , 0	},
-    {"±",		BTYPE_SIGN	,'S',	0	},
-    {"=",		BTYPE_EQU	,'=',	13	}
+    {"0"	,BTYPE_0	, '0'	, 0	},
+    {"."	,BTYPE_COMMA	, '.'	, ','	},
+    {"«"	,BTYPE_BS	, 8  	, 0	},
+    {"±"	,BTYPE_SIGN	, 'S'	, 0	},
+    {"="	,BTYPE_EQU	, '='	, 13	}
 };
 
 
@@ -677,7 +677,11 @@ static void HandleButton(WORD type)
 	    vallen = 0;
 	    strcpy(ledstring,"0");
 	    
-	    if (tapefh) fprintf(tapefh,"\t%s\n",visledstring);
+	    if (tapefh)
+	    {
+	        fprintf(tapefh,"\t%s\n",visledstring);
+		fflush(tapefh);
+	    }
 	    break;
 	    
 	case STATE_OP:
@@ -690,10 +694,14 @@ static void HandleButton(WORD type)
 	    vallen = 0;				
 	    refresh_led = TRUE;
 	    
-	    if (tapefh) fprintf(tapefh,"%s\t%s\n",(operation == BTYPE_ADD) ? "+" :
+	    if (tapefh)
+	    {
+	    	fprintf(tapefh,"%s\t%s\n",(operation == BTYPE_ADD) ? "+" :
 				(operation == BTYPE_SUB) ? "-" :
 				(operation == BTYPE_DIV) ? ":" :
 				"×" ,visledstring);
+		fflush(tapefh);
+	    }
 	    break;
 	    
 	} /* switch(state) */
@@ -705,15 +713,23 @@ static void HandleButton(WORD type)
 	if (state == STATE_LEFTVAL)
 	{
 	    GetLeftValue();
-	    if (tapefh) fprintf(tapefh,"\t%s\n",visledstring);
+	    if (tapefh)
+	    {
+	    	fprintf(tapefh,"\t%s\n",visledstring);
+		fflush(tapefh);
+	    }
 	}	
 	else if (state == STATE_RIGHTVAL)
 	{
 	    GetRightValue();
-	    if (tapefh) fprintf(tapefh,"%s\t%s\n",(operation == BTYPE_ADD) ? "+" :
+	    if (tapefh)
+	    {
+	        fprintf(tapefh,"%s\t%s\n",(operation == BTYPE_ADD) ? "+" :
 				(operation == BTYPE_SUB) ? "-" :
 				(operation == BTYPE_DIV) ? ":" :
 				"×" ,visledstring);
+		fflush(tapefh);
+	    }
 	}
 	
 	matherr = DoOperation();
@@ -724,7 +740,11 @@ static void HandleButton(WORD type)
 	if (!matherr)
 	{
 	    RefreshLED();
-	    if (tapefh) fprintf(tapefh,"=\t%s\n",visledstring);
+	    if (tapefh)
+	    {
+	        fprintf(tapefh,"=\t%s\n",visledstring);
+		fflush(tapefh);
+	    }
 	} else {
 	    refresh_led = TRUE;
 	}
