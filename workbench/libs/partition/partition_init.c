@@ -6,7 +6,6 @@
    Lang: English
 */
 
-#include <aros/symbolsets.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -15,11 +14,26 @@
 #include "partition_support.h"
 #include LC_LIBDEFS_FILE
 
-AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
+#undef SysBase
+
+/* customize libheader.c */
+#define LC_RESIDENTPRI 104
+#define LC_LIBBASESIZE sizeof(LIBBASETYPE)
+#define LC_NO_OPENLIB
+#define LC_NO_CLOSELIB
+#define LC_RESIDENTFLAGS (RTF_AUTOINIT | RTF_COLDSTART)
+
+#include <libcore/libheader.c>
+
+#define PartitionBase ((LIBBASETYPEPTR) lh)
+
+ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
-    LIBBASE->tables = (struct PartitionTableInfo **)PartitionSupport;
-    return TRUE;
+    PartitionBase->tables = (struct PartitionTableInfo **)PartitionSupport;
+   return TRUE;
 }
 
-ADD2INITLIB(Init, 0);
+void SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
+{
+}
 

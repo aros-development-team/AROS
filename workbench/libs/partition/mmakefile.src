@@ -23,14 +23,10 @@ FUNCS := \
 	querypartitionattrs \
 	destroypartitiontable
 
-#MM workbench-libs-partition-includes : \
-#MM    kernel-exec-includes \
-#MM    includes-copy
-#MM- workbench-libs-partition : linklibs
+#MM- workbench-libs-partition : includes linklibs
 
-%build_module mmake=workbench-libs-partition \
-    modname=partition modtype=library \
-    files="partition_init $(FUNCS) $(FILES)"
+%build_module_macro mmake=workbench-libs-partition modname=partition \
+  modtype=library funcs=$(FUNCS) files=$(FILES) conffile=lib.conf
 
 %common
 
