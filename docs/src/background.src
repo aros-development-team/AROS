@@ -78,6 +78,8 @@ ask or say, contact the \link{coordinator}{mailto:digulla@aros.fh-konstanz.de}.
 \item Lennard voor den Dag - Amiga port
 \item Chris Lawrence - Linux/m68k
 \item Geert Uytterhoeven - Linux/m68k
+\item Nils Henrik Lorentzen - diskfont, icons
+\item Stefan Ruppert - Datatypes
 \item Kars de Jong - misc
 \item Stefan Reinauer
 \item Christopher D. Judd
@@ -91,10 +93,9 @@ ask or say, contact the \link{coordinator}{mailto:digulla@aros.fh-konstanz.de}.
 
 \section{The current status}
 
-\exec{gawk -f ../../scripts/stat.awk}
+\execverb{gawk -f stathtml.gawk}
 
-Exec, DOS and utility are almost completed, graphics, intuition, diskfont
-and icon are in work right now.
+\section{Snapshots}
 
 \largepic{A snapshot of the window of demowin}{pics/demowin.gif}
 
