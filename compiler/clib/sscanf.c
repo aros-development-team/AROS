@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function sscanf()
@@ -56,6 +56,20 @@
   int _sscanf(char * str, const char * format, ... ) 
 */
 {
+#if 1
+    int     retval;
+    va_list args;
+
+    va_start(args, format);
+
+    retval = vsscanf(str, format, args);
+
+    va_end(args);
+    
+    return retval;
+  
+#else
+
   #define TRUE 1
   #define FALSE 0
   
@@ -309,6 +323,9 @@
   } /* while() */
   va_end(arg);
   return retval;
+
+#endif
+
 }  
 
 /*
