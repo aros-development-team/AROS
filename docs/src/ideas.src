@@ -89,15 +89,42 @@ easier for developers to support it.
 
 \item
 \begin{new}{27.10.1997}
+By Aaron Digulla:
 When a new HIDD is installed, it should appear in the list of
 available HIDDs automatically (eg. by file notification on the directory).
 \end{new}
 
 \item
 \begin{new}{27.10.1997}
+By Aaron Digulla:
 We need an automatic converter for the incompatible features of AROS
 to convert the old AmigaOS code to AROS (which can then be compiled on
 AmigaOS by our compatibility lib).
+\end{new}
+
+\item
+\begin{new}{3.11.1997}
+By Bernhard Fastenrath:
+I wanted to have a select() for AmigaOS filedescriptors some time ago, that's
+why I wrote the AbortPkt() patch which sends an ACTION_ABORT.
+
+A select/asyncio handler (AsyncIO.hidd ?) which handles allocation of buffers
+and IO on multiple handlers could allocate buffers, do multiple reads on behalf
+of a process and signal the process when input is available. The same would
+happen for write operations (writing would block when the select handler has
+queued a maximum of bytes or buffers for a single process).
+
+A process that wants to exit could just close the select handler and leave it
+to the handler to deallocate the buffers when they are returned one day ...
+Under AROS the handler would be able to use AbortPkt() and under AmigaOS it
+would be able to use it if the patch is installed and the underlying handler
+accepts the packet type ACTION_ABORT.
+
+The idea reminds me a bit of Unix STREAMS or NT device drivers: both pass
+packets through several layers of device abstractions. UnixIO could be one
+layer below the select handler and would translate it to a real select()
+because the buffer mechanism of the select handler is part of the Unix kernel
+anyway; so a write would block when the kernel buffers are full, as usual.
 \end{new}
 \end{itemize}
 \end{new}
