@@ -187,9 +187,9 @@ AROS_UFH2(void, putchr,
     AROS_UFHA(UBYTE,    chr, D0),
     AROS_UFHA(STRPTR *, p,   A3))
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     *(*p)++=chr;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/
