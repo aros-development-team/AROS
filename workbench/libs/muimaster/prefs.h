@@ -140,11 +140,10 @@ struct ZunePrefsNew
     BOOL     cycle_menu_recessed_entries; /* yet unused, remove this comment when handled */
 
     /* Strings */
-/* old zune used struct MUI_PenSpec, new will probably differ -dlc */
-    struct MUI_PenSpec string_bg_active; /* yet unused, remove this comment when handled */
-    struct MUI_PenSpec string_text_active; /* yet unused, remove this comment when handled */
-    struct MUI_PenSpec string_bg_inactive; /* yet unused, remove this comment when handled */
-    struct MUI_PenSpec string_text_inactive; /* yet unused, remove this comment when handled */
+    STRPTR string_bg_active;
+    STRPTR string_text_active;
+    STRPTR string_bg_inactive;
+    STRPTR string_text_inactive;
 
     /* Lists */
     ListviewMulti   list_multi; /* yet unused, remove this comment when handled */
