@@ -402,7 +402,7 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return NULL;
     }
 
-/*      D(bug("String_New(%p)\n",obj)); */
+    D(bug("String_New(%p)\n",obj));
 
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
     data->ehn.ehn_Priority = 0;
@@ -922,10 +922,10 @@ static IPTR String_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     UWORD   textleft_save;
     WORD    markstart = 0, markstop = 0;
     
-    D(bug("\nString_Draw(%p) %ldx%ldx%ldx%ld reason=%ld msgflgs=%ld curs=%d "
-	  "displ=%ld len=%ld buf='%s'\n",obj,_mleft(obj),_mtop(obj),
-	  _mwidth(obj),_mheight(obj), data->msd_RedrawReason, msg->flags,
-	  data->BufferPos, data->DispPos, data->NumChars, data->Buffer));
+    /*  D(bug("\nString_Draw(%p) %ldx%ldx%ldx%ld reason=%ld msgflgs=%ld curs=%d " */
+/*  	  "displ=%ld len=%ld buf='%s'\n",obj,_mleft(obj),_mtop(obj), */
+/*  	  _mwidth(obj),_mheight(obj), data->msd_RedrawReason, msg->flags, */
+/*  	  data->BufferPos, data->DispPos, data->NumChars, data->Buffer)); */
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -1268,7 +1268,8 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 	}
     }
     
-/*      D(bug("got muikey %d, imsg %p\n", muikey, msg->imsg)); */
+    D(bug("String_HandleEvent: muikey %d, imsg %p is_active=%d\n", muikey,
+	  msg->imsg, data->is_active));
     if (muikey != MUIKEY_NONE && data->is_active)
     {
 	retval = MUI_EventHandlerRC_Eat;
@@ -1397,6 +1398,7 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 		data->is_active = FALSE;
 		set(obj, MUIA_Background,
 		    (IPTR)muiGlobalInfo(obj)->mgi_Prefs->string_bg_inactive);
+		DoMethod(obj, MUIM_GoInactive);
 		retval = 0;
 		break;
 
@@ -1412,11 +1414,15 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 	WORD x = msg->imsg->MouseX;
 	WORD y = msg->imsg->MouseY;
 
+	//bug("String_HandleEvent: parsing imsg %p, class=%ld\n", msg->imsg, msg->imsg->Class);
+
 	switch (msg->imsg->Class)
 	{
 	    case IDCMP_MOUSEBUTTONS: /* set cursor and activate it */
 		if (code == SELECTDOWN)
-		{		    
+		{
+		    //bug("String_HandleEvent: code == SELECTDOWN, x=%d y=%d\n", x, y);
+
 		    if (_isinobject(x, y))
 		    {
 			UWORD text_left, text_right;
@@ -1440,14 +1446,17 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 			
 			if (!data->is_active)
 			{
+			    //bug("String got button, lets activate\n");
 			    data->is_active = TRUE;
 			    data->msd_RedrawReason = WENT_ACTIVE;
 			    // redraw
 			    set(obj, MUIA_Background,
 				(IPTR)muiGlobalInfo(obj)->mgi_Prefs->string_bg_active);
 
-			    // useful only when obj is not already window active obj
+			    //DoMethod(obj, MUIM_GoActive);
 			    set(_win(obj), MUIA_Window_ActiveObject, obj);
+			    // let other objects a chance to get desactivated
+			    //retval = 0;
 			}
 			
 			if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
@@ -1521,6 +1530,9 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 			data->is_active = FALSE;
 			set(obj, MUIA_Background,
 			    (IPTR)muiGlobalInfo(obj)->mgi_Prefs->string_bg_inactive);
+			//DoMethod(obj, MUIM_GoInactive);
+			// let other objects a chance to get activated
+			//retval = 0;
 		    }
 		} /* if (code == SELECTDOWN) */
 		else if (code == SELECTUP)
@@ -1602,6 +1614,8 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 	    {
 		unsigned char code;
 
+		//bug("String_HandleEvent: idcmp_rawkey\n");
+
 		if (!data->is_active)
 		    break;
 
@@ -1643,7 +1657,7 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
     {
     	MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
-/*      D(bug("eh return %ld\n", retval)); */
+    //D(bug("String eh return %ld\n", retval));
     return retval;
 }
 
@@ -1696,7 +1710,7 @@ static IPTR String_GoActive(struct IClass * cl, Object * obj, Msg msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
 
-    D(bug("string %p going active\n", obj));
+    //D(bug("String_GoActive %p\n", obj));
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
@@ -1716,7 +1730,7 @@ static IPTR String_GoInactive(struct IClass * cl, Object * obj, Msg msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
 
-    D(bug("string %p going inactive\n", obj));
+    //D(bug("String_GoInactive %p\n", obj));
 
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
