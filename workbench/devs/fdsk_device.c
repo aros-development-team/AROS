@@ -355,6 +355,7 @@ AROS_LH1(void, beginio,
 	case TD_FORMAT:
 	case TD_CHANGENUM:
 	case TD_CHANGESTATE:
+	case TD_GETGEOMETRY:
 	    /* Forward to unit thread */
 	    PutMsg(&((struct unit *)iotd->iotd_Req.io_Unit)->port, 
 		   &iotd->iotd_Req.io_Message);
@@ -502,6 +503,24 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
 }
 
 /****************************************************************************************/
+void getgeometry(struct unit *unit, struct DriveGeometry *dg) {
+struct FileInfoBlock fib;
+
+    Examine(unit->file, &fib);
+    dg->dg_SectorSize = 512;
+    dg->dg_Heads = 16;
+    dg->dg_TrackSectors = 63;
+    dg->dg_TotalSectors = fib.fib_Size / dg->dg_SectorSize;
+    /* in case of links or block devices with emul_handler we get the wrong size */
+    if (dg->dg_TotalSectors == 0)
+	dg->dg_TotalSectors = dg->dg_Heads*dg->dg_TrackSectors*5004;
+    dg->dg_Cylinders = dg->dg_TotalSectors / (dg->dg_Heads * dg->dg_TrackSectors);
+    dg->dg_CylSectors = dg->dg_Heads * dg->dg_TrackSectors;
+    dg->dg_BufMemType = MEMF_PUBLIC;
+    dg->dg_DeviceType = DG_DIRECT_ACCESS;
+    dg->dg_Flags = 0;
+}
+/****************************************************************************************/
 
 AROS_UFH2(void, putchr, 
     AROS_UFHA(UBYTE, chr, D0), 
@@ -600,6 +619,10 @@ AROS_UFH3(LONG, unitentry,
 		case TD_CHANGESTATE:
 		    err = 0;
 		    iotd->iotd_Req.io_Actual = 0;
+		    break;
+		case TD_GETGEOMETRY:
+		    getgeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
+		    err = 0;
 		    break;
 		    
  	    } /* switch(iotd->iotd_Req.io_Command) */

@@ -169,6 +169,16 @@ struct IFS_EXAMINE_NEXT
 /* Works exactly like FSA_EXAMINE with the exeption that multiple files may be
    examined, ie the filehandle must be a directory. */
 #define FSA_EXAMINE_ALL 13
+struct IFS_EXAMINE_ALL
+{
+      /* ExAllData structure buffer to be filled by the filehandler. */
+    struct ExAllData * io_ead;
+	 struct ExAllControl *io_eac;
+    LONG               io_Size; /* Size of the buffer. */
+      /* With which kind of information shall the buffer be filled with? See
+         ED_* definitions in <dos/exall.h> for more information. */
+    LONG               io_Mode;
+};
 
 /* This has to be called, if FSA_EXAMINE_ALL is stopped before all examined
    files were returned. It takes no arguments except the filehandle in
@@ -224,6 +234,7 @@ struct IFS_RENAME
 #define FSA_READ_SOFTLINK 20
 struct IFS_READ_SOFTLINK
 {
+    STRPTR io_Filename; /* file name which returned ERROR_IS_SOFT_LINK */
       /* The buffer to fill with the pathname. If this buffer is too small, the
          filesystem handler is supposed to return ERROR_LINE_TOO_LONG. */
     STRPTR io_Buffer;
@@ -473,8 +484,8 @@ struct IOFileSys
         struct IFS_IS_INTERACTIVE  io_IS_INTERACTIVE; /* FSA_IS_INTERACTIVE */
         struct IFS_SAME_LOCK       io_SAME_LOCK;      /* FSA_SAME_LOCK */
         struct IFS_EXAMINE         io_EXAMINE;        /* FSA_EXAMINE */
-#define io_EXAMINE_ALL io_EXAMINE
-	struct IFS_EXAMINE_NEXT	   io_EXAMINE_NEXT;   /* FSA_EXAMINE_NEXT */
+        struct IFS_EXAMINE_ALL     io_EXAMINE_ALL;    /* FSA_EXAMINE_ALL */
+        struct IFS_EXAMINE_NEXT    io_EXAMINE_NEXT;   /* FSA_EXAMINE_NEXT */
         struct IFS_OPEN_FILE       io_OPEN_FILE;      /* FSA_OPEN_FILE */
         struct IFS_CREATE_DIR      io_CREATE_DIR;     /* FSA_CREATE_DIR */
         struct IFS_CREATE_HARDLINK io_CREATE_HARDLINK;/* FSA_CREATE_HARDLINK */

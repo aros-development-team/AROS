@@ -1611,6 +1611,7 @@ static LONG examine_next(struct rambase *rambase,
 
 static LONG examine_all(struct filehandle *dir, 
                         struct ExAllData *ead, 
+                        struct ExAllControl *eac, 
                         ULONG size, 
                         ULONG type)
 {
@@ -1621,6 +1622,7 @@ static LONG examine_all(struct filehandle *dir,
     LONG dummy; /* not anything is done with this value but passed to examine */
     end = (STRPTR)ead + size;
 
+    eac->eac_Entries = 0;
     if (dir->node->type != ST_USERDIR)
     {
 	return ERROR_OBJECT_WRONG_TYPE;
@@ -1658,7 +1660,7 @@ static LONG examine_all(struct filehandle *dir,
 
 	    return 0;
 	}
-
+	eac->eac_Entries++;
 	last = ead;
 	ead = ead->ed_Next;
 	ent = (struct fnode *)ent->node.mln_Succ;
@@ -1984,6 +1986,7 @@ void processFSM(struct rambase *rambase)
 	    */
 	    error = examine_all((struct filehandle *)iofs->IOFS.io_Unit,
 				iofs->io_Union.io_EXAMINE_ALL.io_ead,
+				iofs->io_Union.io_EXAMINE_ALL.io_eac,
 				iofs->io_Union.io_EXAMINE_ALL.io_Size,
 				iofs->io_Union.io_EXAMINE_ALL.io_Mode);
 	    break;
