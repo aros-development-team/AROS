@@ -403,7 +403,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
             process, argptr, argsize,
 	    defaults[1].ti_Data ?
 	    (APTR)defaults[1].ti_Data:
-	    (APTR)BADDR(defaults[0].ti_Data) + 1,
+	    (APTR)((BPTR *)BADDR(defaults[0].ti_Data) + 1),
 	    KillCurrentProcess, DOSBase
         )
     )
