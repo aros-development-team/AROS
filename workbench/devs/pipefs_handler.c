@@ -2,8 +2,8 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
-    Revision 1.13  2001/08/16 15:04:43  falemagn
-    Implemented nonblocking mode
+    Revision 1.14  2001/08/16 16:18:24  falemagn
+    Implemented FSA_FILE_MODE. At the moment only handles FMF_NONBLOCK, in future it'll have to handle also FMF_RAW and the whole handler will have to be modified to be able to dispatch more requestes simultaneously. Implemented also a way to request unnamed pipes. They're not really unnamed, since you can see them, but they do the trick pretty well. Just open PIPEFS://unnamedpipe// with the mode you want, then CD to it and open "" with the mode you want as many times you want. Every opening of PIPEFS://unnamedpipe// will result in a NEW file opened (this is the only difference between this kind of pipe and the other ones). To be able to implement the ipe() funxtion it's been enough to open  PIPEFS://unnamedpipe// for reading, cd'ing to it, and then opening "" for writing
 
     Revision 1.12  2001/07/16 19:22:41  falemagn
     The FSA_CREATE_DIRECTORY actoon didn't return a valid filehandle: FIXED. Implemented deleting.
@@ -580,7 +580,7 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 
     if (dn && !dn->parent && strcmp(filename, "//unnamedpipe//") == 0)
     {
-	return NewFileNode(pipefsbase, "//unnamedpipe//", FNF_DELETEONCLOSE, dn, &err);
+	return NewFileNode(pipefsbase, "//unnamedpipe//", FNF_DELETEONCLOSE, dn, err);
     }
 
     fn = FindFile(&dn, filename);
@@ -592,7 +592,7 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 	{
 	    kprintf("But the user wants it to be created.\n");
 
-	    return NewFileNode(pipefsbase, FilePart(filename), 0, dn, &err);
+	    return NewFileNode(pipefsbase, FilePart(filename), 0, dn, err);
 	}
     }
 
@@ -992,13 +992,24 @@ AROS_UFH3(LONG, pipefsproc,
 		    NEWLIST(&dn->files);
 		    DateStamp(&dn->datestamp);
 
-		    un->fn   = (struct dilenode *)dn;
+		    un->fn   = (struct filenode *)dn;
 		    un->mode = 0;
 		    msg->iofs->IOFS.io_Unit = (struct Unit *)un;
 
 		    SendBack(msg, 0);
 		    continue;
 		}
+		case FSA_FILE_MODE:
+		    kprintf("Command is FSA_FILE_MODE\n");
+		    kprintf("Current mode is 0x%08x\n", un->mode);
+
+		    un->mode &= ~msg->iofs->io_Union.io_FILE_MODE.io_Mask;
+		    un->mode |= msg->iofs->io_Union.io_FILE_MODE.io_FileMode;
+
+		    kprintf("New mode is 0x%08x\n", un->mode);
+
+		    SendBack(msg, 0);
+		    continue;
 		case FSA_DELETE_OBJECT:
 		{
 		    STRPTR filename    = SkipColon(msg->iofs->io_Union.io_DELETE_OBJECT.io_Filename);
