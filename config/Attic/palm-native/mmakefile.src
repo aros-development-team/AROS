@@ -24,9 +24,30 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 ##MM	    create-mf-inc-again kernel-link-native binary-palm-m68k \
 ##MM	    workbench-palm-m68k demos contrib-palm-m68k
 
-#MM- AROS-palm-1 : setup 
 
-#MM- AROS-palm : setup-palm includes includes-palm-m68k compiler kernel boot-palm
+#MM- AROS-palm-1 : setup
+
+
+#MM- AROS-palm : \
+#MM	setup-palm \
+#MM	includes \
+#MM	includes-palm-m68k \
+#MM	compiler-nofpu \
+#MM	kernel \
+#MM	boot-palm
+
+
+#Instead of the target 'compiler' I need to make the traget compiler-nofpu
+#MM- compiler-nofpu : setup includes \
+#MM	linklibs-amiga \
+#MM	linklibs-arosm-m68000 \
+#MM	linklibs-arosz \
+#MM	linklibs-arossupport \
+#MM	linklibs-autoinit \
+#MM	linklibs-arosc \
+#MM	linklibs-coolimages  \
+#MM	linklibs-gcc1-m68k
+
 
 #MM create-mf-inc-again
 create-mf-inc-again :
@@ -62,12 +83,14 @@ create-mf-inc-again :
 
 
 # Setup
-#MM- setup-palm : setup-exec-$(ARCH)-$(CPU)
+#MM- setup-palm : setup-exec-$(ARCH)-$(CPU) \
+#MM	setup-mlib-$(ARCH)-$(CPU) \
+#MM	setup-clib-$(ARCH)-$(CPU)
 
 
-#MM		setup-intuition-$(CPU) \
-#MM		setup-battclock-$(CPU) \
-#MM		setup-dos-$(CPU)
+# MM		setup-intuition-$(CPU) \
+# MM		setup-battclock-$(CPU) \
+# MM		setup-dos-$(CPU)
 
 # Setup includes
 #MM- includes-palm : includes-copy includes-$(CPU)
