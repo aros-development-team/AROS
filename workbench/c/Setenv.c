@@ -87,7 +87,9 @@
 
 static const char version[] = "$VER: Setenv 41.1 (13.08.1997)\n";
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs	* rda;
     IPTR		* args[TOTAL_ARGS] = { NULL, NULL };

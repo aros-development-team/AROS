@@ -367,6 +367,7 @@ static void NotifyLauncherTask(void)
 
 /*********************************************************************************************/
 
+int __nocommandline;
 int main(void)
 {
     Detach();

@@ -491,6 +491,8 @@ struct DosLibrary *DOSBase = 0;
 struct ExecBase *SysBase = 0;
 #endif
 
+int __nocommandline;
+
 ULONG main(void)
 {
     struct Process *task;

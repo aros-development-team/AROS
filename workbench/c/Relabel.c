@@ -60,7 +60,9 @@ static const char version[] = "$VER: Relabel 41.1 (02.06.2000)\n";
 
 enum { ARG_DRIVE = 0, ARG_NAME };
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     int  retval = RETURN_OK;
     IPTR args[] = { NULL, NULL };

@@ -99,7 +99,9 @@ static int fillbuffer(struct task **buffer, IPTR size)
     return 1;
 }
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     IPTR size;
     struct task *buffer,*tasks,*tasks2;

@@ -124,7 +124,9 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
 BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet, 
 		  BOOL add, BOOL sub);
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs     *rda;
     struct AnchorPath *apath;
@@ -137,44 +139,40 @@ int main(int argc, char *argv[])
 			    (IPTR)FALSE };
 
     int retval = RETURN_OK;
-    
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
 
-    if (UtilityBase != NULL)
+    apath = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN,
+                     MEMF_ANY | MEMF_CLEAR);
+
+    if (apath != NULL)
     {
-        apath = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN,
-                         MEMF_ANY | MEMF_CLEAR);
+        /* Make sure DOS knows the buffer size. */
+        apath->ap_Strlen = MAX_PATH_LEN;
 
-        if (apath != NULL)
-        {
-            /* Make sure DOS knows the buffer size. */
-            apath->ap_Strlen = MAX_PATH_LEN;
+        rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
-            rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+	if (rda != NULL)
+	{
+ 	    STRPTR  file = (STRPTR)args[ARG_FILE];
+	    STRPTR  flags = (STRPTR)args[ARG_FLAGS];
+	    BOOL    add = (BOOL)args[ARG_ADD];
+	    BOOL    sub = (BOOL)args[ARG_SUB];
+	    BOOL    all = (BOOL)args[ARG_ALL];
+	    BOOL    quiet = (BOOL)args[ARG_QUIET];
 
-            if (rda != NULL)
+	    LONG    flagValues = FIBF_READ | FIBF_WRITE | FIBF_DELETE |
+	                         FIBF_EXECUTE;
+
+	    if (flags != NULL)
 	    {
-		STRPTR  file = (STRPTR)args[ARG_FILE];
-		STRPTR  flags = (STRPTR)args[ARG_FLAGS];
-		BOOL    add = (BOOL)args[ARG_ADD];
-		BOOL    sub = (BOOL)args[ARG_SUB];
-		BOOL    all = (BOOL)args[ARG_ALL];
-		BOOL    quiet = (BOOL)args[ARG_QUIET];
-
-		LONG    flagValues = FIBF_READ | FIBF_WRITE | FIBF_DELETE |
-		                     FIBF_EXECUTE;
-
-		if (flags != NULL)
+	        while (*flags != 0)
 		{
-		    while (*flags != 0)
+		    switch (toupper(*flags))
 		    {
-			switch (toupper(*flags))
-			{
-			    /* Active low */
+ 		        /* Active low */
 			case 'R':
 			    flagValues &= ~FIBF_READ;
 			    break;
-			    
+
 			case 'W':
 			    flagValues &= ~FIBF_WRITE;
 			    break;
@@ -203,53 +201,45 @@ int main(int argc, char *argv[])
 			default:
 			    printf("Invalid flags - must be one of SPARWED\n");
 			    retval = RETURN_FAIL;
-			}
+		    }
 
-			flags++;
-		    } /* while (*flags != 0) */
-		}
+		    flags++;
+		} /* while (*flags != 0) */
+	    }
 
-		if (retval == RETURN_OK)
+	    if (retval == RETURN_OK)
+	    {
+		if (!all &&IsDosEntryA(file, LDF_VOLUMES | LDF_DEVICES))
 		{
-		    if (!all &&IsDosEntryA(file, LDF_VOLUMES | LDF_DEVICES))
-		    {
-			printf("Can't set protection for %s - ", file);
-			SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-			PrintFault(IoErr(), NULL);
-			
-			retval = RETURN_FAIL;
-		    }
-		    else
-		    {
-			retval = doProtect(apath, file, flagValues,
-					   flags != NULL, add, sub, all,
-					   quiet);
-		    }
-		}
+		    printf("Can't set protection for %s - ", file);
+		    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+		    PrintFault(IoErr(), NULL);
 
-		FreeArgs(rda);
-            }
-            else
-            {
-                PrintFault(IoErr(), "Protect");
-                retval = RETURN_FAIL;
-            }
-        }
+		    retval = RETURN_FAIL;
+		}
+		else
+		{
+		    retval = doProtect(apath, file, flagValues,
+			  	       flags != NULL, add, sub, all,
+		                       quiet);
+		}
+	    }
+
+	    FreeArgs(rda);
+	}
         else
         {
+            PrintFault(IoErr(), "Protect");
             retval = RETURN_FAIL;
         }
-	
-        FreeVec(apath);
-	
-        CloseLibrary((struct Library *)UtilityBase);
     }
     else
     {
-        VPrintf("Need \'utility.library\' version 39 or above\n", NULL);
         retval = RETURN_FAIL;
     }
-    
+
+    FreeVec(apath);
+
     return retval;
 }
 

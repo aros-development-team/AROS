@@ -61,10 +61,12 @@
 
 static const char version[] = "$VER: Unsetenv 41.0 (27.07.1997)\n";
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
-	struct RDArgs       * rda;
-	struct ExAllControl * eac;
+    struct RDArgs       * rda;
+    struct ExAllControl * eac;
     struct ExAllData    * ead;
     struct ExAllData    * eaData;
     IPTR                * args[TOTAL_ARGS] = { NULL };

@@ -96,8 +96,7 @@ enum
     ARG_COUNT
 };
 
-struct LocaleBase *LocaleBase;
-
+int LocaleBase_version = LOCALE_VERSION;
 
 // *****  Prototypes for internal functions  *******
 
@@ -122,11 +121,12 @@ const TEXT new_line[]       = "\n";
 const TEXT abandon_msg[]    = "** File abandoned\n";
 
 
-int main()
+int __nocommandline;
+
+int main(void)
 {
     IPTR              *args;
     struct RDArgs     *read_args;
-    struct LocaleBase *locale_base;
     struct AnchorPath *anchor;
     LONG               error;
     LONG               return_code = RETURN_WARN;
@@ -136,26 +136,20 @@ int main()
     UWORD              indent = 0, pat_buf_length, cut_off, pat_length;
     UBYTE              k, q;
     struct Locale     *locale;
-    
-    /* Open libraries */
-    
-    locale_base = (struct LocaleBase *)OpenLibrary(locale_name, 
-						   LOCALE_VERSION);
-    
+
     /* Allocate buffers */
-    
+
     spaces      = AllocMem(SPACES_SIZE, MEMF_CLEAR);
     anchor      = AllocMem(sizeof(struct AnchorPath), MEMF_CLEAR);
     args        = AllocMem(ARG_COUNT*sizeof(APTR), MEMF_CLEAR);
     path_buffer = AllocMem(PATH_BUF_SIZE,MEMF_ANY);
-    
-    if(args && anchor && locale_base && spaces && path_buffer)
+
+    if(args && anchor && spaces && path_buffer)
     {
-	LocaleBase = locale_base;
 	locale = OpenLocale(NULL);
-	
+
 	for(text = spaces + SPACES_SIZE - 1; text > spaces; *(--text) = ' ');
-	
+
 	/* Parse arguments */
 	
 	read_args = ReadArgs(template, args, NULL);
@@ -381,11 +375,6 @@ int main()
 	FreeMem(user_pattern, pat_length + 5);
     if(pattern)
 	FreeMem(pattern, pat_buf_length);
-    
-    /* Close libraries and exit */
-    
-    if(locale_base)
-	CloseLibrary((struct Library *)LocaleBase);
     
     /* Check and reset signals */
     

@@ -72,7 +72,9 @@ static int fillbuffer(struct lib **buffer, IPTR size)
     return 1;
 }
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     IPTR size;
     struct lib *buffer,*libs,*libs2;

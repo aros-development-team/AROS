@@ -105,7 +105,9 @@
 
 static const char version[] = "$VER: newshell 41.1 (21.04.2001)\n";
 
-int main (int argc, char ** argv)
+int __nocommandline;
+
+int main (void)
 {
     IPTR args[2] = { (IPTR)"CON:10/10/640/480/AROS-Shell/CLOSE",
 		     (IPTR)"S:Shell-Startup" };

@@ -111,7 +111,9 @@ static const char version[] = "$VER: Rename 41.2 (23.11.2000)\n";
 int doRename(STRPTR *from, STRPTR to, BOOL quiet);
 
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs     *rda;
 

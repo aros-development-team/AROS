@@ -63,7 +63,9 @@ static const char version[] = "$VER: MakeLink 41.1 (02.06.2000)\n";
 
 enum { ARG_FROM = 0, ARG_TO, ARG_HARD, ARG_FORCE };
 
-int main(int argc, char **argv)
+int __initcommandline;
+
+int main(void)
 {
     int  retval = RETURN_FAIL;
     IPTR args[] = { NULL, NULL, (IPTR)FALSE, (IPTR)FALSE };

@@ -47,7 +47,9 @@ static const char version[] = "$VER: Stack 41.1 (1.1.2000)";
 					  (among other things) how much stack
 				          space AROS functions need. */
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs *rda;
     IPTR           args[1] = { (IPTR)NULL };

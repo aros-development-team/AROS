@@ -14,7 +14,9 @@ static const char version[] = "$VER: path 41.1 (14.3.1997)\n";
 
 UBYTE Buffer[4096];
 
-int main (int argc, char ** argv)
+int __nocommandline;
+
+int main (void)
 {
     struct RDArgs *rda;
     IPTR args[6]={ 0, 0, 1, 0, 0, 0 };

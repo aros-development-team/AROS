@@ -41,7 +41,7 @@
     EXAMPLE
 
         shell FROM S:Startup-Sequence
-    
+
         Starts a shell and executes the startup script.
 
     BUGS

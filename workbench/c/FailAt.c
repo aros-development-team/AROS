@@ -72,7 +72,9 @@ static const char exthelp[] =
     "\tRCLIM/N   The new return code limit\n";
 
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs *rd, *rda;
     IPTR           args[TOTAL_ARGS] = { (IPTR)NULL };

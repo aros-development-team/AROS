@@ -57,7 +57,9 @@ static const char exthelp[] =
     "Fault : Display the meaning of a DOS error code\n"
     "\tNUMBERS/N/M      The error numbers you wish to query\n";
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs *rd, *rda;
     IPTR args[TOTAL_ARGS] = { NULL };

@@ -19,12 +19,11 @@
 #include <libraries/expansion.h>
 
 # define   DEBUG 1
-# include  <aros/debug.h> 
+# include  <aros/debug.h>
 
 static const char version[] = "$VER: mount 41.1 (19.2.1997)\n";
 
-static struct UtilityBase *UtilityBase;
-static struct Library     *ExpansionBase;
+extern struct Library     *ExpansionBase;
 
 LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 {
@@ -117,7 +116,7 @@ static void preparefile(STRPTR buf, LONG size)
 		
 		*buf++=' ';
 	    }
-	    
+
 	    continue;
 	}
 	
@@ -248,7 +247,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 	{
 	    s2++;
 	}
-	
+
 	if (s2 == buffer || s2[-1] != ':')
 	{
 	    return 1;
@@ -325,10 +324,10 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 	    }
 
 	    FreeArgs(rd);
-	    
+
 	    return error;
 	}
-	
+
 	while (rda.RDA_Source.CS_CurChr < rda.RDA_Source.CS_Length)
 	{
 	    if (!rda.RDA_Source.CS_Buffer[rda.RDA_Source.CS_CurChr++])
@@ -342,7 +341,12 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 }
 
 
-int main(int argc, char ** argv)
+int __nocommandline;
+
+int UtilityBase_version = 0;
+int ExpansionBase_version = 0;
+
+int main(void)
 {
     STRPTR  args[2] = { NULL, "Devs:Mountlist" };
     STRPTR  mem;
@@ -352,53 +356,35 @@ int main(int argc, char ** argv)
     struct RDArgs    *rda;
     struct Process   *me = (struct Process *)FindTask(NULL);
 
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 0);
+    rda = ReadArgs("DEVICE/M,FROM/K", (ULONG *)args, NULL);
 
-    if (UtilityBase != NULL)
+    if (rda != NULL)
     {
-	ExpansionBase = OpenLibrary("expansion.library", 41);
+	error = readfile(args[1], &mem, &size);
 
-	if (ExpansionBase != NULL)
+	if (!error)
 	{
-	    rda = ReadArgs("DEVICE/M,FROM/K", (ULONG *)args, NULL);
-	    
-	    if (rda != NULL)
-	    {
-		error = readfile(args[1], &mem, &size);
-		
-		if (!error)
-		{
-		    STRPTR *dev = (STRPTR *)args[0];
-		    preparefile(mem, size);
+	    STRPTR *dev = (STRPTR *)args[0];
+	    preparefile(mem, size);
 
-		    while (*dev)
-		    {
-			error = mount(*dev++, mem, size);
-			
-			if (error)
-			{
-			    break;
-			}
-		    }
-		    
-		    FreeVec(mem);
-		}
-		
-		FreeArgs(rda);
-	    } /* if (rda != NULL) */
-	    else
+	    while (*dev)
 	    {
-		error = IoErr();
+		error = mount(*dev++, mem, size);
+
+		if (error)
+		{
+		    break;
+		}
 	    }
 
-	    CloseLibrary(ExpansionBase);
-	} /* if (ExpansionBase != NULL) */
+	    FreeVec(mem);
+	}
 
-	CloseLibrary((struct Library *)UtilityBase);
-    }
+	FreeArgs(rda);
+    } /* if (rda != NULL) */
     else
     {
-	error = ERROR_OBJECT_NOT_FOUND;
+	error = IoErr();
     }
 
     if (error)

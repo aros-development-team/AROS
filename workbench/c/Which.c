@@ -112,7 +112,9 @@ BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib);
 STRPTR GetFullPath(BPTR lock);
 
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     /* Array filled by ReadArgs() call */
     IPTR           args[ARG_COUNT] = {0, 0, 0, 0};

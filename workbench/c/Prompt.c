@@ -65,7 +65,9 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs *rda;
     ULONG          retval = RETURN_OK;

@@ -50,7 +50,9 @@
 #include <dos/rdargs.h>
 #include <dos_commanderrors.h>
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs *rda;
     struct CommandLineInterface *cli = Cli();

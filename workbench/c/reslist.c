@@ -68,7 +68,9 @@ static int fillbuffer(struct res **buffer, IPTR size)
     return 1;
 }
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     IPTR size;
     struct res *buffer,*ress,*ress2;

@@ -5,8 +5,6 @@
 #include <proto/dos.h>
 #include <proto/locale.h>
 
-struct LocaleBase *LocaleBase = NULL;
-
 int main(int argc, char **av)
 {
     struct Locale *new;
@@ -17,24 +15,21 @@ int main(int argc, char **av)
 	return 20;
     }
 
-    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 38);
-    if(LocaleBase)
+    new = OpenLocale(av[1]);
+    FPuts(Output(), "Locale opened\n");
+    if(new)
     {
-	new = OpenLocale(av[1]);
-	FPuts(Output(), "Locale opened\n");
-	if(new)
-	{
-	    struct Locale *old = NULL;
-	    old = LocalePrefsUpdate(new);
-	    FPuts(Output(), "Locale set\n");
-	    CloseLocale(old);
-	    CloseLocale(new);
-	}
-	else
-	{
-	    PrintFault(IoErr(), "SetLocale");
-	}
-	CloseLibrary((struct Library *)LocaleBase);
+	struct Locale *old = NULL;
+	old = LocalePrefsUpdate(new);
+	FPuts(Output(), "Locale set\n");
+	CloseLocale(old);
+	CloseLocale(new);
     }
+    else
+    {
+	PrintFault(IoErr(), "SetLocale");
+	return 20;
+    }
+
     return 0;
 }

@@ -284,7 +284,9 @@ LONG dumpfile(struct file *in, struct file *out, BOOL showline)
 	}
 }
 
-int main (int argc, char ** argv)
+int __nocommandline;
+
+int main (void)
 {
     IPTR args[5]={ 0, 0, 0, 0, 0 };
     struct RDArgs *rda;

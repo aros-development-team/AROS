@@ -61,7 +61,9 @@
 #include <dos/dosextens.h>
 #include <dos_commanderrors.h>
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     struct CommandLineInterface *cli = Cli();
 
