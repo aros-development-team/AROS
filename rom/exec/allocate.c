@@ -1,10 +1,10 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Allocate memory.
-    Lang: english
+    Allocate memory from a specific MemHeader.
 */
+
 #include "exec_intern.h"
 #include "memory.h"
 #include <aros/machine.h>
@@ -76,6 +76,7 @@ AROS_LH2(APTR, Allocate,
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    
     struct MemChunk *p1, *p2;
 
     ASSERT_VALID_PTR(freeList);
@@ -112,7 +113,7 @@ AROS_LH2(APTR, Allocate,
 	/* Consistency check: Check alignment restrictions */
 	if( ((IPTR)p2|(ULONG)p2->mc_Bytes) & (MEMCHUNK_TOTAL-1) )
 	{
-	    Alert(AN_MemCorrupt);
+	    if (SysBase != NULL) Alert(AN_MemCorrupt);
 	    return NULL;
 	}
 #endif
@@ -156,10 +157,10 @@ AROS_LH2(APTR, Allocate,
 	*/
 	if((UBYTE *)p2<=(UBYTE *)p1+p1->mc_Bytes)
 	{
-	    Alert(AN_MemCorrupt);
+	    if (SysBase != NULL) Alert(AN_MemCorrupt);
 	    return NULL;
 	}
 #endif
     }
     AROS_LIBFUNC_EXIT
-} /* Allocate */
+} /* Allocate() */
