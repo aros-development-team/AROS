@@ -1598,7 +1598,7 @@ endef
 .PHONY : %(mmake)
 
 #MM
-%(mmake): $(GENDIR)/$(CURDIR)
+%(mmake): | $(GENDIR)/$(CURDIR)
 	@m="$(GENDIR)/$(CURDIR)/%(mmake)-auxiliary.mak";        \
 	$(ECHO) "all: $(addprefix %(dst)/,$(%(mmake)_FILES))" > $$m 
 	@m="$(GENDIR)/$(CURDIR)/%(mmake)-auxiliary.mak";    \
