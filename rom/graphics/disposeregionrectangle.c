@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: (AROS only) Graphics function DisposeRegionRectangle()
@@ -53,8 +53,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct RegionRectangle *next;
-    
     ASSERT_VALID_PTR(regionrectangle);
 
 #if REGIONS_USE_MEMPOOL
