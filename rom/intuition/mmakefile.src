@@ -144,6 +144,9 @@ FUNCS := \
 	windowtofront \
 	zipwindow
 
+#MM kernel-intuition : kernel-intuition-$(ARCH)-$(CPU)
+#MM kernel-intuition-linklib : kernel-intuition-$(ARCH)-$(CPU)
+
 USER_INCLUDES := -I$(TOP)/rom/dos
 
 %build_module_macro mmake=kernel-intuition \
