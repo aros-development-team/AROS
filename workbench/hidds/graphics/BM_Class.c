@@ -2346,7 +2346,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 #define SysBase     	    (csd->sysbase)
 
 #define NUM_ROOT_METHODS    4
-#define NUM_BITMAP_METHODS  27
+#define NUM_BITMAP_METHODS  31
 
 /****************************************************************************************/
 
@@ -2383,6 +2383,10 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColorExpansion  },
         {(IPTR (*)())bitmap_bytesperline	, moHidd_BitMap_BytesPerLine	    },
 	{(IPTR (*)())bitmap_convertpixels	, moHidd_BitMap_ConvertPixels	    },
+	{(IPTR (*)())bitmap_fillmemrect8    	, moHidd_BitMap_FillMemRect8	    },
+	{(IPTR (*)())bitmap_fillmemrect16    	, moHidd_BitMap_FillMemRect16	    },
+	{(IPTR (*)())bitmap_fillmemrect32    	, moHidd_BitMap_FillMemRect32	    },
+	{(IPTR (*)())bitmap_invertmemrect    	, moHidd_BitMap_InvertMemRect	    },
 	{(IPTR (*)())bitmap_setcolormap		, moHidd_BitMap_SetColorMap	    },
 	{(IPTR (*)())bitmap_mapcolor		, moHidd_BitMap_MapColor	    },
 	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	    },

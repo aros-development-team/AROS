@@ -449,7 +449,11 @@ enum {
     moHidd_BitMap_GetImageLUT,
     moHidd_BitMap_BytesPerLine,
     moHidd_BitMap_ConvertPixels,
- 
+    moHidd_BitMap_FillMemRect8,
+    moHidd_BitMap_FillMemRect16,
+    moHidd_BitMap_FillMemRect32,
+    moHidd_BitMap_InvertMemRect,
+    
     /* This method is used only by subclasses, I repeat:
     ONLY BY SUBCLASSES, to register available modes in the baseclass
     */
@@ -719,6 +723,52 @@ struct pHidd_BitMap_ConvertPixels
     
 };
 
+struct pHidd_BitMap_FillMemRect8
+{
+    OOP_MethodID mID;
+    APTR    	 dstBuf;
+    WORD    	 minX;
+    WORD    	 minY;
+    WORD    	 maxX;
+    WORD    	 maxY;
+    ULONG   	 dstMod;
+    UWORD   	 fill; 
+};
+
+struct pHidd_BitMap_FillMemRect16
+{
+    OOP_MethodID mID;
+    APTR   	 dstBuf;
+    WORD    	 minX;
+    WORD    	 minY;
+    WORD    	 maxX;
+    WORD    	 maxY;
+    ULONG   	 dstMod;
+    UWORD   	 fill; 
+};
+
+struct pHidd_BitMap_FillMemRect32
+{
+    OOP_MethodID mID;
+    APTR   	 dstBuf;
+    WORD    	 minX;
+    WORD    	 minY;
+    WORD    	 maxX;
+    WORD    	 maxY;
+    ULONG   	 dstMod;
+    ULONG   	 fill; 
+};
+
+struct pHidd_BitMap_InvertMemRect
+{
+    OOP_MethodID mID;
+    APTR    	 dstBuf;
+    WORD    	 minX;
+    WORD    	 minY;
+    WORD    	 maxX;
+    WORD    	 maxY;
+    ULONG   	 dstMod;
+};
 
 struct pHidd_BitMap_SetColorMap {
     OOP_MethodID mID;
@@ -893,6 +943,46 @@ VOID     HIDD_BM_ConvertPixels  (OOP_Object *obj
 	, HIDDT_PixelLUT *pixlut
 );
 
+VOID	HIDD_BM_FillMemRect8 (OOP_Object *obj
+    	, APTR dstBuf
+	, WORD minX
+	, WORD minY
+	, WORD maxX
+	, WORD maxY
+	, ULONG dstMod
+	, UBYTE fill
+);
+
+VOID	HIDD_BM_FillMemRect16 (OOP_Object *obj
+    	, APTR dstBuf
+	, WORD minX
+	, WORD minY
+	, WORD maxX
+	, WORD maxY
+	, ULONG dstMod
+	, UWORD fill
+);
+
+VOID	HIDD_BM_FillMemRect32 (OOP_Object *obj
+    	, APTR dstBuf
+	, WORD minX
+	, WORD minY
+	, WORD maxX
+	, WORD maxY
+	, ULONG dstMod
+	, ULONG fill
+);
+
+VOID	HIDD_BM_InvertMemRect(OOP_Object *obj
+    	, APTR dstBuf
+	, WORD minX
+	, WORD minY
+	, WORD maxX
+	, WORD maxY
+	, ULONG dstMod
+);
+
+	
 OOP_Object * HIDD_BM_SetColorMap(OOP_Object *o, OOP_Object *colorMap);
 
 BOOL HIDD_BM_ObtainDirectAccess(OOP_Object *o

@@ -772,6 +772,112 @@ VOID     HIDD_BM_ConvertPixels  (OOP_Object *obj
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
+VOID	HIDD_BM_FillMemRect8 (OOP_Object *obj
+    	, APTR dstBuf
+	, WORD minX
+	, WORD minY
+	, WORD maxX
+	, WORD maxY
+	, ULONG dstMod
+	, UBYTE fill
+)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_FillMemRect8 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect8);
+        
+    p.mID = mid;
+    p.dstBuf = dstBuf;
+    p.minX = minX;
+    p.minY = minY;
+    p.maxX = maxX;
+    p.maxY = maxY;
+    p.dstMod = dstMod;
+    p.fill = fill;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+VOID	HIDD_BM_FillMemRect16(OOP_Object *obj
+    	, APTR dstBuf
+	, WORD minX
+	, WORD minY
+	, WORD maxX
+	, WORD maxY
+	, ULONG dstMod
+	, UWORD fill
+)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_FillMemRect16 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect16);
+        
+    p.mID = mid;
+    p.dstBuf = dstBuf;
+    p.minX = minX;
+    p.minY = minY;
+    p.maxX = maxX;
+    p.maxY = maxY;
+    p.dstMod = dstMod;
+    p.fill = fill;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+VOID	HIDD_BM_FillMemRect32 (OOP_Object *obj
+    	, APTR dstBuf
+	, WORD minX
+	, WORD minY
+	, WORD maxX
+	, WORD maxY
+	, ULONG dstMod
+	, ULONG fill
+)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_FillMemRect32 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_FillMemRect32);
+        
+    p.mID = mid;
+    p.dstBuf = dstBuf;
+    p.minX = minX;
+    p.minY = minY;
+    p.maxX = maxX;
+    p.maxY = maxY;
+    p.dstMod = dstMod;
+    p.fill = fill;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+
+VOID	HIDD_BM_InvertMemRect(OOP_Object *obj
+    	, APTR dstBuf
+	, WORD minX
+	, WORD minY
+	, WORD maxX
+	, WORD maxY
+	, ULONG dstMod
+)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_InvertMemRect p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_InvertMemRect);
+        
+    p.mID = mid;
+    p.dstBuf = dstBuf;
+    p.minX = minX;
+    p.minY = minY;
+    p.maxX = maxX;
+    p.maxY = maxY;
+    p.dstMod = dstMod;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
 
 OOP_Object * HIDD_BM_SetColorMap(OOP_Object *obj, OOP_Object *colorMap)
 {
