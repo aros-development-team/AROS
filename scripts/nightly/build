@@ -6,16 +6,17 @@ export SP=$(dirname $0)
 export CFG_NAME=$1
 source $SP/setup initial
 
-printi "Starting nightly build on "$CFG_NAME"..."
-
-setl   update.log
-source $SP/update
+printi "Starting nightly build on $CFG_NAME..."
+# Update sources.
+zsh $SP/update
 if [ $? != 0 ]; then
-    printe "Updating sources FAILED! Aborting script."
+    printe "Updating sources FAILED! ABORTING SCRIPT!"
+    echo >/tmp/_aros_mail "ARGH!"
+    mutt -s "[BUILD] Nightly builds on $CFG_NAME FAILED COMPLETELY" -c $CFG_MAIL_CC -a "$LOG_BASE/update.log" $CFG_MAIL_TO </tmp/_aros_mail
     exit 5
 fi
-resetl
 
+# Build packages.
 failed=()
 succeeded=()
 for package in $CFG_PACKAGES; do
@@ -29,29 +30,29 @@ for package in $CFG_PACKAGES; do
     fi
 done
 
-# Cleanup 
+# Cleanup.
 setl cleanup.log
 source $SP/cleanup
 resetl
 
 STOP_TIME=$(date -u +"%H:%M")
 
-# Generate report
+# Generate report.
 MAIL_FILE=/tmp/_aros_build_report
 
-SUBJECT_PREFIX='[BUILD]'
-SUBJECT_BASE='Nightly builds on '$CFG_NAME
+SUBJECT_PREFIX="[BUILD]"
+SUBJECT_BASE="Nightly builds on $CFG_NAME"
 
 if   [ -z $failed ]; then
-    RESULT='completed successfully'
+    RESULT="completed successfully"
 elif [ -z $succeeded ]; then
-    RESULT='FAILED COMPLETELY'
+    RESULT="FAILED COMPLETELY"
 else
-    RESULT='FAILED PARTLY'
+    RESULT="FAILED PARTLY"
 fi
 
-SUBJECT=$SUBJECT_PREFIX $SUBJECT_BASE $RESULT
-HEADER=$SUBJECT_BASE $RESULT
+SUBJECT="$SUBJECT_PREFIX $SUBJECT_BASE $RESULT"
+HEADER="$SUBJECT_BASE $RESULT."
 
 function write()
 {
@@ -59,34 +60,36 @@ function write()
 }
 
 write $HEADER
-write 'Build started at '$START_TIME', finished at '$STOP_TIME'.'
-write ''
-ATTACH=''
+write "Build started at $START_TIME, finished at $STOP_TIME."
+ATTACH=""
 if [ ! -z $failed ]; then
-    write 'The following packages FAILED to build completely:'
+    write ""
+    write "The following packages FAILED to build completely:"
     for package in $failed; do
-        write '    '$package
+        write $package
 	tail -100 $LOG_BASE/$package.log >/tmp/_aros_build_log_$package
 	ATTACH=$ATTACH '-a /tmp/_aros_build_log_'$package
     done
-    write ''
-    write 'Please see the attached shortened logs or the full logs at'
-    write 'http://aros.sf.net/download/nightly/logs/ for details.'
+    write ""
+    write "Please see the attached shortened logs or the full logs at"
+    write "http://aros.sf.net/download/nightly/logs/ for details."
 fi
 if [ ! -z $succeeded ]; then
-    write ''
-    write 'The following packages were built successfully:'
+    write ""
+    write "The following packages were built successfully:"
     for package in $succeeded; do
-        write '    '$package
+        write "$package"
     done
 fi
-write ''
-write 'The following archives were created:'
+write ""
+write "The following archives were created:"
 ls -1 -I logs $ARCHIVE_BASE >>$MAIL_FILE
 
-mutt -s $SUBJECT -c $CFG_MAIL_CC $ATTACH $CFG_MAIL_TO <$MAIL_FILE
+mutt -s "$SUBJECT" -c $CFG_MAIL_CC $ATTACH $CFG_MAIL_TO <$MAIL_FILE
 
-rm -rf /tmp/_aros_build_log_*
+if [ ! -z $failed ]; then
+    rm -rf /tmp/_aros_build_log_*
+fi
 rm -f $MAIL_FILE
 
 printi "Compressing log files..."
