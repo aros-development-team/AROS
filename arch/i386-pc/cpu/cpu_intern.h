@@ -39,7 +39,7 @@
 #include <aros/asmcall.h>
 #include <aros/config.h>
 #include <aros/debug.h>
-#define  DEBUG_NAME_STR                     "[" NAME_STRING "]"
+#define  DEBUG_NAME_STR                     "[" MOD_NAME_STRING "]"
 #include <aros/multiboot.h>
 
 #include <hardware/custom.h>
