@@ -66,7 +66,7 @@ struct MinList
 #   define GetHead(l)       (void *)(((struct List *)l)->lh_Head->ln_Succ \
 				? ((struct List *)l)->lh_Head \
 				: (struct Node *)0)
-#   define GetTail(l)       (void *)(((struct List *)l)->lh_TailPred->ln_Succ \
+#   define GetTail(l)       (void *)(((struct List *)l)->lh_TailPred->ln_Pred \
 				? ((struct List *)l)->lh_TailPred \
 				: (struct Node *)0)
 #   define GetSucc(n)       (void *)(((struct Node *)n)->ln_Succ->ln_Succ \
