@@ -35,10 +35,17 @@
 #include <clib/macros.h>
 
 #include <clib/alib_protos.h>
+#ifdef _SASC
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#elif __GNUC__
+#include <clib/exec_protos.h>
+#include <clib/intuition_protos.h>
+#include <clib/graphics_protos.h>
+#include <clib/utility_protos.h>
+#endif
 
 #include "intuition_intern.h"
 
@@ -177,7 +184,7 @@ __RA3(static IPTR, dispatch_imageclass,
 
 	/*
 	    We are paranoid, and will check validity of objects.
-	    I beleive the AmigaOS, atleast at some level, allows NULL.
+	    I believe the AmigaOS, at least at some level, allows NULL.
 	*/
 
 	if (o)
