@@ -31,28 +31,36 @@ if ($res < 0)
     exit (10);
 }
 
-$query = msqlStoreResult ();
-
-printf ("This is the result:<P>\n");
-
-$row = msqlFetchRow ($query);
-
-printf ("<TABLE>\n");
-
-while ( # $row != 0 )
+if ($res == 0)
 {
-    $t = 0;
-    printf ("<TR>");
-    while ($t < #$row)
-    {
-	printf ("<TD>%s</TD>", $row[$t]);
-	$t = $t + 1;
-    }
-    printf ("</TR>\n");
+    printf ("No results.\n");
+}
+else
+{
+    $query = msqlStoreResult ();
+
     $row = msqlFetchRow ($query);
+
+    printf ("This is the result:<P>\n");
+
+    printf ("<TABLE>\n");
+
+    while ( # $row != 0 )
+    {
+	$t = 0;
+	printf ("<TR>");
+	while ($t < #$row)
+	{
+	    printf ("<TD>%s</TD>", $row[$t]);
+	    $t = $t + 1;
+	}
+	printf ("</TR>\n");
+	$row = msqlFetchRow ($query);
+    }
+
+    printf ("</TABLE>\n");
+
+    msqlFreeResult ($query);
 }
 
-printf ("</TABLE>\n");
-
-msqlFreeResult ($query);
 msqlClose ($sock);
