@@ -89,24 +89,24 @@ AROS_LH1(BOOL, FreeClass,
     
     SANITY_CHECKR(classPtr,FALSE)
     
-    ObtainSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->ClassListLock);
 
     /*
         Make sure no one creates another object from this class. For private
         classes, this call does nothing.
     */
-    RemoveClass (classPtr);
+    RemoveClass(classPtr);
 
     if (!classPtr->cl_SubclassCount && !classPtr->cl_ObjectCount)
     {
         AROS_ATOMIC_DEC(classPtr->cl_Super->cl_SubclassCount);
         
-        FreeMem (classPtr, sizeof (Class));
+        FreeMem(classPtr, sizeof (Class));
 
         retval = TRUE;
     }
 
-    ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ClassListLock);
     
     return retval;
 
