@@ -33,7 +33,7 @@
 #include <aros/debug.h>
 
 #define SQR(x) 			((x) * (x))
-#define CW_PI 			3.1415926535
+#define CW_PI 			3.14159265358979
 
 #define USE_WRITEPIXELARRAY 	1
 
@@ -43,6 +43,29 @@ BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat
 {
     DOUBLE d, r, rx, ry, l, h, s;
 
+#if 1
+    /* Should also work with not perfect (cy == cy) circle */
+    
+    rx = (DOUBLE) cx - x;
+    ry = ((DOUBLE) y - cy) * cx / cy;
+
+    /* d = (SQR(cx) * SQR(rx) + SQR(cx) * SQR(ry) - SQR(cx) * SQR(cx)); */
+
+    r = sqrt (SQR(rx) + SQR(ry));
+    if (r > cx) d = 1.0; else d = 0.0;
+    
+    if (r != 0.0)
+        h = atan2 (rx / r, ry / r);
+    else
+        h = 0.0;
+
+    l = sqrt (SQR((cx * cos (h + 0.5 * CW_PI))) + SQR((cx * sin (h + 0.5 * CW_PI))));
+    /*             ^^                                  ^^                          */
+    /* no bug!                                                                     */
+    
+#else
+    /* Does not work well if cx != cy (elliptical shape) */
+    
     rx = (DOUBLE) cx - x;
     ry = (DOUBLE) y - cy;
 
@@ -56,9 +79,10 @@ BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat
         h = 0.0;
 
     l = sqrt (SQR((cx * cos (h + 0.5 * CW_PI))) + SQR((cy * sin (h + 0.5 * CW_PI))));
+#endif
+
     s = r / l;
-    h = 360.0 * h / (2.0 * CW_PI) + 180;
-    h = h / 360.0;
+    h = (h + CW_PI) / (2.0 * CW_PI);
     
     if (s == 0.0)
         s = 0.00001;
@@ -268,16 +292,14 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
 	    DrawEllipse(&temprp, cx, cy, rx - 1, ry - 1);
 	    
 	    DeinitRastPort(&temprp);
-	    
-	    
-	    data->wheeldrawn = TRUE;
-	    
+	    	    
 	} /* if (data->bm) */
 		
     } /* if (!data->bm || (box->Width != data->bmwidth) || (box->Height != data->bmheight)) */
     
     if (data->bm)
     {
+        data->wheeldrawn = TRUE;
         BltBitMapRastPort(data->bm, 0, 0, rp, box->Left, box->Top, box->Width, box->Height, 0xC0);
     }
     

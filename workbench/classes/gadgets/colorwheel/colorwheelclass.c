@@ -458,7 +458,8 @@ STATIC IPTR colorwheel_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	    switch(ie->ie_Code)
 	    {
 	        case SELECTUP:
-		    *msg->gpi_Termination = EG(o)->GadgetID;
+		    notify_all(cl, o, msg->gpi_GInfo, FALSE, TRUE);
+		    *msg->gpi_Termination = EG(o)->GadgetID; /* ?? */
 		    retval = GMR_NOREUSE | GMR_VERIFY;		    
 		    break;
 		
