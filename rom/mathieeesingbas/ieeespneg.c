@@ -3,7 +3,7 @@
     $Id$
 
     Desc:
-    Lang:
+    Lang: english
 */
 
 #include <libraries/mathieeesp.h>
@@ -17,10 +17,10 @@
 
     NAME */
 
-        AROS_LH1(LONG, IEEESPNeg,
+        AROS_LH1(float, IEEESPNeg,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
+        AROS_LHA(float, y, D0),
 
 /*  LOCATION */
         struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 10, Mathieeesingbas)

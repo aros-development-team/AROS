@@ -17,10 +17,10 @@
 
     NAME */
 
-        AROS_LH1(LONG, IEEESPFloor,
+        AROS_LH1(float, IEEESPFloor,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
+        AROS_LHA(float, y, D0),
 
 /*  LOCATION */
         struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 15, Mathieeesingbas)

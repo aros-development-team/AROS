@@ -2,6 +2,9 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1998/02/02 21:07:21  bergers
+    Changed the LONGs to float. The define in mathieeesingbas_intern.h does the trick.
+
     Revision 1.2  1997/09/28 11:31:46  bergers
     updated version - again
 
@@ -14,6 +17,11 @@
 */
 #ifndef __MATHIEEESP_INTERN_H__
 #define __MATHIEEESP_INTERN_H__
+
+/* the following line is necessary so that the function headers are
+   created correctly and the functions can be compiled properly */
+
+#define float LONG
 
 /* This is a short file that contains a few things every mathieeespbas
    function needs

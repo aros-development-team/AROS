@@ -17,17 +17,17 @@
 
     NAME */
 
-        AROS_LH2(LONG, IEEESPAdd,
+        AROS_LH2(float, IEEESPAdd,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
-        AROS_LHA(LONG, z, D1),
+        AROS_LHA(float, y, D0),
+        AROS_LHA(float, z, D1),
 
 /*  LOCATION */
         struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 11, Mathieeesingbas)
 
 /*  FUNCTION
-        Calculate the sum of two ffp numbers
+        Calculate the sum of two IEEE single precision numbers
 
     INPUTS
         y  - IEEE single precision floating point
@@ -39,7 +39,7 @@
         Flags:
           zero     : result is zero
           negative : result is negative
-          overflow : result is too large or too small for ffp format
+          overflow : result is too large or too small for IEEESP format
 
     NOTES
 

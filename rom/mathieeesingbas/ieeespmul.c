@@ -20,17 +20,17 @@
 
     NAME */
 
-        AROS_LH2(LONG, IEEESPMul,
+        AROS_LH2(float, IEEESPMul,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
-        AROS_LHA(LONG, z, D1),
+        AROS_LHA(float, y, D0),
+        AROS_LHA(float, z, D1),
 
 /*  LOCATION */
         struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 13, Mathieeesingbas)
 
 /*  FUNCTION
-        Multiply two ffp numbers
+        Multiply two IEEE single precision numbers
         res = y * z;
 
     INPUTS
@@ -52,10 +52,7 @@
 
     SEE ALSO
 
-
     INTERNALS
-      ALGORITHM
-          Pen and paper algorithm of multiplication
 
     HISTORY
 

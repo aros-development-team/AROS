@@ -20,7 +20,7 @@
         AROS_LH1(LONG, IEEESPTst,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
+        AROS_LHA(float, y, D0),
 
 /*  LOCATION */
         struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 8, Mathieeesingbas)

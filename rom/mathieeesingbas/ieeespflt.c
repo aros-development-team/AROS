@@ -17,7 +17,7 @@
 
     NAME */
 
-        AROS_LH1(LONG, IEEESPFlt,
+        AROS_LH1(float, IEEESPFlt,
 
 /*  SYNOPSIS */
         AROS_LHA(LONG, y, D0),
@@ -37,7 +37,7 @@
         Flags:
           zero     : result is zero
           negative : result is negative
-          overflow : ffp is not exactly the integer
+          overflow : IEEE single precision number is not exactly the integer
 
     NOTES
 

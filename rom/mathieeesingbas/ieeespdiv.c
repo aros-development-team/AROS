@@ -17,11 +17,11 @@
 
     NAME */
 
-        AROS_LH2(LONG, IEEESPDiv,
+        AROS_LH2(float, IEEESPDiv,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, y, D0),
-        AROS_LHA(LONG, z, D1),
+        AROS_LHA(float, y, D0),
+        AROS_LHA(float, z, D1),
 
 /*  LOCATION */
         struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 14, Mathieeesingbas)
