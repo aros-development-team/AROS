@@ -1,9 +1,0 @@
-<section title="How compatible is AROS ?">
-
-<p>Most compatible. We expect that AROS will run existing software on the
-Amiga without problems. On other hardware (like PCs), the existing
-software must be recompiled. We will offer a preprocessor which you can
-use on your code which will change any code that might break with AROS
-and/or warn you about such code.</p>
-
-</section>

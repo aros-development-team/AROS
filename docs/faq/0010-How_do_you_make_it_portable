@@ -1,8 +1,0 @@
-<section title="How do you want to make it portable ?">
-
-<p>One of the major new features of AROS will be the new Hardware
-Independent Device Drivers (HIDD). They will allow us to port AROS to
-any hardware with almost no fuzz. But that's a bit in the future. So
-don't worry that your old code won't work anymore, say, next month.</p>
-
-</section>
