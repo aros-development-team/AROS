@@ -81,7 +81,7 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
     EnterFunc(bug("makecheckbox()\n"));
 
     if (!GadToolsBase->aroscbbase)
-        GadToolsBase->aroscbbase = OpenLibrary("aroscheckbox.gadget", 0);
+        GadToolsBase->aroscbbase = OpenLibrary(AROSCHECKBOXNAME, 0);
     if (!GadToolsBase->aroscbbase)
         return NULL;
 
@@ -118,7 +118,7 @@ struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
     };
 
     if (!GadToolsBase->aroscybase)
-        GadToolsBase->aroscybase = OpenLibrary("aroscycle.gadget", 0);
+        GadToolsBase->aroscybase = OpenLibrary(AROSCYCLENAME, 0);
     if (!GadToolsBase->aroscybase)
         return NULL;
 
@@ -155,7 +155,7 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     };
 
     if (!GadToolsBase->arosmxbase)
-        GadToolsBase->arosmxbase = OpenLibrary("arosmutualexclude.gadget", 0);
+        GadToolsBase->arosmxbase = OpenLibrary(AROSMXNAME, 0);
     if (!GadToolsBase->arosmxbase)
         return NULL;
 
