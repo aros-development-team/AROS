@@ -12,11 +12,11 @@ INCLUDES = -I$(BINDIR)/include -I$(TOP)/amiga/include -I$(TOP)/libs
 TESTDIR = $(BINDIR)/test
 OBJDIR = $(GENDIR)/test
 
-LIBS = -L$(LIBDIR) $(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros \
+LIBS = -L$(LIBDIR) $(GENDIR)/filesys/emul_handler.o -lAmigaOS -larossupport \
 	$(X11LDFLAGS) -lX11
 
 DEPLIBS = $(LIBDIR)/libarosc.a \
-	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
+	$(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
 
 FILES = tasktest signaltest exceptiontest tasktest2 messagetest \
 	semaphoretest initstructtest devicetest filetest
