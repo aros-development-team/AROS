@@ -279,6 +279,9 @@ static IPTR Gauge_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
 	data->info_width = TextLength(&rp,data->buf,strlen(data->buf));
 	data->info_height = _font(obj)->tf_YSize;
+#ifdef _AROS
+	DeinitRastPort(&rp);
+#endif
     } else
     {
 	if (data->horiz)

@@ -142,6 +142,9 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     data->knob_height = _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+#ifdef _AROS
+    DeinitRastPort(&rp);
+#endif
     return TRUE;
 }
 

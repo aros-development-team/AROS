@@ -870,6 +870,7 @@ static ULONG IconList_CreateDragImage(struct IClass *cl, Object *obj, struct MUI
 	    DrawIconState(&temprp,node->dob,NULL,0,0, node->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, TRUE, TAG_DONE);
 #else
 	    DrawIconStateA(&temprp,node->dob,NULL,0,0, node->selected?IDS_SELECTED:IDS_NORMAL, NULL);
+	    DeinitRastPort(&temprp);
 #endif
 
     	}

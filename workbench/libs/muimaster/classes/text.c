@@ -594,11 +594,7 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
     struct ZTextLine *line;
     struct ZTextChunk *chunk;
     int offx,len;
-
     struct RastPort rp;
-
-    InitRastPort(&rp);
-    SetFont(&rp,_font(obj));
 
     if (!code) return 0;
 
@@ -629,6 +625,9 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	return 1;
     }
 
+    InitRastPort(&rp);
+    SetFont(&rp,_font(obj));
+
     if (code == '\b')
     {
     	if (data->xpos && zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
@@ -645,6 +644,9 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    }
 	    zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
     	}
+#ifdef _AROS
+	DeinitRastPort(&rp);
+#endif
 	return 1;
     }
 
@@ -659,6 +661,9 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 		strcpy(&chunk->str[len],&chunk->str[len+1]);
 	    }
     	}
+#ifdef _AROS
+	DeinitRastPort(&rp);
+#endif
 	return 1;
     }
 
@@ -670,6 +675,9 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    get(obj,MUIA_String_Contents, &buf);
 	    set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
 	    set(obj,MUIA_String_Acknowledge,buf);
+#ifdef _AROS
+	    DeinitRastPort(&rp);
+#endif
 	    return 0;
 	}
     }
@@ -678,7 +686,12 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
     {
     	/* Check if character is accepted */
 	if (!strchr(data->accept,code))
+	{
+#ifdef _AROS
+	    DeinitRastPort(&rp);
+#endif
 	    return 0;
+	}
     }
 
     if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
@@ -725,11 +738,19 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 		{
 		    data->update_arg1 = offx;
 		    data->update_arg2 = char_width;
+#ifdef _AROS
+		    DeinitRastPort(&rp);
+#endif
 		    return 2;
 		}
 	    }
         }
     }
+
+#ifdef _AROS
+    DeinitRastPort(&rp);
+#endif
+
     return 1;
 }
 
