@@ -932,7 +932,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
     {
 	struct MUI_InputHandlerNode *ihn;
 	ihn = (struct MUI_InputHandlerNode *)mn;
-	handler_mask |= ihn->ihn_Flags;
+	handler_mask |= ihn->ihn_Signals;
     }
 
     signalmask = (1L << (data->app_GlobalInfo.mgi_UserPort->mp_SigBit)) | handler_mask | (1L << data->app_TimerPort->mp_SigBit);
@@ -1021,7 +1021,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 		struct MUI_InputHandlerNode *ihn;
 		ihn = (struct MUI_InputHandlerNode *)mn;
 		if (signal & ihn->ihn_Signals) DoMethod(ihn->ihn_Object,ihn->ihn_Method);
-	    }
+            }
 	}
     }
 
