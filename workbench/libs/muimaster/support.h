@@ -37,4 +37,14 @@ __asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object
 
 ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...);
 
+#define _between(a,x,b) ((x)>=(a) && (x)<=(b))
+#define _isinobject(x,y) (_between(_mleft(obj),(x),_mright (obj)) \
+                          && _between(_mtop(obj) ,(y),_mbottom(obj)))
+
+/* add mask in flags if tag is true, else sub mask */
+#define _handle_bool_tag(flags, tag, mask) \
+((tag) ? ((flags) |= (mask)) : ((flags) &= ~(mask)))
+
+#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+
 #endif
