@@ -1,0 +1,8 @@
+functable.c
+functions.c
+functions.h
+commodities_endtag.c
+*.map
+*.err
+libdefs.h
+mmakefile

@@ -1,0 +1,98 @@
+/*
+    (C) 1997-98 AROS - The Amiga Research OS
+    $Id$
+
+    Desc:
+    Lang: English
+*/
+
+/*****************************************************************************
+
+The description string for ParseIX
+
+Any commodity filter object has an IX structure attached to it to be able
+to sort out the input events matching a certain description to divert them
+down the tree of objects attached to the filter. For convenience purposes
+there is the function ParseIX() that transforms a description string into
+an IX structure.
+
+The format of the description string is as follows:
+
+[class] {[-] (qualifier|synonym)} [[-] upstroke] [HighMap|ANSICode]
+
+"class" specifies the input event class (see devices/inputevent.h), which
+may be any of the following:
+
+   Description word         Input event class
+   --------------------     ---------------------
+   "rawkey"                 IECLASS_RAWKEY
+   "rawmouse"               IECLASS_RAWMOUSE
+   "event"                  IECLASS_EVENT
+   "pointerpos"             IECLASS_POINTERPOS
+   "timer"                  IECLASS_TIMER
+   "newprefs"               IECLASS_NEWPREFS
+   "diskremoved"            IECLASS_DISKREMOVED
+   "diskinserted"           IECLASS_DISKINSERTED
+
+If no class is given in the description string, it's assumed to be of
+IECLASS_RAWKEY.
+
+"qualifier" may be any of those defined below; each qualifier string has a
+correspondance in an input event qualifier:
+
+   Qualifier string         Input event class
+   --------------------     ---------------------
+   "lshift"                 IEQUALIFIER_LSHIFT
+   "rshift"                 IEQUALIFIER_RSHIFT
+   "capslock"               IEQUALIFIER_CAPSLOCK
+   "control"                IEQUALIFIER_CONTROL
+   "lalt"                   IEQUALIFIER_LALT
+   "ralt"                   IEQUALIFIER_RALT
+   "lcommand"               IEQUALIFIER_LCOMMAND
+   "rcommand"               IEQUALIFIER_RCOMMAND
+   "numericpad"             IEQUALIFIER_NUMERICPAD
+   "repeat"                 IEQUALIFIER_REPEAT
+   "midbutton"              IEQUALIFIER_MIDBUTTON
+   "rbutton"                IEQUALIFIER_RBUTTON
+   "leftbutton"             IEQUALIFIER_LEFTBUTTON
+   "relativemouse"          IEQUALIFIER_RELATIVEMOUSE
+
+If the qualifier is preceded by a '-', the filter won't care whether the
+qualifier is present in the event or not.
+
+
+Possible synonyms are:
+
+    Synonym string          Synonym identifier
+    -------------------     -----------------------
+    "shift"                 IXSYM_SHIFT    /* either shift key */
+    "caps"                  IXSYM_CAPS     /* either shift key or capslock */
+    "alt"                   IXSYM_ALT      /* either alt key */
+
+The synonyms specifies multiple qualifiers with one string. If a synonym
+string is preceded by a '-', the filter won't care if the synonym is present
+in the event or not.
+
+
+Upstroke is the string "upstroke" and if it's not specified only downstrokes
+are considered; if it's specified, the filter considers only upstrokes, and
+if the '-' is present both upstrokes and downstrokes are considered.
+
+
+Highmap is one of strings below:
+
+   "space", "backspace", "tab", "enter", "return", "esc",
+   "del", "help", "up", "down", "right", "left", 
+   "f1", "f2", "f3","f4", "f5", "f6", "f7", "f8", "f9", "f10"
+
+INTERNAL NOTE: There are actually a few more, see Parse.h
+
+ANSICode is a single character that is processed via the system keymap
+to obtain the code. Note that if locale.library is loaded, the result
+may be different code values for the same input on different computers.
+
+Note that all description strings are case insensitive.
+
+Some examples:
+
+
