@@ -7,6 +7,21 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
 		   $(CFLAGS)
 
+# sheutlin: these cpu specific things should be in a separate directory
+#MM- AROS-linux-i386: AROS-linux
+#MM- setup-linux-i386: setup-linux
+#MM- includes-linux-i386 : includes-copy
+#MM- kernel-linux-i386: kernel-linux
+#MM- kernel-exec-linux-i386: kernel-exec-linux
+#MM- kernel-dos-linux-i386: kernel-dos-linux
+#MM- kernel-graphics-linux-i386: kernel-graphics-linux
+#MM- kernel-intuition-linux-i386: kernel-intution-linux
+#MM- kernel-hidd-linux-i386: kernel-hidd-linux
+#MM- kernel-utility-linux-i386: kernel-utility-linux
+#MM- kernel-battclock-linux-i386: kernel-battclock-linux
+#MM- workbench-linux-i386: workbench-linux
+#MM- contrib-linux-i386: contrib-linux
+
 
 #MM- AROS-linux : setup setup-linux includes compiler kernel workbench \
 #MM	    demos contrib shell
@@ -94,11 +109,13 @@ exec-linux : $(OSGENDIR)/exec/init.o
 
 #MM- check : check-exec-unix
 
-#MM- clib-linux : clib-linux-$(CPU)
-
-#MM- alib-linux : alib-linux-$(CPU)
-
-#MM- includes-linux : includes-copy includes-linux-$(CPU)
+# sheutlin: they are obsolete now
+##MM- clib-linux : clib-linux-$(CPU)
+#
+##MM- alib-linux : alib-linux-$(CPU)
+#
+# sheutlin: moved up
+##MM- includes-linux : includes-copy includes-linux-$(CPU)
 
 #MM- workbench-linux : workbench-complete workbench-hidd-unix
 
