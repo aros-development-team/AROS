@@ -1,10 +1,12 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/layers.h>
 #include <exec/types.h>
 #include <intuition/intuition.h>
 #include <aros/oldprograms.h>
 #include <graphics/gfxbase.h>
-#include <graphics/rastport.h> 
+#include <graphics/rastport.h>
+#include <graphics/regions.h> 
 #include <stdio.h>
 
 struct NewWindow MyWin =
@@ -14,10 +16,54 @@ struct NewWindow MyWin =
     NULL,NULL,(char *)"Testwindow",
     NULL,NULL,0,0,0,0,WBENCHSCREEN 
   };
+
+struct GfxBase * GfxBase;
+struct LayersBase * LayersBase;
+
+void installClipRegion(struct Window * w)
+{
+  int width, height;
+  struct Rectangle Rect;
+  ULONG x,y,line;
+  struct Region * R = NewRegion();
+  printf("Width of ClipRegion Rectangles: ");
+  scanf("%i",&width);
+  printf("Height of ClipRegion Rectangles: ");
+  scanf("%i",&height);
+  y = 0;
+  line = 0;
+  while (y < w->Height)
+  {
+    x = (line & 1) * width;
+    while (x < w->Width)
+    {
+      Rect.MinX = x;
+      Rect.MinY = y;
+      Rect.MaxX = x+width-1;
+      Rect.MaxY = y+height-1;
+      OrRectRegion(R,&Rect);
+    
+      x += (2*width);
+    }
+    y += height;
+    line ++;
+  }
   
+  InstallClipRegion(w->WLayer, R);
+  
+}
+  
+void uninstallClipRegion(struct Window * w)
+{
+  struct Region * R = InstallClipRegion(w->WLayer, NULL);
+  if (NULL != R)
+    DisposeRegion(R);
+}
+
 void main(void)
 {
-  struct GfxBase * GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",0);
+  LayersBase = (struct LayersBase *)OpenLibrary("layers.library",0);
+  GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",0);
   if (NULL != GfxBase)
   {
     struct IntuitionBase * IntuitionBase =
@@ -33,6 +79,7 @@ void main(void)
         UWORD areabuffer[250];
         char c;
         struct AreaInfo myAreaInfo;
+        installClipRegion(TheDude);
         InitArea(&myAreaInfo, &areabuffer[0], 50);
         rp->AreaInfo = &myAreaInfo;
         InitTmpRas(&tmpras, AllocRaster(320,200),RASSIZE(320,200));
@@ -95,6 +142,7 @@ void main(void)
             break;
           ReplyMsg((struct Message *)Msg);
         }
+        uninstallClipRegion(TheDude);
         CloseWindow(TheDude);
       }
       CloseLibrary((struct Library *)IntuitionBase);
