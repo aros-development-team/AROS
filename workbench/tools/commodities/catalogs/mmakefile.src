@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 DESTDIR := $(BINDIR)/Locale/Catalogs
 
-CATALOGS 	:= svenska deutsch
+CATALOGS 	:= svenska deutsch norsk
 CATDESC 	:= commodities
 CATSUBDIR	:= Sys/
 CATNAME 	:= Commodities
@@ -19,7 +19,7 @@ setup-commodities-catalogs : create_dirs create_catalogs create_include
 
 create_catalogs: $(OBJS)
 	@$(NOP)
-	
+
 $(DESTDIR)/%/$(CATSUBDIR)$(CATNAME).catalog : %.ct $(CATDESC).cd
 	@$(ECHO) "Creating $(CATNAME) catalog for language $*."
 	@$(IF) $(FLEXCAT) $(CATDESC).cd $*.ct CATALOG=$(DESTDIR)/$*/$(CATSUBDIR)$(CATNAME).catalog ; then $(NOP) ; else $(NOP) ; fi ;
