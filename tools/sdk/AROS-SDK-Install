@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export LC_ALL=C
+
 echo Searching for a suitable compiler...
 cc=gcc
 
@@ -70,7 +72,7 @@ for tool1 in $tools_list; do
         tool=`which $tool 2>/dev/null`
 
         if test "$tool" != ""; then
-            tool_targets_list=`$tool --help 2>&1 | grep "$tool: "`
+            tool_targets_list=`$tool --help 2>&1 | grep "$tool: supported targets:"`
         else
             tool_targets_list=
         fi
@@ -162,7 +164,7 @@ while true; do
     read answer
 
     if test "\$answer" = "yes"; then
-        echo Unistalling the AROS SDK...
+        echo Uninstalling the AROS SDK...
         rm -Rf $aros_sdk_path/${cc_cpu}-aros $aros_sdk_path/bin/i386-aros-* \$0
         break
     fi
