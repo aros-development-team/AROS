@@ -7,6 +7,7 @@
 */
 
 #include <proto/dos.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -45,27 +46,28 @@
 ******************************************************************************/
 {
     static char *var = NULL;
-    size_t  	len, i = 0;
+    char    	c;
     
-    do
+    /* 
+      This will always return 0 if the var exists and EOF if it doesn't,
+      then we'll be able to retrieve the var lenght with IoErr()
+    */
+    if (!GetVar((char *)name, &c, 1, GVF_BINARY_VAR))
     {
-    	i += 256;
-	if (var != NULL) free(var);
-	    
-	var = malloc(i);
-	if (var == NULL) return NULL;
-	   
-	len = GetVar((char *)name, var, i, GVF_BINARY_VAR) + 1;
+    	LONG len = IoErr()+1;
 	
-    } while(len >= i);
-    
-    if (len == 0)
-    {
-    	/* Variable does not exist */
-    	return NULL;
+	var = malloc(len);
+	
+	if (!var)
+	    errno = ENOMEM;
+    	else
+	{
+    	    /*This should not fail, unless someone stealt our variable*/
+#warning FIXME: maybe this function should be atomic 	    
+    	    GetVar((char *)name, var, len, GVF_BINARY_VAR);
+	}       
     }
-    
+
     return var;
-    
 } /* getenv */
 
