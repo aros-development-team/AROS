@@ -296,39 +296,90 @@ void UpdateAreaPtrn (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     if (rp->AreaPtrn != NULL)
     {
-        Pixmap stipple;
-        int width, height;
-	char *pattern;
-	int y;
-
-	width = 16;
-	height = 1<<(rp->AreaPtSz);
-
-	pattern = AllocMem(2*height*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
-	for (y=0; y<height; y++)
+	if (rp->AreaPtSz > 0)
 	{
-	    pattern[2*y] = (char)( (rp->AreaPtrn[y]) & (255) );
-	    pattern[2*y+1] = (char)( ( (rp->AreaPtrn[y]) & (255<<8) ) >> 8);
-	}
+	    /* Singlecolored AreaPtrn */
+            Pixmap stipple;
+            int width, height;
+	    char *pattern;
+	    int y;
+
+	    width = 16;
+	    height = 1<<(rp->AreaPtSz);
+
+	    pattern = AllocMem(2*height*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
+	    for (y=0; y<height; y++)
+	    {
+		pattern[2*y] = (char)( (rp->AreaPtrn[y]) & (255) );
+		pattern[2*y+1] = (char)( ( (rp->AreaPtrn[y]) & (255<<8) ) >> 8);
+	    }
 LX11
-        XSetFillStyle (sysDisplay
-            , GetGC(rp)
-            , FillStippled
-        );
+	    XSetFillStyle (sysDisplay
+		, GetGC(rp)
+		, FillStippled
+	    );
 
-        stipple = XCreateBitmapFromData (sysDisplay
-            , GetXWindow (rp)
-            , pattern
-            , width
-            , height
-        );
+	    stipple = XCreateBitmapFromData (sysDisplay
+		, GetXWindow (rp)
+		, pattern
+		, width
+		, height
+	    );
 
-	FreeMem (pattern, 2*height*sizeof(char));
+	    FreeMem (pattern, 2*height*sizeof(char));
 
-        XSetStipple( sysDisplay, GetGC (rp), stipple);
+	    XSetStipple( sysDisplay, GetGC (rp), stipple);
 UX11
+	}
+	else {
+	/* Multicolored AreaPtrn */
+            Pixmap tile;
+            unsigned int width, height, depth;
+            unsigned long foreground, background;
+	    char *pattern;
+	    int y,z;
+
+/* Find a way to determine the depth of the AreaPtrn */
+	    depth = 1;	/* Number of bitplanes used for AreaPtrn */
+	    		/* Dummy value for now! */
+	    width = 16;
+	    height = 1>>(rp->AreaPtSz); /* AreaPtSz is negative */
+	    foreground = 0;	/* Specify the foreground and background
+	    			   pixel values to use. (Xlib Ref.Man.)
+	    			   Dummy values for now! */
+	    background = 1;
+
+	    pattern = AllocMem(2*height*depth*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
+	    for (z=0; z<depth; z++)
+		for (y=0; y<height; y++)
+		{
+		    pattern[2*y+2*z*height] = (char)( (rp->AreaPtrn[y+z*height]) & (0xff) );
+		    pattern[2*y+2*z*height+1] = (char)( ( (rp->AreaPtrn[y+z*height]) & (0xff<<8) ) >> 8);
+		}
+LX11
+	    XSetFillStyle (sysDisplay
+		, GetGC(rp)
+		, FillTiled
+	    );
+
+	    tile = XCreatePixmapFromBitmapData (sysDisplay
+		, GetXWindow (rp)
+		, pattern
+		, width
+		, height
+		, foreground
+		, background
+		, depth
+	    );
+
+	    FreeMem (pattern, 2*height*depth*sizeof(char));
+
+	    XSetTile( sysDisplay, GetGC (rp), tile);
+UX11
+	}
     }
     else {
+	/* No AreaPtrn -> Use solid fill style */
 LX11
         XSetFillStyle (sysDisplay
             , GetGC (rp)
