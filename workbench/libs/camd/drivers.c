@@ -8,6 +8,7 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/camd.h>
 
 #include "camd_intern.h"
 
@@ -211,11 +212,8 @@ void LoadDriver(char *name,
 
 	D(bug("camd.library: drivers.c/LoadDriver - trying to open %s..\n",name));
 
-#ifdef _AROS
-	mididevicedata=Camd_OpenMidiDevice(name,CamdBase);
-#else
-	mididevicedata=OpenMidiDevice(name,CamdBase);
-#endif
+	mididevicedata=OpenMidiDevice(name);
+
 	D(bug("camd.library: drivers.c/LoadDriver - It was%s a success..\n",mididevicedata==NULL?" not":""));
 
 	if(mididevicedata==NULL) return;
@@ -223,17 +221,13 @@ void LoadDriver(char *name,
 #ifdef _AROS
 	if((mididevicedata->Flags&1)==0){
 		D(bug("%s: mididevicedata->Flags&1==0 is not not supported for AROS!\n",name));
-		Camd_CloseMidiDevice(mididevicedata,CamdBase);
+		CloseMidiDevice(mididevicedata);
 		return;
 	}
 #endif
 
 	if((*mididevicedata->Init)(SysBase)==FALSE){
-#ifdef _AROS
-		Camd_CloseMidiDevice(mididevicedata,CamdBase);
-#else
-		CloseMidiDevice(mididevicedata,CamdBase);
-#endif
+		CloseMidiDevice(mididevicedata);
 		return;
 	}
 
@@ -246,11 +240,7 @@ void LoadDriver(char *name,
 
 	if(AllocDriverData(driver,mididevicedata,CamdBase)==FALSE){
 		FreeDriverData(driver,CamdBase);
-#ifdef _AROS
-		Camd_CloseMidiDevice(mididevicedata,CamdBase);
-#else
-		CloseMidiDevice(mididevicedata,CamdBase);
-#endif
+		CloseMidiDevice(mididevicedata);
 		return;
 	}
 
