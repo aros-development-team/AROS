@@ -21,7 +21,7 @@ void aros_reset(void)
 	/*
 	 * Initialize the LCD Controller
 	 */
-	WREG_L(LSSA)  = 0x80000;
+	WREG_L(LSSA)  = 0x90000;
 	WREG_B(LVPW)  = 160/16;
 	WREG_W(LXMAX) = 160-1;
 	WREG_W(LYMAX) = 160-1;
@@ -66,7 +66,7 @@ void aros_reset(void)
 	/*
 	 * First parameter is memory start, 2nd is size of memory.
 	 */
-	main_init((void *)0x400,0x80000-0x400);
+	main_init((void *)0x400,0x90000-0x400);
 }
 
 void _Init_IRQVectors(void)
