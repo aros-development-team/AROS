@@ -406,7 +406,6 @@ int main(int argc,char *argv[])
 	AROSBase.StdOut = stderr;
 
 	CreateNewProc (bootprocess);
-
     }
 
     RemTask(NULL); /* get rid of Boot task */
