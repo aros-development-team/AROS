@@ -13,6 +13,7 @@
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <libraries/expansionbase.h>
+#include <devices/newstyle.h>
 
 #include <proto/exec.h>
 
@@ -133,12 +134,35 @@ struct MsgPort *mp=CreateMsgPort();
 		iotd=(struct IOExtTD *)CreateIORequest(mp,sizeof(struct IOExtTD));
 		if (iotd)
 		{
+			kprintf("Trying to boot from %S\n", AROS_BSTR_ADDR(fssm->fssm_Device));
 			if (!OpenDevice(AROS_BSTR_ADDR(fssm->fssm_Device),fssm->fssm_Unit, (struct IORequest *)&iotd->iotd_Req,0))
 			{
-				iotd->iotd_Req.io_Command = CMD_READ;
-				iotd->iotd_Req.io_Offset =
-					de->de_LowCyl*de->de_Surfaces*
+				if (strncmp(AROS_BSTR_ADDR(fssm->fssm_Device), "ide.device", 10) == 0)
+				{
+				    UQUAD offset64 = de->de_LowCyl;
+
+				    offset64 *= de->de_Surfaces;
+				    offset64 *= de->de_BlocksPerTrack;
+				    offset64 *= (de->de_SizeBlock*4);
+
+				    iotd->iotd_Req.io_Command = NSCMD_TD_READ64;
+				    iotd->iotd_Req.io_Offset  = offset64 &  0xFFFFFFFF;
+				    iotd->iotd_Req.io_Actual  = offset64 >> 32;
+				    kprintf("Reading at offset 0x%08x%08x\n",
+				        iotd->iotd_Req.io_Actual, iotd->iotd_Req.io_Offset);
+
+				}
+				else
+				{
+				    iotd->iotd_Req.io_Command = CMD_READ;
+			  	    iotd->iotd_Req.io_Offset =
+				        de->de_LowCyl*de->de_Surfaces*
 					de->de_BlocksPerTrack*(de->de_SizeBlock*4);
+
+				    kprintf("Reading at offset 0x%08x\n",
+				    iotd->iotd_Req.io_Offset);
+				}
+
 				iotd->iotd_Req.io_Length = 512;
 				iotd->iotd_Req.io_Data = buf;
 
