@@ -68,7 +68,6 @@ static const char version[] = "$VER: WiMP 0.8 (1.5.2001)";
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/console.h>
-#include <aros/machine.h>
 #include <proto/gadtools.h>
 #include <libraries/gadtools.h>
 

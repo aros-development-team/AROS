@@ -5,7 +5,6 @@
 
 #include <proto/exec.h>
 #include <clib/exec_protos.h>
-#include <aros/machine.h>
 #include "initstruct.h"
 #include <stdio.h>
 #include <stddef.h>

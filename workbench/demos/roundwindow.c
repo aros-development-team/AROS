@@ -7,7 +7,6 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <clib/alib_protos.h>
-#include <aros/machine.h>
 #include <aros/debug.h>
 
 #include <math.h>

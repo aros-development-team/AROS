@@ -10,7 +10,6 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <aros/system.h>
-#include <aros/machine.h>
 #include <aros/asmcall.h>
 #include <devices/inputevent.h>
 #include <exec/alerts.h>

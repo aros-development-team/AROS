@@ -6,7 +6,6 @@
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
-#include <aros/machine.h>
 
 #include <math.h>
 #include <stdio.h>

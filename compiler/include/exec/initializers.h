@@ -1,7 +1,7 @@
 #ifndef EXEC_INITIALIZERS_H
 #define EXEC_INITIALIZERS_H
 
-#include <aros/machine.h>
+#include <aros/system.h>
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.

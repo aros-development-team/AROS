@@ -27,7 +27,6 @@
 #include <proto/graphics.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
-#include <aros/machine.h>
 #include <clib/alib_protos.h>
 
 #include <string.h>

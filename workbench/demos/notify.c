@@ -8,7 +8,6 @@
 
 #include <proto/exec.h>
 #include <exec/memory.h>
-#include <aros/machine.h>
 #include <stdio.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>

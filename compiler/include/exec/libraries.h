@@ -12,9 +12,6 @@
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
 #endif
-#ifndef AROS_MACHINE_H
-#   include <aros/machine.h>
-#endif
 
 /* Library constants */
 /* LIB_VECTSIZE is in aros/machine.h */

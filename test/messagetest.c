@@ -10,7 +10,6 @@
 #include <exec/tasks.h>
 #include <clib/exec_protos.h>
 #include "memory.h"
-#include <aros/machine.h>
 #include <stdio.h>
 
 #define STACKSIZE 4096

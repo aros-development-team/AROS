@@ -13,7 +13,6 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include <aros/machine.h>
 #include <aros/debug.h>
 
 #include <stdio.h>
