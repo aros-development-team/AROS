@@ -67,7 +67,7 @@ hardware_reset_init_1:
 	.globl hardware_reset_init2
 	.align 8
 hardware_reset_init_2:
-	jmp aros_reset;
+	jmp main_init
 
 	.globl software_reset
 	.align 8
@@ -75,4 +75,4 @@ hardware_reset_init_2:
 software_reset:
 	lea    initial_ssp,%a0
 	move.l (%a0),%ssp
-	jmp    aros_reset
+	jmp    main_init
