@@ -2,8 +2,16 @@ include $(TOP)/config/make.cfg
 
 #MM- AROS-morphos : includes-morphos setup-morphos setup-clib workbench-morphos
 
-#MM- workbench-morphos: \
+#MM- workbench-morphos : \
+#MM		setup-multiview-catalogs \
+#MM		setup-more-catalogs \
+#MM		setup-asl-catalogs \
 #MM		workbench-libs-locale-module-quick \
 #MM		workbench-libs-iffparse-module-quick \
 #MM		workbench-libs-commodities-module-quick \
 #MM		workbench-libs-gadtools-module-quick \
+#MM		workbench-libs-asl-module-quick \
+#MM		workbench-libs-icon-module-quick \
+#MM		workbench-libs-diskfont-module-quick
+
+
