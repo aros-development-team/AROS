@@ -62,7 +62,7 @@
     struct DosList    *dl, *newdl = NULL;
     struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
 
-    if(lock != NULL)
+    if (lock != NULL)
     {
 	newdl = MakeDosEntry(name, DLT_DIRECTORY);
 
