@@ -3,6 +3,8 @@
    $Id$ 
  */
 
+#define MUIMASTER_YES_INLINE_STDARG
+
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/memory.h>

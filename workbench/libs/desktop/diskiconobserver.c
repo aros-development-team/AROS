@@ -1,7 +1,9 @@
 /*
-   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2003, The AROS Development Team. All rights reserved.
    $Id$ 
- */
+*/
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #define DEBUG 1
 #include <aros/debug.h>
