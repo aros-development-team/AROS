@@ -35,6 +35,7 @@ extern const struct Resident
     Graphics_resident,
     Timer_resident,
     Battclock_resident,
+    Input_resident,
     Intuition_resident,
     Console_resident,
     Mathffp_resident,
@@ -57,6 +58,7 @@ static const struct Resident *romtagList[] =
     &Graphics_resident, 		    /* ColdStart,   65	 */
     &Timer_resident,			    /* ColdStart,   50   */
     &Battclock_resident,		    /* ColdStart,   45   */
+    &Input_resident,			    /* ColdStart,   30   */	
     &Intuition_resident,		    /* ColdStart,   10	 */
     &Console_resident,			    /* ColdStart,   5	 */
     &emul_handler_resident,		    /* ColdStart,   0	 */
