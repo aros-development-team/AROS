@@ -3,7 +3,7 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= loaddesktop
-EXEDIR := $(AROSDIR)/test/desktop
+EXEDIR := $(AROS_TESTS)/desktop
 
 #MM test-desktop : includes linklibs
 

@@ -4,7 +4,7 @@
 include $(TOP)/config/make.cfg
 
 FILES  := examine writetooltypes
-EXEDIR := $(TESTDIR)/Icon
+EXEDIR := $(AROS_TESTS)/Icon
 
 #MM- test : test-icon
 #MM test-icon

@@ -4,7 +4,7 @@
 include $(TOP)/config/make.cfg
 
 FILES           := memset
-EXEDIR          := $(AROSDIR)/test/benchmarks/clib
+EXEDIR          := $(AROS_TESTS)/benchmarks/clib
 
 #MM- test-benchmarks : test-benchmarks-clib
 #MM- test-benchmarks-quick : test-benchmarks-clib-quick

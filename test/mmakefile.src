@@ -5,25 +5,26 @@
 include $(TOP)/config/make.cfg
 
 
-FILES := amiga2date \
-	amigademo \
-	availfonts \
-	blttemplatealpha \
-	date2amiga \
-	dosvartest \
-	exceptiontest \
-	fileseek \
-	filetest \
-	fontinfo \
-	fstest \
-	getcybermapattr \
-	gfx \
-	iffparsewrite \
-	ilbmtoc \
-	localetest \
-	matchtest \
-	messagetest \
-	newmatch \
+FILES := \
+    amiga2date \
+    amigademo \
+    availfonts \
+    blttemplatealpha \
+    date2amiga \
+    dosvartest \
+    exceptiontest \
+    fileseek \
+    filetest \
+    fontinfo \
+    fstest \
+    getcybermapattr \
+    gfx \
+    iffparsewrite \
+    ilbmtoc \
+    localetest \
+    matchtest \
+    messagetest \
+    newmatch \
     keymaptest \
     layerstest \
     inquire \
@@ -37,43 +38,43 @@ FILES := amiga2date \
     serialtest \
     unixio \
     librarytest \
-	opendiskfont \
-	partition \
-	pipe \
-	scantest \
-	semaphoretest \
-	showvisregion \
-	showvisshape \
-	sortlayercr \
-	signaltest \
-	strtodate \
-	systemtags \
-	systemtagsslave \
-	tasktest \
-	tasktest2 \
-	ExNext \
-	randtest \
-	enqueue \
-	semtorture \
-	obtainpentest \
-	readpixelarray \
-	writepixelarray \
-	writepixelarrayalpha \
-	rawtest \
-	camdtree \
-	mktime \
-	rexxsyslibtest \
-	portsend \
-	portreceive \
-	makelib \
-	weightamatch \
-	printnativekeytable \
-	textbug \
-	testide \
-	playoss \
-	openlib
+    opendiskfont \
+    partition \
+    pipe \
+    scantest \
+    semaphoretest \
+    showvisregion \
+    showvisshape \
+    sortlayercr \
+    signaltest \
+    strtodate \
+    systemtags \
+    systemtagsslave \
+    tasktest \
+    tasktest2 \
+    ExNext \
+    randtest \
+    enqueue \
+    semtorture \
+    obtainpentest \
+    readpixelarray \
+    writepixelarray \
+    writepixelarrayalpha \
+    rawtest \
+    camdtree \
+    mktime \
+    rexxsyslibtest \
+    portsend \
+    portreceive \
+    makelib \
+    weightamatch \
+    printnativekeytable \
+    textbug \
+    testide \
+    playoss \
+    openlib
 
-EXEDIR := $(AROSDIR)/test
+EXEDIR := $(AROS_TESTS)
 
 USER_CFLAGS := -I$(TOP)/workbench/libs
 
