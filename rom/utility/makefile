@@ -50,15 +50,14 @@ ARCH_PATH := $(TOP)/config/$(ARCH)
 
 ASM_FILES_TRY := $(foreach f,$(FUNCTIONS),$(ASM_PATH)/$(f).[cs] $(ARCH_PATH)/$(f).[cs])
 ASM_FILES_EXIST := $(wildcard $(ASM_FILES_TRY))
-ASM_FILES := $(basename $(notdir $(ASM_FILES_EXIST)))
+ASM_FILES_EXIST := $(basename $(notdir $(ASM_FILES_EXIST)))
 
 # Black magic: First create a negative list of the files (ie. only the
 # ones which do *not* have a special assembler version for this CPU
 # and then strip the path and extensions from all files in this list.
 # Now the list contains the basenames of all files which must be taken
 # from the local directory.
-FUNCTIONS := $(filter-out $(ASM_FILES_EXIST),$(ASM_FILES_TRY))
-FUNCTIONS := $(basename $(notdir $(FUNCTIONS)))
+FUNCTIONS := $(filter-out $(ASM_FILES_EXIST),$(FUNCTIONS))
 
 ifeq ($(FLAVOUR),native)
 LIBS = -L$(LIBDIR) -larosc
