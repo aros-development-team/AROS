@@ -3,9 +3,6 @@
     $Id$
 */
 
-#ifdef __palmos__
-#include <Pilot.h>
-#endif
 #include <asm/registers.h>
 #include <gfx.h>
 
@@ -24,8 +21,10 @@
 
 #include <devices/keyboard.h>
 
+#include <aros/core.h>
 
 #include "memory.h"
+#include "traps.h"
 #include <memory.h>
 
 #include "exec_intern.h"
@@ -109,7 +108,7 @@ static const struct Resident *romtagList[] =
 	*/
 	&boot_resident,			    /* ColdStart,  -50	 */
 	&Dos_resident,			    /* None,	   -120  */
-//	&LDDemon_resident,		    /* AfterDOS,   -125  */
+	&LDDemon_resident,		    /* AfterDOS,   -125  */
 //	&con_handler_resident,		    /* AfterDOS,   -126  */
 	NULL
 };
@@ -181,6 +180,12 @@ void main_init(void * memory, ULONG memSize)
 		do {} while(1);
 	}
 	m68k_SSP = ((ULONG)m68k_SSP) + AROS_STACKSIZE;
+
+	/*
+	 * Init the core
+	 */
+	init_core(SysBase);
+	Init_Traps();
 	/*
 	 * This is the last place where I am in supervisor mode.
 	 * so let me switch into user mode and continue there.

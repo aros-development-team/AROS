@@ -9,5 +9,6 @@
 void idleTask(void)
 {
 	while (1) {
+//		*(BYTE *)0xdddddebc = '~';
 	}
 }

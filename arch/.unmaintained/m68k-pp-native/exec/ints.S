@@ -29,5 +29,3 @@ _sys_dispatch:
 	*/
 	clr.w  0xfffff30e     // clear the IRQ status register LO
 	rte
-
-

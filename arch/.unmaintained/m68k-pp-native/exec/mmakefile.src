@@ -29,13 +29,14 @@ FILES := coldreboot \
 	superstate \
 	ints \
 	switchtouser \
-	inithw \
 	offsets \
 	setsr \
-	sys_trap1_handler
+	sys_trap1_handler \
+	traps
 
 COREFILES	:= init \
-	execstubs
+	execstubs \
+	core
 
 
 #MM
