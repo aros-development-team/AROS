@@ -1,4 +1,4 @@
-[name] - Draft v0.1
+[name] - Draft v0.2
 
 Index
 
@@ -9,6 +9,7 @@ Index
 4.1 .............. Interfaces
 4.2 .............. Classes
 4.3 .............. Objects
+4.4 .............. Exceptions
 5 ................ Implementation
 5.1 .............. Interfaces
 5.2 .............. Classes
@@ -16,11 +17,14 @@ Index
 5.4 .............. VTables
 5.5 .............. Methods invocation
 5.6 .............. Casting
+5.7 .............. Exceptions
+5.7.1 ............ Exceptions and AROS
 
 Appendices
 
 A ................ TODO
 B ................ Contributors
+C ................ ChangeLog
 
 
 1 - Preface
@@ -115,6 +119,7 @@ Interfaces can, moreover, "extend" other interfaces, that is they can include
 all the characteristics of the interfaces that they extend, plus adding some of
 their own.
 
+
 4.2 Classes
 
 As said, classes are implementation of interfaces. Actually, a class might be
@@ -130,6 +135,7 @@ gets their implementation. A class can override the implementation of a specific
 characteristic provided by the class being extended and is required to implement
 all the characteristics that the class being extended doesn't implement.
 
+
 4.3 Objects
 
 Objects are, as in the usual naming convention, instances of classes. You can
@@ -140,6 +146,30 @@ Classes are actually objects themselves, and so are interfaces [this has to be
 better checked, I still have some doubts about the chicken&egg problem...].
 
 [add something else?]
+
+
+4.4 Exceptions
+
+One way of dealing with errors and unusual situations consists in checking for
+the success of every operation being done. This is the way errors are dealt with
+in C, for example, and although it's easy to implement, it's very bug prone and
+boring to use, without taking in consideration that it often leads to ugly and
+difficult to read code, full of nested if...then...else constructs.
+
+Another way consists in using what are called "exceptions". The idea is that
+"exceptional" situation, like errors, are dealt all together, in a piece of code
+kept separated from the rest. This allows for a better readable source code and
+also for a more powerful and less bug-prone error handling.
+
+Exceptions are commonly used in C++, and are the only encouraged way of dealing
+with errors in Java.
+
+[name] uses exceptions as well, and with some preprocessor magics it's
+possible using them in C almost like in Java or C++.
+
+Exceptions can be hungry of CPU cycles, though, so they must not be misused, and
+where necessary the good old if...then...else construct can and must be used
+instead.
 
 
 
@@ -193,7 +223,7 @@ in C++ is called "VTable", that is an array of pointer to method functions.
 Thus a method ID unanbiguously identifies a method into a given array and, given
 an ID, to invoke the method something like this is enough:
 
-    (*vtable[methodid])(args...)
+    (*vtable[methodid])(obj, args...)
 
 IDs are assigned sequentially to the methods of a given interface. For example:
 
@@ -278,7 +308,7 @@ But the multiple inheritance of interfaces is a characteristic that comes in
 hand when we need to utilize only ONE of the multiple interfaces that a given
 interface extends or that a given class implements, thus there must be a way of
 getting only the methods of the interface I2 inside the interface I3, for
-example. This is, infact, the argument of the  paragraph 5.6.
+example. This is, infact, the argument of the section 5.6.
 
 
 5.5 Methods invocation
@@ -377,7 +407,7 @@ Then to invoke a method we use the macro
 
 
     #define DoMethod(Obj, Interface, Method, Args...) \
-        (((Interface ## _ ## Method ## _ ## type)((Interface)(Obj)).Vtable[Interface ## _ ## Method ## _ ## id])(Args))
+        (((Interface ## _ ## Method ## _type)((Interface)(Obj)).vtable[Interface ## _ ## Method ## _ ## id])(Obj, Args))
 
 With a wise use of the preprocessor and of the type casting it's IMPOSSIBLE
 invoking a method on the wrong object.
@@ -385,12 +415,12 @@ invoking a method on the wrong object.
 [needs further explanation].
 
 If the compiler supplied a pseudo function like "nameoftype(type)" à la typeof()
-it would be possible to not pass the interface's name to the DoMethod() macro,
+it would be possible not passing the interface's name to the DoMethod() macro,
 thus making more natural and readable the code. The macro could infact look like
 this:
 
     #define DoMethod(Obj, Method, Args...) \
-        (((nameoftype(typeof(Obj)) ## _ ## Method ## _ ## type)(Obj)).Vtable[nameoftype(typeof(Obj)) ## _ ## Method ## _ ## id])(Args))
+        (((nameoftype(typeof(Obj)) ## _ ## Method ## _type)(Obj)).vtable[nameoftype(typeof(Obj)) ## _ ## Method ## _ ## id])(Obj, Args))
 
 So this is definitely something that must be looked into.
 
@@ -415,16 +445,16 @@ And I have these objects references:
     Triangle t;
 
 I want to be able to store them into an array, so that I can act on them looking
-at them just as "shapes". Thus I need an array of shapes:
+at them just as "Shapes". Thus I need an array of shapes:
 
     Shape    shapes[3];
 
 The problem, here, is that I cannot just do something like
 
-    5.6.a) shapes[0] = c; //wrong!
+    5.6.a) shapes[0] = c; // wrong!
 
-because this is not C++ and the C compiler doesn't know how to cast a circle to
-a shape. This basically means that the casting cannot be implicit.
+because this is not C++ and the C compiler doesn't know how to cast a Circle to
+a Shape. This basically means that the casting cannot be implicit.
 
 A macro StaticCast() will come in hand, in this case:
 
@@ -450,7 +480,7 @@ interfaces that it extends and that is not the leftmost one. This is because the
 vtable, in that case, will not start at the same address as the old one, but
 will instead be shifted by some places.
 
-In all those cases that it's not possible using StaticCast() then DynamicCast()
+In all those cases that it's not possible using StaticCast(), then DynamicCast()
 must be used [not definitive]:
 
     #define DynamicCast(Interface, Obj)((Interface){GetVTable(Obj, Interface ## _id), Obj.data})
@@ -458,12 +488,211 @@ must be used [not definitive]:
 GetVTable is a function/macro [still to be defined] that gets an object
 reference and an interface ID and gives back the related vtable for the given
 object. In case the interface is not implemented in the object's class then an
-*exception* is arisen [write the chapter about exceptions].
+*exception* is arisen.
 
-This is the safest way of casting, but is also the slowest one, thus when
+This is the safest way of casting, but it's also the slowest one, thus when
 possible must be avoided.
 
-[ TO BE CONTINUED ]
+
+5.7 Exceptions
+
+As explained in 4.4 exceptions are widely used in [name]. This section describes
+the C interface and the implementation of the exceptions in [name].
+
+The code that wanted to handle exceptions in [name] would look this way:
+
+5.7.a)
+
+    TRY
+    {
+        /* Code that can generate exceptions */
+        ...
+    }
+    CATCH(Exception1, name1)
+    {
+        /* Code that handles the exception */
+        ...
+    }
+    CATCH(Exception2, name2)
+    {
+        /* Code that handles the exception */
+        ...
+    }
+    ...
+    CATCH(ExceptionN, nameN)
+    {
+        /* Code that handles the exception */
+        ...
+    }
+    ENDCATCH
+
+If you are familiar with the try...catch block of C++ and Java you surely get
+whay does it do.
+
+The above code would be translated, with the help of the C preprocessor, in the
+below code [Not definitive]:
+
+
+5.7.b)
+
+    {
+        jmp_buf oldexceptbuf = currentexceptbuf;
+        IPTR (**)() vtable;
+
+        if (setjmp(&currentexceptbuf) == 0)
+        {
+            {
+                /* code that can generate exceptions */
+                ...
+            }
+        }
+        else
+        if ((vtable == GetVTableNoExcept(currexception, Exception1_id)))
+        {
+            Exception1 name1 = (Exception1)({vtable, currentexception.data});
+
+            currentexceptbuf = oldexceptbuf;
+
+            {
+                /* Code that handles the exception */
+                ...
+            }
+        }
+        else
+        if ((vtable == GetVTableNoExcept(currexception, Exception2_id)))
+        {
+            Exception2 name2 = (Exception2)({vtable, currentexception.data});
+
+            currentexceptbuf = oldexceptbuf;
+
+            {
+                /* Code that handles the exception */
+                ...
+            }
+        }
+        ...
+        else
+        if ((vtable == GetVTableNoExcept(currexception, ExceptionN_id)))
+        {
+            ExceptionN nameN = (ExceptionN)({vtable, currentexception.data});
+
+            currentexceptbuf = oldexceptbuf;
+
+            {
+                /* Code that handles the exception */
+                ...
+            }
+        }
+        else
+        {
+            /* Default code for the exception handling */
+        }
+
+        currentexceptbuf = oldexceptbuf;
+    }
+
+The macros look like this:
+
+5.7.c)
+
+    #define TRY                                  \
+    {                                            \
+        jmp_buf oldexceptbuf = currentexceptbuf; \
+        IPTR (**)() vtable;                      \
+                                                 \
+        if (setjmp(&currentenv) == 0)            \
+        {
+
+currentexceptbuf is a per-task global variable that holds the status to which
+the program has to go in case an exception is "thrown". This status is
+saved and the current one is put in the variable so that the exceptions thrown
+by the code inside the TRY block will be caught by the related CATCH blocks.
+
+    #define CATCH(Interface, Obj)                                           \
+        }                                                                   \
+        else                                                                \
+        if ((vtable == GetVTableNoExcept(currexception, Interface ## _id))) \
+        {                                                                   \
+            Interface Obj = (Interface)({vtable, currentexception.data});   \
+                                                                            \
+            currentexceptbuf = oldexceptbuf;
+
+In case an exception is thrown, setjmp() will return a non-zero value and so the
+CATCH block will be executed. The above code checks whether the exception is an
+object of a class that implements a given interface. To do this check is used a
+version of GetVTable(), that we saw in 5.5, that doesn't throw an exception in
+case the object's class doesn't implement the interface. GetVTable() itself,
+infact, makes use of GetVTableNoExcept() for its purpouses.
+
+If the exception object's class doesn't implement the interface then the next
+CATCH block, if present, will be executed, otherwise the previous status is
+restored so that another exception can be thrown if necessary, and the code
+inside the CATCH block is executed.
+
+    #define ENDCATCH                                       \
+        }                                                  \
+        else                                               \
+        {                                                  \
+            /* Default code for the exception handling */  \
+        }                                                  \
+                                                           \
+        currentexceptbuf = oldexceptbuf;
+    }
+
+If no exceptions are caught then the above code is executed, which deals with
+the exception in a default way [ define which way ].
+
+As we know, the exceptions can be "thrown". To do this another macro comes
+in hand, that is
+
+     THROW
+     (
+         ExceptionX,  // The interface's name implemented by the class of which
+                      // the exception object has to be an instantation.
+         tags...      // The tags and their values used by the class'
+                      // constructor
+     );
+
+The exception's class MUST implement the "Exception" interface, either
+directly or thru another class that it extends. This will be checked at runtime,
+and in case this requirement is not meen an exception [put here the name of the
+exception] will be thrown, of course not using the THROW() macro [this has to
+be revised, perhaps].
+
+
+This is how the macro is suposed to look like [it's just the first thought]:
+
+    #define THROW(ExceptionX, tags...) \
+    {
+        /* Dispose the old exception, if there's any */
+        if (currexception.data) DisposeObject(currexception);
+
+        if (HasInterface(ExceptionX ## _id, Exception ## _id))
+        {
+	    /* Create a new one */
+            currexception = StaticCast(Exception, NewObject(ExceptionX, ##tags));
+
+	    /* Return to the previous saved state */
+            longjmp(&currentexceptbuf, 1);
+        }
+        else
+        {
+	    /* Create a new one */
+            currexception = StaticCast(Exception, NewObject(ExceptionNotValid));
+
+	    /* Return to the previous saved state */
+            longjmp(&currentexceptbuf, 1);
+        }
+    }
+
+[What if while throwing an exception we run out of memory? Does the
+"OutOfMemory" exception have to be handled separately, perhaps?]
+
+5.7.1 Exceptions and AROS
+
+[ explain how the AROS' specific implementation of [name] handles the
+exceptions ]
+
 
 
 
@@ -478,7 +707,9 @@ A - TODO
 
 2) Replace all the [name] occurrencies in this text with the chosen name
 
-3) Write anything that has not been written until now and that needs to :)
+3) Have a deeper look at the exceptions handling
+
+4) Write anything that has not been written until now and that needs to :)
 
 
 
@@ -486,3 +717,13 @@ A - TODO
 B - Contributors
 
 Fabio Alemagna <falemagn@studenti.unina.it> - The ideator
+
+
+
+
+C - ChangeLog
+
+$Log$
+Revision 1.6  2001/12/11 18:50:54  falemagn
+Added the sections regarding the exceptions handling. Please give me your comments...
+
