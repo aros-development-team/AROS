@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -60,36 +60,37 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(methods == NULL)
-	return NULL;
-
-    while(methods->dtm_Method != STM_DONE)
+    struct DTMethod *retval = NULL;
+    
+    if (methods)
     {
-	if(command != NULL)
+	while(methods->dtm_Method != STM_DONE)
 	{
-	    if(Stricmp(methods->dtm_Command, command) != 0)
+	    if(command != NULL)
 	    {
-		methods++;
-		break;
+		if(Stricmp(methods->dtm_Command, command) == 0)
+		{
+		    retval = methods;
+		    break;
+		}
+	    }
+
+	    if(method != ~0UL)
+	    {
+		if(methods->dtm_Method == method)
+		{
+		    retval = methods;
+		    break;
+		}
 	    }
 	    
-	    return methods;
+	    methods++;
 	}
-
-	if(method != ~0UL)
-	{
-	    if(methods->dtm_Method != method)
-	    {
-		methods++;
-		break;
-	    }
-	}
-
-	return methods;
     }
-
-    return NULL;
+    
+    return retval;
 
     AROS_LIBFUNC_EXIT
+    
 } /* FindTriggerMethod */
 
