@@ -65,7 +65,10 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_GaugeData   *data;
     struct TagItem  	    *tag, *tags;
     
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
+    obj = (Object *)DoSuperNew(cl, obj,
+			       MUIA_Background, MUII_BACKGROUND,
+			       MUIA_Frame, MUIV_Frame_Gauge,
+			       TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
