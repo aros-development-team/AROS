@@ -98,10 +98,12 @@ struct filehandle
 
 /* filehandle flags */
 
-#define FHFLG_READPENDING  1
-#define FHFLG_WRITEPENDING 2
-#define FHFLG_CANREAD      4
-#define FHFLG_WAIT	   8 	/* filename contained WAIT */
+#define FHFLG_READPENDING   	1
+#define FHFLG_WRITEPENDING  	2
+#define FHFLG_CANREAD       	4
+#define FHFLG_WAIT	    	8   /* filename contained WAIT */
+#define FHFLG_RAW   	    	16  /* in RAW mode */
+#define FHFLG_ASYNCCONSOLEREAD	32  /* There is a pending async console.device CMD_READ request */
 
 typedef struct IntuitionBase IntuiBase;
 
