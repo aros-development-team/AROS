@@ -509,3 +509,11 @@ tools/FlexCat/flexcat.c cause conflicts with existing functions on certain
 OS's.  These need to be implemented in Linux, but not Amiga/GG and
 Windows/CygWin.
 
+BUG000075
+lbischoff@aros.org
+The defaults for FgPen, BgPen, DrawMode etc. that are set in InitRastPort() 
+do not reach the graphics hidd. One has to call the related Setxxx function
+first. But since these functions do only work properly if a bitmap is attached
+to the rastport, one can not call them inside of InitRastPort.
+There is a workaround for this problem in OpenWindow ATM, so that at least a
+window's rastport is initialized correctly.     
