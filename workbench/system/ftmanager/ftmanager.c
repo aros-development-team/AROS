@@ -1,6 +1,8 @@
 /*
  * Based on source from ftmanager from MorphOS for their ft2.library
  */
+#define NO_INLINE_STDARG
+
 #define _CLIB_USERDATA_
 #include <libraries/arosc.h>
 #include <stdlib.h>
