@@ -5,6 +5,10 @@
 #   include <toollib/toollib.h>
 #endif
 
+#ifndef __GNUC__
+#   define __attribute__(x)     /* eps */
+#endif
+
 extern void Error	    PARAMS ((const char * fmt, ...));
 extern void Warn	    PARAMS ((const char * fmt, ...));
 extern void StdError	    PARAMS ((const char * fmt, ...));
@@ -16,7 +20,7 @@ extern void PushError	    PARAMS ((const char * fmt, ...));
 extern void PushWarn	    PARAMS ((const char * fmt, ...));
 extern void PushStdError    PARAMS ((const char * fmt, ...));
 extern void PushStdWarn     PARAMS ((const char * fmt, ...));
-extern void ErrorExit	    PARAMS ((int ec));
+extern void ErrorExit	    PARAMS ((int ec)) __attribute__ ((noreturn));
 
 #endif /* TOOLLIB_ERROR_H */
 
