@@ -22,13 +22,13 @@
 
 int main (void)
 {
-    printf ("# Macros\n"
+    printf ("/* Macros */\n"
 	"#define AROS_CSYMNAME(n)       n\n"
 	"#define AROS_CDEFNAME(n)       n\n"
 	"#define AROS_SLIB_ENTRY(n,s)   s ## _ ## n\n"
 	    "\n");
 
-    printf ("# ExecBase\n");
+    printf ("/* ExecBase */\n");
     printf ("#define AttnResched   %d\n", offsetof (struct ExecBase, AttnResched));
     printf ("#define IDNestCnt     %d\n", offsetof (struct ExecBase, IDNestCnt));
     printf ("#define TDNestCnt     %d\n", offsetof (struct ExecBase, TDNestCnt));
@@ -36,7 +36,7 @@ int main (void)
     printf ("#define ThisTask      %d\n", offsetof (struct ExecBase, ThisTask));
     printf ("#define SysFlags      %d\n", offsetof (struct ExecBase, SysFlags));
 
-    printf ("\n# struct Task\n");
+    printf ("\n/* struct Task */\n");
     printf ("#define tc_State      %d\n", offsetof (struct Task, tc_State));
     printf ("#define tc_Flags      %d\n", offsetof (struct Task, tc_Flags));
     printf ("#define tc_ExceptCode %d\n", offsetof (struct Task, tc_ExceptCode));
@@ -51,15 +51,15 @@ int main (void)
     printf ("#define tc_IDNestCnt  %d\n", offsetof (struct Task, tc_IDNestCnt));
     printf ("#define tc_UnionETask %d\n", offsetof (struct Task, tc_UnionETask));
 
-    printf ("\n# struct DosBase\n");
+    printf ("\n/* struct DosBase */\n");
     printf ("#define dl_SysBase    %d\n", offsetof (struct DosLibrary, dl_SysBase));
 
-    printf ("\n# struct StackSwapStruct\n");
+    printf ("\n/* struct StackSwapStruct */\n");
     printf ("#define stk_Lower     %d\n", offsetof (struct StackSwapStruct, stk_Lower));
     printf ("#define stk_Upper     %d\n", offsetof (struct StackSwapStruct, stk_Upper));
     printf ("#define stk_Pointer   %d\n", offsetof (struct StackSwapStruct, stk_Pointer));
 
-    printf ("\n# struct sigcontext_struct\n");
+    printf ("\n/* struct sigcontext_struct */\n");
     printf ("#define sc_mask       %d\n", offsetof (struct sigcontext_struct, sc_mask));
     printf ("#define sc_usp        %d\n", offsetof (struct sigcontext_struct, sc_usp));
     printf ("#define sc_d0         %d\n", offsetof (struct sigcontext_struct, sc_d0));
@@ -69,14 +69,14 @@ int main (void)
     printf ("#define sc_pc         %d\n", offsetof (struct sigcontext_struct, sc_pc));
     printf ("#define sc_size       %d\n", sizeof (struct sigcontext_struct));
 
-    printf ("\n# struct AROS_cpu_context\n");
+    printf ("\n/* struct AROS_cpu_context */\n");
     printf ("#define regs          %d\n", offsetof (struct AROS_cpu_context, regs));
     printf ("#define fpregs        %d\n", offsetof (struct AROS_cpu_context, fpregs));
 
-    printf ("\n# struct IntETask\n");
+    printf ("\n/* struct IntETask */\n");
     printf ("#define iet_Context   %d\n", offsetof (struct IntETask, iet_Context));
 
-    printf ("\n# Task Flags\n");
+    printf ("\n/* Task Flags */\n");
     printf ("#define TS_RUN        %d\n", TS_RUN);
     printf ("#define TS_READY      %d\n", TS_READY);
     printf ("#define TS_REMOVED    %d\n", TS_REMOVED);
@@ -87,7 +87,7 @@ int main (void)
     printf ("#define TB_SWITCH     %d\n", TB_SWITCH);
     printf ("#define TB_LAUNCH     %d\n", TB_LAUNCH);
 
-    printf ("\n# Exec functions\n");
+    printf ("\n/* Exec functions */\n");
     printf ("#define Switch        %d\n", FuncOffset (9));
     printf ("#define Dispatch      %d\n", FuncOffset (10));
     printf ("#define Exception     %d\n", FuncOffset (11));
@@ -98,7 +98,7 @@ int main (void)
     printf ("#define CopyMem       %d\n", FuncOffset (104));
     printf ("#define StackSwap     %d\n", FuncOffset (122));
 
-    printf ("\n# Constants\n");
+    printf ("\n/* Constants */\n");
     printf ("#define AT_DeadEnd    0x%08X\n", AT_DeadEnd);
     printf ("#define AN_StackProbe 0x%08X\n", AN_StackProbe);
 
