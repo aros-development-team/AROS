@@ -207,7 +207,7 @@ do                                          \
 
 	    #include <stdarg.h>
 
-	    static void callback(UBYTE chr __reg(d0), UBYTE **data, __reg(a3))
+	    static void callback(UBYTE chr __reg(d0), UBYTE **data __reg(a3))
 	    {
 	       *(*data)++=chr;
 	    }
