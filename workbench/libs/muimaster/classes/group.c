@@ -2789,6 +2789,8 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case MUIM_DeleteBubble:
     case MUIM_CreateShortHelp:
     case MUIM_DeleteShortHelp:
+    case OM_ADDTAIL:
+    case OM_REMOVE:    
     	return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded? */
     }
     
