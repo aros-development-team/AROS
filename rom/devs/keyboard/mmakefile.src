@@ -5,9 +5,8 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(TOP)/rom/devs
 
-%build_module_macro mmake=kernel-keyboard \
+%build_module mmake=kernel-keyboard \
   modname=keyboard modtype=device \
-  initfile=keyboard \
-  conffile=lib.conf
+  files=keyboard
 
 %common

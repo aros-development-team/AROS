@@ -15,6 +15,7 @@
 #include <exec/interrupts.h>
 #include <exec/devices.h>
 
+#include <oop/oop.h>
 
 #define KB_MAXKEYS     256
 #define KB_MATRIXSIZE  (KB_MAXKEYS/(sizeof(UBYTE)*8))
@@ -27,7 +28,7 @@ struct KeyboardBase
     struct ExecBase   *kb_sysBase;
     struct Library    *kb_LowLevelBase;
 
-    BPTR               kb_seglist;
+    APTR               kb_seglist;
     
     struct MinList          kb_PendingQueue;  /* IOrequests (KBD_READEVENT) not done quick */
     struct SignalSemaphore  kb_QueueLock;

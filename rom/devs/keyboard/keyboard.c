@@ -28,7 +28,7 @@
 #include <utility/utility.h>
 #include <hidd/keyboard.h>
 #include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include "abstractkeycodes.h"
 #include "keyboard_intern.h"
 #include "devs_private.h"
@@ -36,6 +36,8 @@
 #ifdef  __GNUC__
 #include "keyboard_gcc.h"
 #endif
+
+#include LC_LIBDEFS_FILE
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -86,68 +88,6 @@
 
 /****************************************************************************************/
 
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-static const UBYTE datatable;
-
-struct KeyboardBase *AROS_SLIB_ENTRY(init, Keyboard)();
-void AROS_SLIB_ENTRY(open, Keyboard)();
-BPTR AROS_SLIB_ENTRY(close, Keyboard)();
-BPTR AROS_SLIB_ENTRY(expunge, Keyboard)();
-int  AROS_SLIB_ENTRY(null, Keyboard)();
-void AROS_SLIB_ENTRY(beginio, Keyboard)();
-LONG AROS_SLIB_ENTRY(abortio, Keyboard)();
-
-static const char end;
-
-int AROS_SLIB_ENTRY(entry, Keyboard)(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-const struct Resident Keyboard_resident =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&Keyboard_resident,
-    (APTR)&end,
-    RTF_AUTOINIT|RTF_COLDSTART,
-    41,
-    NT_DEVICE,
-    44,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[] = "keyboard.device";
-
-static const char version[] = "$VER: keyboard.device 41.0 (13.4.1998)\r\n";
-
-static const APTR inittabl[4] =
-{
-    (APTR)sizeof(struct KeyboardBase),
-    (APTR)functable,
-    (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init, Keyboard)
-};
-
-static void *const functable[] =
-{
-    &AROS_SLIB_ENTRY(open, Keyboard),
-    &AROS_SLIB_ENTRY(close, Keyboard),
-    &AROS_SLIB_ENTRY(expunge, Keyboard),
-    &AROS_SLIB_ENTRY(null, Keyboard),
-    &AROS_SLIB_ENTRY(beginio, Keyboard),
-    &AROS_SLIB_ENTRY(abortio, Keyboard),
-    (void *)-1
-};
-
-
-/****************************************************************************************/
-
 #if NEWSTYLE_DEVICE
 
 static const UWORD SupportedCommands[] =
@@ -176,48 +116,36 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase);
     
 /****************************************************************************************/
 
-AROS_UFH3(struct KeyboardBase *, AROS_SLIB_ENTRY(init,Keyboard),
- AROS_UFHA(struct KeyboardBase *,   KBBase,	D0),
- AROS_UFHA(BPTR,		    segList,	A0),
- AROS_UFHA(struct ExecBase *,	    sysBase,	A6)
-)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, KBBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
 
     /* reset static data */
     HiddKbdAB = 0;
 
-    /* Store arguments */
-    KBBase->kb_sysBase = sysBase;
-    KBBase->kb_seglist = segList;
-    
     InitSemaphore(&KBBase->kb_QueueLock);
     NEWLIST(&KBBase->kb_ResetHandlerList);
     NEWLIST(&KBBase->kb_PendingQueue);
     
-    return KBBase;
-    AROS_USERFUNC_EXIT
+    return TRUE;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH3(void, open,
- AROS_LHA(struct IORequest *, ioreq, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	   struct KeyboardBase *, KBBase, 1, Keyboard)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		    LIBBASETYPE, KBBase,
+		    struct IORequest, ioreq,
+		    unitnum, flags
+)
 {
-    AROS_LIBFUNC_INIT
-
-    /* Keep compiler happy */
-    unitnum = 0;
-    flags   = 0;
+    AROS_SET_DEVFUNC_INIT
 
     if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
     {
         D(bug("keyport.device/open: IORequest structure passed to OpenDevice is too small!\n"));
         ioreq->io_Error = IOERR_OPENFAIL;
-	return;
+	return FALSE;
     }
     
     if(KBBase->kb_keyBuffer == NULL)
@@ -229,13 +157,13 @@ AROS_LH3(void, open,
     if(KBBase->kb_keyBuffer == NULL)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
-	return;
+	return FALSE;
     }
 
     if((ioreq->io_Unit = AllocMem(sizeof(KBUnit), MEMF_CLEAR)) == NULL)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
-	return;
+	return FALSE;
     }
 
 /* nlorentz: Some extra stuff that must be inited */
@@ -246,7 +174,7 @@ AROS_LH3(void, open,
 	if (NULL == KBBase->kb_Matrix)
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
-	    return;
+	    return FALSE;
 	}
     }
     
@@ -256,7 +184,7 @@ AROS_LH3(void, open,
 	if (!KBBase->kb_OOPBase)
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
-	    return;
+	    return FALSE;
 	}
     }
     
@@ -267,7 +195,7 @@ AROS_LH3(void, open,
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
 	    D(bug("keyboard.device: Could not get attrbase\n"));
-	    return;
+	    return FALSE;
 	}
     }
     D(bug("keyboard.device: Attrbase: %x\n", HiddKbdAB));
@@ -278,7 +206,7 @@ AROS_LH3(void, open,
     KBBase->kb_Interrupt.is_Code = kbdSendQueuedEvents;
 	
 /******* nlorentz: End of stuff added by me ********/
-
+    
 
 /* nlorentz: No lowlevel library yet */
 #if 0
@@ -288,85 +216,47 @@ AROS_LH3(void, open,
 
 	/* Install our own keyboard handler if opened for the first time */
 	if(KBBase->kb_LowLevelBase)
- 	    if((KBBase->kb_kbIrqHandle = AddKBInt(keyCallback, KBBase) == NULL)
+ 	    if((KBBase->kb_kbIrqHandle = AddKBInt(keyCallback, KBBase)) == NULL)
 	    {
 	        CloseLibrary(KBBase->kb_LowLevelBase);
 		KBBase->kb_LowLevelBase = NULL; /* Do cleanup below. */
             }
 
     }
-
+    
     if(!KBBase->kb_LowLevelBase)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
-	return;
+	return FALSE;
 	/* TODO: Clean up. */
     }
 #endif
 
-    /* I have one more opener. */
-    KBBase->kb_device.dd_Library.lib_OpenCnt++;
-
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+    
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IORequest *,    ioreq,  A1),
-	  struct KeyboardBase *, KBBase, 2, Keyboard)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, KBBase,
+		      struct IORequest, ioreq
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 
     FreeMem(ioreq->io_Unit, sizeof(KBUnit));
 
-    /* Let any following attemps to use the device crash hard. */
-    ioreq->io_Device = (struct Device *)-1;
-
-    KBBase->kb_device.dd_Library.lib_OpenCnt--;
-    if(KBBase->kb_device.dd_Library.lib_OpenCnt == 0)
-	expunge();
-
-    return 0;
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0(BPTR, expunge, struct KeyboardBase *, KBBase, 3, Keyboard)
-{
-    AROS_LIBFUNC_INIT
-
-    /* TODO: Deallocate key buffer and matrix, and shut down the keyboard
-             interrupt. */
-#if 0
-
-    RemKBInt(KBBase->kb_kbIrqHandle);
-
-    /* Free buffers _after_ removing the interrupt. */
-    FreeMem(KBBase->kb_Matrix, KB_MATRIXSIZE);
-    FreeMem(KBBase->kb_keyBuffer, KB_BUFFERSIZE*sizeof(UWORD));
-
-    CloseLibrary(KBBase->kb_LowLevelBase);
-    KBBase->kb_LowLevelBase = NULL;
-
-#endif
-
-    /* Do not expunge the device. Set the delayed expunge flag and return. */
-    KBBase->kb_device.dd_Library.lib_Flags |= LIBF_DELEXP;
-    return 0;
-
-    AROS_LIBFUNC_EXIT
-}
-
-/****************************************************************************************/
-
-AROS_LH0I(int, null, struct KeyboardBase *, KBBase, 4, Keyboard)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 /****************************************************************************************/
 
