@@ -411,11 +411,12 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     char *format = NULL;
     
     obj = (Object *)DoSuperNew(cl, obj,
-	MUIA_InnerLeft,0,
-	MUIA_InnerRight,0,
-	MUIA_InnerTop,0,
-	MUIA_InnerBottom,0,
+/*  	MUIA_InnerLeft,0, */
+/*  	MUIA_InnerRight,0, */
+/*  	MUIA_InnerTop,0, */
+/*  	MUIA_InnerBottom,0, */
 	MUIA_Font, MUIV_Font_List,
+	MUIA_Background, MUII_ListBack,
     	TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
 
@@ -427,10 +428,9 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->intern_tresh_size = 1024;
     data->input = 1;
 
-    SetAttrs(obj,
-	MUIA_Background, MUII_ListBack,
-	MUIA_FillArea,FALSE,
-	TAG_DONE);
+/*      SetAttrs(obj, */
+/*    	MUIA_FillArea,FALSE, */
+/*  	TAG_DONE); */
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
