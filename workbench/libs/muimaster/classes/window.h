@@ -42,6 +42,7 @@ struct MUI_WindowData
     UWORD          wd_innerBottom;
 
     Object *       wd_DragObject; /* the object which is being dragged */
+    Object *       wd_DropObject; /* the destination object */
     struct DragNDrop *wd_dnd;
     struct MUI_DragImage *wd_DragImage;
 };

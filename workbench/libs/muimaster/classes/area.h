@@ -77,6 +77,7 @@ struct MUI_AreaData
 #define MADF_ACTIVE            (1<< 21)
 #define MADF_DRAGGABLE         (1<< 22)
 #define MADF_DRAGGING          (1<< 23)
+#define MADF_DROPABLE          (1<< 24)
 
 #define DRAW_BG_RECURSIVE (1<<1)
 
@@ -220,6 +221,14 @@ enum {
     MUIV_InputMode_Toggle,
 };
 
+#define MUIV_DragQuery_Refuse 0
+#define MUIV_DragQuery_Accept 1
+
+#define MUIV_DragReport_Abort    0
+#define MUIV_DragReport_Continue 1
+#define MUIV_DragReport_Lock     2
+#define MUIV_DragReport_Refresh  3
+
 /*** Private ***/
 
 /* Methods */
@@ -234,11 +243,13 @@ enum {
 };
 
 #define MUIM_Timer 0x90092032 /* PRIV */
+#define MUIM_DragQueryExtended 0x90092033 /* PRIV - returns a object or NULL */
 
 struct  MUIP_CustomBackfill  { ULONG MethodID; LONG left; LONG top; LONG right; LONG bottom; LONG xoffset; LONG yoffset; };
 struct  MUIP_DeleteDragImage { ULONG MethodID; struct MUI_DragImage *di; };              /* Custom Class */
 struct  MUIP_CreateDragImage { ULONG MethodID; LONG touchx; LONG touchy; ULONG flags; }; /* Custom Class */
 struct  MUIP_DoDrag          { ULONG MethodID; LONG touchx; LONG touchy; ULONG flags; }; /* Custom Class */
+struct  MUIP_DragQueryExtended { ULONG MethodID; Object *obj; LONG x; LONG y; };
 
 /* Attributes */
 

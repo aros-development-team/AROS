@@ -279,13 +279,67 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     	if (imsg->Class == IDCMP_MOUSEMOVE)
     	{
+    	    if (data->wd_DropObject)
+    	    {
+		if (imsg->MouseX < _left(data->wd_DropObject) || imsg->MouseX > _right(data->wd_DropObject) || imsg->MouseY < _top(data->wd_DropObject) || imsg->MouseY > _bottom(data->wd_DropObject))
+		{
+		    /* We have left the object */
+		    UndrawDragNDrop(data->wd_dnd);
+		    DoMethod(data->wd_DropObject, MUIM_DragFinish,data->wd_DragObject);
+		    data->wd_DropObject = NULL;
+		}
+	    }
+
+    	    if (!data->wd_DropObject)
+    	    {
+    	    	/* TODO: also should look inside diffeent windows */
+		if ((data->wd_DropObject = (Object*)DoMethod(data->wd_RootObject,MUIM_DragQueryExtended,data->wd_DragObject,imsg->MouseX,imsg->MouseY)))
+		{
+		    UndrawDragNDrop(data->wd_dnd);
+		    DoMethod(data->wd_DropObject, MUIM_DragBegin,data->wd_DragObject);
+		}
+	    }
+
+	    if (data->wd_DropObject)
+	    {
+	    	LONG update = 0;
+	    	LONG i;
+	    	for (i=0;i<2;i++)
+	    	{
+		    LONG res = DoMethod(data->wd_DropObject,MUIM_DragReport,data->wd_DragObject,imsg->MouseX,imsg->MouseY,update);
+		    switch (res)
+		    {
+			case    MUIV_DragReport_Abort:
+				UndrawDragNDrop(data->wd_dnd);
+				DoMethod(data->wd_DropObject, MUIM_DragFinish,data->wd_DragObject);
+				data->wd_DropObject = NULL;
+				break;
+
+			case    MUIV_DragReport_Continue: break;
+			case    MUIV_DragReport_Lock: break; /* NYI */
+			case    MUIV_DragReport_Refresh:
+				UndrawDragNDrop(data->wd_dnd);
+				update = 1;
+				break;
+		    }
+	    	}
+	    }
 	    DrawDragNDrop(data->wd_dnd, imsg->MouseX + iWin->LeftEdge , imsg->MouseY + iWin->TopEdge);
     	}
 
     	if (imsg->Class == IDCMP_MOUSEBUTTONS)
     	{
 	    if ((imsg->Code == MENUDOWN)  || (imsg->Code == SELECTUP))
+	    {
+	    	if (imsg->Code == SELECTUP && data->wd_DropObject)
+	    	{
+		    UndrawDragNDrop(data->wd_dnd);
+		    DoMethod(data->wd_DropObject, MUIM_DragFinish, data->wd_DragObject);
+		    DoMethod(data->wd_DropObject, MUIM_DragDrop, data->wd_DragObject, imsg->MouseX, imsg->MouseY);
+		    data->wd_DropObject = NULL;
+	    	}
 		finish_drag = 1;
+	    }
 	}
 
 	if (imsg->Class == IDCMP_CLOSEWINDOW) finish_drag = 1;
@@ -293,6 +347,11 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	if (finish_drag)
 	{
 	    UndrawDragNDrop(data->wd_dnd);
+	    if (data->wd_DropObject)
+	    {
+		DoMethod(data->wd_DropObject, MUIM_DragFinish,data->wd_DragObject);
+		data->wd_DropObject = NULL;
+	    }
 	    DeleteDragNDrop(data->wd_dnd);
 	    DoMethod(data->wd_DragObject,MUIM_DeleteDragImage, data->wd_DragImage);
 	    data->wd_DragImage = NULL;
