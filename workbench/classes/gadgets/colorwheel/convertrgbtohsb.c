@@ -58,6 +58,58 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, ColorWheelBase)
 
+#if FIXED_MATH
+    Fixed32 R, G, B, H, S, I, max, min, delta;
+    
+    R = rgb->cw_Red >> 16;
+    G = rgb->cw_Green >> 16;
+    B = rgb->cw_Blue >> 16;
+
+    max = MAX(MAX(R, G), B);
+    min = MIN(MIN(R, G), B);
+    
+    I = max;
+    
+    S = (max != 0) ? ( (ULONG) ( ( max - min ) << 16 ) / (ULONG) max ) : 0;
+    if( S >= (FIXED_ONE-1) ) S = FIXED_ONE-1;
+    
+    if (S == 0)
+    {
+        H = 0; /* -1.0; */
+    }
+    else
+    {
+	delta = max - min;
+
+	if (R == max)
+	{
+            H = FixDiv( (G - B), delta );
+	}
+	else if (G == max)
+	{
+            H = INT_TO_FIXED( 2 ) + FixDiv( (B - R), delta );
+	}
+	else if (B == max)
+	{
+            H = INT_TO_FIXED( 4 ) + FixDiv( (R - G), delta );
+        }
+	
+	H *= 60;
+
+	if (H < 0 )
+	{
+            H += INT_TO_FIXED( 360 );
+	}
+	
+	H /= 360;
+    }	
+
+    hsb->cw_Hue 	= H | ( H << 16 );
+    hsb->cw_Saturation  = S | ( S << 16 );
+    hsb->cw_Brightness  = I | ( I << 16 );
+
+#else /* FIXED_MATH */
+
 #if 1
 
     DOUBLE R, G, B, H, S, I, max, min, delta;
@@ -135,6 +187,8 @@
     hsb->cw_Brightness = (ULONG) rint (I * 0xFFFFFFFF);
 
 #endif
+
+#endif /* FIXED_MATH */
 
     AROS_LIBFUNC_EXIT
     

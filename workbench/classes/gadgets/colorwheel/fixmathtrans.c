@@ -215,48 +215,38 @@ unsigned short TanTab[MAX_TRIG+1] = {
 
 /****************************************************************************/
 
-Fixed32 FixSqrti(ULONG x) // 32 -> 16.16
+Fixed32 FixSqrti(ULONG x) // 16 -> 16.16
 {
-	ULONG		rt;
-	LONG		i,dx;
+    if( x )
+    {			
+	register unsigned long int xroot, m2, x2, dx = x;
 
-	switch( x )
+	xroot = 0;
+	m2 = 1 << 15 * 2;
+
+	do
 	{
-		case 0:
-			rt = 0;
-		break;
-		
-		case 1:
-			rt = FIXED_ONE;
-		break;
-		
-		default:
-			for(i=2;(x>>i)>0;i+=2);  // find top bit
+	    x2 = xroot + m2;
+	    xroot >>= 1;
 
-			rt = x>>(i>>1);
-			
-			while (x>=rt*rt+(rt<<1)+1)
-			{ 
-				i = (x/rt-rt)>>1;	//(aý+bý)=aý+2ab+bý; cý-aý=2ab+bý
-				rt += i;		//   (b ~= cý-aý)/2a
-				
-				while(x<=rt*rt-(rt<<1)+1)
-				{
-					i = (rt-x/rt)>>1;
-					rt -= i;
-				}
-		   	}
-		  
-			dx = ( (x) - (rt*rt) ) << 16;
-			dx /= ((LONG)rt)<<1;
-			rt = (rt<<16) + dx;
-	}	
-  
-	return (Fixed32) rt;
+	    if (x2 <= x)
+	    {
+		x -= x2;  xroot += m2;
+	    }
+	}
+	while (m2 >>= 2);
+
+	dx  = ( (dx) - (xroot*xroot) ) << 16;
+	dx /= ((long)xroot)<<1;
+
+	return (xroot<<16) + dx;
+    } 
+
+    return 0;
 }
 
 /****************************************************************************/
-
+#if 0
 Fixed32 FixSqrt( Fixed32 ecx )
 {
     LONG eax, ebx, edx;
@@ -328,8 +318,7 @@ lp6:
 
 Fixed32 FixSinCos( Fixed32 theta, Fixed32 *sinus )
 {
-//  theta = FIXED_TO_INT( FixDiv( FixMul( theta, INT_TO_FIXED( MAX_TRIG/2 ) ), FIXED_PI ) );
-    theta = FIXED_TO_INT( FixDiv( theta << 9, FIXED_PI ) );
+    theta = FIXED_TO_INT( FixMul( theta << 9, 20861 ) );
     theta &= (MAX_TRIG - 1);
     
     *sinus = SinCosTab[theta];
@@ -339,7 +328,7 @@ Fixed32 FixSinCos( Fixed32 theta, Fixed32 *sinus )
 		
 	return SinCosTab[theta];
 }	
-
+#endif
 /****************************************************************************/
 
 __inline static Fixed32 FixAtan( Fixed32 x )
@@ -348,6 +337,9 @@ __inline static Fixed32 FixAtan( Fixed32 x )
 }
 
 /****************************************************************************/
+
+#undef FixDiv
+#define FixDiv( x, y )	(((ULONG)x<<16)/(ULONG)y)
 
 Fixed32 FixAtan2( Fixed32 y, Fixed32 x )
 {	

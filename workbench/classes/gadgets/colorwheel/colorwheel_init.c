@@ -48,6 +48,9 @@ struct IntuitionBase *IntuitionBase;
 #define SysBase      (LC_SYSBASE_FIELD(lh))
 
 
+struct ColorWheelBase *ColorWheelBase;
+struct ColorWheelBase **cwbptr = &ColorWheelBase;
+
 #define ColorWheelBase ((LIBBASETYPEPTR) lh)
 
 /***************************************************************************************************/
@@ -56,6 +59,8 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     D(bug("Inside initfunc of colorwheel.gadget\n"));
 
+    *cwbptr = lh;
+    
     if (!GfxBase)
     	GfxBase = (GraphicsBase *) OpenLibrary ("graphics.library", 37);
     if (!GfxBase)
@@ -71,6 +76,11 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!IntuitionBase)
 	return NULL;
 
+    if (!LayersBase)
+    	LayersBase = OpenLibrary ("layers.library", 39);
+    if (!LayersBase)
+    	return NULL;
+	
     if (!CyberGfxBase)
         CyberGfxBase = OpenLibrary ("cybergraphics.library", 0);
     /* we can live even without CyberGfxBase */
@@ -104,6 +114,9 @@ void SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
     CloseLibrary ((struct Library *) IntuitionBase);
     IntuitionBase = NULL;
 
+    CloseLibrary(LayersBase);
+    LayersBase = NULL;
+    
     CloseLibrary(CyberGfxBase);
     CyberGfxBase = NULL;
 
