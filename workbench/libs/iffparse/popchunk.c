@@ -119,9 +119,6 @@
 
 	    if (err) return (err);
 
-
-
-
 	}
 	else  /* IFFSIZE known at PushChunk() time */
 	    size = cn->cn_Size;
@@ -138,12 +135,9 @@
 		IPB(IFFParseBase)
 	    );
 	    
-	    if (err) return (err);
+	    if (err < 0) return (err);
 	    size++;
-
 	}
-
-
 
 	if
 	(
@@ -160,7 +154,6 @@
 	}
     }
 
-
     /* Actually pop the top context-node. (Done for both handles in Read & Write mode) */
 
     PopContextNode(iff, IPB(IFFParseBase));
@@ -170,7 +163,7 @@
     if (iff->iff_Flags & IFFF_WRITE)
     {
         cn = TopChunk(iff);
-	
+
 	/* Might work without this check, because there seems to be always at
 	   least one contextnode --> see AllocIFF) */
 	if (cn->cn_Node.mln_Succ)
