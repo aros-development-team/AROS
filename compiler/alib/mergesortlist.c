@@ -180,9 +180,9 @@
 	       1) In the first case, it serves to build the 
 	          circular list.
 		  
-	       2) In the 2nd case, it does hald the job of
+	       2) In the 2nd case, it does 1/4 of the job of
 	          reversing the order of the nodes (the 
-		  other half is done inside the if block).  */
+		  other 3/4 are done inside the if block).  */
         l1->mln_Pred = l2;
 	
 	if (compare(l1, l2, data) >= 0)
