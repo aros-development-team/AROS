@@ -18,6 +18,12 @@
 #include <dos/dos.h>
 
 
+#define USE_FAST_PUTPIXEL		1
+#define OPTIMIZE_DRAWPIXEL_FOR_COPY	1
+#define USE_FAST_DRAWPIXEL		1
+#define USE_FAST_GETPIXEL		1
+#define COPYBOX_CHECK_FOR_ALIKE_PIXFMT	1
+
     
 #define GOT_PF_ATTR(code)	GOT_ATTR(code, aoHidd_PixFmt, pixfmt)
 #define FOUND_PF_ATTR(code)	FOUND_ATTR(code, aoHidd_PixFmt, pixfmt);
@@ -157,7 +163,6 @@ struct HIDDBitMapData
     BOOL  displayable;   /* bitmap displayable?           */
     BOOL  pf_registered;
     ULONG flags;         /* see hidd/graphic.h 'flags for */
-                         /* HIDD_Graphics_CreateBitMap'   */
 #if 0
     ULONG format;        /* planar or chunky              */
     ULONG bytesPerRow;   /* bytes per row                 */
@@ -171,6 +176,19 @@ struct HIDDBitMapData
     Object *gfxhidd;
     
     Object *colmap;
+
+    /* Optimize these two method calls */
+#if USE_FAST_PUTPIXEL    
+    IPTR (*putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg);
+#endif
+#if USE_FAST_GETPIXEL    
+    IPTR (*getpixel)(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg);
+#endif
+
+#if USE_FAST_DRAWPIXEL    
+    IPTR (*drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel *msg);
+#endif
+
 
 
 };
@@ -227,6 +245,18 @@ struct class_static_data
     Class		 *chunkybmclass;
     
     Object		*std_pixfmts[num_Hidd_StdPixFmt];
+    
+    /* Thes calls are optimized by calling the method functions directly	*/
+#if USE_FAST_PUTPIXEL
+    MethodID		putpixel_mid;
+#endif
+#if USE_FAST_GETPIXEL
+    MethodID		getpixel_mid;
+#endif
+#if USE_FAST_DRAWPIXEL
+    MethodID		drawpixel_mid;
+#endif
+    
 };
 
 

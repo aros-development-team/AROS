@@ -49,6 +49,18 @@ static struct ABDescr attrbases[] = {
 	|| (y) < GC_CLIPY1(gc)		\
 	|| (y) > GC_CLIPY2(gc) )
 
+
+#define HBM(x) ((struct HIDDBitMapData *)x)
+
+#define PUTPIXEL(o, msg)	\
+    HBM(o)->putpixel(OCLASS(o), o, msg)
+
+#define GETPIXEL(o, msg)	\
+    HBM(o)->getpixel(OCLASS(o), o, msg)
+
+#define DRAWPIXEL(o, msg)	\
+    HBM(o)->drawpixel(OCLASS(o), o, msg)
+    
 /*** BitMap::New() ************************************************************/
 
 
@@ -175,15 +187,33 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 		} else {
 		    data->width	 = attrs[AO(Width)];
 		    data->height = attrs[AO(Height)];
-		    data->prot.pixfmt = attrs[AO(PixFmt)]; 
+		    data->prot.pixfmt = (Object *)attrs[AO(PixFmt)]; 
 		}
 	    } /* displayable */
 	} /* if (ok) */
 	
-	
-	
 	/* Try to create the colormap */
 	if (ok) {
+	    /* initialize the direct method calling */
+#if USE_FAST_PUTPIXEL
+	    data->putpixel = (IPTR (*)(Class *, Object *, struct pHidd_BitMap_PutPixel *))
+				    GetMethod(obj, CSD(cl)->putpixel_mid);
+	    if (NULL == data->putpixel)
+		ok = FALSE;
+#endif
+#if USE_FAST_GETPIXEL
+	    data->getpixel = (IPTR (*)(Class *, Object *, struct pHidd_BitMap_GetPixel *))
+				    GetMethod(obj, CSD(cl)->getpixel_mid);
+	    if (NULL == data->getpixel)
+		ok = FALSE;
+#endif
+
+#if USE_FAST_DRAWPIXEL
+	    data->drawpixel = (IPTR (*)(Class *, Object *, struct pHidd_BitMap_DrawPixel *))
+				    GetMethod(obj, CSD(cl)->drawpixel_mid);
+	    if (NULL == data->drawpixel)
+		ok = FALSE;
+#endif
 	    data->colmap = NewObject(NULL, CLID_Hidd_ColorMap, colmap_tags);
 	    if (NULL == data->colmap)
 		ok = FALSE;
@@ -352,9 +382,13 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 
 static ULONG bitmap_drawpixel(Class *cl, Object *obj, struct pHidd_BitMap_DrawPixel *msg)
 {
-    ULONG src, dest, val, mode;
-    ULONG writeMask;
+    HIDDT_Pixel src, dest, val;
+    HIDDT_DrawMode mode;
+    HIDDT_Pixel writeMask;
     Object *gc;
+#if USE_FAST_PUTPIXEL
+    struct pHidd_BitMap_PutPixel p;
+#endif
 
 /*    EnterFunc(bug("BitMap::DrawPixel() x: %i, y: %i\n", msg->x, msg->y));
 */
@@ -388,8 +422,15 @@ static ULONG bitmap_drawpixel(Class *cl, Object *obj, struct pHidd_BitMap_DrawPi
     gc = msg->gc;
 
     src       = GC_FG(gc);
-    dest      = HIDD_BM_GetPixel(obj, msg->x, msg->y);
     mode      = GC_DRMD(gc);
+    
+#if OPTIMIZE_DRAWPIXEL_FOR_COPY
+    if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0UL) {
+	val = src;
+    } else {
+#endif
+
+    dest      = HIDD_BM_GetPixel(obj, msg->x, msg->y);
     writeMask = ~GC_COLMASK(gc) & dest;
 
     if(mode & 1) val = ( src &  dest);
@@ -399,8 +440,20 @@ static ULONG bitmap_drawpixel(Class *cl, Object *obj, struct pHidd_BitMap_DrawPi
 
     val = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
 
-    HIDD_BM_PutPixel(obj, msg->x, msg->y, val);
+#if OPTIMIZE_DRAWPIXEL_FOR_COPY
+}
+#endif
 
+#if USE_FAST_PUTPIXEL
+    p.mID	= CSD(cl)->putpixel_mid;
+    p.x		= msg->x;
+    p.y		= msg->y;
+    p.pixel	= val;
+    PUTPIXEL(obj, &p);
+#else
+
+    HIDD_BM_PutPixel(obj, msg->x, msg->y, val);
+#endif
 
 /*    ReturnInt("BitMap::DrawPixel ", ULONG, 1); */ /* in quickmode return always 1 */
     return 1;
@@ -668,8 +721,26 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     
     HIDDT_PixelFormat *srcpf, *dstpf;
     struct HIDDBitMapData *data;
+    Object *dest;
+    
     
     Object *gc;
+#if USE_FAST_GETPIXEL
+    struct pHidd_BitMap_GetPixel get_p;
+#endif
+
+#if USE_FAST_DRAWPIXEL
+    struct pHidd_BitMap_DrawPixel draw_p;
+    
+    draw_p.mID	= CSD(cl)->drawpixel_mid;
+    draw_p.gc	= msg->gc;
+#endif
+
+#if USE_FAST_GETPIXEL
+    get_p.mID	= CSD(cl)->getpixel_mid;
+#endif
+    
+    dest = msg->dest;
 
     EnterFunc(bug("BitMap::CopyBox()"));
     
@@ -677,9 +748,9 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     data = INST_DATA(cl, obj);
     srcpf = (HIDDT_PixelFormat *)data->prot.pixfmt;
     
-kprintf("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OCLASS: %s\n", srcpf, obj
+/* kprintf("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OCLASS: %s\n", srcpf, obj
 	, cl->ClassNode.ln_Name, OCLASS(obj)->ClassNode.ln_Name);
-	
+*/	
     GetAttr(msg->dest, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
     
     /* Compare graphtypes */
@@ -706,7 +777,7 @@ kprintf("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OCLASS: %s\n", srcpf, obj
 
     if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
     	if (IS_TRUECOLOR(srcpf)) {
-kprintf("COPY FROM TRUECOLOR TO TRUECOLOR\n");
+// kprintf("COPY FROM TRUECOLOR TO TRUECOLOR\n");
 	    for(y = 0; y < msg->height; y++) {
 #warning Maybe do a special case if both pixel formats are the same; no need for MapColor/UnmapPixel    
 		HIDDT_Color col;
@@ -716,13 +787,34 @@ kprintf("COPY FROM TRUECOLOR TO TRUECOLOR\n");
 		
 		for(x = 0; x < msg->width; x++) {
 		    HIDDT_Pixel pix;
-	    
-		    pix = HIDD_BM_GetPixel(obj, srcX++, srcY);
-		    HIDD_BM_UnmapPixel(obj, pix, &col);
 		    
+#if USE_FAST_GETPIXEL
+		    get_p.x = srcX ++;
+		    get_p.y = srcY;
+		    pix = GETPIXEL(obj, &get_p);
+#else
+		    pix = HIDD_BM_GetPixel(obj, srcX++, srcY);
+#endif
+
+#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
+		    if (srcpf == dstpf) {
+			GC_FG(gc) = pix;
+		    } else {
+#endif
+		    HIDD_BM_UnmapPixel(obj, pix, &col);
 		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &col);
+#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
+		    }
+#endif
+
+#if USE_FAST_DRAWPIXEL
+		    draw_p.x = destX ++;
+		    draw_p.y = destY;
+		    DRAWPIXEL(dest, &draw_p);
+#else
 		    
 		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
+#endif
 		}
             	srcY++; destY++;
 	    }
@@ -732,7 +824,7 @@ kprintf("COPY FROM TRUECOLOR TO TRUECOLOR\n");
 	        For this case we do NOT convert through RGB,
 		but copy the pixel indexes directly
 	     */
-kprintf("COPY FROM PALETTE TO PALETTE\n");
+// kprintf("COPY FROM PALETTE TO PALETTE\n");
 #warning This might not work very well with two StaticPalette bitmaps
 	    for(y = 0; y < msg->height; y++) {
 		srcX  = memSrcX;
@@ -757,7 +849,7 @@ kprintf("COPY FROM PALETTE TO PALETTE\n");
 	} else if (IS_TRUECOLOR(dstpf)) {
 	    /* Get the colortab */
 	    HIDDT_Color *ctab = ((HIDDT_ColorLUT *)data->colmap)->colors;
-kprintf("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab);
+// kprintf("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab);
 
 	    
 	    for(y = 0; y < msg->height; y++) {

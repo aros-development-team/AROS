@@ -1130,6 +1130,16 @@ D(bug("Creating std pixelfmts\n"));
     	goto failexit;
 D(bug("Pixfmts created\n"));
 
+    /* Get two methodis required for direct method execution */
+#if USE_FAST_PUTPIXEL
+    csd->putpixel_mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutPixel);
+#endif
+#if USE_FAST_GETPIXEL
+    csd->getpixel_mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixel);
+#endif
+#if USE_FAST_DRAWPIXEL
+    csd->drawpixel_mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_DrawPixel);
+#endif
 
     ReturnPtr("init_gfxhiddclass", Class *, cl);
     
