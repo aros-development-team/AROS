@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define MUIMASTER_YES_INLINE_STDARG
+
 #include <exec/types.h>
 #include <utility/date.h>
 
