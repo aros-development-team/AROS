@@ -132,10 +132,24 @@ BEGIN {
 			if (match(line,/[ \t]*([a-zA-Z_]+,[ \t]*)*[a-zA-Z_]+[ \t]*-/))
 			{
 			    print "<DT>"substr(line,RSTART,RLENGTH-1) >> out;
-			    print "<DD>"substr(line,RSTART+RLENGTH) >> out;
+
+			    line=substr(line,RSTART+RLENGTH);
+			    gsub(/&/,"\\&amp;",line);
+			    gsub(/</,"\\&lt;",line);
+			    gsub(/>/,"\\&gt;",line);
+			    gsub(/"/,"\\&quot;",line);
+
+			    print "<DD>"line >> out;
 			}
 			else
+			{
+			    gsub(/&/,"\\&amp;",line);
+			    gsub(/</,"\\&lt;",line);
+			    gsub(/>/,"\\&gt;",line);
+			    gsub(/"/,"\\&quot;",line);
+
 			    print line >> out;
+			}
 
 			#if (line=="" && !first)
 			#    print "<P>\n" >> out;
@@ -150,7 +164,14 @@ BEGIN {
 			if (line=="" && !first)
 			    print "<P>\n" >> out;
 			else
+			{
+			    gsub(/&/,"\\&amp;",line);
+			    gsub(/</,"\\&lt;",line);
+			    gsub(/>/,"\\&gt;",line);
+			    gsub(/"/,"\\&quot;",line);
+
 			    print line >> out;
+			}
 
 			first=0;
 		    }
@@ -192,6 +213,11 @@ BEGIN {
 				}
 				else
 				{
+				    gsub(/&/,"\\&amp;",rest);
+				    gsub(/</,"\\&lt;",rest);
+				    gsub(/>/,"\\&gt;",rest);
+				    gsub(/"/,"\\&quot;",rest);
+
 				    line=line rest;
 				    rest="";
 				}
