@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/31 13:51:18  aros
+    Create and free the RastPort with the new functions
+
     Revision 1.2  1996/10/24 15:51:20  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -61,26 +64,31 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    struct RastPort rp;
+    struct RastPort * rp;
     struct TextFont * newfont;
     LONG width;
 
-    InitRastPort (&rp);
+    rp = CreateRastPort ();
 
-    if (iText->ITextFont)
+    if (rp)
     {
-	newfont = OpenFont (iText->ITextFont);
+	if (iText->ITextFont)
+	{
+	    newfont = OpenFont (iText->ITextFont);
 
-	if (newfont)
-	    SetFont (&rp, newfont);
-    }
+	    if (newfont)
+		SetFont (rp, newfont);
+	}
 
-    width = TextLength (&rp, iText->IText, strlen (iText->IText));
+	width = TextLength (rp, iText->IText, strlen (iText->IText));
 
-    if (iText->ITextFont)
-    {
-	if (newfont)
-	    CloseFont (newfont);
+	if (iText->ITextFont)
+	{
+	    if (newfont)
+		CloseFont (newfont);
+	}
+
+	FreeRastPort (rp);
     }
 
     AROS_LIBFUNC_EXIT
