@@ -419,6 +419,7 @@ static void MakeGadgets(void)
 	    PGA_Total           , 100                                                                           ,
 	    PGA_Visible         , 100                                                                           ,
 	    PGA_Freedom         , FREEVERT                                                                      ,
+	    PGA_NotifyBehaviour , PG_BEHAVIOUR_NICE                                                             ,
 	    TAG_DONE);
 
     gad[GAD_RIGHTARROW] = NewObject(NULL, BUTTONGCLASS,
@@ -458,6 +459,7 @@ static void MakeGadgets(void)
 	    PGA_Total           ,100                                                                                    ,
 	    PGA_Visible         ,100                                                                                    ,
 	    PGA_Freedom         ,FREEHORIZ                                                                              ,
+	    PGA_NotifyBehaviour ,PG_BEHAVIOUR_NICE                                                                  	,
 	    TAG_DONE);
 
     for(i = 0;i < NUM_GADGETS;i++)
