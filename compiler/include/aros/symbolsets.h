@@ -56,11 +56,19 @@ ADD2SET(libraryset_##bname, __LIBS_SET__, pri)
 const ULONG bname##_version = ver
 
 /* some already allocated priorities for library opening/closing */
-#define LIBSET_EXEC_PRI      0
-#define LIBSET_DOS_PRI       1
-#define LIBSET_INTUITION_PRI 2
-#define LIBSET_UTILITY_PRI   5
-#define LIBSET_AROSC_PRI     20
+#define LIBSET_EXEC_PRI          0
+#define LIBSET_DOS_PRI           1
+#define LIBSET_INTUITION_PRI     2
+#define LIBSET_LAYERS_PRI        3
+#define LIBSET_GRAPHICS_PRI      4
+#define LIBSET_UTILITY_PRI       5
+#define LIBSET_IFFPARSE_PRI      6
+#define LIBSET_CYBERGRAPHICS_PRI 7
+#define LIBSET_DISKFONT_PRI      8
+#define LIBSET_LOCALE_PRI        9
+#define LIBSET_ASL_PRI           10
+
+#define LIBSET_AROSC_PRI         20
 
 /* User priorities starts from here */
 #define LIBSET_USER_PRI      100  /*An enough hight value, I think... */
