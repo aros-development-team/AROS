@@ -97,6 +97,7 @@ FUNCTIONS	:= \
 	setmaxpen \
 	setoutlinepen \
 	setrast \
+	setrgb4 \
 	setrgb32 \
 	setrpattrsa \
 	setwritemask \

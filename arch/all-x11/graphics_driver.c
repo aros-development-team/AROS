@@ -1551,6 +1551,21 @@ UX11
 
 } /* driver_SetRGB32 */
 
+void driver_SetRGB4 (struct ViewPort * vp, ULONG color,
+	    ULONG red, ULONG green, ULONG blue,
+	    struct GfxBase * GfxBase)
+{
+ 	driver_SetRGB32 (vp, t
+	    , (ULONG)( (red) + (red<<4) + (red<<8) + (red<<12)
+			+ (red<<16) + (red<<20) + (red<<24) + (red<<28) )
+	    , (ULONG)( (green) + (green<<4) + (green<<8) + (green<<12)
+			+ (green<<16) + (green<<20) + (green<<24) + (green<<28) )
+	    , (ULONG)( (blue) + (blue<<4) + (blue<<8) + (blue<<12)
+			+ (blue<<16) + (blue<<20) + (blue<<24) + (blue<<28) )
+	    , GfxBase
+	);
+}
+
 int highbit (int mask)
 {
     int bit;
