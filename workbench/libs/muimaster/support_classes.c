@@ -19,6 +19,7 @@
 #include "support_classes.h"
 #include "muimaster_intern.h"
 
+/*#define MYDEBUG*/
 #include "debug.h"
 
 static const struct __MUIBuiltinClass * const builtins[] =
@@ -185,6 +186,7 @@ Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
     Class *cl          = NULL;
     struct Library *mb = NULL;
 
+    D(bug("Makeing Builtinclass %s\n",classid));
 
     for (i = 0; i < sizeof(builtins)/sizeof(builtins[0]); i++)
     {
@@ -195,9 +197,12 @@ Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
 
 	    /* This may seem strange, but opening muimaster.library here is done in order to
                increase muimaster.library's open count, so that it doesn't get expunged
-	       while some of its internal classes are still in use.  */
+	       while some of its internal classes are still in use.
+	       We don't use muimaster.library directly but the name of the library
+	       stored inside the base, because the library can be compiled also as
+	       zunemaster.library  */
 
-	    mb = OpenLibrary("muimaster.library", 0);
+	    mb = OpenLibrary(MUIMasterBase->lib_Node.ln_Name, 0);
 
             /* It can't possibly fail, but well... */
 	    if (!mb)
