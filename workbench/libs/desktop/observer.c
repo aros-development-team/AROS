@@ -36,7 +36,7 @@ IPTR observerNew(Class *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-            case: OA_Presentation:
+            case OA_Presentation:
                 presentation = (Object*) tag->ti_Data;
                 break;
             
