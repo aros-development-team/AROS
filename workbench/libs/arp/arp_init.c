@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <utility/utility.h> /* this must be before mathtrans_intern.h */
+#include <proto/arp.h>
 
 #define NO_LIB_DEFINES 1
 #include "arp_intern.h"
@@ -77,7 +78,8 @@ ULONG SAVEDS L_OpenLib (LC_LIBHEADERTYPEPTR lh)
 void SAVEDS L_CloseLib(LC_LIBHEADERTYPEPTR lh)
 {
   /* Free everything this task has allocated via arp */
-  while (TRUE == FreeTaskResList());
+#warning FIXME!
+//while (TRUE == FreeTaskResList());
 } /* L_CloseLib */
 
 void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
