@@ -34,6 +34,7 @@
 extern struct ExecBase * PrepareExecBase(struct MemHeader *);
 extern void switch_to_user_mode(void *, ULONG *);
 extern void main_init_cont(void);
+extern struct MemHeader * detect_memory(void);
 
 
 /*
@@ -152,32 +153,21 @@ void processor_init(void)
 /************************************************************************************/
 extern ULONG initial_ssp;
 
-void main_init(void * memory, ULONG memSize)
+void main_init(void)
 {
 	struct ExecBase *SysBase = NULL;
 	ULONG * m68k_USP;
-	struct MemHeader *mh = NULL;
-	UWORD * ranges[] = {(UWORD *)0x10c00000 , (UWORD *)0x10c00000 + (1024 * 1024),
-	                    (UWORD *)~0};
+	UWORD * rom_ranges[] = {(UWORD *)0x10c00000 , (UWORD *)0x10c00000 + (1024 * 1024),
+	                        (UWORD *)~0};
+#define MAX_MEM_HEADERS 10
+	struct MemHeader * mh =  NULL;
 
 	processor_init();
+
 	/*
-	   Prepare first memory list. Our memory will start at 'memory'.
-	 */
-
-	mh=(struct MemHeader*)memory;
-	mh->mh_Node.ln_Type    = NT_MEMORY;
-	mh->mh_Node.ln_Name    = "chip memory";
-	mh->mh_Node.ln_Pri     = -5;
-	mh->mh_Attributes      = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA |
-	                         MEMF_KICK;
-	mh->mh_First           = (struct MemChunk *)((UBYTE*)mh+MEMHEADER_TOTAL);
-	mh->mh_First->mc_Next  = NULL;
-	mh->mh_First->mc_Bytes = memSize - MEMHEADER_TOTAL;
-	mh->mh_Lower           = mh->mh_First;
-	mh->mh_Upper           = (APTR)(memory + memSize);
-	mh->mh_Free            = mh->mh_First->mc_Bytes;
-
+	 * detect memory of the system
+	 */	
+	mh = detect_memory();
 
 	/*
 	    We have to put somewhere in this function checking for ColdStart,
@@ -217,7 +207,7 @@ void main_init(void * memory, ULONG memSize)
 	}
 	D(bug("SSP: %x\n",initial_ssp));
 
-	SysBase->ResModules=Exec_RomTagScanner(SysBase, ranges);
+	SysBase->ResModules=Exec_RomTagScanner(SysBase, rom_ranges);
 
 	/*
 	 * Init the core

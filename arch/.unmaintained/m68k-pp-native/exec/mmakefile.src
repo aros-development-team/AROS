@@ -36,7 +36,8 @@ FILES := coldreboot \
 
 COREFILES	:= init \
 	execstubs \
-	core
+	core \
+	detect_memory
 
 
 #MM
