@@ -10,8 +10,17 @@
 #include <libraries/mui.h>
 
 /*** Attributes *************************************************************/
-#define MUIA_ExecuteCommand_Lock (TAG_USER | 0x20000000)
-#define MUIA_ExecuteCommand_Name (TAG_USER | 0x20000001)
+/*+
+    [I..] BPTR
+    Lock on parent directory.
++*/
+#define MUIA_ExecuteCommand_Parent  (TAG_USER | 0x20000000)  
+
+/*+
+    [I..] CONST_STRPTR
+    Initial command line.
++*/
+#define MUIA_ExecuteCommand_Initial (TAG_USER | 0x20000001)
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *ExecuteCommand_CLASS;
