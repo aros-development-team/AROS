@@ -139,14 +139,13 @@ struct HIDDBitMapData
 /* Private bitmap attrs */
 
 enum {
-    aoHidd_BitMap_GfxHidd = num_Hidd_BitMap_Attrs,
+    aoHidd_BitMap_Dummy = num_Hidd_BitMap_Attrs,
     
     num_Total_BitMap_Attrs
     
 };
 
 
-#define aHidd_BitMap_GfxHidd	(HiddBitMapAttrBase + aoHidd_BitMap_GfxHidd)
 
 #if 0
 struct HIDDGCData

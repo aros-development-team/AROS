@@ -130,6 +130,7 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
     data->width		= width;
     data->height	= height;
     data->pixfmt  	= pfobj;
+    data->gfxhidd	= gfxhidd;
     
     return o;
      
@@ -141,7 +142,7 @@ static VOID gfxmode_dispose(Class *cl, Object *o, Msg msg)
      struct gfxmode_data *data;
      
      data = INST_DATA(cl, o);
-     
+
      HIDD_Gfx_ReleasePixFmt(data->gfxhidd, data->pixfmt);
      
      DoSuperMethod(cl, o, (Msg)msg);

@@ -567,9 +567,34 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     WORD  srcY = msg->srcY, destY = msg->destY;
     ULONG memFG;
     
+    HIDDT_PixelFormat *srcpf, *dstpf;
+    struct HIDDBitMapData *data;
+    
     Object *gc;
 
     EnterFunc(bug("BitMap::CopyBox()"));
+    
+    /* Get the source pixel format */
+    data = INST_DATA(cl, obj);
+    srcpf = &data->prot.pixfmt;
+    
+    dstpf = (HIDDT_PixelFormat *)HIDD_BM_GetPixelFormat(msg->dest, vHidd_PixFmt_Native);
+    
+    /* Compare graphtypes */
+    if (HIDD_PF_GRAPHTYPE(srcpf) == HIDD_PF_GRAPHTYPE(dstpf)) {
+    	/* It is ok to do a direct copy */
+    } else {
+    	/* Find out the gfx formats */
+	if (  IS_PALETTIZED(srcpf) && IS_TRUECOLOR(dstpf)) {
+	
+	} else if (IS_TRUECOLOR(srcpf) && IS_PALETTIZED(dstpf)) {
+	
+	} else if (IS_PALETTE(srcpf) && IS_STATICPALETTE(dstpf)) {
+	
+	} else if (IS_STATICPALETTE(srcpf) && IS_PALETTE(dstpf)) {
+	
+	}
+    }
     
     gc = msg->gc;
     

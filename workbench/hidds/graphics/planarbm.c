@@ -51,7 +51,8 @@ static Object *planarbm_new(Class *cl, Object *o, struct pRoot_New *msg)
     BOOL ok = TRUE;    
     
     struct planarbm_data *data;
-    
+
+kprintf("planarbm::new()\n");    
     o =(Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (NULL == o)
     	return NULL;
@@ -217,6 +218,7 @@ BOOL planarbm_setbitmap(Class *cl, Object *o, struct pHidd_PlanarBM_SetBitMap *m
     };
 	
     ULONG i;
+kprintf("PlanarBM::SetBitMap()\n");
     
     data = INST_DATA(cl, o);
     bm = msg->bitMap;
@@ -245,6 +247,7 @@ BOOL planarbm_setbitmap(Class *cl, Object *o, struct pHidd_PlanarBM_SetBitMap *m
     }
     
     /* Update the planes */
+   kprintf("Setting planes: planebuf_size=%d\n", data->planebuf_size);
     for (i = 0; i < data->planebuf_size; i ++) {
     	if (i < bm->Depth) 
    	    data->planes[i] = bm->Planes[i];
@@ -287,7 +290,7 @@ Class *init_planarbmclass(struct class_static_data *csd)
         {NULL, 0UL}
     };
 
-    struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
+    struct MethodDescr bitmap_descr[NUM_BITMAP_METHODS + 1] =
     {
         {(IPTR (*)())planarbm_putpixel		, moHidd_BitMap_PutPixel	},
         {(IPTR (*)())planarbm_getpixel		, moHidd_BitMap_GetPixel	},
@@ -302,9 +305,9 @@ Class *init_planarbmclass(struct class_static_data *csd)
     
     struct InterfaceDescr ifdescr[] =
     {
-        {root_descr,     IID_Root       , NUM_ROOT_METHODS	},
-        {bitMap_descr,	 IID_Hidd_BitMap, NUM_BITMAP_METHODS	},
-        {planarbm_descr, IID_Hidd_BitMap, NUM_PLANARBM_METHODS	},
+        {root_descr,     IID_Root       , 	NUM_ROOT_METHODS	},
+        {bitmap_descr,	 IID_Hidd_BitMap, 	NUM_BITMAP_METHODS	},
+        {planarbm_descr, IID_Hidd_PlanarBM, 	NUM_PLANARBM_METHODS	},
         {NULL, NULL, 0}
     };
 

@@ -81,7 +81,8 @@ static VOID root_dispose(Class *cl, Object *o, Msg msg)
     ObtainSemaphore(&data->pfsema);
     free_objectlist((struct List *)&data->pflist, TRUE, CSD(cl));
     ReleaseSemaphore(&data->pfsema);
-    
+
+    DoSuperMethod(cl, o, msg);
 }
 
 
@@ -121,10 +122,46 @@ static Object * hiddgfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitM
 	{ TAG_MORE, 0UL }
     };
     
+    STRPTR classid;
+    Class *classptr;
+    
     tags[0].ti_Data = (IPTR)o;
     tags[1].ti_Data = (IPTR)msg->attrList;
     
-    return NewObject(msg->classPtr, msg->classID, tags);
+    if (    NULL == msg->classPtr
+         && NULL == msg->classID  ) {
+    	
+	HIDDT_StdPixFmt stdpf;
+    
+  	/* The superclass has not supplied a bitmap
+	   Find out the pixelformat.
+	*/
+	
+	stdpf = GetTagData(aHidd_BitMap_StdPixFmt, vHidd_PixFmt_Unknown, msg->attrList);
+	
+	switch (stdpf) {
+#warning Remember to update this if more std pixfmts are added
+	    case vHidd_PixFmt_RGB24:
+	    case vHidd_PixFmt_RGB16:
+	    case vHidd_PixFmt_ARGB32:
+	    case vHidd_PixFmt_RGBA32:
+	    case vHidd_PixFmt_LUT8:
+	        classid = CLID_Hidd_ChunkyBM;
+		classptr = NULL;
+	        break;
+		
+	    default:
+kprintf("!!!No std pixfmt supplied to hiddgfx_newbitmap\n");
+	    	return NULL;
+	    	break;
+	}
+	
+    } else {
+    	classptr = msg->classPtr;
+	classid  = msg->classID;
+    }
+    
+    return NewObject(classptr, classid, tags);
 }
 
 
@@ -525,7 +562,9 @@ static VOID hiddgfx_releasepixfmt(Class *cl, Object *o, struct pHidd_Gfx_Release
 {
     struct HIDDGraphicsData *data;
     
-    struct objectnode *n;
+    struct objectnode *n, *safe;
+
+    kprintf("release_pixfmt\n");
     
     data = INST_DATA(cl, o);
     
@@ -535,7 +574,7 @@ static VOID hiddgfx_releasepixfmt(Class *cl, Object *o, struct pHidd_Gfx_Release
     /* We can use ForeachNode and not ForeachNodeSafe because
       we remove only one node and do not traverse the list any further after that */
       
-    ForeachNode(&data->pflist, n) {
+    ForeachNodeSafe(&data->pflist, n, safe) {
     	if (msg->pixFmt == n->object) {
 	    n->refcount --;
 	    if (0 == n->refcount) {
@@ -850,6 +889,8 @@ static VOID free_objectlist(struct List *list, BOOL disposeobjects, struct class
     	Remove(( struct Node *)n);
 	
 	if (NULL != n->object && disposeobjects) {
+kprintf("free_objectlist: FREEING OBJECT %p, class=%p\n"
+	, n->object, OCLASS(n->object) );
 	    DisposeObject(n->object);
 	}
 	
@@ -950,6 +991,9 @@ VOID HIDD_Gfx_ReleasePixFmt(Object *o, Object *pixFmt)
    
    p.pixFmt = pixFmt;
    
-   DoMethod(o, (Msg)&p);
    
+   
+   DoMethod(o, (Msg)&p);
+
+
 }

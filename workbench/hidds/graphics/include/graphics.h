@@ -82,6 +82,21 @@ enum
     num_Hidd_Gfx_Methods
 };
 
+enum {
+    aoHidd_Gfx_IsWindowed,
+    aoHidd_Gfx_ActiveBMCallBack,
+    aoHidd_Gfx_ActiveBMCallBackData,
+    
+    num_Hidd_Gfx_Attrs
+};
+
+#define aHidd_Gfx_IsWindowed 		(HiddGfxAttrBase + aoHidd_Gfx_IsWindowed		)
+#define aHidd_Gfx_ActiveBMCallBack	(HiddGfxAttrBase + aoHidd_Gfx_ActiveBMCallBack		)
+#define aHidd_Gfx_ActiveBMCallBackData	(HiddGfxAttrBase + aoHidd_Gfx_ActiveBMCallBackData	)
+
+#define IS_GFX_ATTR(attr, idx)	\
+	( ( ( idx ) = (attr) - HiddGfxAttrBase) < num_Hidd_Gfx_Attrs)
+
 
 /* Parameter tags for the QueryGfxMode method */
 enum {
@@ -196,6 +211,12 @@ enum {
 #define vHidd_GT_Mask 0x03
 
 #define HIDD_PF_GRAPHTYPE(pf) ((pf)->flags & vHidd_GT_Mask)
+#define IS_PALETTIZED(pf) (    (HIDD_PF_GRAPHTYPE(pf) == vHidd_GT_Palette)	\
+			    || (HIDD_PF_GRAPHTYPE(pf) == vHidd_GT_StaticPalette) )
+			    
+#define IS_TRUECOLOR(pf) 	( (HIDD_PF_GRAPHTYPE(pf) == vHidd_GT_TrueColor) )
+#define IS_PALETTE(pf)  	( (HIDD_PF_GRAPHTYPE(pf) == vHidd_GT_Palette) )
+#define IS_STATICPALETTE(pf)  	( (HIDD_PF_GRAPHTYPE(pf) == vHidd_GT_StaticPalette) )
 
 typedef ULONG HIDDT_StdPixFmt;
 typedef ULONG HIDDT_DrawMode;
@@ -208,16 +229,19 @@ enum {
 	
 	num_Hidd_PseudoPixFmt,
 	
+	/* Chunky formats */
 	vHidd_PixFmt_RGB24 = num_Hidd_PseudoPixFmt,
 	vHidd_PixFmt_RGB16,
 	vHidd_PixFmt_ARGB32,
 	vHidd_PixFmt_RGBA32,
 	vHidd_PixFmt_LUT8,
 	
+	
 	num_Hidd_PixFmt
 };
 
 #define num_Hidd_StdPixFmt (num_Hidd_PixFmt - num_Hidd_PseudoPixFmt)
+
 
 #define MAP_SHIFT	((sizeof (HIDDT_Pixel) - sizeof (HIDDT_ColComp)) *8)
 #define SHIFT_UP_COL(col) ((HIDDT_Pixel)((col) << MAP_SHIFT))
@@ -338,6 +362,9 @@ enum {
 
     aoHidd_BitMap_Friend,	/* [I.G] Friend bitmap. The bitmap will be allocated so that it
     				   is optimized for blitting to this bitmap */
+
+    aoHidd_BitMap_GfxHidd,
+    aoHidd_BitMap_StdPixFmt,	/* What pixel format the bitmap should have */
     
     num_Hidd_BitMap_Attrs
 };    
@@ -362,8 +389,10 @@ enum {
 #define aHidd_BitMap_BestSize      (HiddBitMapAttrBase + aoHidd_BitMap_BestSize)
 #define aHidd_BitMap_LeftEdge      (HiddBitMapAttrBase + aoHidd_BitMap_LeftEdge)
 #define aHidd_BitMap_TopEdge       (HiddBitMapAttrBase + aoHidd_BitMap_TopEdge)
-#define aHidd_BitMap_ColorTab      (HiddBitMapAttrBase + aoHidd_BitMap_ColorTab)
-#define aHidd_BitMap_Friend		 (HiddBitMapAttrBase + aoHidd_BitMap_Friend)
+#define aHidd_BitMap_ColorTab	   (HiddBitMapAttrBase + aoHidd_BitMap_ColorTab)
+#define aHidd_BitMap_Friend	   (HiddBitMapAttrBase + aoHidd_BitMap_Friend)
+#define aHidd_BitMap_GfxHidd	   (HiddBitMapAttrBase + aoHidd_BitMap_GfxHidd)
+#define aHidd_BitMap_StdPixFmt	   (HiddBitMapAttrBase + aoHidd_BitMap_StdPixFmt)
 
 
 
