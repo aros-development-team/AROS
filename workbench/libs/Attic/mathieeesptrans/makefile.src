@@ -21,7 +21,7 @@ LIB=$(LIBDIR)/lib$(LIBNAME).so
 
 INIT_FILE = $(LIBNAME)_init
 
-FILES = $(LIBNAME)_functable intern_ieeespld
+FILES = $(LIBNAME)_functable intern_ieeespld intern_ieeespisodd
 
 END_FILE = $(LIBNAME)_endtag
 
@@ -32,7 +32,9 @@ FUNCTIONS = \
 	ieeespcosh \
 	ieeesptanh \
 	ieeesplog \
-	ieeesplog10
+	ieeesplog10 \
+	ieeesppow \
+	ieeespsin
 
 
 

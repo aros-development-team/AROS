@@ -31,7 +31,7 @@
 
 /*  FUNCTION
 
-      Calculate logarithm (base 10) of the given IEEE single precision number
+      Calculate logarithm (base e) of the given IEEE single precision number
 
     INPUTS
 

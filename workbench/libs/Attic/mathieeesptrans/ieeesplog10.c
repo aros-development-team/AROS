@@ -15,12 +15,11 @@
 #include <exec/types.h>
 #include "mathieeesingtrans_intern.h"
 
-
 /*****************************************************************************
 
     NAME */
 
-      AROS_LH1(LONG, SPLog10,
+      AROS_LH1(LONG, IEEESPLog10,
 
 /*  SYNOPSIS */
 
@@ -28,7 +27,7 @@
 
 /*  LOCATION */
 
-      struct Library *, MathIeeeSingTransBase, 9, Mathieeesptrans)
+      struct Library *, MathIeeeSingTransBase, 21, Mathieeesptrans)
 
 /*  FUNCTION
 
@@ -36,7 +35,7 @@
 
     INPUTS
 
-      y - IEEE single precision floating point number
+      y - IEEE single precision number
 
     RESULT
 
@@ -59,30 +58,30 @@
       ALGORITHM:
 
       If the Argument is negative set overflow-flag and return 0.
-      If the Argument is 0 return 0xde5bd8fe.
+      If the Argument is 0 return 0xffffffff.
 
       All other cases:
 
       (ld is the logarithm with base 2)
-      (log is the logarithm with base 10)
+      (ln is the logarithm with base e)
       y = M * 2^E
 
-      log y = log ( M * 2^E ) =
+      ln y = ln ( M * 2^E ) =
 
-            = log M + log 2^E =
+           = ln M + ln 2^E =
 
-            = log M + E * log (2) =
+           = ln M + E * ln (2) =
 
-              ld M        ld 2
-            = ----- + E * ----- =      [ld 2 = 1]
-              ld 10       ld 10
+             ld M        ld 2
+           = ----- + E * ----- =      [ld 2 = 1]
+             ld 10       ld 10
 
-              ld M + E
-            = --------
-              ld 10
+             ld M + E
+           = --------
+             ld 10
 
       ld 10 can be precalculated, of course.
-      For calculating ld M see file intern_spld.c
+      For calculating ld M see file intern_ieeespld.c
 
     HISTORY
 
@@ -128,15 +127,15 @@
   Exponent |= Sign;
   }
 
-  ld_M = intern_IEEESPLd((struct MathIeeeSingTransBase_intern *)
-                                 MathIeeeSingTransBase,
-                         (y & IEEESPMantisse_Mask) | 0x3f000000);
+  ld_M = intern_IEEESPLd( (struct MathIeeeSingTransBase_intern *)
+                                                  MathIeeeSingTransBase,
+                          (y & IEEESPMantisse_Mask) | 0x3f000000 );
 
-  /*           ld M + E
-  ** log(y) =  --------
-  **             ld 10
-  */                     
+  /*               ld M + E
+  ** log(fnum1) =  --------
+  **                 ld 10
+  */
 
   return IEEESPMul( IEEESPAdd(ld_M, Exponent), InvLd10);
-} /* SPLog10 */
 
+} /* SPLog */
