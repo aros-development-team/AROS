@@ -60,6 +60,8 @@
 #include <aros/debug.h>
 #include <string.h>
 
+#include "/usr/include/signal.h"
+
 #undef DOSBase
 
 #define malloc you_must_change_malloc_to__emul_malloc
@@ -203,6 +205,22 @@ static void emul_free(struct emulbase *emulbase, APTR mem)
 
 /*********************************************************************************************/
 
+static BOOL is_root_filename(char *filename)
+{
+    BOOL result = FALSE;
+    
+    if ((*filename == '\0') ||
+        (!strcmp(filename, ".")) ||
+	(!strcmp(filename, "./")))
+    {
+        result = TRUE;
+    }
+    
+    return result;
+}
+
+/*********************************************************************************************/
+
 static LONG err_u2a(void)
 {
     ULONG i;
@@ -221,28 +239,30 @@ static LONG err_u2a(void)
 /* Create a plain path out of the supplied filename.
    Eg 'path1/path2//path3/' becomes 'path1/path3'.
 */
-void shrink(struct emulbase *emulbase, char *filename)
+BOOL shrink(struct emulbase *emulbase, char *filename)
 {
-    char *s1,*s2;
+    char	  *s1,*s2;
     unsigned long len;
-    
-    unsigned char before_filename[8];
-    
-    memcpy(before_filename, filename - 8, 8);
-    
+
+    if (filename[0] == '.')
+        if (filename[1] == '/') filename += 2;
+	
     for(;;)
     {
-	/* strip all leading slashes */
-	while(*filename=='/')
-	    memmove(filename,filename+1,strlen(filename));
+	/* leading slashes? --> return FALSE. */
+	if(*filename=='/') return FALSE;
 
 	/* remove superflous paths (ie paths that are followed by '//') */
 	s1=strstr(filename,"//");
 	if(s1==NULL)
 	    break;
 	s2=s1;
-	while((s2 > filename) && (*--s2 != '/'))
-	    ;
+	while(s2 > filename)
+	{
+	    if (s2[-1] == '/') break;
+	    s2--;
+	}
+	
 	memmove(s2,s1+2,strlen(s1+1));
     }
 
@@ -250,7 +270,8 @@ void shrink(struct emulbase *emulbase, char *filename)
     len=strlen(filename);
     if(len&&filename[len-1]=='/')
 	filename[len-1]=0;
-	
+
+   return TRUE;
 }
 
 /*********************************************************************************************/
@@ -262,18 +283,23 @@ static LONG makefilename(struct emulbase *emulbase,
     LONG ret = 0;
     int len, dirlen;
     dirlen = strlen(dirname) + 1;
-    len = strlen(filename) + dirlen + 1;
+    len = strlen(filename) + dirlen + 1 + /*safety*/ 1;
     *dest=(char *)emul_malloc(emulbase, len);
     if ((*dest))
     {
 	CopyMem(dirname, *dest, dirlen);
-	if (AddPart(*dest, filename, len))
+	if (dirlen > 1)
 	{
-	  shrink(emulbase, *dest);
-	} else {
+	    if ((*dest)[dirlen - 2] != '/') strcat(*dest, "/");
+	}
+	
+	strcat(*dest, filename);
+
+	if (!shrink(emulbase, *dest))
+	{
 	    emul_free(emulbase, *dest);
 	    *dest = NULL;
-	    ret = ERROR_OBJECT_TOO_LARGE;
+	    ret = ERROR_OBJECT_NOT_FOUND;
 	}
     } else
 	ret = ERROR_NO_FREE_STORE;
@@ -834,13 +860,21 @@ static LONG examine(struct emulbase *emulbase,
 	case ED_SIZE:
 	    ead->ed_Size	= st.st_size;
 	case ED_TYPE:
-          if (S_ISDIR(st.st_mode))
-            ead->ed_Type 	= S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0;
-          else
-            ead->ed_Type 	= ST_FILE;
+            if (S_ISDIR(st.st_mode))
+	    {
+	        if (is_root_filename(fh->name))
+		{
+                   ead->ed_Type = ST_ROOT;
+		} else {
+		   ead->ed_Type = ST_USERDIR;
+		}
+	    } else {
+	        ead->ed_Type 	= ST_FILE;
+	    }
+	    
 	case ED_NAME:
 	    ead->ed_Name=next;
-	    last=name=*fh->name?fh->name:"Workbench";
+	    last=name=is_root_filename(fh->name)?"Workbench":fh->name;
 
             /* do not show the "." but "" instead */
 	    if (last[0] == '.' && last[1] == '\0')
