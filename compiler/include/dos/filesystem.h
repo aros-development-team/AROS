@@ -38,12 +38,15 @@
    reason (including that it makes no sense to perform that action on that
    specific filesystem).
 
-   All actions work relative to the relative directory (where it makes sense),
-   whichs filehandle is to be set in the IOFileSys->IOFS.io_Unit field. This
+   All actions work relative to the relative directory (where it makes sense).
+   Its filehandle is to be set in the IOFileSys->IOFS.io_Unit field. This
    field also serves as a container for filehandles for actions that either
    need a filehandle as argument or return one. When not stated otherwise this
    field has to be set to the filehandle to affect or is set to the filehandle
-   that is returned from the action.
+   that is returned from the action. Note that the filehandle mentioned above
+   is not a pointer to a struct FileHandle as defined in <dos/dosextens.h>, but
+   an APTR to a device specific blackbox structure. This APTR is normally set
+   as FileHandle->fh_Unit, if you are using a struct FileHandle.
 
    Whenever a filename is required as argument, this filename has to be
    stripped from the devicename, ie it has to be relative to the current

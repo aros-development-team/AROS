@@ -320,7 +320,11 @@ struct FileHandle
        fh_Funcs/fh_Func1, fh_Func2, fh_Func3, fh_Args/fh_Arg1 and fh_Arg2 */
     ULONG	    fh_Size;
     ULONG	    fh_Flags;   /* see below */
+      /* This is a pointer to a filesystem handler. See <dos/filesystems.h> for
+         more information. */
     struct Device * fh_Device;
+      /* A private pointer to a device specific filehandle structure. See
+         <dos/filesystems.h> for more information. */
     struct Unit   * fh_Unit;
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     LONG            fh_NoAROS3; /* not used by AROS */
