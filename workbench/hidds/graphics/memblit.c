@@ -472,9 +472,9 @@ VOID bitmap_copymembox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyM
 
 	    while(w--)
 	    {
-		*--dst_start = *src_start;
-		*--dst_start = *src_start;
-		*--dst_start = *src_start;
+		*--dst_start = *--src_start;
+		*--dst_start = *--src_start;
+		*--dst_start = *--src_start;
 	    }
 	    
 	    src_start -= src_start_add;
