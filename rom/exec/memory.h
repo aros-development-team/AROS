@@ -8,6 +8,7 @@
 #ifndef _MEMORY_H_
 #define _MEMORY_H_
 
+#include <aros/debug.h>
 #include <exec/lists.h>
 #include <exec/semaphores.h>
 #include <exec/memory.h>
@@ -60,6 +61,36 @@ struct Block
     struct MinNode Node;
     ULONG Size;
 };
+
+#if AROS_MUNGWALL_DEBUG
+
+#define MUNGWALL_HEADER_ID 0x1ADEBCA1
+
+/* This struct must not be bigger than MUNGWALLHEADER_SIZE!! */
+
+struct MungwallHeader
+{   
+    union
+    {
+    	struct
+	{
+    	    struct  MinNode 	node;
+    	    ULONG   	    	magicid;
+    	    ULONG   	    	allocsize;
+	} s;
+	struct
+	{
+	    UBYTE   	    	blub[MUNGWALLHEADER_SIZE];
+	} b;
+    } u;    
+};
+
+#define mwh_node    	u.s.node
+#define mwh_magicid 	u.s.magicid
+#define mwh_allocsize 	u.s.allocsize
+
+#endif
+
 
 #define BLOCK_TOTAL \
 ((sizeof(struct Block)+AROS_WORSTALIGN-1)&~(AROS_WORSTALIGN-1))
