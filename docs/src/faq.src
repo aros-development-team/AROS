@@ -12,9 +12,9 @@ original OS)
 ported to other hardwares with no effort)
 
 \item Provide every hardware with Amiga apps with native look and feel or,
-as the user chooses, forign hardware with Amiga look and feel.
+as the user chooses, foreign hardware with Amiga look and feel.
 
-\item AROS will come in three falvours: 1) A standalone OS like Linux, Win,
+\item AROS will come in three flavours: 1) A standalone OS like Linux, Win,
 etc. 2) An Amiga Emulation (ie. a window in which you have a Workbench.
 Every new screen will open a new window) 3) A link-library with which you
 can port Amiga apps to other OSs (eg. Windows). 1) will have Amiga l&f,
@@ -43,7 +43,7 @@ No. a) If it was that important, it would be in the OS already :-) b) Why
 don't you do it yourself and send it to us ?
 
 See, there are plenty of people around who think that their feature is the
-most important and that "the AmigaOS has no future if this feature is no
+most important and that "the AmigaOS has no future if this feature is not
 built in right now". We say: The AmigaOS' demise has nothing to do with
 missing features. The AmigaOS can do everything a modern OS should do. We
 see that there are possibilities to enhance the AmigaOS but if we do it,
