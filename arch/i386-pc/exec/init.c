@@ -59,7 +59,7 @@ struct MemHeader *mh;
 
 void bzero(void * ptr,int len);
 void kprintf(const char * string,...);
-struct ExecBase * PrepareExecBase(struct MemHeader * mh);
+extern struct ExecBase * PrepareExecBase(struct MemHeader * mh);
 
 /* External functions */
 
