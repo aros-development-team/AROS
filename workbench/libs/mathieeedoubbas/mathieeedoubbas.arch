@@ -50,8 +50,10 @@
 
 #/AutoDoc
 #Code
-    /*if (0 == y) */
-    if (is_eqC(y,0,0))
+    QUAD * Qy = (QUAD *)&y;
+
+    /*if (0 == (*Qy)) */
+    if (is_eqC((*Qy),0,0))
     {
       /* value is 0 -> set the Zero Flag */
       SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
@@ -59,9 +61,9 @@
     else
     {
       /* set the sign-bit to zero */
-      /* y &= (IEEEDPMantisse_Mask | IEEEDPExponent_Mask) */
-      AND64QC(y, (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi),
-		 (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo));
+      /* (*Qy) &= (IEEEDPMantisse_Mask | IEEEDPExponent_Mask) */
+      AND64QC((*Qy), (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi),
+		     (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo));
       SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
     }
     return y;
@@ -110,19 +112,22 @@
   LONG Shift;
   QUAD Exponent;
   LONG Ltmp1, Ltmp2;
+  QUAD * Qy = (QUAD *)&y;
+  QUAD * Qz = (QUAD *)&z;
+  double * DRes = (double *)&Res;
 
   SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
 
-  AND64C(Qtmp1, y, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo);
-  AND64C(Qtmp2, z, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo);
+  AND64C(Qtmp1, *Qy, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo);
+  AND64C(Qtmp2, *Qz, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo);
   SHRU32(Ltmp1, Qtmp1, 52);
   SHRU32(Ltmp2, Qtmp2, 52);
   Shift = Ltmp1 - Ltmp2;
 
-  if (is_neqC(y, 0x0, 0x0) &&
-      is_neqC(y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo) )
+  if (is_neqC(*Qy, 0x0, 0x0) &&
+      is_neqC(*Qy, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo) )
   {
-    AND64C(Mant1, y, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
+    AND64C(Mant1, *Qy, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
     OR64QC(Mant1, 0x00100000, 0x00000000);
   }
   else
@@ -130,11 +135,11 @@
     Set_Value64C(Mant1, 0x0, 0x0);
   }
 
-  if (is_neqC(z, 0x0, 0x0) &&
-      is_neqC(z, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo) )
+  if (is_neqC(*Qz, 0x0, 0x0) &&
+      is_neqC(*Qz, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo) )
   {
-    /* Mant2 = (z & IEEESPMantisse_Mask) | 0x00800000; */
-    AND64C(Mant2, z, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
+    /* Mant2 = (*Qz & IEEESPMantisse_Mask) | 0x00800000; */
+    AND64C(Mant2, *Qz, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
     OR64QC(Mant2, 0x00100000, 0x00000000);
   }
   else
@@ -145,22 +150,22 @@
   if (Shift > 0)
   {
     SHRU64(Mant2, Mant2, Shift);
-    AND64C(Exponent, y, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo);
+    AND64C(Exponent, *Qy, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo);
   }
   else
   {
     SHRU64(Mant1, Mant1, (-Shift));
-    AND64C(Exponent, z, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo);
+    AND64C(Exponent, *Qz, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo);
   }
 
   // sign(fnum1) == sign(fnum2)
   // simple addition
   // 0.25 <= res < 1
-  AND64C(Qtmp1, z, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
-  AND64C(Qtmp2, y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
+  AND64C(Qtmp1, *Qz, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
+  AND64C(Qtmp2, *Qy, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
   if ( is_eq(Qtmp1, Qtmp2))
   {
-    AND64C(Res, y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
+    AND64C(Res, *Qy, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
     ADD64Q(Mant1, Mant2);
     AND64C(Qtmp1, Mant1, 0x00200000, 0x0);
     if ( is_neqC(Qtmp1, 0x0, 0x0))
@@ -175,7 +180,7 @@
   else
   {
     //printf("Exponent: %x\n",Exponent);
-    if ( is_lessSC(y, 0x0, 0x0))
+    if ( is_lessSC(*Qy, 0x0, 0x0))
     {
       SUB64(Mant1, Mant2, Mant1);
     }
@@ -198,7 +203,7 @@
     {
       SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       Set_Value64C(Res, 0x0, 0x0);
-      return Res;
+      return *(double *)&Res;
     }
     else
     {
@@ -223,7 +228,7 @@
   }
   OR64Q(Res, Mant1);
   OR64Q(Res, Exponent);
-  return Res;
+  return *DRes;
 #/Code
 #/Function
 
@@ -261,24 +266,25 @@
 
 #/AutoDoc
 #Code
-  if (is_eqC(y,0,0))
+  QUAD * Qy = (QUAD *)&y;
+
+  if (is_eqC((*Qy),0,0))
   {
     SetSR(Zero_Bit, Negative_Bit|Overflow_Bit|Zero_Bit);
     return y;
   }
 
-  XOR64QC(y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
+  XOR64QC((*Qy), IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
   /* Ceil(y) = -Floor(-y); */
   y = IEEEDPFloor(y);
-  if (is_eqC(y,0x0,0x0))
+  if (is_eqC((*Qy), 0x0, 0x0))
   {
-    QUAD tmp;
-    Set_Value64C(tmp, 0, 0);
-    return tmp;
+    Set_Value64C((*Qy), 0, 0);
+    return y;
   }
   else
   {
-    XOR64QC(y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo );
+    XOR64QC((*Qy), IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo );
     return y;
   }
 #/Code
@@ -321,17 +327,20 @@
 
 #/AutoDoc
 #Code
-  if (is_eq(y,z))
+  QUAD * Qy = (QUAD *)&y;
+  QUAD * Qz = (QUAD *)&z;
+
+  if (is_eq(*Qy,*Qz))
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return 0;
   }
 
-  if (is_lessSC(y,0,0) /* y < 0 */ && is_lessSC(z,0,0) /* z < 0 */)
+  if (is_lessSC(*Qy,0,0) /* y < 0 */ && is_lessSC(z,0,0) /* z < 0 */)
   {
-    NEG64(y);
-    NEG64(z);
-    if (is_greater(y,z) /* -y > -z */ )
+    NEG64(*Qy);
+    NEG64(*Qz);
+    if (is_greater(*Qy,*Qz) /* -y > -z */ )
     {
       SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
       return 1;
@@ -343,7 +352,7 @@
     }
   }
 
-  if ( is_less(y,z)  /* (QUAD)y < (QUAD)z */ )
+  if ( is_less(*Qy,*Qz)  /* (QUAD)y < (QUAD)z */ )
   {
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return -1;
@@ -392,8 +401,13 @@
     HISTORY
 
 #/AutoDoc
-#Code
-  return 0x0badc0de0badc0deULL;
+#Code    
+/*
+  QUAD * Qy = (QUAD *)&y;
+  QUAD * Qz = (QUAD *)&z;
+*/
+  QUAD Res = 0x0badc0de0badc0deULL;
+  return *(double *)&Res;
 #/Code
 #/Function
 
@@ -432,12 +446,13 @@
 #Code
 LONG Res, Shift, tmp;
 QUAD y2;
+QUAD * Qy = (QUAD *)&y;
 
-tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
+  tmp = Get_High32of64(*Qy) & IEEEDPExponent_Mask_Hi;
 
   if ( tmp > 0x41d00000 )
   {
-    if( is_lessSC(y, 0x0, 0x0))
+    if( is_lessSC(*Qy, 0x0, 0x0))
     {
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       return 0x80000000;
@@ -450,19 +465,19 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
   }
 
 
-  if (is_eqC(y, 0x0, 0x0) ||
-      is_eqC(y,IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo)) /* y=+-0; */
+  if (is_eqC(*Qy, 0x0, 0x0) ||
+      is_eqC(*Qy,IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo)) /* y=+-0; */
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return 0;
   }
 
-  Shift = (Get_High32of64(y) & IEEEDPExponent_Mask_Hi) >> 20;
+  Shift = (Get_High32of64(*Qy) & IEEEDPExponent_Mask_Hi) >> 20;
   Shift = 0x433 - Shift;
-  tmp = Get_High32of64(y);
-  AND64QC(y, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
-  OR64QC(y, 0x00100000, 0x00000000);
-  SHRU64(y2, y , Shift);
+  tmp = Get_High32of64(*Qy);
+  AND64QC(*Qy, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
+  OR64QC(*Qy, 0x00100000, 0x00000000);
+  SHRU64(y2, *Qy , Shift);
   Res = Get_Low32of64(y2);
 
   /* Test for a negative sign  */
@@ -513,29 +528,30 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
 #/AutoDoc
 #Code
   QUAD Mask;
-  QUAD y_tmp,y2,tmp;
+  QUAD y_tmp,y2;
   int shift;
+  QUAD * Qy = (QUAD *)&y;
 
-  if (is_eqC(y,0,0))
-    return y;
+  if (is_eqC(*Qy,0,0))
+    return *Qy;
 
-  Set_Value64(y_tmp, y);
+  Set_Value64(y_tmp, *Qy);
   AND64QC(y_tmp, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo );
 
   if (is_lessC(y_tmp, one_Hi, one_Lo ))
   {
-    if (is_lessSC(y,0,0))
+    if (is_lessSC(*Qy,0,0))
     {
       SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    	Set_Value64C(tmp, one_Hi | IEEEDPSign_Mask_Hi,
+    	Set_Value64C(*Qy, one_Hi | IEEEDPSign_Mask_Hi,
     	                  one_Lo | IEEEDPSign_Mask_Lo);
-      return tmp;
+      return y;
     }
     else
     {
       SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      Set_Value64C(tmp, 0,0);
-      return tmp;
+      Set_Value64C(*Qy, 0,0);
+      return y;
     }
   }
 
@@ -545,29 +561,29 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
   SHRS64(Mask, Mask, (shift-0x3ff+11));  /* leave the () there! StormC 1.1 needs 'em! */
 
   /* y is negative */
-  if (is_leqSC(y, 0x0, 0x0))
+  if (is_leqSC(*Qy, 0x0, 0x0))
   {
     QUAD Mask2;
     NOT64(Mask2, Mask);
-    Set_Value64(y2,y);
+    Set_Value64(y2,*Qy);
     AND64Q(y2, Mask2);
     if (is_neqC(y2,0x0,0x0))
     {
       QUAD minusone;
-    	Set_Value64C(minusone, one_Hi | IEEEDPSign_Mask_Hi,
-    	                       one_Lo | IEEEDPSign_Mask_Lo);
-      y = IEEEDPAdd(y, minusone);
-      Set_Value64C(Mask, 0x80000000,
-                         0x00000000);
+      double * Dminusone = (double *)&minusone;
+      Set_Value64C(minusone, one_Hi | IEEEDPSign_Mask_Hi,
+    	                     one_Lo | IEEEDPSign_Mask_Lo);
+      *Qy = IEEEDPAdd(*Qy, *Dminusone);
+      Set_Value64C(Mask, 0x80000000, 0x00000000);
       SHRU32(shift, y_tmp, 52);
       SHRS64(Mask, Mask, (shift-0x3ff+11)); /* leave the () there! StormC 1.1 needs 'em! */
     }
   }
 
-  if (is_lessSC(y,0x0,0x0))
+  if (is_lessSC(*Qy,0x0,0x0))
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
-  AND64Q(y, Mask);
+  AND64Q(*Qy, Mask);
 
   return y;
 #/Code
@@ -608,13 +624,14 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
   LONG Exponent = 0;
   LONG TestMask = 0xFFFFFFFF;
   QUAD Res, yQuad, ExponentQuad;
+  double * DRes = (double *)&Res;
 
   Set_Value64C(Res,0,0);
 
-  if (y == 0)
+  if (0 == y)
   {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return Res; /* return 0 */
+    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);  
+    return *DRes; /* return 0 */
   }
 
   if (y < 0 )
@@ -642,7 +659,7 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
   if ( is_lessSC(Res,0,0) ) /* Res < 0 */
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
-  return Res;
+  return *DRes;
 #/Code
 #/Function
 
@@ -724,18 +741,20 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
 
 #/AutoDoc
 #Code
-  /* change the sign-bit */
-  XOR64QC(y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
+  QUAD * Qy = (QUAD *)&y;
 
-  if (is_eqC(y, 0x0, 0x0 ) ||
-      is_eqC(y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo) )
+  /* change the sign-bit */
+  XOR64QC(*Qy, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
+
+  if (is_eqC(*Qy, 0x0, 0x0 ) ||
+      is_eqC(*Qy, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo) )
   {
     SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
    return y;
   }
 
   /* if (y < 0) */
-  if(is_lessSC(y, 0x0, 0x0) )
+  if(is_lessSC(*Qy, 0x0, 0x0) )
   /* result is negative */
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
   else
@@ -783,7 +802,9 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
 
 #/AutoDoc
 #Code
-  XOR64QC(z, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo );
+  QUAD * Qz = (QUAD *)&z;
+
+  XOR64QC(*Qz, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo );
   return IEEEDPAdd(y,z);
 #/Code
 #/Function
@@ -828,15 +849,17 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
 
 #/AutoDoc
 #Code
+  QUAD * Qy = (QUAD *)&y;
+
   /* y is negative */
-  if (is_lessSC(y, 0x0, 0x0) /* y < 0 */)
+  if (is_lessSC(*Qy, 0x0, 0x0) /* y < 0 */)
   {
     SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
     return -1;
   }
 
   /* fnum1 is zero */
-  if (is_eqC(y, 0x0, 0x0) /* y == 0 */)
+  if (is_eqC(*Qy, 0x0, 0x0) /* y == 0 */)
   {
     SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
     return 0;
@@ -849,4 +872,3 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
 #/Function
 
 #/Archive
-

@@ -8,10 +8,6 @@
 #ifndef __MATHIEEEDOUBBAS_INTERN_H__
 #define __MATHIEEEDOUBBAS_INTERN_H__
 
-/* the following line is necessary so that the function headers are
-   created correctly and the functions can be compiled properly */
-
-#define double QUAD
 
 /* This is a short file that contains a few things every mathieeedoubbas
    function needs */

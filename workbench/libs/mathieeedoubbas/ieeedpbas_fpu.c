@@ -14,12 +14,21 @@
    FPU registers instead. So we're using the trick with the QUADs.
    See below. 
 */
+
+/*
+  !!! Fixme !!!
+   Problem on i386 etc: 
+     The functions in the *.arch file (integer-emulation of double
+     operations) return QUADs. The protos however say that these functions
+     are returning doubles. Unfortunately doubles are not returned like
+     QUADs!
+ */
+//#define UseRegisterArgs 1
 #if UseRegisterArgs
   #define RETURN_TYPE QUAD  /* For Linux/M68k & AmigaOS w/ bin. compat. */
 #else
   #define RETURN_TYPE double /* for the rest */
 #endif
-
 
 AROS_LHQUAD1(LONG, FPU_IEEEDPFix,
 AROS_LHAQUAD(double, y, D0, D1),
@@ -128,8 +137,8 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 13, MathIeeeDoubBas)
   QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
   y=y*z;
   return * Res;
-#else
-  return (y*z);
+#else  
+  return y*z;
 #endif
 } /* FPU_IEEEDPMul */
 
