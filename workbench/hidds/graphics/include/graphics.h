@@ -444,6 +444,8 @@ enum {
     moHidd_BitMap_ObtainDirectAccess,
     moHidd_BitMap_ReleaseDirectAccess,
     
+    moHidd_BitMap_BitMapScale, 
+    
     moHidd_BitMap_PrivateSet,
     
     num_Hidd_BitMap_Methods
@@ -721,6 +723,14 @@ struct pHidd_BitMap_ObtainDirectAccess {
 
 struct pHidd_BitMap_ReleaseDirectAccess {
     OOP_MethodID mID;
+};
+
+struct pHidd_BitMap_BitMapScale {
+    OOP_MethodID mID;
+    OOP_Object   *src;
+    OOP_Object   *dst;
+    struct BitScaleArgs * bsa;
+    OOP_Object	*gc;
 };
 
 /**** Graphics context definitions ********************************************/

@@ -316,6 +316,8 @@ VOID HIDD_Gfx_CopyBox(OOP_Object *obj, OOP_Object *src, WORD srcX, WORD srcY, OO
 
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
+
+
 /***************************************************************/
 
 BOOL HIDD_BM_SetColors (OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors)
@@ -817,6 +819,23 @@ VOID HIDD_BM_ReleaseDirectAccess(OOP_Object *obj)
     OOP_DoMethod(obj, (OOP_Msg)&p);
 	
     return;
+}
+
+/***************************************************************/
+VOID HIDD_BM_BitMapScale(OOP_Object *obj, OOP_Object *src, OOP_Object *dest, struct BitScaleArgs * bsa, OOP_Object *gc)
+{
+    static OOP_MethodID mid = 0;
+    struct pHidd_BitMap_BitMapScale p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BitMapScale);
+        
+    p.mID    = mid;
+    p.src    = src;
+    p.dst    = dest;
+    p.bsa    = bsa;
+    p.gc     = gc;
+
+    OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
 /********* GC *****************************************/
