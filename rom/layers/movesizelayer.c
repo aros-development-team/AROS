@@ -323,6 +323,8 @@
                 0xff,
                 NULL
               );
+              OrRectRegion(l->DamageList,&CR->bounds);
+              l->Flags |= LAYERREFRESH;
 	    }
             else
 	    {
@@ -366,6 +368,8 @@
                 0xff,
                 NULL
               );
+              OrRectRegion(l->DamageList,&CR->bounds);
+              l->Flags |= LAYERREFRESH;
 	    }
             else
 	    {
