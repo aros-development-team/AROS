@@ -387,7 +387,7 @@ AROS_UFH3S(void, WindowPatternBackFillFunc,
 	WORD OffsetX; // the offset within the tile in x direction
 	WORD OffsetY; // the offset within the tile in y direction
 
-	struct BackFillInfo *BFI = (struct BackFillInfo *)Hook; // get the data for our backfillhook (but __saveds is nonetheless required because this function needs GfxBase)
+	struct BackFillInfo *BFI = (struct BackFillInfo *)Hook; // get the data for our backfillhook
 
 #if !defined(__MAXON__) && !defined(__AROS__)
 	putreg(12,(long)Hook->h_Data);
