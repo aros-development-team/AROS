@@ -201,7 +201,7 @@ extern void intui_WindowLimits (struct Window * window,
 extern void intui_ActivateWindow (struct Window *);
 extern void intui_BeginRefresh (struct Window * window,
 	    struct IntuitionBase * IntuitionBase);
-extern void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
+extern BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
 	    WORD width, WORD height);
 extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
 extern void intui_EndRefresh (struct Window * window,

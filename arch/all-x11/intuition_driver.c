@@ -539,7 +539,7 @@ UX11
     SIGID ();
 }
 
-void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
+BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     WORD width, WORD height)
 {
 LX11
