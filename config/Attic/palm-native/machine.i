@@ -14,3 +14,9 @@
 #define FindTask      -294
 #define CacheControl  -648
 #define StackSwap     -732
+
+/*
+ * Define the following when function calls pass arguments via registers.
+ * This is used for conditional compilation in some assembly functions here.
+ */
+#undef DoRegisterCalls
