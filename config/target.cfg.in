@@ -18,7 +18,7 @@ SHARED_LD	:= @SHARED_LD@
 KERNEL_LD	:= @KERNEL_LD@
 GENMAP		:= @aros_target_genmap@
 
-TARGET_CFLAGS	:= @aros_target_cflags@
+TARGET_CFLAGS	:= @aros_target_cflags@ -nostdinc -isystem @aros_target_cc_includes@
 TARGET_AFLAGS	:= @aros_target_aflags@
 TARGET_LDFLAGS	:= @aros_target_ldflags@
 STATIC_CFLAGS	:= @aros_static_cflags@
