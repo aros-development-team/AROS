@@ -58,6 +58,11 @@ LIB=$(LIBDIR)/libdiskfont.a
 $(SLIBDIR)/diskfont.library: $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
 	@echo "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee diskfontlib.map
+	@$(CHECKUNDEFSYMS) $@ > undefdsyms.list
+	@if test -s undefdsyms.list; then \
+	    echo "Error: Found undefined symbols" ; \
+	    cat undefdsyms.list ; \
+	else true ; fi
 	@if test ! -s diskfontlib.map; then rm diskfontlib.map ; else true ; fi
 	@$(STRIP) $@
 
