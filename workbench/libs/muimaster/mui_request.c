@@ -14,9 +14,9 @@
 #ifdef __AROS__
 #include <aros/asmcall.h>
 #include <proto/muimaster.h>
-#else
-#include "mui.h"
 #endif
+
+#include "mui.h"
 
 #include "muimaster_intern.h"
 
