@@ -193,7 +193,7 @@
 
     /* since this is an emulation, we just show the bug in the console */
     fprintf (stderr
-	, "GURU Meditation %04lx %04lx "
+	, "GURU Meditation %04lx %04lx\n"
 	, alertNum >> 16
 	, alertNum & 0xFFFF
     );
@@ -286,7 +286,7 @@
     }
 
     fprintf (stderr
-	, "\nTask: %p (%s)"
+	, "\nTask: %p (%s)\n"
 	, task
 	, (task && task->tc_Node.ln_Name) ?
 	    task->tc_Node.ln_Name
