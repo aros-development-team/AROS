@@ -11,12 +11,44 @@ LIBS = -L$(LIBDIR) -larosc -lamiga -laros -larosc
 DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
 
-FILES=alib_util newobject setattrs openwindowtags openscreentags \
-	dogadgetmethod domethod dosupermethod readbyte readword \
-	readlong readfloat readdouble readstring readstruct writebyte \
-	writeword writelong writefloat writedouble writestring \
-	writestruct coercemethod callhook newlist hookentry \
-	freestruct createstdio createextio deletestdio deleteextio
+FILES = alib_util \
+	callhook \
+	coercemethod \
+	createextio \
+	createport \
+	createstdio \
+	createtask \
+	deleteextio \
+	deleteport \
+	deletestdio \
+	deletetask \
+	dogadgetmethod \
+	domethod \
+	dosupermethod \
+	freestruct \
+	hookentry \
+	newlist \
+	newobject \
+	openscreentags \
+	openwindowtags \
+	readbyte \
+	readdouble \
+	readfloat \
+	readlong \
+	readstring \
+	readstruct \
+	readword \
+	setattrs \
+	setsuperattrs \
+	sprintf \
+	startup \
+	writebyte \
+	writedouble \
+	writefloat \
+	writelong \
+	writestring \
+	writestruct \
+	writeword
 
 all: setup $(LIBDIR)/libamiga.a $(LIBDIR)/startup.o
 
