@@ -198,8 +198,7 @@ VOID x11task_entry(struct x11task_params *xtp)
 {
     HIDD *unixio;
     struct x11_staticdata *xsd = xtp->xsd;
-/*    int i = 0;
-*/    
+    
     unixio = (HIDD)New_UnixIO(OOPBase);
     if (unixio)
     {
@@ -228,16 +227,7 @@ D(bug("Entering input loop, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
 			, unixio_callback
 			, (APTR)xsd );
 			
-/*	i ++;
-	if ((i % 10) == 0 )
-	{
-	    kprintf("x11hidd task woken up %d times\n", i);
-	}
-*/	
-
 			
-
-
 D(bug("Got input from unixio\n"));
 			
 	if (ret != 0)
@@ -251,23 +241,13 @@ D(bug("Got input from unixio\n"));
 	    struct xwinnode *node;
 	    int pending;
 
-D(bug("Outside XPending lock, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
-	, xsd->x11sema.ss_Owner, FindTask(NULL), xsd->x11sema.ss_NestCount
-	, xsd->x11sema.ss_QueueCount));
+
 LX11	
-D(bug("Inside XPending lock, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
-	, xsd->x11sema.ss_Owner, FindTask(NULL), xsd->x11sema.ss_NestCount
-	, xsd->x11sema.ss_QueueCount));
 	    pending = XPending (xsd->display);
 UX11	    
 	    if (pending == 0)
 	    	break;
-/*	    kprintf("I");
-*/	
 
-D(bug("Outside XNexeEvent lock, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
-	, xsd->x11sema.ss_Owner, FindTask(NULL), xsd->x11sema.ss_NestCount
-	, xsd->x11sema.ss_QueueCount));
 	
 LX11
 D(bug("Doing XNextEvent\n"));
@@ -302,27 +282,6 @@ UX11
 	    
 	    if (window_found)
 	    {
-/*	    XGCValues gcval;
-	    GC gc;
-		    
-
-	 
-	    gcval.plane_mask = 0xFFFFFFFF;
-	    gcval.graphics_exposures = True;
-
-LX11	 
-	    gc = XCreateGC( xsd->display
-	 		, DefaultRootWindow( xsd->display )
-			, GCPlaneMask | GCGraphicsExposures
-			, &gcval
-		    );
-	    if (gc)
-	    {
-	        XSetForeground(xsd->display, gc, BlackPixel(xsd->display, DefaultScreen(xsd->display)));
-	        XDrawLine(xsd->display, event.xany.window, gc, 10, 10, 200, 200);
-	    }
-UX11	    
-*/
 	        D(bug("Got event for window %x\n", event.xany.window));
 	    	switch (event.type)
 	    	{
@@ -337,6 +296,7 @@ UX11
 	        case ButtonRelease:
 	    	case MotionNotify:
 		    D(bug("Motionnotify event\n"));
+
 		
 	    	    ObtainSemaphoreShared( &xsd->sema );
 		    if (xsd->mousehidd)
