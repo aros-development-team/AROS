@@ -20,7 +20,7 @@
 extern struct PTFunctionTable PartitionMBR;
 extern struct PTFunctionTable PartitionRDB;
 
-struct PTFunctionTable *PartitionSupport[]={&PartitionMBR, &PartitionRDB, 0};
+struct PTFunctionTable *PartitionSupport[]={&PartitionRDB, &PartitionMBR, 0};
 
 /* get geometry */
 LONG PartitionGetGeometry
