@@ -9,14 +9,15 @@
 
 
 #if defined(AROS_64BIT_TYPE) || defined(__GNUC__)
-#    define Get_High32of64(val)       ((val) >> 32L )
-#    define Get_Low32of64(val)        ((val) & 0xFFFFFFFF)
+#    define Get_High32of64(val)       ((QUAD)(val) >> 32L )
+#    define Get_Low32of64(val)        ((QUAD)(val) & 0xFFFFFFFF)
 #    define ConvertTo64(HI,LO)        ((((QUAD)(HI)) << 32L) | LO)
 #else
 #    define Get_High32of64(val)       ((val).high)
 #    define Set_High32of64(Dest,Src)  ((Dest).high) = Src
-#    define Get_Low32of64(val)        ((val).low)  
+#    define Get_Low32of64(val)        ((val).low)
 #    define Set_Low32of64(Dest,Src)   ((Dest).low) = Src
+#
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
@@ -24,7 +25,7 @@
      ConvertTo64(Const64_Hi, Const64_Lo)
 #else
 #define QuadData(Const64_Hi, Const64_Lo, Const64) \
-     {Const64_Hi, Const64_Lo}  
+     {Const64_Hi, Const64_Lo}
 #endif
 
 
