@@ -844,8 +844,8 @@ static LONG startup(struct emulbase *emulbase)
 {
     struct Library *ExpansionBase;
     struct filehandle *fhi, *fho, *fhe, *fhv;
-    struct DeviceNode *dlv;
-    LONG ret=ERROR_NO_FREE_STORE;
+    struct DeviceNode *dlv, *dlv2;
+    LONG ret = ERROR_NO_FREE_STORE;
 
     ExpansionBase = OpenLibrary("expansion.library",0);
     if(ExpansionBase != NULL)
@@ -901,28 +901,59 @@ static LONG startup(struct emulbase *emulbase)
 				"Workbench" total 11 bytes (9 + NULL + length)
 				Add an extra 4 for alignment purposes.
 			    */
-			    ret=ERROR_NO_FREE_STORE;
-			    dlv = AllocMem(sizeof(struct DeviceNode) + 15, MEMF_CLEAR|MEMF_PUBLIC);
-			    if(dlv!=NULL)
+			    ret = ERROR_NO_FREE_STORE;
+
+			    dlv = AllocMem(sizeof(struct DeviceNode) + 15,
+					   MEMF_CLEAR | MEMF_PUBLIC);
+
+			    dlv2 = AllocMem(sizeof(struct DeviceNode) + 30,
+					    MEMF_CLEAR | MEMF_PUBLIC);
+
+			    if(dlv != NULL && dlv2 != NULL)
 			    {
 				STRPTR s;
+				STRPTR s2;
 
 				/*  We want s to point to the first 4-byte
 				    aligned memory after the structure.
 				*/
 				s = (STRPTR)(((IPTR)dlv + sizeof(struct DeviceNode) + 4) & ~3);
-				CopyMem("Workbench", &s[1], 9);
-				*s = 9;
+				s2 = (STRPTR)(((IPTR)dlv2 + sizeof(struct DeviceNode) + 4) & ~3);
+				
 
-				dlv->dn_Type   = DLT_DEVICE;
-				dlv->dn_Unit   = (struct Unit *)fhv;
-				dlv->dn_Device = &emulbase->device;
+				CopyMem("Foreign harddisk", &s[1], 17);
+				*s = 16;
+
+				dlv->dn_Type    = DLT_DEVICE;
+				dlv->dn_Unit    = (struct Unit *)fhv;
+				dlv->dn_Device  = &emulbase->device;
 				dlv->dn_Handler = NULL;
 				dlv->dn_Startup = NULL;
 				dlv->dn_OldName = MKBADDR(s);
 				dlv->dn_NewName = &s[1];
 
-				AddBootNode( 0, 0, dlv, NULL);
+				AddBootNode(0, 0, dlv, NULL);
+
+
+				/* Unfortunately, we cannot do the stuff below
+				   as dos is not yet initialized... */
+				// AddDosEntry(MakeDosEntry("Workbench", 
+				//			    DLT_VOLUME));
+
+				CopyMem("Workbench", &s2[1], 10);
+				*s2 = 9;
+
+				dlv2->dn_Type    = DLT_VOLUME;
+				dlv2->dn_Unit    = (struct Unit *)fhv;
+				dlv2->dn_Device  = &emulbase->device;
+				dlv2->dn_Handler = NULL;
+				dlv2->dn_Startup = NULL;
+				dlv2->dn_OldName = MKBADDR(s2);
+				dlv2->dn_NewName = &s2[1];
+
+				/* Make sure this is not booted from */
+				AddBootNode(-128, 0, dlv2, NULL);
+
 				return 0;
 			    }
 			} /* valid directory */
