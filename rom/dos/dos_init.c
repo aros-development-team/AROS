@@ -83,25 +83,28 @@ AROS_LH2(struct LIBBASETYPE *, init,
     ULONG * taskarray;
 
     /* Store arguments */
-    LIBBASE->dl_SysBase=SysBase;
-    LIBBASE->dl_SegList=segList;
+    LIBBASE->dl_SysBase = SysBase;
+    LIBBASE->dl_SegList = segList;
     
     LIBBASE->dl_Root = &rootnode;
-    /*
-      Init the RootNode structure
-    */
-    taskarray = (ULONG *)AllocMem(sizeof(ULONG)+sizeof(APTR), MEMF_CLEAR);
+
+    /* Init the RootNode structure */
+    taskarray = (ULONG *)AllocMem(sizeof(ULONG) + sizeof(APTR), MEMF_CLEAR);
     taskarray[0] = 1;
     rootnode.rn_TaskArray = MKBADDR(taskarray);
+
+    NewList((struct List *)&LIBBASE->dl_Root->rn_CliList);
+    InitSemaphore(&LIBBASE->dl_Root->rn_RootLock);
 
     InitSemaphore(&LIBBASE->dl_DosListLock);
     InitSemaphore(&LIBBASE->dl_LSigSem);
     InitSemaphore(&LIBBASE->dl_DSigSem);
 
-    LIBBASE->dl_UtilityBase=OpenLibrary("utility.library",39);
-    if(LIBBASE->dl_UtilityBase!=NULL)
+    LIBBASE->dl_UtilityBase = OpenLibrary("utility.library",39);
+
+    if(LIBBASE->dl_UtilityBase != NULL)
     {
-	/* iaint:
+	/*  iaint:
 	    I know this is bad, but I also know that the timer.device
 	    will never go away during the life of dos.library. I also
 	    don't intend to make any I/O calls using this.
@@ -135,7 +138,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
 	SetSignal(0, SIGF_SINGLE);
 	
-	if(OpenDevice("timer.device", UNIT_VBLANK, &LIBBASE->dl_TimerIO.tr_node, 0) == 0)
+	if(OpenDevice("timer.device", UNIT_VBLANK, 
+		      &LIBBASE->dl_TimerIO.tr_node, 0) == 0)
 	{
 	    LIBBASE->dl_TimerBase = LIBBASE->dl_TimerIO.tr_node.io_Device;
 
@@ -149,7 +153,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	    DOSBoot(SysBase, DOSBase);
 
 	    /* This is where we start the RTC_AFTERDOS residents */
-	    InitCode(RTF_AFTERDOS,0);
+	    InitCode(RTF_AFTERDOS, 0);
 
 	    /* We now restart the multitasking	- this is done
 	       automatically by RemTask() when it switches.
@@ -159,9 +163,11 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	Alert(AT_DeadEnd | AG_OpenDev | AN_DOSLib | AO_TimerDev);
 	CloseLibrary(LIBBASE->dl_UtilityBase);
     }
+
     Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_UtilityLib);
 
     return NULL;
+
     AROS_LIBFUNC_EXIT
 }
 
