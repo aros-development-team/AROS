@@ -87,12 +87,15 @@
 	| ((minterm & 0x20) << 1)	\
 	| ((minterm & 0x10) << 3) )  >> 4 )
 
-#define TranslateRect(_rect, _dx, _dy) \
-{                                      \
-    (_rect)->MinX += (_dx);            \
-    (_rect)->MinY += (_dy);            \
-    (_rect)->MaxX += (_dx);            \
-    (_rect)->MaxY += (_dy);            \
+#define TranslateRect(rect, dx, dy) \
+{                                   \
+    struct Rectangle *_rect = rect; \
+    WORD _dx = dx;                  \
+    WORD _dy = dy;                  \
+    (_rect)->MinX += (_dx);         \
+    (_rect)->MinY += (_dy);         \
+    (_rect)->MaxX += (_dx);         \
+    (_rect)->MaxY += (_dy);         \
 }
 
 /* Rastport flag that tells whether or not the driver has been inited */
@@ -704,7 +707,7 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 	if (drmd & JAM2)
 	{
 	    gc_tags[2].ti_Data = vHidd_GC_ColExp_Opaque;
-	}	
+	}
 	else if (drmd & COMPLEMENT)
 	{
 	    gc_tags[3].ti_Data = vHidd_GC_DrawMode_Invert;
@@ -752,7 +755,7 @@ void driver_SetBPen (struct RastPort * rp, ULONG pen,
 		    struct GfxBase * GfxBase)
 {
     struct gfx_driverdata *dd;
-    
+
     if (CorrectDriverData (rp, GfxBase))
     {
     	
@@ -812,7 +815,7 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
     	OOP_SetAttrs(dd->dd_GC, drmd_tags);
     }
     return;
-    	
+
 }
 
 
@@ -920,7 +923,7 @@ static LONG fillrect_pendrmd(struct RastPort *rp
     gc_tags[0].ti_Data = (IPTR)old_drmd;
     gc_tags[1].ti_Data = (IPTR)old_fg;
     OOP_SetAttrs(gc, gc_tags);
-    
+
 	
     return pixwritten;
 }
@@ -932,7 +935,7 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     
     struct BitMap *bm = rp->BitMap;
     UBYTE rp_drmd;
-    
+
     HIDDT_Pixel pix;
     HIDDT_DrawMode drmd;
     ULONG pen;
@@ -973,7 +976,7 @@ struct bitmap_render_data {
     ULONG minterm;
     struct BitMap *srcbm;
     OOP_Object *srcbm_obj;
-    
+
 };
 
 static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy
@@ -983,21 +986,20 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy
 {
     struct bitmap_render_data *brd;
     ULONG width, height;
-    
+
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;
-    
-    
+
     brd = (struct bitmap_render_data *)bitmap_rd;
-    
+
 //bug("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
 //	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, x1, y1, x2, y2, GfxBase);
-	
-	
+
+
     /* Get some info on the colormaps. We have to make sure
        that we have the apropriate mapping tables set.
     */
-    
+
     if (!int_bltbitmap(brd->srcbm
     	, brd->srcbm_obj
 	, srcx, srcy
@@ -1026,7 +1028,7 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
     struct Rectangle rr;
     HIDDT_DrawMode old_drmd;
     OOP_Object *gc;
-    
+
     Point src;
 
     struct TagItem gc_tags[] = {
@@ -1075,7 +1077,6 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 
 #define dumprect(rect) \
         kprintf(#rect " : (%d,%d) - (%d,%d)\n",(rect)->MinX,(rect)->MinY,(rect)->MaxX,(rect)->MaxY)
-
 BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 	LONG x1, LONG y1, LONG x2, LONG y2, BOOL UpdateDamageList,
 	BOOL hasClipRegion,
@@ -1348,16 +1349,13 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
         }
 
 failexit:
-        DisposeRegionRectangleList(R.RegionRectangle);
+        ClearRegion(&R);
         UnlockLayerRom(L);
     }
 
     return TRUE;
 
 }
-
-
-
 void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 {
 
