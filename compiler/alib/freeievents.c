@@ -42,8 +42,8 @@
     HISTORY
 
 ******************************************************************************/
-
 {
+    AROS_GET_SYSBASE
     struct InputEvent *next;
     
     for(next = ie; next != NULL; ie = next)

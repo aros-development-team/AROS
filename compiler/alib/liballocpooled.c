@@ -40,6 +40,7 @@
 ******************************************************************************/
 {
 #   define poolHeader	((POOL *)pool)
+    AROS_GET_SYSBASE
     ULONG *puddle = NULL;
 
     if (SysBase->LibNode.lib_Version >= 39)

@@ -9,8 +9,6 @@
 #include <ctype.h>
 #include <aros/debug.h>
 
-extern struct ExecBase * SysBase;
-
 /*****************************************************************************
 
     NAME */
@@ -59,6 +57,7 @@ extern struct ExecBase * SysBase;
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     ULONG t, end;
     int   i;
 
@@ -93,4 +92,3 @@ extern struct ExecBase * SysBase;
 	}
     }
 } /* hexdump */
-

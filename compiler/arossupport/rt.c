@@ -70,6 +70,7 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     RTData * rtd;
 
     if ((rtd = GetRTData ()))
@@ -239,6 +240,7 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     RTData * rtd;
 
     if (!(rtd = GetRTData ()) )
@@ -295,6 +297,7 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     RTData * rtd;
     IPTR     ret;
     va_list  args;
@@ -386,6 +389,7 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     RTData   * rtd;
     va_list    args;
     Resource * rtnew;
@@ -852,6 +856,7 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     if (!rtd && !(rtd = GetRTData ()))
 	return;
 
@@ -887,6 +892,7 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 char * StrDup (const char * str)
 {
+    AROS_GET_SYSBASE
     char * copy;
 
     if ((copy = AllocVec (strlen (str)+1, MEMF_ANY)))
@@ -941,4 +947,3 @@ IPTR RT_Search (RTData * rtd, int rtt, RTNode ** rtptr, va_list args)
 
     return RT_SEARCH_NOT_FOUND;
 } /* RT_Search */
-

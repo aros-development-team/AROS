@@ -19,6 +19,7 @@ AROS_UFH2 (void, KPutChar,
 	AROS_UFHA(struct ExecBase *,SysBase,A3)
 )
 {
+    AROS_GET_SYSBASE
     AROS_LIBFUNC_INIT
     RawPutChar(chr);
     AROS_LIBFUNC_EXIT
@@ -26,6 +27,7 @@ AROS_UFH2 (void, KPutChar,
 
 void KPrintF(STRPTR format, ...)
 {
+    AROS_GET_SYSBASE
     va_list args;
 
     va_start(args, format);

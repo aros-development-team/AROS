@@ -74,6 +74,7 @@ static const struct newMemList MemTemplate =
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     struct Task     * newtask,
 		    * task2;
     struct newMemList nml;
@@ -114,4 +115,3 @@ static const struct newMemList MemTemplate =
 
     return newtask;
 } /* CreateTask */
-

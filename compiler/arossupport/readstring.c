@@ -58,6 +58,7 @@
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     STRPTR buffer;
     LONG   size, maxsize;
     LONG   c;
@@ -106,4 +107,3 @@
 
     return TRUE;
 } /* ReadString */
-

@@ -103,6 +103,7 @@ static IPTR coolimage_new(Class * cl, Object * o, struct opSet * msg)
 
 static IPTR coolimage_dispose(Class * cl, Object * o, Msg msg)
 {
+    AROS_GET_SYSBASE
     struct CoolImageData *data;
     
     data = INST_DATA(cl, o);
@@ -191,6 +192,7 @@ AROS_UFH3S(IPTR, cool_imageclass_dispatcher,
 
 BOOL InitCoolImageClass(struct Library *CyberGfxBase)
 {
+    AROS_GET_SYSBASE
     BOOL retval = FALSE;
     
     cool_cybergfxbase = CyberGfxBase;

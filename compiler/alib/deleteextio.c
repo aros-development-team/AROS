@@ -44,6 +44,7 @@
 
 ******************************************************************************/
 {
+    AROS_GET_SYSBASE
     /* Erase some fields to enforce crashes */
     ioreq->io_Message.mn_Node.ln_Type = -1L;
 

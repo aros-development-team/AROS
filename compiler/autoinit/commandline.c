@@ -23,6 +23,7 @@ static int  __argmax;
 
 int __initcommandline(void)
 {
+    AROS_GET_SYSBASE
     char *ptr    = NULL;
     LONG  namlen = 64;
     int   done   = 0;
@@ -157,6 +158,7 @@ int __initcommandline(void)
 
 void __exitcommandline(void)
 {
+    AROS_GET_SYSBASE
     if (__argv) {
 	if (__argv[0])
 	    FreeVec(__argv[0]);
