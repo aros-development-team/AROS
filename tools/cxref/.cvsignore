@@ -1,0 +1,12 @@
+Makefile
+autoconfig.h
+config.cache
+config.log
+config.status
+cxref
+cxref-inst
+latex-style.c
+parse-lex.c
+parse-yacc.c
+parse-yacc.h
+y.tab.h
