@@ -39,11 +39,13 @@ ULIBNAME := Intuition
 OSMODULE  := intuition.library
 FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
 	     gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
-	     requesters strgadgets strgclass sysiclass pointerclass windowclasses \
+	     requesters strgadgets strgclass  pointerclass windowclasses \
 	     intuition_misc inputhandler_support inputhandler_actions \
 	     menus menutask barlabelclass fillrectclass groupgclass wbtasktalk \
 	     rootclass icclass modelclass itexticlass misc
-	     
+## need some more thinking:
+## sysiclass
+
 FUNCTIONS := \
 	activategadget \
 	activatewindow \
@@ -175,6 +177,7 @@ FUNCTIONS := \
 	viewportaddress \
 	wbenchtoback \
 	wbenchtofront \
+        windowaction \
 	windowlimits \
 	windowtoback \
 	windowtofront \
