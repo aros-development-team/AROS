@@ -42,7 +42,7 @@ responsibility is assumed.
 
 #include <stdio.h>
 
-#ifdef __AROS
+#ifdef _AROS
 #define __chip
 #include <proto/alib.h>
 #endif
@@ -98,7 +98,7 @@ if (IntuitionBase != NULL)
 			WA_Width,	200,
 			WA_Height,	100,
 			WA_RMBTrap,	TRUE,
-#ifdef __AROS
+#ifdef _AROS
 			WA_IDCMP,	IDCMP_RAWKEY,
 #endif
 			TAG_END)))
@@ -119,7 +119,7 @@ if (IntuitionBase != NULL)
 	/* Draw the same image at a new location */
 	DrawImage(win->RPort,&myImage,100,10);
 
-#ifdef __AROS
+#ifdef _AROS
 	/* Wait for a keypress */
 	Wait (1L << win->UserPort->mp_SigBit);
 #else

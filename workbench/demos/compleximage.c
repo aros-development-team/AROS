@@ -43,7 +43,7 @@ responsibility is assumed.
 
 #include <stdio.h>
 
-#ifdef __AROS
+#ifdef _AROS
 #define __chip
 #include <proto/alib.h>
 #endif
@@ -128,7 +128,7 @@ if (IntuitionBase != NULL)
 	if (NULL != (win = OpenWindowTags(NULL,
 			    WA_RMBTrap,      TRUE,
 			    WA_CustomScreen, scr,
-#ifdef __AROS
+#ifdef _AROS
 			    WA_IDCMP,	     IDCMP_RAWKEY,
 #endif
 			    TAG_END)))
@@ -168,7 +168,7 @@ if (IntuitionBase != NULL)
 	    myImage.PlaneOnOff = 0x1;
 	    DrawImage(win->RPort,&myImage,100,50);
 
-#ifdef __AROS
+#ifdef _AROS
 	    /* Wait for a keypress */
 	    Wait (1L << win->UserPort->mp_SigBit);
 #else
