@@ -309,14 +309,14 @@ struct FrameInfo
 /* DTM_REMOVEDTOBJECT, DTM_CLEARSELECTED, DTM_COPY, DTM_ABORTPRINT */
 struct dtGeneral
 {
-    ULONG              MethodID;
+    STACKULONG         MethodID;
     struct GadgetInfo *dtg_GInfo;
 };
 
 /* DTM_SELECT */
 struct dtSelect
 {
-    ULONG              MethodID;
+    STACKULONG         MethodID;
     struct GadgetInfo *dts_GInfo;
     struct Rectangle   dts_Select;
 };
@@ -324,12 +324,12 @@ struct dtSelect
 /* DTM_FRAMEBOX */
 struct dtFrameBox
 {
-    ULONG              MethodID;
+    STACKULONG         MethodID;
     struct GadgetInfo *dtf_GInfo;
     struct FrameInfo  *dtf_ContentsInfo;        /* Input */
     struct FrameInfo  *dtf_FrameInfo;           /* Output */
-    ULONG              dtf_SizeFrameInfo;
-    ULONG              dtf_FrameFlags;
+    STACKULONG         dtf_SizeFrameInfo;
+    STACKULONG         dtf_FrameFlags;
 };
 
 #ifndef  FRAMEF_SPECIFY
@@ -340,7 +340,7 @@ struct dtFrameBox
 /* DTM_GOTO */
 struct dtGoto
 {
-    ULONG              MethodID;
+    STACKULONG         MethodID;
     struct GadgetInfo *dtg_GInfo;
     STRPTR             dtg_NodeName;          /* Node to goto */
     struct TagItem    *dtg_AttrList;          /* Additional attributes */
@@ -349,9 +349,9 @@ struct dtGoto
 /* DTM_TRIGGER */
 struct dtTrigger
 {
-    ULONG              MethodID;
+    STACKULONG         MethodID;
     struct GadgetInfo *dtt_GInfo;
-    ULONG              dtt_Function;
+    STACKULONG         dtt_Function;
     APTR               dtt_Data;
 };
 
@@ -401,7 +401,7 @@ union printerIO
 /* DTM_PRINT */
 struct dtPrint
 {
-    ULONG              MethodID;
+    STACKULONG         MethodID;
     struct GadgetInfo *dtp_GInfo;           /* Gadget information */
     union printerIO   *dtp_PIO;             /* Printer IO request */
     struct TagItem    *dtp_AttrList;        /* Additional attributes */
@@ -410,33 +410,33 @@ struct dtPrint
 /* DTM_DRAW */
 struct dtDraw
 {
-    ULONG            MethodID;
+    STACKULONG       MethodID;
     struct RastPort *dtd_RPort;
-    LONG             dtd_Left;
-    LONG             dtd_Top;
-    LONG             dtd_Width;
-    LONG             dtd_Height;
-    LONG             dtd_TopHoriz;
-    LONG             dtd_TopVert;
-    struct TagItem  *dtd_AttrList;          /* Additional attributes */
+    STACKLONG        dtd_Left;
+    STACKLONG        dtd_Top;
+    STACKLONG        dtd_Width;
+    STACKLONG        dtd_Height;
+    STACKLONG        dtd_TopHoriz;
+    STACKLONG        dtd_TopVert;
+    struct TagItem  *dtd_AttrList;         /* Additional attributes */
 };
 
 /* DTM_RELEASEDRAWINFO */
 struct dtReleaseDrawInfo
 
 {
-    ULONG   MethodID;
-    APTR    dtr_Handle;		/* Handle as returned by DTM_OBTAINDRAWINFO */
+    STACKULONG   MethodID;
+    APTR         dtr_Handle;		   /* Handle as returned by DTM_OBTAINDRAWINFO */
 };
 
 
 /* DTM_WRITE */
 struct dtWrite
 {
-    ULONG              MethodID;
+    STACKULONG         MethodID;
     struct GadgetInfo *dtw_GInfo;          /* Gadget information */
     BPTR               dtw_FileHandle;     /* File handle to write to */
-    ULONG              dtw_Mode;
+    STACKULONG         dtw_Mode;
     struct TagItem    *dtw_AttrList;       /* Additional attributes */
 };
 
