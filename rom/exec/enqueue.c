@@ -5,9 +5,9 @@
     Desc: Add a node into a sorted list
     Lang: english
 */
-/* I want the macros */
 #include <exec/lists.h>
 #include <proto/exec.h>
+#include <assert.h>
 
 /*****************************************************************************
 
