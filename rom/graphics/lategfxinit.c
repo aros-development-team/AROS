@@ -68,4 +68,4 @@
     
 
     AROS_LIBFUNC_EXIT
-} /* InitGfxHidd */
+} /* LateGfxInit */
