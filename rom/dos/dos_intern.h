@@ -16,9 +16,6 @@
 #include <dos/dosasl.h>
 #include <utility/tagitem.h>
 
-/* Needed for aros_print_not_implemented macro */
-#include <aros/debug.h>
-
 #include "dos_dosdoio.h"
 
 #ifdef SysBase
