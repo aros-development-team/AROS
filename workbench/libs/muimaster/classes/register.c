@@ -203,7 +203,7 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
 	WritePixel(_rp(obj), right_item_bar_x + 1, bottom_item_bar_y + 1);
 	DoMethod(obj,MUIM_DrawBackground, left_item_bar_x - 1, bottom_item_bar_y + 2,
 		 item_bar_width + (2 * 1), 1,
-		 left_item_bar_x - 1, top_item_bar_y + 2, 0);
+		 left_item_bar_x - 1, bottom_item_bar_y + 2, 0);
 	
     }
     /* right vert bar */
