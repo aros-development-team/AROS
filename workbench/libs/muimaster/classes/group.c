@@ -26,6 +26,7 @@ extern struct Library *MUIMasterBase;
 #include "debug.h"
 
 #define ROUND(x) ((int)(x + 0.5))
+#define IS_HIDDEN(obj) (! (_flags(obj) & MADF_SHOWME)  || (_flags(obj) & MADF_BORDERGADGET))
 
 /* Attributes filtered out in OM_SET, before OM_SET gets passed to children.
    Tested with MUI under UAE/AOS.
@@ -57,6 +58,14 @@ extern struct Library *MUIMasterBase;
     
 */
 
+struct layout2d_elem {
+    WORD min;
+    WORD max;
+    WORD dim;
+    ULONG weight;
+};
+
+
 struct MUI_GroupData
 {
     Object      *family;
@@ -64,10 +73,13 @@ struct MUI_GroupData
     ULONG        flags;
     ULONG        columns;
     ULONG        rows;
+    struct layout2d_elem *row_infos;
+    struct layout2d_elem *col_infos;
     LONG         active_page;
     ULONG        horiz_spacing;
     ULONG        vert_spacing;
     ULONG        num_childs;
+    ULONG        num_visible_children; /* for horiz/vert group only */
     ULONG        horiz_weight_sum;
     ULONG        vert_weight_sum;
     ULONG        update; /* for MUI_Redraw() 1 - do not redraw the frame, 2 - the virtual pos has changed */
@@ -112,12 +124,6 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg);
 /******************************************************************************/
 /******************************************************************************/
 
-struct layout2d_elem {
-    int min;
-    int max;
-    int dim;
-    int weight;
-};
 
 static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg);
 
@@ -321,7 +327,12 @@ static ULONG Group_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
-    if (data->family) MUI_DisposeObject(data->family);
+    if (data->row_infos != NULL)
+	mui_free(data->row_infos);
+    if (data->col_infos != NULL)
+	mui_free(data->col_infos);
+    if (data->family != NULL)
+	MUI_DisposeObject(data->family);
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -361,6 +372,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
 		break;
 	    case MUIA_Group_ActivePage:
+		D(bug("Group_Set, activepage=%d\n", tag->ti_Data));
 		change_active_page(cl, obj, (LONG)tag->ti_Data);
 		break;
 	    case MUIA_Group_Forward:
@@ -430,6 +442,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     		case MUIA_CycleChain:
     		case MUIA_Draggable:
     		case MUIA_FillArea:
+		case MUIA_Group_ActivePage:
     		case MUIA_Frame:
     		case MUIA_FrameTitle:
     		case MUIA_HorizWeight:
@@ -806,7 +819,9 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct Region *region = NULL;
     APTR clip;
 
-/*      D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
+/*  	D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld upd=%d page=%d\n", */
+/*  	      obj,_left(obj),_top(obj),_right(obj),_bottom(obj), */
+/*  	      data->update, data->active_page)); */
 /*      D(bug("Group_Draw(%p) msg=0x%08lx flags=0x%08lx\n", obj, msg->flags, _flags(obj))); */
 
     if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
@@ -1056,13 +1071,13 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
     Object *child;
     struct MUI_MinMax tmp;
     WORD maxminwidth = 0;
-    int num_visible_children = Group_GetNumVisibleChildren(data, children);
     BOOL found_nonzero_vweight = FALSE;
 
     tmp.MinHeight = 0;
     tmp.DefHeight = 0;
     tmp.MaxHeight = MUI_MAXMAX;
-    tmp.MinWidth = tmp.DefWidth = tmp.MaxWidth = (num_visible_children - 1) * data->horiz_spacing;
+    tmp.MinWidth = tmp.DefWidth = tmp.MaxWidth =
+	(data->num_visible_children - 1) * data->horiz_spacing;
 
     if (data->flags & GROUP_SAME_WIDTH) {
 	cstate = (Object *)children->mlh_Head;
@@ -1072,6 +1087,8 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 	    maxminwidth = MAX(maxminwidth, _minwidth(child));
 	}
     }
+
+    data->horiz_weight_sum = 0;
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate))) {
 	if (! (_flags(child) & MADF_SHOWME)  || (_flags(child) & MADF_BORDERGADGET))
@@ -1090,6 +1107,7 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 	  is the min of all maxheights
 	 */
 	tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
+	data->horiz_weight_sum += _hweight(child);
 	if (_vweight(child) > 0)
 	{
 	    found_nonzero_vweight = TRUE;
@@ -1112,13 +1130,13 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
     Object *child;
     struct MUI_MinMax tmp;
     WORD maxminheight = 0;
-    int num_visible_children = Group_GetNumVisibleChildren(data, children);
     BOOL found_nonzero_hweight = FALSE;
 
     tmp.MinWidth = 0;
     tmp.DefWidth = 0;
     tmp.MaxWidth = MUI_MAXMAX;
-    tmp.MinHeight = tmp.DefHeight = tmp.MaxHeight = (num_visible_children - 1) * data->vert_spacing;
+    tmp.MinHeight = tmp.DefHeight = tmp.MaxHeight =
+	(data->num_visible_children - 1) * data->vert_spacing;
 
     if (data->flags & GROUP_SAME_HEIGHT)
     {
@@ -1130,6 +1148,7 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 	}
     }
 
+    data->vert_weight_sum = 0;
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -1144,6 +1163,7 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 	tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
 	tmp.DefWidth = MAX(tmp.DefWidth, _defwidth(child));
 	tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
+	data->vert_weight_sum += _vweight(child);
 	if (_hweight(child) > 0)
 	{
 	    found_nonzero_hweight = TRUE;
@@ -1153,6 +1173,7 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
     {
 	tmp.MaxWidth = tmp.MinWidth;
     }
+
     END_MINMAX();
 }
 
@@ -1172,6 +1193,9 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
 	/* calculate min and max height of this row */
 	int min_h = 0, def_h = 0, max_h = MUI_MAXMAX;
 	BOOL found_nonzero_vweight = FALSE;
+
+	data->row_infos[i].weight = 0;
+
 	j = 0;
 	while ((child = NextObject(&cstate))) {
 	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
@@ -1187,6 +1211,7 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
 	    if (_vweight(child) > 0)
 	    {
 		found_nonzero_vweight = TRUE;
+		data->row_infos[i].weight += _vweight(child);
 	    }
 	    ++j;
 	    if ((j % data->columns) == 0)
@@ -1197,6 +1222,11 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
 	else
 	    max_h = MAX(max_h, min_h);
 /*  	D(bug("row %d : min_h=%d max_h=%d\n", i, min_h, max_h)); */
+
+	data->row_infos[i].min = min_h;
+	data->row_infos[i].max = max_h;
+	data->vert_weight_sum += data->row_infos[i].weight;
+
 	req->MinHeight += min_h;
 	req->DefHeight += def_h;
 	req->MaxHeight += max_h;
@@ -1218,6 +1248,8 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
 	/* calculate min and max width of this column */
 	int min_w = 0, def_w = 0, max_w = MUI_MAXMAX;
 	BOOL found_nonzero_hweight = FALSE;
+
+	data->col_infos[i].weight = 0;
 
 	j = 0;
 	/* process all childs to get childs on a column */
@@ -1244,6 +1276,7 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
 	    if (_hweight(child) > 0)
 	    {
 		found_nonzero_hweight = TRUE;
+		data->col_infos[i].weight += _hweight(child);
 	    }
 	}
 	if (!found_nonzero_hweight)
@@ -1251,6 +1284,11 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
 	else
 	    max_w = MAX(max_w, min_w);
 /*  	D(bug("col %d : min_w=%d max_w=%d\n", i, min_w, max_w)); */
+
+	data->col_infos[i].min = min_w;
+	data->col_infos[i].max = max_w;
+	data->horiz_weight_sum += data->col_infos[i].weight;
+
 	req->MinWidth += min_w;
 	req->DefWidth += def_w;
 	req->MaxWidth += max_w;
@@ -1282,6 +1320,25 @@ group_minmax_2d(struct IClass *cl, Object *obj,
     	if (data->num_childs % data->columns) return;
 	data->rows = data->num_childs / data->columns;
     }
+
+    if (data->row_infos != NULL)
+	mui_free(data->row_infos);
+
+    data->row_infos = mui_alloc(data->rows * sizeof(struct layout2d_elem));
+    if (NULL == data->row_infos)
+	return;
+
+    if (data->col_infos != NULL)
+	mui_free(data->col_infos);
+
+    data->col_infos = mui_alloc(data->columns * sizeof(struct layout2d_elem));
+    if (NULL == data->col_infos)
+	return;
+
+    data->horiz_weight_sum = 0;
+    data->vert_weight_sum = 0;
+
+
     tmp.MinHeight = tmp.DefHeight = tmp.MaxHeight = (data->rows - 1) * data->vert_spacing;
     tmp.MinWidth = tmp.DefWidth = tmp.MaxWidth = (data->columns - 1) * data->horiz_spacing;
     /* get minimum dims if same dims for all childs are needed */
@@ -1304,6 +1361,7 @@ group_minmax_2d(struct IClass *cl, Object *obj,
     }
     minmax_2d_rows_pass (data, children, &tmp, maxmin_height, maxdef_height);
     minmax_2d_columns_pass (data, children, &tmp, maxmin_width, maxdef_width);
+
     END_MINMAX();
 }
 
@@ -1412,6 +1470,7 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
     {
 	if ((data->rows == 1) && (data->columns == 1))
 	{
+	    data->num_visible_children = Group_GetNumVisibleChildren(data, lm.lm_Children);
 	    if (data->flags & GROUP_HORIZ)
 		group_minmax_horiz(cl, obj, lm.lm_Children, msg);
 	    else
@@ -1434,243 +1493,351 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 }
 
 
-    /*
-    ** Layout function. Here, we have to call MUI_Layout() for each
-    ** our children. MUI wants us to place them in a rectangle
-    ** defined by (0,0,lm->lm_Layout.Width-1,lm->lm_Layout.Height-1)
-    ** You are free to put the children anywhere in this rectangle.
-    **
-    ** Return TRUE if everything went ok, FALSE on error.
-    ** Note: Errors during layout are not easy to handle for MUI.
-    **       Better avoid them!
-    */
-/* Write a proper hook function */
-static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *children)
+
+// enforce minmax constraint, but also update total growable/shrinkable weights
+// while we're at it
+static void Layout1D_minmax_constraint (
+    WORD *sizep, WORD minsize, WORD maxsize, WORD *remainp, WORD *sizegrowp,
+    WORD *sizeshrinkp, ULONG *weightgrowp, ULONG *weightshrinkp, UWORD weight
+    )
 {
-    struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object *cstate;
-    Object *child;
-    LONG left = 0;
-    LONG top = 0;
-    LONG width;
-    LONG height;
-    LONG bonus = 0;
-    LONG totalBonus;
-    int num_visible_children = Group_GetNumVisibleChildren(data, children);
+    WORD size = *sizep, remain = *remainp,
+	sizegrow = *sizegrowp, sizeshrink = *sizeshrinkp;
+    ULONG weightgrow = *weightgrowp, weightshrink = *weightshrinkp;
 
-    totalBonus = _mwidth(obj) - (num_visible_children - 1) * data->horiz_spacing;
-
-    data->horiz_weight_sum = 0;
-    /*
-     * pass 1 : consider fixed size objects, and calc weight
-     */
-    cstate = (Object *)children->mlh_Head;
-    while ((child = NextObject(&cstate)))
+    if (size <= minsize) // too little
     {
-	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
-	    continue;
-	totalBonus -= _minwidth(child);
-
-	if (_minwidth(child) != w0_maxwidth(child))
-	    data->horiz_weight_sum += _hweight(child);
+	remain += size - minsize;
+	size = minsize;
+	sizeshrink -= size;
+	if (size == maxsize)
+	    sizegrow -= size;
+    }
+    else if (size >= maxsize) // too big
+    {
+	remain += size - maxsize;
+	size = maxsize;
+	sizegrow -= size;
     }
 
-    if (data->flags & GROUP_VIRTUAL)
-    {
-    	/* This is alao true for non virtual groups, but if this would be the case
-        ** then there is a bug in the layout function
-        */
-    	if (totalBonus < 0) totalBonus = 0;
-    }
+    if (size < maxsize)
+	weightgrow += weight;
+    if (size > minsize)
+	weightshrink += weight;
 
-    if (data->horiz_weight_sum == 0) /* fixed width childs */
-    {
-	left = totalBonus / 2;
-	data->horiz_weight_sum = 1;
-    }
-
-    /* max size ?  (too much bonus) */
-    cstate = (Object *)children->mlh_Head;
-    while ((child = NextObject(&cstate)))
-    {
-	_flags(child) &= ~MADF_MAXSIZE;
-	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
-	    continue;
-	if (_minwidth(child) == w0_maxwidth(child))
-	    continue;
-/*	if ((totalBonus * _hweight(child) / (double)data->horiz_weight_sum) >
-	    (_maxwidth(child) - _minwidth(child)))*/
-	if ((totalBonus * _hweight(child) / data->horiz_weight_sum) >
-	    (w0_maxwidth(child) - _minwidth(child)))
-	{
-	    _flags(child) |= MADF_MAXSIZE;
-	    totalBonus -= w0_maxwidth(child) - _minwidth(child);
-	    data->horiz_weight_sum -= _hweight(child);
-	}
-    }
-    /*
-     * pass 2 : distribute space. Minimum space is available,
-     * bonus space is distributed according to weights
-     */
-
-    /* The real height of the object */
-    data->virt_mheight = 0;
-
-    cstate = (Object *)children->mlh_Head;
-    while ((child = NextObject(&cstate)))
-    {
-	BOOL has_variable_width;
-
-	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
-	    continue;
-	has_variable_width = (_minwidth(child) != w0_maxwidth(child)) &&
-	    !(_flags(child) & MADF_MAXSIZE);
-	/* center child if group height is bigger than maxheight */
-	height = MIN(_maxheight(child), _mheight(obj));
-	height = MAX(height, _minheight(child));
-	if (height > data->virt_mheight) data->virt_mheight = height;
-	top = (_mheight(obj) - height) / 2;
-
-	if (data->flags & GROUP_VIRTUAL)
-	{
-	    /* This is alao true for non virtual groups, but if this would be the case
-	    ** then there is a bug in the layout function
-	    */
-	    if (top < 0) top = 0;
-	}
-
-	width = (_flags(child) & MADF_MAXSIZE) ?
-	    w0_maxwidth(child) : _minwidth(child);
-	if (has_variable_width && data->horiz_weight_sum)
-	{
-//	    bonus = ROUND(totalBonus * _hweight(child)
-//			  / (double)data->horiz_weight_sum);
-	    bonus = (totalBonus * _hweight(child) + data->horiz_weight_sum  / 2) / data->horiz_weight_sum;
-
-	    bonus = MIN(bonus, w0_maxwidth(child) - width);
-	    width += bonus;
-	}
-	width = CLAMP(width, _minwidth(child), w0_maxwidth(child));
-	if (!MUI_Layout(child, left, top, width, height, 0))
-	    return;
-	left += data->horiz_spacing + width;
-	if (has_variable_width)
-	{
-	    data->horiz_weight_sum -= _hweight(child);
-	    totalBonus -= bonus;
-	}
-    }
-
-    if (data->flags & GROUP_VIRTUAL)
-    {
-	data->virt_mheight = _mheight(obj);
-	data->virt_mwidth = left - data->horiz_spacing;
-    }
+    *sizep = size; *remainp = remain;
+    *sizegrowp = sizegrow; *sizeshrinkp = sizeshrink;
+    *weightgrowp = weightgrow; *weightshrinkp = weightshrink;
 }
 
-/* Write a proper hook function */
+
+// redistribute excess size to growable child, or reduce size of a shrinkable
+// child
+static void Layout1D_redistribution (
+    WORD *sizep, WORD minsize, WORD maxsize, WORD *remainp, WORD *sizegrowp,
+    WORD *sizeshrinkp, ULONG *weightgrowp, ULONG *weightshrinkp, UWORD weight
+    )
+{
+    WORD size = *sizep, remain = *remainp,
+	sizegrow = *sizegrowp, sizeshrink = *sizeshrinkp;
+    ULONG weightgrow = *weightgrowp, weightshrink = *weightshrinkp;
+
+    if ((remain > 0) && (size < maxsize))
+    {
+	LONG newsize;
+
+	newsize = (sizegrow * weight + weightgrow / 2) / weightgrow;
+
+/*  	D(bug("newsize=%ld == size_growa=%ld * w=%ld / weight_grow=%d\n", */
+/*  	      newsize, sizegrow, weight, weightgrow)); */
+
+	/* take care of off-by-1 errors that may toggle remainder sign
+	 * by ensuring convergence to 0
+	 */
+	if (remain - newsize + size < 0)
+	{
+/*  	    D(bug("adding remainder=%d => size = %d\n", */
+/*  		  remain, size + remain)); */
+	    size += remain;
+	    remain = 0;
+	}
+	else
+	{
+	    remain -= newsize - size;
+	    size = newsize;
+	    sizegrow -= size;
+	    weightgrow -= weight;
+	}
+    }
+    else if ((remain < 0) && (size > minsize))
+    {
+	LONG newsize;
+
+	newsize = (sizeshrink * weight + weightshrink / 2) / weightshrink;
+
+/*  	D(bug("newsize=%ld == size_shrinkables=%ld * w=%ld / weight_shrinkables=%d\n", */
+/*  	      newsize, sizeshrink, weight, weightshrink)); */
+
+	if (remain - newsize + size > 0)
+	{
+/*  	    D(bug("adding remainder=%d => size = %d\n", */
+/*  		  remain, size + remain)); */
+	    size += remain;
+	    remain = 0;
+	}
+	else
+	{
+	    remain -= newsize - size;
+	    size = newsize;
+	    sizeshrink -= size;
+	    weightshrink -= weight;
+	}
+    }
+
+    *sizep = size; *remainp = remain;
+    *sizegrowp = sizegrow; *sizeshrinkp = sizeshrink;
+    *weightgrowp = weightgrow; *weightshrinkp = weightshrink;
+}
+
+
+// 2 passes at most, less on average (0.5 or 1.5), each does
+// - a minmax clamping, evenutally adding to a remainder
+// (remainder = missing (underflow) or remaining (overflow) space compared
+// to ideal sizes where childs fill the whole group)
+// - a redistribution of the remainder, by growing (pos. remainder) or
+// shrinking (neg. remainder) childs able to support it.
+//
+// Occasionnaly the first time the redistribution is done, the minmax
+// constraint can be broken, thus the extra pass to check and eventually
+// redistribute. The second redistribution never breaks minmax constraint
+// (there should be a mathematical proof, but feel free to prove me wrong
+// with an example)
+static void Layout1D_minmax_constraints_and_redistrib (
+    struct MinList *children,
+    WORD total_size,
+    WORD remainder,
+    BOOL group_horiz
+)
+{
+    Object *cstate;
+    Object *child;
+    int i;
+
+    for (i = 0; i < 2; i++)
+    {
+	WORD size_growables = total_size;
+	WORD size_shrinkables = total_size;
+	ULONG weight_growables = 0;
+	ULONG weight_shrinkables = 0;
+
+/*  	D(bug("start : rem=%ld, A=%ld, size_growables=%ld, size_shrinkables=%ld\n", */
+/*  	      remainder, total_size, size_growables, size_shrinkables)); */
+
+	// minmax constraints
+	cstate = (Object *)children->mlh_Head;
+	while ((child = NextObject(&cstate)))
+	{
+	    WORD old_size;
+
+	    if (IS_HIDDEN(child))
+		continue;
+
+	    if (group_horiz)
+	    {
+		old_size = _width(child);
+
+		Layout1D_minmax_constraint(
+		&_width(child), _minwidth(child), _maxwidth(child),
+		&remainder,
+		&size_growables, &size_shrinkables,
+		&weight_growables, &weight_shrinkables,
+		_hweight(child));
+
+/*  		D(bug("loop1 on %p : width=%d was %d, rem=%d, A=%d, " */
+/*  		      "sizegrow=%d, sizeshrink=%d w=%d min=%d max=%d\n", */
+/*  		      child, _width(child), old_size, remainder, total_size, */
+/*  		      size_growables, size_shrinkables, _hweight(child), */
+/*  		      _minwidth(child), _maxwidth(child))); */
+	    }
+	    else // ! group_horiz
+	    {
+		old_size = _height(child);
+
+		Layout1D_minmax_constraint(
+		&_height(child), _minheight(child), _maxheight(child),
+		&remainder,
+		&size_growables, &size_shrinkables,
+		&weight_growables, &weight_shrinkables,
+		_vweight(child));
+		
+/*  		D(bug("loop1 on %p : h=%ld was %d, rem=%d, A=%d, " */
+/*  		      "sizegrow=%d, sizeshrink=%d w=%d min=%d max=%d\n", */
+/*  		      child, _height(child), old_size, remainder, total_size, */
+/*  		      size_growables, size_shrinkables, _vweight(child), */
+/*  		      _minheight(child), _maxheight(child))); */
+	    } // if (group_horiz)
+	} // while child, minmax constraints
+
+	// mid-pass break
+	if (remainder == 0)
+	    break;
+
+/*  	D(bug("mid : rem=%d, A=%d, size_grow=%d, size_shrink=%d, " */
+/*  	      "wg=%ld, ws=%ld\n", remainder, total_size, size_growables, */
+/*  	      size_shrinkables, weight_growables, weight_shrinkables)); */
+
+	// distribute remaining space to possible candidates
+	cstate = (Object *)children->mlh_Head;
+	while (((child = NextObject(&cstate)) != NULL) && (remainder != 0))
+	{
+	    WORD old_size;
+
+	    if (IS_HIDDEN(child))
+		continue;
+
+	    if (group_horiz)
+	    {
+		old_size = _width(child);
+
+		Layout1D_redistribution(
+		    &_width(child), _minwidth(child), _maxwidth(child),
+		    &remainder,
+		    &size_growables, &size_shrinkables,
+		    &weight_growables, &weight_shrinkables,
+		    _hweight(child));
+
+/*  		D(bug("loop2 on %p : h=%d was %d, rem=%d, A=%d, " */
+/*  		      "size_grow=%d, size_shrink=%d\n", child, */
+/*  		      _width(child), old_size, remainder, total_size, */
+/*  		      size_growables, size_shrinkables)); */
+	    }
+	    else // ! group_horiz
+	    {
+		old_size = _height(child);
+
+		Layout1D_redistribution(
+		    &_height(child), _minheight(child), _maxheight(child),
+		    &remainder,
+		    &size_growables, &size_shrinkables,
+		    &weight_growables, &weight_shrinkables,
+		    _vweight(child));
+
+/*  		D(bug("loop2 on %p : h=%d was %d, rem=%d, A=%d, " */
+/*  		      "size_grow=%d, size_shrink=%d\n", child, */
+/*  		      _height(child), old_size, remainder, total_size, */
+/*  		      size_growables, size_shrinkables)); */
+	    } // if (group_horiz)
+	    
+	} // while child, redistribution
+
+	if (remainder != 0)
+	{
+/*  	    D(bug("end : rem=%ld, A=%ld, size_grow=%ld, size_shrink=%ld\n", */
+/*  		  remainder, total_size, size_growables, size_shrinkables)); */
+	}
+	// dont break here if remainder == 0, some minmax constraints
+	// may not be respected
+    } // end for
+
+    // to easily spot layout bugs, nothing like a (division by zero) exception
+    if (remainder != 0)
+    {
+/*  	ASSERT(remainder != 0); */
+/*  	D(bug("gonna crash, remainder = %d\n", remainder)); */
+/*  	remainder /= 0; */
+    }
+
+}
+
+static void Layout1D_weight_constraint (
+    WORD *total_sizep,
+    WORD *total_init_sizep,
+    ULONG *total_weightp,
+    WORD *sizep,
+    UWORD weight,
+    WORD minsize
+)
+{
+    if (*total_weightp > 0)
+	*sizep = (*total_sizep * weight + *total_weightp / 2)
+	    / *total_weightp;
+    else
+	*sizep = minsize;
+
+    *total_weightp    -= weight;
+    *total_sizep      -= *sizep;
+    *total_init_sizep += *sizep;
+}
+
+
 static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *children)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object *cstate;
     Object *child;
-    LONG left = 0;
-    LONG top = 0;
-    LONG width;
-    LONG height;
-    LONG bonus = 0;
-    LONG totalBonus;
+    ULONG total_weight;
+    WORD remainder;         /* must converge to 0 to succesfully end layout */
+    WORD total_size;
+    WORD total_size_backup;
+    WORD total_init_size;   /* total size of the ideally sized childs */
+    WORD width;
+    WORD left = 0;
+    WORD top = 0;
 
-    int num_visible_children = Group_GetNumVisibleChildren(data, children);
+    total_weight = data->vert_weight_sum;
+    total_init_size = 0;
+    total_size = _mheight(obj) - (data->num_visible_children - 1) * data->vert_spacing;
+    total_size_backup = total_size;
 
-    totalBonus = _mheight(obj) - (num_visible_children - 1) * data->vert_spacing;
+/*      D(bug("\nvert layout for %p, A=%d W=%ld\n", obj, total_size, total_weight)); */
 
-    data->vert_weight_sum = 0;
-    /*
-     * pass 1 : consider fixed size objects, and calc weight
-     */
+    // weight constraints
+    // calculate ideal size for each object, and total ideal size
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
-	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
+	if (IS_HIDDEN(child))
 	    continue;
-	totalBonus -= _minheight(child);
 
-	if (_minheight(child) != w0_maxheight(child))
-	    data->vert_weight_sum += _vweight(child);
-    }
+	Layout1D_weight_constraint(
+	    &total_size, &total_init_size, &total_weight,
+	    &_height(child), _vweight(child), _minheight(child));
+/*  	D(bug("child %p : ideal=%d w=%ld\n", */
+/*  	      child, _height(child), _vweight(child))); */
+    } // while child, weight constraints
+
+    total_size = total_size_backup;
+    remainder = total_size - total_init_size;
 
     if (data->flags & GROUP_VIRTUAL)
     {
-    	/* This is alao true for non virtual groups, but if this would be the case
+    	/* This is also true for non virtual groups, but if this would be the case
         ** then there is a bug in the layout function
         */
-    	if (totalBonus < 0) totalBonus = 0;
+    	if (total_size < 0) total_size = 0;
     }
 
-    if (data->vert_weight_sum == 0) /* fixed height childs */
-    {
-	top = totalBonus / 2;
-	data->vert_weight_sum = 1;
-    }
-    /* max size ?  (too much bonus) */
+    Layout1D_minmax_constraints_and_redistrib (
+	children,
+	total_size,
+	remainder,
+	FALSE);
+
+    // do the layout
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
-	_flags(child) &= ~MADF_MAXSIZE;
-	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
+	if (IS_HIDDEN(child))
 	    continue;
-	if (_minheight(child) == w0_maxheight(child))
-	    continue;
-/*	if ((totalBonus * _vweight(child) / (double)data->vert_weight_sum) >
-	    (_maxheight(child) - _minheight(child)))*/
-	if ((totalBonus * _vweight(child) / data->vert_weight_sum) >
-	    (w0_maxheight(child) - _minheight(child)))
-	{
-	    _flags(child) |= MADF_MAXSIZE;
-	    totalBonus -= w0_maxheight(child) - _minheight(child);
-	    data->vert_weight_sum -= _vweight(child);
-	}
-    }
-    /*
-     * pass 2 : distribute space. Minimum space is available,
-     * bonus space is distributed according to weights
-     */
-    cstate = (Object *)children->mlh_Head;
-    while ((child = NextObject(&cstate)))
-    {
-	BOOL has_variable_height;
 
-	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
-	    continue;
-	has_variable_height = (_minheight(child) != w0_maxheight(child)) &&
-	    !(_flags(child) & MADF_MAXSIZE);
 	width = MIN(_maxwidth(child), _mwidth(obj));
 	width = MAX(width, _minwidth(child));
 	left = (_mwidth(obj) - width) / 2;
-	height = (_flags(child) & MADF_MAXSIZE) ?
-	    w0_maxheight(child) : _minheight(child);
 
-	if (has_variable_height && data->vert_weight_sum) /* Added this check, because data->vert_weight_sum might be 0 */
-	{
-/*	    bonus = ROUND(totalBonus * _vweight(child)
-			  / (double)data->vert_weight_sum);*/ /* Using integer numbers is nicer */
-
-	    bonus = (totalBonus * _vweight(child) + data->vert_weight_sum  / 2) / data->vert_weight_sum;
-
-	    bonus = MIN(bonus, w0_maxheight(child) - height);
-	    height += bonus;
-	}
-
-	height = CLAMP(height, _minheight(child), w0_maxheight(child));
-	if (!MUI_Layout(child, left, top, width, height, 0))
+/*  	D(bug("child %p -> layout %d x %d\n", child, width, _height(child))); */
+	if (!MUI_Layout(child, left, top, width, _height(child), 0))
 	    return;
-	top += data->vert_spacing + height;
-	if (has_variable_height)
-	{
-	    data->vert_weight_sum -= _vweight(child);
-	    totalBonus -= bonus;
-	}
+	top += data->vert_spacing + _height(child);
     }
 
     if (data->flags & GROUP_VIRTUAL)
@@ -1680,152 +1847,190 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
     }
 }
 
-static void
-layout_2d_row_precalc (struct MUI_GroupData *data,
-		       struct layout2d_elem *row_infos,
-		       struct MinList *children,
-		       LONG *totBonusHe, LONG *top_start)
+
+static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *children)
 {
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object *cstate;
     Object *child;
-    int i, j;
+    ULONG total_weight;
+    WORD remainder;         /* must converge to 0 to succesfully end layout */
+    WORD total_size;
+    WORD total_size_backup;
+    WORD total_init_size;   /* total size of the ideally sized childs */
+    WORD height;
+    WORD top = 0;
+    WORD left = 0;
 
+    total_weight = data->horiz_weight_sum;
+    total_init_size = 0;
+    total_size = _mwidth(obj) - (data->num_visible_children - 1) * data->horiz_spacing;
+    total_size_backup = total_size;
+
+/*      D(bug("\nhoriz layout for %p, A=%d W=%ld\n", obj, total_size, total_weight)); */
+
+    // weight constraints
+    // calculate ideal size for each object, and total ideal size
     cstate = (Object *)children->mlh_Head;
-    /* for each row */
-    for (i = 0; i < data->rows; i++)
+    while ((child = NextObject(&cstate)))
     {
-	BOOL found_nonzero_vweight = FALSE;
-	/* min and max heights */
-	row_infos[i].min = 0;
-	row_infos[i].max = MUI_MAXMAX;
+	if (IS_HIDDEN(child))
+	    continue;
 
-	j = 0;
-	while ((child = NextObject(&cstate)))
-	{
-	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
-		continue;
-	    row_infos[i].min = MAX(row_infos[i].min, _minheight(child));
-	    row_infos[i].max = MIN(row_infos[i].max, _maxheight(child));
-	    if (_vweight(child) > 0)
-	    {
-		found_nonzero_vweight = TRUE;
-		row_infos[i].weight += _vweight(child);
-	    }
-	    ++j;
-	    if ((j % data->columns) == 0)
-		break;
-	}
-	if (!found_nonzero_vweight)
-	    row_infos[i].max = row_infos[i].min;
-	else
-	    row_infos[i].max = MAX(row_infos[i].max, row_infos[i].min);
-	/* process results for this row */
-	*totBonusHe -= row_infos[i].min;
-	if (row_infos[i].min != row_infos[i].max)
-	    data->vert_weight_sum += row_infos[i].weight;
-/*  	g_print("l1 row %d : %d %d %d\n", i, */
-/*  		row_infos[i].min, row_infos[i].max, row_infos[i].weight); */
+	Layout1D_weight_constraint(
+	    &total_size, &total_init_size, &total_weight,
+	    &_width(child), _hweight(child), _minwidth(child));
+/*  	D(bug("child %p : ideal=%d w=%ld\n", */
+/*  	      child, _width(child), _hweight(child))); */
+    } // while child, weight constraints
+
+    total_size = total_size_backup;
+    remainder = total_size - total_init_size;
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+    	/* This is also true for non virtual groups, but if this would be the case
+        ** then there is a bug in the layout function
+        */
+    	if (total_size < 0) total_size = 0;
     }
-    if (data->vert_weight_sum == 0)
+
+    Layout1D_minmax_constraints_and_redistrib (
+	children,
+	total_size,
+	remainder,
+	TRUE);
+
+    // do the layout
+    cstate = (Object *)children->mlh_Head;
+    while ((child = NextObject(&cstate)))
     {
-	*top_start = *totBonusHe / 2;
-	data->vert_weight_sum = 1;
+	if (IS_HIDDEN(child))
+	    continue;
+
+	height = MIN(_maxheight(child), _mheight(obj));
+	height = MAX(height, _minheight(child));
+	top = (_mheight(obj) - height) / 2;
+
+/*  	D(bug("child %p -> layout %d x %d\n", child, _width(child), height)); */
+	if (!MUI_Layout(child, left, top, _width(child), height, 0))
+	    return;
+	left += data->horiz_spacing + _width(child);
     }
-}
 
-/* could be precalculated once at askminmax time ? */
-static void
-layout_2d_col_precalc (struct MUI_GroupData *data,
-		       struct layout2d_elem *col_infos,
-		       struct MinList *children,
-		       LONG *totBonusWi, LONG *left_start)
-{
-    Object *cstate;
-    Object *child;
-    int i, j;
-
-    /* for each col */
-    for (i = 0; i < data->columns; i++)
+    if (data->flags & GROUP_VIRTUAL)
     {
-	BOOL found_nonzero_hweight = FALSE;
-	/* min and max widths */
-	col_infos[i].min = 0;
-	col_infos[i].max = MUI_MAXMAX;
-
-	j = 0;
-	cstate = (Object *)children->mlh_Head;
-	while ((child = NextObject(&cstate)))
-	{
-	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
-		continue;
-	    ++j;
-	    if (((j - 1) % data->columns) != i)
-		continue;
-	    col_infos[i].min = MAX(col_infos[i].min, _minwidth(child));
-	    col_infos[i].max = MIN(col_infos[i].max, _maxwidth(child));
-	    if (_hweight(child) > 0)
-	    {
-		found_nonzero_hweight = TRUE;
-		col_infos[i].weight += _hweight(child);
-	    }
-	}
-	if (!found_nonzero_hweight)
-	    col_infos[i].max = col_infos[i].min;
-	else
-	    col_infos[i].max = MAX(col_infos[i].max, col_infos[i].min);
-	/* process results for this col */
-	*totBonusWi -= col_infos[i].min;
-	if (col_infos[i].min != col_infos[i].max)
-	    data->horiz_weight_sum += col_infos[i].weight;
-/*  	g_print("l1 col %d : %d %d %d\n", i, */
-/*  		col_infos[i].min, col_infos[i].max, col_infos[i].weight); */
-    }
-    if (data->horiz_weight_sum == 0)
-    {
-	*left_start = *totBonusWi / 2;
-	data->horiz_weight_sum = 1;
+	data->virt_mheight = _mheight(obj);
+	data->virt_mwidth = left - data->horiz_spacing;
     }
 }
 
-static void layout_2d_calc_rowcol_dims (struct MUI_GroupData *data,
-				   struct layout2d_elem *row_infos,
-				   struct layout2d_elem *col_infos,
-				   LONG totBonusHe, LONG totBonusWi)
+
+static void Layout2D_weight_constraint (
+    struct MUI_GroupData *data,
+    struct layout2d_elem *row_infos,
+    struct layout2d_elem *col_infos,
+    WORD total_size_height, WORD total_size_width,
+    WORD *total_init_height, WORD *total_init_width)
 {
     int i;
-    LONG bonusHe = 0;
-    LONG bonusWi = 0;
+    ULONG total_weight_vert = data->vert_weight_sum;
+    ULONG total_weight_horiz = data->horiz_weight_sum;
+
+    *total_init_height = 0;
+    *total_init_width = 0;
 
     /* calc row heights */
     for (i = 0; i < data->rows; i++)
     {
-	row_infos[i].dim = row_infos[i].min;
-	if (row_infos[i].min != row_infos[i].max)
-	{
-//	    bonusHe = ROUND(totBonusHe * row_infos[i].weight / (double)data->vert_weight_sum);
-	    bonusHe = (totBonusHe * row_infos[i].weight + data->vert_weight_sum / 2) / data->vert_weight_sum;
-	    row_infos[i].dim += bonusHe;
-	    row_infos[i].dim = CLAMP(row_infos[i].dim,
-				     row_infos[i].min, row_infos[i].max);
-	    data->vert_weight_sum -= row_infos[i].weight;
-	    totBonusHe -= bonusHe;
-	}
-/*  	g_print("l2 row %d : %d\n", i, row_infos[i].dim); */
+	if (total_weight_vert > 0)
+	    row_infos[i].dim = (total_size_height * row_infos[i].weight + total_weight_vert / 2)
+		/ total_weight_vert;
+	else
+	    row_infos[i].dim = row_infos[i].min;
+
+/*  	D(bug("l2 row %d : ideal = %d with w=%d, A=%d, W=%d\n", i, row_infos[i].dim, */
+/*  	      row_infos[i].weight, total_size_height, total_weight_vert)); */
+
+	total_weight_vert -= row_infos[i].weight;
+	total_size_height -= row_infos[i].dim;
+	*total_init_height += row_infos[i].dim;
     }
 
     /* calc columns widths */
     for (i = 0; i < data->columns; i++)
     {
-	col_infos[i].dim = col_infos[i].min;
-	if (col_infos[i].min != col_infos[i].max)
+	if (total_weight_horiz)
+	    col_infos[i].dim = (total_size_width * col_infos[i].weight + total_weight_horiz / 2 )
+		/ total_weight_horiz;
+	else
+	    col_infos[i].dim = col_infos[i].min;
+
+/*  	D(bug("l2 col %d : ideal = %d with w=%d, A=%d, W=%d\n", i, col_infos[i].dim, */
+/*  	      col_infos[i].weight, total_size_width, total_weight_horiz)); */
+
+	total_weight_horiz -= col_infos[i].weight;
+	total_size_width -= col_infos[i].dim;
+	*total_init_width += col_infos[i].dim;
+    }
+}
+
+
+
+static void Layout2D_minmax_constraints_and_redistrib (
+    struct layout2d_elem *infos,
+    WORD nitems,
+    WORD total_size,
+    WORD remainder)
+{
+    int j;
+
+    for (j = 0; j < 2; j++)
+    {
+	WORD size_growables = total_size;
+	WORD size_shrinkables = total_size;
+	ULONG weight_growables = 0;
+	ULONG weight_shrinkables = 0;
+	WORD old_size;
+	int i;
+
+	// minmax constraints
+	for (i = 0; i < nitems; i++)
 	{
-//	    bonusWi = ROUND(totBonusWi * col_infos[i].weight / (double)data->horiz_weight_sum);
-	    bonusWi = ((totBonusWi * col_infos[i].weight + data->horiz_weight_sum / 2 ) / data->horiz_weight_sum);
-	    col_infos[i].dim += bonusWi;
-	    col_infos[i].dim = CLAMP(col_infos[i].dim,
-				     col_infos[i].min, col_infos[i].max);
-	    data->horiz_weight_sum -= col_infos[i].weight;
-	    totBonusWi -= bonusWi;
+	    old_size = infos[i].dim;
+
+	    Layout1D_minmax_constraint(
+		&infos[i].dim, infos[i].min, infos[i].max,
+		&remainder,
+		&size_growables, &size_shrinkables,
+		&weight_growables, &weight_shrinkables,
+		infos[i].weight);
+
+/*  	    D(bug("loop1 on %d : size=%d was %d, rem=%d, A=%d, " */
+/*  		      "sizegrow=%d, sizeshrink=%d w=%d min=%d max=%d\n", */
+/*  		      i, infos[i].dim, old_size, remainder, total_size, */
+/*  		      size_growables, size_shrinkables, infos[i].weight, */
+/*  		      infos[i].min, infos[i].max)); */
+	}
+
+	if (remainder == 0)
+	    break;
+
+	for (i = 0; i < nitems; i++)
+	{
+	    old_size = infos[i].dim;
+
+	    Layout1D_redistribution(
+		&infos[i].dim, infos[i].min, infos[i].max,
+		&remainder,
+		&size_growables, &size_shrinkables,
+		&weight_growables, &weight_shrinkables,
+		infos[i].weight);
+
+/*  	    D(bug("loop2 on %d : size=%d was %d, rem=%d, A=%d, " */
+/*  		      "size_grow=%d, size_shrink=%d\n", i, */
+/*  		      infos[i].dim, old_size, remainder, total_size, */
+/*  		      size_growables, size_shrinkables)); */
 	}
     }
 }
@@ -1883,7 +2088,7 @@ layout_2d_distribute_space (struct MUI_GroupData *data,
 	    ctop = top + (row_height - cheight) / 2;
 
 /*  	    g_print("layout %d %d  %d %d\n", cleft, ctop, cwidth, cheight); */
-
+/*  	    D(bug("2DL/child %p -> layout %d x %d\n", child, cwidth, cheight)); */
 	    if (!MUI_Layout(child, cleft, ctop, cwidth, cheight, 0))
 		return;
 
@@ -1897,6 +2102,7 @@ layout_2d_distribute_space (struct MUI_GroupData *data,
 	top += data->vert_spacing + row_height;
     }
 }
+
 
 /*
  * all childs in the same row have the same maximum height
@@ -1913,55 +2119,51 @@ layout_2d_distribute_space (struct MUI_GroupData *data,
  * all column members will have the same width
  */
 /* Write a proper hook function */
-static void group_layout_2d(struct IClass *cl, Object *obj, struct MinList *children)
+static void 
+group_layout_2d(struct IClass *cl, Object *obj, struct MinList *children)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    LONG left_start = 0;
-    LONG top_start = 0;
-    LONG totBonusHe = _mheight(obj) - (data->rows - 1) * data->vert_spacing;
-    LONG totBonusWi = _mwidth(obj) - (data->columns - 1) * data->horiz_spacing;
-    struct layout2d_elem *row_infos;
-    struct layout2d_elem *col_infos;
+    WORD left_start = 0;
+    WORD top_start = 0;
+    WORD total_size_height = _mheight(obj) - (data->rows - 1) * data->vert_spacing;
+    WORD total_size_width = _mwidth(obj) - (data->columns - 1) * data->horiz_spacing;
+    WORD total_init_height;
+    WORD total_init_width;
+    WORD remainder_height;
+    WORD remainder_width;
 
-    if (data->rows == 0)
-    {
-//	g_printerr("zune: group_layout_2d: the number of childs "
-//		   "is not a multiple of the number of columns.\n");
+    if (data->num_childs % data->rows || data->num_childs % data->columns)
 	return;
-    }
-
-    if (data->columns == 0)
-    {
-//	g_printerr("zune: group_layout_2d: the number of childs "
-//		   "is not a multiple of the number of rows.\n");
+    if (data->row_infos == NULL || data->col_infos == NULL)
 	return;
-    }
 
-    if (data->num_childs % data->rows) return;
-    if (data->num_childs % data->columns) return;
+    // fix left/top ?
 
-    /* it's ugly to store these values, but is there another solution ? */
-    if ((row_infos = mui_alloc(data->rows * sizeof(struct layout2d_elem))))
-    {
-	if ((col_infos = mui_alloc(data->columns * sizeof(struct layout2d_elem))))
-	{
-	    data->horiz_weight_sum = 0;
-	    data->vert_weight_sum = 0;
+    // weight constraints
+    Layout2D_weight_constraint (
+	data, data->row_infos, data->col_infos,
+	total_size_height, total_size_width,
+	&total_init_height, &total_init_width);
 
-	    layout_2d_row_precalc(data, row_infos, children,
-			  &totBonusHe, &top_start);
-	    layout_2d_col_precalc(data, col_infos, children,
-			  &totBonusWi, &left_start);
+    remainder_height = total_size_height - total_init_height;
+    remainder_width = total_size_width - total_init_width;
 
-	    layout_2d_calc_rowcol_dims (data, row_infos, col_infos,
-				totBonusHe, totBonusWi);
-	    layout_2d_distribute_space (data, row_infos, col_infos,
+    Layout2D_minmax_constraints_and_redistrib(
+	data->row_infos,
+	data->rows,
+	total_size_height,
+	remainder_height);
+
+    Layout2D_minmax_constraints_and_redistrib(
+	data->col_infos,
+	data->columns,
+	total_size_width,
+	remainder_width);
+
+    layout_2d_distribute_space (data, data->row_infos, data->col_infos,
 				children, left_start, top_start);
-	    mui_free(row_infos);
-	}
-	mui_free(col_infos);
-    }
 }
+
 
 /* Write a proper hook function */
 static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinList *children)
@@ -1976,6 +2178,7 @@ static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinLis
 	w = MIN(_mwidth(obj), _maxwidth(child));
 	h = MIN(_mheight(obj), _maxheight(child));
 
+/*  	D(bug("PM/child %p -> layout %d x %d\n", child, w, h));	 */
 	MUI_Layout(child, (_mwidth(obj) - w) / 2, (_mheight(obj) - h) / 2,
 		   w, h, 0);
     }
