@@ -13,6 +13,7 @@
 #include <aros/symbolsets.h>
 #include <errno.h>
 #include "__errno.h"
+#include "__upath.h"
 
 /*****************************************************************************
 
@@ -55,7 +56,14 @@
 ******************************************************************************/
 {
     BPTR oldlock;
-    BPTR newlock = Lock( path, SHARED_LOCK );
+    BPTR newlock;
+    
+    path = __path_u2a(path);
+    
+    if (path == NULL)
+        return -1;
+	    
+    newlock = Lock( path, SHARED_LOCK );
 
     if( newlock == NULL )
     {
@@ -105,7 +113,10 @@ void __exit_chdir(void)
 
         if( NameFromLock( __startup_cd_lock, buffer, 256 ) )
         {
-            SetCurrentDirName( buffer );
+	    const char *buf2 = __path_a2u(buffer);
+	    
+	    if (buf2)
+                SetCurrentDirName( buf2 );
         }
         lock = CurrentDir( __startup_cd_lock );
 	UnLock( lock );
