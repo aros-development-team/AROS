@@ -40,41 +40,41 @@ AROS_LHQUAD2(LONG, IEEEDPCmp,
 {
     AROS_LIBFUNC_INIT
     
-  QUAD * Qy = (QUAD *)&y;
-  QUAD * Qz = (QUAD *)&z;
-
-  if (is_eq(*Qy,*Qz))
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-
-  if (is_lessSC(*Qy,0,0) /* y < 0 */ && is_lessSC(z,0,0) /* z < 0 */)
-  {
-    NEG64(*Qy);
-    NEG64(*Qz);
-    if (is_greater(*Qy,*Qz) /* -y > -z */ )
+    QUAD * Qy = (QUAD *)&y;
+    QUAD * Qz = (QUAD *)&z;
+    
+    if (is_eq(*Qy,*Qz))
     {
-      SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 1;
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
+    }
+    
+    if (is_lessSC(*Qy,0,0) /* y < 0 */ && is_lessSC(z,0,0) /* z < 0 */)
+    {
+        NEG64(*Qy);
+        NEG64(*Qz);
+        if (is_greater(*Qy,*Qz) /* -y > -z */ )
+        {
+            SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
+            return 1;
+        }
+        else
+        {
+            SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+            return -1;
+        }
+    }
+    
+    if ( is_less(*Qy,*Qz)  /* (QUAD)y < (QUAD)z */ )
+    {
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return -1;
     }
     else
     {
-      SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return -1;
+        SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 1;
     }
-  }
-
-  if ( is_less(*Qy,*Qz)  /* (QUAD)y < (QUAD)z */ )
-  {
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return -1;
-  }
-  else
-  {
-    SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 1;
-  }
   
     AROS_LIBFUNC_EXIT
 }

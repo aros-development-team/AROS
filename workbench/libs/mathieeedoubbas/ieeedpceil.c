@@ -38,27 +38,27 @@ AROS_LHQUAD1(double, IEEEDPCeil,
 {
     AROS_LIBFUNC_INIT
 
-  QUAD * Qy = (QUAD *)&y;
-
-  if (is_eqC((*Qy),0,0))
-  {
-    SetSR(Zero_Bit, Negative_Bit|Overflow_Bit|Zero_Bit);
-    return y;
-  }
-
-  XOR64QC((*Qy), IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
-  /* Ceil(y) = -Floor(-y); */
-  y = IEEEDPFloor(y);
-  if (is_eqC((*Qy), 0x0, 0x0))
-  {
-    Set_Value64C((*Qy), 0, 0);
-    return y;
-  }
-  else
-  {
-    XOR64QC((*Qy), IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo );
-    return y;
-  }
+    QUAD * Qy = (QUAD *)&y;
+    
+    if (is_eqC((*Qy),0,0))
+    {
+        SetSR(Zero_Bit, Negative_Bit|Overflow_Bit|Zero_Bit);
+        return y;
+    }
+    
+    XOR64QC((*Qy), IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
+    /* Ceil(y) = -Floor(-y); */
+    y = IEEEDPFloor(y);
+    if (is_eqC((*Qy), 0x0, 0x0))
+    {
+        Set_Value64C((*Qy), 0, 0);
+        return y;
+    }
+    else
+    {
+        XOR64QC((*Qy), IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo );
+        return y;
+    }
   
     AROS_LIBFUNC_EXIT
 }

@@ -43,8 +43,8 @@ AROS_LHQUAD2(double, IEEEDPDiv,
     AROS_LIBFUNC_INIT
     
 #if 0
-      QUAD * Qy = (QUAD *)&y;
-      QUAD * Qz = (QUAD *)&z;
+    QUAD * Qy = (QUAD *)&y;
+    QUAD * Qz = (QUAD *)&z;
 #endif
     
     QUAD Res = 0x0badc0de0badc0deULL;
