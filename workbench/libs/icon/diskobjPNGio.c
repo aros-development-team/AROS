@@ -18,7 +18,7 @@
 
 #include "icon_intern.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define ATTR_ICONX   	    0x80001001
@@ -133,13 +133,19 @@ STATIC VOID DetectIconType(BPTR file, struct DiskObject *dobj, struct IconBase *
 
 			if ((len >= 5) && (strcasecmp(fib->fib_FileName + len - 5, ".info") == 0))
 			{
+                            BPTR oldcd;
+                            
 		    	    *(fib->fib_FileName + len - 5) = '\0';
 
 			    UnLock(lock);
 
     	    	    	    D(bug("Detect PNG Icon Type. Trying to examine %s ...\n", fib->fib_FileName));
-
-			    if ((lock = Lock(fib->fib_FileName, SHARED_LOCK)))
+                            
+                            oldcd = CurrentDir(dirlock);
+                            lock = Lock(fib->fib_FileName, SHARED_LOCK);
+                            CurrentDir(oldcd);
+                            
+			    if (lock)
 			    {
 			    	if (Examine(lock, fib))
 				{
