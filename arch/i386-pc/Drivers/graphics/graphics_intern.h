@@ -26,8 +26,8 @@ struct class_static_data
     struct Library       * utilitybase;
     struct Library       * oopbase;
 
-    Class                *gfxhiddclass; /* graphics hidd class    */
-    Class                *bitmapclass;  /* bitmap class           */
+    OOP_Class            *gfxhiddclass; /* graphics hidd class    */
+    OOP_Class            *bitmapclass;  /* bitmap class           */
 
 
 };

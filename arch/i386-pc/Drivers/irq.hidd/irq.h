@@ -39,13 +39,13 @@ struct irq_staticdata
     struct Library	*oopbase;
     struct Library	*utilitybase;
     struct ExecBase	*sysbase;
-    Class		*irqclass;
+    OOP_Class		*irqclass;
     
     struct List		irqlist[vHidd_IRQ_NumIRQ];    
     ULONG		transtable[16];
 };
 
-Class *init_irqclass  ( struct irq_staticdata * );
+OOP_Class *init_irqclass  ( struct irq_staticdata * );
 VOID free_irqclass  ( struct irq_staticdata * );
 
 #define ISD(cl) ((struct irq_staticdata *)cl->UserData)

@@ -92,7 +92,7 @@ static OOP_Object *_Root_New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	
 	    ReturnPtr("Server::New", OOP_Object *, o);
 	}
-	CoerceMethod(cl, o, (OOP_Msg)&disp_mid);
+	OOP_CoerceMethod(cl, o, (OOP_Msg)&disp_mid);
 	
     }
     ReturnPtr ("Server::New", OOP_Object *, NULL);
@@ -238,7 +238,7 @@ static VOID _Server_Run(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	while ( (pm = (struct ProxyMsg *)GetMsg(data->ReceivePort)) )
 	{
 	    /* Execute method */
-	    pm->pm_RetVal = DoMethod(pm->pm_Object, pm->pm_ObjMsg);
+	    pm->pm_RetVal = OOP_DoMethod(pm->pm_Object, pm->pm_ObjMsg);
 	    
 	    /* Reply back to task invoking */
 	    ReplyMsg((struct Message *)pm);

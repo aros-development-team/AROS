@@ -44,9 +44,9 @@ struct linuxkbd_data
     APTR callbackdata;
 };
 
-static AttrBase HiddKbdAB = 0;
+static OOP_AttrBase HiddKbdAB = 0;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_Kbd, &HiddKbdAB },
     { NULL, NULL }
@@ -58,7 +58,7 @@ static BOOL havetable = FALSE;
 static UWORD scancode2hidd(UBYTE scancode, struct linux_staticdata *lsd);
 
 /***** Kbd::New()  ***************************************/
-static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_kbd_hidd = FALSE;
     struct TagItem *tag, *tstate;
@@ -73,7 +73,7 @@ ObtainSemaphore(&LSD(cl)->sema);
 ReleaseSemaphore(&LSD(cl)->sema);
  
     if (has_kbd_hidd) /* Cannot open twice */
-    	ReturnPtr("Kbd::New", Object *, NULL); /* Should have some error code here */
+    	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     tstate = msg->attrList;
     D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
@@ -102,12 +102,12 @@ ReleaseSemaphore(&LSD(cl)->sema);
 	    
     } /* while (tags to process) */
     if (NULL == callback)
-    	ReturnPtr("Kbd::New", Object *, NULL); /* Should have some error code here */
+    	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-	struct linuxkbd_data *data = INST_DATA(cl, o);
+	struct linuxkbd_data *data = OOP_INST_DATA(cl, o);
 	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
 	data->callbackdata = callbackdata;
 	
@@ -115,23 +115,23 @@ ObtainSemaphore(&LSD(cl)->sema);
 	LSD(cl)->kbdhidd = o;
 ReleaseSemaphore(&LSD(cl)->sema);
     }
-    ReturnPtr("Kbd::New", Object *, o);
+    ReturnPtr("Kbd::New", OOP_Object *, o);
 }
 
 
-static Object *kbd_dispose(Class *cl, Object *o, Msg msg)
+static OOP_Object *kbd_dispose(OOP_Class *cl, OOP_Object *o, Msg msg)
 {
     ObtainSemaphore(&LSD(cl)->sema);
     LSD(cl)->kbdhidd = NULL;
     ReleaseSemaphore(&LSD(cl)->sema);
     
-    DoSuperMethod(cl, o, msg);
+    OOP_DoSuperMethod(cl, o, msg);
     
 }
 
 /***** LinuxKbd::HandleEvent()  ***************************************/
 
-static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_LinuxKbd_HandleEvent *msg)
+static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxKbd_HandleEvent *msg)
 {
     struct linuxkbd_data * data;
     UBYTE scancode;
@@ -139,7 +139,7 @@ static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_LinuxKbd_HandleEv
 
     EnterFunc(bug("linuxkbd_handleevent()\n"));
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
     scancode = msg->scanCode;
     hiddcode = scancode2hidd(scancode, LSD(cl));
@@ -256,29 +256,29 @@ static void LoadScanCode2RawKeyTable(struct linux_staticdata *lsd)
 #define NUM_ROOT_METHODS 2
 #define NUM_LINUXKBD_METHODS 1
 
-Class *init_kbdclass (struct linux_staticdata *lsd)
+OOP_Class *init_kbdclass (struct linux_staticdata *lsd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = {
-    	{ METHODDEF(kbd_new),		moRoot_New },
-    	{ METHODDEF(kbd_dispose),	moRoot_Dispose },
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = {
+    	{ OOP_METHODDEF(kbd_new),		moRoot_New },
+    	{ OOP_METHODDEF(kbd_dispose),	moRoot_Dispose },
 	{ NULL, 0UL }
     };
     
-    struct MethodDescr kbdhidd_descr[NUM_LINUXKBD_METHODS + 1] = 
+    struct OOP_MethodDescr kbdhidd_descr[NUM_LINUXKBD_METHODS + 1] = 
     {
-    	{ METHODDEF(kbd_handleevent),	moHidd_LinuxKbd_HandleEvent },
+    	{ OOP_METHODDEF(kbd_handleevent),	moHidd_LinuxKbd_HandleEvent },
 	{ NULL, 0UL }
     };
     
-    struct InterfaceDescr ifdescr[] = {
+    struct OOP_InterfaceDescr ifdescr[] = {
     	{ root_descr,	 IID_Root, 		NUM_ROOT_METHODS	},
     	{ kbdhidd_descr, IID_Hidd_LinuxKbd, 	NUM_LINUXKBD_METHODS	},
 	{ NULL, NULL, 0 }
     };
     
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] = {
 	{ aMeta_SuperID,		(IPTR)CLID_Hidd 			},
@@ -291,21 +291,21 @@ Class *init_kbdclass (struct linux_staticdata *lsd)
     LoadScanCode2RawKeyTable(lsd);
     if (MetaAttrBase) {
     
-    	cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	if (NULL != cl) {
 	    
-	    if (ObtainAttrBases(attrbases)) {
+	    if (OOP_ObtainAttrBases(attrbases)) {
 		cl->UserData = (APTR)lsd;
 		lsd->kbdclass = cl;
 		
-	    	AddClass(cl);
+	    	OOP_AddClass(cl);
 	    } else {
 	    	free_kbdclass(lsd);
 		cl = NULL;
 	    }
 	}
 	/* Don't need this anymore */
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     }
     
     return cl;
@@ -321,13 +321,13 @@ VOID free_kbdclass(struct linux_staticdata *lsd)
     {
 	
         if (NULL != lsd->kbdclass) {
-        	RemoveClass(lsd->kbdclass);
+        	OOP_RemoveClass(lsd->kbdclass);
 	
-		DisposeObject((Object *) lsd->kbdclass);
+		OOP_DisposeObject((OOP_Object *) lsd->kbdclass);
         	lsd->kbdclass = NULL;
 	}
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
 
     }
 
@@ -510,18 +510,18 @@ void cleanup_sighandling()
 
 
 #undef OOPBase
-#define OOPBase ((struct Library *)OCLASS(OCLASS(OCLASS(o)))->UserData)
+#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(o)))->UserData)
 
-VOID HIDD_LinuxKbd_HandleEvent(Object *o, UBYTE scanCode)
+VOID HIDD_LinuxKbd_HandleEvent(OOP_Object *o, UBYTE scanCode)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_LinuxKbd_HandleEvent p;
     
     if (!mid)
-	mid = GetMethodID(IID_Hidd_LinuxKbd, moHidd_LinuxKbd_HandleEvent);
+	mid = OOP_GetMethodID(IID_Hidd_LinuxKbd, moHidd_LinuxKbd_HandleEvent);
 	
     p.mID	= mid;
     p.scanCode	= scanCode;
     
-    DoMethod(o, (Msg)&p);
+    OOP_DoMethod(o, (OOP_Msg)&p);
 }

@@ -185,7 +185,7 @@ int main()
     char text1[60];
     char text2[] = "\nOops! Kernel under construction...\n";
 
-    Object *o;
+    OOP_Object *o;
 
 /* Get memory size. This code works even with 4GB of memory
    BIOS would have some troubles if you have more than 64MB */

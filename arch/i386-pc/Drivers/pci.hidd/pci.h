@@ -35,7 +35,7 @@ struct pci_staticdata
     struct ExecBase	*sysbase;
 };
 
-Class *init_pciclass  ( struct pci_staticdata * );
+OOP_Class *init_pciclass  ( struct pci_staticdata * );
 VOID free_pciclass  ( struct pci_staticdata * );
 
 #endif /* HIDD_VGA_H */

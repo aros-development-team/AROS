@@ -22,7 +22,7 @@ VOID releaseattrbases(struct abdescr *abd, struct Library * OOPBase)
     {
         if ( *(abd->attrbase) != 0 )
 	{
-	    ReleaseAttrBase(abd->interfaceid);
+	    OOP_ReleaseAttrBase(abd->interfaceid);
 	    *(abd->attrbase) = 0;
 	}
     }
@@ -34,7 +34,7 @@ BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase)
     struct abdescr *d;
     for (d = abd; d->interfaceid; d ++)
     {
-        *(d->attrbase) = ObtainAttrBase(abd->interfaceid);
+        *(d->attrbase) = OOP_ObtainAttrBase(abd->interfaceid);
 	if ( *(d->attrbase) == 0 )
 	{
 	    releaseattrbases(abd, OOPBase);
@@ -46,18 +46,18 @@ BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase)
 }
 
 #undef OOPBase
-#define OOPBase ((struct Library *)OCLASS(OCLASS(o))->UserData)
+#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(o))->UserData)
 
-VOID Hidd_Kbd_HandleEvent(Object *o, ULONG event)
+VOID Hidd_Kbd_HandleEvent(OOP_Object *o, ULONG event)
 {
     struct pHidd_Kbd_HandleEvent msg;
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
 
     if (!mid)
-    	mid = GetMethodID(IID_Hidd_HwKbd, moHidd_Kbd_HandleEvent);
+    	mid = OOP_GetMethodID(IID_Hidd_HwKbd, moHidd_Kbd_HandleEvent);
 
     msg.mID = mid;
     msg.event = event;
 
-    DoMethod(o, (Msg) &msg);
+    OOP_DoMethod(o, (OOP_Msg) &msg);
 }

@@ -37,12 +37,12 @@
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
-static AttrBase HiddBitMapAttrBase	= 0;  
-static AttrBase HiddSyncAttrBase	= 0;
-static AttrBase HiddGfxAttrBase		= 0;
-static AttrBase HiddPixFmtAttrBase	= 0;
+static OOP_AttrBase HiddBitMapAttrBase	= 0;  
+static OOP_AttrBase HiddSyncAttrBase	= 0;
+static OOP_AttrBase HiddGfxAttrBase		= 0;
+static OOP_AttrBase HiddPixFmtAttrBase	= 0;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap,  &HiddBitMapAttrBase	},
     { IID_Hidd_Sync, &HiddSyncAttrBase	},
@@ -65,7 +65,7 @@ static BOOL get_pixfmt(HIDDT_PixelFormat *pf, struct linux_staticdata *fsd);
 
 
 
-static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
 
     struct TagItem pftags[] = {
@@ -175,10 +175,10 @@ kprintf("FB;  mask: (%p, %p, %p, %p), shift: (%d, %d, %d, %d)\n"
 	mymsg.mID = msg->mID;
 	mymsg.attrList = mytags;
 
-	o = (Object *)DoSuperMethod(cl, o, (Msg)&mymsg);
+	o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
 	if (NULL != o) {
-/*    	    MethodID dispose_mid;
-	    struct gfx_data *data = INST_DATA(cl, o);
+/*    	    OOP_MethodID dispose_mid;
+	    struct gfx_data *data = OOP_INST_DATA(cl, o);
 	
 */	    return o;
 	
@@ -189,20 +189,20 @@ kprintf("FB;  mask: (%p, %p, %p, %p), shift: (%d, %d, %d, %d)\n"
 }
 
 /********** FBGfx::Dispose()  ******************************/
-static VOID gfx_dispose(Class *cl, Object *o, Msg msg)
+static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gfx_data *data;
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
     cleanup_linuxfb(LSD(cl));
     
-    DoSuperMethod(cl, o, msg);
+    OOP_DoSuperMethod(cl, o, msg);
     
     return;
 }
 
 /********** FBGfx::NewBitMap()  ****************************/
-static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *msg)
+static Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
 
     BOOL displayable;
@@ -224,11 +224,11 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
 	
 	msg = &p;
     }
-    return (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /******* FBGfx::Set()  ********************************************/
-static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
+static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     
@@ -239,11 +239,11 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 		break;
 		
 	    default:
-	    	DoSuperMethod(cl, o, (Msg)msg);
+	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
     } else {
-    	DoSuperMethod(cl, o, (Msg)msg);
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     
     return;
@@ -257,29 +257,29 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 #define NUM_ROOT_METHODS 3
 #define NUM_GFXHIDD_METHODS 1
 
-Class *init_gfxclass (struct linux_staticdata *fsd)
+OOP_Class *init_gfxclass (struct linux_staticdata *fsd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] =  {
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =  {
     	{(IPTR (*)())gfx_new,		moRoot_New},
     	{(IPTR (*)())gfx_dispose,	moRoot_Dispose},
     	{(IPTR (*)())gfx_get,		moRoot_Get},
 	{NULL, 0UL}
     };
     
-    struct MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] =  {
+    struct OOP_MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] =  {
     	{(IPTR (*)())gfxhidd_newbitmap,	moHidd_Gfx_NewBitMap},
 	{NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =   {
+    struct OOP_InterfaceDescr ifdescr[] =   {
     	{root_descr, 	IID_Root, 	NUM_ROOT_METHODS},
     	{gfxhidd_descr, IID_Hidd_Gfx, 	NUM_GFXHIDD_METHODS},
 	{NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =  {
 	{ aMeta_SuperID,		(IPTR)CLID_Hidd_Gfx},
@@ -290,19 +290,19 @@ Class *init_gfxclass (struct linux_staticdata *fsd)
     };
     
     if (MetaAttrBase) {
-    	cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	if(cl)	{
 	    
-	    if (ObtainAttrBases(attrbases))   {
+	    if (OOP_ObtainAttrBases(attrbases))   {
 		cl->UserData = (APTR)fsd;
 		fsd->gfxclass = cl;
-	    	AddClass(cl);
+	    	OOP_AddClass(cl);
 	    } else {
 	    	free_gfxclass( fsd );
 		cl = NULL;
 	    }
 	}
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     }
     return cl;
 }
@@ -316,13 +316,13 @@ VOID free_gfxclass(struct linux_staticdata *fsd)
     if(NULL != fsd) {
     
     	if (NULL != fsd->gfxclass) {
-	    RemoveClass(fsd->gfxclass);
-	    DisposeObject((Object *) fsd->gfxclass);
+	    OOP_RemoveClass(fsd->gfxclass);
+	    OOP_DisposeObject((OOP_Object *) fsd->gfxclass);
 	    
 	    fsd->gfxclass = NULL;
 	}
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
     }
 }
 

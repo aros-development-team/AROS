@@ -60,9 +60,9 @@ extern struct vgaModeDesc vgaDefMode[];
 
 #define OOPBase xsd->oopbase
 
-extern AttrBase HiddPixFmtAttrBase;	// = 0;
+extern OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
 
-static struct ABDescr abd[] = {
+static struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
 	{ NULL, NULL }
 };
@@ -74,7 +74,7 @@ static BOOL initclasses(struct vga_staticdata *xsd)
 
     /* Get some attrbases */
     
-    if (!ObtainAttrBases(abd))
+    if (!OOP_ObtainAttrBases(abd))
     	goto failure;
 
     xsd->vgaclass = init_vgaclass(xsd);
@@ -117,7 +117,7 @@ static VOID freeclasses(struct vga_staticdata *xsd)
     if (xsd->onbmclass)
     	free_onbmclass(xsd);
 
-    ReleaseAttrBases(abd);
+    OOP_ReleaseAttrBases(abd);
 	
     return;
 }

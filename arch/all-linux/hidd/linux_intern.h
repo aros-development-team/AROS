@@ -39,7 +39,7 @@
 
 
 #define HiddLinuxFBAttrBase  __abHidd_LinuxFB
-extern AttrBase HiddLinuxFBAttrBase;
+extern OOP_AttrBase HiddLinuxFBAttrBase;
 
 enum {
     
@@ -61,10 +61,10 @@ enum
 
 struct pHidd_LinuxKbd_HandleEvent
 {
-    MethodID mID;
+    OOP_MethodID mID;
     UBYTE scanCode;
 };
-VOID HIDD_LinuxKbd_HandleEvent(Object *o, UBYTE scanCode);
+VOID HIDD_LinuxKbd_HandleEvent(OOP_Object *o, UBYTE scanCode);
 
 /***** Linux Mouse HIDD *******************/
 
@@ -81,11 +81,11 @@ enum
 
 struct pHidd_LinuxMouse_HandleEvent
 {
-    MethodID mID;
+    OOP_MethodID mID;
     struct pHidd_Mouse_Event *mouseEvent;    
 };
 
-VOID HIDD_LinuxMouse_HandleEvent(Object *o, struct pHidd_Mouse_Event *mouseEvent);
+VOID HIDD_LinuxMouse_HandleEvent(OOP_Object *o, struct pHidd_Mouse_Event *mouseEvent);
 
 
 /*** Shared data ***/
@@ -96,10 +96,10 @@ struct linux_staticdata {
     struct Library *oopbase;
     struct Library *utilitybase;
     
-    Class *gfxclass;
-    Class *bmclass;
-    Class *kbdclass;
-    Class *mouseclass;
+    OOP_Class *gfxclass;
+    OOP_Class *bmclass;
+    OOP_Class *kbdclass;
+    OOP_Class *mouseclass;
     
     /* The device file */
     int fbdev;
@@ -117,20 +117,20 @@ struct linux_staticdata {
     int mousefd;
     
     struct Task *input_task;
-    Object *kbdhidd;
-    Object *mousehidd;
+    OOP_Object *kbdhidd;
+    OOP_Object *mousehidd;
 };
 
-Class *init_gfxclass (struct linux_staticdata *lsd);
+OOP_Class *init_gfxclass (struct linux_staticdata *lsd);
 VOID free_gfxclass(struct linux_staticdata *lsd);
 
-Class *init_bmclass(struct linux_staticdata *lsd);
+OOP_Class *init_bmclass(struct linux_staticdata *lsd);
 VOID free_bmclass(struct linux_staticdata *lsd);
 
-Class *init_mouseclass(struct linux_staticdata *lsd);
+OOP_Class *init_mouseclass(struct linux_staticdata *lsd);
 VOID free_mouseclass(struct linux_staticdata *lsd);
 
-Class *init_kbdclass(struct linux_staticdata *lsd);
+OOP_Class *init_kbdclass(struct linux_staticdata *lsd);
 VOID free_kbdclass(struct linux_staticdata *lsd);
 
 struct Task *init_input_task(struct linux_staticdata *lsd);

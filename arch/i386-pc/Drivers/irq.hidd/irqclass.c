@@ -23,9 +23,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-static AttrBase HiddIRQAttrBase	= 0;
+static OOP_AttrBase HiddIRQAttrBase	= 0;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_IRQ,	&HiddIRQAttrBase	},
     { NULL, NULL }
@@ -38,7 +38,7 @@ struct irq_data
 
 /*** HIDDIRQ::AddHandler() ***************************************/
 
-static BOOL irq_addhandler(Class *cl, Object *obj, struct pHidd_IRQ_AddHandler *msg)
+static BOOL irq_addhandler(OOP_Class *cl, OOP_Object *obj, struct pHidd_IRQ_AddHandler *msg)
 {
     EnterFunc(bug("HIDDIRQ::AddHandler()\n"));
     D(bug("Adding handler %s\n",msg->handlerinfo->h_Node.ln_Name));
@@ -58,7 +58,7 @@ static BOOL irq_addhandler(Class *cl, Object *obj, struct pHidd_IRQ_AddHandler *
 
 /*** HIDDIRQ::RemHandler() ***************************************/
 
-static VOID irq_remhandler(Class *cl, Object *obj, struct pHidd_IRQ_RemHandler *msg)
+static VOID irq_remhandler(OOP_Class *cl, OOP_Object *obj, struct pHidd_IRQ_RemHandler *msg)
 {
     EnterFunc(bug("HIDDIRQ::RemHandler()\n"));
     D(bug("Removing handler %s\n",msg->handlerinfo->h_Node.ln_Name));
@@ -72,7 +72,7 @@ static VOID irq_remhandler(Class *cl, Object *obj, struct pHidd_IRQ_RemHandler *
 
 /*** HIDDIRQ::CauseIRQ() *****************************************/
 
-static VOID irq_causeirq(Class *cl, Object *obj, struct pHidd_CauseIRQ *msg)
+static VOID irq_causeirq(OOP_Class *cl, OOP_Object *obj, struct pHidd_CauseIRQ *msg)
 {
     EnterFunc(bug("HIDDIRQ::CauseIRQ()\n"));
 #warning TODO: Write CauseIRQ method
@@ -91,12 +91,12 @@ static VOID irq_causeirq(Class *cl, Object *obj, struct pHidd_CauseIRQ *msg)
 
 #define NUM_IRQ_METHODS moHidd_IRQ_NumMethods
 
-Class *init_irqclass (struct irq_staticdata *isd)
+OOP_Class *init_irqclass (struct irq_staticdata *isd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
     BOOL  ok  = FALSE;
     
-    struct MethodDescr irqhidd_descr[NUM_IRQ_METHODS + 1] = 
+    struct OOP_MethodDescr irqhidd_descr[NUM_IRQ_METHODS + 1] = 
     {
         {(IPTR (*)())irq_addhandler,    moHidd_IRQ_AddHandler},
         {(IPTR (*)())irq_remhandler,    moHidd_IRQ_RemHandler},
@@ -104,13 +104,13 @@ Class *init_irqclass (struct irq_staticdata *isd)
         {NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {irqhidd_descr, IID_Hidd_IRQ, NUM_IRQ_METHODS},
         {NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
         
     struct TagItem tags[] =
     {
@@ -124,7 +124,7 @@ Class *init_irqclass (struct irq_staticdata *isd)
     
     EnterFunc(bug("    init_irqclass(isd=%p)\n", isd));
 
-    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     D(bug("Class=%p\n", cl));
     if(cl)
     {
@@ -142,7 +142,7 @@ Class *init_irqclass (struct irq_staticdata *isd)
     }
     else
     {
-        AddClass(cl);
+        OOP_AddClass(cl);
     }
 
     ReturnPtr("init_irqclass", Class *, cl);
@@ -154,9 +154,9 @@ void free_irqclass(struct irq_staticdata *isd)
 
     if(isd)
     {
-        RemoveClass(isd->irqclass);
+        OOP_RemoveClass(isd->irqclass);
 	
-        if(isd->irqclass) DisposeObject((Object *) isd->irqclass);
+        if(isd->irqclass) OOP_DisposeObject((OOP_Object *) isd->irqclass);
         isd->irqclass = NULL;
     }
 

@@ -38,11 +38,11 @@ enum
 
 struct pHidd_Mouse_HandleEvent
 {
-    MethodID mID;
+    OOP_MethodID mID;
     ULONG event;
 };
 
-VOID Hidd_Mouse_HandleEvent(Object *o, ULONG event);
+VOID Hidd_Mouse_HandleEvent(OOP_Object *o, ULONG event);
 
 /***** VGA gfx HIDD *******************/
 
@@ -69,13 +69,13 @@ struct vga_staticdata
     struct List		modelist;	/* List of modes supported */
     struct bitmap_data	*visible;	/* Point to visible bitmap */
 
-    Class 	*vgaclass;
-    Class 	*onbmclass;
-    Class 	*offbmclass;
-    Class 	*mouseclass;
+    OOP_Class 	*vgaclass;
+    OOP_Class 	*onbmclass;
+    OOP_Class 	*offbmclass;
+    OOP_Class 	*mouseclass;
 
-    Object 	*vgahidd;
-    Object 	*mousehidd;
+    OOP_Object 	*vgahidd;
+    OOP_Object 	*mousehidd;
 
     LONG		mouseX;		/* Pointer X position on screen */
     ULONG		mouseW;		/* Pointer width */
@@ -84,7 +84,7 @@ struct vga_staticdata
     ULONG		mouseVisible;	/* Is pointer visible flag */
     UBYTE		*mouseShape;	/* Points to pointer shape */
 
-    VOID	(*activecallback)(APTR, Object *, BOOL);
+    VOID	(*activecallback)(APTR, OOP_Object *, BOOL);
     APTR	callbackdata;
 };
 
@@ -96,38 +96,38 @@ enum
 };
 
 struct pHidd_Gfx_SetMouseShape {
-    MethodID mID;
+    OOP_MethodID mID;
     ULONG width;
     ULONG height;
     UBYTE *shape;
 };
 
 struct pHidd_Gfx_SetMouseXY {
-    MethodID mID;
+    OOP_MethodID mID;
     LONG dx;
     LONG dy;
 };
 
 struct pHidd_Gfx_ShowHide {
-    MethodID mID;
+    OOP_MethodID mID;
     BOOL visible;
 };
 
 #if 0
     /* nlorentz: This function is no lonfger necessary	*/
-BOOL set_pixelformat(Object *);
+BOOL set_pixelformat(OOP_Object *);
 
 #endif
 
-Class *init_vgaclass  ( struct vga_staticdata * );
-Class *init_onbmclass  ( struct vga_staticdata * );
-Class *init_offbmclass  ( struct vga_staticdata * );
+OOP_Class *init_vgaclass  ( struct vga_staticdata * );
+OOP_Class *init_onbmclass  ( struct vga_staticdata * );
+OOP_Class *init_offbmclass  ( struct vga_staticdata * );
 
 VOID free_vgaclass  ( struct vga_staticdata * );
 VOID free_onbmclass  ( struct vga_staticdata * );
 VOID free_offbmclass  ( struct vga_staticdata * );
 
-Class *init_mouseclass (struct vga_staticdata * );
+OOP_Class *init_mouseclass (struct vga_staticdata * );
 VOID free_mouseclass ( struct vga_staticdata * );
 
 void draw_mouse (struct vga_staticdata *);

@@ -30,11 +30,11 @@
 
 #include "bitmap.h"
 
-static AttrBase HiddBitMapAttrBase = 0;
-static AttrBase HiddVGAGfxAB = 0;
-static AttrBase HiddVGABitMapAB = 0;
+static OOP_AttrBase HiddBitMapAttrBase = 0;
+static OOP_AttrBase HiddVGAGfxAB = 0;
+static OOP_AttrBase HiddVGABitMapAB = 0;
 
-static struct ABDescr attrbases[] = 
+static struct OOP_ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
     /* Private bases */
@@ -52,42 +52,42 @@ void vgaRefreshArea(struct bitmap_data *, int , struct Box *);
 
 /*********** BitMap::New() *************************************/
 
-static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("VGAGfx.BitMap::New()\n"));
     
-    o = (Object *)DoSuperMethod(cl, o, (Msg) msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
     	struct bitmap_data *data;
         IPTR width, height, depth;
 	
-	Object *friend, *pf;
+	OOP_Object *friend, *pf;
 	
-        data = INST_DATA(cl, o);
+        data = OOP_INST_DATA(cl, o);
 	
 	/* clear all data  */
         memset(data, 0, sizeof(struct bitmap_data));
 	
 	/* Get attr values */
-	GetAttr(o, aHidd_BitMap_Width,		&width);
-	GetAttr(o, aHidd_BitMap_Height, 	&height);
+	OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
+	OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
 #if 0
 /* nlorentz: The aHidd_BitMap_Depth attribute no loner exist,, so we must
 	get the depth in two steps: First get pixel format, then get depth */
-	GetAttr(o, aHidd_BitMap_Depth,		&depth);
+	OOP_GetAttr(o, aHidd_BitMap_Depth,		&depth);
 #else
-	GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
-	GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
+	OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
+	OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
 #endif
 	
 	/* Get the friend bitmap. This should be a displayable bitmap */
-	GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
+	OOP_GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
 
 	/* If you got a friend bitmap, copy its colormap */
 	if (friend)
 	{
-	    struct bitmap_data *src = INST_DATA(cl, friend);
+	    struct bitmap_data *src = OOP_INST_DATA(cl, friend);
 	    
 	    CopyMem(&src->cmap, &data->cmap, 4*16);
 	}
@@ -139,21 +139,21 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	} /* if got data->VideoData */
 
 	{
-	    MethodID disp_mid = GetMethodID(IID_Root, moRoot_Dispose);
-    	    CoerceMethod(cl, o, (Msg) &disp_mid);
+	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+    	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
 	}
 	
 	o = NULL;
     } /* if created object */
 
-    ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
+    ReturnPtr("VGAGfx.BitMap::New()", OOP_Object *, o);
 }
 
 /**********  Bitmap::Dispose()  ***********************************/
 
-static VOID offbitmap_dispose(Class *cl, Object *o, Msg msg)
+static VOID offbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     EnterFunc(bug("VGAGfx.BitMap::Dispose()\n"));
     
     if (data->VideoData)
@@ -161,7 +161,7 @@ static VOID offbitmap_dispose(Class *cl, Object *o, Msg msg)
     if (data->Regs)
 	FreeVec(data->Regs);
 	
-    DoSuperMethod(cl, o, msg);
+    OOP_DoSuperMethod(cl, o, msg);
     
     ReturnVoid("VGAGfx.BitMap::Dispose");
 }
@@ -185,9 +185,9 @@ static VOID offbitmap_dispose(Class *cl, Object *o, Msg msg)
 #define NUM_BITMAP_METHODS 10
 
 
-Class *init_offbmclass(struct vga_staticdata *xsd)
+OOP_Class *init_offbmclass(struct vga_staticdata *xsd)
 {
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
         {(IPTR (*)())MNAME(new), 	moRoot_New    },
         {(IPTR (*)())MNAME(dispose),	moRoot_Dispose},
@@ -198,7 +198,7 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
         {NULL, 0UL}
     };
 
-    struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
+    struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
         {(IPTR (*)())MNAME(setcolors),		moHidd_BitMap_SetColors},
     	{(IPTR (*)())MNAME(putpixel),		moHidd_BitMap_PutPixel},
@@ -214,14 +214,14 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
         {NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {root_descr,    IID_Root       , NUM_ROOT_METHODS},
         {bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
         {NULL, NULL, 0}
     };
 
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
@@ -231,7 +231,7 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
         {TAG_DONE, 0UL}
     };
     
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
     EnterFunc(bug("init_bitmapclass(xsd=%p)\n", xsd));
     
@@ -244,7 +244,7 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
        D(bug("Got attrbase\n"));
        
 /*    for (;;) {cl = cl; } */
-        cl = NewObject(NULL, CLID_HiddMeta, tags);
+        cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
         if(cl)
         {
             D(bug("BitMap class ok\n"));
@@ -252,9 +252,9 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
             cl->UserData     = (APTR) xsd;
            
             /* Get attrbase for the BitMap interface */
-	    if (ObtainAttrBases(attrbases))
+	    if (OOP_ObtainAttrBases(attrbases))
             {
-                AddClass(cl);
+                OOP_AddClass(cl);
             }
             else
             {
@@ -264,7 +264,7 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
         }
 	
 	/* We don't need this anymore */
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     } /* if(MetaAttrBase) */
 
     ReturnPtr("init_bmclass", Class *,  cl);
@@ -279,11 +279,11 @@ void free_offbmclass(struct vga_staticdata *xsd)
 
     if(xsd)
     {
-        RemoveClass(xsd->offbmclass);
-        if(xsd->offbmclass) DisposeObject((Object *) xsd->offbmclass);
+        OOP_RemoveClass(xsd->offbmclass);
+        if(xsd->offbmclass) OOP_DisposeObject((OOP_Object *) xsd->offbmclass);
         xsd->offbmclass = NULL;
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
     }
     ReturnVoid("free_bmclass");
 }

@@ -123,9 +123,9 @@ AROS_LH2(struct TrackDiskBase *,  init,
 	
 	if (OOPBase)
 	{
-	    Object *o;
+	    OOP_Object *o;
 	    
-	    o = NewObject(NULL, CLID_Hidd_IRQ, NULL);
+	    o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
 	    
 	    if (o)
 	    {
@@ -159,7 +159,7 @@ AROS_LH2(struct TrackDiskBase *,  init,
 		
 		HIDD_IRQ_AddHandler(o, irq, vHidd_IRQ_Timer);
 		
-		DisposeObject(o);
+		OOP_DisposeObject(o);
 	    }
 	    CloseLibrary(OOPBase);
 	}

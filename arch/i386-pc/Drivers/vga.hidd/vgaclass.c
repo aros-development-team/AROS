@@ -35,13 +35,13 @@
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
-static AttrBase HiddBitMapAttrBase 	= 0;  
-static AttrBase HiddPixFmtAttrBase	= 0;
-static AttrBase HiddSyncAttrBase	= 0;
-static AttrBase HiddVGAAB 		= 0;
-static AttrBase HiddVGABitMapAB 	= 0;
+static OOP_AttrBase HiddBitMapAttrBase 	= 0;  
+static OOP_AttrBase HiddPixFmtAttrBase	= 0;
+static OOP_AttrBase HiddSyncAttrBase	= 0;
+static OOP_AttrBase HiddVGAAB 		= 0;
+static OOP_AttrBase HiddVGABitMapAB 	= 0;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
     { IID_Hidd_VGABitMap,	&HiddVGABitMapAB	},
@@ -132,7 +132,7 @@ VOID init_sync_tags(struct TagItem *tags, struct vgaModeDesc *md)
     tags[9].ti_Tag = TAG_DONE;
 }
 
-static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem pftags[] = {
     	{ aHidd_PixFmt_RedShift,	0	}, /* 0 */
@@ -227,7 +227,7 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
     
 
 
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
 	D(bug("Got object from super\n"));
@@ -240,19 +240,19 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 	XSD(cl)->vgahidd = o;
 	
-	ReturnPtr("VGAGfx::New", Object *, o);
+	ReturnPtr("VGAGfx::New", OOP_Object *, o);
 	
     }
-    ReturnPtr("VGAGfx::New", Object *, NULL);
+    ReturnPtr("VGAGfx::New", OOP_Object *, NULL);
 }
 
-static VOID gfx_dispose(Class *cl, Object *o, Msg msg)
+static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    DoSuperMethod(cl, o, (Msg)msg);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     return;
 }
 
-static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
+static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     BOOL found = FALSE;
@@ -266,24 +266,24 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
     }
     
     if (!found)
-	DoSuperMethod(cl, o, (Msg)msg);
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	
     return;
 }
 
 /********** GfxHidd::NewBitMap()  ****************************/
-static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *msg)
+static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
 
     BOOL displayable, framebuffer;
     struct vga_data *data;
-    Class *classptr = NULL;
+    OOP_Class *classptr = NULL;
     struct TagItem mytags[2];
     struct pHidd_Gfx_NewBitMap mymsg;
     
     EnterFunc(bug("VGAGfx::NewBitMap()\n"));
     
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     
     /* Displayable bitmap ? */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
@@ -333,15 +333,15 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
 	    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
 	    if (vHidd_StdPixFmt_Unknown == stdpf) {
 		/* No std pixfmt supplied */
-		Object *friend;
+		OOP_Object *friend;
 	    
 		/* Did the user supply a friend bitmap ? */
-		friend = (Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+		friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
 		if (NULL != friend) {
-		    Object * gfxhidd;
+		    OOP_Object * gfxhidd;
 		    /* User supplied friend bitmap. Is the friend bitmap a
 		    VGA Gfx hidd bitmap ? */
-		    GetAttr(friend, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 		    if (gfxhidd == o) {
 			/* Friend was VGA hidd bitmap. Now we can supply our own class */
 			classptr = XSD(cl)->offbmclass;		    
@@ -368,12 +368,12 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
 	msg = &mymsg;
     }
 
-    ReturnPtr("VGAGfx::NewBitMap", Object *, (Object *)DoSuperMethod(cl, o, (Msg)msg));
+    ReturnPtr("VGAGfx::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
 }
 
 /********** GfxHidd::SetMouseShape()  ****************************/
 
-static VOID gfxhidd_setmouseshape(Class *cl, Object *o, struct pHidd_Gfx_SetMouseShape *msg)
+static VOID gfxhidd_setmouseshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetMouseShape *msg)
 {
     if (msg->shape)
     {
@@ -393,7 +393,7 @@ static VOID gfxhidd_setmouseshape(Class *cl, Object *o, struct pHidd_Gfx_SetMous
 
 /********** GfxHidd::SetMouseXY()  ****************************/
 
-static VOID gfxhidd_setmousexy(Class *cl, Object *o, struct pHidd_Gfx_SetMouseXY *msg)
+static VOID gfxhidd_setmousexy(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetMouseXY *msg)
 {
     struct Box box = {0, 0, 0, 0};
 
@@ -421,7 +421,7 @@ static VOID gfxhidd_setmousexy(Class *cl, Object *o, struct pHidd_Gfx_SetMouseXY
 
 /********** GfxHidd::SetMouseVisible()  ****************************/
 
-static VOID gfxhidd_showhide(Class *cl, Object *o, struct pHidd_Gfx_ShowHide *msg)
+static VOID gfxhidd_showhide(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowHide *msg)
 {
     XSD(cl)->mouseVisible = msg->visible;
     
@@ -430,7 +430,7 @@ static VOID gfxhidd_showhide(Class *cl, Object *o, struct pHidd_Gfx_ShowHide *ms
 
 /*********  GfxHidd::CopyBox()  ***************************/
 
-static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
+static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     ULONG mode;
     unsigned char *src = 0, *dest = 0;
@@ -441,22 +441,22 @@ static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
     EnterFunc(bug("VGAGfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
     	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 	
-    GetAttr(msg->src,  aHidd_VGABitMap_Drawable, (IPTR *)&src);
-    GetAttr(msg->dest, aHidd_VGABitMap_Drawable, (IPTR *)&dest);
+    OOP_GetAttr(msg->src,  aHidd_VGABitMap_Drawable, (IPTR *)&src);
+    OOP_GetAttr(msg->dest, aHidd_VGABitMap_Drawable, (IPTR *)&dest);
 
     if (0 == dest || 0 == src)
     {
 	/* The source and/or destination object is no VGA bitmap, onscreen nor offscreen.
 	   Let the superclass do the copying in a more general way
 	*/
-	DoSuperMethod(cl, o, (Msg)msg);
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	return;
 	
     }
 
     {
-    	struct bitmap_data *data = INST_DATA(OCLASS(msg->src), msg->src);
-        struct bitmap_data *ddata = INST_DATA(OCLASS(msg->dest), msg->dest);
+    	struct bitmap_data *data = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+        struct bitmap_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
         int i, width, phase, j;
 
         // start of Source data
@@ -626,7 +626,7 @@ static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
 
 /********** GfxHidd::SetCursorShape()  ****************************/
 
-static BOOL gfxhidd_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+static BOOL gfxhidd_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
     /* hmm ... moHidd_Gfx_SetCursorShape seems to have a HIDD bitmap in msg->shape, while
        the old (obsolete?) native moHidd_Gfx_SetMouseShape seems to expect a simple
@@ -638,7 +638,7 @@ static BOOL gfxhidd_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCur
 
 /********** GfxHidd::SetCursorPos()  ****************************/
 
-static BOOL gfxhidd_setcursorpos(Class *cl, Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
     struct Box box = {0, 0, 0, 0};
 
@@ -668,7 +668,7 @@ static BOOL gfxhidd_setcursorpos(Class *cl, Object *o, struct pHidd_Gfx_SetCurso
 
 /********** GfxHidd::SetCursorVisible()  ****************************/
 
-static VOID gfxhidd_setcursorvisible(Class *cl, Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
     XSD(cl)->mouseVisible = msg->visible;
     
@@ -685,11 +685,11 @@ static VOID gfxhidd_setcursorvisible(Class *cl, Object *o, struct pHidd_Gfx_SetC
 #define NUM_ROOT_METHODS 3
 #define NUM_VGA_METHODS 8 /* stegerg: was 5*/
 
-Class *init_vgaclass (struct vga_staticdata *xsd)
+OOP_Class *init_vgaclass (struct vga_staticdata *xsd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
     	{(IPTR (*)())gfx_new,		moRoot_New},
     	{(IPTR (*)())gfx_dispose,	moRoot_Dispose},
@@ -697,7 +697,7 @@ Class *init_vgaclass (struct vga_staticdata *xsd)
 	{NULL, 0UL}
     };
     
-    struct MethodDescr vgahidd_descr[NUM_VGA_METHODS + 1] = 
+    struct OOP_MethodDescr vgahidd_descr[NUM_VGA_METHODS + 1] = 
     {
     	{(IPTR (*)())gfxhidd_newbitmap,		moHidd_Gfx_NewBitMap},
 	{(IPTR (*)())gfxhidd_setmouseshape,	moHidd_Gfx_SetMouseShape},
@@ -714,14 +714,14 @@ Class *init_vgaclass (struct vga_staticdata *xsd)
 	{NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{root_descr, 	IID_Root, 		NUM_ROOT_METHODS},
     	{vgahidd_descr, IID_Hidd_Gfx,	 	NUM_VGA_METHODS},
 	{NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
@@ -736,17 +736,17 @@ Class *init_vgaclass (struct vga_staticdata *xsd)
     
     if (MetaAttrBase)
     {
-    	cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	if(cl)
     	{
 	    cl->UserData = (APTR)xsd;
 	    xsd->vgaclass = cl;
 	    
-	    if (ObtainAttrBases(attrbases))
+	    if (OOP_ObtainAttrBases(attrbases))
 	    {
 		D(bug("VgaHiddClass ok\n"));
 		
-	    	AddClass(cl);
+	    	OOP_AddClass(cl);
 	    }
 	    else
 	    {
@@ -755,9 +755,9 @@ Class *init_vgaclass (struct vga_staticdata *xsd)
 	    }
 	}
 	/* Don't need this anymore */
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     }
-    ReturnPtr("init_vgaclass", Class *, cl);
+    ReturnPtr("init_vgaclass", OOP_Class *, cl);
 }
 
 /*************** free_vgaclass()  **********************************/
@@ -767,12 +767,12 @@ VOID free_vgaclass(struct vga_staticdata *xsd)
 
     if(xsd)
     {
-        RemoveClass(xsd->vgaclass);
+        OOP_RemoveClass(xsd->vgaclass);
 	
-        if(xsd->vgaclass) DisposeObject((Object *) xsd->vgaclass);
+        if(xsd->vgaclass) OOP_DisposeObject((OOP_Object *) xsd->vgaclass);
         xsd->vgaclass = NULL;
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
     }
     ReturnVoid("free_vgaclass");
 }

@@ -36,18 +36,18 @@ enum
 
 struct pHidd_Kbd_HandleEvent
 {
-    MethodID mID;
+    OOP_MethodID mID;
     ULONG event;
 };
 
-VOID Hidd_Kbd_HandleEvent(Object *o, ULONG event);
+VOID Hidd_Kbd_HandleEvent(OOP_Object *o, ULONG event);
 
 /* misc */
 
 struct abdescr
 {
     STRPTR interfaceid;
-    AttrBase *attrbase;
+    OOP_AttrBase *attrbase;
 };
 
 struct kbd_staticdata
@@ -58,20 +58,20 @@ struct kbd_staticdata
     struct Library *utilitybase;
     struct ExecBase *sysbase;
 
-    Class *kbdclass;
+    OOP_Class *kbdclass;
 
-    Object *irqhidd;
-    Object *kbdhidd;
+    OOP_Object *irqhidd;
+    OOP_Object *kbdhidd;
     
 #if MOUSE_ACTIVE
-    Object *irqhidd_mouse;
+    OOP_Object *irqhidd_mouse;
 #endif
 };
 
 BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase);
 VOID releaseattrbases(struct abdescr *abd, struct Library *OOPBase);
 
-Class *init_kbdclass  ( struct kbd_staticdata * );
+OOP_Class *init_kbdclass  ( struct kbd_staticdata * );
 
 VOID free_kbdclass  ( struct kbd_staticdata * );
 

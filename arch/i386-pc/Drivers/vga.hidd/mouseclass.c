@@ -27,9 +27,9 @@
 
 ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata);
 
-static AttrBase HiddMouseAB;
+static OOP_AttrBase HiddMouseAB;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_Mouse, &HiddMouseAB },
     { NULL, NULL }
@@ -40,8 +40,8 @@ struct mouse_data
     VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
     APTR callbackdata;
     
-    Object * Ser;
-    Object * Unit;
+    OOP_Object * Ser;
+    OOP_Object * Unit;
     
     UWORD buttonstate;
 };
@@ -53,7 +53,7 @@ struct mouse_data
 #define MIDDLE_BUTTON	4
 
 /***** Mouse::New()  ***************************************/
-static Object * mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object * mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
    
@@ -69,10 +69,10 @@ static Object * mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
     if (has_mouse_hidd) /* Cannot open twice */
     	ReturnPtr("Mouse::New", Object *, NULL); /* Should have some error code here */
 
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-	struct mouse_data *data = INST_DATA(cl, o);
+	struct mouse_data *data = OOP_INST_DATA(cl, o);
 	struct TagItem *tag, *tstate;
 	
 	tstate = msg->attrList;
@@ -100,7 +100,7 @@ static Object * mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 	if (OpenLibrary("serial.hidd",0))
 	{
-	    if ((data->Ser = NewObject(NULL, CLID_Hidd_Serial, NULL)))
+	    if ((data->Ser = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL)))
 	    {
 		D(bug("Got serial object = %p", data->Ser));
 		if ((data->Unit = HIDD_Serial_NewUnit(data->Ser, 0)))
@@ -140,13 +140,13 @@ static Object * mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 /***** Mouse::HandleEvent()  ***************************************/
 
-static VOID mouse_handleevent(Class *cl, Object *o, struct pHidd_Mouse_HandleEvent *msg)
+static VOID mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_HandleEvent *msg)
 {
     struct mouse_data * data;
 
     EnterFunc(bug("mouse_handleevent()\n"));
 
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
 
 /* Nothing done yet */
 
@@ -163,30 +163,30 @@ static struct vga_staticdata *vsd;
 #define NUM_ROOT_METHODS 1
 #define NUM_MOUSE_METHODS 1
 
-Class *init_mouseclass (struct vga_staticdata *xsd)
+OOP_Class *init_mouseclass (struct vga_staticdata *xsd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-    	{METHODDEF(mouse_new),		moRoot_New},
+    	{OOP_METHODDEF(mouse_new),		moRoot_New},
 	{NULL, 0UL}
     };
     
-    struct MethodDescr mousehidd_descr[NUM_MOUSE_METHODS + 1] = 
+    struct OOP_MethodDescr mousehidd_descr[NUM_MOUSE_METHODS + 1] = 
     {
-    	{METHODDEF(mouse_handleevent),	moHidd_Mouse_HandleEvent},
+    	{OOP_METHODDEF(mouse_handleevent),	moHidd_Mouse_HandleEvent},
 	{NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
     	{root_descr, 	IID_Root, 		NUM_ROOT_METHODS},
     	{mousehidd_descr, IID_Hidd_HwMouse, 	NUM_MOUSE_METHODS},
 	{NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
@@ -201,7 +201,7 @@ Class *init_mouseclass (struct vga_staticdata *xsd)
     
     if (MetaAttrBase)
     {
-    	cl = NewObject(NULL, CLID_HiddMeta, tags);
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     	if(cl)
     	{
 	    cl->UserData = (APTR)xsd;
@@ -209,11 +209,11 @@ Class *init_mouseclass (struct vga_staticdata *xsd)
 	    
 	    vsd = xsd;
 	    
-	    if (ObtainAttrBases(attrbases))
+	    if (OOP_ObtainAttrBases(attrbases))
 	    {
 		D(bug("MouseHiddClass ok\n"));
 		
-	    	AddClass(cl);
+	    	OOP_AddClass(cl);
 	    }
 	    else
 	    {
@@ -222,7 +222,7 @@ Class *init_mouseclass (struct vga_staticdata *xsd)
 	    }
 	}
 	/* Don't need this anymore */
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     }
     ReturnPtr("init_mouseclass", Class *, cl);
 }
@@ -234,12 +234,12 @@ VOID free_mouseclass(struct vga_staticdata *xsd)
 
     if(xsd)
     {
-        RemoveClass(xsd->mouseclass);
+        OOP_RemoveClass(xsd->mouseclass);
 	
-        if(xsd->mouseclass) DisposeObject((Object *) xsd->mouseclass);
+        if(xsd->mouseclass) OOP_DisposeObject((OOP_Object *) xsd->mouseclass);
         xsd->mouseclass = NULL;
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
     }
     ReturnVoid("free_mouseclass");
 }
@@ -255,7 +255,7 @@ ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR use
     static UBYTE cnt = 0;
 
 #if OLD_GFXMOUSE_HACK
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     static struct pHidd_Gfx_SetMouseXY p;
 #else
     static struct mouse_data *mousedata;
@@ -266,7 +266,7 @@ ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR use
 #if OLD_GFXMOUSE_HACK 
     if (!mid)
     {
-	mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetMouseXY);
+	mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetMouseXY);
 	p.mID = mid;
     }
 #endif
@@ -297,7 +297,7 @@ ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR use
 #if OLD_GFXMOUSE_HACK
             p.dx = (char)(((inbuf[0] & 0x03) << 6) | (inbuf[1] & 0x3f));
 	    p.dy = (char)(((inbuf[0] & 0x0c) << 4) | (inbuf[2] & 0x3f));
-            DoMethod(vsd->vgahidd, (Msg) &p);
+            OOP_DoMethod(vsd->vgahidd, (Msg) &p);
 
 #else
 

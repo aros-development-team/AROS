@@ -251,7 +251,7 @@ failexit:
 	DeleteMsgPort(mouse_port);
 	
     if (NULL != unixio)
-    	DisposeObject((Object *)unixio);
+    	OOP_DisposeObject((OOP_Object *)unixio);
 
     Signal(itp.parent, itp.fail_signal);
      

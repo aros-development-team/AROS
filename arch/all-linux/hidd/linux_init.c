@@ -67,9 +67,9 @@ struct linux_base
 #define OOPBase lsd->oopbase
 
 
-static AttrBase HiddPixFmtAttrBase = 0;
+static OOP_AttrBase HiddPixFmtAttrBase = 0;
 
-struct ABDescr abd[] = {
+struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
 	{ NULL, NULL }
 };
@@ -99,7 +99,7 @@ kprintf("KBD INITED\n");
 	if (!lsd->mouse_inited) goto failure;
 kprintf("MOUSE INITED\n");
 
-	if (!ObtainAttrBases(abd))
+	if (!OOP_ObtainAttrBases(abd))
 	    goto failure;
 kprintf("OBTAINED ATTRBASES\n");	    
 
@@ -146,7 +146,7 @@ static VOID cleanup_linux_hidd(struct linux_staticdata *lsd)
 	if (NULL != lsd->gfxclass)
 	    free_gfxclass(lsd);
 
-	ReleaseAttrBases(abd);
+	OOP_ReleaseAttrBases(abd);
 
 
 	if (NULL != lsd->input_task)

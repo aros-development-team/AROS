@@ -20,9 +20,9 @@
 
 struct HIDDSerialData
 {
-    Class *SerialHIDDClass;
+    OOP_Class *SerialHIDDClass;
 
-    Object		*SerialUnits[SER_MAX_UNITS];
+    OOP_Object		*SerialUnits[SER_MAX_UNITS];
     UBYTE		usedunits;
 };
 
@@ -54,10 +54,10 @@ struct class_static_data
     struct Library       * utilitybase;
     struct Library       * oopbase;
 
-    Class		 *serialhiddclass;
-    Class		 *serialunitclass;
+    OOP_Class		 *serialhiddclass;
+    OOP_Class		 *serialunitclass;
 
-    Object               *irqhidd;
+    OOP_Object               *irqhidd;
 
     struct HIDDSerialUnitData   *units[SER_MAX_UNITS];
 };
@@ -93,10 +93,10 @@ struct IntHIDDSerialBase
 
 /* pre declarations */
 
-Class *init_serialhiddclass(struct class_static_data *csd);
+OOP_Class *init_serialhiddclass(struct class_static_data *csd);
 void   free_serialhiddclass(struct class_static_data *csd);
 
-Class *init_serialunitclass(struct class_static_data *csd);
+OOP_Class *init_serialunitclass(struct class_static_data *csd);
 void   free_serialunitclass(struct class_static_data *csd);
 
 

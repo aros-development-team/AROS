@@ -29,51 +29,51 @@
 #include <aros/debug.h>
 
 #undef OOPBase
-#define OOPBase ((struct Library *)OCLASS(OCLASS(OCLASS(obj)))->UserData)
+#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
 
 /***************************************************************/
 
-BOOL HIDD_IRQ_AddHandler(Object *obj, HIDDT_IRQ_Handler *handler, HIDDT_IRQ_Id id)
+BOOL HIDD_IRQ_AddHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler, HIDDT_IRQ_Id id)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_IRQ_AddHandler p;
     
-    if(!mid) mid = GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler);
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler);
         
     p.mID           = mid;
     p.handlerinfo   = handler;
     p.id            = id;
 
-    return((BOOL) DoMethod(obj, (Msg) &p));
+    return((BOOL) OOP_DoMethod(obj, (OOP_Msg) &p));
 }
 
 /***************************************************************/
 
-VOID HIDD_IRQ_RemHandler(Object *obj, HIDDT_IRQ_Handler *handler)
+VOID HIDD_IRQ_RemHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_IRQ_RemHandler p;
 
-    if (!mid) mid = GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_RemHandler);
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_RemHandler);
 
     p.mID           = mid;
     p.handlerinfo   = handler;
 
-    DoMethod(obj, (Msg) &p);
+    OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
 /*****************************************************************/
 
-VOID HIDD_CauseIRQ(Object *obj, HIDDT_IRQ_Id id, HIDDT_IRQ_HwInfo *hwinfo)
+VOID HIDD_CauseIRQ(OOP_Object *obj, HIDDT_IRQ_Id id, HIDDT_IRQ_HwInfo *hwinfo)
 {
-    static MethodID mid = 0;
+    static OOP_MethodID mid = 0;
     struct pHidd_CauseIRQ p;
 
-    if (!mid) mid = GetMethodID(IID_Hidd_IRQ, moHidd_CauseIRQ);
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_CauseIRQ);
 
     p.mID           = mid;
     p.id            = id;
     p.hardwareinfo  = hwinfo;
 
-    DoMethod(obj, (Msg) &p);
+    OOP_DoMethod(obj, (OOP_Msg) &p);
 }

@@ -12,7 +12,7 @@
 #define IID_Hidd_VGABitMap "hidd.bitmap.vgabitmap"
 
 #define HiddVGABitMapAB __abHidd_VGABitMap
-extern AttrBase HiddVGABitMapAB;
+extern OOP_AttrBase HiddVGABitMapAB;
 
 enum {
     aoHidd_VGABitMap_Drawable,
@@ -52,11 +52,11 @@ struct Box
     int x2, y2;
 };
 
-VOID bitmap_clear(Class *, Object *, struct pHidd_BitMap_Clear *);
-BOOL bitmap_setcolors(Class *, Object *, struct pHidd_BitMap_SetColors *);
-VOID bitmap_putpixel(Class *, Object *, struct pHidd_BitMap_PutPixel *);
-HIDDT_Pixel bitmap_getpixel(Class *, Object *, struct pHidd_BitMap_GetPixel *);
-ULONG bitmap_drawpixel(Class *, Object *, struct pHidd_BitMap_DrawPixel *);
+VOID bitmap_clear(OOP_Class *, OOP_Object *, struct pHidd_BitMap_Clear *);
+BOOL bitmap_setcolors(OOP_Class *, OOP_Object *, struct pHidd_BitMap_SetColors *);
+VOID bitmap_putpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_PutPixel *);
+HIDDT_Pixel bitmap_getpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_GetPixel *);
+ULONG bitmap_drawpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_DrawPixel *);
 
 void vgaRefreshArea(struct bitmap_data *, int , struct Box *);
 

@@ -94,7 +94,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
                 {
                     D(bug("  Got SerialHIDDClass\n"));
 		    
-		    csd->irqhidd = NewObject(NULL, CLID_Hidd_IRQ, NULL);
+		    csd->irqhidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
 		    
 		    if (csd->irqhidd)
 		    {

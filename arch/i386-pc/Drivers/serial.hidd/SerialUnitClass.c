@@ -108,16 +108,16 @@ static inline unsigned int serial_inp(struct HIDDSerialUnitData * data,
 /* IO bases for every COM port */
 ULONG bases[] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
 
-static AttrBase HiddSerialUnitAB;
+static OOP_AttrBase HiddSerialUnitAB;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_SerialUnit, &HiddSerialUnitAB },
     { NULL,	NULL }
 };
 
 /******* SerialUnit::New() ***********************************/
-static Object *serialunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
+static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
   struct HIDDSerialUnitData * data;
   struct TagItem *tag, *tstate;
@@ -142,11 +142,11 @@ static Object *serialunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
 
   } /* while (tags to process) */
   
-  obj = (Object *)DoSuperMethod(cl, obj, (Msg)msg);
+  obj = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 
   if (obj)
   {
-    data = INST_DATA(cl, obj);
+    data = OOP_INST_DATA(cl, obj);
     
     data->baseaddr = bases[unitnum];
     
@@ -189,32 +189,32 @@ static Object *serialunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
      set_baudrate(data, SER_DEFAULT_BAUDRATE);
   } /* if (obj) */
 
-  ReturnPtr("SerialUnit::New()", Object *, obj);
+  ReturnPtr("SerialUnit::New()", OOP_Object *, obj);
 }
 
 /******* SerialUnit::Dispose() ***********************************/
-static Object *serialunit_dispose(Class *cl, Object *obj, Msg msg)
+static OOP_Object *serialunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
 {
   struct HIDDSerialUnitData * data;
   EnterFunc(bug("SerialUnit::Dispose()\n"));
 
-  data = INST_DATA(cl, obj);
+  data = OOP_INST_DATA(cl, obj);
 
   CSD(cl->UserData)->units[data->unitnum] = NULL;
 
   /* stop all interrupts */
   serial_outp(data, UART_IER, 0);
 
-  DoSuperMethod(cl, obj, (Msg)msg);
-  ReturnPtr("SerialUnit::Dispose()", Object *, obj);
+  OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
+  ReturnPtr("SerialUnit::Dispose()", OOP_Object *, obj);
 }
 
 
 
 /******* SerialUnit::Init() **********************************/
-BOOL serialunit_init(Class *cl, Object *o, struct pHidd_SerialUnit_Init *msg)
+BOOL serialunit_init(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Init *msg)
 {
-  struct HIDDSerialUnitData * data = INST_DATA(cl, o);
+  struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   
   EnterFunc(bug("SerialUnit::Init()\n"));
   data->DataReceivedCallBack = msg->DataReceived;
@@ -226,9 +226,9 @@ BOOL serialunit_init(Class *cl, Object *o, struct pHidd_SerialUnit_Init *msg)
 }
 
 /******* SerialUnit::Write() **********************************/
-ULONG serialunit_write(Class *cl, Object *o, struct pHidd_SerialUnit_Write *msg)
+ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Write *msg)
 {
-  struct HIDDSerialUnitData * data = INST_DATA(cl, o);
+  struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   unsigned char status;
   ULONG len = msg->Length;
   ULONG count = 0;
@@ -261,9 +261,9 @@ static ULONG valid_baudrates[] =
 
 
 /******* SerialUnit::SetBaudrate() **********************************/
-BOOL serialunit_setbaudrate(Class *cl, Object *o, struct pHidd_SerialUnit_SetBaudrate *msg)
+BOOL serialunit_setbaudrate(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SetBaudrate *msg)
 {
-  struct HIDDSerialUnitData * data = INST_DATA(cl, o);
+  struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   BOOL valid = FALSE;
   
   if (msg->baudrate != data->baudrate)
@@ -283,9 +283,9 @@ static UBYTE valid_datalengths[] =
 };
 
 /******* SerialUnit::SetParameters() **********************************/
-BOOL serialunit_setparameters(Class *cl, Object *o, struct pHidd_SerialUnit_SetParameters *msg)
+BOOL serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SetParameters *msg)
 {
-  struct HIDDSerialUnitData * data = INST_DATA(cl, o);
+  struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   BOOL valid = TRUE;
   int i = 0;
   struct TagItem * tags = msg->tags;
@@ -343,15 +343,15 @@ BOOL serialunit_setparameters(Class *cl, Object *o, struct pHidd_SerialUnit_SetP
 }
 
 /******* SerialUnit::SendBreak() **********************************/
-BYTE serialunit_sendbreak(Class *cl, Object *o, struct pHidd_SerialUnit_SendBreak *msg)
+BYTE serialunit_sendbreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SendBreak *msg)
 {
-  struct HIDDSerialUnitData * data = INST_DATA(cl, o);
+  struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   
   return SerErr_LineErr;
 }
 
 /****** SerialUnit::GetCapabilities ********************************/
-VOID serialunit_getcapabilities(Class * cl, Object *o, struct TagItem * tags)
+VOID serialunit_getcapabilities(OOP_Class * cl, OOP_Object *o, struct TagItem * tags)
 {
   if (NULL != tags)
   {
@@ -440,11 +440,11 @@ AROS_UFH3(void, serialunit_write_more_data,
 #define NUM_ROOT_METHODS 2
 #define NUM_SERIALUNIT_METHODS moHidd_SerialUnit_NumMethods
 
-Class *init_serialunitclass (struct class_static_data *csd)
+OOP_Class *init_serialunitclass (struct class_static_data *csd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
     
-    struct MethodDescr serialunithiddroot_descr[NUM_ROOT_METHODS + 1] = 
+    struct OOP_MethodDescr serialunithiddroot_descr[NUM_ROOT_METHODS + 1] = 
     {
         {(IPTR (*)())serialunit_new,		moRoot_New},
         {(IPTR (*)())serialunit_dispose,	moRoot_Dispose},
@@ -455,7 +455,7 @@ Class *init_serialunitclass (struct class_static_data *csd)
         {NULL, 0UL}
     };
     
-    struct MethodDescr serialunithidd_descr[NUM_SERIALUNIT_METHODS + 1] =
+    struct OOP_MethodDescr serialunithidd_descr[NUM_SERIALUNIT_METHODS + 1] =
     {
         {(IPTR (*)())serialunit_init,		moHidd_SerialUnit_Init},
         {(IPTR (*)())serialunit_write,		moHidd_SerialUnit_Write},
@@ -466,14 +466,14 @@ Class *init_serialunitclass (struct class_static_data *csd)
         {NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {serialunithiddroot_descr	, IID_Root		, NUM_ROOT_METHODS},
         {serialunithidd_descr		, IID_Hidd_SerialUnit	, NUM_SERIALUNIT_METHODS},
         {NULL, NULL, 0}
     };
 
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
         
     struct TagItem tags[] =
     {
@@ -487,23 +487,23 @@ Class *init_serialunitclass (struct class_static_data *csd)
 
     EnterFunc(bug("    init_serialunitclass(csd=%p)\n", csd));
 
-    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     D(bug("Class=%p\n", cl));
     if(cl)
     {
-	if (ObtainAttrBases(attrbases))
+	if (OOP_ObtainAttrBases(attrbases))
 	{
             D(bug("SerialUnit Class ok\n"));
             cl->UserData = (APTR)csd;
 
-            AddClass(cl);
+            OOP_AddClass(cl);
 	} else {
 	    free_serialunitclass(csd);
 	    cl = NULL;
 	}
     }
 
-    ReturnPtr("init_serialunitclass", Class *, cl);
+    ReturnPtr("init_serialunitclass", OOP_Class *, cl);
 }
 
 
@@ -513,9 +513,9 @@ void free_serialunitclass(struct class_static_data *csd)
 
     if(csd)
     {
-        RemoveClass(csd->serialhiddclass);
+        OOP_RemoveClass(csd->serialhiddclass);
 	
-        if(csd->serialhiddclass) DisposeObject((Object *) csd->serialhiddclass);
+        if(csd->serialhiddclass) OOP_DisposeObject((OOP_Object *) csd->serialhiddclass);
         csd->serialhiddclass = NULL;
     }
 

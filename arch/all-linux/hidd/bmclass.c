@@ -24,9 +24,9 @@ struct bitmap_data {
     int dummy;
 };
 
-static AttrBase HiddBitMapAttrBase = 0;
+static OOP_AttrBase HiddBitMapAttrBase = 0;
 
-static struct ABDescr attrbases[] = {
+static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
     { NULL, NULL }
 };
@@ -36,22 +36,22 @@ static struct ABDescr attrbases[] = {
  
 /*********** BitMap::New() *************************************/
 
-static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL ok = TRUE;
 // kill(getpid(), 19);
-    o = (Object *)DoSuperMethod(cl, o, (Msg) msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
 kprintf("LINUXFB: GOT OBJ %p\n", o);
     if (NULL != o) {
     	struct bitmap_data *data;
 	
-	data = INST_DATA(cl, o);
+	data = OOP_INST_DATA(cl, o);
 	
 	if (!ok) {
 	    ULONG dispose_mid;
-	    dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
+	    dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	
-	    CoerceMethod(cl, o, (Msg)&dispose_mid);
+	    OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
 	    o = NULL;
     	}
     }
@@ -60,14 +60,14 @@ kprintf("LINUXFB: GOT OBJ %p\n", o);
 }
 
 /*********  BitMap::ObtainDirectAccess()  *************************************/
-static BOOL bitmap_obtaindirectaccess(Class *cl, Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
+static BOOL bitmap_obtaindirectaccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
 {
     ULONG width, height;
     
     /* Get width & height from bitmap object */
   
-    GetAttr(o, aHidd_BitMap_Width,  &width);
-    GetAttr(o, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
+    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
     
     *msg->addressReturn	= LSD(cl)->baseaddr;
     *msg->widthReturn	= LSD(cl)->vsi.xres_virtual;
@@ -77,7 +77,7 @@ static BOOL bitmap_obtaindirectaccess(Class *cl, Object *o, struct pHidd_BitMap_
     return TRUE;
 }
 
-static VOID bitmap_releasedirectaccess(Class *cl, Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
+static VOID bitmap_releasedirectaccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
 {
      /* Do nothing */
 #warning Here we can use mprotect() to detect accesses while no access is granted
@@ -85,7 +85,7 @@ static VOID bitmap_releasedirectaccess(Class *cl, Object *o, struct pHidd_BitMap
 }
 
 /*********** BitMap::PutPixel() ***********************************************/
-static VOID bitmap_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
+static VOID bitmap_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     UBYTE *addr;
     LONG xoffset, yoffset;
@@ -120,7 +120,7 @@ static VOID bitmap_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
 }
 
 /*********** BitMap::GetPixel() ***********************************************/
-static HIDDT_Pixel  bitmap_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg)
+static HIDDT_Pixel  bitmap_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     UBYTE *addr;
     HIDDT_Pixel pix = 0;
@@ -152,14 +152,14 @@ static HIDDT_Pixel  bitmap_getpixel(Class *cl, Object *o, struct pHidd_BitMap_Ge
 #define NUM_ROOT_METHODS	1
 #define NUM_BITMAP_METHODS	4
 
-Class *init_bmclass(struct linux_staticdata *fsd)
+OOP_Class *init_bmclass(struct linux_staticdata *fsd)
 {
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = {
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = {
         {(IPTR (*)())bitmap_new    , moRoot_New    },
         {NULL, 0UL}
     };
 
-    struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] = {
+    struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] = {
         {(IPTR (*)())bitmap_obtaindirectaccess,		moHidd_BitMap_ObtainDirectAccess	},
         {(IPTR (*)())bitmap_releasedirectaccess,	moHidd_BitMap_ReleaseDirectAccess	},
         {(IPTR (*)())bitmap_putpixel,			moHidd_BitMap_PutPixel			},
@@ -168,13 +168,13 @@ Class *init_bmclass(struct linux_staticdata *fsd)
         {NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =  {
+    struct OOP_InterfaceDescr ifdescr[] =  {
         {root_descr,    IID_Root       , NUM_ROOT_METHODS},
         {bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
         {NULL, NULL, 0}
     };
 
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 
     struct TagItem tags[] = {
         {aMeta_SuperID,        (IPTR)CLID_Hidd_BitMap		},
@@ -183,17 +183,17 @@ Class *init_bmclass(struct linux_staticdata *fsd)
         {TAG_DONE, 0UL}
     };
     
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
     if(0 != MetaAttrBase) {
-        cl = NewObject(NULL, CLID_HiddMeta, tags);
+        cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
 	if(NULL != cl) {
             cl->UserData     = (APTR) fsd;
            
             /* Get attrbase for the BitMap interface */
-	    if (ObtainAttrBases(attrbases)) {
+	    if (OOP_ObtainAttrBases(attrbases)) {
 	    	fsd->bmclass = cl;
-                AddClass(cl);
+                OOP_AddClass(cl);
             } else {
 #warning The failure handlilg code is buggy. How do we know if the class was successfully added before removing it in free_onbcmlass ?
                 free_bmclass( fsd );
@@ -202,7 +202,7 @@ Class *init_bmclass(struct linux_staticdata *fsd)
         }
 	
 	/* We don't need this anymore */
-	ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     } /* if(MetaAttrBase) */
     
     return cl;
@@ -217,12 +217,12 @@ void free_bmclass(struct linux_staticdata *fsd)
     if(NULL != fsd)  {
     
         if(NULL != fsd->bmclass) {
-	    RemoveClass(fsd->bmclass);
-	    DisposeObject((Object *) fsd->bmclass);
+	    OOP_RemoveClass(fsd->bmclass);
+	    OOP_DisposeObject((OOP_Object *) fsd->bmclass);
             fsd->bmclass = NULL;
 	}
 	
-	ReleaseAttrBases(attrbases);
+	OOP_ReleaseAttrBases(attrbases);
 	
     }
     

@@ -51,7 +51,7 @@ int mouse_reset(void);
 
 long pckey2hidd (ULONG event);
 
-static AttrBase HiddKbdAB;
+static OOP_AttrBase HiddKbdAB;
 
 static struct abdescr attrbases[] =
 {
@@ -180,7 +180,7 @@ keytable[] =
 
 
 /***** Kbd::New()  ***************************************/
-static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
+static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_kbd_hidd = FALSE;
     struct TagItem *tag, *tstate;
@@ -197,7 +197,7 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
     ReleaseSemaphore( &XSD(cl)->sema);
  
     if (has_kbd_hidd) /* Cannot open twice */
-    	ReturnPtr("Kbd::New", Object *, NULL); /* Should have some error code here */
+    	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     tstate = msg->attrList;
     D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
@@ -226,19 +226,19 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    
     } /* while (tags to process) */
     if (NULL == callback)
-    	ReturnPtr("Kbd::New", Object *, NULL); /* Should have some error code here */
+    	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-        struct kbd_data *data = INST_DATA(cl, o);
+        struct kbd_data *data = OOP_INST_DATA(cl, o);
         
         data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
         data->callbackdata = callbackdata;
 
         /* Get irq.hidd */
 
-        if ((XSD(cl)->irqhidd = NewObject(NULL, CLID_Hidd_IRQ, NULL)))
+        if ((XSD(cl)->irqhidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL)))
         {
             /* Install keyboard interrupt */
 
@@ -271,7 +271,7 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
         }
         
 #if MOUSE_ACTIVE
-        if ((XSD(cl)->irqhidd_mouse = NewObject(NULL, CLID_Hidd_IRQ, NULL)))
+        if ((XSD(cl)->irqhidd_mouse = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL)))
         {
             /* install mouse irq handler */
 
@@ -317,18 +317,18 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 
   }
     }
-    ReturnPtr("Kbd::New", Object *, o);
+    ReturnPtr("Kbd::New", OOP_Object *, o);
 }
 
 /***** X11Kbd::HandleEvent()  ***************************************/
 
-static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_Kbd_HandleEvent *msg)
+static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_HandleEvent *msg)
 {
     struct kbd_data * data;
     UWORD key;
 
     EnterFunc(bug("kbd_handleevent()\n"));
-    data = INST_DATA(cl, o);
+    data = OOP_INST_DATA(cl, o);
     key = pckey2hidd(msg->event);
     D(bug("%lx ",key));
     if (key == 0x78)	// Reset request
@@ -349,30 +349,30 @@ static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_Kbd_HandleEvent *
 #define NUM_ROOT_METHODS 1
 #define NUM_KBD_METHODS 1
 
-Class *init_kbdclass (struct kbd_staticdata *xsd)
+OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
 
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
+    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-        {METHODDEF(kbd_new),            moRoot_New},
+        {OOP_METHODDEF(kbd_new),            moRoot_New},
         {NULL, 0UL}
     };
     
-    struct MethodDescr kbdhidd_descr[NUM_KBD_METHODS + 1] = 
+    struct OOP_MethodDescr kbdhidd_descr[NUM_KBD_METHODS + 1] = 
     {
-        {METHODDEF(kbd_handleevent),    moHidd_Kbd_HandleEvent},
+        {OOP_METHODDEF(kbd_handleevent),    moHidd_Kbd_HandleEvent},
         {NULL, 0UL}
     };
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {root_descr,    IID_Root,           NUM_ROOT_METHODS},
         {kbdhidd_descr, IID_Hidd_HwKbd,     NUM_KBD_METHODS},
         {NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
@@ -387,7 +387,7 @@ Class *init_kbdclass (struct kbd_staticdata *xsd)
     
     if (MetaAttrBase)
     {
-        cl = NewObject(NULL, CLID_HiddMeta, tags);
+        cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
         if(cl)
         {
             cl->UserData = (APTR)xsd;
@@ -397,7 +397,7 @@ Class *init_kbdclass (struct kbd_staticdata *xsd)
             {
                 D(bug("KbdHiddClass ok\n"));
 		
-                AddClass(cl);
+                OOP_AddClass(cl);
             }
             else
             {
@@ -406,9 +406,9 @@ Class *init_kbdclass (struct kbd_staticdata *xsd)
             }
         }
         /* Don't need this anymore */
-        ReleaseAttrBase(IID_Meta);
+        OOP_ReleaseAttrBase(IID_Meta);
     }
-    ReturnPtr("init_kbdclass", Class *, cl);
+    ReturnPtr("init_kbdclass", OOP_Class *, cl);
 }
 
 /*************** free_kbdclass()  **********************************/
@@ -418,9 +418,9 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
 
     if(xsd)
     {
-        RemoveClass(xsd->kbdclass);
+        OOP_RemoveClass(xsd->kbdclass);
 	
-        if(xsd->kbdclass) DisposeObject((Object *) xsd->kbdclass);
+        if(xsd->kbdclass) OOP_DisposeObject((OOP_Object *) xsd->kbdclass);
         xsd->kbdclass = NULL;
 	
         releaseattrbases(attrbases, OOPBase);
@@ -630,7 +630,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         if ((kbd_keystate & (LCTRL|LMETA|RMETA))==(LCTRL|LMETA|RMETA))
             event=K_ResetRequest;
         if ((event & 0x7f7f)==(K_Scroll_Lock & 0x7f)) event|=0x4000;
-        Hidd_Kbd_HandleEvent((Object *)irq->h_Data,(ULONG) event);
+        Hidd_Kbd_HandleEvent((OOP_Object *)irq->h_Data,(ULONG) event);
       }
 #if MOUSE_ACTIVE
       else

@@ -5,16 +5,16 @@
 #include <aros/debug.h>
 
 /*********  BitMap::Clear()  *************************************/
-static VOID MNAME(clear)(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
+static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     ULONG width, height;
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
     
     /* Get width & height from bitmap superclass */
 
-    GetAttr(o, aHidd_BitMap_Width,  &width);
-    GetAttr(o, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
+    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
 
     box.x2 = width - 1;
     box.y2 = height - 1;
@@ -31,10 +31,10 @@ static VOID MNAME(clear)(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
     return;
 }
 
-static HIDDT_Pixel MNAME(mapcolor)(Class *cl, Object *o, struct pHidd_BitMap_MapColor *msg)
+static HIDDT_Pixel MNAME(mapcolor)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_MapColor *msg)
 {
     int i,f;
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
     HIDDT_Pixel red	= msg->color->red >> 8;
     HIDDT_Pixel green	= msg->color->green >> 8;
@@ -74,10 +74,10 @@ static HIDDT_Pixel MNAME(mapcolor)(Class *cl, Object *o, struct pHidd_BitMap_Map
     return i;
 }
 
-static VOID MNAME(unmappixel)(Class *cl, Object *o, struct pHidd_BitMap_UnmapPixel *msg)
+static VOID MNAME(unmappixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnmapPixel *msg)
 {
     int i,f;
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
     HIDDT_Pixel red	= msg->color->red >> 8;
     HIDDT_Pixel green	= msg->color->green >> 8;
@@ -102,9 +102,9 @@ static VOID MNAME(unmappixel)(Class *cl, Object *o, struct pHidd_BitMap_UnmapPix
     } while (f && (i<16));
 }
 
-static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
+static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_PixelFormat *pf;
     
     ULONG xc_i, col_i;
@@ -118,12 +118,12 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 	 
 	 /* Superclass takes care of this case */
 	 
-	 return DoSuperMethod(cl, o, (Msg)msg);
+	 return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 
     /* We have a vHidd_GT_Palette bitmap */    
     
-    if (!DoSuperMethod(cl, o, (Msg)msg)) return FALSE;
+    if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) return FALSE;
     
     if ((msg->firstColor + msg->numColors) > (1 << data->bpp))
 	return FALSE;
@@ -159,9 +159,9 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 
 /*********  BitMap::PutPixel()  ***************************/
 
-static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
+static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel fg;
     unsigned char *ptr;
 
@@ -202,10 +202,10 @@ static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
 }
 
 /*********  BitMap::GetPixel()  *********************************/
-static HIDDT_Pixel MNAME(getpixel)(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg)
+static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     HIDDT_Pixel pixel=0;
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     
     unsigned char *ptr;
 
@@ -221,9 +221,9 @@ static HIDDT_Pixel MNAME(getpixel)(Class *cl, Object *o, struct pHidd_BitMap_Get
 
 /*********  BitMap::DrawPixel()  ***************************/
 
-static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel *msg)
+static VOID MNAME(drawpixel)(OOP_Class *cl,OOP_ Object *o, struct pHidd_BitMap_DrawPixel *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel fg;
     unsigned char *ptr;
 
@@ -267,9 +267,9 @@ static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel
 
 /*********  BitMap::PutImage()  ***************************/
 
-static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *msg)
+static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
 
     int i;
@@ -316,9 +316,9 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
 
 /*********  BitMap::GetImage()  ***************************/
 
-static VOID MNAME(getimage)(Class *cl, Object *o, struct pHidd_BitMap_GetImage *msg)
+static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
     int i;
 
@@ -346,9 +346,9 @@ static VOID MNAME(getimage)(Class *cl, Object *o, struct pHidd_BitMap_GetImage *
 
 /*********  BitMap::PutImageLUT()  ***************************/
 
-static VOID MNAME(putimagelut)(Class *cl, Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
 
     int i;
@@ -395,9 +395,9 @@ static VOID MNAME(putimagelut)(Class *cl, Object *o, struct pHidd_BitMap_PutImag
 
 /*********  BitMap::GetImageLUT()  ***************************/
 
-static VOID MNAME(getimagelut)(Class *cl, Object *o, struct pHidd_BitMap_GetImageLUT *msg)
+static VOID MNAME(getimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
     int i;
 
@@ -425,9 +425,9 @@ static VOID MNAME(getimagelut)(Class *cl, Object *o, struct pHidd_BitMap_GetImag
 
 /*********  BitMap::FillRect()  ***************************/
 
-static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *msg)
+static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data =OOP_INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
     HIDDT_Pixel fg = GC_FG(msg->gc);
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
@@ -511,7 +511,7 @@ static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
 	    break;
 	    
 	default:
-	    DoSuperMethod(cl, o, (Msg)msg);
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	    break;
 	    
     } /* switch(mode) */
@@ -534,7 +534,7 @@ static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
     ReturnVoid("VGAGfx.BitMap::FillRect");
 }
 
-static VOID PutPixel(Class *cl, struct bitmap_data *data, int x, int y, unsigned long fg)
+static VOID PutPixel(OOP_Class *cl, struct bitmap_data *data, int x, int y, unsigned long fg)
 {
     unsigned char *ptr;
 
@@ -572,10 +572,10 @@ static VOID PutPixel(Class *cl, struct bitmap_data *data, int x, int y, unsigned
 }
 
 /*** BitMap::BlitColorExpansion() **********************************************/
-static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
+static VOID MNAME(blitcolorexpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     ULONG cemd;
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel fg, bg;
     LONG x, y;
 
@@ -612,9 +612,9 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
 
 /*** BitMap::Get() *******************************************/
 
-static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)
+static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
     if (IS_VGABM_ATTR(msg->attrID, idx))
     {
@@ -625,13 +625,13 @@ static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)
 		break;
 		
 	    default:
-	    	DoSuperMethod(cl, o, (Msg)msg);
+	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
     }
     else
     {
-    	DoSuperMethod(cl, o, (Msg)msg);
+    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 
     return;

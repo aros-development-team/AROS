@@ -26,9 +26,9 @@
 
 /*static AttrBase HiddGCAttrBase;*/
 
-static AttrBase HiddSerialUnitAB;
+static OOP_AttrBase HiddSerialUnitAB;
 
-static struct ABDescr attrbases[] =
+static struct OOP_ABDescr attrbases[] =
 {
     { IID_Hidd_SerialUnit, &HiddSerialUnitAB },
     { NULL,	NULL }
@@ -36,10 +36,10 @@ static struct ABDescr attrbases[] =
 
 /*** HIDDSerial::NewUnit() *********************************************************/
 
-static Object *hiddserial_newunit(Class *cl, Object *obj, struct pHidd_Serial_NewUnit *msg)
+static OOP_Object *hiddserial_newunit(OOP_Class *cl, OOP_Object *obj, struct pHidd_Serial_NewUnit *msg)
 {
-  Object *su = NULL;
-  struct HIDDSerialData * data = INST_DATA(cl, obj);
+  OOP_Object *su = NULL;
+  struct HIDDSerialData * data = OOP_INST_DATA(cl, obj);
   ULONG unitnum = -1;
 
   EnterFunc(bug("HIDDSerial::NewSerial()\n"));
@@ -80,7 +80,7 @@ static Object *hiddserial_newunit(Class *cl, Object *obj, struct pHidd_Serial_Ne
 	{TAG_DONE		       }
     };
 
-    su = NewObject(NULL, CLID_Hidd_SerialUnit, tags);
+    su = OOP_NewObject(NULL, CLID_Hidd_SerialUnit, tags);
     data->SerialUnits[unitnum] = su;
     /*
     ** Mark it as used
@@ -94,10 +94,10 @@ static Object *hiddserial_newunit(Class *cl, Object *obj, struct pHidd_Serial_Ne
 
 /*** HIDDSerial::DisposeUnit() ****************************************************/
 
-static VOID hiddserial_disposeunit(Class *cl, Object *obj, struct pHidd_Serial_DisposeUnit *msg)
+static VOID hiddserial_disposeunit(OOP_Class *cl, OOP_Object *obj, struct pHidd_Serial_DisposeUnit *msg)
 {
-  Object * su = msg->unit;
-  struct HIDDSerialData * data = INST_DATA(cl, obj);
+  OOP_Object * su = msg->unit;
+  struct HIDDSerialData * data = OOP_INST_DATA(cl, obj);
   EnterFunc(bug("HIDDSerial::DisposeUnit()\n"));
 
   if(su)
@@ -108,7 +108,7 @@ static VOID hiddserial_disposeunit(Class *cl, Object *obj, struct pHidd_Serial_D
       if (data->SerialUnits[unitnum] == su)
       {
         D(bug("Disposing SerialUnit!\n"));
-        DisposeObject(su);
+        OOP_DisposeObject(su);
         data->SerialUnits[unitnum] = NULL;
         data->usedunits &= ~(1 << unitnum);
         break;
@@ -134,12 +134,12 @@ static VOID hiddserial_disposeunit(Class *cl, Object *obj, struct pHidd_Serial_D
 
 #define NUM_SERIALHIDD_METHODS moHidd_Serial_NumMethods
 
-Class *init_serialhiddclass (struct class_static_data *csd)
+OOP_Class *init_serialhiddclass (struct class_static_data *csd)
 {
-    Class *cl = NULL;
+    OOP_Class *cl = NULL;
     BOOL  ok  = FALSE;
     
-    struct MethodDescr serialhidd_descr[NUM_SERIALHIDD_METHODS + 1] = 
+    struct OOP_MethodDescr serialhidd_descr[NUM_SERIALHIDD_METHODS + 1] = 
     {
         {(IPTR (*)())hiddserial_newunit,         moHidd_Serial_NewUnit},
         {(IPTR (*)())hiddserial_disposeunit,     moHidd_Serial_DisposeUnit},
@@ -147,13 +147,13 @@ Class *init_serialhiddclass (struct class_static_data *csd)
     };
     
     
-    struct InterfaceDescr ifdescr[] =
+    struct OOP_InterfaceDescr ifdescr[] =
     {
         {serialhidd_descr, IID_Hidd_Serial, NUM_SERIALHIDD_METHODS},
         {NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
         
     struct TagItem tags[] =
     {
@@ -168,7 +168,7 @@ Class *init_serialhiddclass (struct class_static_data *csd)
 
     EnterFunc(bug("    init_serialhiddclass(csd=%p)\n", csd));
 
-    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
     D(bug("Class=%p\n", cl));
     if(cl)
     {
@@ -180,7 +180,7 @@ Class *init_serialhiddclass (struct class_static_data *csd)
 
         if(csd->serialunitclass)
         {
-            if (ObtainAttrBases(attrbases))
+            if (OOP_ObtainAttrBases(attrbases))
 	    {
 		D(bug("SerialUnitClass ok\n"));
 
@@ -196,10 +196,10 @@ Class *init_serialhiddclass (struct class_static_data *csd)
     }
     else
     {
-        AddClass(cl);
+        OOP_AddClass(cl);
     }
 
-    ReturnPtr("init_serialhiddclass", Class *, cl);
+    ReturnPtr("init_serialhiddclass", OOP_Class *, cl);
 }
 
 
@@ -209,11 +209,11 @@ void free_serialhiddclass(struct class_static_data *csd)
 
     if(csd)
     {
-        RemoveClass(csd->serialhiddclass);
+        OOP_RemoveClass(csd->serialhiddclass);
 	
 	free_serialunitclass(csd);
 
-        if(csd->serialhiddclass) DisposeObject((Object *) csd->serialhiddclass);
+        if(csd->serialhiddclass) OOP_DisposeObject((OOP_Object *) csd->serialhiddclass);
         csd->serialhiddclass = NULL;
     }
 

@@ -79,29 +79,29 @@ typedef enum {
 
 struct pHidd_IRQ_AddHandler
 {
-    MethodID            mID;
+    OOP_MethodID        mID;
     HIDDT_IRQ_Handler   *handlerinfo;
     HIDDT_IRQ_Id        id;
 };
 
 struct pHidd_IRQ_RemHandler
 {
-    MethodID            mID;
+    OOP_MethodID        mID;
     HIDDT_IRQ_Handler   *handlerinfo;
 };
 
 struct pHidd_CauseIRQ
 {
-    MethodID            mID;
+    OOP_MethodID        mID;
     HIDDT_IRQ_Id        id;
     HIDDT_IRQ_HwInfo    *hardwareinfo;
 };
 
 /* Predeclarations of stubs in libhiddirqstubs */
 
-BOOL HIDD_IRQ_AddHandler    (Object *, HIDDT_IRQ_Handler *, HIDDT_IRQ_Id);
-VOID HIDD_IRQ_RemHandler    (Object *, HIDDT_IRQ_Handler *);
-VOID HIDD_CauseIRQ          (Object *, HIDDT_IRQ_Id, HIDDT_IRQ_HwInfo *);
+BOOL HIDD_IRQ_AddHandler    (OOP_Object *, HIDDT_IRQ_Handler *, HIDDT_IRQ_Id);
+VOID HIDD_IRQ_RemHandler    (OOP_Object *, HIDDT_IRQ_Handler *);
+VOID HIDD_CauseIRQ          (OOP_Object *, HIDDT_IRQ_Id, HIDDT_IRQ_HwInfo *);
 
 #endif /* HIDD_IRQ_H */
 
