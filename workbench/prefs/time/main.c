@@ -254,7 +254,7 @@ static void YearFunc(struct Hook *hook, Object *obj, IPTR *param)
     	nnset(obj, MUIA_String_Integer, year);
     }
     
-    set(cal, MUIA_Calendar_Year, year);
+    nnset(cal, MUIA_Calendar_Year, year);
 
 }
 
@@ -341,6 +341,27 @@ static void MakeGUI(void)
 		    Child, VGroup, /* Clock box */
 		    	GroupFrame,
 			Child, HVSpace,
+			Child, HGroup,
+			    Child, HVSpace,
+			    Child, StringObject, /* hour gadget */
+			    	StringFrame,
+				MUIA_String_Accept, (IPTR)"0123456789",
+				MUIA_FixWidthTxt, (IPTR)"555",
+				End,
+			    Child, CLabel2(":"),
+			    Child, StringObject, /* min gadget */
+			    	StringFrame,
+				MUIA_String_Accept, (IPTR)"0123456789",
+				MUIA_FixWidthTxt, (IPTR)"555",
+				End,
+			    Child, CLabel2(":"),		    
+			    Child, StringObject, /* sec gadget */
+			    	StringFrame,
+				MUIA_String_Accept, (IPTR)"0123456789",
+				MUIA_FixWidthTxt, (IPTR)"555",
+				End,
+			    Child, HVSpace,
+			    End,
 		    	End,
 		    End,
 		Child, HGroup, /* save/use/cancel button row */

@@ -32,6 +32,8 @@ struct CalendarData
     STRPTR  	    	    	defdaylabels[12];
     WORD    	    	    	cellwidth;
     WORD    	    	    	cellheight;
+    WORD    	    	    	mwday; /* weekday of 1st of month */
+    WORD    	    	    	old_mday;
 };
 
 /*********************************************************************************************/
@@ -126,11 +128,13 @@ static IPTR Calendar_Dispose(Class *cl, Object *obj, Msg msg)
 static IPTR Calendar_Set(Class *cl, Object *obj, struct opSet *msg)
 {
     struct CalendarData *data = INST_DATA(cl, obj);
+    struct ClockData	 old_clockdata;
     struct TagItem      *tags  = msg->ops_AttrList;
     struct TagItem      *tag;
     BOOL    	    	 redraw = FALSE;
     
-kprintf("calendar_set\n");
+    old_clockdata = data->clockdata;
+    
     while ((tag = NextTagItem(&tags)) != NULL)
     {
     	switch(tag->ti_Tag)
@@ -171,11 +175,33 @@ kprintf("calendar_set\n");
     
     if (redraw)
     {
-    	ULONG secs = Date2Amiga(&data->clockdata);
+    	struct ClockData cd2;
+    	ULONG 	    	 secs;
+	
+	cd2 = data->clockdata;
+	cd2.mday = 1;
+	
+	if (data->clockdata.mday > NumMonthDays(&cd2))
+	{
+	    data->clockdata.mday = NumMonthDays(&cd2);
+	}
+	
+	secs = Date2Amiga(&data->clockdata);
 	
 	Amiga2Date(secs, &data->clockdata);
 	
-    	MUI_Redraw(obj, MADF_DRAWUPDATE);
+	if ((data->clockdata.year != old_clockdata.year) ||
+	    (data->clockdata.month != old_clockdata.month) ||
+	    (data->clockdata.mday != old_clockdata.mday))
+	{
+	    if ((data->clockdata.year == old_clockdata.year) &&
+	    	(data->clockdata.month == old_clockdata.month))
+	    {
+	    	data->old_mday = old_clockdata.mday;
+	    }
+    	    MUI_Redraw(obj, MADF_DRAWUPDATE);
+	    data->old_mday = 0;
+	}
     }
     
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -186,7 +212,7 @@ kprintf("calendar_set\n");
 static IPTR Calendar_Get(Class *cl, Object *obj, struct opGet *msg)
 {
     struct CalendarData *data = INST_DATA(cl, obj);
-    IPTR    	    	retval = TRUE;
+    IPTR    	    	 retval = TRUE;
     
     switch(msg->opg_AttrID)
     {
@@ -283,10 +309,10 @@ static IPTR Calendar_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *ms
 
     DoSuperMethodA(cl, obj, (Msg)msg);
     
-    msg->MinMaxInfo->MinWidth  += data->cellwidth * 7;
-    msg->MinMaxInfo->MinHeight += data->cellheight * 7;
-    msg->MinMaxInfo->DefWidth  += data->cellwidth * 7;
-    msg->MinMaxInfo->DefHeight += data->cellheight * 7;
+    msg->MinMaxInfo->MinWidth  += data->cellwidth * 7 + 2;
+    msg->MinMaxInfo->MinHeight += data->cellheight * 7 + 1;
+    msg->MinMaxInfo->DefWidth  += data->cellwidth * 7 + 2;
+    msg->MinMaxInfo->DefHeight += data->cellheight * 7 + 1;
     msg->MinMaxInfo->MaxWidth   = MUI_MAXMAX;
     msg->MinMaxInfo->MaxHeight  = MUI_MAXMAX;
     
@@ -299,58 +325,87 @@ static IPTR Calendar_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *ms
 static IPTR Calendar_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct CalendarData *data = INST_DATA(cl, obj);
-    WORD    	    	 x, y, offx, offy, mwday, day, mdays;
+    WORD    	    	 x, y, offx, offy, day, mdays;
     
     DoSuperMethodA(cl, obj, (Msg)msg);
     
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
     
-    if (msg->flags & MADF_DRAWUPDATE)
-    {
-    }
-    
-    offx = (_mwidth(obj) - data->cellwidth * 7) / 2;
-    offy = (_mheight(obj) - data->cellheight * 7) / 2;
+    offx = _mleft(obj) + (_mwidth(obj) - data->cellwidth * 7 - 2) / 2 + 1;
+    offy = _mtop(obj) + (_mheight(obj) - data->cellheight * 7 - 1) / 2;
     
     /* ~random 8 * 7 to make sure expression inside brackets is positive */
-    mwday = (8 * 7 + data->clockdata.wday - data->clockdata.mday + 1) % 7;
+    data->mwday = (8 * 7 + data->clockdata.wday - data->clockdata.mday + 1) % 7;
     
     mdays = NumMonthDays(&data->clockdata);
 
-kprintf("actdate = %d.%d.%d  wday = %d\n", data->clockdata.mday, data->clockdata.month, data->clockdata.year, data->clockdata.wday);
+    //kprintf("actdate = %d.%d.%d  wday = %d\n", data->clockdata.mday, data->clockdata.month, data->clockdata.year, data->clockdata.wday);
 
-kprintf("mwday = %d  mdays = %d\n", mwday, mdays);
+    //kprintf("mwday = %d  mdays = %d\n", data->mwday, mdays);
     
-    day = firstweekday - mwday + 1 - 7;
+    day = firstweekday - data->mwday + 1 - 7;
     
     SetFont(_rp(obj), _font(obj));
     SetDrMd(_rp(obj), JAM1);
     
+    if (!(msg->flags & MADF_DRAWUPDATE))
+    {
+    	SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
+	Move(_rp(obj), offx - 1,
+	    	       offy);
+	Draw(_rp(obj), offx - 1,
+	    	       offy + data->cellheight * 7);
+	Draw(_rp(obj), offx +  data->cellwidth * 7,
+	    	       offy + data->cellheight * 7);
+	Draw(_rp(obj), offx + data->cellwidth * 7,
+	    	       offy);
+    }
+    
     for(y = 0; y < 7; y++)
     {
+    	if (!y && (msg->flags & MADF_DRAWUPDATE))
+	{
+	    day += 7;
+	    continue;
+    	}
+	
     	for(x = 0; x < 7; x++)
 	{
 	    STRPTR text;	    
 	    UBYTE buf[3];
 	    
+	    if (data->old_mday && (day != data->old_mday) && (day != data->clockdata.mday))
+	    {
+	    	day++;
+		continue;
+	    }
+	    
 	    text = NULL;
-	    SetAPen(_rp(obj), _dri(obj)->dri_Pens[y ? SHINEPEN : SHADOWPEN]);
-	    RectFill(_rp(obj), _mleft(obj) + x * data->cellwidth + 1 + offx,
-	    	    	       _mtop(obj) + y * data->cellheight + 1 + offy,
-			       _mleft(obj) + x * data->cellwidth + data->cellwidth - 2 + offx,
-			       _mtop(obj) + y * data->cellheight + data->cellheight - 2 + offy);
+	    if (day == data->clockdata.mday)
+	    {
+	    	SetAPen(_rp(obj), _pens(obj)[MPEN_FILL]);
+	    }
+	    else
+	    {
+	    	SetAPen(_rp(obj), _dri(obj)->dri_Pens[y ? SHINEPEN : SHADOWPEN]);
+	    }
+	    
+	    RectFill(_rp(obj), x * data->cellwidth + 1 + offx,
+	    	    	       y * data->cellheight + 1 + offy,
+			       x * data->cellwidth + data->cellwidth - 2 + offx,
+			       y * data->cellheight + data->cellheight - 2 + offy);
 			       
 	    SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
-	    Move(_rp(obj), _mleft(obj) + x * data->cellwidth + offx,
-		    	   _mtop(obj) + y * data->cellheight + offy);
-	    Draw(_rp(obj), _mleft(obj) + x * data->cellwidth + data->cellwidth - 1 + offx,
-		    	   _mtop(obj) + y * data->cellheight + offy);
-	    Draw(_rp(obj), _mleft(obj) + x * data->cellwidth + data->cellwidth - 1 + offx,
-		    	   _mtop(obj) + y * data->cellheight + data->cellheight - 1 + offy);
-	    Draw(_rp(obj), _mleft(obj) + x * data->cellwidth + offx,
-		    	   _mtop(obj) + y * data->cellheight + data->cellheight - 1 + offy);
-	    Draw(_rp(obj), _mleft(obj) + x * data->cellwidth + offx,
-		    	   _mtop(obj) + y * data->cellheight + offy);
+	    Move(_rp(obj), x * data->cellwidth + offx,
+		    	   y * data->cellheight + offy);
+	    Draw(_rp(obj), x * data->cellwidth + data->cellwidth - 1 + offx,
+		    	   y * data->cellheight + offy);
+	    Draw(_rp(obj), x * data->cellwidth + data->cellwidth - 1 + offx,
+		    	   y * data->cellheight + data->cellheight - 1 + offy);
+	    Draw(_rp(obj), x * data->cellwidth + offx,
+		    	   y * data->cellheight + data->cellheight - 1 + offy);
+	    Draw(_rp(obj), x * data->cellwidth + offx,
+		    	   y * data->cellheight + offy);	    
 
     	    if (y > 0)
 	    {
@@ -358,7 +413,7 @@ kprintf("mwday = %d  mdays = %d\n", mwday, mdays);
 		{
 		    sprintf(buf, "%d", day);
 	    	    SetSoftStyle(_rp(obj), FS_NORMAL, AskSoftStyle(_rp(obj)));
-		    SetAPen(_rp(obj), _dri(obj)->dri_Pens[SHADOWPEN]);
+		    SetAPen(_rp(obj), _dri(obj)->dri_Pens[day == data->clockdata.mday ? SHADOWPEN : FILLTEXTPEN]);
 		    text = buf;
 		}
 	    }
@@ -375,8 +430,8 @@ kprintf("mwday = %d  mdays = %d\n", mwday, mdays);
 	    	WORD tx, ty, tw;
 		
 		tw = TextLength(_rp(obj), text, strlen(text));
-		tx = _mleft(obj) + offx + x * data->cellwidth + (data->cellwidth - tw) / 2;
-		ty = _mtop(obj) + offy + y * data->cellheight + (data->cellheight - _font(obj)->tf_YSize) / 2;
+		tx = offx + x * data->cellwidth + (data->cellwidth - tw) / 2;
+		ty = offy + y * data->cellheight + (data->cellheight - _font(obj)->tf_YSize) / 2;
 		
 		Move(_rp(obj), tx, ty + _font(obj)->tf_Baseline);
 		Text(_rp(obj), text, strlen(text));
@@ -393,8 +448,108 @@ kprintf("mwday = %d  mdays = %d\n", mwday, mdays);
 
 /*********************************************************************************************/
 
+static WORD DayUnderMouse(Object *obj, struct CalendarData *data, struct IntuiMessage *imsg)
+{
+    WORD x, y, offx, offy, i;
+    
+    offx = (_mwidth(obj) - data->cellwidth * 7 - 2) / 2 + 1;
+    offy = (_mheight(obj) - data->cellheight * 7 - 1) / 2 + data->cellheight;
+    
+    x = imsg->MouseX - _mleft(obj) - offx;
+    y = imsg->MouseY - _mtop(obj) - offy;
+    
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x >= data->cellwidth * 7) x = data->cellwidth * 7 - 1;
+    if (y >= data->cellheight * 6) y = data->cellheight * 6 - 1;
+    
+    x /= data->cellwidth;
+    y /= data->cellheight;
+    
+    i = y * 7 + x;
+    
+    i += firstweekday - data->mwday + 1;
+    
+    if (i < 1)
+    {
+    	i = 1;
+    }
+    else if (i > NumMonthDays(&data->clockdata))
+    {
+    	i = NumMonthDays(&data->clockdata);
+    }
+    
+    return i;
+}
+
+/*********************************************************************************************/
+
+#define _between(a,x,b) ((x)>=(a) && (x)<=(b))
+
+/*********************************************************************************************/
+
 static IPTR Calendar_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
+    struct CalendarData *data = INST_DATA(cl, obj);
+    
+    if (msg->muikey == MUIKEY_NONE)
+    {
+    	WORD x1 = _mleft(obj) + (_mwidth(obj)  - data->cellwidth  * 7 - 2) / 2 + 1;
+	WORD y1 = _mtop(obj)  + (_mheight(obj) - data->cellheight * 7 - 1) / 2 + data->cellheight;
+	WORD x2 = x1 + data->cellwidth * 7 - 1;
+	WORD y2 = y1 + data->cellheight * 6 - 1;
+	WORD day;
+	
+	BOOL in = _between(x1, msg->imsg->MouseX, x2) && _between(y1, msg->imsg->MouseY, y2);
+
+    	switch(msg->imsg->Class)
+	{
+	    case IDCMP_MOUSEBUTTONS:
+	    	switch(msg->imsg->Code)
+		{
+		    case SELECTDOWN:
+		    	if (in)
+			{
+			    day = DayUnderMouse(obj, data, msg->imsg);
+			    if (day != data->clockdata.mday)
+			    {
+			    	set(obj, MUIA_Calendar_MonthDay, day);
+			    }
+			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+	                    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+			    return MUI_EventHandlerRC_Eat;
+			}
+			break;
+			
+		    case SELECTUP:
+		    	if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
+			{
+			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+	                    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+		    	    return MUI_EventHandlerRC_Eat;
+			}
+			break;
+		}
+		break;
+		  	   	
+	    case IDCMP_MOUSEMOVE:
+	    	if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
+		{
+	    	    day = DayUnderMouse(obj, data, msg->imsg);
+		    if (day != data->clockdata.mday)
+		    {
+			set(obj, MUIA_Calendar_MonthDay, day);
+		    }
+		    return MUI_EventHandlerRC_Eat;		    
+		}
+	    	break;
+		
+	} /* switch(msg->imsg->Class) */
+	
+    } /* if (msg->muikey == MUIKEY_NONE) */
+    
     return 0;
 }
 
