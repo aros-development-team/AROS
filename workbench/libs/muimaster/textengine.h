@@ -51,9 +51,6 @@ struct ZText {
 
 /* private */
     struct MinList lines;
-    UBYTE align; /* used in parsing */
-    ULONG style;
-    LONG  dripen;
 };
 
 typedef struct ZText ZText;
