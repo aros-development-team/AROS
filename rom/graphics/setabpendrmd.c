@@ -102,6 +102,7 @@
     rp->FgPen = apen;
     rp->BgPen = bpen;
     rp->DrawMode = drawMode;
-
+    rp->linpatcnt = 15;
+    
     AROS_LIBFUNC_EXIT
 } /* SetABPenDrMd */
