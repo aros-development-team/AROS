@@ -14,7 +14,7 @@
 
     SYNOPSIS
 
-        NAME,STRING/F
+        NAME,SAVE/S,STRING/F
 
     LOCATION
 
@@ -25,9 +25,10 @@
         Sets a global variable from the current shell. These variables can
         be accessed from any program executing at any time.
 
-        These variables are not saved in the ENVARC: directory, hence they
+        These variables are usually not saved in the ENVARC: directory, hence they
         can only be used by programs during the current execution of the
-        operating system.
+        operating system. When using SAVE argument, the variable is also saved
+	in ENVARC:
 
         If no parameters are specified, the current list of global variables
         are displayed.
@@ -35,6 +36,8 @@
     INPUTS
 
         NAME    - The name of the global variable to set.
+
+        SAVE    - Save the variable also in ENVARC:
 
         STRING  - The value of the global variable NAME.
 
@@ -80,16 +83,27 @@
 #include <utility/tagitem.h>
 #include <stdio.h>
 
+#define SH_GLOBAL_DOSBASE 1 /* because of Printf from amiga.lib */
+
 #include <aros/shcommands.h>
 
-AROS_SH2(Setenv, 41.1,
+AROS_SH3(Setenv, 45.0,
 AROS_SHA(STRPTR, ,NAME,     , NULL),
+AROS_SHA(IPTR  , ,SAVE,   /S, NULL),
 AROS_SHA(STRPTR, ,STRING, /F, NULL))
 {
     AROS_SHCOMMAND_INIT
 
+    int     Return_Value;
+    BOOL    Success;
+    BPTR    lock;
+    TEXT    progname[108];
+    
     (void)Setenv_version;
 
+    GetProgramName(progname, sizeof(progname));
+    Return_Value = RETURN_OK;
+    
     if (SHArg(NAME) != NULL || SHArg(STRING) != NULL)
     {
         /* Make sure we get to here is either arguments are
@@ -99,15 +113,20 @@ AROS_SHA(STRPTR, ,STRING, /F, NULL))
         {
             /* Add the new global variable to the list.
              */
-	     if
-	     (
-	         !SetVar(SHArg(NAME),
-                         SHArg(STRING),
-                         -1,
-                         GVF_GLOBAL_ONLY)
-             )
+	     Success = SetVar(SHArg(NAME),
+	     	    	      SHArg(STRING),
+			      -1,
+			      SHArg(SAVE) ? GVF_GLOBAL_ONLY | GVF_SAVE_VAR : GVF_GLOBAL_ONLY);
+
+    	     if (Success == FALSE)
 	     {
-	         return RETURN_ERROR;
+	         UBYTE buf[FAULT_MAX+128];
+
+	         Fault(-141, NULL, buf, sizeof(buf));
+	         Printf(buf, SHArg(NAME));	                	
+	     	 PrintFault(IoErr(), progname);
+
+	     	 Return_Value = RETURN_ERROR;
 	     }
         }
     }
@@ -115,37 +134,39 @@ AROS_SHA(STRPTR, ,STRING, /F, NULL))
     {
         /* Display a list of global variables.
          */
-        BPTR lock                 = NULL;
-	struct FileInfoBlock *FIB = NULL;
-
-	if
-	(
-	    !(lock = Lock("ENV:", ACCESS_READ))    ||
-	    !(FIB = AllocDosObject(DOS_FIB, NULL)) ||
-	    (Examine(lock, FIB) == DOSFALSE)
-	)
+	 
+	lock = Lock("ENV:", ACCESS_READ);
+	if (lock)
 	{
-	    if (FIB) FreeDosObject(DOS_FIB, FIB);
-	    if (lock) UnLock(lock);
-
-	    return RETURN_FAIL;
-	}
-
-        while (ExNext(lock, FIB))
-        {
-	    /* don't show dirs */
-            if (FIB->fib_DirEntryType < 0)
+	    struct FileInfoBlock *FIB = AllocDosObject(DOS_FIB, NULL);
+   	
+	    if (FIB)
 	    {
-                FPuts(Output(),FIB->fib_FileName);
-		FPuts(Output(),"\n");
- 	    }
+		if(Examine(lock, FIB))
+		{		
+	            while(ExNext(lock, FIB))
+	            {
+	                /* don't show dirs */
+		        if (FIB->fib_DirEntryType < 0)
+	        	{	                    	
+	                    PutStr(FIB->fib_FileName);
+	                    PutStr("\n");
+	                } 	                    				    	    
+		    } 
+		}
+		FreeDosObject(DOS_FIB, FIB);
+    	    }
+	    UnLock(lock);
 	}
-
-	FreeDosObject(DOS_FIB, FIB);
-	UnLock(lock);
+	else
+	{
+	    PrintFault(IoErr(), progname);
+	    
+	    Return_Value = RETURN_FAIL;
+	}
     }
 
-    return RETURN_OK;
+    return Return_Value;
 
     AROS_SHCOMMAND_EXIT
 } /* main */
