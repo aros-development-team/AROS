@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information about the timer.device and HIDD's

@@ -1,26 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.6  1998/10/20 16:46:14  hkiel
-    Amiga Research OS
-
-    Revision 1.5  1998/02/01 21:47:20  bergers
-    Use float instead of LONG when calling these functions now.
-    A define in mathffp_intern.h does the trick.
-
-    Revision 1.4  1997/07/21 20:56:40  bergers
-    *** empty log message ***
-
-    Revision 1.3  1997/07/04 05:59:52  bergers
-    Added some more constants
-
-    Revision 1.2  1997/06/25 21:36:43  bergers
-    *** empty log message ***
-
-    Revision 1.1  1997/05/30 20:50:57  aros
-    *** empty log message ***
-
 
     Desc:
     Lang: english
