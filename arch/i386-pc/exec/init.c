@@ -301,7 +301,7 @@ int main()
 	}
     }
 
-#if 1
+#if 0
 
     kprintf("graphics.hidd = %08.8lx\n",OpenLibrary("graphics.hidd",0));
     kprintf("vga.hidd = %08.8lx\n",OpenLibrary("vga.hidd",0));

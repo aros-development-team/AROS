@@ -23,8 +23,8 @@
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   4 /* Worst case alignment */
 
-#define SIZEOF_ALL_REGISTERS	8*4  /* Size of iet_Context */
 #define SIZEOF_FPU_STATE	108  /* 108 bytes are needed to store FPU */
+#define SIZEOF_ALL_REGISTERS	(15*4 + SIZEOF_FPU_STATE)  /* Size of iet_Context */
 
 /* ??? */
 #define SP_OFFSET 0

@@ -7,8 +7,6 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 		   $(INCDIR)/aros/machine.h \
 		   $(GENINCDIR)/aros/boot.h \
 		   $(INCDIR)/aros/boot.h \
-		   $(GENINCDIR)/exec/etask.h \
-		   $(INCDIR)/exec/etask.h \
 		   $(GENINCDIR)/asm/segments.h \
 		   $(INCDIR)/asm/segments.h \
 		   $(GENINCDIR)/core.h \
@@ -16,7 +14,7 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 		   $(INCDIR)/sigcore.h
 	   
 #MM- AROS-native : setup setup-native includes compiler kernel boot-native \
-#MM	    Drivers-native Serial-native create-mf-inc-again kernel-link-native binary-native-i386
+#MM	    create-mf-inc-again kernel-link-native binary-native-i386
 
 #MM create-mf-inc-again
 create-mf-inc-again :
@@ -25,26 +23,26 @@ create-mf-inc-again :
 
 # Kernel
 #MM- kernel-native : kernel-exec-native \
+#MM	    kernel-expansion-linklib kernel-expansion-native-i386 \
+#MM	    kernel-utility-linklib \
 #MM	    kernel-aros-linklib \
+#MM	    kernel-mathieeesingbas-linklib \
+#MM	    kernel-boopsi-linklib \
+#MM	    kernel-oop-linklib \
+#MM	    kernel-hidd-linklib \
+#MM	    kernel-graphics-linklib graphics-gfxhidd kernel-graphics-native-i386 \
+#MM	    kernel-layers-linklib \
+#MM	    kernel-timer-linklib \
+#MM	    kernel-misc-linklib kernel-misc-native-i386 \
+#MM	    kernel-battclock-native \
+#MM	    kernel-devs \
+#MM         kernel-intuition-native \
 #MM	    kernel-keymap-linklib \
 #MM	    kernel-mathffp-linklib \
-#MM	    kernel-mathieeesingbas-linklib \
-#MM	    kernel-expansion-linklib kernel-expansion-native-i386 \
-#MM	    kernel-boopsi-linklib \
-#MM	    kernel-timer-linklib \
-#MM	    kernel-oop-linklib \
-#MM	    kernel-devs \
-#MM	    kernel-layers-linklib \
-#MM	    kernel-battclock-native \
-#MM	    kernel-hidd-linklib \
-#MM	    kernel-utility-linklib \
 #MM	    kernel-workbench-linklib \
-#MM         kernel-intuition-native \
-#MM	    kernel-misc-linklib kernel-misc-native-i386 \
-#MM	    kernel-graphics-linklib graphics-gfxhidd kernel-graphics-native-i386 \
-#MM	    kernel-cgfx-linklib
-
-
+#MM		Drivers-native-irq \
+#MM		Drivers-native-kbd \
+#MM		Drivers-native
 
 
 # Setup

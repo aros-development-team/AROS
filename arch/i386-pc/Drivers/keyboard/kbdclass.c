@@ -29,7 +29,7 @@
 #include "kbd.h"
 #include "keys.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
@@ -273,7 +273,7 @@ static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_Kbd_HandleEvent *
 		ColdReboot();
 	if (data->kbd_callback)
 	{
-//    	data->kbd_callback(data->callbackdata, key);
+    	data->kbd_callback(data->callbackdata, key);
 	}
     ReturnVoid("Kbd::HandleEvent");
 }
