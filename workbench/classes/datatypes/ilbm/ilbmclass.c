@@ -277,10 +277,12 @@ static BOOL ReadILBM(Object *o)
 	return FALSE;
     }
     
-    bmhd->bmh_Width  = bmhd->bmh_PageWidth  = file_bmhd->bmh_Width [0] * 256 + file_bmhd->bmh_Width [1];
-    bmhd->bmh_Height = bmhd->bmh_PageHeight = file_bmhd->bmh_Height[0] * 256 + file_bmhd->bmh_Height[1];
-    bmhd->bmh_Depth  = file_bmhd->bmh_Depth;
-   
+    bmhd->bmh_Width  	  = bmhd->bmh_PageWidth  = file_bmhd->bmh_Width [0] * 256 + file_bmhd->bmh_Width [1];
+    bmhd->bmh_Height 	  = bmhd->bmh_PageHeight = file_bmhd->bmh_Height[0] * 256 + file_bmhd->bmh_Height[1];
+    bmhd->bmh_Depth  	  = file_bmhd->bmh_Depth;
+    bmhd->bmh_Masking 	  = file_bmhd->bmh_Masking;
+    bmhd->bmh_Transparent = file_bmhd->bmh_Transparent[0] * 256 + file_bmhd->bmh_Transparent[1];
+    
     numcolors = cmap_prop->sp_Size / 3;
 
     SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors, TAG_DONE);
