@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -191,75 +191,57 @@ UBYTE i;
 LONG newMedium(struct afsbase *afsbase, struct Volume *volume) {
 struct BlockCache *blockbuffer;
 UWORD i;
-LONG retval;
 
 	blockbuffer=getBlock(afsbase, volume,0);
-	if (blockbuffer)
+	if (blockbuffer == NULL)
+		return ERROR_UNKNOWN;
+	volume->dostype=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
+	if (volume->dostype != 0x444F5300)
 	{
+		blockbuffer=getBlock(afsbase, volume, 1);
 		volume->dostype=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
-		if (volume->dostype!=0x444F5300)
-		{
-			blockbuffer=getBlock(afsbase, volume, 1);
-			volume->dostype=AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
-		}
-		volume->flags |= AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
-		if (volume->dostype==0x444F5300)
-		{
-			if ((blockbuffer=getBlock(afsbase, volume,volume->rootblock)))
-			{
-				for (i=0;i<=24;i++)
-					volume->bitmapblockpointers[i]=AROS_BE2LONG
-						(
-							blockbuffer->buffer[BLK_BITMAP_POINTERS_START(volume)+i]
-						);
-				volume->bitmapextensionblock=AROS_BE2LONG
-					(
-						blockbuffer->buffer[BLK_BITMAP_EXTENSION(volume)]
-					);
-				if (!blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
-				{
-					volume->usedblockscount=0;
-					showError(afsbase, ERR_DISKNOTVALID);
-				}
-				else
-				{
-					blockbuffer->flags |= BCF_USED;
-					volume->usedblockscount=countUsedBlocks(afsbase, volume);
-					blockbuffer->flags &= ~BCF_USED;
-				}
-				if (initDeviceList(afsbase, volume,blockbuffer))
-				{
-					if (addDosVolume(afsbase, volume))
-					{
-						/* for free block searching */
-						volume->lastaccess=volume->rootblock;
-						return 0;
-					}
-					else
-					{
-						showError(afsbase, ERR_DOSENTRY);
-						retval=ERROR_UNKNOWN;
-					}
-					remDosVolume(afsbase, volume);
-				}
-				else
-				{
-					retval=ERROR_NO_FREE_STORE;
-				}
-			}
-			else
-			{
-				retval=ERROR_UNKNOWN;
-			}
-		}
-		else
-		{
-			retval=ERROR_NOT_A_DOS_DISK;
-		}
+	}
+	volume->flags |= AROS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
+	if (volume->dostype != 0x444F5300)
+		return ERROR_NOT_A_DOS_DISK;
+	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
+	if (blockbuffer == NULL)
+		return ERROR_UNKNOWN;
+	if (AROS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)]) != ST_ROOT)
+		return ERROR_NOT_A_DOS_DISK;
+	for (i=0;i<=24;i++)
+	{
+		volume->bitmapblockpointers[i]=AROS_BE2LONG
+			(
+				blockbuffer->buffer[BLK_BITMAP_POINTERS_START(volume)+i]
+			);
+	}
+	volume->bitmapextensionblock=AROS_BE2LONG
+		(
+			blockbuffer->buffer[BLK_BITMAP_EXTENSION(volume)]
+		);
+	if (!blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
+	{
+		volume->usedblockscount=0;
+		showError(afsbase, ERR_DISKNOTVALID);
 	}
 	else
-		retval=ERROR_UNKNOWN;
-	return retval;
+	{
+		blockbuffer->flags |= BCF_USED;
+		volume->usedblockscount=countUsedBlocks(afsbase, volume);
+		blockbuffer->flags &= ~BCF_USED;
+	}
+	if (!initDeviceList(afsbase, volume,blockbuffer))
+		return ERROR_NO_FREE_STORE;
+	if (!addDosVolume(afsbase, volume))
+	{
+		showError(afsbase, ERR_DOSENTRY);
+		remDosVolume(afsbase, volume);
+		return ERROR_UNKNOWN;
+	}
+	/* for free block searching */
+	volume->lastaccess=volume->rootblock;
+	return 0;
 }
 
 void nsdCheck(struct afsbase *afsbase, struct Volume *volume) {
@@ -442,6 +424,12 @@ struct Volume *volume;
 							devicedef->de_LowCyl*
 							devicedef->de_Surfaces*
 							devicedef->de_BlocksPerTrack;
+					volume->lastblock=
+							(
+								(devicedef->de_HighCyl+1)
+								*devicedef->de_Surfaces
+								*devicedef->de_BlocksPerTrack
+							)-1;
 					volume->cmdread=CMD_READ;
 					volume->cmdwrite=CMD_WRITE;
 					volume->cmdseek=TD_SEEK;
