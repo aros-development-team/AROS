@@ -15,16 +15,20 @@
     /IF><
 /DEF>
 
+&lt;
+&gt;
+&amp;
+
 <filename>This is a filename</filename>
 
 This is a filename <filename text="test.src">.
 
 <BDEF NAME="code" OPTION="type">
-    <ENV NAME="code">
-    <FILTER CMD="format -type $type -style $outputStyle $infilename"
-	VerbatimInput InputFile ProcessOutput>
-    </ENV>
-</BDEF>
+<   ENV NAME="code"><
+    FILTER CMD="format -type $type -outformat $outputFormat $infilename"
+	VerbatimInput InputFile ProcessOutput><
+    /ENV><
+/BDEF>
 
 <code type="c">
 #include <stdio.h>
