@@ -1203,12 +1203,16 @@ LONG executeFile(STRPTR fileName)
     if(BADDR(scriptFile) != NULL)
     {
 	BOOL               moreLeft; /* Script ended? */
+	BOOL	    	   breakD;   /* User hit CTRL D? */
+	
 	struct Redirection rd;
 
 	cli->cli_CurrentInput = scriptFile; /* Set current input for script
 					       commands */
 	P(kprintf("Loaded script\n"));
 
+    	SetSignal(0, SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F);
+	
 	do
 	{
 	    struct CommandLine cl = { NULL, 0, 0 };
@@ -1224,7 +1228,9 @@ LONG executeFile(STRPTR fileName)
 	    
 	    Redirection_release(&rd);
 
-	} while(moreLeft && (cli->cli_ReturnCode < cli->cli_FailLevel));
+    	    breakD = CheckSignal(SIGBREAKF_CTRL_D);
+	    
+	} while(moreLeft && !breakD && (cli->cli_ReturnCode < cli->cli_FailLevel));
 	
 	/* Was there an error encountered in the script file that had a
 	   higher fail code than what was specified with FailAt? */
@@ -1448,7 +1454,9 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
     {	
 	P(kprintf("Command loaded!\n"));
 
-	SetIoErr(0);     /* Clear error before we execute this command */
+	SetIoErr(0);        	    	 /* Clear error before we execute this command */
+	SetSignal(0, SIGBREAKF_CTRL_C);
+	
 	cli->cli_Module = seglist;
 	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 					 commandArgs, strlen(commandArgs));
