@@ -156,53 +156,22 @@ csimatchtable[] =
 
 struct Task *createConTask(APTR taskparams, struct conbase *conbase)
 {
-    struct Task     *task;
-    struct MemList  *memlist;
-    UBYTE   	    *mem;
-    APTR    	    stack;
-    
-    #define TASKMEM_SIZE (sizeof(struct Task) + CONTASK_STACKSIZE)
-
-    memlist = AllocMem(sizeof (struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-    if (memlist)
+    struct TagItem tags[] =
     {
-	mem = AllocMem(TASKMEM_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
-	if (mem)
-	{
-            task = (struct Task *)mem;
-	    stack = mem + sizeof(struct Task);
-
-	    memlist->ml_NumEntries = 1;
-	    memlist->ml_ME[0].me_Addr = mem;
-	    memlist->ml_ME[0].me_Length = TASKMEM_SIZE;
-	    
-    	    NEWLIST(&task->tc_MemEntry);
-	    AddHead(&task->tc_MemEntry, &memlist->ml_Node);
-
-    	    task->tc_Node.ln_Type = NT_TASK;
-    	    task->tc_Node.ln_Name = "CON: Window";
-    	    task->tc_Node.ln_Pri  = CONTASK_PRIORITY;
-
-	    task->tc_SPLower=stack;
-	    task->tc_SPUpper=(BYTE *)stack + CONTASK_STACKSIZE;
-
-    	#if AROS_STACK_GROWS_DOWNWARDS
-	    task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
-	    ((APTR *)task->tc_SPUpper)[-1] = taskparams;
-    	#else
-	    task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
-	    *(APTR *)task->tc_SPLower = taskparams;
-    	#endif
-
-	    if(AddTask(task, conTaskEntry, NULL) != NULL)
-	    {
-		return (task);
-	    }	
-            FreeMem(mem,TASKMEM_SIZE);
-	}
-	FreeMem(memlist, sizeof(struct MemList));
-    }
-    return (NULL);
+    	{NP_Name    	, (IPTR)"CON: Window"	},
+	{NP_Entry   	, (IPTR)conTaskEntry	},
+	{NP_Priority   	, CONTASK_PRIORITY  	},
+	{NP_StackSize	, CONTASK_STACKSIZE 	},
+	{NP_Input   	, 0 	    	    	},
+	{NP_Output  	, 0 	    	    	},
+	{NP_Error   	, 0 	    	    	},
+	{NP_WindowPtr	, (IPTR)-1  	    	},
+	{NP_CopyVars	, FALSE     	    	},
+	{NP_UserData	, (IPTR)taskparams  	},
+	{TAG_DONE   	    	    	    	}	
+    };
+    
+    return (struct Task *)CreateNewProc(tags);
 
 }
 

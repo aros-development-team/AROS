@@ -13,6 +13,7 @@
 #include <exec/types.h>
 #include <dos/dosextens.h>
 #include <hidd/hidd.h>
+#include <aros/asmcall.h>
 
 /*
 ** stegerg:
@@ -125,6 +126,10 @@ typedef struct IntuitionBase IntuiBase;
 #endif
 #define InputBase conbase->inputbase
 
-VOID conTaskEntry(struct conTaskParams *param);
+AROS_UFP3(VOID, conTaskEntry,
+    AROS_UFPA(STRPTR, argstr, A0),
+    AROS_UFPA(ULONG, arglen, D0),
+    AROS_UFPA(struct ExecBase *, sysbase, A6)
+);
 
 #endif /* __CON_HANDLER_INTERN_H */
