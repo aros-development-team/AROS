@@ -1,5 +1,5 @@
 # $Id$
-TOP=../../..
+TOP=../..
 
 USER_DEFINES = -D__AROS
 USER_INCLUDES = -I$(TOP)/apps/compiler/clib/include
@@ -38,22 +38,8 @@ FILES = alib_util \
 	openscreentags \
 	openwindowtags \
 	rangerand \
-	readbyte \
-	readdouble \
-	readfloat \
-	readlong \
-	readstring \
-	readstruct \
-	readword \
 	setattrs \
-	setsuperattrs \
-	writebyte \
-	writedouble \
-	writefloat \
-	writelong \
-	writestring \
-	writestruct \
-	writeword
+	setsuperattrs
 
 all: setup $(LIBDIR)/libamiga.a $(LIBDIR)/startup.o
 
@@ -61,7 +47,7 @@ setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
-	$(RM) $(OBJDIR) *.err $(LIBDIR)/libamiga.a
+	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libamiga.a
 
 test: $(EXEDIR)/betest $(EXEDIR)/wstest $(EXEDIR)/rstest
 
@@ -86,9 +72,9 @@ $(LIBDIR)/libamiga.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	$(RANLIB) $@
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -- $^ > $@
 
-include $(foreach f,$(FILES),$(OBJDIR)/$(f).d) $(OBJDIR)/startup.d
+ifneq ($(TARGET),clean)
+include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+endif
