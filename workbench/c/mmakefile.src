@@ -30,6 +30,7 @@ FILES	:= \
 	MakeLink \
 	Mount \
 	Protect \
+	Reboot \
 	Relabel \
 	Rename \
 	RequestChoice \
