@@ -747,7 +747,7 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
 	    event->ie_Y = y;
 	    
 	    gpUn->gpu_lastX = x;
-	    gpUn->gpu_lastY = x;
+	    gpUn->gpu_lastY = y;
 	    
 	    event->ie_TimeStamp.tv_secs = GPBase->gp_nTicks;
 	    event->ie_TimeStamp.tv_micro = 0;
