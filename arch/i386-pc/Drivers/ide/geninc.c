@@ -18,15 +18,15 @@
 
 int main (void)
 {
-    printf ("# timerequest Structure\n");
+    printf ("/* timerequest Structure */\n");
     printf ("#define io_Device     %d\n", offsetof (struct IORequest, io_Device));
     printf ("#define tr_time       %d\n", offsetof (struct timerequest, tr_time));
 
-    printf ("# timeval structure\n");
+    printf ("/* timeval structure */\n");
     printf ("#define tv_secs       %d\n", offsetof (struct timeval, tv_secs));
     printf ("#define tv_micro      %d\n", offsetof (struct timeval, tv_micro));
 
-    printf ("\n# Timer functions\n");
+    printf ("\n/* Timer functions */\n");
     printf ("#define GetSysTime    %d\n", FuncOffset (11));
 
     return 0;
