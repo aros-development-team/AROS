@@ -37,8 +37,7 @@ void main(void)
     	SubWindow, wnd = WindowObject,
     	    MUIA_Window_Title, "test",
     	    WindowContents, VGroup,
-    	    	Child, MUI_NewObject(MUIC_Area, MUIA_FixWidth, 40, MUIA_FixHeight, 30, TAG_DONE),
-    	    	Child, MUI_NewObject(MUIC_Area, MUIA_FixWidth, 40, MUIA_FixHeight, 30, TAG_DONE),
+    	    	Child, TextObject, MUIA_Text_Contents, "Hello World!!\nThis is a text object",End,
     	        End,
     	    End,
     	End;

@@ -7,7 +7,9 @@
 */
 
 #include <intuition/classusr.h>
+#include <clib/alib_protos.h>
 
+#include "mui.h"
 #include "muimaster_intern.h"
 
 /*****************************************************************************
@@ -53,14 +55,13 @@ __asm BOOL MUI_Layout(register __a0 Object *obj,register __d1 LONG left,register
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
-#if 0
     static const struct MUIP_Layout method = { MUIM_Layout };
     Object *parent = _parent(obj);
 
 /*
  * Called only by groups, never by windows
  */
-    ASSERT(parent != NULL);
+//    ASSERT(parent != NULL);
 
     _left(obj) = left + _mleft(parent);
     _top(obj) = top + _mtop(parent);
@@ -68,7 +69,6 @@ __asm BOOL MUI_Layout(register __a0 Object *obj,register __d1 LONG left,register
     _height(obj) = height;
 
     DoMethodA(obj, (Msg)&method);
-#endif
     return TRUE;
 
     AROS_LIBFUNC_EXIT
