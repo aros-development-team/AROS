@@ -48,5 +48,6 @@
 
 ******************************************************************************/
 {
+    fflush (stream);
     return __vcscan (stream, (void *)fgetc, (void *)ungetc, format, args);
 } /* vfscanf */
