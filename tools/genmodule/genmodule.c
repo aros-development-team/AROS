@@ -20,23 +20,26 @@ int main(int argc, char **argv)
     modulenameupper = strdup(modulename);
     for (s=modulenameupper; *s!='\0'; *s = toupper(*s), s++)
 	;
-    
+
     if (strcmp(argv[2],"library")==0)
-    {
-	modtype = LIBRARY;
-	firstlvo = 5;
-    }
+    	modtype = LIBRARY;
     else if (strcmp(argv[2],"mcc")==0)
-    {
-	modtype = MCC;
-	firstlvo = 6;
-    }
+    	modtype = MCC;
+    else if (strcmp(argv[2],"mui")==0)
+    	modtype = MUI;
+    else if (strcmp(argv[2],"mcp")==0)
+    	modtype = MCP;
     else
     {
 	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);
 	exit(20);
     }
-    
+
+    if (modtype == LIBRARY)
+        firstlvo = 5;
+    else if (modtype == MCC || modtype == MUI || modtype == MCP)
+        firstlvo = 6;
+   
     conffile = argv[3];
 
     if (strlen(argv[4])>200)
@@ -59,14 +62,14 @@ int main(int argc, char **argv)
 
     readconfig();
     readref();
-    if( modtype == LIBRARY )
+    if (modtype == LIBRARY)
     {
         writeincproto(0);
         writeincclib(0);
         writeincdefines(0);
         writeautoinit();
     }
-    if( modtype == MCC )
+    if (modtype == MCC || modtype == MUI || modtype == MCP)
     {
         writemccinit();
         writemccquery();

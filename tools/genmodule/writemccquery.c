@@ -11,7 +11,7 @@ void writemccquery(void)
     FILE *out;
     char line[256];
     
-    if(modtype != MCC)
+    if(modtype != MCC && modtype != MUI && modtype != MCP)
     {
         fprintf(stderr, "Unsupported modtype %d\n", modtype);
         exit(20);
@@ -36,7 +36,8 @@ void writemccquery(void)
         "#include <exec/types.h>\n"
         "#include <libraries/mui.h>\n"
         "\n"
-        "#define MCC_CLASS 0\n"
+        "#define MCC_CLASS       0\n"
+        "#define MCC_PREFS_CLASS 1\n"
         "\n"
         "extern struct MUI_CustomClass *MCC;\n"
         "\n"
@@ -49,13 +50,16 @@ void writemccquery(void)
     switch(modtype)
     {
     case MCC:
+    case MUI:
         fprintf(out, "        case MCC_CLASS:          return MCC;\n");
+        break;
+    case MCP:
+        fprintf(out, "        case MCC_PREFS_CLASS:    return MCC;\n");
         break;
     }
     
-    // FIXME: handle modtype MCP + MUI
-    // FIXME: handle MCC_PREFS_IMAGE somehow
-    // FIXME: handle "ONLY_GLOBAL" ??
+    /* FIXME: handle MCC_PREFS_IMAGE somehow */
+    /* FIXME: handle "ONLY_GLOBAL" ?? */
     
     fprintf
     (
@@ -66,9 +70,5 @@ void writemccquery(void)
         "}\n"
     );
     
-    // FIXME: this generates a file that needs to be existing when genmodule
-    //        runs (so it can find MCC_Query function)... how to solve this
-    //          hen&egg problem?
-    //  --> add it by hand "inside" genmodule (inside readref.c perhaps)
     fclose(out);
 }

@@ -32,6 +32,8 @@ void writeinclibdefs(void)
     {
         case LIBRARY: suffix = "library"; break;
         case MCC:     suffix = "mcc"; break;
+        case MUI:     suffix = "mui"; break;
+        case MCP:     suffix = "mcp"; break;
         default:
             fprintf(stderr, "Unhandled modtype %d\n", modtype);
             fclose(out);
