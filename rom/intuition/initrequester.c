@@ -12,7 +12,7 @@
     NAME */
 #include <proto/intuition.h>
 
-	AROS_LH1(void, InitRequest,
+	AROS_LH1(void, InitRequester,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Requester *, requester, A0),
