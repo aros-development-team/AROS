@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+# $0 new old
+#
+# Replaces old with new if they differ. old is saved as old.bak
+#
+
+if cmp -s "$1" "$2"; then
+    mv "$2" "$2.bak"
+    mv "$1" "$2"
+fi

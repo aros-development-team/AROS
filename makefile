@@ -224,40 +224,92 @@ else
 endif
 
 CLIBDIR=$(TOP)/compiler/include/clib
+DEFINEDIR=$(TOP)/compiler/include/defines
 
-includes: \
+includes:
+	for include in
 	    $(CLIBDIR)/exec_protos.h \
 	    $(CLIBDIR)/dos_protos.h \
 	    $(CLIBDIR)/utility_protos.h \
 	    $(CLIBDIR)/graphics_protos.h \
 	    $(CLIBDIR)/intuition_protos.h \
-	    $(CLIBDIR)/console_protos.h
+	    $(CLIBDIR)/console_protos.h \
+	    $(CLIBDIR)/icon_protos.h \
+	    $(CLIBDIR)/iffparse_protos.h \
 
 $(CLIBDIR)/exec_protos.h: $(wildcard config/$(KERNEL)/*.s \
 	    config/$(KERNEL)/*.c rom/exec/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Exec \
 	config/$(KERNEL)/*.s config/$(KERNEL)/*.c rom/exec/*.c
+	@name=`basename $@ _protos.h` ; \
+	for dir in $(CLIBDIR) $(DEFINEDIR) ; do \
+	    $(TOP)/scripts/moveifchanged $$dir/$$name.h.new $$dir/$$name.h ; \
+	    $(RM) $$dir/$$name.h.new ; \
+	done
 
 $(CLIBDIR)/dos_protos.h: $(wildcard rom/dos/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Dos \
 	rom/dos/*.c
+	@name=`basename $@ _protos.h` ; \
+	for dir in $(CLIBDIR) $(DEFINEDIR) ; do \
+	    $(TOP)/scripts/moveifchanged $$dir/$$name.h.new $$dir/$$name.h ; \
+	    $(RM) $$dir/$$name.h.new ; \
+	done
 
 $(CLIBDIR)/utility_protos.h: $(wildcard rom/utility/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Utility \
 	rom/utility/*.c
+	@name=`basename $@ _protos.h` ; \
+	for dir in $(CLIBDIR) $(DEFINEDIR) ; do \
+	    $(TOP)/scripts/moveifchanged $$dir/$$name.h.new $$dir/$$name.h ; \
+	    $(RM) $$dir/$$name.h.new ; \
+	done
 
 $(CLIBDIR)/graphics_protos.h: $(wildcard rom/graphics/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Graphics \
 	rom/graphics/*.c
+	@name=`basename $@ _protos.h` ; \
+	for dir in $(CLIBDIR) $(DEFINEDIR) ; do \
+	    $(TOP)/scripts/moveifchanged $$dir/$$name.h.new $$dir/$$name.h ; \
+	    $(RM) $$dir/$$name.h.new ; \
+	done
 
 $(CLIBDIR)/intuition_protos.h: $(wildcard rom/intuition/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Intuition \
 	rom/intuition/*.c
+	@name=`basename $@ _protos.h` ; \
+	for dir in $(CLIBDIR) $(DEFINEDIR) ; do \
+	    $(TOP)/scripts/moveifchanged $$dir/$$name.h.new $$dir/$$name.h ; \
+	    $(RM) $$dir/$$name.h.new ; \
+	done
 
 $(CLIBDIR)/console_protos.h: rom/devs/cdinputhandler.c \
 	    rom/devs/rawkeyconvert.c scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Console \
 	rom/devs/cdinputhandler.c rom/devs/rawkeyconvert.c
+	@name=`basename $@ _protos.h` ; \
+	for dir in $(CLIBDIR) $(DEFINEDIR) ; do \
+	    $(TOP)/scripts/moveifchanged $$dir/$$name.h.new $$dir/$$name.h ; \
+	    $(RM) $$dir/$$name.h.new ; \
+	done
+
+$(CLIBDIR)/icon_protos.h: $(wildcard workbench/libs/icon/*.c) scripts/genprotos.h
+	gawk -f scripts/genprotos.h --assign lib=Icon \
+	workbench/libs/icon/*.c
+	@name=`basename $@ _protos.h` ; \
+	for dir in $(CLIBDIR) $(DEFINEDIR) ; do \
+	    $(TOP)/scripts/moveifchanged $$dir/$$name.h.new $$dir/$$name.h ; \
+	    $(RM) $$dir/$$name.h.new ; \
+	done
+
+$(CLIBDIR)/iffparse_protos.h: $(wildcard workbench/libs/iffparse/*.c) scripts/genprotos.h
+	gawk -f scripts/genprotos.h --assign lib=IFFParse \
+	workbench/libs/iffparse/*.c
+	@name=`basename $@ _protos.h` ; \
+	for dir in $(CLIBDIR) $(DEFINEDIR) ; do \
+	    $(TOP)/scripts/moveifchanged $$dir/$$name.h.new $$dir/$$name.h ; \
+	    $(RM) $$dir/$$name.h.new ; \
+	done
 
 $(GENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@
