@@ -7,6 +7,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 
+#include <aros/debug.h>
 #include <devices/trackdisk.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
@@ -22,6 +23,54 @@ extern struct TagItem pcpartitiontags[], pcpdeletepartitiontags[],
 		pcptypelvtags[], pcptypeintegertags[];
 extern struct creategadget pcpgadgets[];
 
+void setPCPGadgetAttrs(struct Window *mainwin) {
+	pcpdeletepartitiontags[0].ti_Data = TRUE;
+	pcpeditarospartitiontags[0].ti_Data = TRUE;
+	pcpstartcyltags[0].ti_Data = TRUE;
+	pcpendcyltags[0].ti_Data = TRUE;
+	pcptotalcyltags[0].ti_Data = TRUE;
+	pcptypelvtags[0].ti_Data = TRUE;
+	pcptypelvtags[2].ti_Data = 0;
+	pcptypelvtags[3].ti_Data = ~0;
+	pcptypelvtags[4].ti_Data = 0;
+	pcptypeintegertags[0].ti_Data = TRUE;
+	pcptypeintegertags[1].ti_Data = 0;
+	SetGadgetAttrsA
+		(
+			pcpgadgets[ID_PCP_DELETE_PARTITION-ID_PCP_FIRST_GADGET].gadget,
+			mainwin,0,pcpdeletepartitiontags
+		);
+/*	SetGadgetAttrsA
+		(
+			pcpgadgets[ID_PCP_EDIT_PARTITION-ID_PCP_FIRST_GADGET].gadget,
+			mainwin,0,pcpeditarospartitiontags
+		);*/
+	SetGadgetAttrsA
+		(
+			pcpgadgets[ID_PCP_STARTCYL-ID_PCP_FIRST_GADGET].gadget,
+			mainwin,0,pcpstartcyltags
+		);
+	SetGadgetAttrsA
+		(
+			pcpgadgets[ID_PCP_ENDCYL-ID_PCP_FIRST_GADGET].gadget,
+			mainwin,0,pcpendcyltags
+		);
+	SetGadgetAttrsA
+		(
+			pcpgadgets[ID_PCP_TOTALCYL-ID_PCP_FIRST_GADGET].gadget,
+			mainwin,0,pcptotalcyltags
+		);
+	SetGadgetAttrsA
+		(
+			pcpgadgets[ID_PCP_TYPELV-ID_PCP_FIRST_GADGET].gadget,
+			mainwin,0,pcptypelvtags
+		);
+	SetGadgetAttrsA
+		(
+			pcpgadgets[ID_PCP_TYPEINTEGER-ID_PCP_FIRST_GADGET].gadget,
+			mainwin,0,pcptypeintegertags
+		);
+}
 
 void findPartitions(struct Window *mainwin, struct HDUnitNode *hdunit) {
 struct PCPartitionTable *pcpt=(struct PCPartitionTable *)&hdunit->mbr_copy[0x1BE];
@@ -79,24 +128,13 @@ void viewPartitionData
 	pcpdeletepartitiontags[0].ti_Data = FALSE;
 //	pcpeditarospartitiontags[0].ti_Data = FALSE;
 	pcpstartcyltags[0].ti_Data = FALSE;
-	pcpstartcyltags[1].ti_Data =
-		pn->pt_entry->first_sector/
-		hdunit->geometry.dg_Heads/
-		hdunit->geometry.dg_TrackSectors;
+	pcpstartcyltags[1].ti_Data = pn->pt_entry->first_sector;
 	pcpendcyltags[0].ti_Data = FALSE;
-#warning "non cylinder aligned partitions (QNX) cause errors"
-	pcpendcyltags[1].ti_Data =
-		(
-			pn->pt_entry->first_sector+
-			pn->pt_entry->count_sector
-		)/
-		hdunit->geometry.dg_Heads/
-		hdunit->geometry.dg_TrackSectors-1;
+#warning "non cylinder aligned partitions!"
+	
+	pcpendcyltags[1].ti_Data = pn->pt_entry->first_sector+pn->pt_entry->count_sector-1;
 	pcptotalcyltags[0].ti_Data = FALSE;
-	pcptotalcyltags[1].ti_Data =
-		pn->pt_entry->count_sector/
-		hdunit->geometry.dg_Heads/
-		hdunit->geometry.dg_TrackSectors;
+	pcptotalcyltags[1].ti_Data = pn->pt_entry->count_sector;
 	pcptypelvtags[0].ti_Data = FALSE;
 	pcptypelvtags[2].ti_Data = pn->pt_entry->type;
 	pcptypelvtags[3].ti_Data = pn->pt_entry->type;
@@ -199,7 +237,7 @@ ULONG val;
 	*tracksector = (sector % dg->dg_TrackSectors) + 1;
 }
 
-BOOL validValue(struct List *partition_list, struct PartitionNode *current, LONG value) {
+BOOL validValue(struct List *partition_list, struct PartitionNode *current, ULONG value) {
 struct PartitionNode *pn;
 
 	pn = (struct PartitionNode *)partition_list->lh_Head;
@@ -224,69 +262,63 @@ BOOL changeStartCyl
 		struct Window *mainwin,
 		struct HDUnitNode *hdunit,
 		struct PartitionNode *pn,
-		LONG value
+		ULONG value
 	)
 {
 
-	value =
-		value ?
-			value *
-			hdunit->geometry.dg_Heads *
-			hdunit->geometry.dg_TrackSectors
-		:
-			hdunit->geometry.dg_TrackSectors;
 	if (value != pn->pt_entry->first_sector)
 	{
-		if (validValue(&partition_list, pn, value))
+		if (value>=hdunit->geometry.dg_TrackSectors)
 		{
-			/* Do we add space to partition ? */
-			if (value<pn->pt_entry->first_sector)
+			if (validValue(&partition_list, pn, value))
 			{
-				/* if so add it to total cylinders */
-				pcptotalcyltags[1].ti_Data =
-					(
+				/* Do we add space to partition ? */
+				if (value<pn->pt_entry->first_sector)
+				{
+					/* if so add it to total cylinders */
+					pcptotalcyltags[1].ti_Data =
 						pn->pt_entry->count_sector+
-						(pn->pt_entry->first_sector-value)
-					)/
-					hdunit->geometry.dg_Heads/
-					hdunit->geometry.dg_TrackSectors;
+						(pn->pt_entry->first_sector-value);
+				}
+				else
+				{
+					/* if not sub it from total cylinders */
+					pcptotalcyltags[1].ti_Data =
+						pn->pt_entry->count_sector-
+						(value-pn->pt_entry->first_sector);
+				}
+				/* make changes visible */
+				SetGadgetAttrsA
+					(
+						pcpgadgets[ID_PCP_TOTALCYL-ID_PCP_FIRST_GADGET].gadget,
+						mainwin,0,pcptotalcyltags
+					);
+				/* set new starting sector */
+				pn->pt_entry->first_sector = value;
+				setComponents
+					(
+						&hdunit->geometry,
+						pn->pt_entry->first_sector,
+						&pn->pt_entry->start_head,
+						&pn->pt_entry->start_sector,
+						&pn->pt_entry->start_cylinder
+					);
+				return TRUE;
 			}
 			else
 			{
-				/* if not sub it from total cylinders */
-				pcptotalcyltags[1].ti_Data =
+				/* Input wasn't valid */
+				pcpstartcyltags[1].ti_Data = pn->pt_entry->first_sector;
+				SetGadgetAttrsA
 					(
-						pn->pt_entry->count_sector-
-						(value-pn->pt_entry->first_sector)
-					)/
-					hdunit->geometry.dg_Heads/
-					hdunit->geometry.dg_TrackSectors;
+						pcpgadgets[ID_PCP_STARTCYL-ID_PCP_FIRST_GADGET].gadget,
+						mainwin,0,pcpstartcyltags
+					);
 			}
-			/* make changes visible */
-			SetGadgetAttrsA
-				(
-					pcpgadgets[ID_PCP_TOTALCYL-ID_PCP_FIRST_GADGET].gadget,
-					mainwin,0,pcptotalcyltags
-				);
-			/* set new starting sector */
-			pn->pt_entry->first_sector = value;
-			setComponents
-				(
-					&hdunit->geometry,
-					pn->pt_entry->first_sector,
-					&pn->pt_entry->start_head,
-					&pn->pt_entry->start_sector,
-					&pn->pt_entry->start_cylinder
-				);
-			return TRUE;
 		}
 		else
 		{
-			/* Input wasn't valid */
-			pcpstartcyltags[1].ti_Data =
-				pn->pt_entry->first_sector/
-				hdunit->geometry.dg_Heads/
-				hdunit->geometry.dg_TrackSectors;
+			pcpstartcyltags[1].ti_Data = hdunit->geometry.dg_TrackSectors;
 			SetGadgetAttrsA
 				(
 					pcpgadgets[ID_PCP_STARTCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -302,35 +334,26 @@ BOOL changeEndCyl
 		struct Window *mainwin,
 		struct HDUnitNode *hdunit,
 		struct PartitionNode *pn,
-		LONG value
+		ULONG value
 	)
 {
-	value =
-		value ?
-			value *
-			hdunit->geometry.dg_Heads *
-			hdunit->geometry.dg_TrackSectors
-		:
-			hdunit->geometry.dg_TrackSectors;
+
 	if (value>pn->pt_entry->first_sector)
 	{
-		if (value != (pn->pt_entry->first_sector+pn->pt_entry->count_sector))
+		if (value != (pn->pt_entry->count_sector+pn->pt_entry->first_sector-1))
 		{
 			if (validValue(&partition_list, pn, value))
 			{
+				pn->pt_entry->count_sector = value-pn->pt_entry->first_sector+1;
 				setComponents
 					(
 						&hdunit->geometry,
-						pn->pt_entry->first_sector+pn->pt_entry->count_sector-1,
+						value,
 						&pn->pt_entry->end_head,
 						&pn->pt_entry->end_sector,
 						&pn->pt_entry->end_cylinder
 					);
-				pn->pt_entry->count_sector = value-pn->pt_entry->first_sector;
-				pcptotalcyltags[1].ti_Data =
-					pn->pt_entry->count_sector/
-					hdunit->geometry.dg_Heads/
-					hdunit->geometry.dg_TrackSectors;
+				pcptotalcyltags[1].ti_Data = pn->pt_entry->count_sector;
 				/* make changes visible */
 				SetGadgetAttrsA
 					(
@@ -343,12 +366,7 @@ BOOL changeEndCyl
 			{
 				/* invalid entry */
 				pcpendcyltags[1].ti_Data =
-					(
-						pn->pt_entry->first_sector+
-						pn->pt_entry->count_sector
-					)/
-					hdunit->geometry.dg_Heads/
-					hdunit->geometry.dg_TrackSectors-1;
+						pn->pt_entry->first_sector+pn->pt_entry->count_sector-1;
 				SetGadgetAttrsA
 					(
 						pcpgadgets[ID_PCP_ENDCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -361,12 +379,7 @@ BOOL changeEndCyl
 	{
 		/* value is smaller than first sector */
 		pcpendcyltags[1].ti_Data =
-			(
-				pn->pt_entry->first_sector+
-				pn->pt_entry->count_sector
-			)/
-			hdunit->geometry.dg_Heads/
-			hdunit->geometry.dg_TrackSectors-1;
+				pn->pt_entry->first_sector+pn->pt_entry->count_sector-1;
 		SetGadgetAttrsA
 			(
 				pcpgadgets[ID_PCP_ENDCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -381,21 +394,14 @@ BOOL changeTotalCyl
 		struct Window *mainwin,
 		struct HDUnitNode *hdunit,
 		struct PartitionNode *pn,
-		LONG value
+		ULONG value
 	)
 {
-	value =
-		value ?
-			value *
-			hdunit->geometry.dg_Heads *
-			hdunit->geometry.dg_TrackSectors
-		:
-			hdunit->geometry.dg_TrackSectors;
 	if (value != pn->pt_entry->count_sector)
 	{
-		if (validValue(&partition_list, pn, value+pn->pt_entry->first_sector))
+		if (validValue(&partition_list, pn, value+pn->pt_entry->first_sector-1))
 		{
-			pn->pt_entry->count_sector = value-pn->pt_entry->first_sector;
+			pn->pt_entry->count_sector = value;
 			setComponents
 				(
 					&hdunit->geometry,
@@ -406,12 +412,7 @@ BOOL changeTotalCyl
 				);
 			/* make changes visible */
 			pcpendcyltags[1].ti_Data =
-				(
-					pn->pt_entry->first_sector+
-					pn->pt_entry->count_sector
-				)/
-				hdunit->geometry.dg_Heads/
-				hdunit->geometry.dg_TrackSectors-1;
+					pn->pt_entry->first_sector+pn->pt_entry->count_sector-1;
 			SetGadgetAttrsA
 				(
 					pcpgadgets[ID_PCP_ENDCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -422,10 +423,7 @@ BOOL changeTotalCyl
 		else
 		{
 			/* invalid Value */
-			pcptotalcyltags[1].ti_Data =
-				pn->pt_entry->count_sector/
-				hdunit->geometry.dg_Heads/
-				hdunit->geometry.dg_TrackSectors;
+			pcptotalcyltags[1].ti_Data = pn->pt_entry->count_sector;
 			SetGadgetAttrsA
 				(
 					pcpgadgets[ID_PCP_TOTALCYL-ID_PCP_FIRST_GADGET].gadget,
@@ -440,7 +438,7 @@ BOOL changeType
 	(
 		struct Window *mainwin,
 		struct PartitionNode *pn,
-		LONG value
+		ULONG value
 	)
 {
 BOOL retval = FALSE;

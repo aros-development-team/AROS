@@ -79,6 +79,9 @@ int i,count;
 								node->geometry.dg_SectorSize = 512;
 								node->geometry.dg_TrackSectors = 63;
 								node->geometry.dg_Heads = 255;
+								node->geometry.dg_CylSectors =
+									node->geometry.dg_TrackSectors *
+									node->geometry.dg_Heads;
 							}
 							else
 								es.es_TextFormat = "Heads = %ld Cyls = %ld Sec/Track = %ld";

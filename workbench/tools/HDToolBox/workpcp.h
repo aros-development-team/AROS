@@ -19,11 +19,12 @@ void findPartitions(struct Window *, struct HDUnitNode *);
 struct PartitionNode *getPartition(struct Window *, struct HDUnitNode *, int);
 void pcp_Ok(struct List *);
 void pcp_Cancel(void);
-BOOL changeStartCyl(struct Window *, struct HDUnitNode *, struct PartitionNode *, LONG);
-BOOL changeEndCyl(struct Window *, struct HDUnitNode *, struct PartitionNode *, LONG);
-BOOL changeTotalCyl(struct Window *, struct HDUnitNode *, struct PartitionNode *, LONG);
-BOOL changeType(struct Window *, struct PartitionNode *, LONG);
+BOOL changeStartCyl(struct Window *, struct HDUnitNode *, struct PartitionNode *, ULONG);
+BOOL changeEndCyl(struct Window *, struct HDUnitNode *, struct PartitionNode *, ULONG);
+BOOL changeTotalCyl(struct Window *, struct HDUnitNode *, struct PartitionNode *, ULONG);
+BOOL changeType(struct Window *, struct PartitionNode *, ULONG);
 void deletePartition(struct Window *, struct PartitionNode *);
+void setPCPGadgetAttrs(struct Window *);
 
 #endif
 
