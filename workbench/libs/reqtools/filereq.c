@@ -61,6 +61,7 @@ APTR ASM SAVEDS FileRequestA (
     ULONG 				tagdata;
 
 
+kprintf("--++FileRequesta\n");
 
     if (!(glob = AllocVec (sizeof(GlobData), MEMF_PUBLIC|MEMF_CLEAR)))
 	 return ((APTR)FALSE);
@@ -68,12 +69,22 @@ APTR ASM SAVEDS FileRequestA (
     glob->reqtype = REQTYPE(freq);
     if (glob->reqtype == RT_FILEREQ)
     {
+kprintf("--++FileRequesta 2\n");
 
+	/* AROS timer.device checks IO length to make sure apps
+	   dont use a too small/wrong iorequest structure */
+	   
+	glob->timereq.tr_node.io_Message.mn_Length = sizeof(glob->timereq);
+	
 	if (OpenDevice ("timer.device", UNIT_VBLANK, (struct IORequest *)&glob->timereq, 0))
 	{
+kprintf("--++FileRequesta 3\n");
+
 	    FreeVec (glob);
 	    return ((APTR)FALSE);
 	}
+kprintf("--++FileRequesta 4\n");
+
 	
 	glob->buff = &freq->buff;
 	glob->freq = freq;
@@ -417,7 +428,7 @@ void REGARGS StopTimer (GlobData *glob)
     struct Node *node;
     int 	othermsgs = FALSE, gotreply = FALSE;
 
-    if (glob->timerstarted)
+   if (glob->timerstarted)
     {
 	AbortIO ((struct IORequest *)&glob->timereq);
 	/* We don't use WaitIO() since not sure it leaves other messages
@@ -444,6 +455,7 @@ void REGARGS StopTimer (GlobData *glob)
 	if (othermsgs) Signal ((struct Task *)ThisProcess(), glob->winmask);
 	glob->timerstarted = FALSE;
     }
+
 }
 
 /****************************************************************************************/

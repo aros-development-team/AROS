@@ -29,6 +29,7 @@
 #include <proto/wb.h>
 #include <proto/gadtools.h>
 #include <proto/utility.h>
+#include <proto/alib.h>
 #include <workbench/startup.h>
 #include <workbench/workbench.h>
 #include <clib/macros.h>

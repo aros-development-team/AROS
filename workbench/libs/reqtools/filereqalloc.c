@@ -9,6 +9,12 @@
 
 /****************************************************************************************/
 
+#ifdef _AROS
+#define fib_EntryType fib_DirEntryType
+#endif
+
+/****************************************************************************************/
+
 ULONG structsize[] =
 {
     sizeof (struct RealFileRequester) 		+ sizeof(ULONG),	/* RT_FILEREQ */

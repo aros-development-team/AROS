@@ -133,14 +133,14 @@ void ShortDelay(void)
 ULONG LoopReqHandler(struct rtHandlerInfo *rthi)
 {
     ULONG handler_retval, sigs;
-    
+
     do
     {
-        if (rthi->DoNotWait)
+       if (rthi->DoNotWait)
 	    sigs = 0;
 	else
 	    sigs = Wait(rthi->WaitMask);
-	
+
 	handler_retval = rtReqHandlerA(rthi, sigs, NULL);
 	
     } while (handler_retval == CALL_HANDLER);

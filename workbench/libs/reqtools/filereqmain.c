@@ -9,6 +9,12 @@
 
 /****************************************************************************************/
 
+#ifdef _AROS
+#define fib_EntryType fib_DirEntryType
+#endif
+
+/****************************************************************************************/
+
 #ifndef MTYPE_APPWINDOW
 #define MTYPE_APPWINDOW		7	/* msg from an app window */
 #endif
@@ -93,6 +99,10 @@ ULONG ASM SAVEDS PropReqHandler (
     APTR 			winlock;
     ULONG 			id;
 
+static int counter;
+
+counter++;
+
     /* uncomment if sigs is no longer ignored */
 //  if (glob->DoNotWait) sigs = SetSignal (0, 0);
 
@@ -157,6 +167,8 @@ ULONG ASM SAVEDS PropReqHandler (
 
     if (glob->newdir)
     {
+kprintf("filereqmain: glob->newdir = TRUE\n");
+
 	glob->disks = FALSE;
 	
 	if (!glob->bufferentry)
@@ -512,6 +524,7 @@ ULONG ASM SAVEDS PropReqHandler (
 
 	    if( !AddEntry( glob, buff, glob->fib.fib_FileName, size, ctype ) )
 		glob->exnext = FALSE;
+
 skipfile:
 	    ;
 	    
@@ -633,7 +646,10 @@ skipfile:
 		    break;
 		    
 		case IDCMP_MOUSEMOVE:
+		    kprintf("---mouse move1 \n");
 		    if (!glob->downgadget) break;
+		    
+		    kprintf("---mouse move 2\n");
 		    
 		    if (glob->downgadget == FILES)
 		    {
@@ -684,6 +700,7 @@ skipfile:
 		    break;
 		    
 		case IDCMP_GADGETDOWN:
+		    kprintf("---gadgetdown\n");
 		    EndQuiet (glob);
 		    glob->downgadget = id = gad->GadgetID;
 		    if (id == FILES)
@@ -1338,6 +1355,8 @@ iterate:
 
     } while (reqmsg && !glob->newdir);
 
+#ifndef _AROS
+#warning Disabled this gadget activation here, as in Intuition this functions is slow (why? ask stegerg)
     if (doactgad)
     {
 	ActivateGadget (glob->activegadget, glob->reqwin, NULL);
@@ -1347,6 +1366,7 @@ iterate:
 	    ModifyIDCMP (glob->reqwin, IDCMP_RAWKEY|REQ_IDCMP);
 	}
     }
+#endif
 
     return ((ULONG)CALL_HANDLER);
 }
