@@ -240,6 +240,7 @@ clib00122;2;hkiel;setbuf
 clib00123;2;hkiel;setlinebuf
 clib00124;0;hkiel;setvbuf
 clib00125;2;hkiel;system
+clib00126;2;stegerg;Write stpcpy
 c00000;2;srittau;Write C:AddBuffers
 c00001;2;laguest;Write C:Alias
 c00002;2;srittau;Write C:Ask
