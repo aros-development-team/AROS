@@ -34,10 +34,27 @@
 	@if test -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 %end
 
-%define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ err=$(@F)-x.err libs=$(LIBS)
+%define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ err=$(@F)-x.err libs=$(LIBS) us=undefdsyms.list
 	@$(ECHO) "Linking %(to)..."
 	@%(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) 2>&1|tee %(err)
+	@$(CHECKUDS) %(to) > %(us)
+	@if test -s %(us); then \
+	    cat %(us) >> %(err); \
+	    echo "There are undefined symbols in %(to):"; \
+	    cat %(us); \
+	else true ; fi
+	@$(RM) %(us)
 	@if test -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
+%end
+
+%define checkuds us=undefdsyms.list err=$(@F)-x.err
+	@$(CHECKUDS) %(to) > %(us)
+	@if test -s %(us); then \
+	    cat %(us) >> %(err); \
+	    echo "There are undefined symbols in %(to):"; \
+	    cat %(us); \
+	else true ; fi
+	@$(RM) %(us)
 %end
 
 # Create the library
