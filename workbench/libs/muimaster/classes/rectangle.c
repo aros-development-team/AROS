@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2003, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -28,10 +28,10 @@
 
 extern struct Library *MUIMasterBase;
 
-static const int __version = 1;
+static const int __version  = 1;
 static const int __revision = 1;
 
-struct MUI_RectangleData
+struct Rectangle_DATA
 {
     STRPTR         BarTitle;
     ULONG          Type;
@@ -48,12 +48,10 @@ static void draw_line(struct RastPort *rp, int xa, int ya, int xb, int yb)
     Draw(rp,xb,yb);
 }
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static ULONG Rectangle_New(struct IClass *cl, Object *obj, struct opSet *msg)
+
+IPTR Rectangle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_RectangleData *data;
+    struct Rectangle_DATA *data;
     struct TagItem *tags,*tag;
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
@@ -95,12 +93,9 @@ static ULONG Rectangle_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (ULONG)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static ULONG Rectangle_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Rectangle__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_RectangleData *data = INST_DATA(cl, obj);
+    struct Rectangle_DATA *data = INST_DATA(cl, obj);
 
     if (data->BarTitle) mui_free(data->BarTitle);
 
@@ -108,17 +103,14 @@ static ULONG Rectangle_Dispose(struct IClass *cl, Object *obj, Msg msg)
 }
 
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static ULONG Rectangle_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Rectangle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 /*----------------------------------------------------------------------------*/
 /* small macro to simplify return value storage */
 /*----------------------------------------------------------------------------*/
 #define STORE *(msg->opg_Storage)
 
-    struct MUI_RectangleData *data = INST_DATA(cl, obj);
+    struct Rectangle_DATA *data = INST_DATA(cl, obj);
 
     switch(msg->opg_AttrID)
     {
@@ -147,12 +139,9 @@ static ULONG Rectangle_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 #undef STORE
 }
 
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static ULONG Rectangle_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Rectangle__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_RectangleData *data = INST_DATA(cl, obj);
+    struct Rectangle_DATA *data = INST_DATA(cl, obj);
 
     if (!(DoSuperMethodA(cl, obj, (Msg) msg)))
 	return FALSE;
@@ -166,12 +155,9 @@ static ULONG Rectangle_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
-static ULONG Rectangle_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Rectangle__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    struct MUI_RectangleData *data = INST_DATA(cl, obj);
+    struct Rectangle_DATA *data = INST_DATA(cl, obj);
 
     if (data->ztext)
 	zune_text_destroy(data->ztext);
@@ -186,9 +172,9 @@ static ULONG Rectangle_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Clean
  and before layout takes place. We need to tell MUI the
  minimum, maximum and default size of our object.
 **************************************************************************/
-static ULONG Rectangle_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Rectangle__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
-    struct MUI_RectangleData *data = INST_DATA(cl, obj);
+    struct Rectangle_DATA *data = INST_DATA(cl, obj);
 
     /*
     ** let our superclass first fill in what it thinks about sizes.
@@ -246,9 +232,9 @@ static ULONG Rectangle_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
  Note: You may only render within the rectangle
        _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj).
 **************************************************************************/
-static ULONG  Rectangle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Rectangle__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct MUI_RectangleData *data = INST_DATA(cl, obj);
+    struct Rectangle_DATA *data = INST_DATA(cl, obj);
     struct MUI_RenderInfo *mri;
 
     /*
@@ -393,24 +379,21 @@ BOOPSI_DISPATCHER(IPTR, Rectangle_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Rectangle_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return Rectangle_Dispose(cl, obj, msg);
-	case OM_GET: return Rectangle_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_Setup: return Rectangle_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup: return Rectangle_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_AskMinMax: return Rectangle_AskMinMax(cl, obj, (APTR)msg);
-	case MUIM_Draw: return Rectangle_Draw(cl, obj, (APTR)msg);
+	case OM_NEW:         return Rectangle__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:     return Rectangle__OM_DISPOSE(cl, obj, msg);
+	case OM_GET:         return Rectangle__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup:     return Rectangle__MUIM_Setup(cl, obj, (APTR)msg);
+	case MUIM_Cleanup:   return Rectangle__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_AskMinMax: return Rectangle__MUIM_AskMinMax(cl, obj, (APTR)msg);
+	case MUIM_Draw:      return Rectangle__MUIM_Draw(cl, obj, (APTR)msg);
+        default:             return DoSuperMethodA(cl, obj, msg);
     }
-    return DoSuperMethodA(cl, obj, msg);
 }
 
-
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Rectangle_desc = { 
+const struct __MUIBuiltinClass _MUI_Rectangle_desc =
+{ 
     MUIC_Rectangle, 
     MUIC_Area, 
-    sizeof(struct MUI_RectangleData), 
+    sizeof(struct Rectangle_DATA), 
     (void*)Rectangle_Dispatcher 
 };
