@@ -342,17 +342,30 @@ int parsemacroname(char *name,
 		   struct _parseinfo *parseinfo,
 		   struct config *cfg)
 {
-    if (cfg->libcall == REGISTERMACRO && (strncmp(name, "AROS_LH_", 8) == 0  || strncmp(name, "AROS_NTLH_", 10) == 0)) 
+    if
+    (
+        cfg->libcall == REGISTERMACRO && 
+	(
+	    strncmp(name, "AROS_LH_", 8)    == 0 || 
+	    strncmp(name, "AROS_PLH_", 9)   == 0 || 
+	    strncmp(name, "AROS_NTLH_", 10) == 0
+        ) 
+    ) 
     {
 	struct functionhead *funclistit, *func;
 	char *begin, *end, *funcname;
-	int novararg;
+	int novararg = 0, priv = 0;
 	unsigned int lvo;
 	
 	if (strncmp(name, "AROS_LH_", 8) == 0)
 	{
 	    begin = name+8;
-	    novararg = 0;
+	}
+	else
+	if (strncmp(name, "AROS_PLH_", 9) == 0)
+	{
+	    begin = name+9;
+	    priv = 1;
 	}
 	else
 	{
@@ -377,6 +390,7 @@ int parsemacroname(char *name,
 
 	func = newfunctionhead(funcname, NULL, lvo);
 	func->novararg = novararg;
+	func->priv     = priv;
 
 	if (funclist == NULL || funclist->lvo > func->lvo)
 	{
