@@ -38,6 +38,7 @@
 
 #include "graphics_intern.h"
 #include "graphics_internal.h"
+#include "intregions.h"
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -783,7 +784,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     ScrollRaster() and ScrollRasterBF() 
   */
   /*
-    There a four different cases to consider:
+    There are four different cases to consider:
     1) rastport without layer (a screen's rastport)
     2) rastport with simple-refresh layer 
     3) rastport with smart -refresh layer
@@ -883,18 +884,41 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     struct ClipRect * CR = L->ClipRect;
     struct Region * R;
     struct Rectangle Rect;
+    struct Rectangle ScrollRect;
      
     LockLayerRom(L);
      
     if (0 != (L->Flags & LAYERSIMPLE) &&
         TRUE == UpdateDamageList)
     {
-      R = NewRegion();
-      if (NULL == R)
-      {
+      /* 
+         This region should also contain the current damage list in that
+         area.
+         Region R = damagelist AND scrollarea
+      */
+      if (NULL == (R = copyregion(L->DamageList, GfxBase)))
+      { 
+        /* not enough memory */
+        DisposeRegion(R);
         UnlockLayerRom(L);
         goto failexit;
       }
+      
+      ScrollRect.MinX = x1;
+      ScrollRect.MinY = y1;
+      ScrollRect.MaxX = x2;
+      ScrollRect.MaxY = y2;
+      
+      /* this cannot fail */
+      AndRectRegion(R, &ScrollRect);
+      /* Now Region R contains the damage that is already there before
+         the area has been scrolled at all.
+       */
+
+      /* This area must also be cleared from the current damage list. But
+         I do this later as I might run out of memory here somewhere in
+         between...
+      */    
     }  
     
     /* adapt x1,x2,y1,y2 to the cliprect coordinates */
@@ -1034,20 +1058,80 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 
     /* (xleft,yup)(xright,ydown) defines the rectangle to copy into */
 
-    xleft  -= dx;
-    xright -= dx;
-    yup    -= dy;
-    ydown  -= dy;
     
     /* Move the region, if it's a simple layer  */
     if (0 != (L->Flags & LAYERSIMPLE) &&
         TRUE == UpdateDamageList)
     {
+      struct Rectangle blank;
       R->bounds.MinX -= dx;
       R->bounds.MinY -= dy;
       R->bounds.MaxX -= dx;
       R->bounds.MaxY -= dy;
+      /* make this region valid again */
+      AndRectRegion(R, &ScrollRect);
+
+//      /* hm, add the blank parts to the region as well! */
+//
+//      if (dx != 0)
+//      {
+//        if (dx < 0)
+//        {
+//          /* scrolling to the right, so there's a blank on the left */
+//          blank.MinX = xleft;
+//          blank.MaxX = xleft - dx;
+//        }
+//        else
+//        {
+//          /* scrolling to the left, so there's a blank on the right */
+//          blank.MinX = xright - dx;
+//          blank.MaxX = xright;
+//        }
+//        
+//        blank.MinY = y1;
+//        blank.MaxY = y2;
+//
+//        /* Add this blank rectangle to the damaged part */        
+//        if (FALSE == OrRectRegion(R, &blank))
+//        {
+//          DisposeRegion(R);
+//          UnlockLayerRom(L);
+//          goto failexit;
+//        }
+//      }
+//      
+//      if (dy != 0)
+//      {
+//        if (dy < 0)
+//        {
+//          /* scrolling down, so there's a blank on the top */
+//          blank.MinY = yup;
+//          blank.MaxY = yup - dy;
+//        }
+//        else
+//        {
+//          /* scrolling up, so there's a blank on the bottom */
+//          blank.MinY = ydown - dy;
+//          blank.MaxY = ydown;
+//        }
+//        
+//        blank.MinX = x1;
+//        blank.MaxX = x2;
+//        
+//        if (FALSE == OrRectRegion(R, &blank))
+//        {
+//          DisposeRegion(R);
+//          UnlockLayerRom(L);
+//          goto failexit;
+//        }
+//      }
+//      
     }
+
+    xleft  -= dx;
+    xright -= dx;
+    yup    -= dy;
+    ydown  -= dy;
     
     /* now copy from the bitmap bm into the destination */
     CR = L->ClipRect;
@@ -1169,6 +1253,8 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
          LAYERREFRESH flag, but of course only if it's necessary */
       if (NULL != R->RegionRectangle)
       {
+        /* first clear the damage lists of the scrolled area */
+        ClearRectRegion(L->DamageList, &ScrollRect);
         OrRegionRegion(R, L->DamageList);
         L->Flags |= LAYERREFRESH;
       }
