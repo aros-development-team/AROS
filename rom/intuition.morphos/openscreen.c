@@ -372,12 +372,12 @@ AROS_LH1(struct Screen *, OpenScreen,
 #ifdef USEWINDOWLOCK
     BOOL         windowlock = FALSE;
 #endif
-#ifdef __MORPHOS__
     struct Rectangle      *dclip = NULL;
     LONG                   overscan = OSCAN_TEXT;
     DisplayInfoHandle      displayinfo;
     struct DimensionInfo   dimensions;
     struct MonitorInfo     monitor;
+#ifdef __MORPHOS__
     ULONG                  allocbitmapflags = BMF_DISPLAYABLE;
 #else
     BOOL          frontbm_set = FALSE;
@@ -733,17 +733,13 @@ AROS_LH1(struct Screen *, OpenScreen,
                 break;
 
             case SA_DClip:
-#ifdef __MORPHOS__
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_DClip 0x%lx\n",tag->ti_Data));
                 dclip = (struct Rectangle *)tag->ti_Data;
-#endif
                 break;
 
             case SA_Overscan:
-#ifdef __MORPHOS__
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_OverScan 0x%lx\n",tag->ti_Data));
                 overscan = tag->ti_Data;
-#endif
                 break;
 
             case SA_LikeWorkbench:
@@ -997,7 +993,42 @@ AROS_LH1(struct Screen *, OpenScreen,
         DEBUG_OPENSCREEN(dprintf("OpenScreen: no displayinfo\n"));
     }
 #else
+    if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
+        GetDisplayInfoData(displayinfo, &dimensions, sizeof(dimensions), DTAG_DIMS, modeid) &&
+        GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid))
+    {
+        screen->Monitor = monitor.Mspc;
 
+        if (dclip == NULL)
+        {
+            switch (overscan)
+            {
+            case OSCAN_STANDARD:
+                dclip = &dimensions.StdOScan;
+                break;
+
+            case OSCAN_MAX:
+                dclip = &dimensions.MaxOScan;
+                break;
+
+            case OSCAN_VIDEO:
+                dclip = &dimensions.VideoOScan;
+                break;
+
+            default:
+                dclip = &dimensions.TxtOScan;
+                break;
+            }
+        }
+
+        if (ns.Width == STDSCREENWIDTH)
+            ns.Width = dclip->MaxX - dclip->MinX + 1;
+
+        if (ns.Height == STDSCREENHEIGHT)
+            ns.Height = dclip->MaxY - dclip->MinY + 1;
+
+    }
+    
     if ((success = InitRastPort (&screen->Screen.RastPort)))
     {
         rp_inited = TRUE;
