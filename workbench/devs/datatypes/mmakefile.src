@@ -1,0 +1,21 @@
+include $(TOP)/config/make.cfg
+
+OBJDIR 		:= $(GENDIR)/$(CURDIR)
+	
+DTDIR 		:= $(DEVSDIR)/DataTypes
+FILES 		:= FTXT
+DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
+
+#MM workbench-devs : setup $(DTFILES)
+workbench-devs : $(DTFILES)
+	@$(NOP)
+
+#MM
+setup :
+	%mkdirs_q $(DTDIR)
+
+$(DTDIR)/% : %
+	@$(CP) $< $@
+	
+%common
+
