@@ -12,6 +12,9 @@ USE_AMIGALIB    := yes
 USE_MLIB        := yes
 USER_CFLAGS     := -O2 -fomit-frame-pointer
 
+#MM- test-benchmarks : test-benchmarks-graphics
+#MM- test-benchmarks-quick : test-benchmarks-graphics-quick
+
 #MM test-benchmarks-graphics : includes linklibs
 
 %make_prog_setup mmake=test-benchmarks-graphics
