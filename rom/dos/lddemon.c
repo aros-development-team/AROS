@@ -234,12 +234,6 @@ AROS_LH2(struct Library *, OpenLibrary,
 	library = LDInit(ldd.ldd_Return, DOSBase);
     }
 
-    /*
-	Release the semaphore here, if the library is going to be in the
-	list, then it will be, but we don't want it to lock up whilst we
-	wait for it to load another disk based library itself.
-    */
-    ReleaseSemaphore(&DOSBase->dl_LSigSem);
 
     if( library != NULL )
     {
@@ -266,6 +260,16 @@ AROS_LH2(struct Library *, OpenLibrary,
 	    library = NULL;
 	Permit();
     }
+    
+    /*
+	Release the semaphore here, after calling Open vector. This
+	means that library open is singlethreaded by the semaphore.
+	It also handles circular dependant libraries. (Won't deadlock),
+	and recursive OpenLibrary calls (Semaphores nest when obtained
+	several times in a row by the same task).
+    */
+    ReleaseSemaphore(&DOSBase->dl_LSigSem);
+
     return library;
 
     AROS_LIBFUNC_EXIT
@@ -317,11 +321,6 @@ AROS_LH4(BYTE, OpenDevice,
 	device = (struct Device *)LDInit(ldd.ldd_Return, DOSBase);
     }
 
-    /*
-	Release the semaphore here, if the device is going to be in the
-	list, then it will be, but we don't want it to lock up whilst we
-	wait for it to load another disk based device itself.
-    */
     ReleaseSemaphore(&DOSBase->dl_DSigSem);
     
     if( device != NULL )
@@ -352,6 +351,14 @@ AROS_LH4(BYTE, OpenDevice,
 	    iORequest->io_Device = NULL;
 
     }
+    /*
+	Release the semaphore here, after calling Open vector. This
+	means that decvice open is singlethreaded by the semaphore.
+	It also handles circular dependant devices. (Won't deadlock),
+	and recursive OpenDevice calls (Semaphores nest when obtained
+	several times in a row by the same task).
+    */
+    
     return ret;
 
     AROS_LIBFUNC_EXIT
