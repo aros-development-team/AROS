@@ -260,20 +260,18 @@ after a system reset. To find AROS modules, look for modules that are in RAM
 
 More information on these pages on the WorldWideWait:
 
-    http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
-    http://aros.fh-konstanz.de/~digulla/  (German Mirror)
+    http://www.aros.org/
     http://www.xs4all.nl/~ldp/aros/ (AROS for Amiga)
 
-If you have FTP, you can also get the most recent version as tar.gz files
-(quite smaller than lha) from:
+If you have FTP, you can also get the most recent version from:
 
-    ftp://aros.fh-konstanz.de/pub/aros/
+    ftp://ftp.aros.org/pub/aros/
 
 You can use these EMail addresses to send bug reports:
 
-    aros-bugs@aros.fh-konstanz.de
-    aros-linux-bugs@aros.fh-konstanz.de
-    aros-amiga-bugs@aros.fh-konstanz.de
+    aros-bugs@aros.org
+    aros-linux-bugs@aros.org
+    aros-amiga-bugs@aros.org
 
 
 =============================================================================
@@ -291,7 +289,7 @@ following address:
     78464 Konstanz
     Germany
 
-    EMail: digulla@aros.fh-konstanz.de
+    EMail: digulla@aros.org
 
 For more information please read "AFD-COPYRIGHT" (Version 1 or higher).
 
