@@ -49,12 +49,7 @@ Object *IconImage__OM_NEW
             case MUIA_IconImage_File:
                 file = (CONST_STRPTR) tag->ti_Data;
                 break;
-            
-            default:
-                continue; /* Don't supress non-processed tags */
         }
-        
-        tag->ti_Tag = TAG_IGNORE;
     }
     
     if (diskObject == NULL && file == NULL) goto error; /* Must specify one */
