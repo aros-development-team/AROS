@@ -5,14 +5,9 @@ FILES         := iconimage
 INCLUDE_FILES := iconimage.h
 
 #MM- workbench-classes-zune : workbench-classes-zune-iconimage
-#MM- workbench-classes-zune-quick : workbench-classes-zune-iconimage-quick
-
-#MM- workbench-classes-zune-iconimage : includes workbench-classes-zune-iconimage-module
-#MM- workbench-classes-zune-iconimage-quick : workbench-classes-zune-iconimage-module
-
-#MM workbench-classes-zune-iconimage-module
+#MM workbench-classes-zune-iconimage
 %build_module \
-    mmake=workbench-classes-zune-iconimage-module \
+    mmake=workbench-classes-zune-iconimage \
     modname=IconImage modtype=mcc \
     conffile=iconimage.conf \
     uselibs="amiga arosc"

@@ -1,18 +1,15 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
 # $Id$
+
 include $(TOP)/config/make.cfg
 
 FILES         := calendar
 INCLUDE_FILES := calendar.h
 
 #MM- workbench-classes-zune : workbench-classes-zune-calendar
-#MM- workbench-classes-zune-quick : workbench-classes-zune-calendar-quick
-
-#MM- workbench-classes-zune-calendar : includes workbench-classes-zune-calendar-module
-#MM- workbench-classes-zune-calendar-quick : workbench-classes-zune-calendar-module
-
-#MM workbench-classes-zune-calendar-module
+#MM workbench-classes-zune-calendar
 %build_module \
-    mmake=workbench-classes-zune-calendar-module \
+    mmake=workbench-classes-zune-calendar \
     modname=Calendar modtype=mcc \
     conffile=calendar.conf \
     uselibs="amiga arosc m"
