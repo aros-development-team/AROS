@@ -62,6 +62,7 @@ BEGIN {
 
 		# The filename of the resulting HTML file
 		out=CURDIR "/../html/autodocs/" bn ".html";
+		#out="/dev/stdout";
 
 		location=0; # The field LOCATION hasn't been read yet
 
