@@ -58,7 +58,7 @@ IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
     
     IPTR retval = 0;
     
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
         switch(tag->ti_Tag)
 	{
@@ -90,7 +90,7 @@ IPTR fillrect_draw(Class *cl, Object *obj, struct impDraw *msg)
     struct RastPort 	*rp = ((struct impDraw *)msg)->imp_RPort;
     WORD 		x1, y1, x2, y2;
     
-    APTR		old_areaptrn = rp->AreaPtrn;
+    const UWORD *	old_areaptrn = rp->AreaPtrn;
     BYTE		old_areaptsz = rp->AreaPtSz;
     BYTE		old_drmd = GetDrMd(rp);
     BYTE		old_apen = GetAPen(rp);
