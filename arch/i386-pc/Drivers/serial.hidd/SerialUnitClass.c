@@ -139,7 +139,9 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
     }
     data->unitnum    = unitnum;
 
+    Disable();
     CSD(cl->UserData)->units[data->unitnum] = data;
+    Enable();
 
     D(bug("Unit %d at 0x0%x\n", data->unitnum, data->baseaddr));
 
@@ -184,7 +186,9 @@ static OOP_Object *serialunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
 
   data = OOP_INST_DATA(cl, obj);
 
+  Disable();
   CSD(cl->UserData)->units[data->unitnum] = NULL;
+  Enable();
 
   /* stop all interrupts */
   serial_outp(data, UART_IER, 0);
@@ -201,10 +205,12 @@ BOOL serialunit_init(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Init 
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   
   EnterFunc(bug("SerialUnit::Init()\n"));
+  Disable();
   data->DataReceivedCallBack = msg->DataReceived;
   data->DataReceivedUserData = msg->DataReceivedUserData;
   data->DataWriteCallBack    = msg->WriteData;
   data->DataWriteUserData    = msg->WriteDataUserData;
+  Enable();
 
   ReturnBool("SerialUnit::Init()", TRUE);
 }
