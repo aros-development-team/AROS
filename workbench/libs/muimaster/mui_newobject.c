@@ -62,17 +62,22 @@ __asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct 
 #endif
 	Object *obj = NewObjectA(cl, NULL, tags);
 
-#ifndef _AROS
 	if (!obj)
 	{
-	    printf("Could create object of %s\n",classname);
+    	#ifndef _AROS
+	    printf("Could not create object of %s\n",classname);
+	#else
+	    kprintf("  *** Could not create object of %s\n",classname);
+	#endif 
 	}
-#endif
+
 	return obj;
     }
 
 #ifndef _AROS
-printf("Couldn't find %s\n",classname);
+    printf("Couldn't find %s\n",classname);
+#else
+    kprintf(" *** Couldn't find %s\n",classname);
 #endif
 
     return NULL;
