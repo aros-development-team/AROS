@@ -318,6 +318,8 @@ void intui_RefreshWindowFrame(struct Window *w)
     
     EnterFunc(bug("intui_RefreshWindowFrame(w=%p)\n", w));
     
+    LockLayerRom(rp->Layer);
+    
     SetAPen(rp, 1);
     D(bug("Pen set\n"));
     drawrect(rp, 0, 0, w->Width - 1, w->Height - 1, IntuitionBase);
@@ -330,6 +332,7 @@ void intui_RefreshWindowFrame(struct Window *w)
 	    RefreshGList((struct Gadget *)SYSGAD(w, i), w, NULL, 1 );
     }
     
+    UnlockLayerRom(rp->Layer);
     
     ReturnVoid("intui_RefreshWindowFrame");
 }
