@@ -39,10 +39,14 @@
  
 ******************************************************************************/
 
+
 /*
-   XDEF AROS_SLIB_ENTRY(CacheClearU,Exec)    for 68000/68010
-   XDEF AROS_SLIB_ENTRY(CacheClearU_20,Exec) for 68020/68030
-   XDEF AROS_SLIB_ENTRY(CacheClearU_40,Exec) for 68040/68060
+   XDEF AROS_SLIB_ENTRY(CacheClearU,Exec)   	; for 68000/68010
+   XDEF AROS_SLIB_ENTRY(CacheClearU_20,Exec)	; for 68020/68030
+   XDEF AROS_SLIB_ENTRY(CacheClearU_40,Exec)	; for 68040/68060
+   XDEF AROS_SLIB_ENTRY(CacheClearU_60,Exec)	; for 68060 (clears not only
+						; the i and d caches, but also
+						; the branch cache)
 */
 
 	#include "machine.i"
@@ -61,7 +65,7 @@ AROS_SLIB_ENTRY(CacheClearU,Exec):
 	.type	AROS_SLIB_ENTRY(CacheClearU_20,Exec),@function
 AROS_SLIB_ENTRY(CacheClearU_20,Exec):
 	move.l	a5,a1		/* Save a5 */
-	lea.l	cacheclearusup_20,a5
+	lea.l	cacheclearusup_20(pc),a5
 	jmp	Supervisor(a6)	/* No jsr: this saves an rts */
 
 cacheclearusup_20:
@@ -79,13 +83,33 @@ cacheclearusup_20:
 	.type	AROS_SLIB_ENTRY(CacheClearU_40,Exec),@function
 AROS_SLIB_ENTRY(CacheClearU_40,Exec):
 	move.l	a5,a1
-	lea.l	cacheclearusup_40,a5
+	lea.l	cacheclearusup_40(pc),a5
 	jmp	Supervisor(a6)
 
 cacheclearusup_40:
 	cpusha	bc	/* Push dirty cache lines to memory and invalidate both caches */
 	cinva	bc	/* 68060 invalidates depending on DPI (Disable CPUSH invalidation)
 			   bit of CACR. Force an invalidation with CINV. */
+	move.l	a1,a5
+	rte
+
+	.text
+	.balign 16
+	.globl	AROS_SLIB_ENTRY(CacheClearU_60,Exec)
+	.type	AROS_SLIB_ENTRY(CacheClearU_60,Exec),@function
+AROS_SLIB_ENTRY(CacheClearU_60,Exec):
+	move.l	a5,a1
+	lea.l	cacheclearusup_60(pc),a5
+	jmp	Supervisor(a6)
+
+cacheclearusup_60:
+	cpusha	bc	/* Push dirty cache lines to memory and invalidate both caches */
+	cinva	bc	/* 68060 invalidates depending on DPI (Disable CPUSH invalidation)
+			   bit of CACR. Force an invalidation with CINV. */
+	or.w	#0x0700,sr
+	movec	cacr,d0
+	bset.l	#20,d0		/* set CABC Clear All (entries in) Branch Cache bit */
+	movec	d0,cacr		/* clear Branch Cache */
 	move.l	a1,a5
 	rte
 
