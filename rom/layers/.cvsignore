@@ -3,4 +3,4 @@ mmakefile
 *.s
 *.map
 libdefs.h
-*functable.c
+layers_functable.c
