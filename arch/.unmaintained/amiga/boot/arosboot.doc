@@ -306,6 +306,15 @@ For more information please read "AFD-COPYRIGHT" (Version 1 or higher).
 9. History
 -----------------------------------------------------------------------------
 
+41.8
+- Fixed bug that could cause reset vector corruption (mementry for the
+  KickTagPtr was 4 bytes short).
+
+41.7
+- Do all file operations relative to PROGDIR:. This applies to the config
+  file itself as well as to modules. This removes the need to CD into the
+  directory where arosboot lives before running arosboot.
+
 41.6
 - Major overhaul.
 - New command line options.
