@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
      	        output = argv[cnt][2]?&argv[cnt][2]:argv[++cnt];
             else
 	    /* Incremental linking is requested */
-            if (argv[cnt][0]=='r')
+            if (argv[cnt][1]=='r')
 	        incremental = 1;
 	}
     }
@@ -245,13 +245,14 @@ int main(int argc, char *argv[])
 
 	fwrite(buf, cnt, 1, stderr);
     }
-    fatalerror(ferror(pipe));
+
+    pclose(pipe);
 
     if (thereare)
-    	remove(output);
+        remove(output);
+    else
+	chmod(output, 0766);
 
-    chmod(output, 0766);
-    
     return thereare;
 }
 
