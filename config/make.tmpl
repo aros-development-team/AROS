@@ -1152,8 +1152,8 @@ endif
 
 BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
 BD_GENFILES$(BDID)  := $(BD_MODULE$(BDID)) $(BD_EXTRAGENFILES$(BDID))
-BD_EXTRAOBJS$(BDID) := $(pathsubst %.c,%.o,$(BD_EXTRAFILES$(BDID)))
-BD_EXTRADEPS$(BDID) := $(pathsubst %.c,%.d,$(BD_EXTRAFILES$(BDID)))
+BD_EXTRAOBJS$(BDID) := $(patsubst %.c,%.o,$(BD_EXTRAFILES$(BDID)))
+BD_EXTRADEPS$(BDID) := $(patsubst %.c,%.d,$(BD_EXTRAFILES$(BDID)))
 BD_DEPS$(BDID)      += $(BD_EXTRADEPS$(BDID))
 
 #MM
@@ -1173,7 +1173,7 @@ $(BD_REFFILE$(BDID)) : $(BD_SRCS$(BDID)) $(CXREF) $(BD_OBJDIR$(BDID))
 	@echo "Generating function reference file for module $(BD_MODNAME$(BDID))"
 	@$(CXREF) -raw -CPP "gcc $(strip $(BD_CFLAGS$(BDID))) -E -C -dD" $(BD_SRCS$(BDID)) >$@
 
-$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.c $(BD_OBJDIR$(BDID))/libdefs.h $(subst .o,.c,$(BD_ENDOBJ$(BDID))) \
+$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.c $(BD_OBJDIR$(BDID))/libdefs.h $(patsubst %.o,%.c,$(BD_ENDOBJ$(BDID))) \
 $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) $(BD_EXTRAFILES$(BDID)) : \
 $(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID)) $(BD_OBJDIR$(BDID))
 	@echo "Generating functable and includes for module $(BD_MODNAME$(BDID))"
