@@ -258,7 +258,7 @@
 #ifdef __GNUC__
 #define get(obj,attr,store)                      \
 ({                                               \
-    IPTR  _localstore;                           \
+    IPTR  _localstore = *store;                  \
     ULONG _ret;                                  \
     typeof (store) _store = (store);             \
     struct __foo { int GetAttrs__IPTR_storage_size_mismatch[(sizeof(*_store) == sizeof(IPTR))?1:-1];}; \
