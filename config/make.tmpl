@@ -85,9 +85,8 @@ $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
 	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 
 $(OBJDIR)/functions.c : $(TOP)/tools/archtools/archtool %(archive)
-	@$(TOP)/tools/archtools/archtool -s %(archive) functions.c
 %mkdir_q $(OBJDIR)
-	@$(MV) functions.c $(OBJDIR)
+	@$(TOP)/tools/archtools/archtool -s %(archive) $@
 
 $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 %mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
@@ -856,20 +855,31 @@ $(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
 %define genlibincludes_arch name=$(LIBNAME) archive=$(ARCHIVE)
 #MM includes-generate : setup-clib
 includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
+			    $(INCDIR)/pragmas/%(name)_pragmas.h \
 			    $(INCDIR)/clib/%(name)_protos.h \
-			    $(INCDIR)/defines/%(name).h
+			    $(INCDIR)/defines/%(name).h \
+			    $(INCDIR)/inline/%(name).h \
+			    $(INCDIR)/proto/%(name).h
 	@$(NOP)
 
-$(OBJDIR)/headers.stamp : $(ARCHIVE) $(TOP)/tools/archtools/archtool
-	@$(TOP)/tools/archtools/archtool -C $(GENINCDIR) %(archive)
-	@$(TOP)/tools/archtools/archtool -d $(GENINCDIR) %(archive)
+$(OBJDIR)/headers.stamp : %(archive) $(TOP)/tools/archtools/archtool
+	@$(TOP)/tools/archtools/archtool -I $(GENINCDIR) %(archive)
 	@$(TOUCH) $@
 
+$(INCDIR)/pragmas/%(name)_pragmas.h : $(GENINCDIR)/pragmas/%(name)_pragmas.h
+	@$(CP) $< $@
+
 $(INCDIR)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
-	$(CP) $< $@
+	@$(CP) $< $@
 
 $(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
-	$(CP) $< $@
+	@$(CP) $< $@
+
+$(INCDIR)/inline/%(name).h : $(GENINCDIR)/inline/%(name).h
+	@$(CP) $< $@
+
+$(INCDIR)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
+	@$(CP) $< $@
 %end
 
 
@@ -955,6 +965,74 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 	@$(FOR) file in %(files) ; do \
 	    $(ECHO) >> $(GENDIR)/config.files "not $$file" ; \
 	done
+%end
+
+%define genlib_arch
+SLIB	      := $(SLIBDIR)/$(LIBNAME).library
+LIB	      := $(LIBDIR)/lib$(LIBNAME).a
+INIT_FILE     := $(LIBNAME)_init
+END_FILE      := $(LIBNAME)_endtag
+OBJDIR        := $(GENDIR)/$(CURDIR)
+INITFUNC      := $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC       := $(OBJDIR)/$(END_FILE).o
+SYS_FILES     := $(SYS_FILES) $(INIT_FILE) functable
+OBJS	      := $(foreach f,$(FILES) functions $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
+
+
+$(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
+	@$(ECHO) "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(ECHO) "Checking $@..."
+	@$(CHECKUDS) $@ > undefdsyms.list
+	@$(IF) $(TEST) -s undefdsyms.list ; then \
+	    $(CAT) undefdsyms.list >> $(@F)-x.err ; \
+	    $(ECHO) "There are undefined symbols in $@:" ; \
+	    $(CAT) undefdsyms.list ; \
+	else $(NOP) ; fi
+	@$(RM) undefdsyms.list
+	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
+	@$(STRIP) $@
+
+$(LIB) : $(OBJS)
+	@$(ECHO) "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $(OBJS)
+	@$(RANLIB) $@
+
+$(OBJDIR)/functions.o : functions.c
+	@$(ECHO) "Compiling $<..."
+	@$(CC) $(CFLAGS) -c functions.c -o $(OBJDIR)/functions.o 2>&1|tee functions.err
+	@$(IF) $(TEST) -s functions.err; then $(TOUCH) $(TOP)/errors ; else $(RM) functions.err ; fi
+
+functions.c : $(TOP)/tools/archtools/archtool $(ARCHIVE)
+	@$(TOP)/tools/archtools/archtool -s $(ARCHIVE) $@
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+ALL_FUNCTIONS := $(FUNCTIONS)
+%genlibincludes_arch
+
+$(OBJDIR)/%.o : %.c
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@$(IF) $(TEST) -s $*.err; then $(TOUCH) $(TOP)/errors;else $(RM) $*.err; fi
+
+functable.c : $(ARCHIVE) $(TOP)/tools/archtools/archtool libdefs.h
+	@$(ECHO) "Generating $@..."
+	@$(TOP)/tools/archtools/archtool -t $(ARCHIVE)
+
+$(END_FILE).c : $(TOP)/scripts/makeendtag.awk
+	@$(ECHO) "Regenerating $@..."
+	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
+		-v lib=$(ULIBNAME)
+
+$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
+
+libdefs.h : lib.conf $(TOP)/tools/archtools/archtool
+	@$(ECHO) "Generating $@..."
+	@$(TOP)/tools/archtools/archtool -c
+
 %end
 
 %define genlib_cpak

@@ -8,8 +8,8 @@
 #include "mathieeesingtrans_intern.h"
 #include "libdefs.h"
 
-#define LC_SYSBASE_FIELD(lib)	(((LIBBASETYPEPTR       )(lib))->mist_SysBase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->mist_SegList)
+#define LC_SYSBASE_FIELD(lib)	(((LIBBASETYPEPTR)(lib))->mist_SysBase)
+#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->mist_SegList)
 #define LC_RESIDENTNAME		mathieeesingtrans_resident
 #define LC_RESIDENTFLAGS	RTF_AUTOINIT
 #define LC_RESIDENTPRI		0

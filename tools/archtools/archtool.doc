@@ -35,7 +35,7 @@ Finally we have the code block for the function: '#Code' '#/Code'
 Integrated programs
 -------------------
 
-Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C] <parameter>
+Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|-r|-I] <parameter>
 
   -h help
 
@@ -61,6 +61,8 @@ Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C] <parameter>
   -p genproto
      Usage: archtool -p <incdir>
   -i geninline
+     Usage: archtool -i <incdir>
+  -r pragmas
      Usage: archtool -i <incdir>
   -I genincludes
      Usage: archtool -I <incdir>
@@ -127,9 +129,14 @@ It reads in ./headers.tmpl if available, adds lines between
 functions in <archfile> archive.
 Be sure to have an existing subdir "inline" in <incdir>!
 
-12) Generate Includes
-This module generates all (ATM:clib/defines/proto/inline) includes in the
-corresponding subdirs of <incdir>.
+12) Generate pragmas/<basename>_pragmas.h
+This module generates the include files in <incdir>/pragmas/
+This is just one line including clib/<basename>_protos.h
+Be sure to have an existing subdir "pragmas" in <incdir>!
+
+13) Generate Includes
+This module generates all (ATM:clib/defines/proto/inline/pragmas) includes
+in the corresponding subdirs of <incdir>.
 It reads in ./headers.tmpl if available, adds lines between
 '##begin [clib|defines]' and '##end [clib|defines]' and defines
 the LPA/LCA macros for all functions in <archfile> archive.

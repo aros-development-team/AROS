@@ -10,28 +10,11 @@ FILES		:= \
 	intern_ieeespisodd \
 	intern_ieeespld
 
-FUNCTIONS	:= \
-	ieeespacos \
-	ieeespasin \
-	ieeespatan \
-	ieeespcos \
-	ieeespcosh \
-	ieeespexp \
-	ieeespfieee \
-	ieeesplog \
-	ieeesplog10 \
-	ieeesppow \
-	ieeespsin \
-	ieeespsincos \
-	ieeespsinh \
-	ieeespsqrt \
-	ieeesptan \
-	ieeesptanh \
-	ieeesptieee 
+ARCHIVE		:= mathieeesingtrans.arch
 
 %define_libs prelibs=-l$(LIBNAME)
 
-%genlib_cpak
+%genlib_arch
 
 #MM workbench-libs-mathieeesingtrans : setup includes linklibs
 workbench-libs-mathieeesingtrans : show-flags $(SLIB)

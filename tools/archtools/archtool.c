@@ -322,9 +322,9 @@ char **words = NULL;
         }
         if( lc->libbasetype == NULL )
         {
-          lc->libbasetype = malloc( (len+12) * sizeof(char) );
-          sprintf( lc->libbasetype, "struct %sBase",words[1]);
-          lc->libbasetype[7] = toupper(lc->libbasetype[7]);
+          lc->libbasetype = malloc( (len+5) * sizeof(char) );
+          sprintf( lc->libbasetype, "%sBase",words[1]);
+          lc->libbasetype[0] = toupper(lc->libbasetype[0]);
         }
       }
       else if( strcmp(words[0],"libname")==0 )
@@ -344,8 +344,8 @@ char **words = NULL;
         }
         if( lc->libbasetype == NULL )
         {
-          lc->libbasetype = malloc( (len+12) * sizeof(char) );
-          sprintf( lc->libbasetype, "struct %sBase",words[1]);
+          lc->libbasetype = malloc( (len+5) * sizeof(char) );
+          sprintf( lc->libbasetype, "%sBase",words[1]);
         }
       }
       else if( strcmp(words[0],"libbase")==0 )
@@ -466,8 +466,8 @@ return 0;
 #		    libname	    xxx
 #		    basename	    Xxx
 #		    libbase	    XxxBase
-#		    libbasetype     struct XxxBase
-#		    libbasetypeptr  struct XxxBase *
+#		    libbasetype     XxxBase
+#		    libbasetypeptr  XxxBase *
 #
 #		Variables will only be changed if they have not yet been
 #		specified.
@@ -588,8 +588,8 @@ time_t t;
   }
 
   fprintf( fd, "#define LIBBASE          %s\n", lc->libbase );
-  fprintf( fd, "#define LIBBASETYPE      %s\n", lc->libbasetype );
-  fprintf( fd, "#define LIBBASETYPEPTR   %s\n", lc->libbasetypeptr );
+  fprintf( fd, "#define LIBBASETYPE      struct %s\n", lc->libbasetype );
+  fprintf( fd, "#define LIBBASETYPEPTR   struct %s\n", lc->libbasetypeptr );
   fprintf( fd, "#define VERSION_NUMBER   %d\n", lc->version );
   fprintf( fd, "#define REVISION_NUMBER  %d\n", lc->revision );
   fprintf( fd, "#define BASENAME         %s\n", lc->basename );
@@ -709,7 +709,7 @@ int numparams=0;
         {
           fprintf( fdo, "%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
         }
-        fprintf( fdo, "struct LIBBASETYPE *, LIBBASE, %s, BASENAME)\n", reg[0] );
+        fprintf( fdo, "LIBBASETYPEPTR, LIBBASE, %s, BASENAME)\n", reg[0] );
         fprintf( fdo, "%s\n", code );
         in_function = 0;
         for( i=0 ; i < numparams ; i++ )
@@ -1007,7 +1007,7 @@ int numparams=0;
         {
           fprintf( fdo, "AROS_%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
         }
-        fprintf( fdo, "struct LIBBASETYPE *, LIBBASE, %s, BASENAME)\n", reg[0] );
+        fprintf( fdo, "LIBBASETYPEPTR, LIBBASE, %s, BASENAME)\n", reg[0] );
         in_code = 1;
       }
       else if( strcmp(word,"/Code")==0 && in_code )
@@ -2025,6 +2025,41 @@ int firstlvo;
 return 0;
 }
 
+int genpragmas(int argc, char **argv)
+{
+FILE *fdo = NULL;
+char *filename, *newname;
+struct libconf *lc;
+
+  if(argc != 2)
+  {
+    fprintf( stderr, "Usage: %s <incdir>\n", argv[0] );
+    exit(-1);
+  }
+  lc = calloc( 1, sizeof(struct libconf) );
+  if(parse_libconf(NULL,lc))
+    return(-1);
+  filename = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
+  sprintf( filename, "%s/pragmas/%s_pragmas.h", argv[1], lc->libname );
+  newname = malloc( (strlen(argv[1])+strlen(lc->libname)+24) * sizeof(char) );
+  sprintf( newname, "%s/pragmas/%s_pragmas.h.new", argv[1], lc->libname );
+  fdo = fopen(newname,"w");
+  if(!fdo)
+  {
+    fprintf( stderr, "Couldn't open file %s!\n", newname );
+    return(-1);
+  }
+
+  fprintf( fdo, "#include <clib/%s_protos.h>\n", lc->libname );
+  fclose(fdo);
+  moveifchanged(filename,newname);
+  free(lc);
+  free(newname);
+  free(filename);
+
+return 0;
+}
+
 int genproto(int argc, char **argv)
 {
 FILE *fdo = NULL;
@@ -2346,8 +2381,8 @@ int firstlvo;
 return 0;
 }
 
-/* Generate clib/ defines/ proto/ inline/ */
-#define NUM_INCLUDES 4
+/* Generate clib/ defines/ proto/ inline/ pragmas/ */
+#define NUM_INCLUDES 5
 int genincludes(int argc, char **argv)
 {
 FILE *fd, *fdo[NUM_INCLUDES], *headerstempl;
@@ -2401,6 +2436,17 @@ int firstlvo;
   sprintf( filename[3], "%s/inline/%s.h", argv[1], lc->libname );
   newname[3] = malloc( (strlen(argv[1])+strlen(lc->libname)+15) * sizeof(char) );
   sprintf( newname[3], "%s/inline/%s.h.new", argv[1], lc->libname );
+  filename[4] = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
+  sprintf( filename[4], "%s/pragmas/%s_pragmas.h", argv[1], lc->libname );
+  newname[4] = malloc( (strlen(argv[1])+strlen(lc->libname)+24) * sizeof(char) );
+  sprintf( newname[4], "%s/pragmas/%s_pragmas.h.new", argv[1], lc->libname );
+  fdo[4] = fopen(newname[4],"w");
+  if(!fdo[4])
+  {
+    fprintf( stderr, "Couldn't open file %s!\n", newname[4] );
+    return(-1);
+  }
+
   for( i=0 ; i<NUM_INCLUDES ; i++ )
   {
     fdo[i] = fopen(newname[i],"w");
@@ -2456,6 +2502,7 @@ int firstlvo;
   fprintf( fdo[3], "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS\n" );
   fprintf( fdo[3], "    *** Automatic generated file. Do not edit ***\n" );
   fprintf( fdo[3], "    Desc: Inlines for %s.", lc->basename );
+  fprintf( fdo[4], "#include <clib/%s_protos.h>\n", lc->libname );
   switch( lc->type )
   {
     case t_resource:
@@ -2737,8 +2784,8 @@ char option;
 
   if( argc < 2 )
   {
-    fprintf( stderr, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|I] <parameter>\n", argv[0] );
-    fprintf( stderr, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n  -i geninline\n  I genincludes\n" );
+    fprintf( stderr, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|-r|-I] <parameter>\n", argv[0] );
+    fprintf( stderr, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n  -i geninline\n  -r genpragmas\n  -I genincludes\n" );
     exit(-1);
   }
 
@@ -2815,10 +2862,13 @@ char option;
       case 'I':
         retval = genincludes( argc, &argv[1] );
         break;
+      case 'r':
+        retval = genpragmas( argc, &argv[1] );
+        break;
       case 'h':
       default:
-        fprintf( stdout, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|-I] <parameter>\n", argv[0] );
-        fprintf( stdout, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n  -i geninline\n  I genincludes\n" );
+        fprintf( stdout, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|-r|-I] <parameter>\n", argv[0] );
+        fprintf( stdout, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n  -i geninline\n  -r genpragmas\n  -I genincludes\n" );
         break;
     }
   }
