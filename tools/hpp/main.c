@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <time.h>
+#include <errno.h>
 #include <toollib/stdiocb.h>
 #include <toollib/error.h>
 #include "html.h"
