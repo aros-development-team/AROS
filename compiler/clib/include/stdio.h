@@ -64,8 +64,10 @@ typedef long fpos_t;
 
 #endif
 
-#ifndef _CLIB_KERNEL_
+#if !defined(_CLIB_KERNEL_) && !defined(_CLIB_LIBRARY_)
     extern FILE *stdin, *stdout, *stderr;
+#else
+#include <libraries/arosc.h>
 #endif
 
 extern FILE *fopen (const char * name, const char * mode);

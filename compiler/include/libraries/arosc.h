@@ -66,7 +66,7 @@ extern struct Library *aroscbase;
 
 #define AROSCNAME "arosc.library"
 
-#ifdef _CLIB_KERNEL_
+#if defined(_CLIB_KERNEL_) || defined(_CLIB_LIBRARY_)
 
 #define CLIB_USES_ETASK 1
 
@@ -78,6 +78,10 @@ extern struct Library *aroscbase;
 #endif
 
 #define GETUSER struct AroscUserData *clib_userdata = AROSC_USERDATA(0)
+
+#ifdef _CLIB_LIBRARY_
+#define clib_userdata (AROSC_USERDATA(0))
+#endif
 
 #define errno               (*(int *)         (clib_userdata->errnoptr))
 #define stdin               (*(FILE **)       (clib_userdata->stdinptr))
