@@ -142,10 +142,8 @@ int main(int argc, char *argv[])
     if (apath)
     {
 	/* Make sure DOS knows the buffer size.
-	 *
-	 * ap_Strlen in AmigaOS.
 	 */
-	apath->ap_StrLen = MAX_PATH_LEN;
+	apath->ap_Strlen = MAX_PATH_LEN;
 
 	/* The cast in ReadArgs() stops the compiler from complaining.
 	 */
