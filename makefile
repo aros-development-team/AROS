@@ -175,7 +175,7 @@ check : $(TESTS)
 #
 # END_DESC{target}
 clean:
-	-$(RM) $(ARCHDIR) host.cfg
+	-$(RM) $(ARCHDIR)
 	$(MAKE) $(MFLAGS) subdirs TARGET=clean
 
 # BEGIN_DESC{internaltarget}
@@ -243,7 +243,7 @@ $(CLIBDIR)/exec_protos.h: $(wildcard config/$(KERNEL)/*.s \
 	@$(TOP)/scripts/moveifchanged $@.new $@
 	@name=`basename $@ _protos.h` ; \
 	    $(TOP)/scripts/moveifchanged $(DEFINEDIR)/$$name.h.new $(DEFINEDIR)/$$name.h ; \
-	    $(RM) $@.new $$dir/$$name.h.new
+	    $(RM) $@.new $(DEFINEDIR)/$$name.h.new
 
 $(CLIBDIR)/dos_protos.h: $(wildcard rom/dos/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Dos \
@@ -251,7 +251,7 @@ $(CLIBDIR)/dos_protos.h: $(wildcard rom/dos/*.c) scripts/genprotos.h
 	@$(TOP)/scripts/moveifchanged $@.new $@
 	@name=`basename $@ _protos.h` ; \
 	    $(TOP)/scripts/moveifchanged $(DEFINEDIR)/$$name.h.new $(DEFINEDIR)/$$name.h ; \
-	    $(RM) $@.new $$dir/$$name.h.new
+	    $(RM) $@.new $(DEFINEDIR)/$$name.h.new
 
 $(CLIBDIR)/utility_protos.h: $(wildcard rom/utility/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Utility \
@@ -259,7 +259,7 @@ $(CLIBDIR)/utility_protos.h: $(wildcard rom/utility/*.c) scripts/genprotos.h
 	@$(TOP)/scripts/moveifchanged $@.new $@
 	@name=`basename $@ _protos.h` ; \
 	    $(TOP)/scripts/moveifchanged $(DEFINEDIR)/$$name.h.new $(DEFINEDIR)/$$name.h ; \
-	    $(RM) $@.new $$dir/$$name.h.new
+	    $(RM) $@.new $(DEFINEDIR)/$$name.h.new
 
 $(CLIBDIR)/graphics_protos.h: $(wildcard rom/graphics/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Graphics \
@@ -267,7 +267,7 @@ $(CLIBDIR)/graphics_protos.h: $(wildcard rom/graphics/*.c) scripts/genprotos.h
 	@$(TOP)/scripts/moveifchanged $@.new $@
 	@name=`basename $@ _protos.h` ; \
 	    $(TOP)/scripts/moveifchanged $(DEFINEDIR)/$$name.h.new $(DEFINEDIR)/$$name.h ; \
-	    $(RM) $@.new $$dir/$$name.h.new
+	    $(RM) $@.new $(DEFINEDIR)/$$name.h.new
 
 $(CLIBDIR)/intuition_protos.h: $(wildcard rom/intuition/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Intuition \
@@ -275,7 +275,7 @@ $(CLIBDIR)/intuition_protos.h: $(wildcard rom/intuition/*.c) scripts/genprotos.h
 	@$(TOP)/scripts/moveifchanged $@.new $@
 	@name=`basename $@ _protos.h` ; \
 	    $(TOP)/scripts/moveifchanged $(DEFINEDIR)/$$name.h.new $(DEFINEDIR)/$$name.h ; \
-	    $(RM) $@.new $$dir/$$name.h.new
+	    $(RM) $@.new $(DEFINEDIR)/$$name.h.new
 
 $(CLIBDIR)/console_protos.h: rom/devs/cdinputhandler.c \
 	    rom/devs/rawkeyconvert.c scripts/genprotos.h
@@ -284,7 +284,7 @@ $(CLIBDIR)/console_protos.h: rom/devs/cdinputhandler.c \
 	@$(TOP)/scripts/moveifchanged $@.new $@
 	@name=`basename $@ _protos.h` ; \
 	    $(TOP)/scripts/moveifchanged $(DEFINEDIR)/$$name.h.new $(DEFINEDIR)/$$name.h ; \
-	    $(RM) $@.new $$dir/$$name.h.new
+	    $(RM) $@.new $(DEFINEDIR)/$$name.h.new
 
 $(CLIBDIR)/icon_protos.h: $(wildcard workbench/libs/icon/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Icon \
@@ -292,7 +292,7 @@ $(CLIBDIR)/icon_protos.h: $(wildcard workbench/libs/icon/*.c) scripts/genprotos.
 	@$(TOP)/scripts/moveifchanged $@.new $@
 	@name=`basename $@ _protos.h` ; \
 	    $(TOP)/scripts/moveifchanged $(DEFINEDIR)/$$name.h.new $(DEFINEDIR)/$$name.h ; \
-	    $(RM) $@.new $$dir/$$name.h.new
+	    $(RM) $@.new $(DEFINEDIR)/$$name.h.new
 
 $(CLIBDIR)/iffparse_protos.h: $(wildcard workbench/libs/iffparse/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=IFFParse \
@@ -300,7 +300,7 @@ $(CLIBDIR)/iffparse_protos.h: $(wildcard workbench/libs/iffparse/*.c) scripts/ge
 	@$(TOP)/scripts/moveifchanged $@.new $@
 	@name=`basename $@ _protos.h` ; \
 	    $(TOP)/scripts/moveifchanged $(DEFINEDIR)/$$name.h.new $(DEFINEDIR)/$$name.h ; \
-	    $(RM) $@.new $$dir/$$name.h.new
+	    $(RM) $@.new $(DEFINEDIR)/$$name.h.new
 
 $(GENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@
