@@ -1,0 +1,43 @@
+#!/bin/sh
+# $0 from to
+# Find a relative path from "to" to "from"
+# ie. a path which can be used in "from" to get to "to".
+# Example: $0 x/y/z a/b -> ../../../a/b
+# Example: $0 /x/y/z a/b -> /x/y/z
+# Example: $0 x/../y/z a/b -> ../../a/b
+# Example: $0 x/y/../z a/b -> ../../a/b
+# Example: $0 x/./y/z a/b -> ../../../a/b
+
+gawk 'BEGIN {
+    from=ARGV[1];
+    to=ARGV[2];
+
+    prefix="";
+
+    gsub (/\/$/,"",from);
+
+    if (substr(from,1,1)=="/")
+	print from
+    else
+    {
+	while (from!="")
+	{
+	    if (!match(from,/^[^/]+/))
+	    {
+		from=substr(from,2);
+	    }
+	    else
+	    {
+		dir=substr(from,RSTART,RLENGTH);
+		from=substr(from,RSTART+RLENGTH+1);
+
+		if (dir != "." && dir != "..")
+		    prefix=prefix "../";
+		else if (dir=="..")
+		    prefix=substr(prefix,4);
+	    }
+	}
+
+	print prefix to
+    }
+}' $1 $2
