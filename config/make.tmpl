@@ -1425,10 +1425,10 @@ ifeq ($(MODTYPE),module)
 MOD_DIR%(id) := $(AROS_MODULES)
 endif
 ifeq ($(MODTYPE),mcc)
-MOD_DIR%(id) := $(CONTRIBDIR)/Zune/Libs/mui
+MOD_DIR%(id) := $(AROS_CLASSES)/Zune
 endif
 ifeq ($(MODTYPE),mcp)
-MOD_DIR%(id) := $(CONTRIBDIR)/Zune/Libs/mui
+MOD_DIR%(id) := $(AROS_CLASSES)/Zune
 endif
 ifeq ($(MOD_DIR%(id)),bollocks)
 $(error You have to set MODTYPE to something other than $(MODTYPE))
