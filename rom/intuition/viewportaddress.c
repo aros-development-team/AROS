@@ -16,7 +16,7 @@
 	AROS_LH1(struct ViewPort *, ViewPortAddress,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Window *, Window, D0),
+	AROS_LHA(struct Window *, Window, A0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 50, Intuition)
