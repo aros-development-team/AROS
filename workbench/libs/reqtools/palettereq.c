@@ -1006,14 +1006,12 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 	}
 
     #ifndef _AROS
-    #if 1
     #warning Changed, because gcc produced wrong code! gcc 2.95.1 compiled under UAE JIT for Linux!?
     	wheelwidth = glob->screenres.y;
 	wheelwidth *= wheelheight;
 	wheelwidth /= glob->screenres.x;
     #else
 	wheelwidth = wheelheight * glob->screenres.y / glob->screenres.x;
-    #endif
     #endif
 
 	if( ( scrwidth - winwidth > wheelwidth + 8 ) &&
