@@ -20,6 +20,9 @@
 extern struct DosLibrary *DOSBase;
 #endif
 
+/* Forward definitions */
+struct DevProc;
+
 /*
     Prototypes
 */
