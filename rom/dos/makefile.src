@@ -10,15 +10,23 @@ endif
 
 include $(TOP)/config/make.cfg
 
+LIBNAME = dos
+
 EXEDIR=$(BINDIR)/test
 TESTOBJDIR = $(GENDIR)/rom/dos
+OBJDIR=$(OSGENDIR)/$(LIBNAME)
+LIB=$(LIBDIR)/lib$(LIBNAME).so
 
 %define_libs
 
-%prepare_shlib dos $(SHARED_DOS)
+%prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
 
-FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname \
+INIT_FILE = $(LIBNAME)_init
+
+FILES = $(LIBNAME)_functable lddemon errorlist loadseg_elf doname \
 	loadseg_aout
+
+END_FILE = $(LIBNAME)_endtag
 
 FUNCTIONS = \
 	abortpkt addbuffers adddosentry addpart addprocess addsegment	     \
@@ -51,8 +59,9 @@ FUNCTIONS = \
 	vfwritef vprintf waitforchar waitpkt write writechars \
 	dosgetstring
 
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
-DEPS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
+
+OBJS=$(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
@@ -84,8 +93,16 @@ dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	%mkfunctable_q Dos
 
+$(LIBNAME)_endtag.c: $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q Dos
+
+$(OBJDIR)/$(LIBNAME)_init.o: libdefs.h
+
+%libdefs_rule
+
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
 %common
-%include_deps
+%include_deps $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).d)
+
