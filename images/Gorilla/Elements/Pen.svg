@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<!-- Created with Sodipodi ("http://www.sodipodi.com/") -->
+<svg
+   width="24pt"
+   height="24pt"
+   viewBox="0 0 24 24"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xml="http://www.w3.org/XML/1998/namespace"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   id="svg592"
+   sodipodi:version="0.32"
+   sodipodi:docname="/home/adam/Projekt/AROS/images/Gorilla/Elements/Pen.svg"
+   sodipodi:docbase="/home/adam/Projekt/AROS/images/Gorilla/Elements">
+  <defs
+     id="defs620">
+    <linearGradient
+       id="aigrd1"
+       gradientUnits="userSpaceOnUse"
+       x1="12.0688"
+       y1="2.3364"
+       x2="12.0688"
+       y2="5.2781">
+      <stop
+         offset="0"
+         style="stop-color:#FFFFFF"
+         id="stop597" />
+      <stop
+         offset="0.1236"
+         style="stop-color:#E6E6E6"
+         id="stop598" />
+    </linearGradient>
+  </defs>
+  <sodipodi:namedview
+     id="base" />
+  <g
+     id="Layer_x0020_4"
+     style="fill-rule:nonzero;clip-rule:nonzero;stroke:#000000;stroke-miterlimit:4;"
+     transform="matrix(-0.330617,-0.943766,0.943766,-0.330617,5.984113,28.50521)">
+    <path
+       style="fill:none;stroke-width:1.8855;stroke-linecap:round;stroke-linejoin:round;"
+       d="M7.5,4.2l5.7,3l6.2,8.3l-0.1,1.3l-1.4,1.5l-1.5-0.2L10,10.3l-2.4-6z"
+       id="path603" />
+    <linearGradient
+       id="aigrd2"
+       gradientUnits="userSpaceOnUse"
+       x1="11.144"
+       y1="12.4951"
+       x2="15.5123"
+       y2="9.1142">
+      <stop
+         offset="0"
+         style="stop-color:#EFF0CE"
+         id="stop605" />
+      <stop
+         offset="0.5"
+         style="stop-color:#FFFFFF"
+         id="stop606" />
+      <stop
+         offset="1"
+         style="stop-color:#EFF0CE"
+         id="stop607" />
+    </linearGradient>
+    <path
+       style="fill:url(#aigrd2);stroke:none;"
+       d="M7.5,4.2l5.7,3l6.2,8.3l-0.1,1.3l-1.4,1.5l-1.5-0.2L10,10.3l-2.4-6z"
+       id="path608" />
+    <path
+       style="fill:#E0C35D;stroke:none;"
+       d="M11.9,10.8l6,7.5l-1.5-0.2L10,10.3l2,0.5z"
+       id="path609" />
+    <path
+       style="fill:#C8AF53;stroke:none;"
+       d="M13.5,9.3l5.8,7.6l-1.4,1.5l-6-7.5l1.5-1.6z"
+       id="path610" />
+    <path
+       style="fill:#F7E46E;stroke:none;"
+       d="M13.3,7.3l6.2,8.3l-0.1,1.3l-5.8-7.6l-0.2-2z"
+       id="path611" />
+    <linearGradient
+       id="aigrd3"
+       gradientUnits="userSpaceOnUse"
+       x1="8.0918"
+       y1="5.6606"
+       x2="8.989"
+       y2="5.0924">
+      <stop
+         offset="0"
+         style="stop-color:#000000"
+         id="stop613" />
+      <stop
+         offset="0.5"
+         style="stop-color:#616061"
+         id="stop614" />
+      <stop
+         offset="1"
+         style="stop-color:#000000"
+         id="stop615" />
+    </linearGradient>
+    <path
+       style="fill:url(#aigrd3);stroke:none;"
+       d="M10.1,5.6c0,1-0.5,1.5-1.5,1.5L7.5,4.2l2.6,1.4z"
+       id="path616" />
+  </g>
+  <g
+     id="Layer_x0020_2"
+     style="fill-rule:nonzero;clip-rule:nonzero;stroke:#000000;stroke-miterlimit:4;">
+    <path
+       style="fill:none;stroke:none;"
+       d="M24,24H0V0h24v24z"
+       id="path618" />
+  </g>
+</svg>

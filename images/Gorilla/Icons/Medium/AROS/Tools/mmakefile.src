@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Calculator
+ICONS     := Calculator HDToolBox PCITool InstallAROS Editor
 ICONDIR   := $(AROSDIR)/Tools
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 

@@ -5,7 +5,10 @@ include $(TOP)/config/make.cfg
 
 ICONS     := \
     def_Disk def_RAM def_Harddisk def_CDROM def_Drawer def_Trashcan \
-    def_Project def_Picture def_Text def_Document def_Tool
+    def_Project def_Picture def_Text def_Document def_Tool def_Authors \
+    def_CSS def_Font def_HTML def_Legal def_Movie def_Music def_PDF def_Patch \
+    def_Postscript def_Presentation def_Printer def_ReadMe def_Spreadsheet \
+    def_XCF
 
 ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/SYS
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)

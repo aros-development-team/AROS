@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Generator: Adobe Illustrator 9.0, SVG Export Plug-In  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000303 Stylable//EN"   "http://www.w3.org/TR/2000/03/WD-SVG-20000303/DTD/svg-20000303-stylable.dtd" [
+	<!ENTITY st0 "fill:#D9D9D9;stroke-width:0.2296;">
+	<!ENTITY st1 "fill:#7273A3;stroke:none;">
+	<!ENTITY st2 "fill:#7273A3;stroke-width:0.2296;">
+	<!ENTITY st3 "stroke-width:0.9183;">
+	<!ENTITY st4 "fill:none;stroke:none;">
+	<!ENTITY st5 "fill-rule:nonzero;clip-rule:nonzero;stroke:#000000;stroke-miterlimit:4;">
+	<!ENTITY st6 "fill:url(#aigrd1);stroke-width:0.2296;">
+]>
+<svg  width="24pt" height="24pt" viewBox="0 0 24 24" xml:space="preserve">
+	<g id="Layer_x0020_3" style="&st5;">
+		<path style="&st3;" d="M21.3,1.1c0.8,0,1.5,0.7,1.5,1.5V21c0,0.8-0.7,1.5-1.5,1.5H3.2l-2-2V2.6c0-0.8,0.7-1.5,1.5-1.5h18.6z"/>
+		<path style="&st1;" d="M2.1,20.1l1.5,1.5h17.7c0.3,0,0.6-0.2,0.6-0.6V2.6c0-0.3-0.2-0.6-0.6-0.6H2.6C2.3,2,2.1,2.3,2.1,2.6v17.5z"/>
+		<linearGradient id="aigrd1" gradientUnits="userSpaceOnUse" x1="12.0688" y1="2.3364" x2="12.0688" y2="5.2781">
+			<stop  offset="0" style="stop-color:#FFFFFF"/>
+			<stop  offset="0.1236" style="stop-color:#E6E6E6"/>
+		</linearGradient>
+		<path style="&st6;" d="M19.8,11.2c0,0.3-0.2,0.5-0.5,0.5H4.9c-0.3,0-0.5-0.2-0.5-0.5V2.5C4.4,2.2,4.6,2,4.9,2h14.4c0.3,0,0.5,0.2,0.5,0.5v8.7z"/>
+		<path style="&st0;" d="M16.7,21.1c0,0.3-0.3,0.6-0.7,0.6H6.2c-0.4,0-0.7-0.2-0.7-0.6v-7.3c0-0.3,0.3-0.6,0.7-0.6H16c0.4,0,0.7,0.2,0.7,0.6v7.3z"/>
+		<path style="&st2;" d="M10.5,19.6c0,0.3-0.2,0.5-0.6,0.5H8.1c-0.3,0-0.6-0.2-0.6-0.5v-4.5c0-0.3,0.2-0.5,0.6-0.5H10c0.3,0,0.6,0.2,0.6,0.5v4.5z"/>
+	</g>
+	<g id="Layer_x0020_2" style="&st5;">
+		<path style="&st4;" d="M24,24H0V0h24v24z"/>
+	</g>
+</svg>

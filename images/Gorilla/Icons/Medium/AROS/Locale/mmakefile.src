@@ -3,8 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Clock Installer More MultiView
-ICONDIR   := $(AROSDIR)/Utilities
+ICONS     := Help
+ICONDIR   := $(AROSDIR)/Locale
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
 #MM
