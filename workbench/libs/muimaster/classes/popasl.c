@@ -129,11 +129,11 @@ AROS_UFH3(ULONG,Popasl_Open_Function,
 	    get(string,MUIA_String_Contents,&str);
 
 	    path_end = PathPart(str);
-	    buf = (char*)AllocVec(path_end - str + 2, MEMF_PUBLIC);
+	    buf = (char*)AllocVec(path_end - str + 10, MEMF_PUBLIC);
 	    if (!buf) return 0;
 
 	    strncpy(buf,str,path_end - str);
-	    buf[path_end - str] = 0;
+	    strcpy(buf + (path_end - str),".font");
 
 	    data->tag_list[5].ti_Tag = ASLFR_InitialFile;
 	    data->tag_list[5].ti_Data = (IPTR)FilePart(str);
@@ -256,7 +256,11 @@ AROS_UFH3(ULONG,Popasl_Close_Function,
 		    if (buf)
 		    {
 		    	char num_buf[20];
+		    	char *font_ext;
 		        strcpy(buf,name);
+
+		        /* Remove the .font extension */
+		        if ((font_ext = strstr(buf,".font"))) *font_ext = 0;
 		        sprintf(num_buf,"%ld",size);
 		        AddPart(buf,num_buf,len);
 		        set(string,MUIA_String_Contents,buf);
