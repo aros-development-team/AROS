@@ -105,7 +105,7 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
     hook.h_Entry = (HOOKFUNC)LocDateToStrPutCharFunc;
     hook.h_Data = &buf;
     
-    ObtainSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
+    REPLACEMENT_LOCK;
     
     loc = (struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale;
     
@@ -213,7 +213,7 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
 	FormatDate(loc, fstring, &datetime->dat_Stamp, &hook);
     }
     
-    ReleaseSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
+    REPLACEMENT_UNLOCK;
    
     return DOSTRUE;
     

@@ -102,11 +102,15 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 
     //kprintf("LocRawDoFmt: FormatString = \"%s\"\n", FormatString);
  
+    REPLACEMENT_LOCK;
+    
     retval = FormatString(&(IntLB(LocaleBase)->lb_CurrentLocale->il_Locale),
     	    	    	  (STRPTR)FormatString,
 			  DataStream,
 			  &hook);
 
+    REPLACEMENT_UNLOCK;
+    
     //kprintf("LocRawDoFmt: FormatString: returning %x\n", retval);
     
     return retval;
