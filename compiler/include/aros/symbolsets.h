@@ -11,6 +11,7 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <exec/execbase.h>
 #include <aros/asmcall.h>
 
 struct libraryset
@@ -21,14 +22,17 @@ struct libraryset
 };
 
 extern int set_call_funcs(const void *set[], int direction, int test_fail);
-extern int set_open_libraries(void);
-extern void set_close_libraries(void);
 extern
 AROS_UFH3(int, set_call_libfuncs,
 	  AROS_UFHA(void**, set, A0),
 	  AROS_UFHA(int, order, D0),
 	  AROS_UFHA(void*, libbase, A6)
 	 );
+
+extern int set_open_libraries_Sys(struct ExecBase *);
+extern void set_close_libraries_Sys(struct ExecBase *);
+#define set_open_libraries()      set_open_libraries_Sys(SysBase)
+#define set_close_libraries()     set_close_libraries_Sys(SysBase)
 
 #define SETNAME(set) __##set##_LIST__
 

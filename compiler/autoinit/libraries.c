@@ -21,10 +21,8 @@ DECLARESET(LIBS);
 AROS_MAKE_ASM_SYM(int, dummy, __includelibrarieshandling, 0);
 AROS_EXPORT_ASM_SYM(__includelibrarieshandling);
                              
-int set_open_libraries(void)
+int set_open_libraries_Sys(struct ExecBase *SysBase)
 {
-    AROS_GET_SYSBASE_OK
-    
     int pos;
     struct libraryset *set;
     
@@ -56,10 +54,8 @@ int set_open_libraries(void)
     return 1;
 }
 
-void set_close_libraries(void)
+void set_close_libraries_Sys(struct ExecBase *SysBase)
 {
-    AROS_GET_SYSBASE_OK
-    
     int pos;
     struct libraryset *set;
     
