@@ -14,54 +14,59 @@
 #include <oop/root.h>
 #include <oop/meta.h>
 #include <oop/interface.h>
+#include <oop/ifmeta.h>
+
+#include "private.h"
 
 #include "intern.h"
 
+#undef SDEBUG
 #undef DEBUG
 #define DEBUG 0
+#define SDEBUG 0
 #include <aros/debug.h>
 
 #define OOPBase ((struct Library *)cl->UserData)
-static struct IFMethod *FindIF(struct IntClass *cl, ULONG ifid);
+
 static IPTR StdCallIF(Interface *iface, Msg msg);
 
-struct InterfaceData
+struct interface_data
 {
     /* First part of the interface object's instance data is
        public, and may be accesesd directly.
     */
-    Interface PublicPart;
+    Interface public;
     
     /* The pointer to the interface's methods should indeed not
        be public.
     */
-    struct IFMethod	*MethodTable;
+    struct IFMethod	*methodtable;
 };    
 
 
-struct IntIFObject
+struct interface_object
 {
     /* All objects has a pointer to their class at ((VOID **)o)[-1] */
-    Class *OClass;
+    Class *oclass;
     
     /* When getting a interface ojject, you will get a pointer to
        &(intifobject->Inst.PublicPart)
     */
-    struct InterfaceData Inst;
+    struct interface_data data;
 
 };
 
-/************
-**  New()  **
-************/
-static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
+/***********************
+**  Interface::New()  **
+***********************/
+static Object *interface_new(Class *cl, Object *o, struct P_Root_New *msg)
 {
      
     
-    ULONG if_id = 0UL;
+    STRPTR if_id = NULL;
     struct IFMethod *if_mtab;
     Object *if_obj;
-    struct IntIFObject *if_inst;
+    struct interface_object *ifo;
     
     /* Parse parameters */
     
@@ -69,9 +74,9 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     if_obj = (Object *)GetTagData(A_Interface_TargetObject, NULL, msg->AttrList);
     
     /* What interface does he want from the object ? */
-    if_id  = (ULONG)GetTagData(A_Interface_InterfaceID,  0UL,  msg->AttrList);
+    if_id  = (STRPTR)GetTagData(A_Interface_InterfaceID,  NULL,  msg->AttrList);
 
-    EnterFunc(bug("Interface::New(if_obj=%p, if_id=%ld)\n", if_obj, if_id));
+    EnterFunc(bug("Interface::New(if_obj=%p, if_id=%s)\n", if_obj, if_id));
     
     /* We MUST have those two parameters, to be able to
        create an interface object */
@@ -79,10 +84,10 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     	ReturnPtr("Interface::New", Object *, NULL);
 
 	
-    D(bug("Trying to find interface: %ld\n", if_id));
+    D(bug("Trying to find interface: %s\n", if_id));
 
     /* Try to find interface in the target object's class*/
-    if_mtab = FindIF((struct IntClass *)OCLASS(if_obj), if_id);
+    if_mtab = findinterface(OCLASS(if_obj), if_id);
     
     if (!if_mtab) 
     	/* Not supported. Failed. */
@@ -91,8 +96,8 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     D(bug("mtab found: %p\n", if_mtab));
     
     /* Allocate mem for the interface object */
-    if_inst = AllocMem( sizeof (struct IntIFObject), MEMF_ANY );
-    if (if_inst)
+    ifo = AllocMem( sizeof (struct interface_object), MEMF_ANY );
+    if (ifo)
     {
 
         D(bug("obj alloced\n"));
@@ -103,22 +108,22 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
 	   (He doesn't have to store both)
 	*/
 	
-	if_inst->Inst.PublicPart.TargetObject = if_obj;
+	ifo->data.public.TargetObject = if_obj;
 	
 	
 	/* Function for calling a method on an interface obect.
 	   Just use a standard one, but we could add support
 	   for letting the user override the function with his own.
 	*/
-	if_inst->Inst.PublicPart.Call = StdCallIF;
+	ifo->data.public.Call = StdCallIF;
 	
 	/* The interface object must have some methods to call :-) */
-	if_inst->Inst.MethodTable = if_mtab;
+	ifo->data.methodtable = if_mtab;
 	
 	/* Initialize OCLASS(interfaceobject) */
-	if_inst->OClass	= cl;
+	ifo->oclass	= cl;
 	
-	ReturnPtr ("Interface::New", Object *, (Object *)&(if_inst->Inst.PublicPart));
+	ReturnPtr ("Interface::New", Object *, (Object *)&(ifo->data.public));
     }
     ReturnPtr ("Interface::New", Object *, NULL);
     
@@ -127,12 +132,12 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
 /****************
 **  Dispose()  **
 ****************/
-static VOID _Root_Dispose(Class *cl, Interface  *ifobj, Msg msg )
+static VOID interface_dispose(Class *cl, Interface  *ifobj, Msg msg )
 {
     EnterFunc(bug("Interface::Dispose()\n"));
     
     /* Just free the thing */
-    FreeMem(_OBJECT(ifobj), sizeof (struct IntIFObject));
+    FreeMem(_OBJECT(ifobj), sizeof (struct interface_object));
     
     ReturnVoid("Interface::Dispose");
 }
@@ -142,35 +147,6 @@ static VOID _Root_Dispose(Class *cl, Interface  *ifobj, Msg msg )
 **  Support functions  **
 ************************/
 
-/* FindIF() finds the method table of an interface inside a class.
-   If the interface isn't supported by the class, it returns NULL
-*/
-
-static struct IFMethod *FindIF(struct IntClass *cl, ULONG ifid)
-{
-    register struct IFBucket *b;
-
-    /* Get offset into hashtable (linked list of buckets) */
-    b = ((struct IntClass *)cl)->IFTableDirectPtr[ifid & cl->HashMask];
-    
-    /* Look thriugh the linked list of buckets for the correct one */
-loop:
-    if (b)
-    {
-    	/* Correct bucket ? */
-        if (b->InterfaceID == ifid)
-	{
-	    /* Yep. return methodtable */
-	    return(b->MethodTable);
-    	}
-
-	/* Not correct ID. Try again with next bucket in linked list */
-        b = b->Next;
-        goto loop;
-    }
-    /* Interface not found in hash table */
-    return (NULL);
-}
 
 /* Default way to call a interface objects' method.
    (Inserted into the Interface struct's CallIF() field
@@ -178,12 +154,12 @@ loop:
 static IPTR StdCallIF(Interface *iface, Msg msg)
 {
     /* Mask off the method offset */
-    register ULONG midx = msg->MethodID & METHOD_MASK;
+    register ULONG midx = msg->MID & METHOD_MASK;
     
     register struct IFMethod *method;
     
     /* Get the correct method from the correct offset */
-    method = &( ((struct InterfaceData *)iface)->MethodTable[midx] );
+    method = &( ((struct interface_data *)iface)->methodtable[midx] );
     
     /* ... and call the method on the interface object's target object */
     return ( method->MethodFunc(method->mClass, iface->TargetObject, msg) );
@@ -193,19 +169,19 @@ static IPTR StdCallIF(Interface *iface, Msg msg)
 #undef OOPBase
 
 /* Well, initalize the interface class. Self explainatory */
-Class *InitInterfaceClass(struct Library *OOPBase)
+Class *init_interfaceclass(struct Library *OOPBase)
 {
 
     struct MethodDescr methods[] =
     {
-	{(IPTR (*)())_Root_New,			MIDX_Root_New},
-	{(IPTR (*)())_Root_Dispose,		MIDX_Root_Dispose},
+	{(IPTR (*)())interface_new,		MIDX_Root_New},
+	{(IPTR (*)())interface_dispose,		MIDX_Root_Dispose},
 	{ NULL, 0UL }
     };
     
     struct InterfaceDescr ifdescr[] =
     {
-    	{ methods, GUID_Root, 2},
+    	{ methods, IID_Root, 2},
 	{ NULL, 0UL, 0UL}
     };
     
@@ -213,22 +189,22 @@ Class *InitInterfaceClass(struct Library *OOPBase)
     {
         {A_Class_SuperID,		(IPTR)NULL},
 	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)INTERFACECLASS},
-	{A_Class_InstSize,		(IPTR)sizeof (struct InterfaceData)},
+	{A_Class_ID,			(IPTR)CLID_Interface},
+	{A_Class_InstSize,		(IPTR)sizeof (struct interface_data)},
 	{TAG_DONE, 0UL}
     };
 
     
     Class *cl;
     
-    EnterFunc(bug("InitInterfaceClass()\n"));
+    EnterFunc(bug("init_interfaceclass()\n"));
     
-    cl = (Class *)NewObjectA(NULL, METACLASS, tags);
+    cl = (Class *)NewObjectA(NULL, CLID_IFMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;
     	AddClass(cl);
     }
     
-    ReturnPtr ("InitInterfaceClass", Class *, cl);
+    ReturnPtr ("init_interfaceclass", Class *, cl);
 }

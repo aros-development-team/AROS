@@ -22,13 +22,17 @@
 
 typedef ULONG Object;
 
+typedef ULONG MethodID;
+
 typedef struct
 {
-    IPTR MethodID;
+    MethodID MID;
 } *Msg;
 
 
-typedef struct IClass
+typedef struct IClass Class;
+
+struct IClass
 {
 
     /* Array of pointers to methodtables for this class */
@@ -36,11 +40,12 @@ typedef struct IClass
     
     
     ULONG InstOffset;
-    ULONG InstSize;
     APTR UserData;
     IPTR (*DoMethod)(Object *, Msg);
+    IPTR (*CoerceMethod)(Class *, Object *, Msg);
+    IPTR (*DoSuperMethod)(Class *, Object *, Msg);
 
-} Class;
+};
 
 
 
@@ -61,13 +66,15 @@ struct _Object
 #define _OBJ(obj) ((struct _Object *)(obj))
 
 #define INST_DATA(cl, obj) \
-	(((VOID *)(obj)) + _OBJECT(obj)->o_Class->InstOffset)
+	(((VOID *)(obj)) + (cl)->InstOffset)
 
 #define OCLASS(obj) \
 	(_OBJECT(obj)->o_Class)
 
 
 #define DoMethod(o, msg) ( (OCLASS(o))->DoMethod((o), (msg)) )
+#define DoSuperMethod(cl, o, msg) ((cl)->DoSuperMethod(cl, o, msg))
+#define CoerceMethod(cl, o, msg) ((cl)->CoerceMethod(cl, o, msg))
 
 #define TagIdx(tag) ((tag) & METHOD_MASK)
 

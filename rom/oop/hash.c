@@ -45,6 +45,7 @@ struct HashTable *NewHash(ULONG entries, UBYTE type, struct IntOOPBase *OOPBase)
 
     /* Allocate hashtable struct */
     
+    
     ht = AllocMem(sizeof (struct HashTable), MEMF_ANY);
     if (ht)
     {
@@ -138,15 +139,16 @@ VOID FreeHash(struct HashTable *ht, VOID (*freebucket)(), struct IntOOPBase *OOP
 struct Bucket *HashLookupULONG(struct HashTable *ht, IPTR id, struct IntOOPBase *OOPBase)
 {
     struct Bucket *b;
-    
+    EnterFunc(bug("HashLookupULONG(ht=%p, id=%ld)\n", ht, id));
     /* Function for looking up integers in the table */
     for (b = ht->Table[CalcHashULONG(ht, id)]; b; b = b->Next)
     {
+    	D(bug("Current bucket: %p of id %ld\n", b, b->ID));
     	if (b->ID == id)
-	    return (b);
+	    ReturnPtr ("HashLookupULONG", struct Bucket *, b);
     }
     
-    return (NULL);
+    ReturnPtr ("HashLookupULONG", struct Bucket *, NULL);
 }
 
 struct Bucket *HashLookupStr(struct HashTable *ht, IPTR id, struct IntOOPBase *OOPBase)

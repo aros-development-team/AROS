@@ -12,8 +12,8 @@
 
 extern ULONG __OOPI_Server;
 
-#define GUID_Server "Server"
-#define SERVERCLASS "serverclass"
+#define IID_Server "Server"
+#define CLID_Server "serverclass"
 
 enum {
     MIDX_Server_AddObject = 0,
@@ -55,7 +55,7 @@ struct P_Server_FindObject
 #define Server_AddObject(o, object, id)	\
 ({		\
     struct P_Server_AddObject msg;	\
-    msg.MethodID = M_Server_AddObject;	\
+    msg.MethodID = GetMethodID(IID_Server, MIDX_Server_AddObject);	\
     msg.Object = object;		\
     msg.ObjectID = id;			\
     ((BOOL)DoMethod(o, (Msg)&msg));		\
@@ -64,7 +64,7 @@ struct P_Server_FindObject
 #define Server_RemoveObject(o, id)	\
 ({		\
     struct P_Server_RemoveObject msg;		\
-    msg.MethodID = M_Server_RemoveObject;	\
+    msg.MethodID = GetMethodID(IID_Server, MIDX_Server_RemoveObject);	\
     msg.ObjectID = id;				\
     DoMethod(o, (Msg)&msg);			\
 })
@@ -72,14 +72,14 @@ struct P_Server_FindObject
 #define Server_FindObject(o, id)	\
 ({					\
     struct P_Server_FindObject msg;	\
-    msg.MethodID = M_Server_FindObject;	\
+    msg.MethodID = GetMethodID(IID_Server, MIDX_Server_FindObject);	\
     msg.ObjectID = id;			\
     ((Object *)DoMethod(o, (Msg)&msg));		\
 })
 
 #define Server_Run(o)			\
 ({					\
-    ULONG mid = M_Server_Run;		\
+    ULONG mid = GetMethodID(IID_Server, MIDX_Server_Run);		\
     DoMethod(o, (Msg)&mid);		\
 })
 

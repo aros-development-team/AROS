@@ -9,7 +9,8 @@
 #include <exec/lists.h>
 #include <proto/exec.h>
 #include <oop/root.h>
-// #include "intern.h"
+#include "intern.h"
+#define MD(x) ((struct metadata *)x)
 
 /*****************************************************************************
 
@@ -79,7 +80,7 @@
 	/* If a public ID was given, find pointer to class */
 	classPtr = (Class *)FindName((struct List *)&(GetOBase(OOPBase)->ob_ClassList), classID);
 	if (classPtr)
-	   IntCl(classPtr)->ObjectCount ++; /* We don't want the class to be freed while we work on it */
+	   MD(classPtr)->objectcount ++; /* We don't want the class to be freed while we work on it */
     }
     
     /* Release lock on list */
@@ -92,14 +93,18 @@
     
     D(bug("Creating new instance\n"));
 
-    p.MethodID = (IPTR)M_Root_New;
+    p.MID = GetMethodID(IID_Root, MIDX_Root_New);
     p.AttrList = tagList;
+    
+    D(bug("mid=%ld\n", p.MID));
 
     /* Call the New() method of the specified class */
-    o = (Object *)CoerceMethodA(classPtr, (Object *)classPtr, (Msg)&p);
+    
+    D(bug("Coercemethod: %p\n", classPtr->CoerceMethod));
+    o = (Object *)CoerceMethod(classPtr, (Object *)classPtr, (Msg)&p);
     if (!o)
     {
-	IntCl(classPtr)->ObjectCount --; /* Object creation failed, release lock */
+	MD(classPtr)->objectcount --; /* Object creation failed, release lock */
     }
     ReturnPtr ("NewObjectA", Object *, o);
     

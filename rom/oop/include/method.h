@@ -11,9 +11,9 @@
 
 extern ULONG __OOPI_Method;
 
-#define GUID_Method "Method"
+#define IID_Method "Method"
 
-#define METHODCLASS "methodclass"
+#define CLID_Method "methodclass"
 
 #define MethodBase (__OOPI_Method)
 

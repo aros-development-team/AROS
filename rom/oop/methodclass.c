@@ -15,8 +15,10 @@
 #include <oop/method.h>
 #include <oop/root.h>
 #include <oop/meta.h>
+#include <oop/ifmeta.h>
 
 #include "intern.h"
+#include "private.h"
 
 #undef DEBUG
 #undef SDEBUG
@@ -34,29 +36,28 @@
    the same object many times, and need it to be fast.
 */
 
-static struct IFMethod *FindMethod(struct IntClass *cl, ULONG mid);
 
-struct IntMethod
+struct intmethod
 {
     /* Every object has its class at ((VOID **)obj)[-1] */
     
-    Class *OClass;
+    Class *oclass;
     
     /* The app gets a pointer to &(intmethod->PublicPart).
        The public part is a readonly public struct.
      */
-    Method PublicPart;
+    Method public;
 };
 
-struct MethodData
+struct method_data
 {
-    Method PublicPart;
+    Method public;
 };
 
-/************
-**  New()  **
-************/
-static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
+/********************
+**  Method::New()  **
+********************/
+static Object *method_new(Class *cl, Object *o, struct P_Root_New *msg)
 {
     Msg m_msg     = NULL;
     Object *m_obj = NULL;
@@ -64,7 +65,7 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     struct TagItem *tag, *tstate;
     
     ULONG mid = 0UL;
-    struct IntMethod *m;
+    struct intmethod *m;
     struct IFMethod *ifm;
     
     EnterFunc(bug("Method::New()\n"));
@@ -106,50 +107,56 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     	ReturnPtr("Method::New", Object *, NULL);
 	
     /* Try to find methodfunc */
-    ifm = FindMethod((struct IntClass *)OCLASS(m_obj), mid);
+    D(bug("trying to find method, oclass=%p, oclass(oclass)=%p\n",
+    	OCLASS(m_obj), OCLASS(OCLASS(m_obj)) ));
+    D(bug("oclass(oclass)=%s\n", OCLASS(OCLASS(m_obj))->ClassNode.ln_Name));
+    
+    ifm = meta_findmethod((Object *)OCLASS(m_obj), mid, (struct Library *)OOPBase);
+    D(bug("found method: %p\n", ifm));
     if (!ifm)
     	/* If method isn't supported by target object, exit gracefully */
     	ReturnPtr("Method::New", Object *, NULL);
     
     /* Allocate mem for the method object */
-    m = AllocMem( sizeof (struct IntMethod), MEMF_ANY );
-    if (m);
+    m = AllocMem( sizeof (struct intmethod), MEMF_ANY );
+    if (m)
     {
+    	D(bug("Method object allocated\n"));
 	
 	/* Initialize message's method ID. (User convenience) */
-	m_msg->MethodID = mid;
+	m_msg->MID = mid;
 
 	/* Target object is stored for user convenience */
-    	m->PublicPart.TargetObject  = m_obj;
+    	m->public.TargetObject  = m_obj;
 	
 	/* The message is stored for user convenience */
-	m->PublicPart.Message       = m_msg;
+	m->public.Message       = m_msg;
 	
 	/* Store method implemetation func and the class that will
 	   receive the method call. (We skip unimplemented class calls)
 	*/
-	m->PublicPart.MethodFunc    = ifm->MethodFunc;
-	m->PublicPart.MClass	    = ifm->mClass;
+	m->public.MethodFunc    = ifm->MethodFunc;
+	m->public.MClass	= ifm->mClass;
 	
 	/* Initialize OCLASS(methodobject) */
-	m->OClass	= cl;
+	m->oclass	= cl;
 	
 	/* Return pointer to the public part */
-	ReturnPtr ("Method::New", Object *, (Object *)&(m->PublicPart));
+	ReturnPtr ("Method::New", Object *, (Object *)&(m->public));
     }
     ReturnPtr ("Method::New", Object *, NULL);
     
 }
 
-/****************
-**  Dispose()  **
-****************/
-static VOID _Root_Dispose(Class *cl, Method  *m, Msg msg )
+/************************
+**  Method::Dispose()  **
+************************/
+static VOID method_dispose(Class *cl, Method  *m, Msg msg )
 {
     EnterFunc(bug("Method::Dispose()\n"));
     
     /* Well, free the method object */
-    FreeMem(_OBJECT(m), sizeof (struct IntMethod));
+    FreeMem(_OBJECT(m), sizeof (struct intmethod));
     
     ReturnVoid("Method::Dispose");
 }
@@ -158,59 +165,22 @@ static VOID _Root_Dispose(Class *cl, Method  *m, Msg msg )
 **  Support functions  **
 ************************/
 
-/* FindMethod()
-   Find the method in the target object's class.
-   If method isn't supported by class, NULL is supplied.
-*/
-
-static struct IFMethod *FindMethod(struct IntClass *cl, ULONG mid)
-{
-    register struct IFBucket *b;
-    
-    /* Get interfaceID part of methodID */
-    register ULONG ifid = mid & (~METHOD_MASK);	
-
-    /* Get method offset part of methdoID */
-    mid &= METHOD_MASK;
-    
-    /* Look up ID in hashtable and get linked list of buckets,
-       storing interfaces
-     */
-    b = ((struct IntClass *)cl)->IFTableDirectPtr[ifid & cl->HashMask];
-loop:
-    if (b)
-    {
-    	/* Founc correct interface ? */
-        if (b->InterfaceID == ifid)
-	{
-	    /* Yep. Return method at supplied method offset */
-	    return(&(b->MethodTable[mid]));
-    	}
-
-        b = b->Next;
-        goto loop;
-    }
-    /* Method not found, return NULL */
-    return (NULL);
-}
-
-
 #undef OOPBase
 
-/* Self-exapainatory */
-Class *InitMethodClass(struct IntOOPBase *OOPBase)
+/* Self-explainatory */
+Class *init_methodclass(struct IntOOPBase *OOPBase)
 {
 
     struct MethodDescr methods[] =
     {
-	{(IPTR (*)())_Root_New,			MIDX_Root_New},
-	{(IPTR (*)())_Root_Dispose,		MIDX_Root_Dispose},
+	{(IPTR (*)())method_new,	MIDX_Root_New},
+	{(IPTR (*)())method_dispose,	MIDX_Root_Dispose},
 	{ NULL, 0UL }
     };
     
     struct InterfaceDescr ifdescr[] =
     {
-    	{ methods, GUID_Root, 2},
+    	{ methods, IID_Root, 2},
 	{ NULL, 0UL, 0UL}
     };
     
@@ -218,22 +188,23 @@ Class *InitMethodClass(struct IntOOPBase *OOPBase)
     {
         {A_Class_SuperID,		(IPTR)NULL},
 	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)METHODCLASS},
-	{A_Class_InstSize,		(IPTR)sizeof (struct MethodData)},
+	{A_Class_ID,			(IPTR)CLID_Method},
+	{A_Class_InstSize,		(IPTR)sizeof (struct method_data)},
 	{TAG_DONE, 0UL}
     };
 
     
     Class *cl;
     
-    EnterFunc(bug("InitMethodClass()\n"));
+    EnterFunc(bug("init_methodclass()\n"));
     
-    cl = (Class *)NewObjectA(NULL, METACLASS, tags);
+    cl = (Class *)NewObjectA(NULL, CLID_IFMeta, tags);
     if (cl)
     {
+    	D(bug("Method class successfully created\n"));
         cl->UserData = OOPBase;
     	AddClass(cl);
     }
     
-    ReturnPtr ("InitMethodClass", Class *, cl);
+    ReturnPtr ("init_methodclass", Class *, cl);
 }

@@ -15,12 +15,15 @@
 #include <oop/proxy.h>
 #include <oop/meta.h>
 #include <oop/server.h>
+#include <oop/ifmeta.h>
 
 #include <string.h>
 
 #include "intern.h"
 
 #undef DEBUG
+#undef SDEBUG
+#define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -79,11 +82,11 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     if ( !(realobject && serverport) )
     	return (NULL);
     
-    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (o)
     {
         struct ProxyData *data;
-	ULONG disp_mid = M_Root_Dispose;
+	ULONG disp_mid = GetMethodID(IID_Root, MIDX_Root_Dispose);
 	    
 	data = (struct ProxyData *)INST_DATA(cl, o);
 	
@@ -116,7 +119,7 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
 	    
 	}
 	
-	CoerceMethodA(cl, o, (Msg)&disp_mid);
+	CoerceMethod(cl, o, (Msg)&disp_mid);
 	
     }
     ReturnPtr("Proxy::New", Object *, NULL);
@@ -138,7 +141,7 @@ static VOID _Root_Dispose(Class *cl, Object *o, Msg msg)
     	FreeMem(data->Message, sizeof (struct ProxyMsg));
 
     /* .. and the object itself. */
-    DoSuperMethodA(cl, o, msg);
+    DoSuperMethod(cl, o, msg);
     
     ReturnVoid("Proxy::Dispose");
 }
@@ -155,7 +158,7 @@ static VOID _Root_Dispose(Class *cl, Object *o, Msg msg)
 
 static IPTR _Proxy_DoMethod(Object *o, Msg msg)
 {
-    struct ProxyData *data = INST_DATA(cl, o);
+    struct ProxyData *data = INST_DATA(OCLASS(o), o);
     
     EnterFunc(bug("Proxy_DoMethod()\n"));
     
@@ -182,7 +185,7 @@ static IPTR _Proxy_DoMethod(Object *o, Msg msg)
 
 #undef OOPBase
 
-Class *InitProxyClass(struct Library *OOPBase)
+Class *init_proxyclass(struct Library *OOPBase)
 {
 
     struct MethodDescr root_methods[] =
@@ -195,15 +198,15 @@ Class *InitProxyClass(struct Library *OOPBase)
     
     struct InterfaceDescr ifdescr[] =
     {
-    	{ root_methods,		GUID_Root, 2},
+    	{ root_methods,		IID_Root, 2},
 	{ NULL, 0UL, 0UL}
     };
     
     struct TagItem tags[] =
     {
-        {A_Class_SuperID,		(IPTR)ROOTCLASS},
+        {A_Class_SuperID,		(IPTR)CLID_Root},
 	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)PROXYCLASS},
+	{A_Class_ID,			(IPTR)CLID_Proxy},
 	{A_Class_InstSize,		(IPTR)sizeof (struct ProxyData) },
 	{A_Class_DoMethod,		(IPTR)_Proxy_DoMethod},
 	{TAG_DONE, 0UL}
@@ -212,14 +215,14 @@ Class *InitProxyClass(struct Library *OOPBase)
     
     Class *cl;
     
-    EnterFunc(bug("InitServerClass()\n"));
+    EnterFunc(bug("InitProxyClass()\n"));
     
-    cl = (Class *)NewObjectA(NULL, METACLASS, tags);
+    cl = (Class *)NewObjectA(NULL, CLID_IFMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;
     	AddClass(cl);
     }
     
-    ReturnPtr ("InitServerClass", Class *, cl);
+    ReturnPtr ("InitProxyClass", Class *, cl);
 }

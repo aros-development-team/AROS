@@ -11,8 +11,8 @@
 
 extern ULONG __OOPI_Proxy;
 
-#define GUID_Proxy "Proxy"
-#define PROXYCLASS "proxyclass"
+#define IID_Proxy "Proxy"
+#define CLID_Proxy "proxyclass"
 
 #define ProxyBase (__OOPI_Proxy)
 

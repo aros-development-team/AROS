@@ -8,28 +8,48 @@
     Lang: english
 */
 
-
-extern ULONG __OOPI_Root;
+#ifndef OOP_OOP_H
+#   include <oop/oop.h>
+#endif
 
 
 /* Root class defs */
 
-#define GUID_Root "Root"
-#define ROOTCLASS "rootclass"
+#define IID_Root "Root"
+#define CLID_Root "rootclass"
 
-#define RootBase (__OOPI_Root)
 
-#define MIDX_Root_New		0
-#define MIDX_Root_Dispose	1
+enum
+{
+    MIDX_Root_New = 0,
+    MIDX_Root_Dispose,
+    MIDX_Root_Set,
+    MIDX_Root_Get,
+    
+    NUM_M_Root
+};
+    
 
-#define M_Root_New	(RootBase + MIDX_Root_New)
-#define M_Root_Dispose	(RootBase + MIDX_Root_Dispose)
 
 /* Message structs */
 struct P_Root_New
 {
-    ULONG MethodID;
+    MethodID MID;
     struct TagItem *AttrList;
 };
+
+struct P_Root_Set
+{
+    MethodID MID;
+    struct TagItem *AttrList;
+};
+
+struct P_Root_Get
+{
+    MethodID MID;
+    ULONG AttrID;
+    IPTR *Storage;
+};
+
 
 #endif /* OOP_ROOT_H */

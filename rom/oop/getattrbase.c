@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: OOP function GetID
+    Desc: OOP function GetAttrBase
     Lang: english
 */
 
@@ -17,7 +17,7 @@
 
 #include <aros/debug.h>
 
-	AROS_LH1(ULONG, GetID,
+	AROS_LH1(ULONG, GetAttrBase,
 
 /*  SYNOPSIS */
 	AROS_LHA(STRPTR  	, stringID, A0),
@@ -27,21 +27,17 @@
 
 /*  FUNCTION
 	Maps a globally unique string interface ID into
-	a numeric interface ID that is unique on
+	a numeric AttrBase ID that is unique on
 	pr. machine basis.
-	The interface ID is also used as a part of the method ID.
-	Programmers must use this to
-	initialize global vars that are used for
-	as part of methodIDs.
+	
 
     INPUTS
     	stringID	- globally unique interface identifier.
 
     RESULT
-    	Numeric interface identifier that is unique for this machine.
+    	Numeric AttrBase that is unique for this machine.
 
     NOTES
-    	Can also be used for initializing attribute bases.
 
     EXAMPLE
 
@@ -59,23 +55,30 @@
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
     /* Look up ID */
-    struct IDBucket *idb;
-    struct HashTable *idtable = GetOBase(OOPBase)->ob_IDTable;
-    ULONG id = 0UL;
+    struct iid_bucket *idb;
+    struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
+    ULONG base = -1UL;
     
-    EnterFunc(bug("GetID(stringID=%s)\n", stringID));
+    EnterFunc(bug("GetAttrBase(stringID=%s)\n", stringID));
     
     
     /* Has ID allready been mapped to a numeric ID ? */
-    idb = (struct IDBucket *)idtable->Lookup(idtable, (IPTR)stringID, (struct IntOOPBase *)OOPBase);
+    idb = (struct iid_bucket *)iidtable->Lookup(iidtable, (IPTR)stringID, GetOBase(OOPBase));
     if (idb)
     {
 
     	/* If so, it has been stored in the hashtable, and we have 
     	** to return the same numeric ID now.
 	*/
-    	id = idb->NumericID;
-	D(bug("Bucket found: id=%ld\n", id));
+	if (idb->attrbase == -1UL)
+	{
+	    idb->attrbase = GetOBase(OOPBase)->ob_CurrentAttrBase ++;
+	}
+	
+    	base = idb->attrbase;
+	base <<= NUM_METHOD_BITS;
+
+	D(bug("Bucket found: id=%ld\n", base));
     }
     else
     {
@@ -86,30 +89,35 @@
     	/* If not, then map it and create a new bucket in the
 	** hashtable to store it
 	*/
-	idb = AllocMem(sizeof (struct IDBucket), MEMF_ANY);
+	idb = AllocMem(sizeof (struct iid_bucket), MEMF_ANY);
 	if (idb)
 	{
-	    idb->StrID = AllocVec(strlen(stringID) + 1, MEMF_ANY);
-	    if (idb->StrID)
+	    idb->interface_id = AllocVec(strlen(stringID) + 1, MEMF_ANY);
+	    if (idb->interface_id)
 	    {
 	    	D(bug("Allocated bucket\n"));
-	    	strcpy(idb->StrID, stringID);
+	    	strcpy(idb->interface_id, stringID);
 		
 		/* Get next free ID, and increase the free ID to mark it as used */
-		id = idb->NumericID = ++ GetOBase(OOPBase)->ob_CurrentID;
+		base = idb->attrbase = GetOBase(OOPBase)->ob_CurrentAttrBase ++;
+		
+		base <<= NUM_METHOD_BITS;
+		idb->methodbase = -1UL;
 		
 		/* Insert bucket into hash table */
-		InsertBucket(idtable, (struct Bucket *)idb, (struct IntOOPBase *)OOPBase);
+		InsertBucket(iidtable, (struct Bucket *)idb, GetOBase(OOPBase));
 	    }
 	    else
 	    {
-	    	FreeMem(idb, sizeof (struct IDBucket));
+	    	FreeMem(idb, sizeof (struct iid_bucket));
+		
+/* Throw exception here */		
+		base = -1UL;
 	    }
 	}
     }
     
-    /* The ID must be left-shifted to make place for method offsets */
-    ReturnInt ("GetID", ULONG, id << NUM_METHOD_BITS);
+    ReturnInt ("GetAttrBase", ULONG, base);
     
     AROS_LIBFUNC_EXIT
 

@@ -15,9 +15,9 @@
 
 extern ULONG __OOPI_Interface;
 
-#define GUID_Interface "Interface"
+#define IID_Interface "Interface"
 
-#define INTERFACECLASS "interfaceclass"
+#define CLID_Interface "interfaceclass"
 
 #define InterfaceBase (__OOPI_Interface)
 

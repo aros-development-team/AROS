@@ -16,10 +16,12 @@
 #include <oop/meta.h>
 #include <oop/server.h>
 #include <oop/proxy.h>
+#include <oop/ifmeta.h>
 #include <string.h>
 
 #include "intern.h"
 
+#undef DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -58,27 +60,42 @@ struct  ServerObjectNode
 
 static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
 {
-    EnterFunc(bug("Server::New()\n"));
-    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+    EnterFunc(bug("Server::New(cl=%s, o=%p, msg=%p)\n",
+    		cl->ClassNode.ln_Name, o, msg));
+    
+    D(bug("DoSuperMethod: %p\n", cl->DoSuperMethod));
+    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    D(bug("got obj\n"));
+
     if (o)
     {
-    	struct ServerData *data = INST_DATA(cl, o);
-	ULONG disp_mid = M_Root_Dispose;
+    	struct ServerData *data;
+	ULONG disp_mid;
+    	D(bug("getting instdata\n"));
 	
+	data = INST_DATA(cl, o);
+    	D(bug("got instdata\n"));
+
+	disp_mid = GetMethodID(IID_Root, MIDX_Root_Dispose);
+    	D(bug("got dispmid\n"));
 	/* Clear so we can test what resources are allocated in Dispose() */
+	D(bug("Object created, o=%p, data=%p\n", o, data));
 	memset(data, 0, sizeof (struct ServerData));
-	
+
+	D(bug("Object instdata cleared\n"));	
 	NEWLIST(&data->ObjectList);
 	InitSemaphore(&data->ObjectListLock);
 	
 	/* Set up port for receiving incoming invocation requests */
+	D(bug("Creating receive msgport\n"));	
+
 	data->ReceivePort = CreateMsgPort();
 	if (data->ReceivePort)
 	{
 	
 	    ReturnPtr("Server::New", Object *, o);
 	}
-	CoerceMethodA(cl, o, (Msg)&disp_mid);
+	CoerceMethod(cl, o, (Msg)&disp_mid);
 	
     }
     ReturnPtr ("Server::New", Object *, NULL);
@@ -199,7 +216,7 @@ static Object * _Server_FindObject(Class *cl, Object *o, struct P_Server_FindObj
 	
 	Object *proxy;
 	
-	proxy = NewObjectA(NULL, PROXYCLASS, proxy_tags);
+	proxy = NewObjectA(NULL, CLID_Proxy, proxy_tags);
 	if (proxy)
 	{
 	    ReturnPtr("Server::FindObject", Object *, proxy);
@@ -237,7 +254,7 @@ static VOID _Server_Run(Class *cl, Object *o, Msg msg)
 
 #undef OOPBase
 
-Class *InitServerClass(struct Library *OOPBase)
+Class *init_serverclass(struct Library *OOPBase)
 {
 
     struct MethodDescr root_methods[] =
@@ -258,16 +275,16 @@ Class *InitServerClass(struct Library *OOPBase)
     
     struct InterfaceDescr ifdescr[] =
     {
-    	{ root_methods,		GUID_Root, 2},
-    	{ server_methods,	GUID_Server, 4},
+    	{ root_methods,		IID_Root, 2},
+    	{ server_methods,	IID_Server, 4},
 	{ NULL, 0UL, 0UL}
     };
     
     struct TagItem tags[] =
     {
-        {A_Class_SuperID,		(IPTR)ROOTCLASS},
+        {A_Class_SuperID,		(IPTR)CLID_Root},
 	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)SERVERCLASS},
+	{A_Class_ID,			(IPTR)CLID_Server},
 	{A_Class_InstSize,		(IPTR)sizeof (struct ServerData)},
 	{TAG_DONE, 0UL}
     };
@@ -277,7 +294,7 @@ Class *InitServerClass(struct Library *OOPBase)
     
     EnterFunc(bug("InitServerClass()\n"));
     
-    cl = (Class *)NewObjectA(NULL, METACLASS, tags);
+    cl = (Class *)NewObjectA(NULL, CLID_IFMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;

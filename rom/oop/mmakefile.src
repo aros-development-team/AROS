@@ -54,10 +54,10 @@ LIBNAME  := oop
 ULIBNAME := OOP
 
 OSMODULE  := oop.library
-FILES	  := support hash rootclass metaclass methodclass method \
-	serverclass proxyclass interfaceclass
+FILES	  := support hash rootclass metaclass   \
+	 privatestubs methodclass interfaceclass serverclass proxyclass hiddmetaclass
 	
-FUNCTIONS := newobjecta getid dosupermethoda coercemethoda \
+FUNCTIONS := newobjecta getattrbase  getmethodid \
 	disposeobject addclass removeclass addserver removeserver findserver
 
 # BEGIN_DESC{localmakevar}

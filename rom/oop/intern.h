@@ -33,11 +33,25 @@
 #   include <oop/oop.h>
 #endif
 
+#ifndef OOP_ROOT_H
+#   include <oop/root.h>
+#endif
 
+#ifndef OOP_META_H
+#   include <oop/meta.h>
+#endif
+
+/* Predeclaration */
+struct IntOOPBase;
+
+#ifndef PRIVATE_H
+#   include "private.h"
+#endif
+
+#define SDEBUG 0
 #define DEBUG 0
 
 
-#define IntCl(cl) ((struct IntClass *)cl)
 
 /* These are used to index an array in the library base
    from which we get the IDs for the used interfaces.
@@ -53,6 +67,8 @@ enum {
     NUM_Indexes
 };
 
+
+
 /* Used by the internal GetIDs() functions, to get several
 IDs at a time */
 
@@ -62,34 +78,7 @@ struct IDDescr
     ULONG *Storage;
 };
 
-/* Definition of the entire class structure */
 
-struct IntClass
-{
-    /* The number of methods that are new for this class */
-    struct IClass PPart; /* Public part */
-    
-    ULONG SubClassCount;
-    ULONG ObjectCount;
-    
-    struct IntClass *SuperClass;
-
-    
-    /* The hashtable containing the interfaces (method tables) */
-    struct HashTable *IFTable;
-    
-    /* A direct pointer into the hashtable, for faster lookup */
-    struct IFBucket **IFTableDirectPtr;
-    
-    /* Used by the hash function. As the above field, it is put
-    ** here for speed
-    */
-    ULONG HashMask;
-    
-    /* Number of interfaces in the hashtable */
-    ULONG NumInterfaces;
-    
-};
 
 
 /* defines used to access the interface IDs stored in the library base */
@@ -101,54 +90,6 @@ struct IntClass
 #define __OOPI_Proxy		(GetOBase(OOPBase)->ob_InternIDs[IDX_IProxy])
 #define __OOPI_Interface	(GetOBase(OOPBase)->ob_InternIDs[IDX_IInterface])
 
-/* definition of oop.library's library base structure */
-struct IntOOPBase
-{
-    struct Library		 ob_LibNode;
-    struct ExecBase	       * ob_SysBase;
-    struct Library	       * ob_UtilityBase;
-    BPTR			 ob_SegList;
-
-    struct SignalSemaphore	 ob_ClassListLock;
-    struct MinList		 ob_ClassList;
-    
-    struct SignalSemaphore	 ob_ServerListLock;
-    struct MinList		 ob_ServerList;
-    
-    /* rootclass */
-    struct IntClass 		 ob_RootClass;
-    
-    /* Instance data of the meta object/class */
-    struct MetaInst
-    {
-    	Class *Class; /* The meta object's class */
-		/* Possible future addon: Root object's instance here */
-	struct IntClass InstanceData; /* Meta object's instance data */
-    }
-    			 	 ob_MetaClass;
-
-    /* Store pointers to some usefull classes here */				 
-    Class			 *ob_MethodClass;
-    Class			 *ob_ServerClass;
-    Class			 *ob_ProxyClass;
-    Class			 *ob_InterfaceClass;
-    
-    /* Hashtable containing string interface ID => Numeric interface
-    ** ID mappings. Used by GetID()
-    */
-    struct HashTable	       * ob_IDTable;
-    
-    /* The currently lowest available numeric interfaceID that
-    ** we can map a new interface string ID onto.
-    ** Used by GetID()
-    */
-    
-    ULONG			 ob_CurrentID;
-    
-    /* An array of the interface IDs used internally. */
-    ULONG			 ob_InternIDs[NUM_Indexes];
-};
-
 #define GetOBase(lib)           ((struct IntOOPBase *)(lib))
 #define SysBase 		(GetOBase(OOPBase)->ob_SysBase)
 #define UtilityBase		(GetOBase(OOPBase)->ob_UtilityBase)
@@ -157,60 +98,54 @@ struct IntOOPBase
 **  Prototypes  **
 *****************/
 
-/* Functions from... */
-/* support.c */
-BOOL AllocDispatchTables(
-		struct IntClass 	*cl,
-		struct InterfaceDescr 	*ifDescr,
-		struct IntOOPBase 	*OOPBase);
-VOID FreeDispatchTables(struct IntClass *cl, struct IntOOPBase *OOPBase);
-
-
-
 BOOL GetIDs(struct IDDescr *idDesr, struct IntOOPBase *OOPBase);
 
-/* method.c */
-IPTR LocalDoMethod(Object *, Msg);
 
 /* rootclass.c */
-BOOL InitRootClass(struct IntOOPBase *OOPBase);
+BOOL init_rootclass(struct IntOOPBase *OOPBase);
 
 /* metaclass.c */
-BOOL InitMetaClass(struct IntOOPBase *OOPBase);
+BOOL init_basemeta(struct IntOOPBase *OOPBase);
+BOOL init_ifmetaclass(struct IntOOPBase *OOPBase);
 
 /* methodclass.c */
-Class *InitMethodClass(struct IntOOPBase *OOPBase);
+Class *init_methodclass(struct IntOOPBase *OOPBase);
 
 /* serverclass.c */
-Class *InitServerClass(struct Library *OOPBase);
+Class *init_serverclass(struct Library *OOPBase);
 
 /* proxyclass.c */
-Class *InitProxyClass(struct Library *OOPBase);
+Class *init_proxyclass(struct Library *OOPBase);
 
 /* interfaceclass.c */
-Class *InitInterfaceClass(struct Library *OOPBase);
+Class *init_interfaceclass(struct Library *OOPBase);
+
+
+Class *init_hiddmetaclass(struct IntOOPBase *OOPBase);
+
+/* support.c */
+BOOL hasinterface(Class *cl, STRPTR interface_id);
+struct IFMethod *findinterface(Class *cl, STRPTR interface_id);
+struct IFMethod *findmethod(Class *cl, STRPTR interface_id, ULONG method_offset);
+BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
+BOOL init_mi_methodbase(STRPTR interface_id, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
 
 /*****************
 **  Structures  **
 *****************/
 
 /* Bucket for hashtable used to map string interface IDs to
-** numeric interface IDs. Used in getid.c().		
+** numeric interface IDs and attrbases.
 */
 
-struct IDBucket
+struct iid_bucket
 {
-    struct IDBucket *Next;
-    STRPTR StrID;
-    ULONG  NumericID;
-    
+    struct iid_bucket *next;
+    STRPTR interface_id;
+    ULONG  methodbase;
+    ULONG  attrbase;
 };
 
-/* Instance data of the meta object */
-struct MetaData
-{
-    Class ClassInstance;
-};
 
 
 /* Definition of bucket for hashtable used to store
@@ -221,6 +156,7 @@ struct IFBucket
 {
     struct IFBucket *Next;
     ULONG InterfaceID;
+    STRPTR GlobalInterfaceID;
     struct IFMethod *MethodTable;
     ULONG NumMethods;
 };
@@ -259,37 +195,134 @@ struct ServerNode
     Object	*sn_Server;
 };
 
-/* Macro that performs normal method invocations on an object.
-   Used in DoMethod(), CoerceMethod() and DoSuperMethod().
-   Basically, the macro below uses the interfaceID part of the
-   methodID to look up the class' hashtable of supported interfaces.
-   Then it gets the method array for the interface, and uses
-   the method offset part of the methodID to call the correct
-   method.
-*/
 
-#   define IntCallMethod(cl, o, msg) 					\
-    {				    					\
-    	register struct IFBucket *b;					\
-    	register ULONG mid = msg->MethodID;				\
-    	register ULONG ifid = mid & (~METHOD_MASK);			\
-    	register struct IFMethod *method;				\
-    									\
-    	mid &= METHOD_MASK;						\
-									\
-	b = cl->IFTableDirectPtr[ifid & cl->HashMask];			\
-loop:   if (b) 								\
-   	{								\
-       	    if (b->InterfaceID == ifid)					\
-	    {								\
-	    	method = &(b->MethodTable[mid]);			\
-	    	return (method->MethodFunc(method->mClass, o, msg));	\
-	    }    							\
-            b = b->Next;						\
-	    goto loop;							\
-    	}								\
-    	return (0UL);							\
-     }
+/* Instance data of base metaclass and rootclass */
 
+struct metadata
+{
+    Class public; /* public part of class objects */
+    Class *superclass;
+    ULONG subclasscount;
+    ULONG objectcount;
+    ULONG instsize;
+    BOOL  disptabs_inited;
+    ULONG numinterfaces;
+    
+};
+
+#define NUM_BASEMETA_IFS 2
+struct basemetaobject /* Real instance data of the base meta class */
+{
+    Class  *oclass; /* The meta object's class */
+    struct basemeta_inst
+    {
+    	struct metadata data;
+    	struct IFMethod *iftable[NUM_BASEMETA_IFS]; /* has two interfaces: root and meta */
+    
+    	/* The interface tables */
+    	struct IFMethod	rootif[NUM_M_Root];
+    	struct IFMethod	metaif[NUMTOTAL_M_Meta];
+    } inst;
+};
+
+struct rootclassobject
+{
+    Class *oclass; /* The rootclass object's class */
+    struct rootinst
+    {
+    	struct metadata data;
+    	struct IFMethod rootif[NUM_M_Root];
+    } inst;
+};
+
+
+/* IFMeta class */
+
+struct ifmeta_data
+{
+    
+    /* The hashtable containing the interfaces (method tables) */
+    struct HashTable *iftable;
+    
+    /* A direct pointer into the hashtable, for faster lookup */
+    struct IFBucket **iftab_directptr;
+    
+    /* Used by the hash function. As the above field, it is put
+    ** here for speed
+    */
+    ULONG hashmask;
+    
+    /* Number of interfaces in the hashtable */
+    ULONG numinterfaces;
+
+};
+
+
+struct ifmetaobject
+{
+    Class *oclass; /* The interface metaclass' class (itself) */
+    struct ifmeta_inst
+    {
+    	struct metadata base;
+	struct ifmeta_data data;
+	
+    } inst;
+};
+
+
+
+/*************************
+** Library Base struct  **
+*************************/
+struct IntOOPBase
+{
+    struct Library		 ob_LibNode;
+    struct ExecBase	       * ob_SysBase;
+    struct Library	       * ob_UtilityBase;
+    BPTR			 ob_SegList;
+
+    struct SignalSemaphore	 ob_ClassListLock;
+    struct MinList		 ob_ClassList;
+    
+    struct SignalSemaphore	 ob_ServerListLock;
+    struct MinList		 ob_ServerList;
+    
+    /* rootclass object */
+    struct rootclassobject	 ob_RootClassObject;
+    
+    /* base metaclass object */
+    struct basemetaobject	 ob_BaseMetaObject;
+    
+    /* interface metaclass object */
+    struct ifmetaobject		 ob_IFMetaObject;
+    
+    /* HIDD metaclass */				
+    Class 			 *ob_HIDDMetaClass;
+
+    /* Store pointers to some usefull classes here */				 
+    Class			 *ob_MethodClass;
+    Class			 *ob_ServerClass;
+    Class			 *ob_ProxyClass;
+    Class			 *ob_InterfaceClass;
+    
+    /* Hashtable containing string interface ID => Numeric interface
+    ** ID mappings. Used by GetMethodID() and GetAttrBase()
+    */
+    struct HashTable	       * ob_IIDTable;
+    
+    /* The currently lowest available numeric interfaceID that
+    ** we can map a new interface string ID onto.
+    ** Used by GetID()
+    */
+    
+    ULONG			 ob_CurrentMethodBase;
+    ULONG			 ob_CurrentAttrBase;
+    
+    /* An array of the interface IDs used internally. */
+    ULONG			 ob_InternIDs[NUM_Indexes];
+};
+
+#define ROOTCLASSPTR (& (OOPBase)->ob_RootClassObject.inst.data.public)
+#define BASEMETAPTR (& (OOPBase)->ob_BaseMetaObject.inst.data.public)
 
 #endif /* INTERN_H */

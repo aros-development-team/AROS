@@ -23,6 +23,11 @@
 #include "libdefs.h"
 
 #include "hash.h"
+#undef SDEBUG
+#undef DEBUG
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
 
 
 BOOL InitUtilityClasses(struct IntOOPBase *OOPBase);
@@ -71,12 +76,14 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 
     struct IDDescr intern_ids[] =
     {
-	{ GUID_Root,		&__OOPI_Root		},
-	{ GUID_Meta,		&__OOPI_Meta		},
-	{ GUID_Method,		&__OOPI_Method		},
-	{ GUID_Server,		&__OOPI_Server		},
-	{ GUID_Proxy,		&__OOPI_Proxy		},
-	{ GUID_Interface,	&__OOPI_Interface	},
+    	/* We must make sure that Root gets ID 0 and Meta gets ID 1 */
+	{ IID_Root,		&__OOPI_Root		},
+	{ IID_Meta,		&__OOPI_Meta		},
+	
+	{ IID_Method,		&__OOPI_Method		},
+	{ IID_Server,		&__OOPI_Server		},
+	{ IID_Proxy,		&__OOPI_Proxy		},
+	{ IID_Interface,	&__OOPI_Interface	},
 	{ NULL,	NULL }
     };
 
@@ -85,27 +92,31 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 
     NEWLIST(&GetOBase(LIBBASE)->ob_ServerList);
     InitSemaphore(&GetOBase(LIBBASE)->ob_ServerListLock);
-
+    
+    SDInit();
 	
     UtilityBase = OpenLibrary (UTILITYNAME, 0);
     if (UtilityBase)
     {
-    	GetOBase(LIBBASE)->ob_IDTable = NewHash(NUM_IDS, HT_STRING, GetOBase(LIBBASE));
-    	if (GetOBase(LIBBASE)->ob_IDTable)
+    	GetOBase(LIBBASE)->ob_IIDTable = NewHash(NUM_IDS, HT_STRING, GetOBase(LIBBASE));
+    	if (GetOBase(LIBBASE)->ob_IIDTable)
 	{
-	    
 	    /* Get some IDs that are used internally */
     	    if (GetIDs(intern_ids, (struct IntOOPBase *)OOPBase))
     	    {
-            	if (InitRootClass(GetOBase(OOPBase)))
+            	if (init_rootclass(GetOBase(OOPBase)))
 	    	{
-            	    if (InitMetaClass(GetOBase(OOPBase)))
+            	    if (init_basemeta(GetOBase(OOPBase)))
 	    	    {
-		        if ((GetOBase(OOPBase)->ob_MethodClass =
-					InitMethodClass((struct IntOOPBase *)OOPBase) ))
+		    	if (init_ifmetaclass(GetOBase(OOPBase)))
 			{
-	    	    	    if (InitUtilityClasses((struct IntOOPBase *)OOPBase))
-			    	return (TRUE);
+			    GetOBase(OOPBase)->ob_HIDDMetaClass
+			    	= init_hiddmetaclass(GetOBase(OOPBase));
+			    if (GetOBase(OOPBase)->ob_HIDDMetaClass)
+			    {
+	    	    	    	if (InitUtilityClasses((struct IntOOPBase *)OOPBase))
+			    	    return (TRUE);
+			    }
 			}
 		    }
 	    	}
@@ -124,16 +135,24 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 **************************/
 BOOL InitUtilityClasses(struct IntOOPBase *OOPBase)
 {
-    OOPBase->ob_ServerClass = InitServerClass((struct Library *)OOPBase);
-    if (OOPBase->ob_ServerClass)
+    D(bug("Initializing methodclass\n"));
+    if ((GetOBase(OOPBase)->ob_MethodClass = init_methodclass(GetOBase(OOPBase) )))
     {
-        OOPBase->ob_ProxyClass = InitProxyClass((struct Library *)OOPBase);
-	if (OOPBase->ob_ProxyClass)
-	{
-	    OOPBase->ob_InterfaceClass = InitInterfaceClass((struct Library *)OOPBase);
-	    if (OOPBase->ob_InterfaceClass)
+    	D(bug("Initializing serverclass\n"));
+    	OOPBase->ob_ServerClass = init_serverclass((struct Library *)OOPBase);
+    	if (OOPBase->ob_ServerClass)
+    	{
+	    D(bug("Initializing proxyclass\n"));
+    	    OOPBase->ob_ProxyClass = init_proxyclass((struct Library *)OOPBase);
+	    if (OOPBase->ob_ProxyClass)
 	    {
-    	    	return (TRUE);
+    		D(bug("Initializing interfaceclass\n"));
+	    	OOPBase->ob_InterfaceClass = init_interfaceclass((struct Library *)OOPBase);
+	    	if (OOPBase->ob_InterfaceClass)
+	    	{
+    	    	    D(bug("Everything initialized\n"));
+    	    	    return (TRUE);
+		}
 	    }
 	}
     }

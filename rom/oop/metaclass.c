@@ -14,10 +14,11 @@
 #include <oop/meta.h>
 #include <oop/root.h>
 #include <oop/oop.h>
+#include <oop/ifmeta.h>
 
 #include "intern.h"
 #include "hash.h"
-
+#include "private.h"
 
 #undef SDEBUG
 #undef DEBUG
@@ -25,7 +26,60 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OOPBase	(GetOBase(((Class *)cl)->UserData))
+#define MD(cl) ((struct metadata *)cl)
+#define IFI(cl) ((struct ifmeta_inst *)cl)
+
+#   define IntCallMethod(cl, o, msg) 					\
+    {				    					\
+    	register struct IFBucket *b;					\
+    	register MethodID mid = msg->MID;				\
+    	register ULONG ifid = mid & (~METHOD_MASK);			\
+    	register struct IFMethod *method;				\
+    									\
+    	mid &= METHOD_MASK;						\
+									\
+	b = IFI(cl)->data.iftab_directptr[ifid & IFI(cl)->data.hashmask];	\
+loop:   if (b) 								\
+   	{								\
+       	    if (b->InterfaceID == ifid)					\
+	    {								\
+	    	method = &(b->MethodTable[mid]);			\
+	    	return (method->MethodFunc(method->mClass, o, msg));	\
+	    }    							\
+            b = b->Next;						\
+	    goto loop;							\
+    	}								\
+    	return (0UL);							\
+     }
+
+
+
+#define UB(x) ((UBYTE *)x)
+
+/* Allocates and initializes the interface hashtable, and the methodtables */
+static BOOL ifmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisptabs *msg);
+static VOID ifmeta_freedisptabs(Class *cl, Object *o, Msg msg);
+
+static IPTR Meta_DoMethod(Object *o, Msg msg);
+static IPTR Meta_CoerceMethod(Class *cl, Object *o, Msg msg);
+static IPTR Meta_DoSuperMethod(Class *cl, Object *o, Msg msg);
+
+/* Hooks */
+VOID freebucket(struct Bucket *b, struct IntOOPBase *OOPBase);
+struct Bucket *copybucket(struct Bucket *old_b, APTR data, struct IntOOPBase *OOPBase);
+
+/* Internal */
+static struct IFBucket *createbucket(
+			 STRPTR			interface_id
+			,ULONG			num_methods
+			,struct IntOOPBase 	*OOPBase);
+			
+static ULONG calc_ht_entries(struct ifmeta_inst *cl
+		,Class *super
+		,struct InterfaceDescr *ifDescr
+		,struct IntOOPBase *OOPBase);
+
+
 
 /*
    The metaclass is used to create class. That means,
@@ -36,237 +90,695 @@
 */   
    
    
+#define OOPBase	(GetOBase(((Class *)cl)->UserData))
+   
 
-/************
-**  New()  **
-************/
-static Object *_Root_New(struct IntClass *cl, Object *o, struct P_Root_New *msg)
+/********************
+**  IFMeta::New()  **
+********************/
+static Object *ifmeta_new(Class *cl, Object *o, struct P_Root_New *msg)
 {
-    struct IntClass *data;
 
-    struct InterfaceDescr *ifdescr = NULL;
-    STRPTR superid = NULL, clid = NULL;
-    struct IntClass *superptr = NULL;
-    struct TagItem *tag, *tstate;
-    ULONG instsize = (ULONG)-1L;
     IPTR (*domethod)(Object *, Msg) = NULL;
+    IPTR (*coercemethod)(Class *, Object *, Msg) 	= NULL;
+    IPTR (*dosupermethod)(Class *, Object *, Msg) 	= NULL;
 
-    EnterFunc(bug("Meta::New(cl=%s, msg = %p)\n",
-    	cl->PPart.ClassNode.ln_Name, msg));
+    EnterFunc(bug("IFMeta::New(cl=%s, msg = %p)\n",
+    	cl->ClassNode.ln_Name, msg));
 
-    /* Analyze the taglist before object is allocated,
-    ** so we can easily exit cleanly if some info is missing
-    */
-
-    tstate = msg->AttrList;
-    while ((tag = NextTagItem(&tstate)))
-    {
-        if (IsMetaAttr(tag->ti_Tag))
-	{
-	    D(bug("Got meta attr %lx with TagIdx %ld\n",
-	    	tag->ti_Tag, TagIdx(tag->ti_Tag) ));
-	    
-	    switch (TagIdx(tag->ti_Tag))
-	    {
-	    
-	    case AIDX_Class_SuperID:
-	        D(bug("Got superID\n"));
-		/* ID of superclass */
-		superid = (STRPTR)tag->ti_Data;
-		break;
-		    
-	    case AIDX_Class_InterfaceDescr:
-	        D(bug("Got ifdescr\n"));
-		/* What interfaces does the class support ? */
-		ifdescr = (struct InterfaceDescr *)tag->ti_Data;
-		break;
-		    
-	    case AIDX_Class_ID:
-	        D(bug("Got classID\n"));
-		/* The new class' ID */
-		clid = (STRPTR)tag->ti_Data;
-		break;
-		    
-	    case AIDX_Class_SuperPtr:
-	        D(bug("Got superPtr\n"));
-		/* If the super class is private, than we must have
-		   a pointer to it.
-		*/
-		superptr = (struct IntClass *)tag->ti_Data;
-		break;
-		
-	    case AIDX_Class_InstSize:
-	        /* Instance data size for the new class */
-	        instsize = (ULONG)tag->ti_Data;
-		break;
-		
-	    case AIDX_Class_DoMethod:
-	        /* The user can override the class' default DoMethod() call */
-	        domethod = (IPTR(*)(Object *, Msg))tag->ti_Data;
-		break;
-	    }
-	    
-	}
-	
-    }
-    
-    /* The user must supply instance size */
-    if (instsize == (ULONG)-1)
-    	ReturnPtr ("Meta::New, no instsize", Object *, NULL);
-    
-    /* The new class must have interfaces */
-    if (!ifdescr)
-    	ReturnPtr ("Meta::New, no ifdescr", Object *, NULL);
-
-    /* The new class must have a superclass */
-    if (!superptr)
-    {
-	if (superid)
-	{
-	    superptr = (struct IntClass *)FindName((struct List *)&(GetOBase(OOPBase)->ob_ClassList), superid);
-	    if (!superptr)
-	    	ReturnPtr ("Meta::New, no superptr/id", Object *, NULL);
-	}
-    }
-    
-    /* We are sure we have enough args, and can let rootclass alloc the instance data */
-    o = (Object *)DoSuperMethodA((Class *)cl, o, (Msg)msg);
+    /* Let the BaseMeta class initialize some stuff for us */
+    o = (Object *)DoSuperMethod((Class *)cl, o, (Msg)msg);
     if (o)
     {
-	ULONG dispose_mid = M_Root_Dispose;
+       
+        struct ifmeta_inst *inst;
+	
+	inst = (struct ifmeta_inst *)o;
+	
+	domethod 	= (IPTR (*)())GetTagData(A_Class_DoMethod, 	NULL, msg->AttrList);
+	coercemethod 	= (IPTR (*)())GetTagData(A_Class_CoerceMethod, 	NULL, msg->AttrList);
+	dosupermethod	= (IPTR (*)())GetTagData(A_Class_DoSuperMethod, NULL, msg->AttrList);
+	
 
-        D(bug("Instance allocated\n"));
+        D(bug("Instance allocated %p\n", inst));
 	
-	data = (struct IntClass *)INST_DATA(cl, o);
-	
-	D(bug("superptr=%p\n", superptr));
-	
-	/* Set new class' superclass. This MUST be done
-	   before calling AllocDispatchTables(), cause this
-	   function has to copy the dispatch tables of the superclass
-	 */
-	data->SuperClass = superptr;
-	
-	/* Allocate dispatch tables for the new class (see support.c) */
-	if (AllocDispatchTables(data, ifdescr, OOPBase))
+		    
+	if (!domethod)
+	    domethod = Meta_DoMethod;
+		    
+	if (!coercemethod)
+	    coercemethod = Meta_CoerceMethod;
+		    
+	if (!dosupermethod)
 	{
-	    /* Copy the class' ID */
-	    data->PPart.ClassNode.ln_Name = AllocVec(strlen (clid) + 1, MEMF_ANY);
-	    if (data->PPart.ClassNode.ln_Name)
+	    
+	    Class *superptr = inst->base.superclass;
+	    if (superptr)
 	    {
-	    
-	    	/* Initialize class fields */
-		
-		/* Instoffset */
-		if (superptr)
-	    	    data->PPart.InstOffset = superptr->PPart.InstOffset + superptr->PPart.InstSize;
-		else
-		    data->PPart.InstOffset = 0UL;
-		    
-		if (!domethod)
-		    domethod = LocalDoMethod;
-		    
-		data->PPart.InstSize 	= instsize;
-		data->PPart.DoMethod	= domethod;
-	    	data->SubClassCount 	= 0UL;
-	    	data->ObjectCount	= 0UL;
-	    
-	    	data->SuperClass	= superptr;
-		
-		/* Copy class ID */
-		strcpy(data->PPart.ClassNode.ln_Name, clid);
-		
-	    	/* NumInterfaces, HashTable, IFTableDirectPtr and HashMask allready set
-	   	** by AllocDispatchTables()
-		*/
-	    
-	    
-    	    	ReturnPtr ("Meta::New", Object *, o);
-	    }
-	    FreeDispatchTables(data, OOPBase);
-	}
+	    	D(bug("Got superptr: %p\n", superptr));
+	    	/* Use superclass' DoSupermethod call if superclass isn't
+	      	    an instance of the HIDDMetaClass
+	    	*/
+	    	if (OCLASS(superptr) != (Class *)cl)
+	    	{
+	    	    D(bug("superptr has different meta\n"));
 
-	CoerceMethodA((Class *)cl, o, (Msg)&dispose_mid);
+	    	    dosupermethod = superptr->DoSuperMethod;
+	    	}
+	    	else
+	    	{
+	    	    D(bug("superptr has same meta\n"));
+	    
+	    	    dosupermethod = Meta_DoSuperMethod;
+	    	}
+		
+	    }
+	    else /* if (class has no superclass) */
+	    {
+	    	dosupermethod = NULL;
+	    }
+	        
+	}
+		
+	inst->base.public.DoMethod	= domethod;
+	inst->base.public.CoerceMethod	= coercemethod;
+	inst->base.public.DoSuperMethod	= dosupermethod;
+	    
+	D(bug("Classes' functions set\n"));
     }
     
-    ReturnPtr ("Meta::New", Object *, NULL);   
+    ReturnPtr ("IFMeta::New", Object *, o);   
 }
 
-/****************
-**  Dispose()  **
-****************/
-static VOID _Root_Dispose(struct IntClass *cl, Object *o, Msg msg)
+/******************************
+**  IFMeta::allocdisptabs()  **
+******************************/
+
+/* Allocates and initializes the interface hashtable, and the methodtables */
+static BOOL ifmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdisptabs *msg)
 {
-    struct IntClass *data = (struct IntClass *)INST_DATA(cl, o);
+    ULONG num_if;
+    
+    struct ifmeta_inst *inst = (struct ifmeta_inst *)o;
+    
+    
+    EnterFunc(bug("IFMeta::allocdisptabs(cl=%p, o=%p,ifDescr=%p)\n",
+    	cl, o, msg->ifdescr));
+    
+    /* Get number of needed hash entries */
+    num_if = calc_ht_entries(inst, msg->superclass, msg->ifdescr, OOPBase);
+    
+    inst->base.numinterfaces = num_if;
 
-    EnterFunc(bug("Meta::Dispose(o=%p, oclass=%s)\n", o, _OBJECT(o)->o_Class->ClassNode.ln_Name));
+    D(bug("numinterfaces set to %ld\n", num_if));
     
-    D(bug("Freeing dispatch table\n"));
-    
-    /* Free the dispatch tables */
-    FreeDispatchTables(data, OOPBase);
+    /* Create a new integer hashtable, with a reasonable size */
+    inst->data.iftable = NewHash(num_if, HT_INTEGER, OOPBase);
+    if (inst->data.iftable)
+    {
+    	struct InterfaceDescr *ifdescr;
+    	D(bug("Got iftable\n"));
+    	/* Save hashmask for use in method lookup */
+	inst->data.hashmask = HashMask(inst->data.iftable);
+	
+	if (msg->superclass) /* This test makes it work for initializing root classes */
+	{
 
-    D(bug("Freeing class id\n"));
+	    /* Copy parent interfaces into the new class */
+	    struct IFMethod *superif;
+	    struct P_meta_iterateifs ii_msg;
+	    STRPTR interface_id;
+	    ULONG num_methods;
+
+	    /* must be initialized to zero */
+	    IPTR iterval = 0UL;
+	    
+	    D(bug("Adding superclass' methods\n"));
+	    
+	    ii_msg.mid = GetMethodID(IID_Meta, MIDX_meta_iterateifs);
+	    
+	    ii_msg.iterval_ptr		= &iterval;
+	    ii_msg.interface_id_ptr	= &interface_id;
+	    ii_msg.num_methods_ptr	= &num_methods;
+	    
+	    
+	    for (;;)
+	    {
+	    	struct IFBucket *ifb;
+    		struct IFMethod *ifm = NULL;
+    		ULONG mtab_size;
+
+	    	superif = (struct IFMethod *)CoerceMethod(OCLASS(msg->superclass)
+							,(Object *)msg->superclass
+							,(Msg)&ii_msg);
+		if (!superif)
+		    break;
+		    
+		/* Allocate and insert the interface into the new class */
+		ifb = createbucket(interface_id, num_methods, OOPBase);
+		D(bug("Created bucket: %p\n", ifb));
+		if (!ifb)
+		    goto failure;
+		    
+		/* Copy the interface */
+		mtab_size = UB (&ifm[num_methods]) - UB( &ifm[0]);
+		D(bug("Copying from superclass methods for if %s, mtab_size=%d,basmetaroot %p, superif %p\n",
+			ifb->GlobalInterfaceID, mtab_size, OOPBase->ob_BaseMetaObject.inst.rootif, superif));
+			
+		CopyMem(superif, ifb->MethodTable, mtab_size);
+		InsertBucket(inst->data.iftable, (struct Bucket *)ifb, OOPBase);
+		    
+	    } /* for (;;) */
+	
+	} /* if (we inherit interfaces from some superclass) */
+	
+	/* Insert our own interfaces */
+	D(bug("Inserting own methods\n"));
+	for ( ifdescr = msg->ifdescr; ifdescr->MethodTable; ifdescr ++)
+	{
+	    struct IFBucket *ifb;
+	    ULONG i;
+	    
+	    ULONG iid;
+	    /* Get variable interface ID */
+	    
+	    D(bug("Getting Local ifID for global ID %s\n", ifdescr->InterfaceID));
+	    if (!init_mi_methodbase(ifdescr->InterfaceID, &iid, OOPBase))
+	    	goto failure;
+	    
+	    D(bug("Got local ifID %ld\n", iid));
+
+	    /* Lookup hashtable to see if interface has been copied from superclass */
+	    ifb = (struct IFBucket *)inst->data.iftable->Lookup(
+	    		  inst->data.iftable
+			, iid
+			, OOPBase);
+
+	    D(bug("tried to find bucket in hashtable: %p\n", ifb));
+	    if (!ifb)
+	    {
+	    	D(bug("Bucket doesn't exist, creating..\n"));
+	    	/* Bucket doesn't exist, allocate it */
+		ifb = createbucket(ifdescr->InterfaceID, ifdescr->NumMethods, OOPBase);
+	    	if (!ifb)
+	    	    goto failure;
+		else
+		{
+	    	    D(bug("Inserting bucket for IF %s\n", ifdescr->InterfaceID));
+		    InsertBucket(inst->data.iftable, (struct Bucket *)ifb, OOPBase);
+		}
+	    }
+		
+	    
+	    D(bug("overriding methods\n"));
+
+	    /* Ovveride the superclass methods with our new ones */
+	    for (i = 0; ifdescr->MethodTable[i].MethodFunc; i ++)
+	    {
+   	    	if (ifdescr->MethodTable[i].MethodFunc)
+	    	{
+	   	    ifb->MethodTable[ ifdescr->MethodTable[i].MethodIdx ].MethodFunc = ifdescr->MethodTable[i].MethodFunc;
+	    	    ifb->MethodTable[ ifdescr->MethodTable[i].MethodIdx ].mClass     = (Class *)o;
+	    	}
+	    } /* for (each method in the interface) */
+	    
+	} /* for (each interface to add to class) */
+	
+	/* For speedup in method lookup */
+	inst->data.iftab_directptr = (struct IFBucket **)inst->data.iftable->Table;
+    	
+	ReturnBool ("IFMeta::allocdisptabs", TRUE);
+	
+    } /* if (interface hash table allocated) */
+
+failure:
+    D(bug("FAILURE\n"));
+    if (inst->data.iftable)
+    	FreeHash(inst->data.iftable, freebucket, OOPBase);
+    ReturnBool ("IFMeta::allocdisptabs", FALSE);
+}
+
+/*****************************
+**  IFMeta::freedisptabs()  **
+*****************************/
+static VOID ifmeta_freedisptabs(Class *cl, Object *o, Msg msg)
+
+{
+    struct ifmeta_inst *inst = (struct ifmeta_inst *)o;
+    /* This frees the hashtable + all buckets */
     
-    /* Free the class ID */
-    FreeVec(data->PPart.ClassNode.ln_Name);
+    FreeHash(inst->data.iftable, freebucket, OOPBase);
     
-    D(bug("Calling superclass\n"));
+    return;
+}
+
+/**************************
+**  IFMeta::getifinfo()  **
+**************************/
+static struct IFMethod *ifmeta_getifinfo(Class *cl, Object *o, struct P_meta_getifinfo *msg)
+{
+    ULONG iid;
+    struct ifmeta_inst *inst = (struct ifmeta_inst *)o;
+    struct IFMethod *mtab = NULL;
+    struct IFBucket *b;
+        
+    /* Get the ULONG variable interface id */
+    iid = GetMethodID(msg->interface_id, 0);
     
-    /* And let the rootclass free the object */
-    DoSuperMethodA((Class *)cl, o, msg);
-    ReturnVoid("Meta::Dispose");
+    /* Try looking it up in the class' table */
+    b = (struct IFBucket *)inst->data.iftable->Lookup(inst->data.iftable, iid, OOPBase);
+    {
+    	*(msg->num_methods_ptr) = b->NumMethods;
+	
+    	mtab = b->MethodTable;
+    }
+    
+    return mtab;
+}
+
+/***************************
+**  IFMeta::iterateifs()  **
+***************************/
+static struct IFMethod *ifmeta_iterateifs(Class *cl, Object *o, struct P_meta_iterateifs *msg)
+{
+    struct HashTable *ht = ((struct ifmeta_inst *)o)->data.iftable;
+    struct IFBucket *found_bucket = NULL; /* MUST default to NULL */
+   
+    struct IFBucket *ifb = NULL; /* keep compiler happy */
+    
+
+    struct IFMethod *current_if = NULL;     /* MUST default to NULL */
+
+    UWORD last_idx = (*(msg->iterval_ptr)) >> 16;
+    UWORD last_bucket_no = (*(msg->iterval_ptr)) & 0x0000FFFF;
+    
+    UWORD idx;
+    
+    UWORD bucket_no = 0; /* keep compiler happy */
+    EnterFunc(bug("IFMeta::iterateifs(cl=%s, o=%s)\n",
+    	cl->ClassNode.ln_Name, ((Class *)o)->ClassNode.ln_Name ));
+	
+    D(bug("last_idx: %ld, last_bucket_no=%ld\n", last_idx, last_bucket_no));
+    
+
+    for (idx = last_idx ;idx < HashSize(ht); idx ++)
+    {
+    	D(bug("idx=%ld\n", idx));
+	
+	bucket_no = 0;
+	
+    	for (ifb = (struct IFBucket *)ht->Table[idx]; ifb; )
+	{
+	    D(bug("ifb=%s, netx=%p, bucket_no=%ld\n",
+	    	ifb->GlobalInterfaceID, ifb->Next, bucket_no));
+	    /* Is this a new bucket in the iteration ? */
+	    
+	    if ((idx > last_idx) || (bucket_no >= last_bucket_no))
+	    {
+	    	found_bucket = ifb;
+		
+		/* Yes, it's a goto, but it really simplifies things here */
+		goto after_loop;
+	    }
+	    else
+	    {
+	    	ifb = ifb->Next;
+		bucket_no ++;
+	    }
+	    
+	} /* for (all buckets at each idx) */
+	
+    } /* for (each entry at east index from last idx) */
+
+after_loop:
+    
+    /* OK, found a bucket ? */
+    if (found_bucket)
+    {
+    	D(bug("bucket found: %s at idx %ld, b_no %ld\n",
+		found_bucket->GlobalInterfaceID, idx, bucket_no));
+        *(msg->iterval_ptr)	 = (idx << 16) + bucket_no + 1;
+	*(msg->interface_id_ptr) = ifb->GlobalInterfaceID;
+	*(msg->num_methods_ptr)  = ifb->NumMethods;
+	
+	current_if = ifb->MethodTable;
+    }
+
+    ReturnPtr ("IFMeta::iterateifs", struct IFMethod *, current_if);
+}
+
+/***************************
+**  IFMeta::findmethod()  **
+***************************/
+
+/* Used for finding a method for method objects */
+static struct IFMethod *ifmeta_findmethod(Class *cl, Object *o, struct P_meta_findmethod *msg)
+{
+    register struct IFBucket *b;
+    register ULONG method_offset;
+    struct ifmeta_inst *inst = (struct ifmeta_inst *)o;
+    
+    /* Get interfaceID part of methodID */
+    register ULONG ifid = msg->method_to_find & (~METHOD_MASK);	
+    
+    EnterFunc(bug("IFMeta::findmethod(o=%p, mid=%ld)\n", o, msg->method_to_find));
+    
+
+    /* Get method offset part of methdoID */
+    method_offset =  msg->method_to_find & METHOD_MASK;
+    
+    /* Look up ID in hashtable and get linked list of buckets,
+       storing interfaces
+    */
+    b = inst->data.iftab_directptr[ifid & inst->data.hashmask];
+loop:
+    if (b)
+    {
+    	/* Found correct interface ? */
+        if (b->InterfaceID == ifid)
+	{
+	    /* Yep. Return method at supplied method offset */
+	    ReturnPtr ("IFMeta::findmethod", struct IFMethod *, &(b->MethodTable[method_offset]));
+    	}
+
+        b = b->Next;
+        goto loop;
+    }
+    /* Method not found, return NULL */
+    ReturnPtr ("IFMeta::findmethod", struct IFMethod *, NULL);
+
 }
 
 #undef OOPBase
 
-BOOL InitMetaClass(struct IntOOPBase *OOPBase)
+/**********
+  Support
+**********/
+
+/*************************
+**  init_ifmetaclass()  **
+*************************/
+
+#define NUM_META_METHODS 5
+#define NUM_ROOT_METHODS 1
+BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
 {
-    struct MethodDescr root_mdescr[]=
+    struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1]=
     {
-    	{ (IPTR (*)())_Root_New,		MIDX_Root_New		},
-    	{ (IPTR (*)())_Root_Dispose,		MIDX_Root_Dispose	},
+    	{ (IPTR (*)())ifmeta_new,	MIDX_Root_New		},
+	{  NULL, 0UL }
+    };
+
+    struct MethodDescr meta_mdescr[NUM_META_METHODS + 1]=
+    {
+    	{ (IPTR (*)())ifmeta_allocdisptabs,	MIDX_meta_allocdisptabs	},
+    	{ (IPTR (*)())ifmeta_freedisptabs,	MIDX_meta_freedisptabs	},
+    	{ (IPTR (*)())ifmeta_getifinfo,		MIDX_meta_getifinfo	},
+    	{ (IPTR (*)())ifmeta_iterateifs,	MIDX_meta_iterateifs	},
+    	{ (IPTR (*)())ifmeta_findmethod,	MIDX_meta_findmethod	},
 	{  NULL, 0UL }
     };
     
 
-    struct InterfaceDescr _Meta_Descr[] =
+    struct InterfaceDescr meta_descr[] =
     {
-    	{root_mdescr, GUID_Root, 2},
+    	{root_mdescr, IID_Root, 1},
+    	{meta_mdescr, IID_Meta, NUM_META_METHODS},
 	{NULL, NULL, 0UL}
     };
     
-    struct IntClass *MetaClass = &(OOPBase->ob_MetaClass.InstanceData);
+    struct ifmetaobject *imo = &(OOPBase->ob_IFMetaObject);
+    struct P_meta_allocdisptabs adt_msg;
+    Class *ifmeta_cl;
     
-    EnterFunc(bug("InitMetaClass()\n"));
+    EnterFunc(bug("init_ifmetaclass()\n"));
 
-    /* The metaclass needs some special handling when being initialized */
-
-    /* Superclass must be initialized before calling AllocDispatchTables() */
-    MetaClass->SuperClass = &OOPBase->ob_RootClass;
+    ifmeta_cl = &(imo->inst.base.public);
     
-    if (AllocDispatchTables(MetaClass, _Meta_Descr, OOPBase))
+    D(bug("Got ifmeta classptr\n"));
+       
+    imo->inst.base.superclass = BASEMETAPTR;
+
+    D(bug("Initialized ifmeta superclass\n"));
+    
+    adt_msg.superclass = imo->inst.base.superclass;
+    adt_msg.ifdescr = meta_descr;
+    
+    /* allocdisptabs() must know the OOPBase */
+    imo->inst.base.public.UserData		= (APTR)OOPBase;
+    /* It must also have a valid DoSuperMethod(), more exatly
+       the DoSuperMethod() of the BaseMeta class
+    */
+    imo->inst.base.public.DoSuperMethod = BASEMETAPTR->DoSuperMethod;
+    
+    
+    D(bug("Allocating ifmeta disptabs\n"));
+
+    
+    if (ifmeta_allocdisptabs(ifmeta_cl, (Object *)ifmeta_cl, &adt_msg))
+		
     {
+    	D(bug("ifmeta disptabs allocated\n"));
     	/* initialize Class ID */
-    	MetaClass->PPart.ClassNode.ln_Name   	= METACLASS;
-	MetaClass->PPart.InstOffset 	= 0UL;
-	MetaClass->PPart.InstSize   	= sizeof (struct IntClass);
-	MetaClass->PPart.DoMethod	= LocalDoMethod;
-	MetaClass->SubClassCount 	= 0UL;
-	MetaClass->ObjectCount	 	= 0UL;
+	imo->inst.base.public.ClassNode.ln_Name = CLID_IFMeta;
+	imo->inst.base.public.InstOffset 	= sizeof (struct metadata);
+	
+	D(bug("IFMeta DoMethod=%p\n", Meta_DoMethod));
+	imo->inst.base.public.DoMethod		= Meta_DoMethod;
+	imo->inst.base.public.CoerceMethod	= Meta_CoerceMethod;
 
-	MetaClass->NumInterfaces 	= 2UL;
-	MetaClass->PPart.UserData	= (APTR)OOPBase;
+	imo->inst.base.instsize   = sizeof (struct ifmeta_data);
+	imo->inst.base.subclasscount	= 0UL;
+	imo->inst.base.objectcount	= 0UL;
+
+	imo->inst.data.numinterfaces 	= 2UL;
 	
-	/* The class of the meta object is the metaclass,
-	** so it is an instance of itself :-)
-	*/
-	OOPBase->ob_MetaClass.Class = (Class *)&(OOPBase->ob_MetaClass.InstanceData);
+	/* This class' class is itself */
+    	imo->oclass = &(imo->inst.base.public);
 	
-	/* Make it public */
-	AddClass((Class *)MetaClass);
-	ReturnBool ("InitMetaClass", TRUE);
+/*	{
+	   ULONG i;
+	   D(bug("Trying to call get_if_info on ifmeta many times\n"));
+	   for (i = 0; i < 10; i ++)
+	   {
+	   	ULONG num_methods;
+		meta_getifinfo((Object *)imo->oclass, IID_Meta, &num_methods);
+		
+		D(bug("IF has %ld methods\n", num_methods));
+	   }
+	   
+	}
+*/	/* Make it public */
+	AddClass(ifmeta_cl);
+	ReturnBool ("init_metaclass", TRUE);
     }
-    ReturnBool ("InitMetaClass", FALSE);
+    ReturnBool ("init_ifmetaclass", FALSE);
 
 }
+
+
+/************************
+**  calc_ht_entries()  **
+************************/
+
+/* Calculates the number of interfaces the new class has
+   ( == number of buckets in the hashtable)
+*/
+static ULONG calc_ht_entries(struct ifmeta_inst *cl
+		,Class *super
+		,struct InterfaceDescr *ifDescr
+		,struct IntOOPBase *OOPBase)
+{
+    ULONG num_if = 0;
+    
+    EnterFunc(bug("calc_ht_entries(cl=%p, ifDescr=%p, super=%p)\n", cl, ifDescr, super));
+
+  
+ 
+    if (super)
+    {
+    	/* Get number of interfaces (method tables) in superclass */
+	
+
+    	num_if = MD(super)->numinterfaces;
+	
+	D(bug("Super-interfaces: %ld\n", num_if));
+    
+    	/* Check if there are any new interfaces in this class */
+	
+    	for (; ifDescr->MethodTable; ifDescr ++)
+    	{
+	    struct P_meta_getifinfo gii_msg;
+	    ULONG num_methods;
+	    
+	    D(bug("Checking for interface %s\n", ifDescr->InterfaceID));
+	    
+	    gii_msg.mid = GetMethodID(IID_Meta, MIDX_meta_getifinfo);
+	    gii_msg.interface_id = ifDescr->InterfaceID;
+	    gii_msg.num_methods_ptr = &num_methods;
+	    
+	    
+	    /* Does super support interface ? */
+	    D(bug("Calling CoerceMethod on class %s\n", OCLASS(super)->ClassNode.ln_Name));
+	    if (!CoerceMethod(OCLASS(super), (Object *)super, (Msg)&gii_msg))
+	    {
+	        D(bug("Found new interface: %s\n", ifDescr->InterfaceID));
+		
+		/* If it didn't then we have a new interface for this class */
+	    	num_if ++;
+	    }
+	
+    	} /* for (each interface in the description for the class) */
+    
+    }
+    else
+    {
+    	/* This is a baseclass, count the interfaces */
+    	for (; ifDescr->MethodTable; ifDescr ++)
+    	{
+	    num_if ++;
+	
+    	} /* for (each interface in the description for the class) */
+    }
+    ReturnInt ("calc_ht_entries", ULONG, num_if);
+}
+
+
+
+
+
+
+/*********************
+**  createbucket()  **
+*********************/
+/* Creates a new interface bucket */
+static struct IFBucket *createbucket(
+			 STRPTR			interface_id
+			,ULONG			num_methods
+			,struct IntOOPBase 	*OOPBase)
+{
+    struct IFMethod *ifm = NULL;
+    ULONG mtab_size = UB (&ifm[num_methods]) - UB( &ifm[0]);
+    
+    /* Allocate bucket */
+    struct IFBucket *ifb;
+    
+    ifb = (struct IFBucket *)AllocMem( sizeof (struct IFBucket), MEMF_ANY );
+    if (ifb)
+    {
+    	/* Allocate method table for this interface */
+    	ifb->MethodTable = (struct IFMethod *)AllocVec(mtab_size, MEMF_ANY);
+	if (ifb->MethodTable)
+	{
+	    /* Get correct ID for the interface (string ID => interface ID mapping) */
+
+	    if (init_mi_methodbase(interface_id, &(ifb->InterfaceID), OOPBase))
+	    {
+	    	/* Save number of methods in the interface */
+	    	ifb->NumMethods  = num_methods;
+		
+		/* Save the global string representations of the ID */
+		ifb->GlobalInterfaceID = interface_id;
+		return (ifb);
+
+	    }
+	}
+	FreeMem (ifb, sizeof (struct IFBucket));
+    }
+    return (NULL);
+}    
+    
+
+/***********************
+**  Hash table hooks  **
+***********************/
+#define IB(x) ((struct IFBucket *)x)
+
+VOID freebucket(struct Bucket *b, struct IntOOPBase *OOPBase)
+{
+
+    /* Free methodtable */
+    FreeVec(IB(b)->MethodTable);
+
+    /* Free the bucket itself */
+    FreeMem(b, sizeof (struct IFBucket));
+    
+
+    return;
+}
+
+/* Copies a hashtable bucket */
+struct Bucket *copyBucket(struct Bucket *old_b, APTR data, struct IntOOPBase *OOPBase)
+{
+    struct IFBucket *new_b;
+    
+    EnterFunc(bug("CopyBucket(old_b=%p)\n", old_b));
+    
+    /* Allocate memory for the new interface bucket */
+    new_b = (struct IFBucket *)AllocMem(sizeof (struct IFBucket), MEMF_ANY );
+    if (new_b)
+    {
+    	struct IFMethod *ifm = NULL;
+        ULONG mtab_size;
+	
+	/* Get number of methods in source methodtable */
+	ULONG numentries = IB(old_b)->NumMethods;
+	
+	mtab_size = UB(&ifm[numentries]) - UB(&ifm[0]);
+	
+	/* Allocate memory for methodtable of same size as source one */
+    	new_b->MethodTable = (struct IFMethod *)AllocVec(mtab_size, MEMF_ANY);
+	if (new_b->MethodTable)
+	{
+	    /* Copy methodtable to destination */
+	    CopyMem(IB(old_b)->MethodTable, new_b->MethodTable, mtab_size);
+	    
+    	    /* Initialize bucket */
+	    new_b->InterfaceID  	= IB(old_b)->InterfaceID;
+	    new_b->NumMethods 		= IB(old_b)->NumMethods;
+	    new_b->GlobalInterfaceID 	= IB(old_b)->GlobalInterfaceID;
+	    	    
+	    ReturnPtr ("CopyBucket", struct Bucket *, (struct Bucket *)new_b );
+	}
+	FreeMem (new_b, sizeof (struct IFBucket));
+    }
+    
+    ReturnPtr ("CopyBucket", struct Bucket *, NULL);
+}
+
+
+
+/* Default function for calling DoMethod() on a local object */
+/*****************
+**  DoMethod()  **
+*****************/
+#define OOPBase ((struct IntOOPBase *)OCLASS(OCLASS(OCLASS(object)))->UserData)
+static IPTR Meta_DoMethod(Object *object, Msg msg)
+{
+    struct metadata *cl = (struct metadata *)OCLASS(object);
+    
+    
+    /* Macro below defined in intern.h */
+    IntCallMethod(cl, object, msg);
+
+}
+
+
+/*******************
+**  CoerceMethod  **
+*******************/
+static IPTR Meta_CoerceMethod(Class *cl, Object *object, Msg msg)
+{
+    IntCallMethod(cl, object, msg);
+}
+
+/********************
+**  DoSuperMethod  **
+********************/
+static IPTR Meta_DoSuperMethod(Class *cl, Object *object, Msg msg)
+{
+    cl = IFI(cl)->base.superclass;
+    IntCallMethod(cl, object, msg);
+}
+
+#undef OOPBase
