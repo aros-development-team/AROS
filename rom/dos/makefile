@@ -2,46 +2,38 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-ODIR=$(OBJDIR)/dos
-
 all: setup $(LIBDIR)/libdos.a
 
 setup :
-	@echo "Setting up"
-	@if [ ! -d $(ODIR) ]; then $(MKDIR) $(ODIR) ; fi
-	@$(TOUCH) setup
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
 
 clean:
-	$(RM) $(ODIR) *.err $(LIBDIR)/libdos.a setup
+	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libdos.a
 
-$(ODIR)/%.o: %.c
+$(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-$(ODIR)/%.o: %.s
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err; fi
-
-$(LIBDIR)/libdos.a: $(ODIR)/dos_init.o \
-	    $(ODIR)/open.o $(ODIR)/close.o $(ODIR)/read.o $(ODIR)/write.o \
-	    $(ODIR)/seek.o $(ODIR)/adddosentry.o $(ODIR)/finddosentry.o \
-	    $(ODIR)/addprocess.o $(ODIR)/flush.o $(ODIR)/output.o \
-	    $(ODIR)/allocdosobject.o $(ODIR)/freedosentry.o \
-	    $(ODIR)/attemptlockdoslist.o $(ODIR)/freedosobject.o \
-	    $(ODIR)/remdosentry.o $(ODIR)/ioerr.o $(ODIR)/createnewproc.o \
-	    $(ODIR)/isinteractive.o $(ODIR)/setioerr.o $(ODIR)/delay.o \
-	    $(ODIR)/loadseg_elf.o $(ODIR)/unlockdoslist.o \
-	    $(ODIR)/lockdoslist.o $(ODIR)/makedosentry.o $(ODIR)/loadseg.o \
-	    $(ODIR)/input.o $(ODIR)/selectoutput.o $(ODIR)/selectinput.o \
-	    $(ODIR)/unloadseg.o $(ODIR)/runcommand.o $(ODIR)/runprocess.o \
-	    $(ODIR)/readitem.o $(ODIR)/fgetc.o $(ODIR)/ungetc.o \
-	    $(ODIR)/readargs.o $(ODIR)/strtolong.o $(ODIR)/errorlist.o \
-	    $(ODIR)/freeargs.o $(ODIR)/printfault.o $(ODIR)/fputc.o \
-	    $(ODIR)/fputs.o $(ODIR)/findarg.o $(ODIR)/currentdir.o \
-	    $(ODIR)/namefromlock.o $(ODIR)/assignlock.o $(ODIR)/examine.o \
-	    $(ODIR)/putstr.o $(ODIR)/vfprintf.o $(ODIR)/vprintf.o \
-	    $(ODIR)/exall.o $(ODIR)/datetostr.o $(ODIR)/lddemon.o \
-	    $(ODIR)/getargstr.o $(ODIR)/maxcli.o $(ODIR)/cli.o \
-	    $(ODIR)/duplock.o $(ODIR)/openfromlock.o \
-	    $(ODIR)/dos_functable.o
+$(LIBDIR)/libdos.a: $(OSGENDIR)/dos_init.o \
+	    $(OSGENDIR)/open.o $(OSGENDIR)/close.o $(OSGENDIR)/read.o $(OSGENDIR)/write.o \
+	    $(OSGENDIR)/seek.o $(OSGENDIR)/adddosentry.o $(OSGENDIR)/finddosentry.o \
+	    $(OSGENDIR)/addprocess.o $(OSGENDIR)/flush.o $(OSGENDIR)/output.o \
+	    $(OSGENDIR)/allocdosobject.o $(OSGENDIR)/freedosentry.o \
+	    $(OSGENDIR)/attemptlockdoslist.o $(OSGENDIR)/freedosobject.o \
+	    $(OSGENDIR)/remdosentry.o $(OSGENDIR)/ioerr.o $(OSGENDIR)/createnewproc.o \
+	    $(OSGENDIR)/isinteractive.o $(OSGENDIR)/setioerr.o $(OSGENDIR)/delay.o \
+	    $(OSGENDIR)/loadseg_elf.o $(OSGENDIR)/unlockdoslist.o \
+	    $(OSGENDIR)/lockdoslist.o $(OSGENDIR)/makedosentry.o $(OSGENDIR)/loadseg.o \
+	    $(OSGENDIR)/input.o $(OSGENDIR)/selectoutput.o $(OSGENDIR)/selectinput.o \
+	    $(OSGENDIR)/unloadseg.o $(OSGENDIR)/runcommand.o \
+	    $(OSGENDIR)/readitem.o $(OSGENDIR)/fgetc.o $(OSGENDIR)/ungetc.o \
+	    $(OSGENDIR)/readargs.o $(OSGENDIR)/strtolong.o $(OSGENDIR)/errorlist.o \
+	    $(OSGENDIR)/freeargs.o $(OSGENDIR)/printfault.o $(OSGENDIR)/fputc.o \
+	    $(OSGENDIR)/fputs.o $(OSGENDIR)/findarg.o $(OSGENDIR)/currentdir.o \
+	    $(OSGENDIR)/namefromlock.o $(OSGENDIR)/assignlock.o $(OSGENDIR)/examine.o \
+	    $(OSGENDIR)/putstr.o $(OSGENDIR)/vfprintf.o $(OSGENDIR)/vprintf.o \
+	    $(OSGENDIR)/exall.o $(OSGENDIR)/datetostr.o $(OSGENDIR)/lddemon.o \
+	    $(OSGENDIR)/getargstr.o $(OSGENDIR)/maxcli.o $(OSGENDIR)/cli.o \
+	    $(OSGENDIR)/duplock.o $(OSGENDIR)/openfromlock.o \
+	    $(OSGENDIR)/dos_functable.o
 	$(AR) $@ $^

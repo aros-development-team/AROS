@@ -2,28 +2,20 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-ODIR=$(OBJDIR)/utility
-
 all: setup $(LIBDIR)/libutility.a
 
 setup :
-	@echo "Setting up"
-	@if [ ! -d $(ODIR) ]; then $(MKDIR) $(ODIR) ; fi
-	@$(TOUCH) setup
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
 
 clean:
-	$(RM) $(ODIR) *.err $(LIBDIR)/libutility.a setup
+	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libutility.a
 
-$(ODIR)/%.o: %.s
+$(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-$(ODIR)/%.o: %.c
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
-	if test ! -s $*.err; then rm $*.err; fi
-
-$(LIBDIR)/libutility.a: $(ODIR)/utility_init.o \
-	    $(ODIR)/stricmp.o $(ODIR)/strnicmp.o $(ODIR)/applytagchanges.o \
-	    $(ODIR)/findtagitem.o $(ODIR)/tolower.o \
-	    $(ODIR)/utility_functable.o
+$(LIBDIR)/libutility.a: $(OSGENDIR)/utility_init.o \
+	    $(OSGENDIR)/stricmp.o $(OSGENDIR)/strnicmp.o $(OSGENDIR)/applytagchanges.o \
+	    $(OSGENDIR)/findtagitem.o $(OSGENDIR)/tolower.o \
+	    $(OSGENDIR)/utility_functable.o
 	$(AR) $@ $^

@@ -2,28 +2,26 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-ODIR=$(OBJDIR)/m68k-emul
+OBJDIR=$(GENDIR)/m68k-emul
 
 all: setup $(LIBDIR)/libkernel.a
 
 setup :
-	@echo "Setting up"
-	@if [ ! -d $(ODIR) ]; then $(MKDIR) $(ODIR) ; fi
-	@$(TOUCH) setup
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
 
 clean:
 	$(RM) $(LIBDIR)/libkernel.a
 
-$(ODIR)/%.o: %.s
+$(OBJDIR)/%.o: %.s
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-$(ODIR)/%.o: %.c
+$(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-libkernel.a: $(ODIR)/init.o $(ODIR)/supervisor.o $(ODIR)/switch.o \
-	    $(ODIR)/dispatch.o $(ODIR)/disable.o $(ODIR)/enable.o \
-	    $(ODIR)/forbid.o $(ODIR)/permit.o $(ODIR)/preparecontext.o \
-	    $(ODIR)/special.o
+libkernel.a: $(OBJDIR)/init.o $(OBJDIR)/supervisor.o $(OBJDIR)/switch.o \
+	    $(OBJDIR)/dispatch.o $(OBJDIR)/disable.o $(OBJDIR)/enable.o \
+	    $(OBJDIR)/forbid.o $(OBJDIR)/permit.o $(OBJDIR)/preparecontext.o \
+	    $(OBJDIR)/special.o
 	$(AR) $@ $^
