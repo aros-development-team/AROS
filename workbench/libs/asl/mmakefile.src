@@ -28,7 +28,8 @@ FUNCS := allocfilerequest	\
 	aslrequest		\
 	freeaslrequest		\
 	freefilerequest 	\
-	requestfile
+	requestfile 	    	\
+	abortaslrequest
 
 USE_ROMLIB := yes
 USE_MLIB := yes
