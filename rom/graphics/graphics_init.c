@@ -143,7 +143,9 @@ AROS_LH1(struct LIBBASETYPE *, open,
 
     /* Allocate 8 IPTR's for a hash list needed by
        GfxAssociate(), GfxLookUp()                  */
-    LIBBASE->hash_table = (LONG *)AllocMem(8*sizeof(LONG *), 
+
+    if (!LIBBASE->hash_table)
+    	LIBBASE->hash_table = (LONG *)AllocMem(8*sizeof(LONG *), 
                                            MEMF_CLEAR|MEMF_PUBLIC);
     if (!LIBBASE->hash_table)
       return NULL;
