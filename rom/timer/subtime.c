@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-97 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: SubTime - subtract two timevals from each other.
@@ -66,20 +66,20 @@
 	dest->tv_micro -= 1000000;
     }
 
-    dest->tv_micro -= src->tv_micro;
-    dest->tv_secs -= src->tv_secs;
-
-    /* Normalize the dest:
-	These numbers are unsigned, so dest->mic > src->mic means that
-	dest->mic has wrapped around, in that case, normalize by adding
-	1 sec to micros, and subtracting 1 second from secs
-	I do so like adding 0...
-    */
-    if(dest->tv_micro > src->tv_secs)
+    /* Check if wrap around will happen, when subtracting src->tv_micro
+       from dest->tv_micro. If yes, then normalize, by adding 1 sec to
+       micros and subtracting 1 sec from secs. Note: this check must be
+       done here, ie. before subtracting src timeval from dest timeval! */
+       
+    if(dest->tv_micro < src->tv_micro)
     {
 	dest->tv_micro += 1000000;
 	dest->tv_secs--;
     }
 
+    dest->tv_micro -= src->tv_micro;
+    dest->tv_secs -= src->tv_secs;
+
     AROS_LIBFUNC_EXIT
+    
 } /* SubTime */
