@@ -93,3 +93,7 @@ printi "Compressing log files..."
 for file in $LOG_BASE/*.log; do
     bzip2 $file
 done
+
+# Prune old nightly builds
+find Archive -maxdepth 1 -ctime +4 | xargs rm -rf
+
