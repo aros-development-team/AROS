@@ -12,6 +12,20 @@
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
+#ifndef INTUITION_CLASSES_H
+#   include <intuition/classes.h>
+#endif
+
+/* Prototypes for stubs in amiga.lib */
+ULONG SetAttrs (APTR obj, ULONG tag1, ...);
+ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
+APTR NewObject (Class * classPtr, UBYTE * classID, ULONG tag1, ...);
+IPTR DoMethodA (Object * obj, Msg message);
+IPTR DoMethod (Object * obj, ULONG MethodID, ...);
+IPTR DoSuperMethodA (Class  * cl, Object * obj, Msg message);
+IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+IPTR CoerceMethodA (Class * cl, Object * obj, Msg msg);
+IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 
 /*
     Prototypes
@@ -25,7 +39,7 @@ AROS_LP1(void, DisposeObject,
     struct Library *, BOOPSIBase, 6, BOOPSI)
 
 AROS_LP1(struct IClass *, FindClass,
-    AROS_LPA(ClassID,	classID, A0),
+    AROS_LPA(ClassID,   classID, A0),
     struct Library *, BOOPSIBase, 7, BOOPSI)
 
 AROS_LP1(BOOL, FreeClass,
