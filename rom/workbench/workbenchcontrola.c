@@ -53,29 +53,38 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    BOOL            rc       = TRUE;  /* Return Code */
+    struct TagItem *tstate = tags,
+                   *tag;
+    BOOL            rc       = TRUE;
 
-    struct TagItem *tagState = tags;
-    struct TagItem *tag;
+#   define STORE(pointer, value) (pointer != NULL ? *pointer = (value) : (value))
 
-    while ((tag = NextTagItem(&tagState)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
-        switch( tag->ti_Tag ) {
+        switch (tag->ti_Tag)
+        {
             case WBCTRLA_IsOpen:
                 /* TODO: Do something... */
                 break;
 
             case WBCTRLA_DuplicateSearchPath:
-                /* TODO: Do something... */
+                STORE
+                (
+                    (BPTR *) tag->ti_Data,
+                    DuplicateSearchPath(WorkbenchBase->wb_SearchPath)
+                );
                 break;
 
             case WBCTRLA_FreeSearchPath:
-                /* TODO: Do something... */
+                FreeSearchPath((BPTR) tag->ti_Data);
                 break;
 
             case WBCTRLA_GetDefaultStackSize:
-                if( tag->ti_Data != NULL )
-                    *((ULONG *) tag->ti_Data) = WorkbenchBase->wb_DefaultStackSize;
+                STORE
+                (
+                    (ULONG *) tag->ti_Data, 
+                    WorkbenchBase->wb_DefaultStackSize
+                );
                 break;
 
             case WBCTRLA_SetDefaultStackSize:
@@ -127,8 +136,11 @@
                 break;
 
             case WBCTRLA_GetTypeRestartTime:
-                if( tag->ti_Data != NULL )
-                    *((ULONG *) tag->ti_Data) = WorkbenchBase->wb_TypeRestartTime;
+                STORE
+                (
+                    (ULONG *) tag->ti_Data,
+                    WorkbenchBase->wb_TypeRestartTime
+                );
                 break;
 
             case WBCTRLA_SetTypeRestartTime:
@@ -138,6 +150,8 @@
     }
 
     return rc;
+
+#   undef STORE
 
     AROS_LIBFUNC_EXIT
 } /* WorkbenchControlA */

@@ -12,6 +12,7 @@
 #include "workbench_intern.h"
 #include LC_LIBDEFS_FILE
 #include "handler.h"
+#include "support.h"
 
 #ifdef SysBase
 #   undef SysBase
@@ -35,7 +36,7 @@
 
 #include <libcore/libheader.c>
 
-#define SysBase     (WorkbenchBase->wb_SysBase)
+#define SysBase (WorkbenchBase->wb_SysBase)
 
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
 {
@@ -61,7 +62,7 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
     
     /* Initialize miscellanous variables -----------------------------------*/
     WorkbenchBase->wb_DefaultStackSize = 1024 * 32; /* 32kiB */ // FIXME: also read from preferences */
-    
+        
     return TRUE;
 } /* L_InitLib */
 
@@ -71,6 +72,8 @@ ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
 
     if (!(WorkbenchBase->wb_Initialized))
     {
+        struct CommandLineInterface *cli;
+        
         /* Open libraries --------------------------------------------------*/
         //FIXME: error handling! libs not closed if open fails!
         if (!(WorkbenchBase->wb_UtilityBase = OpenLibrary(UTILITYNAME, 37L)))
@@ -97,6 +100,15 @@ ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
             return FALSE;
         }
         
+        /* Duplicate the search path ---------------------------------------*/
+        if ((cli = Cli()) != NULL)
+        {
+            WorkbenchBase->wb_SearchPath = DuplicateSearchPath
+            (
+                cli->cli_CommandDir
+            );
+        }
+    
         /* Start workbench handler -----------------------------------------*/
         if
         (

@@ -55,7 +55,8 @@ struct WorkbenchBase
     struct List             wb_AppIcons;
     struct List             wb_AppMenuItems;
 
-    struct List             wb_HiddenDevices;     /* List of devices that Workbench will not show */
+    BPTR                    wb_SearchPath;
+    struct List             wb_HiddenDevices;           /* List of devices that Workbench will not show */
     ULONG                   wb_DefaultStackSize;
     ULONG                   wb_TypeRestartTime;
 
