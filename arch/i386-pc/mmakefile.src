@@ -46,7 +46,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-keymap-native			\
 #MM	kernel-mathieeesingbas-linklib		\
 #MM	kernel-mathffp-linklib			\
-#MM	kernel-devs-native				\
+#MM	kernel-devs-native			\
 #MM	kernel-filesys				\
 #MM	kernel-graphics-linklib			\
 #MM	graphics-gfxhidd			\
@@ -78,7 +78,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM- kernel-misc-native : kernel-misc-native-i386 kernel-misc-linklib
 #MM- kernel-battclock-native : kernel-battclock-native-i386 kernel-battclock-linklib
 #MM- kernel-keymap-native : kernel-keymap-native-i386 kernel-keymap-linklib
-#MM- kernel-devs-native : kernel-devs-native-i386 kernel-devs workbench-fs-afs-linklib workbench-fs-nil-linklib workbench-fs-ram-linklib
+#MM- kernel-devs-native : kernel-devs-native-i386 kernel-devs workbench-fs-afs-linklib workbench-fs-nil-linklib workbench-fs-ram-linklib aminet-disk-cdrom-amicdrom-linklib
 #MM- kernel-intuition-native : intuition-gfxhidd intuition-native-i386 kernel-intuition-linklib
 #MM- kernel-dos-native : dos-native-i386 kernel-dos-linklib
 #MM- kernel-workbench-native : kernel-workbench-native-i386 kernel-workbench-linklib
@@ -157,7 +157,8 @@ kernel-devs-native-i386 :
 	%add_objects rom/boot/libafs
 	%add_objects rom/boot/libnil
 	%add_objects rom/boot/libram
-
+	%add_objects rom/boot/libcdrom
+        
 #MM kernel-graphics-native-i386 :
 kernel-graphics-native-i386 :
 	%add_objects rom/boot/libgraphics
