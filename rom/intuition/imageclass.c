@@ -118,7 +118,7 @@ AROS_UFH3S(IPTR, dispatch_imageclass,
 
 	D( kprintf("ImageClass OM_SET\n") );
 
-        while ((tag = NextTagItem(&tstate)))
+        while ((tag = NextTagItem((const struct TagItem **)&tstate)))
         {
             tidata = tag->ti_Data;
 
@@ -254,8 +254,8 @@ AROS_UFH3S(IPTR, dispatch_imageclass,
             Loosing my sanity, better check that I do not have
             have my X/Y mixed up here. :)
 	*/
-        if ((imp->imp_Point.X >= IM(o)->LeftEdge && imp->imp_Point.X <= IM(o)->LeftEdge + IM(o)->Width) &&
-            (imp->imp_Point.Y >= IM(o)->TopEdge  && imp->imp_Point.Y <= IM(o)->TopEdge + IM(o)->Height))
+        if ((imp->imp_Point.X >= IM(o)->LeftEdge && imp->imp_Point.X < IM(o)->LeftEdge + IM(o)->Width) &&
+            (imp->imp_Point.Y >= IM(o)->TopEdge  && imp->imp_Point.Y < IM(o)->TopEdge + IM(o)->Height))
             retval = 1UL;
 	break;}
 
