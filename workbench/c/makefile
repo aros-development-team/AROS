@@ -32,17 +32,17 @@ clean:
 $(EXEDIR)/forkbomb : forkbomb
 	$(CP) $< $@
 
-#$(EXEDIR)/dir: $(OBJDIR)/dir.o $(OBJDIR)/strlen.o $(OBJDIR)/qsort.o $(OBJDIR)/strcpy.o
-#	 $(CC) -Xlinker -i $(CFLAGS) $^ -o $@ -nostartfiles -nostdlib
+$(EXEDIR)/dir: $(OBJDIR)/dir.o $(LIBDIR)/libaros.a
+	$(CC) $(ILDFLAGS) $^ -o $@ -L$(LIBDIR) -laros
 
-$(EXEDIR)/dir: dir.c strlen.c qsort.c strcpy.c
-	$(CC) -DNO_LINK $(CFLAGS) -c $< -o $@
+$(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o
+	$(CC) $(ILDFLAGS) $^ -o $@
 
-$(EXEDIR)/librarytest: librarytest.c $(TOP)/libs/dummylib_gcc.h
+$(OBJDIR)/librarytest.o: librarytest.c $(TOP)/libs/dummylib_gcc.h
 	$(CC) $(CFLAGS) -I $(TOP)/libs -c $< -o $@
 
-$(EXEDIR)/%: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+$(EXEDIR)/%: %.o
+	$(CC) $(ILDFLAGS) $< -o $@
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
