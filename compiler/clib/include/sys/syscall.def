@@ -126,3 +126,5 @@ SYSTEM_CALL (asctime)
 SYSTEM_CALL (sleep)
 SYSTEM_CALL (chdir)
 SYSTEM_CALL (IoErr2errno)
+SYSTEM_CALL (mktime)
+
