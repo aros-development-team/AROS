@@ -235,7 +235,7 @@
     /*
 	Prepare the cpu context
     */
-#   define PREPARE_INITIAL_CONTEXT(task)    /* nop */
+#   define PREPARE_INITIAL_CONTEXT(task,startpc)    /* nop */
 
     /*
 	This macro is similar to PREPARE_INITIAL_FRAME() but also saves
