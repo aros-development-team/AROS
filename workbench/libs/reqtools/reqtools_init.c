@@ -41,9 +41,9 @@
 
 /* Global variables */
 
-#define extern
+#define __RT_DEFINEVARS
 #include "globalvars.h"
-#undef extern
+#undef __RT_DEFINEVARS
 
 /****************************************************************************************/
 
