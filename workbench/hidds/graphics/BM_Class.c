@@ -1890,7 +1890,6 @@ static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
 		dst_red   = (destpix & 0x00FF0000) >> 16;
 		dst_green = (destpix & 0x0000FF00) >> 8;
 		dst_blue  = (destpix & 0x000000FF);
-		dst_alpha = (destpix & 0xFF000000) >> 24;
 	    #else
 		dst_red   = (destpix & 0x0000FF00) >> 8;
 		dst_green = (destpix & 0x00FF0000) >> 16;
@@ -1981,6 +1980,223 @@ static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
     }
 
     ReturnVoid("BitMap::PutAlphaImage");
+}
+
+/****************************************************************************************/
+
+static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
+    	    	    	    struct pHidd_BitMap_PutAlphaTemplate *msg)
+{
+    WORD    	    	    x, y;
+    UBYTE   	    	    *pixarray = msg->alpha;
+    ULONG    	    	    *buf;
+    OOP_Object	    	    *gc = msg->gc;
+    struct HIDDBitMapData   *data;
+    HIDDT_Color     	     color;
+    LONG 	    	     a_red, a_green, a_blue;
+    LONG	    	     b_red, b_green, b_blue;
+    WORD    	    	     type = 0;
+    
+    data = OOP_INST_DATA(cl, o);
+
+    EnterFunc(bug("BitMap::PutAlphaTemplate(x=%d, y=%d, width=%d, height=%d)\n"
+    		, msg->x, msg->y, msg->width, msg->height));
+
+    
+    HIDD_BM_UnmapPixel(o, GC_FG(gc), &color);
+
+    a_red   = color.red >> 8;
+    a_green = color.green >> 8;
+    a_blue  = color.blue >> 8;
+
+    if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
+    {
+    	type = 0;
+    }
+    else if (GC_DRMD(gc) == vHidd_GC_DrawMode_Invert)
+    {
+    	type = 2;
+    }
+    else
+    {
+    	type = 4;
+
+    	HIDD_BM_UnmapPixel(o, GC_BG(gc), &color);
+    	b_red   = color.red >> 8;
+    	b_green = color.green >> 8;
+    	b_blue  = color.blue >> 8;
+    }
+    
+    if (msg->invertalpha) type++;
+    
+    buf = AllocVec(msg->width * sizeof(ULONG), MEMF_PUBLIC);    
+    if (buf)
+    {
+    	for(y = msg->y; y < msg->y + msg->height; y++)
+	{
+	    if (type < 4)
+	    {
+		HIDD_BM_GetImage(o,
+	    	    		 (UBYTE *)buf,
+				 0,
+				 msg->x,
+				 y,
+				 msg->width,
+				 1,
+				 vHidd_StdPixFmt_ARGB32);
+	    }
+	    
+	    switch(type)
+	    {
+	    	case 0:	/* JAM1 */	    
+		    for(x = 0; x < msg->width; x++)
+		    {
+	    		ULONG	    destpix;
+			LONG	    dst_red, dst_green, dst_blue, alpha;
+
+    	    		alpha = *pixarray++;
+
+    	    	    	destpix = buf[x];
+			
+    		    #if AROS_BIG_ENDIAN		
+			dst_red   = (destpix & 0x00FF0000) >> 16;
+			dst_green = (destpix & 0x0000FF00) >> 8;
+			dst_blue  = (destpix & 0x000000FF);
+		    #else
+			dst_red   = (destpix & 0x0000FF00) >> 8;
+			dst_green = (destpix & 0x00FF0000) >> 16;
+			dst_blue  = (destpix & 0xFF000000) >> 24;
+		    #endif
+
+			dst_red   += ((a_red   - dst_red)   * alpha) / 256;
+			dst_green += ((a_green - dst_green) * alpha) / 256;
+			dst_blue  += ((a_blue  - dst_blue)  * alpha) / 256;
+
+    		    #if AROS_BIG_ENDIAN
+			destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
+    		    #else
+			destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
+		    #endif
+
+			buf[x] = destpix;
+
+		    } /* for(x = 0; x < msg->width; x++) */
+		    break;
+
+	    	case 1:	/* JAM1 | INVERSVID */	    
+		    for(x = 0; x < msg->width; x++)
+		    {
+	    		ULONG	    destpix;
+			LONG	    dst_red, dst_green, dst_blue, alpha;
+
+    	    		alpha = (*pixarray++) ^ 255;
+
+    	    	    	destpix = buf[x];
+			
+    		    #if AROS_BIG_ENDIAN		
+			dst_red   = (destpix & 0x00FF0000) >> 16;
+			dst_green = (destpix & 0x0000FF00) >> 8;
+			dst_blue  = (destpix & 0x000000FF);
+		    #else
+			dst_red   = (destpix & 0x0000FF00) >> 8;
+			dst_green = (destpix & 0x00FF0000) >> 16;
+			dst_blue  = (destpix & 0xFF000000) >> 24;
+		    #endif
+
+			dst_red   += ((a_red   - dst_red)   * alpha) / 256;
+			dst_green += ((a_green - dst_green) * alpha) / 256;
+			dst_blue  += ((a_blue  - dst_blue)  * alpha) / 256;
+
+    		    #if AROS_BIG_ENDIAN
+			destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
+    		    #else
+			destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
+		    #endif
+
+			buf[x] = destpix;
+
+		    } /* for(x = 0; x < msg->width; x++) */
+		    break;
+
+    	    	case 2: /* COMPLEMENT */
+		    #warning "Implement PutAlphaTemplate COMPLEMENT mode"
+		    break;
+
+		case 3: /* COMPLEMENT | INVERSVID*/
+		    #warning "Implement PutAlphaTemplate COMPLEMENT|INVERSVID mode"
+		    break;
+		    
+	    	case 4:	/* JAM2 */	    
+		    for(x = 0; x < msg->width; x++)
+		    {
+	    		ULONG	    destpix;
+			LONG	    dst_red, dst_green, dst_blue, alpha;
+
+    	    		alpha = *pixarray++;
+
+			dst_red   = b_red   + ((a_red   - b_red)   * alpha) / 256;
+			dst_green = b_green + ((a_green - b_green) * alpha) / 256;
+			dst_blue  = b_blue  + ((a_blue  - b_blue)  * alpha) / 256;
+
+    		    #if AROS_BIG_ENDIAN
+			destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
+    		    #else
+			destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
+		    #endif
+
+			buf[x] = destpix;
+
+		    } /* for(x = 0; x < msg->width; x++) */
+		    break;
+
+	    	case 5:	/* JAM2 | INVERSVID */	    
+		    for(x = 0; x < msg->width; x++)
+		    {
+	    		ULONG	    destpix;
+			LONG	    dst_red, dst_green, dst_blue, alpha;
+
+    	    		alpha = (*pixarray++) ^ 255;
+
+			dst_red   = b_red   + ((a_red   - b_red)   * alpha) / 256;
+			dst_green = b_green + ((a_green - b_green) * alpha) / 256;
+			dst_blue  = b_blue  + ((a_blue  - b_blue)  * alpha) / 256;
+
+    		    #if AROS_BIG_ENDIAN
+			destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
+    		    #else
+			destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
+		    #endif
+
+			buf[x] = destpix;
+
+		    } /* for(x = 0; x < msg->width; x++) */
+		    break;
+    	
+	    } /* switch(type) */
+	    
+	    HIDD_BM_PutImage(o,
+	    	    	     msg->gc,
+			     (UBYTE *)buf,
+			     0,
+			     msg->x,
+			     y,
+			     msg->width,
+			     1,
+			     vHidd_StdPixFmt_ARGB32);
+			     
+	    pixarray += msg->modulo - msg->width;
+
+	} /* for(y = msg->y; y < msg->y + msg->height; y++) */
+	
+    	FreeVec(buf);
+	
+    } /* if (buf) */
+    else
+    {
+
+    }
+
+    ReturnVoid("BitMap::PutAlphaTemplate");
 }
 
 /****************************************************************************************/
@@ -2579,7 +2795,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 
 #define NUM_ROOT_METHODS    4
 
-#define NUM_BITMAP_METHODS  46
+#define NUM_BITMAP_METHODS  47
 
 /****************************************************************************************/
 
@@ -2611,6 +2827,7 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_clear		, moHidd_BitMap_Clear		    },
         {(IPTR (*)())bitmap_putimage		, moHidd_BitMap_PutImage	    },
         {(IPTR (*)())bitmap_putalphaimage	, moHidd_BitMap_PutAlphaImage	    },
+        {(IPTR (*)())bitmap_putalphatemplate	, moHidd_BitMap_PutAlphaTemplate    },
 	{(IPTR (*)())bitmap_putimagelut     	, moHidd_BitMap_PutImageLUT 	    },
         {(IPTR (*)())bitmap_getimage		, moHidd_BitMap_GetImage	    },
         {(IPTR (*)())bitmap_getimagelut		, moHidd_BitMap_GetImageLUT	    },
