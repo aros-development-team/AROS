@@ -29,10 +29,11 @@
     HISTORY
 
         11-Dec-2000     hkiel     Initial version
+        01-May-2001	petah     Added CTRL-C checking (WiMP 0.8)
 
 ******************************************************************************/
 
-static const char version[] = "$VER: WiMP 0.7 (10.02.2001)\n";
+static const char version[] = "$VER: WiMP 0.8 (1.5.2001)";
 
 #define AROS_ALMOST_COMPATIBLE
 
@@ -927,7 +928,11 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 
   while ( quit == 0 )
   {
-    port = Wait ( w_sigbit | iw_sigbit );
+    port = Wait ( w_sigbit | iw_sigbit | SIGBREAKF_CTRL_C);
+
+    if ( (port & SIGBREAKF_CTRL_C) )
+     quit = 1;
+
     if ( ( port & iw_sigbit ) != 0L )
     {
       msg = (struct IntuiMessage *) GetMsg ( InfoWindow->UserPort );
@@ -1365,4 +1370,3 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
   close_lib();
   return ( 0 );
 }
-
