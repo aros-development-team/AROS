@@ -29,9 +29,12 @@ void writestart(void)
 	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
 	    "#include <libcore/libheader.c>\n");
-    
-    for (linelistit = cdeflines; linelistit!=NULL; linelistit = linelistit->next)
-	fprintf(out, "%s\n", linelistit->line);
+
+    if (libcall == REGISTER)
+    {
+	for (linelistit = cdeflines; linelistit!=NULL; linelistit = linelistit->next)
+	    fprintf(out, "%s\n", linelistit->line);
+    }
     
     for (funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
     {
