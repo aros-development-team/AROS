@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/11 13:00:16  digulla
+    Use correct alignment (M. Fleischer)
+
     Revision 1.3  1996/08/13 13:52:48  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -20,6 +23,9 @@
 #include <dos/dosextens.h>
 #include <clib/dos_protos.h>
 #include "dos_intern.h"
+
+#define ALLOCVEC_TOTAL \
+(DOUBLEALIGN>sizeof(ULONG)?DOUBLEALIGN:sizeof(ULONG))
 
 static BPTR LDLoad(STRPTR name, STRPTR basedir, struct DosLibrary *DOSBase)
 {
@@ -58,8 +64,8 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
     BPTR seg=seglist;
     while(seg)
     {
-	ULONG size=((ULONG *)BADDR(seg))[0];
-	STRPTR addr=(STRPTR)&((ULONG *)BADDR(seg))[1];
+        STRPTR addr=(STRPTR)BADDR(seg)-ALLOCVEC_TOTAL;
+        ULONG size=*(ULONG *)addr;
 	for(;size>=sizeof(struct Resident);size-=PTRALIGN,addr+=PTRALIGN)
 	{
 	    struct Resident *res=(struct Resident *)addr;
@@ -71,7 +77,7 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
 		return lib;
 	    }
 	}
-	seglist=*(BPTR *)BADDR(seglist-1);
+        seg=*(BPTR *)BADDR(seg);
     }
     UnLoadSeg(seglist);
     return NULL;
