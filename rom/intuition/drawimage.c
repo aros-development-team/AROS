@@ -14,6 +14,9 @@
 #	include <aros/debug.h>
 #include <proto/arossupport.h>
 
+#define USE_BLTBITMAPRASTPORT 1
+#define USE_FASTPLANEPICK0    1
+
 /*****************************************************************************
 
     NAME */
@@ -61,18 +64,22 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    WORD    x, y, d;
+    UWORD   shift;
+    ULONG   planeonoff, planepick;
+
+#if !USE_BLTBITMAPRASTPORT
+
     ULONG   apen;
     ULONG   drmd;
-    WORD    x, y, d, plane;
-    WORD    xoff, yoff;
-    UWORD * bits[8];
-    UWORD   bitmask;
-    UWORD   shift;
-    UWORD   offset;
-    ULONG   pen = 0;
-    ULONG   planeonoff, planepick;
     ULONG   lastPen = 0;
-#define START_BITMASK	0x8000L
+    ULONG   pen = 0;
+    UWORD   offset;
+    UWORD   bitmask;
+    UWORD * bits[8];
+    WORD    xoff, yoff, plane;
+
+    #define START_BITMASK	0x8000L
 
     /* Store important variables of the RastPort */
     apen = GetAPen (rp);
@@ -80,6 +87,9 @@
 
     /* Change RastPort to the mode I need */
     SetDrMd (rp, JAM1);
+    
+#endif
+    
     
     /* For all images... */
     for ( ; image; image=image->NextImage)
@@ -91,7 +101,9 @@
 
 	planepick  = image->PlanePick;
         planeonoff = image->PlaneOnOff & ~planepick;
-	
+
+#if USE_FASTPLANEPICK0
+
 	if (planepick == 0)
 	{
 	    SetAPen(rp, planeonoff);
@@ -102,13 +114,46 @@
 	    
 	    continue;
 	}
-	
+
+#endif
 	
 	/* Use x to store size of one image plane */
 	x = ((image->Width + 15) >> 4) * image->Height;
 	y = 0;
 
 	shift = 1;
+
+#if USE_BLTBITMAPRASTPORT
+	{
+	    struct BitMap bitmap;
+	    
+	    /* The "8" (instead of image->Depth) seems to be correct,
+	       as for example DOpus uses prop gadget knob images with
+	       a depth of 0 (planepick 0, planeonoff color) */
+	       
+	    InitBitMap(&bitmap, 8, image->Width, image->Height);
+	    
+	    for(d = 0; d < 8; d++)
+	    {
+	        if (planepick & shift)
+		{
+		     bitmap.Planes[d] = (PLANEPTR)(image->ImageData + (y++) * x);
+		} else {
+		     bitmap.Planes[d] = (planeonoff & shift) ? (PLANEPTR)-1 : NULL;
+		}
+		shift <<= 1;
+	    }
+
+	    BltBitMapRastPort(&bitmap,
+	    		      0, 0,
+	    		      rp,
+			      leftOffset + image->LeftEdge, topOffset + image->TopEdge,
+			      image->Width, image->Height,
+			      192);
+	}
+	
+#else
+	
 	
 	for(d = 0; d < image->Depth;d++)
 	{
@@ -151,15 +196,6 @@
 		    shift <<= 1;
 		}
 
-/* kprintf (" x=%2d y=%2d   offset=%3d bitmask=%04x bits[]=%04x pen=%d\n"
-    , x
-    , y
-    , offset
-    , bitmask
-    , bits[0][offset]
-    , pen
-); */
-
 		if (!x)
 		{
 		    lastPen = pen;
@@ -190,12 +226,18 @@
 		offset ++;
 		
 	} /* for (y=0; y < image->Height; y++, yoff++) */
+
+#endif
 	
     } /* for ( ; image; image=image->NextImage) */
+
+#if !USE_BLTBITMAPRASTPORT
 
     /* Restore RastPort */
     SetAPen (rp, apen);
     SetDrMd (rp, drmd);
+
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* DrawImage */
