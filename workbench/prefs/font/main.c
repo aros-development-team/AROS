@@ -32,10 +32,10 @@ int main(void)
     }
     
     application = ApplicationObject,
-        SubWindow, (IPTR) window = SystemPrefsWindowObject,
+        SubWindow, (IPTR) (window = SystemPrefsWindowObject,
             WindowContents, (IPTR) FPEditorObject,
             End,
-        End,
+        End),
     End;
 
     if (application != NULL)
