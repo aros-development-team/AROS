@@ -10,8 +10,8 @@ PODS		= SFDCompile.pod
 all : $(SFDC)
 
 $(SFDC) : $(MAIN) $(CLASSES) $(PODS)
-	$(SED) "s/SFDC_VERSION/$(VERSION)/g" $^ | sed "s/SFDC_DATE/$(DATE)/g" >$@
-	$(CHMOD) +x $@
+	@$(SED) "s/SFDC_VERSION/$(VERSION)/g" $^ | sed "s/SFDC_DATE/$(DATE)/g" >$@
+	@$(CHMOD) +x $@
 	
 clean:
 	@$(RM) -f $(SFDC)
