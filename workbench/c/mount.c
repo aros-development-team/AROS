@@ -17,6 +17,7 @@
 #include <proto/utility.h>
 #include <proto/expansion.h>
 #include <libraries/expansion.h>
+#include <string.h>
 
 # define   DEBUG 1
 # include  <aros/debug.h>
@@ -304,13 +305,9 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 			dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
 
 			if (AddDosNode(vec->de_BootPri, ADNF_STARTPROC, dn))
-			{
 			    error = 0;
-			}
 			else
-			{
-			    error = IoErr();
-			}
+			    error = ERROR_INVALID_RESIDENT_LIBRARY;
 		    }
 		    else
 		    {
@@ -372,6 +369,7 @@ int main(void)
 
 		if (error)
 		{
+		    printf("ddddd\n");
 		    break;
 		}
 	    }
