@@ -2,7 +2,7 @@
 
 #Not working yet: workbench demos apps
 
-#MM AROS-amiga : setup includes compiler arosboot kernel
+#MM AROS-amiga : setup includes compiler arosboot kernel apps workbench
 AROS-amiga :
 	@$(NOP)
 
@@ -10,7 +10,17 @@ AROS-amiga :
 kernel-amiga :
 	@$(NOP)
 
-#MM apps : Moria3D
+#MM workbench-amiga : workbench-c workbench-libs workbench-s
+workbench-amiga :
+	@$(NOP)
+
+#MM workbench-libs-amiga : workbench-libs-diskfont workbench-libs-gadtools
+#MM workbench-libs-amiga : workbench-libs-icon workbench-libs-iffparse
+#MM workbench-libs-amiga : workbench-libs-mathieeesptrans workbench-libs-mathtrans
+workbench-libs-amiga :
+	@$(NOP)
+
+#MM apps-amiga : 
 apps :
 	@$(NOP)
 

@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 #MM
-workbench : $(SDIR)/Startup-Sequence
+workbench-s : $(SDIR)/Startup-Sequence
 
 $(SDIR)/Startup-Sequence : Startup-Sequence
 	$(CP) $^ $@

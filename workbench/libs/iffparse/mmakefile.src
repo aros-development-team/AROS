@@ -74,8 +74,8 @@ FUNCTIONS := \
 
 %genlib_old
 
-#MM workbench : setup includes linklibs
-workbench : show-flags $(SLIB)
+#MM workbench-libs-iffparse : setup includes linklibs
+workbench-libs-iffparse : show-flags $(SLIB)
 
 #MM clean
 #MM setup

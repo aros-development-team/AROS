@@ -30,8 +30,8 @@ FUNCTIONS	:= \
 
 %genlib_old
 
-#MM workbench : setup includes linklibs
-workbench : show-flags $(SLIB)
+#MM workbench-libs-gadtools : setup includes linklibs
+workbench-libs-gadtools : show-flags $(SLIB)
 
 #MM clean
 #MM setup

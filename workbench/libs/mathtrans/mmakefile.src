@@ -49,8 +49,8 @@ EXTRA_DEPLIBS = $(LIB)
 
 %genlib
 
-#MM workbench : setup includes linklibs
-workbench : show-flags $(SLIB)
+#MM workbench-libs-mathtrans : setup includes linklibs
+workbench-libs-mathtrans : show-flags $(SLIB)
 
 #MM setup
 #MM clean

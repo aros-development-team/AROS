@@ -21,8 +21,8 @@ FUNCTIONS := \
 
 %genlib_old
 
-#MM workbench : setup includes linklibs
-workbench : show-flags $(SLIB)
+#MM workbench-libs-asl : setup includes linklibs
+workbench-libs-asl : show-flags $(SLIB)
 
 #MM clean
 #MM setup

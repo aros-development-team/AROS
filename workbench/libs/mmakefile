@@ -1,0 +1,6 @@
+# $Id$
+
+# The workbench-libs target points back to config/$(ARCH)/mmakefile:
+#MM workbench-libs : workbench-libs-$(ARCH)
+workbench-libs :
+	@$(NOP)

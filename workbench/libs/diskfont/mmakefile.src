@@ -27,8 +27,8 @@ FUNCTIONS	:= \
 
 %genlib_old
 
-#MM workbench : setup includes linklibs
-workbench : show-flags $(SLIB)
+#MM workbench-libs-diskfont : setup includes linklibs
+workbench-libs-diskfont : show-flags $(SLIB)
 
 #MM clean
 #MM setup

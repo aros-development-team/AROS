@@ -44,8 +44,8 @@ FUNCTIONS := \
 
 %genlib
 
-#MM workbench : setup includes linklibs
-workbench : show-flags $(SLIB)
+#MM workbench-libs-mathieeesptrans : setup includes linklibs
+workbench-libs-mathieeesptrans : show-flags $(SLIB)
 
 #MM setup
 #MM clean

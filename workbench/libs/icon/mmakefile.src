@@ -42,8 +42,8 @@ FUNCTIONS   := \
 
 %genlib
 
-#MM workbench : setup includes linklibs
-workbench : show-flags $(SLIB)
+#MM workbench-libs-icon : setup includes linklibs
+workbench-libs-icon : show-flags $(SLIB)
 
 #MM setup
 #MM clean
