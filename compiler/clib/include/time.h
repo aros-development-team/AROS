@@ -23,14 +23,9 @@ typedef __time_t            time_t;
 typedef __clock_t           clock_t;
 #endif
 
-#ifndef __AROS_SIZE_T_DECLARED
-#define __AROS_SIZE_T_DECLARED
-typedef __size_t            size_t;
-#endif
-
-#ifndef NULL
-#   define NULL	    0
-#endif
+#define __need_size_t
+#define __need_NULL
+#include <stddef.h>
 
 /* XXX: This is supposed to be 1000000 on SUSv2 platforms apparently */
 #define CLOCKS_PER_SEC 50
