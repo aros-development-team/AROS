@@ -32,6 +32,13 @@
 #define ATTR_DEFAULTTOOL    0x8000100a
 #define ATTR_TOOLTYPE	    0x8000100b
 
+#define EFFECT_NONE      (0)
+#define EFFECT_LIGHTEN   (1)
+#define EFFECT_TINT_BLUE (2)
+#define EFFECT_XOR       (3)
+
+#define EFFECT EFFECT_LIGHTEN
+
 /****************************************************************************************/
 
 /*
@@ -512,6 +519,57 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 	}
     	
     } /**/
+    
+    /* If there's no image for selected-state, generate one */
+    if (!icon->iconPNG.img2)
+    {
+    	ULONG size = icon->iconPNG.width * icon->iconPNG.height;
+	
+    	if ((icon->iconPNG.img2 = AllocPooled(pool, size * sizeof(ULONG))))
+	{
+	    ULONG *src = (ULONG *)icon->iconPNG.img1;
+	    ULONG *dst = (ULONG *)icon->iconPNG.img2;
+	    
+	    while(size--)
+	    {
+	    	ULONG pixel = *src++;
+		
+		/* Effects like in changetoselectediconcolor.c */
+		
+	#if EFFECT == EFFECT_LIGHTEN
+	    #if AROS_BIG_ENDIAN
+	    	pixel = (pixel & 0xFF000000) +
+		      	((pixel >> 1) & 0x007F7F7F) +
+		      	0x00808080;
+	    #else
+	    	pixel = (pixel & 0x000000FF) +
+		      	((pixel >> 1) & 0x7F7F7F00) +
+		      	0x80808000;	    	
+	    #endif
+	#elif EFFECT == EFFECT_TINT_BLUE
+	    #if AROS_BIG_ENDIAN
+	    	pixel = (pixel & 0xFF000000) +
+		      	((pixel >> 1) & 0x007F7F7F) +
+		      	0x00000080;
+	    #else
+	    	pixel = (pixel & 0x000000FF) +
+		      	((pixel >> 1) & 0x7F7F7F00) +
+		      	0x80000000;	    	
+	    #endif
+	    
+	#elif EFFECT == EFFECT_XOR
+	    #if AROS_BIG_ENDIAN
+	    	pixel = (pixel & 0xFF000000) +
+		      	((pixel & 0x00FFFFFF) ^ 0x00FFFFFF);
+	    #else
+	    	pixel = (pixel & 0x000000FF) +
+		      	((pixel & 0xFFFFFF00) ^ 0xFFFFFF00);	    	
+	    #endif	    
+	#endif
+		*dst++ = pixel;
+	    }
+	}
+    }
     
     *ret = &icon->dobj;
     
