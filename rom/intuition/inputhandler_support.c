@@ -381,6 +381,7 @@ void PrepareGadgetInfo(struct GadgetInfo *gi, struct Screen *scr, struct Window 
 void SetGadgetInfoGadget(struct GadgetInfo *gi, struct Gadget *gad)
 {
     SET_GI_RPORT(gi, gi->gi_Window, gad);
+    gi->gi_Layer = gi->gi_RastPort->Layer;
     GetGadgetDomain(gad, gi->gi_Screen, gi->gi_Window, NULL, &gi->gi_Domain);
 }
 /***********************
