@@ -23,6 +23,13 @@
 /* aros_print_not_implemented() macro: */
 #include <aros/debug.h>
 
+/* Should the Loc???() replacement functions lock the default locale.
+   1 = yes. 0 = no. If you set this to 0, then you must make sure that
+   a Locale which was once set as default Locale never gets freed from
+   memory. */
+   
+#define REPLACEMENTFUNCS_LOCK_LOCALE 0
+
 struct IntLocaleBase
 {
     struct LocaleBase        lb_LocaleBase;
@@ -116,6 +123,13 @@ struct IntCatalog
 #define IFFParseBase (((struct IntLocaleBase *)LocaleBase)->lb_IFFParseBase)
 #define UtilityBase (((struct IntLocaleBase *)LocaleBase)->lb_UtilityBase)
 
+#if REPLACEMENTFUNCS_LOCK_LOCALE
+#define REPLACEMENT_LOCK    ObtainSemaphore(&IntLB(LocaleBase)->lb_LocaleLock)
+#define REPLACEMENT_UNLOCK  ReleaseSemaphore(&IntLB(LocaleBase)->lb_LocaleLock)
+#else
+#define REPLACEMENT_LOCK
+#define REPLACEMENT_UNLOCK
+#endif
 
 #define ID_CTLG MAKE_ID('C','T','L','G')
 #define ID_FVER MAKE_ID('F','V','E','R')

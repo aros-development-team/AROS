@@ -62,8 +62,14 @@ extern struct LocaleBase *globallocalebase;
 
 #define LocaleBase globallocalebase
 
-    return ConvToLower((struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale, character);
-   
+    UBYTE retval;
+    
+    REPLACEMENT_LOCK;    
+    retval = ConvToLower((struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale, character);   
+    REPLACEMENT_UNLOCK;
+    
+    return retval;
+    
     AROS_LIBFUNC_EXIT
     
 } /* LocToLower */

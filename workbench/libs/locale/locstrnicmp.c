@@ -64,11 +64,19 @@ extern struct LocaleBase *globallocalebase;
 
 #define LocaleBase globallocalebase
 
-    return StrnCmp((struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale,
-    	    	   (STRPTR)string1,
-		   (STRPTR)string2,
-		   length,
-		   SC_ASCII);
+    LONG retval;
+    
+    REPLACEMENT_LOCK;
+    
+    retval = StrnCmp((struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale,
+    	    	     (STRPTR)string1,
+		     (STRPTR)string2,
+		     length,
+		     SC_ASCII);
+    
+    REPLACEMENT_UNLOCK;
+    
+    return retval;
     
     AROS_LIBFUNC_EXIT
     
