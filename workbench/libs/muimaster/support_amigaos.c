@@ -93,6 +93,11 @@ int sprintf(char *buf, const char *fmt, ...)
 		RawDoFmt(fmt, (((ULONG *)&fmt)+1), (void(*)())&cpy_func, buf);
 		return (int)strlen(buf);
 }
+#else
+ASM ULONG HookEntry(REG(a0, struct Hook *hook),REG(a2, APTR obj), REG(a1, APTR msg))
+{
+	return hook->h_SubEntry(hook,obj,msg);
+}
 #endif
 
 /***************************************************************************/

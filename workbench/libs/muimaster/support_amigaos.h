@@ -61,6 +61,11 @@ size_t strlcat(char *buf, const char *src, size_t len);
 Object *DoSuperNewTagList(struct IClass *cl, Object *obj,void *dummy, struct TagItem *tags);
 Object *DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy,...);
 
+/*** HookEntry for OS4 (is only a dummy) ************************************/
+#ifdef __amigaos4__
+ASM ULONG HookEntry(REG(a0, struct Hook *hook),REG(a2, APTR obj), REG(a1, APTR msg));
+#endif
+
 /*** AROS Exec extensions ***************************************************/
 #ifndef __amigaos4__
 APTR AllocVecPooled(APTR pool, ULONG size);
