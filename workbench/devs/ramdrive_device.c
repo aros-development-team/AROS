@@ -30,7 +30,7 @@
 #include <aros/macros.h>
 #include <string.h>
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "ramdrive_device_gcc.h"
 #endif
 

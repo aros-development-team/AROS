@@ -22,7 +22,7 @@
 #include <proto/dos.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "rootfs_handler_gcc.h"
 #endif
 
