@@ -1,0 +1,21 @@
+Pseudo-BNF
+----------
+
+package    = header, file*
+
+file       = pathLength, path, dataLength, data
+
+header     = 'P', 'K', 'G', version
+version    = UBYTE      # Must be 0
+
+pathLength = LONG
+path       = BYTE[pathLength] 
+dataLength = LONG
+data       = BYTE[dataLength] 
+
+Example
+-------
+
+"PKG", 0, 3L, "foo", 8L, "barbarba"
+
+Note: No NULL bytes after strings!
