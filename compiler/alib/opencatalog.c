@@ -15,6 +15,7 @@ extern struct LocaleBase *LocaleBase;
     NAME */
 #include <libraries/locale.h>
 #include <proto/locale.h>
+#undef OpenCatalog /* Get rid of the macro from inline/ */
 
 	struct Catalog * OpenCatalog (
 
