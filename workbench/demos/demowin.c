@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/16 14:03:41  digulla
+    More demos
+
     Revision 1.3  1996/08/15 13:17:32  digulla
     More types of IntuiMessages are checked
     Problem with empty window was due to unhandled REFRESH
@@ -78,6 +81,8 @@ void D(char *str)
 
 void Refresh (struct RastPort * rp)
 {
+    int len;
+
     SetAPen (rp, 1);
     SetDrMd (rp, JAM2);
 
@@ -90,6 +95,8 @@ void Refresh (struct RastPort * rp)
     Move (rp, 300, 40);
     Text (rp, "Hello World.", 12);
 
+    SetAPen (rp, 3);
+    RectFill (rp, 90, 0, 120, 30);
     SetAPen (rp, 0);
     RectFill (rp, 100, 10, 110, 20);
 
@@ -101,7 +108,26 @@ void Refresh (struct RastPort * rp)
 
     SetAPen (rp, 3);
     RectFill (rp, 250, 10, 260, 20);
+
+    len = TextLength (rp, "Hello World.", 12);
+
+    SetAPen (rp, 2);
+    RectFill (rp, 299, 59, 300+len, 60+rp->Font->tf_YSize);
+
+    SetAPen (rp, 1);
+    Move (rp, 300, 60 + rp->Font->tf_Baseline);
+    Text (rp, "Hello World.", 12);
+
+    SetDrMd (rp, JAM1);
+    SetAPen (rp, 1);
+    Move (rp, 301, 101);
+    Text (rp, "Hello World.", 12);
+    SetAPen (rp, 2);
+    Move (rp, 300, 100);
+    Text (rp, "Hello World.", 12);
 }
+
+static void end (void);
 
 static LONG tinymain(void)
 {
@@ -110,12 +136,13 @@ static LONG tinymain(void)
     struct RastPort * rp;
     struct IntuiMessage * im;
     int cont, draw;
-    ULONG args[3];
+    ULONG args[4];
 
     args[0] = (ULONG) tinymain;
     args[1] = (ULONG) Refresh;
     args[2] = (ULONG) _entry;
-    VPrintf ("main=%08lx\nRefresh=%08lx\nentry=%08lx\n", args);
+    args[4] = (ULONG) end;
+    VPrintf ("main=%08lx\nRefresh=%08lx\nentry=%08lx\nend=%08lx\n", args);
 
     nw.LeftEdge = 100;
     nw.TopEdge = 100;
@@ -135,6 +162,12 @@ static LONG tinymain(void)
 
     D("OpenWindow\n");
     win = OpenWindow (&nw);
+
+    if (!win)
+    {
+	D("Couldn't open window\n");
+	return 10;
+    }
 
     rp = win->RPort;
 
@@ -190,3 +223,4 @@ static LONG tinymain(void)
     return 0;
 }
 
+static void end (void) {}
