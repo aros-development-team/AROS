@@ -1,0 +1,244 @@
+;
+;	$VER: security_support.cd 1.0 (4.3.94)
+;
+; Freeze, Kill, Unfreeze
+;
+MSG_BADARG(//)
+Bad argument\n
+;
+MSG_KILLFAIL(//)
+Couldn't kill task\n
+;
+MSG_FREEZEFAIL(//)
+Couldn't freeze task\n
+;
+MSG_UNFREEZEFAIL(//)
+Couldn't unfreeze task\n
+;
+; LimitDOSSetProtection
+;
+MSG_BOTH_ONOFF(//)
+You can't specify both ON and OFF\n
+;
+MSG_NO_ONOFF(//)
+You must specify one of ON and OFF\n
+;
+; Login & Logout
+;
+MSG_BOTH_TASKPROC(//)
+Both TASK and PROCESS cannot be specified \n
+;
+MSG_BOTH_USERIDOWN(//)
+Both USERID and OWN cannot be specified \n
+;
+MSG_TASKNOTFOUND(//)
+Couldn't find task [ID=\'%s\']\n
+;
+MSG_PROCNOTFOUND(//)
+Couldn't find process [ID=%ld]\n
+;
+MSG_LOGINOK(//)
+Successfully Loged in \n
+;
+MSG_LOGINFAIL(//)
+Login has failed\n
+;
+; MakeKeyFiles
+;
+MSG_KEYFILEFAIL(//)
+Couldn't create keyfile on volume \'%s\'
+;
+MSG_KEYFILEBACKUP(//)
+\n\033[1m     Do NOT forget to make a backup of all Keyfiles!!\033[0m\n\n
+;
+MSG_BADCONFIGDIR(//)
+The configuration directory must be on a partition using the AFFS FileSystem\n
+;
+MSG_BADPASSWDDIR(//)
+The password directory must be on a partition using the AFFS FileSystem\n
+;
+; MAssign
+;
+MSG_INVALID_DEVICE(//)
+Invalid device name %s\n
+;
+MSG_MUSTBEROOT(//)
+MAssign must be run by root\n
+;
+MSG_ASSIGNCONFLICT(//)
+%s conflicts with another assign\n
+;
+; MList
+;
+MSG_DIRECTORY(//)
+Directory \"%s\"\n
+;
+MSG_USAGE(//)
+%ld files - %ld directories - %ld blocks used\n\n
+;
+MSG_TOTAL(//)
+TOTAL: 
+;
+; MProtect
+;
+MSG_BOTH_ADDSUB(//)
+You can't specify both ADD and SUB\n
+;
+MSG_WARN_UW(//)
+WARNING: U and W are both set\n
+;
+MSG_DONE(//)
+...Done\n
+;
+MSG_INVALID_FLAG(//)
+Invalid flag - must be one of %s\n
+;
+; Passwd
+;
+MSG_ENTEROLDPWD_GUI(//)
+Enter your old password
+;
+MSG_ENTERNEWPWD_GUI(//)
+Enter your new password
+;
+MSG_RETYPEPWD_GUI(//)
+Retype your new password
+;
+MSG_PASSWDREQ_GUI(//)
+MultiUser Passwd Request
+;
+MSG_ENTEROLDPWD_CON(//)
+Old password        : 
+;
+MSG_ENTERNEWPWD_CON(//)
+\nNew password        :
+;
+MSG_RETYPEPWD_CON(//)
+\nRetype new password :
+;
+MSG_RETYPEERROR_GUI(//)
+Error retyping new password
+;
+MSG_RETYPEERROR_CON(//)
+Error retyping new password\n
+;
+MSG_PWDCHANGEOK_GUI(//)
+Password successfully changed
+;
+MSG_PWDCHANGEOK_CON(//)
+Password successfully changed\n
+;
+MSG_PWDCHANGEFAIL_GUI(//)
+Changing password failed
+;
+MSG_PWDCHANGEFAIL_CON(//)
+Changing password failed\n
+;
+MSG_OK(//)
+OK
+;
+; RunCommand
+;
+MSG_NOMEMSTACK(//)
+Not enough memory for stack\n
+;
+MSG_ONLYFROMCLI(//)
+RunCommand must be used from a CLI\n
+;
+; SetDefProtection
+;
+MSG_SETDEFPROTECTFAIL(//)
+SetDefProtect failed\n
+;
+; SetOwner(37) (see also MProtect)
+;
+MSG_INVALID_OPTIONS(//)
+Invalid options\n
+;
+MSG_UNKNOWN_USER(//)
+Unknown User \'%s\'\n
+;
+MSG_UNKNOWN_GROUP(//)
+Unknown Group \'%s\'\n
+;
+; Tasks (see also MProtect)
+;
+MSG_TFORMAT_HEAD1(//)
+Type    Node     Pri Name/Command                     Owner\n
+;
+MSG_TFORMAT_HEAD2(//)
+-----------------------------------------------------------\n
+;
+MSG_TFORMAT_LINE(//)
+%-7s %08lx %3ld %-32s %s\n
+;
+MSG_CLI(//)
+CLI %3ld
+;
+MSG_PROC(//)
+Process
+;
+MSG_TASK(//)
+Task
+;
+; UserInfo (see also SetOwner)
+;
+MSG_UINFO_THIS(//)
+Dumping information for this user...\n
+;
+MSG_UINFO_ALL(//)
+Dumping information for all users...\n
+;
+MSG_UINFO_USERID(//)
+Dumping information for user \'%s\'...\n
+;
+MSG_UINFO_UID(//)
+Dumping information for user %ld...\n
+;
+MSG_GINFO_GROUPID(//)
+Dumping information for group \'%s\'...\n
+;
+MSG_GINFO_GID(//)
+Dumping information for group %ld...\n
+;
+MSG_NOINFO(//)
+No information\n
+;
+MSG_UFORMAT_USER(//)
+\nUser \'%s\' (uid %ld), group \'%s\' (gid %ld)\n\
+In real life \'%s\'\nHome Directory \'%s\'\n
+;
+MSG_UFORMAT_SECGROUPS(//)
+Secondary groups: \'%s\' (gid %ld)
+;
+MSG_UFORMAT_SECGROUPS2(//)
+, \'%s\' (gid %ld)
+;
+MSG_UFORMAT_NOSECGROUPS(//)
+No secondary groups.\n
+;
+MSG_NEVERLOGGED(//)
+Never logged in.\n
+;
+MSG_LASTLOGGED(//)
+Last login on %s, %s at %s.\n
+;
+MSG_PLAN(//)
+Plan:\n
+;
+MSG_NOPLAN(//)
+No plan.\n
+;
+MSG_NOLOGACCESS(//)
+No access to last login or plan.\n
+;
+; Who
+;
+MSG_UNKNOWN_UID(//)
+Unknown user %04lx\n
+;
+MSG_NOBODY(//)
+Anonymous User
+;
+; see also SetOwner
+;

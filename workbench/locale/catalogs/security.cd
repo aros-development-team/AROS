@@ -1,0 +1,95 @@
+;
+;	$VER: Security.cd 1.0 (28.02.94)
+;
+; misc. strings
+;
+MSG_OK(//)
+OK
+;
+MSG_RESUME(//)
+Resume
+;
+MSG_WARNING_GUI(//)
+Security Warning
+;
+MSG_LOGINREQ_GUI(//)
+Security Login Request
+;
+MSG_LOGINPROMPT_GUI(//)
+\33cWelcome to the AROS Research OS\nAROS Version: %s\n\nPlease fill in your user details\nto log onto %s.
+;
+MSG_LOGINREQ_CON(//)
+\033[0;0H\033[J\n\n\n     AROS %s at %s\n
+;
+MSG_LOGINPROMPT_CON(//)
+\n\nLogin    :
+;
+MSG_PASSWDPROMPT_GUI(//)
+Enter your Password
+;
+MSG_PASSWDPROMPT_CON(//)
+Password :
+;
+MSG_LOGINFAIL_GUI(//)
+Login Incorrect
+;
+MSG_LOGINFAIL_CON(//)
+\n    Login Incorrect !!\n
+;
+MSG_LASTLOGIN(//)
+Logged in on %s, %s at %s.\n\nLast login on %s, %s at %s.
+;
+MSG_FIRSTLOGIN(//)
+Logged in on %s, %s at %s.\n\nNever logged in before.
+;
+; warning strings
+;
+MSG_NOMUFS(100//)
+You must have at least one partition with the AFFS FileSystem
+;
+MSG_NOCONFIGFILE(//)
+Couldn't load the configuration file\nUsing the default configuration
+;
+MSG_BADKEYFILE(//)
+Security violation: Bad or inconsistent keyfile(s) found
+;
+MSG_BADENTRY_PASSWD(//)
+Bad entry found on line %ld of the password file\nThis line will be ignored
+;
+MSG_BADENTRY_GROUP(//)
+Bad entry found on line %ld of the group file\nThis line will be ignored
+;
+MSG_BADVALUE_CONFIG(//)
+Bad value(s) found on line %ld of the configuration file\n\
+This value will be ignored
+;
+MSG_BADOPTION_CONFIG(//)
+Bad option found on line %ld of the configuration file\nThis line will be ignored
+;
+MSG_TOOMANYSECGROUPS(//)
+Too many secondary groups for user with uid %ld\n\
+Line %ld of the group file will be ignored
+;
+; logfile strings
+;
+MSG_LOG_STARTUP(200//)
+Startup
+;
+MSG_LOG_LOGIN(//)
+Login from %ld to \'%s\'
+;
+MSG_LOG_LOGINFAIL(//)
+Login from %ld to \'%s\' failed
+;
+MSG_LOG_PASSWD(//)
+Passwd for %ld
+;
+MSG_LOG_PASSWDFAIL(//)
+Passwd for %ld failed
+;
+MSG_LOG_CHECKPASSWD(//)
+CheckPasswd for %ld
+;
+MSG_LOG_CHECKPASSWDFAIL(//)
+CheckPasswd for %ld failed
+;
