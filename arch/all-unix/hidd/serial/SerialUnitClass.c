@@ -74,7 +74,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
   D(bug("SerialUnit created on %s at %s.\n",__DATE__,__TIME__));
 
   tstate = msg->attrList;
-  while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+  while ((tag = NextTagItem((struct TagItem **)&tstate)))
   {
       ULONG idx;
 
@@ -559,7 +559,7 @@ VOID serialunit_getcapabilities(OOP_Class * cl, OOP_Object *o, struct TagItem * 
 /****** SerialUnit::GetStatus ********************************/
 UWORD serialunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_GetStatus *msg)
 {
-	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+//	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
 
 	return 0;
 }
@@ -819,6 +819,7 @@ static void adapt_termios(struct termios * termios,
 		case SPARITY_MARK:
 		case SPARITY_SPACE:
 		default:
+		break;
 	}
 	
 	/*
@@ -867,6 +868,7 @@ static void adapt_termios(struct termios * termios,
 		break;
 		
 		default:
+		break;
 	}
 
 	cfsetspeed(termios, prefs->BaudRate);
