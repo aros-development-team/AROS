@@ -92,10 +92,10 @@ dist-src :
 # \item{clean} Remove all generated files
 #
 # END_DESC{target}
-#MM
-clean :
-	-$(RM) $(ARCHDIR) Makefile mmake.cache config.cache config.status \
-		config.log
+# M M
+#clean :
+#	-$(RM) $(ARCHDIR) Makefile mmake.cache config.cache config.status \
+#		config.log
 
 
 $(GENDIR)/%.o: %.c

@@ -23,7 +23,7 @@ makedirs:
 	else true ; fi
 
 # Create the tools that are used to build AROS.
-tools : makedirs $(TOOLLIB) $(GENMF) $(MODTOOL) $(CPAK) $(ARCHTOOL) \
+tools : makedirs $(TOOLLIB) $(GENMF) $(CPAK) $(ARCHTOOL) \
 	$(FLEXCAT) $(GENSKELETON) $(CREATEDTDESC) $(ILBMTOC) $(GENSETS) \
 	$(COLLECT-AROS) $(SPECS)
 
@@ -32,9 +32,6 @@ $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
 
 $(GENMF) : $(TOP)/tools/genmf/genmf.c
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genmf TOP=$(TOP)
-
-$(MODTOOL) : $(TOOLLIB) $(wildcard $(TOP)/tools/modtool/*.[ch])
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/modtool TOP=$(TOP)
 
 $(CPAK) : $(TOP)/tools/cpak/cpak.c
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/cpak TOP=$(TOP)
@@ -86,6 +83,8 @@ $(MMAKE): $(TOP)/tools/MetaMake/mmake.c $(GENMF)
 # Clean the sources
 clean:
 	@$(MMAKE) AROS.clean
+	-@$(RM) $(ARCHDIR) Makefile mmake.cache config.cache config.status \
+	    config.log
 
 # Clean the sources and tools
 arch-clean: clean
