@@ -145,21 +145,19 @@ void mx_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG h
 	col2 = MPEN_SHADOW;
     }
 
-    /* Draw checkmark (only if image is in selected state) */
-
     SetAPen(rport, mri->mri_Pens[col1]);
     RectFill(rport, left + 3, top, right - 3, top);
     WritePixel(rport, left + 2, top + 1);
-    RectFill(rport, left + 1, top + 2, left + 1, top + 3);
-    RectFill(rport, left, top + 4, left, bottom - 4);
-    RectFill(rport, left + 1, bottom - 3, left + 1, bottom - 2);
+    WritePixel(rport, left + 1, top + 2);
+    RectFill(rport, left, top + 3, left, bottom - 3);
+    WritePixel(rport, left + 1, bottom - 2);
     WritePixel(rport, left + 2, bottom - 1);
 	
     SetAPen(rport, mri->mri_Pens[col2]);
     WritePixel(rport, right - 2, top + 1);
-    RectFill(rport, right - 1, top + 2, right - 1, top + 3);
-    RectFill(rport, right, top + 4, right, bottom - 4);
-    RectFill(rport, right - 1, bottom - 3, right - 1, bottom - 2);
+    WritePixel(rport, right - 1, top + 2);
+    RectFill(rport, right, top + 3, right, bottom - 3);
+    WritePixel(rport, right - 1, bottom - 2);
     WritePixel(rport, right - 2, bottom - 1);
     RectFill(rport, left + 3, bottom, right - 3, bottom);
 	
@@ -178,6 +176,8 @@ void mx_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG h
 	    RectFill(rport, right, top + 2, right, bottom - 2);
 	} else {
 	    RectFill(rport, left, top, right, bottom);
+	    RectFill(rport, left - 1, top + 1, right + 1, bottom - 1);
+	    RectFill(rport, left + 1, top - 1, right - 1, bottom + 1);
 	}
     }
 }
@@ -187,6 +187,7 @@ void cycle_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LON
     struct RastPort *rport = mri->mri_RastPort;
     int bottom = top + height - 1;
     int right = left + width - 1;
+    int arrow_top;
 
     SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
 
@@ -199,16 +200,36 @@ void cycle_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LON
     Draw(rport,right-6,bottom-1);
     Move(rport,left+2,top);
     Draw(rport,right-7,top);
-    Move(rport,right-7,top+1);
-    Draw(rport,right-6,top+1);
+
+    arrow_top = top + (3 * height / 4) - 3;
+    /* prevent arrow touching bottom */
+    if (arrow_top + 4 >= bottom-1)
+	arrow_top = bottom - 5;
+
+    RectFill(rport,right-7,top+1,right-6,arrow_top-1);
 
     /* The small arrow */
-    Move(rport,right - 6 - 3, top+2);
-    Draw(rport,right - 7 + 3, top+2);
-    Move(rport,right - 6 - 2, top+3);
-    Draw(rport,right - 7 + 2, top+3);
-    Move(rport,right - 6 - 1, top+4);
-    Draw(rport,right - 7 + 1, top+4);
+    /* makes arrow bigger */
+    if (arrow_top - top - 2 >= 4)
+    {
+	Move(rport,right - 6 - 3, arrow_top-1);
+	Draw(rport,right - 7 + 3, arrow_top-1);
+	Move(rport,right - 6 - 2, arrow_top);
+	Draw(rport,right - 7 + 2, arrow_top);
+	Move(rport,right - 6 - 2, arrow_top+1);
+	Draw(rport,right - 7 + 2, arrow_top+1);
+	Move(rport,right - 6 - 1, arrow_top+2);
+	Draw(rport,right - 7 + 1, arrow_top+2);
+    }
+    else
+    {
+	Move(rport,right - 6 - 3, arrow_top);
+	Draw(rport,right - 7 + 3, arrow_top);
+	Move(rport,right - 6 - 2, arrow_top+1);
+	Draw(rport,right - 7 + 2, arrow_top+1);
+	Move(rport,right - 6 - 1, arrow_top+2);
+	Draw(rport,right - 7 + 1, arrow_top+2);
+    }
 
     /* The right bar */
     SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
@@ -333,7 +354,7 @@ static struct vector_image vector_table[] =
     {8,10,arrowleft_draw},
     {8,10,arrowright_draw},
     {16,10,checkbox_draw},
-    {16,10,mx_draw},
+    {10,10,mx_draw},
     {15,8,cycle_draw},
     {10,11,popup_draw},
     {10,11,popfile_draw},
