@@ -156,10 +156,20 @@ UX11
 	D(bug("Xwindow : %p\n", DRAWABLE(data)));
 	if (DRAWABLE(data))
 	{
-	    struct MsgPort *port;
-	    
-	    struct notify_msg *msg;
+            XSizeHints 		sizehint;
+	    struct MsgPort 	*port;	    
+	    struct notify_msg 	*msg;
+
+	    XStoreName   (GetSysDisplay(), DRAWABLE(data), "AROS");
+	    XSetIconName (GetSysDisplay(), DRAWABLE(data), "AROS Screen");
 		    
+	    sizehint.flags      = PMinSize | PMaxSize;
+	    sizehint.min_width  = width;
+	    sizehint.min_height = height;
+	    sizehint.max_width  = width;
+	    sizehint.max_height = height;
+	    XSetWMNormalHints (GetSysDisplay(), DRAWABLE(data), &sizehint);
+	    
 	    D(bug("Calling XMapRaised\n"));
 LX11	    
 	    XMapRaised (GetSysDisplay(), DRAWABLE(data));
