@@ -67,7 +67,7 @@
   struct RegionRectangle * RR;
 
   LockLayer(0, l);
-
+  
   if (NULL != R)
   {
     RR = R->RegionRectangle;
@@ -97,7 +97,9 @@
           _FreeClipRect(CR, l);
           CR = FirstCR;
 	}
-	UnlockLayer(l);
+	
+	/* stegerg: don't unlock here, because endupdate unlocks always */
+	/* UnlockLayer(l); */
         return FALSE;
       } /* else */
 
