@@ -30,17 +30,21 @@ BEGIN {
     indir="compiler/include"
     outdir=indir;
 
-    basename_lp=indir "/clib/" tolower(lib) "_protos.h"
-    basename_lc=indir "/defines/" tolower(lib) ".h"
-    infile_lp=basename_lp
-    infile_lc=basename_lc
-    out_lp=basename_lp ".new"
-    out_lc=basename_lc ".new"
-
-    todo=2;
+    infile_lp=pubclib
+    infile_ld=pubdef
+    pinfile_lp=privclib
+    pinfile_ld=privdef
+    out_lp=infile_lp ".new";
+    out_ld=infile_ld ".new";
+    pout_lp=pinfile_lp ".new";
+    pout_ld=pinfile_ld ".new";
 
     printf ("") > out_lp;
-    printf ("") > out_lc;
+    printf ("") > out_ld;
+    printf ("") > pout_lp;
+    printf ("") > pout_ld;
+
+    todo=2;
 
     while ((getline < infile_lp) > 0 && todo)
     {
@@ -56,20 +60,72 @@ BEGIN {
 	print >> out_lp;
     }
 
+    close (infile_lp);
+
     todo=2;
 
-    while ((getline < infile_lc) > 0 && todo)
+    while ((getline < infile_ld) > 0 && todo)
     {
 	if ($1 == "Defines")
 	    todo --;
-	else if ($1 == "#ifndef" && define_lc=="")
+	else if ($1 == "#ifndef" && define_ld=="")
 	{
-	    define_lc = $2;
+	    define_ld = $2;
 	}
 	else if (todo < 2)
 	    todo --;
 
-	print >> out_lc;
+	print >> out_ld;
+    }
+
+    close (infile_ld);
+
+    todo=2;
+
+    while ((getline < pinfile_lp) > 0 && todo)
+    {
+	if ($1 == "Prototypes")
+	    todo --;
+	else if ($1 == "#ifndef" && pdefine_lp=="")
+	{
+	    pdefine_lp = $2;
+	}
+	else if (todo < 2)
+	    todo --;
+
+	print >> pout_lp;
+    }
+
+    close (pinfile_lp);
+
+    todo=2;
+
+    while ((getline < pinfile_ld) > 0 && todo)
+    {
+	if ($1 == "Defines")
+	    todo --;
+	else if ($1 == "#ifndef" && pdefine_ld=="")
+	{
+	    pdefine_ld = $2;
+	}
+	else if (todo < 2)
+	    todo --;
+
+	print >> pout_ld;
+    }
+
+    close (pinfile_ld);
+}
+/^\/\*\*\*\*\*+/ {
+    if (match($0,/\*\*i\*/))
+    {
+#	 printf ("%s is private\n", FILENAME);
+	public=0;
+    }
+    else
+    {
+#	 printf ("%s is %s\n", FILENAME, "public");
+	public=1;
     }
 }
 /^#?[ \t]*NAME[ \t]*(\*\/)?[ \t]*$/ {
@@ -129,33 +185,48 @@ BEGIN {
 	}
     }
 
+    if (public)
+    {
+	outp = out_lp;
+	outd = out_ld;
+    }
+    else
+    {
+	outp = pout_lp;
+	outd = pout_ld;
+    }
+
     line=f;
     gsub("@1","\n    ",line);
     gsub("AROS_LH","AROS_LP",line);
-    print line >> out_lp;
-    print "" >> out_lp;
+    print line >> outp;
+    print "" >> outp;
 
-    printf ("#define %s(", name) >> out_lc;
+    printf ("#define %s(", name) >> outd;
     for (t=0; t<args; t++)
     {
-	printf ("%s", a[t]) >> out_lc;
+	printf ("%s", a[t]) >> outd;
 
 	if (t+1<args)
-	    printf (", ") >> out_lc;
+	    printf (", ") >> outd;
     }
-    printf (") \\\n") >> out_lc
+    printf (") \\\n") >> outd
     line=f;
     gsub("@1"," \\\n    ",line);
     gsub("AROS_LH","AROS_LC",line);
-    print "    " line >> out_lc;
-    print "" >> out_lc;
+    print "    " line >> outd;
+    print "" >> outd;
 }
 END {
-    print "\n#endif /* " define_lc " */" >> out_lc
+    print "\n#endif /* " define_ld " */" >> out_ld
     print "\n#endif /* " define_lp " */" >> out_lp
+    if (pdefine_ld != "")
+	print "\n#endif /* " pdefine_ld " */" >> pout_ld
+    if (pdefine_lp != "")
+	print "\n#endif /* " pdefine_lp " */" >> pout_lp
 
-    close (infile_lc);
-    close (out_lc);
-    close (infile_lp);
+    close (out_ld);
     close (out_lp);
+    close (pout_ld);
+    close (pout_lp);
 }
