@@ -9,7 +9,18 @@ void showPtrArgsText(struct afsbase *afsbase, char *string, ULONG *args) {
 struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,"Cancel"};
 
 	es.es_TextFormat=string;
-	EasyRequestArgs(0,&es,0,args);
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+	if (IntuitionBase->FirstScreen)
+#endif
+		EasyRequestArgs(0,&es,0,args);
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+	else
+	{
+#warning kprintf for error printing when gfx.hidd is not initialized
+		kprintf(string,args);
+		kprintf("\n");
+	}
+#endif
 }
 
 void showText(struct afsbase *afsbase, char *string, ...) {
