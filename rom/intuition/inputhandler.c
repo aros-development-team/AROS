@@ -927,7 +927,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			UWORD imsgcode;
 			ULONG ret = HandleStrInput(gadget, gi, ie, &imsgcode,
 						   IntuitionBase);
-			if (ret == SGA_END)
+
+			im->Class = 0;      /* Already used for strgadget. */
+
+			if (ret & SGA_END)
 			{
 			    if (gadget->Activation & GACT_RELVERIFY)
 			    {
@@ -939,8 +942,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 				ptr = "GADGETUP";
 			    }
 			}
-
-			im->Class = 0;      /* Already used for strgadget. */
 
 			break; }
 
