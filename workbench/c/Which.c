@@ -150,8 +150,8 @@ BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
 {
     BOOL            found = FALSE;    /* Object found? */
     struct DevProc *dp = NULL, *dp2;  /* For GetDeviceProc() call */
-    struct MsgPort *oldFST;           /* Temporary holder of old FileSysTask */
     BPTR            oldCurDir;        /* Temporary holder of old current dir */
+    //    struct MsgPort *oldFST;           /* Temporary holder of old FileSysTask */
     
     /* If FilePart(name) is not name itself, it can't be in the C: directory;
        or rather, it isn't in the C: directory or we found it in
