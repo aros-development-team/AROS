@@ -121,10 +121,10 @@ AROS_UFH4(int, Dispatcher,
     /* 2. The first task in the ready list hast to have the
           same or higher priority than the currently active task */ 
 
-    if( SysBase->TaskReady.lh_Head->ln_Succ != NULL  /* &&  
+    if( SysBase->TaskReady.lh_Head->ln_Succ != NULL &&  
         ((BYTE)SysBase->ThisTask->tc_Node.ln_Pri <=
-	   (BYTE)((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
-	  */ )
+	 (BYTE)((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
+	)
     {
 	/* Check if task switch is possible */
 	if( SysBase->TDNestCnt < 0 )
@@ -165,34 +165,21 @@ AROS_UFH4(int, Dispatcher,
 
 void idleTask(struct ExecBase *SysBase)
 {
-    struct Task *inputDevice = NULL;
+/*
+    struct Task *inputDevice = FindTask("input.device");
     struct Task *idle = FindTask (NULL);
-
+*/
     while(1)
     {
-	/* If the input device exists, we should signal it */
-	if( inputDevice )
-	{
-	    Signal(inputDevice, SIGBREAKF_CTRL_F);
-	}
-	else
-	{
-	    /* Does somebody want the input device prodded, if so
-	       then we had better be told
-	    */
-	    if( SetSignal(0,0) & SIGBREAKF_CTRL_F )
-		inputDevice = FindTask("input.device");
-	}
-	/* Test if there are any other tasks in the ready queue */
-	if( !IsListEmpty(&SysBase->TaskReady) )
-	{
-#warning TODO: Does not work, yet Reschedule(FindTask(NULL));
-	    Disable ();
-	    idle->tc_State = TS_READY;
-	    AddTail (&SysBase->TaskReady, &idle->tc_Node);
-	    Enable ();
-	    Switch();
-	}
+    /*
+       if (inputDevice)
+         Signal(inputDevice, SIGBREAKF_CTRL_F);
+       Disable ();
+       idle->tc_State = TS_READY;
+       AddTail (&SysBase->TaskReady, &idle->tc_Node);
+       Enable ();
+       Switch();
+    */
     }
 }
 
