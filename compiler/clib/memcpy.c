@@ -5,7 +5,7 @@
     Desc: ANSI C function memcpy()
     Lang: english
 */
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 

@@ -8,8 +8,8 @@
 #include <errno.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
 
 /*****************************************************************************
 

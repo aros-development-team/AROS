@@ -6,7 +6,7 @@
     Lang: english
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 extern APTR __startup_mempool;
 
 /*****************************************************************************

@@ -5,7 +5,7 @@
     Desc: ANSI C function bcopy()
     Lang: english
 */
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
@@ -36,6 +36,7 @@
     EXAMPLE
 
     BUGS
+	Overlapping memory areas are not supported. This should be fixed.
 
     SEE ALSO
 	memmove(), exec/CopyMem()

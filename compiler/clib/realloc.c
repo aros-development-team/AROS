@@ -6,7 +6,7 @@
     Lang: english
 */
 #include <aros/machine.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
