@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -49,38 +49,39 @@
 
 ***************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-  struct VisualInfo * vinfo = (struct VisualInfo *)vi;
-  struct MenuItem *item = menuitem;
-  
-  /* First layout subitems */
-  
-  while (NULL != item)
-  {
-    if (NULL != item->SubItem)
+    struct VisualInfo	*vinfo = (struct VisualInfo *)vi;
+    struct MenuItem 	*item = menuitem;
+
+    /* First layout subitems */
+
+    while (NULL != item)
     {
-      if (FALSE == layoutsubitems(item,
-                                  vinfo,
-                                  tagList,
-                                  GTB(GadToolsBase)))
-        return FALSE;
+	if (NULL != item->SubItem)
+	{
+	    if (FALSE == layoutsubitems(item,
+                                	vinfo,
+                                	tagList,
+                                	GTB(GadToolsBase)))
+                return FALSE;
+	}
+	item = item->NextItem;
     }
-    item = item->NextItem;
-  }
 
-  /*
-  ** Process all menu items and subitems
-  */
-  if (FALSE == layoutmenuitems(menuitem,
-                               vinfo,
-                               tagList,
-                               GTB(GadToolsBase)))
-      return FALSE;
+    /*
+    ** Process all menu items and subitems
+    */
+    if (FALSE == layoutmenuitems(menuitem,
+                        	 vinfo,
+                        	 tagList,
+                        	 GTB(GadToolsBase)))
+	return FALSE;
 
 
-  return TRUE;  
+    return TRUE;  
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
+    
 } /* LayoutMenuItemsA */

@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -59,8 +59,9 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
-    LONG count = 0;
-    struct TagItem *tag, *mytags = taglist;
+    
+    LONG 		count = 0;
+    struct TagItem 	*tag, *mytags = taglist;
 
     if (gad == NULL || taglist == NULL)
         return 0L;
@@ -70,5 +71,7 @@
 	    count++;
 
     return count;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* GT_GetGadgetAttrsA */

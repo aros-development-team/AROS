@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -49,8 +49,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    struct GT_IntuiMessage *gtmsg;
-    struct IntuiMessage *rc;
+    struct GT_IntuiMessage 	*gtmsg;
+    struct IntuiMessage		*rc;
     
     gtmsg = (struct GT_IntuiMessage *)modimsg;
     if (gtmsg)
@@ -62,7 +62,7 @@
 	
 	if (gtmsg->wasalloced)
 	{
-	    FreeMem(gtmsg,sizeof(struct GT_IntuiMessage));
+	    FreeMem(gtmsg, sizeof(struct GT_IntuiMessage));
 	}
     }
     else
@@ -73,4 +73,5 @@
     return rc;
 
     AROS_LIBFUNC_EXIT
-} /* GT_BeginRefresh */
+    
+} /* GT_PostFilterIMsg */

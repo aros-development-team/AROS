@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Draw a bevelled box.
@@ -64,8 +64,9 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
-    struct VisualInfo *vi;
-    struct TagItem tags[5];
+    
+    struct VisualInfo 	*vi;
+    struct TagItem 	tags[5];
 
     vi = (struct VisualInfo *)GetTagData(GT_VisualInfo, NULL, taglist);
     if (vi == NULL)
@@ -80,12 +81,14 @@
     tags[3].ti_Tag = IA_FrameType;
     tags[3].ti_Data = GetTagData(GTBB_FrameType, BBFT_BUTTON, taglist);
     tags[4].ti_Tag = TAG_DONE;
-    ObtainSemaphore(&((struct GadToolsBase_intern *)GadToolsBase)->bevelsema);
-    SetAttrsA(((struct GadToolsBase_intern *)GadToolsBase)->bevel, tags);
-    DrawImageState(rport, ((struct GadToolsBase_intern *)GadToolsBase)->bevel,
+    
+    ObtainSemaphore(&GTB(GadToolsBase)->bevelsema);
+    SetAttrsA(GTB(GadToolsBase)->bevel, tags);
+    DrawImageState(rport, GTB(GadToolsBase)->bevel,
                    left, top,
                    IDS_NORMAL, vi->vi_dri);
-    ReleaseSemaphore(&((struct GadToolsBase_intern *)GadToolsBase)->bevelsema);
+    ReleaseSemaphore(&GTB(GadToolsBase)->bevelsema);
 
     AROS_LIBFUNC_EXIT
+    
 } /* DrawBevelBoxA */

@@ -1,5 +1,5 @@
 /*
-    (C) 1997-98 AROS - The Amiga Research OS
+    (C) 1997-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: gadtools.library function CreateGadgetA()
@@ -215,6 +215,14 @@
                                ng->ng_TextAttr,
                                taglist);
 	    break;
+	
+	case GENERIC_KIND:
+	    gad = makegeneric(GTB(GadToolsBase),
+	    		      stdgadtags,
+			      VI(ng->ng_VisualInfo),
+			      ng->ng_TextAttr,
+			      taglist);
+	    break;
 	    
     } /* switch(kind) */
 
@@ -235,4 +243,5 @@
     
     return (gad);
     AROS_LIBFUNC_EXIT
+    
 } /* CreateGadgetA */

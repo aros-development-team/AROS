@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -73,4 +73,5 @@
     return imsg;
 
     AROS_LIBFUNC_EXIT
+    
 } /* GT_GetIMsg */

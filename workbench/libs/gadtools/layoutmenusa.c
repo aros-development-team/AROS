@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -50,108 +50,111 @@
 
 ***************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-  ULONG curX = 0;
-  ULONG curY = 0;
-  struct VisualInfo * vinfo = (struct VisualInfo *)vi;
+    ULONG 		curX = 0;
+    ULONG 		curY = 0;
+    struct VisualInfo 	* vinfo = (struct VisualInfo *)vi;
 
-  struct TextFont * textfont = vinfo->vi_dri->dri_Font;
-  
-  struct TagItem stdlayouttags[] = {
-    {GTMN_Menu, NULL},
-    {GTMN_TextAttr, NULL},
-    {GTMN_NewLookMenus, TRUE},
-    {GTMN_Checkmark, NULL},
-    {GTMN_AmigaKey, NULL},
-    {GTMN_FrontPen, 0L},
-    {TAG_END, 0L}
-  };
-  
-  if (NULL == textfont)
-    return FALSE;
-                                          
-  stdlayouttags[TAG_TextAttr].ti_Data     = GetTagData(GTMN_TextAttr,
-                                                       NULL, 
-                                                       tagList);
-                                                       
-  stdlayouttags[TAG_NewLookMenus].ti_Data = GetTagData(GTMN_NewLookMenus, 
-                                                       FALSE, 
-                                                       tagList);
-                                                       
-  stdlayouttags[TAG_CheckMark].ti_Data    = GetTagData(GTMN_Checkmark,
-                                                       NULL, 
-                                                       tagList);
-                                                       
-  stdlayouttags[TAG_AmigaKey].ti_Data     = GetTagData(GTMN_AmigaKey,
-                                                       NULL, 
-                                                       tagList);
-                     
-  /*
-  ** Only if the FrontPen is provided I will make it a valid
-  ** entry in the tag list.
-  */ 
-                                   
-  if (NULL != tagList && NULL != FindTagItem(GTMN_FrontPen, tagList))
-  {
-    stdlayouttags[TAG_FrontPen].ti_Data     = GetTagData(GTMN_FrontPen,
+    struct TextFont 	* textfont = vinfo->vi_dri->dri_Font;
+
+    struct TagItem 	stdlayouttags[] =
+    {
+	{GTMN_Menu		, NULL	},
+	{GTMN_TextAttr		, NULL	},
+	{GTMN_NewLookMenus	, TRUE	},
+	{GTMN_Checkmark		, NULL	},
+	{GTMN_AmigaKey		, NULL	},
+	{GTMN_FrontPen		, 0L	},
+	{TAG_END		, 0L	}
+    };
+
+    if (NULL == textfont)
+        return FALSE;
+
+    stdlayouttags[TAG_TextAttr].ti_Data     = GetTagData(GTMN_TextAttr,
+                                                	 NULL, 
+                                                	 tagList);
+
+    stdlayouttags[TAG_NewLookMenus].ti_Data = GetTagData(GTMN_NewLookMenus, 
+                                                	 FALSE, 
+                                                	 tagList);
+
+    stdlayouttags[TAG_CheckMark].ti_Data    = GetTagData(GTMN_Checkmark,
+                                                	 NULL, 
+                                                	 tagList);
+
+    stdlayouttags[TAG_AmigaKey].ti_Data     = GetTagData(GTMN_AmigaKey,
+                                                	 NULL, 
+                                                	 tagList);
+
+    /*
+    ** Only if the FrontPen is provided I will make it a valid
+    ** entry in the tag list.
+    */ 
+
+    if (NULL != tagList && NULL != FindTagItem(GTMN_FrontPen, tagList))
+    {
+	stdlayouttags[TAG_FrontPen].ti_Data = GetTagData(GTMN_FrontPen,
                                                          0, 
                                                          tagList);
-  }
-  else
-  {
-    stdlayouttags[TAG_FrontPen].ti_Tag = TAG_DONE;
-  }
-  
-  
-  while (NULL != menu)
-  {
-    if (NULL != menu->FirstItem)
-    {
-      stdlayouttags[TAG_Menu].ti_Data = (ULONG)menu;
-
-      if (FALSE == LayoutMenuItemsA(menu->FirstItem,
-                                    vi,
-                                    stdlayouttags))
-        return FALSE;
     }
-    /*
-    ** Set the coordinates of this menu title
-    ** !!! This might still look ugly...
-    */
-    menu->LeftEdge = curX;
-    menu->TopEdge  = curY;
+    else
+    {
+	stdlayouttags[TAG_FrontPen].ti_Tag = TAG_DONE;
+    }
 
-    menu->Width    = TextLength(&vinfo->vi_screen->RastPort,
-                                menu->MenuName, 
-                                strlen(menu->MenuName)) +
-		     vinfo->vi_screen->MenuHBorder * 2;
+
+    while (NULL != menu)
+    {
+	if (NULL != menu->FirstItem)
+	{
+	    stdlayouttags[TAG_Menu].ti_Data = (ULONG)menu;
+
+	    if (FALSE == LayoutMenuItemsA(menu->FirstItem,
+                                	  vi,
+                                	  stdlayouttags))
+                return FALSE;
+	}
+	
+	/*
+	** Set the coordinates of this menu title
+	** !!! This might still look ugly...
+	*/
+	menu->LeftEdge = curX;
+	menu->TopEdge  = curY;
+
+	menu->Width    = TextLength(&vinfo->vi_screen->RastPort,
+                                    menu->MenuName, 
+                                    strlen(menu->MenuName)) +
+			 vinfo->vi_screen->MenuHBorder * 2;
 
 #if 0     
-    /* stegerg: the Amiga just clips them away, and BTW:
-        dri->dri_Resolution.X is not screen width!! It's
-	aspect information */                           
-    if (menu->Width + curX > vinfo->vi_dri->dri_Resolution.X)
-    {
-#warning Proper layout of menu tiltes???
-      curX  = 0;
-      curY += ((textfont->tf_YSize * 5) / 4);
-      
-      menu->LeftEdge = curX;
-      menu->TopEdge  = curY;
-    }
+	/* stegerg: the Amiga just clips them away, and BTW:
+            dri->dri_Resolution.X is not screen width!! It's
+	    aspect information */                           
+	if (menu->Width + curX > vinfo->vi_dri->dri_Resolution.X)
+	{
+//#warning Proper layout of menu titles???
+	    curX  = 0;
+	    curY += ((textfont->tf_YSize * 5) / 4);
+
+	    menu->LeftEdge = curX;
+	    menu->TopEdge  = curY;
+	}
 #endif
 
-    menu->Height = textfont->tf_YSize;
-    
-    /* Proper layout??? */
-    curX += menu->Width + vinfo->vi_screen->BarHBorder * 2;
-    
-    menu = menu->NextMenu;
-  }
+	menu->Height = textfont->tf_YSize;
 
-  return TRUE;
+	/* Proper layout??? */
+	curX += menu->Width + vinfo->vi_screen->BarHBorder * 2;
 
-  AROS_LIBFUNC_EXIT
+
+	menu = menu->NextMenu;
+    } /* while (NULL != menu) */
+
+    return TRUE;
+
+    AROS_LIBFUNC_EXIT
 } /* LayoutMenusA */

@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: GadTools initialization code.
@@ -18,6 +18,8 @@
 #include "initstruct.h"
 #include "gadtools_intern.h"
 #include "libdefs.h"
+
+/****************************************************************************************/
 
 #define INIT	AROS_SLIB_ENTRY(init,GadTools)
 
@@ -99,6 +101,8 @@ const struct inittable datatable=
 
 struct ExecBase * SysBase;
 
+/****************************************************************************************/
+
 AROS_LH2(struct GadToolsBase_intern *, init,
  AROS_LHA(struct GadToolsBase_intern *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
@@ -138,6 +142,7 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
 
 Object *makebevelobj(struct GadToolsBase_intern *GadToolsBase)
 {
@@ -155,6 +160,8 @@ Object *makebevelobj(struct GadToolsBase_intern *GadToolsBase)
 
     return obj;
 }
+
+/****************************************************************************************/
 
 AROS_LH1(struct GadToolsBase_intern *, open,
  AROS_LHA(ULONG, version, D0),
@@ -213,6 +220,8 @@ AROS_LH1(struct GadToolsBase_intern *, open,
     return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 {
@@ -324,6 +333,8 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH0(BPTR, expunge, struct GadToolsBase_intern *, LIBBASE, 3, BASENAME)
 {
     AROS_LIBFUNC_INIT
@@ -356,9 +367,13 @@ AROS_LH0(BPTR, expunge, struct GadToolsBase_intern *, LIBBASE, 3, BASENAME)
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH0I(int, null, struct GadToolsBase_intern *, LIBBASE, 4, BASENAME)
 {
     AROS_LIBFUNC_INIT
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/

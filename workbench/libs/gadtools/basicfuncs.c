@@ -1,5 +1,5 @@
 /*
-    (C) 1997-98 AROS - The Amiga Research OS
+    (C) 1997-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Basic help functions needed by gadtools.library.
@@ -42,10 +42,7 @@ struct GTIText
 void freeitext(struct GadToolsBase_intern *GadToolsBase,
                struct IntuiText *itext)
 {
-    if (!itext)
-        return;
-	
-    FreeVec(itext);
+    if (itext) FreeVec(itext);
 }
 
 /**********************************************************************************************/

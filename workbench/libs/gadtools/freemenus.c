@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Free memory allocated by CreateMenusA()
@@ -45,22 +45,23 @@
 
 ***************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-  while (NULL != menu)
-  {
-    struct Menu * _menu = menu->NextMenu;
+    while (NULL != menu)
+    {
+	struct Menu * _menu = menu->NextMenu;
+
+	/*
+	** Free all items and subitems of this menu title
+	*/
+	freeitems(menu, (struct GadToolsBase_intern *)GadToolsBase);
+
+	FreeMem(menu, sizeof(struct Menu) + sizeof(APTR));
+
+	menu = _menu;
+    }
+
+    AROS_LIBFUNC_EXIT
     
-    /*
-    ** Free all items and subitems of this menu title
-    */
-    freeitems(menu, (struct GadToolsBase_intern *)GadToolsBase);
-
-    FreeMem(menu, sizeof(struct Menu)+sizeof(APTR));
-
-    menu = _menu;
-  }
-
-  AROS_LIBFUNC_EXIT
 } /* FreeMenus */

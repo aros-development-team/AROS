@@ -1,10 +1,11 @@
 /*
-   (C) 1997-98 AROS - The Amiga Research OS
+   (C) 1997-2000 AROS - The Amiga Research OS
    $Id$
 
    Desc: GadTools menu creation functions
    Lang: English
 */
+
 #include <stdio.h>
 #include <string.h>
 
@@ -73,10 +74,10 @@ static BOOL is_menubarlabelclass_image(struct Image *im, struct GadToolsBase_int
 void appendmenu(struct Menu * firstmenu,
                 struct Menu * lastmenu)
 {
-  while (NULL != firstmenu->NextMenu)
-    firstmenu = firstmenu->NextMenu;
-    
-  firstmenu->NextMenu = lastmenu;
+    while (NULL != firstmenu->NextMenu)
+        firstmenu = firstmenu->NextMenu;
+
+    firstmenu->NextMenu = lastmenu;
 }
 
 /**************************************************************************************************/
@@ -84,17 +85,17 @@ void appendmenu(struct Menu * firstmenu,
 void appenditem(struct Menu * curmenu,
                 struct MenuItem * item)
 {
-  struct MenuItem * mi = curmenu->FirstItem;
-  
-  if (NULL == mi)
-    curmenu->FirstItem = item;
-  else
-  {
-    while (NULL != mi->NextItem)
-      mi = mi->NextItem;
-      
-    mi->NextItem = item;
-  }
+    struct MenuItem * mi = curmenu->FirstItem;
+
+    if (NULL == mi)
+	curmenu->FirstItem = item;
+    else
+    {
+	while (NULL != mi->NextItem)
+	    mi = mi->NextItem;
+
+	mi->NextItem = item;
+    }
 }
 
 /**************************************************************************************************/
@@ -102,17 +103,17 @@ void appenditem(struct Menu * curmenu,
 void appendsubitem(struct MenuItem * curitem,
                    struct MenuItem * cursubitem)
 {
-  struct MenuItem *mi = curitem->SubItem;
-  
-  if (NULL == mi)
-    curitem->SubItem = cursubitem;
-  else
-  {
-    while (NULL != mi->NextItem) 
-      mi = mi->NextItem;
-  
-    mi->NextItem = cursubitem;
-  }
+    struct MenuItem *mi = curitem->SubItem;
+
+    if (NULL == mi)
+	curitem->SubItem = cursubitem;
+    else
+    {
+	while (NULL != mi->NextItem) 
+	    mi = mi->NextItem;
+
+	mi->NextItem = cursubitem;
+    }
 }
 
 /**************************************************************************************************/
@@ -120,18 +121,19 @@ void appendsubitem(struct MenuItem * curitem,
 struct Menu * makemenutitle(struct NewMenu * newmenu,
                             struct TagItem * taglist)
 {
-  struct Menu * menu;
-  menu = (struct Menu *)AllocMem(sizeof(struct Menu)+sizeof(APTR), 
-                                 MEMF_CLEAR);
-  
-  if (NULL != menu)
-  {
-    menu->Flags    = (newmenu->nm_Flags & NM_MENUDISABLED) ^ MENUENABLED;
-    menu->MenuName = newmenu->nm_Label;
-    GTMENU_USERDATA(menu) = newmenu->nm_UserData;
-  }
-  
-  return menu;
+    struct Menu * menu;
+    
+    menu = (struct Menu *)AllocMem(sizeof(struct Menu)+sizeof(APTR), 
+                                   MEMF_CLEAR);
+
+    if (NULL != menu)
+    {
+	menu->Flags    	      = (newmenu->nm_Flags & NM_MENUDISABLED) ^ MENUENABLED;
+	menu->MenuName 	      = newmenu->nm_Label;
+	GTMENU_USERDATA(menu) = newmenu->nm_UserData;
+    }
+
+    return menu;
 }
 
 /**************************************************************************************************/
@@ -141,174 +143,151 @@ struct MenuItem * makemenuitem(struct NewMenu * newmenu,
                                struct TagItem * taglist,
                                struct GadToolsBase_intern * GadToolsBase)
 {
-  struct MenuItem * menuitem;
-  UWORD allocsize;
-  
-  /* Note: 2 IntuiTexts must be alloced, because CreateMenusA can depend on it 
-           if a subitem mark (">>") must be added */
-  
-  if (newmenu->nm_Label == NM_BARLABEL) is_image = TRUE;
-  
-  allocsize = sizeof(struct MenuItem) + sizeof(APTR);
-  if (!is_image) allocsize += sizeof(struct IntuiText) * 2; /* for text + (commandstring OR ">>") */
-  
-  menuitem = (struct MenuItem *)AllocVec(allocsize, MEMF_CLEAR);
-  
-  if (NULL != menuitem)
-  { 
-    menuitem->Flags = (newmenu->nm_Flags & (NM_ITEMDISABLED | CHECKIT | MENUTOGGLE | CHECKED)) ^
-    		      ITEMENABLED;
-		      
-    menuitem->Flags |= HIGHCOMP;
-    
-    if (newmenu->nm_CommKey)
-    {
-        if (!(newmenu->nm_Flags & NM_COMMANDSTRING))
+    struct MenuItem 	* menuitem;
+    UWORD 		allocsize;
+
+    /* Note: 2 IntuiTexts must be alloced, because CreateMenusA can depend on it 
+             if a subitem mark (">>") must be added */
+
+    if (newmenu->nm_Label == NM_BARLABEL) is_image = TRUE;
+
+    allocsize = sizeof(struct MenuItem) + sizeof(APTR);
+    if (!is_image) allocsize += sizeof(struct IntuiText) * 2; /* for text + (commandstring OR ">>") */
+
+    menuitem = (struct MenuItem *)AllocVec(allocsize, MEMF_CLEAR);
+
+    if (NULL != menuitem)
+    { 
+	menuitem->Flags = (newmenu->nm_Flags & (NM_ITEMDISABLED | CHECKIT | MENUTOGGLE | CHECKED)) ^
+    			  ITEMENABLED;
+
+	menuitem->Flags |= HIGHCOMP;
+
+	if (newmenu->nm_CommKey)
 	{
-	    menuitem->Flags |= COMMSEQ;
-	    menuitem->Command = newmenu->nm_CommKey[0];
-	}    
-    }
-    
-    menuitem->MutualExclude = newmenu->nm_MutualExclude;
-    GTMENUITEM_USERDATA(menuitem) = newmenu->nm_UserData;
-        
-    if (FALSE == is_image)
-    {
-      /*
-      ** Text
-      */
-      struct IntuiText * it = (struct IntuiText *)(((UBYTE *)menuitem) +
-      						   sizeof(struct MenuItem) +
-						   sizeof(APTR));
-
-      menuitem->ItemFill = (APTR)it;
-      
-      it->FrontPen = GetTagData(GTMN_FrontPen, 0, taglist);
-      it->DrawMode = JAM1;
-      
-      it->IText    = newmenu->nm_Label;
-      
-      menuitem->Flags |= ITEMTEXT;
-      
-      if (newmenu->nm_CommKey && (newmenu->nm_Flags & NM_COMMANDSTRING))
-      {
-          struct IntuiText *it2 = it + 1;
-	  
-	  *it2 = *it;
-	  it2->IText = newmenu->nm_CommKey;
-	  it->NextText = it2;
-      }
-    }
-    else
-    {
-      menuitem->Flags &= ~ITEMTEXT;     
-
-      if (newmenu->nm_Label != NM_BARLABEL)
-      {
-	/*
-	** An image.
-	*/
-	menuitem->ItemFill = (APTR)newmenu->nm_Label;
-      } else {	
-        /*
-	** A barlabel image.
-	*/
-	
-	struct TagItem barlabel_tags[] =
-	{
-	  {IA_Left	, ITEXT_EXTRA_LEFT	},
-	  {IA_Top	, 3			},
-	  {IA_Width	, 20			},
-	  {IA_Height	, 2			},
-	  {TAG_DONE				}
-	};
-
-	menuitem->Flags &= ~ITEMENABLED;
-
-	menuitem->ItemFill = NewObjectA(NULL, MENUBARLABELCLASS, barlabel_tags);
-
-	if (!menuitem->ItemFill)
-	{
-	  FreeVec(menuitem);
-	  menuitem = NULL;
+            if (!(newmenu->nm_Flags & NM_COMMANDSTRING))
+	    {
+		menuitem->Flags |= COMMSEQ;
+		menuitem->Command = newmenu->nm_CommKey[0];
+	    }    
 	}
-      } 
-    } /* is_image */
-  } /* if (NULL != menuitem) */
-  
-  return menuitem;
+
+	menuitem->MutualExclude = newmenu->nm_MutualExclude;
+	GTMENUITEM_USERDATA(menuitem) = newmenu->nm_UserData;
+
+	if (FALSE == is_image)
+	{
+	    /*
+	    ** Text
+	    */
+	    struct IntuiText * it = (struct IntuiText *)(((UBYTE *)menuitem) +
+      							 sizeof(struct MenuItem) +
+							 sizeof(APTR));
+
+	    menuitem->ItemFill = (APTR)it;
+
+	    it->FrontPen = GetTagData(GTMN_FrontPen, 0, taglist);
+	    it->DrawMode = JAM1;
+
+	    it->IText    = newmenu->nm_Label;
+
+	    menuitem->Flags |= ITEMTEXT;
+
+	    if (newmenu->nm_CommKey && (newmenu->nm_Flags & NM_COMMANDSTRING))
+	    {
+        	struct IntuiText *it2 = it + 1;
+
+		*it2 = *it;
+		it2->IText = newmenu->nm_CommKey;
+		it->NextText = it2;
+	    }
+	  
+	} /* if (FALSE == is_image) */
+	else
+	{
+	    menuitem->Flags &= ~ITEMTEXT;     
+
+	    if (newmenu->nm_Label != NM_BARLABEL)
+	    {
+		/*
+		** An image.
+		*/
+		menuitem->ItemFill = (APTR)newmenu->nm_Label;
+	    }
+	    else
+	    {	
+        	/*
+		** A barlabel image.
+		*/
+
+		struct TagItem barlabel_tags[] =
+		{
+		    {IA_Left	, ITEXT_EXTRA_LEFT	},
+		    {IA_Top	, 3			},
+		    {IA_Width	, 20			},
+		    {IA_Height	, 2			},
+		    {TAG_DONE				}
+		};
+
+		menuitem->Flags &= ~ITEMENABLED;
+
+		menuitem->ItemFill = NewObjectA(NULL, MENUBARLABELCLASS, barlabel_tags);
+
+		if (!menuitem->ItemFill)
+		{
+		    FreeVec(menuitem);
+		    menuitem = NULL;
+		}
+	    } 
+
+	} /* is_image */
+      
+    } /* if (NULL != menuitem) */
+
+    return menuitem;
 }
 
 /**************************************************************************************************/
 
 static void freeitem(struct MenuItem *item, struct GadToolsBase_intern * GadToolsBase)
 {
-  if (!(item->Flags & ITEMTEXT))
-  {
-    struct Image *im = (struct Image *)item->ItemFill;
-
-    if (is_menubarlabelclass_image(im, GadToolsBase))
+    if (!(item->Flags & ITEMTEXT))
     {
-      DisposeObject(im);
+	struct Image *im = (struct Image *)item->ItemFill;
+
+	if (is_menubarlabelclass_image(im, GadToolsBase))
+	{
+	    DisposeObject(im);
+	}
     }
 
-  }
-  
-  FreeVec(item);
+    FreeVec(item);
 }
 
 /**************************************************************************************************/
 
 void freeitems(struct Menu * m, struct GadToolsBase_intern * GadToolsBase)
 {
-  struct MenuItem * mi = m->FirstItem;
-  while (mi)
-  {
-    struct MenuItem * _mi = mi->NextItem, *si = mi->SubItem;
+    struct MenuItem * mi = m->FirstItem;
     
-    while(si)
+    while (mi)
     {
-      struct MenuItem * _si = si->NextItem;
+	struct MenuItem * _mi = mi->NextItem, *si = mi->SubItem;
 
-      freeitem(si, GadToolsBase); 
-      si = _si;
+	while(si)
+	{
+	    struct MenuItem * _si = si->NextItem;
+
+	    freeitem(si, GadToolsBase); 
+	    si = _si;
+	}
+
+	freeitem(mi, GadToolsBase);
+
+	mi = _mi;
     }
-
-    freeitem(mi, GadToolsBase);
-
-    mi = _mi;
-  }
 }
 
-/**************************************************************************************************/
-
-void dsfaffreesubitems(struct MenuItem * mi)
-{
-  /*
-  ** Free a subitems of this MenuItem.
-  */
-  
-  struct MenuItem * si = mi->SubItem;
-
-  while (NULL != si)
-  {
-    struct MenuItem * _si = si->NextItem;
-
-#if 0
-    stegerg: sub menus cannot have submenus    
-    /*
-    ** If this sub item has sub items then also free those.
-    */
-    if (NULL != si->SubItem)
-      freesubitems(si);
-#endif
-
-    FreeVec(si);
-    si = _si;
-  }
-
-}
 /**************************************************************************************************/
 
 static WORD MyIntuiTextLength(struct VisualInfo *vi, struct IntuiText *it, 
@@ -467,173 +446,178 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
                      struct TagItem * taglist,
                      struct GadToolsBase_intern * GadToolsBase)
 {
-  struct MenuItem * menuitem = firstitem;
-  struct MenuItem * equalizeitem = firstitem;
-  struct Image * amikeyimage, * chkimage;
+    struct MenuItem 	* menuitem = firstitem;
+    struct MenuItem 	* equalizeitem = firstitem;
+    struct Image 	* amikeyimage, * chkimage;
 
-  ULONG curX = 0;
-  ULONG curY = 0;
+    ULONG 		curX = 0;
+    ULONG 		curY = 0;
 
-  amikeyimage = (struct Image *)GetTagData(GTMN_AmigaKey, 0, taglist);
-  if (!amikeyimage) amikeyimage = vi->vi_dri->dri_AmigaKey;
+    amikeyimage = (struct Image *)GetTagData(GTMN_AmigaKey, 0, taglist);
+    if (!amikeyimage) amikeyimage = vi->vi_dri->dri_AmigaKey;
 
-  chkimage = (struct Image *)GetTagData(GTMN_Checkmark, 0, taglist);
-  if (!chkimage) chkimage = vi->vi_dri->dri_CheckMark;
+    chkimage = (struct Image *)GetTagData(GTMN_Checkmark, 0, taglist);
+    if (!chkimage) chkimage = vi->vi_dri->dri_CheckMark;
 
-  while (NULL != menuitem)
-  {
-    ULONG addwidth = 0;
-    ULONG addleft = 0;
-    
-    menuitem->LeftEdge = curX;
-    menuitem->TopEdge  = curY;
-
-    /*
-    ** Check the flags whether there exists a shortcut or a checkmark is
-    ** necessary..
-    */
-    if (0 != (menuitem->Flags & COMMSEQ))
+    while (NULL != menuitem)
     {
-      /*
-      ** An Amiga key image and a character will appear
-      */
-      struct Image * amikeyimage = (struct Image *)GetTagData(GTMN_AmigaKey, 0, taglist);
+	ULONG addwidth = 0;
+	ULONG addleft = 0;
 
-      if (!amikeyimage) amikeyimage = vi->vi_dri->dri_AmigaKey;
+	menuitem->LeftEdge = curX;
+	menuitem->TopEdge  = curY;
 
-      addwidth = vi->vi_dri->dri_Font->tf_XSize;
-      if (menuitem->Flags & ITEMTEXT)
-      {
-        struct TextFont * font;
-	struct IntuiText *it = (struct IntuiText *)menuitem->ItemFill;
-	
-	if (it->ITextFont)
+	/*
+	** Check the flags whether there exists a shortcut or a checkmark is
+	** necessary..
+	*/
+	if (0 != (menuitem->Flags & COMMSEQ))
 	{
-          if (NULL != (font = OpenFont(it->ITextFont)))
-          {
-            addwidth = font->tf_XSize;
-            CloseFont(font);
-          }
+	    /*
+	    ** An Amiga key image and a character will appear
+	    */
+	    struct Image * amikeyimage = (struct Image *)GetTagData(GTMN_AmigaKey, 0, taglist);
+
+	    if (!amikeyimage) amikeyimage = vi->vi_dri->dri_AmigaKey;
+
+	    addwidth = vi->vi_dri->dri_Font->tf_XSize;
+	    if (menuitem->Flags & ITEMTEXT)
+	    {
+        	struct TextFont  *font;
+		struct IntuiText *it = (struct IntuiText *)menuitem->ItemFill;
+
+		if (it->ITextFont)
+		{
+        	    if (NULL != (font = OpenFont(it->ITextFont)))
+        	    {
+        	      addwidth = font->tf_XSize;
+        	      CloseFont(font);
+        	    }
+		}
+	    }
+
+	    addwidth += amikeyimage->Width +
+			AMIGAKEY_KEY_SPACING +
+			TEXT_AMIGAKEY_SPACING;
+		      
+	} /* if (0 != (menuitem->Flags & COMMSEQ)) */
+
+	if (0 != (menuitem->Flags & CHECKIT))
+	{
+	    /*
+	    ** A checkmark will appear on the left.
+	    */
+
+	    addleft  += chkimage->Width + CHECKMARK_TEXT_SPACING;
+	    addwidth += chkimage->Width + CHECKMARK_TEXT_SPACING;      
 	}
-      }
 
-      addwidth += amikeyimage->Width +
-		  AMIGAKEY_KEY_SPACING +
-		  TEXT_AMIGAKEY_SPACING;
-    }
+	if (0 != (menuitem->Flags & ITEMTEXT))
+	{
+	    /*
+	    ** Text
+	    */
+	    struct IntuiText * it = (struct IntuiText *)menuitem->ItemFill;
+	    struct TagItem   * ti;
 
-    if (0 != (menuitem->Flags & CHECKIT))
-    {
-      /*
-      ** A checkmark will appear on the left.
-      */
+	    if (NULL == it)
+        	return FALSE;
 
-      addleft  += chkimage->Width + CHECKMARK_TEXT_SPACING;
-      addwidth += chkimage->Width + CHECKMARK_TEXT_SPACING;      
-    }
+	    if (NULL != (ti = FindTagItem(GTMN_FrontPen, taglist)))
+	    {
+        	it->FrontPen = ti->ti_Data;
+	    } else {
+        	it->FrontPen = vi->vi_dri->dri_Pens[BARDETAILPEN];
+	    }
 
-    if (0 != (menuitem->Flags & ITEMTEXT))
-    {
-      /*
-      ** Text
-      */
-      struct IntuiText * it = (struct IntuiText *)menuitem->ItemFill;
-      struct TagItem * ti;
-      
-      if (NULL == it)
-        return FALSE;
-      
-      if (NULL != (ti = FindTagItem(GTMN_FrontPen, taglist)))
-      {
-          it->FrontPen = ti->ti_Data;
-      } else {
-          it->FrontPen = vi->vi_dri->dri_Pens[BARDETAILPEN];
-      }
-      
-      it->ITextFont = (struct TextAttr *)GetTagData(GTMN_TextAttr,
-                                                    0,
-                                                    taglist);
-      
-      it->LeftEdge = ITEXT_EXTRA_LEFT + addleft;       
-      it->TopEdge = ITEXT_EXTRA_TOP;
-      
-      menuitem->Width = MyIntuiTextLength(vi, it, GadToolsBase) +
-      			addwidth + ITEXT_EXTRA_LEFT + ITEXT_EXTRA_RIGHT;
+	    it->ITextFont = (struct TextAttr *)GetTagData(GTMN_TextAttr,
+                                                	  0,
+                                                	  taglist);
 
-     /*
-      ** Calculate the height menu item.
-      */
-      if (NULL == it->ITextFont)
-      {
-        /*
-        ** No font is provided, so I will work with the screen font.
-        */ 
-        menuitem->Height = vi->vi_dri->dri_Font->tf_YSize + ITEXT_EXTRA_TOP + ITEXT_EXTRA_BOTTOM;
-      }
-      else
-      {
-        struct TextFont * font;
-        if (NULL != (font = OpenFont(it->ITextFont)))
-        {
-          menuitem->Height = font->tf_YSize + ITEXT_EXTRA_TOP + ITEXT_EXTRA_BOTTOM;
-          CloseFont(font);
-        }
-        else
-          return FALSE; 
-      }
-      curY += menuitem->Height;
-    }
-    else
-    {
-      /*
-      ** Image
-      */
-      struct Image * im = (struct Image *)menuitem->ItemFill;
-      
-      if (NULL == im)
-        return FALSE;
-      
-      if (is_menubarlabelclass_image(im, GadToolsBase))
-      {
+	    it->LeftEdge = ITEXT_EXTRA_LEFT + addleft;       
+	    it->TopEdge = ITEXT_EXTRA_TOP;
 
-        menuitem->Height = 7;
+	    menuitem->Width = MyIntuiTextLength(vi, it, GadToolsBase) +
+      			      addwidth + ITEXT_EXTRA_LEFT + ITEXT_EXTRA_RIGHT;
 
-      } else {
-      
-	menuitem->Width  = im->Width + addwidth + IMAGE_EXTRA_LEFT + IMAGE_EXTRA_RIGHT;
-	menuitem->Height = im->Height + IMAGE_EXTRA_TOP + IMAGE_EXTRA_BOTTOM;
-	im->LeftEdge = IMAGE_EXTRA_LEFT + addleft;
-	im->TopEdge = IMAGE_EXTRA_TOP;
-      }
-      
-      curY += menuitem->Height;
-    }
-    
-    /*
-    ** In case this menu becomes too high it will have more columns.
-    */
-    if (curY > vi->vi_screen->Height)
-    {
-      ULONG width;
-      
-      width = EqualizeItems(equalizeitem, amikeyimage, vi, GadToolsBase);
-      equalizeitem = menuitem->NextItem;
-      
-      curY = 0;
-      curX += width + MENU_COLUMN_SPACING;
-      menuitem->LeftEdge = curX;
-      menuitem->TopEdge  = curY;
-    }
+	   /*
+	    ** Calculate the height menu item.
+	    */
+	    if (NULL == it->ITextFont)
+	    {
+        	/*
+        	** No font is provided, so I will work with the screen font.
+        	*/ 
+        	menuitem->Height = vi->vi_dri->dri_Font->tf_YSize + ITEXT_EXTRA_TOP + ITEXT_EXTRA_BOTTOM;
+	    }
+	    else
+	    {
+        	struct TextFont * font;
+		
+        	if (NULL != (font = OpenFont(it->ITextFont)))
+        	{
+        	    menuitem->Height = font->tf_YSize + ITEXT_EXTRA_TOP + ITEXT_EXTRA_BOTTOM;
+        	    CloseFont(font);
+        	}
+        	else
+        	    return FALSE; 
+	    }
+	    curY += menuitem->Height;
+	  
+	} /* if (0 != (menuitem->Flags & ITEMTEXT)) */
+	else
+	{
+	    /*
+	    ** Image
+	    */
+	    struct Image * im = (struct Image *)menuitem->ItemFill;
 
-    /*
-    ** Process the next menu item
-    */    
-    menuitem = menuitem->NextItem;
-  }
+	    if (NULL == im)
+        	return FALSE;
 
-  EqualizeItems(equalizeitem, amikeyimage, vi, GadToolsBase);
-  
-  return TRUE;
+	    if (is_menubarlabelclass_image(im, GadToolsBase))
+	    {
+
+        	menuitem->Height = 7;
+
+	    } else {
+
+		menuitem->Width  = im->Width + addwidth + IMAGE_EXTRA_LEFT + IMAGE_EXTRA_RIGHT;
+		menuitem->Height = im->Height + IMAGE_EXTRA_TOP + IMAGE_EXTRA_BOTTOM;
+		im->LeftEdge = IMAGE_EXTRA_LEFT + addleft;
+		im->TopEdge = IMAGE_EXTRA_TOP;
+	    }
+
+	    curY += menuitem->Height;
+	  
+	} /* if (0 != (menuitem->Flags & ITEMTEXT)) else ... */
+
+	/*
+	** In case this menu becomes too high it will have more columns.
+	*/
+	if (curY > vi->vi_screen->Height)
+	{
+	    ULONG width;
+
+	    width = EqualizeItems(equalizeitem, amikeyimage, vi, GadToolsBase);
+	    equalizeitem = menuitem->NextItem;
+
+	    curY = 0;
+	    curX += width + MENU_COLUMN_SPACING;
+	    menuitem->LeftEdge = curX;
+	    menuitem->TopEdge  = curY;
+	}
+
+	/*
+	** Process the next menu item
+	*/    
+	menuitem = menuitem->NextItem;
+      
+    } /* while (NULL != menuitem) */
+
+    EqualizeItems(equalizeitem, amikeyimage, vi, GadToolsBase);
+
+    return TRUE;
 }
 
 /**************************************************************************************************/
@@ -643,9 +627,9 @@ BOOL layoutsubitems(struct MenuItem * motheritem,
                     struct TagItem * taglist,
                     struct GadToolsBase_intern * GadToolsBase)
 {
-  struct MenuItem * menuitem = motheritem->SubItem;
+    struct MenuItem * menuitem = motheritem->SubItem;
 
-  layoutmenuitems(menuitem, vi, taglist, GadToolsBase);
-  
-  return TRUE;
+    layoutmenuitems(menuitem, vi, taglist, GadToolsBase);
+
+    return TRUE;
 }

@@ -1,10 +1,13 @@
 /*
-   (C) 1997-98 AROS - The Amiga Research OS
+   (C) 1997-2000 AROS - The Amiga Research OS
    $Id$
 
    Desc: GadTools gadget creation functions
    Lang: English
 */
+
+/****************************************************************************************/
+
 #include <stdio.h>
 #include <proto/exec.h>
 #include <exec/types.h>
@@ -32,11 +35,12 @@
 
 #include "gadtools_intern.h"
 
+/****************************************************************************************/
+
 #define EG(x) ((struct ExtGadget *)(x))
 
-/*******************
-**  makebutton()  **
-*******************/
+/****************************************************************************************/
+
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
 			  struct TagItem stdgadtags[],
 			  struct VisualInfo *vi,
@@ -65,9 +69,8 @@ struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
     return obj;
 }
 
-/*********************
-**  makecheckbox()  **
-*********************/
+/****************************************************************************************/
+
 struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 			    struct TagItem stdgadtags[],
 			    struct VisualInfo *vi,
@@ -102,9 +105,8 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
     ReturnPtr("makecheckbox()", struct Gadget *, obj);
 }
 
-/******************
-**  makecycle()  **
-******************/
+/****************************************************************************************/
+
 struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
@@ -136,9 +138,8 @@ struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
     return obj;
 }
 
-/***************
-**  makemx()  **
-***************/
+/****************************************************************************************/
+
 struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 		      struct TagItem stdgadtags[],
 		      struct VisualInfo *vi,
@@ -226,9 +227,8 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     return gad;
 }
 
-/*******************
-**  makepalette() **
-*******************/
+/****************************************************************************************/
+
 struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
@@ -284,9 +284,8 @@ struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
     return obj;
 }
 
-/*****************
-**  maketext()  **
-*****************/
+/****************************************************************************************/
+
 struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
@@ -350,9 +349,8 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     return (obj);
 }
 
-/*******************
-**  makenumber()  **
-*******************/
+/****************************************************************************************/
+
 struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
@@ -420,9 +418,7 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
 }
 
 
-/*******************
-**  makeslider()  **
-*******************/
+/****************************************************************************************/
 
 /* This MUST be global, since the gadgetclass doesn't copy ICA_MAPPINGs */
 const struct TagItem slider2level[] =
@@ -430,6 +426,8 @@ const struct TagItem slider2level[] =
     {GTSL_Level,	GTNM_Number},
     {TAG_DONE }
 };
+
+/****************************************************************************************/
 
 struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
@@ -648,6 +646,8 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 
 }                         
 
+/****************************************************************************************/
+
 #ifdef SDEBUG
 #   undef SDEBUG
 #endif
@@ -658,9 +658,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 #define DEBUG 0
 #include <aros/debug.h>
 
-/*********************
-**  makescroller()  **
-*********************/
+/****************************************************************************************/
 
 struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
@@ -884,9 +882,8 @@ failure:
    ReturnPtr("makescroller", struct Gadget *, NULL);
 }
 
-/*******************
-**  makestring()  **
-*******************/
+/****************************************************************************************/
+
 struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
@@ -970,9 +967,8 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     return  (obj);
 }
 
-/********************
-**  makeinteger()  **
-********************/
+/****************************************************************************************/
+
 struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
@@ -1056,9 +1052,7 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
 }
 
 
-/*********************
-**  makelistview()  **
-*********************/
+/****************************************************************************************/
 
 const struct TagItem scroller2lv[] =
 {
@@ -1066,9 +1060,12 @@ const struct TagItem scroller2lv[] =
     {TAG_DONE	, 		}
 };
 
-/* Spacig between scroller and listview */
+/****************************************************************************************/
+
+/* Spacing between scroller and listview */
 #define SCROLLER_SPACING 2
 
+/****************************************************************************************/
 
 struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
@@ -1310,3 +1307,45 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 
     ReturnPtr ("makelistview", struct Gadget *, NULL);
 }
+
+/****************************************************************************************/
+
+struct Gadget *makegeneric(struct GadToolsBase_intern *GadToolsBase,
+		      	  struct TagItem stdgadtags[],
+		      	  struct VisualInfo *vi,
+		      	  struct TextAttr *tattr,
+		      	  struct TagItem *taglist)
+{
+    struct GT_GenericGadget *gad;
+    
+    gad = AllocMem(sizeof(struct GT_GenericGadget), MEMF_PUBLIC | MEMF_CLEAR);
+    if (gad)
+    {
+        gad->gad.LeftEdge 	= stdgadtags[TAG_Left].ti_Data;
+	gad->gad.TopEdge 	= stdgadtags[TAG_Top].ti_Data;
+	gad->gad.Width 		= stdgadtags[TAG_Width].ti_Data;
+	gad->gad.Height 	= stdgadtags[TAG_Height].ti_Data;
+	gad->gad.Flags 		= GFLG_EXTENDED;
+	gad->gad.Activation 	= 0;
+	gad->gad.GadgetType 	= GTYP_GADTOOLS;
+	gad->gad.GadgetRender 	= NULL;
+	gad->gad.SelectRender 	= NULL;
+	gad->gad.GadgetText 	= (struct IntuiText *)stdgadtags[TAG_IText].ti_Data;
+	gad->gad.MutualExclude 	= 0;
+	gad->gad.SpecialInfo 	= NULL;
+	gad->gad.GadgetID 	= stdgadtags[TAG_ID].ti_Data;
+	gad->gad.UserData 	= (APTR)stdgadtags[TAG_UserData].ti_Data;
+	gad->gad.MoreFlags 	= GMORE_BOUNDS | GMORE_GADGETHELP;
+	gad->gad.BoundsLeftEdge = stdgadtags[TAG_Left].ti_Data;
+	gad->gad.BoundsTopEdge 	= stdgadtags[TAG_Top].ti_Data;
+	gad->gad.BoundsWidth 	= stdgadtags[TAG_Width].ti_Data;
+	gad->gad.BoundsHeight 	= stdgadtags[TAG_Height].ti_Data;
+	gad->magic 		= GENERIC_MAGIC;
+	gad->magic2 		= GENERIC_MAGIC2;
+	gad->itext 		= (struct IntuiText *)stdgadtags[TAG_IText].ti_Data;
+    }
+    
+    ReturnPtr ("makegeneric", struct Gadget *, (struct Gadget *)gad);
+}
+
+/****************************************************************************************/

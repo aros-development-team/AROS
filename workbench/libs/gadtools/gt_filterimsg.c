@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -62,13 +62,20 @@
     IPTR		    old_gadget_value;
     BOOL		    msg_only_for_gadtools = FALSE;
     
-    /* Find Context Gadget = first GTYP_GADTOOLS gadget
+    /* Find Context Gadget. Should be first GTYP_GADTOOLS gadget
        in window´s gadgetlist */
     
     contextgad = (struct GT_ContextGadget *)imsg->IDCMPWindow->FirstGadget;
     while (contextgad)
     {
-    	if (contextgad->gad.GadgetType & GTYP_GADTOOLS) break;
+    	if (contextgad->gad.GadgetType == GTYP_GADTOOLS)
+	{
+	    if ((contextgad->magic  == CONTEXT_MAGIC) &&
+	        (contextgad->magic2 == CONTEXT_MAGIC2))
+	    {
+	        break;
+	    }
+	}
 	contextgad = (struct GT_ContextGadget *)contextgad->gad.NextGadget;
     }
     
@@ -339,7 +346,7 @@
 	    rc = NULL;
 	}
 	
-    } /* if (gad) */
+    } /* if (contextgad) */
     else
     {
     	/* no context gadget = stupid coder which uses
@@ -363,9 +370,10 @@
 	   bad things will happen. The only problem is that
 	   the app will not get the msg. */
 	    
-    } /* if (gad) else */
+    } /* if (contextgad) else */
 
     return (struct IntuiMessage *)rc;
 
     AROS_LIBFUNC_EXIT
+    
 } /* GT_FilterIMsg */

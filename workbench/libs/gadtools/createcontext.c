@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -57,10 +57,12 @@
 
     struct GT_ContextGadget *rc;
     
-    rc = (struct GT_ContextGadget *)AllocMem(sizeof(struct GT_ContextGadget),MEMF_PUBLIC | MEMF_CLEAR);
+    rc = (struct GT_ContextGadget *)AllocMem(sizeof(struct GT_ContextGadget), MEMF_PUBLIC | MEMF_CLEAR);
     if (rc)
     {
-    	rc->gad.Flags = GFLG_GADGHNONE | GFLG_DISABLED;
+        rc->magic 	   = CONTEXT_MAGIC;
+	rc->magic2 	   = CONTEXT_MAGIC2;
+    	rc->gad.Flags 	   = GFLG_GADGHNONE | GFLG_DISABLED;
 	rc->gad.GadgetType = GTYP_GADTOOLS;
     }
     
