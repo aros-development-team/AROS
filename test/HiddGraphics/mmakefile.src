@@ -2,18 +2,22 @@
 include $(TOP)/config/make.cfg
 
 #INCLUDES    := -I$(BINDIR)/include -I$(TOP)/amiga/include
-EXEDIR      := .
+EXEDIR      := /DH1/AROS/test/HiddGraphics
 OBJDIR      := $(GENDIR)/test/GfxHidd
 
-%define_libs
+STARTUP = $(LIBDIR)/startup.o
+LIBS    = -L$(LIBDIR) -larossupport -lamiga -lhiddgraphicsstubs $(TOOL).a -larosc
 
 FILES	    := \
 	BitMapNewDispose \
         GCNewDispose     \
         GCReadWritePixelDirect
 
+TOOL  := gfxhiddtool
+
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+DEPS := $(foreach f,$(FILES) $(TOOL),$(OBJDIR)/$(f).d)
 
 #MM test-hidd-graphics : setup includes
 test-hidd-graphics : show-flags $(EXES)
@@ -24,9 +28,9 @@ test-hidd-graphics-quick : show-flags $(EXES)
 	@$(NOP)
 
 show-flags :
-	@echo "OBJDIR=$(OBJDIR)"
-	@echo "EXEDIR=$(EXEDIR)"
-	@echo "CFLAGS=$(CFLAGS)"
+	@$(ECHO) "OBJDIR=$(OBJDIR)"
+	@$(ECHO) "EXEDIR=$(EXEDIR)"
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM
 setup :
@@ -36,7 +40,7 @@ setup :
 clean ::
 	-$(RM) $(EXES)
 
-$(EXEDIR)/% : $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
+$(EXEDIR)/% : $(OBJDIR)/%.o $(TOOL).a $(LIBDIR)/startup.o $(DEPLIBS)
 	%link_q
 
 $(OBJDIR)/%.o : %.c
@@ -45,5 +49,12 @@ $(OBJDIR)/%.o : %.c
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
+
+$(TOOL).a : $(OBJDIR)/$(TOOL).o
+	%mklib_q from=$(OBJDIR)/$(TOOL).o
+
+$(OBJDIR)/$(TOOL).o : $(TOOL).c
+	%compile_q 
+	
 %common
 %include_deps

@@ -69,164 +69,32 @@
 #include <oop/oop.h>
 #include <hidd/graphics.h>
 
+#include "gfxhiddtool.h"
+
 #undef  SDEBUG
 #undef  DEBUG
 #define DEBUG 1
 #include <aros/debug.h>
 
-
-#define B(b) (struct Library **) b
-
-struct OpnLibs
-{
-    STRPTR libName;
-    ULONG  version;
-    struct Library **base;
-};
-
 struct DosLibrary    *DOSBase;
 struct Library       *OOPBase;
 struct Library       *HIDDGraphicsBase;
-/***************************************************************/
 
-struct OpnLibs LibsArray[] = {{"dos.library"      , 37, B(&DOSBase)         },
-                              {AROSOOP_NAME       ,  0, B(&OOPBase)         },
-                              {NULL,                 0, NULL          }
-                             };
-
-BOOL OpenLibs()
+struct ght_OpenLibs LibsArray[] =
 {
-    ULONG  i = 0;
-    BOOL  ok = TRUE;
-
-    while(LibsArray[i].base)
-    {
-        *LibsArray[i++].base = NULL;
-    }
-
-    i = 0;
-
-    while(LibsArray[i].libName && ok)
-    {
-        *LibsArray[i].base = OpenLibrary(LibsArray[i].libName, LibsArray[i].version);
-        if(*LibsArray[i].base == NULL)
-        {
-            printf("Can't open library '%s' V%li!\n",
-                   LibsArray[i].libName,
-                   LibsArray[i].version
-                  );
-            ok = FALSE;
-        }
-
-        i++;
-    }
-
-    return ok;
-}
-/***************************************************************/
-
-void CloseLibs()
-{
-    ULONG i    = 0;
-    BOOL  quit = FALSE;
-
-    while(LibsArray[i].base && !quit)
-    {
-        if(*LibsArray[i].base != NULL)
-        {
-            CloseLibrary(*LibsArray[i].base);
-            i++;
-        }
-        else
-        {
-            quit = TRUE;
-        }
-    }
-}
-/***************************************************************/
-
-ULONG GetAttr(Object *obj, ULONG attrID)
-{
-    static MethodID mid = 0;
-    struct pRoot_Get p;
-    ULONG  ret;
-
-    if(!mid) mid = GetMethodID(IID_Root, moRoot_Get);
-        
-    p.mID     = mid;
-    p.attrID  = attrID;
-    p.storage = &ret;
-
-    DoMethod(obj, (Msg)&p);
-
-    return ret;
-}
-/***************************************************************/
-
-Object * NewGC(Object *hiddGfx, ULONG gcType, struct TagItem *tagList)
-{
-    static MethodID mid = 0;
-    struct pHidd_Gfx_NewGC p;
-    
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewGC);
-        
-    p.mID      = mid;
-    p.gcType   = gcType;
-    p.attrList = tagList;
-
-    return((Object *) DoMethod(hiddGfx, (Msg) &p));
-}
-/***************************************************************/
-
-void DisposeGC(Object *hiddGfx, Object *gc)
-{
-    static MethodID mid = 0;
-    struct pHidd_Gfx_DisposeGC p;
-    
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeGC);
-        
-    p.mID    = mid;
-    p.gc     = gc;
-
-    DoMethod(hiddGfx, (Msg) &p);
-}
-/***************************************************************/
-
-Object * NewBitMap(Object *hiddGfx, struct TagItem *tagList)
-{
-    static MethodID mid = 0;
-    struct pHidd_Gfx_NewBitMap p;
-    
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewBitMap);
-        
-    p.mID      = mid;
-    p.attrList = tagList;
-
-    return((Object *) DoMethod(hiddGfx, (Msg) &p));
-}
-/***************************************************************/
-
-void DisposeBitMap(Object *hiddGfx, Object *bitMap)
-{
-    static MethodID mid = 0;
-    struct pHidd_Gfx_DisposeBitMap p;
-    
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeBitMap);
-        
-    p.mID    = mid;
-    p.bitMap = bitMap;
-
-    DoMethod(hiddGfx, (Msg) &p);
-}
+    GHT_LIB("dos.library"      , 37, &DOSBase),
+    GHT_LIB(AROSOOP_NAME       ,  0, &OOPBase),
+    GHT_LIB(NULL               ,  0, NULL)
+};
 /***************************************************************/
 
 int main(int argc, char **argv)
 {
     ULONG ret = RETURN_FAIL;
 
-    AttrBase HiddGfxAttrBase;
-    AttrBase HiddGCAttrBase;
-    AttrBase HiddBitMapAttrBase;
+    AttrBase HiddGfxAttrBase     = 0;
+    AttrBase HiddGCAttrBase      = 0;
+    AttrBase HiddBitMapAttrBase  = 0;
 
     Object   *gfxHidd;
     Object   *bitMap;
@@ -249,7 +117,7 @@ int main(int argc, char **argv)
     struct RDArgs *rda;
 
 
-    if(OpenLibs())
+    if(ght_OpenLibs(LibsArray))
     {
         rda = ReadArgs("HIDD/K,FG/N/K,BG/N/K", (IPTR *)&args, NULL);
         if (rda != NULL)
@@ -262,13 +130,12 @@ int main(int argc, char **argv)
                 HiddGfxAttrBase    = ObtainAttrBase(IID_Hidd_Gfx);
                 HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
                 HiddGCAttrBase     = ObtainAttrBase(IID_Hidd_GCQuick);
-        
                 if(HiddGfxAttrBase && HiddBitMapAttrBase && HiddGCAttrBase)
                 {
-                    gfxHidd = NewObject(NULL, CLID_Hidd_Gfx, NULL);
+                    gfxHidd = NewObject(NULL, args.hiddName, NULL);
                     if(gfxHidd)
                     {
-                        bitMap = NewBitMap(gfxHidd, NULL);
+                        bitMap = HIDD_Gfx_NewBitMap(gfxHidd, NULL);
                         if(bitMap)
                         {
                             struct TagItem gc_tags[] =
@@ -279,24 +146,24 @@ int main(int argc, char **argv)
                                 {TAG_DONE, 0UL}
                             };
 
-                            gc = NewGC(gfxHidd, HIDDV_Gfx_GCType_Quick, gc_tags);
+                            gc = HIDD_Gfx_NewGC(gfxHidd, vHIDD_Gfx_GCType_Quick, gc_tags);
                             if(gc)
                             {
                                 printf("GC created:\n");
-                                printf("  fg    : %li\n", GetAttr(gc, aHidd_GC_Foreground));
-                                printf("  bg    : %li\n", GetAttr(gc, aHidd_GC_Background));
-                                printf("  drMode: %li\n", GetAttr(gc, aHidd_GC_DrawMode));
-                                printf("  bitMap: %li\n", GetAttr(gc, aHidd_GC_BitMap));
+                                printf("  fg    : %li\n", ght_GetAttr(gc, aHidd_GC_Foreground));
+                                printf("  bg    : %li\n", ght_GetAttr(gc, aHidd_GC_Background));
+                                printf("  drMode: %li\n", ght_GetAttr(gc, aHidd_GC_DrawMode));
+                                printf("  bitMap: %li\n", ght_GetAttr(gc, aHidd_GC_BitMap));
         
-                                DisposeGC(gfxHidd, gc);
+                                HIDD_Gfx_DisposeGC(gfxHidd, gc);
         
                                 ret = RETURN_OK;
                             }
         
-                            DisposeBitMap(gfxHidd, bitMap);
+                            HIDD_Gfx_DisposeBitMap(gfxHidd, bitMap);
                         }
 
-                        DisposeObject(gfxHidd);
+                        if(gfxHidd) DisposeObject(gfxHidd);
                     } /* if(gfxHidd) */
                 }  /* if(HiddGfxAttrBase && HiddBitMapAttrBase && HiddGCAttrBase) */
 
@@ -316,7 +183,7 @@ int main(int argc, char **argv)
 
     } /* if OpenLibs() */
 
-    CloseLibs();
+    ght_CloseLibs(LibsArray);
 
     return(ret);
 }
