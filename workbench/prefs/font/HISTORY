@@ -1,0 +1,5 @@
+0.1 (20.3.2001)		First version. Features IFF-PREF import/export and a font
+			sensitive gadtools GUI. (Internal release)
+0.2 (24.3.2001)		ReadArgs() support with Release 2 template. Structural
+			changes to handleiff.c. (Internal release)
+0.3 (3.4.2001)		Font knows how to deal with gadtools menus. (Developer's release)
