@@ -16,6 +16,7 @@ CLASSES   := application \
 	     notify \
 	     numeric \
 	     slider \
+	     string \
 	     text \
 	     window
 	
