@@ -9,10 +9,10 @@
 #include "os.h"
 #include "volumes.h"
 
-ULONG writeHeader(struct afsbase *, struct Volume *, struct BlockCache *);
+ULONG writeHeader(struct AFSBase *, struct Volume *, struct BlockCache *);
 LONG getDiskInfo(struct Volume *, struct InfoData *);
-LONG inhibit(struct afsbase *, struct Volume *, ULONG forbid);
-LONG format(struct afsbase *, struct Volume *, STRPTR, ULONG);
-LONG relabel(struct afsbase *, struct Volume *, STRPTR);
+LONG inhibit(struct AFSBase *, struct Volume *, ULONG forbid);
+LONG format(struct AFSBase *, struct Volume *, STRPTR, ULONG);
+LONG relabel(struct AFSBase *, struct Volume *, STRPTR);
 
 #endif

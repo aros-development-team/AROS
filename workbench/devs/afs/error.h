@@ -23,7 +23,7 @@ enum {
 	ERR_UNKNOWN
 };
 
-void showText(struct afsbase *, char *, ...);
-void showError(struct afsbase *, ULONG, ...);
+void showText(struct AFSBase *, char *, ...);
+void showError(struct AFSBase *, ULONG, ...);
 
 #endif

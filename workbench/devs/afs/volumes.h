@@ -45,9 +45,9 @@ struct Volume {
 #define VOLF_TRACKDISK    (1 <<  8)
 
 LONG mediumPresent(struct IOHandle *);
-struct Volume *initVolume(struct afsbase *, struct Device *, STRPTR, ULONG, struct DosEnvec *, ULONG *);
-void uninitVolume(struct afsbase *, struct Volume *);
-LONG newMedium(struct afsbase *, struct Volume *);
+struct Volume *initVolume(struct AFSBase *, struct Device *, STRPTR, ULONG, struct DosEnvec *, ULONG *);
+void uninitVolume(struct AFSBase *, struct Volume *);
+LONG newMedium(struct AFSBase *, struct Volume *);
 
 #endif
 

@@ -7,16 +7,16 @@
 #include "error.h"
 #include "volumes.h"
 
-void showPtrArgsText(struct afsbase *afsbase, char *string, ULONG *args) {
+void showPtrArgsText(struct AFSBase *afsbase, char *string, ULONG *args) {
 	vprintf(string, (va_list)args);
 	printf("\n");
 }
 
-void showText(struct afsbase *afsbase, char *string, ...) {
+void showText(struct AFSBase *afsbase, char *string, ...) {
 	showPtrArgsText(afsbase, string, (ULONG *)(&string+1));
 }
 
-void showError(struct afsbase *afsbase, ULONG error, ...) {
+void showError(struct AFSBase *afsbase, ULONG error, ...) {
 char *texts[]={0,
             "No ioport",
             "Couldn't open device %s",
@@ -42,7 +42,7 @@ char *texts[]={0,
 
 ULONG readDisk
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		ULONG start, ULONG count, APTR mem
 	)
@@ -62,7 +62,7 @@ struct IOHandle *ioh;
 
 ULONG writeDisk
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		ULONG start, ULONG count, APTR mem
 	)
@@ -80,11 +80,11 @@ struct IOHandle *ioh;
 	return 1;
 }
 
-void check64BitSupport(struct afsbase *afsbase, struct Volume *volume) {
+void check64BitSupport(struct AFSBase *afsbase, struct Volume *volume) {
 	printf("%s: We just support 64Bit (or not ...)\n", __FUNCTION__);
 }
 
-struct IOHandle *openBlockDevice(struct afsbase *afsbase, struct IOHandle *ioh) {
+struct IOHandle *openBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh) {
 	ioh->fh = fopen(ioh->blockdevice, "r+");
 	if (ioh->fh != NULL)
 	{
@@ -96,21 +96,21 @@ struct IOHandle *openBlockDevice(struct afsbase *afsbase, struct IOHandle *ioh) 
 	return NULL;
 }
 
-void closeBlockDevice(struct afsbase *afsbase, struct IOHandle *ioh) {
+void closeBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh) {
 	fclose(ioh->fh);
 }
 
-ULONG flush(struct afsbase *afsbase, struct Volume *volume) {
+ULONG flush(struct AFSBase *afsbase, struct Volume *volume) {
 	printf("%s: ommand not supported yet!\n", __FUNCTION__);
 	return DOSFALSE;
 }
 
-LONG osMediumInit(struct afsbase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {
+LONG osMediumInit(struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {
 	printf("%s: Don't know what to do here\n", __FUNCTION__);
 	return 0;
 }
 
-void osMediumFree(struct afsbase *afsbase, struct Volume *volume, LONG all) {
+void osMediumFree(struct AFSBase *afsbase, struct Volume *volume, LONG all) {
 	printf("%s: Don't know what to do here\n", __FUNCTION__);
 }
 

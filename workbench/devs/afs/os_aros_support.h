@@ -34,7 +34,7 @@ struct IOHandle {
 	struct IOExtTD *iochangeint;
 	struct Interrupt mc_int;
 	struct Interrupt vbl_int;
-	struct afsbase *afsbase; /* for interrupt code */
+	struct AFSBase *afsbase; /* for interrupt code */
 	ULONG ioflags;
 	UWORD cmdread;
 	UWORD cmdwrite;
@@ -48,6 +48,6 @@ struct IOHandle {
 #define IOHF_DISK_IN      (1<<2)
 #define IOHF_TRACKDISK    (1<<3)
 
-void checkDeviceFlags(struct afsbase *);
+void checkDeviceFlags(struct AFSBase *);
 
 #endif

@@ -32,7 +32,7 @@
 ********************************************/
 LONG initDeviceList
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		struct BlockCache *rootblock
 	)
@@ -40,39 +40,35 @@ LONG initDeviceList
 STRPTR name;
 UBYTE i;
 
-	name=(STRPTR)((ULONG)rootblock->buffer+(BLK_DISKNAME_START(volume)*4));
-	volume->devicelist.dl_Next=0;
-	volume->devicelist.dl_Type=DLT_VOLUME;
-	volume->devicelist.dl_Device=volume->device;
-	volume->devicelist.dl_Lock=0;
-	volume->devicelist.dl_VolumeDate.ds_Days=AROS_BE2LONG
-		(
-			rootblock->buffer[BLK_ROOT_DAYS(volume)]
-		);
-	volume->devicelist.dl_VolumeDate.ds_Minute=AROS_BE2LONG
-		(
-			rootblock->buffer[BLK_ROOT_MINS(volume)]
-		);
-	volume->devicelist.dl_VolumeDate.ds_Tick=AROS_BE2LONG
-		(
-			rootblock->buffer[BLK_ROOT_TICKS(volume)]
-		);
-	volume->devicelist.dl_LockList=0;
-	volume->devicelist.dl_DiskType=volume->dostype;
-	if (volume->devicelist.dl_OldName)
+	name=(char *)rootblock->buffer+(BLK_DISKNAME_START(volume)*4);
+	volume->devicelist.dl_Next = 0;
+	volume->devicelist.dl_Type = DLT_VOLUME;
+	volume->devicelist.dl_Device = volume->device;
+	volume->devicelist.dl_Lock = 0;
+	volume->devicelist.dl_VolumeDate.ds_Days =
+		AROS_BE2LONG(rootblock->buffer[BLK_ROOT_DAYS(volume)]);
+	volume->devicelist.dl_VolumeDate.ds_Minute =
+		AROS_BE2LONG(rootblock->buffer[BLK_ROOT_MINS(volume)]);
+	volume->devicelist.dl_VolumeDate.ds_Tick =
+		AROS_BE2LONG(rootblock->buffer[BLK_ROOT_TICKS(volume)]);
+	volume->devicelist.dl_LockList = 0;
+	volume->devicelist.dl_DiskType = volume->dostype;
+	if (volume->devicelist.dl_OldName != NULL)
 	{
-		volume->devicelist.dl_OldName=(BSTR)BADDR(volume->devicelist.dl_OldName);
+		volume->devicelist.dl_OldName =
+			(BSTR)BADDR(volume->devicelist.dl_OldName);
 	}
 	else
 	{
-		volume->devicelist.dl_OldName=(BSTR)AllocVec(32,MEMF_CLEAR | MEMF_PUBLIC);
-		if (volume->devicelist.dl_OldName==0)
+		volume->devicelist.dl_OldName =
+			(BSTR)AllocVec(32,MEMF_CLEAR | MEMF_PUBLIC);
+		if (volume->devicelist.dl_OldName == NULL)
 			return DOSFALSE;
 	}
-	for (i=0;i<name[0];i++)
+	for (i=0; i<name[0]; i++)
 		AROS_BSTR_putchar(volume->devicelist.dl_OldName, i, name[i+1]);
 	AROS_BSTR_setstrlen(volume->devicelist.dl_OldName, name[0]);
-	volume->devicelist.dl_OldName=MKBADDR(volume->devicelist.dl_OldName);
+	volume->devicelist.dl_OldName = MKBADDR(volume->devicelist.dl_OldName);
 	return DOSTRUE;
 }
 
@@ -82,51 +78,55 @@ UBYTE i;
  Input : volume - volume to add
  Output: DOSTRUE for success; DOSFALSE otherwise
 ********************************************/
-LONG addDosVolume(struct afsbase *afsbase, struct Volume *volume) {
-struct DosList *doslist, *dl=0;
+LONG addDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
+struct DosList *doslist;
+struct DosList *dl=NULL;
 char string[32];
 char *bname;
 UBYTE i;
 
-	bname=BADDR(volume->devicelist.dl_OldName);
-	for (i=0;i<AROS_BSTR_strlen(bname);i++)
-		string[i]=AROS_BSTR_getchar(bname,i);
-	string[AROS_BSTR_strlen(bname)]=0;
+	bname = BADDR(volume->devicelist.dl_OldName);
+	for (i=0; i<AROS_BSTR_strlen(bname); i++)
+		string[i] = AROS_BSTR_getchar(bname,i);
+	string[AROS_BSTR_strlen(bname)] = 0;
 	/* is the volume already in the list? */
-	if ((doslist=LockDosList(LDF_WRITE | LDF_VOLUMES)))
+	doslist = LockDosList(LDF_WRITE | LDF_VOLUMES);
+	if (doslist != NULL)
 	{
-		if ((dl=FindDosEntry(doslist,string,LDF_VOLUMES)))
+		dl = FindDosEntry(doslist,string,LDF_VOLUMES);
+		if (dl != NULL)
 		{
-			if (((struct AfsHandle *)dl->dol_Unit)->volume==volume)
+			if (((struct AfsHandle *)dl->dol_Unit)->volume == volume)
 			{
-				if (dl->dol_misc.dol_volume.dol_LockList)
+				if (dl->dol_misc.dol_volume.dol_LockList != NULL)
 				{
-					volume->locklist=dl->dol_misc.dol_volume.dol_LockList;
+					volume->locklist = dl->dol_misc.dol_volume.dol_LockList;
 				}
 			}
 			else
 			{
-				dl=0;
+				dl = NULL;
 			}
 		}
 		UnLockDosList(LDF_WRITE | LDF_VOLUMES);
 	}
 	/* if not create a new doslist */
-	if (!dl)
+	if (dl == NULL)
 	{
-		if (!(doslist=MakeDosEntry(string,DLT_VOLUME)))
+		doslist = MakeDosEntry(string,DLT_VOLUME);
+		if (doslist == NULL)
 			return DOSFALSE;
-		doslist->dol_Unit=(struct Unit *)&volume->ah;
-		doslist->dol_Device=volume->device;
-		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Days=
+		doslist->dol_Unit = (struct Unit *)&volume->ah;
+		doslist->dol_Device = volume->device;
+		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Days =
 			volume->devicelist.dl_VolumeDate.ds_Days;
-		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Minute=
+		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Minute =
 			volume->devicelist.dl_VolumeDate.ds_Minute;
-		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Tick=
+		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Tick =
 			volume->devicelist.dl_VolumeDate.ds_Tick;
 		AddDosEntry(doslist);
 		/* if we re-use "volume" clear locklist */
-		volume->locklist = 0;
+		volume->locklist = NULL;
 	}
 	return DOSTRUE;
 }
@@ -141,27 +141,30 @@ UBYTE i;
  Note  : displays a message if volume couldn't
          be found in the system
 ********************************************/
-void remDosVolume(struct afsbase *afsbase, struct Volume *volume) {
-struct DosList *doslist,*dl;
+void remDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
+struct DosList *doslist;
+struct DosList *dl;
 char *bname;
 char string[32];
 UBYTE i;
 
 	if (volume->dostype == 0x444F5300)
 	{
-		bname=BADDR(volume->devicelist.dl_OldName);
-		if (bname)
+		bname = BADDR(volume->devicelist.dl_OldName);
+		if (bname != NULL)
 		{
-			for (i=0;i<AROS_BSTR_strlen(bname);i++)
-				string[i]=AROS_BSTR_getchar(bname,i);
-			string[AROS_BSTR_strlen(bname)]=0;
-			if ((doslist=LockDosList(LDF_WRITE | LDF_VOLUMES)))
+			for (i=0; i<AROS_BSTR_strlen(bname); i++)
+				string[i] = AROS_BSTR_getchar(bname,i);
+			string[AROS_BSTR_strlen(bname)] = 0;
+			doslist = LockDosList(LDF_WRITE | LDF_VOLUMES);
+			if (doslist != NULL)
 			{
-				if ((dl=FindDosEntry(doslist,string,LDF_VOLUMES)))
+				dl = FindDosEntry(doslist,string,LDF_VOLUMES);
+				if (dl != NULL)
 				{
-					if (volume->locklist)
+					if (volume->locklist != NULL)
 					{
-						dl->dol_misc.dol_volume.dol_LockList=volume->locklist;
+						dl->dol_misc.dol_volume.dol_LockList = volume->locklist;
 					}
 					else
 					{
@@ -177,7 +180,9 @@ UBYTE i;
 	}
 }
 
-LONG osMediumInit(struct afsbase *afsbase, struct Volume *volume, struct BlockCache *block) {
+LONG osMediumInit
+	(struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *block)
+{
 
 	if (!initDeviceList(afsbase, volume, block))
 		return ERROR_NO_FREE_STORE;
@@ -190,17 +195,17 @@ LONG osMediumInit(struct afsbase *afsbase, struct Volume *volume, struct BlockCa
 	return 0;
 }
 
-void osMediumFree(struct afsbase *afsbase, struct Volume *volume, LONG all) {
+void osMediumFree(struct AFSBase *afsbase, struct Volume *volume, LONG all) {
 	remDosVolume(afsbase, volume);
 	if (all)
-		if (volume->devicelist.dl_OldName)
+		if (volume->devicelist.dl_OldName != NULL)
 			FreeVec(BADDR(volume->devicelist.dl_OldName));
 }
 
 /************************** I/O ******************************************/
 struct IOExtTD *openDevice
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct MsgPort *mp,
 		STRPTR device,
 		ULONG unit,
@@ -209,7 +214,7 @@ struct IOExtTD *openDevice
 {
 struct IOExtTD *ioreq;
 
-	ioreq=(struct IOExtTD *)CreateIORequest(mp, sizeof(struct IOExtTD));
+	ioreq = (struct IOExtTD *)CreateIORequest(mp, sizeof(struct IOExtTD));
 	if (ioreq != NULL)
 	{
 		if (OpenDevice(device, unit, (struct IORequest *)ioreq, flags) == 0)
@@ -223,14 +228,14 @@ struct IOExtTD *ioreq;
 	return NULL;
 }
 
-void closeDevice(struct afsbase *afsbase, struct IOExtTD *ioreq) {
+void closeDevice(struct AFSBase *afsbase, struct IOExtTD *ioreq) {
 	if (ioreq->iotd_Req.io_Device != NULL)
 		CloseDevice((struct IORequest *)&ioreq->iotd_Req);
 	DeleteIORequest((APTR)ioreq);
 }
 
 LONG getGeometry
-	(struct afsbase *afsbase, struct IOHandle *ioh, struct DriveGeometry *dg)
+	(struct AFSBase *afsbase, struct IOHandle *ioh, struct DriveGeometry *dg)
 {
 	ioh->ioreq->iotd_Req.io_Command = TD_GETGEOMETRY;
 	ioh->ioreq->iotd_Req.io_Data = dg;
@@ -240,7 +245,7 @@ LONG getGeometry
 
 VOID changeIntCode(struct IOHandle *, APTR, struct ExecBase *);
 
-LONG addChangeInt(struct afsbase *afsbase, struct IOHandle *ioh) {
+LONG addChangeInt(struct AFSBase *afsbase, struct IOHandle *ioh) {
 
 	ioh->mc_int.is_Code = (void(*)())&changeIntCode;
 	ioh->mc_int.is_Data = ioh;
@@ -253,10 +258,10 @@ LONG addChangeInt(struct afsbase *afsbase, struct IOHandle *ioh) {
 	return ioh->iochangeint->iotd_Req.io_Error;
 }
 
-void remChangeInt(struct afsbase *afsbase, struct IOHandle *ioh) {
+void remChangeInt(struct AFSBase *afsbase, struct IOHandle *ioh) {
 
 	if (
-			(ioh->iochangeint != 0) &&
+			(ioh->iochangeint != NULL) &&
 			(ioh->iochangeint->iotd_Req.io_Error == 0)
 		)
 	{
@@ -265,7 +270,7 @@ void remChangeInt(struct afsbase *afsbase, struct IOHandle *ioh) {
 	}
 }
 
-void checkAddChangeInt(struct afsbase *afsbase, struct IOHandle *ioh) {
+void checkAddChangeInt(struct AFSBase *afsbase, struct IOHandle *ioh) {
 struct DriveGeometry dg;
 
 	if (!getGeometry(afsbase, ioh, &dg))
@@ -274,7 +279,7 @@ struct DriveGeometry dg;
 		{
 			ioh->iochangeint = openDevice
 				(afsbase, ioh->mp, ioh->blockdevice, ioh->unit, ioh->flags);
-			if (ioh->iochangeint)
+			if (ioh->iochangeint != NULL)
 			{
 				addChangeInt(afsbase, ioh);
 			}
@@ -282,16 +287,16 @@ struct DriveGeometry dg;
 	}
 }
 
-UBYTE diskPresent(struct afsbase *afsbase, struct IOHandle *ioh) {
+UBYTE diskPresent(struct AFSBase *afsbase, struct IOHandle *ioh) {
 
-	ioh->ioreq->iotd_Req.io_Command=TD_CHANGESTATE;
+	ioh->ioreq->iotd_Req.io_Command = TD_CHANGESTATE;
 	DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
-	return ioh->ioreq->iotd_Req.io_Actual==0;
+	return ioh->ioreq->iotd_Req.io_Actual == 0;
 }
 
 int timercode(struct Custom *, struct IOHandle *, APTR, struct ExecBase *);
 
-struct IOHandle *openBlockDevice(struct afsbase *afsbase, struct IOHandle *ioh)
+struct IOHandle *openBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh)
 {
 
 	ioh->mp = CreateMsgPort();
@@ -319,7 +324,7 @@ struct IOHandle *openBlockDevice(struct afsbase *afsbase, struct IOHandle *ioh)
 	return NULL;
 }
 
-void closeBlockDevice(struct afsbase *afsbase, struct IOHandle *ioh) {
+void closeBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh) {
 
 	remChangeInt(afsbase, ioh);
 	if (ioh->iochangeint != NULL)
@@ -330,19 +335,19 @@ void closeBlockDevice(struct afsbase *afsbase, struct IOHandle *ioh) {
 		DeleteMsgPort(ioh->mp);
 }
 
-void motorOff(struct afsbase *afsbase, struct IOHandle *ioh) {
+void motorOff(struct AFSBase *afsbase, struct IOHandle *ioh) {
 
-	ioh->ioreq->iotd_Req.io_Command=TD_MOTOR;
-	ioh->ioreq->iotd_Req.io_Length=0;
+	ioh->ioreq->iotd_Req.io_Command = TD_MOTOR;
+	ioh->ioreq->iotd_Req.io_Length = 0;
 	DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
 }
 
-void checkDeviceFlags(struct afsbase *afsbase) {
+void checkDeviceFlags(struct AFSBase *afsbase) {
 struct Volume *volume;
 struct IOHandle *ioh;
 
 	volume = (struct Volume *)afsbase->device_list.lh_Head;
-	while (volume->ln.ln_Succ)
+	while (volume->ln.ln_Succ != NULL)
 	{
 		ioh = &volume->ioh;
 		if (ioh->ioflags & IOHF_MOTOR_OFF)
@@ -369,31 +374,31 @@ struct IOHandle *ioh;
 	}
 }
 
-void check64BitSupport(struct afsbase *afsbase, struct Volume *volume) {
+void check64BitSupport(struct AFSBase *afsbase, struct Volume *volume) {
 struct NSDeviceQueryResult nsdq;
 UWORD *cmdcheck;
 
 	if (
 			(
-				(volume->startblock+(volume->rootblock*2))*  /* last block */
+				(volume->startblock+(volume->countblocks))*  /* last block */
 				(volume->SizeBlock*4/512)	/* 1 portion (block) equals 512 (bytes) */
 			)>8388608)
 	{
-		nsdq.SizeAvailable=0;
-		nsdq.DevQueryFormat=0;
-		volume->ioh.ioreq->iotd_Req.io_Command=NSCMD_DEVICEQUERY;
-		volume->ioh.ioreq->iotd_Req.io_Data=&nsdq;
-		volume->ioh.ioreq->iotd_Req.io_Length=sizeof(struct NSDeviceQueryResult);
-		if (DoIO((struct IORequest *)volume->ioh.ioreq)==IOERR_NOCMD)
+		nsdq.SizeAvailable = 0;
+		nsdq.DevQueryFormat = 0;
+		volume->ioh.ioreq->iotd_Req.io_Command = NSCMD_DEVICEQUERY;
+		volume->ioh.ioreq->iotd_Req.io_Data = &nsdq;
+		volume->ioh.ioreq->iotd_Req.io_Length = sizeof(struct NSDeviceQueryResult);
+		if (DoIO((struct IORequest *)volume->ioh.ioreq) == IOERR_NOCMD)
 		{
 			D(bug("[afs] initVolume-NSD: device doesn't understand NSD-Query\n"));
 		}
 		else
 		{
 			if (
-					(volume->ioh.ioreq->iotd_Req.io_Actual>sizeof(struct NSDeviceQueryResult)) ||
-					(volume->ioh.ioreq->iotd_Req.io_Actual==0) ||
-					(volume->ioh.ioreq->iotd_Req.io_Actual!=nsdq.SizeAvailable)
+					(volume->ioh.ioreq->iotd_Req.io_Actual > sizeof(struct NSDeviceQueryResult)) ||
+					(volume->ioh.ioreq->iotd_Req.io_Actual == 0) ||
+					(volume->ioh.ioreq->iotd_Req.io_Actual != nsdq.SizeAvailable)
 				)
 			{
 				D(bug("[afs] initVolume-NSD: WARNING wrong io_Actual using NSD\n"));
@@ -403,7 +408,7 @@ UWORD *cmdcheck;
 				D(bug("[afs] initVolume-NSD: using NSD commands\n"));
 				if (nsdq.DeviceType != NSDEVTYPE_TRACKDISK)
 					D(bug("[afs] initVolume-NSD: WARNING no trackdisk type\n"));
-				for (cmdcheck=nsdq.SupportedCommands;*cmdcheck;cmdcheck++)
+				for (cmdcheck=nsdq.SupportedCommands; *cmdcheck; cmdcheck++)
 				{
 					if (*cmdcheck == NSCMD_TD_READ64)
 						volume->ioh.cmdread = NSCMD_TD_READ64;
@@ -415,8 +420,8 @@ UWORD *cmdcheck;
 						volume->ioh.cmdformat = NSCMD_TD_FORMAT64;
 				}
 				if (
-						(volume->ioh.cmdread!=NSCMD_TD_READ64) ||
-						(volume->ioh.cmdwrite!=NSCMD_TD_WRITE64)
+						(volume->ioh.cmdread != NSCMD_TD_READ64) ||
+						(volume->ioh.cmdwrite != NSCMD_TD_WRITE64)
 					)
 					D(bug("[afs] initVolume-NSD: WARNING no READ64/WRITE64\n")); 
 			}
@@ -431,22 +436,21 @@ UWORD *cmdcheck;
 /*******************************************
  Name  : flush
  Descr.: flush buffers and update disk (sync)
- Input : afsbase -
-         volume  - volume to flush
+ Input : volume  - volume to flush
  Output: DOSTRUE
 ********************************************/
-ULONG flush(struct afsbase *afsbase, struct Volume *volume) {
+ULONG flush(struct AFSBase *afsbase, struct Volume *volume) {
 
 	flushCache(volume->blockcache);
-	volume->ioh.ioreq->iotd_Req.io_Command=CMD_UPDATE;
+	volume->ioh.ioreq->iotd_Req.io_Command = CMD_UPDATE;
 	DoIO((struct IORequest *)&volume->ioh.ioreq->iotd_Req);
-	//turn off motor
+	/* turn off motor */
 	return DOSTRUE;
 }
 
 ULONG readwriteDisk
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		ULONG start,
 		ULONG count,
@@ -458,50 +462,44 @@ ULONG retval;
 struct IOHandle *ioh = &volume->ioh;
 UQUAD offset;
 
-	D(bug("[afs]    readDisk: reading block %ld\n",start));
+	D(bug("[afs]    readDisk: reading block %ld\n", start));
 	if (
-			((volume->startblock+start)<=volume->lastblock) &&
-			((volume->startblock+start+count-1)<=volume->lastblock)
+			((volume->startblock+start) <= volume->lastblock) &&
+			((volume->startblock+start+count-1) <= volume->lastblock)
 		)
 	{
-		ioh->ioreq->iotd_Req.io_Command=cmd;
-		ioh->ioreq->iotd_Req.io_Length=count*BLOCK_SIZE(volume);
-		ioh->ioreq->iotd_Req.io_Data=mem;
+		ioh->ioreq->iotd_Req.io_Command = cmd;
+		ioh->ioreq->iotd_Req.io_Length = count*BLOCK_SIZE(volume);
+		ioh->ioreq->iotd_Req.io_Data = mem;
 
 		offset  = start+volume->startblock;
 		offset *= BLOCK_SIZE(volume);
 
-		ioh->ioreq->iotd_Req.io_Offset=0xFFFFFFFF & offset;
-		ioh->ioreq->iotd_Req.io_Actual=offset>>32;
-		retval=DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
-		if (retval)
+		ioh->ioreq->iotd_Req.io_Offset = 0xFFFFFFFF & offset;
+		ioh->ioreq->iotd_Req.io_Actual = offset>>32;
+		retval = DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
+		if (retval != 0)
 			showError(afsbase, ERR_READWRITE, retval);
 		if (ioh->ioflags & IOHF_TRACKDISK)
 		{
-			if (ioh->moff_time>0)
-			{
-				ioh->moff_time=100;
-			}
-			else
-			{
-				ioh->moff_time=100;
+			ioh->moff_time = 100;
+			if (ioh->moff_time <= 0)
 				AddIntServer(INTB_VERTB, &ioh->vbl_int);
-			}
 		}
 	}
 	else
 	{
-		showText(afsbase, "Attempted to read/write block outside range! (range: %ld-%ld, start: %ld, count: %ld", volume->startblock, volume->lastblock, start, count);
+		showText(afsbase, "Attempted to read/write block outside range!\n\nrange: %ld-%ld, start: %ld, count: %ld", volume->startblock, volume->lastblock, start, count);
 		retval = 1;
 	}
 	return retval;
 }
 
-ULONG readDisk(struct afsbase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
+ULONG readDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
 	return readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdread);
 }
 
-ULONG writeDisk(struct afsbase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
+ULONG writeDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
 	return readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdwrite);
 }
 #undef SysBase

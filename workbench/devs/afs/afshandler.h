@@ -10,7 +10,7 @@
 #include <dos/filesystem.h>
 #include <devices/timer.h>
 
-struct afsbase
+struct AFSBase
 {
 	struct Device device;
 	struct IntuitionBase *intuitionbase;
@@ -23,6 +23,6 @@ struct afsbase
 	struct List device_list;	/* list of mounted devices (struct Volume) */
 };
 
-#define expunge() AROS_LC0(BPTR, expunge, struct afsbase *, afsbase, 3, afs)
+#define expunge() AROS_LC0(BPTR, expunge, struct AFSBase *, afsbase, 3, afs)
 
 #endif

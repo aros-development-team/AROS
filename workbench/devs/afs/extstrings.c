@@ -28,8 +28,7 @@ UBYTE length;
 	return 0;
 }
 
-LONG StrCmp(STRPTR str1, STRPTR str2)
-{
+LONG StrCmp(STRPTR str1, STRPTR str2) {
 	do
 	{
 		if ((*str1==0) && (*str2==0))
@@ -38,8 +37,7 @@ LONG StrCmp(STRPTR str1, STRPTR str2)
 	return 0;
 }
 
-ULONG StrLen(STRPTR str)
-{
+ULONG StrLen(STRPTR str) {
 ULONG length=0;
 
 	while (*str++)
@@ -47,8 +45,7 @@ ULONG length=0;
 	return length;
 }
 
-void StrCpyToBstr(char *src, char *dst)
-{
+void StrCpyToBstr(char *src, char *dst) {
 UWORD len=0;
 
 	while (*src)

@@ -21,12 +21,12 @@ struct BlockCache {
 #define BCF_USED 1
 #define BCF_WRITE 2
 
-struct BlockCache *initCache(struct afsbase *, struct Volume *volume, ULONG);
-void freeCache(struct afsbase *, struct BlockCache *);
-struct BlockCache *getFreeCacheBlock(struct afsbase *, struct Volume *, ULONG);
-struct BlockCache *getBlock(struct afsbase *, struct Volume *, ULONG);
-LONG writeBlock(struct afsbase *, struct Volume *, struct BlockCache *);
+struct BlockCache *initCache(struct AFSBase *, struct Volume *volume, ULONG);
+void freeCache(struct AFSBase *, struct BlockCache *);
+struct BlockCache *getFreeCacheBlock(struct AFSBase *, struct Volume *, ULONG);
+struct BlockCache *getBlock(struct AFSBase *, struct Volume *, ULONG);
+LONG writeBlock(struct AFSBase *, struct Volume *, struct BlockCache *);
 void flushCache(struct BlockCache *);
-void checkCache(struct afsbase *, struct BlockCache *);
+void checkCache(struct AFSBase *, struct BlockCache *);
 
 #endif
