@@ -159,8 +159,8 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 	{
 	    if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET) break;
 	     
-	    gpht.gpht_Mouse.X = xrel;
-	    gpht.gpht_Mouse.Y = yrel;
+	    gpht.gpht_Mouse.X = xrel - ibox.Left;
+	    gpht.gpht_Mouse.Y = yrel - ibox.Top;
 
 	    if (DoMethodA ((Object *)gadget, (Msg)&gpht) == GMR_GADGETHIT)
 		break;
@@ -375,19 +375,16 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break;
 
 		    case GTYP_PROPGADGET:
-		    	{
-			    struct IBox box;
-			    
-			    GetGadgetDomain(gadget, w, NULL, &box);
-			    
-			    HandlePropSelectDown(gadget,
-						 w,
-						 NULL,
-						 win_mousex - box.Left,
-						 win_mousey - box.Top,
-						 IntuitionBase);
+			GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
 
-			}
+			HandlePropSelectDown(gadget,
+					     w,
+					     NULL,
+					     win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL),
+					     win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL),
+					     IntuitionBase);
+
+
 			break;
 
 		    case GTYP_STRGADGET:
@@ -461,8 +458,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X = win_mousex - gi->gi_Domain.Left;
-			gpi.gpi_Mouse.Y = win_mousey - gi->gi_Domain.Top;
+			gpi.gpi_Mouse.X = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData	= NULL;
 
 
@@ -579,8 +576,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X = win_mousex - gi->gi_Domain.Left;
-			gpi.gpi_Mouse.Y = win_mousey - gi->gi_Domain.Top;
+			gpi.gpi_Mouse.X = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData	= NULL;
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
@@ -654,8 +651,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left;
-			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top;
+			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
 			retval = DoMethodA((Object *)gadget, (Msg)&gpi);
@@ -727,8 +724,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left;
-			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top;
+			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
 			retval = DoMethodA((Object *)gadget, (Msg)&gpi);
@@ -810,12 +807,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break;
 
 		    case GTYP_PROPGADGET:
+		        GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
+			
 			HandlePropMouseMove(gadget
 				,w
 				,NULL
-				/* Delta movement */
-				,ie->ie_X - mpos_x
-				,ie->ie_Y - mpos_y
+				,win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL)
+				,win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL)
 				,IntuitionBase);
 
 			break;
@@ -832,8 +830,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left;
-			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top;
+			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
@@ -952,13 +950,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			ULONG termination;
 
 			SET_GI_RPORT(gi, w, gadget);
-
+			GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
+			
 			gpi.MethodID	    = GM_HANDLEINPUT;
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = im->MouseX;
-			gpi.gpi_Mouse.Y     = im->MouseY;
+			gpi.gpi_Mouse.X     = im->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y     = im->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
 			retval = DoMethodA((Object *)gadget, (Msg)&gpi);
@@ -1045,13 +1044,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    ULONG termination;
 		     
  		    SET_GI_RPORT(gi, w, gadget);
+		    GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
 		    
 		    gpi.MethodID	    = GM_HANDLEINPUT;
 		    gpi.gpi_GInfo	    = gi;
 		    gpi.gpi_IEvent	    = ie;
 		    gpi.gpi_Termination = &termination;
-		    gpi.gpi_Mouse.X     = im->MouseX;
-		    gpi.gpi_Mouse.Y     = im->MouseY;
+		    gpi.gpi_Mouse.X     = im->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+		    gpi.gpi_Mouse.Y     = im->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 		    gpi.gpi_TabletData  = NULL;
 
 		    retval = DoMethodA((Object *)gadget, (Msg)&gpi);
@@ -1240,19 +1240,35 @@ D(bug("Window: %p\n", w));
 		      /* GZZ window or regular window? */
 		      if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
 		      {
-		        /* move outer window behind! */
-		        /* attention: targetlayer->back would not be valid as
-		                      targetlayer already moved!! 
-		        */
-		        BehindLayer(0, targetwindow->BorderRPort->Layer);
-		      } 
+		          /* move outer window behind! */
+		          /* attention: targetlayer->back would not be valid as
+		                	targetlayer already moved!! 
+		          */
+		          BehindLayer(0, targetwindow->BorderRPort->Layer);
 
-                      /* 
-                       * Check all layers in front of the layer.
-                       */
-		      L = targetlayer->front;
-		      CheckLayersInFront = TRUE;
+			  /* 
+                	   * stegerg: check all layers including inner gzz
+			   *          layer because of this: inner layer
+			   *          was moved back first, so it gets 
+			   *          completely under the outer layer.
+			   *          Maybe it would be better to move the
+			   *          outer layer first and then move the
+			   *          inner layer with MoveLayerinfrontof
+			   *          (outerlayer) ????
+			   * 
+                	   */
 
+			  L = targetlayer; /* targetlayer->front */
+			  CheckLayersInFront = TRUE;
+
+		      } else {
+
+                	  /* 
+                	   * Check all layers in front of the layer.
+                	   */
+			  L = targetlayer->front;
+			  CheckLayersInFront = TRUE;
+		      }
 		    }
 		    
 		    
