@@ -1,7 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.36  2001/01/12 21:25:07  stegerg
+    dont CloseFont window->RPort->font but IntWindow->initialfont (the font
+    which was opened during OpenWindow)
+
     Revision 1.35  2000/12/25 22:52:35  bergers
     Bugfix for child windows.
 
@@ -398,7 +402,7 @@ VOID int_closewindow(struct IntuiActionMessage *msg, struct IntuitionBase *Intui
 
     /* Free resources */
     
-    CloseFont (window->RPort->Font);
+    CloseFont (IW(window)->initialfont);
     
     /* Let the driver clean up. Driver wil dealloc window's rastport */
     intui_CloseWindow (window, IntuitionBase);
