@@ -85,18 +85,17 @@ VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase
 }
 
 
-#define ADDREL(gad,flag,w,field) ((gad->Flags & (flag)) ? w->field : 0)
-#define GetLeft(gad,w)           (ADDREL(gad,GFLG_RELRIGHT,w,Width)   + gad->LeftEdge)
-#define GetTop(gad,w)            (ADDREL(gad,GFLG_RELBOTTOM,w,Height) + gad->TopEdge)
-#define GetWidth(gad,w)          (ADDREL(gad,GFLG_RELWIDTH,w,Width)   + gad->Width)
+#define ADDREL(gad,flag,w,field) ((gad->Flags & (flag)) ?  w->field : 0)
+
+#define GetLeft(gad,w)           (ADDREL(gad,GFLG_RELRIGHT ,w,Width)  + w->LeftEdge + gad->LeftEdge)
+#define GetTop(gad,w)            (ADDREL(gad,GFLG_RELBOTTOM,w,Height) + w->TopEdge  + gad->TopEdge)
+#define GetWidth(gad,w)          (ADDREL(gad,GFLG_RELWIDTH ,w,Width)  + gad->Width)
 #define GetHeight(gad,w)         (ADDREL(gad,GFLG_RELHEIGHT,w,Height) + gad->Height)
 
 #define InsideGadget(w,gad,x,y)   \
 	    ((x) >= GetLeft(gad,w) && (y) >= GetTop(gad,w) \
-	    && (x) < GetLeft(gad,w) + GetWidth(gad,w) \
-	    && (y) < GetTop(gad,w) + GetHeight(gad,w))
-
-
+	     && (x) < GetLeft(gad,w) + GetWidth(gad,w) \
+	     && (y) < GetTop(gad,w) + GetHeight(gad,w))
 
 /*****************
 **  FindGadget	**
@@ -108,7 +107,6 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
     struct gpHitTest gpht;
     int gx, gy;
 
-
     gpht.MethodID     = GM_HITTEST;
     gpht.gpht_GInfo   = gi;
     gpht.gpht_Mouse.X = x;
@@ -118,9 +116,9 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
     {
 	if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET)
 	{
+	    /* Mousclick inside the gadget? */
 	    gx = x - GetLeft(gadget,window);
 	    gy = y - GetTop(gadget,window);
-
 	    if (gx >= 0
 		&& gy >= 0
 		&& gx < GetWidth(gadget,window)
