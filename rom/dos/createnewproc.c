@@ -74,7 +74,7 @@ void internal_ChildFree(APTR tid);
 
     /* Allocated resources */
     struct Process  	    	*process = NULL;
-    BPTR            	    	 input = 0, output = 0, curdir = 0, homedir = 0;
+    BPTR            	    	 input = 0, output = 0, ces = 0, curdir = 0, homedir = 0;
     STRPTR          	    	 stack = NULL, name = NULL, argptr = NULL;
     ULONG           	    	 namesize = 0, argsize = 0;
     struct MemList  	    	*memlist = NULL;
@@ -95,7 +95,7 @@ void internal_ChildFree(APTR tid);
     /* 3 */    { NP_CloseInput	, 1           	    	    	},
     /* 4 */    { NP_Output  	, TAGDATA_NOT_SPECIFIED    	},
     /* 5 */    { NP_CloseOutput , 1           	    	    	},
-    /* 6 */    { NP_Error   	, 0           	    	    	},
+    /* 6 */    { NP_Error   	, TAGDATA_NOT_SPECIFIED    	},
     /* 7 */    { NP_CloseError	, 1           	    	    	},
     /* 8 */    { NP_CurrentDir	, TAGDATA_NOT_SPECIFIED    	},
     /* 9 */    { NP_StackSize	, AROS_STACKSIZE    	        },
@@ -223,7 +223,7 @@ void internal_ChildFree(APTR tid);
     if (defaults[2].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
 	if (__is_process(me))
-	{     
+	{
 	    input = Open("NIL:", MODE_OLDFILE);
 	    ERROR_IF(!input);
 
@@ -236,14 +236,14 @@ void internal_ChildFree(APTR tid);
     }
 
     /* NP_Output */
-    
+
     if (defaults[4].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
 	if (__is_process(me))
 	{
 	    output = Open("NIL:", MODE_NEWFILE);
 	    ERROR_IF(!output);
-	    
+
 	    defaults[4].ti_Data = (IPTR)output;
 	}
 	else
@@ -251,9 +251,26 @@ void internal_ChildFree(APTR tid);
 	    defaults[4].ti_Data = 0;
 	}
     }
-    
+
+    /* NP_Error */
+
+    if (defaults[6].ti_Data == TAGDATA_NOT_SPECIFIED)
+    {
+	if (__is_process(me))
+	{
+	    ces = Open("NIL:", MODE_NEWFILE);
+	    ERROR_IF(!ces);
+
+	    defaults[6].ti_Data = (IPTR)ces;
+	}
+	else
+	{
+	    defaults[6].ti_Data = 0;
+	}
+    }
+
     /* NP_CurrentDir */
-    
+
     if (defaults[8].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
 	if (__is_process(me))
@@ -408,6 +425,11 @@ error:
     if (input != NULL)
     {
 	Close(input);
+    }
+
+    if (ces != NULL)
+    {
+	Close(ces);
     }
 
     if (argptr != NULL)
