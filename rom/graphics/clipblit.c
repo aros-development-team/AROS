@@ -287,14 +287,14 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
 	      {
                 /* with superbitmap */
                 if (xSrc >= crX0)
-                  bltSrcX = xSrc - crX0 + srcLayer->Scroll_X;
+                  bltSrcX = xSrc + srcLayer->Scroll_X;
                 else
-                  bltSrcX = srcLayer->Scroll_X;
+                  bltSrcX = crX0 + srcLayer->Scroll_X;
             
-                if (ySrc > crY0)
-                  bltSrcY   = ySrc - crY0 + srcLayer->Scroll_Y;
+                if (ySrc >= crY0)
+                  bltSrcY   = ySrc + srcLayer->Scroll_Y;
                 else
-                  bltSrcY   = srcLayer->Scroll_Y;
+                  bltSrcY   = crY0 + srcLayer->Scroll_Y;
 	        /*
                 kprintf("bltSrcX: %d, bltSrcY: %d\n",bltSrcX,bltSrcY);
 	        */
