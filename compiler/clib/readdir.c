@@ -13,6 +13,7 @@
 
 #include "__errno.h"
 #include "__open.h"
+#include "__upath.h"
 
 /*****************************************************************************
 
@@ -74,15 +75,15 @@
     	return NULL;
     }
 
-    if (dir->pos == 0)
+    if (__doupath && dir->pos == 0)
     {
         dir->ent.d_name[0]='.';
-    	dir->ent.d_name[1]='\0';
-    }
+        dir->ent.d_name[1]='\0';
+    } 
     else
-    if (dir->pos == 1)
+    if (__doupath && dir->pos == 1)
     {
-    	dir->ent.d_name[0]='.';
+        dir->ent.d_name[0]='.';
     	dir->ent.d_name[1]='.';
     	dir->ent.d_name[2]='\0';
     }
