@@ -32,10 +32,15 @@ for src in $* ; do
 	    echo
 	    dot=0
 	fi
-	if [ ! -e "$log" -o "$src" -nt "$log" ]; then
-	    echo "Regenerating $log"
-	    cvs log "$src" | gawk -f "$CURDIR/cvslog2html.gawk" > "$log"
-	fi
+
+	# TODO This doesn't work because of inetd: When CVS is
+	# accessed too fequently, inetd thinks that the CVS server
+	# hangs in a loop and disables it.
+	#if [ ! -e "$log" -o "$src" -nt "$log" ]; then
+	#    echo "Regenerating $log"
+	#    cvs log "$src" | gawk -f "$CURDIR/cvslog2html.gawk" > "$log"
+	#fi
+	touch "$log"
 	echo "Regenerating $html"
 	gawk -f "$CURDIR/adoc2html.gawk" --assign "CURDIR=$CURDIR" "$src" "$log"
     else
