@@ -21,6 +21,7 @@ struct IIHData
     struct InputEvent		*ReturnInputEvent;
     struct InputEvent		*GeneratedInputEvents;
     struct InputEvent		*ActGeneratedInputEvent;
+    struct Task			*InputDeviceTask;
     APTR			InputEventMemPool;
     WORD			LastMouseX;
     WORD			LastMouseY;
