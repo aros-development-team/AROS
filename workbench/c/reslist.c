@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -14,7 +14,7 @@
 #include <proto/dos.h>
 #include <aros/machine.h>
 
-static const char version[] = "$VER: reslist 41.1 (24.2.2000)\n";
+static const char version[] = "$VER: reslist 41.2 (20.07.2001)\n";
 
 struct res
 {
@@ -89,7 +89,7 @@ int main(void)
                            "------------------------------------------------------------\n");
 	    for(ress2=buffer;ress2<ress;ress2++)
 	    {
-		IPTR args[1];
+		IPTR args[2];
 		args[0] = (IPTR)ress2->address;
 		args[1] = (IPTR)ress2->name;
 
