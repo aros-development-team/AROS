@@ -88,8 +88,13 @@
     {
       /*
       ** visible cliprect ?
+      ** or invisible cliprect of a SMART REFRESH layer?
+      ** (the latter is necessary as SizeLayer() changes the DamageList
+      ** also for SMART REFRESH layers)
       */
-      if (NULL == CR->lobs)
+      if ( NULL == CR->lobs || 
+          (LAYERSMART == (l->Flags & (LAYERSMART|LAYERSUPER)) &&
+           NULL != CR->lobs ))
       {
         struct Rectangle Rect = CR->bounds;
         Rect.MinX -= l->bounds.MinX;
