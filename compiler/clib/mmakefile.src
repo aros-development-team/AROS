@@ -80,6 +80,7 @@ FILES := \
 	mrand48 \
 	nrand48 \
 	open \
+	perror \
 	printf \
 	putenv \
 	puts \
