@@ -203,7 +203,6 @@ case "$target_os" in
 	    echo "Unknown CPU for native --- $target_cpu"
 	    ;;
 	esac
-	aros_shared_cflags="-mcpu=k6"
 	;;
 
     freebsd*)
