@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  1999/01/16 23:18:29  hkiel
+    Extended AutoDocs
+
     Revision 1.5  1998/10/20 16:45:58  hkiel
     Amiga Research OS
 
@@ -18,7 +21,7 @@
     New functions to handle Public Screens
 
 
-    Desc:
+    Desc: Intuition function GetScreenDrawInfo()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -37,20 +40,30 @@
 	struct IntuitionBase *, IntuitionBase, 115, Intuition)
 
 /*  FUNCTION
+	Returns a pointer to struct DrawInfo of the passed screen.
+	This data is READ ONLY. The version of the struct DrawInfo
+	is given in the dri_Version field.
 
     INPUTS
+	screen - The screen you want to get the DrawInfo from.
+		Must be valid and open.
 
     RESULT
+	Returns pointer to struct DrawInfo defined in intuition/screens.h
 
     NOTES
+	Call FreeScreenDrawInfo() after finishing using the pointer.
+	This function does not prevent the screen from being closed.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	FreeScreenDrawInfo(), LockPubScreen(), intuition/screens.h
 
     INTERNALS
+	Only returns the pointer.
 
     HISTORY
 	29-10-95    digulla automatically created from

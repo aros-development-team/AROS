@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition Function ObtainGIRPort()
@@ -24,18 +24,29 @@
 	struct IntuitionBase *, IntuitionBase, 93, Intuition)
 
 /*  FUNCTION
+	This function sets up a RastPort for exclusive use by custom
+	gadget hook routines. Call this function each time a hook
+	routine needs to render into the gadget and ReleaseGIRPort()
+	immediately afterwards.
 
     INPUTS
+	gInfo - Pointer to GadgetInfo structure, as passed to each
+	custom gadget hook function.
 
     RESULT
+	Pointer to a RastPort you can render to. NULL if you aren't
+	allowed to render into this gadget.
 
     NOTES
+	If a routine passes a RastPort, eg. GM_RENDER, ObtainGIRPort()
+	needn't be called.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	ReleaseGIRPort()
 
     INTERNALS
 

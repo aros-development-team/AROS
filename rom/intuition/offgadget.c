@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Intuition function OffGadget()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -44,6 +44,7 @@
     BUGS
 
     SEE ALSO
+	AddGadget(), RefreshGadgets()
 
     INTERNALS
 
