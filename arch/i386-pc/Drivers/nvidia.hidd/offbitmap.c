@@ -19,6 +19,8 @@
 
 #include <hidd/graphics.h>
 
+#include <assert.h>
+
 #include "riva_hw.h"
 #include "nv.h"
 

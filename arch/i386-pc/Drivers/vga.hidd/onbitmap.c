@@ -19,6 +19,8 @@
 
 #include <hidd/graphics.h>
 
+#include <assert.h>
+
 #include "vgahw.h"
 #include "vga.h"
 #include "vgaclass.h"

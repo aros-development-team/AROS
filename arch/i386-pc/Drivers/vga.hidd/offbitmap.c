@@ -20,6 +20,8 @@
 
 #include <hidd/graphics.h>
 
+#include <assert.h>
+
 #include "vga.h"
 #include "vgaclass.h"
 
