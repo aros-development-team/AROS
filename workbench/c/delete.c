@@ -161,6 +161,15 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 	for (match = MatchFirst(files[i], ap); match == 0;
 	     match = MatchNext(ap))
 	{
+	    if (CheckSignal(SIGBREAKF_CTRL_C))
+	    {
+		MatchEnd(ap);
+		PrintFault(ERROR_BREAK,"");
+
+		return  RETURN_ERROR;
+	    }
+
+
 	    /* If this is a directory, we enter it regardless if the ALL
 	       switch is set. */
 	    if (isDirectory(&ap->ap_Info))
