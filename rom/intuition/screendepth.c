@@ -61,31 +61,32 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-struct Screen *parent = NULL,
+struct Screen *family = NULL,
 	      *current = IntuitionBase->FirstScreen,
 	      *previous = NULL,
-	      *preparent = NULL;
+	      *prefamily = NULL;
 
     if ( reserved != NULL )
 	return;
 
+    /* Find the screen in the list and check for family */
     while ( current && current!=screen )
     {
-//	if ( flags & SDEPTH_INFAMILY )
-//	{
-//	    /* Check if this screen belongs to current family */
-//	    if ( parent && !(current->SPECIALFLAGS & SF_CHILD) )
-//	    {
-//		parent = NULL;
-//	    }
-//
-//	    /* Check if this is a parent screen */
-//	    if ( current->SPECIALFLAGS & SF_PARENT )
-//	    {
-//		parent = current;
-//		preparent = previous;
-//	    }
-//	}
+	if ( flags & SDEPTH_INFAMILY )
+	{
+	    /* Check if this is the first child in a family */
+	    if ( !family && (GetPrivScreen(current)->SpecialFlags & SF_IsChild) )
+	    {
+		family = current;
+		prefamily = previous;
+	    }
+	    /* Check if this screen is a child so next one belongs to current family */
+	    if ( family && !(GetPrivScreen(current)->SpecialFlags & SF_IsChild) )
+	    {
+		family = NULL;
+		prefamily = NULL;
+	    }
+	}
 	previous = current;
 	current = current->NextScreen;
     }
@@ -94,57 +95,64 @@ struct Screen *parent = NULL,
     {
 	if ( flags & SDEPTH_TOFRONT )
 	{
-	    if ( previous ) /* I'm not the first screen */
+	    if ( previous ) /* I'm not the very first screen */
 	    {
 		if ( flags & SDEPTH_INFAMILY )
 		{
-//		    if ( current->SPECIALFLAGS & SF_CHILD )
-//		    {
-//			previous->NextScreen = current->NextScreen;
-//			current->NextScreen = parent->NextScreen;
-//			parent->NextScreen = current;
-//		    }
-//		    else if ( current->SPECIALFLAGS & SP_PARENT )
-//		    {
-//			/* Go to last screen of this family */
-//			while ( current->NextScreen && (current->NextScreen->SPECIALFLAGS & SF_CHILD) )
-//			    current = current->NextScreen;
-//			previous->NextScreen = current->NextScreen;
-//			current->NextScreen = IntuitionBase->FirstScreen;
-//			IntuitionBase->FirstScreen = screen;
-//		    }
-//		    else
-		    {
+		    if ( GetPrivScreen(current)->SpecialFlags & SF_IsChild )
+		    { /* Move me in the front of my family */
+			if ( family ) /* I'm not the first one in my family */
+			{
+			    previous->NextScreen = current->NextScreen;
+			    current->NextScreen = family;
+			    if ( prefamily )
+			    {
+				prefamily->NextScreen = current;
+			    }
+			    else
+			    {
+				IntuitionBase->FirstScreen = current;
+			    }
+			}
+		    }
+		    else if ( GetPrivScreen(current)->SpecialFlags & SF_IsParent )
+		    { /* Move whole family */
+			if ( prefamily ) /* We are not the first family */
+			{
+			    prefamily->NextScreen = current->NextScreen;
+			    current->NextScreen = IntuitionBase->FirstScreen;
+			    IntuitionBase->FirstScreen = family;
+			}
+		    }
+		    else
+		    { /* I have no family */
 			previous->NextScreen = current->NextScreen;
 			current->NextScreen = IntuitionBase->FirstScreen;
 			IntuitionBase->FirstScreen = current;
 		    }
 		}
-		else
+		else /* ! SDEPTH_INFAMILY */
 		{
-//		    if ( current->SPECIALFLAGS & SF_PARENT )
-//		    {
-//			/* Go to last screen of this family */
-//			while ( current->NextScreen && (current->NextScreen->SPECIALFLAGS & SF_CHILD) )
-//			    current = current->NextScreen;
-//			previous->NextScreen = current->NextScreen;
-//			current->NextScreen = IntuitionBase->FirstScreen;
-//			IntuitionBase->FirstScreen = screen;
-//		    }
-//		    else if ( current->SPECIALFLAGS & SF_CHILD )
-//		    {
-//			if ( preparent ) /* I'm not in the first family */
-//			{
-//			    /* Go to last screen of this family */
-//			    while ( current->NextScreen && (current->NextScreen->SPECIALFLAGS & SF_CHILD) )
-//				current = current->NextScreen;
-//			    preparent->NextScreen = current->NextScreen;
-//			    current->NextScreen = IntuitionBase->FirstScreen;
-//			    IntuitionBase->FirstScreen = parent;
-//			}
-//		    }
-//		    else
-		    {
+		    if ( GetPrivScreen(current)->SpecialFlags & (SF_IsChild|SF_IsParent) )
+		    { /* Move my whole family */
+			if ( !family )
+			{
+			    prefamily = previous;
+			    family = current;
+			}
+			if ( prefamily )
+			{ /* We are not the first family */
+			    while ( !(GetPrivScreen(current)->SpecialFlags & SF_IsParent) )
+			    {
+				current = current->NextScreen;
+			    }
+			    prefamily->NextScreen = current->NextScreen;
+			    current->NextScreen = IntuitionBase->FirstScreen;
+			    IntuitionBase->FirstScreen = family;
+			}
+		    }
+		    else
+		    { /* I have no family */
 			previous->NextScreen = current->NextScreen;
 			current->NextScreen = IntuitionBase->FirstScreen;
 			IntuitionBase->FirstScreen = current;
@@ -152,105 +160,130 @@ struct Screen *parent = NULL,
 		}
 	    }
 	}
+
 	else if ( flags & SDEPTH_TOBACK )
 	{
 	    if ( flags & SDEPTH_INFAMILY )
 	    {
-//		if ( current->SPECIALFLAGS & SF_CHILD )
-//		{
-//		    if ( screen->NextScreen && (screen->NextScreen->SPECIALFLAGS & SF_CHILD) ) /* I'm not the last screen in this family */
-//		    {
-//			/* Go to last screen of this family */
-//			while ( current->NextScreen && (current->NextScreen->SPECIALFLAGS & SF_CHILD) )
-//			    current = current->NextScreen;
-//			previous->NextScreen = screen->NextScreen;
-//			screen->NextScreen = current->NextScreen;
-//			current->NextScreen = screen;
-//		    }
-//		}
-//		else if ( current->SPECIALFLAGS & SP_PARENT )
-//		{
-//struct Screen *last;
-//		    /* Go to last screen of this family */
-//		    while ( current->NextScreen && (current->NextScreen->SPECIALFLAGS & SF_CHILD) )
-//			current = current->NextScreen;
-//		    if ( current->NextScreen ) /* I'm not the last family */
-//		    {
-//			if ( previous )
-//			    previous->NextScreen = current->NextScreen;
-//			else
-//			    IntuitionBase->FirstScreen = current->NextScreen;
-//			last = current;
-//			while ( last->NextScreen )
-//			    last = last->NextScreen;
-//			last->NextScreen = screen;
-//			current->NextScreen = NULL;
-//		    }
-//		}
-//		else
+		if ( GetPrivScreen(current)->SpecialFlags & SF_IsChild )
+		{
+		    /* Go to last screen of this family */
+		    while ( !GetPrivScreen(current->NextScreen)->SpecialFlags & SF_IsParent )
+		    {
+			current = current->NextScreen;
+		    }
+		    if ( current != screen ) /* I'm not the last screen of my family */
+		    {
+			if ( previous )
+			{
+			    previous->NextScreen = screen->NextScreen;
+			}
+			else
+			{
+			    IntuitionBase->FirstScreen = screen->NextScreen;
+			}
+			screen->NextScreen = current->NextScreen;
+			current->NextScreen = screen;
+		    }
+		}
+		else if ( GetPrivScreen(current)->SpecialFlags & SF_IsParent )
 		{
 		    if ( current->NextScreen ) /* I'm not the last screen */
 		    {
 			while ( current->NextScreen )
+			{
 			    current = current->NextScreen;
-			if ( previous )
-			    previous->NextScreen = screen->NextScreen;
+			}
+			if ( prefamily )
+			{
+			    prefamily->NextScreen = screen->NextScreen;
+			}
 			else
+			{
 			    IntuitionBase->FirstScreen = screen->NextScreen;
+			}
+			if ( family )
+			{
+			    current->NextScreen = family;
+			}
+			else
+			{
+			    current->NextScreen = screen;
+			}
+			screen->NextScreen = NULL;
+		    }
+		}
+		else
+		{
+		    if ( current->NextScreen ) /* I'm not the last screen */
+		    {
+			while ( current->NextScreen )
+			{
+			    current = current->NextScreen;
+			}
+			if ( previous )
+			{
+			    previous->NextScreen = screen->NextScreen;
+			}
+			else
+			{
+			    IntuitionBase->FirstScreen = screen->NextScreen;
+			}
 			current->NextScreen = screen;
 			screen->NextScreen = NULL;
 		    }
 		}
 	    }
-	    else
+	    else /* ! SDEPTH_INFAMILY */
 	    {
-//		if ( current->SPECIALFLAGS & SF_PARENT )
-//		{
-//struct Screen *last;
-//		    /* Go to last screen of this family */
-//		    while ( current->NextScreen && (current->NextScreen->SPECIALFLAGS & SF_CHILD) )
-//			current = current->NextScreen;
-//		    if ( current->NextScreen ) /* I'm not the last family */
-//		    {
-//			if ( previous )
-//			    previous->NextScreen = current->NextScreen;
-//			else
-//			    IntuitionBase->FirstScreen  = current->NextScreen;
-//			last = current;
-//			while ( last->NextScreen )
-//			    last = last->NextScreen;
-//			last->NextScreen = screen;
-//			current->NextScreen = NULL;
-//		    }
-//		}
-//		else if ( current->SPECIALFLAGS & SF_CHILD )
-//		{
-//struct Screen *last;
-//		    /* Go to last screen of this family */
-//		    while ( current->NextScreen && (current->NextScreen->SPECIALFLAGS & SF_CHILD) )
-//			current = current->NextScreen;
-//		    if ( current->NextScreen ) /* I'm not the last family */
-//		    {
-//			if ( prevparent )
-//			    prevparent->NextScreen = current->NextScreen;
-//			else
-//			    IntuitionBase->FirstScreen  = current->NextScreen;
-//			last = current;
-//			while ( last->NextScreen )
-//			    last = last->NextScreen;
-//			last->NextScreen = parent;
-//			current->NextScreen = NULL;
-//		}
-//		else
+struct Screen *last;
+		if ( GetPrivScreen(current)->SpecialFlags & (SF_IsChild|SF_IsParent) )
+		{
+		    if ( !family )
+		    {
+			family = current;
+			prefamily = previous;
+		    }
+		    /* Go to last screen of this family */
+		    while ( !GetPrivScreen(current)->SpecialFlags & SF_IsParent )
+		    {
+			current = current->NextScreen;
+		    }
+		    if ( current->NextScreen ) /* We are not the last family */
+		    {
+			last = current->NextScreen;
+			while ( last->NextScreen )
+			{
+			    last = last->NextScreen;
+			}
+			if ( prefamily )
+			{
+			    prefamily->NextScreen = current->NextScreen;
+			}
+			else
+			{
+			    IntuitionBase->FirstScreen = current->NextScreen;
+			}
+			last->NextScreen = family;
+			current->NextScreen = NULL;
+		    }
+		}
+		else
 		{
 		    if ( current->NextScreen ) /* I'm not the last screen */
 		    {
 			while ( current->NextScreen )
+			{
 			    current = current->NextScreen;
+			}
 			if ( previous )
+			{
 			    previous->NextScreen = screen->NextScreen;
+			}
 			else
+			{
 			    IntuitionBase->FirstScreen = screen->NextScreen;
+			}
 			current->NextScreen = screen;
 			screen->NextScreen = NULL;
 		    }
