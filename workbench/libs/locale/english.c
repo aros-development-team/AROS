@@ -462,7 +462,7 @@ AROS_LH4(LONG, strcompare,
    function-prototypes. Using prototypes would also be OK, though.)
    ----------------------------------------------------------------------- */
 
-void *const __language_functable[] =
+void *const __eng_functable[] =
 {
     /* 0 - 3 */
     &AROS_SLIB_ENTRY(convtolower, english),
