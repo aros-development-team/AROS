@@ -82,7 +82,7 @@
 
 	    areainfo->VctrPtr[2] = a;
 	    areainfo->VctrPtr[3] = b;
-	    areainfo->FlagPtr[1] = AREAINFOFLAG_ELLIPSE; //stegerg: was AREAINFOFLAG_MOVE;
+	    areainfo->FlagPtr[1] = AREAINFOFLAG_ELLIPSE;
 
 	    areainfo->VctrPtr    = &areainfo->VctrPtr[4];
 	    areainfo->FlagPtr    = &areainfo->FlagPtr[2];
