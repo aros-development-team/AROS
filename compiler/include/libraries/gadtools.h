@@ -12,6 +12,9 @@
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
+#ifndef INTUITION_GADGETCLASS_H
+#   include <intuition/gadgetclass.h>
+#endif
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>
 #endif
