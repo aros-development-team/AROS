@@ -31,6 +31,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <stddef.h>
+
 /*
   All screens and windows will be updated with the current position of
   the mouse pointer. The windows will receive relative mouse coordinates.
@@ -798,7 +800,7 @@ void WindowNeedsRefresh(struct Window * w,
     /* Does the window already have such a message? */
     if (IDCMP_REFRESHWINDOW == IM->Class)
     {
-kprintf("Window %s already has a refresh message pending!!\n",w->Title ? w->Title : "<NONAME>");
+kprintf("Window %s already has a refresh message pending!!\n",w->Title ? w->Title : (STRPTR)"<NONAME>");
       found = TRUE;break;
     }
   }
@@ -807,7 +809,7 @@ kprintf("Window %s already has a refresh message pending!!\n",w->Title ? w->Titl
 
   if (!found)
   {
-kprintf("Sending a refresh message to window %s  %d %d %d %d!!\n",w->Title ? w->Title : "<NONAME>",
+kprintf("Sending a refresh message to window %s  %d %d %d %d!!\n",w->Title ? w->Title : (STRPTR)"<NONAME>",
 								w->LeftEdge,
 								w->TopEdge,
 								w->Width,
@@ -872,41 +874,41 @@ struct Window *FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event,
 struct InputEvent *AllocInputEvent(struct IIHData *iihdata)
 {
     struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
-    struct InputEvent *ie;
+    struct GeneratedInputEvent *ie;
     
-    ie = AllocPooled(iihdata->InputEventMemPool, sizeof(struct InputEvent));
+    ie = AllocPooled(iihdata->InputEventMemPool, sizeof(struct GeneratedInputEvent));
     if (ie)
     {
         if (iihdata->ActGeneratedInputEvent)
 	{
-	    iihdata->ActGeneratedInputEvent->ie_NextEvent = ie;
-	    iihdata->ActGeneratedInputEvent = ie;
+	    iihdata->ActGeneratedInputEvent->ie_NextEvent = &ie->ie;
+	    iihdata->ActGeneratedInputEvent = &ie->ie;
 	} else {
-	    iihdata->GeneratedInputEvents = ie;
-	    iihdata->ActGeneratedInputEvent = ie;
+	    iihdata->GeneratedInputEvents = &ie->ie;
+	    iihdata->ActGeneratedInputEvent = &ie->ie;
 	}
+	AddTail((struct List *)&iihdata->GeneratedInputEventList, (struct Node *)&ie->node);
     }
     
-    return ie;
+    return (struct InputEvent *)ie;
 }
 
 void FreeGeneratedInputEvents(struct IIHData *iihdata)
 {
     struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
-    struct InputEvent *ie, *nextie;
+    struct Node *node, *succ;
+    struct GeneratedInputEvent *ie;
     
-    ie = iihdata->GeneratedInputEvents;
-    while (ie)
+    ForeachNodeSafe(&iihdata->GeneratedInputEventList, node, succ)
     {
-        nextie = ie->ie_NextEvent;
-	
-	FreePooled(iihdata->InputEventMemPool, ie, sizeof(struct InputEvent));
-	
-	ie = nextie;    
+	ie = (struct GeneratedInputEvent *)(((UBYTE *)node) - offsetof(struct GeneratedInputEvent, node));
+	FreePooled(iihdata->InputEventMemPool, ie, sizeof(struct GeneratedInputEvent));
     }
     
     iihdata->GeneratedInputEvents = NULL;
     iihdata->ActGeneratedInputEvent = NULL;
+    
+    NEWLIST(&iihdata->GeneratedInputEventList);
 }
 
 /*********************************************************************/
