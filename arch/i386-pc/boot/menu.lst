@@ -3,31 +3,39 @@
 timeout 5 
 default 2
 
-title AROS VBE  640x480 16bpp
+title AROS VBE  640x480  16bpp
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 640 480 16
 
-title AROS VBE  800x600 16bpp
+title AROS VBE  800x600  16bpp
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 800 600 16
 
-title AROS VBE 1024x768 16bpp
+title AROS VBE 1024x768  16bpp
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 1024 768 16
 
-title AROS VBE  640x480 32bpp
+title AROS VBE 1280x1024 16bpp
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
+setvbe 1280 1024 16
+
+title AROS VBE  640x480  32bpp
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 640 480 32
 
-title AROS VBE  800x600 32bpp
+title AROS VBE  800x600  32bpp
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 800 600 32
 
-title AROS VBE 1024x768 32bpp
+title AROS VBE 1024x768  32bpp
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 1024 768 32
 
-title AROS VGA  640x480  4bpp
+title AROS VBE 1280x1024 32bpp
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
+setvbe 1280 1024 32
+
+title AROS VGA  640x480   4bpp
 kernel /boot/aros-pc-i386.gz
 
 title AROS NVIDIA
