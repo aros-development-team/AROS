@@ -5,8 +5,6 @@
 include $(TOP)/config/make.cfg
 
 LIBBASEFILES := \
-        __getprogramname \
-	__showerror \
 	aros \
 	asl \
 	arosc \
@@ -28,15 +26,16 @@ LIBBASEFILES := \
 	realtime \
 	utility \
 	workbench \
-	muimaster 
-
+	muimaster
 
 # libraries_nolibs must come BEFORE libraries
 LIBHANDLINGFILES := \
+        __getprogramname \
+	__showerror \
 	functions \
 	commandline \
 	libraries_nolibs \
-	libraries 
+	libraries
 
 FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES)
 
