@@ -34,7 +34,7 @@ struct Scrollbutton_Data
 
 static ULONG Scrollbutton_New(struct IClass * cl, Object * o, struct opSet * msg)
 {
-  return (ULONG) DoSuperNew(cl, o,
+  return (ULONG) DoSuperNewTags(cl, o, NULL,
   	ButtonFrame,
   	MUIA_InputMode, MUIV_InputMode_RelVerify,
   	MUIA_Background, MUII_ButtonBack,

@@ -45,7 +45,7 @@ static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *prop = MUI_NewObject(MUIC_Prop, PropFrame, MUIA_Prop_Horiz, horiz,
 				 TAG_MORE, msg->ops_AttrList);
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 			       MUIA_Group_Spacing, 0,
 			       MUIA_Background, MUII_BACKGROUND,
 			       TAG_MORE, msg->ops_AttrList);

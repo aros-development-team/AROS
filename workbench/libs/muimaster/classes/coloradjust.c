@@ -212,7 +212,7 @@ static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     colorwheelbase = OpenLibrary("gadgets/colorwheel.gadget", 0);
     gradientsliderbase = OpenLibrary("gadgets/gradientslider.gadget", 0);
     
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 	MUIA_Group_Columns, 2,
 	MUIA_Group_VertSpacing, 1,
 	Child, Label1("Red:"),

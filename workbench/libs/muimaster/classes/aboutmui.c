@@ -879,7 +879,7 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	"\nCompiled on " __DATE__
 	"\nCopyright © 2002-2003, The AROS Development Team.";
     
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
     	MUIA_Window_Title, "About Zune",
 	WindowContents, VGroup,
 /*

@@ -41,7 +41,7 @@ static ULONG String_New(struct IClass *cl, Object * obj, struct opSet *msg)
 	}
     }
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 	MUIA_Text_Editable, TRUE,
 	MUIA_Text_SetMin, TRUE,
 	MUIA_Text_SetMax, FALSE,

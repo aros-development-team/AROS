@@ -313,7 +313,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     switch (adjust_type)
     {
 	case MUIV_Imageadjust_Type_All:
-	    obj = (Object *)DoSuperNew(cl, obj,
+	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				       MUIA_Register_Titles, labels_all,
 				       Child, HCenter((pattern_group = ColGroup(6), End)),
 				       Child, HCenter((vector_group = ColGroup(6), End)),
@@ -323,7 +323,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 				       TAG_MORE, msg->ops_AttrList);
 	    break;
 	case MUIV_Imageadjust_Type_Background:
-	    obj = (Object *)DoSuperNew(cl, obj,
+	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				       MUIA_Register_Titles, labels_bg,
 				       Child, HCenter((pattern_group = ColGroup(6), End)),
 				       Child, (IPTR)color_group,
@@ -331,7 +331,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 				       TAG_MORE, msg->ops_AttrList);
 	    break;
 	case MUIV_Imageadjust_Type_Image:
-	    obj = (Object *)DoSuperNew(cl, obj,
+	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				       MUIA_Register_Titles, labels_image,
 				       Child, HCenter((pattern_group = ColGroup(6), End)),
 				       Child, HCenter((vector_group = ColGroup(6), End)),
@@ -340,7 +340,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 				       TAG_MORE, msg->ops_AttrList);
 	    break;
 	case MUIV_Imageadjust_Type_Pen:
-	    obj = (Object *)DoSuperNew(cl, obj,
+	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				       MUIA_Register_Titles, labels_color,
 				       Child, (IPTR)color_group,
 				       TAG_MORE, msg->ops_AttrList);

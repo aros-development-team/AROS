@@ -114,7 +114,7 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     grouptags[i].ti_Tag = TAG_MORE;
     grouptags[i].ti_Data = (IPTR)msg->ops_AttrList;
 
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 			       TAG_MORE, grouptags);
     FreeTagItems(grouptags);
     if (!obj)
