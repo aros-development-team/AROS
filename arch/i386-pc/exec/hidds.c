@@ -230,7 +230,7 @@ kprintf("ibase = %lx\n", IntuitionBase);
 
 	      if (win2)
 	      {
-		BlackPrint(win2->RPort, ScreenInfo, 40);
+		BlackPrint(win2->RPort, ScreenInfo, 40, GfxBase);
 
 		for(;;)
 		{
@@ -256,7 +256,7 @@ kprintf("ibase = %lx\n", IntuitionBase);
 			  s[7] = hex[(msg->Code >> 0) & 0xF];
 			  s[8] = '\0';
 			  
-			  BlackPrint(win2->RPort, s, 60);
+			  BlackPrint(win2->RPort, s, 60, GfxBase);
 			  
 			  if (msg->Code == 0x45) quitme = TRUE;
 			}
@@ -271,7 +271,7 @@ kprintf("ibase = %lx\n", IntuitionBase);
 
 			  sprintf(s, "Mouse: %4ld, %4ld", mx, my);
 
-			  WhitePrint(win2->RPort, s, 80);
+			  WhitePrint(win2->RPort, s, 80, GfxBase);
 #if 0			  
 			  mx &= 511;
 			  my &= 255;
@@ -303,7 +303,7 @@ kprintf("ibase = %lx\n", IntuitionBase);
     }
 }
 
-void BlackPrint(struct RastPort *RPort, char *String, UWORD height)
+void BlackPrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBase * GfxBase)
 {
         SetAPen(RPort, 2);
         SetBPen(RPort, 1);
@@ -312,7 +312,7 @@ void BlackPrint(struct RastPort *RPort, char *String, UWORD height)
         Text(RPort, String, strlen(String));
 }
 
-void WhitePrint(struct RastPort *RPort, char *String, UWORD height)
+void WhitePrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBase * GfxBase)
 {
         SetAPen(RPort, 1);
         SetBPen(RPort, 2);
