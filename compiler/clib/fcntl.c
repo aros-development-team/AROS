@@ -14,7 +14,6 @@
 
 int fcntl(int fd, int cmd, ...)
 {
-    GETUSER;
     fdesc *desc = __getfdesc(fd);
 
     if (!desc)
