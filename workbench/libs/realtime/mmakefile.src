@@ -19,7 +19,7 @@ FUNCS := createplayera \
 	 setplayerattrsa \
 	 unlockrealtime
 
-#MM- workbench-libs-realtime : setup includse linklibs
+#MM- workbench-libs-realtime : setup includes linklibs
 %make_module_setup mmake=workbench-libs-realtime
 %make_module_cpak
 %make_module mmake=workbench-libs-realtime
