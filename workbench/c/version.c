@@ -6,7 +6,11 @@
     Lang: english
 */
 
+#include <aros/config.h>
+
+#if (AROS_FLAVOUR != AROS_FLAVOUR_NATIVE)
 #define ENABLE_RT	1
+#endif
 
 #include <aros/rt.h>
 

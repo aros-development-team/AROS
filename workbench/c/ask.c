@@ -53,6 +53,7 @@ int main(int argc, char **argv)
             while (ready == 0)
             {
 	        VPrintf("%s ", (IPTR *)&args[0]);
+		Flush(Output());
                 if (FGets(Input(), buffer, 100) == (STRPTR)buffer)
 	        {
                     char * tmpbuf;
