@@ -74,6 +74,7 @@ FUNCTIONS := \
 	createrastport \
 	cwait \
 	deinitrastport \
+	disownblitter \
 	disposeregion \
 	draw \
 	drawellipse \
@@ -122,6 +123,9 @@ FUNCTIONS := \
 	openfont \
 	orrectregion \
 	orregionregion \
+	ownblitter \
+	qblit \
+	qbsblit \
 	polydraw \
 	readpixel \
 	readpixelarray8 \
