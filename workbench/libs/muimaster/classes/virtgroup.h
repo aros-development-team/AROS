@@ -19,6 +19,9 @@
 #define MUIA_Virtgroup_Top      (MUIB_MUI|0x00425200) /* V6  isg LONG */
 #define MUIA_Virtgroup_Width    (MUIB_MUI|0x00427c49) /* V6  ..g LONG */
 
+#define MUIA_Virtgroup_MinWidth    (MUIB_Virtgroup | 0x00000001) /* Zune: V1 ..g BOOL PRIV */
+#define MUIA_Virtgroup_MinHeight   (MUIB_Virtgroup | 0x00000002) /* Zune: V1 ..g BOOL PRIV */
+
 
 extern const struct __MUIBuiltinClass _MUI_Virtgroup_desc; /* PRIV */
 

@@ -222,7 +222,7 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->rows = 1;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -366,7 +366,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     ** active page
     */
        
-    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -400,6 +400,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->vert_spacing = tag->ti_Data;
 		break;
 	    case MUIA_Virtgroup_Left:
+	    	//kprintf("set virtgroup_left: %d\n", tag->ti_Data);
 		virt_offx = tag->ti_Data;
 		break;
 	    
@@ -413,6 +414,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_Virtgroup_Top:
+	    	//kprintf("set virtgroup_top: %d\n", tag->ti_Data);
 		virt_offy = tag->ti_Data;
 		break;
 	
@@ -433,7 +435,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	   when OM_SET is passed to group's children */
 
 	tags = msg->ops_AttrList;   
-	while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+	while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
 	{
 	    switch (tag->ti_Tag)
 	    {    
@@ -509,6 +511,8 @@ static ULONG Group_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_Virtgroup_Top: STORE = data->virt_offy; return 1;
 	case MUIA_Virtgroup_Width: STORE = data->virt_mwidth; return 1;
 	case MUIA_Virtgroup_Height: STORE = data->virt_mheight; return 1;
+	case MUIA_Virtgroup_MinWidth: STORE = data->saved_minwidth; return 1;
+	case MUIA_Virtgroup_MinHeight: STORE = data->saved_minheight; return 1;	
     }
 
     /* our handler didn't understand the attribute, we simply pass
@@ -1070,10 +1074,10 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 
 #define END_MINMAX() \
-    tmp.DefHeight = CLAMP(tmp.DefHeight, tmp.MinHeight, tmp.MaxHeight); \
-    tmp.DefWidth = CLAMP(tmp.DefWidth, tmp.MinWidth, tmp.MaxWidth); \
     tmp.MaxHeight = MAX(tmp.MaxHeight, tmp.MinHeight); \
     tmp.MaxWidth = MAX(tmp.MaxWidth, tmp.MinWidth); \
+    tmp.DefHeight = CLAMP(tmp.DefHeight, tmp.MinHeight, tmp.MaxHeight); \
+    tmp.DefWidth = CLAMP(tmp.DefWidth, tmp.MinWidth, tmp.MaxWidth); \
     msg->MinMaxInfo->MinWidth += tmp.MinWidth; \
     msg->MinMaxInfo->MinHeight += tmp.MinHeight; \
     msg->MinMaxInfo->MaxWidth += tmp.MaxWidth; \
@@ -1157,6 +1161,15 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
     {
 	tmp.MaxHeight = tmp.MinHeight;
     }
+
+    //if (data->flags & GROUP_VIRTUAL)
+    //{
+    //kprintf("# min %d x %d  def %d x %d  max %d x %d\n",
+    //		tmp.MinWidth, tmp.MinHeight,
+    //		tmp.DefWidth, tmp.DefHeight,
+    //		tmp.MaxWidth, tmp.MaxHeight);
+    //}
+
     END_MINMAX();
 }
 
@@ -1524,6 +1537,14 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 	if (lm.lm_MinMax.DefWidth < lm.lm_MinMax.MinWidth)
 	    lm.lm_MinMax.DefWidth = lm.lm_MinMax.MinWidth;
 
+    	//kprintf("### min %d x %d   def %d x %d  max %d x %d\n",
+    	//    msg->MinMaxInfo->MinWidth,
+    	//    msg->MinMaxInfo->MinHeight,
+    	//    msg->MinMaxInfo->DefWidth,
+    	//    msg->MinMaxInfo->DefHeight,
+    	//    msg->MinMaxInfo->MaxWidth,
+    	//    msg->MinMaxInfo->MaxHeight);
+
 	msg->MinMaxInfo->MinWidth += lm.lm_MinMax.MinWidth;
 	msg->MinMaxInfo->MinHeight += lm.lm_MinMax.MinHeight;
 	msg->MinMaxInfo->MaxWidth += lm.lm_MinMax.MaxWidth;
@@ -1534,6 +1555,15 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 	    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
 	msg->MinMaxInfo->DefWidth += lm.lm_MinMax.DefWidth;
 	msg->MinMaxInfo->DefHeight += lm.lm_MinMax.DefHeight;
+
+    	//kprintf("#### min %d x %d   def %d x %d  max %d x %d\n",
+    	//    msg->MinMaxInfo->MinWidth,
+    	//    msg->MinMaxInfo->MinHeight,
+    	//    msg->MinMaxInfo->DefWidth,
+    	//    msg->MinMaxInfo->DefHeight,
+    	//    msg->MinMaxInfo->MaxWidth,
+    	//    msg->MinMaxInfo->MaxHeight);
+
     }
     else
     {
@@ -1557,6 +1587,15 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 	data->saved_minheight = msg->MinMaxInfo->MinHeight;
 	msg->MinMaxInfo->MinWidth = super_minwidth + 2;
 	msg->MinMaxInfo->MinHeight = super_minheight + 2;
+	
+    	//kprintf("## min %d x %d   def %d x %d  max %d x %d\n",
+    	//    msg->MinMaxInfo->MinWidth,
+    	//    msg->MinMaxInfo->MinHeight,
+    	//    msg->MinMaxInfo->DefWidth,
+    	//    msg->MinMaxInfo->DefHeight,
+    	//    msg->MinMaxInfo->MaxWidth,
+    	//    msg->MinMaxInfo->MaxHeight);
+	
     }
     return 0;
 }
@@ -1870,10 +1909,28 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
     WORD width;
     WORD left = 0;
     WORD top = 0;
+    WORD layout_width;
+    WORD layout_height;
+
+    //kprintf("group_layout_vert: virtoff = %d,%d\n", data->virt_offx, data->virt_offy);
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	data->virt_mwidth  = CLAMP(_mwidth(obj), data->saved_minwidth - _subwidth(obj), _maxwidth(obj) - _subwidth(obj));
+	data->virt_mheight = CLAMP(_mheight(obj), data->saved_minheight - _subheight(obj), _maxheight(obj) - _subheight(obj));
+	
+	layout_width  = data->virt_mwidth;
+	layout_height = data->virt_mheight;
+    }
+    else
+    {
+    	layout_width = _mwidth(obj);
+	layout_height = _mheight(obj);
+    }
 
     total_weight = data->vert_weight_sum;
     total_init_size = 0;
-    total_size = _mheight(obj) - (data->num_visible_children - 1) * data->vert_spacing;
+    total_size = layout_height - (data->num_visible_children - 1) * data->vert_spacing;
     total_size_backup = total_size;
 
 /*      D(bug("\nvert layout for %p, A=%d W=%ld\n", obj, total_size, total_weight)); */
@@ -1918,9 +1975,9 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
 	if (IS_HIDDEN(child))
 	    continue;
 
-	width = MIN(_maxwidth(child), _mwidth(obj));
+	width = MIN(_maxwidth(child), layout_width);
 	width = MAX(width, _minwidth(child));
-	left = (_mwidth(obj) - width) / 2;
+	left = (layout_width - width) / 2;
 
 /*  	D(bug("child %p -> layout %d x %d\n", child, width, _height(child))); */
 	if (!MUI_Layout(child, left, top, width, _height(child), 0))
@@ -1928,11 +1985,6 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
 	top += data->vert_spacing + _height(child);
     }
 
-    if (data->flags & GROUP_VIRTUAL)
-    {
-	data->virt_mwidth = _mwidth(obj);
-	data->virt_mheight = top - data->vert_spacing;
-    }
 }
 
 
@@ -1949,10 +2001,33 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
     WORD height;
     WORD top = 0;
     WORD left = 0;
+    WORD layout_width;
+    WORD layout_height;
 
+    //kprintf("group_layout_horiz: virtoff = %d,%d\n", data->virt_offx, data->virt_offy);
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	data->virt_mwidth  = CLAMP(_mwidth(obj), data->saved_minwidth - _subwidth(obj), _maxwidth(obj) - _subwidth(obj));
+	data->virt_mheight = CLAMP(_mheight(obj), data->saved_minheight - _subheight(obj), _maxheight(obj) - _subheight(obj));
+	
+	layout_width  = data->virt_mwidth;
+	layout_height = data->virt_mheight;
+
+    	//kprintf("group_layout_horiz: layoutsize %d x %d  virtsize %d x %d  msize %d x %d\n",
+        //    layout_width, layout_height, data->virt_mwidth, data->virt_mheight,
+	//    _mwidth(obj), _mheight(obj));
+
+    }
+    else
+    {
+    	layout_width = _mwidth(obj);
+	layout_height = _mheight(obj);
+    }
+    
     total_weight = data->horiz_weight_sum;
     total_init_size = 0;
-    total_size = _mwidth(obj) - (data->num_visible_children - 1) * data->horiz_spacing;
+    total_size = layout_width - (data->num_visible_children - 1) * data->horiz_spacing;
     total_size_backup = total_size;
 
 /*      D(bug("\nhoriz layout for %p, A=%d W=%ld\n", obj, total_size, total_weight)); */
@@ -2000,9 +2075,9 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	if (IS_HIDDEN(child))
 	    continue;
 
-	height = MIN(_maxheight(child), _mheight(obj));
+	height = MIN(_maxheight(child), layout_height);
 	height = MAX(height, _minheight(child));
-	top = (_mheight(obj) - height) / 2;
+	top = (layout_height - height) / 2;
 
 /*  	D(bug("child %p -> layout %d x %d\n", child, _width(child), height)); */
 	if (!MUI_Layout(child, left, top, _width(child), height, 0))
@@ -2010,11 +2085,6 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	left += data->horiz_spacing + _width(child);
     }
 
-    if (data->flags & GROUP_VIRTUAL)
-    {
-	data->virt_mheight = _mheight(obj);
-	data->virt_mwidth = left - data->horiz_spacing;
-    }
 }
 
 
@@ -2210,13 +2280,6 @@ layout_2d_distribute_space (struct MUI_GroupData *data,
 	top += data->vert_spacing + row_height;
     }
 
-    if (data->flags & GROUP_VIRTUAL)
-    {
-	data->virt_mwidth = left - data->horiz_spacing;
-	data->virt_mheight = top - data->vert_spacing;
-	D(bug("group_layout_2d: virt_mwidth = %d, h = %d\n", data->virt_mwidth,
-	    data->virt_mheight));
-    }
 }
 
 
@@ -2247,14 +2310,34 @@ group_layout_2d(struct IClass *cl, Object *obj, struct MinList *children)
     WORD total_init_width;
     WORD remainder_height;
     WORD remainder_width;
+    WORD layout_width;
+    WORD layout_height;
 
     if (data->rows == 0 || data->columns == 0)
 	return;
-
     if (data->num_childs % data->rows || data->num_childs % data->columns)
 	return;
     if (data->row_infos == NULL || data->col_infos == NULL)
 	return;
+	
+    //kprintf("group_layout_horiz: virtoff = %d,%d\n", data->virt_offx, data->virt_offy);
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	data->virt_mwidth  = CLAMP(_mwidth(obj), data->saved_minwidth - _subwidth(obj), _maxwidth(obj) - _subwidth(obj));
+	data->virt_mheight = CLAMP(_mheight(obj), data->saved_minheight - _subheight(obj), _maxheight(obj) - _subheight(obj));
+	
+	layout_width  = data->virt_mwidth;
+	layout_height = data->virt_mheight;
+    }
+    else
+    {
+    	layout_width = _mwidth(obj);
+	layout_height = _mheight(obj);
+    }
+
+    total_size_height = layout_height - (data->rows - 1) * data->vert_spacing;
+    total_size_width = layout_width - (data->columns - 1) * data->horiz_spacing;
 
     // fix left/top ?
 
@@ -2291,18 +2374,35 @@ group_layout_2d(struct IClass *cl, Object *obj, struct MinList *children)
 /* Write a proper hook function */
 static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinList *children)
 {
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object *cstate;
     Object *child;
+    WORD layout_width;
+    WORD layout_height;
     int w, h;
+    
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	data->virt_mwidth  = CLAMP(_mwidth(obj), data->saved_minwidth - _subwidth(obj), _maxwidth(obj) - _subwidth(obj));
+	data->virt_mheight = CLAMP(_mheight(obj), data->saved_minheight - _subheight(obj), _maxheight(obj) - _subheight(obj));
+	
+	layout_width  = data->virt_mwidth;
+	layout_height = data->virt_mheight;
+    }
+    else
+    {
+    	layout_width = _mwidth(obj);
+	layout_height = _mheight(obj);
+    }
 
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
-	w = MIN(_mwidth(obj), _maxwidth(child));
-	h = MIN(_mheight(obj), _maxheight(child));
+	w = MIN(layout_width, _maxwidth(child));
+	h = MIN(layout_height, _maxheight(child));
 
 /*  	D(bug("PM/child %p -> layout %d x %d\n", child, w, h));	 */
-	MUI_Layout(child, (_mwidth(obj) - w) / 2, (_mheight(obj) - h) / 2,
+	MUI_Layout(child, (layout_width - w) / 2, (layout_height - h) / 2,
 		   w, h, 0);
     }
 }
@@ -2316,7 +2416,7 @@ static ULONG Group_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *ms
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     struct MUI_LayoutMsg lm;
-
+   
     get(data->family, MUIA_Family_List, (ULONG *)&(lm.lm_Children));
     if (data->flags & GROUP_PAGEMODE)
     {
@@ -2348,6 +2448,38 @@ static ULONG Group_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *ms
 	else
 	    group_layout_2d(cl, obj, lm.lm_Children);
     }
+    
+    if (data->flags & GROUP_VIRTUAL)
+    {
+    	WORD new_virt_offx, new_virt_offy;
+	
+	new_virt_offx = data->virt_offx;
+	new_virt_offy = data->virt_offy;
+	
+	if (new_virt_offx + _mwidth(obj) > data->virt_mwidth)
+	{
+	    new_virt_offx = data->virt_mwidth - _mwidth(obj);
+	}	
+	if (new_virt_offx < 0) new_virt_offx = 0;
+	
+	if (new_virt_offy + _mheight(obj) > data->virt_mheight)
+	{
+	    new_virt_offy = data->virt_mheight - _mheight(obj);
+	}	
+	if (new_virt_offy < 0) new_virt_offy = 0;
+	
+	if (new_virt_offx != data->virt_offx)
+	{
+	    nfset(obj, MUIA_Virtgroup_Left, new_virt_offx);
+	}
+
+	if (new_virt_offy != data->virt_offy)
+	{
+	    nfset(obj, MUIA_Virtgroup_Top, new_virt_offy);
+	}
+		
+    }
+    
     return 0;
 }
 
@@ -2613,7 +2745,8 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 			    /* scroll left */
 			    if (new_virt_offx >= 4) new_virt_offx -= 4;
 			    else new_virt_offx = 0;
-	            	} else
+	            	}
+			else if (msg->imsg->MouseX > _mright(obj))
 	            	{
 			    /* scroll right */
 			    new_virt_offx += 4;
@@ -2625,7 +2758,8 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 			    /* scroll top */
 			    if (new_virt_offy >= 4) new_virt_offy -= 4;
 			    else new_virt_offy = 0;
-	            	} else
+	            	}
+			else if (msg->imsg->MouseY > _mbottom(obj))
 	            	{
 			    /* scroll bottom */
 			    new_virt_offy += 4;
