@@ -46,15 +46,8 @@ BOOT_TAR_FILES := \
     Classes/DataTypes/picture.datatype \
     Classes/DataTypes/ilbm.datatype \
     Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
-    Classes/Zune/AboutWindow.mcc Classes/Zune/Aboutmui.mui \
-    Classes/Zune/Balance.mui Classes/Zune/Boopsi.mui Classes/Zune/Calendar.mcc \
-    Classes/Zune/Clock.mcc Classes/Zune/Coloradjust.mui \
-    Classes/Zune/Colorfield.mui Classes/Zune/IconImage.mcc \
-    Classes/Zune/IconListview.mui Classes/Zune/Popasl.mui \
-    Classes/Zune/Popframe.mui Classes/Zune/Popimage.mui Classes/Zune/Poppen.mui \
-    Classes/Zune/PreferencesWindow.mcc Classes/Zune/Radio.mui \
-    Classes/Zune/Scrollgroup.mui Classes/Zune/Settingsgroup.mui \
-    Classes/Zune/Virtgroup.mui \
+    Classes/Zune/AboutWindow.mcc Classes/Zune/Calendar.mcc \
+    Classes/Zune/IconImage.mcc Classes/Zune/PreferencesWindow.mcc \
     Devs.info \
     Devs/DataTypes/ELF Devs/DataTypes/ELF_EXE Devs/DataTypes/ILBM Devs/DataTypes/FTXT \
     Devs/Keymaps Devs/clipboard.device Devs/serial.device Devs/Mountlist \
@@ -76,7 +69,16 @@ BOOT_TAR_FILES := \
     Tools/calculator Tools/Editor Tools/HDToolBox Tools/HDToolBox.info \
     Tools/Commodities Tools/Commodities.info Tools.info \
     Utilities/MultiView Utilities/Multiview.info Utilities.info 
-    
+
+ifneq ($(AROS_TARGET_VARIANT),tiny)
+BOOT_TAR_FILES := $(BOOT_TAR_FILES) \
+    Classes/Zune/Aboutmui.mui Classes/Zune/Balance.mui Classes/Zune/Boopsi.mui \
+    Classes/Zune/Clock.mcc Classes/Zune/Coloradjust.mui \
+    Classes/Zune/Colorfield.mui Classes/Zune/IconListview.mui \
+    Classes/Zune/Popasl.mui Classes/Zune/Popframe.mui Classes/Zune/Popimage.mui \
+    Classes/Zune/Poppen.mui Classes/Zune/Radio.mui Classes/Zune/Scrollgroup.mui \
+    Classes/Zune/Settingsgroup.mui Classes/Zune/Virtgroup.mui
+endif    
 
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/bootdisk
