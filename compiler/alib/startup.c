@@ -56,9 +56,9 @@ AROS_UFH3(LONG, __startup_entry,
     struct Process *myproc;
 
     SysBase = sysbase;
-
+    
     /*
-        No program will be able to do anything useful without the dos.library,
+        No one program will be able to do anything useful without the dos.library,
         so we open it here instead of using the automatic opening system
     */
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
