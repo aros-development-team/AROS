@@ -50,34 +50,42 @@ setup :
 	@if [ ! -d $(TOOLGENDIR) ]; then $(MKDIR) $(TOOLGENDIR) ; else true ; fi
 
 $(BOOTGENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@$(ECHO) "Compiling $<..."
+	@$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if [ ! -s $*.err ]; then rm $*.err ; else true ; fi
 
 $(TOOLGENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@$(ECHO) "Compiling $<..."
+	@$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if [ ! -s $*.err ]; then rm $*.err ; else true ; fi
 
 $(BINDIR)/arosboot: $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o)
-	$(CC) $(LDFLAGS) $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o) $(LIBS) -o $@
-	$(STRIP) $@
+	@$(ECHO) "Building $@..."
+	@$(CC) $(LDFLAGS) $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o) $(LIBS) -o $@
+	@$(STRIP) $@
 
 $(BINDIR)/arosboot.config: arosboot.config
-	$(CP) $< $@
+	@$(ECHO) "Updating $@..."
+	@$(CP) $< $@
 
 $(BINDIR)/arosboot.doc: arosboot.doc
-	$(CP) $< $@
+	@$(ECHO) "Updating $@..."
+	@$(CP) $< $@
 
 $(TOOLDIR)/%: $(TOOLGENDIR)/%.o
-	$(CC) $(LDFLAGS) $< -o $@
-	$(STRIP) $@
+	@$(ECHO) "Building $@..."
+	@$(CC) $(LDFLAGS) $< -o $@
+	@$(STRIP) $@
 
 $(BOOTGENDIR)/%.d: %.c
+	@$(ECHO) "Makedepend $<..."
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 $(TOOLGENDIR)/%.d: %.c
+	@$(ECHO) "Makedepend $<..."
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 # Don't try to include dependency files if we're cleaning up.
 ifneq ("$(TARGET)","clean")
