@@ -30,6 +30,6 @@
 
 AROS_LP1(BOOL, LateGfxInit,
     AROS_LPA(APTR, data, A0),
-    struct GfxBase *, GfxBase, 181, Dos)
+    struct GfxBase *, GfxBase, 181, Graphics)
 
 #endif /* _GRAPHICS_PRIVATE_H */

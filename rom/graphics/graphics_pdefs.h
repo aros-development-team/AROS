@@ -4,7 +4,7 @@
     Copyright (C) 1997-1998 AROS - The Amiga Research OS
     $Id
 
-    Desc: Private function definitions for DOS
+    Desc: Private function definitions for Gfx
     Lang: english
 */
 

@@ -4,7 +4,7 @@
     Copyright (C) 1997-1998 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Private inlines for dos.library
+    Desc: Private inlines for graphics.library
     Lang: english
 */
 
