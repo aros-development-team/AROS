@@ -391,7 +391,13 @@ static ULONG get_gadgetclass(Class *cl, Object *o, struct opGet *msg)
 	    *msg->opg_Storage = (IPTR)EG(o)->UserData;
 
 	default:
-	    *msg->opg_Storage = (IPTR)NULL;
+	    #if 0
+	    
+	    /* DONT DO THIS!! For example BGUI propclass relies on this!! */
+	    
+	    *msg->opg_Storage = (IPTR)NULL; */
+	    #endif
+	    
 	    retval = 0UL;
 	    break;
 	    
