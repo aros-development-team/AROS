@@ -1,6 +1,6 @@
 /*
-    (C) 1995 AROS - The Amiga Replacement OS
-    $Id$	$Log
+    (C) 1995-2000 AROS - The Amiga Research OS
+    $Id$
 
     Desc: Graphics function Draw()
     Lang: english

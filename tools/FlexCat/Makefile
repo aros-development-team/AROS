@@ -1,4 +1,4 @@
-#   Copyright (C) 2000 AROS - The Amiga Replacement OS
+#   Copyright (C) 2000 AROS - The Amiga Research OS
 #   $Id$
 #
 #   Desc: Makefile for FlexCat

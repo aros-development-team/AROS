@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  2000/08/13 13:21:55  hkiel
+    AROS is Amiga Research OS, not Replacement ;-)  Updated Copyright string.
+
     Revision 1.4  1996/12/09 11:55:52  aros
     No longer used
 

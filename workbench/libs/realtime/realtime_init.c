@@ -1,6 +1,6 @@
 /*
-    (C) 1999 AROS - The Amiga Replacement OS
-    $Id:
+    (C) 1999-2000 AROS - The Amiga Research OS
+    $Id$
 
     Desc: Realtime.library initialization code.
     Lang: English.

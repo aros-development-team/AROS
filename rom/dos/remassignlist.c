@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: RemAssignList() - Remove an entry from a multi-dir assign.

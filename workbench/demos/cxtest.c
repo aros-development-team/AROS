@@ -1,5 +1,5 @@
 /*
-    (C) 1998-99 AROS - The Amiga Replacement OS
+    (C) 1998-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Test program for Commodities

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: OS specific functions for signal blocking

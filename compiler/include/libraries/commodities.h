@@ -2,7 +2,7 @@
 #define LIBRARIES_COMMODITIES_H
 
 /*
-    (C) 1997-99 AROS - The Amiga Replacement OS
+    (C) 1997-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Includes for commodities.library
