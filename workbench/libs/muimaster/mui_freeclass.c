@@ -60,7 +60,6 @@
 
         if (FreeClass(cl))
 	{
-	    bug ("Freed %s\n", cl->cl_ID);
             CloseLibrary(MUIMasterBase);
 	    if (strcmp(super->cl_ID, ROOTCLASS) != 0)
 	        MUI_FreeClass(super);

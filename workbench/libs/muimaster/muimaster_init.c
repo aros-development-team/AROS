@@ -163,9 +163,6 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
 {
-    if (((struct Library *)MUIMasterBase)->lib_OpenCnt == 1)
-        ((struct Library *)MUIMasterBase)->lib_OpenCnt =2;
-	
     D(bug("Inside Open func of muimaster.library\n"));
 
     return TRUE;
