@@ -220,38 +220,6 @@ includes-copy : $(GENINCDIR)/sigcore.h
 clean ::
 	-$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS)
 
-$(INCDIR)/aros/%.h : %.h
-	%mkdirs_q $(INCDIR)/aros
-	$(CP) $< $@
-
-$(INCDIR)/asm/%.h : %.h
-	%mkdirs_q $(INCDIR)/asm
-	$(CP) $< $@
-
-$(INCDIR)/exec/%.h : %.h
-	%mkdirs_q $(INCDIR)/exec
-	$(CP) $< $@
-
-$(INCDIR)/%.h : %.h
-	%mkdirs_q $(INCDIR)
-	$(CP) $< $@
-
-$(GENINCDIR)/aros/%.h : %.h
-	%mkdirs_q $(GENINCDIR)/aros
-	$(CP) $< $@
-
-$(GENINCDIR)/asm/%.h : %.h
-	%mkdirs_q $(GENINCDIR)/asm
-	$(CP) $< $@
-
-$(GENINCDIR)/exec/%.h : %.h
-	%mkdirs_q $(GENINCDIR)/exec
-	$(CP) $< $@
-
-$(GENINCDIR)/%.h : %.h
-	%mkdirs_q $(GENINCDIR)
-	$(CP) $< $@
-
 build: build.c $(GENINCDIR)/aros/boot.h
 	@$(HOST_CC) $(CFLAGS) -D__BFD__ -o build $<
 
