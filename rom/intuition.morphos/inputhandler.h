@@ -17,7 +17,8 @@
 #   include <intuition/cghooks.h>
 #endif
 
-#define PROPHACK
+// FIXME: cannot enable PROPHACK on AROS because of MOS-specific code
+//#define PROPHACK
 
 struct IIHData
 {
