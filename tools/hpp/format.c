@@ -234,9 +234,16 @@ rem_again:
 	    break;
 
 	case '#':
-	    NEWMODE(m_cpp);
 
 	    VS_Clear (ident);
+	    VS_AppendChar (ident, c);
+
+	    while ((c = getc (in)) != EOF)
+	    {
+		if (!isspace (c))
+		    break;
+	    }
+
 	    VS_AppendChar (ident, c);
 
 	    while ((c = getc (in)) != EOF)
@@ -250,7 +257,18 @@ rem_again:
 		VS_AppendChar (ident, c);
 	    }
 
-	    fputs (ident->buffer, stdout);
+	    data = DB_FindData ("c-html", ident->buffer);
+
+	    if (data)
+	    {
+		NEWMODE(m_space);
+		fputs (data, stdout);
+	    }
+	    else
+	    {
+		NEWMODE(m_cpp);
+		fputs (ident->buffer, stdout);
+	    }
 
 	    if (!strcmp (ident->buffer, "#include"))
 	    {
