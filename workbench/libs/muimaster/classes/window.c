@@ -290,7 +290,14 @@ void CleanupRenderInfo(struct MUI_RenderInfo *mri)
 
 void ShowRenderInfo(struct MUI_RenderInfo *mri)
 {
-    mri->mri_RastPort = mri->mri_Window->RPort;
+    if (mri->mri_BufferBM)
+    {
+	mri->mri_RastPort = &mri->mri_BufferRP;
+    }
+    else
+    {
+	mri->mri_RastPort = mri->mri_Window->RPort;
+    }
 }
 
 void HideRenderInfo(struct MUI_RenderInfo *mri)
@@ -846,6 +853,20 @@ void _zune_window_message(struct IntuiMessage *imsg)
 #endif
 		DoMethod(data->wd_RootObject, MUIM_Layout);
 		DoMethod(data->wd_RootObject, MUIM_Show);
+		{
+		    LONG left,top,width,height;
+
+		    left = data->wd_RenderInfo.mri_Window->BorderLeft;
+		    top = data->wd_RenderInfo.mri_Window->BorderTop,
+			width = data->wd_RenderInfo.mri_Window->Width
+			- data->wd_RenderInfo.mri_Window->BorderRight - left;
+		    height = data->wd_RenderInfo.mri_Window->Height
+			- data->wd_RenderInfo.mri_Window->BorderBottom - top;
+
+/*  	D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
+		    zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
+				     left, top, width, height, left, top, 0);
+		}
 		MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 	    }
 	}
@@ -1899,6 +1920,40 @@ static void window_minmax(Object *obj, struct MUI_WindowData *data)
 #endif
 }
 
+
+static void install_backbuffer (struct IClass *cl, Object *obj)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    struct Window *win = data->wd_RenderInfo.mri_Window;
+
+#if 0
+    data->wd_RenderInfo.mri_BufferBM =
+	AllocBitMap(win->Width, win->Height, win->RPort->BitMap->Depth,
+		    0, win->RPort->BitMap);
+#endif
+    if (data->wd_RenderInfo.mri_BufferBM)
+    {
+	D(bug("install_backbuffer : allocated bitmap %dx%dx%d with friend %p\n",
+	      win->Width, win->Height, win->RPort->BitMap->Depth, win->RPort->BitMap));
+	InitRastPort(&data->wd_RenderInfo.mri_BufferRP);
+	data->wd_RenderInfo.mri_BufferRP.BitMap = data->wd_RenderInfo.mri_BufferBM;
+    }
+}
+
+static void deinstall_backbuffer (struct IClass *cl, Object *obj)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+#ifdef __AROS__
+    DeinitRastPort(&data->wd_RenderInfo.mri_BufferRP);
+#endif
+    if (data->wd_RenderInfo.mri_BufferBM)
+    {
+	FreeBitMap(data->wd_RenderInfo.mri_BufferBM);
+	data->wd_RenderInfo.mri_BufferBM = NULL;
+    }
+}
+
 /*
  * Called after window is opened or resized.
  * An expose event is already queued, it will trigger
@@ -1969,6 +2024,8 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 	return FALSE;
     }
 
+    install_backbuffer(cl, obj);
+
     data->wd_Flags |= MUIWF_OPENED;
 
     window_show(cl, obj);
@@ -2014,6 +2071,9 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
     /* remove from window */
     DoMethod(data->wd_RootObject, MUIM_Hide);
     zune_imspec_hide(data->wd_Background);
+
+    deinstall_backbuffer(cl, obj);
+
     HideRenderInfo(&data->wd_RenderInfo);
 
     /* close here ... */
@@ -2034,7 +2094,7 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
     if (!(data->wd_Flags & MUIWF_OPENED)) return 0;
 
     DoMethod(data->wd_RootObject, MUIM_Hide);
-
+    deinstall_backbuffer(cl, obj);
     HideRenderInfo(&data->wd_RenderInfo);
 
     /* inquire about sizes */
@@ -2042,8 +2102,25 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
     /* resize window ? */
     window_select_dimensions(data);
     _zune_window_resize(data);
+
+    install_backbuffer(cl, obj);
+
     window_show(cl, obj);
 
+    {
+	LONG left,top,width,height;
+
+	left = data->wd_RenderInfo.mri_Window->BorderLeft;
+	top = data->wd_RenderInfo.mri_Window->BorderTop,
+	width = data->wd_RenderInfo.mri_Window->Width
+	    - data->wd_RenderInfo.mri_Window->BorderRight - left;
+	height = data->wd_RenderInfo.mri_Window->Height
+	    - data->wd_RenderInfo.mri_Window->BorderBottom - top;
+
+/*  	D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
+	zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
+		 left, top, width, height, left, top, 0);
+    }
     MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
     return TRUE;
 }

@@ -114,6 +114,14 @@ __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
     }
     DoMethod(obj, MUIM_Draw, flags);
 
+    /* copy buffer to window */
+    if (muiRenderInfo(obj)->mri_BufferBM)
+    {
+	ClipBlit(&muiRenderInfo(obj)->mri_BufferRP, _left(obj), _top(obj),
+		 muiRenderInfo(obj)->mri_Window->RPort, _left(obj), _top(obj),
+		 _width(obj), _height(obj), 0xc0);
+    }
+
     if (region)
     {
 	/* This call actually also frees the region */
