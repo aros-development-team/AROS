@@ -31,6 +31,18 @@ archive $ARCHIVE $PACKAGE
 cd      $ROOT
 delete  $BUILD_BASE/$PACKAGE
 
+printi "Creating documentation source package..."
+PACKAGE=$BASENAME-docs-source
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+
+copy    $SOURCE_DOCS $BUILD_BASE/$PACKAGE
+cd      $BUILD_BASE/$PACKAGE
+prune
+cd      $BUILD_BASE
+archive $ARCHIVE $PACKAGE
+cd      $ROOT
+delete  $BUILD_BASE/$PACKAGE
+
 cd      $ROOT
 resetl
 
