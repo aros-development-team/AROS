@@ -319,14 +319,16 @@ BOOL ScanDosList(STRPTR *filter)
 	while((ndl = NextDosEntry(ndl, LDF_ASSIGNS | LDF_VOLUMES | LDF_READ)) != NULL)
 	{
 	    TEXT    name[108];
-	    STRPTR  taskName;
+	    STRPTR  taskName = NULL;  /* Initialized to avoid a warning */
 
 	    __sprintf(name, "%s:", ndl->dol_DevName);
 
-	    if((ndl->dol_Type > DLT_VOLUME) || !(myMatchPatternNoCase(strray, name)))
+	    if ((ndl->dol_Type > DLT_VOLUME) || !(myMatchPatternNoCase(strray, name)))
+	    {
 		continue;
+	    }
 
-	    switch(ndl->dol_Type)
+	    switch (ndl->dol_Type)
 	    {
 	    case DLT_VOLUME:
 		taskName =  ndl->dol_DevName;   // ((struct Task *)ndl->dol_Task->mp_SigTask)->tc_Node.ln_Name;
@@ -726,9 +728,10 @@ void doInfo()
 				if((idn->DosType & ID_DOS_DISK) != ID_DOS_DISK)
 				    y = idn->DosType;
 				
-				LPrintf(DEVFMTSTR, "%4ld%% %4ld %-11s%-8s%s\n", x, id.id_NumSoftErrors,
+				LPrintf(DEVFMTSTR, "%4ld%% %4ld %-11s%-8s%s\n",
+					x, id.id_NumSoftErrors,
 					((id.id_DiskState >= ID_WRITE_PROTECTED) && (id.id_DiskState <= ID_VALIDATED)) ?
-					dstate[id.id_DiskState - ID_WRITE_PROTECTED] : "", GetFSysStr(y), name);
+					dstate[id.id_DiskState - ID_WRITE_PROTECTED] : (STRPTR)"", GetFSysStr(y), name);
 				
 				if(blocks)
 				{
