@@ -555,44 +555,7 @@ static VOID x11kbd_handleevent(Class *cl, Object *o, struct pHidd_X11Kbd_HandleE
 #undef XSD
 #define XSD(cl) xsd
 
-#if 0
-long StateToQualifier (unsigned long state)
-{
-    long result;
 
-    result = 0;
-
-    if (state & ShiftMask)
-	result |= SHIFT;
-
-    if (state & ControlMask)
-	result |= CTRL;
-
-    if (state & LockMask)
-	result |= CAPS;
-
-    if (state & Mod2Mask) /* Right Alt */
-	result |= LALT;
-
-    if (state & 0x2000) /* Mode switch */
-	result |= RALT;
-
-    if (state & Mod1Mask) /* Left Alt */
-	result |= AMIGAKEYS;
-
-    if (state & Button1Mask)
-	result |= IEQUALIFIER_LEFTBUTTON;
-
-    if (state & Button2Mask)
-	result |= IEQUALIFIER_RBUTTON;
-
-    if (state & Button3Mask)
-	result |= IEQUALIFIER_MIDBUTTON;
-
-    return (result);
-} /* StateToQualifier */
-
-#endif
 
 WORD lookup_keytable(KeySym *ks, struct _keytable *keytable)
 {
