@@ -855,9 +855,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		if (w->UserPort)
 		{
-		    msg = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
-
 		    Forbid ();
+		    msg = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
 
 		    while ((succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ))
 		    {
