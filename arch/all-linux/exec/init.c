@@ -183,6 +183,26 @@ int main(int argc, char **argv)
     */
     SysBase = PrepareExecBase(mh);
 
+    /* ROM memory header. This special memory header covers all ROM code and data sections
+     * so that TypeOfMem() will not return 0 for addresses pointing into the kernel.
+     */
+    if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
+    {
+	/* These symbols are provided by the linker on most platforms */
+	extern char _start, _end;
+
+	mh->mh_Node.ln_Type = NT_MEMORY;
+	mh->mh_Node.ln_Name = "rom memory";
+	mh->mh_Node.ln_Pri = -128;
+	mh->mh_Attributes = MEMF_KICK;
+	mh->mh_First = NULL;
+	mh->mh_Lower = (APTR)&_start;
+	mh->mh_Upper = (APTR)&_end;
+	mh->mh_Free = 0;			/* Never allocate from this chunk! */
+	Forbid();
+	Enqueue(&SysBase->MemList, &mh->mh_Node);
+    }
+
     /* Ok, lets start up the kernel, we are probably using the UNIX
        kernel, or a variant of that (see config/unix).
     */
