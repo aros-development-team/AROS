@@ -4,7 +4,7 @@
 
 */
 
-#define RDB_WRITE 0
+#define RDB_WRITE 1
 
 #include <proto/exec.h>
 #include <proto/partition.h>
@@ -84,13 +84,8 @@ ULONG count=0;
 
 	while (count != size)
 	{
-		if (count == DE_DOSTYPE)
-			*dst++ = *src++;
-		else
-		{
-			*dst++ = AROS_BE2LONG(*src);
-			src++;
-		}
+		*dst++ = AROS_BE2LONG(*src);
+		src++;
 		count++;
 	}
 }
@@ -137,7 +132,7 @@ struct PartitionHandle *ph;
 		ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
 		if (ph)
 		{
-			ph->ln.ln_Name = AllocMem(32, MEMF_PUBLIC | MEMF_CLEAR);
+			ph->ln.ln_Name = AllocVec(32, MEMF_PUBLIC | MEMF_CLEAR);
 			if (ph->ln.ln_Name)
 			{
 				pblock = AllocMem(sizeof(struct PartitionBlock), MEMF_PUBLIC);
@@ -149,10 +144,10 @@ struct PartitionHandle *ph;
 					ph->data = pblock;
 					CopyMem(pblock->pb_DriveName+1, ph->ln.ln_Name, pblock->pb_DriveName[0]);
 					ph->ln.ln_Name[pblock->pb_DriveName[0]]=0;
-					CopyBEDosEnvec(pblock->pb_Environment, (ULONG *)&ph->de, 17);
+					CopyBEDosEnvec(pblock->pb_Environment, (ULONG *)&ph->de, AROS_BE2LONG(((struct DosEnvec *)pblock->pb_Environment)->de_TableSize)+1);
 					return ph;
 				}
-				FreeMem(ph->ln.ln_Name, 32);
+				FreeVec(ph->ln.ln_Name);
 			}
 			FreeMem(ph, sizeof(struct PartitionHandle));
 		}
@@ -357,7 +352,7 @@ void PartitionRDBFreeHandle
 	ClosePartitionTable(ph);
 	Remove(&ph->ln);
 	FreeMem(ph->data, sizeof(struct PartitionBlock));
-	FreeMem(ph->ln.ln_Name, 32);
+	FreeVec(ph->ln.ln_Name);
 	FreeMem(ph, sizeof(struct PartitionHandle));
 }
 
@@ -406,7 +401,7 @@ ULONG size;
 			fn->filesystem[size].lsb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)&fn->filesystem[size], AROS_LONG2BE(fn->filesystem[size].lsb_SummedLongs)));
 #if RDB_WRITE
 			if (writeBlock(PartitionBase, root, block++, &fn->filesystem[size]) != 0)
-				return;
+				return block;
 #else
 			kprintf("RDB-write: block=%ld, type=LSEG\n", block);
 			block++;
@@ -448,7 +443,7 @@ ULONG block;
 		bn->bbb.bbb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)&bn->bbb, AROS_BE2LONG(bn->bbb.bbb_SummedLongs)));
 		CopyMem(&bn->bbb, buffer, sizeof(struct BadBlockBlock));
 #if RDB_WRITE
-//		writeBlock(PartitionBase, root, block++, 512);
+		writeBlock(PartitionBase, root, block++, buffer);
 #else
 		kprintf("RDB-write: block=%ld, type=BADB\n", block);
 		block++;
@@ -471,7 +466,7 @@ ULONG block;
 		pblock->pb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)pblock, AROS_BE2LONG(pblock->pb_SummedLongs)));
 		CopyMem(pblock, buffer, sizeof(struct PartitionBlock));
 #if RDB_WRITE
-		writeBlock(PartitionBase, root, block++, 512);
+		writeBlock(PartitionBase, root, block++, buffer);
 #else
 		kprintf("RDB-write: block=%ld, type=PART\n", block);
 		block++;
@@ -496,13 +491,12 @@ ULONG block;
 		block = PartitionRDBWriteFileSys(PartitionBase, root, fn, block);
 		fn->fhb.fhb_Next = fn->ln.ln_Succ->ln_Succ ? AROS_LONG2BE(block) : (ULONG)-1;
 		fn->fhb.fhb_ChkSum = 0;
-		fn->fhb.fhb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)&fn->fhb, AROS_BE2LONG(fn->fhb.fhb_SummedLongs)));
 		CopyMem(&fn->fhb, buffer, sizeof(struct FileSysHeaderBlock));
+		((struct FileSysHeaderBlock *)buffer)->fhb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)buffer, AROS_BE2LONG(fn->fhb.fhb_SummedLongs)));
 #if RDB_WRITE
-//		writeBlock(PartitionBase, root, fshblock, 512);
+		writeBlock(PartitionBase, root, fshblock, buffer);
 #else
-		kprintf("RDB-write: block=%ld, type=FSHD\n", block);
-		block++;
+		kprintf("RDB-write: block=%ld, type=FSHD\n", fshblock);
 #endif
 		fn = (struct FileSysNode *)fn->ln.ln_Succ;
 	}
@@ -511,7 +505,7 @@ ULONG block;
 	data->rdb.rdb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)&data->rdb, AROS_BE2LONG(data->rdb.rdb_SummedLongs)));
 	CopyMem(&data->rdb, buffer, sizeof(struct RigidDiskBlock));
 #if RDB_WRITE
-//	writeBlock(PartitionBase, root, data->rdbblock, 512);
+	writeBlock(PartitionBase, root, data->rdbblock, buffer);
 #else
 	kprintf("RDB-write: block=%ld, type=RDSK\n", data->rdbblock);
 #endif
@@ -525,6 +519,7 @@ LONG PartitionRDBCreatePartitionTable
 	)
 {
 struct RDBData *data;
+ULONG i;
 
 	data = AllocMem(sizeof(struct RDBData), MEMF_PUBLIC | MEMF_CLEAR);
 	if (data)
@@ -536,15 +531,31 @@ struct RDBData *data;
 		data->rdb.rdb_BadBlockList = (ULONG)-1;
 		data->rdb.rdb_PartitionList = (ULONG)-1;
 		data->rdb.rdb_FileSysHeaderList = (ULONG)-1;
+		data->rdb.rdb_DriveInit = (ULONG)-1;
+		for (i=0;i<6;i++)
+			data->rdb.rdb_Reserved1[i] = (ULONG)-1;
 		data->rdb.rdb_Cylinders = AROS_LONG2BE(ph->de.de_HighCyl+1);
 		data->rdb.rdb_Sectors = AROS_LONG2BE(ph->de.de_BlocksPerTrack);
 		data->rdb.rdb_Heads = AROS_LONG2BE(ph->de.de_Surfaces);
+
+		data->rdb.rdb_Park = data->rdb.rdb_Cylinders;
+		data->rdb.rdb_WritePreComp = data->rdb.rdb_Cylinders;
+		data->rdb.rdb_ReducedWrite = data->rdb.rdb_Cylinders;
+		/* StepRate */
+		
 		data->rdb.rdb_RDBBlocksLo = AROS_LONG2BE(1); /* leave a block for PC */
-#warning "reserved >= 2??? blocks"
-		data->rdb.rdb_RDBBlocksHi = AROS_LONG2BE(ph->de.de_Surfaces*ph->de.de_BlocksPerTrack*2); /* two cylinders */
+		data->rdb.rdb_RDBBlocksHi = AROS_LONG2BE((ph->de.de_Surfaces*ph->de.de_BlocksPerTrack*2)-1); /* two cylinders */
 		data->rdb.rdb_LoCylinder = AROS_LONG2BE(2);
 		data->rdb.rdb_HiCylinder = AROS_LONG2BE(ph->de.de_HighCyl);
 		data->rdb.rdb_CylBlocks = AROS_LONG2BE(ph->de.de_Surfaces*ph->de.de_BlocksPerTrack);
+		/* AutoParkSeconds */
+		/* DiskVendor */
+		/* DiskProduct */
+		/* DiskRevision */
+		/* ControllerVendor */
+		/* ControllerProduct */
+		/* ControllerRevision */
+
 		data->rdbblock = 1;
 		NEWLIST(&data->badblocklist);
 		NEWLIST(&data->fsheaderlist);
@@ -552,83 +563,6 @@ struct RDBData *data;
 		return 0;
 	}
 	return 1;
-}
-
-struct PartitionHandle *PartitionRDBAddPartition
-	(
-		struct Library *PartitionBase,
-		struct PartitionHandle *root,
-		struct TagItem *taglist
-	)
-{
-struct TagItem *tag;
-
-	tag = findTagItem(PT_DOSENVEC, taglist);
-	if (tag)
-	{
-	struct PartitionBlock *pblock;
-	struct PartitionHandle *ph;
-	struct PartitionHandle *oph;
-	struct DosEnvec *de;
-
-		de = (struct DosEnvec *)tag->ti_Data;
-		ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
-		if (ph)
-		{
-			pblock = AllocMem(sizeof(struct PartitionBlock), MEMF_PUBLIC | MEMF_CLEAR);
-			if (pblock)
-			{
-				ph->data = pblock;
-				CopyMem(de, &ph->de, sizeof(struct DosEnvec *));
-				CopyBEDosEnvec((ULONG *)de, pblock->pb_Environment, 17);
-				pblock->pb_ID = AROS_LONG2BE(IDNAME_PARTITION);
-				pblock->pb_SummedLongs = AROS_LONG2BE(sizeof(struct PartitionBlock)/4);
-				tag = findTagItem(PT_NAME, taglist);
-				if (tag)
-				{
-				STRPTR name = (STRPTR)tag->ti_Data;
-				ULONG len = strlen(name);
-
-					CopyMem(name, ph->ln.ln_Name, len+1);
-					CopyMem(name, pblock->pb_DriveName, len);
-					pblock->pb_DriveName[len] = 0;
-					pblock->pb_DriveName[0] = len;
-				}
-				oph = (struct PartitionHandle *)root->table->list.lh_Head;
-				while (oph->ln.ln_Succ)
-				{
-					if (de->de_LowCyl<oph->de.de_LowCyl)
-						break;
-					oph = (struct PartitionHandle *)oph->ln.ln_Succ;
-				}
-				if (oph->ln.ln_Succ)
-				{
-					oph = (struct PartitionHandle *)oph->ln.ln_Pred;
-					if (oph->ln.ln_Pred)
-					{
-						Insert(&root->table->list, &ph->ln, &oph->ln);
-					}
-					else
-						AddHead(&root->table->list, &ph->ln);
-				}
-				else
-					AddTail(&root->table->list, &ph->ln);
-				return ph;
-			}
-			FreeMem(ph, sizeof(struct PartitionHandle));
-		}
-	}
-	return 0;
-}
-
-void PartitionRDBDeletePartition
-	(
-		struct Library *PartitionBase,
-		struct PartitionHandle *ph
-	)
-{
-
-	PartitionRDBFreeHandle(PartitionBase, ph);
 }
 
 LONG PartitionRDBGetPartitionTableAttrs
@@ -656,9 +590,8 @@ LONG PartitionRDBGetPartitionTableAttrs
 			*((LONG *)taglist[0].ti_Data) = root->table->type;
 			break;
 		case PTT_RESERVED:
-#warning "reserved >= 2??? blocks"
 			*((LONG *)taglist[0].ti_Data) =
-				root->de.de_Surfaces*root->de.de_BlocksPerTrack*2; /* two cylinders */
+				root->de.de_Surfaces*root->de.de_BlocksPerTrack*2; /* 2 cylinders */
 			break;
 		}
 		taglist++;
@@ -704,9 +637,10 @@ LONG PartitionRDBGetPartitionAttrs
 			break;
 		case PT_TYPE:
 			{
-			struct PartitionType *ptype = taglist[0].ti_Data;
+			struct PartitionType *ptype=(struct PartitionType *)taglist[0].ti_Data;
+			ULONG dt = AROS_LONG2BE(ph->de.de_DosType);
 
-				CopyMem(&ph->de.de_DosType, ptype->id, 4);
+				CopyMem(&dt, ptype->id, 4);
 				ptype->id_len = 4;
 			}
 			break;
@@ -741,18 +675,20 @@ LONG PartitionRDBSetPartitionAttrs
 		{
 		case PT_DOSENVEC:
 			{
-			struct DosEnvec *de;
-				de = (struct DosEnvec *)taglist[0].ti_Data;
-				CopyMem(de, &ph->de, sizeof(struct DosEnvec));
-				CopyBEDosEnvec((ULONG *)&ph->de, data->pb_Environment, 17);
+			struct DosEnvec *de = (struct DosEnvec *)taglist[0].ti_Data;
+
+				CopyMem(de, &ph->de, (de->de_TableSize+1)*4);
+				CopyBEDosEnvec((ULONG *)de, data->pb_Environment, de->de_TableSize+1);
 			}
 			break;
 		case PT_TYPE:
 			{
-			struct PartitionType *ptype = taglist[0].ti_Data;
+			struct PartitionType *ptype=(struct PartitionType *)taglist[0].ti_Data;
+			ULONG dt;
 
-				CopyMem(ptype->id, &ph->de.de_DosType, 4);
-				((struct DosEnvec *)&data->pb_Environment)->de_DosType = ph->de.de_DosType;
+				CopyMem(ptype->id, &dt, 4);
+				ph->de.de_DosType = AROS_BE2LONG(dt);
+				data->pb_Environment[DE_DOSTYPE] = dt;
 			}
 			break;
 		case PT_NAME:
@@ -761,8 +697,8 @@ LONG PartitionRDBSetPartitionAttrs
 			ULONG len = strlen(name);
 
 				CopyMem(name, ph->ln.ln_Name, len+1);
-				CopyMem(name, data->pb_DriveName, len);
-				data->pb_DriveName[len] = 0;
+				CopyMem(name, data->pb_DriveName+1, len);
+				data->pb_DriveName[len+1] = 0;
 				data->pb_DriveName[0] = len;
 			}
 			break;
@@ -782,6 +718,76 @@ LONG PartitionRDBSetPartitionAttrs
 		taglist++;
 	}
 	return 0;
+}
+
+struct PartitionHandle *PartitionRDBAddPartition
+	(
+		struct Library *PartitionBase,
+		struct PartitionHandle *root,
+		struct TagItem *taglist
+	)
+{
+struct TagItem *tag;
+
+	tag = findTagItem(PT_DOSENVEC, taglist);
+	if (tag)
+	{
+	struct PartitionBlock *pblock;
+	struct PartitionHandle *ph;
+	struct PartitionHandle *oph;
+
+		ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
+		if (ph)
+		{
+			ph->ln.ln_Name = AllocVec(32, MEMF_PUBLIC | MEMF_CLEAR);
+			if (ph->ln.ln_Name)
+			{
+				pblock = AllocMem(sizeof(struct PartitionBlock), MEMF_PUBLIC | MEMF_CLEAR);
+				if (pblock)
+				{
+					ph->root = root;
+					ph->bd = root->bd;
+					ph->data = pblock;
+					pblock->pb_ID = AROS_LONG2BE(IDNAME_PARTITION);
+					pblock->pb_SummedLongs = AROS_LONG2BE(sizeof(struct PartitionBlock)/4);
+					PartitionRDBSetPartitionAttrs(PartitionBase, ph, taglist);
+					oph = (struct PartitionHandle *)root->table->list.lh_Head;
+					while (oph->ln.ln_Succ)
+					{
+						if (ph->de.de_LowCyl<oph->de.de_LowCyl)
+							break;
+						oph = (struct PartitionHandle *)oph->ln.ln_Succ;
+					}
+					if (oph->ln.ln_Succ)
+					{
+						oph = (struct PartitionHandle *)oph->ln.ln_Pred;
+						if (oph->ln.ln_Pred)
+						{
+							Insert(&root->table->list, &ph->ln, &oph->ln);
+						}
+						else
+							AddHead(&root->table->list, &ph->ln);
+					}
+					else
+						AddTail(&root->table->list, &ph->ln);
+					return ph;
+				}
+				FreeVec(ph->ln.ln_Name);
+			}
+			FreeMem(ph, sizeof(struct PartitionHandle));
+		}
+	}
+	return 0;
+}
+
+void PartitionRDBDeletePartition
+	(
+		struct Library *PartitionBase,
+		struct PartitionHandle *ph
+	)
+{
+
+	PartitionRDBFreeHandle(PartitionBase, ph);
 }
 
 ULONG PartitionRDBPartitionTableAttrs[]=
