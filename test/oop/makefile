@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -O2 -Wall
 
-LINS = 
+LINS =
 SRC = *.c
 
 OBJS = test.o method.o timerclass.o oop.o support.o
@@ -13,11 +13,12 @@ clean:
 
 veryclean: clean
 	rm .dep
-	
-dep:
-	makedepend -f.dep $(SRC) 
+
+depend:
+	touch .dep
+	makedepend -f.dep $(SRC)
 
 oop: $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) $(LIBS) -o oop
 
-include .dep
+-include .dep
