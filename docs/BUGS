@@ -1,7 +1,7 @@
 Outstanding bugs:
 BUG000021 BUG000026 BUG000037 BUG000058 BUG000063
 BUG000068 BUG000070 BUG000074 BUG000075 BUG000076
-BUG000077
+BUG000077 BUG000078 BUG000079 BUG000080
 
 
 
@@ -554,6 +554,21 @@ stefan.berger@att.net
 'Aros' only links correctly if layers library has a global variable
 GfxBase, otherwise GfxBase is undefined in graphics.library.
 Also see 'nm -u libgraphics.so'
+
+BUG000078
+iain@ugh.net.au
+When using LMB to do multiple selection of menus, it causes the menu to
+disappear off the screen, rather than waiting for the RMB to be released.
+It should allow for multiple selection of menu items.
+
+BUG000079
+iain@ugh.net.au
+ELF object format loader will not load objects with a non-zero entry.
+
+BUG000080
+iain@ugh.net.au
+When you try and CD into a plain file, you get directory not found rather
+than object is of wrong type. See also BUG000065.
 
 
 
