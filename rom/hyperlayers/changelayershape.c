@@ -42,15 +42,15 @@
 
 
     INPUTS
-       L        - pointer to layer 
+       L        - pointer to layer
        newshape - pointer to a region that comprises the new shape
-                  of the layer. May be NULL if callback is provided. 
+                  of the layer. May be NULL if callback is provided.
        callback - pointer to a callback hook. May be NULL if newshape
                   is given.
 
     RESULT
        Pointer to the previously installed region.
-  
+
     NOTES
 
     EXAMPLE
@@ -76,15 +76,16 @@
     struct Region r, cutoldshape, rtmp, cutnewshape;
     struct Layer * lparent, * _l, * lfirst;
     int behind_l = FALSE;
-    r.RegionRectangle = NULL;
-    rtmp.RegionRectangle = NULL;
-    cutoldshape.RegionRectangle = NULL;
-    cutnewshape.RegionRectangle = NULL;
+    InitRegion(&r);
+    InitRegion(&rtmp);
+    InitRegion(&cutoldshape);
+    InitRegion(&cutnewshape);
+
 
     if (IS_VISIBLE(l))
     {
       /*
-       * Backup everything that is visible right now into 
+       * Backup everything that is visible right now into
        * cliprects.
        */
       lfirst = GetFirstFamilyMember(l);

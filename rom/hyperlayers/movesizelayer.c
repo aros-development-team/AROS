@@ -72,10 +72,10 @@
   struct Region * newshape = NewRegion(), * oldshape, r, rtmp, cutnewshape;
   struct Rectangle rectw, recth;
 
-  rtmp.RegionRectangle = NULL; // min. initialization
-  r.RegionRectangle = NULL; // min. initialization
-  cutnewshape.RegionRectangle = NULL;
-  
+  InitRegion(&r);
+  InitRegion(&rtmp);
+  InitRegion(&cutnewshape);
+
   LockLayers(l->LayerInfo);
 
   /*

@@ -498,7 +498,7 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
                    BMF_CLEAR,
                    display_bm);
       }
-      
+
 #if 0
 kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
         __FUNCTION__,
@@ -513,7 +513,7 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
 
       rr = rr->Next;
     }
-  
+
     if (FALSE == looped)
     {
       /*
@@ -537,7 +537,7 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
     else
       break;
   } /* while (1) */
-  
+
   return firstcr;
 }
 
@@ -1052,7 +1052,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
  *
  * This function MUST not manipulate hide_region!!!!
  */
-int _BackupPartsOfLayer(struct Layer * l, 
+int _BackupPartsOfLayer(struct Layer * l,
                         struct Region * hide_region,
                         int dx,
                         int backupsimplerefresh,
@@ -1060,7 +1060,7 @@ int _BackupPartsOfLayer(struct Layer * l,
 {
   struct ClipRect * newcr;
   struct Region r, * clipregion;
-  r.RegionRectangle = NULL;  // min. initialization!
+  InitRegion(&r);
 
 if (hide_region == l->VisibleRegion)
   kprintf("ERROR - same regions!! %s\n",__FUNCTION__);
@@ -1071,8 +1071,8 @@ if (hide_region == l->VisibleRegion)
    * area of the layer.
    */
 
-  clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);  
-  
+  clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);
+
   ClearRegionRegion(hide_region,l->VisibleRegion);
   SetRegion(l->VisibleRegion, &r);
   AndRegionRegion(l->visibleshape,&r);
@@ -1100,7 +1100,7 @@ if (hide_region == l->VisibleRegion)
    */
   if (clipregion)
     _InternalInstallClipRegion(l, clipregion, dx, dx, LayersBase);
-    
+
   return TRUE;
 }
 
@@ -1111,15 +1111,16 @@ if (hide_region == l->VisibleRegion)
  * This function MUST not manipulate show_region!!!!
  */
 
-int _ShowPartsOfLayer(struct Layer * l, 
+int _ShowPartsOfLayer(struct Layer * l,
                       struct Region * show_region,
                       struct LayersBase * LayersBase)
 {
   struct ClipRect * newcr;
   struct Region r;
   struct Region * clipregion;
-  
-  r.RegionRectangle = NULL;  // min. initialization
+
+  InitRegion(&r);
+
 //kprintf("%s called for %p\n",__FUNCTION__,l);
 
   /*
@@ -1169,8 +1170,9 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
   struct ClipRect * prevcr = NULL;
   struct BitMap * bm = l->rp->BitMap;
   int invisible = FALSE;
-  
-  r.RegionRectangle = NULL;
+
+  InitRegion(&r);
+
   SetRegion(l->VisibleRegion, &r);
   AndRegionRegion(l->shape, &r);
   AndRegionRegion(l->parent->shape, &r);
@@ -1183,11 +1185,11 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
     {
       struct ClipRect * cr;
 
-#if USE_POOLS  
+#if USE_POOLS
       ObtainSemaphore(&LayersBase->lb_MemLock);
       cr = (struct ClipRect *)AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
       ReleaseSemaphore(&LayersBase->lb_MemLock);
-#else     
+#else
       cr = AllocMem(sizeof(struct ClipRect), MEMF_CLEAR);
 #endif
 
@@ -1206,14 +1208,14 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
         cr->bounds.MaxX,
         cr->bounds.MaxY,
         invisible);
-#endif      
+#endif
       if (prevcr)
         prevcr->Next = cr;
       else
         l->ClipRect = cr;
-       
+
       prevcr = cr;
-      
+
       if (FALSE == invisible)
       {
 #if 0
@@ -1263,14 +1265,14 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
              bm->Depth,
              BMF_CLEAR,
              bm);
-	     
+
 #warning stegerg: the backfill hook should be called for this bitmap! But _CallLayerHook always uses rp->BitMap
         }
       }
-      
+
       rr=rr->Next;
     }
-    
+
     if (FALSE == invisible)
     {
       XorRectRegion(&r, &l->bounds);
@@ -1282,14 +1284,14 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
     else
       break;
   }
-  
+
   return TRUE;
 }
 
 /*
  * It is assumed that the region r is not needed anymore.
  */
-void _BackFillRegion(struct Layer * l, 
+void _BackFillRegion(struct Layer * l,
                      struct Region * r,
                      int addtodamagelist,
                      struct LayersBase * LayersBase)
@@ -1442,7 +1444,7 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
     else
     {
       struct Region r;
-      r.RegionRectangle = NULL; // min. initialization!
+      InitRegion(&r);
 
       /* convert the region to a list of ClipRects */
       /* backup the old cliprects */
