@@ -4,6 +4,8 @@ AFD-COPYRIGHT - AROS' copyright message
 
 BUGS - Known bugs of AROS
 
+INSTALL - A short description on how to compile AROS the first time
+
 README - A readme with a short introduction about AROS
 
 amiga/ - This is the directory where you can (and should) put things which
