@@ -42,10 +42,27 @@
 
 ******************************************************************************/
 {
-    char * ptr2 = ptr;
+    UBYTE * bptr = ptr;
 
-    while(len--)
-	*ptr2++ = 0;
+    while (((IPTR)bptr)&(AROS_LONGALIGN-1) && len)
+    {
+	*bptr ++ = 0;
+	len --;
+    }
+
+    if (len > sizeof(ULONG))
+    {
+	ULONG * ulptr = (ULONG *)bptr;
+
+	while (len > sizeof(ULONG))
+	{
+	    *ulptr ++ = 0UL;
+	    len -= sizeof(ULONG);
+	}
+    }
+
+    while (len --)
+	*bptr ++ = 0;
 
 } /* bzero */
 
