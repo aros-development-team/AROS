@@ -441,19 +441,26 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
 	    break;
 
 	case IST_BRUSH:
-	{
-	    int i;
-
-	    for (i = 0; i < 2; i++)
-	    {
-		if (spec->u.brush.filename[i])
-		{
-		    spec->u.brush.dt[i] = dt_load_picture(spec->u.brush.filename[i],
-							  mri->mri_Screen);
-		}
-	    }
-	    break;
-	}
+            {
+                int i;
+        
+                for (i = 0; i < 2; i++)
+                {
+                    if (spec->u.brush.filename[i])
+                    {
+                        spec->u.brush.dt[i] = dt_load_picture
+                        (
+                            spec->u.brush.filename[i], mri->mri_Screen
+                        );
+                    }
+                    else
+                    {
+                        spec->u.brush.dt[i] = spec->u.brush.dt[0];
+                    }
+                }
+            }
+            break;
+            
 	case IST_BITMAP:
 	    if (spec->u.bitmap.filename)
 	    {
