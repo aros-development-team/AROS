@@ -104,4 +104,5 @@ $(OSGENDIR)/%.d : %.c
 	%mkdepend_q $(CFLAGS2)
 
 %include_deps
-/%common
+
+%common
