@@ -47,9 +47,13 @@ int main(int argc, char **argv)
 	    {
               if ((screen = openscreen())) 
               {
+#if 0
                 init();
+#endif
 		doall();
+#if 0
                 restore();
+#endif
 		closescreen(screen);
 	      }
               CloseLibrary((struct Library *)DOSBase);
@@ -64,6 +68,7 @@ int main(int argc, char **argv)
 } /* main */
 
 
+#if 0
 /*
   CHEAT!!!
   BltBitMap within AROS doesn't do it a the moment.
@@ -150,6 +155,7 @@ void restore(void)
   BltBitMapPtr = SetFunction(GfxBase, 5 * (-LIB_VECTSIZE) ,BltBitMapPtr);
 }
 
+#endif
 
 struct Screen * openscreen(void)
 {
