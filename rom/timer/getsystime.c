@@ -20,7 +20,7 @@
 	AROS_LHA(struct timeval *, dest, A0),
 
 /*  LOCATION */
-	struct TimerBase *, TimerBase, 11, Timer)
+	struct Device *, TimerBase, 11, Timer)
 
 /*  FUNCTION
 	GetSysTime() will fill in the supplied timeval with the current
@@ -52,15 +52,17 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,TimerBase)
 
+    struct TimerBase *timerBase = (struct TimerBase *)TimerBase;
+
     Disable();
-    dest->tv_secs = TimerBase->tb_CurrentTime.tv_secs;
-    dest->tv_micro = TimerBase->tb_CurrentTime.tv_micro;
-    TimerBase->tb_CurrentTime.tv_micro += 1;
-    if(TimerBase->tb_CurrentTime.tv_micro > 999999)
+    dest->tv_secs = timerBase->tb_CurrentTime.tv_secs;
+    dest->tv_micro = timerBase->tb_CurrentTime.tv_micro;
+    timerBase->tb_CurrentTime.tv_micro += 1;
+    if(timerBase->tb_CurrentTime.tv_micro > 999999)
     {
-	TimerBase->tb_CurrentTime.tv_secs += 1;
+	timerBase->tb_CurrentTime.tv_secs += 1;
 	/* MUST be zero since we are only adding 1 */
-	TimerBase->tb_CurrentTime.tv_micro = 0;
+	timerBase->tb_CurrentTime.tv_micro = 0;
     }
     Enable();
 
