@@ -479,6 +479,14 @@ void init (void)
     char line[256];
     FILE * optfh;
 
+    if (!home)
+    {
+	fprintf (stderr,
+	    "Please set the HOME env var (with setenv or export)\n"
+	);
+	exit (10);
+    }
+
     NEWLIST(&projects);
     defaultprj = project = initproject ("default");
     ADDTAIL(&projects, project);
