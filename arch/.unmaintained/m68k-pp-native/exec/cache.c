@@ -7,10 +7,12 @@
 */
 
 #include <errno.h>
-#include <asm/cachectl.h>
-/* GNU libc 2 has this included in <sys/syscall.h>, but libc5 doesn't :-( */
-#include <asm/unistd.h>
-static inline _syscall4(int,cacheflush,unsigned long,addr,int,scope,int,cache,unsigned long,len)
+#if 0
+	#include <asm/cachectl.h>
+	/* GNU libc 2 has this included in <sys/syscall.h>, but libc5 doesn't :-( */
+	#include <asm/unistd.h>
+	static inline _syscall4(int,cacheflush,unsigned long,addr,int,scope,int,cache,unsigned long,len)
+#endif
 
 /******************************************************************************
 
@@ -48,6 +50,7 @@ static inline _syscall4(int,cacheflush,unsigned long,addr,int,scope,int,cache,un
 
 ******************************************************************************/
 {
+#if 0
     ULONG scope, cpucache = 0;
 
     if (caches & CACRF_ClearD)
@@ -62,6 +65,7 @@ static inline _syscall4(int,cacheflush,unsigned long,addr,int,scope,int,cache,un
 	scope = FLUSH_SCOPE_LINE;
 
     (void) cacheflush((unsigned long)address, scope, cpucache, length);
+#endif
 } /* CacheClearE */
 
 /******************************************************************************
@@ -94,5 +98,7 @@ static inline _syscall4(int,cacheflush,unsigned long,addr,int,scope,int,cache,un
 
 ******************************************************************************/
 {
-    (void) cacheflush(0, FLUSH_SCOPE_ALL, FLUSH_CACHE_BOTH, 0);
+#if 0
+	(void) cacheflush(0, FLUSH_SCOPE_ALL, FLUSH_CACHE_BOTH, 0);
+#endif
 } /* CacheClearU */
