@@ -32,7 +32,8 @@ USER_LIBS   := amiga rom m mui
 #MM     workbench-classes-zune-volumelist \
 ##MM     workbench-classes-zune-numericbutton \
 #MM     workbench-classes-zune-dirlist \
-#MM 	workbench-classes-zune-poplist
+#MM 	workbench-classes-zune-poplist \
+#MM 	workbench-classes-zune-crawling
 
 #MM- workbench-libs-muimaster-clean : \
 #MM     workbench-classes-zune-aboutmui-clean \
@@ -60,7 +61,8 @@ USER_LIBS   := amiga rom m mui
 #MM     workbench-classes-zune-volumelist-clean \
 #MM     workbench-classes-zune-dirlist-clean \
 #MM     workbench-classes-zune-numericbutton-clean \
-#MM 	workbench-classes-zune-poplist-clean
+#MM 	workbench-classes-zune-poplist-clean \
+#MM 	workbench-classes-zune-crawling-clean
 
 #MM workbench-classes-zune-aboutmui : includes
 %build_module \
@@ -268,6 +270,14 @@ USER_LIBS   := amiga rom m mui
     modname=Poplist modtype=mui files=poplist \
     conffile=poplist.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPLIST=0" \
+    uselibs=$(USER_LIBS)
+
+#MM workbench-classes-zune-crawling : includes
+%build_module \
+    mmake=workbench-classes-zune-crawling \
+    modname=Crawling modtype=mui files=crawling \
+    conffile=crawling.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_CRAWLING=0" \
     uselibs=$(USER_LIBS)
 
 %common

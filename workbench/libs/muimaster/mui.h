@@ -581,6 +581,10 @@ struct MUI_RGBcolor
 #include "classes/poplist.h"
 #endif
 
+#ifndef _MUI_CLASSES_CRAWLING_H
+#include "classes/crawling.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/
