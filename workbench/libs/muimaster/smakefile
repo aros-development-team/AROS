@@ -8,6 +8,7 @@ SUPPORTOBJS = \
   objs/frame.o \
   objs/imspec.o \
   objs/imspec_vector.o \
+  objs/imspec_gradient.o \
   objs/menu.o \
   objs/penspec.o \
   objs/support.o \
@@ -155,6 +156,9 @@ objs/imspec.o: imspec.c
 
 objs/imspec_vector.o: imspec_vector.c
   sc $(CFLAGS) imspec_vector.c objname=$@
+
+objs/imspec_gradient.o: imspec_gradient.c
+  sc $(CFLAGS) imspec_gradient.c objname=$@
 
 objs/menu.o: menu.c
   sc $(CFLAGS) menu.c objname=$@
