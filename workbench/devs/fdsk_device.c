@@ -38,7 +38,7 @@ extern void AROS_SLIB_ENTRY(beginio,fdsk)();
 extern LONG AROS_SLIB_ENTRY(abortio,fdsk)();
 extern const char end;
 
-int deventry(void)
+int entry(void)
 {
     /* If the device was executed by accident return error code. */
     return -1;
@@ -50,7 +50,7 @@ const struct Resident resident=
     (struct Resident *)&resident,
     (APTR)&end,
     RTF_AUTOINIT,
-    1,
+    41,
     NT_DEVICE,
     0,
     (char *)name,

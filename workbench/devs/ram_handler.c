@@ -157,8 +157,8 @@ const struct Resident resident=
     (struct Resident *)&resident,
     (APTR)&end,
     RTF_AUTOINIT,
-    1,
-    NT_LIBRARY,
+    41,
+    NT_DEVICE,
     0,
     (char *)name,
     (char *)&version[6],
@@ -167,7 +167,7 @@ const struct Resident resident=
 
 const char name[]="ram.handler";
 
-const char version[]="$VER: ram-handler 41.1 (28.3.96)\n\015";
+const char version[]="$VER: ram-handler 41.2 (28.7.97)\n\015";
 
 const APTR inittabl[4]=
 {

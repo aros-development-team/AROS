@@ -31,7 +31,7 @@ void AROS_SLIB_ENTRY(beginio,nil_handler)();
 LONG AROS_SLIB_ENTRY(abortio,nil_handler)();
 static const char end;
 
-int nil_handler_entry(void)
+int entry(void)
 {
     /* If the handler was executed by accident return error code. */
     return -1;
@@ -43,7 +43,7 @@ const struct Resident nil_handler_resident=
     (struct Resident *)&nil_handler_resident,
     (APTR)&end,
     RTF_AUTOINIT,
-    1,
+    41,
     NT_DEVICE,
     0,
     (char *)name,
