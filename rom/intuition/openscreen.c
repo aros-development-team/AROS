@@ -109,6 +109,8 @@ static const ULONG coltab[] = {
     ULONG	     *colors32 = NULL;
     UWORD	      numcolormapcols;
     BOOL	      ok = TRUE, rp_inited = FALSE, sharepens = FALSE;
+    BOOL	      frontbm_set = FALSE;
+    struct BitMap    *old_front_bm = NULL;
     
     struct TagItem   modetags[] = {
     	{ BIDTAG_Depth		, 0UL 	},
@@ -133,6 +135,8 @@ static const ULONG coltab[] = {
 	, newScreen->Height
 	, newScreen->Depth
     ));
+    
+    old_front_bm = IntuitionBase->FirstScreen;
 
     ns = *newScreen;
 
@@ -376,6 +380,7 @@ static const ULONG coltab[] = {
 	*/
         D(bug("got allocated stuff\n"));	    
 	screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
+	
     }
 
     if (ok)
@@ -504,6 +509,14 @@ static const ULONG coltab[] = {
 	screen->DInfo.dri_AmigaKey  = NewObjectA(NULL, "sysiclass", sysi_tags);
 	
 	if (!screen->DInfo.dri_CheckMark || !screen->DInfo.dri_AmigaKey) ok = FALSE;
+    }
+    
+    if (ok) {
+
+	if (!SetFrontBitMap(screen->Screen.RastPort.BitMap, TRUE))
+	    ok = FALSE;
+	else
+	    frontbm_set = TRUE;
     }
     
     if (ok)
@@ -657,6 +670,8 @@ static const ULONG coltab[] = {
         D(bug("SetRast() called\n"));	    
 
 
+  
+
 	/* If this is a public screen, we link it into the intuition global
 	   public screen list */
 	if(screen->pubScrNode != NULL)
@@ -678,6 +693,11 @@ static const ULONG coltab[] = {
  	
     if (!ok)
     {
+    	if (frontbm_set) {
+	    if (NULL != old_front_bm)
+	    	SetFrontBitMap(old_front_bm, FALSE);
+	}
+	    
         if (screen->Screen.ViewPort.ColorMap) FreeColorMap(screen->Screen.ViewPort.ColorMap);
 
         if (screen->Screen.BarLayer) KillScreenBar(&screen->Screen, IntuitionBase);

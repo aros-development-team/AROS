@@ -291,8 +291,8 @@ struct Screen *last;
 	    }
 	}
     }
-
-#warning TODO: Refresh Display after changing order of screens
+    
+    SetFrontBitMap(IntuitionBase->FirstScreen->RastPort.BitMap, TRUE);
 
     AROS_LIBFUNC_EXIT
 } /* ScreenDepth */
