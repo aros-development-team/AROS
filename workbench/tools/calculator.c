@@ -212,7 +212,7 @@ static void GetArguments(void)
 
 static void DoLocale(void)
 {
-    struct Locale *loc;
+    //struct Locale *loc;
     
     comma = '.';
     
@@ -805,7 +805,7 @@ static void HandleAll(void)
     } /* while(!quitme) */
 }
 
-void main(void)
+int main(void)
 {
     OpenLibs();
     GetArguments();
@@ -816,5 +816,6 @@ void main(void)
     MakeWin();
     HandleAll();
     Cleanup(0);
+    return 0;
 }
 
