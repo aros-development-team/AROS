@@ -19,7 +19,7 @@ FUNCS	:=  addfreelist bumprevision deletediskobject dupdiskobject drawiconstate 
 #MM- workbench-libs-icon : setup includes linklibs
 
 %build_module_macro mmake=workbench-libs-icon modname=icon modtype=library \
-  funcs=$(FUNCS) files=$(FILES) uselibs="arossupport amiga rom m" \
+  funcs=$(FUNCS) files=$(FILES) uselibs="arossupport amiga rom m arosc" \
   conffile=lib.conf
 
 %common
