@@ -122,7 +122,11 @@
 	{
             BPTR file = OpenDefaultIcon(defaultName, MODE_OLDFILE);
             
-            if (file != NULL) icon = ReadIcon(file);
+            if (file != NULL)
+	    {
+	    	icon = ReadIcon(file);
+		CloseDefaultIcon(file);
+	    }
             
             SET_ISDEFAULTICON(TRUE);
 	}
