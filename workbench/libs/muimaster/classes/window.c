@@ -1091,17 +1091,16 @@ mDisconnectParent(struct IClass *cl, Object *obj,
  * Called before window is opened or resized. It determines its bounds,
  * so you can call window_select_dimensions() to find the final dims.
  */
-static void
-window_minmax (struct MUI_WindowData *data)
+static void window_minmax (struct MUI_WindowData *data)
 {
     /* inquire about sizes */
     DoMethod(data->wd_RootObject, MUIM_AskMinMax, (ULONG)&data->wd_MinMax);
     __area_finish_minmax(data->wd_RootObject, &data->wd_MinMax);
 
-//    data->wd_innerLeft   = __zprefs.window_inner_left;
-//    data->wd_innerRight  = __zprefs.window_inner_right;
-//    data->wd_innerTop    = __zprefs.window_inner_top;
-//    data->wd_innerBottom = __zprefs.window_inner_bottom;
+    data->wd_innerLeft   = __zprefs.window_inner_left;
+    data->wd_innerRight  = __zprefs.window_inner_right;
+    data->wd_innerTop    = __zprefs.window_inner_top;
+    data->wd_innerBottom = __zprefs.window_inner_bottom;
 
     data->wd_MinMax.MinWidth += data->wd_innerLeft + data->wd_innerRight;
     data->wd_MinMax.MaxWidth += data->wd_innerLeft + data->wd_innerRight;

@@ -311,15 +311,14 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MUI_TextData *data = INST_DATA(cl, obj);
     APTR clip;
 
+    D(bug("muimaster.library/text.c: Draw Text Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+
     DoSuperMethodA(cl,obj,(Msg)msg);
     if (!(msg->flags & MADF_DRAWOBJECT))
 	return(0);
 
-    D(bug("muimaster.library/text.c: Draw Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
-
-#warning clipping
-//    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
-//			   _mwidth(obj), _mheight(obj));
+    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
+			   _mwidth(obj), _mheight(obj));
     SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
 
     zune_text_draw(data->ztext, obj,
@@ -330,7 +329,7 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /*  		   _mleft(obj), */
 /*  		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2); */
 
-//    MUI_RemoveClipping(muiRenderInfo(obj), clip);
+    MUI_RemoveClipping(muiRenderInfo(obj), clip);
     return TRUE;
 }
 

@@ -39,22 +39,14 @@ extern struct Library *MUIMasterBase;
 #define g_free(x) free(x)
 
 
-static const struct TextAttr defaultFont =
-    { "topaz.font", 8, FS_NORMAL, 0 };
-
-
 struct TextFont *zune_font_get (LONG preset)
 {
-    return OpenFont(&defaultFont);
-
-#if 0
     if ((preset <= MUIV_Font_Inherit) && (preset >= MUIV_Font_NegCount))
     {
-	g_return_val_if_fail(preset <= 0, NULL);
+	if (preset > 0) return NULL;
 	return __zprefs.fonts[-preset];
     }
-    return (GdkFont *)preset;
-#endif
+    return (struct TextFont *)preset;
 }
 
 /*
@@ -323,11 +315,10 @@ static ULONG Area_Dispose(struct IClass *cl, Object *obj, Msg msg)
 }
 
 
-/*
- * OM_SET
- */
-static ULONG
-mSet(struct IClass *cl, Object *obj, struct opSet *msg)
+/**************************************************************************
+ OM_SET
+**************************************************************************/
+static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_AreaData *data  = INST_DATA(cl, obj);
     struct TagItem             *tags  = msg->ops_AttrList;
@@ -448,11 +439,10 @@ mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
-/*
- * GET
- */
-static ULONG
-mGet(struct IClass *cl, Object *obj, struct opGet *msg)
+/**************************************************************************
+ OM_GET
+**************************************************************************/
+static ULONG Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #define STORE *(msg->opg_Storage)
 
@@ -481,32 +471,30 @@ mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_InnerBottom:
 	    if (data->mad_Flags & MADF_INNERBOTTOM)
 		STORE = (ULONG)data->mad_HardIBottom;
-#warning FIXME: InnerBottom
-//	    else
-//		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerBottom;
+	    else
+		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerBottom;
 	    break;
 	case MUIA_InnerLeft:
 	    if (data->mad_Flags & MADF_INNERLEFT)
 		STORE = (ULONG)data->mad_HardILeft;
 	    else if (data->mad_Flags & MADF_FRAMEPHANTOM)
 		STORE = 0;
-#warning FIXME: InnerLeft
-//	    else
-//		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerLeft;
+	    else
+		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerLeft;
 	    break;
 	case MUIA_InnerRight:
 	    if (data->mad_Flags & MADF_INNERRIGHT)
 		STORE = (ULONG)data->mad_HardIRight;
 	    else if (data->mad_Flags & MADF_FRAMEPHANTOM)
 		STORE = 0;
-//	    else
-//		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerRight;
+	    else
+		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerRight;
 	    break;
 	case MUIA_InnerTop:
 	    if (data->mad_Flags & MADF_INNERTOP)
 		STORE = (ULONG)data->mad_HardITop;
-//	    else
-//		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerTop;
+	    else
+		STORE = (ULONG)__zprefs.frames[data->mad_Frame].innerTop;
 	    break;
 	case MUIA_LeftEdge:
 	    STORE = (ULONG)_left(obj);
@@ -556,8 +544,10 @@ mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
-static ULONG
-mAskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+/**************************************************************************
+ MUIM_AskMinMax
+**************************************************************************/
+static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
@@ -656,18 +646,18 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
     _defheight(obj) = MinMaxInfo->DefHeight;
 }
 
-
-static ULONG
-mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+/**************************************************************************
+ MUIM_Draw
+**************************************************************************/
+static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-#warning FIXME: everything ;)
-
-#if 0
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     struct ZuneFrameGfx *zframe;
     struct Rectangle mrect, current;
     APTR areaclip;
     int xtext = _mleft(obj);
+
+    D(bug("muimaster.library/area.c: Draw Area Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
     {
@@ -703,6 +693,7 @@ mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 			       muiRenderInfo(obj)->mri_ClipRect.width,
 			       muiRenderInfo(obj)->mri_ClipRect.height);
 */
+
 /*
  * Background drawing
  */
@@ -741,12 +732,12 @@ mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 			    _left(obj), _top(obj), 0);
 	}
 #else
-	GdkRectangle *r = &data->mad_RenderInfo->mri_ClipRect;
+	struct Rectangle *r = &data->mad_RenderInfo->mri_ClipRect;
 
 	SetAPen(data->mad_RenderInfo->mri_RastPort,
 	        data->mad_RenderInfo->mri_Pens[MPEN_BACKGROUND]);
 
-	if (data->mad_TitleText)
+/*	if (data->mad_TitleText)
 	{
 	    int y = MAX(r->y,
 			_top(obj) + zframe->ythickness
@@ -756,13 +747,10 @@ mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 			    r->width,
 			    MIN(r->height, _bottom(obj) - y));
 	}
-	else
+	else*/
 	{
-	    RectFill(data->mad_RenderInfo->mri_RastPort,
-			    r->x,
-			    r->y,
-			    r->x + r->width  - 1,
-			    r->y + r->height - 1);
+	    /* clipping should be calculated */
+	    RectFill(_rp(obj),_mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
 	}
 #endif
     }
@@ -778,8 +766,10 @@ mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    state ^= 1;
 
 	/* set clipping so that frame is not drawn behind title */
+
 	if (data->mad_TitleText)
 	{
+#if 0
 //	    GdkRegion *empty;
 //	    GdkRegion *clip2;
 //	    GdkRegion *full2;
@@ -880,6 +870,7 @@ mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /*	    MUI_RemoveClipping(muiRenderInfo(obj), textdrawclip);*/
 
 	    _font(obj) = obj_font;
+#endif
 	}
 	else
 	{
@@ -888,10 +879,10 @@ mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	}
     }
 
-    mrect.x = _mleft(obj);
-    mrect.y = _mtop(obj);
-    mrect.width = _mwidth(obj);
-    mrect.height = _mheight(obj);
+    mrect.MinX = _mleft(obj);
+    mrect.MinY = _mtop(obj);
+    mrect.MaxX = _mright(obj);
+    mrect.MaxY = _mbottom(obj);
 
     current = muiRenderInfo(obj)->mri_ClipRect;
 /*  	    g_print("intersect area: mrect=(%d, %d, %d, %d) current=(%d, %d, %d, %d)\n", */
@@ -899,23 +890,25 @@ mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /*  		    mrect.width, mrect.height, */
 /*  		    current.x, current.y, */
 /*  		    current.width, current.height); */
+
+#if 0
     if (!gdk_rectangle_intersect(&mrect, &current,
 				 &muiRenderInfo(obj)->mri_ClipRect))
     {
 /*  	g_print("failed\n"); */
 	msg->flags &= ~MADF_DRAWOBJECT;
     }
+#endif
 
 /*    MUI_RemoveClipping(muiRenderInfo(obj), areaclip);*/
 
-#endif
     return TRUE;
 }
 
-
-static ULONG
-mDrawBackground(struct IClass *cl, Object *obj,
-		    struct MUIP_DrawBackground *msg)
+/**************************************************************************
+ MUIM_DrawBackgroup
+**************************************************************************/
+static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_DrawBackground *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
@@ -1004,16 +997,15 @@ cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj)
 }
 
 
-/* First method to be called after an OM_NEW, it is the place
- * for all initializations depending on the environment, but not
- * on the gadget size/position. Matched by MUIM_Cleanup.
- */
-static ULONG
-mSetup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+/**************************************************************************
+ First method to be called after an OM_NEW, it is the place
+ for all initializations depending on the environment, but not
+ on the gadget size/position. Matched by MUIM_Cleanup.
+**************************************************************************/
+static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
-/*      g_print("\nmSetup %p, font preset = %ld\n", obj, data->mad_FontPreset); */
     area_update_data(data);
     muiRenderInfo(obj) = msg->RenderInfo;
 
@@ -1069,10 +1061,10 @@ mSetup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 }
 
 
-/* Called to match a MUIM_Setup, when environment is no more available.
- */
-static ULONG
-mCleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+/**************************************************************************
+ Called to match a MUIM_Setup, when environment is no more available.
+**************************************************************************/
+static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
@@ -1122,12 +1114,13 @@ mCleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
     return TRUE;
 }
 
-/* Called after the window is open and the area layouted, but before
- * any drawing. Matched by one MUIM_Hide.
- * Good place to init things depending on gadget size/position.
- */
-static ULONG
-mShow(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+
+/**************************************************************************
+ Called after the window is open and the area layouted, but before
+ any drawing. Matched by one MUIM_Hide.
+ Good place to init things depending on gadget size/position.
+**************************************************************************/
+static ULONG Area_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     Object *activeobj;
@@ -1160,10 +1153,10 @@ mShow(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     return TRUE;
 }
 
-/* Called when the window is about to be closed, to match MUIM_Show.
- */
-static ULONG
-mHide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+/**************************************************************************
+ Called when the window is about to be closed, to match MUIM_Show.
+**************************************************************************/
+static ULONG Area_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     Object *activeobj;
@@ -1187,12 +1180,11 @@ mHide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 }
 
 
-/*
- * called by parent between OM_NEW and MUIM_Setup,
- * init RenderInfo and GlobalInfo
- */
-static ULONG 
-mConnectParent(struct IClass *cl, Object *obj,
+/**************************************************************************
+ called by parent between OM_NEW and MUIM_Setup,
+ init RenderInfo and GlobalInfo
+**************************************************************************/
+static ULONG  Area_ConnectParent(struct IClass *cl, Object *obj,
 		   struct MUIP_ConnectParent *msg)
 {
 /*      struct MUI_AreaData *data = INST_DATA(cl, obj); */
@@ -1210,11 +1202,12 @@ mConnectParent(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * called by window parent between OM_NEW and MUIM_Setup,
- * init RenderInfo and GlobalInfo. Neccessary???
- */
-static ULONG mConnectParentWindow(struct IClass *cl, Object *obj,
+
+/**************************************************************************
+ called by window parent between OM_NEW and MUIM_Setup,
+ init RenderInfo and GlobalInfo.
+**************************************************************************/
+static ULONG Area_ConnectParentWindow(struct IClass *cl, Object *obj,
 			 struct MUIP_ConnectParentWindow *msg)
 {
 /*      struct MUI_AreaData *data = INST_DATA(cl, obj); */
@@ -1230,10 +1223,10 @@ static ULONG mConnectParentWindow(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * called by parent object.
- */
-static ULONG mDisconnectParent(struct IClass *cl, Object *obj,
+/**************************************************************************
+ called by parent object.
+**************************************************************************/
+static ULONG Area_DisconnectParent(struct IClass *cl, Object *obj,
 		      struct MUIP_DisconnectParent *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
@@ -1246,10 +1239,10 @@ static ULONG mDisconnectParent(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/*
- * Called when gadget activated
- */
-static ULONG mGoActive(struct IClass *cl, Object *obj, Msg msg)
+/**************************************************************************
+ Called when gadget activated
+**************************************************************************/
+static ULONG Area_GoActive(struct IClass *cl, Object *obj, Msg msg)
 {
 /*      g_print("mGoActive %p\n", obj); */
     if (!(_flags(obj) & MADF_ACTIVE))
@@ -1261,10 +1254,10 @@ static ULONG mGoActive(struct IClass *cl, Object *obj, Msg msg)
     return TRUE;
 }
 
-/*
- * Called when gadget deactivated
- */
-static ULONG mGoInactive(struct IClass *cl, Object *obj, Msg msg)
+/**************************************************************************
+ Called when gadget deactivated
+**************************************************************************/
+static ULONG Area_GoInactive(struct IClass *cl, Object *obj, Msg msg)
 {
 /*      g_print("mGoInactive %p\n", obj); */
     if (_flags(obj) & MADF_ACTIVE)
@@ -1276,18 +1269,21 @@ static ULONG mGoInactive(struct IClass *cl, Object *obj, Msg msg)
     return TRUE;
 }
 
-/*
- * This one or derived methods wont be called if short help is
- * not set in area instdata. So set this to a dummy val if overriding
- */
-static ULONG mCreateShortHelp(struct IClass *cl, Object *obj, struct MUIP_CreateShortHelp *msg)
+/**************************************************************************
+ This one or derived methods wont be called if short help is
+ not set in area instdata. So set this to a dummy val if overriding
+**************************************************************************/
+static ULONG Area_CreateShortHelp(struct IClass *cl, Object *obj, struct MUIP_CreateShortHelp *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
     return (ULONG)data->mad_ShortHelp;
 }
 
-static ULONG mDeleteShortHelp(struct IClass *cl, Object *obj, struct MUIP_DeleteShortHelp *msg)
+/**************************************************************************
+ ...
+**************************************************************************/
+static ULONG Area_DeleteShortHelp(struct IClass *cl, Object *obj, struct MUIP_DeleteShortHelp *msg)
 {
     return TRUE;
 }
@@ -1581,8 +1577,10 @@ event_motion(struct IClass *cl, Object *obj, GdkEventMotion *evm)
 
 #endif
 
-static ULONG
-mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+/**************************************************************************
+ ...
+**************************************************************************/
+static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
@@ -1640,10 +1638,10 @@ mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
     return 0;
 }
 
-/* Trivial; custom classes may override this to get dynamic menus.
- */
-static ULONG
-mContextMenuBuild(struct IClass *cl, Object *obj, struct MUIP_ContextMenuBuild *msg)
+/**************************************************************************
+ Trivial; custom classes may override this to get dynamic menus.
+**************************************************************************/
+static ULONG Area_ContextMenuBuild(struct IClass *cl, Object *obj, struct MUIP_ContextMenuBuild *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
@@ -1651,11 +1649,10 @@ mContextMenuBuild(struct IClass *cl, Object *obj, struct MUIP_ContextMenuBuild *
 }
 
 
-/*
- * MUIM_Export : to export an objects "contents" to a dataspace object.
- */
-static ULONG
-mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+/**************************************************************************
+ MUIM_Export : to export an objects "contents" to a dataspace object.
+**************************************************************************/
+static ULONG Area_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     STRPTR id;
@@ -1673,11 +1670,10 @@ mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 }
 
 
-/*
- * MUIM_Import : to import an objects "contents" from a dataspace object.
- */
-static ULONG
-mImport(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+/**************************************************************************
+ MUIM_Import : to import an objects "contents" from a dataspace object.
+**************************************************************************/
+static ULONG Area_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     STRPTR id;
@@ -1706,10 +1702,8 @@ mImport(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
  * Because of BYTE storage, all values are clamped to 0..127
  * Inner dimensions being clamped to 0..32, it shouldnt cause too much harm
  */
-static void
-area_update_data(struct MUI_AreaData *data)
+static void area_update_data(struct MUI_AreaData *data)
 {
-#if 0
     struct ZuneFrameGfx *zframe;
 
     zframe = zune_zframe_get (&__zprefs.frames[data->mad_Frame]);
@@ -1760,20 +1754,7 @@ area_update_data(struct MUI_AreaData *data)
 	    CLAMP(data->mad_addtop
 		  + __zprefs.frames[data->mad_Frame].innerBottom
 		  + zframe->ythickness, 0, 127);
-#endif
 }
-
-//#ifdef DEBUG
-//STRPTR
-//zune_area_to_string (Object *area)
-//{
-//    static char buf[1000];
-//    g_snprintf(buf, 1000, "area %p at %d,%d (%dx%d) [%s]",
-//	       area, _left(area), _top(area), _width(area), _height(area),
-//	       OCLASS(area)->cl_ID);
-//    return buf;
-//}
-//#endif
 
 #ifndef _AROS
 __asm IPTR Area_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
@@ -1789,56 +1770,33 @@ AROS_UFH3S(IPTR, Area_Dispatcher,
 	/* Whenever an object shall be created using NewObject(), it will be
 	** sent a OM_NEW method.
 	*/
-	case OM_NEW:
-	    return Area_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE:
-	    return Area_Dispose(cl, obj, msg);
-	case OM_SET:
-	    return(mSet(cl, obj, (struct opSet *)msg));
-	case OM_GET:
-	    return(mGet(cl, obj, (struct opGet *)msg));
-	case MUIM_AskMinMax :
-	    return(mAskMinMax(cl, obj, (APTR)msg));
-	case MUIM_Draw :
-	    return(mDraw(cl, obj, (APTR)msg));
-	case MUIM_DrawBackground :
-	    return(mDrawBackground(cl, obj, (APTR)msg));
-	case MUIM_Setup :
-	    return(mSetup(cl, obj, (APTR)msg));
-	case MUIM_Cleanup :
-	    return(mCleanup(cl, obj, (APTR)msg));
-	case MUIM_Show :
-	    return(mShow(cl, obj, (APTR)msg));
-	case MUIM_Hide :
-	    return(mHide(cl, obj, (APTR)msg));
-	case MUIM_ConnectParent :
-	    return(mConnectParent(cl, obj, (APTR)msg));
-	case MUIM_ConnectParentWindow :
-	    return(mConnectParentWindow(cl, obj, (APTR)msg));
-	case MUIM_DisconnectParent :
-	    return(mDisconnectParent(cl, obj, (APTR)msg));
-	case MUIM_GoActive :
-	    return(mGoActive(cl, obj, (APTR)msg));
-	case MUIM_GoInactive :
-	    return(mGoInactive(cl, obj, (APTR)msg));
-	case MUIM_Layout :
-	    return(TRUE);
-	case MUIM_CreateShortHelp:
-	    return(mCreateShortHelp(cl, obj, (APTR)msg));
-	case MUIM_DeleteShortHelp:
-	    return(mDeleteShortHelp(cl, obj, (APTR)msg));
-	case MUIM_HandleEvent:
-	    return(mHandleEvent(cl, obj, (APTR)msg));
-	case MUIM_ContextMenuBuild:
-	    return(mContextMenuBuild(cl, obj, (APTR)msg));
+	case OM_NEW: return Area_New(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE: return Area_Dispose(cl, obj, msg);
+	case OM_SET: return Area_Set(cl, obj, (struct opSet *)msg);
+	case OM_GET: return Area_Get(cl, obj, (struct opGet *)msg);
+	case MUIM_AskMinMax: return Area_AskMinMax(cl, obj, (APTR)msg);
+	case MUIM_Draw: return Area_Draw(cl, obj, (APTR)msg);
+	case MUIM_DrawBackground: return Area_DrawBackground(cl, obj, (APTR)msg);
+	case MUIM_Setup: return Area_Setup(cl, obj, (APTR)msg);
+	case MUIM_Cleanup: return Area_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_Show: return Area_Show(cl, obj, (APTR)msg);
+	case MUIM_Hide: return Area_Hide(cl, obj, (APTR)msg);
+	case MUIM_ConnectParent: return Area_ConnectParent(cl, obj, (APTR)msg);
+	case MUIM_ConnectParentWindow: return Area_ConnectParentWindow(cl, obj, (APTR)msg);
+	case MUIM_DisconnectParent: return Area_DisconnectParent(cl, obj, (APTR)msg);
+	case MUIM_GoActive: return Area_GoActive(cl, obj, (APTR)msg);
+	case MUIM_GoInactive: return Area_GoInactive(cl, obj, (APTR)msg);
+	case MUIM_Layout: return 1;
+	case MUIM_CreateShortHelp: return Area_CreateShortHelp(cl, obj, (APTR)msg);
+	case MUIM_DeleteShortHelp: return Area_DeleteShortHelp(cl, obj, (APTR)msg);
+	case MUIM_HandleEvent: return Area_HandleEvent(cl, obj, (APTR)msg);
+	case MUIM_ContextMenuBuild: return Area_ContextMenuBuild(cl, obj, (APTR)msg);
 
-	case MUIM_Export :
-	    return(mExport(cl, obj, (APTR)msg));
-	case MUIM_Import :
-	    return(mImport(cl, obj, (APTR)msg));	
+	case MUIM_Export: return Area_Export(cl, obj, (APTR)msg);
+	case MUIM_Import: return Area_Import(cl, obj, (APTR)msg);
     }
 
-    return(DoSuperMethodA(cl, obj, msg));
+    return DoSuperMethodA(cl, obj, msg);
 }
 
 
