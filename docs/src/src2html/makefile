@@ -5,7 +5,7 @@ MIC = $(TOP)/scripts/moveifchanged
 CC = cc
 CFLAGS = -g -Wall -O
 
-SRCS = gram.c scan.c main.c emit.c emit_html.c varstr.c hash.c util.c
+SRCS = gram.c scan.c main.c emit.c emit_html.c varstr.c hash.c util.c exec.c
 OBJS = $(subst .c,.o,$(SRCS))
 
 all : grammar src2html
