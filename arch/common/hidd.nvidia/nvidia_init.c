@@ -386,6 +386,8 @@ AROS_UFH3(void, Enumerator,
 	    OOP_SetAttrs(pciDevice, (struct TagItem*)&attrs);
 	    
 	    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&driver);
+	    sd->pcidriver = driver;
+
 	    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base1, (APTR)&buf);
 	    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size1, (APTR)&size);
 
@@ -429,7 +431,6 @@ AROS_UFH3(void, Enumerator,
 		D(bug("[NVidia] Usable size: %dKB\n", sd->CardMem->mh_Free >> 10));
 
 		sd->Device = pciDevice;
-		sd->pcidriver = driver;
 
 		InitMode(sd, state, 640, 480, 16, 25200, 0, 
 		    640, 480,
