@@ -124,23 +124,19 @@ struct Library       *IconBase = NULL;
 static void freeResources(APState *as);
 static BOOL initiate(int argc, char **argv, APState *as);
 static void killCapsLockCustomFunc(CxMsg *msg, CxObj *co);
-STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id);
+CONST_STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id);
 
 
-STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+CONST_STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
 {
-    STRPTR string;
-
     if (catalogPtr != NULL)
     {
-        string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+        return GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
     }
     else
     {
-        string = CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
-
-    return string;
 }
 
 
