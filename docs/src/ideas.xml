@@ -721,4 +721,50 @@ You can find lcc at
 </p>
 </idea>
 
+<idea title="Build Shared Thingy" by="Henning Kiel">
+
+<p>AIM: The 'Build Shared Thingy' is intended to be a tool to generate
+all sorts of shared binaries in a common way.  It should be only given a
+directory and produce the shared bin out of it -- or at least generate
+C-code which then only needs to be compiled.  It might read in some
+*global* config file which contains info on the system
+(OS/Hardware).</p>
+
+<p>Mainly the tool is intended to make generation of libraries easier,
+but it should be also possible to create HIDDs, etc. with this tool.</p>
+
+<p>'How does shared library creation work?'</p>
+
+<p>THINGS IT MUST DO: We must have an archive with all the functions
+code and the specification of the interface (ie. return-value and
+parameters like *.arch), so the tool can create the library-functions
+itself.  There must be a way to substitute system/machine-dependant
+functions like a dir-tree in AROS/machine/linux-i386/rom/dos for
+linux-i386 specific functions which will replace std or will be added to
+AROS/rom/dos.</p>
+
+<p> We must provide a short description of the library (ie. Name,
+LibBase, LibBaseType, Version, options like lib.conf). </p>
+
+<p> The tool must provide standard init, open, close, expunge and null
+functions, which can be overridden or better: you provide an abstract
+description of what is to do (ie. library dependencies, initializing
+code, etc. -- the tool then will create the code on its own).</p>
+
+<p> Archtools functionality (inherited from the gawk scripts) must be
+given: generate includes, merging archives, etc. </p>
+
+<p> AutoDocs should be integrated, too, since they are closely connected
+to the sources. </p>
+
+<comment by="Iain Templeton">
+<p>This is the text of the file
+<filename>tools/buildshared/README</filename>, which I have removed and
+put the content in this file. It turns out that some of this
+functionality is implemented in the
+<filename>tools/genskeleton</filename> directory, and some in the new
+Python based archtools that Aaron Digulla has been workin on. Hopefully
+</comment>
+</idea>
+
 </chapter>
