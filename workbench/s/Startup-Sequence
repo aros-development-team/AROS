@@ -78,6 +78,6 @@ If EXISTS S:User-Startup
     Execute S:User-Startup
 EndIf
 
-LoadWB
+WANDERER:Wanderer
 
 EndCLI
