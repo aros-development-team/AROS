@@ -131,7 +131,6 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
     
         return HGroup,
             ButtonFrame,
-            MUIA_VertWeight,               0,
             MUIA_Background,               MUII_ButtonBack,
             MUIA_InputMode,                MUIV_InputMode_RelVerify,
             MUIA_Group_Spacing,            0,
@@ -140,8 +139,10 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
             MUIA_ControlChar : 
             TAG_IGNORE,             (IPTR) controlChar,
             
+            Child, HVSpace,
             Child, ImageObject,
                 MUIA_Image_Spec, (IPTR) imageSpec,
+                MUIA_Weight,            0,
             End,
             Child, HSpace(4),
             Child, TextObject,
@@ -149,7 +150,9 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
                 MUIA_Text_HiCharIdx, (IPTR) '_',
                 MUIA_Text_Contents,  (IPTR) label,
                 MUIA_Text_PreParse,  (IPTR) "\33c",
+                MUIA_Weight,                0,
             End,
+            Child, HVSpace,
         End;    
         
     }
