@@ -2,6 +2,9 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1999/03/24 20:06:05  nlorentz
+    Implemented function
+
     Revision 1.6  1999/01/16 23:19:48  hkiel
     Added aros_print_not_implemented()
 
@@ -70,9 +73,10 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    
+    
+    return;
 
-#warning TODO: Write intuition/FreeScreenDrawInfo()
-    aros_print_not_implemented ("FreeScreenDrawInfo");
 
     AROS_LIBFUNC_EXIT
 } /* FreeScreenDrawInfo */
