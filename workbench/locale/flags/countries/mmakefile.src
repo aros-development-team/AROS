@@ -1,0 +1,35 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FLAGS := Australia  	    \
+    	 Belgie     	    \
+	 Belgique   	    \
+	 Canada     	    \
+	 Canada_Français    \
+	 Danmark    	    \
+	 Deutschland	    \
+	 España     	    \
+	 France     	    \
+	 Great_Britain	    \
+	 Italia     	    \
+	 Nederland  	    \
+	 Norge	    	    \
+	 Polska     	    \
+	 Portugal   	    \
+	 Schweiz    	    \
+	 Suisse     	    \
+	 Suomi	    	    \
+	 Sverige    	    \
+	 Svizzera   	    \
+	 United_Kingdom     \
+	 United_States	    \
+	 Österreich
+
+#MM- workbench-locale : workbench-locale-flags-countries
+#MM workbench-locale-flags-countries: setup
+workbench-locale-flags-countries : files-copy
+
+%copy_files_q files=$(FLAGS) dst=$(AROS_LOCALE)/Flags/Countries
+
+%common
+
