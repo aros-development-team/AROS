@@ -2461,12 +2461,17 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
     struct dnode *dnTemp = dn;
     HashTable *ht = rambase->notifications;
     STRPTR  name = nr->nr_Name;
+    STRPTR  colon;
 
-    kprintf("Calling getname\n");
+    colon = strchr(name, ':');
+   
+    /* Take care of absolute names in nr_Name */
+    if (colon != NULL)
+    {
+	name = colon + 1;
+    }
 
     nr->nr_FullName = getName(rambase, dn, nr->nr_Name);
-
-    kprintf("Returned from getName\n");
 
     if (nr->nr_FullName == NULL)
     {
@@ -2475,7 +2480,7 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
 
     /* First: Check if the file is opened */
 
-    kprintf("Checking existence\n");
+    kprintf("Checking existence of %s\n", name);
 
     if (findname(rambase, &name, &dnTemp) == 0)
     {
@@ -2513,7 +2518,7 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
 	/* This file is not opened */
 
 	struct Receiver *rr = AllocVec(sizeof(struct Receiver), MEMF_CLEAR);
-	
+
 	if (rr == NULL)
 	{
 	    return FALSE;
