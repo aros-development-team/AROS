@@ -241,6 +241,8 @@ BOOL openwin()
                              MXIDCMP |
                              PALETTEIDCMP |
                              SLIDERIDCMP |
+			     SCROLLERIDCMP |
+			     ARROWIDCMP |
                              IDCMP_GADGETUP |
 			     IDCMP_VANILLAKEY |
 			     IDCMP_CLOSEWINDOW |
