@@ -83,7 +83,7 @@ VOID do_auto(struct MsgPort * prt, ULONG unitnum, ULONG baudrate, ULONG delay)
 		DeleteExtIO((struct IORequest *)IORequests[0]);
 		IORequests[0]=NULL;
 	} else {
-		printf("Opened device. Now waiting for %d secs.\n",delay);
+		printf("Opened device. Now waiting for %d seconds.\n",delay);
 		if (0 != delay) {
 			Delay(50*delay);
 		}
@@ -104,8 +104,10 @@ VOID do_auto(struct MsgPort * prt, ULONG unitnum, ULONG baudrate, ULONG delay)
 			IORequests[0]->IOSer.io_Data = buffer;
 
 			DoIO((struct IORequest *)IORequests[0]);
-			printf("Now please enter something! Waiting for a while!\n");
-			Delay(50 * delay);
+			printf("Now please enter something! Waiting for %d seconds!\n",delay);
+			if (0 != delay) {
+				Delay(50 * delay);
+			}
 
 			IORequests[0]->IOSer.io_Command = SDCMD_QUERY;
 
