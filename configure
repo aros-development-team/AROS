@@ -19,6 +19,8 @@ proc=`uname -m`
 # $APP_CFLAGS	 - the compile-flags for applications that will run under AROS
 #		   (e.g. AROS/c/#?). If you do not define this, $COMMON_CFLAGS
 #		   will be used.
+# $GENMAP        - Generate a linker map. Use like this:
+#                  $(CC) options $(GENMAP) mapfile moreoptions
 CC="cc"
 COMMON_CFLAGS="-g"
 RANLIB="ranlib"
@@ -28,6 +30,7 @@ GUI_LIBFLAGS=""
 MKDEPEND="makedepend"
 FLAVOUR="emulation"
 SHELL_LDFLAGS=""
+GENMAP="-Xlinker -Map -Xlinker"
 
 # Flags to link AROS binaries (ie. binaries which are to be started
 # inside AROS). What we need is something like a shared lib: All
@@ -204,6 +207,8 @@ case "$1" in
 	echo "SHARED_CFLAGS := $SHARED_CFLAGS" >> $2
 	echo "SHARED_AR := $SHARED_AR" >> $2
     fi
+
+    echo "GENMAP := $GENMAP" >> $2
 
     # These change commands in config/make.cfg 
     if [ -n "$RM" ]; then
