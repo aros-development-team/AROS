@@ -8,7 +8,6 @@
 #MM	kernel-aros \
 #MM	kernel-exec-module \
 #MM	kernel-alerthook-module \
-#MM	kernel-layers-module \
 #MM	kernel-boopsi-module \
 #MM	kernel-utility-module \
 #MM	kernel-expansion-module \
@@ -20,6 +19,7 @@
 # hidd-graphics-amiga-intui-module <- missing files/includes?
 # kernel-dos-module <- removed due to spilled register bug in egcs
 # kernel-graphics-module <- removed due to spilled register bug in egcs
+# kernel-layers-module <- register spilling
 
 # The "workbench" dependency in "AROS-amiga" wraps back onto this target:
 #MM- workbench-amiga : \
