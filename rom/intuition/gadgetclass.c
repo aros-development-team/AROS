@@ -136,6 +136,15 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 	    retval = 1UL;
 	    break;
 
+	case GA_Bounds:
+	    EG(o)->BoundsLeftEdge = ((struct IBox *)tidata)->Left;
+	    EG(o)->BoundsTopEdge  = ((struct IBox *)tidata)->Top;
+	    EG(o)->BoundsWidth    = ((struct IBox *)tidata)->Width;
+	    EG(o)->BoundsHeight   = ((struct IBox *)tidata)->Height;
+	    EG(o)->MoreFlags |= GMORE_BOUNDS;
+	    retval = 1UL;
+	    break;
+	   	    
 	case GA_Previous:
 	    if( (tidata != 0L) && (msg->MethodID == OM_NEW) )
 	    {

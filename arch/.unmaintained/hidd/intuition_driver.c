@@ -322,6 +322,8 @@ void intui_RefreshWindowFrame(struct Window *w)
     /* Draw a frame around the window */
     struct RastPort *rp = w->BorderRPort;
     struct DrawInfo *dri;
+    struct Gadget *gad;
+    ULONG ilock;
     UWORD i;
     
     EnterFunc(bug("intui_RefreshWindowFrame(w=%p)\n", w));
@@ -364,13 +366,32 @@ void intui_RefreshWindowFrame(struct Window *w)
 	    if (w->BorderBottom > 2) RectFill(rp, 1, w->Height - w->BorderBottom + 1,
 	    					  w->Width - 2, w->Height - 2);
 						  
-	    /* Refresh all the sytem gadgets */
+	    /* Refresh all the gadgets with GACT_???BORDER activation set */
 
+	    ilock = LockIBase(0);
+	    
+	    gad = w->FirstGadget;
+	    while(gad)
+	    {
+	    	if (gad->Activation & (GACT_TOPBORDER |
+				       GACT_LEFTBORDER |
+				       GACT_RIGHTBORDER |
+				       GACT_BOTTOMBORDER))
+		{
+		    RefreshGList(gad, w, NULL, 1);
+		}
+		
+	    	gad = gad->NextGadget;
+	    }
+	    
+	    UnlockIBase(ilock);
+#if 0	    
 	    for (i = 0; i < NUM_SYSGADS; i ++)
 	    {
         	if (SYSGAD(w, i))
 		    RefreshGList((struct Gadget *)SYSGAD(w, i), w, NULL, 1 );
 	    }
+#endif
 
 	    UnlockLayerRom(rp->Layer);
 
@@ -565,6 +586,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
 		    {GA_SysGadget,	TRUE		},
 		    {GA_SysGType,	GTYP_WDEPTH 	},
+		    {GA_TopBorder,	TRUE		},
 		    {TAG_DONE,		0UL }
 	    };
 		
@@ -593,6 +615,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
 		    {GA_SysGadget,	TRUE		},
 		    {GA_SysGType,	GTYP_WZOOM 	},
+		    {GA_TopBorder,	TRUE		},
 		    {TAG_DONE,		0UL }
 	    };
 		
@@ -618,6 +641,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
 		    {GA_SysGadget,	TRUE		},
 		    {GA_SysGType,	GTYP_CLOSE 	},
+		    {GA_TopBorder,	TRUE		},
 		    {TAG_DONE,		0UL }
 	    };
 		
@@ -642,6 +666,8 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 			{GA_Top,	0		},
 			{GA_RelWidth,	db_width 	},
 			{GA_Height,	TITLEBAR_HEIGHT },
+			{GA_SysGType,	GTYP_WDRAGGING	},
+			{GA_TopBorder,	TRUE		},
 			{TAG_DONE,	0UL}
 	    };
 	    SYSGAD(w, DRAGBAR) = NewObjectA(
