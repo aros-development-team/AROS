@@ -141,8 +141,16 @@ static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot
 
 							error = Hidd_UnixIO_AsyncIO(data->unixio_read,
 							                            data->filedescriptor,
+							                            vHidd_UnixIO_Terminal,
 							                            data->replyport_read,
-							                            vHidd_UnixIO_RW | vHidd_UnixIO_Keep,
+							                            vHidd_UnixIO_Read | vHidd_UnixIO_Keep,
+							                            SysBase);
+
+							error = Hidd_UnixIO_AsyncIO(data->unixio_write,
+							                            data->filedescriptor,
+							                            vHidd_UnixIO_Terminal,
+							                            data->replyport_write,
+							                            vHidd_UnixIO_Write | vHidd_UnixIO_Keep,
 							                            SysBase);
 							goto exit;
 
@@ -194,8 +202,6 @@ static OOP_Object *parallelunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg 
 		Hidd_UnixIO_AbortAsyncIO(data->unixio_read,
 		                         data->filedescriptor,
 		                         SysBase);
-//		Hidd_UnixIO_AbortAsyncIONotification(data->unixio_write,
-//                                                   data->filedescriptor);
 
 		close(data->filedescriptor);
 	
@@ -249,18 +255,6 @@ ULONG parallelunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit
 	            msg->Outbuffer,
 	            msg->Length);
 
-#if 0
-	if (len < msg->Length) {
-
-		// !!!!!! FROM WHAT I CAN TELL THE FOLLOWING LINE
-		//				CAUSES PROBLEMS. IT IS NECESSARY TO HAVE IT, THOUGH.
-		error = Hidd_UnixIO_AsyncIO(data->unixio_write,
-		                            data->filedescriptor,
-                                            data->replyport_write,
-		                            vHidd_UnixIO_Write,
-		                            SysBase);
-	}
-#endif
 
 	ReturnInt("ParallelUnit::Write()",ULONG, len);
 }
@@ -327,11 +321,6 @@ AROS_UFH3(void, parallelunit_receive_data,
 	UBYTE buffer[READBUFFER_SIZE];
 	struct Message * msg;
 
-	/*
-	** Get the unixio message from my port and free it
-	*/
-	msg = GetMsg(data->replyport_read);
-	FreeMem(msg, sizeof(struct uioMessage));
 
 	/*
 	** Read the data from the port ...
@@ -344,16 +333,6 @@ AROS_UFH3(void, parallelunit_receive_data,
 	if (NULL != data->DataReceivedCallBack)
 		data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 
-#if 0
-	/*
-	** I want to be notified when the next data are coming in.
-	*/
-	error = Hidd_UnixIO_AsyncIO(data->unixio_read,
-	                            data->filedescriptor,
-	                            data->replyport_read,
-	                            vHidd_UnixIO_Read,
-	                            SysBase);
-#endif
 	AROS_USERFUNC_EXIT
 }
 
@@ -366,12 +345,6 @@ AROS_UFH3(void, parallelunit_write_more_data,
 
 	struct HIDDParallelUnitData * data = iD;
 	struct Message * msg;
-
-	/*
-	** Get the unixio message from my port and free it
-	*/
-	msg = GetMsg(data->replyport_read);
-	FreeMem(msg, sizeof(struct uioMessage));
 
 	/*
 	** Ask for more data be written to the unit
