@@ -8,6 +8,9 @@
 #include <proto/dos.h>
 #include "icon_intern.h"
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -102,6 +105,10 @@
 	    }
 
 	    UnLock(lock);
+	} else
+	{
+#warning TODO: If above lock fails what to do then if we lock for a Disk.info?
+	    return NULL;
 	}
 
 	/* Try to open the default icon */
