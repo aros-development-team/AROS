@@ -1,0 +1,31 @@
+To get AROS/Palm to run under POSE, a few changes need to
+be done to the POSE Source. So here's what you need to
+do (POSE 3.4):
+
+Emulator_Src_3.4/SrcShared/EmStructs.h:
+
+ In the IsValid() function comment out the following
+ check
+ 
+    if (!fDevice.SupportsROM (fROMFile))
+    	return false;
+ 
+ This is necessary, because otherwise it does not accept
+ the AROS ROM.
+ 
+
+Emulator_Src_3.4/SrcShared/Hardware/EmBankDRAM.cpp:
+
+ #if 0 out everthing in the PrvCheckBelowStackPointerAccess()
+ function, otherwise stack errors are reported all the time.
+ 
+
+Emulator_Src_3.4/SrcShared/EmPalmOS.cpp:
+
+ In the function EmPalmOS::CheckStackPointerDecrement()
+ comment out the "Errors::ReportErrStackOverflow ();"
+ inside the "if(fatal)" block, otherwise one gets
+ stack overflow errors.
+ 
+
+ 
