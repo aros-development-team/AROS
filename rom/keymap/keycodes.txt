@@ -64,3 +64,14 @@
 *       69      Right Mouse Button (not converted)
 *       6A      Middle Mouse Button (not converted)
 *
+* ----------- from workbench/libs/commodities/parse.h ----------
+*
+*       4B     F11
+*       6F     F12
+*       70     HOME
+*       71     END
+*       47     INSERT
+*       49     PAGE DOWN
+*       48     PAGE UP
+*       6E     PAUSE/BREAK
+*
