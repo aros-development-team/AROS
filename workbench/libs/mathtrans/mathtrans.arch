@@ -152,6 +152,7 @@
 
     INTERNALS
      Algorithm for Calculation of sin(y):
+     <code>
          z    = floor ( |y| / pi );
          y_1  = |y| - z * pi;        => 0 <= y_1 < pi
 
@@ -167,6 +168,7 @@
 
          if (z was an odd number)
            Res = -Res;
+     </code>
 
 
     HISTORY
@@ -252,6 +254,7 @@
 
     INTERNALS
       Algorithm for Calculation of cos(y):
+     <code>
          z    = floor ( |y| / pi );
          y_1  = |y| - z * pi;        => 0 <= y_1 < pi
 
@@ -267,6 +270,7 @@
 
          if (y_1 was greater than pi/2 in the test above)
            Res = -Res;
+     </code>
 
 
     HISTORY
@@ -569,10 +573,12 @@ LONG tmp;
     SEE ALSO
 
     INTERNALS
+     <code>
       cosh(x) = (1/2)*( e^x + e^(-x) )
 
       cosh( |x| >= 44 ) = infinity;
       cosh( |x| >= 9  ) = (1/2) * (e^x);
+     </code>
 
     HISTORY
 
@@ -638,12 +644,14 @@ LONG tmp;
     SEE ALSO
 
     INTERNALS
+     <code>
 
                 ( e^x - e^(-x) )
      tanh(x) =  ----------------
                 ( e^x + e^(-x) )
 
      tanh( |x| > 9 ) = 1
+     </code>
 
     HISTORY
 
@@ -711,7 +719,9 @@ LONG tmp;
     SEE ALSO
 
     INTERNALS
+     <code>
       e^(>= 44): return FFP_Pinfty;
+     </code>
 
     HISTORY
 
@@ -834,6 +844,7 @@ char Exponent;
 
       (ld is the logarithm with base 2)
       (ln is the logarithm with base e)
+     <code>
       fnum1 = M * 2^E
 
       ln fnum1 = ln ( M * 2^E ) =
@@ -849,6 +860,7 @@ char Exponent;
                  ld M + E
                = --------
                  ld e
+     </code>
 
       ld e can be precalculated, of course.
       For calculating ld M see file intern_spld.c
@@ -993,6 +1005,7 @@ char Exponent;
         fnum1 = M * 2^E
 
         If exponent is an odd number:
+     <code>
           fnum = ( M*2 ) * 2^ (E-1)
           Now E' = E-1 is an even number and
                -> sqrt(fnum) = sqrt(M)   * sqrt(2)   * sqrt (2^E')
@@ -1001,11 +1014,14 @@ char Exponent;
                              = sqrt(M)   * sqrt(2)   * 2^(E'/2)
                              = sqrt(M)   * 1/sqrt(2) * 2^(1+(E'/2))
                              = sqrt(M/2)             * 2^(1+(E'/2))
+     </code>
 
 
-        If Exponent is an even number:
+       If Exponent is an even number:
+     <code>
            -> sqrt(fnum) = sqrt(M) * sqrt (2^E) =
                          = sqrt(M) * 2^(E/2)
+     </code>
 
         Now calculate the square root of the mantisse.
         The following algorithm calculates the square of a number + delta
@@ -1015,6 +1031,7 @@ char Exponent;
         Start out with number = 0;
 
 
+     <code>
         Exponent = -1;
         Root = 0;
         repeat
@@ -1024,6 +1041,7 @@ char Exponent;
           Exponent --;
         }
         until you`re happy with the accuracy
+     </code>
 
 
     HISTORY
@@ -1228,7 +1246,7 @@ char Exponent;
       flags:
         zero     : result is zero
         negative : result is negative
-        overflow : fnum < -1  or  fnum > 1
+        overflow : fnum &lt; -1  or  fnum &gt; 1
 
     NOTES
 
@@ -1344,7 +1362,7 @@ char Exponent;
       flags:
       zero     : result is zero
       negative : 0 (not possible)
-      overflow : fnum < -1  or  fnum > 1
+      overflow : fnum &lt; -1  or  fnum &gt; 1
 
     NOTES
 
@@ -1490,6 +1508,7 @@ char Exponent;
 
       (ld is the logarithm with base 2)
       (log is the logarithm with base 10)
+      <code>
       fnum1 = M * 2^E
 
       log fnum1 = log ( M * 2^E ) =
@@ -1505,6 +1524,7 @@ char Exponent;
                   ld M + E
                 = --------
                   ld 10
+      </code>
 
       ld 10 can be precalculated, of course.
       For calculating ld M see file intern_spld.c
