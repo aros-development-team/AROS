@@ -11,6 +11,7 @@
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
 #include <errno.h>
+#include "__errno.h"
 
 #ifndef _CLIB_KERNEL_
 static BOOL __startup_cd_changed;  /* Need this since NULL is a valid lock */
@@ -40,7 +41,7 @@ static BPTR __startup_cd_lock;
     NOTES
     	At program exit, the current working directory will be changed back
 	to the one that was current when the program first started. If you
-	do not desire this behavious, use dos.library/CurrentDir() instead.
+	do not desire this behaviour, use dos.library/CurrentDir() instead.
 			
     EXAMPLE
 
