@@ -110,7 +110,7 @@ AROS_LH2(struct NVBase *, init,
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
-    nvBase->nv_SysBase = (struct Library *)sysBase;
+    nvBase->nv_SysBase = sysBase;
     nvBase->nv_SegList = segList;
 
     return nvBase;
