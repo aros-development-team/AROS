@@ -207,7 +207,7 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	int width;
 
 	DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj));
-	data->knob_frame->draw[0](muiRenderInfo(obj), pos, _mtop(obj), data->knob_width, _mheight(obj));
+	data->knob_frame->draw[data->state](muiRenderInfo(obj), pos, _mtop(obj), data->knob_width, _mheight(obj));
 
 	get(obj,MUIA_Numeric_Value,&val);
 
@@ -235,6 +235,51 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
     {
 	switch (msg->imsg->Class)
 	{
+	    case    IDCMP_MOUSEBUTTONS:
+	            if (msg->imsg->Code == SELECTDOWN)
+	            {
+	            	if (_between(_mleft(obj),msg->imsg->MouseX,_mright(obj)) && _between(_mtop(obj),msg->imsg->MouseY,_mbottom(obj)))
+	            	{
+			    data->clickx = msg->imsg->MouseX;
+			    data->clicky = msg->imsg->MouseY;
+			    
+			    data->knob_click = data->clickx - DoMethod(obj,MUIM_Numeric_ValueToScale, 0, _mwidth(obj) - data->knob_width);
+
+			    if (_between(data->clickx - data->knob_click + _mleft(obj), msg->imsg->MouseX, data->clickx - data->knob_click + data->knob_width - 1 + _mleft(obj)))
+			    {
+				DoMethod(obj, MUIM_Window_RemEventHandler, &data->ehn);
+				data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+				DoMethod(obj, MUIM_Window_AddEventHandler, &data->ehn);
+				data->state = 1;
+				MUI_Redraw(obj,MADF_DRAWUPDATE);
+			    }   else
+			    {
+				if (msg->imsg->MouseX < data->clickx - data->knob_click + _mleft(obj))
+				    DoMethod(obj, MUIM_Numeric_Decrease, 1);
+				else
+				    DoMethod(obj, MUIM_Numeric_Increase, 1);
+			    }
+			}
+		    } else
+		    {
+			if (data->state)
+			{
+			    DoMethod(obj, MUIM_Window_RemEventHandler, &data->ehn);
+			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+			    DoMethod(obj, MUIM_Window_AddEventHandler, &data->ehn);
+			    data->state = 0;
+			    MUI_Redraw(obj,MADF_DRAWUPDATE);
+			}
+		    }
+		    break;
+
+	    case    IDCMP_MOUSEMOVE:
+		    {
+			LONG newval;
+			newval =  DoMethod(obj,MUIM_Numeric_ScaleToValue, 0, _mwidth(obj) - data->knob_width, msg->imsg->MouseX - data->knob_click);
+			set(obj,MUIA_Numeric_Value,newval);
+		    }
+		    break;
 	}
     }
 

@@ -5,9 +5,11 @@ struct MUI_SliderData
 {
     ULONG flags;
     struct MUI_EventHandlerNode ehn;
+    struct ZuneFrameGfx *knob_frame;
     LONG val_width;
     LONG knob_width;
-    struct ZuneFrameGfx *knob_frame;
+    LONG state; /* When using mouse */
+    LONG knob_click,clickx,clicky;
 };
 
 
