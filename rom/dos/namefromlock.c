@@ -106,7 +106,8 @@
 
     STRPTR s1, s2, name;
     struct Unit *curlock, *oldlock=NULL;
-    struct ExAllData *ead=(struct ExAllData *)buffer;
+    struct ExAllData stackead;
+    struct ExAllData *ead = &stackead;
     LONG error;
 
     /* Get pointer to filehandle */
@@ -135,7 +136,7 @@
 	iofs->IOFS.io_Unit=curlock;
 	iofs->IOFS.io_Command=FSA_EXAMINE;
 	iofs->io_Union.io_EXAMINE.io_ead =ead;
-	iofs->io_Union.io_EXAMINE.io_Size=name-buffer;
+	iofs->io_Union.io_EXAMINE.io_Size=sizeof(stackead);
 	iofs->io_Union.io_EXAMINE.io_Mode=ED_TYPE;
 	DoIO(&iofs->IOFS);
 	error=iofs->io_DosError;
