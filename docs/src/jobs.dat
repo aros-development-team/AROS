@@ -422,7 +422,7 @@ datatypes00027;2;SDuvan;SaveDTObjectA
 datatypes00028;2;SDuvan;StartDragSelect
 datatypes00029;1;SDuvan;LaunchToolA
 DataType00000;0;;Implement 8svx.datatype
-DataType00001;0;;Implement amigaguide.datatype
+DataType00001;0;gierich;Implement amigaguide.datatype
 DataType00002;0;;Implement animation.datatype
 DataType00003;2;stegerg;Implement ascii.datatype
 DataType00004;0;;Implement ilbm.datatype
