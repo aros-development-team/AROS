@@ -44,7 +44,7 @@
 #include "textclass.h"
 
 /* Define the following to enable the debug version */
-//#define MYDEBUG
+#define MYDEBUG
 #include "debug.h"
 
 
@@ -55,11 +55,6 @@
 #define NO_PRINTER 0
 #define NO_GMORE_SCROLLRASTER 0
 #endif
-
-/* 17 is reserved for help */
-#define STM_SEARCH 18
-#define STM_SEARCH_NEXT 19
-#define STM_SEARCH_PREV 20
 
 /* Some prototypes */
 static void CopyText(struct Text_Data *td);
@@ -1372,6 +1367,7 @@ static void CopyTextNowIFF(struct Text_Data *td, struct IFFHandle *iff)
     struct Line *mark_line1, *mark_line2;
     LONG curlinelen = 0;
 
+    D(bug("  copytextnowiff\n"));
     PrepareMark(td, &mark_x1, &mark_y1, &mark_x2, &mark_y2, &mark_line1, &mark_line2);
     if (!mark_line1)
     {
@@ -1425,7 +1421,6 @@ static void CopyTextNowIFF(struct Text_Data *td, struct IFFHandle *iff)
 		    len = mark_x2 - curlinelen - 1;
 	        }
 	    }
-
 	    if (draw_rect && (GetLineStartX(line) != line->ln_XOffset))
 	        WriteChunkBytes(iff, "\t", 1);
 
@@ -1854,9 +1849,11 @@ const static ULONG supported_methods[] =
 
 const static struct DTMethod trigger_methods[] =
 {
+#ifndef __AROS__
   {"Search...","SEARCH",STM_SEARCH},
   {"Search next", "SEARCH_NEXT",STM_SEARCH_NEXT},
   {"Search previous", "SEARCH_PREV",STM_SEARCH_PREV},
+#endif
   {NULL,NULL,0}
 };
 
@@ -2625,34 +2622,47 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
     return retval;
 }
 
-STATIC VOID DT_Write(struct IClass * cl, struct Gadget * g, struct dtWrite * msg)
+STATIC BOOL DT_Write(struct IClass * cl, struct Gadget * g, struct dtWrite * msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
 
-    D(bug("%ld\n", msg->dtw_Mode));
+    // D(bug("%ld\n", msg->dtw_Mode));
 
     if (msg->dtw_Mode == DTWM_RAW && msg->dtw_FileHandle)
     {
-    	if (!td->mark_line1)
-	    Write(msg->dtw_FileHandle, td->buffer_allocated, td->buffer_allocated_len);
-	else CopyTextNowDOS(td,msg->dtw_FileHandle);
+	/* A NULL file handle is a NOP */
+	if( msg->dtw_FileHandle )
+	{
+	    if (!td->mark_line1)
+		Write(msg->dtw_FileHandle, td->buffer_allocated, td->buffer_allocated_len);
+	    else CopyTextNowDOS(td,msg->dtw_FileHandle);
+	}
     }  else
     if (msg->dtw_Mode == DTWM_IFF)
     {
-    	struct IFFHandle *iff = AllocIFF();
-    	if (iff)
+    	struct IFFHandle *iff;
+	    
+	if ((iff = AllocIFF()))
     	{
-	    if ((iff->iff_Stream = msg->dtw_FileHandle))
+	    D(bug(" got iff handle %08lx\n", (long)iff));
+	    if ((iff->iff_Stream = (IPTR)(msg->dtw_FileHandle)))
 	    {
 		InitIFFasDOS(iff);
+		D(bug(" init iff %08lx\n", (long)iff));
 		if(!OpenIFF(iff,IFFF_WRITE))
 		{
+		    D(bug(" open iff %08lx\n", (long)iff));
 		    if(!PushChunk(iff, MAKE_ID('F','T','X','T'), MAKE_ID('F','O','R','M'), IFFSIZE_UNKNOWN))
 		    {
+			D(bug(" push chunk FTXT %08lx\n", (long)iff));
 			if(!PushChunk(iff, 0, MAKE_ID('C','H','R','S'), IFFSIZE_UNKNOWN))
 			{
-			    CopyTextNowIFF(td,(struct IFFHandle *)msg->dtw_FileHandle);
+			    D(bug(" push chunk CHRS %08lx\n", (long)iff));
+			    CopyTextNowIFF(td, iff);
+			    D(bug(" copy text %08lx\n", (long)iff));
+			    PopChunk(iff);
 			}
+			PopChunk(iff);
 		    }
 		    CloseIFF(iff);
 		}
@@ -2660,6 +2670,7 @@ STATIC VOID DT_Write(struct IClass * cl, struct Gadget * g, struct dtWrite * msg
 	    FreeIFF(iff);
 	}
     }
+    return TRUE;
 }
 
 STATIC VOID DT_Print(struct IClass *cl, struct Gadget *g, struct dtPrint *msg)
@@ -2982,7 +2993,7 @@ STATIC VOID DT_Trigger(struct IClass *cl, Object *o, struct dtTrigger *msg)
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
     ULONG function = ((struct dtTrigger*)msg)->dtt_Function;
 
-    D(bug("%ld\n",function));
+    D(bug(" Trigger function %ld\n",function));
 
     if (function == STM_ACTIVATE_FIELD || function == STM_RETRACE || function == STM_SEARCH)
     {
@@ -3121,7 +3132,7 @@ ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object *
     case DTM_WRITE:
 	{
 	    D(bug("text.datatype: Dispatcher called (MethodID: DTM_WRITE)!\n"));
-	    DT_Write(cl, (struct Gadget *) o, (struct dtWrite *) msg);
+	    return (ULONG) DT_Write(cl, (struct Gadget *) o, (struct dtWrite *) msg);
 	}
 	break;
 
@@ -3155,9 +3166,9 @@ ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object *
 	break;
 #endif
 
-	case OM_NOTIFY:
-		D(bug("text.datatype: Dispatcher called (MethodID: OM_NOTIFY)!\n"));
-		return DoSuperMethodA(cl, o, (Msg) msg);
+    case OM_NOTIFY:
+	    D(bug("text.datatype: Dispatcher called (MethodID: OM_NOTIFY)!\n"));
+	    return DoSuperMethodA(cl, o, (Msg) msg);
 
     default:
 	D(bug("text.datatype: Dispatcher called (MethodID: %ld=0x%lx)!\n", *msg, *msg));
