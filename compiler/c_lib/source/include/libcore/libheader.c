@@ -1,11 +1,20 @@
 /*
-**	$VER: libheader.c 37.15 (14.8.97)
+**    © Copyright 1996-97 Andreas R. Kleinert
+**    All Rights Reserved.
+** 
+**    Copyright © 1997-2001, The AROS Development Team. All rights reserved.
+**    $Id$
 **
-**	This file must be compiled and must be passed as the first
-**	object to link to the linker.
+**    This file needs to be at the start of a compiled module. Most of the
+**    time this is done by including it in the *_init.c of the module.
 **
-**	(C) Copyright 1996-97 Andreas R. Kleinert
-**	All Rights Reserved.
+**    This file is based on a file from the CLib37x.lha package of Andreas R.
+**    Kleinert (of which a more recent version is available on aminet) and
+**    adapted to fit in the AROS build framework.
+** 
+**    To be able to compile modules with a license incompatible with the AROS
+**    Public License users may relicense this file under any license of their
+**    choice.
 */
 
 #define __USE_SYSBASE	     /* perhaps only recognized by SAS/C */
