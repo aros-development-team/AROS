@@ -2,7 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-EXEDIR := $(CONTRIBDIR)/Gfx/Jpeg
+EXEDIR := $(AROS_TESTS)/libjpeg
 
 COMMON := cdjpeg \
 	 rdbmp \
