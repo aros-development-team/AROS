@@ -428,7 +428,7 @@ int init_gui(void)
 	            End,
 		    Child, VGroup,
 	                TextFrame,
-			InnerSpacing(4,4),
+			InnerSpacing(6,6),
 	                MUIA_Background, MUII_PageBack,
 			Child, main_page_group = VGroup,
 			    Child, main_page_group_displayed = main_page_space = HVSpace,
