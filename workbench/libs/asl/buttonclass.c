@@ -1,10 +1,12 @@
 /*
-    (C) 2000-2001 AROS - The Amiga Research OS
+    Copyright (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: english
 */
+
+#define OWN_INPUT_HANDLING 1
 
 #define AROS_ALMOST_COMPATIBLE 1
 
@@ -145,6 +147,167 @@ static IPTR aslbutton_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 	    (msg->gpht_Mouse.X < gadw) &&
 	    (msg->gpht_Mouse.Y < gadh)) ? GMR_GADGETHIT : 0;
 }
+
+/***********************************************************************************/
+
+#if OWN_INPUT_HANDLING
+
+/***********************************************************************************/
+
+static IPTR aslbutton_goactive(Class *cl, Object *o, struct gpInput *msg)
+{
+    struct GadgetInfo  	*gi = msg->gpi_GInfo;
+    IPTR		retval = GMR_NOREUSE;
+
+    if (gi)
+    {
+	struct RastPort *rp = ObtainGIRPort(gi);
+
+	if (rp)
+	{
+	    EG(o)->Flags |= GFLG_SELECTED;
+
+	    DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+	    ReleaseGIRPort(rp);
+
+	    retval = GMR_MEACTIVE;
+	}
+    }
+    
+    return retval;
+ }
+
+/***********************************************************************************/
+
+static IPTR aslbutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
+{
+    struct GadgetInfo 	*gi = msg->gpi_GInfo;
+    IPTR    	    	retval = GMR_MEACTIVE;
+
+    if (gi)
+    {
+	struct InputEvent *ie = ((struct gpInput *)msg)->gpi_IEvent;
+
+	switch(ie->ie_Class)
+	{
+	    case IECLASS_RAWMOUSE:
+		switch( ie->ie_Code )
+		{
+		    case SELECTUP:
+	        	if( EG(o)->Flags & GFLG_SELECTED )
+			{
+			    struct RastPort *rp;
+
+			    /* mouse is over gadget */
+			    EG(o)->Flags &= ~GFLG_SELECTED;
+
+			    if ((rp = ObtainGIRPort(gi)))
+			    {
+				DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+				ReleaseGIRPort(rp);
+			    }
+			    retval = GMR_NOREUSE | GMR_VERIFY;
+			    *msg->gpi_Termination = IDCMP_GADGETUP;
+			}
+			else
+			{
+			    retval = GMR_NOREUSE;
+    	    	    	}
+			break;
+
+		    case IECODE_NOBUTTON:
+	        	{
+			    struct gpHitTest gpht;
+
+			    gpht.MethodID     = GM_HITTEST;
+			    gpht.gpht_GInfo   = gi;
+			    gpht.gpht_Mouse.X = ((struct gpInput *)msg)->gpi_Mouse.X;
+			    gpht.gpht_Mouse.Y = ((struct gpInput *)msg)->gpi_Mouse.Y;
+
+			    /*
+			       This case handles selection state toggling when the
+			       left button is depressed and the mouse is moved
+			       around on/off the gadget bounds.
+			    */
+			    if ( DoMethodA(o, (Msg)&gpht) == GMR_GADGETHIT )
+			    {
+				if ( (EG(o)->Flags & GFLG_SELECTED) == 0 )
+				{
+				    struct RastPort *rp;
+
+				    /* mouse is over gadget */
+				    EG(o)->Flags |= GFLG_SELECTED;
+
+				    if ((rp = ObtainGIRPort(gi)))
+				    {
+					DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+					ReleaseGIRPort(rp);
+				    }
+				}
+			    }
+			    else
+			    {
+				if ( (EG(o)->Flags & GFLG_SELECTED) != 0 )
+				{
+				    struct RastPort *rp;
+
+				    /* mouse is not over gadget */
+				    EG(o)->Flags &= ~GFLG_SELECTED;
+
+				    if ((rp = ObtainGIRPort(gi)))
+				    {
+					DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+					ReleaseGIRPort(rp);
+				    }
+				}
+			    }
+			    break;
+			}
+
+		    default:
+	        	retval = GMR_REUSE;
+			*((struct gpInput *)msg)->gpi_Termination = 0UL;
+			break;
+		    
+		} /* switch(ie->ie_Code) */
+		break;
+		
+	} /* switch(ie->ie_Class) */
+	
+    } /* if (gi) */
+    else
+    {
+        retval = GMR_NOREUSE;
+    }
+    
+    return retval;
+}
+
+/***********************************************************************************/
+
+static IPTR aslbutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+{
+    struct GadgetInfo *gi = msg->gpgi_GInfo;
+
+    EG(o)->Flags &= ~GFLG_SELECTED;
+ 
+    if (gi)
+    {
+	struct RastPort *rp = ObtainGIRPort(gi);
+	
+	if (rp)
+	{
+	    DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+	    ReleaseGIRPort(rp);
+	}
+    }
+
+    return 0;
+}
+
+/***********************************************************************************/
+
+#endif /* OWN_INPUT_HANDLING */
 
 /***********************************************************************************/
 
@@ -304,7 +467,20 @@ AROS_UFH3S(IPTR, dispatch_aslbuttonclass,
 	case GM_HITTEST:
 	    retval = aslbutton_hittest(cl, obj, (struct gpHitTest *)msg);
 	    break;
+
+#if OWN_INPUT_HANDLING
+    	case GM_GOACTIVE:
+	    retval = aslbutton_goactive(cl, obj, (struct gpInput *)msg);
+	    break;
 	    
+	case GM_HANDLEINPUT:
+	    retval = aslbutton_handleinput(cl, obj, (struct gpInput *)msg);
+	    break;
+	    
+	case GM_GOINACTIVE:
+	    retval = aslbutton_goinactive(cl, obj, (struct gpGoInactive *)msg);
+	    break;
+#endif	    
 	case GM_RENDER:
 	    retval = aslbutton_render(cl, obj, (struct gpRender *)msg);
 	    break;
@@ -335,7 +511,12 @@ Class *makeaslbuttonclass(struct AslBase_intern * AslBase)
     if (AslBase->aslbuttonclass)
 	return AslBase->aslbuttonclass;
 
+#if OWN_INPUT_HANDLING
+    cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct AslButtonData), 0UL);
+#else
     cl = MakeClass(NULL, BUTTONGCLASS, NULL, sizeof(struct AslButtonData), 0UL);
+#endif
+
     if (!cl)
 	return NULL;
 	
