@@ -2017,6 +2017,26 @@ static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
 /*  	  obj, data->mad_Frame, data->mad_addleft, data->mad_addtop, data->mad_subwidth, data->mad_subheight)); */
 }
 
+/**************************************************************************
+ MUIM_UpdateInnerSizes - Updates the innersizes of an object. You actually
+ should only call this method if the dimensions of an object would not be
+ affected, otherwise the results are unexpected
+**************************************************************************/
+static ULONG Area_UpdateInnerSizes(struct IClass *cl, Object *obj, struct MUIP_UpdateInnerSizes *msg)
+{
+    struct MUI_AreaData *data = INST_DATA(cl, obj);
+    struct ZuneFrameGfx *zframe;
+    struct MUI_FrameSpec_intern *frame;
+
+    if (_flags(obj) & MADF_SETUP)
+    {
+	frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+	zframe = zune_zframe_get(frame);
+        area_update_innersizes(obj, data, frame, zframe);
+    }
+    return 1;
+}
+
 
 BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 {
@@ -2046,6 +2066,7 @@ BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 	case MUIM_HandleEvent: return Area_HandleEvent(cl, obj, (APTR)msg);
 	case MUIM_ContextMenuBuild: return Area_ContextMenuBuild(cl, obj, (APTR)msg);
 	case MUIM_Timer: return Area_Timer(cl,obj,msg);
+	case MUIM_UpdateInnerSizes: return Area_UpdateInnerSizes(cl,obj,(APTR)msg);
 	case MUIM_DragQuery: return MUIV_DragQuery_Refuse;
 	case MUIM_DragBegin: return Area_DragBegin(cl,obj,(APTR)msg);
 	case MUIM_DragDrop: return FALSE;
