@@ -39,7 +39,7 @@ OSMODULE  := dos.library
 IMAGE_TYPES := aos aout elf
 FILES	  := devname doname dosboot errorlist inithidds lddemon runprocess \
 	     filesystem_support match_misc newcliproc rootnode dosdoio\
-	     patternmatching \
+	     patternmatching internalseek internalflush \
 	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
 FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \

@@ -1,12 +1,13 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 #include <dos/dosextens.h>
 #include <proto/dos.h>
+#include "dos_intern.h"
+
+#define DEBUG 1
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -43,57 +44,35 @@
 
     INTERNALS
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    /* Get pointer to filehandle */
+    /* Get pointer to filehandle. */
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);
-    long success = 1;
 
-    /* If the file is in write mode... */
-    if(fh->fh_Flags & FHF_WRITE)
+    /* The file must be in write mode. */
+    if( fh->fh_Flags & FHF_WRITE )
     {
-	UBYTE *pos;
-
-	/* Unset write flag */
-	fh->fh_Flags &= ~FHF_WRITE;
-
-	/* Write the data. (In many pieces if the first one isn't enough). */
-	pos = fh->fh_Buf;
-
-	while(pos != fh->fh_Pos)
-        {
-            LONG size;
-
-	    size = Write(file,pos,fh->fh_Pos-pos);
-
-	    /* An error happened? No success. */
-	    if(size < 0)
-	    {
-	        success = 0;
-		break;
-	    }
-
-	    pos += size;
+	/* Handle append mode. */
+	if( fh->fh_Flags & FHF_APPEND )
+	{
+	    InternalSeek( fh, 0, OFFSET_END, DOSBase );
 	}
+	
+	return InternalFlush( fh, DOSBase );
     }
-    else if(fh->fh_Pos < fh->fh_End)
+    else if( fh->fh_Pos < fh->fh_End )
     {
         /* Read mode. Try to seek back to the current position. */
-        if(Seek(file, fh->fh_Pos - fh->fh_End, OFFSET_CURRENT) < 0)
-            success = 0;
+        if( Seek( file, fh->fh_Pos - fh->fh_End, OFFSET_CURRENT ) < 0 )
+        {
+            return FALSE;
+        }
     }
 
-    /* Reinit the buffer and return. */
-    fh->fh_Pos = fh->fh_End = fh->fh_Buf;
-
-    return success;
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 } /* Flush */
