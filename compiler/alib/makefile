@@ -46,8 +46,6 @@ FILES = alib_util \
 	readword \
 	setattrs \
 	setsuperattrs \
-	sprintf \
-	startup \
 	writebyte \
 	writedouble \
 	writefloat \
