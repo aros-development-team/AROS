@@ -2,7 +2,7 @@
 #define GRAPHICS_CLIP_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997 - 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Clip descriptions.
@@ -31,78 +31,80 @@
 
 struct Layer
 {
-    struct Layer     * front;
-    struct Layer     * back;
-    struct ClipRect  * ClipRect;
-    struct RastPort  * rp;
-    struct Rectangle   bounds;
+    struct Layer     	    * front;
+    struct Layer     	    * back;
+    struct ClipRect  	    * ClipRect;
+    struct RastPort  	    * rp;
+    struct Rectangle          bounds;
 
 #if 1
-    struct Layer * parent;
+    struct Layer     	    * parent; 	    	    	/* PRIVATE !!! */
 #else
-    UBYTE reserved[4];
+    UBYTE   	    	      reserved[4];
 #endif
-    UWORD priority;
-    UWORD Flags;
+    UWORD   	    	      priority;
+    UWORD   	    	      Flags;
 
-    struct BitMap   * SuperBitMap;
-    struct ClipRect * SuperClipRect;
+    struct BitMap   	    * SuperBitMap;
+    struct ClipRect 	    * SuperClipRect;
 
-    APTR Window;
-    WORD Scroll_X;
-    WORD Scroll_Y;
+    APTR    	    	      Window;
+    WORD    	    	      Scroll_X;
+    WORD    	    	      Scroll_Y;
 
-    struct ClipRect * cr;
-    struct ClipRect * cr2;
-    struct ClipRect * crnew;
-    struct ClipRect * SuperSaveClipRects;
-    struct ClipRect * _cliprects;
+    struct ClipRect 	    * cr;
+    struct ClipRect 	    * cr2;
+    struct ClipRect 	    * crnew;
+    struct ClipRect 	    * SuperSaveClipRects;
+    struct ClipRect 	    * _cliprects;
 
-    struct Layer_Info      * LayerInfo;
-    struct SignalSemaphore   Lock;
-    struct Hook            * BackFill;
+    struct Layer_Info       * LayerInfo;
+    struct SignalSemaphore    Lock;
+    struct Hook             * BackFill;
 
 #if 1
-    struct Region * VisibleRegion;
-    struct Region * shape;
-    struct Region * shaperegion;
-    struct Region * visibleshape;
-    unsigned int nesting;
+    struct Region   	    * VisibleRegion; 	    	/* PRIVATE !!! */
 #else
-    ULONG reserved1;
+    ULONG   	    	      reserved1;
 #endif
 
-    struct Region * ClipRegion;
-    struct Region * saveClipRects;
+    struct Region   	    * ClipRegion;
+    struct Region   	    * saveClipRects;
 
-    WORD Width;
-    WORD Height;
+    WORD    	    	      Width;
+    WORD    	    	      Height;
 
-    UBYTE SuperSaveClipRectCounter;
 #if 1
-    UBYTE visible;
-    UBYTE reserved2[16];
+    struct Region   	    * shape;	    	    	/* PRIVATE !!! */
+    struct Region   	    * shaperegion;  	    	/* PRIVATE !!! */
+    struct Region   	    * visibleshape; 	    	/* PRIVATE !!! */
+
+    UWORD   	    	      nesting;	    	    	/* PRIVATE !!! */
+    UBYTE   	    	      SuperSaveClipRectCounter;	/* PRIVATE !!! */
+    UBYTE   	    	      visible;	    	    	/* PRIVATE !!! */
+
+    UBYTE   	    	      reserved2[2]; 
 #else
-    UBYTE reserved2[17];
+    UBYTE   	    	      reserved2[18];
 #endif
 
-    struct Region * DamageList;
+    struct Region   	    * DamageList;
 };
 
 #define MAXSUPERSAVECLIPRECTS	20	/* Max. number of cliprects that are kept preallocated in the list */
 
 struct ClipRect
 {
-    struct ClipRect  * Next;
-    struct ClipRect  * prev;
-    struct Layer     * lobs;
-    struct BitMap    * BitMap;
-    struct Rectangle   bounds;
+    struct ClipRect  	    * Next;
+    struct ClipRect  	    * prev;
+    struct Layer     	    * lobs;
+    struct BitMap    	    * BitMap;
+    struct Rectangle          bounds;
 
-    void * _p1;
-    void * _p2;
-    LONG   reserved;
-    LONG   Flags;
+    void    	    	    * _p1;
+    void    	    	    * _p2;
+    LONG    	    	      reserved;
+    LONG    	    	      Flags;
 };
 
 /* PRIVATE */

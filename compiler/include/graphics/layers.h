@@ -51,6 +51,7 @@ struct Layer_Info
 #define LAYER_CLIPRECTS_LOST (1<<8)
 #define LAYERIREFRESH        (1<<9)
 #define LAYERIREFRESH2       (1<<10)
+#define LAYER_ROOT_LAYER     (1<<14)
 
 #define LAYERS_BACKFILL   ((struct Hook *)0)
 #define LAYERS_NOBACKFILL ((struct Hook *)1)
