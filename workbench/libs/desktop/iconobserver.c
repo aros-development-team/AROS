@@ -121,8 +121,10 @@ IPTR iconObserverNew(Class * cl, Object * obj, struct opSet * msg)
         data->executable = executable;
         data->deleteable = deleteable;
 
+//kprintf("io1 : %d\n", _presentation(obj));
         DoMethod(_presentation(obj), MUIM_Notify, IA_Executed, TRUE, obj, 1,
                  IOM_Execute);
+//kprintf("io1.1 : %d\n", _presentation(obj));
         DoMethod(_presentation(obj), MUIM_Notify, IA_Selected, MUIV_EveryTime,
                  obj, 3, MUIM_Set, IOA_Selected, MUIV_TriggerValue);
         DoMethod(_presentation(obj), MUIM_Notify, IA_Directory,
@@ -148,7 +150,8 @@ IPTR iconObserverNew(Class * cl, Object * obj, struct opSet * msg)
         DoMethod(_presentation(obj), MUIM_Notify, IA_Deleteable,
                  MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Deleteable,
                  MUIV_TriggerValue);
-    }
+//kprintf("io2\n");
+	}
 
     return retval;
 }
@@ -171,16 +174,18 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
             /*
                was this OM_SET triggered by a notify? 
              */
-                if (strcmp(_comment(_presentation(obj)), data->comment))
+//kprintf("io3\n");
+				if (strcmp(_comment(_presentation(obj)), data->comment))
                     DoMethod(_presentation(obj), MUIM_NoNotifySet, IA_Comment,
                              data->comment);
-                break;
+//kprintf("io4\n");
+				break;
             // TODO: When one of these bits is set, send a request to the
             // handler to do the change
             case IOA_Script:
                 data->script = tag->ti_Data;
             /*
-               was this OM_SET triggered by a notify? 
+               was this OM_SET triggered by a notify?
              */
                 if (_script(_presentation(obj)) != data->script)
                     DoMethod(_presentation(obj), MUIM_NoNotifySet, IA_Script,
@@ -189,7 +194,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
             case IOA_Pure:
                 data->pure = tag->ti_Data;
             /*
-               was this OM_SET triggered by a notify? 
+               was this OM_SET triggered by a notify?
              */
                 if (_pure(_presentation(obj)) != data->pure)
                     DoMethod(_presentation(obj), MUIM_NoNotifySet, IA_Pure,
@@ -198,7 +203,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
             case IOA_Archived:
                 data->archived = tag->ti_Data;
             /*
-               was this OM_SET triggered by a notify? 
+               was this OM_SET triggered by a notify?
              */
                 if (_archived(_presentation(obj)) != data->archived)
                     DoMethod(_presentation(obj), MUIM_NoNotifySet,
@@ -207,7 +212,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
             case IOA_Readable:
                 data->readable = tag->ti_Data;
             /*
-               was this OM_SET triggered by a notify? 
+               was this OM_SET triggered by a notify?
              */
                 if (_readable(_presentation(obj)) != data->readable)
                     DoMethod(_presentation(obj), MUIM_NoNotifySet,
@@ -216,7 +221,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
             case IOA_Writeable:
                 data->writeable = tag->ti_Data;
             /*
-               was this OM_SET triggered by a notify? 
+               was this OM_SET triggered by a notify?
              */
                 if (_writeable(_presentation(obj)) != data->writeable)
                     DoMethod(_presentation(obj), MUIM_NoNotifySet,
