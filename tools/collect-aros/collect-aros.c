@@ -314,7 +314,7 @@ end:
     else
 	chmod(output, 0766);
 
-    if (strip_all)
+    if (!thereare && strip_all)
     {
         free(command);
         command = joinstrings(STRIPPATH, " --strip-unneeded ", output, NULL);
