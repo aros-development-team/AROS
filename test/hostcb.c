@@ -2,15 +2,18 @@
 #include <proto/exec.h>
 #include <aros/debug.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
-#define CMD(msg)    	((msg)->mn_Node.ln_Name)
+#define CMD(msg)    	((msg)->mn_Node.ln_Pri)
+#define PARAM(msg)	((msg)->mn_Node.ln_Name)
 #define RETVAL(msg) 	((msg)->mn_Node.ln_Name)
 #define SUCCESS(msg) 	((msg)->mn_Node.ln_Pri)
 
 struct MsgPort *replyport;
 struct Message  msg;
 
-static BOOL SendClipboardMsg(struct Message *msg, char *command)
+static BOOL SendClipboardMsg(struct Message *msg, char command, void *param)
 {
     struct MsgPort *port;
 
@@ -19,6 +22,8 @@ static BOOL SendClipboardMsg(struct Message *msg, char *command)
     if (port)
     {
     	CMD(msg) = command;
+	PARAM(msg) = param;
+	
 	PutMsg(port, msg);
     }
     Permit();
@@ -26,14 +31,47 @@ static BOOL SendClipboardMsg(struct Message *msg, char *command)
     return port ? TRUE : FALSE;    
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     replyport = CreateMsgPort();
     if (replyport)
     {
+    	BOOL sent;
+	
 	msg.mn_ReplyPort = replyport;	    
     	    
-	if (SendClipboardMsg(&msg, "READ"))
+	if (argc == 3)
+	{
+	    UBYTE *test;
+	    ULONG size = 1048576;
+	    ULONG i;
+	    
+	    test = malloc(size + 1);
+    	    if (test)
+	    {
+	    	for(i = 0; i < size; i++)
+		{
+		    UBYTE c = (i % 10) + '0';
+		    
+		    if ((i % 64) == 63) c = '\n';
+		    
+		    test[i] = c;
+		}
+		test[i] = '\0';
+		
+	    	sent = SendClipboardMsg(&msg, 'W', test);
+	    }
+	}
+	else if (argc == 2)
+	{
+	    sent = SendClipboardMsg(&msg, 'W', argv[1]);
+	}
+	else if (argc == 1)
+	{
+	    sent = SendClipboardMsg(&msg, 'R', NULL);
+	}
+	
+	if (sent)
 	{
 	    WaitPort(replyport);
 	    GetMsg(replyport);
