@@ -53,7 +53,6 @@
 	struct MinNode *node,*temp;
 	struct MidiLink *midilink;
 
-	D(bug("About to delete midi\n"));
 	ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 		if( ! (IsListEmpty((struct List *)&midinode->mi_OutLinks))){
 			node=midinode->mi_OutLinks.mlh_Head;
@@ -71,10 +70,8 @@
 		}
 		if( ! (IsListEmpty((struct List *)&midinode->mi_InLinks))){
 			node=midinode->mi_InLinks.mlh_Head;
-			D(bug("here\n"));
 			while(node->mln_Succ!=NULL){
 				temp=node->mln_Succ;
-				D(bug("here2\n"));
 
 				midilink=GetMidiLinkFromOwnerNode(node);
 
@@ -99,8 +96,6 @@
 		FreeVec(mymidinode->sysex_start);
 	}
 	FreeMem(midinode,sizeof(struct MyMidiNode));
-
-	D(bug("Finished to delete midi\n"));
 
    AROS_LIBFUNC_EXIT
 

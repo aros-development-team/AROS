@@ -28,7 +28,6 @@ BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *
 		return FALSE;
 	}
 
-	D(bug("About to open port, %s %d\n",driverdata->mididevicedata->Name,driverdata->portnum));
 	driverdata->midiportdata=(*driverdata->mididevicedata->OpenPort)(
 		driverdata->mididevicedata,
 		driverdata->portnum,
@@ -36,9 +35,9 @@ BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *
 		(void (* ASM)(UWORD REG(d0),APTR REG(a2))) Receiver,
 		driverdata
 	);
-	D(bug("Finished to open port\n"));
+
 	if(driverdata->midiportdata==NULL){
-		D(bug("Seems like it failed...\n"));
+		D(bug("camd.library: drivers.c/OpenDriver. (*OpenPort) failed...\n"));
 		EndReceiverProc(driverdata,CamdBase);
 		if(ErrorCode!=NULL){
 			*ErrorCode=CME_NoUnit(driverdata->portnum);
@@ -51,13 +50,11 @@ BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *
 
 
 void CloseDriver(struct DriverData *driverdata,struct CamdBase *CamdBase){
-	D(bug("closing driver %lx\n",driverdata));
 	(*driverdata->mididevicedata->ClosePort)(
 		driverdata->mididevicedata,
 		driverdata->portnum
 	);
 	EndReceiverProc(driverdata,CamdBase);
-	D(bug("finished closing driver %lx\n",driverdata));
 }
 
 BOOL AllocDriverData(
@@ -144,13 +141,11 @@ BOOL AllocDriverData(
 		InitSemaphore(&driverdata->sysexsemaphore);
 
 		driverdata->isOutOpen=FALSE;
-		D(bug("isOutOpen=FALSE\n"));
 		driverdata->isInOpen=FALSE;
 	}
 
 	for(lokke=0;lokke<nports;lokke++){
 		driverdata=driver->driverdatas[lokke];
-		D(bug("driverdata: %lx\n",driverdata));
 		AddClusterSender(&driverdata->incluster->cluster,&driverdata->innode,NULL,CamdBase);
 		AddClusterReceiver(&driverdata->outcluster->cluster,&driverdata->outnode,NULL,CamdBase);
 	}
@@ -214,14 +209,14 @@ void LoadDriver(char *name,
 	struct Drivers *driver;
 	struct MidiDeviceData *mididevicedata;
 
-	D(bug("trying to open %s..\n",name));
+	D(bug("camd.library: drivers.c/LoadDriver - trying to open %s..\n",name));
 
 #ifdef _AROS
 	mididevicedata=Camd_OpenMidiDevice(name,CamdBase);
 #else
 	mididevicedata=OpenMidiDevice(name,CamdBase);
 #endif
-	D(bug("It was%s a success..\n",mididevicedata==NULL?" not":""));
+	D(bug("camd.library: drivers.c/LoadDriver - It was%s a success..\n",mididevicedata==NULL?" not":""));
 
 	if(mididevicedata==NULL) return;
 

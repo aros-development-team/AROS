@@ -65,16 +65,11 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist);
 
 	seg=seglist=LoadSeg(name);
 
-	D(bug("seglist loaded okey? %lx\n",seg));
-
 	if(seglist==NULL) return NULL;
-
-	D(bug("seglist loaded okey\n"));
 
 // The code here is partly taken from AROS/rom/dos/lddemon.c - LDInit()
 
 	while(seg!=NULL){
-	  D(bug("checking a new seglist\n"));
 		addr=(STRPTR)((LONG)BADDR(seg)-sizeof(ULONG));
 		size=*(ULONG *)addr;
 
