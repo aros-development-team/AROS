@@ -34,6 +34,9 @@ extern void init_gui();
 /* Internal function prototypes */
 int main( int, char ** );
 
+#ifdef DEBUG
+char test_script[] = "SYS:Utilities/test.script";
+#endif /* DEBUG */
 
 char *filename = NULL;
 BPTR inputfile;
@@ -75,21 +78,23 @@ int nextarg, endoffile, count;
   }
 
   /* open script file */
-#ifdef DEBUG
-  if (args[ARG_SCRIPT])
-  {
-    printf( "Using script %s.\n", (STRPTR)args[ARG_SCRIPT] );
-    filename = StrDup( (STRPTR)args[ARG_SCRIPT] );
-  }
-  else
-  {
-    printf( "Using default script.\n" );
-    filename = StrDup( "SYS:Utilities/test.script" );
-  }
-#else /* DEBUG */
   if (argc)
   {
-    filename = StrDup( (STRPTR)args[ARG_SCRIPT] );
+    if (args[ARG_SCRIPT])
+    {
+      filename = StrDup( (STRPTR)args[ARG_SCRIPT] );
+    }
+    else
+    {
+      fprintf( stderr, "No SCRIPT specified!\n" );
+#ifdef DEBUG
+      fprintf( stderr, "Using %s instead...\n", test_script );
+      filename = StrDup( test_script );
+#else
+      FreeArgs(rda);
+      exit(-1);
+#endif /* DEBUG */
+    }
   }
   else
   {
@@ -98,21 +103,23 @@ int nextarg, endoffile, count;
     {
 #ifdef DEBUG
       fprintf( stderr, "No SCRIPT ToolType in Icon!\n" );
-#endif /* DEBUG */
+      ttemp = test_script;
+#else
       ArgArrayDone();
       exit(-1);
+#endif /* DEBUG */
     }
     filename = StrDup( ttemp );
   }
-#endif /* DEBUG */
 
   inputfile = Open( filename, MODE_OLDFILE );
   if ( inputfile == NULL )
   {
 #ifdef DEBUG
+    fprintf( stderr, "Error opening scipt <%s>\n",filename );
     PrintFault( IoErr(), INSTALLER_NAME );
-    exit(-1);
 #endif /* DEBUG */
+    exit(-1);
   }
 
   preferences.welcome = FALSE;
