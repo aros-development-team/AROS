@@ -68,7 +68,8 @@ struct NotifyRequest
 #define NRB_SEND_SIGNAL   1 /* Set a signal of the specified task. */
 #define NRB_WAIT_REPLY    3 /* Wait for a reply by the application before
                                going on with watching? */
-#define NRB_NOTIFY_INTIAL 4
+#define NRB_NOTIFY_INITIAL 4 /* Notify if the file/directory exists when
+                                the notification request is posted */
 
 #define NRF_SEND_MESSAGE   (1L<<NRB_SEND_MESSAGE)
 #define NRF_SEND_SIGNAL    (1L<<NRB_SEND_SIGNAL)
