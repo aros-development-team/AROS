@@ -32,6 +32,7 @@
     compatible.
 */
 
+#define _XOPEN_SOURCE
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +41,14 @@
 int main (int argc, char ** argv)
 {
     char salt[3];
-    char * set = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
+    char set[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
+
+
+    if (argc < 2 || argc > 3)
+    {
+	printf("Usage: %s <password> [<salt>]\n", argv[0]);
+	return 1;
+    }
 
     srand (time (NULL));
 
