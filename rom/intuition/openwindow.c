@@ -316,10 +316,6 @@
     w->FirstGadget = nw.FirstGadget;
 
 
-    D(bug("Window dims: (%d, %d, %d, %d)\n",
-	  w->LeftEdge, w->TopEdge, w->Width, w->Height));
-	
-
     if (nw.DetailPen == 0xFF) nw.DetailPen = 1;
     if (nw.BlockPen  == 0xFF) nw.BlockPen = 0;
 
