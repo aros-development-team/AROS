@@ -909,9 +909,9 @@ void intui_ProcessEvents (void)
 
 			if (inside && (gadget->Activation & GACT_RELVERIFY))
 			{
-			    im->Class = IDCMP_GADGETUP;
+			    im->Class	 = IDCMP_GADGETUP;
 			    im->IAddress = gadget;
-			    ptr       = "GADGETDOWN";
+			    ptr 	 = "GADGETUP";
 			}
 
 			switch (gadget->GadgetType & GTYP_GTYPEMASK)
