@@ -19,8 +19,7 @@ workbench-amiga :
 workbench-libs-amiga :
 	@$(NOP)
 
-##MM workbench-classes-amiga : workbench-classes-aroscheckbox workbench-classes-aroslist
-##MM workbench-classes-amiga : workbench-classes-aroslistview workbench-classes-arosmutualexclude
+##MM workbench-classes-amiga : workbench-classes-complete
 workbench-classes-amiga :
 	@$(NOP)
 

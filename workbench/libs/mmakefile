@@ -4,3 +4,13 @@
 #MM workbench-libs : workbench-libs-$(ARCH)
 workbench-libs :
 	@$(NOP)
+
+# A general catch-all target. You can use this if everything compiles on your
+# machine, and you want to save yourself some typing.
+#MM workbench-libs-complete : workbench-libs-asl workbench-libs-diskfont
+#MM workbench-libs-complete : workbench-libs-gadtools workbench-libs-icon
+#MM workbench-libs-complete : workbench-libs-iffparse workbench-libs-mathieeesptrans
+#MM workbench-libs-complete : workbench-libs-mathtrans
+workbench-libs-complete :
+	@$(NOP)
+
