@@ -323,6 +323,21 @@ String * getline (FILE * fh)
     return s;
 }
 
+void add_continuation(String *s, FILE *fh)
+{
+    String *s2;
+    
+    while (s->value[s->len-1]=='\\')
+    {
+	s2 = getline(fh);
+	s->value[s->len-1]='\0';
+	s->len--;
+	append_string(s, s2->value);
+	free_string(s2);
+    }
+}
+
+	    
 void output (const char * line)
 {
     const char * ptr = line;
@@ -441,6 +456,8 @@ void read_templates (const char * fn)
 	    char * defval, * flags;
 	    Arg * arg;
 
+	    add_continuation(line, fh);
+	    
 	    tmpl = new (Template);
 
 	    NewList (&tmpl->args);
@@ -523,6 +540,11 @@ void read_templates (const char * fn)
 		if (!strcmp (line->value, "%end"))
 		    break;
 
+		ptr = line->value;
+		while (isspace(*ptr)) ptr++;
+		if (*ptr=='%' && ptr[1]!='(' && ptr[1]!='\0')
+		    add_continuation(line, fh);
+		
 		if (tmpl->body)
 		    append_string (tmpl->body, line->value);
 		else
@@ -764,9 +786,14 @@ int main (int argc, char ** argv)
 
 	if (*ptr == '%')
 	{
+	    int pos = ptr - line->value;
+	    
 	    if (!strncmp (ptr+1, "common", 6))
 		common = 1;
-
+	    
+	    add_continuation(line, stdin);
+	    ptr = line->value + pos;
+	    
 	    replace_template (ptr);
 	}
 	else
