@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/intuition.h>
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -20,10 +21,9 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_AboutmuiData
 {
-    int dummy;
+    Object *app;
 };
 
-#if 0
 static const unsigned long colors[] = {
 	0xECECECEC, 0xF5F5F5F5, 0xFEFEFEFE,
 	0x83838383, 0xB4B4B4B4, 0xF3F3F3F3,
@@ -857,22 +857,29 @@ static const unsigned char body[] = {
 	0x3E, 0x02, 0xBF, 0xFF, 0xEF, 0xF3, 0xA9, 0x38, 
 	0x00, 0x03, 0xD0, 0xFC, 0x03, 
 };
-#endif
+
+static void CloseAboutWindowFunc(const struct Hook *hook, Object *app, APTR msg)
+{
+    Object *aboutwin = *(Object **)msg;
+
+    set(aboutwin, MUIA_Window_Open, FALSE);
+    DoMethod(app, OM_REMMEMBER, (IPTR)aboutwin);
+    MUI_DisposeObject(aboutwin);
+}
 
 static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_AboutmuiData   *data;
     struct TagItem  	    *tag, *tags;
-    Object *app = NULL;
-    Object *ok_button;
-    const char about_text[] = "Zune, a MUI clone\n"
+    static const struct Hook closehook = { { NULL, NULL }, HookEntry,
+					   (APTR)CloseAboutWindowFunc, NULL };
+    static const char about_text[] = "Zune, a MUI clone\n"
 	"\nCompiled on " __DATE__
-	"\nCopyright © 2002, The AROS Development Team.";
+	"\nCopyright © 2002-2003, The AROS Development Team.";
     
     obj = (Object *)DoSuperNew(cl, obj,
     	MUIA_Window_Title, "About Zune",
 	WindowContents, VGroup,
-#if 0
 	    Child, MUI_NewObject(MUIC_Bodychunk,
 	    	MUIA_Bodychunk_Body, body,
 	    	MUIA_Bodychunk_Compression, 1,
@@ -884,10 +891,14 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		MUIA_Bitmap_UseFriend, TRUE,
 	    	MUIA_FixWidth,100,
 	    	MUIA_FixHeight,100,
+		TextFrame,
+		InnerSpacing(0,0),
 	    	TAG_DONE),
-#endif
-	    Child, CLabel(about_text),
-	    Child, ok_button = SimpleButton("Ok"),
+	    Child, TextObject,
+			       MUIA_Text_PreParse, MUIX_C,
+			       MUIA_Text_Contents, about_text,
+			       TextFrame,
+			       End,
 	    End,
     	TAG_MORE, msg->ops_AttrList);
 
@@ -901,15 +912,19 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case MUIA_Aboutmui_Application:
-	    	app = (Object*)tag->ti_Data;
+	    	data->app = (Object*)tag->ti_Data;
 		break;
     	}
     }
 
-    if (app) DoMethod(app,OM_ADDMEMBER,(IPTR)obj);
+    if (data->app)
+    {
+	DoMethod(data->app, OM_ADDMEMBER, (IPTR)obj);
+	DoMethod(obj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)data->app, 6,
+		 MUIM_Application_PushMethod, (IPTR)data->app, 3,
+		 MUIM_CallHook, (IPTR)&closehook, (IPTR)obj);
+    }
 
-    DoMethod(obj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)obj, 3, MUIM_Set, MUIA_Window_Open, FALSE);
-    DoMethod(ok_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)obj, 3 , MUIM_Set, MUIA_Window_Open, FALSE);
     return (IPTR)obj;
 }
 
