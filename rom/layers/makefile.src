@@ -28,6 +28,9 @@ INIT_FILE = layersstrap_init
 
 FILES = basicfuncs
 
+# Asm files that have no C counterpart
+AFILES = basicasmfuncs
+
 # Guarantee that this will go at the end of the file:
 END_FILE = layers_endtag
 
@@ -108,7 +111,7 @@ LIBLIST = layers arossupport arosc
 LIBDEPS = $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
 
 # The object filenames
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
+OBJS = $(foreach f,$(FILES) $(AFILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
 
 # The init and endskip object filenames
 INITFUNC = $(OBJDIR)/$(INIT_FILE).o
