@@ -17,7 +17,7 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH4(ULONG, DoDTMethodA,
+	AROS_LH4(IPTR, DoDTMethodA,
 
 /*  SYNOPSIS */
 	AROS_LHA(Object           *, o  , A0),
@@ -61,7 +61,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG retval;
+    IPTR retval;
    
     switch(msg->MethodID)
     {
