@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 #ifndef __MATHIEEEDOUBBAS_INTERN_H__
 #define __MATHIEEEDOUBBAS_INTERN_H__
@@ -29,6 +26,7 @@
 #   include <dos/dos.h>
 #endif
 
+#include <proto/exec.h>
 
 #ifndef __MATHIEEE64BIT_DEFINES_H__
 #   include <aros/mathieee64bitdefines.h>

@@ -37,8 +37,9 @@
 #endif
 
 AROS_LHQUAD1(LONG, FPU_IEEEDPFix,
-AROS_LHAQUAD(double, y, D0, D1),
-struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas)
+    AROS_LHAQUAD(double, y, D0, D1),
+    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas
+)
 {
   AROS_LIBFUNC_INIT
   return (LONG)y;
@@ -46,8 +47,9 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas)
 } /* FPU_IEEEDPFix */
 
 AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFlt,
-AROS_LHAQUAD(LONG, y, D0, D1),
-struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 6, MathIeeeDoubBas)
+    AROS_LHAQUAD(LONG, y, D0, D1),
+    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 6, MathIeeeDoubBas
+)
 {
   AROS_LIBFUNC_INIT
 #if UseRegisterArgs
@@ -62,9 +64,10 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 6, MathIeeeDoubBas)
 } /* FPU_IEEEDPFlt */
 
 AROS_LHQUAD2(LONG, FPU_IEEEDPCmp,
-AROS_LHAQUAD(double, y, D0, D1),
-AROS_LHAQUAD(double, z, D2, D3),
-struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 7, MathIeeeDoubBas)
+    AROS_LHAQUAD(double, y, D0, D1),
+    AROS_LHAQUAD(double, z, D2, D3),
+    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 7, MathIeeeDoubBas
+)
 {
   AROS_LIBFUNC_INIT
 
@@ -78,8 +81,9 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 7, MathIeeeDoubBas)
 } /* FPU_IEEEDPCmp */
 
 AROS_LHQUAD1(LONG, FPU_IEEEDPTst,
-AROS_LHAQUAD(double, y, D0, D1),
-struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, MathIeeeDoubBas)
+    AROS_LHAQUAD(double, y, D0, D1),
+    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, MathIeeeDoubBas
+)
 {
   AROS_LIBFUNC_INIT
 
@@ -93,8 +97,9 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, MathIeeeDoubBas)
 } /* FPU_IEEEDPTst */
 
 AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAbs,
-AROS_LHAQUAD(double, y, D0, D1),
-struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 9, MathIeeeDoubBas)
+    AROS_LHAQUAD(double, y, D0, D1),
+    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 9, MathIeeeDoubBas
+)
 {
   AROS_LIBFUNC_INIT
 
@@ -125,9 +130,10 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 10, MathIeeeDoubBas)
 } /* FPU_IEEEDPNeg */
 
 AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPAdd,
-AROS_LHAQUAD(double, y, D0, D1),
-AROS_LHAQUAD(double, z, D2, D3),
-struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 11, MathIeeeDoubBas)
+    AROS_LHAQUAD(double, y, D0, D1),
+    AROS_LHAQUAD(double, z, D2, D3),
+    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 11, MathIeeeDoubBas
+)
 {
   AROS_LIBFUNC_INIT
 #if UseRegisterArgs
@@ -157,9 +163,10 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 12, MathIeeeDoubBas)
 } /* FPU_IEEEDPSub */
 
 AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPMul,
-AROS_LHAQUAD(double, y, D0, D1),
-AROS_LHAQUAD(double, z, D2, D3),
-struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 13, MathIeeeDoubBas)
+    AROS_LHAQUAD(double, y, D0, D1),
+    AROS_LHAQUAD(double, z, D2, D3),
+    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 13, MathIeeeDoubBas
+)
 {
   AROS_LIBFUNC_INIT
 #if UseRegisterArgs
@@ -173,9 +180,10 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 13, MathIeeeDoubBas)
 } /* FPU_IEEEDPMul */
 
 AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPDiv,
-AROS_LHAQUAD(double, y, D0, D1),
-AROS_LHAQUAD(double, z, D2, D3),
-struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 14, MathIeeeDoubBas)
+    AROS_LHAQUAD(double, y, D0, D1),
+    AROS_LHAQUAD(double, z, D2, D3),
+    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 14, MathIeeeDoubBas
+)
 {
   AROS_LIBFUNC_INIT
 #if UseRegisterArgs
@@ -189,8 +197,9 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 14, MathIeeeDoubBas)
 } /* FPU_IEEEDPDiv */
 
 AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFloor,
-AROS_LHAQUAD(double, y, D0, D1),
-struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas)
+    AROS_LHAQUAD(double, y, D0, D1),
+    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas
+)
 {
   AROS_LIBFUNC_INIT
  /*  return floor(y); */
@@ -199,12 +208,12 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas)
 } /* FPU_IEEEDPFloor */
 
 AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPCeil,
-AROS_LHAQUAD(double, y, D0, D1),
-struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 16, MathIeeeDoubBas)
+    AROS_LHAQUAD(double, y, D0, D1),
+    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 16, MathIeeeDoubBas
+)
 {
   AROS_LIBFUNC_INIT
  /*  return ceil(y); */
   return 0xbadc0deULL;
   AROS_LIBFUNC_EXIT
 } /* FPU_IEEEDPCeil */
-
