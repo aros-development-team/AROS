@@ -41,13 +41,13 @@
     INPUTS
 	address -   Address to start the operation. This address may be
 		    rounded DOWN due to hardware granularity.
-	length  -   Length of the memory to flush. This will be rounded
+	length	-   Length of the memory to flush. This will be rounded
 		    up, of $FFFFFFFF to indicate that all addresses
 		    should be cleared.
-	caches  -   Bit flags to indicate which caches should be cleared
+	caches	-   Bit flags to indicate which caches should be cleared
 
-			CACRF_ClearI    -   Clear the instruction cache
-			CACRF_ClearD    -   Clear the data cache
+			CACRF_ClearI	-   Clear the instruction cache
+			CACRF_ClearD	-   Clear the data cache
 
 		    All other bits are reserved.
 
@@ -76,7 +76,6 @@
     AROS_LIBFUNC_INIT
 
 #warning TODO: Write exec/CacheClearE()
-    aros_print_not_implemented("CacheClearE");
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
