@@ -6,6 +6,7 @@
 #include <proto/graphics.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define WINWIDTH    	400
 #define WINHEIGHT   	400
@@ -116,5 +117,6 @@ int main(void)
     makewin();
     handleall();
     cleanup(0);
+
     return 0;
 }
