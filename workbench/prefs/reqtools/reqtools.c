@@ -46,6 +46,7 @@
 #include "reqtools_rev.h"
 
 #ifdef _AROS
+#include <aros/macros.h>
 #include <proto/alib.h>
 #define __exit exit
 #define __main was__main
@@ -98,7 +99,7 @@ struct ReqToolsPrefs    RTPrefs;
 struct ReqToolsPrefs    DefaultPrefs;
 struct ReqDefaults    	*ReqDefs;
 
-#define PREFSLEN    	( sizeof( struct ReqToolsPrefs) - 4 - sizeof( struct SignalSemaphore ) )
+#define PREFSLEN    	RTPREFS_SIZE
 
 WORD    		CurrentReq, WheelType;
 BOOL    		CreateIcons, UseScreenFont = TRUE;
@@ -807,6 +808,13 @@ SaveAs( VOID )
 
 TEXT    FaultBuff[ 100 ];
 
+#ifdef _AROS
+#define	LOADSAVETO configbuffer
+UBYTE	configbuffer[PREFSLEN];
+#else
+#define LOADSAVETO &RTPrefs.Flags
+#endif
+
 LONG
 LoadConfig( STRPTR fname )
 {
@@ -819,12 +827,47 @@ LoadConfig( STRPTR fname )
         return( TRUE );
     }
 
-    if( Read( file, &RTPrefs.Flags, PREFSLEN ) != PREFSLEN )
+    if( Read( file, LOADSAVETO, PREFSLEN ) != PREFSLEN )
     {
         LocEZReq( MSG_READ_ERROR, MSG_ABORT );
         Close( file );
         return( FALSE );
     }
+#ifdef _AROS
+#define READ_ULONG *((ULONG *)configptr)++
+#define READ_UWORD *((UWORD *)configptr)++
+
+    {
+        UBYTE *configptr = configbuffer;
+	ULONG val;
+	WORD  i;
+	
+	val = READ_ULONG;
+	RTPrefs.Flags = AROS_LONG2BE(val);
+	
+	for(i = 0;i < RTPREF_NR_OF_REQ; i++)
+	{
+	    val = READ_ULONG;
+	    RTPrefs.ReqDefaults[i].Size = AROS_LONG2BE(val);
+	    
+	    val = READ_ULONG;
+	    RTPrefs.ReqDefaults[i].ReqPos = AROS_LONG2BE(val);
+	    
+	    val = READ_UWORD;
+	    RTPrefs.ReqDefaults[i].LeftOffset = AROS_WORD2BE(val);
+
+	    val = READ_UWORD;
+	    RTPrefs.ReqDefaults[i].TopOffset = AROS_WORD2BE(val);
+
+	    val = READ_UWORD;
+	    RTPrefs.ReqDefaults[i].MinEntries = AROS_WORD2BE(val);
+
+	    val = READ_UWORD;
+	    RTPrefs.ReqDefaults[i].MaxEntries = AROS_WORD2BE(val);	    
+	}
+	
+    }
+#endif
 
     Close( file );
     WheelType = GetWheelType( RTPrefs.Flags );
@@ -844,7 +887,43 @@ SaveConfig( STRPTR fname )
         return( FALSE );
     }
 
-    if( Write( file, &RTPrefs.Flags, PREFSLEN ) != PREFSLEN )
+#ifdef _AROS
+#define WRITE_ULONG *((ULONG *)configptr)++ = AROS_LONG2BE(val)
+#define WRITE_UWORD *((UWORD *)configptr)++ = AROS_WORD2BE(val)
+
+    {
+        UBYTE *configptr = configbuffer;
+	ULONG val;
+	WORD  i;
+	
+	val = RTPrefs.Flags;
+	WRITE_ULONG;
+	
+	for(i = 0;i < RTPREF_NR_OF_REQ; i++)
+	{
+	    val = RTPrefs.ReqDefaults[i].Size;
+	    WRITE_ULONG;
+	    
+	    val = RTPrefs.ReqDefaults[i].ReqPos;
+	    WRITE_ULONG;
+	    
+	    val = RTPrefs.ReqDefaults[i].LeftOffset;
+	    WRITE_UWORD;
+	    
+	    val = RTPrefs.ReqDefaults[i].TopOffset;
+	    WRITE_UWORD;
+	    
+	    val = RTPrefs.ReqDefaults[i].MinEntries;
+	    WRITE_UWORD;
+	    
+	    val = RTPrefs.ReqDefaults[i].MaxEntries;
+	    WRITE_UWORD;
+
+	}
+	
+    }
+#endif
+    if( Write( file, LOADSAVETO, PREFSLEN ) != PREFSLEN )
     {
         LocEZReq( MSG_ERROR_SAVING_PREFS, MSG_OK );
         Close( file );

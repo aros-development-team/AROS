@@ -680,8 +680,14 @@ void UpdatePrefsWindow (int onlydefs)
 						       TAG_END);
        GT_SetGadgetAttrs (noledgad, WindowPtr, NULL, GTCB_Checked, !( RTPrefs.Flags & RTPRF_NOLED ),
 						     TAG_END);
+#if 1
+       /* AROS/AmigaOS bug fix: this "!" seems to be wrong */
+       GT_SetGadgetAttrs (mmbgad, WindowPtr, NULL, GTCB_Checked, ( RTPrefs.Flags & RTPRF_MMBPARENT ),
+						   TAG_END);
+#else
        GT_SetGadgetAttrs (mmbgad, WindowPtr, NULL, GTCB_Checked, !( RTPrefs.Flags & RTPRF_MMBPARENT ),
 						   TAG_END);
+#endif
     }
     
 }
