@@ -3,7 +3,7 @@ TOP=..
 include $(TOP)/make.cfg
 
 FILES = closefont draw move openfont rectfill scrollraster setapen setbpen \
-	setdrmd setfont setrast text
+	setdrmd setfont setrast text writepixel
 
 all: setup $(OSGENDIR)/graphics_init.o $(OSGENDIR)/graphics_functable.o \
 	$(OSGENDIR)/driver_x11.o \
