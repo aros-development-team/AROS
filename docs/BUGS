@@ -1,7 +1,7 @@
 Outstanding bugs:
 BUG000021 BUG000026 BUG000037 BUG000058 BUG000063
 BUG000068 BUG000070 BUG000074 BUG000075 BUG000076
-BUG000077 BUG000078 BUG000079 BUG000080
+BUG000077 BUG000078 BUG000079
 
 
 
@@ -565,7 +565,7 @@ BUG000079
 iain@ugh.net.au
 ELF object format loader will not load objects with a non-zero entry.
 
-BUG000080
+BUG000080 Fixed
 iain@ugh.net.au
 When you try and CD into a plain file, you get directory not found rather
 than object is of wrong type. See also BUG000065.
