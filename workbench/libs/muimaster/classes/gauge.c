@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 
@@ -30,7 +30,7 @@ extern struct Library *MUIMasterBase;
 
 #define GAUGE_BUFSIZE 256
 
-struct MUI_GaugeData
+struct Gauge_DATA
 {
    BOOL horiz;
    BOOL dupinfo;
@@ -50,7 +50,7 @@ struct MUI_GaugeData
 **************************************************************************/
 static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_GaugeData   *data;
+    struct Gauge_DATA   *data;
     struct TagItem  	    *tag, *tags;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -112,7 +112,7 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Gauge_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_GaugeData   *data = INST_DATA(cl,obj);
+    struct Gauge_DATA   *data = INST_DATA(cl,obj);
     if (data->dupinfo && data->info) FreeVec(data->info);
     return DoSuperMethodA(cl,obj,msg);
 }
@@ -122,7 +122,7 @@ static IPTR Gauge_Dispose(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_GaugeData   *data;
+    struct Gauge_DATA   *data;
     struct TagItem  	    *tag, *tags;
     int info_changed = 0;
     int need_redraw = 0;
@@ -217,7 +217,7 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG  Gauge_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 {
-    struct MUI_GaugeData *data = INST_DATA(cl, obj);
+    struct Gauge_DATA *data = INST_DATA(cl, obj);
     ULONG *store               = msg->opg_Storage;
     ULONG    tag               = msg->opg_AttrID;
 
@@ -256,7 +256,7 @@ static ULONG  Gauge_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 **************************************************************************/
 static IPTR Gauge_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_GaugeData *data = INST_DATA(cl,obj);
+    struct Gauge_DATA *data = INST_DATA(cl,obj);
 
     if (!(DoSuperMethodA(cl, obj, (Msg)msg))) return 0;
 
@@ -293,7 +293,7 @@ static IPTR Gauge_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 **************************************************************************/
 static IPTR Gauge_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
-    struct MUI_GaugeData *data = INST_DATA(cl,obj);
+    struct Gauge_DATA *data = INST_DATA(cl,obj);
     DoSuperMethodA(cl,obj,(Msg)msg);
 
     if (data->horiz)
@@ -330,7 +330,7 @@ static IPTR Gauge_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 **************************************************************************/
 static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct MUI_GaugeData *data = INST_DATA(cl,obj);
+    struct Gauge_DATA *data = INST_DATA(cl,obj);
     //ULONG val;
 
     DoSuperMethodA(cl,obj,(Msg)msg);
@@ -381,6 +381,7 @@ static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 
+#if ZUNE_BUILTIN_GAUGE
 BOOPSI_DISPATCHER(IPTR, Gauge_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -397,13 +398,10 @@ BOOPSI_DISPATCHER(IPTR, Gauge_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
 const struct __MUIBuiltinClass _MUI_Gauge_desc = { 
     MUIC_Gauge, 
     MUIC_Area, 
-    sizeof(struct MUI_GaugeData), 
+    sizeof(struct Gauge_DATA), 
     (void*)Gauge_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_GAUGE */

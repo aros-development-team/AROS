@@ -3,6 +3,7 @@
 include $(TOP)/config/make.cfg
 
 MAKE_BUILTIN_ABOUTMUI := no
+MAKE_BUILTIN_GAUGE    := yes
 
 CLASSES := \
     application \
@@ -20,7 +21,6 @@ CLASSES := \
     family \
     frameadjust \
     framedisplay \
-    gauge \
     group \
     iconlist \
     iconlistview \
@@ -109,6 +109,13 @@ ifeq ($(MAKE_BUILTIN_ABOUTMUI),yes)
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_ABOUTMUI=1
 else
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_ABOUTMUI=0
+endif
+
+ifeq ($(MAKE_BUILTIN_GAUGE),yes)
+    CLASSES     := $(CLASSES) gauge
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_GAUGE=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_GAUGE=0
 endif
 
 #MM- workbench-libs-muimaster : setup includes linklibs
