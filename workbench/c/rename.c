@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Rename CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -29,24 +29,19 @@
 
     INPUTS
 
-	FROM  - The name(s) of the file(s) to rename or move. There may
-		be many files specified, this is used when moving files
-		into a new directory.
+	FROM   --  The name(s) of the file(s) to rename or move. There may
+		   be many files specified, this is used when moving files
+		   into a new directory.
 
-	TO|AS - The name which we wish to call the file.
+	TO|AS  --  The name which we wish to call the file.
 
-	QUIET - Suppress any output from the command.
+	QUIET  --  Suppress any output from the command.
 
     RESULT
 
 	Standard DOS error codes.
 
     NOTES
-
-	100% compatible with the standard AmigaOS Rename command.
-
-	The standard Rename command allows the use of pattern matching,
-	so this has been implemented in AROS' Rename command.
 
     EXAMPLE
 
@@ -65,9 +60,6 @@
 
     SEE ALSO
 
-	AmigaDOS Manual 3rd Edition - Pages 131-132 (Rename command)
-	AmigaDOS Manual 3rd Edition - Page  277     (Rename DOS command)
-
     INTERNALS
 
 	Rename() can only move a file to another directory, if and only if
@@ -80,16 +72,13 @@
 
     HISTORY
 
-	10.04.97    laguest    Corrected 'FromFiles ++' to '*(FromFiles ++)'
-
-	08.04.97    laguest    Corrected the pointer arithmetic error,
-			       from (*FromFiles)++ to *(Fromfiles++)
-
-	28.03.97    srittau    Fixes as discussed on mailing-list
-
-	19.03.97    laguest    Initial inclusion to the CVS repository
+        23.11.00  SDuvan   --  Rewrote from scratch
+	19.03.97  laguest  --  Initial inclusion to the CVS repository
 
 ******************************************************************************/
+
+#define  DEBUG  0
+#include <aros/debug.h>
 
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -100,196 +89,185 @@
 #include <exec/memory.h>
 #include <exec/types.h>
 
-#define ARG_TEMPLATE	"FROM/A/M,TO=AS/A,QUIET/S"
-#define ARG_FROM	0
-#define ARG_TO		1
-#define ARG_QUIET	2
-#define TOTAL_ARGS	3
+#include <stdio.h>
+#include <string.h>
 
-/* Used to define whether the boolean switches are set or not.
- */
-#define NOT_SET 	0
+#define ARG_TEMPLATE	"FROM/A/M,TO=AS/A,QUIET/S"
+
+enum
+{
+    ARG_FROM = 0,
+    ARG_TO,
+    ARG_QUIET,
+    NOOFARGS
+};
+
 
 #define MAX_PATH_LEN	512
 
-/* Defines whether MathFirst(), etc has matched a file.
- */
-#define MATCHED_FILE	0
+static const char version[] = "$VER: Rename 41.2 (23.11.2000)\n";
 
-static const char version[] = "$VER: Rename 41.1 (22.3.1997)\n";
 
-void DumpStats(char *, char *);
+int doRename(STRPTR *from, STRPTR to, BOOL quiet);
+
 
 int main(int argc, char *argv[])
 {
-    struct RDArgs     * rda;
-    struct AnchorPath * apath;
-    IPTR	      * args[TOTAL_ARGS] = { NULL, NULL, NULL };
-    STRPTR	      * FromFiles;
-    char	      * FileName = NULL;
-    char		PathName[MAX_PATH_LEN];
-    LONG		MatchResult;
-    BOOL		Success;
-    int 		Return_Value;
+    struct RDArgs     *rda;
 
-    Return_Value = RETURN_OK;
+    IPTR  args[NOOFARGS] = { NULL, NULL, NULL };
 
-    apath = (struct AnchorPath *)AllocVec(
-	    sizeof(struct AnchorPath) + MAX_PATH_LEN
-	    , MEMF_ANY | MEMF_CLEAR
-    );
+    int   retval = RETURN_FAIL;
 
-    if (apath)
+    rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+    
+    if(rda != NULL)
     {
-	/* Make sure DOS knows the buffer size.
-	 */
-	apath->ap_Strlen = MAX_PATH_LEN;
+	STRPTR *from  = (STRPTR *)args[ARG_FROM];
+	STRPTR  to    = (STRPTR)args[ARG_TO];
+	BOOL    quiet = (BOOL)args[ARG_QUIET];
+	
+	retval = doRename(from, to, quiet);
+	
+	FreeArgs(rda);
+    }
 
-	/* The cast in ReadArgs() stops the compiler from complaining.
-	 */
-	rda = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL);
-	if (rda)
+    return retval;
+}
+
+
+int doRename(STRPTR *from, STRPTR to, BOOL quiet)
+{
+    struct AnchorPath *ap;
+
+    char    pathName[MAX_PATH_LEN];
+    STRPTR  fileStart;
+    BOOL    destIsDir = FALSE;
+    BOOL    destExists = FALSE;
+    LONG    match;
+    BPTR    lock;
+    ULONG   i;
+
+
+
+    /* First we check if the destination is a directory */
+    lock = Lock(to, SHARED_LOCK);
+
+    if(lock != NULL)
+    {
+ 	struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+
+	destExists = TRUE;
+
+	if(fib == NULL)
 	{
-	    FromFiles = (STRPTR *)args[ARG_FROM];
+	    UnLock(lock);
+	    PrintFault(IoErr(), "Rename");
 
-	    while
-	    (
-		*FromFiles != NULL
-	    &&
-		Return_Value == RETURN_OK
-	    )
-	    {
-		MatchResult = MatchFirst((STRPTR)*FromFiles
-					 , apath
-		);
-
-		do
-		{
-		    if (MatchResult == MATCHED_FILE)
-		    {
-			FileName = FilePart((UBYTE *)args[ARG_TO]);
-
-			/* If we do not have a filename at the end of the path.
-			 */
-			if (FileName == NULL || *FileName == NULL)
-			{
-
-			    /* Obtain a full path with filename.
-			     */
-			    if
-			    (
-				AddPart(&PathName[0]
-					, (UBYTE *)args[ARG_TO]
-					, MAX_PATH_LEN
-				)
-			    )
-			    {
-				if
-				(
-				    AddPart(&PathName[sizeof(args[ARG_TO])]
-					    , FilePart(&apath->ap_Buf[0])
-					    , MAX_PATH_LEN - sizeof(args[ARG_TO]))
-				)
-				{
-
-				    if (args[ARG_QUIET] == NOT_SET)
-					DumpStats(apath->ap_Buf
-						  , &PathName[0]
-					);
-
-				    Success = Rename(apath->ap_Buf
-						     , &PathName[0]
-				    );
-
-				    if (Success == FALSE)
-				    {
-					Return_Value = RETURN_FAIL;
-					PrintFault(IoErr(), "Rename");
-				    }
-				}
-				else
-				{
-				    Return_Value = RETURN_FAIL;
-				    PrintFault(IoErr(), "Rename");
-				}
-			    }
-			    else
-			    {
-				Return_Value = RETURN_FAIL;
-				PrintFault(IoErr(), "Rename");
-			    }
-			}
-			else
-			{
-			    if (args[ARG_QUIET] == NOT_SET)
-				DumpStats(*FromFiles
-					  , (UBYTE *)args[ARG_TO]
-				);
-
-			    /* Perform a normal rename.
-			     */
-			    Success = Rename((char *)*FromFiles
-					     , (UBYTE *)args[ARG_TO]
-			    );
-
-			    if (Success == FALSE)
-			    {
-				Return_Value = RETURN_FAIL;
-				PrintFault(IoErr(), "Rename");
-			    }
-			}
-		    }
-		    else
-		    {
-			Return_Value = RETURN_FAIL;
-
-			PutStr("Can't rename ");
-			if (FileName == NULL || *FileName == NULL) {
-			    PutStr(apath->ap_Buf);
-			    PutStr(" as ");
-			    PutStr(PathName);
-			} else {
-			    PutStr(*FromFiles);
-			    PutStr(" as ");
-			    PutStr((STRPTR)args[ARG_TO]);
-			}
-			PutStr(" because ");
-			PrintFault(IoErr(), NULL);
-		    }
-		}
-		while
-		(
-		    (MatchResult = MatchNext(apath)) ==  MATCHED_FILE
-		&&
-		    Return_Value == RETURN_OK
-		);
-
-		if (Return_Value != RETURN_OK)
-		    break;
-
-		MatchEnd(apath);
-
-		FromFiles ++;
-	    }
+	    return RETURN_FAIL;
 	}
 
-	FreeArgs(rda);
-    } else
-	Return_Value = RETURN_FAIL;
+	if(Examine(lock, fib))
+	{
+	    if(fib->fib_DirEntryType >= 0)
+	    {
+		destIsDir = TRUE;
+	    }
+	}
+	else
+	{
+	    UnLock(lock);
+	    PrintFault(IoErr(), "Rename");
 
-    FreeVec(apath);
+	    return RETURN_FAIL;
+	}
 
-    return(Return_Value);
+	UnLock(lock);
+    }
 
-} /* main */
+    
+    /* If the source is a pattern or multiple defined files, the destination
+       'to' have to be a directory. */
+    for(i = 0; from[i] != NULL; i++);
+    
+    if(i > 1 || ParsePattern(from[0], pathName, sizeof(pathName)) == 1)
+    {
+	if(!destExists)
+	{
+	    printf("Destination directory \"%s\" does not exist.\n", to);
+	    
+	    return RETURN_FAIL;
+	}	
 
-void DumpStats(char *from, char *to)
-{
-    IPTR args[2];
+	if(!destIsDir)
+	{
+	    printf("Destination \"%s\" is not a directory.\n", to);
 
-    args[0] = (IPTR)from;
-    args[1] = (IPTR)to;
+	    return RETURN_FAIL;
+	}
+    }
+    else
+    {
+	if(destExists)
+	{
+	    printf("Can't rename %s as %s because", from[0], to);
+	    PrintFault(ERROR_OBJECT_EXISTS, "");
 
-    VPrintf("Renaming %s as %s\n", args);
+	    return RETURN_FAIL;
+	}
+    }
 
-} /* DumpStats */
+    /* Now either only one specific file should be renamed or the
+       destination is really a directory. We can use the same routine
+       for both cases! */
+    
+    ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN,
+				       MEMF_ANY | MEMF_CLEAR);
+    
+    if(ap == NULL)
+    {
+	SetIoErr(ERROR_NO_FREE_STORE);
+	PrintFault(IoErr(), "Rename");
+	
+	return RETURN_FAIL;
+    }
+    
+    strncpy(pathName, to, MAX_PATH_LEN);
+    
+    fileStart = pathName + strlen(pathName);
+    
+    /* Notify the Match functions that we have a buffer */
+    ap->ap_Strlen = MAX_PATH_LEN;
+
+    for(i = 0; from[i] != NULL; i++)
+    {
+	for(match = MatchFirst(from[i], ap); match == 0; match = MatchNext(ap))
+	{
+	    /* Check for identical 'from' and 'to'? */
+		
+	    if(destIsDir)
+	    {
+		/* Clear former filename */
+		*fileStart = 0;
+		AddPart(pathName, FilePart(ap->ap_Buf), MAX_PATH_LEN);
+	    }
+	    
+	    if(!quiet)
+	    {
+		printf("Renaming %s as %s\n", ap->ap_Buf, pathName);
+	    }
+	    
+	    if(!Rename(ap->ap_Buf, pathName))
+	    {
+		MatchEnd(ap);
+		PrintFault(IoErr(), "Rename");
+		
+		return RETURN_FAIL;
+	    }
+	}
+	
+	MatchEnd(ap);
+    }
+    
+    return RETURN_OK;
+}
