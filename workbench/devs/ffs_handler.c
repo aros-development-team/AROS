@@ -49,7 +49,7 @@
 
 /* All information in the amiga FS is big endian */
 
-#if BIG_ENDIAN
+#if AROS_BIG_ENDIAN
 #define EC(a) (a)
 #else
 #define EC(a) (((a)>>24)|(((a)&0xff0000)>>8)|(((a)&0xff00)<<8)|((a)<<24))
