@@ -327,7 +327,7 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 	return retval;
 }
 
-void redrawRectangle(ULONG x1, ULONG y1, ULONG x2, ULONG y2, Object *obj, struct IconContainerClassData *data)
+void redrawRectangle(LONG x1, LONG y1, LONG x2, LONG y2, Object *obj, struct IconContainerClassData *data)
 {
 	struct MemberNode *mn;
 
@@ -368,7 +368,7 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
 	if(msg->flags & MADF_DRAWOBJECT)
 	{
-		clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj)-1, _mheight(obj)-1);
+		clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
 		if(data->widthAdjusted!=0)
 		{
@@ -464,7 +464,7 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 			if(scrollAmountX>0)
 			{
 				// scroll right, displays shifts left, redraw gap at right
-				redrawX1=_mright(obj)-abs(scrollAmountX)+1;
+				redrawX1=_mright(obj)-abs(scrollAmountX);
 				redrawX2=_mright(obj);
 
 			}
@@ -472,7 +472,7 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 			{
 				// scroll left, display shifts right, redraw gap at left
 				redrawX1=_mleft(obj);
-				redrawX2=_mleft(obj)+abs(scrollAmountX)-1;
+				redrawX2=_mleft(obj)+abs(scrollAmountX);
 			}
 
 			redrawY1=_mtop(obj);
@@ -490,7 +490,7 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 				mn=(struct MemberNode*)mn->m_Node.mln_Succ;
 			}
 
-			clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj)-1, _mtop(obj)-1, _mwidth(obj)+2, _mheight(obj)+2);
+			clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
 			ScrollRaster(_rp(obj), scrollAmountX, 0, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
 
