@@ -52,11 +52,13 @@
 
     SEE ALSO
 
-    DrawDTObjectA(), ReleaseDTDrawInfo()
+    DrawDTObjectA(), ObtainDTDrawInfo()
 
     INTERNALS
 
     HISTORY
+
+    29.8.99  SDuvan  implemented
 
 *****************************************************************************/
 {

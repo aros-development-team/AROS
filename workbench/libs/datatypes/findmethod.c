@@ -50,6 +50,8 @@
 
     HISTORY
 
+    2.8.99  SDuvan  implemented
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -69,4 +71,3 @@
 
     AROS_LIBFUNC_EXIT
 } /* FindMethod */
-
