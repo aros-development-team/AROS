@@ -49,8 +49,8 @@ for file in $(find . -type f -not -name "*.md5" -printf "%p;"); do
             
             dst="$DST/$(dirname $file)"
             mkdir -p $dst
-            mv "$file" $dst
-            mv "$file.md5" $dst
+            mv -f "$file" $dst
+            mv -f "$file.md5" $dst
         else
             echo "! $file"
         fi
