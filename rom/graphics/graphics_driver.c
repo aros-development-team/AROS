@@ -246,34 +246,34 @@ void ReleaseDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
     
     if (!(rp->Flags & RPF_SELF_CLEANUP))
     {
-    	/* FIXME: stegerg 23 jan 2004: needs semprotection, too! */
+    /* FIXME: stegerg 23 jan 2004: needs semprotection, too! */
 	/* CHECKME: stegerg 23 feb 2005: really?? */
 	
-    	dd->dd_LockCount--;
+    dd->dd_LockCount--;
     
     	// Don't do this:
 	//
-    	// if (!dd->dd_LockCount) KillDriverData(rp, GfxBase);
+//    if (!dd->dd_LockCount) KillDriverData(rp, GfxBase);
 	//
 	// some garbage collection should later hunt for dd's with
 	// 0 lockcount and possibly non-usage for a certain amount
 	// of time and get rid of them.
-    }
+}
 }
 
 void KillDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
-{    
+{
     if (RP_BACKPOINTER(rp) == rp)
     {
         struct gfx_driverdata *dd = NULL;
-
+    
     	if (rp->Flags & RPF_SELF_CLEANUP)
 	{
 	    dd = RP_DRIVERDATA(rp);
 	}
     	else
     	{
-            ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
+    ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
     	    if (FindDriverData(RP_DRIVERDATA(rp), rp, GfxBase))
 	    {
 	    	dd = RP_DRIVERDATA(rp);
@@ -282,19 +282,19 @@ void KillDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
     	    ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
     	}
     
-	if (dd)
-	{
-    	    struct shared_driverdata *sdd;
+    if (dd)
+    {
+    	struct shared_driverdata *sdd;
+    	
+	sdd = SDD(GfxBase);
 
-	    sdd = SDD(GfxBase);
-
-    	    HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
-	    FreePooled(PrivGBase(GfxBase)->driverdatapool, dd, sizeof(*dd)); 
+    	HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
+	FreePooled(PrivGBase(GfxBase)->driverdatapool, dd, sizeof(*dd)); 
 	    RP_DRIVERDATA(rp) = NULL;
-	}
+    }
     
     }
-            
+        
 }
 
 #else
@@ -805,6 +805,8 @@ static ULONG bgf_render(APTR bgfr_data
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;
     
+    ASSERT(width > 0 && height > 0);
+
     bgfrd = (struct bgf_render_data *)bgfr_data;
     
     HIDD_BM_BlitColorExpansion( dstbm_obj
@@ -830,6 +832,8 @@ void blit_glyph_fast(struct RastPort *rp, OOP_Object *fontbm, WORD xsrc
     EnterFunc(bug("blit_glyph_fast(%d, %d, %d, %d, %d)\n"
     	, xsrc, destx, desty, width, height));
 	
+    
+    ASSERT(width > 0 && height > 0);
     
     bgfrd.fbm_xsrc = xsrc;
     bgfrd.fbm	   = fontbm;
@@ -973,18 +977,18 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	}
 	else
 	{
-	    WORD xoffset;
-	    xoffset = charloc >> 16;
-	
-	    blit_glyph_fast(rp
-		, fontbm
-		, xoffset
-		, current_x // render_x
-		, render_y
-		, charloc & 0xFFFF
-		, tf->tf_YSize
-		, GfxBase
-	    );
+	       WORD
+	    glyphXOffset = charloc >> 16,
+        glyphWidth = charloc & 0xFFFF;
+
+	    ASSERT(tf->tf_YSize > 0);
+
+/* blit the glypth if it has data in the bitmap */
+        if (glyphWidth > 0)
+        {
+            blit_glyph_fast(rp, fontbm, glyphXOffset, current_x, render_y,
+                glyphWidth, tf->tf_YSize, GfxBase);
+        }
 	}
 	
 	if (tf->tf_CharSpace)
@@ -1552,7 +1556,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     	case RECTFMT_BGRA32 : srcfmt_hidd = vHidd_StdPixFmt_BGRA32  ; morphfmt_hidd = vHidd_StdPixFmt_BGR032; break;
 	case RECTFMT_RGBA32 : srcfmt_hidd = vHidd_StdPixFmt_RGBA32  ; morphfmt_hidd = vHidd_StdPixFmt_RGB032; break;
 	case RECTFMT_ABGR32 : srcfmt_hidd = vHidd_StdPixFmt_ABGR32  ; morphfmt_hidd = vHidd_StdPixFmt_0BGR32; break;
-	case RECTFMT_RAW    : srcfmt_hidd = vHidd_StdPixFmt_Native  ; break;
+	case RECTFMT_RAW  : srcfmt_hidd = vHidd_StdPixFmt_Native; break;
     }
 
     /* Compute the start of the array */
@@ -1584,8 +1588,8 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);	    
 	    if (stdpf == morphfmt_hidd) srcfmt_hidd = morphfmt_hidd;
-	}
-	
+    }
+
     	pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, srcfmt_hidd);
     }
         
@@ -1705,7 +1709,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     	case RECTFMT_BGRA32 : dstfmt_hidd = vHidd_StdPixFmt_BGRA32  ; morphfmt_hidd = vHidd_StdPixFmt_BGR032; break;
 	case RECTFMT_RGBA32 : dstfmt_hidd = vHidd_StdPixFmt_RGBA32  ; morphfmt_hidd = vHidd_StdPixFmt_RGB032; break;
 	case RECTFMT_ABGR32 : dstfmt_hidd = vHidd_StdPixFmt_ABGR32  ; morphfmt_hidd = vHidd_StdPixFmt_0BGR32; break;
-	case RECTFMT_RAW    : dstfmt_hidd = vHidd_StdPixFmt_Native  ; break;
+	case RECTFMT_RAW  : dstfmt_hidd = vHidd_StdPixFmt_Native; break;
     }
 
 #warning Get rid of the below code ?
@@ -1735,8 +1739,8 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
 
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);	    
 	    if (stdpf == morphfmt_hidd) dstfmt_hidd = morphfmt_hidd;
-    	}
-	
+    }
+       
     	pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, dstfmt_hidd);
     }
     
