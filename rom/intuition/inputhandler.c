@@ -5,6 +5,7 @@
 #include <proto/alib.h>
 #include <proto/layers.h>
 #include <proto/graphics.h>
+#include <proto/keymap.h>
 #include <exec/memory.h>
 #include <exec/alerts.h>
 #include <exec/interrupts.h>
@@ -14,6 +15,7 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/cghooks.h>
 #include <intuition/sghooks.h>
+#include <devices/inputevent.h>
 #include "inputhandler.h"
 
 #include "boopsigadgets.h"
@@ -294,7 +296,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    break;
 
 	case IECLASS_RAWMOUSE:
-	    /* IECLASS_RAWMOUSE events are let through even when there is no active window */
+	    /* IECLASS_RAWMOUSE events are let through even when there
+	       is no active window */
 	    if (im)
 	    {
 		im->Code	= ie->ie_Code;
@@ -308,7 +311,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    case SELECTDOWN: {
 		BOOL new_gadget = FALSE;
 
-
  	        /* 
 	        **  The mouse coordinates relative to the upper left
 	        **  corner of the window
@@ -321,9 +323,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		if (!gadget)
 		{
-
-  
-		    gadget = FindGadget (w, ie->ie_X, ie->ie_Y, gi);
+  		    gadget = FindGadget (w, ie->ie_X, ie->ie_Y, gi);
 		    if (gadget)
 		    {
 			new_gadget = TRUE;
@@ -352,7 +352,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break;
 
 		    case GTYP_PROPGADGET:
-			HandlePropSelectDown(gadget, w, NULL, im->MouseX, im->MouseY, IntuitionBase);
+			HandlePropSelectDown(gadget, w, NULL, im->MouseX,
+					     im->MouseY, IntuitionBase);
 			break;
 
 		    case GTYP_STRGADGET:
@@ -365,7 +366,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			{
 			    UWORD imsgcode;
 
-			    HandleStrInput(gadget, gi, ie, &imsgcode, IntuitionBase);
+			    HandleStrInput(gadget, gi, ie, &imsgcode,
+					   IntuitionBase);
 			}
 			else
 			{
@@ -692,8 +694,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		w->WScreen->MouseX = ie->ie_X;
 		w->WScreen->MouseY = ie->ie_Y;
 
-
-
 		if (gadget)
 		{
 		    int inside = InsideGadget(w,gadget,im->MouseX, im->MouseY);
@@ -810,13 +810,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 	    break; }
 
-
-
 	    } /* switch (im->im_Code)  (what button was pressed ?) */
 	    break;
-
-
-
 
 
 	case IECLASS_RAWKEY:
@@ -824,19 +819,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    im->Code	    = ie->ie_Code;
 	    im->Qualifier   = ie->ie_Qualifier;
 
-	    if (!(ie->ie_Code & 0x8000))
+	    if (!(ie->ie_Code & IECODE_UP_PREFIX))
 	    {
 		ptr = "RAWKEY PRESSED";
 
-
 		if (gadget)
 		{
-
 		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 		    {
 		    case GTYP_STRGADGET: {
 			UWORD imsgcode;
-			ULONG ret = HandleStrInput(gadget, gi, ie, &imsgcode, IntuitionBase);
+			ULONG ret = HandleStrInput(gadget, gi, ie, &imsgcode,
+						   IntuitionBase);
 			if (ret == SGA_END)
 			{
 			    if (gadget->Activation & GACT_RELVERIFY)
@@ -849,6 +843,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 				ptr = "GADGETUP";
 			    }
 			}
+
+			im->Class = 0;      /* Already used for strgadget. */
+
 			break; }
 
 		    case GTYP_CUSTOMGADGET: {
@@ -896,12 +893,31 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			}
 
-
 			break;}  /* case BOOPSI custom gadget type */
 
 		    } /* switch (gadget type) */
 
 		} /* if (a gadget is currently active) */
+		else
+		{
+		    /* This is a regular RAWKEY event (no gadget taking care
+		       of it...). */
+
+		    if(w->IDCMPFlags & IDCMP_VANILLAKEY)
+		    {
+			UBYTE keyBuffer;
+
+			if(MapRawKey(ie, &keyBuffer, 1, NULL) != -1)
+			{
+			    im->Class = IDCMP_VANILLAKEY;
+			    im->Code  = keyBuffer;
+			}
+
+			/* If the event mapped to more than one byte, it is not
+			   a legal VANILLAKEY, so we send it as the original
+			   RAWKEY event. */
+		    }
+		}
 	    }
 	    else /* key released */
 	    {
