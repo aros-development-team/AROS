@@ -57,6 +57,11 @@ AddDatatypes REFRESH QUIET
 IPrefs
 Run <NIL: >NIL: ConClip
 
+If EXISTS SYS:Development
+    Assign INCLUDE: SYS:Development/Include
+    Assign LIB: SYS:Development/Lib
+EndIf
+
 If EXISTS C:RexxMast
     Assign REXX: S:
     Run <NIL: >NIL: C:RexxMast
