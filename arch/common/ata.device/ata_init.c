@@ -36,7 +36,7 @@ AROS_UFP3(LIBBASETYPEPTR, ata_init,
     AROS_UFPA(BPTR, slist, A0),
     AROS_UFPA(struct ExecBase *, SysBase, A6));
 
-static LONG __unused __ata_entry(void)
+static LONG __used __ata_entry(void) 
 {
     return -1;
 }
@@ -48,7 +48,7 @@ static const APTR inittabl[4];
 extern void *const LIBFUNCTABLE[];
 
 /* What are these? Naah, just kidding ;) */
-static const struct Resident ata_resident = {
+static const struct Resident ata_resident __used = {
     RTC_MATCHWORD,
     (struct Resident *)&ata_resident,
     (APTR)&LIBEND,
