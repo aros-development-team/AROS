@@ -39,6 +39,8 @@ AROS_UFH3(ULONG,Popobject_Open_Function,
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(void **, msg,  A1))
 {
+    AROS_USERFUNC_INIT
+
     struct Popobject_DATA *data = (struct Popobject_DATA *)hook->h_Data;
     Object  	    	  *string = (Object*)msg[0];
 
@@ -92,6 +94,8 @@ AROS_UFH3(ULONG,Popobject_Open_Function,
     }
 
     return 1;
+    
+    AROS_USERFUNC_EXIT
 }
 
 
@@ -100,6 +104,8 @@ AROS_UFH3(ULONG,Popobject_Close_Function,
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(void **, msg,  A1))
 {
+    AROS_USERFUNC_INIT
+
     struct Popobject_DATA *data= (struct Popobject_DATA *)hook->h_Data;
     Object  	    	  *string = (Object*)msg[0];
     LONG    	    	   suc = (LONG)msg[1];
@@ -119,6 +125,8 @@ AROS_UFH3(ULONG,Popobject_Close_Function,
 
     }
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
 IPTR Popobject__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
