@@ -267,26 +267,14 @@
         l->back->front = l;
       behind->back = l;
     }
-    
-    
-    /*
-     * Does this layer have a layer in front of it?
-     * If yes, then take that layer's VisibleRegion and
-     * cut out that layer's shape. This is then the 
-     * VisibleRegion of my layer.
-     */
-    if (l->front)
-    {
-      _SetRegion(l->front->VisibleRegion, l->VisibleRegion);
-      ClearRegionRegion(l->front->shape, l->VisibleRegion);
-    }
-    else
-      _SetRegion(li->check_lp->shape, l->VisibleRegion);
 
     if (parent)
       l->nesting = parent->nesting+1;
     else
       l->nesting = 0;
+    
+    
+
 
     if (IS_VISIBLE(l))
     {
@@ -295,6 +283,21 @@
        */
       struct Layer * _l = l->back;
       struct Layer * lparent = l->parent;
+
+      /*
+       * Does this layer have a layer in front of it?
+       * If yes, then take that layer's VisibleRegion and
+       * cut out that layer's shape. This is then the 
+       * VisibleRegion of my layer.
+       */
+      if (l->front)
+      {
+        _SetRegion(l->front->VisibleRegion, l->VisibleRegion);
+        ClearRegionRegion(l->front->shape, l->VisibleRegion);
+      }
+      else
+        _SetRegion(li->check_lp->shape, l->VisibleRegion);
+     
       /*
        * First tell all layers behind this layer to
        * back up their parts that the new layer will
@@ -317,13 +320,16 @@
         _l = _l->back;
       }
 
-      /*
-       * Show the layer according to its visible area
-       * This function creates the cliprects in the area
-       * of the layer.
-       */
-      _ShowLayer(l);
     }
+    /*
+     * Show the layer according to its visible area
+     * This function creates the cliprects in the area
+     * of the layer.
+     * This also works for invisible layers since their Visible
+     * Region is non existent.
+     */
+    if (!IS_ROOTLAYER(l))
+      _ShowLayer(l);
   }
   else
     goto failexit;
