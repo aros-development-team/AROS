@@ -89,9 +89,9 @@ all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FUNCTIONS),$(f).s) \
-	$(SLIBDIR)/exec.strap
+	$(OSMODDIR)/exec.strap
 
-$(SLIBDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+$(OSMODDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 		       $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
 		       $(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o)
 	$(CC) $(ILDFLAGS) \
@@ -101,19 +101,21 @@ $(SLIBDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(LIBS) -o $@ 2>&1|tee execstrap.err
 	@if test ! -s execstrap.err; then rm execstrap.err ; else true ; fi
 	@strip $@
-else
-all: setup \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
 # To study the assembler output for evaluation (can be helpful in tracking
 # down bugs):
 %.s: %.c
 	$(CC) -S $(CFLAGS) $< -c -o $@
+else
+all: setup \
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
+
 endif
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	@if [ ! -d $(OSMODDIR) ]; then $(MKDIR) $(OSMODDIR) ; else true ; fi
 
 clean:
 	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libexec.a
