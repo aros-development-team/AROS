@@ -298,7 +298,7 @@ void _zune_focus_destroy (Object *obj)
 
 /**************/
 
-#waring REWORK: Eventhandling stuff
+#warning REWORK: Eventhandling stuff
 
 void _zune_window_message(struct IntuiMessage *imsg)
 {
