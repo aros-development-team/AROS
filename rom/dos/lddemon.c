@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Loader for shared libraries and devices.
@@ -150,7 +150,7 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
 	
 	for(
 	    addr += sizeof(BPTR) + sizeof(ULONG),
-		size -= sizeof(BPTR) - sizeof(ULONG);
+		size -= sizeof(BPTR) + sizeof(ULONG);
 	    size >= sizeof(struct Resident) ;
 	    size -= AROS_PTRALIGN, addr += AROS_PTRALIGN
 	)
@@ -245,6 +245,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 	ldd.ldd_Version = version;
 	ldd.ldd_BaseDir = "libs:";
 
+    	SetSignal(0, SIGF_SINGLE);
 	D(bug("LDCaller: Sending request for %s v%ld\n", libname, version));
 	PutMsg(DOSBase->dl_LDDemonPort, (struct Message *)&ldd);
 	WaitPort(&ldd.ldd_ReplyPort);
@@ -340,7 +341,8 @@ AROS_LH4(BYTE, OpenDevice,
 
 	ldd.ldd_Name = devname;
 	ldd.ldd_BaseDir = "devs:";
-
+    	
+	SetSignal(0, SIGF_SINGLE);	
 	D(bug("LDCaller: Sending request for %s\n", devname));
 	PutMsg(DOSBase->dl_LDDemonPort, (struct Message *)&ldd);
 	WaitPort(&ldd.ldd_ReplyPort);
