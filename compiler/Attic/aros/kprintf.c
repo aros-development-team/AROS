@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/30 16:56:46  digulla
+    At last, it works :) *phew*
+
     Revision 1.3  1996/08/23 17:00:49  digulla
     Another attempt to make kprintf() work, but to no avail :(
 
@@ -22,12 +25,13 @@
 */
 #include <aros/arosbase.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <aros/system.h>
 #include <clib/dos_protos.h>
 #include <clib/aros_protos.h>
 #undef kprintf
-#include <stdio.h>
+#include <unistd.h>
 
 extern struct DosBase  * DOSBase;
 extern struct ExecBase * SysBase;
@@ -73,69 +77,213 @@ extern struct ExecBase * SysBase;
 
 ******************************************************************************/
 {
+#if 1
     va_list	 args;
     int 	 ret;
-#if 0
-    ULONG	 vpargs[10];
-    int 	 t;
-    const char * ptr;
+    static const char * hex = "0123456789ABCDEF";
+    ULONG	 val;
+    LONG	 lval;
 
-    if (DOSBase && AROSBase && AROSBase->StdOut)
+    if (!fmt)
+	return write (2, "(null)", 6);
+
+    va_start (args, fmt);
+
+    ret = 0;
+
+    while (*fmt)
     {
-	va_start (args, fmt);
-
-	for (t=0,ptr=fmt; *ptr && t<10; )
+	if (*fmt == '%')
 	{
-	    while (*ptr)
+	    int width = 0;
+	    int zero = 0;
+
+	    fmt ++;
+
+	    if (*fmt == '0')
 	    {
-		if (*ptr == '%')
+		zero = 1;
+		fmt ++;
+	    }
+
+	    if (isdigit (*fmt))
+		width = atoi (fmt);
+
+	    while (isdigit(*fmt) || *fmt=='.' || *fmt=='-' || *fmt=='+')
+		fmt ++;
+
+	    switch (*fmt)
+	    {
+	    case '%': break;
+		write (2, fmt, 1);
+		ret ++;
+		break;
+
+	    case 's':
+	    case 'S': {
+		char * str = va_arg (args, char *);
+		int len;
+
+		if (!str)
+		    str = "(null)";
+
+		if (*fmt == 'S')
 		{
-		    ptr ++;
+		    write (2, "\"", 1);
+		    ret ++;
+		}
 
-		    while (isdigit(*ptr) || *ptr=='.' || *ptr=='-')
-			ptr ++;
+		len = strlen (str);
 
-		    switch (*ptr)
+		write (2, str, len);
+		ret += len;
+
+		if (*fmt == 'S')
+		{
+		    write (2, "\"", 1);
+		    ret ++;
+		}
+
+		break; }
+
+	    case 'p': {
+		int t;
+		char puffer[sizeof (void *)*2];
+		ULONG val;
+
+		t = sizeof (void *)*2;
+		val = va_arg (args, ULONG);
+
+		while (t)
+		{
+		    puffer[--t] = hex[val & 0x0F];
+		    val >>= 4;
+		}
+
+		write (2, puffer, sizeof (void *)*2);
+
+		break; }
+
+	    case 'c': {
+		char c;
+
+		c = va_arg (args, char);
+
+		write (2, &c, 1);
+
+		break; }
+
+	    case 'l': {
+		int t;
+		char puffer[32];
+
+		if (fmt[1] == 'u' || fmt[1] == 'd' || tolower(fmt[1]) == 'x')
+		    fmt ++;
+
+		if (*fmt == 'd')
+		{
+		    lval = va_arg (args, LONG);
+
+		    val = lval ? 1 : 0;
+		}
+		else
+		{
+		    val = va_arg (args, ULONG);
+		}
+
+print_int:
+		if (val==0)
+		{
+		    if (width == 0)
+			width = 1;
+
+		    while (width > 0)
 		    {
-		    case '%': break;
-		    case 's':
-			vpargs[t] = (ULONG) va_arg (args, char *);
-			if (!vpargs[t])
-			    vpargs[t] = (ULONG) "(null)";
+			write (2, "00000000", (width < 8) ? width : 8);
+			width -= 8;
+		    }
 
-			t ++;
-			break;
+		    ret ++;
+		    break;
+		}
 
-		    case 'l':
-			if (ptr[1] == 'd' || tolower(ptr[1]) == 'x')
-			    ptr ++;
+		t = 32;
 
-			vpargs[t ++] = va_arg (args, ULONG);
-			break;
-		    default:
-			vpargs[t ++] = va_arg (args, int); break;
-			break;
+		if (*fmt == 'd' || *fmt == 'u')
+		{
+		    if (*fmt == 'u')
+		    {
+			if (lval < 0)
+			{
+			    write (2, "-", 1);
+			    ret ++;
+			    val = -lval;
+			}
+			else
+			    val = lval;
+		    }
+
+		    while (val && t)
+		    {
+			puffer[--t] = hex[val % 10];
+
+			val /= 10;
+		    }
+		}
+		else
+		{
+		    while (val && t)
+		    {
+			puffer[--t] = hex[val & 0x0F];
+
+			val >>= 4;
 		    }
 		}
 
-		ptr ++;
-	    }
+		width -= 32-t;
+
+		while (width > 0)
+		{
+		    write (2, "00000000", (width < 8) ? width : 8);
+		    width -= 8;
+		}
+
+		write (2, &puffer[t], 32-t);
+		ret += 32-t;
+
+		break; }
+
+	    default: {
+		if (*fmt == 'd')
+		{
+		    lval = va_arg (args, int);
+
+		    val = lval ? 1 : 0;
+		}
+		else
+		{
+		    val = va_arg (args, unsigned int);
+		}
+
+		goto print_int;
+
+		break; }
+	    } /* switch */
+	}
+	else
+	{
+	    write (2, fmt, 1);
+	    ret ++;
 	}
 
-	ret = VFPrintf ((BPTR)AROSBase->StdOut, (char *)fmt, vpargs);
-	Flush ((BPTR)AROSBase->StdOut);
-
-	va_end (args);
-    }
-#else
-    va_start (args, fmt);
-
-    ret = vfprintf (AROSBase->StdOut, (char *)fmt, args);
-    fflush (AROSBase->StdOut);
+	fmt ++; /* Next char */
+    } /* while (*fmt); */
 
     va_end (args);
-#endif
 
     return ret;
+#else
+    return -1;
+#endif
 } /* kprintf */
 
