@@ -1135,6 +1135,84 @@ writecache (Project * prj)
 }
 
 void
+updatemakefile (Project * prj, const char * path)
+{
+    char * mf = xmalloc (strlen (path) + 4);
+    char * ptr, * dir, * file, * ext;
+    char * dest, * src;
+    int len;
+    struct stat sst, dst;
+
+    strcpy (mf, path);
+    len = strlen (mf) - 4;
+    if (len > 0 && strcmp (mf+len, ".src"))
+	strcat (mf, ".src");
+
+    ptr = dir = mf;
+    file = NULL;
+    while (*ptr)
+    {
+	if (*ptr == '/')
+	    file = ptr+1;
+
+	ptr ++;
+    }
+    if (!file)
+    {
+	dir = ".";
+	file = mf;
+    }
+    ptr = file;
+    ext = NULL;
+    while (*ptr)
+    {
+	if (*ptr == '.')
+	    ext = ptr+1;
+
+	ptr ++;
+    }
+
+    chdir (prj->top);
+    if (file != mf)
+    {
+	file[-1] = 0;
+	chdir (dir);
+    }
+
+    ext[-1] = 0;
+    dest = xstrdup (file);
+    ext[-1] = '.';
+
+    src = file;
+    if (stat (src, &sst) == -1)
+	return;
+
+    if (stat (dest, &dst) == -1
+	|| sst.st_mtime > dst.st_mtime
+	|| checkdeps (prj, dst.st_mtime)
+    )
+    {
+	printf ("(Re)generating %s/%s because ", dir, dest);
+	if (stat (dest, &dst) == -1)
+	    printf ("%s doesn't exist\n", dest);
+	else if (sst.st_mtime > dst.st_mtime)
+	    printf ("%s.src is newer\n", dest);
+	else
+	    printf ("config.deps is newer\n");
+
+	if (!execute (prj, prj->genmakefilescript,"-","-",""))
+	{
+	    fprintf (stderr, "Error while regenerating makefile %s\n", dest);
+	    unlink (dest);
+	    exit (10);
+	}
+    }
+
+    xfree (dest);
+    xfree (mf);
+}
+
+void
 buildmflist (Project * prj)
 {
     char * mfn, * mfnsrc;
@@ -1149,6 +1227,7 @@ buildmflist (Project * prj)
     DirNode * dnode;
     int done, todo, nummfs, reread;
     Node * tmpnode;
+    time_t tt, now;
 
     if (!prj->buildmflist)
 	return;
@@ -1170,14 +1249,22 @@ buildmflist (Project * prj)
 
     done = nummfs = reread = 0;
 
+    time (&tt);
+    now = 0;
+
     while ((cd = GetHead(&dirs)))
     {
 	todo = 0;
 	ForeachNode (&dirs, tmpnode)
 	    todo ++;
 
-	printf ("Done: %4d   Todo: %4d\r", done, todo);
-	fflush (stdout);
+	time (&now);
+	if (now != tt)
+	{
+	    printf ("Done: %4d   Todo: %4d\r", done, todo);
+	    fflush (stdout);
+	    tt = now;
+	}
 
 	Remove (cd);
 
@@ -1318,11 +1405,11 @@ buildmflist (Project * prj)
 	if (foundmf == 2)
 	{
 	    strcpy (path+offset, mfnsrc);
-	    addnodeonce (&prj->makefiles, path+2, NULL);
-	    path[offset] = 0;
-	    nummfs ++;
+	    updatemakefile (prj, path);
+	    foundmf --;
 	}
-	else if (foundmf == 1)
+
+	if (foundmf == 1)
 	{
 	    mfnsrc[len] = 0;
 	    strcpy (path+offset, mfnsrc);
@@ -1821,6 +1908,7 @@ callmake (Project * prj, const char * tname, const char * mforig)
 	chdir (dir);
     }
 
+#if 0
     if (ext && !strcmp (ext, "src"))
     {
 	char * src, * dest;
@@ -1857,11 +1945,12 @@ callmake (Project * prj, const char * tname, const char * mforig)
 	xfree (dest);
     }
 
-    setvar (prj, "CURDIR", dir);
-    setvar (prj, "TARGET", tname);
-
     if (ext)
 	ext[-1] = 0;
+#endif
+
+    setvar (prj, "CURDIR", dir);
+    setvar (prj, "TARGET", tname);
 
     *buffer = 0;
 
@@ -1981,8 +2070,6 @@ main (int argc, char ** argv)
 
     currdir = getcwd (NULL, 1024);
 
-    init ();
-
     mflagc = targetc = 0;
 
     for (t=1; t<argc; t++)
@@ -2018,6 +2105,8 @@ main (int argc, char ** argv)
 	    targets[targetc++] = argv[t];
 	}
     }
+
+    init ();
 
     if (!targetc)
     {
