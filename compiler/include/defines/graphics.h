@@ -29,7 +29,13 @@
     AROS_LC2(PLANEPTR, AllocRaster, \
     AROS_LCA(ULONG          , width, D0), \
     AROS_LCA(ULONG          , height, D1), \
-    struct GfxBase *, GfxBase, 153, Graphics)
+    struct GfxBase *, GfxBase, 82, Graphics)
+
+#define AndRectRegion(region, rectangle) \
+    AROS_LC2(void, AndRectRegion, \
+    AROS_LCA(struct Region *, region, A0), \
+    AROS_LCA(struct Rectangle *, rectangle, A1), \
+    struct GfxBase *, GfxBase, 84, Graphics)
 
 #define AreaDraw(rp, x, y) \
     AROS_LC3(LONG, AreaDraw, \
@@ -80,6 +86,12 @@
     AROS_LCA(PLANEPTR       , tempA, A2), \
     struct GfxBase *, GfxBase, 5, Graphics)
 
+#define ClearRectRegion(region, rectangle) \
+    AROS_LC2(BOOL, ClearRectRegion, \
+    AROS_LCA(struct Region *, region, A0), \
+    AROS_LCA(struct Rectangle *, rectangle, A1), \
+    struct GfxBase *, GfxBase, 87, Graphics)
+
 #define CloneRastPort(rp) \
     AROS_LC1(struct RastPort *, CloneRastPort, \
     AROS_LCA(struct RastPort *, rp, A1), \
@@ -98,6 +110,11 @@
     AROS_LC1(void, DeinitRastPort, \
     AROS_LCA(struct RastPort *, rp, A1), \
     struct GfxBase *, GfxBase, 179, Graphics)
+
+#define DisposeRegion(region) \
+    AROS_LC1(void, DisposeRegion, \
+    AROS_LCA(struct Region *, region, A0), \
+    struct GfxBase *, GfxBase, 89, Graphics)
 
 #define Draw(rp, x, y) \
     AROS_LC3(void, Draw, \
@@ -209,10 +226,20 @@
     AROS_LCA(LONG             , y, D1), \
     struct GfxBase *, GfxBase, 40, Graphics)
 
+#define NewRegion() \
+    AROS_LC0(struct Region *, NewRegion, \
+    struct GfxBase *, GfxBase, 86, Graphics)
+
 #define OpenFont(textAttr) \
     AROS_LC1(struct TextFont *, OpenFont, \
     AROS_LCA(struct TextAttr *, textAttr, A0), \
     struct GfxBase *, GfxBase, 12, Graphics)
+
+#define OrRectRegion(region, rectangle) \
+    AROS_LC2(BOOL, OrRectRegion, \
+    AROS_LCA(struct Region *, region, A0), \
+    AROS_LCA(struct Rectangle *, rectangle, A1), \
+    struct GfxBase *, GfxBase, 85, Graphics)
 
 #define PolyDraw(rp, count, polyTable) \
     AROS_LC3(void, PolyDraw, \
