@@ -14,3 +14,5 @@ char
 <cstring>$text</cstring>
 @punctuation
 <cpunctuation>$text</cpunctuation>
+<stdio.h>
+<LINK NAME="<cheader>&lt;stdio.h&gt;</cheader>" REF="/usr/include/stdio.h">
