@@ -442,7 +442,7 @@ AROS_UFH3(static VOID, sendQueuedEvents,
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     /* Broadcast keys */
-    struct IORequest *ioreq;
+    struct IORequest *ioreq, *nextnode;
     struct List *pendingList;
     
 
@@ -450,7 +450,7 @@ AROS_UFH3(static VOID, sendQueuedEvents,
 
     D(bug("Inside software irq\n"));
 
-    ForeachNode(pendingList, ioreq)
+    ForeachNodeSafe(pendingList, ioreq, nextnode)
     {
         BOOL moreevents;
 	
@@ -458,13 +458,13 @@ AROS_UFH3(static VOID, sendQueuedEvents,
 	moreevents = fillrequest(ioreq, GPBase);
 
 	/* Remove must be before ReplyMsg(), otherwise
-	the message is removed from the replyport */
+	the message is removed from the replyport 
+	It Is NOT done in ReplyMsg, and must be done here to empty the list!
+	   The "moreevents" is unnecessary... */
 	
 	Remove((struct Node *)ioreq);
  	ReplyMsg((struct Message *)&ioreq->io_Message);
 
-	/* Is NOT done in ReplyMsg, and must be done here to empty the list!
-	   The "moreevents" is unnecessary... */
 	gpUn->gpu_flags &= ~GBUF_PENDING;
 	
 	if (!moreevents)
