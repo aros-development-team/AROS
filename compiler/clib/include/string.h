@@ -59,8 +59,8 @@ void * memset (void * dest, int c, size_t n);
 size_t stccpy(char *str1_ptr, const char *str2_ptr, size_t max);
 char *stpsym(char *str_ptr, char *dest_ptr, int dest_size);
 
-static __inline__ char * index (const char * s, int c)  { return strchr(s, c); }
-static __inline__ char * rindex (const char * s, int c) { return strrchr(s, c); }
+char * index (const char * s, int c);
+char * rindex (const char * s, int c);
 
 char * stpblk( const char * str );   /* Supplemental (not ANSI C) */
 

@@ -71,3 +71,5 @@
 
     return p;
 } /* strrchr */
+
+AROS_MAKE_ALIAS(strrchr, rindex);

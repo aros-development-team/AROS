@@ -62,3 +62,5 @@
 
     return NULL;
 } /* strchr */
+
+AROS_MAKE_ALIAS(strchr, index);
