@@ -225,6 +225,9 @@ Object *app;
 Object *root_iconwnd;
 Object *root_menustrip;
 
+CONST_STRPTR rootBG;
+CONST_STRPTR dirsBG;
+
 /**************************************************************************
  This is a custom class inheriting from the WindowClass.
 **************************************************************************/
@@ -282,7 +285,7 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
         iconlist = MUI_NewObject
         (
             MUIC_IconVolumeList,
-            MUIA_Background, MUII_RegisterBack, 
+            MUIA_Background,     (IPTR) rootBG, 
             TAG_DONE
         );
     }
@@ -292,7 +295,7 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	iconlist = MUI_NewObject
         (
             MUIC_IconDrawerList,
-            MUIA_Background,                   MUII_PageBack,
+            MUIA_Background,            (IPTR) dirsBG,
             MUIA_IconDrawerList_Drawer, (IPTR) drw, 
             TAG_DONE
         );
@@ -1118,6 +1121,42 @@ void DoDetach(void)
 }
 #endif
 
+VOID LoadPrefs(VOID)
+{
+    BPTR fh;
+    
+    if ((fh = Open("ENV:SYS/Wanderer.prefs", MODE_OLDFILE)) != NULL)
+    {
+        STRPTR buffer = NULL;
+        LONG   length;
+        
+        Seek(fh, 0, OFFSET_END);
+        length = Seek(fh, 0, OFFSET_BEGINNING) + 2;
+        
+        if ((buffer = AllocVec(length, MEMF_ANY)) != NULL)
+        {
+            // FIXME: error handling
+            FGets(fh, buffer, length);
+            if (buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
+            rootBG = StrDup(buffer);
+            
+            FGets(fh, buffer, length);
+            if (buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
+            dirsBG = StrDup(buffer);
+            
+            FreeVec(buffer);
+        }
+        
+        Close(fh);
+    }
+}
+
+VOID FreePrefs()
+{
+    if (rootBG != NULL) FreeVec(rootBG);
+    if (dirsBG != NULL) FreeVec(dirsBG);
+}
+
 /**************************************************************************
  Our main entry
 **************************************************************************/
@@ -1148,6 +1187,8 @@ int main(void)
         closemuimaster();
 	return 20;
     }
+
+    LoadPrefs();
 
     app = WandererObject,
 	MUIA_Application_Title, "Wanderer",
@@ -1194,6 +1235,8 @@ int main(void)
 	MUI_DisposeObject(app);
     }
 
+    FreePrefs();
+    
     MUI_DeleteCustomClass(CL_Wanderer);
     MUI_DeleteCustomClass(CL_IconWindow);
     closemuimaster();
