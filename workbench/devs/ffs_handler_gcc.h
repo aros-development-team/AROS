@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1998/08/19 18:08:37  bernie
+    changed module definition to FFS_HANDLER_GCC_H
+
     Revision 1.1  1996/11/14 08:53:30  aros
     First attempt for a real fastfilesystem
     (only directoryscans for now)
@@ -10,8 +13,8 @@
     Desc:
     Lang:
 */
-#ifndef RAM_HANDLER_GCC_H
-#define RAM_HANDLER_GCC_H
+#ifndef FFS_HANDLER_GCC_H
+#define FFS_HANDLER_GCC_H
 #include <aros/libcall.h>
 #include <exec/execbase.h>
 #include <exec/io.h>
