@@ -78,9 +78,14 @@ fixed. The initial REFRESH is not sent to the window.
 It refreshes now more or less correctly but it sometimes hangs until one
 moves the mouse :-/
 
+This will be fixed as soon as the X Graphics HIDD is available.
+Maybe connected to BUG000010.
+
 BUG000010
 digulla@aros.fh-konstanz.de
 Refresh doesn't work correctly or not at all if the window is resized.
+This will be fixed as soon as the X Graphics HIDD is available.
+Maybe connected to BUG000009.
 
 BUG000011 fixed
 digulla@aros.fh-konstanz.de
@@ -191,4 +196,8 @@ BUG000027
 srittau@aros.org
 Disable does not work correctly with some gadtools-gadgets. At least
 the gadgets are not ghosted.
+
+BUG000028
+srittau@aros.org
+The sliders next to listviews don't work.
 
