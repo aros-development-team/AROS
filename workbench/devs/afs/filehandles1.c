@@ -910,8 +910,11 @@ struct BlockCache *blockbuffer;
 	}
 	else if (mode==OFFSET_CURRENT)
 	{
-	  	if (offset == 0)
+	 	if (offset == 0)
+		{
+		    error = 0;
 		    return ah->current.offset;
+		}
 
 		newoffset=ah->current.offset+offset;
 		block=ah->header_block;
