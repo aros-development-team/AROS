@@ -5,13 +5,18 @@
     Desc: Show the use or Ressource Tracking (RT)
     Lang: english
 */
-
+#define AROS_ALMOST_COMPATIBLE /* Enable small enhancements */
 #define ENABLE_RT   1 /* Enable RT */
 
 #include <stdio.h>
+
 #include <aros/rt.h>
 #include <exec/memory.h>
+#include <intuition/intuition.h>
+
 #include <proto/exec.h>
+
+struct IntuitionBase * IntuitionBase;
 
 int main (int argc, char ** argv)
 {
@@ -58,6 +63,13 @@ int main (int argc, char ** argv)
     printf ("Bug 5: Freeing %p\n", illmem);
 
     FreeVec (illmem);
+
+    IntuitionBase = OpenLibrary (INTUITIONNAME, 0);
+
+    printf ("Bug 6: OverWriting IntuitionBase (%p)\n", IntuitionBase);
+    IntuitionBase = (struct IntuitionBase *)23;
+
+    CloseLibrary (IntuitionBase);
 
     /*
 	Terminate RT. This will also be a NOP if RT is not enabled. If
