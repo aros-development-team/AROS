@@ -115,9 +115,17 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 	/* The simpliest modes. Be careful with max refresh rate of your CRT! */
 
-	MAKE_SYNC(640x480_60,   25175,
-		 640,  664,  760,  800,
-		 480,  491,  493,  525);
+	MAKE_SYNC(320x240_60,   12600,
+		 320,  328,  376,  400,
+		 240,  245,  246,  262);
+
+	MAKE_SYNC(400x300_60,   18000,
+		 400,  412,  448,  512,
+		 300,  300,  301,  312);
+
+	MAKE_SYNC(640x480_60,   25200,
+		 640,  656,  752,  800,
+		 480,  490,  492,  525);
 
 	MAKE_SYNC(800x600_56,	36000,
 		 800,  824,  896, 1024,
@@ -129,6 +137,8 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 	struct TagItem modetags[] = {
 		{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags			},
+		{ aHidd_Gfx_SyncTags,	(IPTR)sync_320x240_60	},
+		{ aHidd_Gfx_SyncTags,	(IPTR)sync_400x300_60	},
 		{ aHidd_Gfx_SyncTags,	(IPTR)sync_640x480_60	},
 		{ aHidd_Gfx_SyncTags,	(IPTR)sync_800x600_56	},
 		{ aHidd_Gfx_SyncTags,	(IPTR)sync_1024x768_60	},
@@ -368,6 +378,32 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
         ULONG d_add = ddata->width - msg->width;
 
 	width = msg->width;
+
+/* FIXME! Acceleration doesn't work here...
+
+if (ddata == NSD(cl)->visible)
+{
+     while (NSD(cl)->riva.PGRAPH[0x1C0] & 1) {
+	__asm__("nop");
+     }
+
+//    NSD(cl)->riva.PGRAPH[0x724/4] = (NSD(cl)->riva.PGRAPH[0x724/4] & ~0x000000FF) | (0x00000055);
+
+    *(NSD(cl)->base1) = (ULONG)data->VideoData - (ULONG)NSD(cl)->memory;
+    *(NSD(cl)->pitch1) = data->width * ((data->bpp + 1)/8);
+    
+     RIVA_FIFO_FREE( NSD(cl)->riva, Rop, 1 );
+     NSD(cl)->riva.Rop->Rop3 = 0xcc;
+	
+    RIVA_FIFO_FREE(NSD(cl)->riva, Blt, 3);
+     NSD(cl)->riva.Blt->TopLeftSrc  = (msg->srcY << 16) | msg->srcX;
+     NSD(cl)->riva.Blt->TopLeftDst  = (msg->destY << 16) | msg->destX;
+     NSD(cl)->riva.Blt->WidthHeight = (msg->height << 16) | msg->width;
+}
+else
+
+*/
+{
 
     	if ((msg->srcY > msg->destY) || ((msg->srcY == msg->destY) && (msg->srcX >= msg->destX)))
 	{
@@ -657,7 +693,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 		break;
 		
 	} /* switch(mode) */
-	
+}	
     }
     ReturnVoid("VGAGfx.BitMap::CopyBox");
 }
@@ -767,6 +803,9 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 			
 			riva_wclut(&NSD(cl)->riva, i, red, green, blue);
 		}
+
+//		acc_SetClippingRectangle(NSD(cl), 0, 0, width, height);
+		acc_DisableClipping(NSD(cl));
 
 		fb = msg->bitMap;
 	}

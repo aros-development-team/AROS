@@ -100,6 +100,16 @@ struct nv_staticdata
 
 	struct bitmap_data	*visible;
 
+	ULONG				*base0;
+	ULONG				*base1;
+	ULONG				*base2;
+	ULONG				*base3;
+	
+	ULONG				*pitch0;
+	ULONG				*pitch1;
+	ULONG				*pitch2;
+	ULONG				*pitch3;
+
 	VOID				(*activecallback)(APTR, OOP_Object *, BOOL);
 	APTR				callbackdata;
 };
@@ -215,6 +225,42 @@ static inline unsigned char MISCin(struct nv_staticdata *nsd)
 #define OOPBase		((struct Library *)NSD(cl)->oopbase)
 #define UtilityBase	((struct Library *)NSD(cl)->utilitybase)
 #define SysBase		(NSD(cl)->sysbase)
+
+/* nVidia prototypes */
+
+extern UWORD default_cursor[];
+
+/**** Accelerated functions */
+void acc_SetClippingRectangle(struct nv_staticdata *nsd, int x1, int y1, int x2, int y2);
+void acc_DisableClipping(struct nv_staticdata *nsd);
+void acc_SetPattern(struct nv_staticdata *nsd, int c1, int c2, int pat1, int pat2);
+void acc_SetRop(struct nv_staticdata *nsd, int rop);
+void acc_PrepareToFill(struct nv_staticdata *nsd, int color, int rop);
+void acc_FillRectangle(struct nv_staticdata *nsd, int x, int y, int w, int h);
+void acc_Sync(struct nv_staticdata *nsd);
+void acc_SolidLine(struct nv_staticdata *nsd, int color, int x1, int y1, int x2, int y2);
+
+/**** General functions */
+void load_cursor(struct nv_staticdata *nsd, UWORD *tmp);
+void convert_cursor(UWORD *src, int width, int height, UWORD *dst);
+void riva_wclut(RIVA_HW_INST *chip, UBYTE regnum, UBYTE red, UBYTE green, UBYTE blue);
+void load_state(struct nv_staticdata *nsd, struct riva_regs *regs);
+void save_state(struct nv_staticdata *nsd, struct riva_regs *regs);
+int findCard(struct nv_staticdata *nsd);
+void load_mode(struct nv_staticdata *nsd, int width, int height, int bpp, ULONG pixelc,
+	ULONG base, int HDisplay, int VDisplay,	int HSyncStart, int HSyncEnd, int HTotal,
+	int VSyncStart, int VSyncEnd, int VTotal);
+APTR vbuffer_alloc(struct nv_staticdata *nsd, int size);
+void vbuffer_free(struct nv_staticdata *nsd, APTR buff, int size);
+int initclasses(struct nv_staticdata *nsd);
+
+
+
+
+
+
+
+
 
 #endif /* HIDD_NV_H */
 

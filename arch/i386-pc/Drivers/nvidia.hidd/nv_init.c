@@ -73,7 +73,7 @@ struct nvbase
 #define bb	( MAKE_RGB15(0x080808) )
 
 UWORD default_cursor[] = {
-	ii,WW,00,00,00,00,00,00,00,00,00
+    ii,WW,00,00,00,00,00,00,00,00,00
 ,
     bb,ii,WW,WW,00,00,00,00,00,00,00
 ,
@@ -104,17 +104,18 @@ UWORD default_cursor[] = {
 
 void load_cursor(struct nv_staticdata *nsd, UWORD *tmp)
 {
-	int show = nsd->riva.ShowHideCursor(&nsd->riva, 0);
-	int         *image, i, numInts;
-	numInts = (MAX_CURS*MAX_CURS*2) / sizeof(int);
+    int show = nsd->riva.ShowHideCursor(&nsd->riva, 0);
+    int         *image, i, numInts;
+    numInts = (MAX_CURS*MAX_CURS*2) / sizeof(int);
 
-	nsd->cursor = tmp;
+    nsd->cursor = tmp;
 
-	image   = (int *)tmp;
+    image   = (int *)tmp;
     for (i = 0; i < numInts; i++)
-        nsd->riva.CURSOR[i] = image[i];
+	nsd->riva.CURSOR[i] = image[i];
 
-	nsd->riva.ShowHideCursor(&nsd->riva, nsd->cvisible);			//show);
+    nsd->riva.ShowHideCursor(&nsd->riva, nsd->cvisible);			//show);
+//	nsd->riva.ShowHideCursor(&nsd->riva, show);
 }
 
 void convert_cursor(UWORD *src, int width, int height, UWORD *dst)
@@ -162,9 +163,8 @@ static const struct riva_regs reg_template = {
 	0xEB							/* MISC */
 };
 
-void riva_wclut(RIVA_HW_INST *chip,
-		       unsigned char regnum, unsigned char red,
-		       unsigned char green, unsigned char blue)
+void riva_wclut(RIVA_HW_INST *chip, UBYTE regnum, UBYTE red,
+		       UBYTE green, UBYTE blue)
 {
 	VGA_WR08(chip->PDIO, 0x3c8, regnum);
 	VGA_WR08(chip->PDIO, 0x3c9, red);
@@ -241,7 +241,7 @@ int findCard(struct nv_staticdata *nsd)
 {
 	HIDDT_PCI_Device **ptr, **res;
 
-	int arch;
+	int arch = 0;
 
 	struct TagItem tags[] = {
 		{ tHidd_PCI_VendorID,	VENDOR_NVIDIA },
@@ -290,7 +290,7 @@ int findCard(struct nv_staticdata *nsd)
 			D(bug("found in VENDOR_NVIDIA!\n"));
 			
 			nsd->card = *ptr;
-			arch = (d < DEVICE_GEFORCE_SDR) ? NV_ARCH_04 : NV_ARCH_10;
+			arch = d;
 			
 			break;
 		}
@@ -309,7 +309,7 @@ int findCard(struct nv_staticdata *nsd)
 				D(bug("found in VENDOR_NVIDIA_SGS!\n"));
 
 				nsd->card = *ptr;
-				arch = NV_ARCH_03;
+				arch = (*ptr)->DeviceID;
 				
 				break;
 			}
@@ -318,10 +318,32 @@ int findCard(struct nv_staticdata *nsd)
 		HIDD_PCI_FreeQuery(nsd->pcihidd, res);
 	}
 	
+	switch (arch & 0x0ff0)
+	{
+		case 0x0010:
+			arch = NV_ARCH_03;
+			break;
+		case 0x0020:
+		case 0x00a0:
+			arch = NV_ARCH_04;
+			break;
+		case 0x0100:
+		case 0x0110:
+		case 0x0150:
+		case 0x0170:
+		case 0x01a0:
+			arch = NV_ARCH_10;
+			break;
+		case 0x0200:
+		case 0x0250:
+//			arch = NV_ARCH_20;
+			break;
+	}
+	
 	if (nsd->card)
 	{
-		ULONG mmio = (ULONG)nsd->card->BaseAddress[0] & 0xfffffff0;
-		ULONG base = (ULONG)nsd->card->BaseAddress[1] & 0xfffffff0;
+		ULONG mmio = (ULONG)nsd->card->BaseAddress[0] & 0xffffc000;
+		ULONG base = (ULONG)nsd->card->BaseAddress[1] & 0xff800000;
 		
 		nsd->riva.Architecture = arch;
 		nsd->riva.EnableIRQ = 0;
@@ -338,17 +360,40 @@ int findCard(struct nv_staticdata *nsd)
 		nsd->riva.PDIO = (U008 *)(mmio + 0x00681000);
 		nsd->riva.PVIO = (U008 *)(mmio + 0x000C0000);
 
-		nsd->riva.IO = (MISCin(nsd) & 0x01) ? 0x3D0 : 0x3B0;
+		nsd->riva.IO = 0x3d0;	//(MISCin(nsd) & 0x01) ? 0x3D0 : 0x3B0;
 
 		switch (nsd->riva.Architecture)
 		{
 			case NV_ARCH_03:
 				nsd->riva.PRAMIN = (unsigned *)(base + 0x00C00000);
+
+				nsd->base0 = &(nsd->riva.PGRAPH[0x00000630/4]);
+				nsd->base1 = &(nsd->riva.PGRAPH[0x00000634/4]);
+				nsd->base2 = &(nsd->riva.PGRAPH[0x00000638/4]);
+				nsd->base3 = &(nsd->riva.PGRAPH[0x0000063C/4]);
+				
+				nsd->pitch0 = &(nsd->riva.PGRAPH[0x00000650/4]);
+				nsd->pitch1 = &(nsd->riva.PGRAPH[0x00000654/4]);
+				nsd->pitch2 = &(nsd->riva.PGRAPH[0x00000658/4]);
+				nsd->pitch3 = &(nsd->riva.PGRAPH[0x0000065C/4]);
+
 				break;
+
 			case NV_ARCH_04:
 			case NV_ARCH_10:
 				nsd->riva.PCRTC = (unsigned *)(mmio + 0x00600000);
 				nsd->riva.PRAMIN = (unsigned *)(mmio + 0x00710000);
+
+				nsd->base0 = &(nsd->riva.PGRAPH[0x00000640/4]);
+				nsd->base1 = &(nsd->riva.PGRAPH[0x00000644/4]);
+				nsd->base2 = &(nsd->riva.PGRAPH[0x00000648/4]);
+				nsd->base3 = &(nsd->riva.PGRAPH[0x0000064C/4]);
+
+				nsd->pitch0 = &(nsd->riva.PGRAPH[0x00000670/4]);
+				nsd->pitch1 = &(nsd->riva.PGRAPH[0x00000674/4]);
+				nsd->pitch2 = &(nsd->riva.PGRAPH[0x00000678/4]);
+				nsd->pitch3 = &(nsd->riva.PGRAPH[0x0000067C/4]);
+
 				break;
 		}
 
@@ -357,7 +402,7 @@ int findCard(struct nv_staticdata *nsd)
 		CRTCout(nsd, 0x11, 0xFF);
 		nsd->riva.LockUnlock(&nsd->riva, 0);
 
-		save_state(nsd, &nsd->init_state);
+//		save_state(nsd, &nsd->init_state);
 		
 	#if USE_ALLOCATE
 	    	{
@@ -399,8 +444,8 @@ void load_mode(struct nv_staticdata *nsd,
 	int HSyncStart, int HSyncEnd, int HTotal,
 	int VSyncStart, int VSyncEnd, int VTotal)
 {
-	struct riva_regs newmode;
-	int HDisplaySize = HDisplay;
+    struct riva_regs newmode;
+    int HDisplaySize = HDisplay;
 
 	D(bug(	"load_mode: width=%d height=%d, bpp=%d, pixelc=%d, base=%08.8lx\n"
 			"  hDisp=%d hStart=%d hEnd=%d hTotal=%d\n"
@@ -409,6 +454,9 @@ void load_mode(struct nv_staticdata *nsd,
 			HDisplay, HSyncStart, HSyncEnd, HTotal,
 			VDisplay, VSyncStart, VSyncEnd, VTotal));
 
+
+//	memset(&newmode, 0, sizeof(struct riva_regs));
+	
 	memcpy(&newmode, &reg_template, sizeof(struct riva_regs));
 
 	HDisplay = (HDisplay / 8) - 1;
@@ -458,11 +506,23 @@ void load_mode(struct nv_staticdata *nsd,
 				  HTotal, height, VDisplay, VSyncStart, VSyncEnd,
 				  VTotal, pixelc);
 
+//	if (nsd->riva.Architecture >= NV_ARCH_10)
+//	{
+//		nsd->riva.CURSOR = (U032 *)((U032)nsd->memheader.mh_First + nsd->riva.CursorStart);
+//	}
+
 	load_state(nsd, &newmode);
 
-	nsd->riva.SetStartAddress(&nsd->riva, base);	
 	nsd->riva.LockUnlock(&nsd->riva, 0); /* important for HW cursor */
 	load_cursor(nsd, nsd->cursor);
+	nsd->riva.SetStartAddress(&nsd->riva, base);	
+
+	new_setupAccel(nsd);
+
+        *(nsd->base0) =
+	*(nsd->base1) = 
+	*(nsd->base2) = 
+	*(nsd->base3) = base;
 }
 
 APTR vbuffer_alloc(struct nv_staticdata *nsd, int size)
@@ -477,6 +537,17 @@ APTR vbuffer_alloc(struct nv_staticdata *nsd, int size)
 	if (!ret)
 	{
 	    ret = AllocMem(size, MEMF_CLEAR | MEMF_PUBLIC);
+	}
+	else
+	{
+	    /* Clear memory. */
+	    ULONG cnt,*p;
+
+	    p=(ULONG *)ret;
+	    cnt=size/sizeof(ULONG);
+
+	    while(cnt--)
+		*p++=0;
 	}
 	
 	return ret;
