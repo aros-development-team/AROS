@@ -259,7 +259,11 @@ static ULONG String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->msd_Accept = (CONST_STRPTR)tag->ti_Data;
 		break;
 
-	    case MUIA_String_Integer:
+            case MUIA_String_AttachedList:
+		data->msd_AttachedList = (Object *)tag->ti_Data;
+		break;
+	    
+            case MUIA_String_Integer:
 	    {
 		char buf[20];
 
@@ -286,8 +290,16 @@ static ULONG String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     switch(msg->opg_AttrID)
     {
 	case MUIA_String_Contents:
-	    STORE = (IPTR)data->Buffer;
+	    STORE = (IPTR) data->Buffer;
 	    return 1;
+        
+	case MUIA_String_Accept:
+	    STORE = (IPTR) data->msd_Accept;
+	    return 1;
+        
+        case MUIA_String_AttachedList:
+            STORE = (IPTR) data->msd_AttachedList;
+            break;
 
 	case MUIA_String_Integer:
 	{
@@ -303,9 +315,6 @@ static ULONG String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    return 1;
 	}
 	
-	case MUIA_String_Accept:
-	    STORE = (IPTR)data->msd_Accept;
-	    return 1;
     }
     return DoSuperMethodA(cl, obj, (Msg) msg);
 #undef STORE
