@@ -19,7 +19,7 @@
 int main (void)
 {
     printf ("# Macros\n"
-#if (defined(__FreeBSD__) || defined(__NetBSD__)) && !defined(__ELF__)
+#if (defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)
 	"#define AROS_CSYMNAME(n)       _ ## n\n"
 	"#define AROS_CDEFNAME(n)       _ ## n\n"
 	"#define AROS_SLIB_ENTRY(n,s)   _ ## s ## _ ## n\n"

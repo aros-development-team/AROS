@@ -21,6 +21,10 @@ includes-netbsd-i386 : $(INCFILES) machine.i
 	@$(NOP)
 
 #MM
+includes-openbsd-i386 : $(INCFILES) machine.i
+	@$(NOP)
+	
+#MM
 includes-cygwin-i386 : $(INCFILES) machine.i
 	@$(NOP)
 

@@ -145,6 +145,21 @@ case "$host_os" in
 	aros_host_lib_suffix=".0.0"
         ;; 
 
+    openbsd*)
+        aros_host_cc="$aros_host_cc -pipe"
+        aros_host_make="gmake"
+        aros_host_arch="openbsd"
+        case "$host_cpu" in
+            *i?86*)
+                aros_host_cpu="i386"
+                ;;
+            *)
+                AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+                aros_host_cpu="$host_cpu"
+                ;;
+        esac
+        ;;
+	
     morphos*)
 	aros_host_cc="$aros_host_cc"
 	aros_host_arch="morphos"
@@ -192,7 +207,7 @@ case "$host_os" in
 	;;
 esac
 
-AROS_PROG(HOST_AR,[ar],[cru])
+AROS_PROG(HOST_AR,[ar],[cr])
 AROS_PROG(HOST_RANLIB,ranlib)
 
 AROS_PROG(RM,[rm],[-rf])
@@ -372,6 +387,25 @@ case "$target_os" in
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
         strip_args="-x"
         ;;   
+
+    openbsd*)
+        aros_target_arch="openbsd"
+        case "$target_cpu" in
+            *i?86*)
+                aros_target_cpu="i386"
+                aros_flavour="emulation"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__OpenBSD__"
+                ;;
+            *)
+                AC_MSG_ERROR("Unknown CPU for OpenBSD -- $target_cpu")
+                ;;
+        esac
+	aros_target_cflags="$aros_target_cflags -D$aros_target_cpu"
+	aros_target_genmap="-Wl,-M -Xlinker >"
+        aros_target_nm_flags="-u"
+	aros_flavour="emulation"
+        strip_args="-x"
+        ;;
 
     morphos*)
 	aros_target_arch="morphos"
