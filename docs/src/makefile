@@ -60,10 +60,10 @@ $(DEST)adoc_index.html: $(DEST)adoc_index.tmp adocpost.gawk adoc_header.html \
 	    adoc_footer.html
 	cat adoc_header.html > $@
 	gawk -F: -f adocpost.gawk --assign mode=pre_bylib $(DEST)adoc_index.tmp | \
-	sort | \
+	sort -f | \
 	gawk -F: -f adocpost.gawk --assign mode=post_bylib >> $@
 	gawk -F: -f adocpost.gawk --assign mode=pre_byname $(DEST)adoc_index.tmp | \
-	sort | \
+	sort -f | \
 	gawk -F: -f adocpost.gawk --assign mode=post_byname >> $@
 	cat adoc_footer.html | sed "s/\\\\today/`date "+%d %b %Y"`/" >> $@
 	chmod a+r $@
