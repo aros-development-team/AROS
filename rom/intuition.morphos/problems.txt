@@ -1,0 +1,224 @@
+
+proposals
+
+o menu
+  o I would like to have tearoff menus where a menu transforms into a window
+    when you press with the leftbutton on the menubar title and move it away.
+  o we should allow round edged(transparent edges) menus
+  o we should allow to blend in a menu(transparent effect)
+  o antialised fonts for menu texts
+
+----------------------------------------------------------------------
+
+Implemented proposals:
+
+o menu
+  o I think a butterfly instead of this ugly Acmd key image looks better.
+  o we should allow textured backgrouns for menus
+  o I would like to have sticky menus (Henes)
+  o when you go over a menuitem it shouldn't create a frame but should
+    just be brighten up on truecolor screens.
+
+o title bar clock
+
+o window bar's name should have also a center string mode
+
+----------------------------------------------------------------------
+
+Fixed problems:
+
+ o ScrollVPort and/or WaitBOVP isn't synched with vbl and create some half display
+   (Henes)
+
+ o Amiga+M/N support is missing
+   (Henes)
+
+ o personnalpaint7(aminet) can't draw a single pixel and is missing 90% of events
+   (Henes)
+
+ o MUI has problems with bordersize
+   (Henes)
+
+ o there is a problem with ced's mouseblanker. When the mouse is "off" it's not reactivated
+   when for example a different ced window pops up(requester) which needs our attention.
+   (Ralph) (fixed)
+
+ o wshell cnc windows don't receive menu keys. wshell windows have no idcmp.
+   As it looks to me fcomp installs an inputhandler after intuition which expects
+   rawkeys+iecode_up_prefix to do something...maybe intuition sends no inputevent here
+   anymore.
+   (fixed)
+
+ o reqattack's buttons don't react on lmb. There's still sth wrong with FindGadget, GM_HITTEST :((
+   This was bug in ReqAttack, but... it seems that IM_HITTEST doesn't check for left,topedge
+   or has some protection against garbage (RA stored pointers in there).
+   (jacaDcaps)
+
+ o wipeout doesn't work at all, crashing very early or exiting with a strange error number
+   (Henes)
+   AllocScreenBuffer crated wrong bitmap and dbufinfo was always set to NULL, even on success.
+   ChanageScreenBuffer was not implemented at all.
+   (jacaDcaps)
+
+ o an active window is opening, another window takes the focus, the first window is draw without border
+   (Henes)
+   This was due to the fact that for WFLG_ACTIVATE window OpenWindow called ActivateWindow,
+   which was returning immediately when there was an active gadget. Now it doesn't care about this.
+   (jacaDcaps)
+
+ o CTRL-k doesn't work in stringgadgets
+   Added CTRL filtering to stringgadget class
+   (Ralph)
+
+ o lamiga-n/m seem to get passed on to the active window, so CED opens a 
+   "save clip as" requester when I try to switch to WB from CED.
+   (bigfoot)
+   (Ralph)
+
+ o e.g. diskmontools 3.13 by Jörg Strohmayer doesn't work with intuitionppc/gadtoolsppc
+   A lot of hits to 0x746F7061 'topa' at refreshglist time, probably some gadgets are
+   handled wrong
+   (Frank)
+
+ o colors aren't correct...they are somehow different..
+   (Ralph)
+   Frank's pre iprefs 0 color test was broken
+   Also fixed missing obtainpen of the last 4 colors
+
+ o window border refresh doesn't work properly for SMART_REFRESH window layers. Just put a
+   smart refresh window in the back of another window and put it back in front again. The window
+   title bar is not properly updated
+
+ o ChangeScreenBuffer doesn't care about active gadgets (should fail if there's any!)
+   (jacaDcaps)
+
+ o dopus's/ced/other progs scrollers always look recessed
+   (jacaDcaps)
+
+ o screenmode change doesn't work
+   (Ralph)
+   LockPubScreen increased visitor count by 2 when locking WB screen.
+   (jacaDcaps)
+
+ o IDCMP_GADGETHELP either doesn't work or is not implemented. Programs like fxScan/iospirit use it to display some
+   sort of bubble help if you stay on a button for a few seconds (Frank)
+
+ o DOpus 4.x scrollers don't refresh properly (leaves trails)
+   (CISC)
+   This should not happen anymore if setting PROP_RENDER_OPTIMIZATION define to 0
+   in intuition_intern.h (stegerg)
+
+ o 1:1 don't work for window borders (still 2:1).
+   (CISC)
+
+ o the menu checkmark has a weird ratio
+
+ o ahi's modeid requesters display wrong frequency (OHz in the slider)
+
+ o dopus's iconify gadgets are placed too far away from others
+   (Henes)
+
+ o a window can open on the top of a menu
+   (Henes)
+
+----------------------------------------------------------------------
+
+
+ o the mouse movement is dead slow
+   (fixed, but 2x times too fast for some people now)
+
+ o rmb to call menu, lmb on an entry, slide on all menu entries and release lmb, it will select only one
+   Attn: AFAIR, this multiple menu selection stuff is one of the C= patents, and was not
+   implemented by AROS on purpose. (Emm)
+
+ o rmb, lmb on a menu entry, slide on the top of the menu, move the mouse outside of it, release rmb, the selection is forgoten
+
+ o SFSdefragmentGUI: click on the resize gadget, it will be recessed forever
+
+ o keyboard timings aren't used.
+   (Ralph)
+
+ o wb screen uses wrong memory base addresse after you have tested a different modeid in cgxmode
+   (Henes)
+
+ o Matrix screen blanker seems to break intuitionppc. Periodically memory is lost and the
+   system hangs after popupmenu access. Probably some input event hacking of Matrix blanker ??
+   (Frank)
+
+ o screenmode change pops up a requester which has 2 weird centered buttongadgets
+   while the left one doesn't seem to react on mouseinput on the whole length of
+   the gadget
+   (Ralph)
+
+ o font requester doesn't work either
+   (Ralph)
+
+ o keyboard control of e.g. string gadgets is either utterly broken or not implemented
+   (Amiga-X, tab key , keypad enter ...)
+
+ o perfectpaint has no depth gadget
+   (Henes)
+
+ o propscroller overwrites if mfr opens in a huge dir with a lot entries.
+
+ o a frame surrounding checkmark like in palette doesn't work...the frame is too small.
+
+ o emm: CloseWindow sometimes locks in DeleteLayer.
+   In my case it seems to happen more often when my blanker is on(seperate screen) and the blanker
+   removes its window/screen.
+   In Hangs on OrRegionRegion...from DelRegionRegion
+
+10145768:	48 00 00 0c	b	10145774 <delregionregion+0x240>
+1014576c:	7f fc fb 78	mr	r28,r31
+10145770:	83 ff 00 00	lwz	r31,0(r31)
+10145774:	2c 1f 00 00	cmpwi	r31,0
+10145778:	40 82 fe 10	bne	10145588 <delregionregion+0x54>
+1014577c:	83 bd 00 00	lwz	r29,0(r29)
+10145780:	2c 1d 00 00	cmpwi	r29,0
+10145784:	40 82 fd f4	bne	10145578 <delregionregion+0x44>
+10145788:	7f 23 cb 78	mr	r3,r25
+1014578c:	7f 44 d3 78	mr	r4,r26
+10145790:	7f 65 db 78	mr	r5,r27
+10145794:	4b ff f1 a9	bl	1014493c <freeregion>
+10145798:	7f c3 f3 78	mr	r3,r30
+1014579c:	7f 45 d3 78	mr	r5,r26
+101457a0:	7f 66 db 78	mr	r6,r27
+101457a4:	38 80 00 00	li	r4,0
+101457a8:	4b ff f6 41	bl	10144de8 <orregionregion>
+hang
+
+
+ o int_refreshwindowframe is called with a window sometimes which window->BorderRPort's layer
+   must be NULL as it crashes in LockLayerRom then...happened when called by SetWindowTitles
+   in CNC:. WShell's conhandler.
+   Late 2:50 thinking...only a GZZ window may have a layer in the borderrport..or do i miss
+   something here ?
+
+ o Search stringgadget in CED behaves weird "sometimes"..i usally open it and blindly enter
+   text but sometimes it doesn't enter the text in the search but in the replace gadget.
+   A bit weird....maybe related to the search "history,multiline?".
+
+ o DOpus 4.x menus look horrible (colorinverted text and whatnot)
+   (CISC)
+   This seems to be due to old-style menus not being handled properly,
+   maybe enforce NewLook (or atleast add prefs option)?
+
+ o When Heretic2 runs on a different gfx board than the Workbench, you see a grey areas on the wb, with the same size than H2's screen.
+   Maybe it's the backdrop window or a blit happening on the wrong screen.
+   (Henes)
+
+ o In ADescent, you can move the mouse in X axis as usual, but the movement are limited to a little zone in the Y axis.
+   (Henes)
+
+ o Hacks to remove wb screenbar don't work any more (because of clock?).
+   (CISC)
+
+ o When a window closes, its name isn't removed from the screenbar.
+   (Henes)
+
+ o When you move a window, there is a trail of its box if another window opens at the same time (and it deadlocks most of the times:)
+   (Henes)
+
+ o Sometimes, menus are too larges.
+   (Henes)
+

@@ -1,0 +1,239 @@
+intuition.library.elf
+
+50.46
+
+Added double buffering of window titlebar.
+Some work on smallmenu 2 mui gate.
+Refresh mode is now: no damage buffer, redraw in BeginRefresh.
+
+50.45
+
+Added ScrollWindowRasterNoSize call. Fixed opaque sizing for MUI bordeless windows with
+app created sizing gadget.
+
+50.44
+
+SkinConfig SKINHEIGHT handling. Lot's of rendering fixes related to double buffer.
+SetPrefs() doesn't change pointer when pointer matrix not changed.
+
+50.43
+
+New code to recognise if the app controling the window is busy or not, based on send/receive
+timevals.
+Fixed strgclass replace mode, if there is no char under coursor it acts like a normal
+inputmode gadget now.
+
+50.42
+
+Rendering of window titlebar and some sysiclass images is now double-buffered.
+Moved title rendering to renderwindowframe.c.
+Non-flickering opaque resizing of MUI widnows.
+Window activation on CloseWindow is done using timeval now - last active window is selected.
+
+50.41
+
+SKINHEIGHT in SkinConfig - subdirs support in skins allowing to adjust skin height to font selected by user.
+Opaque resizing support for MUI.
+Fixed tablet support - now NEWTABLET events are handled as IECLASS_RAWMOUSE when calling boopsi gadgets' OM_HANDLEINPUT.
+Fixed a crash when a boopsi gadget was closing own window while it was activated by user in the same event.
+
+50.40
+
+Added additional alphachannel check for sysiclass images & requester logos to
+avoid problems with PIXFMT_ARGB32 destinations (cyfm)
+Fixed defpubscreen stuff in CloseScreen();
+ActivateGadget now forces string gads activation even when they are active already.
+Added string clear support in default string edit hook on "RCOMMAND x" key (cyfm)
+Tablet support. Default 1.3 strgads use topaz.font,8 now.
+
+50.39
+
+Autoscroll support. Uses memory pools for IDCMP messages allocations.
+
+50.38
+
+Now supports alpha channel instead of transparency for sysiclass images & requester logos.
+
+50.37
+Gadgets with gad->GadgetType & GTYP_GTYPEMASK == 0 are now rendered and handled as if they were
+normal GTYP_BOOLGADGET gadgets. This fixes missing SGrab gadget issue and few more.
+
+50.36
+
+Added simple TimedDisplayAlert that dump the alert to debug output. (Piru)
+
+50.35
+
+Configurable titlebar clock. Added logos support to easyrequesters (for DOS reqs). Fixed unclickable
+zones in requester gadgets. Fixed several rendrering glitches in window borders.
+
+50.34
+
+Fixed mem trashing again. A window whose task is dead (doing Wait(0) and not running atm)
+gets a titlebar changed, no idcmps are sent to such window.
+
+Fixed IDCMP_MENUVERIFY timeout. Now it's small (no longer ~1 mintue;) and causes menu to
+appear, not cancel.
+
+50.33
+
+Changed locking stuff. Added WLAYER, BLAYER macros used to access window layers. Window layers are now
+additionaly stored in struct IntWindow * to avoid problems with apps messing up WLayer, RPort->Layer
+pointers.
+
+50.32
+
+Fixed propgadgets handling with props not using AUTOKNOB flags. Now intuition reads prop size from
+struct Image passed in GadgetRender instead of falling back to min dimmensions.
+
+50.31
+
+Added IDCMP_IDCMPUPDATE cache and event reduction. Inputhandler no longer pokes data into already freed memory.
+Some cleanups in OpenWindow bordersize adjusting. If an app puts a gadget into a bottom/right border the window
+will get WFLG_SIZEB flag set.
+
+50.30
+
+Implemented LendMenus() and company. Not really tested.
+
+50.29
+
+Window title is now buffered (gives nice speed optims of apps calling SetWindowTitles too much)
+Added a simple and slow workaround for refresh problems on window resize (wizard gzz windows).
+Fixed sysiclass arrow sizes. Fixed busylooping on CloseWindow when window had a inactive requester.
+Fixed EndRequest (checks for layer ptr before disposing it, clears it's ptr in struct Requester).
+
+50.28
+
+Cleanups in skins stuff. Added WINDOW_NOGADGETSIMULATION flag for window border rendering. Depthmenu is lenght
+limited to 20 chars from now on. Moving mouse ptr with a tablet works now.
+
+50.27
+
+Added extending WORD -> LONG to functions that have differences between autodoc and prototypes
+
+50.26
+
+ChangeWindowBox and relatives use WORD coords, added MUIIMAGE XEN gadget
+
+50.25
+
+Added sanity checks	to layer locks in case some sucky Sam Jordan-alike code decides to messup window->
+BorderRPort and window->RPort. Xen images are larger now. Strgclass doesn't messup string colors (fixes mui pbs)
+
+50.24
+
+Fixed screennotify CloseScreenClient NULL screen case. This fix the MUI image
+cache issue (bogus MUI images/pens/etc after screen reopen). Shame on me. [Piru]
+
+50.23
+
+ActivateWindow no longer borks AWeb window - screen swapping by sdepth gadget with autoactivation enabled was wrong.
+Fixed possible refresh problem with EndRequest. Workaround popupmenu.library hotkey mess by using PeekQualifier in
+hotkey compare stuff. Fixed the problem which caused MUI popup windows not to follow parent window correctly
+(IDCMP_CHANGEWINDOW wasn't sent in some cases). Now it works for all kinds of dragging.
+
+50.22
+
+Deadlock changes again. LOCKWINDOWLAYERS macro, most layer locks use LockLayerInfo now.
+
+50.21
+
+Cleanups in sysiclass. Replaced AROS images with XEN style images, changes in border aspect ratio.
+SetWindowTitles is asynchronous now to avoid deadlocks.
+
+50.20
+
+Fixed WA_BusyPointer handling on OpenWindow(); Fixed some refresh issues with nocarerefresh windows.
+
+50.19
+
+Priviledged refresh opaque mode, fixed some opaque related refresh problems.
+
+50.18
+
+Moved skins code to morphos/ directory. Added RMB activation (fixed hotkey matching). Fixed
+some deadlock issues with cancelling dragging by rmb. Window depthmenu doesn't show
+iconified windows anymore.
+
+50.17
+
+Opaquemove speedup hack, fixed some prop-speedup hack bugs
+
+50.16
+
+Added prop-speedup hack
+
+50.15
+
+Prop gadgets speed optimizations. Fixed broken open_delays in transparent menus.
+
+50.14
+
+Implemented transparency API
+
+50.13
+
+Fixed titlebar skin scale size calculations
+
+Fixed some resize mess when offscreen layers were turned off
+
+DoMoveSizeWindow calls layer resize funcs even when user doesn't change any coords
+(like in intuition 68k)
+
+Some programs like TurboPrint GraphicPublisher specify {WA_PubScreen, NULL} 
+and want to open on the default public screen that way. This way of
+calling OpenWindowTagList() does not fail anymore now. [cyfm]
+
+50.12
+
+<space to fill>
+
+50.11
+
+<space to fill>
+
+50.10
+
+<space to fill>
+
+50.9
+
+<space to fill>
+
+50.8
+
+<space to fill>
+
+50.7
+
+<space to fill>
+
+50.6
+
+<space to fill>
+
+50.5
+
+<space to fill>
+
+50.4
+
+<space to fill>
+
+50.3
+
+<space to fill>
+
+50.2
+
+<space to fill>
+
+50.1
+
+<space to fill>
+
+50.0
+
+<space to fill>
+
