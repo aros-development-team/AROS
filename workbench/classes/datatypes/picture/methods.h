@@ -33,7 +33,6 @@ const IPTR KnownMethods[] =
  OM_UPDATE,
  OM_ADDMEMBER,
  OM_REMMEMBER,
- GM_Dummy,
  GM_HITTEST,
  GM_RENDER,
  GM_GOACTIVE,
@@ -86,7 +85,6 @@ const char *MethodNames[] =
  "OM_UPDATE",
  "OM_ADDMEMBER",
  "OM_REMMEMBER",
- "GM_Dummy",
  "GM_HITTEST",
  "GM_RENDER",
  "GM_GOACTIVE",
@@ -126,7 +124,7 @@ const char *MethodNames[] =
  "IM_ERASEFRAME"
 };
 
-const int NumMethods = 49;
+const int NumMethods = 48;
 
 /*---*/
 
@@ -167,10 +165,12 @@ const IPTR KnownAttribs[] =
  DTA_Handle,
  DTA_DataType,
  DTA_Domain,
+#ifndef _AROS
  DTA_Left,
  DTA_Top,
  DTA_Width,
  DTA_Height,
+#endif /* _AROS */
  DTA_ObjName,
  DTA_ObjAuthor,
  DTA_ObjAnnotation,
@@ -179,10 +179,12 @@ const IPTR KnownAttribs[] =
  DTA_ObjectID,
  DTA_UserData,
  DTA_FrameInfo,
+#ifndef _AROS
  DTA_RelRight,
  DTA_RelBottom,
  DTA_RelWidth,
  DTA_RelHeight,
+#endif /* _AROS */
  DTA_SelectDomain,
  DTA_TotalPVert,
  DTA_TotalPHoriz,
@@ -315,9 +317,11 @@ const IPTR KnownAttribs[] =
  SYSIA_Depth,
  SYSIA_Which,
  SYSIA_DrawInfo,
+#ifndef _AROS
  SYSIA_Pens,
  IA_ShadowPen,
  IA_HighlightPen,
+#endif /* _AROS */
  SYSIA_ReferenceFont,
  IA_SupportsDisable,
  IA_FrameType,
@@ -369,10 +373,12 @@ const char *AttribNames[] =
  "DTA_Handle",
  "DTA_DataType",
  "DTA_Domain",
+#ifndef _AROS
  "DTA_Left",
  "DTA_Top",
  "DTA_Width",
  "DTA_Height",
+#endif /* _AROS */
  "DTA_ObjName",
  "DTA_ObjAuthor",
  "DTA_ObjAnnotation",
@@ -381,10 +387,12 @@ const char *AttribNames[] =
  "DTA_ObjectID",
  "DTA_UserData",
  "DTA_FrameInfo",
+#ifndef _AROS
  "DTA_RelRight",
  "DTA_RelBottom",
  "DTA_RelWidth",
  "DTA_RelHeight",
+#endif /* _AROS */
  "DTA_SelectDomain",
  "DTA_TotalPVert",
  "DTA_TotalPHoriz",
@@ -517,9 +525,11 @@ const char *AttribNames[] =
  "SYSIA_Depth",
  "SYSIA_Which",
  "SYSIA_DrawInfo",
+#ifndef _AROS
  "SYSIA_Pens",
  "IA_ShadowPen",
  "IA_HighlightPen",
+#endif /* _AROS */
  "SYSIA_ReferenceFont",
  "IA_SupportsDisable",
  "IA_FrameType",
@@ -535,11 +545,9 @@ const char *AttribNames[] =
 };
 
 #ifdef _AROS
-const int NumAttribs = 189;
+const int NumAttribs = 178;
 #else /* _AROS */
 const int NumAttribs = 196;
 #endif /* _AROS */
 
 #endif /* MYDEBUG */
-
-

@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
-USER_CFLAGS   := -DCOMPILE_DATATYPE
+USER_CFLAGS   := -DCOMPILE_DATATYPE -DMYDEBUG
 
 MODNAME := picture
 MODTYPE := datatype
