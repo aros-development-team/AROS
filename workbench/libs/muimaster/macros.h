@@ -18,6 +18,7 @@
 #define MenuitemObject      MUIOBJMACRO_START(MUIC_Menuitem)
 #define WindowObject        MUIOBJMACRO_START(MUIC_Window)
 #define ImageObject         MUIOBJMACRO_START(MUIC_Image)
+#define ImagedisplayObject  MUIOBJMACRO_START(MUIC_Imagedisplay)
 #define BitmapObject        MUIOBJMACRO_START(MUIC_Bitmap)
 #define BodychunkObject     MUIOBJMACRO_START(MUIC_Bodychunk)
 #define ChunkyImageObject   MUIOBJMACRO_START(MUIC_ChunkyImage)
