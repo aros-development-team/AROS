@@ -339,10 +339,10 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh,
 			  }
 			else if (!strnicmp(param, "SCREEN", 6))
 			  {
-			    if ((fh->screentitle = AllocVec(paramlen + 5, MEMF_PUBLIC)))
+			    if ((fh->screenname = AllocVec(paramlen - 5, MEMF_PUBLIC)))
 			      {
-				CopyMem(param+6, fh->screentitle, paramlen-5);
-				fh->screentitle[paramlen] = '\0';
+				CopyMem(param+6, fh->screenname, paramlen-6);
+				fh->screenname[paramlen-6] = '\0';
 			      }
 			  }
 		      }
