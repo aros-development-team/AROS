@@ -12,7 +12,7 @@
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
-	AROS_LH3I(ULONG, SetSoftStyle,
+	AROS_LH3(ULONG, SetSoftStyle,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp    , A1),
@@ -59,7 +59,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *, GfxBase)
 
     ULONG  realEnable = enable & AskSoftStyle(rp);
 
