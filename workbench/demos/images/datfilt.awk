@@ -80,7 +80,9 @@ BEGIN {
 	printf ("#define %s_WIDTH    %d\n", NAME, width) >> fout;
 	printf ("#define %s_HEIGHT   %d\n\n", NAME, height) >> fout;
 
-	printf ("UWORD %sData[] =\n", name) >> fout;
+#	printf ("UWORD %sData[] =\n", name) >> fout;
+	printf ("UBYTE %sData[] =\n", name) >> fout;
+	
 	printf ("{\n") >> fout;
 	xmax=int((width+15)/16);
 	pick=0;
@@ -95,7 +97,9 @@ BEGIN {
 
 		for (x=0; x<xmax; x++)
 		{
-		    printf (" 0x%04X,", out[y,x,d]) >> fout;
+#		    printf (" 0x%04X,", out[y,x,d]) >> fout;
+		    printf (" 0x%02X,", out[y,x,d]/256) >> fout;
+		    printf (" 0x%02X,", out[y,x,d]%256) >> fout;
 		}
 
 		printf ("\n") >> fout;
