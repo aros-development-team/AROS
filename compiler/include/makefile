@@ -18,23 +18,27 @@ $(INCDIR)/%.h: %.h
 setup: make-dirs os-include
 
 make-dirs:
-	@if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR) ; else true ; fi
-	@if [ ! -d $(INCDIR)/aros ]; then $(MKDIR) $(INCDIR)/aros ; else true ; fi
-	@if [ ! -d $(INCDIR)/clib ]; then $(MKDIR) $(INCDIR)/clib ; else true ; fi
-	@if [ ! -d $(INCDIR)/defines ]; then $(MKDIR) $(INCDIR)/defines ; else true ; fi
-	@if [ ! -d $(INCDIR)/devices ]; then $(MKDIR) $(INCDIR)/devices ; else true ; fi
-	@if [ ! -d $(INCDIR)/dos ]; then $(MKDIR) $(INCDIR)/dos ; else true ; fi
-	@if [ ! -d $(INCDIR)/exec ]; then $(MKDIR) $(INCDIR)/exec ; else true ; fi
-	@if [ ! -d $(INCDIR)/graphics ]; then $(MKDIR) $(INCDIR)/graphics ; else true ; fi
-	@if [ ! -d $(INCDIR)/hardware ]; then $(MKDIR) $(INCDIR)/hardware ; else true ; fi
-	@if [ ! -d $(INCDIR)/inline ]; then $(MKDIR) $(INCDIR)/inline ; else true ; fi
-	@if [ ! -d $(INCDIR)/intuition ]; then $(MKDIR) $(INCDIR)/intuition ; else true ; fi
-	@if [ ! -d $(INCDIR)/libraries ]; then $(MKDIR) $(INCDIR)/libraries ; else true ; fi
-	@if [ ! -d $(INCDIR)/pragmas ]; then $(MKDIR) $(INCDIR)/pragmas ; else true ; fi
-	@if [ ! -d $(INCDIR)/prefs ]; then $(MKDIR) $(INCDIR)/prefs ; else true ; fi
-	@if [ ! -d $(INCDIR)/proto ]; then $(MKDIR) $(INCDIR)/proto ; else true ; fi
-	@if [ ! -d $(INCDIR)/utility ]; then $(MKDIR) $(INCDIR)/utility ; else true ; fi
-	@if [ ! -d $(INCDIR)/workbench ]; then $(MKDIR) $(INCDIR)/workbench ; else true ; fi
+<<<<<<< makefile
+	@for dir in $(INCDIR)         \
+		$(INCDIR)/aros        \
+		$(INCDIR)/clib        \
+		$(INCDIR)/defines     \
+		$(INCDIR)/devices     \
+		$(INCDIR)/dos         \
+		$(INCDIR)/exec        \
+		$(INCDIR)/graphics    \
+		$(INCDIR)/hardware    \
+		$(INCDIR)/inline      \
+		$(INCDIR)/intuition   \
+		$(INCDIR)/libraries   \
+		$(INCDIR)/pragmas     \
+		$(INCDIR)/prefs       \
+		$(INCDIR)/proto       \
+		$(INCDIR)/utility     \
+		$(INCDIR)/workbench   \
+	; do \
+	   if [ ! -d "$$dir" ]; then $(MKDIR) "$$dir" ; else true ; fi ;\
+	done
 
 clean:
 	-$(RM) $(INCDIR)
