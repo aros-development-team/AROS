@@ -37,6 +37,7 @@
 
 #define EM_386          3
 #define EM_68K          4
+#define EM_ARM         40
 
 #define R_386_NONE      0
 #define R_386_32        1
