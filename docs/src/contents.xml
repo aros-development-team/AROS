@@ -1,8 +1,0 @@
-<contents>
-<item>
-    <file>jobs.dat</file>
-    This file contains the things which are todo, in work or
-	completed. The format is "job;status;login;comment". status
-	can be 0 (open), 1 (in work), 2 (completed).
-</item>
-</contents>
