@@ -136,10 +136,10 @@ ULONG do_render_func(struct RastPort *rp
 	xrel = L->bounds.MinX;
 	yrel = L->bounds.MinY;
 
-	torender.MinX = rr->MinX + xrel;
-	torender.MinY = rr->MinY + yrel;
-	torender.MaxX = rr->MaxX + xrel;
-	torender.MaxY = rr->MaxY + yrel;
+	torender.MinX = rr->MinX + xrel - L->Scroll_X;
+	torender.MinY = rr->MinY + yrel - L->Scroll_Y;
+	torender.MaxX = rr->MaxX + xrel - L->Scroll_X;
+	torender.MaxY = rr->MaxY + yrel - L->Scroll_Y;
 
 	
 	CR = L->ClipRect;
@@ -159,8 +159,8 @@ ULONG do_render_func(struct RastPort *rp
 		yoffset = intersect.MinY - torender.MinY;
 		
 		if (get_special_info) {
-		     RSI(funcdata)->layer_rel_srcx = intersect.MinX - L->bounds.MinX;
-		     RSI(funcdata)->layer_rel_srcy = intersect.MinY - L->bounds.MinY;
+		     RSI(funcdata)->layer_rel_srcx = intersect.MinX - L->bounds.MinX + L->Scroll_X;
+		     RSI(funcdata)->layer_rel_srcy = intersect.MinY - L->bounds.MinY + L->Scroll_Y;
 		}
 		
 	        if (NULL == CR->lobs)
@@ -282,8 +282,8 @@ ULONG do_pixel_func(struct RastPort *rp
 	
 	CR = L->ClipRect;
 	
-	absx = x + L->bounds.MinX;
-	absy = y + L->bounds.MinY;
+	absx = x + L->bounds.MinX - L->Scroll_X;
+	absy = y + L->bounds.MinY - L->Scroll_Y;
 	
 	for (;NULL != CR; CR = CR->Next)
 	{
@@ -685,6 +685,8 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
 
 /****************************************************************************************/
 
+#if 0
+
 void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, LONG x_src , LONG y_src,
     	    	     struct BitMap *hidd_bm, LONG x_dest, LONG y_dest,
 		     ULONG xsize, ULONG ysize, VOID (*fillbuf_hook)(),
@@ -789,6 +791,8 @@ void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, LONG x_src , LONG y_src
     return;
     
 }
+
+#endif
 
 /****************************************************************************************/
 
@@ -1480,11 +1484,4 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     return TRUE;
 }
 
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/
 /****************************************************************************************/
