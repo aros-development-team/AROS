@@ -48,7 +48,7 @@ const struct Resident resident=
     (ULONG *)inittabl
 };
 
-const char name[]=IFFPARSENAME;
+const char name[]="iffparse.library";
 
 const char version[]="$VER: iffparse 41.1 (10.2.97)\n\015";
 
