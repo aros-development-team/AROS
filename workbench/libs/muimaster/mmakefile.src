@@ -65,6 +65,7 @@ CLASSINCLUDES := $(foreach f, $(CLASSES), classes/$(f).h)
 
 FILES := \
     support \
+    support_classes \
     textengine \
     frame \
     penspec \
