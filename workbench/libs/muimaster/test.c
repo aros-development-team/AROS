@@ -119,6 +119,9 @@ void main(void)
 			End,
 		    End,
 
+    	    	Child, SliderObject,
+		    End,
+
     	    	Child, HGroup,
     	    	    Child, quit_button = TextObject,
 			ButtonFrame,
