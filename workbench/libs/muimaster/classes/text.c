@@ -62,14 +62,6 @@ static const int __revision = 1;
 
 static void setup_text (struct MUI_TextData *data, Object *obj);
 
-static char *StrDup(char *x)
-{
-    char *dup;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
 /**************************************************************************
  OM_NEW
 **************************************************************************/

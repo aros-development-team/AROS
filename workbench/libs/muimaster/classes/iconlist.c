@@ -79,15 +79,6 @@ static void *List_First(APTR list)
     return ((struct MinList*)list)->mlh_Head;
 }
 
-static char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
 struct MUI_IconData
 {
     APTR pool; /* Pool to allocate data from */

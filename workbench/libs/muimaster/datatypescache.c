@@ -34,15 +34,6 @@
 
 extern struct Library *MUIMasterBase;
 
-static char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
 static struct List dt_list;
 static int dt_initialized;
 

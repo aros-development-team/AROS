@@ -47,16 +47,6 @@ struct MUI_GaugeData
    LONG info_height;
 };
 
-static char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
-
 /**************************************************************************
  OM_NEW
 **************************************************************************/

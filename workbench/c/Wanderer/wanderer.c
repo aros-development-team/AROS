@@ -176,19 +176,6 @@ STATIC ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 }
 
 /**************************************************************************
- Duplicate a string using AllocVec
-**************************************************************************/
-static char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, 0);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
-
-/**************************************************************************
  This function returns a Menu Object with the given id
 **************************************************************************/
 Object *FindMenuitem(Object* strip, int id)

@@ -20,13 +20,13 @@
 #include <exec/execbase.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <proto/alib.h>
 #include "etask.h"
 #endif
 #include <stdio.h>
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 #include <proto/dos.h>
+#include <proto/alib.h>
 
 typedef struct
 {

@@ -59,15 +59,6 @@ static void handle_event(Object *win, struct IntuiMessage *event);
 #define DO_HALFSHINE_GUN(a,b) ({ ULONG val = ((((a)>>24) + 3 * ((b)>>24)) / 4); val + (val<<8) + (val<<16) + (val<<24);})
 #define DO_HALFSHADOW_GUN(a,b) ({ ULONG val = ((((a)>>24) + 5 * ((b)>>24)) / 6); val + (val<<8) + (val<<16) + (val<<24);})
 
-static char *StrDup(char *x)
-{
-    char *dup;
-    if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
-    if (dup) CopyMem((x), dup, strlen(x) + 1);
-    return dup;
-}
-
 /* this is for the cycle list */
 struct ObjNode
 {
