@@ -299,6 +299,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
             
 	    return MUI_NewObject(MUIC_Image,
 		    ButtonFrame,
+		    MUIA_Background   , MUII_ButtonBack,
 		    MUIA_Weight,0,
 	            MUIA_Image_Spec, MUII_CheckMark,
 	            MUIA_InputMode, MUIV_InputMode_Toggle,
