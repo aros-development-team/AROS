@@ -100,7 +100,7 @@ STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase_intern *Di
     LONG retval = 0;
     APTR iterator;
     struct TTextAttr *attr;
-    BOOL tagged = flags & AFF_TAGGED;
+    BOOL tagged = (flags & AFF_TAGGED) ? TRUE : FALSE;
     struct BufferInfo *bi;
     
     D(bug("AvailFonts(buffer=%p, bufbytes=%d,flags=%d)\n", buffer, bufBytes, flags));
@@ -203,7 +203,6 @@ STATIC VOID BufferInfoAdd(struct BufferInfo *bi, UWORD type, struct TTextAttr *t
 	    bi->endptr -= size;
 	    memcpy(bi->endptr, tattr->tta_Tags, size);
 	    bi->u.taf->taf_Attr.tta_Tags = (struct TagItem *)bi->endptr;
-	    
 	    bi->u.taf++;
 	}
 	else
