@@ -18,14 +18,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#define PARAM "UNIT=UNITNUM/K/N,START/S"
-#define ARG_UNITNUM     0
-#define ARG_START       1
-#define TOTAL_ARGS      2
+#define PARAM "FILE/A,UNIT=UNITNUM/K/N,START/S"
+#define ARG_FILENAME    0
+#define ARG_UNITNUM     1
+#define ARG_START       2
+#define TOTAL_ARGS      3
 
 #define BAUDRATE        57600
 
-int start_protocol(struct IOExtSer *, ULONG );
+int start_protocol(struct IOExtSer *, ULONG, char * );
 
 struct Packet;
 
@@ -78,7 +79,7 @@ printf("Opening serial port unit %d with %d baud.\n",
 				 * so let's start.
 				 */
 				printf("All set!\n");
-				err = start_protocol(IORequest, args[ARG_START]);
+				err = start_protocol(IORequest, args[ARG_START], args[ARG_FILENAME]);
 			} else {
 				printf("Could not set baudrate!\n");
 			}
@@ -90,7 +91,7 @@ printf("Opening serial port unit %d with %d baud.\n",
 		DeleteExtIO((struct IORequest *)IORequest);
 		FreeArgs(rda);
 	} else {
-		printf("Could not read arguments!\n");
+		printf("Forgot to give a mandator argument?\n");
 	}
 	
 	return 0;
@@ -728,7 +729,7 @@ int upload_program(struct IOExtSer * IORequest, char * name, ULONG * startaddr)
 }
 
 
-int start_protocol(struct IOExtSer * IORequest, ULONG start)
+int start_protocol(struct IOExtSer * IORequest, ULONG start, char * filename)
 {
 	int err;
 	char * buf;
@@ -781,7 +782,7 @@ int start_protocol(struct IOExtSer * IORequest, ULONG start)
 
 	BuildPalmMem(&Regs);
 	printf("Trying to upload program now!\n");
-	upload_program(IORequest,"test", &startaddr);
+	upload_program(IORequest,filename, &startaddr);
 
 	if (TRUE == start)
 		start_program(IORequest, startaddr);
