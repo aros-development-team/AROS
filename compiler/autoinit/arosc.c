@@ -1,41 +1,43 @@
 #include <aros/symbolsets.h>
 #include <stdio.h>
 #include <setjmp.h>
-
-#define _CLIB_KERNEL_
+#include <sys/syscall.h>
 #include <libraries/arosc.h>
-
-#undef errno
-#undef stdin
-#undef stdout
-#undef stderr
-#undef __startup_jmp_buf
-#undef __startup_error
 
 int  errno;
 FILE *stdin, *stdout, *stderr;
 
+unsigned short int *const __ctype_b;
+int *const __ctype_toupper;
+int *const __ctype_tolower;
+
 extern jmp_buf __startup_jmp_buf;
 extern LONG __startup_error;
 
-
 static int postopen(void)
 {
-    GETUSER;
+    struct AroscUserdata *userdata = (struct AroscUserdata *)(FindTask(0)->tc_UserData);
 
-    clib_userdata->errnoptr           = &errno;
-    clib_userdata->stdinptr           = &stdin;
-    clib_userdata->stdoutptr          = &stdout;
-    clib_userdata->stderrptr          = &stderr;
-    clib_userdata->startup_jmp_bufptr = &__startup_jmp_buf;
-    clib_userdata->startup_errorptr   = &__startup_error;
+    /* passess these values to the library */
+    userdata->errnoptr           = &errno;
+    userdata->stdinptr           = &stdin;
+    userdata->stdoutptr          = &stdout;
+    userdata->stderrptr          = &stderr;
+    userdata->startup_jmp_bufptr = &__startup_jmp_buf;
+    userdata->startup_errorptr   = &__startup_error;
 
-    return arosc_internalinit();
+    /*get these values from the library */
+    __ctype_b       = userdata->ctype_b;
+    __ctype_toupper = userdata->ctype_toupper;
+    __ctype_tolower = userdata->ctype_tolower;
+
+    /* Tell the library it can now initialize its internal stuff */
+    return syscall(arosc_internalinit);
 }
 
 static void preclose(void)
 {
-    arosc_internalexit();
+    syscall(arosc_internalexit);
 }
 
-ADDLIB2SET(AROSCNAME, 39, struct Library *, aroscbase, postopen, preclose);
+ADD2LIBS(AROSCNAME, 39, LIBSET_AROSC_PRI, struct Library *, aroscbase, postopen, preclose);
