@@ -884,13 +884,7 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    	MUIA_FixWidth,100,
 	    	MUIA_FixHeight,100,
 	    	TAG_DONE),
-	    Child, ok_button = TextObject,
-	    	ButtonFrame,
-	    	MUIA_Background, MUII_ButtonBack,
-	    	MUIA_InputMode, MUIV_InputMode_RelVerify,
-		MUIA_Text_Contents, "Ok",
-		MUIA_Text_PreParse, "\033c",
-		End,
+	    Child, ok_button = SimpleButton("Ok"),
 	    End,
     	TAG_MORE, msg->ops_AttrList);
 
