@@ -26,8 +26,8 @@
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "gadtools_intern.h"

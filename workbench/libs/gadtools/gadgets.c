@@ -1,5 +1,5 @@
 /*
-   (C) 1997-2001 AROS - The Amiga Research OS
+   Copyright (C) 1997-2001 AROS - The Amiga Research OS
    $Id$
 
    Desc: GadTools gadget creation functions
@@ -25,8 +25,8 @@
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "gadtools_intern.h"
