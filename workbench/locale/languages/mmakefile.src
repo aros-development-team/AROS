@@ -7,7 +7,7 @@ OBJDIR=$(GENDIR)/workbench/locale/languages
 LOCALEDIR=$(BINDIR)/Locale
 LANGDIR=$(LOCALEDIR)/Languages
 
-LANGUAGES=piglatin deutsch
+LANGUAGES=piglatin deutsch francais
 
 LANGFILE=$(foreach f, $(LANGUAGES), $(LANGDIR)/$(f).language)
 
