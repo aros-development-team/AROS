@@ -115,6 +115,8 @@ Class *ZUNE_GetExternalClass(ClassID classname, struct Library *MUIMasterBase)
 	    D(bug("Calling MCC Query. Librarybase at 0x%lx\n",mcclib));
 
 	    mcc = MCC_Query(0);
+	    if (!mcc) mcc = MCC_Query(1); /* MCP? */
+	    
 	    if (mcc)
 	    {
 		if (mcc->mcc_Class)
