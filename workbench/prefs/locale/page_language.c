@@ -16,6 +16,8 @@
 
 static struct Gadget *gadlist, *availgad, *prefgad, *cleargad, *gad;
 static WORD domleft, domtop, domwidth, domheight;
+static WORD availleft, availtop, availwidth, availheight;
+static WORD prefleft, preftop, prefwidth, prefheight;
 static WORD minwidth, minheight;
 static BOOL page_active;
 
@@ -63,11 +65,11 @@ static LONG language_makegadgets(void)
     
     labelheight = dri->dri_Font->tf_YSize + 2;
     
-    ng.ng_LeftEdge   = domleft;
-    ng.ng_TopEdge    = domtop + labelheight;
-    ng.ng_Width      = (domwidth - SPACE_X) / 2;
-    ng.ng_Height     = domheight - dri->dri_Font->tf_YSize - BUTTON_EXTRAHEIGHT - SPACE_Y -
-    	    	       labelheight;
+    ng.ng_LeftEdge   = availleft = domleft;
+    ng.ng_TopEdge    = availtop = preftop = domtop + labelheight;
+    ng.ng_Width      = availwidth = prefwidth = (domwidth - SPACE_X) / 2;
+    ng.ng_Height     = availheight = prefheight = domheight - dri->dri_Font->tf_YSize -
+    	    	       BUTTON_EXTRAHEIGHT - SPACE_Y - labelheight;
     ng.ng_GadgetText = MSG(MSG_GAD_AVAIL_LANGUAGES);
     ng.ng_TextAttr   = 0;
     ng.ng_GadgetID   = MSG_GAD_AVAIL_LANGUAGES;
@@ -77,7 +79,7 @@ static LONG language_makegadgets(void)
     gad = availgad = CreateGadget(LISTVIEW_KIND, gad, &ng, GTLV_Labels, (IPTR)&language_list,
     	    	    	    	    	    	    	   TAG_DONE);
     
-    ng.ng_LeftEdge   = domleft + domwidth - ng.ng_Width;
+    ng.ng_LeftEdge   = prefleft = domleft + domwidth - ng.ng_Width;
     ng.ng_GadgetText = MSG(MSG_GAD_PREF_LANGUAGES);
     ng.ng_GadgetID   = MSG_GAD_PREF_LANGUAGES;
     
@@ -211,7 +213,54 @@ static LONG language_input(struct IntuiMessage *msg)
 		retval = TRUE;
 	    	break;
 	}
+	
     }
+    else if (msg->Class == IDCMP_RAWKEY)
+    {
+    	WORD delta;
+	
+	switch(msg->Code)
+	{
+	    case RAWKEY_NM_WHEEL_UP:
+	    	delta = -1;
+		break;
+		
+	    case RAWKEY_NM_WHEEL_DOWN:
+	    	delta = 1;
+		break;
+		
+	    default:
+	    	delta = 0;
+		break;
+	}
+	
+	if (delta)
+	{
+    	    struct Gadget *lvgad = NULL;
+
+    	    if ((win->MouseX >= availleft) &&
+		(win->MouseY >= availtop) &&
+		(win->MouseX < availleft + availwidth) &&
+		(win->MouseY < availtop + availheight))
+	    {
+		lvgad = availgad;
+	    }
+	    else if ((win->MouseX >= prefleft) &&
+	    	     (win->MouseY >= preftop) &&
+	    	     (win->MouseX < prefleft + prefwidth) &&
+	    	     (win->MouseY < preftop + prefheight))
+	    {
+		lvgad = prefgad;
+	    }
+	    
+	    if (lvgad)
+	    {
+	    	ScrollListview(lvgad, delta);
+	    }
+	    
+	}
+    }
+    
     
     return retval;
 }

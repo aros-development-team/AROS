@@ -65,6 +65,10 @@
 #include <devices/inputevent.h>
 #endif
 
+#ifndef DEVICES_RAWKEYCODES_H
+#include <devices/rawkeycodes.h>
+#endif
+
 #ifndef LIBRARIES_GADTOOLS_H
 #include <libraries/gadtools.h>
 #endif
@@ -251,11 +255,10 @@ void InitMenus(void);
 void MakeMenus(void);
 void KillMenus(void);
 void SetMenuFlags(void);
-
 struct Node *FindListNode(struct List *list, WORD which);
 void SortInNode(struct List *list, struct Node *node);
-
 STRPTR GetFile(CONST_STRPTR title, CONST_STRPTR dir, BOOL savemode);
+void ScrollListview(struct Gadget *gad, WORD delta);
 
 /* page_language.c */
 
