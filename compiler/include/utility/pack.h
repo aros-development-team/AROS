@@ -52,6 +52,6 @@
 #define PACK_ENTRY(tagbase,tag,type,field,control) (control | ((tag - tagbase)<<16L) | PK_CALCOFFSET(type,field))
 #define PACK_BYTEBIT(tagbase,tag,type,field,control,flags) (control | ((tag - tagbase)<<16L) | PK_CALCOFFSET(type,field) | (PK_BITNUM(flags) <<13L))
 #define PACK_WORDBIT(tagbase,tag,type,field,control,flags) (control | ((tag - tagbase)<<16L) | (PK_CALCOFFSET(type,field) + PK_WORDOFFSET(flags)) | ((PK_BITNUM(flags) & 7)<<13L))
-#define PAKC_LONGBIT(tagbase,tag,type,field,control,flags) (control | ((tag - tagbase)<<16L) | (PK_CALCOFFSET(type,field) + PK_LONGOFFSET(flags)) | ((PK_BITNUM(flags) & 7)<<13L))
+#define PACK_LONGBIT(tagbase,tag,type,field,control,flags) (control | ((tag - tagbase)<<16L) | (PK_CALCOFFSET(type,field) + PK_LONGOFFSET(flags)) | ((PK_BITNUM(flags) & 7)<<13L))
 
 #endif /* UTILITY_PACK_H */
