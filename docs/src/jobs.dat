@@ -280,6 +280,12 @@ clib00162;0;hkiel;Write fchmod
 clib00163;0;hkiel;Write sigaction
 clib00164;0;hkiel;Write sigaddset
 clib00165;0;hkiel;Write sigemptyset
+clib00166;0;hkiel;Write sigdelset
+clib00167;0;hkiel;Write sigfillset
+clib00168;0;hkiel;Write sigismember
+clib00169;0;hkiel;Write sigpending
+clib00170;0;hkiel;Write sigprocmask
+clib00171;0;hkiel;Write sigsuspend
 c00000;2;srittau;Write C:AddBuffers
 c00001;2;laguest;Write C:Alias
 c00002;2;srittau;Write C:Ask
