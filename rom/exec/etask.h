@@ -15,7 +15,8 @@
 struct IntETask
 {
     struct ETask iet_Task;
-    APTR	 iet_RT;    /* Structure for resource tracking */
+    APTR	 iet_RT;	/* Structure for resource tracking */
+    APTR	 iet_Context;	/* Structure to store CPU registers */
 };
 
 #endif /* _ETASK_H */
