@@ -3,14 +3,13 @@
 
 include $(TOP)/config/make.cfg
 
-FILES  := main 
-EXEDIR := $(AROS_C)
+FILES  := main
 
 #MM- workbench-c : workbench-c-partition
 #MM workbench-c-partition : includes linklibs 
 
 %build_prog mmake=workbench-c-partition \
-    progname=Partition targetdir=$(EXEDIR) \
+    progname=Partition targetdir=$(AROS_C) \
     files=$(FILES) uselibs="amiga arosc m" \
     usestartup=no
 
