@@ -463,7 +463,7 @@ digulla@hepe.com
 (Reported by Dirk Weber) Run AROS, "cd C", "cd ..". The path reads now
 "Workbench:C/..".
 
-BUG000067
+BUG000067 fixed
 digulla@hepe.com
 (Reported by Dirk Weber) The fillpattern for the workbench screen
 is distorted.
