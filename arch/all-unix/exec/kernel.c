@@ -43,6 +43,8 @@ sigset_t sig_int_mask;	/* Mask of signals that Disable() block */
 int intrap;
 LONG supervisor;
 
+static BOOL sigactive[NSIG];
+
 /*
     These tables are used to map signals to interrupts
     and trap. There are two tables for the two different kinds
@@ -101,6 +103,17 @@ static void sighandler(int sig, sigcontext_t * sc)
 
     AROS_ATOMIC_INCL(supervisor);
 
+    if (sigactive[sig])
+    {
+#if NOISY
+    	fprintf(stderr,"********* sighandler: sig %d already active **********\n", sig);
+	fflush(stderr);
+#endif
+
+    	return;
+    }
+    sigactive[sig] = TRUE;
+    
     /* Map the Unix signal to an Amiga signal. */
     iv = &SysBase->IntVects[sig2tab[sig]];
 
@@ -122,6 +135,15 @@ static void sighandler(int sig, sigcontext_t * sc)
 	    I must supply them here. Obviously I will dummy some of these
 	    though.
 	*/
+	
+	/* If iv->iv_Code calls Disable()/Enable() we could end up
+	   having the signals unblocked, which then can cause nesting
+	   signals which we do not want. Therefore prevent this from
+	   happening by doing this manual Disable()ing/Enable()ing,
+	   ie. inc/dec of SysBase->IDNestCnt. */
+	   
+	SysBase->IDNestCnt++;
+	
 	AROS_UFC5(void, iv->iv_Code,
 	    AROS_UFCA(ULONG, 0, D1),
 	    AROS_UFCA(ULONG, 0, A0),
@@ -129,6 +151,8 @@ static void sighandler(int sig, sigcontext_t * sc)
 	    AROS_UFCA(APTR, iv->iv_Code, A5),
 	    AROS_UFCA(struct ExecBase *, SysBase, A6)
 	);
+	
+	SysBase->IDNestCnt--;
     }
 
     /* Has an interrupt told us to dispatch when leaving */
@@ -189,6 +213,8 @@ static void sighandler(int sig, sigcontext_t * sc)
 
     AROS_ATOMIC_DECL(supervisor);
 
+    sigactive[sig] = FALSE;
+    
 } /* sighandler */
 
 #if 0
