@@ -59,7 +59,8 @@ FILES := amiga2date \
 	mktime \
 	rexxsyslibtest \
 	portsend \
-	portreceive
+	portreceive \
+	makelib
 
 EXEDIR := $(AROSDIR)/test
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
