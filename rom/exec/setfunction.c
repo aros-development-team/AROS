@@ -76,6 +76,11 @@
 {
     AROS_LIBFUNC_INIT
     APTR ret;
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    ULONG *vecaddr;
+#endif
+
+    D(bug("SetFunction(%s, %lx, %lx) = ", (ULONG)library->lib_Node.ln_Name, funcOffset, (ULONG)newFunction));
 
 #if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
     /*
@@ -111,11 +116,12 @@
     {
 	funcOffset &= 0x0000ffff;
     }
-#endif
 
-    D(bug("SetFunction(%s, %lx, %lx) = ", (ULONG)library->lib_Node.ln_Name, funcOffset, (ULONG)newFunction));
-
+#else
+    /* Vector pre-processing for non-native machines: */
     funcOffset = (-funcOffset) / LIB_VECTSIZE;
+
+#endif
 
     /*
 	Arbitrate for the jumptable. This isn't enough for interrupt callable
@@ -126,23 +132,38 @@
     /* Mark the library as changed. */
     library->lib_Flags|=LIBF_CHANGED;
 
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    /* The following section is coded like this (instead of using the macros),
+       because else gcc will output 64-bit muls instructions, that are not
+       present on the 68060 (and will crash it). It's faster this way, too. :) */
+    vecaddr = (APTR)((ULONG)library + funcOffset);
+
+    /* Get the old vector pointer */
+    ret = (APTR)*(ULONG *)(((ULONG)vecaddr)+2);
+
+    /* Set new vector and jmp instruction */
+    *(UWORD *)vecaddr = 0x4ef9;
+    *(ULONG *)(((ULONG)vecaddr)+2) = (ULONG)newFunction;
+
+#else /* non-native section follows */
     /* Get old vector. */
     ret = __AROS_GETVECADDR (library, funcOffset);
 
-#if 1
+    /* Don't forget to initialise the vector, or else there would be no actual
+       assembler jump instruction in the vector */
     __AROS_INITVEC (library, funcOffset);
-#endif
 
     /* Write new one. */
     __AROS_SETVECADDR (library, funcOffset, newFunction);
 
+#endif /* end if system specific sections */
+
+#if 1
     /* And clear the instruction cache. */
+    /* Simply clear the entire cache... */
     CacheClearU();
-#if 0
-    /*
-       Fixed to also flush data cache (very important for CopyBack style
-       caches) [ldp]
-    */
+#else
+    /* ...or clear the vector address range specifically */
     CacheClearE (__AROS_GETJUMPVEC(library,funcOffset),LIB_VECTSIZE,CACRF_ClearI|CACRF_ClearD);
 #endif
 
