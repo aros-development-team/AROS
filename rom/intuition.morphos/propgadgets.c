@@ -25,12 +25,6 @@
 
 extern ULONG HookEntry();
 
-#ifndef SKINS
-#warning define RenderPropBackground here and paste aros one to this file!
-// FIXME!
-#define RenderPropBackground(a,b,c,d,e,f,g)
-#endif
-
 #undef DEBUG
 #define DEBUG 0
 #   include <aros/debug.h>
@@ -41,6 +35,43 @@ extern ULONG HookEntry();
 #define clickoffset_y GetPrivIBase(IntuitionBase)->prop_clickoffset_y
 
 BOOL isonborder(struct Gadget *gadget,struct Window *window);
+
+static void RenderPropBackground(struct Window *win, struct DrawInfo *dri,
+    	    	    	    	 struct Rectangle *rect, struct PropInfo *pi,
+				 struct RastPort *rp, BOOL onborder, struct IntuitionBase *IntuitionBase)
+{
+    static UWORD pattern[] = {0x5555,0xAAAA};
+    struct Rectangle r = *rect;
+       
+#if 0
+    if (!(pi->Flags & PROPBORDERLESS))
+    {
+    	r.MinX++;
+	r.MinY++;
+	r.MaxX--;
+	r.MaxY--;
+    }
+#endif
+    
+    SetDrMd(rp, JAM2);
+    
+    if (pi->Flags & PROPNEWLOOK)
+    {
+    	SetAfPt(rp, pattern, 1);
+	SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+	SetBPen(rp, dri->dri_Pens[(!onborder || !(win->Flags & WFLG_WINDOWACTIVE)) ?
+	    	    	    	  BACKGROUNDPEN : FILLPEN]);
+	
+	RectFill(rp, r.MinX, r.MinY, r.MaxX, r.MaxY);
+    	SetAfPt(rp, NULL, 0);
+    }
+    else
+    {
+    	SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+	RectFill(rp, r.MinX, r.MinY, r.MaxX, r.MaxY);
+    }
+}
+
 
 VOID HandlePropSelectDown
 (
