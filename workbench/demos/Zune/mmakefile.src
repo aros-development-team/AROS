@@ -1,8 +1,9 @@
 # $Id$
 #
-# Makefile for MUI Demos
+# Makefile for Zune Demos
 
 include $(TOP)/config/make.cfg
+include ../make.cfg
 
 FILES := \
     mui_layout1 \
@@ -12,23 +13,27 @@ FILES := \
     mui_notify2 \
     mui_input1
 
-EXEDIR := $(AROSDIR)/MUIDemos
+EXEDIR := $(ZUNEDIR)/Tests
 EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 USER_INCLUDES := -I../libs/muimaster
 
-USE_CLIB := yes
-USE_AMIGALIB    := yes
-USE_MUILIB      := yes
-USE_AROSLIB     := yes
+USE_CLIB     := yes
+USE_AMIGALIB := yes
+USE_MUILIB   := yes
+USE_AROSLIB  := yes
 
+#MM contrib-zune-demos : includes linklibs  
 
-#MM mui-demos : includes linklibs  
+%make_prog_setup mmake=contrib-zune-demos
 
-%make_prog_setup mmake=mui-demos
-
-mui-demos : setup $(EXES)
+contrib-zune-demos : setup $(EXES)
 
 %make_prog_single dir=$(EXEDIR)
+
+#MM setup
+setup ::
+	%mkdirs_q $(ZUNEDIR)
+	%mkdirs_q $(ZUNEDIR)/Tests
 
 %common
 %include_deps
