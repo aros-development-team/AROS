@@ -1149,6 +1149,7 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
     for (i = 0; i < data->rows; i++) {
 	/* calculate min and max height of this row */
 	int min_h = 0, def_h = 0, max_h = MUI_MAXMAX;
+	BOOL found_nonzero_vweight = FALSE;
 	j = 0;
 	while ((child = NextObject(&cstate))) {
 	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
@@ -1160,12 +1161,19 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
 	    }
 	    min_h = MAX(min_h, _minheight(child));
 	    def_h = MAX(def_h, w0_defheight(child));
-	    max_h = MIN(max_h, w0_maxheight(child));
+	    if (_vweight(child) > 0)
+	    {
+		max_h = MIN(max_h, _maxheight(child));
+		found_nonzero_vweight = TRUE;
+	    }
 	    ++j;
 	    if ((j % data->columns) == 0)
 		break;
 	}
-	max_h = MAX(max_h, min_h);
+	if (!found_nonzero_vweight)
+	    max_h = min_h;
+	else
+	    max_h = MAX(max_h, min_h);
 /*  	D(bug("row %d : min_h=%d max_h=%d\n", i, min_h, max_h)); */
 	req->MinHeight += min_h;
 	req->DefHeight += def_h;
@@ -1185,6 +1193,8 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
     for (i = 0; i < data->columns; i++) {
 	/* calculate min and max width of this column */
 	int min_w = 0, def_w = 0, max_w = MUI_MAXMAX;
+	BOOL found_nonzero_hweight = FALSE;
+
 	j = 0;
 	/* process all childs to get childs on a column */
 	cstate = (Object *)children->mlh_Head;
@@ -1201,9 +1211,21 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
 	    }
 	    min_w = MAX(min_w, _minwidth(child));
 	    def_w = MAX(def_w, w0_defwidth(child));
-	    max_w = MIN(max_w, w0_maxwidth(child));
+
+	    /* this handles the case of null weight childs, which limit
+	     *  the max size if they're alone, but not if they are with
+	     *  non-null weight obj
+	     */
+	    if (_hweight(child) > 0)
+	    {
+		max_w = MIN(max_w, _maxwidth(child));
+		found_nonzero_hweight = TRUE;
+	    }
 	}
-	max_w = MAX(max_w, min_w);
+	if (!found_nonzero_hweight)
+	    max_w = min_w;
+	else
+	    max_w = MAX(max_w, min_w);
 /*  	D(bug("col %d : min_w=%d max_w=%d\n", i, min_w, max_w)); */
 	req->MinWidth += min_w;
 	req->DefWidth += def_w;
@@ -1642,6 +1664,7 @@ layout_2d_row_precalc (struct MUI_GroupData *data,
     /* for each row */
     for (i = 0; i < data->rows; i++)
     {
+	BOOL found_nonzero_vweight = FALSE;
 	/* min and max heights */
 	row_infos[i].min = 0;
 	row_infos[i].max = MUI_MAXMAX;
@@ -1652,13 +1675,20 @@ layout_2d_row_precalc (struct MUI_GroupData *data,
 	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
 		continue;
 	    row_infos[i].min = MAX(row_infos[i].min, _minheight(child));
-	    row_infos[i].max = MIN(row_infos[i].max, w0_maxheight(child));
-	    row_infos[i].weight += _vweight(child);
+	    if (_vweight(child) > 0)
+	    {
+		found_nonzero_vweight = TRUE;
+		row_infos[i].max = MIN(row_infos[i].max, _maxheight(child));
+		row_infos[i].weight += _vweight(child);
+	    }
 	    ++j;
 	    if ((j % data->columns) == 0)
 		break;
 	}
-	row_infos[i].max = MAX(row_infos[i].max, row_infos[i].min);
+	if (!found_nonzero_vweight)
+	    row_infos[i].max = row_infos[i].min;
+	else
+	    row_infos[i].max = MAX(row_infos[i].max, row_infos[i].min);
 	/* process results for this row */
 	*totBonusHe -= row_infos[i].min;
 	if (row_infos[i].min != row_infos[i].max)
@@ -1686,6 +1716,7 @@ layout_2d_col_precalc (struct MUI_GroupData *data,
     /* for each col */
     for (i = 0; i < data->columns; i++)
     {
+	BOOL found_nonzero_hweight = FALSE;
 	/* min and max widths */
 	col_infos[i].min = 0;
 	col_infos[i].max = MUI_MAXMAX;
@@ -1700,10 +1731,17 @@ layout_2d_col_precalc (struct MUI_GroupData *data,
 	    if (((j - 1) % data->columns) != i)
 		continue;
 	    col_infos[i].min = MAX(col_infos[i].min, _minwidth(child));
-	    col_infos[i].max = MIN(col_infos[i].max, w0_maxwidth(child));
-	    col_infos[i].weight += _hweight(child);
+	    if (_hweight(child) > 0)
+	    {
+		found_nonzero_hweight = TRUE;
+		col_infos[i].max = MIN(col_infos[i].max, _maxwidth(child));
+		col_infos[i].weight += _hweight(child);
+	    }
 	}
-	col_infos[i].max = MAX(col_infos[i].max, col_infos[i].min);
+	if (!found_nonzero_hweight)
+	    col_infos[i].max = col_infos[i].min;
+	else
+	    col_infos[i].max = MAX(col_infos[i].max, col_infos[i].min);
 	/* process results for this col */
 	*totBonusWi -= col_infos[i].min;
 	if (col_infos[i].min != col_infos[i].max)
