@@ -417,7 +417,7 @@ static LONG doDir(STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
 	
 	    error = CheckDir(lock, (struct ExAllData *)buffer, sizeof(buffer),
 			     eac, &dirs, &files);
-	    
+
 	    FreeDosObject(DOS_EXALLCONTROL, eac);
 	    
 	    if (error == 0 && doDirs)
@@ -559,10 +559,13 @@ static int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
 		    struct table *files)
 {
     int   error = RETURN_OK;
-    LONG  loop;
+    BOOL  loop;
+    LONG  ioErr;
+    struct ExAllData *oldEad = ead;
 
     do
     {
+	ead = oldEad;
 	loop = ExAll(lock, ead, eadSize, ED_COMMENT, eac);
 	
 	if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES)
