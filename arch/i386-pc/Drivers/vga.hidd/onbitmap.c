@@ -196,8 +196,7 @@ static VOID onbitmap_dispose(Class *cl, Object *o, Msg msg)
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 3
-//12
+#define NUM_BITMAP_METHODS 12
 
 Class *init_onbmclass(struct vga_staticdata *xsd)
 {
@@ -216,16 +215,16 @@ Class *init_onbmclass(struct vga_staticdata *xsd)
     {
         {(IPTR (*)())MNAME(setcolors),		moHidd_BitMap_SetColors},
     	{(IPTR (*)())MNAME(putpixel),		moHidd_BitMap_PutPixel},
-//    	{(IPTR (*)())MNAME(clear),		moHidd_BitMap_Clear},
+    	{(IPTR (*)())MNAME(clear),		moHidd_BitMap_Clear},
     	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},
-//    	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
-//    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
-//    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
-//    	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
-//    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
-//    	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
-//    	{(IPTR (*)())MNAME(putimagelut),	moHidd_BitMap_PutImageLUT},
-//    	{(IPTR (*)())MNAME(getimagelut),	moHidd_BitMap_GetImageLUT},
+    	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
+    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
+    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
+    	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
+    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
+    	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
+    	{(IPTR (*)())MNAME(putimagelut),	moHidd_BitMap_PutImageLUT},
+    	{(IPTR (*)())MNAME(getimagelut),	moHidd_BitMap_GetImageLUT},
         {NULL, 0UL}
     };
     
