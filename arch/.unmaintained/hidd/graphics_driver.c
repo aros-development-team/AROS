@@ -1130,6 +1130,9 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 	{
 	    if (!SetRegion(L->DamageList, &R))
 	        goto failexit;
+
+	    /* The damage list is relative to the layer */
+	    TranslateRect(&R.bounds, L->bounds.MinX, L->bounds.MinY);
 	}
 
         #define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
@@ -1171,7 +1174,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 
 	    if (CR->lobs && (L->Flags & LAYERSIMPLE) && UpdateDamageList)
 	    {
-	        ClearRectRegion(&R, &CR->lobs);
+	        ClearRectRegion(&R, &CR->bounds);
 	    }
 	    else
 	    if (AndRectRect(&ScrollRect, &CR->bounds, &Rect))
@@ -1278,7 +1281,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 			}
 		    }
 
-		    if (dosrcsrc = AndRectRect(&CR->bounds, &Rect, &Tmp))
+		    if ((dosrcsrc = AndRectRect(&CR->bounds, &Rect, &Tmp)))
 		    {
 			if (!ClearRectRegion(RectRegion, &Tmp))
 			{
@@ -1330,11 +1333,15 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
                LAYERREFRESH flag, but of course only if it's necessary */
 
             /* first clear the damage lists of the scrolled area */
-            ClearRectRegion(L->DamageList, &ScrollRect);
+
+	    TranslateRect(&ScrollRect, -L->bounds.MinX, -L->bounds.MinY);
+	    ClearRectRegion(L->DamageList, &ScrollRect);
 
             if (R.RegionRectangle)
             {
-                OrRegionRegion(&R, L->DamageList);
+		TranslateRect(&R.bounds, -L->bounds.MinX, -L->bounds.MinY);
+
+		OrRegionRegion(&R, L->DamageList);
                 L->Flags |= LAYERREFRESH;
             }
         }
@@ -1357,7 +1364,7 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
     OOP_Object *gc;
     struct Layer *L = rp->Layer;
     struct BitMap *bm = rp->BitMap;
-    
+
     if (!CorrectDriverData (rp, GfxBase))
 	return;
 	
@@ -1391,7 +1398,7 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 	    
 	/* No need for clipping */
 	HIDD_BM_DrawLine(bm_obj, gc, rp->cp_x, rp->cp_y, x, y);  
-	
+
 	
 	RELEASE_HIDD_BM(bm_obj, bm);
 	    
@@ -1402,7 +1409,7 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 	WORD xrel;
         WORD yrel;
 	struct Rectangle torender, intersect;
-	
+
 	LockLayerRom(L);
 	
 	xrel = L->bounds.MinX;
@@ -1472,7 +1479,7 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 		    {
 		    	LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
 			LONG layer_rel_x, layer_rel_y;
-			
+
 			layer_rel_x = intersect.MinX - xrel;
 			layer_rel_y = intersect.MinY - yrel;
 			
