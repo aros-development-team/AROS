@@ -295,17 +295,17 @@ static BOOL init_gfx(STRPTR gfxclassname, struct initbase *base)
 	CloseLibrary((struct Library *)GfxBase);
     }
     ReturnBool ("init_gfxhidd", success);
-}	    
+}
 
 
 static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base)
 {
     BOOL success = FALSE;
     struct MsgPort *mp;
-    
-    
+
+
     EnterFunc(bug("init_device(classname=%s)\n", hiddclassname));
-    
+
     mp = CreateMsgPort();
     if (mp)
     {
@@ -315,7 +315,7 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
 	    if (0 == OpenDevice(devicename, 0, io, 0))
 	    {
 		UBYTE *data;
-		
+
 	        /* Allocate message data */
 		data = AllocMem(BUFSIZE, MEMF_PUBLIC);
 		if (data)
@@ -325,14 +325,14 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
 		    ioStd(io)->io_Command = CMD_HIDDINIT;
 		    ioStd(io)->io_Data = data;
 		    ioStd(io)->io_Length = strlen(data);
-		    
+
 		    /* Let the device init the HIDD */
 		    DoIO(io);
 		    if (0 == io->io_Error)
 		    {
 			success = TRUE;
 		    }
-		    
+
 		    FreeMem(data, BUFSIZE);
 		}
 		CloseDevice(io);

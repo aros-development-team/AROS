@@ -138,7 +138,7 @@
     iofs.io_Union.io_EXAMINE_ALL.io_Mode = data;
 
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     if
     (

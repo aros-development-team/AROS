@@ -138,7 +138,7 @@
 	iofs->io_Union.io_EXAMINE.io_ead =ead;
 	iofs->io_Union.io_EXAMINE.io_Size=sizeof(stackead);
 	iofs->io_Union.io_EXAMINE.io_Mode=ED_TYPE;
-	DoIO(&iofs->IOFS);
+	DosDoIO(&iofs->IOFS);
 	error=iofs->io_DosError;
 
 	/* Move name to the top of the buffer. */
@@ -162,7 +162,7 @@
 	    iofs->IOFS.io_Command=FSA_OPEN;
 	    iofs->io_Union.io_OPEN.io_Filename="/";
 	    iofs->io_Union.io_OPEN.io_FileMode=0;
-	    DoIO(&iofs->IOFS);
+	    DosDoIO(&iofs->IOFS);
 	    curlock=iofs->IOFS.io_Unit;
 	    error=iofs->io_DosError;
 	}
@@ -172,7 +172,7 @@
 	{
 	    iofs->IOFS.io_Unit=oldlock;
 	    iofs->IOFS.io_Command=FSA_CLOSE;
-	    DoIO(&iofs->IOFS);
+	    DosDoIO(&iofs->IOFS);
 	}
 	oldlock=curlock;
     }while(!error&&ead->ed_Type!=ST_ROOT);

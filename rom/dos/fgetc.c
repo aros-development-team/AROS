@@ -73,7 +73,9 @@
 
             /* An error happened? Return it. */
             if(size < 0)
+	    {
                 return EOF;
+            }
 
             pos += size;
         }
@@ -95,7 +97,7 @@
 
             return EOF;
         }
-        
+
         /* Is there a buffer? */
         if(fh->fh_Buf == NULL)
         {
@@ -114,22 +116,24 @@
             fh->fh_Flags |= FHF_BUF;
             fh->fh_Size = IOBUFSIZE;
         }
-        
+
         /* Fill the buffer. */
         size = Read(file, fh->fh_Buf, fh->fh_Size);
-        
+
         /* Prepare filehandle for data. */
         if(size <= 0)
             size = 0;
 
         fh->fh_Pos = fh->fh_Buf;
         fh->fh_End = fh->fh_Buf + size;
-        
+
         /* No data read? Return EOF. */
         if(size == 0)
+	{
             return EOF;
+	}
     }
-    
+
     /* All OK. Get data. */
     return *fh->fh_Pos++;
 

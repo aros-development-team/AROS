@@ -123,7 +123,7 @@
     iofs.io_Union.io_EXAMINE.io_Mode = ED_OWNER;
 
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     /* Set error code and return */
     SetIoErr(iofs.io_DosError);

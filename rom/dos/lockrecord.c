@@ -84,7 +84,7 @@
     iofs.io_Union.io_RECORD.io_RecordMode = mode;
     iofs.io_Union.io_RECORD.io_Timeout = timeout;
 
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
     
     SetIoErr(iofs.io_DosError);
     

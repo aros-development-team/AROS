@@ -75,7 +75,7 @@
 
     SetSignal(0, SIGF_SINGLE);
 	
-    DoIO(&timerio.tr_node);
+    DosDoIO(&timerio.tr_node);
     
     AROS_LIBFUNC_EXIT
 } /* Delay */

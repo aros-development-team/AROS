@@ -79,12 +79,12 @@
 	iofs.io_Union.io_READ_SOFTLINK.io_Buffer = buffer;
     	iofs.io_Union.io_READ_SOFTLINK.io_Size   = size;
 
-    	DoIO(&iofs.IOFS);
+    	DosDoIO(&iofs.IOFS);
 
 	error = iofs.io_DosError;
 
 	iofs.IOFS.io_Command = FSA_CLOSE;
-	DoIO(&iofs.IOFS);
+	DosDoIO(&iofs.IOFS);
 
 	SetIoErr(error);
     }

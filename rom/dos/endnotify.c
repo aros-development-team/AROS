@@ -77,7 +77,7 @@
 	    return;
 	}
 	
-	DoIO(&iofs.IOFS);
+	DosDoIO(&iofs.IOFS);
     }
 
     if (notify->nr_Flags & NRF_SEND_MESSAGE)

@@ -68,7 +68,7 @@
 
     iofs.io_Union.io_INFO.io_Info = parameterBlock;
 
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     SetIoErr(iofs.io_DosError);
 

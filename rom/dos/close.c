@@ -118,7 +118,7 @@
     iofs.IOFS.io_Unit	= fh->fh_Unit;
 
     /* Send the request. No errors possible. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     /* Free the filehandle which was allocated in Open(), CreateDir()
        and such. */

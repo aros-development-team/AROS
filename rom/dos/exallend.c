@@ -81,7 +81,7 @@
     iofs.IOFS.io_Unit   = fh->fh_Unit;
 
     /* Send the request. May not fail. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     AROS_LIBFUNC_EXIT
 } /* ExAllEnd */

@@ -95,7 +95,7 @@
 	    return DOSFALSE;
 	}
 
-	DoIO(&iofs.IOFS);
+	DosDoIO(&iofs.IOFS);
     }
 
     SetIoErr(iofs.io_DosError);
