@@ -1,7 +1,7 @@
 #ifndef INTUITION_INTERN_H
 #define INTUITION_INTERN_H
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuitions internal structure
@@ -439,7 +439,8 @@ extern BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
 extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
 extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
 extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *, 
-			      struct BitMap * SuperBitMap, struct Hook *backfillhook);
+			      struct BitMap * SuperBitMap, struct Hook *backfillhook,
+			      struct Region * shape);
 extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
 extern void intui_RefreshWindowFrame(struct Window *win);
 extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event, struct IntuitionBase *IntuitionBase);
