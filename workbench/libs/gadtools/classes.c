@@ -1532,7 +1532,7 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     struct TagItem *tag, *tstate, tags[] =
     {
     	{STRINGA_TextVal,	0UL},
-    	{STRINGA_LongVal,	0UL},
+	{STRINGA_LongVal,	0UL},
     	{STRINGA_MaxChars,	0UL},
     	{STRINGA_EditHook,	0UL},
     	{TAG_MORE,		0UL}
@@ -1556,11 +1556,22 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
 	    	struct StringData *data = INST_DATA(cl,o);
 		
 		data->gadgetkind = tidata;
+		if (tidata == STRING_KIND)
+		{
+		    tags[1].ti_Tag = TAG_IGNORE;
+		} else {
+		    tags[0].ti_Tag = TAG_IGNORE;
+		}
 	    }
 	    break;
 	    
-    	    case GTST_String:	tags[0].ti_Data = tidata; break;
-    	    case GTIN_Number:	tags[1].ti_Data = tidata; break;
+    	    case GTST_String:
+	    	tags[0].ti_Data = tidata;
+		break;
+		
+    	    case GTIN_Number:
+	    	tags[1].ti_Data = tidata;
+		break;
     	    
     	    /* Another weird inconsistency of AmigaOS GUI objects:
     	    ** For intuition and strgclass gadgets, MaxChars includes trailing
@@ -1712,19 +1723,25 @@ AROS_UFH3S(IPTR, dispatch_stringclass,
     case OM_GET:
     {
     	struct StringData *data = INST_DATA(cl, o);
+	Tag old_AttrID = OPG(msg)->opg_AttrID;
 	
-    	switch(OPG(msg)->opg_AttrID)
+    	switch(old_AttrID)
 	{
 	    case GTA_GadgetKind:
 	    case GTA_ChildGadgetKind:
 	    	*(OPG(msg)->opg_Storage) = data->gadgetkind;
 		retval = 1UL;
 		break;
+	    
+	    case GTST_String:
+	    	OPG(msg)->opg_AttrID = STRINGA_TextVal;
+		/* fall through */
 		
 	    default:
 	    	retval = DoSuperMethodA(cl, o, msg);
 		break;
 	}
+	OPG(msg)->opg_AttrID = old_AttrID;
     }
     break;
     
