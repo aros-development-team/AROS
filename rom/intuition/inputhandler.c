@@ -1356,18 +1356,14 @@ D(bug("Window: %p\n", w));
                        struct RastPort * rp = targetwindow->BorderRPort;
                        struct Layer * L = rp->Layer;
                        struct ClipRect * cr = NULL;
+                       struct Region * oldclipregion;
                        /* 
                        ** In case a clip region is installed then I have to 
                        ** install the regular cliprects of the layer
                        ** first. Otherwise the frame might not get cleared correctly.
                        */
-                       if (NULL != L->ClipRegion && NULL != L->_cliprects)
-                       {
-                         /* remember those cliprects */
-                         cr = L->ClipRect;
-                         L->ClipRect = L->_cliprects;
-                       }
-                       
+                       oldclipregion = InstallClipRegion(L, NULL);
+
                        SetAPen(rp, 0);
                        if (msg->dy > 0)
                        {
@@ -1389,11 +1385,8 @@ D(bug("Window: %p\n", w));
                        /*
                        ** Reinstall the clipregions rectangles if there are any.
                        */
-                       if (NULL != cr)
-                       {
-                         /* reinstall the clipregion cliprects */
-                         L->ClipRect = cr;
-                       }
+                       if (NULL != oldclipregion)
+                         InstallClipRegion(L, oldclipregion);
                      }
                      
                      /* I first resize the outer window if a GZZ window */
