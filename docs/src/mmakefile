@@ -77,9 +77,9 @@ access-rights :
 $(DEST)cgi-bin/counter.txt :
 	    echo "0" > $@
 
-#MM docs-index : setup-docs docs
-docs-index :
-	cd $(DEST) ; glimpseindex -H . -o .
+##MM docs-index : setup-docs docs
+#docs-index :
+#	cd $(DEST) ; glimpseindex -H . -o .
 
 $(DEST)srcs :
 	ln -s $(TOP) $(DEST)srcs
@@ -224,13 +224,13 @@ $(DEST)inc_index.html : $(INCLUDE_SRCS)
 	chmod a+r $@
 
 #MM all-docs : setup-docs
-all-docs : includes docs docs-index
+all-docs : includes docs 
 
 includes : devlist.inc contents.inc status.inc \
 	jobserv-free.inc jobserv-work.inc jobserv-done.inc
 
-devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
-	gawk -f $< > $@
+devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt 
+	gawk -f $< --assign TOP="$(TOP)" > $@
 
 status.inc :
 	gawk -f stathtml.gawk > $@.new
