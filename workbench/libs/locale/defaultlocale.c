@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS
+    Copyright (C) 1995-2001 AROS
     $Id$
 
     Desc: Default Locale Preferences
@@ -11,11 +11,17 @@
 
 #include "locale_intern.h"
 
+/* stegerg: the strings "united_states.country", "english.language" and
+   "english" have been verified on the Amiga with a test program which
+   does OpenLocale(NULL) and then print out this fields. The Amiga was
+   booted "without startup-sequence" and the program then started as first,
+   without other programs before" */
+   
 /* We have to be careful not to try and change any of this */
 const struct Locale defLocale =
 {
-    NULL,                           /* Locale Name */
-    "english",                      /* Language Name */
+    "united_states.country",        /* Locale Name */
+    "english.language",             /* Language Name */
     {   "english", NULL, NULL,
 	NULL, NULL, NULL,
 	NULL, NULL, NULL, NULL },   /* Prefered Languages */
