@@ -15,6 +15,9 @@
 #ifndef GRAPHICS_TEXT_H
 #	include <graphics/text.h>
 #endif
+#ifndef DOS_BPTR_H
+#   include <dos/bptr.h>
+#endif
 
 #define	MAXFONTPATH	256
 
