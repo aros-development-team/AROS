@@ -105,18 +105,8 @@ AROS_SHA(BOOL, ,HEAD,/S,FALSE))
     {
         UBYTE Buffer[2048];
         IPTR parg[1];
-	BPTR l;
 
-	l = Lock ("", SHARED_LOCK);
-	if (l)
-	{
-	    NameFromLock(l, Buffer, sizeof (Buffer));
-	    UnLock(l);
-
-            parg[0] = (IPTR)Buffer;
-     	    VPrintf("Current Directory: %s\n", parg);
-	}
-
+        PutStr("Current Directory\n");
 
 	for
         (
