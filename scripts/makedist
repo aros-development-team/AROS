@@ -4,6 +4,7 @@
 # > mkdir .../dist
 # > cvs -d ... checkout AROS
 # > mv AROS AROS.source
+# > ln -s AROS.source/scripts/makedist .
 #
 # Usage:
 # - Update AROS.source if necessary:
