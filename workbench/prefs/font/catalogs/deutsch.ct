@@ -52,8 +52,8 @@ Kann IFF Handle nicht allozieren!
 ; Can't allocate IFF handle!
 ;
 MSG_CANT_ALLOCATE_MEM
-Kann Anwendungs-Speicher nicht allozieren!
-; Can't allocate application memory!
+Kann Anwendungs-Speicher nicht allozieren (%s)!
+; Can't allocate application memory (%s)!
 ;
 MSG_WINTITLE
 Zeichensatz-Voreinsteller (Font)
