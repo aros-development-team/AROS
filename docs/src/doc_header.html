@@ -22,6 +22,136 @@ since 12. October 1999.
 <H2>NEWS</H2>
 <TABLE>
 
+<TR><TD VALIGN=TOP>25.02.2001</TD><TD>
+Georg Steger finished Locale preferences. Have a look in our
+<A HREF="screenshots/index.html">screenshots</A> !! Definitely
+worth a look :-) There is now a demo how to use the
+cool_buttonclass from his coolimages lib. XaoS depends on
+topaz/8 font, so it didn't work corretly anymore because we
+use a proportional font now. <P>
+
+Johan Alfredsson fixed a bug in C:SetKeyboard and RAM handler.
+IPrefs can now use notification in ENV:Sys/ to update preferences.<P>
+
+Thanks to Stefan Berger, one can now abort packets sent to filesystems.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>22.02.2001</TD><TD>
+Georg Steger implemented FindCliProc() and brought the workbench
+background pattern back. There is now a tool to install a pattern.
+Locking of Open/CloseWorkbench() should be correct now. He also
+committed a batch of new <A HREF="screenshots/index.html">screenshots</A> !
+Here you can see our first preferences program: Locale.
+There is now a linklib with some icons (used, for example,
+by ASL).<P>
+
+Johan Alfredsson finished record locking (mostly untested because
+we have no filesystem which supports locking, yet).<P>
+
+Lars Bischoff cleaned S:Startup-Sequence. S:User-Startup is now
+supported.<P>
+
+Sebastian Heutling improved his filesystem (removed a lot of global
+variables).<P>
+
+Stefan Berger began to work on an packet IO system emualtor. As you
+might know, DOS uses DosPackets to talk to filesystems while any
+other system on the AmigaOS uses Exec IORequests. Therefore, AROS
+uses IORequests for filesystems, too (because they are much more
+clean in design). Now you can port AmigaOS code which relies on
+packets and it will work.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>18.02.2001</TD><TD>
+Johan Alfredsson began work on record locking and fixed a notification
+bug in RAM handler.<P>
+
+Sebastian Heutling fixed a bug in his filesystem (extending a new
+file didn't always work).<P>
+
+Kjetil Svalastog Matheussen improved his CAMD/MIDI library.<P>
+
+Georg Steger added a demo for a register tab gadget.  He also committed an
+ILBM->C converter so we can put images in our software (for example, the map of
+Earth in the locale preferences). 
+</TD></TR>
+
+<TR><TD VALIGN=TOP>15.02.2001</TD><TD>
+Georg Steger wrote the locale sensitve StrToDate replacement and
+made IPrefs install them. The workbench screen title is now 
+"Workbench Screen" as it should be. Also some bugs which the
+test code showed in the date<->string conversion where
+squished by him. Lastly, he added some scripts to start Doom
+with a certain amount of players using his netlocal routines.
+Makes a nice running demo for AROS :-)<P>
+
+Johan Alfredsson completed notifications support.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>12.02.2001</TD><TD>
+Sebastian Heutling fixed the seek() code in his filesystem and he
+implemented FSA_DISK_INFO.<P>
+
+Georg Steger fixed a lot of wrong types in the tools in C:
+(in AROS, you must pass an IPTR, not an ULONG if something can
+contain a pointer and an int). He also fixed the sequence of
+parameters for hooks in locale.library and implemented locales'
+replacement of Execs' RawDoFmt(). IPrefs now installs this
+patch. That made DirOpus crash but he found and fixed that bug
+immediately. A global semaphore in IPrefs now protects the
+patches IPrefs installs so they are installed only once if
+IPrefs is started more than once. IPrefs will now patch utility.library
+locale sensitive replacements for string functions (Stricmp(),
+ToLower(), etc) and dos.library (DateToStr()). Filenames for
+languages now have their proper accents.<P>
+
+Johan Alfredsson continued his work on the notification code.<P>
+
+Sven Drieling summarized the m68k-emulator thread. When this works
+out, it might be possible to run Amiga code unmodifier on AROS.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>08.02.2001</TD><TD>
+Georg Steger continued in his quest to improve all demos we have plus
+the code in AROS which used by the demos. He also improved catalog loading
+and fixed a bug in diskfont.library (in libclose). Next, he added some
+mountlist entries for our new filesystem and began to work in IPrefs.<P>
+
+Sebastian Heutling fixed a bug in his FFS code.<P>
+
+Henning Kiel made his WiMP tool font sensitive.<P>
+
+Stefan Berger fix a bug in parallel and serial.device.<P>
+
+Johan Alfredsson improved a lot of code which is now used because we
+have a filesystem (for example, C:Info shows now the volumes). Notification
+should now work with the RAM handler.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>05.02.2001</TD><TD>
+Georg Steger fixed a couple of bugs in the graphics.library (AreaFill)
+and improved locale a bit (if no language could be loaded, say that
+english, which is compiled in, is being used). He also improved some
+old demos from Fish disks and fixed some bugs in exec semaphores and
+c.lib/sscanf(). While improving the fish disk demos, he found a design
+fault in MathFFP (sometinges, ULONG is used and sometimes float).
+Lastly, he improved the bool gadgets, added support for the suomi
+language.<P>
+
+Stefan Berger helped to discover the MathFFP design fault.<P>
+
+Kjetil Svalastog Matheussen improved camd.library.<P>
+
+Michael Schulz improved the boot code for AROS i386/Native. The AROS
+kernel can now be upto 1.2MB (err, no, AROS doesn't need that much.
+It's just that we have no filesystem, yet, and therefore cannot
+load any libraries from disk, so for the time being, they must be
+compiled in :-)<P>
+
+Sebastian Heutling commited out first filesystem. Since we haven't
+got the sources for SFS as we hoped, our first filesystem is FFS.
+</TD></TR>
+
 <TR><TD VALIGN=TOP>03.02.2001</TD><TD>
 Georg Steger added the country specific files for all countries
 which are supported by the AmigaOS and some more languages.
@@ -33,75 +163,6 @@ Stefan Berger finished GetLanguageSelection() in lowlevel.library.<P>
 
 Johan Alfredsson improved realtime.library and Swedish locale
 files.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>31.01.2001</TD><TD>
-Georg Steger improved CreateNewProc() and implemented the
-"open options" for console windows (AUTO/INACTIVE/NOSIZE/etc).
-He also fixed a bug in the LD-Demon and some bugs related
-to DefaultPubScreen handling. There is now C:SetDefaultFont
-with which you can set the default font for the system (AROS
-uses a much nicer font now than the default Topaz/8). The code
-in Intuition has been improved to use this font. Also, AROS
-will not open the boot shell anymore if the Startup-Sequence
-doesn't print anything. SetLocale now opens the specified prefs
-file plus some a lot of bugfixes in locale.library. Lastly,
-he added a lot of font-sensitive code in various places.<P>
-
-Notification is implemented but there is no filesystem
-which supports it, yet. I sure hope that we get the SFS
-sources, soon !<P>
-
-Kjetil Svalastog Matheussen finished the port for PlayMF
-(compiles now without error) and fixed a couple of typos
-on the MIDI include files. Next, he ported Fireworks,
-a tool by Christian Buchner that displays the MIDI data
-processed by camd nicely.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>27.01.2001</TD><TD>
-Georg Steger improved the default stack size handling and
-fixed a couple of refresh related bugs in Intuition.
-He made user specified fonts work correctly with ASL
-requesters, various gadgets and MultiView. He also
-fixed Ctrl-C/D/E/F breaking in CON: windows.<P>
-
-Stefan Berger added code which allows to scale a layer (ie.
-zoom into it :-). Check the winshape and roundshape demo
-(use +/- to zoom it; it's slow, though).<P>
-
-Johan Alfredsson finished realtime.library and committed
-a demo for the library to test it.<P>
-
-Kjetil Svalastog Matheussen committed a MIDI player (PlayMF
-from Aminet) which allows to test the camd.library. He
-also fixed some bugs in realtime.library.<P>
-
-Joerg Dietrich backported MultiView to the Amiga and began
-working on V44 datatypes and improved his picture.datatype.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>21.01.2001</TD><TD>
-Kjetil Svalastog Matheussen fixed a couple of bugs in the
-new camd.library and wrote an example MIDI driver for it.
-Johan Alfredsson began work on the last datatypes.library function
-(LaunchToolA()).<P>
-
-Georg Steger fixed a really very old bug in the task switching
-core of AROS (FPU context wasn't correctly saved).
-</TD></TR>
-
-<TR><TD VALIGN=TOP>17.01.2001</TD><TD>
-Johan Alfredsson completed C:Run and Kjetil Svalastog Matheussen
-commited a first version of a camd.library (MIDI) and fixed
-a few bugs in realtime.library.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>15.01.2001</TD><TD>
-Georg Steger fixed a bug (moving&sizing a window at the same time)
-in the new layers.library and improved font copying by the build
-process. Johan Alfredsson improved C:Run. Henning Kiel fixed a
-couple of bugs in his games. 
 </TD></TR>
 
 <TR><TD><A HREF="oldnews.html">Older News</A></TD></TR>
