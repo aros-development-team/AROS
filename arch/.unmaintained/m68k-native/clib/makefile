@@ -4,7 +4,7 @@ TOP=../../..
 include $(TOP)/config/make.cfg
 
 SPECIAL_AFLAGS = -I../
-CLIBDIR=$(GENDIR)/clib
+CLIBDIR=$(GENDIR)/compiler/clib
 
 MACHINE_H = $(INCDIR)/aros/machine.h
 
