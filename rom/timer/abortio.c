@@ -69,8 +69,6 @@
     Disable();
     if(timereq->tr_node.io_Message.mn_Node.ln_Type != NT_REPLYMSG)
     {
-	struct timerequest *tr;
-
 	timereq->tr_node.io_Error = IOERR_ABORTED;
 
 	/*  We have to fix up the following request if it exists.
