@@ -135,3 +135,6 @@ MSG_GAD_KEY_TYPE
 Skriv
 ; Type
 ;
+MSG_TIME_FORMAT
+%d.%02d s
+; %d.%02d s
