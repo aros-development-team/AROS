@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <aros/stubs.h>
+#include <aros/machine.h>
 #include <exec/libraries.h>
 
 #define SYSTEM_CALL(name) "" #name "" ,
@@ -28,8 +28,8 @@ void emitstub(int n)
     if (!f) exit(1);
 
     fprintf(f, STUBCODE,
-	       names[n], names[n], "aroscbase",
-	       -(n+LIB_RESERVED+1)*LIB_VECTSIZE);
+	       names[n], "aroscbase",
+	       &(__AROS_GETJUMPVEC(0, n+1)->vec));
 
     fclose(f);
     free(fname);
