@@ -49,6 +49,7 @@ FUNCTIONS := \
 	addglist \
 	allocremember \
 	allocscreenbuffer \
+	alohaworkbench \
 	autorequest \
 	beginrefresh \
 	buildeasyrequestargs \
@@ -102,10 +103,10 @@ FUNCTIONS := \
 	movescreen \
 	movewindow \
 	movewindowinfrontof \
-	nextobject \
-	nextpubscreen \
 	newmodifyprop \
 	newobjecta \
+	nextobject \
+	nextpubscreen \
 	obtaingirport \
 	offgadget \
 	offmenu \
