@@ -59,6 +59,7 @@
 
 #include <aros/arossupportbase.h>
 #include <aros/asmcall.h>
+#include <aros/config.h>
 #include <aros/debug.h>
 
 #include <hardware/custom.h>
@@ -874,10 +875,11 @@ void exec_cinit()
 
 	ExecBase->TDNestCnt++;
 	Permit();
-
+#if (AROS_SERIAL_DEBUG >0)
 	SetFunction(&ExecBase->LibNode, -84*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
 	SetFunction(&ExecBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
 	RawIOInit();
+#endif
     /* Scan for valid RomTags */
     ExecBase->ResModules = exec_RomTagScanner();
 
