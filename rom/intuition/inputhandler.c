@@ -1056,7 +1056,6 @@ kprintf("Moving window (%d, %d)\n", msg->dx, msg->dy);
 
                      msg->Window->Width += msg->dx;
                      msg->Window->Height+= msg->dy;
-                     RefreshWindowFrame(w);
 
                      CheckLayersBehind = TRUE;
                      L = msg->Window->WLayer;
