@@ -725,7 +725,7 @@ endif
 BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(TMP_FILES))) $(BD_ARCHOBJS$(BDID))
 BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
 
-BD_DEPS$(BDID)       := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(TMP_FILES)))
+BD_DEPS$(BDID)       := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_INITFILE$(BDID)) $(TMP_FILES)))
 
 BD_GENINCS$(BDID)    :=
 ifneq (%(genincludes),)
@@ -956,7 +956,7 @@ $(KOBJSDIR)/$(BD_MODNAME$(BDID))_$(BD_MODTYPE$(BDID)).o : $(BD_INITOBJ$(BDID)) $
 
 endif
 
-%include_deps depstargets="%(mmake) %(mmake)-linklib %(mmake)-kobj" deps=$(BD_DEPS$(BDID))
+%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-linklib %(mmake)-kobj" deps=$(BD_DEPS$(BDID))
 %end
 #------------------------------------------------------------------------------
 
