@@ -572,93 +572,6 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
     return res;
 }
 
-#if 0
-
-static void
-handle_key(Object *win, struct IntuiMessageKey *event, gint mask)
-{
-    struct MUI_WindowData *data = muiWindowData(win);
-    struct MinNode *mn;
-    struct MUI_EventHandlerNode *ehn;
-    ULONG res;
-    ULONG muikey;
-
-    /* Zune can handle the key itself */
-    if (zune_key_translate(win, event, &muikey) == FALSE)
-	return;
-
-    /* try ActiveObject */
-    if (data->wd_ActiveObject)
-    {
-	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
-	{
-	    ehn = (struct MUI_EventHandlerNode *)mn;
-
-	    if ((ehn->ehn_Object == (Object *)data->wd_ActiveObject->data) &&
-		(ehn->ehn_Events & mask))
-	    {
-		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
-		if (res & MUI_EventHandlerRC_Eat)
-		{
-		    DoMethod(_app(ehn->ehn_Object), MUIM_Application_PushMethod,
-			     GPOINTER_TO_UINT(ehn->ehn_Object), 3,
-			     MUIM_HandleEvent, 0, MUIKEY_RELEASE);
-		    return;
-		}
-	    }
-	}
-    }
-
-    /* try DefaultObject */
-    if ((data->wd_DefaultObject)
-	&& !((data->wd_ActiveObject)
-	     && (data->wd_DefaultObject == (Object *)data->wd_ActiveObject->data)))
-    {	    
-	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
-	{
-	    ehn = (struct MUI_EventHandlerNode *)mn;
-
-	    if ((ehn->ehn_Object == data->wd_DefaultObject) &&
-		(ehn->ehn_Events & mask))
-	    {
-		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
-		if (res & MUI_EventHandlerRC_Eat)
-		{
-		    DoMethod(_app(ehn->ehn_Object), MUIM_Application_PushMethod,
-			     GPOINTER_TO_UINT(ehn->ehn_Object), 3,
-			     MUIM_HandleEvent, 0, MUIKEY_RELEASE);
-		    return;
-		}
-	    }
-	}
-    }
-
-    if ((event->string == NULL)
-	|| (strlen(event->string) != 1))
-	return;
-
-    /* try Control Chars */
-    for (mn = data->wd_CCList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
-    {
-	ehn = (struct MUI_EventHandlerNode *)mn;
-
-	if ((tolower(ehn->ehn_Events) == tolower(event->string[0])))
-	{
-	    res = invoke_event_handler(ehn, (struct IntuiMessage *)event, ehn->ehn_Flags);
-	    if (res & MUI_EventHandlerRC_Eat)
-	    {
-		DoMethod(_app(ehn->ehn_Object), MUIM_Application_PushMethod,
-			 GPOINTER_TO_UINT(ehn->ehn_Object), 3,
-			 MUIM_HandleEvent, 0, MUIKEY_RELEASE);
-		return;
-	    }
-	}
-    }
-    
-}
-
-#endif
-
 /**************************************************************************
  ...
 **************************************************************************/
@@ -670,6 +583,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
     ULONG res;
     LONG muikey = MUIKEY_NONE;
     ULONG mask = event->Class;
+    Object *active_object = NULL;
 
     if (mask == IDCMP_RAWKEY)
     {
@@ -704,6 +618,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	*/
 
 	act = data->wd_ActiveObject;
+	active_object = act->obj;
 
 #if 0
 	if (muikey != MUIKEY_NONE)
@@ -730,6 +645,28 @@ static void handle_event(Object *win, struct IntuiMessage *event)
     }
 
     /* try DefaultObject */
+    if (data->wd_DefaultObject && active_object != data->wd_DefaultObject)
+    {
+    	/* No, we only should do this if the object actually has requested this via RequestIDCMP()! */
+    	if (muikey != MUIKEY_NONE && (_flags(data->wd_DefaultObject) & MADF_CANDRAW))
+    	{
+	    DoMethod(data->wd_DefaultObject, MUIM_HandleInput, event, muikey);
+	    return;
+    	}
+
+	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+	{
+	    ehn = (struct MUI_EventHandlerNode *)mn;
+
+	    if ((ehn->ehn_Object == data->wd_DefaultObject) &&
+		(ehn->ehn_Events & mask))
+	    {
+		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
+		if (res & MUI_EventHandlerRC_Eat)
+		    return;
+	    }
+	}
+    }
 
     /* try Control Chars */
     if (mask == IDCMP_RAWKEY)
