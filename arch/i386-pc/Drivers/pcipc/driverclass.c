@@ -21,6 +21,9 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+#undef SysBase
+#define SysBase (PSD(cl)->sysbase)
+
 #define	HiddPCIDriverAttrBase	(PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase		(PSD(cl)->hiddAB)
 
