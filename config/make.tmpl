@@ -601,7 +601,7 @@ else
         %(mmake)-libdir := --libdir=$(LIBDIR)
     endif
     ifeq ($(%(mmake)-includedir),)
-        %(mmake)-includedir := --includedir=$(INCDIR)
+        %(mmake)-includedir := --includedir=$(AROS_INCLUDES)
     endif
 endif
 
@@ -862,7 +862,7 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
 endif
 BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 ifeq ($(BD_MODTYPE$(BDID)),library)
-  BD_DFILE_DEPS$(BDID) += $(addprefix $(INCDIR)/,$(BD_GENINCS$(BDID)))
+  BD_DFILE_DEPS$(BDID) += $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID)))
 endif
 
 #MM %(mmake) : %(mmake)-includes
@@ -944,10 +944,10 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h :
 
 # The include files generated in $(GENINCDIR) have to be mirrored in the AROS include directory
 ifeq ($(BD_MODTYPE$(BDID)),library)
-%rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(INCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h
-%rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/defines/$(BD_MODNAME$(BDID)).h
-%rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/pragmas/$(BD_MODNAME$(BDID)).h
-%rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/proto/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(AROS_INCLUDES)/clib/$(BD_MODNAME$(BDID))_protos.h
+%rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(AROS_INCLUDES)/defines/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(AROS_INCLUDES)/pragmas/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(AROS_INCLUDES)/proto/$(BD_MODNAME$(BDID)).h
 endif
 
 # For a shared library also build a static link lib
@@ -1141,7 +1141,7 @@ BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
 TMP_DEPS := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 ifneq ($(BD_GENINCS$(BDID)),)
 TMP_DEPS += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp \
-  $(addprefix $(INCDIR)/,$(BD_GENINCS$(BDID)))
+  $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID)))
 endif
 
 %(mmake)-includes : $(TMP_DEPS)
@@ -1221,15 +1221,15 @@ $(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h :
 	@$(TOUCH) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp
 
 # The include files generated in $(GENINCDIR) have to be mirrored in the AROS include directory
-%rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(INCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h
-%rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/defines/$(BD_MODNAME$(BDID)).h
-#%rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/pragmas/$(BD_MODNAME$(BDID)).h
-%rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/proto/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(AROS_INCLUDES)/clib/$(BD_MODNAME$(BDID))_protos.h
+%rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(AROS_INCLUDES)/defines/$(BD_MODNAME$(BDID)).h
+#%rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(AROS_INCLUDES)/pragmas/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(AROS_INCLUDES)/proto/$(BD_MODNAME$(BDID)).h
 
 MYDIRS$(BDID) := $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(GENINCDIR)/clib \
   $(GENINCDIR)/proto $(GENINCDIR)/defines \
-  $(GENINCDIR)/pragmas $(INCDIR) $(INCDIR)/clib $(INCDIR)/proto \
-  $(INCDIR)/defines $(INCDIR)/pragmas \
+  $(GENINCDIR)/pragmas $(AROS_INCLUDES) $(AROS_INCLUDES)/clib $(AROS_INCLUDES)/proto \
+  $(AROS_INCLUDES)/defines $(AROS_INCLUDES)/pragmas \
   $(BD_MODDIR$(BDID)) $(KOBJSDIR)
 
 %rule_makedirs dirs=$(MYDIRS$(BDID)) setuptarget=setup-module$(BDID)
@@ -1241,7 +1241,7 @@ TMP_DEPS := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
   $(BD_LIBDEFSINC$(BDID))
 ifneq ($(BD_GENINCS$(BDID)),)
 TMP_DEPS += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp \
-  $(addprefix $(INCDIR)/,$(BD_GENINCS$(BDID)))
+  $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID)))
 endif
 
 %(mmake)-linklib : $(TMP_DEPS)

@@ -18,10 +18,10 @@ DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 #MM
 includes-copy-morphos : $(DEST_INCLUDES)
 
-$(INCDIR)/%.h : %.h
+$(AROS_INCLUDES)/%.h : %.h
 	@$(CP) $< $@
 
-$(INCDIR)/%.c : %.c
+$(AROS_INCLUDES)/%.c : %.c
 	@$(CP) $< $@
 
 #MM
@@ -36,4 +36,4 @@ setup-includes-morphos :
 
 #MM
 clean :
-	-$(RM) $(INCDIR)
+	-$(RM) $(AROS_INCLUDES)
