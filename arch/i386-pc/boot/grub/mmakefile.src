@@ -7,6 +7,9 @@ include $(TOP)/config/make.cfg
 #MM
 grub-copy-stages : $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2
 
+CFLAGS := -minline-all-stringops
+export CFLAGS
+
 %build_with_configure mmake=grub \
     extraoptions="--enable-preset-menu=$(TOP)/$(CURDIR)/../menu.lst --disable-fat --disable-ffs --disable-minix --disable-reiserfs --disable-vstafs --disable-jfs --disable-xfs --disable-md5-password --disable-packet-retransmission --disable-ext2fs --disable-serial --disable-hercules" host=yes install_target=
     
