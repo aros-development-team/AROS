@@ -297,7 +297,7 @@ struct DisplayMode
 #define ASLSM_MaxHeight 	ASL_TB + 119
 #define ASLSM_MinDepth		ASL_TB + 120
 #define ASLSM_MaxDepth		ASL_TB + 121
-#define ASLSM_FiltreFun 	ASL_TB + 122
+#define ASLSM_FilterFunc 	ASL_TB + 122
 
 #define ASLSM_CustomSMList	ASL_TB + 123
 
