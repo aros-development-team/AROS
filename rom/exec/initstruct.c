@@ -134,7 +134,7 @@
 #if AROS_BIG_ENDIAN
 		offset=*(ULONG *)it&0xffffff;
 #else
-		offset=*(ULONG *)it>>8;
+		offset=(it[1] << 16) | (*(UWORD *)&it[2]);
 #endif
 		it+=sizeof(LONG);
 		break;
@@ -240,7 +240,7 @@
 	}
 
 	/* Align next instruction byte */
-	it=(UBYTE *)(((IPTR)it+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1));
+	it=(UBYTE *)(((IPTR)it+AROS_WORDALIGN-1)&~(AROS_WORDALIGN-1));
     }
     AROS_LIBFUNC_EXIT
 }
