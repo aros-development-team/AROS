@@ -68,6 +68,8 @@
 	    *ulptr ++ = fill;
 	    count -= sizeof(ULONG);
 	}
+
+        ptr = (UBYTE *)ulptr;
     }
 
     while (count --)
