@@ -69,8 +69,8 @@ void Receiver_SysExSuperTreat(
 					ObtainSemaphore(&mymidinode->receiversemaphore);
 						PutSysEx2Link(midilink,data);
 					ReleaseSemaphore(&mymidinode->receiversemaphore);
-					midilink=(struct MidiLink *)midilink->ml_Node.ln_Succ;
 				}
+				midilink=(struct MidiLink *)midilink->ml_Node.ln_Succ;
 			}
 		}
 
