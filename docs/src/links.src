@@ -9,16 +9,13 @@ contains the latest binary release for linux as
 
 \begin{itemize}
 \item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.tgz}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386.tgz},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386.tgz})
+(\fileinfo{$(TOP)/dist/AROS-linux-i386.tgz})
 
 \item \link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.lha}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386.lha},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386.lha})
+(\fileinfo{$(TOP)/dist/AROS-linux-i386.lha})
 
 \item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.readme}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386.readme},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386.readme})
+(\fileinfo{$(TOP)/dist/AROS-linux-i386.readme})
 
 \end{itemize}
 
@@ -26,16 +23,13 @@ and the source as
 
 \begin{itemize}
 \item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.tgz}
-(\execverb{getfilesize $(TOP)/dist/AROSdev.tgz},
- \execverb{getfiledate $(TOP)/dist/AROSdev.tgz})
+(\fileinfo{$(TOP)/dist/AROSdev.tgz})
 
 \item \link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.lha}
-(\execverb{getfilesize $(TOP)/dist/AROSdev.lha},
- \execverb{getfiledate $(TOP)/dist/AROSdev.lha})
+(\fileinfo{$(TOP)/dist/AROSdev.lha})
 
 \item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.readme}.
-(\execverb{getfilesize $(TOP)/dist/AROSdev.readme},
- \execverb{getfiledate $(TOP)/dist/AROSdev.readme}).
+(\fileinfo{$(TOP)/dist/AROSdev.readme})
 
 \end{itemize}
 
@@ -43,16 +37,13 @@ Also available is the latest beta as binary for linux as
 
 \begin{itemize}
 \item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.tgz}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-current.tgz},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-current.tgz})
+(\fileinfo{$(TOP)/dist/AROS-linux-i386-current.tgz})
 
 \item \link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.lha}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-current.lha},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-current.lha})
+(\fileinfo{$(TOP)/dist/AROS-linux-i386-current.lha})
 
 \item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.readme}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-current.readme},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-current.readme})
+(\fileinfo{$(TOP)/dist/AROS-linux-i386-current.readme})
 
 \end{itemize}
 
@@ -60,33 +51,27 @@ and the source of the beta as
 
 \begin{itemize}
 \item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.tgz}
-(\execverb{getfilesize $(TOP)/dist/AROSdev-current.tgz},
- \execverb{getfiledate $(TOP)/dist/AROSdev-current.tgz})
+(\fileinfo{$(TOP)/dist/AROSdev-current.tgz})
 
 \item \link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.lha}
-(\execverb{getfilesize $(TOP)/dist/AROSdev-current.lha},
- \execverb{getfiledate $(TOP)/dist/AROSdev-current.lha})
+(\fileinfo{$(TOP)/dist/AROSdev-current.lha})
 
 \item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.readme}
-(\execverb{getfilesize $(TOP)/dist/AROSdev-current.readme},
- \execverb{getfiledate $(TOP)/dist/AROSdev-current.readme}).
+(\fileinfo{$(TOP)/dist/AROSdev-current.readme}).
 
 \end{itemize}
 
 \item AROS in
-\link {Germany}{http://aros.fh-konstanz.de:8080/aros/} (Main site)
+\link{Germany}{http://aros.fh-konstanz.de:8080/aros/} (Main site)
 and
 \link{Sweden}{http://www.lysator.liu.se/amiga/aros/} (Mirror)
 
 \item \link{AROS for Amiga}{http://home.worldonline.nl/~ldp/aros/}
 (Local copy of the
 \link{binary}{ftp://aros.fh-konstanz.de/pub/aros/AROS-m68k-bin.lha}
-(\execverb{getfilesize ~ftp/pub/aros/AROS-m68k-bin.lha},
- \execverb{getfiledate ~ftp/pub/aros/AROS-m68k-bin.lha}) and
-the
+(\fileinfo{~ftp/pub/aros/AROS-m68k-bin.lha}) and the
 \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-m68k-bin.readme}
-(\execverb{getfilesize ~ftp/pub/aros/AROS-m68k-bin.readme},
- \execverb{getfiledate ~ftp/pub/aros/AROS-m68k-bin.readme}) and
+(\fileinfo{~ftp/pub/aros/AROS-m68k-bin.readme}) and
 
 \item \link{AROS AutoDocs}{adoc_index.html}
 
