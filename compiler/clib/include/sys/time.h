@@ -41,5 +41,6 @@ struct timezone
 /* clib functions */
 int gettimeofday(struct timeval * tv, struct timezone * tz);
 int settimeofday(const struct timeval * tv, const struct timezone * tz);
+int utimes(const char *file, struct timeval tvp[2]);
 
 #endif /* _SYS_TIME_H */
