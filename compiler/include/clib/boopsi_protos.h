@@ -16,6 +16,18 @@
 #   include <intuition/classes.h>
 #endif
 
+/* Get rid of inline defines ... why are the prototypes here anyway
+   and not in alib_protos.h ? [ldp] */
+#undef SetAttrs
+#undef SetSuperAttrs
+#undef NewObject
+#undef DoMethodA
+#undef DoMethod
+#undef DoSuperMethodA
+#undef DoSuperMethod
+#undef CoerceMethodA
+#undef CoerceMethod
+
 /* Prototypes for stubs in amiga.lib */
 ULONG SetAttrs (APTR obj, ULONG tag1, ...);
 ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
