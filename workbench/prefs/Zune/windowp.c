@@ -30,6 +30,7 @@ struct MUI_WindowPData
     Object *font_normal_string;
     Object *font_tiny_string;
     Object *font_big_string;
+    Object *background_window_string;
 };
 
 static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
@@ -71,6 +72,15 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    MUIA_Popstring_Button, PopButton(MUII_PopUp),
 		    End,
 		End,
+
+	    Child, ColGroup(2),
+		GroupFrameT("Background"),
+		Child, MakeLabel("Window"),
+		Child, PopaslObject,
+		    MUIA_Popstring_String, d.background_window_string = StringObject, StringFrame, End,
+		    MUIA_Popstring_Button, PopButton(MUII_PopFile),
+		    End,
+		End,
 	    End,
     	TAG_MORE, msg->ops_AttrList);
 
@@ -88,12 +98,14 @@ static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_
     setstring(data->font_normal_string,FindConfig(MUICFG_Font_Normal));
     setstring(data->font_tiny_string,FindConfig(MUICFG_Font_Tiny));
     setstring(data->font_big_string,FindConfig(MUICFG_Font_Big));
+    setstring(data->background_window_string,((char*)FindConfig(MUICFG_Background_Window))+2);
     return 1;    
 }
 
 static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_WindowPData *data = INST_DATA(cl, obj);
+    char *buf;
     char *str = getstring(data->font_normal_string);
     AddConfigStr(str,MUICFG_Font_Normal);
 
@@ -103,6 +115,19 @@ static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_
     str = getstring(data->font_big_string);
     AddConfigStr(str,MUICFG_Font_Big);
 
+    if ((str = getstring(data->background_window_string)))
+    {
+    	if (*str)
+    	{
+	    if ((buf = AllocVec(strlen(str)+10,0)))
+	    {
+		strcpy(buf,"5:");
+		strcat(buf,str);
+	        AddConfigStr(buf,MUICFG_Background_Window);
+	        FreeVec(buf);
+	    }
+	}
+    }
     return TRUE;
 }
 
