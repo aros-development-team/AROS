@@ -1393,7 +1393,7 @@ prefs00005;0;stegerg;Write Pointer prefs program
 prefs00006;0;stegerg;Write Screenmode prefs program
 prefs00007;0;stegerg;Write Serial prefs program
 prefs00008;0;stegerg;Write Time prefs program
-prefs00009;0;stegerg;Write WBPattern prefs program
+prefs00009;1;holmen;Write WBPattern prefs program
 prefs00010;0;stegerg;Write Printer prefs program
 ramdrive00000;0;digulla;Write KillRAD
 ramdrive00001;0;digulla;Write KillRAD
