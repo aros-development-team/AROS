@@ -42,7 +42,6 @@ static struct OOP_ABDescr attrbases[] =
 };
 
 
-
 static OOP_Object *mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
@@ -101,6 +100,24 @@ static VOID mouse_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 }
 
 
+static VOID mouse_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+
+    if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
+    {
+	switch (idx)
+	{
+	    case aoHidd_Mouse_RelativeCoords:
+		*msg->storage = TRUE;
+		return;
+    	}
+    }
+    
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+
 static VOID mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxMouse_HandleEvent *msg)
 {
 
@@ -116,7 +133,7 @@ static VOID mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxMo
 #undef LSD
 #define LSD(cl) lsd
 
-#define NUM_ROOT_METHODS 2
+#define NUM_ROOT_METHODS 3
 #define NUM_X11MOUSE_METHODS 1
 
 OOP_Class *init_linuxmouseclass (struct linux_staticdata *lsd)
@@ -127,6 +144,7 @@ OOP_Class *init_linuxmouseclass (struct linux_staticdata *lsd)
     {
     	{OOP_METHODDEF(mouse_new),			moRoot_New},
     	{OOP_METHODDEF(mouse_dispose),		moRoot_Dispose},
+    	{OOP_METHODDEF(mouse_get),			moRoot_Get},
 	{NULL, 0UL}
     };
     struct OOP_MethodDescr mousehidd_descr[NUM_X11MOUSE_METHODS + 1] = 

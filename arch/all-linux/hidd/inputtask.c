@@ -149,8 +149,8 @@ kprintf("FDS: %d, %d\n", lsd->kbdfd, lsd->mousefd);
 	/* Turn on kbd support */
 //	init_kbd(lsd);
 	
-	err_kbd		= Hidd_UnixIO_AsyncIO(unixio, lsd->kbdfd,   kbd_port,	vHidd_UnixIO_Terminal, vHidd_UnixIO_Read, SysBase);
-	err_mouse	= Hidd_UnixIO_AsyncIO(unixio, lsd->mousefd, mouse_port,	vHidd_UnixIO_Terminal, vHidd_UnixIO_Read, SysBase);
+	err_kbd		= Hidd_UnixIO_AsyncIO(unixio, lsd->kbdfd,   vHidd_UnixIO_Terminal, kbd_port,	vHidd_UnixIO_Read, SysBase);
+	err_mouse	= Hidd_UnixIO_AsyncIO(unixio, lsd->mousefd, vHidd_UnixIO_Terminal, mouse_port,  vHidd_UnixIO_Read, SysBase);
 	
 //    	ret = (int)Hidd_UnixIO_Wait( unixio, lsd->kbdfd, vHidd_UnixIO_Read, NULL, NULL);
 //	cleanup_kbd(lsd);
@@ -200,21 +200,29 @@ ReleaseSemaphore(&lsd->sema);
 	if (sigs & mousesig) {
 	    ULONG i;
 	    LONG bytesread;
-	    UBYTE buf[3];
+	    UBYTE buf[4];
 	    BYTE dx = 0, dy = 0;
 	    struct mouse_state newstate;
 	    
 	    /* Got mouse event */
 	    kprintf("------------- MOUSE EVENT ------------\n");
-	    for (i = 0; i < 3; i ++) {
+	    for (i = 0; i < 4; i ++) {
 	    	bytesread = read(lsd->mousefd, &buf[i], 1);
-		if (-1 == bytesread) {
+		if (-1 == bytesread)
+		{
+		    if (errno == EAGAIN)
+		    {
+		    	i--;
+			continue;
+		    }
 		    kprintf("!!! linux input task: Could not read from mouse device: %s\n", strerror(errno));
 		    goto end_mouse_event;    
 		}
+		
+		if ((buf[0] & 8) != 8) i--;
 	    }
 	    
-	    kprintf("%d: %d: %d\n", buf[0], buf[1], buf[2]);
+	    kprintf("%02x: %02x: %02x\n", buf[0], buf[1], buf[2]);
 	    /* Get button states */
 	    newstate.buts[0] = (buf[0] & 0x01) ? 1 : 0;
 	    newstate.buts[1] = (buf[0] & 0x02) ? 1 : 0;
@@ -228,14 +236,55 @@ ReleaseSemaphore(&lsd->sema);
 		dy = (buf[0] & 0x20) ? buf[2] - 256 : buf[2];
 	    }
 		
+	    newstate.dx = dx;
+	    newstate.dy = -dy;
+	    
 	    kprintf("EVENT: STATE 1:%d, 2:%d, 3:%d, dx:%d, dy:%d\n"
 		, newstate.buts[0], newstate.buts[1], newstate.buts[2]
 		, newstate.dx, newstate.dy);
 		
-	    update_mouse_state(&oldstate, &newstate, &mouse_event);
-ObtainSemaphore(&lsd->sema);
+    	    mouse_event.x = newstate.dx;
+	    mouse_event.y = newstate.dy;
+	    
+	    if (newstate.dx || newstate.dy)
+	    {
+	    	mouse_event.button = vHidd_Mouse_NoButton;
+		mouse_event.type = vHidd_Mouse_Motion;
+		
+	    	HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
+	    }
+		
+	    if (newstate.buts[0] != oldstate.buts[0])
+	    {
+	    	mouse_event.button = vHidd_Mouse_Button1;
+		mouse_event.type = newstate.buts[0] ? vHidd_Mouse_Press : vHidd_Mouse_Release;	
+			
+	    	HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
+	    }
+
+	    if (newstate.buts[1] != oldstate.buts[1])
+	    {
+	    	mouse_event.button = vHidd_Mouse_Button2;
+		mouse_event.type = newstate.buts[1] ? vHidd_Mouse_Press : vHidd_Mouse_Release;	
+			
+	    	HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
+	    }
+	    
+	    if (newstate.buts[2] != oldstate.buts[2])
+	    {
+	    	mouse_event.button = vHidd_Mouse_Button3;
+		mouse_event.type = newstate.buts[2] ? vHidd_Mouse_Press : vHidd_Mouse_Release;	
+			
+	    	HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
+	    }
+	    
+    	    oldstate = newstate;
+	    	    
+#if 0
+    	    ObtainSemaphore(&lsd->sema);
 	    HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
-ReleaseSemaphore(&lsd->sema);
+    	    ReleaseSemaphore(&lsd->sema);
+#endif
 	    
 end_mouse_event:
 	    free_unixio_message(mouse_port, lsd);
