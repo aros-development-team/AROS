@@ -287,22 +287,28 @@ Exec_Switch_SSE:    cli
                     .balign 32,0x90
                     .globl  Exec_Dispatch_SSE
                     .type   Exec_Dispatch_SSE,@function
-Exec_Dispatch_SSE:  movl    $Exec_Restore_SSE,%edi
+		    
+Exec_Dispatch_SSE:  SAVE_ALL
+    	    	    movl    $Exec_Restore_SSE,%edi
                     jmp     Exec_Dispatch_com
 
                     .balign 32,0x90
                     .globl  Exec_Dispatch_FPU
                     .type   Exec_Dispatch_FPU,@function
-Exec_Dispatch_FPU:  movl    $Exec_Restore_FPU,%edi
+		    
+Exec_Dispatch_FPU:  SAVE_ALL
+    	    	    movl    $Exec_Restore_FPU,%edi
                     jmp     Exec_Dispatch_com
 		    
                     .balign 32,0x90
                     .globl  Exec_Dispatch
                     .type   Exec_Dispatch,@function
-Exec_Dispatch:      movl    $Exec_Restore_Gene,%edi
+		    
+Exec_Dispatch:	    SAVE_ALL
+    	     	    movl    $Exec_Restore_Gene,%edi
 Exec_Dispatch_com:  movl    4,%ebp
                     movw    $-1,IDNestCnt(%ebp)
-                    sti
+/*                    sti*/
 
 Exec_Dispatch_x:    cli
                     leal    TaskReady(%ebp),%eax
@@ -333,7 +339,7 @@ Exec_Dispatch_x:    cli
                     movw    %ax,IDNestCnt(%ebp)
                     cmpw    $0,IDNestCnt(%ebp)
                     jge     1f
-                    sti
+                    /* sti */
 1:
                     testb   $TF_EXCEPT | TF_LAUNCH,tc_Flags(%ecx)
                     je      1f
