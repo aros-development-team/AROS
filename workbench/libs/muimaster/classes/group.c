@@ -1035,6 +1035,7 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
     struct MUI_MinMax tmp;
     WORD maxminwidth = 0;
     int num_visible_children = Group_GetNumVisibleChildren(data, children);
+    BOOL found_nonzero_vweight = FALSE;
 
     tmp.MinHeight = 0;
     tmp.DefHeight = 0;
@@ -1061,7 +1062,20 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 	tmp.MaxWidth = MIN(tmp.MaxWidth, MUI_MAXMAX);
 	tmp.MinHeight = MAX(tmp.MinHeight, _minheight(child));
 	tmp.DefHeight = MAX(tmp.DefHeight, _defheight(child));
-	tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
+	/*
+	  if all childs have null weight then maxheight=minheight
+	  if all but some childs have null weights, the maxheight
+	  is the min of all maxheights
+	 */
+	if (_vweight(child) > 0)
+	{
+	    tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
+	    found_nonzero_vweight = TRUE;
+	}
+    }
+    if (!found_nonzero_vweight)
+    {
+	tmp.MaxHeight = tmp.MinHeight;
     }
     END_MINMAX();
 }
@@ -1077,6 +1091,7 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
     struct MUI_MinMax tmp;
     WORD maxminheight = 0;
     int num_visible_children = Group_GetNumVisibleChildren(data, children);
+    BOOL found_nonzero_hweight = FALSE;
 
     tmp.MinWidth = 0;
     tmp.DefWidth = 0;
@@ -1106,7 +1121,15 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 	tmp.MaxHeight = MIN(tmp.MaxHeight, MUI_MAXMAX);
 	tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
 	tmp.DefWidth = MAX(tmp.DefWidth, _defwidth(child));
-	tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
+	if (_hweight(child) > 0)
+	{
+	    tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
+	    found_nonzero_hweight = TRUE;
+	}
+    }
+    if (!found_nonzero_hweight)
+    {
+	tmp.MaxWidth = tmp.MinWidth;
     }
     END_MINMAX();
 }
