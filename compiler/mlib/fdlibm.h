@@ -11,7 +11,9 @@
  * ====================================================
  */
 
-#include <aros/machine.h>
+#ifndef AROS_CPU_H
+#include <aros/cpu.h>
+#endif
 #if AROS_BIG_ENDIAN == 0
 #define __LITTLE_ENDIAN
 #endif

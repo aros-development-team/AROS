@@ -9,9 +9,6 @@
     Lang: English
 */
 
-#ifndef AROS_MACHINE_H
-#include <aros/machine.h>
-#endif
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif

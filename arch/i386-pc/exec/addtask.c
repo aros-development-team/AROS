@@ -8,7 +8,6 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <aros/libcall.h>
-#include <aros/machine.h>
 #include <proto/exec.h>
 #include "etask.h"
 #include "exec_util.h"

@@ -1,5 +1,4 @@
 
-#include <aros/machine.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 

@@ -6,7 +6,6 @@
     Lang: english
 */
 #include <dos/dos.h>
-#include <aros/machine.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <proto/exec.h>

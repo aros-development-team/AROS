@@ -9,7 +9,6 @@
 #include <proto/exec.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
-#include <aros/machine.h>
 #include <exec/libraries.h>
 
 extern void Exec_FreeMem();

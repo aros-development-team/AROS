@@ -4,7 +4,6 @@
 */
 #include <exec/execbase.h>
 #include <clib/exec_protos.h>
-#include <aros/machine.h>
 
 APTR sp;
 

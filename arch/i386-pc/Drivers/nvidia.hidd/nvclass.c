@@ -18,7 +18,6 @@
 #include <hidd/graphics.h>
 
 #include <aros/system.h>
-#include <aros/machine.h>
 #include <aros/asmcall.h>
 
 #include <devices/inputevent.h>

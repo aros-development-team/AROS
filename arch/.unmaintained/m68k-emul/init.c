@@ -7,7 +7,6 @@
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
 #include "memory.h"
-#include <aros/machine.h>
 #include <stdlib.h>
 
 #define NEWLIST(l)                          \

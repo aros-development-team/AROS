@@ -14,7 +14,6 @@
 #include <proto/dos.h>
 #include <proto/arossupport.h>
 #include <aros/asmcall.h>
-#include <aros/machine.h>
 #include "dos_intern.h"
 #include "internalloadseg.h"
 #define DEBUG 0

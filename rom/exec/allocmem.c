@@ -10,7 +10,6 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/rt.h>
-#include <aros/machine.h>
 #include <aros/macros.h>
 #include <aros/config.h>
 #include <aros/arossupportbase.h>

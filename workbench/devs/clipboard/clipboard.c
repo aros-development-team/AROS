@@ -31,7 +31,6 @@
 #include "clipboard_intern.h"
 #define DEBUG 0
 #include <aros/debug.h>
-#include <aros/machine.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>

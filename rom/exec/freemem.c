@@ -7,7 +7,6 @@
 */
 #include <exec/alerts.h>
 #include <exec/execbase.h>
-#include <aros/machine.h>
 #include <aros/libcall.h>
 #include <aros/config.h>
 #include <aros/macros.h>

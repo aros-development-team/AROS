@@ -17,7 +17,6 @@
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <aros/system.h>
-#include <aros/machine.h>
 #include <aros/asmcall.h>
 #include <aros/core.h>
 

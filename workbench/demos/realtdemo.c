@@ -13,7 +13,6 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
-#include <aros/machine.h>
 #include <utility/hooks.h>
 #include <utility/tagitem.h>
 

@@ -24,7 +24,6 @@
 #include <proto/dos.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
-#include <aros/machine.h>
 #include <aros/macros.h>
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "ffs_handler_gcc.h"
