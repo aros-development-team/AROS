@@ -13,6 +13,7 @@
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <exec/alerts.h>
+#include <exec/memory.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <libraries/expansionbase.h>
@@ -31,21 +32,53 @@ AROS_UFH3(void, intBoot,
     AROS_UFHA(struct ExecBase *,SysBase, A6)
 )
 {
+	struct ExpansionBase *ExpansionBase = NULL;
 	struct Library *DOSBase = NULL;
 	BPTR lock;
+	struct BootNode *bn;
+	STRPTR bootname, s1;
+	ULONG len;
 
 	DOSBase = OpenLibrary("dos.library", 0);
 	if( DOSBase == NULL)
 		Alert(AT_DeadEnd| AG_OpenLib | AN_DOSLib | AO_DOSLib);
+
+	ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
+	if( ExpansionBase == NULL )
+	{
+		D(bug("Urk, no expansion.library, something's wrong!\n"));
+		Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
+	}
 
 	/* We have to do all the locking in this because we don't
 	   have a Process in DOSBoot yet, and we need a process
 	   to create locks etc.
 	*/
 
-	lock = Lock("SYS:", SHARED_LOCK);
+	bn = (struct BootNode *)ExpansionBase->MountList.lh_Head;
 
+	s1 = ((struct DosList *)bn->bn_DeviceNode)->dol_DevName;
+	while (*s1++)
+		;
+
+	len = s1 - ((struct DosList *)bn->bn_DeviceNode)->dol_DevName;
+	bootname = AllocMem(len + 2, MEMF_ANY);
+	if (bootname == NULL)
+		Alert( AT_DeadEnd | AG_NoMemory | AO_DOSLib | AN_StartMem );
+	CopyMem(((struct DosList *)bn->bn_DeviceNode)->dol_DevName,
+		bootname, len);
+	bootname[len-1] = ':';
+	bootname[len] = '\0';
+	CloseLibrary((struct Library *)ExpansionBase);
+	lock = Lock(bootname, SHARED_LOCK);
 	if( lock )
+		AssignLock("SYS", lock);
+	else
+		Alert( AT_DeadEnd | AG_BadParm | AN_DOSLib );
+
+	FreeMem(bootname, len + 2);
+	lock = Lock("SYS:", SHARED_LOCK);
+	if ( lock )
 		CurrentDir(lock);
 	else
 		Alert( AT_DeadEnd | AG_BadParm | AN_DOSLib );
@@ -80,7 +113,6 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 {
 	struct ExpansionBase *ExpansionBase;
 	struct BootNode *bn;
-	struct DosList *sysvol;
 
 	struct TagItem bootprocess[] = 
 	{
@@ -112,15 +144,6 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 		));
 		AddDosEntry((struct DosList *)bn->bn_DeviceNode);
 	}
-
-	bn = (struct BootNode *)ExpansionBase->MountList.lh_Head;
-	sysvol = MakeDosEntry("SYS", DLT_DIRECTORY);
-	if( sysvol == NULL )
-		Alert( AT_DeadEnd | AN_DOSLib | AO_Unknown );
-
-	sysvol->dol_Device = ((struct DosList *)bn->bn_DeviceNode)->dol_Device;
-	sysvol->dol_Unit   = ((struct DosList *)bn->bn_DeviceNode)->dol_Unit;
-	AddDosEntry( sysvol );
 
 	if(CreateNewProc(bootprocess) == NULL)
 	{
