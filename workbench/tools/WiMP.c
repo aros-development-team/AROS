@@ -30,7 +30,7 @@
 
 ******************************************************************************/
 
-static const char version[] = "$VER: WiMP 0.1 (11.12.2000)\n";
+static const char version[] = "$VER: WiMP 0.1 (12.12.2000)\n";
 
 #define AROS_ALMOST_COMPATIBLE
 
@@ -79,10 +79,34 @@ struct Window *Window;
 
 enum {None_type,Window_type,Screen_type,Max_type};
 
+#define ID_ZIP 12
+struct NewGadget zipgad =
+{
+    479, 130, 30, 20,
+    "Zip", NULL,
+    ID_ZIP, PLACETEXT_IN, NULL, NULL
+};
+
+#define ID_ACTIVATE 13
+struct NewGadget activategad =
+{
+    409, 130, 70, 20,
+    "Activate", NULL,
+    ID_ACTIVATE, PLACETEXT_IN, NULL, NULL
+};
+
+#define ID_ORIGIN 14
+struct NewGadget origingad =
+{
+    289, 130, 120, 20,
+    "Move To Origin", NULL,
+    ID_ORIGIN, PLACETEXT_IN, NULL, NULL
+};
+
 #define ID_BACK 15
 struct NewGadget backgad =
 {
-    250, 130, 80, 20,
+    220, 130, 69, 20,
     "To Back", NULL,
     ID_BACK, PLACETEXT_IN, NULL, NULL
 };
@@ -90,7 +114,7 @@ struct NewGadget backgad =
 #define ID_FRONT 16
 struct NewGadget frontgad =
 {
-    170, 130, 80, 20,
+    150, 130, 70, 20,
     "To Front", NULL,
     ID_FRONT, PLACETEXT_IN, NULL, NULL
 };
@@ -98,7 +122,7 @@ struct NewGadget frontgad =
 #define ID_KILL 17
 struct NewGadget killgad =
 {
-    120, 130, 50, 20,
+    110, 130, 40, 20,
     "Kill", NULL,
     ID_KILL, PLACETEXT_IN, NULL, NULL
 };
@@ -114,7 +138,7 @@ struct NewGadget rescuegad =
 #define ID_UPDATE 19
 struct NewGadget updategad =
 {
-    10, 130, 110, 20,
+    10, 130, 100, 20,
     "Update List", NULL,
     ID_UPDATE, PLACETEXT_IN, NULL, NULL
 };
@@ -134,8 +158,8 @@ APTR vi;
 struct Gadget *glist = NULL;
 struct Gadget *screenlistg = NULL;
 
-struct IntuiText killscr_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Do you really want to Close the selected Screen?\n",NULL};
-struct IntuiText killwin_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Do you really want to Close the selected Window?\n",NULL};
+struct IntuiText killscr_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Do you really want to Close the selected Screen?",NULL};
+struct IntuiText killwin_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Do you really want to Close the selected Window?",NULL};
 struct IntuiText pos_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"Yes.",NULL};
 struct IntuiText neg_body = {1,0,JAM1,10,10,NULL,(UBYTE *)"No!",NULL};
 
@@ -206,6 +230,9 @@ struct Gadget *makegadgets(struct Gadget *gad)
     killgad.ng_VisualInfo = vi;
     frontgad.ng_VisualInfo = vi;
     backgad.ng_VisualInfo = vi;
+    origingad.ng_VisualInfo = vi;
+    activategad.ng_VisualInfo = vi;
+    zipgad.ng_VisualInfo = vi;
     
     initlvnodes(&lv_list);
     gad = CreateGadget(LISTVIEW_KIND, gad, &listviewgad,
@@ -227,6 +254,15 @@ struct Gadget *makegadgets(struct Gadget *gad)
 		TAG_DONE);
 
     gad = CreateGadget(BUTTON_KIND, gad, &backgad,
+		TAG_DONE);
+
+    gad = CreateGadget(BUTTON_KIND, gad, &origingad,
+		TAG_DONE);
+
+    gad = CreateGadget(BUTTON_KIND, gad, &activategad,
+		TAG_DONE);
+
+    gad = CreateGadget(BUTTON_KIND, gad, &zipgad,
 		TAG_DONE);
 
     if (!gad) {
@@ -264,7 +300,6 @@ void open_window()
 	, WA_SimpleRefresh, TRUE
 	, TAG_END
     );
-  ActivateWindow(Window);
 }
 
 void close_window()
@@ -323,6 +358,17 @@ IPTR xptr;
   }
 }
 
+VOID update_list()
+{
+  freelvnodes(&lv_list);
+  initlvnodes(&lv_list);
+  GT_SetGadgetAttrs(screenlistg,Window,NULL,
+      GTLV_Labels, (IPTR)&lv_list,
+      GTLV_Selected, (IPTR)-1,
+      TAG_DONE);
+  GT_RefreshWindow(Window,NULL);
+}
+
 int main()
 {
 struct Screen *scr;
@@ -351,7 +397,6 @@ int quit=0;
     switch(class)
     {
       case IDCMP_CLOSEWINDOW :
-
 		quit=1;
 		break;
 
@@ -359,12 +404,25 @@ int quit=0;
 		switch (((struct Gadget *) msg->IAddress)->GadgetID)
 		{
 		  case ID_UPDATE:
-			freelvnodes(&lv_list);
-			initlvnodes(&lv_list);
-			GT_SetGadgetAttrs(screenlistg,Window,NULL,
-			    GTLV_Labels, (IPTR)&lv_list,
-			    TAG_DONE);
-			GT_RefreshWindow(Window,NULL);
+			update_list();
+			break;
+
+		  case ID_ZIP:
+			object = getsw(&type);
+			if(type==Window_type)
+			{
+			  ZipWindow((struct Window *)object);
+			}
+			update_list();
+			break;
+
+		  case ID_ACTIVATE:
+			object = getsw(&type);
+			if(type==Window_type)
+			{
+			  ActivateWindow((struct Window *)object);
+			}
+			update_list();
 			break;
 
 		  case ID_FRONT:
@@ -382,14 +440,8 @@ int quit=0;
 			    default:
 				break;
 			  }
-			  GT_SetGadgetAttrs(screenlistg,Window,NULL,
-			      GTLV_Selected, (IPTR)-1,
-			      TAG_DONE);
-
-			  freelvnodes(&lv_list);
-			  initlvnodes(&lv_list);
-			  GT_RefreshWindow(Window,NULL);
 			}
+			update_list();
 			break;
 
 		  case ID_BACK:
@@ -407,14 +459,28 @@ int quit=0;
 			    default:
 				break;
 			  }
-			  GT_SetGadgetAttrs(screenlistg,Window,NULL,
-			      GTLV_Selected, (IPTR)-1,
-			      TAG_DONE);
-
-			  freelvnodes(&lv_list);
-			  initlvnodes(&lv_list);
-			  GT_RefreshWindow(Window,NULL);
 			}
+			update_list();
+			break;
+
+		  case ID_ORIGIN:
+			object = getsw(&type);
+			if(type==Screen_type || type==Window_type)
+			{
+			  switch(type)
+			  {
+			    case Screen_type :
+				MoveScreen((struct Screen *)object,-((struct Screen *)object)->LeftEdge,-((struct Screen *)object)->TopEdge);
+				break;
+			    case Window_type :
+				MoveWindow((struct Window *)object,-((struct Window *)object)->LeftEdge,-((struct Window *)object)->TopEdge);
+				break;
+			    default:
+				break;
+			  }
+			  Delay(5);
+			}
+			update_list();
 			break;
 
 		  case ID_KILL:
@@ -425,14 +491,14 @@ int quit=0;
 			  switch(type)
 			  {
 			    case Screen_type :
-				killit = AutoRequest(Window,&killscr_body,&pos_body,&neg_body,NULL,NULL,200,75);
+				killit = AutoRequest(Window,&killscr_body,&pos_body,&neg_body,0,0,200,75);
 				if( killit == TRUE )
 				{
 				  CloseScreen((struct Screen *)object);
 				}
 				break;
 			    case Window_type :
-				killit = AutoRequest(Window,&killwin_body,&pos_body,&neg_body,NULL,NULL,200,75);
+				killit = AutoRequest(Window,&killwin_body,&pos_body,&neg_body,0,0,200,75);
 				if( killit == TRUE )
 				{
 				  CloseWindow((struct Window *)object);
@@ -441,14 +507,8 @@ int quit=0;
 			    default:
 				break;
 			  }
-			  GT_SetGadgetAttrs(screenlistg,Window,NULL,
-			      GTLV_Selected, (IPTR)-1,
-			      TAG_DONE);
-
-			  freelvnodes(&lv_list);
-			  initlvnodes(&lv_list);
-			  GT_RefreshWindow(Window,NULL);
 			}
+			update_list();
 			break;
 
 		  case ID_RESCUE:
@@ -469,13 +529,9 @@ int quit=0;
 			  }
 			  scr = scr->NextScreen;
 			}
-			Delay(1);
-			freelvnodes(&lv_list);
-			initlvnodes(&lv_list);
-			GT_SetGadgetAttrs(screenlistg,Window,NULL,
-			    GTLV_Labels, (IPTR)&lv_list,
-			    TAG_DONE);
-			GT_RefreshWindow(Window,NULL);
+
+			Delay(5);
+			update_list();
 			break;
 
 		  case ID_LISTVIEW:
