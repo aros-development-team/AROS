@@ -65,6 +65,7 @@ void  free(void *memory);
 char *getenv(const char *name);
 int   setenv(const char *name, const char *value, int overwrite);
 int   putenv(const char *string);
+int   unsetenv(const char *name);
 
 char *mktemp(char *buf);
 int   system(const char *string);
