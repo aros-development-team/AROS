@@ -41,12 +41,20 @@ struct Window * win;
 struct Gadget * glist;
 
 #define ID_BUTTON 1
+#define ID_CHECKBOX 2
 
 struct NewGadget buttongad =
 {
-    10, 310, 180, 20,
-    "Show _Gadgets", NULL,
+    210, 10, 100, 20,
+    "Button (1)", NULL,
     ID_BUTTON, PLACETEXT_IN, NULL, NULL
+};
+
+struct NewGadget checkbox =
+{
+    320, 10, 20, 20,
+    "Checkbox (2)", NULL,
+    ID_CHECKBOX, PLACETEXT_RIGHT, NULL, NULL
 };
 
 
@@ -56,12 +64,12 @@ BOOL openlibs()
     GadToolsBase = OpenLibrary("gadtools.library", 0);
     if (!IntuitionBase)
     {
-        Printf("GTDemo: Error opening intuition.library\n");
+        VPrintf("GTDemo: Error opening intuition.library\n", NULL);
         return FALSE;
     }
     if (!GadToolsBase)
     {
-        Printf("GTDemo: Error opening gadtools.library\n");
+        Printf("GTDemo: Error opening gadtools.library\n", NULL);
         return FALSE;
     }
     return TRUE;
@@ -82,10 +90,7 @@ struct Gadget * gt_init()
     scr = LockPubScreen(NULL);
     vi = GetVisualInfoA(scr, NULL);
     if (vi != NULL)
-    {
-        buttongad.ng_VisualInfo = vi;
-        gad = CreateContext(&glist);
-    }
+	gad = CreateContext(&glist);
     return gad;
 }
 
@@ -103,11 +108,13 @@ BOOL openwin()
                          WA_PubScreen, scr,
                          WA_Left, 0,
                          WA_Top, 0,
-                         WA_Width, 200,
-                         WA_Height, 340,
+                         WA_Width, 400,
+                         WA_Height, 300,
                          WA_Title, "GTDemo",
                          WA_IDCMP,
                              BUTTONIDCMP |
+			     CHECKBOXIDCMP |
+			     IDCMP_GADGETUP |
                              IDCMP_RAWKEY |
                              IDCMP_CLOSEWINDOW |
                              IDCMP_REFRESHWINDOW,
@@ -118,7 +125,7 @@ BOOL openwin()
                          TAG_DONE);
     if (!win)
     {
-        Printf("GTDemo: Error opening window\n");
+        Printf("GTDemo: Error opening window\n", NULL);
         return FALSE;
     }
     return TRUE;
@@ -127,36 +134,39 @@ BOOL openwin()
 
 struct Gadget * makegadgets(struct Gadget *gad)
 {
-    gad = CreateGadgetA(BUTTON_KIND, gad, &buttongad, NULL);
+    buttongad.ng_VisualInfo = vi;
+    checkbox.ng_VisualInfo = vi;
+    gad = CreateGadget(BUTTON_KIND, gad, &buttongad, TAG_DONE);
+    gad = CreateGadget(CHECKBOX_KIND, gad, &checkbox,
+		       GTCB_Checked, FALSE,
+		       GTCB_Scaled, TRUE, TAG_DONE);
     if (!gad)
-        Printf("GTDemo: Error creating gadgets\n");
+    {
+        FreeGadgets(gad);
+        Printf("GTDemo: Error creating gadgets\n", NULL);
+    }
     return gad;
 }
 
 void draw_bevels(struct Window *win, APTR vi)
 {
-    struct TagItem tags[4];
-
-    tags[0].ti_Tag = GTBB_Recessed;
-    tags[1].ti_Tag = GTBB_FrameType;
-    tags[2].ti_Tag = GT_VisualInfo;
-    tags[2].ti_Data = (IPTR)vi;
-    tags[3].ti_Tag = TAG_DONE;
-    tags[0].ti_Data = FALSE;
-    tags[1].ti_Data = BBFT_BUTTON;
-    DrawBevelBoxA(win->RPort, 10, 10, 80, 80, tags);
-    tags[0].ti_Data = TRUE;
-    DrawBevelBoxA(win->RPort, 110, 10, 80, 80, tags);
-    tags[0].ti_Data = FALSE;
-    tags[1].ti_Data = BBFT_RIDGE;
-    DrawBevelBoxA(win->RPort, 10, 110, 80, 80, tags);
-    tags[0].ti_Data = TRUE;
-    DrawBevelBoxA(win->RPort, 110, 110, 80, 80, tags);
-    tags[0].ti_Data = FALSE;
-    tags[1].ti_Data = BBFT_ICONDROPBOX;
-    DrawBevelBoxA(win->RPort, 10, 210, 80, 80, tags);
-    tags[0].ti_Data = TRUE;
-    DrawBevelBoxA(win->RPort, 110, 210, 80, 80, tags);
+    DrawBevelBox(win->RPort, 10, 10, 80, 80,
+		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+    DrawBevelBox(win->RPort, 110, 10, 80, 80,
+		 GTBB_Recessed, TRUE,
+		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+    DrawBevelBox(win->RPort, 10, 110, 80, 80,
+		 GTBB_FrameType, BBFT_RIDGE,
+		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+    DrawBevelBox(win->RPort, 110, 110, 80, 80,
+		 GTBB_FrameType, BBFT_RIDGE, GTBB_Recessed, TRUE,
+		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+    DrawBevelBox(win->RPort, 10, 210, 80, 80,
+		 GTBB_FrameType, BBFT_ICONDROPBOX,
+		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
+    DrawBevelBox(win->RPort, 110, 210, 80, 80,
+		 GTBB_FrameType, BBFT_ICONDROPBOX, GTBB_Recessed, TRUE,
+		 GT_VisualInfo, (IPTR)vi, TAG_DONE);
 }
 
 void handlewin()
@@ -181,6 +191,27 @@ void handlewin()
             case IDCMP_RAWKEY:
                 ready = TRUE;
                 break;
+	    case IDCMP_GADGETUP:
+	        printf("Gadget %d released",
+			((struct Gadget *)msg->IAddress)->GadgetID);
+		switch (((struct Gadget *)msg->IAddress)->GadgetID)
+		{
+		case ID_CHECKBOX: {
+		    IPTR checked;
+		    struct TagItem gettags[] = {{GTCB_Checked, (IPTR)NULL}, {TAG_DONE, 0}};
+		    gettags[0].ti_Data = (IPTR)&checked;
+
+		    printf(" (%ld)", GT_GetGadgetAttrs((struct Gadget *)msg->IAddress,
+				      win, NULL,
+				      GTCB_Checked, (IPTR)&checked, TAG_DONE));
+		    if (checked)
+		        printf(" (checked)");
+		    else
+		        printf(" (not checked)");
+		    break; }
+		}
+		printf("\n");
+	        break;
             }
             GT_ReplyIMsg(msg);
         }
