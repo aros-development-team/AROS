@@ -7,7 +7,7 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 
-void driver_SetDrMd (struct RastPort *, ULONG);
+void driver_SetDrMd (struct RastPort *, ULONG, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -49,7 +49,7 @@ void driver_SetDrMd (struct RastPort *, ULONG);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_SetDrMd (rp, drawMode);
+    driver_SetDrMd (rp, drawMode, GfxBase);
 
     rp->DrawMode = drawMode;
 

@@ -7,7 +7,7 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 
-void driver_Draw (struct RastPort *, long, long);
+void driver_Draw (struct RastPort *, long, long, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -50,7 +50,7 @@ void driver_Draw (struct RastPort *, long, long);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_Draw (rp, x, y);
+    driver_Draw (rp, x, y, GfxBase);
 
     rp->cp_x = x;
     rp->cp_y = y;

@@ -1,12 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
+    $Id$	 $Log
     Desc:
     Lang: english
 */
 #include "graphics_intern.h"
 
-WORD driver_TextLength (struct RastPort *, STRPTR, ULONG);
+WORD driver_TextLength (struct RastPort *, STRPTR, ULONG, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -49,7 +49,7 @@ WORD driver_TextLength (struct RastPort *, STRPTR, ULONG);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return driver_TextLength (rp, string, count);
+    return driver_TextLength (rp, string, count, GfxBase);
 
     __AROS_FUNC_EXIT
 } /* TextLength */

@@ -7,7 +7,7 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 
-void driver_Move (struct RastPort *, long, long);
+void driver_Move (struct RastPort *, long, long, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -50,10 +50,10 @@ void driver_Move (struct RastPort *, long, long);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+    driver_Move (rp, x, y, GfxBase);
+
     rp->cp_x = x;
     rp->cp_y = y;
-
-    driver_Move (rp, x, y);
 
     __AROS_FUNC_EXIT
 } /* Move */

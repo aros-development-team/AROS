@@ -1,17 +1,18 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
+    $Id$	 $Log
     Desc:
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 
-LONG driver_WritePixel (struct RastPort *, long, long);
+LONG driver_WritePixel (struct RastPort *, long, long, struct GfxBase *);
 
 /*****************************************************************************
 
     NAME */
+	#include <graphics/rastport.h>
 	#include <clib/graphics_protos.h>
 
 	__AROS_LH3(LONG, WritePixel,
@@ -49,7 +50,7 @@ LONG driver_WritePixel (struct RastPort *, long, long);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return driver_WritePixel (rp, x, y);
+    return driver_WritePixel (rp, x, y, GfxBase);
 
     __AROS_FUNC_EXIT
 } /* WritePixel */

@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/02 16:41:27  digulla
+    Always pass GfxBase to driver
+
     Revision 1.3  1996/08/23 17:09:44  digulla
     Moved the modification of the rastport behind the call of the driver to
     allow the driver to examine the old value
@@ -20,7 +23,7 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 
-extern void driver_SetAPen (struct RastPort *, ULONG);
+extern void driver_SetAPen (struct RastPort *, ULONG, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -62,7 +65,7 @@ extern void driver_SetAPen (struct RastPort *, ULONG);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_SetAPen (rp, pen);
+    driver_SetAPen (rp, pen, GfxBase);
 
     rp->FgPen = pen;
 

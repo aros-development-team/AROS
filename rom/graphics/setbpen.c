@@ -7,7 +7,7 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 
-extern void driver_SetBPen (struct RastPort *, ULONG);
+extern void driver_SetBPen (struct RastPort *, ULONG, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -49,7 +49,7 @@ extern void driver_SetBPen (struct RastPort *, ULONG);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_SetBPen (rp, pen);
+    driver_SetBPen (rp, pen, GfxBase);
 
     /* Do it after the driver to allow it to inspect the previous value */
     rp->BgPen = pen;

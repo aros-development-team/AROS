@@ -8,7 +8,7 @@
 #include <graphics/rastport.h>
 #include <graphics/text.h>
 
-LONG driver_SetFont (struct RastPort *, struct TextFont *);
+LONG driver_SetFont (struct RastPort *, struct TextFont *, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -51,7 +51,7 @@ LONG driver_SetFont (struct RastPort *, struct TextFont *);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return driver_SetFont (rp, textFont);
+    return driver_SetFont (rp, textFont, GfxBase);
 
     __AROS_FUNC_EXIT
 } /* SetFont */
