@@ -48,6 +48,7 @@ struct IntIntuitionBase
     struct ExecBase	   * SysBase;
     struct UtilityBase	   * UtilBase;
     struct Library	   * BOOPSIBase;
+    struct Library	   * KeymapBase;
 
     struct Screen	   * WorkBench;
     struct SignalSemaphore * IBaseLock;
@@ -104,6 +105,10 @@ extern struct IntuitionBase * IntuitionBase;
 #undef UtilityBase
 #endif
 #define UtilityBase (GetPrivIBase(IntuitionBase)->UtilBase)
+#ifdef KeymapBase
+#undef KeymapBase
+#endif
+#define KeymapBase (GetPrivIBase(IntuitionBase)->KeymapBase)
 #ifdef BOOPSIBase
 #undef BOOPSIBase
 #endif

@@ -10,6 +10,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/keymap.h>
 #include <intuition/screens.h>
 #include <intuition/cghooks.h>
 #include <devices/inputevent.h>
@@ -307,7 +308,6 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
     {
     	struct StringExtend *strext;
 
-   	 
     	strext = ((struct StringInfo *)gad->SpecialInfo)->Extension;
     	
     	if (strext->Font)
@@ -620,9 +620,6 @@ VOID MoveCharsLeft(STRPTR str, UWORD first, UWORD last, UWORD steps)
     str[last] = 0;
 }
     
-/* !!!! Temporary kludge until there is a keymap.library !!!! */
-extern LONG intui_RawKeyConvert(struct InputEvent *, STRPTR,
-					LONG, struct KeyMap *);
 
 STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 {
@@ -641,8 +638,11 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     gad = sgw->Gadget;
     strinfo = sgw->StringInfo;
     
-    numchars = intui_RawKeyConvert(sgw->IEvent, keybuf, KEYBUFSIZE, NULL);
+    numchars = MapRawKey(sgw->IEvent, keybuf, KEYBUFSIZE, NULL);
     if (numchars == -1)
+    	return (FALSE);
+
+    if (numchars == 0)
     	return (FALSE);
     	
     letter = keybuf[0];

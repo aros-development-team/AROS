@@ -37,7 +37,7 @@
 #include "strgadgets.h" /* To get GlobalEditFunc prototype */
 #include "inputhandler.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 static const char name[];
@@ -212,6 +212,12 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	    return NULL; /* don't close anything */
     }
 
+    if (!KeymapBase)
+    {
+	if (!(KeymapBase = OpenLibrary ("keymap.library", 39)) )
+	    return NULL; /* don't close anything */
+    }
+    
     if (!GetPrivIBase(LIBBASE)->WorkBench)
     {
 	struct Screen * screen;
@@ -275,6 +281,8 @@ AROS_LH0(BPTR, expunge,
     if (GetPrivIBase(LIBBASE)->WorkBench)
 	CloseScreen (GetPrivIBase(LIBBASE)->WorkBench);
     
+    if (KeymapBase)
+	CloseLibrary (KeymapBase);
 
     if (UtilityBase)
 	CloseLibrary ((struct Library *)UtilityBase);
