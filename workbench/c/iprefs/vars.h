@@ -28,6 +28,7 @@ VAR struct Library              *DiskfontBase;
 VAR struct Library  	    	*IFFParseBase;
 
 VAR struct MsgPort  	    	*notifyport;
+VAR struct IPrefsSem	    	*iprefssem;
 
 VAR WORD    	    	    	prog_exitcode;
 VAR UBYTE   	    	    	s[256];
