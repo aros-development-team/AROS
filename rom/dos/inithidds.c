@@ -20,7 +20,6 @@
 #include <proto/dos.h>
 #include <oop/oop.h>
 #include <string.h>
-#include <ctype.h>
 
 #include "../graphics/graphics_private.h"	/* LateGfxInit proto	*/
 #include "../intuition/intuition_private.h"	/* LateIntuiInit proto	*/
@@ -59,14 +58,11 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
 
 #define HIDDPREFSFILE "Sys:s/hidd.prefs"
 
-/* We don't link with c library so I mus implement this separately */
-static BOOL isblank(int c)
-{
-    if (c == 9 || c == 32)
-    	return TRUE;
-	
-    return FALSE;
-}
+/* We don't link with c library so I must implement this separately */
+#define isblank(c) \
+	(c == '\t' || c == ' ')
+#define isspace(c) \
+	(c == '\t' || c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\v')
 
 BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 {
