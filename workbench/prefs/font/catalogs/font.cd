@@ -23,7 +23,7 @@ Can't allocate IFF handle!
 MSG_CANT_ALLOCATE_MEM (//)
 Can't allocate application memory (%s)!
 ;
-MSG_WINDOW_TITLE (//)
+MSG_NAME (//)
 Font Preferences
 ;
 MSG_MENU_PREFERENCES (//)

@@ -31,7 +31,7 @@ MSG_CANT_ALLOCATE_MEM
 Kann Anwendungs-Speicher nicht allozieren (%s)!
 ; Can't allocate application memory (%s)!
 ;
-MSG_WINDOW_TITLE
+MSG_NAME
 Zeichensatz-Voreinsteller (Font)
 ; Font Preferences
 ;

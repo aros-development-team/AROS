@@ -31,7 +31,7 @@ MSG_CANT_ALLOCATE_MEM
 Impossible d'allouer de la mémoire pour l'application (%s) !
 ; Can't allocate application memory (%s)!
 ;
-MSG_WINDOW_TITLE
+MSG_NAME
 Préférences des polices de caractères (Font)
 ; Font Preferences
 ;
