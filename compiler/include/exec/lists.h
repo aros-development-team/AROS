@@ -63,6 +63,22 @@ struct MinList
 				= (struct Node *)\
 				    &(((struct List *)l)->lh_Tail))
 
+#   define ADDHEAD(l,n)     ((void)(\
+	((struct Node *)n)->ln_Succ          = ((struct List *)l)->lh_Head, \
+	((struct Node *)n)->ln_Pred          = (struct Node *)&((struct List *)l)->lh_Head, \
+	((struct List *)l)->lh_Head->ln_Pred = ((struct Node *)n), \
+	((struct List *)l)->lh_Head          = ((struct Node *)n)))
+
+#   define ADDTAIL(l,n)     ((void)(\
+	((struct Node *)n)->ln_Succ              = (struct Node *)&((struct List *)l)->lh_Tail, \
+	((struct Node *)n)->ln_Pred              = ((struct List *)l)->lh_TailPred, \
+	((struct List *)l)->lh_TailPred->ln_Succ = ((struct Node *)n), \
+	((struct List *)l)->lh_TailPred          = ((struct Node *)n) ))
+
+#   define REMOVE(n)        ((void)(\
+	((struct Node *)n)->ln_Pred->ln_Succ = ((struct Node *)n)->ln_Succ,\
+	((struct Node *)n)->ln_Succ->ln_Pred = ((struct Node *)n)->ln_Pred ))
+
 #   define GetHead(l)       (void *)(((struct List *)l)->lh_Head->ln_Succ \
 				? ((struct List *)l)->lh_Head \
 				: (struct Node *)0)
