@@ -3,15 +3,17 @@ TOP=..
 include $(TOP)/make.cfg
 
 AMIGADIR=$(TOP)/amiga
-INCDIR=$(ARCHDIR)/include
+OBJDIR=$(GENDIR)/include
+INCDIR=$(BINDIR)/include
 
-all: setup links
+all: setup $(OBJDIR)/links
 
-links:
+$(OBJDIR)/links:
 	$(TOP)/scripts/makelinks . $(INCDIR) "*.h"
-	touch links
+	touch $(OBJDIR)/links
 
 setup:
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR) ; else true ; fi
 
 clean:
