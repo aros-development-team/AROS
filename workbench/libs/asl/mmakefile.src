@@ -6,8 +6,8 @@ USER_INCLUDES := -I. -I..
 LIBNAME 	:= asl
 ULIBNAME	:= Asl
 
-FILES := functable filereqhooks basicfuncs dirlist fontreqhooks \
-	dirlistfuncs
+FILES := functable filereqhooks basicfuncs fontreqhooks \
+	 filereqsupport classes gadgets coolimagedata
 
 FUNCTIONS := \
 	allocfilerequest	\
@@ -33,6 +33,9 @@ setup :
 clean ::
 	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
 	$(END_FILE).c $(LIB) $(SLIB)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
 
 %common
 %include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
