@@ -8,9 +8,15 @@ FUNCS := meminfo \
 	 deletedata \
 	 getitemlist
 
-#MM- workbench-libs-nvdisk : includes linklibs
+#MM workbench-libs-nvdisk-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     includes-copy
+#MM- workbench-libs-nvdisk : linklibs
 
-%build_module_macro mmake=workbench-libs-nvdisk modname=nvdisk \
-  modtype=library funcs=$(FUNCS) uselibs=rom conffile=lib.conf
+%build_module mmake=workbench-libs-nvdisk \
+    modname=nvdisk modtype=library \
+    files="nvdisk_init $(FUNCS)" \
+    uselibs=rom
 
 %common
