@@ -1,10 +1,13 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Library header for intuition
     Lang: English
 */
+
+/****************************************************************************************/
+
 #define AROS_ALMOST_COMPATIBLE
 
 #define INIT AROS_SLIB_ENTRY(init,Intuition)
@@ -41,6 +44,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/****************************************************************************************/
+
 static const char name[];
 static const char version[];
 static const APTR inittabl[4];
@@ -60,6 +65,7 @@ struct IClass *InitButtonGClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitFrButtonClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitPropGClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitStrGClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitGroupGClass (struct LIBBASETYPE * LIBBASE);
 
 struct IClass *InitMenuBarLabelClass (struct LIBBASETYPE * LIBBASE);
 
@@ -99,6 +105,8 @@ static const APTR inittabl[4]=
     NULL,
     &INIT
 };
+
+/****************************************************************************************/
 
 AROS_LH2(struct LIBBASETYPE *, init,
  AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
@@ -147,15 +155,16 @@ AROS_LH2(struct LIBBASETYPE *, init,
     InitSemaphore(&GetPrivIBase(LIBBASE)->IntuiActionLock);
     
     /* Add all other classes */
-    InitImageClass (LIBBASE); /* After ROOTCLASS */
-    InitFrameIClass (LIBBASE); /* After IMAGECLASS */
-    InitSysIClass (LIBBASE); /* After IMAGECLASS */
-    InitFillRectClass (LIBBASE); /* After IMAGECLASS */
-    InitGadgetClass (LIBBASE); /* After ROOTCLASS */
-    InitButtonGClass (LIBBASE); /* After GADGETCLASS */
-    InitFrButtonClass (LIBBASE); /* After BUTTONGCLASS */
-    InitPropGClass (LIBBASE);    /* After GADGETCLASS */
-    InitStrGClass (LIBBASE);    /* After GADGETCLASS */
+    InitImageClass (LIBBASE); 		/* After ROOTCLASS 	*/
+    InitFrameIClass (LIBBASE); 		/* After IMAGECLASS 	*/
+    InitSysIClass (LIBBASE); 		/* After IMAGECLASS 	*/
+    InitFillRectClass (LIBBASE); 	/* After IMAGECLASS 	*/
+    InitGadgetClass (LIBBASE); 		/* After ROOTCLASS 	*/
+    InitButtonGClass (LIBBASE); 	/* After GADGETCLASS 	*/
+    InitFrButtonClass (LIBBASE); 	/* After BUTTONGCLASS 	*/
+    InitPropGClass (LIBBASE);    	/* After GADGETCLASS 	*/
+    InitStrGClass (LIBBASE);    	/* After GADGETCLASS 	*/
+    InitGroupGClass (LIBBASE);		/* After GADGETCLASS 	*/
     
     InitMenuBarLabelClass (LIBBASE); /* After IMAGECLASS */
     
@@ -181,6 +190,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
     return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH1(struct LIBBASETYPE *, open,
  AROS_LHA(ULONG, version, D0),
@@ -293,6 +304,8 @@ AROS_LH1(struct LIBBASETYPE *, open,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH0(BPTR, close,
 	   struct LIBBASETYPE *, LIBBASE, 2, Intuition)
 {
@@ -314,6 +327,8 @@ AROS_LH0(BPTR, close,
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH0(BPTR, expunge,
 	   struct LIBBASETYPE *, LIBBASE, 3, Intuition)
@@ -389,6 +404,8 @@ AROS_LH0(BPTR, expunge,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH0I(int, null,
 	    struct LIBBASETYPE *, LIBBASE, 4, Intuition)
 {
@@ -396,3 +413,5 @@ AROS_LH0I(int, null,
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
