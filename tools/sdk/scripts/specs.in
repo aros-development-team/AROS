@@ -8,7 +8,7 @@
 -m @ld_emu@ -L@aros_sdk_path@/@cc_cpu@-aros/lib
 
 *lib:
--lamiga -larossupport %{!static: -larosc_shared} %{static: -larosc} -lm
+-lamiga -larossupport -larosc -lm
 
 *startfile:
 %{detach:@aros_sdk_path@/@cc_cpu@-aros/lib/detach.o} @aros_sdk_path@/@cc_cpu@-aros/lib/startup.o
