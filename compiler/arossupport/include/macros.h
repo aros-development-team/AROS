@@ -9,7 +9,7 @@
     Lang: english
 */
 
-#ifndef AROS_MACHINE_H
+#ifndef AROS_SYSTEM_H
 #   include <aros/system.h>
 #endif
 
