@@ -105,6 +105,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Text_desc,
     &_MUI_Numeric_desc,
     &_MUI_Slider_desc,
+    &_MUI_String_desc,
 };
 
 #define NUM_BUILTINS  sizeof(builtins) / sizeof(struct __MUIBuiltinClass *)
