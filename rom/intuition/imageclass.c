@@ -34,7 +34,6 @@
 
 #include <clib/macros.h>
 
-#include <clib/alib_protos.h>
 #ifdef _SASC
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -47,7 +46,11 @@
 #include <clib/utility_protos.h>
 #endif
 
+#ifdef _AROS
+#include <aros/asmcall.h>
+#include <clib/alib_protos.h>
 #include "intuition_intern.h"
+#endif
 
 /* Image data */
 #define ARROWDOWN_WIDTH    18
@@ -169,10 +172,11 @@ UWORD ArrowRight1Data[] =
 
 /* Our imageclass dispatcher.
  */
-__RA3(static IPTR, dispatch_imageclass,
-    Class *,  cl,  A0,
-    Object *, o,   A2,
-    Msg,      msg, A1)
+AROS_UFH3(static IPTR, dispatch_imageclass,
+    AROS_UFHA(Class *,  cl,  A0),
+    AROS_UFHA(Object *, o,   A2),
+    AROS_UFHA(Msg,      msg, A1)
+)
 {
     IPTR retval = 0UL;
 
@@ -387,11 +391,11 @@ __RA3(static IPTR, dispatch_imageclass,
 	{
 	    struct impDraw * imsg = (struct impDraw *)msg;
 
-	    DrawImage (imsg->imp_RPort
+	    /* DrawImage (imsg->imp_RPort
 		, (struct Image *)o
 		, imsg->imp_Offset.X
 		, imsg->imp_Offset.Y
-	    );
+	    ); */
 
 	    /* Leave retval=0: No further rendering necessary */
 	}
@@ -469,7 +473,7 @@ struct IClass *InitImageClass (struct IntuitionBase * IntuitionBase)
 	*/
     if ((cl = MakeClass(IMAGECLASS, ROOTCLASS, NULL, sizeof(struct Image), 0)))
     {
-	cl->cl_Dispatcher.h_Entry    = (APTR)dispatch_imageclass;
+	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMFUNC_NAME(dispatch_imageclass);
 	cl->cl_Dispatcher.h_SubEntry = NULL;
 	cl->cl_UserData 	     = (IPTR)IntuitionBase;
 
