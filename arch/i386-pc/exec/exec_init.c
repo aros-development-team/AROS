@@ -78,6 +78,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include LC_LIBDEFS_FILE
+
 #include "etask.h"
 #include "exec_util.h"
 #include "traps.h"
@@ -120,9 +122,9 @@ asmlinkage void Exec_SystemCall(struct pt_regs);
 ULONG   **exec_RomTagScanner();
 void    irqSetup(void);
 
-extern const UBYTE Exec_end __text;             /* Somewhere in library */
+extern const UBYTE LIBEND __text;             /* Somewhere in library */
 extern ULONG _edata,_end;                       /* They are standard for ELF */
-extern const APTR ExecFunctions[] __text;
+extern const APTR LIBFUNCTABLE[] __text;
 
 extern struct Library * PrepareAROSSupportBase (void);
 extern ULONG SoftIntDispatch();
@@ -249,7 +251,7 @@ const struct Resident Exec_resident __text=
 {
     RTC_MATCHWORD,          /* Magic value used to find resident */
     &Exec_resident,         /* Points to Resident itself */
-    &Exec_end,              /* Where could we find next Resident? */
+    &LIBEND,                /* Where could we find next Resident? */
     0,                      /* There are no flags!! */
     41,                     /* Version */
     NT_LIBRARY,             /* Type */
@@ -590,7 +592,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     if (!exec_check_base())
     {
         ULONG   negsize = 0;             /* size of vector table */
-        void  **fp      = ExecFunctions; /* pointer to a function in the table */
+        void  **fp      = LIBFUNCTABLE;  /* pointer to a function in the table */
         
         rkprintf("Reallocating ExecBase...");
         /*
@@ -757,7 +759,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
     /* Build the jumptable */
     ExecBase->LibNode.lib_NegSize =
-        Exec_MakeFunctions(ExecBase, ExecFunctions, NULL, ExecBase);
+        Exec_MakeFunctions(ExecBase, LIBFUNCTABLE, NULL, ExecBase);
 
     rkprintf("OK\n");
 
