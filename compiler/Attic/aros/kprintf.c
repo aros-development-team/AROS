@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/09/18 14:41:54  digulla
+    Fixed the bug from %ld for %d also
+    Fill with "0" or " "
+
     Revision 1.6  1996/09/17 18:07:18  digulla
     DOSBase and SysBase are now declared in the respective header files.
     The type of DOSBase is "struct DosLibrary *". Fixed everywhere
@@ -85,6 +89,7 @@
     va_list	 args;
     int 	 ret;
     static const char * hex = "0123456789ABCDEF";
+    char       * fill;
     ULONG	 val;
     LONG	 lval;
 
@@ -100,14 +105,17 @@
 	if (*fmt == '%')
 	{
 	    int width = 0;
-	    int zero = 0;
 
 	    fmt ++;
 
 	    if (*fmt == '0')
 	    {
-		zero = 1;
+		fill = "00000000";
 		fmt ++;
+	    }
+	    else
+	    {
+		fill = "        ";
 	    }
 
 	    if (isdigit (*fmt))
@@ -203,7 +211,7 @@ print_int:
 
 		    while (width > 0)
 		    {
-			write (2, "00000000", (width < 8) ? width : 8);
+			write (2, fill, (width < 8) ? width : 8);
 			width -= 8;
 		    }
 
@@ -248,7 +256,7 @@ print_int:
 
 		while (width > 0)
 		{
-		    write (2, "00000000", (width < 8) ? width : 8);
+		    write (2, fill, (width < 8) ? width : 8);
 		    width -= 8;
 		}
 
@@ -262,7 +270,7 @@ print_int:
 		{
 		    lval = va_arg (args, int);
 
-		    val = lval ? 1 : 0;
+		    val = (lval < 0) ? -lval : lval;
 		}
 		else
 		{
