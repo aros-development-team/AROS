@@ -17,12 +17,21 @@ clib-freebsd-i386 : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
 	@$(NOP)
 
 #MM
+clib-cygwin-i386 : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
+	@$(NOP)
+
+#MM
 setup-clib-linux-i386 :
 	%mkdirs_q $(CLIBDIR)
 	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
 
 #MM
 setup-clib-freebsd-i386 :
+	%mkdirs_q $(CLIBDIR)
+	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
+
+#MM
+setup-clib-cygwin-i386 :
 	%mkdirs_q $(CLIBDIR)
 	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
 

@@ -16,8 +16,12 @@ includes-freebsd-i386 : $(INCFILES) machine.i
 	@$(NOP)
 
 #MM
+includes-cygwin-i386 : $(INCFILES) machine.i
+	@$(NOP)
+
+#MM
 clean::
-	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i geninc
+	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i geninc$(HOST_EXE_SUFFIX)
 
 $(INCDIR)/aros/%.h : %.h
 	%mkdirs_q $(INCDIR)/aros
@@ -31,10 +35,12 @@ $(GENINCDIR)/%.h : %.h
 	%mkdirs_q $(GENINCDIR)
 	$(CP) $< $@
 
-machine.i: geninc.c $(MACHINE_H)
+geninc$(HOST_EXE_SUFFIX) : geninc.c
 	@echo "CFLAGS=$(CFLAGS)"
 	@echo "Creating geninc..."
-	@$(HOST_CC) $(CFLAGS) -o geninc $<
-	./geninc > machine.i
+	@$(HOST_CC) $(CFLAGS) -I$(OS_INCLUDES) -o $@ $<
+
+machine.i: geninc$(HOST_EXE_SUFFIX) $(MACHINE_H)
+	./geninc$(HOST_EXE_SUFFIX) > machine.i
 
 %common

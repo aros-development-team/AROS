@@ -58,10 +58,17 @@
 
 	#include "machine.i"
 
+#ifndef __CYGWIN32__
 	.text
 	.balign 16
 	.globl	AROS_CDEFNAME(setjmp)
 	.type	AROS_CDEFNAME(setjmp),@function
+#else
+	.text
+	.align 4
+	.globl	AROS_CDEFNAME(setjmp)
+	.def	AROS_CDEFNAME(setjmp); .scl 2; .type 32; .endef
+#endif
 
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	env, FirstArg

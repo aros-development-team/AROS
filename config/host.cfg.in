@@ -20,6 +20,7 @@ MKARGS		:= @aros_host_mkargs@
 
 HOST_AR		:= @HOST_AR@
 HOST_RANLIB	:= @HOST_RANLIB@
+HOST_EXE_SUFFIX	:= @aros_host_exe_suffix@
 
 MMAKE		:= @MMAKE@
 AWK		:= @AWK@

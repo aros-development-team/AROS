@@ -20,6 +20,16 @@
 		    which gets two arguments
 */
 
+#ifndef __CYGWIN32__
+#define _FUNCTION(name)				\
+	.globl	AROS_CDEFNAME(name)		; \
+	.type	AROS_CDEFNAME(name),@function
+#else
+#define _FUNCTION(name)				\
+	.globl	AROS_CDEFNAME(name)		; \
+	.def	AROS_CDEFNAME(name); .scl 2; .type 32; .endef
+#endif
+
 #define NUM_REGS    7
 #define FIRST_ARG   ((NUM_REGS+2)*4)
 #define SECOND_ARG  (FIRST_ARG+4)
@@ -85,15 +95,13 @@ cname:				    ; \
 	STUB_ARG0(name)
 
 #define STUB1(cname,name)             \
-	.globl	cname		    ; \
-	.type	cname,@function     ; \
+	_FUNCTION(cname)	    ; \
 cname:				    ; \
 	STUB_ARG1(name)
 
 
 #define STUB2(cname,name)             \
-	.globl	cname		    ; \
-	.type	cname,@function     ; \
+	_FUNCTION(cname)	    ; \
 cname:				    ; \
 	STUB_ARG2(name)
 

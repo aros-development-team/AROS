@@ -87,6 +87,7 @@ aros_host_debug="-g -O0"
 aros_host_mkdep="\$(TOP)/scripts/mkdep"
 aros_host_mkargs="--no-print-directory"
 aros_host_incl="/usr/include"
+aros_host_exe_suffix=""
 
 # This is the main host configuration section. It is where the host
 # can change the values of any variables it needs to change. We do
@@ -137,6 +138,22 @@ case "$host_os" in
 		;;
 	esac
         ;;
+
+    cygwin*)
+	aros_host_arch="cygwin"
+	aros_host_cc="$aros_host_cc -pipe"
+	aros_host_exe_suffix=".exe"
+	case "$host_cpu" in
+	    *i?86*)
+		aros_host_cpu="i386"
+		;;
+	    *)
+		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+		aros_host_cpu="$host_cpu"
+		;;
+	esac
+        ;;
+
     *)
 	AC_MSG_ERROR([Unsupported host architecture $host])
 	;;
@@ -312,6 +329,23 @@ case "$target_os" in
         esac
 	;;
 
+    cygwin*)
+	aros_target_arch="cygwin"
+	aros_shared_default="no"
+	case "$target_cpu" in
+	    *i?86*)
+		aros_target_cpu="i386"
+		aros_flavour="emulation"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__CYGWIN32__"
+		aros_shared_cflags=""
+		aros_default_wbdepth=8
+		;;
+	    *)
+		AC_MSG_ERROR("Unknown CPU for CygWin -- $target_cpu")
+		;;
+	esac
+    ;;
+
     *)
 	AC_MSG_ERROR([Unsupported target architecture $target])
 	;;
@@ -422,6 +456,7 @@ AC_SUBST(aros_host_ldflags)
 AC_SUBST(aros_host_debug)
 AC_SUBST(aros_host_mkdep)
 AC_SUBST(aros_host_mkargs)
+AC_SUBST(aros_host_exe_suffix)
 
 # Target Related
 AC_SUBST(aros_target_arch)

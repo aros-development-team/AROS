@@ -60,7 +60,7 @@ $(TOP)/tools/MetaMake/Makefile : $(TOP)/tools/MetaMake/configure \
 
 $(MMAKE): $(TOP)/tools/MetaMake/mmake.c $(GENMF)
 	$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake
-	cp $(TOP)/tools/MetaMake/mmake $(MMAKE)
+	cp $(TOP)/tools/MetaMake/mmake$(HOST_EXE_SUFFIX) $(MMAKE)
 
 # Clean the sources
 clean:
