@@ -6,20 +6,13 @@ BEGIN {
 	if (match($0,/^#/) || $1=="")
 	    continue;
 
+	if (!match ($0,/[a-zA-Z_]+[0-9]+ (FREE|WORK|DONE)/))
+	    continue;
+
 	id=$1; status=$2;
 	getline < file;
 	email=$1;
-	text="";
-	while ((getline line < file) > 0)
-	{
-	    if (line=="")
-		break;
-
-	    if (text=="")
-		text=line;
-	    else
-		text=text "\n" line;
-	}
+	getline text < file;
 
 	for (t=0; t<ARGC; t++)
 	{
