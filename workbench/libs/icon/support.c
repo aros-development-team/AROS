@@ -169,6 +169,32 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct IconBase *IconBas
     }
 }
 
+BPTR __LockObject_WB(CONST_STRPTR name, LONG mode, struct Library *IconBase)
+{
+    BPTR lock = Lock(name, mode);
+    
+    if (lock == NULL && strcasecmp(name + strlen(name) - 5, ":Disk") == 0)
+    {
+        // FIXME: perhaps allocate buffer from heap?
+        TEXT  buffer[256];               /* Path buffer */
+        ULONG length = strlen(name) - 3; /* Amount to copy + NULL */
+        
+        if (sizeof(buffer) >= length)
+        {
+            strlcpy(buffer, name, length);
+            lock = Lock(buffer, mode);
+        }
+    }
+    
+    return lock;
+}
+
+VOID __UnLockObject_WB(BPTR lock, struct Library *IconBase)
+{
+    if (lock != NULL) UnLock(lock);
+}
+
+
 CONST_STRPTR GetDefaultIconName(LONG type)
 {
     static const char * const defaultNames[] =
