@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  2000/11/17 23:50:41  stegerg
+    follow image->NextImage. Has still to be fixed/changed if
+    it is possible that one calls DrawImageState with mixed
+    normal/boopsi images in the list.
+
     Revision 1.6  1998/10/20 16:45:54  hkiel
     Amiga Research OS
 
@@ -93,14 +98,19 @@
     {
 	if (image->Depth == CUSTOMIMAGEDEPTH)
 	{
-	    DoMethod ((Object *)image
-		, IM_DRAW
-		, rp
-		, (WORD)leftOffset
-		, (WORD)topOffset
-		, state
-		, drawInfo
-	    );
+	    while(image)
+	    {
+		DoMethod ((Object *)image
+		    , IM_DRAW
+		    , rp
+		    , (WORD)leftOffset
+		    , (WORD)topOffset
+		    , state
+		    , drawInfo
+		);
+		
+		image = image->NextImage;
+	    };
 	}
 	else
 	{
