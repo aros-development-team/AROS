@@ -11,3 +11,6 @@ _Execute
 MSG_BUTTON_CANCEL (//)
 _Cancel
 ;
+MSG_CONSOLE_TITLE (//)
+Command Output
+;
