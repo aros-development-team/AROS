@@ -12,6 +12,9 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 includes-linux-i386 : $(INCFILES) machine.i
 
 #MM
+includes-freebsd-i386 : $(INCFILES) machine.i
+
+#MM
 clean::
 	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i geninc
 
