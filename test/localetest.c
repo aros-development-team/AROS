@@ -57,7 +57,7 @@ void formatstring_test(struct Locale * locale)
   ** Just a simple test for FormatString
   */
   FormatString(locale, "%s! %s %s %s %u %u %lx!\n", &dataStream, &myhook);
-  FormatString(locale, "%4$s! (%5$u %7$lX %6$u %6$U %7$lU)  %1$.3s %2$s %3$s %4$s!\n", &dataStream, &myhook);
+  FormatString(locale, "%4$s! (%5$u %7$lX %6$u %6$U %7$lU)  %1$.3s %2$20s %3$s %4$s!\n", &dataStream, &myhook);
 }
 
 void formatdate_test(struct Locale * locale)

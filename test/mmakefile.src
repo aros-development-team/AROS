@@ -21,7 +21,9 @@ FILES := amigademo \
 	tasktest \
 	tasktest2 \
 	ExNext \
-	taskswitchbench 
+	taskswitchbench \
+	randtest \
+	m68kemul
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
