@@ -328,13 +328,7 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 	xc.green = msg->colors[col_i].green;
 	xc.blue	 = msg->colors[col_i].blue;
 	
-D(bug("Outside sema, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
-	, XSD(cl)->x11sema.ss_Owner, FindTask(NULL), XSD(cl)->x11sema.ss_NestCount
-	, XSD(cl)->x11sema.ss_QueueCount));
 LX11	
-D(bug("Inside sema, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
-	, XSD(cl)->x11sema.ss_Owner, FindTask(NULL), XSD(cl)->x11sema.ss_NestCount
-	, XSD(cl)->x11sema.ss_QueueCount));
 
 	if (XAllocColor(data->display, data->colmap, &xc))
 	{
@@ -349,9 +343,6 @@ D(bug("Inside sema, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
 
 
 UX11	
-D(bug("sema released, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
-	, XSD(cl)->x11sema.ss_Owner, FindTask(NULL), XSD(cl)->x11sema.ss_NestCount
-	, XSD(cl)->x11sema.ss_QueueCount));
 
 /*	*((ULONG *)0) = 0;
 */    }
