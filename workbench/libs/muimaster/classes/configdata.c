@@ -263,13 +263,13 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->prefs.group_title_position = GROUP_TITLE_POSITION_CENTERED;
     data->prefs.group_title_color = GROUP_TITLE_COLOR_BLACK;
-    data->prefs.group_hspacing = 2;
-    data->prefs.group_vspacing = 2;
+    data->prefs.group_hspacing = 4;
+    data->prefs.group_vspacing = 4;
 
-    data->prefs.window_inner_left = 2;
-    data->prefs.window_inner_right = 2;
-    data->prefs.window_inner_top = 2;
-    data->prefs.window_inner_bottom = 2;
+    data->prefs.window_inner_left = 4;
+    data->prefs.window_inner_right = 4;
+    data->prefs.window_inner_top = 4;
+    data->prefs.window_inner_bottom = 4;
     data->prefs.window_position = WINDOW_POSITION_FORGET_ON_EXIT;
 
     /* pens */
