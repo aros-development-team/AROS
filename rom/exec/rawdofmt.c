@@ -138,6 +138,9 @@
 			          if non NULL, instructs RawDoFmt to switch to another
 				  format string, whose address is the value of the parameter.
 
+				  Look at the EXAMPLE section to see an example about how
+				  to use this option.
+
 	DataStream   - Array of the data items.
 	PutChProc    - Callback function. Called for each character, including
 		       the NUL terminator.
@@ -151,13 +154,42 @@
 	default integer size of the compiler.
 
     EXAMPLE
-	build a sprintf style function
+	Build a sprintf style function:
 
-	static void callback(UBYTE chr, UBYTE **data)
-	{   *(*data)++=chr;   }
+	    static void callback(UBYTE chr, UBYTE **data)
+	    {
+	       *(*data)++=chr;
+	    }
 
-	void my_sprintf(UBYTE *buffer, UBYTE *format, ...)
-	{   RawDoFmt(format, &format+1, &callback, &buffer);   }
+	    void my_sprintf(UBYTE *buffer, UBYTE *format, ...)
+	    {
+	        RawDoFmt(format, &format+1, &callback, &buffer);
+            }
+
+	The above example makes the assumption that arguments are
+	all passed on the stack, which is true on some architectures
+	but is not on some others. In the general case you should NOT
+	use that approach, you should rather use the %v or %V options
+	and the standard <stdarg.h> facilities, like this:
+
+	    #include <stdarg.h>
+
+	    static void callback(UBYTE chr, UBYTE **data)
+	    {
+	       *(*data)++=chr;
+	    }
+
+	    void my_sprintf(UBYTE *buffer, UBYTE *format, ...)
+	    {
+	        va_list args;
+		va_start(args, format);
+
+		APTR raw_args[] = { &args, format };
+
+	        RawDoFmt("%V", raw_args, &callback, &buffer);
+
+		va_end(args);
+            }
 
     BUGS
 	PutChData cannot be modified from the callback hook on non-m68k
