@@ -82,7 +82,7 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
     if( BootLoaderBase )
     {
 	BootLoaderBase->bl_SysBase = SysBase;
-	BootLoaderBase->bl_UtilBase = OpenLibrary("utility.library",0);
+	BootLoaderBase->bl_UtilityBase = OpenLibrary("utility.library",0);
 	BootLoaderBase->bl_Node.ln_Pri = 0;
 	BootLoaderBase->bl_Node.ln_Type = NT_RESOURCE;
 	BootLoaderBase->bl_Node.ln_Name = (STRPTR)name;
