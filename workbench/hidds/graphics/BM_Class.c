@@ -1838,6 +1838,13 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+int static inline 
+__attribute__((always_inline, const)) do_alpha(int a, int v) 
+{
+    int tmp  = (a*v);
+    return ((tmp<<8) + tmp + 32768)>>16;
+}
+
 static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
     	    	    	    struct pHidd_BitMap_PutAlphaImage *msg)
 {
@@ -1896,10 +1903,10 @@ static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
 		dst_blue  = (destpix & 0xFF000000) >> 24;
 	    #endif
 		
-		dst_red   += ((src_red - dst_red) * src_alpha) / 256;
-		dst_green += ((src_green - dst_green) * src_alpha) / 256;
-		dst_blue  += ((src_blue - dst_blue) * src_alpha) / 256;
-		
+		dst_red   += do_alpha(src_alpha, src_red - dst_red);
+		dst_green += do_alpha(src_alpha, src_green - dst_green);
+		dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
+
     	    #if AROS_BIG_ENDIAN
 	    	destpix &= 0xFF000000;
 		destpix |= (dst_red << 16) + (dst_green << 8) + (dst_blue);
@@ -1961,9 +1968,9 @@ static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
 		dst_green = col.green >> 8;
 		dst_blue  = col.blue  >> 8;
 		
-		dst_red   += ((src_red - dst_red) * src_alpha) / 256;
-		dst_green += ((src_green - dst_green) * src_alpha) / 256;
-		dst_blue  += ((src_blue - dst_blue) * src_alpha) / 256;
+		dst_red   += do_alpha(src_alpha, src_red - dst_red);
+		dst_green += do_alpha(src_alpha, src_green - dst_green);
+		dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
 		
 		col.red   = dst_red << 8;
 		col.green = dst_green << 8;
@@ -2067,10 +2074,10 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 			dst_green = (destpix & 0x00FF0000) >> 16;
 			dst_blue  = (destpix & 0xFF000000) >> 24;
 		    #endif
-
-			dst_red   += ((a_red   - dst_red)   * alpha) / 256;
-			dst_green += ((a_green - dst_green) * alpha) / 256;
-			dst_blue  += ((a_blue  - dst_blue)  * alpha) / 256;
+			
+			dst_red   += do_alpha(alpha, a_red - dst_red);
+			dst_green += do_alpha(alpha, a_green - dst_green);
+			dst_blue  += do_alpha(alpha, a_blue - dst_blue);
 
     		    #if AROS_BIG_ENDIAN
 			destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
@@ -2103,9 +2110,9 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 			dst_blue  = (destpix & 0xFF000000) >> 24;
 		    #endif
 
-			dst_red   += ((a_red   - dst_red)   * alpha) / 256;
-			dst_green += ((a_green - dst_green) * alpha) / 256;
-			dst_blue  += ((a_blue  - dst_blue)  * alpha) / 256;
+			dst_red   += do_alpha(alpha, a_red - dst_red);
+			dst_green += do_alpha(alpha, a_green - dst_green);
+			dst_blue  += do_alpha(alpha, a_blue - dst_blue);
 
     		    #if AROS_BIG_ENDIAN
 			destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
