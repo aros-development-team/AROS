@@ -29,10 +29,6 @@
 /* Just set it to the mimetaclass for now */
 #define CLID_HiddMeta	"simetaclass"
 
-#define HiddAttrBase __IHidd
-
-extern ULONG HiddAttrBase;
-
 #ifndef __typedef_HIDD
 #   define __typedef_HIDD
     typedef APTR HIDD;
