@@ -120,6 +120,7 @@ FUNCS := \
 	setdmrequest \
 	setedithook \
 	setgadgetattrsa \
+	setiprefs_aros \
 	setmenustrip \
 	setmousequeue \
 	setpointer \
