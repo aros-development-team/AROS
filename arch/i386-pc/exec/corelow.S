@@ -229,13 +229,13 @@ Exec_Switch:        cli                         /* Disable all interrupts */
                     movl    $Exec_Restore_Gene,%edi
 
 Exec_Switch_Common: movl    4,%ebp
-                    movw    IDNestCnt(%ebp),%ax
-                    movw    $-1,IDNestCnt(%ebp)
+                    movb    IDNestCnt(%ebp),%al
+                    movb    $-1,IDNestCnt(%ebp)
 
     	    	    cli     	    	    	/* stegerg: was "sti" -> CHECKME */
 
                     movl    ThisTask(%ebp),%ebx
-                    movw    %ax,tc_IDNestCnt(%ebx)
+                    movb    %al,tc_IDNestCnt(%ebx)
                     movl    48(%esp),%eax           /* Get USP */
                     movl    %eax,tc_SPReg(%ebx)
 
@@ -312,7 +312,7 @@ Exec_Dispatch_FPU:  SAVE_ALL
 Exec_Dispatch:	    SAVE_ALL
     	     	    movl    $Exec_Restore_Gene,%edi
 Exec_Dispatch_com:  movl    4,%ebp
-                    movw    $-1,IDNestCnt(%ebp)
+                    movb    $-1,IDNestCnt(%ebp)
 /*                    sti*/
 
 Exec_Dispatch_x:    cli
@@ -340,9 +340,9 @@ Exec_Dispatch_x:    cli
 
                     andl    $~0x2000,SysFlags(%ebp)
                     movb    $TS_RUN,tc_State(%ecx)
-                    movw    tc_IDNestCnt(%ecx),%ax
-                    movw    %ax,IDNestCnt(%ebp)
-                    cmpw    $0,IDNestCnt(%ebp)
+                    movb    tc_IDNestCnt(%ecx),%al
+                    movb    %al,IDNestCnt(%ebp)
+                    cmpb    $0,IDNestCnt(%ebp)
                     jge     1f
                     /* sti */
 1:
