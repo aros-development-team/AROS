@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to read in the function reference file. Part of genmodule.
@@ -17,7 +17,7 @@ struct _parseinfo
     struct functionhead *currentfunc;
 };
 
-void readref(void)
+void readref(struct config *cfg)
 {
     struct functionhead *funclistit = NULL;
     struct functionhead *currentfunc = NULL; /* will be either funclistit or methlistit */
@@ -25,9 +25,9 @@ void readref(void)
     unsigned int funcnamelength;
     char *begin, *end, *line;
 
-    if (!fileopen(reffile))
+    if (!fileopen(cfg->reffile))
     {
-	fprintf(stderr, "Could not open %s\n", reffile);
+	fprintf(stderr, "Could not open %s\n", cfg->reffile);
 	exit(20);
     }
 
@@ -52,7 +52,7 @@ void readref(void)
 		 strncmp(line, "VARIABLE", 8)==0 ||
 		 strncmp(line, "FUNCTION", 8)==0
 		) &&
-		libcall==REGISTER)
+		cfg->libcall==REGISTER)
 	    {
 		/* About to leave function */
 		if (parseinfo.funcarg!=NULL)
@@ -79,7 +79,7 @@ void readref(void)
 		begin = strchr(line,':');
 		if (begin==NULL)
 		{
-		    fprintf(stderr, "Syntax error in reffile %s\n", reffile);
+		    fprintf(stderr, "Syntax error in reffile %s\n", cfg->reffile);
 		    exit(20);
 		}
 		begin++;
@@ -87,7 +87,7 @@ void readref(void)
 		end = strchr(begin, '[');
 		if (end==NULL)
 		{
-		    fprintf(stderr, "Syntax error in reffile %s\n", reffile);
+		    fprintf(stderr, "Syntax error in reffile %s\n", cfg->reffile);
 		    exit(20);
 		}
 		while (isspace(*(end-1))) end--;
@@ -97,9 +97,9 @@ void readref(void)
 		
 		parseinfo.infunction =
 		(
-		       parsemuimethodname(begin, &parseinfo)
-		    || parsemacroname(begin, &parseinfo)
-		    || parsefunctionname(begin, &parseinfo)
+		       parsemuimethodname(begin, &parseinfo, cfg)
+		    || parsemacroname(begin, &parseinfo, cfg)
+		    || parsefunctionname(begin, &parseinfo, cfg)
 		);
 	    }
 	    else if (parseinfo.infunction)
@@ -112,7 +112,7 @@ void readref(void)
 		    begin = strchr(line, ':');
 		    if (begin==NULL)
 		    {
-			fprintf(stderr, "Syntax error in reffile %s\n", reffile);
+			fprintf(stderr, "Syntax error in reffile %s\n", cfg->reffile);
 			exit(20);
 		    }
 		    begin++;
@@ -121,7 +121,7 @@ void readref(void)
 		    /* for libcall == STACK the whole argument is the type
 		     * otherwise split the argument in type and name
 		     */
-		    if (libcall != STACK)
+		    if (cfg->libcall != STACK)
 		    {
 			/* Count the [] specification at the end of the argument */
 			end = begin+strlen(begin);
@@ -158,7 +158,7 @@ void readref(void)
 
 		    if (strcasecmp(begin, "void")==0)
 		    {
-			if (libcall != STACK)
+			if (cfg->libcall != STACK)
 			    free(name);
 		    }
 		    else
@@ -175,7 +175,7 @@ void readref(void)
 			    }
 			}
 			
-			if (libcall == STACK)
+			if (cfg->libcall == STACK)
 			{
 			    parseinfo.funcarg->type = strdup(begin);
 			    parseinfo.funcarg->name = NULL;
@@ -194,7 +194,7 @@ void readref(void)
 		    begin = strchr(line, ':');
 		    if (begin==NULL)
 		    {
-			fprintf(stderr, "Syntax error in reffile %s\n", reffile);
+			fprintf(stderr, "Syntax error in reffile %s\n", cfg->reffile);
 			exit(20);
 		    }
 		    begin++;
@@ -211,7 +211,7 @@ void readref(void)
     /* For REGISTERMACRO libcall the name of the register is still in the parametername
      * so go over the function and fix this
      */
-    if (libcall == REGISTERMACRO)
+    if (cfg->libcall == REGISTERMACRO)
     {
 	struct functionarg * arglistit;
 	char *s;
@@ -252,7 +252,7 @@ void readref(void)
 	{
 	    if 
             (
-                   (modtype == MCC || modtype == MUI || modtype == MCP) 
+                   (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP) 
                 && strcmp(funclistit->name, "MCC_Query") == 0 
             )
             {
@@ -274,7 +274,7 @@ void readref(void)
                 fprintf
                 (
                     stderr, "Did not find function %s in reffile %s\n", 
-                    funclistit->name, reffile
+                    funclistit->name, cfg->reffile
                 );
                 exit(20);
             }
@@ -284,11 +284,12 @@ void readref(void)
 
 
 int parsemuimethodname(char *name,
-		       struct _parseinfo *parseinfo)
+		       struct _parseinfo *parseinfo,
+		       struct config *cfg)
 {
     int ok = 0;
     
-    if (modtype == MCC || modtype == MUI || modtype == MCP)
+    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
     {
 	char *sep;
 	
@@ -297,10 +298,10 @@ int parsemuimethodname(char *name,
 	 */
 	if
 	(
-	       strncmp(name, modulename, strlen(modulename)) == 0
-	    && strcmp(name+strlen(modulename), "_Dispatcher") == 0
+	       strncmp(name, cfg->modulename, strlen(cfg->modulename)) == 0
+	    && strcmp(name+strlen(cfg->modulename), "_Dispatcher") == 0
 	)
-	    customdispatcher = 1;	
+	    cfg->customdispatcher = 1;	
 	    
 	sep = strstr(name, "__OM_");
 	if (sep == NULL) sep = strstr(name, "__MUIM_");
@@ -308,7 +309,7 @@ int parsemuimethodname(char *name,
 	if 
 	(
 	       sep != NULL
-	    && strncmp(modulename, name, sep - name) == 0
+	    && strncmp(cfg->modulename, name, sep - name) == 0
 	)
 	{
 	    struct functionhead *method, *it;
@@ -338,9 +339,10 @@ int parsemuimethodname(char *name,
 
 
 int parsemacroname(char *name,
-		   struct _parseinfo *parseinfo)
+		   struct _parseinfo *parseinfo,
+		   struct config *cfg)
 {
-    if (libcall == REGISTERMACRO && (strncmp(name, "AROS_LH_", 8) == 0  || strncmp(name, "AROS_NTLH_", 10) == 0)) 
+    if (cfg->libcall == REGISTERMACRO && (strncmp(name, "AROS_LH_", 8) == 0  || strncmp(name, "AROS_NTLH_", 10) == 0)) 
     {
 	struct functionhead *funclistit, *func;
 	char *begin, *end, *funcname;
@@ -358,10 +360,12 @@ int parsemacroname(char *name,
 	    novararg = 1;
 	}
 	
-	if (strncmp(begin, basename, strlen(basename)) != 0 || begin[strlen(basename)] != '_')
+	if (strncmp(begin, cfg->basename, strlen(cfg->basename)) != 0
+	    || begin[strlen(cfg->basename)] != '_'
+	)
 	    return 0;
 	
-	begin = begin + strlen(basename) + 1;
+	begin = begin + strlen(cfg->basename) + 1;
 	end = begin + strlen(begin) - 1;
 	
 	while(end != begin && *end != '_') end--;
@@ -411,11 +415,12 @@ int parsemacroname(char *name,
 }
 
 int parsefunctionname(char *name,
-		      struct _parseinfo *parseinfo)
+		      struct _parseinfo *parseinfo,
+		      struct config *cfg)
 {
     struct functionhead *funclistit;
     
-    if (libcall == REGISTERMACRO)
+    if (cfg->libcall == REGISTERMACRO)
 	return 0;
     
     for (funclistit = funclist;
@@ -430,7 +435,7 @@ int parsefunctionname(char *name,
 	parseinfo->funcarg = funclistit->arguments;
 	parseinfo->currentfunc = funclistit;
 	
-	switch (libcall)
+	switch (cfg->libcall)
 	{
 	case STACK:
 	    parseinfo->newarg = 1;

@@ -1,6 +1,6 @@
 GENMODULE_SRCS := \
     genmodule.c \
-    variables.c \
+    config.c \
     fileread.c \
     functionhead.c \
     readconfig.c \
@@ -19,7 +19,7 @@ GENMODULE_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENMODULE_SRCS) $(GENMOD
 	       	  $(AROS_INCLUDES)/aros/machine.h
 GENLIBDEFS_SRCS := \
     genlibdefs.c \
-    variables.c \
+    config.c \
     fileread.c \
     functionhead.c \
     readconfig.c \
@@ -28,7 +28,7 @@ GENLIBDEFS_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENLIBDEFS_SRCS) $(GENM
 
 GENMODULEDUMMY_SRCS := \
     genmoduledummy.c \
-    variables.c \
+    config.c \
     fileread.c \
     functionhead.c \
     readconfig.c \

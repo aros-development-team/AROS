@@ -1,42 +1,29 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write libdefs.h. Part of genmodule.
 */
 #include "genmodule.h"
 
-void writeinclibdefs(void)
+void writeinclibdefs(struct config *cfg)
 {
     FILE *out;
     char line[1024];
     struct linelist *linelistit;
-    char *_libbasetype = (libbasetype==NULL) ? "struct GM_LibHeader" : libbasetype;
-    char *residentflags, *suffix;
-	
-    switch(modtype)
-    {
-        case LIBRARY: suffix = "library"; break;
-        case DEVICE:  suffix = "device"; break; 
-        case MCC:     suffix = "mcc"; break;
-        case MUI:     suffix = "mui"; break;
-        case MCP:     suffix = "mcp"; break;
-        default:
-	    fprintf(stderr, "Unhandled modtype %d\n", modtype);
-	    fclose(out);
-	    exit(20);
-    }
-    
-    if (residentpri >= 105)
+    char *_libbasetype = (cfg->libbasetype==NULL) ? "struct GM_LibHeader" : cfg->libbasetype;
+    char *residentflags;
+
+    if (cfg->residentpri >= 105)
 	residentflags = "RTF_AUTOINIT|RTF_SINGLETASK";
-    else if (residentpri >= -50)
+    else if (cfg->residentpri >= -50)
 	residentflags = "RTF_AUTOINIT|RTF_COLDSTART";
-    else if (residentpri < -120)
+    else if (cfg->residentpri < -120)
 	residentflags = "RTF_AUTOINIT|RTF_AFTERDOS";
     else
 	residentflags = "RTF_AUTOINIT";
     
-    snprintf(line, 1023, "%s/%s_libdefs.h", gendir, modulename);
+    snprintf(line, 1023, "%s/%s_libdefs.h", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -50,7 +37,7 @@ void writeinclibdefs(void)
         "#ifndef _%s_LIBDEFS_H\n"
         "#define _%s_LIBDEFS_H\n"
         "\n",
-        modulenameupper, modulenameupper
+        cfg->modulenameupper, cfg->modulenameupper
     );
 
     fprintf
@@ -71,20 +58,20 @@ void writeinclibdefs(void)
         "#define LIBFUNCTABLE     GM_UNIQUENAME(FuncTable)\n"
         "#define RESIDENTPRI      %d\n"
         "#define RESIDENTFLAGS    %s\n",
-        basename,
-        libbase, _libbasetype, _libbasetype,
-        modulename, suffix,
-        majorversion, majorversion,
-        minorversion, minorversion,
-        modulename, suffix, majorversion, minorversion, datestring,
-        residentpri,
+        cfg->basename,
+        cfg->libbase, _libbasetype, _libbasetype,
+        cfg->modulename, cfg->suffix,
+        cfg->majorversion, cfg->majorversion,
+        cfg->minorversion, cfg->minorversion,
+        cfg->modulename, cfg->suffix, cfg->majorversion, cfg->minorversion, cfg->datestring,
+        cfg->residentpri,
         residentflags
     );
 
-    for (linelistit = cdefprivatelines; linelistit!=NULL; linelistit = linelistit->next)
+    for (linelistit = cfg->cdefprivatelines; linelistit!=NULL; linelistit = linelistit->next)
 	fprintf(out, "%s\n", linelistit->line);
     
-    if (libbasetype == NULL && !(options & OPTION_NORESIDENT))
+    if (cfg->libbasetype == NULL && !(cfg->options & OPTION_NORESIDENT))
     {
 	fprintf(out,
 		"\n"
@@ -112,15 +99,15 @@ void writeinclibdefs(void)
 		"#define GM_SEGLIST_FIELD LC_SEGLIST_FIELD\n"
 		"#endif\n"
 	);
-	if (sysbase_field != NULL)
+	if (cfg->sysbase_field != NULL)
 	    fprintf(out,
 		    "#define GM_SYSBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
-		    sysbase_field
+		    cfg->sysbase_field
 	    );
-	if (seglist_field != NULL)
+	if (cfg->seglist_field != NULL)
 	    fprintf(out,
 		    "#define GM_SEGLIST_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
-		    seglist_field
+		    cfg->seglist_field
 	    );
     }
 
@@ -129,7 +116,7 @@ void writeinclibdefs(void)
         out,
         "\n"
         "#endif /* _%s_LIBDEFS_H */\n",
-        modulenameupper
+        cfg->modulenameupper
     );
     
     fclose(out);

@@ -1,24 +1,24 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
 
     Desc: function to read in the module config file. Part of genmodule.
 */
 #include "genmodule.h"
 #include "fileread.h"
 
-static void readsectionconfig(void);
-static void readsectionproto(void);
-static void readsectioncdef(void);
-static void readsectioncdefprivate(void);
-static void readsectionfunctionlist(void);
+static void readsectionconfig(struct config *);
+static void readsectionproto(struct config *);
+static void readsectioncdef(struct config *);
+static void readsectioncdefprivate(struct config *);
+static void readsectionfunctionlist(struct config *);
 
-void readconfig(void)
+void readconfig(struct config *cfg)
 {
     char *line, *s, *s2;
 
-    if (!fileopen(conffile))
+    if (!fileopen(cfg->conffile))
     {
-	fprintf(stderr, "Could not open %s\n", conffile);
+	fprintf(stderr, "Could not open %s\n", cfg->conffile);
 	exit(20);
     }
 
@@ -57,23 +57,23 @@ void readconfig(void)
 	    switch (partnum)
 	    {
 	    case 1: /* config */
-		readsectionconfig();
+		readsectionconfig(cfg);
 		break;
 		
 	    case 2: /* proto */
-		readsectionproto();
+		readsectionproto(cfg);
 		break;
 		
 	    case 3: /* cdefprivate */
-		readsectioncdefprivate();
+		readsectioncdefprivate(cfg);
 		break;
 		
 	    case 4: /* cdef */
-		readsectioncdef();
+		readsectioncdef(cfg);
 		break;
 
 	    case 5: /* functionlist */
-		readsectionfunctionlist();
+		readsectionfunctionlist(cfg);
 		break;
 	    }
 	}
@@ -82,11 +82,11 @@ void readconfig(void)
     }
     fileclose();
     
-    if (modtype == MCC || modtype == MUI || modtype == MCP)
+    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
     {
         struct functionhead *function;
         
-        function = newfunctionhead("MCC_Query", NULL, firstlvo - 1);
+        function = newfunctionhead("MCC_Query", NULL, cfg->firstlvo - 1);
 	funcaddarg(function, NULL, NULL, "D0");
 
         function->next = funclist;
@@ -95,7 +95,7 @@ void readconfig(void)
 }
 
 
-static void readsectionconfig(void)
+static void readsectionconfig(struct config *cfg)
 {
     int atend = 0, i;
     char *line, *s, *s2;
@@ -144,23 +144,23 @@ static void readsectionconfig(void)
 	    switch (namenum)
 	    {
 	    case 1: /* basename */
-		basename = strdup(s);
+		cfg->basename = strdup(s);
 		break;
 		
 	    case 2: /* libbase */
-		libbase = strdup(s);
+		cfg->libbase = strdup(s);
 		break;
 		
 	    case 3: /* libbasetype */
-		libbasetype = strdup(s);
+		cfg->libbasetype = strdup(s);
 		break;
 		
 	    case 4: /* libbasetypeextern */
-		libbasetypeextern = strdup(s);
+		cfg->libbasetypeextern = strdup(s);
 		break;
 		
 	    case 5: /* version */
-		if (sscanf(s, "%u.%u", &majorversion, &minorversion)!=2)
+		if (sscanf(s, "%u.%u", &cfg->majorversion, &cfg->minorversion)!=2)
 		    exitfileerror(20, "wrong version string \"%s\"\n", s);
 		break;
 		
@@ -172,26 +172,26 @@ static void readsectionconfig(void)
 		{
 		    exitfileerror(20, "date string has have dd.mm.yyyy format\n");
 		}
-		datestring = strdup(s);
+		cfg->datestring = strdup(s);
 		break;
 		
 	    case 7: /* libcall */
 		if (strcmp(s, "stack")==0)
-		    libcall = STACK;
+		    cfg->libcall = STACK;
 		else if (strcmp(s, "register")==0)
-		    libcall = REGISTER;
+		    cfg->libcall = REGISTER;
 		else if (strcmp(s, "mixed")==0)
 		{
-		    libcall = MIXED;
+		    cfg->libcall = MIXED;
 		    exitfileerror(20, "mixed libcall not supported yet\n");
 		}
 		else if (strcmp(s, "registermacro")==0)
 		{
-		    libcall = REGISTERMACRO;
+		    cfg->libcall = REGISTERMACRO;
 		}
 		else if (strcmp(s, "autoregister")==0)
 		{
-		    libcall = AUTOREGISTER;
+		    cfg->libcall = AUTOREGISTER;
 		    exitfileerror(20, "autoregister libcall not supported yet\n");
 		}
 		else
@@ -199,11 +199,11 @@ static void readsectionconfig(void)
 		break;
 		
 	    case 8: /* forcebase */
-		addforcebase(&forcelist, s);
+		addforcebase(&cfg->forcelist, s);
 		break;
                 
             case 9: /* superclass */
-                superclass = strdup(s);
+                cfg->superclass = strdup(s);
                 break;
 		
 	    case 10: /* residentpri */
@@ -211,9 +211,9 @@ static void readsectionconfig(void)
 		    int count;
 		    char dummy;
 		    
-		    count = sscanf(s, "%d%c", &residentpri, &dummy);
+		    count = sscanf(s, "%d%c", &cfg->residentpri, &dummy);
 		    if (count != 1 ||
-			residentpri < -128 || residentpri > 127
+			cfg->residentpri < -128 || cfg->residentpri > 127
 		    )
 		    {
 			exitfileerror(20, "residentpri number format error\n");
@@ -248,13 +248,13 @@ static void readsectionconfig(void)
 		    switch (optionnum)
 		    {
 		    case 1: /* noautolib */
-			options |= OPTION_NOAUTOLIB;
+			cfg->options |= OPTION_NOAUTOLIB;
 			break;
 		    case 2: /* noexpunge */
-			options |= OPTION_NOEXPUNGE;
+			cfg->options |= OPTION_NOEXPUNGE;
 			break;
 		    case 3: /* noresident */
-			options |= OPTION_NORESIDENT;
+			cfg->options |= OPTION_NORESIDENT;
 			break;
 		    }
 		    while (isspace(*s)) s++;
@@ -262,11 +262,11 @@ static void readsectionconfig(void)
 		break;
 
 	    case 12: /* sysbase_field */
-		sysbase_field = strdup(s);
+		cfg->sysbase_field = strdup(s);
 		break;
 		
 	    case 13: /* seglist_field */
-		seglist_field = strdup(s);
+		cfg->seglist_field = strdup(s);
 		break;
 	    }
 	}
@@ -294,32 +294,32 @@ static void readsectionconfig(void)
 	}
     }
     
-    if (basename==NULL)
+    if (cfg->basename==NULL)
     {
-	basename = strdup(modulename);
-	*basename = toupper(*basename);
+	cfg->basename = strdup(cfg->modulename);
+	*cfg->basename = toupper(*cfg->basename);
     }
-    if (libbase==NULL)
+    if (cfg->libbase==NULL)
     {
-	unsigned int len = strlen(basename)+5;
-	libbase = malloc(len);
-	snprintf(libbase, len, "%sBase", basename);
+	unsigned int len = strlen(cfg->basename)+5;
+	cfg->libbase = malloc(len);
+	snprintf(cfg->libbase, len, "%sBase", cfg->basename);
     }
-    if (sysbase_field != NULL && libbasetype == NULL)
+    if (cfg->sysbase_field != NULL && cfg->libbasetype == NULL)
 	exitfileerror(20, "sysbase_field specified when no libbasetype is given\n");
-    if (seglist_field != NULL && libbasetype == NULL)
+    if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
 	exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
 
-    if (libbasetypeextern==NULL)
+    if (cfg->libbasetypeextern==NULL)
     {
-	if (modtype == DEVICE)
-	    libbasetypeextern = "struct Device";
+	if (cfg->modtype == DEVICE)
+	    cfg->libbasetypeextern = "struct Device";
 	else
-	    libbasetypeextern = "struct Library";
+	    cfg->libbasetypeextern = "struct Library";
     }
 }
 
-static void readsectionproto(void)
+static void readsectionproto(struct config *cfg)
 {
     int atend = 0;
     char *line, *s;
@@ -332,7 +332,7 @@ static void readsectionproto(void)
 
 	if (strncmp(line, "##", 2)!=0)
 	{
-	    addline(&protolines, line);
+	    addline(&cfg->protolines, line);
 	}
 	else
 	{
@@ -356,7 +356,7 @@ static void readsectionproto(void)
     }
 }
 
-static void readsectioncdef(void)
+static void readsectioncdef(struct config *cfg)
 {
     int atend = 0;
     char *line, *s;
@@ -369,7 +369,7 @@ static void readsectioncdef(void)
 
 	if (strncmp(line, "##", 2)!=0)
 	{
-	    addline(&cdeflines, line);
+	    addline(&cfg->cdeflines, line);
 	}
 	else
 	{
@@ -393,7 +393,7 @@ static void readsectioncdef(void)
     }
 }
 
-static void readsectioncdefprivate(void)
+static void readsectioncdefprivate(struct config *cfg)
 {
     int atend = 0;
     char *line, *s;
@@ -406,7 +406,7 @@ static void readsectioncdefprivate(void)
 
 	if (strncmp(line, "##", 2)!=0)
 	{
-	    addline(&cdefprivatelines, line);
+	    addline(&cfg->cdefprivatelines, line);
 	}
 	else
 	{
@@ -430,17 +430,17 @@ static void readsectioncdefprivate(void)
     }
 }
 
-static void readsectionfunctionlist(void)
+static void readsectionfunctionlist(struct config *cfg)
 {
     int atend = 0;
     char *line, *s, *s2;
-    unsigned int lvo = firstlvo;
+    unsigned int lvo = cfg->firstlvo;
     struct functionhead **funclistptr = &funclist;
     
-    if (basename==NULL)
+    if (cfg->basename==NULL)
 	exitfileerror(20, "section functionlist has to come after section config\n");
 
-    if (libcall==REGISTERMACRO)
+    if (cfg->libcall==REGISTERMACRO)
 	exitfileerror(20, "No functionlist allowed for registermacro libcall");
     
     while (!atend)
@@ -525,7 +525,7 @@ static void readsectionfunctionlist(void)
 	    {
 		if (sclosebracket == NULL)
 		    exitfileerror(20, "'(' withouth ')'");
-		if (libcall != REGISTER)
+		if (cfg->libcall != REGISTER)
 		    exitfileerror(20, "registers may only be specified for REGISTER libcall\n");
 		
 		*sopenbracket='\0';

@@ -1,23 +1,23 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write modulename_mcc_query.c. Part of genmodule.
 */
 #include "genmodule.h"
 
-void writemccquery(void)
+void writemccquery(struct config *cfg)
 {
     FILE *out;
     char line[256];
     
-    if(modtype != MCC && modtype != MUI && modtype != MCP)
+    if(cfg->modtype != MCC && cfg->modtype != MUI && cfg->modtype != MCP)
     {
-        fprintf(stderr, "Unsupported modtype %d\n", modtype);
+        fprintf(stderr, "Unsupported modtype %d\n", cfg->modtype);
         exit(20);
     }
     
-    snprintf(line, 255, "%s/%s_mcc_query.c", gendir, modulename);
+    snprintf(line, 255, "%s/%s_mcc_query.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
     if(out == NULL)
     {
@@ -30,7 +30,7 @@ void writemccquery(void)
         out,
         "/*\n"
         "    *** Automatically generated file. Do not edit ***\n"
-        "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
+        "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
         "*/\n"
         "\n"
         "#include <exec/types.h>\n"
@@ -47,7 +47,7 @@ void writemccquery(void)
         "    {\n"
     );
     
-    switch(modtype)
+    switch(cfg->modtype)
     {
     case MCC:
     case MUI:

@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write modulename_mcc_init.c. Part of genmodule.
 */
 #include "genmodule.h"
 
-void writemccinit(void)
+void writemccinit(struct config *cfg)
 {
     FILE *out;
     char line[256];
@@ -16,7 +16,7 @@ void writemccinit(void)
     unsigned int lvo;
     int i;
     
-    snprintf(line, 255, "%s/%s_mcc_init.c", gendir, modulename);
+    snprintf(line, 255, "%s/%s_mcc_init.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
     if(out==NULL)
     {
@@ -29,7 +29,7 @@ void writemccinit(void)
         out,
         "/*\n"
         "    *** Automatically generated file. Do not edit! ***\n"
-        "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
+        "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
         "*/\n"
         "\n"
         "#include <exec/types.h>\n"
@@ -51,10 +51,10 @@ void writemccinit(void)
         "#include <aros/symbolsets.h>\n"
         "#include \"%s_libdefs.h\"\n"
         "\n",
-        modulename
+        cfg->modulename
     );
         
-    for(linelistit = cdeflines; linelistit != NULL; linelistit = linelistit->next)
+    for(linelistit = cfg->cdeflines; linelistit != NULL; linelistit = linelistit->next)
     {
         fprintf(out, "%s\n", linelistit->line);
     }
@@ -69,7 +69,7 @@ void writemccinit(void)
         "#else\n"
         "#   define %s_DATA_SIZE (0)\n"
         "#endif\n",
-        basename, basename, basename
+        cfg->basename, cfg->basename, cfg->basename
     );
     
     fprintf
@@ -92,7 +92,7 @@ void writemccinit(void)
     {
         int first = 1;
         
-        fprintf(out, "%s %s__%s(", methlistit->type, basename, methlistit->name);
+        fprintf(out, "%s %s__%s(", methlistit->type, cfg->basename, methlistit->name);
         
         for 
         (
@@ -111,7 +111,7 @@ void writemccinit(void)
         fprintf(out, ");\n");
     }
 
-    if (!customdispatcher)
+    if (!cfg->customdispatcher)
     {
         fprintf
         (
@@ -123,7 +123,7 @@ void writemccinit(void)
             "{\n"
             "    switch (message->MethodID)\n"
             "    {\n",
-            basename
+            cfg->basename
         );
         
         for 
@@ -136,7 +136,7 @@ void writemccinit(void)
             (
                 out, 
                 "        case %s: return (IPTR) %s__%s(", 
-                methlistit->name, basename, methlistit->name
+                methlistit->name, cfg->basename, methlistit->name
             );
             
             if (methlistit->argcount != 3)
@@ -173,7 +173,7 @@ void writemccinit(void)
             "\n"
             "/*** Custom dispatcher prototype ********************************************/\n"
             "BOOPSI_DISPATCHER_PROTO(IPTR, %s_Dispatcher, CLASS, object, message);\n",
-            basename
+            cfg->basename
         );
     }
     
@@ -206,7 +206,7 @@ void writemccinit(void)
         "\n"
         "ADD2INITLIB(MCC_Startup, 0);\n"
         "ADD2EXPUNGELIB(MCC_Shutdown, 0);\n",
-        superclass, basename, basename
+        cfg->superclass, cfg->basename, cfg->basename
     );
     
     fclose(out);

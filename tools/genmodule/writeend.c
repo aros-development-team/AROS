@@ -1,16 +1,16 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
 
     Desc: function to write modulename_end.c. Part of genmodule.
 */
 #include "genmodule.h"
 
-void writeend(void)
+void writeend(struct config *cfg)
 {
     FILE *out;
     char line[256];
     
-    snprintf(line, 255, "%s/%s_end.c", gendir, modulename);
+    snprintf(line, 255, "%s/%s_end.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -20,7 +20,7 @@ void writeend(void)
     fprintf(out,
 	    "#include \"%s_libdefs.h\"\n"
 	    "int GM_UNIQUENAME(End)(void) {return 0;}\n",
-	    modulename
+	    cfg->modulename
     );
     fclose(out);
 }
