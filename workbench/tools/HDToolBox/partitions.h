@@ -18,14 +18,18 @@ struct PartitionNode {
 	ULONG flags;
 	struct DosEnvec de;
 	ULONG pos;
-	ULONG type;
+	struct PartitionType type;
 };
 
-#define PNF_CHANGED    (1<<0)
-#define PNF_ADDED      (1<<1)
-#define PNF_NEW_TABLE  (1<<2)
-#define PNF_DEL_TABLE  (1<<3)
-#define PNF_TABLE      (1<<4)
+#define PNF_CHANGED       (1<<0)
+#define PNF_ADDED         (1<<1)
+#define PNF_NEW_TABLE     (1<<2)
+#define PNF_DEL_TABLE     (1<<3)
+#define PNF_TABLE         (1<<4)
+#define PNF_FLAGS_CHANGED (1<<5)
+#define PNF_DE_CHANGED    (1<<6)
+#define PNF_BOOTABLE      (1<<16)
+#define PNF_AUTOMOUNT     (1<<17)
 
 void par_Init(struct Window *, struct PartitionTableNode *);
 void viewPartitionData(struct Window *, struct PartitionTableNode *, struct PartitionNode *);
