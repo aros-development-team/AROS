@@ -14,7 +14,7 @@ setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
-	$(RM) $(SLIBDIR)/dummy.library $(OBJDIR)
+	-$(RM) $(SLIBDIR)/dummy.library $(OBJDIR)
 
 $(SLIBDIR)/%.library: %lib.o
 	$(CC) $(ILDFLAGS) $^ -o $@
@@ -23,10 +23,9 @@ $(OBJDIR)/%.o: %.c
 	$(CC) $(CCFLAGS) -I $(TOP) $< -c -o $@
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
+ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES),$(OBJDIR)/$(f)lib.d)
-
+endif

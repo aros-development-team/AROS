@@ -20,7 +20,7 @@ setup:
 	@if [ ! -d $(DEVSDIR) ]; then $(MKDIR) $(DEVSDIR) ; else true ; fi
 
 clean:
-	$(RM) $(DEVSDIR)
+	-$(RM) $(DEVSDIR)
 
 $(DEVSDIR)/Mountlist : Mountlist
 	$(CP) $< $@
@@ -35,9 +35,9 @@ $(DEVSDIR)/%.device: $(OBJDIR)/%_device.o
 	$(CC) $(ILDFLAGS) $< -o $@ $(LIBS)
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
+ifneq ($(TARGET),clean)
 include $(OBJDIR)/ram_handler.d $(OBJDIR)/nil_handler.d
+endif

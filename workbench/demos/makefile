@@ -38,7 +38,7 @@ setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
-	$(RM) $(EXES)
+	-$(RM) $(EXES)
 
 $(EXEDIR)/forkbomb : forkbomb
 	$(CP) $< $@
@@ -56,16 +56,13 @@ $(OBJDIR)/%.o: %.c
 	$(CC) $(APPCFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(APPCFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 $(OBJDIR)/librarytest.d: librarytest.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -I$(TOP)/libs -- $(APPCFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
+ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-
+endif
