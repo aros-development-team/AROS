@@ -142,6 +142,7 @@
 	iofs.IOFS.io_Unit   = fh->fh_Unit;
 
 	iofs.io_Union.io_EXAMINE_ALL.io_ead  = buffer;
+	iofs.io_Union.io_EXAMINE_ALL.io_eac  = control;
 	iofs.io_Union.io_EXAMINE_ALL.io_Size = size;
 	iofs.io_Union.io_EXAMINE_ALL.io_Mode = data;
 
@@ -164,6 +165,7 @@
 
 	struct ExAllData *last = buffer, *curr = buffer;
 
+	control->eac_Entries = 0;
 	if
 	(
 	    control->eac_LastKey  == 0 &&
@@ -290,19 +292,7 @@ end:
 
     /* Set error code and return */
     SetIoErr(iofs.io_DosError);
-
-    if(iofs.io_DosError != 0)
-    {
-	control->eac_Entries = 0;
-	return DOSFALSE;
-    }
-
-    for(size = 0; buffer != NULL; size++)
-	buffer = buffer->ed_Next;
-
-    control->eac_Entries = size;
-
-    return DOSTRUE;
+    return iofs.io_DosError == 0 ? DOSTRUE : DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* ExAll */
