@@ -3,8 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
-#include <aros/debug.h>
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -26,9 +25,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#define DEBUG 1
+#include <aros/debug.h>
 
 struct Library *DesktopBase;
-struct Library *MUIMasterBase;
 
 int main(void)
 {
@@ -58,9 +58,6 @@ int main(void)
     struct TagItem icTags[6];
     ULONG inputResult;
 
-    MUIMasterBase=OpenLibrary("muimaster.library", 0);
-    if(!MUIMasterBase)
-        printf("could not open muimaster.library\n");
     DesktopBase=OpenLibrary("desktop.library", 0);
     if(!DesktopBase)
         printf("could not open desktop.library\n");
@@ -200,7 +197,6 @@ int main(void)
 
 
     CloseLibrary(DesktopBase);
-    CloseLibrary(MUIMasterBase);
 
     return 0;
 }
