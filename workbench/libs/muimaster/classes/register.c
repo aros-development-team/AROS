@@ -23,7 +23,7 @@
 #include "prefs.h"
 #include "font.h"
 
-/*#define MYDEBUG 1*/
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
@@ -340,7 +340,7 @@ static void SetHardCoord(Object *obj, struct MUI_RegisterData *data)
     adata->mad_HardIRight  	= REGISTER_FRAMEX;
     adata->mad_HardIBottom 	= data->tab_height * (data->rows - 1 - data->active/data->columns) +  REGISTER_FRAMEBOTTOM;
 
-    D(bug("Hardcoord %lx\n",adata->mad_HardITop));
+/*      D(bug("Hardcoord %p top=%ld bottom=%ld\n", obj, adata->mad_HardITop, adata->mad_HardIBottom)); */
 }
 
 /**************************************************************************
@@ -511,24 +511,27 @@ static ULONG Register_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
 
     DoSuperMethodA(cl, obj, (Msg)msg);
-    D(bug("Register_AskMinMax1 : %ld, %ld, %ld\n",
-	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->MaxWidth));
+/*      D(bug("Register_AskMinMax1 : %ld, %ld, %ld\n", */
+/*  	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->MaxWidth)); */
    
 
-    D(bug("Register_AskMinMax : spacings = %d, minw=%d, defw=%d, mymin=%d, mydef=%d\n",
-	  data->total_hspacing, msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth,
-	  data->min_width, data->def_width));
+/*      D(bug("Register_AskMinMax : spacings = %d, minw=%d, defw=%d, mymin=%d, mydef=%d\n", */
+/*  	  data->total_hspacing, msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth, */
+/*  	  data->min_width, data->def_width)); */
 
     msg->MinMaxInfo->MinWidth = MAX(msg->MinMaxInfo->MinWidth, data->min_width);
     msg->MinMaxInfo->MaxWidth = MAX(msg->MinMaxInfo->MaxWidth, data->def_width);
     msg->MinMaxInfo->DefWidth = MAX(msg->MinMaxInfo->DefWidth, data->def_width);
 
-    msg->MinMaxInfo->MinHeight += data->tab_height;
-    msg->MinMaxInfo->DefHeight += data->tab_height;
+/*      msg->MinMaxInfo->MinHeight += data->tab_height; */
+/*      msg->MinMaxInfo->DefHeight += data->tab_height; */
     msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
 
-    D(bug("Register_AskMinMax2 : %ld, %ld, %ld\n",
-	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->MaxWidth));
+/*      D(bug("Register_AskMinMax %p : tabheight=%d, minh=%d\n", obj, data->tab_height, */
+/*  	  msg->MinMaxInfo->MinHeight)); */
+
+/*      D(bug("Register_AskMinMax2 : %ld, %ld, %ld\n", */
+/*  	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->MaxWidth)); */
     return TRUE;
 }
 
@@ -560,8 +563,8 @@ static ULONG Register_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout 
 
     LayoutTabItems(obj,data);
 
-    D(bug("Register_Layout : left=%d, top=%d / framewidth=%d, frameheight=%d\n",
- 	  data->left, data->top, data->framewidth, data->frameheight));
+/*      D(bug("Register_Layout : left=%d, top=%d / framewidth=%d, frameheight=%d\n", */
+/*   	  data->left, data->top, data->framewidth, data->frameheight)); */
 
     return retval;
 }
@@ -575,7 +578,7 @@ static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
-    D(bug("Register_Show : left = %d, _left = %d, mleft = %d, \n", data->left, _left(obj), _mleft(obj)))
+/*      D(bug("Register_Show : left = %d, _left = %d, mleft = %d, \n", data->left, _left(obj), _mleft(obj))) */
 
     return TRUE;
 }
