@@ -70,7 +70,7 @@ If EXISTS S:User-Startup
   Execute S:User-Startup
 EndIf
 
-;LoadWB
+LoadWB
 
 Execute S:Shell-Startup
 
