@@ -10,14 +10,10 @@
 #include <stddef.h>
 
 #include <exec/memory.h>
-#include <aros/structdesc.h>
+#include <aros/bigendianio.h>
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <workbench/workbench.h>
-/* #include <intuition/intuitionbase.h>
-#include <intuition/intuition.h>
-#include <graphics/gfxbase.h>
-#include <graphics/rastport.h> */
 
 #include <proto/alib.h>
 #include <proto/exec.h>
@@ -27,32 +23,32 @@
 
 static AROS_UFH3(ULONG, ProcessDrawerData,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 );
 static AROS_UFH3(ULONG, ProcessGadgetRender,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,    streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 );
 static AROS_UFH3(ULONG, ProcessSelectRender,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 );
 static AROS_UFH3(ULONG, ProcessDefaultTool,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 );
 static AROS_UFH3(ULONG, ProcessToolTypes,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 );
 static AROS_UFH3(ULONG, ProcessFlagPtr,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 );
 
@@ -153,32 +149,78 @@ const IPTR IconDesc[] =
     SDM_END
 };
 
+#undef DOSBase
+#define DOSBase     ((struct DOSLibrary *)(hook->h_Data))
+
+AROS_UFH3(LONG, dosstreamhook,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(BPTR,          fh,   A2),
+    AROS_UFHA(ULONG       *, msg,  A1)
+)
+{
+    LONG rc;
+
+    switch (*msg)
+    {
+    case BEIO_READ:
+	rc = FGetC (fh);
+#if 0
+kprintf ("dsh: Read: %02X\n", rc);
+#endif
+
+	break;
+
+    case BEIO_WRITE:
+	rc = FPutC (fh, ((struct BEIOM_Write *)msg)->Data);
+	break;
+
+    case BEIO_IGNORE:
+	Flush (fh);
+
+	rc = Seek (fh, ((struct BEIOM_Ignore *)msg)->Count, OFFSET_CURRENT);
+#if 0
+kprintf ("dsh: Skip %d\n", ((struct BEIOM_Ignore *)msg)->Count);
+#endif
+	break;
+
+    }
+
+    return rc;
+} /* dosstreamhook */
+
+
 /*    if (!WriteStruct (icon, dobj, IconDesc))
 
 		FreeStruct (dobj, DiskObjectDesc); */
 
 #define DO(x)       ((struct DiskObject *)x)
 
+#undef DOSBase
+#define DOSBase     ((struct DOSLibrary *)(streamhook->h_Data))
+
 static AROS_UFH3(ULONG, ProcessDrawerData,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
-/* kprintf ("ProcessDrawerData\n"); */
+#if 0
+kprintf ("ProcessDrawerData\n");
+#endif
+
     if (DO(data->sdd_Dest)->do_Type == WBDRAWER)
     {
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    Flush (file);
+	    Flush (data->sdd_Stream);
 
-	    return Seek (file, DRAWERDATAFILESIZE, OFFSET_CURRENT) != EOF;
+	    return Seek (data->sdd_Stream, 48 /* DRAWERDATAFILESIZE */, OFFSET_CURRENT) != EOF;
 
 	case SDV_SPECIALMODE_WRITE:
-	    return Write (file
+	    return Write (data->sdd_Stream
 		, DO(data->sdd_Dest)->do_DrawerData
-		, DRAWERDATAFILESIZE
+		, 48 /* DRAWERDATAFILESIZE */
 	    ) != EOF;
 
 	case SDV_SPECIALMODE_FREE:
@@ -189,24 +231,26 @@ static AROS_UFH3(ULONG, ProcessDrawerData,
     return TRUE;
 } /* ProcessDrawerData */
 
-static struct Image * ReadImage (BPTR file)
+static struct Image * ReadImage (struct Hook * streamhook, BPTR file)
 {
     struct Image * image;
     ULONG	   size;
     ULONG	   t;
 
-    if (!ReadStruct (file, (APTR *)&image, ImageDesc))
+    if (!ReadStruct (streamhook, (APTR *)&image, file, ImageDesc))
 	return NULL;
 
     /* Size of imagedata in bytes */
     size = ((image->Width + 15) >> 3) * image->Height * image->Depth;
 
-/* kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
+#if 0
+kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
     , image->Width
     , image->Height
     , image->Depth
     , size
-); */
+);
+#endif
 
     if (size)
     {
@@ -219,7 +263,7 @@ static struct Image * ReadImage (BPTR file)
 	size >>= 1; /* Get size in words */
 
 	for (t=0; t<size; t++)
-	    if (!ReadWord (file, &image->ImageData[t]))
+	    if (!ReadWord (streamhook, &image->ImageData[t], file))
 		break;
 
 	if (t != size)
@@ -232,19 +276,29 @@ static struct Image * ReadImage (BPTR file)
     return image;
 } /* ReadImage */
 
-static int WriteImage (BPTR file, struct Image * image)
+static int WriteImage (struct Hook * streamhook, BPTR file,
+	struct Image * image)
 {
     ULONG size;
     ULONG t;
 
-    if (!WriteStruct (file, image, ImageDesc) )
+#if 1
+kprintf ("WriteImage: %dx%dx%d (%d bytes)\n"
+    , image->Width
+    , image->Height
+    , image->Depth
+    , size
+);
+#endif
+
+    if (!WriteStruct (streamhook, image, file, ImageDesc) )
 	return FALSE;
 
     /* Get size in words */
     size = ((image->Width + 15) >> 4) * image->Height * image->Depth;
 
     for (t=0; t<size; t++)
-	if (!WriteWord (file, image->ImageData[t]))
+	if (!WriteWord (streamhook, image->ImageData[t], file))
 	    break;
 
     return (t == size);
@@ -265,17 +319,20 @@ static void FreeImage (struct Image * image)
 
 static AROS_UFH3(ULONG, ProcessGadgetRender,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
     struct Image * image;
-/* kprintf ("ProcessGadgetRender\n"); */
+
+#if 0
+kprintf ("ProcessGadgetRender\n");
+#endif
 
     switch (data->sdd_Mode)
     {
     case SDV_SPECIALMODE_READ:
-	image = ReadImage (file);
+	image = ReadImage (streamhook, data->sdd_Stream);
 
 	if (!image)
 	    return FALSE;
@@ -287,7 +344,7 @@ static AROS_UFH3(ULONG, ProcessGadgetRender,
     case SDV_SPECIALMODE_WRITE:
 	image = DO(data->sdd_Dest)->do_Gadget.GadgetRender;
 
-	return WriteImage (file, image);
+	return WriteImage (streamhook, data->sdd_Stream, image);
 
     case SDV_SPECIALMODE_FREE:
 	image = DO(data->sdd_Dest)->do_Gadget.GadgetRender;
@@ -302,19 +359,22 @@ static AROS_UFH3(ULONG, ProcessGadgetRender,
 
 static AROS_UFH3(ULONG, ProcessSelectRender,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
     struct Image * image;
-/* kprintf ("ProcessSelectRender\n"); */
+
+#if 0
+kprintf ("ProcessSelectRender\n");
+#endif
 
     if (DO(data->sdd_Dest)->do_Gadget.Flags & GFLG_GADGHIMAGE)
     {
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    image = ReadImage (file);
+	    image = ReadImage (streamhook, data->sdd_Stream);
 
 	    if (!image)
 		return FALSE;
@@ -326,7 +386,7 @@ static AROS_UFH3(ULONG, ProcessSelectRender,
 	case SDV_SPECIALMODE_WRITE:
 	    image = DO(data->sdd_Dest)->do_Gadget.SelectRender;
 
-	    return WriteImage (file, image);
+	    return WriteImage (streamhook, data->sdd_Stream, image);
 
 	case SDV_SPECIALMODE_FREE:
 	    image = DO(data->sdd_Dest)->do_Gadget.SelectRender;
@@ -342,7 +402,7 @@ static AROS_UFH3(ULONG, ProcessSelectRender,
 
 static AROS_UFH3(ULONG, ProcessFlagPtr,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
@@ -351,8 +411,12 @@ static AROS_UFH3(ULONG, ProcessFlagPtr,
     switch (data->sdd_Mode)
     {
     case SDV_SPECIALMODE_READ:
-	if (FRead (file, &ptr, 4, 1) == EOF)
+	if (FRead (data->sdd_Stream, &ptr, 4, 1) == EOF)
 	    return FALSE;
+
+#if 0
+kprintf ("ProcessFlagPtr: %08lx\n", ptr);
+#endif
 
 	*((APTR *)data->sdd_Dest) = (APTR)(ptr != 0L);
 
@@ -364,7 +428,7 @@ static AROS_UFH3(ULONG, ProcessFlagPtr,
 	else
 	    ptr = 0L;
 
-	if (FWrite (file, &ptr, 4, 1) == EOF)
+	if (FWrite (data->sdd_Stream, &ptr, 4, 1) == EOF)
 	    return FALSE;
 
 	break;
@@ -377,12 +441,12 @@ static AROS_UFH3(ULONG, ProcessFlagPtr,
     return TRUE;
 } /* ProcessFlagPtr */
 
-static STRPTR ReadIconString (BPTR file)
+static STRPTR ReadIconString (struct Hook * streamhook, BPTR file)
 {
     ULONG  len;
     STRPTR str;
 
-    if (!ReadLong (file, &len))
+    if (!ReadLong (streamhook, &len, file))
 	return NULL;
 
     str = AllocMem (len, MEMF_ANY);
@@ -396,16 +460,20 @@ static STRPTR ReadIconString (BPTR file)
 	return NULL;
     }
 
+#if 0
+kprintf ("ReadIconString: \"%s\"\n", str);
+#endif
+
     return str;
 } /* ReadIconString */
 
-static int WriteIconString (BPTR file, STRPTR str)
+static int WriteIconString (struct Hook * streamhook, BPTR file, STRPTR str)
 {
     ULONG len;
 
     len = strlen (str) + 1;
 
-    if (!WriteLong (file, len))
+    if (!WriteLong (streamhook, len, file))
 	return FALSE;
 
     return FWrite (file, str, len, 1) != EOF;
@@ -413,18 +481,22 @@ static int WriteIconString (BPTR file, STRPTR str)
 
 static AROS_UFH3(ULONG, ProcessDefaultTool,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
     STRPTR str;
+
+#if 0
+kprintf ("ProcessDefaultTool\n");
+#endif
 
     if (DO(data->sdd_Dest)->do_DefaultTool)
     {
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    str = ReadIconString (file);
+	    str = ReadIconString (streamhook, data->sdd_Stream);
 
 	    if (!str)
 		return FALSE;
@@ -436,7 +508,7 @@ static AROS_UFH3(ULONG, ProcessDefaultTool,
 	case SDV_SPECIALMODE_WRITE: {
 	    str = DO(data->sdd_Dest)->do_DefaultTool;
 
-	    WriteIconString (file, str);
+	    WriteIconString (streamhook, data->sdd_Stream, str);
 
 	    break; }
 
@@ -454,10 +526,14 @@ static AROS_UFH3(ULONG, ProcessDefaultTool,
 
 static AROS_UFH3(ULONG, ProcessToolTypes,
     AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
+#if 1
+kprintf ("ProcessToolTypes\n");
+#endif
+
     if (DO(data->sdd_Dest)->do_ToolTypes)
     {
 	ULONG	 t;
@@ -469,16 +545,19 @@ static AROS_UFH3(ULONG, ProcessToolTypes,
 	case SDV_SPECIALMODE_READ:
 	    /* Read size of ToolTypes array (each entry is 4 bytes and the
 	       last is 0L */
-	    if (!ReadLong (file, &count))
+	    if (!ReadLong (streamhook, &count, data->sdd_Stream))
 		return FALSE;
 
 	    count = (count >> 2) - 1; /* How many entries */
 
 	    ttarray = AllocMem ((count+1)*sizeof(STRPTR), MEMF_ANY);
 
+kprintf ("Read %d tooltypes (tt=%p)\n", count, ttarray);
+
 	    for (t=0; t<count; t++)
 	    {
-		ttarray[t] = ReadIconString (file);
+		ttarray[t] = ReadIconString (streamhook, data->sdd_Stream);
+kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 
 		if (!ttarray[t])
 		{
@@ -506,14 +585,17 @@ static AROS_UFH3(ULONG, ProcessToolTypes,
 
 	    for (count=0; ttarray[count]; count++);
 
+kprintf ("Write %d tooltypes (%p)\n", count, ttarray);
+
 	    size = (count+1)*4;
 
-	    if (!WriteLong (file, size))
+	    if (!WriteLong (streamhook, size, data->sdd_Stream))
 		return FALSE;
 
 	    for (t=0; t<count; t++)
 	    {
-		if (!WriteIconString (file, ttarray[t]))
+kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
+		if (!WriteIconString (streamhook, data->sdd_Stream, ttarray[t]))
 		    return FALSE;
 	    }
 
@@ -522,14 +604,23 @@ static AROS_UFH3(ULONG, ProcessToolTypes,
 	case SDV_SPECIALMODE_FREE:
 	    ttarray = (STRPTR *)DO(data->sdd_Dest)->do_ToolTypes;
 
+kprintf ("Free tooltypes (%p)\n", count, ttarray);
+
 	    for (t=0; ttarray[t]; t++)
+	    {
+kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 		FreeMem (ttarray[t], strlen (ttarray[t])+1);
+	    }
 
 	    FreeMem (ttarray, (t+1)*sizeof(STRPTR));
 
 	    break;
 	}
     }
+#if 0
+    else
+	kprintf ("No tool types\n");
+#endif
 
     return TRUE;
 } /* ProcessToolTypes */
