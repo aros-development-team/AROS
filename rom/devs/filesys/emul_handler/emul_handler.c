@@ -68,7 +68,11 @@
 
 #include "/usr/include/signal.h"
 
+/*********************************************************************************************/
+
 #undef DOSBase
+
+#define NO_CASE_SENSITIVITY 1
 
 #define malloc you_must_change_malloc_to__emul_malloc
 #define free you_must_change_free_to__emul_free
@@ -312,6 +316,171 @@ static LONG makefilename(struct emulbase *emulbase,
 
     return ret;
 }
+
+/*********************************************************************************************/
+
+#if NO_CASE_SENSITIVITY
+
+static void fixcase(struct emulbase *emulbase, char *pathname)
+{
+    struct dirent 	*de;
+    DIR			*dir;
+    char		*pathstart, *pathend;
+
+    pathstart = pathname;
+    
+    while((pathstart = strchr(pathstart, '/')))
+    {
+        *pathstart++ = '\0';
+	
+	pathend = strchr(pathstart, '/');
+	if (pathend) *pathend = '\0';
+	
+	if ((dir = opendir(pathname)))
+	{
+	    while((de = readdir(dir)))
+	    {
+        	if (strcasecmp(de->d_name, pathstart) == 0)
+		{
+		    strcpy(pathstart, de->d_name);
+		    break;
+		}
+	    }	    
+	    closedir(dir);
+	    
+	} /* if ((dir = opendir(pathname))) */
+	
+	if (pathend) *pathend = '/';
+	pathstart[-1] = '/';
+	
+	if (!dir) break;
+	
+    } /* while((pathpos = strchr(pathpos, '/))) */
+
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_open(struct emulbase *emulbase, char *pathname, int flags, mode_t mode)
+{
+    int	result;
+
+    fixcase(emulbase, pathname);
+    result = open((const char *)pathname, flags, mode);
+        
+    return result;        
+}
+
+/*-------------------------------------------------------------------------------------------*/
+ 
+static DIR *nocase_opendir(struct emulbase *emulbase, char *name)
+{
+    DIR *result;
+    
+    fixcase(emulbase, name);
+    result = opendir((const char *)name);
+    
+    return result;
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_stat(struct emulbase *emulbase, char *file_name, struct stat *buf)
+{
+    int result;
+    
+    fixcase(emulbase, file_name);
+    result = stat((const char *)file_name, buf);
+    
+    return result;
+}
+  
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_lstat(struct emulbase *emulbase, char *file_name, struct stat *buf)
+{
+    int result;
+    
+    fixcase(emulbase, file_name);
+    result = lstat((const char *)file_name, buf);
+    
+    return result;
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_unlink(struct emulbase *emulbase, char *pathname)
+{
+    int result;
+    
+    fixcase(emulbase, pathname);
+    result = unlink((const char *)pathname);
+    
+    return result;
+}
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_rmdir(struct emulbase *emulbase, char *pathname)
+{
+    int result;
+    
+    fixcase(emulbase, pathname);
+    result = rmdir((const char *)pathname);
+    
+    return result;
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_link(struct emulbase *emulbase, char *oldpath, const char *newpath)
+{
+    int result;
+    
+    fixcase(emulbase, oldpath);
+    result = link((const char *)oldpath, newpath);
+    
+    return result;
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_symlink(struct emulbase *emulbase, char *oldpath, const char *newpath)
+{ 
+    int result;
+    
+    fixcase(emulbase, oldpath);
+    result = symlink((const char *)oldpath, newpath);
+    
+    return result;
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+#undef open
+#define open(a,b,c) nocase_open(emulbase, a, b, c)
+
+#undef opendir
+#define opendir(a) nocase_opendir(emulbase, a)
+
+#undef stat
+#define stat(a,b) nocase_stat(emulbase, a, b)
+
+#undef lstat
+#define lstat(a,b) nocase_lstat(emulbase, a, b)
+
+#undef unlink
+#define unlink(a) nocase_unlink(emulbase, a)
+
+#undef rmdir
+#define rmdir(a) nocase_rmdir(emulbase,a)
+
+#undef link
+#define link(a,b) nocase_link(emulbase, a, b)
+
+#undef symlink
+#define symlink(a,b) nocase_symlink(emulbase, a, b)
+
+#endif /* NO_CASE_SENSITIVITY */
 
 /*********************************************************************************************/
 
