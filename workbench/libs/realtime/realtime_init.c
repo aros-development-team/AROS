@@ -11,8 +11,6 @@
 
 #define  AROS_ALMOST_COMPATIBLE
 
-#include <aros/debug.h>
-
 #include <utility/utility.h>
 
 #include <exec/types.h>
@@ -27,6 +25,10 @@
 
 #include "realtime_intern.h"
 #include "libdefs.h"
+
+#undef DEBUG
+#define DEBUG 1
+#include <aros/debug.h>
 
 #define INIT	AROS_SLIB_ENTRY(init, RealTime)
 
@@ -69,7 +71,7 @@ const char version[] = VERSION_STRING;
 
 const APTR inittabl[4] =
 {
-    (APTR)sizeof(struct RealTimeBase),
+    (APTR)sizeof(struct internal_RealTimeBase),
     (APTR)LIBFUNCTABLE,
     (APTR)&datatable,
     &INIT
