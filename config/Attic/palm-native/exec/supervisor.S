@@ -27,7 +27,7 @@
  	whatever the function left in the registers
  
     NOTES
- 	This function is CPU dependant.
+ 	This function is CPU dependent.
  
     EXAMPLE
  
@@ -49,68 +49,15 @@
 	.globl	AROS_SLIB_ENTRY(Supervisor,Exec)
 
 AROS_SLIB_ENTRY(Supervisor,Exec):
-	/* I am cheating my way through this routine, because ixemul traps all
-	   exceptions. We would never be able to finish this function.
-	   I need to change one register, though, because I need to get this
-	   Amiga's original ExecBase. I will use register a4 for this. I also
-	   assume the original Supervisor() function does not expect its SysBase
-	   in a6.
-	*/
+#ifndef DoRegisterCalls
+	move.l  4(%sp),%a5 // Get the userFunction pointer
+#endif
+	move.l  %d7,-(%sp)
+	move.l  #8,%d7     // #8 => call _sys_trap1_Supervisor
+	trap    #1
+	move.l  (%sp)+,%d7
 	rts
 
-#warning FIXME!!!
-	/* get original SysBase */
-	move.l	4.w,%a4
-	/* call that Supervisor() function */
-	jmp	Supervisor(%a4)
-
-	/* Program flow will not get here */
-
- 	/* a privileged do-nothing instruction */
- 	or.w	#0x0000,%sr
- 	/* No trap? Then this was called from supervisor mode. Prepare a rte. */
- 	move.w	%sr,-(%sp)
- 	jmp	(%a5)
- 
-
-
- 	/* CPU privilege violation vector points to here */
- 	.globl	_TrapLevel8
-_TrapLevel8:
- 
- 	/* There is only one legal location which may do a privilege
- 	   violation - and that is the instruction above.
-	*/
-#warning What is this here???
-/*
- 	cmp.l	#_Exec_Supervisor,2.w(%sp)
-*/
- 	jne	pv
- 	/* All OK. Prepare returnaddress and go to the right direction. */
- 	move.l	#end,2.w(%sp)
- 	jmp	(%a5)
-end:	rts
- 
- 	/* Store trap number */
-pv:	move.l	#8,-(%sp)
- 	bra	_TrapEntry
- 
- 	/* And handle the trap */
-_TrapEntry:
- 	/* Simple disable */
- 	or.w	#0x0700,%sr
- 
- 	/* get some room for destination address */
- 	subq.w	#4,%sp
- 
- 	/* calculate destination address without clobbering any registers */
- 	move.l	%a0,-(%sp)
-	move.l	4,%a0
-	bsr	get_offsetof_ThisTask
-	move.l	(%a0,%d0),%a0
-	bsr	get_offsetof_tc_TrapCode
-	move.l	(%a0,%d0),4(%sp)
-	move.l	(%sp)+,%a0
-
-	/* and jump */
-	rts
+	.globl _sys_trap1_Supervisor
+_sys_trap1_Supervisor:
+	jmp	(%a5)
