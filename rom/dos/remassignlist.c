@@ -59,13 +59,12 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct DosList *dl = NULL;
-    BPTR lck2;
     BOOL res = DOSFALSE;
 
     dl = LockDosList(LDF_ASSIGNS|LDF_WRITE);
-    while(dl = FindDosEntry(dl, name, LDF_ASSIGNS))
+    while((dl = FindDosEntry(dl, name, LDF_ASSIGNS)))
     {
-	struct AssignList *al, *lastal;
+	struct AssignList *al, *lastal = NULL;
 
 	al = dl->dol_misc.dol_assign.dol_List;
 
@@ -80,9 +79,9 @@
 		This is a bit tricky, me move the first element
 		in the list to the header
 	    */
-	    dol->dol_misc.dol_assign.dol_List = al->al_Next;
-	    UnLock(dol->dol_Lock);
-	    dol->dol_Lock = al->al_Lock;
+	    dl->dol_misc.dol_assign.dol_List = al->al_Next;
+	    UnLock(dl->dol_Lock);
+	    dl->dol_Lock = al->al_Lock;
 	    FreeVec(al);
 	    res = DOSTRUE;
 	}
@@ -93,7 +92,14 @@
 		if(SameLock(al->al_Lock, lock) == LOCK_SAME)
 		{
 		    /* Remove this element. Singly linked list */
-		    remal->al_Next = al->al_Next;
+		    if(lastal == NULL)
+		    {
+			/* First element of list... */
+			dl->dol_misc.dol_assign.dol_List = al->al_Next;
+		    }
+		    else
+    			lastal->al_Next = al->al_Next;
+
 		    UnLock(al->al_Lock);
 		    FreeVec(al);
 		    al = NULL;
@@ -102,7 +108,7 @@
 		else
 		{
 		    lastal = al;
-		    al = al->al_Next);
+		    al = al->al_Next;
 		}
 	    }
 	} /* in the assignlist */

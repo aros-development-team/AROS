@@ -62,10 +62,9 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct Device *res = NULL;
-    BPTR lock = NULL;
     struct DosList *dl;
 
-    dl = LockDosList(LDF_READ|LDF_ALL)
+    dl = LockDosList(LDF_READ|LDF_ALL);
     dl = FindDosEntry(dl, name, LDF_ALL);
     if(dl != NULL)
     {

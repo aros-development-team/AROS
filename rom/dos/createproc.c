@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "dos_intern.h"
+#include <dos/dostags.h>
 
 /*****************************************************************************
 
@@ -82,8 +83,8 @@
 
     /* Don't forget to find out some extra defaults here */
     struct TagItem procTags[6] = {
-	{ NP_SegList,       (IPTR)segList },
-	{ NP_FreeSegList,   FALSE },
+	{ NP_Seglist,       (IPTR)segList },
+	{ NP_FreeSeglist,   FALSE },
 	{ NP_StackSize,     stackSize },
 	{ NP_Name,          (IPTR)name },
 	{ NP_Priority,      pri },

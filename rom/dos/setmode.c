@@ -62,17 +62,17 @@
 
     */
     struct IOFileSys     iofs;
-    struct FileHandle   *fh = (struct FileHandle *)BADDR(file)
+    struct FileHandle   *fha = (struct FileHandle *)BADDR(fh);
     struct Process      *me = (struct Process *)FindTask(NULL);
 
     iofs.IOFS.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     iofs.IOFS.io_Message.mn_ReplyPort = &me->pr_MsgPort;
     iofs.IOFS.io_Message.mn_Length = sizeof(iofs);
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit = fh->fh_Unit;
+    iofs.IOFS.io_Device = fha->fh_Device;
+    iofs.IOFS.io_Unit = fha->fh_Unit;
     iofs.IOFS.io_Command = FSA_CONSOLE_MODE;
     iofs.IOFS.io_Flags = 0;
-    iofs.io_Union.io_CONSOLE_MODE.io_Mode = mode;
+    iofs.io_Union.io_CONSOLE_MODE.io_ConsoleMode = mode;
 
     DoIO(&iofs.IOFS);
 
