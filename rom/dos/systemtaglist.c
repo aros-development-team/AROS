@@ -233,30 +233,31 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 
 	struct TagItem proctags[] =
 	{
-	    { NP_Entry      , (IPTR)NewCliProc              }, /* 0  */
+	    { NP_Entry      , (IPTR) NewCliProc             }, /* 0  */
 	    { NP_Priority   , me->pr_Task.tc_Node.ln_Pri    }, /* 1  */
 	    { NP_StackSize  , AROS_STACKSIZE                }, /* 2  */
-	    { NP_Path       , (IPTR)NULL                    }, /* 3  */
 	    { NP_Name       , isBoot ? (IPTR)"Boot Shell" :
 	                      isBackground ?
 			      (IPTR)"Background CLI" :
-			      (IPTR)"New Shell"             }, /* 4  */
-	    { NP_Input      , (IPTR)cis                     }, /* 5  */
-	    { NP_Output     , (IPTR)cos                     }, /* 6  */
-	    { NP_CloseInput , (isAsynch || cis_opened)      }, /* 7  */
-	    { NP_CloseOutput, (isAsynch || cos_opened)      }, /* 8  */
-	    { NP_Cli        , (IPTR)TRUE                    }, /* 9  */
+			      (IPTR)"New Shell"             }, /* 3  */
+	    { NP_Input      , (IPTR)cis                     }, /* 4  */
+	    { NP_Output     , (IPTR)cos                     }, /* 5  */
+	    { NP_CloseInput , (isAsynch || cis_opened)      }, /* 6  */
+	    { NP_CloseOutput, (isAsynch || cos_opened)      }, /* 7  */
+	    { NP_Cli        , (IPTR)TRUE                    }, /* 8  */
 	    { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
-	                      (IPTR)me->pr_WindowPtr        }, /* 10 */
-	    { NP_Arguments  , (IPTR)command                 }, /* 11 */
-	    { NP_Synchronous, FALSE                         }, /* 12 */
-	    { NP_Error      , (IPTR)ces                     }, /* 13 */
+	                      (IPTR)me->pr_WindowPtr        }, /* 9 */
+	    { NP_Arguments  , (IPTR)command                 }, /* 10 */
+	    { NP_Synchronous, FALSE                         }, /* 11 */
+	    { NP_Error      , (IPTR)ces                     }, /* 12 */
 	    { NP_CloseError , (isAsynch || ces_opened) &&
-              /* Since old AmigaOS programs don't know anything about Error()
-              being handled by this function, don't close the Error stream
-              if it's the same as the caller's one*/
-			      ces != Error()                }, /* 14 */
-	    { TAG_END       , 0                             }  /* 15 */
+            /* 
+                Since old AmigaOS programs don't know anything about Error()
+                being handled by this function, don't close the Error stream
+                if it's the same as the caller's one.
+            */
+			      ces != Error()                }, /* 13 */
+	    { TAG_END       , 0                             }  /* 14 */
 	};
 
 	Tag filterList[] =

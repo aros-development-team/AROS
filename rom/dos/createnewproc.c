@@ -79,7 +79,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     struct CommandLineInterface *cli = NULL;
     struct Process  	    	*me = (struct Process *)FindTask(NULL);
     STRPTR          	    	 s;
-    BPTR            	    	*oldpath, *newpath, *nextpath;
 
     /* TODO: NP_CommandName, NP_ConsoleTask, NP_NotifyOnDeath */
 
@@ -109,6 +108,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /*19 */    { NP_Synchronous , (IPTR)FALSE 	    	    	},
     /*20 */    { NP_FreeSeglist , (IPTR)TRUE  	    	    	},
     /*21 */    { NP_HomeDir 	, TAGDATA_NOT_SPECIFIED     	},
+    /*22 */    { NP_Path        , TAGDATA_NOT_SPECIFIED         }, /* Default: copy path from parent */
 	       { TAG_END    	, 0           	    	    	}
     };
 
@@ -138,7 +138,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     {
         BPTR seg;
 
-        for (seg = defaults[0].ti_Data; seg; seg = *(BPTR *)BADDR(seg))
+        for (seg = (BPTR) defaults[0].ti_Data; seg; seg = *(BPTR *)BADDR(seg))
         {
             if
             (
@@ -195,13 +195,15 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 		       MEMF_ANY);
     ENOMEM_IF(memlist == NULL);
 
+    /* NP_Cli */
     if (defaults[13].ti_Data != NULL)
     {
+        BPTR *oldpath = NULL;
+        
 	/* Don't forget to pass tags to AllocDosObject() */
 	cli = (struct CommandLineInterface *)AllocDosObject(DOS_CLI, tags);
 	ENOMEM_IF(cli == NULL);
 
-	oldpath = NULL;
 	cli->cli_DefaultStack = (defaults[9].ti_Data + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
 
 	if (__is_process(me))
@@ -219,21 +221,29 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	    }
 	}
 
-	newpath = &cli->cli_CommandDir;
 
-	/* Add substitute for lock chain */
-	while (oldpath != NULL)
-	{
-	    nextpath = AllocVec(2*sizeof(BPTR), MEMF_CLEAR);
-	    ENOMEM_IF(nextpath == NULL);
-
-	    newpath[0]  = MKBADDR(nextpath);
-	    nextpath[1] = DupLock(oldpath[1]);
-	    ERROR_IF(!nextpath[1]);
-
-	    newpath = nextpath;
-	    oldpath = BADDR(oldpath[0]);
-	}
+	if (defaults[22].ti_Data != TAGDATA_NOT_SPECIFIED)
+        {
+            cli->cli_CommandDir = (BPTR) defaults[22].ti_Data;
+        }
+        else
+        {
+            BPTR *nextpath, 
+                 *newpath = &cli->cli_CommandDir;
+            
+            while (oldpath != NULL)
+            {
+                nextpath = AllocVec(2*sizeof(BPTR), MEMF_CLEAR);
+                ENOMEM_IF(nextpath == NULL);
+                
+                newpath[0]  = MKBADDR(nextpath);
+                nextpath[1] = DupLock(oldpath[1]);
+                ERROR_IF(!nextpath[1]);
+                
+                newpath = nextpath;
+                oldpath = BADDR(oldpath[0]);
+            }
+        }
     }
 
     /* NP_Input */
@@ -287,7 +297,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	}
     }
 
-    if (defaults[6].ti_Data) SetVBuf(defaults[6].ti_Data, NULL, BUF_NONE, -1);
+    if (defaults[6].ti_Data) SetVBuf((BPTR) defaults[6].ti_Data, NULL, BUF_NONE, -1);
 
     /* NP_CurrentDir */
 
