@@ -2,11 +2,8 @@
 #define INTUITION_CLASSUSR_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: BOOPSI users
-    Lang: english
 */
 
 #ifndef UTILITY_HOOKS_H
@@ -16,31 +13,23 @@
 #   include <utility/tagitem.h>
 #endif
 
-/*#ifdef AROS_USE_OOP
-#    include <oop/oop.h>
-#endif*/
-
-/*#ifndef AROS_USE_OOP*/
-#    ifndef __typedef_Object
-#       define __typedef_Object
-         typedef ULONG  Object;
-#    endif
-/*#endif*/
+#ifndef __typedef_Object
+#   define __typedef_Object
+    typedef ULONG  Object;
+#endif
 
 #ifndef __typedef_ClassID
 #   define __typedef_ClassID
-    typedef UBYTE *ClassID;
+    typedef CONST_STRPTR ClassID;
 #endif
 
-/*#ifndef AROS_USE_OOP*/
-#    ifndef __typedef_Msg
-#        define __typedef_Msg
-         typedef struct
-         {
-             STACKULONG MethodID;
-         } *Msg;
-#    endif
-/*#endif*/
+#ifndef __typedef_Msg
+#   define __typedef_Msg
+    typedef struct
+    {
+        STACKULONG MethodID;
+    } *Msg;
+#endif
 
 #define ROOTCLASS     "rootclass"
 #define IMAGECLASS    "imageclass"
