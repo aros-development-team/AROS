@@ -1,12 +1,16 @@
 BEGIN {
+    stderr="/dev/stderr";
+
+    special_item["NEWLIST()"]="<A HREF=\"../srcs/include/exec/lists.h\">NEWLIST()</A>";
+
     for(t=1; t<ARGC; t++)
     {
 	file=ARGV[t];
 	bn=basename(file);
-	printf ("%3d%% %-60s\r", t*100/ARGC, bn) >> "/dev/stderr";
+	printf ("%3d%% %-60s\r", t*100/ARGC, bn) >> stderr;
 	if (substr(bn,1,1)=="6")
-	    print "\n"file >> "/dev/stderr";
-	fflush("/dev/stderr");
+	    print "\n"file >> stderr;
+	fflush(stderr);
 
 	LIBS["alib"]="amiga.lib";
 	LIBS["devs"]="Devices";
@@ -15,9 +19,12 @@ BEGIN {
 
 	out="";
 	mode="head";
+	fnr=0;
 
 	while ((getline < file) > 0)
 	{
+	    fnr ++;
+
 	    if (mode=="head")
 	    {
 		if (match($0,/^.\*\*\*\*\*+$/))
@@ -51,7 +58,10 @@ BEGIN {
 		    newfield=="SEE" || newfield=="INTERNALS" || newfield=="HISTORY")
 		{
 		    if (lastfield=="EXAMPLE")
-			printf ("</PRE>") >> out;
+		    {
+			if (example_is=="here" || example_is=="example")
+			    printf ("</PRE>") >> out;
+		    }
 		    else if (field=="INPUTS" || field=="HISTORY")
 			print "</DL>\n" >> out;
 
@@ -64,12 +74,14 @@ BEGIN {
 		    field=newfield;
 
 		    if (newfield=="SEE")
-			print "<DL>\n<DT>SEE ALSO\n<DD>\n" >> out;
+			print "<DL>\n<DT>SEE ALSO\n<DD>" >> out;
 		    else
-			print "<DL>\n<DT>"newfield"\n<DD>\n" >> out;
+			print "<DL>\n<DT>"newfield"\n<DD>" >> out;
 
 		    if (field=="EXAMPLE")
-			printf ("<PRE>") >> out;
+		    {
+			example_is="";
+		    }
 		    else if (field=="INPUTS")
 			print "<DL COMPACT>\n" >> out;
 		    else if (field=="HISTORY")
@@ -83,7 +95,7 @@ BEGIN {
 			{
 			    if (!(lib in LIBS) )
 			    {
-				print "Unknown lib: "lib" in file "file >> "/dev/stderr";
+				print "Unknown lib: "lib" in file "file >> stderr;
 			    }
 			    else
 				print out":"fname":"LIBS[lib];
@@ -208,13 +220,97 @@ BEGIN {
 		    }
 		    else if (field=="EXAMPLE")
 		    {
-			gsub(/^(        |\t)/,"",line);
-			gsub(/&/,"\\&amp;",line);
-			gsub(/</,"\\&lt;",line);
-			gsub(/>/,"\\&gt;",line);
-			gsub(/"/,"\\&quot;",line);
+			if (first)
+			{
+			    if (match (line,/#[ \t]*ifdef[ \t]+EXAMPLE/))
+			    {
+				printf ("<PRE>")>>out;
+				example_is = "example";
+				ifdeflevel = 0;
+				skip = 1;
+			    }
+			    else if (match (line,/See[ \t]+[^ \t]+[ \t]*[(][)]/))
+			    {
+				example_is = line;
+				sub(/^.*See[ \t]+/,"",example_is);
+				sub(/[ \t]*[(][)].*$/,"",example_is);
+				fn = tolower(example_is) ".html";
+				print "See <A HREF=\""fn"\">"example_is"()</A>">>out;
+				skip=1;
+			    }
+			    else if (match (line,/See[ \t]below/))
+			    {
+				example_is="below";
+				close (file);
+				state = "skip";
+				ifdeflevel = 0;
 
-			print line >> out;
+				printf ("<PRE>")>>out;
+				while ((getline line < file) > 0)
+				{
+				    if (state=="skip")
+				    {
+					if (match (line,/^#[ \t]*ifdef[ \t]+TEST/))
+					    state="found";
+				    }
+				    else if (state=="found")
+				    {
+					if (match (line,/^#[ \t]*ifdef/))
+					    ifdeflevel ++;
+					else if (match (line,/^#[ \t]*endif/))
+					{
+					    if (!ifdeflevel)
+					    {
+						state="skip";
+						continue;
+					    }
+					    else
+						ifdeflevel --;
+					}
+
+					print line >> out;
+				    }
+				}
+				printf ("</PRE>")>>out;
+
+				close (file);
+
+				for (pos=0; pos<fnr; pos++)
+				    getline line < file;
+
+				skip=1;
+			    }
+			    else
+				example_is="here";
+
+			    first = 0;
+			}
+
+			if (example_is=="example" && !skip)
+			{
+			    if (match (line,/^#[ \t]*ifdef/))
+				ifdeflevel ++;
+			    else if (match (line,/^#[ \t]*endif/))
+			    {
+				if (!ifdeflevel)
+				    skip=1;
+
+				ifdeflevel --;
+			    }
+			}
+
+			if (!skip)
+			{
+			    gsub(/^(        |\t)/,"",line);
+			    gsub(/&/,"\\&amp;",line);
+			    gsub(/</,"\\&lt;",line);
+			    gsub(/>/,"\\&gt;",line);
+			    gsub(/"/,"\\&quot;",line);
+
+			    print line >> out;
+			}
+			else
+			    skip --;
 		    }
 		    else if (field=="SEE")
 		    {
@@ -225,42 +321,38 @@ BEGIN {
 
 			    while (rest!="")
 			    {
-				if (match(rest,/^[ \t]+/))
+				if (match(rest,/^[a-zA-Z_][a-zA-Z0-9]*[(][)]/))
 				{
-				    line=line substr(rest,RSTART,RLENGTH);
+				    link=substr(rest,RSTART,RLENGTH-2);
 				    rest=substr(rest,RSTART+RLENGTH);
-				}
-
-				if (match(rest,/^[^(]+[(][)],?/))
-				{
-				    entry=substr(rest,RSTART,RLENGTH);
-				    rest=substr(rest,RSTART+RLENGTH);
-				    link=gensub(/(.*)[(][)],?/,"\\1",1,entry);
 
 				    lfile="../html/autodocs/" tolower(link) ".html";
 
-				    if (!exists(lfile))
-				    {
-					#line=line "("lfile") " entry;
-					line=line " " entry;
-				    }
+				    if (link in special_item)
+					line = line special_item[link];
+				    else if (link"()" in special_item)
+					line = line special_item[link"()"];
+				    else if (exists(lfile))
+					line=line "<A HREF=\""tolower(link)".html\">"link"()</A>";
 				    else
-				    {
-					if (match(entry,/,/))
-					    line=line "<A HREF=\""tolower(link)".html\">"link"()</A>,";
-					else
-					    line=line "<A HREF=\""tolower(link)".html\">"link"()</A>";
-				    }
+					line=line " " link "()";
 				}
 				else
 				{
-				    gsub(/&/,"\\&amp;",rest);
-				    gsub(/</,"\\&lt;",rest);
-				    gsub(/>/,"\\&gt;",rest);
-				    gsub(/"/,"\\&quot;",rest);
+				    if (match(rest,/^[^a-zA-Z_]+/))
+					len=RLENGTH;
+				    else
+					len=1;
 
-				    line=line rest;
-				    rest="";
+				    post=substr(rest,1,len);
+
+				    gsub(/&/,"\\&amp;",post);
+				    gsub(/</,"\\&lt;",post);
+				    gsub(/>/,"\\&gt;",post);
+				    gsub(/"/,"\\&quot;",post);
+
+				    line=line post;
+				    rest=substr(rest,len+1);
 				}
 			    }
 
@@ -307,7 +399,7 @@ BEGIN {
 	close (file);
     }
 
-    printf ("\n") >> "/dev/stderr";
+    printf ("\n") >> stderr;
 }
 
 function basename(file) {
