@@ -177,17 +177,12 @@ typedef __int32_t                   swblk_t;    /* Swap offset              */
     pthread_t
 */
 
-/* Network related */
-typedef __uint32_t      in_addr_t;
-typedef __uint16_t      in_port_t;
-
-
 /*** Macros for endianness conversion ****************************************/
 
-#define htons(w) AROS_WORD2BE(w)
-#define htonl(l) AROS_LONG2BE(l)
-#define ntohs(w) AROS_BE2WORD(w)
-#define ntohl(l) AROS_BE2LONG(l)
+#define __htons(w) AROS_WORD2BE(w)
+#define __htonl(l) AROS_LONG2BE(l)
+#define __ntohs(w) AROS_BE2WORD(w)
+#define __ntohl(l) AROS_BE2LONG(l)
 
 /*** Defines and macros for select() *****************************************/
 

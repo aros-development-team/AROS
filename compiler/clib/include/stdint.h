@@ -10,14 +10,45 @@
 
 #include <aros/cpu.h>
 
+#ifndef __AROS_INT64_T_DECLARED
+#define __AROS_INT64_T_DECLARED
 typedef signed AROS_64BIT_TYPE              int64_t;
+#endif
+
+#ifndef __AROS_UINT64_T_DECLARED
+#define __AROS_UINT64_T_DECLARED
 typedef unsigned AROS_64BIT_TYPE            uint64_t;
+#endif
+
+#ifndef __AROS_INT32_T_DECLARED
+#define __AROS_INT32_T_DECLARED
 typedef signed AROS_32BIT_TYPE              int32_t;
+#endif
+
+#ifndef __AROS_UINT32_T_DECLARED
+#define __AROS_UINT32_T_DECLARED
 typedef unsigned AROS_32BIT_TYPE            uint32_t;
+#endif
+
+#ifndef __AROS_INT16_T_DECLARED
+#define __AROS_INT16_T_DECLARED
 typedef signed AROS_16BIT_TYPE              int16_t;
+#endif
+
+#ifndef __AROS_UINT16_T_DECLARED
+#define __AROS_UINT16_T_DECLARED
 typedef unsigned AROS_16BIT_TYPE            uint16_t;
+#endif
+
+#ifndef __AROS_INT8_T_DECLARED
+#define __AROS_INT8_T_DECLARED
 typedef signed AROS_8BIT_TYPE               int8_t;
+#endif
+
+#ifndef __AROS_UINT8_T_DECLARED
+#define __AROS_UINT8_T_DECLARED
 typedef unsigned AROS_8BIT_TYPE             uint8_t;
+#endif
 
 typedef signed AROS_INTPTR_TYPE             intptr_t;
 typedef unsigned AROS_INTPTR_TYPE           uintptr_t;
