@@ -51,6 +51,9 @@
 #define EG(o) ((struct ExtGadget *)o)
 #define IM(o) ((struct Image *)o)
 
+#undef IntuitionBase
+#define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
+
 /****************************************************************************/
 
 void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
@@ -161,9 +164,6 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 }
 
 /****************************************************************************/
-
-#undef IntuitionBase
-#define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
 
 /* frbuttonclass boopsi dispatcher
  */
