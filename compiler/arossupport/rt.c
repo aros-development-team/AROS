@@ -180,6 +180,7 @@ static IPTR RT_ShowErrorMem (RTData * rtd, int rtt, MemoryResource *, IPTR, int,
 
 static IPTR RT_AllocVec (RTData * rtd, MemoryResource * rt, va_list args, BOOL * success);
 static IPTR RT_FreeVec (RTData * rtd, MemoryResource * rt);
+static IPTR RT_SearchVec (RTData * rtd, int rtt, MemoryResource ** rtptr, va_list args);
 static IPTR RT_ShowErrorVec (RTData * rtd, int, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
 
 static IPTR RT_CreatePort (RTData * rtd, PortResource * rt, va_list args, BOOL * success);
