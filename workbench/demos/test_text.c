@@ -168,7 +168,7 @@ int handleevents(struct Window *win)
     struct IntuiMessage *imsg;
     struct MsgPort *port = win->UserPort;
     BOOL done = FALSE;
-    int event;
+    int event = 0;
 	
     EnterFunc(bug("HandleEvents(win=%p)\n", win));
     

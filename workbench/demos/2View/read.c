@@ -84,7 +84,7 @@ int ReadILBM (struct IFFHandle * iff,
 {
     struct RastPort * rp = window->RPort;
     BYTE * planes[MAX_PLANES];
-    int t,x,bit,byte,row,pen,lastpen;
+    int t,x,bit,byte,row,pen = 0,lastpen;
 
     printf ("ReadILBM iff=%p win=%p Size=%ldx%ld Depth=%d %s%s\n",
 	iff, window, Width, Height, Depth,
