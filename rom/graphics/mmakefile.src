@@ -78,6 +78,7 @@ FUNCTIONS := \
 	disposeregion \
 	draw \
 	drawellipse \
+	drawglist \
 	extendfont \
 	eraserect \
 	flood \
@@ -136,6 +137,7 @@ FUNCTIONS := \
 	rectfill \
 	releasepen \
 	remfont \
+	remibob \
 	remvsprite \
 	scalerdiv \
 	scrollraster \
@@ -165,6 +167,7 @@ FUNCTIONS := \
 	textlength \
 	ucopperlistinit \
 	unlocklayerrom \
+	vbeampos \
 	waitblit \
 	waitbovp \
 	waittof \

@@ -1,0 +1,55 @@
+/*
+    (C) 1995-99 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Read the current vertical position of the beam
+    Lang: english
+*/
+#include "graphics_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+	#include <clib/graphics_protos.h>
+
+	AROS_LH0(LONG, VBeamPos,
+
+/*  SYNOPSIS */
+	/* void */
+
+/*  LOCATION */
+	struct GfxBase *, GfxBase, 64, Graphics)
+
+/*  FUNCTION
+
+    INPUTS
+        none
+
+    RESULT
+	None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+
+
+#warning TODO: Write graphics/VBeamPos()
+    aros_print_not_implemented ("VBeamPos");
+
+    return 10;
+
+    AROS_LIBFUNC_EXIT
+} /* VBeamPos */
