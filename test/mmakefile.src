@@ -72,7 +72,8 @@ FILES := \
     textbug \
     testide \
     playoss \
-    openlib
+    openlib \
+    dumpmem
 
 EXEDIR := $(AROS_TESTS)
 
