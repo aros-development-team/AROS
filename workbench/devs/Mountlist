@@ -21,59 +21,7 @@ PIPEFS:
 	FileSystem	= pipefs.handler
 #
 
-/* Entry for a file mounted as filesystem FDSK0: */
-FDSK0:
-	FileSystem	= ffs.handler
-	Device		= fdsk.device
-	Unit		= 0
-	BlockSize	= 512
-	Surfaces	= 2
-	BlocksPerTrack	= 11
-	LowCyl		= 0
-	HighCyl		= 79
-	Reserved	= 2
-#
-
-/* Entry for a file mounted as filesystem FDSK1: */
-FDSK1:
-	FileSystem	= ffs.handler
-	Device		= fdsk.device
-	Unit		= 1
-	BlockSize	= 512
-	Surfaces	= 2
-	BlocksPerTrack	= 11
-	LowCyl		= 0
-	HighCyl		= 79
-	Reserved	= 2
-#
-
-/* Entry for a file mounted as filesystem FDSK2: */
-FDSK2:
-	FileSystem	= ffs.handler
-	Device		= fdsk.device
-	Unit		= 2
-	BlockSize	= 512
-	Surfaces	= 2
-	BlocksPerTrack	= 11
-	LowCyl		= 0
-	HighCyl		= 79
-	Reserved	= 2
-#
-
-/* Entry for a file mounted as filesystem FDSK3: */
-FDSK3:
-	FileSystem	= ffs.handler
-	Device		= fdsk.device
-	Unit		= 3
-	BlockSize	= 512
-	Surfaces	= 2
-	BlocksPerTrack	= 11
-	LowCyl		= 0
-	HighCyl		= 79
-	Reserved	= 2
-#
-
-/* Entry for a file mounted as filesystem AFDSK0: */
+/* Entry for a file mounted as filesystem AFD0: */
 AFD0:
 	FileSystem	= afs.handler
 	Device		= fdsk.device
@@ -86,7 +34,7 @@ AFD0:
 	Reserved	= 2
 #
 
-/* Entry for a file mounted as filesystem AFDSK1: */
+/* Entry for a file mounted as filesystem AFD1: */
 AFD1:
 	FileSystem	= afs.handler
 	Device		= fdsk.device
@@ -99,7 +47,7 @@ AFD1:
 	Reserved	= 2
 #
 
-/* Entry for a file mounted as filesystem AFDSK2: */
+/* Entry for a file mounted as filesystem AFD2: */
 AFD2:
 	FileSystem	= afs.handler
 	Device		= fdsk.device
@@ -112,7 +60,7 @@ AFD2:
 	Reserved	= 2
 #
 
-/* Entry for a file mounted as filesystem AFDSK3: */
+/* Entry for a file mounted as filesystem AFD3: */
 AFD3:
 	FileSystem	= afs.handler
 	Device		= fdsk.device
