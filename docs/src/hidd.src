@@ -553,9 +553,25 @@ use it to draw because in a multitasking system, you might loose the
 CPU just after |HIDDV_Graphics_Cmd_CheckTOF()| told you that a
 vblank is happening right now.
 
-\item{HIDDT_BitMap HIDDV_Graphics_Cmd_CreateBitMap (UWORD width, UWORD
-height, UWORD depth)} Create a drawing area with the specified size
-and number of colors.
+\item{HIDDT_BitMap HIDDV_Graphics_Cmd_CreateBitMap (Tag tag, ...)}
+Create a drawing area with the specified attributes.
+
+\begin{taglist}
+\item{HIDDA_BitMap_Width,UWORD,IG} - Create a bitmap with this width.
+When the bitmap has been created, you can query the attribute.
+
+\item{HIDDA_BitMap_Height,UWORD,IG} - Create a bitmap with this height.
+When the bitmap has been created, you can query the attribute.
+
+\item{HIDDA_BitMap_Depth,UWORD,IG} - Create a bitmap with this depth.
+When the bitmap has been created, you can query the attribute.
+The number of distinct colors is |1L << depth|.
+
+\item{HIDDA_BitMap_Showable,BOOL,IG} - Create a bitmap which should later
+be displayed. When the bitmap has been created, you can query the
+attribute.
+
+\end{taglist}
 
 \item{ULONG HIDDV_Graphics_Cmd_ShowBitMap (HIDDT_BitMap bm, BOOL wait)}
 Make a bitmap visible. Some systems allow to show more than one bitmap at a
@@ -589,6 +605,16 @@ In quick mode, the following restrictions are not checked: It's not checked
 whether the source or destination rectangle is completely inside the valid
 area or whether the areas overlap. If they overlap, the results are
 unpredictable.
+
+When copying bitmaps between two different HIDDs, the following pseudo
+algorithm is executed: First the destination HIDD is queried whether it
+does understand the format of the source HIDD. If it does, then the
+destination HIDD does the copying. If it doesn't, then the source is asked
+whether it understands the destination HIDDs' format. If it does, then
+the source HIDD will do the copying. If it doesn't, then the default
+CopyArea of the graphics HIDD base class will be invoked which
+copies the bitmaps pixel by pixel with |HIDDV_Graphics_Cmd_GetPixel()|
+and |HIDDV_Graphics_Cmd_SetPixel()|.
 
 \item{BOOL HIDDV_Graphics_Cmd_SetPixel (HIDDT_GC gc, WORD x, WORD y)}
 Changes the pixel at (|x|,|y|) to the color stored in |gc|. This command is
@@ -708,12 +734,17 @@ of the graphics memory. Note that most HIDDs don't support to set this
 value. This can be used to access the video hardware directly. If you
 plan this, you must check if the HIDD supports this and if it does,
 then you must take the appropriate steps specified in the HIDDs' docs
-to tell the HIDD what you are doing (eg. disable the HIDD).
+to tell the HIDD what you are doing (eg. disable the HIDD). After
+you did this, you can use |HIDDA_Graphics_Format| to find out
+the format in which the data is stored here.
 
 \item{HIDDA_Graphics_BestSize,ULONG,G} Query the HIDD for the best size
 for drawing areas or drawing commands. Most graphics chips have
 a certain blocking size, ie. it doesn't matter if you copy 6 bits or
 30 but 33 is slow. The HIDD will return 32 in this case.
+
+\item{HIDDA_Graphics_Format,ULONG,G} Tell the format of the data
+at |HIDDA_Graphics_BaseAddress|. See this tag for details.
 
 \end{taglist}
 
