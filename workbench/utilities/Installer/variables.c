@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,6 @@
 extern InstallerPrefs preferences;
 extern IPTR args[TOTAL_ARGS];
 extern UBYTE **tooltypes;
-extern struct IconBase *IconBase;
 
 /* External function prototypes */
 extern void request_userlevel( char * );
@@ -196,7 +195,6 @@ char *ttemp;
 #ifdef DEBUG
        fprintf( stderr, "No ToolType APPNAME in Icon!\n" );
        ArgArrayDone();
-       CloseLibrary( (struct Library *)IconBase );
        exit(-1);
 #endif /* DEBUG */
       }

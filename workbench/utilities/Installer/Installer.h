@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,7 +14,8 @@
    This flag is not only for internal verbosity, but embraces outputs
    where Intuition GUI is still missing (mostly errors), too.
 */
-#define DEBUG 1
+//#define DEBUG 1
+#undef DEBUG
 
 #ifdef DEBUG
 #   include <proto/arossupport.h>
@@ -39,6 +40,11 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/alib.h>
+#include <proto/icon.h>
+#include <proto/workbench.h>
+#include <workbench/workbench.h>
+#include <workbench/startup.h>
+#include <dos/bptr.h>
 
 extern struct ExecBase *SysBase;
 
