@@ -52,7 +52,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
         goto failure;
 
     /* First read the file id (FCH_ID or TFCH_ID) */
-    if (!ReadWord( &DFB(DiskfontBase)->dsh, &aword, fh ))
+    if (!ReadWord( &DFB(DiskfontBase)->dsh, &aword, (void *)fh ))
         goto failure;
     
     /* Check that this is a .font file */
@@ -63,7 +63,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
     fdh->Tagged = ((aword == TFCH_ID) || (aword == OFCH_ID));
     
      /* Read number of (T)FontContents structs in the file */
-    if (!ReadWord( &DFB(DiskfontBase)->dsh, &numentries ,fh ))
+    if (!ReadWord( &DFB(DiskfontBase)->dsh, &numentries , (void *)fh ))
         goto failure;
     
     fdh->NumEntries = numentries;
@@ -97,7 +97,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
         
         do
         {
-       	    if (!ReadByte( &DFB(DiskfontBase)->dsh, strptr, fh))
+       	    if (!ReadByte( &DFB(DiskfontBase)->dsh, strptr, (void *)fh))
         	goto failure;
         		
             oldstrlen ++;
@@ -108,7 +108,14 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
        	strptr = strpbrk(strbuf, "/");
 
        	/* End string at '/' */
-       	if (strptr) *strptr = 0;
+       	if (strptr)
+	{
+	    *strptr = 0;
+	}
+	else
+	{
+	    strptr = strbuf + strlen(strbuf);
+	}
        	
        	
        	/* Allocate space for fontname */
@@ -134,7 +141,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
         {
 
             /* Next thing up is the tagcount */
-            if (!ReadWord(&DFB(DiskfontBase)->dsh, &numtags, fh))
+            if (!ReadWord(&DFB(DiskfontBase)->dsh, &numtags, (void *)fh))
                 goto failure;
                 
             
@@ -174,13 +181,13 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
         } /* if (fdh->Tagged) */
         
         /* Read the rest of the info */
-        if (!ReadWord( &DFB(DiskfontBase)->dsh, &(tattr->tta_YSize), fh ))
+        if (!ReadWord( &DFB(DiskfontBase)->dsh, &(tattr->tta_YSize), (void *)fh ))
             goto failure;
 
-        if (!ReadByte(&DFB(DiskfontBase)->dsh, &(tattr->tta_Style), fh ))
+        if (!ReadByte(&DFB(DiskfontBase)->dsh, &(tattr->tta_Style), (void *)fh ))
             goto failure;
             
-        if (!ReadByte( &DFB(DiskfontBase)->dsh, &(tattr->tta_Flags), fh ))
+        if (!ReadByte( &DFB(DiskfontBase)->dsh, &(tattr->tta_Flags), (void *)fh ))
             goto failure;
 
         tattr ++;
