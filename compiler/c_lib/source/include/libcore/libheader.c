@@ -248,17 +248,17 @@ DECLARESET(INITLIB)
 DECLARESET(EXPUNGELIB)
 DECLARESET(OPENLIB)
 DECLARESET(CLOSELIB)
+DECLARESET(SYSINIT)
+
+#endif
 
 #ifdef SysBase
-#undef SysBase
+#   define __LC_OLD_SYSBASE SysBase
+#   undef SysBase
 #endif
-struct ExecBase *SysBase;
-#else
-#ifndef SysBase
-#   define SysBase	(LC_SYSBASE_FIELD(lh))
-#   define __LC_OWN_SYSBASE
-#endif
-#endif
+
+/* In these functions always take the LC_SYSBASE_FIELD as SysBase */
+#define SysBase	(LC_SYSBASE_FIELD(lh))
 
 /* -----------------------------------------------------------------------
     InitLib:
@@ -283,11 +283,8 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     LC_SYSBASE_FIELD(lh) = sysBase;
     LC_SEGLIST_FIELD(lh) = segList;
 
-
 #ifdef AROS_LC_SETFUNCS
-    SysBase = sysBase;
-
-    ok = set_open_libraries() && set_call_funcs(SETNAME(INIT), 1, 1);
+    ok = set_call_libfuncs(SETNAME(SYSINIT), 1, sysBase) && set_open_libraries() && set_call_funcs(SETNAME(INIT), 1, 1);
     if ( ok )
     {
 	/* ctors get called in inverse order than init funcs */
@@ -508,8 +505,10 @@ AROS_LH0 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(ExtFuncLib),
     AROS_LIBFUNC_EXIT
 }
 
-#ifdef __LC_OWN_SYSBASE
-#   undef SysBase
+#undef SysBase
+#ifdef __LC_OLD_SYSBASE
+#   define SysBase __LC_OLD_SYSBASE
+#   undef __LC_OLD_SYSBASE
 #endif
 
 #ifdef __SASC
@@ -552,4 +551,5 @@ DEFINESET(INITLIB)
 DEFINESET(EXPUNGELIB)
 DEFINESET(OPENLIB)
 DEFINESET(CLOSELIB)
+DEFINESET(SYSINIT)
 #endif
