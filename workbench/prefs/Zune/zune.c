@@ -103,13 +103,10 @@ static ULONG ImageClipboard_DragQuery(struct IClass *cl, Object *obj, struct MUI
 {
     IPTR dummy;
 
-/*      D(bug("ImageClipboard_DragQuery\n")); */
     if (msg->obj == obj)
 	return MUIV_DragQuery_Refuse;
-/*      D(bug("ImageClipboard_DragQuery 2\n")); */
     if (!get(msg->obj, MUIA_Imagedisplay_Spec, &dummy))
 	return MUIV_DragQuery_Refuse;
-/*      D(bug("ImageClipboard_DragQuery accepted\n")); */
     return MUIV_DragQuery_Accept;
 }
 
@@ -117,7 +114,6 @@ static ULONG ImageClipboard_DragDrop(struct IClass *cl, Object *obj, struct MUIP
 {
     IPTR spec;
 
-/*      D(bug("ImageClipboard_DragDrop\n")); */
     get(msg->obj, MUIA_Imagedisplay_Spec, &spec);
     set(obj, MUIA_Imagedisplay_Spec, spec);
     return 0;
@@ -148,13 +144,10 @@ static ULONG FrameClipboard_DragQuery(struct IClass *cl, Object *obj, struct MUI
 {
     struct MUI_FrameSpec *dummy;
 
-/*      D(bug("ImageClipboard_DragQuery\n")); */
     if (msg->obj == obj)
 	return MUIV_DragQuery_Refuse;
-/*      D(bug("ImageClipboard_DragQuery 2\n")); */
     if (!get(msg->obj, MUIA_Framedisplay_Spec, &dummy))
 	return MUIV_DragQuery_Refuse;
-/*      D(bug("ImageClipboard_DragQuery accepted\n")); */
     return MUIV_DragQuery_Accept;
 }
 
@@ -162,9 +155,8 @@ static ULONG FrameClipboard_DragDrop(struct IClass *cl, Object *obj, struct MUIP
 {
     struct MUI_FrameSpec *spec;
 
-/*      D(bug("ImageClipboard_DragDrop\n")); */
     get(msg->obj, MUIA_Framedisplay_Spec, &spec);
-    set(obj, MUIA_Framedisplay_Spec, spec);
+    set(obj, MUIA_Framedisplay_Spec, (IPTR)spec);
     return 0;
 }
 
@@ -412,6 +404,7 @@ int init_gui(void)
 			MUIA_Listview_List, main_page_list = ListObject,
 			    InputListFrame,
 			    MUIA_List_DisplayHook, &page_display_hook,
+	                    MUIA_CycleChain, 1,
 			    End,
 			End,
 		    Child, HGroup,
@@ -419,7 +412,7 @@ int init_gui(void)
 					     MUIA_Draggable, TRUE,
 					     MUIA_FixHeight, 20,
 					     MUIA_FixWidth, 30,
-					     MUIA_Window_Title, "Frame Clipboard",
+					     MUIA_Window_Title, (IPTR)"Frame Clipboard",
 					     TAG_DONE), /* Popframe really */
       	               Child, NewObject(CL_ImageClipboard->mcc_Class, NULL,
 					     MUIA_Draggable, TRUE,
@@ -427,7 +420,7 @@ int init_gui(void)
 					     MUIA_FixHeight, 20,
 					     MUIA_FixWidth, 30,
 					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
-					     MUIA_Window_Title, "Image Clipboard",
+					     MUIA_Window_Title, (IPTR)"Image Clipboard",
 					     TAG_DONE),
 		        End, /* HGroup */
 	            End,
@@ -530,7 +523,7 @@ void test_prefs(void)
 
     save_prefs(appname, FALSE);
 /*      load_prefs(); */
-    cfg = MUI_NewObject(MUIC_Configdata, MUIA_Configdata_Application, app, TAG_DONE);
+    cfg = MUI_NewObject(MUIC_Configdata, MUIA_Configdata_Application, (IPTR)app, TAG_DONE);
     set(app, MUIA_Application_Configdata, cfg);
 }
 
