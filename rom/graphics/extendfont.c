@@ -57,12 +57,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+        #define TFE_COOKIE 0xffff
+
 	/* !!! defaults to FALSE !!! */
 	ULONG retval = FALSE; 
 	
 	struct TextFontExtension *tfe;
 	
-	if (font == 0)
+	if (font == NULL)
 		return(FALSE);
 	
 	/* Does the font allready have an extension ? */
@@ -73,10 +75,10 @@
 		/* Try to build an extension */
 		if (fontTags)
 		{
-			if ((tfe = AllocMem(sizeof (struct TextFontExtension), MEMF_ANY|MEMF_CLEAR)) != 0)
+			if ((tfe = AllocMem(sizeof (struct TextFontExtension), MEMF_ANY|MEMF_CLEAR)) != NULL)
 			{
 				/* We take a copy of the tagitems */
-				if ((tfe->tfe_Tags = CloneTagItems(fontTags)) != 0)
+				if ((tfe->tfe_Tags = CloneTagItems(fontTags)) != NULL)
 				{
 				
 					/* Fill in the textfontextension */
