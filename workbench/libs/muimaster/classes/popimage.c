@@ -15,6 +15,8 @@
 #include <proto/muimaster.h>
 #endif
 
+/*  #define MYDEBUG 1 */
+#include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -173,6 +175,7 @@ STATIC IPTR Popimage_CloseWindow(struct IClass *cl, Object *obj,
     {
 	char *spec;
 	get(data->imageadjust, MUIA_Imageadjust_Spec, &spec);
+	D(bug("popimage: got %s\n", spec));
 	set(obj, MUIA_Imagedisplay_Spec, spec);
     }
 
