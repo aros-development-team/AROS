@@ -35,12 +35,6 @@ struct DrawerMessage
     struct WBArg           dm_Drawer;
 };
 
-/*** Errors *****************************************************************/
-#define HE_NONE         (0) /* no error */
-#define HE_MSGPORT      (1) /* could not allocate message port */
-#define HE_MEMORY       (2) /* could not allocate memory */
-#define HE_LIBRARY      (3) /* could not open library */
-
 /*** Prototypes *************************************************************/
 AROS_UFP3
 (
