@@ -1093,7 +1093,8 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
-            Damage = NewRectRegion(x1 + MinX(L), y1 + MinY(L), x2 + MinX(L), y2 + MinY(L));
+//            Damage = NewRectRegion(x1 + MinX(L), y1 + MinY(L), x2 + MinX(L), y2 + MinY(L));
+            Damage = AndRectRegionND(L->VisibleRegion, &ScrollRect);
         }
 
         AROS_BEGIN_PROFILING(SortLayerCR)
@@ -1387,7 +1388,8 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
-            Damage = NewRectRegion(x1 + MinX(L), y1 + MinY(L), x2 + MinX(L), y2 + MinY(L));
+//            Damage = NewRectRegion(x1 + MinX(L), y1 + MinY(L), x2 + MinX(L), y2 + MinY(L));
+            Damage = AndRectRegionND(L->VisibleRegion, &ScrollRect);
         }
 
         AROS_BEGIN_PROFILING(Blitting loop)
