@@ -490,8 +490,8 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         UWORD *pens = data->dri->dri_Pens;
 	UWORD bg;
 
-        WORD h_spacing = width  / 3;
-	WORD v_spacing = height / 3;
+        WORD h_spacing = width  / 6;
+	WORD v_spacing = height / 6;
 	
 	WORD right, bottom;
 	
@@ -506,11 +506,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	/* Draw a image of two partly overlapped tiny windows, 
 	*/
 	
-	left += h_spacing / 2;
-	top  += v_spacing / 2;
+	left += h_spacing;
+	top  += v_spacing;
 	
-	width  -= h_spacing;
-	height -= v_spacing;
+	width  -= h_spacing * 2;
+	height -= v_spacing * 2;
 	
 	right  = left + width  - 1;
 	bottom = top  + height - 1;
@@ -576,41 +576,66 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	
     case CLOSEIMAGE: {
 	UWORD *pens = data->dri->dri_Pens;
-	
+	WORD right = left + width - 1;
+	WORD bottom = top  + height - 1;
+	WORD h_spacing = width * 4 / 10;
+	WORD v_spacing = height * 3 / 10;
+
 	SetAPen(rport, getbgpen(msg->imp_State, pens));
-	RectFill(rport,left, top, left + width - 1, top + height - 1);
+	RectFill(rport,left, top, right, bottom);
+	
+	left += h_spacing;right -= h_spacing;
+	top += v_spacing;bottom -= v_spacing;
+	
 	SetAPen(rport, pens[SHADOWPEN]);
-	RectFill(rport, left + 5, top + 4, left + width - 1 - 5, top + height - 1 - 4);
+	RectFill(rport, left, top, right, bottom);
+	
+	left++;top++;
+	right--;bottom--;
+	
 	SetAPen(rport, pens[(msg->imp_State == IDS_NORMAL) ? SHINEPEN : BACKGROUNDPEN]);
-	RectFill(rport, left + 6, top + 5, left + width - 1 - 6, top + height - 1 - 5); 
+	RectFill(rport, left, top, right, bottom);
 
         break; }
 	
     case ZOOMIMAGE: {
         UWORD *pens = data->dri->dri_Pens;
 	UWORD bg;
-
-	WORD bottom = top + height -1 ;
-
+	WORD right = left + width - 1;
+	WORD bottom = top + height - 1 ;
+	WORD h_spacing = width / 6;
+	WORD v_spacing = height / 6;
+	
 	bg = getbgpen(msg->imp_State, pens);
 	
 	/* Clear background into correct color */
 	SetAPen(rport, bg);
-	RectFill(rport, left, top, left + width - 1, top + height - 1);
+	RectFill(rport, left, top, right, bottom);
+	
+	left += h_spacing;right -= h_spacing;
+	top += v_spacing;bottom -= v_spacing;
 	
 	SetAPen(rport, pens[SHADOWPEN]);
-	RectFill(rport, left + 2, top + 2, left + width - 1 - 2, top + height - 1 - 2);
+	RectFill(rport, left, top, right, bottom);
 
 	SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? SHINEPEN :
 						 	       (msg->imp_State == IDS_NORMAL) ? FILLPEN : BACKGROUNDPEN]);
-	RectFill(rport, left + 3, top + 3, left + width - 1 - 3, top + height - 1 - 3);
+	RectFill(rport, left + 1, top + 1, right - 1, bottom - 1);
+
+	right = left + (right - left + 1) / 2;
+	bottom = top + (bottom - top + 1) / 2;
+	
+	if (right - left <  4) right = left + 4;
 	
 	SetAPen(rport, pens[SHADOWPEN]);
-	RectFill(rport, left + 3, top + 3, left + 4 + 4, top + 3 + 4);
+	RectFill(rport, left, top, right, bottom);
+	
+	left += 2;right -= 2;
+	top += 1; bottom -= 1;
 	
 	SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN :
 							       (msg->imp_State == IDS_NORMAL) ? SHINEPEN : BACKGROUNDPEN]);
-	RectFill(rport,left + 4, top + 3, left + 5 + 1, top + 3 + 3);
+	RectFill(rport,left, top, right, bottom);
         break; }
 	
     
