@@ -57,30 +57,21 @@ struct IconInternalMemList
 };
 
 extern struct ExecBase * SysBase;
+extern struct DosLibrary * DOSBase;
 
 struct IconBase
 {
-    struct LibHeader  libheader;
+    struct Library   LibNode;
+    BPTR	     ib_SegList;
+    struct ExecBase  *ib_SysBase;
 
     /* Private parts */
-#if 0
-    struct Library  * dosbase;
-#endif
     struct Library  * utilitybase;
     struct Hook       dsh;
 };
 
 #define LB(icon)        ((struct IconBase *)icon)
-#if 0
-#undef DOSBase
-#define DOSBase     (((struct IconBase *)IconBase)->dosbase)
-#else
-extern struct DosLibrary * DOSBase;
-#endif
 #undef UtilityBase
 #define UtilityBase	(((struct IconBase *)IconBase)->utilitybase)
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct IconBase *, IconBase, 3, Icon)
 
 #endif /* ICON_INTERN_H */

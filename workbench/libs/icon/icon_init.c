@@ -10,8 +10,17 @@
 #include "icon_intern.h"
 #include "libdefs.h"
 
+#define LC_SYSBASE_FIELD(lib)	(((LIBBASETYPEPTR       )(lib))->ib_SysBase)
+#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->ib_SegList)
+#define LC_RESIDENTNAME		Icon_resident
+#define LC_RESIDENTFLAGS	RTF_AUTOINIT
+#define LC_RESIDENTPRI		0
+#define LC_LIBBASESIZE		sizeof(LIBBASETYPE)
+#define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
+#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->LibNode)
+
 #define LC_NO_CLOSELIB
-#define LC_RESIDENTPRI	    -120
+#define LC_NO_OPENLIB
 
 #include <libcore/libheader.c>
 
@@ -19,37 +28,21 @@
 #include <aros/debug.h>
 #undef kprintf
 
-#undef DOSBase;
+#undef DOSBase
+#undef SysBase
 
 struct ExecBase   * SysBase; /* global variable */
 struct DosLibrary * DOSBase;
 
 ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
 {
-    SysBase = lh->lh_SysBase;
+    SysBase = lh->ib_SysBase;
 
-    return TRUE;
-} /* L_InitLib */
-
-ULONG SAVEDS L_OpenLib (LC_LIBHEADERTYPEPTR lh)
-{
-#if 0
-    if (!LB(lh)->dosbase)
-	LB(lh)->dosbase = OpenLibrary (DOSNAME, 39);
-
-    if (!LB(lh)->dosbase)
-	return FALSE;
-#else
-    if (!DOSBase)
-	DOSBase = (struct DosLibrary *) OpenLibrary (DOSNAME, 39);
-
+    DOSBase = (struct DosLibrary *) OpenLibrary (DOSNAME, 39);
     if (!DOSBase)
 	return FALSE;
-#endif
 
-    if (!LB(lh)->utilitybase)
-	LB(lh)->utilitybase = OpenLibrary (UTILITYNAME, 39);
-
+    LB(lh)->utilitybase = OpenLibrary (UTILITYNAME, 39);
     if (!LB(lh)->utilitybase)
 	return NULL;
 
@@ -57,7 +50,8 @@ ULONG SAVEDS L_OpenLib (LC_LIBHEADERTYPEPTR lh)
     LB(lh)->dsh.h_Data  = DOSBase;
 
     return TRUE;
-} /* L_OpenLib */
+} /* L_InitLib */
+
 
 void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
 {
@@ -68,4 +62,3 @@ void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
 	CloseLibrary (LB(lh)->utilitybase);
 
 } /* L_ExpungeLib */
-
