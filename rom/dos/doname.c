@@ -15,6 +15,8 @@
 #include <string.h>
 #include "dos_intern.h"
 
+#include <linux/signal.h>
+
 LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
     STRPTR volname;
@@ -26,7 +28,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name, struct DosLibrary *DOSBas
     struct FileHandle *fh;
     struct Process *me = (struct Process *)FindTask(NULL);
 
-    if (!Strnicmp(name, "PROGDIR:", 8))
+    if (!Strnicmp(name, "PROGDIR:", 8) && me->pr_HomeDir)
     {
 	cur = me->pr_HomeDir;
 	volname = NULL;
@@ -124,7 +126,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name, struct DosLibrary *DOSBas
 	device = DOSBase->dl_NulHandler;
 	unit = DOSBase->dl_NulLock;
     }
-
+	
     iofs->IOFS.io_Device = device;
     iofs->IOFS.io_Unit = unit;
     iofs->io_Union.io_NamedFile.io_Filename = (STRPTR)pathname;
