@@ -473,11 +473,10 @@ void writestart(void)
 	funclistit2 = funclistit->next;
 	fprintf(out,
 		"\n"
-		"const APTR %s_functable[]=\n"
+		"const APTR GM_UNIQUENAME(FuncTable)[]=\n"
 		"{\n"
 		"    &AROS_SLIB_ENTRY(%s,%s),\n"
 		"    &AROS_SLIB_ENTRY(%s,%s),\n",
-		modulename,
 		funclistit->name, basename,
 		funclistit2->name, basename
 	);
