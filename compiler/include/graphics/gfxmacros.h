@@ -29,6 +29,11 @@
 	(w)->AreaPtrn = p; \
 	(w)->AreaPtSz = n; \
     }
+#define SetOPen(w,c) \
+    { \
+	(w)->AOlPen = c; \
+	(w)->Flags |= AREAOUTLINE; \
+    }
 #define SetAOlPen(w,p)  SetOutlinePen(w,p)
 #define SetWrMsk(w,m)   SetWriteMask(w,m)
 #define BNDRYOFF(w)     {(w)->Flags &= ~AREAOUTLINE;}
