@@ -6,7 +6,7 @@
 
 /*** BitMap::ConvertPixels() **********************************************/
 #define SHIFT_PIX(pix, shift)	\
-	(( (shift) < 0) ? (pix) << (-shift) : (pix) >> (shift) )
+	(( (shift) < 0) ? (pix) >> (-shift) : (pix) << (shift) )
 
 
 
@@ -94,10 +94,17 @@ static VOID true_to_true(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels
     blue_diff	= srcfmt->blue_shift	- dstfmt->blue_shift;
 
 
+#if 0
 kprintf("true_to_true()\n: src = %x  dest = %x srcfmt = %d %d %d %d [%d] destfmt = %d %d %d %d [%d]\n",
 	src, dst, srcfmt->alpha_shift, srcfmt->red_shift, srcfmt->green_shift, srcfmt->blue_shift, srcfmt->bytes_per_pixel,
-		  dstfmt->alpha_shift, dstfmt->red_shift, dstfmt->green_shift, dstfmt->blue_shift, srcfmt->bytes_per_pixel);
-kprintf("destmasks = %x %x %x %x  diffs = %d %d %d %d\n",
+		  dstfmt->alpha_shift, dstfmt->red_shift, dstfmt->green_shift, dstfmt->blue_shift, dstfmt->bytes_per_pixel);
+
+kprintf("srcmasks = %p %p %p %p\n",
+	srcfmt->alpha_mask,
+	srcfmt->red_mask,
+	srcfmt->green_mask,
+	srcfmt->blue_mask);
+kprintf("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 	dstfmt->alpha_mask,
 	dstfmt->red_mask,
 	dstfmt->green_mask,
@@ -106,7 +113,7 @@ kprintf("destmasks = %x %x %x %x  diffs = %d %d %d %d\n",
 	red_diff,
 	green_diff,
 	blue_diff);
-	    
+#endif	    
     for (y = 0; y < msg->height; y ++)
     {
     	APTR s = src;
@@ -119,11 +126,19 @@ kprintf("destmasks = %x %x %x %x  diffs = %d %d %d %d\n",
 	    
 	    GET_TRUE_PIX(s, srcpix, srcfmt);
 	    
-	    dstpix =      (SHIFT_PIX(srcpix, alpha_diff) & dstfmt->alpha_mask)
-	    		| (SHIFT_PIX(srcpix, red_diff)   & dstfmt->red_mask)
-	    		| (SHIFT_PIX(srcpix, green_diff) & dstfmt->green_mask)
-	    		| (SHIFT_PIX(srcpix, blue_diff)  & dstfmt->blue_mask);
-	    
+	    dstpix =      (SHIFT_PIX(srcpix & srcfmt->alpha_mask, alpha_diff) & dstfmt->alpha_mask)
+	    		| (SHIFT_PIX(srcpix & srcfmt->red_mask  , red_diff)   & dstfmt->red_mask)
+	    		| (SHIFT_PIX(srcpix & srcfmt->green_mask, green_diff) & dstfmt->green_mask)
+	    		| (SHIFT_PIX(srcpix & srcfmt->blue_mask , blue_diff)  & dstfmt->blue_mask);
+
+#if 0
+	kprintf("[ %p, %p, %p, %p ] "
+		, srcpix
+		, srcpix & srcfmt->blue_mask
+		, SHIFT_PIX(srcpix & srcfmt->blue_mask, blue_diff)
+		, SHIFT_PIX(srcpix & srcfmt->blue_mask, blue_diff) & dstfmt->blue_mask);
+#endif	    
+// kprintf("[ %p => %p ] \n", srcpix, dstpix);
 	    /* Write the pixel to the destination buffer */
 	    PUT_TRUE_PIX(d, dstpix, dstfmt);
 	    
@@ -312,7 +327,7 @@ VOID bitmap_convertpixels(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixel
     /* For now we assume truecolor */
     HIDDT_PixelFormat *srcfmt, *dstfmt;
     
-    kprintf("bitmap_convertpixels()\n");
+//    kprintf("bitmap_convertpixels()\n");
 
     srcfmt = msg->srcPixFmt;
     dstfmt = msg->dstPixFmt;
