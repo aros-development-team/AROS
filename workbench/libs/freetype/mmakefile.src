@@ -63,8 +63,8 @@ $(GENINCDIR)/%.h : include/%.h
 	@$(CP) $< $@
 	
 #MM
-contrib-freetype-linklib-clean :
-	$(MAKE) TOP=. clean
+contrib-freetype-linklib-clean : clean
+	-$(MAKE) TOP=. clean
 
 #MM
 clean :: contrib-freetype-linklib-clean
