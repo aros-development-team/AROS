@@ -1,6 +1,6 @@
 [Devices]
 scsi.device
-ide.device
+ata.device
 fdsk.device
 
 [TableIDs]
