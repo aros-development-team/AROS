@@ -37,7 +37,7 @@ struct MUI_GaugeData
    BOOL horiz;
    BOOL dupinfo;
 
-   ULONG current;
+   ULONG current; /* (dlc) LONG in MUI */
    ULONG max;
    ULONG divide;
    STRPTR info;
@@ -147,7 +147,11 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Gauge_Current:
-	    	    data->current = tag->ti_Data;
+		    data->current = tag->ti_Data;
+		    if ((LONG)tag->ti_Data < 0)
+		        data->current = 0;
+		    else if (tag->ti_Data > data->max)
+		        data->current = data->max;
 		    info_changed = 1;
 		    need_redraw = 1;
 		    break;
@@ -197,7 +201,39 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 /**************************************************************************
- OM_SET
+ OM_GET
+**************************************************************************/
+static ULONG  Gauge_Get(struct IClass *cl, Object * obj, struct opGet *msg)
+{
+    struct MUI_GaugeData *data = INST_DATA(cl, obj);
+    ULONG *store = msg->opg_Storage;
+    ULONG    tag = msg->opg_AttrID;
+
+    switch (tag)
+    {
+    case MUIA_Gauge_Current:
+	*store = data->current;
+	return TRUE;
+    case MUIA_Gauge_Divide:
+	*store = data->divide;
+	return TRUE;
+    case MUIA_Gauge_InfoText:
+	*store = (ULONG)data->info;
+	return TRUE;
+    case MUIA_Gauge_Max:
+	*store = data->max;
+	return TRUE;
+    case MUIA_Gauge_DupInfoText:
+	*store = (ULONG)data->dupinfo;
+	return TRUE;
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+
+/**************************************************************************
+ MUIM_Setup
 **************************************************************************/
 static IPTR Gauge_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
@@ -329,6 +365,7 @@ AROS_UFH3S(IPTR,Gauge_Dispatcher,
 	case OM_NEW: return Gauge_New(cl, obj, (struct opSet *)msg);
 	case OM_DISPOSE: return Gauge_Dispose(cl, obj, (Msg)msg);
 	case OM_SET: return Gauge_Set(cl, obj, (struct opSet *)msg);
+	case OM_GET: return Gauge_Get(cl, obj, (struct opGet *)msg);
 	case MUIM_Setup: return Gauge_Setup(cl, obj, (struct MUIP_Setup *)msg);
 	case MUIM_AskMinMax: return Gauge_AskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
 	case MUIM_Draw: return Gauge_Draw(cl, obj, (struct MUIP_Draw*)msg);
