@@ -160,6 +160,7 @@ SHARED	:= \
 	isatty \
 	isinf \
 	jrand48 \
+        kill \
 	labs \
 	lcong48 \
 	localtime \
