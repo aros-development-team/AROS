@@ -198,27 +198,35 @@ kprintf("dto 9\n");
 		    nomheight = ((nomheight) ? nomheight : 175);
 
 		    /* Open the window */
-		    if ((win = OpenWindowTags ( NULL,
-						WA_InnerWidth,	nomwidth,
-						WA_InnerHeight,	nomheight,
-						WA_Title,		name,
-						WA_IDCMP,		IDCMP_FLAGS,
-						WA_DragBar,	TRUE,
-						WA_DepthGadget,	TRUE,
-						WA_CloseGadget,	TRUE,
-						WA_AutoAdjust,	TRUE,
-						WA_SimpleRefresh,	TRUE,
-						WA_BusyPointer,	TRUE,
-						WA_Activate,	TRUE,
-						TAG_DONE)))
+
+		    if (win = OpenWindowTags (NULL,
+					      WA_InnerWidth,	nomwidth,
+					      WA_InnerHeight,	nomheight,
+					      WA_Title,		name,
+					      WA_IDCMP,		IDCMP_FLAGS,
+					      WA_DragBar,	TRUE,
+					      WA_DepthGadget,	TRUE,
+					      WA_CloseGadget,	TRUE,
+					      WA_AutoAdjust,	TRUE,
+					      WA_SimpleRefresh,	TRUE,
+					      WA_BusyPointer,	TRUE,
+					      WA_Activate,	TRUE,
+					      WA_SizeGadget,	TRUE,
+					      WA_SizeBBottom,	TRUE,
+					      WA_MinWidth,	50,
+					      WA_MinHeight,	50,
+					      WA_MaxWidth,	10000,
+					      WA_MaxHeight,	10000,
+					      TAG_DONE))
+
 		    {
 kprintf("dto 10\n");
 			/* Set the dimensions of the DataType object. */
 			SetDTAttrs (dto, NULL, NULL,
 				    GA_Left,	win->BorderLeft,
 				    GA_Top,	win->BorderTop,
-				    GA_Width,	win->Width - win->BorderLeft - win->BorderRight,
-				    GA_Height,	win->Height - win->BorderTop - win->BorderBottom,
+				    GA_RelWidth,	- win->BorderLeft - win->BorderRight,
+				    GA_RelHeight,	- win->BorderTop - win->BorderBottom,
 				    ICA_TARGET,	ICTARGET_IDCMP,
 				    TAG_DONE);
 kprintf("dto 11\n");
