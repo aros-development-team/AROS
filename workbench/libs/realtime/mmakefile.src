@@ -14,10 +14,16 @@ FUNCS := createplayera \
 	 setplayerattrsa \
 	 unlockrealtime
 
-#MM- workbench-libs-realtime : includes linklibs
+#MM workbench-libs-realtime-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
+#MM- workbench-libs-realtime : linklibs
 
-%build_module_macro mmake=workbench-libs-realtime modname=realtime \
-  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs=amiga \
-  conffile=lib.conf
+%build_module mmake=workbench-libs-realtime \
+    modname=realtime modtype=library \
+    files="realtime_init $(FUNCS) $(FILES)" \
+    uselibs=amiga
 
 %common
