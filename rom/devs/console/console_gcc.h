@@ -206,7 +206,7 @@ struct cdihData
 struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice);
 VOID cleanupCDIH(struct Interrupt *cdihandler, struct ConsoleBase *ConsoleDevice);
 
-VOID consoleTaskEntry(struct coTaskParams *param);
+VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice);
 
 struct Task *createConsoleTask(APTR taskparams, struct ConsoleBase *ConsoleDevice);
 
@@ -246,7 +246,7 @@ struct ConsoleBase
     
     struct Interrupt	*inputHandler;
     struct Task		*consoleTask;
-    struct MsgPort	*commandPort;
+    struct MsgPort	 commandPort;
     
     /* Queued read requests */
     struct MinList	readRequests;

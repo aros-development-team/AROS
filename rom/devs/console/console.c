@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Console.device
@@ -135,7 +135,6 @@ AROS_LH2(struct ConsoleBase *, init,
 {
     AROS_LIBFUNC_INIT
     
-
     /* Store arguments */
     ConsoleDevice->sysBase = sysBase;
     ConsoleDevice->seglist = segList;
@@ -144,9 +143,80 @@ AROS_LH2(struct ConsoleBase *, init,
     InitSemaphore(&ConsoleDevice->unitListLock);
     InitSemaphore(&ConsoleDevice->consoleTaskLock);
     
-    ConsoleDevice->device.dd_Library.lib_OpenCnt=1;
+    ConsoleDevice->gfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
+    if (!ConsoleDevice->gfxBase)
+	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_GraphicsLib);
 
-    return ConsoleDevice;
+    ConsoleDevice->intuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
+    if (!ConsoleDevice->intuitionBase)
+	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_Intuition);
+
+    ConsoleDevice->boopsiBase = OpenLibrary(BOOPSINAME, 37);
+    if (!ConsoleDevice->boopsiBase)
+	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_Unknown);
+
+    ConsoleDevice->utilityBase = OpenLibrary("utility.library", 37);
+    if (!ConsoleDevice->utilityBase)
+	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_UtilityLib);
+
+    ConsoleDevice->keymapBase = OpenLibrary("keymap.library", 37);
+    if (!ConsoleDevice->keymapBase)
+	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_KeyMapLib);
+    
+    /* Create the console classes */
+    CONSOLECLASSPTR = makeConsoleClass(ConsoleDevice);
+    STDCONCLASSPTR = makeStdConClass(ConsoleDevice);
+    if (!CONSOLECLASSPTR || !STDCONCLASSPTR)
+	Alert(AT_DeadEnd | AN_ConsoleDev | AG_NoMemory);
+
+    /* Create the console.device task. */
+    ConsoleDevice->consoleTask = AllocMem(sizeof(struct Task), MEMF_CLEAR|MEMF_PUBLIC);
+    if(ConsoleDevice->consoleTask)
+    {
+	struct Task * const task = ConsoleDevice->consoleTask;
+	APTR stack;
+
+	/* Initialise the task */
+	NEWLIST(&task->tc_MemEntry);
+	task->tc_Node.ln_Type = NT_TASK;
+	task->tc_Node.ln_Name = "console.device";
+	task->tc_Node.ln_Pri = COTASK_PRIORITY;
+
+	/* Initialise Command Port now we have the task */
+	ConsoleDevice->commandPort.mp_Node.ln_Type = NT_MSGPORT;
+	ConsoleDevice->commandPort.mp_SigTask = task;
+	ConsoleDevice->commandPort.mp_Flags = PA_SIGNAL;
+	ConsoleDevice->commandPort.mp_SigBit = 16;
+	NEWLIST(&ConsoleDevice->commandPort.mp_MsgList);
+
+	task->tc_SigAlloc = 1L<<16 | SysBase->TaskSigAlloc;
+
+	stack = AllocMem(COTASK_STACKSIZE, MEMF_PUBLIC);
+	if(stack != NULL)
+	{
+	    task->tc_SPLower = stack;
+	    task->tc_SPUpper = (UBYTE *)stack + COTASK_STACKSIZE;
+
+#if AROS_STACK_GROWS_DOWNWARDS
+	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper - SP_OFFSET - sizeof(APTR);
+	    ((APTR *)task->tc_SPUpper)[-1] = ConsoleDevice;
+#else
+	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET + sizeof(APTR);
+	    ((APTR *)(task->tc_SPLower + SP_OFFSET))[0] = ConsoleDevice;
+#endif
+
+	    if(AddTask(task, consoleTaskEntry, NULL) != NULL)
+	    {
+		return ConsoleDevice;
+		/* ALL OK */
+	    }
+	    FreeMem(stack, COTASK_STACKSIZE);
+	}
+	FreeMem(task, sizeof(struct Task));
+    }
+
+    Alert(AT_DeadEnd | AN_ConsoleDev | AG_NoMemory);
+    return NULL;
     AROS_LIBFUNC_EXIT
 }
 
@@ -162,7 +232,6 @@ AROS_LH3(void, open,
     
     BOOL success = FALSE;
     
-    
     /* Keep compiler happy */
     flags=0;
     
@@ -173,91 +242,6 @@ AROS_LH3(void, open,
         D(bug("console.device/open: IORequest structure passed to OpenDevice is too small!\n"));
         goto open_fail;
     }
-    
-    if (!ConsoleDevice->gfxBase)
-    {
-    	ConsoleDevice->gfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
-    	if (!ConsoleDevice->gfxBase)
-	    goto open_fail;
-    }
-    
-    if (!ConsoleDevice->intuitionBase)
-    {
-    	ConsoleDevice->intuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
-    	if (!ConsoleDevice->intuitionBase)
-	    goto open_fail;
-    }
-    
-    if (!ConsoleDevice->boopsiBase)
-    {
-    	ConsoleDevice->boopsiBase = OpenLibrary(BOOPSINAME, 37);
-    	if (!ConsoleDevice->boopsiBase)
-	    goto open_fail;
-    }
-
-    if (!ConsoleDevice->utilityBase)
-    {
-    	ConsoleDevice->utilityBase = OpenLibrary("utility.library", 37);
-    	if (!ConsoleDevice->utilityBase)
-	    goto open_fail;
-    }
-    
-    if (!ConsoleDevice->keymapBase)
-    {
-    	ConsoleDevice->keymapBase = OpenLibrary("keymap.library", 37);
-	if (!ConsoleDevice->keymapBase)
-	    goto open_fail;
-    }
-    
-    /* Create the console classes */
-    if (!CONSOLECLASSPTR)
-    {
-    	CONSOLECLASSPTR = makeConsoleClass(ConsoleDevice);
-    	if (!CONSOLECLASSPTR)
-	    goto open_fail;
-    }	    
-    
-    if (!STDCONCLASSPTR)
-    {
-    	STDCONCLASSPTR = makeStdConClass(ConsoleDevice);
-    	if (!STDCONCLASSPTR)
-	    goto open_fail;
-    }
-    
-    /* Create the console device task */
-    if (!ConsoleDevice->consoleTask)
-    {
-    	struct coTaskParams ctp;
-	BYTE sigbit;
-	
-	/* Initialize task parameters */
-	ctp.consoleDevice = ConsoleDevice;
-	ctp.parentTask = FindTask(NULL);
-	
-	sigbit = AllocSignal(-1L);
-	if (sigbit != -1)
-	{
-	    ctp.initSignal = 1 << sigbit;
-	    
-	    
-    	    ConsoleDevice->consoleTask = createConsoleTask(&ctp, ConsoleDevice);
-	    if (ConsoleDevice->consoleTask)
-	    {
-	    	/* Wait for the console.device task to initialize itself
-		*/
-		
-		Wait (1 << sigbit);
-		
-		/* OK. we can now go on */
-		
-	    }
-	    /* Free the allocated signal, we don't need it anymore */
-	    FreeSignal(sigbit);
-	    
-	} /* if (signal allocated) */
-
-    } /* if (console.device task hasn't been initialized earlier) */
-    
     
     if (((LONG)unitnum) == CONU_LIBRARY) /* unitnum is ULONG while CONU_LIBRARY is -1 :-(   */
     {
@@ -328,8 +312,7 @@ AROS_LH3(void, open,
 
     /* I have one more opener. */
     ConsoleDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
-    
-    
+
     ReturnVoid("OpenConsole");
     
 open_fail:
@@ -472,7 +455,7 @@ AROS_LH1(void, beginio,
         /* Mark IO request to be done non-quick */
     	ioreq->io_Flags &= ~IOF_QUICK;
     	/* Send to input device task */
-    	PutMsg(ConsoleDevice->commandPort, (struct Message *)ioreq);
+    	PutMsg(&ConsoleDevice->commandPort, (struct Message *)ioreq);
     }
     else
     {
