@@ -49,7 +49,28 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    return modimsg;
+    struct GT_IntuiMessage *gtmsg;
+    struct IntuiMessage *rc;
+    
+    gtmsg = (struct GT_IntuiMessage *)modimsg;
+    if (gtmsg)
+    {
+    	/* GT_FilterIMsg (which is called by GT_GetImsg)
+	   always returns an extended GadTools intuimsg */
+
+    	rc = gtmsg->origmsg;
+	
+	if (gtmsg->wasalloced)
+	{
+	    FreeMem(gtmsg,sizeof(struct GT_IntuiMessage));
+	}
+    }
+    else
+    {
+    	rc = NULL;
+    }
+    
+    return rc;
 
     AROS_LIBFUNC_EXIT
 } /* GT_BeginRefresh */

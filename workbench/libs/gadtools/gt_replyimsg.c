@@ -49,7 +49,13 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    ReplyMsg((struct Message *)imsg);
+    struct IntuiMessage *origmsg;
+    
+    if (imsg)
+    {
+    	origmsg = GT_PostFilterIMsg(imsg);
+	ReplyMsg(&origmsg->ExecMessage);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* GT_ReplyIMsg */

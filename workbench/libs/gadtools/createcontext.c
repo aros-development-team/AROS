@@ -55,13 +55,18 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase_intern *,GadToolsBase)
 
-    struct Gadget *gad;
+    struct GT_ContextGadget *rc;
+    
+    rc = (struct GT_ContextGadget *)AllocMem(sizeof(struct GT_ContextGadget),MEMF_PUBLIC | MEMF_CLEAR);
+    if (rc)
+    {
+    	rc->gad.Flags = GFLG_GADGHNONE | GFLG_DISABLED;
+	rc->gad.GadgetType = GTYP_GADTOOLS;
+    }
+    
+    *glistpointer = (struct Gadget *)rc;
+    
+    return (struct Gadget *)rc;
 
-    gad = NewObjectA(NULL, GADGETCLASS, NULL);
-    if (gad)
-        gad->GadgetType |= GTYP_GADTOOLS;
-    *glistpointer = gad;
-
-    return gad;
     AROS_LIBFUNC_EXIT
 } /* CreateContext */

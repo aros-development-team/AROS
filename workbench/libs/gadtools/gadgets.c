@@ -70,6 +70,7 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 			    struct VisualInfo *vi,
 			    struct TagItem *taglist)
 {
+    struct IClass *cl;
     struct Gadget *obj;
     struct TagItem tags[] =
     {
@@ -80,12 +81,14 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 
     EnterFunc(bug("makecheckbox()\n"));
 
+#if 0
     if (!GadToolsBase->aroscbbase)
         GadToolsBase->aroscbbase = OpenLibrary(AROSCHECKBOXNAME, 0);
     if (!GadToolsBase->aroscbbase)
         return NULL;
 
     D(bug("GadToolsBase->aroscbbase: %p\n", GadToolsBase->aroscbbase));
+#endif
 
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
     tags[1].ti_Data = GetTagData(GTCB_Checked, FALSE, taglist);
@@ -95,7 +98,16 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
         stdgadtags[TAG_Width].ti_Data = CHECKBOX_WIDTH;
         stdgadtags[TAG_Height].ti_Data = CHECKBOX_HEIGHT;
     }
+
+#if 0
     obj = (struct Gadget *) NewObjectA(NULL, AROSCHECKBOXCLASS, tags);
+#endif
+
+    cl = makecheckboxclass(GadToolsBase);
+    if (!cl)
+    	return (NULL);
+	
+    obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
 
     ReturnPtr("makecheckbox()", struct Gadget *, obj);
 }
@@ -108,26 +120,28 @@ struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
                          struct VisualInfo *vi,
                          struct TagItem *taglist)
 {
+    struct IClass *cl;
     struct Gadget *obj;
     struct TagItem tags[] =
     {
 	{GA_Disabled, FALSE},
 	{GTCY_Labels, FALSE},
         {GTCY_Active, 0},
+	{GA_RelVerify,TRUE},
 	{TAG_MORE, (IPTR) NULL}
     };
 
-    if (!GadToolsBase->aroscybase)
-        GadToolsBase->aroscybase = OpenLibrary(AROSCYCLENAME, 0);
-    if (!GadToolsBase->aroscybase)
-        return NULL;
 
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
     tags[1].ti_Data = GetTagData(GTCY_Labels, FALSE, taglist);
     tags[2].ti_Data = GetTagData(GTCY_Active, 0, taglist);
-    tags[3].ti_Data = (IPTR) stdgadtags;
+    tags[4].ti_Data = (IPTR) stdgadtags;
 
-    obj = (struct Gadget *) NewObjectA(NULL, AROSCYCLECLASS, tags);
+    cl = makecycleclass(GadToolsBase);
+    if (!cl)
+    	return (NULL);
+	
+    obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
 
     return obj;
 }
@@ -140,6 +154,7 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 		      struct VisualInfo *vi,
 		      struct TagItem *taglist)
 {
+    struct IClass *cl;
     struct Gadget *gad;
     int labels = 0;
     STRPTR *labellist;
@@ -153,11 +168,6 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
         {AROSMX_TickLabelPlace, GV_LabelPlace_Right},
 	{TAG_MORE, (IPTR) NULL}
     };
-
-    if (!GadToolsBase->arosmxbase)
-        GadToolsBase->arosmxbase = OpenLibrary(AROSMXNAME, 0);
-    if (!GadToolsBase->arosmxbase)
-        return NULL;
 
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
     labellist = (STRPTR *) GetTagData(GTMX_Labels, (IPTR) NULL, taglist);
@@ -217,7 +227,11 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     while (labellist[labels])
 	labels++;
 
-    gad = (struct Gadget *) NewObjectA(NULL, AROSMXCLASS, tags);
+    cl = makemxclass(GadToolsBase);
+    if (!cl)
+    	return (NULL);
+	
+    gad = (struct Gadget *) NewObjectA(cl, NULL, tags);
 
     return gad;
 }
@@ -230,6 +244,7 @@ struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
                          struct VisualInfo *vi,
                          struct TagItem *taglist)
 {
+    struct IClass *cl;
     struct Gadget *obj = NULL;
 
     struct TagItem *tag, tags[] =
@@ -268,12 +283,11 @@ struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
 
     tags[9].ti_Data = (IPTR)stdgadtags;
 
-    if (!GadToolsBase->arospabase)
-        GadToolsBase->arospabase = OpenLibrary(AROSPALETTENAME, 0);
-    if (!GadToolsBase->arospabase)
-        return NULL;
+    cl = makepaletteclass(GadToolsBase);
+    if (!cl)
+    	return (NULL);
 
-    obj = (struct Gadget *) NewObjectA(NULL, AROSPALETTECLASS, tags);
+    obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
 
     return obj;
 }
@@ -301,6 +315,7 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     	{GTTX_Justification,	GTJ_LEFT},
     	{GTA_Text_Format,	(IPTR)"%s"},
     	{GA_TextAttr,		(IPTR)NULL},
+	{GTA_GadgetKind,	TEXT_KIND},
 	{TAG_MORE, (IPTR) NULL}
     };
 
@@ -328,7 +343,7 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     	tags[8].ti_Data = (IPTR)tattr;
     else
     	tags[8].ti_Tag = TAG_IGNORE;
-    tags[9].ti_Data = (IPTR)stdgadtags;
+    tags[10].ti_Data = (IPTR)stdgadtags;
 
     cl = maketextclass(GadToolsBase);
     if (!cl)
@@ -361,6 +376,7 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
     	{GTNM_Justification,	GTJ_CENTER},
     	{GTNM_MaxNumberLen,	100},
     	{GA_TextAttr,		(IPTR)NULL},
+	{GTA_GadgetKind,	NUMBER_KIND},
 	{TAG_MORE, (IPTR) NULL}
     };
     
@@ -391,7 +407,7 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
     else
     	tags[8].ti_Tag = TAG_IGNORE;
     	
-    tags[9].ti_Data = (IPTR)stdgadtags;
+    tags[10].ti_Data = (IPTR)stdgadtags;
 
     cl = maketextclass(GadToolsBase);
     if (!cl)
@@ -425,8 +441,8 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     struct TagItem stags[] =
     {
     	{GA_Disabled,	FALSE},
-    	{GA_RelVerify,	FALSE},
-    	{GA_Immediate,	FALSE},
+    	{GA_RelVerify,	TRUE},	/* Georg S.: was false */
+    	{GA_Immediate,	TRUE},	/* Georg S.: was false */
     	{GTSL_Min,	0},
     	{GTSL_Max,	15},
     	{GTSL_Level,	0},
@@ -447,6 +463,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 	 {GA_Previous,	(IPTR)NULL},
 	 {GA_DrawInfo,	(IPTR)NULL},
 	 {GTNM_Number,	0},
+	 {GTA_GadgetKind, SLIDER_KIND},
 	 {TAG_DONE,}
     };
     STRPTR lformat = NULL;
@@ -621,6 +638,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 **  makescroller()  **
 *********************/
 
+#if 0
 const struct TagItem arrow_dec2scroller[] =
 {
     {GA_ID,	GTA_Scroller_Dec},
@@ -632,7 +650,7 @@ const struct TagItem arrow_inc2scroller[] =
     {GA_ID,	GTA_Scroller_Inc},
     {TAG_DONE, }
 };
-
+#endif
 
 struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
@@ -651,15 +669,16 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	{GTSC_Visible,	2},
     	{PGA_Freedom,	FREEHORIZ},
     	{GA_Disabled,	FALSE},
-    	{GA_RelVerify,	FALSE},
-    	{GA_Immediate,	FALSE},
+    	{GA_RelVerify,	TRUE},		/* Georg S.: was false */
+    	{GA_Immediate,	TRUE},		/* Georg S.: was false */
+	{GTA_GadgetKind, SCROLLER_KIND},
 	{TAG_MORE, (IPTR) NULL}
     };
     
     struct TagItem *scr_dim_tagitem;
     
     UWORD freedom = stags[3].ti_Data; /* default */
-    WORD arrowdim;
+    WORD arrowdim, arrowkind = SCROLLER_KIND;
     BOOL relverify, immediate;
     ULONG scr_dim_tag;
     
@@ -685,13 +704,15 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	case GA_RelVerify:	relverify = stags[5].ti_Data = tidata; break;
     	case GA_Immediate:	immediate = stags[6].ti_Data = tidata; break;
     	
-    	case GTSC_Arrows:	arrowdim = (WORD)tidata;
+    	case GTSC_Arrows:	arrowdim = (WORD)tidata; break;
+	case GTA_Scroller_ArrowKind: arrowkind = (WORD)tidata; break;
+	case GTA_Scroller_ScrollerKind: stags[7].ti_Data = tidata; break;
     	    
     	}
     	
     } /* while (iterate taglist) */
 
-    stags[7].ti_Data = (IPTR)stdgadtags;
+    stags[8].ti_Data = (IPTR)stdgadtags;
     
     /* Substract the arrow's total size from the sroller's size */
     scr_dim_tag = ((freedom == FREEVERT) ? GA_Height : GA_Width);
@@ -710,12 +731,15 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     if (arrowdim) /* Scroller has arroes ? */
     {
     	Class *arrowcl;
+
+#if 0
     	struct TagItem antags[] =
     	{
     	    {ICA_TARGET,	(IPTR)NULL},
     	    {ICA_MAP,		(IPTR)NULL},
     	    {TAG_DONE,}
     	};
+#endif
     	
     	struct TagItem atags[] =
     	{
@@ -727,9 +751,10 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	    {GA_DrawInfo,	(IPTR)NULL},
     	    {GA_Previous,	(IPTR)NULL},
     	    {GTA_Arrow_Scroller, (IPTR)NULL},
-    	    {GA_RelVerify,	0},
-    	    {GA_Immediate,	0},
+    	    {GA_RelVerify,	TRUE},
+    	    {GA_Immediate,	TRUE},
     	    {GA_ID,		0},
+	    {GTA_GadgetKind,	arrowkind},
     	    {TAG_DONE}
     	};
     	
@@ -738,8 +763,8 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	atags[7].ti_Data = (IPTR)scroller;	/* Set GTA_Arrow_Scroller */
 
     	/* These must be the same as for scroller */
-    	atags[8].ti_Data = (IPTR)relverify;
-    	atags[9].ti_Data = (IPTR)immediate;
+/*    	atags[8].ti_Data = (IPTR)relverify;
+    	atags[9].ti_Data = (IPTR)immediate;*/
     	atags[10].ti_Data = (IPTR)GetTagData(GA_ID, 0, stdgadtags); 
     	
     	/* Open needed class */
@@ -794,7 +819,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	    	
     	} /* if (scroller is FREEVERT or FREEHORIZ) */
 
-    	
+#if 0    	
     	/* Create notfications from arrows to scroller */
     	antags[0].ti_Data = (IPTR)scroller;
 
@@ -803,6 +828,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 
     	antags[1].ti_Data = (IPTR)arrow_inc2scroller;
     	SetAttrsA((Object *)arrow_inc, antags);
+#endif
     	
     } /* if (scroller should have arrows attached) */
     
@@ -845,6 +871,7 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     	{STRINGA_Justification,	GACT_STRINGLEFT},
     	{STRINGA_ReplaceMode,	FALSE},
     	{GA_TextAttr,		(IPTR)NULL},
+	{GTA_GadgetKind,	STRING_KIND},
 	{TAG_MORE, 	(IPTR)NULL}
     };
     
@@ -874,7 +901,7 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     else
     	tags[9].ti_Tag = TAG_IGNORE; /* Don't pass GA_TextAttr, NULL */
 	
-    tags[10].ti_Data = (IPTR)stdgadtags;
+    tags[11].ti_Data = (IPTR)stdgadtags;
 
     cl = makestringclass(GadToolsBase);
     if (!cl)
@@ -908,6 +935,7 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
     	{STRINGA_Justification,	GACT_STRINGLEFT},
     	{STRINGA_ReplaceMode,	FALSE},
     	{GA_TextAttr,		(IPTR)NULL},
+	{GTA_GadgetKind,	INTEGER_KIND},
 	{TAG_MORE, 	(IPTR)NULL}
     };
     
@@ -937,7 +965,7 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
     else
     	tags[9].ti_Tag = TAG_IGNORE; /* Don't pass GA_TextAttr, NULL */
 
-    tags[10].ti_Data = (IPTR)stdgadtags;
+    tags[11].ti_Data = (IPTR)stdgadtags;
 
     cl = makestringclass(GadToolsBase);
     if (!cl)
@@ -992,6 +1020,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     	{GTLV_ReadOnly,		0L},
     	{LAYOUTA_Spacing,	0L},    	
     	{GA_TextAttr,		(IPTR)NULL},
+	{GA_RelVerify,		TRUE},
 	{TAG_MORE, 	(IPTR)NULL}
     };
     
@@ -1081,7 +1110,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     lv_height_tag->ti_Data = (IPTR)lv_height;
     
     
-    lvtags[11].ti_Data = (IPTR)stdgadtags;
+    lvtags[12].ti_Data = (IPTR)stdgadtags;
     
     cl = makelistviewclass(GadToolsBase);
     if (cl)
@@ -1109,6 +1138,8 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
             	*/
             	{GTSC_Arrows, 	10L},
             	{PGA_Freedom,	LORIENT_VERT},
+		{GTA_Scroller_ArrowKind, LISTVIEW_KIND},
+		{GTA_Scroller_ScrollerKind, LISTVIEW_KIND},
             	{TAG_DONE,}
             };
         

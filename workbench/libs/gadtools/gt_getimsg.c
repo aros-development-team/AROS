@@ -53,10 +53,24 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    struct IntuiMessage *msg;
+    struct IntuiMessage *imsg, *gtmsg;
 
-    msg = (struct IntuiMessage *)GetMsg(intuiport);
+    while ((imsg = (struct IntuiMessage *)GetMsg(intuiport)))
+    {
+    	if ((gtmsg = GT_FilterIMsg(imsg)))
+	{
+	    /* msg is for app */
+	    imsg = gtmsg;
+	    break;
+	}
+	else
+	{
+	    /* msg was for gadtools only */
+	    ReplyMsg(&imsg->ExecMessage);
+	}
+    }
+    
+    return imsg;
 
-    return msg;
     AROS_LIBFUNC_EXIT
 } /* GT_GetIMsg */

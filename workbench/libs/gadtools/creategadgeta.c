@@ -66,7 +66,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    struct Gadget *gad = NULL;
+    struct Gadget *gad = NULL, *gad2;
     struct TagItem stdgadtags[] = {
         {GA_Left, 0L},
 	{GA_Top, 0L},
@@ -74,7 +74,7 @@
 	{GA_Height, 0L},
 	{GA_IntuiText, (IPTR)NULL},
         {GA_LabelPlace, (IPTR)GV_LabelPlace_In},
-	{GA_Previous, (IPTR)previous},
+	{GA_Previous, (IPTR)NULL},
 	{GA_ID, 0L},
 	{GA_DrawInfo, (IPTR)NULL},
 	{GA_UserData, (IPTR)NULL},
@@ -83,6 +83,15 @@
 
     if (previous == NULL || ng == NULL || ng->ng_VisualInfo == NULL)
 	return (NULL);
+
+    /* Georg S: gadtools gadgets which consist of "child" gadgets
+       in AROS return pointer to the first child gadget, while
+       on Amiga the last child gadget is returned */
+    
+    while (previous->NextGadget)
+    {
+    	previous = previous->NextGadget;
+    }
 
     stdgadtags[TAG_Left].ti_Data = ng->ng_LeftEdge;
     stdgadtags[TAG_Top].ti_Data = ng->ng_TopEdge;
@@ -201,10 +210,19 @@
     }
 
     if (gad)
-	gad->GadgetType |= GTYP_GADTOOLS;
+    {
+    	gad2 = gad;
+	while (gad2)
+	{
+	    gad2->GadgetType |= GTYP_GADTOOLS;
+	    gad2 = gad2->NextGadget;
+	}
+    }
     else
+    {
         FreeVec((APTR)stdgadtags[TAG_IText].ti_Data);
-
+    }
+    
     return (gad);
     AROS_LIBFUNC_EXIT
 } /* CreateGadgetA */

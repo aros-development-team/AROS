@@ -24,9 +24,12 @@
 #include <devices/inputevent.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
+#include <gadgets/aroscheckbox.h>
+#include <gadgets/aroscycle.h>
+#include <gadgets/arosmx.h>
+#include <gadgets/arospalette.h>
 
 #include <string.h> /* memset() */
-
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -146,11 +149,22 @@ AROS_UFH3S(IPTR, dispatch_buttonclass,
 #define OPG(x) ((struct opGet *)(x))
     case OM_GET:
 	data = INST_DATA(cl, obj);
-	if (OPG(msg)->opg_AttrID == GA_Disabled)
-	    retval = DoSuperMethodA(cl, obj, msg);
-	else {
-	    *(OPG(msg)->opg_Storage) = 0UL;
-	    retval = 0UL;
+	switch (OPG(msg)->opg_AttrID)
+	{
+	    case GA_Disabled:
+	    	retval = DoSuperMethodA(cl, obj, msg);
+		break;
+	
+	    case GTA_GadgetKind:
+	    case GTA_ChildGadgetKind:
+	    	*(OPG(msg)->opg_Storage) = BUTTON_KIND;
+	    	retval = 1UL;
+		break;
+		
+	    default:
+	    	*(OPG(msg)->opg_Storage) = 0UL;
+	    	retval = 0UL;
+		break;
 	}
 	break;
 
@@ -176,6 +190,7 @@ struct TextData {
     UBYTE flags;
     struct TextFont *font;
     UWORD maxnumberlength;
+    WORD gadgetkind;
     LONG  (*dispfunc)(struct Gadget *, WORD);
 
     
@@ -200,6 +215,10 @@ IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     	
     	switch (tag->ti_Tag)
     	{
+	    case GTA_GadgetKind:
+	    	data->gadgetkind = (WORD)tidata;
+		break;
+
     	    case GTNM_Number:
     	    	data->toprint = tidata;
     	    	D(bug("GTNM_Number: %ld\n", tidata));
@@ -538,11 +557,22 @@ AROS_UFH3S(IPTR, dispatch_textclass,
 #define OPG(x) ((struct opGet *)(x))
     case OM_GET:
 	data = INST_DATA(cl, o);
-	if (OPG(msg)->opg_AttrID == GA_Disabled)
-	    retval = DoSuperMethodA(cl, o, msg);
-	else {
-	    *(OPG(msg)->opg_Storage) = 0UL;
-	    retval = 0UL;
+	switch (OPG(msg)->opg_AttrID)
+	{
+	    case GA_Disabled:
+	    	retval = DoSuperMethodA(cl, o, msg);
+		break;
+		
+	    case GTA_GadgetKind:
+	    case GTA_ChildGadgetKind:
+	    	*(OPG(msg)->opg_Storage) = data->gadgetkind;
+		retval = 1UL;
+		break;
+		
+	    default:
+	  	*(OPG(msg)->opg_Storage) = 0UL;
+	   	retval = 0UL;
+		break;
 	}
 	break;
 
@@ -709,6 +739,42 @@ STATIC IPTR slider_goactive(Class *cl, Object *o, struct gpInput *msg)
     ReturnInt("Slider::Goactive", IPTR, retval);
 }
 
+/********************
+**  Slider::Get()  **
+********************/
+STATIC IPTR slider_get(Class *cl, Object *o, struct opGet *msg)
+{
+    struct SliderData *data;
+    IPTR retval = 1UL;
+    
+    data = INST_DATA(cl,o);
+    switch (msg->opg_AttrID)
+    {
+	case GTA_GadgetKind:
+	case GTA_ChildGadgetKind:
+	    *msg->opg_Storage = SLIDER_KIND;
+	    break;
+	
+	case GTSL_Level:
+	    *msg->opg_Storage = data->level;
+	    break;
+	
+	case GTSL_Max:
+	    *msg->opg_Storage = data->max;
+	    break;
+	
+	case GTSL_Min:
+	    *msg->opg_Storage = data->min;
+	    break;
+	    
+	default:
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    break;
+    }
+    
+    return retval;
+}
+
 /****************************
 **  Slider::HandleInput()  **
 ****************************/
@@ -732,8 +798,10 @@ STATIC IPTR slider_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	if (data->level - data->min != top)
     	{
     	    data->level = data->min + top;
+#if 0
     	    retval = GMR_INTERIMUPDATE;
    	    *(msg->gpi_Termination) = data->level;
+#endif
 	    notifylevel(cl, o, data->level, msg->gpi_GInfo, GadToolsBase);    	
 
     	}
@@ -757,7 +825,6 @@ AROS_UFH3S(IPTR, dispatch_sliderclass,
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
-
     IPTR retval = 0UL;
 
     switch (msg->MethodID) {
@@ -767,6 +834,10 @@ AROS_UFH3S(IPTR, dispatch_sliderclass,
 
     case OM_SET:
 	retval = slider_set(cl, o, (struct opSet *) msg);
+	break;
+
+    case OM_GET:
+	retval = slider_get(cl, o, (struct opGet *) msg);
 	break;
 
     case GM_GOACTIVE:
@@ -808,7 +879,9 @@ AROS_UFH3S(IPTR, dispatch_sliderclass,
 struct ArrowData {
 	Object *arrowimage;
 	Object *frame;
-	Object *scroller;	
+	Object *scroller;
+	WORD gadgetkind;
+	WORD arrowtype;
 };
 
 
@@ -843,7 +916,8 @@ STATIC Object *arrow_new(Class * cl, Object * o, struct opSet *msg)
    	{GA_Image,	0UL},
    	{TAG_MORE,	0UL}
    };
-    
+   WORD arrowtype;
+ 
     EnterFunc(bug("Arrow::New()\n"));
     
     fitags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList);
@@ -854,7 +928,7 @@ STATIC Object *arrow_new(Class * cl, Object * o, struct opSet *msg)
     if (!frame)
 	return NULL;
 	
-    itags[0].ti_Data = GetTagData(GTA_Arrow_Type, LEFTIMAGE, msg->ops_AttrList);
+    itags[0].ti_Data = arrowtype = GetTagData(GTA_Arrow_Type, LEFTIMAGE, msg->ops_AttrList);
     itags[1].ti_Data = (IPTR)dri;
     
     arrowimage = NewObjectA(NULL, SYSICLASS, itags);
@@ -875,6 +949,8 @@ STATIC Object *arrow_new(Class * cl, Object * o, struct opSet *msg)
     	struct ArrowData *data = INST_DATA(cl, o);
     	
     	D(bug("Got object from superclass: %p\n", o));
+	data->gadgetkind = GetTagData(GTA_GadgetKind, 0, msg->ops_AttrList);
+	data->arrowtype = arrowtype;
     	data->scroller = (Object *)GetTagData(GTA_Arrow_Scroller, NULL,  msg->ops_AttrList);
     	if (!data->scroller)
      	    goto failure;
@@ -903,12 +979,14 @@ failure:
 STATIC IPTR arrow_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
     IPTR retval;
+#if 0
     struct InputEvent *ie = msg->gpi_IEvent;
+#endif
 
     EnterFunc(bug("Arrow::HandleInput\n()\n"));
     /* Let superclass tell what it thinks about the event */
     retval = DoSuperMethodA(cl, o, (Msg)msg);
-
+#if 0
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
     	if ((ie->ie_Code == SELECTUP) || (ie->ie_Code == MENUDOWN))
@@ -926,6 +1004,7 @@ STATIC IPTR arrow_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	GetAttr(PGA_Top, data->scroller, msg->gpi_Termination);
 	retval = GMR_INTERIMUPDATE;
     }
+#endif
     ReturnInt ("Arrow::HandleInput", IPTR, retval);
 }
 
@@ -943,6 +1022,37 @@ AROS_UFH3S(IPTR, dispatch_arrowclass,
 	retval = (IPTR)arrow_new(cl, o, (struct opSet *) msg);
 	break;
 
+    case OM_GET: {
+    	struct ArrowData *data = INST_DATA(cl, o);
+	
+	switch(OPG(msg)->opg_AttrID)
+	{
+	    case GTA_GadgetKind:
+	    	*(OPG(msg)->opg_Storage) = data->gadgetkind;
+		retval = 1UL;
+		break;
+	
+	    case GTA_ChildGadgetKind:
+	    	*(OPG(msg)->opg_Storage) = _ARROW_KIND;
+		retval = 1UL;
+		break;
+
+	    case GTA_Arrow_Type:
+	    	*(OPG(msg)->opg_Storage) = data->arrowtype;
+		retval = 1UL;
+		break;
+
+	    case GTA_Arrow_Scroller:
+	    	*(OPG(msg)->opg_Storage) = (IPTR)data->scroller;
+		retval = 1UL;
+		break;
+		
+	    default:
+	    	retval = DoSuperMethodA(cl, o, msg);
+		break;
+	}
+	} break;
+	
     case OM_DISPOSE: {
     	struct ArrowData *data = INST_DATA(cl, o);
 
@@ -970,7 +1080,7 @@ AROS_UFH3S(IPTR, dispatch_arrowclass,
 
 struct ScrollerData
 {
-    UBYTE dummy;
+    WORD gadgetkind;
 };
 
 /**********************
@@ -988,6 +1098,7 @@ IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
     	{PGA_Visible,	0},
     	{TAG_MORE,	(IPTR)NULL}
     };
+    struct ScrollerData *data;
 
     tags[3].ti_Data = (IPTR)msg->ops_AttrList;
     
@@ -1003,7 +1114,11 @@ IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
     	
     	switch (tag->ti_Tag)
     	{
-		
+	     case GTA_GadgetKind:
+	     	data = INST_DATA(cl, o);
+		data->gadgetkind = tag->ti_Data;
+		break;
+
     	     case GTSC_Total:
     	     	tags[0].ti_Data  = tag->ti_Data;
     	     	break;
@@ -1017,28 +1132,37 @@ IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
             	break;
             	
              case GTA_Scroller_Dec:
+#if 0
                 /* buttong_class gives -GA_ID if mouse outside arrow */
                 if ((tag->ti_Data > 0) && (opU(msg)->opu_Flags & OPUF_INTERIM))
                 {
+#endif
+
             	    if (tags[1].ti_Data > 0)
             	    {
             	    	((ULONG)tags[1].ti_Data) --;
             	    	retval = 1UL;
             	    }
+#if 0
                 }
+#endif
                 break;
             
             case GTA_Scroller_Inc:
+#if 0
                 /* buttong_class gives -GA_ID if mouse outside arrow */
                 if ((tag->ti_Data > 0) && (opU(msg)->opu_Flags & OPUF_INTERIM))
                 {
+#endif
             	    /* Top < (Total - Visible) ? */
             	    if (tags[1].ti_Data < (tags[0].ti_Data - tags[2].ti_Data))
             	    {
             	    	((ULONG)tags[1].ti_Data) ++;
            	    	retval = 1UL;
            	    }
+#if 0
             	}
+#endif
             	break;
             
 	     	
@@ -1052,6 +1176,50 @@ IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 }
 
 
+
+/**********************
+**  Scroller::Get()  **
+**********************/
+IPTR scroller_get(Class * cl, Object * o, struct opGet *msg)
+{
+    struct ScrollerData *data = INST_DATA(cl, o);
+    IPTR retval = 1UL;
+
+    switch (msg->opg_AttrID)
+    {
+	case GTA_GadgetKind:
+	    *msg->opg_Storage = data->gadgetkind;
+	    break;
+		
+	case GTA_ChildGadgetKind:
+	    *msg->opg_Storage = SCROLLER_KIND;
+	    break;
+	
+	case GTSC_Top:
+	    msg->opg_AttrID = PGA_Top;
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    msg->opg_AttrID = GTSC_Top;
+	    break;
+	    
+	case GTSC_Total:
+	    msg->opg_AttrID = PGA_Total;
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    msg->opg_AttrID = GTSC_Total;
+	    break;
+	    
+	case GTSC_Visible:
+	    msg->opg_AttrID = PGA_Visible;
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    msg->opg_AttrID = GTSC_Visible;
+	    break;
+	    
+	default:
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    break;
+    }
+    
+    return retval;
+}
 
 /**********************
 **  Scroller::New()  **
@@ -1074,16 +1242,22 @@ Object *scroller_new(Class * cl, Object * o, struct opSet *msg)
 ****************************/
 STATIC IPTR scroller_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
-    struct InputEvent *ie = msg->gpi_IEvent;
+/*    struct InputEvent *ie = msg->gpi_IEvent;*/
     IPTR retval;
+
+#if 0    
     LONG top1, top2;
     
     EnterFunc(bug("Scroller::HandleInput()\n"));
  
     /* Get the PGA_Top attribute */
     DoSuperMethod(cl, o, OM_GET, PGA_Top, &top1);
+#endif
      
     retval = DoSuperMethodA(cl, o, (Msg)msg);
+
+#if 0
+    /* now done by GT_FilterImsg */
     /* Mousemove ? */
     if ((ie->ie_Class == IECLASS_RAWMOUSE) && (ie->ie_Code == IECODE_NOBUTTON))
     {
@@ -1096,6 +1270,7 @@ STATIC IPTR scroller_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	    *(msg->gpi_Termination) = top2;
     	}
     }
+#endif
     
     ReturnInt("Scroller::HandleInput", IPTR, retval);
 }
@@ -1137,6 +1312,10 @@ AROS_UFH3S(IPTR, dispatch_scrollerclass,
 	} /* if */
 	break;
     
+    case OM_GET:
+	retval = scroller_get(cl, o, (struct opGet *)msg);
+    	break;
+    
     case GM_HANDLEINPUT:
     	retval = scroller_handleinput(cl, o, (struct gpInput *)msg);
     	break;
@@ -1166,6 +1345,7 @@ struct StringData
     LONG 	labelplace;
     Object	*frame;
     struct TextFont *font;
+    WORD	gadgetkind;
 };
 /***********************
 **  String::SetNew()  **
@@ -1195,6 +1375,14 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	
     	switch (tag->ti_Tag)
     	{
+	    case GTA_GadgetKind:
+	    {
+	    	struct StringData *data = INST_DATA(cl,o);
+		
+		data->gadgetkind = tidata;
+	    }
+	    break;
+	    
     	    case GTST_String:	tags[0].ti_Data = tidata; break;
     	    case GTIN_Number:	tags[1].ti_Data = tidata; break;
     	    
@@ -1344,7 +1532,26 @@ AROS_UFH3S(IPTR, dispatch_stringclass,
     case OM_SET:
 	retval = string_setnew(cl, o, (struct opSet *)msg);
 	break;
+
+    case OM_GET:
+    {
+    	struct StringData *data = INST_DATA(cl, o);
 	
+    	switch(OPG(msg)->opg_AttrID)
+	{
+	    case GTA_GadgetKind:
+	    case GTA_ChildGadgetKind:
+	    	*(OPG(msg)->opg_Storage) = data->gadgetkind;
+		retval = 1UL;
+		break;
+		
+	    default:
+	    	retval = DoSuperMethodA(cl, o, msg);
+		break;
+	}
+    }
+    break;
+    
     case GM_RENDER:
     	retval = string_render(cl, o, (struct gpRender *)msg);
     	break;
@@ -1946,6 +2153,11 @@ STATIC IPTR listview_get(Class *cl, Object *o, struct opGet *msg)
 
     switch (msg->opg_AttrID)
     {
+    	case GTA_GadgetKind:
+	case GTA_ChildGadgetKind:
+	    *(msg->opg_Storage) = LISTVIEW_KIND;
+	    break;
+
 	case GTLV_Top:
 	    *(msg->opg_Storage) = (IPTR)data->ld_Top;
 	    break;
@@ -2033,6 +2245,8 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
 		}
 
 		ReleaseGIRPort(rp);
+		
+		ReturnInt ("ListView::GoActive", IPTR, GMR_VERIFY | GMR_NOREUSE);
 	    }
 
 	} /* if (click wasn't on old acive gadget) */
@@ -2124,7 +2338,6 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 		dy = data->ld_ScrollEntries * TotalItemHeight(data);
 		
 		D(bug("Scrolling delta y: %d\n", dy));
-
 
 		ScrollRaster(msg->gpr_RPort, 0, dy,
 			G(o)->LeftEdge + LV_BORDER_X,
@@ -2223,6 +2436,158 @@ AROS_UFH3S(IPTR, dispatch_listviewclass,
 
 
 
+/*************************** CHECKBOX_KIND *****************************/
+
+struct CheckBoxData {
+    UBYTE dummy;
+};
+
+AROS_UFH3S(IPTR, dispatch_checkboxclass,
+	  AROS_UFHA(Class *, cl, A0),
+	  AROS_UFHA(Object *, obj, A2),
+	  AROS_UFHA(Msg, msg, A1)
+)
+{
+    IPTR retval = 0UL;
+
+    switch (msg->MethodID) {
+    case OM_GET:
+	switch (OPG(msg)->opg_AttrID)
+	{
+	    case GTA_GadgetKind:
+	    case GTA_ChildGadgetKind:
+	    	*(OPG(msg)->opg_Storage) = CHECKBOX_KIND;
+	    	retval = 1UL;
+		break;
+		
+	    default:
+	    	retval = DoSuperMethodA(cl, obj, msg);
+		break;
+	}
+	break;
+
+    default:
+	retval = DoSuperMethodA(cl, obj, msg);
+	break;
+    }
+
+    return retval;
+}
+
+
+/*************************** CYCLE_KIND *****************************/
+
+struct CycleData {
+    UBYTE dummy;
+};
+
+AROS_UFH3S(IPTR, dispatch_cycleclass,
+	  AROS_UFHA(Class *, cl, A0),
+	  AROS_UFHA(Object *, obj, A2),
+	  AROS_UFHA(Msg, msg, A1)
+)
+{
+    IPTR retval = 0UL;
+
+    switch (msg->MethodID) {
+    case OM_GET:
+	switch (OPG(msg)->opg_AttrID)
+	{
+	    case GTA_GadgetKind:
+	    case GTA_ChildGadgetKind:
+	    	*(OPG(msg)->opg_Storage) = CYCLE_KIND;
+	    	retval = 1UL;
+		break;
+		
+	    default:
+	    	retval = DoSuperMethodA(cl, obj, msg);
+		break;
+	}
+	break;
+
+    default:
+	retval = DoSuperMethodA(cl, obj, msg);
+	break;
+    }
+
+    return retval;
+}
+
+/*************************** MX_KIND *****************************/
+
+struct MXData {
+    UBYTE dummy;
+};
+
+AROS_UFH3S(IPTR, dispatch_mxclass,
+	  AROS_UFHA(Class *, cl, A0),
+	  AROS_UFHA(Object *, obj, A2),
+	  AROS_UFHA(Msg, msg, A1)
+)
+{
+    IPTR retval = 0UL;
+
+    switch (msg->MethodID) {
+    case OM_GET:
+	switch (OPG(msg)->opg_AttrID)
+	{
+	    case GTA_GadgetKind:
+	    case GTA_ChildGadgetKind:
+	    	*(OPG(msg)->opg_Storage) = MX_KIND;
+	    	retval = 1UL;
+		break;
+		
+	    default:
+	    	retval = DoSuperMethodA(cl, obj, msg);
+		break;
+	}
+	break;
+
+    default:
+	retval = DoSuperMethodA(cl, obj, msg);
+	break;
+    }
+
+    return retval;
+}
+
+/*************************** PALETTE_KIND *****************************/
+
+struct PaletteData {
+    UBYTE dummy;
+};
+
+AROS_UFH3S(IPTR, dispatch_paletteclass,
+	  AROS_UFHA(Class *, cl, A0),
+	  AROS_UFHA(Object *, obj, A2),
+	  AROS_UFHA(Msg, msg, A1)
+)
+{
+    IPTR retval = 0UL;
+
+    switch (msg->MethodID) {
+    case OM_GET:
+	switch (OPG(msg)->opg_AttrID)
+	{
+	    case GTA_GadgetKind:
+	    case GTA_ChildGadgetKind:
+	    	*(OPG(msg)->opg_Storage) = PALETTE_KIND;
+	    	retval = 1UL;
+		break;
+		
+	    default:
+	    	retval = DoSuperMethodA(cl, obj, msg);
+		break;
+	}
+	break;
+
+    default:
+	retval = DoSuperMethodA(cl, obj, msg);
+	break;
+    }
+
+    return retval;
+}
 
 /*************************** Classes *****************************/
 
@@ -2386,4 +2751,104 @@ VOID freelistviewclass(Class *cl, struct GadToolsBase_intern *GadToolsBase)
     FreeClass(cl);
     
     return;
+}
+
+Class *makecheckboxclass(struct GadToolsBase_intern * GadToolsBase)
+{
+    Class *cl;
+
+    if (GadToolsBase->checkboxclass)
+	return GadToolsBase->checkboxclass;
+
+    if (!GadToolsBase->aroscbbase)
+        GadToolsBase->aroscbbase = OpenLibrary(AROSCHECKBOXNAME, 0);
+    if (!GadToolsBase->aroscbbase)
+        return NULL;
+	
+    cl = MakeClass(NULL, AROSCHECKBOXCLASS, NULL, sizeof(struct CheckBoxData), 0UL);
+    if (!cl)
+	return NULL;
+	
+    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_checkboxclass);
+    cl->cl_Dispatcher.h_SubEntry = NULL;
+    cl->cl_UserData = (IPTR) GadToolsBase;
+
+    GadToolsBase->checkboxclass = cl;
+  
+    return cl;
+}
+
+Class *makecycleclass(struct GadToolsBase_intern * GadToolsBase)
+{
+    Class *cl;
+
+    if (GadToolsBase->cycleclass)
+	return GadToolsBase->cycleclass;
+
+    if (!GadToolsBase->aroscybase)
+        GadToolsBase->aroscybase = OpenLibrary(AROSCYCLENAME, 0);
+    if (!GadToolsBase->aroscybase)
+        return NULL;
+	
+    cl = MakeClass(NULL, AROSCYCLECLASS, NULL, sizeof(struct CycleData), 0UL);
+    if (!cl)
+	return NULL;
+	
+    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_cycleclass);
+    cl->cl_Dispatcher.h_SubEntry = NULL;
+    cl->cl_UserData = (IPTR) GadToolsBase;
+
+    GadToolsBase->cycleclass = cl;
+  
+    return cl;
+}
+
+Class *makemxclass(struct GadToolsBase_intern * GadToolsBase)
+{
+    Class *cl;
+
+    if (GadToolsBase->mxclass)
+	return GadToolsBase->mxclass;
+
+    if (!GadToolsBase->arosmxbase)
+        GadToolsBase->arosmxbase = OpenLibrary(AROSMXNAME, 0);
+    if (!GadToolsBase->arosmxbase)
+        return NULL;
+	
+    cl = MakeClass(NULL, AROSMXCLASS, NULL, sizeof(struct MXData), 0UL);
+    if (!cl)
+	return NULL;
+	
+    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_mxclass);
+    cl->cl_Dispatcher.h_SubEntry = NULL;
+    cl->cl_UserData = (IPTR) GadToolsBase;
+
+    GadToolsBase->mxclass = cl;
+  
+    return cl;
+}
+
+Class *makepaletteclass(struct GadToolsBase_intern * GadToolsBase)
+{
+    Class *cl = NULL;
+
+    if (GadToolsBase->paletteclass)
+	return GadToolsBase->paletteclass;
+
+    if (!GadToolsBase->arospabase)
+        GadToolsBase->arospabase = OpenLibrary(AROSPALETTENAME, 0);
+    if (!GadToolsBase->arospabase)
+        return NULL;
+	
+    cl = MakeClass(NULL, AROSPALETTECLASS, NULL, sizeof(struct PaletteData), 0UL);
+    if (!cl)
+	return NULL;
+	
+    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_paletteclass);
+    cl->cl_Dispatcher.h_SubEntry = NULL;
+    cl->cl_UserData = (IPTR) GadToolsBase;
+
+    GadToolsBase->paletteclass = cl;
+
+    return cl;
 }

@@ -70,6 +70,11 @@ Class *makescrollerclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makearrowclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makestringclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makelistviewclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makecheckboxclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makecycleclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makemxclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makepaletteclass(struct GadToolsBase_intern *GadToolsBase);
+
 /* Listview class has some data that must be freed */
 VOID freelistviewclass(Class *cl, struct GadToolsBase_intern *GadToolsBase);
 
@@ -140,14 +145,22 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 /* Tags for the private gadtools classes */
 #define GT_Dummy (TAG_USER)
 
-#define GTA_Text_DispFunc	(GT_Dummy + 1)
-#define GTA_Text_Format		(GT_Dummy + 2)
-#define GTA_Arrow_Type		(GT_Dummy + 3)
-#define GTA_Arrow_Pulse		(GT_Dummy + 4)
-#define GTA_Arrow_Scroller	(GT_Dummy + 5)
-#define GTA_Scroller_Dec	(GT_Dummy + 6)
-#define GTA_Scroller_Inc	(GT_Dummy + 7)
-#define GTA_Listview_Scroller	(GT_Dummy + 8)
+#define GTA_Text_DispFunc	  (GT_Dummy + 1)
+#define GTA_Text_Format		  (GT_Dummy + 2)
+#define GTA_Arrow_Type		  (GT_Dummy + 3)
+#define GTA_Arrow_Pulse		  (GT_Dummy + 4)
+#define GTA_Arrow_Scroller	  (GT_Dummy + 5)
+#define GTA_Scroller_Dec	  (GT_Dummy + 6)
+#define GTA_Scroller_Inc	  (GT_Dummy + 7)
+#define GTA_Listview_Scroller	  (GT_Dummy + 8)
+#define GTA_GadgetKind		  (GT_Dummy + 9)
+#define GTA_ChildGadgetKind	  (GT_Dummy + 10)
+#define GTA_Scroller_ScrollerKind (GT_Dummy + 11)
+#define GTA_Scroller_ArrowKind	  (GT_Dummy + 12)
+
+/* private gadget kinds */
+
+#define _ARROW_KIND   100
 
 /* Some listview specific constants */
 #define LV_BORDER_X 4
@@ -181,11 +194,41 @@ struct GadToolsBase_intern
     Class * arrowclass;
     Class * stringclass;
     Class * listviewclass;
-
+    Class * checkboxclass;
+    Class * cycleclass;
+    Class * mxclass;
+    Class * paletteclass;
+   
     /* Semaphore to protect the bevel object. */
     struct SignalSemaphore   bevelsema;
     /* Actually an Object *. The image used for bevel boxes. */
     struct Image           * bevel;
+};
+
+/* extended intuimsg as used by GT_GetIMsg, GT_FilterIMsg, ... */
+
+struct GT_IntuiMessage
+{
+    struct ExtIntuiMessage imsg;
+    struct IntuiMessage * origmsg;
+    BOOL wasalloced;
+};
+
+/* dummy gadget created by CreateContext */
+
+struct GT_ContextGadget
+{
+    struct Gadget gad;
+    struct GT_IntuiMessage gtmsg;
+    struct Gadget *activegadget;
+    struct Gadget *parentgadget;
+    IPTR gadget_value;
+    IPTR gadgetkind;
+    IPTR childgadgetkind;
+    IPTR childinfo;
+    ULONG getattrtag;
+    ULONG setattrtag;
+    WORD scrollticker;
 };
 
 /* The following typedefs are necessary, because the names of the global

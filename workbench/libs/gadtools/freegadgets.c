@@ -49,6 +49,7 @@
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     struct Gadget *lastgad = NULL, *nextgad = NULL;
+    BOOL context_gadget_found = FALSE;
 
     if (!glist)
 	return;
@@ -58,9 +59,19 @@
 	nextgad = glist->NextGadget;
 	if ((glist->Flags & GTYP_GADTOOLS))
 	{
-            freeitext((struct GadToolsBase_intern *)GadToolsBase, glist->GadgetText);
-            glist->GadgetText = NULL;
-	    DisposeObject(glist);
+	    if (!context_gadget_found)
+	    {
+	   	/* First GADTOOL gadget in list is context gadget */
+	        context_gadget_found = TRUE;
+		
+		FreeMem(glist,sizeof(struct GT_ContextGadget));
+	    }
+	    else
+	    {
+            	freeitext((struct GadToolsBase_intern *)GadToolsBase, glist->GadgetText);
+            	glist->GadgetText = NULL;
+	    	DisposeObject(glist);
+	    }
 	}
 	else
 	{
