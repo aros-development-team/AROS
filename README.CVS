@@ -27,7 +27,7 @@ where "user" is your login, eg. digulla:
 This asks you for your password. Type it in and if there is no error
 displayed, you are connected.
 
-5. Now you can use _any_ CVS comand as if the main source tree was
+5. Now you can use _any_ CVS command as if the main source tree was
 on your local host. To get a complete copy of the current tree, use:
 
     > cvs -d :pserver:user@wi-pc44.fh-konstanz.de:/home/AROS/CVS checkout AROS
@@ -111,4 +111,4 @@ After this, you can omit the "-d :pserver..." and just type, for example:
 
     > cvs help
 
-Fave a lot of fun :)
+Have a lot of fun :)
