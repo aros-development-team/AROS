@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 OS_INCLUDES	:= -I$(GENINCDIR)
 OBJDIR		:= $(GENDIR)/filesys
-FILES		:= con_handler
+FILES		:= con_handler support
 OBJS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 LIB		:= $(LIBDIR)/libcon_handler.a
