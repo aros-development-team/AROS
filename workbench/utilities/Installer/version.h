@@ -1,1 +1,1 @@
-static const char version[] = "$VER: Installer 43.3 (29.03.2002)\n";
+static const char version[] = "$VER: Installer 43.3 (13.07.2003)\n";
