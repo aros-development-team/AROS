@@ -229,9 +229,9 @@ static OOP_Object *serialunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
   data = OOP_INST_DATA(cl, obj);
   D(bug("Freeing filedescriptor (%d)!\n",data->filedescriptor));
 
-  tcsetattr(data->filedescriptor, TCSANOW, &data->orig_termios);
   if (-1 != data->filedescriptor)
   { 
+    tcsetattr(data->filedescriptor, TCSANOW, &data->orig_termios);
     Hidd_UnixIO_AbortAsyncIO(data->unixio_read,
                              data->filedescriptor,
                              SysBase);
