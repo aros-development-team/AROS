@@ -76,6 +76,7 @@ struct MUI_StringData {
 #define MSDF_ADVANCEONCR    (1<<0)
 #define MSDF_LONELYEDITHOOK (1<<1)
 #define MSDF_MARKING	    (1<<2)
+#define MSDF_KEYMARKING	    (1<<3)
 
 enum {
     NO_REASON = 0,
@@ -270,7 +271,7 @@ static BOOL Buffer_GetMarkedRange(struct MUI_StringData *data, WORD *start, WORD
     if (start) *start = markstart;
     if (stop) *stop = markstop;
 
-kprintf("Buffer_GetMarkedRange: returning %d .. %d\n", markstart, markstop);
+    //kprintf("Buffer_GetMarkedRange: returning %d .. %d\n", markstart, markstop);
     
     return TRUE;
 }
@@ -425,7 +426,7 @@ static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_String_Contents:
 		Buffer_SetNewContents(data, (STRPTR)tag->ti_Data);
 		data->msd_RedrawReason = NEW_CONTENTS;
-		data->msd_Flags &= ~MSDF_MARKING;
+		data->msd_Flags &= ~(MSDF_MARKING | MSDF_KEYMARKING);
 		MUI_Redraw(obj, MADF_DRAWOBJECT);
 		break;
 
@@ -1056,14 +1057,14 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
     if (code == 1) // ctrl-a, linestart
     {
 	data->BufferPos = 0;
-	data->msd_Flags &= ~MSDF_MARKING;
+	data->msd_Flags &= ~(MSDF_MARKING | MSDF_KEYMARKING);
 	return 1;
     }
 
     if (code == 26) // ctrl-z, lineend
     {
 	data->BufferPos = data->NumChars;
-	data->msd_Flags &= ~MSDF_MARKING;
+	data->msd_Flags &= ~(MSDF_MARKING | MSDF_KEYMARKING);
 	return 1;
     }
 
@@ -1143,19 +1144,71 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
     ULONG retval = 0;
     int update = 0;
+    LONG muikey = msg->muikey;
     BOOL cursor_kills_marking = FALSE;
     
-    if (data->msd_Flags & MSDF_MARKING)
+    if ((data->msd_Flags & MSDF_MARKING) && !(data->msd_Flags & MSDF_KEYMARKING))
     {
     	cursor_kills_marking = TRUE;
     }
+     
+    if (muikey == MUIKEY_NONE)
+    {
+    	if (msg->imsg->Class == IDCMP_RAWKEY)
+	{
+	    static LONG muikeytable[3][2] =
+	    {
+	    	{MUIKEY_LEFT	    , MUIKEY_RIGHT  	},
+		{MUIKEY_WORDLEFT    , MUIKEY_WORDRIGHT	},
+		{MUIKEY_LINESTART   , MUIKEY_LINEEND	}
+	    };
+	    WORD dirindex = -1, amountindex = 0;
+	    
+	    switch(msg->imsg->Code)
+	    {
+	    	case 0x4F:
+	    	    dirindex = 0;
+		    break;
+		    
+		case 0x4E:
+		    dirindex = 1;
+		    break;
+
+	    #ifdef __AROS__
+		case RAWKEY_HOME:
+		    muikey = MUIKEY_LINESTART;
+		    break;
+
+		case RAWKEY_END:
+		    muikey = MUIKEY_LINEEND;
+		    break;
+	    #endif
+		    		    
+	    }
+	    
+	    if ((dirindex != -1) && (muikey == MUIKEY_NONE))
+	    {
+	    	if (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+		{
+		    amountindex = 2;
+		}
+		else if (msg->imsg->Qualifier & IEQUALIFIER_CONTROL)
+		{
+		    amountindex = 1;
+		}
+		
+		muikey = muikeytable[amountindex][dirindex];
+	    }
+	    
+	}
+    }
     
-/*      D(bug("got muikey %d, imsg %p\n", msg->muikey, msg->imsg)); */
-    if (msg->muikey != MUIKEY_NONE && data->is_active)
+/*      D(bug("got muikey %d, imsg %p\n", muikey, msg->imsg)); */
+    if (muikey != MUIKEY_NONE && data->is_active)
     {
 	retval = MUI_EventHandlerRC_Eat;
 
-	switch (msg->muikey)
+	switch (muikey)
 	{
 	    case MUIKEY_LEFT:
 	    	if (cursor_kills_marking)
@@ -1318,7 +1371,7 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
     	    	    	data->OldClick_Sec = data->NewClick_Sec;
 			data->OldClick_Micro = data->NewClick_Micro;
 			
-			kprintf("multiclick %d\n", data->MultiClick);
+			//kprintf("multiclick %d\n", data->MultiClick);
 			
 			if (!data->is_active)
 			{
@@ -1488,21 +1541,27 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 		    break;
 
 		code = ConvertKey(msg->imsg);
-	    #ifdef __AROS__
 		if (!code)
 		{
 		    switch(msg->imsg->Code)
 		    {
-		    	case RAWKEY_HOME:
-			    code = 1; /* ctrl-a */
+    	    	    	case 0x64: /* LALT */
+			case 0x65: /* RALT */
+   	    	    	case 0x64 | IECODE_UP_PREFIX:
+			case 0x65 | IECODE_UP_PREFIX:
+			    if (msg->imsg->Qualifier & (IEQUALIFIER_LALT | IEQUALIFIER_RALT))
+			    {
+			    	data->MarkPos = data->BufferPos;
+				data->msd_Flags |= (MSDF_MARKING | MSDF_KEYMARKING);
+			    }
+			    else
+			    {
+			    	data->msd_Flags &= ~MSDF_KEYMARKING;
+			    }
 			    break;
-			    
-			case RAWKEY_END:
-			    code = 26; /* ctrl-z */
-			    break;
+			
 		    }
 		}
-	    #endif
 	    
 		if (code)
 		{
@@ -1577,6 +1636,7 @@ static IPTR String_GoActive(struct IClass * cl, Object * obj, Msg msg)
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
     data->is_active = TRUE;
+    data->msd_Flags &= ~MSDF_KEYMARKING;
     data->msd_RedrawReason = WENT_ACTIVE;
     // redraw
     set(obj, MUIA_Background,
