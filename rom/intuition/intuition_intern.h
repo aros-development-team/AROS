@@ -180,6 +180,16 @@ extern struct IntuitionBase * IntuitionBase;
 #define expunge() \
     AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
 
+
+#define IS_BORDER_GADGET(gad) \
+	(((gad->GadgetType) & GTYP_SYSGADGET) \
+	|| ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER)))
+
+#define SET_GI_RPORT(gi, w, gad)	\
+	(gi)->gi_RastPort = (IS_BORDER_GADGET(gad) ?  (w)->BorderRPort : (w)->RPort)
+
+
+
 /* Driver prototypes */
 extern int  intui_init (struct IntuitionBase *);
 extern int  intui_open (struct IntuitionBase *);
