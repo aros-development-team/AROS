@@ -1,10 +1,10 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: IFFParse initialization code.
-    Lang: English.
+    IFFParse initialization code.
 */
+
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
@@ -25,7 +25,7 @@
 #ifdef __MORPHOS__
 ULONG HookEntry(void)
 {
-	struct Hook *h=(struct Hook *)REG_A0;
+    struct Hook *h=(struct Hook *)REG_A0;
     Msg msg=(Msg) REG_A1;
     Object *obj=(Object*) REG_A2;
     
@@ -34,16 +34,16 @@ ULONG HookEntry(void)
 
 static struct EmulLibEntry    HookEntry_Gate=
 {
-	TRAP_LIB, 0, (void (*)(void))HookEntry
+    TRAP_LIB, 0, (void (*)(void))HookEntry
 };
 
 #define EasyHook(hook, func)  \
-	    IFFParseBase->hook.h_Entry = (IPTR (*)())&HookEntry_Gate;\
+        IFFParseBase->hook.h_Entry = (IPTR (*)())&HookEntry_Gate;\
         IFFParseBase->hook.h_SubEntry = (IPTR(*)())func;\
         IFFParseBase->hook.h_Data = IFFParseBase
 #else
 #define EasyHook(hook, func)  \
-	    IFFParseBase->hook.h_Entry = HookEntry; \
+        IFFParseBase->hook.h_Entry = HookEntry; \
         IFFParseBase->hook.h_SubEntry = (IPTR(*)())func; \
         IFFParseBase->hook.h_Data = IFFParseBase
 #endif
@@ -70,3 +70,4 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 }
 
 ADD2INITLIB(Init, 0);
+
