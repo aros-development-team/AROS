@@ -43,6 +43,18 @@
     EXAMPLE
 
     BUGS
+        There is still a problem when some polygons are filled that
+        pixels are missing. This could be due to the way lines are 
+        drawn. All lines should be drawn from lower
+        y coordinates to higher y coordinates since this is the
+        way the alogrithm calculates lines here. For example, it
+        might make a difference whether a line is drawn from lower
+        to higher y coordinates. Examples for two same lines with
+        different layout:
+        
+             ****              *****
+        *****              ****
+        
 
     SEE ALSO
 	InitArea() AreaDraw() AreaEllipse() AreaCircle() graphics/rastport.h
@@ -142,7 +154,7 @@
         		else
                 	    BytesPerRow = (BytesPerRow >> 3) & 0xfffe;
 
-    	    	    	if (rp->TmpRas->Size < BytesPerRow * (bounds.MaxY - bounds.MinY + 1))
+    	    	    	if ((ULONG)rp->TmpRas->Size < BytesPerRow * (bounds.MaxY - bounds.MinY + 1))
 		    	    return -1;
 
 	  /*              
@@ -232,7 +244,7 @@
         	    else
         	        BytesPerRow = (BytesPerRow >> 3) & 0xfffe;
 
-    	    	    if (rp->TmpRas->Size < BytesPerRow * (bounds.MaxY - bounds.MinY + 1))
+    	    	    if ((ULONG)rp->TmpRas->Size < BytesPerRow * (bounds.MaxY - bounds.MinY + 1))
 		    	return -1;
 			
         	    /* Draw an Ellipse and fill it */
