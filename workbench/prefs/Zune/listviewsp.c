@@ -80,10 +80,10 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       MUIA_Group_Columns, 2,
 			       MUIA_Group_SameSize, TRUE,
 			       Child, VGroup,
-			       MUIA_Group_VertSpacing, 2,
 			       GroupFrameT("Control"),
 			       Child, HVSpace,
 			       Child, ColGroup(2),
+			       MUIA_Group_VertSpacing, 2,
 			       Child, Label("Multi:"),
 			       Child, d.multi_cycle =
 			       MakeCycle("Multi:", multi_labels),
@@ -92,6 +92,7 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       MakeCycle("Refresh:", refresh_labels),
 			       Child, Label("Smooth:"),
 			       Child, HGroup,
+			       MUIA_Group_HorizSpacing, 4,
 			       Child, d.smooth_checkmark = MakeCheck(NULL),
 			       Child, d.smooth_slider = MakeListviewspSlider(),
 			       End, /* HGroup */
@@ -147,12 +148,13 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 			       Child, ColGroup(3),
 			       MUIA_Group_VertSpacing, 2,
+			       MUIA_Group_SameSize, TRUE,
 			       GroupFrameT("Cursor"),
 			       Child, FreeLabel("Active:"),
 			       Child, d.active_popimage = MakeBackgroundPopimage(),
 			       Child, VGroup,
 			       Child, HVSpace,
-			       Child, Label("Active &\nSelected:"),
+			       Child, CLabel("Active &\nSelected:"),
 			       End, /* VGroup */
 			       Child, FreeLabel("Selected:"),
 			       Child, d.selected_popimage = MakeBackgroundPopimage(),
