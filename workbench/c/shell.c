@@ -1,39 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.10  1996/10/15 15:42:11  digulla
-    Fixed a bug in the code to extract the names of the redirection files
-    Added ">>" (append) redirection.
-    Better exit-code
-
-    Revision 1.9  1996/10/04 14:35:14  digulla
-    Search C: without path C: add
-
-    Revision 1.8  1996/09/17 16:43:01  digulla
-    Use general startup code
-
-    Revision 1.7  1996/09/17 16:09:34  digulla
-    Another failure to make SIGALRM work :(
-
-    Revision 1.6  1996/09/13 17:52:11  digulla
-    Use IPTR
-
-    Revision 1.5  1996/09/12 14:47:55  digulla
-    More stack
-
-    Revision 1.4  1996/08/30 17:02:03  digulla
-    Fixed a bug which caused the shell to exit if the timer sent a signal. This
-	fix is a very bad hack :(
-
-    Revision 1.3  1996/08/23 17:05:58  digulla
-    Increased the stack.
-
-    Revision 1.2  1996/08/01 17:40:46  digulla
-    Added standard header for all files
 
     Desc:
-    Lang:
+    Lang: english
 */
 #include <exec/memory.h>
 #include <exec/libraries.h>

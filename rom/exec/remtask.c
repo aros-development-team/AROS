@@ -1,20 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.6  1996/10/24 15:50:57  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.5  1996/08/16 14:05:12  digulla
-    Added debug output
-
-    Revision 1.4  1996/08/13 13:56:07  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:18  digulla
-    Added standard header for all files
 
     Desc:
     Lang: english
@@ -36,7 +22,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/exec_protos.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH1(void, RemTask,
 
@@ -113,7 +99,8 @@
 	/* And force a task switch */
 	Switch();
 	/* Does not return. */
-    }else
+    }
+    else
 	/* Good luck. Freeing other tasks is simple. */
 	Remove(&task->tc_Node);
 
