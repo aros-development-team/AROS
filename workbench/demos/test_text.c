@@ -64,6 +64,7 @@ int main(int argc, char **argv)
 		    
 		    /* Get the default font */
 		    
+		    
 		    tf = OpenFont(&ta);
 		    
 		    SetFont(w1->RPort, tf);
@@ -85,7 +86,7 @@ int main(int argc, char **argv)
 		    SetBPen(w1->RPort, BLOCKPEN);
 		    test_text(w1);
 		    
-		    SetWindowTitles(w1, "Press a key to quit\n", NULL);
+		    SetWindowTitles(w1, "Press a key to quit", NULL);
 		    
 		    handleevents(w1);
 
@@ -119,7 +120,7 @@ void test_text(struct Window *w)
     
     iw = w->Width - w->BorderLeft - w->BorderRight;
     
-    len = sizeof (TEST_TEXT);
+    len = sizeof (TEST_TEXT) - 1;
     
     pixlen = TextLength(w->RPort, TEST_TEXT, len);
     
