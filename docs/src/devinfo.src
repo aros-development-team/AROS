@@ -208,6 +208,10 @@ Encrypting my_password: cbEVHg0j9uNRs
 (you must have the directory where crypt is stored in, in your path or
 you must do this in the same directory where crypt is).
 
+\bold{CVS doesn't work with Miami.} Miami uses a different routine for
+encrypting data than Un*x and therefore passwords generated with Miami
+won't work. Sorry.
+
 \subsection{How to get access to the AROS CVS server}
 
 Mail the password you have created to me:
