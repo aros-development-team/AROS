@@ -103,8 +103,10 @@ AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LIBFUNC_INIT
     SysBase = sysBase;
 
+#if 0 /* intuition_driver stuff is dead */
     if (!intui_init (LIBBASE))
 	return NULL;
+#endif
 
     /*  We have to open this here, but it doesn't do any allocations,
 	so it shouldn't fail...
@@ -265,8 +267,9 @@ AROS_LH1(struct LIBBASETYPE *, open,
 		    AROS_SLIB_ENTRY(DisplayError, Intuition));
     }
 
-    if (!intui_open (LIBBASE))
+#if 0 /* intuition_driver stuff is dead */ 
 	return NULL;
+#endif
 
     /* I have one more opener. */
     LIBBASE->LibNode.lib_OpenCnt++;
@@ -285,7 +288,10 @@ AROS_LH0(BPTR, close,
     /* I have one fewer opener. */
     if(!--LIBBASE->LibNode.lib_OpenCnt)
     {
+    
+#if 0 /* intuition_driver stuff is dead */
 	intui_close (LIBBASE);
+#endif
 
 	/* Delayed expunge pending? */
 	if(LIBBASE->LibNode.lib_Flags&LIBF_DELEXP)
@@ -350,8 +356,10 @@ AROS_LH0(BPTR, expunge,
     	DeleteMsgPort(GetPrivIBase(LIBBASE)->InputMP);
 
 
+#if 0 /* intuition_driver stuff is dead */ 
     /* Let the driver do the same */
     intui_expunge (LIBBASE);
+#endif
 
 #ifdef DISK_BASED /* Don't remove a ROM library */
     FreeImageClass ();
