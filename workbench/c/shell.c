@@ -70,9 +70,6 @@
   *  Alias [] support
   *  Break support (and SetSignal(0L) before execution) -- CreateNewProc()?
   *  Script file execution capabilities (if script bit set)
-  *  > Setenv Var $Var
-     > $Var
-     is not a good idea...
   *  $ must be taken care of differently than it is now so that things
      like cd SYS:Olle/$pelle works
 
