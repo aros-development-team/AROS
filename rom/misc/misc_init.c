@@ -18,10 +18,12 @@
 #include <aros/asmcall.h>
 #include "misc_intern.h"
 
+#include "libdefs.h"
+
 static const UBYTE name[];
 static const UBYTE idstring[];
 static const void * const functable[];
-extern const char AROS_SLIB_ENTRY(end, Misc);
+extern const char LIBEND;
 
 struct MiscBase *AROS_SLIB_ENTRY(init, Misc)();
 
@@ -37,7 +39,7 @@ const struct Resident Misc_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Misc_resident,
-    (APTR)&AROS_SLIB_ENTRY(end,Misc),
+    (APTR)&LIBEND,
     RTF_COLDSTART,
     41,
     NT_RESOURCE,
