@@ -38,7 +38,7 @@ ULIBNAME := Dos
 OSMODULE  := dos.library
 IMAGE_TYPES := aos aout elf
 FILES	  := devname doname dosboot errorlist inithidds lddemon runprocess \
-	     match_misc \
+	     match_misc execcommand \
 	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
 FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
