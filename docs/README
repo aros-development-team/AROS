@@ -1,6 +1,6 @@
 Short: AROS - Amiga Research OS (Beta release)
-Author:   Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de) and many others
-Uploader: Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de)
+Author:   Aaron "Optimizer" Digulla (digulla@hepe.com) and many others
+Uploader: Aaron "Optimizer" Digulla (digulla@hepe.com)
 Version:  1.12b
 Type:	  misc/emu
 
@@ -44,9 +44,9 @@ WHERE TO FIND MORE INFOS ?
 
 Look at these pages on WorldWideWait:
 
+    http://www.aros.org/ (Alias for Main site, preferred)
     http://aros.fh-konstanz.de/aros/ (Main site)
     http://home.pages.de/~aros/ (Alias for main site)
-    http://www.aros.org/ (Alias for main site)
     http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
     http://www.xs4all.nl/~ldp/aros/ (AROS for Amiga)
 
@@ -67,8 +67,11 @@ There are these EMail addresses where you can send bug reports to:
 MISC
 ----
 
-This software is subject to the "Standard Amiga FD-Software Copyright Note".
-It is MAILWARE as defined in paragraph 4b.
+This software is subject to the "AROS PUBLIC LICENSE" which can be found
+in this archive as license.html. The license is derived from the Mozilla
+Public License. The biggest difference is that the word "Mozilla" has
+been replaced by "AROS" everywhere in the text.
+
 If you like it and use it regularly please send a message to the
 following address:
 
@@ -77,6 +80,5 @@ following address:
     78467 Konstanz
     Germany
 
-    EMail: digulla@aros.fh-konstanz.de
+    EMail: digulla@hepe.com
 
-For more information please read "AFD-COPYRIGHT" (Version 1 or higher).
