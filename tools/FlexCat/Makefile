@@ -6,23 +6,22 @@
 
 # Things of interest.
 SRC	:=  flexcat.c
-SDFILES	:=  C_c_orig.sd C_h_orig.sd
+SDFILES	:=  C_c_orig.sd C_h_orig.sd gcccatcomp.sd
 
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -Wunused -O3
 SD_OUT	:=  $(foreach f,$(SDFILES),$(TOOLDIR)/$(f))
 
-all : $(FLEXCAT) copy_sd_files
-
-real-all: $(FLEXCAT) copy_sd_files
+all : $(FLEXCAT) $(SD_OUT) $(TOOLDIR)/gcccatcomp.sh
 
 $(FLEXCAT) : flexcat.c
 	@$(MECHO) "Compiling $(notdir $@)..."
 	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@
 	@$(STRIP) $@
 
-copy_sd_files : $(SD_OUT)
+$(TOOLDIR)/gcccatcomp.sh: gcccatcomp.sh
+	@$(CP) $< $@
 
 $(TOOLDIR)/%.sd : %.sd
 	@$(CP) $< $@
