@@ -1085,6 +1085,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
 	LockLayerRom(L);
 
+
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
  	    /* Scroll the old damagelist within the scroll area */
@@ -1094,14 +1095,63 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
         /* The scrolling area is relative to the Layer, so make it relative to the screen */
         TranslateRect(&ScrollRect, MinX(L), MinY(L));
 
+        /* The damage list will be formed by the now hidden layer's parts that will become visible due
+           to the scrolling procedure, thus we procede this way:
+
+           1) Calculate the invisible region out of the visible one, subtracting it from the
+              scrolling area
+
+           2) Scroll the invisible region by (-dx, dy-) and then subtract from it the not scrolled one
+
+           The regions that we obtain after (2) is the new damage list
+        */
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
 	    Rect = ScrollRect;
-            TranslateRect(&Rect, -dx, -dy);
+            TranslateRect(&Rect, dx, dy);
 
 	    if (_AndRectRect(&ScrollRect, &Rect, &Rect))
             {
-                Damage = AndRectRegionND(L->VisibleRegion, &Rect);
+ 	        struct Region *Damage;
+
+                Damage = NewRectRegion(Rect.MinX, Rect.MinY, Rect.MaxX, Rect.MaxY);
+                if (Damage)
+                {
+        	    if
+                    (
+                        ClearRegionRegion(L->VisibleRegion, Damage)
+                        &&
+                        Damage->RegionRectangle
+                    )
+                    {
+                        struct Region Tmp;
+                        /*
+                           We play sort of dirty here, by making assumptions about the internals of the
+                           Region structure and the region handling functions, but we are allowed to do that,
+                           aren't we? ;-)
+      		        */
+
+                        Tmp = *Damage;
+
+                        TranslateRect(Bounds(Damage), -dx, -dy);
+
+                        if
+                        (
+                            ClearRegionRegion(&Tmp, Damage)
+                            &&
+                            Damage->RegionRectangle
+                        )
+              	        {
+		            /* Join the new damage list with the old one */
+                	    TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
+                	    OrRegionRegion(Damage, L->DamageList);
+
+                	    L->Flags |= LAYERREFRESH;
+            	        }
+		    }
+
+            	    DisposeRegion(Damage);
+             	}
             }
         }
 
@@ -1162,12 +1212,6 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
          		0xff,
                  	NULL
  		    );
-
- 	  	    if (Damage)
-                    {
-                        ClearRectRegion(Damage, &Rect);
-                    }
-
 		}
 		else
 		{
@@ -1276,11 +1320,6 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
                         );
 		    }
 
-  	            if (Damage)
-                    {
-                        ClearRegionRegion(RectRegion, Damage);
-                    }
-
                     if (dosrcsrc)
 		    {
 			BltBitMap
@@ -1298,10 +1337,6 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
                  	    NULL
                         );
 
-       	                if (Damage && srcbm == rp->BitMap)
-                        {
-                            ClearRectRegion(Damage, &Tmp);
-                        }
 		    }
 
                     DisposeRegion(RectRegion);
@@ -1310,23 +1345,6 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
         }
 
         AROS_END_PROFILING
-
-        if (Damage)
-        {
-            /* Add the damagelist to the layer's damage list and set the
-               LAYERREFRESH flag, but of course only if it's necessary */
-
-	    if (Damage->RegionRectangle)
-            {
-		/* Join the new damage list with the old one */
-                TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
-                OrRegionRegion(Damage, L->DamageList);
-
-                L->Flags |= LAYERREFRESH;
-            }
-
-            DisposeRegion(Damage);
-        }
 
 failexit:
         UnlockLayerRom(L);
@@ -1380,7 +1398,6 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     else
     {
         struct ClipRect *SrcCR, *DstCR/*, *OldCR*/;
-	struct Region *Damage = NULL;
 
         LockLayerRom(L);
 
@@ -1401,14 +1418,63 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
         /* The scrolling area is relative to the Layer, so make it relative to the screen */
         TranslateRect(&ScrollRect, MinX(L), MinY(L));
 
+        /* The damage list will be formed by the now hidden layer's parts that will become visible due
+           to the scrolling procedure, thus we procede this way:
+
+           1) Calculate the invisible region out of the visible one, subtracting it from the
+              scrolling area
+
+           2) Scroll the invisible region by (-dx, dy-) and then subtract from it the not scrolled one
+
+           The regions that we obtain after (2) is the new damage list
+        */
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
 	    Rect = ScrollRect;
-            TranslateRect(&Rect, -dx, -dy);
+            TranslateRect(&Rect, dx, dy);
 
 	    if (_AndRectRect(&ScrollRect, &Rect, &Rect))
             {
-                Damage = AndRectRegionND(L->VisibleRegion, &Rect);
+ 	        struct Region *Damage;
+
+                Damage = NewRectRegion(Rect.MinX, Rect.MinY, Rect.MaxX, Rect.MaxY);
+                if (Damage)
+                {
+        	    if
+                    (
+                        ClearRegionRegion(L->VisibleRegion, Damage)
+                        &&
+                        Damage->RegionRectangle
+                    )
+                    {
+                        struct Region Tmp;
+                        /*
+                           We play sort of dirty here, by making assumptions about the internals of the
+                           Region structure and the region handling functions, but we are allowed to do that,
+                           aren't we? ;-)
+      		        */
+
+                        Tmp = *Damage;
+
+                        TranslateRect(Bounds(Damage), -dx, -dy);
+
+                        if
+                        (
+                            ClearRegionRegion(&Tmp, Damage)
+                            &&
+                            Damage->RegionRectangle
+                        )
+              	        {
+		            /* Join the new damage list with the old one */
+                	    TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
+                	    OrRegionRegion(Damage, L->DamageList);
+
+                	    L->Flags |= LAYERREFRESH;
+            	        }
+		    }
+
+            	    DisposeRegion(Damage);
+             	}
             }
         }
 
@@ -1501,11 +1567,6 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
                                 0xFF,
                                 NULL
 			    );
-
-	  	            if (Damage && dstbm == rp->BitMap)
-                            {
-                                ClearRectRegion(Damage, &Rect2);
-                            }
 			}
             	    }
         	}
@@ -1513,20 +1574,6 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
  	}
 
 	AROS_END_PROFILING
-
-        if (Damage)
-        {
-	    if (Damage->RegionRectangle)
-            {
-		/* Join the new damage list with the old one */
-                TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
-                OrRegionRegion(Damage, L->DamageList);
-
-                L->Flags |= LAYERREFRESH;
-            }
-
-            DisposeRegion(Damage);
-        }
 
         UnlockLayerRom(L);
     }
