@@ -13,3 +13,10 @@ APTR AllocAslRequestTags(ULONG reqType, Tag tag1, ...);
 BOOL AslRequestTags(APTR requester, Tag tag1, ...);
 
 ##end clib
+
+##begin proto
+#ifndef AslBase
+  extern struct Library *AslBase;
+#endif
+
+##end proto
