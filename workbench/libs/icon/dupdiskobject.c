@@ -9,6 +9,8 @@
 #include <proto/arossupport.h>
 #include "icon_intern.h"
 
+/*#define OUTPUT_DATA*/
+
 struct OldDrawerData
 {
     struct NewWindow dd_NewWindow;
@@ -54,6 +56,18 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	if ((dest->ImageData = AllocPooled(pool,data_size)))
 	{
 	    memcpy(dest->ImageData,src->ImageData,data_size);
+#ifdef OUTPUT_DATA
+	    kprintf("plane_pick = %ld\n",src->PlanePick);
+	    kprintf("width = %ld\n",src->Width);
+	    kprintf("height = %ld\n",src->Height);
+
+	    for (i=0;i<data_size;i++)
+	    {
+		kprintf("0x%02lx,",((unsigned char*)src->ImageData)[i]);
+		if (i%16 == 15) kprintf("\n");
+	    }
+	     kprintf("\n");
+#endif
 	    return dest;
 	}
 
@@ -121,6 +135,9 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 
     /* copy the contents */
     *dob = *icon;
+#ifdef OUTPUT_DATA
+    kprintf("gadgetwidth = %ld\ngadgetheight = %ld\n",dob->do_Gadget.Width,dob->do_Gadget.Height);
+#endif
 
     /* and now the pointers and the rest */
 #warning TODO: check for errors here
