@@ -21,8 +21,15 @@
     io->io_Length = sizeof (struct InputEvent);	\
     SendIO((struct IORequest *)io)
     
+    
 #define SEND_KBD_REQUEST(kbdio, kbdie)	SEND_INPUT_REQUEST(kbdio, kbdie, KBD_READEVENT)
 #define SEND_GPD_REQUEST(gpdio, gpdie) SEND_INPUT_REQUEST(gpdio, gpdie, GPD_READEVENT)
+
+#define SEND_TIMER_REQUEST(timerio)			\
+	timerio->tr_node.io_Command = TR_ADDREQUEST;	\
+	timerio->tr_time.tv_secs = 0;			\
+	timerio->tr_time.tv_micro = 10000;		\
+	SendIO((struct IORequest *)timerio)
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -63,7 +70,7 @@ VOID ForwardQueuedEvents(struct inputbase *InputDevice)
 void ProcessEvents (struct IDTaskParams *taskparams)
 {
     struct inputbase *InputDevice = taskparams->InputDevice;
-    ULONG commandsig, kbdsig, wakeupsigs, gpdsig;
+    ULONG commandsig, kbdsig, wakeupsigs, gpdsig, timersig;
     struct MsgPort *timermp;
     struct timerequest *timerio;
 
@@ -143,20 +150,42 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     /* .. and to the gameport.device */
     SEND_GPD_REQUEST(gpdio, gpdie);
     
+    /* .. and to the timer device */
+    SEND_TIMER_REQUEST(timerio);
+    
     commandsig = 1 << InputDevice->CommandPort->mp_SigBit;
     
     kbdsig = 1 << kbdmp->mp_SigBit;
     gpdsig = 1 << gpdmp->mp_SigBit;
+    timersig = 1 << timermp->mp_SigBit;
 
     /* Tell the task that created us, that we are finished initializing */
     Signal(taskparams->Caller, taskparams->Signal);
     for (;;)
     {
 
-//	D(bug("id : waiting for wakeup-call\n"));
-	wakeupsigs = Wait (commandsig | kbdsig | gpdsig);
-	D(bug("Wakeup sig: %x, cmdsig: %x, kbdsig: %x\n"
-		, wakeupsigs, commandsig, kbdsig));
+	wakeupsigs = Wait (commandsig | kbdsig | gpdsig | timersig);
+	D(bug("Wakeup sig: %x, cmdsig: %x, kbdsig: %x\n, timersig: %x"
+		, wakeupsigs, commandsig, kbdsig, timersig));
+	
+
+	
+	if (wakeupsigs & timersig)
+	{
+	    struct InputEvent timer_ie;
+	    
+	    GetMsg(timermp);
+
+	    timer_ie.ie_Class = IECLASS_TIMER;
+	    /* Add a timestamp to the event */
+	    GetSysTime( &(timer_ie.ie_TimeStamp ));
+	    
+	    AddEQTail(&timer_ie, InputDevice);
+	    ForwardQueuedEvents(InputDevice);
+	    
+	    
+	    SEND_TIMER_REQUEST(timerio);
+	}
 	
 	if (wakeupsigs & commandsig)
 	{
@@ -164,7 +193,6 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    /* Get all commands from the port */
 	    while ( (ioreq = (struct IOStdReq *)GetMsg(InputDevice->CommandPort)) )
 	    {
-	//	    D(bug("id task: processing sommand %d\n", ioreq->io_Command));
 	    	
 		switch (ioreq->io_Command)
 		{
@@ -184,7 +212,6 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     	        
 		    ie = (struct InputEvent *)ioreq->io_Data; 
 		    /* Add a timestamp to the event */
- //    	    	D(bug("id: Getting system time\n"));
 		    GetSysTime( &(ie->ie_TimeStamp ));
 
 		    D(bug("id: %d\n", ie->ie_Class));
@@ -193,11 +220,10 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     	    	
 		    AddEQTail((struct InputEvent *)ioreq->io_Data, InputDevice);
     	    	
-    //	    	D(bug("id: Forwarding events\n"));
     	    	
     	    	/* Forward event (and possible others in the queue) */
 		    ForwardQueuedEvents(InputDevice);
-//    	    	D(bug("id: Events forwarded\n"));
+
 
 		    } break;
     	    	
@@ -210,7 +236,7 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	   
 	    
 	} /* if (IO command received) */
-	else if (wakeupsigs & kbdsig)
+	if (wakeupsigs & kbdsig)
 	{
 	    
 	    GetMsg(kbdmp); /* Only one message */
@@ -231,7 +257,7 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    /* Wit for some more events */
 	    SEND_KBD_REQUEST(kbdio, kbdie);
 	}
-	else if (wakeupsigs & gpdsig)
+	if (wakeupsigs & gpdsig)
 	{
 	    GetMsg(gpdmp); /* Only one message */
 	    if (gpdio->io_Error != 0)
@@ -241,7 +267,7 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    AddEQTail((struct InputEvent *)gpdio->io_Data, InputDevice);
 	    /* New event from keyboard device */
     	    D(bug("id: Gameport event\n"));
-    	    	
+
     	    	
     	    D(bug("id: Forwarding events\n"));
     	    	/* Forward event (and possible others in the queue) */
