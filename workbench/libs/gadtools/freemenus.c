@@ -55,7 +55,7 @@
     /*
     ** Free all items and subitems of this menu title
     */
-    freeitems(menu);
+    freeitems(menu, (struct GadToolsBase_intern *)GadToolsBase);
 
     FreeMem(menu, sizeof(struct Menu)+sizeof(APTR));
 
