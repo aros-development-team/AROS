@@ -11,6 +11,8 @@ FILES		:= \
 	intern_ieeedpld
 
 FUNCTIONS	:= \
+	ieeedpacos \
+	ieeedpasin \
 	ieeedpatan \
 	ieeedpcosh \
 	ieeedpexp \
