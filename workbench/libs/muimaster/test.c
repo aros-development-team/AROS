@@ -508,8 +508,10 @@ End,
 			Child, editor_text = TextObject,
 			    StringFrame,
 #ifndef COMPILE_WITH_MUI
+#if 0
 			    MUIA_Text_Editable, TRUE,
 			    MUIA_Text_Multiline, TRUE,
+#endif
 #endif
 			    End,
 		    	Child, PopaslObject,
