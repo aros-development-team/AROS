@@ -113,10 +113,11 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
     BOOL result = FALSE;
 
     struct UtilityBase *UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
+    struct CommandLineInterface *cli = Cli();
+
     if (!UtilityBase)
         return RETURN_FAIL;
 
-    struct CommandLineInterface *cli = Cli();
 
     if((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {
