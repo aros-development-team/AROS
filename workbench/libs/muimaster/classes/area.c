@@ -700,6 +700,8 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
+    area_update_data(obj, data);
+    
     msg->MinMaxInfo->MinWidth = _subwidth(obj);
     if (data->mad_TitleText)
     {
