@@ -21,6 +21,7 @@ Assign HELP:    LOCALE:Help DEFER
 Assign THEMES:  SYS:Themes
 Assign THEME:   THEMES:Mason
 ;Assign PRINTERS: DEVS:Printers
+Assign WANDERER: SYS:System/Wanderer DEFER
 
 If EXISTS SYS:DiskImages
     Assign FDSK: SYS:DiskImages
