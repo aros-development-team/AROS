@@ -217,13 +217,16 @@ inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBa
 
 
 /* Called by intuition to free a window */
-VOID int_closewindow(struct Window *window);
+VOID int_closewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
+VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
 struct IntWindow
 {
     struct Window window;
     
     /* This message is sent to the intuition input handler when
-       a window should be closed
+       a window should be closed. We allocate it
+       in OpenWindow(), so that CloseWindow 
+       since CloseWindow() may not fail.
     */
        
     struct IntuiMessage *closeMessage;
@@ -231,13 +234,31 @@ struct IntWindow
 };
 
 
+/* IMCODE_WBENCHMESSAGE parameter structs
+NOTE: The first two fields of these MUST be the
+same as the first ones in IntuiMessage.
+
+However we could instead use another message port in
+the inputhandler to handle these messages and then add
+a pointer to this one in struct IntWindow above.
+*/
+
+struct msgActivateWindow
+{
+    ULONG Class;
+    UWORD Code;
+    struct Window *Window;
+    
+};
 
 /* IDCMP_WBENCHMESSAGE parameters */
+
 
 enum
 {
 	/* Sent from application task to intuition inside CloseWindow() */
-	IMCODE_CLOSEWINDOW = 0
+	IMCODE_CLOSEWINDOW = 0,
+	IMCODE_ACTIVATEWINDOW
 };
 
 #endif /* INTUITION_INTERN_H */
