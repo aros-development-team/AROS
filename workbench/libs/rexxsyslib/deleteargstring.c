@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "rexxsyslib_intern.h"
+#include <rexx/storage.h>
 
 /*****************************************************************************
 
@@ -41,8 +42,13 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,RexxSysBase)
-
-    aros_print_not_implemented ("DeleteArgstring");
-
+ 
+    static struct RexxArg dummy;
+    struct RexxArg *ra;
+  
+    ra = (struct RexxArg *)(argstring-((void *)dummy.ra_Buff-(void *)&dummy));
+    FreeMem(ra, ra->ra_Size+sizeof(struct RexxArg)-8);
+  
+    ReturnVoid("DeleteArgstring");
     AROS_LIBFUNC_EXIT
 } /* DeleteArgstring */

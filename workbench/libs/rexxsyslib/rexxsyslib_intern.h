@@ -32,6 +32,9 @@
 #ifndef REXX_STORAGE_H
 #   include <rexx/storage.h>
 #endif
+#ifndef LIBCORE_BASE_H
+#   include <libcore/base.h>
+#endif
 #include <stdlib.h>
 
 
@@ -46,19 +49,10 @@ struct RexxSysBase_intern; /* prereference */
 
 struct RexxSysBase_intern
 {
-    struct Library    library;
-    struct ExecBase * sysbase;
-    BPTR	      seglist;
-/*    struct Library  * dosbase;*/
+    struct LibHeader library;
 };
 
-#define IPB(ipb)        ((struct RexxSysBase_intern *)ipb)
 #undef SysBase
-#define SysBase (IPB(RexxSysBase)->sysbase)
-/*#undef DOSBase
-#define DOSBase (IPB(RexxSysBase)->dosbase)*/
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct RexxSysBase_intern *, RexxSysBase, 3, RexxSys)
+#define SysBase (((struct LibHeader*)RexxSysBase)->lh_SysBase)
 
 #endif /* REXXSYSLIB_INTERN_H */
