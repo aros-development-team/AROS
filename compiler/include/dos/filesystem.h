@@ -3,7 +3,11 @@
 
 /*
     (C) Copyright 1995-2001 AROS - The Amiga Research OS
+<<<<<<< filesystem.h
     $Id$
+=======
+    $Id$
+>>>>>>> 1.31
 
     Desc: AROS specific structures and definitions for filesystems.
     Lang: english
@@ -412,7 +416,7 @@ struct IFS_RELABEL
                                  and return an error in case Write()/Read()
 				 would block */
 
-#define FMF_AMIGADOS (1L<<31) /* Identifies the old AmigaDOS modes */
+#define FMF_AMIGADOS (1L<<9) /* Identifies the old AmigaDOS modes */
 #define FMF_MODE_OLDFILE   (FMF_AMIGADOS | FMF_WRITE | FMF_READ)
 #define FMF_MODE_READWRITE (FMF_MODE_OLDFILE | FMF_CREATE)
 #define FMF_MODE_NEWFILE   (FMF_MODE_READWRITE | FMF_LOCK | FMF_CLEAR)
