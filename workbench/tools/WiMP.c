@@ -30,7 +30,7 @@
 
 ******************************************************************************/
 
-static const char version[] = "$VER: WiMP 0.4 (17.12.2000)\n";
+static const char version[] = "$VER: WiMP 0.5 (26.12.2000)\n";
 
 #define AROS_ALMOST_COMPATIBLE
 
@@ -75,8 +75,11 @@ struct Library *GadToolsBase;
 struct GfxBase *GfxBase;
 struct Screen *Screen;
 struct Window *Window;
+struct Window *InfoWindow = NULL;
+struct RastPort *iw_rp;
 struct Menu *menus;
 ULONG lock;
+ULONG w_sigbit, iw_sigbit;
 
 enum {None_type,Window_type,Screen_type,Max_type};
 
@@ -140,7 +143,7 @@ struct NewGadget frontgad =
 struct NewGadget killgad =
 {
     10, 130, 50, 20,
-    "Kill", NULL,
+    "Close", NULL,
     ID_KILL, PLACETEXT_IN, NULL, NULL
 };
 
@@ -229,6 +232,8 @@ static struct NewMenu nm[] =
     {NM_ITEM, "Zip"},
     {NM_ITEM, "Hide"},
     {NM_ITEM, "Show"},
+    {NM_ITEM, NM_BARLABEL},
+    {NM_ITEM, "Info"},
   {NM_TITLE, "Generic"},
     {NM_ITEM, "Rescue All"},
     {NM_ITEM, "Show All"},
@@ -262,7 +267,16 @@ char *string;
   /* Traverse through all Screens */
   while ( scr )
   {
-    sprintf(tmp,"Screen:   %p %4dx%4d @%4d.%4d     \"%s\",\"%s\"",scr,scr->Width,scr->Height,scr->LeftEdge,scr->TopEdge,scr->Title,scr->DefaultTitle);
+    sprintf (	tmp,
+		"Screen:   %p %4dx%4d @%4d.%4d     \"%s\",\"%s\"",
+		scr,
+		scr->Width,
+		scr->Height,
+		scr->LeftEdge,
+		scr->TopEdge,
+		scr->Title,
+		scr->DefaultTitle
+	    );
     string = strdup(tmp);
     node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
     AddTail(list, node);
@@ -272,7 +286,20 @@ char *string;
     win = scr->FirstWindow;
     while ( win )
     {
-      sprintf(tmp,"  Window: %p %4dx%4d @%4d,%4d %c%c%c \"%s\"%c(%p)",win,win->Width,win->Height,win->LeftEdge,win->TopEdge,(IsWindowVisible(win)?' ':'H'),(IS_CHILD(win)?'C':' '),(HAS_CHILDREN(win)?'P':' '),win->Title,(IS_CHILD(win)==NULL?0:' '),win->parent);
+      sprintf ( tmp,
+		"  Window: %p %4dx%4d @%4d,%4d %c%c%c \"%s\"%c(%p)",
+		win,
+		win->Width,
+		win->Height,
+		win->LeftEdge,
+		win->TopEdge,
+		(IsWindowVisible(win)?' ':'H'),
+		(IS_CHILD(win)?'C':' '),
+		(HAS_CHILDREN(win)?'P':' '),
+		win->Title,
+		(IS_CHILD(win)?' ':0),
+		win->parent
+	      );
       string = strdup(tmp);
       node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
       AddTail(list, node);
@@ -316,6 +343,8 @@ IPTR getsw(int *type)
 {
 IPTR gadget;
 IPTR xptr = 0;
+struct Screen *scr;
+struct Window *win;
 
   GT_GetGadgetAttrs(screenlistg,Window,NULL,
       GTLV_Selected, (IPTR)&gadget,
@@ -344,7 +373,31 @@ IPTR xptr = 0;
       default:
 	  break;
     }
-    return xptr;
+    lock = LockIBase(0);
+    scr = IntuitionBase->FirstScreen;
+    UnlockIBase(lock);
+    /* Traverse through all Screens */
+    while ( scr && scr != xptr )
+    {
+      /* Traverse through all Windows of current Screen */
+      win = scr->FirstWindow;
+      while ( win && win != xptr )
+      {
+	win = win->NextWindow;
+      }
+      scr = scr->NextScreen;
+    }
+    if ( ( win == xptr && *type == Window_type )
+      || ( scr == xptr && *type == Screen_type ) )
+    {
+      return xptr;
+    }
+    else
+    {
+      update_list();
+      *type = None_type;
+      return 0;
+    }
   }
   else
   {
@@ -386,6 +439,14 @@ int i, type, max;
       OffMenu(Window,actionmenu[i-1]);
     }
     gad = gad->NextGadget;
+  }
+  if ( type == None_type )
+  {
+    OffMenu(Window,FULLMENUNUM(1,11,NOSUB));
+  }
+  else
+  {
+    OnMenu(Window,FULLMENUNUM(1,11,NOSUB));
   }
 
 return;
@@ -490,12 +551,14 @@ VOID open_window()
 	, WA_SimpleRefresh, TRUE
 	, TAG_END
     );
+    w_sigbit = 1 << Window->UserPort->mp_SigBit;
 
 return;
 }
 
 VOID close_window()
 {
+  CloseWindow(InfoWindow);
   CloseWindow(Window);
   FreeGadgets(glist);
   FreeVisualInfo(vi);
@@ -509,6 +572,117 @@ VOID close_lib()
   CloseLibrary((struct Library *)IntuitionBase);
   CloseLibrary((struct Library *)GfxBase);
   CloseLibrary(GadToolsBase);
+
+return;
+}
+
+VOID open_infowindow()
+{
+  InfoWindow = OpenWindowTags ( NULL
+	, WA_Title,	    TITLE_TXT
+	, WA_Left,	    0
+	, WA_Top,	    0
+	, WA_Width,	    580
+	, WA_Height,	    250
+	, WA_IDCMP,	    IDCMP_REFRESHWINDOW
+			    | IDCMP_CLOSEWINDOW
+	, WA_Flags,	    WFLG_DRAGBAR
+			    | WFLG_DEPTHGADGET
+			    | WFLG_CLOSEGADGET
+			    | WFLG_NOCAREREFRESH
+			    | WFLG_SIMPLE_REFRESH
+			    | WFLG_ACTIVATE
+			    | WFLG_GIMMEZEROZERO
+	, WA_SimpleRefresh, TRUE
+	, TAG_END
+    );
+    iw_sigbit = 1 << InfoWindow->UserPort->mp_SigBit;
+    iw_rp = InfoWindow->RPort;
+
+return;
+}
+
+VOID close_infowindow()
+{
+  CloseWindow ( InfoWindow );
+  InfoWindow = NULL;
+  iw_sigbit = 0L;
+
+return;
+}
+
+#define WPRINT(line)			\
+	Move(iw_rp, 10, line*9+2);	\
+	Text(iw_rp, tmp, strlen(tmp) );
+
+VOID WindowInfo( struct Window *win )
+{
+char tmp[1024];
+
+  if ( InfoWindow == NULL )
+  {
+    open_infowindow();
+  }
+  else
+  {
+    EraseRect ( iw_rp, 0, 0, InfoWindow->Width, InfoWindow->Height );
+  }
+  DrawBevelBox ( iw_rp, 4, 16, 560, 200,
+		 GTBB_Recessed, TRUE,
+		 GTBB_FrameType, BBFT_RIDGE,
+		 GT_VisualInfo, (IPTR) vi,
+		 TAG_DONE );
+
+  SetAPen(iw_rp,1);
+  sprintf(tmp,"Window: %p \"%s\"",win,win->Title);		WPRINT(  1 );
+  sprintf(tmp,"LeftEdge     = %d", win->LeftEdge);		WPRINT(  3 );
+  sprintf(tmp,"TopEdge      = %d", win->TopEdge);		WPRINT(  4 );
+  sprintf(tmp,"Width        = %d", win->Width);			WPRINT(  5 );
+  sprintf(tmp,"Height       = %d", win->Height);		WPRINT(  6 );
+  sprintf(tmp,"MinWidth     = %d", win->MinWidth);		WPRINT(  7 );
+  sprintf(tmp,"MinHeight    = %d", win->MinHeight);		WPRINT(  8 );
+  sprintf(tmp,"MaxWidth     = %d", win->MaxWidth);		WPRINT(  9 );
+  sprintf(tmp,"MaxHeight    = %d", win->MaxHeight);		WPRINT( 10 );
+  sprintf(tmp,"Flags        = %010p", (void *)win->Flags);	WPRINT( 11 );
+  sprintf(tmp,"Title        = \"%s\"", win->Title);		WPRINT( 12 );
+  sprintf(tmp,"ReqCount     = %d", win->ReqCount);		WPRINT( 13 );
+  sprintf(tmp,"WScreen      = %p \"%s\"", win->WScreen,
+				win->WScreen->Title);		WPRINT( 14 );
+  sprintf(tmp,"BorderLeft   = %d", win->BorderLeft);		WPRINT( 15 );
+  sprintf(tmp,"BorderTop    = %d", win->BorderTop);		WPRINT( 16 );
+  sprintf(tmp,"BorderRight  = %d", win->BorderRight);		WPRINT( 17 );
+  sprintf(tmp,"BorderBottom = %d", win->BorderBottom);		WPRINT( 18 );
+
+return;
+}
+
+VOID ScreenInfo( struct Screen *scr )
+{
+char tmp[1024];
+
+  if ( InfoWindow == NULL )
+  {
+    open_infowindow();
+  }
+  else
+  {
+    EraseRect ( iw_rp, 0, 0, InfoWindow->Width, InfoWindow->Height );
+  }
+  DrawBevelBox ( iw_rp, 4, 16, 560, 200,
+		 GTBB_Recessed, TRUE,
+		 GTBB_FrameType, BBFT_RIDGE,
+		 GT_VisualInfo, (IPTR) vi,
+		 TAG_DONE );
+
+  SetAPen(iw_rp,1);
+  sprintf(tmp,"Screen: %p \"%s\"",scr,scr->Title);		WPRINT(  1 );
+  sprintf(tmp,"LeftEdge     = %d", scr->LeftEdge);		WPRINT(  3 );
+  sprintf(tmp,"TopEdge      = %d", scr->TopEdge);		WPRINT(  4 );
+  sprintf(tmp,"Width        = %d", scr->Width);			WPRINT(  5 );
+  sprintf(tmp,"Height       = %d", scr->Height);		WPRINT(  6 );
+  sprintf(tmp,"Flags        = %010p", (void *)scr->Flags);	WPRINT(  7 );
+  sprintf(tmp,"Title        = \"%s\"", scr->Title);		WPRINT(  8 );
+  sprintf(tmp,"DefaultTitle = \"%s\"", scr->DefaultTitle);	WPRINT(  9 );
 
 return;
 }
@@ -608,12 +782,17 @@ struct MenuItem *item;
 struct EasyStruct es;
 ULONG class;
 UWORD code;
+ULONG port;
 IPTR object;
 int type;
 int quit = 0;
+ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 
   open_lib();
   open_window();
+
+  CurrentTime( &sec1, &msec1 );
+  sel1 = -1;
 
   gad = gt_init();
   gad = makegadgets(gad);
@@ -630,17 +809,30 @@ int quit = 0;
 
   while ( quit == 0 )
   {
-    WaitPort(Window->UserPort);
-    msg = (struct IntuiMessage *)GetMsg(Window->UserPort);
-    class = msg->Class;
-    code = msg->Code;
-    switch ( class )
+    port = Wait ( w_sigbit | iw_sigbit );
+    if ( ( port & iw_sigbit ) != 0L )
     {
-      case IDCMP_CLOSEWINDOW :
+      msg = (struct IntuiMessage *)GetMsg(InfoWindow->UserPort);
+      class = msg->Class;
+      code = msg->Code;
+      if ( class == IDCMP_CLOSEWINDOW )
+      {
+	close_infowindow();
+      }
+      ReplyMsg((struct Message *)msg);
+    }
+    else if ( ( port & w_sigbit ) != 0L )
+    {
+      msg = (struct IntuiMessage *)GetMsg(Window->UserPort);
+      class = msg->Class;
+      code = msg->Code;
+      switch ( class )
+      {
+	case IDCMP_CLOSEWINDOW :
 		quit = 1;
 		break;
 
-      case IDCMP_MENUPICK :
+	case IDCMP_MENUPICK :
 		while ( code != MENUNULL )
 		{
 //		  printf("Menu: %d %d %d\n",MENUNUM(code),ITEMNUM(code),SUBNUM(code));
@@ -784,6 +976,17 @@ int quit = 0;
 				}
 				Delay(5);
 				break;
+			  case 11: /* Info */
+				object = getsw(&type);
+				if ( type == Window_type )
+				{
+				  WindowInfo((struct Window *)object);
+				}
+				else if ( type == Screen_type )
+				{
+				  ScreenInfo((struct Screen *)object);
+				}
+				break;
 			}
 			update_list();
 			break;
@@ -826,7 +1029,7 @@ int quit = 0;
 		  
 		break;
 
-      case IDCMP_GADGETUP :
+	case IDCMP_GADGETUP :
 		switch ( ((struct Gadget *)(msg->IAddress))->GadgetID )
 		{
 		  case ID_UPDATE:
@@ -992,6 +1195,27 @@ int quit = 0;
 			break;
 
 		  case ID_LISTVIEW:
+			CurrentTime( &sec2, &msec2 );
+			GT_GetGadgetAttrs ( screenlistg,Window,NULL,
+      					GTLV_Selected, (IPTR)&sel2,
+      					TAG_DONE);
+			if ( sel1 == sel2
+			     && DoubleClick ( sec1, msec1, sec2, msec2 )
+      			   )
+      			{
+			  object = getsw(&type);
+			  if ( type == Window_type )
+			  {
+			    WindowInfo((struct Window *)object);
+			  }
+			  else if ( type == Screen_type )
+			  {
+			    ScreenInfo((struct Screen *)object);
+			  }
+      			}
+      			sec1 = sec2;
+      			msec1 = msec2;
+      			sel1 = sel2;
 			update_actionglist();
 			break;
 
@@ -1000,10 +1224,11 @@ int quit = 0;
 		}
 		break;
 
-        default :
+	default :
 		break;
+      }
+      ReplyMsg((struct Message *)msg);
     }
-    ReplyMsg((struct Message *)msg);
   }
 
   close_window();
