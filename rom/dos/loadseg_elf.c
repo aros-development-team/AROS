@@ -46,6 +46,10 @@ extern struct DosLibrary * DOSBase;
 #define STT_OBJECT	1
 #define STT_FUNC	2
 
+#define SHN_ABS 	0xfff1
+#define SHN_COMMON	0xfff2
+#define SHN_UNDEF	0
+
 #define ELF32_ST_TYPE(i)    ((i) & 0x0F)
 
 struct elfheader
@@ -227,13 +231,13 @@ BPTR LoadSeg_ELF (BPTR file)
 
     numsym = sh->size / sizeof (struct symbol);
 
-    mint = maxt = symtab[0].shindex;
+    mint = maxt = symtab[1].shindex;
 
-/* kprintf ("Symbol %d: index=%d\n", 0, symtab[0].shindex); */
+/* kprintf ("Symbol %d: index=%d\n", 0, symtab[1].shindex); */
 
     /* Find the minimal number of hunks which are neccessary to satisfy
        all symbol references (ie. all hunks in which a symbol resides) */
-    for (i=1; i<numsym; i++)
+    for (i=2; i<numsym; i++)
     {
 #if PRINT_SYMBOLTABLE
     kprintf ("Symbol %d: name=%d value=%d size=%d info=%d other=%d shindex=%d\n",
@@ -248,8 +252,7 @@ BPTR LoadSeg_ELF (BPTR file)
 
 	if (symtab[i].shindex < mint)
 	    mint = symtab[i].shindex;
-
-	if (symtab[i].shindex > maxt)
+	else if (symtab[i].shindex > maxt)
 	    maxt = symtab[i].shindex;
     }
 
@@ -352,13 +355,20 @@ BPTR LoadSeg_ELF (BPTR file)
     /* kprintf ("    File has %d sections.\n", eh.shnum); */
 
     /* Reserve memory for each global symbol in its hunk */
-    for (i=0; i<numsym; i++)
+    for (i=1; i<numsym; i++)
     {
 	if (symtab[i].shindex < 0)
 	{
 	    symtab[i].value = hunks[symtab[i].shindex].size;
 
 	    hunks[symtab[i].shindex].size += symtab[i].size;
+	}
+	else if (symtab[i].shindex == SHN_UNDEF)
+	{
+	    kprintf ("Symbol %s is undefined\n",
+		&strtab[symtab[i].name]
+	    );
+	    ERROR (ERROR_OBJECT_WRONG_TYPE);
 	}
     }
 
@@ -383,7 +393,7 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
     /* Show the final addresses of global symbols */
     if (strtab)
     {
-	for (i=0; i<numsym; i++)
+	for (i=1; i<numsym; i++)
 	{
 	    /* Print the symbol if it has a name and if it's a variable
 		or function */
