@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/10 13:18:38  digulla
+    Use dl_DevNam instaed of dl_Name (STRPTR and BPTR) (Fleischer)
+
     Revision 1.3  1996/08/13 13:52:44  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -69,7 +72,7 @@
     dl=LockDosList(LDF_ALL|LDF_WRITE);
     if(dlist->dol_Type!=DLT_VOLUME)
     {
-	dl=FindDosEntry(dl,dlist->dol_Name,LDF_DEVICES|LDF_ASSIGNS|LDF_WRITE);
+	dl=FindDosEntry(dl,dlist->dol_DevName,LDF_DEVICES|LDF_ASSIGNS|LDF_WRITE);
 	if(dl!=NULL)
 	    success=0;
     }
