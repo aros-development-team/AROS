@@ -193,7 +193,7 @@ When using 2View, it prints multiple error-messages:
 After quitting graphical programs (eg gtdemo) don't work as expected.
 (Linux 2.0.35, XFree86 3.3.1)
 
-BUG000027
+BUG000027 fixed
 srittau@aros.org
 Disable does not work correctly with some gadtools-gadgets. At least
 the gadgets are not ghosted.
@@ -236,7 +236,7 @@ mreckt@wurzelausix.CS.Uni-SB.DE
   Deadend/Exec/Corrupt memory list detected in FreeMem
   Task: 0x401e7ae8 (Boot Process)
 
-BUG000034
+BUG000034 fixed
 srittau@aros.org
 "wait" segfaults, if certain times are used. Probably a problem with
 Delay() (or wait's communication with Delay()).
@@ -302,10 +302,12 @@ maybe be reworked so they have only one exitpont (ie. return),
 thus reducing the risk for such bugs, and it would also make
 them less difficult to understand.
 
-BUG000044
+BUG000044 fixed
 bergers@aros.org
 Only one screen seems to get the focus. If there are more screens than one
 only the one that was opened latest gets correct input events.
+
+This is taken care of by a callback function in the X11 graphics HIDD.
 
 BUG000045 fixed
 bergers@aros.org
@@ -355,7 +357,7 @@ memory leak, not inside AROS itself, but in Linux
 in x11gfx.hidd: Somewhere XGetImage() is called,
 but XFreeImage() or similar is not called.
 
-BUG000051
+BUG000051 fixed
 nlorentz@online.no
 Events sometimes come "too late" from X.
 Ie, for example when you start a program in arosshell, you have
@@ -364,6 +366,9 @@ starts, and then all the keypresses comes from X11 at once.
 This is indirectly caused by input.device's timer
 (If the timer disabled, it will work normally).
 Probably the timer somehow effects unixio HIDD.
+
+This problem went away when the idle task was changed to not busy wait
+any more (now using sigsuspend()).
 
 BUG000052
 nlorentz@online.no
@@ -479,4 +484,16 @@ henning@tilt.prima.de
 Running contrib/Demos/Voxel/voxel without ./aros --memsize 16 gives
 "voxel:Object is of wrong type" instead of "voxel:Could not open object: Out of
 memory"
+
+BUG000071
+sduvan@aros.org
+When putting a window over a console window that _partially covers the active
+text line vertically_, activating the console window and starting to type
+will shift the text written (pixel data) making the output garbled.
+
+BUG000072
+sduvan@aros.org
+Using Opaque and moving windows around will sooner or later produce an error
+    allocbitmap.c, 149: bad pointer: nbm = $0
+resulting in a Segmentation fault.
 
