@@ -58,6 +58,8 @@
 	return EOF;
     }
 
+    if (!str) str = "(null)";
+
     while (*str)
     {
 	if (FPutC((BPTR)fdesc->fh, *str) == EOF)
