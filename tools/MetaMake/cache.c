@@ -42,7 +42,7 @@ Boston, MA 02111-1307, USA.  */
 #include "mmake.h"
 
 #define MAJOR		0L
-#define MINOR		7L
+#define MINOR		8L
 #define REVISION	0L
 #define ID		((MAJOR << 24) | (MINOR << 16) | REVISION)
 #define CHECK_ID(id)    (((id) & 0xFFFF0000) == ((ID) & 0xFFFF0000))

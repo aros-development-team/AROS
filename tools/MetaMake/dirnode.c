@@ -430,12 +430,14 @@ printf ("found #MM in %s\n", makefile->name);
 			
 			while (line[strlen(line)-1] != '\n' && !feof(fh))
 			{
+			    int pos = ptr - line;
 			    linelen += 512;
 			    ptr = xmalloc (linelen);
 			    strcpy (ptr, line);
 			    xfree (line);
 			    line = ptr;
 			    fgets (line+strlen(line), linelen-strlen(line), fh);
+			    ptr = line + pos;
 			}
 
 			if (line[strlen(line)-1] == '\n')
