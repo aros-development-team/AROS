@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Show a dump of the memory list
-    Lang: english
+    Show a dump of the memory list.
 */
 
 #define DEBUG 1
@@ -44,9 +43,6 @@
 
     INTERNALS
 
-    HISTORY
-	24-12-95    digulla created
-
 ******************************************************************************/
 {
 #ifndef __DONT_USE_DEBUGMEM__
@@ -56,7 +52,12 @@
 
     Forbid();
 
-    for (mh=GetHead(&SysBase->MemList); mh; mh=GetSucc(mh))
+    for
+    (
+        mh = (struct MemHeader *) GetHead(&SysBase->MemList); 
+        mh != NULL; 
+        mh = (struct MemHeader *) GetSucc(mh)
+    )
     {
 	bug("List %s: Attr=%08lX from 0x%p to 0x%p Free=%ld\n"
 	    , mh->mh_Node.ln_Name
