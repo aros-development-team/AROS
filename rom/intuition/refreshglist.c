@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.15  1999/10/11 20:57:26  stegerg
+    added internal refreshglist func
+
     Revision 1.14  1998/10/20 16:46:03  hkiel
     Amiga Research OS
 
@@ -127,9 +130,70 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    int_refreshglist(gadgets,
+    		     window,
+		     requester,
+		     numGad,
+		     0,
+		     0,
+		     IntuitionBase);
+		     
+    ReturnVoid("RefreshGList");
+
+    AROS_LIBFUNC_EXIT
+} /* RefreshGList */
+
+
+
+void int_refreshglist(struct Gadget *gadgets, struct Window *window,
+		      struct Requester *requester, LONG numGad, LONG mustbe, LONG mustnotbe,
+		      struct IntuitionBase *IntuitionBase)
+{
     for ( ; gadgets && numGad; gadgets=gadgets->NextGadget, numGad --)
     {
-    	D(bug("RefreshGList: gadget=%p\n",gadgets));
+	if ((mustbe != 0) || (mustnotbe != 0))
+	{
+	    if (gadgets->Activation & (GACT_LEFTBORDER | GACT_RIGHTBORDER |
+	              		    	GACT_TOPBORDER  | GACT_BOTTOMBORDER))
+ 	    {
+	    	if (mustnotbe & REFRESHGAD_BORDER) continue; /* don't refresh if border gadget */
+	    }
+	    else
+	    {
+	    	if (mustbe & REFRESHGAD_BORDER) continue; /* don't refresh if not a border gadget */
+	    }
+	    
+	    if (gadgets->Flags & (GFLG_RELRIGHT | GFLG_RELBOTTOM |
+	                      	  GFLG_RELWIDTH | GFLG_RELHEIGHT))
+	    {
+	    	if (mustnotbe & REFRESHGAD_REL) continue; /* don't refresh if rel??? gadget */
+	    }
+	    else
+	    {
+	    	if (mustbe & REFRESHGAD_REL) continue; /* don't refresh if not rel??? gadget */
+	    }
+	    
+	    if (gadgets->Flags & GFLG_RELSPECIAL)
+	    {
+	    	if (mustnotbe & REFRESHGAD_RELS) continue; /* don't refresh if relspecial gadget */
+	    }
+	    else
+	    {
+	    	if (mustbe & REFRESHGAD_RELS) continue; /* don't refresh if not relspecial gadget */
+	    }
+	    
+	    if ((gadgets->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
+	    {
+	    	if (mustnotbe & REFRESHGAD_BOOPSI) continue; /* don't refresh if boopsi gadget */
+	    }
+	    else
+	    {
+	    	if (mustbe & REFRESHGAD_BOOPSI) continue; /* don't refresh if not boopsi gadget */
+	    }
+	
+	} /* if ((mustbe != 0) || (mustnotbe != 0)) */
+	
+       	D(bug("RefreshGList: gadget=%p\n",gadgets));
 	switch (gadgets->GadgetType & GTYP_GTYPEMASK)
 	{
 	case GTYP_BOOLGADGET:
@@ -152,8 +216,6 @@
 	    break;
 
 	} /* switch GadgetType */
-    }
-    ReturnVoid("RefreshGList");
 
-    AROS_LIBFUNC_EXIT
-} /* RefreshGList */
+    } /* for ( ; gadgets && numGad; gadgets=gadgets->NextGadget, numGad --) */
+}
