@@ -1,0 +1,16 @@
+## version $VER: clock.catalog 1.0 (18.08.2003)
+## codeset 0
+## language español
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+*** Error: ¡No puedo crear objeto de aplicación!
+; Error: Can't create application object.
+;
+MSG_WINDOW_TITLE
+Reloj
+; Clock
+;
+MSG_OK
+Ok
+; Ok
+;
