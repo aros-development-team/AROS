@@ -222,6 +222,30 @@ static IPTR aslfontpreview_render(Class *cl, Object *o, struct gpRender *msg)
 			   y,
 			   IDS_NORMAL,
 			   msg->gpr_GInfo->gi_DrInfo);
+	
+	#if AVOID_FLICKER
+	    {
+		struct IBox ibox, fbox;
+
+    		fbox.Left = x;
+		fbox.Top = y;
+		fbox.Width = w;
+		fbox.Height = h;
+
+		ibox.Left = x + PREVIEW_BORDER_X;
+		ibox.Top = y + PREVIEW_BORDER_Y;
+		ibox.Width = w - PREVIEW_BORDER_X * 2;
+		ibox.Height = h - PREVIEW_BORDER_Y * 2;
+
+		PaintInnerFrame(msg->gpr_RPort,
+	    	    		msg->gpr_GInfo->gi_DrInfo,
+				data->frame,
+				&fbox,
+				&ibox,
+				msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN],
+				AslBase);
+	    }
+	#endif
 	}
     }
       

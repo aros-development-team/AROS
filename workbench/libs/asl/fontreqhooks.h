@@ -30,7 +30,7 @@
 #endif
 
 #define FOREQ_FIRST_OBJECT(x) 	    	((x)->NameListview)
-#define FOREQ_LAST_OBJECT(x) 	    	((x)->BGColorGadget)
+#define FOREQ_LAST_OBJECT(x) 	    	((x)->EraserGadget)
 
 struct FOUserData
 {
@@ -48,6 +48,7 @@ struct FOUserData
     Object  	    	    	*ColorLabel;
     Object  	    	    	*FGColorGadget;
     Object  	    	    	*BGColorGadget;
+    Object			*EraserGadget;
     
     struct ScrollerGadget 	NameScrollGad;
     struct ScrollerGadget   	SizeScrollGad;

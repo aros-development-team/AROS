@@ -1111,3 +1111,84 @@ AROS_UFH3(ULONG, StringEditFunc,
 
 
 /*****************************************************************************************/
+
+void PaintInnerFrame(struct RastPort *rp, struct DrawInfo *dri, Object *frameobj,
+    	    	     struct IBox *framebox, struct IBox *innerbox, ULONG pen,
+		     struct AslBase_intern *AslBase)
+{
+    struct impFrameBox  fmsg;
+    struct IBox     	cbox;
+    struct IBox     	fbox;
+    WORD    	    	x1, y1, x2, y2;
+    WORD    	    	ix1, iy1, ix2, iy2;
+
+    cbox.Left   = framebox->Left;
+    cbox.Top    = framebox->Top;
+    cbox.Width  = framebox->Width;
+    cbox.Height = framebox->Height;
+
+    fmsg.MethodID   	 = IM_FRAMEBOX;
+    fmsg.imp_ContentsBox = &cbox;
+    fmsg.imp_FrameBox 	 = &fbox;
+    fmsg.imp_DrInfo 	 = dri;
+    fmsg.imp_FrameFlags  = 0;
+
+    DoMethodA(frameobj, (Msg)&fmsg);
+
+    SetABPenDrMd(rp, pen, 0, JAM1);	 
+
+    x1 = fbox.Left;
+    y1 = fbox.Top;
+    x2 = x1 + fbox.Width - 1;
+    y2 = y1 + fbox.Height - 1;
+
+    ix1 = cbox.Left;
+    iy1 = cbox.Top;
+    ix2 = ix1 + cbox.Width - 1;
+    iy2 = iy1 + cbox.Height - 1;
+
+    ix1 += (ix1 - x1);
+    iy1 += (iy1 - y1);
+    ix2 += (ix2 - x2);
+    iy2 += (iy2 - y2);
+
+    x1 = innerbox->Left - 1;
+    y1 = innerbox->Top - 1;
+    x2 = innerbox->Left + innerbox->Width;
+    y2 = innerbox->Top + innerbox->Height;
+
+    RectFill(rp, ix1, iy1, ix2, y1);
+    RectFill(rp, ix1, iy1, x1, iy2);
+    RectFill(rp, x2, iy1, ix2, iy2);
+    RectFill(rp, ix1, y2, ix2, iy2);
+
+}
+
+/*****************************************************************************************/
+
+void PaintBoxFrame(struct RastPort *rp, struct IBox *outerbox, struct IBox *innerbox, 
+    	    	   ULONG pen, struct AslBase_intern *AslBase)
+{
+    WORD x1, y1, x2, y2;
+    WORD ix1, iy1, ix2, iy2;
+
+    ix1 = outerbox->Left;
+    iy1 = outerbox->Top - 1;
+    ix2 = outerbox->Left + outerbox->Width - 1;
+    iy2 = outerbox->Top + outerbox->Height - 1;
+
+    x1 = innerbox->Left - 1;
+    y1 = innerbox->Top - 1;
+    x2 = innerbox->Left + innerbox->Width;
+    y2 = innerbox->Top + innerbox->Height;
+
+    SetABPenDrMd(rp, pen, 0, JAM1);	 
+
+    RectFill(rp, ix1, iy1, ix2, y1);
+    RectFill(rp, ix1, iy1, x1, iy2);
+    RectFill(rp, x2, iy1, ix2, iy2);
+    RectFill(rp, ix1, y2, ix2, iy2);
+   
+}
+
+/*****************************************************************************************/

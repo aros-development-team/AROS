@@ -62,6 +62,8 @@
 #define USE_SHARED_COOLIMAGES 1
 #endif
 
+#define AVOID_FLICKER 1
+
 /*****************************************************************************************/
 
 // #define TURN_OFF_DEBUG
@@ -288,6 +290,7 @@ struct AslBase_intern
     Class   	    	    	*aslfontpreviewclass;
     Class   	    	    	*aslfontstyleclass;
     Class   	    	    	*aslcolorpickerclass;
+    Class   	    	    	*asleraserclass;
 };
 
 /*****************************************************************************************/
@@ -324,6 +327,12 @@ AROS_UFP3(ULONG, StringEditFunc,
     AROS_UFPA(struct SGWork *,		sgw,		A2),
     AROS_UFPA(ULONG *, 			command,	A1));
 
+void PaintInnerFrame(struct RastPort *rp, struct DrawInfo *dri, Object *frameobj,
+    	    	     struct IBox *framebox, struct IBox *innerbox, ULONG pen,
+		     struct AslBase_intern *AslBase);
+void PaintBoxFrame(struct RastPort *rp, struct IBox *outerbox, struct IBox *innerbox, 
+    	    	   ULONG pen, struct AslBase_intern *AslBase);
+
 /* classes.c */
 
 Class *makeaslpropclass(struct AslBase_intern *AslBase);
@@ -335,6 +344,7 @@ Class *makeaslcycleclass(struct AslBase_intern *AslBase);
 Class *makeaslfontpreviewclass(struct AslBase_intern *AslBase);
 Class *makeaslfontstyleclass(struct AslBase_intern *AslBase);
 Class *makeaslcolorpickerclass(struct AslBase_intern *AslBase);
+Class *makeasleraserclass(struct AslBase_intern *AslBase);
 
 /* gadgets.c */
 
@@ -342,6 +352,8 @@ BOOL makescrollergadget(struct ScrollerGadget *scrollergad, struct LayoutData *l
 			struct TagItem *tags, struct AslBase_intern *AslBase);
 void killscrollergadget(struct ScrollerGadget *scrollergad, struct AslBase_intern *AslBase);
 void getgadgetcoords(struct Gadget *gad, struct GadgetInfo *gi, WORD *x, WORD *y, WORD *w, WORD *h);
+void getgadgetbounds(struct Gadget *gad, struct GadgetInfo *gi, WORD *x, WORD *y, WORD *w, WORD *h);
+
 void connectscrollerandlistview(struct ScrollerGadget *scrollergad, Object *listview,
 				struct AslBase_intern *AslBase);
 void FreeObjects(Object **first, Object **last, struct AslBase_intern *AslBase);

@@ -228,6 +228,11 @@ AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
     if (!LIBBASE->aslcolorpickerclass)
         return FALSE;
 
+    if (!LIBBASE->asleraserclass)
+        LIBBASE->asleraserclass = makeasleraserclass(LIBBASE);
+    if (!LIBBASE->asleraserclass)
+        return FALSE;
+
     return TRUE;
 }
 
@@ -287,6 +292,12 @@ AROS_SET_LIBFUNC(CleanUp, LIBBASETYPE, LIBBASE)
     {
 	FreeClass(LIBBASE->aslcolorpickerclass);
 	LIBBASE->aslcolorpickerclass = NULL;
+    }
+
+    if (LIBBASE->asleraserclass)
+    {
+	FreeClass(LIBBASE->asleraserclass);
+	LIBBASE->asleraserclass = NULL;
     }
 	
     return TRUE;

@@ -911,6 +911,32 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 		       IDS_NORMAL,
 		       msg->gpr_GInfo->gi_DrInfo);
 
+    #if AVOID_FLICKER
+    	{
+	    struct IBox ibox, fbox;
+	    
+	    fbox.Left = data->minx;
+	    fbox.Top = data->miny;
+	    fbox.Width = data->maxx  - data->minx + 1;
+	    fbox.Height = data->maxy - data->miny + 1;
+	    
+	    ibox.Left = data->minx + BORDERLVSPACINGX;
+	    ibox.Top = data->miny  + BORDERLVSPACINGY;
+	    ibox.Width = (data->maxx - data->minx + 1) - BORDERLVSPACINGX * 2;
+	    ibox.Height = data->lineheight * data->visible;
+	    
+	    PaintInnerFrame(msg->gpr_RPort,
+	    	    	    msg->gpr_GInfo->gi_DrInfo,
+			    data->frame,
+			    &fbox,
+			    &ibox,
+			    msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN],
+			    AslBase);
+	    
+	}
+	
+    #endif
+    
         renderallitems(cl, o, msg->gpr_RPort);
 
     } /* if (msg->gpr_Redraw == GREDRAW_REDRAW) */

@@ -39,7 +39,7 @@
 #define MAX_FILE_LEN 257
 
 #define FREQ_FIRST_OBJECT(x) ((x)->Listview)
-#define FREQ_LAST_OBJECT(x) ((x)->PathGad)
+#define FREQ_LAST_OBJECT(x) ((x)->EraserGad)
 
 struct FRUserData
 {
@@ -55,6 +55,7 @@ struct FRUserData
     Object			*FileGad;
     Object			*PatternGad;
     Object			*PathGad;
+    Object  	    	    	*EraserGad;
     struct ScrollerGadget 	ScrollGad;
     struct List			ListviewList;
     struct Hook			ListviewHook;

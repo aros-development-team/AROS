@@ -772,7 +772,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	udata->DirectoryScanSymbol = gad = NewObjectA(AslBase->aslbuttonclass, NULL, sym_tags);
 	if (!udata->DirectoryScanSymbol) goto failure;
     }
-
+    
     /* make string gadgets */
         
     y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
@@ -833,6 +833,19 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    string_tags[1].ti_Data = y;
 	}	
     }
+
+#if AVOID_FLICKER
+    {
+    	struct TagItem eraser_tags[] =
+	{
+	    {GA_Previous, (IPTR)gad},
+	    {TAG_DONE}
+	};
+	
+	udata->EraserGad = gad = NewObjectA(AslBase->asleraserclass, NULL, eraser_tags);
+	/* Doesn't matter if this failed */
+    }
+#endif
     
     if (ifreq->ifr_InitialShowVolumes)
     {

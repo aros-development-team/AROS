@@ -130,12 +130,15 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 	    struct NewWindow nw;
     	    struct TagItem   wintags[] =
 	    {
-	        {WA_CustomScreen	, (IPTR)ld->ld_Screen	}, /* stegerg: requesters should not use WA_PubScreen */
-		{WA_InnerWidth		, 0			},
-		{WA_InnerHeight		, 0			},
-		{WA_AutoAdjust		, TRUE			},
-		{WA_NewLookMenus    	, TRUE	    	    	},
-		{TAG_DONE					}
+	        {WA_CustomScreen	, (IPTR)ld->ld_Screen	    }, /* stegerg: requesters should not use WA_PubScreen */
+		{WA_InnerWidth		, 0			    },
+		{WA_InnerHeight		, 0			    },
+		{WA_AutoAdjust		, TRUE			    },
+		{WA_NewLookMenus    	, TRUE	    	    	    },
+	    #if AVOID_FLICKER
+		{WA_BackFill	    	, (IPTR)LAYERS_NOBACKFILL   },
+	    #endif
+		{TAG_DONE					    }
 	    };
     	    ULONG   	    idcmp;
 	    BOOL    	    privateidcmp;

@@ -965,6 +965,19 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	} /* if (iforeq->ifo_Flags & FOF_DODRAWMODE) */
 		
     } /* if (iforeq->ifo_Flags & (FOF_DODRAWMODE | FOF_DOSTYLE | FOF_DOFRONTPEN | FOF_DOBACKPEN)) */
+
+#if AVOID_FLICKER
+    {
+    	struct TagItem eraser_tags[] =
+	{
+	    {GA_Previous, (IPTR)gad},
+	    {TAG_DONE}
+	};
+	
+	udata->EraserGadget = gad = NewObjectA(AslBase->asleraserclass, NULL, eraser_tags);
+	/* Doesn't matter if this failed */
+    }
+#endif
     
     w = OUTERSPACINGX + labelwidth + LABELSPACINGX + maxgadcolwidth + OUTERSPACINGX;
     if (w > ld->ld_MinWidth) ld->ld_MinWidth = w;
