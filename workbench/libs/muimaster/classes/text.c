@@ -483,6 +483,7 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
 
+#if 0
     if (data->update == 2)
     {
     	/* Note, scrolling won't work, if there would be a background, different then a plain pen */
@@ -493,6 +494,7 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2,
 		   data->xpos - 1,data->ypos, FALSE);
     } else
+#endif
     {
         get(_win(obj),MUIA_Window_ActiveObject,&act);
 
