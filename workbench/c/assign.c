@@ -145,7 +145,8 @@ enum
 };
 
 
-int main (int argc, char ** argv)
+int __nocommandline = 1;
+int main (void)
 {
     IPTR args[NOOFARGS] = { NULL, NULL, (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE,
 			    (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE,
@@ -154,7 +155,7 @@ int main (int argc, char ** argv)
     int error = RETURN_OK;
 
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
-    
+
     if(rda != NULL)
     {
 	/* Get correct types and reduce complexity for clarity */

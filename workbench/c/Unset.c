@@ -67,7 +67,9 @@ static const char version[] = "$VER: Unset 41.0 (27.07.1997)\n";
 
 void GetNewString(STRPTR, STRPTR, LONG);
 
-int main(int argc, char *argv[])
+int __nocommandline = 1;
+
+int main(void)
 {
 	struct RDArgs   * rda;
     struct Process  * UnsetProc;
@@ -164,7 +166,7 @@ void GetNewString(STRPTR s, STRPTR d, LONG l)
 
     while (i < l)
     {
-        if (s[i] == '*' || s[i] == '')
+        if (s[i] == '*' || s[i] == '\e')
         {
             d[j] = '*';
 
@@ -174,7 +176,7 @@ void GetNewString(STRPTR s, STRPTR d, LONG l)
         else
         {
             d[j] = s[i];
-            
+
             i++;
             j++;
         }

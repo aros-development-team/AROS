@@ -48,7 +48,9 @@
 #include <dos_commanderrors.h>
 
 
-int main(int argc, char **argv)
+int __nocommandline = 1;
+
+int main(void)
 {
     struct CommandLineInterface *cli = Cli();
 

@@ -36,7 +36,9 @@ int stripwhites(char * buffer)
 
 int UtilityBase_version = 37;
 
-int main(int argc, char **argv)
+int __nocommandline = 1;
+
+int main(void)
 {
     int error = RETURN_OK;
     STRPTR args[1] = { NULL };

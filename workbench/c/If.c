@@ -94,7 +94,9 @@
 #include <proto/exec.h>
 #include <dos_commanderrors.h>
 
-int main(int argc, char **argv)
+int __nocommandline = 1;
+
+int main(void)
 {
     BOOL result = FALSE;
 

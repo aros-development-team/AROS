@@ -189,6 +189,8 @@ int UtilityBase_version  = 37;
 int LocaleBase_version   = 37;
 int IFFParseBase_version = 37;
 
+int __nocommandline = 1;
+
 int main(void)
 {
     extern struct WBStartup *WBenchMsg;
@@ -553,12 +555,12 @@ struct CompoundDatatype *CreateBasicType(struct StackVars *sv,
 	    cdt->DTH.dth_BaseName=
 	    cdt->DT.dtn_Node1.ln_Name=
 	    cdt->DT.dtn_Node2.ln_Name=(UBYTE*)(cdt + 1);
-	
+
 	cdt->DTH.dth_GroupID = GroupID;
 	cdt->DTH.dth_ID = ID;
-	
+
 	cdt->DTH.dth_Flags = Flags;
-		
+
 	NewList(&cdt->DT.dtn_ToolList);
 		
 	cdt->DT.dtn_Length = AllocLen;

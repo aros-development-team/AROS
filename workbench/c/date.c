@@ -209,8 +209,9 @@ int printdate(STRPTR filename)
     return error;
 }
 
+int __nocommandline = 1;
 
-int main(int argc, char **argv)
+int main(void)
 {
     int            error = RETURN_OK;
     STRPTR         args[ARG_COUNT] = {NULL, NULL, NULL, NULL};
