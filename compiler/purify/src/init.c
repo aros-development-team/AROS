@@ -124,13 +124,32 @@ void Purify_Init (void)
 
     node->data = "toupper array";
 
-    node = Purify_AddMemory (&errno
-	, sizeof(errno)
-	, PURIFY_MemFlag_Readable|PURIFY_MemFlag_Writable
+#define ADDGLOBAL(var,name) \
+    node = Purify_AddMemory (&(var)                               \
+	, sizeof(var)                                             \
+	, PURIFY_MemFlag_Readable|PURIFY_MemFlag_Writable	  \
+	, PURIFY_MemType_Data					  \
+    );								  \
+								  \
+    node->data = name
+
+    ADDGLOBAL(errno,"errno");
+
+    node = Purify_AddMemory (stdin
+	, sizeof(stdin)
+	, PURIFY_MemFlag_Readable
 	, PURIFY_MemType_Data
     );
 
-    node->data = "errno";
+    node->data = "stdin";
+
+    node = Purify_AddMemory (stdout
+	, sizeof(stdout)
+	, PURIFY_MemFlag_Readable
+	, PURIFY_MemType_Data
+    );
+
+    node->data = "stdout";
 
     Purify_PrintMemory ();
 }
