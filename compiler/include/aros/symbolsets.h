@@ -15,9 +15,9 @@
 
 struct libraryset
 {
-    STRPTR name;
-    const ULONG  *versionptr;
-    void   **baseptr;
+    CONST_STRPTR name;
+    const LONG * const versionptr;
+    void  **baseptr;
 };
 
 extern int set_call_funcs(const void *set[], int direction, int test_fail);
@@ -107,7 +107,7 @@ btype bname;                                             \
                                                          \
 AROS_IMPORT_ASM_SYM(__includelibrarieshandling);         \
                                                          \
-const ULONG bname##_version __attribute__((weak)) = ver; \
+const LONG bname##_version __attribute__((weak)) = ver;  \
                                                          \
 const struct libraryset libraryset_##bname =             \
 {                                                        \
@@ -116,7 +116,7 @@ const struct libraryset libraryset_##bname =             \
 ADD2SET(libraryset_##bname, libs, 0) 
 
 #define ASKFORLIBVERSION(bname, ver) \
-const ULONG bname##_version = ver
+const LONG bname##_version = ver
 
 /* Traverse the set from the first element to the last one, or vice versa,
    depending on the value of 'direction': >=0 means first -> last, <0 means
