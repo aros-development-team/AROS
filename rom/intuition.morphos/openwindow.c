@@ -1428,9 +1428,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             /* backdrop window was created over screen barlayer, but it must be
             under the screen barlayer if screen has flag SHOWTITLE set */
 
-            Forbid();
-            w->WScreen->Flags &= ~SHOWTITLE;
-            Permit();
+            AROS_ATOMIC_ANDW(w->WScreen->Flags, ~SHOWTITLE);
 
             ShowTitle(w->WScreen, TRUE);
 #endif

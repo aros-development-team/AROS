@@ -55,12 +55,9 @@ AROS_LH2(void, ReportMouse,
 
     SANITY_CHECK(window)
 
-    Forbid();
-    if (flag)
-        window->Flags |= WFLG_REPORTMOUSE;
-    else
-        window->Flags &= ~WFLG_REPORTMOUSE;
-    Permit();
+    if (flag) AROS_ATOMIC_ORL(window->Flags, WFLG_REPORTMOUSE);
+    else      AROS_ATOMIC_ANDL(window->Flags, ~WFLG_REPORTMOUSE);
+    
 
     AROS_LIBFUNC_EXIT
 } /* ReportMouse */
