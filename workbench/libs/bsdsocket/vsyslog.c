@@ -48,7 +48,7 @@
     aros_print_not_implemented ("vsyslog");
 #warning TODO: Write BSDSocket/vsyslog
 
-    return NULL;
+    return;
 
     AROS_LIBFUNC_EXIT
 

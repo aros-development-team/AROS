@@ -62,7 +62,7 @@ FUNCTIONS := \
 
 %genlib_cpak
 
-#MM workbench-libs-bsdsocket : setup includes
+#MM workbench-libs-bsdsocket : setup includes network-includes
 workbench-libs-bsdsocket : $(SLIB)
 	@$(NOP)
 

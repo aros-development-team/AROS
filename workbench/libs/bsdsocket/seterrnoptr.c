@@ -47,7 +47,7 @@
     aros_print_not_implemented ("SetErrnoPtr");
 #warning TODO: Write BSDSocket/SetErrnoPtr
 
-    return NULL;
+    return;
 
     AROS_LIBFUNC_EXIT
 
