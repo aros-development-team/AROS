@@ -9,10 +9,12 @@
 #include <proto/layers.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/utility.h>
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <graphics/clip.h>
 #include "layers_intern.h"
+#include "basicfuncs.h"
 
 
 /*****************************************************************************

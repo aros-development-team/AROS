@@ -7,6 +7,7 @@
 */
 #include <aros/libcall.h>
 #include <graphics/layers.h>
+#include "basicfuncs.h"
 
 #define DEBUG 0
 #include <aros/debug.h>

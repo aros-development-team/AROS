@@ -9,6 +9,9 @@
 #include <graphics/clip.h>
 #include <graphics/layers.h>
 #include <utility/tagitem.h>
+#include <proto/exec.h>
+#include <proto/utility.h>
+#include <proto/graphics.h>
 #include "basicfuncs.h"
 
 /*****************************************************************************

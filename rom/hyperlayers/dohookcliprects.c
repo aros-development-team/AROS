@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
 #include <aros/libcall.h>
 #include "layers_intern.h"
 #include "basicfuncs.h"
