@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:10:55  aros
+    Don't use the TOLOWER() and TOUPPER() macros directly.
+
     Revision 1.4  1996/09/12 14:52:47  digulla
     Better way to separate public and private parts of the library base
 
@@ -56,18 +59,6 @@
 #ifndef CLIB_UTILITY_PROTOS_H
 #include <clib/utility_protos.h>
 #endif
-
-/*
-	I could use a table for this conversion, but the utility.library
-	functions are patched by locale anyway, so this would be some
-	kind of overkill.
-*/
-
-#define TOLOWER(a) \
-(((a)>='A'&&(a)<='Z') || ((a)>=0xc0 && (a)<=0xde && (a)!=0xd7) ? (a)+0x20 : (a) )
-
-#define TOUPPER(a) \
-(((a)>='a'&&(a)<='z') || ((a)>=0xe0 && (a)<=0xfe && (a)!=0xf7) ? (a)+0x20 : (a) )
 
 /*
     This is the internal version of the UtilityBase structure
