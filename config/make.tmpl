@@ -37,6 +37,7 @@
 %define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ err=$(@F)-x.err libs=$(LIBS) us=undefdsyms.list
 	@$(ECHO) "Linking %(to)..."
 	@%(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) 2>&1|tee %(err)
+	@$(ECHO) "Checking %(to)..."
 	@$(CHECKUDS) %(to) > %(us)
 	@if test -s %(us); then \
 	    cat %(us) >> %(err); \
@@ -48,6 +49,7 @@
 %end
 
 %define checkuds us=undefdsyms.list err=$(@F)-x.err to=$@
+	@$(ECHO) "Checking %(to)..."
 	@$(CHECKUDS) %(to) > %(us)
 	@if test -s %(us); then \
 	    cat %(us) >> %(err); \
