@@ -32,9 +32,9 @@ int main(int argc, char **argv)
 {
 	int i = 0;
 	IPTR args[NOOFARGS] = {(IPTR)FALSE,
-	                       NULL,
-	                       NULL,
-	                       NULL};
+	                       (IPTR)NULL,
+	                       (IPTR)NULL,
+	                       (IPTR)NULL};
 	struct RDArgs * rda;
 	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 	
@@ -47,11 +47,11 @@ int main(int argc, char **argv)
 			ULONG unitnum = 0;
 			ULONG baudrate = 9600;
 			ULONG delay = 5;
-			if (NULL != args[ARG_UNIT])
+			if (NULL != (APTR) args[ARG_UNIT])
 				unitnum = atoi((CONST_STRPTR)args[ARG_UNIT]);
-			if (NULL != args[ARG_BAUD])
+			if (NULL != (APTR) args[ARG_BAUD])
 				baudrate = atoi((CONST_STRPTR)args[ARG_BAUD]);
-			if (NULL != args[ARG_PAUSE])
+			if (NULL != (APTR) args[ARG_PAUSE])
 				delay = atoi((CONST_STRPTR)args[ARG_PAUSE]);
 			do_auto(SerPort, 
 			        unitnum, 

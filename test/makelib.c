@@ -68,7 +68,7 @@ AROS_UFH1(ULONG,LIB_expunge,
 	Remove((struct Node *)DummyBase);
     else
 	DummyBase->library.lib_Flags |= LIBF_DELEXP;
-    return NULL;
+    return 0;
 }
 
 /********/
@@ -76,7 +76,7 @@ AROS_UFH1(ULONG,LIB_expunge,
 AROS_UFH1(ULONG,LIB_close,
         AROS_LHA(struct DummyBase *, DummyBase, D0))
 {
-    ULONG ret = NULL;
+    ULONG ret = 0;
 
     DummyBase->library.lib_OpenCnt--;
     if (!DummyBase->library.lib_OpenCnt)
