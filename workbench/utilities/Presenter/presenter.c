@@ -37,15 +37,15 @@ Object *Presenter__OM_NEW
     ( 
         CLASS, self, NULL,
         
-        SubWindow, (IPTR) window = WindowObject,
+        SubWindow, (IPTR) (window = WindowObject,
             MUIA_Window_Title,    (IPTR) "Presenter",
             MUIA_Window_Activate,        TRUE,
             MUIA_Window_Width,           800,
             MUIA_Window_Height,          600,
             
-            WindowContents, (IPTR) PresentationObject,
-            End,
-        End,
+            WindowContents, (IPTR) (PresentationObject,
+            End),
+        End),
     
         TAG_MORE, (IPTR) message->ops_AttrList
     );
