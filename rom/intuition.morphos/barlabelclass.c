@@ -101,11 +101,15 @@ AROS_UFH3S(IPTR, dispatch_menubarlabelclass,
         switch(((struct opGet *)msg)->opg_AttrID)
         {
         case IA_SupportsDisable:
-#if MENUS_AMIGALOOK
-            *(((struct opGet *)msg)->opg_Storage) = 0;
-#else
-*(((struct opGet *)msg)->opg_Storage) = 1;
-#endif
+            if (MENUS_AMIGALOOK)
+            {
+                *(((struct opGet *)msg)->opg_Storage) = 0;
+            }
+            else
+            {
+                *(((struct opGet *)msg)->opg_Storage) = 1;
+            }
+            
             retval = 1;
             break;
 
@@ -132,21 +136,22 @@ AROS_UFH3S(IPTR, dispatch_menubarlabelclass,
             y2 = y1 + ((struct Image *)obj)->Height - 1;
 
 
-#if MENUS_AMIGALOOK
-            SetAPen(rp, data->dri->dri_Pens[BARDETAILPEN]);
-            RectFill(rp, x1, y1, x2, y2);
-#else
-/* Will only work if imageheight = 2 */
-            SetAPen(rp, data->dri->dri_Pens[SHADOWPEN]);
-            RectFill(rp, x1, y1, x2 - 1, y1);
-            WritePixel(rp, x1, y2);
-
-            SetAPen(rp, data->dri->dri_Pens[SHINEPEN]);
-            RectFill(rp, x1 + 1, y2, x2, y2);
-            WritePixel(rp, x2, y1);
-
-#endif
-
+            if (MENUS_AMIGALOOK)
+            {
+                SetAPen(rp, data->dri->dri_Pens[BARDETAILPEN]);
+                RectFill(rp, x1, y1, x2, y2);
+            }
+            else
+            {
+                /* Will only work if imageheight = 2 */
+                SetAPen(rp, data->dri->dri_Pens[SHADOWPEN]);
+                RectFill(rp, x1, y1, x2 - 1, y1);
+                WritePixel(rp, x1, y2);
+    
+                SetAPen(rp, data->dri->dri_Pens[SHINEPEN]);
+                RectFill(rp, x1 + 1, y2, x2, y2);
+                WritePixel(rp, x2, y1);
+            }
         }
         break;
 
