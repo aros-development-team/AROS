@@ -734,8 +734,9 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 }
 
 
-BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
-	LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase * GfxBase)
+BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
+	LONG x1, LONG y1, LONG x2, LONG y2, BOOL UpdateDamageList,
+	struct GfxBase * GfxBase)
 {
   LONG xCorr1, xCorr2, yCorr1, yCorr2, absdx, absdy, xBlockSize, yBlockSize;
   struct BitMap * bm;
@@ -868,7 +869,8 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
      
     LockLayerRom(L);
      
-    if (0 != (L->Flags & LAYERSIMPLE))
+    if (0 != (L->Flags & LAYERSIMPLE) &&
+        TRUE == UpdateDamageList)
     {
       R = NewRegion();
       if (NULL == R)
@@ -925,7 +927,9 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
            I add the Rect to the Region, otherwise I do a blit into the
            temporary bitmap instead 
         */
-        if (NULL != CR->lobs && 0 != (L->Flags & LAYERSIMPLE))
+        if (NULL != CR->lobs && 
+            0 != (L->Flags & LAYERSIMPLE) &&
+            TRUE == UpdateDamageList)
         {
           if (FALSE == OrRectRegion(R, &Rect))
           {
@@ -963,7 +967,7 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
             {
               /* a smart layer */
               BltBitMap(CR->BitMap,
-                        Rect.MinX - CR->bounds.MinX + CR->bounds.MinX & 0x0F,
+                        Rect.MinX - CR->bounds.MinX + (CR->bounds.MinX & 0x0F),
                         Rect.MinY - CR->bounds.MinY,
                         bm,
                         Rect.MinX - xleft,
@@ -1019,7 +1023,8 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
     ydown  -= dy;
     
     /* Move the region, if it's a simple layer  */
-    if (0 != (L->Flags & LAYERSIMPLE))
+    if (0 != (L->Flags & LAYERSIMPLE) &&
+        TRUE == UpdateDamageList)
     {
       R->bounds.MinX -= dx;
       R->bounds.MinY -= dy;
@@ -1068,7 +1073,9 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
            I subtract the Rect from the Region, otherwise I do a blit 
            from the temporary bitmap instead 
         */
-        if (NULL != CR->lobs && 0 != (L->Flags & LAYERSIMPLE))
+        if (NULL != CR->lobs && 
+            0 != (L->Flags & LAYERSIMPLE) &&
+            TRUE == UpdateDamageList)
         {
           ClearRectRegion(R, &Rect);
         }
@@ -1139,7 +1146,7 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
     }
     
     
-    if (0 != (L->Flags & LAYERSIMPLE))
+    if (0 != (L->Flags & LAYERSIMPLE) && TRUE == UpdateDamageList)
     {
       /* Add the damagelist to the layer's damage list and set the
          LAYERREFRESH flag, but of course only if it's necessary */
