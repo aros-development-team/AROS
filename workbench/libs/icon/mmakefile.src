@@ -15,7 +15,8 @@ FORCE_LIBS 		:= $(MOSLIB)/libaros.a $(MOSLIB)/libstringio.a $(MOSLIB)/libstring.
 USE_CPAK 		:= no
 endif
 
-FILES	:=  basicfuncs diskobjio
+FILES	:=  basicfuncs diskobjio diskobj35io
+
 FUNCS	:=  addfreelist bumprevision deletediskobject dupdiskobject drawiconstate findtooltype \
 	    freediskobject freefreelist getdefdiskobject getdiskobject \
 	    getdiskobjectnew geticonrectangle geticontaglist matchtoolvalue putdefdiskobject putdiskobject

@@ -28,6 +28,16 @@ STATIC STRPTR StrDupPooled(APTR pool, STRPTR str)
     return newstr;
 }
 
+STATIC UBYTE *MemDupPooled(APTR pool, UBYTE *src, ULONG size)
+{
+    UBYTE *newmem;
+    
+    newmem = AllocPooled(pool, size);
+    if (newmem) memcpy(newmem, src, size);
+    
+    return newmem;
+}
+
 STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 {
     struct Image *dest;
@@ -115,8 +125,8 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
 
     APTR pool;
-    void **mem;
-    struct DiskObject *dob;
+    struct NativeIcon *mem;
+    struct DiskObject *dobj;
 
     if (!icon) return NULL;
 
@@ -124,39 +134,119 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
     if (!pool) return NULL;
 
     /* AROS doesn't need the gfx to be placed in chip memory, so we can use pools */
-    mem = (void**)AllocPooled(pool, sizeof(struct DiskObject) + sizeof(void*));
-    if (!mem)
-    {
-	DeletePool(pool);
-	return NULL;
-    }
-    mem[0] = pool;
-    dob = (struct DiskObject*)(mem + 1);
+    mem = (struct NativeIcon *)AllocPooled(pool, sizeof(struct NativeIcon));
+    if (!mem) goto fail;
+
+    memset(mem, 0, sizeof(*mem));
+    
+    mem->pool = pool;
+    dobj = &mem->dobj;
 
     /* copy the contents */
-    *dob = *icon;
+    *dobj = *icon;
+
+    if (GetTagData(ICONDUPA_JustLoadedFromDisk, FALSE, tags) != FALSE)
+    {
+    	struct NativeIcon *srcnativeicon;
+	
+	srcnativeicon = NATIVEICON(icon);
+ 
+    	mem->icon35 = srcnativeicon->icon35;
+	
+	if (srcnativeicon->icon35.img1.imagedata)
+	{
+	    mem->icon35.img1.imagedata = MemDupPooled(pool,
+	    	    	    	    	    	      srcnativeicon->icon35.img1.imagedata,
+	    	    	    	    	    	      srcnativeicon->icon35.width * srcnativeicon->icon35.height);
+						      
+    	    if (!mem->icon35.img1.imagedata) goto fail;
+	}
+
+	if (srcnativeicon->icon35.img2.imagedata)
+	{
+	    mem->icon35.img2.imagedata = MemDupPooled(pool,
+	    	    	    	    	    	      srcnativeicon->icon35.img2.imagedata,
+	    	    	    	    	    	      srcnativeicon->icon35.width * srcnativeicon->icon35.height);
+						      
+    	    if (!mem->icon35.img2.imagedata) goto fail;
+	}
+	
+	if (srcnativeicon->icon35.img1.palette)
+	{
+	    mem->icon35.img1.palette = MemDupPooled(pool,
+	    	    	    	    	    	    srcnativeicon->icon35.img1.palette,
+						    srcnativeicon->icon35.img1.numcolors * 3);
+	    if (!mem->icon35.img1.palette) goto fail;
+	}
+	
+	if (srcnativeicon->icon35.img2.palette && srcnativeicon->icon35.img2.flags & IMAGE35F_HASPALETTE)
+	{
+	    mem->icon35.img2.palette = MemDupPooled(pool,
+	    	    	    	    	    	    srcnativeicon->icon35.img2.palette,
+						    srcnativeicon->icon35.img2.numcolors * 3);
+	    if (!mem->icon35.img2.palette) goto fail;
+	}
+	else if (srcnativeicon->icon35.img1.palette)
+	{
+	    /* Both images use same palette which is kept in memory only once */
+	    srcnativeicon->icon35.img2.palette = srcnativeicon->icon35.img1.palette;
+	}
+	
+    } /* if (GetTagData(ICONDUPA_JustLoadedFromDisk, FALSE, tags) != FALSE) */
+   
 #ifdef OUTPUT_DATA
-    kprintf("gadgetwidth = %ld\ngadgetheight = %ld\n",dob->do_Gadget.Width,dob->do_Gadget.Height);
+    kprintf("gadgetwidth = %ld\ngadgetheight = %ld\n",dobj->do_Gadget.Width,dobj->do_Gadget.Height);
 #endif
 
     /* and now the pointers and the rest */
 #warning TODO: check for errors here
-    dob->do_DefaultTool = StrDupPooled(pool,icon->do_DefaultTool);
-    dob->do_ToolWindow = StrDupPooled(pool,icon->do_ToolWindow);
 
+    if (dobj->do_DefaultTool)
+    {
+    	dobj->do_DefaultTool = StrDupPooled(pool,icon->do_DefaultTool);
+	if (!dobj->do_DefaultTool) goto fail;
+    }
+    
+    if (dobj->do_ToolWindow)
+    {
+    	dobj->do_ToolWindow = StrDupPooled(pool,icon->do_ToolWindow);
+    	if (!dobj->do_ToolWindow) goto fail;
+    }
+    
     if (icon->do_DrawerData)
     {
-	if ((dob->do_DrawerData = AllocPooled(pool,sizeof(struct DrawerData))))
- 	{
-#warning FIXME: we copy only sizeof(OldDrawerData) here
-	    memset(dob->do_DrawerData,0,sizeof(struct DrawerData));
-	    memcpy(dob->do_DrawerData,icon->do_DrawerData,sizeof(struct OldDrawerData));
-        }
+    	LONG size;
+	
+	dobj->do_DrawerData = AllocPooled(pool, sizeof(struct DrawerData));
+    	if (!dobj->do_DrawerData) goto fail;
+	
+ 	if (((LONG)icon->do_Gadget.UserData > 0) &&
+	    ((LONG)icon->do_Gadget.UserData <= WB_DISKREVISION))
+	{
+	    size = sizeof(struct DrawerData);
+	}
+	else
+	{
+	    size = sizeof(struct OldDrawerData);
+	}
+
+	memset(dobj->do_DrawerData, 0, sizeof(struct DrawerData));
+	memcpy(dobj->do_DrawerData, icon->do_DrawerData, size);
     }
 
     /* Duplicate the image data */
-    dob->do_Gadget.GadgetRender = ImageDupPooled(pool,(struct Image*)icon->do_Gadget.GadgetRender);
-    dob->do_Gadget.SelectRender = ImageDupPooled(pool,(struct Image*)icon->do_Gadget.SelectRender);
+    
+    if (icon->do_Gadget.GadgetRender)
+    {
+    	dobj->do_Gadget.GadgetRender = ImageDupPooled(pool, (struct Image*)icon->do_Gadget.GadgetRender);
+	if (!dobj->do_Gadget.GadgetRender) goto fail;
+    }
+    
+    if (icon->do_Gadget.SelectRender)
+    {	    
+    	dobj->do_Gadget.SelectRender = ImageDupPooled(pool, (struct Image*)icon->do_Gadget.SelectRender);
+	if (!dobj->do_Gadget.SelectRender) goto fail;
+    }
 
     /* Duplicate the tool types */
     if (icon->do_ToolTypes)
@@ -165,16 +255,29 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	/* Get number of tool types */
 	for (num_tts = 0;icon->do_ToolTypes[num_tts];num_tts++);
 
-	if ((dob->do_ToolTypes = (char**)AllocPooled(pool,sizeof(char*)*(num_tts+1))))
+	if ((dobj->do_ToolTypes = (char**)AllocPooled(pool,sizeof(char*)*(num_tts+1))))
 	{
 	    int i;
 	    for (i=0;i<num_tts;i++)
-		dob->do_ToolTypes[i] = StrDupPooled(pool,icon->do_ToolTypes[i]);
-	    dob->do_ToolTypes[i] = NULL;
+	    {
+		dobj->do_ToolTypes[i] = StrDupPooled(pool,icon->do_ToolTypes[i]);
+		if (!dobj->do_ToolTypes[i]) goto fail;
+	    }
+	    dobj->do_ToolTypes[i] = NULL;
+	}
+	else
+	{
+	    goto fail;
 	}
     }
 
-    return dob;
+    AddIconToList(mem, LB(IconBase));
+    
+    return dobj;
 
+fail:
+    DeletePool(pool);
+    return NULL;
+    
     AROS_LIBFUNC_EXIT
 } /* FreeDiskObject */

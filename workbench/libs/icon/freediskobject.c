@@ -7,6 +7,7 @@
 */
 #include <proto/arossupport.h>
 #include "icon_intern.h"
+#include <stddef.h>
 
 extern const IPTR IconDesc[];
 
@@ -46,11 +47,15 @@ extern const IPTR IconDesc[];
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
     
-    void **mem = (void**)diskobj;
-    mem--;
+    struct NativeIcon *nativeicon;
+    
+    nativeicon = NATIVEICON(diskobj);
+    
+    RemoveIconFromList(nativeicon, LB(IconBase));
     
     /* It's enough to free our pool */
-    DeletePool(mem[0]);
+    DeletePool(nativeicon->pool);
 
     AROS_LIBFUNC_EXIT
+    
 } /* FreeDiskObject */

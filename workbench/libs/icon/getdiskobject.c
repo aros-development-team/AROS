@@ -85,10 +85,20 @@ extern const IPTR IconDesc[];
 
     /* Make the icon "native" so it can be free'd with FreeDiskObject() */
     if (dobj)
-	dup_dobj = DupDiskObjectA(dobj,NULL);
-    else
- 	dup_dobj = NULL;
+    {
+    	struct TagItem dup_tags[] =
+	{
+	    {ICONDUPA_JustLoadedFromDisk, TRUE	},
+	    {TAG_DONE	    	    	    	}
+	};
 
+	dup_dobj = DupDiskObjectA(dobj,dup_tags);
+    }
+    else
+    {
+ 	dup_dobj = NULL;
+    }
+    
     FreeStruct ((APTR)dobj, IconDesc);
 
     Close (icon);
