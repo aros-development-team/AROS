@@ -12,6 +12,9 @@
 #ifndef UTILITY_HOOKS_H
 #   include <utility/hooks.h>
 #endif
+#ifndef UTILITY_TAGITEM_H
+#   include <utility/tagitem.h>
+#endif
 
 #ifndef __typedef_Object
 #   define __typedef_Object
@@ -26,7 +29,7 @@
 #   define __typedef_Msg
     typedef struct
     {
-	ULONG MethodID;
+	STACKULONG MethodID;
     } *Msg;
 #endif
 
@@ -60,30 +63,30 @@
 
 struct opSet
 {
-    ULONG		MethodID;
+    STACKULONG		MethodID;
     struct TagItem    * ops_AttrList;
     struct GadgetInfo * ops_GInfo;
 };
 
 struct opGet
 {
-    ULONG   MethodID;
-    ULONG   opg_AttrID;
-    ULONG * opg_Storage;
+    STACKULONG	MethodID;
+    Tag 	opg_AttrID;
+    STACKIPTR * opg_Storage;
 };
 
 struct opAddTail
 {
-    ULONG	  MethodID;
+    STACKULONG	  MethodID;
     struct List * opat_List;
 };
 
 struct opUpdate
 {
-    ULONG		MethodID;
+    STACKULONG		MethodID;
     struct TagItem    * opu_AttrList;
     struct GadgetInfo * opu_GInfo;
-    ULONG		opu_Flags;    /* see below */
+    STACKULONG		opu_Flags;    /* see below */
 };
 
 /* opu_Flags */
@@ -91,8 +94,8 @@ struct opUpdate
 
 struct opMember
 {
-    ULONG    MethodID;
-    Object * opam_Object;
+    STACKULONG MethodID;
+    Object   * opam_Object;
 };
 #define opAddMember opMember
 
