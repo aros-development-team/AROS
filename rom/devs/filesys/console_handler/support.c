@@ -489,6 +489,25 @@ void answer_read_request(struct conbase *conbase, struct filehandle *fh, struct 
     CopyMem(fh->inputbuffer, iofs->io_Union.io_READ.io_Buffer, readlen);
     CopyMem(fh->inputbuffer + readlen, fh->inputbuffer, fh->inputsize - readlen);
 
+#if DEBUG
+{
+    UBYTE *buffer = (UBYTE *)iofs->io_Union.io_READ.io_Buffer;
+    WORD i;
+    
+    kprintf("answer_read_request (readlen = %d inputsize = %d inputpos = %d inputstart = %d)\n--",
+    		readlen,
+		fh->inputsize,
+		fh->inputpos,
+		fh->inputstart);
+		
+    for(i = 0;i < readlen; i++)
+    {
+    	printf("%c", buffer[i]);
+    }
+    kprintf(" ------------\n\n");
+}
+#endif
+
     fh->inputsize  -= readlen;
     fh->inputpos   -= readlen;
     fh->inputstart -= readlen;
@@ -501,14 +520,20 @@ void answer_read_request(struct conbase *conbase, struct filehandle *fh, struct 
 
 LONG answer_write_request(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs)
 {
-    UBYTE 	*buffer = iofs->io_Union.io_WRITE.io_Buffer;
-    LONG 	*length_ptr = &(iofs->io_Union.io_WRITE.io_Length);
+    UBYTE 		*buffer = iofs->io_Union.io_WRITE.io_Buffer;
+    LONG 		*length_ptr = &(iofs->io_Union.io_WRITE.io_Length);
 #if BETTER_WRITE_HANDLING
-    LONG 	writesize = 0;
+    LONG 		writesize = 0;
 #endif
 
 #if RMB_FREEZES_OUTPUT
-    while(PeekQualifier() & IEQUALIFIER_RBUTTON)
+    struct Window 	*conwindow;
+    
+    conwindow = ((struct ConUnit *)fh->conwriteio.io_Unit)->cu_Window;
+    
+    while((PeekQualifier() & IEQUALIFIER_RBUTTON) &&
+    	  conwindow &&
+	  (conwindow == IntuitionBase->ActiveWindow))
     {
         Delay(2);
     }

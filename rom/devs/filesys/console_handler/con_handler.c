@@ -723,7 +723,7 @@ VOID conTaskEntry(struct conTaskParams *param)
 	/* Dont wait if a write is pending and a write really can be done */
 	if ((fh->flags & FHFLG_WRITEPENDING) &&
 	    (fh->inputpos == fh->inputstart) &&
-	    (fh->inputsize == 0))
+	    ((fh->inputsize - fh->inputstart) == 0))
 	{
 	    sigs = CheckSignal(conreadmask | contaskmask);
 	}
@@ -1023,7 +1023,7 @@ VOID conTaskEntry(struct conTaskParams *param)
 
 	if ((fh->flags & FHFLG_WRITEPENDING) &&
 	    (fh->inputpos == fh->inputstart) &&
-	    (fh->inputsize == 0))
+	    ((fh->inputsize - fh->inputstart) == 0))
 	{
 	    struct IOFileSys *iofs, *iofs_next;
 
@@ -1035,6 +1035,9 @@ VOID conTaskEntry(struct conTaskParams *param)
 		    /* Write was done only partly */
 		    break;
 		}
+		/* Break even here (means execute only one request), so that
+		   reads can be handled inbetween */
+		break;
 	    }
 
 	    if (IsListEmpty(&fh->pendingWrites)) fh->flags &= ~FHFLG_WRITEPENDING;
