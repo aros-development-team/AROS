@@ -24,7 +24,7 @@
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_ScrollbarData
+struct Scrollbar_DATA
 {
     Object *prop;
     Object *up_arrow;
@@ -32,12 +32,10 @@ struct MUI_ScrollbarData
     int sb_pos;
 };
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
+
+IPTR Scrollbar__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ScrollbarData *data;
+    struct Scrollbar_DATA *data;
     //struct TagItem *tags,*tag;
     int horiz = GetTagData(MUIA_Group_Horiz, 0, msg->ops_AttrList);
     int usewinborder = GetTagData(MUIA_Prop_UseWinBorder, 0, msg->ops_AttrList);
@@ -115,9 +113,9 @@ static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
-static IPTR Scrollbar_Setup(struct IClass *cl, Object *obj, Msg msg)
+IPTR Scrollbar__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_ScrollbarData *data = INST_DATA(cl, obj);
+    struct Scrollbar_DATA *data = INST_DATA(cl, obj);
 
     if (!DoSuperMethodA(cl, obj, msg))
 	return FALSE;
@@ -159,19 +157,16 @@ BOOPSI_DISPATCHER(IPTR, Scrollbar_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Scrollbar_New(cl, obj, (struct opSet *) msg);
-	case MUIM_Setup: return Scrollbar_Setup(cl, obj, msg);
+	case OM_NEW:     return Scrollbar__OM_NEW(cl, obj, (struct opSet *) msg);
+	case MUIM_Setup: return Scrollbar__MUIM_Setup(cl, obj, msg);
+        default:         return DoSuperMethodA(cl, obj, msg);
     }
-    return DoSuperMethodA(cl, obj, msg);
 }
 
-
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Scrollbar_desc = { 
+const struct __MUIBuiltinClass _MUI_Scrollbar_desc =
+{ 
     MUIC_Scrollbar, 
     MUIC_Group, 
-    sizeof(struct MUI_ScrollbarData), 
+    sizeof(struct Scrollbar_DATA), 
     (void*)Scrollbar_Dispatcher 
 };
