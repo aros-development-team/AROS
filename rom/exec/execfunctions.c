@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/23 17:07:22  digulla
+    The number of functions is hardcoded in init.c, so it should be the same here.
+
     Revision 1.3  1996/08/01 17:41:10  digulla
     Added standard header for all files
 
@@ -118,7 +121,7 @@ void Exec_CachePostDMA();
 void Exec_AddMemHandler();
 void Exec_RemMemHandler();
 
-void *ExecFunctions[]=
+void *ExecFunctions[131]=
 {
 /*  1 */NULL,
 	NULL,
