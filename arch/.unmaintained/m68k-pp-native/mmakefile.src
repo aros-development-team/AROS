@@ -33,7 +33,7 @@ create-mf-inc-again :
 #MM	kernel-expansion-pp-m68k           \
 #MM	kernel-utility-linklib             \
 #MM	kernel-aros-linklib                \
-#MM	kernel-oop-native-i386 kernel-oop-linklib            \
+#MM	kernel-oop-linklib                 \
 #MM	kernel-hidd-linklib                \
 #MM	kernel-mathieeesingbas-linklib     \
 #MM	kernel-timer-linklib               \
@@ -55,18 +55,6 @@ create-mf-inc-again :
 #MM	kernel-console-linklib             \
 #MM	kernel-fs-con                      \
 #MM	Drivers-pp-m68k
-
-## kernel-boot-linklib seems broken
-
-##MM kernel-devs = gamport+input+console
-##MM	    kernel-boot-linklib \
-##MM	    kernel-devs \
-##MM	    kernel-keymap-linklib \
-##MM		kernel-filesys-pp-m68k \
-##MM		Drivers-irq \
-##MM		Drivers-kbd \
-##MM		Drivers-pp-m68k
-
 
 # Setup
 #MM- setup-pp-m68k : setup-exec-$(ARCH)-$(CPU) \
