@@ -506,6 +506,7 @@ extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
 extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *, 
 			      struct BitMap * SuperBitMap, struct Hook *backfillhook,
 			      struct Region * shape,
+			      struct Hook * shapehook,
 			      struct Layer * parent,
 			      ULONG  visible);
 extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
