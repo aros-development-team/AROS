@@ -30,7 +30,7 @@ char *copyrights[] =
     "Copyright © 1996, 1997 ",
     "AROS - The Amiga Replacement OS  ",
     "© 1985-1996 ESCOM AG",
-    "ALPHA ROM ",
+    "ALPHA OS ",
     "exec.library",
     "exec 40.100 (12.12.96)\013\010"
 };
