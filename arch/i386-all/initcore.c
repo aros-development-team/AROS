@@ -10,6 +10,8 @@
 #include <sys/time.h>
 #undef timeval
 
+#define NOISY	0
+
 void os_disable(void);
 static int sig2inttabl[NSIG];
 int supervisor;
@@ -34,8 +36,10 @@ static void sighandler (int sig, sigcontext_t * sc)
 
     if (supervisor)
     {
+#if NOISY
 	fprintf (stderr, "Illegal supervisor %d\n", supervisor);
 	fflush (stderr);
+#endif
 	return;
     }
 
