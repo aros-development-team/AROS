@@ -90,9 +90,17 @@ BEGIN {
 		jobd[name]*100.0/job[name]);
     }
     print "</TABLE><P>"
-    print "There is a total of " ojobs " other things.<BR>\n"
-    printf ("%4d (%.2f%%) are still todo.<BR>\n",        ofree, ofree*100.0/ojobs);
-    printf ("%4d (%.2f%%) are currently in work.<BR>\n", owork, owork*100.0/ojobs);
-    printf ("%4d (%.2f%%) are completed.<P>\n",         odone, odone*100.0/ojobs);
+
+    if (ojobs)
+    {
+	print "There is a total of " ojobs " other things.<BR>\n"
+	printf ("%4d (%.2f%%) are still todo.<BR>\n",        ofree, ofree*100.0/ojobs);
+	printf ("%4d (%.2f%%) are currently in work.<BR>\n", owork, owork*100.0/ojobs);
+	printf ("%4d (%.2f%%) are completed.<P>\n",         odone, odone*100.0/ojobs);
+    }
+    else
+    {
+	print "There are currently no other jobs.<BR>\n"
+    }
 }
 
