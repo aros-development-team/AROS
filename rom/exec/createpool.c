@@ -5,7 +5,6 @@
     Desc: Create a memory pool.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include "exec_intern.h"
 #include <aros/libcall.h>
 #include <clib/alib_protos.h>

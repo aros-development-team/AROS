@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#define AROS_ALMOST_COMPATIBLE
 //#include <utility/utility.h>
 #include "mathieeesingbas_intern.h"
 #include "libdefs.h"

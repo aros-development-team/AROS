@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#define AROS_ALMOST_COMPATIBLE 1
 
 /* the rest are Amiga includes */
 #include <proto/exec.h>

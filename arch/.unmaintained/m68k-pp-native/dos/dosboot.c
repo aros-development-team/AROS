@@ -6,7 +6,6 @@
     Lang: english 
 */
 
-#define AROS_ALMOST_COMPATIBLE
 
 # define  DEBUG  1
 # include <aros/debug.h>

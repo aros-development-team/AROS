@@ -52,7 +52,6 @@
 
 ******************************************************************************/
 
-#define  AROS_ALMOST_COMPATIBLE
 
 #include <cxintern.h>   /* Exchange is the ONLY commodity that may use this */
 /* These are necessary as cxintern.h defines them for commodities.library

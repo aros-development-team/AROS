@@ -10,7 +10,6 @@
 #include <gfx.h>
 
 #define AROS_USE_OOP
-#define AROS_ALMOST_COMPATIBLE 1
 
 #include <aros/config.h>
 #include <exec/io.h>

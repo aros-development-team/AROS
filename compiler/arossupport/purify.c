@@ -7,7 +7,6 @@
 */
 
 /* Local prototypes */
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <string.h>

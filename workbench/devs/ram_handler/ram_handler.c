@@ -8,7 +8,6 @@
 
 #define  INKERNEL 1
 
-#define  AROS_ALMOST_COMPATIBLE
 
 #define  DEBUG 0
 #include <aros/debug.h>

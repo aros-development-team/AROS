@@ -6,7 +6,6 @@
     Lang: English.
 */
 
-#define AROS_ALMOST_COMPATIBLE 1
 
 #define size_t aros_size_t
 #include <hidd/unixio.h>

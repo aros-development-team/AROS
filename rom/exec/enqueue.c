@@ -6,7 +6,6 @@
     Lang: english
 */
 /* I want the macros */
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <proto/exec.h>
 

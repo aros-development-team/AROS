@@ -79,11 +79,9 @@
 #define AO_Unknown      0x00008035
 
 /* AROS Additions, start at 0x40 */
-#ifdef AROS_ALMOST_COMPATIBLE
 #define AO_ArosLib	0x00008040
 #define AO_OOPLib	0x00008041
 #define AO_HiddLib	0x00008042
-#endif
 
 /* exec.library */
 #define AN_ExecLib      0x01000000
@@ -235,13 +233,11 @@
 #define AN_Unknown 0x35000000
 
 /* AROS Additions */
-#ifdef AROS_ALMOST_COMPATIBLE
 #define AN_Aros		    0x40000000
 #define AN_OOP		    0x41000000
 
 /* Hidd Subsystem */
 #define AN_Hidd		    0x42000000
 #define AN_HiddNoRoot	    0xC2000001	/* Could not create root device */
-#endif
 
 #endif /* EXEC_ALERTS_H */

@@ -119,13 +119,11 @@ extern int setbuf(FILE *stream, char *buf);
 extern int setlinebuf(FILE *stream);
 extern int setvbuf(FILE *stream, char *buf, int mode, size_t size);
 
-#ifdef AROS_ALMOST_COMPATIBLE
 extern int __vcformat (void * data, int (*outc)(int, void *),
 			const char * format, va_list args);
 extern int __vcscan (void * data, int (*getc)(void *),
 			int (*ungetc)(int, void *),
 			const char * format, va_list args);
-#endif
 
 #define putc fputc
 #define getc fgetc

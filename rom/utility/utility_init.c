@@ -5,7 +5,6 @@
     Desc: Utility Resident and initialization.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include "intern.h"
 #include "libdefs.h"
 

@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#define AROS_ALMOST_COMPATIBLE /* NEWLIST */
 
 #include <proto/dos.h>
 #include "dos_intern.h"

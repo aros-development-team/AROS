@@ -6,7 +6,6 @@
    Lang: english
 */
 
-#define AROS_ALMOST_COMPATIBLE 1
 
 #include "protos.h"
 

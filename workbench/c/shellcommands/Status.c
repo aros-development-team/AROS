@@ -78,7 +78,6 @@
 
 ******************************************************************************/
 
-#define  AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 
 #define  DEBUG  0

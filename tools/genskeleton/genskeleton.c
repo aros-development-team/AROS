@@ -453,7 +453,6 @@ static void make_initc()
     fprintf(f, "    Lang: English\n");
     fprintf(f, "*/\n");
     fprintf(f, "\n");
-    fprintf(f, "#define AROS_ALMOST_COMPATIBLE\n");
     fprintf(f, "#include <exec/types.h>\n");
     fprintf(f, "#include <exec/libraries.h>\n");
     fprintf(f, "#include <aros/libcall.h>\n");

@@ -8,7 +8,6 @@
 
 /****************************************************************************************/
 
-#define  AROS_ALMOST_COMPATIBLE
 
 #include "reqtools_intern.h"
 #include <exec/types.h>

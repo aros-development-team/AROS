@@ -5,7 +5,6 @@
     Desc: Implementation of simpler mutexes
 */
 
-#define AROS_ALMOST_COMPATIBLE
 #include <aros/system.h>
 #include <exec/types.h>
 #include <exec/lists.h>

@@ -30,7 +30,6 @@ warranties are made.  All use is at your own risk. No liability or
 responsibility is assumed.
 */
 
-#define AROS_ALMOST_COMPATIBLE
 
 #include <exec/types.h>
 #include <exec/libraries.h>

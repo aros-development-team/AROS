@@ -18,9 +18,7 @@
 #define ADNF_STARTPROC      (1L<< ADNB_STARTPROC)
 
 /* This is supposed to tell the boot code that we boot without a ConfigDev */
-#ifdef AROS_ALMOST_COMPATIBLE
 #define ADNB_NOCONFIGDEV    8
 #define ADNF_NOCONFIGDEV    (1L<< ADNF_NOCONFIGDEV)
-#endif
 
 #endif /* LIBRARIES_EXPANSION_H */

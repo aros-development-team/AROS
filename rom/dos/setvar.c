@@ -6,7 +6,6 @@
     Lang: English
 */
 
-#define AROS_ALMOST_COMPATIBLE
 #include "dos_intern.h"
 #include <exec/memory.h>
 #include <dos/dos.h>

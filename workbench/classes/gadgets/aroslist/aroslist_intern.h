@@ -7,8 +7,6 @@
 #define AROSLIST_INTERN_H
 
 
-#undef  AROS_ALMOST_COMPATIBLE 
-#define AROS_ALMOST_COMPATIBLE 1
 
 #ifndef EXEC_TYPES_H
 #    include <exec/types.h>

@@ -12,7 +12,6 @@
 #define XCurrentTime 0L
 
 #define DEBUG_FreeMem 1
-#define AROS_ALMOST_COMPATIBLE 1
 
 #define X11_LOCK
 void LockX11();

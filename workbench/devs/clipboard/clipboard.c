@@ -13,7 +13,6 @@
 
 /****************************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE 1
 #include "clipboard_intern.h"
 #include <exec/resident.h>
 #include <devices/clipboard.h>

@@ -6,8 +6,6 @@
 #ifndef DISKFONT_INTERN_H
 #define DISKFONT_INTERN_H
 
-#undef	AROS_ALMOST_COMPATIBLE
-#define AROS_ALMOST_COMPATIBLE
 
 #ifndef   PROTO_EXEC_H
 #	include  <proto/exec.h>

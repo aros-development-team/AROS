@@ -10,7 +10,6 @@
 
     NAME */
 
-#define AROS_ALMOST_COMPATIBLE
 #include "nvdisk_intern.h"
 #include <dos/dos.h>
 #include <exec/memory.h>

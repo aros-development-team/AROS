@@ -5,7 +5,6 @@
     Desc: Add a server to the list of public servers
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <proto/exec.h>

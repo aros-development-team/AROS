@@ -5,7 +5,6 @@
     Desc: a virtual filesystem that emulates the unixish root dir
     Lang: English
 */
-#define AROS_ALMOST_COMPATIBLE
 
 #define  DEBUG 1
 #include <aros/debug.h>

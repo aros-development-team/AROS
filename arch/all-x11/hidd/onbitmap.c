@@ -6,7 +6,6 @@
     Lang: English.
 */
 
-#define AROS_ALMOST_COMPATIBLE 1
 
 #include <stdlib.h>
 #include <stdio.h>

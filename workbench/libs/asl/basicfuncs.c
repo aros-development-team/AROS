@@ -6,8 +6,6 @@
     Lang: english
 */
 
-#undef	AROS_ALMOST_COMPATIBLE
-#define AROS_ALMOST_COMPATIBLE
 
 #include <proto/exec.h>
 #include <proto/utility.h>

@@ -7,7 +7,6 @@
 */
 /* Original source from libnix */
 
-#define AROS_ALMOST_COMPATIBLE
 
 static int _vsprintf_uc (int c, char ** str)
 {

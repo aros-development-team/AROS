@@ -5,7 +5,6 @@
     Desc: GadTools initialization code.
     Lang: English.
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <stddef.h>
 #include <exec/libraries.h>
 #include <exec/types.h>

@@ -66,10 +66,10 @@ transparent and compatible, others are only compatible and some or not.
 
 \subsection{Macros}
 
-AROS defines a couple of macros in various header files. To enable them, you
-must define |AROS_ALMOST_COMPATIBLE|. All macros cast their parameters to
-the correct type, so you must provide a valid input but can safe the
-casts (macros are meant to make life more simple).
+AROS defines a couple of macros in various header files. All macros
+cast their parameters to the correct type, so you must provide a
+valid input but can safe the casts (macros are meant to make life
+more simple).
 
 \begin{description}
 \item{NEWLIST(list)}

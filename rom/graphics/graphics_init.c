@@ -5,7 +5,6 @@
     Desc: Graphics library
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE 1
 
 #define DEBUG 0
 

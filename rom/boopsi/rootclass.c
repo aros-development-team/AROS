@@ -5,7 +5,6 @@
     Desc: BOOPSI rootclass
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 
 #include <exec/lists.h>
 #include <exec/memory.h>

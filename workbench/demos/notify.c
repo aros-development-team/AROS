@@ -6,7 +6,6 @@
     Lang: English
 */
 
-#define  AROS_ALMOST_COMPATIBLE
 #include <proto/exec.h>
 #include <exec/memory.h>
 #include <aros/machine.h>

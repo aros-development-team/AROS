@@ -6,7 +6,6 @@
     Lang: English
 */
 
-#define  AROS_ALMOST_COMPATIBLE
 
 #define  DEBUG  1
 

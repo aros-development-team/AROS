@@ -44,7 +44,6 @@
         This file has been completely rewritten from assembler source!
 */
 
-#define AROS_ALMOST_COMPATIBLE
 
 #include <exec/resident.h>
 #include <exec/types.h>

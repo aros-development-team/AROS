@@ -8,7 +8,6 @@
 
 /******************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE /* NEWLIST macro */
 
 #include <string.h>
 

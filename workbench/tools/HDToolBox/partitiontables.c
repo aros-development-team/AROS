@@ -3,7 +3,6 @@
     $Id$
 */
 
-#define AROS_ALMOST_COMPATIBLE
 
 #include <stdio.h>
 #include <string.h>

@@ -6,7 +6,6 @@
     Lang: English
 */
 
-#define AROS_ALMOST_COMPATIBLE 1
 #include <devices/trackdisk.h>
 #include <exec/resident.h>
 #include <exec/errors.h>

@@ -8,7 +8,6 @@
     This version handles ATA and ATAPI devices
 */
 
-#define AROS_ALMOST_COMPATIBLE 1
 #include <dos/filehandler.h>
 #include <exec/devices.h>
 #include <exec/errors.h>

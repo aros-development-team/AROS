@@ -7,7 +7,6 @@
     Desc: Internal header file for graphics.library
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE 1
 
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>

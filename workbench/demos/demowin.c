@@ -5,7 +5,6 @@
     Desc: A short demo for the features of Intuition and Graphics
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE 1
 #define ENABLE_RT	1
 #define ENABLE_PURIFY	1
 

@@ -9,7 +9,6 @@
 /* HISTORY:      25.06.99   SDuvan  Began implementing... */
 
 
-#define  AROS_ALMOST_COMPATIBLE
 
 #include <utility/utility.h>
 

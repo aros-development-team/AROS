@@ -7,7 +7,6 @@
 */
 #include "rt.h"
 #if 0
-#define AROS_ALMOST_COMPATIBLE
 #define ENABLE_RT 0	/* no RT inside this file */
 #define RT_INTERNAL 1
 #include <aros/rt.h>

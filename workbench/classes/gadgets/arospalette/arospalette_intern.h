@@ -6,8 +6,6 @@
 #ifndef AROSPALETTE_INTERN_H
 #define AROSPALETTE_INTERN_H
 
-#undef  AROS_ALMOST_COMPATIBLE 
-#define AROS_ALMOST_COMPATIBLE 
 
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>

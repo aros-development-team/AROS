@@ -58,7 +58,6 @@ struct MinList
       ( (((struct MsgPort *)mp)->mp_MsgList.lh_TailPred) \
 	    == (struct Node *)(&(((struct MsgPort *)mp)->mp_MsgList)) )
 
-#ifdef AROS_ALMOST_COMPATIBLE
 #   define NEWLIST(l)       (((struct List *)l)->lh_TailPred \
 				= (struct Node *)(l), \
 			    ((struct List *)l)->lh_Tail = 0, \
@@ -116,7 +115,6 @@ struct MinList
 	    ForeachNode (list,n) count ++;  \
 	} while (0)
 
-#endif
 
 
 /******************************************************************************

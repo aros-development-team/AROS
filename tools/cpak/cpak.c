@@ -177,7 +177,7 @@ char filename[50];
 	fprintf ( stderr, "Could not open functions.h out-file!\n" );
 	exit ( -1 );
     }
-    fprintf ( fdo, "#define AROS_ALMOST_COMPATIBLE\n\n" );
+
     search = first.next;
     while ( search != NULL )
     {

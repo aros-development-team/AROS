@@ -5,7 +5,6 @@
     Desc: DOS function LoadSeg()
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE 1
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>

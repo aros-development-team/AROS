@@ -9,8 +9,6 @@
 #ifndef ASL_INTERN_H
 #define ASL_INTERN_H
 
-#undef	AROS_ALMOST_COMPATIBLE
-#define AROS_ALMOST_COMPATIBLE
 
 
 #ifndef EXEC_TYPES_H

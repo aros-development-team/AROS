@@ -8,7 +8,6 @@
 
 /*******************************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE 1
 
 #include <libraries/gadtools.h>
 #include <proto/exec.h>

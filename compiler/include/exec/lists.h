@@ -56,145 +56,141 @@ struct MinList
       ( (((struct MsgPort *)(mp))->mp_MsgList.lh_TailPred) \
 	    == (struct Node *)(&(((struct MsgPort *)(mp))->mp_MsgList)) )
 
-#ifdef AROS_ALMOST_COMPATIBLE
-#   define NEWLIST(_l)                               \
-    do                                               \
-    {                                                \
-        struct List *l = (struct List *)(_l);        \
-                                                     \
-        l->lh_TailPred = (struct Node *)l;           \
-        l->lh_Tail     = 0;                          \
-        l->lh_Head     = (struct Node *)&l->lh_Tail; \
-    } while (0)
+#define NEWLIST(_l)                              \
+do                                               \
+{                                                \
+    struct List *l = (struct List *)(_l);        \
+                                                 \
+    l->lh_TailPred = (struct Node *)l;           \
+    l->lh_Tail     = 0;                          \
+    l->lh_Head     = (struct Node *)&l->lh_Tail; \
+} while (0)
 
-#   define ADDHEAD(_l,_n)                                 \
-    do                                                    \
-    {                                                     \
-        struct Node *n = (struct Node *)(_n);             \
-        struct List *l = (struct List *)(_l);             \
+#define ADDHEAD(_l,_n)                                \
+do                                                    \
+{                                                     \
+    struct Node *n = (struct Node *)(_n);             \
+    struct List *l = (struct List *)(_l);             \
+                                                      \
+    n->ln_Succ          = l->lh_Head;                 \
+    n->ln_Pred          = (struct Node *)&l->lh_Head; \
+    l->lh_Head->ln_Pred = n;                          \
+    l->lh_Head          = n;                          \
+} while (0)
+
+#define ADDTAIL(_l,_n)                                    \
+do                                                        \
+{                                                         \
+    struct Node *n = (struct Node *)(_n);                 \
+    struct List *l = (struct List *)(_l);                 \
                                                           \
-        n->ln_Succ          = l->lh_Head;                 \
-	n->ln_Pred          = (struct Node *)&l->lh_Head; \
-	l->lh_Head->ln_Pred = n;                          \
-	l->lh_Head          = n;                          \
-    } while (0)
+    n->ln_Succ              = (struct Node *)&l->lh_Tail; \
+    n->ln_Pred              = l->lh_TailPred;             \
+    l->lh_TailPred->ln_Succ = n;                          \
+    l->lh_TailPred          = n;                          \
+} while (0)
 
-#   define ADDTAIL(_l,_n)                                     \
-    do                                                        \
-    {                                                         \
-        struct Node *n = (struct Node *)(_n);                 \
-        struct List *l = (struct List *)(_l);                 \
-                                                              \
-        n->ln_Succ              = (struct Node *)&l->lh_Tail; \
-	n->ln_Pred              = l->lh_TailPred;             \
-	l->lh_TailPred->ln_Succ = n;                          \
-	l->lh_TailPred          = n;                          \
-    } while (0)
+#define REMOVE(_n)                        \
+do                                        \
+{                                         \
+    struct Node *n = (struct Node *)(_n); \
+                                          \
+    n->ln_Pred->ln_Succ = n->ln_Succ;     \
+    n->ln_Succ->ln_Pred = n->ln_Pred;     \
+} while (0)
 
-#   define REMOVE(_n)                         \
-    do                                        \
-    {                                         \
-	struct Node *n = (struct Node *)(_n); \
-                                              \
-        n->ln_Pred->ln_Succ = n->ln_Succ;     \
-	n->ln_Succ->ln_Pred = n->ln_Pred;     \
-    } while (0)
-
-#   ifdef __GNUC__
-#       define GetHead(_l)                                       \
-        ({                                                       \
-            struct List *l = (struct List *)(_l);                \
-                                                                 \
-            l->lh_Head->ln_Succ ? l->lh_Head : (struct Node *)0; \
-        })
-
-#       define GetTail(_l)                                               \
-        ({                                                               \
-            struct List *l = (struct List *)(_l);                        \
-                                                                         \
-            l->lh_TailPred->ln_Pred ? l->lh_TailPred : (struct Node *)0; \
-        })
-
-#       define GetSucc(_n)                                       \
-        ({                                                       \
-	    struct Node *n = (struct Node *)(_n);                \
-                                                                 \
-            n->ln_Succ->ln_Succ ? n->ln_Succ : (struct Node *)0; \
-        })
-
-#       define GetPred(_n)                                       \
-        ({                                                       \
-	    struct Node *n = (struct Node *)(_n);                \
-                                                                 \
-            n->ln_Pred->ln_Pred ? n->ln_Pred : (struct Node *)0; \
-        })
-
-#    else
-
-#       define GetHead(l)                                                                            \
-        (                                                                                            \
-            ((struct List *)(l))->lh_Head->ln_Succ ? ((struct List *)l)->lh_Head : (struct Node *)0; \
-        )
-
-#       define GetTail(l)                                                                                      \
-        (                                                                                                      \
-            ((struct List *)(l))->lh_TailPred->ln_Pred ? ((struct List *)(l))->lh_TailPred : (struct Node *)0; \
-        )
-
-#       define GetSucc(n)                                                                          \
-        (                                                                                          \
-            ((struct Node *)n)->ln_Succ->ln_Succ ? ((struct Node *)n)->ln_Succ : (struct Node *)0; \
-        }
-
-#       define GetPred(n)                                                                          \
-        (                                                                                          \
-            ((struct Node *)n)->ln_Pred->ln_Pred ? ((struct Node *)n)->ln_Pred : (struct Node *)0; \
-        }
-#    endif
-
-#   define REMTAIL(_l)                       \
-    ({                                       \
-	struct List *l = (struct List *)_l;  \
-	struct Node *n;                      \
-	if ((n=GetTail(l)))                  \
-	{                                    \
-	   n->ln_Pred->ln_Succ = n->ln_Succ; \
-	   n->ln_Succ->ln_Pred = n->ln_Pred; \
-	}                                    \
-	n;                                   \
+#ifdef __GNUC__
+#   define GetHead(_l)                                       \
+    ({                                                       \
+        struct List *l = (struct List *)(_l);                \
+                                                             \
+        l->lh_Head->ln_Succ ? l->lh_Head : (struct Node *)0; \
     })
 
+#   define GetTail(_l)                                               \
+    ({                                                               \
+        struct List *l = (struct List *)(_l);                        \
+                                                                     \
+        l->lh_TailPred->ln_Pred ? l->lh_TailPred : (struct Node *)0; \
+    })
 
-#   define ForeachNode(l,n)                        \
-    for                                            \
-    (                                              \
-        n=(void *)(((struct List *)(l))->lh_Head); \
-        ((struct Node *)(n))->ln_Succ;             \
-	n=(void *)(((struct Node *)(n))->ln_Succ)  \
+#   define GetSucc(_n)                                       \
+    ({                                                       \
+        struct Node *n = (struct Node *)(_n);                \
+                                                             \
+        n->ln_Succ->ln_Succ ? n->ln_Succ : (struct Node *)0; \
+    })
+
+#   define GetPred(_n)                                       \
+    ({                                                       \
+        struct Node *n = (struct Node *)(_n);                \
+                                                         \
+        n->ln_Pred->ln_Pred ? n->ln_Pred : (struct Node *)0; \
+    })
+
+#else
+
+#   define GetHead(l)                                                                            \
+    (                                                                                            \
+        ((struct List *)(l))->lh_Head->ln_Succ ? ((struct List *)l)->lh_Head : (struct Node *)0; \
     )
 
-#   define ForeachNodeSafe(l,n,n2)                  \
-    for                                             \
-    (                                               \
-        n=(void *)(((struct List *)(l))->lh_Head);  \
-        (n2=(void *)((struct Node *)(n))->ln_Succ); \
-        n=(void *)n2                                \
+#   define GetTail(l)                                                                                      \
+    (                                                                                                      \
+        ((struct List *)(l))->lh_TailPred->ln_Pred ? ((struct List *)(l))->lh_TailPred : (struct Node *)0; \
     )
 
-#   define SetNodeName(node,name)   \
-	(((struct Node *)(node))->ln_Name = (char *)(name))
-#   define GetNodeName(node)        \
-	(((struct Node *)(node))->ln_Name)
+#   define GetSucc(n)                                                                          \
+    (                                                                                          \
+        ((struct Node *)n)->ln_Succ->ln_Succ ? ((struct Node *)n)->ln_Succ : (struct Node *)0; \
+    }
 
-#   define ListLength(list,count)      \
-    do {		               \
-	struct Node * n;	       \
-	count = 0;		       \
-	ForeachNode (list,n) count ++; \
-    } while (0)
-
+#   define GetPred(n)                                                                          \
+    (                                                                                          \
+        ((struct Node *)n)->ln_Pred->ln_Pred ? ((struct Node *)n)->ln_Pred : (struct Node *)0; \
+    }
 #endif
 
+#define REMTAIL(_l)                       \
+({                                        \
+    struct List *l = (struct List *)_l;   \
+    struct Node *n;                       \
+    if ((n=GetTail(l)))                   \
+    {                                     \
+        n->ln_Pred->ln_Succ = n->ln_Succ; \
+        n->ln_Succ->ln_Pred = n->ln_Pred; \
+    }                                     \
+    n;                                    \
+})
+
+
+#define ForeachNode(l,n)                       \
+for                                            \
+(                                              \
+    n=(void *)(((struct List *)(l))->lh_Head); \
+    ((struct Node *)(n))->ln_Succ;             \
+    n=(void *)(((struct Node *)(n))->ln_Succ)  \
+)
+
+#define ForeachNodeSafe(l,n,n2)                 \
+for                                             \
+(                                               \
+    n=(void *)(((struct List *)(l))->lh_Head);  \
+    (n2=(void *)((struct Node *)(n))->ln_Succ); \
+    n=(void *)n2                                \
+)
+
+#define SetNodeName(node,name)   \
+    (((struct Node *)(node))->ln_Name = (char *)(name))
+#define GetNodeName(node)        \
+    (((struct Node *)(node))->ln_Name)
+
+#define ListLength(list,count)     \
+do {		                   \
+    struct Node * n;	           \
+    count = 0;		           \
+    ForeachNode (list,n) count ++; \
+} while (0)
 
 /******************************************************************************
 *****  ENDE exec/lists.h

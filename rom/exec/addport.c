@@ -5,7 +5,6 @@
     Desc: Add a port to the public list of ports.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/ports.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>

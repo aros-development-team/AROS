@@ -5,7 +5,6 @@
     Desc: X11 hidd initialization code.
     Lang: English.
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
