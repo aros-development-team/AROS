@@ -95,7 +95,7 @@ dist-src :
 #MM
 clean :
 	-$(RM) $(ARCHDIR) Makefile mmake.cache config.cache config.status \
-		config.log errors crypt
+		config.log
 
 
 $(GENDIR)/%.o: %.c
