@@ -104,7 +104,7 @@ if [ "$CFG_MAIL_ENABLE" = "yes" ]; then
         done
         mail_write ""
         mail_write "The following archives were created:"
-        mail_write "$(find $ARCHIVE_BASE -type f -not -path '*/logs/*' -not -name '*.md5' -printf '%f\n')"
+        mail_write "$( find $ARCHIVE_BASE -type f -not -path '*/logs/*' -not -name '*.md5' | xargs -n 1 basename )"
         mail_write ""
         mail_write "The archives will be available for download from http://www.aros.org/download.php."
     fi
