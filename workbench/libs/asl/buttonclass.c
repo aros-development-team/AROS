@@ -175,7 +175,7 @@ static IPTR aslbutton_goactive(Class *cl, Object *o, struct gpInput *msg)
 	{
 	    EG(o)->Flags |= GFLG_SELECTED;
 
-	    DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+	    DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
 	    ReleaseGIRPort(rp);
 
 	    retval = GMR_MEACTIVE;
@@ -211,7 +211,7 @@ static IPTR aslbutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 			    if ((rp = ObtainGIRPort(gi)))
 			    {
-				DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+				DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
 				ReleaseGIRPort(rp);
 			    }
 			    retval = GMR_NOREUSE | GMR_VERIFY;
@@ -248,7 +248,7 @@ static IPTR aslbutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 				    if ((rp = ObtainGIRPort(gi)))
 				    {
-					DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+					DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
 					ReleaseGIRPort(rp);
 				    }
 				}
@@ -264,7 +264,7 @@ static IPTR aslbutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 				    if ((rp = ObtainGIRPort(gi)))
 				    {
-					DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+					DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
 					ReleaseGIRPort(rp);
 				    }
 				}
@@ -305,7 +305,7 @@ static IPTR aslbutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 	
 	if (rp)
 	{
-	    DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+	    DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
 	    ReleaseGIRPort(rp);
 	}
     }

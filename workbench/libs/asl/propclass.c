@@ -1,11 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
-
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -167,7 +163,7 @@ static IPTR aslprop_set(Class * cl, Object * o, struct opSet * msg)
 	rp = ObtainGIRPort(msg->ops_GInfo);
     	if (NULL != rp)
 	{
-	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_UPDATE);
+	    DoMethod(o, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 	    ReleaseGIRPort(rp);
 	}
     }

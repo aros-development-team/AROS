@@ -1,11 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
-
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -397,7 +393,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
     BOOL 			redraw = FALSE, notify_all = FALSE, notify_top = FALSE;
     WORD 			newtop;
     
-    retval = DoSuperMethod(cl, o, OM_SET, msg->ops_AttrList, msg->ops_GInfo);
+    retval = DoSuperMethod(cl, o, OM_SET, (IPTR) msg->ops_AttrList, (IPTR) msg->ops_GInfo);
 
     while((tag = NextTagItem(&tstate)))
     {
@@ -764,7 +760,7 @@ static IPTR asllistview_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	    /* fall through */
 	    
         case IECLASS_RAWMOUSE:
-	    if (msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE) code = msg->gpi_IEvent->ie_Code;
+	    code = msg->gpi_IEvent->ie_Code;
 	    
 	    switch(code)
 	    {
