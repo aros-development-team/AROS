@@ -1016,7 +1016,7 @@ void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
 #define rdtscll(val) \
      __asm__ __volatile__("rdtsc" : "=A" (val))
 
-#if ENABLE_PROFILING
+#if ENABLE_PROFILING && defined(__i386__)
 
 
 #define AROS_BEGIN_PROFILING(context)  \
@@ -1094,7 +1094,13 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
 //            Damage = NewRectRegion(x1 + MinX(L), y1 + MinY(L), x2 + MinX(L), y2 + MinY(L));
-            Damage = AndRectRegionND(L->VisibleRegion, &ScrollRect);
+	    struct Rectangle Rect = ScrollRect;
+            TranslateRect(&Rect, -dx, -dy);
+
+	    if (_AndRectRect(&ScrollRect, &Rect, &Rect))
+            {
+                Damage = AndRectRegionND(L->VisibleRegion, &Rect);
+            }
         }
 
         AROS_BEGIN_PROFILING(SortLayerCR)
@@ -1395,7 +1401,13 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
 //            Damage = NewRectRegion(x1 + MinX(L), y1 + MinY(L), x2 + MinX(L), y2 + MinY(L));
-            Damage = AndRectRegionND(L->VisibleRegion, &ScrollRect);
+	    struct Rectangle Rect = ScrollRect;
+            TranslateRect(&Rect, -dx, -dy);
+
+	    if (_AndRectRect(&ScrollRect, &Rect, &Rect))
+            {
+                Damage = AndRectRegionND(L->VisibleRegion, &Rect);
+            }
         }
 
         AROS_BEGIN_PROFILING(Blitting loop)
