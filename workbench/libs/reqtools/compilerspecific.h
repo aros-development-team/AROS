@@ -27,7 +27,12 @@
 #define STDARGS
 #define ALIGNED
 
-#warning Fix CHIP macro for GCC compiler in compilerspecific.h
+/* #warning Fix CHIP macro for GCC compiler in compilerspecific.h
+   
+   Does not really matter, as there is only one place with a
+   mouse pointer data structure which uses/needs this CHIP. And
+   this is anyway only used on OS versions < 39 */
+   
 #define CHIP
 
 #define ASM

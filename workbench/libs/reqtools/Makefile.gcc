@@ -1,19 +1,35 @@
 CC 	:= gcc
 LD	:= gcc
-CFLAGS	:= -Wall -DNO_INLINE_STDARG
-LDFLAGS := -noixemul -nostartfiles -s
+RM  	:= rm
+CFLAGS	:= -Wall -DNO_INLINE_STDARG -O2 -m68020
+LDFLAGS := -noixemul -nostartfiles
 LIBFILE := /ram/reqtools.library
-CFILES	:= req boopsigads general filereq filereqalloc \
+CFILES	:= reqtoolsami_init req boopsigads general filereq filereqalloc \
 	   filereqextra filereqmain filereqsetup \
 	   palettereq rtlocale \
 	   mem misc boopsi rtfuncs
 COBJS	:= $(foreach f, $(CFILES), $(f).o)
-	   
-All 	: $(LIBFILE)
+DEPS    := $(foreach f, $(CFILES), $(f).d)
+#EXTRALIB:= $(shell $(CC) --print-libgcc-file)
 
+.PHONY : all depend clean library
+	   
+all : $(LIBFILE)
+
+depend	: $(DEPS)
+
+clean	:
+	rm -f *.o *.d $(LIBFILE)
+	
 $(LIBFILE) : $(COBJS)
-	$(LD) $^ -o $@
+	$(LD) $(LDFLAGS) $^ $(EXTRALIB) -o $@
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+%.d : %.c
+	$(CC) $(CFLAGS) -M $< -o $@
+
+ifeq (,$(filter clean depend,$(TARGET)))
+-include $(DEPS)
+endif

@@ -27,7 +27,7 @@ struct rtWindowLock
     LONG                 rtwl_Magic;
     struct rtWindowLock *rtwl_RequesterPtr;
     ULONG                rtwl_LockCount;
-    BOOL                 rtwl_ReqInstalled;
+    ULONG                rtwl_ReqInstalled;
 
     /* To save window parameters */
     APTR                 rtwl_Pointer;
@@ -382,7 +382,7 @@ SAVEDS ASM APTR RTFuncs_rtLockWindow(REGPARAM(a0, struct Window *, window))
     if(winLock == NULL)
 	return NULL;
 
-    winLock->rtwl_Magic = 'r' << 24 | 't' << 16 | 'W' << 8 | 'L';
+    winLock->rtwl_Magic = 'r' << 24 | 't' << 16 | 'L' << 8 | 'W';
     winLock->rtwl_RequesterPtr = winLock;
     
     winLock->rtwl_MinHeight = window->MinHeight;
@@ -393,6 +393,7 @@ SAVEDS ASM APTR RTFuncs_rtLockWindow(REGPARAM(a0, struct Window *, window))
     WindowLimits(window, window->Width, window->Height,
 		 window->Width, window->Height);
     
+    InitRequester((struct Requester *)winLock);
     winLock->rtwl_ReqInstalled = Request((struct Requester *)winLock, window);
     
     winLock->rtwl_Pointer = window->Pointer;
@@ -424,8 +425,11 @@ SAVEDS ASM VOID RTFuncs_rtUnlockWindow(REGPARAM(a0, struct Window *, window),
 	struct TagItem tags[] = { { WA_Pointer, (IPTR)wLock->rtwl_Pointer },
 				  { TAG_DONE  , NULL } };
 
-	SetWindowPointerA(window, (struct TagItem *)&tags);
+	SetWindowPointerA(window, tags);
 
+    	if (wLock->rtwl_ReqInstalled)
+	    EndRequest((struct Requester *)wLock, window);
+	
 	WindowLimits(window, wLock->rtwl_MinWidth, wLock->rtwl_MaxWidth,
 		     wLock->rtwl_MinHeight, wLock->rtwl_MaxHeight);
 

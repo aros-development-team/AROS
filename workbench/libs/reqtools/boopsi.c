@@ -219,7 +219,6 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
 			     ypos,
 			     gad->LeftEdge + gad->Width - 1,
 			     gad->TopEdge + gad->Height -1 );
-					  
 		im->PlanePick = (imsg->imp_State == IDS_SELECTED) ? FILLTEXTPEN : TEXTPEN; 
 	    }
 	    
@@ -256,12 +255,14 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
 	        struct TagItem beveltags[] =
 		{
 		    {GT_VisualInfo	, (IPTR)data->lod_IData.idata_VisualInfo	},
-		    {GTBB_Recessed	, (imsg->imp_State == IDS_SELECTED)		},
+		    {GTBB_Recessed  	, TRUE	    	    	    	    	    	},
 		    {TAG_DONE								}
 		};
 		
-	        /* draw bevelbox around gadget container (recessed if selected) */
+		if (imsg->imp_State != IDS_SELECTED) beveltags[1].ti_Tag = TAG_IGNORE;
 		
+	        /* draw bevelbox around gadget container (recessed if selected) */
+
 		DrawBevelBoxA(rp,
 			      gad->LeftEdge,
 			      gad->TopEdge,
@@ -272,7 +273,7 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
 	    
 	    SetFont(rp, oldfont);
 	    if (font) CloseFont(font);
-	    
+	    break;
 	    
 	default:
 	    retval = DoSuperMethodA(cl, (Object *)im, msg);

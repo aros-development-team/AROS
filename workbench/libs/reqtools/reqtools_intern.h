@@ -35,6 +35,8 @@ struct IntReqToolsBase
 
 /****************************************************************************************/
 
+#ifdef _AROS
+
 /* filereqalloc.c */
 
 struct RealFileRequester;
@@ -60,6 +62,8 @@ ULONG GetString (UBYTE *stringbuff, LONG maxlen, char *title,
 
 LONG PaletteRequestA (char *title, struct rtReqInfo *reqinfo, struct TagItem *taglist);
 
+#endif
+
 /****************************************************************************************/
 
 /* Fix name clashes */
@@ -67,8 +71,10 @@ typedef  struct IntuitionBase  IntuiBase;
 
 #define GPB(x) 		((struct IntReqToolsBase *)x)
 
+#ifdef _AROS
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct IntReqToolsBase *, RTBase, 3, ReqTools)
+#endif
 
 /****************************************************************************************/
 

@@ -119,10 +119,6 @@ ULONG ASM SAVEDS PropReqHandler (
     APTR 			winlock;
     ULONG 			id;
 
-static int counter;
-
-counter++;
-
     /* uncomment if sigs is no longer ignored */
 //  if (glob->DoNotWait) sigs = SetSignal (0, 0);
 
