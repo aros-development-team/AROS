@@ -42,7 +42,8 @@ static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
     int usewinborder = GetTagData(MUIA_Prop_UseWinBorder, 0, msg->ops_AttrList);
     int sb_pos = GetTagData(MUIA_Scrollbar_Type, 0, msg->ops_AttrList);
 
-    Object *prop = MUI_NewObject(MUIC_Prop, MUIA_Prop_Horiz, horiz, TAG_MORE, msg->ops_AttrList);
+    Object *prop = MUI_NewObject(MUIC_Prop, PropFrame, MUIA_Prop_Horiz, horiz,
+				 TAG_MORE, msg->ops_AttrList);
 
     obj = (Object *)DoSuperNew(cl, obj,
 			       MUIA_Group_Spacing, 0,
@@ -55,13 +56,10 @@ static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prop = prop;
     data->sb_pos = sb_pos;
 
-    D(bug("Scrollbar_New %p usewinborder=%d\n", obj, usewinborder));
-
     if (!usewinborder)
     {
 	data->up_arrow = ImageObject,
 	    MUIA_Background, MUII_ButtonBack,
-	    horiz ? MUIA_Image_FreeVert : MUIA_Image_FreeHoriz, TRUE,
 	    MUIA_Weight, 0,
 	    ImageButtonFrame,
 	    MUIA_InputMode, MUIV_InputMode_RelVerify,
@@ -75,7 +73,6 @@ static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	data->down_arrow = ImageObject,
 	    MUIA_Background, MUII_ButtonBack,
-	    horiz ? MUIA_Image_FreeVert : MUIA_Image_FreeHoriz, TRUE,
 	    MUIA_Weight, 0,
 	    ImageButtonFrame,
 	    MUIA_InputMode, MUIV_InputMode_RelVerify,
