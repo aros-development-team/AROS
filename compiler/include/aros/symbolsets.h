@@ -15,7 +15,7 @@
 struct libraryset
 {
     STRPTR name;
-    ULONG  version;
+    ULONG  *versionptr;
     void   **baseptr;
     int   (*postopenfunc)(void);
     void  (*preclosefunc)(void);
@@ -43,12 +43,26 @@ void * SETNAME(set)[] __attribute__((weak))={0,0}
 #define ADD2EXIT(symbol, pri)\
 	ADD2SET(symbol, __EXIT_SET__, pri)
 
-#define ADDLIB2SET(name, version, btype, bname, postopenfunc, preclosefunc) \
-btype bname;                                                                \
-struct libraryset libraryset_##bname =                                      \
-{                                                                           \
-     name, version, &bname, postopenfunc, preclosefunc                      \
-};                                                                          \
-ADD2SET(libraryset_##bname, __LIBS_SET__, 0)
+#define ADD2LIBS(name, ver, pri, btype, bname, postopenfunc, preclosefunc) \
+btype bname;                                                               \
+const ULONG bname##_version __attribute__((weak)) = ver;                   \
+struct libraryset libraryset_##bname =                                     \
+{                                                                          \
+     name, &bname##_version, &bname, postopenfunc, preclosefunc            \
+};                                                                         \
+ADD2SET(libraryset_##bname, __LIBS_SET__, pri)
+
+#define ASKFORLIBVERSION(bname, ver) \
+const ULONG bname##_version = ver
+
+/* some already allocated priorities for library opening/closing */
+#define LIBSET_EXEC_PRI      0
+#define LIBSET_DOS_PRI       1
+#define LIBSET_INTUITION_PRI 2
+#define LIBSET_UTILITY_PRI   5
+#define LIBSET_AROSC_PRI     20
+
+/* User priorities starts from here */
+#define LIBSET_USER_PRI      100  /*An enough hight value, I think... */
 
 #endif
