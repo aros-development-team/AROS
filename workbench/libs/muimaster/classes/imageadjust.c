@@ -39,6 +39,9 @@ struct MUI_ImageadjustData
     int last_vector_selected;
     struct Hook vector_select_hook;
 
+    Object *external_list;
+    struct Hook external_display_hook;
+
     char *imagespec;
 };
 
@@ -73,6 +76,95 @@ AROS_UFH3(VOID,Vector_Select_Function,
     if (data->last_vector_selected != -1) set(data->vector_image[data->last_vector_selected],MUIA_Selected,FALSE);
     data->last_vector_selected = new_selected;
 }
+
+#ifndef _AROS
+static __saveds __asm void Imageadjust_External_Display(register __a0 struct Hook *h, register __a2 char **strings, register __a1 char *filename)
+#else
+AROS_UFH3(VOID,Imageadjust_External_Display,
+	AROS_UFHA(struct Hook *, h,  A0),
+	AROS_UFHA(char **strings, , A2),
+	AROS_UFHA(char *, filename,  A1))
+#endif
+{
+    if (filename) *strings = FilePart(filename);
+}
+
+/**************************************************************************
+ Adds a directory to the list
+**************************************************************************/
+static int AddDirectory(Object *list, STRPTR dir, LONG parent)
+{
+    BPTR lock = Lock(dir,ACCESS_READ);
+    struct ExAllControl *eac;
+    struct ExAllData *ead, *entry;
+    LONG more;
+    int dir_len = strlen(dir);
+    if (!lock) return 0;
+
+    eac = (struct ExAllControl*)AllocDosObject(DOS_EXALLCONTROL,NULL);
+    if (!eac)
+    {
+	UnLock(lock);
+	return 0;
+    }
+
+    ead = AllocVec(1024,0);
+    if (!ead)
+    {
+	FreeDosObject(DOS_EXALLCONTROL,eac);
+	UnLock(lock);
+	return 0;
+    }
+
+    eac->eac_LastKey = 0;
+
+    do
+    {
+    	more = ExAll(lock,ead,1024,ED_TYPE,eac);
+	if ((!more) && (IoErr() != ERROR_NO_MORE_ENTRIES)) break;
+	if (eac->eac_Entries == 0) continue;
+
+	entry = ead;
+	do
+	{
+	    int len = dir_len + strlen(ead->ed_Name) + 10;
+	    char *buf = AllocVec(len,0);
+	    if (buf)
+	    {
+	    	LONG num;
+	    	int is_directory;
+
+		if (ead->ed_Type > 0)
+		{
+		    is_directory = 1;
+		    if (ead->ed_Type == ST_SOFTLINK)
+		    {
+		    	/* TODO: Special handling */
+		    }
+		} else is_directory = 0;
+
+		strcpy(buf,dir);
+		AddPart(buf,ead->ed_Name,len);
+
+		num = DoMethod(list,MUIM_List_InsertSingleAsTree, buf, parent, MUIV_List_InsertSingleAsTree_Bottom,is_directory?MUIV_List_InsertSingleAsTree_List:0);
+
+		if (num != -1 && is_directory)
+		{
+		    AddDirectory(list,buf,num);
+		}
+		FreeVec(buf);
+	    }
+	    ead = ead->ed_Next;
+	}   while (ead);
+    } while (more);
+
+    FreeVec(ead);
+    FreeDosObject(DOS_EXALLCONTROL,eac);
+    UnLock(lock);
+    return 1;
+}
+
+
 
 /**************************************************************************
  ...
@@ -132,7 +224,6 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct MUI_ImageadjustData *da
 		set(obj,MUIA_Group_ActivePage,3);
 		break;
 		
-
 	case    '6':
 		{
 		    LONG img;
@@ -157,6 +248,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *pattern_group;
     Object *vector_group;
     Object *bitmap_string;
+    Object *external_list;
     char *spec=NULL;
     int i;
 
@@ -169,7 +261,13 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    MUIA_Popstring_String, bitmap_string = StringObject, StringFrame, End,
 	    MUIA_Popstring_Button, PopButton(MUII_PopFile),
 	    End,
-	Child, HVSpace,
+	Child, ListviewObject,
+	    MUIA_Listview_List, external_list = ListObject,
+		InputListFrame,
+		MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+		MUIA_List_DestructHook, MUIV_List_DestructHook_String,
+		End,
+	    End,
 	TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
 
@@ -201,7 +299,6 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->vector_select_hook.h_Data = data;
     data->vector_select_hook.h_Entry = (HOOKFUNC)Vector_Select_Function;
 
-
     for (i=0;i<24;i++)
     {
     	char spec[10];
@@ -211,8 +308,6 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	    ButtonFrame,
 	    MUIA_Image_Spec, spec,
 	    MUIA_InputMode, MUIV_InputMode_Immediate,
-//	    MUIA_Image_FreeVert, TRUE,
-//	    MUIA_Image_FreeHoriz, TRUE,
 	    MUIA_Weight, 0,
 	    End;
 
@@ -236,8 +331,13 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-    Imageadjust_SetImagespec(obj,data,spec);
+    data->external_list = external_list;
+    data->external_display_hook.h_Entry = (HOOKFUNC)Imageadjust_External_Display;
+    set(data->external_list,MUIA_List_DisplayHook, &data->external_display_hook);
 
+    DoMethod(obj,MUIM_Notify,MUIA_Group_ActivePage, 4, obj, 1, MUIM_Imageadjust_ReadExternal);
+
+    Imageadjust_SetImagespec(obj,data,spec);
     return (IPTR)obj;
 }
 
@@ -336,6 +436,18 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     return 0;
 }
 
+/**************************************************************************
+ MUIM_Imageadjust_ReadExternal
+**************************************************************************/
+static IPTR Imageadjust_ReadExternal(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_ImageadjustData *data = INST_DATA(cl, obj);
+    DoMethod(data->external_list,MUIM_List_Clear);
+    AddDirectory(data->external_list,"MUI:Images",-1);
+    return 0;
+
+}
+
 #ifndef _AROS
 __asm IPTR Imageadjust_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
@@ -351,6 +463,8 @@ AROS_UFH3S(IPTR,Imageadjust_Dispatcher,
 	case OM_DISPOSE: return Imageadjust_Dispose(cl,obj,(APTR)msg);
 	case OM_SET: return Imageadjust_Set(cl, obj, (struct opSet *)msg);
 	case OM_GET: return Imageadjust_Get(cl,obj,(APTR)msg);
+
+        case MUIM_Imageadjust_ReadExternal: return Imageadjust_ReadExternal(cl,obj,(APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
