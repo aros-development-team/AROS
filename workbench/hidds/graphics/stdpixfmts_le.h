@@ -70,7 +70,7 @@ const HIDDT_PixelFormat stdpfs[] =
     }, {
     	  /* X1R5G5B5 */
 	  
-	  15, 16, 2
+	  15, 15, 2
 	, 0x00007C00, 0x000003E0, 0x0000001F, 0x00000000
 	, 17, 22, 27, 0
 	, 0, 0
@@ -79,7 +79,7 @@ const HIDDT_PixelFormat stdpfs[] =
     }, {
     	  /* X1R5G5B5 little endian */
 	  
-	  15, 16, 2
+	  15, 15, 2
 	, 0x00007C00, 0x000003E0, 0x0000001F, 0x00000000
 	, 17, 22, 27, 0
 	, 0, 0
@@ -88,7 +88,7 @@ const HIDDT_PixelFormat stdpfs[] =
     }, {
     	  /* X1B5G5R5 */
 	  
-	  15, 16, 2
+	  15, 15, 2
 	, 0x0000001F, 0x000003E0, 0x00007C00, 0x00000000
 	, 27, 22, 17, 0
 	, 0, 0
@@ -97,7 +97,7 @@ const HIDDT_PixelFormat stdpfs[] =
     }, {   
     	  /* X1B5G5R5 little endian */
 	  
-	  15, 16, 2
+	  15, 15, 2
 	, 0x0000001F, 0x000003E0, 0x00007C00, 0x00000000
 	, 27, 22, 17, 0
 	, 0, 0
