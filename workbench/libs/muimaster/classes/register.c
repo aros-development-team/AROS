@@ -288,7 +288,7 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
     for(data->numitems = 0; data->labels[data->numitems]; data->numitems++)
 	;
 
-    data->active = (WORD)GetTagData(MUIA_Group_ActivePage, 0, msg->ops_AttrList);
+    get(obj, MUIA_Group_ActivePage, &data->active);
     if (data->active < 0 || data->active >= data->numitems)
     {
 	data->active = 0;
@@ -309,7 +309,7 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	data->items[i].text = data->labels[i];
     }
         
-    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
+    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
@@ -328,27 +328,6 @@ static ULONG Register_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->items) FreeVec(data->items);
     
     return DoSuperMethodA(cl, obj, msg);
-}
-
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static IPTR Register_Set(struct IClass *cl, Object *obj, struct opSet *msg)
-{
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
-    IPTR    	    	     retval;
-    WORD active;
-
-    active = (WORD)GetTagData(MUIA_Group_ActivePage, data->active, msg->ops_AttrList);
-
-    if (active != data->active)
-    {
-	data->oldactive = data->active;
-	data->active = active;
-    }    
-    retval = DoSuperMethodA(cl, obj, (Msg)msg);
-    
-    return retval;
 }
 
 /**************************************************************************
@@ -529,13 +508,23 @@ static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg
 **************************************************************************/
 static ULONG Register_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    //struct MUI_RegisterData *data = INST_DATA(cl, obj);
-    
+    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    ULONG active;
+
     DoSuperMethodA(cl,obj,(Msg)msg);
 
 /*      D(bug("Register_Draw : flags = %d\n", msg->flags)); */
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
 	return(0);
+
+    get(obj, MUIA_Group_ActivePage, &active);
+
+    if (active != data->active)
+    {
+	data->oldactive = data->active;
+	data->active = active;
+    }    
+    
     RenderRegisterTab(cl, obj, msg->flags);
     
     return TRUE;
@@ -549,6 +538,16 @@ static ULONG Register_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
     WORD i, x, y;
     
+    if (msg->muikey != MUIKEY_NONE)
+    {
+	switch (msg->muikey)
+	{
+	    case MUIKEY_PRESS:
+		nfset(obj, MUIA_Group_ActivePage, MUIV_Group_ActivePage_Next);
+		return MUI_EventHandlerRC_Eat;
+	}
+    }
+
     if (msg->imsg)
     {
 	if ((msg->imsg->Class == IDCMP_MOUSEBUTTONS) &&
@@ -570,6 +569,7 @@ static ULONG Register_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 			if (data->active != i)
 			{
 			    nfset(obj, MUIA_Group_ActivePage, i);
+			    return MUI_EventHandlerRC_Eat;
 			}
 			break;
 		    }
@@ -590,7 +590,6 @@ BOOPSI_DISPATCHER(IPTR, Register_Dispatcher, cl, obj, msg)
     {
 	case OM_NEW: return Register_New(cl, obj, (struct opSet *)msg);
 	case OM_DISPOSE: return Register_Dispose(cl, obj, msg);
-	case OM_SET: return Register_Set(cl, obj, (struct opSet *)msg);
 	case MUIM_Setup: return Register_Setup(cl, obj, (struct MUIP_Setup *)msg);
     	case MUIM_Cleanup: return Register_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
 	case MUIM_AskMinMax: return Register_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
