@@ -234,6 +234,10 @@ struct NewMenu
 #define GTTX_Clipped         (GT_TagBase + 85)
 #define GTNM_Clipped         (GT_TagBase + 85)
 
+/* AROS Extensions */
+#define GTLV_Total  	     (GT_TagBase + 150) /* OM_GET */
+#define GTLV_Visible	     (GT_TagBase + 151) /* OM_GET */
+
 /* GTTX_Justification and GTNM_Justification */
 #define GTJ_LEFT   0
 #define GTJ_RIGHT  1
