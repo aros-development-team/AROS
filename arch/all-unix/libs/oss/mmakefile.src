@@ -4,6 +4,12 @@ include $(TOP)/config/make.cfg
 
 FILES := funcs
 
+#MM workbench-libs-oss-unix-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-oop-includes \
+#MM     includes-copy
+#MM workbench-libs-oss-unix : linklibs
+
 %build_module mmake=workbench-libs-oss-unix modname=oss \
     modtype=library files="$(FILES) oss_init" linklibname=ossshared \
     uselibs="amiga rom m hiddstubs"
