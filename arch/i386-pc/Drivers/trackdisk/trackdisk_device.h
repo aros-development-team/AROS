@@ -45,6 +45,7 @@ struct TDU
     BOOL	tdu_Busy;		/* Unit working? */
     UBYTE	tdu_UnitNum;		/* Unit number */
     UBYTE	tdu_DiskIn;		/* Disk in drive? */
+    UBYTE	tdu_pcn;		/* Current track */
     UBYTE	tdu_ProtStatus;
     UBYTE	tdu_lastcyl;
     UBYTE	tdu_lasthd;
