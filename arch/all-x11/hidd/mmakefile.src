@@ -9,7 +9,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I.
 #USER_INCLUDES := -I.
 
-FILES	   := x11 support x11gfx bitmap functable endtag x11_init offscreenbm support x11kbd x11mouse
+FILES	   := x11 support x11gfx onbitmap offbitmap functable endtag x11_init support x11kbd x11mouse
 
 OBJDIR := $(GENDIR)/$(CURDIR)
 OBJS	:= $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
