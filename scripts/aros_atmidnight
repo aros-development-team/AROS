@@ -56,27 +56,27 @@ echo "$today $size" >> "$CONTRIB_SIZE"
 #fi
 
 # Create nightly builds
-cd $AROSDIR/dist
-rel=`date '+%Y%m%d'` ; export rel
-dstdir=~ftp/pub/aros/snapshots ; export dstdir
-find $dstdir -mtime +$keep -print0 | xargs -0 rm -f
-nice ./makedist 2>&1 | mailx -s "Nightly builds" aros-dev
+#cd $AROSDIR/dist
+#rel=`date '+%Y%m%d'` ; export rel
+#dstdir=~ftp/pub/aros/snapshots ; export dstdir
+#find $dstdir -mtime +$keep -print0 | xargs -0 rm -f
+#nice ./makedist 2>&1 | mailx -s "Nightly builds" aros-dev
 
 # Mirror disk images
-cd ~ftp/pub/aros/DiskImages
-wget -q --timestamping --no-directories --no-host-directories \
-    -r --accept "*.bz2" --accept readme.txt \
-    http://wh2-315.st.uni-magdeburg.de/~sheutlin/aros
-rm -f robots.txt
-for f in *.bz2 ; do
-    name=$(basename "$f" .bz2)
-    if [ ! -f "$name" -o "$name.bz2" -nt "$name" ]; then
-	bzip2 -cd "$name.bz2" > "$name"
-    fi
-    if [ ! -f "$name.gz" -o "$name" -nt "$name.gz" ]; then
-	gzip -9 < "$name" > "$name.gz"
-    fi
-done
+#cd ~ftp/pub/aros/DiskImages
+#wget -q --timestamping --no-directories --no-host-directories \
+#    -r --accept "*.bz2" --accept readme.txt \
+#    http://wh2-315.st.uni-magdeburg.de/~sheutlin/aros
+#rm -f robots.txt
+#for f in *.bz2 ; do
+#    name=$(basename "$f" .bz2)
+#    if [ ! -f "$name" -o "$name.bz2" -nt "$name" ]; then
+#	bzip2 -cd "$name.bz2" > "$name"
+#    fi
+#    if [ ! -f "$name.gz" -o "$name" -nt "$name.gz" ]; then
+#	gzip -9 < "$name" > "$name.gz"
+#    fi
+#done
 
 # Update the WWW site
 cd ~/www
