@@ -2,20 +2,26 @@
     Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Filesystem that accesses an underlying unix filesystem.
+    Desc: Filesystem that accesses an underlying POSIX filesystem.
     Lang: english
 */
+
+/* Implementing this handler is quite complicated as it uses AROS system-calls
+   as well as POSIX calls of the underlying operating system. This easily
+   leads to complications. So take care, when updating this handler!
+
+   Please always update the version-string below, if you modify the code!
+*/
+
 /* AROS includes */
 #include <aros/system.h>
 #include <aros/options.h>
 #include <aros/libcall.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
-#include <exec/types.h>
 #include <exec/alerts.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
-#include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
@@ -29,7 +35,7 @@
 #include <aros/debug.h>
 #include <proto/boopsi.h>
 
-/* Unix includes */
+/* POSIX includes */
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -41,9 +47,12 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #undef timeval
+
+#include "emul_handler_intern.h"
 #ifdef __GNUC__
 #   include "emul_handler_gcc.h"
 #endif
+
 #undef DOSBase
 
 static const char name[];
@@ -62,17 +71,6 @@ LONG AROS_SLIB_ENTRY(abortio,emul_handler) ();
 
 static const char end;
 
-struct filehandle
-{
-    char * name;     /* full name including pathname                 */
-    int    type;     /* type can either be FHD_FILE or FHD_DIRECTORY */
-    char * pathname; /* if type == FHD_FILE then you'll find the pathname here */
-    long   dirpos;   /* and how to reach it via seekdir(.,dirpos) here. */
-    long   DIR;      /* both of these vars will be filled in by examine *only* (at the moment) */
-    long   fd;
-};
-#define FHD_FILE      0
-#define FHD_DIRECTORY 1
 
 int emul_handler_entry(void)
 {
@@ -96,7 +94,7 @@ const struct Resident emul_handler_resident=
 
 static const char name[]="emul.handler";
 
-static const char version[]="$VER: emul_handler 41.2 (14.7.1997)\r\n";
+static const char version[]="$VER: emul_handler 41.3 (07.07.1998)\r\n";
 
 static const APTR inittabl[4]=
 {
@@ -119,13 +117,20 @@ static void *const functable[]=
 
 static const UBYTE datatable=0;
 
-/* Make an AROS error-code out of an unix error-code. */
-LONG u2a[][2]=
+/*********************************** Support *******************************/
+
+/* Make an AROS error-code (<dos/dos.h>) out of an unix error-code. */
+static LONG u2a[][2]=
 {
   { ENOMEM, ERROR_NO_FREE_STORE },
   { ENOENT, ERROR_OBJECT_NOT_FOUND },
   { EEXIST, ERROR_OBJECT_EXISTS },
-  { EACCES, ERROR_WRITE_PROTECTED },
+  { EACCES, ERROR_WRITE_PROTECTED }, /* AROS distinguishes between different
+                                        kinds of privelege violation. Therefore
+                                        a routine using err_u2a() should check
+                                        for ERROR_WRITE_PROTECTED and replace
+                                        it by a different constant, if
+                                        necessary. */
   { ENOTDIR, ERROR_DIR_NOT_FOUND },
   { ENOSPC, ERROR_DISK_FULL },
   { ENOTEMPTY, ERROR_DIRECTORY_NOT_EMPTY },
@@ -150,7 +155,62 @@ static LONG err_u2a(void)
 }
 
 
-/* Make unix protection bits out of amiga protection bits. */
+/* Create a plain path out of the supplied filename.
+   Eg 'path1/path2//path3/' becomes 'path1/path3'.
+*/
+void shrink(char *filename)
+{
+    char *s1,*s2;
+    unsigned long len;
+    for(;;)
+    {
+	/* strip all leading slashes */
+	while(*filename=='/')
+	    memmove(filename,filename+1,strlen(filename));
+
+	/* remove superflous paths (ie paths that are followed by '//') */
+	s1=strstr(filename,"//");
+	if(s1==NULL)
+	    break;
+	s2=s1;
+	while((s2 > filename) && (*--s2 != '/'))
+	    ;
+	memmove(s2,s1+2,strlen(s1+1));
+    }
+
+    /* strip trailing slash */
+    len=strlen(filename);
+    if(len&&filename[len-1]=='/')
+	filename[len-1]=0;
+}
+
+/* Allocate a buffer, in which the filename is appended to the pathname. */
+static LONG makefilename(struct emulbase *emulbase,
+			 char **dest, STRPTR dirname, STRPTR filename)
+{
+    LONG ret = 0;
+    int len, dirlen;
+    dirlen = strlen(dirname) + 1;
+    len = strlen(filename) + dirlen + 1;
+    *dest=(char *)malloc(len);
+    if ((*dest))
+    {
+	CopyMem(dirname, *dest, dirlen);
+	if (AddPart(*dest, filename, len))
+	    shrink(*dest);
+	else {
+	    free(*dest);
+	    *dest = NULL;
+	    ret = ERROR_OBJECT_TOO_LARGE;
+	}
+    } else
+	ret = ERROR_NO_FREE_STORE;
+
+    return ret;
+}
+
+
+/* Make unix protection bits out of AROS protection bits. */
 mode_t prot_a2u(ULONG protect)
 {
     mode_t uprot = 0000;
@@ -180,12 +240,12 @@ mode_t prot_a2u(ULONG protect)
     return uprot;
 }
 
-/* Make amiga protection bits out of unix protection bits. */
+/* Make AROS protection bits out of unix protection bits. */
 ULONG prot_u2a(mode_t protect)
 {
     ULONG aprot = FIBF_SCRIPT;
 
-    /* The following three (amiga) flags are low-active! */
+    /* The following three (AROS) flags are low-active! */
     if (!(protect & S_IRUSR))
 	aprot |= FIBF_READ;
     if (!(protect & S_IWUSR))
@@ -211,60 +271,6 @@ ULONG prot_u2a(mode_t protect)
 }
 
 
-/* Makes a direct path out of the supplied filename.
-   Eg 'path1/path2//path3/' becomes 'path1/path3'.
-*/
-static void shrink(char *filename)
-{
-    char *s1,*s2;
-    unsigned long len;
-    for(;;)
-    {
-	/* strip all leading slashes */
-	while(*filename=='/')
-	    memmove(filename,filename+1,strlen(filename));
-
-	/* remove superflous paths (ie paths that are followed by '//') */
-	s1=strstr(filename,"//");
-	if(s1==NULL)
-	    break;
-	s2=s1;
-	while((s2 > filename) && (*--s2 != '/'))
-	    ;
-	memmove(s2,s1+2,strlen(s1+1));
-    }
-
-    /* strip trailing slash */
-    len=strlen(filename);
-    if(len&&filename[len-1]=='/')
-	filename[len-1]=0;
-}
-
-static LONG makefilename(struct emulbase *emulbase,
-			 char **dest, STRPTR dirname, STRPTR filename)
-{
-    LONG ret = 0;
-    int len, dirlen;
-    dirlen = strlen(dirname) + 1;
-    len = strlen(filename) + dirlen + 1;
-    *dest=(char *)malloc(len);
-    if ((*dest))
-    {
-	CopyMem(dirname, *dest, dirlen);
-	if (AddPart(*dest, filename, len))
-	    shrink(*dest);
-	else {
-	    free(*dest);
-	    *dest = NULL;
-	    ret = ERROR_OBJECT_TOO_LARGE;
-	}
-    } else
-	ret = ERROR_NO_FREE_STORE;
-
-    return ret;
-}
-
-
 /* Free a filehandle */
 static LONG free_lock(struct filehandle *current)
 {
@@ -284,7 +290,7 @@ static LONG free_lock(struct filehandle *current)
 
 		if (current->DIR)
 		{
-		  closedir((DIR *)current->DIR);
+		  closedir(current->DIR);
 		}
 	    }
 	    break;
@@ -312,7 +318,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
     if(fh!=NULL)
     {
         fh->pathname = NULL; /* just to make sure... */
-        fh->DIR      = 0;
+        fh->DIR      = NULL;
 	/* If no filename is given and the file-descriptor is one of the
 	   standard filehandles (stdin, stdout, stderr) ... */
 	if((!name[0]) && ((*handle)->type == FHD_FILE) &&
@@ -380,7 +386,7 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
     if(fh!=NULL)
     {
         fh->pathname = NULL; /* just to make sure... */
-        fh->DIR      = 0L;
+        fh->DIR      = NULL;
 	/* If no filename is given and the file-descriptor is one of the
 	   standard filehandles (stdin, stdout, stderr) ... */
 	if ((!name[0]) && ((*handle)->type==FHD_FILE) &&
@@ -430,7 +436,7 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
     if (fh)
     {
         fh->pathname = NULL; /* just to make sure... */
-        fh->DIR      = 0;
+        fh->DIR      = NULL;
 	ret = makefilename(emulbase, &fh->name, (*handle)->name, filename);
 	if (!ret)
 	{
@@ -501,19 +507,19 @@ static LONG startup(struct emulbase *emulbase)
 	if(fhi!=NULL)
 	{
             fhi->pathname = NULL; /* just to make sure... */
-            fhi->DIR      = 0;
+            fhi->DIR      = NULL;
 	
 	    fho=(struct filehandle *)malloc(sizeof(struct filehandle));
 	    if(fho!=NULL)
 	    {
                 fho->pathname = NULL; /* just to make sure... */
-                fho->DIR      = 0;
+                fho->DIR      = NULL;
 
 		fhe=(struct filehandle *)malloc(sizeof(struct filehandle));
 		if(fhe!=NULL)
 		{
                     fhe->pathname = NULL; /* just to make sure... */
-                    fhe->DIR      = 0;
+                    fhe->DIR      = NULL;
 		    fhv=(struct filehandle *)malloc(sizeof(struct filehandle));
 		    if(fhv != NULL)
 		    {
@@ -522,7 +528,7 @@ static LONG startup(struct emulbase *emulbase)
 			fhv->name = ".";
 			fhv->type = FHD_DIRECTORY;
                         fhv->pathname = NULL; /* just to make sure... */
-                        fhv->DIR      = 0;
+                        fhv->DIR      = NULL;
 
 			/* Make sure that the root directory is valid */
 			if(!stat(fhv->name,&st) && S_ISDIR(st.st_mode))
@@ -604,6 +610,9 @@ static const ULONG sizes[]=
   offsetof(struct ExAllData,ed_Comment), offsetof(struct ExAllData,ed_OwnerUID),
   sizeof(struct ExAllData) };
 
+/* Returns a malloc()'ed buffer, containing a pathname, stripped by the
+   filename.
+*/
 char * pathname_from_name (char * name)
 {
   long len = strlen(name);
@@ -616,12 +625,15 @@ char * pathname_from_name (char * name)
   if (0 != i)
   {
     result = (char *)malloc(i+1);
+    if(!result)
+      return NULL;
     strncpy(result, name, i);
     result[i]=0x0;
   } 
   return result;
 }
 
+/* Returns a malloc()'ed buffer, containing the filename without its path. */
 char * filename_from_name(char * name)
 {
   long len = strlen(name);
@@ -634,6 +646,8 @@ char * filename_from_name(char * name)
   if (0 != i)
   {
     result = (char *)malloc(len-i);
+    if(!result)
+      return NULL;
     strncpy(result, &name[i+1], len-i);
     result[len-i-1]=0x0;
   } 
@@ -649,8 +663,12 @@ static LONG examine(struct filehandle *fh,
 {
     STRPTR next, end, last, name;
     struct stat st;
+
+    /* Return an error, if supplied type is not supported. */
     if(type>ED_OWNER)
 	return ERROR_BAD_NUMBER;
+
+    /* Check, if the supplied buffer is large enough. */
     next=(STRPTR)ead+sizes[type];
     end =(STRPTR)ead+size;
     if(next>=end)
@@ -658,12 +676,11 @@ static LONG examine(struct filehandle *fh,
 
     if(lstat(*fh->name?fh->name:".",&st))
       return err_u2a();
-
     
     if (FHD_FILE == fh->type)
-       /* what we have here is a file, so it's no that easy to
+       /* What we have here is a file, so it's no that easy to
           deal with it when the user is calling ExNext() after
-          Examine. So I better prepare it now. */
+          Examine(). So I better prepare it now. */
     {
       /* We're going to opendir the directory where the file is in
          and then actually start searching for the file. Yuk! */
@@ -673,18 +690,34 @@ static LONG examine(struct filehandle *fh,
         char * filename;
         fh->pathname = pathname_from_name(fh->name);
         filename     = filename_from_name(fh->name);
-        fh->DIR      = (long)opendir(fh->pathname);
+        if(!fh->pathname || !filename)
+        {
+          free(filename);
+          return ERROR_NO_FREE_STORE;
+        }
+        fh->DIR      = opendir(fh->pathname);
+        if(!fh->DIR)
+        {
+          free(filename);
+          return err_u2a();
+        }
         do 
         {
-          dirEnt = readdir((DIR *)fh->DIR);
+          errno = 0;
+          dirEnt = readdir(fh->DIR);
         }
         while (NULL != dirEnt &&
                0    != strcmp(dirEnt->d_name, filename));
         free(filename);
-        if (NULL == dirEnt)
-          return ERROR_NO_MORE_ENTRIES; /* !!! FIXME (return value correct?)*/
+        if(!dirEnt)
+        {
+          if(!errno)
+            return ERROR_NO_MORE_ENTRIES;
+          else
+            return err_u2a();
+        }
 
-        *dirpos = (LONG)telldir((DIR *)fh->DIR);
+        *dirpos = (LONG)telldir(fh->DIR);
         
       }
     }
@@ -751,14 +784,14 @@ static LONG examine_next(struct filehandle *fh,
   {
     case FHD_DIRECTORY:
         seekdir((DIR *)fh->fd, FIB->fib_DiskKey);
-        pathname = fh->name; /* it's just a directory!!! */
+        pathname = fh->name; /* it's just a directory! */
         ReadDIR  = (DIR *)fh->fd;
     break;
      
     case FHD_FILE:
-        seekdir((DIR *)fh->DIR, FIB->fib_DiskKey);
+        seekdir(fh->DIR, FIB->fib_DiskKey);
         pathname = fh->pathname;
-        ReadDIR  = (DIR *)fh->DIR;
+        ReadDIR  = fh->DIR;
     break; 
   }
   /* hm, let's read the data now! 
@@ -888,26 +921,67 @@ static LONG create_hardlink(struct emulbase *emulbase,
 
     fh = malloc(sizeof(struct filehandle));
     if (!fh)
-    {
-        fh->pathname = NULL; /* just to make sure... */
-        fh->DIR      = 0;
+      return ERROR_NO_FREE_STORE;
+
+    fh->pathname = NULL; /* just to make sure... */
+    fh->DIR      = NULL;
     
-	error = makefilename(emulbase, &fh->name, (*handle)->name, name);
-	if (!error)
-	{
-	    if (!link(oldfile->name, fh->name))
-		*handle = fh;
-	    else
-		error = err_u2a();
-	} else
-	{
-	    error = ERROR_NO_FREE_STORE;
-	    free(fh);
-	}
+    error = makefilename(emulbase, &fh->name, (*handle)->name, name);
+    if (!error)
+    {
+        if (!link(oldfile->name, fh->name))
+            *handle = fh;
+        else
+            error = err_u2a();
     } else
-	error = ERROR_NO_FREE_STORE;
+    {
+        error = ERROR_NO_FREE_STORE;
+        free(fh);
+    }
 
     return error;
+}
+
+
+static LONG create_softlink(struct emulbase * emulbase,
+                            struct filehandle **handle, STRPTR name, STRPTR ref)
+{
+    LONG error=0L;
+    struct filehandle *fh;
+
+    fh = malloc(sizeof(struct filehandle));
+    if(!fh)
+      return ERROR_NO_FREE_STORE;
+
+    fh->pathname = NULL; /* just to make sure... */
+    fh->DIR      = NULL;
+    
+    error = makefilename(emulbase, &fh->name, (*handle)->name, name);
+    if (!error)
+    {
+        if (!symlink(ref, fh->name))
+            *handle = fh;
+        else
+            error = err_u2a();
+    } else
+    {
+        error = ERROR_NO_FREE_STORE;
+        free(fh);
+    }
+
+    return error;
+}
+
+
+static LONG read_softlink(struct emulbase *emulbase,
+                          struct filehandle *fh,
+                          STRPTR buffer,
+                          ULONG size)
+{
+    if (readlink(fh->name, buffer, size-1) == -1)
+        return err_u2a();
+
+    return 0L;
 }
 
 
@@ -1123,12 +1197,12 @@ AROS_LH1(void, beginio,
 
 	case FSA_SET_FILE_SIZE:
 	    /* We could manually change the size, but this is currently not
-	       implemented. */
+	       implemented. FIXME */
 	case FSA_WAIT_CHAR:
 	    /* We could manually wait for a character to arrive, but this is
-	       currently not implemented. */
+	       currently not implemented. FIXME */
 	case FSA_FILE_MODE:
-	    /* !!! not supported yet !!! */
+	    /* FIXME: not supported yet */
 	    error=ERROR_ACTION_NOT_KNOWN;
 	    break;
 
@@ -1200,11 +1274,23 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_CREATE_SOFTLINK:
+            error = create_softlink(emulbase,
+                                    (struct filehandle **)&iofs->IOFS.io_Unit,
+                                    iofs->io_Union.io_CREATE_SOFTLINK.io_Filename,
+                                    iofs->io_Union.io_CREATE_SOFTLINK.io_Reference);
+            break;
+
 	case FSA_RENAME:
-	case FSA_READ_SOFTLINK:
-	    /* !!! not supported yet !!! */
+	    /* FIXME: not supported yet */
 	    error=ERROR_ACTION_NOT_KNOWN;
 	    break;
+
+        case FSA_READ_SOFTLINK:
+            error = read_softlink(emulbase,
+                                  (struct filehandle *)iofs->IOFS.io_Unit,
+                                  iofs->io_Union.io_READ_SOFTLINK.io_Buffer,
+                                  iofs->io_Union.io_READ_SOFTLINK.io_Size);
+            break;
 
 	case FSA_DELETE_OBJECT:
 	    error = delete_object(emulbase,
@@ -1233,7 +1319,7 @@ AROS_LH1(void, beginio,
 	case FSA_MORE_CACHE:
 	case FSA_FORMAT:
 	case FSA_MOUNT_MODE:
-	    /* !!! not supported yet !!! */
+	    /* FIXME: not supported yet */
 
 	default:
 	    error=ERROR_ACTION_NOT_KNOWN;

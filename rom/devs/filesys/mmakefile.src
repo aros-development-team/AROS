@@ -3,9 +3,13 @@ include $(TOP)/config/make.cfg
 
 OS_INCLUDES	:= -I$(GENINCDIR)
 OBJDIR		:= $(GENDIR)/filesys
+FILES		:= emul_handler
+OBJS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+DEPS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+LIB		:= $(OBJDIR)/emul_handler.a
 
 #MM
-kernel-filesys-$(ARCH)-$(CPU) : show-flags $(OBJDIR)/emul_handler.o
+kernel-filesys-$(ARCH)-$(CPU) : show-flags $(LIB)
 
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
@@ -22,6 +26,9 @@ setup :
 clean ::
 	-$(RM) $(OBJDIR) *.err
 
+$(LIB) : $(OBJS)
+	%mklib_q
+
 $(OBJDIR)/%.o : %.c
 	%compile_q
 
@@ -29,4 +36,4 @@ $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
 %common
-%include_deps $(OBJDIR)/emul_handler.d
+%include_deps
