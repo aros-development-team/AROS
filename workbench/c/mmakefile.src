@@ -45,6 +45,7 @@ FILES	    := \
 	Filenote \
 	Get \
 	Getenv \
+	Join \
 	List \
 	Lock \
 	Protect \
