@@ -80,7 +80,7 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
     struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
     struct TagItem *tag;
    
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
 	LONG data = tag->ti_Data;
 	
