@@ -22,5 +22,5 @@ fdesc *__getfdesc(register int fd);
 void __setfdesc(register int fd, fdesc *fdesc);
 int __getfdslot(int wanted_fd);
 int __getfirstfd(register int startfd);
-
+int __open(int wanted_fd, const char *pathname, int flags, int mode);
 #endif
