@@ -3869,16 +3869,27 @@ setvbe_func (char *arg, int flags)
 	return 1;
     }
 
-    if (! safe_parse_maxint (&arg, &width))
-	return 1;
-    arg = skip_to(0,arg);
-    if (! safe_parse_maxint (&arg, &height))
-	return 1;
-    arg = skip_to(0,arg);
-    if (! safe_parse_maxint (&arg, &depth))
-	return 1;
+    if (*arg == '#')
+    {
+    	arg++;
+	if(!safe_parse_maxint(&arg, &mode))
+	    return 1;
+    }
+    else
+    {
+	if (! safe_parse_maxint (&arg, &width))
+	    return 1;
+	arg = skip_to(0,arg);
+	if (! safe_parse_maxint (&arg, &height))
+	    return 1;
+	arg = skip_to(0,arg);
+	if (! safe_parse_maxint (&arg, &depth))
+	    return 1;
+    
+        grub_printf("Scanning for a %dx%d %d deep vesa mode.\n",width,height,depth);
 
-    grub_printf("Scanning for a %dx%d %d deep vesa mode.\n",width,height,depth);
+    }
+    
 
     if (! (mbi.flags & MB_INFO_VIDEO_INFO))
     {
@@ -3901,6 +3912,8 @@ setvbe_func (char *arg, int flags)
 	    (int) (vbe_info_block.version & 0xFF));
 
     /* Iterate probing modes.  */
+    
+    if(mode == 0x03)
     for (mode_list
 	    = (unsigned short *) VBE_FAR_PTR (vbe_info_block.video_mode);
 	    *mode_list != 0xFFFF;
@@ -3943,8 +3956,20 @@ setvbe_func (char *arg, int flags)
 	grub_printf ("No matching mode found.\n");
     else
     {
+    	int attributes = 0;
+	int bpl = 0;
+	int linear_bpl = 0;
+	
+    	if (get_vbe_mode_info (mode, &mode_info_block) == 0x004F)
+    	{
+	    attributes = mode_info_block.mode_attributes;
+	    bpl = mode_info_block.bytes_per_scanline;
+    	    linear_bpl = mode_info_block.linear_bytes_per_scanline;
+	}
+
 	mbi.vbe_mode = mode;
-	grub_printf("Kernel will start in Vesa mode 0x%x\n",mode);
+	grub_printf("Kernel will start in Vesa mode 0x%x (attr %x  bpl %d  linear_bpl %d)\n",mode, attributes,
+	bpl, linear_bpl);
     }
     return 0;
 }
