@@ -70,6 +70,7 @@ typedef long fpos_t;
 
 extern FILE *fopen (const char * name, const char * mode);
 extern FILE *fdopen (int filedes, const char *mode);
+extern FILE *freopen (const char *path, const char *mode, FILE *stream );
 extern int fclose (FILE *);
 extern int printf (const char * format, ...);
 extern int vprintf (const char * format, va_list args);
