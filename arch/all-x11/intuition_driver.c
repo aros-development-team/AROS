@@ -10,6 +10,8 @@
 #define AROS_ALMOST_COMPATIBLE 1
 
 #define X11_LOCK
+void LockX11();
+void UnlockX11();
 
 #include <stdlib.h>
 #include <stdio.h>

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
     Desc:
@@ -162,7 +162,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           if (hunktab[i].memory == NULL)
             ERROR(ERROR_NO_FREE_STORE);
 
-          *((BPTR *)(hunktab[i].memory)) = hunktab[i].size;
+          *((BPTR *)(hunktab[i].memory)) = (BPTR)hunktab[i].size;
           hunktab[i].memory += sizeof(ULONG);
 
           /* Link hunks
@@ -277,7 +277,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
         /* if the amount of words read was odd, then skip the following
            16-bit word   */
-        if (0x1 == Wordcount & 0x1)
+        if (0x1 == (Wordcount & 0x1))
           Seek(fh, 2, OFFSET_CURRENT);
         }
       break;

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Code to dynamically load ELF executables
@@ -395,7 +395,7 @@ BPTR InternalLoadSeg_ELF (BPTR file,
       if (hunks[t].memory == NULL)
         ERROR (ERROR_NO_FREE_STORE);
 
-      *((BPTR *)(hunks[t].memory)) = hunks[t].size + sizeof(ULONG) + sizeof(BPTR);
+      *((BPTR *)(hunks[t].memory)) = (BPTR)(hunks[t].size + sizeof(ULONG) + sizeof(BPTR));
 
       hunks[t].memory += sizeof(ULONG) + sizeof(BPTR);
 
