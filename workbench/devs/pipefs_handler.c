@@ -2,6 +2,9 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  2001/07/16 07:06:25  falemagn
+    Cleaned up a little
+
     Revision 1.4  2001/07/15 21:12:24  falemagn
     Ooops... forgot to do merge with Stefan changes...
 
@@ -155,6 +158,7 @@ AROS_LHA(BPTR,              segList,  A0),
 	 struct ExecBase *, sysBase, 0, pipefs_handler)
 {
     AROS_LIBFUNC_INIT
+        struct IOFileSys iofs;
 
     /* Store arguments */
     SysBase =  sysBase;
@@ -207,7 +211,7 @@ AROS_LH3(void, open,
 	if (dn)
 	{
 	    dn->node.ln_Type = (UBYTE)ST_ROOT;
-	    dn->node.ln_Name = "PIPEFS";
+	    dn->node.ln_Name = iofs->io_Union.io_OpenDevice.io_DosName;
 	    dn->parent = NULL;
 
 	    NEWLIST(&dn->files);
@@ -426,14 +430,6 @@ static STRPTR SkipColon(STRPTR str)
     return oldstr;
 }
 
-/*
-  Return the len of the first part in the path.
-
-  EXAMPLE
-    LenFirstPart("yyy/xxx") would return 3
-    LenFirstPart("xxxx") would return 4
-*/
-
 static STRPTR StrDup(struct pipefsbase *pipefsbase, STRPTR str)
 {
     size_t len = strlen(str)+1;
@@ -444,6 +440,14 @@ static STRPTR StrDup(struct pipefsbase *pipefsbase, STRPTR str)
 
     return ret;
 }
+
+/*
+  Return the len of the first part in the path.
+
+  EXAMPLE
+    LenFirstPart("yyy/xxx") would return 3
+    LenFirstPart("xxxx") would return 4
+*/
 
 static size_t LenFirstPart(STRPTR path)
 {
@@ -467,9 +471,11 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
 	path++;
     }
 
-    if (!dn || (BYTE)dn->node.ln_Type <= 0) return NULL;
+    if (!dn) return NULL;
 
     if (!path[0]) return (struct filenode *)dn;
+
+    if ((BYTE)dn->node.ln_Type <= 0) return NULL;
 
     len      = LenFirstPart(path);
     nextpart = &path[len];
@@ -520,57 +526,57 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, struct IOFileSys 
     STRPTR filename       = SkipColon(iofs->io_Union.io_NamedFile.io_Filename);
     struct usernode *un   = (struct usernode *)iofs->IOFS.io_Unit;
     struct filenode *fn   = un->fn;
+    struct dirnode  *dn   = (struct dirnode *)fn;
     ULONG            mode = iofs->io_Union.io_OPEN.io_FileMode;
 
     kprintf("User wants to open file %S.\n", filename);
     kprintf("Current directory is %S\n", fn->node.ln_Name);
-
-    if (filename[0])
+					   /*
+    if (strcmp(filename, "//unnamed pipe//")
     {
-	struct dirnode *dn = (struct dirnode *)fn;
+					     */
 
-	fn = FindFile(&dn, filename);
-        if (!fn)
+    fn = FindFile(&dn, filename);
+    if (!fn)
+    {
+	kprintf("The file couldn't be found.\n");
+
+	if (dn && mode&FMF_CREATE)
 	{
-	    kprintf("The file couldn't be found.\n");
+	    kprintf("But the user wants it to be created.\n");
 
-	    if (dn && mode&FMF_CREATE)
+	    fn = AllocVec(sizeof(*fn), MEMF_PUBLIC|MEMF_CLEAR);
+	    if (fn)
 	    {
-		kprintf("But the user wants it to be created.\n");
+		fn->node.ln_Name = StrDup(pipefsbase, FilePart(filename));
 
-		fn = AllocVec(sizeof(*fn), MEMF_PUBLIC|MEMF_CLEAR);
-		if (fn)
+		if (fn->node.ln_Name)
 		{
-		    fn->node.ln_Name = StrDup(pipefsbase, FilePart(filename));
+		    fn->node.ln_Type = (UBYTE)ST_PIPEFILE;
 
-		    if (fn->node.ln_Name)
-		    {
-		        fn->node.ln_Type = (UBYTE)ST_PIPEFILE;
+		    NEWLIST(&fn->pendingwrites);
+		    NEWLIST(&fn->pendingreads);
 
-			NEWLIST(&fn->pendingwrites);
-			NEWLIST(&fn->pendingreads);
+		    fn->parent = dn;
 
-			fn->parent = dn;
+		    AddTail(&dn->files, (struct Node *)fn);
+		    kprintf("New file created and added to the list\n");
 
-			AddTail(&dn->files, (struct Node *)fn);
-			kprintf("New file created and added to the list\n");
-
-		    	return fn;
-		    }
-
-		    FreeVec(fn);
+		    return fn;
 		}
 
-		kprintf("AllocVec Failed. No more memory available\n");
-		iofs->io_DosError = ERROR_NO_FREE_STORE;
-		return NULL;
-            }
-	    else
-	    {
-	        iofs->io_DosError = ERROR_OBJECT_NOT_FOUND;
-	        return NULL;
+		FreeVec(fn);
 	    }
-        }
+
+	    kprintf("AllocVec Failed. No more memory available\n");
+	    iofs->io_DosError = ERROR_NO_FREE_STORE;
+	    return NULL;
+	}
+	else
+	{
+	    iofs->io_DosError = ERROR_OBJECT_NOT_FOUND;
+	    return NULL;
+	}
     }
 
     if ((BYTE)fn->node.ln_Type > 0 && mode&(FMF_WRITE|FMF_READ))
