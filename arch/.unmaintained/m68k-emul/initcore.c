@@ -8,10 +8,10 @@
 #include <hardware/intbits.h>
 #include <exec/interrupts.h>
 #include <exec/execbase.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <aros/asmcall.h>
 #include <signal.h>
-#define timeval     linux_timeval
+#define timeval     sys_timeval
 #include <sys/time.h>
 #undef timeval
 
@@ -24,15 +24,19 @@ static void signals(int sig)
     struct IntVector *iv;
     supervisor++;
     iv=&SysBase->IntVects[sig2inttabl[sig]];
-    AROS_UFC2(void,iv->iv_Code,
-    	AROS_UFCA(APTR,iv->iv_Data,A1),
-    	AROS_UFCA(struct ExecBase *,SysBase,A6));
+    if (iv->iv_Code)
+    {
+	AROS_UFC2(void,iv->iv_Code,
+	    AROS_UFCA(APTR,iv->iv_Data,A1),
+	    AROS_UFCA(struct ExecBase *,SysBase,A6)
+	);
+    }
     disable();
     supervisor--;
     if(SysBase->AttnResched&0x8000)
     {
-        SysBase->AttnResched&=~0x8000;
-        Dispatch();
+	SysBase->AttnResched&=~0x8000;
+	Dispatch();
     }
 }
 
