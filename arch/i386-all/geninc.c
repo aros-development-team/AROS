@@ -10,7 +10,6 @@
 #include <dos/dosextens.h>
 #include <stdio.h>
 #include <stddef.h>
-#include <signal.h>
 
 #define FuncOffset(x)       (int)__AROS_GETJUMPVEC(0,x)
 
@@ -36,10 +35,6 @@ int main (void)
 #endif
 	    "\n");
 
-    printf ("/* For sigprocmask */\n");
-    printf ("#define SIG_BLOCK     %d\n", SIG_BLOCK);
-    printf ("#define SIG_UNBLOCK   %d\n\n", SIG_UNBLOCK);
-
     printf ("/* ExecBase */\n");
     printf ("#define AttnResched   %d\n", offsetof (struct ExecBase, AttnResched));
     printf ("#define IDNestCnt     %d\n", offsetof (struct ExecBase, IDNestCnt));
@@ -60,9 +55,6 @@ int main (void)
     printf ("#define tc_SPLower    %d\n", offsetof (struct Task, tc_SPLower));
     printf ("#define tc_SPUpper    %d\n", offsetof (struct Task, tc_SPUpper));
     printf ("#define tc_IDNestCnt  %d\n", offsetof (struct Task, tc_IDNestCnt));
-
-    printf ("\n/* struct DosBase */\n");
-    printf ("#define dl_SysBase    %d\n", offsetof (struct DosLibrary, dl_SysBase));
 
     printf ("\n/* struct StackSwapStruct */\n");
     printf ("#define stk_Lower     %d\n", offsetof (struct StackSwapStruct, stk_Lower));
