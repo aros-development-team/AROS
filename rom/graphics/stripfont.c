@@ -11,6 +11,7 @@
 #include <proto/oop.h>
 #include "graphics_intern.h"
 
+
 /*****************************************************************************
 
     NAME */
@@ -52,6 +53,7 @@
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     struct TextFontExtension *tfe;
+    struct tfe_hashnode *hn;
 	
     /* Valid parameter ? */
     if (font == NULL)
@@ -59,24 +61,25 @@
 		
     /* Does the font have an extension ? */
     
-    tfe = tfe_hashlookup(font, GfxBase);
-    if (NULL != tfe)
+    hn = tfe_hashlookup(font, GfxBase);
+    if (NULL != hn)
     {
+    	tfe = hn->ext;
+	driver_StripFont(font, hn, GfxBase);
+	
     	/* Remove the hashitem (tfe_hashdelete() has semaphore protection) */
-	
-	driver_FontHIDDCleanup(font, GfxBase);
-	
 	tfe_hashdelete(font, GfxBase);
-    
-	font->tf_Extension = tfe->tfe_OrigReplyPort;
-
-        /* Font is not tagged anymore */
-        font->tf_Style ^= FSF_TAGGED;
-		
 	
+	if (NULL != tfe)
+	{
+	    font->tf_Extension = tfe->tfe_OrigReplyPort;
+
+            /* Font is not tagged anymore */
+            font->tf_Style ^= FSF_TAGGED;
 		
-	FreeTagItems(tfe->tfe_Tags);
-	FreeMem(tfe, sizeof (struct TextFontExtension));
+	    FreeTagItems(tfe->tfe_Tags);
+	    FreeMem(tfe, sizeof (struct TextFontExtension));
+	}
 		
     }
 

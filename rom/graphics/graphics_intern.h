@@ -26,18 +26,9 @@
 #   include <oop/oop.h>
 #endif
 
-/* This structure is used for hash lookup of textfontextensions.
-    Works somewhat like GfxNew(), GfxAssociate(), GfxLookup() etc */
 
-struct tfe_hashnode
-{
-    struct tfe_hashnode 	*next;
-    struct TextFont		*back;
-    struct TextFontExtension	*ext;
-    
-    /* A bitmap describing the font */
-    Object *font_bitmap;
-};
+#include "fontsupport.h"
+
 
 extern struct GfxBase * GfxBase;
 
@@ -57,13 +48,6 @@ struct GfxBase_intern
     struct SignalSemaphore  tfe_hashtab_sema;
 };
 
-extern struct TextFontExtension *tfe_hashlookup(struct TextFont *tf, struct GfxBase *GfxBase);
-extern struct tfe_hashnode *tfe_hashlookup_intern(struct TextFont *tf, struct GfxBase *GfxBase);
-
-extern struct tfe_hashnode *tfe_hashadd(struct TextFontExtension * etf
-		, struct TextFont *tf
-		, struct GfxBase *GfxBase);
-extern VOID tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase);
 /* Macros */
 
 #define WIDTH_TO_BYTES(width) ((( (width) - 1) >> 3) + 1)
@@ -213,8 +197,8 @@ extern LONG driver_WritePixelLine8 (struct RastPort * rp, ULONG xstart,
 			    
 extern void driver_WaitTOF (struct GfxBase *);
 
-extern BOOL driver_FontHIDDInit(struct TextFont *font, struct GfxBase *GfxBase);
-extern void driver_FontHIDDCleanup(struct TextFont *font, struct GfxBase *GfxBase);
+extern BOOL driver_ExtendFont(struct TextFont *font, struct tfe_hashnode *hn, struct GfxBase *GfxBase);
+extern void driver_StripFont(struct TextFont *font, struct tfe_hashnode *hn, struct GfxBase *GfxBase);
 
 
 /* functions in support.c */

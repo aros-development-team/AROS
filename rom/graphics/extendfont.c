@@ -10,6 +10,9 @@
 #include <exec/memory.h>
 #include "graphics_intern.h"
 
+#include <sys/types.h>
+#include <signal.h>
+
 
 /*****************************************************************************
 
@@ -58,20 +61,26 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    struct TextFontExtension *tfe;
     struct TagItem def_tags = { TAG_DONE, 0};
+    struct tfe_hashnode *hn;
+    struct TextFontExtension *tfe;
     
     if (font == NULL)
 	return FALSE;
 
 	
     /* Does the font allready have an extension ? */
-    
-    tfe = tfe_hashlookup(font, GfxBase);
-    if (tfe)
-    {    
-	return TRUE;
+    hn = tfe_hashlookup(font, GfxBase);
+    if (NULL == hn)
+    {
+    	hn = tfe_hashnode_create(GfxBase);
+	if (NULL == hn)
+		return FALSE;
     }
+    
+    tfe = hn->ext;
+    if (NULL != tfe)
+    	return TRUE;
 
     /* Try to build an extension */
     if (!fontTags)
@@ -82,8 +91,6 @@
 	/* We make a copy of the tagitems */
 	if ((tfe->tfe_Tags = CloneTagItems(fontTags)) != NULL)
 	{
-	    /* Fill in the textfontextension *before* we make it public */
-	    struct tfe_hashnode *hn;
 				
 	    tfe->tfe_MatchWord		= 0; /* unused */
 	    tfe->tfe_BackPtr		= font;
@@ -92,15 +99,14 @@
 	    TFE(font->tf_Extension) = tfe;
 	    font->tf_Style |= FSF_TAGGED;
 		
-	    hn = tfe_hashadd(tfe, font, GfxBase);
-	    if (NULL != hn)
+	    if (driver_ExtendFont(font, hn, GfxBase))
 	    {
-	    	if (driver_FontHIDDInit(font, GfxBase))
-		{
-		    return TRUE;
-		}
+		tfe_hashadd(hn, font, tfe, GfxBase);
+    		return TRUE;
 	    }
-	    FreeTagItems(fontTags);
+
+	    
+	    FreeTagItems(tfe->tfe_Tags);
 
 	} 
 	FreeMem(tfe, sizeof (struct TextFontExtension));
