@@ -1,9 +1,7 @@
 #include <aros/libcall.h>
 #include <proto/mathieeedoubbas.h>
-#include <proto/exec.h>
-#include <exec/types.h>
+#include <math.h>
 #include "mathieeedoubbas_intern.h"
-
 
 AROS_LHQUAD1(LONG, FPU_IEEEDPFix,
 AROS_LHAQUAD(double, y, D0, D1),
@@ -88,4 +86,17 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 14, MathIeeeDoubBas)
   return y/z;
 } /* FPU_IEEEDPDiv */
 
+AROS_LHQUAD1(double, FPU_IEEEDPFloor,
+AROS_LHAQUAD(double, y, D0, D1),
+struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas)
+{
+  return floor(y);
+} /* FPU_IEEEDPFloor */
+
+AROS_LHQUAD1(double, FPU_IEEEDPCeil,
+AROS_LHAQUAD(double, y, D0, D1),
+struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 16, MathIeeeDoubBas)
+{
+  return ceil(y);
+} /* FPU_IEEEDPCeil */
 
