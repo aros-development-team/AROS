@@ -2843,26 +2843,22 @@ static void WindowMinMax(Object *obj, struct MUI_WindowData *data)
 
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERLEFT))
     {
-	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERLEFT;
-    	muiAreaData(data->wd_RootObject)->mad_HardILeft = wd_innerLeft;
+    	muiAreaData(data->wd_RootObject)->mad_InnerLeft = wd_innerLeft;
     }
 
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERTOP))
     {
-	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERTOP;
-    	muiAreaData(data->wd_RootObject)->mad_HardITop = wd_innerTop;
+    	muiAreaData(data->wd_RootObject)->mad_InnerTop = wd_innerTop;
     }
 
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERRIGHT))
     {
-	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERRIGHT;
-    	muiAreaData(data->wd_RootObject)->mad_HardIRight = wd_innerRight;
+    	muiAreaData(data->wd_RootObject)->mad_InnerRight = wd_innerRight;
     }
 
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERBOTTOM))
     {
-	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERBOTTOM;
-    	muiAreaData(data->wd_RootObject)->mad_HardIBottom = wd_innerBottom;
+    	muiAreaData(data->wd_RootObject)->mad_InnerBottom = wd_innerBottom;
     }
 
     /* inquire about sizes */
