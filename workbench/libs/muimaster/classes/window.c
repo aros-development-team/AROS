@@ -1303,7 +1303,7 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
     if (!DoMethod(obj, MUIM_Window_Setup))
 	return FALSE;
     /* I got display info, so calculate your display dependant data */
-    if (!DoMethod(data->wd_RootObject, MUIM_Setup, (IPTR)&data->wd_RenderInfo))
+    if (!DoSetupMethod(data->wd_RootObject, &data->wd_RenderInfo))
     {
 	DoMethod(obj, MUIM_Window_Cleanup);
 	return FALSE;
