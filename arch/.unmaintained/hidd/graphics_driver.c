@@ -1239,7 +1239,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 		        srcbm     = rp->BitMap;
 		    }
 
-		    for (HiddCR = CR->_p1; HiddCR; HiddCR = HiddCR->_p1)
+		    for (HiddCR = CR->_p1; HiddCR && RectRegion->RegionRectangle; HiddCR = HiddCR->_p1)
 		    {
 			if (AndRectRect(&RectRegion->bounds, &HiddCR->bounds, &Tmp))
 			{
