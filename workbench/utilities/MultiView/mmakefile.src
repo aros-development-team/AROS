@@ -14,8 +14,6 @@ USE_CLIB_SHARED := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
 
-USER_CFLAGS := -O2 -Wunused -Wall
-
 #MM workbench-utilities : includes linklibs setup-multiview-catalogs
 
 %make_prog_setup mmake=workbench-utilities
