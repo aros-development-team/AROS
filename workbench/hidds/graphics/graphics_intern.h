@@ -117,6 +117,17 @@ struct HIDDGraphicsData
 	*/
 	struct SignalSemaphore pfsema;
 	struct MinList pflist;
+	Object *curs_bm;
+	BOOL curs_on;
+	ULONG curs_x;
+	ULONG curs_y;
+	Object *curs_backup;
+	
+	Object *framebuffer;
+	
+	/* gc used for stuff like rendering cursor */
+	Object *gc;
+	HIDDT_ModeID curmode;
 };
 
 /* Private gfxhidd methods */

@@ -37,7 +37,7 @@ static BOOL register_modes(Class *cl, Object *o, struct TagItem *modetags);
 static BOOL alloc_mode_db(struct mode_db *mdb, ULONG numsyncs, ULONG numpfs, Class *cl);
 static VOID free_mode_db(struct mode_db *mdb, Class *cl);
 static Object *create_and_init_object(Class *cl, UBYTE *data, ULONG datasize, struct class_static_data *csd);
-
+static VOID draw_cursor(struct HIDDGraphicsData *data, BOOL draw, struct class_static_data *csd);
 
 static struct pfnode *find_pixfmt(struct MinList *pflist
 	, HIDDT_PixelFormat *tofind
@@ -52,12 +52,13 @@ static AttrBase HiddPixFmtAttrBase	= 0;
 static AttrBase HiddBitMapAttrBase	= 0;
 static AttrBase HiddGfxAttrBase		= 0;
 static AttrBase HiddSyncAttrBase	= 0;
-
+static AttrBase HiddGCAttrBase		= 0;
 static struct ABDescr attrbases[] = {
     { IID_Hidd_PixFmt, 	&HiddPixFmtAttrBase	},
     { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
     { IID_Hidd_Gfx,	&HiddGfxAttrBase	},
     { IID_Hidd_Sync,	&HiddSyncAttrBase	},
+    { IID_Hidd_GC,	&HiddGCAttrBase		},
     { NULL, NULL }
 };
     
@@ -81,6 +82,8 @@ static Object *root_new(Class *cl, Object *o, struct pRoot_New *msg)
     struct HIDDGraphicsData *data;
     BOOL ok = FALSE;
     struct TagItem *modetags;
+    struct TagItem gctags[] = { {TAG_DONE, 0UL} };
+    
     o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (NULL == o)
     	return NULL;
@@ -99,6 +102,13 @@ static Object *root_new(Class *cl, Object *o, struct pRoot_New *msg)
 	if (register_modes(cl, o, modetags)) {
 	    ok = TRUE;
 	}
+    }
+    
+    /* Create a gc that we can use for some rendering */
+    if (ok) {
+	data->gc = NewObject(CSD(cl)->gcclass, NULL, gctags);
+	if (NULL == data->gc)
+	    ok = FALSE;
     }
     
     if (!ok) {
@@ -126,6 +136,9 @@ static VOID root_dispose(Class *cl, Object *o, Msg msg)
     ObtainSemaphore(&data->pfsema);
     free_objectlist((struct List *)&data->pflist, TRUE, CSD(cl));
     ReleaseSemaphore(&data->pfsema);
+    
+    if (NULL != data->gc)
+	DisposeObject(data->gc);
 
     DoSuperMethod(cl, o, msg);
 }
@@ -784,7 +797,7 @@ static VOID hiddgfx_releasemodeids(Class *cl, Object *o, struct pHidd_Gfx_Releas
     FreeVec(msg->modeIDs);
 }
 
-/*** HIDDGfx::NextMode *************************************************/
+/*** HIDDGfx::NextModeID *************************************************/
 static HIDDT_ModeID hiddgfx_nextmodeid(Class *cl, Object *o, struct pHidd_Gfx_NextModeID *msg)
 {
     struct HIDDGraphicsData *data;
@@ -867,6 +880,142 @@ static BOOL hiddgfx_getmode(Class *cl, Object *o, struct pHidd_Gfx_GetMode *msg)
 	*msg->syncPtr = *msg->pixFmtPtr = NULL;
     }
     return ok;
+}
+
+/*** HIDDGfx::SetCursor() ********************************************/
+static BOOL hiddgfx_setcursor(Class *cl, Object *o, struct pHidd_Gfx_SetCursor *msg)
+{
+    /* Parse the cursor tags */
+    struct TagItem *tag, *tstate;
+    
+    struct HIDDGraphicsData *data;
+    BOOL on;
+    LONG xpos, ypos;
+    Object *bitmap;
+    BOOL update_curs = FALSE;
+    BOOL bitmap_changed = FALSE;
+    Object *new_backup = NULL;
+        
+    data = INST_DATA(cl, o);
+    on 		= data->curs_on;
+    bitmap	= data->curs_bm;
+    xpos	= data->curs_x;
+    ypos	= data->curs_y; 
+    
+    
+    for (tstate = msg->cursorTags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
+	switch (tag->ti_Tag) {
+	    case tHidd_Cursor_BitMap:
+		bitmap = (Object *)tag->ti_Data;
+		break;
+
+	    case tHidd_Cursor_XPos:
+		xpos = (LONG)tag->ti_Data;
+		break;
+
+	    case tHidd_Cursor_YPos:
+		ypos = (LONG)tag->ti_Data;
+		break;
+
+	    case tHidd_Cursor_On:
+		on = (BOOL)tag->ti_Data;
+		break;
+	 }
+    }
+    
+    /* Look for changes */
+    if (bitmap != data->curs_bm) {
+	/* Bitmap changed. */
+	if (NULL == bitmap) {
+	    /* Erase the old cursor */
+	    on = FALSE;
+	    update_curs = TRUE;
+	    bitmap_changed = TRUE;
+	    
+	    
+	} else {
+	    IPTR curs_width, curs_height, curs_depth;
+	    IPTR mode_width, mode_height, mode_depth;
+	    Object *curs_pf, *mode_sync,* mode_pf;
+	    struct TagItem bmtags[] = {
+		{ aHidd_BitMap_Displayable,	FALSE	},
+		{ aHidd_BitMap_Width,		0	},
+		{ aHidd_BitMap_Height,		0	},
+		{ aHidd_BitMap_PixFmt,		0	},
+		{ TAG_DONE, 0UL }
+	    };
+	    
+	    GetAttr(bitmap, aHidd_BitMap_Width,	 &curs_width);
+	    GetAttr(bitmap, aHidd_BitMap_Height, &curs_height);
+	    GetAttr(bitmap, aHidd_BitMap_PixFmt, (IPTR *)&curs_pf);
+	    
+	    GetAttr(curs_pf, aHidd_PixFmt_Depth, &curs_depth);
+	    
+	    HIDD_Gfx_GetMode(o, data->curmode, &mode_sync, &mode_pf);
+	    GetAttr(mode_sync, aHidd_Sync_HDisp, &mode_width);
+	    GetAttr(mode_sync, aHidd_Sync_VDisp, &mode_height);
+	    GetAttr(mode_pf, aHidd_PixFmt_Depth, &mode_depth);
+
+	    /* Disallow very large cursors, and cursors with higher
+	       depth than the framebuffer bitmap */
+	    if (    ( curs_width  > (mode_width  / 2) )
+		 || ( curs_height > (mode_height / 2) )
+		 || ( curs_depth  > mode_depth) ) {
+		 return FALSE;
+	    }
+	    
+	    /* Create new backup bitmap */
+	    bmtags[1].ti_Data = curs_width;
+	    bmtags[2].ti_Data = curs_height;
+	    bmtags[3].ti_Data = (IPTR)curs_pf;
+	    new_backup = NewObject(
+		  curs_depth >= 8 ? CSD(cl)->chunkybmclass : CSD(cl)->planarbmclass
+		, NULL
+		, bmtags
+	    );
+	    
+	    if (NULL == new_backup)
+		return FALSE;
+
+	    if (on)
+		update_curs = TRUE;
+		
+	    bitmap_changed = TRUE;
+	}
+    }
+    
+    if (on != data->curs_on) {
+	update_curs = TRUE;
+    }
+    
+    if (xpos != data->curs_x || ypos != data->curs_y) {
+	update_curs = TRUE;
+    }
+    
+    /* Do we want to erase the old cursor ? */
+    if (data->curs_bm && data->curs_on && update_curs) {
+	draw_cursor(data, FALSE, CSD(cl));
+	if (bitmap_changed) {
+	    if (NULL != data->curs_backup) {
+		DisposeObject(data->curs_backup);
+		data->curs_backup = NULL;
+	    }
+	}
+    }
+
+    data->curs_bm	= bitmap;
+    data->curs_on	= on;
+    data->curs_x	= xpos;
+    data->curs_y	= ypos;
+    
+    if (data->curs_bm && data->curs_on && update_curs) {
+	if (bitmap_changed) {
+	    data->curs_backup = new_backup;
+	}
+	draw_cursor(data, TRUE, CSD(cl));
+    }
+    
+    return TRUE;
 }
 
 /*** HIDDGfx::RegisterPixFmt() ********************************************/
@@ -1032,7 +1181,7 @@ static Object *hiddgfx_getpixfmt(Class *cl, Object *o, struct pHidd_Gfx_GetPixFm
 #define UtilityBase (csd->utilitybase)
 
 #define NUM_ROOT_METHODS	3
-#define NUM_GFXHIDD_METHODS	12
+#define NUM_GFXHIDD_METHODS	13
 
 Class *init_gfxhiddclass (struct class_static_data *csd)
 {
@@ -1059,6 +1208,7 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
         {(IPTR (*)())hiddgfx_registerpixfmt, 	moHidd_Gfx_RegisterPixFmt	},
         {(IPTR (*)())hiddgfx_releasepixfmt, 	moHidd_Gfx_ReleasePixFmt	},
 	{(IPTR (*)())hiddgfx_getpixfmt, 	moHidd_Gfx_GetPixFmt		},
+	{(IPTR (*)())hiddgfx_setcursor, 	moHidd_Gfx_SetCursor		},
         {NULL, 0UL}
     };
     
@@ -1549,6 +1699,77 @@ static struct pfnode *find_pixfmt(struct MinList *pflist
     	return n;
 	
     return NULL;
+}
+
+static VOID draw_cursor(struct HIDDGraphicsData *data, BOOL draw, struct class_static_data *csd)
+{
+    IPTR width, height;
+    IPTR fb_width, fb_height;
+    ULONG x, y;
+    LONG w2end;
+    LONG h2end;
+    
+    struct TagItem gctags[] = {
+	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy	},
+	{ TAG_DONE, 0UL }
+    };
+    
+    GetAttr(data->curs_bm, aHidd_BitMap_Width,  &width);
+    GetAttr(data->curs_bm, aHidd_BitMap_Height, &height);
+    
+    GetAttr(data->framebuffer, aHidd_BitMap_Width,  &fb_width);
+    GetAttr(data->framebuffer, aHidd_BitMap_Height, &fb_height);
+    
+    /* Do some clipping */
+    x = data->curs_x;
+    y = data->curs_y;
+    
+    w2end = fb_width  - 1 - data->curs_x;
+    h2end = fb_height - 1 - data->curs_y;
+    
+    if (w2end <= 0 || h2end <= 0) /* Cursor outside framebuffer */
+	return;
+
+    if (w2end < width)
+	width -= (width - w2end);
+	
+    if (h2end < height)
+	height -= (height - h2end);
+    
+    SetAttrs(data->gc, gctags);
+    
+    if (draw) {
+	/* Backup under the new cursor image */
+	HIDD_BM_CopyBox(data->framebuffer
+	    , data->gc
+	    , data->curs_x
+	    , data->curs_y
+	    , data->curs_backup
+	    , 0, 0
+	    , width, height
+	);
+	
+	/* Render the cursor image */
+	HIDD_BM_CopyBox(data->curs_bm
+	    , data->gc
+	    , 0, 0
+	    , data->framebuffer
+	    , data->curs_x, data->curs_y
+	    , width, height
+	);
+	
+    } else {
+	/* Erase the old cursor image */
+	HIDD_BM_CopyBox(data->framebuffer
+	    , data->gc
+	    , 0, 0
+	    , data->framebuffer
+	    , data->curs_x
+	    , data->curs_y
+	    , width, height
+	);
+    }
+    return;
 }
 
 

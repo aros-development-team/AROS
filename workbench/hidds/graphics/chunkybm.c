@@ -52,7 +52,7 @@ kprintf("ChunkyBM::New(): GETTING GFXHIDD\n");
     if (NULL == o)
     	return NULL;
 
-kprintf("ChumkBM::New(): RETURNED FROM SUPER\n");
+kprintf("ChumkBM::New(): RETURNED FROM SUPER: %p\n", o);
 	
     /* Initialize the instance data to 0 */
     data = INST_DATA(cl, o);
@@ -65,7 +65,7 @@ kprintf("ChumkBM::New(): RETURNED FROM SUPER\n");
     GetAttr(pf, aHidd_PixFmt_BytesPerPixel,	&bytesperpixel);
     
     data->bytesperpixel = bytesperpixel;
-    data->bytesperrow	= data->bytesperpixel * ((width + alignoffset) / aligndiv);
+    data->bytesperrow	= data->bytesperpixel * width;
 
 kprintf("ChunkBM:New(): dims: %dx%d, bpp: %d, bpr: %d\n"
     , width, height, bytesperpixel, data->bytesperrow);
@@ -114,25 +114,27 @@ static VOID chunkybm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
 
     /* bitmap in chunky-mode */
     dest = data->buffer + msg->x * data->bytesperpixel + msg->y * data->bytesperrow;
-
     switch(data->bytesperpixel)
     {
 	case 1: *((UBYTE *) dest)   = (UBYTE) msg->pixel; break;
 	case 2: *((UWORD *) dest)   = (UWORD) msg->pixel; break;
-	case 3: if (1 == ( ((IPTR)dest) & 1) )
+	case 3:	dest[0] = (UBYTE)(msg->pixel >> 16) & 0x000000FF;
+		dest[1] = (UBYTE)(msg->pixel >> 8) & 0x000000FF;
+		dest[2] = (UBYTE)msg->pixel & 0x000000FF;
+		break;
+		
+/*	 if (1 == ( ((IPTR)dest) & 1) )
                 {
-                  /* first is odd */
                   *((UBYTE *) dest++) = (UBYTE) msg->pixel >> 16;
                   *((UWORD *) dest  ) = (UWORD) msg->pixel;
                 }
                 else
                 {
-                  /* first is even */
                   *((UWORD *) dest++) = (UWORD) msg->pixel >> 8; 
                   *((UBYTE *) dest  ) = (UBYTE) msg->pixel;
                 }
 		break;
-
+*/
 	case 4: *((ULONG *) dest)   = (ULONG) msg->pixel; break;
     }
 	
@@ -141,7 +143,7 @@ static VOID chunkybm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
 
 static ULONG chunkybm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
-    ULONG retval;
+    HIDDT_Pixel retval;
     UBYTE *src;
     struct chunkybm_data *data;
     
@@ -152,9 +154,10 @@ static ULONG chunkybm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
 
     switch(data->bytesperpixel)
     {
-	case 1: retval = ((ULONG) *((UBYTE *) src)); break;
-	case 2: retval = ((ULONG) *((UWORD *) src)); break;
-	case 3: retval = ((ULONG) (*((UBYTE *) src++) << 16) | *((UWORD *) src)); break;
+	case 1: retval = (HIDDT_Pixel) *((UBYTE *) src); break;
+	case 2: retval = (HIDDT_Pixel) *((UWORD *) src); break;
+	case 3: retval = (HIDDT_Pixel) (src[0] << 16) + (src[1] << 8) + src[2]; break;
+	//(*((UBYTE *) src++) << 16) | *((UWORD *) src)); break;
 	case 4: retval = ((ULONG) *((ULONG *) src)); break;
     }
 

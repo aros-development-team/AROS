@@ -206,7 +206,22 @@ HIDDT_ModeID HIDD_Gfx_NextModeID(Object *obj, HIDDT_ModeID modeID, Object **sync
     
 }
 
+/***************************************************************/
 
+BOOL HIDD_Gfx_SetCursor(Object *obj, struct TagItem *cursorTags)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_SetCursor p;
+
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursor);
+        
+    p.mID = mid;
+    
+    p.cursorTags = cursorTags;
+
+    return (BOOL)DoMethod(obj, (Msg) &p);
+    
+}
 
 /***************************************************************/
 

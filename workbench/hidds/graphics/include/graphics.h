@@ -77,6 +77,7 @@ enum
     moHidd_Gfx_CheckMode,
     
     moHidd_Gfx_GetPixFmt,
+    moHidd_Gfx_SetCursor,
     
     
     num_Hidd_Gfx_Methods
@@ -212,13 +213,22 @@ struct pHidd_Gfx_CheckMode {
     Object *pixFmt;
 };
 
-
 struct pHidd_Gfx_GetPixFmt {
     MethodID mID;
     HIDDT_StdPixFmt stdPixFmt;
 };
 
+struct pHidd_Gfx_SetCursor {
+    MethodID mID;
+    struct TagItem *cursorTags;
+};
 
+enum {
+    tHidd_Cursor_BitMap,	/* Object *, cursor shape bitmap */
+    tHidd_Cursor_XPos,		/* ULONG, cursor x position	*/
+    tHidd_Cursor_YPos,		/* ULONG, cursor Y position */
+    tHidd_Cursor_On		/* BOOL, cursor on, TRUE, FALSE. */
+};
 /**** BitMap definitions ******************************************************/
 
 
@@ -744,6 +754,7 @@ Object *HIDD_Gfx_GetPixFmt(Object *obj, HIDDT_StdPixFmt pixFmt);
 BOOL HIDD_Gfx_CheckMode(Object *obj, HIDDT_ModeID modeID, Object *sync, Object *pixFmt);
 BOOL HIDD_Gfx_GetMode(Object *obj, HIDDT_ModeID modeID, Object **syncPtr, Object **pixFmtPtr);
 HIDDT_ModeID HIDD_Gfx_NextModeID(Object *obj, HIDDT_ModeID modeID, Object **syncPtr, Object **pixFmtPtr);
+BOOL HIDD_Gfx_SetCursor(Object *obj, struct TagItem *cursorTags);
 
 
 VOID HIDD_GC_SetClipRect(Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);

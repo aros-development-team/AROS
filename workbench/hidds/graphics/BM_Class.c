@@ -750,7 +750,18 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     
 /* kprintf("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OCLASS: %s\n", srcpf, obj
 	, cl->ClassNode.ln_Name, OCLASS(obj)->ClassNode.ln_Name);
-*/	
+*/
+{
+ULONG sw, sh, dw, dh;
+kprintf("COPYBOX: src=%p, dst=%p, width=%d, height=%d\n"
+    , obj, msg->dest, msg->width, msg->height);
+    
+GetAttr(obj, aHidd_BitMap_Width, &sw);
+GetAttr(obj, aHidd_BitMap_Height, &sh);
+GetAttr(msg->dest, aHidd_BitMap_Width, &dw);
+GetAttr(msg->dest, aHidd_BitMap_Height, &dh);
+kprintf("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh);
+}
     GetAttr(msg->dest, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
     
     /* Compare graphtypes */
@@ -775,16 +786,19 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     
     /* All else have failed, copy pixel by pixel */
 
+
     if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
     	if (IS_TRUECOLOR(srcpf)) {
 // kprintf("COPY FROM TRUECOLOR TO TRUECOLOR\n");
 	    for(y = 0; y < msg->height; y++) {
-#warning Maybe do a special case if both pixel formats are the same; no need for MapColor/UnmapPixel    
 		HIDDT_Color col;
 		
 		srcX  = memSrcX;
 		destX = memDestX;
-		
+
+/* if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
+    kprintf("[%d,%d] ", memSrcX, memDestX);
+*/    
 		for(x = 0; x < msg->width; x++) {
 		    HIDDT_Pixel pix;
 		    
@@ -807,6 +821,8 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
 		    }
 #endif
 
+// #if 0
+
 #if USE_FAST_DRAWPIXEL
 		    draw_p.x = destX ++;
 		    draw_p.y = destY;
@@ -815,8 +831,12 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
 		    
 		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
 #endif
+
+// #endif
 		}
-            	srcY++; destY++;
+/*if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
+    kprintf("[%d,%d] ", srcY, destY);
+*/            	srcY++; destY++;
 	    }
 	    
         } else {
@@ -875,7 +895,6 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     }
     
     GC_FG(gc) = memFG;
-
     ReturnVoid("BitMap::CopyBox");
 }
 
