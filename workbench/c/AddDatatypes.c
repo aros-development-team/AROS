@@ -736,7 +736,7 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 	    hook.h_Entry = (HOOKFUNC)HookEntry;
 	    hook.h_SubEntry = (HOOKFUNC)MemStreamHook;
 	    
-	    if (ReadStruct(&hook, &fdh, &memptr, FileDataTypeHeaderDesc))
+	    if (ReadStruct(&hook, (APTR *) &fdh, &memptr, FileDataTypeHeaderDesc))
 	    {
 		IPTR extraoffset = sizeof(struct DataTypeHeader) - 32;
 		
