@@ -264,12 +264,12 @@ static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel
 
 static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *msg)
 {
-//    ULONG mode;
+    ULONG mode;
     unsigned char *dest;
     struct bitmap_data *data = INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
 
-//    GetAttr(msg->dest, aHidd_BitMap_DrawMode, &mode);
+    mode = GC_DRMD(msg->gc);
 
     EnterFunc(bug("VGAGfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
     	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
@@ -318,35 +318,140 @@ static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *ms
 	    width -= phase;
 	}
 
-        while (cnt--)
-        {
-	    i = width;
-	    j = phase;
-            while (j--)
-            {
-                *(unsigned char*)d_start++ = *(unsigned char*)s_start++;
-            }
-	    while (i >= 4)
-	    {
-		*((unsigned long*)d_start) = *((unsigned long*)s_start);
-		d_start += 4;
-		s_start += 4;
-		i -= 4;
-	    }
-	    while (i--)
-            {
-                *(unsigned char*)d_start++ = *(unsigned char*)s_start++;
-            }
-            d_start += d_add;
-            s_start += s_add;
-        }
+        switch(mode)
+	{
+	    case vHidd_GC_DrawMode_Copy:
+                while (cnt--)
+    	        {
+	            i = width;
+	            j = phase;
+                    while (j--)
+                    {
+                        *(unsigned char*)d_start++ = *(unsigned char*)s_start++;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) = *((unsigned long*)s_start);
+		        d_start += 4;
+		        s_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *(unsigned char*)d_start++ = *(unsigned char*)s_start++;
+                    }
+                    d_start += d_add;
+                    s_start += s_add;
+                }
+		break;
+		
+	    case vHidd_GC_DrawMode_And:
+                while (cnt--)
+    	        {
+	            i = width;
+	            j = phase;
+                    while (j--)
+                    {
+                        *(unsigned char*)d_start++ &= *(unsigned char*)s_start++;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) &= *((unsigned long*)s_start);
+		        d_start += 4;
+		        s_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *(unsigned char*)d_start++ &= *(unsigned char*)s_start++;
+                    }
+                    d_start += d_add;
+                    s_start += s_add;
+                }
+		break;
+
+	    case vHidd_GC_DrawMode_Xor:
+                while (cnt--)
+    	        {
+	            i = width;
+	            j = phase;
+                    while (j--)
+                    {
+                        *(unsigned char*)d_start++ ^= *(unsigned char*)s_start++;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) ^= *((unsigned long*)s_start);
+		        d_start += 4;
+		        s_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *(unsigned char*)d_start++ ^= *(unsigned char*)s_start++;
+                    }
+                    d_start += d_add;
+                    s_start += s_add;
+                }
+		break;
+	    	
+	    case vHidd_GC_DrawMode_Clear:
+                while (cnt--)
+    	        {
+	            i = width;
+	            j = phase;
+                    while (j--)
+                    {
+                        *(unsigned char*)d_start++ = 0;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) = 0;
+		        d_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *(unsigned char*)d_start++ = 0;
+                    }
+                    d_start += d_add;
+                }
+		break;
+	    	
+	    case vHidd_GC_DrawMode_Invert:
+                while (cnt--)
+    	        {
+	            i = width;
+	            j = phase;
+                    while (j--)
+                    {
+                        *(unsigned char*)d_start = ~*(unsigned char*)d_start;
+			d_start++;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) = ~*((unsigned long*)d_start);
+		        d_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *(unsigned char*)d_start = ~*(unsigned char*)d_start;
+                    }
+                    d_start += d_add;
+                }
+		break;
+	}
+	
 	if (ddata->disp)
 	{
     	    box.x1 = msg->destX;
     	    box.y1 = msg->destY;
     	    box.x2 = box.x1 + msg->width;
     	    box.y2 = box.y1 + msg->height;
+            ObtainSemaphore(&XSD(cl)->HW_acc);
     	    vgaRefreshArea(ddata, 1, &box);
+            ReleaseSemaphore(&XSD(cl)->HW_acc);
 
 	    if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
 		 ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
@@ -394,7 +499,9 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
         box.y1 = msg->y;
         box.x2 = box.x1 + msg->width;
         box.y2 = box.y1 + msg->height;
+        ObtainSemaphore(&XSD(cl)->HW_acc);
         vgaRefreshArea(data, 1, &box);
+        ReleaseSemaphore(&XSD(cl)->HW_acc);
 
 	if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
 	     ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
@@ -471,7 +578,9 @@ static VOID MNAME(putimagelut)(Class *cl, Object *o, struct pHidd_BitMap_PutImag
         box.y1 = msg->y;
         box.x2 = box.x1 + msg->width;
         box.y2 = box.y1 + msg->height;
+        ObtainSemaphore(&XSD(cl)->HW_acc);
         vgaRefreshArea(data, 1, &box);
+        ReleaseSemaphore(&XSD(cl)->HW_acc);
 
 	if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
 	     ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
@@ -567,7 +676,9 @@ static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
         box.y1 = msg->minY;
         box.x2 = msg->maxX;
         box.y2 = msg->maxY;
+        ObtainSemaphore(&XSD(cl)->HW_acc);
         vgaRefreshArea(data, 1, &box);
+        ReleaseSemaphore(&XSD(cl)->HW_acc);
 
 	if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
 	     ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
@@ -678,3 +789,4 @@ static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)
 
     return;
 }
+
