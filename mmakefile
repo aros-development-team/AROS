@@ -31,7 +31,7 @@ clean-errors :
 #
 # END_DESC{internaltarget}
 checkerr :
-	-wc -l $(GENDIR)/errors
+	@if [ -f $(GENDIR)/errors ]; then wc -l $(GENDIR)/errors ; else $(NOP) ; fi
 
 # BEGIN_DESC{target}
 # \item{crypt} Create the file crypt to create a password for CVS access
@@ -71,7 +71,7 @@ dist : dist-dir dist-tar dist-lha dist-src
 	cp README dist/$(DEVARCHIVE).readme
 
 dist-dir :
-	@if [ ! -d dist ]; then $(MKDIR) dist ; else true ; fi
+	@if [ ! -d dist ]; then $(MKDIR) dist ; else $(NOP) ; fi
 	@echo "Correcting access flags"
 	@chmod -R ug=rwX,o=rX .
 
