@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     int cnt;
     char *output, **ldargs;
     /* incremental = 1 -> don't do final linking.
-       incremental = 2 -> don't do final linking AND STILL produde symbol sets.  */
+       incremental = 2 -> don't do final linking AND STILL produce symbol sets.  */
     int incremental = 0, ignore_undefined_symbols = 0;
     int strip_all   = 0;
     char *do_verbose = NULL;
@@ -137,6 +137,9 @@ int main(int argc, char *argv[])
     fwrite(LDSCRIPT_PART1, sizeof(LDSCRIPT_PART1) - 1, 1, ldscriptfile);
     emit_sets(setlist, ldscriptfile);
     fwrite(LDSCRIPT_PART2, sizeof(LDSCRIPT_PART2) - 1, 1, ldscriptfile);
+    if (incremental == 0)
+        fputs("PROVIDE(SysBase = 0x515BA5E);\n", ldscriptfile);
+    fwrite(LDSCRIPT_PART3, sizeof(LDSCRIPT_PART3) - 1, 1, ldscriptfile);
 
     fclose(ldscriptfile);
     ldscriptfile = NULL;

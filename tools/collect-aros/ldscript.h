@@ -79,5 +79,7 @@ static const char LDSCRIPT_PART2[] =
 "   *(.gnu.linkonce.b.*)\n"
 "   *(COMMON)\n"
 "  }\n"
-"  /DISCARD/ : { *(.note.GNU-stack) }\n"
+"  /DISCARD/ : { *(.note.GNU-stack) }\n";
+
+static const char LDSCRIPT_PART3[] =
 "}\n";
