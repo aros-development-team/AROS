@@ -1,0 +1,263 @@
+####################################################################
+####################################################################
+############# THIS IS A GENERATED FILE ! DO NOT EDIT ###############
+####################################################################
+####################################################################
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I. -Ipriv
+
+LIBNAME 	:= muimaster
+ULIBNAME	:= MUIMaster
+
+FILES := mbuiltins mdynamic mframes mkey mprefs mprefsio \
+	znotify zfamily zapplication zwindow zarea zrectangle \
+	ztext zgroup znumeric zslider \
+	file font textengine window_Amiga \
+	gdkrectangle
+
+#	zdataspace zconfigdata \
+#	uproperties \
+
+FUNCTIONS := mclass mclipping mlayout mobject mpen muimaster_missing GList GString
+
+STARTUP = $(LIBDIR)/startup.o
+LIBS = -L$(LIBDIR) -l$(LIBNAME) -larossupport -lamiga -larosc -larosm -lautoinit 
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
+	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a $(LIBDIR)/libautoinit.a 
+
+ifndef LIBPOST
+  LIBPOST := library
+endif
+ifndef DESTDIR
+  DESTDIR := $(SLIBDIR)
+endif
+ifndef BASENAME
+  BASENAME := $(ULIBNAME)
+endif
+
+SLIB	      := $(DESTDIR)/$(LIBNAME).$(LIBPOST)
+LIB	      := $(LIBDIR)/lib$(LIBNAME).a
+OBJDIR	      := $(GENDIR)/$(CURDIR)
+INIT_FILE     := $(LIBNAME)_init
+END_FILE      := $(OBJDIR)/endtag
+INITFUNC      := $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC       := $(END_FILE).o
+SYS_FILES     := $(SYS_FILES) $(INIT_FILE) functable
+OBJS	      := $(foreach f,$(FILES) functions $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
+DEPS          := $(foreach f,$(INIT_FILE) functable functions $(FILES) $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
+
+$(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
+	@$(ECHO) "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
+	@$(STRIP) $@
+
+$(LIB) : $(OBJS)
+	@$(ECHO) "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $(OBJS)
+	@$(RANLIB) $@
+
+$(OBJDIR)/functions.c : mmakefile.src $(foreach f,$(FUNCTIONS),$(f).c)
+	@$(CPAK) $(FUNCTIONS)
+	@$(IF) $(TEST) ! -d $(OBJDIR) ; then $(MKDIR) $(OBJDIR) ; else $(NOP) ; fi
+
+	@$(MV) functions.c functions.h $(OBJDIR)
+
+ALL_FUNCTIONS := $(FUNCTIONS)
+#MM includes-generate : setup-clib
+includes-generate : setup $(OBJDIR)/headers.stamp \
+            $(INCDIR)/clib/$(LIBNAME)_protos.h \
+            $(INCDIR)/defines/$(LIBNAME).h \
+            $(INCDIR)/inline/$(LIBNAME).h \
+            $(INCDIR)/proto/$(LIBNAME).h
+	@$(NOP)
+
+FSRCS := $(foreach f,$(ALL_FUNCTIONS),$(f).c)
+
+_HEADER_DEPS := mmakefile.src $(wildcard headers.tmpl) libdefs.h \
+            $(FSRCS) \
+            $(SCRIPTDIR)/genshared \
+            $(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/gendefines.awk \
+            $(SCRIPTDIR)/geninline.awk
+
+$(OBJDIR)/headers.stamp : $(GENINCDIR)/clib/$(LIBNAME)_protos.h \
+	    $(GENINCDIR)/defines/$(LIBNAME).h \
+	    $(GENINCDIR)/inline/$(LIBNAME).h \
+	    $(GENINCDIR)/proto/$(LIBNAME).h
+	@$(TOUCH) $@
+
+$(GENINCDIR)/clib/$(LIBNAME)_protos.h : $(_HEADER_DEPS)
+	@$(SCRIPTDIR)/genshared -clib  -prefix $(GENINCDIR) $(FSRCS)
+
+$(GENINCDIR)/defines/$(LIBNAME).h : $(_HEADER_DEPS)
+	@$(SCRIPTDIR)/genshared -defines  -prefix $(GENINCDIR) $(FSRCS)
+
+$(GENINCDIR)/inline/$(LIBNAME).h : $(_HEADER_DEPS)
+	@$(SCRIPTDIR)/genshared -inline  -prefix $(GENINCDIR) $(FSRCS)
+
+$(GENINCDIR)/proto/$(LIBNAME).h : $(_HEADER_DEPS)
+	@$(SCRIPTDIR)/genshared -proto  -prefix $(GENINCDIR) $(FSRCS)
+
+$(INCDIR)/clib/$(LIBNAME)_protos.h : $(GENINCDIR)/clib/$(LIBNAME)_protos.h
+	@$(CP) $< $@
+
+$(INCDIR)/defines/$(LIBNAME).h : $(GENINCDIR)/defines/$(LIBNAME).h
+	@$(CP) $< $@
+
+$(INCDIR)/inline/$(LIBNAME).h : $(GENINCDIR)/inline/$(LIBNAME).h
+	@$(CP) $< $@
+
+$(INCDIR)/proto/$(LIBNAME).h : $(GENINCDIR)/proto/$(LIBNAME).h
+	@$(CP) $< $@
+
+
+
+$(OBJDIR)/functions.o : $(OBJDIR)/functions.c
+	@$(ECHO) "Compiling $(notdir $<)..."
+	@$(IF) $(CC) $(CFLAGS) -I$(OBJDIR) -I. -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$<: $(CC) $(CFLAGS) -I$(OBJDIR) -I. -c $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: $(CC) $(CFLAGS) -I$(OBJDIR) -I. -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+
+$(OBJDIR)/functions.d : $(OBJDIR)/functions.c
+	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir $<)..."
+	@$(MKDEPEND) $(CFLAGS) -I$(OBJDIR) $< -o $@
+
+
+$(OBJDIR)/%.o : %.c
+	@$(ECHO) "Compiling $(CURDIR)/$(notdir $<)..."
+	@$(IF) $(CC) $(CFLAGS) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(CURDIR)/$<: $(CC) $(CFLAGS) -c $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: $(CC) $(CFLAGS) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+
+FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
+
+$(OBJDIR)/functable.c : mmakefile.src $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk libdefs.h
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
+	@$(AWK) -f $(BINDIR)/scripts/genfunctable.awk $(FUNCTABLE_SRCS) > $@
+
+$(OBJDIR)/functable.d : $(OBJDIR)/functable.c
+	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir $<)..."
+	@$(MKDEPEND) $(CFLAGS) $< -o $@
+
+
+$(OBJDIR)/functable.o : $(OBJDIR)/functable.c
+	@$(ECHO) "Compiling $(CURDIR)/$(notdir $<)..."
+	@$(IF) $(CC) $(CFLAGS) -I$(OBJDIR) -I. -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(CURDIR)/$<: $(CC) $(CFLAGS) -I$(OBJDIR) -I. -c $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: $(CC) $(CFLAGS) -I$(OBJDIR) -I. -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+
+
+
+$(END_FILE).c : libdefs.h
+		@$(IF) $(TEST) ! -d $(OBJDIR) ; then $(MKDIR) $(OBJDIR) ; else $(NOP) ; fi
+
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+$(ENDFUNC) : $(END_FILE).c libdefs.h
+	@$(ECHO) "Compiling $(notdir $<)..."
+	@$(IF) $(CC) $(CFLAGS) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$<: $(CC) $(CFLAGS) -c $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: $(CC) $(CFLAGS) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+
+$(END_FILE).d : $(END_FILE).c
+	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir $<)..."
+	@$(MKDEPEND) $(CFLAGS) $< -o $@
+
+
+
+$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
+
+libdefs.h : lib.conf $(ARCHTOOL)
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
+	@$(ARCHTOOL) -c
+
+
+$(OBJDIR)/%.d : %.c
+	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir $<)..."
+	@$(MKDEPEND) $(CFLAGS) $< -o $@
+
+
+# Include these files but only if the current target is neither
+# setup nor clean.
+ifeq (,$(filter clean% %clean %clean% setup% includes% ,$(TARGET)))
+-include $(DEPS)
+endif
+
+
+
+#MM workbench-libs-muimaster : setup includes linklibs
+workbench-libs-muimaster : $(SLIB) ;
+
+#MM workbench-libs-muimaster-quick : 
+workbench-libs-muimaster-quick : $(SLIB) ;
+
+#MM
+setup :
+	@$(FOR) dir in $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS) ; do \
+	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+	done
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+# Include these files but only if the current target is neither
+# setup nor clean.
+ifeq (,$(filter clean% %clean %clean% setup% includes% ,$(TARGET)))
+-include $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) functions,$(OBJDIR)/$(f).d)
+endif
+
+### EOF ###
