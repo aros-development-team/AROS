@@ -8,8 +8,9 @@
 #ifndef _ZUNE_ZUNESTUFF_H
 #define _ZUNE_ZUNESTUFF_H
 
-Object *MakeLabel(STRPTR str);
-Object *MakeButton(STRPTR str);
+Object *MakeButton (CONST_STRPTR str);
+Object *MakeCycle (CONST_STRPTR label, CONST_STRPTR entries[]);
+Object *MakeCheck (CONST_STRPTR label);
 Object *MakeSpacingSlider (void);
 Object *MakeBackgroundPopimage(void);
 Object *MakePopframe(void);

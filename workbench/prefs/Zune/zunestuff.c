@@ -14,21 +14,13 @@
 #endif
 
 #include "zunestuff.h"
-
-/****************************************************************
- Create a simple label
-*****************************************************************/
-Object *MakeLabel(STRPTR str)
-{
-  return (MUI_MakeObject(MUIO_Label, str, 0));
-}
-
+ 
 /****************************************************************
  Create a button (within the cycle chain)
 *****************************************************************/
-Object *MakeButton(STRPTR str)
+Object *MakeButton(CONST_STRPTR str)
 {
-    Object *obj = MUI_MakeObject(MUIO_Button, str);
+    Object *obj = MUI_MakeObject(MUIO_Button, (IPTR)str);
     if (obj)
     {
         SetAttrs(obj,
@@ -53,12 +45,27 @@ LONG xget(Object * obj, ULONG attr)
 
 Object *MakeSpacingSlider (void)
 {
-    Object *obj = MUI_MakeObject(MUIO_Slider, "", 0, 9);
+    Object *obj = MUI_MakeObject(MUIO_Slider, (IPTR)"", 0, 9);
     if (obj)
 	set(obj, MUIA_CycleChain, 1);
     return obj;
 }
 
+Object *MakeCycle (CONST_STRPTR label, CONST_STRPTR entries[])
+{
+    Object *obj = MUI_MakeObject(MUIO_Cycle, (IPTR)label, (IPTR)entries);
+    if (obj)
+	set(obj, MUIA_CycleChain, 1);
+    return obj;
+}
+
+Object *MakeCheck (CONST_STRPTR label)
+{
+    Object *obj = MUI_MakeObject(MUIO_Checkmark, (IPTR)label);
+    if (obj)
+	set(obj, MUIA_CycleChain, 1);
+    return obj;
+}
 
 Object *MakeBackgroundPopimage(void)
 {
