@@ -307,7 +307,6 @@ static OOP_Object *create_framebuffer(struct GfxBase *GfxBase)
     HIDDT_ModeID hiddmode;
     OOP_Object *fb = NULL;
 
-    kprintf("-- 3 --\n");
     /* Get the highest available resolution at the best possible depth */
     hiddmode = get_best_resolution_and_depth(GfxBase);
     if (vHidd_ModeID_Invalid == hiddmode) {
@@ -316,8 +315,6 @@ static OOP_Object *create_framebuffer(struct GfxBase *GfxBase)
     	/* Create the framebuffer object */
 	fbtags[1].ti_Data = hiddmode;
 	fb = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, fbtags);
-
-        kprintf("--- %p\n", fb);
     }
 
     return fb;
@@ -481,12 +478,10 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 
 		if (NULL != SDD(GfxBase)->planarbm_cache) {
 
-		    kprintf("-- 1 --\n");
 		    /* Move the modes into the displayinfo DB */
 		    SDD(GfxBase)->dispinfo_db = build_dispinfo_db(GfxBase);
 		    if (NULL != SDD(GfxBase)->dispinfo_db) {
 
-			    kprintf("-- 2 --\n");
 			SDD(GfxBase)->framebuffer = create_framebuffer(GfxBase);
 			if (NULL != SDD(GfxBase)->framebuffer) {
 D(bug("FRAMEBUFFER OK: %p\n", SDD(GfxBase)->framebuffer));
