@@ -842,7 +842,7 @@ graphics00125;2;digulla;Write EraseRect
 graphics00126;2;nlorentz;Write ExtendFont
 graphics00127;2;nlorentz;Write StripFont
 graphics00128;0;digulla;Write CalcIVG
-graphics00129;1;bergers;Write AttachPalExtra
+graphics00129;2;bergers;Write AttachPalExtra
 graphics00130;1;bergers;Write ObtainBestPenA
 graphics00131;2;bergers;Write SetRGB
 graphics00132;2;digulla;Write GetAPen
@@ -858,8 +858,8 @@ graphics00141;2;nlorentz;Write FreeBitMap
 graphics00142;0;free;Write GetExtSpriteA
 graphics00143;0;digulla;Write CoerceMode
 graphics00144;0;digulla;Write ChangeVPBitMap
-graphics00145;0;bergers;Write ReleasePen
-graphics00146;1;bergers;Write ObtainPen
+graphics00145;2;bergers;Write ReleasePen
+graphics00146;2;bergers;Write ObtainPen
 graphics00147;2;bergers;Write GetBitMapAttr
 graphics00148;2;SDuvan;Write AllocDBufInfo
 graphics00149;2;SDuvan;Write FreeDBufInfo
@@ -868,7 +868,7 @@ graphics00151;2;digulla;Write SetWriteMask
 graphics00152;2;bergers;Write SetMaxPen
 graphics00153;2;bergers;Write SetRGB
 graphics00154;2;bergers;Write ScrollRasterBF
-graphics00155;0;bergers;Write FindColor
+graphics00155;1;bergers;Write FindColor
 graphics00156;0;bergers;Write AllocSpriteDataA
 graphics00157;0;bergers;Write ChangeExtSpriteA
 graphics00158;0;bergers;Write FreeSpriteData
