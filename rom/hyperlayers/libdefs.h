@@ -14,7 +14,7 @@
 #define REVISION_NUMBER  0
 #define BASENAME         Layers
 #define BASENAME_STRING  "Layers"
-#define VERSION_STRING   "$VER: layers 41.0 (07.12.2000)\r\n"
+#define VERSION_STRING   "$VER: layers 41.0 (09.12.2000)\r\n"
 #define LIBEND           Layers_end
 #define LIBFUNCTABLE     Layers_functable
 #define COPYRIGHT_STRING ""

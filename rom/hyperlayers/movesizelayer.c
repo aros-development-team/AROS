@@ -68,7 +68,7 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct Layer * first, *_l;
+  struct Layer * first, *_l, *lparent;
   struct Region * newshape = NewRegion(), * oldshape, * r, *br;
   struct Rectangle rect;
   
@@ -121,29 +121,41 @@
   newshape->bounds.MaxX += dx; 
   newshape->bounds.MaxY += dy;
 
-  first = _FindFirstFamilyMember(l);
-kprintf("%s called for layer %p!\n",__FUNCTION__);
+  first = GetFirstFamilyMember(l);
+//kprintf("%s called for layer %p, first = %p!\n",__FUNCTION__,l,first);
   
   /*
    * First back up parts of layers that are behind the layer
    * family. Only need to do this if layer is moving or
-   * getting bigger in size.
+   * getting bigger in size. Only need to visit those layers
+   * that overlap with the new shape of the layer.
    */
 
+#if 0
 kprintf("\t\t%s: Backing up parts of layers that are behind the layer!\n",
         __FUNCTION__);
-  if (0 != dx || 0 != dy || dw > 0 || dh > 0)
+#endif
+        
+  lparent = l->parent;
+  _l = l->back;
+  if ((0 != dx || 0 != dy || dw > 0 || dh > 0) && (lparent != _l))
   {
-    _l = l->back;
     while (1)
     {
-      if (IS_VISIBLE(_l))
+      if (IS_VISIBLE(_l) && DO_OVERLAP(&newshape->bounds, &_l->shape->bounds))
         _BackupPartsOfLayer(_l, newshape, 0, FALSE);
-      if (_l == l->parent)
-        break;
-      
-      _l = _l->back;      
-    }  
+      else
+        ClearRegionRegion(newshape, _l->VisibleRegion);
+
+      if (_l == lparent)
+      {
+        if (IS_VISIBLE(_l) || (NULL == lparent->parent))
+          break;
+        else
+          lparent = lparent->parent;
+      }
+      _l = _l->back;
+    }
   }
 
   /*
@@ -155,24 +167,23 @@ kprintf("\t\t%s: Backing up parts of layers that are behind the layer!\n",
   br = NewRegion();
   OrRegionRegion(first->VisibleRegion, r);
   oldshape = l->shape;
-  l->shape = newshape;
  
   while (1)
   {
     struct ClipRect * cr;
-    
-    ClearRegion(br);
-    OrRegionRegion(_l->shape, br);
-    AndRegionRegion(_l->parent->shape, br);
+
+#if 0
 kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
         __FUNCTION__);
-    
-    if (_l == l)
-      l->shape = oldshape;    
-    
-    if (IS_VISIBLE(_l))
-      _BackupPartsOfLayer(_l, br, dx, TRUE);
+#endif    
 
+    if (IS_VISIBLE(_l))
+    {
+      ClearRegion(br);
+      OrRegionRegion(_l->shape, br);
+      ClearRegion(_l->VisibleRegion);
+      _BackupPartsOfLayer(_l, br, dx, TRUE);
+    }
     /*
      * Effectively move the layer...
      */
@@ -182,7 +193,7 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
     _l->bounds.MaxY += dy;
 
     /*
-     * and also its cliprects.
+     * ...and also its cliprects.
      */
     cr = _l->ClipRect;
     while (cr)
@@ -196,8 +207,10 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
     
     if (_l == l)
     {
+#if 0
 kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED!\n",
         __FUNCTION__);
+#endif
       l->shape = newshape;
       if (IS_VISIBLE(l))
       {
@@ -214,17 +227,18 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED!\n",
 
     if (IS_VISIBLE(l))
     {
-kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED!\n",
+#if 0
+kprintf("\t\t%s: SHOWING parts of the layer TO BE MOVED (children)!\n",
         __FUNCTION__);
+#endif
       _ShowPartsOfLayer(_l, r);
       ClearRegionRegion(_l->shape, r);
     }
       
     _l = _l->back;
   }
+
   DisposeRegion(br);
-  DisposeRegion(r);
-    
    
   /*
    * Now make those parts of the layers after l up to and including
@@ -233,47 +247,65 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED!\n",
    */
   if (0 != dx || 0 != dy || dw < 0 || dh < 0)
   {
-    struct Region * r = NewRegion();
+    ClearRegion(r);
     OrRegionRegion(l->VisibleRegion, r);
     ClearRegionRegion(l->shape, r);
     _l = l->back;
+    lparent = l->parent;
     
     while (1)
     {
+#if 0
 kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
         __FUNCTION__);
-      if (IS_VISIBLE(_l))
-      {
-        ClearRegion(_l->VisibleRegion);
+#endif
+      ClearRegion(_l->VisibleRegion);
+      if (IS_VISIBLE(_l) && DO_OVERLAP(&r->bounds, &_l->shape->bounds))
         _ShowPartsOfLayer(_l, r);
+      else
+        OrRegionRegion(r, _l->VisibleRegion);
+
+      if (IS_VISIBLE(_l) || (_l == _l->LayerInfo->check_lp))
         AndRegionRegion(_l->VisibleRegion, oldshape);
+
+#if 0
+      if (_l == _l->LayerInfo->check_lp)
+        kprintf("root reached! %p\n",_l);
+#endif
+      
+      if (_l == lparent)
+      {
+        if (IS_VISIBLE(_l) || (NULL == lparent->parent))
+          break;
+        else
+          lparent = lparent->parent;
       }
       
-      if (_l == l->parent)
-        break;
-      
-      if (IS_VISIBLE(_l))    
+      if (IS_VISIBLE(_l))
         ClearRegionRegion(_l->shape, r);
       
       _l = _l->back;
     }
     
-    DisposeRegion(r);
-
     /*  
      * Now I need to clear the old layer at its previous place..
      * But I may only clear those parts where no layer has become
      * visible in the meantime.
      */
     if (!IS_EMPTYREGION(oldshape))
-      _BackFillRegion(l->parent, oldshape);
+    {
+      if (lparent &&
+          (IS_SIMPLEREFRESH(lparent) || (lparent==l->LayerInfo->check_lp)))
+        _BackFillRegion(l->parent, oldshape);
+    }
   }
-  
+
+  DisposeRegion(r);
   DisposeRegion(oldshape);
-  
+
   UnlockLayers(l->LayerInfo);
-  
+
   return TRUE;
-   
+
   AROS_LIBFUNC_EXIT
 } /* MoveSizeLayer */

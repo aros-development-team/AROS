@@ -35,7 +35,7 @@ LIBNAME  := layers
 ULIBNAME := Layers
 
 OSMODULE  := layers.library
-FILES	  := basicfuncs createcliprects
+FILES	  := basicfuncs createcliprects movelayerz
 	
 FUNCTIONS := \
 	beginupdate \
@@ -50,6 +50,7 @@ FUNCTIONS := \
 	dohookcliprects \
 	endupdate \
 	fattenlayerinfo \
+	getfirstfamilymember \
 	initlayers \
 	installclipregion \
 	installlayerhook \

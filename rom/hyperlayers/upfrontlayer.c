@@ -65,7 +65,7 @@
 
   struct Layer * first, * _l, * lbehind = NULL, * lfront = NULL;
   int found = FALSE;
-  struct Region * r = NewRegion();
+  LONG ret;
 
 kprintf("\t\t%s called!\n",__FUNCTION__);
   LockLayers(l->LayerInfo);
@@ -75,7 +75,7 @@ kprintf("\t\t%s called!\n",__FUNCTION__);
    * priority.
    * Also keep its children in front of itself.
    */
-  first = _FindFirstFamilyMember(l);
+  first = GetFirstFamilyMember(l);
 
   /*
    * If there is nobody in front of the first family member
@@ -115,76 +115,8 @@ kprintf("\t\t%s called!\n",__FUNCTION__);
     return TRUE;
   }
 
-  /*
-   * Remember the layer that will come behind l
-   */
-  lbehind = _l;
-  lfront = lbehind->front;
+  ret = _MoveLayerToFront(l,_l, LayersBase);
 
-  /*
-   * Unlink the family of layers from its old place.
-   */
-  first->front->back = l->back;
-  l->back->front = first->front;
-
-  /*
-   * I need exactly that layers visible region later on.
-   */
-  OrRegionRegion(lbehind->VisibleRegion,r);
-    
-  /*
-   * Now I have to move the layer family in front of layer lbehind.
-   * Nothing changes for the layers in front of layer lbehind, but on
-   * the layers behind (including first->front) I must back up some of 
-   * their parts that the new family might be hiding no.
-   * Once I step on the layer that was behind the layer l
-   * I can stop because those layers are already hidden well
-   * enough.
-   */
-  do
-  {
-kprintf("\t\t%s: backing up parts of layer %p!\n",__FUNCTION__,_l);
-    _BackupPartsOfLayer(_l,
-                        l->shape,
-                        0,
-                        FALSE);
-    _l = _l->back;
-  }
-  while (_l != l->back);
-
-  /*
-   * Now I must make the layer family of l visible 
-   * (lfirst to and including l)
-   */
-  _l = first;
-    
-  while (1)
-  {
-kprintf("\t\t%s: Showing parts of layer %p\n",__FUNCTION__,_l);
-    _ShowPartsOfLayer(_l, r);
-    ClearRegionRegion(_l->shape, r);
-
-    if (_l == l)
-      break;
-
-    _l = _l->back;
-  }
-
-  DisposeRegion(r);
-
-  /*
-   * Link the family into its new place.
-   * First the frontmost kid and then l.
-   */
-  if (NULL != lfront)
-    lfront->back = first;
-  else
-    l->LayerInfo->top_layer = first;
-    
-  first->front = lfront;
-
-  l->back = lbehind;
-  lbehind->front = l;
 
   /*
    * Unlock all locked layers.

@@ -61,133 +61,34 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct Layer * first, * _l, * lfront = NULL, * lbackold = NULL ;
+  struct Layer * _l;
   int found = FALSE;
-  struct Region * r = NewRegion();
-  struct Region * r2 = NewRegion();
+  LONG ret;
 
 kprintf("\t\t%s called!\n",__FUNCTION__);
   LockLayers(l->LayerInfo);
 
-
   /*
-   * Move the layer behind the layer with the same
-   * priority.
-   * Keep its children in front of itself.
+   * The layer in front of the family is the layer in
+   * front of the parent of my layer
    */
-  first = _FindFirstFamilyMember(l);
-
-  /*
-   * Search for the new place
-   * search all layers that have the same priority.
-   * If I find another layer with the same nesting
-   * as the one to be moved I have a place to move.
-   */
-  _l = l->back;
-  
-  if (_l->priority == l->priority)
+  if (!l->parent)
   {
-    while (1)
-    {
-      if (_l->nesting == l->nesting)
-        found = TRUE;
-      if (NULL == _l->back || _l->back->priority != l->priority)
-        break;
-      _l = _l->back;
-    }
-  }
+    UnlockLayers(l->LayerInfo);
+    return FALSE;
+  }  
+  _l = l->parent->front;
   
-  if (FALSE == found)
+  if (_l == l)
   {
     UnlockLayers(l->LayerInfo);
     return TRUE;
   }
-  
-  if (_l->nesting != l->nesting)
-  {
-    kprintf("%s: Something is wrong with the order of the layers!\n",__FUNCTION__);
-    UnlockLayers(l->LayerInfo);
-    return FALSE;
-  }
-
-  /*
-   * Remember the layer that will come in front of l
-   */
-  lfront = _l;
-  lbackold = l->back;
-
-  /*
-   * Take the family out of its old place.
-   */
-  if (NULL != first->front)
-    first->front->back = lbackold;
-  else
-    l->LayerInfo->top_layer = lbackold;
-    
-  lbackold->front = first->front;
-
-  _l = lbackold;
-  /*
-   * Collect the additional parts that have to be hidden
-   * on the layers that are to be moved.
-   */
-  while (NULL != _l)
-  {
-    if (l->priority != _l->priority)
-      break;
-    
-    if (l->nesting == _l->nesting);
-      OrRegionRegion(_l->shape, r);
-      
-    _l = _l->back;
-  }
-
-  OrRegionRegion(first->VisibleRegion, r2);
-
-  /*
-   * First back up the family ...
-   */
-  
-  _l = first;
-  while (1)
-  {
-    _BackupPartsOfLayer(_l, r, 0, FALSE);
-    if (_l == l)
-      break;
-  
-    _l = _l -> back;
-  }
-  DisposeRegion(r);
-
-  
-  /*
-   * Show the layers that appear now.
-   * Start with the layer that is behind the layer l.
-   */
-  _l = lbackold;
-
-  while (1 /* !IS_EMPTYREGION(r2) */)
-  {
-    _ShowPartsOfLayer(_l, r2);
-    if (_l == lfront)
-      break;
-    ClearRegionRegion(_l->shape, r2);
-    _l = _l->back; 
-  }
-
-  DisposeRegion(r2);
-
-  /*
-   * Link the familiy into its new place.
-   */
-  first->front = lfront;
-  lfront->back->front = l;
-  l->back = lfront->back;
-  lfront->back = first;
+  ret = _MoveLayerBehind(l,_l,LayersBase);
 
   UnlockLayers(l->LayerInfo);
 
-  return TRUE;
+  return ret;
 
   AROS_LIBFUNC_EXIT
 } /* BehindLayer */

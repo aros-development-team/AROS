@@ -30,7 +30,11 @@
 /*  FUNCTION
         Moves layer directly in front of another layer. Other layers
         might become visible. You cannot move a backdrop layer in front
-        of a non-backdrop layer.
+        of a non-backdrop layer. You can also not move a layer in front
+        of a layer with different relationship to the root layer. Boot
+        have to be children of grandchildren or grandgrandchildren etc.
+        of the root layer. The root layer is not visible to you and
+        should never be accessed.
         If parts of a simple layer become visible these areas are added
         to the damage list.
 
@@ -62,7 +66,59 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  return FALSE;
+  struct Layer * first, *_l;
+  int toback = TRUE;
+  LONG ret;
+
+  if (layer_to_move->parent  != other_layer->parent ||
+      layer_to_move->priority < other_layer->priority)
+    return FALSE;
+
+  LockLayers(layer_to_move->LayerInfo);
+
+  first = GetFirstFamilyMember(layer_to_move);
+  
+  _l = layer_to_move->parent->front;
+  while (1)
+  {
+    /*
+     * If I run into the other layer before I find l
+     * then I know I have to move it to the back.
+     */ 
+    if (_l == other_layer)
+      break;
+      
+    if (_l == layer_to_move)
+    {
+      toback = FALSE;
+      break;
+    }
+    _l = _l->front;
+    if (NULL == _l)
+      return FALSE;
+  }
+
+  if (TRUE == toback)
+  {
+    _l = GetFirstFamilyMember(other_layer);
+    /*
+     * If the topmost child of the other layer is
+     * behind my layer I don't have to do anything.
+     */
+    if (layer_to_move->back == _l)
+    {
+      UnlockLayers(layer_to_move->LayerInfo);
+      return TRUE;
+    }
+    ret = _MoveLayerBehind(layer_to_move,first, _l);
+  }
+  else
+  {
+    ret = _MoveLayerToFront(layer_to_move, first, other_layer);
+  }
+  
+  UnlockLayers(layer_to_move->LayerInfo);
+  return ret;
   
   AROS_LIBFUNC_EXIT
 } /* MoveLayerInFrontOf */

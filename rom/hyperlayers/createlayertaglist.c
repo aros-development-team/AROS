@@ -21,27 +21,55 @@
 	AROS_LHA(struct Layer_Info *, li, A0),
 	AROS_LHA(struct BitMap     *, bm, A1),
 	AROS_LHA(LONG               , flags, D0),
-	AROS_LHA(struct TagItem    *, tagItem, A2),
+	AROS_LHA(struct TagItem    *, tagList, A2),
 
 /*  LOCATION */
 	struct LayersBase *, LayersBase, 37, Layers)
 
 /*  FUNCTION
-        Create a new layer at the given position and with the
-        given size. 
+        Create a new layer according to the tags given.
 
     INPUTS
         li    - pointer to LayerInfo structure
         bm    - pointer to common bitmap
         flags - choose the type of layer by setting some flags
+                If it is to be a super bitmap layer then the tag
+                LA_SUPERBITMAP must be provided along with a 
+                pointer to a valid super bitmap.
+        tagList - a list of tags that specify the properties of the
+                  layer. The following tags are currently supported:
+                  LA_PRIORITY : priority class of the layer. The
+                                higher the number the further the
+                                layer will be in front of everything
+                                else.
+                                Default value is UPFRONTPRIORITY.
+                  LA_HOOK     : Backfill hook
+                  LA_SUPERBITMAP : pointer to a superbitmap. The flags
+                                  must also represent that this
+                                  layer is supposed to be a superbitmap
+                                  layer.
+                  LA_CHILDOF  : pointer to parent layer. If NULL then
+                                this layer will be created as a old-style
+                                layer.
+                  LA_INFRONTOF : pointer to a layer in front of which
+                                 this layer is to be created.
+                  LA_BEHIND : pointer to a layer behind which this layer
+                             is to be created. Must not give both LA_INFRONTOF
+                             and LA_BEHIND.
+                  LA_VISIBLE : FALSE if this layer is to be invisible.
+                               Default value is TRUE
+                  LA_SHAPE : The region of the layer that comprises its shape.
+                             This value must be provided. The region must
+                             be relative to the parent layer.
+                  
         
     RESULT
         Pointer to the newly created layer. NULL if layer could not be 
         created (Probably out of memory).
+        If the layer is created successful you must not free is shape.
+        The shape is automatically freed when the layer is deleted.
         
     NOTES
-       You MUST provide LA_PRIORITY!
-
 
     EXAMPLE
 
@@ -72,48 +100,48 @@
 
 kprintf("%s entered!\n",__FUNCTION__);
 
-  while (TAG_DONE != tagItem[i].ti_Tag)
+  while (TAG_DONE != tagList[i].ti_Tag)
   {
-    switch (tagItem[i].ti_Tag)
+    switch (tagList[i].ti_Tag)
     {
       case LA_PRIORITY:
-        priority = tagItem[i].ti_Data;
+        priority = tagList[i].ti_Data;
       break;
       
       case LA_HOOK:
-        hook = (struct Hook *)tagItem[i].ti_Data;
+        hook = (struct Hook *)tagList[i].ti_Data;
       break;
       
       case LA_SUPERBITMAP:
-        superbitmap = (struct BitMap *)tagItem[i].ti_Data;
+        superbitmap = (struct BitMap *)tagList[i].ti_Data;
       break;
       
       case LA_CHILDOF:
-        parent = (struct Layer *)tagItem[i].ti_Data;
+        parent = (struct Layer *)tagList[i].ti_Data;
       break;
       
       case LA_INFRONTOF:
         if (infrontof)
           return NULL;
-        infrontof = (struct Layer *)tagItem[i].ti_Data;
+        infrontof = (struct Layer *)tagList[i].ti_Data;
       break;
       
       case LA_BEHIND:
         if (behind)
           return NULL;
-        behind = (struct Layer *)tagItem[i].ti_Data;
+        behind = (struct Layer *)tagList[i].ti_Data;
       break;
       
       case LA_VISIBLE:
-        visible = tagItem[i].ti_Data;
+        visible = tagList[i].ti_Data;
       break;
       
       case LA_SHAPE:
-        layershape = (struct Region *)tagItem[i].ti_Data;
+        layershape = (struct Region *)tagList[i].ti_Data;
       break;
 
       default:
-        kprintf("%s: Unknown option %d!\n",__FUNCTION__,tagItem[i].ti_Tag);
+        kprintf("%s: Unknown option %d!\n",__FUNCTION__,tagList[i].ti_Tag);
         return NULL;
     }
     i++;
@@ -121,7 +149,7 @@ kprintf("%s entered!\n",__FUNCTION__);
   
   if ((flags & LAYERSUPER) && (NULL == superbitmap)) 
   {
-//    kprintf("%s: LAYERSUPER but not bitmap!\n",__FUNCTION__);
+//    kprintf("%s: LAYERSUPER but no bitmap!\n",__FUNCTION__);
     return NULL;
   }
     
@@ -129,6 +157,24 @@ kprintf("%s entered!\n",__FUNCTION__);
   {
 //    kprintf("No layer shape!\n");
     return NULL;
+  }
+
+  if (!parent)
+    parent = li->check_lp;
+
+  /*
+   * User gives coordinates reltive to parent.
+   * Adjust the shape to the absolute coordinates
+   * If this is the root layer, I don't have to 
+   * do anything. I recognize the root layer if there
+   * is no parent.
+   */
+  if (parent)
+  {
+    layershape->bounds.MinX += parent->shape->bounds.MinX;
+    layershape->bounds.MinY += parent->shape->bounds.MinY;
+    layershape->bounds.MaxX += parent->shape->bounds.MinX;
+    layershape->bounds.MaxY += parent->shape->bounds.MinY;
   }
 
   if (infrontof && infrontof->priority > priority)
@@ -174,9 +220,6 @@ kprintf("%s entered!\n",__FUNCTION__);
     if (NULL == li->check_lp)
       li->check_lp = l;
 
-    if (!parent)
-      parent = li->check_lp;
-    
     l->parent = parent;
 
     LockLayers(li);
@@ -210,7 +253,7 @@ kprintf("%s entered!\n",__FUNCTION__);
 
       if (li->top_layer == infrontof)
       {
-//kprintf("Creating a layer on top!\n");
+kprintf("Creating a layer on top!\n");
         li->top_layer = l;
         l->front  = NULL;
         l->back   = infrontof;
@@ -262,13 +305,15 @@ kprintf("%s entered!\n",__FUNCTION__);
        * back up their parts that the new layer will
        * be hiding.
        */
-      while (NULL != _l && _l->parent == parent)
+      while (1)
       {
-        if (IS_VISIBLE(_l))
-        {
-//kprintf("\t\tbacking up parts of layer %p!\n",_l);
+        if (IS_VISIBLE(_l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
           _BackupPartsOfLayer(_l, l->shape, 0, FALSE);
-        }
+        else
+          ClearRegionRegion(l->shape, _l->VisibleRegion);
+        
+        if (_l == parent)
+          break;
         _l = _l->back;
       }
 

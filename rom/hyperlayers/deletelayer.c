@@ -62,14 +62,14 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct Layer * _l = l->back;
+  struct Layer * _l = l->back, * lparent;
   struct ClipRect * cr, *_cr;
   /*
    * all children must have been destroyed before.
    */
   LockLayers(l->LayerInfo);
   
-  if (l != _FindFirstFamilyMember(l))
+  if (l != GetFirstFamilyMember(l))
   {
     kprintf("%s: There are still children around! Cannot destroy layer %p\n",
             __FUNCTION__,
@@ -77,6 +77,8 @@
     UnlockLayers(l->LayerInfo);
     return FALSE;
   }
+  
+  lparent = l->parent;
   
   if (IS_VISIBLE(l))
   { 
@@ -86,17 +88,24 @@
     
     /*
      * Visit all layers behind this layer until my parent comes
-     * I also visit my parent.
+     * I also visit my parent. If my parent is invisible I must
+     * go further to the parent of that parent etc.
      */
     while ((NULL != _l) && !IS_EMPTYREGION(r))
     {
       if (IS_VISIBLE(_l))
+      {
         _ShowPartsOfLayer(_l, r);
+        AndRegionRegion(_l->VisibleRegion, l->shape);
+      }
       
-      AndRegionRegion(_l->VisibleRegion, l->shape);
-
-      if (_l == l->parent)
-        break;
+      if (_l == lparent)
+      {
+        if (IS_VISIBLE(_l) || (NULL == lparent->parent))
+          break;
+        else
+          lparent = lparent->parent;
+      }
       /*
        * The part that this layer is hiding I cannot make 
        * visible on the layers behind it. Therefore I
@@ -110,7 +119,12 @@
     DisposeRegion(r);
 
     if (!IS_EMPTYREGION(l->shape))
-      _BackFillRegion(l->parent, l->shape);
+    {
+kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
+      if (lparent && 
+          (IS_SIMPLEREFRESH(lparent) || (lparent==l->LayerInfo->check_lp)))
+        _BackFillRegion(lparent, l->shape);
+    }
   }
   
   /*
