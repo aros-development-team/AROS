@@ -6,7 +6,6 @@
     Lang:
 */
 
-#include <libraries/mathieeedp.h>
 #include <aros/libcall.h>
 #include <proto/mathieeedoubbas.h>
 #include <proto/exec.h>
@@ -65,10 +64,10 @@ AROS_LIBFUNC_INIT
     return 0;
   }
 
-  if (is_lessSC(y,0,0,0) /* y < 0 */ && is_lessSC(z,0,0) /* z < 0 */)
+  if (is_lessSC(y,0,0,0) /* y < 0 */ && is_lessSC(z,0,0, 0) /* z < 0 */)
   {
-    NEG(y);
-    NEG(z);
+    NEG64(y);
+    NEG64(z);
     if (is_greater(y,z) /* -y > -z */ )
     {
       SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);

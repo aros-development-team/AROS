@@ -57,9 +57,6 @@ struct MathIeeeDoubBasBase
 */
 
 
-#define expunge() \
- AROS_LC0(BPTR, expunge, struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 3, Mathieeedoubbas)
-
 #define Zero_Bit     0x00000004  /* Flags of the 680xx CPU */
 #define Negative_Bit 0x00000008  
 #define Overflow_Bit 0x00000002  
@@ -71,6 +68,10 @@ struct MathIeeeDoubBasBase
 #define IEEEDPExponent_Mask_Lo 0x00000000 
 #define IEEEDPSign_Mask_Hi     0x80000000 /*  1 bit for the sign      */
 #define IEEEDPSign_Mask_Lo     0x00000000 
+
+#define IEEEDPNAN_Hi           0x7FFFFFFF
+#define IEEEDPNAN_Lo           0xFFFFFFFF
+#define IEEEDPNAN_64           0x7FFFFFFFFFFFFFFFUUL
 
 #define IEEEDPMantisse_Mask_64 0x0007FFFFFFFFFFFFULL /* 63 bit for the mantisse */
 #define IEEEDPExponent_Mask_64 0x7FF8000000000000ULL /* 10 bit for the exponent */

@@ -54,12 +54,13 @@
 ******************************************************************************/
 {
 AROS_LIBFUNC_INIT
-  LONG Res;
-  LONG Shift;
+LONG Res, Shift, tmp;
+QUAD y2;
 
-/*
-  if ((y & IEEESPExponent_Mask) > 0x60000000 )
-    if(y < 0)
+tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
+
+  if ( tmp > 0x41d00000 )
+    if( is_lessSC(y, 0x0, 0x0, 0x0UUL))
     {
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       return 0x80000000;
@@ -69,10 +70,10 @@ AROS_LIBFUNC_INIT
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       return 0x7fffffff;
     }
-*/
 
-  if (is_eqC(y,0,0,0) || 
-      is_eqC(y,IEEEDPSign_Mask_Hi, 
+
+  if (is_eqC(y, 0x0, 0x0, 0x0UUL) ||
+      is_eqC(y,IEEEDPSign_Mask_Hi,
                IEEEDPSign_Mask_Lo,
                IEEEDPSign_Mask_64)) /* y=+-0; */
   {
@@ -80,13 +81,20 @@ AROS_LIBFUNC_INIT
     return 0;
   }
 
-  Shift = (Get_High32OF64(y) & IEEEDPExponent_Mask_Hi) >> 20;
-  Shift -= 0x3fe;
-  SHRU64(y,y,Shift);
-  Res = Get_Low32OF64(y);
+  Shift = (Get_High32of64(y) & IEEEDPExponent_Mask_Hi) >> 20;
+  Shift = 0x433 - Shift;
+  tmp = Get_High32of64(y);
+  AND64QC(y, IEEEDPMantisse_Mask_Hi,
+             IEEEDPMantisse_Mask_Lo,
+             IEEEDPMantisse_Mask_64);
+  OR64QC(y,  0x00100000,
+             0x00000000,
+             0x0010000000000000UUL);
+  SHRU64(y2, y , Shift);
+  Res = Get_Low32of64(y2);
 
   /* Test for a negative sign  */
-  if (is_lessSC(y,0,0,0)) /* y < 0 */
+  if (tmp < 0) /* y < 0 */
   {
     Res = -Res;
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);

@@ -63,14 +63,14 @@
 {
 AROS_LIBFUNC_INIT
   /* y is negative */
-  if (is_lessSC(y, 0, 0, 0) /* y < 0 */)
+  if (is_lessSC(y, 0x0, 0x0, 0x0UUL) /* y < 0 */)
   {
     SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
     return -1;
   }
 
   /* fnum1 is zero */
-  if (is_eqC(y, 0, 0, 0) /* y == 0 */)
+  if (is_eqC(y, 0x0UUL, 0x0UUL, 0x0UUL) /* y == 0 */)
   {
     SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
     return 0;

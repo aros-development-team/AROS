@@ -16,7 +16,7 @@
 
     NAME */
 
-      AROS_LHQUAD1(LONG, IEEEDPFlt,
+      AROS_LHQUAD1(QUAD, IEEEDPFlt,
 
 /*  SYNOPSIS */
       AROS_LHAQUAD(LONG, y, D0, D1),
@@ -68,7 +68,7 @@ AROS_LIBFUNC_INIT
 
   if (y < 0 )
   {
-    Set_Value64C(Res, IEEEDPSign_Mask_Hi, 
+    Set_Value64C(Res, IEEEDPSign_Mask_Hi,
                       IEEEDPSign_Mask_Lo,
                       IEEEDPSign_Mask_64);
     y = -y;
@@ -80,18 +80,18 @@ AROS_LIBFUNC_INIT
     TestMask <<= 1;
   }
 
-  SHL32(yQuad , y , 53 - Exponent );
+  SHL32(yQuad , y , (53 - Exponent) );
 
-  AND64C(yQuad, yQuad, IEEEDPMantisse_Mask_Hi, 
-                       IEEEDPMantisse_Mask_Lo,
-                       IEEEDPMantisse_Mask_64);
+  AND64QC(yQuad,  IEEEDPMantisse_Mask_Hi,
+                  IEEEDPMantisse_Mask_Lo,
+                  IEEEDPMantisse_Mask_64);
 
   Exponent += 0x3fe;
 
   /* adapt Exponent to IEEEDP-Format */
   SHL32(ExponentQuad, Exponent, 52);
-  OR64(Res, Res, yQuad);
-  OR64(Res, Res, ExponentQuad);
+  OR64Q(Res, yQuad);
+  OR64Q(Res, ExponentQuad);
   if ( is_lessSC(Res,0,0,0) ) /* Res < 0 */
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 

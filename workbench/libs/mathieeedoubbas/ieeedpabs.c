@@ -64,9 +64,9 @@
     {
       /* set the sign-bit to zero */
       /* y &= (IEEEDPMantisse_Mask | IEEEDPExponent_Mask) */
-      AND64C(y,y, (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi),
-                  (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo),
-                  (IEEEDPMantisse_Mask_64 | IEEEDPExponent_Mask_64) )
+      AND64QC(y, (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi),
+                 (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo),
+                 (IEEEDPMantisse_Mask_64 | IEEEDPExponent_Mask_64) )
       SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
     }
     return y;
