@@ -2,7 +2,7 @@
     (C) 1999 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: Intuition function SetMenuStrip()
     Lang: English
 */
 #include "intuition_intern.h"
@@ -29,23 +29,33 @@ void Characterize(struct Menu *menu);
 	struct IntuitionBase *, IntuitionBase, 44, Intuition)
 
 /*  FUNCTION
+	This function adds a MenuStrip to the Window, which can be invoked
+	by the user after this call by pressing the right mouse button.
+	Menus with no MenuItems will not be attached.
 
     INPUTS
+	window - The window to add the MenuStrip to
+	menu   - The menu to be added to the window above.
 
     RESULT
+	TRUE if all menus have at least one menuitem.
 
     NOTES
+	This function calculates internal values and is therfore the
+	official way to add a new MenuStrip to Window.
+	Always do a ClearMenuStrip() before closing the Window or adding
+	another MenuStrip to the Window.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	ResetMenuStrip(), ClearMenuStrip()
 
     INTERNALS
 
     HISTORY
-
     11.06.99  SDuvan  implemented function
 
 *****************************************************************************/
