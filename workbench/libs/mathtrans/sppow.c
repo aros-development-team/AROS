@@ -64,6 +64,8 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
+
   /* a     ^ b     = e^(b     * ln a    )
   ** fnum2 ^ fnum1 = e^(fnum1 * ln fnum2)
   */
@@ -81,5 +83,5 @@
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-
+AROS_LIBFUNC_EXIT
 } /* SPPow */

@@ -65,6 +65,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
 ULONG Res;
 LONG tmp;
   /* sinh(-x) = -sinh(x) */
@@ -97,4 +98,5 @@ LONG tmp;
     return (Res | FFPSign_Mask);
   }
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPSinh */

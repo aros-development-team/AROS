@@ -68,6 +68,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
 ULONG Res;
 LONG tmp;
   tmp = (fnum1 & FFPExponent_Mask) - 0x41;
@@ -100,4 +101,5 @@ LONG tmp;
   }
 
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPTanh */

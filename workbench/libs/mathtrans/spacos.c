@@ -63,6 +63,8 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
+
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -154,5 +156,5 @@
   r = SPDiv(q, p);
   w = SPAdd(c, SPMul(r,s));
   return SPAdd(SPMul(two, SPAdd(df,w)),0x800000a9);
-
+AROS_LIBFUNC_EXIT
 } /* SPAcos */

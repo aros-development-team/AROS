@@ -64,6 +64,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   LONG Res;
   /* check for ieeenum == 0 */
   if (0 == ieeenum)
@@ -93,5 +94,6 @@
   }
 
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPFieee */
 

@@ -65,6 +65,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
 ULONG Res;
 LONG tmp;
   /* cosh(-x) = cosh(x) */
@@ -92,4 +93,5 @@ LONG tmp;
     return 0;
   }
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPCosh */

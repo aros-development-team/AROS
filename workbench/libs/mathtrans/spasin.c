@@ -64,6 +64,7 @@
 
 
 {
+AROS_LIBFUNC_INIT
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -145,4 +146,5 @@
 
    }
    return (t | (fnum1 & FFPSign_Mask )) ;
+AROS_LIBFUNC_EXIT
 } /* SPAsin  */

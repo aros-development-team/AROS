@@ -89,6 +89,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   LONG ld_M, Exponent, Mask = 0x40, i, Sign;
   /* check for negative sign */
   if ((char) fnum1 < 0)
@@ -133,4 +134,5 @@
   */
 
   return SPMul( SPAdd(ld_M, Exponent), InvLde);
+AROS_LIBFUNC_EXIT
 } /* SPLog */

@@ -63,6 +63,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   LONG Res;
   LONG Exponent;
   if (0 == fnum)
@@ -83,4 +84,5 @@
   }
 
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPTIEEE */

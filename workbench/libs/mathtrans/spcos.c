@@ -80,6 +80,7 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   LONG z,Res,ysquared,yabs,tmp;
   yabs = fnum1 & (FFPMantisse_Mask + FFPExponent_Mask);
 
@@ -131,4 +132,5 @@
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
+AROS_LIBFUNC_EXIT
 } /* SPCos */

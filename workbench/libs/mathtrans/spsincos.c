@@ -64,7 +64,9 @@
 ******************************************************************************/
 
 {
+AROS_LIBFUNC_INIT
   * pfnum2 = SPCos(fnum1);
   return SPSin(fnum1);
+AROS_LIBFUNC_EXIT
 } /* SPSincos */
 
