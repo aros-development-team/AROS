@@ -1,0 +1,105 @@
+AROSfA FAQ 1.0
+
+This document gives answers to some (frequently) asked questions, and other
+things to note when running AROSfA (AROS for Amiga).
+
+ Q. I have all sorts of problems trying to use AROSfA. What gives?
+ A. AROSfA is still in an alpha state. Currently we are trying to get some
+    more diverse feedback about the configurations it runs on, and which
+    configurations it causes problems with. Your error/bug reports are very
+    welcome and help to improve AROS.
+
+    If you have a problem, and you suspect one of the AROSfA modules is the
+    cause of this, you can remove it from "boot.config", so it won't be
+    loaded. Currently, the modules can be run independently from each other.
+
+ Q. I have installed exec.strap, but now I get these weird blue and green
+    stripes when booting.
+ A. This is normal behaviour. Exec.strap uses these stripes to signal that it
+    has started (blue stripes), and that is has patched exec.library (green
+    stripes). It is a quick indication that AROS survived the reboot and is
+    installing itself.
+
+ Q. I get lots of enforcer hits from alert.hook and/or utility.library.
+ A. Yes, we have had the same reports. We are looking into it. These enforcer
+    hits may have nothing to do with these modules, but with the lower-level
+    exec.strap. Do they still occur when exec.strap is not installed?
+
+ Q. I'm using kickstart v37, but when I try to use the boot-menu, I get a guru.
+ A. Some internal changes were made to the system between OS37 and OS39. Our
+    guideline for implementing AROS is OS39/40 (kick 3.0/3.1). We are adding
+    V37 compatibility code whenever we encounter incompatibilities, such as in
+    the case of the boot-menu.
+
+ Q. Why is there no 68000 version?
+ A. Some assembler-instructions that are in the 68020 and higher are not
+    implemented on the 68000. Gcc, the c-compiler we use, uses small functions
+    to implement this missing functionality on the 68000, but these functions
+    are in a linker library. This linker library expects to be used together
+    with one of the standard startup-files (*crt.o). We don't use these
+    startup files, so the module cannot be successfully linked (unresolved
+    references).
+    If you know how to circumvent this, we would surely like to know! :)
+
+ Q. I've downloaded AROS, but I have some problems.
+ A. We are continually improving AROS. Chances are your problem is already
+    fixed. Updates for AROSfA modules are made available at the following
+    support webpage:
+
+    http://www.worldonline.nl/~ldp/aros/
+
+    If the latest versions still have the problem, and there is no mention
+    of it on the "known problems" list, we may not be aware that there is a
+    problem. Why not tell us?
+
+ Q. So, what kind of system do you use to program AROS? Why does it work ok
+    for you, but causes all kinds of problems for me?
+ A. AROSfA is being developed on this system:
+    - A1200/Blizzard A1230-IV/nofpu/2+8 meg RAM/maprom on
+    - "setcpu cache burst"
+    - "blizkick devs:kickstart localfast speedrom"
+    - Kickstart 39.106, Workbench 40.42
+    - setpatch 40.16 (14-02-1994)
+    - KingCON-handler (68020+) 1.3 (31-05-1994) (completely replaces CON:/RAW:)
+    - CycleToMenu 37.6 ( 6-06-1994)
+    - PowerSnap 37.326 (10-02-1994)
+    - ToolManager_Starter 2.1 (16-05-1993)
+    - MCP 1.10ß wildstar/borderblank/noclick/formatprotect/rtpatch/assignprefs/
+                promotor
+
+ Q. I have just run "boot", and now I use "printresmodules", but I can't spot
+    the modules I have just loaded. Is something wrong?
+ A. No, not at all. The "printresmodules" tool prints the system list of
+    Resident Modules. The modules you have just installed will only be started
+    during the next reset, so they won't show up in the list until then.
+
+ Q. "boot" loads the modules into my chip ram! I'd rather have them in fast!
+    What gives?
+ A. AROS modules are loaded into RAM. The area of RAM they are loaded in has to
+    be available very early during the system reset procedure. Some RAM boards
+    that are not AutoConfig[tm] are late at adding their RAM to the system.
+    Their RAM may not be available when some AROS modules want to be started,
+    and the system may be jumping into nothingness, causing a crash.
+    On OS39+, "boot" allocates memory of type MEMF_KICK. This attribute is given
+    to memory that qualifies for this requirement. This may not help in all
+    cases, but tools such as "blizkick localfast" may help.
+    On OS37, this memory attribute was not implemented. "boot" has no way of
+    knowing which memory it can use for the modules. For compatibility, it
+    defaults to MEMF_CHIP, which is guaranteed to be available. You can force
+    the modules to be loaded into fastmem by using "boot -f".
+
+ Q. My viruskiller reports a possible virus when I'm running AROSfA.
+ A. Your viruskiller is expressing a genuine concern. Viruses are known to use
+    the same methods as AROS to be able to survive a reboot. To be more
+    specific: AROS uses the KickTagPtr/KickMemPtr fields. If your viruskiller
+    complains that something is using these fields, and you are running AROS,
+    you can ignore the warning. Another type of program that uses these fields
+    is the RAD:-drive.
+
+ Q. I was using the RAD:-drive, but after I ran "boot -x" or "boot -X", it
+    was no longer alive after a reset.
+ A. Correct. RAD: uses these KickTagPtr/KickMemPtr fields of Execbase to
+    survive a reboot, and "boot -x" and "boot -X" erase these fields in
+    ExecBase. This causes RAD: to die during the reset.
+
+END
