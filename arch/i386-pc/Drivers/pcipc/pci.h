@@ -21,7 +21,7 @@
 
 extern UBYTE LIBEND;
 
-AROS_UFP3(struct pcibase *, Pci_init,
+AROS_UFP3(struct pcibase *, Pcipc_init,
     AROS_UFHA(struct pcibase *, pcibase, D0),
     AROS_UFHA(BPTR, slist, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6));
@@ -44,8 +44,8 @@ struct pcibase {
     BPTR		    slist;
 };
 
-OOP_Class *init_pcidriverclass(struct pci_staticdata *);
-VOID free_pcidriverclass(struct pci_staticdata *, OOP_Class *);
+OOP_Class *init_pcipcdriverclass(struct pci_staticdata *);
+VOID free_pcipcdriverclass(struct pci_staticdata *, OOP_Class *);
 
 
 #define PCI_AddressPort	0x0cf8
