@@ -51,7 +51,7 @@ AROS_UFH1(void, RBF_InterruptHandler,
          */
         BYTE * outBuf;
         UWORD indexOutBuf;
-        ioreq = (struct IOStdReq *)SU->su_ReadCommandPort.mp_MsgList.lh_Head;
+        ioreq = (struct IOStdReq *)SU->su_ActiveRead;
         if (NULL == ioreq)
         {
           break;
@@ -70,29 +70,34 @@ AROS_UFH1(void, RBF_InterruptHandler,
             if (0 == outBuf[indexOutBuf])
             {
               /* this request is done, so I answer the message */
-              struct Message * msg = GetMsg(&SU->su_ReadCommandPort);
 
               /* the final 0 has been found */
               ioreq->io_Actual = indexOutBuf;
 
-              ReplyMsg(msg);
+              ReplyMsg((struct Message *)ioreq);
+              
+              /* get the next request... */
+              ioreq = (struct IOStdReq *)GetMsg(&SU->su_QReadCommandPort);
+              SU->su_ActiveRead = (struct Message *)ioreq;
+              
               break;
             }
             indexOutBuf++;
             index ++;
-          }
+          } /* while */
           
+          /* is the buffer completely copied now? */
           if (index == length)
             break;
-        }
-      }
+        } /* if (...) */
+      } /* while (TRUE) */
       
       if (NULL == ioreq)
       {
         /* there's no more IORequest waiting, so I fill the buffer with
            the remaining data */
         /*
-          There are no more reads pending
+          There are also no more reads pending
         */
         SU->su_Status &= ~STATUS_READS_PENDING;
         while (index < length)
@@ -117,19 +122,27 @@ AROS_UFH1(void, RBF_InterruptHandler,
           else
           {
             /* Buffer full!!! */
-            SU->status |= STATUS_BUFFEROVERFLOW;
+            SU->su_Status |= STATUS_BUFFEROVERFLOW;
             break;
           }
         }
       }
     }
     SU = SU->su_Next;
-  }
+  } /* while (NULL != SU) */
 }
 
 
 AROS_UFH1(void, TBE_InterruptHandler,
   AROS_UFHA(struct serialbase *, sb, A1))
 {
- 
+  /* There's one problem with this interrupthandler:
+     It is only meant for one UART and not for more. So 
+     in this routine it will have to handle all of the
+     installed and used UARTs.
+   */
+  while(NULL != SU)
+  {
+  
+  } /* (NULL != SU) */
 }

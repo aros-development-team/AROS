@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.3  1999/03/08 13:07:51  bergers
+    Update.
+
     Revision 1.2  1999/03/05 13:29:29  bergers
     Update.
 
@@ -81,8 +84,11 @@ struct SerialUnit
   
   struct SignalSemaphore su_Lock;
 
-  struct MsgPort      su_ReadCommandPort;
-  struct MsgPort      su_WriteCommandPort;
+  struct MsgPort      su_QReadCommandPort;
+  struct Message    * su_ActiveRead;
+  
+  struct MsgPort      su_QWriteCommandPort;
+  struct Message    * su_ActiveWrite;
 
   ULONG               su_UnitNum;
   ULONG               su_Flags;    // copy of IOExtSer->io_SerFlags;

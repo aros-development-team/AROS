@@ -265,6 +265,8 @@ AROS_LH1(void, beginio,
       **  Let me see whether I can copy any data at all and
       **  whether nobody else is using this device now
        */
+      ioreq->IOSer.io_Actual = 0;      
+
       if (SU->su_InputFirst != SU->su_InputNextPos &&
           0 == (SU->su_Status & STATUS_READS_PENDING)    )
       {
@@ -294,15 +296,20 @@ AROS_LH1(void, beginio,
             break;
 	  } 
 	}
+
+        if (NULL != SU->su_ActiveRead)
+          kprintf("READ: error in datastructure!");
+        SU->su_ActiveRead = (struct Message *)ioreq;
+        SU->su_Status |= STATUS_READS_PENDING;
+        break;
       }
       /*
       **  Everything that falls down here could not be completely
       **  satisfied
       */
 
-      PutMsg((struct MsgPort *)&SU->su_ReadCommandPort,
+      PutMsg((struct MsgPort *)&SU->su_QReadCommandPort,
              (struct Message *)ioreq);
-      SU->su_Status |= STATUS_READS_PENDING;
       /*
       ** As I am returning immediately I will tell that this
       ** could not be done QUICK   
@@ -310,12 +317,16 @@ AROS_LH1(void, beginio,
       ioreq->IOSer.io_Flags &= ~IOF_QUICK;
     break;
 
+    /*******************************************************************/
+
     case CMD_WRITE:
       /* Write data to the UART */
-      
+      ioreq->IOSer.io_Actual = 0;      
+
       /* Check whether I can write some data immediately */
       if (0 == (SU->su_Status & STATUS_WRITES_PENDING))
       {
+        int writtenbytes;
         /* I can write the first (few) byte(s) immediately */
         SU->su_Status |= STATUS_WRITES_PENDING;
         /* Writing the first few bytes to the UART has to have the
@@ -324,13 +335,20 @@ AROS_LH1(void, beginio,
            UART should get the sequence of HW-interrupts going
            until there is no more data to write 
 	*/
-        // HIDD_WRITE_BYTE(SU->su_Hidd, (struct IOStdReq *)ioreq);
+        writtenbytes = 0;
+        // HIDD_WRITE_BYTES(SU->su_Hidd, (struct IOStdReq *)ioreq);
+        if (NULL != SU->su_ActiveWrite)
+          kprintf("error!!");
+        SU->su_ActiveWrite = (struct Message *)ioreq;
+        SU->su_Status |= STATUS_WRITES_PENDING;
         break;
       }    
-      /* I could not write the data immediately so I will make this
-         the responsibility of the interrupt handler
+      /* I could not write the data immediately as another request
+         is already there. So I will make this
+         the responsibility of the interrupt handler to use this
+         request once it is done with the active request.
       */
-      PutMsg((struct MsgPort *)&SU->su_WriteCommandPort,
+      PutMsg((struct MsgPort *)&SU->su_QWriteCommandPort,
              (struct Message *)ioreq);
     break;
 
@@ -340,7 +358,108 @@ AROS_LH1(void, beginio,
       SU->su_InputFirst = 0;
       ioreq->IOSer.io_Error = 0;      
     break;
-  
+
+    /*******************************************************************/
+
+    case CMD_RESET:
+      /* All IOrequests, including the active ones, are aborted */
+
+      /* Abort the active IORequests */
+      SU->su_Status &= ~(STATUS_READS_PENDING|STATUS_WRITES_PENDING);
+      if (NULL != SU->su_ActiveRead)
+      {
+        /* do I have to leave anything in the message ? */
+        ReplyMsg(SU->su_ActiveRead);
+      }
+
+      if (NULL != SU->su_ActiveWrite)
+      {
+        /* do I have to leave anything in the message ? */
+        ReplyMsg(SU->su_ActiveWrite);
+      }
+
+      /* change the Buffer pointers to reset position */
+      SU->su_InputFirst   = 0;
+      SU->su_InputNextPos = 0;
+
+      /* check the buffer for correct init size */
+      if (MINBUFSIZE != SU->su_InBufLength)
+      {
+        BYTE * oldBuffer = su_InputBuffer;
+        BYTE * newBuffer = (BYTE *)AllocMem(MINBUFSIZE ,MEMF_PUBLIC);
+        if (NULL != newbuffer)
+	{
+          SU->SU_InputBuffer = newBuffer;
+          FreeMem(oldBuffer, SU->su_InBufLength);
+          /* write new buffersize */
+          SU->su_InBufLength = MINBUFSIZE;
+        }
+        else
+	{
+          /* Buffer could not be allocated*/
+	}
+      }
+      /* now fall through to CMD_FLUSH */
+
+    /*******************************************************************/
+
+    case CMD_FLUSH:
+      /* 
+      ** Clear all queued IO request for the given serial unit except
+      ** for the active ones.
+       */
+      Disable();
+      while (TRUE)
+      {
+        struct IOStdReq * iosreq = 
+                  (struct IOStdReq *)GetMsg(&SU->su_QReadCommandPort);
+        if (NULL == iosreq)
+          break;
+        /* What do I have to leave in the request to tell the user
+           that the request was not satisfied?? Anyhting at all? */
+        ReplyMsg((struct Message *)iosreq);        
+      }
+
+      while (TRUE)
+      {
+        struct IOStdReq * iosreq = 
+                  (struct IOStdReq *)GetMsg(&SU->su_QWriteCommandPort);
+        if (NULL == iosreq)
+          break;
+        /* What do I have to leave in the request to tell the user
+           that the request was not satisfied?? Anyhting at all? */
+        ReplyMsg((struct Message *)iosreq);        
+      }
+      ioreq->IOSer.io_Error = 0;
+
+      Enable();
+    break;
+
+    /*******************************************************************/
+
+    case SDCMD_QUERY:
+
+      SU->su_Status = 0;
+      // SU->su_Status = HIDD_QUERY(SU->su_HIDD); 
+      if (0 != (SU->su_Status & STATUS_BUFFEROVERFLOW))
+      {
+        ioreq->io_Status |= IO_STATF_OVERRUN;
+        ioreq->io_Actual = 0;
+      }
+      else
+      {
+        /* pass back the number of unread input characters */
+        int unread = SU->su_InputNextPos - SU->su_InputFirst;
+        if (unread < 0)
+          ioreq->io_Actual = -unread;
+        else
+          ioreq->io_Actual = SU->su_InBufLength - unread;
+      }
+
+    break;
+
+    /*******************************************************************/
+
     case SDCMD_SETPARAMS:
         
       /* Change of buffer size for input buffer? */
@@ -456,6 +575,8 @@ AROS_LH1(void, beginio,
 	}
       }        
     break;
+
+    /*******************************************************************/
 
     
   } /* switch () */
