@@ -519,10 +519,23 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 {
     /* The allocation is taken care of by appendString */
     struct CSource filtered = { NULL, 0, 0 };
-
-    struct CSource cs = { cl->line, strlen(cl->line), 0 };
-
-    BOOL           result = FALSE;
+    struct CSource cs       = { cl->line, strlen(cl->line), 0 };
+    struct LocalVar *lv;
+    BOOL  result = FALSE;
+    
+    lv = FindVar("echo", LV_VAR);
+    if (lv != NULL)
+    {
+	/* AmigaDOS' shell is content also with echo being set to anything
+	   that begins with "on" in order to trigger commands echoing on, 
+	   it doesn't really have to be set to just "on".  */
+	if (lv->lv_Len >= 2)
+	    if (strncasecmp(lv->lv_Value, "on", 2) == 0)
+	    {
+		/* Ok, commands echoing is on.  */
+		PutStr(cl->line);
+	    }
+    }
 
     D(bug("Calling convertLine(), line = %s\n", cl->line));
 
@@ -1181,7 +1194,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	cli->cli_Module = seglist;
 
 	me->tc_Node.ln_Name = command;
-
+	
         __debug_mem = FindVar("__debug_mem", LV_VAR) != NULL;
 
 	if (__debug_mem)
