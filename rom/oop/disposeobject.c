@@ -71,4 +71,4 @@
     ReturnVoid("DisposeObject");
     
     AROS_LIBFUNC_EXIT
-} /* NewObjectA */
+} /* DisposeObject */
