@@ -363,19 +363,47 @@
 	    w->BorderTop += GfxBase->DefaultFont->tf_YSize + 1;
     }
 
-    if (w->Flags & WFLG_SIZEBRIGHT)
+    if (w->Flags & (WFLG_SIZEBRIGHT | WFLG_SIZEBBOTTOM))
     {
-    	if (w->BorderRight < 16) w->BorderRight = 16;
-    }
-    if (w->Flags & WFLG_SIZEBBOTTOM)
-    {
-    	if (w->BorderBottom < 16) w->BorderBottom = 16;
+        IPTR sizewidth = 16, sizeheight = 16;
+	struct Image *im;
+	struct DrawInfo *dri;
+	
+	if ((dri = GetScreenDrawInfo(w->WScreen)))
+	{
+	    struct TagItem imtags[] =
+	    {
+		SYSIA_DrawInfo, dri,
+		SYSIA_Which, SIZEIMAGE,
+		TAG_DONE 
+	    };
+	
+	    if ((im = NewObjectA(NULL, SYSICLASS, imtags)))
+	    {
+	    	GetAttr(IA_Width, im, &sizewidth);
+		GetAttr(IA_Height, im, &sizeheight);
+		 
+	    	DisposeObject(im);
+	    }
+	    FreeScreenDrawInfo(w->WScreen, dri);
+	}
+
+	if (w->Flags & WFLG_SIZEBRIGHT)
+	{
+    	    if (w->BorderRight < sizewidth) w->BorderRight = sizewidth;
+	}
+
+	if (w->Flags & WFLG_SIZEBBOTTOM)
+	{
+    	    if (w->BorderBottom < sizeheight) w->BorderBottom = sizeheight;
+	}
+	
+	IW(w)->sizeimage_width = sizewidth;
+	IW(w)->sizeimage_height = sizeheight;
     }
 
-    if (innerWidth != ~0L)
-	nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
-    if (innerHeight != ~0L)
-	nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
+    if (innerWidth != ~0L) nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
+    if (innerHeight != ~0L) nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
     
     w->LeftEdge    = nw.LeftEdge;
     w->TopEdge	   = nw.TopEdge;
