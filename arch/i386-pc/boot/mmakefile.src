@@ -39,10 +39,8 @@ BOOT_TAR_FILES := \
 	Utilities/MultiView Utilities/More Utilities/Installer Utilities/test.script \
 	contrib/aminet/Format64
 
-BOOT_SRC_DIR := $(AROSDIR)
-BOOT_SRC_FILES := $(foreach f, $(BOOT_FILES), $(AROS_DIR)/$(f))
-
-BOOT_DEST_DIR := $(OSGENDIR)/bootdisk
+BOOT_SRC_DIR    := $(AROSDIR)
+BOOT_DEST_DIR   := $(OSGENDIR)/bootdisk
 BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
 
 #MM
@@ -87,6 +85,7 @@ $(BINDIR)/boot/grub/% : %
 bootdisk-pc-i386: \
 	$(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.tgz \
 	$(BINDIR)/boot/aros-pc-i386 install
+	@$(CP) Startup-Sequence $(BOOT_DEST_DIR)/S
 	@$(CP) $(BINDIR)/boot/aros-pc-i386 $(BOOT_DEST_DIR)/boot
 	@gzip -f $(BOOT_DEST_DIR)/boot/aros-pc-i386
 	@$(TOOLDIR)/createhdfile $(OSGENDIR)/boot/aros.bin floppy1440 $(BOOT_DEST_DIR)
@@ -109,6 +108,7 @@ $(AROSDIR)/boot/aros.bin : $(OSGENDIR)/boot/aros.bin
 
 #TODO: it depend on all files in workbench dir
 $(OSGENDIR)/boot/aros.iso: $(AROSDIR)/boot/aros.bin
+	@$(CP) $(TOP)/workbench/s/Startup-Sequence.CDROM $(AROSDIR)/S/Startup-Sequence
 	@mkisofs \
 		-output $(OSGENDIR)/boot/aros.iso \
 		-b boot/aros.bin \
