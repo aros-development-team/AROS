@@ -98,7 +98,7 @@ results in
     This will show up
 
 ------------------------------------------------------------------------------
-<FILTER CMD=command [VERBATIMINPUT] [INPUTFILE] [PROCESSOUTPUT]>
+<FILTER CMD=command [PROCESSINPUT] [EXPANDINPUT] [INPUTFILE] [PROCESSOUTPUT]>
 
 Calls the specified command and passes the contents of $@body to it. This
 is most useful in a block.
@@ -109,9 +109,11 @@ is most useful in a block.
 Calls the external program "format". The various variables are expanded.
 The following options are available:
 
-VERBATIMINPUT - Don't modify the contents of $@body in any way. Pass it
-    verbatim to the command. If you omit this, HPP parses the body and
-    passes the result to the command.
+PROCESSINPUT - Read the body and process it before handing it to the filter
+    (ie. do the normal HPP job on the input of the filter).
+
+EXPANDINPUT - This is less than PROCESSINPUT; it just expands all
+    variables. If you specify both, then this will happen first.
 
 INPUTFILE - Create a variable $infilename and set it to the name of the
     file where the contents of $@body are stored. If you omit this, then
@@ -143,5 +145,35 @@ results in
 
 Continues with processing the specified file and resumes after the INCLUDE
 when the whole file has been processed.
+------------------------------------------------------------------------------
+<BLOCK name>text</BLOCK>
+
+Creates a big variable name with the contents text.
+
+<BLOCK test>
+    This is assigned to the variable test.
+</BLOCK>
+------------------------------------------------------------------------------
+<TEMPLATE NAME=string>text</TEMPLATE>
+
+This uses the information stored in text to create an output file. It
+does this as follows: First the text is read and then the template
+and the variables defined in the text are replaced in the template.
+------------------------------------------------------------------------------
+<EXPAND TEXT=string>
+
+Expands string twice and puts them in the output. This is useful if you
+have a variable which itself might contain variables.
+
+<SET var1="$var2">
+<SET var2="$test">
+
+$var1
+<EXPAND TEXT="$var1">
+
+gives
+
+$var2
+$test
 ------------------------------------------------------------------------------
 
