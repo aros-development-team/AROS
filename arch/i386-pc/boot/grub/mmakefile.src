@@ -1,6 +1,18 @@
-# Makefile to build GRUB.
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
 
 include $(TOP)/config/make.cfg
+
+GRUBOPTS := --enable-preset-menu=$(TOP)/$(CURDIR)/../menu.lst
+
+ifneq ($(AROS_TARGET_VARIANT),tiny)
+GRUBOPTS += 
+else
+GRUBOPTS += --disable-fat --disable-ffs --disable-minix --disable-reiserfs \
+            --disable-vstafs --disable-jfs --disable-xfs --disable-md5-password \
+            --disable-packet-retransmission --disable-ext2fs --disable-serial \
+            --disable-hercules
+endif
 
 #MM- config-i386-native-boot-grub : grub-quick grub-copy-stages
 
@@ -10,8 +22,8 @@ grub-copy-stages : $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2
 CFLAGS := -minline-all-stringops
 export CFLAGS
 
-%build_with_configure mmake=grub \
-    extraoptions="--enable-preset-menu=$(TOP)/$(CURDIR)/../menu.lst --disable-fat --disable-ffs --disable-minix --disable-reiserfs --disable-vstafs --disable-jfs --disable-xfs --disable-md5-password --disable-packet-retransmission --disable-ext2fs --disable-serial --disable-hercules" host=yes install_target=
+%build_with_configure mmake=grub host=yes install_target=  \
+    extraoptions="$(GRUBOPTS)" 
     
 $(AROSDIR)/boot/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1
 	%mkdirs_q $(dir $@)

@@ -68,25 +68,21 @@ BOOT_TAR_FILES := \
     Tools/Editor Tools/HDToolBox Tools/HDToolBox.info Tools.info \
     Utilities/MultiView Utilities/Multiview.info Utilities.info 
 
-ifneq ($(AROS_TARGET_VARIANT),tiny)
-BOOT_TAR_FILES := $(BOOT_TAR_FILES) \
-    Classes/Zune/Aboutmui.mui Classes/Zune/Balance.mui Classes/Zune/Boopsi.mui \
-    Classes/Zune/Clock.mcc Classes/Zune/Coloradjust.mui \
-    Classes/Zune/Colorfield.mui Classes/Zune/IconListview.mui \
-    Classes/Zune/Popasl.mui Classes/Zune/Popframe.mui Classes/Zune/Popimage.mui \
-    Classes/Zune/Poppen.mui Classes/Zune/Radio.mui Classes/Zune/Scrollgroup.mui \
-    Classes/Zune/Settingsgroup.mui Classes/Zune/Virtgroup.mui
-endif    
-
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/bootdisk
 BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
+
+CDBOOT_FILES     := boot/grub/stage1 boot/grub/stage2 boot/grub/menu.lst
+CDBOOT_SRC_DIR   := $(AROSDIR)
+CDBOOT_DST_DIR   := $(OSGENDIR)/cdboot
+CDBOOT_DST_FILES := $(foreach f, $(CDBOOT_FILES), $(CDBOOT_DST_DIR)/$(f))
 
 #MM
 setup-pc-i386 :
 	%mkdirs_q $(OSGENDIR)/boot
 	%mkdirs_q $(BINDIR)/boot
 	%mkdirs_q $(BINDIR)/boot/grub
+	%mkdirs_q $(CDBOOT_DST_DIR)/boot/grub
 	-$(RM) -r $(BOOT_DEST_DIR)/*
 	%mkdirs_q $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)/C
@@ -116,6 +112,9 @@ $(BINDIR)/boot/grub/menu.lst.DH0 : menu.lst.DH0
 $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386.gz
 	@$(CP) $^ $@
 
+$(CDBOOT_DST_DIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386.gz
+	@$(CP) $^ $@
+
 #MM workbench-boot-pc-i386
 workbench-boot-pc-i386:
 	@$(NOP)
@@ -132,6 +131,10 @@ $(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_D
 $(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz install
 $(OSGENDIR)/boot/aros.bin: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
 	$(COPYTOAFS) $@ --name "AROS Live Floppy" --size floppy1440 $(BOOT_DEST_DIR)
+	./install $@
+
+$(OSGENDIR)/boot/cdboot.bin: $(CDBOOT_DST_FILES) $(CDBOOT_DST_DIR)/boot/aros-pc-i386.gz install $(BINDIR)/boot/grub/menu.lst
+	$(COPYTOAFS) $@ --name "AROS CD Boot Image" --size floppy1440 $(CDBOOT_DST_DIR)
 	./install $@
 
 $(BOOT_DEST_DIR)/S/Startup-Sequence:
@@ -160,19 +163,22 @@ $(BOOT_DEST_DIR)/AROS.pkg :
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
 
+$(CDBOOT_DST_DIR)/% : $(CDBOOT_SRC_DIR)/%
+	@$(CP) $< $@
+
 #MM- bootiso : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-#MM bootiso-pc-i386 : software-pc-i386 bootdisk-pc-i386
+#MM bootiso-pc-i386 : software-pc-i386
 bootiso-pc-i386: $(OSGENDIR)/boot/aros.iso
 
-$(AROSDIR)/boot/aros.bin : $(OSGENDIR)/boot/aros.bin
+$(AROSDIR)/boot/cdboot.bin : $(OSGENDIR)/boot/cdboot.bin
 	@$(CP) $< $@
 
 #TODO: it depend on all files in workbench dir
-$(OSGENDIR)/boot/aros.iso: $(AROSDIR)/boot/aros.bin
+$(OSGENDIR)/boot/aros.iso: $(AROSDIR)/boot/cdboot.bin
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@mkisofs \
 		-output $(OSGENDIR)/boot/aros.iso \
-		-b boot/aros.bin \
+		-b boot/cdboot.bin \
 		-allow-leading-dots \
                 -V "AROS Live CD" \
 		-p "AROS Development Team" -P "AROS Development Team" -R -J \
