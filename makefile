@@ -100,6 +100,7 @@ endif
 # \item{checkerr} Checks if any error has been occurred during compile
 #
 # END_DESC{internaltarget}
+.PHONY: checkerr
 checkerr :
 	@if test -e $(TOP)/errors ; then \
 	    $(RM) $(TOP)/errors ; \
