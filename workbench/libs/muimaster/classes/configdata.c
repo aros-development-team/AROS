@@ -35,13 +35,25 @@ struct MUI_ConfigdataData
     int test;
 };
 
-static APTR GetConfigData(Object *obj, ULONG id, APTR def)
+static CONST_STRPTR GetConfigString(Object *obj, ULONG id, CONST_STRPTR def)
 {
-    APTR f = (APTR)DoMethod(obj, MUIM_Dataspace_Find, id);
+    CONST_STRPTR f = (CONST_STRPTR)DoMethod(obj, MUIM_Dataspace_Find, id);
     if (!f)
 	return def;
     return f;
 }
+
+static ULONG GetConfigULong(Object *obj, ULONG id, ULONG def)
+{
+    ULONG v;
+    ULONG *vp = (ULONG *)DoMethod(obj, MUIM_Dataspace_Find, id);
+    if (!vp)
+	return def;
+    v = AROS_LONG2BE(*vp);
+    return v;
+}
+
+
 
 static void LoadPrefs(STRPTR filename, Object *obj)
 {
@@ -78,7 +90,7 @@ static void LoadPrefs(STRPTR filename, Object *obj)
 struct spec_cfg {
     ULONG muiv;
     ULONG cfgid;
-    char *defspec;
+    CONST_STRPTR defspec;
 };
 
 struct spec_cfg imspec_defaults[] =
@@ -137,7 +149,7 @@ static void init_imspecs (Object *obj, struct MUI_ConfigdataData *data)
     for (i = 0; i < Num_Imspec_Defaults; i++)
     {
 	struct spec_cfg *img = imspec_defaults + i;
-	CONST_STRPTR imspec = GetConfigData(obj, img->cfgid, img->defspec);
+	CONST_STRPTR imspec = GetConfigString(obj, img->cfgid, img->defspec);
 
 	D(bug("init_imspecs: %ld %lx %s ...\n", img->muiv, img->cfgid, imspec));
 	data->prefs.imagespecs[img->muiv] = imspec;
@@ -180,7 +192,7 @@ static void init_framespecs (Object *obj, struct MUI_ConfigdataData *data)
     for (i = 0; i < Num_Framespec_Defaults; i++)
     {
 	struct spec_cfg *fcfg = framespec_defaults + i;
-	CONST_STRPTR framespec = GetConfigData(obj, fcfg->cfgid, fcfg->defspec);
+	CONST_STRPTR framespec = GetConfigString(obj, fcfg->cfgid, fcfg->defspec);
 	zune_frame_spec_to_intern(framespec,
 				  &data->prefs.frames[fcfg->muiv]);
     }
@@ -244,7 +256,7 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /*---------- group stuff ----------*/
 
     data->prefs.group_title_position = GROUP_TITLE_POSITION_CENTERED;
-    data->prefs.group_title_color = GROUP_TITLE_COLOR_BLACK;
+    data->prefs.group_title_color = GROUP_TITLE_COLOR_HILITE;
     data->prefs.group_hspacing = 4;
     data->prefs.group_vspacing = 4;
 
@@ -255,15 +267,19 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- Buttons ----------*/
 
-    data->prefs.radiobutton_hspacing = 4;
-    data->prefs.radiobutton_vspacing = 2;
+    data->prefs.radiobutton_hspacing = GetConfigULong(obj, MUICFG_Radio_HSpacing, 4);
+    data->prefs.radiobutton_vspacing = GetConfigULong(obj, MUICFG_Radio_VSpacing, 1);
 
     /*---------- Cycles ----------*/
 
-    data->prefs.cycle_menu_position = CYCLE_MENU_POSITION_CENTERED;
-    data->prefs.cycle_menu_min_entries = 2;
-    data->prefs.cycle_menu_speed = 0;
-    data->prefs.cycle_menu_recessed_entries = TRUE;
+    data->prefs.cycle_menu_position =
+	GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Position, CYCLE_MENU_POSITION_BELOW);
+    data->prefs.cycle_menu_min_entries =
+	GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Level, 2);
+    data->prefs.cycle_menu_speed =
+	GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Speed, 0);
+    data->prefs.cycle_menu_recessed_entries =
+	GetConfigULong(obj, MUICFG_Cycle_Menu_Recessed, FALSE);
 
     /*---------- Sliders ----------*/
     /* all taken care of in frames and images */
@@ -274,7 +290,8 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- Lists ----------*/
 
-    data->prefs.list_linespacing = 2;
+    data->prefs.list_linespacing =
+	GetConfigULong(obj, MUICFG_List_FontLeading, 1);
 
     /*---------- Strings ----------*/
     /* all taken care of in frames and images */
