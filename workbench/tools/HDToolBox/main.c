@@ -162,6 +162,7 @@ BOOL running=TRUE;
 				case ID_MAIN_EXIT :
 					if (reallyExit(&pt_list))
 					{
+						mountPartitions(&pt_list);
 						freePartitionTableList(&pt_list);
 						freeHDList(&hd_list);
 						running=FALSE;
