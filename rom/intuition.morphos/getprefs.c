@@ -4,9 +4,9 @@
     $Id$
 */
 
+#include <intuition/preferences.h>
 #include <proto/exec.h>
 #include "intuition_intern.h"
-#include <intuition/preferences.h>
 
 /*****************************************************************************
  
@@ -44,8 +44,6 @@ AROS_LH2(struct Preferences *, GetPrefs,
  
     INTERNALS
  
-    HISTORY
- 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -54,7 +52,7 @@ AROS_LH2(struct Preferences *, GetPrefs,
     DEBUG_GETPREFS(dprintf("GetPrefs: Buffer 0x%lx Size 0x%lx Inform %d\n",
                            prefbuffer, size));
 
-    if(prefbuffer)
+    if (prefbuffer != NULL && size != 0)
     {
         ULONG lock = LockIBase(0);
         CopyMem(GetPrivIBase(IntuitionBase)->ActivePreferences,
