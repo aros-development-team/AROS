@@ -25,22 +25,16 @@
       struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 16, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Calculates the ceil-value of a IEEE double precision number
+        Calculates the ceil-value of a IEEE double precision number
 
     INPUTS
-	y  - IEEE double precision floating point
-	z  - IEEE double precision floating point
+        y  - IEEE double precision floating point
 
     RESULT
-       +1 : y > z
-	0 : y = z
-       -1 : y < z
-
-
-	Flags:
-	  zero	   : y = z
-	  negative : y < z
-	  overflow : 0
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
 
     NOTES
 
@@ -49,8 +43,11 @@
     BUGS
 
     SEE ALSO
+        IEEEDPFloor()
 
     INTERNALS
+      ALGORITHM:
+         Ceil(y) = - Floor(-y)
 
     HISTORY
 
@@ -58,7 +55,24 @@
 {
 AROS_LIBFUNC_INIT
 
-  return 0ULL;
+  /*
+  if (is_eq(y,?,?,?)
+    return y;
+  */
+  XOR64QC(y, IEEEDPSign_Mask_Hi,
+             IEEEDPSign_Mask_Lo,
+             IEEEDPSign_Mask_64);
+  /* Ceil(y) = -Floor(-y); */
+  y = IEEEDPFloor(y);
+  if (is_eqC(y,0x0,0x0,0x0))
+    return 0;
+  else
+  {
+    XOR64QC(y, IEEEDPSign_Mask_Hi,
+               IEEEDPSign_Mask_Lo,
+               IEEEDPSign_Mask_64);
+    return y;
+  }
 
 AROS_LIBFUNC_EXIT
 } /* IEEEDPCeil */
