@@ -11,6 +11,7 @@
 #include "__time.h"
 #include "__errno.h"
 #include "__stat.h"
+#include "__upath.h"
 
 #include <sys/stat.h>
 
@@ -19,6 +20,10 @@ int stat(const char *path, struct stat *sb)
     int res = 0;
     BPTR lock;
 
+    path = __path_u2a(path);
+    if (path == NULL)
+        return -1;
+	
     lock = Lock(path, SHARED_LOCK);
     if (!lock)
     {
