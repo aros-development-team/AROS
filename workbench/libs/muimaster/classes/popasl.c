@@ -148,13 +148,22 @@ AROS_UFH3(ULONG,Popasl_Open_Function,
     	DeleteMsgPort(msg_port);
     	return 0;
     }
-    if (!(data->asl_proc = CreateNewProcTags(NP_Entry, Asl_Entry, TAG_DONE)))
+    
     {
-    	FreeVec(startup);
-    	DeleteMsgPort(msg_port);
-    	return 0;
-    }
+        struct TagItem *processTags = 
+        {
+            { NP_Entry, Asl_Entry },
+            { TAG_DONE            }
+        };
 
+        if (!(data->asl_proc = CreateNewProc( processTags )))
+        {
+            FreeVec(startup);
+            DeleteMsgPort(msg_port);
+            return 0;
+        }
+    }
+    
     startup->msg.mn_ReplyPort = msg_port;
     startup->msg.mn_Length = sizeof(struct Asl_Startup);
     startup->tags = data->tag_list;
