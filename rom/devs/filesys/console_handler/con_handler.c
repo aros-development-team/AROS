@@ -230,6 +230,7 @@ static LONG con_read(struct conbase *conbase, struct filehandle *fh, UBYTE *buff
     fh->conio->io_Data	  = buffer;
     fh->conio->io_Length  = *length_ptr;
     
+    kprintf("con_handler: Read() not implemened, thus entering endless loop\n");
     for (;;) {err = err;}
     err = DoIO( ioReq(fh->conio) );
     *length_ptr = fh->conio->io_Actual;
