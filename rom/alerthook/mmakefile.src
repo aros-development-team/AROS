@@ -26,7 +26,7 @@ kernel-alerthook-module : show-flags $(OSMODDIR)/alert.hook
 
 $(OSMODDIR)/alert.hook : $(OBJS)
 	@$(ECHO) "Building $@ ..."
-	@$(CC) $(ILDFLAGS) $(OBJS) $(GENMAP) alert.map -o $@ 2>&1|tee alert.err
+	@$(CC) $(ILDFLAGS) $(OBJS) $(GENMAP) alerthook.map -o $@ 2>&1|tee alert.err
 	@if $(TEST) ! -s alert.err ; then rm alert.err ; else true ; fi
 	@strip $@
 
