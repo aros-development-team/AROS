@@ -1,5 +1,5 @@
 # $Id$
-TOP=..
+TOP=../..
 
 # Use OS's own includes over the local ones
 SPECIAL_CFLAGS=-I/usr/include
@@ -33,7 +33,7 @@ FUNCTIONS = \
 ASMFUNCTIONS = forbid permit disable getcc cacheclearu
 
 else
-LIBS = 
+LIBS =
 
 FILES = init execfunctions
 
