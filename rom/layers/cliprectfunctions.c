@@ -110,6 +110,8 @@ struct ClipRect * Case_0(struct Rectangle * R,
   /* first let's see whether the area has alreay been backed up one */
   if (NULL == CR->BitMap)
   {
+if (CR->lobs)
+  kprintf("!!!!!!!!!!!!!!!!!!!! error !!!\n");
     /* we have to back it up now because it will be hidden by the
        new layer
     */
@@ -334,7 +336,8 @@ struct ClipRect * Case_2(struct Rectangle * R,
 
     bm_old = CR->BitMap;
     if (NULL != bm_old)
-    { /* get two new bitmap structures
+    { /* 
+         get two new bitmap structures
          they have the same height, but different width
        */
 
@@ -345,7 +348,8 @@ struct ClipRect * Case_2(struct Rectangle * R,
       DEF_DO_THE_BLIT(CR_New1, CR-> lobs, display_bm);
 
       CR->lobs = newlayer;
-      /* dispose the old bitmap structure as everything
+      /* 
+         Dispose the old bitmap structure as everything
          that was backed up there is now in the two other
          bitmap structures
       */
@@ -976,7 +980,7 @@ struct ClipRect * Case_7(struct Rectangle * R,
     CR_New2->bounds.MaxY = DEF_Y1;
 
     CR_New3->bounds.MinX = DEF_MINX;
-    CR_New3->bounds.MinY = DEF_Y0+1;
+    CR_New3->bounds.MinY = DEF_Y1+1;
     CR_New3->bounds.MaxX = DEF_MAXX;
     CR_New3->bounds.MaxY = DEF_MAXY;
 

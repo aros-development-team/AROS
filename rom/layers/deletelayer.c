@@ -103,11 +103,14 @@
   if (NULL != LD->front)
   {
     LD->front->back = LD->back;
-    LD->back->front = LD->front;
+
+    if (LD->back)
+      LD->back->front = LD->front;
   }
   else /* take out the very first layer */
   {
     LI -> top_layer = LD -> back;
+
     if (NULL != LD->back)
       LD->back->front = NULL;
   }
@@ -115,12 +118,12 @@
   /* Let's delete the ClipRects of the layer LD that are
      hidden themselves. 
      The other ClipRects I add to the damage List for
-     me to refresh (clear) through at the end.
+     me to refroesh (clear) through at the end.
   */
 
   /* clear the region that is there */
   ClearRegion(LD->DamageList);
-  
+
   CR = LD->ClipRect;
   while (NULL != CR)
   {
@@ -141,7 +144,7 @@
          to clear later on. Parts that do not have to be cleared
          later on will be taken out further below with a call
          to ClearRectRegion(). These parts are restored from
-         other layers.
+         other layers which were hidden by that layer.
       */
       status = OrRectRegion(LD->DamageList, &CR->bounds);
       if (FALSE == status)
@@ -162,7 +165,7 @@
   */
   
   /* there is a damagelist left and there is a layer behind */
-  
+
   if (NULL != LD->DamageList->RegionRectangle && NULL != LD->back)
   {
     /* 
@@ -245,58 +248,57 @@
       } /* while */
       L_behind = L_behind -> back;
     }
-  
-    /* !! this is not implemented !! */
-    /* 
-       The List of the ClipRects of the layer LD should
-       now only contain these parts that have to be cleared
-       in the bitmap. 
-    */
-    /*
-        The last thing we have to do now is clear those parts of
-        the deleted layer that we not hiding anything.
-        !!! Actuall we should use EraseRect() here so the background
-        can be restored with the installed backfill hook.
-    */
-    R = LD->DamageList;
+  }
+    
+  /* 
+     The List of the ClipRects of the layer LD should
+     now only contain these parts that have to be cleared
+     in the bitmap. 
+  */
+  /*
+      The last thing we have to do now is clear those parts of
+      the deleted layer that we not hiding anything.
+      !!! Actuall we should use EraseRect() here so the background
+      can be restored with the installed backfill hook.
+  */
+  R = LD->DamageList;
 
-    SetAPen(LD->rp, 255);
 
-    RR = R->RegionRectangle;
-    /* check if a region is empty */
-    while (NULL != RR)
-    {
+
+  RR = R->RegionRectangle;
+  /* check if a region is empty */
+  while (NULL != RR)
+  {
 /*
-      Move(LD->rp,RR->bounds.MinX,RR->bounds.MinY);
-      Draw(LD->rp,RR->bounds.MaxX,RR->bounds.MinY);
-      Draw(LD->rp,RR->bounds.MaxX,RR->bounds.MaxY);
-      Draw(LD->rp,RR->bounds.MinX,RR->bounds.MaxY);
-      Draw(LD->rp,RR->bounds.MinX,RR->bounds.MinY);
-      Delay(10);
+    Move(LD->rp,RR->bounds.MinX,RR->bounds.MinY);
+    Draw(LD->rp,RR->bounds.MaxX,RR->bounds.MinY);
+    Draw(LD->rp,RR->bounds.MaxX,RR->bounds.MaxY);
+    Draw(LD->rp,RR->bounds.MinX,RR->bounds.MaxY);
+    Draw(LD->rp,RR->bounds.MinX,RR->bounds.MinY);
+    Delay(10);
 
-      printf("Found RectangleRegion: (%i,%i) - (%i,%i)\n",
-        RR->bounds.MinX,
-        RR->bounds.MinY,
-        RR->bounds.MaxX,
-        RR->bounds.MaxY);
+    printf("Found RectangleRegion: (%i,%i) - (%i,%i)\n",
+      RR->bounds.MinX,
+      RR->bounds.MinY,
+      RR->bounds.MaxX,
+      RR->bounds.MaxY);
 */
-      BltBitMap(
-        LD->rp->BitMap, /* don't need a source but mustn't give NULL!!!*/
-        0,
-        0,
-        LD->rp->BitMap,
-        RR->bounds.MinX + R->bounds.MinX,
-        RR->bounds.MinY + R->bounds.MinY,
-        RR->bounds.MaxX - RR->bounds.MinX + 1,
-        RR->bounds.MaxY - RR->bounds.MinY + 1,
-        0x000, /* clear destination */
-        0xff,
-        NULL
-      );      
-      RR = RR->Next;
-    } /* while */
-  
-  } /* if */
+
+    BltBitMap(
+      LD->rp->BitMap, /* don't need a source but mustn't give NULL!!!*/
+      0,
+      0,
+      LD->rp->BitMap,
+      RR->bounds.MinX + R->bounds.MinX,
+      RR->bounds.MinY + R->bounds.MinY,
+      RR->bounds.MaxX - RR->bounds.MinX + 1,
+      RR->bounds.MaxY - RR->bounds.MinY + 1,
+      0x000, /* clear destination */
+      0xff,
+      NULL
+    );      
+    RR = RR->Next;
+  } /* while */
   
   /*
      Free 
@@ -304,6 +306,7 @@
      - damagelist 
      - layer structure itself
    */
+ 
    
   FreeMem(LD->rp, sizeof(struct RastPort));
   DisposeRegion(LD->DamageList);
