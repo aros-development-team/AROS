@@ -1,19 +1,36 @@
-# $Id:
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-FILES	:=	pcihw pciutil pci_init functable
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
-END_FILE :=	$(OBJDIR)/endtag
-ENDFUNC :=	$(END_FILE).o
+MY_INCLS    := $(wildcard include/*.h)
+DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+FILES	    := pci_init pciclass pci_hw functable
+OBJDIR	    := $(GENDIR)/$(CURDIR)
+END_FILE    := $(OBJDIR)/endtag
+ENDFUNC     := $(END_FILE).o
 
-#MM Drivers-native-i386 : 
-Drivers-native-i386 : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/pci_driver
+#MM Drivers-native-i386-pci : 
+Drivers-native-i386-pci : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
+	%add_objects rom/boot/hidd.kernel.pci
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(OSGENDIR)/boot/pci_driver.o
-	@objcopy -R .note -R .comment $(OSGENDIR)/boot/pci_driver.o
+	    -o $(OSGENDIR)/boot/hidd.kernel.pci.o
+	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.kernel.pci.o
+
+#MM
+includes-native-i386 : $(DEST_INC) $(GEN_INC)
+	@$(NOP)
+
+$(INCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+$(GENINCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+#MM
+setup-includes :
+	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
 
 #MM
 clean ::
@@ -32,9 +49,12 @@ $(OBJDIR)/%.o : %.c
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
-onbitmap.s: onbitmap.c
+irq.s: irq.c
 	%ctoasm_q
-
+	
+irq_init.s: irq_init.c
+	%ctoasm_q
+	
 %libdefs_rule
 	
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
