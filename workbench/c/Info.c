@@ -604,10 +604,14 @@ void doInfo()
 
 			if(lock != NULL)
 			{
-			    if(Info(lock, &id))
+			    D(bug("Got lock on %s\n", name));
+
+			    if(Info(lock, &id) == DOSTRUE)
 			    {
 				ULONG  x, y;
 				
+				D(bug("Got info on %s\n", name));
+
 				LPrintf(~0, nfmtstr, name);
 				
 				x = ComputeKBytes(id.id_NumBlocks, id.id_BytesPerBlock);
@@ -617,6 +621,8 @@ void doInfo()
 				PrintNum(y); 
 				PrintNum(x - y);
 				
+				D(bug("Calling NameFromLock()\n"));
+
 				if(NameFromLock(lock, name, 108L))
 				{
 				    LONG len = strlen(name) - 1;
@@ -642,10 +648,10 @@ void doInfo()
 				}
 				else
 				    x = 0;
+
+ 				// y = ((struct DeviceList *)BADDR(id.id_VolumeNode))->dl_DiskType;
 				
-				y = ((struct DeviceList *)BADDR(id.id_VolumeNode))->dl_DiskType;
-				
-				if(!y)
+				//				if(!y)
 				    y = id.id_DiskType;
 				
 				if((idn->DosType & ID_DOS_DISK) != ID_DOS_DISK)
@@ -664,6 +670,8 @@ void doInfo()
 					    id.id_NumBlocks-id.id_NumBlocksUsed, id.id_BytesPerBlock );
 				}
 			    }
+			    else
+				D(bug("Info failure\n"));
 			    
 			    UnLock(lock);
 			}
