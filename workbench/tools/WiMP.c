@@ -157,6 +157,9 @@ struct List lv_list;
 APTR vi;
 struct Gadget *glist = NULL;
 struct Gadget *screenlistg = NULL;
+struct Gadget *actiong = NULL;
+#define ACTIONGLENW 6
+#define ACTIONGLENS 2
 
 static struct NewMenu nm[] = {
   {NM_TITLE, "Project"},
@@ -245,6 +248,40 @@ struct Gadget *gt_init()
     return gad;
 }
 
+VOID update_actionglist()
+{
+struct Gadget *gad;
+int i, type, max;
+
+  getsw(&type);
+  gad = actiong;
+
+  if( type == Screen_type )
+  {
+    max = ACTIONGLENS;
+  }
+  else if( type == None_type )
+  {
+    max = ACTIONGLENW;
+  }
+  else
+  {
+    max = 0;
+  }
+  for ( i = ACTIONGLENW ; i > 0 ; i-- )
+  {
+    if ( i > max )
+    {
+      OnGadget(gad,Window,NULL);
+    }
+    else
+    {
+      OffGadget(gad,Window,NULL);
+    }
+    gad = gad->NextGadget;
+  }
+}
+
 VOID makemenus()
 {
     menus = CreateMenusA(nm,NULL);
@@ -266,8 +303,9 @@ struct Gadget *makegadgets(struct Gadget *gad)
     
     initlvnodes(&lv_list);
     gad = CreateGadget(LISTVIEW_KIND, gad, &listviewgad,
-    		GTLV_Labels,	(IPTR)&lv_list,
-    		GTLV_ReadOnly,	FALSE,
+    		GTLV_Labels,		(IPTR)&lv_list,
+    		GTLV_ShowSelected,	NULL,
+    		GTLV_ReadOnly,		FALSE,
 		TAG_DONE);
     screenlistg = gad;
 
@@ -279,6 +317,7 @@ struct Gadget *makegadgets(struct Gadget *gad)
 
     gad = CreateGadget(BUTTON_KIND, gad, &killgad,
 		TAG_DONE);
+    actiong = gad;
 
     gad = CreateGadget(BUTTON_KIND, gad, &frontgad,
 		TAG_DONE);
@@ -299,6 +338,7 @@ struct Gadget *makegadgets(struct Gadget *gad)
         FreeGadgets(glist);
         printf("GTDemo: Error creating gadgets\n");
     }
+    update_actionglist();
     return gad;
 }
 
@@ -421,8 +461,9 @@ VOID update_list()
   initlvnodes(&lv_list);
   GT_SetGadgetAttrs(screenlistg,Window,NULL,
       GTLV_Labels, (IPTR)&lv_list,
-      GTLV_Selected, (IPTR)-1,
+      GTLV_Selected, (IPTR)~0,
       TAG_DONE);
+  update_actionglist();
   GT_RefreshWindow(Window,NULL);
 }
 
@@ -467,7 +508,7 @@ int quit=0;
       case IDCMP_MENUPICK :
 		while (code!=MENUNULL)
 		{
-		  printf("Menu: %d %d %d\n",MENUNUM(code),ITEMNUM(code),SUBNUM(code));
+//		  printf("Menu: %d %d %d\n",MENUNUM(code),ITEMNUM(code),SUBNUM(code));
 		  switch(MENUNUM(code))
 		  {
 		    case 0: /* Project */
@@ -740,6 +781,7 @@ int quit=0;
 			break;
 
 		  case ID_LISTVIEW:
+			update_actionglist();
 			break;
 
 		  default:
