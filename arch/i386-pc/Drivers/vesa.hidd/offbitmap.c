@@ -20,8 +20,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include "offbitmap.h"
 #include "bitmap.h"
+#include "offbitmap.h"
 #include "vesagfxclass.h"
 
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
@@ -132,7 +132,7 @@ static VOID MNAME(dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 6
+#define NUM_BITMAP_METHODS 7
 
 OOP_Class *init_vesagfxoffbmclass(struct VesaGfx_staticdata *xsd)
 {
@@ -145,13 +145,14 @@ OOP_Class *init_vesagfxoffbmclass(struct VesaGfx_staticdata *xsd)
     };
     struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
-	{(IPTR (*)())MNAME(putpixel)	, moHidd_BitMap_PutPixel    },
-	{(IPTR (*)())MNAME(getpixel)	, moHidd_BitMap_GetPixel    },
-	{(IPTR (*)())MNAME(fillrect)	, moHidd_BitMap_FillRect    },
-	{(IPTR (*)())MNAME(putimage)	, moHidd_BitMap_PutImage    },
-	{(IPTR (*)())MNAME(getimage)	, moHidd_BitMap_GetImage    },
-    	{(IPTR (*)())MNAME(putimagelut) , moHidd_BitMap_PutImageLUT },
-	{NULL	    	    	    	, 0UL	    	    	    }
+	{(IPTR (*)())MNAME(putpixel)	    	, moHidd_BitMap_PutPixel    	    },
+	{(IPTR (*)())MNAME(getpixel)	    	, moHidd_BitMap_GetPixel    	    },
+	{(IPTR (*)())MNAME(fillrect)	    	, moHidd_BitMap_FillRect    	    },
+	{(IPTR (*)())MNAME(putimage)	    	, moHidd_BitMap_PutImage    	    },
+	{(IPTR (*)())MNAME(getimage)	    	, moHidd_BitMap_GetImage    	    },
+    	{(IPTR (*)())MNAME(putimagelut)     	, moHidd_BitMap_PutImageLUT 	    },
+    	{(IPTR (*)())MNAME(blitcolorexpansion)	, moHidd_BitMap_BlitColorExpansion  },
+	{NULL	    	    	    	    	, 0UL	    	    	    	    }
     };
     struct OOP_InterfaceDescr ifdescr[] =
     {
