@@ -245,21 +245,26 @@ ifneq ("$(SHARED_AR)","")
 ifeq ("$(SHARED_EXEC)","yes")
 DEPLIBEXEC=$(LIBDIR)/libexec.so
 LIBEXEC=-lexec
-else
-DEPLIBEXEC=
-LIBEXEC=
 endif
 ifeq ("$(SHARED_DOS)","yes")
-DEPLIBEXEC=$(LIBDIR)/libdos.so
-LIBEXEC=-ldos
-else
-DEPLIBEXEC=
-LIBEXEC=
+DEPLIBDOS=$(LIBDIR)/libdos.so
+LIBDOS=-ldos
+endif
+ifeq ("$(SHARED_UTILITY)","yes")
+DEPLIBUTILITY=$(LIBDIR)/libutility.so
+LIBUTILITY=-lutility
+endif
+ifeq ("$(SHARED_GRAPHICS)","yes")
+DEPLIBGRAPHICS=$(LIBDIR)/libgraphics.so
+LIBGRAPHICS=-lgraphics
+endif
+ifeq ("$(SHARED_INTUITION)","yes")
+DEPLIBINTUITION=$(LIBDIR)/libintuition.so
+LIBINTUITION=-lintuition
 endif
 
-LIBLIBS=$(DEPLIBEXEC) $(DEPLIBDOS) $(LIBDIR)/libutility.so \
-	$(LIBDIR)/libgraphics.so \
-	$(LIBDIR)/libintuition.so
+LIBLIBS=$(DEPLIBEXEC) $(DEPLIBDOS) $(DEPLIBUTILITY) \
+	$(DEPLIBGRAPHICS) $(DEPLIBINTUITION) $(DEPLIBAROS)
 LIBPATH=$(shell cd $(LIBDIR) ; pwd)
 endif
 $(LIBAMIGAOS) : $(LIBOBJS) $(LIBLIBS) $(LIBDIR)/libamiga.a
@@ -269,7 +274,8 @@ ifeq ("$(SHARED_AR)","")
 	@$(RANLIB) $@
 else
 	@$(SHARED_AR) $@ $(LIBOBJS) -L$(LIBDIR) \
-		-lintuition -lgraphics $(LIBDOS) -lutility $(LIBEXEC) -lamiga
+		$(LIBINTUITION) $(LIBGRAPHICS) $(LIBDOS) \
+		$(LIBAROS) $(LIBUTILITY) $(LIBEXEC) -lamiga
 endif
 
 GENPROTOS=$(TOP)/scripts/genprotos
