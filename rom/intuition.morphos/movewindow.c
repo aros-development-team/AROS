@@ -75,8 +75,8 @@ AROS_LH3(void, MoveWindow,
         msg.dx = dx;
         msg.dy = dy;
 
-        //DoASyncAction((APTR)int_movewindow, &msg.msg, sizeof(msg), IntuitionBase);
-        DoSyncAction((APTR)int_movewindow, &msg.msg, IntuitionBase);
+        DoASyncAction((APTR)int_movewindow, &msg.msg, sizeof(msg), IntuitionBase);
+        //DoSyncAction((APTR)int_movewindow, &msg.msg, IntuitionBase);
     }
 
     AROS_LIBFUNC_EXIT

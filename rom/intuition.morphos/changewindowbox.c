@@ -101,8 +101,8 @@ AROS_LH5(void, ChangeWindowBox,
     }
     if (height > window->WScreen->Height) msg.height = window->WScreen->Height;
 
-//    DoASyncAction((APTR)int_changewindowbox, &msg.msg, sizeof(msg), IntuitionBase);
-    DoSyncAction((APTR)int_changewindowbox, &msg.msg, IntuitionBase);
+    DoASyncAction((APTR)int_changewindowbox, &msg.msg, sizeof(msg), IntuitionBase);
+//    DoSyncAction((APTR)int_changewindowbox, &msg.msg, IntuitionBase);
 
     AROS_LIBFUNC_EXIT
 

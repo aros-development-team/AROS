@@ -69,8 +69,8 @@ AROS_LH1(void, ZipWindow,
 
     msg.window = window;
 
-//    DoASyncAction((APTR)int_zipwindow, &msg.msg, sizeof(msg), IntuitionBase);
-    DoSyncAction((APTR)int_zipwindow, &msg.msg, IntuitionBase);
+    DoASyncAction((APTR)int_zipwindow, &msg.msg, sizeof(msg), IntuitionBase);
+//    DoSyncAction((APTR)int_zipwindow, &msg.msg, IntuitionBase);
 
     AROS_LIBFUNC_EXIT
 
