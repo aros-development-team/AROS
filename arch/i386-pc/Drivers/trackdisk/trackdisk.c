@@ -133,7 +133,7 @@ AROS_LH2(struct TrackDiskBase *,  init,
     	"andl $0xff,%%eax"
     	:"=a"(drives)
     	:
-    	:"eax","cc");
+    	:"cc");
 
     /* Build units */
     	
