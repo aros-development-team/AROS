@@ -425,8 +425,6 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     if (!(data->mtd_Flags & MTDF_SETMIN))
 	msg->MinMaxInfo->MinWidth = 0;
 
-    msg->MinMaxInfo->DefWidth = 0;
-
     D(bug("muimaster.library/text.c: Text_AskMinMax 0x%lx: Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj,
 	msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight,
 	msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight,
