@@ -229,7 +229,7 @@ static LONG Dataspace_WriteIFF(struct IClass *cl, Object *obj, struct MUIP_Datas
     iter = (struct Dataspace_Node *)List_First(&data->list);
     while (iter)
     {
-    	rc = WriteChunkBytes(msg->handle,&iter->id,iter->len); /* ID - LEN - DATA */
+    	rc = WriteChunkBytes(msg->handle,&iter->id,iter->len+8); /* ID - LEN - DATA */
     	if (rc < 0) return rc;
 	iter = (struct Dataspace_Node*)Node_Next(iter);
     }
