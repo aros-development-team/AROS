@@ -47,37 +47,6 @@ SYMBOL_NAME_STR(IRQ) #nr "_interrupt:\n\t"   \
         "add	sp, sp, #(17*4)\n\t"         \
         "subs   pc, lr, #4\n\t");
 
-#define BUILD_IRQ_old(nr)                    \
-/*asmlinkage*/ void IRQ_NAME(nr);            \
-__asm__(                                     \
-        "\n\t.text\n\t"                      \
-        ".globl "SYMBOL_NAME_STR(IRQ) #nr "_interrupt\n\t"           \
-        ".type  "SYMBOL_NAME_STR(IRQ) #nr "_interrupt, function\n\t" \
-        "\n\t"__ALIGN_STR"\n"                \
-SYMBOL_NAME_STR(IRQ) #nr "_interrupt:\n\t"   \
-        "stmdb	sp!,{r0-r4}\n\t"             \
-        "movnv	r0,r0\n\t"                   \
-        "stmdb	sp!,{r0-r12,sp,lr}^\n\t"     \
-        "movnv	r0,r0\n\t"                   \
-        "mrs	r0,spsr\n\t"                 \
-        "stmdb	sp!,{r0,lr}\n\t"             \
-        "movnv	r0,r0\n\t"                   \
-        "mov	r0,sp\n\t"                   \
-        "mov	r1,#0\n\t"                   \
-        "bl    "SYMBOL_NAME_STR(do_IRQ)"\n\t"\
-        "movnv	r0,r0\n\t"                   \
-        "ldmia  sp!,{r0,lr}\n\t"             \
-        "movnv	r0,r0\n\t"                   \
-        "msr	spsr,r0\n\t"                 \
-        "mov	r4,sp\n\t"                   \
-        "ldmia  r4!,{r0-r12,sp,lr}^\n\t"     \
-        "movnv	r0,r0\n\t"                   \
-        "add	sp, sp, #60\n\t"             \
-        "ldmia  sp!,{r0-r4}\n\t"             \
-        "movnv	r0,r0\n\t"                   \
-        "subs   pc,lr,#4\n\t");
-
-
 struct PlatformData
 {
 	struct irqDescriptor    irq_desc[NR_IRQS];
