@@ -26,7 +26,7 @@
 #include <aros/asmcall.h>
 #include <aros/machine.h>
 #include <aros/macros.h>
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "ffs_handler_gcc.h"
 #endif
 #include <stddef.h>
