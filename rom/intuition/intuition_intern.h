@@ -608,6 +608,7 @@ struct IntScreen
 #define SF_IsChild  	    (0x0002)
 #define SF_InvisibleBar     (0x0004)
 #define SF_AppearingBar     (0x0008)
+#define SF_SysFont  	    (0x0010)
 
 struct IntIntuiMessage
 {
