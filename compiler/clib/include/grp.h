@@ -30,7 +30,7 @@ struct group
 __BEGIN_DECLS
 
 struct group *getgrgid(gid_t gid);
-/* NOTIMPL struct group *getgrnam(const char *name); */
+struct group *getgrnam(const char *name);
 
 #if __POSIX_VISIBLE >= 200112
 /* NOTIMPL int getgrgid_r(gid_t gid, struct group *grp, char *buffer, size_t bufsize,
@@ -40,9 +40,9 @@ struct group *getgrgid(gid_t gid);
 #endif
 
 #if __XSI_VISIBLE
-/* NOTIMPL struct group *getgrent(void); */
-/* NOTIMPL void endgrent(void); */
-/* NOTIMPL void setgrent(void); */
+struct group *getgrent(void);
+void endgrent(void);
+void setgrent(void);
 #endif
 
 __END_DECLS

@@ -251,7 +251,7 @@ int         ftruncate(int fd, off_t length);
 #endif
 
 #if __POSIX_VISIBLE >= 200112 || __XSI_VISIBLE
-/* NOTIMPL int         fchown(int fd, uid_t owner, gid_t group); */
+int         fchown(int fd, uid_t owner, gid_t group);
 ssize_t     readlink(const char * restrict path, char * restrict buf, int bufsize);
 #endif
 
