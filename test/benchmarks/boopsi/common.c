@@ -84,6 +84,7 @@ BOOPSI_DISPATCHER(IPTR, Test_Dispatcher, CLASS, self, message)
     
     return (IPTR) NULL;
 }
+BOOPSI_DISPATCHER_END
 
 /*** Setup ******************************************************************/
 struct MUI_CustomClass *Test_CLASS;
