@@ -26,20 +26,18 @@ Boston, MA 02111-1307, USA.  */
 typedef struct
 {
     Node node;
-
-    /* The current target doesn't appear in the Makefile itself; it's
-       just a metatarget. Don't try to run make with it. */
-    int  virtualtarget : 1;
+    int virtualtarget : 1;
+    
+    Makefile * makefile;
 }
-Makefile;
-
+MakefileRef;
+   
 typedef struct
 {
     Node node;
     int  updated : 1;
 
     List makefiles;
-    List deps;
 }
 Target;
 

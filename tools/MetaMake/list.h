@@ -86,6 +86,7 @@ List;
 	    (node)=(void *)(nextnode))
 
 /* Functions */
+void AssignList (List * dest, List * src);
 void *FindNode (const List * l, const char * name);
 void printlist (List * l);
 void freelist (List * l);

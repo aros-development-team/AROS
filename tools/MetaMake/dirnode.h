@@ -31,15 +31,42 @@ typedef struct _DirNode DirNode;
 struct _DirNode
 {
     Node node;
+    
+    DirNode * parent;
     time_t	time;
-    DirNode   * parent;
     List subdirs;
+    List makefiles;
 };
 
+typedef struct
+{
+    Node node;
+
+    int virtualtarget;
+    List deps;
+}
+MakefileTarget;
+
+typedef struct
+{
+    Node node;
+
+    DirNode * dir; /* The directory where this makefile is located */
+    time_t time; /* Last time this Makefile was scanned for targets */
+    List targets; /* list of MakefileTargets: targets present in this makefile */
+}
+Makefile;
+
 void printdirnode (DirNode * node, int level);
-void freecachenodes (DirNode * node);
+void printdirnodemftarget (DirNode * node);
+void freedirnode (DirNode * node);
+void freemakefile (Makefile * makefile);
 DirNode * finddirnode (DirNode * node, const char * path);
-DirNode * adddirnode (DirNode * node, const char * path);
+int scandirnode (DirNode * node, const char * mfname, List * ignoredirs);
+int scanmakefiles (DirNode * node, List * vars);
+Makefile * addmakefile (DirNode * node, const char * filename);
+Makefile * findmakefile (DirNode * node, const char * filename);
+const char * buildpath (DirNode * node);
 DirNode * readcachedir (FILE * fh);
 int writecachedir (FILE * fh, DirNode * node);
 

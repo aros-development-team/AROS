@@ -87,7 +87,7 @@ substvars (List * varlist, const char * str)
 	else
 	    *dest ++ = *src ++;
 
-	assert (dest<buffer+1024);
+	assert (dest<buffer+sizeof(buffer));
     }
 
     *dest = 0;

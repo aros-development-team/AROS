@@ -55,9 +55,6 @@ Boston, MA 02111-1307, USA.  */
 #ifdef HAVE_SYS_TYPES_H
 #   include <sys/types.h>
 #endif
-#ifdef HAVE_NETINET_IN_H
-#   include <netinet/in.h> /* for htonl/ntohl() */
-#endif
 
 #include "list.h"
 #include "mem.h"
@@ -79,7 +76,9 @@ error (char * fmt, ...)
     VA_START (args, fmt);
     fprintf (stderr, "Error: ");
     vfprintf (stderr, fmt, args);
-    fprintf (stderr, ": %s\n", strerror (errno));
+    if (errno != 0)
+	fprintf (stderr, ": %s", strerror (errno));
+    fprintf (stderr, "\n");
     va_end (args);
 }
 
@@ -87,7 +86,6 @@ error (char * fmt, ...)
 int
 main (int argc, char ** argv)
 {
-    Project * prj, * next;
     char * currdir;
     int t;
     char * targets[64];
@@ -159,7 +157,7 @@ main (int argc, char ** argv)
 	if (!prj)
 	{
 	    printf ("Nothing known about project %s\n", pname);
-	    return;
+	    return 20;
 	}
 	
 	maketarget (prj, tname);
