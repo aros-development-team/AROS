@@ -23,6 +23,9 @@
 
 #include "notify.h"
 
+#define MYDEBUG
+#include "debug.h"
+
 extern struct Library *MUIMasterBase;
 
 /*
@@ -185,9 +188,12 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
     if (tag->ti_Tag != nnode->nn_TrigAttr)
 	return;
 
-    /*Is the notification already being performed? */
+    /* Is the notification already being performed? */
     if (nnode->nn_Active)
+    {
+	D(bug("Notifyloop detected!\n"));
         return;
+    }
 
     if
     (
