@@ -20,6 +20,7 @@
 #define ImageObject         MUI_NewObject(MUIC_Image
 #define BitmapObject        MUI_NewObject(MUIC_Bitmap
 #define BodychunkObject     MUI_NewObject(MUIC_Bodychunk
+#define ChunkyImageObject   MUI_NewObject(MUIC_ChunkyImage
 #define NotifyObject        MUI_NewObject(MUIC_Notify
 #define ApplicationObject   MUI_NewObject(MUIC_Application
 #define TextObject          MUI_NewObject(MUIC_Text
@@ -146,6 +147,9 @@
  MUI_MakeObject()
 **************************************************************************/
 #define SimpleButton(label) MUI_MakeObject(MUIO_Button,label)
+
+#define CoolImageButton(label,image) MUI_MakeObject(MUIO_CoolButton, label, image, 0)
+#define CoolImageIDButton(label,imageid) MUI_MakeObject(MUIO_CoolButton, label, imageid, MUIO_CoolButton_CoolImageID)
 
 #ifdef MUI_OBSOLETE
 /**************************************************************************
