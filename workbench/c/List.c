@@ -283,25 +283,20 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
 		break;
 
-		/* Volume name */
+		/* Path incl. volume name*/
 	    case 'F':
 		{
-		    STRPTR pEnd = PathPart(lf->filename);
-		    UBYTE  token = 0;     /* Set only to avoid a warning */
-
-		    if (pEnd != NULL)
-		    {
-			token = pEnd[2];
-			pEnd[1] = 0;
-		    }
+		    STRPTR pEnd = FilePart(lf->filename);
+		    UBYTE  token;
+		    
+		    token = pEnd[0];
+		    pEnd[0] = 0;
 		    
 		    printf(lf->filename);
 
 		    /* Restore filename */
-		    if (pEnd != NULL)
-		    {
-			pEnd[1] = token;
-		    }
+		    pEnd[0] = token;
+
 		}
 
 		break;
@@ -378,9 +373,10 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
 		break;
 
+    	    	/* Path name, but without volume */
 	    case 'P':
 		{
-		    STRPTR end = PathPart(lf->filename) + 1;
+		    STRPTR end = FilePart(lf->filename);
 		    STRPTR start = strchr(lf->filename, ':');
 		    UBYTE  token = *end;
 		    
