@@ -64,11 +64,11 @@ static const char end;
 
 struct filehandle
 {
-    char * name; /*full name includeing pathname */
+    char * name;     /* full name including pathname */
     int    type;
     char * pathname; /* if type == FHD_FILE then you'll find the pathname here */
     long   dirpos;   /* and how to reach it via seekdir(.,dirpos) here. */
-    long   DIR;      /* both of these vars will be filled in by examine *only* */
+    long   DIR;      /* both of these vars will be filled in by examine *only* (at the moment) */
     long   fd;
 };
 #define FHD_FILE      0
@@ -276,14 +276,29 @@ static LONG free_lock(struct filehandle *current)
 	       current->fd!=STDERR_FILENO)
 	    {
 		close(current->fd);
+		printf("freeing name %s\n",current->name);
 		free(current->name);
-		free(current->pathname);
+
+		if (current->pathname)
+		{
+ 		  printf("freeing pathname %s\n",current->pathname);
+		  free(current->pathname);
+		}
+
 		if (current->DIR)
-		  closedir((DIR *)current->DIR);
+		{
+		  printf("(1)closing dir!\n");
+		  //closedir((DIR *)current->DIR);
+		}
 	    }
 	    break;
 	case FHD_DIRECTORY:
-	    closedir((DIR *)current->fd);
+            if (current->fd)
+            {
+              printf("(2)closing dir!\n");
+	      closedir((DIR *)current->fd);
+	    }
+	    
 	    free(current->name);
 	    break;
     }
@@ -303,6 +318,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
     if(fh!=NULL)
     {
         fh->pathname = NULL; /* just to make sure... */
+        fh->DIR      = 0;
 	/* If no filename is given and the file-descriptor is one of the
 	   standard filehandles (stdin, stdout, stderr) ... */
 	if((!name[0]) && ((*handle)->type == FHD_FILE) &&
@@ -370,6 +386,8 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
     fh=(struct filehandle *)malloc(sizeof(struct filehandle));
     if(fh!=NULL)
     {
+        fh->pathname = NULL; /* just to make sure... */
+        fh->DIR      = NULL;
 	/* If no filename is given and the file-descriptor is one of the
 	   standard filehandles (stdin, stdout, stderr) ... */
 	if ((!name[0]) && ((*handle)->type==FHD_FILE) &&
@@ -418,6 +436,8 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
     fh = (struct filehandle *)malloc(sizeof(struct filehandle));
     if (fh)
     {
+        fh->pathname = NULL; /* just to make sure... */
+        fh->DIR      = 0;
 	ret = makefilename(emulbase, &fh->name, (*handle)->name, filename);
 	if (!ret)
 	{
@@ -487,12 +507,20 @@ static LONG startup(struct emulbase *emulbase)
 	fhi=(struct filehandle *)malloc(sizeof(struct filehandle));
 	if(fhi!=NULL)
 	{
+            fhi->pathname = NULL; /* just to make sure... */
+            fhi->DIR      = 0;
+	
 	    fho=(struct filehandle *)malloc(sizeof(struct filehandle));
 	    if(fho!=NULL)
 	    {
+                fho->pathname = NULL; /* just to make sure... */
+                fho->DIR      = 0;
+
 		fhe=(struct filehandle *)malloc(sizeof(struct filehandle));
 		if(fhe!=NULL)
 		{
+                    fhe->pathname = NULL; /* just to make sure... */
+                    fhe->DIR      = 0;
 		    fhv=(struct filehandle *)malloc(sizeof(struct filehandle));
 		    if(fhv != NULL)
 		    {
@@ -500,6 +528,8 @@ static LONG startup(struct emulbase *emulbase)
 
 			fhv->name = ".";
 			fhv->type = FHD_DIRECTORY;
+                        fhv->pathname = NULL; /* just to make sure... */
+                        fhv->DIR      = 0;
 
 			/* Make sure that the root directory is valid */
 			if(!stat(fhv->name,&st) && S_ISDIR(st.st_mode))
@@ -651,16 +681,16 @@ static LONG examine(struct filehandle *fh,
         char * filename;
         fh->pathname = pathname_from_name(fh->name);
         filename     = filename_from_name(fh->name);
-        fh->DIR      = opendir(fh->pathname);
+        fh->DIR      = (long)opendir(fh->pathname);
         do 
         {
-          dirEnt = readdir(fh->DIR);
+          dirEnt = readdir((DIR *)fh->DIR);
         }
         while (NULL != dirEnt &&
                0    != strcmp(dirEnt->d_name, filename));
         free(filename);
         if (NULL == dirEnt)
-          return ERROR_NO_MORE_ENTRIES; /* !!! */
+          return ERROR_NO_MORE_ENTRIES; /* !!! FIXME (return value correct?)*/
 
         *dirpos = (LONG)telldir((DIR *)fh->DIR);
         
@@ -725,13 +755,13 @@ static LONG examine_next(struct filehandle *fh,
     case FHD_DIRECTORY:
         seekdir((DIR *)fh->fd, FIB->fib_DiskKey);
         pathname = fh->name; /* it's just a directory!!! */
-        ReadDIR  = fh->fd;
+        ReadDIR  = (DIR *)fh->fd;
     break;
      
     case FHD_FILE:
         seekdir((DIR *)fh->DIR, FIB->fib_DiskKey);
         pathname = fh->pathname;
-        ReadDIR  = fh->DIR;
+        ReadDIR  = (DIR *)fh->DIR;
     break; 
   }
   /* hm, let's read the data now! 
@@ -744,8 +774,8 @@ static LONG examine_next(struct filehandle *fh,
   {
     dir = readdir(ReadDIR);
   }  
-  while ( dir->d_name[0] == '.' && 
-         (dir->d_name[1] == '\0' || dir->d_name[1] == '.') );
+  while ( 0 == strcmp(dir->d_name,"." ) || 
+          0 == strcmp(dir->d_name,"..")     ); 
   
   
   name = (STRPTR)malloc(strlen(pathname)+strlen(dir->d_name)+2);
@@ -861,6 +891,9 @@ static LONG create_hardlink(struct emulbase *emulbase,
     fh = malloc(sizeof(struct filehandle));
     if (!fh)
     {
+        fh->pathname = NULL; /* just to make sure... */
+        fh->DIR      = 0;
+    
 	error = makefilename(emulbase, &fh->name, (*handle)->name, name);
 	if (!error)
 	{
@@ -878,6 +911,23 @@ static LONG create_hardlink(struct emulbase *emulbase,
 
     return error;
 }
+
+
+ULONG parent_dir(struct filehandle *fh,
+	         char ** DirName)
+{
+  *DirName = pathname_from_name(fh->name);
+  printf("parent_dir of %s is %s \n",fh->name,*DirName);
+  return 0;
+}
+
+void parent_dir_post(char ** DirName)
+{
+  /* free the previously allocated memory */
+  free(*DirName);
+  **DirName = 0;
+}
+
 
 /************************ Library entry points ************************/
 
@@ -1168,6 +1218,19 @@ AROS_LH1(void, beginio,
 				  iofs->io_Union.io_DELETE_OBJECT.io_Filename);
 	    break;
 
+	case FSA_PARENT_DIR:
+	    /* error will always be 0 */
+	    error = parent_dir((struct filehandle *)iofs->IOFS.io_Unit,
+	                       &(iofs->io_Union.io_PARENT_DIR.io_DirName)
+	                       );
+            break;
+        
+        case FSA_PARENT_DIR_POST:
+            /* error will always be 0 */
+            error = 0;
+            parent_dir_post(&(iofs->io_Union.io_PARENT_DIR.io_DirName));
+            break;    
+            
 	case FSA_SET_COMMENT:
 	case FSA_SET_PROTECT:
 	case FSA_SET_OWNER:
