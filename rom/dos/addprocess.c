@@ -23,6 +23,8 @@ LONG DosEntry (
 	);
 }
 
+
+
 struct Process * AddProcess (
     struct Process    * process,
     STRPTR		argPtr,
@@ -42,6 +44,8 @@ struct Process * AddProcess (
 
     process->pr_Task.tc_SPReg  = (STRPTR)sp-SP_OFFSET;
     process->pr_Task.tc_Flags |= TF_ETASK;
+
+    addprocesstoroot(process, DOSBase);
 
     return (struct Process *)AddTask (&process->pr_Task, (APTR)DosEntry, finalPC);
 } /* AddProcess */

@@ -83,6 +83,11 @@ LONG createresult(struct AnchorPath * AP,
                   struct AChain * AC,
                   struct DosLibrary * DOSBase);
 
+
+
+void addprocesstoroot(struct Process * , struct DosLibrary *);
+void removefromrootnode(struct Process *, struct DosLibrary *);
+
 struct marker
 {
     UBYTE type; /* 0: Split 1: MP_NOT */

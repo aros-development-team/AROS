@@ -154,10 +154,6 @@ void internal_ChildFree(APTR tid);
 	cli = (struct CommandLineInterface *)AllocDosObject(DOS_CLI, tags);
 	ENOMEM_IF(cli == NULL);
 
-	Forbid();
-	process->pr_TaskNum = ++(DOSBase->dl_ProcCnt);
-	Permit();
-
 	oldpath = NULL;
 	cli->cli_DefaultStack = defaults[9].ti_Data >> 2;
 
@@ -370,6 +366,7 @@ error:
 } /* CreateNewProc */
 
 
+
 static void KillCurrentProcess(void)
 {
     /* I need the global here because there is no local way to get it */
@@ -433,6 +430,8 @@ static void KillCurrentProcess(void)
 	// ChildStatus(me);
 	internal_ChildFree(me);
     }
+
+    removefromrootnode(me, DOSBase);
 
     RemTask(NULL);
 }

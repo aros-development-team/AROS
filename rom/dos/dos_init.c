@@ -10,6 +10,7 @@
 #include <exec/execbase.h>
 #include <exec/libraries.h>
 #include <exec/alerts.h>
+#include <exec/memory.h>
 #include <proto/exec.h>
 #include <aros/libcall.h>
 #include <dos/dosextens.h>
@@ -65,6 +66,8 @@ static const APTR Dos_inittabl[4]=
     &INIT
 };
 
+static struct RootNode rootnode;
+
 #undef SysBase
 
 AROS_LH2(struct LIBBASETYPE *, init,
@@ -74,10 +77,19 @@ AROS_LH2(struct LIBBASETYPE *, init,
 {
     AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
+    ULONG * taskarray;
 
     /* Store arguments */
     LIBBASE->dl_SysBase=SysBase;
     LIBBASE->dl_SegList=segList;
+    
+    LIBBASE->dl_Root = &rootnode;
+    /*
+      Init the RootNode structure
+    */
+    taskarray = (ULONG *)AllocMem(sizeof(ULONG)+sizeof(APTR), MEMF_CLEAR);
+    taskarray[0] = 1;
+    rootnode.rn_TaskArray = MKBADDR(taskarray);
 
     InitSemaphore(&LIBBASE->dl_DosListLock);
     InitSemaphore(&LIBBASE->dl_LSigSem);

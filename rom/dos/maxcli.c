@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  2000/02/17 20:23:13  bergers
+    Two functions that work on the root node.
+
     Revision 1.8  1998/10/20 16:44:46  hkiel
     Amiga Research OS
 
@@ -73,6 +76,22 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     
-    return DOSBase->dl_ProcCnt;
+   ULONG * taskarray = (ULONG *)BADDR(DOSBase->dl_Root->rn_TaskArray);
+    /* 
+       The first ULONG in the taskarray contains the size of the
+       taskarray = the max. number of processes the taskarray
+       can currently hold. 
+    */
+    ULONG retval = taskarray[0];
+    
+    /* 
+       Not all of the fields in the array may contain a valid
+       pointer to a process and they might be NULL instead. So
+       I search that array backwards until I find a valid endtry.
+    */
+    while (retval && NULL != taskarray[retval])
+      retval--;
+    
+    return retval;
     AROS_LIBFUNC_EXIT
 } /* MaxCli */
