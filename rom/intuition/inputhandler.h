@@ -9,6 +9,7 @@ struct IIHData
 {
     struct IntuitionBase	*IntuitionBase;
     struct MsgPort		*IntuiReplyPort;
+    struct MsgPort		*IntuiDeferedActionPort;
     struct Gadget		*ActiveGadget;
     WORD			LastMouseX;
     WORD			LastMouseY;
