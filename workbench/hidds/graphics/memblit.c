@@ -868,3 +868,641 @@ VOID bitmap_getmem32image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 }
 
 /****************************************************************************************/
+
+VOID bitmap_putmemtemplate8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate8 *msg)
+{
+    WORD    	    	     x, y;
+    UBYTE   	    	    *bitarray, *buf;
+    UWORD    	    	     bitmask;
+    OOP_Object	    	    *gc = msg->gc;
+    ULONG	     	     fg = GC_FG(gc);
+    ULONG	    	     bg = GC_BG(gc);
+    WORD    	    	     type = 0;
+    
+    if (msg->width <= 0 || msg->height <= 0)
+	return;
+
+    if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
+    {
+    	type = 0;
+    }
+    else if (GC_DRMD(gc) == vHidd_GC_DrawMode_Invert)
+    {
+    	type = 2;
+    }
+    else
+    {
+    	type = 4;
+    }
+    
+    if (msg->inverttemplate) type++;
+    
+    bitarray = msg->template + ((msg->srcx / 16) * 2);
+    bitmask = 0x8000 >> (msg->srcx & 0xF);
+    
+    buf = msg->dst + msg->y * msg->dstMod + msg->x;
+    
+    for(y = 0; y < msg->height; y++)
+    {
+	ULONG  mask = bitmask;
+	UWORD *array = (UWORD *)bitarray;
+	UWORD  bitword = AROS_BE2WORD(*array);
+    	UBYTE *xbuf = buf;
+
+	switch(type)
+	{
+	    case 0:	/* JAM1 */	    
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (bitword & mask) *xbuf = fg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 1:	/* JAM1 | INVERSVID */	    
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (!(bitword & mask)) *xbuf = fg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+    	    case 2: /* COMPLEMENT */
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (bitword & mask) *xbuf = ~(*xbuf);
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 3: /* COMPLEMENT | INVERSVID*/
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (!(bitword & mask)) *xbuf = ~(*xbuf);
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		 } /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 4:	/* JAM2 */	    
+		for(x = 0; x < msg->width; x++)
+		{
+     	    	    *xbuf++ = (bitword & mask) ? fg : bg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 5:	/* JAM2 | INVERSVID */	    
+		for(x = 0; x < msg->width; x++)
+		{
+     	    	    *xbuf++ = (bitword & mask) ? bg : fg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	} /* switch(type) */
+
+	buf += msg->dstMod;			     
+	bitarray += msg->modulo;
+
+    } /* for(y = 0; y < msg->height; y++) */ 
+}
+
+VOID bitmap_putmemtemplate16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate16 *msg)
+{
+    WORD    	    	     x, y;
+    UBYTE   	    	    *bitarray, *buf;
+    UWORD   	    	     bitmask;
+    OOP_Object	    	    *gc = msg->gc;
+    ULONG	     	     fg = GC_FG(gc);
+    ULONG	    	     bg = GC_BG(gc);
+    WORD    	    	     type = 0;
+    
+    if (msg->width <= 0 || msg->height <= 0)
+	return;
+
+    if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
+    {
+    	type = 0;
+    }
+    else if (GC_DRMD(gc) == vHidd_GC_DrawMode_Invert)
+    {
+    	type = 2;
+    }
+    else
+    {
+    	type = 4;
+    }
+    
+    if (msg->inverttemplate) type++;
+    
+    bitarray = msg->template + ((msg->srcx / 16) * 2);
+    bitmask = 0x8000 >> (msg->srcx & 0xF);
+    
+    buf = msg->dst + msg->y * msg->dstMod + msg->x * 2;
+
+    for(y = 0; y < msg->height; y++)
+    {
+	ULONG  mask = bitmask;
+	UWORD *array = (UWORD *)bitarray;
+	UWORD  bitword = AROS_BE2WORD(*array);
+    	UWORD *xbuf = (UWORD *)buf;
+
+	switch(type)
+	{
+	    case 0:	/* JAM1 */	    
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (bitword & mask) *xbuf = fg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 1:	/* JAM1 | INVERSVID */	    
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (!(bitword & mask)) *xbuf = fg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+    	    case 2: /* COMPLEMENT */
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (bitword & mask) *xbuf = ~(*xbuf);
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 3: /* COMPLEMENT | INVERSVID*/
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (!(bitword & mask)) *xbuf = ~(*xbuf);
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		 } /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 4:	/* JAM2 */	    
+		for(x = 0; x < msg->width; x++)
+		{
+     	    	    *xbuf++ = (bitword & mask) ? fg : bg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 5:	/* JAM2 | INVERSVID */	    
+		for(x = 0; x < msg->width; x++)
+		{
+     	    	    *xbuf++ = (bitword & mask) ? bg : fg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	} /* switch(type) */
+
+	buf += msg->dstMod;			     
+	bitarray += msg->modulo;
+
+    } /* for(y = 0; y < msg->height; y++) */
+    
+}
+
+VOID bitmap_putmemtemplate24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate24 *msg)
+{
+    WORD    	    	     x, y;
+    UBYTE   	    	    *bitarray, *buf;
+    UWORD   	    	     bitmask;
+    OOP_Object	    	    *gc = msg->gc;
+    ULONG	     	     fg = GC_FG(gc);
+    UBYTE   	    	     fg1, fg2, fg3;
+    ULONG	    	     bg = GC_BG(gc);
+    UBYTE   	    	     bg1, bg2, bg3;
+    WORD    	    	     type = 0;
+    
+    if (msg->width <= 0 || msg->height <= 0)
+	return;
+
+#if AROS_BIG_ENDIAN        
+    fg1 = (fg >> 16) & 0xFF;
+    fg2 = (fg >> 8) & 0xFF;
+    fg3 =  fg & 0xFF;
+
+    bg1 = (bg >> 16) & 0xFF;
+    bg2 = (bg >> 8) & 0xFF;
+    bg3 =  bg & 0xFF;
+#else
+    fg1 =  fg & 0xFF;
+    fg2 = (fg >> 8) & 0xFF;
+    fg3 = (fg >> 16) & 0xFF;
+
+    bg1 =  bg & 0xFF;
+    bg2 = (bg >> 8) & 0xFF;
+    bg3 = (bg >> 16) & 0xFF;
+#endif
+
+    if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
+    {
+    	type = 0;
+    }
+    else if (GC_DRMD(gc) == vHidd_GC_DrawMode_Invert)
+    {
+    	type = 2;
+    }
+    else
+    {
+    	type = 4;
+    }
+    
+    if (msg->inverttemplate) type++;
+    
+    bitarray = msg->template + ((msg->srcx / 16) * 2);
+    bitmask = 0x8000 >> (msg->srcx & 0xF);
+    
+    buf = msg->dst + msg->y * msg->dstMod + msg->x * 3;
+    
+    for(y = 0; y < msg->height; y++)
+    {
+	ULONG  mask = bitmask;
+	UWORD *array = (UWORD *)bitarray;
+	UWORD  bitword = AROS_BE2WORD(*array);
+    	UBYTE *xbuf = buf;
+
+	switch(type)
+	{
+	    case 0:	/* JAM1 */	    
+		for(x = 0; x < msg->width; x++, xbuf += 3)
+		{
+    	    	    if (bitword & mask)
+		    {
+			xbuf[0] = fg1;
+			xbuf[1] = fg2;
+			xbuf[2] = fg3;
+		    }
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 1:	/* JAM1 | INVERSVID */	    
+		for(x = 0; x < msg->width; x++, xbuf += 3)
+		{
+    	    	    if (!(bitword & mask))
+		    {
+			xbuf[0] = fg1;
+			xbuf[1] = fg2;
+			xbuf[2] = fg3;
+    	    	    }
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+    	    case 2: /* COMPLEMENT */
+		for(x = 0; x < msg->width; x++, xbuf += 3)
+		{
+    	    	    if (bitword & mask)
+		    {
+			xbuf[0] = ~xbuf[0];
+			xbuf[1] = ~xbuf[1];
+			xbuf[2] = ~xbuf[2];
+    	    	    }
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 3: /* COMPLEMENT | INVERSVID*/
+		for(x = 0; x < msg->width; x++, xbuf += 3)
+		{
+    	    	    if (!(bitword & mask))
+		    {
+			xbuf[0] = ~xbuf[0];
+			xbuf[1] = ~xbuf[1];
+			xbuf[2] = ~xbuf[2];
+		    }
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		 } /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 4:	/* JAM2 */	    
+		for(x = 0; x < msg->width; x++)
+		{
+		    if (bitword & mask)
+		    {
+			*xbuf++ = fg1;
+			*xbuf++ = fg2;
+			*xbuf++ = fg3;
+		    }
+		    else
+		    {
+			*xbuf++ = bg1;
+			*xbuf++ = bg2;
+			*xbuf++ = bg3;
+		    }
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 5:	/* JAM2 | INVERSVID */	    
+		for(x = 0; x < msg->width; x++)
+		{
+		    if (bitword & mask)
+		    {
+			*xbuf++ = bg1;
+			*xbuf++ = bg2;
+			*xbuf++ = bg3;
+		    }
+		    else
+		    {
+			*xbuf++ = fg1;
+			*xbuf++ = fg2;
+			*xbuf++ = fg3;
+		    }
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	} /* switch(type) */
+
+	buf += msg->dstMod;			     
+	bitarray += msg->modulo;
+
+    } /* for(y = 0; y < msg->height; y++) */
+    
+}
+
+VOID bitmap_putmemtemplate32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate32 *msg)
+{
+    WORD    	    	     x, y;
+    UBYTE   	    	    *bitarray, *buf;
+    UWORD   	    	     bitmask;
+    OOP_Object	    	    *gc = msg->gc;
+    ULONG	     	     fg = GC_FG(gc);
+    ULONG	    	     bg = GC_BG(gc);
+    WORD    	    	     type = 0;
+    
+    if (msg->width <= 0 || msg->height <= 0)
+	return;
+
+    if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
+    {
+    	type = 0;
+    }
+    else if (GC_DRMD(gc) == vHidd_GC_DrawMode_Invert)
+    {
+    	type = 2;
+    }
+    else
+    {
+    	type = 4;
+    }
+    
+    if (msg->inverttemplate) type++;
+    
+    bitarray = msg->template + ((msg->srcx / 16) * 2);
+    bitmask = 0x8000 >> (msg->srcx & 0xF);
+    
+    buf = msg->dst + msg->y * msg->dstMod + msg->x * 4;
+    
+    for(y = 0; y < msg->height; y++)
+    {
+	ULONG  mask = bitmask;
+	UWORD *array = (UWORD *)bitarray;
+	UWORD  bitword = AROS_BE2WORD(*array);
+	ULONG *xbuf = (ULONG *)buf;
+
+	switch(type)
+	{
+	    case 0:	/* JAM1 */	    
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (bitword & mask) *xbuf = fg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 1:	/* JAM1 | INVERSVID */	    
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (!(bitword & mask)) *xbuf = fg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+    	    case 2: /* COMPLEMENT */
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (bitword & mask) *xbuf = ~(*xbuf);
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 3: /* COMPLEMENT | INVERSVID*/
+		for(x = 0; x < msg->width; x++, xbuf++)
+		{
+    	    	    if (!(bitword & mask)) *xbuf = ~(*xbuf);
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		 } /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 4:	/* JAM2 */	    
+		for(x = 0; x < msg->width; x++)
+		{
+     	    	    *xbuf++ = (bitword & mask) ? fg : bg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	    case 5:	/* JAM2 | INVERSVID */	    
+		for(x = 0; x < msg->width; x++)
+		{
+     	    	    *xbuf++ = (bitword & mask) ? bg : fg;
+
+		    mask >>= 1;
+		    if (!mask)
+		    {
+			mask = 0x8000;
+			array++;
+			bitword = AROS_BE2WORD(*array);
+		    }
+		} /* for(x = 0; x < msg->width; x++) */
+		break;
+
+	} /* switch(type) */
+
+	buf += msg->dstMod;			     
+	bitarray += msg->modulo;
+
+    } /* for(y = 0; y < msg->height; y++) */
+    
+}
+

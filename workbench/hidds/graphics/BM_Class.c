@@ -3468,7 +3468,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 
 #define NUM_ROOT_METHODS    4
 
-#define NUM_BITMAP_METHODS  49
+#define NUM_BITMAP_METHODS  53
 
 /****************************************************************************************/
 
@@ -3527,6 +3527,10 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
 	{(IPTR (*)())bitmap_getmem32image8  	, moHidd_BitMap_GetMem32Image8	    },
 	{(IPTR (*)())bitmap_getmem32image16  	, moHidd_BitMap_GetMem32Image16	    },
 	{(IPTR (*)())bitmap_getmem32image24  	, moHidd_BitMap_GetMem32Image24	    },
+	{(IPTR (*)())bitmap_putmemtemplate8 	, moHidd_BitMap_PutMemTemplate8     },
+	{(IPTR (*)())bitmap_putmemtemplate16 	, moHidd_BitMap_PutMemTemplate16    },
+	{(IPTR (*)())bitmap_putmemtemplate24 	, moHidd_BitMap_PutMemTemplate24    },
+	{(IPTR (*)())bitmap_putmemtemplate32 	, moHidd_BitMap_PutMemTemplate32    },	
 	{(IPTR (*)())bitmap_setcolormap		, moHidd_BitMap_SetColorMap	    },
 	{(IPTR (*)())bitmap_mapcolor		, moHidd_BitMap_MapColor	    },
 	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	    },

@@ -500,6 +500,10 @@ enum
     moHidd_BitMap_GetMem32Image8,
     moHidd_BitMap_GetMem32Image16,
     moHidd_BitMap_GetMem32Image24,
+    moHidd_BitMap_PutMemTemplate8,
+    moHidd_BitMap_PutMemTemplate16,
+    moHidd_BitMap_PutMemTemplate24,
+    moHidd_BitMap_PutMemTemplate32,
     
     /* This method is used only by subclasses, I repeat:
     ONLY BY SUBCLASSES, to register available modes in the baseclass
@@ -1083,6 +1087,62 @@ struct pHidd_BitMap_GetMem32Image24
     ULONG   	    dstMod;
 };
 
+struct pHidd_BitMap_PutMemTemplate8
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE   	    *template;
+    ULONG   	    modulo;
+    WORD    	    srcx;
+    APTR    	    dst;
+    ULONG   	    dstMod;
+    WORD    	    x, y;
+    WORD    	    width, height;
+    BOOL    	    inverttemplate;
+};
+
+struct pHidd_BitMap_PutMemTemplate16
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE   	    *template;
+    ULONG   	    modulo;
+    WORD    	    srcx;
+    APTR    	    dst;
+    ULONG   	    dstMod;
+    WORD    	    x, y;
+    WORD    	    width, height;
+    BOOL    	    inverttemplate;  
+};
+
+struct pHidd_BitMap_PutMemTemplate24
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE   	    *template;
+    ULONG   	    modulo;
+    WORD    	    srcx;
+    APTR    	    dst;
+    ULONG   	    dstMod;
+    WORD    	    x, y;
+    WORD    	    width, height;
+    BOOL    	    inverttemplate;  
+};
+
+struct pHidd_BitMap_PutMemTemplate32
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE   	    *template;
+    ULONG   	    modulo;
+    WORD    	    srcx;
+    APTR    	    dst;
+    ULONG   	    dstMod;
+    WORD    	    x, y;
+    WORD    	    width, height;
+    BOOL    	    inverttemplate;  
+};
+
 struct pHidd_BitMap_SetColorMap
 {
     OOP_MethodID    mID;
@@ -1458,6 +1518,58 @@ VOID	HIDD_BM_GetMem32Image24(OOP_Object *obj,
 				UWORD height,
 				ULONG srcMod,
 				ULONG dstMod);
+
+VOID	HIDD_BM_PutMemTemplate8	(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *template,
+				 ULONG modulo,
+				 WORD srcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height,
+				 BOOL inverttemplate);
+				 
+VOID	HIDD_BM_PutMemTemplate16(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *template,
+				 ULONG modulo,
+				 WORD srcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height,
+				 BOOL inverttemplate);
+				 
+VOID	HIDD_BM_PutMemTemplate24(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *template,
+				 ULONG modulo,
+				 WORD srcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height,
+				 BOOL inverttemplate);
+				 
+VOID	HIDD_BM_PutMemTemplate32(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *template,
+				 ULONG modulo,
+				 WORD srcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height,
+				 BOOL inverttemplate);
 
 OOP_Object * HIDD_BM_SetColorMap(OOP_Object *o, OOP_Object *colorMap);
 
