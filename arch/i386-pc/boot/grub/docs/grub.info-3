@@ -1,4 +1,4 @@
-This is grub.info, produced by makeinfo version 4.1 from grub.texi.
+Detta är grub.info, skapad av makeinfo version 4.5 från grub.texi.
 
 INFO-DIR-SECTION Kernel
 START-INFO-DIR-ENTRY
@@ -26,6 +26,30 @@ of a permission notice identical to this one.
    Permission is granted to copy and distribute translations of this
 manual into another language, under the above conditions for modified
 versions.
+
+
+File: grub.info,  Node: setup,  Next: testload,  Prev: savedefault,  Up: Command-line and menu entry commands
+
+setup
+-----
+
+ - Command: setup [`--force-lba'] [`--stage2=os_stage2_file']
+          [`--prefix=dir'] install_device [image_device]
+     Set up the installation of GRUB automatically. This command uses
+     the more flexible command `install' (*note install::) in the
+     backend and installs GRUB into the device INSTALL_DEVICE. If
+     IMAGE_DEVICE is specified, then find the GRUB images (*note
+     Images::) in the device IMAGE_DEVICE, otherwise use the current
+     "root device", which can be set by the command `root'. If
+     INSTALL_DEVICE is a hard disk, then embed a Stage 1.5 in the disk
+     if possible.
+
+     The option `--prefix' specifies the directory under which GRUB
+     images are put. If it is not specified, GRUB automatically
+     searches them in `/boot/grub' and `/grub'.
+
+     The options `--force-lba' and `--stage2' are just passed to
+     `install' if specified. *Note install::, for more information.
 
 
 File: grub.info,  Node: testload,  Next: testvbe,  Prev: setup,  Up: Command-line and menu entry commands
@@ -1178,6 +1202,7 @@ Index
 * fstest:                                fstest.
 * FSYS_BUF:                              Filesystem interface.
 * geometry:                              geometry.
+* gfxmenu:                               gfxmenu.
 * grub_read:                             Filesystem interface.
 * halt:                                  halt.
 * help:                                  help.

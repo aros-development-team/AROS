@@ -62,6 +62,8 @@ int default_entry = 0;
 int fallback_entry = -1;
 /* The number of current entry.  */
 int current_entryno;
+/* graphics file */
+char graphics_file[64];
 /* The address for Multiboot command-line buffer.  */
 static char *mb_cmdline;
 /* The password.  */
@@ -770,7 +772,19 @@ static struct builtin builtin_debug =
 static int
 default_func (char *arg, int flags)
 {
+
 #ifndef SUPPORT_DISKLESS
+#ifndef GRUB_UTIL
+  /* Has a forced once-only default been specified? */
+  static int savedefault_helper(int);
+  if ((saved_entryno & STAGE2_ONCEONLY_ENTRY) != 0)
+    {
+      grub_timeout = 0;
+      default_entry = saved_entryno & ~STAGE2_ONCEONLY_ENTRY;
+      savedefault_helper(0);
+      return 0;
+    }
+#endif
   if (grub_strcmp (arg, "saved") == 0)
     {
       default_entry = saved_entryno;
@@ -1310,6 +1324,28 @@ static struct builtin builtin_fstest =
 };
 
 
+
+/* graphics */
+static int
+gfxmenu_func (char *arg, int flags)
+{
+  memmove(graphics_file, arg, sizeof graphics_file - 1);
+  graphics_file[sizeof graphics_file - 1] = 0;
+
+  return 0;
+}
+ 
+static struct builtin builtin_gfxmenu =
+{
+  "gfxmenu",
+  gfxmenu_func,
+  BUILTIN_MENU | BUILTIN_HELP_LIST,
+  "gfxmenu FILE",
+  "Use the graphical menu from FILE."
+};
+
+
+
 /* geometry */
 static int
 geometry_func (char *arg, int flags)
@@ -3185,21 +3221,14 @@ static struct builtin builtin_rootnoverify =
 };
 
 
-/* savedefault */
-static int
-savedefault_func (char *arg, int flags)
-{
+
 #if !defined(SUPPORT_DISKLESS) && !defined(GRUB_UTIL)
+/* Write specified default entry number into stage2 file. */
+static int
+savedefault_helper (int new_default)
+{
   char buffer[512];
   int *entryno_ptr;
-  
-  /* This command is only useful when you boot an entry from the menu
-     interface.  */
-  if (! (flags & BUILTIN_SCRIPT))
-    {
-      errnum = ERR_UNRECOGNIZED;
-      return 1;
-    }
   
   /* Get the geometry of the boot drive (i.e. the disk which contains
      this stage2).  */
@@ -3226,10 +3255,10 @@ savedefault_func (char *arg, int flags)
   entryno_ptr = (int *) (buffer + STAGE2_SAVED_ENTRYNO);
 
   /* Check if the saved entry number differs from current entry number.  */
-  if (*entryno_ptr != current_entryno)
+  if (*entryno_ptr != new_default)
     {
       /* Overwrite the saved entry number.  */
-      *entryno_ptr = current_entryno;
+      *entryno_ptr = new_default;
       
       /* Save the image in the disk.  */
       if (! rawwrite (boot_drive, install_second_sector, buffer))
@@ -3240,6 +3269,117 @@ savedefault_func (char *arg, int flags)
     }
 
   return 0;
+}
+#endif
+
+#if !defined(SUPPORT_DISKLESS) && defined(GRUB_UTIL)
+/*
+ * Full implementation of new `savedefault' for GRUB shell.
+ * XXX This needs fixing for stage2 files which aren't accessible
+ *     through a mounted filesystem.
+ */
+static int
+savedefault_shell(char *arg, int flags)
+{
+  char *stage2_os_file = "/boot/grub/stage2"; /* Default filename */
+  FILE *fp;
+  char buffer[512];
+  int *entryno_ptr;
+  int new_default = 0;
+
+  while (1)
+    {
+      if (grub_memcmp ("--stage2=", arg, sizeof ("--stage2=") - 1) == 0)
+        {
+          stage2_os_file = arg + sizeof ("--stage2=") - 1;
+          arg = skip_to (0, arg);
+          nul_terminate (stage2_os_file);
+        }
+      else if (grub_memcmp ("--default=", arg, sizeof ("--default=") - 1) == 0)
+        {
+          char *p = arg + sizeof ("--default=") - 1;
+          if (! safe_parse_maxint (&p, &new_default))
+            return 1;
+          arg = skip_to (0, arg);
+        }
+      else if (grub_memcmp ("--once", arg, sizeof ("--once") - 1) == 0)
+        {
+          new_default |= STAGE2_ONCEONLY_ENTRY;
+          arg = skip_to (0, arg);
+        }
+      else
+        break;
+    }
+
+  if (! (fp = fopen(stage2_os_file, "r+")))
+    {
+      errnum = ERR_FILE_NOT_FOUND;
+      return 1;
+    }
+  
+  if (fseek (fp, SECTOR_SIZE, SEEK_SET) != 0)
+    {
+      fclose (fp);
+      errnum = ERR_BAD_VERSION;
+      return 1;
+    }
+  
+  if (fread (buffer, 1, SECTOR_SIZE, fp) != SECTOR_SIZE)
+    {
+      fclose (fp);
+      errnum = ERR_READ;
+      return 1;
+    }
+
+  /* Sanity check.  */
+  if (buffer[STAGE2_STAGE2_ID] != STAGE2_ID_STAGE2
+      || *((short *) (buffer + STAGE2_VER_MAJ_OFFS)) != COMPAT_VERSION)
+    {
+      errnum = ERR_BAD_VERSION;
+      return 1;
+    }
+  
+  entryno_ptr = (int *) (buffer + STAGE2_SAVED_ENTRYNO);
+  *entryno_ptr = new_default;
+
+  if (fseek (fp, SECTOR_SIZE, SEEK_SET) != 0)
+    {
+      fclose (fp);
+      errnum = ERR_BAD_VERSION;
+      return 1;
+    }
+  
+  if (fwrite (buffer, 1, SECTOR_SIZE, fp) != SECTOR_SIZE)
+    {
+      fclose (fp);
+      errnum = ERR_WRITE;
+      return 1;
+    }
+  
+  (void)fflush (fp);
+  fclose (fp);
+  return 0;
+}
+#endif
+
+/* savedefault */
+static int
+savedefault_func (char *arg, int flags)
+{
+#if !defined(SUPPORT_DISKLESS)
+#if !defined(GRUB_UTIL)
+  /* This command is only useful when you boot an entry from the menu
+     interface.  */
+  if (! (flags & BUILTIN_SCRIPT))
+    {
+      errnum = ERR_UNRECOGNIZED;
+      return 1;
+    }
+
+  return savedefault_helper(current_entryno);
+#else /* defined(GRUB_UTIL) */
+  return savedefault_shell(arg, flags);
+#endif
 #else /* ! SUPPORT_DISKLESS && ! GRUB_UTIL */
   errnum = ERR_UNRECOGNIZED;
   return 1;
@@ -3251,8 +3391,14 @@ static struct builtin builtin_savedefault =
   "savedefault",
   savedefault_func,
   BUILTIN_CMDLINE,
+#ifdef GRUB_UTIL
+  "savedefault [--stage2=STAGE2_FILE] [--default=DEFAULT] [--once]",
+  "Save DEFAULT as the default boot entry in STAGE2_FILE. If '--once'"
+  " is specified, the default is reset after the next reboot."
+#else
   "savedefault",
   "Save the current entry as the default boot entry."
+#endif
 };
 
 
@@ -4822,6 +4968,7 @@ struct builtin *builtin_table[] =
   &builtin_find,
   &builtin_fstest,
   &builtin_geometry,
+  &builtin_gfxmenu,
   &builtin_halt,
   &builtin_help,
   &builtin_hiddenmenu,

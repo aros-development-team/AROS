@@ -59,7 +59,9 @@ check_multiboot (const char *filename, FILE *fp)
   int i;
   char buf[8192];
 
-  if (fread (buf, 1, 8192, fp) < 0)
+  fread (buf, 1, 8192, fp);
+  
+  if (ferror(fp))
     {
       fprintf (stderr, "%s: Read error.\n", filename);
       return 0;

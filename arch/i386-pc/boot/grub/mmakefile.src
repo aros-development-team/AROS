@@ -28,7 +28,7 @@ configure: config.h.in configure.in
 	autoconf
 
 Makefile: configure $(TOP)/config/i386-native/boot/menu.lst
-	CC="$(HOST_CC)" ./configure \
+	CFLAGS="-minline-all-stringops" CC="$(HOST_CC)" ./configure \
 	--enable-preset-menu=$(TOP)/config/i386-native/boot/menu.lst \
 	--disable-fat --disable-ffs --disable-minix --disable-reiserfs \
 	--disable-vstafs --disable-jfs --disable-xfs --disable-md5-password \
