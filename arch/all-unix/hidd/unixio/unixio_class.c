@@ -131,7 +131,6 @@ AROS_UFH5 (void, SigIO_IntServer,
 
     struct uio_data * ud = (struct uio_data *) intList;
 
-kprintf("SigIO_IntServer\n");
     Signal (ud -> ud_WaitForIO, SIGBREAKF_CTRL_C);
 
     AROS_USERFUNC_EXIT
@@ -142,11 +141,12 @@ kprintf("SigIO_IntServer\n");
 static int unixio_start_timer(struct timerequest * timerio)
 {
     int rc = FALSE;
+    
     if (NULL != timerio) {
         timerio->tr_node.io_Command = TR_ADDREQUEST;
         timerio->tr_time.tv_secs    = 0;
         timerio->tr_time.tv_micro   = 250000;
-        
+
         SendIO(&timerio->tr_node);
         rc = TRUE;
     }
@@ -243,6 +243,7 @@ static void WaitForIO (void)
 	         * Will be sending it again.
 	         */
 	        GetMsg(timer_port);
+
 	        if (terminals_write_counter > 0) {
 	          //kprintf("RE STARTING TIMER! (%d)\n",terminals_write_counter);
 	          unixio_start_timer(timerio);
@@ -302,12 +303,13 @@ static void WaitForIO (void)
                   if (umsg->mode & vHidd_UnixIO_Write &&
                       umsg->fd_type & vHidd_UnixIO_Terminal) {
                       terminals_write_counter--;
-#if 0
+#if 1
                       if (0 == terminals_write_counter) {
                         if (!CheckIO(&timerio->tr_node)) 
                           AbortIO(&timerio->tr_node);
                         WaitIO(&timerio->tr_node);
-                        kprintf("KIIIIILLLED!\n");
+    	    	    	SetSignal(0, 1L << timer_port->mp_SigBit);
+                        //kprintf("KIIIIILLLED!\n");
                       }
 #endif
                   }
@@ -411,7 +413,16 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
 #ifdef __linux__
                         if ((msg->mode & vHidd_UnixIO_Write) &&
 			    (msg->fd_type & vHidd_UnixIO_Terminal)) /* stegerg: CHECKME added vHidd_Unixio_terminal check */
+			{
                             terminals_write_counter--;
+                      if (terminals_write_counter) {
+                        if (!CheckIO(&timerio->tr_node)) 
+                          AbortIO(&timerio->tr_node);
+                        WaitIO(&timerio->tr_node);
+    	    	    	SetSignal(0, 1L << timer_port->mp_SigBit);
+
+			}
+		      }
 #endif
 		    } else {
 		        /*
