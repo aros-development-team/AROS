@@ -48,8 +48,6 @@ static OOP_Object *planarbm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 {
     ULONG width, height, depth;
     
-    UBYTE alignoffset	= 15;
-    UBYTE aligndiv	= 2;
     BOOL  ok = TRUE;   
      
 #if 0
@@ -101,10 +99,10 @@ static OOP_Object *planarbm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, (IPTR *)&depth);
     
     /* We cache some info */
-    data->bytesperrow	  = (width + alignoffset) / aligndiv;
+    data->bytesperrow	  = ((width + 15) & ~15) / 8;
     data->rows 		  = height;
     data->depth		  = depth;
-    
+
     if (ok)
     {
 	/* Allocate memory for plane array */
@@ -254,7 +252,7 @@ static VOID planarbm_putimage(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    **plane;
     ULONG   	    	    planeoffset;
     struct planarbm_data    *data;  
-    
+
     if ((msg->pixFmt != vHidd_StdPixFmt_Native) &&
     	(msg->pixFmt != vHidd_StdPixFmt_Native32))
     {
@@ -366,6 +364,7 @@ static VOID planarbm_putimage(OOP_Class *cl, OOP_Object *o,
 		pixarray += msg->modulo;
 		planeoffset += data->bytesperrow;
 	    }
+	    
 	    break;
 	    
 	} /* switch(msg->pixFmt) */    
@@ -548,7 +547,7 @@ static VOID planarbm_blitcolorexpansion(OOP_Class *cl, OOP_Object *o,
     	/* srcBitMap is a planarbm class object */
 	
 	maskdata = OOP_INST_DATA(cl, msg->srcBitMap);
-	mask     = data->planes[0];
+	mask     = maskdata->planes[0];
 	mask     += msg->srcY * maskdata->bytesperrow + msg->srcX / 8;
 
 	for(y = 0; y < msg->height; y++)
@@ -609,7 +608,7 @@ static VOID planarbm_blitcolorexpansion(OOP_Class *cl, OOP_Object *o,
 		    }
 
 		} /* for(x = 0; x < msg->width; x++) */
-
+    	    	
 		plane++;
 
 	    } /* for(d = 0; d < data->depth; d++) */
