@@ -45,7 +45,7 @@ int main (void)                                                \
 __shexitpoint:                                \
     if (___rda)                               \
          FreeArgs(___rda);                    \
-    if (IoErr())                              \
+    if (IoErr() && __shretcode)               \
         PrintFault(IoErr(), __shcommandname); \
     return __shretcode;                       \
 }
