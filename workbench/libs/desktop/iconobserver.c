@@ -26,6 +26,7 @@
 #include "observer.h"
 #include "iconclass.h"
 #include "iconobserver.h"
+#include "abstracticon.h"
 
 #include "desktop_intern_protos.h"
 
@@ -123,36 +124,33 @@ IPTR iconObserverNew(Class * cl, Object * obj, struct opSet * msg)
         data->executable = executable;
         data->deleteable = deleteable;
 
-//kprintf("io1 : %d\n", _presentation(obj));
         DoMethod(_presentation(obj), MUIM_Notify, IA_Executed, TRUE, obj, 1,
                  IOM_Execute);
-//kprintf("io1.1 : %d\n", _presentation(obj));
         DoMethod(_presentation(obj), MUIM_Notify, IA_Selected, MUIV_EveryTime,
                  obj, 3, MUIM_Set, IOA_Selected, MUIV_TriggerValue);
         DoMethod(_presentation(obj), MUIM_Notify, IA_Directory,
                  MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Directory,
                  MUIV_TriggerValue);
-        DoMethod(_presentation(obj), MUIM_Notify, IA_Comment, MUIV_EveryTime,
+        DoMethod(_presentation(obj), MUIM_Notify, AIA_Comment, MUIV_EveryTime,
                  obj, 3, MUIM_Set, IOA_Comment, MUIV_TriggerValue);
 
-        DoMethod(_presentation(obj), MUIM_Notify, IA_Script, MUIV_EveryTime,
+        DoMethod(_presentation(obj), MUIM_Notify, AIA_Script, MUIV_EveryTime,
                  obj, 3, MUIM_Set, IOA_Script, MUIV_TriggerValue);
-        DoMethod(_presentation(obj), MUIM_Notify, IA_Pure, MUIV_EveryTime,
+        DoMethod(_presentation(obj), MUIM_Notify, AIA_Pure, MUIV_EveryTime,
                  obj, 3, MUIM_Set, IOA_Pure, MUIV_TriggerValue);
-        DoMethod(_presentation(obj), MUIM_Notify, IA_Archived, MUIV_EveryTime,
+        DoMethod(_presentation(obj), MUIM_Notify, AIA_Archived, MUIV_EveryTime,
                  obj, 3, MUIM_Set, IOA_Archived, MUIV_TriggerValue);
-        DoMethod(_presentation(obj), MUIM_Notify, IA_Readable, MUIV_EveryTime,
+        DoMethod(_presentation(obj), MUIM_Notify, AIA_Readable, MUIV_EveryTime,
                  obj, 3, MUIM_Set, IOA_Readable, MUIV_TriggerValue);
-        DoMethod(_presentation(obj), MUIM_Notify, IA_Writeable,
+        DoMethod(_presentation(obj), MUIM_Notify, AIA_Writeable,
                  MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Writeable,
                  MUIV_TriggerValue);
-        DoMethod(_presentation(obj), MUIM_Notify, IA_Executable,
+        DoMethod(_presentation(obj), MUIM_Notify, AIA_Executable,
                  MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Executable,
                  MUIV_TriggerValue);
-        DoMethod(_presentation(obj), MUIM_Notify, IA_Deleteable,
+        DoMethod(_presentation(obj), MUIM_Notify, AIA_Deleteable,
                  MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Deleteable,
                  MUIV_TriggerValue);
-//kprintf("io2\n");
 	}
 
     return retval;
@@ -178,7 +176,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
              */
 //kprintf("io3\n");
 				if (strcmp(_comment(_presentation(obj)), data->comment))
-                    DoMethod(_presentation(obj), MUIM_NoNotifySet, IA_Comment,
+                    DoMethod(_presentation(obj), MUIM_NoNotifySet, AIA_Comment,
                              data->comment);
 //kprintf("io4\n");
 				break;
@@ -190,7 +188,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
                was this OM_SET triggered by a notify?
              */
                 if (_script(_presentation(obj)) != data->script)
-                    DoMethod(_presentation(obj), MUIM_NoNotifySet, IA_Script,
+                    DoMethod(_presentation(obj), MUIM_NoNotifySet, AIA_Script,
                              data->script);
                 break;
             case IOA_Pure:
@@ -199,7 +197,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
                was this OM_SET triggered by a notify?
              */
                 if (_pure(_presentation(obj)) != data->pure)
-                    DoMethod(_presentation(obj), MUIM_NoNotifySet, IA_Pure,
+                    DoMethod(_presentation(obj), MUIM_NoNotifySet, AIA_Pure,
                              data->pure);
                 break;
             case IOA_Archived:
@@ -209,7 +207,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
              */
                 if (_archived(_presentation(obj)) != data->archived)
                     DoMethod(_presentation(obj), MUIM_NoNotifySet,
-                             IA_Archived, data->archived);
+                             AIA_Archived, data->archived);
                 break;
             case IOA_Readable:
                 data->readable = tag->ti_Data;
@@ -218,7 +216,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
              */
                 if (_readable(_presentation(obj)) != data->readable)
                     DoMethod(_presentation(obj), MUIM_NoNotifySet,
-                             IA_Readable, data->readable);
+                             AIA_Readable, data->readable);
                 break;
             case IOA_Writeable:
                 data->writeable = tag->ti_Data;
@@ -227,25 +225,25 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
              */
                 if (_writeable(_presentation(obj)) != data->writeable)
                     DoMethod(_presentation(obj), MUIM_NoNotifySet,
-                             IA_Writeable, data->writeable);
+                             AIA_Writeable, data->writeable);
                 break;
             case IOA_Executable:
                 data->comment = tag->ti_Data;
             /*
-               was this OM_SET triggered by a notify? 
+               was this OM_SET triggered by a notify?
              */
                 if (_executable(_presentation(obj)) != data->executable)
                     DoMethod(_presentation(obj), MUIM_NoNotifySet,
-                             IA_Executable, data->executable);
+                             AIA_Executable, data->executable);
                 break;
             case IOA_Deleteable:
                 data->comment = tag->ti_Data;
             /*
-               was this OM_SET triggered by a notify? 
+               was this OM_SET triggered by a notify?
              */
                 if (_deleteable(_presentation(obj)) != data->deleteable)
                     DoMethod(_presentation(obj), MUIM_NoNotifySet,
-                             IA_Deleteable, data->deleteable);
+                             AIA_Deleteable, data->deleteable);
                 break;
             default:
                 retval = DoSuperMethodA(cl, obj, (Msg) msg);

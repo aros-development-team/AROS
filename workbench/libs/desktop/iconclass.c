@@ -56,14 +56,6 @@ IPTR iconNew(Class * cl, Object * obj, struct opSet * msg)
     struct DiskObject *diskobject = NULL;
     UBYTE          *label = NULL;
     BOOL            selected = FALSE;
-    BOOL            script = FALSE,
-        pure = FALSE,
-        archived = FALSE,
-        readable = FALSE,
-        writeable = FALSE,
-        executable = FALSE,
-        deleteable = FALSE;
-    UBYTE          *comment = NULL;
     UBYTE           viewMode = IAVM_LARGEICON;
     struct DateStamp *lastChanged = NULL;
     LONG            type = 0;
@@ -84,38 +76,6 @@ IPTR iconNew(Class * cl, Object * obj, struct opSet * msg)
 
             case IA_Selected:
                 selected = (BOOL) tag->ti_Data;
-                break;
-
-            case IA_Comment:
-                comment = (UBYTE *) tag->ti_Data;
-                break;
-
-            case IA_Script:
-                script = (BOOL) tag->ti_Data;
-                break;
-
-            case IA_Pure:
-                pure = (BOOL) tag->ti_Data;
-                break;
-
-            case IA_Archived:
-                archived = (BOOL) tag->ti_Data;
-                break;
-
-            case IA_Readable:
-                readable = (BOOL) tag->ti_Data;
-                break;
-
-            case IA_Writeable:
-                writeable = (BOOL) tag->ti_Data;
-                break;
-
-            case IA_Executable:
-                executable = (BOOL) tag->ti_Data;
-                break;
-
-            case IA_Deleteable:
-                deleteable = (BOOL) tag->ti_Data;
                 break;
 
             case IA_ViewMode:
@@ -211,38 +171,6 @@ IPTR iconSet(Class * cl, Object * obj, struct opSet * msg)
                 data->directory = (UBYTE *) tag->ti_Data;
                 retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
-            case IA_Comment:
-                data->comment = (UBYTE *) tag->ti_Data;
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
-                break;
-            case IA_Script:
-                data->script = (BOOL) tag->ti_Data;
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
-                break;
-            case IA_Pure:
-                data->pure = (BOOL) tag->ti_Data;
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
-                break;
-            case IA_Archived:
-                data->archived = (BOOL) tag->ti_Data;
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
-                break;
-            case IA_Readable:
-                data->readable = (BOOL) tag->ti_Data;
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
-                break;
-            case IA_Writeable:
-                data->writeable = (BOOL) tag->ti_Data;
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
-                break;
-            case IA_Executable:
-                data->executable = (BOOL) tag->ti_Data;
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
-                break;
-            case IA_Deleteable:
-                data->deleteable = (BOOL) tag->ti_Data;
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
-                break;
             case IA_Type:
                 data->type = (LONG) tag->ti_Data;
                 break;
@@ -273,7 +201,7 @@ IPTR iconSet(Class * cl, Object * obj, struct opSet * msg)
                         }
                         if (data->lastModifiedPart)
                         {
-                        // muiNotifyData(data->lastModifiedPart)->mnd_ParentObject 
+                        // muiNotifyData(data->lastModifiedPart)->mnd_ParentObject
                         // = obj;
                         // DoMethod(data->lastModifiedPart,
                         // MUIM_ConnectParent, obj);
@@ -335,30 +263,6 @@ IPTR iconGet(Class * cl, Object * obj, struct opGet * msg)
             break;
         case IA_Directory:
             *msg->opg_Storage = (ULONG) data->directory;
-            break;
-        case IA_Comment:
-            *msg->opg_Storage = (ULONG) data->comment;
-            break;
-        case IA_Script:
-            *msg->opg_Storage = (ULONG) data->script;
-            break;
-        case IA_Pure:
-            *msg->opg_Storage = (ULONG) data->pure;
-            break;
-        case IA_Archived:
-            *msg->opg_Storage = (ULONG) data->archived;
-            break;
-        case IA_Readable:
-            *msg->opg_Storage = (ULONG) data->readable;
-            break;
-        case IA_Writeable:
-            *msg->opg_Storage = (ULONG) data->writeable;
-            break;
-        case IA_Executable:
-            *msg->opg_Storage = (ULONG) data->executable;
-            break;
-        case IA_Deleteable:
-            *msg->opg_Storage = (ULONG) data->deleteable;
             break;
         default:
             retval = DoSuperMethodA(cl, obj, (Msg) msg);

@@ -131,4 +131,9 @@ AROS_UFH3(IPTR, containerIconObserverDispatcher,
           AROS_UFHA(Class *, cl, A0),
           AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1));
 
+AROS_UFH3(IPTR, abstractIconDispatcher,
+          AROS_UFHA(Class *, cl, A0),
+          AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1));
+
+
 #endif /* DESKTOP_INTERN_PROTOS_H */
