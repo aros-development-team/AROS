@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 	if
 	(
 	    !(tempoutput   = make_temp_file(NULL))     ||
-	    !(ldscriptname = make_temp_file(".x"))     ||
+	    !(ldscriptname = make_temp_file(NULL))     ||
 	    !(ldscriptfile = fopen(ldscriptname, "w"))
 	)
 	{
