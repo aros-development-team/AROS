@@ -1,12 +1,12 @@
 #ifndef _BOOLGADGETS_H_
 #define _BOOLGADGETS_H_
-/*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
 
-    Desc: Routines for BOOL Gadgets
-    Lang: english
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    $Id$
 */
+
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>
 #endif
@@ -15,10 +15,10 @@
 #endif
 
 void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
-	    struct IntuitionBase * IntuitionBase);
+                        struct Requester * requester, struct IntuitionBase * IntuitionBase);
 
 void RefreshBoolGadgetState(struct Gadget * gadget, struct Window * window,
-    	    	    	    struct IntuitionBase *IntuitionBase);
+                            struct Requester *requester, struct IntuitionBase *IntuitionBase);
 
 #endif /* _BOOLGADGETS_H_ */
 

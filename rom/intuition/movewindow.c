@@ -1,69 +1,95 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
-
-    Desc: Move a window around on the screen
-    Lang: english
+ 
+    Move a window around on the screen.
 */
+
 #include "intuition_intern.h"
+#include "inputhandler_actions.h"
+
+struct MoveWindowActionMsg
+{
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
+    LONG    	    	     dx;
+    LONG    	    	     dy;
+};
+
+static VOID int_movewindow(struct MoveWindowActionMsg *msg,
+                           struct IntuitionBase *IntuitionBase);
+
 
 /*****************************************************************************
-
+ 
     NAME */
-	#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
-	AROS_LH3(void, MoveWindow,
+AROS_LH3(void, MoveWindow,
 
-/*  SYNOPSIS */
-	AROS_LHA(struct Window *, window, A0),
-	AROS_LHA(LONG           , dx, D0),
-	AROS_LHA(LONG           , dy, D1),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Window *, window, A0),
+         AROS_LHA(LONG           , dx, D0),
+         AROS_LHA(LONG           , dy, D1),
 
-/*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 28, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 28, Intuition)
 
 /*  FUNCTION
-	Change the position of a window on the screen.
-
+    Change the position of a window on the screen.
+ 
     INPUTS
-	window - Move this window
-	dx, dy - Move it that many pixels along the axis (right, down)
-
+    window - Move this window
+    dx, dy - Move it that many pixels along the axis (right, down)
+ 
     RESULT
-	The window will move when the next input event will be received.
-
+    The window will move when the next input event will be received.
+ 
     NOTES
-
+ 
     EXAMPLE
-
+ 
     BUGS
-
+ 
     SEE ALSO
-	SizeWindow()
-
+    SizeWindow()
+ 
     INTERNALS
-
+ 
     HISTORY
-
+ 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct IntuiActionMessage * msg;
-    
-    if (dx || dy)
+    EXTENDWORD(dx);
+    EXTENDWORD(dy);
+
+    if (window && (dx || dy))
     {
-	msg = AllocIntuiActionMsg(AMCODE_MOVEWINDOW, window, IntuitionBase);
+        struct MoveWindowActionMsg msg;
 
-	if (NULL != msg)
-	{
-	    msg->iam_MoveWindow.dx = dx;
-	    msg->iam_MoveWindow.dy = dy;
+        msg.window = window;
+        msg.dx     = dx;
+        msg.dy     = dy;
 
-	    SendIntuiActionMsg(msg, IntuitionBase);
-	}   
+        DoASyncAction((APTR)int_movewindow, &msg.msg, sizeof(msg), IntuitionBase);
+        //DoSyncAction((APTR)int_movewindow, &msg.msg, IntuitionBase);
     }
-    
+
     AROS_LIBFUNC_EXIT
 } /* MoveWindow */
+
+static VOID int_movewindow(struct MoveWindowActionMsg *msg,
+                           struct IntuitionBase *IntuitionBase)
+{
+    struct Window *window = msg->window;
+
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+
+    DoMoveSizeWindow(window,
+                     window->LeftEdge + msg->dx, window->TopEdge + msg->dy,
+                     window->Width, window->Height, FALSE, IntuitionBase);
+}

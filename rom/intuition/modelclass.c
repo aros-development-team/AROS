@@ -1,11 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
-
-    Desc: modelclass implementation.
-    Lang: english
 */
-
 
 #include <exec/types.h>
 
@@ -24,19 +21,17 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-#include "intuition_private.h"
-
-#ifdef __AROS__
+#ifndef __MORPHOS__
 #include <aros/asmcall.h>
 #include <proto/alib.h>
-#endif
+#endif /* !__MORPHOS__ */
 
 #include "intuition_intern.h"
 
 /**********************************************************************************************/
 
 #undef IntuitionBase
-#define IntuitionBase	((struct IntuiBase *)(cl->cl_UserData))
+#define IntuitionBase   ((struct IntuiBase *)(cl->cl_UserData))
 
 struct ModelData
 {
@@ -48,107 +43,124 @@ struct ModelData
 /* icclass boopsi dispatcher
  */
 AROS_UFH3S(IPTR, dispatch_modelclass,
-    AROS_UFHA(Class *,  cl,  A0),
-    AROS_UFHA(Object *, o,   A2),
-    AROS_UFHA(Msg,      msg, A1)
-)
+           AROS_UFHA(Class *,  cl,  A0),
+           AROS_UFHA(Object *, o,   A2),
+           AROS_UFHA(Msg,      msg, A1)
+          )
 {
     AROS_USERFUNC_INIT
 
-    struct ModelData 	*data;
-    IPTR 		retval = 0UL;
-    
+    struct ModelData *data = NULL;   /* shut up the compiler */
+    IPTR              retval = 0UL;
+
     if (msg->MethodID != OM_NEW) data = INST_DATA(cl, o);
-    
+
     switch(msg->MethodID)
     {
-        case OM_NEW:
-	    if ((o = (Object *)DoSuperMethodA(cl, o, msg)))
-	    {
-	        data = INST_DATA(cl, o);
-		
-		NEWLIST(&data->memberlist);
-		
-		retval = (IPTR)o;
-	    };
-	    break;
-	    
+	case OM_NEW:
+            if ((o = (Object *)DoSuperMethodA(cl, o, msg)))
+            {
+        	data = INST_DATA(cl, o);
+
+        	NEWLIST(&data->memberlist);
+
+        	retval = (IPTR)o;
+            };
+            break;
+
 	case OM_DISPOSE:
-	    for(;;)
- 	    {
-	        /* free all member objects */
-		
-	        Object *member, *objstate;
-		
-		objstate = (Object *)data->memberlist.mlh_Head;
-		member = NextObject(&objstate);
-		if (!member) break;
-		
-		DoMethod(member, OM_REMOVE);
-		
-		DisposeObject(member);
-		
-	    }
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-	
+            for(;;)
+            {
+        	/* free all member objects */
+
+        	Object *member, *objstate;
+        	ULONG method;
+
+        	objstate = (Object *)data->memberlist.mlh_Head;
+        	member = NextObject(&objstate);
+        	if (!member) break;
+
+        	method = OM_REMOVE;
+        	DoMethodA(member, (Msg)&method);
+
+        	DisposeObject(member);
+
+            }
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
+
 	case OM_ADDMEMBER:
-	    DoMethod( ((struct opMember *)msg)->opam_Object, OM_ADDTAIL, &data->memberlist);
-	    break;
-	    
+        {
+            struct opAddTail method;
+
+            method.MethodID  = OM_ADDTAIL;
+            method.opat_List = (struct List *)&data->memberlist;
+
+            DoMethodA( ((struct opMember *)msg)->opam_Object, (Msg)&method);
+            break;
+        }
+
 	case OM_REMMEMBER:
-	    DoMethod( ((struct opMember *)msg)->opam_Object, OM_REMOVE);
-	    break;
-	
-	case OM_UPDATE: 
+        {
+            STACKULONG method = OM_REMOVE;
+
+            DoMethodA( ((struct opMember *)msg)->opam_Object, (Msg)&method);
+            break;
+        }
+
+	case OM_UPDATE:
 	case OM_NOTIFY:
-	    /* send OM_UPDATE to all members without mapping the tags! */
-	    
-	    if (!IsListEmpty(&data->memberlist))
-	    {
-		if (DoMethod(o, ICM_CHECKLOOP) == 0) /* avoid loops */
-		{
-		    struct TagItem *clonetags;
+            /* send OM_UPDATE to all members without mapping the tags! */
 
-		    if ((clonetags = CloneTagItems(((struct opUpdate *)msg)->opu_AttrList)))
-		    {
-		        struct opUpdate opu = *(struct opUpdate *)msg;
-			Object		*member, *objstate;
-			
-			opu.MethodID     = OM_UPDATE; /* not OM_NOTIFY! */
-			opu.opu_AttrList = clonetags;
+            if (!IsListEmpty((struct List *)&data->memberlist))
+            {
+        	STACKULONG method = ICM_CHECKLOOP;
 
-	                DoMethod(o, ICM_SETLOOP);
-			
-			objstate = (Object *)data->memberlist.mlh_Head;
-			while((member = NextObject(&objstate)))
-			{
-			    DoMethodA(member, (Msg)&opu);
-			    
-			    /* in case the member object poked around in the taglist: */
-			    RefreshTagItemClones(clonetags, ((struct opUpdate *)msg)->opu_AttrList);
-			}
-			
-		        DoMethod(o, ICM_CLEARLOOP);
-			
-			FreeTagItems(clonetags);
-		    }
+        	if (DoMethodA(o, (Msg)&method) == 0) /* avoid loops */
+        	{
+                    struct TagItem *clonetags;
 
-		} /* if (DoMethod(o, ICM_CHECKLOOP) == 0) */
-		
-	    } /* if (!IsListEmpty(&data->memberlist)) */
-	    
-	    /* modelclass is a superclass of icclass so not only the members are targets,
-	       but possibly also the modelclass object itself could have an ICA_Target.
-	       This is handled by the superclass */
-	       
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-	    
+                    if ((clonetags = CloneTagItems(((struct opUpdate *)msg)->opu_AttrList)))
+                    {
+                	struct opUpdate  opu = *(struct opUpdate *)msg;
+                	Object          *member, *objstate;
+
+                	opu.MethodID     = OM_UPDATE; /* not OM_NOTIFY! */
+                	opu.opu_AttrList = clonetags;
+
+                	method = ICM_SETLOOP;
+                	DoMethodA(o, (Msg)&method);
+
+                	objstate = (Object *)data->memberlist.mlh_Head;
+                	while((member = NextObject(&objstate)))
+                	{
+                            DoMethodA(member, (Msg)&opu);
+
+                            /* in case the member object poked around in the taglist: */
+                            RefreshTagItemClones(clonetags, ((struct opUpdate *)msg)->opu_AttrList);
+                	}
+
+                	method = ICM_CLEARLOOP;
+                	DoMethodA(o, (Msg)&method);
+
+                	FreeTagItems(clonetags);
+                    }
+
+        	} /* if (DoMethod(o, ICM_CHECKLOOP) == 0) */
+
+            } /* if (!IsListEmpty(&data->memberlist)) */
+
+            /* modelclass is a superclass of icclass so not only the members are targets,
+               but possibly also the modelclass object itself could have an ICA_Target.
+               This is handled by the superclass */
+
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
+
 	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-	    
+            retval = DoSuperMethodA(cl, o, msg);
+            break;
+
     } /* switch(msg->MethodID) */
 
     return retval;
@@ -168,11 +180,11 @@ struct IClass *InitModelClass (struct IntuitionBase *IntuitionBase)
     */
     if ( (cl = MakeClass(MODELCLASS, ICCLASS, NULL, sizeof(struct ModelData), 0)) )
     {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_modelclass);
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_UserData 	     = (IPTR)IntuitionBase;
+        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_modelclass);
+        cl->cl_Dispatcher.h_SubEntry = NULL;
+        cl->cl_UserData              = (IPTR)IntuitionBase;
 
-	AddClass (cl);
+        AddClass (cl);
     }
 
     return (cl);

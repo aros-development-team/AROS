@@ -1,9 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
-
-    Desc: Intuition function OpenWorkBench()
-    Lang: english
 */
 
 #include "intuition_intern.h"
@@ -13,74 +11,85 @@
 #include <proto/graphics.h>
 
 /*****************************************************************************
-
+ 
     NAME */
 
-    AROS_LH0(IPTR, OpenWorkBench,
+AROS_LH0(IPTR, OpenWorkBench,
 
-/*  SYNOPSIS */
+         /*  SYNOPSIS */
 
-/*  LOCATION */
-    struct IntuitionBase *, IntuitionBase, 35, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 35, Intuition)
 
 /*  FUNCTION
-	Attempt to open the Workbench screen.
-
+    Attempt to open the Workbench screen.
+ 
     INPUTS
-	None.
-
+    None.
+ 
     RESULT
-	Tries to (re)open WorkBench screen. If successful return value
-	is a pointer to the screen structure, which shouldn't be used,
-	because other programs may close the WorkBench and make the
-	pointer invalid.
-	If this function fails the return value is NULL.
-
+    Tries to (re)open WorkBench screen. If successful return value
+    is a pointer to the screen structure, which shouldn't be used,
+    because other programs may close the WorkBench and make the
+    pointer invalid.
+    If this function fails the return value is NULL.
+ 
     NOTES
-
+ 
     EXAMPLE
-
+ 
     BUGS
-
+ 
     SEE ALSO
-	CloseWorkBench()
-
+    CloseWorkBench()
+ 
     INTERNALS
-
-    HISTORY
-
+ 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct Screen *wbscreen;
-    
+
+    DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: <%s>\n",
+                                FindTask(NULL)->tc_Node.ln_Name));
+
     LockPubScreenList();
-    
+
     wbscreen = GetPrivIBase(IntuitionBase)->WorkBench;
+
+    DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Workbench 0x%lx\n",
+                                (ULONG) wbscreen));
+
     if (wbscreen)
     {
-    	UnlockPubScreenList();
-	
-	return (IPTR)wbscreen;
+        DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: returning Workbench screen at 0x%lx\n",
+                                    (ULONG) wbscreen));
+
+        UnlockPubScreenList();
+
+#ifdef INTUITION_NOTIFY_SUPPORT
+        /* Notify that the Workbench screen is open */
+        /* NOTE: Original screennotify.library notify in this case, too! */
+        sn_DoNotify(SCREENNOTIFY_TYPE_WORKBENCH, (APTR) TRUE, GetPrivIBase(IntuitionBase)->ScreenNotifyBase);
+#endif
+        return (IPTR)wbscreen;
     }
     else
     {
-    	/* Open the Workbench screen if we don't have one. */
-    	UWORD pens[] = { ~0 };
+        /* Open the Workbench screen if we don't have one. */
         struct TagItem screenTags[] =
-	{
-            { SA_Width      , AROS_DEFAULT_WBWIDTH  	},
-            { SA_Height     , AROS_DEFAULT_WBHEIGHT 	},
-            { SA_Depth      , AROS_DEFAULT_WBDEPTH  	},
-            { SA_Type       , WBENCHSCREEN          	},
-            { SA_Title      , (IPTR)"Workbench Screen"  },
-            { SA_PubName    , (IPTR)"Workbench"     	},
-	    { SA_Pens	    , (IPTR)pens    	    	},
-            { SA_SharePens  , TRUE                  	},
-	    { SA_SysFont    , 1     	    	    	},
-            { TAG_END       , 0                     	}
+        {   
+            { SA_Width,                AROS_DEFAULT_WBWIDTH  	},
+            { SA_Height,               AROS_DEFAULT_WBHEIGHT 	},
+            { SA_Depth,                AROS_DEFAULT_WBDEPTH  	},
+            { SA_LikeWorkbench,        TRUE                	},
+            { SA_Type,                 WBENCHSCREEN        	},
+            { SA_Title,         (IPTR) "Workbench Screen"       },
+            { SA_PubName,       (IPTR) "Workbench"   	        },
+            { SA_SharePens,            TRUE                	},
+            { TAG_END,                 0           	    	}
         };
     	struct TagItem modetags[] =
 	{
@@ -91,7 +100,7 @@
 	};	
     	ULONG modeid;
 	
-	modeid = BestModeIDA(modetags);
+        modeid = BestModeIDA(modetags);
     	if (modeid != INVALID_ID)
 	{
 	    APTR  disphandle;
@@ -111,18 +120,20 @@
 		}
 	    }
 	}
-	
+
+        DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
+
         wbscreen = OpenScreenTagList( NULL, screenTags );
 
         if( !wbscreen )
-	{
-	    UnlockPubScreenList();
-	    
-	    return 0;
-	    
-	}
-        
-	GetPrivIBase(IntuitionBase)->WorkBench = wbscreen;
+        {
+            DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: failed to open Workbench screen !!!!\n"));
+
+            UnlockPubScreenList();
+            return 0;
+        }
+
+        GetPrivIBase(IntuitionBase)->WorkBench = wbscreen;
 
         /* Make the screen public. */
         PubScreenStatus( wbscreen, 0 );
@@ -134,30 +145,41 @@
        list locked. But while sending the Message to the Workbench task we
        must unlock the semaphore, otherwise there can be deadlocks if the
        Workbench task itself does something which locks the pub screen list.
-       
+
        But if we unlock the pub screen list, then some other task could try
        to close the Workbench screen in the meantime. The trick to solve
        this problem is to increase the psn_VisitorCount of the Workbench
        screen here, before unlocking the pub screen list. This way the
        Workbench screen cannot go away. */
-    
+
     GetPrivScreen(wbscreen)->pubScrNode->psn_VisitorCount++;
-    
+    DEBUG_VISITOR(dprintf("OpenWorkbench: new VisitorCount %ld\n",
+                          GetPrivScreen(wbscreen)->pubScrNode->psn_VisitorCount));
+
     UnlockPubScreenList();
-    
+
+    DEBUG_VISITOR(dprintf("OpenWorkbench: notify Workbench\n"));
+
     /* Don't call this function while pub screen list is locked! */
     TellWBTaskToOpenWindows(IntuitionBase);
-    
+
     /* Now fix the psn_VisitorCount we have increased by one, above. It's probably
        better to do this by hand, instead of calling UnlockPubScreen, because Un-
        lockPubScreen can send signal to psn_SigTask. */
-       
+
     LockPubScreenList();
     GetPrivScreen(wbscreen)->pubScrNode->psn_VisitorCount--;
+    DEBUG_VISITOR(dprintf("OpenWorkbench: new VisitorCount %ld\n",
+                          GetPrivScreen(wbscreen)->pubScrNode->psn_VisitorCount));
     UnlockPubScreenList();
-    
+
+#ifdef INTUITION_NOTIFY_SUPPORT
+    /* Notify that the Workbench screen is open again */
+    sn_DoNotify(SCREENNOTIFY_TYPE_WORKBENCH, (APTR) TRUE, GetPrivIBase(IntuitionBase)->ScreenNotifyBase);
+#endif
+
     return (IPTR)wbscreen;
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* OpenWorkBench */

@@ -1,10 +1,9 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
-
-    Desc: Intuition function AlohaWorkbench()
-    Lang: english
 */
+
 #include "intuition_intern.h"
 
 /*****************************************************************************
@@ -12,13 +11,13 @@
     NAME */
 #include <proto/intuition.h>
 
-        AROS_LH1(void, AlohaWorkbench,
+AROS_LH1(void, AlohaWorkbench,
 
-/*  SYNOPSIS */
-        AROS_LHA(struct MsgPort *, wbmsgport, A0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct MsgPort *, wbmsgport, A0),
 
-/*  LOCATION */
-        struct IntuitionBase *, IntuitionBase, 67, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 67, Intuition)
 
 /*  FUNCTION
         The WorkBench program wants to call this function to signal
@@ -62,6 +61,8 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     /* Save MsgPort into private IntuitionBase */
+    DEBUG_ALOHAWORKBENCH(dprintf("AlohaWorkbench: MsgPort %p\n",
+                     wbmsgport));
     GetPrivIBase(IntuitionBase)->WorkBenchMP = wbmsgport;
 
     AROS_LIBFUNC_EXIT
