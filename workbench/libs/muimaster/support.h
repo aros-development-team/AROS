@@ -65,4 +65,6 @@ void *Node_Next(APTR node);
 /* returns first node of this list */
 void *List_First(APTR list);
 
+WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
+
 #endif /* _MUIMASTER_SUPPORT_H */
