@@ -90,9 +90,11 @@ IPTR GadgetDesc[] =
     SDM_UWORD(O(Flags)),
     SDM_UWORD(O(Activation)),
     SDM_UWORD(O(GadgetType)),
-    SDM_IGNORE(4+4+4), /* GadgetRender+SelectRender+GadgetText */
+    SDM_SPECIAL(O(GadgetRender),&ProcessFlagPtrHook),
+    SDM_SPECIAL(O(SelectRender),&ProcessFlagPtrHook),
+    SDM_SPECIAL(O(GadgetText),&ProcessFlagPtrHook),
     SDM_LONG(O(MutualExclude)),
-    SDM_IGNORE(4), /* SpecialInfo */
+    SDM_SPECIAL(O(SpecialInfo),&ProcessFlagPtrHook),
     SDM_UWORD(O(GadgetID)),
     SDM_ULONG(O(UserData)),
     SDM_END
@@ -109,10 +111,11 @@ IPTR DiskObjectDesc[] =
     SDM_UBYTE(O(do_Type)),
     SDM_IGNORE(1), /* Pad */
     SDM_SPECIAL(O(do_DefaultTool),&ProcessFlagPtrHook),
-    SDM_SPECIAL(O(do_ToolTypes),&ProcessFlagPtrHook), /* dito */
+    SDM_SPECIAL(O(do_ToolTypes),&ProcessFlagPtrHook),
     SDM_LONG(O(do_CurrentX)),
     SDM_LONG(O(do_CurrentY)),
-    SDM_IGNORE(4+4), /* do_DrawerData+do_ToolWindow */
+    SDM_SPECIAL(O(do_DrawerData),&ProcessFlagPtrHook),
+    SDM_SPECIAL(O(do_ToolWindow),&ProcessFlagPtrHook),
     SDM_LONG(O(do_StackSize)),
     SDM_END
 };
@@ -127,10 +130,10 @@ IPTR ImageDesc[] =
     SDM_WORD(O(Width)),
     SDM_WORD(O(Height)),
     SDM_WORD(O(Depth)),
-    SDM_IGNORE(4), /* ImageData */
+    SDM_SPECIAL(O(ImageData),&ProcessFlagPtrHook),
     SDM_UBYTE(O(PlanePick)),
     SDM_UBYTE(O(PlaneOnOff)),
-    SDM_IGNORE(4), /* NextImage */
+    SDM_SPECIAL(O(NextImage),&ProcessFlagPtrHook),
     SDM_END
 };
 
@@ -247,6 +250,16 @@ int main (int argc, char ** argv)
 
 		for (t=0; dobj->do_ToolTypes[t]; t++)
 		    kprintf ("TT %d: %s\n", t, dobj->do_ToolTypes[t]);
+
+		if (!(icon = Open ("readicon.info", MODE_NEWFILE)) )
+		    PrintFault (IoErr(), "Cannot write icon to readicon.info");
+		else
+		{
+		    if (!WriteStruct (icon, dobj, IconDesc))
+			PrintFault (IoErr(), "Writing of icon to readicon.info failed");
+
+		    Close (icon);
+		}
 
 		FreeStruct (dobj, DiskObjectDesc);
 	    }
@@ -462,7 +475,10 @@ AROS_UFH3(ULONG, ProcessFlagPtr,
 	break;
 
     case SDV_SPECIALMODE_WRITE:
-	ptr = (*((APTR *)data->sdd_Dest) != NULL);
+	if (*((APTR *)data->sdd_Dest))
+	    ptr = 0xABADCAFEL;
+	else
+	    ptr = 0L;
 
 	if (FWrite (file, &ptr, 4, 1) == EOF)
 	    return FALSE;
