@@ -9,8 +9,9 @@
 #include <dos/dostags.h>
 
 #include "workbench_intern.h"
+#include "handler.h"
 
-BOOL StartHandler( WorkbenchBase *WorkbenchBase ) {
+BOOL StartHandler( struct WorkbenchBase *WorkbenchBase ) {
     struct Process *proc;
     struct TagItem  procTags[] = {
         { NP_Entry,      (IPTR) WorkbenchHandler    },
@@ -20,16 +21,51 @@ BOOL StartHandler( WorkbenchBase *WorkbenchBase ) {
     };
 
     kprintf( "Workbench: About to star WBHandler...\n" );
-    handler = CreateNewProc( procTags );
+    proc = CreateNewProc( procTags );
     kprintf( "Workbench: ...DONE!\n" );
 
-    if( handler ) {
+    if( proc ) {
         kprintf( "Workbench: Started Workbench Handler.\n" );
-        WorkbenchBase->wb_HandlerPort = &handler->pr_MsgPort;
+        WorkbenchBase->wb_HandlerPort = &(proc->pr_MsgPort);
 
         return TRUE;
     } else {
         kprintf( "Workbench: Starting Workbench Handler failed!\n" );
         return FALSE;
+    }
+}
+
+void AddHiddenDevice( STRPTR name, struct WorkbenchBase *WorkbenchBase ) {
+    /* Make sure we got valid pointers... */
+    if( (name == NULL) || (WorkbenchBase == NULL) ) {
+        return;
+    }
+
+    /* Only add the device name if it isn't already the list. */
+    if( FindName( &(WorkbenchBase->wb_HiddenDevices), name ) == NULL ) {
+        struct Node *deviceName;
+
+        if( (deviceName = AllocMem( sizeof( struct Node ), MEMF_ANY | MEMF_CLEAR )) ) {
+            deviceName->ln_Name = name;
+            AddTail( &(WorkbenchBase->wb_HiddenDevices), deviceName );
+
+            /* TODO: Notify WB App. */
+        }
+    }
+}
+
+void RemoveHiddenDevice( STRPTR name, struct WorkbenchBase *WorkbenchBase ) {
+    struct Node *deviceName;
+
+    /* Make sure we got valid pointers... */
+    if( (name == NULL) || (WorkbenchBase == NULL) ) {
+        return;
+    }
+
+    if( (deviceName = FindName( &(WorkbenchBase->wb_HiddenDevices), name )) ) {
+        Remove( deviceName );
+        FreeVec( deviceName );
+
+        /* TODO: Notify WB App. Maybe not here...*/
     }
 }
