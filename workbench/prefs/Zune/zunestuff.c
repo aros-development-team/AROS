@@ -75,3 +75,21 @@ Object *MakePoppen(void)
 		     MUIA_Window_Title, (IPTR)"Adjust Pen",
 		     TAG_DONE);
 }
+
+Object *MakePopfont(Object **store, BOOL fixed)
+{
+    Object *string;
+    
+    if (store == NULL) store = &string;
+    
+    return PopaslObject,
+        MUIA_Popasl_Type,              ASL_FontRequest,
+        ASLFO_MaxHeight,               100,
+        ASLFO_FixedWidthOnly,          fixed ? TRUE : FALSE,
+        MUIA_Popstring_String, (IPTR) *store = TextObject,
+            TextFrame,
+            MUIA_Background, MUII_TextBack,
+        End,
+        MUIA_Popstring_Button, (IPTR)  PopButton(MUII_PopUp),
+    End;
+}

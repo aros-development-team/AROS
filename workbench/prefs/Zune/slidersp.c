@@ -120,14 +120,7 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                 End, /* HGroup Frame/BG */
                 Child, (IPTR) HGroup,
                     Child, (IPTR) Label2("Font:"),
-                    Child, (IPTR) PopaslObject,
-                        MUIA_Popasl_Type, ASL_FontRequest,
-                        MUIA_Popstring_String, (IPTR) d.knob_font_string = StringObject,
-                            StringFrame, 
-                            MUIA_CycleChain, 1,
-                        End,
-                        MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
-                    End,
+                    Child, (IPTR) MakePopfont(&d.knob_font_string, FALSE),
                 End, /* HGroup font */
             End, /* VGroup Knob Design */
         End, /* HGroup Container/Knob design */

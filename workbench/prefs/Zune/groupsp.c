@@ -80,13 +80,7 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                 Child, (IPTR) d.title_color_cycle =
                            MakeCycle("Color:", color_labels),
                 Child, (IPTR) Label("Font:"),
-                Child, (IPTR) PopaslObject,
-                   MUIA_Popasl_Type, ASL_FontRequest,
-                   MUIA_Popstring_String, (IPTR) d.font_title_string = StringObject,
-                        StringFrame, 
-                    End,
-                   MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
-                End,
+                Child, (IPTR) MakePopfont(&d.font_title_string, FALSE),
             End, /* Title */
             Child, (IPTR) VSpace(0),
         End,

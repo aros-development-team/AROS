@@ -68,14 +68,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     Child, (IPTR) FreeLabel("Frame:"),
                     Child, (IPTR) d.button_popframe = MakePopframe(),
                     Child, (IPTR) Label("Font:"),
-                    Child, (IPTR) PopaslObject,
-                        MUIA_Popasl_Type, ASL_FontRequest,
-                        MUIA_Popstring_String, (IPTR) d.text_font_string = StringObject,
-                            MUIA_CycleChain, 1,
-                            StringFrame, 
-                        End,
-                        MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
-                    End,
+                    Child, (IPTR) MakePopfont(&d.text_font_string, FALSE),
                 End,
             End, /* Text Buttons */
             Child, (IPTR) VGroup, /* other buttons */
