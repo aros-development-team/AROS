@@ -54,105 +54,14 @@ extern void DrawJUMP(struct RastPort *rp,ULONG state,LONG cx,LONG cy,struct Intu
 
 /**************************************************************************************************/
 
+#ifdef __AROS__
+#define USE_AROS_DEFSIZE 1
+#else
+#define USE_AROS_DEFSIZE 0
+#endif
+
 #define DEFSIZE_WIDTH  14
 #define DEFSIZE_HEIGHT 14
-
-#if 0 /* stegerg: ???? */
-
-/* Image data */
-#define ARROWDOWN_WIDTH    18
-#define ARROWDOWN_HEIGHT   11
-
-UWORD ArrowDown0Data[] =
-    {
-        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0C0C, 0x4000,
-        0x0738, 0x4000, 0x03F0, 0x4000, 0x01E0, 0x4000, 0x00C0, 0x4000,
-        0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
-
-        0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
-        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
-        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
-    };
-
-UWORD ArrowDown1Data[] =
-    {
-        0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8C0C, 0x0000,
-        0x8738, 0x0000, 0x83F0, 0x0000, 0x81E0, 0x0000, 0x80C0, 0x0000,
-        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
-
-        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
-        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
-        0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
-    };
-
-#define ARROWUP_WIDTH    18
-#define ARROWUP_HEIGHT   11
-
-UWORD ArrowUp0Data[] =
-    {
-        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x00C0, 0x4000,
-        0x01E0, 0x4000, 0x03F0, 0x4000, 0x0738, 0x4000, 0x0C0C, 0x4000,
-        0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
-
-        0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
-        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
-        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
-    };
-
-UWORD ArrowUp1Data[] =
-    {
-        0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x80C0, 0x0000,
-        0x81E0, 0x0000, 0x83F0, 0x0000, 0x8738, 0x0000, 0x8C0C, 0x0000,
-        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
-
-        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
-        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
-        0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
-    };
-
-#define ARROWLEFT_WIDTH    11
-#define ARROWLEFT_HEIGHT   16
-
-UWORD ArrowLeft0Data[] =
-    {
-        0x0000, 0x0020, 0x0020, 0x0120, 0x0320, 0x0620, 0x0E20, 0x1C20,
-        0x1C20, 0x0E20, 0x0620, 0x0320, 0x0120, 0x0020, 0x0020, 0xFFE0,
-
-        0xFFE0, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000,
-        0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000,
-    };
-
-UWORD ArrowLeft1Data[] =
-    {
-        0xFFE0, 0x8000, 0x8000, 0x8100, 0x8300, 0x8600, 0x8E00, 0x9C00,
-        0x9C00, 0x8E00, 0x8600, 0x8300, 0x8100, 0x8000, 0x8000, 0x0000,
-
-        0x0000, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020,
-        0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0xFFE0,
-    };
-
-#define ARROWRIGHT_WIDTH    11
-#define ARROWRIGHT_HEIGHT   16
-
-UWORD ArrowRight0Data[] =
-    {
-        0x0000, 0x0020, 0x0020, 0x1020, 0x1820, 0x0C20, 0x0E20, 0x0720,
-        0x0720, 0x0E20, 0x0C20, 0x1820, 0x1020, 0x0020, 0x0020, 0xFFE0,
-
-        0xFFE0, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000,
-        0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000,
-    };
-
-UWORD ArrowRight1Data[] =
-    {
-        0xFFE0, 0x8000, 0x8000, 0x9000, 0x9800, 0x8C00, 0x8E00, 0x8700,
-        0x8700, 0x8E00, 0x8C00, 0x9800, 0x9000, 0x8000, 0x8000, 0x0000,
-
-        0x0000, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020,
-        0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0xFFE0,
-    };
-
-#endif
 
 /**************************************************************************************************/
 
@@ -306,22 +215,32 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     {
     case LEFTIMAGE:
     case RIGHTIMAGE:
+    #if USE_AROS_DEFSIZE
+    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+    #else
         def_low_width = 16;
         def_med_width = 16;
         def_high_width = 23;
         def_low_height = 11;
         def_med_height = 10;
         def_high_height = 22;
+    #endif
         break;
 
     case UPIMAGE:
     case DOWNIMAGE:
+    #if USE_AROS_DEFSIZE
+    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+    #else
         def_low_width = 13;
         def_med_width = 18;
         def_high_width = 23;
         def_low_height = 11;
         def_med_height = 11;
         def_high_height = 22;
+    #endif
         break;
 
     case DEPTHIMAGE:
@@ -332,31 +251,51 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     case POPUPIMAGE:
     case SNAPSHOTIMAGE:
     case JUMPIMAGE:
+    #if USE_AROS_DEFSIZE
+    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+    #else
         def_low_width = 18;
         def_med_width = 24;
         def_high_width = 24;
+    #endif
         if ((data->type == DEPTHIMAGE)||(data->type == ZOOMIMAGE)) IM(obj)->LeftEdge = -1;
         break;
 
     case SDEPTHIMAGE:
+    #if USE_AROS_DEFSIZE
+    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+    #else
         def_low_width = 17;
         def_med_width = 23;
         def_high_width = 23;
+    #endif
         break;
 
     case CLOSEIMAGE:
+    #if USE_AROS_DEFSIZE
+    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+    #else
         def_low_width = 15;
         def_med_width = 20;
         def_high_width = 20;
+    #endif
         break;
 
     case SIZEIMAGE:
+    #if USE_AROS_DEFSIZE
+    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+    #else
         def_low_width = 13;
         def_med_width = 18;
         def_high_width = 18;
         def_low_height = 11;
         def_med_height = 10;
         def_high_height = 10;
+    #endif
         break;
 
     case MENUCHECK:
