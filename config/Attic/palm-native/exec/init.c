@@ -1,4 +1,6 @@
+#ifdef __palmos__
 #include <Pilot.h>
+#endif
 #include <registers.h>
 #include <palmgfx.h>
 
@@ -146,7 +148,7 @@ void Init_IRQVectors(void);
 
 int main_init_cont(void);
 
-void main_init(void * memory, Long memSize)
+void main_init(void * memory, ULONG memSize)
 {
 	Init_PalmHardware();
 	Init_IRQVectors();
