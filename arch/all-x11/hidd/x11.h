@@ -186,7 +186,7 @@ struct x11_staticdata
     ULONG green_shift;
     ULONG blue_shift;
 
-    ULONG size; /* Size of pixel in bits */
+    ULONG depth; /* Size of pixel in bits */ /* stegerg: was called "size" */
     ULONG bytes_per_pixel;
     
     ULONG clut_shift;
