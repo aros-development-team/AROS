@@ -1,23 +1,12 @@
 Short: AROS - Amiga Replacement OS
 Author:   Aaron "Optimizer" Digulla (digulla@fh-konstanz.de) and many others
 Uploader: Aaron "Optimizer" Digulla (digulla@fh-konstanz.de)
-Version:  1.8
+Version:  1.9
 Type:	  misc/emu
 
 New this time:
-- Renamed "openwin" to "demowin".
-- Implemented PROPGADGETS
-- Even more bugfixes (librarytest works now :)
-- Many new README's. Developers should have a look at README.porting,
-  README.contents, README.CVS and README.jobserv depending on what they
-  want to do.
-- Many new function from M. Fleischer (we have now 236 funcions in all)
-- Many new function from I. Templeton (Utility.library)
-- NIL: and RAM: devices from M. Fleischer
-- AROS now uses the AFD-COPYRIGHT
-- ***Developers: If you update from 1.7, you *MUST* call "make clean"
-  because some headers have changed.
-- New CLI commands: Mount, Assign, MakeDir, Delete
+- Better handling of Intuition Windows on X11
+- Bug fixes (as usual)
 
 This project's goal is to provide a public available AmigaOS which
 is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
