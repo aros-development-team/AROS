@@ -157,10 +157,10 @@ void idleTask(struct ExecBase *SysBase)
 	if( !IsListEmpty(&SysBase->TaskReady) )
 	{
 	    /* TODO Doesn't work, yet Reschedule(FindTask(NULL)); */
-	    Forbid ();
+	    Disable ();
 	    idle->tc_State = TS_READY;
 	    AddTail (&SysBase->TaskReady, &idle->tc_Node);
-	    Permit ();
+	    Enable ();
 	    Switch();
 	}
     }
