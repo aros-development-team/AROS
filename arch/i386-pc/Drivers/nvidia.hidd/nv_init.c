@@ -55,7 +55,7 @@ struct nvbase
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #undef SysBase
@@ -359,14 +359,33 @@ int findCard(struct nv_staticdata *nsd)
 
 		save_state(nsd, &nsd->init_state);
 		
+	#if USE_ALLOCATE
+	    	{
+		    struct MemChunk *mc = (struct MemChunk *)base;
+	    	    
+		    nsd->memheader.mh_Node.ln_Type = NT_MEMORY;
+		    nsd->memheader.mh_Node.ln_Name = "NVIDIA video mem";
+		    nsd->memheader.mh_First = mc;
+		    nsd->memheader.mh_Lower = (APTR)mc;
+		    nsd->memheader.mh_Free  = nsd->riva.RamAmountKBytes * 1024;
+		    nsd->memheader.mh_Upper = (APTR)(nsd->memheader.mh_Free + (IPTR)base);
+		    
+		    mc->mc_Next = NULL;
+		    mc->mc_Bytes = nsd->memheader.mh_Free;
+		    
+		    nsd->memory = base;
+		}
+	#else
+	
 		nsd->memory = (APTR)base;
 		nsd->memsize = nsd->riva.RamAmountKBytes * 1024;
 		nsd->memfree = nsd->memsize;
 		nsd->first = (struct vMemChunk *)base;
 		nsd->first->next = NULL;
 		nsd->first->size = nsd->memsize;
-
-		D(bug("Video memory: %dKB\n", nsd->memfree  / 1024));
+    	#endif
+	
+		D(bug("Video memory: %dKB\n", nsd->riva.RamAmountKBytes));
 	}
 	
 	return (nsd->card) ? TRUE : FALSE;
@@ -448,6 +467,20 @@ void load_mode(struct nv_staticdata *nsd,
 
 APTR vbuffer_alloc(struct nv_staticdata *nsd, int size)
 {
+#if USE_ALLOCATE
+    	APTR ret;
+	
+	Forbid();
+	ret = Allocate(&nsd->memheader, size);
+	Permit();
+	
+	if (!ret)
+	{
+	    ret = AllocMem(size, MEMF_CLEAR | MEMF_PUBLIC);
+	}
+	
+	return ret;
+#else
 	APTR ret = NULL;
 	struct vMemChunk *mc=NULL, *p1, *p2;
 
@@ -535,10 +568,24 @@ APTR vbuffer_alloc(struct nv_staticdata *nsd, int size)
 	}
 	Permit();
 	return AllocMem(size, MEMF_CLEAR | MEMF_PUBLIC);
+#endif
 }
 
 void vbuffer_free(struct nv_staticdata *nsd, APTR buff, int size)
 {
+#if USE_ALLOCATE
+	if ( ((ULONG)buff < (ULONG)(nsd->memheader.mh_Lower)) ||
+	     ((ULONG)buff >= (ULONG)(nsd->memheader.mh_Upper)) )
+	{
+		FreeMem(buff, size);
+	}
+    	else
+	{
+	    Forbid();
+	    Deallocate(&nsd->memheader, buff, size);
+	    Permit();
+	}
+#else
 	size = (size + 15) & ~16;
 
 	if ((ULONG)buff < (ULONG)(nsd->memory))
@@ -613,6 +660,7 @@ void vbuffer_free(struct nv_staticdata *nsd, APTR buff, int size)
 	    nsd->memfree+=size;
 	    Permit();
 	}
+#endif
 }
 
 /** Class initialization */
