@@ -64,7 +64,10 @@ AROS_UFH3(void, Pulse,
 
 	/* NOTE! 12 should be 1, but as the timing source is the VBlank
 	         running at 50Hz instead of the real heartbeat running at
-		 600 Hz, we scale things up */
+		 600 Hz, we scale things up
+		 -The hartbeat is actually supposed to be 1200 Hz, so I
+		  changed 12 up to 24. -ksvalast.
+		 */
 	GPB(RealTimeBase)->rtb_Time += 24;  /* Not sure about that frac time... maybe
 					 to take care of other sync sources
 					 (not external) whose heartbeats
