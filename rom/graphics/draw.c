@@ -58,8 +58,9 @@
   LONG _x, _y;
   LONG steps, counter;
 
-
+/*
   driver_Draw (rp, x, y, GfxBase);
+*/
 
   if (rp->cp_x != x)
     if (rp->cp_x > x)
@@ -106,7 +107,7 @@
     if (dx > dy)
     {
       x += x_step;
-      _x += dx;
+      /* _x += dx; unnecessary in this case */
       _y += dy;
       if (_y >= dx)
       {
@@ -118,7 +119,7 @@
     {
       y += y_step;
       _x += dx;
-      _y += dy;
+      /* _y += dy; unnecessary in this case */
       if (_x >= dy)
       {
         _x -= dy;
