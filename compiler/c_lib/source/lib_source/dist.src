@@ -1,0 +1,8 @@
+*.[ch]
+makefile.*
+SCOPTIONS
+make_storm.bat
+mcpp.SESSION
+smakefile
+storm*
+

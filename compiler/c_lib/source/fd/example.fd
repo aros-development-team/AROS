@@ -1,0 +1,6 @@
+** $VER: example.fd 37.4 (8.1.97)
+##base _ExampleBase
+##bias 30
+##public
+EXF_TestRequest(title,body,gadgets)(D1/D2/D3)
+##end

@@ -1,0 +1,31 @@
+TOP = ../../../..
+
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES = -D_AROS -I../include/example
+
+LIBS = -L$(LIBDIR) -lamiga -larossupport -larosc
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
+	$(LIBDIR)/libarosc.a
+
+OBJS = StartUp.o LibInit.o SampleFuncs.o
+LIB = $(SLIBDIR)/example.library
+
+all : $(LIB)
+
+clean :
+	$(RM) *.o $(LIB)
+
+$(LIB) : $(OBJS) $(DEPLIBS)
+	$(CC) $(ILDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+StartUp.o : StartUp.c SampleFuncs.h compiler.h
+	$(CC) $(CFLAGS) -c StartUp.c
+
+LibInit.o : LibInit.c compiler.h
+	$(CC) $(CFLAGS) -c LibInit.c
+
+SampleFuncs.o : SampleFuncs.c SampleFuncs.h compiler.h
+	$(CC) $(CFLAGS) -c SampleFuncs.c
+
+

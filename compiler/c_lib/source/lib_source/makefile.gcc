@@ -1,0 +1,20 @@
+
+CFLAGS :=	-noixemul -nostdlib -nostartfiles \
+		-IADE:include -ICsources:c_lib/source/include/example \
+		-O2 -fstrength-reduce -fomit-frame-pointer -s -msmall-code -fbaserel
+
+
+example.library : StartUp.o LibInit.o SampleFuncs.o
+		gcc $(CFLAGS) -o example.library StartUp.o LibInit.o SampleFuncs.o -lnix -lgcc -lamiga
+
+
+StartUp.o : StartUp.c
+	gcc -c $(CFLAGS) StartUp.c
+
+LibInit.o : LibInit.c
+	gcc -c $(CFLAGS) LibInit.c
+
+SampleFuncs.o : SampleFuncs.c
+	gcc -c $(CFLAGS) SampleFuncs.c
+
+

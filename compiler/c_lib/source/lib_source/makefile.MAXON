@@ -1,0 +1,12 @@
+RAM:example.library: StartUp.o LibInit.o SampleFuncs.o
+	mcppc StartUp.o LibInit.o SampleFuncs.o -o RAM:example.library -gs -l amiga
+
+StartUp.o: /include/example/examplebase.h maxon.h samplefuncs.h StartUp.c
+	mcppc -c -pc -gb0 -O -gd StartUp.c
+
+LibInit.o: /include/example/examplebase.h LibInit.c maxon.h
+	mcppc -c -pc -gb0 -O -gd LibInit.c
+
+SampleFuncs.o: maxon.h SampleFuncs.c
+	mcppc -c -pc -gb0 -O -gd SampleFuncs.c
+

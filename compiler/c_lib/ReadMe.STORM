@@ -1,0 +1,32 @@
+StormC 2.x note:
+----------------
+[Andreas Kleinert <Andreas_Kleinert@t-online.de>]
+
+
+ If you have both, SAS/C (with "smake") and StormC, you may simply type
+
+        smake -f storm_smakefile
+    or  make_storm.bat
+
+ to recompile the sample library, otherwise you may have to adjust
+ the makefile "storm_smakefile" to your favourite make utility.
+
+ With the configuration:
+
+    StormC 2.00.04
+    StormLink 2.0 Amiga-OS Target
+    (plus StormAsm, unknown version)
+
+ compiling worked fine with both, storm_smakefile and a project
+ settings file. The library was Ok. But please note, that with the
+ configuration:
+
+    StormC 1.10.07
+    StormAsm 1.05
+    StormLink 1.1 Amiga-OS Target
+
+ the sample did compile fine, but nevertheless did not work, since the
+ created temporary assembler source did not had all of the static
+ data preinitialized, but in parts runtime-initialized (only tested
+ with storm_smakefile).
+
