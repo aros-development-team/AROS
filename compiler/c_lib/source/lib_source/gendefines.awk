@@ -180,14 +180,14 @@ function emit_struct(tname)
         printf "#define __%s_WB(%s", fname, libbase
         for (t=0; t<narg; t++)
 	{
-            printf ", %s", arg[t, 2]
+            printf ", __%s", arg[t, 2]
 	}
         print ")\\"
 
         printf "    AROS_LC%d(%s, %s, \\\n", narg, tname, fname
         for (t=0; t<narg; t++)
 	{
-            printf "    AROS_LCA(%s, (%s), %s), \\\n", arg[t, 1], arg[t, 2], arg[t, 3]
+            printf "    AROS_LCA(%s, (__%s), %s), \\\n", arg[t, 1], arg[t, 2], arg[t, 3]
 	}
         printf "    %s, (%s), %d, %s)\n\n", libbtp, libbase, lvo, basename
 
