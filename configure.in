@@ -365,6 +365,7 @@ case "$target_os" in
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__linux__"
 		aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
 		aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
+		gcc_target_cpu="mc68000"
 		;;
 	    *i?86*)
 		aros_target_cpu="i386"
@@ -372,6 +373,7 @@ case "$target_os" in
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
 		aros_default_wbdepth=8
+		gcc_target_cpu="i386"
 		;;
 	    *powerpc*)
 	    	aros_target_cpu="ppc"
@@ -379,6 +381,7 @@ case "$target_os" in
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
 		aros_default_wbdepth=8
+		gcc_target_cpu="ppc"
 		;;
 	    *)
 		AC_MSG_ERROR("Unknown CPU for Linux -- $target_cpu")
@@ -399,6 +402,7 @@ case "$target_os" in
 		aros_kernel_ldflags=""
 		aros_default_wbwidth=640
 		aros_default_wbheight=480
+		gcc_target_cpu="i386"
 		;;
 	    *)
 		AC_MSG_ERROR("Unknown native CPU -- $target_cpu")
@@ -411,6 +415,7 @@ case "$target_os" in
 	aros_target_cpu="i386"
 	aros_flavour="emulation"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+	gcc_target_cpu="i386"
 
 	dnl FreeBSD 5.x has changed the default object format.
 	case $target_os in
@@ -435,6 +440,7 @@ case "$target_os" in
 		aros_object_format="m68kelf"
         	aros_flavour="emulcompat"
         	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
+		gcc_target_cpu="mc68000"
         	;;
             *i?86*)
         	aros_target_cpu="i386"
@@ -442,6 +448,7 @@ case "$target_os" in
         	aros_flavour="emulation"
         	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__NetBSD__"
         	aros_default_wbdepth=8
+		gcc_target_cpu="i386"
         	;;
             *)
         	AC_MSG_ERROR("Unknown CPU for NetBSD -- $target_cpu")
@@ -460,6 +467,7 @@ case "$target_os" in
 		aros_object_format="elf_i386"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__OpenBSD__"
+		gcc_target_cpu="i386"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for OpenBSD -- $target_cpu")
@@ -478,6 +486,7 @@ case "$target_os" in
                 aros_target_cpu="sparc"
 		aros_object_format="elf_sparc"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dsparc -D__Solaris__"
+		gcc_target_cpu="sparc"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for Solaris -- $target_cpu")
@@ -495,6 +504,7 @@ case "$target_os" in
 	aros_flavour="nativecompat"
 	aros_target_cflags="-O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__ -D__NOLIBBASE__"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+	gcc_target_cpu="ppc"
 	;;
 
     amiga*)
@@ -511,12 +521,14 @@ case "$target_os" in
 		aros_flavour="nativecompat"
 		aros_target_cflags="$aros_target_cflags -m68020 -m68881"
 		aros_target_aflags="$aros_target_aflags -m68060"
+		gcc_target_cpu="mc68000"
 		;;
 	    *ppc*)
 		aros_cpu="ppc"
 		aros_flavour="native"
 		aros_target_cflags="$aros_target_cflags -mpowerpc -mcpu=603e"
 		aros_target_aflags="$aros_target_aflags -m603e"
+		gcc_target_cpu="ppc"
 		;;
 	    *)
 		AC_MSG_ERROR("Unknown CPU for Amiga $target_cpu")
@@ -535,6 +547,7 @@ case "$target_os" in
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__CYGWIN32__"
 		aros_shared_cflags=""
 		aros_default_wbdepth=8
+		gcc_target_cpu="i386"
 		;;
 	    *)
 		AC_MSG_ERROR("Unknown CPU for CygWin -- $target_cpu")
@@ -566,7 +579,7 @@ case "$target_os" in
 		aros_target_nm="m68k-elf-nm"
 		aros_target_objcopy="m68k-elf-objcopy"
 		aros_target_objdump="m68k-elf-objdump"
-		aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DAROS_NO_SIGNAL_H -Dlinux"
+		aros_target_cflags="-Wall -Werror-implicit-function-declaration -fno-builtin -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -DHAS_OWN_DISPATCHER -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DNEEDS___MAIN -Dlinux"
 		aros_target_aflags="-Wall -x assembler-with-cpp -mc68000 --short-branchs"
 		aros_target_ldflags="-nostartfiles -nostdlib"
 		aros_compiler_libs="-lgcc1"
@@ -582,6 +595,8 @@ case "$target_os" in
 		aros_debug_aflags=""
 		aros_debug_ldflags="-g3"
 		aros_mungwall_debug="0"
+		aros_modules_debug="0"
+		gcc_target_cpu="mc68000"
 		;;
 	   *)
 		AC_MSG_ERROR("Unknown CPU for PalmPilot -- $target_cpu")
@@ -869,6 +884,9 @@ AC_SUBST(aros_mungwall_debug)
 AC_SUBST(aros_stack_debug)
 AC_SUBST(aros_modules_debug)
 
+# C compiler related
+AC_SUBST(gcc_target_cpu)
+
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
 emulation)	aros_flavour_uc="AROS_FLAVOUR_EMULATION"
@@ -883,7 +901,7 @@ nativecompat)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="native" ;;
 linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB"
 		aros_flavour="linklib" ;;
-palmnative)	aros_flavour_uc="AROS_FLAVOUR_STANDALONE"
+palmnative)     aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_EMULATION)"
 		aros_flavour="palmnative" ;;
 esac
 
