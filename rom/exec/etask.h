@@ -1,0 +1,21 @@
+#ifndef _ETASK_H
+#define _ETASK_H
+
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Internal description of the ETask structure
+    Lang: english
+*/
+#ifndef EXEC_TASKS_H
+#   include <exec/tasks.h>
+#endif
+
+struct IntETask
+{
+    struct ETask iet_Task;
+    APTR	 iet_RT;    /* Structure for resource tracking */
+};
+
+#endif /* _ETASK_H */
