@@ -428,7 +428,6 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
 		MUIA_InputMode, MUIV_InputMode_RelVerify,
 		MUIA_Image_FreeVert, TRUE,
 		MUIA_Image_FreeHoriz, FALSE,
-		MUIA_CycleChain, 1,
 		TAG_DONE);
 	    break;
 
