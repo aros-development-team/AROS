@@ -750,6 +750,7 @@ STATIC IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
     IPTR RetVal;
 
+    D(bug("picture.datatype/GM_LAYOUT: Initial %d\n", (int)msg->gpl_Initial));
     NotifyAttrChanges((Object *) g, msg->gpl_GInfo, NULL,
    				 GA_ID, g->GadgetID,
    				 DTA_Busy, TRUE,
@@ -795,7 +796,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     SrcHeight = pd->bmhd.bmh_Height;
     SrcDepth = pd->bmhd.bmh_Depth;
     D(bug("picture.datatype/DTM_ASYNCLAYOUT: Source Width %ld Height %ld Depth %ld\n", SrcWidth, SrcHeight, (long)SrcDepth));
-    D(bug("picture.datatype/DTM_ASYNCLAYOUT: Masking %d Transparent %d\n", (int)pd->bmhd.bmh_Masking, (int)pd->bmhd.bmh_Transparent));
+    D(bug("picture.datatype/DTM_ASYNCLAYOUT: Masking %d Transparent %d Initial %d\n", (int)pd->bmhd.bmh_Masking, (int)pd->bmhd.bmh_Transparent, (int)msg->gpl_Initial));
     if( !SrcWidth || !SrcHeight || !SrcDepth )
     {
         D(bug("picture.datatype/DTM_ASYNCLAYOUT: Neccessary fields in BitMapHeader not set !\n"));
@@ -811,7 +812,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     ObtainSemaphore( &(si->si_Lock) );   /* lock object data */
 
     success = TRUE;
-    if( msg->gpl_Initial )   /* we need to do it just once */
+    if( msg->gpl_Initial | !pd->Layouted )   /* we need to do it just once at startup or after scaling */
     {
         /* determine destination screen depth */
         if( !pd->DestScreen )
@@ -1158,6 +1159,7 @@ STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
 			DTA_NominalHoriz, pd->DestWidth,
 			DTA_NominalVert , pd->DestHeight,
 			TAG_DONE);
+    pd->Layouted = FALSE;	/* re-layout required */
 
     return TRUE;
 }

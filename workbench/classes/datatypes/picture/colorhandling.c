@@ -266,7 +266,7 @@ static BOOL ScaleArraySimple( struct Picture_Data *pd, struct RastPort rp )
     destwidthbytes = MOD16( pd->DestWidth << 2 );
     pixelformat = pd->SrcPixelFormat;
     srcpixelbytes = pd->SrcPixelBytes;
-    destline = AllocLineBuffer( destwidth * 4, 1, srcpixelbytes );
+    destline = AllocLineBuffer( destwidth, 1, 4 );
     if( !destline )
 	return FALSE;
     srcy = 0;
