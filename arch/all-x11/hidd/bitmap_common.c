@@ -606,14 +606,33 @@ static ULONG *buf_to_ximage(Object *bm
 {
     if (image->bits_per_pixel == 16)
     {
-    	int i;
+#if 1
+	/* sg */
+	
+    	LONG x, y;
 	UWORD *imdata = (UWORD *)image->data;
 	
+	for (y = 0; y < height; y ++)
+	{
+	    for (x = 0; x < width; x ++)
+	    {
+		*imdata ++ = (UWORD)*buf ++;
+		
+	    }
+	    imdata += ((image->bytes_per_line / 2) - width); /*sg*/
+	}
+
+	
+	
+#else	
+    	int i;
+	UWORD *imdata = (UWORD *)image->data;
 	i = width * height;
 	while (i --)
 	{
 	    *imdata ++ = (UWORD)*buf ++;
 	}
+#endif
     }
     else
     {
@@ -657,7 +676,7 @@ static UBYTE *buf_to_ximage_lut(Object *bm
 		
 	    }
 	    pixarray += msg->modulo;
-	    
+	    imdata += ((image->bytes_per_line / 2) - width); /*sg*/
 	}
     }
     else
