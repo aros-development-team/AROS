@@ -2470,6 +2470,14 @@ char * addtocache(char * cache, char * newline, int len, FILE * fdo)
 	return newcache;
 }
 
+char * clear_cache(char * cache)
+{
+	free(cache);
+	return NULL;
+}
+
+
+
 char * getfuncname(char * s)
 {
 	int i = strlen(s)-1;
@@ -2511,6 +2519,10 @@ char * getfuncname(char * s)
 	return NULL;
 }
 
+
+/*
+ * Rewrite a c function to AROS style c function
+ */
 int rewrite_function(FILE * fdo, char * pattern, struct pragma_description * pd, struct libconf * lc)
 {
 	char output[1024];
@@ -2538,6 +2550,10 @@ int rewrite_function(FILE * fdo, char * pattern, struct pragma_description * pd,
 	return 0;
 }
 
+/*
+ * Rewrite a whole c source code file according to the info provided
+ * from a pragma file.
+ */
 int rewritecfile(FILE * fdi, FILE * fdo, struct pragma_description * pd, struct libconf * lc) 
 {
 	char * line;
@@ -2570,6 +2586,11 @@ int rewritecfile(FILE * fdi, FILE * fdo, struct pragma_description * pd, struct 
 					if (_pd) {
 						printf("-> Rewriting!\n");
 						rewrite_function(fdo,cache,_pd,lc);
+						/*
+						 * Do not throw the cache into the
+						 * file but clear it
+						 */
+					 	cache = clear_cache(cache);
 					} else
 						printf("-> Not rewriting!\n");
 					free(funcname);
