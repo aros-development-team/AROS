@@ -174,6 +174,23 @@ UBYTE buffer[32];
 	}
 	while (*name)
 	{
+		if (
+				(OS_BE2LONG
+					(
+						blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
+					) != ST_ROOT) &&
+				(OS_BE2LONG
+					(
+						blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
+					) != ST_USERDIR) &&
+				(OS_BE2LONG
+					(
+						blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
+					) != ST_LINKDIR))
+		{
+			error = ERROR_OBJECT_WRONG_TYPE;
+			return NULL;
+		}
 		if (*name == '/')	/* get parent entry ? */
 		{
 			if (blockbuffer->buffer[BLK_PARENT(dirah->volume)] == 0)
@@ -196,23 +213,6 @@ UBYTE buffer[32];
 		}
 		else
 		{
-			if (
-					(OS_BE2LONG
-						(
-							blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
-						) != ST_ROOT) &&
-					(OS_BE2LONG
-						(
-							blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
-						) != ST_USERDIR) &&
-					(OS_BE2LONG
-						(
-							blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
-						) != ST_LINKDIR))
-			{
-				error = ERROR_OBJECT_WRONG_TYPE;
-				return NULL;
-			}
 			pos = buffer;
 			while ((*name != 0) && (*name != '/'))
 			{
@@ -221,18 +221,15 @@ UBYTE buffer[32];
 			if (*name == '/')
 				name++;
 			*pos=0;
-			if (*name != '/') /* parent is handled above */
-			{
-				D(bug
-					(
-						"[afs]   findBlock: searching for header block of %s\n",
-						buffer
-					));
-				blockbuffer =
-					getHeaderBlock(afsbase, dirah->volume, buffer, blockbuffer, block);
-				if (blockbuffer == NULL)
-					break;		/* object not found or other error */
-			}
+			D(bug
+				(
+					"[afs]   findBlock: searching for header block of %s\n",
+					buffer
+				));
+			blockbuffer =
+				getHeaderBlock(afsbase, dirah->volume, buffer, blockbuffer, block);
+			if (blockbuffer == NULL)
+				break;		/* object not found or other error */
 		}
 	}
 	D(
