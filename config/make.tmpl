@@ -1307,6 +1307,10 @@ ifdef USE_BGUILIB
 %(libs) := $(%(libs)) -lbgui
 %(deps) := $(%(deps)) $(LIBDIR)/libbgui.a
 endif
+ifdef USE_MUILIB
+%(libs) := $(%(libs)) -lmui
+%(deps) := $(%(deps)) $(LIBDIR)/libmui.a
+endif
 ifdef USE_REQTOOLSLIB
 %(libs) := $(%(libs)) -lreqtoolsstubs
 %(deps) := $(%(deps)) $(LIBDIR)/libreqtoolsstubs.a
