@@ -157,6 +157,7 @@ AROS_LH3(void, open,
 	unitnum = flags = 0;
 	afsbase->device.dd_Library.lib_OpenCnt++;
 	afsbase->rport.mp_SigTask=FindTask(NULL);
+#if 0
 	volume = initVolume
 		(
 			afsbase,
@@ -166,7 +167,7 @@ AROS_LH3(void, open,
 			(struct DosEnvec *)iofs->io_Union.io_OpenDevice.io_Environ,
 			&iofs->io_DosError
 		);
-	if (volume)
+	if (volume != NULL)
 	{
 		AddTail(&afsbase->device_list, &volume->ln);
 		iofs->IOFS.io_Unit = (struct Unit *)(&volume->ah);
@@ -176,19 +177,20 @@ AROS_LH3(void, open,
 
 		return;
 	}
-
-
-/*	iofs->IOFS.io_Command = -1;
+#else
+	iofs->IOFS.io_Command = -1;
 	PutMsg(&afsbase->port, &iofs->IOFS.io_Message);
 	WaitPort(&afsbase->rport);
 	(void)GetMsg(&afsbase->rport);
-	if (iofs->io_DosError == NULL)
+	if (iofs->io_DosError == 0)
 	{
+		AddTail(&afsbase->device_list, &(((struct AfsHandle *)iofs->IOFS.io_Unit)->volume->ln));
 		iofs->IOFS.io_Device = &afsbase->device;
 		afsbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
 		iofs->IOFS.io_Error = 0;
 		return;
-	}*/
+	}
+#endif
 	afsbase->device.dd_Library.lib_OpenCnt--;
 	iofs->IOFS.io_Error = IOERR_OPENFAIL;
 	AROS_LIBFUNC_EXIT	
