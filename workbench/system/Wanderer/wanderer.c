@@ -656,14 +656,17 @@ IPTR Wanderer__MUIM_Application_Execute
             (IPTR) self, 3, MUIM_CallHook, (IPTR) &hook_standard, (IPTR) wanderer_quit
         );
 
-        DoDetach();
-        DoSuperMethodA(CLASS, self, message);
+        DoDetach(RETURN_OK);
+        
+	DoSuperMethodA(CLASS, self, message);
         
         return TRUE;
     }
     
     // FIXME: report error...
     
+    DoDetach(RETURN_FAIL);
+
     return FALSE;
 }
 
