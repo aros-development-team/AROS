@@ -1,12 +1,14 @@
 #ifndef AROS_STRUCTDESC_H
 #define AROS_STRUCTDESC_H
+
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read and write big endian structures from and to a file
     Lang: english
 */
+
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif

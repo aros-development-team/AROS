@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Formats a message and makes sure the user will see it.
     Lang: english
 */
+
 #include <aros/config.h>
 #include <proto/exec.h>
 #include "exec_private.h"

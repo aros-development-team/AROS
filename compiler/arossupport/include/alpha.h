@@ -1,21 +1,9 @@
 #ifndef AROS_ALPHA_H
 #define AROS_ALPHA_H
+
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.2  1998/10/20 16:40:37  hkiel
-    Amiga Research OS
-
-    Revision 1.1  1997/03/27 01:13:52  ldp
-    libaros.a -> libarossupport.a
-
-    Revision 1.1  1997/01/09 18:21:15  digulla
-    Accidentially deleted :-( Shouldn't work when it's getting late
-
-    Revision 1.1  1996/09/13 17:54:34  digulla
-    Overworked the way systems are recognised and added three sample systems
-
 
     Desc: Alpha/DEC-specific things
     Lang: english

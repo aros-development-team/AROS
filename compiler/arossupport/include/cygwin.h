@@ -2,7 +2,7 @@
 #define AROS_CYGWIN_H
 
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CygWin specific things

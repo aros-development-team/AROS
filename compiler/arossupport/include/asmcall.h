@@ -1,6 +1,10 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef AROS_ASMCALL_H
 #define AROS_ASMCALL_H
-/* (C) 1995-96 AROS - The Amiga Research OS */
 
 /******************************************************************************
 

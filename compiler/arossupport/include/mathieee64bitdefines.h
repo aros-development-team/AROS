@@ -1,7 +1,10 @@
 /*
- *  Some shortcuts that provide the highest flexibility
- *  for 64bit and 32bit Systems.
- */
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Some shortcuts that provide the highest flexibility
+    for 64bit and 32bit Systems.
+*/
 
 #ifndef __MATHIEEE64BIT_DEFINES_H__
 #define __MATHIEEE64BIT_DEFINES_H__

@@ -2,10 +2,12 @@
 #define AROS_PURIFY_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
-    Purify - a tool to check memory accesses
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 
+    Purify - a tool to check memory accesses
 */
+
 #ifndef ENABLE_PURIFY
 #   define ENABLE_PURIFY    0
 #endif

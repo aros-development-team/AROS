@@ -1,9 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
-    Debugging macros.
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 
-    This include file can be included several times !
+    Debugging macros.
+    This include file can be included several times!
 */
+
 #ifndef CLIB_AROSSUPPORT_PROTOS_H
 #   include <proto/arossupport.h>
 #endif
