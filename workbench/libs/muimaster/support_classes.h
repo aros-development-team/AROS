@@ -158,6 +158,12 @@
 #   define ZUNE_VOLUMELIST_DESC
 #endif
 
+#if ZUNE_BUILTIN_DIRLIST
+#   define ZUNE_DIRLIST_DESC (&_MUI_Dirlist_desc),
+#else
+#   define ZUNE_DIRLIST_DESC
+#endif
+
 Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
 Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);

@@ -97,6 +97,7 @@ CLASSESOBJS= \
   objs/classes/text.o \
   objs/classes/virtgroup.o \
   objs/classes/volumelist.o \
+  objs/classes/dirlist.o \
   objs/classes/window.o
 
 NLISTOBJS= \
@@ -313,6 +314,9 @@ objs/classes/cycle.o: classes/cycle.c
 
 objs/classes/dataspace.o: classes/dataspace.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/dataspace.c objname=$@
+
+objs/classes/dirlist.o: classes/dirlist.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/dirlist.c objname=$@
 
 objs/classes/family.o: classes/family.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/family.c objname=$@
