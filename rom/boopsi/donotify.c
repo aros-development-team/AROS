@@ -38,8 +38,7 @@ static struct IntuiMessage *SendIDCMPUpdate(
     ULONG		class,
     UWORD		code,
     APTR		IAddress,
-    struct Library *	BOOPSIBase
-    )
+    struct Library 	*BOOPSIBase)
 {
     struct IntuiMessage	*imsg;
 
@@ -63,6 +62,7 @@ static struct IntuiMessage *SendIDCMPUpdate(
 	SendIntuiMessage(msg->opu_GInfo->gi_Window , imsg);
 	
     }
+    
     return imsg;
 }
 
@@ -144,14 +144,39 @@ static struct IntuiMessage *SendIDCMPUpdate(
 			FreeTagItems(ic->ic_CloneTags);
 			ic->ic_CloneTags = NULL;
 		    }
-    		    else
+    		    else 
     		    {
-			SendIDCMPUpdate( cl, o, msg, IDCMP_IDCMPUPDATE,
-					0, ic->ic_CloneTags, BOOPSIBase );
-					
-			/* in this case the cloned tagitems will be freed in the Intuition
-			   InputHandler when the app has replied the IntuiMessage */
+		    	if (msg->opu_GInfo)
+			if (msg->opu_GInfo->gi_Window)
+			if (msg->opu_GInfo->gi_Window->UserPort)
+			if (msg->opu_GInfo->gi_Window->IDCMPFlags & IDCMP_IDCMPUPDATE)
+			{
+			    struct TagItem 	*ti;
+			    UWORD 		code = 0;
+			    
+			    if ((ti = FindTagItem(ICSPECIAL_CODE, ic->ic_CloneTags)))
+			    {
+			        code = ti->ti_Data & 0xFFFF;
+			    } 
+			    SendIDCMPUpdate( cl, o, msg, IDCMP_IDCMPUPDATE,
+					     code, ic->ic_CloneTags, BOOPSIBase );
+
+			    /* in this case the cloned tagitems will be freed in the Intuition
+			       InputHandler when the app has replied the IntuiMessage */
+
+			    ic->ic_CloneTags = NULL;
+			}
+			
+			/* if IDCMP_IDCMPUPDATE msg could not be sent, free taglist */
+			
+			if (ic->ic_CloneTags)
+			{
+			    FreeTagItems(ic->ic_CloneTags);
+			    ic->ic_CloneTags = NULL;
+			}
+			
 		    }
+		    
 		} /* CloneTagItems() */
 
 	    } /* LoopCounter == 1UL */
@@ -165,5 +190,6 @@ static struct IntuiMessage *SendIDCMPUpdate(
     return 1UL;
 
     AROS_LIBFUNC_EXIT
+    
 } /* DoNotify() */
 
