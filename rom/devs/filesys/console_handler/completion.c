@@ -296,6 +296,7 @@ static void AddMatchNode(struct conbase *conbase, struct completioninfo *ci,
     struct matchnode 	*mn;
     struct Node     	*prev, *check;
     WORD    	    	 size;
+    BOOL    	    	 exists = FALSE;
     
     size = strlen(name) + 1 + sizeof(struct matchnode) + ((type > 0) ? 1 : 0);
     
@@ -312,14 +313,28 @@ static void AddMatchNode(struct conbase *conbase, struct completioninfo *ci,
 	prev = NULL;
 	ForeachNode(&ci->matchlist, check)
 	{
-	    if (Stricmp(mn->name, ((struct matchnode *)check)->name) < 0)
-	    	break;
-		
+	    WORD match;
+	    
+	    match = Stricmp(mn->name, ((struct matchnode *)check)->name);
+	    if (match < 0) break;
+	    if (match == 0)
+	    {
+	    	exists = TRUE;
+		break;
+	    }
+	    
 	    prev = check;
 	}
 	
-	Insert(&ci->matchlist, (struct Node *)mn, prev);
-	ci->nummatchnodes++;
+	if (!exists)
+	{
+	    Insert(&ci->matchlist, (struct Node *)mn, prev);
+	    ci->nummatchnodes++;
+	}
+	else
+	{
+	    FreePooled(ci->pool, mn, size);
+	}
     }
 }
 
