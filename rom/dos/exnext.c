@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include "dos_intern.h"
 
@@ -52,33 +52,29 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh=(struct FileHandle *)BADDR(lock);
-
-    /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
+    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
 
     /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys io,*iofs=&io;
+    struct IOFileSys iofs;
 
     /* Prepare I/O request. */
-    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
-    iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit	 =fh->fh_Unit;
-    iofs->IOFS.io_Command=FSA_EXAMINE_NEXT;
-    iofs->IOFS.io_Flags  =0;
-    iofs->io_Union.io_EXAMINE_NEXT.io_fib  = fileInfoBlock;
+    InitIOFS(&iofs, FSA_EXAMINE_NEXT, DOSBase);
+
+    iofs.IOFS.io_Device = fh->fh_Device;
+    iofs.IOFS.io_Unit   = fh->fh_Unit;
+
+    iofs.io_Union.io_EXAMINE_NEXT.io_fib = fileInfoBlock;
 
     /* Send the request. */
-    DoIO(&iofs->IOFS);
+    DoIO(&iofs.IOFS);
 
     /* Set error code and return */
-    SetIoErr(iofs->io_DosError);
-    if(iofs->io_DosError)
-      return DOSFALSE;
+    SetIoErr(iofs.io_DosError);
+
+    if(iofs.io_DosError != 0)
+	return DOSFALSE;
     else
-      return DOSTRUE;
+	return DOSTRUE;
 
     AROS_LIBFUNC_EXIT
 } /* ExNext */
