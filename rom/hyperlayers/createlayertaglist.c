@@ -163,10 +163,9 @@
    */
   if (parent)
   {
-    layershape->bounds.MinX += parent->shape->bounds.MinX;
-    layershape->bounds.MinY += parent->shape->bounds.MinY;
-    layershape->bounds.MaxX += parent->shape->bounds.MinX;
-    layershape->bounds.MaxY += parent->shape->bounds.MinY;
+    _TranslateRect(&layershape->bounds, 
+                   parent->shape->bounds.MinX,
+                   parent->shape->bounds.MinY);
   }
 
   if (infrontof && infrontof->priority > priority)
