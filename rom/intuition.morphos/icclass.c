@@ -81,7 +81,7 @@ AROS_UFH3S(IPTR, dispatch_icclass,
             struct TagItem *tag;
 
             DEBUG_IC(dprintf("dispatch_icclass: OM_SET\n"));
-            while ((tag = NextTagItem((struct TagItem **)&tstate)))
+            while ((tag = NextTagItem(&tstate)))
             {
                 switch(tag->ti_Tag)
                 {
