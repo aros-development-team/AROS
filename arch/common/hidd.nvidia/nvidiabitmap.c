@@ -135,7 +135,7 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	    bm->state = (struct CardState *)AllocPooled(sd->memPool, 
 					sizeof(struct CardState));
 	    
-	    bzero(bm->framebuffer, 640*480*2);
+	    bzero(bm->framebuffer + (IPTR)sd->Card.FrameBuffer, 640*480*2);
 	    
 	    if (bm->state)
 	    {
@@ -409,7 +409,8 @@ static VOID bm__clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *m
         NVDmaNext(&sd->Card, 0);
         NVDmaNext(&sd->Card, (bm->width << 16) | (bm->height));
 
-	NVSync(sd);
+        NVDmaKickoff(&sd->Card);
+	//NVSync(sd);
 
 	UNLOCK_HW   
     }
@@ -744,7 +745,7 @@ static VOID bm__putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 	    NVDmaNext(&sd->Card, ((msg->y + y) << 16) | (msg->x & 0xffff));
 	    NVDmaNext(&sd->Card, (1 << 16) | (msg->width & 0xffff));
 	    
-	    NVSync(sd);
+    	    NVDmaKickoff(&sd->Card);
 	}
 	
 	UNLOCK_HW
@@ -1325,6 +1326,96 @@ static VOID bm__getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIm
 	    
 }
 
+static VOID bm__puttemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
+{
+    nvBitMap *bm = OOP_INST_DATA(cl, o);
+
+    LOCK_BITMAP
+    
+    IPTR VideoData = bm->framebuffer;
+
+    if (bm->fbgfx)
+    {
+	VideoData += (IPTR)sd->Card.FrameBuffer;
+	if (sd->gpu_busy)
+	{
+	    LOCK_HW
+	    NVSync(sd);
+	    UNLOCK_HW
+	}
+    }	
+
+
+    switch(bm->bpp)
+    {
+	case 1:
+	    {
+		struct pHidd_BitMap_PutMemTemplate8 __m = {
+				sd->mid_PutMemTemplate8,
+				msg->gc,
+				msg->template,
+				msg->modulo,
+				msg->srcx,
+				(APTR)VideoData,
+				bm->pitch,
+				msg->x,
+				msg->y,
+				msg->width,
+				msg->height,
+				msg->inverttemplate
+		}, *m = &__m;
+
+		OOP_DoMethod(o, (OOP_Msg)m);
+	    }
+	    break;
+
+	case 2:
+	    {
+		struct pHidd_BitMap_PutMemTemplate16 __m = {
+				sd->mid_PutMemTemplate16,
+				msg->gc,
+				msg->template,
+				msg->modulo,
+				msg->srcx,
+				(APTR)VideoData,
+				bm->pitch,
+				msg->x,
+				msg->y,
+				msg->width,
+				msg->height,
+				msg->inverttemplate
+		}, *m = &__m;
+
+		OOP_DoMethod(o, (OOP_Msg)m);
+	    }
+	    break;
+
+	case 4:
+	    {
+		struct pHidd_BitMap_PutMemTemplate32 __m = {
+				sd->mid_PutMemTemplate32,
+				msg->gc,
+				msg->template,
+				msg->modulo,
+				msg->srcx,
+				(APTR)VideoData,
+				bm->pitch,
+				msg->x,
+				msg->y,
+				msg->width,
+				msg->height,
+				msg->inverttemplate
+		}, *m = &__m;
+
+		OOP_DoMethod(o, (OOP_Msg)m);
+	    }
+	    break;
+
+    } /* switch(bm->bpp) */
+
+    UNLOCK_BITMAP
+}
+
 static BOOL bm__obtaindirectaccess(OOP_Class *cl, OOP_Object *o,
 		struct pHidd_BitMap_ObtainDirectAccess *msg)
 {
@@ -1366,7 +1457,7 @@ static VOID bm__releasedirectaccess(OOP_Class *cl, OOP_Object *o,
 /* Class related functions */
 
 #define NUM_ROOT_METHODS    3
-#define	NUM_BM_METHODS	    14
+#define	NUM_BM_METHODS	    15
 
 OOP_Class *init_onbitmapclass(struct staticdata *sd)
 {
@@ -1392,6 +1483,7 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
 	{ OOP_METHODDEF(bm__drawpoly),	moHidd_BitMap_DrawPolygon },
 	{ OOP_METHODDEF(bm__putimage),	moHidd_BitMap_PutImage },
 	{ OOP_METHODDEF(bm__getimage),	moHidd_BitMap_GetImage },
+	{ OOP_METHODDEF(bm__puttemplate), moHidd_BitMap_PutTemplate },
 	{ OOP_METHODDEF(bm__obtaindirectaccess), moHidd_BitMap_ObtainDirectAccess },
 	{ OOP_METHODDEF(bm__releasedirectaccess), moHidd_BitMap_ReleaseDirectAccess },
 	{ NULL, 0 }
@@ -1426,7 +1518,10 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
 	sd->mid_GetMem32Image8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetMem32Image8);
 	sd->mid_GetMem32Image16 = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetMem32Image16);
 	sd->mid_Clear		= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_Clear);
-
+    	sd->mid_PutMemTemplate8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate8);
+    	sd->mid_PutMemTemplate16= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate16);
+    	sd->mid_PutMemTemplate32= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate32);
+	
 	if (cl)
 	{
 	    cl->UserData = sd;
