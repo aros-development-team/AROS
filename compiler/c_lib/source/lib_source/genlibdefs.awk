@@ -82,9 +82,13 @@ BEGIN {
 }
 /^libbasetype/ {
     libbasetype=$2;
+    for (t=3; t<=NF; t++)
+	libbasetype=libbasetype" "$t;
 }
 /^libbasetypeptr/ {
     libbasetypeptr=$2;
+    for (t=3; t<=NF; t++)
+	libbasetypeptr=libbasetypeptr" "$t;
 }
 /^define/ {
     define=$2;
