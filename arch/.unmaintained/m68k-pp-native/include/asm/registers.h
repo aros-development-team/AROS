@@ -184,7 +184,7 @@
 #define RXEN_F		(1 << 14)
 #define TXEN_F		(1 << 13)
 #define CLKM_F		(1 << 12)
-#define PEN_F		(1 << 11)
+#define PARITY_EN_F	(1 << 11)
 #define ODD_F		(1 << 10)
 #define STOP_F		(1 <<  9)
 #define EITHER8OR7_F	(1 <<  8)
