@@ -1,2 +1,0 @@
-/lib/ contains relocable and compiled parts of kernel (all libraries,
-devices and so on...).
