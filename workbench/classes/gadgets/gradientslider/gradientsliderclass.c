@@ -33,7 +33,7 @@
 
 #define GradientSliderBase ((struct GradientSliderBase_intern *)(cl->cl_UserData))
 
-#else /* AMIGA */
+#else /* !AROS */
 
 #include <intuition/icclass.h>
 #include <intuition/classes.h>
