@@ -38,7 +38,7 @@ struct passwd
 __BEGIN_DECLS
 
 struct passwd *getpwuid(uid_t uid);
-/* NOTIMPL struct passwd *getpwnam(const char *name); */
+struct passwd *getpwnam(const char *name);
 
 #if __POSIX_VISIBLE >= 200112 || __XSI_VISIBLE >= 500
 /* NOTIMPL int getpwnam_r(const char *name, struct passwd *pwd, char *buffer,
