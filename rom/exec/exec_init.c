@@ -195,6 +195,11 @@ SysBase->VBlankFrequency = 50;
 
 	NEWLIST(&t->tc_MemEntry);
 	NEWLIST(&((struct Process *)t)->pr_MsgPort.mp_MsgList);
+
+	/* It's the boot process that RunCommand()s the boot shell, so we
+	   must have this list initialized */
+	NEWLIST((struct List *)&((struct Process *)t)->pr_LocalVars);
+
 	AddHead(&t->tc_MemEntry,&ml->ml_Node);
 
 	t->tc_Node.ln_Name = "Boot Task";
