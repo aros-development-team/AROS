@@ -89,6 +89,7 @@ enum
     MEN_WANDERER_BACKDROP,
     MEN_WANDERER_EXECUTE,
     MEN_WANDERER_SHELL,
+    MEN_WANDERER_GUISETTINGS,
     MEN_WANDERER_ABOUT,
     MEN_WANDERER_QUIT,
 };
@@ -102,6 +103,7 @@ static struct NewMenu nm[] =
     {NM_ITEM,  "Update All" },
     {NM_ITEM,  "Last Message" },
     {NM_ITEM,  "Shell",              "W", NULL,               NULL, (void*)MEN_WANDERER_SHELL},
+    {NM_ITEM,  "GUI Settings...",        NULL, NULL,          NULL, (void*)MEN_WANDERER_GUISETTINGS},
     {NM_ITEM,  "About...",           "?", NULL,               NULL, (void*)MEN_WANDERER_ABOUT},
     {NM_ITEM,  "Quit...",            "Q", NULL,               NULL, (void*)MEN_WANDERER_QUIT},
 
@@ -710,13 +712,25 @@ void wanderer_backdrop(Object **pstrip)
     }
 }
 
+void wanderer_guisettings(void)
+{
+    DoMethod(app, MUIM_Application_OpenConfigWindow);
+}
+
 void wanderer_about(void)
 {
+    STRPTR base;
+    STRPTR params[] = { NULL, NULL };
+
+    get(app, MUIA_Application_Base, (IPTR)&base);
+    params[0] = base;
+
     MUI_RequestA(app,NULL,0,"About Wanderer", "*Better than ever",
 	"AROS ROM version 0.7 (alpha)\n"
 	"Wanderer version 0.1 (alpha)\n\n"
 	"Copyright © 2003, The AROS Development Team.\n"
 	"All rights reserved.\n\n"
+	"ARexx Port: %s\n\n"
 	"\033cWe made it...\n\n"
 	"\033bThe AROS Development Team\033n\n"
 	"Aaron Digulla, Georg Steger, Nils Henrik Lorentzen,\n"
@@ -727,7 +741,8 @@ void wanderer_about(void)
         "Matt Parsons, Stefan Berger, Bernardo Innocenti,\n"
 	"Joerg Dietrich, Kjetil Svalastog Matheussen, Peter Eriksson,\n"
 	"David Le Corfec, Paul Smith, ...\n"
-	"\nTo be continued...",NULL);
+	"\nTo be continued..."
+	, params);
 }
 
 void wanderer_quit(void)
@@ -747,6 +762,7 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
 
     DoMenuNotify(strip,MEN_WANDERER_EXECUTE,execute_open, path);
     DoMenuNotify(strip,MEN_WANDERER_SHELL,shell_open,path);
+    DoMenuNotify(strip,MEN_WANDERER_GUISETTINGS,wanderer_guisettings,NULL);
     DoMenuNotify(strip,MEN_WANDERER_ABOUT,wanderer_about,NULL);
     DoMenuNotify(strip,MEN_WANDERER_QUIT,wanderer_quit,NULL);
 
@@ -955,6 +971,7 @@ int main(void)
 	MUIA_Application_Base, "WANDERER",
 	MUIA_Application_Version, "$VER: Wanderer 0.1 (10.12.02)",
 	MUIA_Application_Description, "The AROS filesystem GUI",
+	MUIA_Application_SingleTask, TRUE,
     	SubWindow, root_iconwnd = IconWindowObject,
 	    MUIA_UserData, 1,
 	    MUIA_Window_Menustrip, root_menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
