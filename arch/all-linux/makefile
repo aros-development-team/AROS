@@ -17,9 +17,6 @@ setup :
 clean:
 	-$(RM) $(OSGENDIR) *.err
 
-config:
-	@echo "Configuring for Linux..."
-
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $(GUI_CCFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
@@ -28,6 +25,13 @@ $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
-ifneq ($(TARGET),clean)
--include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+ifeq ($(TARGET),clean)
+NODEPS:=yes
+endif
+ifeq ($(TARGET),setup)
+NODEPS:=yes
+endif
+
+ifndef NODEPS
+include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 endif
