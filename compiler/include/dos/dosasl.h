@@ -28,7 +28,7 @@ struct AnchorPath
     LONG                 ap_FoundBreak;
     BYTE                 ap_Flags;      /* see below */
     BYTE                 ap_Reserved;
-    WORD                 ap_StrLen;
+    WORD                 ap_Strlen;
     struct FileInfoBlock ap_Info;
     UBYTE                ap_Buf[1];
 };
