@@ -101,7 +101,7 @@ To check: You should get \shell{xx1LtbDbOY4/E} if you call crypt with
 key}{pubkey.asc} (Shift-Click on the link to download) and send me a PGP
 encoded mail with your password and I'll encrypt and add it.
 
-Wait until I confirm this. While you wait, look for CVS 1.8 or better if
+Wait until I confirm this. While you wait, look for CVS 1.10 or better if
 you haven't already done so.
 
 If you want read-only access, then your username is \shell{anon} and
@@ -184,6 +184,32 @@ Use the CVS checkout command for this:
 This will create a
 directory called AROS and populate it with all sources.
 
+\subsection{How to get a copy of extra stuff}
+
+There is now a lot of stuff on the CVS server which is not directly
+related to the core source (for example contributed source code,
+screenshots, etc). You can get a list of all extra parts with
+
+\begin{example}
+> cvs checkout -c
+\end{example}
+
+To checkout one of the extra parts, just do a \shell{cvs checkout}
+somewhere in the AROS tree (you could do it outside but then,
+MetaMake would not find it and you would have to \shell{cvs update}
+it separately):
+
+\begin{example}
+> cvs checkout Quake
+\end{example}
+
+To get a copy of the game Quake into the directory 
+\filename{./contrib/Games/Quake}. Unlike any other part of
+AROS, a \shell{cvs update -dP} will only get you an update of
+Quake and not for the other games in \filename{contrib/Games}
+(you could \shell{cvs checkout Games} to get a copy of all
+games).
+
 \subsection{How to update the sources}
 
 If you have some sources and just want to update them, you can use the
@@ -237,6 +263,29 @@ or
 
 Note that \shell{cvs add dir/file} doesn't work. You can only add
 files in the current directory.
+
+\subsection{Some tips and tricks}
+
+You need to login only once. CVS will remember your password
+and use it when you access the same repository next time.
+
+After the checkout, CVS will remember where the source came
+from. You don't have to set \shell{CVSROOT} or specify \shell{-d ...}
+when you use CVS inside any directory created by CVS.
+
+To save some more typing, you can put all usual options into the
+file \filename{$HOME/.cvsrc}. Here is mine:
+
+\begin{example}
+cvs -z3
+update -dP
+diff -u
+\end{example}
+
+The first line says always to compress the communication between the
+client and the CVS server. The next line says to delete empty
+directories and create new ones when updating. The last line tells
+\shell{cvs diff} to use my favourite format.
 
 \subsection{More infos about CVS}
 
