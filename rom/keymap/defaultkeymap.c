@@ -90,70 +90,70 @@ static UBYTE lokeymaptypes[] =
 
 static UBYTE hikeymaptypes[] =
 {
-    N, 		/* 40 */
-    V, 	/* 41 */
-    V,	/* 42 */
-    V,	/* 43 */
-    V,	/* 44 */
-    V,  /* 45 ESCAPE */
-    V,  /* 46 DEL  */
-    V,	/* 47 */
-    V,	/* 48 */
-    V,	/* 49 */
-    V,	/* 4A */
-    V, 	/* 4B */
-    NOP, 		/* 4C CURSORUP*/
-    NOP, 		/* 4D CURSORDOWN */
-    NOP, 		/* 4E CURSORRIGHT */
-    NOP, 		/* 4F CURSORLEFT */
-    V|ST, 		/* 50 */
-    S, 		/* 51 */
-    S, 		/* 52 */
-    S, 		/* 53 */
-    S, 		/* 54 */
-    S, 		/* 55 */
-    S, 		/* 56 */
-    S, 		/* 57 */
-    S, 		/* 58 */
-    S, 		/* 59 */
-    S, 		/* 5A */
-    S, 		/* 5B */
-    S, 		/* 5C */
-    S, 		/* 5D */
-    S, 		/* 5E */
-    NOP,	/* 5F HELP */
-    S, 		/* 60 */
-    S, 		/* 61 */
-    S, 		/* 62 */
+    N, 		/* 40 SPACE */
+    N, 		/* 41 BACKSPACE */
+    ST|S,	/* 42 TAB */
+    N,		/* 43 ENTER */
+    C,		/* 44 RETURN */
+    A, 	 	/* 45 ESCAPE */
+    N, 	 	/* 46 DEL  */
+    NOP,	/* 47 */
+    NOP,	/* 48 */
+    NOP,	/* 49 */
+    N,		/* 4A NUMERIC PAD - */
+    NOP,	/* 4B */
+    ST|S, 	/* 4C CURSORUP*/
+    ST|S, 	/* 4D CURSORDOWN */
+    ST|S, 	/* 4E CURSORRIGHT */
+    ST|S, 	/* 4F CURSORLEFT */
+    ST|S, 	/* 50 F1 */
+    ST|S, 	/* 51 F2 */
+    ST|S, 	/* 52 F3 */
+    ST|S, 	/* 53 F4 */
+    ST|S, 	/* 54 F5 */
+    ST|S, 	/* 55 F6 */
+    ST|S, 	/* 56 F7 */
+    ST|S, 	/* 57 F8 */
+    ST|S, 	/* 58 F9 */
+    ST|S, 	/* 59 F10 */
+    S, 		/* 5A NUMPAD ( */
+    S, 		/* 5B NUMPAD ) */
+    N, 		/* 5C NUMPAD / */
+    N, 		/* 5D NUMPAD * */
+    N, 		/* 5E NUMPAD + */
+    ST,		/* 5F HELP */
+    NOP,	/* 60 LEFT SHIFT*/
+    NOP, 	/* 61 RIGHT SHIFT */
+    NOP, 	/* 62 CAPS LOCK */
     NOP,	/* 63 CONTROL */
     NOP,	/* 64 LALT */
     NOP,	/* 65 RALT */
     NOP,	/* 66 LCOMMAND */
     NOP, 	/* 67 RCOMMAND */
-    S, 		/* 68 */
-    S, 		/* 69 */
-    S, 		/* 6A */
-    S, 		/* 6B */
-    S, 		/* 6C */
-    S, 		/* 6D */
-    S, 		/* 6E */
-    S, 		/* 6F */
-    S, 		/* 70 */
-    S, 		/* 71 */
-    S, 		/* 72 */
-    S, 		/* 73 */
-    S, 		/* 74 */
-    S, 		/* 75 */
-    S, 		/* 76 */
-    S, 		/* 77 */
-    S, 		/* 78 */
-    S, 		/* 79 */
-    S, 		/* 7A */
-    S, 		/* 7B */
-    S, 		/* 7C */
-    S, 		/* 7D */
-    S, 		/* 7E */
-    S, 		/* 7F */
+    NOP, 	/* 68 LEFT MOUSE BUTTON*/
+    NOP,	/* 69 RIGHT MOUSE BUTTON */
+    NOP,	/* 6A MIDDLE MOUSE BUTTON */
+    NOP,	/* 6B */
+    NOP,	/* 6C */
+    NOP,	/* 6D */
+    NOP,	/* 6E */
+    NOP, 	/* 6F */
+    NOP, 	/* 70 */
+    NOP, 	/* 71 */
+    NOP, 	/* 72 */
+    NOP, 	/* 73 */
+    NOP, 	/* 74 */
+    NOP, 	/* 75 */
+    NOP, 	/* 76 */
+    NOP, 	/* 77 */
+    NOP, 	/* 78 */
+    NOP, 	/* 79 */
+    NOP, 	/* 7A */
+    NOP, 	/* 7B */
+    NOP, 	/* 7C */
+    NOP, 	/* 7D */
+    NOP, 	/* 7E */
+    NOP 	/* 7F */
     
 };
 
@@ -250,123 +250,231 @@ static IPTR lokeymap[] =
 
 /* Strings for the F1 key. In a real AmigaOS keymap, these would have come after
 ** the HiKeyMap, but we do it this way to avoid prototyping
+**
+** String descriptors are byte arrays and work like this:
+**
+** sizeofstring,offset_from_start_array_to_start_of_string
+** sizeofstring,offset_from_start_array_to_start_of_string
+** ..
+** ..
+** string1
+** string2
+** ..
+** ..
+**
+** The number of strings depends on the qualifier flags 
+** set in the keymap type.
 */
-#define N_F1 	"F1"
-#define S_F1 	"S-F1"
-#define A_F1	"A-F1"
-#define SA_F1	"S-A-F1"
-#define C_F1	"C-F1"
-#define SC_F1	"S-C-F1"
-#define AC_F1	"A-C-F1"
-#define SAC_F1	"S-A-C-F1"
-
-#define F1_DS 16 /* descriptor array size */
-#define s(x) (sizeof(x) - 1) /* substract 0 terminator */
 
 UBYTE f1_descr[] =
 {
-    s(N_F1),
-    F1_DS + 0,
+    3,4,
+    4,7,
     
-    s(S_F1),
-    F1_DS + s(N_F1),
-    
-    s(A_F1),
-    F1_DS + s(N_F1) + s(S_F1),
-    
-    s(SA_F1),
-    F1_DS + s(N_F1) + s(S_F1) + s(A_F1),
-    
-    s(C_F1),
-    F1_DS + s(N_F1) + s(S_F1) + s(A_F1) + s(SA_F1),
-    
-    s(SC_F1),
-    F1_DS + s(N_F1) + s(S_F1) + s(A_F1) + s(SA_F1) + s(C_F1),
-    
-    s(AC_F1),
-    F1_DS + s(N_F1) + s(S_F1) + s(A_F1) + s(SA_F1) + s(C_F1) + s(SC_F1),
-    
-    s(SAC_F1),
-    F1_DS + s(N_F1) + s(S_F1) + s(A_F1) + s(SA_F1) + s(C_F1) + s(SC_F1) + s(AC_F1),
-    
-    				'F','1',
-    'S','-',			'F','1',
-    'A','-',			'F','1',
-    'S','-','A','-',		'F','1',
-    'C','-',			'F','1',
-    'S','-','C','-',		'F','1',
-    'A','-','C','-',		'F','1',
-    'S','-','A','-','C','-',	'F','1'
-    
+    0x9B,'0','~',
+    0x9B,'1','0','~'
 };
 
+UBYTE f2_descr[] =
+{
+    3,4,
+    4,7,
+    
+    0x9B,'1','~',
+    0x9B,'1','1','~'
+};
+
+UBYTE f3_descr[] =
+{
+    3,4,
+    4,7,
+    
+    0x9B,'2','~',
+    0x9B,'1','2','~'
+};
+
+UBYTE f4_descr[] =
+{
+    3,4,
+    4,7,
+    
+    0x9B,'3','~',
+    0x9B,'1','3','~'
+};
+
+UBYTE f5_descr[] =
+{
+    3,4,
+    4,7,
+    
+    0x9B,'4','~',
+    0x9B,'1','4','~'
+};
+
+UBYTE f6_descr[] =
+{
+    3,4,
+    4,7,
+    
+    0x9B,'5','~',
+    0x9B,'1','5','~'
+};
+
+UBYTE f7_descr[] =
+{
+    3,4,
+    4,7,
+    
+    0x9B,'6','~',
+    0x9B,'1','6','~'
+};
+
+UBYTE f8_descr[] =
+{
+    3,4,
+    4,7,
+    
+    0x9B,'7','~',
+    0x9B,'1','7','~'
+};
+
+UBYTE f9_descr[] =
+{
+    3,4,
+    4,7,
+    
+    0x9B,'8','~',
+    0x9B,'1','8','~'
+};
+
+UBYTE f10_descr[] =
+{
+    3,4,
+    4,7,
+    
+    0x9B,'9','~',
+    0x9B,'1','9','~'
+};
+
+
+UBYTE up_descr[] =
+{
+    2,4,
+    2,6,
+    
+    0x9B,'A',
+    0x9B,'T'
+};
+
+UBYTE down_descr[] =
+{
+    2,4,
+    2,6,
+    
+    0x9B,'B',
+    0x9B,'S'
+};
+
+UBYTE left_descr[] =
+{
+    2,4,
+    3,6,
+    
+    0x9B,'C',
+    0x9B,' ','@'
+};
+
+UBYTE right_descr[] =
+{
+    2,4,
+    3,6,
+    
+    0x9B,'D',
+    0x9B,' ','A'
+};
+
+UBYTE tab_descr[] =
+{
+    1,4,
+    2,5,
+    
+    0x9,
+    0x9B,'Z'
+};
+
+UBYTE help_descr[] =
+{
+    3,2,
+    
+    0x9B,'?','~'
+};
 
 static IPTR hikeymap[] =
 {
     BYTES(' ', ' ', ' ', ' '),	/* 40 */
     BYTES(8, 8, 8, 8),		/* 41 BACKSPACE*/
-    BYTES(0, 0, 0, 0),	/* 42 */
+    STRING(tab_descr),		/* 42 TAB */
     BYTES(13, 13, 13, 13),	/* 43 ENTER */
-    BYTES(13, 13, 13, 13),	/* 44 RETURN */
-    BYTES(27, 27, 27, 27),	/* 45 ESCAPE */
+    BYTES(0, 0, 10, 13),	/* 44 RETURN */
+    BYTES(0, 0, 0x9B, 27),	/* 45 ESCAPE */
     BYTES(127, 127, 127, 127),	/* 46 DEL */
-    BYTES(0, 0, 0, 0),	/* 47 */
-    BYTES(0, 0, 0, 0),	/* 48 */
-    BYTES(0, 0, 0, 0),	/* 49 */
-    BYTES('-', '-', '-', '-'),		/* 4A */
-    BYTES(0, 0, 0, 0), 	/* 4B */
-    BYTES(0, 0, 0, 0),	/* 4C */
-    BYTES(0, 0, 0, 0),	/* 4D */
-    BYTES(0, 0, 0, 0),	/* 4E */
-    BYTES(0, 0, 0, 0),	/* 4F */
-    STRING(f1_descr),	/* 50 */
-    BYTES(0, 0, 0, 0),	/* 51 */
-    BYTES(0, 0, 0, 0),	/* 52 */
-    BYTES(0, 0, 0, 0),	/* 53 */
-    BYTES(0, 0, 0, 0),	/* 54 */
-    BYTES(0, 0, 0, 0),	/* 55 */
-    BYTES(0, 0, 0, 0),	/* 56 */
-    BYTES(0, 0, 0, 0),	/* 57 */
-    BYTES(0, 0, 0, 0),	/* 58 */
-    BYTES(0, 0, 0, 0),	/* 59 */
-    BYTES(0, 0, 0, 0),	/* 5A */
-    BYTES(0, 0, 0, 0),	/* 5B */
-    BYTES('/', '/', '/', '/'),		/* 5C */
-    BYTES('*', '*', '*', '*'),		/* 5D */
-    BYTES('+', '+', '+', '+'),		/* 5E */
-    BYTES(0, 0, 0, 0),	/* 5F */
-    BYTES(0, 0, 0, 0),	/* 60 */
-    BYTES(0, 0, 0, 0),	/* 61 */
-    BYTES(0, 0, 0, 0),	/* 62 */
-    BYTES(0, 0, 0, 0),	/* 63 */
-    BYTES(0, 0, 0, 0),	/* 64 */
-    BYTES(0, 0, 0, 0),	/* 65 */
-    BYTES(0, 0, 0, 0),	/* 66 */
-    BYTES(0, 0, 0, 0),	/* 67 */
-    BYTES(0, 0, 0, 0),	/* 68 */
-    BYTES(0, 0, 0, 0),	/* 69 */
-    BYTES(0, 0, 0, 0),	/* 6A */
-    BYTES(0, 0, 0, 0),	/* 6B */
-    BYTES(0, 0, 0, 0),	/* 6C */
-    BYTES(0, 0, 0, 0),	/* 6D */
-    BYTES(0, 0, 0, 0),	/* 6E */
-    BYTES(0, 0, 0, 0),	/* 6F */
-    BYTES(0, 0, 0, 0),	/* 70 */
-    BYTES(0, 0, 0, 0),	/* 71 */
-    BYTES(0, 0, 0, 0),	/* 72 */
-    BYTES(0, 0, 0, 0),	/* 73 */
-    BYTES(0, 0, 0, 0),	/* 74 */
-    BYTES(0, 0, 0, 0),	/* 75 */
-    BYTES(0, 0, 0, 0),	/* 76 */
-    BYTES(0, 0, 0, 0),	/* 77 */
-    BYTES(0, 0, 0, 0),	/* 78 */
-    BYTES(0, 0, 0, 0),	/* 79 */
-    BYTES(0, 0, 0, 0),	/* 7A */
-    BYTES(0, 0, 0, 0),	/* 7B */
-    BYTES(0, 0, 0, 0),	/* 7C */
-    BYTES(0, 0, 0, 0),	/* 7D */
-    BYTES(0, 0, 0, 0),	/* 7E */
-    BYTES(0, 0, 0, 0),	/* 7F */
+    BYTES(0, 0, 0, 0),		/* 47 */
+    BYTES(0, 0, 0, 0),		/* 48 */
+    BYTES(0, 0, 0, 0),		/* 49 */
+    BYTES('-', '-', '-', '-'),	/* 4A NUMPAD - */
+    BYTES(0, 0, 0, 0), 		/* 4B */
+    STRING(up_descr),		/* 4C CURSOR UP*/
+    STRING(down_descr),		/* 4D CURSOR DOWN*/
+    STRING(left_descr),		/* 4E CURSOR LEFT */
+    STRING(right_descr),	/* 4F CURSOR RIGHT */
+    STRING(f1_descr),		/* 50 F1 */
+    STRING(f2_descr),		/* 51 */
+    STRING(f3_descr),		/* 52 */
+    STRING(f4_descr),		/* 53 */
+    STRING(f5_descr),		/* 54 */
+    STRING(f6_descr),		/* 55 */
+    STRING(f7_descr),		/* 56 */
+    STRING(f8_descr),		/* 57 */
+    STRING(f9_descr),		/* 58 */
+    STRING(f10_descr),		/* 59 */
+    BYTES('[', '(', '[', '('),	/* 5A */
+    BYTES(']', ')', ']', ')'),	/* 5B */
+    BYTES('/', '/', '/', '/'),	/* 5C */
+    BYTES('*', '*', '*', '*'),	/* 5D */
+    BYTES('+', '+', '+', '+'),	/* 5E */
+    STRING(help_descr),		/* 5F HELP */
+    BYTES(0, 0, 0, 0),		/* 60 */
+    BYTES(0, 0, 0, 0),		/* 61 */
+    BYTES(0, 0, 0, 0),		/* 62 */
+    BYTES(0, 0, 0, 0),		/* 63 */
+    BYTES(0, 0, 0, 0),		/* 64 */
+    BYTES(0, 0, 0, 0),		/* 65 */
+    BYTES(0, 0, 0, 0),		/* 66 */
+    BYTES(0, 0, 0, 0),		/* 67 */
+    BYTES(0, 0, 0, 0),		/* 68 */
+    BYTES(0, 0, 0, 0),		/* 69 */
+    BYTES(0, 0, 0, 0),		/* 6A */
+    BYTES(0, 0, 0, 0),		/* 6B */
+    BYTES(0, 0, 0, 0),		/* 6C */
+    BYTES(0, 0, 0, 0),		/* 6D */
+    BYTES(0, 0, 0, 0),		/* 6E */
+    BYTES(0, 0, 0, 0),		/* 6F */
+    BYTES(0, 0, 0, 0),		/* 70 */
+    BYTES(0, 0, 0, 0),		/* 71 */
+    BYTES(0, 0, 0, 0),		/* 72 */
+    BYTES(0, 0, 0, 0),		/* 73 */
+    BYTES(0, 0, 0, 0),		/* 74 */
+    BYTES(0, 0, 0, 0),		/* 75 */
+    BYTES(0, 0, 0, 0),		/* 76 */
+    BYTES(0, 0, 0, 0),		/* 77 */
+    BYTES(0, 0, 0, 0),		/* 78 */
+    BYTES(0, 0, 0, 0),		/* 79 */
+    BYTES(0, 0, 0, 0),		/* 7A */
+    BYTES(0, 0, 0, 0),		/* 7B */
+    BYTES(0, 0, 0, 0),		/* 7C */
+    BYTES(0, 0, 0, 0),		/* 7D */
+    BYTES(0, 0, 0, 0),		/* 7E */
+    BYTES(0, 0, 0, 0),		/* 7F */
 };
 
 #undef SETBITS
@@ -457,18 +565,46 @@ struct KeyMap def_km =
 #undef S /* Ctrl-c like combo */
 #define X (-1)
 #define S (-2)
-const BYTE keymaptype_table[8][8] =
-{
-    {3, X, X, X, X, X, X, X},	/* KCF_NOQUAL 			== 0 */
-    {3, 2, X, X, X, X, X, X}, 	/* KCF_SHIFT  			== 1 */
-    {3, X, X, X, X, X, X, X}, 	/* KCF_ALT    			== 2 */
-    {3, 2, 1, 0, X, X, X, X}, 	/* KCF_SHIFT|KCF_ALT 		== 3 */
-    {3, X, X, X, 2, X, X, X}, 	/* KCF_CONTROL			== 4 */
-    {3, 2, X, X, 1, 0, X, X}, 	/* KCF_SHIFT|KCF_CONTROL	== 5 */
-    {3, X, 2, X, 1, X, 0, X}, 	/* KCF_ALT|KCF_CONTROL		== 6 */
-    {3, 2, 1, 0, S, X, X, X} 	/* KCF_SHIFT|KCF_ALT|KCF_CONTROL == KC__VANILLA == 7 */
 
-};
+#if 1
+
+/* stegerg: on the Amiga you get a key event if you
+            press for example CONTROL + A, even if
+	    the keymaptype for that key has not set
+	    KCF_CONTROL. So it looks like if for a
+	    certain keypress some qualifiers are set
+	    which are not set in the keymap-type then
+	    this qualifiers are simply to be ignored
+*/
+	    
+    const BYTE keymaptype_table[8][8] =
+    {
+	{3, 3, 3, 3, 3, 3, 3, 3},	/* KCF_NOQUAL 			== 0 */
+	{3, 2, 3, 2, 3, 2, 3, 2}, 	/* KCF_SHIFT  			== 1 */
+	{3, 3, 2, 2, 3, 3, 2, 2}, 	/* KCF_ALT    			== 2 */
+	{3, 2, 1, 0, 3, 2, 1, 0}, 	/* KCF_SHIFT|KCF_ALT 		== 3 */
+	{3, 3, 3, 3, 2, 2, 2, 2}, 	/* KCF_CONTROL			== 4 */
+	{3, 2, 3, 2, 1, 0, 1, 0}, 	/* KCF_SHIFT|KCF_CONTROL	== 5 */
+	{3, 3, 2, 2, 1, 1, 0, 0}, 	/* KCF_ALT|KCF_CONTROL		== 6 */
+	{3, 2, 1, 0, S, X, X, X} 	/* KCF_SHIFT|KCF_ALT|KCF_CONTROL == KC__VANILLA == 7 */
+
+    };
+
+#else 
+
+    const BYTE keymaptype_table[8][8] =
+    {
+	{3, X, X, X, X, X, X, X},	/* KCF_NOQUAL 			== 0 */
+	{3, 2, X, X, X, X, X, X}, 	/* KCF_SHIFT  			== 1 */
+	{3, X, 2, X, X, X, X, X}, 	/* KCF_ALT    			== 2 */
+	{3, 2, 1, 0, X, X, X, X}, 	/* KCF_SHIFT|KCF_ALT 		== 3 */
+	{3, X, X, X, 2, X, X, X}, 	/* KCF_CONTROL			== 4 */
+	{3, 2, X, X, 1, 0, X, X}, 	/* KCF_SHIFT|KCF_CONTROL	== 5 */
+	{3, X, 2, X, 1, X, 0, X}, 	/* KCF_ALT|KCF_CONTROL		== 6 */
+	{3, 2, 1, 0, S, X, X, X} 	/* KCF_SHIFT|KCF_ALT|KCF_CONTROL == KC__VANILLA == 7 */
+
+    };
+#endif
 
 #undef S
 
@@ -478,19 +614,37 @@ const BYTE keymaptype_table[8][8] =
 ** depending on the KCF_SHIFT, KCF_ALT and KCF_CONTROL qualifiers
 ** of the key pressed
 */
-const BYTE keymapstr_table[8][8] =
-{
-    {0, X, X, X, X, X, X, X},	/* KCF_NOQUAL 			== 0 */
-    {0, 1, X, X, X, X, X, X}, 	/* KCF_SHIFT  			== 1 */
-    {0, X, 1, X, X, X, X, X}, 	/* KCF_ALT    			== 2 */
-    {0, 1, 2, 3, X, X, X, X}, 	/* KCF_SHIFT|KCF_ALT 		== 3 */
-    {0, X, X, X, 1, X, X, X}, 	/* KCF_CONTROL			== 4 */
-    {0, 1, X, X, 2, 3, X, X}, 	/* KCF_SHIFT|KCF_CONTROL	== 5 */
-    {0, X, 1, X, 2, X, 3, X}, 	/* KCF_ALT|KCF_CONTROL		== 6 */
-    {0, 1, 2, 3, 4, 5, 6, 7} 	/* KCF_SHIFT|KCF_ALT|KCF_CONTROL == KC__VANILLA == 7 */
 
-};
+#if 1
 
+    /* stegerg: see comment before keymaptype_table */
+    
+    const BYTE keymapstr_table[8][8] =
+    {
+	{0, 0, 0, 0, 0, 0, 0, 0},	/* KCF_NOQUAL 			== 0 */
+	{0, 1, 0, 1, 0, 1, 0, 1}, 	/* KCF_SHIFT  			== 1 */
+	{0, 0, 1, 1, 0, 0, 1, 1}, 	/* KCF_ALT    			== 2 */
+	{0, 1, 2, 3, 0, 1, 2, 3}, 	/* KCF_SHIFT|KCF_ALT 		== 3 */
+	{0, 0, 0, 0, 1, 1, 1, 1}, 	/* KCF_CONTROL			== 4 */
+	{0, 1, 0, 1, 2, 3, 2, 3}, 	/* KCF_SHIFT|KCF_CONTROL	== 5 */
+	{0, 0, 1, 1, 2, 2, 3, 3}, 	/* KCF_ALT|KCF_CONTROL		== 6 */
+	{0, 1, 2, 3, 4, 5, 6, 7} 	/* KCF_SHIFT|KCF_ALT|KCF_CONTROL == KC__VANILLA == 7 */
+
+    };
+#else
+    const BYTE keymapstr_table[8][8] =
+    {
+	{0, X, X, X, X, X, X, X},	/* KCF_NOQUAL 			== 0 */
+	{0, 1, X, X, X, X, X, X}, 	/* KCF_SHIFT  			== 1 */
+	{0, X, 1, X, X, X, X, X}, 	/* KCF_ALT    			== 2 */
+	{0, 1, 2, 3, X, X, X, X}, 	/* KCF_SHIFT|KCF_ALT 		== 3 */
+	{0, X, X, X, 1, X, X, X}, 	/* KCF_CONTROL			== 4 */
+	{0, 1, X, X, 2, 3, X, X}, 	/* KCF_SHIFT|KCF_CONTROL	== 5 */
+	{0, X, 1, X, 2, X, 3, X}, 	/* KCF_ALT|KCF_CONTROL		== 6 */
+	{0, 1, 2, 3, 4, 5, 6, 7} 	/* KCF_SHIFT|KCF_ALT|KCF_CONTROL == KC__VANILLA == 7 */
+
+    };
+#endif
 
 
 #undef X
