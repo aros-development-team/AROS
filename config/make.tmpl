@@ -147,7 +147,11 @@ $(TOCREATE_TMP) :
 	@$(ECHO) "Creating directory $@"
 	%mkdir_q dir=$@
 
-CREATED_DIRS_GLOB += $(TOCREATE_TMP)
+  ifdef CREATED_DIRS_GLOB
+    CREATED_DIRS_GLOB += $(TOCREATE_TMP)
+  else
+    CREATED_DIRS_GLOB := $(TOCREATE_TMP)
+  endif
 endif
 %end
 #------------------------------------------------------------------------------
@@ -448,6 +452,10 @@ endif
 
 #MM
 %(mmake)-setup : setup-module$(BDID)
+
+ifneq ($(dir $(BD_FILES$(BDID))),./)
+vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
+endif
 
 ifeq ($(TARGET),%(mmake)) # Avoid conflicting wildcard rules
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
