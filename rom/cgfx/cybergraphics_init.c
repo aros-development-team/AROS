@@ -1,45 +1,21 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CGFX Library
     Lang: english
 */
 
-
 #include <proto/exec.h>
-#include <proto/oop.h>
+#include <aros/symbolsets.h>
 #include <utility/utility.h>
 
 #include "cybergraphics_intern.h"
 #include LC_LIBDEFS_FILE
 
-#ifdef SysBase
-#   undef SysBase
-#endif
-
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((struct IntCGFXBase *)(lib))->sysbase)
-#define LC_SEGLIST_FIELD(lib)   (((struct IntCGFXBase *)(lib))->seglist)
-#define LC_RESIDENTNAME 	Cybergraphics_resident
-#define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
-#define LC_RESIDENTPRI		8
-#define LC_LIBBASESIZE		sizeof(struct IntCGFXBase)
-#define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((struct IntCGFXBase *)(lib))->libnode)
-#define LC_NO_OPENLIB
-#define LC_NO_CLOSELIB
-#define LC_NO_EXPUNGELIB
-#define LC_STATIC_INITLIB
-
-#include <libcore/libheader.c>
-
-
-#define SysBase (GetCGFXBase(CyberGfxBase)->sysbase)
-
-
-static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
+AROS_SET_LIBFUNC(CGFXInit, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
 
     UtilityBase = OpenLibrary (UTILITYNAME, 0);
     if (UtilityBase)
@@ -57,6 +33,10 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 	}
 	CloseLibrary(UtilityBase);
     }
-    
+
     return (FALSE);
+
+    AROS_SET_LIBFUNC_EXIT
 }
+
+ADD2INITLIB(CGFXInit, 0);
