@@ -112,7 +112,7 @@ STATIC IPTR slider_set(Class * cl, Object * o, struct opSet * msg)
     	    case GTSL_Level:	/* [ISN] */
     	    	if (tidata != data->level)
     	    	{
-    	    	    data->level = data->freedom==FREEHORIZ?(WORD)tidata:data->max-(WORD)tidata;
+    	    	    data->level = data->freedom==FREEHORIZ?(WORD)tidata:data->max-(WORD)tidata+data->min;
     	    	    notifylevel(cl, o, data->level, msg->ops_GInfo, GadToolsBase);
 		    val_set = TRUE;
 		    
@@ -220,7 +220,7 @@ STATIC IPTR slider_get(Class *cl, Object *o, struct opGet *msg)
 	    break;
 	
 	case GTSL_Level:
-	  *msg->opg_Storage = data->freedom==FREEHORIZ?data->level:data->max-data->level;
+	  *msg->opg_Storage = data->freedom==FREEHORIZ?data->level:data->max-data->level+data->min;
 	  break;
 	
 	case GTSL_Max:
