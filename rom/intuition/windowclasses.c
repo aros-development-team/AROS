@@ -38,8 +38,6 @@
 /* For table lookup of images */
 #define SYSGADTYPE_IDX(o) ( ((G(o)->GadgetType & GTYP_SYSTYPEMASK) >> 4) - 1)
 
-#define IntuitionBase ((struct IntuitionBase *)(cl)->cl_UserData)
-
 const ULONG gtyp2image[] = 
 {
     SIZEIMAGE,		/* GTYP_SIZING		*/
@@ -66,27 +64,70 @@ const WORD image_leftedge[] =
 
 struct dragbar_data
 {
-     /* Current left- and topedge of moving window. Ie when the user releases
-     the LMB after a windowdrag, the window's new coords will be (curleft, curtop)
-     */
-     
-     LONG curleft;
-     LONG curtop;
-     
-     /* The current x and y coordinates relative to curleft/curtop */
-     LONG mousex;
-     LONG mousey;
-     
-     /* Whether the dragframe is currently drawn or erased */
-     BOOL isrendered;
-     
-     /* Used to tell GM_GOINACTIVE whether the drag was canceled or not */
-     BOOL drag_canceled;
-     
-     /* Rastport to use during update */
-     struct RastPort *rp;
-     
+    /* Current left- and topedge of moving window. Ie when the user releases
+    the LMB after a windowdrag, the window's new coords will be (curleft, curtop)
+    */
+
+    LONG curleft;
+    LONG curtop;
+
+    /* The current x and y coordinates relative to curleft/curtop */
+    LONG mousex;
+    LONG mousey;
+
+    /* Whether the dragframe is currently drawn or erased */
+    BOOL isrendered;
+
+    /* Used to tell GM_GOINACTIVE whether the drag was canceled or not */
+    BOOL drag_canceled;
+
+    /* Rastport to use during update */
+    struct RastPort *rp;
+
 };
+
+/* drawwindowframe is used when the user drags or resizes a window */
+
+#define DWF_THICK_X 2
+#define DWF_THICK_Y 2
+
+static void drawwindowframe(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
+			    struct IntuitionBase *IntuitionBase)
+{
+    /* this checks should not be necessary, but just to be sure */
+
+    if (x2 < x1)
+    {
+       /* swap x2 and x1 */
+       x2 ^= x1;
+       x1 ^= x2;
+       x2 ^= x1;
+    }
+
+    if (y2 < y1)
+    {
+       /* swap y2 and y1 */
+       y2 ^= y1;
+       y1 ^= y2;
+       y2 ^= y1;
+    }
+    
+    if (((x2 - x1) < (DWF_THICK_X * 2)) ||
+        ((y2 - y1) < (DWF_THICK_Y * 2)))
+    {
+    	RectFill(rp, x1, y1, x2, y2);
+    }
+    else
+    {
+    	RectFill(rp, x1, y1, x2, y1 + DWF_THICK_Y - 1);
+	RectFill(rp, x2 - DWF_THICK_X + 1, y1 + DWF_THICK_Y, x2, y2);
+	RectFill(rp, x1, y2 - DWF_THICK_Y + 1, x2 - DWF_THICK_X, y2);
+	RectFill(rp, x1, y1 + DWF_THICK_Y, x1 + DWF_THICK_X - 1, y2 - DWF_THICK_Y);
+    }
+}
+
+#define IntuitionBase ((struct IntuitionBase *)(cl)->cl_UserData)
+
 static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 {
     EnterFunc(bug("DragBar::Render()\n"));
@@ -295,12 +336,12 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	    	    if (data->isrendered)
 		    {
 			/* Erase old frame */
-			drawrect(data->rp
-				, data->curleft
-				, data->curtop
-				, data->curleft + w->Width  - 1
-				, data->curtop  + w->Height - 1
-				, IntuitionBase
+			drawwindowframe(data->rp
+					, data->curleft
+					, data->curtop
+					, data->curleft + w->Width  - 1
+					, data->curtop  + w->Height - 1
+					, IntuitionBase
 			);
 			
 		    }
@@ -310,12 +351,12 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		     
 		    /* Rerender the window frame */
 		    
-		    drawrect(data->rp
-				, data->curleft
-				, data->curtop
-				, data->curleft + w->Width  - 1
-				, data->curtop  + w->Height - 1
-				, IntuitionBase
+		    drawwindowframe(data->rp
+				   , data->curleft
+				   , data->curtop
+				   , data->curleft + w->Width  - 1
+				   , data->curtop  + w->Height - 1
+				   , IntuitionBase
 		    );
 		    
 		    data->isrendered = TRUE;
@@ -362,12 +403,12 @@ static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 	    SetDrMd(data->rp, COMPLEMENT);
 	    
 	    /* Erase old frame */
-	    drawrect(data->rp
-		, data->curleft
-		, data->curtop
-		, data->curleft + w->Width  - 1
-		, data->curtop  + w->Height - 1
-		, IntuitionBase
+	    drawwindowframe(data->rp
+			   , data->curleft
+			   , data->curtop
+			   , data->curleft + w->Width  - 1
+			   , data->curtop  + w->Height - 1
+			   , IntuitionBase
 	    );
 			
 	}
@@ -658,12 +699,12 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	    	    if (data->isrendered)
 		    {
 			/* Erase old frame */
-			drawrect(data->rp
-				, w->LeftEdge
-				, w->TopEdge
-				, w->LeftEdge + data->width  - 1
-				, w->TopEdge  + data->height - 1
-				, IntuitionBase
+			drawwindowframe(data->rp
+					, w->LeftEdge
+					, w->TopEdge
+					, w->LeftEdge + data->width  - 1
+					, w->TopEdge  + data->height - 1
+					, IntuitionBase
 			);
 			
 		    }
@@ -673,12 +714,12 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		     
 		    /* Rerender the window frame */
 		    
-  		    drawrect(data->rp
-				, w->LeftEdge
-				, w->TopEdge
-				, w->LeftEdge + data->width  - 1
-				, w->TopEdge  + data->height - 1
-				, IntuitionBase
+  		    drawwindowframe(data->rp
+				   , w->LeftEdge
+				   , w->TopEdge
+				   , w->LeftEdge + data->width  - 1
+				   , w->TopEdge  + data->height - 1
+				   , IntuitionBase
 			);
 		    
 		    data->isrendered = TRUE;
@@ -725,12 +766,12 @@ static IPTR sizebutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg
 	    SetDrMd(data->rp, COMPLEMENT);
 	    
 	    /* Erase old frame */
-	    drawrect(data->rp
-		, w->LeftEdge
-		, w->TopEdge
-		, w->LeftEdge + data->width  - 1
-		, w->TopEdge  + data->height - 1
-		, IntuitionBase
+	    drawwindowframe(data->rp
+			   , w->LeftEdge
+			   , w->TopEdge
+			   , w->LeftEdge + data->width  - 1
+			   , w->TopEdge  + data->height - 1
+			   , IntuitionBase
 	    );
 			
 	}
