@@ -32,7 +32,7 @@
 /* Predeclaration */
 struct PaletteBase_intern;
 
-#define GLOBAL_INTUIBASE
+//#define GLOBAL_INTUIBASE
 
 struct PaletteData
 {

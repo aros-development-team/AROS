@@ -16,6 +16,9 @@ FILES := checkboxclass support
 workbench-classes-aroscheckbox : $(SLIB)
 	@$(NOP)
 
+#MM workbench-classes-aroscheckbox-quick :
+workbench-classes-aroscheckbox-quick : $(SLIB)
+	@$(NOP)
 
 #MM setup
 workbench-classes-setup : setup

@@ -39,7 +39,7 @@
 
 /***********************************************************************************/
 
-#define GLOBAL_INTUIBASE
+//#define GLOBAL_INTUIBASE
 
 #define TURN_OFF_DEBUG
 
