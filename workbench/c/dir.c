@@ -14,7 +14,10 @@
 #include <clib/utility_protos.h>
 #include <utility/tagitem.h>
 #include <utility/utility.h>
-#include <clib/aros_protos.h>
+#include <string.h>
+#include <stdlib.h>
+#include <memory.h>
+#include <aros/debug.h>
 
 static const char version[] = "$VER: Dir 1.9 (4.10.1996)\n";
 
@@ -55,16 +58,16 @@ static int AddEntry (struct table * table, char * entry)
 	table->max = new_max;
     }
 
-    if (!(dup = StrDup (entry)) )
+    if (!(dup = strdup (entry)) )
 	return 0;
 
     table->entries[table->num ++] = dup;
     return 1;
 }
 
-static int compare_strings (const APTR s1, const APTR s2)
+static int compare_strings (const void * s1, const void * s2)
 {
-    return Stricmp (*(char **)s1, *(char **)s2);
+    return strcasecmp (*(char **)s1, *(char **)s2);
 }
 
 int indent = 0;
@@ -150,10 +153,10 @@ static LONG do_dir (void)
 
 		    indent ++;
 
-		    QSort (dirs.entries, dirs.num, sizeof (char *),
+		    qsort (dirs.entries, dirs.num, sizeof (char *),
 			compare_strings);
 
-		    ptr = path + StrLen (path);
+		    ptr = path + strlen (path);
 
 		    if (*path && ptr[-1] != ':' && ptr[-1] != '/')
 		    {
@@ -169,7 +172,7 @@ static LONG do_dir (void)
 
 			if (args.all)
 			{
-			    StrCpy (ptr, dirs.entries[t]);
+			    strcpy (ptr, dirs.entries[t]);
 
 			    showline ("%-25.s <DIR>\n", argv);
 			    do_dir ();
@@ -186,7 +189,7 @@ static LONG do_dir (void)
 
 		if (files.num)
 		{
-		    QSort (files.entries, files.num, sizeof (char *),
+		    qsort (files.entries, files.num, sizeof (char *),
 			compare_strings);
 
 		    for (t=0; t<files.num; t+=2)
@@ -205,7 +208,7 @@ static LONG do_dir (void)
 	    {
 		for (t=0; t<dirs.num; t++)
 		{
-		    FreeVec (dirs.entries[t]);
+		    free (dirs.entries[t]);
 		}
 
 		if (dirs.entries)
@@ -216,7 +219,7 @@ static LONG do_dir (void)
 	    {
 		for (t=0; t<files.num; t++)
 		{
-		    FreeVec (files.entries[t]);
+		    free (files.entries[t]);
 		}
 
 		if (files.entries)
@@ -246,7 +249,7 @@ int main (int argc, char ** argv)
     rda=ReadArgs("Dir,OPT/K,ALL/S",(IPTR *)&args,NULL);
     if(rda!=NULL)
     {
-	StrCpy (path, args.dir!=NULL?args.dir:"");
+	strcpy (path, args.dir!=NULL?args.dir:"");
 
 	error = do_dir ();
 

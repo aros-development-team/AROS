@@ -4,6 +4,8 @@ SPECIAL_CFLAGS = -D__AROS
 
 include $(TOP)/make.cfg
 
+INCLUDES = -I$(BINDIR)/include -I$(TOP)/amiga/include
+
 #CC=$(PURIFY) $(SYS_CC)
 
 OBJDIR = $(GENDIR)/exe

@@ -14,7 +14,8 @@
 #include <clib/utility_protos.h>
 #include <utility/tagitem.h>
 #include <utility/utility.h>
-#include <clib/aros_protos.h>
+/* #include <clib/aros_protos.h> */
+#include <string.h>
 
 static const char version[] = "$VER: Copy 1.0 (4.10.1996)\n";
 
@@ -158,11 +159,11 @@ int main (int argc, char ** argv)
 	{
 	    UBYTE * ptr;
 
-	    StrCpy (Buffer, ARG_Dest);
+	    strcpy (Buffer, ARG_Dest);
 
 	    if (*Buffer)
 	    {
-		ptr = Buffer + StrLen (Buffer) - 1;
+		ptr = Buffer + strlen (Buffer) - 1;
 
 		if (*ptr == ':' || *ptr == '/')
 		    ptr ++;
@@ -177,7 +178,7 @@ int main (int argc, char ** argv)
 
 	    for (t=0; ARG_Source[t]; t++)
 	    {
-		StrCpy (ptr, ARG_Source[t]);
+		strcpy (ptr, ARG_Source[t]);
 
 		if (!CopyFile (ARG_Source[0], ARG_Dest))
 		    goto error_exit;
