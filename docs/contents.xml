@@ -18,6 +18,14 @@
 </item>
 
 <item>
+    <dir>faq</dir>
+    The FAQ is generated from these files. The files are numbered and
+    will appear in this order in the FAQ. The date of the file will be
+    used to determine if this FAQ has been updated.
+
+</item>
+
+<item>
     <dir>src</dir>
     The sources for the docs
 
