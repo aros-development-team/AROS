@@ -1,0 +1,28 @@
+# $Id$
+TOP=../../..
+
+include $(TOP)/config/make.cfg
+
+SPECIAL_AFLAGS = -I../
+CLIBDIR=$(GENDIR)/compiler/clib
+
+FILES = setjmp longjmp
+
+TESTS =
+
+#MM
+clib-amiga-m68k : $(foreach f,$(FILES),$(CLIBDIR)/$(f).o)
+
+#MM
+setup-clib-amiga-m68k :
+	%mkdirs_q $(CLIBDIR)
+	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
+
+#MM
+clean::
+	$(RM) $(TESTS)
+
+$(CLIBDIR)/%.o: %.s ../machine.i
+	%assemble_q
+
+%common

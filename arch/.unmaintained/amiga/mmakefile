@@ -1,0 +1,42 @@
+# $Id$
+
+#MM AROS-amiga : setup includes compiler arosboot kernel workbench demos apps
+AROS-amiga :
+	@$(NOP)
+
+#MM apps : Moria3D
+apps :
+	@$(NOP)
+
+#MM setup-amiga : setup-exec-amiga setup-dos-amiga setup-exec-$(CPU)
+#MM setup-amiga : setup-clib-amiga
+setup-amiga :
+	@$(NOP)
+
+#MM setup-exec-amiga : setup-exec-unix
+setup-exec-amiga :
+	@$(NOP)
+
+#MM exec-amiga : exec-unix
+exec-amiga :
+	@$(NOP)
+
+#MM setup-dos-amiga : setup-dos-unix
+setup-dos-amiga :
+	@$(NOP)
+
+#MM check : check-exec-unix
+check :
+	@$(NOP)
+
+#MM setup-clib-amiga : setup-clib-amiga-$(CPU)
+setup-clib-amiga :
+	@$(NOP)
+
+#MM clib-amiga : clib-amiga-$(CPU)
+clib-amiga :
+	@$(NOP)
+
+#MM includes : includes-copy includes-$(CPU)
+includes:
+	@$(NOP)

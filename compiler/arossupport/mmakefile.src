@@ -50,7 +50,7 @@ setup :
 	%mkdirs_q $(OBJDIR) $(INCDIR) $(LIBDIR)
 
 #MM
-includes : $(DEST_INCLUDE_FILES) $(GEN_INCLUDE_FILES)
+includes-copy : $(DEST_INCLUDE_FILES) $(GEN_INCLUDE_FILES)
 
 #MM
 clean ::

@@ -5,7 +5,7 @@ CURDIR=compiler
 include $(TOP)/config/make.cfg
 
 ifeq ($(FLAVOUR),native)
-SUBDIRS=include arossupport alib clib
+SUBDIRS=include arossupport alib clib c_lib
 else
 SUBDIRS=include arossupport alib clib c_lib
 #vbcc

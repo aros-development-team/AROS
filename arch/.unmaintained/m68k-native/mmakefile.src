@@ -1,24 +1,29 @@
 # $Id$
+TOP=../..
+
 include $(TOP)/config/make.cfg
 
 OS_INCLUDES	:= -I$(GENINCDIR)
-SUBDIRS 	:= clib exec
-MACHINE_H	:= $(GENINCDIR)/aros/machine.h
+SUBDIRS         := layers exec utility clib
+MACHINE_H       := $(GENINCDIR)/aros/machine.h
 DISTMACHINE_H	:= $(INCDIR)/aros/machine.h
+SPECIAL_CFLAGS  := -I $(TOP)/exec
+
+#all: machine.i subdirs
 
 #MM
 setup: $(MACHINE_H) $(DISTMACHINE_H) machine.i
 
 #MM
-includes-i386 : $(MACHINE_H) $(DISTMACHINE_H) machine.i
+includes-m68k : $(MACHINE_H) $(DISTMACHINE_H) machine.i
 
 #MM
 clean::
 	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i geninc
 
-$(MACHINE_H) : machine.h
+$(MACHINE_H): machine.h
 	%mkdirs_q $(GENINCDIR)
-	cp $< $@
+	$(CP) $< $@
 
 $(DISTMACHINE_H) : machine.h
 	%mkdirs_q $(INCDIR)
@@ -27,7 +32,10 @@ $(DISTMACHINE_H) : machine.h
 machine.i: geninc.c $(MACHINE_H)
 	@echo "CFLAGS=$(CFLAGS)"
 	@echo "Creating geninc..."
-	@$(CC) $(CFLAGS) -o geninc $<
+	$(CC) $(CFLAGS) -o geninc $<
 	./geninc > machine.i
+
+$(OSGENDIR)/%.d: %.c
+	%mkdepend_q
 
 %common

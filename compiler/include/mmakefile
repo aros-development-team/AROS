@@ -26,7 +26,7 @@ INCSUBDIRS :=	aros \
 		workbench
 
 #MM
-includes : $(DEST_INCLUDES) $(GEN_INCLUDES)
+includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 $(INCDIR)/%.h : %.h
 	$(CP) $< $@

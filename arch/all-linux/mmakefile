@@ -9,6 +9,7 @@ apps :
 	@$(NOP)
 
 #MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-exec-$(CPU) setup-x11
+#MM setup-linux : setup-clib-linux
 setup-linux :
 	@$(NOP)
 
@@ -48,7 +49,14 @@ intuition-linux :
 check :
 	@$(NOP)
 
+#MM setup-clib-linux : setup-clib-linux-$(CPU)
+setup-clib-linux :
+	@$(NOP)
+
 #MM clib-linux : clib-linux-$(CPU)
 clib-linux :
 	@$(NOP)
 
+#MM includes : includes-copy includes-$(CPU)
+includes:
+	@$(NOP)

@@ -8,7 +8,7 @@ DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 all: setup includes
 
 #MM
-includes : $(DEST_INCLUDES)
+includes-copy : $(DEST_INCLUDES)
 
 #MM
 setup :
