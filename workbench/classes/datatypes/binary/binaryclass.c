@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,11 +32,18 @@
 
 #include "binary_intern.h"
 
+#ifdef __AROS__
+#include <aros/symbolsets.h>
+
+ADD2LIBS("datatypes/text.datatype", 0, struct Library *, TextBase)
+#else
 #include "compilerspecific.h"
+#endif
 #include "debug.h"
 
 /**************************************************************************************************/
 
+    
 const UBYTE hexstring[] = "0123456789ABCDEF";
 
 /* ": 12345678 9ABCDEF0 12345678 9ABCDEF0 abcdefghijklmnop" */
@@ -52,7 +59,7 @@ static IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,
 
 /**************************************************************************************************/
 
-static IPTR Binary_New(Class * cl, Object *o, struct opSet *msg)
+IPTR Binary__OM_NEW(Class * cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
     
@@ -109,7 +116,7 @@ static IPTR Binary_New(Class * cl, Object *o, struct opSet *msg)
 
 /**************************************************************************************************/
 
-static IPTR Binary_Dispose(Class *cl, Object *o, Msg msg)
+IPTR Binary__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct BinaryData   *data;
     struct List         *linelist = 0;
@@ -131,7 +138,7 @@ static IPTR Binary_Dispose(Class *cl, Object *o, Msg msg)
 
 /**************************************************************************************************/
 
-static IPTR Binary_Set(Class *cl, Object *o, struct opSet *msg)
+IPTR Binary__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
     
@@ -162,10 +169,14 @@ static IPTR Binary_Set(Class *cl, Object *o, struct opSet *msg)
  
     return retval;  
 }
+IPTR Binary__OM_UPDATE(Class *cl, Object *o, struct opSet *msg)
+{
+    return Binary__OM_SET(cl, o, msg);
+}
 
 /**************************************************************************************************/
 
-static IPTR Binary_Layout(Class *cl, Object *o, struct gpLayout *msg)
+IPTR Binary__GM_LAYOUT(Class *cl, Object *o, struct gpLayout *msg)
 {
     IPTR retval;
     
@@ -186,25 +197,7 @@ static IPTR Binary_Layout(Class *cl, Object *o, struct gpLayout *msg)
 
 /**************************************************************************************************/
 
-static IPTR Binary_ProcLayout(Class *cl, Object *o, struct gpLayout *msg)
-{
-    IPTR retval;
-    
-    /* Tell everyone that we are busy doing things */
-    NotifyAttrChanges (o, ((struct gpLayout *) msg)->gpl_GInfo, 0,
-		       GA_ID    , G(o)->GadgetID,
-		       DTA_Busy , TRUE          ,
-		       TAG_DONE);
-
-    /* Let the super-class partake and then fall through to our layout method */
-    retval = (IPTR) DoSuperMethodA (cl, o, (Msg)msg);
-
-    return retval;
-}
-	
-/**************************************************************************************************/
-
-static IPTR Binary_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
+IPTR Binary__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
 {
     struct DTSpecialInfo        *si = (struct DTSpecialInfo *) G (o)->SpecialInfo;
     struct BinaryData           *data = INST_DATA (cl, o);
@@ -436,22 +429,34 @@ static IPTR Binary_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
     return (IPTR)total;
 }
 
-
-/**************************************************************************************************/
-/**************************************************************************************************/
 /**************************************************************************************************/
 
-#ifdef __AROS__
-AROS_UFH3S(IPTR, DT_Dispatcher,
-	   AROS_UFHA(Class *, cl, A0),
-	   AROS_UFHA(Object *, o, A2),
-	   AROS_UFHA(Msg, msg, A1))
+IPTR Binary__DTM_PROCLAYOUT(Class *cl, Object *o, struct gpLayout *msg)
 {
-    AROS_USERFUNC_INIT
-#else
+    IPTR retval;
+    
+    /* Tell everyone that we are busy doing things */
+    NotifyAttrChanges (o, ((struct gpLayout *) msg)->gpl_GInfo, 0,
+		       GA_ID    , G(o)->GadgetID,
+		       DTA_Busy , TRUE          ,
+		       TAG_DONE);
+
+    /* Let the super-class partake and then fall through to our layout method */
+    retval = (IPTR) DoSuperMethodA (cl, o, (Msg)msg);
+
+    retval = Binary__DTM_ASYNCLAYOUT(cl, o, msg);
+
+    return retval;
+}
+	
+
+/**************************************************************************************************/
+/**************************************************************************************************/
+/**************************************************************************************************/
+
+#ifndef __AROS__
 ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
 {
-#endif
     IPTR retval = 0;
 
     putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
@@ -459,28 +464,28 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
     switch(msg->MethodID)
     {
 	case OM_NEW:
-	    retval = Binary_New(cl, o, (struct opSet *)msg);
+	    retval = Binary__OM_NEW(cl, o, (struct opSet *)msg);
 	    break;
 	
 	case OM_DISPOSE:
-	    retval = Binary_Dispose(cl, o, msg);
+	    retval = Binary__OM_DISPOSE(cl, o, msg);
 	    break;
 	    
 	case OM_SET:
 	case OM_UPDATE:
-	    retval = Binary_Set(cl, o, (struct opSet *)msg);
+	    retval = Binary__OM_SET(cl, o, (struct opSet *)msg);
 	    break;
 	
 	case GM_LAYOUT:
-	    retval = Binary_Layout(cl, o, (struct gpLayout *)msg);
+	    retval = Binary__GM_LAYOUT(cl, o, (struct gpLayout *)msg);
 	    break;
 	
 	case DTM_PROCLAYOUT:
-	    retval = Binary_ProcLayout(cl, o, (struct gpLayout *)msg);
-	    /* fall through */
+	    retval = Binary__DTM_PROCLAYOUT(cl, o, (struct gpLayout *)msg);
+	    break;
 	    
 	case DTM_ASYNCLAYOUT:
-	    retval = Binary_AsyncLayout(cl, o, (struct gpLayout *)msg);
+	    retval = Binary__DTM_ASYNCLAYOUT(cl, o, (struct gpLayout *)msg);
 	    break;
 	
 	default:
@@ -491,9 +496,6 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
     
     return retval;
 
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
 }
 
 /**************************************************************************************************/
@@ -504,16 +506,13 @@ struct IClass *DT_MakeClass(struct Library *binarybase)
 
     if (cl)
     {
-#ifdef __AROS__
-	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
-#else
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
-#endif
 	cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
 	cl->cl_UserData = (IPTR)binarybase; /* Required by datatypes (see disposedtobject) */
     }
 
     return cl;
 }
+#endif /* !__AROS__ */
 
 /**************************************************************************************************/

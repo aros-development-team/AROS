@@ -1,13 +1,11 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := binaryclass libfunc
-FUNCS := obtainengine
+FILES := binaryclass
 
 #MM workbench-datatypes-binary : includes linklibs
 
-%build_module_macro mmake=workbench-datatypes-binary modname=binary \
-  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs=amiga
+%build_module mmake=workbench-datatypes-binary \
+    modname=binary modtype=datatype \
+    files=$(FILES)
 
-%common
