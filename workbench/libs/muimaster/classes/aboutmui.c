@@ -880,6 +880,7 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    	MUIA_Bitmap_SourceColors, colors,
 	    	MUIA_Bitmap_Width, 100,
 	    	MUIA_Bitmap_Height, 100,
+		MUIA_Bitmap_UseFriend, TRUE,
 	    	MUIA_FixWidth,100,
 	    	MUIA_FixHeight,100,
 	    	TAG_DONE),
