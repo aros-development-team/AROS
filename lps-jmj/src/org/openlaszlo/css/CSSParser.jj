@@ -1,0 +1,160 @@
+/* ****************************************************************************
+ * CSSParser.java
+ * ****************************************************************************/
+
+/* J_LZ_COPYRIGHT_BEGIN *******************************************************
+* Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.              *
+* Use is subject to license terms.                                            *
+* J_LZ_COPYRIGHT_END *********************************************************/
+
+/* testing:
+from org.openlaszlo.css import CSSParser
+from java.io import StringReader
+CSSParser(StringReader("id: abc; int: 123; float: 4.5; privative; True: true; False: false; string: 'a string'")).Parse()
+*/
+
+options {
+  STATIC=false;
+  JAVA_UNICODE_ESCAPE = false;
+  USER_CHAR_STREAM=true;
+}
+
+PARSER_BEGIN(CSSParser)
+
+package org.openlaszlo.css;
+import java.util.*;
+
+public class CSSParser {
+}
+PARSER_END(CSSParser)
+
+SKIP : {
+  " " | "\t" | "\r" | "\n" | "\f"
+}
+
+MORE : {
+  "/*" : IN_MULTI_LINE_COMMENT
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN : {
+  <MULTI_LINE_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_MULTI_LINE_COMMENT>
+MORE : {
+  < ~[] >
+}
+
+TOKEN : {
+  < TRUE: "true" >
+| < FALSE: "false" >
+}
+
+TOKEN : {
+  < DECIMAL_LITERAL: ["1"-"9"] (["0"-"9"])* >
+//| < HEX_LITERAL: "0" ["x","X"] (["0"-"9","a"-"f","A"-"F"])+ >
+//| < OCTAL_LITERAL: "0" (["0"-"7"])* >
+| < FLOATING_POINT_LITERAL:
+        (["0"-"9"])+ "." (["0"-"9"])* (<EXPONENT>)? 
+      | "." (["0"-"9"])+ (<EXPONENT>)? 
+      | (["0"-"9"])+ (<EXPONENT>)? 
+  >
+| < #EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
+| < STRING_LITERAL:
+        "\""
+        (   (~["\"","\\","\n","\r"])
+        | <ESCAPE_SEQUENCE>
+        )*
+        "\""
+      | "'"
+        (   (~["'","\\","\n","\r"])
+        | <ESCAPE_SEQUENCE>
+        )*
+        "'"
+  >
+|  // Maybe x and u could be x,X and u,U
+  < #ESCAPE_SEQUENCE:
+      "\\"
+        ( ["n","t","b","r","f","\\","'","\""]
+        | ["0"-"7"] ( ["0"-"7"] )?
+        | ["0"-"3"] ["0"-"7"] ["0"-"7"]
+        | ["x"] ["0"-"9","a"-"f","A"-"F"] ["0"-"9","a"-"f","A"-"F"]
+        | ["u"] ["0"-"9","a"-"f","A"-"F"] ["0"-"9","a"-"f","A"-"F"] ["0"-"9","a"-"f","A"-"F"] ["0"-"9","a"-"f","A"-"F"]
+        )
+  >
+| < UNTERMINATED_STRING_LITERAL:
+        "\""
+        (   (~["\"","\\","\n","\r"])
+        | <ESCAPE_SEQUENCE>
+        )*
+        (["\n","\r"])?
+      | "'"
+        (   (~["'","\\","\n","\r"])
+        | <ESCAPE_SEQUENCE>
+        )*
+        (["\n","\r"])?
+  >
+}
+
+TOKEN : {
+  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+| < #LETTER: ["a"-"z", "A"-"Z"]  >
+| < #DIGIT: ["0"-"9", "-"]  >
+}
+
+TOKEN : {
+  < COLON: ":" >
+| < SEMICOLON: ";" >
+| < COMMA: "," >
+}
+
+String Property() : {Token t;}
+{  t=<IDENTIFIER> {return t.image;} }
+
+Object Term() : {Token t;}
+{
+  LOOKAHEAD(2)
+  "-" t=<DECIMAL_LITERAL>
+     {return new Integer(-Integer.parseInt(t.image));}
+|   LOOKAHEAD(2)
+  ["+"] t=<DECIMAL_LITERAL>
+     {return new Integer(Integer.parseInt(t.image));}
+| "-" t=<FLOATING_POINT_LITERAL>
+     {return new Float(-Float.parseFloat(t.image));}
+| ["+"] t=<FLOATING_POINT_LITERAL>
+     {return new Float(Float.parseFloat(t.image));}
+| t=<STRING_LITERAL>
+     {return t.image.substring(1,t.image.length()-1);}
+| t=<IDENTIFIER>
+     {return t.image;}
+| <TRUE> {return Boolean.TRUE;}
+| <FALSE> {return Boolean.FALSE;}
+}
+
+Object Value() : {Object v;}
+{
+  v=Term() {return v;}
+}
+
+void Declaration(Map map) :
+  {
+    String key;
+    Object value;
+  }
+{
+  [key=Property() 
+    ( ":" value=Term()
+      {map.put(key, value);}
+    | {map.put(key, Boolean.TRUE);}
+    )]
+}
+
+Map Parse() :
+  {
+    Map map = new HashMap();
+  }
+{
+  Declaration(map) (";" Declaration(map))* <EOF>
+  {return map;}
+}
