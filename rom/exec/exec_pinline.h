@@ -18,11 +18,11 @@
 #endif
 
 #define RawIOInit() \
-	LP0NR(0x1f8, LONG, RawIOInit, \
+	LP0NR(0x1f8, RawIOInit, \
 	, EXEC_BASE_NAME)
 
 #define RawMayGetChar() \
-	LP0NR(0x1fe, LONG, RawMayGetChar, \
+	LP0(0x1fe, LONG, RawMayGetChar, \
 	, EXEC_BASE_NAME)
 
 #ifndef RawPutChar
