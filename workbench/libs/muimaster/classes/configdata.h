@@ -35,6 +35,7 @@
 #define MUICFG_Cycle_Menu_Recessed      0x19  /* ULONG, false = 0 (def), true */
 #define MUICFG_Cycle_MenuCtrl_Speed     0x1a  /* ULONG, num of ticks (0..50) (def=0) */
 #define MUICFG_Listview_Smoothed        0x1b  /* ULONG, false = 0 (def), true */
+#define MUICFG_Window_Redraw            0x1d  /* ULONG, without clear, with clear = 1 (def) */
 #define MUICFG_Font_Normal              0x1e
 #define MUICFG_Font_List                0x1f
 #define MUICFG_Font_Tiny                0x20
@@ -94,6 +95,7 @@
 #define MUICFG_Background_SliderKnob    0x5c
 #define MUICFG_Image_TapeUp             0x5d
 #define MUICFG_Image_TapeDown           0x5e
+#define MUICFG_Window_Positions         0x7a
 #define MUICFG_Font_Button              0x80
 #define MUICFG_Scrollbar_Type           0x83 /* ULONG, standard = 0 (def), newlook, custom */
 #define MUICFG_String_Background        0x84

@@ -175,6 +175,8 @@ static struct def_ulval DefULValues[] =
     { MUICFG_Window_Spacing_Right,  4 },
     { MUICFG_Window_Spacing_Top,    3 },
     { MUICFG_Window_Spacing_Bottom, 3 },
+    { MUICFG_Window_Positions, WINDOW_POSITION_FORGET_ON_EXIT },
+    { MUICFG_Window_Redraw, WINDOW_REDRAW_WITH_CLEAR },
     { MUICFG_Radio_HSpacing, 4 },
     { MUICFG_Radio_VSpacing, 1 },
     { MUICFG_Group_HSpacing, 6 },
@@ -290,7 +292,8 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.window_inner_right = GetConfigULong(obj, MUICFG_Window_Spacing_Right);
     data->prefs.window_inner_top = GetConfigULong(obj, MUICFG_Window_Spacing_Top);
     data->prefs.window_inner_bottom = GetConfigULong(obj, MUICFG_Window_Spacing_Bottom);
-    data->prefs.window_position = WINDOW_POSITION_FORGET_ON_EXIT;
+    data->prefs.window_position = GetConfigULong(obj, MUICFG_Window_Positions);
+    data->prefs.window_redraw = GetConfigULong(obj, MUICFG_Window_Redraw);
 
     /*---------- group stuff ----------*/
 
