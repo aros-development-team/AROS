@@ -60,7 +60,7 @@ BEGIN {
 #print "lvo="lvo;
 
     if (f[lvo] != "")
-	printf "Error: lvo "lvo" is used by "f[lvo]" and "name >> stderr;
+	print "Error: lvo "lvo" is used by "f[lvo]" and "name" in "FN >> stderr;
 
     f[lvo] = name;
     if (lvo > maxlvo)

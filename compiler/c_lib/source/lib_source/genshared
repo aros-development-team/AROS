@@ -1,0 +1,227 @@
+#!/bin/sh
+
+AWK=awk
+
+case $1 in
+    -libdefs )
+	mode=libdefs
+    ;;
+    -functable )
+	mode=functable
+    ;;
+    -fd )
+	mode=fd
+    ;;
+    -proto )
+	mode=proto
+    ;;
+    -clib )
+	mode=clib
+    ;;
+#    -inline )
+#	 mode=inline
+#    ;;
+    -defines )
+	mode=defines
+    ;;
+#    -pragma )
+#	 mode=pragma
+#    ;;
+    -headers )
+	mode=headers
+    ;;
+    -* )
+	echo "Unknown option $1"
+	exit 10
+    ;;
+    * )
+	echo "Expecting operation mode as first argument"
+	exit 10
+esac
+
+shift
+
+prefix=.
+confdir=.
+output=""
+scriptdir=`dirname $0`
+debug=0
+test=0
+hasrt=0
+
+while [ $# -ne 0 ] ; do
+    case $1 in
+	-prefix | --prefix )
+	    prefix="$2"
+	    shift
+	;;
+	-output )
+	    output="$2"
+	    shift
+	;;
+	-debug )
+	    debug=1
+	;;
+	-test )
+	    test=1
+	;;
+	-confdir )
+	    confdir="$2"
+	    shift
+	-hasrt
+	    hasrt=1
+	;;
+	*.c )
+	    srcs="$srcs $1"
+	;;
+    esac
+    shift
+done
+
+if [ ! -f "$confdir/lib.conf" ]; then
+    echo "Can't find lib.conf in $confdir"
+    exit 10
+fi
+
+libname=`grep name "$confdir/lib.conf" | sed 's/^name[^a-zA-Z_]*//'`
+LIBNAME=`awk 'BEGIN { print toupper("'$libname'"); }'`
+
+function genfd () {
+    echo "Regenerating fd files for $libname"
+    if [ "x$output" = "x" ]; then
+	outname="$libname"_lib.fd
+    else
+	outname="$output"
+    fi
+    if [ -d "$prefix/fd" ]; then
+	out="$prefix/fd/$outname"
+    else
+	out="$prefix/$outname"
+    fi
+    $AWK -f "$scriptdir/genfd.awk" $srcs > $out.new
+    $scriptdir/moveifchanged $out.new $out
+}
+
+function genproto () {
+    echo "Regenerating proto files for $libname"
+    if [ "x$output" = "x" ]; then
+	outname="$libname".h
+    else
+	outname="$output"
+    fi
+    if [ -d "$prefix/proto" ]; then
+	out="$prefix/proto/$outname"
+    else
+	out="$prefix/$outname"
+    fi
+    echo "#ifndef PROTO_"$LIBNAME"_H" > $out.new
+    echo "#define PROTO_"$LIBNAME"_H" >> $out.new
+    echo >> $out.new
+    echo "/*" >> $out.new
+    echo "    (C) 1995-98 AROS - The Amiga Replacement OS" >> $out.new
+    echo "    \$Id\$" >> $out.new
+    echo "*/" >> $out.new
+    echo >> $out.new
+    echo "#ifndef AROS_SYSTEM_H" >> $out.new
+    echo "#   include <aros/system.h>" >> $out.new
+    echo "#endif" >> $out.new
+    echo >> $out.new
+    echo "#include <clib/"$libname"_protos.h>" >> $out.new
+    echo >> $out.new
+    echo "#if defined(_AMIGA) && defined(__GNUC__)" >> $out.new
+    echo "#   include <inline/"$libname".h>" >> $out.new
+    echo "#else" >> $out.new
+    echo "#   include <defines/"$libname".h>" >> $out.new
+    echo "#endif" >> $out.new
+    echo >> $out.new
+    if [ $hasrt -ne 0 ]; then
+	echo "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_"$LIBNAME")" >> $out.new
+	echo "#   define ENABLE_RT_"$LIBNAME" 1" >> $out.new
+	echo "#   include <aros/rt.h>" >> $out.new
+	echo "#endif" >> $out.new
+	echo >> $out.new
+    fi
+    echo "#endif /* PROTO_"$LIBNAME"_H */" >> $out.new
+    $scriptdir/moveifchanged $out.new $out
+}
+
+function genclib () {
+    echo "Regenerating clib files for $libname"
+    if [ "x$output" = "x" ]; then
+	outname="$libname"_protos.h
+    else
+	outname="$output"
+    fi
+    if [ -d "$prefix/clib" ]; then
+	out="$prefix/clib/$outname"
+    else
+	out="$prefix/$outname"
+    fi
+    $AWK -f $scriptdir/genclib.awk $srcs > $out.new
+    $scriptdir/moveifchanged $out.new $out
+}
+
+function gendefines () {
+    echo "Regenerating defines files for $libname"
+    if [ "x$output" = "x" ]; then
+	outname="$libname".h
+    else
+	outname="$output"
+    fi
+    if [ -d "$prefix/defines" ]; then
+	out="$prefix/defines/$outname"
+    else
+	out="$prefix/$outname"
+    fi
+    $AWK -f $scriptdir/gendefines.awk $srcs > $out.new
+    $scriptdir/moveifchanged $out.new $out
+}
+
+case $mode in
+    libdefs )
+	if [ "x$output" = "x" ]; then
+	    outname="libdefs.h"
+	else
+	    outname="$output"
+	fi
+	out="$prefix/$outname"
+	$AWK -f "$scriptdir/genlibdefs.awk" lib.conf > $out.new
+	$scriptdir/moveifchanged $out.new $out
+    ;;
+    functable )
+	if [ "x$output" = "x" ]; then
+	    outname="functable.c"
+	else
+	    outname="$output"
+	fi
+	out="$prefix/$outname"
+	$AWK -f "$scriptdir/genfunctable.awk" $srcs > $out.new
+	$scriptdir/moveifchanged $out.new $out
+    ;;
+    fd )
+	genfd
+    ;;
+    proto )
+	genproto
+    ;;
+    defines )
+	gendefines
+    ;;
+    clib )
+	genclib
+    ;;
+#    pragma )
+#	 genpragma
+#    ;;
+#    inline )
+#	 geninline
+#    ;;
+    headers )
+	genfd
+	genproto
+	genclib
+	gendefines
+#	 geninline
+#	 genpragma
+    ;;
+esac
