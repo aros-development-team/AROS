@@ -33,6 +33,7 @@ int __stat(BPTR lock, struct stat *sb)
     sb->st_dev     = (dev_t)((struct FileHandle *)lock)->fh_Device;
     sb->st_ino     = (ino_t)fib->fib_DiskKey;
     sb->st_size    = (off_t)fib->fib_Size;
+#warning implement st_blksize
     sb->st_blksize = 1024; /* I'll implement it later */
     sb->st_blocks  = (long)fib->fib_NumBlocks;
     sb->st_atime   =
