@@ -1,38 +1,81 @@
-#    (C) 1995-96 AROS - The Amiga Replacement OS
-#    $Id$
-#    $Log$
-#    Revision 1.3  1996/12/05 15:31:02  aros
-#    Patches by Geert Uytterhoeven integrated
-#
-#    Revision 1.2  1996/08/01 17:41:32  digulla
-#    Added standard header for all files
-#
-#    Desc:
-#    Lang:
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
 
-	.include "machine.i"
+    Desc: Exec function Switch
+    Lang: english
+*/
 
-	.globl	_Exec_Switch
-	.type	_Exec_Switch,@function
-_Exec_Switch:
-	# Preserve scratch registers
-	moveml	%d0/%d1/%a0/%a1,%sp@-
+/******************************************************************************
 
-	# If not in state TS_RUN the current task is already moved
-	# to one of the task lists.
-	movel	%a6@(ThisTask),%a1
-	cmpb	#TS_RUN,%a1@(tc_State)
-	jne	disp
+    NAME
 
-	# If TB_EXCEPT is not set...
-	btst	#TB_EXCEPT,%a1@(tc_Flags)
-	jne	disp
+        AROS_LH0(void, Switch,
 
-	# ...move task to the ready list
-	moveb	#TS_READY,%a1@(tc_State)
-	leal	%a6@(TaskReady),%a0
-	jsr	%a6@(Enqueue)
+    LOCATION
+        struct ExecBase *, SysBase, 6, Exec)
 
-	# dispatch
-disp:	moveml	%sp@+,%d0/%d1/%a0/%a1
-	jmp	%a6@(Dispatch)
+    FUNCTION
+        Tries to switch to the first task in the ready list. This
+        function works almost like Dispatch() with the slight difference
+        that it may be called at any time and as often as you want and
+        that it does not lose the current task if it is of type TS_RUN.
+
+    INPUTS
+
+
+    RESULT
+
+    NOTES
+        This function is CPU dependant.
+
+        This function is for internal use by exec only.
+
+        This function preserves all registers.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        Dispatch()
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
+	#include "machine.i"
+
+	.text
+	.balign 16
+	.globl	AROS_SLIB_ENTRY(Switch,Exec)
+	.type	AROS_SLIB_ENTRY(Switch,Exec),@function
+AROS_SLIB_ENTRY(Switch,Exec):
+	/* Preserve scratch registers */
+	movem.l	%d0-%d1/%a0-%a1,-(%sp)
+
+	/* Get SysBase */
+	move.l	24(%sp),%a0
+
+	/* If not in state TS_RUN the current task is already moved
+	   to one of the task lists. */
+	move.l	ThisTask(%a0),%a1
+	btst	#TB_EXCEPT,tc_Flags(%a1)
+	bne	disp
+	cmp.b	#TS_RUN,tc_State(%a1)
+	bne	disp
+
+	/* ...move task to the ready list */
+	move.b	#TS_READY,tc_State(%a1)
+	move.l	%a0,-(%sp)
+	move.l	%a1,-(%sp)
+	pea	TaskReady(%a0)
+	jsr	Enqueue(%a0)
+	addq.w	#8,%sp
+	addq.w	#4,%sp
+
+	/* dispatch */
+disp:	movem.l	(%sp)+,%d0-%d1/%a0-%a1
+	jmp	AROS_SLIB_ENTRY(Dispatch,Exec)
