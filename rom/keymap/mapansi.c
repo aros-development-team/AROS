@@ -211,7 +211,7 @@
     while (count)
     {
       LONG	FoundLen = 0;
-      unsigned	FoundCode;
+      unsigned	FoundCode = 0;
       unsigned	FoundQual = ~0U;
       unsigned	DeadKeyIndex = 0;
       UBYTE	MyChar = *string;
