@@ -172,7 +172,8 @@ $(OSGENDIR)/boot/aros.iso: $(AROSDIR)/boot/aros.bin
 		-output $(OSGENDIR)/boot/aros.iso \
 		-b boot/aros.bin \
 		-allow-leading-dots \
-		-preparer AROS-Build -publisher AROS -rock -J \
+                -V "AROS Live CD" \
+		-p "AROS Development Team" -P "AROS Development Team" -R -J \
 		$(AROSDIR)
 
 #MM
