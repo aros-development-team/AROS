@@ -1117,7 +1117,7 @@ static IPTR Area_DrawParentBackground(struct IClass *cl, Object *obj, struct MUI
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
 	return FALSE;
 
-    get(obj, MUIA_Parent, (IPTR *)&parent);
+    get(obj, MUIA_Parent, &parent);
     if (parent)
     {
     	DoMethod(parent, MUIM_DrawBackground, msg->left, msg->top,
@@ -1160,7 +1160,7 @@ static IPTR Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Draw
     if (!bg)
     {
 	Object *parent;
-	get(obj, MUIA_Parent, (IPTR *)&parent);
+	get(obj, MUIA_Parent, &parent);
 
 	D(bug("Area_DrawBackground(%p) : MUIM_DrawParentBackground\n",
 	      obj));
@@ -1621,7 +1621,7 @@ static IPTR event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 		    if (menuobj)
 		    {
 			struct NewMenu *newmenu;
-			get(menuobj,MUIA_Menuitem_NewMenu,(IPTR *)&newmenu);
+			get(menuobj,MUIA_Menuitem_NewMenu,&newmenu);
 			if (newmenu)
 			{
 			    if (data->mad_ContextZMenu) zune_close_menu(data->mad_ContextZMenu);

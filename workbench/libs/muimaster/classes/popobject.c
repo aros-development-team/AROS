@@ -271,7 +271,7 @@ IPTR Popobject__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 	    struct Window *popwin = NULL;
 	    struct Window *parentwin = _window(obj);
 
-	    get(data->wnd, MUIA_Window_Window, (IPTR *)&popwin);
+	    get(data->wnd, MUIA_Window_Window, &popwin);
 	    
 	    if (popwin && parentwin)
 	    {

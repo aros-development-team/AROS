@@ -1066,7 +1066,7 @@ int i;
 		WaitCTRL(sigs);
 	    }
 	    FreeVec(string);
-	    get(st, MUIA_String_Contents, (IPTR *)&str);
+	    get(st, MUIA_String_Contents, &str);
 	    string = StrDup(str);
 
 	    DelContents(wc);

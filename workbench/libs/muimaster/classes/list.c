@@ -1163,7 +1163,7 @@ static IPTR List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	       
 	    Object *o;
 	    
-	    get(_win(obj),MUIA_Window_RootObject, (IPTR *)&o);	       
+	    get(_win(obj),MUIA_Window_RootObject, &o);	       
 	    MUI_Redraw(o, MADF_DRAWOBJECT);
 	    
 	    MUI_EndRefresh(muiRenderInfo(obj), 0);

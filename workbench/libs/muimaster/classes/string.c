@@ -573,7 +573,7 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	{
 	    STRPTR buf = NULL;
 	    STORE = 0;
-	    get(obj, MUIA_String_Contents, (IPTR *)&buf);
+	    get(obj, MUIA_String_Contents, &buf);
 	    if (NULL != buf)
 	    {
 		LONG val = 0;
