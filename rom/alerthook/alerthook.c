@@ -39,7 +39,8 @@ STRPTR getGuruString(ULONG, STRPTR);
 
 int entry(void)
 {
-    return 0;
+    /* If the hook was executed by accident return error code. */
+    return -1;
 }
 
 const struct Resident resident=
