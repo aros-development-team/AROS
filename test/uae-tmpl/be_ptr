@@ -11,10 +11,24 @@ class be_ptr
     typedef T value_type;
     typedef T* pointer_type;
 
+#ifdef DEBUG
+    /* Debugging */
+    inline void print ()
+    {
+	printf ("%08lx", static_cast<unsigned long> (ptr));
+    }
+#endif
+
     be_ptr (const pointer_type p) : ptr (reinterpret_cast<uae_ptr> (p))
+    {}
+    be_ptr (void *p) : ptr (reinterpret_cast<uae_ptr> (p)) // 12-5-98
     {}
     be_ptr ()
     {}
+    inline operator void * () // 12-5-98
+    {
+        return reinterpret_cast<void *> (static_cast<uae_ptr> (ptr));
+    }
     operator pointer_type ()
     {
       return reinterpret_cast<pointer_type> (static_cast<uae_ptr> (ptr));
@@ -87,6 +101,14 @@ class be_ptr<void>
   public:
     typedef be_ptr<void> my_type;
     typedef void* pointer_type;
+
+#ifdef DEBUG
+    /* Debugging */
+    inline void print ()
+    {
+	printf ("%08lx", static_cast<unsigned long> (ptr));
+    }
+#endif
 
     be_ptr (const pointer_type p) : ptr (reinterpret_cast<uae_ptr> (p))
     {}

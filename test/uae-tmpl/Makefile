@@ -1,3 +1,7 @@
 
+CC	= c++
+# CCFLAGS	= -Wall -g -DDEBUG
+CCFLAGS	= -Wformat -g -DDEBUG
+
 all:
-	c++ test.c
+	$(CC) $(CCFLAGS) test.c

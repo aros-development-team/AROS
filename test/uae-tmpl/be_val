@@ -34,6 +34,14 @@ class be_val
     typedef T value_type;
     typedef be_val<value_type> my_type;
 
+#ifdef DEBUG
+    /* Debugging */
+    inline void print ()
+    {
+	printf ("%08lx", static_cast<unsigned long> (ptr));
+    }
+#endif
+
     be_val (value_type d) : data (ne2be (d))
     {}
     be_val (const my_type& other)
