@@ -22,8 +22,7 @@ BOOT_FILES := \
 BOOT_TAR_FILES := \
 	C \
 	Classes/DataTypes/ascii.datatype Classes/DataTypes/binary.datatype Classes/DataTypes/text.datatype \
-	Classes/Gadgets/aroscheckbox.gadget Classes/Gadgets/aroscycle.gadget Classes/Gadgets/aroslist.class \
-	Classes/Gadgets/aroslistview.gadget Classes/Gadgets/arosmutualexclude.gadget Classes/Gadgets/arospalette.gadget \
+	Classes/Gadgets/arospalette.gadget \
 	Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
 	Devs \
 	Fonts/fixed \
