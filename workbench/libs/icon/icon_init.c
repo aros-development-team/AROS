@@ -90,6 +90,19 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     	NewList((struct List *)&LB(lh)->iconlists[i]);
     }
     
+    /* Global settings -----------------------------------------------------*/
+    LB(lh)->ib_Screen               = NULL; // FIXME: better default
+    LB(lh)->ib_Precision            = PRECISION_ICON;
+    LB(lh)->ib_EmbossRectangle.MinX = 0; // FIXME: better default
+    LB(lh)->ib_EmbossRectangle.MaxX = 0; 
+    LB(lh)->ib_EmbossRectangle.MinY = 0; 
+    LB(lh)->ib_EmbossRectangle.MaxY = 0; 
+    LB(lh)->ib_Frameless            = TRUE;
+    LB(lh)->ib_IdentifyHook         = NULL; // FIXME: better default
+    LB(lh)->ib_MaxNameLength        = 25;
+    LB(lh)->ib_NewIconsSupport      = TRUE;
+    LB(lh)->ib_ColorIconSupport     = TRUE;
+    
     return TRUE;
 }
 

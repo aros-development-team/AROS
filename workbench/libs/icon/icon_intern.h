@@ -6,55 +6,26 @@
     $Id$
 */
 
-/* Include files */
-#ifndef CLIB_ALIB_PROTOS_H
-#   include <proto/alib.h>
-#endif
-#ifndef PROTO_EXEC_H
-#   include <proto/exec.h>
-#endif
-#ifndef PROTO_INTUITION_H
-#   include <proto/intuition.h>
-#endif
-#ifndef PROTO_GRAPHICS_H
-#   include <proto/graphics.h>
-#endif
-#ifndef DOS_DOS_H
-#   include <dos/dos.h>
-#endif
-#ifndef PROTO_ICON_H
-#   include <proto/icon.h>
-#endif
-#ifndef LIBRARIES_IFFPARSE_H
-#   include <libraries/iffparse.h>
-#endif
-#ifndef PROTO_IFFPARSE_H
-#   include <proto/iffparse.h>
-#endif
-#ifndef PROTO_UTILITY_H
-#   include <proto/utility.h>
-#endif
-#ifndef CYBERGRAPHX_CYBERGRAPHICS_H
-#   include <cybergraphx/cybergraphics.h>
-#endif
-#ifndef PROTO_CYBERGRAPHICS_H
-#   include <proto/cybergraphics.h>
-#endif
-#ifndef WORKBENCH_WORKBENCH_H
-#   include <workbench/workbench.h>
-#endif
-#ifndef EXEC_MEMORY_H
-#   include <exec/memory.h>
-#endif
-#ifndef EXEC_LIBRARIES_H
-#   include <exec/libraries.h>
-#endif
-#ifndef AROS_ASMCALL_H
-#   include <aros/asmcall.h>
-#endif
-#ifndef _STDDEF_H_
-#   include <stddef.h>
-#endif
+#include <exec/memory.h>
+#include <exec/libraries.h>
+#include <aros/asmcall.h>
+#include <dos/dos.h>
+#include <libraries/iffparse.h>
+#include <cybergraphx/cybergraphics.h>
+#include <workbench/workbench.h>
+#include <workbench/icon.h>
+#include <graphics/view.h>
+
+#include <proto/alib.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/icon.h>
+#include <proto/iffparse.h>
+#include <proto/utility.h>
+#include <proto/cybergraphics.h>
+
+#include <stddef.h>
 
 #ifndef LIBCORE_BASE_H
 #ifndef __MORPHOS__
@@ -152,6 +123,16 @@ struct IconBase
     struct Hook             dsh;
     struct SignalSemaphore  iconlistlock;
     struct MinList          iconlists[ICONLIST_HASHSIZE];
+
+    /* Global settings -----------------------------------------------------*/
+    struct Screen          *ib_Screen;
+    LONG                    ib_Precision;
+    struct Rectangle        ib_EmbossRectangle;
+    BOOL                    ib_Frameless;
+    struct Hook            *ib_IdentifyHook;
+    LONG                    ib_MaxNameLength;
+    BOOL                    ib_NewIconsSupport;
+    BOOL                    ib_ColorIconSupport;
 };
 
 typedef struct IconBase IconBase_T;
