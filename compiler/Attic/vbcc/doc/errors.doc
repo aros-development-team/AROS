@@ -1171,3 +1171,14 @@
         The reserved keywords of C may not be used as identifier.
 
 
+217: "register <%s> used with wrong type" (Error)
+
+
+218: "register <%s> is not free" (Error)
+
+
+219: "'__reg' used in old-style function definition" (Warning)
+
+
+220: "unknown register \"%s\"" (Warning)
+

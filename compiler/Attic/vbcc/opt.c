@@ -58,7 +58,7 @@ void recalc_offsets(struct flowgraph *fg)
             used[i]=0;
         }
         sz[i]=szof(vilist[i]->vtyp);
-        al[i]=align[vilist[i]->vtyp->flags&15]; /*  noch fuer Arrays aendern */
+        al[i]=align[vilist[i]->vtyp->flags&NQ]; /*  noch fuer Arrays aendern */
         eqto[i]=-1;
     }
     b=0;
@@ -200,7 +200,7 @@ int peephole(void)
                 if((eins>0&&(c==MULT||c==DIV))||(null&&(c==ADD||c==SUB||c==ADDI2P||c==SUBIFP||c==LSHIFT||c==RSHIFT||c==OR||c==XOR))){
                     if(DEBUG&1024){ printf("operation converted to simple assignment:\n");pric2(stdout,p);}
                     if(c==ADDI2P||c==SUBIFP) p->typf=t=POINTER;
-                    p->code=c=ASSIGN;p->q2.flags=0;p->q2.val.vlong=sizetab[t&15];
+                    p->code=c=ASSIGN;p->q2.flags=0;p->q2.val.vlong=sizetab[t&NQ];
                     changed=1;
                 }
                 if(null&&(c==MULT||c==DIV||c==MOD||c==AND)){
@@ -208,10 +208,10 @@ int peephole(void)
                     if(DEBUG&1024){ printf("operation converted to ASSIGN 0:\n");pric2(stdout,p);}
                     o.val.vlong=l2zl(0L);eval_const(&o.val,LONG);
                     insert_const2(&p->q1.val,t);p->q1.flags=KONST;
-                    p->code=c=ASSIGN;p->q2.flags=0;p->q2.val.vlong=sizetab[t&15];
+                    p->code=c=ASSIGN;p->q2.flags=0;p->q2.val.vlong=sizetab[t&NQ];
                     changed=1;
                 }
-                if(((t&15)<=LONG||(c_flags[21]&USEDFLAG))&&(c==ADD||c==ADDI2P||c==MULT||c==LSHIFT||c==RSHIFT||c==OR||c==AND)){
+                if(((t&NQ)<=LONG||fp_assoc)&&(c==ADD||c==ADDI2P||c==MULT||c==LSHIFT||c==RSHIFT||c==OR||c==AND)){
                 /*  assoziative Operatoren  */
                     struct IC *n=p->next;
                     if(n&&n->code==c&&(n->q2.flags&KONST)&&n->typf==t&&n->q1.flags==p->z.flags&&n->q1.v==p->z.v&&zleqto(n->q1.val.vlong,p->z.val.vlong)){
@@ -241,10 +241,10 @@ int peephole(void)
                     p->code=c=ASSIGN;
                     p->q2.flags=0;
                     p->typf=t=POINTER;
-                    p->q2.val.vlong=sizetab[t&15];
+                    p->q2.val.vlong=sizetab[t&NQ];
                     changed=1;
                 }
-                if((c==ADD||c==SUB)&&(t&15)<=LONG&&p->next&&p->next->next){
+                if((c==ADD||c==SUB)&&(t&NQ)<=LONG&&p->next&&p->next->next){
                     struct IC *p1=p->next,*p2=p1->next;
                     if(p1->code==MULT&&p2->code==ADDI2P&&
                        p1->typf==t&&p2->typf==t&&
@@ -270,7 +270,7 @@ int peephole(void)
                     if(DEBUG&1024){ printf("operation converted to ASSIGN 0:\n");pric2(stdout,p);}
                     o.val.vlong=l2zl(0L);eval_const(&o.val,LONG);
                     insert_const2(&p->q1.val,t);p->q1.flags=KONST;
-                    p->code=c=ASSIGN;p->q2.flags=0;p->q2.val.vlong=sizetab[t&15];
+                    p->code=c=ASSIGN;p->q2.flags=0;p->q2.val.vlong=sizetab[t&NQ];
                     changed=1;
                 }
             }
@@ -299,7 +299,7 @@ int peephole(void)
                 if(DEBUG&1024){ printf("i-i, i/i, i%%i converted to ASSIGN 0/1:\n");pric2(stdout,p);}
                 if(c==DIV) o.val.vlong=l2zl(1L); else o.val.vlong=l2zl(0L);
                 eval_const(&o.val,LONG);insert_const2(&p->q1.val,t);p->q1.flags=KONST;
-                p->code=c=ASSIGN;p->q2.flags=0;p->q2.val.vlong=sizetab[t&15];
+                p->code=c=ASSIGN;p->q2.flags=0;p->q2.val.vlong=sizetab[t&NQ];
                 changed=1;
             }
             if(c==ASSIGN&&(p->z.flags&VAR)&&p->z.flags==p->q1.flags&&p->z.v==p->q1.v&&zleqto(p->z.val.vlong,p->q1.val.vlong)){
@@ -330,13 +330,18 @@ void insert_ccs(void)
             t=mymalloc(TYPS);
             t->flags=0;
             t->next=0;
-            v=add_var("",t,AUTO,0);
+            v=add_tmp_var(t);
             p->z.v=v;
             p=p->next;
-            if(p->code<BEQ||p->code>BGT) ierror(0);
-            p->q1.flags=VAR;
-            p->q1.val.vlong=l2zl(0L);
-            p->q1.v=v;
+            if(p->code<BEQ||p->code>BGT){
+                p=p->prev;
+                p->code=NOP;
+                p->q1.flags=p->q2.flags=p->z.flags=0;
+            }else{
+                p->q1.flags=VAR;
+                p->q1.val.vlong=l2zl(0L);
+                p->q1.v=v;
+            }
         }
     }
 }
@@ -351,8 +356,6 @@ void optimize(long flags,struct Var *function)
 {
 #ifndef NO_OPTIMIZER
     struct flowgraph *fg=0;int r,pass=0;
-    if(!(c_flags[25]&USEDFLAG)) c_flags_val[25].l=60;
-    if(!(c_flags[11]&USEDFLAG)) c_flags_val[11].l=10;
     if(!function) ierror(0);
     norek=nocall=0;
     report_suspicious_loops=report_weird_code=1;
@@ -367,9 +370,9 @@ void optimize(long flags,struct Var *function)
     if(flags&2){
 #ifndef NO_OPTIMIZER
         /*  Variablen fuer ccs einsetzen.   */
-        if(multiple_ccs&&!(c_flags[24]&USEDFLAG)) insert_ccs();
+        if(multiple_ccs) insert_ccs();
         /*  nur ein pass, wenn nur lokale Optimierungen */
-        if(!(flags&32)) c_flags_val[11].l=1;
+        if(!(flags&32)) maxoptpasses=1;
         do{
             gchanged=0;pass++;
             av_globals=av_statics=av_address=av_drefs=0;
@@ -476,13 +479,13 @@ void optimize(long flags,struct Var *function)
                 gchanged|=r;
                 fg=jump_optimization();
             }
-            if((flags&16)||((flags&1)&&pass>=c_flags_val[11].l)){
+            if((flags&16)||((flags&1)&&pass>=maxoptpasses)){
 /*                num_vars();*/
                 free_alias(fg);
                 create_alias(fg);
                 active_vars(fg);
                 if(DEBUG&1024) print_flowgraph(fg);
-                if((flags&16)&&pass<=c_flags_val[11].l){
+                if((flags&16)&&pass<=maxoptpasses){
                     r=dead_assignments(fg);
                     if(DEBUG&1024) printf("dead_assignments returned %d\n",r);
                     gchanged|=r;
@@ -490,7 +493,7 @@ void optimize(long flags,struct Var *function)
             }
 
 
-            if((!gchanged||pass>=c_flags_val[11].l)){
+            if((!gchanged||pass>=maxoptpasses)){
             /*  Funktion evtl. fuer inlining vorbereiten und    */
             /*  Registervergabe                                 */
                 int varargs=0,c;
@@ -498,8 +501,7 @@ void optimize(long flags,struct Var *function)
                     varargs=1;
 
                 /*  default-Wert fuer inline-Entscheidung   */
-                if(!(c_flags[12]&USEDFLAG)) c_flags_val[12].l=30;
-                if(!varargs&&(c_flags[0]&USEDFLAG)&&(c_flags_val[0].l&4096)&&(only_inline||ic_count<=c_flags_val[12].l)){
+                if(!varargs&&(flags&4096)&&(only_inline||ic_count<=inline_size)){
                 /*  fuer function inlinig vorbereiten   */
                     struct IC *p,*new;
                     if(DEBUG&1024) printf("function <%s> prepared for inlining(ic_count=%d)\n",function->identifier,ic_count);
@@ -547,9 +549,9 @@ void optimize(long flags,struct Var *function)
             free(vilist);
             FREEAV;
 
-            if((flags&32)&&gchanged&&pass>=c_flags_val[11].l) error(172,c_flags_val[11].l);
+            if((flags&32)&&gchanged&&pass>=maxoptpasses) error(172,maxoptpasses);
 
-        }while(gchanged&&pass<c_flags_val[11].l);
+        }while(gchanged&&pass<maxoptpasses);
 
         /*  nur, um nochmal ueberfluessige Labels zu entfernen  */
         fg=construct_flowgraph();

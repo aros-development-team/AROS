@@ -15,4 +15,4 @@ bin-gcc
 obj-vcc*
 bin-vcc*
 makefile
-makefile
+Makefile

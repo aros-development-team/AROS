@@ -10,6 +10,10 @@ static char FILE_[]=__FILE__;
 int (*savings)[MAXR+1],regu[MAXR+1];
 int *rvlist;
 
+struct regp {int treg;struct Var *tvar;};
+void do_load_parms(struct regp [],struct flowgraph *);
+void load_one_parm(int,int,struct Var *,struct flowgraph *);
+
 int cmp_savings(const void *v1,const void *v2)
 /*  Vergleichsfkt, um rvlist nach savings zu sortieren  */
 {
@@ -55,47 +59,20 @@ int exit_save(struct flowgraph *fg,int i)
 void load_reg_parms(struct flowgraph *fg)
 /*  Laedt Registerparameter, falls noetig.                              */
 {
-    int i; struct Var *v;
+    int i,j; struct Var *v;
+    struct regp regp[MAXR+1];
+    for(i=1;i<=MAXR;i++){ regp[i].treg=0;regp[i].tvar=0;}
     for(i=0;i<vcount-rcount;i++){
         v=vilist[i];
         if((v->flags&REGPARM)&&fg->regv[v->reg]!=v&&(BTST(fg->av_in,i)||(v->flags&USEDASADR))){
-            struct IC *new; int j;
-            insert_allocreg(fg,0,FREEREG,v->reg);
-            new=mymalloc(ICS);
-            new->line=0;
-            new->file=0;
-            new->code=ASSIGN;
-            new->typf=v->vtyp->flags;
-            new->q1.flags=REG;
-            new->q1.reg=v->reg;
-            new->q2.flags=0;
-            new->q2.val.vlong=szof(v->vtyp);
-            new->z.flags=VAR;
-            new->z.val.vlong=l2zl(0L);
-            new->z.v=v;
-            for(j=1;j<=MAXR;j++)
-                if(fg->regv[j]==v){ new->z.flags|=REG;new->z.reg=j;break; }
-            new->q1.am=new->q2.am=new->z.am=0;
-            new->use_cnt=new->change_cnt=0;
-            new->use_list=new->change_list=0;
-            insert_IC_fg(fg,0,new);
-            insert_allocreg(fg,0,ALLOCREG,v->reg);
-            if(new->z.flags&REG){
-                /*  ALLOCREG verschieben    */
-                struct IC *p;
-                insert_allocreg(fg,0,ALLOCREG,new->z.reg);
-                for(p=new->next;p;p=p->next){
-                    if(p->code==ALLOCREG&&p->q1.reg==new->z.reg){
-                        remove_IC_fg(fg,p);
-                        break;
-                    }
-                }
-                if(!p) ierror(0);
-            }
-            v->offset=l2zl(0);
-        }
+	  regp[v->reg].tvar=v;
+	  for(j=1;j<=MAXR;j++)
+	    if(fg->regv[j]==v) regp[v->reg].treg=j;
+	}
     }
+    do_load_parms(regp,fg);
 }
+
 void insert_regs(struct flowgraph *fg1)
 /*  Fuegt Registervariablen in die ICs ein.                             */
 {
@@ -313,9 +290,9 @@ void do_loop_regs(struct flowgraph *start,struct flowgraph *end)
             if((p->q1.flags&(VAR|VARADR|REG))==VAR){
                 v=p->q1.v;
                 if((v->storage_class==AUTO||v->storage_class==REGISTER)&&!(v->flags&USEDASADR)){
-                    vt=v->vtyp->flags&31;
+                    vt=v->vtyp->flags&NU;
                     i=v->index;
-                    if(p->q1.flags&DREFOBJ) t=p->typf&31; else t=0;
+                    if(p->q1.flags&DREFOBJ) t=p->typf&NU; else t=0;
                     for(r=1;r<=MAXR;r++){
                         if(!regsa[r]&&!BTST(g->regused,r)){
                             /*  extra saving, falls passendes Reg fuer DREF */
@@ -328,9 +305,9 @@ void do_loop_regs(struct flowgraph *start,struct flowgraph *end)
             if((p->q2.flags&(VAR|VARADR|REG))==VAR){
                 v=p->q2.v;
                 if((v->storage_class==AUTO||v->storage_class==REGISTER)&&!(v->flags&USEDASADR)){
-                    vt=v->vtyp->flags&31;
+                    vt=v->vtyp->flags&NU;
                     i=v->index;
-                    if(p->q2.flags&DREFOBJ) t=p->typf&31; else t=0;
+                    if(p->q2.flags&DREFOBJ) t=p->typf&NU; else t=0;
                     for(r=1;r<=MAXR;r++){
                         if(!regsa[r]&&!BTST(g->regused,r)){
                             /*  extra saving, falls passendes Reg fuer DREF */
@@ -343,9 +320,9 @@ void do_loop_regs(struct flowgraph *start,struct flowgraph *end)
             if((p->z.flags&(VAR|VARADR|REG))==VAR){
                 v=p->z.v;
                 if((v->storage_class==AUTO||v->storage_class==REGISTER)&&!(v->flags&USEDASADR)){
-                    vt=v->vtyp->flags&31;
+                    vt=v->vtyp->flags&NU;
                     i=v->index;
-                    if(p->z.flags&DREFOBJ) t=p->typf&31; else t=0;
+                    if(p->z.flags&DREFOBJ) t=p->typf&NU; else t=0;
                     for(r=1;r<=MAXR;r++){
                         if(!regsa[r]&&!BTST(g->regused,r)){
                             /*  extra saving, falls passendes Reg fuer DREF */
@@ -498,9 +475,9 @@ void block_regs(struct flowgraph *fg)
                 if((p->q1.flags&(VAR|VARADR|REG))==VAR){
                     v=p->q1.v;
                     if((v->storage_class==AUTO||v->storage_class==REGISTER)&&!(v->flags&USEDASADR)){
-                        vt=v->vtyp->flags&31;
+                        vt=v->vtyp->flags&NU;
                         i=v->index;
-                        if(p->q1.flags&DREFOBJ) t=p->typf&31; else t=0;
+                        if(p->q1.flags&DREFOBJ) t=p->typf&NU; else t=0;
                         for(r=1;r<=MAXR;r++){
                             if(!regsa[r]&&!BTST(g->regused,r)){
                                 /*  extra saving, falls passendes Reg fuer DREF */
@@ -513,9 +490,9 @@ void block_regs(struct flowgraph *fg)
                 if((p->q2.flags&(VAR|VARADR|REG))==VAR){
                     v=p->q2.v;
                     if((v->storage_class==AUTO||v->storage_class==REGISTER)&&!(v->flags&USEDASADR)){
-                        vt=v->vtyp->flags&31;
+                        vt=v->vtyp->flags&NU;
                         i=v->index;
-                        if(p->q2.flags&DREFOBJ) t=p->typf&31; else t=0;
+                        if(p->q2.flags&DREFOBJ) t=p->typf&NU; else t=0;
                         for(r=1;r<=MAXR;r++){
                             if(!regsa[r]&&!BTST(g->regused,r)){
                                 /*  extra saving, falls passendes Reg fuer DREF */
@@ -528,9 +505,9 @@ void block_regs(struct flowgraph *fg)
                 if((p->z.flags&(VAR|VARADR|REG))==VAR){
                     v=p->z.v;
                     if((v->storage_class==AUTO||v->storage_class==REGISTER)&&!(v->flags&USEDASADR)){
-                        vt=v->vtyp->flags&31;
+                        vt=v->vtyp->flags&NU;
                         i=v->index;
-                        if(p->z.flags&DREFOBJ) t=p->typf&31; else t=0;
+                        if(p->z.flags&DREFOBJ) t=p->typf&NU; else t=0;
                         for(r=1;r<=MAXR;r++){
                             if(!regsa[r]&&!BTST(g->regused,r)){
                                 /*  extra saving, falls passendes Reg fuer DREF */
@@ -696,8 +673,10 @@ void local_regs(struct flowgraph *fg)
 /*  werden (kill==true und out==false), Register zuzuweisen.            */
 {
     struct IC *p;
-    int i,t,r,nr,mustalloc;
+    int i,j,t,r,nr,mustalloc;
+    unsigned char *inmem=mymalloc(vsize);
     if(DEBUG&9216) printf("assigning temporary variables to registers\n");
+    memset(inmem,0,vsize);
     lfg=fg;
     while(lfg){
         if(DEBUG&1024) printf("block %d\n",lfg->index);
@@ -706,12 +685,17 @@ void local_regs(struct flowgraph *fg)
         lfg->calls=0;
         p=lfg->end;
         while(p){
+            nr=0;
             i=replace_local_reg(&p->z);
-            if(i&&!(p->z.flags&DREFOBJ)){
-                lregv[i]=0;regu[i]--;
-                nr=i;mustalloc=1;
-                if(DEBUG&8192) printf("regu[%s] decremented to %d\n",regnames[i],regu[i]);
-            }else nr=0;
+            if((p->z.flags&(VAR|DREFOBJ))==VAR){
+                if(i){
+                    lregv[i]=0;regu[i]--;
+                    nr=i;mustalloc=1;
+                    if(DEBUG&8192) printf("regu[%s] decremented to %d\n",regnames[i],regu[i]);
+                }else{
+                    BCLR(inmem,p->z.v->index);
+                }
+            }
             if(p->code!=ADDRESS){
                 if(replace_local_reg(&p->q1)==nr) mustalloc=0;
                 if(replace_local_reg(&p->q2)==nr) mustalloc=0;
@@ -719,8 +703,8 @@ void local_regs(struct flowgraph *fg)
             /*  hier wegen USEQ2ASZ aufpassen; kommutative ICs sollten so   */
             /*  angeordnet werden, dass ein evtl. Register rechts steht     */
             if((p->q2.flags&(VAR|REG|VARADR))==VAR&&!(p->q2.v->flags&USEDASADR)&&!(p->q2.v->vtyp->flags&VOLATILE)&&(p->q2.v->storage_class==AUTO||p->q2.v->storage_class==REGISTER)){
-                i=p->q2.v->index;
-                if(BTST(lfg->av_kill,i)&&!BTST(lfg->av_out,i)){
+                j=p->q2.v->index;
+                if(BTST(lfg->av_kill,j)&&!BTST(lfg->av_out,j)&&!BTST(inmem,j)){
                     t=p->q2.v->vtyp->flags;
                     if(USEQ2ASZ&&nr&&regok(nr,t,0)&&!regu[nr]&&!regsa[nr]&&(!(p->q2.flags&DREFOBJ)||regok(nr,t,p->typf))) r=nr; else r=0;
                     if(p->q2.v->reg){ r=p->q2.v->reg;if(regu[r]) free_hreg(lfg,p,r,1);}
@@ -736,12 +720,12 @@ void local_regs(struct flowgraph *fg)
                         replace_local_reg(&p->z);
                         if((DEBUG&9216)&&*p->q2.v->identifier) printf("temporary <%s> assigned to %s\n",p->q2.v->identifier,regnames[r]);
                         if(DEBUG&8192) printf("temporary <%s> assigned to %s\n",p->q2.v->identifier,regnames[r]);
-                    }
+                    }else BSET(inmem,j);
                 }
             }
             if((p->z.flags&(VAR|REG|DREFOBJ))==(VAR|DREFOBJ)&&!(p->z.v->flags&USEDASADR)&&!(p->z.v->vtyp->flags&VOLATILE)&&(p->z.v->storage_class==AUTO||p->z.v->storage_class==REGISTER)){
-                i=p->z.v->index;
-                if(BTST(lfg->av_kill,i)&&!BTST(lfg->av_out,i)){
+                j=p->z.v->index;
+                if(BTST(lfg->av_kill,j)&&!BTST(lfg->av_out,j)&&!BTST(inmem,j)){
                     r=0;
                     if(p->z.v->reg){ r=p->z.v->reg;if(regu[r]) free_hreg(lfg,p,r,1);}
                     for(i=0,t=p->z.v->vtyp->flags;i<=MAXR;i++){
@@ -756,12 +740,12 @@ void local_regs(struct flowgraph *fg)
                         replace_local_reg(&p->q1);
                         if((DEBUG&9216)&&*p->z.v->identifier) printf("temporary <%s> assigned to %s\n",p->z.v->identifier,regnames[r]);
                         if(DEBUG&8192) printf("temporary <%s> assigned to %s\n",p->z.v->identifier,regnames[r]);
-                    }
+                    }else BSET(inmem,j);
                 }
             }
             if((p->q1.flags&(VAR|REG|VARADR))==VAR&&!(p->q1.v->flags&USEDASADR)&&!(p->q1.v->vtyp->flags&VOLATILE)&&(p->q1.v->storage_class==AUTO||p->q1.v->storage_class==REGISTER)){
-                i=p->q1.v->index;
-                if(BTST(lfg->av_kill,i)&&!BTST(lfg->av_out,i)){
+                j=p->q1.v->index;
+                if(BTST(lfg->av_kill,j)&&!BTST(lfg->av_out,j)&&!BTST(inmem,j)){
                     t=p->q1.v->vtyp->flags;
                     if(nr&&regok(nr,t,0)&&!regu[nr]&&!regsa[nr]&&(!(p->q1.flags&DREFOBJ)||regok(nr,t,p->typf))) r=nr; else r=0;
                     if(p->code==SETRETURN&&p->z.reg&&regok(p->z.reg,t,p->typf)) r=p->z.reg;
@@ -776,7 +760,7 @@ void local_regs(struct flowgraph *fg)
                         if(replace_local_reg(&p->q1)!=r) ierror(0);
                         if((DEBUG&9216)&&*p->q1.v->identifier) printf("temporary <%s> assigned to %s\n",p->q1.v->identifier,regnames[r]);
                         if(DEBUG&8192) printf("temporary <%s> assigned to %s\n",p->q1.v->identifier,regnames[r]);
-                    }
+                    }else BSET(inmem,j);
                 }
             }
             if(p->code==CALL){
@@ -807,6 +791,7 @@ void local_regs(struct flowgraph *fg)
         }
         lfg=lfg->normalout;
     }
+    free(inmem);
 }
 void insert_saves(void)
 /*  fuegt speichern von Registern bei Funktionsaufrufen ein */
@@ -861,47 +846,96 @@ void insert_simple_allocreg(struct IC *p,int code,int reg)
 void load_simple_reg_parms(void)
 /*  Laedt Registerparameter, falls noetig. Nicht-optimierende Version.  */
 {
-    int i; struct Var *v;
-    for(i=0;i<=1;i++){
-        if(i==0) v=merk_varf; else v=first_var[1];
-        for(;v;v=v->next){
-            if((v->flags&REGPARM)&&regsv[v->reg]!=v){
-                struct IC *new; int j;
-                insert_simple_allocreg(0,FREEREG,v->reg);
-                new=mymalloc(ICS);
-                new->line=0;
-                new->file=0;
-                new->code=ASSIGN;
-                new->typf=v->vtyp->flags;
-                new->q1.flags=REG;
-                new->q1.reg=v->reg;
-                new->q2.flags=0;
-                new->q2.val.vlong=szof(v->vtyp);
-                new->z.flags=VAR;
-                new->z.val.vlong=l2zl(0L);
-                new->z.v=v;
-                for(j=1;j<=MAXR;j++)
-                    if(regsv[j]==v){ new->z.flags|=REG;new->z.reg=j;break; }
-                new->q1.am=new->q2.am=new->z.am=0;
-                new->use_cnt=new->change_cnt=0;
-                new->use_list=new->change_list=0;
-                insert_IC(0,new);
-                insert_simple_allocreg(0,ALLOCREG,v->reg);
-                if(new->z.flags&REG){
-                    /*  ALLOCREG verschieben    */
-                    struct IC *p;
-                    insert_simple_allocreg(0,ALLOCREG,new->z.reg);
-                    for(p=new->next;p;p=p->next){
-                        if(p->code==ALLOCREG&&p->q1.reg==new->z.reg){
-                            remove_IC(p);
-                            break;
-                        }
-                    }
-                    if(!p) ierror(0);
-                }
-            }
-        }
+  int i,j; struct Var *v;
+  struct regp regp[MAXR+1];
+  for(i=1;i<=MAXR;i++) {regp[i].treg=0;regp[i].tvar=0;}
+  for(i=0;i<=1;i++){
+    if(i==0) v=vl3; else v=vl2;
+    for(;v;v=v->next){
+      if((v->flags&REGPARM)&&regsv[v->reg]!=v){
+	regp[v->reg].tvar=v;
+	for(j=1;j<=MAXR;j++)
+	  if(regsv[j]==v) regp[v->reg].treg=j;
+      }
     }
+  }
+  do_load_parms(regp,0);
+}
+void do_load_parms(struct regp regp[],struct flowgraph *fg)
+{
+  int i,j,c=0,notdone;
+  struct {int freg,treg;struct Var *tvar;} order[MAXR]={0};
+  do{
+    notdone=0;
+    for(i=1;i<=MAXR;i++){
+      if(!regp[i].tvar) continue;
+      j=regp[i].treg;
+      if(j==0||regp[j].tvar==0){
+	order[c].freg=i;
+	order[c].treg=j;
+	order[c].tvar=regp[i].tvar;
+	c++; notdone=1;
+	regp[i].treg=0;
+	regp[i].tvar=0;
+      }
+    }
+  }while(notdone);
+  for(i=1;i<=MAXR;i++)
+    if(regp[i].tvar) ierror(0);
+  for(c--;c>=0;c--)
+    load_one_parm(order[c].freg,order[c].treg,order[c].tvar,fg);
+}
+void load_one_parm(int freg,int treg,struct Var *tvar,struct flowgraph *fg)
+{
+  struct IC *new; 
+  if(fg)
+    insert_allocreg(fg,0,FREEREG,freg);
+  else
+    insert_simple_allocreg(0,FREEREG,freg);
+  new=mymalloc(ICS);
+  new->line=0;
+  new->file=0;
+  new->code=ASSIGN;
+  new->typf=tvar->vtyp->flags;
+  new->q1.flags=REG;
+  new->q1.reg=freg;
+  new->q2.flags=0;
+  new->q2.val.vlong=szof(tvar->vtyp);
+  if(treg)
+    new->z.flags=REG|VAR;
+  else
+    new->z.flags=VAR;
+  new->z.val.vlong=l2zl(0L);
+  new->z.v=tvar;
+  new->z.reg=treg;
+  new->q1.am=new->q2.am=new->z.am=0;
+  new->use_cnt=new->change_cnt=0;
+  new->use_list=new->change_list=0;
+  if(fg){
+    insert_IC_fg(fg,0,new);
+    insert_allocreg(fg,0,ALLOCREG,freg);
+  }else{
+    insert_IC(0,new);
+    insert_simple_allocreg(0,ALLOCREG,freg);
+  }
+  if(new->z.flags&REG){
+    /*  ALLOCREG verschieben    */
+    struct IC *p;
+    if(fg)
+      insert_allocreg(fg,0,ALLOCREG,treg);
+    else
+      insert_simple_allocreg(0,ALLOCREG,treg);
+    for(p=new->next;p;p=p->next){
+      if(p->code==ALLOCREG&&p->q1.reg==treg){
+	if(fg)
+	  remove_IC_fg(fg,p);
+	else
+	  remove_IC(p);
+	break;
+      }
+    }
+    if(!p) ierror(0);
+  }
 }
 
 void simple_regs(void)
@@ -930,12 +964,12 @@ void simple_regs(void)
             if(regscratch[i]&&function_calls) continue;
             /*pri=2;*/ pri=0;
             for(j=0;j<=1;j++){
-                if(j==0) v=merk_varf; else v=first_var[1];
+                if(j==0) v=vl3; else v=vl2;
                 while(v){
                     if(v->storage_class==AUTO||v->storage_class==REGISTER){
                         if(!(v->flags&USEDASADR)&&!(v->vtyp->flags&VOLATILE)){
                             if(only_best&&v->vtyp->next) pointertype=v->vtyp->next->flags;
-                            if(v->priority>pri&&regok(i,v->vtyp->flags&31,pointertype)){
+                            if(v->priority>pri&&regok(i,v->vtyp->flags&NU,pointertype)){
                                 regsv[i]=v;pri=v->priority;
                             }
                         }
@@ -953,7 +987,7 @@ void simple_regs(void)
                 icp->file=0;
                 icp->q1.am=icp->q2.am=icp->z.am=0;
                 icp->code=ASSIGN;
-                icp->typf=regsv[i]->vtyp->flags&31;
+                icp->typf=regsv[i]->vtyp->flags&NU;
                 icp->q1.flags=VAR;
                 icp->q1.v=regsv[i];
                 icp->q1.val.vlong=l2zl(0L);

@@ -221,3 +221,8 @@
 "register <%s> is not free",ERROR,
 "'__reg' used in old-style function definition",WARNING,
 "unknown register \"%s\"",WARNING,                                  /*  220 */
+"'...' only allowed with prototypes",WARNING|ANSIV,
+"Hey, do you really know the priority of '&&' vs. '||'?",WARNING|DONTWARN,
+"be careful with priorities of <</>> vs. +/-",WARNING,
+"adress of auto variable returned",WARNING,
+"void function returns a void expression",WARNING,                  /*  225 */

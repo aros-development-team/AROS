@@ -11,9 +11,6 @@ INTRODUCTION
     This document only deals with the target dependant parts of the
     i386 version.
 
-    This code generator is in a very early stage and is expected to create
-    incorrect code. Also the generated code is still rather poor.
-
 
 LEGAL
 
@@ -29,6 +26,9 @@ LEGAL
 
 
 ADDITIONAL OPTIONS FOR THIS VERSION
+
+    -longalign  Align multibyte-values on 4-byte-boundaries. Needed by some
+                operating systems.
 
     -elf        Do not use a '_'-prefix in front of external identifiers.
                 Use a '.'-prefix for label names.
@@ -90,24 +90,21 @@ SOME INTERNALS
 
     The elementary data types are represented like:
 
-    type        size in bits        alignment in bytes
+    type        size in bits        alignment in bytes(with -longalign)
 
     char                8                       1
-    short              16                       2
-    int                32                       2
-    long               32                       2
-    all pointers       32                       2
-    float(fpu)         32                       2
-    double(fpu)        64                       2
-
-    Currently the i386 code generator at the moment only works on systems
-    that store floats and doubles in a similar way (IEEE) like the i386.
-    Floating point will especially not work on big-endian systems.
+    short              16                       2(4)
+    int                32                       2(4)
+    long               32                       2(4)
+    all pointers       32                       2(4)
+    float              32                       2(4)
+    double             64                       2(4)
 
 
 KNOWN PROBLEMS
 
-    Lots...
+    - generated code is very poor
+    - functions which return floating-point values don't work
 
 
 Volker Barthelmann                                      volker@vb.franken.de

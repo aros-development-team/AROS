@@ -78,7 +78,7 @@ void labeled_statement(void)
                 if(tree->flags!=CEXPR||tree->sidefx){
                     error(133);
                 }else{
-                    if((tree->ntyp->flags&15)<CHAR||(tree->ntyp->flags&15)>LONG){
+                    if((tree->ntyp->flags&NQ)<CHAR||(tree->ntyp->flags&NQ)>LONG){
                         error(134);
                     }else{
                         lp=add_label(empty);
@@ -118,13 +118,13 @@ void if_statement(void)
         ltrue=++label;lfalse=++label;
         if(type_expression(tree)){
             tree=makepointer(tree);
-            if(!arith(tree->ntyp->flags&15)&&(tree->ntyp->flags&15)!=POINTER)
+            if(!arith(tree->ntyp->flags&NQ)&&(tree->ntyp->flags&NQ)!=POINTER)
                 {error(136);
             }else{
                 if(tree->flags==ASSIGN) error(164);
                 gen_IC(tree,ltrue,lfalse);
                 if(tree->flags==CEXPR){
-                    eval_const(&tree->val,tree->ntyp->flags&31);
+                    eval_const(&tree->val,tree->ntyp->flags&NU);
                     if(zdeqto(vdouble,d2zd(0.0))&&zleqto(vlong,l2zl(0))&&zuleqto(vulong,ul2zul(0UL))) cexpr=2; else cexpr=1;
                 }else cexpr=0;
                 if((tree->o.flags&SCRATCH)&&cexpr) free_reg(tree->o.reg);
@@ -187,21 +187,21 @@ void switch_statement(void)
     }else{
         if(!type_expression(tree)){
         }else{
-            if((tree->ntyp->flags&15)<CHAR||(tree->ntyp->flags&15)>LONG){
+            if((tree->ntyp->flags&NQ)<CHAR||(tree->ntyp->flags&NQ)>LONG){
                 error(138);
             }else{
                 int m1,m2,m3,def=0,rm,minflag;
                 zlong l,ml,s;zulong ul,mul,us;
                 if(tree->flags==ASSIGN) error(164);
                 m3=break_label=++label;m1=switch_act=++switch_count;
-                m2=switch_typ=tree->ntyp->flags&31;
+                m2=switch_typ=tree->ntyp->flags&NU;
                 gen_IC(tree,0,0);
                 if((tree->o.flags&(DREFOBJ|SCRATCH))!=SCRATCH){
                     new=mymalloc(ICS);
                     new->code=ASSIGN;
                     new->q1=tree->o;
                     new->q2.flags=0;
-                    new->q2.val.vlong=sizetab[m2&15];
+                    new->q2.val.vlong=sizetab[m2&NQ];
                     get_scratch(&new->z,m2,0);
                     new->typf=m2;
                     tree->o=new->z;
@@ -348,6 +348,15 @@ void switch_statement(void)
     if(tree) free_expression(tree);
     cr();
 }
+void repair_tree(np p)
+/*  Bearbeitet einen Ausdruckbaum so, dass er ein zweites Mal   */
+/*  mit gen_IC erzeugt werden kann.                             */
+{
+    if(p->left) repair_tree(p->left);
+    if(p->right) repair_tree(p->right);
+    if(p->flags==IDENTIFIER||p->flags==(IDENTIFIER|256))
+        p->o.v=find_var(p->identifier,0);
+}
 void while_statement(void)
 /*  bearbeitet while_statement                                  */
 {
@@ -360,13 +369,13 @@ void while_statement(void)
     if(tree){
         if(type_expression(tree)){
             tree=makepointer(tree);
-            if(!arith(tree->ntyp->flags&15)&&(tree->ntyp->flags&15)!=POINTER){
+            if(!arith(tree->ntyp->flags&NQ)&&(tree->ntyp->flags&NQ)!=POINTER){
                 error(140);
                 cexpr=-1;
             }else{
                 if(tree->flags==ASSIGN) error(164);
                 if(tree->flags==CEXPR){
-                    eval_const(&tree->val,tree->ntyp->flags&31);
+                    eval_const(&tree->val,tree->ntyp->flags&NU);
                     if(zdeqto(vdouble,d2zd(0.0))&&zleqto(vlong,l2zl(0L))&&zuleqto(vulong,ul2zul(0UL))) cexpr=1; else cexpr=2;
                     if(cexpr==1) error(152);
                 }
@@ -382,7 +391,7 @@ void while_statement(void)
             if(tree->o.flags){
                 new=mymalloc(ICS);
                 new->code=TEST;
-                new->typf=tree->ntyp->flags&31;
+                new->typf=tree->ntyp->flags&NU;
                 new->q1=tree->o;
                 new->q2.flags=new->z.flags=0;
                 add_IC(new);
@@ -391,7 +400,7 @@ void while_statement(void)
                 new->typf=lout;
                 add_IC(new);
             }
-            if(!type_expression(tree)) ierror(0);
+            repair_tree(tree);
         }else{
             new=mymalloc(ICS);
             new->code=BRA;
@@ -421,7 +430,7 @@ void while_statement(void)
         if(tree->o.flags&&!cexpr){
             new=mymalloc(ICS);
             new->code=TEST;
-            new->typf=tree->ntyp->flags&31;
+            new->typf=tree->ntyp->flags&NU;
             new->q1=tree->o;
             new->q2.flags=new->z.flags=0;
             add_IC(new);
@@ -478,13 +487,13 @@ void for_statement(void)
     if(tree2){
         if(type_expression(tree2)){
             tree2=makepointer(tree2);
-            if(!arith(tree2->ntyp->flags&15)&&(tree2->ntyp->flags&15)!=POINTER){
+            if(!arith(tree2->ntyp->flags&NQ)&&(tree2->ntyp->flags&NQ)!=POINTER){
                 error(142);
                 cexpr=-1;
             }else{
                 if(tree2->flags==ASSIGN) error(164);
                 if(tree2->flags==CEXPR){
-                    eval_const(&tree2->val,tree2->ntyp->flags&31);
+                    eval_const(&tree2->val,tree2->ntyp->flags&NU);
                     if(zdeqto(vdouble,d2zd(0.0))&&zleqto(vlong,l2zl(0L))&&zuleqto(vulong,ul2zul(0UL))) cexpr=1; else cexpr=2;
                     if(cexpr==1) error(152);
                 }
@@ -500,7 +509,7 @@ void for_statement(void)
             if(tree2->o.flags){
                 new=mymalloc(ICS);
                 new->code=TEST;
-                new->typf=tree2->ntyp->flags&31;
+                new->typf=tree2->ntyp->flags&NU;
                 new->q1=tree2->o;
                 new->q2.flags=new->z.flags=0;
                 add_IC(new);
@@ -509,7 +518,7 @@ void for_statement(void)
                 new->typf=lout;
                 add_IC(new);
             }
-            if(!type_expression(tree2)) ierror(0);
+            repair_tree(tree2);
         }else{
             new=mymalloc(ICS);
             new->code=BRA;
@@ -548,7 +557,7 @@ void for_statement(void)
         if(tree2->o.flags&&!cexpr){
             new=mymalloc(ICS);
             new->code=TEST;
-            new->typf=tree2->ntyp->flags&31;
+            new->typf=tree2->ntyp->flags&NU;
             new->q1=tree2->o;
             new->q2.flags=new->z.flags=0;
             add_IC(new);
@@ -593,10 +602,10 @@ void do_statement(void)
     if(tree){
         if(type_expression(tree)){
             tree=makepointer(tree);
-            if(arith(tree->ntyp->flags&15)||(tree->ntyp->flags&15)==POINTER){
+            if(arith(tree->ntyp->flags&NQ)||(tree->ntyp->flags&NQ)==POINTER){
                 if(tree->flags==ASSIGN) error(164);
                 if(tree->flags==CEXPR){
-                    eval_const(&tree->val,tree->ntyp->flags&31);
+                    eval_const(&tree->val,tree->ntyp->flags&NU);
                     if(tree->sidefx) gen_IC(tree,0,0);
                     if(!zdeqto(vdouble,d2zd(0.0))){
                         new=mymalloc(ICS);
@@ -609,7 +618,7 @@ void do_statement(void)
                     if(tree->o.flags){
                         new=mymalloc(ICS);
                         new->code=TEST;
-                        new->typf=tree->ntyp->flags&31;
+                        new->typf=tree->ntyp->flags&NU;
                         new->q1=tree->o;
                         new->q2.flags=new->z.flags=0;
                         add_IC(new);
@@ -676,6 +685,16 @@ void break_statement(void)
     if(*s==';') {s++;killsp();} else error(54);
     cr();
 }
+static void check_auto_return(np tree)
+/*  Testet, ob Knoten Adresse einer automatischen Variable ist. */
+{
+    if((tree->flags==ADDRESS||tree->flags==ADDRESSS||tree->flags==ADDRESSA)&&tree->left->flags==IDENTIFIER){
+        struct Var *v;
+        if(v=find_var(tree->left->identifier,0)){
+            if(v->storage_class==AUTO) error(224);
+        }
+    }
+}
 extern int has_return;
 void return_statement(void)
 /*  bearbeitet return_statement                                 */
@@ -690,21 +709,27 @@ void return_statement(void)
             if(!return_typ){
                 if(type_expression(tree)){
                     tree=makepointer(tree);
-                    if((tree->ntyp->flags&15)!=VOID)
-                        error(155);
+                    if((tree->ntyp->flags&NQ)!=VOID) error(155);
+                        else error(225);
                     gen_IC(tree,0,0);
                     if(tree->o.flags&SCRATCH) free_reg(tree->o.reg);
                 }
             }else{
                 if(type_expression(tree)){
                     tree=makepointer(tree);
+                    if(tree->flags==ADD||tree->flags==SUB){
+                        check_auto_return(tree->left);
+                        check_auto_return(tree->right);
+                    }else{
+                        check_auto_return(tree);
+                    }
                     if(!test_assignment(return_typ,tree)){free_expression(tree);return;}
                     gen_IC(tree,0,0);
-                    convert(tree,return_typ->flags&31);
+                    convert(tree,return_typ->flags&NU);
 #ifdef OLDPARMS   /*  alte CALL/RETURN-Methode    */
                     new=mymalloc(ICS);
                     new->code=ASSIGN;
-                    new->typf=return_typ->flags&31;
+                    new->typf=return_typ->flags&NU;
                     new->q1=tree->o;
                     new->q2.flags=0;
                     new->q2.val.vlong=szof(return_typ);
@@ -741,7 +766,7 @@ void return_statement(void)
                         new->z.reg=freturn(return_typ);
                         new->z.flags=0;
                     }
-                    new->typf=return_typ->flags&31;
+                    new->typf=return_typ->flags&NU;
                     new->q1=tree->o;
                     new->q2.flags=0;
                     new->q2.val.vlong=szof(return_typ);

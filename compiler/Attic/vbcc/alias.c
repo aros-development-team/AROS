@@ -12,8 +12,8 @@ int p_typ(struct Var *v)
     struct Typ *t=v->vtyp;int f;
     /*  Kein Zeiger? Dann moeglicherweise Struktur, die verschiedene Zeiger */
     /*  enthalten koennte. Koennte man evtl. noch genauer pruefen.          */
-    if((t->flags&15)!=POINTER||!t->next||(v->flags&DNOTTYPESAFE)) return(CHAR);
-    f=t->next->flags&15;
+    if((t->flags&NQ)!=POINTER||!t->next||(v->flags&DNOTTYPESAFE)) return(CHAR);
+    f=t->next->flags&NQ;
     if(f==VOID) f=CHAR;
     return(f);
 }
@@ -24,7 +24,7 @@ void ic_changes(struct IC *p,unsigned char *result)
 {
     int i,j,t,t2;struct Var *v;
     memset(result,0,vsize);
-    t=p->typf&15;
+    t=p->typf&NQ;
     if(p->z.flags&VAR){
         v=p->z.v;
         i=v->index;
@@ -38,7 +38,7 @@ void ic_changes(struct IC *p,unsigned char *result)
         if(i<rcount) BSET(result,i+vcount-rcount);
 
         if(p->z.flags&DREFOBJ){
-            if(c_flags[23]&USEDFLAG){
+            if(noaliasopt){
                 bvunite(result,av_drefs,vsize);
                 bvunite(result,av_address,vsize);
                 bvunite(result,av_globals,vsize);
@@ -50,7 +50,7 @@ void ic_changes(struct IC *p,unsigned char *result)
                         struct Typ *tp=v->vtyp;
                         if(!v->vtyp) ierror(0);
                         do{
-                            t2=tp->flags&15;
+                            t2=tp->flags&NQ;
                             tp=tp->next;
                         }while(t2==ARRAY);
                         if(t==t2||t==CHAR||t2>POINTER){
@@ -67,7 +67,7 @@ void ic_changes(struct IC *p,unsigned char *result)
             }
         }else{
             if(v->nesting==0||v->storage_class==EXTERN||(v->flags&USEDASADR)){
-                if(c_flags[23]&USEDFLAG){
+                if(noaliasopt){
                     bvunite(result,av_drefs,vsize);
                 }else{
                     for(j=0;j<rcount;j++){
@@ -91,7 +91,7 @@ void ic_uses(struct IC *p,unsigned char *result)
 {
     int i,j,t,t2,c;struct Var *v;struct Typ *tp;
     memset(result,0,vsize);
-    c=p->code;t=p->typf&15;
+    c=p->code;t=p->typf&NQ;
     if(c!=ADDRESS){
         if((p->q1.flags&(VAR|VARADR))==VAR){
             v=p->q1.v;
@@ -107,7 +107,7 @@ void ic_uses(struct IC *p,unsigned char *result)
             if(i>=vcount) {pric2(stdout,p);ierror(0);}
             BSET(result,i);
             if(v->nesting==0||v->storage_class==EXTERN||(v->flags&USEDASADR)){
-                if(c_flags[23]&USEDFLAG){
+                if(noaliasopt){
                     bvunite(result,av_drefs,vsize);
                 }else{
                     for(j=0;j<rcount;j++){
@@ -118,7 +118,7 @@ void ic_uses(struct IC *p,unsigned char *result)
             }
             if(p->q1.flags&DREFOBJ){
                 BSET(result,i+vcount-rcount);
-                if(c_flags[23]&USEDFLAG){
+                if(noaliasopt){
                     bvunite(result,av_drefs,vsize);
                     bvunite(result,av_address,vsize);
                     bvunite(result,av_globals,vsize);
@@ -128,7 +128,7 @@ void ic_uses(struct IC *p,unsigned char *result)
                         if(v->nesting==0||v->storage_class==EXTERN||(v->flags&USEDASADR)){
                             tp=v->vtyp;
                             do{
-                                t2=tp->flags&15;
+                                t2=tp->flags&NQ;
                                 tp=tp->next;
                             }while(t2==ARRAY);
                             if(t==t2||t==CHAR||t2>POINTER||t>POINTER) BSET(result,j);
@@ -148,7 +148,7 @@ void ic_uses(struct IC *p,unsigned char *result)
             if(i>=vcount) {pric2(stdout,p);ierror(0);}
             BSET(result,i);
             if(v->nesting==0||(v->flags&USEDASADR)){
-                if(c_flags[23]&USEDFLAG){
+                if(noaliasopt){
                     bvunite(result,av_drefs,vsize);
                 }else{
                     for(j=0;j<rcount;j++){
@@ -159,7 +159,7 @@ void ic_uses(struct IC *p,unsigned char *result)
             }
             if(p->q2.flags&DREFOBJ){
                 BSET(result,i+vcount-rcount);
-                if(c_flags[23]&USEDFLAG){
+                if(noaliasopt){
                     bvunite(result,av_drefs,vsize);
                     bvunite(result,av_address,vsize);
                     bvunite(result,av_globals,vsize);
@@ -169,7 +169,7 @@ void ic_uses(struct IC *p,unsigned char *result)
                         if(v->nesting==0||v->storage_class==EXTERN||(v->flags&USEDASADR)){
                             tp=v->vtyp;
                             do{
-                                t2=tp->flags&15;
+                                t2=tp->flags&NQ;
                                 tp=tp->next;
                             }while(t2==ARRAY);
                             if(t==t2||t==CHAR||t2>POINTER) BSET(result,j);
@@ -190,7 +190,7 @@ void ic_uses(struct IC *p,unsigned char *result)
         BSET(result,i);
         if(c==ADDI2P||c==SUBIFP) t=POINTER;
         if(v->nesting==0||v->storage_class==EXTERN||(v->flags&USEDASADR)){
-            if(c_flags[23]&USEDFLAG){
+            if(noaliasopt){
                 bvunite(result,av_drefs,vsize);
             }else{
                 for(j=0;j<rcount;j++){

@@ -27,7 +27,7 @@ int compare_const(union atyps *q1,union atyps *q2,int t)
 /*  vergleiht zwei Konstanten; -1, wenn q1<q2; 0, wenn q1==q1; 1 sonst  */
 {
     zdouble d1,d2;zlong l1,l2;zulong u1,u2;zpointer p1,p2;
-    t&=31;
+    t&=NU;
     eval_const(q1,t);p1=vpointer;d1=vdouble;l1=vlong;u1=vulong;
     eval_const(q2,t);p2=vpointer;d2=vdouble;l2=vlong;u2=vulong;
     if(t==POINTER) return(zpleq(p2,p1)?!zpeqto(p1,p2):-1);
@@ -58,7 +58,7 @@ void num_defs(void)
     if(DEBUG&1024) printf("numerating definitions\n");
     for(p=first_ic;p;p=p->next){
         if(!(p->z.flags&VAR)&&p->code!=CALL){p->defindex=0;continue;}
-/*        if((p->z.v->vtyp->flags&15)>POINTER){p->defindex=0;continue;}*/
+/*        if((p->z.v->vtyp->flags&NQ)>POINTER){p->defindex=0;continue;}*/
         p->defindex=++i;
     }
     dcount=i;dsize=(dcount+CHAR_BIT+vcount)/CHAR_BIT;    /* +1, da bei 1 anfaengt */
@@ -131,7 +131,7 @@ int complete_def(struct IC *p)
     if(!t) return(0);
     s1=szof(t);
     if(p->code==ASSIGN||p->code==GETRETURN) s2=p->q2.val.vlong;
-        else s2=sizetab[p->typf&15];
+        else s2=sizetab[p->typf&NQ];
 /*    if(s1<s2) ierror(0);*/
     if(zleqto(s1,s2)) return(1); else return(0);
 }
@@ -171,7 +171,7 @@ void reaching_definitions(struct flowgraph *fg)
                     i=p->change_list[j].v->index;
                     if(p->change_list[j].flags&DREFOBJ) i+=vcount-rcount;
                     if(i>=vcount) continue;
-                    if((i!=zi||(p->typf&15)>POINTER)&&!BTST(g->rd_kill,i+dcount+1)){
+                    if((i!=zi||(p->typf&NQ)>POINTER)&&!BTST(g->rd_kill,i+dcount+1)){
                         BSET(g->rd_gen,i+dcount+1);
                         if(i<rcount&&!BTST(g->rd_kill,dcount+1+i+vcount-rcount))
                             BSET(g->rd_gen,i+vcount-rcount+dcount+1);
@@ -222,7 +222,7 @@ void calc(int c,int t,union atyps *q1,union atyps *q2,union atyps *z,struct IC *
     zdouble d1,d2;zlong l1,l2;zulong u1,u2;
     eval_const(q1,t);
     d1=vdouble;l1=vlong;u1=vulong;
-    if(q2){
+    if(c!=MINUS&&c!=KOMPLEMENT){
         eval_const(q2,t);
         d2=vdouble;l2=vlong;u2=vulong;
     }
@@ -306,7 +306,7 @@ int fold(struct IC *p)
         insert_const2(&p->q1.val,p->typf);
     }else calc(c,p->typf,&p->q1.val,&p->q2.val,&p->q1.val,p);
     p->q2.flags=0;
-    p->q2.val.vlong=sizetab[p->typf&15];
+    p->q2.val.vlong=sizetab[p->typf&NQ];
     p->code=ASSIGN;
     if(DEBUG&1024){printf("becomes\n");pric2(stdout,p);}
     return(1);
@@ -330,7 +330,7 @@ int propagate(struct obj *o,int replace)
     if(v->nesting==0||v->storage_class==STATIC||v->storage_class==EXTERN){
     /*  Wenn moeglich bei statischen Variablen den Wert bei der         */
     /*  Initialisierung ermitteln.                                      */
-        if(replace&&(v->vtyp->flags&15)<=DOUBLE&&((v->vtyp->flags&CONST)||(v->nesting>0&&!(v->flags&(USEDASADR|USEDASDEST))))){
+        if(replace&&(v->vtyp->flags&NQ)<=DOUBLE&&((v->vtyp->flags&CONST)||(v->nesting>0&&!(v->flags&(USEDASADR|USEDASDEST))))){
             /*  Variable hat noch den Wert der Initialisierung.         */
             if(v->clist){
                 /*  Der Wert der Initialisierung ist noch gespeichert.  */
@@ -359,7 +359,7 @@ int propagate(struct obj *o,int replace)
             /*  Wenn die Def. kein einfacher Typ ist, muss sie von      */
             /*  einer evtl. spaeteren Def. ueberschrieben worden sein,  */
             /*  da oben schon auf undefined geprueft wurde.             */
-            if((p->typf&15)>POINTER){ i=1; continue; }
+            if((p->typf&NQ)>POINTER){ i=1; continue; }
             /*  Wenn es keine Zuweisung einer Konstanten ist, ist keine */
             /*  Weitergabe von Konstanten moeglich.                     */
             if(p->code!=ASSIGN) return(0);
@@ -367,10 +367,10 @@ int propagate(struct obj *o,int replace)
             if(val){
                 /*  Wenn mehr als eine Konstante, muessen alle gleich sein  */
                 /*  und den gleichen Typ haben.                             */
-                if((p->typf&31)!=t) return(0);
+                if((p->typf&NU)!=t) return(0);
                 if(compare_const(&p->q1.val,val,t)) return(0);
             }else{
-                val=&p->q1.val;t=p->typf&31;
+                val=&p->q1.val;t=p->typf&NU;
             }
         }
     }
@@ -406,7 +406,7 @@ int constant_propagation(struct flowgraph *fg,int global)
         p=g->start;
         while(p){
 /*            if(DEBUG&1024){print_rd(rd_defs);pric2(stdout,p);}*/
-            if(p->code!=ADDRESS&&p->code!=NOP&&(p->typf&15)<=POINTER&&(p->code<LABEL||p->code>BRA)){
+            if(p->code!=ADDRESS&&p->code!=NOP&&(p->typf&NQ)<=POINTER&&(p->code<LABEL||p->code>BRA)){
                 int i;
                 if((p->q1.flags&(VAR|VARADR))==VAR){
                     i=p->q1.v->index;
@@ -463,7 +463,7 @@ void rd_change(struct IC *p)
             i=p->change_list[j].v->index;
             if(p->change_list[j].flags&DREFOBJ) i+=vcount-rcount;
             if(i>=vcount) continue;
-            if(i!=zi||(p->typf&15)>POINTER){
+            if(i!=zi||(p->typf&NQ)>POINTER){
                 BSET(rd_defs,i+dcount+1);
                 if(i<rcount) BSET(rd_defs,i+vcount-rcount+dcount+1);
             }

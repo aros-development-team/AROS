@@ -148,9 +148,9 @@ struct flowgraph *create_loop_headers(struct flowgraph *fg,int av)
 /*  Kann einen Block mehrmals in der ->in Liste eintragen       */
 {
     struct flowgraph *g,*last,*new,*rg=fg;
-    struct IC *lic;
+    struct IC *lic,*lastic;
     if(DEBUG&1024) printf("creating loop-headers\n");
-    g=fg;last=0;
+    g=fg;last=0;lastic=0;
     while(g){
         new=0;
         if(g->loopend){
@@ -178,8 +178,9 @@ struct flowgraph *create_loop_headers(struct flowgraph *fg,int av)
                 lic->q1.am=lic->q2.am=lic->z.am=0;
                 lic->use_cnt=lic->change_cnt=0;
                 lic->use_list=lic->change_list=0;
-                last->end->next=lic;    /*  kann nicht leer sein, da sonst branchout nicht 0 waere  */
-                lic->prev=last->end;
+                if(lastic) lastic->next=lic;
+                    else   first_ic=lic;
+                lic->prev=lastic;
                 g->start->prev=lic;
                 lic->next=g->start;
                 lp=g->in;ls=&new->in;
@@ -234,7 +235,7 @@ struct flowgraph *create_loop_headers(struct flowgraph *fg,int av)
                 }
             }
         }
-        last=g;
+        last=g;if(last->end) lastic=last->end;
         g=g->normalout;
     }
     return(rg);
@@ -379,7 +380,7 @@ int move_to_head(void)
             insert_IC_fg(g,fglist[g->index],p);
             fglist[g->index]=p;
             changed|=1;
-        }else{
+        }else if(1){
             struct Typ *t=mymalloc(TYPS);
             struct IC *new=mymalloc(ICS);
             struct Var *v;
@@ -387,12 +388,12 @@ int move_to_head(void)
             if(p->code==ADDRESS||p->code==ADDI2P||p->code==SUBIFP) t->flags=POINTER;
                 else t->flags=p->typf;
             if(p->code==COMPARE||p->code==TEST) t->flags=0;
-            if((t->flags&15)==POINTER){
+            if((t->flags&NQ)==POINTER){
                 t->next=mymalloc(TYPS);
                 t->next->flags=VOID;
                 t->next->next=0;
             }else t->next=0;
-            v=add_var(empty,t,AUTO,0);
+            v=add_tmp_var(t);
             *new=*p;
             new->z.flags=VAR;
             new->z.v=v;
@@ -425,8 +426,8 @@ int move_to_head(void)
                 p->use_list=mymalloc(p->use_cnt*VLS);
                 memcpy(&p->use_list[1],m,(p->use_cnt-1)*VLS);
                 free(m);
-                p->use_list[p->use_cnt].v=v;
-                p->use_list[p->use_cnt].flags=0;
+                p->use_list[0].v=v;
+                p->use_list[0].flags=0;
             }
             changed|=2;
         }
@@ -449,7 +450,7 @@ void calc_movable(struct flowgraph *start,struct flowgraph *end)
     int i,j,k,d;
     unsigned char *changed_vars;
     if(DEBUG&1024) printf("calculating not_movable for blocks %d to %d\n",start->index,end->index);
-    if(!(c_flags_val[0].l&1024)){
+    if(!(optflags&1024)){
         memset(not_movable,UCHAR_MAX,dsize);
         return;
     }
@@ -691,7 +692,7 @@ void frequency_reduction(struct flowgraph *start,struct flowgraph *end,struct fl
 /*                                    if(DEBUG&1024) printf("movable\n");*/
                                     add_movable(p,head,MOVE_IC);
                                 }else{
-                                    if(p->code==ADDRESS||((p->typf&15)<=POINTER&&(p->q2.flags||(p->q1.flags&DREFOBJ)))){
+                                    if(p->code==ADDRESS||((p->typf&NQ)<=POINTER&&(p->q2.flags||(p->q1.flags&DREFOBJ)))){
 /*                                        if(DEBUG&1024) printf("move computation out of loop\n");*/
                                         add_movable(p,head,MOVE_COMP);
                                     }
@@ -700,7 +701,7 @@ void frequency_reduction(struct flowgraph *start,struct flowgraph *end,struct fl
                             /*  Wenn IC immer erreicht wird oder ungefaehrlich  */
                             /*  ist, kann man zumindest die Operation           */
                             /*  rausziehen, falls das lohnt.                    */
-                                if(!BTST(moved,p->defindex)&&(!dangerous_IC(p)&&(p->typf&15)<=POINTER&&(p->q2.flags||(p->q1.flags&DREFOBJ)||p->code==ADDRESS))){
+                                if(!BTST(moved,p->defindex)&&(!dangerous_IC(p)&&(p->typf&NQ)<=POINTER&&(p->q2.flags||(p->q1.flags&DREFOBJ)||p->code==ADDRESS))){
 /*                                    if(DEBUG&1024) printf("move computation out of loop\n");*/
                                     add_movable(p,head,MOVE_COMP);
                                 }
@@ -732,6 +733,7 @@ void add_sr(struct IC *p,struct flowgraph *fg,int i_var)
 /*  koennte, geloest werden.                                        */
 {
     struct srlist *new=mymalloc(sizeof(*new));
+    if(DEBUG&1024) printf("all:%p\n",(void*)new);
     new->IC=p;
     new->target_fg=fg;
     new->ind_var=ind_vars[i_var];
@@ -808,6 +810,7 @@ int do_sr(void)
                 /*  Merken, wenn IC von der Form SUB x,ind_var->z   */
                 if(c==SUB&&!compare_objs(&p->q2,&iv_ic->z,iv_ic->typf))
                     minus=1;
+if(DEBUG&1024) puts("1");
                 t1=mymalloc(TYPS);
                 t1->flags=p->typf;
                 if(c==ADDI2P||c==SUBIFP){
@@ -816,7 +819,8 @@ int do_sr(void)
                     t1->next->flags=VOID;
                     t1->next->next=0;
                 }else t1->next=0;
-                niv=add_var(empty,t1,AUTO,0);
+                niv=add_tmp_var(t1);
+if(DEBUG&1024) puts("2");
                 /*  Suchen, ob es noch aequivalente Operationen gibt.   */
                 /*  Noch sehr ineffizient...                            */
                 for(mf=first_sr->next;mf;mf=mf->next){
@@ -831,6 +835,7 @@ int do_sr(void)
                         }
                     }
                 }
+if(DEBUG&1024) puts("3");
                 /*  Initialisierung der Hilfsinduktionsvariablen    */
                 new=mymalloc(ICS);
                 *new=*p;
@@ -838,6 +843,7 @@ int do_sr(void)
                 new->z.v=niv;
                 new->z.val.vlong=l2zl(0L);
                 /*  IC benutzt dasselbe wie p und aendert nur niv.  */
+if(DEBUG&1024) puts("4");
                 if(have_alias){
                     new->change_cnt=1;
                     new->change_list=mymalloc(VLS);
@@ -847,8 +853,10 @@ int do_sr(void)
                     new->use_list=mymalloc(new->use_cnt*VLS);
                     memcpy(new->use_list,p->use_list,new->use_cnt*VLS);
                 }
+if(DEBUG&1024) puts("5");
                 insert_IC_fg(g,fglist[g->index],new);
                 fglist[g->index]=m=new;
+if(DEBUG&1024) puts("6");
                 /*  Ersetzen der Operation durch die Hilfsvariable  */
                 p->code=ASSIGN;
                 p->typf=t1->flags;
@@ -856,21 +864,23 @@ int do_sr(void)
                 p->q2.flags=0;
                 p->q2.val.vlong=szof(t1);
                 /*  Benutzt jetzt auch Hilfsvariable.               */
+if(DEBUG&1024) puts("7");
                 if(have_alias){
                     void *mr=p->use_list;
                     p->use_cnt++;
                     p->use_list=mymalloc(p->use_cnt*VLS);
                     memcpy(&p->use_list[1],mr,(p->use_cnt-1)*VLS);
                     free(mr);
-                    new->use_list[0].v=niv;
-                    new->use_list[0].flags=0;
+                    p->use_list[0].v=niv;
+                    p->use_list[0].flags=0;
                 }
+if(DEBUG&1024) puts("8");
                 /*  Berechnen der Schrittweite fuer Hilfsvariable   */
                 if(c==MULT){
                     t2=mymalloc(TYPS);
                     t2->flags=iv_ic->typf;
                     t2->next=0;
-                    nstep=add_var(empty,t2,AUTO,0);
+                    nstep=add_tmp_var(t2);
                     new=mymalloc(ICS);
                     new->line=iv_ic->line;
                     new->file=iv_ic->file;
@@ -897,12 +907,14 @@ int do_sr(void)
                     insert_IC_fg(g,fglist[g->index],new);
                     fglist[g->index]=m=new;
                 }
+if(DEBUG&1024) puts("9");
                 /*  Erhoehen der Hilfsvariable um Schrittweite      */
                 new=mymalloc(ICS);
                 new->line=iv_ic->line;
                 new->file=iv_ic->file;
 
                 new->code=iv_ic->code;
+if(DEBUG&1024) puts("10");
                 if(minus){
                     switch(new->code){
                         case ADD:     new->code=SUB; break;
@@ -911,10 +923,12 @@ int do_sr(void)
                         case SUBIFP:  new->code=ADDI2P; break;
                     }
                 }
+if(DEBUG&1024) puts("11");
                 if(t1->flags==POINTER){
                     if(new->code==ADD) new->code=ADDI2P;
                     if(new->code==SUB) new->code=SUBIFP;
                 }
+if(DEBUG&1024) puts("12");
                 new->typf=iv_ic->typf;
                 new->q1.flags=VAR;
                 new->q1.v=niv;
@@ -926,6 +940,7 @@ int do_sr(void)
                     if(!compare_objs(&iv_ic->q1,&iv_ic->z,iv_ic->typf)) new->q2=iv_ic->q2;
                         else new->q2=iv_ic->q1;
                 }
+if(DEBUG&1024) puts("13");
                 if(have_alias){
                     new->use_cnt=iv_ic->use_cnt+m->use_cnt;
                     new->use_list=mymalloc(new->use_cnt*VLS);
@@ -936,14 +951,21 @@ int do_sr(void)
                     new->change_list[0].v=niv;
                     new->change_list[0].flags=0;
                 }
+if(DEBUG&1024) puts("14");
                 /*  Flussgraph muss nur bei den Schleifenkoepfen ok sein.   */
                 insert_IC(iv_ic,new);
+if(DEBUG&1024) puts("15");
                 changed|=2;
             }
         }
+if(DEBUG&1024) puts("16");
         mf=first_sr->next;
+if(DEBUG&1024) puts("16a");
+if(DEBUG&1024) printf("fr:%p\n",(void*)first_sr);
         free(first_sr);
+if(DEBUG&1024) puts("16b");
         first_sr=mf;
+if(DEBUG&1024) puts("17");
     }
     free(fglist);
     return(changed);
@@ -1007,7 +1029,7 @@ void strength_reduction(struct flowgraph *start,struct flowgraph *end,struct flo
         memcpy(rd_defs,g->rd_in,dsize);
         for(p=g->start;p;p=p->next){
             if((p->code==MULT||p->code==ADD||p->code==SUB||p->code==ADDI2P||p->code==SUBIFP)&&
-               (((p->typf&15)!=FLOAT&&(p->typf&15)!=DOUBLE)||(c_flags[21]&USEDFLAG)) ){
+               (((p->typf&NQ)!=FLOAT&&(p->typf&NQ)!=DOUBLE)||fp_assoc) ){
                 int k1,k2,iv;
                 if((p->q1.flags&(VAR|VARADR))==VAR){
                     i=p->q1.v->index;
@@ -1141,7 +1163,7 @@ int do_unroll(int donothing)
             long i; struct Typ *t;
             if(DEBUG&1024) printf("unrolling non-constant loop\n");
             if(cmp->q1.flags&VAR) t=cmp->q1.v->vtyp; else t=cmp->q2.v->vtyp;
-            v=add_var(empty,clone_typ(t),AUTO,0);
+            v=add_tmp_var(clone_typ(t));
             /*  branch dient hier teilweise als leere Schablone.    */
             /*  Label an Schleifenausgang setzen.   */
             new=mymalloc(ICS); *new=*branch;
@@ -1199,13 +1221,13 @@ int do_unroll(int donothing)
                         new->code=SUB;
                         new->z=new->q1;
                         new->q2.flags=KONST;
-                        insert_const2(&new->q2.val,new->typf&31);
+                        insert_const2(&new->q2.val,new->typf&NU);
                         insert_IC(head->start,new);
                     }
                 }else{
                     new->code=COMPARE;
                     new->q2.flags=KONST;
-                    insert_const2(&new->q2.val,new->typf&31);
+                    insert_const2(&new->q2.val,new->typf&NU);
                     insert_IC(head->start,new);
                 }
             }
@@ -1265,7 +1287,7 @@ void unroll(struct flowgraph *start,struct flowgraph *head)
     if(DEBUG&1024) printf("only one backward-branch\n");
     e=0; p=end->end;
     do{
-        if(p->code>=BEQ&&p->code<BRA){ branch=p;bflag=p->code;cc=&p->z; }
+        if(p->code>=BEQ&&p->code<BRA){ branch=p;bflag=p->code;cc=&p->q1; }
         if(p->code==TEST){
             if(compare_objs(cc,&p->z,p->typf)) return;
             o=&p->q1;t=p->typf;cmp=p;
@@ -1370,7 +1392,7 @@ void unroll(struct flowgraph *start,struct flowgraph *head)
         printf("\nflags=%d bflag=%d\n",flags,bflag);
     }
     /*  Nur integers als Induktionsvariablen.   */
-    if((t&15)>LONG) return;
+    if((t&NQ)>LONG) return;
     /*  Distanz und Step werden als long behandelt, deshalb pruefen, ob */
     /*  alles im Bereich des garantierten Mindestwerte fuer long.       */
     /*  Wenn man hier die Arithmetik der Zielmaschine benutzen wuerde,  */
@@ -1430,12 +1452,12 @@ void unroll(struct flowgraph *start,struct flowgraph *head)
     if(dist/step<0) ierror(0);
     if(DEBUG&1024) printf("loop is executed %ld times\n",dist/step+1);
     if(start->start->code!=LABEL) ierror(0);
-    if(ic_cnt*(dist/step+1)<=c_flags_val[25].l){
+    if(ic_cnt*(dist/step+1)<=unroll_size){
         /*  Schleife komplett ausrollen.    */
         add_ur(UNROLL_COMPLETELY,dist/step+1,dist/step+1,start,head,cmp,branch,p);
     }else{
         /*  Schleife teilweise ausrollen.   */
-        n=(c_flags_val[25].l-ic_cnt-2)/(2*ic_cnt);
+        n=(unroll_size-ic_cnt-2)/(2*ic_cnt);
         add_ur(UNROLL_MODULO,dist/step+1,n,start,head,cmp,branch,p);
     }
 }
@@ -1474,8 +1496,8 @@ int loop_optimizations(struct flowgraph *fg)
     for(last=0,g=fg;g;g=g->normalout){
         if(g->loopend){
             frequency_reduction(g,g->loopend,last);
-            strength_reduction(g,g->loopend,last);
-            if(c_flags_val[0].l&2048) unroll(g,last);
+            strength_reduction(g,g->loopend,last); 
+            if(optflags&2048) unroll(g,last);
         }
         last=g;
     }
@@ -1491,18 +1513,18 @@ int loop_optimizations(struct flowgraph *fg)
     free(rd_defs);
     free(rd_tmp);
     free(rd_vars);
-
     free(invariant);
     free(inloop);
-
     changed|=move_to_head();
+    if(DEBUG&1024) puts("done");
     changed|=do_sr();
+    if(DEBUG&1024) puts("done");
     changed|=do_unroll(changed);
-
+    if(DEBUG&1024) puts("done");
     free(moved);
     free(not_movable);
     free(moved_completely);
-
+    if(DEBUG&1024) puts("4");
     if(changed&2){
         if(DEBUG&1024) printf("must repeat num_vars\n");
         free(vilist);

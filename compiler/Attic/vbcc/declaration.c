@@ -7,7 +7,7 @@ static char FILE_[]=__FILE__;
 #define PARAMETER 8
 #define OLDSTYLE 16
 
-struct const_list *initialization(struct Typ *,int);
+struct const_list *initialization(struct Typ *,int,int);
 int test_assignment(struct Typ *,np);
 int return_sc,return_reg,has_return;
 
@@ -51,7 +51,7 @@ struct Typ *declaration_specifiers(void)
     storage_class=hard_reg=0;
     new->next=0; new->exact=0;
     do{
-        merk=s;killsp();cpbez(buff,0);notdone=0;
+        killsp();merk=s;cpbez(buff,0);notdone=0;
         if(DEBUG&2) printf("ts: %s\n",buff);
         if(!strcmp("struct",buff)) notdone=STRUCT;
         if(!strcmp("union",buff)) notdone=UNION;
@@ -94,11 +94,11 @@ struct Typ *declaration_specifiers(void)
                     if(*s==':'){
                     /*  bitfields werden hier noch ignoriert    */
                         np tree;
-                        if((ts->flags&15)!=INT) error(51);
+                        if((ts->flags&NQ)!=INT) error(51);
                         s++;killsp();tree=assignment_expression();
                         if(type_expression(tree)){
                             if(tree->flags!=CEXPR) error(52);
-                            if((tree->ntyp->flags&15)<CHAR||(tree->ntyp->flags&15)>LONG) error(52);
+                            if((tree->ntyp->flags&NQ)<CHAR||(tree->ntyp->flags&NQ)>LONG) error(52);
                         }
                         if(tree) free_expression(tree);
                     }else{
@@ -109,7 +109,7 @@ struct Typ *declaration_specifiers(void)
                         freetyp(t);
                         break;
                     }
-                    if((t->flags&15)==FUNKT)
+                    if((t->flags&NQ)==FUNKT)
                         error(15,sbuff);
 
                     if(*ident!=0){
@@ -163,7 +163,7 @@ struct Typ *declaration_specifiers(void)
                     v=add_var(sident,t,AUTO,0); /*  AUTO hier klug? */
                     if(*s=='='){
                         s++;killsp();
-                        v->clist=initialization(v->vtyp,0);
+                        v->clist=initialization(v->vtyp,0,0);
                         val=zi2zl(v->clist->val.vint);killsp();
                     }else{
                         v->clist=mymalloc(CLS);
@@ -241,9 +241,8 @@ struct Typ *declaration_specifiers(void)
             }
         }
         if(DEBUG&2) printf("typ:%d\n",typ);
-        killsp();
     }while(notdone);
-    s=merk;
+    s=merk;killsp();
     return_sc=storage_class;
     return_reg=hard_reg;
     if(typ==0){
@@ -335,7 +334,7 @@ struct Typ *direct_declarator(struct Typ *a)
 /*                    error("incorrect constant expression");*/
                 }else{
                     if(tree->sidefx) error(60);
-                    if(tree->flags!=CEXPR||(tree->ntyp->flags&15)<CHAR||(tree->ntyp->flags&15)>LONG){
+                    if(tree->flags!=CEXPR||(tree->ntyp->flags&NQ)<CHAR||(tree->ntyp->flags&NQ)>LONG){
                         error(19);
                     }else{
                         eval_constn(tree);
@@ -354,12 +353,10 @@ struct Typ *direct_declarator(struct Typ *a)
             }
         }
         if(*s=='('){
-            int komma;
+            int komma,oldstyle=0;
 #ifdef HAVE_REGPARMS
             struct reg_handle reg_handle=empty_reg_handle;
 #endif
-            /* Identifier- oder Parameter-list noch nicht komplett */
-            /* z.B. ... oder ohne Parameter                        */
             s++;
             killsp();
             fsd=mymalloc(sizeof(*fsd));
@@ -371,8 +368,10 @@ struct Typ *direct_declarator(struct Typ *a)
             while(*s!=')'&&*s!='.'){
                 ident=fbuff;*fbuff=0;komma=0;
                 t=declarator(declaration_specifiers());
-                if(!t&&*ident==0) {error(20);
-                                   break;}
+                if(!t){
+                    oldstyle=1;
+                    if(*ident==0) {error(20);break;}
+                }
                 if(fsd->count){
                     if((t&&!(*sl)[fsd->count-1].styp)||
                        (!t&&(*sl)[fsd->count-1].styp))
@@ -392,13 +391,13 @@ struct Typ *direct_declarator(struct Typ *a)
                 if(return_reg&&!regok(return_reg,t->flags,0)) error(217,regnames[return_reg]);
                 (*sl)[fsd->count].identifier=add_identifier(ident,strlen(ident));
                 if(t){
-                    if(((*sl)[fsd->count].styp->flags&15)==VOID&&fsd->count!=0)
+                    if(((*sl)[fsd->count].styp->flags&NQ)==VOID&&fsd->count!=0)
                         error(22);
                     /*  Arrays in Zeiger umwandeln  */
-                    if(((*sl)[fsd->count].styp->flags&15)==ARRAY)
+                    if(((*sl)[fsd->count].styp->flags&NQ)==ARRAY)
                         (*sl)[fsd->count].styp->flags=POINTER;
                     /*  Funktionen in Zeiger auf Funktionen umwandeln   */
-                    if(((*sl)[fsd->count].styp->flags&15)==FUNKT){
+                    if(((*sl)[fsd->count].styp->flags&NQ)==FUNKT){
                         struct Typ *new;
                         new=mymalloc(TYPS);
                         new->flags=POINTER;
@@ -418,14 +417,17 @@ struct Typ *direct_declarator(struct Typ *a)
             }
             ident=imerk;
             if((*s!='.'||*(s+1)!='.'||*(s+2)!='.')||!komma){
-                if(fsd->count>0&&(!(*sl)[fsd->count-1].styp||((*sl)[fsd->count-1].styp->flags&15)!=VOID)){
+                if(fsd->count>0&&(!(*sl)[fsd->count-1].styp||((*sl)[fsd->count-1].styp->flags&NQ)!=VOID)){
                     (*sl)[fsd->count].styp=mymalloc(TYPS);
                     (*sl)[fsd->count].styp->flags=VOID;
                     (*sl)[fsd->count].styp->next=0;
                     (*sl)[fsd->count].identifier=empty;
                     fsd->count++;
                 }
-            }else if(komma) {s+=3;komma=0;}
+            }else if(komma){
+                s+=3;komma=0;
+                if(oldstyle) error(221);
+            }
             p=mymalloc(TYPS);
             p->flags=FUNKT;
             p->next=0;
@@ -586,9 +588,9 @@ int type_uncomplete(struct Typ *p)
 {
     struct struct_declaration *sd;
     if(!p){ierror(0);return(0);}
-    if((p->flags&15)==STRUCT||(p->flags&15)==UNION)
+    if((p->flags&NQ)==STRUCT||(p->flags&NQ)==UNION)
         if(p->exact->count<=0) return(1);
-    if((p->flags&15)==ARRAY){
+    if((p->flags&NQ)==ARRAY){
         if(zlleq(p->size,l2zl(0L))) return(1);
         if(type_uncomplete(p->next)) return(1);
     }
@@ -639,6 +641,10 @@ struct struct_declaration *find_struct(char *identifier,int endnesting)
     if(DEBUG&1) printf("didn't find struct tag <%s>\n",identifier);
     return(0);
 }
+struct Var *add_tmp_var(struct Typ *t)
+{
+    return add_var(empty,t,AUTO,0);
+}
 struct Var *add_var(char *identifier, struct Typ *t, int storage_class,struct const_list *clist)
 /*  Fuegt eine Variable mit Typ in die var_list ein             */
 /*  maschinenspezifisches und Codegeneration fehlen noch        */
@@ -651,7 +657,7 @@ struct Var *add_var(char *identifier, struct Typ *t, int storage_class,struct co
     static zlong paroffset;
     /*if(*identifier==0) return;*/ /* sollte woanders bemaekelt werden */
     if(DEBUG&2) printf("add_var(): %s\n",identifier);
-    if((t->flags&15)==FUNKT&&((t->next->flags&15)==ARRAY||(t->next->flags&15)==FUNKT))
+    if((t->flags&NQ)==FUNKT&&((t->next->flags&NQ)==ARRAY||(t->next->flags&NQ)==FUNKT))
         error(25);
     new=mymalloc(sizeof(struct Var));
     new->identifier=add_identifier(identifier,strlen(identifier));
@@ -679,10 +685,10 @@ struct Var *add_var(char *identifier, struct Typ *t, int storage_class,struct co
         paroffset=maxalign;
         first_var[nesting]=last_var[nesting]=new;
     }
-    f=t->flags&15;
+    f=t->flags&NQ;
     if((storage_class&7)==AUTO||(storage_class&7)==REGISTER){
         if(DEBUG&2) printf("auto\n");
-        if(type_uncomplete(t)&&(t->flags&15)!=ARRAY) error(202,identifier);
+        if(type_uncomplete(t)&&(t->flags&NQ)!=ARRAY) error(202,identifier);
         /*  das noch ueberpruefen   */
         if((c_flags_val[0].l&2)&&nesting==1&&!(storage_class&PARAMETER)){
             new->offset=max_offset;
@@ -770,8 +776,8 @@ void free_var(struct Var *p)
     while(p){
         merk=p->next;
         if(!(p->flags&USEDASADR)&&(p->storage_class==AUTO||p->storage_class==REGISTER)){
-            if(*p->identifier&&!(p->flags&USEDASDEST)&&(p->vtyp->flags&15)<=POINTER) error(64,p->identifier);
-            if(*p->identifier&&!(p->flags&USEDASSOURCE)&&(p->vtyp->flags&15)<=POINTER) error(65,p->identifier);
+            if(*p->identifier&&!(p->flags&USEDASDEST)&&(p->vtyp->flags&NQ)<=POINTER) error(64,p->identifier);
+            if(*p->identifier&&!(p->flags&USEDASSOURCE)&&(p->vtyp->flags&NQ)<=POINTER) error(65,p->identifier);
         }
         if(DEBUG&2) printf("free_var %s, pri=%d\n",p->identifier,p->priority);
         if(p->vtyp) freetyp(p->vtyp);
@@ -814,7 +820,7 @@ void var_declaration(void)
     if(storage_class==EXTERN) extern_flag=1; else extern_flag=0;
     killsp();
     if(*s==';'){
-        if(storage_class||((ts->flags&15)!=STRUCT&&(ts->flags&15)!=UNION&&(ts->flags&15)!=INT))
+        if(storage_class||((ts->flags&NQ)!=STRUCT&&(ts->flags&NQ)!=UNION&&(ts->flags&NQ)!=INT))
             error(36);
         freetyp(ts);s++;killsp();
         return;
@@ -842,7 +848,7 @@ void var_declaration(void)
         storage_class=msc;hard_reg=mhr;
         if(old) {freetyp(old);old=0;}
         t=declarator(clone_typ(ts));
-        if((t->flags&15)!=FUNKT) isfunc=0;
+        if((t->flags&NQ)!=FUNKT) isfunc=0;
             else {isfunc=1;if(storage_class!=STATIC) storage_class=EXTERN;}
         ident=imerk;                    /* nicht unbedingt noetig ?         */
         v=find_var(vident,oldnesting);
@@ -895,9 +901,9 @@ void var_declaration(void)
                     error(207,v->identifier);
                 if(v->storage_class!=EXTERN){ error(77);v->storage_class=EXTERN;}
             }
-            v->clist=initialization(v->vtyp,v->storage_class==AUTO||v->storage_class==REGISTER);
+            v->clist=initialization(v->vtyp,v->storage_class==AUTO||v->storage_class==REGISTER,0);
             if(v->clist){
-                if((v->vtyp->flags&15)==ARRAY&&zleqto(v->vtyp->size,l2zl(0L))){
+                if((v->vtyp->flags&NQ)==ARRAY&&zleqto(v->vtyp->size,l2zl(0L))){
                     struct const_list *p=v->clist;
                     while(p){v->vtyp->size=zladd(v->vtyp->size,l2zl(1L));p=p->next;}
                     if(v->storage_class==AUTO||v->storage_class==REGISTER){
@@ -919,7 +925,7 @@ void var_declaration(void)
                     if(v->clist->tree){
                     /*  einzelner Ausdruck  */
                         gen_IC(v->clist->tree,0,0);
-                        convert(v->clist->tree,v->vtyp->flags&31);
+                        convert(v->clist->tree,v->vtyp->flags&NU);
                         new->q1=v->clist->tree->o;
 /*                        v->clist=0;*/
                     }else{
@@ -954,7 +960,7 @@ void var_declaration(void)
         if(*s==',') {s++;killsp();mdef=1;} else notdone=0;
     }
     freetyp(ts);
-    if(!mdef&&t&&(t->flags&15)==FUNKT&&*s!=';'){
+    if(!mdef&&t&&(t->flags&NQ)==FUNKT&&*s!=';'){
     /*  Funktionsdefinition                                     */
         int i,oldstyle=0;
 #ifdef HAVE_REGPARMS
@@ -995,9 +1001,9 @@ void var_declaration(void)
                                 freetyp((*t->exact->sl)[i].styp);
                             }
                             /*  typ[] in *typ   */
-                            if((ts->flags&15)==ARRAY) ts->flags=POINTER;
+                            if((ts->flags&NQ)==ARRAY) ts->flags=POINTER;
                             /*  typ() in *typ() */
-                            if((ts->flags&15)==FUNKT){
+                            if((ts->flags&NQ)==FUNKT){
                                 struct Typ *new=mymalloc(TYPS);
                                 new->flags=POINTER;
                                 new->next=ts;
@@ -1095,7 +1101,7 @@ void var_declaration(void)
         v->flags|=GENERATED;
         function_calls=0;float_used=0;has_return=0;goto_used=0;
         compound_statement();
-        if((v->vtyp->next->flags&15)!=VOID&&!has_return){
+        if((v->vtyp->next->flags&NQ)!=VOID&&!has_return){
             if(strcmp(v->identifier,"main")) error(173,v->identifier);
                 else error(174,v->identifier);
         }
@@ -1107,6 +1113,9 @@ void var_declaration(void)
         gen_label(return_label);
         if(first_ic&&errors==0){
             if((c_flags[2]&USEDFLAG)&&ic1){fprintf(ic1,"function %s\n",v->identifier); pric(ic1,first_ic);}
+            vl1=first_var[0];
+            vl2=first_var[1];
+            vl3=merk_varf;
             optimize(c_flags_val[0].l,v);
             if((c_flags[3]&USEDFLAG)&&ic2){fprintf(ic2,"function %s\n",v->identifier); pric(ic2,first_ic);}
             if(out&&!only_inline&&!(c_flags[5]&USEDFLAG)){
@@ -1163,7 +1172,7 @@ void var_declaration(void)
     }else{
         if(makeint) error(125);
         if(*s==';') s++; else error(54);
-        if((t->flags&15)==FUNKT&&t->exact){
+        if((t->flags&NQ)==FUNKT&&t->exact){
             struct struct_declaration *sd=t->exact;int i,f;
             for(f=0,i=0;i<sd->count;i++)
                 if(!(*sd->sl)[i].styp){error(126);f=1;}
@@ -1175,16 +1184,6 @@ void var_declaration(void)
     }
     if(old) freetyp(old);
 }
-struct Typ *clone_typ(struct Typ *old)
-/*  Erzeugt Kopie eines Typs und liefert Zeiger auf Kopie   */
-{
-    struct Typ *new;
-    if(!old) return(0);
-    new=mymalloc(TYPS);
-    *new=*old;
-    if(new->next) new->next=clone_typ(new->next);
-    return(new);
-}
 int compare_pointers(struct Typ *a,struct Typ *b,int qual)
 /*  vergleicht, ob Typ beider Typen gleich ist, const/volatile      */
 /*  werden laut ANSI nicht beruecksichtigt                          */
@@ -1192,7 +1191,7 @@ int compare_pointers(struct Typ *a,struct Typ *b,int qual)
     struct struct_declaration *sd;
     int af=a->flags&qual,bf=b->flags&qual;
     if(af!=bf) return(0);
-    af&=15;bf&=15;
+    af&=NQ;bf&=NQ;
     if(af==FUNKT){
         if(a->exact->count&&!compare_sd(a->exact,b->exact)) return(0);
     }
@@ -1241,7 +1240,7 @@ void gen_vars(struct Var *v)
     for(mode=0;mode<3;mode++){
         for(al=maxalign;al>=1;al--){
             int i,flag;
-            for(i=1,flag=0;i<15;i++) if(align[i]==al) flag=1;
+            for(i=1,flag=0;i<NQ;i++) if(align[i]==al) flag=1;
             if(!flag) continue;
             gen_align(out,al);
             for(p=v;p;p=p->next){
@@ -1249,10 +1248,10 @@ void gen_vars(struct Var *v)
                 if(p->storage_class==STATIC||p->storage_class==EXTERN){
                     if(!(p->flags&GENERATED)){
                         if(p->storage_class==EXTERN&&!(p->flags&(USEDASSOURCE|USEDASDEST))&&!(p->flags&(TENTATIVE|DEFINED))) continue;
-                        if((p->vtyp->flags&15)!=ARRAY){
-                            if(align[p->vtyp->flags&15]!=al) continue;
+                        if((p->vtyp->flags&NQ)!=ARRAY){
+                            if(align[p->vtyp->flags&NQ]!=al) continue;
                         }else{
-                            if(align[p->vtyp->next->flags&15]!=al) continue;
+                            if(align[p->vtyp->next->flags&NQ]!=al) continue;
                         }
                         /*  erst konstante initialisierte Daten */
                         if(mode==0){
@@ -1261,7 +1260,7 @@ void gen_vars(struct Var *v)
                                 struct Typ *t=p->vtyp;int f=0;
                                 do{
                                     if(t->flags&(CONST|STRINGCONST)) break;
-                                    if((t->flags&15)!=ARRAY){f=1;break;}
+                                    if((t->flags&NQ)!=ARRAY){f=1;break;}
                                     t=t->next;
                                 }while(1);
                                 if(f) continue;
@@ -1294,7 +1293,7 @@ void gen_clist(FILE *f,struct Typ *t,struct const_list *cl)
 /*  hier ist noch einiges zu tun                            */
 {
     int i;zlong sz;
-    if((t->flags&15)==ARRAY){
+    if((t->flags&NQ)==ARRAY){
         for(sz=l2zl(0L);!zlleq(t->size,sz)&&cl;sz=zladd(sz,l2zl(1L)),cl=cl->next){
             if(!cl->other){ierror(0);return;}
             gen_clist(f,t->next,cl->other);
@@ -1302,13 +1301,13 @@ void gen_clist(FILE *f,struct Typ *t,struct const_list *cl)
         if(!zlleq(t->size,sz)) gen_ds(f,zlmult(zlsub(t->size,sz),szof(t->next)),t->next);
         return;
     }
-    if((t->flags&15)==UNION){
+    if((t->flags&NQ)==UNION){
         gen_clist(f,(*t->exact->sl)[0].styp,cl);
         sz=zlsub(szof(t),szof((*t->exact->sl)[0].styp));
         if(!zleqto(sz,l2zl(0L))) gen_ds(f,sz,0);
         return;
     }
-    if((t->flags&15)==STRUCT){
+    if((t->flags&NQ)==STRUCT){
         zlong al;int fl;struct Typ *st,*h;
         sz=l2zl(0L);
         for(i=0;i<t->exact->count&&cl;i++){
@@ -1316,7 +1315,7 @@ void gen_clist(FILE *f,struct Typ *t,struct const_list *cl)
             st=(*t->exact->sl)[i].styp;
             h=st;
             do{
-                fl=h->flags&15;
+                fl=h->flags&NQ;
                 h=h->next;
             }while(fl==ARRAY);
             al=align[fl];
@@ -1337,7 +1336,7 @@ void gen_clist(FILE *f,struct Typ *t,struct const_list *cl)
             st=(*t->exact->sl)[i].styp;
             h=st;
             do{
-                fl=h->flags&15;
+                fl=h->flags&NQ;
                 h=h->next;
             }while(fl==ARRAY);
             al=align[fl];
@@ -1353,23 +1352,25 @@ void gen_clist(FILE *f,struct Typ *t,struct const_list *cl)
             gen_ds(f,zlsub(al,zlmod(sz,al)),0);
         return;
     }
-    gen_dc(f,t->flags&31,cl);
+    if(cl->tree) cl->tree->o.am=0;
+    gen_dc(f,t->flags&NU,cl);
 }
-struct const_list *initialization(struct Typ *t,int noconst)
+struct const_list *initialization(struct Typ *t,int noconst,int level)
 /*  traegt eine Initialisierung in eine const_list ein          */
 {
     struct const_list *first,*cl,**prev;np tree,tree2;int bracket;zlong i;
-    int f=t->flags&15;
+    int f=t->flags&NQ;
     if(f==FUNKT){error(42);return(0);}
     if(*s=='{'){s++;killsp();bracket=1;} else bracket=0;
     if(f==ARRAY){
-        if(*s=='\"'&&t->next&&(t->next->flags&15)==CHAR){
+        if(*s=='\"'&&t->next&&(t->next->flags&NQ)==CHAR){
             killsp();
             tree=string_expression();
             first=(struct const_list *)tree->identifier;
             free_expression(tree);
         }else{
             prev=0;
+            if(level==0&&!bracket) error(157);
             for(i=l2zl(0L);(zleqto(t->size,l2zl(0L))||!zlleq(t->size,i))&&*s!='}';i=zladd(i,l2zl(1L))){
                 if(!zlleq(i,0)){
                     if(*s==','){s++;killsp();} else break;
@@ -1377,7 +1378,7 @@ struct const_list *initialization(struct Typ *t,int noconst)
                 }
                 cl=mymalloc(CLS);
                 cl->next=0;cl->tree=0;
-                cl->other=initialization(t->next,0);
+                cl->other=initialization(t->next,0,level+1);
                 killsp();
                 if(prev) *prev=cl; else first=cl;
                 prev=&cl->next;
@@ -1387,6 +1388,7 @@ struct const_list *initialization(struct Typ *t,int noconst)
         if(t->exact->count<=0)
             {error(43);return(0);}
         prev=0;
+        if(level==0&&!bracket) error(157);
         for(i=l2zl(0L);!zlleq(t->exact->count,i)&&*s!='}';i=zladd(i,l2zl(1L))){
             if((*t->exact->sl)[zl2l(i)].identifier[0]==0) {continue;} /* unnamed bitfield */
             if(!zlleq(i,0)){
@@ -1395,14 +1397,14 @@ struct const_list *initialization(struct Typ *t,int noconst)
             }
             cl=mymalloc(CLS);
             cl->next=0;cl->tree=0;
-            cl->other=initialization((*t->exact->sl)[zl2l(i)].styp,0);
+            cl->other=initialization((*t->exact->sl)[zl2l(i)].styp,0,level+1);
             if(prev) *prev=cl; else first=cl;
             prev=&cl->next;
         }
     }else if(f==UNION&&(bracket||!noconst)){
         if(t->exact->count<=0)
             {error(44);return(0);}
-        first=initialization((*t->exact->sl)[0].styp,0);
+        first=initialization((*t->exact->sl)[0].styp,0,level+1);
     }else{
         tree2=tree=assignment_expression();
         if(!tree){error(45);return(0);}

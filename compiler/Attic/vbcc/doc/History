@@ -1,24 +1,81 @@
 vbcc is (c) in 1995-97 by Volker Barthelmann
 
-(cga68k): changes in the code generator for amiga68k/unix68k
-(cgi386): changes in the code generator for i386
-(cgppc):  changes in the code generator for ppc
-(cla68k): changes in the C library for amiga68k
-(vca68k): changes in the compiler frontend for amiga68k
-(vcu68k): changes in the compiler frontend for unix68k
+(cga68k):  changes in the code generator for amiga68k/unix68k
+(cgi386):  changes in the code generator for i386
+(cgppc):   changes in the code generator for ppc
+(cgalpha): changes in the code generator for alpha
+(cla68k):  changes in the C library for amiga68k
+(vca68k):  changes in the compiler frontend for amiga68k
+(vcu68k):  changes in the compiler frontend for unix68k
 
+
+Changes since V0.5d
+
+- added warnings 224 and 225
+- bug fix: parsing of format-strings works better now
+- inlined calls don't increase <function_calls>
+- some work on the code-generator for alpha
+- bug fix: function-inlining didn't work with register parameters
+- clearing am before gen_dc
+
+Changes since V0.5c
+
+- new Makefile
+- better support for crosscompilers and emulation of data types
+- bug fix: several bugs fixed
+- a68k/amiga68k became m68k
+
+Changes since V0.5b
+
+- bug fix: corrupt alias info in frequency-reduction
+- bug fix: loop1 in flow.c
+- bug fix: arith_opt() converted uninitialized var
+- uses ffree for i386 (cgi386)
+- added supp.h/c; started to separate C-specific parts
+
+Changes since V0.5a
+
+- setvbuf works better now (cla68k)
+- bug fix: float/double->unsigned char/short works correct with FPU now (cga68k)
+- -longalign added (cgi386)
+- bug fix: mieee.lib closed wrong library (cla68k)
+- bug fix: typo in default rule of Makefile
+- added warning 222
+- bug fix: addressing-modes with 68020+ (cga68k)
+- bug fix: local register allocation when optimizing
+- bug fix: create_loop_headers had problems with empty basic blocks
+- bug fix: enforcer hit and incorrect warnings in certain while- and
+           for-expressions when optimizing
+- bug fix: parsing of certain declarations was buggy
 
 Changes since V0.5
 
+- loop-unrolling now works with multiple ccs
+- work on the ppc code generator (cgppc)
+- bug fix: old-style function-definitions with '...' didn't give a diagnostic
+- bug fix: missing ',' in function calls didn't give a diagnostic
+- bug fix: certain missing brackets around initializers didn't give a
+           diagnostic
 - bug fix: in certain cases wrong code for divisions was generated (cgi386)
 - bug fix: optimizing local register allocation had problems with USEQ2ASZ
 - local_regs() tries to use best reg with SETRETURN
 - started support for default argument passing in registers
-- bug fix: rearranging of array-acceses was buggy with DREFOBJs
+- bug fix: rearranging of array-accesses was buggy with DREFOBJs
 - bug fix: loading of parameters into registers was sometimes wrong if there
            was a jump to the first basic block after optimization
-- bug fix: casting to void and conditional-expressions with coid caused
+- bug fix: casting to void and conditional-expressions with void caused
            problems
+
+Changes since V0.4f
+
+- bug fix: there was a bug with local register allocation and optimizing
+- bug fix: t_max[CHAR] was wrong :-) (cga68k, cgi386, cgppc)
+- ixemul-support updated (cla68k)
+- bug fixed: initialized arrays with unspecified size always increased size
+             of stack frame
+- work on the i386 code generator (cgi386)
+- fixed bug with register parameters and optimizer
+- a4 is saved when geta4 is called (cga68k)
 
 Changes since V0.4e
 

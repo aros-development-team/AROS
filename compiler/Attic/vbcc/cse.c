@@ -324,12 +324,12 @@ int cse(struct flowgraph *fg,int global)
                     if(p->code==ADDRESS||p->code==ADDI2P||p->code==SUBIFP) new->flags=POINTER;
                         else new->flags=p->typf;
                     if(p->code==COMPARE||p->code==TEST) new->flags=0;
-                    if((new->flags&15)==POINTER){
+                    if((new->flags&NQ)==POINTER){
                         new->next=mymalloc(TYPS);
                         new->next->flags=VOID;
                         new->next->next=0;
                     }else new->next=0;
-                    v=add_var(empty,new,AUTO,0);
+                    v=add_tmp_var(new);
                     v->index=-1;
                     /*  Operation durch assign Hilfsvariable ersetzen   */
                     p->code=ASSIGN;

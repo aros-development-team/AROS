@@ -1,21 +1,23 @@
 (c) in 1995-97 by Volker Barthelmann
 
-This document is under construction! Not for public distribution!
+This document is under construction!
 
 This document describes some of the internals of vbcc and tries to explain
-what must be done to write a code generator for vbcc.
+what has to be done to write a code generator for vbcc.
 However if someone wants to write one, I suggest to contact me first,
 so that it can be integrated into the source tree.
 
-You should only have to rewrite/change the files machine.c and machine.h.
-It is probably best to choose an appropriate one from the generic* ones
-and only change something or add something and leave the rest untouched.
+You have to create a new directory for the new target named
+machines/<target-name> and write the files machine.c, machine.h
+and machine.dt. The compiler for this target will be called
+vbcc<target-name> and can be built by the statement 
+"make TARGET=<target-name> bin/vbcc<target-name>".
 
 From now on integer means any of {char, short, int, long} or their
 unsigned couterparts. Arithmetic means integer or float or double.
 Elementary type means arithmetic or pointer.
-If You intend to write a code generator for a machine with different
-kinds of pointers You might have some problems.
+If you intend to write a code generator for a machine with multiple
+different kinds of pointers you might have some problems.
 
 
 THE INTERMEDIATE CODE
@@ -77,12 +79,14 @@ The first IC has 'prev'==0 and the last one has 'next'==0.
     #define UNCOMPLETE 256
 
     However only UNSIGNED is of real importance for the code generator.
-    'typf'&15 yields the type without any qualifiers.
+    'typf'&NQ yields the type without any qualifiers, 'typf'&NU yields
+    the type without any qualifiers but UNSIGNED.
 
 'q1', 'q2' and 'z' are the source1 (quelle1 in German), source2 and target
 (ziel).
 If a result has to be computed, it always will be stored in the object 'z'
-and the objects 'q1' and 'q2' may not be destroyed during this operation.
+and the objects 'q1' and 'q2' usually may not be destroyed during this 
+operation.
 
 The objects are described by this structure.
 
@@ -112,8 +116,6 @@ struct obj{
 
     The object is a variable. The pointer to its struct Var is in 'v'.
     'val.vlong' vontains an offset that has to be added to it.
-    In certain cases (e.g. flags==VAR|REG) where an offset is
-    useless, it can always be taken as 0.
 
     A struct Var looks like:
 
@@ -143,8 +145,9 @@ struct obj{
             #define TYPEDEF 5       /*  not relevant    */
 
         If the variable is not assigned to a register (i.e. bit REG
-        is not set in the flags of the struct obj) then the variable can
-        be addressed in the following ways (with examples of 68k-code):
+        is not set in the flags of the corresponding struct obj) then 
+        the variable can be addressed in the following ways (with 
+        examples of 68k-code):
 
         'storage_class' == AUTO or 'storage_class' == REGISTER:
 
@@ -195,13 +198,25 @@ struct obj{
     The address of the object is to be used. Only together with static
     variables (i.e. 'storage_class' STATIC or EXTERN).
 
-Certain combination of these flags are possible, e.g. VAR|REG, VAR|DREFOBJ,
-VAR|REG|DREFOBJ. 'flags' can be 0. Also some other bits which are not relevant
-to the code generator may be set.
+The possible combinations of these flags should be:
+
+	0 (no object)
+	KONST
+	REG
+	VAR
+	VAR|REG
+	REG|DREFOBJ
+	VAR|DREFOBJ
+	VAR|REG|DREFOBJ
+	VAR|VARADR
+	
+Also some other bits which are not relevant to the code generator may be set.
+
 Constants will usually be in 'q2' if possible. One of the sources always is
 not constant and the target is always an lvalue.
-Unless otherwise specified all operands of an IC are of the type 'typf' (which
-may be further restricted by 'code'). However not all objects must be used.
+Unless otherwise specified all operands of an IC are of the type 'typf' 
+(which may be further restricted by 'code'). However not all objects have 
+to be used.
 This depends on 'code' and is listed below. In most cases (i.e. when not
 explicitly stated) 'typf' is an elementary type (i.e. arithmetic or pointer).
 
@@ -223,7 +238,7 @@ if it is a variable.
 
     The only case where 'typf' == ARRAY should be in automatic initializations.
 
-    It is also possible that ('typf'&15) == CHAR but the size is != 1. This is
+    It is also possible that ('typf'&NQ) == CHAR but the size is != 1. This is
     created for an inline memcpy/strcpy where the type is not known.
 
 #define OR 16
@@ -237,8 +252,7 @@ if it is a variable.
 #define RSHIFT 26
 
     Bit shifting. q1,q2->z. 'q2' is the number of shifts.
-    All operands are integers. AFAIK the behaviour is implementation defined
-    if 'q2' is negative.
+    All operands are integers. 
 
 #define ADD 27
 #define SUB 28
@@ -266,7 +280,7 @@ if it is a variable.
 #define ADDRESS 40
 
     Get the address of an object. q1->z.
-    'z' is always a pointer and 'q1' is always an automatic variable.
+    'z' is always a pointer and 'q1' is always an auto variable.
 
 #define CALL 42
 
@@ -274,8 +288,8 @@ if it is a variable.
     to a function. This may change in the future.
 
     'q2.val.vlong' contains the number of bytes pushed on the stack as
-    function arguments. Those may have to be popped from the stack after the
-    function returns depending on the calling mechanism.
+    function arguments for this call. Those may have to be popped from the 
+    stack after the function returns depending on the calling mechanism.
 
 #define CONVCHAR 50
 #define CONVSHORT 51
@@ -320,8 +334,7 @@ if it is a variable.
     However if a target supports several condition code registers and sets
     the global variable 'multiple_ccs' to 1 vbcc might use those registers
     and perform certain optimizations. Then 'z' may be non-empty and the
-    condition codes have to be stored in 'z' (this will usually be a condition
-    code register).
+    condition codes have to be stored in 'z'.
 
 #define TEST 68
 
@@ -345,8 +358,8 @@ if it is a variable.
     condition code is true (otherwise continue with next statement).
     The condition codes mean equal, not equal, less than, greater or equal,
     less or equal and greater than.
-    If 'q1' is empty then the codes set by the last COMPARE or TEST must be
-    evaluated. Otherwise 'q1' contains the condition codes.
+    If 'q1' is empty (q1.flags==0) then the codes set by the last COMPARE 
+    or TEST must be evaluated. Otherwise 'q1' contains the condition codes.
 
     On some machines the type of operands of a comparison (e.g unsigned or
     signed) is encoded in the branch instructions rather than in the
@@ -416,14 +429,18 @@ if it is a variable.
 
 
 
-MACHINE.H
-
-Only a few changes should be necessary to machine.h.
-
 TARGET DATA TYPES
 
-First you need a typedef every elementary type of the target machine.
-These are:
+As the compiler should be portable we must not assume anything about
+the data types of the host system which is not guaranteed by
+ANSI/ISO C. Especially do not assume that the data types of the host
+system correspond to the ones of the target system.
+
+Therefore vbcc will provide typedefs which can hold a data type
+of the target machine and (as there is no operator overloading in C)
+functions to perform arithmetic on these types.
+
+The typedefs for the target's data types are:
 
     zchar           type char on the target machine
     zuchar          type unsigned char on the target machine
@@ -437,57 +454,101 @@ These are:
     zdouble
     zpointer        a byte pointer on the target machine
 
-If the host machine has an elementary type which can represent a type of
-the target machine you can use that. However if there is none (e.g. if
-you want to build a cross-compiler for a 64bit machine on a 32bit host)
-you have to define it as a struct (if you use an array it has to be embedded
-in a struct because vbcc assigns those types and passes them as function
-arguments etc.) and provide some arithmetic functions.
+These typedefs and arithmetic functions to work on them will be 
+generated by the program dtgen when compiling vbcc.
+It will create the files machines/$(TARGET)/dt.h and dt.c.
 
-In the future there will perhaps be an automated installation procedure which
-checks if the host machine offers appropriate data types and installs
-emulation routines otherwise if possible. However at the moment this must
-be done manually for every host.
+These files are generated from the file machines/$(TARGET)/machine.dt 
+which must describe what representations the code generator needs.
+dtgen will then ask for available types on the host system and
+choose appropriate ones and/or install emulation functions if available.
 
-If you could typedef every type to a host type you can copy the bunch of
-cryptic #defines from the beginning of an example machine.h and skip the
-next part about target arithmetic.
+machine.dt must look as follows:
+
+Every data type representation gets a symbol (the ones which are
+already available can be looked up in datatypes/datatypes.h - new
+ones will be added when necessary).
+The first 11 lines now must contain the representations for the
+following types:
+
+line	type
+ 1 	signed char
+ 2 	unsigned char
+ 3 	signed short
+ 4 	unsigned short
+ 5 	signed int
+ 6 	unsigned int
+ 7 	signed long
+ 8 	unsigned long
+ 9 	float
+10 	double
+11 	void *
+
+If the code generator can use several representations these can be
+added on the same line separated by spaces. E.g. the code generator 
+for m68k does not care if the integers are stored big-endian or 
+little-endian on the host system because it only accesses them through
+the provided arithmetic functions. It does, however, access floats
+and doubles through byte-pointers and therefore requires them to
+be stored in big-endian-format.
 
 TARGET ARITHMETIC
 
-Now you have to provide a lot of functions performing operations using the
-target machine's arithmetic. You can look them up in any machine.h.
+Now you have a lot of functions/macros performing operations using the
+target machine's arithmetic. You can look them up in dt.h/dt.c.
 E.g. zladd() takes two zlongs and returns their sum as zlong. zuladd() does
 the same with zulongs, zdadd() with doubles. No functions for smaller types
-are needed because vbcc will calculate with the wider types and convert the
+are needed because you can calculate with the wider types and convert the
 results down if needed.
 
-If you could typedef any target type to an elementary type of the host
-machine you can simply provide a macro, e.g. #define zladd(x,y) ((x)+(y)).
-
-Note that you _must_ provide prototypes for all functions which are not
-macros.
-
-Now you must provide conversion functions which convert between types of the
-target machine. E.g. zl2zc takes a zlong and returns it converted to a zchar.
-Again look at an example machine.h to see which ones are needed.
+Also there are conversion functions which convert between types of the
+target machine. E.g. zl2zc takes a zlong and returns the value converted 
+to a zchar.
+Again look at dt.h/dt.c to see which ones are there.
 
 A few functions for converting between target and host types are also
-necessary, e.g. l2zl takes a long and returns it converted to a zlong.
+there, e.g. l2zl takes a long and returns it converted to a zlong.
 
-At last we need functions for comparing target data types. E.g. zlleq(a,b)
-must return true if zlong a <= zlong b and false otherwise. zleqto(a,b)
-must return true if zlong a == zlong b and false otherwise.
+At last there are functions for comparing target data types. E.g. 
+zlleq(a,b) returns true if zlong a <= zlong b and false otherwise. 
+zleqto(a,b) returns true if zlong a == zlong b and false otherwise.
 
 ADDRESSING-MODES
 
-If the code generator supports extended addressing modes You have to think
+The intermediate code generated by vbcc does not use any 
+addressing-modes a target might offer. Therefore the code generator
+must find a way to combine several statements if it wants to make use 
+of these modes. E.g. on the m68k the intermediate code
+
+	add	int	#20,a0->a1
+	move	int	#10->(a1)
+	freereg		a1
+
+could be translated to 
+
+	move.l	#10,20(a0)
+
+(notice the freereg which is important).
+
+To aid in this there is a pointer to a struct AdressingMode in every
+struct obj. A code generator could e.g. do a pass over the intermediate
+code, find possible uses for addressing-modes, allocate a struct
+AddressingMode and store a pointer in the struct obj effectively
+replacing the obj.
+
+If the code generator supports extended addressing-modes you have to think
 of a way to represent them and define the structure AddressingMode so that
 all Modes can be stored in it. The machine independant part of vbcc will
-not use these modes, so Your code generator has to find a way to combine
+not use these modes, so your code generator has to find a way to combine
 several statements to make use of these modes.
 
-BASIC PARAMETERS
+When the code generator is done that pointer in every struct obj must
+either be zero or point to a malloc'ed struct AddressingMode which
+will be free'd by vbcc.
+
+MACHINE.H
+
+The first statement should be #include "dt.h".
 
 #define MAXR to the number of available registers.
 
@@ -521,12 +582,37 @@ Calls to memcpy/strcpy with a known size smaller than INLINEMEMCPY may be
 replaced by a single ASSIGN IC by vbcc.
 This may be replaced by a variable of type zlong in the future.
 
+#define ORDERED_PUSH to 1 if you want PUSH-ICs for function arguments to 
+be generated from left to right instead right to left. 
+
+#define HAVE_REGPARMS to 1 if the default function-call-mechanism
+uses register parameters. If you use this you also have to define a
+
+	struct reg_handle {...}
+
+This is used by the compiler to find out which register it should pass
+arguments in it. In machine.c you have to define an initialized
+variable
+
+	struct reg_handle empty_reg_handle;
+
+which represents the default state and a function
+
+	int reg_parm(struct reg_handle *, struct Typ *);
+
+which returns the number of the register the next argument will be
+passed in (or 0 if the argument is not passed in a register) and
+updates the reg_handle in a way that successive calls to reg_parm()
+yield the correct register for every argument.
 
 
 MACHINE.C
 
-This is the main part of the code generator. The following changes have to
-be made:
+This is the main part of the code generator. The first statement
+should be #include "supp.h" which will include all necessary
+declarations.
+
+The following variables and functions must be provided by machine.c.
 
 COMMANDLINE OPTIONS
 
@@ -534,7 +620,7 @@ COMMANDLINE OPTIONS
     The number of flags is specified as MAXGF in machine.h.
     Insert the names for the flags as char *g_flags_name[MAXGF].
     If an option was specified (g_flags[i]&USEDFLAG) is not zero.
-    In int g_flags[MAXGF] You can also choose how the options are to be
+    In int g_flags[MAXGF] you can also choose how the options are to be
     used:
         0       The option can only be specified. E.g. if
                 g_flags_name[2]=="myflag", the commandline may contain
@@ -601,12 +687,12 @@ REGISTER SET
     You _must_ set regsratch[i] = 0 if regsa[i] == 1. If you want it to be
     save across function calls the code generator has to take care of this.
 
-    You should order the registers so that the ones that should be used first
-    have the smallest number and it is recommended that registers which
-    are used to pass return values be assigned the lowest numbers.
+    You should order the registers so that the ones that should be used 
+    first have the smallest number and it is recommended that registers 
+    which are used to pass return values be assigned the lowest numbers.
 
-    Also You may reserve certain registers to the code generator. This may be
-    reasonable if many ICs cannot be converted without using additional
+    Also you may reserve certain registers to the code generator. This may 
+    be reasonable if many ICs cannot be converted without using additional
     registers.
 
 FUNCTIONS
@@ -637,7 +723,7 @@ The following functions have to be implemented by the code generator:
 
 - int regok(int r, int t, int mode);
 
-    Check, whether the type t can be stored in register r; return 0, if not.
+    Check whether the type t can be stored in register r; return 0, if not.
     If t==POINTER and mode==0 the register only has to be able to store the
     pointer, but if mode!=0 it has to be able to dereference the pointer.
 
@@ -658,6 +744,7 @@ The following functions have to be implemented by the code generator:
     Check if type in p does not have to be converted to type t. E.g. on
     many machines certain types have identical representations (integers
     of the same size or pointers and integers of the same size).
+    WARNING: Arguments of this functions may change in the future!
 
 - int shortcut(int code, int t)
 
@@ -705,11 +792,12 @@ The following functions have to be implemented by the code generator:
     the label and necessary informations for external linkage etc.
 
     Typically variables will be generated by a call to gen_align followed
-    by gen_var_head and a series of calls to gen_dc and/or gen_ds.
+    by gen_var_head and (a series of) calls to gen_dc and/or gen_ds.
 
 - void gen_dc(FILE *f, int t, struct const_list *p);
 
     Well..I'm too lazy at the moment to describe that...
+    Also arguments may still change in the future.
 
 
 Volker Barthelmann                                      volker@vb.franken.de

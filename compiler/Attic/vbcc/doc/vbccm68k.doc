@@ -187,6 +187,13 @@ SMALL DATA
     way - other data cannot be accessed) and you probably have to use
     PhxLnk then.
 
+    If you use small data together with functions which are called from
+    functions which have not been compiled with vbcc or with the small data
+    model then you _must_ call geta4() as the first statement in your
+    function (do not use automatic initializations prior to the call to
+    geta4).
+    Note that you must not call geta4() through a function pointer!
+
 
 SMALL CODE
 

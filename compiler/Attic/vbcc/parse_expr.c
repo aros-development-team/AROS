@@ -112,6 +112,7 @@ np logical_or_expression(void)
         new->ntyp=0;
         left=new;
         killsp();
+        if(*s=='&'&&s[1]=='&') error(222);
     }
     return(left);
 }
@@ -132,6 +133,7 @@ np logical_and_expression(void)
         new->ntyp=0;
         left=new;
         killsp();
+        if(*s=='|'&&s[1]=='|') error(222);
     }
     return(left);
 }
@@ -481,6 +483,8 @@ np postfix_expression(void)
                 }
                 killsp();
                 if(*s==',') {s++;killsp();if(*s==')') error(59);} /* hier noch strenger */
+                else if(*s!=')') error(57);
+
             }
             new->alist=first_alist;
             if(*s!=')') error(59); else s++;
@@ -632,10 +636,10 @@ np constant_expression(void)
     }
     while(*s=='u'||*s=='U'||*s=='l'||*s=='L'){
         if(*s=='u'||*s=='U'){
-            if(zulleq(value,UINT_MAX)) new->ntyp->flags=UNSIGNED|INT;
+            if(zulleq(value,t_max[UNSIGNED|INT])) new->ntyp->flags=UNSIGNED|INT;
              else               new->ntyp->flags=UNSIGNED|LONG;
         }else{
-            if(zulleq(value,LONG_MAX)) new->ntyp->flags=LONG;
+            if(zulleq(value,t_max[LONG])) new->ntyp->flags=LONG;
              else               new->ntyp->flags=UNSIGNED|LONG;
         }
         s++;

@@ -10,23 +10,6 @@ void make_cexpr(np);
 
 int dontopt;
 
-void insert_const2(union atyps *p,int t)
-/*  Traegt Konstante in entprechendes Feld ein        */
-{
-    if(!p) ierror(0);
-    t&=31;
-    if(t==CHAR) {p->vchar=vchar;return;}
-    if(t==SHORT) {p->vshort=vshort;return;}
-    if(t==INT) {p->vint=vint;return;}
-    if(t==LONG) {p->vlong=vlong;return;}
-    if(t==(UNSIGNED|CHAR)) {p->vuchar=vuchar;return;}
-    if(t==(UNSIGNED|SHORT)) {p->vushort=vushort;return;}
-    if(t==(UNSIGNED|INT)) {p->vuint=vuint;return;}
-    if(t==(UNSIGNED|LONG)) {p->vulong=vulong;return;}
-    if(t==FLOAT) {p->vfloat=vfloat;return;}
-    if(t==DOUBLE) {p->vdouble=vdouble;return;}
-    if(t==POINTER) {p->vpointer=vpointer;return;}
-}
 void insert_const(np p)
 /*  Spezialfall fuer np */
 {
@@ -43,53 +26,13 @@ int const_typ(struct Typ *p)
             if(const_typ((*p->exact->sl)[i].styp)) return(1);
     return(0);
 }
-void eval_const(union atyps *p,int t)
-/*  weist bestimmten globalen Variablen Wert einer CEXPR zu         */
-{
-    int f=t&15;
-    if(!p) ierror(0);
-    if(f>=CHAR&&f<=LONG){
-        if(!(t&UNSIGNED)){
-            if(f==CHAR) vlong=zc2zl(p->vchar);
-            if(f==SHORT)vlong=zs2zl(p->vshort);
-            if(f==INT)  vlong=zi2zl(p->vint);
-            if(f==LONG) vlong=p->vlong;
-            vulong=zl2zul(vlong);
-            vdouble=zl2zd(vlong);
-        }else{
-            if(f==CHAR) vulong=zuc2zul(p->vuchar);
-            if(f==SHORT)vulong=zus2zul(p->vushort);
-            if(f==INT)  vulong=zui2zul(p->vuint);
-            if(f==LONG) vulong=p->vulong;
-            vlong=zul2zl(vulong);
-            vdouble=zul2zd(vulong);
-        }
-        vpointer=zul2zp(vulong);
-    }else{
-        if(f==POINTER){
-            vulong=zp2zul(p->vpointer);
-            vlong=zul2zl(vulong);vdouble=zul2zd(vulong);
-        }else{
-            if(f==FLOAT) vdouble=zf2zd(p->vfloat); else vdouble=p->vdouble;
-            vlong=zd2zl(vdouble);
-            vulong=zl2zul(vlong);
-        }
-    }
-    vfloat=zd2zf(vdouble);
-    vuchar=zul2zuc(vulong);
-    vushort=zul2zus(vulong);
-    vuint=zul2zui(vulong);
-    vchar=zl2zc(vlong);
-    vshort=zl2zs(vlong);
-    vint=zl2zi(vlong);
-}
 struct Typ *arith_typ(struct Typ *a,struct Typ *b)
 /*  Erzeugt Typ fuer arithmetische Umwandlung von zwei Operanden    */
 {
     int ta,tb;struct Typ *new;
     new=mymalloc(TYPS);
     new->next=0;
-    ta=a->flags&31;tb=b->flags&31;
+    ta=a->flags&NU;tb=b->flags&NU;
     if(ta==DOUBLE||tb==DOUBLE){new->flags=DOUBLE;return(new);}
     if(ta==FLOAT||tb==FLOAT){new->flags=FLOAT;return(new);}
     ta=int_erw(ta);tb=int_erw(tb);
@@ -106,11 +49,11 @@ struct Typ *arith_typ(struct Typ *a,struct Typ *b)
 int int_erw(int t)
 /*  Fuehrt Integer_Erweiterung eines Typen durch                */
 {
-    if((t&15)>SHORT) return(t);
-    if((t&31)==CHAR&&SCHAR_MAX<=INT_MAX) return(INT);
-    if((t&31)==SHORT&&SHRT_MAX<=INT_MAX) return(INT);
-    if((t&31)==(UNSIGNED|CHAR)&&UCHAR_MAX<=INT_MAX) return(INT);
-    if((t&31)==(UNSIGNED|SHORT)&&USHRT_MAX<=INT_MAX) return(INT);
+    if((t&NQ)>SHORT) return(t);
+    if((t&NU)==CHAR&&SCHAR_MAX<=INT_MAX) return(INT);
+    if((t&NU)==SHORT&&SHRT_MAX<=INT_MAX) return(INT);
+    if((t&NU)==(UNSIGNED|CHAR)&&UCHAR_MAX<=INT_MAX) return(INT);
+    if((t&NU)==(UNSIGNED|SHORT)&&USHRT_MAX<=INT_MAX) return(INT);
     return(UNSIGNED|INT);
 }
 int type_expression(np p)
@@ -161,10 +104,10 @@ int type_expression2(np p)
 /*    printf("bearbeite %s\n",ename[p->flags]);*/
 /*  Erzeugung von Zeigern aus Arrays                            */
 /*  Hier muss noch einiges genauer werden (wie gehoert das?)    */
-    if(p->left&&((p->left->ntyp->flags&15)==ARRAY||(p->left->ntyp->flags&15)==FUNKT)){
+    if(p->left&&((p->left->ntyp->flags&NQ)==ARRAY||(p->left->ntyp->flags&NQ)==FUNKT)){
         if(f!=ADDRESS&&f!=ADDRESSA&&f!=ADDRESSS&&f!=FIRSTELEMENT&&f!=DSTRUCT&&(f<PREINC||f>POSTDEC)&&(f<ASSIGN||f>ASSIGNRSHIFT)){
             np new=mymalloc(NODES);
-            if((p->left->ntyp->flags&15)==ARRAY) new->flags=ADDRESSA;
+            if((p->left->ntyp->flags&NQ)==ARRAY) new->flags=ADDRESSA;
              else new->flags=ADDRESS;
             new->ntyp=0;
             new->left=p->left;
@@ -173,9 +116,9 @@ int type_expression2(np p)
             ok&=type_expression2(p->left);
         }
     }
-    if(p->right&&f!=FIRSTELEMENT&&f!=DSTRUCT&&f!=ADDRESSS&&((p->right->ntyp->flags&15)==ARRAY||(p->right->ntyp->flags&15)==FUNKT)){
+    if(p->right&&f!=FIRSTELEMENT&&f!=DSTRUCT&&f!=ADDRESSS&&((p->right->ntyp->flags&NQ)==ARRAY||(p->right->ntyp->flags&NQ)==FUNKT)){
             np new=mymalloc(NODES);
-            if((p->right->ntyp->flags&15)==ARRAY) new->flags=ADDRESSA;
+            if((p->right->ntyp->flags&NQ)==ARRAY) new->flags=ADDRESSA;
              else new->flags=ADDRESS;
             new->ntyp=0;
             new->left=p->right;
@@ -188,18 +131,18 @@ int type_expression2(np p)
         int ff;struct Var *v;
         v=find_var(p->identifier,0);
         if(v==0){error(82,p->identifier);return(0);}
-        ff=v->vtyp->flags&15;
+        ff=v->vtyp->flags&NQ;
         if((ff>=CHAR&&ff<=DOUBLE)||ff==POINTER||ff==STRUCT||ff==UNION/*||ff==ARRAY*/) p->lvalue=1;
         p->ntyp=clone_typ(v->vtyp);
         /*  arithmetischen const Typ als Konstante behandeln, das muss noch
             deutlich anders werden, bevor man es wirklich so machen kann
-        if((p->ntyp->flags&CONST)&&arith(p->ntyp->flags&15)&&v->clist&&!(f&256)){
+        if((p->ntyp->flags&CONST)&&arith(p->ntyp->flags&NQ)&&v->clist&&!(f&256)){
             p->flags=CEXPR;
             p->val=v->clist->val;
             v->flags|=USEDASSOURCE;
         }*/
         p->flags&=~256;
-        if((p->ntyp->flags&15)==ENUM){
+        if((p->ntyp->flags&NQ)==ENUM){
         /*  enumerations auch als Konstante (int) behandeln */
             p->flags=CEXPR;
             if(!v->clist) ierror(0);
@@ -233,9 +176,9 @@ int type_expression2(np p)
         if(f==LAND) m=1; else m=0;
         p->ntyp=mymalloc(TYPS);
         p->ntyp->flags=INT;p->ntyp->next=0;
-        if(!arith(p->left->ntyp->flags&15)&&(p->left->ntyp->flags&15)!=POINTER)
+        if(!arith(p->left->ntyp->flags&NQ)&&(p->left->ntyp->flags&NQ)!=POINTER)
             {error(89);ok=0;}
-        if(!arith(p->right->ntyp->flags&15)&&(p->right->ntyp->flags&15)!=POINTER)
+        if(!arith(p->right->ntyp->flags&NQ)&&(p->right->ntyp->flags&NQ)!=POINTER)
             {error(89);ok=0;}
         if(p->left->flags==CEXPR){
             eval_constn(p->left);
@@ -255,8 +198,8 @@ int type_expression2(np p)
         return(ok);
     }
     if(f==OR||f==AND||f==XOR){
-        if(((p->left->ntyp->flags&15)<CHAR)||((p->left->ntyp->flags&15)>LONG)){error(90);return(0);}
-        if(((p->right->ntyp->flags&15)<CHAR)||((p->right->ntyp->flags&15)>LONG)){error(90);return(0);}
+        if(((p->left->ntyp->flags&NQ)<CHAR)||((p->left->ntyp->flags&NQ)>LONG)){error(90);return(0);}
+        if(((p->right->ntyp->flags&NQ)<CHAR)||((p->right->ntyp->flags&NQ)>LONG)){error(90);return(0);}
         p->ntyp=arith_typ(p->left->ntyp,p->right->ntyp);
         if(!mopt){
             if(!alg_opt(p)) ierror(0);
@@ -270,26 +213,26 @@ int type_expression2(np p)
     /*  werden                                                          */
         zlong s1,s2;zulong u1,u2;zdouble d1,d2;int c=0;
         struct Typ *t;
-        if(!arith(p->left->ntyp->flags&15)||!arith(p->right->ntyp->flags&15)){
-            if((p->left->ntyp->flags&15)!=POINTER||(p->right->ntyp->flags&15)!=POINTER){
+        if(!arith(p->left->ntyp->flags&NQ)||!arith(p->right->ntyp->flags&NQ)){
+            if((p->left->ntyp->flags&NQ)!=POINTER||(p->right->ntyp->flags&NQ)!=POINTER){
                 if(f!=EQUAL&&f!=INEQUAL){
                     error(92);return(0);
                 }else{
-                    if(((p->left->ntyp->flags&15)!=POINTER||p->right->flags!=CEXPR)&&
-                       ((p->right->ntyp->flags&15)!=POINTER||p->left->flags!=CEXPR)){
+                    if(((p->left->ntyp->flags&NQ)!=POINTER||p->right->flags!=CEXPR)&&
+                       ((p->right->ntyp->flags&NQ)!=POINTER||p->left->flags!=CEXPR)){
                         error(93);return(0);
                     }else{
                         if(p->left->flags==CEXPR) eval_constn(p->left);
                          else                     eval_constn(p->right);
-                        if(vdouble!=0||vlong!=0||vulong!=0)
+                        if(!zdeqto(vdouble,d2zd(0.0))||!zleqto(vlong,l2zl(0L))||!zuleqto(vulong,ul2zul(0UL)))
                             {error(40);return(0);}
                     }
                 }
             }else{
-                if(compare_pointers(p->left->ntyp->next,p->right->ntyp->next,15)){
+                if(compare_pointers(p->left->ntyp->next,p->right->ntyp->next,NQ)){
                 }else{
                     if(f!=EQUAL&&f!=INEQUAL){error(41);}
-                    if((p->left->ntyp->next->flags&15)!=VOID&&(p->right->ntyp->next->flags&15)!=VOID)
+                    if((p->left->ntyp->next->flags&NQ)!=VOID&&(p->right->ntyp->next->flags&NQ)!=VOID)
                         {error(41);}
                 }
             }
@@ -328,7 +271,7 @@ int type_expression2(np p)
             t=arith_typ(p->left->ntyp,p->right->ntyp);
             if(!p->left->sidefx) {free_expression(p->left);p->left=0;}
             if(!p->right->sidefx) {free_expression(p->right);p->right=0;}
-            if((t->flags&15)==FLOAT||(t->flags&15)==DOUBLE){
+            if((t->flags&NQ)==FLOAT||(t->flags&NQ)==DOUBLE){
                 if(f==EQUAL) p->val.vint=zdeqto(d1,d2);
                 if(f==INEQUAL) p->val.vint=!zdeqto(d1,d2);
                 if(f==LESSEQ) p->val.vint=zdleq(d1,d2);
@@ -375,23 +318,23 @@ int type_expression2(np p)
         return(ok);
     }
     if(f==ADD||f==SUB||f==MULT||f==DIV||f==MOD||f==LSHIFT||f==RSHIFT||f==PMULT){
-        if(!arith(p->left->ntyp->flags&15)||!arith(p->right->ntyp->flags&15)){
+        if(!arith(p->left->ntyp->flags&NQ)||!arith(p->right->ntyp->flags&NQ)){
             np new;zlong sz; int type=0;
             if(f!=ADD&&f!=SUB){error(94);return(0);}
-            if((p->left->ntyp->flags&15)==POINTER){
-                if((p->left->ntyp->next->flags&15)==VOID)
+            if((p->left->ntyp->flags&NQ)==POINTER){
+                if((p->left->ntyp->next->flags&NQ)==VOID)
                     {error(95);return(0);}
-                if((p->right->ntyp->flags&15)==POINTER){
-                    if((p->right->ntyp->next->flags&15)==VOID)
+                if((p->right->ntyp->flags&NQ)==POINTER){
+                    if((p->right->ntyp->next->flags&NQ)==VOID)
                         {error(95);return(0);}
-                    if(!compare_pointers(p->left->ntyp->next,p->right->ntyp->next,15))
+                    if(!compare_pointers(p->left->ntyp->next,p->right->ntyp->next,NQ))
                         {error(41);}
                     if(f!=SUB){error(96);return(0);}
                      else {type=3;}
                 }else{
-                    if((p->right->ntyp->flags&15)>LONG)
+                    if((p->right->ntyp->flags&NQ)>LONG)
                         {error(97,ename[f]);return(0);}
-                    if((p->right->ntyp->flags&15)<CHAR)
+                    if((p->right->ntyp->flags&NQ)<CHAR)
                         {error(97,ename[f]);return(0);}
                     if(p->right->flags!=PMULT&&p->right->flags!=PCEXPR){
                         new=mymalloc(NODES);
@@ -414,13 +357,13 @@ int type_expression2(np p)
                 }
             }else{
                 np merk;
-                if((p->right->ntyp->flags&15)!=POINTER)
+                if((p->right->ntyp->flags&NQ)!=POINTER)
                     {error(98);return(0);}
-                if((p->right->ntyp->next->flags&15)==VOID)
+                if((p->right->ntyp->next->flags&NQ)==VOID)
                     {error(95);return(0);}
-                if((p->left->ntyp->flags&15)>LONG)
+                if((p->left->ntyp->flags&NQ)>LONG)
                     {error(98);return(0);}
-                if((p->left->ntyp->flags&15)<CHAR)
+                if((p->left->ntyp->flags&NQ)<CHAR)
                     {error(98);return(0);}
                 if(p->flags==SUB){error(99);return(0);}
                 if(p->left->flags!=PMULT&&p->left->flags!=PCEXPR){
@@ -456,11 +399,11 @@ int type_expression2(np p)
             }
         }else{
             p->ntyp=arith_typ(p->left->ntyp,p->right->ntyp);
-            if((p->ntyp->flags&15)>LONG&&(f==MOD||f==LSHIFT||f==RSHIFT))
+            if((p->ntyp->flags&NQ)>LONG&&(f==MOD||f==LSHIFT||f==RSHIFT))
                 {error(101);ok=0;}
             /*  Typerweiterungen fuer SHIFTS korrigieren    */
-            if((f==LSHIFT||f==RSHIFT)&&(p->ntyp->flags&15)==LONG&&(p->left->ntyp->flags&15)<LONG)
-                {p->ntyp->flags&=~15;p->ntyp->flags|=INT;}
+            if((f==LSHIFT||f==RSHIFT)&&(p->ntyp->flags&NQ)==LONG&&(p->left->ntyp->flags&NQ)<LONG)
+                {p->ntyp->flags&=~NQ;p->ntyp->flags|=INT;}
         }
         /*  fuegt &a+x zusammen, noch sub und left<->right machen   */
         /*  Bei CEXPR statt PCEXPR auch machen?                     */
@@ -502,7 +445,7 @@ int type_expression2(np p)
         return(ok);
     }
     if(f==CAST){
-        int from=p->left->ntyp->flags&15,to=p->ntyp->flags&15;
+        int from=p->left->ntyp->flags&NQ,to=p->ntyp->flags&NQ;
         if(to==VOID) return(ok);
         if(from==VOID)
             {error(102);return(0);}
@@ -529,11 +472,11 @@ int type_expression2(np p)
             }
         }
         if(from<=LONG&&to<=LONG&&!zlleq(sizetab[from],sizetab[to])&&p->left->flags!=CEXPR) error(166);
-        if(to==POINTER&&from==POINTER&&!zlleq(align[p->ntyp->next->flags&15],align[p->left->ntyp->next->flags&15]))
+        if(to==POINTER&&from==POINTER&&!zlleq(align[p->ntyp->next->flags&NQ],align[p->left->ntyp->next->flags&NQ]))
             error(167);
         if(p->left->flags==CEXPR){
             eval_constn(p->left);
-            if((p->ntyp->flags&15)==POINTER)
+            if((p->ntyp->flags&NQ)==POINTER)
                 if(!zuleqto(vulong,ul2zul(0UL))||!zleqto(vlong,l2zl(0L))||!zdeqto(vdouble,d2zd(0.0)))
                     error(81);
             insert_const(p);
@@ -543,14 +486,14 @@ int type_expression2(np p)
         return(ok);
     }
     if(f==MINUS||f==KOMPLEMENT||f==NEGATION){
-        if(!arith(p->left->ntyp->flags&15)){
+        if(!arith(p->left->ntyp->flags&NQ)){
             if(f!=NEGATION){error(107);return(0);
             }else{
-                if((p->left->ntyp->flags&15)!=POINTER)
+                if((p->left->ntyp->flags&NQ)!=POINTER)
                     {error(108);return(0);}
             }
         }
-        if(f==KOMPLEMENT&&(p->left->ntyp->flags&15)>LONG)
+        if(f==KOMPLEMENT&&(p->left->ntyp->flags&NQ)>LONG)
             {error(109);return(0);}
         if(f==NEGATION){
             p->ntyp=mymalloc(TYPS);
@@ -559,7 +502,7 @@ int type_expression2(np p)
         }else{
             if(!p->left->ntyp) ierror(0);
             p->ntyp=clone_typ(p->left->ntyp);
-            if((p->ntyp->flags&15)<=LONG) p->ntyp->flags=int_erw(p->ntyp->flags);
+            if((p->ntyp->flags&NQ)<=LONG) p->ntyp->flags=int_erw(p->ntyp->flags);
         }
         if(p->left->flags==CEXPR){
             eval_constn(p->left);
@@ -579,12 +522,12 @@ int type_expression2(np p)
         return(ok);
     }
     if(f==CONTENT){
-        if((p->left->ntyp->flags&15)!=POINTER)
+        if((p->left->ntyp->flags&NQ)!=POINTER)
             {error(111);return(0);}
-        if((p->left->ntyp->next->flags&15)!=ARRAY&&type_uncomplete(p->left->ntyp->next))
+        if((p->left->ntyp->next->flags&NQ)!=ARRAY&&type_uncomplete(p->left->ntyp->next))
             {error(112);return(0);}
         p->ntyp=clone_typ(p->left->ntyp->next);
-        if((p->ntyp->flags&15)!=ARRAY) p->lvalue=1;
+        if((p->ntyp->flags&NQ)!=ARRAY) p->lvalue=1;
         if(p->left->flags==ADDRESS&&zuleqto(p->left->val.vulong,ul2zul(0UL))){
         /*  *&x durch x ersetzen                                */
             np merk;
@@ -611,9 +554,9 @@ int type_expression2(np p)
         return(ok);
     }
     if(f==FIRSTELEMENT){
-/*        if((p->left->ntyp->flags&15)!=ARRAY)
+/*        if((p->left->ntyp->flags&NQ)!=ARRAY)
             {ierror(0);return(0);}*/
-        if((p->left->ntyp->flags&15)==ARRAY) p->ntyp=clone_typ(p->left->ntyp->next);
+        if((p->left->ntyp->flags&NQ)==ARRAY) p->ntyp=clone_typ(p->left->ntyp->next);
          else{
             int i,n=-1;
             for(i=0;i<p->left->ntyp->exact->count;i++)
@@ -625,7 +568,7 @@ int type_expression2(np p)
         return(ok);
     }
     if(f==ADDRESS){
-        if((p->left->ntyp->flags&15)!=FUNKT&&(p->left->ntyp->flags&15)!=ARRAY){
+        if((p->left->ntyp->flags&NQ)!=FUNKT&&(p->left->ntyp->flags&NQ)!=ARRAY){
             if(!p->left->lvalue){error(115);return(0);}
             if(p->left->flags==IDENTIFIER){
                 struct Var *v;
@@ -661,7 +604,7 @@ int type_expression2(np p)
     if(f==DSTRUCT){
     /*  hier kann man bei unions einiges schneller/einfacher machen */
         int i=0,f;struct Typ *t,*h;np new;zlong offset=l2zl(0L),al;
-        if((p->left->ntyp->flags&15)!=STRUCT&&(p->left->ntyp->flags&15)!=UNION)
+        if((p->left->ntyp->flags&NQ)!=STRUCT&&(p->left->ntyp->flags&NQ)!=UNION)
             {error(8);return(0);}
         if(type_uncomplete(p->left->ntyp)){error(11);return(0);}
         if(p->right->flags!=MEMBER)
@@ -670,7 +613,7 @@ int type_expression2(np p)
             t=(*p->left->ntyp->exact->sl)[i].styp;
             h=t;
             do{
-                f=h->flags&15;
+                f=h->flags&NQ;
                 h=h->next;
             }while(f==ARRAY);
             al=align[f];
@@ -683,12 +626,12 @@ int type_expression2(np p)
         t=(*p->left->ntyp->exact->sl)[i].styp;
         h=t;
         do{
-            f=h->flags&15;
+            f=h->flags&NQ;
             h=h->next;
         }while(f==ARRAY);
         al=align[f];
         offset=zlmult(zldiv(zladd(offset,zlsub(al,l2zl(1L))),al),al);
-        if((p->left->ntyp->flags&15)==UNION) offset=l2zl(0L);
+        if((p->left->ntyp->flags&NQ)==UNION) offset=l2zl(0L);
         p->flags=CONTENT;if(p->ntyp) {freetyp(p->ntyp);p->ntyp=0;}
         new=mymalloc(NODES);
         new->flags=ADD;
@@ -712,11 +655,11 @@ int type_expression2(np p)
     if(f==PREINC||f==POSTINC||f==PREDEC||f==POSTDEC){
         if(!p->left->lvalue){error(86);return(0);}
         if(p->left->ntyp->flags&CONST){error(87);return(0);}
-        if(!arith(p->left->ntyp->flags&15)){
-            if((p->left->ntyp->flags&15)!=POINTER){
+        if(!arith(p->left->ntyp->flags&NQ)){
+            if((p->left->ntyp->flags&NQ)!=POINTER){
                 error(24);return(0);
             }else{
-                if((p->left->ntyp->next->flags&15)==VOID)
+                if((p->left->ntyp->next->flags&NQ)==VOID)
                     {error(95);return(0);}
             }
         }
@@ -728,7 +671,7 @@ int type_expression2(np p)
         struct argument_list *al;int i,flags=0;char *s=0;
         struct struct_declaration *sd;
         al=p->alist;
-        if((p->left->ntyp->flags&15)!=POINTER||(p->left->ntyp->next->flags&15)!=FUNKT)
+        if((p->left->ntyp->flags&NQ)!=POINTER||(p->left->ntyp->next->flags&NQ)!=FUNKT)
             {error(26);return(0);}
         if(ok&&p->left->left&&p->left->left->flags==IDENTIFIER&&p->left->left->o.v->storage_class==EXTERN){
             s=p->left->left->o.v->identifier;
@@ -781,30 +724,40 @@ int type_expression2(np p)
                               c=='-'||c=='+'||c==' '||c=='#'||c=='.'||
                               c=='h'||c=='l'||c=='L'||c=='*'){
                             fused|=3;
-                            if(fflags!='*'&&(c=='h'||c=='l'||c=='L'||c=='*'))
+			    if(c=='*'&&(flags&PRINTFLIKE)){
+			      if(!al) {error(214);return(ok);}
+			        at=al->arg->ntyp->flags&NQ;
+				al=al->next;
+				if(at>INT) {error(214);return(ok);}
+			    }
+                            if((fflags!='*'||(flags&PRINTFLIKE))&&(c=='h'||c=='l'||c=='L'||c=='*'))
                                 fflags=c;
                             c=(int)zul2zl(zuc2zul(cl->other->val.vchar));
                             cl=cl->next;
                             if(!cl){error(214);return(ok);}
                         }
                         if(DEBUG&1) printf("format=%c%c\n",fflags,c);
-                        if(c=='%') continue;
-                        if(fflags=='*') continue;
-                        if(!al){error(214);return(ok);}
-                        t=al->arg->ntyp;
-                        if(DEBUG&1){ prd(stdout,t);printf("\n");}
-                        if((flags&SCANFLIKE)){
-                            if((t->flags&15)!=POINTER){error(214);return(ok);}
+                        if(fflags=='*'&&(flags&SCANFLIKE)) continue;
+			if(c!='%'){
+			  if(!al){error(214);return(ok);}
+			  t=al->arg->ntyp;
+			  if(DEBUG&1){ prd(stdout,t);printf("\n");}
+			  if((flags&SCANFLIKE)){
+                            if((t->flags&NQ)!=POINTER){error(214);return(ok);}
                             t=t->next;
-                        }
-                        at=t->flags&31;
+			  }
+			  at=t->flags&NU;
+			}
                         if(flags&PRINTFLIKE){
                             switch(c){
+			    case '%':
+			        fused|=1;
+			        break;
                             case 'o':
                             case 'x':
                             case 'X':
                             case 'c':
-                                at&=15;     /*  fall through    */
+                                at&=NQ;     /*  fall through    */
                             case 'i':
                             case 'd':
                                 fused|=1;
@@ -813,7 +766,7 @@ int type_expression2(np p)
                                 if(at<CHAR||at>LONG){error(214);return(ok);}
                                 break;
                             case 'u':
-                                fused=1;
+                                fused|=1;
                                 if(al->arg->flags==CEXPR) at|=UNSIGNED;
                                 if(at==(UNSIGNED|LONG)&&fflags!='l'){error(214);return(ok);}
                                 if(fflags=='l'&&at!=(UNSIGNED|LONG)){error(214);return(ok);}
@@ -821,7 +774,7 @@ int type_expression2(np p)
                                 break;
                             case 's':
                                 fused|=1;
-                                if(at!=POINTER||(t->next->flags&15)!=CHAR){error(214);return(ok);}
+                                if(at!=POINTER||(t->next->flags&NQ)!=CHAR){error(214);return(ok);}
                                 break;
                             case 'f':
                             case 'e':
@@ -838,7 +791,7 @@ int type_expression2(np p)
                             case 'n':
                                 fused|=3;
                                 if(at!=POINTER){error(214);return(ok);}
-                                at=t->next->flags&31;
+                                at=t->next->flags&NU;
                                 if(fflags=='h'&&at!=SHORT){error(214);return(ok);}
                                 if(fflags==' '&&at!=INT){error(214);return(ok);}
                                 if(fflags=='l'&&at!=LONG){error(214);return(ok);}
@@ -848,6 +801,9 @@ int type_expression2(np p)
                             }
                         }else{
                             switch(c){
+			    case '%':
+			        fused|=1;
+				break;
                             case '[':
                                 fused|=3;
                                 do{
@@ -858,7 +814,7 @@ int type_expression2(np p)
                             case 's':
                             case 'c':
                                 fused|=1;
-                                if((at&15)!=CHAR){error(214);return(ok);}
+                                if((at&NQ)!=CHAR){error(214);return(ok);}
                                 break;
                             case 'n':
                                 fused|=3;       /*  fall through    */
@@ -887,13 +843,13 @@ int type_expression2(np p)
                                 break;
                             case 'p':
                                 fused|=3;
-                                if(at!=VOID){error(214);return(ok);}
+                                if(at!=POINTER||(t->next->flags&NQ)!=VOID){error(214);return(ok);}
                                 break;
                             default:
                                 error(214);return(ok);
                             }
                         }
-                        al=al->next;
+                        if(c!='%') al=al->next;
                     }
                     if(al){ error(214);return(ok);} /* zu viele */
                     if(DEBUG&1) printf("fused=%d\n",fused);
@@ -920,11 +876,11 @@ int type_expression2(np p)
             i++;al=al->next;
         }
         if(i>=sd->count) return(ok);
-        if((*sd->sl)[i].styp&&((*sd->sl)[i].styp->flags&15)!=VOID){error(83);/*printf("sd->count=%d\n",sd->count);*/}
+        if((*sd->sl)[i].styp&&((*sd->sl)[i].styp->flags&NQ)!=VOID){error(83);/*printf("sd->count=%d\n",sd->count);*/}
         return(ok);
     }
     if(f==COND){
-        if(!arith(p->left->ntyp->flags&15)&&(p->left->ntyp->flags&15)!=POINTER){
+        if(!arith(p->left->ntyp->flags&NQ)&&(p->left->ntyp->flags&NQ)!=POINTER){
             error(29);
             return(0);
         }
@@ -951,32 +907,32 @@ int type_expression2(np p)
     }
     if(f==COLON){
         /*  Hier fehlt noch korrekte Behandlung der Typattribute    */
-        if(arith(p->left->ntyp->flags&15)&&arith(p->right->ntyp->flags&15)){
+        if(arith(p->left->ntyp->flags&NQ)&&arith(p->right->ntyp->flags&NQ)){
             p->ntyp=arith_typ(p->left->ntyp,p->right->ntyp);
             return(1);
         }
-        if(compare_pointers(p->left->ntyp,p->right->ntyp,15)){
+        if(compare_pointers(p->left->ntyp,p->right->ntyp,NQ)){
             p->ntyp=clone_typ(p->left->ntyp);
             return(1);
         }
-        if((p->left->ntyp->flags&15)==POINTER&&(p->right->ntyp->flags&15)==POINTER){
-            if((p->left->ntyp->next->flags&15)==VOID){
+        if((p->left->ntyp->flags&NQ)==POINTER&&(p->right->ntyp->flags&NQ)==POINTER){
+            if((p->left->ntyp->next->flags&NQ)==VOID){
                 p->ntyp=clone_typ(p->left->ntyp);
                 return(1);
             }
-            if((p->right->ntyp->next->flags&15)==VOID){
+            if((p->right->ntyp->next->flags&NQ)==VOID){
                 p->ntyp=clone_typ(p->right->ntyp);
                 return(1);
             }
         }
-        if((p->left->ntyp->flags&15)==POINTER&&p->right->flags==CEXPR){
+        if((p->left->ntyp->flags&NQ)==POINTER&&p->right->flags==CEXPR){
             eval_constn(p->right);
             if(zleqto(vlong,l2zl(0L))&&zuleqto(ul2zul(0UL),vulong)&&zdeqto(d2zd(0.0),vdouble)){
                 p->ntyp=clone_typ(p->left->ntyp);
                 return(1);
             }
         }
-        if((p->right->ntyp->flags&15)==POINTER&&p->left->flags==CEXPR){
+        if((p->right->ntyp->flags&NQ)==POINTER&&p->left->flags==CEXPR){
             eval_constn(p->left);
             if(zleqto(l2zl(0L),vlong)&&zuleqto(ul2zul(0UL),vulong)&&zdeqto(d2zd(0.0),vdouble)){
                 p->ntyp=clone_typ(p->right->ntyp);
@@ -995,9 +951,9 @@ np makepointer(np p)
 /*  Durch mehrmaligen Aufruf von type_expression() ineffizient  */
 {
     struct struct_declaration *sd;
-    if((p->ntyp->flags&15)==ARRAY||(p->ntyp->flags&15)==FUNKT){
+    if((p->ntyp->flags&NQ)==ARRAY||(p->ntyp->flags&NQ)==FUNKT){
         np new=mymalloc(NODES);
-        if((p->ntyp->flags&15)==ARRAY){
+        if((p->ntyp->flags&NQ)==ARRAY){
             new->flags=ADDRESSA;
             new->ntyp=clone_typ(p->ntyp);
             new->ntyp->flags=POINTER;
@@ -1118,16 +1074,16 @@ int alg_opt(np p)
             return(type_expression(p));
         }
     }
-    if(zdeqto(d2zd(0.0),d1)&&zuleqto(ul2zul(0UL),u1)&&zleqto(l2zl(0L),s1)) null1=1; else null1=0;
-    if(zdeqto(d2zd(0.0),d2)&&zuleqto(ul2zul(0UL),u2)&&zleqto(l2zl(0L),s2)) null2=1; else null2=0;
-    eins1=eins2=0;
-    vlong=l2zl(1L);vulong=zl2zul(vlong);vdouble=zl2zd(vlong);
-    if(zdeqto(d1,vdouble)&&zuleqto(u1,vulong)&&zleqto(s1,vlong)) eins1=1;
-    if(zdeqto(d2,vdouble)&&zuleqto(u2,vulong)&&zleqto(s2,vlong)) eins2=1;
-    if(!(p->ntyp->flags&UNSIGNED)){
-        vlong=l2zl(-1L);vdouble=zl2zd(vlong);
-        if(zdeqto(d1,vdouble)&&zleqto(s1,vlong)) eins1=-1;
-        if(zdeqto(d2,vdouble)&&zleqto(s2,vlong)) eins2=-1;
+    null1=null2=eins1=eins2=0;
+    if(c&1){
+      if(zdeqto(d1,d2zd(0.0))&&zuleqto(u1,ul2zul(0UL))&&zleqto(s1,l2zl(0L))) null1=1;   
+      if(zdeqto(d1,d2zd(1.0))&&zuleqto(u1,ul2zul(1UL))&&zleqto(s1,l2zl(1L))) eins1=1;
+      if(!(p->ntyp->flags&UNSIGNED)&&zdeqto(d1,d2zd(-1.0))&&zleqto(s1,l2zl(-1L))) eins1=-1;
+    }
+    if(c&2){
+      if(zdeqto(d2,d2zd(0.0))&&zuleqto(u2,ul2zul(0UL))&&zleqto(s2,l2zl(0L))) null2=1; 
+      if(zdeqto(d2,d2zd(1.0))&&zuleqto(u2,ul2zul(1UL))&&zleqto(s2,l2zl(1L))) eins2=1; 
+      if(!(p->ntyp->flags&UNSIGNED)&&zdeqto(d2,d2zd(-1.0))&&zleqto(s2,l2zl(-1L))) eins2=-1;
     }
     if(c==2){
         /*  a+0=a-0=a^0=a>>0=a<<0=a*1=a/1=a   */
@@ -1206,22 +1162,22 @@ int test_assignment(struct Typ *zt,np q)
 /*  testet, ob q an Typ z zugewiesen werden darf    */
 {
     struct Typ *qt=q->ntyp;
-    if(arith(zt->flags&15)&&arith(qt->flags&15)){
-        if((zt->flags&15)<=LONG&&(qt->flags&15)<=LONG&&
-           !zlleq(sizetab[qt->flags&15],sizetab[zt->flags&15])&&q->flags!=CEXPR)
+    if(arith(zt->flags&NQ)&&arith(qt->flags&NQ)){
+        if((zt->flags&NQ)<=LONG&&(qt->flags&NQ)<=LONG&&
+           !zlleq(sizetab[qt->flags&NQ],sizetab[zt->flags&NQ])&&q->flags!=CEXPR)
             error(166);
         return(1);
     }
-    if(((zt->flags&15)==STRUCT&&(qt->flags&15)==STRUCT)||
-       ((zt->flags&15)==UNION &&(qt->flags&15)==UNION )){
+    if(((zt->flags&NQ)==STRUCT&&(qt->flags&NQ)==STRUCT)||
+       ((zt->flags&NQ)==UNION &&(qt->flags&NQ)==UNION )){
         if(!compare_pointers(zt,qt,255)){
             error(38);return(0);}
         else return(1);
     }
-    if((zt->flags&15)==POINTER&&(qt->flags&15)==POINTER){
-        if((zt->next->flags&15)==VOID&&(qt->next->flags&15)!=FUNKT) return(1);
-        if((qt->next->flags&15)==VOID&&(qt->next->flags&15)!=FUNKT) return(1);
-        if(!compare_pointers(zt->next,qt->next,(c_flags[7]&USEDFLAG)?31:15)){
+    if((zt->flags&NQ)==POINTER&&(qt->flags&NQ)==POINTER){
+        if((zt->next->flags&NQ)==VOID&&(qt->next->flags&NQ)!=FUNKT) return(1);
+        if((qt->next->flags&NQ)==VOID&&(qt->next->flags&NQ)!=FUNKT) return(1);
+        if(!compare_pointers(zt->next,qt->next,(c_flags[7]&USEDFLAG)?NU:NQ)){
             error(85);
         }else{
             if((qt->next->flags&CONST)&&!(zt->next->flags&CONST))
@@ -1233,7 +1189,7 @@ int test_assignment(struct Typ *zt,np q)
         }
         return(1);
     }
-    if((zt->flags&15)==POINTER&&q->flags==CEXPR){
+    if((zt->flags&NQ)==POINTER&&q->flags==CEXPR){
         eval_constn(q);
         if(!(zdeqto(d2zd(0.0),vdouble)&&zleqto(l2zl(0L),vlong)&&zuleqto(ul2zul(0UL),vulong)))
             error(113);

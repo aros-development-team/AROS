@@ -29,9 +29,9 @@ void num_vars(void)
     unsigned int i,j;struct IC *p;struct Var *v,*a[3],*vp;
     if(DEBUG&1024) printf("numerating variables loop1\n");
     /*  alle Indizes auf -1 */
-    a[0]=first_var[0];
-    a[1]=first_var[1];
-    a[2]=merk_varf;
+    a[0]=vl1;
+    a[1]=vl2;
+    a[2]=vl3;
     for(j=0;j<3;j++){
         v=a[j];
         while(v){
@@ -49,7 +49,7 @@ void num_vars(void)
     for(p=first_ic;p;p=p->next){
         if(p->code<LABEL||p->code>BRA){
             int c=p->code;
-            j=p->typf&15;
+            j=p->typf&NQ;
             if(c==SUBPFP) j=POINTER;
             if(c==ADDI2P||c==SUBIFP) j=POINTER;
             if(c==CONVCHAR||c==CONVUCHAR) j=CHAR;
@@ -61,21 +61,21 @@ void num_vars(void)
             if(c==CONVDOUBLE) j=DOUBLE;
             if((p->q1.flags&(VAR|DREFOBJ))==(VAR|DREFOBJ)){
                 v=p->q1.v;
-                if(!v->vtyp->next||(v->vtyp->next->flags&15)!=j) v->flags|=DNOTTYPESAFE;
+                if(!v->vtyp->next||(v->vtyp->next->flags&NQ)!=j) v->flags|=DNOTTYPESAFE;
                 if(v->index<0) v->index=i++;
             }
-            j=p->typf&15;
+            j=p->typf&NQ;
             if(c==SUBPFP) j=POINTER;
             if((p->q2.flags&(VAR|DREFOBJ))==(VAR|DREFOBJ)){
                 v=p->q2.v;
-                if(!v->vtyp->next||(v->vtyp->next->flags&15)!=j) v->flags|=DNOTTYPESAFE;
+                if(!v->vtyp->next||(v->vtyp->next->flags&NQ)!=j) v->flags|=DNOTTYPESAFE;
                 if(v->index<0) v->index=i++;
             }
-            j=p->typf&15;
+            j=p->typf&NQ;
             if(c==ADDI2P||c==SUBIFP) j=POINTER;
             if((p->z.flags&(VAR|DREFOBJ))==(VAR|DREFOBJ)){
                 v=p->z.v;
-                if(!v->vtyp->next||(v->vtyp->next->flags&15)!=j) v->flags|=DNOTTYPESAFE;
+                if(!v->vtyp->next||(v->vtyp->next->flags&NQ)!=j) v->flags|=DNOTTYPESAFE;
                 if(v->index<0) v->index=i++;
             }
         }
@@ -84,21 +84,21 @@ void num_vars(void)
     rcount=i;    /*  Anzahl der DREFOBJ-Variablen    */
     /*  jetzt den Rest  */
     for(p=first_ic;p;p=p->next){
-        if(p->code<LABEL||p->code>BRA){
-            j=p->typf&15;
+        if(1/*p->code<LABEL||p->code>BRA*/){
+            j=p->typf&NQ;
             if((p->q1.flags&(VAR|DREFOBJ))==VAR){
                 v=p->q1.v;
-                if((v->vtyp->flags&15)!=j) v->flags|=NOTTYPESAFE;
+                if((v->vtyp->flags&NQ)!=j) v->flags|=NOTTYPESAFE;
                 if(v->index<0) v->index=i++;
             }
             if((p->q2.flags&(VAR|DREFOBJ))==VAR){
                 v=p->q2.v;
-                if((v->vtyp->flags&15)!=j) v->flags|=NOTTYPESAFE;
+                if((v->vtyp->flags&NQ)!=j) v->flags|=NOTTYPESAFE;
                 if(v->index<0) v->index=i++;
             }
             if((p->z.flags&(VAR|DREFOBJ))==VAR){
                 v=p->z.v;
-                if((v->vtyp->flags&15)!=j) v->flags|=NOTTYPESAFE;
+                if((v->vtyp->flags&NQ)!=j) v->flags|=NOTTYPESAFE;
                 if(v->index<0) v->index=i++;
             }
         }
@@ -153,7 +153,7 @@ void num_vars(void)
         if(vilist[i]->flags&USEDASADR) BSET(av_address,i);
         if(vilist[i]->storage_class==STATIC) BSET(av_statics,i);
         if(i<rcount){
-/*            if((vilist[i]->vtyp->flags&15)!=POINTER){ printf("%s(%ld)\n",vilist[i]->identifier,zl2l(vilist[i]->offset));ierror(0);}*/
+/*            if((vilist[i]->vtyp->flags&NQ)!=POINTER){ printf("%s(%ld)\n",vilist[i]->identifier,zl2l(vilist[i]->offset));ierror(0);}*/
             BSET(av_address,i+vcount-rcount);
             BSET(av_globals,i+vcount-rcount);
         }
@@ -192,7 +192,7 @@ void av_change(struct IC *p,unsigned char *use,unsigned char *def)
     /*  Ein Wert wird nicht zerstoert, wenn es kein elementarer Typ ist und */
     /*  die Groesse kleiner als die Variable (steht in alle solchen ICs in  */
     /*  q2.val.vlong.                                                       */
-    if((p->z.flags&(VAR|DREFOBJ))==VAR&&g1&&g2&&((p->z.v->vtyp->flags&15)<=POINTER||zleqto(p->q2.val.vlong,szof(p->z.v->vtyp)))){
+    if((p->z.flags&(VAR|DREFOBJ))==VAR&&g1&&g2&&((p->z.v->vtyp->flags&NQ)<=POINTER||zleqto(p->q2.val.vlong,szof(p->z.v->vtyp)))){
         i=p->z.v->index;
         if(i>=vcount) ierror(0);
         if(!BTST(use,i)) BSET(def,i);
@@ -285,7 +285,7 @@ int dead_assignments(struct flowgraph *fg)
                     p=p->prev;remove_IC_fg(fg,p->next);
                     continue;
                 }
-                if((p->z.v->vtyp->flags&15)<=POINTER||zleqto(p->q2.val.vlong,szof(p->z.v->vtyp)))
+                if((p->z.v->vtyp->flags&NQ)<=POINTER||zleqto(p->q2.val.vlong,szof(p->z.v->vtyp)))
                     BCLR(isused,i);
                 /*  bei Zuweisung an p wird *p aktiv    */
                 if(i<rcount) BSET(isused,i+vcount-rcount);

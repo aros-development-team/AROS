@@ -1,6 +1,6 @@
 /*  $VER: vbcc (opt.h) V0.4     */
 
-#include "vbc.h"
+#include "supp.h"
 
 #define BSET(array,bit) (array)[(bit)/CHAR_BIT]|=1<<((bit)%CHAR_BIT)
 #define BCLR(array,bit) (array)[(bit)/CHAR_BIT]&=~(1<<((bit)%CHAR_BIT))

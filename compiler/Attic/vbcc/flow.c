@@ -52,7 +52,7 @@ struct flowgraph *construct_flowgraph(void)
     /*  Ausserdem wird der Flussgraph teilweise aufgebaut.      */
     if(DEBUG&1024) {puts("construct_flowgraph(): loop1");/*scanf("%d",&i);*/}
     i=1;g->index=i;
-    for(p=first_ic;p;p=p->next){
+    for(p=first_ic;p;){
         code=p->code;
         if(code>=BEQ&&code<=BRA){
             l=p->typf;
@@ -73,16 +73,19 @@ struct flowgraph *construct_flowgraph(void)
                 g->index=++i;
             }else g->normalout=0;
 
-            currentl=0;continue;
+            currentl=0;p=p->next;continue;
         }
-        if(code==ALLOCREG||code==FREEREG) continue;
-        if(code!=LABEL){currentl=0;continue;}
+        if(code==ALLOCREG||code==FREEREG){p=p->next; continue;}
+        if(code!=LABEL){currentl=0;p=p->next;continue;}
         /*  ist ein Label   */
         l=p->typf;
         if(currentl){
+	    struct IC *m;
             iseq[l-firstl]=currentl;
             if(used[l-firstl]) used[currentl-firstl]=1;
-            remove_IC(p);
+	    m=p;p=p->next;
+            remove_IC(m);
+	    continue;
 /*            if(DEBUG&1024) printf("label %d==%d\n",l,iseq[l-firstl]);*/
         }else{
             currentl=l;
@@ -100,6 +103,7 @@ struct flowgraph *construct_flowgraph(void)
             }else g->branchout=0;
             lg[l-firstl]=g;
         }
+	p=p->next;
     }
     g->end=last_ic;g->normalout=g->branchout=0;
     if(DEBUG&1024) printf("%d basic blocks\n",i);

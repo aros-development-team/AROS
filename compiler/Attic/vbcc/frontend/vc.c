@@ -56,7 +56,7 @@ char *ppv=empty,*ccv=empty,*asv=empty,*ldv=empty,*l2v=empty,*rmv=empty;
 #ifdef AMIGA
 const char *config_names[]={"vc.config","ENV:vc.config","VBCC:vc.config"};
 #else
-const char *config_names[]={"vc.config","/etc/vc.config"};
+const char *config_names[]={"vc.config","~/vc.config","/etc/vc.config"};
 #endif
 
 /*  String fuer die Default libraries   */

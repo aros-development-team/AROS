@@ -4,8 +4,6 @@
 
 static char FILE_[]=__FILE__;
 
-struct IC *first_ic=0,*last_ic=0;
-int float_used;
 
 int do_arith(np,struct IC *,np,struct obj *);
 
@@ -41,8 +39,8 @@ void inline_memcpy(np z,np q,zlong size)
 /*  fuegt ein ASSIGN-IC ein, das memcpy(z,q,size) entspricht    */
 {
     struct IC *new=mymalloc(ICS);
-    if((z->ntyp->flags&15)!=POINTER) ierror(0);
-    if((q->ntyp->flags&15)!=POINTER) ierror(0);
+    if((z->ntyp->flags&NQ)!=POINTER) ierror(0);
+    if((q->ntyp->flags&NQ)!=POINTER) ierror(0);
 
     gen_IC(z,0,0);
     if(z->o.flags&DREFOBJ){
@@ -194,25 +192,11 @@ void add_IC(struct IC *new)
     ic_count++;
     /*  Merken, on Fliesskomma benutzt wurde    */
     if(code!=LABEL&&(code<BEQ||code>BRA))
-        if((new->typf&15)==FLOAT||(new->typf&15)==DOUBLE) float_used=1;
+        if((new->typf&NQ)==FLOAT||(new->typf&NQ)==DOUBLE) float_used=1;
     if((new->q1.flags&SCRATCH)&&(new->q1.reg!=new->z.reg||!(new->z.flags&REG)))
         free_reg(new->q1.reg);
     if((new->q2.flags&SCRATCH)&&(new->q2.reg!=new->z.reg||!(new->z.flags&REG)))
         free_reg(new->q2.reg);
-}
-void free_IC(struct IC *p)
-/*  Gibt IC-Liste inkl. Typen frei                  */
-{
-    struct IC *merk;
-    if(DEBUG&1) printf("free_IC()\n");
-    while(p){
-        if(p->q1.am) free(p->q1.am);
-        if(p->q2.am) free(p->q2.am);
-        if(p->z.am) free(p->z.am);
-        merk=p->next;
-        free(p);
-        p=merk;
-    }
 }
 void gen_IC(np p,int ltrue,int lfalse)
 /*  Erzeugt eine IC-Liste aus einer expression      */
@@ -264,11 +248,11 @@ void gen_IC(np p,int ltrue,int lfalse)
     }
     if(p->flags==CAST){
         gen_IC(p->left,0,0);
-        if((p->ntyp->flags&15)==VOID){
+        if((p->ntyp->flags&NQ)==VOID){
             if(p->left->o.flags&SCRATCH) free_reg(p->left->o.reg);
             p->o.flags=0;
         }else{
-            convert(p->left,p->ntyp->flags&31);
+            convert(p->left,p->ntyp->flags&NU);
             p->o=p->left->o;
         }
         return;
@@ -279,7 +263,7 @@ void gen_IC(np p,int ltrue,int lfalse)
         return;
     }
     new=mymalloc(ICS);
-    new->typf=p->ntyp->flags&31;
+    new->typf=p->ntyp->flags&NU;
     new->q1.reg=new->q2.reg=new->z.reg=0;
     new->q1.flags=new->q2.flags=new->z.flags=0;
     if((p->flags>=LSHIFT&&p->flags<=MOD)||(p->flags>=OR&&p->flags<=AND)||p->flags==PMULT){
@@ -319,7 +303,7 @@ void gen_IC(np p,int ltrue,int lfalse)
         new->code=ASSIGN;
         gen_IC(p->right,0,0);
         gen_IC(p->left,0,0);
-        convert(p->right,p->ntyp->flags&31);
+        convert(p->right,p->ntyp->flags&NU);
         new->q1=p->right->o;
         new->z=p->left->o;
         new->q2.val.vlong=szof(p->left->ntyp);
@@ -350,9 +334,9 @@ void gen_IC(np p,int ltrue,int lfalse)
                 n=n->prev;
             }
         }
-        convert(p->right,p->ntyp->flags&31);
+        convert(p->right,p->ntyp->flags&NU);
         new=mymalloc(ICS);
-        new->typf=p->ntyp->flags&31;
+        new->typf=p->ntyp->flags&NU;
         new->q2.flags=0;
         new->code=ASSIGN;
         new->q1=p->right->o;
@@ -379,7 +363,7 @@ void gen_IC(np p,int ltrue,int lfalse)
     }
     if(p->flags==ADDRESS||p->flags==ADDRESSA||p->flags==ADDRESSS){
         new->code=ADDRESS;
-        new->typf=p->left->ntyp->flags&31;
+        new->typf=p->left->ntyp->flags&NU;
         gen_IC(p->left,0,0);
         if(p->left->o.flags&VAR) p->left->o.v->flags|=USEDASSOURCE|USEDASDEST;
         if(p->left->o.flags&DREFOBJ){
@@ -467,8 +451,8 @@ void gen_IC(np p,int ltrue,int lfalse)
             swapped=1;
         }else swapped=0;
         new->code=COMPARE;
-        tl=p->left->ntyp->flags&31;tr=p->right->ntyp->flags&31;
-        if(p->right->flags==CEXPR&&(tr&15)<FLOAT&&(tl&15)<FLOAT){
+        tl=p->left->ntyp->flags&NU;tr=p->right->ntyp->flags&NU;
+        if(p->right->flags==CEXPR&&(tr&NQ)<FLOAT&&(tl&NQ)<FLOAT){
             int negativ;
             eval_constn(p->right);
             if(zlleq(vlong,0)) negativ=1; else negativ=0;
@@ -478,13 +462,13 @@ void gen_IC(np p,int ltrue,int lfalse)
                 tr=tl;
             }
         }
-        if(arith(tl&15)&&(tl!=tr||!shortcut(COMPARE,tl))){
+        if(arith(tl&NQ)&&(tl!=tr||!shortcut(COMPARE,tl))){
             struct Typ *t;
             t=arith_typ(p->left->ntyp,p->right->ntyp);
-            new->typf=t->flags&31;
+            new->typf=t->flags&NU;
             freetyp(t);
         }else{
-            new->typf=p->left->ntyp->flags&31;
+            new->typf=p->left->ntyp->flags&NU;
         }
         gen_IC(p->left,0,0);
         convert(p->left,new->typf);
@@ -517,7 +501,6 @@ void gen_IC(np p,int ltrue,int lfalse)
     }
     if(p->flags==CALL){
         int r=0;struct obj *op;zlong sz;
-        function_calls+=currentpri;
         if(p->left->flags==ADDRESS&&p->left->left->flags==IDENTIFIER){
             struct Var *v;
             gen_IC(p->left,0,0); r=1;
@@ -534,7 +517,7 @@ void gen_IC(np p,int ltrue,int lfalse)
                         printf("%s(%ld)\n",vp->identifier,zl2l(vp->offset));
                 }
                 for(vp=v->fi->vars;vp;vp=vp->next){
-                    if(zleqto(vp->offset,l2zl(0L))&&*vp->identifier&&(vp->storage_class==AUTO||vp->storage_class==REGISTER)) arg_cnt++;
+                    if((zleqto(vp->offset,l2zl(0L))||vp->reg)&&*vp->identifier&&(vp->storage_class==AUTO||vp->storage_class==REGISTER)) arg_cnt++;
                 }
 
                 /*  Argumente in die ersten Parametervariablen kopieren */
@@ -543,7 +526,7 @@ void gen_IC(np p,int ltrue,int lfalse)
 
                 al=p->alist;vp=v->fi->vars;i=0;
                 while(al){
-                    while(vp&&(!*vp->identifier||!zleqto(vp->offset,l2zl(0L))||(vp->storage_class!=REGISTER&&vp->storage_class!=AUTO))) vp=vp->next;
+                    while(vp&&(!*vp->identifier||(!zleqto(vp->offset,l2zl(0L))&&!vp->reg)||(vp->storage_class!=REGISTER&&vp->storage_class!=AUTO))) vp=vp->next;
                     if(!vp){ error(39); break; }
                     if(i>=arg_cnt) ierror(0);
                     if(DEBUG&1024) printf("arg: %s(%ld)\n",vp->identifier,zl2l(vp->offset));
@@ -580,7 +563,7 @@ void gen_IC(np p,int ltrue,int lfalse)
                 }
 
                 /*  Rueckgabewert   */
-                if((p->ntyp->flags&15)!=VOID){
+                if((p->ntyp->flags&NQ)!=VOID){
                     p->o.flags=SCRATCH|VAR;
                     p->o.reg=0;p->o.val.vlong=l2zl(0L);
                     p->o.v=add_var(empty,clone_typ(p->ntyp),AUTO,0);
@@ -758,13 +741,13 @@ void gen_IC(np p,int ltrue,int lfalse)
             struct obj o;
             new=mymalloc(ICS);
             new->code=ADDRESS;
-            new->typf=p->ntyp->flags&31;
+            new->typf=p->ntyp->flags&NU;
             new->q1.flags=VAR;
             new->q1.v=add_var(empty,clone_typ(p->ntyp),AUTO,0);
             new->q1.val.vlong=l2zl(0L);
             op=&new->q1;
             new->q2.flags=0;
-            get_scratch(&new->z,POINTER,p->ntyp->flags&31);
+            get_scratch(&new->z,POINTER,p->ntyp->flags&NU);
             o=new->z;
             add_IC(new);
             new=mymalloc(ICS);
@@ -778,6 +761,7 @@ void gen_IC(np p,int ltrue,int lfalse)
         }
         /*  Scratchregister evtl. sichern   */
         savescratch(MOVEFROMREG,last_ic,0);
+	function_calls+=currentpri;
         new=mymalloc(ICS);
         new->code=CALL;
         new->typf=FUNKT;
@@ -786,7 +770,7 @@ void gen_IC(np p,int ltrue,int lfalse)
         new->q2.val.vlong=sz; /*  Groesse der Parameter auf dem Stack */
         add_IC(new);
         r=0;
-        if((p->ntyp->flags&15)!=VOID){
+        if((p->ntyp->flags&NQ)!=VOID){
             new=mymalloc(ICS);
             new->code=GETRETURN;
             new->q1.flags=new->q2.flags=0;
@@ -794,12 +778,12 @@ void gen_IC(np p,int ltrue,int lfalse)
             new->q2.val.vlong=szof(p->ntyp);
             new->typf=p->ntyp->flags;
             if(freturn(p->ntyp)){
-                int t=p->ntyp->flags&15;
+                int t=p->ntyp->flags&NQ;
                 if(t==STRUCT||t==UNION){
                     new->z.v=add_var(empty,clone_typ(p->ntyp),AUTO,0);
                     new->z.flags=VAR;
                     new->z.val.vlong=l2zl(0L);
-                }else get_scratch(&new->z,p->ntyp->flags&31,0);
+                }else get_scratch(&new->z,p->ntyp->flags&NU,0);
             } else new->z=*op;
             if((new->z.flags&(REG|DREFOBJ))==REG) r=new->z.reg;
             p->o=new->z;
@@ -844,17 +828,17 @@ void gen_IC(np p,int ltrue,int lfalse)
         if(p->flags==POSTINC||p->flags==POSTDEC){
             new=mymalloc(ICS);
             new->code=ASSIGN;
-            new->typf=p->ntyp->flags&31;
-            new->q2.val.vlong=sizetab[p->ntyp->flags&15];
+            new->typf=p->ntyp->flags&NU;
+            new->q2.val.vlong=sizetab[p->ntyp->flags&NQ];
             new->q1=p->left->o;
             new->q1.flags&=~SCRATCH;
-            get_scratch(&new->z,p->left->ntyp->flags&31,0);
+            get_scratch(&new->z,p->left->ntyp->flags&NU,0);
             new->q2.flags=0;
             o=new->z;
             add_IC(new);
             new=mymalloc(ICS);
         }else o=p->left->o;
-        if((p->left->ntyp->flags&15)==POINTER){
+        if((p->left->ntyp->flags&NQ)==POINTER){
             if(p->flags==PREINC||p->flags==POSTINC) new->code=ADDI2P; else new->code=SUBIFP;
             vlong=szof(p->left->ntyp->next);
             new->q2.val.vint=zl2zi(vlong);
@@ -865,7 +849,7 @@ void gen_IC(np p,int ltrue,int lfalse)
             add_IC(new);
         }else{
             if(p->flags==PREINC||p->flags==POSTINC) new->code=ADD; else new->code=SUB;
-            new->typf=p->ntyp->flags&31;
+            new->typf=p->ntyp->flags&NU;
             new->q1=p->left->o;
             new->z=p->left->o;
             new->q2.flags=KONST;
@@ -911,19 +895,19 @@ void gen_IC(np p,int ltrue,int lfalse)
         }
         gen_label(ltrue);
         gen_IC(p->right->left,0,0);
-        if((p->ntyp->flags&15)!=VOID){
-            convert(p->right->left,p->ntyp->flags&31);
+        if((p->ntyp->flags&NQ)!=VOID){
+            convert(p->right->left,p->ntyp->flags&NU);
             if((p->right->left->o.flags&(SCRATCH|DREFOBJ))==SCRATCH){
                 p->o=p->right->left->o;
             }else{
-                get_scratch(&p->o,p->ntyp->flags&31,0);
+                get_scratch(&p->o,p->ntyp->flags&NU,0);
                 new=mymalloc(ICS);
                 new->code=ASSIGN;
                 new->q1=p->right->left->o;
                 new->z=p->o;
                 new->q2.flags=0;
                 new->q2.val.vlong=szof(p->ntyp);
-                new->typf=p->ntyp->flags&31;
+                new->typf=p->ntyp->flags&NU;
                 p->o=new->z;
                 add_IC(new);
             }
@@ -934,15 +918,15 @@ void gen_IC(np p,int ltrue,int lfalse)
         add_IC(new);
         gen_label(lfalse);
         gen_IC(p->right->right,0,0);
-        if((p->ntyp->flags&15)!=VOID){
-            convert(p->right->right,p->ntyp->flags&31);
+        if((p->ntyp->flags&NQ)!=VOID){
+            convert(p->right->right,p->ntyp->flags&NU);
             new=mymalloc(ICS);
             new->code=ASSIGN;
             new->q1=p->right->right->o;
             new->z=p->o;
             new->q2.flags=0;
             new->q2.val.vlong=szof(p->ntyp);
-            new->typf=p->ntyp->flags&31;
+            new->typf=p->ntyp->flags&NU;
             add_IC(new);
         }
         gen_label(lout);
@@ -967,31 +951,51 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
     int t,reg;struct IC *new;struct regargs_list *nrl;zlong sz,of;
 #ifdef HAVE_REGPARMS
     int stdreg;
+#endif
     if(!al) return(0);
+#ifdef HAVE_REGPARMS
     if(n<sd->count) stdreg=reg_parm(reg_handle,(*sd->sl)[n].styp);
         else        stdreg=reg_parm(reg_handle,al->arg->ntyp);
-    if(al->next) of=push_args(al->next,sd,n+1,rl,reg_handle); else of=l2zl(0L);
-#else
-    if(!al) return(0);
-    if(al->next) of=push_args(al->next,sd,n+1,rl); else of=l2zl(0L);
-#endif
-    if(!al->arg) ierror(0);
-    if(!sd) ierror(0);
-    gen_IC(al->arg,0,0);
-#ifdef HAVE_REGPARMS
     reg=stdreg;
 #else
     reg=0;
 #endif
+    if(!al->arg) ierror(0);
+    if(!sd) ierror(0);
     if(n<sd->count){
-        t=(*sd->sl)[n].styp->flags;sz=szof((*sd->sl)[n].styp);
-        reg=(*sd->sl)[n].reg;
+      t=(*sd->sl)[n].styp->flags;sz=szof((*sd->sl)[n].styp);
+      reg=(*sd->sl)[n].reg;
     }else{
-        t=al->arg->ntyp->flags;sz=szof(al->arg->ntyp);
+      t=al->arg->ntyp->flags;sz=szof(al->arg->ntyp);
     }
-    if((t&15)>=CHAR&&(t&15)<=LONG) {t=int_erw(t);sz=sizetab[t&15];}
-    if((t&15)==FLOAT&&n>=sd->count) {t=DOUBLE;sz=sizetab[t];}
-    convert(al->arg,t&31);
+    if((t&NQ)>=CHAR&&(t&NQ)<=LONG) {t=int_erw(t);sz=sizetab[t&NQ];}
+    if((t&NQ)==FLOAT&&n>=sd->count) {t=DOUBLE;sz=sizetab[t];}
+    sz=zlmult(zldiv(zladd(sz,zlsub(maxalign,l2zl(1L))),maxalign),maxalign);
+#ifdef ORDERED_PUSH
+    if(reg==0){
+      gen_IC(al->arg,0,0);
+      convert(al->arg,t&NU);
+      /*  Parameteruebergabe ueber Stack. */
+      new=mymalloc(ICS);
+      new->code=PUSH;
+      new->typf=t;
+      new->q1=al->arg->o;
+      new->q2.flags=new->z.flags=0;
+      new->q2.val.vlong=sz;
+      add_IC(new);
+      if(!al->next) return sz;
+    }
+#endif
+#ifdef HAVE_REGPARMS
+    if(al->next) of=push_args(al->next,sd,n+1,rl,reg_handle); else of=l2zl(0L);
+#else
+    if(al->next) of=push_args(al->next,sd,n+1,rl); else of=l2zl(0L);
+#endif
+#ifdef ORDERED_PUSH
+    if(reg==0) return zladd(of,sz);
+#endif
+    gen_IC(al->arg,0,0);
+    convert(al->arg,t&NU);
     if(reg==0){
         /*  Parameteruebergabe ueber Stack. */
         new=mymalloc(ICS);
@@ -999,7 +1003,7 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
         new->typf=t;
         new->q1=al->arg->o;
         new->q2.flags=new->z.flags=0;
-        new->q2.val.vlong=zlmult(zldiv(zladd(sz,zlsub(maxalign,l2zl(1L))),maxalign),maxalign);
+        new->q2.val.vlong=sz;
         add_IC(new);
         return(zladd(of,sz));
     }else{
@@ -1009,7 +1013,7 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
         /*  Version fuer Optimizer. */
             t2=mymalloc(TYPS);
             t2->flags=t;
-            if((t&15)==POINTER){
+            if((t&NQ)==POINTER){
                 t2->next=mymalloc(TYPS);
                 t2->next->flags=VOID;
                 t2->next->next=0;
@@ -1020,7 +1024,7 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
             new->typf=t;
             new->q1=al->arg->o;
             new->q2.flags=0;
-            new->q2.val.vlong=sz;
+            new->q2.val.vlong=sizetab[t&NQ];
             new->z.flags=VAR;
             new->z.v=v;
             new->z.val.vlong=l2zl(0L);
@@ -1088,7 +1092,7 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
             new->typf=t;
             new->q1=al->arg->o;
             new->q2.flags=new->z.flags=0;
-            new->q2.val.vlong=sz;
+            new->q2.val.vlong=sizetab[t&NQ];
             new->z.flags=REG;
             new->z.reg=reg;
             add_IC(new);
@@ -1106,7 +1110,7 @@ void convert(np p,int f)
 /*  konvertiert das Objekt in p->o in bestimmten Typ    */
 {
     struct IC *new;
-    if((f&15)==VOID||(p->ntyp->flags&31)==f) return;
+    if((f&NQ)==VOID||(p->ntyp->flags&NU)==f) return;
     if(p->flags==CEXPR||p->flags==PCEXPR){
         eval_constn(p);
         p->ntyp->flags=f;
@@ -1118,7 +1122,7 @@ void convert(np p,int f)
     new=mymalloc(ICS);
     new->q1=p->o;
     new->q2.flags=0;
-    new->code=CONVCHAR+(p->ntyp->flags&15)-CHAR;
+    new->code=CONVCHAR+(p->ntyp->flags&NQ)-CHAR;
     if(p->ntyp->flags&UNSIGNED) new->code+=8;
     new->typf=f;
     if(!regok(p->o.reg,f,0)||!(p->o.flags&SCRATCH)){
@@ -1224,9 +1228,9 @@ void scratch_var(struct obj *o,int t)
 /*  nicht effizient, aber wer hat schon so wenig Register...    */
 {
     struct Typ *nt=mymalloc(TYPS);
-    if((t&15)<CHAR||(t&15)>POINTER) ierror(0);
-    nt->flags=t&31;
-    if((t&15)==POINTER){
+    if((t&NQ)<CHAR||(t&NQ)>POINTER) ierror(0);
+    nt->flags=t&NU;
+    if((t&NQ)==POINTER){
         nt->next=mymalloc(TYPS);
         nt->next->flags=VOID;
         nt->next->next=0;
@@ -1244,16 +1248,6 @@ void get_scratch(struct obj *o,int t1,int t2)
         scratch_var(o,t1);
     }
 }
-void remove_IC(struct IC *p)
-/*  entfernt IC p aus Liste */
-{
-    if(p->prev) p->prev->next=p->next; else first_ic=p->next;
-    if(p->next) p->next->prev=p->prev; else last_ic=p->prev;
-    if(p->q1.am) free(p->q1.am);
-    if(p->q2.am) free(p->q2.am);
-    if(p->z.am) free(p->z.am);
-    free(p);
-}
 int do_arith(np p,struct IC *new,np dest,struct obj *o)
 /*  erzeugt IC new fuer einen arithmetischen Knoten und speichert das   */
 /*  Resultat vom Unterknoten dest in o (fuer a op= b)               */
@@ -1267,7 +1261,7 @@ int do_arith(np p,struct IC *new,np dest,struct obj *o)
     gen_IC(p->right,0,0);
     if(dest&&p->right==dest) {*o=p->right->o;f++;}
 
-    if((p->left->ntyp->flags&15)==POINTER&&(p->right->ntyp->flags&15)==POINTER){
+    if((p->left->ntyp->flags&NQ)==POINTER&&(p->right->ntyp->flags&NQ)==POINTER){
     /*  Subtrahieren zweier Pointer                                 */
         if(p->flags!=SUB) ierror(0);
         new->typf=INT;
@@ -1301,29 +1295,29 @@ int do_arith(np p,struct IC *new,np dest,struct obj *o)
         }
         return(f);
     }
-    if((p->flags==ADD||p->flags==SUB)&&(p->ntyp->flags&15)==POINTER){
+    if((p->flags==ADD||p->flags==SUB)&&(p->ntyp->flags&NQ)==POINTER){
     /*  Addieren und Subtrahieren eines Integers zu einem Pointer   */
         if(p->flags==ADD) new->code=ADDI2P; else new->code=SUBIFP;
-        new->typf=p->right->ntyp->flags&31;
+        new->typf=p->right->ntyp->flags&NU;
         new->q1=p->left->o;
         /*  kleinere Typen als MINADDI2P erst in diesen wandeln */
-        if((new->typf&15)<MINADDI2P){convert(p->right,/*UNSIGNED|*/MINADDI2P);new->typf=/*UNSIGNED|*/MINADDI2P;}
+        if((new->typf&NQ)<MINADDI2P){convert(p->right,/*UNSIGNED|*/MINADDI2P);new->typf=/*UNSIGNED|*/MINADDI2P;}
         new->q2=p->right->o;
-        if(!dest&&(p->left->o.flags&SCRATCH)&&regok(new->q1.reg,POINTER,p->left->ntyp->next->flags&31)){
+        if(!dest&&(p->left->o.flags&SCRATCH)&&regok(new->q1.reg,POINTER,p->left->ntyp->next->flags&NU)){
             new->z=p->left->o;
             new->z.flags&=(~DREFOBJ);
         }else{
-            get_scratch(&new->z,POINTER,p->left->ntyp->next->flags&31);
+            get_scratch(&new->z,POINTER,p->left->ntyp->next->flags&NU);
         }
         p->o=new->z;
         add_IC(new);
         return(f);
     }
-    convert(p->left,p->ntyp->flags&31);
-    convert(p->right,p->ntyp->flags&31);
+    convert(p->left,p->ntyp->flags&NU);
+    convert(p->right,p->ntyp->flags&NU);
     new->q1=p->left->o;
     new->q2=p->right->o;
-    new->typf=p->ntyp->flags&31;
+    new->typf=p->ntyp->flags&NU;
     /*  Bei dest!=0, d.h. ASSIGNADD, darf q1 nicht als Ziel benuzt werden!  */
     if(!dest&&(new->q1.flags&SCRATCH)&&regok(new->q1.reg,p->ntyp->flags,0)){
         new->z=new->q1;
