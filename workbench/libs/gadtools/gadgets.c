@@ -271,12 +271,12 @@ struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
     	switch (tag->ti_Tag)
     	{
     	case GA_Disabled:		tags[1].ti_Data = tidata; break;
-    	case GTPA_Depth:		tags[2].ti_Data	= tidata; break;
+    	case GTPA_Depth:		tags[2].ti_Data	= tidata; tags[7].ti_Tag = TAG_IGNORE;break;
     	case GTPA_Color:		tags[3].ti_Data	= tidata; break;
     	case GTPA_ColorOffset:		tags[4].ti_Data	= tidata; break;
     	case GTPA_IndicatorWidth:	tags[5].ti_Data	= tidata; break;
     	case GTPA_IndicatorHeight:	tags[6].ti_Data	= tidata; break;
-    	case GTPA_NumColors:		tags[7].ti_Data	= tidata; break;
+    	case GTPA_NumColors:		tags[7].ti_Data	= tidata; tags[2].ti_Tag = TAG_IGNORE;break;
     	case GTPA_ColorTable:		tags[8].ti_Data	= tidata; break;
     	    
     	} /* switch() */
@@ -719,7 +719,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
  
     
     UWORD freedom = stags[3].ti_Data; /* default */
-    WORD arrowdim, arrowkind = SCROLLER_KIND;
+    WORD arrowdim = -1, arrowkind = SCROLLER_KIND;
     BOOL relverify, immediate;
     ULONG scr_dim_tag;
     
@@ -765,6 +765,17 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     stags[11].ti_Data = (IPTR)stdgadtags;
     
     /* Substract the arrow's total size from the sroller's size */
+
+    if (arrowdim == -1)
+    {
+    	if (freedom == FREEVERT)
+	{
+	    arrowdim = GetTagData(GA_Width, 16, stdgadtags);
+	} else {
+	    arrowdim = GetTagData(GA_Height, 16, stdgadtags);
+	}
+    }
+    
     scr_dim_tag = ((freedom == FREEVERT) ? GA_Height : GA_Width);
     
     scr_dim_tagitem = FindTagItem(scr_dim_tag, stdgadtags);
@@ -1101,7 +1112,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     Class *cl;
 
 
-    WORD scroller_width = 20; /* default */
+    WORD scroller_width = 16; /* default */
     
     struct TagItem *lv_width_tag, *lv_height_tag;
     WORD lv_width, lv_height, viewheight;
@@ -1247,7 +1258,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
             	/* The listview will initialize the scrollers top, visible & total,
             	** in its GM_LAYOUT method
             	*/
-            	{GTSC_Arrows, 	10L},
+            	{GTSC_Arrows, 	scroller_width},
             	{PGA_Freedom,	LORIENT_VERT},
 		{GTA_Scroller_ArrowKind, LISTVIEW_KIND},
 		{GTA_Scroller_ScrollerKind, LISTVIEW_KIND},
