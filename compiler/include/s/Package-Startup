@@ -1,0 +1,4 @@
+Assign Development: SYS:Development
+Assign INCLUDE: Development:include
+Assign LIB: Development:lib
+Path ADD Development:bin
