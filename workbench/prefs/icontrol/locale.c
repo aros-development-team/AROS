@@ -36,7 +36,7 @@ void CleanupLocale(void)
 
 STRPTR MSG(ULONG id)
 {
-    STRPTR retval;
+    CONST_STRPTR retval;
     
     if (catalog)
     {
@@ -45,7 +45,7 @@ STRPTR MSG(ULONG id)
 	retval = CatCompArray[id].cca_Str;
     }
     
-    return retval;
+    return (STRPTR)retval;
 }
 
 /*********************************************************************************************/
