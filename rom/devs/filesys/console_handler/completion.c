@@ -615,6 +615,14 @@ static BOOL DoChooseReq(struct conbase *conbase, struct completioninfo *ci)
 					    	scroll = 1;
 						extreme = TRUE;
 						break;
+						
+					    case RAWKEY_NM_WHEEL_UP:
+					    	scroll = -3;
+						break;
+						
+					    case RAWKEY_NM_WHEEL_DOWN:
+					    	scroll = 3;
+						break;
 					}
 					
 					if (msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
