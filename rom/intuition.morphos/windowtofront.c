@@ -87,6 +87,8 @@ static VOID int_windowtofront(struct WindowToFrontActionMsg *msg,
 
     DEBUG_WINDOWTOFRONT(dprintf("IntWindowToFront: Window 0x%lx\n", window));
 
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+
     if (!(layer->Flags & LAYERBACKDROP))
     {
         LockLayers(&screen->LayerInfo);

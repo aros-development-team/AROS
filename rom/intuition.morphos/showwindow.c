@@ -102,7 +102,9 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 {
     struct Window *window = msg->window;
     struct Library *CGXSystemBase;
-
+    
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+    
     SANITY_CHECK(window)
     if ((CGXSystemBase = OpenLibrary("cgxsystem.library", 0)))
     {
@@ -120,6 +122,8 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 {
     struct Window *window = msg->window;
     struct Screen *screen = window->WScreen;
+
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
 
     if (!IsWindowVisible(window))
     {

@@ -75,7 +75,9 @@ AROS_LH5(void, ChangeWindowBox,
 
     if (!window)
         return;
-
+    
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+    
     EXTENDWORD(left);
     EXTENDWORD(top);
     EXTENDWORD(width);

@@ -105,6 +105,8 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
     struct IntScreen *scr = NULL;
     struct InputEvent *ie;
 
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+
     if ((!iihdata->ActiveGadget) || (iihdata->ActiveGadget && ((iihdata->ActiveGadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH)))
     {
 
