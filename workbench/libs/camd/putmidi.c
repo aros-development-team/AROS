@@ -33,7 +33,7 @@
     INPUTS
 		link - pointer to the midilink to send to.
 		msg  - The complete message to send. A message can not hold more
-		       than 3 bytes, so it fits fine in an ULONG integer. See NOTES
+		       than 3 bytes, so it fits fine in a ULONG integer. See NOTES
 		       to see how a message is built up.
 
     RESULT
