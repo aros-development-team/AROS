@@ -16,6 +16,7 @@ FILES	    := \
 	copy \
 	date \
 	delete \
+	devlist \
 	dir \
 	echo \
 	execute \
@@ -27,6 +28,7 @@ FILES	    := \
 	rename \
 	run \
 	shell \
+	setlocale \
 	tasklist \
 	type \
 	wait \
@@ -39,6 +41,7 @@ FILES	    := \
 	Protect \
 	RequestChoice \
 	Set \
+	SetClock \
 	Setenv \
 	Unalias \
 	Version
