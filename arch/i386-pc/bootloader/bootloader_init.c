@@ -70,6 +70,8 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
+    AROS_USERFUNC_INIT
+
     UWORD neg = AROS_ALIGN(LIB_VECTSIZE * 3);
     struct BootLoaderBase * BootLoaderBase = NULL;
     struct arosmb *mb = (struct arosmb *)0x1000;
@@ -203,4 +205,6 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 	}
     }
     return BootLoaderBase;
+
+    AROS_USERFUNC_EXIT
 }

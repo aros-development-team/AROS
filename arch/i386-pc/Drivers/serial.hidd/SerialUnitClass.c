@@ -446,6 +446,8 @@ AROS_UFH3(void, serialunit_receive_data,
    AROS_UFHA(APTR, iC, A5),
    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+  AROS_USERFUNC_INIT
+
   struct HIDDSerialUnitData * data = iD;
   int len = 0;
   UBYTE buffer[READBUFFER_SIZE];
@@ -465,6 +467,10 @@ AROS_UFH3(void, serialunit_receive_data,
 
   if (NULL != data->DataReceivedCallBack)
     data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
+
+  return;
+
+  AROS_USERFUNC_EXIT
 }
 
 AROS_UFH3(ULONG, serialunit_write_more_data,
@@ -472,6 +478,8 @@ AROS_UFH3(ULONG, serialunit_write_more_data,
    AROS_UFHA(APTR, iC, A5),
    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+  AROS_USERFUNC_INIT
+
   ULONG bytes = 0;
   struct HIDDSerialUnitData * data = iD;
 
@@ -490,6 +498,8 @@ AROS_UFH3(ULONG, serialunit_write_more_data,
   if (NULL != data->DataWriteCallBack)
     bytes = data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
   return bytes;
+
+  AROS_USERFUNC_EXIT
 }
 
 
