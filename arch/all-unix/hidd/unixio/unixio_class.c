@@ -415,7 +415,6 @@ kprintf("\tUnixIO::Wait() Task %s (%x) waiting on port %x\n",FindTask(NULL)->tc_
 static IPTR unixio_asyncio(Class *cl, Object *o, struct uioMsgAsyncIO *msg)
 {
     IPTR retval = 0UL;
-    struct UnixIOData *id = INST_DATA(cl, o);
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
     struct MsgPort  * port = msg->um_ReplyPort;
     struct uio_data *ud = (struct uio_data *)cl->UserData;
@@ -458,7 +457,6 @@ static IPTR unixio_asyncio(Class *cl, Object *o, struct uioMsgAsyncIO *msg)
 *****************************/
 static VOID unixio_abortasyncio(Class *cl, Object *o, struct uioMsgAbortAsyncIO *msg)
 {
-    struct UnixIOData *id = INST_DATA(cl, o);
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
     struct uio_data *ud = (struct uio_data *)cl->UserData;
     struct MsgPort  * port = CreatePort(NULL, 0);
