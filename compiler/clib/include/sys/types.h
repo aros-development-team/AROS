@@ -11,6 +11,7 @@
 
 #include <exec/types.h>
 #include <aros/macros.h>
+#include <stdint.h>
 
 #if !defined(_SIZE_T) && !defined(__typedef_size_t)
 #   define __typedef_size_t
@@ -53,13 +54,9 @@ typedef unsigned short  u_short;
 typedef unsigned int    u_int;
 typedef unsigned long   u_long;
 
-typedef QUAD            int64_t;        /* 64-bit signed integer   */
 typedef UQUAD           u_int64_t;      /* 64-bit unsigned integer */
-typedef LONG            int32_t;        /* 32-bit signed integer   */
 typedef ULONG           u_int32_t;      /* 32-bit unsigned integer */
-typedef WORD            int16_t;        /* 16-bit signed integer   */
 typedef UWORD           u_int16_t;      /* 16-bit unsigned integer */
-typedef BYTE            int8_t;         /* 8-bit signed integer    */
 typedef UBYTE           u_int8_t;       /* 8-bit unsigned integer  */
 
 typedef UQUAD           u_quad_t;

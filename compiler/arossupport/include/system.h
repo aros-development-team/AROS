@@ -42,10 +42,14 @@
 #   define EXTERN extern "C"
 #   define BEGIN_EXTERN     extern "C" {
 #   define END_EXTERN	    };
+#   define __BEGIN_CDEFS    extern "C" {
+#   define __END_CDEFS	    };
 #else
 #   define EXTERN extern
 #   define BEGIN_EXTERN
 #   define END_EXTERN
+#   define __BEGIN_CDEFS
+#   define __END_CDEFS
 #endif
 
 #if defined(__STDC__) || defined(__cplusplus)
