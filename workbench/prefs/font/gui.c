@@ -58,7 +58,7 @@ void FontPrefs2FontString
 
 BOOL FontString2FontPrefs(struct FontPrefs *fp, CONST_STRPTR buffer)
 {
-    STRPTR separator    = PathPart(buffer);
+    STRPTR separator    = PathPart((STRPTR)buffer);
     ULONG  nameLength   = separator - buffer;
     ULONG  suffixLength = strlen(".font");
     ULONG  size;
@@ -76,7 +76,7 @@ BOOL FontString2FontPrefs(struct FontPrefs *fp, CONST_STRPTR buffer)
     ); 
     fp->fp_TextAttr.ta_Name = fp->fp_Name;
     
-    StrToLong(FilePart(buffer), &size);
+    StrToLong(FilePart((STRPTR)buffer), &size);
     fp->fp_TextAttr.ta_YSize = size;
 
     return TRUE;
@@ -111,13 +111,13 @@ BOOL FontPrefs2Gadgets
      
     // FIXME: error checking
     FontPrefs2FontString(buffer, FONTNAMESIZE + 8, fp[FP_WBFONT]);
-    set(data->fpwd_IconsString, MUIA_Text_Contents, buffer);
+    set(data->fpwd_IconsString, MUIA_Text_Contents, (IPTR)buffer);
     
     FontPrefs2FontString(buffer, FONTNAMESIZE + 8, fp[FP_SYSFONT]);
-    set(data->fpwd_SystemString, MUIA_Text_Contents, buffer);
+    set(data->fpwd_SystemString, MUIA_Text_Contents, (IPTR)buffer);
     
     FontPrefs2FontString(buffer, FONTNAMESIZE + 8, fp[FP_SCREENFONT]);
-    set(data->fpwd_ScreenString, MUIA_Text_Contents, buffer);
+    set(data->fpwd_ScreenString, MUIA_Text_Contents, (IPTR)buffer);
     
     return TRUE;
 }
@@ -155,15 +155,14 @@ IPTR FPWindow$OM_NEW
     struct FPWindow_DATA *data = NULL;
     Object               *iconsString, *screenString, *systemString;
     Object               *importMI, *exportMI; /* menu items */
-    TEXT                  buffer[BUFFERSIZE];
         
     struct TagItem tags[] =
     {
         { MUIA_Window_Title,     MSG(MSG_WINDOW_TITLE) },
         { MUIA_Window_Activate,  TRUE          },
-        { MUIA_Window_Menustrip, NULL          }, /* set later */
-        { WindowContents,        NULL          }, /* set later */
-        { TAG_DONE,              NULL          }
+        { MUIA_Window_Menustrip, 0             }, /* set later */
+        { WindowContents,        0             }, /* set later */
+        { TAG_DONE,              0             }
     };
     
     /*
@@ -306,8 +305,6 @@ IPTR FPWindow$MUIM_PreferencesWindow_Cancel
     Class *CLASS, Object *self, Msg message 
 )
 {
-    struct FPWindow_DATA *data = INST_DATA(CLASS, self);
-    
     FP_Cancel(); /* FIXME: check error? */
     
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
