@@ -50,8 +50,8 @@
 
 ULONG DoSuperNewTags
 (
-    Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo, 
-    IPTR tag1, ...
+    Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo,
+    Tag tag1, ...
 )
 {
     AROS_SLOWSTACKMETHODS_PRE(tag1)

@@ -24,7 +24,7 @@
 /*  SYNOPSIS */
 	Class *  class,
 	Object * object,
-	ULONG	 tag1,
+	Tag	 tag1,
 	...)
 
 /*  FUNCTION

@@ -30,7 +30,7 @@ extern struct Library * LayersBase;
 	LONG                x1,
 	LONG                y1,
 	LONG                flags,
-	unsigned long	    tag1,
+	Tag	            tag1,
 	...)
 
 /*  FUNCTION

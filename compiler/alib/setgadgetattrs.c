@@ -28,7 +28,7 @@ extern struct IntuitionBase * IntuitionBase;
 	struct Gadget    * Gadget,
 	struct Window    * Window,
 	struct Requester * Requester,
-	ULONG tag1,
+	Tag                tag1,
 	...)
 
 /*  FUNCTION
