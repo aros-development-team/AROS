@@ -42,7 +42,6 @@ FILES	:= \
     multiple_timers \
     mxgads \
     notify \
-    oopdemo \
     palettedemo \
     readicon \
     regiontest \
