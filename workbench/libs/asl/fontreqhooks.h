@@ -2,7 +2,7 @@
 #define FONTREQHOOKS_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Font requester specific defs.
@@ -40,7 +40,8 @@ struct FOUserData
     
     struct List			NameListviewList;
     struct List     	    	SizeListviewList;
-
+    struct Hook     	    	SizeListviewRenderHook;
+    
     struct AvailFontsHeader 	*AFH;
 
     UWORD 			ButWidth;

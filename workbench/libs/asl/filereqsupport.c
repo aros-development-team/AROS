@@ -1,5 +1,6 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
 
     Desc:
     Lang: english
@@ -132,12 +133,7 @@ void FRRefreshListview(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	{TAG_DONE					}
     };
 
-    if (ld->ld_Window == NULL)
-    {
-	SetAttrsA(udata->Listview, set_tags);
-    } else {
-	SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
-    }
+    SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
 }
 
 /*****************************************************************************************/
@@ -171,12 +167,7 @@ void FRFreeListviewList(struct LayoutData *ld, struct AslBase_intern *AslBase)
     
     if (udata->Listview)
     {
-	if (ld->ld_Window == NULL)
-	{
-	    SetAttrsA(udata->Listview, set_tags);
-	} else {
-	    SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
-	}
+	SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
     }
     
     ForeachNodeSafe(&udata->ListviewList, node, succ)
@@ -650,12 +641,7 @@ void FRSetPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
 	{TAG_DONE						}
     };    
     
-    if (ld->ld_Window)
-    {    
-        SetGadgetAttrsA((struct Gadget *)udata->PathGad, ld->ld_Window, NULL, set_tags);
-    } else {
-        SetAttrsA(udata->PathGad, set_tags);
-    }    
+    SetGadgetAttrsA((struct Gadget *)udata->PathGad, ld->ld_Window, NULL, set_tags);
 }
 
 /*****************************************************************************************/
@@ -734,6 +720,7 @@ BOOL FRParentPath(struct LayoutData *ld, struct AslBase_intern *AslBase)
     return result;
    
 }
+
 /*****************************************************************************************/
 
 void FRSetFile(STRPTR file, struct LayoutData *ld, struct AslBase_intern *AslBase)
@@ -889,12 +876,7 @@ void FRMultiSelectOnOff(struct LayoutData *ld, BOOL onoff, struct AslBase_intern
 	{TAG_DONE			}
     };    
     
-    if (ld->ld_Window)
-    {    
-        SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
-    } else {
-        SetAttrsA(udata->Listview, set_tags);
-    }    
+    SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
 }
 
 /*****************************************************************************************/
@@ -908,12 +890,7 @@ void FRSetPattern(STRPTR pattern, struct LayoutData *ld, struct AslBase_intern *
 	{TAG_DONE							}
     };    
     
-    if (ld->ld_Window)
-    {    
-        SetGadgetAttrsA((struct Gadget *)udata->PatternGad, ld->ld_Window, NULL, set_tags);
-    } else {
-        SetAttrsA(udata->PatternGad, set_tags);
-    }    
+    SetGadgetAttrsA((struct Gadget *)udata->PatternGad, ld->ld_Window, NULL, set_tags); 
 }
 
 /*****************************************************************************************/

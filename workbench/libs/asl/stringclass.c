@@ -1,3 +1,11 @@
+/*
+    (C) 2000-2001 AROS - The Amiga Research OS
+    $Id$
+    
+    Desc:
+    Lang: english
+*/
+
 #define AROS_ALMOST_COMPATIBLE 1
 
 #include <proto/exec.h>
