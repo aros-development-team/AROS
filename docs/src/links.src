@@ -43,9 +43,10 @@ and the source of the beta as
 \end{new}
 
 \item AROS in
-\link{Germany}{http://aros.fh-konstanz.de:8080/aros/} (Main site)
+\link{Germany (Main site)}{http://aros.fh-konstanz.de/aros/},
+\link{Germany (Mirror site)}{http://www.vmc.de/aros/}
 and
-\link{Sweden}{http://www.lysator.liu.se/amiga/aros/} (Mirror)
+\link{Sweden (Mirror site)}{http://www.lysator.liu.se/amiga/aros/}
 \item \link{AROS for Amiga}{http://www.xs4all.nl/~ldp/aros/index.html}
 (Local copy of the
 \link{binary}{ftp://aros.fh-konstanz.de/pub/aros/AROS-m68k-bin.lha}
@@ -73,7 +74,7 @@ A m68k PCI card for PCs.
 
 \begin{itemize}
 \item \link{Aaron Digulla}{http://www.lake.de/home/lake/home/}
-\item \link{Harald Frank (VMC)}{http://members.aol.com/ingriedel/index.htm}
+\item \link{Harald Frank (VMC)}{http://www.vmc.de/}
 \item \link{Luke A. Guest}{http://www.student.comp.brad.ac.uk/~laguest/}
 \item \link{Lennard voor den Dag}{http://www.xs4all.nl/~ldp/}
 \item \link{Martin Steigerwald}{http://home.pages.de/~helios}
