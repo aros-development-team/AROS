@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     The Workbench Handler process and associated functions.
@@ -268,59 +268,54 @@ static VOID __HandleLaunch_WB
     struct WBStartup *startup = message->wbcm_Data.Launch.Startup;
     STRPTR            name    = startup->sm_ArgList[0].wa_Name;
     BPTR              lock    = startup->sm_ArgList[0].wa_Lock;
-    BPTR              cd      = NULL;
-    BOOL              success = FALSE;
+    BPTR              home;
+    BPTR              cd;
+    struct Process   *process;
     
     D(bug("Workbench Handler: HandleLaunch: name = %s\n", name));
     
     /* Change directory to where the program resides */
-    cd = CurrentDir(lock);
+    cd = CurrentDir(startup->sm_ArgList[0].wa_Lock);
     
     /* Load the program from disk */
     startup->sm_Segment = LoadSeg(name);
-    if (startup->sm_Segment != NULL)
+    if (startup->sm_Segment == NULL) goto error;
+    
+    /* Duplicate lock for NP_HomeDir */
+    home = DupLock(lock);
+    if (home == NULL) goto error;
+    
+    /* Launch the program */
+    process = CreateNewProcTags
+    (
+        NP_Seglist,     (IPTR) startup->sm_Segment,
+        NP_Name,        (IPTR) name,
+        NP_HomeDir,     (IPTR) home,
+        NP_StackSize,          WorkbenchBase->wb_DefaultStackSize, // FIXME: should be read from icon
+        TAG_DONE
+    );
+    
+    if (process != NULL)
     {
-        /* Launch the program */
-        struct Process *process = CreateNewProcTags
-        (
-            NP_Seglist,     (IPTR) startup->sm_Segment,
-            NP_Name,        (IPTR) name,
-            NP_StackSize,          WorkbenchBase->wb_DefaultStackSize, // FIXME: should be read from icon
-	    TAG_DONE
-        );
-                
-        if (process != NULL)
-        {
-            D(bug("Workbench Handler: HandleLaunch: Process created successfully\n"));
-            
-            /* Setup startup message */
-            startup->sm_Process              = &process->pr_MsgPort;
-            startup->sm_Message.mn_ReplyPort = hc->hc_StartupReplyPort;
-            
-            /* Send startup message to program */ 
-            PutMsg(startup->sm_Process, (struct Message *) startup);
-            
-            success = TRUE;
-        }
-        else
-        {
-            D(bug("Workbench Handler: HandleLaunch: Failed to create process\n"));
-            UnLoadSeg(startup->sm_Segment); 
-        }
+        D(bug("Workbench Handler: HandleLaunch: Process created successfully\n"));
         
-    }
-    else
-    {
-        D(bug("Workbench Handler: HandleLaunch: Failed to load segment\n"));
-    }
-    
-    if (!success)
-    {
-        //FIXME: report error somehow?
-        D(bug("Workbench Handler: HandleLaunch: Failed to launch program. Deallocating resources.\n"));
-        DestroyWBS(startup);
+        /* Setup startup message */
+        startup->sm_Process              = &process->pr_MsgPort;
+        startup->sm_Message.mn_ReplyPort = hc->hc_StartupReplyPort;
+        
+        /* Send startup message to program */ 
+        PutMsg(startup->sm_Process, (struct Message *) startup);
     }
     
+    goto done;
+    
+error:
+    //FIXME: report error somehow?
+    D(bug("Workbench Handler: HandleLaunch: Failed to launch program. Deallocating resources.\n"));
+    if (startup->sm_Segment != NULL) UnLoadSeg(startup->sm_Segment);
+    DestroyWBS(startup);
+    
+done:
     /* Restore current directory */
     CurrentDir(cd);
 }
