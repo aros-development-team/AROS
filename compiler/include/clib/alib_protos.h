@@ -87,33 +87,6 @@ LONG    ArgInt(UBYTE **tt, STRPTR entry, LONG defaultVal);
 STRPTR  ArgString(UBYTE **tt, STRPTR entry, STRPTR defaultstring);
 struct  InputEvent *InvertString(STRPTR str, struct KeyMap *km);
 
-/* Gadtools */
-APTR GetVisualInfo (struct Screen * screen, ULONG tag1, ...);
-struct Gadget * CreateGadget(	ULONG kind, 
-			struct Gadget * previous, 
-			struct NewGadget * ng,
-			ULONG tag1,
-			...);
-void DrawBevelBox(	struct RastPort * rp,
-			WORD left,
-			WORD top,
-			WORD width,
-			WORD height,
-			ULONG tag1,
-			...);
-void GT_SetGadgetAttrs(	struct Gadget * gad, 
-			struct Window * win, 
-			struct Requester * req,
-			ULONG  tag1,
-			...);
-LONG GT_GetGadgetAttrs(	struct Gadget * gad,
-			struct Window * win,
-			struct Requester * req,
-			ULONG	tag1,
-			...);
-struct Menu * CreateMenus( struct NewMenu * newmenu, ULONG tag1, ...);
-BOOL LayoutMenus( struct Menu * menu, APTR vi, ULONG tag1, ...);
-
 /* Graphics */
 LONG ObtainBestPen( struct ColorMap * cm, LONG R, LONG G, LONG B, ULONG tag1, ...);
 void GetRPAttrs( struct RastPort * rp, Tag tag1, ...);

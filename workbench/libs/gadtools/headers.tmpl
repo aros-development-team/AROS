@@ -7,9 +7,13 @@ extern struct Library * GadToolsBase;
 #include <intuition/screens.h>
 #include <utility/tagitem.h>
 
-APTR         GetVisualInfo(struct Screen *, Tag, ...);
-struct Menu *CreateMenus(struct NewMenu *, Tag, ...);
-BOOL         LayoutMenus(struct Menu *, APTR, Tag, ...);
+APTR           GetVisualInfo(struct Screen *, Tag, ...);
+struct Gadget *CreateGadget(ULONG, struct Gadget *, struct NewGadget *, Tag, ...);
+void           DrawBevelBox(struct RastPort *, WORD, WORD, WORD, WORD, Tag, ...);
+void           GT_SetGadgetAttrs(struct Gadget *, struct Window *, struct Requester *, Tag, ...);
+LONG           GT_GetGadgetAttrs(struct Gadget *, struct Window *, struct Requester *, Tag, ...);
+struct Menu *  CreateMenus(struct NewMenu *, Tag, ...);
+BOOL           LayoutMenus(struct Menu *, APTR, Tag, ...);
 
 ##end proto
 
