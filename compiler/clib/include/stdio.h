@@ -29,14 +29,26 @@
 #   define BUFSIZ 1024
 #endif
 
-typedef struct __FILE
-{
-    void * fh;
-    long   flags;
-} FILE;
+#ifndef __typedef_FILE
+#   define __typedef_FILE
+    typedef struct __FILE
+    {
+	void * fh;
+	long   flags;
+    } FILE;
 
-#define _STDIO_FILEFLAG_EOF	0x0001L
-#define _STDIO_FILEFLAG_ERROR	0x0002L
+#   define _STDIO_FILEFLAG_EOF	   0x0001L
+#   define _STDIO_FILEFLAG_ERROR   0x0002L
+#endif
+
+#ifndef __typedef_fpos_t
+#   define __typedef_fpos_t
+typedef long fpos_t;
+#endif
+
+#define SEEK_SET    1
+#define SEEK_CUR    0
+#define SEEK_END    -1
 
 extern FILE * stdin, * stdout, * stderr;
 
@@ -48,7 +60,7 @@ extern int fprintf (FILE * fh, const char * format, ...);
 extern int vfprintf (FILE * fh, const char * format, va_list args);
 extern int fputc (int c, FILE * stream);
 extern int fputs (const char * str, FILE * stream);
-extern int puts (const char * str, FILE * stream);
+extern int puts (const char * str);
 extern int fflush (FILE * stream);
 extern int fgetc (FILE * stream);
 extern int ungetc (int c, FILE * stream);
@@ -63,6 +75,11 @@ extern int vsprintf (char * str, const char * format, va_list args);
 extern int snprintf (char * str, size_t n, const char * format, ...);
 extern int vsnprintf (char * str, size_t n, const char * format, va_list args);
 
+extern int fseek (FILE * stream, long offset, int whence);
+extern long ftell (FILE * stream);
+extern void rewind (FILE * stream);
+extern int fgetpos (FILE * stream, fpos_t * pos);
+extern int fsetpos (FILE * stream, fpos_t * pos);
 
 #ifdef AROS_ALMOST_COMPATIBLE
 extern int __vcformat (void * data, int (*uc)(int, void *),
