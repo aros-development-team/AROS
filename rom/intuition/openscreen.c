@@ -20,6 +20,16 @@
 #endif
 #	include <aros/debug.h>
 
+/* Default colors for the new screen */
+
+static const ULONG coltab[] = { 
+    (4L << 16) + 0,	/* 4 colors, loaded at index 0 */
+    0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF, /* Grey  */
+    0x00000000, 0x00000000, 0x00000000, /* Black */
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White */
+    0x00000000, 0x00000000, 0xAFFFFFFF, /* Blue  */
+    0L		/* Termination */
+};    
 /*****************************************************************************
 
     NAME */
@@ -79,21 +89,46 @@
         screen->Screen.RastPort.BitMap = AllocBitMap(newScreen->Width, 
                                                      newScreen->Height, 
                                                      newScreen->Depth, 
-                                                     BMF_CLEAR /* |BMF_DISPLAYABLE */, 
+                                                     BMF_CLEAR |BMF_DISPLAYABLE , 
                                                      NULL);
-	if (!success  || (NULL == screen->Screen.RastPort.BitMap) )
+						     
+	/* Init screens viewport (probably not necessary, but I'll do it anyway */
+	InitVPort(&screen->Screen.ViewPort);
+	
+	/* Allocate a RasInfo struct in which we have  a pointer
+	   to the struct BitMap, into which the driver can
+	   store its stuff. (Eg. pointer to a BitMap HIDD object) 
+	*/
+	screen->Screen.ViewPort.RasInfo = AllocMem( sizeof (struct RasInfo), MEMF_ANY|MEMF_CLEAR);
+	
+	   
+	if (!success  || (NULL == screen->Screen.RastPort.BitMap) || (NULL == screen->Screen.ViewPort.RasInfo) )
 	{
           if (screen->Screen.RastPort.BitMap)
             FreeBitMap(screen->Screen.RastPort.BitMap);
+	    
+	  if (screen->Screen.ViewPort.RasInfo)
+	      FreeMem(screen->Screen.ViewPort.RasInfo, sizeof (struct RasInfo));
 
 	  FreeMem (screen, sizeof (struct IntScreen));
 	  screen = NULL;
           return NULL;
 	}
+	else
+	{
+	    /* Store pointer to bitmap, so we can get hold of it
+	       from withing LoadRGBxx() functions
+	    */
+	    screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
+	}
+	
     }
 
     if (screen)
     {
+        /* Load some default colors for the screen */
+	LoadRGB32(&screen->Screen.ViewPort, (ULONG *)coltab);
+	
 	COPY(LeftEdge);
 	COPY(TopEdge);
 	COPY(Width);
@@ -161,6 +196,10 @@
 	screen->Pens[BARDETAILPEN] = 1;
 	screen->Pens[BARBLOCKPEN] = 2;
 	screen->Pens[BARTRIMPEN] = 1;
+	
+	/* Set screen to background color */
+	SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
+
     }
 
     ReturnPtr ("OpenScreen", struct Screen *, &screen->Screen);
