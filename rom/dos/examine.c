@@ -1,0 +1,117 @@
+/*
+    $Id$
+    $Log$
+    Revision 1.1  1996/07/28 16:37:22  digulla
+    Initial revision
+
+    Desc:
+    Lang: english
+*/
+#include <exec/memory.h>
+#include <clib/exec_protos.h>
+#include <dos/filesystem.h>
+#include <dos/dosextens.h>
+#include <dos/exall.h>
+
+/*****************************************************************************
+
+    NAME */
+	#include <clib/dos_protos.h>
+
+	__AROS_LH2(BOOL, Examine,
+
+/*  SYNOPSIS */
+	__AROS_LA(BPTR,                   lock, D1),
+	__AROS_LA(struct FileInfoBlock *, fib,  D2),
+
+/*  LOCATION */
+	struct DosLibrary *, DOSBase, 17, Dos)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	29-10-95    digulla automatically created from
+			    dos_lib.fd and clib/dos_protos.h
+
+*****************************************************************************/
+{
+    __AROS_FUNC_INIT
+    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    
+    UBYTE buffer[512];
+    struct ExAllData *ead=(struct ExAllData *)buffer;
+    STRPTR src, dst;
+    ULONG i;
+
+    /* Get pointer to filehandle */
+    struct FileHandle *fh=(struct FileHandle *)BADDR(lock);
+
+    /* Get pointer to process structure */
+    struct Process *me=(struct Process *)FindTask(NULL);
+
+    /* Get pointer to I/O request. Use stackspace for now. */
+    struct IOFileSys io,*iofs=&io;
+
+    /* Prepare I/O request. */
+    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
+    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Device =fh->fh_Device;
+    iofs->IOFS.io_Unit   =fh->fh_Unit;
+    iofs->IOFS.io_Command=FSA_EXAMINE;
+    iofs->IOFS.io_Flags  =0;
+    iofs->io_Args[0]=(LONG)buffer;
+    iofs->io_Args[1]=512;
+    iofs->io_Args[2]=ED_OWNER;
+
+    /* Send the request. */
+    DoIO(&iofs->IOFS);
+    
+    /* Set error code and return */
+    if((me->pr_Result2=iofs->io_DosError))
+        return 0;
+    else
+    {
+	fib->fib_DiskKey=0;
+	fib->fib_DirEntryType=ead->ed_Type;
+	src=ead->ed_Name;
+	dst=fib->fib_FileName;
+	if(src!=NULL)
+  	    for(i=0;i<107;i++)
+	        if(!(*dst++=*src++))
+	            break;
+	*dst++=0;
+	fib->fib_Protection=ead->ed_Prot^0xf;
+	fib->fib_EntryType=ead->ed_Type;
+	fib->fib_Size=ead->ed_Size;
+	fib->fib_Date.ds_Days=ead->ed_Days;
+	fib->fib_Date.ds_Minute=ead->ed_Mins;
+	fib->fib_Date.ds_Tick=ead->ed_Ticks;
+	src=ead->ed_Comment;
+	dst=fib->fib_Comment;
+	if(src!=NULL)
+  	    for(i=0;i<79;i++)
+	        if(!(*dst++=*src++))
+	            break;
+	*dst++=0;
+	fib->fib_OwnerUID=ead->ed_OwnerUID;
+	fib->fib_OwnerGID=ead->ed_OwnerGID;
+	return 1;
+    }
+
+    __AROS_FUNC_EXIT
+} /* Examine */
