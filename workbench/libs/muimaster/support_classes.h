@@ -152,9 +152,12 @@
 #   define ZUNE_VIRTGROUP_DESC
 #endif
 
-struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb);
-BOOL DestroyClasses(struct Library *MUIMasterBase);
-struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct Library *MUIMasterBase);
+Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
+Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
+Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);
+Class *ZUNE_MakeBuiltinClass(ClassID className, struct Library *mb);
+VOID   ZUNE_AddBuiltinClass(Class *cl, struct Library *mb);
+VOID   ZUNE_RemoveBuiltinClass(Class *cl, struct Library *mb);
 
 AROS_UFP3
 (
@@ -163,6 +166,18 @@ AROS_UFP3
     AROS_UFPA(Object *,        obj, A2),
     AROS_UFPA(Msg     ,        msg, A1)
 );
+
+
+#ifdef __AROS__
+#define MCC_Query(x) AROS_LVO_CALL1(struct MUI_CustomClass *,          \
+		                    AROS_LCA(LONG, (x), D0),           \
+				    struct Library *, mcclib, 5, lib);
+#else
+
+struct MUI_CustomClass *MCC_Query(ULONG d0);
+#pragma  libcall mcclib MCC_Query 01e 001
+
+#endif
 
 #endif /* _MUIMASTER_SUPPORT_CLASSES_H */
 
