@@ -153,6 +153,7 @@ kernel-devs-native-i386 :
 	%add_objects rom/boot/libkeyboard
 	%add_objects rom/boot/libconsole
 	%add_objects rom/boot/libtrackdisk
+	%add_objects rom/boot/libide
 
 #MM
 includes-native-i386 : $(INCFILES) machine.i
