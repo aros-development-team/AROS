@@ -337,7 +337,8 @@ BOOL LoadPrefs(STRPTR filename)
 BOOL SavePrefs(STRPTR filename)
 {
     static struct LocalePrefs 	saveprefs;
-    struct IFFHandle 	     	*iff;    
+    struct IFFHandle 	     	*iff;
+    WORD    	    	    	i;
     BOOL    	    	    	retval = FALSE, delete_if_error = FALSE;
     
     saveprefs = localeprefs;
@@ -346,6 +347,10 @@ BOOL SavePrefs(STRPTR filename)
     FixCountryEndianess(&saveprefs.lp_CountryData);
 #endif
     
+    for(i = 0; i < 10; i++)
+    {
+    	saveprefs.lp_PreferredLanguages[i][0] = ToLower(saveprefs.lp_PreferredLanguages[i][0]);
+    }
     
     D(bug("SavePrefs: Trying to open \"%s\"\n", filename));
     
