@@ -1,16 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.3  1998/10/20 16:46:38  hkiel
-    Amiga Research OS
-
-    Revision 1.2  1996/08/01 17:41:38  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
 */
+
 #ifndef DUMMYDEV_GCC_H
 #define DUMMYDEV_GCC_H
 #include <aros/libcall.h>

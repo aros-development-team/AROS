@@ -1,11 +1,9 @@
 /*
-   (C) 1997-98 AROS - The Amiga Research OS
-   $Id$
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
 
-   Desc: Demo of new OOP system
-   Lang: english
+    Demo of new OOP system
  */
-
 
 /* Prevent inclusion of <intuition/classes.h>,
  * which is referenced in the amiga inline macros

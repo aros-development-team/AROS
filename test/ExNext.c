@@ -1,9 +1,8 @@
-  /*
-    (C) 2000 AROS - The Amiga Research OS
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Test ExNext() function
-    Lang: english
+    Test ExNext() function
 */
 
 #include <proto/dos.h>
