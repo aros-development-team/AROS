@@ -1218,27 +1218,21 @@ struct ListNode *iln;
 		switch (type)
 		{
 		case LNT_Root:
-			/* add gadget */
-			set(gadgets.buttons[0], MUIA_Disabled, FALSE);
-			/* resize/move gadget */
-			set(gadgets.buttons[4], MUIA_Disabled, TRUE);
+			set(gadgets.buttons[GB_ADD_ENTRY], MUIA_Disabled, FALSE);
+			set(gadgets.buttons[GB_RESIZE_MOVE], MUIA_Disabled, TRUE);
 			break;
 		case LNT_Device:
-			/* add gadget */
-			set(gadgets.buttons[0], MUIA_Disabled, TRUE);
-			/* resize/move gadget */
-			set(gadgets.buttons[4], MUIA_Disabled, TRUE);
+			set(gadgets.buttons[GB_ADD_ENTRY], MUIA_Disabled, TRUE);
+			set(gadgets.buttons[GB_RESIZE_MOVE], MUIA_Disabled, TRUE);
 			break;
 		case LNT_Harddisk:
 		case LNT_Partition:
-			/* add gadget */
-			set(gadgets.buttons[0], MUIA_Disabled, FALSE);
-			/* resize/move gadget */
-			DoMethod(gadgets.buttons[4], MUIM_KillNotify, MUIA_Pressed);
-			set(gadgets.buttons[4], MUIA_Disabled, FALSE);
+			set(gadgets.buttons[GB_ADD_ENTRY], MUIA_Disabled, FALSE);
+			DoMethod(gadgets.buttons[GB_RESIZE_MOVE], MUIM_KillNotify, MUIA_Pressed);
+			set(gadgets.buttons[GB_RESIZE_MOVE], MUIA_Disabled, FALSE);
 			DoMethod
 			(
-				gadgets.buttons[4],
+				gadgets.buttons[GB_RESIZE_MOVE],
 				MUIM_Notify, MUIA_Pressed, FALSE, resizemovegadgets.win, 3,
 				MUIM_Set, MUIA_Window_Open, TRUE
 			);
@@ -1433,7 +1427,7 @@ int i;
 					    	MUIA_Group_SameWidth, TRUE,
 						MUIA_FixHeight, 1,
 					    	Child, gadgets.buttons[GB_SAVE_CHANGES] = IMAGEBUTTON(WORD_Save_Changes, COOL_SAVEIMAGE_ID),
-					    	Child, gadgets.buttons[10] = IMAGEBUTTON(WORD_Exit, COOL_CANCELIMAGE_ID),
+					    	Child, gadgets.buttons[GB_EXIT] = IMAGEBUTTON(WORD_Exit, COOL_CANCELIMAGE_ID),
 					End,
 				End,
 			End,
@@ -1768,6 +1762,11 @@ int i;
 	);
 	DoMethod
 	(
+		gadgets.buttons[GB_EXIT], MUIM_Notify, MUIA_Pressed, FALSE, app, 2,
+		MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
+	);
+	DoMethod
+	(
 		gadgets.leftlv,
 			MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, gadgets.leftlv, 2,
 			MUIM_CallHook, &hook_lv_doubleclick
@@ -1778,7 +1777,7 @@ int i;
 			MUIM_Notify, MUIA_Listview_SelectChange, TRUE, gadgets.leftlv, 2,
 			MUIM_CallHook, &hook_lv_click
 	);
-	for (i=0;i<10;i++)
+	for (i=GB_FIRST;i<GB_EXIT;i++)
 	{
 		DoMethod
 		(
