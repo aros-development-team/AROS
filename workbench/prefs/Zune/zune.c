@@ -311,10 +311,10 @@ void main_page_active(void)
 
     if (new_group == main_page_group_displayed) return;
 
-    DoMethod(main_page_group,MUIM_Group_InitChange);
-    DoMethod(main_page_group,OM_REMMEMBER,main_page_group_displayed);
-    DoMethod(main_page_group,OM_ADDMEMBER,new_group);
-    DoMethod(main_page_group,MUIM_Group_ExitChange);
+    DoMethod(main_page_group, MUIM_Group_InitChange);
+    DoMethod(main_page_group, OM_REMMEMBER, (IPTR)main_page_group_displayed);
+    DoMethod(main_page_group, OM_ADDMEMBER, (IPTR)new_group);
+    DoMethod(main_page_group, MUIM_Group_ExitChange);
     main_page_group_displayed = new_group;
 }
 
@@ -405,26 +405,26 @@ int init_gui(void)
 		    Child, ListviewObject,
 			MUIA_Listview_List, main_page_list = ListObject,
 			    InputListFrame,
+	                    MUIA_List_AdjustWidth, TRUE,
 			    MUIA_List_DisplayHook, &page_display_hook,
 	                    MUIA_CycleChain, 1,
 			    End,
 			End,
 		    Child, HGroup,
+	                MUIA_Group_SameWidth, TRUE, /* 20030706, until layout bug is fixed */
 			Child, NewObject(CL_FrameClipboard->mcc_Class, NULL,
 					     MUIA_Draggable, TRUE,
 					     MUIA_FixHeight, 20,
-					     MUIA_FixWidth, 30,
 					     MUIA_Window_Title, (IPTR)"Frame Clipboard",
-					     TAG_DONE), /* Popframe really */
-      	               Child, NewObject(CL_ImageClipboard->mcc_Class, NULL,
+					     TAG_DONE),
+      	                Child, NewObject(CL_ImageClipboard->mcc_Class, NULL,
 					     MUIA_Draggable, TRUE,
-					     MUIA_Dropable, TRUE,
 					     MUIA_FixHeight, 20,
-					     MUIA_FixWidth, 30,
 					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
 					     MUIA_Window_Title, (IPTR)"Image Clipboard",
 					     TAG_DONE),
 		        End, /* HGroup */
+	            Child, CLabel("D&D Clips"),
 	            End,
 		    Child, VGroup,
 	                TextFrame,
@@ -452,13 +452,24 @@ int init_gui(void)
     {
     	int i;
 
-	DoMethod(main_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 3, MUIM_CallHook, &hook_standard, main_cancel_pressed);
-	DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_cancel_pressed);
-	DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_save_pressed);
-	DoMethod(use_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, main_use_pressed);
-	DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 6, MUIM_Application_PushMethod, app, 3, MUIM_CallHook, &hook_standard, main_test_pressed);
-	DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, main_cancel_pressed);
-	DoMethod(aboutzune_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_AboutMUI, main_wnd);
+	DoMethod(main_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+		 (IPTR)app, 3, MUIM_CallHook, (IPTR)&hook_standard,
+		 (IPTR)main_cancel_pressed);
+	DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
+		 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_cancel_pressed);
+	DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
+		 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_save_pressed);
+	DoMethod(use_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
+		 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_use_pressed);
+	DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 6,
+		 MUIM_Application_PushMethod, (IPTR)app, 3, MUIM_CallHook,
+		 (IPTR)&hook_standard, (IPTR)main_test_pressed);
+	DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
+		 MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
+		 (IPTR)&hook_standard, (IPTR)main_cancel_pressed);
+	DoMethod(aboutzune_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
+		 MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_AboutMUI,
+		 (IPTR)main_wnd);
 
 	for (i=0;main_page_entries[i].name;i++)
 	{
@@ -467,13 +478,16 @@ int init_gui(void)
 	    {
 		if ((p->cl = create_class(p->desc)))
 		{
-		    p->group = NewObject(p->cl->mcc_Class,NULL,TAG_DONE);
+		    p->group = NewObject(p->cl->mcc_Class, NULL, TAG_DONE);
 		}
 	    }
-	    DoMethod(main_page_list,MUIM_List_InsertSingle,p,MUIV_List_Insert_Bottom);
+	    DoMethod(main_page_list, MUIM_List_InsertSingle, (IPTR)p,
+		     MUIV_List_Insert_Bottom);
 	}
 
-	DoMethod(main_page_list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, main_page_active);
+	DoMethod(main_page_list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+		 (IPTR)app, 3, MUIM_CallHook, (IPTR)&hook_standard,
+		 (IPTR)main_page_active);
 
 	/* Activate first entry */
 	set(main_page_list,MUIA_List_Active,0);
@@ -496,10 +510,12 @@ void deinit_gui(void)
 *****************************************************************/
 void load_prefs(CONST_STRPTR name)
 {
-    Object *configdata = MUI_NewObject(MUIC_Configdata,
-				       MUIA_Configdata_ApplicationBase, name,
-				       TAG_DONE);
-    if (configdata)
+    Object *configdata;
+
+    configdata = MUI_NewObject(MUIC_Configdata,
+			       MUIA_Configdata_ApplicationBase, (IPTR)name,
+			       TAG_DONE);
+    if (configdata != NULL)
     {
 	int i;
 
@@ -511,7 +527,8 @@ void load_prefs(CONST_STRPTR name)
 	{
 	    struct page_entry *p = &main_page_entries[i];
 	    if (p->group)
-		DoMethod(p->group,MUIM_Settingsgroup_ConfigToGadgets,configdata);
+		DoMethod(p->group, MUIM_Settingsgroup_ConfigToGadgets,
+			 (IPTR)configdata);
 	}
 
 /*  	D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
@@ -542,10 +559,12 @@ void restore_prefs(CONST_STRPTR name)
 *****************************************************************/
 void save_prefs(CONST_STRPTR name, BOOL envarc)
 {
-    Object *configdata = MUI_NewObject(MUIC_Configdata,
-				       MUIA_Configdata_ApplicationBase, name,
-				       TAG_DONE);
-    if (configdata)
+    Object *configdata;
+
+    configdata = MUI_NewObject(MUIC_Configdata,
+			       MUIA_Configdata_ApplicationBase, name,
+			       TAG_DONE);
+    if (configdata != NULL)
     {
 	int i;
 	char buf[255];
@@ -557,7 +576,8 @@ void save_prefs(CONST_STRPTR name, BOOL envarc)
 	{
 	    struct page_entry *p = &main_page_entries[i];
 	    if (p->group)
-		DoMethod(p->group,MUIM_Settingsgroup_GadgetsToConfig,configdata);
+		DoMethod(p->group, MUIM_Settingsgroup_GadgetsToConfig,
+			 (IPTR)configdata);
 	}
 
 	if (envarc)
@@ -581,7 +601,8 @@ void loop(void)
 {
     ULONG sigs = 0;
 
-    while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
+    while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
+	  != MUIV_Application_ReturnID_Quit)
     {
 	if (sigs)
 	{
