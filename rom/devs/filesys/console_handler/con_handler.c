@@ -290,17 +290,24 @@ AROS_LH2(struct conbase *, init,
     struct DeviceNode *dn;
 
     /* Store arguments */
-    conbase->sysbase=sysBase;
-    conbase->seglist=segList;
-    conbase->device.dd_Library.lib_OpenCnt=1;    
-
-    
+    conbase->sysbase = sysBase;
+    conbase->seglist = segList;
+    conbase->device.dd_Library.lib_OpenCnt = 1;    
+  
     conbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
     if (conbase->dosbase)
     {
     	conbase->intuibase = (IntuiBase *)OpenLibrary("intuition.library", 37);
 	if (conbase->intuibase)
 	{
+	    /* Really bad hack, but con_handler is in ROM, intuition.library is
+	       open, if intuition.library is open, then Input.Device must be
+	       open, too, ... and I don't like to OpenDevice just for Peek-
+	       Qualifier */
+	       
+	    #warning InputDevice open hack. Hope this is not a problem since it is only used for PeekQualifier
+	    conbase->inputbase = (struct Device *)FindName(&conbase->sysbase->DeviceList, "input.device");
+
 	    /* Install CON: handler into device list */
     	    dn = AllocMem(sizeof (struct DeviceNode), MEMF_CLEAR|MEMF_PUBLIC);
     	    if (dn)
@@ -759,6 +766,7 @@ VOID conTaskEntry(struct conTaskParams *param)
 			break;
 
 		    case INP_SHIFT_CURSORLEFT: /* move to beginning of line */
+		    case INP_HOME:
 			if (fh->inputpos > fh->inputstart)
 			{
 			    do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
@@ -775,6 +783,7 @@ VOID conTaskEntry(struct conTaskParams *param)
 			break;
 
 		    case INP_SHIFT_CURSORRIGHT: /* move to end of line */
+		    case INP_END:
 			if (fh->inputpos != fh->inputsize)
 			{
 			    do_movecursor(conbase, fh, CUR_RIGHT, fh->inputsize - fh->inputpos);
@@ -818,6 +827,32 @@ VOID conTaskEntry(struct conTaskParams *param)
 			}
 			break;
 
+		    case INP_SHIFT_BACKSPACE:
+		        if (fh->inputpos > fh->inputstart)
+			{
+			    do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
+			    if (fh->inputpos == fh->inputsize)
+			    {
+				do_eraseinline(conbase, fh);
+								
+			    	fh->inputpos = fh->inputsize = fh->inputstart;
+			    } else {
+			        WORD chars_right = fh->inputsize - fh->inputpos;
+				
+			        do_cursorvisible(conbase, fh, FALSE);
+				do_write(conbase, fh, &fh->inputbuffer[fh->inputpos], chars_right);
+				do_eraseinline(conbase, fh);
+				do_movecursor(conbase, fh, CUR_LEFT, chars_right);
+				do_cursorvisible(conbase, fh, TRUE);
+								
+				memmove(&fh->inputbuffer[fh->inputstart], &fh->inputbuffer[fh->inputpos], chars_right);
+
+				fh->inputsize -= (fh->inputpos - fh->inputstart);
+				fh->inputpos = fh->inputstart;	
+			    }
+			}
+		    	break;
+			
 		    case INP_DELETE:
 			if (fh->inputpos < fh->inputsize)
 			{
@@ -840,6 +875,14 @@ VOID conTaskEntry(struct conTaskParams *param)
 			}
 			break;
 
+		    case INP_SHIFT_DELETE:
+		        if (fh->inputpos < fh->inputsize)
+			{
+			    fh->inputsize = fh->inputpos;
+			    do_eraseinline(conbase, fh);
+			}
+		    	break;
+			
 		    case INP_CONTROL_X:
 			if ((fh->inputsize - fh->inputstart) > 0)
 			{
@@ -849,8 +892,7 @@ VOID conTaskEntry(struct conTaskParams *param)
 			    }
 			    do_eraseinline(conbase, fh);
 
-			    fh->inputpos = fh->inputstart;
-			    fh->inputsize -= (fh->inputsize - fh->inputstart);
+			    fh->inputpos = fh->inputsize = fh->inputstart;
 			}
 			break;
 
