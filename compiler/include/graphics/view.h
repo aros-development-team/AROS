@@ -212,5 +212,51 @@ struct PaletteExtra
 	UWORD	pe_SharableColors;
 };
 
+#define PENF_EXCLUSIVE (1l<<PENB_EXCLUSIVE)
+#define PENF_NO_SETCOLOR (1l<<PENB_NO_SETCOLOR)
+#define PENB_EXCLUSIVE 0
+#define PENB_NO_SETCOLOR 1
+
+
+#define PEN_EXCLUSIVE PENF_EXCLUSIVE
+#define PEN_NO_SETCOLOR PENF_NO_SETCOLOR
+
+#define PRECISION_EXACT	-1
+#define PRECISION_IMAGE	0
+#define PRECISION_ICON	16
+#define PRECISION_GUI	32
+
+
+#define OBP_Precision 0x84000000
+#define OBP_FailIfBad 0x84000001
+
+#define MVP_OK		0
+#define MVP_NO_MEM	1
+#define MVP_NO_VPE	2
+#define MVP_NO_DSPINS	3	
+#define MVP_NO_DISPLAY	4	
+#define MVP_OFF_BOTTOM	5	
+
+#define MCOP_OK		0	
+#define MCOP_NO_MEM	1
+#define MCOP_NOP	2
+
+struct DBufInfo {
+	APTR	dbi_Link1;
+	ULONG	dbi_Count1;
+	struct Message dbi_SafeMessage;	
+	APTR dbi_UserData1;
+
+	APTR	dbi_Link2;
+	ULONG	dbi_Count2;
+	struct Message dbi_DispMessage;	
+	APTR	dbi_UserData2;	
+	ULONG	dbi_MatchLong;
+	APTR	dbi_CopPtr1;
+	APTR	dbi_CopPtr2;
+	APTR	dbi_CopPtr3;
+	UWORD	dbi_BeamPos1;
+	UWORD	dbi_BeamPos2;
+};
 
 #endif /* GRAPHICS_VIEW_H */
