@@ -64,10 +64,8 @@ extern APTR __startup_mempool;
 
     if (__startup_mempool)
     {
-	size += AROS_ALIGN(sizeof(size_t));
-
 	/* Allocate the memory */
-	mem = AllocPooled (__startup_mempool, size);    
+	mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(size_t)));    
 	if (mem)
 	{	
 	    *((size_t *)mem) = size;
