@@ -718,4 +718,13 @@ minimizes damage. For sure, it would be rather complex to write.
 
 \end{indent}
 \end{new}
+\item
+\begin{new}{24.5.2000}
+By: Georg Steger \nl
+Subject: Software to show the number of missing/unimplemented functions.
+
+The idea is to have a software which scans a software for AmigaOS functions
+and reports those which are not yet implemented.
+
+\end{new}
 \end{itemize}
