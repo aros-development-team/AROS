@@ -209,14 +209,7 @@ static IPTR Radio_Setup(struct IClass *cl, Object *obj, Msg msg)
     return TRUE;
 }
 
-#ifndef _AROS
-__asm IPTR Radio_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Radio_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR, Radio_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
