@@ -99,14 +99,29 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                 D(bug("OpenWorkbenchObject: it's a DISK, DRAWER or GARGABE\n"));
                 
                 {
-                    struct WBCommandMessage *wbcm = CreateWBCM(WBCM_TYPE_RELAY);
-                    struct WBHandlerMessage *wbhm = CreateWBHM(WBHM_TYPE_OPEN);
-                    // FIXME: check errors
+                    struct WBCommandMessage *wbcm     = NULL;
+                    struct WBHandlerMessage *wbhm     = NULL;
+                    CONST_STRPTR             namecopy = NULL;
                     
-                    wbhm->wbhm_Data.Open.Name = StrDup(name);
-                    wbcm->wbcm_Data.Relay.Message = wbhm;
-                    
-                    PutMsg(&(WorkbenchBase->wb_HandlerPort), (struct Message *) wbcm);
+                    if
+                    (
+                           (wbcm     = CreateWBCM(WBCM_TYPE_RELAY)) != NULL
+                        && (wbhm     = CreateWBHM(WBHM_TYPE_OPEN))  != NULL
+                        && (namecopy = StrDup(name))                != NULL
+                        
+                    )
+                    {
+                        wbhm->wbhm_Data.Open.Name     = namecopy;
+                        wbcm->wbcm_Data.Relay.Message = wbhm;
+                        
+                        PutMsg(&(WorkbenchBase->wb_HandlerPort), (struct Message *) wbcm);
+                    }
+                    else
+                    {
+                        FreeVec(namecopy);
+                        DestroyWBHM(wbhm);
+                        DestroyWBCM(wbcm);
+                    }
                 }
                 
                 break;
@@ -199,7 +214,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                     
                 if (!success)
                 {
-                    // FIXME: open execute command
+                    // FIXME: open execute command?
                 }
                 break;
         }
