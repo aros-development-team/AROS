@@ -22,6 +22,8 @@ extern struct Library *MUIMasterBase;
 #include "muimaster_intern.h"
 #include "mui.h"
 #include "support.h"
+#include "prefs.h"
+
 
 //#define MYDEBUG 1
 #include "debug.h"
@@ -570,7 +572,7 @@ static ULONG Group_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_
  * Put group in exchange state
  */
 static ULONG
-mInitChange(struct IClass *cl, Object *obj,
+Group_InitChange(struct IClass *cl, Object *obj,
 		 struct MUIP_Group_InitChange *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -584,7 +586,7 @@ mInitChange(struct IClass *cl, Object *obj,
  * Will recalculate display after dynamic adding/removing
  */
 static ULONG
-mExitChange(struct IClass *cl, Object *obj,
+Group_ExitChange(struct IClass *cl, Object *obj,
 		 struct MUIP_Group_ExitChange *msg)
 {
     static ULONG method = MUIM_Window_RecalcDisplay;
@@ -608,7 +610,7 @@ mExitChange(struct IClass *cl, Object *obj,
  * Sort the family
  */
 static ULONG
-mSort(struct IClass *cl, Object *obj, struct MUIP_Group_Sort *msg)
+Group_Sort(struct IClass *cl, Object *obj, struct MUIP_Group_Sort *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -1948,7 +1950,7 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 /*
  * MUIM_Export : to export an objects "contents" to a dataspace object.
  */
-static ULONG mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+static ULONG Group_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
     //struct MUI_GroupData *data = INST_DATA(cl, obj);
     STRPTR id;
@@ -1968,7 +1970,7 @@ static ULONG mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 /*
  * MUIM_Import : to import an objects "contents" from a dataspace object.
  */
-static ULONG mImport(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+static ULONG Group_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
     //struct MUI_GroupData *data = INST_DATA(cl, obj);
     STRPTR id;
@@ -1987,7 +1989,7 @@ static ULONG mImport(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
  * contains the given <udata> and returns the object pointer in this case.
  */
 static ULONG
-mFindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+Group_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -2004,7 +2006,7 @@ mFindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
  * in this case.
  */
 static ULONG
-mGetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
+Group_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -2023,7 +2025,7 @@ mGetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
 static ULONG 
-mSetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+Group_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -2041,7 +2043,7 @@ mSetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
  * Stop after the first udata found.
  */
 static ULONG
-mSetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+Group_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -2211,11 +2213,11 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case OM_REMMEMBER: return Group_RemMember(cl, obj, (APTR)msg);
     case MUIM_AskMinMax: return Group_AskMinMax(cl, obj, (APTR)msg);
     case MUIM_Group_ExitChange :
-	return mExitChange(cl, obj, (APTR)msg);
+	return Group_ExitChange(cl, obj, (APTR)msg);
     case MUIM_Group_InitChange :
-	return mInitChange(cl, obj, (APTR)msg);
+	return Group_InitChange(cl, obj, (APTR)msg);
     case MUIM_Group_Sort :
-	return mSort(cl, obj, (APTR)msg);
+	return Group_Sort(cl, obj, (APTR)msg);
     case MUIM_ConnectParent : return Group_ConnectParent(cl, obj, (APTR)msg);
     case MUIM_DisconnectParent: return Group_DisconnectParent(cl, obj, (APTR)msg);
     case MUIM_Layout: return Group_Layout(cl, obj, (APTR)msg);
@@ -2226,17 +2228,17 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 //    case MUIM_Group_FindObject :
 //	return mFindObject(cl, obj, (APTR)msg);
     case MUIM_Export :
-	return mExport(cl, obj, (APTR)msg);
+	return Group_Export(cl, obj, (APTR)msg);
     case MUIM_Import :
-	return mImport(cl, obj, (APTR)msg);
+	return Group_Import(cl, obj, (APTR)msg);
     case MUIM_FindUData :
-	return mFindUData(cl, obj, (APTR)msg);
+	return Group_FindUData(cl, obj, (APTR)msg);
     case MUIM_GetUData :
-	return mGetUData(cl, obj, (APTR)msg);
+	return Group_GetUData(cl, obj, (APTR)msg);
     case MUIM_SetUData :
-	return mSetUData(cl, obj, (APTR)msg);
+	return Group_SetUData(cl, obj, (APTR)msg);
     case MUIM_SetUDataOnce :
-	return mSetUDataOnce(cl, obj, (APTR)msg);
+	return Group_SetUDataOnce(cl, obj, (APTR)msg);
     case MUIM_Show: return Group_Show(cl, obj, (APTR)msg);
     case MUIM_Hide: return Group_Hide(cl, obj, (APTR)msg);
     case MUIM_HandleEvent: return Group_HandleEvent(cl,obj, (APTR)msg);
