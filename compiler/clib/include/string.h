@@ -78,9 +78,9 @@ int stcu_d(char * out, unsigned uivalue); /* SAS C */
 void * memccpy (void * restrict dest, const void * restrict src,
 		    int c, size_t n);
 
-int bcmp (const void * s1, const void * s2, int n);
+int bcmp (const void * s1, const void * s2, size_t n);
 void bcopy (const void * src, void * dst, size_t n);
-void bzero (void * src, int n);
+void bzero (void * src, size_t n);
 
 char *strsep(char **, const char *); /* BSD */
 
