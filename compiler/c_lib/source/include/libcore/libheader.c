@@ -59,7 +59,7 @@
 /* Include the file with the #defines for this library */
 #include LC_LIBDEFS_FILE
 
-LONG ASM LC_BUILDNAME(LibStart) (void)
+LONG ASM LC_BUILDNAME(entry) (void)
 {
     return(-1);
 }
