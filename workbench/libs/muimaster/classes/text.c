@@ -8,6 +8,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <exec/types.h>
 
 #include <clib/alib_protos.h>
@@ -15,6 +16,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/dos.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -33,6 +35,7 @@ struct MUI_TextData {
     ULONG  mtd_Flags;
     STRPTR contents;
     STRPTR preparse;
+    STRPTR accept; /* MUIA_String_Accept */
     TEXT   hichar;
     ZText *ztext;
     LONG xpixel; /* needed for cursor up/down movements, can be -1 */
@@ -130,6 +133,14 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
             case    MUIA_String_AdvanceOnCR:
 		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_ADVANCEONCR);
 		    break;
+
+	    case    MUIA_String_Accept:
+		    data->accept = (char*)tag->ti_Data;
+		    break;
+
+	    case    MUIA_String_Integer:
+		    set(obj,MUIA_String_Integer,tag->ti_Data);
+		    break;
 	}
     }
 
@@ -200,6 +211,14 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    }
 		    break;
 
+	    case    MUIA_String_Integer:
+		    {
+			char buf[20];
+			sprintf(buf,"%ld",tag->ti_Data);
+			set(obj, MUIA_String_Contents, buf);
+		    }
+		    break;
+
 	    case    MUIA_Text_PreParse:
 		    {
 		    	char *new_preparse = StrDup(((char*)tag->ti_Data)?(char*)tag->ti_Data:"");
@@ -248,6 +267,23 @@ static ULONG Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		}
 		STORE = (ULONG)data->contents;
 		return 1;
+
+	case    MUIA_String_Integer:
+		{
+		    /* This actually is slower then necessary, a integer gadget should contain no
+                     * style infos and no newline, so zune_text_iso_string is not needed - but it's
+                     * simpler so */
+		    STRPTR buf = NULL;
+		    get(obj,MUIA_String_Contents, &buf);
+		    if (buf)
+		    {
+		    	LONG val;
+		    	StrToLong(buf,&val);
+		    	STORE = val;
+		    	return 1;
+		    }
+		}
+		return 0;
 
 	case	MUIA_Text_PreParse:
 		STORE = (ULONG)data->preparse;
@@ -574,7 +610,9 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
     {
 	if (!(data->mtd_Flags & MTDF_MULTILINE))
 	{
-	    set(obj,MUIA_String_Acknowledge,TRUE);
+	    UBYTE *buf = NULL;
+	    get(obj,MUIA_String_Contents, &buf);
+	    set(obj,MUIA_String_Acknowledge,buf);
 	    if (data->mtd_Flags & MTDF_ADVANCEONCR) set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
 	    else set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_None);
 	    return 0;
@@ -630,10 +668,19 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
     {
 	if (!(data->mtd_Flags & MTDF_MULTILINE))
 	{
-	    set(obj,MUIA_String_Acknowledge,TRUE);
+	    UBYTE *buf = NULL;
+	    get(obj,MUIA_String_Contents, &buf);
+	    set(obj,MUIA_String_Acknowledge,buf);
 	    set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
 	    return 0;
 	}
+    }
+
+    if (data->accept)
+    {
+    	/* Check if character is accepted */
+	if (!strchr(data->accept,code))
+	    return 0;
     }
 
     if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))

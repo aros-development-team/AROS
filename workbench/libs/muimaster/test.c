@@ -585,7 +585,7 @@ End,
 		Child, RectangleObject,
 		    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
 		    MUIA_Rectangle_HBar, TRUE,
-		    MUIA_Rectangle_BarTitle,"Enter a string",
+		    MUIA_Rectangle_BarTitle,"Enter an integer",
 		    End,
 
 		Child, CycleObject,
@@ -596,6 +596,7 @@ End,
 		    StringFrame,
 		    MUIA_CycleChain,1,
 		    MUIA_String_AdvanceOnCR, TRUE,
+		    MUIA_String_Accept, "0123456789",
 		    End,
 
 		Child, prop = ScrollbarObject,
