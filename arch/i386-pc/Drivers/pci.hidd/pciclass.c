@@ -7,7 +7,7 @@
 */
 
 
-#include <hidd/pci.h>
+#include <hidd/pcibus.h>
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -29,7 +29,7 @@ static OOP_AttrBase HiddPCIAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
-    { IID_Hidd_PCI,	&HiddPCIAttrBase	},
+    { IID_Hidd_PCIBus,	&HiddPCIAttrBase	},
     { NULL, NULL }
 };
 
@@ -158,7 +158,7 @@ OOP_Class *init_pciclass (struct pci_staticdata *psd)
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-        {pcihidd_descr, IID_Hidd_PCI, NUM_PCI_METHODS},
+        {pcihidd_descr, IID_Hidd_PCIBus, NUM_PCI_METHODS},
         {NULL, NULL, 0}
     };
     
@@ -169,7 +169,7 @@ OOP_Class *init_pciclass (struct pci_staticdata *psd)
         { aMeta_SuperID,                (IPTR)CLID_Root},
 
         { aMeta_InterfaceDescr,         (IPTR)ifdescr},
-        { aMeta_ID,                     (IPTR)CLID_Hidd_PCI},
+        { aMeta_ID,                     (IPTR)CLID_Hidd_PCIBus},
         { aMeta_InstSize,               (IPTR)sizeof (struct pci_data) },
         {TAG_DONE, 0UL}
     };

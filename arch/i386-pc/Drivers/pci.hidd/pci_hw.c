@@ -11,7 +11,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <oop/oop.h>
-#include <hidd/pci.h>
+#include <hidd/pcibus.h>
 #include <asm/io.h>
 
 #undef  SDEBUG
