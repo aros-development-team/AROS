@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#ifndef AROS_NOFPU
+
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
@@ -120,3 +122,11 @@
     return val;
 } /* strtod */
 
+#else
+
+void strtod (const char * str,char ** endptr)
+{
+	return;
+}
+
+#endif /* AROS_NOFPU */

@@ -80,7 +80,9 @@
   char * s = str;
   char * format_end;
   long int result;
+#ifndef AROS_NOFPU
   double D_result;
+#endif
 
   int maxwidth;
   int base;
@@ -282,6 +284,7 @@
                    s = s_end;
                  break;
 
+#ifndef AROS_NOFPU
         case 'e' :
         case 'E' :
         case 'f' :
@@ -301,7 +304,7 @@
                    s = s_end;
                    
                  break;
-                 
+#endif                 
         case 'n' : /* the user wants to know how many letters we already
                       processed on the input (not format!!) string. So
                       we give hime the content of letter variable n */

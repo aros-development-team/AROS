@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#ifndef AROS_NOFPU
 #include <aros/machine.h>
 #include <stdio.h>
 extern void __calc_seed(unsigned short int xsubi[3]);
@@ -113,3 +114,12 @@ extern unsigned char __Xrand[8];
 #endif
   return *retval;
 } /* drand48 */
+
+#else
+
+void drand48(void)
+{
+	return;
+}
+
+#endif /* AROS_NOFPU */

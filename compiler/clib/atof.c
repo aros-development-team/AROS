@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#ifndef AROS_NOFPU
+
 #include <ctype.h>
 #include <stdio.h>
 
@@ -49,3 +51,11 @@
     return strtod (str, (char **)NULL);
 } /* atof */
 
+#else
+
+void atof(const char * str)
+{
+	return;
+}
+
+#endif /* AROS_NOFPU */

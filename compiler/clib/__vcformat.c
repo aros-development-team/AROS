@@ -13,7 +13,11 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <limits.h>
+#ifndef AROS_NO_LIMITS_H
+#	include <limits.h>
+#else
+#	define ULONG_MAX   4294967295UL
+#endif
 #include <ctype.h>
 #include "__math.h"
 #include <math.h>
@@ -24,6 +28,12 @@
 /* Prevent 'missing math function' problem on AROSfA */
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 #define FULL_SPECIFIERS
+#endif
+
+#ifdef AROS_NOFPU
+#	ifdef FULL_SPECIFIERS
+#		undef FULL_SPECIFIERS
+#	endif
 #endif
 
 #ifndef BITSPERBYTE
@@ -439,3 +449,4 @@ const unsigned char *const __decimalpoint = ".";
   }
   return outcount;
 }
+

@@ -8,7 +8,12 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <limits.h>
+#ifndef AROS_NO_LIMITS_H
+#	include <limits.h>
+#else
+#	define LONG_MAX	2147483647L
+#	define LONG_MIN	(-LONG_MAX - 1L)
+#endif
 
 /*****************************************************************************
 

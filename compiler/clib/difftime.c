@@ -9,6 +9,7 @@
 /*****************************************************************************
 
     NAME */
+#ifndef AROS_NOFPU
 #include <time.h>
 
 	double difftime (
@@ -55,3 +56,12 @@
     return (double)(time2 - time1);
     
 } /* difftime */
+
+#else
+
+void difftime(void)
+{
+	return;
+}
+
+#endif /* AROS_NOFPU */
