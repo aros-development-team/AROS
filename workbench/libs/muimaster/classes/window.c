@@ -92,6 +92,7 @@ struct MUI_WindowData
     APTR           wd_DefaultObject;
     ULONG          wd_ID;
     STRPTR         wd_Title;
+    STRPTR         wd_ScreenTitle;
     LONG           wd_Height;       /* Current dimensions */
     LONG           wd_Width;
     LONG           wd_X;
@@ -432,6 +433,7 @@ BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         WA_Top,          (IPTR)data->wd_Y,
         WA_Flags,        (IPTR)flags,
         data->wd_Title?WA_Title:TAG_IGNORE,(IPTR)data->wd_Title,
+        data->wd_ScreenTitle?WA_ScreenTitle:TAG_IGNORE, (IPTR)data->wd_ScreenTitle,
         WA_CustomScreen, (IPTR)data->wd_RenderInfo.mri_Screen,
         WA_InnerWidth,   (IPTR)data->wd_Width,
         WA_InnerHeight,  (IPTR)data->wd_Height,
@@ -1394,6 +1396,10 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    set(obj, MUIA_Window_Title, tag->ti_Data);
 		    break;
 
+	    case    MUIA_Window_ScreenTitle:
+		    set(obj, MUIA_Window_ScreenTitle, tag->ti_Data);
+		    break;
+
 	    case    MUIA_Window_Activate:
 		    _handle_bool_tag(data->wd_Flags, !tag->ti_Data, MUIWF_DONTACTIVATE);
 		    break;
@@ -1476,6 +1482,9 @@ static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->wd_Title)
 	FreeVec(data->wd_Title);
 
+    if (data->wd_ScreenTitle)
+	FreeVec(data->wd_ScreenTitle);
+
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -1540,6 +1549,15 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_Window_Title:
 		    if (data->wd_Title) FreeVec(data->wd_Title);
 		    data->wd_Title = StrDup((STRPTR)tag->ti_Data);
+		    if (data->wd_RenderInfo.mri_Window)
+			SetWindowTitles(data->wd_RenderInfo.mri_Window,data->wd_Title, (CONST_STRPTR)~0);
+		    break;
+
+	    case    MUIA_Window_ScreenTitle:
+		    if (data->wd_ScreenTitle) FreeVec(data->wd_ScreenTitle);
+		    data->wd_ScreenTitle = StrDup((STRPTR)tag->ti_Data);
+		    if (data->wd_RenderInfo.mri_Window)
+			SetWindowTitles(data->wd_RenderInfo.mri_Window, (CONST_STRPTR)~0, data->wd_ScreenTitle);
 		    break;
 	}
     }
@@ -1587,9 +1605,10 @@ static ULONG Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_Window_RootObject:
 	    STORE = (ULONG)data->wd_RootObject;
 	    return(TRUE);
-	case MUIA_Window_Title:
-	    STORE = (ULONG)data->wd_Title;
-	    return(TRUE);
+
+	case MUIA_Window_Title: STORE = (ULONG)data->wd_Title; return 1;
+	case MUIA_Window_ScreenTitle: STORE = (ULONG)data->wd_ScreenTitle; return 1;
+
 	case MUIA_Window_Width:
 	    STORE = (ULONG)data->wd_Width;
 	    return(TRUE);
