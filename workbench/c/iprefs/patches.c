@@ -39,6 +39,7 @@ pi [] =
     {LIB_UTILITY, 29 , LIB_LOCALE, 35}, /* ToUpper   */
     {LIB_DOS	, 124, LIB_LOCALE, 36}, /* DateToStr */
     {LIB_DOS	, 125, LIB_LOCALE, 37}, /* StrToDate */
+    {LIB_DOS	, 154, LIB_LOCALE, 38}, /* DosGetLocalizedString */
     {NULL   	    	    	     }
 };
 
