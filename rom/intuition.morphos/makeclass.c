@@ -5,7 +5,6 @@
     Desc: Initialize a BOOPSI class
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <proto/exec.h>

@@ -5,7 +5,7 @@
     Desc: Create a new BOOPSI object
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
+
 #include <exec/lists.h>
 #include <intuition/classes.h>
 #include <proto/exec.h>

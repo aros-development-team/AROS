@@ -5,7 +5,6 @@
     Desc:
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include "intuition_intern.h"
 
 #define IW(x) ((struct IntWindow *)x)
