@@ -185,5 +185,252 @@ VOID bitmap_invertmemrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Inve
         
 }
 
+/****************************************************************************************/
+
+VOID bitmap_copymembox8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox8 *msg)
+{
+    UBYTE *src_start, *dst_start;
+    LONG phase, width, height, w, p;
+    ULONG src_start_add, dst_start_add;
+    BOOL descending;
+    
+    width = msg->width;
+    height = msg->height;
+
+    src_start = msg->src + msg->srcY * msg->srcMod + msg->srcX;
+    src_start_add = msg->srcMod - width;
+
+    dst_start = msg->dst + msg->dstY * msg->dstMod + msg->dstX;
+    dst_start_add = msg->dstMod - width;
+        
+    if ((IPTR)src_start > (IPTR)dst_start)
+    {
+	if ((phase = (IPTR)src_start & 3L))
+	{
+    	    phase = 4 - phase;
+	    if (phase > width) phase = width;
+	    width -= phase;
+	}
+    	descending = FALSE;
+    }
+    else
+    {
+    	src_start += (height - 1) * msg->srcMod + width;
+	dst_start += (height - 1) * msg->dstMod + width;
+	
+	phase = ((IPTR)src_start & 3L);
+	if (phase > width) phase = width;
+	width -= phase;
+	
+	descending = TRUE;
+    }
+ 
+    /* NOTE: This can write LONGs to odd addresses, which might not work
+       on some CPUs (MC68000) */
+
+    if (!descending)
+    {
+	while(height--)
+	{
+    	    w = width;
+	    p = phase;
+
+	    while(p--)
+	    {
+		*dst_start++ = *src_start++;
+	    }
+	    while(w >= 4)
+	    {
+		*((ULONG *)dst_start)++ = *((ULONG *)src_start)++;
+		w -= 4;
+	    }
+	    while(w--)
+	    {
+		*dst_start++ = *src_start++;
+	    }
+	    src_start += src_start_add;
+	    dst_start += dst_start_add;
+	}
+    }
+    else
+    {
+	while(height--)
+	{
+    	    w = width;
+	    p = phase;
+
+	    while(p--)
+	    {
+		*--dst_start = *--src_start;
+	    }
+	    while(w >= 4)
+	    {
+		*--((ULONG *)dst_start) = *--((ULONG *)src_start);
+		w -= 4;
+	    }
+	    while(w--)
+	    {
+		*--dst_start = *--src_start;
+	    }
+	    src_start -= src_start_add;
+	    dst_start -= dst_start_add;
+	}
+     }
+    
+}
+
+/****************************************************************************************/
+
+VOID bitmap_copymembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox16 *msg)
+{
+    UBYTE *src_start, *dst_start;
+    LONG phase, width, height, w, p;
+    ULONG src_start_add, dst_start_add;
+    BOOL descending;
+    
+    width = msg->width;
+    height = msg->height;
+
+    src_start = msg->src + msg->srcY * msg->srcMod + msg->srcX * 2;
+    src_start_add = msg->srcMod - width * 2;
+
+    dst_start = msg->dst + msg->dstY * msg->dstMod + msg->dstX * 2;
+    dst_start_add = msg->dstMod - width * 2;
+        
+    if ((IPTR)src_start > (IPTR)dst_start)
+    {
+	if ((phase = (IPTR)src_start & 1L))
+	{
+    	    phase = 2 - phase;
+	    if (phase > width) phase = width;
+	    width -= phase;
+	}
+    	descending = FALSE;
+    }
+    else
+    {
+    	src_start += (height - 1) * msg->srcMod + width * 2;
+	dst_start += (height - 1) * msg->dstMod + width * 2;
+	
+	phase = ((IPTR)src_start & 1L);
+	if (phase > width) phase = width;
+	width -= phase;
+	
+	descending = TRUE;
+    }
+ 
+    if (!descending)
+    {
+	while(height--)
+	{
+    	    w = width;
+	    p = phase;
+
+	    while(p--)
+	    {
+		*((UWORD *)dst_start)++ = *((UWORD *)src_start)++;
+	    }
+	    while(w >= 2)
+	    {
+		*((ULONG *)dst_start)++ = *((ULONG *)src_start)++;
+		w -= 2;
+	    }
+	    while(w--)
+	    {
+		*((UWORD *)dst_start)++ = *((UWORD *)src_start)++;
+	    }
+	    src_start += src_start_add;
+	    dst_start += dst_start_add;
+	}
+    }
+    else
+    {
+	while(height--)
+	{
+    	    w = width;
+	    p = phase;
+
+	    while(p--)
+	    {
+		*--((UWORD *)dst_start) = *--((UWORD *)src_start);
+	    }
+	    while(w >= 2)
+	    {
+		*--((ULONG *)dst_start) = *--((ULONG *)src_start);
+		w -= 2;
+	    }
+	    while(w--)
+	    {
+		*--((UWORD *)dst_start) = *--((UWORD *)src_start);
+	    }
+	    src_start -= src_start_add;
+	    dst_start -= dst_start_add;
+	}
+     }
+    
+}
+
+/****************************************************************************************/
+
+VOID bitmap_copymembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox32 *msg)
+{
+    UBYTE *src_start, *dst_start;
+    LONG width, height, w;
+    ULONG src_start_add, dst_start_add;
+    BOOL descending;
+    
+    width = msg->width;
+    height = msg->height;
+
+    src_start = msg->src + msg->srcY * msg->srcMod + msg->srcX * 4;
+    src_start_add = msg->srcMod - width * 4;
+
+    dst_start = msg->dst + msg->dstY * msg->dstMod + msg->dstX * 4;
+    dst_start_add = msg->dstMod - width * 4;
+        
+    if ((IPTR)src_start > (IPTR)dst_start)
+    {
+    	descending = FALSE;
+    }
+    else
+    {
+    	src_start += (height - 1) * msg->srcMod + width * 4;
+	dst_start += (height - 1) * msg->dstMod + width * 4;
+	
+	descending = TRUE;
+    }
+ 
+    if (!descending)
+    {
+	while(height--)
+	{
+    	    w = width;
+
+	    while(w--)
+	    {
+		*((ULONG *)dst_start)++ = *((ULONG *)src_start)++;
+	    }
+
+	    src_start += src_start_add;
+	    dst_start += dst_start_add;
+	}
+    }
+    else
+    {
+	while(height--)
+	{
+    	    w = width;
+
+	    while(w--)
+	    {
+		*--((ULONG *)dst_start) = *--((ULONG *)src_start);
+	    }
+	    
+	    src_start -= src_start_add;
+	    dst_start -= dst_start_add;
+	}
+     }
+    
+}
 
 /****************************************************************************************/

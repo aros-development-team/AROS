@@ -879,6 +879,103 @@ VOID	HIDD_BM_InvertMemRect(OOP_Object *obj
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
+
+VOID	HIDD_BM_CopyMemBox8(OOP_Object *obj
+    	, APTR src
+	, WORD srcX
+	, WORD srcY
+	, APTR dst
+	, WORD dstX
+	, WORD dstY
+	, UWORD width
+	, UWORD height
+	, ULONG srcMod
+	, ULONG dstMod)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_CopyMemBox8 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox8);
+        
+    p.mID = mid;
+    p.src = src;
+    p.srcX = srcX;
+    p.srcY = srcY;
+    p.dst = dst;
+    p.dstX = dstX;
+    p.dstY = dstY;
+    p.width = width;
+    p.height = height;
+    p.srcMod = srcMod;  
+    p.dstMod = dstMod;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+VOID	HIDD_BM_CopyMemBox16(OOP_Object *obj
+    	, APTR src
+	, WORD srcX
+	, WORD srcY
+	, APTR dst
+	, WORD dstX
+	, WORD dstY
+	, UWORD width
+	, UWORD height
+	, ULONG srcMod
+	, ULONG dstMod)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_CopyMemBox16 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox16);
+        
+    p.mID = mid;
+    p.src = src;
+    p.srcX = srcX;
+    p.srcY = srcY;
+    p.dst = dst;
+    p.dstX = dstX;
+    p.dstY = dstY;
+    p.width = width;
+    p.height = height;
+    p.srcMod = srcMod;   
+    p.dstMod = dstMod;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+VOID	HIDD_BM_CopyMemBox32(OOP_Object *obj
+    	, APTR src
+	, WORD srcX
+	, WORD srcY
+	, APTR dst
+	, WORD dstX
+	, WORD dstY
+	, UWORD width
+	, UWORD height
+	, ULONG srcMod
+	, ULONG dstMod)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_CopyMemBox32 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox32);
+        
+    p.mID = mid;
+    p.src = src;
+    p.srcX = srcX;
+    p.srcY = srcY;
+    p.dst = dst;
+    p.dstX = dstX;
+    p.dstY = dstY;
+    p.width = width;
+    p.height = height;
+    p.srcMod = srcMod;  
+    p.dstMod = dstMod;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
 OOP_Object * HIDD_BM_SetColorMap(OOP_Object *obj, OOP_Object *colorMap)
 {
     STATIC_MID;
