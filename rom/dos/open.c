@@ -62,12 +62,13 @@
     struct FileHandle *ret;
     BPTR con, ast;
     LONG error;
-    
+    struct Process *me;
+
     /* Sanity check */
     if (name == NULL) return NULL;
     
     /* Get pointer to process structure */
-    struct Process *me = (struct Process *)FindTask(NULL);
+    me = (struct Process *)FindTask(NULL);
 
     /* Create filehandle */
     ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
