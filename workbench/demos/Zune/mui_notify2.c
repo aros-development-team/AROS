@@ -7,16 +7,61 @@
 #include <exec/types.h>
 
 //#include <libraries/mui.h>
+#include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#ifdef _AROS
 #include <proto/muimaster.h>
+#endif
 #include <proto/utility.h>
-#include <proto/alib.h>
 #include <stdio.h>
 
 #include <mui.h>
 
 struct Library       *MUIMasterBase;
+
+#ifndef _AROS
+
+/* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
+#include "muimaster_intern.h"
+
+int openmuimaster(void)
+{
+    static struct MUIMasterBase_intern MUIMasterBase_instance;
+    MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
+
+    MUIMasterBase_instance.sysbase = *((struct ExecBase **)4);
+    MUIMasterBase_instance.dosbase = OpenLibrary("dos.library",37);
+    MUIMasterBase_instance.utilitybase = OpenLibrary("utility.library",37);
+    MUIMasterBase_instance.aslbase = OpenLibrary("asl.library",37);
+    MUIMasterBase_instance.gfxbase = OpenLibrary("graphics.library",37);
+    MUIMasterBase_instance.layersbase = OpenLibrary("layers.library",37);
+    MUIMasterBase_instance.intuibase = OpenLibrary("intuition.library",37);
+    MUIMasterBase_instance.cxbase = OpenLibrary("commodities.library",37);
+    MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
+    __zune_prefs_init(&__zprefs);
+
+    return 1;
+}
+
+void closemuimaster(void)
+{
+}
+
+#else
+
+int openmuimaster(void)
+{
+    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0))) return 1;
+    return 0;
+}
+
+void closemuimaster(void)
+{
+    if (MUIMasterBase) CloseLibrary(MUIMasterBase);
+}
+
+#endif
 
 #ifndef TAGBASE
 #define TAGBASE (TAG_USER | (9853 << 16))
@@ -190,10 +235,14 @@ Test_Print(struct IClass *cl, Object *obj, struct MUIP_Test_Print *msg)
 /*
  * Test class method dispatcher.
  */
+#ifndef _AROS
+__asm IPTR Test_Dispatcher(register __a0 Class *cl, register __a2 Object *obj, register __a1 Msg msg)
+#else
 AROS_UFH3S(IPTR, Test_Dispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1))
+#endif
 {
     /*
      * Watch out for methods we do understand.
@@ -329,10 +378,14 @@ ExtendedTest_Print(struct IClass *cl, Object *obj,
 /*
  * ExtendedTest class method dispatcher.
  */
+#ifndef _AROS
+__asm IPTR ExtendedTest_Dispatcher(register __a0 Class *cl, register __a2 Object *obj, register __a1 Msg msg)
+#else
 AROS_UFH3S(IPTR, ExtendedTest_Dispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1))
+#endif
 {
     /*
      * Watch out for methods we do understand.
@@ -367,8 +420,7 @@ int main (void)
     struct MUI_CustomClass *extendedTestClass;
     int result = 0;
 
-    MUIMasterBase = OpenLibrary("muimaster.library", 0);
-    if (MUIMasterBase == NULL) return 20;
+    if (!openmuimaster()) return 20;
 
     testClass = MUI_CreateCustomClass(NULL, MUIC_Notify, NULL,
 				      sizeof(struct TestData),
@@ -422,7 +474,7 @@ int main (void)
 
 error:
 
-    CloseLibrary(MUIMasterBase);
+    closemuimaster();
 
     return result;
 }
