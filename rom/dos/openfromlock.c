@@ -1,26 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.6  1997/01/27 00:36:26  ldp
-    Polish
 
-    Revision 1.5  1996/12/09 13:53:35  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.4  1996/10/24 15:50:33  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/08/13 13:52:49  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:40:55  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Open a file from a lock
     Lang: english
 */
 #include <proto/exec.h>
@@ -40,7 +22,7 @@
 	struct DosLibrary *, DOSBase, 63, Dos)
 
 /*  FUNCTION
-	Convert a lock into a filehandle. If all went well the filehandle
+	Convert a lock into a filehandle. If all went well the lock
 	will be gone. In case of an error it must still be freed.
 
     INPUTS
