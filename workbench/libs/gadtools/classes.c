@@ -1693,7 +1693,7 @@ STATIC IPTR string_render(Class *cl, Object *o, struct gpRender *msg)
 	DrawImageState(msg->gpr_RPort,
 		(struct Image *)data->frame,
 		x, y,
-		((G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
+		IDS_NORMAL,
 		msg->gpr_GInfo->gi_DrInfo);
    
    	/* render label */
