@@ -52,8 +52,9 @@ AROS_UFH4(ULONG, VBlankInt,
 
     while(tr && ((struct Node *)tr)->ln_Succ != NULL)
     {
-	if(	(tr->tr_time.tv_secs <= TimerBase->tb_Elapsed.tv_secs)
-	    &&  (tr->tr_time.tv_micro < TimerBase->tb_Elapsed.tv_micro)
+	if(     (tr->tr_time.tv_secs < TimerBase->tb_Elapsed.tv_secs)
+	    ||	(    (tr->tr_time.tv_secs <= TimerBase->tb_Elapsed.tv_secs)
+	         &&  (tr->tr_time.tv_micro < TimerBase->tb_Elapsed.tv_micro))
 	  )
 	{
 	    /* This request has finished */
@@ -92,7 +93,6 @@ AROS_UFH4(ULONG, VBlankInt,
 	    Remove((struct Node *)tr);
 	    tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
 	    tr->tr_node.io_Error = 0;
-	    kprintf("Finished with request!\n");
 	    ReplyMsg((struct Message *)tr);
 
 	    tr = next;
