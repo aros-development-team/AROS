@@ -28,7 +28,7 @@ else
 
 FILES = compleximage demowin gtdemo helloworld inquire intuitext \
 	librarytest listfonts readicon regiontest rtdemo shadowborder \
-	sift simpleimage mathtest
+	sift simpleimage mathtest filereq
 endif
 
 IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
