@@ -682,7 +682,7 @@ void LineInTmpRas(struct RastPort  * rp,
   xright -= bounds->MinX; 
   y      -= bounds->MinY;
 
-kprintf("line from %d to %d\n",xleft,xright);
+//kprintf("line from %d to %d\n",xleft,xright);
 
   if (xleft > xright) return;
   /* 
