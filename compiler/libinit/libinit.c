@@ -8,8 +8,8 @@
 #include <exec/types.h>
 #include <aros/asmcall.h>
 
-typedef AROS_UFH1(int, (*libfunc),
-		  AROS_UFHA(void*, libbase, A6)
+typedef AROS_UFP1(int, (*libfunc),
+		  AROS_UFPA(void*, libbase, A6)
 		 );
 
 AROS_UFH3(int, set_call_libfuncs,
@@ -18,6 +18,8 @@ AROS_UFH3(int, set_call_libfuncs,
 	  AROS_UFHA(void*, libbase, A6)
 	 )
 {
+    AROS_USERFUNC_INIT
+    
     int n;
 
     if (order>=0)
@@ -25,7 +27,8 @@ AROS_UFH3(int, set_call_libfuncs,
         n = 1;
         while(list[n])
         {
-            if (!list[n++](libbase)) return FALSE;
+            if (!AROS_UFC1(int, list[n++], 
+		AROS_UFCA(void *, libbase, A6))) return FALSE;
         }
     }
     else
@@ -34,9 +37,12 @@ AROS_UFH3(int, set_call_libfuncs,
         
         while (n)
         {
-            (void)list[n--](libbase);
+            AROS_UFC1(int, list[n--],
+		AROS_UFCA(void *, libbase, A6));
         }
     }
 
     return TRUE;
+    
+    AROS_USERFUNC_EXIT
 }
