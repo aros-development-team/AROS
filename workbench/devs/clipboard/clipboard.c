@@ -436,11 +436,28 @@ AROS_LH3(void, open,
 	CBUn = (struct ClipboardUnit *)tempNode;
     }
 
-    CBUn->cu_OpenCnt++;
+    if ((ioreq->io_Error == 0) && CBUn)
+    {
+    	CBUn->cu_OpenCnt++;
 
-    /* I have one more opener. */
-    CBBase->cb_device.dd_Library.lib_OpenCnt++;
+    	/* I have one more opener. */
+    	CBBase->cb_device.dd_Library.lib_OpenCnt++;
+    }
+    else if (CBUn && (found == FALSE))
+    {
+    	if (CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort)
+	{
+	    FreeMem(CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort, sizeof(struct MsgPort));
+	}
+	
+	if (CBUn->cu_clipFilename)
+	{
+	    FreeMem(CBUn->cu_clipFilename, CBUN_FILENAMELEN);
+	}
 
+	FreeMem(CBUn, sizeof(struct ClipboardUnit));
+    }
+    
     ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
 
     AROS_LIBFUNC_EXIT
@@ -469,6 +486,7 @@ AROS_LH1(BPTR, close,
     {
 	D(bug("clipboard.device/close: removeunit\n",ioreq));
 	Remove((struct Node *)ioreq->io_Unit);
+    	FreeMem(CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort, sizeof(struct MsgPort));
 	FreeMem(CBUn->cu_clipFilename, CBUN_FILENAMELEN);
 	FreeMem(ioreq->io_Unit, sizeof(struct ClipboardUnit));
     }
