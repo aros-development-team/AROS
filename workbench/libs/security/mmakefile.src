@@ -62,9 +62,9 @@ EXEDIR := $(AROSDIR)/MuFS
 
 USER_INCLUDES := -I../Include
 
-#MM libs-multiuser : includes linklibs
+#MM workbench-libs-security : includes linklibs
 
-%build_module mmake=libs-mufs-security modname=security \
+%build_module mmake=workbench-libs-security modname=security \
   modtype=library files=$(FUNCS) uselibs="mui amiga rom m"
 
 %common
