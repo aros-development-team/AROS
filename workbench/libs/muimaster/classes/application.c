@@ -8,10 +8,12 @@
 
 #include <exec/types.h>
 #include <devices/timer.h>
+#include <dos/dostags.h>
 
 #include <clib/alib_protos.h>
 #include <libraries/commodities.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/commodities.h>
@@ -1116,6 +1118,10 @@ static ULONG Application_SetConfigdata(struct IClass *cl, Object *obj,
     return 0;
 }
 
+
+/* MUIM_Application_OpenWindows
+ * Opens all windows of an application
+ */
 static ULONG Application_OpenWindows(struct IClass *cl, Object *obj,
 				       struct MUIP_Application_OpenWindows *msg)
 {
@@ -1132,6 +1138,27 @@ static ULONG Application_OpenWindows(struct IClass *cl, Object *obj,
     }
     return 0;
 }
+
+
+static ULONG Application_OpenConfigWindow(struct IClass *cl, Object *obj,
+				       struct MUIP_Application_OpenConfigWindow *msg)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    struct TagItem tags[] =
+    {
+	{ SYS_Background, TRUE          },
+	{ SYS_Asynch,     TRUE          },
+	{ TAG_DONE,       0             }
+    };
+
+    if (SystemTagList("Zune wanderer", tags) == -1)
+    {	
+	return 0;
+    }
+
+    return 1;
+}
+
 
 /*
  * The class dispatcher
@@ -1182,6 +1209,8 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
 	    return Application_SetConfigdata(cl, obj, (APTR)msg);
 	case MUIM_Application_OpenWindows :
 	    return Application_OpenWindows(cl, obj, (APTR)msg);
+	case MUIM_Application_OpenConfigWindow:
+	    return Application_OpenConfigWindow(cl, obj, (APTR)msg);
     }
 
     return(DoSuperMethodA(cl, obj, msg));
