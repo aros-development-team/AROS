@@ -135,17 +135,17 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 	/* Clean new stack from call to StackSwap */
 	addl $8,%esp
 #endif
-printf("In runprocess! %x , %x\n",entry, *entry);
+printf("In runprocess! %lx , %lx\n", (IPTR)entry, (IPTR)*entry);
     StackSwap (sss);
 
     /* Call the function with the new stack. */
 /*    *retptr = (*entry)(argptr, argsize, DOSBase->dl_SysBase);
 */
 	*retptr = AROS_UFC3(ULONG, entry,
-	            AROS_UFCA(STRPTR, argptr  ,A0),
-	            AROS_UFCA(ULONG,  argsize ,D0),
-	            AROS_UFCA(struct ExecBase *, SysBase, A6)
-	          ); 
+		    AROS_UFCA(STRPTR, argptr  ,A0),
+		    AROS_UFCA(ULONG,  argsize ,D0),
+		    AROS_UFCA(struct ExecBase *, SysBase, A6)
+		  );
 
 #if 0
 	/* Call the specified routine */
