@@ -7,6 +7,7 @@
 */
 
 #include <rexx/rexxcall.h>
+#include <rexx/errors.h>
 #include <aros/debug.h>
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
@@ -21,13 +22,14 @@
  */
 struct arexxfunc {
   const char *commandname;
+  UBYTE minargs, maxargs;
   LONG (*f)(struct Library *, struct RexxMsg *, UBYTE **);
 };
 
 /* The following function list has to be sorted on name */
 struct arexxfunc funcs[] = {
-    { "ALLOCMEM", rxsupp_allocmem },
-    { "FREEMEM", rxsupp_freemem }
+    { "ALLOCMEM", 1, 2, rxsupp_allocmem },
+    { "FREEMEM", 2, 2, rxsupp_freemem }
 };
 #define FUNCCOUNT (sizeof(funcs)/sizeof(struct arexxfunc))
 
@@ -42,13 +44,19 @@ AROS_AREXXLIBQUERYFUNC(ArexxDispatch, msg,
     struct arexxfunc *func;
     UBYTE *argstring = NULL;
     LONG rc;
+    UBYTE n = msg->rm_Action & RXARGMASK;
   
     func = bsearch(ARG0(msg), funcs, FUNCCOUNT, sizeof(struct arexxfunc), comparefunc);
     if (func == NULL)
     {
         ReturnRexxQuery(1, NULL);
     }
-    else
+    else if (n < func->minargs || n > func->maxargs)
+    {
+        kprintf("Wrong number of arguments %d\n", n);
+        ReturnRexxQuery(ERR10_018, NULL);
+    }
+    else 
     {
         rc = func->f(RexxSupportBase, msg, &argstring);
         ReturnRexxQuery(rc, argstring);
