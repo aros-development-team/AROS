@@ -64,6 +64,7 @@
   struct Layer_Info * LI = L->LayerInfo;
   struct Layer * _L;
   struct ClipRect * CR, * _CR;
+  struct Region * oldclipregion;
 
   /* 
      If it's a non-BACKDROP layer and behind it is either no
@@ -92,7 +93,10 @@
 
   SetLayerPriorities(LI);
 
+  oldclipregion = InstallClipRegion(L, NULL);
+
   UninstallClipRegionClipRects(LI);
+
 
   if (LI->top_layer == L)
   {
@@ -357,6 +361,9 @@
   } /* while */
 
   CleanupLayers(LI);
+
+  if (NULL != oldclipregion)
+    InstallClipRegion(L, oldclipregion);
   
   InstallClipRegionClipRects(LI);
 
