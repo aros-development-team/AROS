@@ -109,7 +109,7 @@ static IPTR aslprop_set(Class * cl, Object * o, struct opSet * msg)
     
     data = INST_DATA(cl, o);
     
-    while((ti = NextTagItem(&tstate)))
+    while((ti = NextTagItem((const struct TagItem **)&tstate)))
     {
         switch(ti->ti_Tag)
 	{
@@ -639,7 +639,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 
     retval = DoSuperMethodA(cl, o, (Msg) msg);
 
-    while((tag = NextTagItem(&tstate)))
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
         switch(tag->ti_Tag)
 	{

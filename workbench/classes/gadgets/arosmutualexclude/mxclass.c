@@ -43,7 +43,7 @@ void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
     struct MXData *data = INST_DATA(cl, obj);
     struct TagItem *tag, *taglist = msg->ops_AttrList;
 
-    while ((tag = NextTagItem(&taglist))) {
+    while ((tag = NextTagItem((const struct TagItem **)&taglist))) {
 	switch (tag->ti_Tag) {
 	case GA_DrawInfo:
 	    data->dri = (struct DrawInfo *) tag->ti_Data;
@@ -139,7 +139,7 @@ IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
-    while ((tag = NextTagItem(&taglist))) {
+    while ((tag = NextTagItem((const struct TagItem **)&taglist))) {
 	switch (tag->ti_Tag) {
         case GA_Disabled:
             retval = TRUE;

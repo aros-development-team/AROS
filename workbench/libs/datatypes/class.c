@@ -77,7 +77,7 @@ ULONG SetAttributes(struct Library *DTBase, Class *class, Object *object,
     struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
     struct TagItem *tag;
    
-    while((tag = NextTagItem(&tstate)))
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
 	LONG data = tag->ti_Data;
 	

@@ -103,7 +103,7 @@ AROS_UFH3(VOID, FOTagHook,
 
     tstate = pta->pta_Tags;
 
-    while ((tag = NextTagItem(&tstate)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
     {
 	IPTR data = tag->ti_Data;
 

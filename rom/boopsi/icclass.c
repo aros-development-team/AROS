@@ -80,7 +80,7 @@ AROS_UFH3S(IPTR, dispatch_icclass,
 	    struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
 	    struct TagItem *tag;
 
-	    while ((tag = NextTagItem(&tstate)))
+	    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
 	    {
 		switch(tag->ti_Tag)
 		{

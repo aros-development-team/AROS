@@ -91,7 +91,7 @@ VOID ParseCommonTags
 
     tstate = taglist;
 
-    while ((tag = NextTagItem(&tstate)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
     {
 	/* The tags that are put "in a row" are defined as the same value,
 		and therefor we only use one of them, but the effect is for all of them
