@@ -903,9 +903,9 @@ GetVolName( BSTR bstr, STRPTR cstr )
 	LONG    length = AROS_BSTR_strlen(bstr);
 	LONG    i;		/* Loop variable */
 
-	for (i = 0; i < length - 1; i++)
+	for (i = 0; i < length; i++)
 	{
-	    cstr[i] = AROS_BSTR_getchar(bstr, i + 1);
+	    cstr[i] = AROS_BSTR_getchar(bstr, i);
 	}
 	
 	cstr[i++] = ':';
