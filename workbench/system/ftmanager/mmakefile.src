@@ -21,4 +21,4 @@ FILES := ftmanager
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
 %common
-#include_deps
+%include_deps
