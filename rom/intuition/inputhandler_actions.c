@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Responsible for executing deferred Intuition actions like
@@ -201,9 +201,22 @@ static void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
 static void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
 				 BOOL is_sizewindow, struct IntuitionBase *IntuitionBase)
 {
+    struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
     struct Layer *lay;
     
     D(bug("********* WindowSizeHasChanged ********\n"));
+
+    /* Fix GadgetInfo domain if there is an active gadget in window
+       which was resized */
+    
+    if ((iihdata->ActiveGadget) && (targetwindow == iihdata->GadgetInfo.gi_Window))
+    {
+    	GetGadgetDomain(iihdata->ActiveGadget,
+	    	    	iihdata->GadgetInfo.gi_Screen,
+			iihdata->GadgetInfo.gi_Window,
+			NULL,
+			&iihdata->GadgetInfo.gi_Domain);    	
+    }
 
     /* Relayout GFLG_REL??? gadgets */
     DoGMLayout(targetwindow->FirstGadget, targetwindow, NULL, -1, FALSE, IntuitionBase);
