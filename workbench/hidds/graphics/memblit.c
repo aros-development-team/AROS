@@ -109,6 +109,45 @@ VOID bitmap_fillmemrect16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Fill
 
 /****************************************************************************************/
 
+VOID bitmap_fillmemrect24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect24 *msg)
+{
+    UBYTE *start;
+    LONG width, height, w;
+    UBYTE fill1, fill2, fill3;
+    ULONG start_add;
+    
+    start = msg->dstBuf + msg->minY * msg->dstMod + msg->minX * 3;
+    width = msg->maxX - msg->minX + 1;
+    height = msg->maxY - msg->minY + 1;
+    start_add = msg->dstMod - width * 3;
+
+#if AROS_BIG_ENDIAN        
+    fill1 = (msg->fill >> 16) & 0xFF;
+    fill2 = (msg->fill >> 8) & 0xFF;
+    fill3 =  msg->fill & 0xFF;
+#else
+    fill1 =  msg->fill & 0xFF;
+    fill2 = (msg->fill >> 8) & 0xFF;
+    fill3 = (msg->fill >> 16) & 0xFF;
+#endif
+
+    while(height--)
+    {
+    	w = width;
+	
+	while(w--)
+	{
+	    *start++ = fill1;
+	    *start++ = fill2;
+	    *start++ = fill3;
+	}
+
+	start += start_add;
+    }
+}
+
+/****************************************************************************************/
+
 VOID bitmap_fillmemrect32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect32 *msg)
 {
     UBYTE *start;
@@ -372,6 +411,73 @@ VOID bitmap_copymembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyM
 
 /****************************************************************************************/
 
+VOID bitmap_copymembox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox24 *msg)
+{
+    UBYTE *src_start, *dst_start;
+    LONG width, height, w;
+    ULONG src_start_add, dst_start_add;
+    BOOL descending;
+    
+    width = msg->width;
+    height = msg->height;
+
+    src_start = msg->src + msg->srcY * msg->srcMod + msg->srcX * 3;
+    src_start_add = msg->srcMod - width * 3;
+
+    dst_start = msg->dst + msg->dstY * msg->dstMod + msg->dstX * 3;
+    dst_start_add = msg->dstMod - width * 3;
+        
+    if ((IPTR)src_start > (IPTR)dst_start)
+    {
+    	descending = FALSE;
+    }
+    else
+    {
+    	src_start += (height - 1) * msg->srcMod + width * 3;
+	dst_start += (height - 1) * msg->dstMod + width * 3;
+	
+	descending = TRUE;
+    }
+ 
+    if (!descending)
+    {
+	while(height--)
+	{
+    	    w = width;
+
+	    while(w--)
+	    {
+		*((UBYTE *)dst_start)++ = *((UBYTE *)src_start)++;
+		*((UBYTE *)dst_start)++ = *((UBYTE *)src_start)++;
+		*((UBYTE *)dst_start)++ = *((UBYTE *)src_start)++;
+	    }
+
+	    src_start += src_start_add;
+	    dst_start += dst_start_add;
+	}
+    }
+    else
+    {
+	while(height--)
+	{
+    	    w = width;
+
+	    while(w--)
+	    {
+		*--((UBYTE *)dst_start) = *--((UBYTE *)src_start);
+		*--((UBYTE *)dst_start) = *--((UBYTE *)src_start);
+		*--((UBYTE *)dst_start) = *--((UBYTE *)src_start);
+	    }
+	    
+	    src_start -= src_start_add;
+	    dst_start -= dst_start_add;
+	}
+     }
+    
+}
+
+/****************************************************************************************/
+
 VOID bitmap_copymembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox32 *msg)
 {
     UBYTE *src_start, *dst_start;
@@ -460,6 +566,49 @@ VOID bitmap_copylutmembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Co
 	while(w--)
 	{
 	    *((UWORD *)dst_start)++ = (UWORD)(pixlut[*((UBYTE *)src_start)++]);
+	}
+	src_start += src_start_add;
+	dst_start += dst_start_add;
+    }
+}
+
+/****************************************************************************************/
+
+VOID bitmap_copylutmembox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox24 *msg)
+{
+    HIDDT_Pixel *pixlut = msg->pixlut->pixels;
+    UBYTE *src_start, *dst_start;
+    LONG width, height, w;
+    ULONG src_start_add, dst_start_add;
+
+    if (!pixlut) return;
+    
+    width = msg->width;
+    height = msg->height;
+
+    src_start = msg->src + msg->srcY * msg->srcMod + msg->srcX;
+    src_start_add = msg->srcMod - width;
+
+    dst_start = msg->dst + msg->dstY * msg->dstMod + msg->dstX * 3;
+    dst_start_add = msg->dstMod - width * 3;
+        
+    while(height--)
+    {
+    	w = width;
+
+	while(w--)
+	{
+	    HIDDT_Pixel pix = pixlut[*((UBYTE *)src_start)++];
+	    
+	#if AROS_BIG_ENDIAN
+	    *dst_start++ = (pix >> 16) & 0xFF;
+	    *dst_start++ = (pix >> 8) & 0xFF;
+	    *dst_start++ =  pix & 0xFF;
+	#else
+	    *dst_start++ =  pix & 0xFF;
+	    *dst_start++ = (pix >> 8) & 0xFF;
+	    *dst_start++ = (pix >> 16) & 0xFF;
+	#endif
 	}
 	src_start += src_start_add;
 	dst_start += dst_start_add;
@@ -561,6 +710,47 @@ VOID bitmap_putmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 /****************************************************************************************/
 
+VOID bitmap_putmem32image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image24 *msg)
+{
+    UBYTE *src_start, *dst_start;
+    LONG width, height, w;
+    ULONG src_start_add, dst_start_add;
+    
+    width = msg->width;
+    height = msg->height;
+
+    src_start = msg->src;
+    src_start_add = msg->srcMod - width * 4;
+
+    dst_start = msg->dst + msg->dstY * msg->dstMod + msg->dstX * 3;
+    dst_start_add = msg->dstMod - width * 3;
+        
+    while(height--)
+    {
+    	w = width;
+
+	while(w--)
+	{
+	    ULONG pix = *((ULONG *)src_start)++;
+	    
+	#if AROS_BIG_ENDIAN
+	    *dst_start++ = (pix >> 16) & 0xFF;
+	    *dst_start++ = (pix >> 8) & 0xFF;
+	    *dst_start++ =  pix & 0xFF;
+	#else
+	    *dst_start++ =  pix & 0xFF;
+	    *dst_start++ = (pix >> 8) & 0xFF;
+	    *dst_start++ = (pix >> 16) & 0xFF;
+	#endif
+
+	}
+	src_start += src_start_add;
+	dst_start += dst_start_add;
+    }
+}
+
+/****************************************************************************************/
+
 VOID bitmap_getmem32image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image8 *msg)
 {
     UBYTE *src_start, *dst_start;
@@ -613,6 +803,45 @@ VOID bitmap_getmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 	while(w--)
 	{
 	    *((ULONG *)dst_start)++ = (ULONG)(*((UWORD *)src_start)++);
+	}
+	src_start += src_start_add;
+	dst_start += dst_start_add;
+    }
+}
+
+/****************************************************************************************/
+
+VOID bitmap_getmem32image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image24 *msg)
+{
+    UBYTE *src_start, *dst_start;
+    LONG width, height, w;
+    ULONG src_start_add, dst_start_add;
+    
+    width = msg->width;
+    height = msg->height;
+
+    src_start = msg->src + msg->srcY * msg->srcMod + msg->srcX * 3;
+    src_start_add = msg->srcMod - width * 3;
+
+    dst_start = msg->dst;
+    dst_start_add = msg->dstMod - width * 4;
+        
+    while(height--)
+    {
+    	w = width;
+
+	while(w--)
+	{
+	    UBYTE pix1 = *src_start++;
+	    UBYTE pix2 = *src_start++;
+	    UBYTE pix3 = *src_start++;
+	    
+	#if AROS_BIG_ENDIAN
+	    *((ULONG *)dst_start)++ = (pix1 << 16) | (pix2 << 8) | pix3;
+	#else
+	    *((ULONG *)dst_start)++ = (pix3 << 16) | (pix2 << 8) | pix1;
+	#endif
+	
 	}
 	src_start += src_start_add;
 	dst_start += dst_start_add;

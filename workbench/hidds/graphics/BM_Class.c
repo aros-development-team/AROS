@@ -2345,7 +2345,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 
 #define NUM_ROOT_METHODS    4
 
-#define NUM_BITMAP_METHODS  40
+#define NUM_BITMAP_METHODS  45
 
 /****************************************************************************************/
 
@@ -2384,17 +2384,22 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
 	{(IPTR (*)())bitmap_convertpixels	, moHidd_BitMap_ConvertPixels	    },
 	{(IPTR (*)())bitmap_fillmemrect8    	, moHidd_BitMap_FillMemRect8	    },
 	{(IPTR (*)())bitmap_fillmemrect16    	, moHidd_BitMap_FillMemRect16	    },
+	{(IPTR (*)())bitmap_fillmemrect24    	, moHidd_BitMap_FillMemRect24	    },
 	{(IPTR (*)())bitmap_fillmemrect32    	, moHidd_BitMap_FillMemRect32	    },
 	{(IPTR (*)())bitmap_invertmemrect    	, moHidd_BitMap_InvertMemRect	    },
 	{(IPTR (*)())bitmap_copymembox8    	, moHidd_BitMap_CopyMemBox8	    },
 	{(IPTR (*)())bitmap_copymembox16    	, moHidd_BitMap_CopyMemBox16	    },
+	{(IPTR (*)())bitmap_copymembox24    	, moHidd_BitMap_CopyMemBox24	    },
 	{(IPTR (*)())bitmap_copymembox32    	, moHidd_BitMap_CopyMemBox32	    },
 	{(IPTR (*)())bitmap_copylutmembox16    	, moHidd_BitMap_CopyLUTMemBox16	    },
+	{(IPTR (*)())bitmap_copylutmembox24    	, moHidd_BitMap_CopyLUTMemBox24	    },
 	{(IPTR (*)())bitmap_copylutmembox32    	, moHidd_BitMap_CopyLUTMemBox32	    },
 	{(IPTR (*)())bitmap_putmem32image8  	, moHidd_BitMap_PutMem32Image8	    },
 	{(IPTR (*)())bitmap_putmem32image16  	, moHidd_BitMap_PutMem32Image16	    },
+	{(IPTR (*)())bitmap_putmem32image24  	, moHidd_BitMap_PutMem32Image24	    },
 	{(IPTR (*)())bitmap_getmem32image8  	, moHidd_BitMap_GetMem32Image8	    },
 	{(IPTR (*)())bitmap_getmem32image16  	, moHidd_BitMap_GetMem32Image16	    },
+	{(IPTR (*)())bitmap_getmem32image24  	, moHidd_BitMap_GetMem32Image24	    },
 	{(IPTR (*)())bitmap_setcolormap		, moHidd_BitMap_SetColorMap	    },
 	{(IPTR (*)())bitmap_mapcolor		, moHidd_BitMap_MapColor	    },
 	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	    },

@@ -476,17 +476,22 @@ enum
     moHidd_BitMap_ConvertPixels,
     moHidd_BitMap_FillMemRect8,
     moHidd_BitMap_FillMemRect16,
+    moHidd_BitMap_FillMemRect24,
     moHidd_BitMap_FillMemRect32,
     moHidd_BitMap_InvertMemRect,
     moHidd_BitMap_CopyMemBox8,
     moHidd_BitMap_CopyMemBox16,
+    moHidd_BitMap_CopyMemBox24,
     moHidd_BitMap_CopyMemBox32,
     moHidd_BitMap_CopyLUTMemBox16,
+    moHidd_BitMap_CopyLUTMemBox24,
     moHidd_BitMap_CopyLUTMemBox32,
     moHidd_BitMap_PutMem32Image8,
     moHidd_BitMap_PutMem32Image16,
+    moHidd_BitMap_PutMem32Image24,
     moHidd_BitMap_GetMem32Image8,
     moHidd_BitMap_GetMem32Image16,
+    moHidd_BitMap_GetMem32Image24,
     
     /* This method is used only by subclasses, I repeat:
     ONLY BY SUBCLASSES, to register available modes in the baseclass
@@ -786,6 +791,20 @@ struct pHidd_BitMap_FillMemRect16
     UWORD   	 fill; 
 };
 
+/* Fill rect area in 24 bit memory chunky buffer with pixel */
+
+struct pHidd_BitMap_FillMemRect24
+{
+    OOP_MethodID mID;
+    APTR   	 dstBuf;
+    WORD    	 minX;
+    WORD    	 minY;
+    WORD    	 maxX;
+    WORD    	 maxY;
+    ULONG   	 dstMod;
+    UWORD   	 fill; 
+};
+
 /* Fill rect area in 32 bit memory chunky buffer with pixel */
 
 struct pHidd_BitMap_FillMemRect32
@@ -841,6 +860,20 @@ struct pHidd_BitMap_CopyMemBox16
     ULONG           dstMod;
 };
 
+/* copy src rect from 24 bit chunky memory buffer to dst rect in 24 bit chunky memory buffer */
+
+struct pHidd_BitMap_CopyMemBox24
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    WORD            srcX, srcY;
+    APTR      	    dst;
+    WORD            dstX, dstY;
+    UWORD   	    width, height;
+    ULONG   	    srcMod;
+    ULONG           dstMod;
+};
+
 /* copy src rect from 32 bit chunky memory buffer to dst rect in 32 bit chunky memory buffer */
 
 struct pHidd_BitMap_CopyMemBox32
@@ -860,6 +893,23 @@ struct pHidd_BitMap_CopyMemBox32
    a HIDDT_PixelLUT lookup to convert from 8 --> 16*/
 
 struct pHidd_BitMap_CopyLUTMemBox16
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    WORD            srcX, srcY;
+    APTR      	    dst;
+    WORD            dstX, dstY;
+    UWORD   	    width, height;
+    ULONG   	    srcMod;
+    ULONG           dstMod;
+    HIDDT_PixelLUT  *pixlut;    
+};
+
+/* copy src rect from 8 bit chunky memory buffer to
+   dst rect in 24 bit chunky memory buffer using
+   a HIDDT_PixelLUT lookup to convert from 8 --> 24*/
+
+struct pHidd_BitMap_CopyLUTMemBox24
 {
     OOP_MethodID    mID;
     APTR    	    src;
@@ -917,6 +967,20 @@ struct pHidd_BitMap_PutMem32Image16
     ULONG   	    dstMod;
 };
 
+/* copy a chunky 24 bit image contained in a 32 bit chunky array
+   to dest 24 bit chunky memory buffer */
+
+struct pHidd_BitMap_PutMem32Image24
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    APTR	    dst;
+    WORD	    dstX, dstY;
+    UWORD	    width, height;
+    ULONG   	    srcMod;
+    ULONG   	    dstMod;
+};
+
 /* copy an area of a 8 bit chunky memory buffer into a
    8 bit image which is organized as a 32 bit chunky array */
 
@@ -935,6 +999,20 @@ struct pHidd_BitMap_GetMem32Image8
    16 bit image which is organized in a 32 bit chunky array */
 
 struct pHidd_BitMap_GetMem32Image16
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    WORD	    srcX, srcY;
+    APTR	    dst;
+    UWORD	    width, height;
+    ULONG   	    srcMod;
+    ULONG   	    dstMod;
+};
+
+/* copy an area of a 24 bit chunky memory buffer into a
+   24 bit image which is organized in a 32 bit chunky array */
+
+struct pHidd_BitMap_GetMem32Image24
 {
     OOP_MethodID    mID;
     APTR    	    src;
@@ -1142,6 +1220,15 @@ VOID	HIDD_BM_FillMemRect16 (OOP_Object *obj,
 			       ULONG dstMod,
 			       UWORD fill);
 
+VOID	HIDD_BM_FillMemRect24 (OOP_Object *obj,
+    			       APTR dstBuf,
+			       WORD minX,
+			       WORD minY,
+			       WORD maxX,
+			       WORD maxY,
+			       ULONG dstMod,
+			       UWORD fill);
+
 VOID	HIDD_BM_FillMemRect32 (OOP_Object *obj,
     			       APTR dstBuf,
 			       WORD minX,
@@ -1183,6 +1270,18 @@ VOID	HIDD_BM_CopyMemBox16(OOP_Object *obj,
 			     ULONG srcMod,
 			     ULONG dstMod);
 
+VOID	HIDD_BM_CopyMemBox24(OOP_Object *obj,
+    	    	    	     APTR src,
+			     WORD srcX,
+			     WORD srcY,
+			     APTR dst,
+			     WORD dstX,
+			     WORD dstY,
+			     UWORD width,
+			     UWORD height,
+			     ULONG srcMod,
+			     ULONG dstMod);
+
 VOID	HIDD_BM_CopyMemBox32(OOP_Object *obj,
     	    	    	     APTR src,
 			     WORD srcX,
@@ -1196,6 +1295,19 @@ VOID	HIDD_BM_CopyMemBox32(OOP_Object *obj,
 			     ULONG dstMod);
 
 VOID	HIDD_BM_CopyLUTMemBox16(OOP_Object *obj,
+    				APTR src,
+				WORD srcX,
+				WORD srcY,
+				APTR dst,
+				WORD dstX,
+				WORD dstY,
+				UWORD width,
+				UWORD height,
+				ULONG srcMod,
+				ULONG dstMod,
+				HIDDT_PixelLUT *pixlut);
+
+VOID	HIDD_BM_CopyLUTMemBox24(OOP_Object *obj,
     				APTR src,
 				WORD srcX,
 				WORD srcY,
@@ -1241,6 +1353,16 @@ VOID	HIDD_BM_PutMem32Image16(OOP_Object *obj,
 				ULONG srcMod,
 				ULONG dstMod);
 
+VOID	HIDD_BM_PutMem32Image24(OOP_Object *obj,
+    	    	    		APTR src,
+				APTR dst,
+				WORD dstX,
+				WORD dstY,
+				UWORD width,
+				UWORD height,
+				ULONG srcMod,
+				ULONG dstMod);
+
 VOID	HIDD_BM_GetMem32Image8(OOP_Object *obj,
     	    	    	       APTR src,
 			       WORD srcX,
@@ -1252,6 +1374,16 @@ VOID	HIDD_BM_GetMem32Image8(OOP_Object *obj,
 			       ULONG dstMod);
 
 VOID	HIDD_BM_GetMem32Image16(OOP_Object *obj,
+    	    	    		APTR src,
+				WORD srcX,
+				WORD srcY,
+				APTR dst,
+				UWORD width,
+				UWORD height,
+				ULONG srcMod,
+				ULONG dstMod);
+
+VOID	HIDD_BM_GetMem32Image24(OOP_Object *obj,
     	    	    		APTR src,
 				WORD srcX,
 				WORD srcY,
