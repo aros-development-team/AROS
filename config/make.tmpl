@@ -893,7 +893,7 @@ ifneq ($(findstring $(BD_MODTYPE$(BDID)),mcc mui mcp),)
 		compiler=%(compiler)
 endif
 
-ifneq ($(findstring $(BD_MODTYPE$(BDID)),library mcc),)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library mcc mcp),)
   BD_LINKLIBFILES$(BDID)   += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
   BD_LINKLIBOBJS$(BDID)    += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.o
   BD_LINKLIBDEPS$(BDID)    := $(patsubst %.o,%.d,$(BD_LINKLIBOBJS$(BDID))) 
@@ -1130,7 +1130,7 @@ BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -I. -I$(TOP)/workbench/l
 endif
 
 # Add additional files depending the module type
-ifeq ($(findstring $(BD_MODTYPE$(BDID)),library gadget datatype handler device resource mui mcc hidd),)
+ifeq ($(findstring $(BD_MODTYPE$(BDID)),library gadget datatype handler device resource mui mcc mcp hidd),)
     $(error unhandled MODTYPE %(modtype))
 endif
 ifeq ($(BD_MODDIR$(BDID)),)
@@ -1156,6 +1156,9 @@ ifeq ($(BD_MODDIR$(BDID)),)
     BD_MODDIR$(BDID)  := $(AROS_CLASSES)/Zune
   endif
   ifeq ($(BD_MODTYPE$(BDID)),mcc)
+    BD_MODDIR$(BDID)  := $(AROS_CLASSES)/Zune
+  endif
+  ifeq ($(BD_MODTYPE$(BDID)),mcp)
     BD_MODDIR$(BDID)  := $(AROS_CLASSES)/Zune
   endif
   ifeq ($(BD_MODTYPE$(BDID)),hidd)
