@@ -445,7 +445,6 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	    case MUIA_Timer:
 		data->mad_Timeval = tag->ti_Data;
-/*    		g_print("tick %d\n", data->mad_Timeval); */
 		break;
 
 	    case MUIA_VertWeight:
@@ -994,6 +993,11 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	set(_win(obj), MUIA_Window_ActiveObject, obj);
     }
     _flags(obj) |= MADF_SETUP;
+
+    data->mad_Timer.ihn_Flags = MUIIHNF_TIMER;
+    data->mad_Timer.ihn_Method = MUIM_Timer;
+    data->mad_Timer.ihn_Object = obj;
+
     return TRUE;
 }
 
@@ -1025,6 +1029,12 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 
 //    cleanup_cycle_chain (data, obj);
     cleanup_control_char (data, obj);
+
+    if (data->mad_Timer.ihn_Millis)
+    {
+	DoMethod(_app(obj), MUIM_Application_RemInputHandler, &data->mad_Timer);
+	data->mad_Timer.ihn_Millis = 0;
+    }
 
     /* Remove the event handler if it has been added */
     if (data->mad_ehn.ehn_Events)
@@ -1173,25 +1183,24 @@ static void handle_press(struct IClass *cl, Object *obj)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
-/*  g_print("handle press\n"); */
     switch (data->mad_InputMode)
     {
 	case MUIV_InputMode_RelVerify:
 	    set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
-#if defined(_AROS) || defined(_AMIGA)
-#warning FIXME: input timeout
-#else
-	    data->mad_PreTimeout_id =
-		g_timeout_add(500, add_intuiticks_client, obj);
-/*  	    g_print("pretimer %d installed\n", muiAreaData(obj)->mad_PreTimeout_id); */
-#endif
+	    if (!data->mad_Timer.ihn_Millis)
+	    {
+	    	data->mad_Timer.ihn_Millis = 150;
+		DoMethod(_app(obj), MUIM_Application_AddInputHandler, &data->mad_Timer);
+	    }
 	    set(obj, MUIA_Selected, TRUE);
 	    set(obj, MUIA_Pressed, TRUE);
 	    break;
+
 	case MUIV_InputMode_Immediate:
 	    nnset(obj, MUIA_Selected, FALSE);
 	    set(obj, MUIA_Selected, TRUE);
 	    break;
+
 	case MUIV_InputMode_Toggle:
 	    set(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED));
 	    break;
@@ -1199,8 +1208,7 @@ static void handle_press(struct IClass *cl, Object *obj)
 }
 
 /* either lmb or release key */
-static void
-handle_release(struct IClass *cl, Object *obj)
+static void handle_release(struct IClass *cl, Object *obj)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 /*  g_print("handle release\n"); */
@@ -1212,23 +1220,14 @@ handle_release(struct IClass *cl, Object *obj)
 	    set(obj, MUIA_Pressed, FALSE);
 	    set(obj, MUIA_Selected, FALSE);
 	}
-#if defined(_AROS) || defined(_AMIGA)
-#warning FIXME: input timeout
-#else
-	if (data->mad_Timeout_id)
-	{
-	    g_source_remove(data->mad_Timeout_id);
-/*  	    g_print("intuiticks %d removed\n", data->mad_Timeout_id); */
-	    data->mad_Timeout_id = 0;
-	}
-	else if (data->mad_PreTimeout_id)
-	{
-	    g_source_remove(data->mad_PreTimeout_id);
-/*  	    g_print("preTimer %d removed\n", data->mad_PreTimeout_id); */
-	    data->mad_PreTimeout_id = 0;
-	}
-#endif
     }
+
+    if (data->mad_Timer.ihn_Millis)
+    {
+	DoMethod(_app(obj), MUIM_Application_RemInputHandler, &data->mad_Timer);
+    	data->mad_Timer.ihn_Millis = 0;
+    }
+
 }
 
 #if defined(_AROS) || defined(_AMIGA)
@@ -1564,6 +1563,21 @@ static ULONG Area_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg
     return 0;
 }
 
+/**************************************************************************
+ MUIM_Timer
+**************************************************************************/
+static ULONG Area_Timer(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_AreaData *data = INST_DATA(cl, obj);
+    if (data->mad_Timer.ihn_Millis)
+	DoMethod(_app(obj), MUIM_Application_RemInputHandler, &data->mad_Timer);
+    data->mad_Timer.ihn_Millis = 50;
+    DoMethod(_app(obj), MUIM_Application_AddInputHandler, &data->mad_Timer);
+
+    set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
+    return 0;
+}
+
 
 /*
  * Calculates addleft, addtop, subwidth, subheight from current settings.
@@ -1659,6 +1673,7 @@ AROS_UFH3S(IPTR, Area_Dispatcher,
 	case MUIM_DeleteShortHelp: return Area_DeleteShortHelp(cl, obj, (APTR)msg);
 	case MUIM_HandleEvent: return Area_HandleEvent(cl, obj, (APTR)msg);
 	case MUIM_ContextMenuBuild: return Area_ContextMenuBuild(cl, obj, (APTR)msg);
+	case MUIM_Timer: return Area_Timer(cl,obj,msg);
 
 	case MUIM_Export: return Area_Export(cl, obj, (APTR)msg);
 	case MUIM_Import: return Area_Import(cl, obj, (APTR)msg);
