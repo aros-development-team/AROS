@@ -98,12 +98,22 @@ AROS_LH2(struct LIBBASETYPE *, init,
     InitSemaphore(&LIBBASE->dl_Root->rn_RootLock);
 
     InitSemaphore(&LIBBASE->dl_DosListLock);
-    InitSemaphore(&LIBBASE->dl_LSigSem);
-    InitSemaphore(&LIBBASE->dl_DSigSem);
 
-    LIBBASE->dl_UtilityBase = OpenLibrary("utility.library",39);
+    LIBBASE->dl_UtilityBase = OpenLibrary("utility.library",39L);
 
-    if(LIBBASE->dl_UtilityBase != NULL)
+    if(LIBBASE->dl_UtilityBase == NULL)
+    {
+	Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_UtilityLib);
+	return NULL;
+    }
+
+    LIBBASE->dl_IntuitionBase = OpenLibrary("intuition.library", 39L);
+    if(LIBBASE->dl_IntuitionBase == NULL)
+    {
+	Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_Intuition);
+	return NULL;
+    }
+
     {
 	/*  iaint:
 	    I know this is bad, but I also know that the timer.device
@@ -162,10 +172,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	    RemTask(NULL);
 	}
 	Alert(AT_DeadEnd | AG_OpenDev | AN_DOSLib | AO_TimerDev);
-	CloseLibrary(LIBBASE->dl_UtilityBase);
     }
-
-    Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_UtilityLib);
 
     return NULL;
 

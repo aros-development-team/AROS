@@ -1,10 +1,11 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: English
 */
+#include <proto/intuition.h>
 #include "dos_intern.h"
 #include <aros/debug.h>
 
@@ -24,23 +25,18 @@
 	struct DosLibrary *, DOSBase, 81, Dos)
 
 /*  FUNCTION
-
-    Displays an error message to and gets response from a user.
+	Displays an error message to and gets response from a user.
 
     INPUTS
-
-    formatStr   --  printf-style formatted string
-    flags       --  this is unimportant in the dos version of this function,
-                    see INTERNALS below
-    args        --  arguments to 'formatStr'
+	formatStr   --  printf-style formatted string
+	flags       --  arguments to EasyRequestArgs()
+	args        --  arguments to 'formatStr'
 
     RESULT
-
-    Nothing
+	Nothing
 
     NOTES
-
-    This is a PRIVATE dos function.
+	This is a PRIVATE dos function.
 
     EXAMPLE
 
@@ -49,24 +45,49 @@
     SEE ALSO
 
     INTERNALS
-
-    The purpose of this function is to put up a requester when an error has
-    occurred that is connected to the filesystem. As dos is started before
-    intuition, dos knows nothing about any requesters. Therefore, intuition
-    has to setfunction this function when it's opened.
-        This function may, however, have an implementation that is platform
-    specific where the string is written out without intuition functions for
-    startup error message displaying possibilities.
+	The purpose of this function is to put up a requester when an error
+	has occurred that is connected to the filesystem.
 
     HISTORY
+	23.10.1999  SDuvan	Implemented
+	25.03.2001  iaint	Put where it's meant to be!
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    kprintf(formatStr, args);
+    struct IntuitionBase * const IntuitionBase = DOSBase->dl_IntuitionBase;
+    struct Window * window;	/* The window to put the requester in */
+    char	    gadTexts[128];
+    char *	    gtPtr = (char *)gadTexts;
+    ULONG	    idcmp = flags;
+    ULONG	    res;
 
-    return 1;
+    struct EasyStruct es =
+    {
+	sizeof(struct EasyStruct),
+	0,			    	    /* flags */
+	DosGetString(STRING_REQUESTTITLE),  /* "System Requester" */
+	formatStr,
+	gadTexts			    /* "Retry|Cancel" */
+    };
+
+    window = (struct Window *)((struct Process *)FindTask(NULL))->pr_WindowPtr;
+
+    /* Supress requesters? */
+    if( (IPTR)window == (IPTR)-1L)
+	return 0;
+
+    /* Create localised gadget texts */
+    strcpy(gtPtr, DosGetString(STRING_RETRY));
+    strcat(gtPtr, "|");
+    strcat(gtPtr, DosGetString(STRING_CANCEL));
+
+    res = EasyRequestArgs(window, &es, &idcmp, args);
+    if(res == 0)
+	return 1;
+    else
+	return 0;
 
     AROS_LIBFUNC_EXIT
 } /* DisplayError */
