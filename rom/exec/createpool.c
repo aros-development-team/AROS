@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/19 17:09:02  aros
+    Include <aros/machine.h> over "machine.h"
+    Fixed a type in the docs
+
     Revision 1.4  1996/08/13 13:56:00  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -16,7 +20,7 @@
 #include "exec_intern.h"
 #include <aros/libcall.h>
 #include <clib/alib_protos.h>
-#include "machine.h"
+#include <aros/machine.h>
 #include "memory.h"
 
 #define NEWLIST(l) \
@@ -48,8 +52,8 @@
 	puddleSize   - The number of bytes that the pool expands
 		       if it is too small.
 	threshSize   - Allocations beyond the threshSize are given
-		       directly to the system. threshSize must not
-		       be smaller than the puddleSize.
+		       directly to the system. threshSize must be
+		       smaller than the puddleSize.
 
     RESULT
 	A handle for the memory pool or NULL if the pool couldn't
