@@ -94,7 +94,7 @@
     /IF><
 /DEF>
 <DEF NAME=email OPTION=addr><A HREF="mailto:$addr"><TT>$addr</TT></A></DEF>
-<DEF NAME=largepic OPTION=title OPTION=file><A HREF="$file">$title</A></DEF>
+<DEF NAME=largepic OPTION=title OPTION=file><EXPAND TEXT="<A HREF="$file">">$title</A></DEF>
 <DEF NAME=shell OPTION=text><EXPAND TEXT="<VERB TEXT="$text">"></DEF>
 
 <REM --- Blocks ------------------------------------------------------------->
