@@ -86,7 +86,7 @@ List;
 	    (node)=(void *)(nextnode))
 
 /* Functions */
-void AssignList (List * dest, List * src);
+void AssignList (List * dest, List * src); /* After assignment only dest may be used !!! */
 void *FindNode (const List * l, const char * name);
 void printlist (List * l);
 void freelist (List * l);

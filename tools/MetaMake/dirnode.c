@@ -35,14 +35,12 @@ Boston, MA 02111-1307, USA.  */
 #ifdef HAVE_SYS_TYPES_H
 #   include <sys/types.h>
 #endif
-#ifdef HAVE_NETINET_IN_H
-#   include <netinet/in.h> /* for htonl/ntohl() */
-#endif
 
 #include "dirnode.h"
 #include "mem.h"
 #include "var.h"
 #include "mmake.h"
+#include "io.h"
 
 #define FLAG_VIRTUAL	0x0001
 
@@ -746,106 +744,70 @@ buildpath (DirNode * node)
 Makefile *
 readmakefile (FILE * fh)
 {
-    int len, ret;
     Makefile * makefile;
     MakefileTarget * mftarget;
     Node * n;
-    time_t tt;
+    uint32_t intt;
+    char * s;
 
-    ret = fread (&len, sizeof(len), 1, fh);
-    if (ferror (fh))
+    if (!readstring(fh, &s))
     {
-	error ("readmakefile:fread():%d", __LINE__);
+	error ("readmakefile:readstring():%d", __LINE__);
 	exit (20);
     }
-    len = ntohl (len);
 
-    if (len < 0)
+    if (s == NULL)
 	return NULL;
 
-    makefile = new (Makefile);
-    makefile->node.name = xmalloc (len+1);
+    makefile = newnodesize(s, sizeof(Makefile));
+    xfree(s);
     NewList(&makefile->targets);
 
-    if (len)
-    {
-	ret = fread (makefile->node.name, len, 1, fh);
-	if (ferror (fh))
-	{
-	    error ("readmakefile:fread():%d", __LINE__);
-	    exit (20);
-	}
-    }
-    makefile->node.name[len] = 0;
-
-    ret = fread (&tt, sizeof (tt), 1, fh);
-    if (ferror (fh))
+    if (!readuint32 (fh, &intt)) 
     {
 	error ("readmakefile:fread():%d", __LINE__);
 	exit (20);
     }
-    makefile->time = ntohl (tt);
+    makefile->time = intt;
 
     for (;;)
     {
-	int in;
-	
-	ret = fread (&len, sizeof(len), 1, fh);
-	if (ferror (fh))
+	int32_t in;
+
+	if (!readstring(fh, &s))
 	{
-	    error ("readmakefile:fread():%d", __LINE__);
+	    error ("readmakefile:readstring():%d", __LINE__);
 	    exit (20);
 	}
-	len = ntohl (len);
 
-	if (len < 0)
+	if (s == NULL)
 	    break;
 
-	mftarget = new (MakefileTarget);
+	mftarget = newnodesize(s, sizeof(MakefileTarget));
+	xfree(s);
 	AddTail (&makefile->targets, mftarget);
-	mftarget->node.name = xmalloc (len+1);
 	NewList (&mftarget->deps);
-	
-	ret = fread (mftarget->node.name, len, 1, fh);
-	if (ferror (fh))
+
+	if (!readint32 (fh, &in))
 	{
 	    error ("readmakefile:fread():%d", __LINE__);
 	    exit (20);
 	}
-	mftarget->node.name[len] = 0;
-	
-	ret = fread (&in, sizeof (in), 1, fh);
-	if (ferror (fh))
-	{
-	    error ("readmakefile:fread():%d", __LINE__);
-	    exit (20);
-	}
-	mftarget->virtualtarget = ntohl (in);
+	mftarget->virtualtarget = in;
 	
 	for (;;)
 	{
-	    ret = fread (&len, sizeof(len), 1, fh);
-	    if (ferror (fh))
+	    if (!readstring(fh, &s))
 	    {
-		error ("readmakefile:fread():%d", __LINE__);
+		error ("readmakefile:readstring():%d", __LINE__);
 		exit (20);
 	    }
-	    len = ntohl (len);
 	    
-	    if (len < 0)
+	    if (s == NULL)
 		break;
 
-	    n = new (Node);
-	    n->name = xmalloc (len+1);
-
-	    ret = fread (n->name, len, 1, fh);
-	    if (ferror (fh))
-	    {
-		error ("readmakefile:fread():%d", __LINE__);
-		exit (20);
-	    }
-	    n->name[len] = 0;
-
+	    n = newnode(s);
+	    xfree(s);
 	    AddTail (&mftarget->deps, n);
 	}
     }
@@ -856,143 +818,100 @@ readmakefile (FILE * fh)
 int
 writemakefile (FILE * fh, Makefile * makefile)
 {
-    int len, ret, out;
     MakefileTarget * mftarget;
     Node * n;
+
+    if (makefile == NULL)
+    {
+	if (!writestring (fh, NULL))
+	{
+	    error ("writemakefile/writestring():%d", __LINE__);
+	    return 0;
+	}
+	    
+	return 1;
+    }
     
-    len = strlen (makefile->node.name);
-    out = htonl (len);
-    ret = fwrite (&out, sizeof(out), 1, fh);
-    if (ret <= 0)
+    if (!writestring (fh, makefile->node.name))
     {
-	error ("writemakefile/fwrite():%d", __LINE__);
-	return ret;
+	error ("writemakefile/writestring():%d", __LINE__);
+	return 0;
     }
 
-    ret = fwrite (makefile->node.name, len, 1, fh);
-    if (ret <= 0)
+    if (!writeuint32 (fh, makefile->time))
     {
 	error ("writemakefile/fwrite():%d", __LINE__);
-	return ret;
-    }
-
-    out = htonl (makefile->time);
-    ret = fwrite (&out, sizeof (out), 1, fh);
-    if (ret <= 0)
-    {
-	error ("writemakefile/fwrite():%d",
-	    __LINE__
-	);
-	return ret;
+	return 0;
     }
 
     ForeachNode (&makefile->targets, mftarget)
     {
-	len = strlen (mftarget->node.name);
-	out = htonl (len);
-	ret = fwrite (&out, sizeof(out), 1, fh);
-	if (ret <= 0)
+	if (!writestring (fh, mftarget->node.name))
 	{
-	    error ("writemakefile/fwrite():%d", __LINE__);
-	    return ret;
+	    error ("writemakefile/writestring():%d", __LINE__);
+	    return 0;
 	}
 
-	ret = fwrite (mftarget->node.name, len, 1, fh);
-	if (ret <= 0)
-	{
-	    error ("writemakefile/fwrite():%d",	__LINE__);
-	    return ret;
-	}
-
-	out = htonl (mftarget->virtualtarget);
-	ret = fwrite (&out, sizeof(out), 1, fh);
-	if (ret <= 0)
+	if (!writeint32 (fh, mftarget->virtualtarget))
 	{
 	    error ("writemakefile/fwrite():%d", __LINE__);
-	    return ret;
+	    return 0;
 	}
 
 	ForeachNode (&mftarget->deps, n)
 	{
-	    len = strlen (n->name);
-	    out = htonl (len);
-	    ret = fwrite (&out, sizeof(out), 1, fh);
-	    if (ret <= 0)
+	    if (!writestring (fh, n->name))
 	    {
-		error ("writemakefile/fwrite():%d", __LINE__);
-		return ret;
-	    }
-
-	    ret = fwrite (n->name, len, 1, fh);
-	    if (ret <= 0)
-	    {
-		error ("writemakefile/fwrite():%d", __LINE__);
-		return ret;
+		error ("writemakefile/writestring():%d", __LINE__);
+		return 0;
 	    }
 	}
 
-	out = htonl(-1);
-	ret = fwrite (&out, sizeof(out), 1, fh);
-	if (ret <= 0)
+	if (!writestring (fh, NULL))
 	{
-	    error ("writemakefile/fwrite():%d", __LINE__);
-	    return ret;
+	    error ("writemakefile/writestring():%d", __LINE__);
+	    return 0;
 	}
     }
 
-    out = htonl(-1);
-    ret = fwrite (&out, sizeof(out), 1, fh);
-    if (ret <= 0)
+    if (!writestring(fh, NULL))
     {
-	error ("writemakefile/fwrite():%d", __LINE__);
-	return ret;
+	error ("writemakefile/writestring():%d", __LINE__);
+	return 0;
     }
     
-    return ret;
+    return 1;
 }
 
 DirNode *
 readcachedir (FILE * fh)
 {
-    int len, ret, in;
     DirNode * node, * subnode;
     Makefile * makefile;
+    uint32_t intt;
+    char * s;
 
-    ret = fread (&len, sizeof(len), 1, fh);
-    if (ferror (fh))
+    if (!readstring(fh, &s))
     {
-	error ("readcachedir:fread():%d", __LINE__);
+	error ("readcachedir:readstring():%d", __LINE__);
 	return NULL;
     }
-    len = ntohl (len);
 
-    if (len < 0)
+    if (s == NULL)
 	return NULL;
 
-    node = new (DirNode);
-    node->node.name = xmalloc (len+1);
+    node = newnodesize(s, sizeof(DirNode));
+    xfree (s);
     NewList(&node->makefiles);
     NewList(&node->subdirs);
 
-    if (len)
-    {
-	ret = fread (node->node.name, len, 1, fh);
-	if (ferror (fh))
-	{
-	    error ("readcachedir:fread():%d", __LINE__);
-	    free (node);
-	    return NULL;
-	}
-    }
-    node->node.name[len] = 0;
-    ret = fread (&in, sizeof (in), 1, fh);
-    if (ferror (fh))
+    if (!readuint32 (fh, &intt))
     {
 	error ("readcachedir:fread():%d", __LINE__);
 	free (node);
 	return NULL;
     }
-    node->time = ntohl (in);
+    node->time = intt;
 
     while ((makefile = readmakefile (fh)))
     {
@@ -1012,64 +931,44 @@ readcachedir (FILE * fh)
 int
 writecachedir (FILE * fh, DirNode * node)
 {
-    int len, ret, out;
+    int out;
     DirNode * subnode;
     Makefile * makefile;
-    
-    len = strlen (node->node.name);
-    out = htonl (len);
-    ret = fwrite (&out, sizeof(out), 1, fh);
-    if (ret <= 0)
+
+    if (node == NULL)
     {
-	error ("writecachedir/fwrite():%d",
-	    __LINE__
-	);
-	return ret;
+	if (!writestring(fh, NULL))
+	{
+	    error ("writecachedir/writestring():%d", __LINE__);
+	    return 0;
+	}
+
+	return 1;
+    }
+    
+    if (!writestring(fh, node->node.name))
+    {
+	error ("writecachedir/writestring():%d", __LINE__);
+	return 0;
     }
 
-    if (len)
-    {
-	ret = fwrite (node->node.name, len, 1, fh);
-	if (ret <= 0)
-	{
-	    error ("writecachedir/fwrite():%d",	__LINE__);
-	    return ret;
-	}
-    }
-    
-    out = htonl (node->time);
-    ret = fwrite (&out, sizeof (out), 1, fh);
-    if (ret <= 0)
+    if (!writeuint32 (fh, node->time))
     {
 	error ("writecachedir/fwrite():%d", __LINE__);
-	return ret;
+	return 0;
     }
 
     ForeachNode (&node->makefiles, makefile)
 	writemakefile (fh, makefile);
-    
-    out = htonl (-1);
-    ret = fwrite (&out, sizeof (out), 1, fh);
-    if (ret <= 0)
-    {
-	error ("writecachedir/fwrite():%d", __LINE__);
-	return ret;
-    }
+
+    if (!writemakefile (fh, NULL))
+	return 0;
 
     ForeachNode (&node->subdirs, subnode)
     {
-	ret = writecachedir (fh, subnode);
-	if (ret <= 0)
-	    return ret;
+	if (!writecachedir (fh, subnode))
+	    return 0;
     }
 
-    out = htonl (-1);
-    ret = fwrite (&out, sizeof (out), 1, fh);
-    if (ret <= 0)
-    {
-	error ("writecachedir/fwrite():%d", __LINE__);
-	return ret;
-    }
-
-    return ret;
+    return writecachedir (fh, NULL);
 }
