@@ -111,8 +111,8 @@ AROS_LH2(LIBBASETYPEPTR, init,
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );
     if (!(PrivGBase(GfxBase)->regionpool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
-    	    	    	    	    	    	      sizeof(struct RegionRectangle) * 20,
-    	    	    	    	    	    	      sizeof(struct RegionRectangle) * 20)))
+    	    	    	    	    	    	      sizeof(struct RegionRectangleExtChunk) * 20,
+    	    	    	    	    	    	      sizeof(struct RegionRectangleExtChunk) * 20)))
     {
     	return NULL;
     }
