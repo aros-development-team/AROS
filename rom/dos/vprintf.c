@@ -46,8 +46,6 @@ AROS_UFP2(void, vfp_hook,
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

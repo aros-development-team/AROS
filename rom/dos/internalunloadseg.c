@@ -44,10 +44,6 @@ extern void Exec_FreeMem();
 
     INTERNALS
 
-    HISTORY
-        27-11-96    digulla automatically created from
-                            dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT

@@ -46,10 +46,6 @@
 
     INTERNALS
 
-    HISTORY
-	5-12-96    turrican automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

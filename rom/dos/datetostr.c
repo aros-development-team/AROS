@@ -120,8 +120,6 @@ const char *const Dos_SubstDateTable[]=
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

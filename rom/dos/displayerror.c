@@ -48,10 +48,6 @@
 	The purpose of this function is to put up a requester when an error
 	has occurred that is connected to the filesystem.
 
-    HISTORY
-	23.10.1999  SDuvan	Implemented
-	25.03.2001  iaint	Put where it's meant to be!
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

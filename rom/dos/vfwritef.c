@@ -69,11 +69,6 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-	22.12.99    SDuvan  implemented
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

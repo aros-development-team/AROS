@@ -60,36 +60,6 @@
 	Goes from the last char of the pathname back until it finds a ':',
 	a '/' or until the first char reached.
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
-	04-08-96    steigerwald hopefully filled up with something useful
-				;-), however untested!
-
-	07-08-96    steigerwald reworked code, implented digulla's
-				suggestions, thanks Aaron ;-)
-
-				added some documentation ;-)
-
-				converted all comments in function to
-				c++ style to avoid nested comments
-
-				again untested, cause too much AROS stuff
-				that is not easy to #ifdef out missing
-
-	20-08-96    steigerwald finally added all those #ifndef NO_AROS
-				to get this thing working stand-alone
-				test routine added
-				some bugs fixed
-
-				problem: see while and ifs below ;-(((
-
-				routine seems to work so far, but doesnt
-				check for path consistency so
-				FilePart("dh0:test/exec:now") will give a
-				pointer to "now" ;-)
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

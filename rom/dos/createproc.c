@@ -71,8 +71,6 @@
     INTERNALS
 	Basically passes this call to CreateNewProc().
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

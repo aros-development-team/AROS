@@ -53,8 +53,6 @@
 
     This call should be replaced by a value for AllocDosObject().
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

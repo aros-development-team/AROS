@@ -55,10 +55,6 @@
 
     INTERNALS
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 
 /*****************************************************************************
@@ -90,10 +86,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 /*AROS alias ExamineFH Examine */

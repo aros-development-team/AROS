@@ -46,10 +46,6 @@
     INTERNALS
 	Calls the action FSA_RENAME on the filesystem-handler.
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

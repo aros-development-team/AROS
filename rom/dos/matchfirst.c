@@ -59,12 +59,6 @@
 
     INTERNALS
 
-    HISTORY
-        09-11-2000  stegerg, rewritten from scratch.
-	29-04-97    bergers, initial revision
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

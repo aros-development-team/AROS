@@ -44,10 +44,6 @@
 
     INTERNALS
 
-    HISTORY
-
-    28.04.2000  SDuvan  implemented
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
