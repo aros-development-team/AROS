@@ -16,7 +16,7 @@
 	AROS_LH3I(void, CopyMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR,  source, A0),
+	AROS_LHA(CONST_APTR,  source, A0),
 	AROS_LHA(APTR,  dest,   A1),
 	AROS_LHA(ULONG, size,   D0),
 

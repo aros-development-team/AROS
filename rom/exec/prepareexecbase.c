@@ -59,10 +59,6 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase = (struct ExecBase *)
 	    ((UBYTE *)allocmem(mh, neg + sizeof(struct ExecBase)) + neg);
 
-#ifdef DEBUG
-    kprintf("SysBase = %p\n", SysBase);
-#endif
-
     /* Zero out the memory. Makes below a bit smaller. */
     memset(SysBase, 0, sizeof(struct ExecBase));
 
@@ -87,14 +83,14 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 
     NEWLIST(&SysBase->MemList);
     SysBase->MemList.lh_Type = NT_MEMORY;
-    AddHead(&SysBase->MemList, &mh->mh_Node);
+    ADDHEAD(&SysBase->MemList, &mh->mh_Node);
     NEWLIST(&SysBase->ResourceList);
     SysBase->ResourceList.lh_Type = NT_RESOURCE;
     NEWLIST(&SysBase->DeviceList);
     SysBase->DeviceList.lh_Type = NT_DEVICE;
     NEWLIST(&SysBase->LibList);
     SysBase->LibList.lh_Type = NT_LIBRARY;
-    AddHead(&SysBase->LibList, &SysBase->LibNode.lib_Node);
+    ADDHEAD(&SysBase->LibList, &SysBase->LibNode.lib_Node);
     NEWLIST(&SysBase->PortList);
     SysBase->PortList.lh_Type = NT_MSGPORT;
     NEWLIST(&SysBase->TaskReady);

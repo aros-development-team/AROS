@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#undef DEBUG
 #define DEBUG 0
 #define LMBSUPPORT 1
 

@@ -8,11 +8,6 @@
 #include <exec/lists.h>
 #include <proto/exec.h>
 
-#if DEBUG
-#undef THIS_FILE
-static const char THIS_FILE[] = __FILE__;
-#endif
-
 /*****************************************************************************
 
     NAME */

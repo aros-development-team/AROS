@@ -338,7 +338,7 @@ SysBase->VBlankFrequency = 50;
     /* We now start up the interrupts */
     Enable();
 
-#ifdef DEBUG
+#if DEBUG
     debugmem();
 #endif
 

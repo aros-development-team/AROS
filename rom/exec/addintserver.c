@@ -17,11 +17,6 @@
 #include <proto/exec.h>
 #include <aros/libcall.h>
 
-#if DEBUG
-#undef THIS_FILE
-static const char THIS_FILE[] = __FILE__;
-#endif
-
 /*****************************************************************************
 
     NAME */

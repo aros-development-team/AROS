@@ -70,7 +70,7 @@
 	     && (((struct Resident *)*list)->rt_Flags & (UBYTE)startClass) )
 	    {
 		D(bug("calling InitResident(\"%s\", NULL)\n", 
-			(struct Resident *)*list->rt_Name));
+			((struct Resident *)(*list))->rt_Name));
 		InitResident((struct Resident *)*list, NULL);
 	    }
 

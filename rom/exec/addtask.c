@@ -89,6 +89,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 	, initialPC
 	, finalPC
     ));
+    ASSERT_VALID_PTR(task);
 
     /* Set node type to NT_TASK if not set to something else. */
     if(!task->tc_Node.ln_Type)
