@@ -118,22 +118,7 @@ FILES	:= \
 
 #MM- linklibs: linklibs-amiga linklibs-startup
 #MM linklibs-amiga : includes includes-copy
-#MM linklibs-startup : includes includes-copy
 
 %build_linklib mmake=linklibs-amiga libname=amiga files="$(FILES)"
 
-# The rules to build the startup code.
-
-linklibs-startup : $(LIBDIR)/startup.o $(LIBDIR)/detach.o
-
-%copy_includes includes=startup.h path=aros dir=
-
-USER_CFLAGS := -I $(TOP)/rom/exec
-
-$(LIBDIR)/startup.o : startup.c
-	%compile_q 
-
-$(LIBDIR)/detach.o : detach.c
-	%compile_q
-	
 %common
