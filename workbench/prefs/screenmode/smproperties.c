@@ -155,7 +155,8 @@ err:
 IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
     struct ScreenModeProperties_DATA *data = INST_DATA(CLASS, self);    
-    struct TagItem *tags, *tag;
+    const struct TagItem *tags;
+    struct TagItem *tag;
     struct TagItem noforward_tags[] =
     {
         {MUIA_Group_Forward , FALSE                       },
