@@ -35,7 +35,6 @@ extern LONG __startup_error;
 
 DECLARESET(INIT);
 DECLARESET(EXIT);
-DECLARESET(LIBS);
 
 /*
     This won't work for normal AmigaOS because you can't expect SysBase to be
@@ -52,6 +51,7 @@ extern char *__argstr;
 extern ULONG __argsize;
 extern char **__argv;
 extern int  __argc;
+extern struct DosLibrary *DOSBase;
 
 #warning TODO: reset and initialize the FPU
 #warning TODO: resident startup
@@ -63,10 +63,17 @@ AROS_UFH3(LONG, entry,
 {
     struct Process *myproc;
 
+    SysBase = sysbase;
+
+    /*
+      No one program will be able to do anything useful without the dos.library,
+      so we open it here instead of using the automatic opening system
+    */
+    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
+    if (!DOSBase) return RETURN_FAIL;
+
     __argstr  = argstr;
     __argsize = argsize;
-
-    SysBase = sysbase;
 
     myproc = (struct Process *)FindTask(NULL);
 
@@ -82,7 +89,7 @@ AROS_UFH3(LONG, entry,
 
     if
     (
-        !(__startup_error = set_open_libraries(SETNAME(LIBS))) &&
+        !(__startup_error = set_open_libraries()) &&
         !(__startup_error = set_call_funcs(SETNAME(INIT), 1))
     )
     {
@@ -93,7 +100,7 @@ AROS_UFH3(LONG, entry,
     }
 
     set_call_funcs(SETNAME(EXIT), -1);
-    set_close_libraries(SETNAME(LIBS));
+    set_close_libraries();
 
     /* Reply startup message to Workbench.
      * We Forbid() to avoid being UnLoadSeg()ed before we're really finished.
@@ -104,6 +111,8 @@ AROS_UFH3(LONG, entry,
 	ReplyMsg((struct Message *)WBenchMsg);
     }
 
+    CloseLibrary((struct Library *)DOSBase);
+
     return __startup_error;
 } /* entry */
 
@@ -111,7 +120,7 @@ AROS_UFH3(LONG, entry,
    then the code to handle the commandline will be included from the autoinit.lib
 */
 extern void __nocommandline(void);
-static void (*__importcommandline) = &__nocommandline;
+static void *__importcommandline = &__nocommandline;
 
 /* pass these values to the command line handling function */
 char *__argstr;
@@ -122,13 +131,13 @@ char **__argv;
 int  __argc;
 
 struct ExecBase *SysBase;
+struct DosLibrary *DOSBase;
 struct WBStartup *WBenchMsg;
 jmp_buf __startup_jmp_buf;
 LONG __startup_error;
 
 DEFINESET(INIT);
 DEFINESET(EXIT);
-DEFINESET(LIBS);
 
 /*	Stub function for GCC __main().
 
