@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/iffparse.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -23,9 +24,41 @@
 
 extern struct Library *MUIMasterBase;
 
+
+static struct MinNode *Node_Next(APTR node)
+{
+    if(node == NULL) return NULL;
+    if(((struct MinNode*)node)->mln_Succ == NULL) return NULL;
+    if(((struct MinNode*)node)->mln_Succ->mln_Succ == NULL)
+	return NULL;
+    return ((struct MinNode*)node)->mln_Succ;
+}
+
+static struct MinNode *List_First(APTR list)
+{
+    if( !((struct MinList*)list)->mlh_Head) return NULL;
+    if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
+    return ((struct MinList*)list)->mlh_Head;
+}
+
+struct Dataspace_Node
+{
+    struct MinNode node;
+    ULONG len;
+
+    ULONG id;
+    /* len bytes data follows */
+};
+
 struct MUI_DataspaceData
 {
-    int dummy;
+    /* We store this as a linear list, but it has O(n) when looking 
+    ** for an entry which is bad, because the is the most fequently used
+    ** operation.
+    */
+    struct MinList list;
+    APTR pool;
+    APTR pool_allocated;
 };
 
 static ULONG Dataspace_New (struct IClass *cl, Object *obj, struct opSet *msg)
@@ -39,14 +72,26 @@ static ULONG Dataspace_New (struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-#if 0
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
+	    case    MUIA_Dataspace_Pool:
+		    data->pool = (APTR)tag->ti_Data;
+		    break;
 	}
     }
-#endif
+
+    NewList((struct List*)&data->list);
+
+    if (!data->pool)
+    {
+	if (!(data->pool_allocated = CreatePool(0,4096,4096)))
+	{
+	    CoerceMethod(cl,obj,OM_DISPOSE);
+	    return NULL;
+	}
+    }
 
     return (ULONG)obj;
 }
@@ -55,12 +100,34 @@ static ULONG Dataspace_New (struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG  Dataspace_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
+    if (data->pool_allocated) DeletePool(data->pool_allocated);
+    else CoerceMethod(cl,obj,MUIM_Dataspace_Clear);
     return DoSuperMethodA(cl, obj, msg);
 }
 
 static ULONG Dataspace_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Add *msg)
 {
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
+    struct Dataspace_Node *replace;
+    struct Dataspace_Node *node = (struct Dataspace_Node*)AllocVec(sizeof(struct Dataspace_Node)+msg->len,0);
+    if (!node) return 0;
+
+    replace = (struct Dataspace_Node *)List_First(&data->list);
+    while (replace)
+    {
+	if (replace->id == msg->id)
+	{
+	    Remove((struct Node*)replace);
+	    FreePooled(data->pool,replace,replace->len + sizeof(struct Dataspace_Node));
+	    break;
+	}
+	replace = (struct Dataspace_Node*)Node_Next(replace);
+    }
+
+    AddTail((struct List*)&data->list,(struct Node*)node);
+    node->id = msg->id;
+    node->len = msg->len;
+    CopyMem(msg->data,node+1,node->len);
     return 1;
 }
 
@@ -71,7 +138,21 @@ static ULONG Dataspace_Clear(struct IClass *cl, Object *obj, struct MUIP_Dataspa
 
 static ULONG Dataspace_Find(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Find *msg)
 {
-    return 0;
+    struct MUI_DataspaceData *data = INST_DATA(cl, obj);
+    struct Dataspace_Node *find;
+
+    find = (struct Dataspace_Node *)List_First(&data->list);
+    while (find)
+    {
+	if (find->id == msg->id)
+	{
+	    return (ULONG)(find + 1);
+	    break;
+	}
+	find = (struct Dataspace_Node*)Node_Next(find);
+    }
+	
+    return NULL;
 }
 
 static ULONG Dataspace_Merge(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Merge *msg)
