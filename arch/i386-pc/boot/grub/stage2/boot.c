@@ -30,6 +30,7 @@ static int cur_addr;
 entry_func entry_addr;
 static struct mod_list mll[99];
 
+unsigned long mb_header_flags;
 
 /*
  *  The next two functions, 'load_image' and 'load_module', are the building
@@ -44,7 +45,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
   int len, i, exec_type = 0, align_4k = 1;
   entry_func real_entry_addr = 0;
   kernel_t type = KERNEL_TYPE_NONE;
-  unsigned long flags = 0, text_len = 0, data_len = 0, bss_len = 0;
+  unsigned long text_len = 0, data_len = 0, bss_len = 0;
   char *str = 0, *str2 = 0;
   struct linux_kernel_header *lh;
   union
@@ -57,10 +58,6 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
   /* presuming that MULTIBOOT_SEARCH is large enough to encompass an
      executable header */
   unsigned char buffer[MULTIBOOT_SEARCH];
-
-  /* sets the header pointer to point to the beginning of the
-     buffer by default */
-  pu.aout = (struct exec *) buffer;
 
   if (!grub_open (kernel))
     return KERNEL_TYPE_NONE;
@@ -79,8 +76,9 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
     {
       if (MULTIBOOT_FOUND ((int) (buffer + i), len - i))
 	{
-	  flags = ((struct multiboot_header *) (buffer + i))->flags;
-	  if (flags & MULTIBOOT_UNSUPPORTED)
+         pu.mb = (struct multiboot_header *) (buffer + i);
+         mb_header_flags = pu.mb->flags;
+         if (mb_header_flags & MULTIBOOT_UNSUPPORTED)
 	    {
 	      grub_close ();
 	      errnum = ERR_BOOT_FEATURES;
@@ -91,6 +89,56 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	  break;
 	}
     }
+  /* Handle graphics request for multiboot kernels */
+  if (type == KERNEL_TYPE_MULTIBOOT &&
+      mb_header_flags & MULTIBOOT_VIDEO_MODE &&
+      mbi.flags & MB_INFO_VIDEO_INFO)
+    {
+      mbi.vbe_mode = 0x03;
+
+      if (pu.mb->mode_type == 0)
+       {
+         unsigned short fallback = 0xFFFF;
+
+         for (mode_list
+                = (unsigned short *) VBE_FAR_PTR (vbe_info_block.video_mode);
+              *mode_list != 0xFFFF;
+              mode_list++)
+           {
+             if (get_vbe_mode_info (*mode_list, &mode_info_block) != 0x004F
+                 || (mode_info_block.mode_attributes & 0x0091) != 0x0091)
+               continue;
+
+             if (fallback == 0xFFFF) fallback = *mode_list;
+
+             if (pu.mb->width == mode_info_block.x_resolution &&
+                 pu.mb->height == mode_info_block.y_resolution &&
+                 pu.mb->depth == mode_info_block.bits_per_pixel )
+               {
+                 mbi.vbe_mode = *mode_list;
+                 break;
+               }
+           }
+
+         if (*mode_list == 0xFFFF && fallback != 0xFFFF)
+           mbi.vbe_mode = fallback;
+
+       }
+
+      if (debug)
+       {
+         grub_printf ("%s mode requested: %dx%dx%d\n",
+                      (pu.mb->mode_type == 0 ? "VBE graphics" : "Text"),
+                      pu.mb->width, pu.mb->height, pu.mb->depth);
+         grub_printf ("Mode selected: 0x%x\n", mbi.vbe_mode);
+       }
+
+    }
+
+  /* sets the header pointer to point to the beginning of the
+     buffer by default */
+  pu.aout = (struct exec *) buffer;
+
 
   /* Use BUFFER as a linux kernel header, if the image is Linux zImage
      or bzImage.  */
@@ -135,7 +183,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	    }
 	}
     }
-  else if (flags & MULTIBOOT_AOUT_KLUDGE)
+  else if (mb_header_flags & MULTIBOOT_AOUT_KLUDGE)
     {
       pu.mb = (struct multiboot_header *) (buffer + i);
       entry_addr = (entry_func) pu.mb->entry_addr;
@@ -398,7 +446,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 
   if (exec_type)		/* can be loaded like a.out */
     {
-      if (flags & MULTIBOOT_AOUT_KLUDGE)
+      if (mb_header_flags & MULTIBOOT_AOUT_KLUDGE)
 	str = "-and-data";
 
       printf (", loadaddr=0x%x, text%s=0x%x", cur_addr, str, text_len);
@@ -408,7 +456,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	{
 	  cur_addr += text_len;
 
-	  if (!(flags & MULTIBOOT_AOUT_KLUDGE))
+	  if (!(mb_header_flags & MULTIBOOT_AOUT_KLUDGE))
 	    {
 	      /* we have to align to a 4K boundary */
 	      if (align_4k)
