@@ -2180,8 +2180,8 @@ static VOID hidd2amiga_fast(Object *hidd_bm
 	/*  Write pixels to the destination */
 	putbuf_hook(dest_info
 		, current_x + x_src
-		, current_x + x_src
-		, current_y + y_dest
+		, current_y + y_src
+		, current_x + x_dest
 		, current_y + y_dest
 		, tocopy_w, tocopy_h
 		, temp_buf
