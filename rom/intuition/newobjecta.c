@@ -2,24 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.5  1997/01/27 00:36:41  ldp
-    Polish
-
-    Revision 1.4  1996/12/10 14:00:06  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/10/24 15:51:22  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.2  1996/10/23 16:30:09  aros
-    Ooops.. PublicClassList is a MinNode list :-)
-
-    Revision 1.1  1996/08/28 17:55:35  digulla
-    Proportional gadgets
-    BOOPSI
+    Revision 1.6  1997/03/20 16:05:08  digulla
+    Fixed bug: Added FindClass()
 
 
-    Desc:
+    Desc: Create a new BOOPSI object
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
@@ -28,6 +15,7 @@
 #include <proto/exec.h>
 #include <proto/alib.h>
 #include "intuition_intern.h"
+#include "boopsi.h"
 
 /*****************************************************************************
 
@@ -92,20 +80,10 @@
 
     /* No classPtr ? */
     if (!classPtr)
-    {
-	/* Search for the class */
-	for (classPtr=GetHead(PublicClassList);
-	    classPtr;
-	    classPtr=GetSucc(classPtr)
-	)
-	{
-	    if (!strcmp (classPtr->cl_ID, classID))
-		break;
-	}
+	classPtr = FindClass (classID, IntuitionBase);
 
-	if (!classPtr)
-	    return (NULL); /* Nothing found */
-    }
+    if (!classPtr)
+	return (NULL); /* Nothing found */
 
     /* Put the classPtr in our dummy object */
     carrier.o_Class = classPtr;

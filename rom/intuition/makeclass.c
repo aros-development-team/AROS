@@ -2,32 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.7  1997/03/17 18:56:25  srittau
-    Fixed some typos in FUNCTION description.
-
-    Revision 1.6  1997/01/27 00:36:40  ldp
-    Polish
-
-    Revision 1.5  1996/12/10 14:00:05  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.4  1996/11/08 11:28:03  aros
-    All OS function use now Amiga types
-
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.3  1996/10/24 15:51:22  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.2  1996/10/23 16:30:09  aros
-    Ooops.. PublicClassList is a MinNode list :-)
-
-    Revision 1.1  1996/08/28 17:55:35  digulla
-    Proportional gadgets
-    BOOPSI
+    Revision 1.8  1997/03/20 16:05:08  digulla
+    Fixed bug: Added FindClass()
 
 
-    Desc:
+    Desc: Initialize a BOOPSI class
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
@@ -35,6 +14,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include "intuition_intern.h"
+#include "boopsi.h"
 
 /*****************************************************************************
 
@@ -118,7 +98,7 @@
 	return (NULL);
 
     /* Does this class already exist ? */
-    if (FindName (PublicClassList, classID))
+    if (FindClass (classID, IntuitionBase))
 	return (NULL);
 
     /* Has the user specified a classPtr ? */

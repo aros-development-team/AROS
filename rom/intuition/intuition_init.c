@@ -281,6 +281,20 @@ AROS_LH0I(int, null,
     AROS_LIBFUNC_EXIT
 }
 
+Class * FindClass (ClassID classID, struct IntuitionBase * IntuitionBase)
+{
+    Class * classPtr;
+
+    /* Search for the class */
+    ForeachNode (PublicClassList, classPtr)
+    {
+	if (!strcmp (classPtr->cl_ID, classID))
+	    break;
+    }
+
+    return classPtr; /* Nothing found */
+}
+
 #undef IntuitionBase
 #define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
 

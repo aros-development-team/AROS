@@ -26,6 +26,7 @@
 #   include <intuition/screens.h>
 #endif
 #include "intuition_debug.h"
+#include "boopsi.h"
 
 struct IntIntuitionBase
 {
