@@ -10,7 +10,7 @@ DEPLIBS 	:= $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
 		    $(LIBDIR)/libarosc.a
 SRCS		:= LibInit.c SampleFuncs.c
 OBJS		:= libheader.o LibInit.o functable.o SampleFuncs.o libtail.o
-LIB		:= $(SLIBDIR)/example.library
+LIB		:= $(AROS_LIBS)/example.library
 
 #MM
 clean :
