@@ -21,6 +21,8 @@
 #include <proto/iffparse.h>
 
 #ifdef __AROS__
+/*  #define DEBUG 1 */
+/*  #include <aros/debug.h> */
 #include <proto/muimaster.h>
 #endif
 
@@ -32,7 +34,7 @@
 struct Library *MUIMasterBase;
 
 void load_prefs(char *filename);
-void save_prefs(char *filename);
+void save_prefs(BOOL envarc);
 
 #ifndef __AROS__
 
@@ -127,8 +129,8 @@ struct page_entry
 
 struct page_entry main_page_entries[] =
 {
-    {"Info",NULL,NULL,NULL},
-    {"System",NULL,NULL,NULL},
+/*      {"Info",NULL,NULL,NULL}, */
+/*      {"System",NULL,NULL,NULL}, */
     {"Windows",NULL,NULL,&_MUIP_Windows_desc},
     {"Buttons",NULL,NULL,&_MUIP_Buttons_desc},
     {"Groups",NULL,NULL,&_MUIP_Groups_desc},
@@ -205,8 +207,7 @@ void main_page_active(void)
 *****************************************************************/
 void main_save_pressed(void)
 {
-    save_prefs("env:zune/global.prefs");
-    save_prefs("envarc:zune/global.prefs");
+    save_prefs(TRUE);
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
@@ -215,7 +216,7 @@ void main_save_pressed(void)
 *****************************************************************/
 void main_use_pressed(void)
 {
-    save_prefs("env:zune/global.prefs");
+    save_prefs(FALSE);
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
@@ -253,12 +254,26 @@ int init_gui(void)
 
 	    WindowContents, VGroup,
     	    	Child, HGroup,
+	          Child, VGroup,
 		    Child, ListviewObject,
 			MUIA_Listview_List, main_page_list = ListObject,
 			    InputListFrame,
 			    MUIA_List_DisplayHook, &page_display_hook,
 			    End,
 			End,
+		    Child, HGroup,
+			Child, MUI_NewObject(MUIC_Popimage,
+					     MUIA_FixHeight, 20,
+					     MUIA_FixWidth, 30,
+					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
+					     TAG_DONE), /* Popframe really */
+	                Child, MUI_NewObject(MUIC_Popimage,
+					     MUIA_FixHeight, 20,
+					     MUIA_FixWidth, 30,
+					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
+					     TAG_DONE),
+		        End, /* HGroup */
+	            End,
 		    Child, VGroup,
 	                TextFrame,
 			InnerSpacing(4,4),
@@ -329,6 +344,7 @@ void load_prefs(char *filename)
     {
 	int i;
 
+/*  	D(bug("zune::load_prefs: created configdata %p\n", configdata)); */
 	DoMethod(configdata, MUIM_Configdata_Load, (IPTR)filename);
 
         /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */
@@ -340,18 +356,22 @@ void load_prefs(char *filename)
 	}
 
     	MUI_DisposeObject(configdata);
+/*  	D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
     }
 }
 
 /****************************************************************
  Saves the done prefs
 *****************************************************************/
-void save_prefs(char *filename)
+void save_prefs(BOOL envarc)
 {
     Object *configdata = MUI_NewObjectA(MUIC_Configdata, NULL);
+
     if (configdata)
     {
 	int i;
+
+/*  	D(bug("zune::save_prefs: created configdata %p\n", configdata)); */
 
         /* Call MUIM_Settingsgroup_GadgetsToConfig for every group */
 	for (i=0;i<MAIN_PAGE_ENTRIES_LEN;i++)
@@ -361,9 +381,15 @@ void save_prefs(char *filename)
 		DoMethod(p->group,MUIM_Settingsgroup_GadgetsToConfig,configdata);
 	}
 
-	DoMethod(configdata, MUIM_Configdata_Save, (IPTR)filename);
+
+	if (envarc)
+	{
+	    DoMethod(configdata, MUIM_Configdata_Save, (IPTR)"envarc:zune/global.prefs");
+	}
+	DoMethod(configdata, MUIM_Configdata_Save, (IPTR)"env:zune/global.prefs");
 
     	MUI_DisposeObject(configdata);
+/*  	D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
     }
 }
 
