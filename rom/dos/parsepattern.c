@@ -28,7 +28,7 @@
 
 /*  FUNCTION
 	Takes a pattern containing wildcards and transforms it into some
-	intermediate representation for use with the MathPattern() function.
+	intermediate representation for use with the MatchPattern() function.
 	The intermediate representation is longer but generally a buffer
 	size of 2*(strlen(Source)+1) is enough. Nevertheless you should check
 	the returncode to be sure that everything went fine.
