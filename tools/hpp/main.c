@@ -12,6 +12,7 @@
 #include "main.h"
 
 static const char version[] = "$VER: hpp 0.2 (19.11.1997)\r\n";
+static int wraplonglines = 1;
 
 static int
 MyStdioPutCB (StdioStream * ss, int c, CBD data)
@@ -39,7 +40,7 @@ MyStdioPutCB (StdioStream * ss, int c, CBD data)
 
 	lastc = c;
 
-	if (linelen > 70 && allowbreak)
+	if (linelen > 70 && allowbreak && wraplonglines)
 	{
 	    linelen = 0;
 
@@ -187,6 +188,10 @@ void main (int argc, char ** argv)
 	else if (!strcmp (argv[t], "-o") || !strcmp (argv[t], "-output"))
 	{
 	    outfile = argv[++t];
+	}
+	if (!strcmp (argv[t], "-nowrap"))
+	{
+	    wraplonglines = 0;
 	}
 	else
 	{
