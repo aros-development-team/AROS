@@ -292,10 +292,6 @@ struct gpInput
 #define GMR_NEXTACTIVE    (1L<<4) /* Activate next gadget. */
 #define GMR_PREVACTIVE    (1L<<5) /* Activate previous gadget. */
 
-  /* This return value is used as a hack to make gatools gadgets work, and may
-     be INCOMPATIBLE with a future AmigaOS. FOR SYSTEM USE ONLY! */
-#define GMR_INTERIMUPDATE (1L<<20)
-
 /* See GM_GOACTIVE for explanation. */
 #define GM_GOINACTIVE 4
 struct gpGoInactive
