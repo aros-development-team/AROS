@@ -186,7 +186,7 @@ int main(void)
 						{
 							struct TagItem args[2];
 
-							args[0].ti_Tag=OPA_Target;
+							args[0].ti_Tag=DDO_Target;
 							args[0].ti_Data=member;
 							args[1].ti_Tag=TAG_END;
 							args[1].ti_Data=0;
