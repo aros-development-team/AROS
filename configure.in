@@ -167,7 +167,7 @@ dnl particular target.
 # host and target CPU are the same. With GCC this is normally enough.
 #
 
-if test "$cross_compile" = "no" ; then 
+#if test "$cross_compile" = "no" ; then 
     aros_target_cc="$aros_host_cc"
     aros_target_as="$aros_host_cc"
     aros_shared_ld="$aros_host_ld"
@@ -176,9 +176,9 @@ if test "$cross_compile" = "no" ; then
 
     aros_target_mkdep="$aros_host_mkdep"
     aros_target_incl_def="$aros_host_incl"
-else
-    AC_MSG_ERROR([cross compiling is not yet supported])
-fi
+#else
+#    AC_MSG_ERROR([cross compiling is not yet supported])
+#fi
 
 # The default tools.
 aros_target_ar="ar"
