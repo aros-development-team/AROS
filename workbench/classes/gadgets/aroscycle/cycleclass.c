@@ -224,8 +224,11 @@ VOID cycle_render(Class *cl, Object *o, struct gpRender *msg)
                    EG(o)->Flags&GFLG_SELECTED?IDS_SELECTED:IDS_NORMAL,
                    msg->gpr_GInfo->gi_DrInfo);
 
-    if (data->font) SetFont(msg->gpr_RPort, data->font);
-    
+    if (data->font)
+    	SetFont(msg->gpr_RPort, data->font);
+    else
+	SetFont(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Font);
+
     if (data->labels)
         renderlabel(AROSCycleBase, EG(o),
                     data->labels[data->active],
