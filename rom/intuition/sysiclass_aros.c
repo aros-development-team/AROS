@@ -70,6 +70,7 @@ extern void DrawJUMP(struct RastPort *rp,ULONG state,LONG cx,LONG cy,struct Intu
 #define IM(o) ((struct Image *)o)
 
 static UWORD getbgpen(ULONG state, UWORD *pens);
+static UWORD getbgpen_gt(ULONG state, UWORD *pens);
 static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
                              WORD left, WORD top, WORD width, WORD height,
                              struct IntuitionBase *IntuitionBase);
@@ -630,6 +631,12 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
                 bottom--;
                 width -= 2;
                 height -= 2;
+		
+		if (data->flags & SYSIFLG_GADTOOLS)
+		{
+                    SetAPen(rport, getbgpen_gt(msg->imp_State, data->dri->dri_Pens));
+                    RectFill(rport, left, top, right, bottom);
+		}
             }
 
             if (data->flags & SYSIFLG_GADTOOLS)
@@ -722,6 +729,13 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
                 bottom--;
                 width -= 2;
                 height -= 2;
+
+		if (data->flags & SYSIFLG_GADTOOLS)
+		{
+                    SetAPen(rport, getbgpen_gt(msg->imp_State, data->dri->dri_Pens));
+                    RectFill(rport, left, top, right, bottom);
+		}
+
             }
 
             if (data->flags & SYSIFLG_GADTOOLS)
@@ -814,6 +828,13 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
                 bottom--;
                 width -= 2;
                 height -= 2;
+
+		if (data->flags & SYSIFLG_GADTOOLS)
+		{
+                    SetAPen(rport, getbgpen_gt(msg->imp_State, data->dri->dri_Pens));
+                    RectFill(rport, left, top, right, bottom);
+		}
+
             }
 
             if (data->flags & SYSIFLG_GADTOOLS)
@@ -907,6 +928,12 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
                 bottom--;
                 width -= 2;
                 height -= 2;
+
+		if (data->flags & SYSIFLG_GADTOOLS)
+		{
+                    SetAPen(rport, getbgpen_gt(msg->imp_State, data->dri->dri_Pens));
+                    RectFill(rport, left, top, right, bottom);
+		}
             }
 
             if (data->flags & SYSIFLG_GADTOOLS)
@@ -1565,9 +1592,27 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
             bg = pens[FILLPEN];
             break;
 
-	case IDS_INACTIVENORMAL:
+	default:
             bg = pens[BACKGROUNDPEN];
             break;
+    }
+    
+    return bg;
+}
+
+/**************************************************************************************************/
+
+static UWORD getbgpen_gt(ULONG state, UWORD *pens)
+{
+    UWORD bg;
+
+    switch (state)
+    {
+	case IDS_SELECTED:
+	case IDS_INACTIVESELECTED:
+            bg = pens[FILLPEN];
+            break;
+
 	default:
             bg = pens[BACKGROUNDPEN];
             break;
