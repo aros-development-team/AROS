@@ -2,7 +2,7 @@
     Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Country data for sverige
+    Desc: Country data for Sverige
 */
 
 #include <exec/types.h>
