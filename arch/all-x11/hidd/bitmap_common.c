@@ -61,6 +61,19 @@ static void SwapImageEndianess(XImage *image)
 	    	imdata += (image->bytes_per_line - width * 2);
 		break;
 
+    	    case 3:
+    		for (x = 0; x < width; x ++)
+    		{
+    		    UBYTE pix1 = ((UBYTE *)imdata)[0];
+    		    UBYTE pix3 = ((UBYTE *)imdata)[2];
+		    
+		    *((UBYTE *)imdata) = pix3;
+		    ((UBYTE *)imdata) += 2;
+		    *((BYTE *)imdata)++ = pix1;
+    		}
+	    	imdata += (image->bytes_per_line - width * 3);
+		break;
+		
 	    case 4:
     		for (x = 0; x < width; x ++)
     		{
@@ -274,6 +287,26 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 	case vHidd_StdPixFmt_Native32:
     	    switch (image->bits_per_pixel)
 	    {	
+		case 8:
+		{
+		    LONG x, y;
+
+		    UBYTE *imdata = (UBYTE *)image->data;
+
+		    for (y = 0; y < height; y ++)
+		    {
+			HIDDT_Pixel *p = buf;
+
+			for (x = 0; x < width; x ++)
+			{
+			    *p++ = *imdata++;
+			}
+			((UBYTE *)imdata) += (image->bytes_per_line - width);
+			((UBYTE *)buf) += msg->modulo;
+		    }
+		    break;
+		}
+
 		case 16:
 		{
 		    LONG x, y;
@@ -704,6 +737,25 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 	case vHidd_StdPixFmt_Native32:
     	    switch (image->bits_per_pixel)
 	    {
+    	    	case 8:
+		{
+		    LONG x, y;
+		    
+		    UBYTE *imdata = (UBYTE *)image->data;
+
+		    for (y = 0; y < height; y ++)
+		    {
+			HIDDT_Pixel *p = buf;
+			for (x = 0; x < width; x ++)
+			{
+			    *imdata ++ = (UBYTE)*p++;
+			}
+			((UBYTE *)imdata) += (image->bytes_per_line - width); 
+			((UBYTE *)buf) += msg->modulo;
+		    }
+		    break;
+		}
+		    
 		case 16:
 		{
 		    LONG x, y;
@@ -851,6 +903,24 @@ static UBYTE *buf_to_ximage_lut(OOP_Class *cl, OOP_Object *bm
     
     switch(image->bits_per_pixel)
     {
+	case 8:
+	{
+    	    LONG x, y;
+	    UBYTE *imdata = (UBYTE *)image->data;
+
+	    for (y = 0; y < height; y ++)
+	    {
+		UBYTE *buf = pixarray;
+		for (x = 0; x < width; x ++)
+		{
+		    *imdata ++ = (UBYTE)lut[*buf ++];
+		}
+		pixarray += msg->modulo;
+		imdata += (image->bytes_per_line  - width); /*sg*/
+	    }
+	    break;
+    	}
+
 	case 16:
 	{
     	    LONG x, y;
@@ -862,7 +932,6 @@ static UBYTE *buf_to_ximage_lut(OOP_Class *cl, OOP_Object *bm
 		for (x = 0; x < width; x ++)
 		{
 		    *imdata ++ = (UWORD)lut[*buf ++];
-
 		}
 		pixarray += msg->modulo;
 		imdata += ((image->bytes_per_line / 2) - width); /*sg*/
