@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.12  1997/02/28 00:14:20  ldp
+    Check if a node has a name, and only strcmp() if it has. Should fix streams
+    of Enforcer hits of bytereads from 0. I didn't get them, but I got hitlogs of
+    35kB, so they sure were there. :)
+
     Revision 1.11  1997/01/01 03:46:09  ldp
     Committed Amiga native (support) code
 
@@ -97,9 +102,13 @@
     /* Look through the list */
     for (node=GetHead(list); node; node=GetSucc(node))
     {
-	/* check the node. If we found it, stop */
-	if (!strcmp (node->ln_Name, name))
-	    break;
+	/* Only compare the names if this node has one. */
+	if(node->ln_Name)
+	{
+	    /* Check the node. If we found it, stop. */
+	    if (!strcmp (node->ln_Name, name))
+		break;
+	}
     }
 
     /*
