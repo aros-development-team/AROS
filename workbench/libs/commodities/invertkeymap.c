@@ -8,8 +8,10 @@
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
 #include "cxintern.h"
+#define __NOLIBBASE__ 1
 #include <proto/keymap.h>
 #include <proto/timer.h>
+#undef __NOLIBBASE__
 #include <aros/debug.h>
 
 /*****************************************************************************

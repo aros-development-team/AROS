@@ -17,6 +17,9 @@
 
 #include <aros/debug.h>
 
+#define DEBUG_MATCHIX(x)	;//if ((event->ie_Class == IECLASS_RAWMOUSE) || (event->ie_Class == IECLASS_POINTERPOS) || (event->ie_Class == IECLASS_NEWPOINTERPOS)) x;
+
+
     AROS_LH2(BOOL, MatchIX,
 
 /*  SYNOPSIS */
@@ -67,24 +70,33 @@
     UWORD temp = 0;
     UWORD qual;
     
+    DEBUG_MATCHIX(dprintf("MatchIX: ev[0x%lx, 0x%lx, 0x%lx] ix[0x%lx, (0x%lx, 0x%lx), (0x%lx, 0x%lx, 0x%lx)]\n",
+			  event->ie_Class, event->ie_Code, event->ie_Qualifier,
+			  ix->ix_Class, ix->ix_Code, ix->ix_CodeMask,
+			  ix->ix_Qualifier, ix->ix_QualMask, ix->ix_QualSame));
+
     if (ix->ix_Class == IECLASS_NULL)
     {
+	DEBUG_MATCHIX(dprintf("MatchIX: IECLASS_NULL\n"));
 	return TRUE;
     }
     
     if (event->ie_Class != ix->ix_Class)
     {
+	DEBUG_MATCHIX(dprintf("MatchIX: fail\n"));
 	return FALSE;
     }
 
-    //    kprintf("Code: ie %i ix: %i\n", event->ie_Code, ix->ix_Code);
+    DEBUG_MATCHIX(dprintf("Code: ie %lx ix: %lx\n", event->ie_Code, ix->ix_Code));
     
     if (((ix->ix_Code ^ event->ie_Code) & ix->ix_CodeMask) != 0)
     {
+	DEBUG_MATCHIX(dprintf("MatchIX: fail\n"));
 	return FALSE;
     }
     
     temp = event->ie_Qualifier;
+    DEBUG_MATCHIX(dprintf("Code: temp %lx\n", temp));
 
     if ((qual = ix->ix_QualSame) != 0)
     {
@@ -112,13 +124,16 @@
 	    }
 	}
     }
+    DEBUG_MATCHIX(dprintf("Code: temp %lx\n", temp));
 
     if (((temp ^ ix->ix_Qualifier) & ix->ix_QualMask) == 0)
     {
+	DEBUG_MATCHIX(dprintf("MatchIX: ok\n"));
 	return TRUE;
     }
     else
     {
+	DEBUG_MATCHIX(dprintf("MatchIX: fail\n"));
 	return FALSE;
     }
 

@@ -279,6 +279,9 @@ pix_S pix_Highmap[]=
 	{"LEFT",
 	0x4f},
 
+	{"NUMLOCK",
+	0x6d},
+
 	{"PAGE_DOWN",
 	0x49},
 
@@ -288,11 +291,17 @@ pix_S pix_Highmap[]=
 	{"PAUSE",
 	0x6e},
 
+	{"PRTSCR",
+	0x6c},
+
 	{"RETURN",
 	0x44},
 
 	{"RIGHT",
 	0x4e},
+
+	{"SCRLOCK",
+	0x6b},
 
 	{"SPACE",
 	0x40},

@@ -16,13 +16,18 @@
 
 #include <libraries/commodities.h>
 #include <proto/commodities.h>
+#define __NOLIBBASE__ 1
 #include <proto/utility.h>
 #include <proto/keymap.h>
+#undef __NOLIBBASE__
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
 #include <string.h>
 
 #include "parse.h"
+
+#define DEBUG_PARSEIX(x)	;
+#define DEBUG_PMATCH(x)		;
 
 BOOL pMatch(pix_S[], STRPTR, LONG *, BOOL *, struct Library *CxBase);
 VOID GetNext(STRPTR *);
@@ -95,6 +100,10 @@ BOOL IsSeparator(char);
     struct InputEvent event;
     
     /* Set as standard if no class is specified in the description */
+#if 0
+    /* Caller is expected to set this! */
+    ix->ix_Version = IX_VERSION;
+#endif
     ix->ix_Class = IECLASS_RAWKEY;
     ix->ix_Code = 0;
     ix->ix_CodeMask = 0xFFFF;
@@ -109,7 +118,7 @@ BOOL IsSeparator(char);
 	return -2;
     }
 
-    D(bug("ParseIX: ix = %p, desc = \"%s\"\n", ix, desc));
+    DEBUG_PARSEIX(dprintf("ParseIX: ix = 0x%lx, desc = \"%s\"\n", ix, desc));
     
     while (IsSeparator(*desc))
     {
@@ -233,14 +242,14 @@ BOOL IsSeparator(char);
 	desc++;
     }
 
-    D(bug("ParseIX: Class %p Code 0x%x CodeMask 0x%x\n"
-	  "ParseIX: Qualifier 0x%x QualMask 0x%x QualSame 0x%x\n",
-	  ix->ix_Class,
-	  ix->ix_Code,
-	  ix->ix_CodeMask,
-	  ix->ix_Qualifier,
-	  ix->ix_QualMask,
-	  ix->ix_QualSame));
+    DEBUG_PARSEIX(dprintf("ParseIX: Class 0x%lx Code 0x%lx CodeMask 0x%lx\n"
+			  "ParseIX: Qualifier 0x%lx QualMask 0x%lx QualSame 0x%lx\n",
+			  ix->ix_Class,
+			  ix->ix_Code,
+			  ix->ix_CodeMask,
+			  ix->ix_Qualifier,
+			  ix->ix_QualMask,
+			  ix->ix_QualSame));
     
     if (*desc == '\0')
     {
@@ -248,7 +257,7 @@ BOOL IsSeparator(char);
     }
     else
     {
-	D(bug("ParseIX: fail, desc %p *desc %p\n", desc, *desc));
+	DEBUG_PARSEIX(dprintf("ParseIX: fail, desc 0x%lx *desc 0x%lx\n", desc, *desc));
 	return -1;
     }
     
@@ -262,8 +271,8 @@ BOOL pMatch(pix_S words[], STRPTR string, LONG *v, BOOL *dash,
     STRPTR nstr = string;
     int    i;
 
-    D(bug("pMatch: words[0] = \"%s\" string \"%s\" dash %d\n",
-	  words[0].name, string, *dash));
+    DEBUG_PMATCH(dprintf("pMatch: words[0] = \"%s\" string \"%s\" dash %d\n",
+			 words[0].name, string, *dash));
     
     if (*dash)
     {
@@ -283,12 +292,12 @@ BOOL pMatch(pix_S words[], STRPTR string, LONG *v, BOOL *dash,
 	if (Strnicmp(nstr, words[i].name, strlen(words[i].name)) == 0)
 	{
 	    *v = words[i].value;
-	    D(bug("pMatch: value 0x%lx\n", *v));
+	    DEBUG_PMATCH(dprintf("pMatch: value 0x%lx\n", *v));
 	    return TRUE;
 	}
     }
 
-    D(bug("pMatch: not found\n"));
+    DEBUG_PMATCH(dprintf("pMatch: not found\n"));
     return FALSE;
 }
 

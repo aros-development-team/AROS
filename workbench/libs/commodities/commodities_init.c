@@ -6,6 +6,7 @@
     Lang: English.
 */
 
+#define  AROS_ALMOST_COMPATIBLE
 
 #ifndef  DEBUG
 #define  DEBUG 0
@@ -28,6 +29,7 @@
 #endif
 #include <stddef.h>
 
+#include <intuition/classusr.h>
 #include <exec/libraries.h>
 #include <exec/alerts.h>
 #include <libraries/commodities.h>
@@ -49,6 +51,10 @@ extern BPTR AROS_SLIB_ENTRY(expunge, Commodities)();
 extern int AROS_SLIB_ENTRY(null, Commodities)();
 extern const char LIBEND;
 
+#ifdef __MORPHOS__
+    unsigned long __abox__ = 1;
+#endif
+
 int entry(void)
 {
     /* If the library was executed by accident return error code. */
@@ -63,7 +69,7 @@ ULONG HookEntry(void)
     Msg msg=(Msg) REG_A1;
     Object *obj=(Object*) REG_A2;
 
-    return h->h_SubEntry(h,obj,msg);
+    return ((ULONG(*)(APTR,APTR,APTR))h->h_SubEntry)(h,obj,msg);
 }
 
 static struct EmulLibEntry    HookEntry_Gate=
@@ -79,10 +85,10 @@ const struct Resident resident=
     RTC_MATCHWORD,
     (struct Resident *)&resident,
     (APTR)&LIBEND,
-#ifndef __MORPHOS__
-    RTF_AUTOINIT,
+#ifdef __MORPHOS__
+    RTF_PPC | RTF_EXTENDED | RTF_AUTOINIT,
 #else
-    RTF_PPC | RTF_AUTOINIT,
+    RTF_AUTOINIT,
 #endif
     VERSION_NUMBER,
     NT_LIBRARY,
@@ -90,6 +96,11 @@ const struct Resident resident=
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
+#ifdef __MORPHOS__
+    ,
+    REVISION_NUMBER,	/* Revision */
+    NULL /* Tags */
+#endif
 };
 
 const char name[] = NAME_STRING;
