@@ -399,10 +399,10 @@ static ULONG hittest_gadgetclass(Class *cl, Object *o, struct gpHitTest *gpht)
 
     GetGadgetIBox(o, gpht->gpht_GInfo, &container);
 
-    if ( (gpht->gpht_Mouse.X >= container.Left) &&
-	 (gpht->gpht_Mouse.X <  container.Left + container.Width) &&
-	 (gpht->gpht_Mouse.Y >= container.Top) &&
-	 (gpht->gpht_Mouse.Y <  container.Top + container.Height)
+    if ( (gpht->gpht_Mouse.X >= 0) &&
+	 (gpht->gpht_Mouse.X <  container.Width) &&
+	 (gpht->gpht_Mouse.Y >= 0) &&
+	 (gpht->gpht_Mouse.Y <  container.Height)
     )
     {
 	return(GMR_GADGETHIT);
