@@ -798,9 +798,7 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init,UnixIO),
     */
     nml.nml_ME[1].me_Length = AROS_STACKSIZE;
 
-    ml = AllocEntry ((struct MemList *)&nml);
-
-    if (AROS_CHECK_ALLOCENTRY(ml))
+    if (NewAllocEntry((struct MemList *)&nml, &ml, NULL))
     {
 	newtask = ml->ml_ME[0].me_Addr;
 
