@@ -5,6 +5,7 @@
     Desc: Insert a node into a list.
     Lang: english
 */
+#include <assert.h>
 
 /*****************************************************************************
 
