@@ -45,6 +45,30 @@ extern struct Library *MUIMasterBase;
 
 #define ROUND(x) ((int)(x + 0.5))
 
+
+struct MUI_GroupData
+{
+    Object      *family;
+    struct Hook *layout_hook;
+    ULONG        flags;
+    ULONG        columns;
+    ULONG        rows;
+    LONG         active_page;
+    ULONG        horiz_spacing;
+    ULONG        vert_spacing;
+    ULONG        num_childs;
+    ULONG        horiz_weight_sum;
+    ULONG        vert_weight_sum;
+    ULONG        update; /* for MUI_Refraw() 1 - do not redraw the frame */
+};
+
+#define GROUP_HORIZ       (1<<1)
+#define GROUP_SAME_WIDTH  (1<<2)
+#define GROUP_SAME_HEIGHT (1<<3)
+#define GROUP_CHANGING    (1<<4)
+#define GROUP_PAGEMODE    (1<<5)
+
+
 static const int __version = 1;
 static const int __revision = 1;
 
@@ -99,7 +123,8 @@ static void change_active_page (struct IClass *cl, Object *obj, LONG page)
     	if (_flags(obj) & MADF_CANDRAW)
     	{
 	    Group_Show(cl,obj,NULL);
-	    MUI_Redraw(obj, MADF_DRAWOBJECT);
+	    data->update = 1;
+	    MUI_Redraw(obj, MADF_DRAWUPDATE);
 	}
     }
 }
@@ -548,20 +573,22 @@ static ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     D(bug("muimaster.library/group.c: Draw Group Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
     DoSuperMethodA(cl, obj, (Msg)msg);
-    if (!(msg->flags & MADF_DRAWOBJECT) && !(msg->flags & MADF_DRAWALL))
-	return TRUE;
 
+    if ((msg->flags & MADF_DRAWOBJECT) && data->update == 1)
+    {
+	/*
+	 * update is set when changing active page of a page group
+	 * need to redraw background ourself
+	 */
+	DoMethod(obj, MUIM_DrawBackground,
+		_mleft(obj), _mtop(obj),  _mwidth(obj), _mheight(obj), _left(obj), _top(obj), 0);
 
-    /*
-     * update is set when changing active page of a page group
-     * need to redraw background ourself
-     */
-/*      if (msg->flags & MADF_DRAWUPDATE) */
-/*      { */
-/*  	DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), */
-/*  		 _mwidth(obj), _mheight(obj), _left(obj), _top(obj), 0); */
-/*      } */
-
+	data->update = 0;
+    } else
+    {
+	if (!(msg->flags & MADF_DRAWOBJECT) && !(msg->flags & MADF_DRAWALL))
+	    return TRUE;
+    }
 
     group_rect = muiRenderInfo(obj)->mri_ClipRect;
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
@@ -576,12 +603,12 @@ static ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    continue;
 	}
 	
-	msg->flags |= MADF_DRAWOBJECT; /* yup, do not forget */
+//	msg->flags |= MADF_DRAWOBJECT; /* yup, do not forget */
 
-	child_rect.MinX = _left(child);
-	child_rect.MinY = _top(child);
-	child_rect.MaxX = _right(child);
-	child_rect.MaxY = _bottom(child);
+//	child_rect.MinX = _left(child);
+//	child_rect.MinY = _top(child);
+//	child_rect.MaxX = _right(child);
+//	child_rect.MaxY = _bottom(child);
 /*  	    g_print("intersect: a=(%d, %d, %d, %d) b=(%d, %d, %d, %d)\n", */
 /*  		    group_rect.x, group_rect.y, */
 /*  		    group_rect.width, group_rect.height, */
@@ -590,7 +617,8 @@ static ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 //	if (gdk_rectangle_intersect(&group_rect, &child_rect,
 //				    &muiRenderInfo(obj)->mri_ClipRect))
-	    DoMethodA(child, (Msg)msg);
+//	    DoMethodA(child, (Msg)msg);
+	    MUI_Redraw(child,MADF_DRAWOBJECT);
 
 	muiRenderInfo(obj)->mri_ClipRect = group_rect;
 /*  	    g_print("set back clip to (%d, %d, %d, %d)\n", */
