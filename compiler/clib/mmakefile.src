@@ -58,6 +58,7 @@ FILES := \
 	fputs \
 	fread \
 	free \
+	freopen \
 	fseek \
 	fsetpos \
 	ftell \
