@@ -21,7 +21,7 @@
 	AROS_LHA(struct Requester *,req,A1),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 14, Gadtools)
+	struct Library *, GadToolsBase, 14, GadTools)
 
 /*  FUNCTION
 	You have to call this function as soon as a window containing
@@ -49,7 +49,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     GT_BeginRefresh(win);
     GT_EndRefresh(win, TRUE);

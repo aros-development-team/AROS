@@ -22,7 +22,7 @@
 	AROS_LHA(struct TagItem *, tagList, A2),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 11, Gadtools)
+	struct Library *, GadToolsBase, 11, GadTools)
 
 /*  FUNCTION
 
@@ -50,7 +50,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     return FALSE;
 

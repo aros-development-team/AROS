@@ -2,7 +2,7 @@
     (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Gadtools initialization code.
+    Desc: GadTools initialization code.
     Lang: English.
 */
 #include <stddef.h>
@@ -21,11 +21,11 @@ extern const char version[];
 extern const APTR inittabl[4];
 extern void *const FUNCTABLE[];
 extern const struct inittable datatable;
-extern struct GadtoolsBase_intern *INIT();
-extern struct GadtoolsBase_intern *AROS_SLIB_ENTRY(open,Gadtools)();
-extern BPTR AROS_SLIB_ENTRY(close,Gadtools)();
-extern BPTR AROS_SLIB_ENTRY(expunge,Gadtools)();
-extern int AROS_SLIB_ENTRY(null,Gadtools)();
+extern struct GadToolsBase_intern *INIT();
+extern struct GadToolsBase_intern *AROS_SLIB_ENTRY(open,GadTools)();
+extern BPTR AROS_SLIB_ENTRY(close,GadTools)();
+extern BPTR AROS_SLIB_ENTRY(expunge,GadTools)();
+extern int AROS_SLIB_ENTRY(null,GadTools)();
 extern const char END;
 
 int entry(void)
@@ -38,11 +38,11 @@ const struct Resident resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
-    (APTR)&Gadtools_end,
+    (APTR)&GadTools_end,
     RTF_AUTOINIT,
     LIBVERSION,
     NT_LIBRARY,
-    0,
+    -120,	/* priority */
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
@@ -54,7 +54,7 @@ const char version[]=VERSION;
 
 const APTR inittabl[4]=
 {
-    (APTR)sizeof(struct GadtoolsBase_intern),
+    (APTR)sizeof(struct GadToolsBase_intern),
     (APTR)FUNCTABLE,
     (APTR)&datatable,
     &INIT
@@ -71,7 +71,7 @@ struct inittable
     S_END (END);
 };
 
-#define O(n) offsetof(struct GadtoolsBase_intern,n)
+#define O(n) offsetof(struct GadToolsBase_intern,n)
 
 const struct inittable datatable=
 {
@@ -79,7 +79,7 @@ const struct inittable datatable=
     { { I_CPYO(1,L,O(library.lib_Node.ln_Name)), { (IPTR)name } } },
     { { I_CPYO(1,B,O(library.lib_Flags       )), { LIBF_SUMUSED|LIBF_CHANGED } } },
     { { I_CPYO(1,W,O(library.lib_Version     )), { LIBVERSION } } },
-    { { I_CPYO(1,W,O(library.lib_Revision    )), { 0 } } },
+    { { I_CPYO(1,W,O(library.lib_Revision    )), { LIBREVISION } } },
     { { I_CPYO(1,L,O(library.lib_IdString    )), { (IPTR)&version[6] } } },
   I_END ()
 };
@@ -87,16 +87,16 @@ const struct inittable datatable=
 #undef O
 #undef SysBase
 
-AROS_LH2(struct GadtoolsBase_intern *, init,
- AROS_LHA(struct GadtoolsBase_intern *, LIBBASE, D0),
+AROS_LH2(struct GadToolsBase_intern *, init,
+ AROS_LHA(struct GadToolsBase_intern *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
-     struct ExecBase *, SysBase, 0, BASENAME)
+     struct ExecBase *, sysBase, 0, BASENAME)
 {
     AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
-    LIBBASE->sysbase=SysBase;
+    LIBBASE->sysbase=sysBase;
     LIBBASE->seglist=segList;
 
     /* You would return NULL here if the init failed. */
@@ -107,9 +107,9 @@ AROS_LH2(struct GadtoolsBase_intern *, init,
 /* Use This from now on */
 #define SysBase LIBBASE->sysbase
 
-AROS_LH1(struct GadtoolsBase_intern *, open,
+AROS_LH1(struct GadToolsBase_intern *, open,
  AROS_LHA(ULONG, version, D0),
-     struct GadtoolsBase_intern *, LIBBASE, 1, BASENAME)
+     struct GadToolsBase_intern *, LIBBASE, 1, BASENAME)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -150,7 +150,7 @@ AROS_LH1(struct GadtoolsBase_intern *, open,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(BPTR, close, struct GadtoolsBase_intern *, LIBBASE, 2, BASENAME)
+AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -180,7 +180,7 @@ AROS_LH0(BPTR, close, struct GadtoolsBase_intern *, LIBBASE, 2, BASENAME)
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(BPTR, expunge, struct GadtoolsBase_intern *, LIBBASE, 3, BASENAME)
+AROS_LH0(BPTR, expunge, struct GadToolsBase_intern *, LIBBASE, 3, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
@@ -212,7 +212,7 @@ AROS_LH0(BPTR, expunge, struct GadtoolsBase_intern *, LIBBASE, 3, BASENAME)
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(int, null, struct GadtoolsBase_intern *, LIBBASE, 4, BASENAME)
+AROS_LH0I(int, null, struct GadToolsBase_intern *, LIBBASE, 4, BASENAME)
 {
     AROS_LIBFUNC_INIT
     return 0;

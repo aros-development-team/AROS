@@ -20,7 +20,7 @@
 	AROS_LHA(struct IntuiMessage *, modimsg, A1),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 18, Gadtools)
+	struct Library *, GadToolsBase, 18, GadTools)
 
 /*  FUNCTION
 	Restores an intuition message formerly changed with GT_FilterIMsg().
@@ -47,7 +47,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     return modimsg;
 

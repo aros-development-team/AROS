@@ -21,7 +21,7 @@
 	AROS_LHA(struct MsgPort *, intuiport, A0),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 12, Gadtools)
+	struct Library *, GadToolsBase, 12, GadTools)
 
 /*  FUNCTION
         You must use this function instead of exec.library/GetMsg() to get
@@ -51,7 +51,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     struct IntuiMessage *msg;
 

@@ -20,7 +20,7 @@
         AROS_LHA(BOOL, complete, D0),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 16, Gadtools)
+	struct Library *, GadToolsBase, 16, GadTools)
 
 /*  FUNCTION
         GT_EndRefresh() must be called, when a refresh initiated with
@@ -48,7 +48,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     EndRefresh(win, complete);
 

@@ -27,7 +27,7 @@
 	AROS_LHA(struct TagItem *, taglist, A1),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 20, Gadtools)
+	struct Library *, GadToolsBase, 20, GadTools)
 
 /*  FUNCTION
 	DrawBevelBoxA() does just that. It draws a bevelled box.
@@ -61,7 +61,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
     struct Screen *scr;
     struct DrawInfo *dri;
     UWORD pen1, pen2;

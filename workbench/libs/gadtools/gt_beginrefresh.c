@@ -20,7 +20,7 @@
 	AROS_LHA(struct Window *, win, A0),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 15, Gadtools)
+	struct Library *, GadToolsBase, 15, GadTools)
 
 /*  FUNCTION
 	Refreshes the given window. This function must be used instead
@@ -56,7 +56,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     BeginRefresh(win);
 

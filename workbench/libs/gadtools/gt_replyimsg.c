@@ -21,7 +21,7 @@
 	AROS_LHA(struct IntuiMessage *, imsg, A1),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 13, Gadtools)
+	struct Library *, GadToolsBase, 13, GadTools)
 
 /*  FUNCTION
         Replies a message gotten via GT_GetIMsg().
@@ -47,7 +47,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     ReplyMsg((struct Message *)imsg);
 

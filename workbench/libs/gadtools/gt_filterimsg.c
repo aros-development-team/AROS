@@ -19,7 +19,7 @@
 	AROS_LHA(struct IntuiMessage *, imsg, A1),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 17, Gadtools)
+	struct Library *, GadToolsBase, 17, GadTools)
 
 /*  FUNCTION
 	Processes an intuition message. Normally, you should not use this
@@ -52,7 +52,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     return imsg;
 

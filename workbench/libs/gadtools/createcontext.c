@@ -23,7 +23,7 @@
 	AROS_LHA(struct Gadget **, glistpointer, A0),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 19, Gadtools)
+	struct Library *, GadToolsBase, 19, GadTools)
 
 /*  FUNCTION
         Creates a virtual first gadget to which all following gadgets must be
@@ -53,7 +53,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase_intern *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase_intern *,GadToolsBase)
 
     struct Gadget *gad;
 

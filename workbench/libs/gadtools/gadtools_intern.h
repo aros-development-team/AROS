@@ -30,12 +30,12 @@
 /* Some external stuff (gadtools_init.c) */
 
 
-struct GadtoolsBase_intern; /* prerefrence */
+struct GadToolsBase_intern; /* prerefrence */
 
 /* Internal prototypes */
 
 
-struct GadtoolsBase_intern
+struct GadToolsBase_intern
 {
     struct Library    library;
     struct ExecBase * sysbase;
@@ -54,19 +54,19 @@ struct GadtoolsBase_intern
 typedef struct IntuitionBase IntuiBase;
 typedef struct GfxBase GraphicsBase;
 
-#define GTB(gtb)        ((struct GadtoolsBase_intern *)gtb)
+#define GTB(gtb)        ((struct GadToolsBase_intern *)gtb)
 #undef SysBase
-#define SysBase (GTB(GadtoolsBase)->sysbase)
+#define SysBase (GTB(GadToolsBase)->sysbase)
 #undef IntuitionBase
-#define IntuitionBase (GTB(GadtoolsBase)->intuibase)
+#define IntuitionBase (GTB(GadToolsBase)->intuibase)
 #undef DOSBase
-#define DOSBase (GTB(GadtoolsBase)->dosbase)
+#define DOSBase (GTB(GadToolsBase)->dosbase)
 #undef GfxBase
-#define GfxBase (GTB(GadtoolsBase)->gfxbase)
+#define GfxBase (GTB(GadToolsBase)->gfxbase)
 #undef UtilityBase
-#define UtilityBase (GTB(GadtoolsBase)->utilitybase)
+#define UtilityBase (GTB(GadToolsBase)->utilitybase)
 
 #define expunge() \
-AROS_LC0(BPTR, expunge, struct GadtoolsBase_intern *, GadtoolsBase, 3, Gadtools)
+AROS_LC0(BPTR, expunge, struct GadToolsBase_intern *, GadToolsBase, 3, GadTools)
 
 #endif /* GADTOOLS_INTERN_H */

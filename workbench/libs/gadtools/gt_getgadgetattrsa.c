@@ -26,7 +26,7 @@
 	AROS_LHA(struct TagItem *, taglist, A3),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 29, Gadtools)
+	struct Library *, GadToolsBase, 29, GadTools)
 
 /*  FUNCTION
         Get a list of attributes from a specific gadget.
@@ -58,7 +58,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     return 0L;
 

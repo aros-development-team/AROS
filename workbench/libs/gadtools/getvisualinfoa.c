@@ -22,7 +22,7 @@
 	AROS_LHA(struct TagItem *, tagList, A1),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 21, Gadtools)
+	struct Library *, GadToolsBase, 21, GadTools)
 
 /*  FUNCTION
 	GetVisualInfoA() creates a visual info structure, which is needed
@@ -53,7 +53,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     if (screen == NULL)
 	return NULL;

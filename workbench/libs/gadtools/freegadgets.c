@@ -19,7 +19,7 @@
 	AROS_LHA(struct Gadget *, glist, A0),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 6, Gadtools)
+	struct Library *, GadToolsBase, 6, GadTools)
 
 /*  FUNCTION
 	Frees all gadtools gadgets from a linked list of gadgets.
@@ -45,7 +45,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     struct Gadget *lastgad = NULL, *nextgad;
 

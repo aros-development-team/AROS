@@ -12,7 +12,7 @@
 
     NAME */
 #include <proto/gadtools.h>
-#include <proto/intuition.h>
+	#include <proto/intuition.h>
 #include <intuition/intuition.h>
 #include <utility/tagitem.h>
 
@@ -25,7 +25,7 @@
 	AROS_LHA(struct TagItem *, tagList, A3),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 7, Gadtools)
+	struct Library *, GadToolsBase, 7, GadTools)
 
 /*  FUNCTION
         Refreshes the given window. This function must be used instead
@@ -61,7 +61,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     SetGadgetAttrsA(gad, win, req, tagList);
 

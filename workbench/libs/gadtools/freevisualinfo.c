@@ -21,7 +21,7 @@
 	AROS_LHA(APTR, vi, A0),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 22, Gadtools)
+	struct Library *, GadToolsBase, 22, GadTools)
 
 /*  FUNCTION
 	FreeVisualInfo() frees a visual info structure create with
@@ -48,7 +48,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     AROS_LIBFUNC_EXIT
 } /* FreeVisualInfo */

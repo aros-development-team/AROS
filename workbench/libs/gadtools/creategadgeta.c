@@ -28,7 +28,7 @@
 	AROS_LHA(struct TagItem *, taglist, A2),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 5, Gadtools)
+	struct Library *, GadToolsBase, 5, GadTools)
 
 /*  FUNCTION
         Creates a gadtools gadget.
@@ -59,7 +59,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     BOOL error = TRUE;
     struct Gadget *gad;

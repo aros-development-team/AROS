@@ -22,7 +22,7 @@
 	AROS_LHA(struct TagItem *, tagList, A1),
 
 /*  LOCATION */
-	struct Library *, GadtoolsBase, 8, Gadtools)
+	struct Library *, GadToolsBase, 8, GadTools)
 
 /*  FUNCTION
 	CreateMenusA() creates a complete menu or parts of a menu.
@@ -55,7 +55,7 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadtoolsBase *,GadtoolsBase)
+    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     return NULL;
 
