@@ -65,6 +65,11 @@ struct IntIntuitionBase
     struct MsgPort	   * WorkBenchMP;
     struct Screen	   * WorkBench;
     struct SignalSemaphore * IBaseLock;
+
+    /* Intuition input handlers replyport. This one is set
+    int rom/inputhandler.c/InitIIH()
+    */
+    struct MsgPort	   * IntuiReplyPort;
     
     struct IOStdReq	   * InputIO;
     struct MsgPort	   * InputMP;
@@ -208,17 +213,11 @@ extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallo
 void easyrequest_freelabels(STRPTR *gadgetlabels);
 void easyrequest_freegadgets(struct Gadget *gadgets);
 
-/* !!!!!!! VERY IMPORTANT NOTE !!!!!!!!!!!!
-Because of possible race conditions the functions below MUST ONLY be used
-on the input.device's context. That generally means:
-- From within the intuition inpthandler.
-- Inside boopsi gadget dispatcher GM_GOACTIVE and GM_HANDLEINPUT methods.
-(Window closegadgets use these to send IDCMP_CLOSEWINDOW messages)
 
-*/
-
+/* These recide in inputhandler.c */
 inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struct IntuitionBase *IntuitionBase);
-struct IntuiMessage *get_intuimessage(struct Window *w,  struct IntuitionBase *IntuitionBase);
+inline VOID free_intuimessage(struct IntuiMessage *imsg, struct IntuitionBase *IntuitionBase);
+inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBase);
 
 
 #endif /* INTUITION_INTERN_H */

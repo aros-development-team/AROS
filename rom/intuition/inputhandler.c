@@ -44,6 +44,8 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 	    port = AllocMem(sizeof (struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
 	    if (port)
 	    {
+	        ULONG lock;
+		
 	    	port->mp_Flags   = PA_SIGNAL;
 	    	port->mp_SigBit  = SIGB_INTUITION;
 	    	port->mp_SigTask = FindTask("input.device");
@@ -54,8 +56,14 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 		iihandler->is_Data = iihdata;
 		iihandler->is_Node.ln_Pri	= 50;
 		iihandler->is_Node.ln_Name	= "Intuition InputHandler";
+		
+		lock = LockIBase(0UL);
 
 		iihdata->IntuitionBase = IntuitionBase;
+		
+		UnlockIBase(lock);
+		
+		GetPrivIBase(IntuitionBase)->IntuiReplyPort = iihdata->IntuiReplyPort;
 
 		ReturnPtr ("InitIIH", struct Interrupt *, iihandler);
 	    }
@@ -235,7 +243,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	
 	if (!im)
 	{
-		im = get_intuimessage(w, IntuitionBase);
+	    im = alloc_intuimessage(IntuitionBase);
 	}
 	    
 	if (!im)
@@ -915,6 +923,7 @@ D(bug("Window: %p\n", w));
 		else
 		{
 		    D(bug("Putting msg to window %p\n"));
+kprintf("Putting msg %p to window %s\n", im, w->Title);
 		    send_intuimessage(im, w, IntuitionBase);
 		    
 		    im = NULL;
@@ -935,18 +944,12 @@ D(bug("Window: %p\n", w));
     IntuitionBase->ActiveWindow = w;
     UnlockIBase(lock);
 
-    /* If the last intuimessage intialized was a swallowed event, then
-       there's no more use of it as all events have been processed,
-       Howevever, we do NOT free it, because it is kept
-       in the window->MessageKey list for later use.
-       This means that less time is wasted Allocating/Deallocating messages.
 
     if (im)
     {
-	FreeMem (im, sizeof (struct IntuiMessage));
+	free_intuimessage(im, IntuitionBase);
 	im = NULL;
     }
-*/
 
     D(bug("Poll the replyport for replies from apps\n"));
     
@@ -956,14 +959,37 @@ D(bug("Window: %p\n", w));
     
     while ((im = (struct IntuiMessage *)GetMsg (iihdata->IntuiReplyPort)))
     {
-    
-        /* Do NOT free message here. Instead just mark it as IDCMP_LONELYMESSAGE,
-	so we can reuse it later
-	FreeMem (im, sizeof (struct IntuiMessage));
-	*/
-	im->Class |= IDCMP_LONELYMESSAGE;
+kprintf("got msg %p\n", im);
+    	free_intuimessage(im, IntuitionBase);
     }
 
     D(bug("Outside pollingloop\n"));
     return (oldchain);
+}
+
+
+inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struct IntuitionBase *IntuitionBase)
+{
+
+    /* Mark the message as taken */    
+
+    /* Reply the message to intuition */
+    imsg->ExecMessage.mn_ReplyPort = w->WindowPort;
+    imsg->IDCMPWindow = w;
+    
+    PutMsg(w->UserPort, (struct Message *)imsg);
+}
+
+inline VOID free_intuimessage(struct IntuiMessage *imsg,  struct IntuitionBase *IntuitionBase)
+{
+    FreeMem(imsg, sizeof (struct ExtIntuiMessage));
+}
+
+inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBase)
+{
+    struct IntuiMessage	*imsg;
+    
+    imsg = AllocMem(sizeof(struct ExtIntuiMessage), MEMF_CLEAR|MEMF_PUBLIC);
+
+    return imsg;
 }

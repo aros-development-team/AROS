@@ -36,7 +36,7 @@ ULIBNAME := Intuition
 
 OSMODULE  := intuition.library
 FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
-	     gadgetclass gadgets imageclass inputhandler intuimessage propgadgets propgclass \
+	     gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
 	     requesters strgadgets strgclass sysiclass windowclasses
 
 FUNCTIONS := \
