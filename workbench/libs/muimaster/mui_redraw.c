@@ -9,6 +9,7 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <proto/cybergraphics.h>
 
 #include "muimaster_intern.h"
 #include "mui.h"
@@ -111,19 +112,48 @@
 
     if (get(obj, MUIA_Disabled, &disabled))
     {
+        if (_parent(obj))
+        {
+            ULONG parentDisabled;
+            if (get(_parent(obj), MUIA_Disabled, &parentDisabled))
+            {
+                /* Let the parent draw the pattern... */
+                if (parentDisabled) disabled = FALSE;
+            }
+        }
+        
 	if (disabled)
 	{
-	    const static UWORD pattern[] = {
-		0x8888,
-		0x2222,
-	    };
-	    LONG fg = muiRenderInfo(obj)->mri_Pens[MPEN_SHADOW];
-	    SetDrMd(_rp(obj), JAM1);
-	    SetAPen(_rp(obj), fg);
-	    SetAfPt(_rp(obj), pattern, 1);
-	    RectFill(_rp(obj), _left(obj), _top(obj), _right(obj), _bottom(obj));
-	    SetAfPt(_rp(obj), NULL, 0);
-	}
+            LONG  width  = _width(obj);
+            LONG  height = _height(obj);
+            LONG *buffer = AllocVec(width * height * sizeof(LONG), MEMF_ANY);
+            
+            if (buffer != NULL)
+            {
+#if 1
+                memset(buffer, 0xAA, width * height * sizeof(LONG));
+#else
+                LONG color = (0xAA << 24) + (0xAA << 16) + (0xAA << 8) + 0xBB;
+                LONG x, y;
+                
+                for (y = 0; y < height; y++)
+                {
+                    for (x = 0; x < width; x++)
+                    {
+                        buffer[y * width + x] = color;
+                    }
+                }
+#endif
+                
+                WritePixelArrayAlpha
+                (
+                    buffer, 0, 0, width * sizeof(LONG), 
+                    _rp(obj), _left(obj), _top(obj), width, height, 0
+                );
+                
+                FreeVec(buffer);
+            }
+        }
     }
 
     /* copy buffer to window */
