@@ -110,6 +110,7 @@
         is_image = TRUE;
         /* Fall through */
       case NM_ITEM:
+
         /*
         ** There has to be a menu structure available
         ** to create an item. 
@@ -200,8 +201,11 @@
         end = TRUE;
       break;
     }
-    
-    newmenu += sizeof(struct NewMenu);
+  
+    /*
+    ** Advance to the next item in the array
+    */
+    newmenu = &newmenu[1];
   }
 
   return firstmenu;
