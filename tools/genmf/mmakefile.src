@@ -1,18 +1,9 @@
 include $(TOP)/config/make.cfg
 
-FILES := genmf
-EXES := $(AROSDIR)/Build/Tools/genmf
-
-USE_CLIB := yes
-
 #MM- build-tools : build-tools-genmf
 
-%make_prog_setup mmake=build-tools-genmf
-
-#MM
-build-tools-genmf : setup $(EXES)
-
-%make_prog_single dir=$(AROSDIR)/Build/Tools
+%build_prog mmake=build-tools-genmf \
+    progname=genmf targetdir=$(AROSDIR)/Build/Tools \
+    uselibs=arosc
 
 %common
-%include_deps

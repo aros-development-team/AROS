@@ -1,18 +1,10 @@
 include $(TOP)/config/make.cfg
 
-FILES := ilbmtoicon
-EXES := $(AROSDIR)/Build/Tools/ilbmtoicon
-
-USE_CLIB := yes
-
 #MM- build-tools : build-tools-ilbmtoicon
 
-%make_prog_setup mmake=build-tools-ilbmtoicon
-
-#MM
-build-tools-ilbmtoicon : setup $(EXES)
-
-%make_prog_single dir=$(AROSDIR)/Build/Tools
+%build_prog mmake=build-tools-ilbmtoicon \
+    progname=ilbmtoicon targetdir=$(AROSDIR)/Build/Tools \
+    files=ilbmtoicon uselibs=arosc
 
 %common
-%include_deps
+

@@ -8,22 +8,10 @@ FILES	:= \
 	TxElf
 
 EXEDIR := $(AROSDIR)/Tools/PPilot
-EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 USER_CFLAGS := -D__AROS
 
-USE_CLIB := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
-USE_AROSLIB := yes
-USE_COOLIMAGESLIB := yes
-
-#MM palm-tools :
-
-%make_prog_setup mmake=pp-tools
-
-pp-tools : setup $(EXES)
-
-%make_prog_single dir=$(EXEDIR)
+%build_prog mmake=pp-tools \
+    progname=TxElf targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc m"
 
 %common
-%include_deps

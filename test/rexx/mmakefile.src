@@ -4,30 +4,21 @@
 
 include $(TOP)/config/make.cfg
 
-
 FILES := vartest
-
 EXEDIR := $(AROSDIR)/test/rexx
-EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-USER_CFLAGS := -D__AROS -I$(TOP)/workbench/libs
 
-USE_CLIB := yes
-USE_AMIGALIB := yes
+USER_CFLAGS := -I$(TOP)/workbench/libs
 
 #MM- test : test-rexx
 
-%make_prog_setup mmake=test-rexx
+%build_progs mmake=test-rexx \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="amiga arosc"
 
 #MM
-test-rexx : setup $(EXES) $(EXEDIR)/vartest.rexx
-
-setup ::
-	%mkdir_q $(EXEDIR)
+test-rexx : $(EXEDIR)/vartest.rexx
 
 $(EXEDIR)/vartest.rexx: vartest.rexx
 	@$(CP) $< $@
 
-%make_prog_single dir=$(EXEDIR)
-
 %common
-%include_deps

@@ -28,4 +28,3 @@ workbench-prefs-input-images : $(C_IMAGES)
 	@$(ILBMTOC) $< >$@    	
 
 %common
-%include_deps

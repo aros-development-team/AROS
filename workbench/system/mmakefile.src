@@ -7,19 +7,11 @@ include $(TOP)/config/make.cfg
 FILES	:= \
     FixFonts
 
-EXEDIR := $(AROSDIR)/System
-EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-
-USE_CLIB := yes
-USE_AMIGALIB := yes
-
 #MM- workbench : workbench-system
 #MM workbench-system : includes linklibs
 
-%make_prog_setup mmake=workbench-system
+%build_progs mmake=workbench-system \
+    files=$(FILES) targetdir=$(AROSDIR)/System \
+    uselibs="amiga arosc"
 
-workbench-system : setup $(EXES)
-
-%make_prog_single dir=$(EXEDIR)
 %common
-%include_deps

@@ -7,23 +7,11 @@ include $(TOP)/config/make.cfg
 FILES  := test virttest gradient
 
 EXEDIR := $(AROSDIR)/test/Zune
-EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-
-USE_CLIB := yes
-USE_AMIGALIB    := yes
-USE_MUILIB      := yes
-USE_AROSLIB     := yes
 
 #MM test-zune : test-zune-setup includes linklibs
 
-%make_prog_setup mmake=test-zune
-
-test-zune : $(EXES)
-
-%make_prog_single dir=$(EXEDIR)
-
-#MM test-zune-setup
-%rule_makedirs dirs=$(EXEDIR) setuptarget=test-zune-setup
+%build_progs mmake=test-zune \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="mui arossupport amiga arosc"
 
 %common
-%include_deps

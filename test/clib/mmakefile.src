@@ -11,23 +11,12 @@ FILES := \
 	stpblk
 
 EXEDIR := $(AROSDIR)/test/clib
-EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-
-USE_CLIB := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
-USE_AROSLIB := yes
 
 #MM test-clib : includes includes-copy linklibs kernel
 
-%make_prog_setup mmake=test-clib
-
-test-clib : setup $(EXES)
-
-setup ::
-	%mkdir_q $(EXEDIR)
-	
-%make_prog_single dir=$(EXEDIR)
+%build_progs mmake=test-clib \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="arossupport amiga arosc m"
 
 %common
-%include_deps
+

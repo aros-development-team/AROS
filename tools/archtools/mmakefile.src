@@ -1,18 +1,9 @@
 include $(TOP)/config/make.cfg
 
-FILES := archtool
-EXES := $(AROSDIR)/Build/Tools/archtool
-
-USE_CLIB := yes
-
 #MM- build-tools : build-tools-archtool
 
-%make_prog_setup mmake=build-tools-archtool
-
-#MM
-build-tools-archtool : setup $(EXES)
-
-%make_prog_single dir=$(AROSDIR)/Build/Tools
+%build_prog mmake=build-tools-archtool \
+    progname=archtool targetdir=$(AROSDIR)/Build/Tools \
+    files=archtool uselibs=arosc
 
 %common
-%include_deps
