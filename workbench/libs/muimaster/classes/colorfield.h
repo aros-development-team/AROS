@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,11 +8,11 @@
 
 #define MUIC_Colorfield "Colorfield.mui"
 
-#define MUIA_Colorfield_Pen 	(TAG_USER|0x42713a)
-#define MUIA_Colorfield_Red 	(TAG_USER|0x4279f6)
-#define MUIA_Colorfield_Green	(TAG_USER|0x424466)
-#define MUIA_Colorfield_Blue 	(TAG_USER|0x42d3b0)
-#define MUIA_Colorfield_RGB 	(TAG_USER|0x42677a)
+#define MUIA_Colorfield_Pen 	(TAG_USER|0x0042713a) /* ..g  ULONG   */
+#define MUIA_Colorfield_Red 	(TAG_USER|0x004279f6) /* isg  ULONG   */
+#define MUIA_Colorfield_Green	(TAG_USER|0x00424466) /* isg  ULONG   */
+#define MUIA_Colorfield_Blue 	(TAG_USER|0x0042d3b0) /* isg  ULONG   */
+#define MUIA_Colorfield_RGB 	(TAG_USER|0x0042677a) /* isg  ULONG * */
 
 extern const struct __MUIBuiltinClass _MUI_Colorfield_desc; /* PRIV */
 
