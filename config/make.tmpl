@@ -114,6 +114,7 @@
 	    $(ECHO) "%(linkcmd)" >> %(err) ; \
 	    $(ECHO) "There are undefined symbols in %(to):" 1>&2 ; \
 	    tee < %(us) -a %(err) 1>&2 ; \
+	    $(RM) %(to); \
 	    exit 1 ; \
 	else $(NOP) ; fi
 %end
