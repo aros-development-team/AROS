@@ -5,6 +5,7 @@
 #endif
 
 #include <intuition/classes.h>
+#include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -103,7 +104,7 @@ static const struct __MUIBuiltinClass *builtins[] =
 //    &_MUI_Configdata_desc,
     &_MUI_Text_desc,
     &_MUI_Numeric_desc,
-//    &_MUI_Slider_desc,
+    &_MUI_Slider_desc,
 };
 
 #define NUM_BUILTINS  sizeof(builtins) / sizeof(struct __MUIBuiltinClass *)
@@ -208,5 +209,13 @@ ULONG ConvertKey(struct IntuiMessage *imsg)
    event.ie_EventAddress = (APTR *) *((ULONG *)imsg->IAddress);
    MapRawKey(&event, &code, 1, NULL);
    return code;
+}
+
+/**************************************************************************
+...
+**************************************************************************/
+ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
+{
+  return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
 }
 

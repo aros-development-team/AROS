@@ -35,4 +35,6 @@ __asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object
 #endif
 
 
+ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...);
+
 #endif
