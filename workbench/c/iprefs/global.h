@@ -208,6 +208,11 @@ void FontPrefs_Handler(STRPTR filename);
 
 void InputPrefs_Handler(STRPTR filename);
 
+/* icontrolprefs.c */
+
+void IControlPrefs_Handler(STRPTR filename);
+
+
 /*********************************************************************************************/
 
 #endif /* GLOBAL_H */

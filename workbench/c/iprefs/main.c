@@ -60,7 +60,7 @@ preftable[] =
     {"locale"	    , localeprefsname	, LocalePrefs_Handler	},
     {"palette"	    , paletteprefsname  , NULL	    	    	},
     {"wbpattern"    , patternprefsname  , NULL	    	    	},
-    {"icontrol"     , icontrolprefsname , NULL	    	    	},
+    {"icontrol"     , icontrolprefsname , IControlPrefs_Handler	},
     {"serial"	    , serialprefsname	, SerialPrefs_Handler 	},
     {"printer"	    , printerprefsname	, NULL	    	    	},
     {"pointer"	    , pointerprefsname  , NULL	    	    	},
