@@ -26,6 +26,9 @@ $(CPAK):
 $(ARCHTOOL):
 	$(MAKE) -C tools/archtools TOP=$(TOP)
 
+#MM- install : install-$(ARCH)-$(CPU)
+
+
 
 # BEGIN_DESC{localmakevar}
 # \item{LIBS} Flags which are passed to the linker for executables.

@@ -9,10 +9,10 @@ TOP := $(shell pwd)
 include $(TOP)/config/make.cfg
 
 all: makedirs $(MMAKE) $(GENMF)
-	$(MMAKE)
+	$(MMAKE) AROS
 
 docs: $(MMAKE)
-	$(MMAKE) .docs
+	$(MMAKE) AROS.docs
 
 makedirs:
 	@$(RM) $(TOP)/errors
@@ -34,9 +34,11 @@ $(MMAKE):
 $(GENMF):
 	$(MAKE) -C tools/genmf TOP=$(TOP)
 
+install:
+	$(MMAKE) AROS.install
 
 clean:
 	$(MMAKE) AROS.clean
 
-.PHONY: default all makedirs docs clean
+.PHONY: default all makedirs docs clean install
 
