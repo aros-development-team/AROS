@@ -11,7 +11,7 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <hidd/graphics.h>
-#include <hidd/pci.h>
+#include <hidd/pcibus.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
 #warning: prototypes which should actually be in some public header
@@ -185,7 +185,7 @@ struct VMWareGfx_staticdata *xsd;
 			xsd->utilityBase = OpenLibrary(UTILITYNAME, 37);
 			if (xsd->utilityBase)
 			{
-				xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+				xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCIBus, NULL);
 				if (xsd->pcihidd)
 				{
 					if (findCard(xsd))
