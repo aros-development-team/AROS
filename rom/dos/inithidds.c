@@ -53,7 +53,7 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
 /************************************************************************/
 
 
-#define HIDDPATH "Sys:Hidds/"
+#define HIDDPATH "SYS:Hidds/"
 #define BUFSIZE 100
 
 #define HIDDPREFSFILE "SYS:S/hidd.prefs"
@@ -109,7 +109,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		D(bug("Got line\n"));
 		D(bug("Line: %s\n", buf));
 		  
-		  /* Get keywoard */
+		  /* Get keyword */
 		while ((*keyword != 0) && isspace(*keyword))
 		    keyword ++;
 		
@@ -182,21 +182,21 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	    if (!got_gfx)
 	    {
 	        success = FALSE;
-	    	kprintf("No configureation for gfx hidd\n");
+	    	kprintf("No configuration for gfx hidd\n");
 		goto end;
 	    }
 	    
 	    if (!got_mouse)
 	    {
 	        success = FALSE;
-	    	kprintf("No configureation for mouse hidd\n");
+	    	kprintf("No configuration for mouse hidd\n");
 		goto end;
 	    }
 	
 	    if (!got_kbd)
 	    {
 	        success = FALSE;
-	    	kprintf("No configureation for keyboard hidd\n");
+	    	kprintf("No configuration for keyboard hidd\n");
 		goto end;
 	    }
 	    
