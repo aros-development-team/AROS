@@ -91,6 +91,16 @@ DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.so
 else
 DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.a
 endif
+ifeq ("$(SHARED_TIMER)","yes")
+DEPLIB_TIMER=$(LIBDIR)/libtimer.so
+else
+DEPLIB_TIMER=$(LIBDIR)/libtimer.a
+endif
+ifeq ("$(SHARED_BATTCLOCK)","yes")
+DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.so
+else
+DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.a
+endif
 ifeq ("$(SHARED_BOOT)","yes")
 DEPLIB_BOOT=$(LIBDIR)/libboot.so
 else
@@ -112,14 +122,16 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(DEPLIB_UNIXIOCLASS) \
     $(DEPLIB_EXPANSION) \
     $(DEPLIB_BOOT) \
+    $(DEPLIB_TIMER) \
+    $(DEPLIB_BATTCLOCK) \
     $(LIBDIR)/libconsole.a \
     $(LIBDIR)/libaros.a
 
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lexec -lAmigaOS \
 	-lboot -lintuition -lgraphics -ldos -lconsole \
-	-lhiddcl -lunixiocl -lboopsi -lutility \
-	-laros -lmathffp -lexpansion \
+	-lhiddcl -lunixiocl -lboopsi -lutility -ltimer \
+	-laros -lmathffp -lexpansion -lbattclock \
 	-lamiga -larossupport
 
 # BEGIN_DESC{internaltarget}
@@ -205,7 +217,7 @@ dist-src :
 # END_DESC{target}
 #MM
 clean :
-	-$(RM) $(ARCHDIR) mmake.cache
+	-$(RM) $(ARCHDIR) mmake.cache config.cache config.status config.log
 
 # BEGIN_DESC{internaltarget}
 # \item{$(LIBDIR)/libAmigaOS.a} Recreate the kernel if any kernel function

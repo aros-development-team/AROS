@@ -21,4 +21,6 @@ mmake
 mmake.config
 mmake.cache
 .pure
-mmakefile
+config.status
+config.cache
+config.log
