@@ -140,7 +140,6 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     }
     else
     {
-	fib = AllocDosObject(DOS_FIB, NULL);
 	/*if the file exists, but O_EXCL is set, then return an error. */
     	if (flags & O_EXCL)
     	{
@@ -148,7 +147,8 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	    goto err;
     	}
 
-        if (!fib)
+	fib = AllocDosObject(DOS_FIB, NULL);
+	if (!fib)
         {
     	    errno = IoErr2errno(IoErr());
 	    goto err;
