@@ -132,6 +132,20 @@
       Cli number of the newly created cli process */
 #define SYS_CliNumPtr   (SYS_Dummy + 13)
 
+/* This is a *TAG VALUE*, not a tag. Use this together with SYS_Input, SYS_Output and
+   SYS_Error, to tell SystemTagList to *duplicate* the respective caller's streams.
+
+   Ie.: a TagItem like this
+
+       { SYS_Input, SYS_DupStream }
+
+   tells SystemTagList to duplicate the caller's Input() filehandle and use it as input file
+   handle of the shell.
+
+   The duplicated file handle is automatically closed. */
+  
+#define SYS_DupStream   1
+
 /**********************************************************************
  **************************** Miscellaneous ***************************
  **********************************************************************/
