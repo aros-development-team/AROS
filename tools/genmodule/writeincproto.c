@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
 
     Desc: Function to write proto/modulename.h. Part of genmodule.
 */
@@ -11,7 +11,7 @@ void writeincproto(struct config *cfg)
     char line[256];
     struct linelist *linelistit;
     
-    snprintf(line, 255, "%s/proto/%s.h", cfg->genincdir, cfg->modulename);
+    snprintf(line, 255, "%s/proto/%s.h", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
 
     if (out == NULL)

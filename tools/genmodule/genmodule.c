@@ -12,40 +12,31 @@ int main(int argc, char **argv)
     struct functions *functions = functionsinit();
     struct config *cfg = initconfig(argc, argv);
 
-    if (cfg->command == NORMAL)
-	readref(cfg, functions);
-    
-    if (cfg->command == DUMMY
-	||
-	(
-	    cfg->command == NORMAL
-	    &&
-	    (
-	        cfg->modtype == LIBRARY
-		|| cfg->modtype == DEVICE
-		|| cfg->modtype == RESOURCE
-		|| cfg->modtype == GADGET
-		|| cfg->modtype == DATATYPE
-	    )
-	)
-    )
+    switch (cfg->command)
     {
+    case FILES:
+	readref(cfg, functions);
+	writestart(cfg, functions);
+	writeend(cfg);
+	if (cfg->modtype == LIBRARY)
+	    writeautoinit(cfg);
+	writestubs(cfg, functions);
+	break;
+    case INCLUDES:
+	readref(cfg, functions);
+	/* fall through */
+    case DUMMY:
         writeincproto(cfg);
         writeincclib(cfg, functions);
         writeincdefines(cfg, functions);
-    }
-
-    if (cfg->command == NORMAL)
-    {
-	if (cfg->modtype == LIBRARY)
-	    writeautoinit(cfg);
-	writestart(cfg, functions);
-	writeend(cfg);
-	writestubs(cfg, functions);
-    }
-
-    if (cfg->command == LIBDEFS)
+	break;
+    case LIBDEFS:
 	writeinclibdefs(cfg);
+	break;
+    default:
+	fprintf(stderr, "Internal error in main: Unhandled command type\n");
+	exit(20);
+    }
     
     return 0;
 }

@@ -14,7 +14,7 @@ void writeincclib(struct config *cfg, struct functions *functions)
     struct functionarg *arglistit;
     struct stringlist *linelistit;
     
-    snprintf(line, 255, "%s/clib/%s_protos.h", cfg->genincdir, cfg->modulename);
+    snprintf(line, 255, "%s/clib/%s_protos.h", cfg->gendir, cfg->modulename);
 
     out = fopen(line, "w");
 
