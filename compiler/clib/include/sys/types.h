@@ -9,8 +9,6 @@
     Lang: English
 */
 
-#define __AROS_CLIB_TYPES_ONLY
-
 #include <aros/systypes.h>
 #include <aros/macros.h>
 
