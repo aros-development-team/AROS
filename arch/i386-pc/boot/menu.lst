@@ -1,10 +1,9 @@
-# test
+# AROS_PRESET_MENU
 
 default 0
 timeout 4 
 fallback 1
 
-#aros
 title AROS
-#root (fd0)
 kernel /boot/aros-pc-i386.gz
+                                                                                                                                                                                                                                                                                                                                                                                                                                  
