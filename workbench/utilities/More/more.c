@@ -139,7 +139,7 @@ static IPTR 		Args[NUM_ARGS];
 
 /*********************************************************************************************/
 
-WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
+WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext)
 {
     struct EasyStruct es;
     
@@ -154,7 +154,7 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 
 /****************************************************************************************/
 
-void Cleanup(char *msg)
+VOID Cleanup(CONST_STRPTR msg)
 {
     WORD rc, i;
 
