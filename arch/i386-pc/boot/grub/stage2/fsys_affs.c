@@ -457,12 +457,14 @@ unsigned char length;
 }
 
 unsigned int getHashKey(char *name,unsigned int tablesize, unsigned char flags) {
-unsigned int result;
-
-	result=strlen(name);
+unsigned int length;
+	
+	length=0;
+	while (name[length] != 0)
+	    length++;
 	while (*name!=0)
-		result=(result * 13 +capitalch(*name++,flags)) & 0x7FF;
-	return result%tablesize;
+		length=(length * 13 +capitalch(*name++,flags)) & 0x7FF;
+	return length%tablesize;
 }
 
 grub_error_t getHeaderBlock(char *name, struct CacheBlock **dirh) {
@@ -566,7 +568,9 @@ int block;
 }
 
 void checkPossibility(char *filename, char *bstr) {
-char cstr[32];
+
+#ifndef STAGE1_5
+	char cstr[32];
 
 	if (noCaseStrCmp(filename, bstr, 1)<=0)
 	{
@@ -576,6 +580,7 @@ char cstr[32];
 		cstr[bstr[0]]=0;
 		print_a_completion(cstr);
 	}
+#endif
 }
 
 int affs_dir(char *dirname)
@@ -612,9 +617,11 @@ int affs_dir(char *dirname)
 		checkPossibility(filename, part(buffer1)->pb_DriveName);
 		block = AROS_BE2LONG(part(buffer1)->pb_Next);
 	    }
+#ifndef STAGE1_5
 	    if (*filename == 0)
 		if (print_possibilities>0)
 		    print_possibilities = -print_possibilities;
+#endif
 	}
 	else if (AROS_BE2LONG(dirHeader(buffer1)->p_type) == T_SHORT)
 	{
@@ -640,9 +647,11 @@ int affs_dir(char *dirname)
 		}
 	    }
 	    UnLockBuffer(buffer1);
+#ifndef STAGE1_5
 	    if (*filename == 0)
 		if (print_possibilities>0)
 		    print_possibilities = -print_possibilities;
+#endif
 	}	
 	else
 	{

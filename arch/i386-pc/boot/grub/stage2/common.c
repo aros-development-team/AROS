@@ -1,8 +1,7 @@
 /* common.c - miscellaneous shared variables and routines */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +21,7 @@
 #include <shared.h>
 
 #ifdef SUPPORT_DISKLESS
+# define GRUB	1
 # include <etherboot.h>
 #endif
 
@@ -66,6 +66,7 @@ char *err_list[] =
   [ERR_BOOT_FAILURE] = "Unknown boot failure",
   [ERR_BOOT_FEATURES] = "Unsupported Multiboot features requested",
   [ERR_DEV_FORMAT] = "Unrecognized device string",
+  [ERR_DEV_NEED_INIT] = "Device not initialized yet",
   [ERR_DEV_VALUES] = "Invalid device requested",
   [ERR_EXEC_FORMAT] = "Invalid or unsupported executable format",
   [ERR_FILELENGTH] =
@@ -76,9 +77,10 @@ char *err_list[] =
   [ERR_GEOM] = "Selected cylinder exceeds maximum supported by BIOS",
   [ERR_NEED_LX_KERNEL] = "Linux kernel must be loaded before initrd",
   [ERR_NEED_MB_KERNEL] = "Multiboot kernel must be loaded before modules",
-  [ERR_NEED_SERIAL] = "Serial device not configured",
   [ERR_NO_DISK] = "Selected disk does not exist",
+  [ERR_NO_DISK_SPACE] = "No spare sectors on the disk",
   [ERR_NO_PART] = "No such partition",
+  [ERR_NUMBER_OVERFLOW] = "Overflow while parsing number",
   [ERR_NUMBER_PARSING] = "Error while parsing number",
   [ERR_OUTSIDE_PART] = "Attempt to access block outside partition",
   [ERR_PRIVILEGED] = "Must be authenticated",
@@ -136,25 +138,6 @@ mmap_avail_at (unsigned long bottom)
   return (unsigned long) top - bottom;
 }
 #endif /* ! STAGE1_5 */
-
-#ifdef SUPPORT_DISKLESS
-/* Set up the diskless environment so that GRUB can get a configuration
-   file from a network.  */
-static int
-setup_diskless_environment (void)
-{
-  /* For now, there is no difference between BOOTP and DHCP in GRUB.  */
-  if (! bootp ())
-    {
-      grub_printf ("BOOTP/DHCP fails.\n");
-      return 0;
-    }
-
-  /* This will be erased soon, though...  */
-  print_network_configuration ();
-  return 1;
-}
-#endif /* SUPPORT_DISKLESS */
 
 /* This queries for BIOS information.  */
 void
@@ -320,10 +303,7 @@ init_bios_info (void)
   /* Get the APM BIOS table.  */
   get_apm_info ();
   if (apm_bios_info.version)
-    {
-    mbi.flags |= MB_INFO_APM_TABLE;
     mbi.apm_table = (unsigned long) &apm_bios_info;
-    }
 
   /* Set the signature to `VBE2', to obtain VBE 3.0 information.  */
   grub_memmove (vbe_info_block.signature, "VBE2", 4);
@@ -343,13 +323,10 @@ init_bios_info (void)
 	       | MB_INFO_DRIVE_INFO | MB_INFO_CONFIG_TABLE
 	       | MB_INFO_BOOT_LOADER_NAME);
   
-#endif /* STAGE1_5 */
+  if (apm_bios_info.version)
+    mbi.flags |= MB_INFO_APM_TABLE;
 
-#ifdef SUPPORT_DISKLESS
-  /* If SUPPORT_DISKLESS is defined, initialize the network here.  */
-  if (! setup_diskless_environment ())
-    return;
-#endif
+#endif /* STAGE1_5 */
 
   /* Set boot drive and partition.  */
   saved_drive = boot_drive;

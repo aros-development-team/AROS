@@ -205,6 +205,7 @@ extern char *grub_scratch_mem;
 #define STAGE2_ID_VSTAFS_STAGE1_5	6
 #define STAGE2_ID_JFS_STAGE1_5		7
 #define STAGE2_ID_XFS_STAGE1_5		8
+#define STAGE2_ID_AFFS_STAGE1_5		9
 
 #ifndef STAGE1_5
 # define STAGE2_ID	STAGE2_ID_STAGE2
@@ -225,6 +226,8 @@ extern char *grub_scratch_mem;
 #  define STAGE2_ID	STAGE2_ID_JFS_STAGE1_5
 # elif defined(FSYS_XFS)
 #  define STAGE2_ID	STAGE2_ID_XFS_STAGE1_5
+# elif defined(FSYS_AFFS)
+#  define STAGE2_ID	STAGE2_ID_AFFS_STAGE1_5
 # else
 #  error "unknown Stage 2"
 # endif
@@ -656,9 +659,8 @@ extern int filemax;
  */
 
 extern struct multiboot_info mbi;
-struct vbe_controller vbe_info_block;
-struct vbe_mode mode_info_block;
-extern unsigned short *mode_list;
+extern struct vbe_controller vbe_info_block;
+extern struct vbe_mode mode_info_block;
 extern unsigned long saved_drive;
 extern unsigned long saved_partition;
 #ifndef STAGE1_5

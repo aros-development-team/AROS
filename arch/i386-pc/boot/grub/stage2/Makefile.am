@@ -16,7 +16,7 @@ INCLUDES = -I$(top_srcdir)/stage1
 # The library for /sbin/grub.
 noinst_LIBRARIES = libgrub.a
 libgrub_a_SOURCES = boot.c builtins.c char_io.c cmdline.c common.c \
-	disk_io.c fsys_ext2fs.c fsys_fat.c fsys_ffs.c fsys_jfs.c \
+	disk_io.c fsys_affs.c fsys_ext2fs.c fsys_fat.c fsys_ffs.c fsys_jfs.c \
 	fsys_minix.c fsys_reiserfs.c fsys_vstafs.c fsys_xfs.c gunzip.c \
 	md5.c serial.c stage2.c terminfo.c tparm.c
 libgrub_a_CFLAGS = $(GRUB_CFLAGS) -I$(top_srcdir)/lib \
@@ -31,21 +31,21 @@ pkgdatadir = $(datadir)/$(PACKAGE)/$(host_cpu)-$(host_vendor)
 EXTRA_PROGRAMS = nbloader.exec pxeloader.exec diskless.exec
 
 if DISKLESS_SUPPORT
-pkgdata_DATA = stage2 e2fs_stage1_5 fat_stage1_5 ffs_stage1_5 \
+pkgdata_DATA = stage2 affs_stage1_5 e2fs_stage1_5 fat_stage1_5 ffs_stage1_5 \
 	jfs_stage1_5 minix_stage1_5 reiserfs_stage1_5 vstafs_stage1_5 \
 	xfs_stage1_5 nbgrub pxegrub
 noinst_DATA = pre_stage2 start nbloader pxeloader diskless
-noinst_PROGRAMS = pre_stage2.exec start.exec e2fs_stage1_5.exec \
+noinst_PROGRAMS = pre_stage2.exec start.exec affs_stage1_5.exec e2fs_stage1_5.exec \
 	fat_stage1_5.exec ffs_stage1_5.exec jfs_stage1_5.exec \
 	minix_stage1_5.exec reiserfs_stage1_5.exec \
 	vstafs_stage1_5.exec xfs_stage1_5.exec nbloader.exec \
 	pxeloader.exec diskless.exec
 else
-pkgdata_DATA = stage2 e2fs_stage1_5 fat_stage1_5 ffs_stage1_5 \
+pkgdata_DATA = stage2 affs_stage1_5 e2fs_stage1_5 fat_stage1_5 ffs_stage1_5 \
 	jfs_stage1_5 minix_stage1_5 reiserfs_stage1_5 vstafs_stage1_5 \
 	xfs_stage1_5
 noinst_DATA = pre_stage2 start
-noinst_PROGRAMS = pre_stage2.exec start.exec e2fs_stage1_5.exec \
+noinst_PROGRAMS = pre_stage2.exec start.exec affs_stage1_5.exec e2fs_stage1_5.exec \
 	fat_stage1_5.exec ffs_stage1_5.exec jfs_stage1_5.exec \
 	minix_stage1_5.exec reiserfs_stage1_5.exec \
 	vstafs_stage1_5.exec xfs_stage1_5.exec
@@ -83,7 +83,7 @@ STAGE1_5_COMPILE = $(STAGE2_COMPILE) -DNO_DECOMPRESSION=1 -DSTAGE1_5=1
 
 # For stage2 target.
 pre_stage2_exec_SOURCES = asm.S bios.c boot.c builtins.c char_io.c \
-	cmdline.c common.c console.c disk_io.c fsys_ext2fs.c \
+	cmdline.c common.c console.c disk_io.c fsys_affs.c fsys_ext2fs.c \
 	fsys_fat.c fsys_ffs.c fsys_jfs.c fsys_minix.c fsys_reiserfs.c \
 	fsys_vstafs.c fsys_xfs.c gunzip.c hercules.c md5.c serial.c \
 	smp-imps.c stage2.c terminfo.c tparm.c
@@ -121,6 +121,15 @@ start_exec-start.$(OBJEXT): stage2_size.h
 stage2: pre_stage2 start
 	-rm -f stage2
 	cat start pre_stage2 > stage2
+
+# For affs_stage1_5 target.
+affs_stage1_5_exec_SOURCES = start.S asm.S common.c char_io.c disk_io.c \
+	stage1_5.c fsys_affs.c bios.c
+affs_stage1_5_exec_CFLAGS = $(STAGE1_5_COMPILE) -DFSYS_AFFS=1 \
+	-DNO_BLOCK_FILES=1
+affs_stage1_5_exec_ASFLAGS = $(STAGE1_5_COMPILE) -DFSYS_AFFS=1 \
+	-DNO_BLOCK_FILES=1
+affs_stage1_5_exec_LDFLAGS = $(STAGE1_5_LINK)
 
 # For e2fs_stage1_5 target.
 e2fs_stage1_5_exec_SOURCES = start.S asm.S common.c char_io.c disk_io.c \
