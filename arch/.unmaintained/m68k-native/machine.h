@@ -26,6 +26,8 @@
 #define AROS_GET_DOSBASE        extern struct DosLibrary * DOSBase;
 #define AROS_GET_SYSBASE_OK	extern struct ExecBase * SysBase;
 
+register unsigned char * AROS_GET_SP asm("%sp");
+
 /*
     How much do I have to add to sp to get the address of the first
     byte on the stack?

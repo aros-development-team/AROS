@@ -7,7 +7,7 @@
 
     NOTE: This file must compile *without* any other header !
 
-    Desc: machine.h 
+    Desc: machine.h
     Lang: english
 */
 
@@ -28,6 +28,8 @@
 #define AROS_GET_SYSBASE_OK     struct ExecBase * SysBase = *(struct ExecBase **)0x4;
 #define AROS_GET_DOSBASE        struct DosLibrary * DOSBase = (struct DosLibrary *)OpenLibrary((UBYTE *)"dos.library",0); \
                                 CloseLibrary(DOSBase);
+
+register unsigned char * AROS_GET_SP asm("%sp");
 
 /* ??? */
 #define SP_OFFSET 0

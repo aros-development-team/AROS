@@ -21,9 +21,11 @@
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   4 /* Worst case alignment */
 
-#define AROS_GET_SYSBASE	extern struct ExecBase * SysBase;
-#define AROS_GET_DOSBASE	extern struct DosLibrary * DOSBase;
-#define AROS_GET_SYSBASE_OK	extern struct ExecBase * SysBase;
+#define AROS_GET_SYSBASE	extern struct ExecBase   *SysBase;
+#define AROS_GET_DOSBASE	extern struct DosLibrary *DOSBase;
+#define AROS_GET_SYSBASE_OK	extern struct ExecBase   *SysBase;
+
+register unsigned char * AROS_GET_SP asm("%esp");
 
 /* ??? */
 #define SP_OFFSET 0
