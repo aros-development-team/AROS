@@ -21,8 +21,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 
 #MM- workbench-pc-i386 : workbench-complete workbench workbench-boot-pc-i386
 
-#MM- contrib-pc-i386 : contrib-complete aminet-disk-misc-format64 aminet-disk-cdrom-amicdrom \
-#MM	    aminet-util-arc-untgz
+#MM- contrib-pc-i386 : contrib-complete
 
 #
 # Kernel modules
