@@ -70,9 +70,6 @@ extern VOID tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase);
 
 #define XCOORD_TO_MASK(x) (1L << (7 - ((x) & 0x07)))
 
-/* This one is used for determining optimal offset for blitting into
-cliprects */
-#define ALIGN_OFFSET(x) ((x) & 0x0F)
 
 /* Defines */
 #define BMT_STANDARD	0x0000	/* Standard bitmap */

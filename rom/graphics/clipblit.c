@@ -335,7 +335,7 @@ void internal_ClipBlit(struct RastPort * srcRP,
               if (0 == (srcLayer->Flags & LAYERSUPER))
 	      {
                 /* no superbitmap */
-                SrcOffsetX = srcCR->bounds.MinX & 0x0F;
+                SrcOffsetX = ALIGN_OFFSET(srcCR->bounds.MinX);
 
                 if (xSrc >= crX0)
                   bltSrcX = xSrc - crX0 + SrcOffsetX;
@@ -480,7 +480,7 @@ void internal_ClipBlit(struct RastPort * srcRP,
 	      {
                 /* no superbitmap */
                 destBM      = destCR->BitMap;
-                DestOffsetX = destCR->bounds.MinX & 0x0F;
+                DestOffsetX = ALIGN_OFFSET(destCR->bounds.MinX);
                 DestOffsetY = 0;
 	      }
               else
