@@ -35,6 +35,7 @@ int pipe(int pipedes[2]);
 ssize_t read (int fd, void * buf, size_t count);
 #define rmdir unlink
 int truncate(const char *path, off_t length);
+int ftruncate(int fd, off_t length);
 int unlink(const char *pathname);
 void usleep(unsigned long usec);
 ssize_t write (int fd, const void * buf, size_t count);
