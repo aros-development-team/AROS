@@ -134,7 +134,7 @@ kprintf("%s called 2nd!\n",__FUNCTION__);
        * Since the Damagelist is relative to the layer I have to make
        * some adjustments to the coordinates here.
        */
-      TranslateRect(&l->DamageList->bounds,l->bounds.MinX,l->bounds.MinY);
+      _TranslateRect(&l->DamageList->bounds,-l->bounds.MinX,-l->bounds.MinY);
       l->Flags |= LAYERREFRESH;
     }
   }
