@@ -5,6 +5,9 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
+#ifndef EXEC_SEMAPHORES_H
+#   include <exec/semaphores.h>
+#endif
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
@@ -46,10 +49,6 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
 			    struct NewGadget *ng);
 void freeitext(struct GadToolsBase_intern *GadToolsBase,
 	       struct IntuiText *itext);
-void drawbevelsbyhand(struct GadToolsBase_intern *GadToolsBase,
-		      struct RastPort *rport,
-		      WORD left, WORD top, WORD width, WORD height,
-		      struct TagItem *taglist);
 Class *makebuttonclass(struct GadToolsBase_intern *GadToolsBase);
 
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
@@ -81,6 +80,11 @@ struct GadToolsBase_intern
     struct Library	 * arosmxbase;
 
     Class * buttonclass;
+
+    /* Semaphore to protect the bevel object. */
+    struct SignalSemaphore   bevelsema;
+    /* Actually an Object *. The image used for bevel boxes. */
+    struct Image           * bevel;
 };
 
 /* The following typedefs are necessary, because the names of the global

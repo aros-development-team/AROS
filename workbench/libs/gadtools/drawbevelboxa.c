@@ -5,6 +5,7 @@
     Desc: Draw a bevelled box.
     Lang: english
 */
+#include <proto/exec.h>
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
 #include <intuition/screens.h>
@@ -65,8 +66,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
     struct VisualInfo *vi;
-    struct Image *frame;
-    struct TagItem tags[7];
+    struct TagItem tags[5];
 
     vi = (struct VisualInfo *)GetTagData(GT_VisualInfo, NULL, taglist);
     if (vi == NULL)
@@ -76,24 +76,17 @@
     tags[0].ti_Data = width;
     tags[1].ti_Tag = IA_Height;
     tags[1].ti_Data = height;
-    tags[2].ti_Tag = IA_Resolution;
-    tags[2].ti_Data = (vi->vi_dri->dri_Resolution.X<<16) + vi->vi_dri->dri_Resolution.Y;
-    tags[3].ti_Tag = IA_Recessed;
-    tags[3].ti_Data = GetTagData(GTBB_Recessed, FALSE, taglist);
-    tags[4].ti_Tag = IA_FrameType;
-    tags[4].ti_Data = GetTagData(GTBB_FrameType, BBFT_BUTTON, taglist);
-    tags[5].ti_Tag = IA_EdgesOnly;
-    tags[5].ti_Data = TRUE;
-    tags[6].ti_Tag = TAG_DONE;
-    frame = (struct Image *)NewObjectA(NULL, FRAMEICLASS, tags);
-    if (!frame)
-    {
-        drawbevelsbyhand((struct GadToolsBase_intern *)GadToolsBase,
-            rport, left, top, width, height, taglist);
-        return;
-    }
-    DrawImageState(rport, frame, left, top, IDS_NORMAL, vi->vi_dri);
-    DisposeObject((Object *)frame);
+    tags[2].ti_Tag = IA_Recessed;
+    tags[2].ti_Data = GetTagData(GTBB_Recessed, FALSE, taglist);
+    tags[3].ti_Tag = IA_FrameType;
+    tags[3].ti_Data = GetTagData(GTBB_FrameType, BBFT_BUTTON, taglist);
+    tags[4].ti_Tag = TAG_DONE;
+    ObtainSemaphore(&((struct GadToolsBase_intern *)GadToolsBase)->bevelsema);
+    SetAttrsA(((struct GadToolsBase_intern *)GadToolsBase)->bevel, tags);
+    DrawImageState(rport, ((struct GadToolsBase_intern *)GadToolsBase)->bevel,
+                   left, top,
+                   IDS_NORMAL, vi->vi_dri);
+    ReleaseSemaphore(&((struct GadToolsBase_intern *)GadToolsBase)->bevelsema);
 
     AROS_LIBFUNC_EXIT
 } /* DrawBevelBoxA */

@@ -13,7 +13,9 @@
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <aros/libcall.h>
+#include <utility/tagitem.h>
 #include <utility/utility.h>
+#include <intuition/imageclass.h>
 #include "initstruct.h"
 #include "gadtools_intern.h"
 #include "libdefs.h"
@@ -112,12 +114,31 @@ AROS_LH2(struct GadToolsBase_intern *, init,
 
     LIBBASE->buttonclass = NULL;
 
+    InitSemaphore(&LIBBASE->bevelsema);
+    LIBBASE->bevel = NULL;
+
     /* You would return NULL here if the init failed. */
     return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
 
-/* Use This from now on */
+
+Object *makebevelobj(struct GadToolsBase_intern *GadToolsBase)
+{
+    Object * obj;
+    struct TagItem tags[4];
+
+    tags[0].ti_Tag  = IA_EdgesOnly;
+    tags[0].ti_Data = TRUE;
+    tags[1].ti_Tag  = IA_Left;
+    tags[1].ti_Data = 0UL;
+    tags[2].ti_Tag  = IA_Top;
+    tags[2].ti_Data = 0UL;
+    tags[3].ti_Tag  = TAG_DONE;
+    obj = NewObjectA(NULL, FRAMEICLASS, tags);
+
+    return obj;
+}
 
 AROS_LH1(struct GadToolsBase_intern *, open,
  AROS_LHA(ULONG, version, D0),
@@ -158,6 +179,11 @@ AROS_LH1(struct GadToolsBase_intern *, open,
     if (!BOOPSIBase)
 	return NULL;
 
+    if (!LIBBASE->bevel)
+        LIBBASE->bevel = (struct Image *)makebevelobj(GadToolsBase);
+    if (!LIBBASE->bevel)
+        return NULL;
+
     /* I have one more opener. */
     LIBBASE->library.lib_OpenCnt++;
     LIBBASE->library.lib_Flags&=~LIBF_DELEXP;
@@ -178,7 +204,10 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
-      {
+    {
+        if (LIBBASE->bevel)
+            DisposeObject(LIBBASE->bevel);
+
 	if (LIBBASE->buttonclass)
 	    FreeClass(LIBBASE->buttonclass);
 
