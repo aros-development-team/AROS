@@ -100,9 +100,9 @@ cname:				    ; \
 	STUB1(AROS_SLIB_ENTRY(Disable,Exec),_Disable)
 	STUB1(AROS_SLIB_ENTRY(Enable,Exec),_Enable)
 
-	STUB2(AROS_SLIB_ENTRY(_ObtainSemaphore,Exec),AROS_SLIB_ENTRY(ObtainSemaphore,Exec))
-	STUB2(AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec),AROS_SLIB_ENTRY(ReleaseSemaphore,Exec))
-	STUB2(AROS_SLIB_ENTRY(_ObtainSemaphoreShared,Exec),AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec))
+	STUB2(AROS_SLIB_ENTRY(ObtainSemaphore,Exec),AROS_CSYMNAME(_ObtainSemaphore))
+	STUB2(AROS_SLIB_ENTRY(ReleaseSemaphore,Exec),AROS_CSYMNAME(_ReleaseSemaphore))
+	STUB2(AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec),AROS_CSYMNAME(_ObtainSemaphoreShared))
 
 	.globl	AROS_SLIB_ENTRY(Switch,Exec)
 	.type	AROS_SLIB_ENTRY(Switch,Exec),@function

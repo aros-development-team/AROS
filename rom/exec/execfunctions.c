@@ -88,8 +88,8 @@ void AROS_SLIB_ENTRY(Procure,Exec)();
 void AROS_SLIB_ENTRY(Vacate,Exec)();
 void AROS_SLIB_ENTRY(OpenLibrary,Exec)();
 void AROS_SLIB_ENTRY(InitSemaphore,Exec)();
-void AROS_SLIB_ENTRY(_ObtainSemaphore,Exec)();
-void AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec)();
+void AROS_SLIB_ENTRY(ObtainSemaphore,Exec)();
+void AROS_SLIB_ENTRY(ReleaseSemaphore,Exec)();
 void AROS_SLIB_ENTRY(AttemptSemaphore,Exec)();
 void AROS_SLIB_ENTRY(ObtainSemaphoreList,Exec)();
 void AROS_SLIB_ENTRY(ReleaseSemaphoreList,Exec)();
@@ -106,7 +106,7 @@ void AROS_SLIB_ENTRY(CreateIORequest,Exec)();
 void AROS_SLIB_ENTRY(DeleteIORequest,Exec)();
 void AROS_SLIB_ENTRY(CreateMsgPort,Exec)();
 void AROS_SLIB_ENTRY(DeleteMsgPort,Exec)();
-void AROS_SLIB_ENTRY(_ObtainSemaphoreShared,Exec)();
+void AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec)();
 void AROS_SLIB_ENTRY(AllocVec,Exec)();
 void AROS_SLIB_ENTRY(FreeVec,Exec)();
 void AROS_SLIB_ENTRY(CreatePool,Exec)();
@@ -232,8 +232,8 @@ void *ExecFunctions[131]=
 	&AROS_SLIB_ENTRY(Vacate,Exec),
 	&AROS_SLIB_ENTRY(OpenLibrary,Exec),
 	&AROS_SLIB_ENTRY(InitSemaphore,Exec),
-	&AROS_SLIB_ENTRY(_ObtainSemaphore,Exec),
-	&AROS_SLIB_ENTRY(_ReleaseSemaphore,Exec),
+	&AROS_SLIB_ENTRY(ObtainSemaphore,Exec),
+	&AROS_SLIB_ENTRY(ReleaseSemaphore,Exec),
 	&AROS_SLIB_ENTRY(AttemptSemaphore,Exec),
 	&AROS_SLIB_ENTRY(ObtainSemaphoreList,Exec),
 	&AROS_SLIB_ENTRY(ReleaseSemaphoreList,Exec),
@@ -251,7 +251,7 @@ void *ExecFunctions[131]=
 /*110 */&AROS_SLIB_ENTRY(DeleteIORequest,Exec),
 	&AROS_SLIB_ENTRY(CreateMsgPort,Exec),
 	&AROS_SLIB_ENTRY(DeleteMsgPort,Exec),
-	&AROS_SLIB_ENTRY(_ObtainSemaphoreShared,Exec),
+	&AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec),
 	&AROS_SLIB_ENTRY(AllocVec,Exec),
 	&AROS_SLIB_ENTRY(FreeVec,Exec),
 	&AROS_SLIB_ENTRY(CreatePool,Exec),

@@ -75,7 +75,7 @@ const struct SpecialResident resident =
     (struct Resident*)&resident,
     (APTR)&end,
     RTF_COLDSTART,
-    41,			/* version */
+    41, 		/* version */
     NT_KICKMEM,
     106,		/* Just above exec.library.
 			   Because exec is RTF_SINGLETASK, and this is
@@ -87,7 +87,7 @@ const struct SpecialResident resident =
     },
     SR_COOKIE,		/* magic cookie to recognize a patchable library */
     dearray,		/* pointer to array of function status bytes */
-    137			/* highest vector slot in this library */
+    137 		/* highest vector slot in this library */
 };
 
 const char name[] = "exec.strap";
@@ -116,7 +116,7 @@ UBYTE dearray[] =
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 100-109 */
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 110-119 */
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 120-129 */
-    1, 1, 1, 1, 1, 1, 1, 1        /* 130-137 */
+    1, 1, 1, 1, 1, 1, 1, 1	  /* 130-137 */
 };
 
 #define SetFunc(offset,name) \
@@ -216,18 +216,18 @@ int start(void)
 	BTW:  What bit(s) is (are) set for the MC68060?
 	ANS:  Bit 7.
 	BTW2: They would really be set by the 68060.library, which will obviously
-              not have executed at this point in the reset-procedure.
+	      not have executed at this point in the reset-procedure.
 	ANS:  So we have to recognize it ourselves. Write routine.
 	BTW3: If there is an agreed upon bit for the 68060, we could examine the
-              type of processor for ourselves in exec.strap, and update AttnFlags
-              accordingly.
+	      type of processor for ourselves in exec.strap, and update AttnFlags
+	      accordingly.
 	ANS:  See 2.
 	BTW4: The 68060 can be recognized by its Processor Configuration Register (PCR).
-              This register also contains the bit to enable Superscalar Operation,
-              which we could set at this point in the reset-procedure to speed
-              things up considerably (if nothing breaks).
+	      This register also contains the bit to enable Superscalar Operation,
+	      which we could set at this point in the reset-procedure to speed
+	      things up considerably (if nothing breaks).
 	ANS:  Just try it.
-      	BTW5: For the MC68060, we could also enable the Branch Cache at this point.
+	BTW5: For the MC68060, we could also enable the Branch Cache at this point.
 	ANS:  Yep.
     */
 
@@ -318,7 +318,7 @@ int start(void)
     SetFunc( 93, InitSemaphore);
 #if 0
     /* Can only be patched if we have control over the microkernel: */
-    SetFunc( 94, _ObtainSemaphore);
+    SetFunc( 94, ObtainSemaphore);
 #endif
 #if 0 /* ZZZ */
     SetFunc( 96, AttemptSemaphore);
@@ -333,7 +333,7 @@ int start(void)
     SetFunc(112, DeleteMsgPort);
 #if 0
     /* Can only be patched if we have control over the microkernel: */
-    SetFunc(113, _ObtainSemaphoreShared);
+    SetFunc(113, ObtainSemaphoreShared);
 #endif
     SetFunc(114, AllocVec);
     SetFunc(115, FreeVec);
@@ -386,7 +386,7 @@ const char end = 0;
 
 /*************************************************************************
  *  Functions not yet added to this file (whether enabled or not):
- *  
+ *
  *  Supervisor
  *  ExitIntr
  *  Schedule
