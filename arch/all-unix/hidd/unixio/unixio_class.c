@@ -223,10 +223,17 @@ static void WaitForIO (void)
 #endif		    
 		    
 	    D(bug("wfio: Waiting for message or signal for task %s\n",ud->ud_WaitForIO->tc_Node.ln_Name));
-	    rmask = Wait ((ULONG) (1 << ud->ud_Port -> mp_SigBit) | 
-	                          (1 << timer_port  -> mp_SigBit) |
-	                          SIGBREAKF_CTRL_C);
 #ifdef __linux__
+            rmask =
+                Wait
+                (
+                    (1UL << ud->ud_Port->mp_SigBit)
+                    |
+                    (1UL << timer_port->mp_SigBit)
+                    |
+                    SIGBREAKF_CTRL_C
+                );
+
 	    if (rmask & 1 << timer_port -> mp_SigBit)
 	    {
 	        /*
@@ -242,7 +249,10 @@ static void WaitForIO (void)
 	        }
 	    }
 	    else
+#else
+            rmask = Wait((1UL << ud->ud_Port->mp_SigBit) | SIGBREAKF_CTRL_C);
 #endif
+
 	    if (rmask & 1 << ud->ud_Port -> mp_SigBit)
 	    {
 	        D(bug("wfio: Got message\n"));
