@@ -33,12 +33,16 @@ struct FileInfoBlock
     UBYTE fib_Reserved[32];
 };
 
+#define DOSTRUE 		(-1L)
+
 #define MODE_OLDFILE		1005
 #define MODE_NEWFILE		1006
 #define MODE_READWRITE		1004
 
 #define SHARED_LOCK		-2
+#define ACCESS_READ		SHARED_LOCK
 #define EXCLUSIVE_LOCK		-1
+#define ACCESS_WRITE		EXCLUSIVE_LOCK
 
 #define OFFSET_BEGINNING	-1
 #define OFFSET_CURRENT		0
