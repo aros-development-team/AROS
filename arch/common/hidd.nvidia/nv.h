@@ -196,6 +196,7 @@ struct staticdata {
     OOP_Class		    *nvclass;
     OOP_Class		    *onbmclass;
     OOP_Class		    *offbmclass;
+    OOP_Class		    *planarbmclass;
 
     OOP_Object		    *pci;
     OOP_Object		    *Device;
@@ -208,6 +209,7 @@ struct staticdata {
     OOP_AttrBase	    pixFmtAttrBase;
     OOP_AttrBase	    gfxAttrBase;
     OOP_AttrBase	    syncAttrBase;
+    OOP_AttrBase	    planarAttrBase;
 
     HIDDT_DPMSLevel	    dpms;
 
@@ -230,7 +232,9 @@ struct staticdata {
     OOP_MethodID	    mid_PutMem32Image16;
     OOP_MethodID	    mid_GetMem32Image8;
     OOP_MethodID	    mid_GetMem32Image16;
+    OOP_MethodID	    mid_GetImage;
     
+    BOOL		    gpu_busy;
 
     IPTR		    scratch_buffer;
 };
@@ -255,6 +259,16 @@ typedef struct __bm {
     struct CardState *state;
 } nvBitMap;
 
+struct planarbm_data
+{
+    UBYTE   **planes;
+    ULONG   planebuf_size;
+    ULONG   bytesperrow;
+    ULONG   rows;
+    UBYTE   depth;
+    BOOL    planes_alloced;
+};
+
 #define LOCK_HW		{ ObtainSemaphore(&sd->HWLock); }
 
 #define UNLOCK_HW	{ ReleaseSemaphore(&sd->HWLock); }
@@ -274,6 +288,7 @@ LIBBASETYPE {
 OOP_Class *init_nvclass(struct staticdata*);
 OOP_Class *init_onbitmapclass(struct staticdata *);
 OOP_Class *init_offbitmapclass(struct staticdata *);
+OOP_Class *init_nvplanarbmclass(struct staticdata *sd);
 
 void LoadState(struct staticdata *, struct CardState *);
 void SaveState(struct staticdata *, struct CardState *);

@@ -270,7 +270,10 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 	    */
 	    HIDDT_StdPixFmt stdpf;
 	    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
-	    if (vHidd_StdPixFmt_Unknown == stdpf) {
+	    if (vHidd_StdPixFmt_Plane == stdpf) {
+		classptr = sd->planarbmclass;
+	    }
+	    else if (vHidd_StdPixFmt_Unknown == stdpf) {
 		/* No std pixfmt supplied */
 		OOP_Object *friend;
 	    

@@ -7,7 +7,7 @@ CFLAGS := $(CFLAGS) -D__KERNEL__
 
 LIBNAME := nvidia
 
-FILES	:= nvidiaclass nvhardware nvidiabitmap
+FILES	:= nvidiaclass nvhardware nvidiabitmap planarbm
 
 #unused MM- kernel-objs: kernel-pci-kobj
 

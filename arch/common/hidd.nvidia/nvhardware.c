@@ -1982,6 +1982,8 @@ void NVSync(struct staticdata *sd)
     while(READ_GET(pNv) != pNv->dmaPut);
 
     while(pNv->PGRAPH[0x0700/4]);
+
+    sd->gpu_busy = FALSE;
 }
 
 void NVDMAKickoffCallback(struct staticdata *sd)
