@@ -596,7 +596,8 @@ static VOID bm__drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawL
 	}
 	
 	NVSetRopSolid(sd, GC_DRMD(gc), ~0 << bm->depth);
-	NVDmaStart(&sd->Card, LINE_COLOR, 1);
+	NVDmaStart(&sd->Card, LINE_FORMAT, 2);
+	NVDmaNext(&sd->Card, bm->line_format);
 	NVDmaNext(&sd->Card, GC_FG(gc));
 
 	NVDmaStart(&sd->Card, LINE_LINES(0), 4);
@@ -966,7 +967,8 @@ static VOID bm__drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
 	}
 	
 	NVSetRopSolid(sd, GC_DRMD(gc), ~0 << bm->depth);
-	NVDmaStart(&sd->Card, LINE_COLOR, 1);
+	NVDmaStart(&sd->Card, LINE_FORMAT, 2);
+	NVDmaNext(&sd->Card, bm->line_format);
 	NVDmaNext(&sd->Card, GC_FG(gc));
 
 	NVDmaStart(&sd->Card, LINE_LINES(0), 8);
@@ -1031,7 +1033,8 @@ static VOID bm__drawpoly(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawP
 	}
 	
 	NVSetRopSolid(sd, GC_DRMD(gc), ~0 << bm->depth);
-	NVDmaStart(&sd->Card, LINE_COLOR, 1);
+	NVDmaStart(&sd->Card, LINE_FORMAT, 2);
+	NVDmaNext(&sd->Card, bm->line_format);
 	NVDmaNext(&sd->Card, GC_FG(gc));
     
 	for(i = 2; i < (2 * msg->n); i = i + 2)
