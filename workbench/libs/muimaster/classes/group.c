@@ -2355,7 +2355,8 @@ static ULONG IsObjectVisible(Object *child, struct Library *MUIMasterBase)
     	if (!obj) break;
 	if (obj == wnd) break;
 
-	if (_right(child) < _mleft(obj) || _left(child) > _mright(obj) || _bottom(child) < _mtop(obj) || _top(child) > _mbottom(obj))
+	if (_right(child) < _mleft(obj) || _left(child) > _mright(obj)
+	    || _bottom(child) < _mtop(obj) || _top(child) > _mbottom(obj))
 	    return FALSE;
     }
     return TRUE;
@@ -2644,7 +2645,7 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 static ULONG Group_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_DrawBackground *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    
+
     if (data->flags & GROUP_VIRTUAL)
     {
     	struct MUIP_DrawBackground msg2 = *msg;
@@ -2656,6 +2657,44 @@ static ULONG Group_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dr
     }
     
     return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+/**************************************************************************
+ MUIM_FindAreaObject
+ Find the given object or return NULL
+**************************************************************************/
+static IPTR Group_FindAreaObject(struct IClass *cl, Object *obj,
+				 struct MUIP_FindAreaObject *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    // it's me ?
+    if (msg->obj == obj)
+	return (IPTR)obj;
+
+    // it's one of my childs ?
+    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	if (msg->obj == child)
+	    return (IPTR)child;
+    }
+
+    // let the childs find it
+    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	Object *res = (Object *)DoMethodA(child, (Msg)msg);
+	if (res != NULL)
+	    return (IPTR)res;
+    }
+
+    return (IPTR)NULL;
 }
 
 /**************************************************************************
@@ -2707,13 +2746,10 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case OM_ADDMEMBER: return Group_AddMember(cl, obj, (APTR)msg);
     case OM_REMMEMBER: return Group_RemMember(cl, obj, (APTR)msg);
     case MUIM_AskMinMax: return Group_AskMinMax(cl, obj, (APTR)msg);
-    case MUIM_Group_ExitChange :
-	return Group_ExitChange(cl, obj, (APTR)msg);
-    case MUIM_Group_InitChange :
-	return Group_InitChange(cl, obj, (APTR)msg);
-    case MUIM_Group_Sort :
-	return Group_Sort(cl, obj, (APTR)msg);
-	case MUIM_Group_DoMethodNoForward: return Group_DoMethodNoForward(cl, obj, (APTR)msg);
+    case MUIM_Group_ExitChange : return Group_ExitChange(cl, obj, (APTR)msg);
+    case MUIM_Group_InitChange : return Group_InitChange(cl, obj, (APTR)msg);
+    case MUIM_Group_Sort : return Group_Sort(cl, obj, (APTR)msg);
+    case MUIM_Group_DoMethodNoForward: return Group_DoMethodNoForward(cl, obj, (APTR)msg);
     case MUIM_ConnectParent : return Group_ConnectParent(cl, obj, (APTR)msg);
     case MUIM_DisconnectParent: return Group_DisconnectParent(cl, obj, (APTR)msg);
     case MUIM_Layout: return Group_Layout(cl, obj, (APTR)msg);
@@ -2721,18 +2757,17 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case MUIM_Cleanup: return Group_Cleanup(cl, obj, (APTR)msg);
     case MUIM_Draw: return Group_Draw(cl, obj, (APTR)msg);
 
-    case MUIM_FindUData :
-	return Group_FindUData(cl, obj, (APTR)msg);
-    case MUIM_GetUData :
-	return Group_GetUData(cl, obj, (APTR)msg);
-    case MUIM_SetUData :
-	return Group_SetUData(cl, obj, (APTR)msg);
-    case MUIM_SetUDataOnce :
-	return Group_SetUDataOnce(cl, obj, (APTR)msg);
+    case MUIM_FindUData : return Group_FindUData(cl, obj, (APTR)msg);
+    case MUIM_GetUData : return Group_GetUData(cl, obj, (APTR)msg);
+    case MUIM_SetUData : return Group_SetUData(cl, obj, (APTR)msg);
+    case MUIM_SetUDataOnce : return Group_SetUDataOnce(cl, obj, (APTR)msg);
     case MUIM_Show: return Group_Show(cl, obj, (APTR)msg);
     case MUIM_Hide: return Group_Hide(cl, obj, (APTR)msg);
     case MUIM_HandleEvent: return Group_HandleEvent(cl,obj, (APTR)msg);
     case MUIM_DrawBackground: return Group_DrawBackground(cl, obj, (APTR)msg);
+    case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
+    case MUIM_FindAreaObject: return Group_FindAreaObject(cl, obj, (APTR)msg);
+
 #if 0
     /* Disabled. See above */
     case MUIM_Notify: return Group_Notify(cl, obj, (APTR)msg);
@@ -2753,12 +2788,9 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case MUIM_CreateBubble:
     case MUIM_DeleteBubble:
     case MUIM_CreateShortHelp:
-    case MUIM_DeleteShortHelp:  
+    case MUIM_DeleteShortHelp:
     	return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded? */
-
-    case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
     }
-
     
     /* sometimes you want to call a superclass method,
      * but not dispatching to child. 
