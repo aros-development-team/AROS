@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS specific list class implementation.
@@ -56,9 +56,9 @@ STATIC VOID SetActive(LONG pos, struct ListData *data)
     data->ld_Active = pos;
     return;
 }
-STATIC IPTR list_set(Class *cl, Object *o,struct opSet *msg)
+STATIC _OM_SET(Class *cl, Object *o,struct opSet *msg)
 {
-    IPTR retval = 0UL;
+    IPTR retval = (IPTR)0;
     
     const struct TagItem *tag, *tstate;
     struct ListData *data;
@@ -94,11 +94,23 @@ STATIC IPTR list_set(Class *cl, Object *o,struct opSet *msg)
     
     ReturnPtr("list_set", IPTR, retval);
 }
+IPTR AROSList__OM_SET(Class *cl, Object *o,struct opSet *msg)
+{
+    IPTR retval = DoSuperMethodA(cl, o, msg);
+    retval += _OM_SET(cl, o, msg);
+    return retval;
+}
+IPTR AROSList__OM_UPDATE(Class *cl, Object *o,struct opSet *msg)
+{
+    IPTR retval = DoSuperMethodA(cl, o, msg);
+    retval += _OM_SET(cl, o, msg);
+    return retval;
+}
 
 /*****************
 ** List::New()  **
 *****************/
-STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
+IPTR AROSList__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
 
@@ -151,8 +163,8 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
 	data->ld_PointerArray = AllocEntries( (srcarray != NULL) 
 						? CountItems(srcarray) 
 						: NUMENTRIES_TO_ADD,
-					    data,
-					    LB(AROSListBase));
+					    data
+	);
 					    
  	if (!data->ld_Pool)
  	{
@@ -174,8 +186,8 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
     	/* Handle our special tags - overrides defaults. This must be done 
     	before the AROSM_List_Insert call, because we must get the ConstructHook and 
     	DestructHook tags */
-    	    	
-   	list_set(cl, o, msg);
+
+   	_OM_SET(cl, o, msg);
     	
 	if (srcarray)
 	{
@@ -193,7 +205,7 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
 ** List::Dispose()  **
 *********************/
 
-STATIC VOID list_dispose(Class *cl, Object *o, Msg msg)
+VOID AROSList__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
 #warning TODO: Call destructhook too
 
@@ -226,7 +238,7 @@ STATIC VOID list_dispose(Class *cl, Object *o, Msg msg)
 ** List::Get()  **
 *****************/
 
-STATIC IPTR list_get(Class *cl, Object *o, struct opGet *msg)
+IPTR AROSList__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     IPTR retval = 1UL;
     struct ListData *data;
@@ -253,7 +265,7 @@ STATIC IPTR list_get(Class *cl, Object *o, struct opGet *msg)
 /********************
 ** List::Insert()  **
 ********************/
-STATIC ULONG list_insert(Class *cl, Object *o, struct AROSP_List_Insert *msg)
+ULONG AROSList__AROSM_List_Insert(Class *cl, Object *o, struct AROSP_List_Insert *msg)
 {
     struct ListData *data;
     
@@ -302,7 +314,7 @@ STATIC ULONG list_insert(Class *cl, Object *o, struct AROSP_List_Insert *msg)
     {
     	struct ListEntry **newptrarray;
     	
-    	newptrarray = AllocEntries(items2insert, data, LB(AROSListBase));
+    	newptrarray = AllocEntries(items2insert, data);
     	if (!newptrarray)
     	    return (0UL);
     	
@@ -315,7 +327,7 @@ STATIC ULONG list_insert(Class *cl, Object *o, struct AROSP_List_Insert *msg)
 	}    	    		
 	
 	/* Now insert the entries themselves */
-	numinserted = InsertItems(msg->ItemArray, newptrarray, pos, data, LB(AROSListBase));
+	numinserted = InsertItems(msg->ItemArray, newptrarray, pos, data);
 	
 	/* Copy all the entries BELOW the inserted value */
 	if (pos != data->ld_NumEntries)
@@ -340,8 +352,8 @@ STATIC ULONG list_insert(Class *cl, Object *o, struct AROSP_List_Insert *msg)
     	    numinserted = InsertItems(msg->ItemArray,
     	    			data->ld_PointerArray,
     	    			pos,
-    	    			data,
-    	    			LB(AROSListBase));
+    	    			data
+    	    );
     	    D(bug("lins: inserted %d entries at end of list\n", numinserted));
     	}
     	else
@@ -360,7 +372,7 @@ STATIC ULONG list_insert(Class *cl, Object *o, struct AROSP_List_Insert *msg)
 	    	ptr --;
 	    }
 	    
-	    numinserted = InsertItems(msg->ItemArray, data->ld_PointerArray, pos, data, LB(AROSListBase));
+	    numinserted = InsertItems(msg->ItemArray, data->ld_PointerArray, pos, data);
 	    if (numinserted < items2insert)
 	    {
 	    	/*
@@ -403,7 +415,7 @@ STATIC ULONG list_insert(Class *cl, Object *o, struct AROSP_List_Insert *msg)
 /***************************
 **  List::InsertSingle()  **
 ***************************/
-STATIC IPTR list_insertsingle(Class *cl, Object *o, struct AROSP_List_InsertSingle *msg)
+IPTR AROSList__AROSM_List_InsertSingle(Class *cl, Object *o, struct AROSP_List_InsertSingle *msg)
 {
     
     APTR ptrarray[2];
@@ -416,13 +428,13 @@ STATIC IPTR list_insertsingle(Class *cl, Object *o, struct AROSP_List_InsertSing
     insert_msg.ItemArray    = ptrarray;
     insert_msg.Position	    = msg->Position;
     
-    return (IPTR)list_insert(cl, o, &insert_msg);
+    return (IPTR)AROSList__AROSM_List_Insert(cl, o, &insert_msg);
 }
 
 /*********************
 **  List::Remove()  **
 *********************/
-STATIC VOID list_remove(Class *cl, Object *o, struct AROSP_List_Remove *msg)
+VOID AROSList__AROSM_List_Remove(Class *cl, Object *o, struct AROSP_List_Remove *msg)
 {
 
     
@@ -504,7 +516,7 @@ STATIC VOID list_remove(Class *cl, Object *o, struct AROSP_List_Remove *msg)
 /********************
 **  List::Clear()  **
 ********************/
-STATIC VOID list_clear(Class *cl, Object *o, Msg msg)
+VOID AROSList__AROSM_List_Clear(Class *cl, Object *o, Msg msg)
 {
     register LONG pos;
     struct ListData *data = INST_DATA(cl, o);
@@ -534,204 +546,123 @@ D(bug("Addidng to freeentrylist\n"));
     return;
 }
 
-/* listclass boopsi dispatcher
- */
-AROS_UFH3S(IPTR, dispatch_listclass,
-    AROS_UFHA(Class *,  cl,  A0),
-    AROS_UFHA(Object *, o,   A2),
-    AROS_UFHA(Msg,      msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-    IPTR retval = 0UL;
-    
-    D(bug("listclass disp: MethodID: %d\n", msg->MethodID));
-    
-    switch(msg->MethodID)
+
+/*********************
+**  List::Select()  **
+*********************/
+VOID AROSList__AROSM_List_Select(Class *cl, Object *o, Msg msg)
+{	
+    /* We _could_ put the Select_All stuff together
+       with the singlemode but that would slow down singlemode a little */
+#undef S
+#define S(msg) ((struct AROSP_List_Select *)msg)
+    struct ListData *data = INST_DATA(cl, o);
+
+    if (S(msg)->Position != AROSV_List_Select_All)
     {
-	case OM_NEW:
-	    retval = list_new(cl, o, (struct opSet *)msg);
-	    break;
-
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    retval += (IPTR)list_set(cl, o, (struct opSet *)msg);
-	    break;
-
-	case OM_GET:
-	    retval = (IPTR)list_get(cl, o, (struct opGet *)msg);
-	    break;
-	    
-	case OM_DISPOSE:
-	    list_dispose(cl, o, msg);
-	    break;
-
-	case AROSM_List_Insert:
-	    retval = (IPTR)list_insert(cl, o, (struct AROSP_List_Insert *)msg);
-	    break;
-	    
-	case AROSM_List_InsertSingle:
-	    retval = (IPTR)list_insertsingle(cl, o, (struct AROSP_List_InsertSingle *)msg);
-	    break;
-	
-	case AROSM_List_Remove:
-	    list_remove(cl, o, (struct AROSP_List_Remove *)msg);
-	    break;
-	
-	case AROSM_List_Clear:
-	    list_clear(cl, o, msg);
-	    break;
-
-	case AROSM_List_Select:
+	struct ListEntry *le; 
+	    	
+	le = data->ld_PointerArray[S(msg)->Position];
+	    	
+	switch (S(msg)->SelType)
 	{
-	    /* We _could_ put the Select_All stuff together
-	       with the singlemode but that would slow down singlemode a little */
-	    #undef S
-	    #define S(msg) ((struct AROSP_List_Select *)msg)
-	    struct ListData *data = INST_DATA(cl, o);
-
-	    
-	    if (S(msg)->Position != AROSV_List_Select_All)
-	    {
-	    	struct ListEntry *le; 
-	    	
-	    	le = data->ld_PointerArray[S(msg)->Position];
-	    	
-	    	switch (S(msg)->SelType)
-	    	{
-	    	    case AROSV_List_Select_On:
-	    	    	le->le_Flags |= LEFLG_SELECTED;
-	    	    	break;
-	    	    	
-	    	    case AROSV_List_Select_Off:
-	    	    	le->le_Flags &= ~LEFLG_SELECTED;
-	    	    	break;
-
-	    	    case AROSV_List_Select_Toggle:
-	    	    	le->le_Flags ^= LEFLG_SELECTED;
-	    	    	break;
-	    	    	
-	    	    case AROSV_List_Select_Ask:
-	    	    	*(S(msg)->State) = ((le->le_Flags & LEFLG_SELECTED) != 0);
-	    	    	break;
-	    	}
-	    }
-	    else
-	    {
-	    	register LONG pos;
-	    	register struct ListEntry *le;
-	    	
-	    	*(S(msg)->State) = 0;
-	    	
-	    	for (pos = 0; pos < data->ld_NumEntries; pos ++)
-	    	{
-	    	    le = data->ld_PointerArray[S(msg)->Position];
-		    switch (S(msg)->SelType)
-	    	    {
-	    	    	case AROSV_List_Select_On:
-	    	    	    le->le_Flags |= LEFLG_SELECTED;
-	    	    	    break;
-	    	    	
-	    	    	case AROSV_List_Select_Off:
-	    	    	    le->le_Flags &= ~LEFLG_SELECTED;
-	    	    	    break;
-
-	    	    	case AROSV_List_Select_Toggle:
-	    	    	    le->le_Flags ^= LEFLG_SELECTED;
-	    	    	    break;
-	    	    	
-	    	    	case AROSV_List_Select_Ask:
-	    	    	    if (le->le_Flags & LEFLG_SELECTED)
-	    	    	    {
-	    	    	    	*(S(msg)->State) += 1;
-	    	    	    }
-	    	    	    break;
-	    		
-	    	    }	    	
-	    	}
-	    }
-
-	} break;
-	    
-	case AROSM_List_NextSelected:
-	{
-	    #undef NS
-	    #define NS(msg) ((struct AROSP_List_NextSelected *)msg)
-	    
-	    struct ListData *data = INST_DATA(cl, o);
-	    register LONG pos;
-	    
-	    pos = *(NS(msg)->Position);
-	    
-	    if (pos == AROSV_List_NextSelected_Start)
-	    	pos = 0;
-	    	
-	    for (; pos < data->ld_NumEntries; pos ++)
-	    {
-	    	if (data->ld_PointerArray[pos]->le_Flags & LEFLG_SELECTED)
-	    	{
-	    	    *(NS(msg)->Position) = pos;
-	    	    return(retval);
-	    	}
-	    }
-	    
-	    *(NS(msg)->Position) = AROSV_List_NextSelected_End;
-	    
-	} break;
-	
-	case AROSM_List_GetEntry:
-	{
-	    #undef GE
-	    #define GE(msg) ((struct AROSP_List_GetEntry *)msg)
-	    
-	    struct ListData *data;
-
-	    data = INST_DATA(cl, o);
-	    
-	    if (GE(msg)->Position >= data->ld_NumEntries || GE(msg)->Position < 0)
-	    {
-	    	*(GE(msg)->ItemPtr) = NULL;
-	    }
-	    else
-	    {
-	        *(GE(msg)->ItemPtr) = data->ld_PointerArray[GE(msg)->Position]->le_Item;
-       	    }
-
-	} break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
+	case AROSV_List_Select_On:
+	    le->le_Flags |= LEFLG_SELECTED;
 	    break;
-	    
-    } /* switch */
+	    	    	
+	case AROSV_List_Select_Off:
+	    le->le_Flags &= ~LEFLG_SELECTED;
+	    break;
 
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}  /* dispatch_listclass */
-
-
-#undef AROSListBase
-
-/****************************************************************************/
-
-/* Initialize our list class. */
-struct IClass *InitListClass (struct ListBase_intern * AROSListBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the listclass...
-     */
-    if ((cl = MakeClass(AROSLISTCLASS, ROOTCLASS, NULL, sizeof(struct ListData), 0)))
-    {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_listclass);
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_UserData 	     = (IPTR)AROSListBase;
-
-	AddClass (cl);
+	case AROSV_List_Select_Toggle:
+	    le->le_Flags ^= LEFLG_SELECTED;
+	    break;
+	    	    	
+	case AROSV_List_Select_Ask:
+	    *(S(msg)->State) = ((le->le_Flags & LEFLG_SELECTED) != 0);
+	    break;
+	}
     }
+    else
+    {
+	register LONG pos;
+	register struct ListEntry *le;
+	    	
+	*(S(msg)->State) = 0;
+	
+	for (pos = 0; pos < data->ld_NumEntries; pos ++)
+	{
+	    le = data->ld_PointerArray[S(msg)->Position];
+	    switch (S(msg)->SelType)
+	    {
+	    case AROSV_List_Select_On:
+		le->le_Flags |= LEFLG_SELECTED;
+		break;
+	    	    	
+	    case AROSV_List_Select_Off:
+		le->le_Flags &= ~LEFLG_SELECTED;
+		break;
 
-    return (cl);
+	    case AROSV_List_Select_Toggle:
+		le->le_Flags ^= LEFLG_SELECTED;
+		break;
+	    	    	
+	    case AROSV_List_Select_Ask:
+		if (le->le_Flags & LEFLG_SELECTED)
+		{
+		    *(S(msg)->State) += 1;
+		}
+		break;
+	    }	    	
+	}
+    }
+}
+
+
+/***************************
+**  List::NextSelected()  **
+***************************/
+VOID AROSList__AROSM_List_NextSelected(Class *cl, Object *o, Msg msg)
+{
+#undef NS
+#define NS(msg) ((struct AROSP_List_NextSelected *)msg)
+	    
+    struct ListData *data = INST_DATA(cl, o);
+    register LONG pos;
+	    
+    pos = *(NS(msg)->Position);
+	    
+    if (pos == AROSV_List_NextSelected_Start)
+	pos = 0;
+	    	
+    for (; pos < data->ld_NumEntries; pos ++)
+    {
+	if (data->ld_PointerArray[pos]->le_Flags & LEFLG_SELECTED)
+	{
+	    *(NS(msg)->Position) = pos;
+	    return;
+	}
+    }
+	    
+    *(NS(msg)->Position) = AROSV_List_NextSelected_End;
+}
+
+
+/***********************
+**  List::GetEntry()  **
+***********************/
+VOID AROSList__AROSM_List_GetEntry(Class *cl, Object *o, Msg msg)
+{
+#undef GE
+#define GE(msg) ((struct AROSP_List_GetEntry *)msg)
+	    
+    struct ListData *data;
+
+    data = INST_DATA(cl, o);
+	    
+    if (GE(msg)->Position >= data->ld_NumEntries || GE(msg)->Position < 0)
+	*(GE(msg)->ItemPtr) = NULL;
+    else
+	*(GE(msg)->ItemPtr) = data->ld_PointerArray[GE(msg)->Position]->le_Item;
 }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Help functions for aroslistclass.
@@ -37,8 +37,8 @@ ULONG CountItems(APTR *array)
 /****************/
 
 struct ListEntry **AllocEntries(ULONG			numnewentries,
-				struct ListData		*data,
-				struct ListBase_intern	*AROSListBase)
+				struct ListData		*data
+)
 {
     struct ListEntry *nodes = NULL;
 
@@ -90,8 +90,8 @@ struct ListEntry **AllocEntries(ULONG			numnewentries,
 ULONG InsertItems(APTR 		    *itemarray,
 		struct ListEntry    **pointerarray,
 		LONG		    pos,
-		struct ListData     *data,
-		struct ListBase_intern *AROSListBase)
+		struct ListData     *data
+)
 {
     register struct ListEntry **leptr;
     register struct ListEntry *le;
