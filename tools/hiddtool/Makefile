@@ -101,6 +101,8 @@ demo	: $(EXE)
 	@echo "and recompile"
 	@echo ""
 	@echo "Also it could maybe be expanded to work for libs, devs etc."
+	@echo ""
+
 	
 test:	
 	@echo $(KERNELHIDDS)
