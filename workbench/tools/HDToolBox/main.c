@@ -226,26 +226,52 @@ BOOL running=TRUE;
 						);
 					break;
 				case ID_PCP_TOTALCYL :
-						changeTotalCyl
+					changeTotalCyl
+					(
+						mainwin,
+						current_pt,
+						current_partition,
 						(
-							mainwin,
-							current_pt,
-							current_partition,
-							(
-								(struct StringInfo *)
-									(
-										(struct Gadget *) msg->IAddress
-									)->SpecialInfo
-							)->LongInt
-						);
+							(struct StringInfo *)
+								(
+									(struct Gadget *) msg->IAddress
+								)->SpecialInfo
+						)->LongInt
+					);
+					break;
+				case ID_PCP_NAME:
+					changeName
+					(
+						mainwin,
+						current_partition,
+						(
+							(struct StringInfo *)
+								(
+									(struct Gadget *) msg->IAddress
+								)->SpecialInfo
+						)->Buffer
+					);
 					break;
 				case ID_PCP_BOOTABLE:
-					current_partition->flags |= PNF_FLAGS_CHANGED;
 					if (msg->Code)
 						current_partition->flags |= PNF_BOOTABLE;
 					else
 						current_partition->flags &= ~PNF_BOOTABLE;
+					current_partition->flags |= PNF_FLAGS_CHANGED;
 					viewPartitionData(mainwin, current_pt, current_partition);
+					break;
+				case ID_PCP_BOOTPRI:
+					changeBootPri
+					(
+						mainwin,
+						current_partition,
+						(
+							(struct StringInfo *)
+								(
+									(struct Gadget *) msg->IAddress
+								)->SpecialInfo
+						)->LongInt
+					);
 					break;
 				case ID_PCP_OK :
 					if (pcp_Ok(current_pt))

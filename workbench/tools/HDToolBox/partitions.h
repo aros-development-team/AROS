@@ -41,6 +41,8 @@ void changeEndCyl(struct Window *, struct PartitionTableNode *, struct Partition
 void changeTotalCyl(struct Window *, struct PartitionTableNode *, struct PartitionNode *, ULONG);
 struct PartitionNode *addPartition(struct Window *, struct PartitionTableNode *, struct DosEnvec *);
 void deletePartition(struct Window *, struct PartitionNode *);
+void changeBootPri(struct Window *, struct PartitionNode *, LONG);
+void changeName(struct Window *, struct PartitionNode *, STRPTR);
 
 #endif
 
