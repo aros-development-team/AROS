@@ -9,6 +9,7 @@ FILES := amigademo \
 	devicetest \
 	dosvartest \
 	exceptiontest \
+	fileseek \
 	filetest \
 	matchtest \
 	messagetest \
