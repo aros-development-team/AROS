@@ -10,7 +10,10 @@
 #include <aros/libcall.h>
 
 /*****************************************************************************/
-#ifndef UseExecstubs
+#undef  Exec
+#ifdef UseExecstubs
+#    define Exec _Exec
+#endif
 
 /*  NAME */
 #include <proto/exec.h>
@@ -68,10 +71,9 @@
     HISTORY
 
 ******************************************************************************/
-#else
-void _Exec_Enable(struct ExecBase * SysBase)
-#endif
 {
+#undef Exec
+
     AROS_LIBFUNC_INIT
 
     /* Only disable interrupts if they are not already disabled. The
