@@ -1481,7 +1481,7 @@ rexxsupport;2;verhaegs;Write GETARG
 rexxsupport;2;verhaegs;Write GETPKT
 rexxsupport;2;verhaegs;Write OPENPORT
 rexxsupport;2;verhaegs;Write REPLY
-rexxsupport;0;verhaegs;Write SHOWDIR
+rexxsupport;1;verhaegs;Write SHOWDIR
 rexxsupport;0;verhaegs;Write SHOWLIST
 rexxsupport;0;verhaegs;Write STATEF
 rexxsupport;2;verhaegs;Write WAITPKT
