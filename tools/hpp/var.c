@@ -10,6 +10,7 @@ static List globals;
 static List functions;
 
 static String DefinedCB (const char ** args, int dummy, CBD data);
+static String ExprCB	(const char ** args, int dummy, CBD data);
 
 static String
 DefinedCB (const char ** args, int dummy, CBD data)
@@ -23,6 +24,35 @@ DefinedCB (const char ** args, int dummy, CBD data)
     return VS_New ((Var_Find (args[0])) ? "1" : "0");
 }
 
+static String
+ExprCB (const char ** args, int dummy, CBD data)
+{
+    int rc, value;
+    char buffer[32];
+
+    if (!args[0])
+    {
+	PushError ("$expr(): Expecting one arg");
+	return NULL;
+    }
+
+    rc = Expr_Parse (args[0], &value);
+
+    if (rc != T_OK)
+    {
+	PushError ("Error parsing expression %s", args[0]);
+	return NULL;
+    }
+
+#ifdef HAVE_VSNPRINT
+    vsnprint (buffer, sizeof (buffer), "%d", value);
+#else
+    vsprint (buffer, "%d", value);
+#endif
+
+    return VS_New (buffer);
+}
+
 void
 Var_Init (void)
 {
@@ -30,6 +60,7 @@ Var_Init (void)
     NewList (&functions);
 
     Func_Add ("defined", (CB) DefinedCB, NULL);
+    Func_Add ("expr", (CB) ExprCB, NULL);
 }
 
 void
