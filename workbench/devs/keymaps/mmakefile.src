@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-KEYMAPS := pc105_d pc105_i pc105_s pc105_n
+KEYMAPS := pc105_d pc105_i pc105_s pc105_n sun_usa
 
 #MM- workbench-devs-complete : workbench-devs-keymaps
 #MM workbench-devs-keymaps : setup includes
