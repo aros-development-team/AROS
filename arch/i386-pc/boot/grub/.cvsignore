@@ -1,11 +1,8 @@
 Makefile
-configure
 config.status
 config.cache
 config.log
 stamp-h
-config.h.in
-config.h
 stamp-h1
 mmakefile
 .files-touched
