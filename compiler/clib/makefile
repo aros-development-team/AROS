@@ -25,18 +25,25 @@ FILES = \
 	bsearch \
 	bzero \
 	calloc \
+	clearerr \
 	ctype \
 	close \
 	creat \
 	errno \
 	exit \
+	fclose \
 	feof \
+	ferror \
 	fflush \
 	fgetc \
+	fgets \
+	fopen \
 	fprintf \
 	fputc \
 	fputs \
+	fread \
 	free \
+	fwrite \
 	labs \
 	malloc \
 	memchr \
