@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/12/09 13:53:29  aros
+    Added empty templates for all missing functions
+
+    Moved #include's into first column
+
     Revision 1.4  1996/10/24 15:50:30  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -21,7 +26,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/dos_protos.h>
+#include <clib/dos_protos.h>
 
 	AROS_LH0(STRPTR, GetArgStr,
 

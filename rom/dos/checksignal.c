@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/12/09 13:53:22  aros
+    Added empty templates for all missing functions
+
+    Moved #include's into first column
+
     Revision 1.1  1996/12/05 15:52:23  aros
     Initial revision
 
@@ -15,7 +20,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/dos_protos.h>
+#include <clib/dos_protos.h>
 
 	AROS_LH1(LONG, CheckSignal,
 

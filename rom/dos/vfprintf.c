@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/12/09 13:53:49  aros
+    Added empty templates for all missing functions
+
+    Moved #include's into first column
+
     Revision 1.6  1996/11/18 13:20:14  aros
     Compile assembler files with CPP
 
@@ -54,7 +59,7 @@ AROS_UFH2(void,vfp_hook,
 /*****************************************************************************
 
     NAME */
-	#include <clib/dos_protos.h>
+#include <clib/dos_protos.h>
 
 	AROS_LH3(LONG, VFPrintf,
 

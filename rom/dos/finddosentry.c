@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/12/09 13:53:28  aros
+    Added empty templates for all missing functions
+
+    Moved #include's into first column
+
     Revision 1.7  1996/11/14 08:54:17  aros
     Some more changes
 
@@ -31,7 +36,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/dos_protos.h>
+#include <clib/dos_protos.h>
 
 	AROS_LH3(struct DosList *, FindDosEntry,
 

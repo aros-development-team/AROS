@@ -2,11 +2,16 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/12/09 13:53:27  aros
+    Added empty templates for all missing functions
+
+    Moved #include's into first column
+
     Revision 1.5  1996/11/21 10:49:47  aros
     Created macros AROS_SLIB_ENTRY() for assembler files, too, to solve naming
     problems.
 
-    The #includes in the header *must* begin in the first column. Otherwise
+The #includes
     makedepend will ignore them (GCC works, though).
 
     Removed a couple of Logs
@@ -18,7 +23,7 @@
     Better way to create a TEST
 
     Revision 1.2  1996/08/23 17:06:17  digulla
-    Added #include "dos_intern.h"
+Added #include
 
     Revision 1.1  1996/08/20 11:58:36  digulla
     FilePart by Martin Steigerwald

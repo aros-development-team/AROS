@@ -1,19 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1996/11/25 15:50:34  aros
-    Polished
-
-    Revision 1.4  1996/10/24 15:50:30  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/08/13 13:52:46  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:40:51  digulla
-    Added standard header for all files
 
     Desc:
     Lang: english
@@ -24,7 +11,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/dos_protos.h>
+#include <clib/dos_protos.h>
 
 	AROS_LH2(LONG, FPuts,
 
@@ -34,7 +21,7 @@
 
 /*  LOCATION */
 
-	struct DosLibrary *, DOSBase, 56, Dos)
+	struct DosLibrary *, DOSBase, 57, Dos)
 
 /*  FUNCTION
 

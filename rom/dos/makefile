@@ -5,19 +5,34 @@ include $(TOP)/config/make.cfg
 
 FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname
 FUNCTIONS = \
-	adddosentry addprocess allocdosobject assignlock attemptlockdoslist \
-	cli close createnewproc currentdir datetostr delay duplock exall    \
-	examine fgetc findarg finddosentry flush fputc fputs freeargs	    \
-	freedosentry freedosobject getargstr input ioerr isinteractive	    \
-	loadseg lockdoslist makedosentry maxcli namefromlock open	    \
-	openfromlock output printfault putstr read readargs readitem	    \
-	remdosentry runcommand seek selectinput selectoutput setioerr	    \
-	setowner strtolong ungetc unloadseg unlockdoslist vfprintf	    \
-	vprintf write filepart addbuffers changemode createdir deletefile   \
-	exallend isfilesystem lock matchpattern matchpatternnocase	    \
-	parsepattern parsepatternnocase setcomment setfiledate setfilesize  \
-	setprotection pathpart fread fwrite checksignal nextdosentry	    \
-	writechars
+	abortpkt addbuffers adddosentry addpart addprocess addsegment	     \
+	allocdosobject assignadd assignlate	       \
+	assignlock assignpath attemptlockdoslist changemode checksignal cli  \
+	cliinitnewcli cliinitrun close comparedates createdir createnewproc  \
+	createproc currentdir datestamp datetostr	\
+	delay deletefile deletevar deviceproc doname dopkt     \
+	duplock endnotify errorlist errorreport       \
+	exall exallend examine execute exit exnext fault fgetc	   \
+	fgets filepart findarg findcliproc finddosentry findsegment findvar  \
+	flush format fputc fputs fread freeargs freedeviceproc	     \
+	freedosentry freedosobject fwrite getargstr getconsoletask   \
+	getcurrentdirname getdeviceproc getfilesystask getprogramdir	     \
+	getprogramname getprompt getvar info inhibit input internalloadseg   \
+	internalunloadseg ioerr isfilesystem isinteractive lddemon loadseg   \
+	loadseg_elf lock lockdoslist lockrecord lockrecords makedosentry     \
+	makelink matchend matchfirst matchnext matchpattern		     \
+	matchpatternnocase maxcli namefromlock newloadseg	  \
+	nextdosentry open openfromlock output parentdir    \
+	parentoffh parsepattern parsepatternnocase pathpart printfault	     \
+	putstr read readargs readitem readlink relabel remassignlist	     \
+	remdosentry remsegment rename replypkt runcommand samedevice	     \
+	samelock seek selectinput selectoutput sendpkt setargstr setcomment  \
+	setconsoletask setcurrentdirname setfiledate setfilesize	     \
+	setfilesystask setioerr setmode setowner setprogramdir		     \
+	setprogramname setprompt setprotection setvar setvbuf splitname      \
+	startnotify strtodate strtolong systemtaglist ungetc	      \
+	unloadseg unlockdoslist unlockrecord unlockrecords vfprintf   \
+	vfwritef vprintf waitforchar waitpkt write writechars
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \

@@ -18,7 +18,7 @@ BPTR LoadSeg_ELF(BPTR file);
 /*****************************************************************************
 
     NAME */
-	#include <clib/dos_protos.h>
+#include <clib/dos_protos.h>
 
 	AROS_LH1(BPTR, LoadSeg,
 

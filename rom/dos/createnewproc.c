@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/12/09 13:53:23  aros
+    Added empty templates for all missing functions
+
+    Moved #include's into first column
+
     Revision 1.9  1996/10/24 15:50:25  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -47,7 +52,7 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 /*****************************************************************************
 
     NAME */
-	#include <clib/dos_protos.h>
+#include <clib/dos_protos.h>
 
 	AROS_LH1(struct Process *, CreateNewProc,
 

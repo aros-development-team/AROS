@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.12  1996/12/09 13:53:35  aros
+    Added empty templates for all missing functions
+
+    Moved #include's into first column
+
     Revision 1.11  1996/11/22 12:28:16  aros
     Fixed bug for Open("CONSOLE:") to make run work again
 
@@ -50,7 +55,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/dos_protos.h>
+#include <clib/dos_protos.h>
 
 	AROS_LH2(BPTR, Open,
 
