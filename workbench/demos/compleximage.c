@@ -120,20 +120,15 @@ struct Image myImage;
 IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",37);
 if (IntuitionBase != NULL)
     {
-#ifndef __AROS
     if (NULL != (scr = OpenScreenTags(NULL,
 			SA_Depth,	4,
 			SA_Pens,	&pens,
 			TAG_END)))
-#else
-    scr = NULL;
-#endif
 	{
 	if (NULL != (win = OpenWindowTags(NULL,
 			    WA_RMBTrap,      TRUE,
-#ifndef __AROS
 			    WA_CustomScreen, scr,
-#else
+#ifdef __AROS
 			    WA_IDCMP,	     IDCMP_RAWKEY,
 #endif
 			    TAG_END)))
@@ -175,7 +170,7 @@ if (IntuitionBase != NULL)
 
 #ifdef __AROS
 	    /* Wait for a keypress */
-	Wait (1L << win->UserPort->mp_SigBit);
+	    Wait (1L << win->UserPort->mp_SigBit);
 #else
 	    /* Wait a bit, then quit.
 	    ** In a real application, this would be an event loop, like the
@@ -186,9 +181,7 @@ if (IntuitionBase != NULL)
 
 	    CloseWindow(win);
 	    }
-#ifndef __AROS
 	CloseScreen(scr);
-#endif
 	}
     CloseLibrary((struct Library *)IntuitionBase);
     }
