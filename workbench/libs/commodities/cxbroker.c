@@ -1,5 +1,5 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -13,7 +13,7 @@
 #define  AROS_ALMOST_COMPATIBLE
 
 #ifndef  DEBUG
-#define  DEBUG 1
+#define  DEBUG 0
 #endif
 #include <aros/debug.h>
 
@@ -24,8 +24,14 @@
 #include <devices/inputevent.h>
 #include <libraries/commodities.h>
 #include <exec/lists.h>
+#include <aros/asmcall.h>
 
+#ifdef __MORPHOS__
+extern const struct EmulLibEntry cxIHandler_Gate;
+#else
 extern struct InputEvent *cxIHandler();
+#endif
+
 
     AROS_LH2(CxObj *, CxBroker,
 
@@ -180,7 +186,7 @@ BOOL SetupIHandler(struct CommoditiesBase *CxBase)
     
     //  kprintf("CxBroker: Opened input.device.\n");
     
-    CxBase->cx_Interrupt.is_Code = ((VOID (*))cxIHandler);
+    CxBase->cx_Interrupt.is_Code = AROS_ASMSYMNAME(cxIHandler);
     CxBase->cx_Interrupt.is_Data = CxBase;
     CxBase->cx_Interrupt.is_Node.ln_Pri = 53;
     CxBase->cx_Interrupt.is_Node.ln_Name = CxBase->cx_LibNode.lib_Node.ln_Name;
