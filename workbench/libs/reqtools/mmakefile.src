@@ -33,8 +33,20 @@ FUNCS := \
     rtunlockprefs \
     rtunlockwindow 
 
-#MM- workbench-libs-reqtools : includes linklibs
-#MM- workbench-libs-reqtools : workbench-libs-reqtools-catalogs
+#MM- workbench-libs-reqtools-includes : \
+#MM      kernel-exec-includes \
+#MM      kernel-dos-includes \
+#MM      kernel-graphics-includes \
+#MM      kernel-layers-includes \
+#MM      kernel-intuition-includes \
+#MM      kernel-console-includes \
+#MM      kernel-workbench-includes \
+#MM      workbench-libs-diskfont-includes \
+#MM      workbench-libs-gadtools-includes \
+#MM      workbench-libs-locale-includes \
+#MM      workbench-gadget-colorwheel-includes \
+#MM      includes-copy
+#MM- workbench-libs-reqtools : linklibs workbench-libs-reqtools-catalogs
 
 %build_module mmake=workbench-libs-reqtools \
     modname=reqtools modtype=library \
