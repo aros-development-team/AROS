@@ -521,32 +521,24 @@ BPTR InternalLoadSeg_ELF
         }
     }
 
-    /* No errors, deallocate only the symbol tables */
-    for (i = 0; i < eh.shnum; i++)
-    {
-        if (sh[i].type == SHT_SYMTAB)
-            MyFree(sh[i].addr, sh[i].size);
-    }
 
     goto end;
 
 error:
 
-    /* There were some errors, deallocate all the allocated sections */
-    for (i = 0; i < eh.shnum; i++)
-    {
-        if (sh[i].addr)
-        {
-            if (sh[i].flags & SHF_ALLOC)
-                MyFree(sh[i].addr - sizeof(struct hunk), sh[i].size + sizeof(struct hunk));
-            else
-                MyFree(sh[i].addr, sh[i].size);
-        }
-    }
+    /* There were some errors, deallocate The hunks */
 
+    InternalUnLoadSeg(hunks, (VOID_FUNC)funcarray[2]);
     hunks = 0;
 
 end:
+
+    /* deallocate the symbol tables */
+    for (i = 0; i < eh.shnum; i++)
+    {
+        if (sh[i].type == SHT_SYMTAB)
+            MyFree(sh[i].addr, sh[i].size);
+    }
 
     /* Free the section headers */
     MyFree(sh, eh.shnum * eh.shentsize);
@@ -554,6 +546,6 @@ end:
     return hunks;
 }
 
-#undef MyRead
+#undef MyRead1
 #undef MyAlloc
 #undef MyFree
