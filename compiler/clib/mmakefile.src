@@ -83,6 +83,7 @@ COMMON	:= \
 SHARED	:= \
 	__assert \
 	__env \
+	__exitfunc \
 	__ioerr2errno \
 	__isinf \
 	__open \
@@ -160,6 +161,7 @@ SHARED	:= \
 	mkdir \
 	mrand48 \
 	nrand48 \
+	on_exit \
 	open \
 	opendir \
 	perror \

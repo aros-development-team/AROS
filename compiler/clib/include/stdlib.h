@@ -125,6 +125,7 @@ void  free(void *memory);
 /* Communication with the environment */
 void  abort (void) __noreturn;
 int   atexit(void (*func)(void));
+int   on_exit(void (*func)(int, void *), void *);
 void  exit (int code) __noreturn;
 int   system(const char *string);
 char *getenv(const char *name);
