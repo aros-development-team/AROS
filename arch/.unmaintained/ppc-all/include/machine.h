@@ -24,12 +24,44 @@
 #define AROS_GET_DOSBASE	extern struct DosLibrary *DOSBase;
 #define AROS_GET_SYSBASE_OK	extern struct ExecBase   *SysBase;
 
-#ifndef __TINYC__
-register unsigned char * AROS_GET_SP asm("%sp");
-#endif
+#define GET_SP(x) \
+    __asm__ __volatile__ (	\
+    "stw  1,%0 \n\t"		\
+    : "=m"(x)			\
+    :				\
+    : "memory", "cc")
 
-/* ??? */
-#define SP_OFFSET 4
+#define SET_SP(x) \
+    __asm__ __volatile__ (	\
+    "lwz  1,%0 \n\t"		\
+    :				\
+    : "m"(x)			\
+    : "cc")
+
+#define FLUSH_CACHES 1
+#define CACHE_BLOCK_SIZE 32
+
+#define DATA_CACHE_BST(x)	\
+    __asm__ __volatile__ (	\
+    "dcbst 0,%0 \n\t"		\
+    :				\
+    : "r"(x))
+
+#define INSTR_CACHE_BINV(x)	\
+    __asm__ __volatile__ (	\
+    "icbi 0,%0 \n\t"		\
+    :				\
+    : "r"(x))
+
+#define SYNC  __asm__ __volatile__ ("sync" )
+#define ISYNC __asm__ __volatile__ ("isync")
+
+/*
+     An offset value sometimes added to
+     or subtracted from the stack limits.
+*/
+
+#define SP_OFFSET 0
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
@@ -66,13 +98,15 @@ struct FullJumpVec
 /*
 	 BIT
 	31..26: 18
-	25.. 2: address shifted to the right by 2
-	   1  : 0 = EA=address+instruction
-		     1 = EA=address
-		0  : 1 = LR=EA of following INSTR
+	25.. 2: address shifted to the left by 2
+	     1: 0 = EA=address+instruction
+		1 = EA=address
+	     0: 1 = LR=EA of following INSTR
 */
 #define __AROS_SET_FULLJMP(v,a) \
-	(((struct FullJumpVec *)v)->vec = ((18<<26) | ((ULONG)(a) & 0x03FFFFFC) | 0x02))
+	((struct FullJumpVec *)v)->vec =\
+	      (18 << 26)\
+	    | ((char *)(a) - (char *)&(((struct FullJumpVec *)v)->vec)) & 0x3FFFFFFC
 
 struct JumpVec
 {
@@ -102,16 +136,16 @@ struct JumpVec
      the library vectors list.
 
 */
-#define STUBCODE                                       \
-		"#define EMITSTUB(fname, bname, vec) " \
-		".globl fname ; "                      \
-		"fname : "                             \
-		"lis  9,bname@ha; "                    \
-		"la   0,bname@l(9); "                  \
-		"la   0,vec(0); "                      \
-		"mtlr 0; "                           \
-		"blrl;\n"                          \
-		"EMITSTUB(%s, %s, %d) "
+#define STUBCODE                               \
+	"#define EMITSTUB(fname, bname, vec) " \
+	".globl fname; "                       \
+	"fname : "                             \
+	"lis   11,bname@ha; "                  \
+	"la    0,bname@l(11); "                \
+	"lwz   0,vec(0); "                     \
+	"mtctr 0; "                            \
+	"bctrl;\n "                            \
+	"EMITSTUB(%s, %s, %d) "
 /*
    We want to activate the execstubs and preserve all registers
    when calling obtainsemaphore, obtainsemaphoreshared, releasesemaphore,
@@ -207,7 +241,7 @@ extern void _aros_not_implemented (char *);
 	"mr     1,11\n\t"    \
 	: "=r"(_re), "=m"(*(APTR *)p)\
 	: "m"(_n), "r"(_n1), "r"(_n2), "r"(_n3)\
-	: "cc", "memory", "0","11" );\
+	: "cc", "memory", "0", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13");\
     (_t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
