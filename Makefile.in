@@ -103,7 +103,7 @@ $(TOP)/tools/MetaMake/Makefile : $(TOP)/tools/MetaMake/configure \
 	$(TOP)/tools/MetaMake/Makefile.in
 	@cd $(TOP)/tools/MetaMake ; CC="$(HOST_CC)" ./configure --prefix=$(TOOLDIR)
 
-$(MMAKE): $(TOP)/tools/MetaMake/mmake.c $(GENMF)
+$(MMAKE): $(wildcard $(TOP)/tools/MetaMake/*.[ch]) $(GENMF)
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake
 	@cp $(TOP)/tools/MetaMake/mmake$(HOST_EXE_SUFFIX) $(MMAKE)
 
