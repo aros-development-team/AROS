@@ -52,9 +52,9 @@ FILE *xpopen(char *command)
 
 char *xtempnam(void)
 {
-    char *ret = tempnam("/tmp", NULL);
-
-    fatalerror(!ret);
+    char *ret = strdup(TMPTEMPLATE);
+    int rc = mkstemp(ret); //tempnam("/tmp", NULL);
+    fatalerror(!rc);
 
     return ret;
 }
@@ -167,10 +167,12 @@ int main(int argc, char *argv[])
     FILE *ldscriptfile = NULL;
     char buf[200];
     int thereare = 0, incremental = 0;
+    int ignore_missing_symbols = 0;
 
     char *LINKERPATH  = getenv("AROS_TARGET_LINKERPATH");
     char *OBJDUMPPATH = getenv("AROS_TARGET_OBJDUMPPATH");
     char *NMPATH      = getenv("AROS_TARGET_NMPATH");
+
 
     if (!LINKERPATH)
     {
@@ -207,6 +209,10 @@ int main(int argc, char *argv[])
 	    /* Incremental linking is requested */
             if (argv[cnt][1]=='r')
 	        incremental = 1;
+	    else
+	    /* Ignoring of missing symbols is requested */
+	    if (argv[cnt][1]=='i')
+	        ignore_missing_symbols = 1;
 	}
     }
 
@@ -249,6 +255,7 @@ int main(int argc, char *argv[])
     }
 
     free(command);
+    free(tempoutname);
     command = joinstrings(NMPATH, " -C -ul ", output, NULL);
 
     pipe = xpopen(command);
@@ -266,11 +273,14 @@ int main(int argc, char *argv[])
 
     pclose(pipe);
 
-    if (thereare)
+    if (thereare && (0 == ignore_missing_symbols))
         remove(output);
     else
 	chmod(output, 0766);
 
+    if (1 == ignore_missing_symbols) {
+         thereare = 0;
+    }
     return thereare;
 }
 
