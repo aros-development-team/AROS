@@ -49,6 +49,8 @@ struct list_entry
     char *column2;
 };
 
+Object *app;
+
 Object *wheel;
 Object *r_slider;
 Object *g_slider;
@@ -103,6 +105,11 @@ __saveds void objects_function(void)
     	DoMethod(group, OM_ADDMEMBER, new_obj);
     	DoMethod(group, MUIM_Group_ExitChange);
     }
+}
+
+void about_function(void)
+{
+    MUI_Request(app,NULL,0,"Test", "*Ok|Cancel", "This is a test application of Zune, an OpenSource MUI clone",NULL);
 }
 
 __saveds __asm void display_function(register __a0 struct Hook *h, register __a2 char **strings, register __a1 struct list_entry *entry)
@@ -195,7 +202,6 @@ __saveds static __asm void hook_func_standard(register __a0 struct Hook *h, regi
 }
 void main(void)
 {
-    Object *app;
     Object *wnd,*second_wnd;
     Object *open_button;
     Object *quit_button;
@@ -482,6 +488,7 @@ End,
 	DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, save_function);
 
 	DoMethod(quit_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	DoMethod(about_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, about_function);
 
 	set(wnd,MUIA_Window_Open,TRUE);
 
