@@ -288,7 +288,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
             EM_ARM);
         #endif
 
-        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+        SetIoErr(ERROR_NOT_EXECUTABLE);
         return 0;
     }
 
