@@ -96,7 +96,7 @@ static UBYTE earthmap_chunky[EARTHMAP_SMALL_WIDTH * EARTHMAP_SMALL_HEIGHT];
 static UBYTE *earthmap_chunky_remapped;
 
 static ULONG earthmap_coltab[256];
-static UBYTE remaptable[256];
+static WORD  remaptable[256];
 static UBYTE timezone_text[256];
 static WORD  pen2index[NUM_TIMEZONES];
 
@@ -448,8 +448,8 @@ static void timezone_cleanup(void)
     {
     	for(i = 0; i < EARTHMAP_SMALL_COLORS; i++)
 	{
-	    ReleasePen(scr->ViewPort.ColorMap, remaptable[i]);
-	    ReleasePen(scr->ViewPort.ColorMap, remaptable[128 + i]);
+	    if (remaptable[i]       != -1) ReleasePen(scr->ViewPort.ColorMap, remaptable[i]);
+	    if (remaptable[128 + i] != -1) ReleasePen(scr->ViewPort.ColorMap, remaptable[128 + i]);
 	}
 	pens_alloced = FALSE;
     }
