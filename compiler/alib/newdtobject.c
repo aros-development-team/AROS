@@ -9,6 +9,8 @@
 #include <intuition/classusr.h>
 #include <utility/tagitem.h>
 
+#include <aros/debug.h>
+
 extern struct Library *DataTypesBase;
 
 /*****************************************************************************
