@@ -83,11 +83,11 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	  	 Currently we only support the default depth
 		*/
 
+		width=(width+15) & ~15;
 		data->width = width;
 		data->height = height;
 		data->bpp = depth;
 		data->disp = -1;
-		width=(width+15) & ~15;
 		
 		if (depth > 16)
 		{
@@ -107,6 +107,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
 
 	    data->VideoData = vbuffer_alloc(NSD(cl), width*height*multi);
+	    
 	    if ((APTR)data->VideoData >= (APTR)NSD(cl)->memory)
 	    {
 			HIDDT_ModeID modeid;
