@@ -2,7 +2,7 @@
     (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: keymap.library function AskKeyMapDefault()
     Lang: english
 */
 #include "keymap_intern.h"
@@ -23,10 +23,12 @@
 	struct Library *, KeymapBase, 6, Keymap)
 
 /*  FUNCTION
+	Gives you a pointer to the current system default keymap.
 
     INPUTS
 
     RESULT
+    	Pointer to the system defaul keymap.
 
     NOTES
 
@@ -35,6 +37,7 @@
     BUGS
 
     SEE ALSO
+    	SetKeyMapDefault()
 
     INTERNALS
 
@@ -46,10 +49,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,KeymapBase)
-
-    D(bug("AskKeymapDefault\n"));    
     
-    return (NULL);
+    return (KMBase(KeymapBase)->DefaultKeymap);
 
     AROS_LIBFUNC_EXIT
 } /* AskKeyMapDefault */
