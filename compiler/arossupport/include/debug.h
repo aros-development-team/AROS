@@ -266,7 +266,9 @@
 	    if(*__p != (fill))				\
 	    {						\
 		struct Task *__t = FindTask(NULL);	\
-		kprintf("\x07" "Broken wall detected in " __FUNCTION__ " at 0x%x, Task: 0x%x, Name: %s\n", \
+		kprintf("\x07" "Broken wall detected at %s:%d at 0x%x, " \
+			"Task: 0x%x, Name: %s\n",       \
+                        __FUNCTION__, __LINE__,         \
 			__p, __t, __t->tc_Node.ln_Name);\
 	    }						\
 	    __p++;					\
