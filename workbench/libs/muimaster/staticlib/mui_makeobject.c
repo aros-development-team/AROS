@@ -62,6 +62,7 @@ extern struct Library * MUIMasterBase;
 	case 5: /* MUIO_Radio */
 	case 7: /* MUIO_String */
 	case 13: /* MUIO_MenustripNM */
+	case 112: /* MUIO_ImageButton */
 	    numparams = 2;
 	    break;
 	    
