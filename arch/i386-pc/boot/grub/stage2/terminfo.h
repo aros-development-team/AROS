@@ -1,7 +1,7 @@
 /* terminfo.h - read a terminfo entry from the command line */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #ifndef GRUB_TERMCAP_HEADER
 #define GRUB_TERMCAP_HEADER	1
 
-#define TERMINFO_LEN 32
+#define TERMINFO_LEN 40
 
 typedef struct terminfo
 {

@@ -4,11 +4,13 @@ changed files to support FastFileSystem
 stage2/disk_io.c
 	added affs support
 stage2/filesys.h
-	added AFFS support
+	added affs support
+stage2/shared.h
+        added affs support
 stage2/fsys_affs.c
 	added
-stage2/Makefile.in
-	added various *fsys_affs* + libgrub_a_CFLAGS=-DFSYS_AFFS=1
+stage2/Makefile.am
+	added various *fsys_affs* + -DFSYS_AFFS=1
 configure.in
 	added AFFS enable/disable support
 

@@ -8,4 +8,5 @@ config.h.in
 config.h
 stamp-h1
 mmakefile
+.files-touched
 

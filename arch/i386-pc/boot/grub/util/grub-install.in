@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Install GRUB on your drive.
-#   Copyright (C) 1999,2000,2001,2002 Free Software Foundation, Inc.
+#   Copyright (C) 1999,2000,2001,2002,2003 Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ rootdir=
 grub_prefix=/boot/grub
 
 install_device=
+no_floppy=
 force_lba=
 recheck=no
 debug=no
@@ -64,6 +65,7 @@ Install GRUB on your drive.
   --root-directory=DIR    install GRUB images under the directory DIR
                           instead of the root directory
   --grub-shell=FILE       use FILE as the grub shell
+  --no-floppy             do not probe any floppy drive
   --force-lba             force GRUB to use LBA mode even for a buggy
                           BIOS
   --recheck               probe a device map even if it already exists
@@ -179,6 +181,29 @@ convert () {
     fi
 }
 
+# Usage: resolve_symlink file
+# Find the real file/device that file points at
+resolve_symlink () {
+	tmp_fname=$1
+	# Resolve symlinks
+	while test -L $tmp_fname; do
+		tmp_new_fname=`ls -al $tmp_fname | sed -n 's%.*-> \(.*\)%\1%p'`
+		if test -z "$tmp_new_fname"; then
+			echo "Unrecognized ls output" 2>&1
+			exit 1
+		fi
+
+		# Convert relative symlinks
+		case $tmp_new_fname in
+			/*) tmp_fname="$tmp_new_fname"
+			;;
+			*) tmp_fname="`echo $tmp_fname | sed 's%/[^/]*$%%'`/$tmp_new_fname"
+			;;
+		esac
+	done
+	echo "$tmp_fname"
+}
+
 # Usage: find_device file
 # Find block device on which the file resides.
 find_device () {
@@ -191,20 +216,8 @@ find_device () {
 	exit 1
     fi
 
-    # Resolve symlinks
-    while test -L $tmp_fname; do
-	tmp_new_fname=`ls -al $tmp_fname | sed -n 's%.*-> %\1%p'`
-	if test -z "$tmp_new_fname"; then
-	    echo "Unrecognized ls output" 2>&1
-	    exit 1
-	fi
+	tmp_fname=`resolve_symlink $tmp_fname`
 
-	# Convert relative symlinks
-	case $tmp_new_fname in
-	    /*) tmp_fname="$tmp_new_fname" ;;
-	    *) tmp_fname="`echo $tmp_fname | sed 's%/[^/]*$%%'`/$tmp_new_fname" ;;
-	esac
-    done
     echo "$tmp_fname"
 }
 
@@ -221,6 +234,8 @@ for option in "$@"; do
 	rootdir=`echo "$option" | sed 's/--root-directory=//'` ;;
     --grub-shell=*)
 	grub_shell=`echo "$option" | sed 's/--grub-shell=//'` ;;
+    --no-floppy)
+	no_floppy="--no-floppy" ;;
     --force-lba)
 	force_lba="--force-lba" ;;
     --recheck)
@@ -312,7 +327,7 @@ else
     # Create a safe temporary file.
     test -n "$mklog" && log_file=`$mklog`
 
-    $grub_shell --batch --device-map=$device_map <<EOF >$log_file
+    $grub_shell --batch $no_floppy --device-map=$device_map <<EOF >$log_file
 quit
 EOF
     if grep "Error [0-9]*: " $log_file >/dev/null; then
@@ -334,6 +349,7 @@ fi
 # Check for INSTALL_DEVICE.
 case "$install_device" in
 /dev/*)
+    install_device=`resolve_symlink "$install_device"`
     install_drive=`convert "$install_device"`
     # I don't know why, but some shells wouldn't die if exit is
     # called in a function.
@@ -395,7 +411,7 @@ for file in ${grubdir}/stage1 ${grubdir}/stage2 ${grubdir}/*stage1_5; do
     count=5
     tmp=`echo $file | sed "s|^${grubdir}|${grub_prefix}|"`
     while test $count -gt 0; do
-	$grub_shell --batch --device-map=$device_map <<EOF >$log_file
+	$grub_shell --batch $no_floppy --device-map=$device_map <<EOF >$log_file
 dump ${root_drive}${tmp} ${img_file}
 quit
 EOF
@@ -420,7 +436,7 @@ rm -f $log_file
 test -n "$mklog" && log_file=`$mklog`
 
 # Now perform the installation.
-$grub_shell --batch --device-map=$device_map <<EOF >$log_file
+$grub_shell --batch $no_floppy --device-map=$device_map <<EOF >$log_file
 root $root_drive
 setup $force_lba --stage2=$grubdir/stage2 --prefix=$grub_prefix $install_drive
 quit

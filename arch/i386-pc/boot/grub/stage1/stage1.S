@@ -1,7 +1,7 @@
 /* -*-Asm-*- */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001   Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002   Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -106,6 +106,15 @@ after_BPB:
 
 /* general setup */
 	cli		/* we're not safe here! */
+
+	/*
+	 * This is a workaround for buggy BIOSes which don't pass boot
+	 * drive correctly. If GRUB is installed into a HDD, do
+	 * "orb $0x80, %dl", otherwise "orb $0x00, %dl" (i.e. nop).
+	 */
+	.byte	0x80, 0xca
+boot_drive_mask:
+	.byte	0x00
 
 	/*
 	 * ljmp to the next instruction because some bogus BIOSes

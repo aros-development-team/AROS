@@ -16,11 +16,8 @@
  *                  network device driver which uses this chip
  *
  * $Log$
- * Revision 1.3  2003/03/09 10:34:06  chodorowski
- * First part of updating GRUB to 0.93. I hope I didn't get anything wrong.
- * There are still 3 files to update in stage2/, namely builtins.c, common.c
- * and boot.c. The build might break before those are commited, but I plan
- * to let Johan Grip do those files. ;-)
+ * Revision 1.4  2004/01/05 14:00:21  falemagn
+ * Updated to the newest sources and converted mmakefile.src to use the build_with_configure macro
  *
  * Revision 1.3  2000/07/29 19:22:54  okuji
  * update the network support to etherboot-4.6.4.

@@ -2,35 +2,18 @@
 
 include $(TOP)/config/make.cfg
 
-#MM config-i386-native-boot-grub
-config-i386-native-boot-grub: setup grub-build grub-copy
+#MM- config-i386-native-boot-grub : grub-quick grub-copy-stages
 
-.PHONY: grub-build
-grub-build: Makefile
-	$(MAKE)
+#MM
+grub-copy-stages : $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2
 
-grub-copy: $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2
+%build_with_configure mmake=grub \
+    extraoptions="--enable-preset-menu=$(TOP)/$(CURDIR)/../menu.lst --disable-fat --disable-ffs --disable-minix --disable-reiserfs --disable-vstafs --disable-jfs --disable-xfs --disable-md5-password --disable-packet-retransmission --disable-ext2fs --disable-serial --disable-hercules" host=yes install_target=
+    
+$(AROSDIR)/boot/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1
+	%mkdirs_q $(dir $@)
+	@$(CP) $< $@
 
-setup:
-	%mkdirs_q $(AROSDIR)/boot
-	%mkdirs_q $(AROSDIR)/boot/grub
-
-$(AROSDIR)/boot/grub/stage1: stage1/stage1
-	@$(CP) stage1/stage1 $(AROSDIR)/boot/grub
-
-$(AROSDIR)/boot/grub/stage2: stage2/stage2
-	@$(CP) stage2/stage2 $(AROSDIR)/boot/grub
-
-config.h.in: configure.in
-	autoheader
-
-configure: config.h.in configure.in
-	autoconf
-
-Makefile: configure $(TOP)/$(CURDIR)/../menu.lst
-	CFLAGS="-minline-all-stringops" CC="$(HOST_CC)" ./configure \
-	--enable-preset-menu=$(TOP)/$(CURDIR)/../menu.lst \
-	--disable-fat --disable-ffs --disable-minix --disable-reiserfs \
-	--disable-vstafs --disable-jfs --disable-xfs --disable-md5-password \
-	--disable-packet-retransmission --disable-ext2fs -disable-serial \
-	--disable-hercules
+$(AROSDIR)/boot/grub/stage2: $(GENDIR)/$(CURDIR)/stage2/stage2
+	%mkdirs_q $(dir $@)
+	@$(CP) $< $@

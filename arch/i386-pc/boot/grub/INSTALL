@@ -43,17 +43,13 @@ configure script.
   Texinfo release. See the web page
   <http://www.gnu.org/software/texinfo/texinfo.html>.
 
-* Developers: GNU Automake 1.5
+* Developers: GNU Autoconf 2.5x and GNU Automake 1.7 or later
 
   You should not need Automake just to compile GRUB, but you will need
   it if you edit any of the build files (Makefile.am, configure.in,
   etc).  We use the new "per-executable flags" feature found in the
   latest release of automake.  See the web page
   <http://www.gnu.org/software/automake/automake.html>.
-
-  Note that you shouldn't use 1.6 because of the incompatibility on
-  assembler support. We will shift to 1.6, once 1.6 becomes more popular
-  than 1.5.
 
 
 Configuring the GRUB

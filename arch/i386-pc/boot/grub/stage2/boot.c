@@ -1,7 +1,7 @@
 /* boot.c - load and bootstrap a kernel */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -89,12 +89,6 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	  str2 = "Multiboot";
 	  break;
 	}
-    }
-  /* Handle graphics request for multiboot kernels */
-  if (type == KERNEL_TYPE_MULTIBOOT &&
-      mbi.flags & MB_INFO_VIDEO_INFO)
-    {
-      mbi.vbe_mode = 0x03;
     }
 
   /* Use BUFFER as a linux kernel header, if the image is Linux zImage
@@ -272,7 +266,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 
       data_len = setup_sects << 9;
       text_len = filemax - data_len - SECTOR_SIZE;
-      
+
       linux_data_tmp_addr = (char *) LINUX_BZIMAGE_ADDR + text_len;
       
       if (! big_linux
@@ -286,8 +280,8 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	errnum = ERR_WONT_FIT;
       else
 	{
-      grub_printf ("   [Linux-%s, setup=0x%x, size=0x%x]\n",
-		   (big_linux ? "bzImage" : "zImage"), data_len, text_len);
+	  grub_printf ("   [Linux-%s, setup=0x%x, size=0x%x]\n",
+		       (big_linux ? "bzImage" : "zImage"), data_len, text_len);
 
 	  /* Video mode selection support. What a mess!  */
 	  /* NOTE: Even the word "mess" is not still enough to
@@ -296,14 +290,14 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	     any more. -okuji  */
 	  {
 	    char *vga;
-
+	
 	    /* Find the substring "vga=".  */
 	    vga = grub_strstr (arg, "vga=");
 	    if (vga)
 	      {
 		char *value = vga + 4;
 		int vid_mode;
-
+	    
 		/* Handle special strings.  */
 		if (substring ("normal", value) < 1)
 		  vid_mode = LINUX_VID_MODE_NORMAL;
@@ -320,11 +314,11 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 		    grub_close ();
 		    return KERNEL_TYPE_NONE;
 		  }
-
+	    
 		lh->vid_mode = vid_mode;
 	      }
 	  }
-		
+
 	  /* Check the mem= option to limit memory used for initrd.  */
 	  {
 	    char *mem;
@@ -379,9 +373,9 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	      linux_mem_size = 0;
 	  }
       
-	  /* It is possible that DATA_LEN is greater than MULTIBOOT_SEARCH,
-	     so the data may have been read partially.  */
-	  if (data_len <= MULTIBOOT_SEARCH)
+	  /* It is possible that DATA_LEN + SECTOR_SIZE is greater than
+	     MULTIBOOT_SEARCH, so the data may have been read partially.  */
+	  if (data_len + SECTOR_SIZE <= MULTIBOOT_SEARCH)
 	    grub_memmove (linux_data_tmp_addr, buffer,
 			  data_len + SECTOR_SIZE);
 	  else
@@ -390,14 +384,14 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	      grub_read (linux_data_tmp_addr + MULTIBOOT_SEARCH,
 			 data_len + SECTOR_SIZE - MULTIBOOT_SEARCH);
 	    }
-
+	  
 	  if (lh->header != LINUX_MAGIC_SIGNATURE ||
 	      lh->version < 0x0200)
 	    /* Clear the heap space.  */
 	    grub_memset (linux_data_tmp_addr + ((setup_sects + 1) << 9),
 			 0,
 			 (64 - setup_sects - 1) << 9);
-
+      
 	  /* Copy command-line plus memory hack to staging area.
 	     NOTE: Linux has a bug that it doesn't handle multiple spaces
 	     between two options and a space after a "mem=" option isn't
@@ -409,10 +403,10 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	  {
 	    char *src = skip_to (0, arg);
 	    char *dest = linux_data_tmp_addr + LINUX_CL_OFFSET;
-
+	
 	    while (dest < linux_data_tmp_addr + LINUX_CL_END_OFFSET && *src)
 	      *(dest++) = *(src++);
-	    
+	
 	    /* Add a mem option automatically only if the user doesn't
 	       specify it explicitly.  */
 	    if (! grub_strstr (arg, "mem=")
@@ -424,24 +418,24 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 		*dest++ = 'e';
 		*dest++ = 'm';
 		*dest++ = '=';
-		
+	    
 		dest = convert_to_ascii (dest, 'u', (extended_memory + 0x400));
 		*dest++ = 'K';
 	      }
-
+	
 	    *dest = 0;
 	  }
-
+      
 	  /* offset into file */
 	  grub_seek (data_len + SECTOR_SIZE);
-
+      
 	  cur_addr = (int) linux_data_tmp_addr + LINUX_SETUP_MOVE_SIZE;
 	  grub_read ((char *) LINUX_BZIMAGE_ADDR, text_len);
       
 	  if (errnum == ERR_NONE)
 	    {
 	      grub_close ();
-
+	  
 	      /* Sanity check.  */
 	      if (suggested_type != KERNEL_TYPE_NONE
 		  && ((big_linux && suggested_type != KERNEL_TYPE_BIG_LINUX)
@@ -450,10 +444,10 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 		  errnum = ERR_EXEC_FORMAT;
 		  return KERNEL_TYPE_NONE;
 		}
-
+	  
 	      /* Ugly hack.  */
 	      linux_text_len = text_len;
-	      
+	  
 	      return big_linux ? KERNEL_TYPE_BIG_LINUX : KERNEL_TYPE_LINUX;
 	    }
 	}

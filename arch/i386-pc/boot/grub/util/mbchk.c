@@ -59,9 +59,7 @@ check_multiboot (const char *filename, FILE *fp)
   int i;
   char buf[8192];
 
-  fread (buf, 1, 8192, fp);
-  
-  if (ferror(fp))
+  if (fread (buf, 1, 8192, fp) < 0)
     {
       fprintf (stderr, "%s: Read error.\n", filename);
       return 0;
@@ -160,7 +158,7 @@ check_multiboot (const char *filename, FILE *fp)
       if (mbh->load_end_addr && mbh->load_end_addr <= mbh->entry_addr)
 	{
 	  fprintf (stderr,
-		   "%s: load_end_addr is not less than entry_addr"
+		   "%s: load_end_addr is not greater than entry_addr"
 		   " (0x%lx <= 0x%lx).\n",
 		   filename, mbh->load_end_addr, mbh->entry_addr);
 	  return 0;

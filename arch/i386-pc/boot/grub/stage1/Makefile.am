@@ -4,7 +4,7 @@ nodist_pkgdata_DATA = stage1
 CLEANFILES = $(nodist_pkgdata_DATA)
 
 # We can't use builtins or standard includes.
-AM_ASFLAGS = $(STAGE1_CFLAGS) -fno-builtin -nostdinc
+AM_CCASFLAGS = $(STAGE1_CFLAGS) -fno-builtin -nostdinc
 LDFLAGS = -nostdlib -Wl,-N,-Ttext,7C00
 
 noinst_PROGRAMS = stage1.exec

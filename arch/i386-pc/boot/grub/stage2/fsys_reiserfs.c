@@ -213,13 +213,11 @@ struct item_head
 
 #define ITEM_VERSION_1 0
 #define ITEM_VERSION_2 1
-#define IH_KEY_OFFSET(ih) (INFO->version < 2 \
-			   || (ih)->ih_version == ITEM_VERSION_1 \
+#define IH_KEY_OFFSET(ih) ((ih)->ih_version == ITEM_VERSION_1 \
 			   ? (ih)->ih_key.u.v1.k_offset \
 			   : (ih)->ih_key.u.v2.k_offset)
 
-#define IH_KEY_ISTYPE(ih, type) (INFO->version < 2 \
-				 || (ih)->ih_version == ITEM_VERSION_1 \
+#define IH_KEY_ISTYPE(ih, type) ((ih)->ih_version == ITEM_VERSION_1 \
 				 ? (ih)->ih_key.u.v1.k_uniqueness == V1_##type \
 				 : (ih)->ih_key.u.v2.k_type == V2_##type)
 
@@ -613,6 +611,14 @@ reiserfs_mount (void)
   INFO->cached_slots = 
     (FSYSREISER_CACHE_SIZE >> INFO->fullblocksize_shift) - 1;
 
+#ifdef REISERDEBUG
+  printf ("reiserfs_mount: version=%d, blocksize=%d\n", 
+	  INFO->version, INFO->blocksize);
+#endif /* REISERDEBUG */
+
+  /* Clear node cache. */
+  memset (INFO->blocks, 0, sizeof (INFO->blocks));
+
   if (super.s_blocksize < FSYSREISER_MIN_BLOCKSIZE
       || super.s_blocksize > FSYSREISER_MAX_BLOCKSIZE
       || (SECTOR_SIZE << INFO->blocksize_shift) != super.s_blocksize)
@@ -735,7 +741,8 @@ next_key (void)
     {
       depth = DISK_LEAF_NODE_LEVEL;
       /* The last item, was the last in the leaf node.  
-       * Read in the next block */
+       * Read in the next block 
+       */
       do
 	{
 	  if (depth == INFO->tree_depth)
@@ -758,7 +765,7 @@ next_key (void)
 	cache = CACHE (depth);
       else 
 	{
-	  cache = read_tree_node (INFO->blocks[depth], --depth);
+	  cache = read_tree_node (INFO->blocks[depth], depth);
 	  if (! cache)
 	    return 0;
 	}
@@ -908,6 +915,10 @@ reiserfs_read (char *buf, int len)
       if (IH_KEY_ISTYPE(INFO->current_ih, TYPE_DIRECT)
 	  && offset < blocksize)
 	{
+#ifdef REISERDEBUG
+	  printf ("direct_read: offset=%d, blocksize=%d\n",
+		  offset, blocksize);
+#endif /* REISERDEBUG */
 	  to_read = blocksize - offset;
 	  if (to_read > len)
 	    to_read = len;
@@ -928,6 +939,10 @@ reiserfs_read (char *buf, int len)
       else if (IH_KEY_ISTYPE(INFO->current_ih, TYPE_INDIRECT))
 	{
 	  blocksize = (blocksize >> 2) << INFO->fullblocksize_shift;
+#ifdef REISERDEBUG
+	  printf ("indirect_read: offset=%d, blocksize=%d\n",
+		  offset, blocksize);
+#endif /* REISERDEBUG */
 	  
 	  while (offset < blocksize)
 	    {
@@ -1084,8 +1099,7 @@ reiserfs_dir (char *dirname)
 	  /* If this is a new stat data and size is > 4GB set filemax to 
 	   * maximum
 	   */
-	  if (INFO->version >= 2
-	      && INFO->current_ih->ih_version == ITEM_VERSION_2
+	  if (INFO->current_ih->ih_version == ITEM_VERSION_2
 	      && ((struct stat_data *) INFO->current_item)->sd_size_hi > 0)
 	    filemax = 0xffffffff;
 	  

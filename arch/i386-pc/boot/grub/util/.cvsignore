@@ -1,7 +1,7 @@
-Makefile
 .deps
+Makefile
 grub-image
-mbchk
-grub-md5-crypt
 grub-install
+grub-md5-crypt
 grub-terminfo
+mbchk

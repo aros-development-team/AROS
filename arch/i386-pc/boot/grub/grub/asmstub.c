@@ -478,32 +478,6 @@ set_vbe_mode (int mode_number)
   return 0;
 }
 
-/* graphical menu functions .  */
-int
-gfx_init (gfx_data_t *gfx_data)
-{
-  return 0;
-}
-
-int
-gfx_done (gfx_data_t *gfx_data)
-{
-  return 0;
-}
-
-int
-gfx_input (gfx_data_t *gfx_data, int *menu_entry)
-{
-  return 0;
-}
-
-int
-gfx_setup_menu (gfx_data_t *gfx_data)
-{
-  return 0;
-}
-
-
 /* low-level timing info */
 int
 getrtsecs (void)

@@ -1,7 +1,7 @@
 /* bios.c - implement C part of low-level BIOS disk input and output */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2003  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -169,7 +169,14 @@ get_diskinfo (int drive, struct geometry *geometry)
 	  /* It is safe to clear out DRP.  */
 	  grub_memset (&drp, 0, sizeof (drp));
 	  
-	  drp.size = sizeof (drp);
+	  /* PhoenixBIOS 4.0 Revision 6.0 for ZF Micro might understand 
+	     the greater buffer size for the "get drive parameters" int 
+	     0x13 call in its own way.  Supposedly the BIOS assumes even 
+	     bigger space is available and thus corrupts the stack.  
+	     This is why we specify the exactly necessary size of 0x42 
+	     bytes. */
+	  drp.size = sizeof (drp) - sizeof (drp.dummy);
+	  
 	  err = get_diskinfo_int13_extensions (drive, &drp);
 	  if (! err)
 	    {

@@ -1,5 +1,14 @@
 NEWS - list of user-visible changes between releases of GRUB
 
+New:
+* Support building on x86-64 with gcc -m32.
+* Use a BIOS call to turn on/off Gate A20. This should solve various
+  problems related to Gate A20 in modern BIOSes.
+* Add a workaround for buggy BIOSes (notably HP Vectra series) which
+  don't pass the boot drive correctly.
+* Display "GNU GRUB" instead of "GRUB" in the menu.
+* Add support QNX RTP into the grub shell.
+
 New in 0.93 - 2002-12-08:
 * Define the behavior of the boot loader when the load end address is
   zero and the bss end address is zero in the Multiboot Specification.

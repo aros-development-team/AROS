@@ -1648,294 +1648,6 @@ ENTRY(set_vbe_mode)
 	popl	%ebp
 	ret
 
-
-/*
- * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- *
- * graphical menu functions
- *
- */
-
-/*
- * int gfx_init (gfx_data_t *gfx_data)
- *
- * init gfx things
- *
- * return vales:
- *   0: ok
- *   1: failed
- *   sets gfx_data->ok
- */
-
-ENTRY(gfx_init)
-	pushl	%ebp
-	movl	%esp, %ebp
-	
-	pushl	%edi
-	pushl	%esi
-	pushl	%ebx
-
-	movl	8(%ebp),%edx
-	movl	%edx,%edi
-	andl	$0xf,%edi
-	shrl	$4,%edx
-
-	pushl	%ebp
-
-	call	EXT_C(prot_to_real)
-	.code16
-
-	pushw	%ds
-
-	movw	%dx,%ds
-	shll	$4,%edx
-	leal	gfx_ofs_sys_cfg(%di),%esi
-	movl	gfx_ofs_mem_start(%di),%eax
-	movl	gfx_ofs_mem_cur(%di),%ebx
-	movl	gfx_ofs_mem_max(%di),%ecx
-	movw	%ds,%dx
-
-	lcall	*gfx_ofs_jmp_table + 4 * 0 (%di)
-
-	movl	$0,%ebx
-	adcl	$0,%ebx
-
-	popw	%ds
-
-	DATA32	call	EXT_C(real_to_prot)
-	.code32
-
-	popl	%ebp
-
-	movl	%ebx,%eax
-	negl	%ebx
-	incl	%ebx
-	movl	8(%ebp),%edx
-	movl	%ebx,gfx_ofs_ok(%edx)
-
-	popl	%ebx
-	popl	%esi
-	popl	%edi
-
-	popl	%ebp
-	ret
-
-
-/*
- * int gfx_done (gfx_data_t *gfx_data)
- *
- * shut down gfx things
- *
- * return vales:
- *   always 0
- *   sets gfx_data->ok
- */
-
-ENTRY(gfx_done)
-	pushl	%ebp
-	movl	%esp, %ebp
-	
-	pushl	%edi
-	pushl	%esi
-	pushl	%ebx
-
-	movl	8(%ebp),%edx
-	movl	%edx,%ebx
-	andl	$0xf,%ebx
-	shrl	$4,%edx
-
-	pushl	%ebp
-
-	call	EXT_C(prot_to_real)
-	.code16
-
-	pushw	%ds
-
-	movw	%dx,%ds
-
-	lcall	*gfx_ofs_jmp_table + 4 * 1 (%bx)
-
-	popw	%ds
-
-	DATA32	call	EXT_C(real_to_prot)
-	.code32
-
-	popl	%ebp
-
-	xorl	%eax,%eax
-	movl	8(%ebp),%edx
-	movl	%eax,gfx_ofs_ok(%edx)
-
-	popl	%ebx
-	popl	%esi
-	popl	%edi
-
-	popl	%ebp
-	ret
-
-
-/*
- * int gfx_input (gfx_data_t *gfx_data, int *menu_entry)
- *
- * let user enter a command line
- *
- * uses gfx_data->cmdline as buffer
- *
- * return values:
- *   1: abort
- *   2: boot
- *   menu_entry: selected entry
- */
-
-ENTRY(gfx_input)
-	pushl	%ebp
-	movl	%esp, %ebp
-	
-	pushl	%edi
-	pushl	%esi
-	pushl	%ebx
-
-	movl	8(%ebp),%edx
-	movl	%edx,%ebx
-	andl	$0xf,%ebx
-	shrl	$4,%edx
-
-	pushl	%ebp
-
-	call	EXT_C(prot_to_real)
-	.code16
-
-	pushw	%ds
-
-	movw	%dx,%ds
-	shll	$4,%edx
-	movl	gfx_ofs_cmdline(%bx),%edi
-	subl	%edx,%edi
-	movw	gfx_ofs_cmdline_len(%bx),%cx
-	movw	gfx_ofs_timeout(%bx),%ax
-	imulw	$18,%ax
-
-	pushl	%ebp
-	lcall	*gfx_ofs_jmp_table + 4 * 2 (%bx)
-	popl	%ebp
-	movl	%eax,%ecx
-
-	popw	%ds
-
-	DATA32	call	EXT_C(real_to_prot)
-	.code32
-
-	popl	%ebp
-
-	movl	12(%ebp),%edx
-	movl	%ebx,(%edx)
-
-	movl	%ecx,%eax
-
-	popl	%ebx
-	popl	%esi
-	popl	%edi
-
-	popl	%ebp
-	ret
-
-
-/*
- * int gfx_setup_menu (gfx_data_t *gfx_data)
- *
- * draw boot menu
- *
- * return values:
- *   always 0
- */
-
-/* menu entry descriptor */
-#define menu_entries		0
-#define menu_default		2	/* seg:ofs */
-#define menu_ent_list		6	/* seg:ofs */
-#define menu_ent_size		10
-#define menu_arg_list		12	/* seg:ofs */
-#define menu_arg_size		16
-#define sizeof_menu_desc	18
-
-ENTRY(gfx_setup_menu)
-	pushl	%ebp
-	movl	%esp, %ebp
-	
-	pushl	%edi
-	pushl	%esi
-	pushl	%ebx
-
-	movl	8(%ebp),%edx
-	movl	%edx,%ebx
-	andl	$0xf,%ebx
-	shrl	$4,%edx
-
-	call	EXT_C(prot_to_real)
-	.code16
-
-	pushw	%ds
-
-	movw	%dx,%ds
-	shll	$4,%edx
-
-	subw	$sizeof_menu_desc,%sp
-	movw	%sp,%bp
-
-	movl	gfx_ofs_menu_entries(%bx),%eax
-	movw	%ax,menu_entries(%bp)
-
-	movl	gfx_ofs_menu_default_entry(%bx),%eax
-	subl	%edx,%eax
-	movw	%ax,menu_default(%bp)
-	movw	%ds,menu_default+2(%bp)
-
-	movl	gfx_ofs_menu_list(%bx),%eax
-	subl	%edx,%eax
-	movw	%ax,menu_ent_list(%bp)
-	movw	%ds,menu_ent_list+2(%bp)
-
-	movl	gfx_ofs_menu_entry_len(%bx),%eax
-	movw	%ax,menu_ent_size(%bp)
-
-	movl	gfx_ofs_args_list(%bx),%eax
-	subl	%edx,%eax
-	movw	%ax,menu_arg_list(%bp)
-	movw	%ds,menu_arg_list+2(%bp)
-
-	movl	gfx_ofs_args_entry_len(%bx),%eax
-	movw	%ax,menu_arg_size(%bp)
-
-	movw	%bp,%si
-	pushw	%ss
-	popw	%es
-	
-	lcall	%ds: *gfx_ofs_jmp_table + 4 * 3 (%bx)
-
-	addw	$sizeof_menu_desc,%sp
-
-	popw	%ds
-
-	DATA32	call	EXT_C(real_to_prot)
-	.code32
-
-	xorl	%eax,%eax
-
-	popl	%ebx
-	popl	%esi
-	popl	%edi
-
-	popl	%ebp
-	ret
-
-
-/*
- *
- * end graphics stuff
- *
- * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- */
-
 		
 /*
  * gateA20(int linear)
@@ -1948,6 +1660,36 @@ ENTRY(gfx_setup_menu)
  */
 
 ENTRY(gateA20)
+	/* first, try a BIOS call */
+	pushl	%ebp
+	movl	8(%esp), %edx
+	
+	call	EXT_C(prot_to_real)
+	
+	.code16
+	movw	$0x2400, %ax
+	testw	%dx, %dx
+	jz	1f
+	incw	%ax
+1:	stc
+	int	$0x15
+	jnc	2f
+
+	/* set non-zero if failed */
+	movb	$1, %ah
+
+	/* save the status */
+2:	movb	%ah, %dl
+
+	DATA32	call	EXT_C(real_to_prot)
+	.code32
+
+	popl	%ebp
+	testb	%dl, %dl
+	jnz	3f
+	ret
+
+3:	/* use keyboard controller */
 	pushl	%eax
 
 	call    gloop1

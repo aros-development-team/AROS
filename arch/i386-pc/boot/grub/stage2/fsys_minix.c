@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -300,7 +300,7 @@ minix_dir (char *dirname)
   int updir_ino = current_ino;	     /* the parent of the current directory */
   int ino_blk;			     /* fs pointer of the inode's info */
 
-  int str_chk;			     /* used ot hold the results of a string
+  int str_chk = 0;		     /* used ot hold the results of a string
 				        compare */
 
   struct minix_inode * raw_inode;    /* inode info for current_ino */
