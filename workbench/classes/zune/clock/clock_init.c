@@ -1,5 +1,6 @@
 /*
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include <exec/types.h>
@@ -20,43 +21,52 @@
 
 /*** Variables **************************************************************/
 struct Device      *TimerBase;
-
 struct timerequest *TimerIO;
 
 /*** Library startup and shutdown *******************************************/
-AROS_SET_LIBFUNC( Clock_Startup, LIBBASETYPE, LIBBASE )
+AROS_SET_LIBFUNC(Clock_Startup, LIBBASETYPE, LIBBASE)
 {
     SysBase = LIBBASE->lh_SysBase;
     
     TimerIO   = NULL;
     TimerBase = NULL;
     
-    TimerIO = AllocMem( sizeof( struct timerequest ), MEMF_CLEAR );
-    if( TimerIO == NULL ) goto error;
+    TimerIO = AllocMem(sizeof(struct timerequest), MEMF_CLEAR);
+    if(TimerIO == NULL) goto error;
     
-    TimerIO->tr_node.io_Message.mn_Length = sizeof( struct timerequest );
+    TimerIO->tr_node.io_Message.mn_Length = sizeof(struct timerequest);
     
-    if( OpenDevice( "timer.device", UNIT_VBLANK, (struct IORequest *) TimerIO, 0) == 0 )
+    if
+    (
+        0 == OpenDevice
+        (
+            "timer.device", UNIT_VBLANK, (struct IORequest *) TimerIO, 0
+        )
+    )
+    {
         TimerBase = (struct Device *) TimerIO->tr_node.io_Device;
+    }
     else
+    {
         goto error;
-        
+    }
+    
     return TRUE;
 
 error:
-    if( TimerBase != NULL ) CloseDevice( (struct IORequest *) TimerIO );
-    if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
+    if (TimerBase != NULL) CloseDevice((struct IORequest *) TimerIO);
+    if (TimerIO != NULL) FreeMem(TimerIO, sizeof(struct timerequest));
     
     return FALSE;
 }
 
-AROS_SET_LIBFUNC( Clock_Shutdown, LIBBASETYPE, LIBBASE )
+AROS_SET_LIBFUNC(Clock_Shutdown, LIBBASETYPE, LIBBASE)
 {
-    if( TimerBase != NULL ) CloseDevice( (struct IORequest *) TimerIO );
-    if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
+    if (TimerBase != NULL) CloseDevice((struct IORequest *) TimerIO);
+    if (TimerIO != NULL) FreeMem(TimerIO, sizeof( struct timerequest ));
 
     return TRUE;
 }
 
-ADD2INITLIB( Clock_Startup, 1 );
-ADD2EXPUNGELIB( Clock_Shutdown, 1 );
+ADD2INITLIB(Clock_Startup, 1);
+ADD2EXPUNGELIB(Clock_Shutdown, 1);
