@@ -99,8 +99,10 @@ D(bug("Loading \"%s\"...\n", name));
 	Close(file);
     }
 
+    if (segs)
+	SetIoErr(0);
 #if DEBUG > 1
-    if (!segs)
+    else
 	bug ("Loading failed\n");
 #endif
 
