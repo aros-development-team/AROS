@@ -10,16 +10,18 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 /\\chapter/ {
     if (match($0,/\\chapter{[^}]*}/))
     {
+	if (subsection)
+	    print "</UL>"
 	if (section)
-	    print "</OL>"
+	    print "</UL>"
 	if (chapter)
-	    print "</OL>"
+	    print "</UL>"
 	chapter ++;
 	checkfile();
 	title=substr($0,RSTART+9,RLENGTH-10);
 	prefix=chapter".";
 	a[toc]="0:"prefix":"toc":"title;
-	print "<OL>"
+	print "<UL>"
 	if (newfile)
 	{
 	    newfile=0;
@@ -27,7 +29,7 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 	}
 	else
 	    date="";
-	print "<H1><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A>"date"</H1>";
+	print "<LI><FONT SIZE=\"+3\"><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A>"date"</FONT>";
 	section=0; subsection=0;
 	toc++;
     }
@@ -35,11 +37,13 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 /\\section/ {
     if (match($0,/\\section{[^}]*}/))
     {
+	if (subsection)
+	    print "</UL>"
 	if (section)
-	    print "</OL>"
+	    print "</UL>"
 	section ++;
 	checkfile();
-	print "<OL>"
+	print "<UL>"
 	title=substr($0,RSTART+9,RLENGTH-10);
 	prefix=chapter"."section;
 	a[toc]="1:"prefix":"toc":"title;
@@ -50,7 +54,7 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 	}
 	else
 	    date="";
-	print "<H2><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A>"date"</H2>";
+	print "<LI><FONT SIZE=\"+2\"><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A>"date"</FONT>";
 	toc++;
 	subsection=0;
     }
@@ -58,6 +62,8 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 /\\subsection/ {
     if (match($0,/\\subsection{[^}]*}/))
     {
+	if (!subsection)
+	    print "<UL>"
 	subsection ++;
 	checkfile();
 	title=substr($0,RSTART+12,RLENGTH-13);
@@ -70,7 +76,7 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 	}
 	else
 	    date="";
-	print "<H3><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A>"date"</H3>";
+	print "<LI><FONT SIZE=\"+1\"><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A>"date"</FONT>";
 	toc++;
     }
 }
@@ -85,9 +91,9 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 }
 END {
     if (section)
-	print "</OL>"
+	print "</UL>"
     if (chapter)
-	print "</OL>"
+	print "</UL>"
     shiftfiles("adoc_index.html");
 }
 

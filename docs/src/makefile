@@ -51,9 +51,9 @@ $(DEST)index.html : $(DEST)toc.html doc_header.html doc_footer.html
 $(DEST)toc.html : $(SRCS) tochtml.gawk
 	@echo "Generating TOC"
 	@gawk -f tochtml.gawk $(SRCS) > $@
-	@echo "<OL TYPE=A>" >> $@
-	@echo "<H1><A HREF="adoc_index.html">Appendix A. AutoDocs</A> (`getfiledate ../html/adoc_index.html`)</H1>" >> $@
-	@echo "</OL>" >> $@
+	@echo "<UL>" >> $@
+	@echo "<LI><FONT SIZE=\"+3\"><A HREF=\"adoc_index.html\">Appendix A. AutoDocs</A> (`getfiledate ../html/adoc_index.html`)</FONT>" >> $@
+	@echo "</UL>" >> $@
 	@echo "" >> $@
 	chmod a+r $@
 
