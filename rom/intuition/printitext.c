@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/21 17:07:08  aros
+    Restored wrong font
+
     Revision 1.3  1996/08/29 15:13:32  digulla
     Wrote code
 
@@ -109,7 +112,7 @@
 	{
 	    if (newfont)
 	    {
-		SetFont (rp, newfont);
+		SetFont (rp, font);
 		CloseFont (newfont);
 	    }
 	}
