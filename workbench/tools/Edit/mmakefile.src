@@ -9,21 +9,13 @@ FILES := ClipLoc Cursor DiskIO Edit Events Gui Jed \
 	 Utility
 
 EXEDIR := $(AROS_TOOLS)
-EXE    := $(EXEDIR)/Editor
-
-USE_AROSLIB     := yes
-USE_CLIB_SHARED := yes
-USE_AMIGALIB    := yes
-USE_MLIB        := yes
 
 #MM- workbench-tools : workbench-tools-editor
 #MM workbench-tools-editor : includes linklibs workbench-tools-editor-catalogs
 
-%make_prog_setup mmake=workbench-tools-editor
-
-workbench-tools-editor : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-tools-editor \
+    progname=Editor targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc_shared m"
 
 %common
-%include_deps
+

@@ -5,29 +5,26 @@
 include $(TOP)/config/make.cfg
 
 FILES 	    := main vars locale misc prefs registertab page_language page_country page_timezone
+EXEDIR      := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-locale
+#MM workbench-prefs-locale : includes linklibs \
+#MM     workbench-prefs-locale-catalogs \
+#MM     workbench-prefs-locale-images
+
+%build_prog mmake=workbench-prefs-locale \
+    progname=Locale targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc_shared m"
+
+
 IMAGES      := earthmap_small timezones_small
 SRCIMAGES   := $(foreach f, $(IMAGES), pics/$(f).ilbm)
 C_IMAGES    := $(foreach f, $(IMAGES), $(f)_image.c)
-EXEDIR      := $(AROSDIR)/Prefs
-EXE 	    := $(EXEDIR)/Locale
 
-USE_AROSLIB := yes
-USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
-USE_COOLIMAGESLIB := yes
-
-#MM- workbench-prefs : workbench-prefs-locale
-#MM workbench-prefs-locale : includes linklibs workbench-prefs-locale-catalogs 
-
-%make_prog_setup mmake=workbench-prefs-locale
-
-workbench-prefs-locale : setup $(C_IMAGES) $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+#MM
+workbench-prefs-locale-images : $(C_IMAGES)
 
 ./%_image.c : pics/%.ilbm
 	@$(ILBMTOC) $< >$@    	
 
 %common
-%include_deps

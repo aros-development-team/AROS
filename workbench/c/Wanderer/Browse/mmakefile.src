@@ -5,23 +5,11 @@ include $(TOP)/config/make.cfg
 FILES  := browse formatting fileinfo
 
 EXEDIR := $(AROS_C)/Wanderer
-EXE    := $(EXEDIR)/Browse
 
-USE_CLIB_SHARED := yes
-USE_AMIGALIB    := yes
-USE_MUILIB      := yes
-USE_AROSLIB     := yes
+#MM workbench-c-wanderer-browse : includes linklibs
 
-#MM workbench-c-wanderer-browse : workbench-c-wanderer-browse-setup includes linklibs
-
-%make_prog_setup mmake=workbench-c-wanderer-browse
-
-workbench-c-wanderer-browse : $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE) 
-
-#MM workbench-c-wanderer-browse-setup
-%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-c-wanderer-browse-setup
+%build_prog mmake=workbench-c-wanderer-browse \
+    progname=Browse targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc_shared"
 
 %common
-%include_deps

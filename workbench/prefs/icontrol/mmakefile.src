@@ -5,29 +5,27 @@
 include $(TOP)/config/make.cfg
 
 FILES 	    := main vars locale misc prefs gui
+EXEDIR      := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-icontrol
+#MM workbench-prefs-icontrol : includes linklibs \
+#MM     workbench-prefs-icontrol-catalogs \
+#MM     workbench-prefs-icontrol-images
+
+%build_prog mmake=workbench-prefs-icontrol \
+    progname=IControl targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc_shared m"
+
+
 IMAGES	    := menupulldownclassic menupulldown3d menupopupclassic menupopup3d
 SRCIMAGES   := $(foreach f, $(IMAGES), images/$(f).ilbm)
 C_IMAGES    := $(foreach f, $(IMAGES), $(f)_image.c)
-EXEDIR      := $(AROSDIR)/Prefs
-EXE 	    := $(EXEDIR)/IControl
 
-USE_AROSLIB := yes
-USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
-USE_MUILIB := yes
-
-#MM- workbench-prefs : workbench-prefs-icontrol
-#MM workbench-prefs-icontrol : includes linklibs workbench-prefs-icontrol-catalogs
-
-%make_prog_setup mmake=workbench-prefs-icontrol
-
-workbench-prefs-icontrol : setup $(C_IMAGES) $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+#MM
+workbench-prefs-icontrol-images : $(C_IMAGES)
 
 ./%_image.c : images/%.ilbm
 	@$(ILBMTOC) $< >$@    	
 
 %common
-%include_deps
+

@@ -8,25 +8,22 @@ include $(TOP)/config/make.cfg
 FILES := main misc procedure parse variables gui more execute cleanup
 
 EXEDIR := $(AROSDIR)/Utilities
-EXE := $(EXEDIR)/Installer
-SCRIPT := test.script
-
-USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_AROSLIB := yes
-USE_MLIB := yes
 
 #MM- workbench-utilities : workbench-utilities-installer
-#MM workbench-utilities-installer : includes linklibs
+#MM workbench-utilities-installer : includes linklibs \
+#MM     workbench-utilities-installer-script
 
-%make_prog_setup mmake=workbench-utilities-installer
+%build_prog mmake=workbench-utilities-installer \
+    progname=Installer targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc_shared m"
 
-workbench-utilities-installer : setup $(EXE) $(EXEDIR)/$(SCRIPT)
+
+SCRIPT := test.script
+
+#MM
+workbench-utilities-installer-script : $(EXEDIR)/$(SCRIPT)
 
 $(EXEDIR)/$(SCRIPT) : $(SCRIPT)
 	@$(CP) $? $@
 
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
-
 %common
-%include_deps

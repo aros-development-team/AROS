@@ -5,22 +5,12 @@ include $(TOP)/config/make.cfg
 
 FILES 	    := main vars locale misc prefs
 EXEDIR      := $(AROSDIR)/Prefs
-EXE 	    := $(EXEDIR)/Serial
-
-USE_AROSLIB := yes
-USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
-USE_COOLIMAGESLIB := yes
 
 #MM- workbench-prefs : workbench-prefs-serial
 #MM workbench-prefs-serial : includes linklibs workbench-prefs-serial-catalogs
 
-%make_prog_setup mmake=workbench-prefs-serial
-
-workbench-prefs-serial : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-prefs-serial \
+    progname=Serial targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc_shared m"
 
 %common
-%include_deps

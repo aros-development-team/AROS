@@ -5,29 +5,25 @@ include $(TOP)/config/make.cfg
 
 FILES       := main support locale executecommand
 EXEDIR      := $(AROS_WANDERER)/Tools
-EXE         := $(EXEDIR)/ExecuteCommand
-ICONS       := ExecuteCommand
-ICONFILES   := $(foreach f, $(ICONS), $(EXEDIR)/$(f).info)
-
-USE_AROSLIB     := yes
-USE_CLIB_SHARED := yes
-USE_AMIGALIB    := yes
-USE_MLIB        := yes
-USE_MUILIB      := yes
 
 #MM- workbench-system-wanderer : workbench-system-wanderer-tools-executecommand
 #MM workbench-system-wanderer-tools-executecommand : \
 #MM     includes linklibs \
-#MM     workbench-system-wanderer-tools-executecommand-catalogs
+#MM     workbench-system-wanderer-tools-executecommand-catalogs \
+#MM     workbench-system-wanderer-tools-executecommand-icons
 
-%make_prog_setup mmake=workbench-system-wanderer-tools-executecommand
+%build_prog mmake=workbench-system-wanderer-tools-executecommand \
+    progname=ExecuteCommand targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc_shared m"
 
-workbench-system-wanderer-tools-executecommand : setup $(EXE) $(ICONFILES)
 
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+ICONS       := ExecuteCommand
+ICONFILES   := $(foreach f, $(ICONS), $(EXEDIR)/$(f).info)
+
+#MM
+workbench-system-wanderer-tools-executecommand-icons : setup $(EXE) $(ICONFILES)
 
 $(EXEDIR)/%.info : icons/%.info.src icons/%_N.png icons/%_S.png
 	%makeicon2
 
 %common
-%include_deps

@@ -7,20 +7,12 @@ include $(TOP)/config/make.cfg
 FILES := reqtools gui misc rtstrings ver
 
 EXEDIR := $(AROSDIR)/Prefs
-EXE := $(EXEDIR)/ReqTools
-
-USE_CLIB := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
 
 #MM- workbench-prefs : workbench-prefs-reqtools
 #MM workbench-prefs-reqtools : includes linklibs setup-prefs-reqtools-catalogs
 
-%make_prog_setup mmake=workbench-prefs-reqtools
-
-workbench-prefs-reqtools : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-prefs-reqtools \
+    progname=ReqTools targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="amiga arosc_shared m"
 
 %common
-%include_deps

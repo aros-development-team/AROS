@@ -8,24 +8,12 @@ FILES  := zune zunestuff windowp buttonsp groupsp cyclesp slidersp \
 scrollbarsp listviewsp stringsp specialp navigationp
 
 EXEDIR := $(AROSDIR)/Prefs
-EXE    := $(EXEDIR)/Zune
-
-USE_CLIB_SHARED := yes
-USE_AMIGALIB    := yes
-USE_MUILIB      := yes
-USE_AROSLIB     := yes
 
 #MM- workbench-prefs : workbench-prefs-zune
 #MM workbench-prefs-zune : workbench-prefs-zune-setup includes linklibs
 
-%make_prog_setup mmake=workbench-prefs-zune
-
-workbench-prefs-zune : $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
-
-#MM workbench-prefs-zune-setup
-%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-prefs-zune-setup
+%build_prog mmake=workbench-prefs-zune \
+    progname=Zune targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc_shared"
 
 %common
-%include_deps
