@@ -232,20 +232,27 @@ ULONG xget(Object *obj, Tag attr)
 #define MUIA_IconWindow_Drawer       (TAG_USER+0x1631314) /* i.g */
 #define MUIA_IconWindow_ActionHook   (TAG_USER+0x1631315) /* i.. */ /* Hook to call when some action happens */
 #define MUIA_IconWindow_IsBackdrop   (TAG_USER+0x1631316) /* isg */ /* is Backdrop window ? */
+#define MUIA_IconWindow_IconList     (TAG_USER+0x1631317) /* ..g */
 
 #define MUIM_IconWindow_Open         (TAG_USER+0x12908f)
+#define MUIM_IconWindow_UnselectAll  (TAG_USER+0x129090)
 
 /* private methods, should be not called from outside */
 #define MUIM_IconWindow_DoubleClicked (0x129090)
+#define MUIM_IconWindow_IconsDropped (0x129091)
+#define MUIM_IconWindow_Clicked (0x129092)
 
 #define ICONWINDOW_ACTION_OPEN 1
+#define ICONWINDOW_ACTION_CLICK 2
+#define ICONWINDOW_ACTION_ICONDROP 3
 
 struct IconWindow_ActionMsg
 {
-   int type;
-   Object *iconlist;
-   int isroot;
-   /* to be continued...*/
+    int type;
+    Object *iconlist;
+    int isroot;
+    struct IconList_Click *click;
+    /* to be continued...*/
 };
 
 struct IconWindow_Data
@@ -299,8 +306,9 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
     set(obj, MUIA_IconWindow_IsBackdrop, is_backdrop);
 
     /* If double clicked then we call our own private methods, that's easier then using Hooks */
-    DoMethod(iconlist,MUIM_Notify,MUIA_IconList_DoubleClick,TRUE,obj,1,MUIM_IconWindow_DoubleClicked);
-
+    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_DoubleClick,TRUE, obj, 1, MUIM_IconWindow_DoubleClicked);
+    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_IconsDropped, MUIV_EveryTime, obj, 1, MUIM_IconWindow_IconsDropped);
+    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Clicked, MUIV_EveryTime, obj, 1, MUIM_IconWindow_Clicked);
     return (IPTR)obj;
 }
 
@@ -372,6 +380,10 @@ STATIC IPTR IconWindow_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		    *msg->opg_Storage = xget(data->iconlist,MUIA_IconDrawerList_Drawer);
 		else *msg->opg_Storage = NULL;
 		return 1;
+
+	case    MUIA_IconWindow_IconList:
+		*msg->opg_Storage = (ULONG)data->iconlist;
+		return 1;
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
@@ -385,9 +397,40 @@ STATIC IPTR IconWindow_DoubleClicked(struct IClass *cl, Object *obj, Msg msg)
 	msg.type = ICONWINDOW_ACTION_OPEN;
 	msg.iconlist = data->iconlist;
 	msg.isroot = data->is_root;
+	msg.click = NULL;
 	CallHookPkt(data->action_hook,obj,&msg);
     }
     return NULL; /* irrelevant */
+}
+
+STATIC IPTR IconWindow_Clicked(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct IconWindow_Data *data = (struct IconWindow_Data*)INST_DATA(cl,obj);;
+    if (data->action_hook)
+    {
+	struct IconWindow_ActionMsg msg;
+	msg.type = ICONWINDOW_ACTION_CLICK;
+	msg.iconlist = data->iconlist;
+	msg.isroot = data->is_root;
+	msg.click = (struct IconList_Click*)xget(data->iconlist, MUIA_IconList_Clicked);
+	CallHookPkt(data->action_hook,obj,&msg);
+    }
+    return NULL; /* irrelevant */
+}
+
+STATIC IPTR IconWindow_IconsDropped(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct IconWindow_Data *data = (struct IconWindow_Data*)INST_DATA(cl,obj);
+    if (data->action_hook)
+    {
+	struct IconWindow_ActionMsg msg;
+	msg.type = ICONWINDOW_ACTION_ICONDROP;
+	msg.iconlist = data->iconlist;
+	msg.isroot = data->is_root;
+	msg.click = (struct IconList_Click*)xget(data->iconlist, MUIA_IconList_Clicked);
+	CallHookPkt(data->action_hook,obj,&msg);
+    }
+    return NULL;
 }
 
 STATIC IPTR IconWindow_Open(struct IClass *cl, Object *obj, Msg msg)
@@ -396,6 +439,13 @@ STATIC IPTR IconWindow_Open(struct IClass *cl, Object *obj, Msg msg)
     DoMethod(data->iconlist,MUIM_IconList_Clear);
     set(obj,MUIA_Window_Open,TRUE);
     DoMethod(data->iconlist,MUIM_IconList_Update);
+    return 1;
+}
+
+STATIC IPTR IconWindow_UnselectAll(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct IconWindow_Data *data = (struct IconWindow_Data*)INST_DATA(cl,obj);
+    DoMethod(data->iconlist,MUIM_IconList_UnselectAll);
     return 1;
 }
 
@@ -409,9 +459,12 @@ BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
 	case OM_GET: return IconWindow_Get(cl,obj,(struct opGet*)msg);
 
 	case MUIM_IconWindow_Open: return IconWindow_Open(cl,obj,(APTR)msg);
+	case MUIM_IconWindow_UnselectAll: return IconWindow_UnselectAll(cl,obj,(APTR)msg);
 
 	/* private methods */
 	case MUIM_IconWindow_DoubleClicked: return IconWindow_DoubleClicked(cl,obj,msg);
+	case MUIM_IconWindow_IconsDropped: return IconWindow_IconsDropped(cl,obj,msg);
+	case MUIM_IconWindow_Clicked: return IconWindow_Clicked(cl,obj,msg);
     }
     return DoSuperMethodA(cl,obj,msg);
 }
@@ -811,6 +864,47 @@ AROS_UFH3(void, hook_func_action,
 	    /* truncate the path */
 	    PathPart(buf)[0] = 0;
 	    execute_open_with_command(buf, FilePart(ent->filename));
+	}
+    } else
+    if (msg->type == ICONWINDOW_ACTION_CLICK)
+    {
+	if (!msg->click->shift)
+	{
+	    Object *cstate = (Object*)(((struct List*)xget(app, MUIA_Application_WindowList))->lh_Head);
+	    Object *child;
+
+	    while ((child = NextObject(&cstate)))
+	    {
+	    	if (xget(child, MUIA_UserData))
+	    	{
+		    if (child != obj)
+		    {
+			DoMethod(child, MUIM_IconWindow_UnselectAll);
+		    }
+		}
+	    }
+	}
+    } else
+    if (msg->type == ICONWINDOW_ACTION_ICONDROP)
+    {
+	Object *cstate = (Object*)(((struct List*)xget(app, MUIA_Application_WindowList))->lh_Head);
+	Object *child;
+
+	while ((child = NextObject(&cstate)))
+	{
+	    if (xget(child, MUIA_UserData))
+	    {
+		struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+		Object *iconlist = (Object*)xget(child, MUIA_IconWindow_IconList);
+
+		do
+		{
+		    DoMethod(iconlist, MUIM_IconList_NextSelected, &ent);
+		    if ((int)ent == MUIV_IconList_NextSelected_End) break;
+
+		    Printf("%s\n",ent->filename);
+		} while(1);
+	    }
 	}
     }
 }
