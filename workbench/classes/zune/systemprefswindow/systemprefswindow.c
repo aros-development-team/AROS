@@ -114,8 +114,6 @@ Object *SystemPrefsWindow__OM_NEW
     
     if (self != NULL)
     {
-        BPTR lock;
-        
         data = INST_DATA(CLASS, self);
         data->spwd_Catalog = catalog;
         data->spwd_Editor  = editor;
