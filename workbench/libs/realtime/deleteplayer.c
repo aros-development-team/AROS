@@ -22,7 +22,7 @@
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 8, RealTime)
+	struct Library *, RealTimeBase, 8, RealTime)
 
 /*  FUNCTION
 

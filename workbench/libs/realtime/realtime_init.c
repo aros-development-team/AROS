@@ -38,8 +38,8 @@
 
 #define INIT	AROS_SLIB_ENTRY(init, RealTime)
 
-BOOL AllocTimer(struct internal_RealTimeBase *RTBase);
-void FreeTimer(struct internal_RealTimeBase *RTBase);
+BOOL AllocTimer(struct internal_RealTimeBase *RealTimeBase);
+void FreeTimer(struct internal_RealTimeBase *RealTimeBase);
 
 extern void Pulse();
 
@@ -116,7 +116,7 @@ const struct inittable datatable=
 
 
 AROS_LH2(struct internal_RealTimeBase *, init,
- AROS_LHA(struct internal_RealTimeBase *, RTBase, D0),
+ AROS_LHA(struct internal_RealTimeBase *, RealTimeBase, D0),
  AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, RealTime)
 {
@@ -126,19 +126,19 @@ AROS_LH2(struct internal_RealTimeBase *, init,
     WORD   i;			/* Loop variable */
 
     /* Store arguments */
-    RTBase->rtb_SysBase = sysBase;
-    RTBase->rtb_SegList = segList;
+    RealTimeBase->rtb_SysBase = sysBase;
+    RealTimeBase->rtb_SegList = segList;
 
     for(i = 0; i < RT_MAXLOCK; i++)
     {
-	InitSemaphore(&RTBase->rtb_Locks[i]);
+	InitSemaphore(&RealTimeBase->rtb_Locks[i]);
     }
 
-    NEWLIST(&RTBase->rtb_ConductorList);
+    NEWLIST(&RealTimeBase->rtb_ConductorList);
 
-    RTBase->rtb_TickErr = 0;	/* How may such a thing be measured? */
+    RealTimeBase->rtb_TickErr = 0;	/* How may such a thing be measured? */
 
-    return RTBase;
+    return RealTimeBase;
 
     AROS_LIBFUNC_EXIT
 }
@@ -146,7 +146,7 @@ AROS_LH2(struct internal_RealTimeBase *, init,
 
 AROS_LH1(struct RealTimeBase *, open,
  AROS_LHA(ULONG, version, D0),
-	   struct RealTimeBase *, RTBase, 1, RealTime)
+	   struct RealTimeBase *, RealTimeBase, 1, RealTime)
 {
     AROS_LIBFUNC_INIT
 
@@ -159,46 +159,46 @@ AROS_LH1(struct RealTimeBase *, open,
     /* Keep compiler happy */
     version = 0;
 
-    if (GPB(RTBase)->rtb_UtilityBase == NULL)
+    if (GPB(RealTimeBase)->rtb_UtilityBase == NULL)
     {
-	GPB(RTBase)->rtb_UtilityBase = OpenLibrary("utility.library", 41);
+	GPB(RealTimeBase)->rtb_UtilityBase = OpenLibrary("utility.library", 41);
     }
 
-    if (GPB(RTBase)->rtb_UtilityBase == NULL)
-    {
-	return NULL;
-    }
-
-    if (GPB(RTBase)->rtb_DOSBase == NULL)
-    {
-	GPB(RTBase)->rtb_DOSBase = OpenLibrary("dos.library", 41);
-    }
-
-    if (GPB(RTBase)->rtb_DOSBase == NULL)
+    if (GPB(RealTimeBase)->rtb_UtilityBase == NULL)
     {
 	return NULL;
     }
 
-    if (RTBase->rtb_LibNode.lib_OpenCnt == 0)
+    if (GPB(RealTimeBase)->rtb_DOSBase == NULL)
+    {
+	GPB(RealTimeBase)->rtb_DOSBase = OpenLibrary("dos.library", 41);
+    }
+
+    if (GPB(RealTimeBase)->rtb_DOSBase == NULL)
+    {
+	return NULL;
+    }
+
+    if (RealTimeBase->rtb_LibNode.lib_OpenCnt == 0)
     {
 	/* I use a process here just to be able to use CreateNewProc() so
 	   I don't have to fiddle with stack order and such... */
 	struct TagItem tags[] = { { NP_Entry   , (IPTR)Pulse            },
 				  { NP_Name    , (IPTR)"RealTime Pulse" },
 				  { NP_Priority, (IPTR)127              },
-				  { NP_UserData, (IPTR)RTBase           },
+				  { NP_UserData, (IPTR)RealTimeBase           },
 				  { TAG_DONE   , (IPTR)NULL             } };
 	
-	GPB(RTBase)->rtb_PulseTask = (struct Task *)CreateNewProc(tags);
+	GPB(RealTimeBase)->rtb_PulseTask = (struct Task *)CreateNewProc(tags);
 
-	if (GPB(RTBase)->rtb_PulseTask == NULL)
+	if (GPB(RealTimeBase)->rtb_PulseTask == NULL)
 	{
 	    return NULL;
 	}
 
 	kprintf("Realtime pulse task created\n");
 
-	if (!AllocTimer((struct internal_RealTimeBase *)RTBase))
+	if (!AllocTimer((struct internal_RealTimeBase *)RealTimeBase))
 	{
 	    return NULL;
 	}
@@ -207,16 +207,16 @@ AROS_LH1(struct RealTimeBase *, open,
     }
 
     /* I have one more opener. */
-    RTBase->rtb_LibNode.lib_OpenCnt++;
-    RTBase->rtb_LibNode.lib_Flags &= ~LIBF_DELEXP;
+    RealTimeBase->rtb_LibNode.lib_OpenCnt++;
+    RealTimeBase->rtb_LibNode.lib_Flags &= ~LIBF_DELEXP;
 
-    return RTBase;
+    return RealTimeBase;
 
     AROS_LIBFUNC_EXIT
 }
 
 
-AROS_LH0(BPTR, close, struct RealTimeBase *, RTBase, 2, RealTime)
+AROS_LH0(BPTR, close, struct RealTimeBase *, RealTimeBase, 2, RealTime)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -227,13 +227,13 @@ AROS_LH0(BPTR, close, struct RealTimeBase *, RTBase, 2, RealTime)
 
     /* I have one fewer opener. */
 
-    if(--(RTBase->rtb_LibNode.lib_OpenCnt) == 0)
+    if(--(RealTimeBase->rtb_LibNode.lib_OpenCnt) == 0)
     {
 	return expunge();
     }
     else
     {
-	RTBase->rtb_LibNode.lib_Flags &= ~LIBF_DELEXP;
+	RealTimeBase->rtb_LibNode.lib_Flags &= ~LIBF_DELEXP;
     }
 
     return NULL;
@@ -242,7 +242,7 @@ AROS_LH0(BPTR, close, struct RealTimeBase *, RTBase, 2, RealTime)
 }
 
 
-AROS_LH0(BPTR, expunge, struct internal_RealTimeBase *, RTBase, 3, RealTime)
+AROS_LH0(BPTR, expunge, struct internal_RealTimeBase *, RealTimeBase, 3, RealTime)
 {
     AROS_LIBFUNC_INIT
 
@@ -252,31 +252,31 @@ AROS_LH0(BPTR, expunge, struct internal_RealTimeBase *, RTBase, 3, RealTime)
 	Never break the Forbid() or strange things might happen.
     */
 
-    CloseLibrary(GPB(RTBase)->rtb_UtilityBase);
+    CloseLibrary(GPB(RealTimeBase)->rtb_UtilityBase);
 
     /* Test for openers. */
-    if (RTBase->rtb_LibNode.lib_OpenCnt)
+    if (RealTimeBase->rtb_LibNode.lib_OpenCnt)
     {
 	/* Set the delayed expunge flag and return. */
-	RTBase->rtb_LibNode.lib_Flags |= LIBF_DELEXP;
+	RealTimeBase->rtb_LibNode.lib_Flags |= LIBF_DELEXP;
 	return 0;
     }
 
-    FreeTimer(RTBase);
+    FreeTimer(RealTimeBase);
 
     /* Shut down the pulse message task -- must be done AFTER freeing the
        timer! */
-    Signal(RTBase->rtb_PulseTask, SIGBREAKF_CTRL_C);
+    Signal(RealTimeBase->rtb_PulseTask, SIGBREAKF_CTRL_C);
 
     /* Get rid of the library. Remove it from the list. */
-    Remove(&RTBase->rtb_LibNode.lib_Node);
+    Remove(&RealTimeBase->rtb_LibNode.lib_Node);
 
     /* Get returncode here - FreeMem() will destroy the field. */
-    ret = RTBase->rtb_SegList;
+    ret = RealTimeBase->rtb_SegList;
 
     /* Free the memory. */
-    FreeMem((char *)RTBase-RTBase->rtb_LibNode.lib_NegSize,
-	    RTBase->rtb_LibNode.lib_NegSize + RTBase->rtb_LibNode.lib_PosSize);
+    FreeMem((char *)RealTimeBase-RealTimeBase->rtb_LibNode.lib_NegSize,
+	    RealTimeBase->rtb_LibNode.lib_NegSize + RealTimeBase->rtb_LibNode.lib_PosSize);
 
     return ret;
 
@@ -284,7 +284,7 @@ AROS_LH0(BPTR, expunge, struct internal_RealTimeBase *, RTBase, 3, RealTime)
 }
 
 
-AROS_LH0I(int, null, struct RealTimeBase *, RTBase, 4, RealTime)
+AROS_LH0I(int, null, struct RealTimeBase *, RealTimeBase, 4, RealTime)
 {
     AROS_LIBFUNC_INIT
     return 0;
@@ -299,35 +299,35 @@ AROS_UFH4(ULONG, rtVBlank,
 	  AROS_UFHA(ULONG, dummy2, A5),
 	  AROS_UFHA(struct ExecBase *, mySysBase, A6))
 { 
-    struct internal_RealTimeBase *RTBase = GPB(data);
+    struct internal_RealTimeBase *RealTimeBase = GPB(data);
 
-    // kprintf("Signalling task %p\n", RTBase->rtb_PulseTask);
-    Signal(RTBase->rtb_PulseTask, SIGF_SINGLE);
+    // kprintf("Signalling task %p\n", RealTimeBase->rtb_PulseTask);
+    Signal(RealTimeBase->rtb_PulseTask, SIGF_SINGLE);
 
     return 0;
 }
 
 
-BOOL AllocTimer(struct internal_RealTimeBase *RTBase)
+BOOL AllocTimer(struct internal_RealTimeBase *RealTimeBase)
 {
     /* TODO */
     /* This should be replaced by some timer.device thing when an accurate
        timer is available -- UNIT_MICROHZ? */
 
-    RTBase->rtb_VBlank.is_Code         = (APTR)&rtVBlank;
-    RTBase->rtb_VBlank.is_Data         = (APTR)RTBase;
-    RTBase->rtb_VBlank.is_Node.ln_Name = "RealTime VBlank server";
-    RTBase->rtb_VBlank.is_Node.ln_Pri  = 127;
-    RTBase->rtb_VBlank.is_Node.ln_Type = NT_INTERRUPT;
+    RealTimeBase->rtb_VBlank.is_Code         = (APTR)&rtVBlank;
+    RealTimeBase->rtb_VBlank.is_Data         = (APTR)RealTimeBase;
+    RealTimeBase->rtb_VBlank.is_Node.ln_Name = "RealTime VBlank server";
+    RealTimeBase->rtb_VBlank.is_Node.ln_Pri  = 127;
+    RealTimeBase->rtb_VBlank.is_Node.ln_Type = NT_INTERRUPT;
     
     /* Add a VBLANK server to take care of the heartbeats. */
-    AddIntServer(INTB_VERTB, &RTBase->rtb_VBlank);
+    AddIntServer(INTB_VERTB, &RealTimeBase->rtb_VBlank);
 
     return TRUE;
 }
 
 
-void FreeTimer(struct internal_RealTimeBase *RTBase)
+void FreeTimer(struct internal_RealTimeBase *RealTimeBase)
 {
-    RemIntServer(INTB_VERTB, &RTBase->rtb_VBlank);
+    RemIntServer(INTB_VERTB, &RealTimeBase->rtb_VBlank);
 }

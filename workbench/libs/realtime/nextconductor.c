@@ -22,7 +22,7 @@
 
 /*  LOCATION */
 
-	struct Library *, RTBase, 12, RealTime)
+	struct Library *, RealTimeBase, 12, RealTime)
 
 /*  FUNCTION
 
@@ -68,7 +68,7 @@
 
     if (previousConductor == NULL)
     {
-	return (struct Conductor *)GetHead((struct List *)&GPB(RTBase)->rtb_ConductorList);
+	return (struct Conductor *)GetHead((struct List *)&GPB(RealTimeBase)->rtb_ConductorList);
     }
 
     return (struct Conductor *)GetSucc((struct Node *)previousConductor);
