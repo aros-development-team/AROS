@@ -1797,14 +1797,8 @@ static void area_update_data(Object *obj, struct MUI_AreaData *data)
 /*  	  obj, data->mad_Frame, data->mad_addleft, data->mad_addtop, data->mad_subwidth, data->mad_subheight)); */
 }
 
-#ifndef _AROS
-__asm IPTR Area_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR, Area_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {

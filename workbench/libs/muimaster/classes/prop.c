@@ -407,14 +407,8 @@ static ULONG Prop_Decrease(struct IClass *cl, Object *obj, struct MUIP_Prop_Decr
     return 1;
 }
 
-#ifndef _AROS
-__asm IPTR Prop_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Prop_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, Prop_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {

@@ -138,18 +138,8 @@ static IPTR Popstring_Open(struct IClass *cl, Object *obj, struct MUIP_Popstring
     return 0;
 }
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
 
-#ifndef _AROS
-__asm IPTR Popstring_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Popstring_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR, Popstring_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {

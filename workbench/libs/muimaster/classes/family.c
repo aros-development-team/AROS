@@ -81,7 +81,7 @@ static const int __revision = 1;
 /*
  * OM_NEW
  */
-static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
+static ULONG Family_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_FamilyData *data;
     struct TagItem        *tags;
@@ -126,7 +126,7 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * OM_DISPOSE
  */
-static ULONG mDispose(struct IClass *cl, Object *obj, Msg msg)
+static ULONG Family_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
@@ -145,8 +145,7 @@ static ULONG mDispose(struct IClass *cl, Object *obj, Msg msg)
 /*
  * OM_GET
  */
-static ULONG
-mGet(struct IClass *cl, Object *obj, struct opGet *msg)
+static ULONG Family_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     ULONG *store = msg->opg_Storage;
@@ -171,7 +170,7 @@ mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 /*
  * MUIM_Family_AddHead : Add an object as first object to the family.
  */
-static ULONG mAddHead(struct IClass *cl, Object *obj, struct MUIP_Family_AddHead *msg)
+static ULONG Family_AddHead(struct IClass *cl, Object *obj, struct MUIP_Family_AddHead *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
 
@@ -188,7 +187,7 @@ static ULONG mAddHead(struct IClass *cl, Object *obj, struct MUIP_Family_AddHead
 /*
  * MUIM_Family_AddTail : Add an object as last object to the family.
  */
-static ULONG mAddTail(struct IClass *cl, Object *obj, struct MUIP_Family_AddTail *msg)
+static ULONG Family_AddTail(struct IClass *cl, Object *obj, struct MUIP_Family_AddTail *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
 
@@ -205,7 +204,7 @@ static ULONG mAddTail(struct IClass *cl, Object *obj, struct MUIP_Family_AddTail
 /*
  * MUIM_Family_Insert : Add an object after another object to the family.
  */
-static ULONG mInsert(struct IClass *cl, Object *obj, struct MUIP_Family_Insert *msg)
+static ULONG Family_Insert(struct IClass *cl, Object *obj, struct MUIP_Family_Insert *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
 
@@ -223,8 +222,7 @@ static ULONG mInsert(struct IClass *cl, Object *obj, struct MUIP_Family_Insert *
 /*
  * MUIM_Family_Remove : Remove an object from a family.
  */
-static ULONG
-mRemove(struct IClass *cl, Object *obj,
+static ULONG Family_Remove(struct IClass *cl, Object *obj,
 			   struct MUIP_Family_Remove *msg)
 {
     /* struct MUI_FamilyData *data = INST_DATA(cl, obj);
@@ -243,7 +241,7 @@ mRemove(struct IClass *cl, Object *obj,
 /*
  * MUIM_Family_Sort : Sort the children of a family.
  */
-static ULONG  mSort(struct IClass *cl, Object *obj,
+static ULONG  Family_Sort(struct IClass *cl, Object *obj,
 			 struct MUIP_Family_Sort *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
@@ -262,7 +260,7 @@ static ULONG  mSort(struct IClass *cl, Object *obj,
  * MUIM_Family_Transfer : All the children of the family are removed and
  * added to another family in the same order.
  */
-static ULONG mTransfer(struct IClass *cl, Object *obj, struct MUIP_Family_Transfer *msg)
+static ULONG Family_Transfer(struct IClass *cl, Object *obj, struct MUIP_Family_Transfer *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
@@ -304,7 +302,7 @@ static ULONG Family_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUD
  * contains the given <udata> and gets <attr> to <storage> for itself
  * in this case.
  */
-static ULONG mGetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
+static ULONG Family_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
@@ -327,8 +325,7 @@ static ULONG mGetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg
  * MUIM_SetUData : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG 
-mSetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+static ULONG Family_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
@@ -348,8 +345,7 @@ mSetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
  * MUIM_SetUDataOnce : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG 
-mSetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
+static ULONG Family_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
@@ -413,61 +409,44 @@ static ULONG Family_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 }
 
 
-/*
- * The class dispatcher
- */
-
-#ifndef _AROS
-__asm IPTR MUI_FamilyDispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR, MUI_FamilyDispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR, Family_Dispatcher, cl, obj, msg)
 {
-    /*
-     * watch out for methods we do understand
-     */
     switch (msg->MethodID)
     {
-	/* Whenever an object shall be created using NewObject(), it will be
-	** sent a OM_NEW method.
-	*/
     case OM_NEW:
-	return(mNew(cl, obj, (struct opSet *) msg));
+	return(Family_New(cl, obj, (struct opSet *) msg));
     case OM_DISPOSE:
-	return(mDispose(cl, obj, msg));
+	return(Family_Dispose(cl, obj, msg));
     case OM_GET:
-	return(mGet(cl, obj, (struct opGet *)msg));
+	return(Family_Get(cl, obj, (struct opGet *)msg));
     case MUIM_Family_AddHead :
-	return(mAddHead(cl, obj, (APTR)msg));
+	return(Family_AddHead(cl, obj, (APTR)msg));
     case OM_ADDMEMBER:
     case MUIM_Family_AddTail :
-	return(mAddTail(cl, obj, (APTR)msg));
+	return(Family_AddTail(cl, obj, (APTR)msg));
     case MUIM_Family_Insert :
-	return(mInsert(cl, obj, (APTR)msg));
+	return(Family_Insert(cl, obj, (APTR)msg));
     case OM_REMMEMBER:
     case MUIM_Family_Remove :
-	return(mRemove(cl, obj, (APTR)msg));
+	return(Family_Remove(cl, obj, (APTR)msg));
     case MUIM_Family_Sort :
-	return(mSort(cl, obj, (APTR)msg));
+	return(Family_Sort(cl, obj, (APTR)msg));
     case MUIM_Family_Transfer :
-	return(mTransfer(cl, obj, (APTR)msg));
-    case MUIM_FindUData: return Family_FindUData(cl, obj, (APTR)msg);
+	return(Family_Transfer(cl, obj, (APTR)msg));
+    case MUIM_FindUData:
+	return Family_FindUData(cl, obj, (APTR)msg);
     case MUIM_GetUData :
-	return(mGetUData(cl, obj, (APTR)msg));
+	return(Family_GetUData(cl, obj, (APTR)msg));
     case MUIM_SetUData :
-	return(mSetUData(cl, obj, (APTR)msg));
+	return(Family_SetUData(cl, obj, (APTR)msg));
     case MUIM_SetUDataOnce :
-	return(mSetUDataOnce(cl, obj, (APTR)msg));
-    case MUIM_ConnectParent: return Family_ConnectParent(cl, obj, (APTR)msg);
-    case MUIM_DisconnectParent: return Family_DisconnectParent(cl, obj, (APTR)msg);
+	return(Family_SetUDataOnce(cl, obj, (APTR)msg));
+    case MUIM_ConnectParent:
+	return Family_ConnectParent(cl, obj, (APTR)msg);
+    case MUIM_DisconnectParent:
+	return Family_DisconnectParent(cl, obj, (APTR)msg);
     }
 
-    /*
-     * we didn't understand the last method, so call our superclass
-     */
     return(DoSuperMethodA(cl, obj, msg));
 }
 
@@ -479,6 +458,6 @@ const struct __MUIBuiltinClass _MUI_Family_desc = {
     MUIC_Family,
     MUIC_Notify,
     sizeof(struct MUI_FamilyData),
-    (void*)MUI_FamilyDispatcher
+    (void*)Family_Dispatcher
 };
 

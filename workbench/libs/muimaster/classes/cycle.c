@@ -284,14 +284,7 @@ static ULONG Cycle_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 }
 
 
-#ifndef _AROS
-__asm IPTR Cycle_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Cycle_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR, Cycle_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {

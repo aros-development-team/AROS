@@ -1215,14 +1215,8 @@ ULONG IconDrawerList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList
     return 1;
 }
 
-#ifndef _AROS
-__asm IPTR IconDrawerList_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,IconDrawerList_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, IconDrawerList_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
@@ -1416,14 +1410,7 @@ ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList
 }
 
 
-#ifndef _AROS
-__asm IPTR IconVolumeList_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,IconVolumeList_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
