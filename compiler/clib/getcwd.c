@@ -59,8 +59,11 @@
     GETUSER;
 
     char pathname[FILENAME_MAX];
-
-    if (GetCurrentDirName (pathname, FILENAME_MAX) == 0)
+    BPTR lock;
+  
+    lock = CurrentDir(NULL);
+    CurrentDir(lock);
+    if (NameFromLock (lock, pathname, FILENAME_MAX) == 0)
     {
 	errno = IoErr2errno (IoErr ());
 	return NULL;
