@@ -24,6 +24,8 @@ I.. UWORD                 NumSparse;
 ISG Point                 Grab;
 ISG BOOL                  FreeSource;
 I.. BOOL                  Remap;
+ISG BOOL                  UseFriendBM;
+ISG BOOL                  DestMode
 */
 
 
@@ -276,7 +278,8 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 	        break;
 
 	    case PDTA_DestMode:
-                D(bug("picture.datatype/OM_SET: Tag PDTA_DestMode (ignored): %ld\n", (long)ti->ti_Data));
+		pd->DestMode = (BOOL) ti->ti_Data;
+                D(bug("picture.datatype/OM_SET: Tag PDTA_DestMode: %ld\n", (long)pd->DestMode));
 	        break;
 
             case PDTA_FreeSourceBitMap:
@@ -290,17 +293,17 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 	        break;
 
 	    case PDTA_MaxDitherPens:
-                pd->MaxDitherPens = (BOOL) ti->ti_Data;
+                pd->MaxDitherPens = (UWORD) ti->ti_Data;
                 D(bug("picture.datatype/OM_SET: Tag PDTA_MaxDitherPens: %ld\n", (long)pd->MaxDitherPens));
 	        break;
 
 	    case PDTA_DitherQuality:
-                pd->DitherQuality = (BOOL) ti->ti_Data;
+                pd->DitherQuality = (UWORD) ti->ti_Data;
                 D(bug("picture.datatype/OM_SET: Tag PDTA_DitherQuality: %ld\n", (long)pd->DitherQuality));
 	        break;
 
 	    case PDTA_ScaleQuality:
-                pd->ScaleQuality = (BOOL) ti->ti_Data;
+                pd->ScaleQuality = (UWORD) ti->ti_Data;
                 D(bug("picture.datatype/OM_SET: Tag PDTA_ScaleQuality: %ld\n", (long)pd->ScaleQuality));
 	        break;
 
@@ -399,7 +402,6 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	    break;
 
 	case PDTA_DestBitMap:
-	    CreateDestBM( pd );
 	    D(bug("picture.datatype/OM_GET: Tag PDTA_DestBitMap: 0x%lx\n", (long)pd->DestBM));
 	    *(msg->opg_Storage)=(ULONG) pd->DestBM;
 	    break;
@@ -457,8 +459,8 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	    break;
 
 	case PDTA_DestMode:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_DestMode: 0x%lx\n", (long)PMODE_V43));
-	    *(msg->opg_Storage)=(ULONG) PMODE_V43;
+	    D(bug("picture.datatype/OM_GET: Tag PDTA_DestMode: 0x%lx\n", (long)pd->DestMode));
+	    *(msg->opg_Storage)=(ULONG) pd->DestMode;
 	    break;
 
 	case PDTA_FreeSourceBitMap:
@@ -577,6 +579,7 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
     SizeY = MIN(NominalHeight - TopVert, domain->Height);
     D(bug("picture.datatype/GM_RENDER: Size X %ld Y %ld\n", SizeX, SizeY));
 
+#if 0
     if( pd->DestBuffer )
     {
 	if( pd->TrueColorDest )
@@ -631,9 +634,10 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 			    pd->DestWidthBytes );
 	} /* else(pd->TrueColorDest) */
     }
-    else if( pd->DestBM )
+#endif
+    if( pd->DestBM )
     {
-	D(bug("picture.datatype/GM_RENDER: Colormapped planar source, Colormapped dest\n"));
+	D(bug("picture.datatype/GM_RENDER: Blitting bitmap\n"));
         BltBitMapRastPort( pd->DestBM,
                           SrcX,
                           SrcY,
@@ -699,6 +703,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     struct DTSpecialInfo *si;
     ULONG SrcWidth, SrcHeight;
     unsigned int SrcDepth;
+    BOOL success;
 
     pd = (struct Picture_Data *) INST_DATA(cl, g);
     si = (struct DTSpecialInfo *) g->SpecialInfo;
@@ -721,6 +726,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 
     ObtainSemaphore( &(si->si_Lock) );   /* lock object data */
 
+    success = TRUE;
     if( msg->gpl_Initial )   /* we need to do it just once */
     {
         /* determine destination screen depth */
@@ -734,7 +740,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
             pd->TrueColorDest = TRUE;
 	    if( pd->UseCM )
 	    {
-		D(bug("picture.datatype/DTM_ASYNCLAYOUT: Forcing colormapped instead of Depth %ld\n", (long)pd->DestDepth));
+		D(bug("picture.datatype/DTM_ASYNCLAYOUT: Forcing colormapped dest depth of 8 instead of %ld\n", (long)pd->DestDepth));
 		pd->DestDepth = 8;
 		pd->TrueColorDest = FALSE;
 	    }
@@ -745,9 +751,16 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 	}
         D(bug("picture.datatype/DTM_ASYNCLAYOUT: Destination Depth %ld\n", (long)pd->DestDepth));
 
-        if( pd->TrueColorSrc )
+	FreeDest( pd );
+	if( !AllocDestBM( pd, SrcWidth, SrcHeight, pd->DestDepth ) )
+	{
+	    ReleaseSemaphore(&si->si_Lock);   /* unlock object data */
+	    return FALSE;
+	}
+
+	if( pd->TrueColorSrc )
         {
-            if( pd->SrcBM )
+            if( !pd->SrcBuffer )
             {
                 D(bug("picture.datatype/DTM_ASYNCLAYOUT: Bitmap source only possible with up to 8 bits !\n"));
                 ReleaseSemaphore(&si->si_Lock);   /* unlock object data */
@@ -756,32 +769,47 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
             if( pd->TrueColorDest )
             {
                 D(bug("picture.datatype/DTM_ASYNCLAYOUT: TrueColor src/dest mode; no remapping required\n"));
-                ConvertTC2TC(pd);
+                success = ConvertTC2TC( pd );
             }
             else
             {
                 D(bug("picture.datatype/DTM_ASYNCLAYOUT: TrueColor src, Colormapped dest mode\n"));
-                ConvertTC2CM(pd);
+                success = ConvertTC2CM( pd );
             }
         }
         else /* if(pd->TrueColorSrc) */
         {
+	    if( !pd->SrcBuffer )
+	    {
+		if( !ConvertBitmap2Chunky( pd ) )
+		{
+		    ReleaseSemaphore(&si->si_Lock);   /* unlock object data */
+		    return FALSE;
+		}
+	    }
             if( pd->TrueColorDest )
             {
                 D(bug("picture.datatype/DTM_ASYNCLAYOUT: Colormapped src, TrueColor dest mode; no remapping required\n"));
-                ConvertCM2TC(pd);
+                success = ConvertCM2TC( pd );
             }
             else
             {
                 D(bug("picture.datatype/DTM_ASYNCLAYOUT: Colormapped src, Colormapped dest mode\n"));
-                ConvertCM2CM(pd);
+                success = ConvertCM2CM( pd );
             }
         } /* else(pd->TrueColorSrc) */
+	if( pd->FreeSource )
+	    FreeSource( pd );
         pd->Layouted = TRUE;
         D(bug("picture.datatype/DTM_ASYNCLAYOUT: Initial layout done\n"));
     } /* if(msg->gpl_Initial) */
 
     ReleaseSemaphore( &si->si_Lock );   /* unlock object data */
+    if( !success )
+    {
+        D(bug("picture.datatype/DTM_ASYNCLAYOUT: Layout failed !\n"));
+	return FALSE;
+    }
 
     {
 	struct IBox *domain;
@@ -853,7 +881,7 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
             /* Initial call: Set new pixel format and allocate Chunky or RGB buffer */
 	    if( pd->SrcBM )
 	    {
-		D(bug("picture.datatype/DTM_WRITEPIXELARRAY: Not possible in planar mode !\n"));
+		D(bug("picture.datatype/DTM_WRITEPIXELARRAY: Not possible in bitmap mode !\n"));
 		return FALSE;
 	    }
 	    if( !pd->bmhd.bmh_Width || !pd->bmhd.bmh_Height || !pd->bmhd.bmh_Depth )
@@ -947,38 +975,15 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
         deststart = pd->SrcBuffer + msg->pbpa_Left * pixelbytes + msg->pbpa_Top * destmod;
         lines = msg->pbpa_Height;
         numbytes = srcwidth * pixelbytes;
-#if 0
-        if( pixelformat == PBPAFMT_RGB )
-        {
-            long i;
 
-            /* convert RGB to ARGB format during copy */
-            for( line=0; line<lines; line++ )
-            {
-                D(bug("picture.datatype/DTM_WRITEPIXELARRAY: RGB src 0x%lx dest 0x%lx bytes %ld\n", (long)srcstart, (long)deststart, numbytes));
-                src = (UBYTE *)srcstart;
-                dest = (ULONG *)deststart;
-                for( i=0; i<srcwidth; i++ )
-                {
-                    *dest++ = (src[0] << 16) | (src[1] << 8) | (src[2]);
-		    src += 3;
-                }
-                srcstart += srcmod;
-                deststart += destmod;
-            }
-        }
-        else
-        {
-#endif
-            /* simply copy data */
-            for( line=0; line<lines; line++ )
-            {
-                // D(bug("picture.datatype/DTM_WRITEPIXELARRAY: COPY src 0x%lx dest 0x%lx bytes %ld\n", (long)srcstart, (long)deststart, numbytes));
-                CopyMem((APTR) srcstart, (APTR) deststart, numbytes);
-                srcstart += srcmod;
-                deststart += destmod;
-            }
-//        }
+	/* simply copy data */
+	for( line=0; line<lines; line++ )
+	{
+	    // D(bug("picture.datatype/DTM_WRITEPIXELARRAY: COPY src 0x%lx dest 0x%lx bytes %ld\n", (long)srcstart, (long)deststart, numbytes));
+	    CopyMem((APTR) srcstart, (APTR) deststart, numbytes);
+	    srcstart += srcmod;
+	    deststart += destmod;
+	}
     }
     return TRUE;
 }
@@ -1055,7 +1060,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
 
         case OM_GET:
         {
-            D(bug("picture.datatype/DT_Dispatcher: Method OM_GET\n"));
+            // D(bug("picture.datatype/DT_Dispatcher: Method OM_GET\n"));
             RetVal=(IPTR) DT_GetMethod(cl, (struct Gadget *) o, (struct opGet *) msg);
             break;
         }
