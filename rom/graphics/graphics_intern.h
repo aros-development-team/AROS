@@ -74,6 +74,8 @@ extern void driver_EraseRect (struct RastPort *, LONG, LONG, LONG, LONG,
 			    struct GfxBase *);
 extern void driver_FreeBitMap (struct BitMap *, struct GfxBase *);
 extern int  driver_InitRastPort (struct RastPort *, struct GfxBase *);
+extern void driver_InitView (struct View *, struct GfxBase *);
+extern void driver_InitVPort (struct ViewPort *, struct GfxBase *);
 extern void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count, struct GfxBase *);
 extern void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table, struct GfxBase *);
 extern void driver_Move (struct RastPort *, LONG, LONG, struct GfxBase *);
