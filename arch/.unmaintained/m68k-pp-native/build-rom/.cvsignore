@@ -1,0 +1,4 @@
+*.o
+*.s
+aros.rom
+aros_rom
