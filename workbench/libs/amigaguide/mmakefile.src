@@ -22,7 +22,7 @@ FUNCS := \
 	unlockamigaguidebase 
 
 #MM workbench-libs-amigaguide-includes : \
-#MM     includes-copy
+#MM     kernel-exec-includes includes-copy
 #MM- workbench-libs-amigaguide : linklibs includes
 
 %build_module mmake=workbench-libs-amigaguide \
