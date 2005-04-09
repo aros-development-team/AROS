@@ -172,7 +172,7 @@ struct AROS_cpu_context
 	 (cc)->regs[13] = R13(sc); \
 	 (cc)->regs[14] = R14(sc); \
 	 (cc)->regs[15] = FP(sc); \
-	 (cc)->regs[16] = PC(sc) \
+	 (cc)->regs[16] = PC(sc); \
     } while (0)
          
 #define RESTORE_CPU(cc,sc)       \
@@ -194,7 +194,7 @@ struct AROS_cpu_context
          R13(sc) = (cc)->regs[13]; \
          R14(sc) = (cc)->regs[14]; \
          FP(sc) = (cc)->regs[15]; \
-         PC(sc) = (cc)->regs[16] \
+         PC(sc) = (cc)->regs[16]; \
     } while (0)
 
 #define SAVE_ERRNO(cc) \
@@ -250,14 +250,14 @@ struct AROS_cpu_context
         do                                      \
 	{                                       \
     	    if (HAS_FPU(sc))                    \
-	        (cc)->fpstate = *(sc)->fpstate; \
+	        (cc)->fpstate = (sc)->fpstate; \
 	} while (0)
 
 #define RESTORE_FPU(cc,sc)                      \
         do                                      \
 	{                                       \
     	    if (HAS_FPU(sc))                    \
-	        *(sc)->fpstate = (cc)->fpstate; \
+	        (sc)->fpstate = (cc)->fpstate; \
 	} while (0)
 
 /*
@@ -321,7 +321,7 @@ struct AROS_cpu_context
 
 #define PREPARE_INITIAL_CONTEXT(task,startpc) \
    asm volatile("fninit\n\t" \
-    	    	"fsave %0\n\t" \
+    	    	"fnsave %0\n\t" \
 		"fwait" : "=m" (GetCpuContext(task)->fpstate))
 
 #else
