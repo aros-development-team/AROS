@@ -38,10 +38,15 @@
 #define EM_68K          4
 #define EM_PPC         20
 #define EM_ARM         40
+#define EM_X86_64       62
 
 #define R_386_NONE      0
 #define R_386_32        1
 #define R_386_PC32      2
+
+#define R_X86_64_NONE   0 
+#define R_X86_64_64     1
+#define R_X86_64_PC32   2
 
 #define R_68k_NONE      0
 #define R_68K_32        1
@@ -67,6 +72,7 @@
 
 #define EI_CLASS        4
 #define ELFCLASS32      1
+#define ELFCLASS64      2
 
 #define EI_OSABI        7
 #define EI_ABIVERSION   8
@@ -251,7 +257,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 
     if
     (
-        eh->ident[EI_CLASS]      != ELFCLASS32    ||
+        eh->ident[EI_CLASS]      != (ELFCLASS32 || ELFCLASS64)    ||
         eh->ident[EI_VERSION]    != EV_CURRENT    ||
         eh->ident[EI_OSABI]      != ELFOSABI_AROS ||
         eh->ident[EI_ABIVERSION] != 0             ||
@@ -261,7 +267,12 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 
             eh->ident[EI_DATA] != ELFDATA2LSB ||
             eh->machine        != EM_386
-        
+
+        #elif defined(__x86_64__)
+
+            eh->ident[EI_DATA] != ELFDATA2LSB ||
+            eh->machine        != EM_X86_64
+
         #elif defined(__mc68000__)
 
             eh->ident[EI_DATA] != ELFDATA2MSB ||
