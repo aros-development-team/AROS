@@ -436,13 +436,14 @@ int main(int argc, char **argv)
     /* We might also be interested in using the BS key instead of the
        delete key, this will do that
     */
+#if !defined(__x86_64__)
     tcgetattr(0, &t);
     t.c_cc[VERASE] = '\b';
 #ifndef TCSASOFT
 #   define TCSASOFT 0
 #endif
     tcsetattr(0, TCSANOW|TCSASOFT, &t);
-
+#endif
     /*	There is nothing more system dependant to set up,
 	so lets start that ball rolling...
 

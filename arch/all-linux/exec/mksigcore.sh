@@ -12,6 +12,8 @@ fi
 handler=__sighandler_t
 if [ `uname -m` = "m68k" ]; then
   sed "s/@sigcontext@/$type/" ${1-.}/../m68k/sigcore.h.src > ${2}
+elif [ `uname -m` = "x86_64" ]; then
+  sed "s/@sigcontext@/$type/;s/@sighandler@/$handler/" ${1-.}/../x86_64/sigcore.h.src > ${2}
 elif [ `uname -m` = "ppc" ]; then
   sed "s/@sigcontext@/$type/;s/@sighandler@/$handler/" ${1-.}/../ppc/sigcore.h.src > ${2}
 else

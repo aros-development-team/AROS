@@ -1,0 +1,12 @@
+# $Id: mmakefile.src 21653 2004-05-22 10:47:19Z verhaegs $
+include $(TOP)/config/make.cfg
+
+USER_AFLAGS := -I..
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec \
+  asmfiles=execstubs \
+  arch=x86_64
+
+#MM kernel-exec-x86_64 : kernel-x86_64-machine_i
+
+%common

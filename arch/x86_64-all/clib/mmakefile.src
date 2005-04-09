@@ -1,0 +1,13 @@
+# $Id: mmakefile.src 21653 2004-05-22 10:47:19Z verhaegs $
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/compiler/clib -I..
+USER_AFLAGS 	:= -I..
+%build_archspecific \
+  mainmmake=linklibs-clib maindir=compiler/clib \
+  arch=x86_64 \
+  asmfiles="longjmp setjmp"
+
+#MM linklibs-clib-x86_64 : kernel-x86_64-machine_i
+
+%common
