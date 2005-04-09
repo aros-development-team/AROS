@@ -476,7 +476,7 @@ unsigned long SwapLong1234(unsigned long r)
 int SwapChoose(void)
 {
 unsigned short w;
-unsigned long  d;
+unsigned int d;
 
   strncpy((char *)&w, "\1\2", 2);
   strncpy((char *)&d, "\1\2\3\4", 4);

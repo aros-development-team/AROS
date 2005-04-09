@@ -8,7 +8,11 @@
 #include "volumes.h"
 
 void showPtrArgsText(struct AFSBase *afsbase, char *string, ULONG *args) {
+#ifdef __x86_64__
+	vprintf(string, args);
+#else
 	vprintf(string, (va_list)args);
+#endif
 	printf("\n");
 }
 
