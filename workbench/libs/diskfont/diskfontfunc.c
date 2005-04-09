@@ -917,7 +917,7 @@ APTR DF_IteratorInit(struct TTextAttr *reqattr, struct DiskfontBase_intern *Disk
 	{
 	    D(bug("DF_IteratorInit: ProgdirDirEntry found\n"));
 	    df_data->u.FontsData.CurrentDirEntry = df_data->u.FontsData.ProgdirDirEntry;
-	    df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(df_data->u.FontsData.ProgdirDirEntry);
+	    df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(&df_data->u.FontsData.ProgdirDirEntry->FileList); /* stegerg: CHECKME!!! */
 	}
 	else
 	    D(bug("DF_IteratorInit: No ProgdirEntry found\n"));
