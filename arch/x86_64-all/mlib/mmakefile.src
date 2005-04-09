@@ -1,0 +1,6 @@
+# $Id: mmakefile.src 16095 2002-12-21 21:19:09Z sheutlin $
+#
+include $(TOP)/config/make.cfg
+
+#MM- linklibs-arosm-x86_64 : linklibs-arosm-hasfpu
+

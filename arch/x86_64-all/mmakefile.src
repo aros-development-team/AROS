@@ -1,0 +1,49 @@
+# $Id: mmakefile.src 22639 2005-01-01 17:05:35Z verhaegs $
+include $(TOP)/config/make.cfg
+
+GENINC		:= $(TOOLDIR)/geninc-x86_64$(HOST_EXE_SUFFIX)
+USER_INCLUDES	:= -I$(GENINCDIR)
+MACHINE_H	:= $(GENINCDIR)/aros/machine.h
+INCFILES	:= $(GENINCDIR)/aros/machine.h \
+		   $(AROS_INCLUDES)/aros/machine.h \
+		   $(GENINCDIR)/jmpdefs.h
+
+# The dependancies here are for compiling geninc.c
+#MM kernel-x86_64-machine_i : \
+#MM     kernel-exec-includes compiler-includes compiler-arossuport-includes
+
+#MM
+includes-common-x86_64 : $(INCFILES)
+
+#MM
+kernel-x86_64-machine_i : machine.i
+
+#MM
+clean::
+	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
+
+#MM- kernel-x86_64 :
+
+$(AROS_INCLUDES)/aros/%.h : %.h
+	%mkdirs_q $(AROS_INCLUDES)/aros
+	$(CP) $< $@
+
+$(GENINCDIR)/aros/%.h : %.h
+	%mkdirs_q $(GENINCDIR)/aros
+	$(CP) $< $@
+
+$(GENINCDIR)/%.h : %.h
+	%mkdirs_q $(GENINCDIR)
+	$(CP) $< $@
+
+GENINC_CFLAGS := $(OS_CFLAGS) -I$(GENINCDIR) $(HOST_CFLAGS)
+
+$(GENINC) : geninc.c 
+	@echo "CFLAGS=$(GENINC_CFLAGS)"
+	@echo "Creating geninc..."
+	@$(HOST_CC) $(GENINC_CFLAGS) -o $@ $<
+
+machine.i: $(GENINC) $(MACHINE_H)
+	$(GENINC) > machine.i
+
+%common
