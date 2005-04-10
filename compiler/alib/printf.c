@@ -9,13 +9,13 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 
+LONG Printf(STRPTR fmt, ...) __stackparm;
+
 LONG Printf(STRPTR fmt, ...)
 {
     LONG retval;
-    AROS_SLOWSTACKMETHODS_PRE(fmt)
 
-    retval = VFPrintf(Output(), fmt, AROS_SLOWSTACKMETHODS_ARG(fmt));
+    retval = VFPrintf(Output(), fmt, &fmt+1);
 
-    AROS_SLOWSTACKMETHODS_POST
     return retval;
 }
