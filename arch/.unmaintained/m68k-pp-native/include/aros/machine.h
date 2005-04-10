@@ -28,6 +28,8 @@
 #define AROS_GET_SYSBASE_OK     struct ExecBase * SysBase = *(struct ExecBase **)0x4;
 #define AROS_GET_DOSBASE        struct DosLibrary * DOSBase = (struct DosLibrary *)OpenLibrary((UBYTE *)"dos.library",0); \
                                 CloseLibrary(DOSBase);
+/* do we need a function attribute to get parameters on the stack? */
+#define __stackparm
 
 register unsigned char * AROS_GET_SP asm("%sp");
 
