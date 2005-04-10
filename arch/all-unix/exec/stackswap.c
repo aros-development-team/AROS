@@ -139,6 +139,7 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 	APTR   ptr1;
 	APTR   ptr2;
 	int    t, i;
+	IPTR * fp;
 
 	newSP = (IPTR *)(sss->stk_Pointer);
 	oldSP = (IPTR *)SP(env);
@@ -184,7 +185,7 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 	for ( ; oldSP != FP(env); ) /* Copy local vars */
 	    *newSP++ = *oldSP++;
 
-	FP(env) = newSP; /* Set new frame pointer */
+	fp = newSP;
 
 	for (i=0; i<NUM_LONGS; i++) /* Copy NUM_LONGS */
 	    *newSP++ = *oldSP++;
@@ -194,6 +195,14 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 	sss->stk_Pointer = oldSP; /* Save modified old SP */
 
 	SP(env) = newSP; /* Set new SP */
+
+	/*
+	    sheutlin:
+		PowerPC has the frame pointer only on the stack.
+		Therefore we can only set the frame pointer after having
+		set the new stack pointer
+	*/
+	FP(env) = fp; /* Set new frame pointer */
 
 	this = FindTask (NULL);
 
