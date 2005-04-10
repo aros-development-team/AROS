@@ -8,17 +8,14 @@
 
 #include <dos/dos.h>
 #include <proto/dos.h>
-#include <stdarg.h>
 
 LONG Printf(STRPTR fmt, ...)
 {
     LONG retval;
-    va_list args;
+    AROS_SLOWSTACKMETHODS_PRE(fmt)
 
-    va_start(args,fmt);
+    retval = VFPrintf(Output(), fmt, AROS_SLOWSTACKMETHODS_ARG(fmt));
 
-    retval = VFPrintf(Output(), fmt, (LONG *)args);
-
-    va_end(args);
+    AROS_SLOWSTACKMETHODS_POST
     return retval;
 }
