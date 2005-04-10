@@ -11,7 +11,7 @@
 #ifdef __linux__
 #   if defined(__GLIBC__) && (__GLIBC__ >= 2)
 #      define SP(env)	((APTR)(env[0].__jmpbuf[JB_GPR1]))
-#      define FP(env)	((APTR)(env[0].__jmpbuf[JB_GPR2]))
+#      define FP(env)	(((APTR *)(env[0].__jmpbuf[JB_GPR1]))[0])
 #      define PC(env)	((APTR)(env[0].__jmpbuf[JB_LR]))
 #   else
 #      define SP(env)	((APTR)(env[0].__sp))
@@ -20,6 +20,6 @@
 #   endif
 #endif
 /* The number of stack longs that have to be copied from the old stack */
-#define NUM_LONGS	4
+#define NUM_LONGS	2
 
 #endif /* !JMPDEFS_H */
