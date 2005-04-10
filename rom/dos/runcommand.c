@@ -20,7 +20,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 	ULONG			 argsize,
 	LONG_FUNC		 entry,
 	struct DosLibrary      * DOSBase
-);
+) __stackparm;
 
 /*****************************************************************************
 
