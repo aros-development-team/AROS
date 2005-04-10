@@ -24,6 +24,10 @@
 #define AROS_GET_DOSBASE	extern struct DosLibrary *DOSBase;
 #define AROS_GET_SYSBASE_OK	extern struct ExecBase   *SysBase;
 
+/* do we need a function attribute to get parameters on the stack? */
+#define __stackparm __attribute__((stackparm))
+
+
 #define GET_SP(x) \
     __asm__ __volatile__ (	\
     "stw  1,%0 \n\t"		\
@@ -143,11 +147,10 @@ struct JumpVec
 	".globl fname; "                       \
 	"fname : "                             \
 	"lis   11,bname@ha; "                  \
-	"la    11,bname@l(11); "               \
-	"lwz   11, 0(11);"                     \
-	"lwz   0,vec(11); "                    \
+	"la    0,bname@l(11); "                \
+	"lwz   0,vec(0); "                     \
 	"mtctr 0; "                            \
-	"bctr;\n "                             \
+	"bctrl;\n "                            \
 	"EMITSTUB(%s, %s, %d) "
 /*
    We want to activate the execstubs and preserve all registers
@@ -232,18 +235,18 @@ extern void _aros_not_implemented (char *);
 	"mr     5,%5\n\t"    \
 	"stw    1,%1\n\t"    \
 	"mflr   0\n\t"       \
-	"stwu   1,-8(1)\n\t" \
-	"stw    0,12(1)\n\t" \
-	"lwz    0,%2\n\t"    \
+	"stwu   1,-12(1)\n\t" \
+	"stw    0,8(1)\n\t" \
+	"mr     0,%2\n\t"    \
 	"mtlr   0\n\t"       \
 	"blrl\n\t"           \
 	"mr     %0,3\n\t"    \
 	"lwz    11,0(1)\n\t" \
-	"lwz    0,4(11)\n\t" \
+	"lwz    0,-4(11)\n\t" \
 	"mtlr   0\n\t"       \
 	"mr     1,11\n\t"    \
 	: "=r"(_re), "=m"(*(APTR *)p)\
-	: "m"(_n), "r"(_n1), "r"(_n2), "r"(_n3)\
+	: "r"(_n), "r"(_n1), "r"(_n2), "r"(_n3)\
 	: "cc", "memory", "0", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13");\
     (_t)_re;\
 })
