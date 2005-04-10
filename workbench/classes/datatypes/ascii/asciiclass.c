@@ -36,6 +36,9 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+#include <aros/symbolsets.h>
+ADD2LIBS("datatypes/text.datatype", 0, struct Library *, TextBase)
+
 /**************************************************************************************************/
 
 static IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
