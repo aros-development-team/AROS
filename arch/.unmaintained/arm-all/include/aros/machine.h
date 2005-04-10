@@ -31,6 +31,9 @@
                                 CloseLibrary(DOSBase);
 #define AROS_GET_SYSBASE_OK     struct ExecBase * SysBase = *(struct ExecBase **)0x4;
 
+/* do we need a function attribute to get parameters on the stack? */
+#define __stackparm
+
 /* ??? */
 #define SP_OFFSET 0
 

@@ -26,6 +26,9 @@
 #define AROS_GET_SYSBASE	extern struct ExecBase * SysBase;
 #define AROS_GET_DOSBASE        extern struct DosLibrary * DOSBase;
 
+/* do we need a function attribute to get parameters on the stack? */
+#define __stackparm __attribute__((stackparm))
+
 #define AROS_SLOWSTACKTAGS	1
 #define AROS_SLOWSTACKMETHODS	1
 

@@ -26,6 +26,9 @@
 #define AROS_GET_SYSBASE	extern struct ExecBase * SysBase;
 #define AROS_GET_DOSBASE        extern struct DosLibrary * DOSBase;
 
+/* do we need a function attribute to get parameters on the stack? */
+#define __stackparm
+
 /*
     How much do I have to add to sp to get the address of the first
     byte on the stack?
