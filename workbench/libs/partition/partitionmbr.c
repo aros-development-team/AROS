@@ -268,31 +268,34 @@ ULONG cyl;
         );
     track = AROS_LE2LONG(entry->first_sector)/root->de.de_BlocksPerTrack;
     cyl = track/root->de.de_Surfaces;
-    if (cyl<255)
+    if (cyl<1024)
     {
         entry->start_head = track % root->de.de_Surfaces;
         entry->start_sector =
-            (AROS_LE2LONG(entry->first_sector) % root->de.de_BlocksPerTrack)+1;
-        entry->start_cylinder = cyl;
+            	(
+						(AROS_LE2LONG(entry->first_sector) % root->de.de_BlocksPerTrack)+1
+					)
+					| ((cyl & 0x300)>>2);
+        entry->start_cylinder = (cyl & 0xFF);
     }
     else
     {
-        entry->start_head = 0xFF;
+        entry->start_head = 0xFE;
         entry->start_sector = 0xFF;
         entry->start_cylinder = 0xFF;
     }
     end = AROS_LE2LONG(entry->first_sector)+AROS_LE2LONG(entry->count_sector);
     track = end/root->de.de_BlocksPerTrack;
     cyl = track/root->de.de_Surfaces-1;
-    if (cyl<255)
+    if (cyl<1024)
     {
         entry->end_head = (track-1) % root->de.de_Surfaces;
-        entry->end_sector = end - ((track-1)*root->de.de_BlocksPerTrack);
-        entry->end_cylinder = cyl;
+        entry->end_sector = (end - ((track-1)*root->de.de_BlocksPerTrack)) | ((cyl & 0x300)>>2);
+        entry->end_cylinder = (cyl & 0xFF);
     }
     else
     {
-        entry->end_head = 0xFF;
+        entry->end_head = 0xFE;
         entry->end_sector = 0xFF;
         entry->end_cylinder = 0xFF;
     }
