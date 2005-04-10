@@ -7,17 +7,17 @@
 #include "error.h"
 #include "volumes.h"
 
-void showPtrArgsText(struct AFSBase *afsbase, char *string, ULONG *args) {
-#ifdef __x86_64__
+void showPtrArgsText(struct AFSBase *afsbase, char *string, va_list args) {
 	vprintf(string, args);
-#else
-	vprintf(string, (va_list)args);
-#endif
 	printf("\n");
 }
 
 void showText(struct AFSBase *afsbase, char *string, ...) {
-	showPtrArgsText(afsbase, string, (ULONG *)(&string+1));
+va_list ap;
+
+	va_start(ap, string);
+	showPtrArgsText(afsbase, string, ap);
+	va_end(ap);
 }
 
 void showError(struct AFSBase *afsbase, ULONG error, ...) {
@@ -34,14 +34,20 @@ char *texts[]={0,
             0,
             "Unknown error"
 };
+
    if (error==ERR_ALREADY_PRINTED)
       return;
    if (error>=ERR_UNKNOWN)
    {
-      showPtrArgsText(afsbase, texts[ERR_UNKNOWN],(ULONG *)&error);
+      showText(afsbase, texts[ERR_UNKNOWN], error);
    }
    else
-      showPtrArgsText(afsbase, texts[error],(ULONG *)(&error+1));
+	{
+		va_list ap;
+		va_start(ap, error);
+      showPtrArgsText(afsbase, texts[error], ap);
+		va_end(ap);
+	}
 }
 
 ULONG readDisk
