@@ -146,8 +146,8 @@ struct JumpVec
 	"#define EMITSTUB(fname, bname, vec) " \
 	".globl fname; "                       \
 	"fname : "                             \
-	"lis   9,bname@ha; "                   \
-	"lwz   11,bname@l(9); "                \
+	"lis   11,bname@ha; "                  \
+	"lwz   11,bname@l(11); "               \
 	"lwz   11,vec(11); "                   \
 	"mtctr 11; "                           \
 	"bctr;\n "                             \
