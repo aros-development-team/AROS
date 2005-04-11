@@ -941,7 +941,7 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 
 BOOL readLine(struct CommandLine *cl, BPTR inputStream)
 {
-    char letter; 
+    LONG letter; 
 
     while(TRUE)
     {
