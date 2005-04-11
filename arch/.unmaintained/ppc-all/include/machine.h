@@ -146,11 +146,11 @@ struct JumpVec
 	"#define EMITSTUB(fname, bname, vec) " \
 	".globl fname; "                       \
 	"fname : "                             \
-	"lis   11,bname@ha; "                  \
-	"la    0,bname@l(11); "                \
-	"lwz   0,vec(0); "                     \
-	"mtctr 0; "                            \
-	"bctrl;\n "                            \
+	"lis   9,bname@ha; "                   \
+	"lwz   11,bname@l(9); "                \
+	"lwz   11,vec(11); "                   \
+	"mtctr 11; "                           \
+	"bctr;\n "                             \
 	"EMITSTUB(%s, %s, %d) "
 /*
    We want to activate the execstubs and preserve all registers
