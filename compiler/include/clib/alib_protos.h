@@ -57,7 +57,7 @@ struct Locale;
     Prototypes
 */
 IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
-IPTR CallHook (struct Hook * hook, APTR obj, ...);
+IPTR CallHook (struct Hook * hook, APTR obj, ...) __stackparm;
 
 /* Exec support */
 VOID BeginIO (struct IORequest *ioReq);
@@ -78,7 +78,7 @@ ULONG RangeRand (ULONG maxValue);
 ULONG FastRand (ULONG seed);
 LONG TimeDelay (LONG unit, ULONG secs, ULONG microsecs);
 void waitbeam (LONG pos);
-void __sprintf(UBYTE *buffer, UBYTE *format, ...);
+void __sprintf(UBYTE *buffer, UBYTE *format, ...) __stackparm;
 STRPTR StrDup(CONST_STRPTR str);
 APTR ReAllocVec(APTR oldmem, ULONG size, ULONG requirements);
 
