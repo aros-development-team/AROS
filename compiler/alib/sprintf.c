@@ -20,6 +20,7 @@ AROS_UFH2(void, __putChr,
 /*****************************************************************************
 
     NAME */
+#include <proto/alib.h>
 
        VOID  __sprintf(
 
