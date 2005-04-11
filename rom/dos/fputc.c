@@ -55,7 +55,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    return (1 == FWriteChars(file, &character, 1))
+    BYTE c = character;
+    return (1 == FWriteChars(file, &c, 1))
         ? character
         : EOF;
 
