@@ -250,7 +250,7 @@ BOOL appendString(struct CSource *cs, STRPTR from, LONG size);
  *
  * Output:   BOOL  --  success/failure indicator
  */
-#define printFlush(format...) do {PrintF(format); Flush(Output());} while (0)
+#define printFlush(format...) do {Printf(format); Flush(Output());} while (0)
 
 /* Function: interact
  *
@@ -354,8 +354,6 @@ static void printPrompt(void);
 /*****************************************************************************/
 void setupResidentCommands(void);
 #define PROCESS(x) ((struct Process *)(x))
-
-static void PrintF(char *format, ...);
 
 AROS_SH1(Shell, 41.1,
 AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
@@ -1194,7 +1192,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	    FreeVec(AllocVec(~0ul/2, MEMF_ANY)); /* Flush memory */
 
 	    mem_before = AvailMem(MEMF_ANY);
-	    PrintF("Available total memory before command execution: %10ld\n", mem_before);
+	    Printf("Available total memory before command execution: %10ld\n", mem_before);
 	}
 
 	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
@@ -1205,8 +1203,8 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	    FreeVec(AllocVec(~0ul/2, MEMF_ANY)); /* Flush memory */
 
 	    mem_after = AvailMem(MEMF_ANY);
-	    PrintF("Available total memory after command execution:  %10ld\n", mem_after);
-	    PrintF("Memory difference (before - after):              %10ld\n", mem_before - mem_after);
+	    Printf("Available total memory after command execution:  %10ld\n", mem_after);
+	    Printf("Memory difference (before - after):              %10ld\n", mem_before - mem_after);
 	}
 
 	me->tc_Node.ln_Name = oldtaskname;
@@ -1355,19 +1353,6 @@ static void setPath(BPTR lock)
 	CurrentDir(dir);
 }
 
-
-
-static void PrintF(char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-
-    VPrintf(format, (LONG *) args);
-
-    va_end(args);
-}
-
-
 static void printPrompt(void)
 {
     BSTR prompt = Cli()->cli_Prompt;
@@ -1387,11 +1372,11 @@ static void printPrompt(void)
 	    {
 	    case 'N':
 	    case 'n':
-		PrintF("%ld", PROCESS(FindTask(NULL))->pr_TaskNum);
+		Printf("%ld", PROCESS(FindTask(NULL))->pr_TaskNum);
 		break;
 	    case 'R':
 	    case 'r':
-		PrintF("%ld", Cli()->cli_ReturnCode);
+		Printf("%ld", Cli()->cli_ReturnCode);
 		break;
 	    case 'S':
 	    case 's':
