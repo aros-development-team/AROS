@@ -29,6 +29,9 @@
 register unsigned char * AROS_GET_SP asm("%rsp");
 #endif
 
+/*do we need a function attribute to get parameters on the stack? */
+#define __stackparm
+
 /* ??? */
 #define SP_OFFSET 0
 
