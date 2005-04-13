@@ -46,10 +46,5 @@ extern struct Library * MUIMasterBase;
 
 *****************************************************************************/
 {
-    AROS_SLOWSTACKTAGS_PRE(param1)
-
-    retval = MUI_RequestA(app, win, flags, title, gadgets, format, AROS_SLOWSTACKTAGS_ARG(param1));
-
-    AROS_SLOWSTACKTAGS_POST
-    
+    return MUI_RequestA(app, win, flags, title, gadgets, format, &param1);
 } /* MUI_Request */
