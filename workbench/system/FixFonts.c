@@ -167,7 +167,7 @@ int main()
                                     if (file)
                                     {
                                         /* Find the size of the header. This is definitely a hack... */
-                                        size=((LONG *)fhead)[-1L]-sizeof(LONG); /* Ehem. This is AllocVec'd */
+                                        size=*((LONG *)((UBYTE *)fhead-AROS_ALIGN(sizeof(ULONG))))-sizeof(LONG); /* Ehem. This is AllocVec'd */
                                         rc=0;
                                         if (Write(file,fhead,size)<0) rc=IoErr();
                                         Close(file);
