@@ -75,7 +75,7 @@
 
 	while (-- size)
 	{
-	    *ulptr = va_arg (args, ULONG);
+	    *ulptr ++ = va_arg (args, ULONG);
 	}
     }
 
@@ -177,7 +177,7 @@
     ULONG	     size;
     va_list	     ap;
 
-    ap	= args;
+    va_copy(ap, args);
     tag = firstTag;
 
     for (size=0;;size++)
@@ -214,7 +214,6 @@
 	tag = va_arg (args, ULONG);
     }
 
-    args = ap;
     tag  = firstTag;
 
     if ((msg = AllocVec (size*sizeof(TagItem), MEMF_ANY)))
@@ -227,7 +226,7 @@
 		break;
 	    else if (tag == TAG_MORE)
 	    {
-		ti[size].ti_Data = (IPTR) va_arg (args, struct TagItem *);
+		ti[size].ti_Data = (IPTR) va_arg (ap, struct TagItem *);
 		break;
 	    }
 
@@ -240,24 +239,24 @@
 	    case TAG_SKIP: {
 		ULONG skip;
 
-		skip = va_arg(args, IPTR);
+		skip = va_arg(ap, IPTR);
 
 		while (skip --)
 		{
-		    (void) va_arg(args, ULONG);
-		    (void) va_arg(args, IPTR);
+		    (void) va_arg(ap, ULONG);
+		    (void) va_arg(ap, IPTR);
 		}
 
 		break; }
 
 	    default:
-		ti[size].ti_Data = va_arg(args, IPTR);
+		ti[size].ti_Data = va_arg(ap, IPTR);
 	    }
 
-	    tag = va_arg (args, ULONG);
+	    tag = va_arg (ap, ULONG);
 	}
     }
-
+    va_end(ap);
     return msg;
 } /* GetTagsFromStack */
 
