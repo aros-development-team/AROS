@@ -23,8 +23,6 @@ void __showerror(char *format, ...)
     struct DosLibrary *DOSBase = NULL;
     const char *name = FindTask(NULL)->tc_Node.ln_Name;
 
-    va_start(args, format);
-
     if
     (
         !__forceerrorrequester                                                 &&
@@ -38,7 +36,7 @@ void __showerror(char *format, ...)
             PutStr(": ");
 	}
 #warning This next line might break on bizarre architectures.
-        VPrintf(format, (IPTR *)args);
+        VPrintf(format, (IPTR *)(&format+1));
         PutStr("\n");
     }
     else
@@ -58,8 +56,6 @@ void __showerror(char *format, ...)
 	CloseLibrary((struct Library *)IntuitionBase);
     }
 
-    va_end(args);
-    
     if (DOSBase != NULL)
         CloseLibrary((struct Library *)DOSBase);
     
