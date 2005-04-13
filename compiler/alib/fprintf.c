@@ -13,12 +13,8 @@
 LONG FPrintf(BPTR fh, STRPTR fmt, ...)
 {
     LONG retval;
-    va_list args;
 
-    va_start(args,fmt);
+    retval = VFPrintf(fh, fmt, (LONG *)(&fmt+1));
 
-    retval = VFPrintf(fh, fmt, (LONG *)args);
-
-    va_end(args);
     return retval;
 }

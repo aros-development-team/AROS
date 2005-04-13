@@ -14,12 +14,7 @@ LONG FWritef(BPTR fh, STRPTR fmt, ...)
 {
     LONG retval;
 
-    va_list args;
-    va_start(args,fmt);
+    retval = VFWritef(fh, fmt, (LONG *)(&fmt+1));
 
-    retval = VFWritef(fh, fmt, (LONG *)args);
-
-    va_end(args);
-    
     return retval;
 }
