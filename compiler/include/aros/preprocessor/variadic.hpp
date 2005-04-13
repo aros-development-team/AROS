@@ -4,5 +4,6 @@
 # include <aros/preprocessor/variadic/first.hpp>
 # include <aros/preprocessor/variadic/rest.hpp>
 # include <aros/preprocessor/variadic/cast2iptr.hpp>
+# include <aros/preprocessor/variadic/cast2tagitem.hpp>
 #
 # endif
