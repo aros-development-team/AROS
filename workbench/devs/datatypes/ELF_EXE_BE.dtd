@@ -1,0 +1,15 @@
+# Descriptor for executable ELF files, ie. relocatable ELF object files.
+Name=ELF_EXE
+Version=$VER: ELF_EXE big endian 1.0 (13-Apr-2005)
+BaseName=binary
+Pattern=#?
+
+#    |----------------------------- ident ----------------------------| |- type -|
+#              EI_CLASS-.        .-EI_VERSION
+#            ELFCLASS32 v        v EV_CURRENT                           --ET_REL--
+Mask=0x7f 'E' 'L' 'F' 0x01 ANY 0x01 ANY ANY ANY ANY ANY ANY ANY ANY ANY 0x00 0x01
+
+GroupID=syst
+ID=exec
+Flags=DTF_BINARY,DTF_CASE
+Priority=1
