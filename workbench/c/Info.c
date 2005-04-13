@@ -236,6 +236,8 @@ CONST_STRPTR GetStrFromCat(ULONG id, CONST_STRPTR def)
 }
 
 
+void LPrintf(ULONG id, CONST_STRPTR def, ...) __stackparm;
+
 void LPrintf(ULONG id, CONST_STRPTR def, ...)
 {
     def = GetStrFromCat(id, def);
