@@ -463,11 +463,6 @@ AROS_UFH2(void, putchr,
 }
 
 
-void dt_sprintf(struct Library *DataTypesBase, UBYTE *buffer, UBYTE *format, ...)
-{
-    RawDoFmt(format, &format+1, (VOID_FUNC)putchr, &buffer);
-}
-
 #warning these work only with stack growing downwards and should therefore be fixed to use macros in utility/tagitem.h
 
 ULONG setattrs(struct Library *DataTypesBase, Object *object, Tag firstTag,...)
