@@ -20,9 +20,9 @@ void typestrncpy(STRPTR, STRPTR, ULONG);
 UWORD strcpyESC(STRPTR, STRPTR, ...);
 void getSizeStr(STRPTR, ULONG);
 ULONG sizeStrToUL(STRPTR);
-LONG GetPartitionAttrsA(struct PartitionHandle *, LONG, ...);
-LONG SetPartitionAttrsA(struct PartitionHandle *, LONG, ...);
-LONG GetPartitionTableAttrsA(struct PartitionHandle *, LONG, ...);
+LONG GetPartitionAttrsA(struct PartitionHandle *, LONG, ...) __stackparm;
+LONG SetPartitionAttrsA(struct PartitionHandle *, LONG, ...) __stackparm;
+LONG GetPartitionTableAttrsA(struct PartitionHandle *, LONG, ...) __stackparm;
 ULONG getAttrInfo(struct PartitionAttribute *, ULONG);
 UBYTE getBitNum(ULONG);
 #endif
