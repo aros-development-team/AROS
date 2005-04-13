@@ -276,8 +276,9 @@
 	    struct Library *DTClassBase;
 
     	    D(bug("datatypes.library/NewDTObjectA: Trying OpenLibrary(datatypes/%s.datatype)\n", BaseName));
-	    
-	    dt_sprintf(DataTypesBase, libname,"datatypes/%s.datatype", BaseName);
+	    strcpy(libname, "datatypes/");
+	    strcat(libname, BaseName);
+	    strcat(libname, ".datatype");
 	    
 	    if(!(DTClassBase = OpenLibrary(libname, 0)))
 		SetIoErr(DTERROR_UNKNOWN_DATATYPE);
