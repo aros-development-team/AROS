@@ -30,7 +30,7 @@ VOID DrawDragNDrop(struct DragNDrop *dnd, LONG x, LONG y);
 VOID UndrawDragNDrop(struct DragNDrop *dnd);
 
 struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList );
-struct BitMapNode *VARARGS68K CreateBitMapNode(void *dummy, ...);
+struct BitMapNode *VARARGS68K CreateBitMapNode(void *dummy, ...) __stackparm;
 VOID DeleteBitMapNode(struct BitMapNode *bmn );
 
 VOID AttachBitMapNode( struct DragNDrop *dnd, struct BitMapNode *bmn );

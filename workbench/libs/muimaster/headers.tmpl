@@ -21,11 +21,11 @@ extern struct Library *MUIMasterBase;
 
 /* Prototypes for stubs in mui.lib */
 
-APTR 	MUI_AllocAslRequestTags(unsigned long reqType, Tag tag1, ...);
-BOOL 	MUI_AslRequestTags(APTR requester, Tag tag1, ...);
+APTR 	MUI_AllocAslRequestTags(unsigned long reqType, Tag tag1, ...) __stackparm;
+BOOL 	MUI_AslRequestTags(APTR requester, Tag tag1, ...) __stackparm;
 Object *MUI_MakeObject(LONG type, ...);
-Object *MUI_NewObject(char *classname, Tag tag1, ...);
+Object *MUI_NewObject(char *classname, Tag tag1, ...) __stackparm;
 LONG    MUI_Request(APTR app, APTR win, LONG flags, char *title, char *gadgets, 
-char *format, APTR param1, ...);
+char *format, APTR param1, ...) __stackparm;
 
 ##end clib
