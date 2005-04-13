@@ -95,16 +95,16 @@ struct  InputEvent *InvertString(STRPTR str, struct KeyMap *km);
 
 /* Graphics */
 #ifndef ObtainBestPen
-LONG ObtainBestPen( struct ColorMap * cm, LONG R, LONG G, LONG B, ULONG tag1, ...);
+LONG ObtainBestPen( struct ColorMap * cm, LONG R, LONG G, LONG B, ULONG tag1, ...) __stackparm;
 #endif
 
 #ifndef GetRPAttrs
-void GetRPAttrs( struct RastPort * rp, Tag tag1, ...);
+void GetRPAttrs( struct RastPort * rp, Tag tag1, ...) __stackparm;
 #endif
 
 /* Intuition */
 #ifndef SetWindowPointer 
-void SetWindowPointer( struct Window * window, ULONG tag1, ...);
+void SetWindowPointer( struct Window * window, ULONG tag1, ...) __stackparm;
 #endif
 
 /* Locale */
@@ -112,7 +112,7 @@ void SetWindowPointer( struct Window * window, ULONG tag1, ...);
 struct Catalog *OpenCatalog(	struct Locale * locale,
 				STRPTR name,
 				ULONG tag1,
-				...);
+				...) __stackparm;
 #endif
 
 /* Pools */
