@@ -23,12 +23,11 @@ AROS_UFH2 (void, KPutChar,
     AROS_USERFUNC_EXIT
 }
 
+void KPrintF(STRPTR format, ...) __stackparm;
+
 void KPrintF(STRPTR format, ...)
 {
     AROS_GET_SYSBASE_OK
-    va_list args;
 
-    va_start(args, format);
-    RawDoFmt(format,args,(VOID_FUNC)KPutChar,SysBase);
-    va_end(args);
+    RawDoFmt(format,&format+1,(VOID_FUNC)KPutChar,SysBase);
 }
