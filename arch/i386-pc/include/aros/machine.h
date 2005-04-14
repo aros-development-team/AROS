@@ -31,7 +31,7 @@
 #define AROS_GET_SYSBASE_OK     extern struct ExecBase * SysBase;
 
 /* do we need a function attribute to get parameters on the stack? */
-#define __stackparam
+#define __stackparm
 
 #ifndef __TINYC__
 register unsigned char * AROS_GET_SP __asm__("%esp");
