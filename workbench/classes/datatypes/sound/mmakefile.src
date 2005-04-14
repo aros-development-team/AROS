@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := dispatch
+FILES := dispatch sound_init
 
 #MM workbench-datatypes-sound : includes linklibs contrib-AHI
 
