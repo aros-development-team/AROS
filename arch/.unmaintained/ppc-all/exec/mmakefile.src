@@ -5,7 +5,7 @@ USER_AFLAGS := -I..
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
   asmfiles=execstubs \
-  files=atomic \
+  files="atomic cachecleare" \
   arch=ppc
 
 #MM kernel-exec-ppc : kernel-ppc-machine_i
