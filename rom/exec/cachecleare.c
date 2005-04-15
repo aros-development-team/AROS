@@ -72,39 +72,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-#if defined(FLUSH_CACHES)
-    {
-	ULONG blocks;
-
-	// cache block alignment
-	ULONG align = (ULONG) address & ~(CACHE_BLOCK_SIZE - 1);
-	
-	// round up
-	length = length + CACHE_BLOCK_SIZE - 1;
-	blocks = length / CACHE_BLOCK_SIZE;
-	if (caches & CACRF_ClearD)
-	{
-	    ULONG i;
-	    for (i = 0; i < blocks; i++)
-		DATA_CACHE_BST(align + i * CACHE_BLOCK_SIZE);
-	    
-	    SYNC;
-	}
-
-	if (caches && CACRF_ClearI)
-	{
-	    ULONG i;
-	    for (i = 0; i < blocks; i++)
-		INSTR_CACHE_BINV(align + i * CACHE_BLOCK_SIZE);
-	    
-	    // SYNC for G4
-	    SYNC;
-	    ISYNC;
-	}
-    }
-#endif
-
+#warning TODO: Write exec/CacheClearE()
 /* iaint: I am sick of this continually printing out... */
 #if DEBUG
     aros_print_not_implemented("CacheClearE");
