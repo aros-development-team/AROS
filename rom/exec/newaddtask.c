@@ -156,9 +156,9 @@
         /* Add the newly created task to the parent's children
 	   list. */
 	et->et_Parent = FindTask(NULL);
-        Disable();
+        Forbid();
 	ADDHEAD(&GetETask(et->et_Parent)->et_Children, et);
-	Enable();
+	Permit();
 
 	/* Initialise the message list */
 	NEWLIST(&et->et_TaskMsgPort.mp_MsgList);

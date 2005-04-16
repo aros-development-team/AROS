@@ -140,14 +140,14 @@
         {
             REMOVE(et);
         }    
+
+        FreeVec(et);	
     }
 #endif
 
     /* Changing the task lists always needs a Disable(). */
     Disable();
 
-    FreeVec(et);
-	
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
     {
