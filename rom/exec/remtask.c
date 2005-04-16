@@ -131,16 +131,23 @@
 	struct ETask *child;
 
         /* Do an effective ChildOrphan(0) */
+	#warning FIXME: should we link the children to our parent?
         ForeachNode(&et->et_Children, child)
    	    child->et_Parent = NULL;
-    
-    	FreeVec(et);
+
+        /* If we have an ETask parent, unlink us from it */
+        if(et->et_Parent != NULL)
+        {
+            REMOVE(et);
+        }    
     }
 #endif
 
     /* Changing the task lists always needs a Disable(). */
     Disable();
 
+    FreeVec(et);
+	
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
     {
