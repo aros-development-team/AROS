@@ -39,8 +39,8 @@ IPTR Popstring__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	    *tag, *tags;
     Object *string, *button;
 
-    button = (Object*)GetTagData(MUIA_Popstring_Button,NULL,msg->ops_AttrList);
-    string = (Object*)GetTagData(MUIA_Popstring_String,NULL,msg->ops_AttrList);
+    button = (Object*)GetTagData(MUIA_Popstring_Button,0,msg->ops_AttrList);
+    string = (Object*)GetTagData(MUIA_Popstring_String,0,msg->ops_AttrList);
     
     obj = (Object *) DoSuperNewTags
     (
@@ -67,7 +67,7 @@ IPTR Popstring__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -87,7 +87,7 @@ IPTR Popstring__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tags,*tag;
     struct Popstring_DATA *data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -99,6 +99,19 @@ IPTR Popstring__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
+
+#define STORE *(msg->opg_Storage)
+IPTR Popstring__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct Popstring_DATA *data = INST_DATA(cl, obj);
+
+    switch(msg->opg_AttrID)
+    {
+    	case MUIA_Popstring_String: STORE = (IPTR)data->string; return 1;
+    }
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+#undef STORE
 
 IPTR Popstring__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
@@ -177,6 +190,8 @@ BOOPSI_DISPATCHER(IPTR, Popstring_Dispatcher, cl, obj, msg)
 	    return Popstring__OM_NEW(cl, obj, (APTR)msg);
 	case OM_SET:
 	    return Popstring__OM_SET(cl, obj, (APTR)msg);
+	case OM_GET:
+	    return Popstring__OM_GET(cl, obj, (APTR)msg);
         case MUIM_Setup:
 	    return Popstring__MUIM_Setup(cl, obj, (APTR)msg);
         case MUIM_Cleanup:
