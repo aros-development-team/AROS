@@ -1,0 +1,420 @@
+;
+; TextEditor_mcp.cd - TextEditor MUI custom prefs catalog description file
+; $Id: TextEditor_mcp.cd,v 1.1 2005/03/30 23:44:36 tactica Exp $
+;
+#version 2
+#language english
+;
+;
+HelpBubble_BlockQual (0//)
+Move the cursor key and hold down the qualifier\n\
+that you set here to mark text.
+;
+HelpBubble_CheckWord (1//)
+If enabled, then the editor will lookup the word,\n\
+and only show suggestions if the word is misspelled.
+;
+HelpBubble_Smooth (2//)
+This will enable pixel smooth scrolling.
+;
+HelpBubble_TypeNSpell (3//)
+Enable this to let the editor\n\
+lookup the words while you type them.
+;
+HelpBubble_UndoLevel (4//)
+Each undo eats 10 bytes of memory.\n\
+Cut and Copy takes a little more,\n\
+depends on the block size!
+;
+MSG_Button_DefaultKeys (5//)
+Default _keys
+;
+MSG_Button_Delete (6//)
+_Delete
+;
+MSG_Button_Insert (7//)
+_Insert
+;
+MSG_ConfigMenu_CheckWord (8//)
+Check word
+;
+MSG_ConfigMenu_TypeNSpell (9//)
+Type'n'spell
+;
+MSG_CycleItem_Alt (10//)
+Alt
+;
+MSG_CycleItem_Ctrl (11//)
+Control
+;
+MSG_CycleItem_Mouse (12//)
+(mouse only)
+;
+MSG_CycleItem_Shift (13//)
+Shift
+;
+MSG_Execution_ARexx (14//)
+ARexx
+;
+MSG_Execution_CLI (15//)
+CLI
+;
+MSG_Function_BOL (16//)
+Begin Of Line
+;
+MSG_Function_Backspace (17//)
+Backspace
+;
+MSG_Function_Bottom (18//)
+Bottom
+;
+MSG_Function_Copy (19//)
+Copy
+;
+MSG_Function_Cut (20//)
+Cut
+;
+MSG_Function_DelBOL (21//)
+Delete to BOL
+;
+MSG_Function_DelBOW (22//)
+Delete to BOW
+;
+MSG_Function_DelEOL (23//)
+Delete to EOL
+;
+MSG_Function_DelEOW (24//)
+Delete to EOW
+;
+MSG_Function_Delete (25//)
+Delete
+;
+MSG_Function_Down (26//)
+Down
+;
+MSG_Function_EOL (27//)
+End Of Line
+;
+MSG_Function_Left (28//)
+Left
+;
+MSG_Function_NextGadget (29//)
+Next gadget
+;
+MSG_Function_NxtPage (30//)
+Next Page
+;
+MSG_Function_NxtPara (31//)
+Next Paragraph
+;
+MSG_Function_NxtSent (32//)
+Next Sentence
+;
+MSG_Function_NxtWord (33//)
+Next Word
+;
+MSG_Function_Paste (34//)
+Paste
+;
+MSG_Function_PrvPage (35//)
+Prev Page
+;
+MSG_Function_PrvPara (36//)
+Prev Paragraph
+;
+MSG_Function_PrvSent (37//)
+Prev Sentence
+;
+MSG_Function_PrvWord (38//)
+Prev Word
+;
+MSG_Function_Redo (39//)
+Redo
+;
+MSG_Function_Return (40//)
+Return
+;
+MSG_Function_Right (41//)
+Right
+;
+MSG_Function_SuggestSpelling (42//)
+Suggest spelling
+;
+MSG_Function_Tab (43//)
+Tab
+;
+MSG_Function_Top (44//)
+Top
+;
+MSG_Function_Undo (45//)
+Undo
+;
+MSG_Function_Up (46//)
+Up
+;
+MSG_GroupTitle_Control (47//)
+Control
+;
+MSG_GroupTitle_Cursor (48//)
+Cursor
+;
+MSG_GroupTitle_Design (49//)
+Design
+;
+MSG_GroupTitle_Fonts (50//)
+Fonts
+;
+MSG_GroupTitle_Separator (51//)
+Separator
+;
+MSG_HelpTxt_SpellChecker (52//)
+ \33u Intro \33n\n\
+\n\
+The TextEditor gadget offers you easy integration of external spell checkers, \
+this allows you to have both type'n'spell and also normal word-guessing.\n\
+\n\
+ \33u Lookup command \33n\n\
+\n\
+For the type'n'spell you'll have to set the lookup command to a script that \
+will lookup the word and set the environment variable \"Found\" to either 0 \
+(for not found) or 1 (for a match).\n\
+I have chosen this behavior because it is the default for AlphaSpell.\n\
+You write %s where you want the word.\n\
+If you use AlphaSpell, then you can write:\n\
+\33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\
+\n\
+You \33bmust\33n remember the quotes, this will let ARexx execute it \
+as a command instead of a script.\n\
+\n\
+ \33u Suggest command \33n\n\
+\n\
+If you press HELP over a word, then the editor will launch this command, \
+again with %s substituted with the current word.\n\
+Your script should produce a file in T: named \"Matches\". This file are \
+then read by the gadget, and the contents are shown in a popup-listview, \
+from where you can choose a word which will replace the misspelled one.\n\
+Again, AlphaSpell users can write:\n\
+\33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\
+\n\
+If you use the methods described above, then you must start AlphaSpell \
+with the \"ARexx\" switch.\n\
+\n\
+It is advised to keep your dictionary in RAM if you enable \
+the type'n'spell feature.
+;
+MSG_LVLabel_Action (53//)
+\33c\0333Action:
+;
+MSG_LVLabel_Key (54//)
+\33c\0333Key:
+;
+MSG_Label_Background (55//)
+Background
+;
+MSG_Label_BlinkSpeed (56//)
+Blinkspeed
+;
+MSG_Label_BlkQual (57//)
+Block qualifier
+;
+MSG_Label_Cursor (58//)
+Cursor
+;
+MSG_Label_Fixed (59//)
+Fixed
+;
+MSG_Label_Frame (60//)
+Frame
+;
+MSG_Label_Highlight (61//)
+Highlight
+;
+MSG_Label_LookupCmd (62//)
+Lookup command
+;
+MSG_Label_LookupWords (63//)
+Lookup word before suggesting?
+;
+MSG_Label_Normal (64//)
+Normal
+;
+MSG_Label_Selected (65//)
+Selected
+;
+MSG_Label_SeparatorShadow (66//)
+Shadow
+;
+MSG_Label_SeparatorShine (67//)
+Shine
+;
+MSG_Label_Smooth (68//)
+Smooth
+;
+MSG_Label_SpellNType (69//)
+Spell check as you type?
+;
+MSG_Label_SuggestCmd (70//)
+Suggest command
+;
+MSG_Label_TabSize (71//)
+Tab size
+;
+MSG_Label_Text (72//)
+Text
+;
+MSG_Label_UndoLevel (73//)
+Undo levels
+;
+MSG_Label_Width (74//)
+Width
+;
+MSG_MenuItem_Background (75//)
+Background
+;
+MSG_MenuItem_Bold (76//)
+Bold
+;
+MSG_MenuItem_Center (77//)
+Center
+;
+MSG_MenuItem_Copy (78//)
+Copy
+;
+MSG_MenuItem_Cut (79//)
+Cut
+;
+MSG_MenuItem_Delete (80//)
+Delete
+;
+MSG_MenuItem_Fill (81//)
+Fill
+;
+MSG_MenuItem_Halfshadow (82//)
+Halfshadow
+;
+MSG_MenuItem_Halfshine (83//)
+Halfshine
+;
+MSG_MenuItem_Italic (84//)
+Italic
+;
+MSG_MenuItem_Left (85//)
+Left
+;
+MSG_MenuItem_Mark (86//)
+Mark
+;
+MSG_MenuItem_Normal (87//)
+Normal
+;
+MSG_MenuItem_Paste (88//)
+Paste
+;
+MSG_MenuItem_Redo (89//)
+Redo
+;
+MSG_MenuItem_Right (90//)
+Right
+;
+MSG_MenuItem_Shadow (91//)
+Shadow
+;
+MSG_MenuItem_Shine (92//)
+Shine
+;
+MSG_MenuItem_Text (93//)
+Text
+;
+MSG_MenuItem_Underline (94//)
+Underline
+;
+MSG_MenuItem_Undo (95//)
+Undo
+;
+MSG_MenuSubTitle_Alignment (96//)
+Alignment
+;
+MSG_MenuSubTitle_Color (97//)
+Color
+;
+MSG_MenuTitle_Edit (98//)
+Edit
+;
+MSG_Page_Keybindings (99//)
+Keybindings
+;
+MSG_Page_Sample (100//)
+Sample
+;
+MSG_Page_Settings (101//)
+Settings
+;
+MSG_Page_SpellChecker (102//)
+Spell checker
+;
+MSG_PopWinTitle_Background (103//)
+Select background
+;
+MSG_PopWinTitle_Cursor (104//)
+Select cursor color
+;
+MSG_PopWinTitle_Frame (105//)
+Select frame
+;
+MSG_PopWinTitle_Highlight (106//)
+Select highlight color
+;
+MSG_PopWinTitle_Selected (107//)
+Select block color
+;
+MSG_PopWinTitle_SeparatorShadow (108//)
+Select separators shadow color
+;
+MSG_PopWinTitle_SeparatorShine (109//)
+Select separators shine color
+;
+MSG_PopWinTitle_Text (110//)
+Select text color
+;
+MSG_SliderText_MaxWidth (111//)
+Same as char
+;
+MSG_SliderText_MinSpeed (112//)
+Off
+;
+MSG_SliderText_MinWidth (113//)
+1 pixel
+;
+MSG_SliderText_StdSpeed (114//)
+\33r%ld ms
+;
+MSG_SliderText_StdWidth (115//)
+%ld pixels
+;
+MSG_SliderText_TabSize (116//)
+%ld spaces
+;
+MSG_Function_GotoBookmark1 (117//)
+Goto Bookmark 1
+;
+MSG_Function_GotoBookmark2 (118//)
+Goto Bookmark 2
+;
+MSG_Function_GotoBookmark3 (119//)
+Goto Bookmark 3
+;
+MSG_Function_SetBookmark1 (120//)
+Set Bookmark 1
+;
+MSG_Function_SetBookmark2 (121//)
+Set Bookmark 2
+;
+MSG_Function_SetBookmark3 (122//)
+Set Bookmark 3
+;
+MSG_Button_Snoop (123//)
+Snoop
+;
+MSG_Function_DelLine (124//)
+Delete line
+;

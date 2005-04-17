@@ -1,0 +1,1097 @@
+TABLE OF CONTENTS
+
+TextEditor.mcc/TextEditor.mcc
+TextEditor.mcc/MUIA_TextEditor_AreaMarked
+TextEditor.mcc/MUIA_TextEditor_AutoClip
+TextEditor.mcc/MUIA_TextEditor_ColorMap
+TextEditor.mcc/MUIA_TextEditor_Columns
+TextEditor.mcc/MUIA_TextEditor_Contents
+TextEditor.mcc/MUIA_TextEditor_CursorPosition
+TextEditor.mcc/MUIA_TextEditor_CursorX
+TextEditor.mcc/MUIA_TextEditor_CursorY
+TextEditor.mcc/MUIA_TextEditor_DoubleClickHook
+TextEditor.mcc/MUIA_TextEditor_ExportHook
+TextEditor.mcc/MUIA_TextEditor_ExportWrap
+TextEditor.mcc/MUIA_TextEditor_FixedFont
+TextEditor.mcc/MUIA_TextEditor_Flow
+TextEditor.mcc/MUIA_TextEditor_HasChanged
+TextEditor.mcc/MUIA_TextEditor_ImportHook
+TextEditor.mcc/MUIA_TextEditor_ImportWrap
+TextEditor.mcc/MUIA_TextEditor_InsertMode         (not yet implemented...)
+TextEditor.mcc/MUIA_TextEditor_InVirtualGroup
+TextEditor.mcc/MUIA_TextEditor_Pen
+TextEditor.mcc/MUIA_TextEditor_Prop_DeltaFactor
+TextEditor.mcc/MUIA_TextEditor_Prop_Entries
+TextEditor.mcc/MUIA_TextEditor_Prop_First
+TextEditor.mcc/MUIA_TextEditor_Prop_Visible
+TextEditor.mcc/MUIA_TextEditor_Quiet
+TextEditor.mcc/MUIA_TextEditor_ReadOnly
+TextEditor.mcc/MUIA_TextEditor_RedoAvailable
+TextEditor.mcc/MUIA_TextEditor_Rows
+TextEditor.mcc/MUIA_TextEditor_Separator
+TextEditor.mcc/MUIA_TextEditor_Slider
+TextEditor.mcc/MUIA_TextEditor_StyleBold
+TextEditor.mcc/MUIA_TextEditor_StyleItalic
+TextEditor.mcc/MUIA_TextEditor_StyleUnderline
+TextEditor.mcc/MUIA_TextEditor_TypeAndSpell
+TextEditor.mcc/MUIA_TextEditor_UndoAvailable
+TextEditor.mcc/MUIA_TextEditor_WrapBorder
+TextEditor.mcc/MUIM_TextEditor_ARexxCmd
+TextEditor.mcc/MUIM_TextEditor_BlockInfo
+TextEditor.mcc/MUIM_TextEditor_ClearText
+TextEditor.mcc/MUIM_TextEditor_ExportBlock        (not yet implemented...)
+TextEditor.mcc/MUIM_TextEditor_ExportText
+TextEditor.mcc/MUIM_TextEditor_HandleError
+TextEditor.mcc/MUIM_TextEditor_InsertText
+TextEditor.mcc/MUIM_TextEditor_MacroBegin         (not yet implemented...)
+TextEditor.mcc/MUIM_TextEditor_MacroEnd           (not yet implemented...)
+TextEditor.mcc/MUIM_TextEditor_MacroExecute       (not yet implemented...)
+TextEditor.mcc/MUIM_TextEditor_MarkText
+TextEditor.mcc/MUIM_TextEditor_Replace
+TextEditor.mcc/MUIM_TextEditor_Search
+TextEditor.mcc/TextEditor.mcc
+
+TextEditor.mcc is a multiline string gadget which holds most of the functions
+of a normal text editor.
+
+The gadget was originally written in 1997, and is Copyright (C) 1997-2000
+by Allan Odgaard.  As of version 15.10, released in April 2005, the gadget
+is maintained and Copyright (C) 2005 by the TextEditor.mcc Open Source team.
+
+TextEditor.mcc/MUIA_TextEditor_AreaMarked
+
+    NAME
+        MUIA_TextEditor_AreaMarked -- [..G], BOOL
+
+    FUNCTION
+        This tag will be set to TRUE when text is marked, and back to
+        FALSE when nothing is marked.  You can create a notify event
+        with this tag and let your cut/copy buttons become ghosted
+        when nothing is marked.
+
+TextEditor.mcc/MUIA_TextEditor_AutoClip
+
+    NAME
+        MUIA_TextEditor_AutoClip -- [ISG], BOOL
+
+    FUNCTION
+        When the gadget is in read only mode and the user marks some text,
+        then it will be automatically copied to the clipboard.  With this
+        tag you can disable that behaviour, but think twice, because the
+        configured 'copy' key (which the user normally uses to copy text)
+        will only function when the gadget is active (or default) which
+        it won't automatically become in read only mode (when clicked).
+
+TextEditor.mcc/MUIA_TextEditor_ColorMap
+
+    NAME
+        MUIA_TextEditor_ColorMap -- [IS.], LONG *
+
+    FUNCTION
+        This is a map of allocated colors, which corresponds to the pen number
+        you set with MUIA_TextEditor_Pen.  By default the map looks like this:
+
+           0 = Normal (user configured text/highlight color)
+           1 = Shine
+           2 = Halfshine
+           3 = Background
+           4 = Halfshadow
+           5 = Shadow
+           6 = Text
+           7 = Fill
+           8 = Mark
+           9 = Screen pen 0
+          10 = Screen pen 1
+          11 = Screen pen 3
+          .. = ...
+         255 = Screen pen 246
+
+        If you supply your own colormap, then pen value 0 will still be
+        "Normal", i.e. the first entry in your colormap has pen value 1.
+        This may seem a bit illogical, suggest an alternative if you want!
+
+        You are allowed to dynamically change the colormap; however, if you
+        change an entry which is on-screen, then it won't have any immediate
+        effect.  The idea is that you should e.g. supply a colormap with 16
+        unused LONGs, allow the user to select a custom color, allocate that
+        color and store the screen pen value into the colormap.  Now you can
+        use that entry as argument for MUIA_TextEditor_Pen.
+
+        Bear in mind that your application may change screen, so the best
+        place to allocate/free colors is in the MUIM_Show and MUIM_Hide
+        methods of the editor gadget.  An example of this can be found in
+        TextEditor-Demo.c
+
+    EXAMPLE
+        /*  Create a cycle gadget which allows the user
+         *  to mark his text with red, green and blue.
+         */
+
+           static LONG editor_cmap[3];
+           UBYTE *cycle_entries[] =
+           {
+             "Normal", "Red", "Green", "Blue", NULL
+           };
+
+        ...
+           cycle = CycleObject,
+                       MUIA_Cycle_Entries, cycle_entries,
+                       End,
+           ...
+           editor = TextEditorObject,
+                       MUIA_TextEditor_ColorMap, editor_cmap,
+                       End,
+        ...
+
+
+        DoMethod(cycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, editor, 3, MUIM_Set, MUIA_TextEditor_Pen, MUIV_TriggerValue);
+        DoMethod(editor, MUIM_Notify, MUIA_TextEditor_Pen, MUIV_EveryTime, cycle, 3, MUIM_Set, MUIA_Cycle_Active, MUIV_TriggerValue);
+
+        /* Subclass of TextEditor.mcc */
+
+           switch(msg->MethodID)
+           {
+              case MUIM_Show:
+                 editor_cmap[0] = ObtainBestPenA(cm, 0xffffffff, 0, 0, NULL);
+                 editor_cmap[1] = ObtainBestPenA(cm, 0, 0xffffffff, 0, NULL);
+                 editor_cmap[2] = ObtainBestPenA(cm, 0, 0, 0xffffffff, NULL);
+                 break;
+
+              case MUIM_Hide:
+                 ReleasePen(cm, editor_cmap[0]);
+                 ReleasePen(cm, editor_cmap[1]);
+                 ReleasePen(cm, editor_cmap[2]);
+                 break;
+           }
+           ...
+
+
+    SEE ALSO
+        MUIA_TextEditor_Pen
+
+TextEditor.mcc/MUIA_TextEditor_Columns
+
+    NAME
+        MUIA_TextEditor_Columns -- [I..], ULONG
+
+    FUNCTION
+        Set the desired width, in characters.
+
+    SEE ALSO
+        MUIA_TextEditor_Rows
+
+TextEditor.mcc/MUIA_TextEditor_Contents
+
+    NAME
+        MUIA_TextEditor_Contents -- [IS.], APTR
+
+    FUNCTION
+        Set the contents of this gadget.  This should normally be a pointer to
+        a text buffer, but if you have supplied your own import hook, then you
+        can set this to anything you like, e.g. a filehandle.
+
+    SEE ALSO
+        MUIA_TextEditor_ImportHook, MUIM_TextEditor_InsertText
+
+TextEditor.mcc/MUIA_TextEditor_CursorPosition
+
+    NAME
+        MUIA_TextEditor_CursorPosition -- [..G], struct Rectangle *
+
+    FUNCTION
+        If you need to open a window or similar, and want it to match the
+        position and/or dimensions of the cursor, then you can use this
+        tag to obtain the rectangle that the cursor is occupying.
+
+    EXAMPLE
+        struct Rectangle *crsr;
+        if(GetAttr(MUIA_TextEditor_CursorPosition, obj, &rect))
+           printf("Cursor at (%ldx%ld)\n", crsr->MinX, crsr->MinY);
+
+    NOTES
+        The values are relative to the top left corner of the window, not the
+        gadget.
+
+        You can't take notify on this tag.
+
+    SEE ALSO
+        MUIA_TextEditor_CursorX, MUIA_TextEditor_CursorY
+
+TextEditor.mcc/MUIA_TextEditor_CursorX
+
+    NAME
+        MUIA_TextEditor_CursorX -- [ISG], ULONG
+
+    FUNCTION
+        You can get or set the cursor's X position with this tag.
+        The first character on a line has position 0.
+        The position is not affected by the gadget's `autowrap' feature.
+        If you set a value higher than the length of the current line, then
+        it will be automatically truncated.
+
+    SEE ALSO
+        MUIA_TextEditor_CursorY
+
+TextEditor.mcc/MUIA_TextEditor_CursorY
+
+    NAME
+        MUIA_TextEditor_CursorY -- [ISG], ULONG
+
+    FUNCTION
+        You can get or set the cursor's Y position with this tag.
+        The first line has position 0.
+        The position is not affected by the gadget's `autowrap' feature.
+        If you set a value higher than the number of lines, then it will
+        be automatically truncated.
+
+    SEE ALSO
+        MUIA_TextEditor_CursorX
+
+TextEditor.mcc/MUIA_TextEditor_DoubleClickHook
+
+    NAME
+        MUIA_TextEditor_DoubleClickHook -- [IS.], struct Hook *
+
+    FUNCTION
+        If you use the gadget in read only mode, you may want a special
+        action to take place when the user double clicks certain words.
+        For example, an e-mail or news client using this gadget to show
+        mails might allow the user to click on an URL to lookup the link.
+
+        The hook will be called with A1 pointing to a ClickMessage, and A0
+        will point to the hook itself.  Your hook should return TRUE if it
+        wants to stop the editor from blocking.
+
+    EXAMPLE
+        /* This hook will test if the user double clicked an HTTP address */
+
+        BOOL URLHookCode (register __a1 struct ClickMessage *clickmsg)
+        {
+              UWORD pos = clickmsg->ClickPosition;
+
+           while(pos && *(clickmsg->LineContents+pos-1) != ' ' && *(clickmsg->LineContents+pos-1) != '<')
+           {
+              pos--;
+           }
+
+           if(strncmp(clickmsg->LineContents+pos, "http:", 5))
+           {
+              return(FALSE);
+           }
+           LookupURL(clickmsg->LineContents+pos);
+           return(TRUE);
+        }
+
+    SEE ALSO
+        MUIA_TextEditor_ReadOnly, mui/TextEditor_mcc.h
+
+TextEditor.mcc/MUIA_TextEditor_ExportHook
+
+    NAME
+        MUIA_TextEditor_ExportHook -- [IS.], struct Hook *
+
+    SPECIAL INPUTS
+        MUIV_TextEditor_ExportHook_EMail
+        MUIV_TextEditor_ExportHook_Plain (default)
+
+    FUNCTION
+        The EMail export hook will convert a bold word to *bold*, italic
+        words to /italic/ and underlined words to _underline_.
+        It also export separators such as <sb> and <tsb>.
+
+        See MUIA_TextEditor_ImportHook for more information.
+
+    SEE ALSO
+        MUIA_TextEditor_ExportWrap, MUIA_TextEditor_ImportHook
+        MUIM_TextEditor_ExportText
+
+TextEditor.mcc/MUIA_TextEditor_ExportWrap
+
+    NAME
+        MUIA_TextEditor_ExportWrap -- [ISG], ULONG
+
+    FUNCTION
+        This attribute allows the built-in export hooks to perform wordwrap.
+        Zero means no wrap (default value).
+
+    SEE ALSO
+        MUIA_TextEditor_ExportHook, MUIA_TextEditor_WrapBorder
+
+TextEditor.mcc/MUIA_TextEditor_FixedFont
+
+    NAME
+        MUIA_TextEditor_FixedFont -- [I.G], BOOL
+
+    FUNCTION
+        Set this if you would like the editor to use a fixed width font.
+
+TextEditor.mcc/MUIA_TextEditor_Flow
+
+    NAME
+        MUIA_TextEditor_Flow -- [.SG], UWORD
+
+    SPECIAL INPUTS
+        MUIV_TextEditor_Flow_Left
+        MUIV_TextEditor_Flow_Right
+        MUIV_TextEditor_Flow_Center
+        MUIV_TextEditor_Flow_Justified (not yet implemented)
+
+    FUNCTION
+        Set/get the current paragraph's alignment.
+
+        If an area is marked while you set this attribute, then the new
+        alignment will be set for the complete area.
+
+TextEditor.mcc/MUIA_TextEditor_HasChanged
+
+    NAME
+        MUIA_TextEditor_HasChanged -- [ISG], BOOL
+
+    FUNCTION
+        This tag will show if the contents of the gadget have changed.
+        You can take notify on this tag, so that you can connect it with
+        a checkmark or text object.
+
+        You should set this tag to FALSE whenever you export the contents
+        of the gadget or overwrite them with something new.
+
+        Even if you have set up notification on this tag, you should
+        still get() it before you kill the text, because this makes it
+        possible to do some advanced testing to see if the text has
+        actually been modified, e.g. by checking the undo buffer, comparing
+        checksums or checking whether or not the text buffer is empty
+        (none of this is currently done, but it may be in the future).
+
+        The tag is currently not affected by:
+         MUIA_TextEditor_Contents, MUIM_TextEditor_ClearText
+         MUIM_TextEditor_Export, MUIM_TextEditor_Import
+
+        ... but comments are welcome :)
+
+TextEditor.mcc/MUIA_TextEditor_ImportHook
+
+    NAME
+        MUIA_TextEditor_ImportHook -- [IS.], struct Hook *
+
+    SPECIAL INPUTS
+        MUIV_TextEditor_ImportHook_EMail
+        MUIV_TextEditor_ImportHook_MIME
+        MUIV_TextEditor_ImportHook_MIMEQuoted
+        MUIV_TextEditor_ImportHook_Plain (default)
+
+    FUNCTION                                                
+        Since this gadget allows different text styles, you can supply an
+        import hook to parse the text correctly.
+
+        The default import hook understands the following escape sequences.
+        They may appear at any position within the line:
+
+         <ESC> + u      Set the soft style to underline.
+         <ESC> + b      Set the soft style to bold.
+         <ESC> + i      Set the soft style to italic.
+         <ESC> + n      Set the soft style back to normal.
+         <ESC> + h      Highlight the current line.
+         <ESC> + p[x]   Change to color x, where x is taken from the colormap.
+                        0 means normal.  The color is reset for each new line.
+
+        The following sequences are only valid at the beginning of a line.
+        If they are placed elsewhere, the result is undefined (they might
+        be ignored or not):
+
+         <ESC> + l      Left justify current and following lines.
+         <ESC> + r      Right justify current and following lines.
+         <ESC> + c      Center current and following lines.
+         <ESC> + [s:x]  Create a separator.  x is a bit combination of flags:
+                         Placement (mutually exclusive):
+                           1 = Top
+                           2 = Middle
+                           4 = Bottom
+                         Cosmetical:
+                           8 = StrikeThru   - Draw separator on top of text.
+                          16 = Thick        - Make separator extra thick.
+
+
+        MUIV_TextEditor_ImportHook_MIME:
+
+        This built-in hook will convert quoted-printables (e.g. "=E5") to
+        the ASCII representation, merge lines ending with a "=",  wordwrap
+        the text (using the value set with MUIA_TextEditor_ImportWrap),
+        highlight all lines that start with ">", make real *bold*, /italic/,
+        _underline_ and #colored# text, and replace <sb> or <tsb> with a real
+        separator bar.  It will stop parsing upon reaching a NULL byte.
+
+        The color used for #colored# text is colormap entry 6, which defaults
+        to MPEN_FILL.  To override it, just supply a colormap with entry 6
+        set to whatever color you would like.
+
+
+        MUIV_TextEditor_ImportHook_MIMEQuoted:
+
+        Like the MIME import hook, but each line gets quoted and highlighted.
+
+
+        MUIV_TextEditor_ImportHook_EMail:
+
+        Like the MIME import hook, but it doesn't convert quoted printables.
+
+
+        You can of course create your own import hook - there is an external
+        file which describes the procedure.
+
+      *** PLEASE DON'T CREATE YOUR OWN HOOKS WHILE THE GADGET IS STILL BETA ***
+
+    SEE ALSO
+        MUIA_TextEditor_ColorMap, MUIA_TextEditor_ExportHook
+        MUIA_TextEditor_ImportWrap
+
+    EXAMPLE
+        /*   Here is how you can `easily' allow the
+         *   user to set the pen of #colored# text
+         */
+
+           static LONG editor_cmap[1];
+
+        set(editor, MUIA_TextEditor_ColorMap, editor_cmap-6);
+                                           /* This saves a little memory :) */
+
+
+        /* Subclass of TextEditor.mcc */
+
+           switch(msg->MethodID)
+           {
+              case MUIM_Show:
+                 editor_cmap[0] = MUI_ObtainPen(muiRenderInfo(obj), spec, flags);
+                 break;
+
+              case MUIM_Hide:
+                 MUI_ReleasePen(muiRenderInfo(obj), editor_cmap[0]);
+                 break;
+           }
+           ...
+
+TextEditor.mcc/MUIA_TextEditor_ImportWrap
+
+    NAME
+        MUIA_TextEditor_ImportWrap -- [ISG], ULONG
+
+    FUNCTION
+        This is here to allow the built-in import hooks to perform wordwrap.
+        The built-in hooks accept a value between 4 and 1024.  Defaults to
+        1023.
+
+    SEE ALSO
+        MUIA_TextEditor_ImportHook, MUIA_TextEditor_WrapBorder
+
+TextEditor.mcc/MUIA_TextEditor_InsertMode
+
+    NAME
+        MUIA_TextEditor_InsertMode -- [ISG], BOOL
+
+    FUNCTION
+        Not yet implemented...
+
+TextEditor.mcc/MUIA_TextEditor_InVirtualGroup
+
+    NAME
+        MUIA_TextEditor_InVirtualGroup -- [I..], BOOL
+
+    FUNCTION
+        Set this to TRUE when the gadget is inside a virtual group.
+        The reason is cosmetical - the pattern will be relative to the
+        gadget instead of the window, since the gadget can be "moved" around.
+
+TextEditor.mcc/MUIA_TextEditor_Pen
+
+    NAME
+        MUIA_TextEditor_Pen -- [.SG], UBYTE (do you need UWORD or ULONG?)
+
+    FUNCTION
+        The value of this tag reflects the current render pen.
+
+    SEE ALSO
+        MUIA_TextEditor_ColorMap
+
+TextEditor.mcc/MUIA_TextEditor_Prop_DeltaFactor
+
+    NAME
+        MUIA_TextEditor_Prop_DeltaFactor -- [..G], ULONG (OBSOLETE)
+
+
+    FUNCTION
+        This tag can tell you how high a line is.  This is useful when you set
+        the increment value of a slider, as MUIA_TextEditor_Prop_Entries holds
+        the lines in pixels.
+
+        You shouldn't use this.  Instead, use MUIA_TextEditor_Slider.
+
+    EXAMPLE
+        DoMethod(editorgad, MUIM_Notify,
+                  MUIA_TextEditor_Prop_DeltaFactor, MUIV_EveryTime,
+                  slider, 3, MUIM_Set, MUIA_Prop_DeltaFactor, MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_TextEditor_Prop_Visible, MUIA_TextEditor_Slider
+        MUIA_TextEditor_Prop_First, MUIA_TextEditor_Prop_Entries
+
+TextEditor.mcc/MUIA_TextEditor_Prop_Entries
+
+    NAME
+        MUIA_TextEditor_Prop_Entries -- [..G], ULONG (OBSOLETE)
+
+
+    FUNCTION
+        This value is the total number of lines in the editor.
+        If you want a slider attached to the gadget, you should create
+        a notify on this attribute.
+
+        You shouldn't use this. Instead, use MUIA_TextEditor_Slider.
+
+    EXAMPLE
+        DoMethod(editorgad, MUIM_Notify,
+                  MUIA_TextEditor_Prop_Entries, MUIV_EveryTime,
+                  slider, 3, MUIM_Set, MUIA_Prop_Entries, MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_TextEditor_Prop_Visible, MUIA_TextEditor_Slider
+        MUIA_TextEditor_Prop_First, MUIA_TextEditor_Prop_DeltaFactor
+
+TextEditor.mcc/MUIA_TextEditor_Prop_First
+
+    NAME
+        MUIA_TextEditor_Prop_First -- [.SG], ULONG (OBSOLETE)
+
+    FUNCTION
+        Get or set the first displayed line.  The purpose of this attribute
+        is to allow connection between the editor gadget and a scrollbar.
+
+    EXAMPLE
+
+        DoMethod(editor, MUIM_Notify,
+                  MUIA_TextEditor_Prop_First, MUIV_EveryTime,
+                  slider, 3, MUIM_Set, MUIA_Prop_First, MUIV_TriggerValue);
+        
+        DoMethod(slider, MUIM_Notify,
+                  MUIA_Prop_First, MUIV_EveryTime,
+                  editor, 3, MUIM_Set, MUIA_TextEditor_Prop_First, MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_TextEditor_Prop_Visible, MUIA_TextEditor_Slider
+        MUIA_TextEditor_Prop_Entries, MUIA_TextEditor_Prop_DeltaFactor
+
+TextEditor.mcc/MUIA_TextEditor_Prop_Visible
+
+    NAME
+        MUIA_TextEditor_Prop_Visible -- [..G], ULONG (OBSOLETE)
+
+    FUNCTION
+        This value is the number of lines that currently fit in the window.
+        If you want a slider attached to the gadget, you should create a
+        notify on this attribute.
+
+        You shouldn't use this.  Instead, use MUIA_TextEditor_Slider.
+
+    EXAMPLE
+
+        DoMethod(editorgad, MUIM_Notify,
+                  MUIA_TextEditor_Prop_Visible, MUIV_EveryTime,
+                  slider, 3, MUIM_Set, MUIA_Prop_Visible, MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_TextEditor_Prop_Entries, MUIA_TextEditor_Slider
+        MUIA_TextEditor_Prop_First, MUIA_TextEditor_Prop_DeltaFactor
+
+TextEditor.mcc/MUIA_TextEditor_Quiet
+
+    NAME
+        MUIA_TextEditor_Quiet -- [ISG], BOOL
+
+    FUNCTION
+        If you need to insert a lot of text "line by line", you should
+        set this tag to TRUE before starting, and then back to FALSE when
+        you are done adding text.
+
+    SEE ALSO
+        MUIM_TextEditor_InsertText
+
+TextEditor.mcc/MUIA_TextEditor_ReadOnly
+
+    NAME
+        MUIA_TextEditor_ReadOnly -- [ISG], BOOL
+
+    FUNCTION
+        Setting this tag to TRUE will make the text read-only.
+        This is very similar to the FloatText.mui, except that
+        this gadget offers blocking.
+
+        In read-only mode
+         - there will be no cursor (only a normal TAB frame),
+         - TAB will activate the next gadget (instead of alt-TAB),
+         - the frame will be set to a ReadListFrame (may change),
+         - there is no ARexx support, except "Copy".
+
+        The MUIA_TextEditor_StyleXXX tags are still usable.
+
+TextEditor.mcc/MUIA_TextEditor_RedoAvailable
+
+    NAME
+        MUIA_TextEditor_RedoAvailable -- [..G], BOOL
+
+    FUNCTION
+        This tag is set to TRUE when the user is able to redo his action(s)
+        (normally after an undo).  You can create a notify on this tag and
+        let your redo button be ghosted when there is nothing to redo.
+
+    SEE ALSO
+        MUIA_TextEditor_UndoAvailable
+
+TextEditor.mcc/MUIA_TextEditor_Rows
+
+    NAME
+        MUIA_TextEditor_Rows -- [I..], ULONG
+
+    FUNCTION
+        Set the desired height, in lines.
+
+    SEE ALSO
+        MUIA_TextEditor_Columns
+
+TextEditor.mcc/MUIA_TextEditor_Separator
+
+    NAME
+        MUIA_TextEditor_Separator -- [.SG], UWORD *
+
+    FUNCTION
+        Each line can act as a separator.
+
+        A separator can be either thick or thin.  It can be rendered over
+        the lines contents, or only on both sides of the contents.  The
+        placement can be either top, middle or bottom.
+
+        This tag reflects the current line.  See mui/TextEditor_mcc.h for
+        definitions.
+
+    EXAMPLE
+        /* A simple way to let the user insert a separator is to create a
+           button or menu item with the following notify.
+
+                  Note: The import hook should be set to
+                        MUIV_TextEditor_ImportHook_Plain
+                        when the notify is executed.
+        */
+
+           DoMethod(button, MUIM_Notify,
+                      MUIA_Pressed, FALSE,
+                      editor, 2, MUIM_TextEditor_InsertText, "\n\33c\33[s:2]\n");
+
+TextEditor.mcc/MUIA_TextEditor_Slider
+
+    NAME
+        MUIA_TextEditor_Slider -- [IS.], Object *
+
+    FUNCTION
+        You should give a pointer to a prop object to allow connection
+        between the editor gadget and the prop object.
+
+        The reason why you shouldn't set up notification yourself is that
+        the gadget needs to set two undocumented tags for the prop object.
+
+    SEE ALSO
+        MUIA_TextEditor_Prop_DeltaFactor, MUIA_TextEditor_Prop_Entries
+        MUIA_TextEditor_Prop_First, MUIA_TextEditor_Prop_Visible
+
+TextEditor.mcc/MUIA_TextEditor_StyleBold
+
+    NAME
+        MUIA_TextEditor_StyleBold -- [.SG], BOOL
+
+    FUNCTION
+        This tag shows whether the cursor or block is over bolded text or not.
+        You can set this tag to TRUE or FALSE if you want the style changed.
+
+    EXAMPLE
+
+        DoMethod(boldgad, MUIM_Notify,
+                  MUIA_Selected, MUIV_EveryTime,
+                  editor, 3, MUIM_NoNotifySet, MUIA_TextEditor_StyleBold, MUIV_TriggerValue);
+
+        DoMethod(editor, MUIM_Notify,
+                  MUIA_TextEditor_StyleBold, MUIV_EveryTime,
+                  boldgad, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_TextEditor_StyleItalic, MUIA_TextEditor_StyleUnderline
+
+TextEditor.mcc/MUIA_TextEditor_StyleItalic
+
+    NAME
+        MUIA_TextEditor_StyleItalic -- [.SG], BOOL
+
+    FUNCTION
+        This tag shows whether the cursor or block is over text in italics
+        or not.  You can set this tag to TRUE or FALSE if you want the
+        style changed.
+
+    EXAMPLE
+        See MUIA_TextEditor_StyleBold
+
+    SEE ALSO
+        MUIA_TextEditor_StyleBold, MUIA_TextEditor_StyleUnderline
+
+TextEditor.mcc/MUIA_TextEditor_StyleUnderline
+
+    NAME
+        MUIA_TextEditor_StyleUnderline -- [.SG], BOOL
+
+    FUNCTION
+        This tag shows whether the cursor or block is over underlined text
+        or not.  You can set this tag to TRUE or FALSE if you want the
+        style changed.
+
+    EXAMPLE
+        See MUIA_TextEditor_StyleBold
+
+    SEE ALSO
+        MUIA_TextEditor_StyleBold, MUIA_TextEditor_StyleItalic
+
+TextEditor.mcc/MUIA_TextEditor_TypeAndSpell
+
+    NAME
+        MUIA_TextEditor_TypeAndSpell -- [.SG], BOOL
+
+    FUNCTION
+        This is a shortcut to the Type'n'spell switch that the user can
+        set in the .mcp module.  NEVER integrate this into the settings
+        of your preferences.
+
+    EXAMPLE
+
+        DoMethod(editor, MUIM_Notify,
+                  MUIA_TextEditor_TypeAndSpell, MUIV_EveryTime,
+                  toggle, 3, MUIM_Set, MUIA_Selected, MUIV_TriggerValue);
+        DoMethod(toggle, MUIM_Notify,
+                  MUIA_Selected, MUIV_EveryTime,
+                  editor, 3, MUIM_Set, MUIA_TextEditor_TypeAndSpell, MUIV_TriggerValue);
+
+TextEditor.mcc/MUIA_TextEditor_UndoAvailable
+
+    NAME
+        MUIA_TextEditor_UndoAvailable -- [..G], BOOL
+
+    FUNCTION
+        This tag is set to TRUE when the user is able to undo his action(s).
+        You can create a notify on this tag and let your undo button be
+        ghosted when there is nothing to undo.
+
+    SEE ALSO
+        MUIA_TextEditor_RedoAvailable
+
+TextEditor.mcc/MUIA_TextEditor_WrapBorder
+
+    NAME
+        MUIA_TextEditor_WrapBorder -- [ISG], ULONG
+
+    FUNCTION
+        The gadget will insert a line break in front of the current word
+        if the cursor goes beyond the column given here.
+
+        Please remember that the gadget does real time wordwrap, which is
+        much better! This tag is only for special cases!!!
+
+    SEE ALSO
+        MUIA_TextEditor_ExportWrap, MUIA_TextEditor_ImportWrap
+
+TextEditor.mcc/MUIM_TextEditor_ARexxCmd
+
+    NAME
+        MUIM_TextEditor_ARexxCmd
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_ARexxCmd, STRPTR command);
+
+    FUNCTION
+        If the user spends much of his time in the TextEditor gadget, he
+        may want to have the gadget's functions integrated in the ARexx
+        command set supplied by the program.  This can easily be done with
+        this method - simply call it with the command that the user has
+        executed.  If the method returns something else than FALSE, then
+        the command has been used by the gadget; if it does return FALSE,
+        then you should parse the command yourself.
+
+        This method can also be used by you, to communicate with the gadget.
+
+        The following commands are currently supported:
+
+           CLEAR
+           CUT
+           COPY
+           PASTE
+           ERASE
+           GOTOLINE       Template: /N/A
+           GOTOCOLUMN     Template: /N/A
+           CURSOR         Template: Up/S,Down/S,Left/S,Right/S
+           LINE           Template: /N/A
+           COLUMN         Template: /N/A
+           NEXT           Template: Word/S,Sentence/S,Paragraph/S,Page/S
+           PREVIOUS       Template: Word/S,Sentence/S,Paragraph/S,Page/S
+           POSITION       Template: SOF/S,EOF/S,SOL/S,EOL/S,SOW/S,EOW/S,SOV/S,EOV/S
+           SETBOOKMARK    Template: /N/A
+           GOTOBOOKMARK   Template: /N/A
+           TEXT           Template: /F
+           TOLOWER
+           TOUPPER
+           KILLLINE
+           UNDO
+           REDO
+           GETLINE
+           GETCURSOR      Template: Line/S,Column/S
+           MARK           Template: On/S,Off/S
+           DELETE
+           BACKSPACE
+           KILLLINE
+           TOUPPER
+           TOLOWER
+
+    RESULT
+        The method will return FALSE if it couldn't use the command.
+        It will return TRUE if it did use the command, but the command
+        didn't give a result back.  It will return a pointer (STRPTR)
+        when the command gives a result - you should return this pointer
+        to the user (CreateArgString() it, and set it as the result, in
+        the Rexx message).  You must free the result yourself with FreeVec().
+
+TextEditor.mcc/MUIM_TextEditor_BlockInfo
+
+    NAME
+        MUIM_TextEditor_BlockInfo
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_BlockInfo, ULONG *startx, ULONG *starty,
+                      ULONG *stopx, ULONG *stopy);
+
+    FUNCTION
+        This method fills out the ULONG pointers with the start and stop
+        position of the currently marked block.
+
+    RESULT
+        The method will return FALSE if no text has been marked.
+
+    EXAMPLE
+        ULONG x1, y1, x2, y2;
+        if(DoMethod(obj, MUIM_TextEditor_BlockInfo, &x1, &y1, &x2, &y2))
+        {
+           ...
+        }
+
+TextEditor.mcc/MUIM_TextEditor_ClearText
+
+    NAME
+        MUIM_TextEditor_ClearText
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_ClearText);
+
+    FUNCTION
+        This will clear all the text in the gadget.
+
+TextEditor.mcc/MUIM_TextEditor_ExportBlock
+
+    NAME
+        MUIM_TextEditor_ExportBlock
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_ExportBlock);
+
+    FUNCTION
+        Not yet implemented...
+
+    RESULT
+        
+
+    SEE ALSO
+        MUIM_TextEditor_InsertText, MUIM_TextEditor_ExportText
+
+TextEditor.mcc/MUIM_TextEditor_ExportText
+
+    NAME
+        MUIM_TextEditor_ExportText
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_ExportText);
+
+    FUNCTION
+        This will export the text using the current export hook.
+
+    RESULT
+        Depends on the export hook.  The built-in hooks will return
+        a pointer to a NULL terminated buffer containing all the text.
+        You must free this buffer with FreeVec() when you are done using it.
+
+    SEE ALSO
+        MUIM_TextEditor_InsertText, MUIM_TextEditor_ExportBlock
+
+TextEditor.mcc/MUIM_TextEditor_HandleError
+
+    NAME
+        MUIM_TextEditor_HandleError
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_HandleError, ULONG errorcode);
+
+    FUNCTION
+        This method is not supported by the editor gadget itself.  The idea
+        is that you should subclass the gadget and implement your own error
+        handler.  The handler should just bring up a requester or write the
+        error in a status line.
+
+        The different errors are:
+
+        Error_ClipboardIsEmpty:        The clipboard doesn't hold any data.
+        Error_ClipboardIsNotFTXT:      The clipboard doesn't hold any text.
+        Error_MacroBufferIsFull:       Not yet used.
+        Error_MemoryAllocationFailed:  Not yet used.
+        Error_NoAreaMarked:            The user has tried to copy or cut, but
+                                       hasn't marked anything.
+        Error_NoMacroDefined:          Not yet used.
+        Error_NothingToRedo:           There is nothing more to redo.
+        Error_NothingToUndo:           There is nothing more to undo.
+        Error_NotEnoughUndoMem:        The user has erased a block that is too
+                                       big to be saved. This results in a lost
+                                       undo buffer.
+        Error_StringNotFound:          Not yet used.
+
+    RESULT
+        NONE
+
+TextEditor.mcc/MUIM_TextEditor_InsertText
+
+    NAME
+        MUIM_TextEditor_InsertText
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_InsertText, STRPTR text, LONG pos);
+
+    FUNCTION
+        This will insert the given text using the current import hook.
+        The position of the inserted text can be:
+
+          MUIV_TextEditor_InsertText_Cursor
+          MUIV_TextEditor_InsertText_Top
+          MUIV_TextEditor_InsertText_Bottom
+
+    RESULT
+        NONE
+
+    SEE ALSO
+        MUIM_TextEditor_ExportText
+
+TextEditor.mcc/MUIM_TextEditor_MacroBegin
+
+    NAME
+        MUIM_TextEditor_MacroBegin
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_MacroBegin);
+
+    FUNCTION
+        Not yet implemented...
+
+    RESULT
+
+
+    SEE ALSO
+        MUIM_TextEditor_MacroEnd, MUIM_TextEditor_MacroExecute
+
+TextEditor.mcc/MUIM_TextEditor_MacroEnd
+
+    NAME
+        MUIM_TextEditor_MacroEnd
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_MacroEnd);
+
+    FUNCTION
+        Not yet implemented...
+
+    RESULT
+
+
+    SEE ALSO
+        MUIM_TextEditor_MacroBegin, MUIM_TextEditor_MacroExecute
+
+TextEditor.mcc/MUIM_TextEditor_MacroExecute
+
+    NAME
+        MUIM_TextEditor_MacroExecute
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_MacroExecute);
+
+    FUNCTION
+        Not yet implemented...
+
+    RESULT
+
+
+    SEE ALSO
+        MUIM_TextEditor_MacroBegin, MUIM_TextEditor_MacroEnd
+
+TextEditor.mcc/MUIM_TextEditor_MarkText
+
+    NAME
+        MUIM_TextEditor_MarkText
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_MarkText, ULONG start_x, ULONG start_y, ULONG stop_x, ULONG stop_y);
+
+    FUNCTION
+        This method will mark the given area.
+
+    RESULT
+        Not defined.
+
+TextEditor.mcc/MUIM_TextEditor_Replace
+
+    NAME
+        MUIM_TextEditor_Replace
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_Replace, STRPTR newstring, ULONG flags);
+
+    FUNCTION
+        This method replacea the marked area with the given string.
+        Currently no flags are defined, so pass 0L for now.
+
+    RESULT
+        TRUE if the string was replaced.  A failure is likely to be because
+        nothing was marked when this method was invoked.
+
+TextEditor.mcc/MUIM_TextEditor_Search
+
+    NAME
+        MUIM_TextEditor_Search
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_TextEditor_Search, STRPTR string, ULONG flags);
+
+    FUNCTION
+        Search the text for the given string.  The string must not exceed 120
+        characters.
+
+        Flags can be:
+
+         MUIF_TextEditor_Search_FromTop
+          Normally the search starts at the cursor position - this flag will
+          make it start at the beginning of the text.
+
+         MUIF_TextEditor_Search_CaseSensitive
+          If you want the search to be case sensitive, then set this flag.
+
+    RESULT
+        TRUE if the string was found, otherwise FALSE.
+
+    NOTE
+        If the string is found, it will be automatically marked.  Thus,
+        in case you want to replace it, simply clear the marked string and
+        insert the new one.
+
+

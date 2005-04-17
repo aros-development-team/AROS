@@ -1,0 +1,152 @@
+------------------------------------
+MUI TextEditor MCC class - ChangeLog
+------------------------------------
+
+$Id: ChangeLog,v 1.32 2005/04/11 03:04:38 tactica Exp $
+$Source: /cvsroot/texteditor-mcc/ChangeLog,v $
+
+2005-04-11  David Rey <tactica@users.sourceforge.net>
+
+    * doc/MCC_TextEditor.guide: general rework - fixed typos and grammar;
+      dropped the fancy V40+ formatting to make maintenance easier
+      (sorry Allan :o); put the old (<15.10) changes in a separate page;
+      documented the historic HD recovery... TODO: installation, arexx,
+      credits and more
+    * mcp/CreatePrefsGroup.c: no longer highlights the LGPL tidbit (it
+      would be unreadable against a white background otherwise, which
+      would be quite common for a text editor :); fixed typos and grammar;
+      reformatted to be more readable; made the usage and arexx parts
+      match what the guide says; added the missing KILLLINE, TOUPPER &
+      TOLOWER ARexx commands; no longer refers the user to the AUI
+      Style Guide for documentation that belongs to local docs; fixed
+      wrong copyright attribution (copyright for the open source code
+      begins in 2005, not in 1997)
+    * mcc/rev.h, mcp/rev.h: changed copyright mark "(c)" to "(C)" for
+      being generally better accepted though still not legally binding
+    * doc/MCC_TextEditor.doc: likewise
+
+2005-04-10  Jens Langner <Jens.Langner@light-speed.de>
+
+    * includes/mccheader.c: updated common MCC include file to reflect the
+      latest changes done in the nlist.mcc project.
+    * includes/mccclass_68k: replaced the assembler based OS4/68k stub by a easier
+      manageable C-based variant.
+	 
+2005-04-10  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+    * mcc/library.c: Request rexxsyslib.library V36 (KS 3.1) instead of V38.
+
+2005-04-09  Jens Langner <Jens.Langner@light-speed.de>
+
+    * all: last preparations for the 15.10 release. bumped version date and
+      such.
+
+2005-04-08  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+    * mcc/SpellChecker.c: Now compiles without OS4 headers too.
+    * mcc/TextEditor-Test.c: Fixed MorphOS build.
+    * includes/SDI_hook.h: Changed MorphOS hooks to use HookEntry stub.
+
+2005-04-08  Sebastian Bauer <mail@sebastianbauer.info>
+
+    * TODO: Added two more entries (italic letter problem, tabs)
+
+2005-04-08  Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcp/CreatePrefsGroup.c: fixed incorrectly formatted about text.
+    * mcp: added missing ENTRY() calls to the Dispatchers which are required
+      by the MorphOS build. However, this required to put the Create/Delete
+      of our subclasses into Dispatcher.c, but now the mcp should hopefully
+      work on MorphOS as well.
+
+2005-04-07  David Rey <tactica@users.sourceforge.net>
+
+    * doc/MCC_TextEditor.doc: fixed typos, corrected grammar, reformatted
+      to make it a bit more readable and adapted to the new state of
+      affairs (LGPL)
+
+2005-04-07  Sebastian Bauer <mail@sebastianbauer.info>
+
+    * mcc/SpellChecker.c: Reimplemented the search path feature also
+      for systems not having a recent workbench.library. Code is mainly
+      untested but the core is taken from YAM with permission from
+      Jens Langner. So TextEditor-mcc is still LGPL ;)
+      Note that this code is not included within the OS4 compile so
+      this feature requires at least version 44 of workbench.library
+      here. But this is a tautology.
+    * mcc: No longer uses static hook declarations within functions,
+      because same code of a mcc can be executed by several tasks!
+    * doc/MCC_TextEditor.doc: Warn about unpredictable results of
+      forbidden placement of some escape sequences for the plain import
+      hook.
+
+2005-04-06  Jens Langner <Jens.Langner@light-speed.de>
+ 
+    * mcc: fixed OS3 build as well and removed all remaining compiler
+      warnings.
+    * mcc/Dispatcher.c: fixed recently broken OS4 build due to latest
+      MorphOS changes.
+
+2005-04-06  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+    * mcc: Removed compiler warnings for MorphOS build.
+
+2005-04-06  Sebastian Bauer <mail@sebastianbauer.info>
+
+    * mcc/ImportHook.c: Changed behaviour of FindEOL() not to return NULL
+      if the text only consits of a 0 byte. This fixed bug #1177619. 
+
+2005-04-05  Sebastian Bauer <mail@sebastianbauer.info>
+
+    * mcc: Clipboard handling for copy/paste was totaly broken (don't
+      confuse clipboard.device with console.device ;) ). Now only one 
+      pointer is used within the instance data for the clipboard io
+      request.
+    * mcc: Reimplemented Workbench path search support when starting shell
+      commands (e.g. for the spell checkers). This however requires at
+      least version 44 of workbench.library (coming with OS3.5)
+    * mcc: Finished complete reimplementation of the import hooks. Because
+      the nature of a reimplementation, the behaviour of the new functions
+      might be different and even buggy. Exporting also works in the
+      meantime.
+
+2005-04-04  Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/ImportText.c: fixed bug where an empty MUIA_TextEditor_Contents
+      string didn't clear the texteditor area.
+    * mcc: removed the last bunch of compiler warnings and made the
+      custom class compile with -DDEBUG disabled.
+
+2005-04-01  Sebastian Bauer <mail@sebastianbauer.info>
+
+    * mcc: Now clears the area before the text near the cursor is
+      redrawn. Fixes bug #1172355 aka "anti alias bug". This is no
+      april fool ;)
+    * mcc: Started to reimplement all of the import and export hooks
+      which were 68k asm before
+
+2005-03-31  Sebastian Bauer <mail@sebastianbauer.info>
+
+    * mcc: Fixed buffer overflow which happened if the font name was 
+      longer than 27 chars.
+    * all: Enforce amiga align for the keybinding structure because
+      this is exported to the settings file and has to be compatible
+      with the 68k version.
+
+2005-03-31  Gunther Nikl <gni@gecko.de>
+
+    * all: Source cleanup and minor OS3 makefile changes.
+
+2005-03-31  Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcp: modified preferences sources to use flexcat to generate
+      the locale.c,h files out of the new TextEditor_mcp.cd and C_?.sd
+      files instead of having a static locale interface.
+
+2005-03-31  David Rey <tactica@users.sourceforge.net>
+
+    * mcp/locale/TextEditor_mcp.cd: added
+
+2005-03-28  Jens Langner <Jens.Langner@light-speed.de>
+
+    * initial LGPL release published at sf.net

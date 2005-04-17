@@ -1,0 +1,66 @@
+/***************************************************************************
+
+ TextEditor.mcc - Textediting MUI Custom Class
+ Copyright (C) 1997-2000 Allan Odgaard
+ Copyright (C) 2005 by TextEditor.mcc Open Source Team
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
+
+ $Id: icon.bh,v 1.1 2005/03/28 11:29:49 damato Exp $
+
+***************************************************************************/
+
+static const ULONG image_palette[24] =
+{
+  0x95555555,0x95555555,0x95555555,
+  0x00000000,0x00000000,0x00000000,
+  0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,
+  0x3BBBBBBB,0x67777777,0xA2222222,
+  0x7BBBBBBB,0x7BBBBBBB,0x7BBBBBBB,
+  0xAFFFFFFF,0xAFFFFFFF,0xAFFFFFFF,
+  0xAAAAAAAA,0x90000000,0x7CCCCCCC,
+  0xFFFFFFFF,0xA9999999,0x97777777
+};
+
+#define IMAGE_WIDTH   23
+#define IMAGE_HEIGHT  14
+#define IMAGE_DEPTH   3
+
+static const UWORD image_body[84] =
+{
+  /* Plane 0 */
+  0x0000,0x1A00,0x0060,0x2400,0x0090,0x5800,0x0128,0xB000,
+  0x0255,0x6000,0x04AA,0xC000,0x0955,0x8400,0x12AB,0xA800,
+  0x255E,0x4000,0x4ABD,0x6000,0x957B,0x5000,0x2AAA,0xA800,
+  0x5555,0x5400,0x5555,0x5600,
+  /* Plane 1 */
+  0x0000,0x1E00,0x0060,0x3800,0x00F0,0x7000,0x01F8,0xE000,
+  0x03ED,0xC000,0x07D5,0x8000,0x0FAB,0x0400,0x1F5E,0x2800,
+  0x3EBC,0x0000,0x7D58,0x2000,0xFA88,0xB000,0xF555,0x5800,
+  0xEAAA,0xAC00,0x8000,0x0200,
+  /* Plane 2 */
+  0x0000,0x0C00,0x0000,0x0800,0x0000,0x1000,0x0020,0x2000,
+  0x0050,0x4000,0x00A8,0x8000,0x0151,0x1800,0x02A2,0x5400,
+  0x054D,0xB000,0x0AB3,0xC000,0x1567,0x4000,0x2AAA,0xA000,
+  0x5555,0x5000,0xFFFF,0xFC00
+};
+
+static const struct BitMap image_bitmap =
+{
+  4, 14, 0, IMAGE_DEPTH, 0,
+  { (UBYTE *)image_body,
+    (UBYTE *)image_body+(1*14*4),
+    (UBYTE *)image_body+(2*14*4),
+    0,0,0,0,0 }
+};
+

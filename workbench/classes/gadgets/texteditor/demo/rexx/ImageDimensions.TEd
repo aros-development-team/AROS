@@ -1,0 +1,72 @@
+/**
+ **  ImageDimensions.CEd V1.0 (31-Aug-97) For CygnusEd & Visage
+ **
+ **  This script will paste the width and height for the image
+ **  specified within an <IMG> tag.
+ **  Bind it to a hotkey, and press that key while
+ **  the cursor is placed inside an <Img Src=...> tag.
+ **  This doesn't work for pictures given an absolute path,
+ **  like http://... but you probably knew that ;^)
+ **
+ **
+ **  For feedback write Allan Odgaard <Duff@DIKU.DK>
+ **/
+
+/* Please customize this line */
+Visage = "Duff's:Graphics/Visage"
+
+/* The rest should work without your interference :-) */
+Options Results
+
+Address 'TEXTEDITOR-DEMO.1'
+
+Path    = 'Data:Homepage'
+GetCursor Column;  CursorX = RESULT
+GetCursor Line;    LineNr  = RESULT
+GetLine;           Line    = RESULT
+
+EndTag    = Right(Line, Length(Line)-CursorX)
+EndTagPos = Pos(">", EndTag)
+
+If(EndTagPos > 0) Then
+Do
+	Line = Upper(Left(Line, EndTagPos+CursorX))
+	StartTagPos = Pos("GMI<", Reverse(Line))
+	If(StartTagPos > 0) Then
+	Do
+		Tag        = Right(Line, StartTagPos+3)
+		PicturePos = Pos("SRC=", Tag)
+		If(PicturePos > 0) Then
+		Do
+			Name = Right(Tag, Length(Tag)-PicturePos-3)
+
+			If(Left(Name, 1) = '"') Then
+				Parse Var Name '"' FileName '"' rest
+			Else
+			Do
+				Parse Var Name FileName '>' rest
+				Parse Var FileName FileName ' ' rest
+			End
+
+			If(Right(Path, 1) = ':') Then
+					File = Path || FileName
+			Else	File = Path || '/' || FileName
+
+			Address Command Visage '>T:ImgDimensions "'File'" Info'
+			If(RC = 0) Then
+			Do
+				Open('Size','T:ImgDimensions','Read')
+				Info = ReadLn('Size')
+				Info = ReadLn('Size')
+				Info = Right(Info, Length(Info)-10)
+				Close('Size')
+
+				Parse Var Info width 'x' height 'x' rest
+
+				GotoLine   LineNr
+            GotoColumn Length(Line)-StartTagPos+1
+				Text '" Width=' || width || ' Height=' || height || '"'
+			End
+		End
+	End
+End

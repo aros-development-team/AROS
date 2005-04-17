@@ -1,0 +1,45 @@
+#   $Id: mmakefile.src,v 1.2 2004/08/23 06:42:07 NicJA Exp $
+include $(TOP)/config/make.cfg
+
+#MM workbench-classes-zune-texteditor-class : includes linklibs
+
+USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcp
+
+FILES := AllocBitMap \
+	 AllocFunctions \
+	 BlockOperators \
+	 CaseConversion \
+	 ColorOperators \
+	 Dispatcher \
+	 EditorStuff \
+	 ExportHook \
+	 ExportText \
+	 GetSetAttrs \
+	 HandleARexx \
+	 HandleInput \
+	 ImportHook \
+	 ImportText \
+	 InitConfig \
+	 Keybindings \
+	 Methods \
+	 MixedFunctions \
+	 Navigation \
+	 PrintLineWithStyles \
+	 Search \
+	 SpellChecker \
+	 StyleOperators \
+	 TextFunctions \
+	 UndoFunctions
+	 
+%build_module_macro mmake=workbench-classes-zune-texteditor-class \
+  modname=TextEditor modtype=mcc \
+  initfile=library files=$(FILES) \
+  uselibs="amiga mui rom m"
+
+
+#MM includes-copy
+
+INCLUDE_FILES := $(TOP)/$(CURDIR)/TextEditor_mcc.h
+%copy_includes path=MUI dir=$(TOP)/$(CURDIR)
+
+%common
