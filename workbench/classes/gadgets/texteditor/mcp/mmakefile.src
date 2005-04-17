@@ -1,0 +1,38 @@
+#   $Id: mmakefile.src,v 1.2 2004/08/23 06:42:07 NicJA Exp $
+include $(TOP)/config/make.cfg
+
+#MM workbench-classes-zune-texteditor-mcp : includes \
+#MM 					    linklibs \
+#MM					    workbench-classes-zune-texteditor-class \
+#MM					    workbench-classes-zune-texteditor-mcp-locale
+
+USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcc
+
+FILES := locale \
+	 CreatePrefsGroup \
+	 Dispatcher \
+	 Keybindings \
+	 KeyStorage \
+	 ObjectCreator \
+	 UserKeys
+	 
+%build_module_macro mmake=workbench-classes-zune-texteditor-mcp \
+  modname=TextEditor modtype=mcp \
+  initfile=library files=$(FILES) \
+  uselibs="amiga mui rom m"
+
+
+#MM includes-copy
+
+INCLUDE_FILES := $(TOP)/$(CURDIR)/TextEditor_mcp.h
+%copy_includes path=MUI dir=$(TOP)/$(CURDIR)
+
+#MM workbench-classes-zune-texteditor-mcp-locale :
+workbench-classes-zune-texteditor-mcp-locale : locale.c locale.h
+
+locale.h : locale.c
+locale.c : locale/TextEditor_mcp.cd C_h.sd C_c.sd
+	@$(ECHO) "Generating locale file $@..."
+	@$(FLEXCAT) locale/TextEditor_mcp.cd locale.h=C_h.sd locale.c=C_c.sd
+
+%common

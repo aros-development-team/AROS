@@ -1,0 +1,49 @@
+==id $Id: muimaster_lib.sfd,v 1.1 2005/03/28 11:29:48 damato Exp $
+==base _MUIMasterBase
+==basetype struct Library *
+==libname muimaster.library
+==bias 30
+==public
+==include <exec/types.h>
+==include <intuition/classes.h>
+==include <utility/tagitem.h>
+==include <libraries/mui.h>
+Object * MUI_NewObjectA(char * par1, struct TagItem * last) (a0,a1)
+==varargs
+Object * MUI_NewObject(char * par1, Tag last, ...) (a0,a1)
+VOID MUI_DisposeObject(Object * last) (a0)
+LONG MUI_RequestA(APTR par1, APTR par2, LONGBITS par3, char * par4, char * par5, char * par6, APTR last) (d0,d1,d2,a0,a1,a2,a3)
+==varargs
+LONG MUI_Request(APTR par1, APTR par2, LONGBITS par3, char * par4, char * par5, char * par6, ULONG tag1, ...) (d0,d1,d2,a0,a1,a2,a3)
+APTR MUI_AllocAslRequest(unsigned long par1, struct TagItem * last) (d0,a0)
+==varargs
+APTR MUI_AllocAslRequestTags(unsigned long par1, Tag last, ...) (d0,a0)
+BOOL MUI_AslRequest(APTR par1, struct TagItem * last) (a0,a1)
+==varargs
+BOOL MUI_AslRequestTags(APTR par1, Tag last, ...) (a0,a1)
+VOID MUI_FreeAslRequest(APTR last) (a0)
+LONG MUI_Error() ()
+LONG MUI_SetError(LONG last) (d0)
+struct IClass * MUI_GetClass(char * last) (a0)
+VOID MUI_FreeClass(struct IClass * last) (a0)
+VOID MUI_RequestIDCMP(Object * par1, ULONG last) (a0,d0)
+VOID MUI_RejectIDCMP(Object * par1, ULONG last) (a0,d0)
+VOID MUI_Redraw(Object * par1, ULONG last) (a0,d0)
+struct MUI_CustomClass * MUI_CreateCustomClass(struct Library * par1, char * par2,
+	struct MUI_CustomClass * par3, int par4, APTR last) (a0,a1,a2,d0,a3)
+BOOL MUI_DeleteCustomClass(struct MUI_CustomClass * last) (a0)
+Object * MUI_MakeObjectA(LONG par1, ULONG * last) (d0,a0)
+==varargs
+Object * MUI_MakeObject(LONG par1, ULONG tag1, ...) (d0,a0)
+BOOL MUI_Layout(Object * par1, LONG par2, LONG par3, LONG par4, LONG par5, ULONG last) (a0,d0,d1,d2,d3,d4)
+==reserve 4
+LONG MUI_ObtainPen(struct MUI_RenderInfo * par1, struct MUI_PenSpec * par2, ULONG last) (a0,a1,d0)
+VOID MUI_ReleasePen(struct MUI_RenderInfo * par1, LONG last) (a0,d0)
+APTR MUI_AddClipping(struct MUI_RenderInfo * par1, WORD par2, WORD par3, WORD par4,
+	WORD last) (a0,d0,d1,d2,d3)
+VOID MUI_RemoveClipping(struct MUI_RenderInfo * par1, APTR last) (a0,a1)
+APTR MUI_AddClipRegion(struct MUI_RenderInfo * par1, struct Region * last) (a0,a1)
+VOID MUI_RemoveClipRegion(struct MUI_RenderInfo * par1, APTR last) (a0,a1)
+BOOL MUI_BeginRefresh(struct MUI_RenderInfo * par1, ULONG last) (a0,d0)
+VOID MUI_EndRefresh(struct MUI_RenderInfo * par1, ULONG last) (a0,d0)
+==end

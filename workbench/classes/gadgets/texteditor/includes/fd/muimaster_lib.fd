@@ -1,0 +1,35 @@
+##base _MUIMasterBase
+##bias 30
+##public
+MUI_NewObjectA(par1,last)(a0,a1)
+*tagcall-A
+MUI_DisposeObject(last)(a0)
+MUI_RequestA(par1,par2,par3,par4,par5,par6,last)(d0,d1,d2,a0,a1,a2,a3)
+*tagcall-A
+MUI_AllocAslRequest(par1,last)(d0,a0)
+*tagcall+Tags
+MUI_AslRequest(par1,last)(a0,a1)
+*tagcall+Tags
+MUI_FreeAslRequest(last)(a0)
+MUI_Error()()
+MUI_SetError(last)(d0)
+MUI_GetClass(last)(a0)
+MUI_FreeClass(last)(a0)
+MUI_RequestIDCMP(par1,last)(a0,d0)
+MUI_RejectIDCMP(par1,last)(a0,d0)
+MUI_Redraw(par1,last)(a0,d0)
+MUI_CreateCustomClass(par1,par2,par3,par4,last)(a0,a1,a2,d0,a3)
+MUI_DeleteCustomClass(last)(a0)
+MUI_MakeObjectA(par1,last)(d0,a0)
+*tagcall-A
+MUI_Layout(par1,par2,par3,par4,par5,last)(a0,d0,d1,d2,d3,d4)
+##bias 156
+MUI_ObtainPen(par1,par2,last)(a0,a1,d0)
+MUI_ReleasePen(par1,last)(a0,d0)
+MUI_AddClipping(par1,par2,par3,par4,last)(a0,d0,d1,d2,d3)
+MUI_RemoveClipping(par1,last)(a0,a1)
+MUI_AddClipRegion(par1,last)(a0,a1)
+MUI_RemoveClipRegion(par1,last)(a0,a1)
+MUI_BeginRefresh(par1,last)(a0,d0)
+MUI_EndRefresh(par1,last)(a0,d0)
+##end

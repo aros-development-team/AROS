@@ -1,0 +1,651 @@
+@DataBase TextEditor.guide
+@$VER: TextEditor.Guide 15.11 (11.4.2005)
+
+@Node Main "TextEditor - AmigaGuide(R) documentation"
+
+Welcome to the @{b}TextEditor @{ub}AmigaGuide(R) documentation.
+
+TextEditor is (C) 1997-2000 by Allan Odgaard,
+(C) 2005 by the TextEditor.mcc Open Source team
+
+
+@{b}@{uu}Table of contents @{uu}@{ub}
+
+
+   @{" Introduction   " Link Intro      }          What TextEditor is!
+   @{" Disclaimer     " Link Disclaimer }          What you should know!
+   @{" License        " Link License    }          Here comes the LGPL!
+   @{" Support        " Link Support    }          Who you should contact!
+
+   @{" Installation   " Link Install    }          How to install TextEditor!
+
+   @{" Usage          " Link Usage      }          How to use TextEditor!
+   @{" ARexx          " Link ARexx      }          How to use the ARexx support!
+
+   @{" History        " Link History    }          Where the class has been!
+   @{" Credits        " Link Credits    }          Who the authors wish to thank!
+
+@EndNode
+
+/// Introduction
+
+@Node Intro "TextEditor / Introduction"
+
+Introduction
+************
+
+
+TextEditor.mcc is a fast multiline string gadget, made as a custom class for
+@{"Magic User Interface" Link MUI}.
+
+
+Features
+========
+
+- It can hold quite large texts without noticeable slowdowns.
+
+- The user can mark text with both keyboard and mouse.
+
+- It supports the clipboard.
+
+- It can edit text with different @{b}styles@{ub}, @{b}alignments@{ub} and @{b}colors@{ub}.
+
+- It can hold @{b}separators@{ub}.
+
+- It has @{b}floating wordwrap@{ub}.
+
+- It has multiple @{b}undo@{ub} and @{b}redo@{ub} buffers.
+
+- It is easy to extend a programs @{b}ARexx@{ub} interface, to reach the editor.
+
+- It can easily be configured to use an external @{b}spell checker@{ub} for both
+  type'n'spell and word guessing.
+
+- It can have a @{b}bitmap/pattern@{ub} as background.
+
+- It supports @{b}pixel smooth scroll@{ub}.
+
+@EndNode
+///
+
+/// Disclaimer
+
+@Node Disclaimer "TextEditor / Disclaimer: Blah, blah, blah..."
+
+Disclaimer
+**********
+
+
+There is no warranty for this program to the extent permitted by applicable
+law.  Except where otherwise stated in writing, the copyright holders and/or
+other parties provide the program "as is" without warranty of any kind,
+either expressed or implied, including, but not limited to, the implied
+warranties of merchantability and fitness for a particular purpose.  The
+entire risk as to the quality and performance of the program is with you.
+Should the program prove defective, you assume the cost of all necessary
+service, repair, or correction.
+
+In no event, unless required by applicable law or agreed to in writing,
+will any copyright holder, or any other party who may redistribute the
+program as permitted above, be liable to you for damages, including any
+general, special, incidental or consequential damages arising out of the
+use or inability to use the program (including but not limited to loss of
+data or data being rendered inaccurate or losses sustained by you or third
+parties or a failure of the program to operate with any other programs),
+even if such holder or other party had been advised of the possibility of
+such damages.
+
+@EndNode
+
+///
+
+/// License
+
+@Node License "TextEditor / License"
+
+License
+*******
+
+
+Binaries and source code are published under the @{" GNU Lesser General Public License " link COPYING/main}.
+
+@EndNode
+
+///
+
+/// Support
+
+@Node Support "TextEditor / Support"
+
+Support
+*******
+
+
+TextEditor.mcc was originally written by Allan Odgaard. However, he's no
+longer working actively on it and as of V15.10 the development is in
+the hands of the TextEditor.mcc Open Source team.
+
+Home page:
+
+   http:\//www.sourceforge.net/projects/texteditor_mcc/
+
+Developer mailing list (ask a TextEditor developer to get you aboard):
+
+   http:\//www.freelists.org/list/texteditor_mcc/
+
+Bugtracker:
+
+   http:\//www.sourceforge.net/tracker/?group_id=135025&atid=731469
+
+@EndNode
+
+///
+
+/// Installation
+
+@Node Install "TextEditor / Installation"
+
+Installation
+************
+
+
+TextEditor requires:
+
+- Kickstart V39 (OS 3.x) or above.
+- 68020 or better.
+- @{"Magic User Interface" Link MUI} 3.6 or above.
+
+TextEditor.mcp requires BetterString.mcc and HotkeyString.mcc,
+http:\//www.diku.dk/students/duff/
+
+TextEditor-Demo requires Toolbar.mcc and InfoText.mcc by Benny Kjær Nielsen
+<Floyd@Amiga,DK>, http:\//www.diku.dk/students/benny/
+
+
+Automatic installation
+======================
+
+Just double-click the "Install" icon and follow the prompts.
+
+
+Manual Installation
+===================
+
+Copy Libs/MUI/<OS>/TextEditor.mcc and Libs/MUI/<OS>/TextEditor.mcp to your
+MUI:Libs/mui/ directory, under the name TextEditor.mcc and TextEditor.mcp.
+Here <OS> is the type of operating system your are running/want to install
+TextEditor.mcc for.
+
+If you haven't already gotten BetterString.mcc and HotkeyString.mcc, then
+you will also need to copy in these two classes, in order to make the
+preferences class work.
+
+All other files are optional.
+
+@EndNode
+
+///
+
+/// Usage
+
+@Node Usage "TextEditor / Usage"
+
+Usage
+*****
+
+
+General notes
+=============
+
+You can double-click a word to select it. If you hold LMB after a
+double-click, then it will only mark @{b}complete@{ub} words. Triple-clicking
+has the same effect, but for entire lines.
+
+In the default configuration you can extend your block by holding down any
+<Shift> key while you press LMB and drag the mouse until you reach the point
+where you want the block to end.
+
+While you drag to scroll, the farther away from the gadget your mouse pointer
+is, the faster the contents will scroll.
+
+
+
+Configuration
+=============
+
+You can configure almost any aspect of the editor; this means the frame, the
+background, fonts, colors, undo levels, tab size, key bindings, spell checker
+and much more.
+
+Run the MUI preferences program (either "globally" from e.g. Workbench, or
+"locally" from the application using TextEditor.
+
+In the listview at the left (after selecting the "external" classes if you're
+using MUI 3.9+) you should see the entry "TextEditor", otherwise something is
+installed wrong. If you have just installed the custom class, then try a
+reboot first; if it still doesn't appear, then something is wrong with your
+MUI installation.
+
+When you select the TextEditor entry you will see four pages.
+
+
+The first page, named "Settings", is where most things are configured. It
+should be easy to understand, as most of the things are exactly as with other
+MUI elements.
+
+
+The second page is called "Key bindings", this is where you set up your keys.
+
+At the top you'll find a cycle gadget labeled "Block qualifier". This gadget
+tells which qualifier you want to use for marking text; for example, if it is
+"Shift", then you shall hold down any <Shift> key while you use the cursor
+keys to decide the size of your marking.
+
+Below is a listview that shows the current key bindings.
+
+If you press the "Default keys" button, all key bindings will be reset to
+defaults.
+
+
+The third page, named "Spell checker", is where you configure the external
+spell checker. The page contains a helpful text that will explain how it is
+all done.
+
+
+Last page, named "Sample", just shows an instance of the TextEditor.mcc.
+You can test your settings here, remember to press the "Test" gadget to apply
+the things that you have changed.
+
+The gadget holds a context sensitive menu, from where you can adjust styles,
+alignment and colors.
+
+
+When you're done configuring the gadget, then press either "Save" or "Use".
+
+
+If you have MUI V20+ installed (3.9 or better), then all the configuration
+items will hold a context sensitive menu, from where you can restore the
+original settings, the last saved settings etc. Exactly as with the rest
+of MUI.
+
+@EndNode
+
+///
+
+/// ARexx
+
+@Node ARexx "TextEditor / ARexx"
+
+ARexx
+*****
+
+If the program using TextEditor.mcc offers an ARexx port and the editor
+plays a central part in the application, then it will most likely extend
+its ARexx port, so that you can also control the editor from ARexx.
+
+If the application has launched several instances of the editor, then it
+should provide a separate ARexx port for each instance (e.g. "YAM.1" and
+"YAM.2" for the first and the second write windows, respectively).
+
+Following is a list of the ARexx commands currently supported by the custom
+class.
+
+
+Command            Template
+.......            ........
+
+CLEAR
+CUT
+COPY
+PASTE
+ERASE
+GOTOLINE           /N/A
+GOTOCOLUMN         /N/A
+CURSOR             Up/S,Down/S,Left/S,Right/S
+LINE               /N/A
+COLUMN             /N/A
+NEXT               Word/S,Sentence/S,Paragraph/S,Page/S
+PREVIOUS           Word/S,Sentence/S,Paragraph/S,Page/S
+POSITION           SOF/S,EOF/S,SOL/S,EOL/S,SOW/S,EOW/S,SOV/S,EOV/S
+SETBOOKMARK        /N/A
+GOTOBOOKMARK       /N/A
+TEXT               /F
+UNDO
+REDO
+GETLINE
+GETCURSOR          Line/S,Column/S
+MARK               On/S,Off/S
+DELETE
+BACKSPACE
+KILLLINE
+TOUPPER
+TOLOWER
+
+
+Please read the Amiga styleguide for a detailed explanation of the commands.
+
+@EndNode
+
+///
+
+/// History
+
+@Node History "TextEditor / History"
+
+History
+*******
+
+(Please check the @{" ChangeLog " link ChangeLog/main} for a more detailed and complete
+list of changes since 15.9)
+
+
+15.11 (xx.xx.2005)
+
+
+15.10 (9.4.2005)
+
+- First update from the TextEditor.mcc Open Source team under the LGPL.
+  Read @{" this " Link Background} to know how it all was made possible!
+- Now clears the area before the text near the cursor is redrawn,
+  thus fixing the problems with antialiased fonts. [sba]
+- ...
+
+@{" Older changes " link OldHistory}
+
+@EndNode
+
+///
+
+/// Old history
+
+@Node OldHistory "TextEditor / Old history"
+
+Old history
+***********
+
+
+This is the original changelog of TextEditor.mcc until it became LGPL.
+
+
+15.9 (21.5.2000)
+
+- Added a tag (MUIA_TextEditor_CursorPosition) to obtain cursor position
+  and dimension (requested by Linus McCabe).
+- Dropped the "Using Programs" section of this guide, as no-one wrote me :-(
+- Added a tag (MUIA_TextEditor_AutoClip) to disable the auto-clip feature
+  (request by Mark Harman).
+- I now use LONG's to store the cursor Y position, which should make it work
+  even when the gadget holds more than 32.768 lines.
+- Updated various dates, versions and copyrights in both the documentation
+  and include files.
+
+15.8 (11.2.2000)
+
+I skipped this release since a beta version got out to the public with this
+version number. And this generally leads to tons of questions from users
+asking which version is the fake, etc.
+
+15.7 (26.9.1999)
+
+- Removed the scroll speedup which appeared shortly after holding down a
+  navigation key (requested by Magnus Holmgren).
+- It was possible to double click symbols which appeared directly after
+  a word (reported by AmiS).
+
+15.6 (10.8.1999)
+
+- New ARexx commands: 'KILLLINE', 'TOUPPER' & 'TOLOWER'. The two latter will
+  affect the current character or the marked text.
+- The gadget now overloads MUIA_Version & MUIA_Revision.
+- If you try to delete the last line, and it is empty, then the cursor
+  will move one line up, before deleting the line (requested by Steve Koren).
+- The editor now allows insertion of non-printable characters (127-159)
+  (requested by Dalibor Puljiz).
+- Added methods for search & replace.
+- Fixed a bug that could make the editor crash when cutting heavily marked up
+  text (reported by Dick Whiting).
+
+15.5 (8.12.1998)
+
+- Added ARexx scripts by Brecht Machiels, which allows you to use ISpell as
+  spellchecker.
+- Changed default key for 'Suggest word'. It's now "Command HELP" instead of
+  just "HELP".
+- When selecting words via double-click, word delimiters have changed from
+  just spaces to all non alpha-numerical characters.
+- Word/sentence selection is only activated when the double-click happens on
+  the same character.
+- Fixed problems with MUIA_Disabled.
+- The export hook could under rare circumstances call CopyMem() with a size
+  of -1 (which is harmless when using MCP's CopyMem-patch). Thanks a lot to
+  Håkan Parting for finding this bug!
+- Added MUIA_TextEditor_Rows/Columns (mainly for web browsers).
+- When exporting text, a line could be wrapped if it had the same length as
+  the wrap setting.
+- While marking text, the object keeps an eye on the parent window. Should
+  it go inactive, the marking will instantly stop.
+
+15.4 (28.3.1998)
+
+- Thick separators have no filling, and are a bit lower. This looks much
+  better :-)
+- In some situations there was an input handler that didn't get removed.
+- Read-only mode wouldn't swallow its own keys, fixed!
+- Fixed activation bug with register pages by removing workaround for a
+  MUI bug :-(
+- Added MUIM_Import/MUIM_Export.
+- Added MUIA_ControlChar.
+- Possible Enforcer hit when sending ARexx cursor movement commands.
+- Marking text thru MUIM_TextEditor_MarkText didn't unmark what was already
+  marked.
+- The email export hook no longer puts '#' in front of multicoloured quoted
+  text.
+- When the editor was the default object and read-only was enabled, it would
+  swallow too many keys.
+- Added multi-level colouring for quoted text.
+
+15.3 (20.2.1998)
+
+- Created MUIM_TextEditor_BlockInfo.
+- You can now get() MUIA_TextEditor_AreaMarked.
+- You can now delete a complete line, with one key (defaults to Ctrl-x).
+- When the email hook detects a quoted line, it will highlight the line and
+  the rest of the paragraph that the line belongs to.
+- Added the Finnish catalog.
+- When a highlighted line doesn't contain characters, it will go back to
+  `normal' mode.
+- The lines which would call the CheckWord() (for type'n'spell) were commented
+  strangely. I have removed the comments, so type'n'spell should work again
+  ;-)
+- If the gadget is read-only and the default object, it should now react on
+  keys.
+- Pressing <Return> in front of a line with styles/colors set for the first
+  letter would make the new empty line hold those styles or colors...
+
+15.2 (18.10.1997)
+
+- First public release.
+
+@EndNode
+
+///
+
+/// Background
+
+@Node Background "TextEditor / Background"
+
+Background
+**********
+
+
+Since its first introduction in October, 1997 by Allan Odgaard, TextEditor
+quickly grew popular among some MUI developers, thanks to its features and
+speed. Sadly, back in 2000 Allan's hard drive apparently died and the
+sources couldn't be accessed anymore, preventing him from delivering further
+updates beyond 15.9, which somewhat hindered the development of applications
+based around TextEditor.
+
+Decided not to surrender easily, in 2004, Jens Langner of YAMOS fame
+contacted Allan asking him to send his hard drive over to Germany.
+Eventually, in March, 2005 the precious hard drive (a very old Seagate
+3660A) arrived and Jens found out that it was actually just the controller
+part that needed a replacement. By then, old hard drive parts were also much
+cheaper and he could afford to try several replacements until eventually one
+did the trick.
+
+Thus, on March 4th, 2005 he spread the news and asked long and wide for
+people owning a matching drive to let him know about their detailed firmware
+and controller values. After an overwhelming response from not less than 40
+people of all over the world, most of them offering to also send their
+hard drive for free, Jens finally picked 7 of the controllers offered so
+far that closely related to the drive he held at home, and asked the owners
+to send them over.
+
+Finally, on March 11th, he randomly picked the first controller out of the
+seven and, surprisingly and in contrast to Murphy's law, this controller
+worked out of the box with Allan's drive!
+
+After first reading out a whole raw image of the drive, he then connected the
+hard drive to his old A4000 and read out all the data from it without a
+hitch (which quite surprised him).
+
+The Amiga community made it possible again!
+
+@EndNode
+
+///
+
+/// Credits
+
+@Node Credits "TextEditor / Credits"
+
+Credits
+*******
+
+Thanks a lot to the following people, for their direct or indirect
+involvement:
+
+- David Rydh
+- Eberhard Hafermatz
+- Mads Henriksen
+- Marcin Orlowski
+- Ole Friis
+- Rand Fredricksen
+- Sune Foldager
+
+
+Especially thanks to
+
+- Benny Kjær Nielsen for clarification of the autodoc, and for creating
+  the cool Toolbar.mcc & InfoText.mcc used in TextEditor-Demo.
+
+- Gilles Masson for all his help.
+
+- Kai Hofmann for MCC-Install.
+
+- Magnus Heino, Marcel Beck, Stefan Stuntz & Steffen Gutmann for their detailed
+  bug repports. Without them, the gadget would probably suffer from a lot of
+  Enforcer hits, since I don't have a MMU myself.
+
+- Roman Patzner for his lovely TextEditor image, used in MUIPrefs. Also thanks
+  for the images used in TextEditor-Demo (which was originally made for YAM 2.0).
+
+- Stefan Stuntz for @{" Magic User Interface " Link MUI}
+
+
+Thanks to the ATO members, who have translated it:
+
+Czech:      Pavel Bures (pbures@cro.cz)
+
+Danish:     Allan Odgaard (duff@diku.dk) &
+
+            Ole Friis (ole_f@post3.tele.dk)
+
+Dutch:      Frits Letteboer (dagraver@dds.nl) &
+
+            Guno Heitman (guno@club.tip.nl)
+
+Finnish:    Kallio Petteri (k140734@cs.tut.fi)
+
+            Mika Lundell (c71829@uwasa.fi)
+
+German:     Sönke Tesch (soenke.tesch@elmshorn.netsurf.de) &
+
+            Arthur Steinmann (steinman@stud.uni-frankfurt.de)
+
+Greek:      Pantelis Kopelias (leestar@acropolis.net)
+
+Italian:    Vincenzo Gervasi (gervasi@di.unipi.it) &
+
+            Piergiorgio Ghezzo (pghezzo@dsi.unive.it)
+
+Norwegian:  Tommy Knudsen (tommy.knudsen@login.eunet.no)
+
+            (who is not in ATO, but thanks anyway :-)
+
+Polish:     Marcin Orlowski (carlos@wfmh.man.szczecin.pl)
+
+Portuguese: Rúben Alvim (mindwalker@mail.telepac.pt) &
+
+            Joel Alvim (mindwalker@mail.telepac.pt)
+
+Russian:    Oleg Sergeev (bigblack@neworder.spb.ru)
+
+Serbian:    Andrija Antonijevic (TheAntony@bigfoot.com) &
+
+            Ljubomir Jankovic (lurch@afrodita.rcub.bg.ac.yu)
+
+Slovenian:  Ales Rosman (ales.rosman@kiss.uni-lj.si)
+
+Spanish:    Antonio Noguera (g032252803@abonados.cplus.es) &
+
+            Samuel Aguilera (slyguy@mx2.redestb.es)
+
+Swedish:    Linus Silvander (linus@icenet.fi) &
+
+            Kristoffer Larsson (d95-kla@nada.kth.se)
+
+
+And for developer includes, thanks to:
+
+Amiga-E:    Neil Williams (neil@bleach.demon.co.uk)
+
+Modula-2:   Sönke Tesch (soenke.tesch@elmshorn.netsurf.de)
+
+@EndNode
+
+///
+
+/// MUI
+
+@Node MUI "MUI - Magic User Interface"
+
+MUI - Magic User Interface
+
+(C) 1992-2005 by Stefan Stuntz
+
+
+MUI is a system to generate and maintain graphical user interfaces. With the
+aid of a preferences program, the user of an application has the ability to
+customize the outfit according to his personal taste.
+
+MUI is distributed as shareware. To obtain a complete package containing
+lots of examples and more information about registration, please look for
+a file called "muiXXusr.lha" (XX means the latest version number) on your
+local bulletin boards or on public domain disks.
+
+
+If you want to register directly, feel free to send
+
+DM 30.-  or  US$ 20.-
+
+to
+
+Stefan Stuntz
+Eduard-Spranger-Straße 7
+80935 München
+GERMANY
+
+@EndNode
+
+///

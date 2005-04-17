@@ -1,0 +1,135 @@
+#/***************************************************************************
+#
+# TextEditor.mcc - Textediting MUI Custom Class
+# Copyright (C) 1997-2000 Allan Odgaard
+# Copyright (C) 2005 by TextEditor.mcc Open Source Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
+#
+# $Id: Makefile.mos,v 1.2 2005/03/31 07:40:27 damato Exp $
+#
+#***************************************************************************/
+
+# Programs
+CC    = ppc-morphos-gcc
+STRIP = ppc-morphos-strip
+RM    = rm -f
+RMDIR = rm -rf
+MKDIR	= mkdir
+CP    = cp
+FC    = flexcat
+
+# Directories
+OBJDIR    = .obj_mos
+BINDIR    = bin_mos
+
+# Compiler/Linker flags
+CPU      = -mcpu=750
+CPUFLAGS = -mmultiple
+CDEFS    = -D__NLVP_VERDATE=\"`date +%d.%m.%Y`\" -D__NLVP_VERDAYS="`expr \`date +%s\` / 86400 - 2922`"
+WARN     = -W -Wall
+OPTFLAGS = -O3 -finline-functions -fomit-frame-pointer -funroll-loops
+DEBUG    = -DWITH_DEBUG -g -O0
+CFLAGS   = -noixemul -I. -I../mcc -I../includes $(CPU) $(CPUFLAGS) $(WARN) $(OPTFLAGS)\
+           $(DEBUG) -c
+LDFLAGS  = -noixemul -nostartfiles
+LDLIBS   = -ldebug
+
+# CPU and DEBUG can be defined outside, defaults to above
+# using e.g. "make DEBUG= CPU=-mcpu=603e" produces optimized non-debug PPC-603e version
+#
+# OPTFLAGS are disabled by DEBUG normally!
+#
+# ignored warnings are:
+# none - because we want to compile with -Wall all the time
+#
+
+MCPTARGET = $(BINDIR)/TextEditor.mcp
+PREFTARGET= $(BINDIR)/TextEditor-Prefs
+
+MCPOBJS = $(OBJDIR)/library.o \
+          $(OBJDIR)/locale.o \
+          $(OBJDIR)/CreatePrefsGroup.o \
+          $(OBJDIR)/Dispatcher.o \
+          $(OBJDIR)/Keybindings.o \
+          $(OBJDIR)/KeyStorage.o \
+          $(OBJDIR)/ObjectCreator.o \
+          $(OBJDIR)/UserKeys.o
+
+PREFOBJS =$(OBJDIR)/locale.o \
+          $(OBJDIR)/CreatePrefsGroup.o \
+          $(OBJDIR)/Dispatcher.o \
+          $(OBJDIR)/Keybindings.o \
+          $(OBJDIR)/KeyStorage.o \
+          $(OBJDIR)/ObjectCreator.o \
+          $(OBJDIR)/UserKeys.o \
+          $(OBJDIR)/Preference.o
+
+#
+
+all: $(BINDIR) $(OBJDIR) locale.c $(MCPTARGET) $(PREFTARGET)
+
+# make the object directories
+$(OBJDIR):
+	@printf '\033[33mGenerating $@ directory\033[0m\n'
+	@$(MKDIR) $(OBJDIR)
+
+# make the binary directories
+$(BINDIR):
+	@printf '\033[33mGenerating $@ directory\033[0m\n'
+	@$(MKDIR) $(BINDIR)
+
+#
+
+$(OBJDIR)/%.o: %.c
+	@printf '\033[32mCompiling $<\033[0m\n'
+	@$(CC) $(CFLAGS) $< -o $@ -DNO_PPCINLINE_STDARG
+
+$(LOCALE)/%.catalog: $(LOCALE)/%.ct
+	@printf '\033[33mGenerating $@\033[0m\n'
+	@$(FC) $(LOCALE)/TextEditor_mcp.cd $< CATALOG $@
+
+#
+
+$(MCPTARGET): $(MCPOBJS)
+	@printf '\033[32mLinking \033[1m$@\033[0m\n'
+	@$(CC) $(LDFLAGS) -o $@.debug $(MCPOBJS) $(LDLIBS)
+	@$(STRIP) -o $@ $@.debug
+
+$(PREFTARGET): $(PREFOBJS) $(OBJDIR)/Preference.o
+	@printf '\033[32mLinking \033[1m$@\033[0m\n'
+	@$(CC) -noixemul -o $@.debug $(PREFOBJS) $(LDLIBS)
+	@$(STRIP) -o $@ $@.debug
+
+$(OBJDIR)/library.o: library.c ../includes/mccheader.c \
+  ../mcc/TextEditor_mcc.h private.h rev.h
+
+$(OBJDIR)/library.o: library.c ../includes/mccheader.c TextEditor_mcp.h \
+  private.h icon.bh rev.h
+
+locale.h: locale.c
+locale.c: locale/TextEditor_mcp.cd C_h.sd C_c.sd
+	@printf '\033[33mGenerating locale file $@...\033[0m\n'
+	@$(FC) locale/TextEditor_mcp.cd locale.h=C_h.sd locale.c=C_c.sd
+
+#
+
+.PHONY: clean
+clean:
+	-$(RM) $(MCPTARGET) $(MCPTARGET).debug $(PREFTARGET) $(PREFTARGET).debug $(MCPOBJS) $(PREFOBJS)
+
+.PHONY: distclean
+distclean: clean
+	-$(RM) locale.?
+	-$(RMDIR) $(OBJDIR)
+	-$(RMDIR) $(BINDIR)
