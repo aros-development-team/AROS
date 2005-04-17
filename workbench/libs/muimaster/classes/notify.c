@@ -667,8 +667,17 @@ static ULONG Notify_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 **************************************************************************/
 static ULONG Notify_GetConfigItem(struct IClass *cl, Object *obj, struct MUIP_GetConfigItem *msg)
 {
-    *msg->storage = DoMethod(muiGlobalInfo(obj)->mgi_Configdata,MUIM_Dataspace_Find,msg->id);
-    return (*msg->storage) ? TRUE : FALSE;
+    IPTR found = DoMethod(muiGlobalInfo(obj)->mgi_Configdata,MUIM_Dataspace_Find,msg->id);
+    
+    if (found)
+    {
+    	*msg->storage = found;
+	return TRUE;
+    }
+    else
+    {
+    	return FALSE;
+    }
 }
 
 
