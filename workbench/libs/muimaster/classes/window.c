@@ -427,7 +427,9 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     APTR visinfo = NULL;
 
     if (!(data->wd_Flags & MUIWF_DONTACTIVATE))
+    {
         flags |= WFLG_ACTIVATE;
+    }
 
     if 
     (
@@ -536,6 +538,11 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 	    SetMenuStrip(win,menu);
 	}
 
+    	if (flags & WFLG_ACTIVATE)
+	{
+	    data->wd_Flags |= MUIWF_ACTIVE;
+	}
+	
         return TRUE;
     }
 
@@ -554,6 +561,8 @@ static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
     data->wd_RenderInfo.mri_VertProp = NULL;
     data->wd_RenderInfo.mri_HorizProp = NULL;
 
+    data->wd_Flags &= ~MUIWF_ACTIVE;
+    
     if (win != NULL)
     {
         /* store position and size */
@@ -2374,7 +2383,7 @@ static IPTR Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -2558,7 +2567,7 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem        *tags = msg->ops_AttrList;
     struct TagItem        *tag;
 
-    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
