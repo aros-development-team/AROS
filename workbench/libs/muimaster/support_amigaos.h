@@ -112,6 +112,8 @@ VOID FreeVecPooled(APTR pool, APTR memory);
 #   endif
 #endif 
 
+#define __stackparm
+
 /*** Miscellanous AROS macros ***********************************************/
 #define AROS_LIBFUNC_INIT
 #define AROS_LIBBASE_EXT_DECL(a, b) extern a b;
