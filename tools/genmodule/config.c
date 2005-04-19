@@ -36,7 +36,7 @@ getBanner(struct config* config)
 const static char usage[] =
     "\n"
     "Usage: genmodule [-c conffile] [-s suffix] [-d gendir]\n"
-    "       {writefiles|writeincludes|writedummy|writelibdefs} modname modtype\n"
+    "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs} modname modtype\n"
 ;
 
 static void readconfig(struct config *);
@@ -125,6 +125,10 @@ struct config *initconfig(int argc, char **argv)
     {
 	cfg->command = FILES;
     }
+    else if (strcmp(argv[optind], "writemakefile") == 0)
+    {
+	cfg->command = MAKEFILE;
+    }
     else if (strcmp(argv[optind], "writeincludes") == 0)
     {
 	cfg->command = INCLUDES;
@@ -151,34 +155,50 @@ struct config *initconfig(int argc, char **argv)
     if (strcmp(argv[optind+2],"library")==0)
     {
     	cfg->modtype = LIBRARY;
+	cfg->genlinklib = 1;
+	cfg->moddir = "Libs";
     }
     else if (strcmp(argv[optind+2],"mcc")==0)
     {
     	cfg->modtype = MCC;
+	cfg->genlinklib = 0;
+	cfg->moddir = "Classes/Zune";
     }
     else if (strcmp(argv[optind+2],"mui")==0)
     {
     	cfg->modtype = MUI;
+	cfg->genlinklib = 0;
+	cfg->moddir = "Classes/Zune";
     }
     else if (strcmp(argv[optind+2],"mcp")==0)
     {
     	cfg->modtype = MCP;
+	cfg->genlinklib = 0;
+	cfg->moddir = "Classes/Zune";
     }
     else if (strcmp(argv[optind+2], "device")==0)
     {
 	cfg->modtype = DEVICE;
+	cfg->genlinklib = 1;
+	cfg->moddir = "Devs";
     }
     else if (strcmp(argv[optind+2], "resource")==0)
     {
 	cfg->modtype = RESOURCE;
+	cfg->genlinklib = 1;
+	cfg->moddir = "Devs";
     }
     else if (strcmp(argv[optind+2], "gadget")==0)
     {
 	cfg->modtype = GADGET;
+	cfg->genlinklib = 0;
+	cfg->moddir = "Classes/Gadgets";
     }
     else if (strcmp(argv[optind+2], "datatype")==0)
     {
 	cfg->modtype = DATATYPE;
+	cfg->genlinklib = 0;
+	cfg->moddir = "Classes/Datatypes";
     }
     else
     {
