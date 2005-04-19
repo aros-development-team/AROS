@@ -47,7 +47,7 @@ static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdat
     {
         imsg->Class 	= class;
         imsg->Code  	= code;
-        imsg->Qualifier = (msg->opu_Flags == OPUF_INTERIM) ? ICMAGIC : 0; //tells SendIntuiMessage if the message is OK to be dropped
+        imsg->Qualifier = (msg->opu_Flags == OPUF_INTERIM) ? IEQUALIFIER_REPEAT : 0; //tells SendIntuiMessage if the message is OK to be dropped
         imsg->IAddress  = IAddress;
         imsg->MouseX    = msg->opu_GInfo->gi_Window->MouseX;
         imsg->MouseY    = msg->opu_GInfo->gi_Window->MouseY;

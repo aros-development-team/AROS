@@ -19,6 +19,4 @@ struct ICData
     ULONG            ic_LoopCounter;
 };
 
-#define ICMAGIC 1234
-
 #endif /* _ICCLASS_H */
