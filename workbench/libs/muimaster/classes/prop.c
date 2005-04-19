@@ -51,7 +51,7 @@ IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->deltafactor = 1;
     
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -107,7 +107,7 @@ IPTR Prop__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     int refresh = 0;
     int only_trigger = 0;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -411,8 +411,8 @@ IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 	    data->first = tag->ti_Data;
 	    if (data->first < 0)
 		data->first = 0;
-	    SetAttrs(obj, MUIA_Prop_Release, ((msg->imsg->Qualifier & IEQUALIFIER_REPEAT) ? FALSE : TRUE),
-	    	    	  MUIA_Prop_First, tag->ti_Data, MUIA_Prop_OnlyTrigger, TRUE,
+	    SetAttrs(obj, MUIA_Prop_First, tag->ti_Data, MUIA_Prop_OnlyTrigger, TRUE,
+			  MUIA_Prop_Release, ((msg->imsg->Qualifier & IEQUALIFIER_REPEAT) ? FALSE : TRUE),
 			  TAG_DONE);
 	}
     }
