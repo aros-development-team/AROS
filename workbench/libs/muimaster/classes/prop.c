@@ -117,7 +117,7 @@ IPTR Prop__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_Prop_First:
-		    data->first = tag->ti_Data;
+ 		    data->first = tag->ti_Data;
 		    refresh = 1;
 		    break;
 
@@ -176,6 +176,7 @@ IPTR Prop__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 		}
     	case    MUIA_Prop_Entries: STORE = data->entries; return 1;
     	case    MUIA_Prop_Visible: STORE = data->visible; return 1;
+	    
     	default:
     	        return DoSuperMethodA(cl,obj,(Msg)msg);
     }
@@ -406,11 +407,13 @@ IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 	    /* Check if we PGA_Top has really changed */
 	    tag = FindTagItem(PGA_Top,(struct TagItem*)msg->imsg->IAddress);
 	    if (!tag) return 0;
-	    if (tag->ti_Data == data->first) return 0;
+	    if ((tag->ti_Data == data->first) && (msg->imsg->Qualifier & IEQUALIFIER_REPEAT)) return 0;
 	    data->first = tag->ti_Data;
 	    if (data->first < 0)
 		data->first = 0;
-	    SetAttrs(obj, MUIA_Prop_First, tag->ti_Data, MUIA_Prop_OnlyTrigger, TRUE, TAG_DONE);
+	    SetAttrs(obj, MUIA_Prop_Release, ((msg->imsg->Qualifier & IEQUALIFIER_REPEAT) ? FALSE : TRUE),
+	    	    	  MUIA_Prop_First, tag->ti_Data, MUIA_Prop_OnlyTrigger, TRUE,
+			  TAG_DONE);
 	}
     }
 
