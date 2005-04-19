@@ -13,13 +13,11 @@
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/muimaster.h>
 
 #include "muimaster_intern.h"
 
 #undef SysBase
-
-#include <interfaces/zunemaster.h>
-
 
 /* Version Tag */
 #define VERSION  0
