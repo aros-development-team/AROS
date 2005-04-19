@@ -45,14 +45,11 @@ USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 #MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes
 #MM workbench-libs-freetype-module : workbench-libs-freetype-includes
 
-# for ftsystem use the source code available in ../config/aros
-%rule_compile basename=../config/aros/ftsystem targetdir=$(GENDIR)/$(CURDIR)
-
 %build_linklib mmake=workbench-libs-freetype-linklib libname=freetype2 \
     files=$(FILESDIR)
 
 %build_module mmake=workbench-libs-freetype-module modname=freetype2 \
     modtype=library files=$(FILESDIR) linklibname=freetype2shared \
-    linklibfiles=tagcall noref=../config/aros/ftsystem \
+    linklibfiles=aros/tagcall noref=../config/aros/ftsystem \
     uselibs="amiga rom m"
 
