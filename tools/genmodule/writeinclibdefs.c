@@ -132,5 +132,12 @@ void writeinclibdefs(struct config *cfg)
         cfg->modulenameupper
     );
     
+    if (ferror(out))
+    {
+	perror("Error writing libdefs.h");
+	fclose(out);
+	exit(20);
+    }
+    
     fclose(out);
 }

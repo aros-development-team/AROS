@@ -22,6 +22,7 @@ int main(int argc, char **argv)
 	    writeautoinit(cfg);
 	writestubs(cfg, functions);
 	break;
+	
     case INCLUDES:
 	readref(cfg, functions);
 	/* fall through */
@@ -30,9 +31,15 @@ int main(int argc, char **argv)
         writeincclib(cfg, functions);
         writeincdefines(cfg, functions);
 	break;
+	
     case LIBDEFS:
 	writeinclibdefs(cfg);
 	break;
+
+    case MAKEFILE:
+	writemakefile(cfg);
+	break;
+	
     default:
 	fprintf(stderr, "Internal error in main: Unhandled command type\n");
 	exit(20);

@@ -10,7 +10,7 @@
 
 #include "stringlist.h"
 
-enum command { CMD_UNSPECIFIED, DUMMY, FILES, LIBDEFS, INCLUDES };
+enum command { CMD_UNSPECIFIED, DUMMY, FILES, LIBDEFS, INCLUDES, MAKEFILE };
 enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE, GADGET,
 	       DATATYPE
 };
@@ -58,6 +58,12 @@ struct config
 
     /* Name for variables and types */
     char *basename, *libbase, *libbasetype, *libbasetypeptrextern;
+
+    /* Does module produce a linklib (e.g. LIB:libmodname.a) ? */
+    int genlinklib;
+
+    /* The default path to put the module relative to SYS: */
+    char *moddir;
     
     /* The names of the fields in the custom library base for storing internal
      * information

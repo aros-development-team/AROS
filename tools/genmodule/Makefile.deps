@@ -11,6 +11,7 @@ GENMODULE_SRCS := \
     writeincproto.c \
     writeincdefines.c \
     writeinclibdefs.c \
+    writemakefile.c \
     writestart.c \
     writeend.c \
     writeautoinit.c \
