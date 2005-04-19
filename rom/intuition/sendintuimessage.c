@@ -135,7 +135,7 @@ AROS_LH2(void, SendIntuiMessage,
         //reduce number of messages if possible (prop updates only!)
         if (IW(window)->num_idcmpupdate && IW(window)->messagecache)
         {
-            if (imsg->Code == IW(window)->messagecache->Code && imsg->Qualifier == ICMAGIC)
+            if (imsg->Code == IW(window)->messagecache->Code && imsg->Qualifier == IEQUALIFIER_REPEAT)
             {
                 IW(window)->messagecache->MouseX = imsg->MouseX;
                 IW(window)->messagecache->MouseY = imsg->MouseY;
