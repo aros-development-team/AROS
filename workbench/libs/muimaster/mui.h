@@ -31,10 +31,15 @@
 
 #include "mui_identifiers.h"
 
+#ifndef __AROS__
+#define MUIMASTER_NAME "zunemaster.library"
+#define MUIMASTER_VMIN    0
+#define MUIMASTER_VLATEST 0
+#else
 #define MUIMASTER_NAME "muimaster.library"
 #define MUIMASTER_VMIN    41
 #define MUIMASTER_VLATEST 41
-
+#endif
 
 /* START PRIV */
 
