@@ -150,7 +150,6 @@ AROS_LH2(void, SendIntuiMessage,
             }
         }
 
-        imsg->Qualifier = 0;
         IW(window)->num_idcmpupdate++;
     }
 
