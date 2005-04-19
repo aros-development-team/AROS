@@ -229,7 +229,7 @@ static VOID UpdateTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
     D(bug("PropGClass: Found scroller top: %d, old %d\n", top, data->top));
 
     /* PGA_Top changed by user ? */
-    if ((top != data->top))
+    if ((top != data->top) || final)
     {
         D(bug("PropGClass: top != data->top, calling NotifyTop\n"));
 
