@@ -184,7 +184,7 @@ ifeq (%(srcdir),)
     TMP_TARGETS := $(addprefix %(targetdir)/,$(notdir %(files)))
     $(foreach f, %(files), \
           $(eval %(targetdir)/$(notdir $(f)) : $(f)) \
-	  $(eval %(targetdir)/$(notdir $(f)) : SRCFILE := $(f)) \
+          $(eval %(targetdir)/$(notdir $(f)) : SRCFILE := $(f)) \
     )
 else
     TMP_TARGETS := $(addprefix %(targetdir)/,%(files))
@@ -346,8 +346,9 @@ $(TMP_TARGETBASE).d : %(basename).c
 ifeq (%(targetdir),)
     TMP_TARGETS := $(addsuffix .o,%(basenames))
     TMP_DTARGETS := $(addsuffix .d,%(basenames))
-    $(foreach f,%(basenames),       $(eval $(f).o $(f).d : $(f).c) \
-	  $(eval $(f).o $(f).d : SRC_FILE:=$(f).c) \
+    $(foreach f,%(basenames),\
+          $(eval $(f).o $(f).d : $(f).c) \
+          $(eval $(f).o $(f).d : SRC_FILE:=$(f).c) \
     )
 else
     TMP_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,$(notdir %(basenames))))
@@ -601,13 +602,13 @@ ifeq (%(targetdir),)
     TMP_TARGETS := $(addsuffix .ref,%(basenames))
     $(foreach f,%(basenames), \
           $(eval $(f).ref : $(f).c) \
-	  $(eval $(f).ref : SRCFILE := $(f).c) \
+          $(eval $(f).ref : SRCFILE := $(f).c) \
     )
 else
     TMP_TARGETS := $(addprefix %(targetdir)/,$(addsuffix .ref,$(notdir %(basenames))))
     $(foreach f,%(basenames), \
           $(eval %(targetdir)/$(notdir $(f)).ref : $(f).c) \
-	  $(eval %(targetdir)/$(notdir $(f)).ref : SRCFILE := $(f).c) \
+          $(eval %(targetdir)/$(notdir $(f)).ref : SRCFILE := $(f).c) \
     )
 endif
 
@@ -1070,7 +1071,7 @@ BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
 BD_CFLAGS     := %(cflags) -I%(objdir) -idirafter $(TOP)/$(CURDIR) -include %(objdir)/%(modname)_deflibdefs.h
-BD_DFLAGS     := %(dflags) -I%(objdir) -include %(objdir)/%(modname)_deflibdefs.h
+BD_DFLAGS     := %(dflags) -I%(objdir) -idirafter $(TOP)/$(CURDIR) -include %(objdir)/%(modname)_deflibdefs.h
 
 BD_LINKLIBFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
 ifeq ($(strip $(%(modname)_LINKLIBFILES) %(linklibfiles)),)
