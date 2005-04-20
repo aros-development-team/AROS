@@ -917,7 +917,7 @@ APTR DF_IteratorInit(struct TTextAttr *reqattr, struct DiskfontBase_intern *Disk
 	{
 	    D(bug("DF_IteratorInit: ProgdirDirEntry found\n"));
 	    df_data->u.FontsData.CurrentDirEntry = df_data->u.FontsData.ProgdirDirEntry;
-	    df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(&df_data->u.FontsData.ProgdirDirEntry->FileList); /* stegerg: CHECKME!!! */
+	    df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(&df_data->u.FontsData.ProgdirDirEntry->FileList);
 	}
 	else
 	    D(bug("DF_IteratorInit: No ProgdirEntry found\n"));
@@ -937,7 +937,7 @@ APTR DF_IteratorInit(struct TTextAttr *reqattr, struct DiskfontBase_intern *Disk
 	{
 	    df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetSucc(df_data->u.FontsData.CurrentDirEntry);
 	    if (df_data->u.FontsData.CurrentDirEntry != NULL)
-		df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(df_data->u.FontsData.CurrentDirEntry);
+		df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(&df_data->u.FontsData.CurrentDirEntry->FileList);
 
 	    D(bug("DF_IteratorInit: CurrentDirEntry: %p CurrentFileEntry: %p\n",
 		  df_data->u.FontsData.CurrentDirEntry, df_data->u.FontsData.CurrentFileEntry));
