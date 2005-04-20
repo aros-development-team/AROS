@@ -67,5 +67,5 @@ const struct keybindings keys[] =
   { { '1'+500, IEQUALIFIER_RCOMMAND, kGotoBookmark1 } },
   { { '2'+500, IEQUALIFIER_RCOMMAND, kGotoBookmark2 } },
   { { '3'+500, IEQUALIFIER_RCOMMAND, kGotoBookmark3 } },
-  { { 0, 0, 0 } }
+  { { (UWORD)-1, 0, 0 } }
 };
