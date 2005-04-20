@@ -43,7 +43,7 @@ void writemakefile(struct config *cfg)
 	{
 	case LIBRARY:
 	    fprintf(out, "%s_LINKLIBFILES := %s_stubs %s_autoinit\n",
-		    cfg->modulename, cfg->modulename
+		    cfg->modulename, cfg->modulename, cfg->modulename
 	    );
 	    break;
 	
