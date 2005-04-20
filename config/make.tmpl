@@ -184,7 +184,7 @@ ifeq (%(srcdir),)
     TMP_TARGETS := $(addprefix %(targetdir)/,$(notdir %(files)))
     $(foreach f, %(files), \
           $(eval %(targetdir)/$(notdir $(f)) : $(f)) \
-	  $(eval %(targetdir)/$(notdir $(f)) : SRCFILE := $(f) \
+	  $(eval %(targetdir)/$(notdir $(f)) : SRCFILE := $(f)) \
     )
 else
     TMP_TARGETS := $(addprefix %(targetdir)/,%(files))
