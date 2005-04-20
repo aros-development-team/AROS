@@ -230,13 +230,13 @@ FUNCTIONS := \
   uselibs=hiddgraphicsstubs
 
 # Generate dummy includes for the layer library to solve a circular include
-# dependency problem.
+# dependency problem. Yes, this is a hack.
 
 OBJDIR   := $(GENDIR)/$(CURDIR)
 DUMMYDIR := $(OBJDIR)/dummyinc
 REFFILES := $(addprefix $(OBJDIR)/, $(addsuffix .ref, graphics_init $(FUNCTIONS) $(FILES)))
 
-ifeq ($(findstring $(TARGET), kernel-graphics-objdir kernel-graphics-setup),)
+ifeq ($(findstring $(TARGET), kernel-graphics-objdir kernel-graphics-setup kernel-graphics-clean clean),)
 %rule_genmodule_makefile modname=layers modtype=library \
     targetdir=$(OBJDIR) conffile=../hyperlayers/layers.conf
 
