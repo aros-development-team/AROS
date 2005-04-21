@@ -49,7 +49,7 @@ void writemakefile(struct config *cfg)
 	
 	case DEVICE:
 	case RESOURCE:
-	    fprintf(out, "%s_LINKLIBFILES := %s_stubs\n", cfg->modulename);
+	    fprintf(out, "%s_LINKLIBFILES := %s_stubs\n", cfg->modulename, cfg->modulename);
 	    break;
 	
 	default:
