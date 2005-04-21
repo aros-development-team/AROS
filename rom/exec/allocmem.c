@@ -304,12 +304,12 @@ static APTR stdAlloc(struct MemHeader *mh, ULONG byteSize, ULONG requirements)
                 {
                     /* Return the last bytes. */
                     p1->mc_Next=p2;
-                    mc=(struct MemChunk *)((UBYTE *)p2+p2->mc_Bytes-byteSize);
+                    mc=(struct MemChunk *)((UBYTE *)(p2+p2->mc_Bytes-byteSize));
                 }
                 else
                 {
                     /* Return the first bytes. */
-                    p1->mc_Next=(struct MemChunk *)((UBYTE *)p2+byteSize);
+                    p1->mc_Next=(struct MemChunk *)((UBYTE *)(p2+byteSize));
                     mc=p2;
                 }
                 
