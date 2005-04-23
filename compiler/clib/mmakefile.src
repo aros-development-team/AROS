@@ -205,23 +205,23 @@ SHARED	:= \
 	on_exit \
 	open \
 	opendir \
-        pclose \
+	pclose \
 	perror \
 	pipe \
-        popen \
+	popen \
 	printf \
 	putenv \
 	puts \
-    putw \
+	putw \
 	qsort \
-    raise \
+	raise \
 	rand \
 	random \
 	read \
 	readdir \
 	readlink \
 	realloc \
-        realloc_nocopy \
+	realloc_nocopy \
 	remove \
 	rename \
 	rewind \
@@ -273,8 +273,9 @@ SHARED	:= \
 	symlink \
 	system \
 	telldir \
+	tempnam \
 	time \
-    times \
+	times \
 	tmpnam \
 	truncate \
 	umask \

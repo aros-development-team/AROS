@@ -84,6 +84,7 @@ int remove(const char *filename);
 int rename(const char *from, const char *to);
 /* NOTIMPL FILE *tmpfile(void); */
 char *tmpnam(char *s);
+char *tempnam(const char *dir, const char *pfx);
 int fclose(FILE *stream);
 int fflush(FILE *stream);
 FILE *fopen(const char * restrict filename, const char * restrict mode);
