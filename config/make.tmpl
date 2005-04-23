@@ -978,7 +978,6 @@ endif
 # Default values for variables and arguments
 BD_DEFLINKLIBNAME := %(modname)
 BD_DEFREFFILE := %(objdir)/%(modname)_ALL.ref
-BD_DEFMODDIR := $(%(modname)_MODDIR)
 BD_DEFDFLAGS := %(cflags)
 OBJDIR ?= $(GENDIR)/$(CURDIR)
 
@@ -1002,6 +1001,7 @@ ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
 
 include %(objdir)/Makefile.%(modname)
 
+BD_DEFMODDIR := $(%(modname)_MODDIR)
 
 ## include files generation
 ##
@@ -1137,7 +1137,7 @@ $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 
 ## Dependency fine-tuning
 ##
-%rule_makedirs dirs="%(objdir) %(moduledir) $(KOBJSDIR)" setuptarget=%(mmake)-setup
+%rule_makedirs dirs="%(objdir) %(prefix)/%(moduledir) $(KOBJSDIR)" setuptarget=%(mmake)-setup
 
 BD_DEPS := $(addsuffix .d,$(addprefix %(objdir)/,$(notdir $(BD_CCFILES))))
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps=$(BD_DEPS)
