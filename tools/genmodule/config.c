@@ -73,7 +73,7 @@ struct config *initconfig(int argc, char **argv)
 {
     struct config *cfg;
     char *s, **argvit = argv + 1;
-    int hassuffix, c;
+    int hassuffix = 0, c;
     
     cfg = malloc(sizeof(struct config));
     if (cfg == NULL)
@@ -100,6 +100,7 @@ struct config *initconfig(int argc, char **argv)
 	    break;
 	case 's':
 	    cfg->suffix = optarg;
+	    hassuffix = 1;
 	    break;
 	case 'd':
 	    /* Remove / at end if present */
@@ -205,6 +206,9 @@ struct config *initconfig(int argc, char **argv)
 	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);
 	exit(20);
     }
+
+    if (!hassuffix)
+	cfg->suffix = argv[optind+2];
 
     cfg->boopsimprefix = NULL;
     switch (cfg->modtype)
