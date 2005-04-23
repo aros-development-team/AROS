@@ -336,7 +336,7 @@ int retval = 1;
 int doWork(struct Config *cfg) {
 int retval = 1;
 struct PathElement *pe;
-struct afsbase *afsbase=NULL;
+struct AFSBase *afsbase=NULL;
 struct DosEnvec de={0};
 LONG error;
 struct Volume *volume;
