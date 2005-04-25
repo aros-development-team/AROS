@@ -90,6 +90,9 @@
 #define AROS_LARGEST_TYPE           long
 #endif
 
+#ifndef AROS_ATOMIC_TYPE
+#define AROS_ATOMIC_TYPE            int
+#endif
 
 /* XXX End of Hacks */
 
