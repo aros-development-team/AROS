@@ -299,10 +299,10 @@ static const STRPTR __french_strings[] =
     "AM", "PM",
 
     /* Soft and hard hyphens */
-    "-", "-",
+     "\xAD", "-",
 
     /* Open and close quotes */
-    "\"", "\"",
+     "\xAB\xA0", "\xA0\xBB",
 
     /* Days: But not actual day names
        Yesterday - the day before the current
