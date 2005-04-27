@@ -1174,14 +1174,16 @@ static void DoSearch(WORD kind)
 		search_startline = line;
 	    } else {
 		done = TRUE;
+		DisplayBeep(NULL);
 	    }
 	} else {
 	    line--;
 	    if (line >= 0)
 	    {
-		 search_startline = line;
+		search_startline = line;
 	    } else {
-		 done = TRUE;
+		done = TRUE;
+		DisplayBeep(NULL);
 	    }
 	}
 
@@ -1411,6 +1413,12 @@ static BOOL HandleWin(void)
 		    {
 			switch((ULONG)GTMENUITEM_USERDATA(item))
 			{
+			    case MSG_MEN_PROJECT_PRINT:
+				sprintf(s, "Run >NIL: Type >PRT: %s", filename);
+				if (System(s, TAG_END))
+				    DisplayBeep(NULL);
+				break;
+
 			    case MSG_MEN_PROJECT_ABOUT:
 				About();
 				break;
