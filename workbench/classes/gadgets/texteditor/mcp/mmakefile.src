@@ -4,7 +4,9 @@ include $(TOP)/config/make.cfg
 #MM workbench-classes-zune-texteditor-mcp : includes \
 #MM 					    linklibs \
 #MM					    workbench-classes-zune-texteditor-class \
-#MM					    workbench-classes-zune-texteditor-mcp-locale
+#MM					    workbench-classes-zune-texteditor-mcp-locale \
+#MM					    workbench-classes-zune-betterstring-class \
+#MM					    workbench-classes-zune-hotkeystring-class
 
 USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcc
 
