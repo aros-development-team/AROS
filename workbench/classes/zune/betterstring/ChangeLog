@@ -1,0 +1,10 @@
+--------------------------------------
+MUI BetterString MCC class - ChangeLog
+--------------------------------------
+
+$Id: ChangeLog,v 1.1 2005/04/21 20:52:04 damato Exp $
+$Source: /cvsroot/bstring-mcc/ChangeLog,v $
+
+2005-04-21  Jens Langner <Jens.Langner@light-speed.de>
+
+    * initial LGPL release published at sf.net

@@ -1,0 +1,29 @@
+#   $Id: mmakefile.src,v 1.2 2004/08/23 06:42:07 NicJA Exp $
+include $(TOP)/config/make.cfg
+
+#MM workbench-classes-zune-betterstring-class : includes linklibs
+
+USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcp
+
+FILES := AllocBitMap \
+	 AllocFunctions \
+	 Dispatcher \
+	 FileNameCompl \
+	 GetSetAttrs \
+	 HandleInput \
+	 InitConfig \
+	 PrintString \
+	 TextFunctions
+	 
+%build_module_macro mmake=workbench-classes-zune-betterstring-class \
+  modname=BetterString modtype=mcc \
+  initfile=library files=$(FILES) \
+  uselibs="amiga mui rom m"
+
+
+#MM includes-copy
+
+INCLUDE_FILES := $(TOP)/$(CURDIR)/BetterString_mcc.h
+%copy_includes path=MUI dir=$(TOP)/$(CURDIR)
+
+%common

@@ -1,0 +1,140 @@
+TABLE OF CONTENTS
+
+BetterString.mcc/BetterString.mcc
+BetterString.mcc/MUIA_BetterString_Columns
+BetterString.mcc/MUIA_BetterString_NoInput
+BetterString.mcc/MUIA_BetterString_SelectSize
+BetterString.mcc/MUIA_BetterString_StayActive
+BetterString.mcc/MUIM_BetterString_ClearSelected
+BetterString.mcc/MUIM_BetterString_FileNameStart
+BetterString.mcc/MUIM_BetterString_Insert
+BetterString.mcc/BetterString.mcc
+
+BetterString is a stringgadget replacement. It is created for MUI, so using it
+should eliminate the problems with the original BOOPSI stringclass.
+The class offers the user to do number arithmetic, like increase, decrease and
+bin<->hex conversion. It has filename completion, ability to mark, cut, copy
+and paste text - Both via mouse and keyboard. The length of the contents
+buffer will dynamically be expanded to hold all of what the user type (unless
+a maximum length is given)
+
+BetterString is released as POLYMORPH-WARE, which means that you need to pay
+or give me, whatever you want your users to pay or give you.
+
+This autodoc only describes what is new, compared to the original "String.mui".
+All tags and methods of the old String.mui is supported, except edit hooks.
+
+For feedback write to: Allan Odgaard
+                       Dagmarsgade 36
+                       DK-2200 Copenhagen
+                email: Duff@DIKU.DK
+                  url: http://www.DIKU.dk/students/duff/
+ Todo
+¯¯¯¯¯¯
+   The class can be set to remember what has been previously typed, and allows
+   the user to go back and forth in the history buffer.
+
+BetterString.mcc/MUIA_BetterString_Columns
+
+    NAME
+        MUIA_BetterString_Columns -- [I..], ULONG
+
+    FUNCTION
+        Set the width of the stringgadget (in characters)
+        This tag is probably only useful for webbrowsers.
+
+BetterString.mcc/MUIA_BetterString_NoInput
+
+    NAME
+        MUIA_BetterString_NoInput -- [ISG], BOOL
+
+    FUNCTION
+        Effectively turns the gadget into read-only mode.
+
+BetterString.mcc/MUIA_BetterString_SelectSize
+
+    NAME
+        MUIA_BetterString_SelectSize -- [.SG], LONG
+
+    FUNCTION
+        Get or set the number of selected characters.
+        A negative value indicates that the marking has happend right to left.
+        A 0 means nothing is marked.
+
+    SEE ALSO
+        MUIA_String_BufferPos (MUIA_String.Doc)
+
+BetterString.mcc/MUIA_BetterString_StayActive
+
+    NAME
+        MUIA_BetterString_StayActive -- [ISG], BOOL
+
+    FUNCTION
+        Setting this attribute to TRUE will let the stringgadget stay active,
+        even when the user hits return, or clicks outside the gadgets area.
+
+BetterString.mcc/MUIM_BetterString_ClearSelected
+
+    NAME
+        MUIM_BetterString_ClearSelected
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_BetterString_ClearSelected);
+
+    FUNCTION
+        Clear all marked text, if any!
+
+    RESULT
+        NONE
+
+BetterString.mcc/MUIM_BetterString_FileNameStart
+
+    NAME
+        MUIM_BetterString_FileNameStart
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_BetterString_FileNameStart, STRPTR buffer, LONG pos);
+
+    FUNCTION
+        When the user press Amiga+TAB, then BetterString will call this
+        method, with a pointer to the current buffer, and a cursor position.
+        It expects the method to return the start position of the partial
+        file, which the cursor is currently at.
+
+        Generally BetterString's own implementation is clever enough to find
+        it, but if for example you use the stringgadget in a webbrowser, where
+        the file is prefixed with "file://", then it isn't.
+
+    RESULT
+        The start of the file or MUIR_BetterString_FileNameStart_Volume if no
+        file is found, this will make BetterString treat the string as the
+        beginning of a volumne, and make it do volume-completion instead.
+
+BetterString.mcc/MUIM_BetterString_Insert
+
+    NAME
+        MUIM_BetterString_Insert
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_BetterString_Insert, STRPTR text, LONG pos);
+
+    FUNCTION
+        This will insert the given text.
+        The position of the inserted text can either be a real position, or:
+
+          MUIV_BetterString_Insert_BufferPos
+          MUIV_BetterString_Insert_StartOfLine
+          MUIV_BetterString_Insert_EndOfLine
+
+
+        If there isn't enough room to fit the complete string, then it will be
+        truncated, and the user will get a DisplayBeep().
+        If the cursor is to the right if the insertion place, then it will be
+        moved.
+
+    RESULT
+        NONE
+
+    SEE ALSO
+        MUIA_String_Contents (MUIA_String.Doc)
+

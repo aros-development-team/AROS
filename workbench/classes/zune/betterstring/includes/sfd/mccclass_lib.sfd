@@ -1,0 +1,9 @@
+==id $Id: mccclass_lib.sfd,v 1.1 2005/04/21 20:52:04 damato Exp $
+==base _MCCClassBase
+==basetype struct Library *
+==libname mccclass.library
+==bias 30
+==public
+==include <exec/types.h>
+ULONG MCC_Query(LONG which) (d0)
+==end

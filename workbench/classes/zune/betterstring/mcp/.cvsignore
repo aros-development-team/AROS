@@ -1,0 +1,5 @@
+.obj_*
+locale.h
+locale.c
+bin_*
+mmakefile

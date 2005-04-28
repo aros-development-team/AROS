@@ -1,0 +1,38 @@
+/***************************************************************************
+
+ BetterString.mcc - A better String gadget MUI Custom Class
+ Copyright (C) 1997-2000 Allan Odgaard
+ Copyright (C) 2005 by BetterString.mcc Open Source Team
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
+
+ $Id: README,v 1.1 2005/04/21 20:52:04 damato Exp $
+
+***************************************************************************/
+
+With full permission of the previous author (Allan Odgaard) BetterString.mcc
+11.6+ is hereby released as free software under the GNU Lesser General Public
+License. Please read this license (COPYING) and make sure you understand the
+terms and conditions of this license.
+
+BetterString.mcc is compiled with GCC v2 and v3 compilers. All required
+third party header files should already be included in the CVS repository.
+However, please note that you might need some more third party tools/utilities
+not included/listed here.
+
+If you want to contribute to the development of BetterString.mcc please register
+with SourceForge.net and notify one of the project admins of the BetterString.mcc
+project available at http://www.sf.net/projects/bstring-mcc/
+
+Jens Langner
+April, 2005
