@@ -1,0 +1,136 @@
+#/***************************************************************************
+#
+# BetterString.mcc - A better String gadget MUI Custom Class
+# Copyright (C) 1997-2000 Allan Odgaard
+# Copyright (C) 2005 by BetterString.mcc Open Source Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
+#
+# $Id: Makefile.os4,v 1.1 2005/04/21 20:52:04 damato Exp $
+#
+#***************************************************************************/
+
+# Programs
+CC    = ppc-amigaos-gcc
+STRIP = ppc-amigaos-strip
+RM    = rm -f
+RMDIR = rm -rf
+MKDIR = mkdir
+CP    = cp
+
+# Directories
+OBJDIR = .obj_os4
+BINDIR = bin_os4
+
+# Compiler/Linker flags
+CPU      = -mcpu=604e
+CPUFLAGS = -mmultiple
+CDEFS    = -D__BS_VERDATE=\"`date +%d.%m.%Y`\" -D__BS_VERDAYS="`expr \`date +%s\` / 86400 - 2922`"
+WARN     = -W -Wall
+OPTFLAGS = -O3 -finline-functions -fomit-frame-pointer -funroll-loops
+DEBUG    = -DWITH_DEBUG -g -O0
+REDEFINE =
+CFLAGS   = -I. -I../mcp -I../includes $(CPU) $(CPUFLAGS) $(WARN) $(OPTFLAGS) $(DEBUG)\
+           -D__USE_INLINE__ $(REDEFINE) -c
+LDFLAGS  = -nostartfiles
+LDLIBS   =
+
+# CPU and DEBUG can be defined outside, defaults to above
+# using e.g. "make DEBUG= CPU=-mcpu=603e" produces optimized non-debug PPC-603e version
+#
+# OPTFLAGS are disabled by DEBUG normally!
+#
+# ignored warnings are:
+# none - because we want to compile with -Wall all the time
+#
+
+MCCTARGET = $(BINDIR)/BetterString.mcc
+TESTTARGET= $(BINDIR)/BetterString-Test
+
+M68KSTUBS = $(OBJDIR)/mccclass_68k.o
+
+MCCOBJS = $(OBJDIR)/library.o \
+          $(OBJDIR)/AllocBitMap.o \
+          $(OBJDIR)/AllocFunctions.o \
+          $(OBJDIR)/Dispatcher.o \
+          $(OBJDIR)/FileNameCompl.o \
+          $(OBJDIR)/GetSetAttrs.o \
+          $(OBJDIR)/HandleInput.o \
+          $(OBJDIR)/InitConfig.o \
+          $(OBJDIR)/PrintString.o \
+          $(OBJDIR)/TextFunctions.o
+
+
+TESTOBJS= $(OBJDIR)/BetterString-Test.o \
+          $(OBJDIR)/AllocBitMap.o \
+          $(OBJDIR)/AllocFunctions.o \
+          $(OBJDIR)/Dispatcher.o \
+          $(OBJDIR)/FileNameCompl.o \
+          $(OBJDIR)/GetSetAttrs.o \
+          $(OBJDIR)/HandleInput.o \
+          $(OBJDIR)/InitConfig.o \
+          $(OBJDIR)/PrintString.o \
+          $(OBJDIR)/TextFunctions.o
+
+#
+
+all: $(BINDIR) $(OBJDIR) $(MCCTARGET) $(TESTTARGET)
+
+# make the object directories
+$(OBJDIR):
+	@printf '\033[33mGenerating $@ directory\033[0m\n'
+	@$(MKDIR) $(OBJDIR)
+
+# make the binary directories
+$(BINDIR):
+	@printf '\033[33mGenerating $@ directory\033[0m\n'
+	@$(MKDIR) $(BINDIR)
+
+#
+
+$(OBJDIR)/%.o: %.c
+	@printf '\033[32mCompiling $<\033[0m\n'
+	@$(CC) $(CFLAGS) $< -o $@ -DNO_PPCINLINE_STDARG
+
+$(OBJDIR)/mccclass_68k.o: ../includes/mccclass_68k.c
+	@printf '\033[32mCompiling $<\033[0m\n'
+	@$(CC) $(CFLAGS) $< -o $@
+
+#
+
+$(MCCTARGET): $(M68KSTUBS) $(MCCOBJS)
+	@printf '\033[32mLinking \033[1m$@\033[0m\n'
+	@$(CC) $(LDFLAGS) -o $@.debug $(MCCOBJS) $(M68KSTUBS) $(LDLIBS)
+	@$(STRIP) -o $@ $@.debug
+
+$(TESTTARGET): $(TESTOBJS)
+	@printf '\033[32mLinking \033[1m$@\033[0m\n'
+	@$(CC) -o $@.debug $(TESTOBJS) $(LDLIBS)
+	@$(STRIP) -o $@ $@.debug
+
+$(OBJDIR)/library.o: library.c ../includes/mccheader.c \
+  BetterString_mcc.h private.h rev.h
+
+$(OBJDIR)/library.o: library.c ../includes/mccheader.c BetterString_mcc.h \
+  private.h rev.h
+
+#
+
+.PHONY: clean
+clean:
+	-$(RM) $(MCCTARGET) $(MCCTARGET).debug $(TESTTARGET) $(TESTTARGET).debug $(MCCOBJS) $(TESTOBJS) $(M68KSTUBS)
+
+.PHONY: distclean
+distclean: clean
+	-$(RMDIR) $(OBJDIR)
+	-$(RMDIR) $(BINDIR)

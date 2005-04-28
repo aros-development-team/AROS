@@ -1,0 +1,6 @@
+*"class.mcc"
+##base _MCCClassBase
+##bias 30
+##public
+MCC_Query(which)(d0)
+##end

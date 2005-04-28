@@ -1,0 +1,52 @@
+TABLE OF CONTENTS
+
+HotkeyString.mcc/HotkeyString.mcc
+HotkeyString.mcc/MUIA_HotkeyString_Snoop
+HotkeyString.mcc/HotkeyString.mcc
+
+HotkeyString.mcc is a subclass of BetterString.mcc, it overloads the input
+method, and converts inputevents to the alphabetical representation. This is
+useful when you allow the user to customize keybindings.
+
+For feedback write to: Allan Odgaard
+                       Dagmarsgade 36
+                       DK-2200 Copenhagen
+                email: Duff@DIKU.DK
+                  url: http://www.DIKU.dk/students/duff/
+ Todo
+¯¯¯¯¯¯
+   MUIA_HotkeyString_IX   - Set an InputXpression as string contents
+   MUIA_HotkeyString_Mode - Tell the class wether or not to display standalone
+                            qualifiers, only qualifiers etc.
+
+HotkeyString.mcc/MUIA_HotkeyString_Snoop
+
+    NAME
+        MUIA_HotkeyString_Snoop -- [.SG], BOOL
+
+    FUNCTION
+        Normally this stringgadget converts each and every keypress to the
+        alphabetical representation. In some cases this may not be desirable,
+        e.g. if you bind the gadget to a listview.
+        Setting this tag to FALSE will make the gadget behave like a normal
+        stringgadget.
+
+    EXAMPLE
+        /*  We have a tbutton, which is a toggle button, a hstring which is our
+            HotkeyString - The tbutton is placed to the right of the string.
+
+            Setting up the following notify will let the string convert keys
+            only when the tbutton is down - And it will make the tbutton
+            become unpressed, when the user enters his hotkey.
+         */
+
+        DoMethod(tbutton, MUIM_Notify, MUIA_Selected, TRUE,
+                 MUIV_Notify_Window, 3, MUIM_Set, MUIA_Window_ActiveObject,
+                 hstring);
+
+        DoMethod(tbutton, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, hstring,
+                 3, MUIM_Set, MUIA_HotkeyString_Snoop, MUIV_TriggerValue);
+
+        DoMethod(hstring, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+                 tbutton, 3, MUIM_Set, MUIA_Selected, FALSE);
+

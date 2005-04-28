@@ -1,0 +1,4 @@
+*.o
+.obj_*
+bin_*
+mmakefile

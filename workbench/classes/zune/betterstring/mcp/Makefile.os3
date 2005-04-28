@@ -1,0 +1,127 @@
+#/***************************************************************************
+#
+# BetterString.mcc - A better String gadget MUI Custom Class
+# Copyright (C) 1997-2000 Allan Odgaard
+# Copyright (C) 2005 by BetterString.mcc Open Source Team
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
+#
+# $Id: Makefile.os3,v 1.1 2005/04/21 20:52:04 damato Exp $
+#
+#***************************************************************************/
+
+# Programs
+CC    = m68k-amigaos-gcc
+STRIP = m68k-amigaos-strip
+RM    = rm -f
+RMDIR = rm -rf
+MKDIR	= mkdir
+CP    = cp
+FC    = flexcat
+
+# Directories
+OBJDIR    = .obj_os3
+BINDIR    = bin_os3
+
+# Compiler/Linker flags
+CPU      = -m68020-60 -msoft-float
+CDEFS    = -D__NLV_VERDATE=\"`date +%d.%m.%Y`\" -D__NLV_VERDAYS="`expr \`date +%s\` / 86400 - 2922`"
+WARN     = -W -Wall
+OPTFLAGS = -O3 -fomit-frame-pointer -funroll-loops
+DEBUG    = -DWITH_DEBUG -g -O0
+CFLAGS   = -noixemul -I. -I../mcc -I../includes -c $(CPU) $(WARN) $(OPTFLAGS) $(DEBUG)
+LDFLAGS  = -noixemul -nostartfiles $(CPU)
+LDLIBS   = -lmui -ldebug -lamiga
+
+# CPU and DEBUG can be defined outside, defaults to above
+# using e.g. "make DEBUG= CPU=-m68060" produces optimized non-debug 68060 version
+#
+# OPTFLAGS are disabled by DEBUG normally!
+#
+# ignored warnings are:
+# none - because we want to compile with -Wall all the time
+#
+
+MCPTARGET = $(BINDIR)/BetterString.mcp
+PREFTARGET= $(BINDIR)/BetterString-Prefs
+
+M68KSTUBS = $(OBJDIR)/mccclass_68k.o
+
+MCPOBJS = $(OBJDIR)/library.o \
+          $(OBJDIR)/locale.o \
+          $(OBJDIR)/CreatePrefsGroup.o \
+          $(OBJDIR)/Dispatcher.o
+
+PREFOBJS= $(OBJDIR)/locale.o \
+          $(OBJDIR)/CreatePrefsGroup.o \
+          $(OBJDIR)/Dispatcher.o \
+          $(OBJDIR)/Preference.o
+
+#
+
+all: $(BINDIR) $(OBJDIR) locale.c $(MCPTARGET) $(PREFTARGET)
+
+# make the object directories
+$(OBJDIR):
+	@printf '\033[33mGenerating $@ directory\033[0m\n'
+	@$(MKDIR) $(OBJDIR)
+
+# make the binary directories
+$(BINDIR):
+	@printf '\033[33mGenerating $@ directory\033[0m\n'
+	@$(MKDIR) $(BINDIR)
+
+#
+
+$(OBJDIR)/%.o: %.c
+	@printf '\033[32mCompiling $<\033[0m\n'
+	@$(CC) $(CFLAGS) $< -o $@ -DNO_INLINE_STDARG
+
+$(LOCALE)/%.catalog: $(LOCALE)/%.ct
+	@printf '\033[33mGenerating $@\033[0m\n'
+	@$(FC) $(LOCALE)/BetterString_mcp.cd $< CATALOG $@
+
+#
+
+$(MCPTARGET): $(MCPOBJS)
+	@printf '\033[32mLinking \033[1m$@\033[0m\n'
+	@$(CC) $(LDFLAGS) -o $@.debug $(MCPOBJS) $(LDLIBS)
+	@$(CC) $(LDFLAGS) -s -o $@ $(MCPOBJS) $(LDLIBS)
+
+$(PREFTARGET): $(PREFOBJS) $(OBJDIR)/Preference.o
+	@printf '\033[32mLinking \033[1m$@\033[0m\n'
+	@$(CC) -o $@.debug $(PREFOBJS) $(LDLIBS)
+	@$(CC) -s -o $@ $(PREFOBJS) $(LDLIBS)
+
+$(OBJDIR)/library.o: library.c ../includes/mccheader.c \
+  ../mcc/BetterString_mcc.h private.h rev.h
+
+$(OBJDIR)/library.o: library.c ../includes/mccheader.c BetterString_mcp.h \
+  private.h icon.bh rev.h
+
+locale.h: locale.c
+locale.c: locale/BetterString_mcp.cd C_h.sd C_c.sd
+	@printf '\033[33mGenerating locale file $@...\033[0m\n'
+	@$(FC) locale/BetterString_mcp.cd locale.h=C_h.sd locale.c=C_c.sd
+
+#
+
+.PHONY: clean
+clean:
+	-$(RM) $(MCPTARGET) $(MCPTARGET).debug $(PREFTARGET) $(PREFTARGET).debug $(MCPOBJS) $(PREFOBJS)
+
+.PHONY: distclean
+distclean: clean
+	-$(RM) locale.?
+	-$(RMDIR) $(OBJDIR)
+	-$(RMDIR) $(BINDIR)

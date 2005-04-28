@@ -1,0 +1,34 @@
+#   $Id: mmakefile.src,v 1.2 2004/08/23 06:42:07 NicJA Exp $
+include $(TOP)/config/make.cfg
+
+#MM workbench-classes-zune-betterstring-mcp : includes \
+#MM 					    linklibs \
+#MM					    workbench-classes-zune-betterstring-class \
+#MM					    workbench-classes-zune-betterstring-mcp-locale
+
+USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcc
+
+FILES := locale \
+	 CreatePrefsGroup \
+	 Dispatcher
+	 
+%build_module_macro mmake=workbench-classes-zune-betterstring-mcp \
+  modname=BetterString modtype=mcp \
+  initfile=library files=$(FILES) \
+  uselibs="amiga mui rom m"
+
+
+#MM includes-copy
+
+INCLUDE_FILES := $(TOP)/$(CURDIR)/BetterString_mcp.h
+%copy_includes path=MUI dir=$(TOP)/$(CURDIR)
+
+#MM workbench-classes-zune-betterstring-mcp-locale :
+workbench-classes-zune-betterstring-mcp-locale : locale.c locale.h
+
+locale.h : locale.c
+locale.c : locale/BetterString_mcp.cd C_h.sd C_c.sd
+	@$(ECHO) "Generating locale file $@..."
+	@$(FLEXCAT) locale/BetterString_mcp.cd locale.h=C_h.sd locale.c=C_c.sd
+
+%common
