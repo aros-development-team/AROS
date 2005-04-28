@@ -93,7 +93,7 @@ extern ULONG AROS_SLIB_ENTRY( null, Locale)();
 
 /* This is not in the array. It's only used for testing against:
 */
-#define iAlNum  (iAlpha & iDigit)  /* Alphanumerical character. */
+#define iAlNum  (iAlpha | iDigit)  /* Alphanumerical character. */
 
 
 /* ------------------------------------------------------------------
