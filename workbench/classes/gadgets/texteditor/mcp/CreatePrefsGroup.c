@@ -27,15 +27,8 @@
 #include <libraries/gadtools.h>
 #include <libraries/mui.h>
 
-#ifndef __AROS__
-#include <mui/BetterString_mcc.h>
-#include <mui/HotkeyString_mcc.h>
-#else
-#define BetterStringObject StringObject
-#define HotkeyStringObject StringObject
-#define MUIA_HotkeyString_Snoop TAG_IGNORE
-#warning "Remove this once AROS has BetterString and HotkeyString MCCs!"
-#endif
+#include <MUI/BetterString_mcc.h>
+#include <MUI/HotkeyString_mcc.h>
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
