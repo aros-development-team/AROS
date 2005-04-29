@@ -14,8 +14,8 @@
 #error "Operating System not supported"
 #endif
 
-struct BlockCache {};
-struct Volume {};
+struct BlockCache;
+struct Volume;
 
 LONG osMediumInit(struct AFSBase *, struct Volume *, struct BlockCache *);
 void osMediumFree(struct AFSBase *, struct Volume *, LONG);
