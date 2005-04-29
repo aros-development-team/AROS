@@ -26,7 +26,6 @@ typedef unsigned long  BPTR;
 struct AFSBase {};
 struct Device {};
 struct DeviceList {};
-struct DosEnvec {};
 struct DriveGeometry {};
 struct Interrupt {};
 struct List {};
