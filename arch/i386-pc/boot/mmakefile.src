@@ -42,11 +42,11 @@ BOOT_TAR_FILES := \
     C/SetDate C/Setenv C/Skip C/Sort C/Stack C/Status C/Touch C/Type C/Unalias \
     C/Unset C/Unsetenv C/Version C/Wait C/Which C/Why C/install-i386-pc \
     C/Partition \
-    Classes/DataTypes/ascii.datatype \
-    Classes/DataTypes/binary.datatype \
-    Classes/DataTypes/text.datatype \
-    Classes/DataTypes/picture.datatype \
-    Classes/DataTypes/ilbm.datatype \
+    Classes/Datatypes/ascii.datatype \
+    Classes/Datatypes/binary.datatype \
+    Classes/Datatypes/text.datatype \
+    Classes/Datatypes/picture.datatype \
+    Classes/Datatypes/ilbm.datatype \
     Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
     Classes/Zune/AboutWindow.mcc Classes/Zune/Calendar.mcc \
     Classes/Zune/IconImage.mcc Classes/Zune/PrefsWindow.mcc \
