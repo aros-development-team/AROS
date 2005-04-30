@@ -1073,6 +1073,14 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 		    		set(obj, MUIA_Application_Active, TRUE);
 				break;
 
+			    case CXCMD_APPEAR:
+				set(obj, MUIA_Application_Iconified, FALSE);
+				break;
+
+			    case CXCMD_DISAPPEAR:
+				set(obj, MUIA_Application_Iconified, TRUE);
+				break;
+
 			    case CXCMD_KILL:
 		    		SetSignal(SIGBREAKF_CTRL_C, SIGBREAKF_CTRL_C);
 				break;
