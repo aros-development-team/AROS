@@ -345,21 +345,6 @@ static void HandleMouseClick(struct MenuHandlerData *mhd, int menuup)
 		
 	AddToSelection(mhd);
     } /* if ((lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey))) */
-	    
-    if (menuup)
-    {
-	KillMenuBarWin(mhd);
-	KillMenuWin(mhd);
-	KillSubMenuWin(mhd);
-
-	if (mhd->dri)
-	{
-	    FreeScreenDrawInfo(mhd->scr, mhd->dri);
-	    mhd->dri = 0;
-	}
-//	MH2Int_MakeMenusInactive(mhd->win, mhd->firstmenupick);
-	mhd->active = FALSE;
-    }
 }
 
 /**************************************************************************************************/
@@ -1456,8 +1441,8 @@ struct ZMenu *zune_open_menu(struct Window *wnd, struct NewMenu *newmenu)
 {
     struct TagItem tags[] =
     {
-	{GTMN_NewLookMenus,TRUE},
-	{TAG_DONE, NULL}
+	{GTMN_NewLookMenus ,TRUE},
+	{TAG_DONE   	    	}
     };
 
     struct ZMenu *zmenu;
@@ -1511,11 +1496,36 @@ void zune_mouse_update(struct ZMenu *zmenu, int left_down)
     else  HandleMouseClick(&zmenu->mhd, 0);
 }
 
-/* returns the user data of the selected entry */
-APTR zune_close_menu(struct ZMenu *zmenu)
+struct MenuItem *zune_leave_menu(struct ZMenu *zmenu)
 {
-    if (!zmenu) return NULL;
     HandleMouseClick(&zmenu->mhd, 1);
-    return NULL;
+
+    return ItemAddress(zmenu->mhd.activemenu, zmenu->mhd.firstmenupick);
 }
 
+/* returns the address of the selected menuitem entry */
+void zune_close_menu(struct ZMenu *zmenu)
+{
+    if (!zmenu) return;
+ 
+    KillMenuBarWin(&zmenu->mhd);
+    KillMenuWin(&zmenu->mhd);
+    KillSubMenuWin(&zmenu->mhd);
+
+    FreeMenus(zmenu->mhd.menu);	
+    zmenu->mhd.menu = 0;
+
+    if (zmenu->mhd.dri)
+    {
+	FreeScreenDrawInfo(zmenu->mhd.scr, zmenu->mhd.dri);
+	zmenu->mhd.dri = 0;
+    }
+
+//	MH2Int_MakeMenusInactive(mhd->win, mhd->firstmenupick);
+    zmenu->mhd.active = FALSE;
+}
+
+struct Menu *zune_get_menu_pointer(struct ZMenu *menu)
+{
+    return menu->mhd.menu;
+}
