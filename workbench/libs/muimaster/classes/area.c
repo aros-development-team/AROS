@@ -82,8 +82,8 @@ Area.mui/MUIA_WindowObject          done
 
 Area.mui/MUIM_AskMinMax             done
 Area.mui/MUIM_Cleanup               done
-Area.mui/MUIM_ContextMenuBuild
-Area.mui/MUIM_ContextMenuChoice
+Area.mui/MUIM_ContextMenuBuild	    done
+Area.mui/MUIM_ContextMenuChoice     done
 Area.mui/MUIM_CreateBubble
 Area.mui/MUIM_CreateShortHelp
 Area.mui/MUIM_DeleteBubble
@@ -1677,6 +1677,13 @@ static IPTR event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 		    if (menuobj)
 		    {
 			struct NewMenu *newmenu;
+			
+			/* stegerg: HACKME, CHECKME! The menu/menu item objs should automatically
+			            be connected (parentobject setup) without need for
+				    this, but they aren't. Because of how family class is and
+				    is used by other classes, I think!? */
+			DoMethod(menuobj, MUIM_ConnectParent, obj);
+			
 			get(menuobj,MUIA_Menuitem_NewMenu,&newmenu);
 			if (newmenu)
 			{
@@ -1695,13 +1702,37 @@ static IPTR event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 	case    MENUUP:
 		if (data->mad_ContextZMenu)
 		{
-		    zune_close_menu(data->mad_ContextZMenu);
-		    data->mad_ContextZMenu = NULL;
+		    struct MenuItem *item = zune_leave_menu(data->mad_ContextZMenu);
+
 		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 	            data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+		    
+		    if (item)
+		    {
+		    	Object *itemobj = (Object*)GTMENUITEM_USERDATA(item);
+			
+			/* CHECKME: MUIA_MenuItem_Trigger should probably be set inside
+			            MUIM_ContextMenuChoice!? But there I only know about
+				    itemobj, not MenuItem itself! */		    	
+    			if (item->Flags & CHECKIT)
+			{
+    	    	    	    set(itemobj, MUIA_Menuitem_Checked, !!(item->Flags & CHECKED));
+
+			} /* if (item->Flags & CHECKIT) */
+					    			
+			set(itemobj, MUIA_Menuitem_Trigger, item);
+			
+			DoMethod(obj, MUIM_ContextMenuChoice, itemobj);
+			
+		    } /* if (item) */
+		    
+		    zune_close_menu(data->mad_ContextZMenu);
+		    data->mad_ContextZMenu = NULL;
+		    
 	            return MUI_EventHandlerRC_Eat;
-		}
+		    
+		} /* if (data->mad_ContextZMenu) */
 		break;
     }
 
@@ -1865,6 +1896,13 @@ static IPTR Area_ContextMenuBuild(struct IClass *cl, Object *obj, struct MUIP_Co
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     return (IPTR)data->mad_ContextMenu; /* a Menustrip object */
+}
+
+/**************************************************************************/
+static IPTR Area_ContextMenuChoice(struct IClass *cl, Object *obj, struct MUIP_ContextMenuChoice *msg)
+{
+    set(obj, MUIA_ContextMenuTrigger, msg->item);
+    return 0;
 }
 
 
@@ -2112,6 +2150,7 @@ BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 	case MUIM_DeleteBubble: return Area_DeleteBubble(cl, obj, (APTR)msg);
 	case MUIM_HandleEvent: return Area_HandleEvent(cl, obj, (APTR)msg);
 	case MUIM_ContextMenuBuild: return Area_ContextMenuBuild(cl, obj, (APTR)msg);
+	case MUIM_ContextMenuChoice: return Area_ContextMenuChoice(cl, obj, (APTR)msg);
 	case MUIM_Timer: return Area_Timer(cl,obj,msg);
 	case MUIM_UpdateInnerSizes: return Area_UpdateInnerSizes(cl,obj,(APTR)msg);
 	case MUIM_DragQuery: return MUIV_DragQuery_Refuse;
