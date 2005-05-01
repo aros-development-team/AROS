@@ -82,7 +82,7 @@ __BEGIN_DECLS
 
 int remove(const char *filename);
 int rename(const char *from, const char *to);
-/* NOTIMPL FILE *tmpfile(void); */
+FILE *tmpfile(void);
 char *tmpnam(char *s);
 char *tempnam(const char *dir, const char *pfx);
 int fclose(FILE *stream);
@@ -160,7 +160,7 @@ FILE    *fdopen (int filedes, const char *mode);
 int	 fileno(FILE *);
 int      pclose(FILE *);
 FILE    *popen(const char *, const char *);
-/* NOTIMPL FILE    *tmpfile(void); */
+FILE    *tmpfile(void);
 char    *tmpnam(char *);
 #endif /* !_ANSI_SOURCE */
 

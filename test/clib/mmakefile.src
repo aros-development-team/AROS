@@ -10,7 +10,8 @@ FILES := \
 	strchr \
 	stpblk \
 	spawnv \
-	spawnvp
+	spawnvp \
+	tmpfile
 
 EXEDIR := $(AROS_TESTS)/clib
 
