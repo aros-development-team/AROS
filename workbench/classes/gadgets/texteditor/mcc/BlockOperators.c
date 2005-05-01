@@ -41,6 +41,19 @@
 #define DebugPrintF(x) NewRawDoFmt(x, (APTR)1, NULL, NULL)
 #endif
 
+#ifdef __AROS__
+#include <aros/macros.h>
+#define LONG2BE(x) AROS_LONG2BE(x)
+#define BE2LONG(x) AROS_BE2LONG(x)
+#define WORD2BE(x) AROS_WORD2BE(x)
+#define BE2WORD(x) AROS_BE2WORD(x)
+#else
+#define LONG2BE(x) x
+#define BE2LONG(x) x
+#define WORD2BE(x) x
+#define BE2WORD(x) x
+#endif
+
 VOID RedrawArea(UWORD startx, struct line_node *startline, UWORD stopx, struct line_node *stopline, struct InstData *data)
 {
   struct pos_info pos1, pos2;
@@ -351,9 +364,9 @@ BOOL InitClipboard (struct InstData *data)
 
 void EndClipSession (struct InstData *data)
 {
-  long clipheader[] = { MAKE_ID('F','O','R','M'), 0, MAKE_ID('F','T','X','T')};
+  long clipheader[] = { LONG2BE(MAKE_ID('F','O','R','M')), 0, LONG2BE(MAKE_ID('F','T','X','T'))};
 
-  clipheader[1] = data->clipboard->io_Offset-8;
+  clipheader[1] = LONG2BE(data->clipboard->io_Offset-8);
   data->clipboard->io_Offset    = 0;
   data->clipboard->io_Data    = (STRPTR)clipheader;
   data->clipboard->io_Length    = sizeof(clipheader);
@@ -369,9 +382,9 @@ void EndClipSession (struct InstData *data)
 
 void ClipInfo (struct line_node *line, struct InstData *data)
 {
-    long  highlightheader[]  = { MAKE_ID('H','I','G','H'), 2};
-    long  separatorheader[]  = { MAKE_ID('S','B','A','R'), 2};
-    long  flowheader[]    = { MAKE_ID('F','L','O','W'), 2};
+    long  highlightheader[]  = { LONG2BE(MAKE_ID('H','I','G','H')), LONG2BE(2)};
+    long  separatorheader[]  = { LONG2BE(MAKE_ID('S','B','A','R')), LONG2BE(2)};
+    long  flowheader[]    = { LONG2BE(MAKE_ID('F','L','O','W')), LONG2BE(2)};
 
   if(line->line.Flow != MUIV_TextEditor_Flow_Left)
   {
@@ -379,7 +392,7 @@ void ClipInfo (struct line_node *line, struct InstData *data)
     data->clipboard->io_Length    = sizeof(flowheader);
     DoIO((struct IORequest*)data->clipboard);
     data->clipboard->io_Data    = (STRPTR)&line->line.Flow;
-    data->clipboard->io_Length    = flowheader[1];
+    data->clipboard->io_Length    = BE2LONG(flowheader[1]);
     DoIO((struct IORequest*)data->clipboard);
   }
 
@@ -389,7 +402,7 @@ void ClipInfo (struct line_node *line, struct InstData *data)
     data->clipboard->io_Length    = sizeof(separatorheader);
     DoIO((struct IORequest*)data->clipboard);
     data->clipboard->io_Data    = (STRPTR)&line->line.Separator;
-    data->clipboard->io_Length    = separatorheader[1];
+    data->clipboard->io_Length    = BE2LONG(separatorheader[1]);
     DoIO((struct IORequest*)data->clipboard);
   }
 
@@ -399,16 +412,16 @@ void ClipInfo (struct line_node *line, struct InstData *data)
     data->clipboard->io_Length    = sizeof(highlightheader);
     DoIO((struct IORequest*)data->clipboard);
     data->clipboard->io_Data    = (STRPTR)&line->line.Color;
-    data->clipboard->io_Length    = highlightheader[1];
+    data->clipboard->io_Length    = BE2LONG(highlightheader[1]);
     DoIO((struct IORequest*)data->clipboard);
   }
 }
 
 void ClipChars (LONG x, struct line_node *line, LONG length, struct InstData *data)
 {
-    long  colorheader[]   = { MAKE_ID('C','O','L','S'), 0};
-    long  styleheader[]   = { MAKE_ID('S','T','Y','L'), 0};
-    long  textheader[]    = { MAKE_ID('C','H','R','S'), 0};
+    long  colorheader[]   = { LONG2BE(MAKE_ID('C','O','L','S')), 0};
+    long  styleheader[]   = { LONG2BE(MAKE_ID('S','T','Y','L')), 0};
+    long  textheader[]    = { LONG2BE(MAKE_ID('C','H','R','S')), 0};
     UWORD style[2] = {1, GetStyle(x-1, line)};
     UWORD color[2] = {1, 0};
     ULONG t_offset;
@@ -443,14 +456,14 @@ void ClipChars (LONG x, struct line_node *line, LONG length, struct InstData *da
       }
     }
 
-    colorheader[1] = data->clipboard->io_Offset - t_offset;
+    colorheader[1] = LONG2BE(data->clipboard->io_Offset - t_offset);
     data->clipboard->io_Offset    = t_offset - sizeof(colorheader);
     if(colorheader[1])
     {
       data->clipboard->io_Data    = (STRPTR)colorheader;
       data->clipboard->io_Length    = sizeof(colorheader);
       DoIO((struct IORequest*)data->clipboard);
-      data->clipboard->io_Offset    += colorheader[1];
+      data->clipboard->io_Offset    += BE2LONG(colorheader[1]);
     }
   }
 
@@ -521,14 +534,14 @@ void ClipChars (LONG x, struct line_node *line, LONG length, struct InstData *da
     }
   }
 
-  styleheader[1] = data->clipboard->io_Offset - t_offset;
+  styleheader[1] = LONG2BE(data->clipboard->io_Offset - t_offset);
   data->clipboard->io_Offset    = t_offset - sizeof(styleheader);
   data->clipboard->io_Data    = (STRPTR)styleheader;
   data->clipboard->io_Length    = sizeof(styleheader);
   DoIO((struct IORequest*)data->clipboard);
-  data->clipboard->io_Offset    += styleheader[1];
+  data->clipboard->io_Offset    += BE2LONG(styleheader[1]);
 
-  textheader[1] = length;
+  textheader[1] = LONG2BE(length);
   data->clipboard->io_Data    = (STRPTR)textheader;
   data->clipboard->io_Length    = sizeof(textheader);
   DoIO((struct IORequest*)data->clipboard);
@@ -541,9 +554,9 @@ void ClipChars (LONG x, struct line_node *line, LONG length, struct InstData *da
 
 void ClipLine (struct line_node *line, struct InstData *data)
 {
-    long  colorheader[] = { MAKE_ID('C','O','L','S'), 0};
-    long  styleheader[] = { MAKE_ID('S','T','Y','L'), 0};
-    long  textheader[]  = { MAKE_ID('C','H','R','S'), 0};
+    long  colorheader[] = { LONG2BE(MAKE_ID('C','O','L','S')), 0};
+    long  styleheader[] = { LONG2BE(MAKE_ID('S','T','Y','L')), 0};
+    long  textheader[]  = { LONG2BE(MAKE_ID('C','H','R','S')), 0};
     UWORD *styles = line->line.Styles;
     UWORD *colors = line->line.Colors;
 
@@ -556,11 +569,13 @@ void ClipLine (struct line_node *line, struct InstData *data)
       colors += 2;
       colorheader[1] += 4;
     }
+    colorheader[1] = LONG2BE(colorheader[1]);
+    
     data->clipboard->io_Data    = (STRPTR)colorheader;
     data->clipboard->io_Length    = sizeof(colorheader);
     DoIO((struct IORequest*)data->clipboard);
     data->clipboard->io_Data    = (STRPTR)line->line.Colors;
-    data->clipboard->io_Length    = colorheader[1];
+    data->clipboard->io_Length    = BE2LONG(colorheader[1]);
     DoIO((struct IORequest*)data->clipboard);
   }
 
@@ -572,20 +587,21 @@ void ClipLine (struct line_node *line, struct InstData *data)
       styleheader[1] += 4;
     }
   }
-
+  styleheader[1] = LONG2BE(styleheader[1]);
+  
   data->clipboard->io_Data    = (STRPTR)styleheader;
   data->clipboard->io_Length    = sizeof(styleheader);
   DoIO((struct IORequest*)data->clipboard);
   data->clipboard->io_Data    = (STRPTR)line->line.Styles;
-  data->clipboard->io_Length    = styleheader[1];
+  data->clipboard->io_Length    = BE2LONG(styleheader[1]);
   DoIO((struct IORequest*)data->clipboard);
 
-  textheader[1] = line->line.Length;
+  textheader[1] = LONG2BE(line->line.Length);
   data->clipboard->io_Data    = (STRPTR)textheader;
   data->clipboard->io_Length    = sizeof(textheader);
   DoIO((struct IORequest*)data->clipboard);
   data->clipboard->io_Data    = (STRPTR)line->line.Contents;
-  data->clipboard->io_Length    = textheader[1];
+  data->clipboard->io_Length    = BE2LONG(textheader[1]);
   DoIO((struct IORequest*)data->clipboard);
 
   data->clipboard->io_Offset += data->clipboard->io_Offset & 1;
