@@ -125,11 +125,11 @@ static ULONG Menuitem_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tags,*tag;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg); /* We need no tags */ 
-    if (!obj) return NULL;
+    if (!obj) return 0;
 
     data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -182,45 +182,79 @@ STATIC ULONG Menuitem_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
 	    case  MUIA_Menuitem_Checked:
-		  _handle_bool_tag(data->flags, tag->ti_Data, MENUF_CHECKED);
-		  break;
+	    	_handle_bool_tag(data->flags, tag->ti_Data, MENUF_CHECKED);
+		if (data->exclude && (data->flags & MENUF_CHECKED))
+		{
+		    Object  	    *parent;
+    	    	    get(obj, MUIA_Parent, &parent);
+
+		    if (parent)
+		    {
+    	    	    	Object	    	*child;
+    	    	    	Object	    	*cstate;
+    	    	    	struct MinList  *ChildList;
+			ULONG	    	i = 1;
+			
+    	    	    	get(parent, MUIA_Family_List, (ULONG *)&(ChildList));
+    	    	    	cstate = (Object *)ChildList->mlh_Head;
+    	    	    	while ((child = NextObject(&cstate)))
+			{
+			    if ((i & data->exclude) && (child != obj))
+			    {			    
+				IPTR checkit, checked;
+
+				get(child, MUIA_Menuitem_Checkit, &checkit);
+				get(child, MUIA_Menuitem_Checked, &checked);
+				
+				if (checkit && checked)
+				{
+			    	    set(child, MUIA_Menuitem_Checked, FALSE);
+				}
+			    }
+			    
+			    i <<= 1;
+		    	}
+		    }
+		    
+		}
+		break;
 
 	    case  MUIA_Menuitem_Checkit:
-		  _handle_bool_tag(data->flags, tag->ti_Data, MENUF_CHECKIT);
-		  break;
+		_handle_bool_tag(data->flags, tag->ti_Data, MENUF_CHECKIT);
+		break;
 
 	    case  MUIA_Menuitem_CommandString:
-		  _handle_bool_tag(data->flags, tag->ti_Data, MENUF_COMMANDSTRING);
-		  break;
+		_handle_bool_tag(data->flags, tag->ti_Data, MENUF_COMMANDSTRING);
+		break;
 
 	    case  MUIA_Menu_Enabled:
 	    case  MUIA_Menuitem_Enabled:
-		  _handle_bool_tag(data->flags, tag->ti_Data, MENUF_ENABLED);
-		  tag->ti_Tag = TAG_IGNORE;
-		  break;
+		_handle_bool_tag(data->flags, tag->ti_Data, MENUF_ENABLED);
+		tag->ti_Tag = TAG_IGNORE;
+		break;
 
 	    case  MUIA_Menuitem_Toggle:
-		  _handle_bool_tag(data->flags, tag->ti_Data, MENUF_TOGGLE);
-		  break;
+		_handle_bool_tag(data->flags, tag->ti_Data, MENUF_TOGGLE);
+		break;
 
 	    case  MUIA_Menuitem_Exclude:
-		  data->exclude = tag->ti_Data;
-		  break;
+		data->exclude = tag->ti_Data;
+		break;
 
 	    case  MUIA_Menuitem_Shortcut:
-		  data->shortcut = (char*)tag->ti_Data;
-		  break;
+		data->shortcut = (char*)tag->ti_Data;
+		break;
 
 	    case  MUIA_Menu_Title:
 	    case  MUIA_Menuitem_Title:
-		  data->title = (char*)tag->ti_Data;
-		  tag->ti_Tag = TAG_IGNORE;
-		  break;
+		data->title = (char*)tag->ti_Data;
+		tag->ti_Tag = TAG_IGNORE;
+		break;
 
 	    case  MUIA_Menuitem_Trigger:
 	    	  data->trigger = (struct MenuItem*)tag->ti_Data;
