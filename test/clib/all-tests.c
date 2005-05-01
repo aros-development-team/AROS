@@ -8,7 +8,8 @@ char *tests[] =
     "chdir",
     "strchr",
     "stpblk",
-    
+    "tmpfile",
+
      NULL
 };
 

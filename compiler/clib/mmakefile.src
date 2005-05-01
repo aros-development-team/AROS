@@ -276,6 +276,7 @@ SHARED	:= \
 	tempnam \
 	time \
 	times \
+	tmpfile \
 	tmpnam \
 	truncate \
 	umask \
