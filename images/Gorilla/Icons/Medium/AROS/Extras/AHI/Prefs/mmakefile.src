@@ -9,4 +9,5 @@ ICONS := AHI
 
 #MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
 #MM- themes-gorilla-icons : themes-gorilla-icons-ahiprefs
-%build_icons mmake=themes-gorilla-icons-ahiprefs icons=$(ICONS) dir=$(CONTRIBDIR)/AHI/Prefs
+%build_icons mmake=themes-gorilla-icons-ahiprefs icons=$(ICONS) dir=$(AROS_PREFS)
+
