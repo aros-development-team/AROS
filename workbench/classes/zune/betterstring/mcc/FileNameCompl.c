@@ -208,8 +208,13 @@ BOOL FileNameComplete (Object *obj, BOOL backwards, struct InstData *data)
 
 					if(VolumeName)
 					{
+					#ifdef __AROS__
+						if(OverwriteA(VolumeName, pos, cut, strlen(VolumeName)+1, data))
+							data->Contents[data->BufferPos-1] = ':';
+					#else
 						if(OverwriteA(VolumeName, pos, cut, *(VolumeName-1)+1, data))
 							data->Contents[data->BufferPos-1] = ':';
+					#endif
 						edited = TRUE;
 					}
 					UnLockDosList(LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS);
