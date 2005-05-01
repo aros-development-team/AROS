@@ -45,6 +45,15 @@
 #include "SDI_stdarg.h"
 #endif
 
+#ifdef __AROS__
+#include <aros/macros.h>
+#define LONG2BE(x) AROS_LONG2BE(x)
+#define BE2LONG(x) AROS_BE2LONG(x)
+#else
+#define LONG2BE(x) x
+#define BE2LONG(x) x
+#endif
+
 static BOOL BlockEnabled(struct InstData *data)
 {
 	return((data->Flags & FLG_BlockEnabled) && data->BlockStart != data->BlockStop);
@@ -273,11 +282,11 @@ VOID CopyBlock (struct InstData *data)
 		{
 			if(!OpenDevice("clipboard.device", 0, (struct IORequest *)iorequest, 0))
 			{
-				ULONG IFF_Head[] = { MAKE_ID('F','O','R','M'),
-                             12 + ((Blk_Width + 1) & ~1),
-                             MAKE_ID('F','T','X','T'),
-                             MAKE_ID('C','H','R','S'),
-                             Blk_Width
+				ULONG IFF_Head[] = { LONG2BE(MAKE_ID('F','O','R','M')),
+                             LONG2BE(12 + ((Blk_Width + 1) & ~1)),
+                             LONG2BE(MAKE_ID('F','T','X','T')),
+                             LONG2BE(MAKE_ID('C','H','R','S')),
+                             LONG2BE(Blk_Width)
                            };
 
 				iorequest->io_ClipID		= 0;
@@ -324,22 +333,24 @@ VOID Paste (struct InstData *data)
 				DoIO((struct IORequest *)iorequest);
 				length = IFF_Head[1]-4;
 
-				if(iorequest->io_Actual == sizeof(IFF_Head) && *IFF_Head == MAKE_ID('F','O','R','M') && IFF_Head[2] == MAKE_ID('F','T','X','T') && length > 8)
+				if(iorequest->io_Actual == sizeof(IFF_Head) &&
+				   *IFF_Head == BE2LONG(MAKE_ID('F','O','R','M')) &&
+				   IFF_Head[2] == BE2LONG(MAKE_ID('F','T','X','T')) && length > 8)
 				{
 					iorequest->io_Length = 8;
 					DoIO((struct IORequest *)iorequest);
 					length -= 8;
 
-					while(length > 0 && *IFF_Head != MAKE_ID('C','H','R','S'))
+					while(length > 0 && *IFF_Head != BE2LONG(MAKE_ID('C','H','R','S')))
 					{
-						iorequest->io_Offset += IFF_Head[1];
-						length -= IFF_Head[1]+8;
+						iorequest->io_Offset += BE2LONG(IFF_Head[1]);
+						length -= BE2LONG(IFF_Head[1])+8;
 						DoIO((struct IORequest *)iorequest);
 					}
 
-					if(*IFF_Head == MAKE_ID('C','H','R','S'))
+					if(*IFF_Head == BE2LONG(MAKE_ID('C','H','R','S')))
 					{
-						ULONG pastelength = IFF_Head[1];
+						ULONG pastelength = BE2LONG(IFF_Head[1]);
 
 						if(data->MaxLength && strlen(data->Contents)+pastelength > data->MaxLength-1)
 						{
@@ -1030,7 +1041,7 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 						case 1:
 						{
 								WORD	offset = mousex - x,
-										newpos;
+										newpos = 0;
 
 							if(mousex < x && data->DisplayPos)
 							{
