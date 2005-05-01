@@ -694,17 +694,41 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 	ioClip(ioreq)->io_Actual = Read(CBUn->cu_clipFile, ioClip(ioreq)->io_Data,
 					ioClip(ioreq)->io_Length);
 
-	D(bug("clipboard.device/readCb: Did Read: data length = %d  data = %02x%02x%02x%02x (%c%c%c%c)\n",
-	      ioClip(ioreq)->io_Length,
-	      ((UBYTE *)ioClip(ioreq)->io_Data)[0],
-	      ((UBYTE *)ioClip(ioreq)->io_Data)[1],
-	      ((UBYTE *)ioClip(ioreq)->io_Data)[2],
-	      ((UBYTE *)ioClip(ioreq)->io_Data)[3],
-	      ((UBYTE *)ioClip(ioreq)->io_Data)[0],
-	      ((UBYTE *)ioClip(ioreq)->io_Data)[1],
-	      ((UBYTE *)ioClip(ioreq)->io_Data)[2],
-	      ((UBYTE *)ioClip(ioreq)->io_Data)[3]));
-
+    	if (ioClip(ioreq)->io_Length >= 4)
+	{
+	    D(bug("clipboard.device/readCb: Did Read: data length = %d  data = %02x%02x%02x%02x (%c%c%c%c)\n",
+		  ioClip(ioreq)->io_Length,
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[1],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[2],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[3],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[1],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[2],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[3]));
+    	}
+    	else if (ioClip(ioreq)->io_Length == 2)
+	{
+	    D(bug("clipboard.device/readCb: Did Read: data length = %d  data = %02x%02x (%c%c)\n",
+		  ioClip(ioreq)->io_Length,
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[1],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[1]));
+    	}
+	else if (ioClip(ioreq)->io_Length == 1)
+	{
+	    D(bug("clipboard.device/readCb: Did Read: data length = %d  data = %02x (%c)\n",
+		  ioClip(ioreq)->io_Length,
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+		  ((UBYTE *)ioClip(ioreq)->io_Data)[0]));
+	}
+	else
+	{
+	    D(bug("clipboard.device/readCb: Did Read nothing: data length = 0  data = 0x%x\n",
+	    	  ioClip(ioreq)->io_Data));
+	}
+	
 	ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Actual;
 
 	if (ioClip(ioreq)->io_Actual == 0)
@@ -772,37 +796,74 @@ static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 	return;
     }
 
-    Seek(CBUn->cu_clipFile, ioClip(ioreq)->io_Offset, OFFSET_BEGINNING);
     if(ioClip(ioreq)->io_Offset > CBUn->cu_clipSize)
     {
 	ULONG len = ioClip(ioreq)->io_Offset - CBUn->cu_clipSize;
 	ULONG buflen = len > WRITEBUFSIZE ? WRITEBUFSIZE : len;
 	UBYTE *buf = AllocMem(buflen, MEMF_CLEAR | MEMF_PUBLIC);
+
+    	Seek(CBUn->cu_clipFile, 0, OFFSET_END);
+
 	if (buf)
 	{
 	    while(len)
 	    {
 		ULONG size = len > WRITEBUFSIZE ? WRITEBUFSIZE : len;
+
 		Write(CBUn->cu_clipFile, buf, size);
 		len -= size;
 	    }
 	    FreeMem(buf, buflen);
 	}
     }
+    Seek(CBUn->cu_clipFile, ioClip(ioreq)->io_Offset, OFFSET_BEGINNING);
 
     D(bug("clipboard.device/writeCb: Did Seek(), offset = %d\n", ioClip(ioreq)->io_Offset));
-    D(bug("clipboard.device/Doing Write: data length = %d  data = %02x%02x%02x%02x (%c%c%c%c)\n",
-	ioClip(ioreq)->io_Length,
-	((UBYTE *)ioClip(ioreq)->io_Data)[0],
-	((UBYTE *)ioClip(ioreq)->io_Data)[1],
-	((UBYTE *)ioClip(ioreq)->io_Data)[2],
-	((UBYTE *)ioClip(ioreq)->io_Data)[3],
-	((UBYTE *)ioClip(ioreq)->io_Data)[0],
-	((UBYTE *)ioClip(ioreq)->io_Data)[1],
-	((UBYTE *)ioClip(ioreq)->io_Data)[2],
-	((UBYTE *)ioClip(ioreq)->io_Data)[3]));
 
-    ioClip(ioreq)->io_Actual = Write(CBUn->cu_clipFile, ioClip(ioreq)->io_Data, ioClip(ioreq)->io_Length);
+    if (ioClip(ioreq)->io_Length >= 4)
+    {
+	D(bug("clipboard.device/Doing Write: data length = %d  data = %02x%02x%02x%02x (%c%c%c%c)\n",
+	    ioClip(ioreq)->io_Length,
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[1],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[2],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[3],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[1],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[2],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[3]));
+    }
+    else if (ioClip(ioreq)->io_Length == 2)
+    {
+	D(bug("clipboard.device/Doing Write: data length = %d  data = %02x%02x (%c%c)\n",
+	    ioClip(ioreq)->io_Length,
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[1],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[1]));
+    }
+    else if (ioClip(ioreq)->io_Length == 1)
+    {
+	D(bug("clipboard.device/Doing Write: data length = %d  data = %02x (%c)\n",
+	    ioClip(ioreq)->io_Length,
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[0]));
+        
+    }
+    else
+    {
+	D(bug("clipboard.device/Doing Write: Not really!!: data length = 0  data = 0x%x\n",
+	      ioClip(ioreq)->io_Data));
+    }
+    
+    if (ioClip(ioreq)->io_Length)
+    {
+    	ioClip(ioreq)->io_Actual = Write(CBUn->cu_clipFile, ioClip(ioreq)->io_Data, ioClip(ioreq)->io_Length);
+    }
+    else
+    {
+    	ioClip(ioreq)->io_Actual = 0; /* texteditor.mcc does 0-length writes */
+    }
 
     if ((LONG)ioClip(ioreq)->io_Actual == -1)
     {
