@@ -38,6 +38,19 @@
 #include "TextEditor_mcc.h"
 #include "private.h"
 
+#ifdef __AROS__
+#include <aros/macros.h>
+#define LONG2BE(x) AROS_LONG2BE(x)
+#define BE2LONG(x) AROS_BE2LONG(x)
+#define WORD2BE(x) AROS_WORD2BE(x)
+#define BE2WORD(x) AROS_BE2WORD(x)
+#else
+#define LONG2BE(x) x
+#define BE2LONG(x) x
+#define WORD2BE(x) x
+#define BE2WORD(x) x
+#endif
+
 BOOL InitClipboard (struct InstData *);
 
 /*----------------------*
@@ -120,8 +133,9 @@ LONG PasteClip (LONG x, struct line_node *actline, struct InstData *data)
     }
     else
     {
-      length = header[1] - 4;
-      if((header[0] == MAKE_ID('F','O','R','M')) && (header[2] == MAKE_ID('F','T','X','T')))
+      length = BE2LONG(header[1]) - 4;
+      if((header[0] == BE2LONG(MAKE_ID('F','O','R','M'))) &&
+      	 (header[2] == BE2LONG(MAKE_ID('F','T','X','T'))))
       {
           UWORD flow = MUIV_TextEditor_Flow_Left;
           UWORD separator = 0;
@@ -137,6 +151,10 @@ LONG PasteClip (LONG x, struct line_node *actline, struct InstData *data)
           data->clipboard->io_Data  = (void *)header;
           data->clipboard->io_Length  = 8;
           DoIO((struct IORequest*)data->clipboard);
+	  
+	  header[0] = BE2LONG(header[0]);
+	  header[1] = BE2LONG(header[1]);
+	  
           chunksize = (header[1]+1) & (ULONG)-2;
           length -= 8 + chunksize;
   
