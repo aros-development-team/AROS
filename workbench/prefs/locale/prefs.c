@@ -60,11 +60,19 @@ static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 		
 		strcpy(entry->realname, entry->name);
 		
-		sp = strchr(entry->name, '_');
-		if (sp)
+		sp = entry->name;
+		while((sp = strchr(sp, '_')))
 		{
 		    sp[0] = ' ';
-		    if (sp[1]) sp[1] = ToUpper(sp[1]);
+		    if (sp[1])
+		    {
+		    	/* Make char after underscore uppercase only if no
+			   more underscores follow */
+		    	if (strchr(sp, '_') == 0)
+			{
+		    	    sp[1] = ToUpper(sp[1]);
+			}
+		    }
 		}
 		SortInNode(list, &entry->node);
 	    }
