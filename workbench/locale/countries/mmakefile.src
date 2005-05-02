@@ -1,11 +1,49 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-COUNTRIES := australia belgië belgique brasil bulgarija canada canada_français \
-    	     danmark deutschland éire españa france great_britain iran ísland \
-	     italia lëtzebuerg lietuva nederland norge österreich polska \
-	     portugal românia rossija schweiz suisse suomi sverige svizzera \
-	     ukrajina united_kingdom united_states vaticano magyarország
+COUNTRIES := australia 		 \
+	     belgië 		 \
+	     belgique 		 \
+	     bosna_i_hercegovina \
+	     brasil 		 \
+	     bulgarija 		 \
+	     canada 		 \
+	     canada_français 	 \
+	     cesko		 \
+    	     danmark 		 \
+	     deutschland 	 \
+	     éire 		 \
+	     españa 		 \
+	     france 		 \
+	     great_britain 	 \
+	     hrvatska		 \
+	     iran 		 \
+	     ísland 		 \
+	     italia 		 \
+	     jugoslavija	 \
+	     lëtzebuerg 	 \
+	     lietuva 		 \
+	     magyarország 	 \
+	     nederland 		 \
+	     nihon		 \
+	     norge 		 \
+	     österreich 	 \
+	     polska 		 \
+	     portugal 		 \
+	     românia 		 \
+	     rossija 		 \
+	     schweiz 		 \
+	     slovakia		 \
+	     slovenija		 \
+	     suisse 		 \
+	     suomi 		 \
+	     sverige 		 \
+	     svizzera 		 \
+	     türkiye		 \
+	     ukrajina 		 \
+	     united_kingdom 	 \
+	     united_states 	 \
+	     vaticano
 
 COUNTRYDIR   := $(AROS_LOCALE)/Countries
 MAKECOUNTRY  := $(OBJDIR)/makecountry
