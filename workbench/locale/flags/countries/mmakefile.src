@@ -1,40 +1,48 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FLAGS := Australia  	    \
-    	 België     	    \
-	 Belgique   	    \
-	 Bulgarija	    \
-	 Brasil             \
-	 Canada     	    \
-	 Canada_Français    \
-	 Danmark    	    \
-	 Deutschland	    \
-	 Éire		    \
-	 España     	    \
-	 France     	    \
-	 Great_Britain	    \
-	 Iran		    \
-	 Ísland		    \
-	 Italia     	    \
-	 Lëtzebuerg	    \
-	 Lietuva	    \
-	 Magyarország	    \
-	 Nederland  	    \
-	 Norge	    	    \
-	 Polska     	    \
-	 Portugal   	    \
-	 România	    \
-	 Rossija	    \
-	 Schweiz    	    \
-	 Suisse     	    \
-	 Suomi	    	    \
-	 Sverige    	    \
-	 Svizzera   	    \
-	 Ukrajina	    \
-	 United_Kingdom     \
-	 United_States	    \
-	 Vaticano	    \
+FLAGS := Australia  	     \
+    	 België     	     \
+	 Belgique   	     \
+	 Bosna_i_Hercegovina \
+	 Bulgarija	     \
+	 Brasil              \
+	 Canada     	     \
+	 Canada_Français     \
+	 Cesko		     \
+	 Danmark    	     \
+	 Deutschland	     \
+	 Éire		     \
+	 España     	     \
+	 France     	     \
+	 Great_Britain	     \
+	 Hrvatska            \
+	 Iran		     \
+	 Ísland		     \
+	 Italia     	     \
+	 Jugoslavija         \
+	 Lëtzebuerg	     \
+	 Lietuva	     \
+	 Magyarország	     \
+	 Nederland  	     \
+	 Nihon		     \
+	 Norge	    	     \
+	 Polska     	     \
+	 Portugal   	     \
+	 România	     \
+	 Rossija	     \
+	 Schweiz    	     \
+	 Slovakia	     \
+	 Slovenija           \
+	 Suisse     	     \
+	 Suomi	    	     \
+	 Sverige    	     \
+	 Svizzera   	     \
+	 Türkiye	     \
+	 Ukrajina	     \
+	 United_Kingdom      \
+	 United_States	     \
+	 Vaticano	     \
 	 Österreich
 
 #MM- workbench-locale : workbench-locale-flags-countries
