@@ -100,6 +100,11 @@ aros_host_incl="/usr/include"
 aros_host_exe_suffix="$EXEEXT"
 aros_host_lib_suffix=""
 
+AC_CHECK_PROGS(aros_host_aclocal,[aclocal aclocal19])
+AC_CHECK_PROGS(aros_host_autoconf,[autoconf autoconf259 autoconf253])
+AC_CHECK_PROGS(aros_host_autoheader,[autoheader autoheader259 autoheader253])
+AC_CHECK_PROGS(aros_host_automake,[automake automake19])
+
 case "$CC" in
     *gcc*)
 	aros_host_cc_pipe="-pipe"
@@ -1106,6 +1111,10 @@ AC_SUBST(aros_host_mkargs)
 AC_SUBST(aros_host_exe_suffix)
 AC_SUBST(aros_host_lib_suffix)
 AC_SUBST(aros_tools_dir)
+AC_SUBST(aros_host_aclocal)
+AC_SUBST(aros_host_autoconf)
+AC_SUBST(aros_host_autoheader)
+AC_SUBST(aros_host_automake)
 
 # Target Related
 AC_SUBST(aros_target_arch)

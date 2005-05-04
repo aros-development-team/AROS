@@ -94,17 +94,17 @@ mmake : $(TOP)/tools/MetaMake/Makefile $(MMAKE)
 
 $(TOP)/tools/MetaMake/configure : $(TOP)/tools/MetaMake/configure.in
 	@$(ECHO) Building MetaMake...
-	@cd $(TOP)/tools/MetaMake ; aclocal ; autoconf
+	@cd $(TOP)/tools/MetaMake ; @aros_host_aclocal@ ; @aros_host_autoconf@
 
 $(TOP)/tools/MetaMake/Makefile.in : $(TOP)/tools/MetaMake/Makefile.am
-	@cd $(TOP)/tools/MetaMake ; automake -a -c
+	@cd $(TOP)/tools/MetaMake ; @aros_host_automake@ -a -c
 
 $(TOP)/tools/MetaMake/Makefile : $(TOP)/tools/MetaMake/configure \
 	$(TOP)/tools/MetaMake/Makefile.in
 	@cd $(TOP)/tools/MetaMake ; CC="$(HOST_CC)" CFLAGS= ./configure --prefix=$(TOOLDIR)
 
 $(MMAKE): $(wildcard $(TOP)/tools/MetaMake/*.[ch]) $(GENMF)
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake
+	@$(MAKE) $(MKARGS) AUTOHEADER=@aros_host_autoheader@ -C $(TOP)/tools/MetaMake
 	@cp $(TOP)/tools/MetaMake/mmake$(HOST_EXE_SUFFIX) $(MMAKE)
 
 # Clean the sources
