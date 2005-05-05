@@ -4,6 +4,12 @@
 #   Desc: General rules included at the end of a generated mmakefile
 #
 
+GLOB_MKDIRS := $(sort $(GLOB_MKDIRS))
+ifneq ($(GLOB_MKDIRS),)
+$(GLOB_MKDIRS) :
+	$(MKDIR) $@
+endif
+
 include $(TOP)/tools/genmodule/Makefile.deps
 
 # Rules for the AROS build tools

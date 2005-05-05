@@ -228,21 +228,8 @@ endif
 
 %(setuptarget) :: %(dirs)
 
-# Only add a rule for a directory for which there is no rule yet.
+GLOB_MKDIRS += %(dirs)
 
-TOCREATE_TMP := $(filter-out $(CREATED_DIRS_GLOB),%(dirs))
-
-ifdef TOCREATE_TMP
-$(TOCREATE_TMP) :
-	@$(ECHO) "Creating directory $@"
-	%mkdir_q dir=$@
-
-  ifdef CREATED_DIRS_GLOB
-    CREATED_DIRS_GLOB += $(TOCREATE_TMP)
-  else
-    CREATED_DIRS_GLOB := $(TOCREATE_TMP)
-  endif
-endif
 %end
 #------------------------------------------------------------------------------
 
@@ -838,9 +825,9 @@ BDID := $(BDTARGETID)
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
     aflags=$(AFLAFS) uselibs= usehostlibs= usestartup=yes detach=no nix=no
 
-.PHONY : %(mmake) %(mmake)-setup
+.PHONY : %(mmake)
 
-%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick"
+%buildid targets="%(mmake) %(mmake)-clean %(mmake)-quick"
 
 BD_PROGNAME$(BDID)  := %(progname)
 BD_OBJDIR$(BDID)    := %(objdir)
@@ -856,16 +843,11 @@ BD_AFLAGS$(BDID)    := %(aflags)
 BD_DFLAGS$(BDID)    := %(dflags)
 BD_LDFLAGS$(BDID)   := %(ldflags)
 
-#MM %(mmake) : %(mmake)-setup
-
 #MM
 %(mmake)-quick : %(mmake)
 
+#MM
 %(mmake) : $(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID))
-
-#MM %(mmake)-setup
-%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_TARGETDIR$(BDID))" \
-    setuptarget=%(mmake)-setup
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
@@ -881,6 +863,11 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 endif
 
 %include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
+
+$(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) : | $(BD_OBJDIR$(BDID))
+$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) : | $(BD_TARGETDIR$(BDID))
+GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_TARGETDIR$(BDID))
+
 %end
 #------------------------------------------------------------------------------
 
@@ -893,9 +880,9 @@ endif
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
     uselibs= usehostlibs= usestartup=yes detach=no
 
-.PHONY : %(mmake) %(mmake)-setup
+.PHONY : %(mmake)
 
-%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick"
+%buildid targets="%(mmake) %(mmake)-clean %(mmake)-quick"
 
 BD_OBJDIR$(BDID)    := %(objdir)
 BD_TARGETDIR$(BDID) := %(targetdir)
@@ -912,16 +899,10 @@ endif
 BD_DFLAGS$(BDID)    := %(dflags)
 BD_LDFLAGS$(BDID)   := %(ldflags)
 
-#MM %(mmake) : %(mmake)-setup
-
 #MM
 %(mmake)-quick : %(mmake)
 
 %(mmake) : $(BD_EXES$(BDID))
-
-#MM %(mmake)-setup
-%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_TARGETDIR$(BDID))" \
-    setuptarget=%(mmake)-setup
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
@@ -936,6 +917,11 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 endif
 
 %include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
+
+$(addprefix $(BD_TARGETDIR$(BDID))/,$(BD_FILES$(BDID))) : | $(BD_TARGETDIR$(BDID))
+$(BD_DEPS$(BDID)) $(BD_OBJS$(BDID)) : | $(BD_OBJDIR$(BDID))
+GLOB_MKDIRS += $(BD_TARGETDIR$(BDID)) $(BD_OBJDIR$(BDID))
+
 %end
 #------------------------------------------------------------------------------
 
@@ -955,16 +941,14 @@ endif
 #MM %(mmake) : %(mmake)-includes
 #MM %(mmake)-kobj : %(mmake)-includes
 #MM %(mmake)-quick : %(mmake)-includes-quick
-#MM %(mmake)-includes : %(mmake)-setup includes-generate-deps
+#MM %(mmake)-includes : %(mmake)-makefile includes-generate-deps
 #MM %(mmake)-includes-quick
-#MM %(mmake)-setup : %(mmake)-makefile
-#MM %(mmake)-makefile : %(mmake)-objdir
-#MM %(mmake)-objdir
+#MM %(mmake)-makefile
 #MM %(mmake)-clean
 
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-includes %(mmake)-clean %(mmake)-quick \
-    %(mmake)-kobj %(mmake)-setup
+    %(mmake)-kobj
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile %(mmake)-objdir
 
@@ -981,11 +965,6 @@ BD_DEFREFFILE := %(objdir)/%(modname)_ALL.ref
 BD_DEFDFLAGS := %(cflags)
 OBJDIR ?= $(GENDIR)/$(CURDIR)
 
-## Create objdir
-##
-%rule_makedirs dirs=%(objdir) setuptarget=%(mmake)-objdir
-
-
 ## Create genmodule include Makefile for the module
 ##
 %(mmake)-makefile : %(objdir)/Makefile.%(modname)
@@ -995,6 +974,9 @@ OBJDIR ?= $(GENDIR)/$(CURDIR)
     modsuffix=%(modsuffix) targetdir=%(objdir) \
     conffile=%(conffile)
 
+%(objdir)/Makefile.%(modname) : | %(objdir)
+
+GLOB_MKDIRS += %(objdir)
 
 # Do not parse these statements if metatarget is not appropriate
 ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
@@ -1002,6 +984,7 @@ ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
 include %(objdir)/Makefile.%(modname)
 
 BD_DEFMODDIR := $(%(modname)_MODDIR)
+
 
 ## include files generation
 ##
@@ -1024,15 +1007,17 @@ ifneq ($(%(modname)_INCLUDES),)
 %rule_copy_multi \
     files=$(%(modname)_INCLUDES) srcdir=$(GENINCDIR) targetdir=$(BD_INCDIR)
 
-
 %rule_genmodule_dummy modname=%(modname) modtype=%(modtype) \
 		      modsuffix=%(modsuffix) \
 		      targetdir=%(objdir)/dummyinc conffile=%(conffile)
 
 BD_INCDIRS := $(filter-out ./,$(sort $(dir $(%(modname)_INCLUDES))))
-BD_INCDIRS := $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS)) \
-    $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
-%rule_makedirs dirs=$(BD_INCDIRS) setuptarget=%(mmake)-setup
+$(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) : | $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS))
+$(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) : | $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS))
+$(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES)) : | %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
+GLOB_MKDIRS += $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS)) \
+    $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS)) \
+    %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
 
 endif
 
@@ -1124,8 +1109,10 @@ BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))
 
 # Link static lib
 ifneq ($(BD_LINKLIB),)
-%rule_makedirs dirs=%(prefix)/$(AROS_DIR_LIB) setuptarget=%(mmake)-setup
 %rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
+
+$(BD_LINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
+GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
 endif
 
 # Link kernel object file
@@ -1137,10 +1124,13 @@ $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 
 ## Dependency fine-tuning
 ##
-%rule_makedirs dirs="%(objdir) %(prefix)/%(moduledir) $(KOBJSDIR)" setuptarget=%(mmake)-setup
-
 BD_DEPS := $(addsuffix .d,$(addprefix %(objdir)/,$(notdir $(BD_CCFILES))))
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps=$(BD_DEPS)
+
+$(BD_OBJS) $(BD_DEPS) $(BD_REFS) : | %(objdir)
+$(BD_MODULE) : | %(prefix)/%(moduledir)
+$(BD_KOBJ) : | $(KOBJSDIR)
+GLOB_MKDIRS += %(objdir) %(prefix)/%(moduledir) $(KOBJSDIR)
 
 # Some include files need to be generated before the .c can be parsed.
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj),) # Only for this target these deps are wanted
@@ -1486,7 +1476,7 @@ endif
 %define build_linklib mmake=/A libname=/A files="$(basename $(wildcard *.c))" \
   asmfiles= cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) objdir=$(OBJDIR) libdir=$(LIBDIR)
 
-%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean"
+%buildid targets="%(mmake) %(mmake)-clean"
 
 # assign and generate the local variables used in this macro
 BD_LIBNAME$(BDID)    := %(libname)
@@ -1510,21 +1500,14 @@ BD_AFLAGS$(BDID)     := %(aflags)
 
 BD_LINKLIB$(BDID)    := $(BD_LIBDIR$(BDID))/lib$(BD_LIBNAME$(BDID)).a
 
-.PHONY : setup-linklib$(BDID)
-
-#MM %(mmake) : %(mmake)-setup
-
-%(mmake) : $(BD_LINKLIB$(BDID))
+.PHONY : %(mmake) %(mmake)-clean
 
 #MM
-%(mmake)-setup : setup-linklib$(BDID)
+%(mmake) : $(BD_LINKLIB$(BDID))
 
 #MM
 %(mmake)-clean ::
 	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID))
-
-%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_LIBDIR$(BDID))" \
-	       setuptarget=setup-linklib$(BDID)
 
 ifeq ($(TARGET),%(mmake))
 ifneq ($(dir $(BD_FILES$(BDID))),./)
@@ -1540,6 +1523,11 @@ endif
 %rule_link_linklib libname=%(libname) objs=$(BD_OBJS$(BDID)) libdir=$(BD_LIBDIR$(BDID))
 
 %include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
+
+$(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) : | $(BD_OBJDIR$(BDID))
+$(BD_LINKLIB$(BDID)) : | $(BD_LIBDIR$(BDID))
+GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_LIBDIR$(BDID))
+
 %end
 #------------------------------------------------------------------------------
 
@@ -1560,18 +1548,17 @@ endif
  description="$(basename $(wildcard *.cd))" dir=$(AROS_CATALOGS) \
  sourcedescription="$(TOOLDIR)/C_h_orig"
 
-%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean"
+%buildid targets="%(mmake) %(mmake)-clean"
 
 BD_SRCS$(BDID) := $(foreach name, %(catalogs), $(name).ct)
 BD_OBJS$(BDID) := $(foreach name, %(catalogs), %(dir)/$(name)/%(subdir)/%(name).catalog)
 BD_DIRS$(BDID) := $(foreach name, %(catalogs), %(dir)/$(name)/%(subdir))
 
-#MM %(mmake) : %(mmake)-setup
-
+#MM
 %(mmake) : $(BD_OBJS$(BDID)) %(source)
 
-#MM %(mmake)-setup
-%rule_makedirs dirs=$(BD_DIRS$(BDID)) setuptarget=%(mmake)-setup
+$(BD_OBJS$(BDID)) : | $(BD_DIRS$(BDID))
+GLOB_MKDIRS += $(BD_DIRS$(BDID))
 
 %(dir)/%/%(subdir)/%(name).catalog : %.ct %(description).cd
 	@$(ECHO) "Creating %(name) catalog for language $*."
@@ -1587,7 +1574,7 @@ endif
 %(mmake)-clean ::
 	$(RM) $(BD_OBJS$(BDID)) %(source)
 
-.PHONY: %(mmake) %(mmake-setup) %(mmake-clean)
+.PHONY: %(mmake) %(mmake-clean)
 
 %end
 
@@ -1602,20 +1589,19 @@ endif
 
 %define build_icons mmake=/A icons=/A dir=/A
 
-%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean"
+%buildid targets="%(mmake) %(mmake)-clean"
 
 BD_OBJS$(BDID) := $(foreach icon, %(icons), %(dir)/$(icon).info)
 
-#MM %(mmake) : %(mmake)-setup
-
+#MM
 %(mmake) : $(BD_OBJS$(BDID))
 
 %(dir)/%.info : %.info.src %.png
 	@$(ECHO) Creating $(notdir $@)...
 	@$(ILBMTOICON) $+ $@
 
-#MM %(mmake)-setup
-%rule_makedirs dirs=%(dir) setuptarget=%(mmake)-setup
+$(BD_OBJS$(BDID)) : | %(dir)
+GLOB_MKDIRS += %(dir)
 
 #MM
 %(mmake)-clean ::
@@ -1649,13 +1635,13 @@ ifeq (%(files) %(asmfiles),)
   $(error no files or asmfiles given)
 endif
 
-%buildid targets="%(mainmmake)-%(arch) %(mainmmake)-%(arch)-setup"
+%buildid targets="%(mainmmake)-%(arch)"
 
 #MM- %(mainmmake) : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-linklib : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-kobj : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
 
-#MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-setup %(mainmmake)-includes
+#MM %(mainmmake)-%(arch) : %(mainmmake)-includes
 
 ifeq (%(arch),)
   $(error argument arch has to be non empty for the rule_compile_archspecific macro)
@@ -1673,14 +1659,11 @@ vpath %.s $(filter-out ./,$(dir %(asmfiles)))
 vpath %.S $(filter-out ./,$(dir %(asmfiles)))
 endif
 
-#MM %(mainmmake)-%(arch)-setup
-%rule_makedirs dirs=$(BD_OBJDIR$(BDID)) setuptarget=%(mainmmake)-%(arch)-setup
+$(BD_OBJS$(BDID)) : | $(BD_OBJDIR$(BDID))
+GLOB_MKDIRS += $(BD_OBJDIR$(BDID))
 
 #MM
 %(mainmmake)-%(arch) :: $(BD_OBJS$(BDID))
-
-#MM %(mainmmake)-%(arch)-setup
-%rule_makedirs dirs=$(BD_OBJDIR$(BDID)) setuptarget=%(mainmmake)-%(arch)-setup
 
 ifeq ($(findstring %(compiler),host target),)
   $(error unknown compiler %(compiler))
@@ -1848,7 +1831,7 @@ $(GENDIR)/$(CURDIR):
 #   $(GENINCDIR) path must not contain any references to the C runtime
 #   library header files.
 #
-%define copy_includes mmake= includes=$(INCLUDE_FILES) path=. dir=include
+%define copy_includes mmake=includes-copy includes=$(INCLUDE_FILES) path=. dir=include
 
 ifneq (%(dir),)
 INCL_FILES_1 := $(subst %(dir),$(AROS_INCLUDES)/%(path),%(includes))
@@ -1860,20 +1843,16 @@ INCL_FILES_2 := $(foreach f,%(includes),$(GENINCDIR)/%(path)/$(f))
 _INC_PATH :=
 endif
 
-ifneq (%(mmake),)
-#MM 
+#MM %(mmake)
+
+ifneq (%(mmake),includes-copy)
+#MM
 includes-copy : %(mmake)
-
-#MM
-%(mmake) : %(mmake)-includes-setup $(INCL_FILES_1) $(INCL_FILES_2)
-
-.PHONY: %(mmake)
-
-else
-#MM
-includes-copy : includes-setup $(INCL_FILES_1) $(INCL_FILES_2)
 endif
 
+%(mmake) : $(INCL_FILES_1) $(INCL_FILES_2)
+
+.PHONY: %(mmake)
 
 $(AROS_INCLUDES)/%(path)/%.h : $(_INC_PATH)%.h
 	@$(CP) $< $@
@@ -1881,20 +1860,11 @@ $(AROS_INCLUDES)/%(path)/%.h : $(_INC_PATH)%.h
 $(GENINCDIR)/%(path)/%.h : $(_INC_PATH)%.h
 	@$(CP) $< $@
 
-ifneq (%(mmake),)
-%(mmake)-includes-setup : $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
-
-.PHONY: %(mmake)-includes-setup
-else
-includes-setup : $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
-endif
-
-$(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path) :
-	%mkdir_q dir=$@
-
-,PHONY: includes-copy includes-setup
-
+$(INCL_FILES_1) : | $(AROS_INCLUDES)/%(path)
+$(INCL_FILES_2) : | $(GENINCDIR)/%(path)
+GLOB_MKDIRS += $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
 %end
+
 
 %define make_hidd_stubs hidd=/A cflags=$(CFLAGS) dflags=$(CFLAGS) parenttarget=linklibs
 STUBS_SRC := $(foreach f,$(STUBS),$(f).c)
@@ -2003,7 +1973,7 @@ else
 endif
 
 
-.PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-build_and_install-quick
+.PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
 
 #MM- %(mmake) : setup includes linklibs-core %(mmake)-quick
 

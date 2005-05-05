@@ -240,6 +240,9 @@ ifeq ($(findstring $(TARGET), kernel-graphics-objdir kernel-graphics-setup kerne
 %rule_genmodule_makefile modname=layers modtype=library \
     targetdir=$(OBJDIR) conffile=../hyperlayers/layers.conf
 
+$(OBJDIR)/Makefile.layers : | $(OBJDIR)
+GLOB_MKDIRS += $(OBJDIR)
+
 include $(OBJDIR)/Makefile.layers
 
 %rule_genmodule_dummy modname=layers modtype=library \
