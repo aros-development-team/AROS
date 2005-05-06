@@ -902,6 +902,7 @@ BD_LDFLAGS$(BDID)   := %(ldflags)
 #MM
 %(mmake)-quick : %(mmake)
 
+#MM
 %(mmake) : $(BD_EXES$(BDID))
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
