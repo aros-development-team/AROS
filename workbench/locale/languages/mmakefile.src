@@ -11,21 +11,17 @@ OBJS    := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(LANGUAGES)))
 DEPS    := $(addprefix $(OBJDIR)/,$(addsuffix .d,$(LANGUAGES)))
 
 #MM- workbench-locale : workbench-locale-languages
-#MM workbench-locale-languages : includes linklibs \
-#MM   workbench-locale-languages-setup
-
-#MM workbench-locale-languages-setup
+#MM workbench-locale-languages : includes linklibs
 
 workbench-locale-languages : $(MODULES)
 
-%rule_makedirs dirs="$(OBJDIR) $(MODDIR)" \
-  setuptarget=workbench-locale-languages-setup
+$(MODDIR)/%.language : $(OBJDIR)/%.o | $(MODDIR)
+	%link_module_q err="$(notdir $(basename $<)).err" objs=$< module="$(notdir $@)"
 
 %rule_compile basename=% targetdir=$(OBJDIR)
 
-$(MODDIR)/%.language : $(OBJDIR)/%.o
-	%link_module_q err="$(notdir $(basename $<)).err" objs=$< module="$(notdir $@)"
-
 %include_deps deps=$(DEPS)
 
-%common
+$(OBJS) $(DEPS) : | $(OBJDIR)
+
+%rule_makedirs dirs="$(OBJDIR) $(MODDIR)"

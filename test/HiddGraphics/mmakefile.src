@@ -26,7 +26,7 @@ EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS := $(foreach f,$(FILES) $(TOOL),$(OBJDIR)/$(f).d)
 
-#MM test-hidd-graphics : test-hidd-graphics-setup includes
+#MM test-hidd-graphics : includes
 test-hidd-graphics : $(EXES)
 	@$(NOP)
 
@@ -34,29 +34,26 @@ test-hidd-graphics : $(EXES)
 test-hidd-graphics-quick : $(EXES)
 	@$(NOP)
 
-#MM
-test-hidd-graphics-setup :
-	%mkdirs_q $(EXEDIR) $(OBJDIR)
+%rule_makedirs dirs="$(EXEDIR) $(OBJDIR)"
 
 #MM
 clean ::
 	-$(RM) $(EXES)
 
-$(EXEDIR)/% : $(OBJDIR)/%.o $(TOOL).a $(LIBDIR)/startup.o $(DEPLIBS)
+$(EXEDIR)/% : $(OBJDIR)/%.o $(TOOL).a $(LIBDIR)/startup.o $(DEPLIBS) | $(EXEDIR)
 	%link_q
 
-$(OBJDIR)/%.o : %.c
+$(OBJDIR)/%.o : %.c | $(OBJDIR)
 	%compile_q opt=$(APPCFLAGS)
 
-$(OBJDIR)/%.d : %.c
+$(OBJDIR)/%.d : %.c | $(OBJDIR)
 	%mkdepend_q
 
 
 $(TOOL).a : $(OBJDIR)/$(TOOL).o
 	%mklib_q from=$(OBJDIR)/$(TOOL).o
 
-$(OBJDIR)/$(TOOL).o : $(TOOL).c
+$(OBJDIR)/$(TOOL).o : $(TOOL).c | $(OBJDIR)
 	%compile_q 
 	
-%common
 %include_deps

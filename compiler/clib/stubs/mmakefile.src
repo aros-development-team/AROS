@@ -5,9 +5,10 @@ STUBSDIR	:= $(GENDIR)/compiler/clib/stubs
 FILES		:= $(shell ($(ECHO) '\#define SYSTEM_CALL(x, y...) x'; $(CAT) $(AROS_INCLUDES)/sys/syscall.def) | $(CPP) -P -)
 FILES		:= $(foreach f,$(FILES), $(STUBSDIR)/$(f))
 OBJS		:= $(foreach f,$(FILES), $(f).o)
+STUBS           := $(foreach f,$(FILES), $(f).S)
 GENSTUBS	:= genstubs
 
-#MM clib-stubs : clib-stubs-setup
+#MM
 clib-stubs : $(OBJS)
 
 #MM
@@ -17,17 +18,17 @@ clib-stubs-clean : clean
 clean ::
 	-$(RM) $(STUBSDIR)
 
-#MM clib-stubs-setup
-%rule_makedirs dirs=$(STUBSDIR) setuptarget=clib-stubs-setup
+$(OBJS) $(STUBS) : | $(STUBSDIR)
+%rule_makedirs dirs=$(STUBSDIR)
 
-$(STUBSDIR)/%.o : $(STUBSDIR)/%.S
+$(OBJS) : $(STUBSDIR)/%.o : $(STUBSDIR)/%.S
 	%assemble_q
 
 $(STUBSDIR)/%.S: $(STUBSDIR)/$(GENSTUBS)
 	@$(ECHO) Generating stub function for \'$$(basename $(notdir $@))\'...
 	@$(STUBSDIR)/$(GENSTUBS) $(basename $(notdir $@)) >$@
 
-$(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def $(AROS_INCLUDES)/aros/machine.h
+$(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def $(AROS_INCLUDES)/aros/machine.h | $(STUBSDIR)
 	@$(HOST_CC) $(HOST_CFLAGS) -I$(GENINCDIR) $< -o $@
 
 %common

@@ -20,11 +20,10 @@ EXEDIR      := $(AROS_WANDERER)/Tools
 ICONS       := ExecuteCommand
 ICONFILES   := $(foreach f, $(ICONS), $(EXEDIR)/$(f).info)
 
-#MM workbench-system-wanderer-tools-executecommand-icons : \
-#MM     workbench-system-wanderer-tools-executecommand-setup
+#MM
 workbench-system-wanderer-tools-executecommand-icons : $(ICONFILES)
 
-$(EXEDIR)/%.info : icons/%.info.src icons/%_N.png icons/%_S.png
+$(EXEDIR)/%.info : icons/%.info.src icons/%_N.png icons/%_S.png | $(EXEDIR)
 	%makeicon2
 
-%common
+%rule_makedirs dirs=$(EXEDIR)

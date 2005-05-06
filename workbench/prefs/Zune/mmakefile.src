@@ -10,7 +10,7 @@ scrollbarsp listviewsp stringsp specialp navigationp
 EXEDIR := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-zune
-#MM workbench-prefs-zune : workbench-prefs-zune-setup includes linklibs
+#MM workbench-prefs-zune : includes linklibs
 
 %build_prog mmake=workbench-prefs-zune \
     progname=Zune targetdir=$(EXEDIR) \
