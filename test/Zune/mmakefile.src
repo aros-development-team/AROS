@@ -22,10 +22,8 @@ FILES  := test      	    \
 
 EXEDIR := $(AROS_TESTS)/Zune
 
-#MM test-zune : test-zune-setup includes linklibs
+#MM test-zune : includes linklibs
 
 %build_progs mmake=test-zune \
     files=$(FILES) targetdir=$(EXEDIR) \
     uselibs="mui arossupport amiga arosc"
-
-%common

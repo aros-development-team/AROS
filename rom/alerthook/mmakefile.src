@@ -1,17 +1,16 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-alerthook-module : includes linklibs kernel-alerthook-setup
-#MM kernel-alerthook-setup
+#MM
 kernel-alerthook-module : $(AROS_MODULES)/alert.hook
 
-%rule_makedirs dirs=$(GENDIR)/$(CURDIR) setuptarget=kernel-alerthook-setup
+%rule_makedirs dirs="$(GENDIR)/$(CURDIR) $(AROS_MODULES)"
 
 %rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)
 
-$(AROS_MODULES)/alert.hook : $(OBJDIR)/alerthook.o
+$(AROS_MODULES)/alert.hook : $(GENDIR)/$(CURDIR)/alerthook.o | $(AROS_MODULES)
 	%link_module_q objs=$^
 
 %include_deps deps=$(GENDIR)/$(CURDIR)/alerthook.d
 
-%common
+$(GENDIR)/$(CURDIR)/alerthook.o $(GENDIR)/$(CURDIR)/alerthook.d : | $(GENDIR)/$(CURDIR)

@@ -9,7 +9,9 @@ USER_CFLAGS	:= -I$(TOP)/rom/dbus -I.. $(shell pkg-config --cflags dbus-1) -DDBUS
   files="gatestubs" \
   compiler=host
 
-## kernel-dbus-unix-setup :: gatestubs.c
+##MM kernel-dbus : kernel-dbus-gatestubs
+##MM
+## kernel-dbus-gatestubs :: gatestubs.c
 
 gatestubs.c:	$(TOP)/rom/dbus/dbus.sfd
 	$(SFDC) --target=$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-aros --mode=gatestubs --gateprefix=__ $< --output=$@

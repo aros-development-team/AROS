@@ -25,17 +25,12 @@ USER_CFLAGS := -DHAVE_COOLIMAGES
     files=$(FILES) uselibs="mui amiga arosc m"
 
 
-#MM workbench-tools-hdtoolbox-prefs : workbench-tools-hdtoolbox-prefs-setup
+#MM
 workbench-tools-hdtoolbox-prefs : $(BINDIR)/Prefs/Env-Archive/hdtoolbox.prefs
 
-$(BINDIR)/Prefs/Env-Archive/% : env-archive/%
+$(BINDIR)/Prefs/Env-Archive/% : env-archive/% | $(BINDIR)/Prefs/Env-Archive
 	@$(CP) $< $@
 
-
-#MM workbench-tools-hdtoolbox-prefs-setup
-%rule_makedirs dirs=$(BINDIR)/Prefs/Env-Archive \
-  setuptarget=workbench-tools-hdtoolbox-prefs-setup
-
-%common
+%rule_makedirs dirs=$(BINDIR)/Prefs/Env-Archive
 
 
