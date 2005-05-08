@@ -37,6 +37,7 @@ NOP		:= @NOP@
 FOR		:= @FOR@
 IF		:= @IF@
 TEST		:= @TEST@
+CMP		:= @CMP@
 CAT		:= @CAT@
 BISON		:= @BISON@
 PNGTOPNM    	:= @PNGTOPNM@
