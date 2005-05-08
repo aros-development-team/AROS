@@ -1,4 +1,4 @@
-dnl Copyright (C) 1997-2003 AROS - The Amiga Research OS
+dnl Copyright (C) 1997-2005 AROS - The Amiga Research OS
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -307,9 +307,11 @@ AM_PATH_PYTHON(2.2.1)
 FOR=for
 IF=if
 TEST=test
+CMP=cmp
 AC_SUBST(FOR)
 AC_SUBST(IF)
 AC_SUBST(TEST)
+AC_SUBST(CMP)
 
 dnl ---------------------------------------------------------------------------
 dnl Look for things about the host system, good for hosted targets.

@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE aros_host_ld aros_host_aclocal aros_host_autoconf aros_host_autoheader aros_host_automake HOST_AR HOST_RANLIB RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP CAT BISON PNGTOPNM PPMTOILBM STRIP SED CHMOD PYTHON PYTHON_VERSION PYTHON_PREFIX PYTHON_EXEC_PREFIX PYTHON_PLATFORM pythondir pkgpythondir pyexecdir pkgpyexecdir FOR IF TEST EGREP LIBOBJS aros_target_ar_ln aros_target_nm_ln aros_target_objcopy_ln aros_target_objdump_ln aros_target_ranlib_ln aros_target_strip_ln DISTCC CCACHE SHARED_LD KERNEL_LD TARGET_CC TARGET_AS TARGET_LD NOSTDINC_CFLAGS NOSTARTUP_LDFLAGS NIX_LDFLAGS DETACH_LDFLAGS NOSTDLIB_LDFLAGS aros_cc_pre AR RANLIB NM NM_PLAIN OBJDUMP OBJCOPY aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_host_arch aros_host_cpu aros_host_cc aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_tools_dir aros_target_arch aros_target_cpu aros_target_variant aros_target_suffix aros_target_incl aros_target_cc aros_target_cc_includes aros_target_cc_path aros_target_objdump aros_target_objcopy aros_target_strip aros_target_as aros_target_nm aros_shared_default aros_object_format aros_compiler_libs aros_config_cflags aros_config_aflags aros_target_ld aros_config_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor ENABLE_DBUS DBUS_CFLAGS DBUS_LIBFLAGS KERNEL_DBUS_KOBJ KERNEL_DBUS_INCLUDES aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug ignore_undefined_symbols gcc_target_cpu LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE aros_host_ld aros_host_aclocal aros_host_autoconf aros_host_autoheader aros_host_automake HOST_AR HOST_RANLIB RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP CAT BISON PNGTOPNM PPMTOILBM STRIP SED CHMOD PYTHON PYTHON_VERSION PYTHON_PREFIX PYTHON_EXEC_PREFIX PYTHON_PLATFORM pythondir pkgpythondir pyexecdir pkgpyexecdir FOR IF TEST CMP EGREP LIBOBJS aros_target_ar_ln aros_target_nm_ln aros_target_objcopy_ln aros_target_objdump_ln aros_target_ranlib_ln aros_target_strip_ln DISTCC CCACHE SHARED_LD KERNEL_LD TARGET_CC TARGET_AS TARGET_LD NOSTDINC_CFLAGS NOSTARTUP_LDFLAGS NIX_LDFLAGS DETACH_LDFLAGS NOSTDLIB_LDFLAGS aros_cc_pre AR RANLIB NM NM_PLAIN OBJDUMP OBJCOPY aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_host_arch aros_host_cpu aros_host_cc aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_tools_dir aros_target_arch aros_target_cpu aros_target_variant aros_target_suffix aros_target_incl aros_target_cc aros_target_cc_includes aros_target_cc_path aros_target_objdump aros_target_objcopy aros_target_strip aros_target_as aros_target_nm aros_shared_default aros_object_format aros_compiler_libs aros_config_cflags aros_config_aflags aros_target_ld aros_config_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor ENABLE_DBUS DBUS_CFLAGS DBUS_LIBFLAGS KERNEL_DBUS_KOBJ KERNEL_DBUS_INCLUDES aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug ignore_undefined_symbols gcc_target_cpu LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -2975,10 +2975,6 @@ fi
   test -n "$aros_host_automake" && break
 done
 
-#aros_host_aclocal="aclocal"
-#aros_host_autoconf="autoconf"
-#aros_host_autoheader="autoheader"
-#aros_host_automake="automake"
 
 case "$CC" in
     *gcc*)
@@ -3029,11 +3025,6 @@ echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 	aros_host_make="gmake"
 	aros_host_arch="freebsd"
 	aros_host_cpu="i386"
-
-        #aros_host_aclocal="aclocal19"
-        #aros_host_autoconf="autoconf259"
-        #aros_host_autoheader="autoheader259"
-        #aros_host_automake="automake19"
 
 
 	        	case $host_os in
@@ -4088,6 +4079,8 @@ echo "${ECHO_T}$am_cv_python_pyexecdir" >&6
 FOR=for
 IF=if
 TEST=test
+CMP=cmp
+
 
 
 
@@ -9475,6 +9468,7 @@ s,@pkgpyexecdir@,$pkgpyexecdir,;t t
 s,@FOR@,$FOR,;t t
 s,@IF@,$IF,;t t
 s,@TEST@,$TEST,;t t
+s,@CMP@,$CMP,;t t
 s,@EGREP@,$EGREP,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@aros_target_ar_ln@,$aros_target_ar_ln,;t t
