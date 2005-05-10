@@ -2,7 +2,7 @@
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: French PC105 Keymap
+    Desc: Portuguese PC105 Keymap
     Lang: English
 */
 
