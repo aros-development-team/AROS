@@ -219,17 +219,15 @@ static void GetArguments(void)
 
 static void DoLocale(void)
 {
-    //struct Locale *loc;
+    struct Locale *loc;
     
     comma = '.';
     
-    /* SDuvan: removed Locale code as it seemed to cause segfaults
-               when running calculator several times */
-    //    if ((loc = OpenLocale(0)))
-    //    {
-    //	comma = loc->loc_DecimalPoint[0];
-    //	CloseLocale(loc);
-    //    }
+    if ((loc = OpenLocale(0)))
+    {
+    	comma = loc->loc_DecimalPoint[0];
+    	CloseLocale(loc);
+    }
     
     bi[16].text[0] = comma;
 }
