@@ -148,10 +148,14 @@
 
 #if __GNUC__ <= 2
 #   define __deprecated
+#   define __section(x)
 #endif
 #if __GNUC__ > 2
 #   define __deprecated    __attribute__((__deprecated__))
+#   define __section(x)    __attribute__((__section__(x)))
 #endif
+
+#define __startup __section(".aros.startup") __used
 
 
 /* 5. Calculated #defines */
