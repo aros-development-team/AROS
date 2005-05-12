@@ -16,6 +16,7 @@ const static char LDSCRIPT_PART1[] =
 "{\n"
 "  .text 0 :\n"
 "  {\n"
+"    *(.aros.startup)\n"
 "    *(.text)\n"
 "    *(.text.*)\n"
 "    *(.stub)\n"
