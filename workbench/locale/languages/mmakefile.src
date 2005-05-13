@@ -15,10 +15,11 @@ DEPS    := $(addprefix $(OBJDIR)/,$(addsuffix .d,$(LANGUAGES)))
 
 workbench-locale-languages : $(MODULES)
 
-$(MODDIR)/%.language : $(OBJDIR)/%.o | $(MODDIR)
+$(MODULES) : | $(MODDIR)
+$(MODDIR)/%.language : $(OBJDIR)/%.o
 	%link_module_q err="$(notdir $(basename $<)).err" objs=$< module="$(notdir $@)"
 
-%rule_compile basename=% targetdir=$(OBJDIR)
+%rule_compile_multi basenames=$(LANGUAGES) targetdir=$(OBJDIR)
 
 %include_deps deps=$(DEPS)
 
