@@ -6,6 +6,7 @@
     Lang: english
 */
 
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/memheaderext.h>
@@ -23,11 +24,13 @@
 #define SWAP(x) x
 #endif
 
-#include <sys/mman.h>
-#include <unistd.h>
+#define _XOPEN_SOURCE 600L /* for posix_memalign */
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#define __USE_MISC /* for MAP_ANON */
+#include <sys/mman.h>
 #include <sys/termios.h>
 
 #include "../../../rom/exec/memory.h"	/* From $(TOP)/rom/exec */
@@ -339,12 +342,14 @@ int main(int argc, char **argv)
     if (!_use_hostmem)
     {
       /* We allocate memSize megabytes */
-      memory = __libc_malloc((memSize << 20));
-      if( !memory )
+      if( posix_memalign(&memory, getpagesize(), (memSize << 20)) != 0 )
       {
 	 /*fprintf(stderr, "Cannot allocate any memory!\n");*/
 	 exit(20);
       }
+      /* Make whole AROS memory area executable */
+      if (mprotect(memory, memSize << 20, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
+	 perror("mprotect failed");
     }
     else
     {
