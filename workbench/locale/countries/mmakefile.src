@@ -49,7 +49,9 @@ COUNTRYDIR   := $(AROS_LOCALE)/Countries
 MAKECOUNTRY  := $(OBJDIR)/makecountry
 OBJDIR 	     := $(GENDIR)/$(CURDIR)
 COUNTIFF     := $(foreach f,$(COUNTRIES),$(COUNTRYDIR)/$(f).country)
-USER_DEFINES := -D_EURO
+OBJS         := $(foreach f,makecountry $(COUNTRIES),$(OBJDIR)/$(f).o)
+DEPS         := $(foreach f,makecountry $(COUNTRIES),$(OBJDIR)/$(f).d)
+USER_CFLAGS  := -D_EURO
 
 #MM- workbench-locale : workbench-locale-countries
 #MM workbench-locale-countries : includes
@@ -59,24 +61,23 @@ workbench-locale-countries: $(MAKECOUNTRY) $(COUNTIFF)
 #MM
 workbench-locale-countries-quick : workbench-locale-countries
 
-$(COUNTRYDIR)/%.country : $(OBJDIR)/%.o | $(MAKECOUNTRY) $(COUNTRYDIR)
+$(COUNTIFF) : | $(MAKECOUNTRY) $(COUNTRYDIR)
+$(COUNTRYDIR)/%.country : $(OBJDIR)/%.o
 	@$(ECHO) "Making $(notdir $@)..."
 	@$(MAKECOUNTRY) $(COUNTRYDIR)/ $*
 
-$(MAKECOUNTRY) : $(OBJDIR)/makecountry.o $(foreach f, $(COUNTRIES),$(OBJDIR)/$(f).o)
+$(MAKECOUNTRY) : $(OBJS)
 	@$(ECHO) "Making $(@F)..."
 	@$(HOST_CC) $(HOST_LDFLAGS) $^ -o $@
 
-$(OBJDIR)/%.o : %.c | $(OBJDIR)
-	%compile_q cmd=$(HOST_CC) opt="$(HOST_CFLAGS) -I$(AROS_INCLUDES) $(USER_DEFINES)"
-
-$(OBJDIR)/%.d : %.c | $(OBJDIR)
-	%mkdepend_q
+$(OBJS) $(DEPS) : | $(OBJDIR)
+%rule_compile_multi basenames="makecountry $(COUNTRIES)" targetdir=$(OBJDIR)
 
 %rule_makedirs dirs="$(OBJDIR) $(COUNTRYDIR)"
+
 
 #MM
 clean ::
 	-$(RM) $(OBJDIR) *.err
 
-%include_deps $(foreach f,makecountry $(COUNTRIES),$(OBJDIR)/$(f).d)
+%include_deps $(DEPS)
