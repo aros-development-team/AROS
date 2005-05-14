@@ -4,13 +4,16 @@
     
     Function to write module_stubs.c. Part of genmodule.
 */
+#include <aros/machine.h>
+
 #include "genmodule.h"
 
 void writestubs(struct config *cfg, struct functions *functions)
 {
-    FILE *out;
+    FILE *out, *outasm;
     char line[256];
     struct functionhead *funclistit;
+    struct stringlist *aliasesit;
     struct functionarg *arglistit;
 
     snprintf(line, 255, "%s/%s_stubs.c", cfg->gendir, cfg->modulename);
@@ -32,7 +35,19 @@ void writestubs(struct config *cfg, struct functions *functions)
         "#undef __%s_NOLIBBASE__\n",
         getBanner(cfg), cfg->modulenameupper
     );
-    
+
+    if (cfg->intcfg & CFG_GENASTUBS)
+    {
+	snprintf(line, 255, "%s/%s_astubs.S", cfg->gendir, cfg->modulename);
+	outasm = fopen(line, "w");
+	if (outasm==NULL)
+	{
+	    fprintf(stderr, "Could not write %s\n", line);
+	    exit(20);
+	}
+	fprintf(outasm, "%s%s", getBanner(cfg), STUBCODE_INIT);
+    }
+
     if (cfg->modtype != MCC && cfg->modtype != MUI && cfg->modtype != MCP)
     {
         fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
@@ -53,38 +68,64 @@ void writestubs(struct config *cfg, struct functions *functions)
     {
         if (funclistit->lvo >= cfg->firstlvo)
 	{
-	    fprintf(out,
-		    "\n"
-		    "%s %s(",
-		    funclistit->type, funclistit->name
-	    );
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
+	    if (funclistit->libcall != STACK)
+	    {
+		fprintf(out,
+			"\n"
+			"%s %s(",
+			funclistit->type, funclistit->name
+		);
+		for (arglistit = funclistit->arguments;
+		     arglistit!=NULL;
+		     arglistit = arglistit->next
+		)
+		{
+		    if (arglistit != funclistit->arguments)
+			fprintf(out, ", ");
+		    fprintf(out, "%s %s", arglistit->type, arglistit->name);
+		}
+		fprintf(out,
+			")\n"
+			"{\n"
+			"    return AROS_LC%d(%s, %s,\n",
+			funclistit->argcount, funclistit->type, funclistit->name
+		);
+		for (arglistit = funclistit->arguments;
+		     arglistit!=NULL;
+		     arglistit = arglistit->next
+		)
+		    fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
+			    arglistit->type, arglistit->name, arglistit->reg
+		    );
+	    
+		fprintf(out, "                    %s, %s, %u, %s);\n}\n",
+			cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename
+		);
+	    }
+	    else /* libcall==STACK */
+	    {
+		assert(cfg->intcfg & CFG_GENASTUBS);
+		
+		fprintf(outasm,
+			STUBCODE,
+			funclistit->name,
+			cfg->libbase,
+			&(__AROS_GETJUMPVEC(NULL, funclistit->lvo)->vec)
+		 );
+	    }
+	
+	    for (aliasesit = funclistit->aliases;
+		 aliasesit != NULL;
+		 aliasesit = aliasesit->next
 	    )
 	    {
-		if (arglistit != funclistit->arguments)
-		    fprintf(out, ", ");
-		fprintf(out, "%s %s", arglistit->type, arglistit->name);
+		assert(cfg->intcfg & CFG_GENASTUBS);
+		
+		fprintf(outasm, ALIASCODE, funclistit->name, aliasesit->s);
 	    }
-	    fprintf(out,
-		    ")\n"
-		    "{\n"
-		    "    return AROS_LC%d(%s, %s,\n",
-		    funclistit->argcount, funclistit->type, funclistit->name
-	    );
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-		fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
-			arglistit->type, arglistit->name, arglistit->reg
-		);
-	    
-	    fprintf(out, "                    %s, %s, %u, %s);\n}\n",
-		    cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename
-	    );
 	}
     }
     fclose(out);
+    if (cfg->intcfg & CFG_GENASTUBS)
+	fclose(outasm);
 }

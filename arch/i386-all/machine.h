@@ -70,9 +70,13 @@ struct JumpVec
 #define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
 /*
-   Code to use to generate stub functions.
-   It must be *printed* with a function like printf in a file
-   to be compiled with gcc.
+   Code to use to generate stub functions in an assembly file.
+   It consist of two parts.
+   The first part is STUBCODE_INIT which has to be printed
+   once in a source file with fprintf or fputs.
+   The second part has to be printed for every function one wants to
+   include in the source file. It has to be printed with a printf-like
+   function and has to be followed by three parameters:
 
    - The first parameter is the function name,
    - The second parameter is the basename,
@@ -83,13 +87,18 @@ struct JumpVec
 
 */
 
-#define STUBCODE                                       \
+#define STUBCODE_INIT                                  \
 		"#define EMITSTUB(fname, bname, vec) " \
-		".globl fname ; "                      \
+		".weak fname ; "                       \
 		"fname : "                             \
 		"movl bname , %%eax; "                 \
 		"jmp *vec(%%eax);\n"                   \
-		"EMITSTUB(%s, %s, %d) "
+	        "#define EMITALIAS(fname, alias) "     \
+	        ".weak alias; .set alias, fname\n"
+#define STUBCODE                                       \
+		"EMITSTUB(%s, %s, %d)\n"
+#define ALIASCODE                                      \
+                "EMITALIAS(%s, %s)\n"
 
 /*
    We want to activate the execstubs and preserve all registers

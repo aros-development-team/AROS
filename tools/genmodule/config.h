@@ -8,6 +8,8 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include <assert.h>
+
 #include "stringlist.h"
 
 enum command { CMD_UNSPECIFIED, DUMMY, FILES, LIBDEFS, INCLUDES, MAKEFILE };
@@ -23,6 +25,12 @@ enum optionflags
     OPTION_NOEXPUNGE = 1<<BIT_NOEXPUNGE,
     OPTION_NORESIDENT = 1<<BIT_NORESIDENT,
     OPTION_DUPBASE = 1<<BIT_DUPBASE
+};
+enum intcfgbit { BIT_GENASTUBS, BIT_GENLINKLIB };
+enum intcfgflags
+{
+    CFG_GENASTUBS = 1<<BIT_GENASTUBS,
+    CFG_GENLINKLIB = 1<<BIT_GENLINKLIB
 };
 
 struct conffuncinfo {
@@ -59,8 +67,6 @@ struct config
     /* Name for variables and types */
     char *basename, *libbase, *libbasetype, *libbasetypeptrextern;
 
-    /* Does module produce a linklib (e.g. LIB:libmodname.a) ? */
-    int genlinklib;
 
     /* The default path to put the module relative to SYS: */
     char *moddir;
@@ -72,6 +78,9 @@ struct config
 
     /* Some additional options, see optionsflags enum above */
     int options;
+
+    /* Internal configuration flags */
+    enum intcfgflags intcfg;
 
     /* Further configuration data for the generated Resident struct */
     char *datestring;

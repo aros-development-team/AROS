@@ -142,7 +142,7 @@ struct JumpVec
      the library vectors list.
 
 */
-#define STUBCODE                               \
+#define STUBCODE_INIT                          \
 	"#define EMITSTUB(fname, bname, vec) " \
 	".globl fname; "                       \
 	"fname : "                             \
@@ -151,7 +151,12 @@ struct JumpVec
 	"lwz   11,vec(11); "                   \
 	"mtctr 11; "                           \
 	"bctr;\n "                             \
+	"#define EMITALIAS(fname, alias) "     \
+	".weak alias; .set alias, fname\n"
+#define STUBCODE                               \
 	"EMITSTUB(%s, %s, %d) "
+#define ALIASCODE                              \
+        "EMITALIAS(%s, %s)\n"
 /*
    We want to activate the execstubs and preserve all registers
    when calling obtainsemaphore, obtainsemaphoreshared, releasesemaphore,

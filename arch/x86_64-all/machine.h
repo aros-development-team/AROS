@@ -85,11 +85,16 @@ struct JumpVec
 
 #define STUBCODE                                       \
 		"#define EMITSTUB(fname, bname, vec) " \
-		".globl fname ; "                      \
+		".weak fname ; "                       \
 		"fname : "                             \
-		"mov bname , %%rax; "                 \
+		"mov bname , %%rax; "                  \
 		"jmp *vec(%%rax);\n"                   \
+	        "#define EMITALIAS(fname, alias) "     \
+	        ".weak alias; .set alias, fname\n"
+#define STUBCODE                                       \
 		"EMITSTUB(%s, %s, %d) "
+#define ALIASCODE                                      \
+                "EMITALIAS(%s, %s)\n"
 
 /*
    We want to activate the execstubs and preserve all registers
