@@ -5,15 +5,24 @@
 #include "ftglyphengine.h"
 #include "kerning.h"
 
+#include <aros/libcall.h>
 #include <proto/utility.h>
 #include <aros/debug.h>
 #include <utility/tagitem.h>
 #include <diskfont/glyph.h>
 #include <diskfont/diskfonttag.h>
 
+#include LC_LIBDEFS_FILE
+
 /* ReleaseInfoA, release allocated memory from ObtainInfo */
-ULONG ReleaseInfoA(struct GlyphEngine *ge, struct TagItem *tags)
+AROS_LH2(ULONG, ReleaseInfoA,
+	 AROS_LHA(struct GlyphEngine *, ge, A0),
+	 AROS_LHA(struct TagItem *, tags, A1),
+	 LIBBASETYPEPTR, LIBBASE, 9, FreeType2
+)
 {
+    AROS_LIBFUNC_INIT
+
     FT_GlyphEngine *engine = (FT_GlyphEngine *)ge;
     Tag   otagtag;
     ULONG otagdata;
@@ -53,4 +62,6 @@ ULONG ReleaseInfoA(struct GlyphEngine *ge, struct TagItem *tags)
     }
     
     return 0;
+    
+    AROS_LIBFUNC_EXIT
 }

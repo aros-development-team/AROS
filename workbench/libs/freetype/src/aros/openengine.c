@@ -6,13 +6,20 @@
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
+#include <aros/libcall.h>
 
 #include <proto/exec.h>
 
+#include LC_LIBDEFS_FILE
+
 static struct Library *mylib;
 
-struct GlyphEngine *OpenEngine(void)
+AROS_LH0(struct GlyphEngine *, OpenEngine,
+	 LIBBASETYPEPTR, LIBBASE, 5, FreeType2
+)
 {
+    AROS_LIBFUNC_INIT
+
     static UBYTE *EngineName = "freetype2";
     FT_GlyphEngine *ge=NULL;
 
@@ -30,6 +37,8 @@ struct GlyphEngine *OpenEngine(void)
 
     D(bug(" return NULL\n"));
     return NULL;
+    
+    AROS_LIBFUNC_EXIT
 }
 
 static AROS_SET_LIBFUNC(getbase, struct Library *, FTBase)

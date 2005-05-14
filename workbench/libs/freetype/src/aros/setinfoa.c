@@ -5,12 +5,15 @@
 #include "ftglyphengine.h"
 #include "glyph.h"
 
+#include <aros/libcall.h>
 #include <proto/utility.h>
 #include <aros/debug.h>
 #include <utility/tagitem.h>
 #include <diskfont/oterrors.h>
 #include <diskfont/diskfonttag.h>
 #include <diskfont/glyph.h>
+
+#include LC_LIBDEFS_FILE
 
 /* scantags, from SetInfoA, looking for the ones we care about
    just ignore anything we don't recognize for now              */
@@ -232,8 +235,14 @@ static void scantags(FT_GlyphEngine *ge, struct TagItem *tags)
 }
 
 /* SetInfoA, store request into our engine structure.         */
-ULONG SetInfoA(struct GlyphEngine *ge, struct TagItem *tags)
+AROS_LH2(ULONG, SetInfoA,
+	 AROS_LHA(struct GlyphEngine *, ge, A0),
+	 AROS_LHA(struct TagItem *, tags, A1),
+	 LIBBASETYPEPTR, LIBBASE, 7, FreeType2
+)
 {
+    AROS_LIBFUNC_INIT
+
     FT_GlyphEngine *engine = (FT_GlyphEngine *)ge
     D(bug("LIB_SetInfoA libbase = 0x%lx engine = 0x%lx tags = 0x%lx\n",FTBase,engine,tags));
 
@@ -241,4 +250,6 @@ ULONG SetInfoA(struct GlyphEngine *ge, struct TagItem *tags)
     scantags(engine, tags);
     
     return (ULONG)(engine->last_error);
+    
+    AROS_LIBFUNC_EXIT
 }
