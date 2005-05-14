@@ -325,9 +325,8 @@ $(TMP_TARGETBASE).d : %(basename).c
 
 #------------------------------------------------------------------------------
 # Generate a rule to compile multiple C source files to an object file and
-# generate the corresponding dependency files. # part, then the source
-# file has to be in that directory. The generated file will be put in the
-# object directory without the directory.
+# generate the corresponding dependency files. The generated file will be put
+# in the object directory without the directory part of the source file.
 # options
 # - basenames: the basenames of the files to compile. The names may include
 #   relative or absolute path names. No wildcard is allowed
@@ -453,6 +452,45 @@ else
 	%assemble_q opt=%(flags)
 
 endif
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to assemble multiple source files to an object file. The
+# generated file will be put in the object directory with the directory part
+# of the source file stripped of.
+# options
+# - basenames: the basenames of the files to compile. The names may include
+#   relative or absolute path names. No wildcard is allowed
+# - aflags (default $(AFLAGS)): the C flags to use for compilation
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .c file. When targetdir is not
+#   empty, path names will stripped from the file names so that all files are in
+#   that dir and not in subdirectories.
+%define rule_assemble_multi basenames=/A aflags=$(AFLAGS) targetdir= suffix=.s
+
+ifeq (%(targetdir),)
+TMP_TARGETS := $(addsuffix .o,%(basenames))
+TMP_WILDCARD := %
+else
+TMP_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,$(notdir %(basenames))))
+TMP_WILDCARD := %(targetdir)/%
+
+# Be sure that all .s files are generated
+$(TMP_TARGETS) : | $(addsuffix %(suffix),%(basenames))
+
+# Be sure that all .c files are found
+TMP_DIRS := $(filter-out ./,$(sort $(dir %(basenames))))
+ifneq ($(TMP_DIRS),)
+    vpath %%(suffix) $(TMP_DIRS)
+endif
+
+endif
+
+$(TMP_TARGETS) : AFLAGS := %(aflags)
+$(TMP_TARGETS) : $(TMP_WILDCARD).o : %%(suffix)
+	%assemble_q opt=$(AFLAGS)
 %end
 #------------------------------------------------------------------------------
 
@@ -747,7 +785,7 @@ endif
 
 TMP_TARGETS := $(%(modname)_STARTFILES) $(%(modname)_ENDFILES) \
 	       $(%(modname)_LINKLIBFILES)
-TMP_TARGETS := $(addsuffix .c,$(TMP_TARGETS))
+TMP_TARGETS := $(addsuffix .c,$(TMP_TARGETS)) $(addsuffix .S, $(%(modname)_LINKLIBAFILES))
 
 TMP_DEPS := $(GENMODULE) %(reffile)
 TMP_OPTS := -r %(reffile)
@@ -1087,20 +1125,27 @@ BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 BD_CFLAGS     := %(cflags) -I%(objdir) -idirafter $(TOP)/$(CURDIR) -include %(objdir)/%(modname)_deflibdefs.h
 BD_DFLAGS     := %(dflags) -I%(objdir) -idirafter $(TOP)/$(CURDIR) -include %(objdir)/%(modname)_deflibdefs.h
 
-BD_LINKLIBFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
+BD_LINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
+BD_LINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBAFILES))
 ifeq ($(strip $(%(modname)_LINKLIBFILES) %(linklibfiles)),)
     BD_LINKLIB :=
 else
     BD_LINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname).a
 endif
+BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
 
 BD_CCFILES := $(BD_NARCHFILES) $(BD_STARTFILES) \
-    $(BD_ENDFILES) $(BD_LINKLIBFILES) %(linklibfiles)
+    $(BD_ENDFILES) $(BD_LINKLIBCFILES) %(linklibfiles)
 
 %rule_compile_multi \
     basenames=$(BD_CCFILES) targetdir=%(objdir) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) \
     compiler=%(compiler)
+
+ifneq ($(BD_LINKLIBAFILES),)
+%rule_assemble_multi \
+    basenames=$(BD_LINKLIBAFILES) targetdir=%(objdir) suffix=.S
+endif
 
 ## function reference files generation
 ##

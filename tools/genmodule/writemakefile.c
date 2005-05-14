@@ -36,29 +36,45 @@ void writemakefile(struct config *cfg)
 	    cfg->modulename, cfg->moddir
     );
 
-    if (!cfg->genlinklib)
-	fprintf(out, "%s_LINKLIBFILES :=\n", cfg->modulename);
+    if (!(cfg->intcfg & CFG_GENLINKLIB))
+	fprintf(out,
+		"%s_LINKLIBFILES :=\n"
+		"%s_LINKLIBAFILES :=\n",
+		cfg->modulename,
+		cfg->modulename
+	);
     else
+    {
 	switch (cfg->modtype)
 	{
 	case LIBRARY:
-	    fprintf(out, "%s_LINKLIBFILES := %s_stubs %s_autoinit\n",
+	    fprintf(out,
+		    "%s_LINKLIBFILES := %s_stubs %s_autoinit\n",
 		    cfg->modulename, cfg->modulename, cfg->modulename
 	    );
 	    break;
 	
 	case DEVICE:
 	case RESOURCE:
-	    fprintf(out, "%s_LINKLIBFILES := %s_stubs\n", cfg->modulename, cfg->modulename);
+	    fprintf(out,
+		    "%s_LINKLIBFILES := %s_stubs\n",
+		    cfg->modulename, cfg->modulename
+	    );
 	    break;
 	
 	default:
 	    fprintf(stderr, "Internal error in writemakefile: unsupported modtype for genlinklib\n");
 	    exit(20);
 	}
-    
+	
+	fprintf(out, "%s_LINKLIBAFILES :=", cfg->modulename);
+	if (cfg->intcfg & CFG_GENASTUBS)
+	    fprintf(out, "%s_astubs\n", cfg->modulename);
+	else
+	    fprintf(out, "\n");
+    }
+
     fprintf(out, "%s_INCLUDES := ", cfg->modulename);
-    
     switch (cfg->modtype)
     {
     case LIBRARY:

@@ -604,7 +604,17 @@ writefunctable(FILE *out,
 	switch (funclistit->libcall)
 	{
 	case STACK:
-	    fprintf(out, "int %s();\n", funclistit->name);
+	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+	    {
+		if (arglistit!=funclistit->arguments)
+		    fprintf(out, ", ");
+		fprintf(out, "%s", arglistit->type);
+	    }
+	    fprintf(out, ");\n");
 	    break;
 	    
 	case REGISTER:

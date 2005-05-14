@@ -156,49 +156,44 @@ struct config *initconfig(int argc, char **argv)
     if (strcmp(argv[optind+2],"library")==0)
     {
     	cfg->modtype = LIBRARY;
-	cfg->genlinklib = 1;
+	cfg->intcfg |= CFG_GENLINKLIB;
 	cfg->moddir = "Libs";
     }
     else if (strcmp(argv[optind+2],"mcc")==0)
     {
     	cfg->modtype = MCC;
-	cfg->genlinklib = 0;
 	cfg->moddir = "Classes/Zune";
     }
     else if (strcmp(argv[optind+2],"mui")==0)
     {
     	cfg->modtype = MUI;
-	cfg->genlinklib = 0;
 	cfg->moddir = "Classes/Zune";
     }
     else if (strcmp(argv[optind+2],"mcp")==0)
     {
     	cfg->modtype = MCP;
-	cfg->genlinklib = 0;
 	cfg->moddir = "Classes/Zune";
     }
     else if (strcmp(argv[optind+2], "device")==0)
     {
 	cfg->modtype = DEVICE;
-	cfg->genlinklib = 1;
+	cfg->intcfg |= CFG_GENLINKLIB;
 	cfg->moddir = "Devs";
     }
     else if (strcmp(argv[optind+2], "resource")==0)
     {
 	cfg->modtype = RESOURCE;
-	cfg->genlinklib = 1;
+	cfg->intcfg |= CFG_GENLINKLIB;
 	cfg->moddir = "Devs";
     }
     else if (strcmp(argv[optind+2], "gadget")==0)
     {
 	cfg->modtype = GADGET;
-	cfg->genlinklib = 0;
 	cfg->moddir = "Classes/Gadgets";
     }
     else if (strcmp(argv[optind+2], "datatype")==0)
     {
 	cfg->modtype = DATATYPE;
-	cfg->genlinklib = 0;
 	cfg->moddir = "Classes/Datatypes";
     }
     else
@@ -744,13 +739,21 @@ static void readsectionfunctionlist(struct config *cfg)
 	if (line==NULL)
 	    exitfileerror(20, "unexptected EOF in functionlist section\n");
 	if (strlen(line)==0)
+	{
+	    if (*funclistptr != NULL)
+		funclistptr = &((*funclistptr)->next);
 	    lvo++;
+	}
 	else if (isspace(*line))
 	{
 	    s = line;
 	    while (isspace(*s)) s++;
 	    if (*s=='\0')
+	    {
+		if (*funclistptr != NULL)
+		    funclistptr = &((*funclistptr)->next);
 		lvo++;
+	    }
 	    else
 		exitfileerror(20, "no space allowed before functionname\n");
 	}
@@ -782,7 +785,7 @@ static void readsectionfunctionlist(struct config *cfg)
 		
 		s += 4;
 		if (!isspace(*s))
-		    exitfileerror(20, "in syntax\n");
+		    exitfileerror(20, "syntax is '.skip n'\n");
 		
 		n=strtol(s, &s2, 10);
 		if (s2==NULL)
@@ -790,9 +793,45 @@ static void readsectionfunctionlist(struct config *cfg)
 		
 		while (isspace(*s2)) s2++;
 		if (*s2!='\0')
-		    exitfileerror(20, "in syntax\n");
+		    exitfileerror(20, "syntax is '.skip n'\n");
+		if (*funclistptr != NULL)
+		    funclistptr = &((*funclistptr)->next);
 		lvo += n;
 	    }
+	    else if (strncmp(s, "alias", 5)==0)
+	    {
+		s += 5;
+		
+		if (!isspace(*s))
+		    exitfileerror(20, "syntax is '.alias name'\n");
+
+		while (isspace(*s)) s++;
+		if (*s == '\0' || !(isalpha(*s) || *s == '_'))
+		    exitfileerror(20, "syntax is '.alias name'\n");
+
+		s2 = s;
+		s++;
+		while (isalnum(*s) || *s == '_') s++;
+
+		if (isspace(*s))
+		{
+		    *s = '\0';
+		    do {
+			s++;
+		    } while (isspace(*s));
+		}
+
+		if (*s != '\0')
+		    exitfileerror(20, "syntax is '.alias name'\n");
+		
+		if (*funclistptr == NULL)
+		    exitfileerror(20, ".alias has to come after a function declaration\n");
+		
+		slist_append(&(*funclistptr)->aliases, s2);
+		cfg->options |= CFG_GENASTUBS;
+	    }
+	    else
+		exitfileerror(20, "Syntax error");
 	}
 	else if (*line!='#')
 	{
@@ -805,13 +844,15 @@ static void readsectionfunctionlist(struct config *cfg)
 	    
 	    /* Duplicate the function name */
 	    for (len = 0;
-		 line[len] != '\0' && !isspace(line[len]) && line[len] != ':' && line[len] != '(';
+		 line[len] != '\0' && !isspace(line[len]) && line[len] != '(';
 		 len++
 	    )
 		/*NOP*/;
 
 	    line[len] = '\0';
 
+	    if (*funclistptr != NULL)
+		funclistptr = &((*funclistptr)->next);
 	    *funclistptr = newconffuncinfo(line, lvo);
 	    lvo++;
 
@@ -856,47 +897,6 @@ static void readsectionfunctionlist(struct config *cfg)
 		    while(isspace(*s)) s++;
 		}
 	    }
-
-	    
-	    /* Parse extra specification, like aliases, vararg, ... */
-	    if (scolon != NULL)
-	    {
-		s = scolon+1;
-		while (isspace(*s)) s++;
-		do
-		{
-		    if (strncmp(s, "alias", 5) == 0)
-		    {
-			char c;
-			s+=5;
-			while (isspace(*s)) s++;
-			if (*s != '(')
-			    exitfileerror(20, "Wrong format for alias: alias(name) is the right form\n");
-			s++;
-			while (isspace(*s)) s++;
-			s2 = s;
-			while (!isspace(*s2) && *s2!=')') s2++;
-			
-			c = *s2;
-			*s2 = '\0';
-			slist_append(&(*funclistptr)->aliases, s);
-			*s2 = c;
-			
-			s = s2;
-			while (isspace(*s)) s++;
-
-			if (*s != ')')
-			    exitfileerror(20, "'(' without a ')'");
-			s++;
-		    }
-		    else
-			exitfileerror(20, "Unknown option for function\n");
-		    
-		    while (isspace(*s)) s++;
-		} while (*s != '\0');
-	    }
-	    
-	    funclistptr = &((*funclistptr)->next);
 	}
     }
 }

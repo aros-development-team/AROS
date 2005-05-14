@@ -452,7 +452,14 @@ static int parsefunctionname(char *name,
     {
 	struct functionhead *func, *funclistit;
 
-	func = newfunctionhead(name, conffuncit->regcount < 0 ? STACK : REGISTER);
+	if (conffuncit->regcount < 0)
+	{
+	    func = newfunctionhead(name, STACK);
+	    cfg->intcfg |= CFG_GENASTUBS;
+	}
+	else
+	    func = newfunctionhead(name, REGISTER);
+
 	func->lvo      = conffuncit->lvo;
 	func->novararg = 1;
 	func->priv     = 0;

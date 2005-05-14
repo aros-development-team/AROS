@@ -45,15 +45,16 @@ int main(int argc, char *argv[])
     for (n=0; syscalls[n].name != NULL; n++)
 	if (!strcmp(syscalls[n].name, argv[1]))
 	{
+	    printf(STUBCODE_INIT);
 	    printf(STUBCODE,
 	           syscalls[n].name, "aroscbase",
-	           &(__AROS_GETJUMPVEC(NULL, (n+1+LIB_RESERVED))->vec));
-	    printf("\n");
+	           &(__AROS_GETJUMPVEC(NULL, (n+1+LIB_RESERVED))->vec)
+	    );
 	    if (syscalls[n].alias[0] != '\0' )
 	    {
-	        printf(".globl %s\n"
-		       "\t.set %s, %s\n",
-		       syscalls[n].alias, syscalls[n].alias, syscalls[n].name);
+	        printf(ALIASCODE,
+		       syscalls[n].name, syscalls[n].alias
+		);
 	    }
 
 	    return 0;
