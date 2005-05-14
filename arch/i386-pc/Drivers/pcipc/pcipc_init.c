@@ -54,7 +54,7 @@ static const char Pci_Name[] = NAME_STRING;
 static const APTR inittabl[4];
 extern void *const LIBFUNCTABLE[];
 
-static const struct Resident Pcipc_Resident = {
+static const struct Resident Pcipc_Resident __used = {
     RTC_MATCHWORD,
     &Pcipc_Resident,
     &LIBEND,
