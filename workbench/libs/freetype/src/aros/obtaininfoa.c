@@ -14,6 +14,8 @@
 #include <diskfont/diskfonttag.h>
 #include <diskfont/glyph.h>
 
+#include LC_LIBDEFS_FILE
+
 /* muck which has to do with opening a face */
 static int OpenFace(FT_GlyphEngine *ge, char *new_ft_filename)
 {
@@ -185,8 +187,14 @@ void switch_family(FT_GlyphEngine *engine)
 /**
  * ObtainInfoA
  **/
-ULONG ObtainInfoA(struct GlyphEngine *ge, struct TagItem *tags)
+AROS_LH2(ULONG, ObtainInfoA,
+	 AROS_LHA(struct GlyphEngine *, ge, A0),
+	 AROS_LHA(struct TagItem *, tags, A1),
+	 LIBBASETYPEPTR, LIBBASE, 8, FreeType2
+)
 {
+    AROS_LIBFUNC_INIT
+
     FT_GlyphEngine *engine=(FT_GlyphEngine *)ge;
     struct GlyphMap **gm_p;
     struct MinList **gw_p;
@@ -262,4 +270,6 @@ ULONG ObtainInfoA(struct GlyphEngine *ge, struct TagItem *tags)
     }
 
     return rc;
+    
+    AROS_LIBFUNC_EXIT
 }
