@@ -2,15 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILESDIR := \
-    aros/ftglyphengine \
-    aros/kerning \
-    aros/glyph \
-    aros/openengine \
-    aros/closeengine \
-    aros/setinfoa \
-    aros/obtaininfoa \
-    aros/releaseinfoa \
+FT2FILES := \
     base/ftbase \
     base/ftinit \
     ../config/aros/ftsystem \
@@ -39,6 +31,16 @@ FILESDIR := \
     winfonts/winfnt \
     gzip/ftgzip
 
+SHFILES := \
+    aros/ftglyphengine \
+    aros/kerning \
+    aros/glyph \
+    aros/openengine \
+    aros/closeengine \
+    aros/setinfoa \
+    aros/obtaininfoa \
+    aros/releaseinfoa \
+
 USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 
 #MM- workbench-libs : workbench-libs-freetype-module
@@ -46,10 +48,10 @@ USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 #MM workbench-libs-freetype-module : workbench-libs-freetype-includes
 
 %build_linklib mmake=workbench-libs-freetype-linklib libname=freetype2 \
-    files=$(FILESDIR)
+    files=$(FT2FILES)
 
 %build_module mmake=workbench-libs-freetype-module modname=freetype2 \
-    modtype=library files=$(FILESDIR) linklibname=freetype2shared \
+    modtype=library files="$(SHFILES) $(FT2FILES)" linklibname=freetype2shared \
     linklibfiles=aros/tagcall noref=../config/aros/ftsystem \
     uselibs="amiga rom m"
 
