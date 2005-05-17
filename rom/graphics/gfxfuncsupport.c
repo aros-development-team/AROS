@@ -132,6 +132,7 @@ ULONG do_render_func(struct RastPort *rp
 	WORD xrel;
         WORD yrel;
 	struct Rectangle torender, intersect;
+	OOP_Object *bm_obj;
 	
 	LockLayerRom(L);
 	
@@ -177,17 +178,23 @@ ULONG do_render_func(struct RastPort *rp
 			    RSI(funcdata)->onscreen = TRUE;
 			}
 
-			pixwritten += render_func(funcdata
-		    	    , srcx + xoffset
-			    , srcy + yoffset
-		            , HIDD_BM_OBJ(bm)
-		    	    , gc
-		    	    , intersect.MinX
-			    , intersect.MinY
-			    , intersect.MaxX
-			    , intersect.MaxY
-			    , GfxBase
-			);
+    	    	    	bm_obj = OBTAIN_HIDD_BM(bm);
+			if(bm_obj)
+			{
+			    pixwritten += render_func(funcdata
+		    		, srcx + xoffset
+				, srcy + yoffset
+		        	, bm_obj
+		    		, gc
+		    		, intersect.MinX
+				, intersect.MinY
+				, intersect.MaxX
+				, intersect.MaxY
+				, GfxBase
+			    );
+			    
+			    RELEASE_HIDD_BM(bm_obj, bm);
+			}
 
 
 		    }
@@ -208,16 +215,23 @@ ULONG do_render_func(struct RastPort *rp
 				RSI(funcdata)->curbm = CR->BitMap;
 				RSI(funcdata)->onscreen = FALSE;
 		    	    }
-			    pixwritten += render_func(funcdata
-				    , srcx + xoffset, srcy + yoffset
-		        	    , HIDD_BM_OBJ(CR->BitMap)
-		    		    , gc
-		    		    , intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
-				    , intersect.MinY - CR->bounds.MinY
-				    , intersect.MaxX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX) 
-				    , intersect.MaxY - CR->bounds.MinY
-				    , GfxBase
-		    	    );
+			    
+			    bm_obj = OBTAIN_HIDD_BM(CR->BitMap);
+			    if (bm_obj)
+			    {
+				pixwritten += render_func(funcdata
+					, srcx + xoffset, srcy + yoffset
+		        		, bm_obj
+		    			, gc
+		    			, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+					, intersect.MinY - CR->bounds.MinY
+					, intersect.MaxX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX) 
+					, intersect.MaxY - CR->bounds.MinY
+					, GfxBase
+		    		);
+				
+				RELEASE_HIDD_BM(bm_obj, CR->BitMap);
+			    }
 			}
 
 		    } /* if (CR->lobs == NULL) */
@@ -287,6 +301,7 @@ ULONG do_pixel_func(struct RastPort *rp
     {
         struct ClipRect *CR;
 	LONG absx, absy;
+	OOP_Object *bm_obj;
 	
 	LockLayerRom( L );
 
@@ -310,11 +325,17 @@ ULONG do_pixel_func(struct RastPort *rp
 		{	    	    
 	            if (NULL == CR->lobs)
 		    {
-			retval = render_func(funcdata
-		    	    , HIDD_BM_OBJ(bm), gc
-			    , absx, absy
-			    , GfxBase
-			);
+		    	bm_obj = OBTAIN_HIDD_BM(bm);
+			if (bm_obj)
+			{
+			    retval = render_func(funcdata
+		    		, bm_obj, gc
+				, absx, absy
+				, GfxBase
+			    );
+			    
+			    RELEASE_HIDD_BM(bm_obj, bm);
+			}
 		    }
 		    else 
 		    {
@@ -331,12 +352,18 @@ ULONG do_pixel_func(struct RastPort *rp
 			}
 			else
 			{
-			    retval = render_func(funcdata
-				    , HIDD_BM_OBJ(CR->BitMap), gc
-				    , absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
-				    , absy - CR->bounds.MinY
-				    , GfxBase
-			    ); 
+			    bm_obj = OBTAIN_HIDD_BM(CR->BitMap);
+			    if (bm_obj)
+			    {
+				retval = render_func(funcdata
+					, bm_obj, gc
+					, absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+					, absy - CR->bounds.MinY
+					, GfxBase
+				); 
+				
+				RELEASE_HIDD_BM(bm_obj, CR->BitMap);
+			    }
 
 
 			} /* If (SMARTREFRESH cliprect) */
