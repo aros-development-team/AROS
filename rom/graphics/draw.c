@@ -144,6 +144,7 @@
 	WORD 	    	    xrel;
         WORD 	    	    yrel;
 	struct Rectangle    torender, intersect;
+	OOP_Object  	    *bm_obj;
 
 	LockLayerRom(L);
 
@@ -185,13 +186,19 @@
 			    , intersect.MaxY
 			);
 
-			HIDD_BM_DrawLine(HIDD_BM_OBJ(bm)
-		    	    , gc
-			    , x1 + xrel
-			    , y1 + yrel
-			    , x + xrel
-			    , y + yrel
-			);
+    	    	    	bm_obj = OBTAIN_HIDD_BM(bm);
+			if (bm_obj)
+			{
+			    HIDD_BM_DrawLine(bm_obj
+		    		, gc
+				, x1 + xrel
+				, y1 + yrel
+				, x + xrel
+				, y + yrel
+			    );
+			    
+			    RELEASE_HIDD_BM(bm_obj, bm);
+			}
 
 			HIDD_GC_UnsetClipRect(gc);
 
@@ -226,14 +233,19 @@
 				    , bm_rel_maxy
 			    );
 
-			    HIDD_BM_DrawLine(HIDD_BM_OBJ(CR->BitMap)
-				    , gc
-				    , bm_rel_minx - (layer_rel_x - x1) + ALIGN_OFFSET(CR->bounds.MinX)
-				    , bm_rel_miny - (layer_rel_y - y1)
-				    , bm_rel_minx - (layer_rel_x - x) + ALIGN_OFFSET(CR->bounds.MinX)
-				    , bm_rel_miny - (layer_rel_y - y)
-			    );
-
+    	    	    	    bm_obj = OBTAIN_HIDD_BM(CR->BitMap);
+			    if (bm_obj)
+			    {
+				HIDD_BM_DrawLine(bm_obj
+					, gc
+					, bm_rel_minx - (layer_rel_x - x1) + ALIGN_OFFSET(CR->bounds.MinX)
+					, bm_rel_miny - (layer_rel_y - y1)
+					, bm_rel_minx - (layer_rel_x - x) + ALIGN_OFFSET(CR->bounds.MinX)
+					, bm_rel_miny - (layer_rel_y - y)
+				);
+				
+				RELEASE_HIDD_BM(bm_obj, CR->BitMap);
+    	    	    	    }
 			    HIDD_GC_UnsetClipRect(gc);
 			}
 

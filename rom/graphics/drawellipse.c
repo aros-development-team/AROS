@@ -102,6 +102,7 @@
 	WORD 	    	    xrel;
         WORD 	    	    yrel;
 	struct Rectangle    torender, intersect;
+	OOP_Object  	    *bm_obj;
 	
 	LockLayerRom(L);
 	
@@ -154,14 +155,20 @@
 			    , intersect.MaxY
 			);
 
-			HIDD_BM_DrawEllipse(HIDD_BM_OBJ(bm)
-		    	    , gc
-			    , xCenter + xrel
-			    , yCenter + yrel
-			    , a
-			    , b
-			);
-
+    	    	    	bm_obj = OBTAIN_HIDD_BM(bm);			
+			if (bm_obj)
+			{
+			    HIDD_BM_DrawEllipse(bm_obj
+		    		, gc
+				, xCenter + xrel
+				, yCenter + yrel
+				, a
+				, b
+			    );
+			    
+    	    	    	    RELEASE_HIDD_BM(bm_obj, bm);			    
+    	    	    	}
+			
 			HIDD_GC_UnsetClipRect(gc);
 
 
@@ -195,15 +202,20 @@
 				    , bm_rel_maxy
 			    );
 
-			    HIDD_BM_DrawEllipse(HIDD_BM_OBJ(CR->BitMap)
-				    , gc
-				    , bm_rel_minx - (layer_rel_x - xCenter) + ALIGN_OFFSET(CR->bounds.MinX)
-				    , bm_rel_miny - (layer_rel_y - yCenter)
-				    , a
-				    , b
-			    );
+    	    	    	    bm_obj = OBTAIN_HIDD_BM(CR->BitMap);
+			    if (bm_obj)
+			    {	
+				HIDD_BM_DrawEllipse(bm_obj
+					, gc
+					, bm_rel_minx - (layer_rel_x - xCenter) + ALIGN_OFFSET(CR->bounds.MinX)
+					, bm_rel_miny - (layer_rel_y - yCenter)
+					, a
+					, b
+				);
 
-
+    	    	    	    	RELEASE_HIDD_BM(bm_obj, CR->BitMap);
+			    }
+			    
 			    HIDD_GC_UnsetClipRect(gc);
 			}
 
