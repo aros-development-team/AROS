@@ -122,7 +122,10 @@ void _CallLayerHook(struct Hook * h,
 {
   struct BitMap * bm = rp->BitMap;
 
-  if (IL(L)->intflags & INTFLAG_AVOID_BACKFILL) return;
+  if (L)
+  {
+    if (IL(L)->intflags & INTFLAG_AVOID_BACKFILL) return;
+  }
   
   if (h == LAYERS_BACKFILL)
   {
