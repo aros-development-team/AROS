@@ -749,7 +749,7 @@ STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct Diskfont
 	
 	if (reqattr==NULL || FilePart(reqattr->tta_Name)==reqattr->tta_Name)
 	{
-	    struct DevProc *dp = NULL, *dp2;
+	    struct DevProc *dp = NULL;
 	    struct MinList newdirlist;
 
 	    df_data->Type = DF_FONTSDATA;
@@ -783,18 +783,17 @@ STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct Diskfont
 #endif
 
 	    NEWLIST(&newdirlist);
-	    while((dp2 = GetDeviceProc(FONTSDIR, dp))!=NULL)
+	    while((dp = GetDeviceProc(FONTSDIR, dp))!=NULL)
 	    {
 		struct DirEntry *direntry, *direntry2;
 		BPTR lock;
 	    
 		D(bug("AllocResources: FONTS: lock = 0x%lx\n", dp2->dvp_Lock));
 	    
-		lock = DupLock(dp2->dvp_Lock);
+		lock = DupLock(dp->dvp_Lock);
 		if (lock==NULL)
 		{
 		    D(bug("AllocResources: Could not duplicate lock\n"));
-		    dp = dp2;
 		    continue;
 		}
 
@@ -834,7 +833,6 @@ STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct Diskfont
 		    REMOVE(direntry);
 		    ADDTAIL(&DiskfontBase->fontsdirentrylist, direntry);
 		}
-		dp = dp2;
 	    }
 	    FreeDeviceProc(dp);
 	}
@@ -846,7 +844,7 @@ STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct Diskfont
 	    fdh = ReadFontDescr(reqattr->tta_Name, DiskfontBase);
 	    df_data->u.FileData.FDH = fdh;
 	    
-	    if (fdh != NULL);
+	    if (fdh != NULL)
 	    {
 		if (fdh->ContentsID==OFCH_ID)
 		{
