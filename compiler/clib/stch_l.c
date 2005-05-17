@@ -6,6 +6,7 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 /*****************************************************************************
 
@@ -26,7 +27,7 @@
 	lvalue - Pointer to long where the result is saved 
 
     RESULT
-	1 means success. 0 means failure.
+	Number of characters converted
 
     NOTES
 	SAS C specific
@@ -41,5 +42,10 @@
 
 ******************************************************************************/
 {
-    return sscanf(in, "%lx", lvalue);   
+    char *endptr;
+    
+    *lvalue = strtoul(in, &endptr, 16);
+    
+    return endptr - in;
+    
 } /* stch_l */
