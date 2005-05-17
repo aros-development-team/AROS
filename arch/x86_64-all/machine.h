@@ -83,7 +83,7 @@ struct JumpVec
 
 */
 
-#define STUBCODE                                       \
+#define STUBCODE_INIT                                  \
 		"#define EMITSTUB(fname, bname, vec) " \
 		".weak fname ; "                       \
 		"fname : "                             \
@@ -92,7 +92,7 @@ struct JumpVec
 	        "#define EMITALIAS(fname, alias) "     \
 	        ".weak alias; .set alias, fname\n"
 #define STUBCODE                                       \
-		"EMITSTUB(%s, %s, %d) "
+		"EMITSTUB(%s, %s, %d)\n"
 #define ALIASCODE                                      \
                 "EMITALIAS(%s, %s)\n"
 
