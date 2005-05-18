@@ -22,6 +22,7 @@
 
 /****************************************************************************************/
 
+#define DEBUG 1
 #include <aros/debug.h>
 
 /****************************************************************************************/
@@ -278,7 +279,8 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
 	}
 
     }
-    else
+    
+    if (chardata_ptr) /* CHECKME: check necessary? Do also colorfonts always have this? */
     {
     	D(bug("B&W font\t Chardatasize: %d\n", chardatasize));
 
