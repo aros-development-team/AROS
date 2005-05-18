@@ -130,7 +130,7 @@ static void openfont(void)
 	printf("  name %p (%s)\n", dfh->dfh_DF.ln_Name, dfh->dfh_DF.ln_Name);
 	printf("  FileID %x\n", dfh->dfh_FileID);
 	printf("  Revision %x\n", dfh->dfh_Revision);
-	printf("  Segment  %lx\n", dfh->dfh_Segment);
+	printf("  Segment  %p\n", dfh->dfh_Segment);
 	printf("  Name %p (%s)\n", dfh->dfh_Name, dfh->dfh_Name);
     }
     
@@ -152,7 +152,7 @@ static void openfont(void)
 	LONG dpivalue;
 	
 	printf("  taglist:\n");
-	while((tag = NextTagItem(&tstate)))
+	while((tag = NextTagItem((const struct TagItem **)&tstate)))
 	{
 	    printf("    {0x%08lx,0x%08lx}\n", tag->ti_Tag, tag->ti_Data);
 	}
@@ -279,7 +279,7 @@ static void showfont(void)
 				   WA_DragBar, TRUE,
 				   WA_DepthGadget, TRUE,
 				   WA_Activate, TRUE,
-				   WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_RAWKEY,
+				   WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY,
 				   WA_Title, (ULONG)"FontInfo",
 				   TAG_DONE);
 				   
