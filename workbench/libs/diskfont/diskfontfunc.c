@@ -788,7 +788,7 @@ STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct Diskfont
 		struct DirEntry *direntry, *direntry2;
 		BPTR lock;
 	    
-		D(bug("AllocResources: FONTS: lock = 0x%lx\n", dp2->dvp_Lock));
+		D(bug("AllocResources: FONTS: lock = 0x%lx\n", dp->dvp_Lock));
 	    
 		lock = DupLock(dp->dvp_Lock);
 		if (lock==NULL)
@@ -1056,9 +1056,14 @@ struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *
 	    df_data->u.FileData.LastAttr->tta_Name = df_data->u.FileData.OrigName;
 	    df_data->u.FileData.LastAttr = NULL;
 	}
+
+	/* Do not return the best-match attribute if it is not an outline font! */
 	
 	if (df_data->u.FileData.FDH==NULL
-	    || df_data->u.FileData.AttrsIndex > df_data->u.FileData.FDH->NumEntries)
+	    || df_data->u.FileData.AttrsIndex > df_data->u.FileData.FDH->NumEntries
+	    || (df_data->u.FileData.FDH->ContentsID != OFCH_ID &&
+	        df_data->u.FileData.AttrsIndex == df_data->u.FileData.FDH->NumEntries))
+		
 	    ReturnPtr("DF_IteratorGetNext", struct TTextAttr *, NULL);
 
 	/* Get the TextAttr the iterator is pointing to
@@ -1079,14 +1084,6 @@ struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *
 	 */
 	df_data->u.FileData.AttrsIndex++;
 
-	/* Do not return the best-match attribute if it is not an outline font,
-	 * this is done by increasing the AttrsIndex once more
-	 */
-	if (df_data->u.FileData.FDH->ContentsID != OFCH_ID
-	    && df_data->u.FileData.AttrsIndex == df_data->u.FileData.FDH->NumEntries)
-	{
-	    df_data->u.FileData.AttrsIndex++;
-	}
 	break;
     }
 
@@ -1301,12 +1298,9 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase_inte
 /****************************************************************************************/
 
 VOID DF_IteratorFree(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
-{
+{    
     struct DF_Data *df_data = (struct DF_Data *)iterator;
 
-    if (df_data->Type == DF_FILEDATA && df_data->u.FileData.LastAttr != NULL)
-	df_data->u.FileData.LastAttr->tta_Name = df_data->u.FileData.OrigName;
-    
     FreeResources(df_data, DiskfontBase);
 }
 
