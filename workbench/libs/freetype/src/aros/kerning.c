@@ -107,7 +107,13 @@ struct MinList *GetWidthList(FT_GlyphEngine *ge)
 	{
 	    //FT_Get_Glyph_Metrics( ge->glyph, &ge->metrics );
 	    metrics = &ge->face->glyph->metrics;
+
+    	#if 0	    
 	    howwide=((metrics->horiAdvance)<<16)/units_per_em;
+	#else
+    	    howwide = (metrics->horiAdvance << 10) /
+	    	      (( ge->face->size->metrics.x_ppem * units_per_em) / ge->face->units_per_EM);
+	#endif
 	}
 
 	node = AllocMem(sizeof(struct GlyphWidthEntry), MEMF_CLEAR);
