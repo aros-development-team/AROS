@@ -1,5 +1,8 @@
 #   $Id: mmakefile.src 22082 2004-08-23 06:42:38Z NicJA $
 include $(TOP)/config/make.cfg
 
-#MM- workbench-classes-zune-texteditor:  workbench-classes-zune-texteditor-class  workbench-classes-zune-texteditor-mcp
+#MM- workbench-classes-zune : workbench-classes-zune-texteditor
 
+#MM- workbench-classes-zune-texteditor : workbench-classes-zune-betterstring \
+#MM					 workbench-classes-zune-texteditor-class \
+#MM					 workbench-classes-zune-texteditor-mcp
