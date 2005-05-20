@@ -61,8 +61,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* If we have native support for 32 * 32 -> 32, use that. */
-    return arg1 * arg2;
+    /* If we have native support for 32 * 32 -> 64, use that. */
+    return (UQUAD)arg1 * arg2;
 
 
 #if 0
