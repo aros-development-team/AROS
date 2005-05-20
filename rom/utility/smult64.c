@@ -72,7 +72,7 @@
        natively (GNU C can)
      */
 
-    return arg1 * arg2;
+    return (QUAD)arg1 * arg2;
 
 #if 0
     /* This is partially the algoritm that is used, however for a
