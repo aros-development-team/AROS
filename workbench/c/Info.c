@@ -865,9 +865,9 @@ void doInfo()
 
 ULONG ComputeKBytes(ULONG a, ULONG b)
 {
-    //    QUAD result = UMult64(a, b);
+    // UQUAD result = UMult64(a, b);
 
-    AROS_64BIT_TYPE result = (AROS_64BIT_TYPE)a * b;
+    UQUAD result = (UQUAD)a * b;
 
     return (ULONG)(result >> 10);
 }
