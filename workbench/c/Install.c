@@ -56,13 +56,13 @@ int readwriteBlock
 		ULONG command
 	)
 {
-QUAD offset;
+UQUAD offset;
 ULONG retval;
 
 	volume->iotd->iotd_Req.io_Command = command;
 	volume->iotd->iotd_Req.io_Length = length;
 	volume->iotd->iotd_Req.io_Data = buffer;
-	offset = (volume->startblock+block)*(volume->SizeBlock*4);
+	offset = (UQUAD)(volume->startblock+block)*(volume->SizeBlock*4);
 	volume->iotd->iotd_Req.io_Offset = offset & 0xFFFFFFFF;
 	volume->iotd->iotd_Req.io_Actual = offset>>32;
 	retval = DoIO((struct IORequest *)&volume->iotd->iotd_Req);
