@@ -114,7 +114,7 @@ struct IOExtTD *ioreq;
 #ifdef __AMIGAOS__
 ULONG lo, hi;
 #else
-QUAD offset;
+UQUAD offset;
 #endif
 
     ioreq = ph->bd->ioreq;
@@ -130,7 +130,7 @@ QUAD offset;
     ioreq->iotd_Req.io_Offset = lo+(hi<<16); /* compose first low 32 bit */
     ioreq->iotd_Req.io_Actual = hi>>16; /* high 32 bits (at least until bit 48 */
 #else
-    offset=(getStartBlock(ph)+block)*(ph->de.de_SizeBlock<<2);
+    offset=(UQUAD)(getStartBlock(ph)+block)*(ph->de.de_SizeBlock<<2);
     ioreq->iotd_Req.io_Offset=0xFFFFFFFF & offset;
     ioreq->iotd_Req.io_Actual=offset>>32;
 #endif
@@ -153,7 +153,7 @@ struct IOExtTD *ioreq;
 #ifdef __AMIGAOS__
 ULONG lo, hi;
 #else
-QUAD offset;
+UQUAD offset;
 #endif
 
     ioreq = ph->bd->ioreq;
@@ -169,7 +169,7 @@ QUAD offset;
     ioreq->iotd_Req.io_Offset = lo+(hi<<16); /* compose first low 32 bit */
     ioreq->iotd_Req.io_Actual = hi>>16; /* high 32 bits (at least until bit 48 */
 #else
-    offset=(getStartBlock(ph)+block)*(ph->de.de_SizeBlock<<2);
+    offset=(UQUAD)(getStartBlock(ph)+block)*(ph->de.de_SizeBlock<<2);
     ioreq->iotd_Req.io_Offset=0xFFFFFFFF & offset;
     ioreq->iotd_Req.io_Actual=offset>>32;
 #endif
