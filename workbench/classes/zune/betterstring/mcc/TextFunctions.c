@@ -16,14 +16,11 @@
 
  BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
 
- $Id: TextFunctions.c,v 1.1 2005/04/21 20:52:04 damato Exp $
+ $Id: TextFunctions.c,v 1.3 2005/05/18 23:22:28 damato Exp $
 
 ***************************************************************************/
 
-#include <proto/diskfont.h>
-#include <proto/graphics.h>
 #include <graphics/text.h>
-#include <graphics/rastport.h>
 
 #include "SDI_compiler.h"
 
@@ -32,51 +29,67 @@ long MyTextLength(struct TextFont *font, char *text, long length)
   register UWORD    stringlength = 0;
   register short    *spacing;
   register short    *kerning;
+  long res = 0;
 
-  if(font->tf_Flags & FPF_PROPORTIONAL)
+  if(length > 0)
   {
-    register unsigned char  current;
-
-    spacing = (short *)font->tf_CharSpace - font->tf_LoChar;
-    kerning = (short *)font->tf_CharKern - font->tf_LoChar;
-    length++;
-
-    while (--length)
+    if(font->tf_Flags & FPF_PROPORTIONAL)
     {
-      current = *text++;
-      stringlength += *(spacing+current) + *(kerning+current);
+      register unsigned char  current;
+
+      spacing = (short *)font->tf_CharSpace - font->tf_LoChar;
+      kerning = (short *)font->tf_CharKern - font->tf_LoChar;
+      length++;
+
+      while(--length > 0)
+      {
+        current = *text++;
+        stringlength += *(spacing+current) + *(kerning+current);
+      }
+
+      res = stringlength;
     }
-    return(stringlength);
+    else
+      res = length*font->tf_XSize;
   }
-  else  return (length * font->tf_XSize);
+
+  return res;
 }
 
 long MyTextFit(struct TextFont *font, char *text, long length, long width, UNUSED long direction)
 {
-  register int    stringlength = 0;
-  register UWORD    charsthatfit = length;
-  register short    *spacing;
-  register short    *kerning;
+  register int  stringlength = 0;
+  register UWORD charsthatfit = length;
+  register short *spacing;
+  register short *kerning;
+  long res = 0;
 
-  if(font->tf_Flags & FPF_PROPORTIONAL)
+  if(length > 0)
   {
-        register unsigned char  current;
-
-    spacing = (short *)font->tf_CharSpace - font->tf_LoChar;
-    kerning = (short *)font->tf_CharKern - font->tf_LoChar;
-    length++;
-
-    while ((stringlength < width) && (--length))
+    if(font->tf_Flags & FPF_PROPORTIONAL)
     {
-      current = *text++;
-      stringlength += *(spacing+current) + *(kerning+current);
+      register unsigned char current;
+
+      spacing = (short *)font->tf_CharSpace - font->tf_LoChar;
+      kerning = (short *)font->tf_CharKern - font->tf_LoChar;
+      length++;
+
+      while((stringlength < width) && (--length) > 0)
+      {
+        current = *text++;
+        stringlength += *(spacing+current) + *(kerning+current);
+      }
+
+      res = charsthatfit-length;
     }
-    return(charsthatfit-length);
+    else
+    {
+      if((width / font->tf_XSize) < length)
+        res = width / font->tf_XSize;
+      else
+        res = length;
+    }
   }
-  else
-  {
-    if ((width / font->tf_XSize) < length)
-        return (width / font->tf_XSize);
-    else  return (length);
-  }
+
+  return res;
 }
