@@ -39,10 +39,9 @@ struct TagItem tags[2];
 		printf
 		(
 			"size: %lld\n",
-			(QUAD)
 			(
-				(de.de_HighCyl-de.de_LowCyl+1)*
-				de.de_Surfaces*de.de_BlocksPerTrack*(de.de_SizeBlock<<2)
+				(QUAD)(de.de_HighCyl-de.de_LowCyl+1)*de.de_Surfaces*
+				(QUAD)de.de_BlocksPerTrack*(de.de_SizeBlock<<2)
 			)
 		);
 	}
