@@ -8,6 +8,9 @@
 
 #define DEBUG 1
 
+#include <string.h>
+#include <ctype.h>
+
 #include <exec/alerts.h>
 #include <aros/asmcall.h>
 #include <exec/lists.h>
@@ -28,9 +31,6 @@
 #include <aros/debug.h>
 #endif
 #include <aros/macros.h>
-
-#include <string.h>
-#include <ctype.h>
 
 #define BOOT_CHECK 0
 
