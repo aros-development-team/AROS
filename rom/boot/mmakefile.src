@@ -7,10 +7,16 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-boot : includes linklibs
 
-FILES := strap
+# The next is a hack so the AROS ctype is used on native platforms
+# This should be removed when a proper kernel compiler is present
+ifeq ($(AROS_TARGET_ARCH),pc)
+    USER_CFLAGS := -I$(AROS_INCLUDES)
+else
+    USER_CFLAGS := -I$(SYS_INCLUDES) -I$(GENINCDIR)
+endif
 
 %build_module_macro mmake=kernel-boot \
   modname=boot modtype=library \
-  initfile=strap
+  initfile=strap compiler=host
 
 %common
