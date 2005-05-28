@@ -137,6 +137,7 @@ void readref(struct config *cfg, struct functions *functions)
 		    /* for libcall == STACK the whole argument is the type
 		     * otherwise split the argument in type and name
 		     */
+#if 0
 		    if (parseinfo.currentfunc->libcall != STACK)
 		    {
 			/* Count the [] specification at the end of the argument */
@@ -173,18 +174,13 @@ void readref(struct config *cfg, struct functions *functions)
 			}
 			*end='\0';
 		    }
-
-		    if (strcasecmp(begin, "void")==0)
-		    {
-			if (parseinfo.currentfunc->libcall != STACK)
-			    free(name);
-		    }
-		    else
+#endif
+		    if (strcasecmp(begin, "void")!=0)
 		    {
 			switch (parseinfo.currentfunc->libcall)
 			{
 			case STACK:
-			    funcaddarg(parseinfo.currentfunc, NULL, begin, NULL);
+			    funcaddarg(parseinfo.currentfunc, begin, NULL);
 			    break;
 			case REGISTER:
 			    if (parseinfo.currreg == NULL)
@@ -195,20 +191,20 @@ void readref(struct config *cfg, struct functions *functions)
 				);
 				exit(20);
 			    }
-			    funcaddarg(parseinfo.currentfunc, name, begin,
-				       parseinfo.currreg->s
-			    );
+			    funcaddarg(parseinfo.currentfunc, begin, parseinfo.currreg->s);
 			    parseinfo.currreg = parseinfo.currreg->next;
 			    break;
 			case REGISTERMACRO:
 			    {
-				char *reg = name + strlen(name) - 1;
-				while (reg != name && *reg != '_') reg--;
+				char *reg = begin + strlen(begin) - 1;
+				while (reg != begin && *reg != '_') reg--;
 		
+				assert(reg > begin);
+				
 				*reg = '\0';
 				reg++;
 
-				funcaddarg(parseinfo.currentfunc, name, begin, reg);
+				funcaddarg(parseinfo.currentfunc, begin, reg);
 			    }
 			    break;
 			default:
@@ -264,7 +260,7 @@ void readref(struct config *cfg, struct functions *functions)
         struct functionhead *function = newfunctionhead("MCC_Query", REGISTERMACRO);
 	function->lvo = cfg->firstlvo - 1;
 	function->type = "IPTR";
-	funcaddarg(function, "what", "LONG", "D0");
+	funcaddarg(function, "LONG what", "D0");
 
         function->next = functions->funclist;
         functions->funclist = function;

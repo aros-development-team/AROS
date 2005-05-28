@@ -22,7 +22,7 @@ GENMODULEINCLUDE := $(dir $(GENMODULE))/genmod_inc/aros/libcall.h
 $(GENMODULE) : $(GENMODULE_DEPS) $(GENMODULEINCLUDE)
 	@$(MECHO) "Compiling $(notdir $@)..."
 	@$(HOST_CC) -g $(HOST_CFLAGS) -I$(GENINCDIR) $(GENMODULE_SRCS) -o $@
-	@$(HOST_STRIP) $@
+#	@$(HOST_STRIP) $@
 
 $(GENMODULEINCLUDE) : include/aros/libcall.h
 	@$(MKDIR) $(dir $@)

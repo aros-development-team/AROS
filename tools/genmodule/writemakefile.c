@@ -98,6 +98,11 @@ void writemakefile(struct config *cfg)
 	fprintf(out, "Internal error writemakefile: unhandled modtype for includes\n");
 	break;
     }
+
+    fprintf(out,
+	    "%s_NEEDREF := %s\n",
+	    cfg->modulename, (cfg->intcfg & CFG_NOREADREF) ? "no" : "yes"
+    );
     
     if (ferror(out))
     {

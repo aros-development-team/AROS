@@ -598,7 +598,8 @@ writefunctable(FILE *out,
     struct functionarg *arglistit;
     unsigned int lvo;
     int i;
-
+    char *name, *type;
+    
     for (funclistit = functions->funclist; funclistit != NULL; funclistit = funclistit->next)
     {
 	switch (funclistit->libcall)
@@ -612,7 +613,7 @@ writefunctable(FILE *out,
 	    {
 		if (arglistit!=funclistit->arguments)
 		    fprintf(out, ", ");
-		fprintf(out, "%s", arglistit->type);
+		fprintf(out, "%s", arglistit->arg);
 	    }
 	    fprintf(out, ");\n");
 	    break;
@@ -626,7 +627,7 @@ writefunctable(FILE *out,
 	    {
 		if (arglistit!=funclistit->arguments)
 		    fprintf(out, ", ");
-		fprintf(out, "%s %s", arglistit->type, arglistit->name);
+		fprintf(out, "%s", arglistit->arg);
 	    }
 	    fprintf(out,
 		    ");\nAROS_LH%d(%s, %s,\n",
@@ -637,10 +638,16 @@ writefunctable(FILE *out,
 		 arglistit = arglistit->next
 	    )
 	    {
+		type = getargtype(arglistit);
+		name = getargname(arglistit);
+		assert(name != NULL && type != NULL);
+		
 		fprintf(out,
 			"         AROS_LHA(%s, %s, %s),\n",
-			arglistit->type, arglistit->name, arglistit->reg
+			type, name, arglistit->reg
 		);
+		free(type);
+		free(name);
 	    }
 	    fprintf(out,
 		    "         %s, %s, %u, %s)\n"
@@ -655,9 +662,13 @@ writefunctable(FILE *out,
 		 arglistit = arglistit->next
 	    )
 	    {
+		name = getargname(arglistit);
+		assert(name != NULL);
+		
 		if (arglistit!=funclistit->arguments)
 		    fprintf(out, ", ");
-		fprintf(out, "%s", arglistit->name);
+		fprintf(out, "%s", name);
+		free(name);
 	    }
 	    fprintf(out,
 		    ");\n\n"
@@ -675,10 +686,16 @@ writefunctable(FILE *out,
 		 arglistit = arglistit->next
 	    )
 	    {
+		type = getargtype(arglistit);
+		name = getargname(arglistit);
+		assert(type != NULL && name != NULL);
+		
 		fprintf(out,
 			"         AROS_LDA(%s, %s, %s),\n",
-			arglistit->type, arglistit->name, arglistit->reg
+			type, name, arglistit->reg
 		);
+		free(type);
+		free(name);
 	    }
 	    fprintf(out,
 		    "         LIBBASETYPEPTR, %s, %u, %s\n"

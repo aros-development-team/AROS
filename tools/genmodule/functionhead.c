@@ -4,6 +4,7 @@
     
     The code for storing information of functions present in the module
 */
+#include <string.h>
 #include "functionhead.h"
 
 struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
@@ -33,7 +34,7 @@ struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
 struct functionarg *funcaddarg
 (
     struct functionhead *funchead,
-    const char *name, const char *type, const char *reg
+    const char *arg, const char *reg
 )
 {
     struct functionarg **argptr = &funchead->arguments;
@@ -44,8 +45,7 @@ struct functionarg *funcaddarg
     if (*argptr != NULL)
     {
 	(*argptr)->next = NULL;
-	(*argptr)->name = (name == NULL) ? NULL : strdup(name);
-	(*argptr)->type = (type == NULL) ? NULL : strdup(type);
+	(*argptr)->arg  = (arg == NULL) ? NULL : strdup(arg);
 	(*argptr)->reg  = (reg  == NULL) ? NULL : strdup(reg);
 	
 	funchead->argcount++;
@@ -77,4 +77,75 @@ struct functions *functionsinit(void)
     functions->methlist = NULL;
     
     return functions;
+}
+
+
+char *getargtype(const struct functionarg *funcarg)
+{
+    char *s, *begin, *end;
+    unsigned int brackets = 0, i;
+
+    begin = s = strdup(funcarg->arg);
+    
+    /* Count the [] at the end of the argument */
+    end = begin+strlen(begin);
+    while (isspace(*(end-1))) end--;
+    while (*(end-1)==']')
+    {
+	brackets++;
+	end--;
+	while (isspace(*(end-1))) end--;
+	if (*(end-1)!='[')
+	{
+	    free(s);
+	    return NULL;
+	}
+	end--;
+	while (isspace(*(end-1))) end--;
+    }
+			
+    /* Skip over the argument name */
+    while (!isspace(*(end-1)) && *(end-1)!='*') end--;
+
+    /* Add * for the brackets */
+    while (isspace(*(end-1))) end--;
+    for (i=0; i<brackets; i++)
+    {
+	*end='*';
+	end++;
+    }
+    *end='\0';
+
+    return s;
+}
+
+char *getargname(const struct functionarg *funcarg)
+{
+    char *s, *begin, *end;
+    int len;
+    
+    /* Count the [] at the end of the argument */
+    end = funcarg->arg+strlen(funcarg->arg);
+    while (isspace(*(end-1))) end--;
+    while (*(end-1)==']')
+    {
+	end--;
+	while (isspace(*(end-1))) end--;
+	if (*(end-1)!='[')
+	    return NULL;
+	end--;
+	while (isspace(*(end-1))) end--;
+    }
+			
+    /* Go to the beginning of the argument name */
+    begin = end;
+    while (!isspace(*(begin-1)) && *(begin-1)!='*') begin--;
+
+    /* Copy the name */
+    len = end - begin;
+    s = malloc(len+1);
+    strncpy(s, begin, len);
+    s[len] = '\0';
+
+    return s;
 }
