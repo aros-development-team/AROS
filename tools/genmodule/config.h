@@ -10,6 +10,7 @@
 
 #include <assert.h>
 
+#include "functionhead.h"
 #include "stringlist.h"
 
 enum command { CMD_UNSPECIFIED, DUMMY, FILES, LIBDEFS, INCLUDES, MAKEFILE };
@@ -26,11 +27,12 @@ enum optionflags
     OPTION_NORESIDENT = 1<<BIT_NORESIDENT,
     OPTION_DUPBASE = 1<<BIT_DUPBASE
 };
-enum intcfgbit { BIT_GENASTUBS, BIT_GENLINKLIB };
+enum intcfgbit { BIT_GENASTUBS, BIT_GENLINKLIB, BIT_NOREADREF };
 enum intcfgflags
 {
     CFG_GENASTUBS = 1<<BIT_GENASTUBS,
-    CFG_GENLINKLIB = 1<<BIT_GENLINKLIB
+    CFG_GENLINKLIB = 1<<BIT_GENLINKLIB,
+    CFG_NOREADREF = 1<<BIT_NOREADREF
 };
 
 struct conffuncinfo {
@@ -107,7 +109,7 @@ struct config
 
 /* Function prototypes */
 
-struct config *initconfig(int, char **);
+struct config *initconfig(int, char **, struct functions *);
 
 const char* getBanner(struct config* config);
 

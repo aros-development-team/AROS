@@ -90,7 +90,7 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
             else
                 first = 0;
             
-            fprintf(out, "%s", arglistit->type);
+            fprintf(out, "%s", arglistit->arg);
         }
         
         fprintf(out, ");\n");

@@ -37,6 +37,8 @@ void writeincclib(struct config *cfg, struct functions *functions)
 	fprintf(out, "%s\n", linelistit->s);
     if (cfg->command!=DUMMY)
     {
+	char *type, *name;
+	
 	for (funclistit = functions->funclist;
 	     funclistit!=NULL;
 	     funclistit = funclistit->next
@@ -57,10 +59,15 @@ void writeincclib(struct config *cfg, struct functions *functions)
 		     arglistit = arglistit->next
 		)
 		{
+		    type = getargtype(arglistit);
+		    name = getargname(arglistit);
+		    assert(type != NULL && name != NULL);
 		    fprintf(out,
 			    "        AROS_LPA(%s, %s, %s),\n",
-			    arglistit->type, arglistit->name, arglistit->reg
+			    type, name, arglistit->reg
 		    );
+		    free(type);
+		    free(name);
 		}
 
 		fprintf(out,

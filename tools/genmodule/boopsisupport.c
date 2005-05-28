@@ -7,16 +7,6 @@
 #include "config.h"
 #include "functionhead.h"
 
-/* gettype remove the variable name from a variable definition and leave return
- * the type of the variable
- * [] at the end will be added as * in the variable type
- * e.g. char *var[] => type: char **, name: var
- * This is a destructive function and will change to string pointed to by def
- * to only contain the type afterwards.
- * Function return 0 when it did not understand the input, 1 otherwise
- */
-static int gettype(char *def);
-
 void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *functions)
 {
     struct functionhead *methlistit;
@@ -62,12 +52,12 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
             fprintf(out, "CLASS, ");
 
             arglistit = arglistit->next;
-	    type = strdup(arglistit->type);
-	    if (!gettype(type))
+	    type = getargtype(arglistit);
+	    if (type == NULL)
 	    {
 		fprintf(stderr,
 			"Argument \"%s\" not understood for function %s\n",
-			arglistit->type, methlistit->name
+			arglistit->arg, methlistit->name
 		);
 		exit(20);
 	    }
@@ -75,12 +65,12 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
 	    free(type);
 	    
             arglistit = arglistit->next;
-	    type = strdup(arglistit->type);
-	    if (!gettype(type))
+	    type = getargtype(arglistit);
+	    if (type == NULL)
 	    {
 		fprintf(stderr,
 			"Argument \"%s\" not understood for function %s\n",
-			arglistit->type, methlistit->name
+			arglistit->arg, methlistit->name
 		);
 		exit(20);
 	    }
@@ -180,7 +170,7 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
             else
                 first = 0;
             
-            fprintf(out, "%s", arglistit->type);
+            fprintf(out, "%s", arglistit->arg);
         }
         
         fprintf(out, ");\n");
@@ -248,36 +238,3 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
     );
 }
 
-static int gettype(char *def)
-{
-    char *begin = def, *end;
-    unsigned int brackets = 0, i;
-		
-    /* Count the [] at the end of the argument */
-    end = begin+strlen(begin);
-    while (isspace(*(end-1))) end--;
-    while (*(end-1)==']')
-    {
-	brackets++;
-	end--;
-	while (isspace(*(end-1))) end--;
-	if (*(end-1)!='[')
-	    return 0;
-	end--;
-	while (isspace(*(end-1))) end--;
-    }
-			
-    /* Skip over the argument name */
-    while (!isspace(*(end-1)) && *(end-1)!='*') end--;
-
-    /* Add * for the brackets */
-    while (isspace(*(end-1))) end--;
-    for (i=0; i<brackets; i++)
-    {
-	*end='*';
-	end++;
-    }
-    *end='\0';
-
-    return 1;
-}

@@ -10,12 +10,13 @@ int main(int argc, char **argv)
 {
     char *s;
     struct functions *functions = functionsinit();
-    struct config *cfg = initconfig(argc, argv);
+    struct config *cfg = initconfig(argc, argv, functions);
 
     switch (cfg->command)
     {
     case FILES:
-	readref(cfg, functions);
+	if (!(cfg->intcfg & CFG_NOREADREF))
+	    readref(cfg, functions);
 	writestart(cfg, functions);
 	writeend(cfg);
 	if (cfg->modtype == LIBRARY)
@@ -24,7 +25,8 @@ int main(int argc, char **argv)
 	break;
 	
     case INCLUDES:
-	readref(cfg, functions);
+	if (!(cfg->intcfg & CFG_NOREADREF))
+	    readref(cfg, functions);
 	/* fall through */
     case DUMMY:
         writeincproto(cfg);

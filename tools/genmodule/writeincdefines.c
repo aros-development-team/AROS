@@ -76,33 +76,38 @@ void
 writedefineregister(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
     struct functionarg *arglistit;
+    int count;
+    char *type;
     
     fprintf(out,
 	    "\n"
 	    "#define __%s_WB(__%s",
 	    funclistit->name, cfg->libbase
     );
-    for (arglistit = funclistit->arguments;
+    for (arglistit = funclistit->arguments, count = 1;
 	 arglistit!=NULL;
-	 arglistit = arglistit->next
+	 arglistit = arglistit->next, count++
     )
     {
-	fprintf(out, ", __%s", arglistit->name);
+	fprintf(out, ", __arg%d", count);
     }
     fprintf(out,
 	    ") \\\n"
 	    "        AROS_LC%d(%s, %s, \\\n",
 	    funclistit->argcount, funclistit->type, funclistit->name
     );
-    for (arglistit = funclistit->arguments;
+    for (arglistit = funclistit->arguments, count = 1;
 	 arglistit!=NULL;
-	 arglistit = arglistit->next
+	 arglistit = arglistit->next, count++
     )
     {
+	type = getargtype(arglistit);
+	assert(type != NULL);
 	fprintf(out,
-		"                  AROS_LCA(%s,(__%s),%s), \\\n",
-		arglistit->type, arglistit->name, arglistit->reg
+		"                  AROS_LCA(%s,(__arg%d),%s), \\\n",
+		type, count, arglistit->reg
 	);
+	free(type);
     }
     fprintf(out,
 	    "        %s, (__%s), %u, %s)\n\n",
@@ -110,21 +115,21 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
     );
 
     fprintf(out, "#define %s(", funclistit->name);
-    for (arglistit = funclistit->arguments;
+    for (arglistit = funclistit->arguments, count = 1;
 	 arglistit != NULL;
-	 arglistit = arglistit->next
+	 arglistit = arglistit->next, count++
     )
     {
 	if (arglistit != funclistit->arguments)
 	    fprintf(out, ", ");
-	fprintf(out, "%s", arglistit->name);
+	fprintf(out, "arg%d", count);
     }
     fprintf(out, ") \\\n    __%s_WB(%s", funclistit->name, cfg->libbase);
-    for (arglistit = funclistit->arguments;
+    for (arglistit = funclistit->arguments, count = 1;
 	 arglistit != NULL;
-	 arglistit = arglistit->next
+	 arglistit = arglistit->next, count++
     )
-	fprintf(out, ", (%s)", arglistit->name);
+	fprintf(out, ", (arg%d)", count);
     fprintf(out, ")\n");
 }
 
@@ -132,14 +137,17 @@ void
 writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
     struct functionarg *arglistit = funclistit->arguments;
-    char isvararg = 0, *varargname;
+    char isvararg = 0, *varargname, *lastname;
 	
     /* Go to last argument */
     if (arglistit == NULL)
 	return;
 	    
     while (arglistit->next != NULL) arglistit = arglistit->next;
-
+    
+    lastname = getargname(arglistit);
+    assert(lastname != NULL);
+    
     if (*(funclistit->name + strlen(funclistit->name) - 1) == 'A')
     {
 	isvararg = 1;
@@ -155,7 +163,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 	varargname[strlen(funclistit->name)-3] = '\0';
     }
     else if (strcmp(funclistit->name + strlen(funclistit->name) - 4, "Args") == 0
-	     && (strcasecmp(arglistit->name, "args") == 0 || strcasecmp(arglistit->name, "argist") == 0)
+	     && (strcasecmp(lastname, "args") == 0 || strcasecmp(lastname, "arglist") == 0)
     )
     {
 	isvararg = 1;
@@ -166,9 +174,9 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
     {
 	char *p;
 		    
-	if (strncmp(arglistit->type, "struct", 6)==0)
+	if (strncmp(arglistit->arg, "struct", 6)==0)
 	{
-	    p = arglistit->type + 6;
+	    p = arglistit->arg + 6;
 	    while (isspace(*p)) p++;
 	    if (strncmp(p, "TagItem", 7) == 0)
 	    {
@@ -187,16 +195,20 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
     }
     if (isvararg)
     {
+	int count;
+	char *type;
+	
 	fprintf(out,
 		"\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
 		"#define %s(",
-		cfg->modulenameupper, varargname);
-	for (arglistit = funclistit->arguments;
+		cfg->modulenameupper, varargname
+	);
+	for (arglistit = funclistit->arguments, count = 1;
 	     arglistit != NULL && arglistit->next != NULL;
-	     arglistit = arglistit->next
+	     arglistit = arglistit->next, count++
 	)
 	{
-	    fprintf(out, "%s, ", arglistit->name);
+	    fprintf(out, "arg%d, ", count);
 	}
 	fprintf(out,
 		"...) \\\n"
@@ -205,18 +217,23 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 		"    %s(",
 		funclistit->name
 	);
-	for (arglistit = funclistit->arguments;
+	for (arglistit = funclistit->arguments, count = 1;
 	     arglistit != NULL;
-	     arglistit = arglistit->next
+	     arglistit = arglistit->next, count++
 	)
 	{
 	    if (arglistit != funclistit->arguments)
 		fprintf(out, ", ");
 			
 	    if (arglistit->next == NULL)
-		fprintf(out, "(%s)__args", arglistit->type);
+	    {
+		type = getargtype(arglistit);
+		assert(type != NULL);
+		fprintf(out, "(%s)__args", type);
+		free(type);
+	    }
 	    else
-		fprintf(out, "(%s)", arglistit->name);
+		fprintf(out, "(arg%d)", count);
 	}
 	fprintf(out,
 		"); \\\n"
@@ -239,7 +256,7 @@ writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg)
 	 arglistit = arglistit->next
     )
     {
-	fprintf(out, "%s", arglistit->type);
+	fprintf(out, "%s", arglistit->arg);
 	if (arglistit->next != NULL)
 	    fprintf(out, ", ");
     }

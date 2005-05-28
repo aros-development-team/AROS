@@ -11,7 +11,7 @@
 void writestubs(struct config *cfg, struct functions *functions)
 {
     FILE *out, *outasm;
-    char line[256];
+    char line[256], *type, *name;
     struct functionhead *funclistit;
     struct stringlist *aliasesit;
     struct functionarg *arglistit;
@@ -45,7 +45,8 @@ void writestubs(struct config *cfg, struct functions *functions)
 	    fprintf(stderr, "Could not write %s\n", line);
 	    exit(20);
 	}
-	fprintf(outasm, "%s%s", getBanner(cfg), STUBCODE_INIT);
+	fprintf(outasm, "%s", getBanner(cfg));
+	fprintf(outasm, STUBCODE_INIT);
     }
 
     if (cfg->modtype != MCC && cfg->modtype != MUI && cfg->modtype != MCP)
@@ -82,7 +83,7 @@ void writestubs(struct config *cfg, struct functions *functions)
 		{
 		    if (arglistit != funclistit->arguments)
 			fprintf(out, ", ");
-		    fprintf(out, "%s %s", arglistit->type, arglistit->name);
+		    fprintf(out, "%s", arglistit->arg);
 		}
 		fprintf(out,
 			")\n"
@@ -94,9 +95,17 @@ void writestubs(struct config *cfg, struct functions *functions)
 		     arglistit!=NULL;
 		     arglistit = arglistit->next
 		)
+		{
+		    type = getargtype(arglistit);
+		    name = getargname(arglistit);
+		    assert(type != NULL && name != NULL);
+		    
 		    fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
-			    arglistit->type, arglistit->name, arglistit->reg
+			    type, name, arglistit->reg
 		    );
+		    free(type);
+		    free(name);
+		}
 	    
 		fprintf(out, "                    %s, %s, %u, %s);\n}\n",
 			cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename

@@ -781,14 +781,22 @@ endif
 # files and source files. This rule has to be preceeded by
 # %rule_genmodule_makefile
 %define rule_genmodule_files modname=/A modtype=/A modsuffix= targetdir= \
-    conffile= reffile=/A
+    conffile= reffile=
 
 TMP_TARGETS := $(%(modname)_STARTFILES) $(%(modname)_ENDFILES) \
 	       $(%(modname)_LINKLIBFILES)
 TMP_TARGETS := $(addsuffix .c,$(TMP_TARGETS)) $(addsuffix .S, $(%(modname)_LINKLIBAFILES))
 
-TMP_DEPS := $(GENMODULE) %(reffile)
-TMP_OPTS := -r %(reffile)
+TMP_DEPS := $(GENMODULE)
+ifeq ($(%(modname)_NEEDREF), yes)
+    ifeq (%(reffile),)
+        $(error reffile needed in rule_genmodule_files but none specified)
+    endif
+    TMP_OPTS := -r %(reffile)
+    TMP_DEPS += %(reffile)
+else
+    TMP_OPTS :=
+endif
 ifneq (%(conffile),)
     TMP_OPTS += -c %(conffile)
     TMP_DEPS += %(conffile)
@@ -824,14 +832,22 @@ endif
 # Generate the support files for compiling a module. This includes include
 # files and source files.
 %define rule_genmodule_includes modname=/A modtype=/A modsuffix= \
-    targetdir= conffile= reffile=/A
+    targetdir= conffile= reffile=
 
 
 ifneq ($(%(modname)_INCLUDES),)
 TMP_TARGETS := $(%(modname)_INCLUDES)
 
-TMP_DEPS := $(GENMODULE) %(reffile)
-TMP_OPTS := -r %(reffile)
+TMP_DEPS := $(GENMODULE)
+ifeq ($(%(modname)_NEEDREF), yes)
+    ifeq (%(reffile),)
+        $(error reffile needed in rule_genmodule_files but none specified)
+    endif
+    TMP_OPTS := -r %(reffile)
+    TMP_DEPS += %(reffile)
+else
+    TMP_OPTS :=
+endif
 ifneq (%(conffile),)
     TMP_OPTS += -c %(conffile)
     TMP_DEPS += %(conffile)

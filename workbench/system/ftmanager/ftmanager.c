@@ -22,6 +22,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
+#undef NO_INLINE_STDARG
 #include <proto/freetype2.h>
 #include <aros/debug.h>
 #include <aros/macros.h>

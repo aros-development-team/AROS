@@ -12,6 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "functionhead.h"
 #include "config.h"
 
 static char banner[256] = "\0";
@@ -39,7 +40,7 @@ const static char usage[] =
     "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs} modname modtype\n"
 ;
 
-static void readconfig(struct config *);
+static void readconfig(struct config *, struct functions *);
 static struct conffuncinfo *newconffuncinfo(const char *name, unsigned int lvo);
 
 
@@ -69,7 +70,7 @@ static const char *dtmprefix[] =
 /* Create a config struct. Initialize with the values from the programs command
  * line arguments and the contents of the modules .conf file
  */
-struct config *initconfig(int argc, char **argv)
+struct config *initconfig(int argc, char **argv, struct functions *functions)
 {
     struct config *cfg;
     char *s, **argvit = argv + 1;
@@ -271,7 +272,7 @@ struct config *initconfig(int argc, char **argv)
 	}
     }
     
-    readconfig(cfg);
+    readconfig(cfg, functions);
     
     return cfg;
 }
@@ -283,9 +284,9 @@ struct config *initconfig(int argc, char **argv)
 static void readsectionconfig(struct config *);
 static void readsectioncdef(struct config *);
 static void readsectioncdefprivate(struct config *);
-static void readsectionfunctionlist(struct config *);
+static void readsectionfunctionlist(struct config *, struct functions *);
 
-static void readconfig(struct config *cfg)
+static void readconfig(struct config *cfg, struct functions *functions)
 {
     char *line, *s, *s2;
 
@@ -342,7 +343,7 @@ static void readconfig(struct config *cfg)
 		break;
 
 	    case 4: /* functionlist */
-		readsectionfunctionlist(cfg);
+		readsectionfunctionlist(cfg, functions);
 		break;
 	    }
 	}
@@ -723,16 +724,18 @@ static void readsectioncdefprivate(struct config *cfg)
     }
 }
 
-static void readsectionfunctionlist(struct config *cfg)
+static void readsectionfunctionlist(struct config *cfg, struct functions *functions)
 {
-    int atend = 0;
+    int atend = 0, i;
     char *line, *s, *s2;
     unsigned int lvo = cfg->firstlvo;
-    struct conffuncinfo **funclistptr = &cfg->conffunclist;
+    struct functionhead **funclistptr = &functions->funclist;
     
     if (cfg->basename==NULL)
 	exitfileerror(20, "section functionlist has to come after section config\n");
 
+    cfg->intcfg |= CFG_NOREADREF;
+    
     while (!atend)
     {
 	line = readline();
@@ -830,73 +833,178 @@ static void readsectionfunctionlist(struct config *cfg)
 		slist_append(&(*funclistptr)->aliases, s2);
 		cfg->options |= CFG_GENASTUBS;
 	    }
+	    else if (strncmp(s, "cfunction", 9)==0)
+	    {
+		if (*funclistptr == NULL)
+		    exitfileerror(20, ".cfunction has to come after a function declaration\n");
+		
+		(*funclistptr)->libcall = REGISTER;
+	    }
+	    else if (strncmp(s, "private", 7)==0)
+	    {
+		if (*funclistptr == NULL)
+		    exitfileerror(20, ".private has to come after a function declaration\n");
+		
+		(*funclistptr)->priv = 1;
+	    }
 	    else
 		exitfileerror(20, "Syntax error");
 	}
-	else if (*line!='#')
+	else if (*line!='#') /* Ignore line that is a comment, e.g. that starts with a # */
 	{
-	    char *sopenbracket, *sclosebracket, *scolon;
-	    int len;
+	    /* The line is a function prototype. It can have two syntax
+	     * type funcname(argproto1, argproto2, ...)
+	     * type funcname(argproto1, argproto2, ...) (reg1, reg2, ...)
+	     * The former is for C type function argument passing, the latter for
+	     * register argument passing.
+	     */
+	    char c, *args[64], *regs[64], *funcname;
+	    int len, argcount = 0, regcount = 0, brcount = 0;
 
-	    sopenbracket = strchr(line,'(');
-	    sclosebracket = strchr(line,')');
-	    scolon = strchr(line,':');
+	    /* Parse 'type functionname' at the beginning of the line */
+	    s = strchr(line, '(');
+	    if (s == NULL)
+		exitfileerror(20, "( expected at position %d\n", strlen(line) + 1);
 	    
-	    /* Duplicate the function name */
-	    for (len = 0;
-		 line[len] != '\0' && !isspace(line[len]) && line[len] != '(';
-		 len++
-	    )
-		/*NOP*/;
-
-	    line[len] = '\0';
-
+	    s2 = s;
+	    while (isspace(*(s2-1)))
+		s2--;
+	    *s2 = '\0';
+	    
+	    while (s2 > line && !isspace(*(s2-1)) && !(*(s2-1) == '*'))
+		s2--;
+	    
+	    if (s2 == line)
+		exitfileerror(20, "No type specifier before function name\n");
+	    
 	    if (*funclistptr != NULL)
 		funclistptr = &((*funclistptr)->next);
-	    *funclistptr = newconffuncinfo(line, lvo);
+	    *funclistptr = newfunctionhead(s2, STACK);
+	    
+	    while (isspace(*(s2-1)))
+		s2--;
+	    *s2 = '\0';
+	    (*funclistptr)->type = strdup(line);
+	    (*funclistptr)->lvo = lvo;
 	    lvo++;
 
-	    /* Parse registers specifications if available */
-	    if (sopenbracket != NULL && (scolon == NULL || scolon > sopenbracket))
+	    /* Parse function prototype */
+	    s++;
+	    while (isspace(*s))
+		s++;
+	    c = *s;
+		
+	    while (c != ')')
 	    {
-		(*funclistptr)->regcount = 0;
+		while (isspace(*s))
+		    s++;
 		
-		if (sclosebracket == NULL)
-		    exitfileerror(20, "'(' without ')'");
+		args[argcount] = s;
+		argcount++;
 		
-		*sopenbracket='\0';
-		*sclosebracket='\0';
-		
-		s = sopenbracket+1;
-		while (isspace(*s)) s++;
-		while (*s!='\0')
+		while
+		(
+		    *s != '\0'
+		    && !(brcount == 0 && (*s == ',' || *s == ')'))
+		)
 		{
-		    *s = toupper(*s);
+		    if (*s == '(')
+			brcount++;
+		    if (*s == ')')
+		    {
+			if (brcount > 0)
+			    brcount--;
+			else
+			    exitfileerror(20, "Unexected ')' at position %d\n", s-line+1);
+		    }
+		    s++;
+		}
+
+		c = *s;
+		if (c == '\0')
+		    exitfileerror(20, "'(' without ')'");
+			
+		s2 = s;
+		while (isspace(*(s2-1)))
+		    s2--;
+		*s2 = '\0';
+
+		if (!(s2 > args[argcount - 1]))
+		    exitfileerror(20, "Syntax error in function prototype\n");
+
+		s++;
+	    }
+
+	    s++;
+	    while (*s != '\0' && isspace(*s))
+		s++;
+
+	    if (*s == '(')
+	    {
+		/* Parse registers specifications if available otherwise this prototype for C type argument passing */
+
+		/* There may be no register specified with () so be sure then c is == ')' */
+		s++;
+		while(isspace(*s))
+		    s++;
+		
+		c = *s;
+
+		while (c != ')')
+		{
+		    while (isspace(*s))
+			s++;
+
+		    regs[regcount] = s;
+		    regcount++;
+		    
 		    if (memchr("AD",s[0],2)!=NULL && memchr("01234567",s[1],8)!=NULL)
 		    {
-			char c = s[2];
-
-			s[2] = '\0';
-			slist_append(&(*funclistptr)->regs, s);
-			(*funclistptr)->regcount++;
-			s[2] = c;
+			s += 2;
+			c = *s;
+			*s = '\0';
 		    }
 		    else
 			exitfileerror(20,
 				      "wrong register \"%s\" for argument %u\n",
-				      s, (*funclistptr)->regcount+1
+				      regs[regcount-1], regcount
 			);
-		    
-		    s += 2;
-		    while (isspace(*s)) s++;
-		    if (*s == ',')
+
+		    while (isspace(c))
+		    {
 			s++;
-		    else if (*s != '\0')
-			exitfileerror(20, "wrong char %c at position %d\n", *s, (int)(s-line) + 1);
+			c = *s;
+		    }
+		    if (c == '\0')
+			exitfileerror(20, "'(' without ')'\n");
+		    if (c != ',' && c != ')')
+			exitfileerror(20, "',' or ')' expected at position %d\n", s-line+1);
 		    
-		    while(isspace(*s)) s++;
+		    s++;
 		}
+
+		s++;
+		while (isspace(*s)) s++;
+		if (*s!='\0')
+		    exitfileerror(20, "wrong char '%c' at position %d\n", *s, (int)(s-line) + 1);
+
+		if (argcount != regcount)
+		    exitfileerror(20, "Number of arguments (%d) and registers (%d) mismatch\n",
+				  argcount, regcount
+		    );
+
+		(*funclistptr)->libcall = REGISTERMACRO;
+		for (i = 0; i < argcount; i++)
+		    funcaddarg(*funclistptr, args[i], regs[i]);
+	    } 
+	    else if (*s == '\0')
+	    { /* No registers specified */
+		for (i = 0; i < argcount; i++)
+		    funcaddarg(*funclistptr, args[i], NULL);
+		cfg->intcfg |= CFG_GENASTUBS;
 	    }
+	    else
+		exitfileerror(20, "wrong char '%c' at position %d\n", *s, (int)(s-line) + 1);
 	}
     }
 }

@@ -18,8 +18,7 @@ enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 
 struct functionarg {
     struct functionarg *next;
-    char *type;
-    char *name;
+    char *arg;
     char *reg;
 };
 
@@ -52,9 +51,20 @@ struct functions {
 struct functionhead *newfunctionhead(const char *name, enum libcall libcall);
 struct functionarg *funcaddarg(
     struct functionhead *funchead,
-    const char *name, const char *type, const char *reg
+    const char *arg, const char *reg
 );
 struct stringlist *funcaddalias(struct functionhead *funchead, const char *alias);
+
+/* getargtype remove the variable name from a variable definition and leave return
+ * the type of the variable
+ * [] at the end will be added as * in the variable type
+ * e.g. char *var[] => type: char **, name: var
+ * This is a destructive function and will change to string pointed to by def
+ * to only contain the type afterwards.
+ * Function return 0 when it did not understand the input, 1 otherwise
+ */
+char *getargtype(const struct functionarg *funcarg);
+char *getargname(const struct functionarg *funcarg);
 
 struct functions *functionsinit(void);
 
