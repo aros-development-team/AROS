@@ -718,6 +718,93 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
 
 /****************************************************************************************/
 
+struct wtp8_render_data
+{
+    UBYTE   	   *array;
+    ULONG   	    modulo;
+    HIDDT_PixelLUT *pixlut;
+    UBYTE   	    transparent;
+};
+
+static ULONG wtp8_render(APTR wtp8r_data, LONG srcx, LONG srcy, OOP_Object *dstbm_obj,
+    	    	    	OOP_Object *dst_gc, LONG x1, LONG y1, LONG x2, LONG y2,
+			struct GfxBase *GfxBase)
+{
+    struct wtp8_render_data *wtp8rd;
+    ULONG   	    	     width, height;
+
+    wtp8rd = (struct wtp8_render_data *)wtp8r_data;
+    
+    width  = x2 - x1 + 1;
+    height = y2 - y1 + 1;
+    
+    HIDD_BM_PutTranspImageLUT(dstbm_obj
+    	, dst_gc
+	, wtp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wtp8rd->modulo)
+	, wtp8rd->modulo
+	, x1, y1
+	, width, height
+	, wtp8rd->pixlut
+	, wtp8rd->transparent
+    );
+    
+    return width * height;
+}
+/****************************************************************************************/
+
+LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
+    	    	    	   LONG xstart, LONG ystart, LONG xstop, LONG ystop,
+		    	   HIDDT_PixelLUT *pixlut, UBYTE transparent,
+			   struct GfxBase *GfxBase)
+{
+	
+    LONG pixwritten = 0;
+    
+    struct wtp8_render_data wtp8rd;
+    struct Rectangle rr;
+    
+    OOP_Object *gc;
+    HIDDT_DrawMode old_drmd;
+
+    struct TagItem gc_tags[] =
+    {
+	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
+	{ TAG_DONE, 0}
+    };
+    
+
+    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
+	return 0;
+	
+    gc = GetDriverData(rp)->dd_GC;
+    
+    OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
+    OOP_SetAttrs(gc, gc_tags);
+    
+    wtp8rd.modulo   	= modulo;
+    wtp8rd.array    	= array;
+    wtp8rd.pixlut   	= pixlut;
+    wtp8rd.transparent	= transparent;
+    
+    rr.MinX = xstart;
+    rr.MinY = ystart;
+    rr.MaxX = xstop;
+    rr.MaxY = ystop;
+    
+    pixwritten = do_render_func(rp, NULL, &rr, wtp8_render, &wtp8rd, FALSE, GfxBase);
+    
+    /* Reset to preserved drawmode */
+    gc_tags[0].ti_Data = old_drmd;
+    OOP_SetAttrs(gc, gc_tags);
+    
+    RELEASE_DRIVERDATA(rp, GfxBase);
+    
+    return pixwritten;
+
+}
+
+/****************************************************************************************/
+
 /*
 ** General functions for moving blocks of data to or from HIDDs, be it pixelarrays
 ** or bitmaps. They use a callback-function to get data from amiga/put data to amiga
