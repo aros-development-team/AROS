@@ -177,6 +177,17 @@
 		}
 	    	break;
 		
+	    case RPTAG_RemapColorFonts:
+	    	if (tag->ti_Data)
+		{
+		    rp->Flags |= RPF_REMAP_COLORFONTS;
+		}
+		else
+		{
+		    rp->Flags &= ~RPF_REMAP_COLORFONTS;
+		}
+		break;
+		
 	} /* switch (tag) */
 	
     } /* while (tag) */

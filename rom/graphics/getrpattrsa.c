@@ -61,7 +61,9 @@
 		RPTAG_ClipRectangle 	Rectangle to clip rendering to. Rectangle will
 		                        be cloned. (AROS extension)
 		RPTAG_ClipRectangleFlags See <graphics/rpattr.h> (AROS extension)
-		
+		RPTAG_RemapColorFonts   Automatically remap colorfonts to their color
+		    	    	    	on hicolor/truecolor screens.
+		       
 
     INPUTS
 	rp   = pointer to a RastPort structure
@@ -200,6 +202,10 @@
 		    *((IPTR *)tag->ti_Data) = 0;
 		}
 	    	break;
+		
+	    case RPTAG_RemapColorFonts:
+	    	*((IPTR *)tag->ti_Data) = (rp->Flags & RPF_REMAP_COLORFONTS) ? TRUE : FALSE;
+		break;
 		
 	} /* switch(tag->ti_Tag) */
 	
