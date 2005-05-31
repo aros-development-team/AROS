@@ -858,7 +858,7 @@ void blit_glyph_fast(struct RastPort *rp, OOP_Object *fontbm, WORD xsrc
 #define NUMCHARS(tf) ((tf->tf_HiChar - tf->tf_LoChar) + 2)
 #define CTF(x) ((struct ColorTextFont *)x)
 
-void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
+void driver_Text (struct RastPort * rp, CONST_STRPTR string, LONG len,
 		  struct GfxBase * GfxBase)
 {
 
@@ -866,7 +866,6 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     WORD  render_y;
     struct TextFont *tf;
     WORD current_x;
-    struct tfe_hashnode *hn;
     OOP_Object *fontbm = NULL;
     
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
@@ -906,33 +905,12 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     
     tf = rp->Font;
     
+    if (ExtendFont(tf, NULL))
+    {
+    	fontbm = TFE_INTERN(tf->tf_Extension)->hash->font_bitmap;
+    }
+    
     /* Check if font has character data as a HIDD bitmap */
-
-    ObtainSemaphore(&PrivGBase(GfxBase)->fontsem);
-
-    hn = tfe_hashlookup(tf, GfxBase);
-    if (NULL != hn)
-    {
-	if (NULL == hn->font_bitmap)
-	{
-	    hn->font_bitmap = fontbm_to_hiddbm(tf, GfxBase);
-	}
-    }
-    else
-    {
-    	hn = tfe_hashnode_create(GfxBase);
-	if (NULL != hn)
-	{
-	    
-	    hn->font_bitmap = fontbm_to_hiddbm(tf, GfxBase);
-	    tfe_hashadd(hn, tf, NULL, GfxBase);
-	}
-    }
-
-    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
-
-    if (NULL != hn)
-	fontbm = hn->font_bitmap;
     
     if (NULL == fontbm)
     {
