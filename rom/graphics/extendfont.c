@@ -7,6 +7,7 @@
 */
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/oop.h>
 #include <exec/memory.h>
 #include "graphics_intern.h"
 #include "fontsupport.h"
@@ -78,7 +79,8 @@
     	hn = tfe_hashnode_create(GfxBase);
 	if (NULL == hn)
 	{
-    	    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);	    
+    	    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
+	    	    
 	    return FALSE;
 	}
 	new_hashnode = TRUE;
@@ -88,6 +90,7 @@
     if (NULL != tfe)
     {
     	ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);	    
+	
     	return TRUE;
     }
     
@@ -96,8 +99,12 @@
     if (!fontTags)
 	fontTags = &def_tags;
 	    
-    if ((tfe = AllocMem(sizeof (struct TextFontExtension), MEMF_ANY|MEMF_CLEAR)) != NULL)
+    if ((tfe = AllocMem(sizeof (struct TextFontExtension_intern), MEMF_ANY|MEMF_CLEAR)) != NULL)
     {
+    	/* Back pointer from tfe to hash */
+	
+    	TFE_INTERN(tfe)->hash = hn;
+	
 	/* We make a copy of the tagitems */
 	if ((tfe->tfe_Tags = CloneTagItems(fontTags)) != NULL)
 	{
@@ -105,10 +112,7 @@
 	    tfe->tfe_MatchWord		= TFE_MATCHWORD;
 	    tfe->tfe_BackPtr		= font;
 	    tfe->tfe_OrigReplyPort	= font->tf_Message.mn_ReplyPort;
-					
-	    TFE(font->tf_Extension) = tfe;
-	    font->tf_Style |= FSF_TAGGED;
-		
+							
 	    if (!hn->font_bitmap)
 	    {
 	    	hn->font_bitmap = fontbm_to_hiddbm(font, GfxBase);
@@ -116,28 +120,53 @@
 	    
 	    if (hn->font_bitmap)
 	    {
-	    	if (new_hashnode)
+	    	BOOL ok = TRUE;
+		
+	    	if ((font->tf_Style & FSF_COLORFONT) &&
+		    (!(CTF(font)->ctf_Flags & CT_ANTIALIAS)))
 		{
-		    tfe_hashadd(hn, font, tfe, GfxBase);
-		}
-		else
-		{
-		    hn->ext = tfe;
+		    /* Real colorfont */
+		    
+		    if (!(hn->chunky_colorfont = colorfontbm_to_chunkybuffer(font, GfxBase)))
+		    {
+		    	ok = FALSE;
+		    }
 		}
 		
-		ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
-    		return TRUE;
-	    }
+		if (ok)
+		{
+	    	    if (new_hashnode)
+		    {
+			tfe_hashadd(hn, font, tfe, GfxBase);
+		    }
+		    else
+		    {
+			hn->ext = tfe;
+		    }
+
+    	            TFE(font->tf_Extension) = tfe;
+    	            font->tf_Style |= FSF_TAGGED;
+
+		    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
+
+    		    return TRUE;
+		    
+		} /* if (ok) */
+		
+		OOP_DisposeObject(hn->font_bitmap);
+		    
+	    } /* if (hn->font_bitmap) */
 
 	    
 	    FreeTagItems(tfe->tfe_Tags);
 
 	} 
-	FreeMem(tfe, sizeof (struct TextFontExtension));
+	FreeMem(tfe, sizeof (struct TextFontExtension_intern));
 	
     } /* if (memory for extension allocated) */
 
-    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);    
+    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);  
+      
     return FALSE;
 
     AROS_LIBFUNC_EXIT

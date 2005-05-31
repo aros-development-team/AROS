@@ -68,7 +68,8 @@
     	tfe = hn->ext;
 	
 	if (hn->font_bitmap) OOP_DisposeObject(hn->font_bitmap);
-	    
+	if (hn->chunky_colorfont) FreeVec(hn->chunky_colorfont);
+	
     	/* Remove the hashitem (tfe_hashdelete() has semaphore protection) */
 	tfe_hashdelete(font, GfxBase);
 	
@@ -77,10 +78,10 @@
 	    font->tf_Extension = tfe->tfe_OrigReplyPort;
 
             /* Font is not tagged anymore */
-            font->tf_Style ^= FSF_TAGGED;
+            font->tf_Style &= ~FSF_TAGGED;
 		
 	    FreeTagItems(tfe->tfe_Tags);
-	    FreeMem(tfe, sizeof (struct TextFontExtension));
+	    FreeMem(tfe, sizeof (struct TextFontExtension_intern));
 	}
 		
     }
