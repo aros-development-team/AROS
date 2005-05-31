@@ -15,6 +15,7 @@
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
 #include <graphics/gfx.h>
+#include <graphics/rpattr.h>
 
 #include <string.h>
 
@@ -257,8 +258,9 @@ static IPTR aslfontpreview_render(Class *cl, Object *o, struct gpRender *msg)
     	struct TextFont *font;
     	struct Layer *lay = msg->gpr_GInfo->gi_Layer;
 	STRPTR text;
+	IPTR   did_remap_colorfonts;
 	WORD   textlen, pixellen;
-	BOOL updating;
+	BOOL   updating;
 	
     	updating = (lay->Flags & LAYERUPDATING) != 0;
 	if (updating) EndUpdate(lay, FALSE);
@@ -284,8 +286,13 @@ static IPTR aslfontpreview_render(Class *cl, Object *o, struct gpRender *msg)
 	    x += (x2 - x + 1 - pixellen) / 2;
 	}
 	
+	GetRPAttrs(rp, RPTAG_RemapColorFonts, &did_remap_colorfonts, TAG_DONE);
+	SetRPAttrs(rp, RPTAG_RemapColorFonts, TRUE, TAG_DONE);
+	
 	Move(rp, x, (y + y2 + 1 - font->tf_YSize) / 2 + font->tf_Baseline);
 	Text(rp, text, textlen);
+
+	SetRPAttrs(rp, RPTAG_RemapColorFonts, did_remap_colorfonts, TAG_DONE);
 	
 	if (updating) EndUpdate(lay, FALSE);	
 	InstallClipRegion(lay, oldclip);
