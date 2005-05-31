@@ -479,6 +479,7 @@ enum
     moHidd_BitMap_MapColor,
     moHidd_BitMap_UnmapPixel,
     moHidd_BitMap_PutImageLUT,
+    moHidd_BitMap_PutTranspImageLUT,
     moHidd_BitMap_GetImageLUT,
     moHidd_BitMap_BytesPerLine,
     moHidd_BitMap_ConvertPixels,
@@ -789,6 +790,18 @@ struct pHidd_BitMap_PutImageLUT
     WORD	    x, y;
     WORD	    width, height;
     HIDDT_PixelLUT  *pixlut;
+};
+
+struct pHidd_BitMap_PutTranspImageLUT
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE 	    *pixels;
+    ULONG	    modulo;
+    WORD	    x, y;
+    WORD	    width, height;
+    HIDDT_PixelLUT  *pixlut;
+    UWORD   	    transparent;
 };
 
 struct pHidd_BitMap_GetImageLUT
@@ -1397,6 +1410,7 @@ HIDDT_Pixel HIDD_BM_MapColor 	(OOP_Object *destObj, HIDDT_Color *color);
 VOID	    HIDD_BM_UnmapPixel	(OOP_Object *destObj, HIDDT_Pixel pixel, HIDDT_Color *color);
 
 VOID	    HIDD_BM_PutImageLUT (OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
+VOID	    HIDD_BM_PutTranspImageLUT (OOP_Object *obj, OOP_Object *gc, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut, UBYTE transparent);
 VOID	    HIDD_BM_GetImageLUT (OOP_Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
 
 ULONG 	    HIDD_BM_BytesPerLine(OOP_Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width);

@@ -2964,6 +2964,115 @@ static VOID bitmap_putimagelut(OOP_Class *cl, OOP_Object *o,
     ReturnVoid("BitMap::PutImageLUT");
 }
 
+static VOID bitmap_puttranspimagelut(OOP_Class *cl, OOP_Object *o,
+    	    	    	    	     struct pHidd_BitMap_PutTranspImageLUT *msg)
+{
+    WORD    	    	     x, y;
+    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
+    UBYTE   	    	     transparent = msg->transparent;
+    HIDDT_PixelLUT  	    *pixlut = msg->pixlut;
+    HIDDT_Pixel     	    *lut = pixlut ? pixlut->pixels : NULL;
+    HIDDT_Pixel	    	    *buf, *xbuf;
+    struct HIDDBitMapData   *data;
+    PIXBUF_DECLARE_VARS
+    
+    data = OOP_INST_DATA(cl, o);
+
+    EnterFunc(bug("BitMap::PutTranspImageLUT(x=%d, y=%d, width=%d, height=%d)\n"
+    		, msg->x, msg->y, msg->width, msg->height));
+
+    if (msg->width <= 0 || msg->height <= 0)
+	return;
+
+    PIXBUF_ALLOC(buf, msg->width * sizeof(HIDDT_Pixel), msg->height);
+
+    if (buf)
+    {
+    	HIDDT_DrawMode old_drmd = GC_DRMD(msg->gc);	
+	GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
+	
+	xbuf = buf;
+	
+    	for(y = msg->y; y < msg->y + msg->height; y++)
+	{
+	    if (PIXBUF_TIME_TO_START_PROCESS)
+	    {
+	    	WORD height = PIXBUF_LINES_TO_PROCESS;
+
+		HIDD_BM_GetImage(o,
+	    	    		 (UBYTE *)buf,
+				 msg->width * sizeof(HIDDT_Pixel),
+				 msg->x,
+				 y,
+				 msg->width,
+				 height,
+				 vHidd_StdPixFmt_Native32);
+    	    }
+	    			     
+	    if (lut)
+	    {
+	    	for(x = 0; x < msg->width; x++)
+	    	{
+		    UBYTE pix = *pixarray++;
+		    
+		    if (pix != transparent)
+		    {
+		    	xbuf[x] = lut[pix];
+		    }
+		    
+    		} /* for(x = 0; x < msg->width; x++) */
+	    }
+	    else
+	    {
+	    	for(x = 0; x < msg->width; x++)
+	    	{
+		    UBYTE pix = *pixarray++;
+		    
+		    if (pix != transparent)
+		    {
+		    	xbuf[x] = pix;
+		    }
+		    
+    		} /* for(x = 0; x < msg->width; x++) */
+	    }
+		
+    	
+	    if (PIXBUF_TIME_TO_END_PROCESS)
+	    {
+	    	LONG height = PIXBUF_LINES_TO_PROCESS;
+		
+		HIDD_BM_PutImage(o,
+	    	    		 msg->gc,
+				 (UBYTE *)buf,
+				 msg->width * sizeof(HIDDT_Pixel),
+				 msg->x,
+				 y - height + 1,
+				 msg->width,
+				 height,
+				 vHidd_StdPixFmt_Native32);
+	    	xbuf = buf;
+	    }
+	    else
+	    {
+	    	xbuf += msg->width;
+	    }
+	    
+	    pixarray = ((UBYTE *)pixarray + msg->modulo - msg->width);
+	    
+	    PIXBUF_NEXT_LINE;
+	    
+
+	} /* for(y = msg->y; y < msg->y + msg->height; y++) */
+
+	GC_DRMD(msg->gc) = old_drmd;
+	
+    	PIXBUF_FREE(buf);
+		
+    } /* if (buf) */
+
+    ReturnVoid("BitMap::PutTranspImageLUT");
+}
+
 /****************************************************************************************/
 
 static VOID bitmap_getimagelut(OOP_Class *cl, OOP_Object *o,
@@ -3473,7 +3582,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 
 #define NUM_ROOT_METHODS    4
 
-#define NUM_BITMAP_METHODS  57
+#define NUM_BITMAP_METHODS  58
 
 /****************************************************************************************/
 
@@ -3509,6 +3618,7 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_putalphatemplate	, moHidd_BitMap_PutAlphaTemplate    },
         {(IPTR (*)())bitmap_putpattern	    	, moHidd_BitMap_PutPattern          },
 	{(IPTR (*)())bitmap_putimagelut     	, moHidd_BitMap_PutImageLUT 	    },
+	{(IPTR (*)())bitmap_puttranspimagelut	, moHidd_BitMap_PutTranspImageLUT   },
         {(IPTR (*)())bitmap_getimage		, moHidd_BitMap_GetImage	    },
         {(IPTR (*)())bitmap_getimagelut		, moHidd_BitMap_GetImageLUT	    },
         {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColorExpansion  },
