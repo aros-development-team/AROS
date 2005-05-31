@@ -831,7 +831,7 @@ static void readsectionfunctionlist(struct config *cfg, struct functions *functi
 		    exitfileerror(20, ".alias has to come after a function declaration\n");
 		
 		slist_append(&(*funclistptr)->aliases, s2);
-		cfg->options |= CFG_GENASTUBS;
+		cfg->intcfg |= CFG_GENASTUBS;
 	    }
 	    else if (strncmp(s, "cfunction", 9)==0)
 	    {
@@ -846,6 +846,13 @@ static void readsectionfunctionlist(struct config *cfg, struct functions *functi
 		    exitfileerror(20, ".private has to come after a function declaration\n");
 		
 		(*funclistptr)->priv = 1;
+	    }
+	    else if (strncmp(s, "novararg", 8)==0)
+	    {
+		if (*funclistptr == NULL)
+		    exitfileerror(20, ".novararg has to come after a function declaration\n");
+		
+		(*funclistptr)->novararg = 1;
 	    }
 	    else
 		exitfileerror(20, "Syntax error");
