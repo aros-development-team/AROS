@@ -557,8 +557,6 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 	is_bold   = (rp->AlgoStyle & FSF_BOLD) != 0;
 	is_italic = (rp->AlgoStyle & FSF_ITALIC) != 0;
 
-kprintf("is_bold %d\n", is_bold);
-	
 	while(len--)
 	{
 	    UBYTE c = *text++;
