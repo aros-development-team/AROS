@@ -123,7 +123,7 @@
 	    	BOOL ok = TRUE;
 		
 	    	if ((font->tf_Style & FSF_COLORFONT) &&
-		    (!(CTF(font)->ctf_Flags & CT_ANTIALIAS)))
+		    ((CTF(font)->ctf_Flags & CT_COLORMASK) != CT_ANTIALIAS))
 		{
 		    /* Real colorfont */
 		    
