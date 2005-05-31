@@ -945,6 +945,21 @@ static IPTR fakefb_putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     BITMAP_METHOD_EXIT
 }
 
+static IPTR fakefb_puttranspimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTranspImageLUT *msg)
+{
+    BITMAP_METHOD_INIT
+    
+    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
+    {
+    	REMOVE_CURSOR(data);
+	inside = TRUE;
+    }
+    
+    FORWARD_METHOD
+    
+    BITMAP_METHOD_EXIT
+}
+
 static IPTR fakefb_drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     BITMAP_METHOD_INIT
@@ -1235,10 +1250,10 @@ static OOP_Class *init_fakefbclass(struct class_static_data *csd)
 
     struct OOP_MethodDescr bitmap_descr[num_Hidd_BitMap_Methods + 1] =
     {
-        {(IPTR (*)())fakefb_fwd	  		, moHidd_BitMap_SetColors	    },
-        {(IPTR (*)())fakefb_drawpixel		, moHidd_BitMap_DrawPixel	    },
         {(IPTR (*)())fakefb_putpixel		, moHidd_BitMap_PutPixel	    },
         {(IPTR (*)())fakefb_getpixel		, moHidd_BitMap_GetPixel	    },
+        {(IPTR (*)())fakefb_fwd	  		, moHidd_BitMap_SetColors	    },
+        {(IPTR (*)())fakefb_drawpixel		, moHidd_BitMap_DrawPixel	    },
         {(IPTR (*)())fakefb_drawline		, moHidd_BitMap_DrawLine	    },
         {(IPTR (*)())fakefb_drawrect		, moHidd_BitMap_DrawRect	    },
         {(IPTR (*)())fakefb_fillrect 		, moHidd_BitMap_FillRect	    },
@@ -1251,12 +1266,13 @@ static OOP_Class *init_fakefbclass(struct class_static_data *csd)
         {(IPTR (*)())fakefb_fillspan		, moHidd_BitMap_FillSpan	    },
         {(IPTR (*)())fakefb_clear		, moHidd_BitMap_Clear		    },
         {(IPTR (*)())fakefb_putimage		, moHidd_BitMap_PutImage	    },
-        {(IPTR (*)())fakefb_puttemplate	    	, moHidd_BitMap_PutTemplate         },
         {(IPTR (*)())fakefb_putalphaimage	, moHidd_BitMap_PutAlphaImage	    },
+        {(IPTR (*)())fakefb_puttemplate	    	, moHidd_BitMap_PutTemplate         },
         {(IPTR (*)())fakefb_putalphatemplate	, moHidd_BitMap_PutAlphaTemplate    },
         {(IPTR (*)())fakefb_putpattern	    	, moHidd_BitMap_PutPattern          },
-        {(IPTR (*)())fakefb_getimage		, moHidd_BitMap_GetImage	    },
         {(IPTR (*)())fakefb_putimagelut		, moHidd_BitMap_PutImageLUT	    },
+        {(IPTR (*)())fakefb_puttranspimagelut	, moHidd_BitMap_PutTranspImageLUT   },
+        {(IPTR (*)())fakefb_getimage		, moHidd_BitMap_GetImage	    },
         {(IPTR (*)())fakefb_getimagelut		, moHidd_BitMap_GetImageLUT	    },
         {(IPTR (*)())fakefb_blitcolexp		, moHidd_BitMap_BlitColorExpansion  },
         {(IPTR (*)())fakefb_fwd			, moHidd_BitMap_BytesPerLine	    },
