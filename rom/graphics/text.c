@@ -71,11 +71,11 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 	BOOL	    	      colorfont;
 		
 	antialias = (ctf->ctf_TF.tf_Style & FSF_COLORFONT) &&
-	    	    (ctf->ctf_Flags & CT_ANTIALIAS) &&
+	    	    ((ctf->ctf_Flags & CT_COLORMASK) == CT_ANTIALIAS) &&
 		    (GetBitMapAttr(rp->BitMap, BMA_DEPTH) >= 15);
 
 	colorfont = (ctf->ctf_TF.tf_Style & FSF_COLORFONT) &&
-	    	    (!(ctf->ctf_Flags & CT_ANTIALIAS));
+	    	    (((ctf->ctf_Flags & CT_COLORMASK) == CT_COLORFONT) || ((ctf->ctf_Flags & CT_COLORMASK) == CT_GREYFONT));
 	
 	if (antialias)
 	{
@@ -691,12 +691,36 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 	
 #endif
 
-#if 1
-    	{
-	    HIDDT_PixelLUT pixlut;
-
+   	{
+	    HIDDT_PixelLUT  pixlut;
+    	    HIDDT_Pixel     pixtab[256];
+	    
 	    pixlut.entries = AROS_PALETTE_SIZE;
 	    pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
+	    
+	    if ((rp->Flags & RPF_REMAP_COLORFONTS) &&
+	    	(CTF(tf)->ctf_ColorFontColors) &&
+		((CTF(tf)->ctf_Flags & CT_COLORMASK) != CT_GREYFONT) && /* <-- FIX/CHECK/SUPPORT CT_GREYFONT) */
+	    	IS_HIDD_BM(rp->BitMap) &&
+		(GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8))
+	    {
+	    	UWORD *colortable = CTF(tf)->ctf_ColorFontColors->cfc_ColorTable;
+	    	WORD   i;
+		
+		for(i = 1; i < CTF(tf)->ctf_ColorFontColors->cfc_Count; i++)
+		{
+		    UWORD rgb12 = *colortable++;
+		    HIDDT_Color col;
+		    
+		    col.red   = ((rgb12 >> 8) & 0x0F) * 0x1111;
+		    col.green = ((rgb12 >> 4) & 0x0F) * 0x1111;
+		    col.blue  = ((rgb12 >> 0) & 0x0F) * 0x1111;
+		    
+		    pixtab[i] = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+		}
+		
+		pixlut.pixels = pixtab;
+	    }
 	    
 	    write_transp_pixels_8(rp, raster,raswidth_bpr,
 	    	    	    	  rp->cp_x + te.te_Extent.MinX,
@@ -706,18 +730,7 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 				  &pixlut, 0, GfxBase);
 	    
 	}
-	
-#else
-    	WriteChunkyPixels(rp,
-	    	    	  rp->cp_x + te.te_Extent.MinX,
-			  rp->cp_y - rp->TxBaseline,
-			  rp->cp_x + te.te_Extent.MinX + raswidth - 1,
-			  rp->cp_y - rp->TxBaseline + rasheight - 1,
-			  raster,
-			  raswidth_bpr);
-#endif
-
-			  
+				  
     	FreeVec(raster);
 	
     } /* if ((raster = AllocVec(raswidth * rasheight, MEMF_CLEAR))) */
