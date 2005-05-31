@@ -72,13 +72,16 @@ do                                  \
     (_rect)->MaxY += (_dy);         \
 } while(0)
 
-/* Rastport flag that tells whether or not the driver has been inited */
+/* Private Rastport flags */
 
-#define RPF_DRIVER_INITED (1L << 15)
-#define RPF_SELF_CLEANUP  (1L << 14)
+/* Flags that tells whether or not the driver has been inited */
+#define RPF_DRIVER_INITED   	(1L << 15)
+#define RPF_SELF_CLEANUP    	(1L << 14)
+/* Shall color fonts be automatically remapped? */
+#define RPF_REMAP_COLORFONTS 	(1L << 13)
 
-#define AROS_PALETTE_SIZE 256
-#define AROS_PALETTE_MEMSIZE (sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE)
+#define AROS_PALETTE_SIZE   	256
+#define AROS_PALETTE_MEMSIZE 	(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE)
 
 /* private AROS fields in RastPort struct:
 
