@@ -9,7 +9,6 @@
 #define DEBUG 1
 
 #include <string.h>
-#include <ctype.h>
 
 #include <exec/alerts.h>
 #include <aros/asmcall.h>
@@ -33,6 +32,8 @@
 #include <aros/macros.h>
 
 #define BOOT_CHECK 0
+
+#define uppercase(x) ((x >= 'a' && x <= 'z') ? (x & 0xdf) : x)
 
 int boot_entry()
 {
@@ -207,7 +208,8 @@ char *devname;
             {
                 if (*devname == '.' || *devname == '\0')
                     break;
-                name[i] = (UBYTE)toupper(*devname++);
+                name[i] = (UBYTE)uppercase(*devname);
+                devname++;
             }
             if ((fssm->fssm_Unit / 10))
                 name[i++] = '0' + (UBYTE)(fssm->fssm_Unit / 10);
