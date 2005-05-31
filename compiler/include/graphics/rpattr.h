@@ -28,7 +28,7 @@
 #define RPTAG_PatternOriginY 	    0x800000C1 /* WORD */
 #define RPTAG_ClipRectangle  	    0x800000C2 /* struct Rectangle *. Clones *rectangle. */
 #define RPTAG_ClipRectangleFlags    0x800000C3 /* ULONG */
-
+#define RPTAG_RemapColorFonts	    0x800000C4 /* BOOL */
 
 /* Flags for ClipRectangleFlags */
 #define RPCRF_RELRIGHT	    	    0x01       /* ClipRectangle.MaxX is relative to right of layer/bitmap */
