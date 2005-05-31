@@ -8,6 +8,7 @@
 
 #include <proto/exec.h>
 #include <proto/oop.h>
+#include <proto/graphics.h>
 
 #include <exec/memory.h>
 #include <graphics/text.h>
@@ -193,5 +194,47 @@ OOP_Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
 }
 
 /****************************************************************************************/
+
+UBYTE *colorfontbm_to_chunkybuffer(struct TextFont *font, struct GfxBase *GfxBase)
+{
+    ULONG  width, height;
+    UBYTE *chunky;
+    
+    width  = font->tf_Modulo * 8;
+    height = font->tf_YSize;
+    
+    chunky = AllocVec(width * height, MEMF_CLEAR);
+    if (chunky)
+    {
+    	struct BitMap bm;
+	struct RastPort rp;
+	UBYTE d, shift = 1, plane = 0;
+	
+	InitBitMap(&bm, CTF(font)->ctf_Depth, width, height);
+	
+	for(d = 0; d < CTF(font)->ctf_Depth; d++, shift <<= 1)
+	{
+	    if (CTF(font)->ctf_PlanePick & shift)
+	    {
+	    	bm.Planes[d] = (PLANEPTR)(CTF(font)->ctf_CharData[plane++]);
+	    }
+	    else
+	    {
+	    	bm.Planes[d] = (CTF(font)->ctf_PlaneOnOff & shift) ? (PLANEPTR)-1 : NULL;
+	    }
+	}
+	
+	InitRastPort(&rp);
+	rp.BitMap = &bm;
+	
+	ReadPixelArray8(&rp, 0, 0, width - 1, height - 1, chunky, NULL); 
+	DeinitRastPort(&rp);
+    }
+       
+    return chunky;
+}
+
+/****************************************************************************************/
+
 
 
