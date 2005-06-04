@@ -41,6 +41,11 @@ int main(int argc, char **argv)
     case MAKEFILE:
 	writemakefile(cfg);
 	break;
+
+    case WRITEFUNCLIST:
+	readref(cfg, functions);
+	writefunclist(cfg, functions);
+	break;
 	
     default:
 	fprintf(stderr, "Internal error in main: Unhandled command type\n");

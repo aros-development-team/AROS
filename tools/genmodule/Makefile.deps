@@ -17,7 +17,8 @@ GENMODULE_SRCS := \
     writeautoinit.c \
     writestubs.c \
     writemccinit.c \
-    writemccquery.c
+    writemccquery.c \
+    writefunclist.c
 GENMODULE_INCS := genmodule.h fileread.h functionhead.h
 GENMODULE_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENMODULE_SRCS) $(GENMODULE_INCS) include/aros/libcall.h) \
 	       	  $(AROS_INCLUDES)/aros/machine.h

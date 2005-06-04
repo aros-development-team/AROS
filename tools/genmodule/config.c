@@ -37,7 +37,7 @@ getBanner(struct config* config)
 const static char usage[] =
     "\n"
     "Usage: genmodule [-c conffile] [-s suffix] [-d gendir]\n"
-    "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs} modname modtype\n"
+    "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs|writefunclist} modname modtype\n"
 ;
 
 static void readconfig(struct config *, struct functions *);
@@ -142,6 +142,10 @@ struct config *initconfig(int argc, char **argv, struct functions *functions)
     else if (strcmp(argv[optind], "writedummy") == 0)
     {
 	cfg->command = DUMMY;
+    }
+    else if (strcmp(argv[optind], "writefunclist") == 0)
+    {
+	cfg->command = WRITEFUNCLIST;
     }
     else
     {
@@ -251,7 +255,7 @@ struct config *initconfig(int argc, char **argv, struct functions *functions)
 	if (cfg->gendir == NULL)
 	    cfg->gendir = ".";
 	
-	if (cfg->command != FILES && cfg->command != INCLUDES)
+	if (cfg->command != FILES && cfg->command != INCLUDES && cfg->command != WRITEFUNCLIST)
 	{
 	    if (cfg->reffile != NULL)
 		fprintf(stderr, "WARNING ! Option -r ingored for %s\n", argv[optind]);
@@ -496,6 +500,7 @@ static void readsectionconfig(struct config *cfg)
 			break;
 		    case 3: /* noresident */
 			cfg->options |= OPTION_NORESIDENT;
+			cfg->firstlvo = 1;
 			break;
 		    case 4: /* peropenerbase */
 			cfg->options |= OPTION_DUPBASE;
