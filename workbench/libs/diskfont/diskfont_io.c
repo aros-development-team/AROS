@@ -204,7 +204,8 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
     if (tf->tf_Style & FSF_COLORFONT)
     {
 	APTR temp_ptr;
-
+    	UBYTE num_planes_data = 0;
+	
 	#undef CTF
 	#define CTF(tf) ((struct ColorTextFont *)tf)
 
@@ -223,6 +224,12 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
 	for (i = 0; i < 8; i ++ )
 	{
 	    COPYPTR(ptr,  ctf_chardata_ptrs[i]);
+	    
+	    if ((CTF(tf)->ctf_Depth > i) && (CTF(tf)->ctf_PlanePick & (1L << i)))
+	    {
+	    	num_planes_data++;
+	    }
+	    
 	}
 
 	/* ------------------------------- */
@@ -263,7 +270,7 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
 
 	/* ------------------------------- */
 	/* Handle character bitmap data for colorfonts */
-	for (i = 0; i < 8; i ++)
+	for (i = 0; i < num_planes_data; i ++)
 	{
 	    if (!ctf_chardata_ptrs[i]) continue;
 
