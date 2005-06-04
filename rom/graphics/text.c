@@ -707,7 +707,7 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 	    	UWORD *colortable = CTF(tf)->ctf_ColorFontColors->cfc_ColorTable;
 	    	WORD   i;
 		
-		for(i = 1; i < CTF(tf)->ctf_ColorFontColors->cfc_Count; i++)
+		for(i = 0; i < CTF(tf)->ctf_ColorFontColors->cfc_Count; i++)
 		{
 		    UWORD rgb12 = *colortable++;
 		    HIDDT_Color col;
