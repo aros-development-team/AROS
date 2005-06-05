@@ -1076,10 +1076,13 @@ endif
 ifeq (%(genincludes),no)
     %(modname)_INCLUDES :=
 endif
+BD_LIBDEFSINC := %(objdir)/%(modname)_libdefs.h
+BD_DEFLIBDEFSINC := %(objdir)/%(modname)_deflibdefs.h
 
 %(mmake)-includes-quick : %(mmake)-includes
 %(mmake)-includes : $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
-    $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES))
+    $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
+    $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC)
 
 ifneq ($(%(modname)_INCLUDES),)
 %rule_genmodule_includes modname=%(modname) modtype=%(modtype) \
