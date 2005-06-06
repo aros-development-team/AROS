@@ -26,7 +26,7 @@ void writefunclist(struct config *cfg, struct functions *functions)
 
     fprintf(out, "##begin functionlist\n");
 	
-    for (funclistit = functions->funclist, lvo = cfg->firstlvo;
+    for (funclistit = functions->funclist, lvo = cfg->firstlvo - 1;
 	 funclistit != NULL;
 	 funclistit = funclistit->next
     )
