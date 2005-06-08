@@ -99,6 +99,9 @@ struct config
 
     /* The function config data present in the functionlist section */
     struct conffuncinfo *conffunclist;
+
+    /* device specific data */
+    char *beginiofunc, *abortiofunc;
     
     /* BOOPSI specific data */
     const char **boopsimprefix;
