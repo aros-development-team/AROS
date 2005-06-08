@@ -36,7 +36,7 @@ getBanner(struct config* config)
 
 const static char usage[] =
     "\n"
-    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir]\n"
+    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-r reffile]\n"
     "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs|writefunclist} modname modtype\n"
 ;
 
@@ -278,6 +278,43 @@ struct config *initconfig(int argc, char **argv, struct functions *functions)
     
     readconfig(cfg, functions);
     
+    /* For a device add the functions given in beginiofunc and abortiofunc to the functionlist
+     * if they are provided
+     */
+    if (cfg->beginiofunc != NULL)
+    {
+	struct functionhead *funchead;
+
+	cfg->intcfg |= CFG_NOREADREF;
+
+	/* Add beginio_func to the list of functions */
+	funchead = newfunctionhead(cfg->beginiofunc, REGISTERMACRO);
+	funchead->type = strdup("void");
+	funchead->lvo = 5;
+	funcaddarg(funchead, "struct IORequest *ioreq", "A1");
+	
+	funchead->next = functions->funclist;
+	functions->funclist = funchead;
+	
+	/* Add abortio_func to the list of functions */
+	funchead = newfunctionhead(cfg->abortiofunc, REGISTERMACRO);
+	funchead->type = strdup("LONG");
+	funchead->lvo = 6;
+	funcaddarg(funchead, "struct IORequest *ioreq", "A1");
+	
+	funchead->next = functions->funclist->next;
+	functions->funclist->next = funchead;
+    }
+    else if (cfg->modtype == DEVICE && cfg->intcfg & CFG_NOREADREF)
+    {
+	fprintf
+	(
+	    stderr,
+	    "beginio_func and abortio_func missing for a device with a non empty function list\n"
+	);
+	exit(20);
+    }
+
     return cfg;
 }
 
@@ -376,7 +413,8 @@ static void readsectionconfig(struct config *cfg)
                 "basename", "libbase", "libbasetype", "libbasetypeextern", 
                 "version", "date", "libcall", "forcebase", "superclass",
 		"residentpri", "options", "sysbase_field", "seglist_field",
-		"rootbase_field", "classptr_field", "classname", "classdatatype"
+		"rootbase_field", "classptr_field", "classname", "classdatatype",
+		"beginio_func", "abortio_func"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -544,6 +582,19 @@ static void readsectionconfig(struct config *cfg)
 		if (cfg->boopsimprefix == NULL)
 		    exitfileerror(20, "classdatatype specified when not a BOOPSI class\n");
 		cfg->classdatatype = strdup(s);
+		break;
+		
+	    case 18: /* beginio_func */
+		if (cfg->modtype != DEVICE)
+		    exitfileerror(20, "beginio_func specified when not a device\n");
+		cfg->beginiofunc = strdup(s);
+		break;
+		
+	    case 19: /* abortio_func */
+		if (cfg->modtype != DEVICE)
+		    exitfileerror(20, "abortio_func specified when not a device\n");
+		cfg->abortiofunc = strdup(s);
+		break;
 	    }
 	}
 	else /* Line starts with ## */
@@ -585,6 +636,11 @@ static void readsectionconfig(struct config *cfg)
 	exitfileerror(20, "sysbase_field specified when no libbasetype is given\n");
     if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
 	exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
+
+    if ( (cfg->beginiofunc != NULL && cfg->abortiofunc == NULL)
+	 || (cfg->beginiofunc == NULL && cfg->abortiofunc != NULL)
+    )
+	exitfileerror(20, "please specify both beginio_func and abortio_func\n");
 
     if (cfg->classname == NULL)
     {
@@ -633,7 +689,7 @@ static void readsectionconfig(struct config *cfg)
 	free(libbasetypeextern);
     }
     
-    /* Givw default value to superclass if it is not specified */
+    /* Give default value to superclass if it is not specified */
     if (cfg->superclass == NULL)
     {
 	switch (cfg->modtype)
