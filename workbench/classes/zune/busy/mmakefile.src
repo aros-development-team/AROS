@@ -1,0 +1,19 @@
+# $Id: mmakefile.src 19696 2003-09-08 21:15:04Z falemagn $
+include $(TOP)/config/make.cfg
+
+FILES         := busy
+INCLUDE_FILES := Busy_mcc.h
+
+
+#MM- workbench-classes-zune : workbench-classes-zune-busy
+#MM workbench-classes-zune-busy
+%build_module \
+    mmake=workbench-classes-zune-busy \
+    modname=Busy modtype=mcc \
+    conffile=busy.conf \
+    uselibs="amiga m rom"
+    
+%copy_includes path=MUI dir=
+    
+%common
+%include_deps
