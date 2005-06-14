@@ -18,11 +18,12 @@ FILES  := test      	    \
 	  levelmeter	    \
 	  knob              \
 	  texticonlist	    \
-	  loginwindow
+	  loginwindow	    \
+	  busy
 
 EXEDIR := $(AROS_TESTS)/Zune
 
-#MM test-zune : includes linklibs
+#MM test-zune : includes linklibs workbench-classes-zune-busy
 
 %build_progs mmake=test-zune \
     files=$(FILES) targetdir=$(EXEDIR) \
