@@ -151,7 +151,7 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	/* mov    (%rsp),%rcx
 	lea	Enable(%rcx),%rax */
 	call	*%rax
-	add	$4,%rsp
+	add	$8,%rsp
 
 	/* Restore registers and return */
 6:
