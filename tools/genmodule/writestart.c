@@ -129,7 +129,7 @@ static void writeresident(FILE *out, struct config *cfg)
 {
     fprintf(out,
 	    "#include <exec/initializers.h>\n"
-	    "#define INITPTR(offset,ptr) 0x80,(UBYTE)offset,(ULONG)ptr\n"
+	    "#define INITPTR(offset,ptr) 0x80,(UBYTE)offset,(IPTR)ptr\n"
 	    "\n"
 	    "extern const int GM_UNIQUENAME(End);\n"
 	    "extern const APTR GM_UNIQUENAME(FuncTable)[];\n"
@@ -212,7 +212,7 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "\n"
 	    "static struct InitTable\n"
 	    "{\n"
-	    "    ULONG                   Size;\n"
+	    "    IPTR                   Size;\n"
 	    "    const APTR             *FuncTable;\n"
 	    "    const struct DataTable *DataTable;\n"
 	    "    APTR                    InitLibTable;\n"
@@ -228,12 +228,12 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "static struct DataTable\n"
 	    "{\n"
 	    "    UWORD ln_Type_Init; UWORD ln_Type_Offset; UWORD ln_Type_Content;\n"
-	    "    UBYTE ln_Name_Init; UBYTE ln_Name_Offset; ULONG ln_Name_Content;\n"
+	    "    UBYTE ln_Name_Init; UBYTE ln_Name_Offset; IPTR ln_Name_Content;\n"
 	    "    UWORD lib_Flags_Init; UWORD lib_Flags_Offset; UWORD lib_Flags_Content;\n"
 	    "    UWORD lib_Version_Init; UWORD lib_Version_Offset; UWORD lib_Version_Content;\n"
 	    "    UWORD lib_Revision_Init; UWORD lib_Revision_Offset; UWORD lib_Revision_Content;\n"
-	    "    UBYTE lib_IdString_Init; UBYTE lib_IdString_Offset; ULONG lib_IdString_Content;\n"
-	    "    ULONG ENDMARK;\n"
+	    "    UBYTE lib_IdString_Init; UBYTE lib_IdString_Offset; IPTR lib_IdString_Content;\n"
+	    "    IPTR ENDMARK;\n"
 	    "}\n"
 	    "const GM_UNIQUENAME(DataTable) =\n"
 	    "{\n"
@@ -260,7 +260,7 @@ static void writeresident(FILE *out, struct config *cfg)
 	break;
     }
     fprintf(out,
-	    "    INITPTR(OFFSET(Node, ln_Name), (ULONG) &GM_UNIQUENAME(LibName)[0]),\n"
+	    "    INITPTR(OFFSET(Node, ln_Name), (IPTR) &GM_UNIQUENAME(LibName)[0]),\n"
     );
     if (cfg->modtype != RESOURCE)
     {
@@ -268,11 +268,11 @@ static void writeresident(FILE *out, struct config *cfg)
 		"    INITBYTE(OFFSET(Library, lib_Flags), LIBF_SUMUSED|LIBF_CHANGED),\n"
 		"    INITWORD(OFFSET(Library, lib_Version), VERSION_NUMBER),\n"
 		"    INITWORD(OFFSET(Library, lib_Revision), REVISION_NUMBER),\n"
-		"    INITPTR(OFFSET(Library, lib_IdString), (ULONG) &GM_UNIQUENAME(LibID)[0]),\n"
+		"    INITPTR(OFFSET(Library, lib_IdString), (IPTR) &GM_UNIQUENAME(LibID)[0]),\n"
 	);
     }
     fprintf(out,
-	    "    (ULONG) 0\n"
+	    "    (IPTR) 0\n"
 	    "};\n"
 	    "\n"
 	    "const char GM_UNIQUENAME(LibName)[] = MOD_NAME_STRING;\n"
