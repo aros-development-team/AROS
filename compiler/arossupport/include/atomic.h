@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,37 +8,76 @@
 
 #include <exec/types.h>
 
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64)
+
+/* lock op is supposed to make these ops atomic and in result SMP safe 
+Atomic addition of an immediate value to a memory location. 
+*/
 
 #define __AROS_ATOMIC_INC_B(var) \
-    __asm__ __volatile__ ("incb %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; incb %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
 #define __AROS_ATOMIC_INC_W(var) \
-    __asm__ __volatile__ ("incw %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; incw %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
 #define __AROS_ATOMIC_INC_L(var) \
-    __asm__ __volatile__ ("incl %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; incl %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
+
+#if defined(__x86_64)
+#define __AROS_ATOMIC_INC_Q(var) \
+    __asm__ __volatile__ ("lock; incq %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
+#endif
+
+
+/* lock op is supposed to make these ops atomic and in result SMP safe 
+Atomic subtraction of an immediate value from a memory location. 
+*/
 
 #define __AROS_ATOMIC_DEC_B(var) \
-    __asm__ __volatile__ ("decb %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; decb %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
 #define __AROS_ATOMIC_DEC_W(var) \
-    __asm__ __volatile__ ("decw %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; decw %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
 #define __AROS_ATOMIC_DEC_L(var) \
-    __asm__ __volatile__ ("decl %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; decl %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
+
+#if defined(__x86_64)
+#define __AROS_ATOMIC_DEC_Q(var) \
+    __asm__ __volatile__ ("lock; decq %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
+#endif
+
+
+/* lock op is supposed to make these ops atomic and in result SMP safe 
+Atomic AND of an immediate value with a value at a memory location. 
+*/
 
 #define __AROS_ATOMIC_AND_B(var, mask) \
-    __asm__ __volatile__ ("andb %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; andb %0,%1" : : "r" ((UBYTE)(mask)), "m" ((var)) : "memory", "cc")
 #define __AROS_ATOMIC_AND_W(var, mask) \
-    __asm__ __volatile__ ("andw %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; andw %0,%1" : : "r" ((UWORD)(mask)), "m" ((var)) : "memory", "cc")
 #define __AROS_ATOMIC_AND_L(var, mask) \
-    __asm__ __volatile__ ("andl %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; andl %0,%1" : : "r" ((ULONG)(mask)), "m" ((var)) : "memory", "cc")
 
+#if defined(__x86_64)
+#define __AROS_ATOMIC_AND_Q(var, mask) \
+    __asm__ __volatile__ ("lock; andq %0,%1" : : "r" ((UQUAD)(mask)), "m" ((var)) : "memory", "cc")
+#endif
+
+
+/* lock op is supposed to make these ops atomic and in result SMP safe 
+Atomic OR of an immediate value with a memory location. 
+*/
 
 #define __AROS_ATOMIC_OR_B(var, mask) \
-    __asm__ __volatile__ ("orb %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; orb %0,%1" : : "r" ((UBYTE)(mask)), "m" ((var)) : "memory", "cc")
 #define __AROS_ATOMIC_OR_W(var, mask) \
-    __asm__ __volatile__ ("orw %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; orw %0,%1" : : "r" ((UWORD)(mask)), "m" ((var)) : "memory", "cc")
 #define __AROS_ATOMIC_OR_L(var, mask) \
-    __asm__ __volatile__ ("orl %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
+    __asm__ __volatile__ ("lock; orl %0,%1" : : "r" ((ULONG)(mask)), "m" ((var)) : "memory", "cc")
 
+#if defined(__x86_64)
+#define __AROS_ATOMIC_OR_Q(var, mask) \
+    __asm__ __volatile__ ("lock; orq %0,%1" : : "r" ((UQUAD)(mask)), "m" ((var)) : "memory", "cc")
+#endif
+
+  
 #elif defined(__powerpc__) || defined(__ppc__)
 
 void atomic_inc_b(BYTE *p);
@@ -75,46 +114,8 @@ void atomic_or_l(LONG *p, LONG mask);
 #define __AROS_ATOMIC_OR_W(var, mask) atomic_or_w((WORD *)&(var), (mask))
 #define __AROS_ATOMIC_OR_L(var, mask) atomic_or_l(&(var), (mask))
 
-#elif defined(__x86_64)
-/* locki op is supposed to make these ops SMP safe */
-#define __AROS_ATOMIC_INC_B(var) \
-    __asm__ __volatile__ ("lock; inc{b} %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_INC_W(var) \
-    __asm__ __volatile__ ("lock; inc{w} %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_INC_L(var) \
-    __asm__ __volatile__ ("lock; inc{l} %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_INC_Q(var) \
-    __asm__ __volatile__ ("lock; inc{q} %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-
-#define __AROS_ATOMIC_DEC_B(var) \
-    __asm__ __volatile__ ("lock; dec{b} %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_DEC_W(var) \
-    __asm__ __volatile__ ("lock; dec{w} %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_DEC_L(var) \
-    __asm__ __volatile__ ("lock; dec{l} %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_DEC_Q(var) \
-    __asm__ __volatile__ ("lock; dec{q} %0" : "=m" ((var)) : "m" ((var)) : "memory", "cc")
-
-#define __AROS_ATOMIC_AND_B(var, mask) \
-    __asm__ __volatile__ ("lock; and{b} %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_AND_W(var, mask) \
-    __asm__ __volatile__ ("lock; and{l} %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_AND_L(var, mask) \
-    __asm__ __volatile__ ("lock; and{l} %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_AND_Q(var, mask) \
-    __asm__ __volatile__ ("lock; and{q} %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-
-#define __AROS_ATOMIC_OR_B(var, mask) \
-    __asm__ __volatile__ ("lock; or{b} %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_OR_W(var, mask) \
-    __asm__ __volatile__ ("lock; or{l} %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_OR_L(var, mask) \
-    __asm__ __volatile__ ("lock; or{l} %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-#define __AROS_ATOMIC_OR_Q(var, mask) \
-    __asm__ __volatile__ ("lock; or{q} %0,%1" : : "r" ((mask)), "m" ((var)) : "memory", "cc")
-
 #else
-
+/* Porting to other archs? Just define your asm atomics as above... else deadlock below will hit you! */
 #include <proto/exec.h>
 
 #define __AROS_ATOMIC_INC_B(var) do {Disable(); (var)++; Enable(); } while(0)
@@ -136,6 +137,7 @@ void atomic_or_l(LONG *p, LONG mask);
 #endif
 
 #ifdef __x86_64__
+/* Don't rely on sizeof(LONG) and I want it this way for now */
 
 #define __AROS_ATOMIC(__instr__, var, args...)               \
 do                                                           \
@@ -143,12 +145,12 @@ do                                                           \
     struct atomic_size                                       \
     {                                                        \
         int unsupported_atomic_size                          \
-	[                                                    \
-	    (sizeof(var) != 1 &&                             \
-	    sizeof(var) != 2 &&                              \
-	    sizeof(var) != 4 &&                              \
-	    sizeof(var) != 8) ? -1 : 1                       \
-	];                                                   \
+        [                                                    \
+            (sizeof(var) != 1 &&                             \
+            sizeof(var) != 2 &&                              \
+            sizeof(var) != 4 &&                              \
+            sizeof(var) != 8) ? -1 : 1                       \
+        ];                                                   \
     };                                                       \
                                                              \
     if (sizeof(var) == 1)                                    \
@@ -172,11 +174,11 @@ do                                                           \
     struct atomic_size                                       \
     {                                                        \
         int unsupported_atomic_size                          \
-	[                                                    \
-	    sizeof(var) != sizeof(BYTE) &&                   \
-	    sizeof(var) != sizeof(WORD) &&                   \
-	    sizeof(var) != sizeof(LONG) ? -1 : 1             \
-	];                                                   \
+        [                                                    \
+            sizeof(var) != sizeof(BYTE) &&                   \
+            sizeof(var) != sizeof(WORD) &&                   \
+            sizeof(var) != sizeof(LONG) ? -1 : 1             \
+        ];                                                   \
     };                                                       \
                                                              \
     if (sizeof(var) == sizeof(BYTE))                         \
@@ -189,7 +191,8 @@ do                                                           \
         __AROS_ATOMIC_ ## __instr__ ## _L((var) , ## args);  \
 } while (0)
 
-#endif 
+#endif
+
 
 #define AROS_ATOMIC_INC(var)       __AROS_ATOMIC(INC, (var))
 #define AROS_ATOMIC_DEC(var)       __AROS_ATOMIC(DEC, (var))
