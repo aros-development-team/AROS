@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#if defined(__i386__) || defined(__x86_64)
+#if defined(__i386__) || defined(__x86_64__)
 
 /* lock op is supposed to make these ops atomic and in result SMP safe 
 Atomic addition of an immediate value to a memory location. 
