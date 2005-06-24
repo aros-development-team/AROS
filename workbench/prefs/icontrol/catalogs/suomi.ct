@@ -1,0 +1,97 @@
+## version $VER: icontrolprefs.catalog 1.0 (25.08.2003)
+## codeset 0
+## language suomi
+;
+MSG_CANT_OPEN_LIB
+En voi avata %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+En voi luoda ohjelmaobjektia!
+; Can't create application object!
+;
+MSG_WINTITLE
+IControl Asetukset
+; IControl Preferences
+;
+MSG_MEN_PROJECT
+Projekti
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Avaa...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Tallenna nimellä...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Lopeta
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Muokkaus
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Palauta oletukset
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Viikeksi tallennettu
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Palautus
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Asetukset
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Luo ikonit?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Lataa IControl asetukset
+; Load IControl Preferences
+;
+MSG_ASL_SAVE_TITLE
+Tallenna IControl asetukset
+; Save IControl Preferences
+;
+MSG_OK
+Selvä
+; Ok
+;
+;
+MSG_MENUS_GROUP
+Valikot
+; Menus
+;
+MSG_MENUS_TYPE
+Tyyppi
+; Type
+;
+MSG_MENUS_TYPE_PULLDOWN
+Alasveto
+; Pull-Down
+;
+MSG_MENUS_TYPE_POPUP
+Hyppy
+; Pop-Up
+;
+MSG_MENUS_LOOK
+Ulkonäkö
+; Look
+;
+MSG_MENUS_LOOK_CLASSIC
+Klassinen
+; Classic
+;
+MSG_MENUS_LOOK_3D
+3D
+; 3D
+;

@@ -1,0 +1,144 @@
+## version $VER: multiview.catalog 1.0 (18.10.2000)
+## codeset 0
+## language suomi
+;
+MSG_CANT_OPEN_LIB
+En voi avata %s V%ld!\n
+;
+MSG_CANT_CREATE_IC 
+En voi luoda yhteysobjekteja!
+;
+MSG_CANT_LOCK_SCR
+En voi lukita julkista näyttöä!
+;
+MSG_CANT_GET_DRI
+En saa DrawInfo:a!
+;
+MSG_CANT_GET_VI
+En saa VisualInfo:a!
+;
+MSG_CANT_CREATE_SYSIMAGE 
+En voi luoda SYSICLASS kuvia!
+;
+MSG_CANT_CREATE_GADGET 
+En voi luoda nappeja!
+;
+MSG_CANT_CREATE_MENUS
+En voi luoda valikkoja!
+;
+MSG_CANT_CREATE_WIN 
+En voi luoda ikkunaa!
+;
+MSG_SAVE_FAILED 
+Tiedostoon tallennus epäonnistui!
+;
+MSG_MEN_PROJECT 
+Projekti
+;
+MSG_MEN_PROJECT_OPEN 
+O\0Avaa...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Tallenna nimellä...
+;
+MSG_MEN_PROJECT_SAVEAS_IFF 
+I\OTallenna IFF:nä...
+MSG_MEN_PROJECT_PRINT 
+P\0Tulosta
+;
+MSG_MEN_PROJECT_ABOUT
+?\0Tietoa...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Lopeta
+;
+MSG_MEN_EDIT 
+Muokkaus
+;
+MSG_MEN_EDIT_MARK 
+M\0Merkitse
+;
+MSG_MEN_EDIT_COPY 
+C\0Kopioi
+;
+MSG_MEN_EDIT_SELECTALL 
+[\0Valitse kaikki
+;
+MSG_MEN_EDIT_CLEARSELECTED
+]\0Poista valinnat
+;
+MSG_MEN_WINDOW 
+Ikkuna
+;
+MSG_MEN_WINDOW_SEPSCREEN
+ \0Käytä erillistä näyttöä?
+;
+MSG_MEN_WINDOW_MINIMIZE
+ \0Pienennä
+;
+MSG_MEN_WINDOW_NORMAL 
+ \0Normaali
+;
+MSG_MEN_WINDOW_MAXIMIZE 
+ \0Maksimoi
+;
+MSG_MEN_SETTINGS 
+Asetukset
+;
+MSG_MEN_SETTINGS_SAVEDEF 
+D\0Tallenna oletuksiksi
+;
+MSG_MEN_PICT 
+Kuva
+;
+MSG_MEN_PICT_ZOOM_IN 
+ \0Lähennä
+;
+MSG_MEN_PICT_ZOOM_OUT 
+ \0Loitonna
+;
+MSG_MEN_PICT_RESET 
+ \0Palauta koko
+;
+MSG_MEN_PICT_FIT_WIN 
+ \0Mahduta ikkunaan
+;
+MSG_MEN_PICT_KEEP_ASPECT 
+ \0Pidä muoto
+;
+MSG_MEN_PICT_FORCE_MAP 
+ \0Pakota paletin kartoitus
+;
+MSG_MEN_TEXT 
+Teksti
+;
+MSG_MEN_TEXT_WORDWRAP 
+ \0Salli rivin vaihto
+;
+MSG_MEN_TEXT_SEARCH 
+ \0Etsi...
+;
+MSG_MEN_TEXT_SEARCH_PREV 
+ \0Etsi edellinen
+;
+MSG_MEN_TEXT_SEARCH_NEXT
+ \0Etsi seuraava
+;
+MSG_ASL_OPEN_TITLE 
+Valitse avattava tiedosto
+;
+MSG_ASL_SAVE_TITLE
+Valitse tallennuskohde
+;
+MSG_ABOUT 
+MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+;
+MSG_ABOUT_TITLE 
+MultiView
+;
+MSG_CONTINUE 
+Jatka
+;
+MSG_OK 
+Selvä
+;

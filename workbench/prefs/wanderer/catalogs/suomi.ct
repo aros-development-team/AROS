@@ -1,0 +1,29 @@
+## version $VER: wanderer.catalog 1.0 (14.02.2004)
+## language suomi
+## codeset 0
+;
+;
+MSG_NAME
+Wanderer asetukset
+; Wanderer Preferences
+;
+MSG_BACKGROUNDS
+Taustat
+; Backgrounds
+;
+MSG_BACKGROUND_WORKBENCH
+Työpöytä
+; Workbench
+;
+MSG_BACKGROUND_DRAWERS
+Hakemistot
+; Drawers
+;
+MSG_SELECT_WORKBENCH_BACKGROUND
+Valitse työpöydän tausta
+; Select Workbench Background
+;
+MSG_SELECT_DRAWER_BACKGROUND
+Valitse hakemistojen tausta
+; Select Drawer Background
+;

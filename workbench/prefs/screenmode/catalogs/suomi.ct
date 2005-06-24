@@ -1,0 +1,26 @@
+## version $VER: ScreenMode.catalog 1.0 (27.01.2005)
+## language suomi
+## codeset 0
+;
+;
+MSG_NAME
+Näyttötilan asetukset
+;
+MSG_WIDTH
+\33lLeveys:
+;
+MSG_DEFAULT
+\33l_oletus
+;
+MSG_HEIGHT
+\33lKorkeus:
+;
+MSG_DEPTH
+\33lSyvyys:
+;
+MSG_AUTOSCROLL
+\33lAutomaattinen vieritys
+;
+MSG_SELECT
+Valitse näyttötila
+;

@@ -1,0 +1,36 @@
+## version $VER: SystemPrefsWindow.catalog 1.0 (14.02.2004)
+## codeset 0
+## language suomi
+;
+MSG_MENU_PREFS
+Asetukset
+; Preferences
+;
+MSG_MENU_PREFS_IMPORT
+U\0Tuo...
+; I\0Import...
+;
+MSG_MENU_PREFS_EXPORT
+V\0Vie...
+; E\0Export...
+;
+MSG_MENU_PREFS_TEST
+O\0Kokeile
+; T\0Test
+;
+MSG_MENU_PREFS_REVERT
+A\0Palauta
+; R\0Revert
+;
+MSG_MENU_PREFS_SAVE
+T\0Tallenna
+; S\0Save
+;
+MSG_MENU_PREFS_USE
+K\0Käytä
+; U\0Use
+;
+MSG_MENU_PREFS_CANCEL
+P\0Peru
+; C\0Cancel
+;

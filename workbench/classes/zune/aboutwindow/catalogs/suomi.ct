@@ -1,0 +1,24 @@
+## version $VER: AboutWindow.catalog 1.0 (12.06.2003)
+## codeset 0
+## language suomi
+;
+MSG_ABOUT
+Tietoa
+; About
+;
+MSG_AUTHORS
+Tekijät
+; Authors
+;
+MSG_SPONSORS
+Tukijat
+; Sponsors
+;
+MSG_SECTION_PROGRAMMING
+Ohjelmointi
+; Programming
+;
+MSG_SECTION_TRANSLATING
+Käännökset
+; Translating
+;

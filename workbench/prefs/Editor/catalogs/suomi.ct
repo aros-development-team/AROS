@@ -1,0 +1,104 @@
+#version $VER: JanoPrefs.catalog 1.0 (24.2.2001)
+#codeset 0
+#language suomi
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Edit Menu
+;
+MSG_RESETDEFAULT
+Oletusasetukset
+;
+MSG_LASTSAVED
+Viimeksi tallennetut asetukset
+;
+; *********************
+;   Preference window 
+; *********************
+;
+MSG_TITLEWIN
+Pääasetukset
+;
+MSG_TAB
+Tabulointi:
+;
+MSG_SEPARATORS
+Erottimet:
+;
+MSG_TXTFONT
+Tekstin kirjasin:
+;
+MSG_SCRFONT
+Näyttökirjasin:
+;
+MSG_PUBSCREEN
+Näytön tyyppi:
+;
+MSG_BACKDROP
+Tausta
+;
+MSG_LEFTMARGIN
+Vasen marginaali
+;
+MSG_AUTOINDENT
+Automaattinen sisennys
+;
+MSG_EXTEND
+Laajennettu numeronäppäimistö
+;
+MSG_PREFSSAVE
+Tallenna
+;
+MSG_USEPREFS
+Käytä
+;
+MSG_DISCARDPREFS
+Peru
+;
+MSG_USEDEF
+Käytä oletuksena
+;
+MSG_CHOOSEIT
+Valitse...
+;
+MSG_CLONEPARENT
+Kloonaa vanhempi
+;
+MSG_COLOR_BACK
+Tausta
+;
+MSG_COLOR_TEXT
+Perusteksti
+;
+MSG_COLOR_FILLTXT
+Valittu täyttöteksti
+;
+MSG_COLOR_FILLSEL
+Valittu teksti
+;
+MSG_COLOR_MARGINBACK
+Marginaalin tausta
+;
+MSG_COLOR_MARGINTXT
+Marginaalin teksti
+;
+MSG_COLOR_SHINE
+Paneeli
+;
+MSG_COLOR_SHADE
+Paneelin varjo
+;
+MSG_COLOR_PANELBACK
+Paneelin tausta
+;
+MSG_COLOR_PANELTEXT
+Paneelin teksti
+;
+MSG_COLOR_GLYPH
+Paneelin glyyfi
+;
+MSG_COLOR_MARKEDLINES
+Aktiivinen paneeli
+;

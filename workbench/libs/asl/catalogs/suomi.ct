@@ -1,0 +1,404 @@
+## version $VER: asl.catalog 1.0 (13.03.2001)
+## language suomi
+## codeset 0
+;
+MSG_FILEREQ_TITLE
+Valitse tiedosto
+; Select File
+;
+MSG_FILEREQ_POSITIVE_GAD
+Selvä
+; Ok
+;
+MSG_FILEREQ_NEGATIVE_GAD
+Peru
+; Cancel
+;
+MSG_FILEREQ_VOLUMES_GAD
+Asemat
+; Volumes
+;
+MSG_FILEREQ_PARENT_GAD
+Edeltäjä
+; Parent
+;
+MSG_FILEREQ_PATTERN_LABEL
+Kuvio
+; Pattern
+;
+MSG_FILEREQ_DRAWER_LABEL
+Hakemisto
+; Drawer
+;
+MSG_FILEREQ_FILE_LABEL
+Tiedosto
+; File
+;
+MSG_FILEREQ_LV_DRAWER
+Hakemisto
+; Drawer
+;
+MSG_FILEREQ_LV_ASSIGN
+Asetettu
+; Assign
+;
+MSG_FILEREQ_DELETE_TITLE
+Poista tiedosto
+; Delete File
+;
+MSG_FILEREQ_DELETE_MSG
+Varoitus: et saa takaisin minkä poistat!\nPoistetaanko varmasti\n%s?
+; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
+;
+MSG_FILEREQ_DELETE_OKCANCEL
+Poista|Peru
+; Delete|Cancel
+;
+MSG_FILEREQ_RENAME_TITLE
+Nimeä uudelleen
+; Rename
+;
+MSG_FILEREQ_RENAME_OK
+Nimeä
+; Rename
+;
+MSG_FILEREQ_RENAME_CANCEL
+Peru
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_TITLE
+Luo hakemisto
+; Create Drawer
+;
+MSG_FILEREQ_CREATEDRAWER_OK
+Luo
+; Create
+;
+MSG_FILEREQ_CREATEDRAWER_CANCEL
+Peru
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_DEFNAME
+Nimeä_minut
+; Rename_Me
+;
+MSG_FILEREQ_SELECT_TITLE
+Valitse kuviolla
+; Select by pattern
+;
+MSG_FILEREQ_SELECT_OK
+Valitse
+; Select
+;
+MSG_FILEREQ_SELECT_CANCEL
+Peru
+; Cancel
+;
+MSG_FILEREQ_MEN_CONTROL
+Hallinta
+; Control
+;
+MSG_FILEREQ_MEN_CONTROL_LASTNAME
+L\0Edellinen nimi
+; L\0Last Name
+;
+MSG_FILEREQ_MEN_CONTROL_NEXTNAME
+N\0Seuraava nimi
+; N\0Next Name
+;
+MSG_FILEREQ_MEN_CONTROL_RESTORE
+R\0Palauta
+; R\0Restore
+;
+MSG_FILEREQ_MEN_CONTROL_PARENT
+P\0Edeltäjä
+; P\0Parent
+;
+MSG_FILEREQ_MEN_CONTROL_VOLUMES
+V\0Asemat
+; V\0Volumes
+;
+MSG_FILEREQ_MEN_CONTROL_UPDATE
+U\0Päivitä
+; U\0Update
+;
+MSG_FILEREQ_MEN_CONTROL_DELETE
+D\0Poista
+; D\0Delete
+;
+MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
+T\0Luo uusi hakemisto...
+; T\0Create new drawer...
+;
+MSG_FILEREQ_MEN_CONTROL_RENAME
+E\0Nimeä uudelleen...
+; E\0Rename...
+;
+MSG_FILEREQ_MEN_CONTROL_SELECT
+#\0Valitse...
+; #\0Select...
+;
+MSG_FILEREQ_MEN_CONTROL_OK
+O\0Selvä
+; O\0Ok
+;
+MSG_FILEREQ_MEN_CONTROL_CANCEL
+C\0Peru
+; C\0Cancel
+;
+MSG_FILEREQ_MEN_FILELIST
+Tiedostolista
+; File list
+;
+MSG_FILEREQ_MEN_FILELIST_SORTNAME
+1\0Järjestä nimen mukaan
+; 1\0Sort by name
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDATE
+2\0Järjestä päivämäärittäin
+; 2\0Sort by date
+;
+MSG_FILEREQ_MEN_FILELIST_SORTSIZE
+3\0Järjestä koon mukaan
+; 3\0Sort by size
+;
+MSG_FILEREQ_MEN_FILELIST_SORTUP
++\0Nouseva järjestys
+; +\0Ascending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDOWN
+-\0Laskeva järjestys
+; -\0Descending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
+4\0Näytä hakemistot ensimmäisenä
+; 4\0Show drawers first
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
+5\0Sekoita hakemistot ja tiedostot
+; 5\0Show drawers with files
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
+6\0Näytä hakemistot lopussa
+; 6\0Show drawers last
+;
+MSG_MODEREQ_TITLE
+Valitse näyttötila
+; Select Screen Mode
+;
+MSG_MODEREQ_POSITIVE_GAD
+Selvä
+; Ok
+;
+MSG_MODEREQ_NEGATIVE_GAD
+Peru
+; Cancel
+;
+MSG_MODEREQ_OVERSCAN_LABEL
+Overscan
+; Overscan
+;
+MSG_MODEREQ_OVERSCAN_TEXT
+Tekstin koko
+; Text Size
+;
+MSG_MODEREQ_OVERSCAN_GRAPHICS
+Grafiikan koko
+; Graphics Size
+;
+MSG_MODEREQ_OVERSCAN_EXTREME
+Äärimmäinen koko
+; Extreme Size
+;
+MSG_MODEREQ_OVERSCAN_MAXIMUM
+Suurin koko
+; Maximum Size
+;
+MSG_MODEREQ_WIDTH_LABEL
+Leveys
+; Width
+;
+MSG_MODEREQ_HEIGHT_LABEL
+Korkeus
+; Height
+;
+MSG_MODEREQ_COLORS_LABEL
+Värit
+; Colors
+;
+MSG_MODEREQ_AUTOSCROLL_LABEL
+Auto-vieritys
+; AutoScroll
+;
+MSG_MODEREQ_AUTOSCROLL_OFF
+POIS
+; OFF
+;
+MSG_MODEREQ_AUTOSCROLL_ON
+PÄÄLLÄ
+; ON
+;
+MSG_MODEREQ_PROPERTIES_TITLE
+Tilan ominaisuudet
+; Mode Properties
+;
+MSG_MODEREQ_PROPERTIES_NOTWB
+Ei tue työpöytää
+; Does not support Workbench
+;
+MSG_MODEREQ_PROPERTIES_NOTGENLOCK
+Ei tue genlock:ia
+; Does not support genlock
+;
+MSG_MODEREQ_PROPERTIES_NOTDRAG
+Ei raahattavissa
+; Not draggable
+;
+MSG_MODEREQ_PROPERTIES_HAM
+Hold & Modify
+; Hold & Modify
+;
+MSG_MODEREQ_PROPERTIES_EHB
+Extra-HalfBright
+; Extra-HalfBright
+;
+MSG_MODEREQ_PROPERTIES_LACE
+Lomitettu
+; Interlaced
+;
+MSG_MODEREQ_PROPERTIES_ECS
+Vaatii ECS:n
+; Requires ECS
+;
+MSG_MODEREQ_PROPERTIES_WB
+Tukee työpöytää
+; Supports Workbench
+;
+MSG_MODEREQ_PROPERTIES_GENLOCK
+Tukee genlock:ia
+; Supports genlock
+;
+MSG_MODEREQ_PROPERTIES_DRAG
+Raahattavissa
+; Draggable
+;
+MSG_MODEREQ_PROPERTIES_DPFPRI2
+DualPlayfield prioriteetti 2
+; DualPlayfield Priority 2
+;
+MSG_MODEREQ_PROPERTIES_REFRESHRATE
+%ldHz, %ld,%ldkHz
+; %ldHz, %ld,%ldkHz
+;
+MSG_MODEREQ_MEN_CONTROL
+Hallinta
+; Control
+;
+MSG_MODEREQ_MEN_CONTROL_LASTMODE
+L\0Edellinen tila
+; L\0Last Mode
+;
+MSG_MODEREQ_MEN_CONTROL_NEXTMODE
+N\0Seuraava tila
+; N\0Next Mode
+;
+MSG_MODEREQ_MEN_CONTROL_PROPERTIES
+?\0Ominaisuuslista...
+; ?\0Property List...
+;
+MSG_MODEREQ_MEN_CONTROL_RESTORE
+R\0Palauta
+; R\0Restore
+;
+MSG_MODEREQ_MEN_CONTROL_OK
+O\0Selvä
+; O\0Ok
+;
+MSG_MODEREQ_MEN_CONTROL_CANCEL
+C\0Peru
+; C\0Cancel
+;
+MSG_FONTREQ_TITLE
+Valitse kirjasin
+; Select Font
+;
+MSG_FONTREQ_POSITIVE_GAD
+Selvä
+; Ok
+;
+MSG_FONTREQ_NEGATIVE_GAD
+Peru
+; Cancel
+;
+MSG_FONTREQ_MEN_CONTROL
+Hallinta
+; Control
+;
+MSG_FONTREQ_MEN_CONTROL_LASTFONT
+L\0Edellinen kirjasin
+; L\0Last Font
+;
+MSG_FONTREQ_MEN_CONTROL_NEXTFONT
+N\0Seuraava kirjasin
+; N\0Next Font
+;
+MSG_FONTREQ_MEN_CONTROL_RESTORE
+R\0Palauta
+; R\0Restore
+;
+MSG_FONTREQ_MEN_CONTROL_RESCAN
+D\0Tutki levy uudelleen
+; D\0Rescan Disk
+;
+MSG_FONTREQ_MEN_CONTROL_OK
+O\0Selvä
+; O\0Ok
+;
+MSG_FONTREQ_MEN_CONTROL_CANCEL
+C\0Peru
+; C\0Cancel
+;
+MSG_FONTREQ_MODE_LABEL
+Tila
+; Mode
+;
+MSG_FONTREQ_MODE_TEXT
+Teksti
+; Text
+;
+MSG_FONTREQ_MODE_TEXTANDFIELD
+Teksti+kenttä
+; Text+Field
+;
+MSG_FONTREQ_MODE_COMPLEMENT
+Käänteinen
+; Complement
+;
+MSG_FONTREQ_STYLE_LABEL
+Tyyli
+; Style
+;
+MSG_FONTREQ_STYLE_BOLD
+B
+; B
+;
+MSG_FONTREQ_STYLE_ITALIC
+I
+; I
+;
+MSG_FONTREQ_STYLE_UNDERLINED
+U
+; U
+;
+MSG_FONTREQ_COLOR_LABEL_FG
+Väri
+; Color
+;
+MSG_FONTREQ_COLOR_LABEL_BG
+Taustaväri
+; BG Color
+;
+MSG_FONTREQ_COLOR_LABEL_FGBG
+Värit
+; Colors
+;

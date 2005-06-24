@@ -1,0 +1,22 @@
+## version $VER: Installer.catalog 1.0 (14.9.2003)
+## language suomi
+## codeset 0
+;
+MSG_OK
+Selvä
+;
+MSG_CANCEL
+Peru
+;
+MSG_MESSAGE
+Viesti
+;
+MSG_PROMPT
+Kehote
+;
+MSG_YES
+Kyllä
+;
+MSG_NO
+Ei
+;

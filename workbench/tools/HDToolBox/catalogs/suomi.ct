@@ -1,0 +1,127 @@
+## version $VER: hdtoolbox.catalog 1.0 (22.05.2003)
+## codeset 0
+## language suomi
+;
+WORD_Active
+Aktiivinen
+;
+WORD_AddEntry
+Lisää kohta
+;
+WORD_All
+Kaikki
+;
+WORD_Automount
+Automount
+;
+WORD_Bootable
+Bootattava
+;
+WORD_BootPri
+Bootti prioriteetti
+;
+WORD_Cancel
+Peru
+;
+WORD_Changed
+Muutettu
+;
+WORD_Change_Type
+Muuta tyyppiä
+;
+WORD_Create_Table
+Luo taulukko
+;
+WORD_Devices
+Laitteet
+;
+WORD_DosEnvec
+DosEnvec
+;
+WORD_Exit
+Poistu
+;
+WORD_Geometry
+Geometria
+;
+WORD_Name
+Nimi
+;
+WORD_Switches
+Kytkimet
+;
+WORD_Ok
+Selvä
+;
+WORD_Parent
+Edeltäjä
+;
+WORD_Partitions
+Osiot
+;
+WORD_Partition_Table
+Osiotaulu
+;
+WORD_Partition_Table_Type
+Osiotaulun tyyppi
+;
+WORD_Partition_Type
+Osion tyyppi
+;
+WORD_RemoveEntry
+Poista kohta
+;
+WORD_Rename
+Nimeä uudelleen
+;
+WORD_Resize_Move
+Muuta kokoa/siirrä
+;
+WORD_Save_Changes
+Tallenna muutokset
+;
+WORD_Size
+Koko
+;
+WORD_Unit
+Laite
+;
+WORD_Units
+Laitteet
+;
+WORD_Unknown
+Tuntematon
+;
+WORD_MENU_Project
+Projekti
+;
+WORD_MENU_About
+Tietoa
+;
+WORD_MENU_Quit
+Lopeta
+;
+MSG_ASK_SAVE
+Kaikki tieto muokatuilla osioilla tuhoutuu!\nOletko varma että tahdot osiotaulun '%s' muutokset kirjoitettavan levylle?
+;
+MSG_NO_MEMORY
+Muisti lopussa
+;
+MSG_PARTITION_TABLE_FULL
+Osiotaulu täynnä
+;
+MSG_Select_Empty_Area
+Valitse tyhjä alue
+;
+MSG_Select_Partition_Resize_Move
+Valitse osio ja muuta sen kokoa/siirrä sitä
+;
+MSG_Welcome
+Tervetuloa osiointityökaluun
+;
+MSG_WriteTableError
+Virhe osiotaulua tallennettaessa
+;
+MSG_CreateTableError
+Virhe osiotaulua luotaessa
+;

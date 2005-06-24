@@ -1,0 +1,101 @@
+## version $VER: AboutAROS.catalog 1.0 (12.8.2003)
+## language suomi
+## codeset 0
+;
+MSG_TITLE
+Tietoa AROS:ista
+; About AROS
+;
+MSG_PERSONAL_BUILD
+Henkilökohtainen käännös
+;
+MSG_NIGHTLY_BUILD
+Öinen käännös
+;
+MSG_SNAPSHOT
+Snapshot
+;
+MSG_MILESTONE
+Virstanpylväs
+;
+MSG_RELEASE
+Release
+;
+MSG_COPYRIGHT
+Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+;
+MSG_LICENSE_1
+Julkaistu seuraavan lisenssin alaisena:
+;
+MSG_LICENSE_2
+AROS Public License
+;
+MSG_LICENSE_3
+, version 1.1.
+;
+MSG_MORE_INFORMATION
+Vieraile sivustolla http://www.aros.org/ lisätietoja varten.
+;
+MSG_PAGE_AUTHORS
+Tekijät
+;
+MSG_PAGE_SPONSORS
+Tukijat
+;
+MSG_PAGE_ACKNOWLEDGEMENTS
+Tunnustuksia
+;
+MSG_SECTION_COORDINATION
+Koordinaatio
+;
+MSG_SECTION_EVANGELISM
+Evangelismi
+;
+MSG_SECTION_HIDD
+HIDD alijärjestelmä
+;
+MSG_SECTION_INTUITION
+Intuition
+;
+MSG_SECTION_GRAPHICS
+Grafiikka
+;
+MSG_SECTION_SHELL_COMMANDS
+Shell-komennot
+;
+MSG_SECTION_WORKBENCH
+Workbench
+;
+MSG_SECTION_TOOLS
+Työkalut
+;
+MSG_SECTION_PREFERENCES
+Preferences
+;
+MSG_SECTION_BGUI
+BGUI
+;
+MSG_SECTION_ZUNE
+Zune
+;
+MSG_SECTION_KERNEL
+Ydin
+;
+MSG_SECTION_DOS
+DOS
+;
+MSG_SECTION_LIBC_POSIX
+C-linkkikirjasto ja POSIX rajapinta
+;
+MSG_SECTION_DOCUMENTATION
+Dokumentaatio
+;
+MSG_SECTION_TRANSLATION
+Käännökset
+;
+MSG_SECTION_ARTISTRY
+Taide
+;
+MSG_SECTION_WEBSITE
+Web-sivusto
+;
