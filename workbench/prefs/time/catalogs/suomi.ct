@@ -1,0 +1,48 @@
+## version $VER: timeprefs.catalog 1.0 (02.02.2005)
+## codeset 0
+## language suomi
+;
+MSG_CANT_OPEN_LIB
+En voi avata %s v%ld\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+En voi luoda ohjelmaobjektia!
+; Can't create application object!
+;
+MSG_WINTITLE
+Aika-asetukset
+; Time Preferences
+;
+MSG_MEN_PROJECT
+Projekti
+; Project
+;
+MSG_MEN_PROJECT_QUIT
+K\0Lopeta
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Muokkaus
+; Edit
+;
+MSG_MEN_EDIT_RESTORE
+V\0Palauta
+; R\0Restore
+;
+MSG_OK
+Selvä
+; Ok
+;
+MSG_GAD_SAVE
+Tallenna
+; Save
+;
+MSG_GAD_USE
+Käytä
+; Use
+;
+MSG_GAD_CANCEL
+Peru
+; Cancel
+;

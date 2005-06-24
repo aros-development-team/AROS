@@ -1,0 +1,57 @@
+## version $VER: ScreenGrabber.catalog 1.0 (03.02.2005)
+## language suomi
+## codeset 0
+;
+;
+MSG_WINDOW_TITLE
+Ruutukaappari
+; ScreenGrabber
+;
+MSG_REFRESH
+Päivitä lista
+; Refresh list
+;
+MSG_SCREEN_INFO
+Näyttötiedot
+; Screen info
+;
+MSG_SIZE
+Koko
+; Size
+;
+MSG_TITLE
+Otsikko
+; Title
+;
+MSG_DEFAULT_TITLE
+Oletusotsikko
+; Default title
+;
+MSG_GRABBING_OPTIONS
+Kaappausasetukset
+; Grabbing options
+;
+MSG_DELAY
+Viive (sek.)
+; Delay (s)
+;
+MSG_HIDE
+Piilota kaappari-ikkuna
+; Hide the grabber window
+;
+MSG_SAVE_OPTIONS
+Tallenna aseutkset
+; Save options
+;
+MSG_SAVE_FILE
+Tallenna tiedosto
+; Save file
+;
+MSG_SCREENSHOT
+Kaappaa näyttö
+; Screenshot
+;
+MSG_SCREEN_PARM
+%d x %d, syvyys=%d
+; %d x %d, depth=%d
+;

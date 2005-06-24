@@ -1,0 +1,9 @@
+## version $VER: loadresource.catalog 1.0 (27.01.2005)
+## language suomi
+## codeset 0
+;
+;
+MSG_ERROR_OPEN_LIBRARY
+Kirjastoa %s ei voi avata.
+; Couldn't open library %s.
+;

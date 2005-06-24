@@ -1,0 +1,77 @@
+## version $VER: fontprefs.catalog 2.0 (13.1.2002)
+## language suomi
+## codeset 0
+;
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+En voi luoda ohjelmaobjektia!
+; Can't create application object.
+;
+MSG_CANT_CREATE_REQ
+En voi luoda tiedostoikkunaa!
+; Can't open create filerequester!
+;
+MSG_CANT_CREATE_CONTEXT
+En voi luoda kontekstia Gadtools:ille!
+; Can't create context for Gadtools!
+;
+MSG_CANT_OPEN_STREAM
+En voi avata IFF-virtaa!
+; Can't open IFF stream!
+;
+MSG_CANT_WRITE_PREFFILE
+En voi tallentaa asetuksia!
+; Can't write preferences!
+;
+MSG_CANT_READ_PREFFILE
+En voi lukea asetuksia!
+; Can't read preferences!
+;
+MSG_CANT_ALLOCATE_IFFPTR
+En voi varata IFF-kahvaa!
+; Can't allocate IFF handle!
+;
+MSG_CANT_ALLOCATE_MEM
+En voi varata ohjelmamuistia (%s)!
+; Can't allocate application memory (%s)!
+;
+MSG_NAME
+Kirjasinasetukset
+; Font Preferences
+;
+MSG_MENU_PREFERENCES
+Asetukset
+; Preferences
+;
+MSG_MENU_PREFERENCES_IMPORT
+I\0Tuo...
+; I\0Import...
+;
+MSG_MENU_PREFERENCES_EXPORT
+E\0Vie...
+; E\0Export...
+;
+MSG_ASL_OPEN_TITLE
+Lataa kirjasinasetukset
+; Load Font Preferences
+;
+MSG_ASL_SAVE_TITLE
+Tallenna kirjasinasetukset
+; Save Font Preferences
+;
+MSG_OK
+Selvä
+; Ok
+;
+MSG_ICONS
+Ikonit:
+; Icons
+;
+MSG_SYSTEM
+Järjestelmä:
+; System:
+;
+MSG_SCREEN
+Näyttö:
+; Screen:
+;

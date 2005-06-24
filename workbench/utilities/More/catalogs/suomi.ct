@@ -1,0 +1,112 @@
+## version $VER: more.catalog 1.0 (14.10.2001)
+## codeset 0
+## language suomi
+;
+MSG_CANT_OPEN_LIB 
+En voi avata %s v%ld!
+;
+MSG_NO_MEM 
+Muisti lopussa!
+;
+MSG_CANT_LOCK_SCR 
+En voi lukita näyttöä!
+;
+MSG_CANT_GET_DRI 
+En saa DrawInfo:a!
+;
+MSG_CANT_GET_VI 
+En saa VisualInfo:a!
+;
+MSG_CANT_CREATE_SYSIMAGE 
+En voi luoda SYSICLASS kuvia!
+;
+MSG_CANT_CREATE_GADGET
+En voi luoda nappeja!
+;
+MSG_CANT_CREATE_MENUS 
+En voi luoda valikkoja!
+;
+MSG_CANT_CREATE_WIN 
+En voi luoda ikkunaa!
+;
+MSG_MEN_PROJECT 
+Projekti
+;
+MSG_MEN_PROJECT_OPEN 
+O\0Avaa...
+;
+MSG_MEN_PROJECT_SAVEAS 
+A\0Tallenna nimellä...
+;
+MSG_MEN_PROJECT_PRINT 
+P\0Tulosta
+;
+MSG_MEN_PROJECT_ABOUT 
+?\0Tietoa...
+;
+MSG_MEN_PROJECT_QUIT 
+Q\0Lopeta
+;
+MSG_MEN_NAVIGATION 
+Navigointi
+;
+MSG_MEN_NAVIGATION_FIND 
+F\0Etsi...
+;
+MSG_MEN_NAVIGATION_FIND_NEXT
+.\0Etsi seuraava
+;
+MSG_MEN_NAVIGATION_FIND_PREV 
+,\0Etsi edellinen
+;
+MSG_MEN_NAVIGATION_JUMP 
+J\0Hyppää...
+;
+MSG_ASL_OPEN_TITLE 
+Valitse avattava tiedosto
+;
+MSG_ASL_SAVE_TITLE 
+Valitse tallennustiedosto
+;
+MSG_ABOUT 
+More V%ld.%ld\n (%s)\nCopyright © %s av %s
+;
+MSG_ABOUT_TITLE 
+More
+;
+MSG_CONTINUE
+Jatka
+;
+MSG_JUMP_TITLE
+Mene riville...
+;
+MSG_FIND_TITLE 
+Etsi
+;
+MSG_OK 
+Selvä
+;
+MSG_CANCEL 
+Peru
+;
+MSG_WIN_TITLE 
+More: %s (%ld riviä - %ld tavua)
+;
+MSG_SHORTCUT_TOP 
+T
+;
+MSG_SHORTCUT_BOTTOM
+B
+;
+MSG_SHORTCUT_JUMP
+GJ
+;
+MSG_SHORTCUT_FIND
+FS
+;
+MSG_SHORTCUT_NEXT
+N
+;
+MSG_SHORTCUT_PREV
+P
+;

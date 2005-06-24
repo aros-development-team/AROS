@@ -1,0 +1,24 @@
+## version $VER: PrefsWindow.catalog 1.0 (28.05.2003)
+## codeset 0
+## language suomi
+;
+MSG_TEST
+_Kokeile
+; Test
+;
+MSG_REVERT
+P_alauta
+; Revert
+;
+MSG_SAVE
+_Tallenna
+;
+; Save
+MSG_USE
+_Käytä
+; Use
+;
+MSG_CANCEL
+_Peru
+; Cancel
+;

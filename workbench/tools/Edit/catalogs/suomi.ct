@@ -1,0 +1,321 @@
+;
+; JanoEditor.catalog
+;
+## version $VER: JanoEditor.catalog 1.0 (27.01.2002).
+## codeset 0
+## language suomi
+;
+MSG_PROJECTTITLE
+Projekti
+;
+MSG_NEWEMPTYFILE
+Uusi
+;
+MSG_OPENNEWFILE
+Avaa tiedosto...
+;
+MSG_LOADINPRJ
+Lataa tiedosto...
+;
+MSG_SAVEFILE
+Tallenna
+;
+MSG_SAVEFILEAS
+Tallenna nimellä...
+;
+MSG_SAVECHANGES
+Tallenna muutokset
+;
+MSG_PRINTFILE
+Tulosta
+;
+MSG_INFORMATION
+Tiedot...
+;
+MSG_CLOSE
+Sulje
+;
+MSG_QUIT
+Lopeta
+;
+MSG_EDITTITLE
+Muokkaus
+;
+MSG_CUT
+Leikkaa
+;
+MSG_COPY
+Kopioi
+;
+MSG_PASTE
+Liitä
+;
+MSG_MARK
+Merkitse
+;
+MSG_MARKCOLUMN
+Merkitse sarake
+;
+MSG_SELECTALL
+Valitse kaikki
+;
+MSG_DELLINE
+Poista rivi
+;
+MSG_SUBTOOLS
+Työkalut
+;
+MSG_INDENT
+Sisennä
+;
+MSG_UNINDENT
+Poista sisennys
+;
+MSG_UPPERCASE
+Isot kirjaimet
+;
+MSG_LOWERCASE
+Pienet kirjaimet
+;
+MSG_TOGGLECASE
+Vaihda kirjain kokoa
+;
+MSG_INSERTFILE
+Sisällytä tiedosto...
+;
+MSG_UNDO
+Peru
+;
+MSG_REDO
+Tee uudestaan
+;
+MSG_SEARCHTITLE
+Etsi
+;
+MSG_FIND
+Etsi...
+;
+MSG_REPLACE
+Korvaa...
+;
+MSG_SUBFIND
+Etsi
+;
+MSG_NEXTFIND
+Etsi seuraava
+;
+MSG_PREVFIND
+Etsi edellinen
+;
+MSG_NEXTREPLACE
+Korvaa
+;
+MSG_PREVPAGE
+Edellinen sivu
+;
+MSG_NEXTPAGE
+Seuraava sivu
+;
+MSG_GOTOLINE
+Mene riville...
+;
+MSG_FINDBRACKET
+Vastaava sulku
+;
+MSG_LASTMODIF
+Viimeisin muutos
+;
+MSG_BEGOFLINE
+Rivin alkuun
+;
+MSG_ENDOFLINE
+Rivin loppuun
+;
+; Macro Menu
+;
+MSG_MACROTITLE
+Makrot
+;
+MSG_STARTRECORD
+Aloita tallennus
+;
+MSG_STOPRECORD
+Lopeta tallennus
+;
+MSG_PLAYMACRO
+Aja makro
+;
+MSG_REPEATMACRO
+Toista makro...
+;
+; Environnement menu
+;
+MSG_ENVTITLE
+Ympäristö
+;
+MSG_SCRMODE
+Näyttötila...
+;
+MSG_FONTS
+Kirjasimet...
+;
+MSG_PREFS
+Yleisasetukset...
+;
+MSG_LOADPREFS
+Lataa asetukset...
+;
+MSG_SAVEPREFS
+Tallenna asetukset
+;
+MSG_SAVEPREFSAS
+Tallenna asetukset nimellä...
+;
+ERR_BADOS
+Wanha käyttis! Asenna v2.0 tai uudempi.
+;
+ERR_NOASLREQ
+En voi varata ASL-kyselyä!
+;
+ERR_NOMEM
+Muisti lopussa!
+;
+ERR_NOGUI
+Pääkäyttöliittymä ei avaudu!
+;
+ERR_NONAME
+Ei nimeä
+;
+ERR_WRITECLIP
+Kirjoitusvirhe leikepöytälaitteeseen
+;
+ERR_OPENCLIP
+Leikepöytää ei voi avata!
+;
+ERR_LOADFILE
+Haluttua tiedostoa ei voi avata!
+;
+ERR_NOTXTINCLIP
+Ei tekstiä leikepöydällä
+;
+ERR_WRONG_TYPE
+Objekti on hakemisto!
+;
+ERR_READCLIP
+Lukutoiminto epätäydellinen mahdollisen muistin puutteen vuoksi
+;
+ERR_NOBRACKET
+Ei sulkua kursorin alla!
+;
+ERR_NOT_FOUND
+Kuviota '%s' ei löydy
+;
+ERR_LOADFONT
+Haluttua kirjasinta ei voi ladata!
+;
+ERR_NOPREFEDITOR
+Asetusmuokkainta ei löydy!
+;
+ERR_BADPREFSFILE
+Asetustiedoston muoto virheellinen.
+;
+ERR_FILEMODIFIED
+Tiedostoa %s on muokattu.\nOletko varma sen sulkemisesta?
+;
+ERR_SLC
+Tallenna|Sulje|Peru
+;
+ERR_NOSEARCHTEXT
+Ei tekstiä jota etsiä!
+;
+ERR_FILEEXISTS
+Tiedosto on jo olemassa. Kirjoitetaanko sen yli?
+;
+ERR_OC
+Kyllä|EI!
+;
+WARN_RECORD
+Aloita makron tallennus
+;
+WARN_RECORDED
+Makro tallennettu
+;
+WARN_REC
+[REC]
+;
+;
+; ******************
+; Information window
+; ******************
+;
+MSG_ABOUT
+Tietoa
+;
+MSG_FORMATINFO
+%s for %s\nSuunnittelu: T.Pierron ja C.Guillaume © 2000\n\nTiedosto muokattavana: %s\nKoko: %ld %s, %ld %s.
+;
+MSG_CONTINUE
+Jatka
+;
+MSG_BYTE
+tavu
+;
+MSG_BYTES
+tavua
+;
+MSG_LINE
+rivi
+;
+MSG_LINES
+rivejä
+;
+;
+; *************************
+;  Search & replace window
+; *************************
+;
+MSG_SEARCHWINDOW
+Etsintäkuvio
+;
+MSG_REPLACEWINDOW
+Etsi ja korvaa
+;
+MSG_SEARCHSTRING
+Paikanna:
+;
+MSG_REPLACESTRING
+Korvaava:
+;
+MSG_OPTCASE
+Merkkikoon on vastattava
+;
+MSG_OPTWORDS
+Kokonaiset sanat
+;
+MSG_BUTTONREPLACE
+Ko_rvaa
+;
+MSG_BUTTONREPALL
+Korvaa k_aikki
+;
+MSG_BUTTONSEARCH
+_Etsi
+;
+MSG_NEXTSEARCH
+_Seuraava
+;
+MSG_USESEARCH
+_Käytä
+;
+MSG_CANCELSEARCH
+_Peru
+;
+MSG_REPLACEALL
+%ld %s '%s':sta/ä korvattu
+;
+MSG_OCCURENCY
+esiintymä
+;
+MSG_OCCURENCIES
+esiintymää
+;
