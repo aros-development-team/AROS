@@ -18,7 +18,7 @@
 	AROS_LH1(APTR, OpenResource,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, resName, A1),
+	AROS_LHA(CONST_STRPTR, resName, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 83, Exec)

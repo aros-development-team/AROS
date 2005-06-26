@@ -18,7 +18,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct NamedObject *, nameSpace, A0),
-	AROS_LHA(STRPTR              , name, A1),
+	AROS_LHA(CONST_STRPTR        , name, A1),
 	AROS_LHA(struct NamedObject *, lastObject, A2),
 
 /*  LOCATION */

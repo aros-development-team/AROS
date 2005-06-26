@@ -17,8 +17,8 @@
 	AROS_LH2(struct NamedObject *, AllocNamedObjectA,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR    , name, A0),
-	AROS_LHA(struct TagItem *, tagList, A1),
+	AROS_LHA(CONST_STRPTR          , name, A0),
+	AROS_LHA(CONST struct TagItem *, tagList, A1),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 38, Utility)

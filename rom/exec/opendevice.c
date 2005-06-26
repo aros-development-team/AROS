@@ -34,7 +34,7 @@ char *const inputname = "input.device";
 	AROS_LH4(BYTE, OpenDevice,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR,             devName,    A0),
+	AROS_LHA(CONST_STRPTR,       devName,    A0),
 	AROS_LHA(ULONG,              unitNumber, D0),
 	AROS_LHA(struct IORequest *, iORequest,  A1),
 	AROS_LHA(ULONG,              flags,      D1),
