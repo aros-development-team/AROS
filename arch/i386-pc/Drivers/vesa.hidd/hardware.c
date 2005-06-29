@@ -13,10 +13,11 @@
 #include <aros/bootloader.h>
 #include <proto/bootloader.h>
 
-
 #include "bitmap.h"
 #include "vesagfxclass.h"
 #include "hardware.h"
+
+#include <string.h>
 
 #undef SysBase
 extern struct ExecBase *SysBase;
@@ -65,6 +66,8 @@ BOOL initVesaGfxHW(struct HWData *data)
 	    	data->bytesperpixel = 1;
 	    }
 	    
+	    D(bug("[Vesa] HwInit: Clearing framebuffer at 0x%08x size %d KB\n",data->framebuffer, vi->FrameBufferSize));
+	    memset(data->framebuffer, 0, vi->FrameBufferSize * 1024);
 	    D(bug("[Vesa] HwInit: Linear framebuffer at 0x%08x\n",data->framebuffer));
 	    D(bug("[Vesa] HwInit: Screenmode %dx%dx%d\n",data->width,data->height,data->depth));
 	    D(bug("[Vesa] HwInit: Masks R %08x<<%2d G %08x<<%2d B %08x<<%2d\n",
