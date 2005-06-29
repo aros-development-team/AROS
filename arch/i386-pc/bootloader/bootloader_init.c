@@ -91,7 +91,7 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, BootLoaderBase)
 	    ULONG masks [] = { 0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff };
 
 	    BootLoaderBase->Vesa.FrameBuffer = (APTR)mb->vmi.phys_base;
-	    BootLoaderBase->Vesa.FrameBufferSize = mb->vci.total_memory * 64;
+	    BootLoaderBase->Vesa.FrameBufferSize = mb->vci.total_memory * 64; /* FrameBufferSize is in KBytes! */
 	    BootLoaderBase->Vesa.XSize = mb->vmi.x_resolution;
 	    BootLoaderBase->Vesa.YSize = mb->vmi.y_resolution;
 	    BootLoaderBase->Vesa.BytesPerLine = mb->vmi.bytes_per_scanline;
