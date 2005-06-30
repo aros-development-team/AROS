@@ -8,6 +8,7 @@ $Id$
 #MM    kernel-pc-i386-kbd-kobj \
 #MM    kernel-pc-i386-mouse-kobj \
 #MM    kernel-pc-i386-serial-kobj \
+#MM    kernel-pc-i386-parallel-kobj \
 #MM    kernel-pc-i386-vesa-kobj \
 #MM    kernel-pc-i386-vga-kobj \
 #MM    kernel-pci-kobj \
