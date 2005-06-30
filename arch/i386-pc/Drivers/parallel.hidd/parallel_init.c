@@ -48,8 +48,6 @@
 
 struct ExecBase * SysBase;
 
-void parallel_int_7(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
-
 #undef OOPBase
 #define OOPBase (csd->oopbase)
 
@@ -90,7 +88,8 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
                 if(csd->parallelhiddclass)
                 {
                     D(bug("  Got ParallelHIDDClass\n"));
-		    
+
+#if 0		    
 		    csd->irqhidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
 		    
 		    if (csd->irqhidd)
@@ -110,8 +109,13 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 			HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Parallel1);
 
 			D(bug("  Got Interrupts\n"));
+#endif
+
 			ReturnInt("ParallelHIDD_Init", ULONG, TRUE);
+
+#if 0
 		    }
+#endif
                 }
 
                 CloseLibrary(csd->utilitybase);

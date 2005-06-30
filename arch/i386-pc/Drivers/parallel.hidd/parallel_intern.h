@@ -8,8 +8,6 @@
 
 /* Include files */
 
-#include <sys/termios.h>
-
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
@@ -55,10 +53,10 @@ struct HIDDParallelUnitData
     VOID		*DataReceivedUserData;
     
     ULONG 		unitnum;
-    int			filedescriptor;
-
+    ULONG   	    	baseaddr;
     BOOL                stopped;
     
+#if 0
     struct MsgPort	*replyport_read;
     struct Interrupt 	*softint_read;
     HIDD		unixio_read;
@@ -66,7 +64,7 @@ struct HIDDParallelUnitData
     struct MsgPort	*replyport_write;
     struct Interrupt 	*softint_write;
     HIDD		unixio_write;
-    
+#endif    
 };
 
 
@@ -106,7 +104,7 @@ void   free_parallelunitclass(struct class_static_data *csd);
 /*
  * Define some names for the registers
  */
-#define PAR_DATA       0       /* In/Out: Parallel Data *
+#define PAR_DATA       0       /* In/Out: Parallel Data */
 #define PAR_SP         1       /* In: Status Port */
 #define PAR_PCP        2       /* In/Out: Parallel Control Port */
 
