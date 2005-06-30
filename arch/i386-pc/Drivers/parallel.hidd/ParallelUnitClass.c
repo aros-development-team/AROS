@@ -6,7 +6,6 @@
     Lang: english
 */
 
-
 /* the rest are Amiga includes */
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -34,29 +33,30 @@
 void parallelunit_receive_data();
 void parallelunit_write_more_data();
 
-inline void outb(unsigned char value, unsigned short port)
+static inline unsigned char inb(unsigned short port)
 {
-	__asm__ __volatile__ ("outb %b0,%w1" : : "a" (value), "Nd"(port));
+
+    unsigned char  _v; 
+
+    __asm__ __volatile__
+    ("inb %w1,%0"
+     : "=a" (_v)
+     : "Nd" (port)
+    );
+    
+    return _v; 
+} 
+
+static inline void outb(unsigned char value, unsigned short port)
+{
+    __asm__ __volatile__
+    ("outb %b0,%w1"
+     :
+     : "a" (value), "Nd" (port)
+    );
 }
 
-inline void outb_p(unsigned char value, unsigned short port)
-{
-	__asm__ __volatile__ ("outb %b0,%w1 \noutb %%al,$0x80" : : "a" (value), "Nd" (port));
-}
-
-inline unsigned char inb(unsigned short port)
-{
-	unsigned char _v;
-	__asm__ __volatile__ ("inb %w1,%b0" : "=a" (_v) : "Nd" (port) );
-	return _v;
-}
-
-inline unsigned char inb_p(unsigned short port)
-{
-	unsigned char _v;
-	__asm__ __volatile__ ("inb %w1,%b0 \noutb %%al,$0x80" : "=a" (_v) : "Nd" (port) );
-	return _v;
-}
+#define parallel_usleep(x) __asm__ __volatile__("\noutb %al,$0x80\n")
 
 static inline void parallel_out(struct HIDDParallelUnitData * data, 
                                 int offset, 
@@ -65,30 +65,21 @@ static inline void parallel_out(struct HIDDParallelUnitData * data,
 	outb(value, data->baseaddr+offset);
 }
 
-static inline void parallel_outp(struct HIDDParallelUnitData * data, 
-                                 int offset, 
-                                 int value)
-{
-	outb_p(value, data->baseaddr+offset);
-}
-
 static inline unsigned int parallel_in(struct HIDDParallelUnitData * data,
                                        int offset)
 {
 	return inb(data->baseaddr+offset);
 }
 
-static inline unsigned int parallel_inp(struct HIDDParallelUnitData * data,
-                                        int offset)
-{
-	return inb_p(data->baseaddr+offset);
-}
-
-
 /*************************** Classes *****************************/
 
 /* IO bases for every Parallel port */
+
+#if 0
 ULONG bases[] = { 0x3bc, 0x378, 0x278};
+#else
+ULONG bases[] = { 0x378, 0x278, 0x3bc};
+#endif
 
 static OOP_AttrBase HiddParallelUnitAB;
 
@@ -102,7 +93,7 @@ static struct OOP_ABDescr attrbases[] =
 static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
 	struct HIDDParallelUnitData * data;
-	static const struct TagItem tags[] = {{ TAG_END, 0}};
+//	static const struct TagItem tags[] = {{ TAG_END, 0}};
 	struct TagItem *tag, *tstate;
 	ULONG unitnum = 0;
 	
@@ -131,17 +122,26 @@ static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot
     
 		data->baseaddr = bases[unitnum];
 		data->unitnum  = unitnum;
-		CSD(cl->UserData)->units[data->unitnum] = data;
 		
+	    #if 0
 		/*
 		 * Enable the interrupt
 		 */
 		parallel_outp(data, UART_PCP, UART_PCP_IRQ_EN);
+	    #endif
+	    
+	    	/* Reset? */
+		
+	    	parallel_out(data, PAR_PCP, PAR_PCP_SLCT_IN);
+		parallel_usleep(60);
+	    	parallel_out(data, PAR_PCP, PAR_PCP_SLCT_IN | PAR_PCP_INIT);
+		
+		/* Reset ? */
+		
 	} /* if (obj) */
 
 	D(bug("%s - an error occurred!\n",__FUNCTION__));
 
-exit:
 	ReturnPtr("ParallelUnit::New()", OOP_Object *, obj);
 }
 
@@ -153,11 +153,11 @@ static OOP_Object *parallelunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg 
 
 	data = OOP_INST_DATA(cl, obj);
 
-	CSD(cl->UserData)->units[data->unitnum] = NULL;
-
+    #if 0
 	/* stop all interrupts */
 	serial_outp(data, UART_PCP, 0);
-
+    #endif
+    
 	OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 	ReturnPtr("ParallelUnit::Dispose()", OOP_Object *, obj);
 }
@@ -167,24 +167,24 @@ static OOP_Object *parallelunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg 
 /******* ParallelUnit::Init() **********************************/
 BOOL parallelunit_init(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Init *msg)
 {
-	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
-	
-	EnterFunc(bug("ParallelUnit::Init()\n"));
-	data->DataReceivedCallBack = msg->DataReceived;
-	data->DataReceivedUserData = msg->DataReceivedUserData;
-	data->DataWriteCallBack		= msg->WriteData;
-	data->DataWriteUserData		= msg->WriteDataUserData;
+    struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
 
-	ReturnBool("ParallelUnit::Init()", TRUE);
+    EnterFunc(bug("ParallelUnit::Init()\n"));
+    data->DataReceivedCallBack = msg->DataReceived;
+    data->DataReceivedUserData = msg->DataReceivedUserData;
+    data->DataWriteCallBack    = msg->WriteData;
+    data->DataWriteUserData    = msg->WriteDataUserData;
+
+    ReturnBool("ParallelUnit::Init()", TRUE);
 }
 
 /******* ParallelUnit::Write() **********************************/
 ULONG parallelunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Write *msg)
 {
 	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
-	ULONG len = msg->Length;
-	ULONG error;
-	unsigned char status;
+	ULONG len = msg->Length, count;
+//	ULONG error;
+//	unsigned char status;
 	
 	EnterFunc(bug("ParallelUnit::Write()\n"));
 	/*
@@ -193,15 +193,25 @@ ULONG parallelunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit
 	if (TRUE == data->stopped)
 		return 0;
 
-	status = parallel_inp(data, PAR_SR);
-
-	if (0 == (status & PAR_SR_BUSY)) {
-		if (len > 0) {
-			parallel_outp(data, PAR_DATA, msg->Outbuffer[count++]);
-			len--;
-		}
+    	parallel_usleep(1);
+	
+    	for(count = 0; count < len; count++)
+	{
+    	    parallel_out(data, PAR_DATA, msg->Outbuffer[count]);
+	    
+    	    while((parallel_in(data, PAR_SP) & (PAR_SP_BUSY | PAR_SP_ERROR)) !=
+		  (PAR_SP_BUSY | PAR_SP_ERROR))
+	    {
+		parallel_usleep(1);
+	    }
+	
+	    parallel_usleep(1);
+	    parallel_out(data, PAR_PCP, PAR_PCP_SLCT_IN | PAR_PCP_INIT | PAR_PCP_STROBE);
+	    parallel_usleep(1);
+	    parallel_out(data, PAR_PCP, PAR_PCP_SLCT_IN | PAR_PCP_INIT);
+	    parallel_usleep(1);
 	}
-
+	
 	ReturnInt("ParallelUnit::Write()",ULONG, count);
 }
 
@@ -244,18 +254,20 @@ UWORD parallelunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_Parallel
 	BYTE status;
 	UWORD rc = 0;
 	
-	status = parallel_inp(data, PAR_SR);
+	status = parallel_in(data, PAR_SP);
 	
-	if (status & PAR_SR_BUSY)
+	if (status & PAR_SP_BUSY)
 		rc |= (1 << 0);
-	if (status & PAR_SR_PE)
+	if (status & PAR_SP_PE)
 		rc |= (1 << 1);
-	if (status & PAR_SR_SLCT)
+	if (status & PAR_SP_SLCT)
 		rc |= (1 << 2);
 
 	return rc;
 }
 
+
+#if 0 /* !! STUFF BELOW DESABLED !! */
 
 /************* The software interrupt handler that gets data from PORT *****/
 
@@ -315,16 +327,22 @@ AROS_UFH3(void, parallelunit_write_more_data,
 	AROS_USERFUNC_EXIT
 }
 
+#endif /* !! END DISABLED STUFF !! */
 
 /******* init_parallelunitclass ********************************/
 
-#define SysBase		 (csd->sysbase)
-#define OOPBase		 (csd->oopbase)
+#undef SysBase
+#define SysBase     (csd->sysbase)
+
+#undef OOPBase
+#define OOPBase     (csd->oopbase)
+
+#undef UtilityBase
 #define UtilityBase (csd->utilitybase)
 
 
 #define NUM_ROOT_METHODS 2
-#define NUM_PARALLELUNIT_METHODS 2
+#define NUM_PARALLELUNIT_METHODS 5
 
 OOP_Class *init_parallelunitclass (struct class_static_data *csd)
 {

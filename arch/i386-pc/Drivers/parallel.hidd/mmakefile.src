@@ -1,0 +1,13 @@
+# $Id: mmakefile.src 20191 2003-11-24 22:03:42Z verhaegs $
+include $(TOP)/config/make.cfg
+
+FILES	:=	ParallelClass ParallelUnitClass
+
+%build_module_macro mmake=kernel-pc-i386-parallel \
+  modname=parallel modtype=hidd \
+  files=$(FILES) \
+  conffile=lib.conf \
+  uselibs=hiddstubs \
+  genfunctable=yes
+
+%common
