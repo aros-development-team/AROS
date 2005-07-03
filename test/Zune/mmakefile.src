@@ -10,6 +10,7 @@ FILES  := test      	    \
 	  volumelist	    \
 	  dirlist   	    \
           disable           \
+	  dtpic		    \
 	  string            \
 	  numericbutton     \
 	  poplist   	    \
