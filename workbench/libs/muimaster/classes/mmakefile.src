@@ -36,7 +36,8 @@ USER_LIBS   := amiga rom m mui
 #MM 	workbench-classes-zune-popscreen \
 #MM 	workbench-classes-zune-crawling \
 #MM	workbench-classes-zune-levelmeter \
-#MM	workbench-classes-zune-knob
+#MM	workbench-classes-zune-knob \
+#MM	workbench-classes-zune-dtpic
 
 #MM- workbench-libs-muimaster-clean : \
 #MM     workbench-classes-zune-aboutmui-clean \
@@ -68,7 +69,8 @@ USER_LIBS   := amiga rom m mui
 #MM 	workbench-classes-zune-popscreen-clean \
 #MM 	workbench-classes-zune-crawling-clean \
 #MM	workbench-classes-zune-levelmeter-clean \
-#MM	workbench-classes-zune-knob-clean
+#MM	workbench-classes-zune-knob-clean \
+#MM	workbench-classes-zune-dtpic-clean
 
 #MM workbench-classes-zune-aboutmui : includes
 %build_module \
@@ -309,6 +311,14 @@ USER_LIBS   := amiga rom m mui
     modname=Knob modtype=mui files=knob \
     conffile=knob.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_KNOB=0" \
+    uselibs=$(USER_LIBS)
+
+#MM workbench-classes-zune-dtpic : includes
+%build_module \
+    mmake=workbench-classes-zune-dtpic \
+    modname=Dtpic modtype=mui files=dtpic \
+    conffile=dtpic.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_DTPIC=0" \
     uselibs=$(USER_LIBS)
 
 %common
