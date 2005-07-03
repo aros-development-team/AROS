@@ -15,25 +15,28 @@ PCI class subsystem
 
 The pci.hidd is a collection of classes used to maintain all PCI devices
 available in the system. All device properties are available through
-appropriate OOP_Object properties and should not be changed per hand
-(although it is still available through six public methods of pcidriver
+appropriate OOP_Object properties and should not be changed manually
+(although this is still available through six public methods of the pcidriver
 class).
 
-How to ask for a PCI device?
+How to find a PCI device?
 ============================
-In order to query for specified PCI device, the moHidd_PCI_EnumDevices method
-of the main PCI class (IID_Hidd_PCI) is to be used. It takes two parameters.
-The first one is the pointer to struct Hook, defining the call-back function
-called for every PCI device that match given requirements. Second parameter
-(may be NULL) is pointer to struct TagItem[] defining the requirements that
-has to be met. Any combination of VendorID, ProductID, RevisionID, Interface,
-Class, Subclass, SubsystemVendorID, SubsystemID may be used (see the
-include/hidd/pci.h for details). If NULL is given, the call-back function will
-be called for every single PCI device seen by the pci class.
+In order to find a specified PCI device, the moHidd_PCI_EnumDevices method
+of the main PCI class (IID_Hidd_PCI) is to be used.
+It expects two parameters. The first one is a pointer to struct Hook,
+which is defining a callback function that is called for every PCI device
+and is trying to match the given requirements.
+The second parameter (might be NULL) is a pointer to struct TagItem[].
+This TagItem list is defining the search criteria that have to be met.
+Any combination of VendorID, ProductID, RevisionID, Interface,
+Class, Subclass, SubsystemVendorID, SubsystemID may be used (see
+include/hidd/pci.h for details). If NULL is given instead, the callback
+function will be called for every single PCI device seen by the pci class.
 The following code may be used to find the PCI device:
 
-/* This hook will be called for every PCI device that math the given
+/* This hook will be called for every PCI device that matches the given
  * requirements */
+
 AROS_UFH3(void, Callback,
     AROS_UFHA(struct Hook *,	hook,	A0),
     AROS_UFHA(OOP_Object *,	obj,	A2),
@@ -69,12 +72,12 @@ void Query()
     {
 	/* Enumerate through all PCI devices */
 	HIDD_PCI_EnumDevices(o, &PCIHook, NULL);
-	/* Enumerate through devices that met requirements only */
+	/* Enumerate through devices who meet the requirements */
 	HIDD_PCI_EnumDevices(o, &PCIHook, &tags);
 
-	[do whatever you want with PCI devices]
+	[do whatever you want with the PCI devices]
 
-	/* Don't need PCI object anymore */
+	/* PCI object isn't needed anymore */
 	OOP_DisposeObject(o);
     }
 }
@@ -83,107 +86,109 @@ Simple, efficient, nice :)
 
 What to do with PCI device object?
 ==================================
-Once the pointer to pci device object is known, the PCI device may be asked
-for its properties, as well as some of the device properties may be changed.
-The Bus, Dev and Sub properties define the physical address of PCI device, as
-seen by the bus driver handling this device (available as Driver property). In
-case of PCI-to-PCI bridges (see isBridge property) , there are some additional 
-properties available (some others, like base addresses 2 to 5 are unavailable 
-on the other hand). Most commonly used were probably:
+Once the pointer to a pci device object is known, the PCI device may be asked
+for its properties, and as well some of the device properties might be changed.
+The Bus, Dev and Sub properties define the physical address of the PCI device,
+as its seen by the bus driver who is handling the device (available as driver
+property).
+In case of PCI-to-PCI bridges (see isBridge property) some additional
+properties are available. On the other hand some others, like base addresses
+2 to 5 are not. The most commonly used are probably:
 
     aHidd_PCIDevice_Base[0..5] - PCI base addresses of given device
     aHidd_PCIDevice_Size[0..5] - sizes of PCI memory/IO areas
     aHidd_PCIDevice_Type[0..5] - type of given area.
 
-If bit ADDRB_IO in Type property is set, the region is an IO region. Otherwise
-it is a memory region, which may be of prefetchable memory (bit ADDRB_PREFETCH
-set).
+If bit ADDRB_IO in property Type is set to 1, the address region is an IO space
+region. Otherwise it is a memory space region, which may be prefetchable memory.
+The ADDRB_PREFETCH bit is set to 1 then (see includes/hidd/pci.h).
 
-Additionally, the driver may check, whether I/O or MEM is decoded by given PCI
-device at all (isIO, isMEM properties), whether BusMaster has been enabled
-(isMaster property), whether the device does snoop PCI bus for VGA palette
-changes (paletteSnoop property). Finally, it is possible to check whether the
-device does support 66MHz PCI bus (is66MHz property).
+Additionally the driver may check if IO or memory space is decoded by a given
+PCI device at all (isIO, isMEM properties), if the BusMaster flag has been
+enabled (isMaster property) or if the device does snoop the PCI bus for VGA
+palette changes (paletteSnoop property).
+Finally, it is possible to check if the device supports 66MHz PCI (is66MHz).
 
-Note, that depending on driver requirements, isIO, isMEM, isMaster and
-paletteSnoop properties may be also set.
+Note that depending on driver requirements the isIO, isMEM, isMaster and
+paletteSnoop properties may also be set.
 
-All properties are obtainable through OOP_GetAttr call (sigh, we are really
+All properties are obtainable through the OOP_GetAttr call (sigh, we are really
 missing the OOP_GetAttrs(obj, struct TagItem
-**attributes_to_get_with_one_call)!!!) and some of them are setable through
-OOP_SetAttrs call (see hidd/pci.h include for details). Please also remember,
+**attributes_to_get_with_one_call)!!!). Some of them are setable through the
+OOP_SetAttrs call (see includes/hidd/pci.h for details). Please also remember
 that before work with attributes is done, the IID_Hidd_PCIDevice AttrBase has
-to be obtained (please don't forget to release it when it's not needed
-anymore).
+to be obtained (don't forget to release it when it's not needed anymore!).
 
 PCIDriver class (user side)
 ===========================
-One of the read-only attributes of PCIDevice class, is the PCIDriver class
-pointer. It points to the hardware driver which handles given PCI device
-object. As it will be seen later, there may be more then one driver working at
-the same time in the system.
+One of the read-only attributes of the PCIDevice class, is the PCIDriver class
+pointer. It points to the hardware driver which handles the given PCI device
+object. As you will see later, there might be more then one driver working in
+the system at the same time.
 
 The driver class has one important attribute - aHidd_PCIDriver_DirectBus. It
-is read-only and if it is set to TRUE, the driver handles PCI bus which is
-directly mapped within the CPU space. DirectBus device may be for example
-typical PCI bus in PC handled by native AROS. Typical indirect PCI bus will be
-then PCI bus handled under Linux (there is no physical *direct* access to the
-PCI devices on hosted AROS on Linux). Depending on the DirectBus property,
-some methods may or should be used.
+is read-only and if it is set to TRUE, the driver handles a PCI bus which is
+directly mapped within the CPU space. A DirectBus device for example is a
+typical PCI bus in a i386 PC handled by native AROS. A typical indirect PCI bus
+is a PCI bus handled under Linux (there is no physical *direct* access to the
+PCI devices with hosted AROS on Linux). Depending on the DirectBus property,
+some methods may or must be used.
 
-While working with not DirectBus PCI driver, the HIDD_PCIDriver_MapPCI and
-HIDD_PCIDriver_UnmapPCI methods may be used to access memory ranges of PCI
-device. The first method tries to map PCI memory space to CPU memory space
+While working with a indirect PCI bus driver, the HIDD_PCIDriver_MapPCI and
+HIDD_PCIDriver_UnmapPCI methods shall be used to access memory ranges of PCI
+a device.
+The first method tries to map PCI memory space to CPU memory space
 (using for example mmap on /dev/mem in case of Linux) so that the given PCI
-memory range may be accessed. UnmapPCI method frees mapping created previously
-with this method.
+memory range can be accessed. The UnmapPCI method frees the mapping that was
+created previously with this method.
 
-Additionally, in case of not DirectBus PCI driver, AllocPCIMem and FreePCIMem
-can be used in order to reserve/free memory accessible by PCI devices and
-aligned to the page boundary. If these methods are not implemented or there is
+Additionally AllocPCIMem and FreePCIMem can be used in order to allocate or
+free memory that is accessible by PCI devices and is aligned to the memory page
+boundary. If these methods are not implemented or there is
 no memory available for PCI devices, AllocPCIMem will return (APTR)-1.
 
 In case of DirectBus devices, the above called methods are still usable. The
-MapPCI is then equivalent to HIDD_PCIDriver_PCItoCPU call and simply
-translates the address seen by PCI device to address seen by CPU. The CPUtoPCI
-works in other direction.
+MapPCI is then equivalent to the HIDD_PCIDriver_PCItoCPU call and simply
+translates the address seen by the PCI device to an address seen by CPU.
+HIDD_PCIDriver_CPUtoPCI is used for the other direction.
 
 Driver creation
 ===============
-In order to write PCI hardware driver, one has to create class derivateing from
-the CLID_Hidd_PCIDriver class. That simplifies the work on driver, as only few
-methods have to be implemented:
+In order to write PCI hardware drivers one has to create a class derivateing
+from the CLID_Hidd_PCIDriver class. That simplifies the work on a driver, as
+only a few methods have to be implemented:
 
 PCIDriver::New()
 ----------------
 This method should add some attributes to the msg->attrList and pass the ::New
 message to the superclass. The aHidd_Name and aHidd_HardwareName are welcomed
-here. Additionally, if driver doesn't work on direct access bus, it should
-reset the aHidd_PCIDriver_DirectBus to FALSE (otherwise it is set to TRUE by
+here. If the driver only works with an indirect access bus, it must set the
+aHidd_PCIDriver_DirectBus to FALSE (otherwise it will be set to TRUE by
 the superclass).
 
-Please note that in worst case (author don't want to provide aHidd_Name and
-aHidd_HardwareName), the implementation of ::New may be skipped.
+Please note that in worst case (author doesn't want to provide aHidd_Name and
+aHidd_HardwareName), the implementation of ::New can be skipped.
 
 PCIDriver::ReadConfigLong() and PCIDriver::WriteConfigLong()
 ------------------------------------------------------------
-These two methods *HAVE TO* be defined in driver class. Otherwise superclass
-will complain with error messages. All other methods used to access the PCI
-config space (Read/Write of Word/Byte) may be implemented by driver class but
-doesn't have to. As all methods are virtual, superclass will do the magic (it
-will use ReadConfigLong and WriteConfigLong methods to access words and bytes
+These two methods *HAVE TO* be defined in the driver class. Otherwise the
+superclass will complain with error messages. All other methods who are used
+to access the PCI config space (Read/Write of Word/Byte) can be implemented by
+the driver class but don't have to.
+As all methods are virtual, the superclass will do the magic (it will use
+ReadConfigLong and WriteConfigLong methods to access words and bytes
 in both read and write mode).
 
-Additionally , the MapPCI/UnmapPCI and CPUtoPCI/PCItoCPU may require 
-rewriting (default is that in case of indirect bus they return
-0xffffffff always and in case of direct bus they return the same address as 
+The MapPCI/UnmapPCI and CPUtoPCI/PCItoCPU calls may require rewriting (the
+default is, that in case of indirect bus access they always return 0xffffffff
+and in case of direct bus access they return the same address as they were
 given).
 
-Adding driver class to the system
+Adding a driver class to the system
 ---------------------------------
-When the driver class is successfully created, it's pointer may be passed to
-the main pci class. It may be done in following way (assume, that cl is the
-pointer to freshly created driver class):
+When the driver class was created successfully, it's pointer can be passed to
+the main pci class. You may implement this like in the following example
+(assume, that cl is a pointer to a freshly created driver class):
 
 [...]
     struct pHidd_PCI_AddHardwareDriver msg;
@@ -201,24 +206,24 @@ pointer to freshly created driver class):
 [...]
 
 Done. The pci subsystem will then use the passed class pointer (note: thanks
-to passing class pointer directly, driver classes do not have to be public) to
-scan PCI bus handled with this hardware driver. From this point, PCI devices
-handled with newly added driver are available for any use.
+to passing the class pointer directly, driver classes do not have to be public)
+to scan the PCI bus handled by this hardware driver.
+From this point PCI devices handled by the added driver are available for
+any use.
 
-Removing driver class from the system
+Removing a driver class from the system
 -------------------------------------
-The driver may ask PCI subsystem to be removed, using the RemHardwareDriver 
-call. It's query may be, but doesn't have to be fulfilled. The driver will
-not be removed if there are any other users of PCI subsystem expect the driver
-wishing to be removed itself. When the RemHardwareDriver call success, the
-driver class may be deleted.
+The driver may ask the PCI subsystem to get removed using the RemHardwareDriver 
+call. The query may be, but doesn't have to be fulfilled. The driver will
+not be removed if there are any other users of the PCI subsystem expect the
+driver itself wanting to be removed. If the RemHardwareDriver call succeeds,
+the driver class may be deleted.
 
-Why do I need this pluggable driver?
+Why do I need this plugable driver?
 ------------------------------------
-Imagine a PCI device (of any kind) which has it's own PCI bus. The device
-driver does know about this bus and wants to share this with other drivers
+Imagine a PCI device (of any kind) which brings it's own PCI bus with it.
+The device driver knows about this bus and wants to share it with other drivers
 (system user). Unfortunately only this specific device driver knows how to
-handle this additional PCI bus. When it creates a driver class which know how
-to talk to it and adds this driver class to pci subsystem, this PCI bus
+handle this additional PCI bus. When it creates a driver class which knows how
+to talk to it and adds this driver class to the pci subsystem, this PCI bus
 becomes part of whole system and from now on it is accessible for anyone.
-
