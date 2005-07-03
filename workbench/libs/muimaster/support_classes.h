@@ -200,6 +200,12 @@
 #   define ZUNE_KNOB_DESC
 #endif
 
+#if ZUNE_BUILTIN_DTPIC
+#   define ZUNE_DTPIC_DESC (&_MUI_Dtpic_desc),
+#else
+#   define ZUNE_DTPIC_DESC
+#endif
+
 Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
 Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);
