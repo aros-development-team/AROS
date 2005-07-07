@@ -107,7 +107,7 @@
 
 	ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 
-	while((tag=NextTagItem(&tstate))){
+	while((tag=NextTagItem((struct TagItem**)&tstate))){
 		switch(tag->ti_Tag){
 			case MIDI_Name:
 				midinode->mi_Node.ln_Name=(char *)tag->ti_Data;
@@ -197,4 +197,21 @@
    AROS_LIBFUNC_EXIT
 }
 
+#ifdef __amigaos4__
+#include <stdarg.h>
+BOOL VARARGS68K SetMidiAttrs(
+	struct CamdIFace *Self,
+	struct MidiNode * mi,
+	...
+)
+{
+	va_list ap;
+	struct TagItem * varargs;
+	va_startlinear(ap, mi);
+	varargs = va_getlinearva(ap, struct TagItem *);
+	return	SetMidiAttrsA(Self,
+		mi,
+		varargs);
+}
+#endif
 

@@ -12,7 +12,6 @@
 
 #include "camd_intern.h"
 
-
 /*****************************************************************************
 
     NAME */
@@ -71,7 +70,11 @@
 
 	struct DriverData *driverdata;
 
+#ifndef __amigaos4__
 	driverdata=GoodPutMidi(link,msg,OUTBUFFERSIZE-1);
+#else
+	driverdata=GoodPutMidi(ICamd, link,msg,OUTBUFFERSIZE-1);
+#endif
 
 	if(driverdata!=NULL){
 		while(Midi2Driver_internal(driverdata,msg,OUTBUFFERSIZE-1)==FALSE) CamdWait();

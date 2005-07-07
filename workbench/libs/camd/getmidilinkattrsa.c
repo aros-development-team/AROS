@@ -57,7 +57,7 @@
 
 	ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
 
-	while((tag=NextTagItem(&tstate))){
+	while((tag=NextTagItem((struct TagItem **)&tstate))){
 		ret++;
 		where=(ULONG *)tag->ti_Data;
 		switch(tag->ti_Tag){
@@ -112,3 +112,20 @@
 }
 
 
+#ifdef __amigaos4__
+#include <stdarg.h>
+ULONG VARARGS68K GetMidiLinkAttrs(
+	struct CamdIFace *Self,
+	struct MidiLink * ml,
+	...
+)
+{
+	va_list ap;
+	struct TagItem * varargs;
+	va_startlinear(ap, ml);
+	varargs = va_getlinearva(ap, struct TagItem *);
+	return	Self->GetMidiLinkAttrsA(
+		ml,
+		varargs);
+}
+#endif

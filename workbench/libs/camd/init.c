@@ -9,11 +9,17 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/camd.h>
+#include <proto/utility.h>
 
 #include "camd_intern.h"
 
 
+#ifdef __amigaos4__
+BOOL InitCamd(struct CamdIFace *ICamd){
+    AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
+#else
 BOOL InitCamd(struct CamdBase *CamdBase){
+#endif
 	struct FileInfoBlock fib;
 	BPTR lock;
 	char temp[256];
@@ -23,11 +29,18 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 		return FALSE;
 	}
 	InitSemaphore(CB(CamdBase)->CLSemaphore);
+#ifndef __amigaos4__
 	NEWLIST(&CB(CamdBase)->mymidinodes);
 	NEWLIST(&CB(CamdBase)->midiclusters);
+	NEWLIST(&CB(CamdBase)->clusnotifynodes);
+#else // ???
+	NEWLIST(CB(CamdBase)->mymidinodes);
+	NEWLIST(CB(CamdBase)->midiclusters);
+	NEWLIST(CB(CamdBase)->clusnotifynodes);
+#endif
 	if(InitCamdTimer()==FALSE) return FALSE;
 	lock=Lock("devs:Midi",ACCESS_READ);
-	if(lock==NULL){
+	if(lock==0){
 		return TRUE;
 	}
 	if(Examine(lock,&fib)==FALSE){
@@ -36,13 +49,22 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	}
 	while(ExNext(lock,&fib)!=FALSE){
 		mysprintf(CamdBase,temp,"devs:Midi/%s",fib.fib_FileName);
+#ifdef __amigaos4__
+		LoadDriver(temp,ICamd);
+#else
 		LoadDriver(temp,CamdBase);
+#endif
 	}
 	UnLock(lock);
 	return TRUE;
 }
 
+#ifdef __amigaos4__
+void UninitCamd(struct CamdIFace *ICamd){
+    AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
+#else
 void UninitCamd(struct CamdBase *CamdBase){
+#endif
 	struct Drivers *driver=CB(CamdBase)->drivers,*temp2;
 	struct Node *node,*temp;
 	struct MidiCluster *midicluster;

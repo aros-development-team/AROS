@@ -30,13 +30,11 @@ SAVEDS void CamdTimerProc(void){
 	ULONG sig;
 	int error;
 
-	D(bug("camdtimerproc1\n"));
 	camdwaitsig=AllocSignal(-1);
 	if(camdwaitsig==-1){
 		camdwaitprocstatus=2;
 		return;
 	}
-	D(bug("camdtimerproc2\n"));
 	camdwaitsig2=AllocSignal(-1);
 	if(camdwaitsig2==-1){
 		FreeSignal(1L<<camdwaitsig);
@@ -44,7 +42,6 @@ SAVEDS void CamdTimerProc(void){
 		return;
 	}
 
-	D(bug("camdtimerproc3\n"));
 	TimerMP=CreateMsgPort();
 	if(TimerMP==NULL){
 		FreeSignal(1L<<camdwaitsig2);
@@ -52,10 +49,8 @@ SAVEDS void CamdTimerProc(void){
 		camdwaitprocstatus=2;
 		return;
 	}
-	D(bug("camdtimerproc4\n"));
 
 	TimerIO=(struct timerequest *)AllocMem(sizeof(struct timerequest),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
-	D(bug("camdtimerproc5\n"));
 
 	if(TimerIO==NULL){
 		FreeSignal(1L<<camdwaitsig2);
@@ -64,7 +59,6 @@ SAVEDS void CamdTimerProc(void){
 		camdwaitprocstatus=2;
 		return;
 	}
-	D(bug("camdtimerproc6\n"));
 
 	TimerIO->tr_node.io_Message.mn_Node.ln_Type=NT_MESSAGE;
 	TimerIO->tr_node.io_Message.mn_ReplyPort=TimerMP;
@@ -76,12 +70,11 @@ SAVEDS void CamdTimerProc(void){
 			TIMERNAME,UNIT_ECLOCK,(struct IORequest *)TimerIO,0L
 	))!=0){
 #else
-	D(bug("camdtimerproc7\n"));
 	if((error=OpenDevice(
 			TIMERNAME,UNIT_VBLANK,(struct IORequest *)TimerIO,0L
 	))!=0){
 #endif
-	  D(bug("camdtimerproc7.1\n"));
+
 		FreeSignal(1L<<camdwaitsig2);
 		FreeSignal(1L<<camdwaitsig);
 		TimerIO->tr_node.io_Message.mn_Node.ln_Type=(UBYTE)-1;
@@ -89,15 +82,12 @@ SAVEDS void CamdTimerProc(void){
 		TimerIO->tr_node.io_Unit=(struct Unit *)-1L;
 		FreeMem(TimerIO,sizeof(struct timerequest));
 		DeleteMsgPort(TimerMP);
-		D(bug("failed camdtimerproc11, error: %ld\n",error));
 		camdwaitprocstatus=2;
 		return;
 	}
 
-	D(bug("camdtimerproc8\n"));
 	ObtainSemaphore(&camdwaitsemaphore);
 
-	D(bug("camdtimerproc9\n"));
 	camdwaittask=FindTask(0L);
 
 	camdwaitprocstatus=1;
@@ -155,9 +145,7 @@ BOOL InitCamdTimer(void){
 	);
 	if(process==NULL) return FALSE;
 
-	D(bug("4.7\n"));
 	while(camdwaitprocstatus==0) Delay(1);
-	D(bug("4.8\n"));
 
 	if(camdwaitprocstatus==2) return FALSE;
 

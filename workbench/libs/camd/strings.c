@@ -7,7 +7,7 @@
 */
 
 #include <proto/exec.h>
-
+#include <proto/utility.h>
 #include "camd_intern.h"
 
 ULONG mystrlen(char *string){
@@ -35,12 +35,17 @@ char *findonlyfilename(char *pathfile){
   return temp;
 }
 
+#ifdef __amigaos4__
+ASM void stuffChar( REG(d0, UBYTE in),REG(a3, char **stream)){
+#else
 ASM void stuffChar( REG(d0) UBYTE in,REG(a3) char **stream){
+#endif
 	stream[0]++;
 	stream[0][-1]=in;
 }
 
 
+#ifndef __amigaos4__
 void mysprintf(struct CamdBase *CamdBase,char *string,char *fmt,...){
 	void *start=&fmt+1;
 
@@ -54,4 +59,5 @@ void mysprintf(struct CamdBase *CamdBase,char *string,char *fmt,...){
 		 (APTR)&string2
 		 );
 }
+#endif
 

@@ -53,7 +53,7 @@
 
 	struct MyMidiNode *mymidinode=(struct MyMidiNode *)midinode;
 	UBYTE *sysex;
-	ULONG numleft=0;
+	ULONG numleft=1;
 
 	if(mymidinode->lastreadstatus!=0xf0) return 0;
 

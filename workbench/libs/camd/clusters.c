@@ -7,22 +7,34 @@
 */
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 
 #include "camd_intern.h"
 
-
+#ifndef __amigaos4__
 #  undef DEBUG
 #  define DEBUG 1
 #  include AROS_DEBUG_H_FILE
+#endif
 
 /*
  *  CLSemaphore must be obtained and the clusters mutex must
  *  not be exclusive locked.
  */
 void RemoveCluster(struct MidiCluster *cluster,struct CamdBase *CamdBase){
+  struct Node *node;
+  struct ClusterNotifyNode *cn;
+
   if(cluster==NULL) return;
   
   Remove(&cluster->mcl_Node);
+
+  for(node=CB(CamdBase)->clusnotifynodes.lh_Head; node->ln_Succ; node=node->ln_Succ)
+    {                           // notify everyone
+      cn=(struct ClusterNotifyNode *)node;
+      Signal(cn->cnn_Task, 1L << cn->cnn_SigBit);
+    }
+  
   
   if(cluster->mcl_Node.ln_Name!=NULL){
     FreeVec(cluster->mcl_Node.ln_Name);
@@ -129,6 +141,8 @@ void LinkHasBeenRemovedFromCluster(struct MidiCluster *cluster,struct CamdBase *
 struct MidiCluster *NewCluster(char *name,struct CamdBase *CamdBase){
 	struct MyMidiCluster *mymidicluster;
 	struct MidiCluster *midicluster;
+	struct Node *node;
+	struct ClusterNotifyNode *cn;
 
 
 	mymidicluster=AllocMem(sizeof(struct MyMidiCluster),MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
@@ -147,11 +161,20 @@ struct MidiCluster *NewCluster(char *name,struct CamdBase *CamdBase){
 	}
 
 	mysprintf(CamdBase,midicluster->mcl_Node.ln_Name,"%s",name);
-
+#ifndef __amigaos4__
 	NEWLIST(&midicluster->mcl_Receivers);
 	NEWLIST(&midicluster->mcl_Senders);
-
+#else // ???
+	NEWLIST(midicluster->mcl_Receivers);
+	NEWLIST(midicluster->mcl_Senders);
+#endif
 	AddTail(&CB(CamdBase)->midiclusters,&midicluster->mcl_Node);
+
+	for(node=CB(CamdBase)->clusnotifynodes.lh_Head; node->ln_Succ; node=node->ln_Succ)
+	  {           // notify everyone
+	    cn=(struct ClusterNotifyNode *)node;
+	    Signal(cn->cnn_Task,1L<<cn->cnn_SigBit);
+	  }
 
 
 	return midicluster;

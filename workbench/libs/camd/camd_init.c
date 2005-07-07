@@ -8,17 +8,21 @@
 #include <exec/types.h>
 #include <exec/libraries.h>
 
-#include <aros/symbolsets.h>
+#ifndef __amigaos4__
+#  include <aros/symbolsets.h>
+#endif
 
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
 
 #include "camd_intern.h"
-#include LC_LIBDEFS_FILE
+#ifndef __amigaos4__
+#  include LC_LIBDEFS_FILE
+#  define DEBUG 1
+#  include <aros/debug.h>
 
-#define DEBUG 1
-#include <aros/debug.h>
+
 
 /****************************************************************************************/
 
@@ -50,3 +54,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 
 ADD2INITLIB(Init, 0);
 ADD2EXPUNGELIB(Expunge, 0);
+
+
+#else
+#  include "camd_aos4_init.c"
+#endif

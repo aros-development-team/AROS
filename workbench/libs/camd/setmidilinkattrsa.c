@@ -10,7 +10,9 @@
 
 #  undef DEBUG
 #  define DEBUG 1
+#ifndef __amigaos4__
 #  include AROS_DEBUG_H_FILE
+#endif
 
 /*****************************************************************************
 
@@ -74,7 +76,7 @@
 
 	ULONG *ErrorCode = (ULONG *)GetTagData(MLINK_ErrorCode, (IPTR) NULL,tags);
 
-	while((tag=NextTagItem(&tstate))){
+	while((tag=NextTagItem((struct TagItem **)&tstate))){
 		switch(tag->ti_Tag){
 			case MLINK_Name:
 				midilink->ml_Node.ln_Name=(char *)tag->ti_Data;
@@ -170,5 +172,22 @@
    AROS_LIBFUNC_EXIT
 }
 
+#ifdef __amigaos4__
+#include <stdarg.h>
+BOOL VARARGS68K SetMidiLinkAttrs(
+	struct CamdIFace *Self,
+	struct MidiLink * ml,
+	...
+)
+{
+	va_list ap;
+	struct TagItem * varargs;
+	va_startlinear(ap, ml);
+	varargs = va_getlinearva(ap, struct TagItem *);
+	return	Self->SetMidiLinkAttrsA(
+		ml,
+		varargs);
+}
+#endif
 
 

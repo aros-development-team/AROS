@@ -42,6 +42,7 @@
     HISTORY
 
 	2001-01-12 ksvalast first created
+        2005-05-21 Lyle Hazelwood : Add support for "To Host" bank change 0xF5
 
 *****************************************************************************/
 {
@@ -69,7 +70,7 @@
 					case 0xf4:
 						return 0;
 					case 0xf5:
-						return 0;
+					        return 2;   /* "To Host" bank change command */
 					case 0xf6:
 						return 1;
 					case 0xf7:

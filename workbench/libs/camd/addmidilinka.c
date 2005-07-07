@@ -7,12 +7,16 @@
 */
 
 #include <proto/exec.h>
-#include <proto/camd.h>
+#ifndef __amigaos4__
+#  include <proto/camd.h>
+#endif
 
 #include "camd_intern.h"
 #  undef DEBUG
 #  define DEBUG 1
+#ifndef __amigaos4__
 #  include AROS_DEBUG_H_FILE
+#endif
 
 #undef AddMidiLinkA
 
@@ -81,7 +85,11 @@
 		}
 	ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 
+#ifndef __amigaos4__
 	if(SetMidiLinkAttrsA(midilink,tags)==FALSE)
+#else
+	if(SetMidiLinkAttrsA(ICamd, midilink,tags)==FALSE)
+#endif
 	{
 
 		ObtainSemaphore(CB(CamdBase)->CLSemaphore);
@@ -98,4 +106,25 @@
 }
 
 
+
+#ifdef __amigaos4__
+#include <stdarg.h>
+struct MidiLink * VARARGS68K AddMidiLink(
+	struct CamdIFace *Self,
+	struct MidiNode * mi,
+	LONG type,
+	...
+)
+{
+	va_list ap;
+	struct TagItem * varargs;
+	va_startlinear(ap, type);
+	varargs = va_getlinearva(ap, struct TagItem *);
+	return	AddMidiLinkA(Self,
+		mi,
+		type,
+		varargs);
+}
+
+#endif
 

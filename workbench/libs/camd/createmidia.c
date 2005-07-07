@@ -5,7 +5,9 @@
 
 #include <proto/utility.h>
 #include <proto/exec.h>
-#include <proto/camd.h>
+#ifndef __amigaos4__
+#  include <proto/camd.h>
+#endif
 
 #include "camd_intern.h"
 
@@ -52,8 +54,13 @@
 	midinode=AllocMem(sizeof(struct MyMidiNode),MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
 	if(midinode==NULL) return NULL;
 
+#ifndef __amigaos4__
 	NEWLIST((struct List *)&midinode->midinode.mi_OutLinks);
 	NEWLIST((struct List *)&midinode->midinode.mi_InLinks);
+#else
+	NEWMINLIST(midinode->midinode.mi_OutLinks);
+	NEWMINLIST(midinode->midinode.mi_InLinks);
+#endif
 
 	midinode->midinode.mi_Node.ln_Name="unnamed";
 
@@ -68,7 +75,11 @@
 	InitSemaphore(&midinode->sysexsemaphore);
 	InitSemaphore(&midinode->sysexsemaphore2);
 
+#ifndef __amigaos4__
 	if(!SetMidiAttrsA(&midinode->midinode,tags))
+#else
+	if(!SetMidiAttrsA(ICamd, &midinode->midinode,tags))
+#endif
 	  {
 		FreeMem(midinode,sizeof(struct MyMidiNode));
 		return NULL;
@@ -85,4 +96,20 @@
 
 
 
+#ifdef __amigaos4__
+#include <stdarg.h>
+struct MidiNode * VARARGS68K CreateMidi(
+	struct CamdIFace *Self,
+	...
+)
+{
+	va_list ap;
+	struct TagItem * varargs;
+	va_startlinear(ap, Self);
+	varargs = va_getlinearva(ap, struct TagItem *);
+    
+	return	CreateMidiA(Self,
+		varargs);
+}
+#endif
 
