@@ -8,7 +8,9 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-
+#ifdef __amigaos4__
+#  include <proto/CamdDriver.h>
+#endif
 #include "camd_intern.h"
 
 #ifdef __AROS__
@@ -58,9 +60,12 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
 
+	struct Drivers *driver;
+
+#ifndef __amigaos4__
 	BPTR seglist,seg;
 	struct MidiDeviceData *mididevicedata;
-	struct Drivers *driver;
+
 
 	STRPTR addr;
 	ULONG size;
@@ -148,6 +153,50 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 
 	UnLoadSeg(seglist);
 	return NULL;
+#else
+
+    struct CamdDriverIFace  *ICamdDriver;
+    struct Library *CamdDriverBase = (struct CamdDriverLibrary *) OpenLibrary( name, 0 );
+
+    if( CamdDriverBase == NULL)
+    {
+//        DebugPrintF("Failed to load %s\n", name);
+        return NULL;
+    }
+    
+    if ((ICamdDriver = (struct CamdDriverIFace *) GetInterface((struct Library *) CamdDriverBase, "main", 1, NULL)) == NULL)
+    {
+//       DebugPrintF("Failed to load interface for %s\n", name);
+       CloseLibrary(CamdDriverBase);
+       return NULL;
+    }
+
+			    
+                driver=AllocMem(sizeof(struct Drivers),MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
+			    if(driver==NULL){
+                  CloseLibrary(CamdDriverBase);
+			      return NULL;
+			    }
+			    driver->mididevicedata = AllocMem(sizeof(struct MidiDeviceData), MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
+                driver->mididevicedata->Name = ICamdDriver->GetMidiDeviceData()->Name;
+                driver->mididevicedata->IDString = ICamdDriver->GetMidiDeviceData()->IDString;
+                driver->mididevicedata->Version = ICamdDriver->GetMidiDeviceData()->Version;
+                driver->mididevicedata->Revision = ICamdDriver->GetMidiDeviceData()->Revision;
+                driver->mididevicedata->NPorts = ICamdDriver->GetMidiDeviceData()->NPorts;
+                driver->mididevicedata->Flags = ICamdDriver->GetMidiDeviceData()->Flags;
+                driver->mididevicedata->CamdDriverBase = CamdDriverBase;
+                driver->mididevicedata->ICamdDriver = ICamdDriver;
+                
+
+			    ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+			    driver->next=CB(CamdBase)->drivers;
+			    CB(CamdBase)->drivers=driver;
+			    ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
+                
+			    return driver->mididevicedata;
+    
+
+#endif
 
    AROS_LIBFUNC_EXIT
 
@@ -157,7 +206,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize){
 	STRPTR addr;
 	ULONG size;
 
-	while(seglist!=NULL){
+	while(seglist!=0){
 		addr=(STRPTR)((LONG)BADDR(seglist)-sizeof(ULONG));
 		size=*(ULONG *)addr;
 		addr+=sizeof(BPTR)+sizeof(ULONG);

@@ -9,6 +9,13 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/camd.h>
+#include <proto/utility.h>
+
+#ifdef __amigaos4__
+#  include <proto/CamdDriver.h>
+#  include <exec/emulation.h>
+#endif
+
 
 #include "camd_intern.h"
 
@@ -29,7 +36,11 @@ BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *
 		return FALSE;
 	}
 
+#ifndef __amigaos4__
 	driverdata->midiportdata=(*driverdata->mididevicedata->OpenPort)(
+#else
+	driverdata->midiportdata= driverdata->mididevicedata->ICamdDriver->OpenPort(
+#endif
 		driverdata->mididevicedata,
 		driverdata->portnum,
 		(ULONG (* ASM)(APTR REG(a2)))Transmitter,
@@ -51,8 +62,12 @@ BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *
 
 
 void CloseDriver(struct DriverData *driverdata,struct CamdBase *CamdBase){
+#ifndef __amigaos4__
 	(*driverdata->mididevicedata->ClosePort)(
-		driverdata->mididevicedata,
+#else
+        driverdata->mididevicedata->ICamdDriver->ClosePort(
+#endif
+                driverdata->mididevicedata,
 		driverdata->portnum
 	);
 	EndReceiverProc(driverdata,CamdBase);
@@ -204,11 +219,18 @@ struct Drivers *FindPrevDriverForMidiDeviceData(
 	return temp;
 }
 
+#ifdef __amigaos4__
+void LoadDriver(char *name,
+	struct CamdIFace *ICamd
+){
+    AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
+#else
 void LoadDriver(char *name,
 	struct CamdBase *CamdBase
 ){
-	struct Drivers *driver;
-	struct MidiDeviceData *mididevicedata;
+#endif
+	struct Drivers *driver = NULL;
+	struct MidiDeviceData *mididevicedata = NULL;
 
 	D(bug("camd.library: drivers.c/LoadDriver - trying to open %s..\n",name));
 
@@ -227,10 +249,15 @@ void LoadDriver(char *name,
 #endif
 	}
 
+#ifndef __amigaos4__
 	if((*mididevicedata->Init)(SysBase)==FALSE){
 		CloseMidiDevice(mididevicedata);
 		return;
 	}
+#else
+#endif
+
+	//D(bug("%s %s %u %u\n", mididevicedata->Name, mididevicedata->IDString, mididevicedata->NPorts,mididevicedata->Flags));
 
 	driver=FindPrevDriverForMidiDeviceData(mididevicedata,CamdBase);
 	if(driver==NULL){

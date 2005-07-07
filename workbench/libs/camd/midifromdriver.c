@@ -452,9 +452,15 @@ void Receiver_first(
 	Code called from driver.
 ******************************************/
 
+#ifdef __amigaos4__
+void Receiver(
+	UWORD input,
+	struct DriverData *driverdata
+#else
 SAVEDS void ASM Receiver(
 	REG(d0) UWORD input,
 	REG(a2) struct DriverData *driverdata
+#endif
 ){
 	*driverdata->re_write=input;
 	driverdata->re_write++;

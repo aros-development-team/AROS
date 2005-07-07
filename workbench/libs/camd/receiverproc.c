@@ -7,6 +7,7 @@
 #include <proto/exec.h>
 #include <dos/dostags.h>
 #include <dos/dos.h>
+#include <proto/utility.h>
 
 #include "camd_intern.h"
 

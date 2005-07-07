@@ -18,15 +18,22 @@
 
 #ifndef __AROS__
 #  define AROS_LIBFUNC_INIT
-#  define AROS_LIBBASE_EXT_DECL(a,b)
+#  ifndef __amigaos4__
+#    define AROS_LIBBASE_EXT_DECL(a,b)
+#  endif
 #  define AROS_LIBFUNC_EXIT
-#  define aros_print_not_implemented(a) kprintf("camd.library: "a" is not implemented\n");
+#  ifndef __amigaos4__
+#    define aros_print_not_implemented(a) kprintf("camd.library: "a" is not implemented\n");
+#  else
+#    define aros_print_not_implemented(a) DebugPrintF("camd.library: "a" is not implemented\n");
+#  endif
 #  define AROS_PTRALIGN 2
 #else
 #  ifndef AROS_LIBCALL_H
 #    include <aros/libcall.h>
 #  endif
 #endif
+
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
@@ -57,6 +64,15 @@
 #  define DEBUG 1
 #  include <aros/debug.h>
 #endif
+
+
+#ifdef __amigaos4__
+#  include <libcore/base.h>
+#  include <interfaces/camd.h>
+#  define AROS_LIBBASE_EXT_DECL(a,b) a b = (a) ICamd->Data.LibBase;
+#endif
+
+
 
 /****************************************************************************************/
 
@@ -193,13 +209,18 @@ struct MyMidiNode{
 };
 
 struct CamdBase_intern{
+#ifndef __amigaos4__
     struct Library library;
     struct ExecBase *sysbase;
     APTR seglist;
-
+#else
+    struct LibHeader		lh;
+#endif
     struct Drivers *drivers;
     struct List mymidinodes;
     struct List midiclusters;
+
+    struct List clusnotifynodes;
 
 
     /* Lock semaphore. Obtained Shared before reading various lists and
@@ -212,7 +233,11 @@ struct CamdBase_intern{
 #ifdef __AMIGAOS__
    extern void kprintf(char *bla,...);
 #  ifdef DEBUG
+#  ifndef __amigaos4__
 #    define bug kprintf
+#  else
+#    define bug DebugPrintF
+#  endif
 #    define D(a) a
 #  else
 #    define D(a)
@@ -262,8 +287,13 @@ BOOL Midi2Driver_internal_oldformat(
 	ULONG msg,
 	ULONG maxbuff
 );
-ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata);
-ULONG ASM Transmitter_oldformat(REG(a2) struct DriverData *driverdata);
+#ifndef __amigaos4__
+  ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata);
+  ULONG ASM Transmitter_oldformat(REG(a2) struct DriverData *driverdata);
+#else
+  ULONG Transmitter(struct DriverData *driverdata);
+  ULONG ASM Transmitter_oldformat(REG(a2, struct DriverData *driverdata));
+#endif
 BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer);
 BOOL SysEx2Driver_oldformat(struct DriverData *driverdata, UBYTE *buffer);
 void RemoveCluster(struct MidiCluster *cluster,struct CamdBase *CamdBase);
@@ -326,10 +356,17 @@ void Receiver_first(
 	struct DriverData *driverdata
 );
 
+#ifndef __amigaos4__
 void ASM Receiver(
 	REG(d0) UWORD input,
 	REG(a2) struct DriverData *driverdata
 );
+#else
+void ASM Receiver(
+	REG(d0, UWORD input),
+	REG(a2, struct DriverData *driverdata)
+	);
+#endif
 
 extern WORD MidiMsgType_status(UBYTE status);
 extern WORD MidiMsgType_CMB_Ctrl(UBYTE data1);
@@ -353,7 +390,11 @@ struct Drivers *FindPrevDriverForMidiDeviceData(
 ULONG mystrlen(char *string);
 BOOL mystrcmp(char *one,char *two);
 char *findonlyfilename(char *pathfile);
-void mysprintf(struct CamdBase *camdbase,char *string,char *fmt,...);
+#ifndef __amigaos4__
+   void mysprintf(struct CamdBase *camdbase,char *string,char *fmt,...);
+#else
+#  define mysprintf(camdbase, string, fmt, ...) SNPrintf(string, 256, fmt, __VA_ARGS__)
+#endif
 struct MidiLink *GetMidiLinkFromOwnerNode(struct MinNode *node);
 
 void CamdWait(void);
@@ -362,8 +403,18 @@ void CamdWait(void);
 
 BOOL InitCamdTimer(void);
 void UninitCamdTimer(void);
+
+#ifdef __amigaos4__
+APTR GoodPutMidi ( struct CamdIFace *ICamd, struct MidiLink * midilink, uint32 msg, uint32 maxbuff );
+#endif
+
+#ifdef __amigaos4__
+BOOL InitCamd(struct CamdIFace *ICamd);
+void UninitCamd(struct CamdIFace *ICamd);
+#else
 BOOL InitCamd(struct CamdBase *CamdBase);
 void UninitCamd(struct CamdBase *CamdBase);
+#endif
 
 #endif /* CAMD_INTERN_H */
 

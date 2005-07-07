@@ -24,33 +24,39 @@
 	struct CamdBase *, CamdBase, 38, Camd)
 
 /*  FUNCTION
+        void EndClusterNotify(struct ClusterNotifyNode *)
 
     INPUTS
+        pointer to previously added ClusterNotifyNode.
 
     RESULT
+        void
 
     NOTES
+        DO NOT call with a ClusterNotifyNode that has not been added.
 
     EXAMPLE
 
     BUGS
-		Not implemented.
+		None known
 
     SEE ALSO
+        StartClusterNotify();
 
     INTERNALS
 
     HISTORY
-
 	2001-01-12 ksvalast first created
+    2005-05-07 Lyle Hazelwood first implemented
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
 
-	aros_print_not_implemented("EndClusterNotify");
+    if(cn == NULL)   return;
 
+    Remove((struct Node *)&cn->cnn_Node);
 	return;
 
    AROS_LIBFUNC_EXIT

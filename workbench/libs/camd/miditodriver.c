@@ -10,14 +10,16 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-
+#ifdef __amigaos4__
+#  include <proto/CamdDriver.h>
+#endif
 #include "camd_intern.h"
 
 #ifndef min
 #define min(a,b) ((a)<=(b)?(a):(b))
 #endif
 
-#if defined(__AMIGAOS__) || AROS_BIG_ENDIAN
+#if defined(__AMIGAOS__) || AROS_BIG_ENDIAN || defined(__amigaos4__)
 #  define BUF0 0
 #  define BUF1 1
 #  define BUF2 2
@@ -174,10 +176,14 @@ ULONG Transmit_Status(struct DriverData *driverdata){
 }
 
 
+#ifdef __amigaos4__
+ULONG Transmitter(struct DriverData *driverdata){
+#else
 ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata){
+#endif
 	UBYTE ret;
 
-#ifndef __AROS__
+#ifdef __AMIGAOS__
 	if((driverdata->mididevicedata->Flags&1)==0){
 		return Transmitter_oldformat(driverdata);
 	}
@@ -231,7 +237,11 @@ BOOL Midi2Driver_rt(struct DriverData *driverdata,ULONG msg){
 
 	IncBuffer_rt(driverdata,&driverdata->buffercurr_rt);
 
+#ifndef __amigaos4__
 	(*driverdata->midiportdata->ActivateXmit)(driverdata,driverdata->portnum);
+#else
+        driverdata->mididevicedata->ICamdDriver->ActivateXmit(driverdata,driverdata->portnum);
+#endif
 
 	ReleaseSemaphore(&driverdata->sendsemaphore);
 
@@ -255,7 +265,7 @@ BOOL Midi2Driver_internal(
 	ULONG maxbuff
 ){
 
-#ifndef __AROS__
+#ifdef __AMIGAOS__
 	if((driverdata->mididevicedata->Flags&1)==0){
 		return Midi2Driver_internal_oldformat(driverdata,msg,maxbuff);
 	}
@@ -280,7 +290,11 @@ BOOL Midi2Driver_internal(
 
 	IncBuffer(driverdata,&driverdata->buffercurr);
 
+#ifndef __amigaos4__
 	(*driverdata->midiportdata->ActivateXmit)(driverdata,driverdata->portnum);
+#else
+	driverdata->mididevicedata->ICamdDriver->ActivateXmit(driverdata,driverdata->portnum);
+#endif
 
 	ReleaseSemaphore(&driverdata->sendsemaphore);
 
@@ -291,7 +305,7 @@ BOOL Midi2Driver_internal(
 
 BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer){
 
-#ifndef __AROS__
+#ifdef __AMIGAOS__
 	if((driverdata->mididevicedata->Flags&1)==0){
 		return SysEx2Driver_oldformat(driverdata,buffer);
 	}
@@ -314,7 +328,11 @@ BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer){
 		ObtainSemaphore(&driverdata->sendsemaphore);
 	}
 
+#ifndef __amigaos4__
 	(*driverdata->midiportdata->ActivateXmit)(driverdata,driverdata->portnum);
+#else
+	driverdata->mididevicedata->ICamdDriver->ActivateXmit(driverdata,driverdata->portnum);
+#endif
 
 	ReleaseSemaphore(&driverdata->sendsemaphore);
 

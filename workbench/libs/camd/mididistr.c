@@ -107,13 +107,23 @@ outofhere:
 
 		(*
 			(
+#ifdef __amigaos4__
 				(ULONG (* ASM)(
+						REG(a0, struct Hook*),
+						REG(a2, struct MidiLink*),
+						REG(a1, MidiMsg*),
+						REG(d0, long),
+						REG(a3, void*)
+					)
+#else
+				 (ULONG (* ASM)(
 						REG(a0) struct Hook*,
 						REG(a2) struct MidiLink*,
 						REG(a1) MidiMsg*,
 						REG(d0) long,
 						REG(a3) void*
 					)
+#endif
 				)
 				(mymidinode->midinode.mi_ReceiveHook->h_Entry)
 			)
