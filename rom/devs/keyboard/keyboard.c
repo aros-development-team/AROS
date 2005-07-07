@@ -598,8 +598,8 @@ AROS_LH1(LONG, abortio,
 /****************************************************************************************/
 
 #define  CORRECT(x)        (((x) & AMIGAKEYMASK) | (((x) & NOTAMIGAKEYMASK) >> 1))
-#define  BVBITCLEAR(x, y)  ((y)[(x) / (sizeof(UBYTE)*8)] &= ~(1 << ((x) & (sizeof(UBYTE) - 1))))
-#define  BVBITSET(x, y)    ((y)[(x) / (sizeof(UBYTE)*8)] |=  (1 << ((x) & (sizeof(UBYTE) - 1))))
+#define  BVBITCLEAR(x, y)  ((y)[(x) / (sizeof(UBYTE)*8)] &= ~(1 << ((x) & (sizeof(UBYTE)*8 - 1))))
+#define  BVBITSET(x, y)    ((y)[(x) / (sizeof(UBYTE)*8)] |=  (1 << ((x) & (sizeof(UBYTE)*8 - 1))))
 
 /****************************************************************************************/
 
