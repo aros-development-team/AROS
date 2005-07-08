@@ -24,74 +24,93 @@ void writefunclist(struct config *cfg, struct functions *functions)
         exit(20);
     }
 
-    fprintf(out, "##begin functionlist\n");
-	
-    for (funclistit = functions->funclist, lvo = cfg->firstlvo - 1;
-	 funclistit != NULL;
-	 funclistit = funclistit->next
-    )
+    if (cfg->boopsimprefix == NULL
+	|| functions->funclist != NULL)
     {
-	if (funclistit->libcall == REGISTERMACRO)
+	fprintf(out, "##begin functionlist\n");
+	
+	for (funclistit = functions->funclist, lvo = cfg->firstlvo - 1;
+	     funclistit != NULL;
+	     funclistit = funclistit->next
+	)
 	{
-	    if (funclistit->lvo > lvo+1)
+	    if (funclistit->libcall == REGISTERMACRO)
 	    {
-		if (funclistit->lvo == lvo+2)
-		    fprintf(out, "\n");
-		else
-		    fprintf(out, ".skip %u\n", funclistit->lvo - lvo - 1);
-	    }
+		if (funclistit->lvo > lvo+1)
+		{
+		    if (funclistit->lvo == lvo+2)
+			fprintf(out, "\n");
+		    else
+			fprintf(out, ".skip %u\n", funclistit->lvo - lvo - 1);
+		}
 	    
-	    fprintf(out,
-		    "%s %s(",
-		    funclistit->type, funclistit->name
-	    );
+		fprintf(out,
+			"%s %s(",
+			funclistit->type, funclistit->name
+		);
 	    
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-	       /* Print a , separator when not the first function argument */
-		if (arglistit != funclistit->arguments)
-		    fprintf(out, ", ");
+		for (arglistit = funclistit->arguments;
+		     arglistit!=NULL;
+		     arglistit = arglistit->next
+		)
+		{
+		    /* Print a , separator when not the first function argument */
+		    if (arglistit != funclistit->arguments)
+			fprintf(out, ", ");
 
-		fprintf(out, "%s", arglistit->arg);
-	    }
-	    fprintf(out, ") (");
+		    fprintf(out, "%s", arglistit->arg);
+		}
+		fprintf(out, ") (");
 	    
-	    for (arglistit = funclistit->arguments;
-		 arglistit != NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-	       /* Print a , separator when not the first function argument */
-		if (arglistit != funclistit->arguments)
-		    fprintf(out, ", ");
+		for (arglistit = funclistit->arguments;
+		     arglistit != NULL;
+		     arglistit = arglistit->next
+		)
+		{
+		    /* Print a , separator when not the first function argument */
+		    if (arglistit != funclistit->arguments)
+			fprintf(out, ", ");
 
-		fprintf(out, "%s", arglistit->reg);
-	    }
-	    fprintf(out, ")\n");
+		    fprintf(out, "%s", arglistit->reg);
+		}
+		fprintf(out, ")\n");
 
-	    for (aliaslistit = funclistit->aliases;
-		 aliaslistit != NULL;
-		 aliaslistit = aliaslistit->next
-	    )
-	    {
-		fprintf(out, ".alias %s\n", aliaslistit->s);
+		for (aliaslistit = funclistit->aliases;
+		     aliaslistit != NULL;
+		     aliaslistit = aliaslistit->next
+	        )
+		{
+		    fprintf(out, ".alias %s\n", aliaslistit->s);
+		}
+	    
+		if (funclistit->novararg)
+		    fprintf(out, ".novararg\n");
+	    
+		if (funclistit->priv)
+		    fprintf(out, ".private\n");
+	    
+		lvo = funclistit->lvo;
 	    }
-	    
-	    if (funclistit->novararg)
-		fprintf(out, ".novararg\n");
-	    
-	    if (funclistit->priv)
-		fprintf(out, ".private\n");
-	    
-	    lvo = funclistit->lvo;
 	}
+
+	fprintf(out, "##end functionlist\n");
     }
 
-    fprintf(out, "##end functionlist\n");
+    if (cfg->boopsimprefix != NULL)
+    {
+	fprintf(out, "##begin methodlist\n");
+	
+	for(funclistit = functions->methlist;
+	    funclistit != NULL;
+	    funclistit = funclistit->next
+	)
+	{
+	    fprintf(out, "%s\n", funclistit->name);
+	}
 
+	fprintf(out, "##end methodlist\n");
+    }
+    
     if (ferror(out))
     {
         perror(line);

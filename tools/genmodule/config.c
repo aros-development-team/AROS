@@ -41,7 +41,6 @@ const static char usage[] =
 ;
 
 static void readconfig(struct config *, struct functions *);
-static struct conffuncinfo *newconffuncinfo(const char *name, unsigned int lvo);
 
 
 /* the method prefices for the supported classes */
@@ -326,6 +325,7 @@ static void readsectionconfig(struct config *);
 static void readsectioncdef(struct config *);
 static void readsectioncdefprivate(struct config *);
 static void readsectionfunctionlist(struct config *, struct functions *);
+static void readsectionmethodlist(struct config *, struct functions *);
 
 static void readconfig(struct config *cfg, struct functions *functions)
 {
@@ -341,7 +341,7 @@ static void readconfig(struct config *cfg, struct functions *functions)
     {
 	if (strncmp(line, "##", 2)==0)
 	{
-	    static char *parts[] = {"config", "cdefprivate", "cdef", "functionlist"};
+	    static char *parts[] = {"config", "cdefprivate", "cdef", "functionlist", "methodlist"};
 	    const unsigned int nums = sizeof(parts)/sizeof(char *);
 	    unsigned int partnum;
 	    int i, atend = 0;
@@ -385,6 +385,10 @@ static void readconfig(struct config *cfg, struct functions *functions)
 
 	    case 4: /* functionlist */
 		readsectionfunctionlist(cfg, functions);
+		break;
+
+	    case 5: /* methodlist */
+		readsectionmethodlist(cfg, functions);
 		break;
 	    }
 	}
@@ -1077,22 +1081,66 @@ static void readsectionfunctionlist(struct config *cfg, struct functions *functi
     }
 }
 
-static struct conffuncinfo *newconffuncinfo(const char *name, unsigned int lvo)
+static void readsectionmethodlist(struct config *cfg, struct functions *functions)
 {
-    struct conffuncinfo *conffuncinfo = malloc(sizeof(struct conffuncinfo));
+    int atend = 0, i;
+    char *line, *s, *s2;
+    unsigned int lvo = cfg->firstlvo;
+    struct functionhead **methlistptr = &functions->methlist;
     
-    if (conffuncinfo == NULL)
-    {
-	fprintf(stderr, "Out of memory !\n");
-	exit (20);
-    }
-    
-    conffuncinfo->next = NULL;
-    conffuncinfo->name = strdup(name);
-    conffuncinfo->lvo = lvo;
-    conffuncinfo->regcount = -1;
-    conffuncinfo->regs = NULL;
-    conffuncinfo->aliases = NULL;
+    if (cfg->basename==NULL)
+	exitfileerror(20, "section methodlist has to come after section config\n");
 
-    return conffuncinfo;
+    cfg->intcfg |= CFG_NOREADREF;
+    
+    while (!atend)
+    {
+	line = readline();
+	if (line==NULL)
+	    exitfileerror(20, "unexptected EOF in methodlist section\n");
+	
+	/* Ignore empty lines or lines that qre a comment, e.g. that starts with a # */
+	if (strlen(line)==0 || (line[0] == '#' && line[1] != '#'))
+	    continue;
+
+	if (isspace(*line))
+	    exitfileerror(20, "No space allowed at start of the line\n");
+
+	if (strncmp(line, "##", 2)==0) /* Is this the end ? */
+	{
+	    s = line+2;
+	    while (isspace(*s)) s++;
+	    if (strncmp(s, "end", 3)!=0)
+		exitfileerror(20, "\"##end methodlist\" expected\n");
+
+	    s += 3;
+	    while (isspace(*s)) s++;
+	    if (strncmp(s, "methodlist", 10)!=0)
+		exitfileerror(20, "\"##end methodlist\" expected\n");
+
+	    s += 10;
+	    while (isspace(*s)) s++;
+	    if (*s!='\0')
+		exitfileerror(20, "unexpected character on position %d\n", s-line);
+
+	    atend = 1;
+	    
+	    continue;
+	}
+
+	if(!isalpha(*line))
+	    exitfileerror(20, "Methodname has to begin with a letter\n");
+	
+	for (s = line + 1; isalnum(*s) || *s == '_'; s++)
+	    ;
+	
+	if (*s != '\0')
+	    exitfileerror(20, "Only letters, digits and an underscore allowed in a methodname\n");
+
+	*methlistptr = newfunctionhead(line, STACK);
+	(*methlistptr)->type = "IPTR";
+	funcaddarg(*methlistptr, "Class *cl", NULL);
+	funcaddarg(*methlistptr, "Object *o", NULL);
+	funcaddarg(*methlistptr, "Msg msg", NULL);
+    }
 }
