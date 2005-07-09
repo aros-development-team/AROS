@@ -248,7 +248,12 @@ enum{
 
 #define CMEF_All (CMEF_MsgErr|CMEF_BufferFull|CMEF_SysExFull|CMEF_ParseMem|CMEF_RecvErr|CMEF_RecvOverflow|CMEF_SysExTooBig)
 
-struct ClusterNotifyNode{ULONG somethinginsideherebutdontusethisone;};
+struct ClusterNotifyNode{
+  struct MinNode cnn_Node;
+  struct Task *cnn_Task;
+  BYTE cnn_SigBit;
+};
+
 
 #endif
 
