@@ -2279,7 +2279,7 @@ PACKAGES_DIR := $(AROSDIR)/../Packages
 %(mmake)-%(subpackage)-package-dir := $(PACKAGES_DIR)/$(%(mmake)-%(subpackage)-archbase)
 
 %(mmake)-%(subpackage)-package-basename := \
-    $(PACKAGES_DIR)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.$(AROS_TARGET_CPU)
+    $(PACKAGES_DIR)/$(%(mmake)-%(subpackage)-archbase)-aros.$(AROS_TARGET_CPU)
 
 %build_with_configure mmake=%(mmake)-%(subpackage) \
      srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-%(subpackage)-srcdir) \
