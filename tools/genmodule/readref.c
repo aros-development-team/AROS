@@ -253,28 +253,6 @@ void readref(struct config *cfg, struct functions *functions)
 	    exit(20);
 	}
     }
-    
-    /* Add internal generated functions */
-    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
-    {
-        struct functionhead *function = newfunctionhead("MCC_Query", REGISTERMACRO);
-	function->lvo = cfg->firstlvo - 1;
-	function->type = "IPTR";
-	funcaddarg(function, "LONG what", "D0");
-
-        function->next = functions->funclist;
-        functions->funclist = function;
-    }
-    else if (cfg->modtype == DATATYPE)
-    {
-	struct functionhead *function = newfunctionhead("ObtainEngine", REGISTERMACRO);
-	function->lvo = cfg->firstlvo - 1;
-	function->type = "struct IClass *";
-	
-	function->next = functions->funclist;
-	functions->funclist = function;
-    }
-    
 }
 
 

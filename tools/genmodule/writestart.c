@@ -46,6 +46,10 @@ void writestart(struct config *cfg, struct functions *functions)
 	    writecloselib(out, cfg);
 	    writeexpungelib(out, cfg);
 	    writeextfunclib(out, cfg);
+	    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
+	        writemccquery(out, cfg);
+	    else if (cfg->modtype == DATATYPE)
+	        writeobtainengine(out, cfg);
 	}
 	writesets(out, cfg);
     }
@@ -54,7 +58,6 @@ void writestart(struct config *cfg, struct functions *functions)
     if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
     {
         writemccinit(out, cfg, functions);
-        writemccquery(out, cfg);
     }
     else if (cfg->modtype == GADGET)
     {
@@ -63,7 +66,6 @@ void writestart(struct config *cfg, struct functions *functions)
     else if (cfg->modtype == DATATYPE)
     {
 	writeclassinit(out, cfg, functions);
-	writeobtainengine(out, cfg);
     }
     
     fclose(out);
@@ -711,6 +713,9 @@ writefunctable(FILE *out,
 	}
     }
 
+    /* lvo contains the number of functions already printed in the functable */
+    lvo = 0;
+    
     if (!(cfg->options & OPTION_NORESIDENT))
     {
 	fprintf(out,
@@ -727,6 +732,23 @@ writefunctable(FILE *out,
 		    "    &AROS_SLIB_ENTRY(GM_UNIQUENAME(ExtFuncLib),%s),\n",
 		    cfg->basename, cfg->basename, cfg->basename, cfg->basename
 	    );
+	    lvo += 4;
+	}
+        if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
+	{
+	    fprintf(out,
+		    "    &AROS_SLIB_ENTRY(MCC_Query,%s),\n",
+		    cfg->basename
+	    );
+	    lvo++;
+	}
+        else if (cfg->modtype == DATATYPE)
+	{
+	    fprintf(out,
+		    "    &AROS_SLIB_ENTRY(ObtainEngine,%s),\n",
+		    cfg->basename
+	    );
+	    lvo++;
 	}
 	funclistit = functions->funclist;
     }
@@ -789,6 +811,7 @@ writefunctable(FILE *out,
 		    funclistit->name, cfg->basename,
 		    funclistit2->name, cfg->basename
 	    );
+	    lvo += 2;
 	    funclistit = funclistit2->next;
 
 	    if (funclistit->lvo == 3)
@@ -800,7 +823,8 @@ writefunctable(FILE *out,
 	    }
 	    else
 		fprintf(out, "    &%s_null,\n", cfg->modulename);
-	
+	    lvo++;
+	    
 	    if (funclistit->lvo == 4)
 	    {
 		fprintf(out, "    &AROS_SLIB_ENTRY(%s,%s),\n",
@@ -810,10 +834,10 @@ writefunctable(FILE *out,
 	    }
 	    else
 		fprintf(out, "    &%s_null,\n", cfg->modulename);
+	    lvo++;
 	}
     }
 
-    lvo = (cfg->modtype == RESOURCE) ? 1 : 4;
     while (funclistit != NULL)
     {
 	for (i = lvo+1; i<funclistit->lvo; i++)
