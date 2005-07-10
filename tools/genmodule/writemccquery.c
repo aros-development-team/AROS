@@ -23,28 +23,26 @@ void writemccquery(FILE *out, struct config *cfg)
         "#define MCC_CLASS       0\n"
         "#define MCC_PREFS_CLASS 1\n"
         "\n"
-        "extern struct MUI_CustomClass *MCC;\n"
-        "\n"
         "AROS_LH1(IPTR, MCC_Query,\n"
         "         AROS_LHA(LONG, what, D0),\n"
-        "         LIBBASETYPEPTR, %s, 5, %s\n"
+        "         LIBBASETYPEPTR, LIBBASE, 5, %s\n"
         ")\n"
         "{\n"
         "    AROS_LIBFUNC_INIT\n"
         "\n"
         "    switch( what )\n"
         "    {\n",
-        cfg->libbase, cfg->basename
+        cfg->basename
     );
     
     switch(cfg->modtype)
     {
     case MCC:
     case MUI:
-        fprintf(out, "        case MCC_CLASS:          return (IPTR)MCC;\n");
+        fprintf(out, "        case MCC_CLASS:          return (IPTR)GM_CLASSPTR_FIELD(LIBBASE);\n");
         break;
     case MCP:
-        fprintf(out, "        case MCC_PREFS_CLASS:    return (IPTR)MCC;\n");
+        fprintf(out, "        case MCC_PREFS_CLASS:    return (IPTR)GM_CLASSPTR_FIELD(LIBBASE);\n");
         break;
     }
     

@@ -61,10 +61,6 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
         out,
         "\n"
         "\n"
-        "/*** Variables **************************************************************/\n"
-        "struct MUI_CustomClass *MCC;\n"
-        "\n"
-        "\n"
         "/*** Prototypes *************************************************************/\n"
     );
     
@@ -108,9 +104,9 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
         "{\n"
         "    AROS_SET_LIBFUNC_INIT\n"
         "    \n"
-        "    MCC = MUI_CreateCustomClass((struct Library *) LIBBASE, \"%s\", NULL, %s_DATA_SIZE, %s_Dispatcher);\n"
+        "    GM_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass((struct Library *) LIBBASE, \"%s\", NULL, %s_DATA_SIZE, %s_Dispatcher);\n"
         "    \n"
-        "    return MCC != NULL;\n"
+        "    return GM_CLASSPTR_FIELD(LIBBASE) != NULL;\n"
         "    \n"
         "    AROS_SET_LIBFUNC_EXIT\n"
         "}\n"
@@ -119,7 +115,7 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
         "{\n"
         "    AROS_SET_LIBFUNC_INIT\n"
         "    \n"
-        "    MUI_DeleteCustomClass(MCC);\n"
+        "    MUI_DeleteCustomClass(GM_CLASSPTR_FIELD(LIBBASE));\n"
         "    return TRUE;\n"
         "    \n"
         "    AROS_SET_LIBFUNC_EXIT\n"
