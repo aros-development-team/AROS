@@ -701,13 +701,13 @@ static void readsectionconfig(struct config *cfg)
 	case MUI:
 	case MCP:
 	case MCC:
-	    cfg->superclass = "Area.mui";
+	    cfg->superclass = "MUIC_Area";
 	    break;
 	case GADGET:
-	    cfg->superclass = "gadgetclass";
+	    cfg->superclass = "GADGETCLASS";
 	    break;
 	case DATATYPE:
-	    cfg->superclass = "datatypesclass";
+	    cfg->superclass = "DATATYPESCLASS";
 	    break;
 	default:
 	    break;
