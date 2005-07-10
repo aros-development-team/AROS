@@ -104,7 +104,7 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
         "{\n"
         "    AROS_SET_LIBFUNC_INIT\n"
         "    \n"
-        "    GM_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass((struct Library *) LIBBASE, \"%s\", NULL, %s_DATA_SIZE, %s_Dispatcher);\n"
+        "    GM_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass((struct Library *) LIBBASE, %s, NULL, %s_DATA_SIZE, %s_Dispatcher);\n"
         "    \n"
         "    return GM_CLASSPTR_FIELD(LIBBASE) != NULL;\n"
         "    \n"
