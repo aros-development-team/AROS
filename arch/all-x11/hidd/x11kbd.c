@@ -703,15 +703,8 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 	    "Note that the keymaptable only makes sure that your keyboard looks as\n"
 	    "much as possible like an Amiga keyboard to AROS. So with the keymaptable\n"
 	    "alone the keyboard will behave like an Amiga keyboard with American layout\n."
-	    "For other layouts you must activate the correct keymap file (which are in\n"
-	    "\"DEVS:Keymaps\") just like in AmigaOS. Actually AROS has only German,\n"
-	    "Italian and Swedish keymap files. You can activate them inside AROS by typing\n"
-	    "this in a AROS Shell or adding it to the AROS Startup-Sequence:\n"
-	    "\n"
-	    "    Setmap pc105_d\n"
-	    "    Setmap pc105_i\n"
-	    "    Setmap pc105_s\n"
-	    "\n", filename);
+	    "For other layouts you must activate the correct keymap just like in AmigaOS.\n", 
+            filename);
     }
 }
 
