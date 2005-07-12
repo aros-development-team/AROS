@@ -508,7 +508,11 @@ void load_pens( void )
 long setup( void )
 {
 	/* Setup pos/dim */
-	CopyMem(&prefs.left,&Template.LeftEdge,4*sizeof(WORD));
+	
+	if (prefs.width && prefs.height)
+	{
+	    CopyMem(&prefs.left,&Template.LeftEdge,4*sizeof(WORD));
+	}
 
 	/* Setup screen */
 	if(Scr == NULL)

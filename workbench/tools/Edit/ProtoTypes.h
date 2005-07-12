@@ -19,7 +19,3 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
-
-#ifdef	JANOPREF    /* Include specific prototypes for JanoPrefs */
-#include "Prefs/Utils.h"
-#endif

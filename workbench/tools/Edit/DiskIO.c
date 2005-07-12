@@ -175,10 +175,11 @@ STRPTR ask_save(struct Window *wnd, AskArgs *path, CONST_STRPTR title)
 			** get_full_path will search for the correct pathname      */
 			if( ( path = CatPath(fr->fr_Drawer, fr->fr_File) ) )
 			{
-				WORD err = get_full_path(path, &title);
+			    	STRPTR fullpath;
+				WORD err = get_full_path(path, &fullpath);
 				/* get_full_path, allocate a new buffer since size may varry */
 				FreeVec( path );
-				if( err == 0 ) return title;
+				if( err == 0 ) return fullpath;
 				ThrowError(Wnd, ErrMsg(err));
 			} else
 				ThrowError(Wnd, ErrMsg(ERR_NOMEM));
@@ -301,9 +302,10 @@ STRPTR ask_load(struct Window *wnd, AskArgs *path, BYTE set_file, CONST_STRPTR t
 
 			if( ( path = CatPath(fr->fr_Drawer, fr->fr_File) ) )
 			{
-				WORD err = get_full_path(path, &title);
+			    	STRPTR fullpath;
+				WORD err = get_full_path(path, &fullpath);
 				FreeVec( path );
-				if( err == 0 ) return title;
+				if( err == 0 ) return fullpath;
 				ThrowError(Wnd, ErrMsg(err));
 			} else
 				ThrowError(Wnd, ErrMsg(ERR_NOMEM));
