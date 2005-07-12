@@ -84,6 +84,8 @@ int main(int argc, char *argv[])
 		 (UtilityBase   = (struct UtilityBase *)   OpenLibrary("utility.library",   36)) )
 	{
 		init_macros();
+		set_default_prefs(&prefs, IntuitionBase->ActiveScreen);
+		
 		load_prefs(&prefs, NULL);     /* See if it exists a config file */
 		sigport = create_port();
 

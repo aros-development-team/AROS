@@ -22,8 +22,12 @@
 #include "ProtoTypes.h"
 
 #define  CATCOMP_NUMBERS
+#ifndef JANOPREF
 #include "strings.h"
-
+#else
+#include "Utils.h"
+#include "../../tools/Edit/strings.h"
+#endif
 extern struct IntuitionBase *IntuitionBase;
 extern struct GfxBase *      GfxBase;
 extern struct Library *      AslBase;
@@ -263,8 +267,16 @@ UBYTE save_prefs(PREFS *prefs)
 		{
 			if( !PushChunk(file, ID_PREF, ID_JANO, IFFSIZE_UNKNOWN) )
 			{	 
-				/* Save window dimension */
-				CopyMem(&Wnd->LeftEdge, &prefs->left, 4*sizeof(WORD));
+			    	if (Wnd)
+				{
+				    /* Save window dimension */
+				    CopyMem(&Wnd->LeftEdge, &prefs->left, 4*sizeof(WORD));
+				}
+				else
+				{
+				    prefs->left = prefs->top = prefs->width = prefs->height = 0;
+				}
+				
 				/* Write configuration file */
 				for(num=0; num < MAX_NUMFIELD; num++) {
 					register STRPTR src;
