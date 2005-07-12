@@ -7,9 +7,16 @@
 #include <exec/types.h>
 #include <exec/io.h>
 #include <libraries/dos.h>
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+
+#include <clib/alib_protos.h>
+
 #include "Gui.h"
 #include "Prefs.h"
 #include "IPC_Prefs.h"
+#include "JanoPrefs.h"
 
 /** Port of Pref and Jano **/
 static struct MsgPort *port, *reply;
@@ -21,14 +28,14 @@ UBYTE *PortName = JANOPREFS_PORT;
 char find_prefs( void )
 {
 	ULONG sigwait;
-	if(reply = (struct MsgPort *) FindPort(PortName))
+	if((reply = (struct MsgPort *) FindPort(PortName)))
 	{
 		PortName = NULL;		/* Private port */
-		if( sigwait = create_port() )
+		if(( sigwait = create_port() ))
 		{
 			/* Send to the running preference tool that someone tries to launch it again */
 			cmd->class = CMD_SHOW;
-			PutMsg(reply, cmd);
+			PutMsg(reply, (struct Message *)cmd);
 			/* cmd packet is associated with "port", thus reply will be done here */
 			Wait( sigwait );
 			/* Unqueue message (don't reply!) */
@@ -43,10 +50,10 @@ char find_prefs( void )
 ULONG create_port( void )
 {
 	/* Create a port and  */
-	if( port = (struct MsgPort *) CreatePort(PortName, 0L) )
+	if(( port = (struct MsgPort *) CreatePort(PortName, 0L) ))
 	{
 		/* Create a message that can be sent to the editor */
-		if( cmd = (struct JPacket *) CreateExtIO(port, (long) sizeof (*cmd)) )
+		if(( cmd = (struct JPacket *) CreateExtIO(port, (long) sizeof (*cmd)) ))
 			return (unsigned) (1L << port->mp_SigBit);
 
 		DeletePort(port);
@@ -58,11 +65,11 @@ ULONG create_port( void )
 char find_jano(PREFS *prefs)
 {
 	extern struct Screen *Scr;
-	if(reply = (struct MsgPort *) FindPort(JANO_PORT))
+	if((reply = (struct MsgPort *) FindPort(JANO_PORT)))
 	{
 		/* Get a copy of the preferences that uses the editor */
 		cmd->class = CMD_PREF;
-		PutMsg(reply, cmd);
+		PutMsg(reply, (struct Message *)cmd);
 		Wait( 1 << port->mp_SigBit | SIGBREAKF_CTRL_C );
 		GetMsg( port );
 		/* Copy to our local buffer */
@@ -77,12 +84,12 @@ char find_jano(PREFS *prefs)
 char send_jano(PREFS *prefs, ULONG class)
 {
 	/* The port can be shutted down!! */
-	if( reply = (struct MsgPort *) FindPort(JANO_PORT))
+	if(( reply = (struct MsgPort *) FindPort(JANO_PORT)))
 	{
 		cmd->class = class;
 		CopyMem(prefs, &cmd->prefs, sizeof(*prefs));
 
-		PutMsg(reply, cmd);
+		PutMsg(reply, (struct Message *)cmd);
 		Wait( 1 << port->mp_SigBit | SIGBREAKF_CTRL_C );
 		GetMsg( port );
 		return 1;
@@ -92,11 +99,11 @@ char send_jano(PREFS *prefs, ULONG class)
 /** Shutdown port **/
 void close_port( void )
 {
-	if( cmd )   DeleteExtIO(cmd, (long) sizeof (*cmd));
+	if( cmd )   DeleteExtIO((struct IORequest *)cmd);
 	if( port ) {
 		/* Be sure there are no message left */
-		void *msg;
-		while(msg = (void *) GetMsg( port )) ReplyMsg(msg);
+		struct Message *msg;
+		while((msg = GetMsg( port ))) ReplyMsg(msg);
 		DeletePort( port );
 	}
 }
@@ -106,7 +113,7 @@ void handle_port( void )
 {
 	struct JPacket *msg;
 	extern UBYTE    ConfigFile;
-	while( msg = (struct JPacket *) GetMsg(port) )
+	while(( msg = (struct JPacket *) GetMsg(port) ))
 	{
 		switch( msg->class )
 		{
@@ -115,6 +122,6 @@ void handle_port( void )
 				/* Close preference tool only if it's associated to jano */
 				if( !ConfigFile ) close_prefwnd(0); break;
 		}
-		ReplyMsg(msg);
+		ReplyMsg((struct Message *)msg);
 	}
 }

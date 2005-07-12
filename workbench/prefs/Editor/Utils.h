@@ -37,10 +37,17 @@ void save_config( char ConfigFile );
 /*** Restore config ***/
 void restore_config( PREFS * );
 
+void load_pref(PREFS *prefs);
+void save_pref_as(PREFS *prefs);
+void default_prefs(PREFS *prefs);
 
-#ifndef	ErrMsg
+void free_asl(void);
+
+#ifdef	ErrMsg
+#undef ErrMsg
+#endif
+
 #define ErrMsg(num)		Errors[ num-ERR_BADOS ]
 extern  UBYTE *Errors[];
-#endif
 
 #endif

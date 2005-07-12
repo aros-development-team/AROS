@@ -1,0 +1,7 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 17995 2003-06-17 09:05:54Z chodorowski $
+
+include $(TOP)/config/make.cfg
+
+%build_catalogs mmake=workbench-prefs-editor-catalogs \
+                name=EditorPrefs subdir=Prefs

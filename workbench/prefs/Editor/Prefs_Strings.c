@@ -6,11 +6,13 @@
 #include <libraries/gadtools.h>
 #include <libraries/locale.h>
 
+#include <proto/locale.h>
+
 #define  CATCOMP_NUMBERS		/* We will need the string id */
 #define  CATCOMP_STRINGS		/* and the english string corresponding to the id */
-#include "Prefs_Strings.h"
+#include "strings.h"
 #define	LocaleInfo				LocaleInfoTmp
-#include "Jed_Strings.h"
+#include "../../tools/Edit/strings.h"
 
 /* Gadget messages */
 STRPTR PrefMsg[] = {
@@ -28,7 +30,7 @@ STRPTR PrefMsg[] = {
 /* Global error messages (taken from Jano) */
 STRPTR Errors[] = {
 	ERR_BADOS_STR,				ERR_NOASLREQ_STR,
-	ERR_NOWRTACCESS_STR,		ERR_NOMEM_STR,
+	/*ERR_NOWRTACCESS_STR,*/		ERR_NOMEM_STR,
 	ERR_NOGUI_STR,				ERR_NONAME_STR,
 	ERR_WRITECLIP_STR,		ERR_OPENCLIP_STR,
 	ERR_LOADFILE_STR,			ERR_NOTXTINCLIP_STR,
@@ -73,8 +75,8 @@ void prefs_local(void)
 {
 	WORD MsgID;
 	/* Custom prefs messages */
-	if( (prefs_cat = (void *) OpenCatalogA(NULL,"JanoPrefs.catalog",NULL)) &&
-	    (jano_cat = (void *) OpenCatalogA(NULL,"JanoEditor.catalog",NULL)) )
+	if( (prefs_cat = (void *) OpenCatalogA(NULL,"Prefs/EditorPrefs.catalog",NULL)) &&
+	    (jano_cat = (void *) OpenCatalogA(NULL,"System/Tools/Editor.catalog",NULL)) )
 	{
 		{	/* Various message of pref */
 			STRPTR *str;

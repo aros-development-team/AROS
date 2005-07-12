@@ -9,15 +9,31 @@
 #include <libraries/gadtools.h>
 #include <libraries/asl.h>
 #include <dos/dos.h>
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/graphics.h>
+#include <proto/diskfont.h>
+#include <proto/intuition.h>
+#include <proto/asl.h>
+#include <proto/gadtools.h>
+
+#include <string.h>
+#include <stdlib.h>
+
 #include "Jed.h"
 #include "JanoPrefs.h"
+#include "Sample.h"
 
 #define CATCOMP_NUMBERS
-#include "Jed_Strings.h"
+#include "../../tools/Edit/strings.h"
 
 extern struct Window *Wnd;
 struct FileRequester *fr=NULL;
 static PREFS oldprefs;
+
+void ThrowError(struct Window *W, UBYTE *Msg);
+void ThrowDOSError(struct Window *W, STRPTR Prefix, UBYTE err);
 
 #define	GetSI(gad)			((struct StringInfo *)gad->SpecialInfo)
 
@@ -136,28 +152,30 @@ void show_changes(PREFS *old, PREFS *new)
 	}
 	GT_SetGadgetAttrs(gads[1], Wnd, NULL, GTST_String, new->wordssep, TAG_DONE);
 	{
-		extern ULONG TextFontTags[], ScrFontTags[], ScrMdTags[];
+		extern struct TagItem TextFontTags[], ScrFontTags[], ScrMdTags[];
 		extern ULONG extended;
 
-		ScrFontTags[3] = ScrMdTags[3] = TextFontTags[3] = 0; extended=0;
+		ScrFontTags[1].ti_Data = 0;
+		ScrMdTags[1].ti_Data = 0;
+		TextFontTags[1].ti_Data = 0; extended=0;
 		if( new->use_txtfont )
 			font_info(StrInfo, new->txtfont),
-			TextFontTags[1] = (ULONG) FTCycTxt, extended |= 1;
+			TextFontTags[0].ti_Data = (ULONG) FTCycTxt, extended |= 1;
 		else
-			TextFontTags[1] = (ULONG) (FTCycTxt+1);
+			TextFontTags[0].ti_Data = (ULONG) (FTCycTxt+1);
 
 		if( new->use_scrfont )
 			font_info(StrInfo+20, new->scrfont),
-			ScrFontTags[1] = (ULONG) FSCycTxt, extended |= 2;
+			ScrFontTags[0].ti_Data = (ULONG) FSCycTxt, extended |= 2;
 		else
-			ScrFontTags[1] = (ULONG) (FSCycTxt+1);
+			ScrFontTags[0].ti_Data = (ULONG) (FSCycTxt+1);
 
 		if( new->use_pub==1 )
 			scr_info(StrInfo+40,Scr->Width, Scr->Height, Scr->RastPort.BitMap->Depth),
-			ScrMdTags[1] = (ULONG) ScrCycTxt, extended |= 4;
+			ScrMdTags[0].ti_Data = (ULONG) ScrCycTxt, extended |= 4;
 		else {
-			ScrMdTags[1] = (ULONG) (ScrCycTxt+1);
-			if(new->use_pub!=2) ScrMdTags[3] = 1; /* Clone */
+			ScrMdTags[0].ti_Data = (ULONG) (ScrCycTxt+1);
+			if(new->use_pub!=2) ScrMdTags[1].ti_Data = 1; /* Clone */
 		}
 
 		/* Show changes */
@@ -180,17 +198,17 @@ void show_changes(PREFS *old, PREFS *new)
 }
 
 /* ASL load or save requester tags: */
-static ULONG tags[] = {
+static IPTR tags[] = {
 	ASLFR_InitialLeftEdge,50,
 	ASLFR_InitialTopEdge,50,
 	ASLFR_InitialWidth,320,
 	ASLFR_InitialHeight,256,
-	ASLFR_Window,NULL,
+	ASLFR_Window,0,
 	ASLFR_Flags1,0,
 	ASLFR_SleepWindow,TRUE,
-	ASLFR_InitialDrawer,(ULONG)"ENVARC:",
-	ASLFR_InitialFile,NULL,
-	ASLFR_InitialPattern,(ULONG)"#?",
+	ASLFR_InitialDrawer,(IPTR)"ENVARC:",
+	ASLFR_InitialFile,0,
+	ASLFR_InitialPattern,(IPTR)"#?",
 	TAG_DONE
 };
 
@@ -216,7 +234,7 @@ void load_pref(PREFS *prefs)
 		tags[11] = FILF_PATGAD;
 		/* Save old preferences */
 		CopyMem(prefs, &oldprefs, sizeof(oldprefs));
-		if(AslRequest(fr, tags))
+		if(AslRequest(fr, (struct TagItem *)tags))
 		{
 			UBYTE errcode;
 			save_asl_dim(fr);
@@ -247,7 +265,7 @@ void save_pref_as(PREFS *prefs)
 	else
 	{
 		tags[11] = FILF_SAVE | FILF_PATGAD;
-		if(AslRequest(fr, tags))
+		if(AslRequest(fr, (struct TagItem *)tags))
 		{
 			save_asl_dim(fr);
 			CopyMem(fr->fr_Drawer, Path, sizeof(Path));
@@ -274,6 +292,8 @@ static char buffer[ MAX(sizeof(Path),sizeof(prefs)) ];
 /*** Save current configuration to restore it later if desired ***/
 void save_config( char ConfigFile )
 {
+#warning "CHECKME: = or ==?"
+
 	if(edit_file = ConfigFile)
 		CopyMem(Path, buffer, sizeof(Path));
 	else
