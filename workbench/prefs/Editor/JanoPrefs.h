@@ -15,3 +15,6 @@
 /*** Shared message strings ***/
 extern struct NewMenu newmenu[];
 extern STRPTR Errors[], PrefMsg[], FSCycTxt[];
+
+BYTE setup_guipref(void);
+void close_prefwnd( BYTE cmd);

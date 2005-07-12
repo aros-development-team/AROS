@@ -9,16 +9,19 @@
 #include "Project.c"
 #include <graphics/clip.h>
 #include <graphics/layers.h>
+
+#include <proto/layers.h>
+
 #include "Sample.h"
 #include "Jed.h"
 
 struct gv   gui;
 struct pens pen = {0,1,3,2,3,1,2,1,3,2,0,1};
 
-ULONG BoxTags[] = {		/* Draws a recessed box */
-	GT_VisualInfo,0,
-	GTBB_Recessed,TRUE,
-	TAG_DONE
+struct TagItem BoxTags[] = {		/* Draws a recessed box */
+	{GT_VisualInfo,0},
+	{GTBB_Recessed,TRUE},
+	{TAG_DONE}
 };
 
 UBYTE *SampleText[] = {LINE1, LINE2, LINE3, LINE4, LINE5};
@@ -78,7 +81,7 @@ struct Region *clipWindow(struct Window *win, LONG minX, LONG minY, LONG maxX, L
 PROJECT *new_project(PROJECT *ins, PREFS *prefs)
 {
 	PROJECT *new;
-	if( new = (void *) AllocVec(sizeof(*new), MEMF_PUBLIC | MEMF_CLEAR) )
+	if(( new = (void *) AllocVec(sizeof(*new), MEMF_PUBLIC | MEMF_CLEAR) ))
 	{
 		if(ins) ins->next = new, new->prev = ins;
 
@@ -100,10 +103,10 @@ void init_sample(struct Window *wnd, PREFS *p, WORD top)
 	gui.right  = wnd->Width+(EXTEND_RIG-10);
 	gui.bottom = top+SAMPLE_HEI;
 	gui.xsize  = p->txtfont->tf_XSize;
-	BoxTags[1] = (ULONG) Vi;
+	BoxTags[0].ti_Data = (IPTR) Vi;
 
 	/* Find out drawing information */
-	if( di = (void *) GetScreenDrawInfo(Scr) )
+	if(( di = (void *) GetScreenDrawInfo(Scr) ))
 	{
 		WORD *offset = &p->pen.bg, *dst;
 
@@ -116,13 +119,13 @@ void init_sample(struct Window *wnd, PREFS *p, WORD top)
 	}
 
 	if(first == NULL)
-	   if(new = new_project(NULL, &prefs)) {
+	   if((new = new_project(NULL, &prefs))) {
 	   	new->name = "sorrow";
 	   	new->labsize = 6;
-		   if(new = new_project(new,  &prefs)) {
+		   if((new = new_project(new,  &prefs))) {
 		   	new->name = "JEd.c";
 		   	new->labsize = 5;
-		   	if(new = new_project(new,  &prefs))
+		   	if((new = new_project(new,  &prefs)))
 					new->name = "No title",
 					new->labsize = 8;
 			}

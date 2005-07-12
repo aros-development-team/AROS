@@ -1,6 +1,6 @@
-#version $VER: JanoPrefs.catalog 1.0 (24.2.2001)
-#codeset 0
-#language suomi
+##version $VER: JanoPrefs.catalog 1.0 (24.2.2001)
+##codeset 0
+##language suomi
 ;
 ; *****************************
 ;  NewMenu strings

@@ -1,0 +1,26 @@
+# $Id: mmakefile.src 19696 2003-09-08 21:15:04Z falemagn $
+#
+# Makefile to make JanoEditor Prefs Program.
+
+include $(TOP)/config/make.cfg
+
+FILES := JanoPrefs PrefsPort Prefs Prefs_Strings SampleEd Utils
+
+EXEDIR := $(AROS_PREFS)
+
+USER_CFLAGS := -DJANOPREF
+USER_INCLUDES := -I../../tools/Edit
+
+#MM- workbench-prefs : workbench-prefs-editor
+#MM workbench-prefs-editor : includes linklibs workbench-prefs-editor-catalogs
+
+Prefs.c : ../../tools/Edit/Prefs.c
+	@$(CP) $< $@
+
+%build_prog mmake=workbench-prefs-editor \
+    progname=EditPrefs targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc m"
+    
+
+%common
+

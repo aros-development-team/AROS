@@ -12,15 +12,27 @@
 #include <libraries/dos.h>
 #include <graphics/gfxbase.h>
 #include <graphics/modeid.h>
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/graphics.h>
+#include <proto/intuition.h>
+#include <proto/gadtools.h>
+#include <proto/asl.h>
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
 #include "Jed.h"
 #include "JanoPrefs.h"
 #include "IPC_Prefs.h"
 #include "Sample.h"
 
 #define  CATCOMP_NUMBERS
-#include "Prefs_Strings.h"
+#include "strings.h"
 #define	LocaleInfo				LocaleInfoTmp		/* Avoid redefinition :-( */
-#include "Jed_Strings.h"
+#include "../../tools/Edit/strings.h"
 
 /* Shared libraires we'll need to open */
 struct IntuitionBase	*IntuitionBase = NULL;
@@ -58,22 +70,22 @@ struct RastPort  RPT;					/* Font measurement */
 UBYTE *FSCycTxt[5],CB_state[CBS];
 
 /* Tag list for various gadget */
-ULONG IntTags[]      = { /*GTIN_Number, 0,*/ GTST_MaxChars,2, TAG_DONE};
-ULONG SepTags[]      = {GTST_MaxChars, MAX_SPLIT, TAG_DONE};
-ULONG TextFontTags[] = {GTCY_Labels, (ULONG)FTCycTxt,  GTCY_Active,0, TAG_DONE};
-ULONG ScrFontTags[]  = {GTCY_Labels, (ULONG)FSCycTxt,  GTCY_Active,0, TAG_DONE};
-ULONG ScrMdTags[]    = {GTCY_Labels, (ULONG)ScrCycTxt, GTCY_Active,0, TAG_DONE};
-ULONG ColorTags[]    = {GTCY_Labels, (ULONG)ColCycTxt, GTCY_Active,0, TAG_DONE};
-ULONG MenuTags[]     = {GTMN_FrontPen, 1L, TAG_DONE};
+struct TagItem IntTags[]      = { /*{GTIN_Number, 0},*/ {GTST_MaxChars,2}, {TAG_DONE}};
+struct TagItem SepTags[]      = {{GTST_MaxChars, MAX_SPLIT}, {TAG_DONE}};
+struct TagItem TextFontTags[] = {{GTCY_Labels, (IPTR)FTCycTxt},  {GTCY_Active,0}, {TAG_DONE}};
+struct TagItem ScrFontTags[]  = {{GTCY_Labels, (IPTR)FSCycTxt},  {GTCY_Active,0}, {TAG_DONE}};
+struct TagItem ScrMdTags[]    = {{GTCY_Labels, (IPTR)ScrCycTxt}, {GTCY_Active,0}, {TAG_DONE}};
+struct TagItem ColorTags[]    = {{GTCY_Labels, (IPTR)ColCycTxt}, {GTCY_Active,0}, {TAG_DONE}};
+struct TagItem MenuTags[]     = {{GTMN_FrontPen, 1L}, {TAG_DONE}};
 
-ULONG *GadTags[]     = {IntTags, SepTags, TextFontTags, ScrFontTags, ScrMdTags};
+struct TagItem *GadTags[]     = {IntTags, SepTags, TextFontTags, ScrFontTags, ScrMdTags};
 
 /* Tag list for opening the main window */
 WORD  PrefZoom[4];
-ULONG PrefTags[] = {
-	WA_Zoom,(ULONG)PrefZoom,
-	WA_NewLookMenus,TRUE,
-	TAG_DONE
+struct TagItem PrefTags[] = {
+	{WA_Zoom,(ULONG)PrefZoom},
+	{WA_NewLookMenus,TRUE},
+	{TAG_DONE}
 };
 
 struct NewGadget NG;							/* To create the gadgets */
@@ -98,8 +110,8 @@ void ThrowError(struct Window *W, UBYTE *Msg)
 		if(Title == 0)
 			Title = (W->Flags & WFLG_BACKDROP ? W->WScreen->Title : W->Title);
 		/* If window is backdrop'ed, change screen's title instead of window */
-		if(W->Flags & WFLG_BACKDROP) SetWindowTitles(W,-1,Msg);
-		else SetWindowTitles(W,Msg,-1);
+		if(W->Flags & WFLG_BACKDROP) SetWindowTitles(W,(STRPTR)-1,Msg);
+		else SetWindowTitles(W,Msg,(STRPTR)-1);
 
 		DisplayBeep(W->WScreen);
 		err_time = 0;
@@ -122,8 +134,8 @@ void ThrowDOSError(struct Window *W, STRPTR Prefix, UBYTE err)
 /*** Reset the old title ***/
 void StopError(struct Window *W)
 {
-	if(W->Flags & WFLG_BACKDROP) SetWindowTitles(W,-1,Title);
-	else SetWindowTitles(W,Title,-1);
+	if(W->Flags & WFLG_BACKDROP) SetWindowTitles(W,(STRPTR)-1,Title);
+	else SetWindowTitles(W,Title,(STRPTR)-1);
 	Title=0;
 	/* INTUITICKS aren't required anymore */
 	ModifyIDCMP(W,W->IDCMPFlags & ~IDCMP_INTUITICKS);
@@ -181,28 +193,32 @@ BYTE setup_guipref( void )
 	PrefZoom[2] = TextLength(&RPT,NewPrefWin.Title,strlen(NewPrefWin.Title))+100;
 	if(prefs.use_pub) PrefZoom[0] = Scr->Width-PrefZoom[2]-15, PrefZoom[1] = 0;
 	else PrefZoom[0] = PrefZoom[1] = 50;
-	PrefZoom[3] = Scr->BarHeight+1;
+	PrefZoom[3] = Scr->WBorTop + Scr->Font->ta_YSize + 1;
 
 	/** Setup inital tags: **/
-	ScrFontTags[3] = ScrMdTags[3] = TextFontTags[3] = 0; extended=0;
+	ScrFontTags[1].ti_Data = 0;
+	ScrMdTags[1].ti_Data = 0;
+	TextFontTags[1].ti_Data = 0;
+	extended=0;
+	
 	if( prefs.use_txtfont )
 		font_info(StrInfo, prefs.txtfont),
-		TextFontTags[1] = (ULONG) FTCycTxt, extended |= 1;
+		TextFontTags[0].ti_Data = (IPTR) FTCycTxt, extended |= 1;
 	else
-		TextFontTags[1] = (ULONG) (FTCycTxt+1);
+		TextFontTags[0].ti_Data = (IPTR) (FTCycTxt+1);
 
 	if( prefs.use_scrfont )
 		font_info(StrInfo+20, prefs.scrfont),
-		ScrFontTags[1] = (ULONG) FSCycTxt, extended |= 2;
+		ScrFontTags[0].ti_Data = (IPTR) FSCycTxt, extended |= 2;
 	else
-		ScrFontTags[1] = (ULONG) (FSCycTxt+1);
+		ScrFontTags[0].ti_Data = (IPTR) (FSCycTxt+1);
 
 	if( prefs.use_pub==1 )
 		scr_info(StrInfo+40,Scr->Width, Scr->Height, Scr->RastPort.BitMap->Depth),
-		ScrMdTags[1] = (ULONG) ScrCycTxt, extended |= 4;
+		ScrMdTags[0].ti_Data = (IPTR) ScrCycTxt, extended |= 4;
 	else {
-		ScrMdTags[1] = (ULONG) (ScrCycTxt+1);
-		if(prefs.use_pub!=2) ScrMdTags[3] = 1; /* Clone */
+		ScrMdTags[0].ti_Data = (IPTR) (ScrCycTxt+1);
+		if(prefs.use_pub!=2) ScrMdTags[1].ti_Data = 1; /* Clone */
 	}
 	/* Checkbox states */
 	CopyMem(&prefs.backdrop, CB_state, CBS);
@@ -212,10 +228,10 @@ BYTE setup_guipref( void )
 
 	/** Init Menus **/
 	if(NULL == (Menu = (void *) CreateMenusA(newmenu, MenuTags)) ||
-	   NULL == LayoutMenus(Menu, Vi, GTMN_TextAttr, Scr->Font, TAG_DONE)) return FALSE;
+	   0 == LayoutMenus(Menu, Vi, GTMN_TextAttr, Scr->Font, TAG_DONE)) return FALSE;
 
 	/** Try to open the window **/
-	if( Wnd = (struct Window *) OpenWindowTagList(&NewPrefWin,PrefTags) )
+	if(( Wnd = (struct Window *) OpenWindowTagList(&NewPrefWin,PrefTags) ))
 	{
 		struct Gadget **pg = gads, *gad;
 		pgads = NULL;
@@ -231,9 +247,24 @@ BYTE setup_guipref( void )
 		/* Create left column of gadgets */
 		for(i=0; i<CGS; i++, NG.ng_TopEdge+=NG.ng_Height, *pg++ = gad)
 		{
+		    	WORD kind;
+			
 			NG.ng_GadgetText = MiscTxt[i];
 			NG.ng_GadgetID   = i;
-			gad = (void *) CreateGadgetA(i>1 ? CYCLE_KIND : STRING_KIND, gad, &NG, GadTags[i]);
+			if (i == 0) 
+			{
+			    kind = INTEGER_KIND;
+			}
+			else if (i == 1)
+			{
+			    kind = STRING_KIND;
+			}
+			else
+			{
+			    kind = CYCLE_KIND;
+			}
+			
+			gad = (void *) CreateGadgetA(kind, gad, &NG, GadTags[i]);
 			if(i==0) AddNum (prefs.tabsize,  GetSI(gad)->Buffer);
 			if(i==1) CopyMem(prefs.wordssep, GetSI(gad)->Buffer, MAX_SPLIT);
 		}
@@ -281,7 +312,7 @@ BYTE setup_guipref( void )
 		NG.ng_LeftEdge  += NG.ng_Width+10);
 		NG.ng_GadgetID   = i+1;
 		CreateGadget(PALETTE_KIND, gad, &NG,
-						 GTPA_Depth, Scr->RastPort.BitMap->Depth,
+						 GTPA_Depth, ((Scr->RastPort.BitMap->Depth > 5) ? 5 : Scr->RastPort.BitMap->Depth),
 						 TAG_DONE);
 
 		/* Add gadgets to window: */
@@ -344,20 +375,20 @@ BYTE handle_pref_gadget(struct Gadget *G)
 					/* User want to use the default text font: */
 					text_to_attr(prefs.txtfont=GfxBase->DefaultFont, &prefs.attrtxt);
 				else
-					if(newfont = get_old_font(FTCycTxt[0]))
+					if((newfont = get_old_font(FTCycTxt[0])))
 						text_to_attr(prefs.txtfont=newfont, &prefs.attrtxt);
 					else { ThrowError(Wnd, ErrMsg(ERR_LOADFONT)); break; }
 				render_sample(Wnd, EDIT_AREA);
 				break;
 			} else
 				/* User want to change the text font: */
-				if(newfont = change_fonts(&prefs.attrtxt, Wnd, TRUE))
+				if((newfont = change_fonts(&prefs.attrtxt, Wnd, TRUE)))
 				{
 					if( prefs.txtfont ) CloseFont(prefs.txtfont);
 					font_info(StrInfo, prefs.txtfont = newfont );
-					TextFontTags[1] = (ULONG) FTCycTxt; extended |= 1;
+					TextFontTags[0].ti_Data = (IPTR) FTCycTxt; extended |= 1;
 					prefs.use_txtfont = TRUE;
-					TextFontTags[3] = 0;
+					TextFontTags[1].ti_Data = 0;
 				} /* else we must reset the original cycle gadget entry */
 			GT_SetGadgetAttrsA(G, Wnd, NULL, TextFontTags);
 			render_sample(Wnd, EDIT_AREA);
@@ -371,7 +402,7 @@ BYTE handle_pref_gadget(struct Gadget *G)
 					/* User want to use default screen font */
 					text_to_attr(prefs.scrfont=prefs.parent->RastPort.Font, &prefs.attrscr);
 				else
-					if(newfont = get_old_font(FSCycTxt[0]))
+					if((newfont = get_old_font(FSCycTxt[0])))
 						text_to_attr(prefs.scrfont=newfont, &prefs.attrscr);
 					else { ThrowError(Wnd, ErrMsg(ERR_LOADFONT)); break; }
 
@@ -379,13 +410,13 @@ BYTE handle_pref_gadget(struct Gadget *G)
 				break;
 			} else
 				/* User want to change the screen font */
-				if(newfont = change_fonts(&prefs.attrscr, Wnd, FALSE))
+				if((newfont = change_fonts(&prefs.attrscr, Wnd, FALSE)))
 				{
 					if( prefs.scrfont ) CloseFont(prefs.scrfont);
 					font_info(StrInfo+20, prefs.scrfont = newfont );
-					ScrFontTags[1] = (ULONG) FSCycTxt; extended |= 2;
+					ScrFontTags[0].ti_Data = (IPTR) FSCycTxt; extended |= 2;
 					prefs.use_scrfont = TRUE;
-					ScrFontTags[3] = 0;
+					ScrFontTags[1].ti_Data = 0;
 				}
 			GT_SetGadgetAttrsA(G, Wnd, NULL, ScrFontTags);
 			render_sample(Wnd, EDIT_ALL);
@@ -402,11 +433,11 @@ BYTE handle_pref_gadget(struct Gadget *G)
 				{
 					prefs.depth  = wid[2];
 					prefs.modeid = Code;
-					ScrMdTags[1] = (ULONG) ScrCycTxt;
-					ScrMdTags[3] = 0;
+					ScrMdTags[0].ti_Data = (IPTR) ScrCycTxt;
+					ScrMdTags[1].ti_Data = 0;
 					scr_info(StrInfo+40, wid[0], wid[1], wid[2]);
 					prefs.use_pub = TRUE; extended |= 4;
-				} else ScrMdTags[3] = useit[ prefs.use_pub+1 ];
+				} else ScrMdTags[1].ti_Data = useit[ prefs.use_pub+1 ];
 				GT_SetGadgetAttrsA(G, Wnd, NULL, ScrMdTags);
 			}
 			/* If user want to use a pubscreen, then disable backdrop checkbox **
@@ -484,11 +515,11 @@ BYTE handle_pref_menu( ULONG MenuID )
 void handle_pref( void )
 {
 	/* Collect messages posted to the window port: */
-	while( msg=(struct IntuiMessage *)GT_GetIMsg(Wnd->UserPort) )
+	while(( msg=GT_GetIMsg(Wnd->UserPort) ))
 	{
 		/* Copy the entire message into the buffer: */
 		CopyMem(msg, &msgbuf, sizeof(msgbuf));
-		GT_ReplyIMsg( (struct Message *) msg );
+		GT_ReplyIMsg( msg );
 
 		switch( msgbuf.Class )
 		{
@@ -502,8 +533,15 @@ void handle_pref( void )
 				if( handle_pref_kbd( msgbuf.Code ) ) return;
 				else break;
 			case IDCMP_MENUPICK:
-				if( handle_pref_menu(GTMENUITEM_USERDATA(ItemAddress(Menu,msgbuf.Code))) ) return;
-				else break;
+			{
+			    	struct MenuItem *item = ItemAddress(Menu,msgbuf.Code);
+				
+				if (item)
+				{
+				    if( handle_pref_menu((ULONG)GTMENUITEM_USERDATA(item))) return;
+				}
+				break;				
+			}
 			case IDCMP_GADGETUP:
 				if( handle_pref_gadget( (struct Gadget *) msgbuf.IAddress) ) return;
 				else break;
@@ -516,6 +554,8 @@ void handle_pref( void )
 #ifdef	DEBUG
 ULONG amem, bmem;
 #endif
+
+void free_locale(void);
 
 /*** Handle events coming from main window: ***/
 void cleanup(UBYTE *msg, int errcode)
@@ -530,8 +570,8 @@ void cleanup(UBYTE *msg, int errcode)
 	if(LocaleBase)		CloseLibrary(LocaleBase);
 	if(AslBase)			CloseLibrary(AslBase);
 	if(GadToolsBase)	CloseLibrary(GadToolsBase);
-	if(GfxBase)			CloseLibrary(GfxBase);
-	if(IntuitionBase)	CloseLibrary(IntuitionBase);
+	if(GfxBase)			CloseLibrary((struct Library *)GfxBase);
+	if(IntuitionBase)	CloseLibrary((struct Library *)IntuitionBase);
 	if(msg)				puts(msg);
 
 #ifdef	DEBUG
@@ -542,8 +582,10 @@ void cleanup(UBYTE *msg, int errcode)
 	exit(errcode);
 }
 
+void prefs_local(void);
+
 /*** MAIN LOOP ***/
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	ULONG sigwait, sigrcvd;
 #ifdef	DEBUG
@@ -597,4 +639,6 @@ main(int argc, char *argv[])
 		} else ThrowError(Wnd, ErrMsg(ERR_NOGUI));
 	} else ThrowError(Wnd, ErrMsg(ERR_BADOS));
 	cleanup(0,0);
+	
+	return 0;
 }
