@@ -14,25 +14,25 @@
     NAME */
 #include <libraries/partition.h>
 
-   AROS_LH1(LONG, OpenPartitionTable,
+	AROS_LH1(LONG, OpenPartitionTable,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, root,       A1),
+	AROS_LHA(struct PartitionHandle *, root, A1),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 7, Partition)
+	struct Library *, PartitionBase, 7, Partition)
 
 /*  FUNCTION
-    open a partition table
+	Open a partition table. On success root->list will be filled with a
+	list of PartitionHandle's. If one partition contains more
+	subpartitions, the caller should call OpenPartitionTable() on the
+	PartitionHandle recursively.
 
     INPUTS
-    root - root partition
+	root - root partition
 
     RESULT
-    0 for success; an error code otherwise.
-    On success root->list will be filled with a list of PartitionHandle's.
-    if one partition contains more subpartitions call OpenPartitionTable()
-    on the PartitionHandle recursivly.
+	0 for success; an error code otherwise.
 
     NOTES
 
@@ -45,7 +45,7 @@
     INTERNALS
 
     HISTORY
-    21-02-02    first version
+	21-02-02    first version
 
 *****************************************************************************/
 {
@@ -73,7 +73,7 @@
                 if (retval!=0)
                 {
                     FreeMem(root->table, sizeof(struct PartitionTableHandler));
-                    root->table = 0;
+                    root->table = NULL;
                 }
                 return retval;
             }

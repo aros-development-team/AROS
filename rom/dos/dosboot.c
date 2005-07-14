@@ -120,10 +120,12 @@ AROS_UFH3(void, intBoot,
         kprintf( "No bootable disk was found.\n" );
         kprintf( "Please insert a bootable disk in any drive.\n" );
         
+#if 0
         for( second = 5; second > 0; second-- ) {
             kprintf( "Retrying in %d seconds...\n", second );
             Delay( 50 ); 
         }
+#endif
         
         /* FIXME: Should there be a prompt instead of a automatic retry? */        
     }
