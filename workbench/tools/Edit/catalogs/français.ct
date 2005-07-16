@@ -244,16 +244,16 @@ ERR_NOSEARCHTEXT
 Aucun texte à rechercher!
 ;
 ERR_FILEEXISTS
-Ce putain de fichier existe déjà. Voulez-vous le virer?
+Le fichier existe déjà.\nVoulez-vous l'écraser?
 ;
 ERR_OC
-Ouais|Oh que non!
+Oui|Non!
 ;
 WARN_RECORD
-Enregistrement de la macro en cours...
+Enregistrement de la macro en cours...
 ;
 WARN_RECORDED
-Macro enregistrée
+Macro enregistrée
 ;
 WARN_REC
 [ENR]
