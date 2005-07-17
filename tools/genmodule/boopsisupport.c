@@ -11,6 +11,7 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
 {
     struct functionhead *methlistit;
     struct functionarg *arglistit;
+    struct stringlist *aliasit;
     int i;
 
     if (!cfg->customdispatcher)
@@ -38,6 +39,15 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
 	    char *type;
 	    
             fprintf(out, "        case %s: ", methlistit->name);
+	    for
+	    (
+	        aliasit = methlistit->aliases;
+	        aliasit != NULL;
+	        aliasit = aliasit->next
+	    )
+	    {
+		fprintf(out, "case %s: ", aliasit->s);
+	    }
 	    if (strcmp(methlistit->type, "void") != 0)
 		fprintf(out, "return (IPTR)");
 	    fprintf(out,"%s__%s(", cfg->basename, methlistit->name);
