@@ -169,7 +169,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	winattr.cursor = GetSysCursor();
 	winattr.save_under = True;
 	
-	winattr.background_pixel = WhitePixel(GetSysDisplay(), GetSysScreen());
+	winattr.background_pixel = BlackPixel(GetSysDisplay(), GetSysScreen());
 	rootwin = DefaultRootWindow (GetSysDisplay());
 	D(bug("Creating XWindow: root win=%p\n", rootwin));
 	depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
@@ -334,6 +334,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		WaitPort(port);
 		GetMsg(port);
 		
+    	    #if !DELAY_XWIN_MAPPING		
 		/* Send a message to the X11 task to ask when the window has been mapped */
 		
    		msg->xdisplay = GetSysDisplay();
@@ -353,7 +354,8 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		GetMsg(port);
 
     	    	kprintf("NOTY_MAPWINDOW request returned\n");		
-		
+    	    #endif
+	    		
 	    	gcval.plane_mask = AllPlanes;
 	    	gcval.graphics_exposures = False;
 		
