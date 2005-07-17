@@ -2938,10 +2938,6 @@ LONG Text__GM_HANDLEINPUT(struct IClass * cl, struct Gadget * g, struct gpInput 
 
     return retval;
 }
-ULONG Text__GM_GOACTIVE(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
-{
-    return Text__GM_HANDLEINPUT(cl, g, msg);
-}
 
 BOOL Text__DTM_WRITE(struct IClass * cl, struct Gadget * g, struct dtWrite * msg)
 {
@@ -3365,10 +3361,6 @@ ULONG Text__GM_LAYOUT(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 #endif
 
    return DoSuperMethodA(cl, (Object*)g, (Msg) msg);
-}
-ULONG Text__DTM_PROCLAYOUT(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
-{
-    return Text__GM_LAYOUT(cl, g, msg);
 }
 
 ULONG Text__DTM_CLEARSELECTED(struct IClass *cl, Object *o, Msg msg)
