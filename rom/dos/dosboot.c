@@ -123,8 +123,11 @@ AROS_UFH3(void, intBoot,
 #if 0
         for( second = 5; second > 0; second-- ) {
             kprintf( "Retrying in %d seconds...\n", second );
-            Delay( 50 ); 
+            Delay( 50 );
         }
+#else
+            kprintf( "Retrying in 5 seconds...\n" );
+            Delay( 500 );
 #endif
         
         /* FIXME: Should there be a prompt instead of a automatic retry? */        
