@@ -1128,19 +1128,61 @@ static void readsectionmethodlist(struct config *cfg, struct functions *function
 	    continue;
 	}
 
-	if(!isalpha(*line))
-	    exitfileerror(20, "Methodname has to begin with a letter\n");
-	
-	for (s = line + 1; isalnum(*s) || *s == '_'; s++)
-	    ;
-	
-	if (*s != '\0')
-	    exitfileerror(20, "Only letters, digits and an underscore allowed in a methodname\n");
+	if (*line=='.')
+	{
+	    s = line+1;
+	    if (strncmp(s, "alias", 5)==0)
+	    {
+		s += 5;
+		
+		if (!isspace(*s))
+		    exitfileerror(20, "syntax is '.alias name'\n");
 
-	*methlistptr = newfunctionhead(line, STACK);
-	(*methlistptr)->type = "IPTR";
-	funcaddarg(*methlistptr, "Class *cl", NULL);
-	funcaddarg(*methlistptr, "Object *o", NULL);
-	funcaddarg(*methlistptr, "Msg msg", NULL);
+		while (isspace(*s)) s++;
+		if (*s == '\0' || !(isalpha(*s) || *s == '_'))
+		    exitfileerror(20, "syntax is '.alias name'\n");
+
+		s2 = s;
+		s++;
+		while (isalnum(*s) || *s == '_') s++;
+
+		if (isspace(*s))
+		{
+		    *s = '\0';
+		    do {
+			s++;
+		    } while (isspace(*s));
+		}
+
+		if (*s != '\0')
+		    exitfileerror(20, "syntax is '.alias name'\n");
+		
+		if (*methlistptr == NULL)
+		    exitfileerror(20, ".alias has to come after a function declaration\n");
+		
+		slist_append(&(*methlistptr)->aliases, s2);
+		cfg->intcfg |= CFG_GENASTUBS;
+	    }
+	    else
+		exitfileerror(20, "Syntax error");
+	}
+	else if (isalpha(*line))
+	{
+	    for (s = line + 1; isalnum(*s) || *s == '_'; s++)
+		;
+	
+	    if (*s != '\0')
+		exitfileerror(20, "Only letters, digits and an underscore allowed in a methodname\n");
+
+	    if (*methlistptr != NULL)
+		methlistptr = &((*methlistptr)->next);
+	    *methlistptr = newfunctionhead(line, STACK);
+	    (*methlistptr)->type = "IPTR";
+	    funcaddarg(*methlistptr, "Class *cl", NULL);
+	    funcaddarg(*methlistptr, "Object *o", NULL);
+	    funcaddarg(*methlistptr, "Msg msg", NULL);
+	}
+	else
+	    exitfileerror(20, "Methodname has to begin with a letter\n");
     }
 }
