@@ -173,10 +173,6 @@ IPTR AROSCheckbox__OM_SET(Class * cl, Object * obj, struct opSet * msg)
 
     return retval;
 }
-IPTR AROSCheckbox__OM_UPDATE(Class * cl, Object * obj, struct opSet * msg)
-{
-    return AROSCheckbox__OM_SET(cl, obj, msg);
-}
 
 /****************************************************************************************/
 

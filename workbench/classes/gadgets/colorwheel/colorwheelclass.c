@@ -263,10 +263,6 @@ IPTR ColorWheel__OM_SET(Class *cl, Object *o, struct opSet *msg)
     }    
     ReturnPtr ("ColorWheel::Set", IPTR, retval);
 }
-IPTR ColorWheel__OM_UPDATE(Class *cl, Object *o, struct opSet *msg)
-{
-    return ColorWheel__OM_SET(cl, o, msg);
-}
 
 /***************************************************************************************************/
 

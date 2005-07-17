@@ -100,12 +100,6 @@ IPTR AROSList__OM_SET(Class *cl, Object *o,struct opSet *msg)
     retval += _OM_SET(cl, o, msg);
     return retval;
 }
-IPTR AROSList__OM_UPDATE(Class *cl, Object *o,struct opSet *msg)
-{
-    IPTR retval = DoSuperMethodA(cl, o, msg);
-    retval += _OM_SET(cl, o, msg);
-    return retval;
-}
 
 /*****************
 ** List::New()  **
