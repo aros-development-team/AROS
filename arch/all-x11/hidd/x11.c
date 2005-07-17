@@ -324,7 +324,9 @@ D(bug("Got input from unixio\n"));
 		    case NOTY_RESIZEWINDOW:
 		    {
 			XWindowChanges xwc;
-
+    	    	    	BOOL replymsg = TRUE;
+			struct xwinnode *node;
+			
 			xwc.width  = nmsg->width;
 			xwc.height = nmsg->height;
 
@@ -338,12 +340,36 @@ D(bug("Got input from unixio\n"));
 
 			XFlush(nmsg->xdisplay);
     	    		UNLOCK_X11
+			
+    	    	    #if DELAY_XWIN_MAPPING	
+		    	ForeachNode(&xwindowlist, node)
+			{
+		    	    if (node->xwindow == nmsg->xwindow)
+			    {			
+				if (!node->window_mapped)
+				{
+		    		    LOCK_X11
+				    XMapWindow(nmsg->xdisplay, nmsg->xwindow);
+	    			#if ADJUST_XWIN_SIZE
+		    		    XMapRaised(nmsg->xdisplay, nmsg->masterxwindow);
+				    XFlush(nmsg->xdisplay);		
+				#endif
+				    UNLOCK_X11
 
-			ReplyMsg((struct Message *)nmsg);
-    	    	    #if 0
-			AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);
-			/* Do not reply message yet */
-    	    	    #endif
+    	    	    	    	    nmsg->notify_type = NOTY_MAPWINDOW;
+				    AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);
+				    
+				    /* Do not reply message yet */
+				    replymsg = FALSE;
+				    
+				    break;
+				}
+			    }
+			}	    	
+		    #endif
+		    
+			if (replymsg) ReplyMsg((struct Message *)nmsg);		    
+			
 			break;
 		    }
 		
