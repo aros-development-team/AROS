@@ -13,7 +13,7 @@
     to make it easier to port stuff, create them as well.
 */
 
-#include <aros/system.h>
+#include <sys/cdefs.h>
 
 #define _LITTLE_ENDIAN      1234
 #define _BIG_ENDIAN         4321
