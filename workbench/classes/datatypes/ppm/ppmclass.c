@@ -49,7 +49,7 @@ ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
 
 /**************************************************************************************************/
 
-IPTR PPM_OM_NEW(Class *cl, Object *o, struct opSet *msg)
+IPTR PPM__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
  IPTR RetVal;
  char *Title;
@@ -585,7 +585,7 @@ static BOOL PPM_Save(struct IClass *cl, Object *o, struct dtWrite *dtw )
 
 /**************************************************************************************************/
 
-IPTR PPM_DTM_WRITE(struct IClass *cl, Object *o, struct dtWrite *dtw)
+IPTR PPM__DTM_WRITE(struct IClass *cl, Object *o, struct dtWrite *dtw)
 {
     if( (dtw -> dtw_Mode) == DTWM_RAW )
     {

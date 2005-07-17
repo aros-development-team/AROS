@@ -344,10 +344,6 @@ IPTR Html__OM_SET(Class *cl, Object *o, struct opSet *msg)
  
     return retval;  
 }
-IPTR Html__OM_UPDATE(Class *cl, Object *o, struct opSet *ops)
-{
-    return Html__OM_SET(cl, o, ops);
-}
 
 /**************************************************************************************************/
 

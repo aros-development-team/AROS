@@ -1756,10 +1756,6 @@ IPTR __regargs Sound__GM_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
 
 	return retval + si->si_TotVert;
 }
-IPTR __regargs Sound__DTM_PROCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
-{
-    return Sound__GM_LAYOUT(cl, o, gpl);
-}
 
 /****************************************************************************/
 
@@ -2108,10 +2104,6 @@ IPTR __regargs Sound__GM_HITTEST( Class *cl, Object *o, struct gpHitTest *gpht )
 	
 	return retval;
 }
-IPTR __regargs Sound__GM_HELPTEST( Class *cl, Object *o, struct gpHitTest *gpht)
-{
-    return Sound__GM_HITTEST(cl, o, gpht);
-}
 
 /****************************************************************************/
 
@@ -2317,10 +2309,6 @@ IPTR __regargs Sound__GM_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi 
 	}
 	
 	return( retval );
-}
-IPTR __regargs Sound__GM_GOACTIVE( Class *cl, Object *o, struct gpInput *gpi)
-{
-    return Sound__GM_HANDLEINPUT(cl, o, gpi);
 }
 
 /****************************************************************************/
@@ -2926,10 +2914,6 @@ IPTR __regargs Sound__DTM_WRITE( Class *cl, Object *o, struct dtWrite *dtw )
 	
 	SetIoErr( err );
 	return( err ? FALSE : TRUE );
-}
-IPTR __regargs Sound__DTM_COPY( Class *cl, Object *o, struct dtWrite *dtw )
-{
-    return Sound__DTM_WRITE(cl, o, dtw);
 }
 
 /****************************************************************************/

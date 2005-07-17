@@ -395,10 +395,6 @@ IPTR Picture__OM_SET(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
     return(RetVal);
 }
-IPTR Picture__OM_UPDATE(struct IClass *cl, struct Gadget *g, struct opSet *msg)
-{
-    return Picture__OM_SET(cl, g, msg);
-}
 
 /**************************************************************************************************/
 

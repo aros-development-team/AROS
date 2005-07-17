@@ -158,10 +158,6 @@ IPTR Ascii__OM_SET(Class *cl, Object *o, struct opSet *msg)
  
     return retval;  
 }
-IPTR Ascii__OM_UPDATE(Class *cl, Object *o, struct opSet *msg)
-{
-    return Ascii__OM_SET(cl, o, msg);
-}
 
 /**************************************************************************************************/
 
