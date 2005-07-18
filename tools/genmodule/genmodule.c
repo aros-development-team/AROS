@@ -43,6 +43,12 @@ int main(int argc, char **argv)
 	break;
 
     case WRITEFUNCLIST:
+	/* Ignore the functionlist and the methodlist that are available in the
+	 * .conf file.
+	 */
+	functions->funclist = NULL;
+	functions->methlist = NULL;
+
 	readref(cfg, functions);
 	writefunclist(cfg, functions);
 	break;

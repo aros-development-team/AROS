@@ -699,12 +699,49 @@ ifneq (%(targetdir),)
     TMP_TARGET := %(targetdir)/$(TMP_TARGET)
 endif
 
-%(targetdir)/%(modname)_libdefs.h : OPTS := $(TMP_OPTS)
-%(targetdir)/%(modname)_libdefs.h : MODNAME := %(modname)
-%(targetdir)/%(modname)_libdefs.h : MODTYPE := %(modtype)
-%(targetdir)/%(modname)_libdefs.h : %(conffile) $(GENMODULE)
+$(TMP_TARGET) : OPTS := $(TMP_OPTS)
+$(TMP_TARGET) : MODNAME := %(modname)
+$(TMP_TARGET) : MODTYPE := %(modtype)
+$(TMP_TARGET) : $(TMP_DEPS)
 	@$(ECHO) "Generating $(notdir $@)"
 	@$(GENMODULE) $(OPTS) writelibdefs $(MODNAME) $(MODTYPE)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate the libdefs.h include file for a module.
+%define rule_genmodule_funclist \
+    modname=/A modtype=/A modsuffix= conffile= targetdir= reffile=
+
+TMP_TARGET := %(modname).funclist
+TMP_DEPS := $(GENMODULE)
+TMP_OPTS := 
+ifeq (%(reffile),)
+    $(error reffile needed in rule_genmodule_funclist but none specified)
+endif
+TMP_OPTS := -r %(reffile)
+TMP_DEPS += %(reffile)
+ifneq (%(conffile),)
+    TMP_OPTS += -c %(conffile)
+    TMP_DEPS += %(conffile)
+else
+    TMP_DEPS += %(modname).conf
+endif
+ifneq (%(modsuffix),)
+    TMP_OPTS += -s %(modsuffix)
+endif
+ifneq (%(targetdir),)
+    TMP_OPTS += -d %(targetdir)
+    TMP_TARGET := %(targetdir)/$(TMP_TARGET)
+endif
+
+$(TMP_TARGET) : OPTS := $(TMP_OPTS)
+$(TMP_TARGET) : MODNAME := %(modname)
+$(TMP_TARGET) : MODTYPE := %(modtype)
+$(TMP_TARGET) : $(TMP_DEPS)
+	@$(ECHO) "Generating $(notdir $@)"
+	@$(GENMODULE) $(OPTS) writefunclist $(MODNAME) $(MODTYPE)
 %end
 #------------------------------------------------------------------------------
 
@@ -1025,11 +1062,12 @@ GLOB_MKDIRS += $(BD_TARGETDIR$(BDID)) $(BD_OBJDIR$(BDID))
 #MM %(mmake)-includes : %(mmake)-makefile includes-generate-deps
 #MM %(mmake)-includes-quick
 #MM %(mmake)-makefile
+#MM %(mmake)-funclist
 #MM %(mmake)-clean
 
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-includes %(mmake)-clean %(mmake)-quick \
-    %(mmake)-kobj
+    %(mmake)-kobj %(mmake)-funclist
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile %(mmake)-objdir
 
@@ -1123,6 +1161,15 @@ BD_LIBDEFSINC := %(objdir)/%(modname)_libdefs.h
 %(objdir)/%(modname)_deflibdefs.h :
 	@$(ECHO) "generating $@"
 	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
+
+
+## Generation of the funclist file
+##
+%(mmake)-funclist : %(modname).funclist
+
+%rule_genmodule_funclist \
+    modname=%(modname) modtype=%(modtype) modsuffix=%(modsuffix) \
+    conffile=%(conffile) reffile=%(reffile)
 
 
 ## Extra genmodule src files generation
