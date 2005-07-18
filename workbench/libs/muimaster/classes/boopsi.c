@@ -411,6 +411,7 @@ ULONG Boopsi__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
     return 0;
 }
 
+#ifndef __AROS__
 BOOPSI_DISPATCHER(IPTR, Boopsi_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -437,6 +438,7 @@ BOOPSI_DISPATCHER(IPTR, Boopsi_Dispatcher, cl, obj, msg)
     }
 }
 BOOPSI_DISPATCHER_END
+#endif
 
 #if ZUNE_BUILTIN_BOOPSI
 const struct __MUIBuiltinClass _MUI_Boopsi_desc = { 
