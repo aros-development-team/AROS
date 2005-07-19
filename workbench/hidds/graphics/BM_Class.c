@@ -3337,7 +3337,8 @@ static HIDDT_Pixel bitmap_mapcolor(OOP_Class *cl, OOP_Object *o,
     HIDDT_Pixel red	= msg->color->red;
     HIDDT_Pixel green	= msg->color->green;
     HIDDT_Pixel blue	= msg->color->blue;
-
+    HIDDT_Pixel alpha   = msg->color->alpha;
+    
     /* This code assumes that sizeof (HIDDT_Pixel is a multimple of sizeof(col->#?)
        which should be true for most (all ?) systems. (I have never heard
        of any system with for example 3 byte types.
@@ -3349,13 +3350,13 @@ static HIDDT_Pixel bitmap_mapcolor(OOP_Class *cl, OOP_Object *o,
 	{
 	    #warning "bitmap_mapcolor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
 
-	    HIDDT_Pixel pixel = MAP_RGB(red, green, blue, pf);
+	    HIDDT_Pixel pixel = MAP_RGBA(red, green, blue, alpha, pf);
 
 	    msg->color->pixval = SWAPBYTES_WORD(pixel);
 	}
 	else
 	{
-    	    msg->color->pixval = MAP_RGB(red, green, blue, pf);
+    	    msg->color->pixval = MAP_RGBA(red, green, blue, alpha, pf);
 	}
     }
     else
@@ -3392,6 +3393,7 @@ static VOID bitmap_unmappixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
     	msg->color->red		= RED_COMP	(pixel, pf);
     	msg->color->green	= GREEN_COMP	(pixel, pf);
     	msg->color->blue	= BLUE_COMP	(pixel, pf);
+    	msg->color->alpha	= ALPHA_COMP	(pixel, pf);
     }
     else
     {
