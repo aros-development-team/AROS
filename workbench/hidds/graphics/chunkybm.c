@@ -42,7 +42,7 @@ static OOP_Object *chunkybm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 {
     struct chunkybm_data    *data;
     
-    ULONG   	    	    width, height;
+    IPTR   	    	    width, height;
 
 #if 0
     UBYTE   	    	    alignoffset	= 15;
@@ -51,7 +51,7 @@ static OOP_Object *chunkybm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     
     BOOL    	    	    ok = TRUE;
     OOP_Object      	    *pf;
-    ULONG   	    	    bytesperpixel;
+    IPTR   	    	    bytesperpixel;
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
@@ -204,6 +204,671 @@ static ULONG chunkybm_getpixel(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+static VOID chunkybm_fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+{
+    struct chunkybm_data  *data =OOP_INST_DATA(cl, o);
+    HIDDT_Pixel     	   fg = GC_FG(msg->gc);
+    HIDDT_DrawMode  	   mode = GC_DRMD(msg->gc);
+    ULONG   	    	   mod;
+
+    mod = data->bytesperrow;
+
+    switch(mode)
+    {
+        case vHidd_GC_DrawMode_Copy:
+	    switch(data->bytesperpixel)
+	    {
+	    	case 1:
+		    HIDD_BM_FillMemRect8(o,
+	    	    	    		 data->buffer,
+	    	    	    		 msg->minX,
+					 msg->minY,
+					 msg->maxX,
+					 msg->maxY,
+					 mod,
+					 fg);
+		    break;
+		    
+		case 2:
+		    HIDD_BM_FillMemRect16(o,
+	    	    	    		 data->buffer,
+	    	    	    		 msg->minX,
+					 msg->minY,
+					 msg->maxX,
+					 msg->maxY,
+					 mod,
+					 fg);
+		    break;
+	    
+	    	case 3:
+		    HIDD_BM_FillMemRect24(o,
+	    	    	    		 data->buffer,
+	    	    	    		 msg->minX,
+					 msg->minY,
+					 msg->maxX,
+					 msg->maxY,
+					 mod,
+					 fg);
+		    break;
+		
+	    	case 4:
+		    HIDD_BM_FillMemRect32(o,
+	    	    	    		 data->buffer,
+	    	    	    		 msg->minX,
+					 msg->minY,
+					 msg->maxX,
+					 msg->maxY,
+					 mod,
+					 fg);
+		    break;
+		
+	    }
+	    break;
+    
+	case vHidd_GC_DrawMode_Invert:
+	    HIDD_BM_InvertMemRect(o,
+	    	    	    	 data->buffer,
+	    	    	    	 msg->minX * data->bytesperpixel,
+				 msg->minY,
+				 msg->maxX * data->bytesperpixel + data->bytesperpixel - 1,
+				 msg->maxY,
+				 mod);
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+	    
+    } /* switch(mode) */
+    
+}
+
+/****************************************************************************************/
+
+static VOID chunkybm_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
+{
+    struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+
+    switch(msg->pixFmt)
+    {
+    	case vHidd_StdPixFmt_Native:
+	    switch(data->bytesperpixel)
+	    {
+	    	case 1:
+	    	    HIDD_BM_CopyMemBox8(o,
+		    	    		msg->pixels,
+					0,
+					0,
+					data->buffer,
+					msg->x,
+					msg->y,
+					msg->width,
+					msg->height,
+					msg->modulo,
+					data->bytesperrow);
+		    break;
+		    
+		case 2:
+	    	    HIDD_BM_CopyMemBox16(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->buffer,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperrow);
+		    break;
+		   
+		case 3:
+	    	    HIDD_BM_CopyMemBox24(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->buffer,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperrow);
+		    break;
+		
+		case 4:
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->buffer,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperrow);
+		    break;
+		     
+    	    } /* switch(data->bytesperpixel) */
+	    break;
+	
+    	case vHidd_StdPixFmt_Native32:
+	    switch(data->bytesperpixel)
+	    {
+	    	case 1:
+		    HIDD_BM_PutMem32Image8(o,
+		    	    	    	   msg->pixels,
+					   data->buffer,
+					   msg->x,
+					   msg->y,
+					   msg->width,
+					   msg->height,
+					   msg->modulo,
+					   data->bytesperrow);
+		    break;
+		    
+		case 2:
+		    HIDD_BM_PutMem32Image16(o,
+		    	    	    	    msg->pixels,
+					    data->buffer,
+					    msg->x,
+					    msg->y,
+					    msg->width,
+					    msg->height,
+					    msg->modulo,
+					    data->bytesperrow);
+		    break;
+
+		case 3:
+		    HIDD_BM_PutMem32Image24(o,
+		    	    	    	    msg->pixels,
+					    data->buffer,
+					    msg->x,
+					    msg->y,
+					    msg->width,
+					    msg->height,
+					    msg->modulo,
+					    data->bytesperrow);
+		    break;
+
+		case 4:		    
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 msg->pixels,
+					 0,
+					 0,
+					 data->buffer,
+					 msg->x,
+					 msg->y,
+					 msg->width,
+					 msg->height,
+					 msg->modulo,
+					 data->bytesperrow);
+		    break;
+		    
+	    } /* switch(data->bytesperpixel) */
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+	    
+    } /* switch(msg->pixFmt) */
+
+}
+
+/****************************************************************************************/
+
+static VOID chunkybm_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+{
+    struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+
+    switch(msg->pixFmt)
+    {
+    	case vHidd_StdPixFmt_Native:
+	    switch(data->bytesperpixel)
+	    {
+	    	case 1:
+	    	    HIDD_BM_CopyMemBox8(o,
+		    	    		data->buffer,
+					msg->x,
+					msg->y,
+					msg->pixels,
+					0,
+					0,
+					msg->width,
+					msg->height,
+					data->bytesperrow,
+					msg->modulo);
+		    break;
+		    
+		case 2:
+	    	    HIDD_BM_CopyMemBox16(o,
+		    	    		 data->buffer,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperrow,
+					 msg->modulo);
+		    break;
+
+		case 3:
+	    	    HIDD_BM_CopyMemBox24(o,
+		    	    		 data->buffer,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperrow,
+					 msg->modulo);
+		    break;
+		   
+		case 4:
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 data->buffer,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperrow,
+					 msg->modulo);
+		    break;
+		     
+    	    } /* switch(data->bytesperpix) */
+	    break;
+
+    	case vHidd_StdPixFmt_Native32:
+	    switch(data->bytesperpixel)
+	    {
+	    	case 1:
+		    HIDD_BM_GetMem32Image8(o,
+		    	    	    	   data->buffer,
+					   msg->x,
+					   msg->y,
+					   msg->pixels,
+					   msg->width,
+					   msg->height,
+					   data->bytesperrow,
+					   msg->modulo);
+		    break;
+		    
+		case 2:
+		    HIDD_BM_GetMem32Image16(o,
+		    	    	    	    data->buffer,
+					    msg->x,
+					    msg->y,
+					    msg->pixels,
+					    msg->width,
+					    msg->height,
+					    data->bytesperrow,
+					    msg->modulo);
+		    break;
+
+		case 3:
+		    HIDD_BM_GetMem32Image24(o,
+		    	    	    	    data->buffer,
+					    msg->x,
+					    msg->y,
+					    msg->pixels,
+					    msg->width,
+					    msg->height,
+					    data->bytesperrow,
+					    msg->modulo);
+		    break;
+
+		case 4:		    
+	    	    HIDD_BM_CopyMemBox32(o,
+		    	    		 data->buffer,
+					 msg->x,
+					 msg->y,
+					 msg->pixels,
+					 0,
+					 0,
+					 msg->width,
+					 msg->height,
+					 data->bytesperrow,
+					 msg->modulo);
+		    break;
+		    
+	    } /* switch(data->bytesperpixel) */
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+	    
+    } /* switch(msg->pixFmt) */
+	    
+}
+
+/****************************************************************************************/
+
+static VOID chunkybm_putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+{
+    struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+
+    switch(data->bytesperpixel)
+    {
+	case 2:
+	    HIDD_BM_CopyLUTMemBox16(o,
+		    	    	 msg->pixels,
+				 0,
+				 0,
+				 data->buffer,
+				 msg->x,
+				 msg->y,
+				 msg->width,
+				 msg->height,
+				 msg->modulo,
+				 data->bytesperrow,
+				 msg->pixlut);
+	    break;
+
+	case 3:
+	    HIDD_BM_CopyLUTMemBox24(o,
+		    	    	 msg->pixels,
+				 0,
+				 0,
+				 data->buffer,
+				 msg->x,
+				 msg->y,
+				 msg->width,
+				 msg->height,
+				 msg->modulo,
+				 data->bytesperrow,
+				 msg->pixlut);
+	    break;
+
+	case 4:
+	    HIDD_BM_CopyLUTMemBox32(o,
+		    	    	    msg->pixels,
+				    0,
+				    0,
+				    data->buffer,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height,
+				    msg->modulo,
+				    data->bytesperrow,
+				    msg->pixlut);
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    } /* switch(data->bytesperpixel) */
+
+}
+
+/****************************************************************************************/
+
+static VOID chunkybm_blitcolorexpansion(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
+{
+    struct chunkybm_data   *data = OOP_INST_DATA(cl, o);
+    HIDDT_Pixel     	    fg, bg, pix;
+    ULONG   	    	    cemd;
+    LONG    	    	    x, y;
+    ULONG   	    	    mod, bpp;
+    UBYTE   	           *mem;
+    BOOL    	    	    opaque;
+    
+    fg = GC_FG(msg->gc);
+    bg = GC_BG(msg->gc);
+    cemd = GC_COLEXP(msg->gc);
+
+    bpp = data->bytesperpixel;
+    
+    mem = data->buffer + msg->destY * data->bytesperrow + msg->destX * bpp;
+    mod = data->bytesperrow - msg->width * bpp;
+    
+    opaque = (cemd & vHidd_GC_ColExp_Opaque) ? TRUE : FALSE;
+    
+    for (y = 0; y < msg->height; y ++)
+    {
+        for (x = 0; x < msg->width; x ++)
+        {
+	    ULONG is_set;
+
+	    is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
+	    if (is_set)
+	    {
+		pix = fg;
+	    }
+	    else if (opaque)
+	    {
+		pix = bg;
+	    }
+	    else
+	    {
+		mem += bpp;
+		continue;
+	    }
+
+    	    switch(bpp)
+	    {
+		case 1:
+   	    	    *mem++ = pix;
+		    break;
+
+		case 2:
+		    *((UWORD *)mem)++ = pix;
+    	    	    break;
+
+		case 3:
+		#if AROS_BIG_ENDIAN
+		    *((UBYTE *)mem)++ = pix >> 16;
+		    *((UBYTE *)mem)++ = pix >> 8;
+		    *((UBYTE *)mem)++ = pix;
+		#else
+		    *((UBYTE *)mem)++ = pix;
+		    *((UBYTE *)mem)++ = pix >> 8;
+		    *((UBYTE *)mem)++ = pix >> 16;
+		#endif
+		    break;
+
+		case 4:
+		    *((ULONG *)mem)++ = pix;
+		    break;
+
+	    }
+	    
+	} /* for (each x) */
+
+    	mem += mod;
+
+    } /* for (each y) */
+
+}
+
+/****************************************************************************************/
+
+static VOID chunkybm_puttemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
+{
+    struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+
+    switch(data->bytesperpixel)
+    {
+	case 1:
+	    HIDD_BM_PutMemTemplate8(o,
+	    	    	    	    msg->gc,
+				    msg->template,
+				    msg->modulo,
+				    msg->srcx,
+				    data->buffer,
+				    data->bytesperrow,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height,
+				    msg->inverttemplate);
+	    break;
+
+	case 2:
+	    HIDD_BM_PutMemTemplate16(o,
+	    	    	    	     msg->gc,
+				     msg->template,
+				     msg->modulo,
+				     msg->srcx,
+				     data->buffer,
+				     data->bytesperrow,
+				     msg->x,
+				     msg->y,
+				     msg->width,
+				     msg->height,
+				     msg->inverttemplate);
+	    break;
+
+	case 3:
+	    HIDD_BM_PutMemTemplate24(o,
+	    	    	    	     msg->gc,
+				     msg->template,
+				     msg->modulo,
+				     msg->srcx,
+				     data->buffer,
+				     data->bytesperrow,
+				     msg->x,
+				     msg->y,
+				     msg->width,
+				     msg->height,
+				     msg->inverttemplate);
+	    break;
+
+	case 4:
+	    HIDD_BM_PutMemTemplate32(o,
+	    	    	    	     msg->gc,
+				     msg->template,
+				     msg->modulo,
+				     msg->srcx,
+				     data->buffer,
+				     data->bytesperrow,
+				     msg->x,
+				     msg->y,
+				     msg->width,
+				     msg->height,
+				     msg->inverttemplate);
+	    break;
+
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    	    break;
+	    
+    } /* switch(data->bytesperpixel) */
+
+}
+
+/****************************************************************************************/
+
+static VOID chunkybm_putpattern(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPattern *msg)
+{
+    struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+
+    switch(data->bytesperpixel)
+    {
+	case 1:
+	    HIDD_BM_PutMemPattern8(o,
+	    	    	    	   msg->gc,
+				   msg->pattern,
+				   msg->patternsrcx,
+				   msg->patternsrcy,
+				   msg->patternheight,
+				   msg->patterndepth,
+				   msg->patternlut,
+				   msg->invertpattern,
+				   msg->mask,
+				   msg->maskmodulo,
+				   msg->masksrcx,
+				   data->buffer,
+				   data->bytesperrow,
+				   msg->x,
+				   msg->y,
+				   msg->width,
+				   msg->height);
+	    break;
+
+	case 2:
+	    HIDD_BM_PutMemPattern16(o,
+	    	    	    	    msg->gc,
+				    msg->pattern,
+				    msg->patternsrcx,
+				    msg->patternsrcy,
+				    msg->patternheight,
+				    msg->patterndepth,
+				    msg->patternlut,
+				    msg->invertpattern,
+				    msg->mask,
+				    msg->maskmodulo,
+				    msg->masksrcx,
+				    data->buffer,
+				    data->bytesperrow,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height);
+	    break;
+
+	case 3:
+	    HIDD_BM_PutMemPattern24(o,
+	    	    	    	    msg->gc,
+				    msg->pattern,
+				    msg->patternsrcx,
+				    msg->patternsrcy,
+				    msg->patternheight,
+				    msg->patterndepth,
+				    msg->patternlut,
+				    msg->invertpattern,
+				    msg->mask,
+				    msg->maskmodulo,
+				    msg->masksrcx,
+				    data->buffer,
+				    data->bytesperrow,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height);
+	    break;
+
+	case 4:
+	    HIDD_BM_PutMemPattern32(o,
+	    	    	    	    msg->gc,
+				    msg->pattern,
+				    msg->patternsrcx,
+				    msg->patternsrcy,
+				    msg->patternheight,
+				    msg->patterndepth,
+				    msg->patternlut,
+				    msg->invertpattern,
+				    msg->mask,
+				    msg->maskmodulo,
+				    msg->masksrcx,
+				    data->buffer,
+				    data->bytesperrow,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height);
+	    break;
+
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    	    break;
+	    
+    } /* switch(data->bytesperpixel) */
+    
+}
+/****************************************************************************************/
+
+
 #undef OOPBase
 #undef SysBase
 
@@ -213,7 +878,7 @@ static ULONG chunkybm_getpixel(OOP_Class *cl, OOP_Object *o,
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS   2
-#define NUM_BITMAP_METHODS 2
+#define NUM_BITMAP_METHODS 9
 
 /****************************************************************************************/
 
@@ -228,9 +893,16 @@ OOP_Class *init_chunkybmclass(struct class_static_data *csd)
 
     struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
-        {(IPTR (*)())chunkybm_putpixel	, moHidd_BitMap_PutPixel},
-        {(IPTR (*)())chunkybm_getpixel	, moHidd_BitMap_GetPixel},
-        {NULL	    	    	    	, 0UL	    	    	}
+        {(IPTR (*)())chunkybm_putpixel	    	, moHidd_BitMap_PutPixel	    },
+        {(IPTR (*)())chunkybm_getpixel	    	, moHidd_BitMap_GetPixel	    },
+        {(IPTR (*)())chunkybm_fillrect	    	, moHidd_BitMap_FillRect	    },
+        {(IPTR (*)())chunkybm_putimage	    	, moHidd_BitMap_PutImage	    },
+        {(IPTR (*)())chunkybm_getimage	    	, moHidd_BitMap_GetImage	    },
+        {(IPTR (*)())chunkybm_putimagelut   	, moHidd_BitMap_PutImageLUT 	    },
+        {(IPTR (*)())chunkybm_blitcolorexpansion, moHidd_BitMap_BlitColorExpansion  },
+        {(IPTR (*)())chunkybm_puttemplate   	, moHidd_BitMap_PutTemplate 	    },
+        {(IPTR (*)())chunkybm_putpattern   	, moHidd_BitMap_PutPattern 	    },
+        {NULL	    	    	    	    	, 0UL   	    	    	    }
     };
     
     struct OOP_InterfaceDescr ifdescr[] =
