@@ -203,15 +203,12 @@
 	}
 	else
 	{
-
+    	    SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
+	    
 	    if (NULL != friend_bitmap)
 	    {
 		if (IS_HIDD_BM(friend_bitmap))
 		SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend_bitmap));
-	    }
-	    else
-	    {
-		SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
 	    }
 
 	    if (flags & BMF_SPECIALFMT)
