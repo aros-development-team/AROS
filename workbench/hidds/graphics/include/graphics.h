@@ -408,11 +408,11 @@ enum
 	| MAP_COLCOMP(blue,  b, pixfmt) 
 
 
-#define MAP_RGBA(r, g, b, pixfmt) 	\
-	  MAP_COMP(red,   r, pixfmt) 	\
-	| MAP_COMP(green, g, pixfmt)	\
-	| MAP_COMP(blue,  b, pixfmt)	\
-	| MAP_COMP(blue,  b, pixfmt)
+#define MAP_RGBA(r, g, b, a, pixfmt) 	\
+	  MAP_COLCOMP(red,   r, pixfmt) 	\
+	| MAP_COLCOMP(green, g, pixfmt)	\
+	| MAP_COLCOMP(blue,  b, pixfmt)	\
+	| MAP_COLCOMP(alpha,  a, pixfmt)
 	
 	
 
@@ -423,6 +423,7 @@ enum
 #define RED_COMP(pix, pixfmt)	GET_COLCOMP(red,   pix, pixfmt)
 #define GREEN_COMP(pix, pixfmt)	GET_COLCOMP(green, pix, pixfmt)
 #define BLUE_COMP(pix, pixfmt)	GET_COLCOMP(blue,  pix, pixfmt)
+#define ALPHA_COMP(pix, pixfmt)	GET_COLCOMP(alpha,  pix, pixfmt)
 
 typedef struct
 {
