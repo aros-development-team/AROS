@@ -1161,7 +1161,38 @@ static void readsectionmethodlist(struct config *cfg, struct functions *function
 		    exitfileerror(20, ".alias has to come after a function declaration\n");
 		
 		slist_append(&(*methlistptr)->aliases, s2);
-		cfg->intcfg |= CFG_GENASTUBS;
+	    }
+	    else if (strncmp(s, "function", 8) == 0)
+	    {
+		s += 8;
+		
+		if (!isspace(*s))
+		    exitfileerror(20, "Syntax error\n");
+		
+		while (isspace(*s)) s++;
+		if (*s == '\0' || !(isalpha(*s) || *s == '_'))
+		    exitfileerror(20, "syntax is '.function name'\n");
+		
+		s2 = s;
+		s++;
+		while (isalnum(*s) || *s == '_') s++;
+
+		if (isspace(*s))
+		{
+		    *s = '\0';
+		    do {
+			s++;
+		    } while (isspace(*s));
+		}
+
+		if (*s != '\0')
+		    exitfileerror(20, "syntax is '.function name'\n");
+		
+		if (*methlistptr == NULL)
+		    exitfileerror(20, ".function has to come after a function declaration\n");
+
+		free((*methlistptr)->name);
+		(*methlistptr)->name = strdup(s2);
 	    }
 	    else
 		exitfileerror(20, "Syntax error");
@@ -1174,13 +1205,22 @@ static void readsectionmethodlist(struct config *cfg, struct functions *function
 	    if (*s != '\0')
 		exitfileerror(20, "Only letters, digits and an underscore allowed in a methodname\n");
 
+	    s2 = malloc(strlen(cfg->basename) + 2 + strlen(line) + 1);
+	    if (s2 == NULL)
+		exitfileerror(20, "Out of memory\n");
+	    sprintf(s2, "%s__%s", cfg->basename, line);
+	    
 	    if (*methlistptr != NULL)
 		methlistptr = &((*methlistptr)->next);
-	    *methlistptr = newfunctionhead(line, STACK);
+	    *methlistptr = newfunctionhead(s2, STACK);
 	    (*methlistptr)->type = "IPTR";
 	    funcaddarg(*methlistptr, "Class *cl", NULL);
 	    funcaddarg(*methlistptr, "Object *o", NULL);
 	    funcaddarg(*methlistptr, "Msg msg", NULL);
+	    
+	    slist_append(&(*methlistptr)->aliases, line);
+	    
+	    free(s2);
 	}
 	else
 	    exitfileerror(20, "Methodname has to begin with a letter\n");
