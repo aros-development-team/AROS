@@ -72,7 +72,7 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
     {
         int first = 1;
         
-        fprintf(out, "%s %s__%s(", methlistit->type, cfg->basename, methlistit->name);
+        fprintf(out, "%s %s(", methlistit->type, methlistit->name);
         
         for 
         (
