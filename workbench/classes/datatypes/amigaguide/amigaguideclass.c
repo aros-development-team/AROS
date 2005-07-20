@@ -14,17 +14,17 @@
 
 /* ------------------------------ prototypes ------------------------------ */
 
-ULONG AmigaGuide__OM_NEW(Class *cl, Object *obj, struct opSet *msg);
-ULONG AmigaGuide__OM_DISPOSE(Class *cl, Object *obj, Msg msg);
-static ULONG om_set(Class *cl, Object *obj, struct opSet *msg);
-static ULONG om_update(Class *cl, Object *obj, struct opSet *msg);
+ULONG om_new(Class *cl, Object *obj, struct opSet *msg);
+ULONG om_dispose(Class *cl, Object *obj, Msg msg);
+ULONG _om_set(Class *cl, Object *obj, struct opSet *msg);
+ULONG _om_update(Class *cl, Object *obj, struct opSet *msg);
 
-ULONG AmigaGuide__GM_RENDER(Class *cl, Object *obj, struct gpRender *msg);
-ULONG AmigaGuide__GM_LAYOUT(Class *cl, Object *obj, struct gpLayout *msg);
-ULONG AmigaGuide__GM_HANDLEINPUT(Class *cl, Object *obj, struct gpInput *msg);
+ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg);
+ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg);
+ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg);
 
-ULONG AmigaGuide__DTM_ASYNCLAYOUT(Class *cl, Object *obj, struct gpLayout *msg);
-ULONG AmigaGuide__DTM_TRIGGER(Class *cl, Object *obj, struct dtTrigger *msg);
+ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg);
+ULONG dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg);
 
 
 static void ActivateAGObject(Class *cl, Object *obj, struct GadgetInfo *ginfo,
@@ -169,8 +169,7 @@ void MakeNavGadget(Class *cl, Object *obj, struct IBox *domain)
 *
 */
 
-
-ULONG AmigaGuide__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
+ULONG om_new(Class *cl, Object *obj, struct opSet *msg)
 {
    ULONG rv;
    CLASSBASE;
@@ -232,7 +231,7 @@ ULONG AmigaGuide__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
    else
    {
       /* set attributes provided by the user */
-      om_set(cl, obj, msg);
+      _om_set(cl, obj, msg);
 
       /* now get the source type only DTST_FILE is supported.
          Then start scanning the AmigaGuide file */
@@ -246,12 +245,9 @@ ULONG AmigaGuide__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
       {
          switch(sourcetype)
          {
-	     char s[1024];
          case DTST_FILE:
    	    data->ag_File->agf_Handle = handle;
             data->ag_File->agf_Lock = DupLockFromFH(handle);
-	     NameFromFH(handle, s, 1024);
-	     DB(("Scanning file %s\n", s));
    	    ScanFile(cl, obj, data->ag_File);
 
             if(data->ag_File->agf_OnOpen != NULL)
@@ -312,8 +308,7 @@ ULONG AmigaGuide__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 *
 */
 
-
-ULONG AmigaGuide__OM_DISPOSE(Class *cl,Object *obj,Msg msg)
+ULONG om_dispose(Class *cl,Object *obj,Msg msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -389,8 +384,7 @@ ULONG AmigaGuide__OM_DISPOSE(Class *cl,Object *obj,Msg msg)
 *
 */
 
-
-ULONG AmigaGuide__OM_GET(Class *cl,Object *obj,struct opGet *msg)
+ULONG om_get(Class *cl,Object *obj,struct opGet *msg)
 {
    ULONG rv;
    INSTDATA;
@@ -452,8 +446,7 @@ ULONG AmigaGuide__OM_GET(Class *cl,Object *obj,struct opGet *msg)
    return rv;
 }
 
-static
-ULONG om_update(Class *cl, Object *obj, struct opSet *msg)
+ULONG _om_update(Class *cl, Object *obj, struct opSet *msg)
 {
    CLASSBASE;
    ULONG rv = 0;
@@ -506,8 +499,7 @@ ULONG om_update(Class *cl, Object *obj, struct opSet *msg)
 */
 
 
-static
-ULONG om_set(Class *cl,Object *obj,struct opSet *msg)
+ULONG _om_set(Class *cl,Object *obj,struct opSet *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -555,8 +547,7 @@ ULONG om_set(Class *cl,Object *obj,struct opSet *msg)
 }
 
 
-
-ULONG AmigaGuide__GM_LAYOUT(Class *cl, Object *obj, struct gpLayout *msg)
+ULONG gm_layout(Class *cl, Object *obj, struct gpLayout *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -645,8 +636,7 @@ ULONG AmigaGuide__GM_LAYOUT(Class *cl, Object *obj, struct gpLayout *msg)
    return rc;
 }
 
-
-ULONG AmigaGuide__GM_RENDER(Class *cl, Object *obj, struct gpRender *msg)
+ULONG gm_render(Class *cl, Object *obj, struct gpRender *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -749,8 +739,7 @@ ULONG AmigaGuide__GM_RENDER(Class *cl, Object *obj, struct gpRender *msg)
 *
 */
 
-
-ULONG AmigaGuide__GM_HANDLEINPUT(Class *cl, Object *obj, struct gpInput *msg)
+ULONG gm_input(Class *cl, Object *obj, struct gpInput *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -801,8 +790,7 @@ ULONG AmigaGuide__GM_HANDLEINPUT(Class *cl, Object *obj, struct gpInput *msg)
    return rv;
 }
 
-
-ULONG AmigaGuide__DTM_REMOVEDTOBJECT(Class *cl, Object *obj, Msg msg)
+ULONG dtm_removedtobject(Class *cl, Object *obj, Msg msg)
 {
    INSTDATA;
 
@@ -822,8 +810,7 @@ ULONG AmigaGuide__DTM_REMOVEDTOBJECT(Class *cl, Object *obj, Msg msg)
    return DoSuperMethodA(cl, obj, msg);
 }
 
-
-ULONG AmigaGuide__DTM_ASYNCLAYOUT(Class *cl, Object *obj, struct gpLayout *msg)
+ULONG dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -1008,8 +995,7 @@ ULONG AmigaGuide__DTM_ASYNCLAYOUT(Class *cl, Object *obj, struct gpLayout *msg)
 */
 
 
-
-ULONG AmigaGuide__DTM_TRIGGER(Class *cl, Object *obj, struct dtTrigger *msg)
+ULONG dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -1306,8 +1292,7 @@ void ActivateAGObject(Class *cl, Object *obj, struct GadgetInfo *ginfo,
 */
 
 
-
-ULONG AmigaGuide__DTM_GOTO(Class *cl, Object *obj, struct dtGoto *msg)
+ULONG dtm_goto(Class *cl, Object *obj, struct dtGoto *msg)
 {
    CLASSBASE;
    INSTDATA;
@@ -1585,7 +1570,7 @@ ULONG AmigaGuide__DTM_GOTO(Class *cl, Object *obj, struct dtGoto *msg)
 }
 
 #ifdef __AROS__
-IPTR AmigaGuide__OM_UPDATE(Class *cl, Object *obj, struct opSet *msg)
+IPTR om_update(Class *cl, Object *obj, struct opSet *msg)
 {
     ULONG rv;
     
@@ -1593,8 +1578,8 @@ IPTR AmigaGuide__OM_UPDATE(Class *cl, Object *obj, struct opSet *msg)
     if(DoMethod(obj, ICM_CHECKLOOP))
 	return (IPTR)0;
 
-    rv = om_update(cl, obj, msg);
-    rv += om_set(cl, obj, msg);
+    rv = _om_update(cl, obj, msg);
+    rv += _om_set(cl, obj, msg);
 
     rv += (ULONG)DoSuperMethodA(cl, obj, (Msg) msg);
 
@@ -1620,9 +1605,9 @@ IPTR AmigaGuide__OM_UPDATE(Class *cl, Object *obj, struct opSet *msg)
     return (IPTR)rv;
 }
 
-IPTR AmigaGuide__OM_SET(Class *cl, Object *obj, struct opSet *msg)
+IPTR om_set(Class *cl, Object *obj, struct opSet *msg)
 {
-    ULONG rv = om_set(cl, obj, CAST_SET(msg));
+    ULONG rv = _om_set(cl, obj, CAST_SET(msg));
 
     rv += (ULONG)DoSuperMethodA(cl, obj, (Msg) msg);
 
@@ -1648,18 +1633,14 @@ IPTR AmigaGuide__OM_SET(Class *cl, Object *obj, struct opSet *msg)
     return (IPTR)rv;
 }
 
-IPTR AmigaGuide__GM_GOACTIVE(Class *cl, Object *obj, struct gpInput *msg)
-{
-    return AmigaGuide__GM_HANDLEINPUT(cl, obj, msg);
-}
-
-IPTR AmigaGuide__DTM_PROCLAYOUT(Class *cl, Object *obj, struct gpLayout *msg)
+IPTR dtm_proclayout(Class *cl, Object *obj, struct gpLayout *msg)
 {
     DoSuperMethodA(cl, obj, (Msg)msg);
     
-    return AmigaGuide__DTM_ASYNCLAYOUT(cl, obj, msg);
+    return dtm_asynclayout(cl, obj, msg);
 }
-#endif /* __AROS__ */
+
+#else /* !defined(__AROS__) */
 
 IPTR class_dispatcher(Class *cl, Object *obj, Msg msg)
 {
@@ -1669,14 +1650,14 @@ IPTR class_dispatcher(Class *cl, Object *obj, Msg msg)
    switch(msg->MethodID)
    {
    case OM_NEW:
-      rv = AmigaGuide__OM_NEW(cl, obj, CAST_SET(msg));
+      rv = om_new(cl, obj, CAST_SET(msg));
       break;
    case OM_DISPOSE:
-      rv = AmigaGuide__OM_DISPOSE(cl, obj, msg);
+      rv = om_dispose(cl, obj, msg);
       break;
 
    case OM_GET:
-      rv = AmigaGuide__OM_GET(cl,obj,(struct opGet *) msg);
+      rv = om_get(cl,obj,(struct opGet *) msg);
       break;
 
    case OM_UPDATE:
@@ -1684,9 +1665,9 @@ IPTR class_dispatcher(Class *cl, Object *obj, Msg msg)
       if(DoMethod(obj, ICM_CHECKLOOP))
 	 break;
 
-      rv = om_update(cl, obj, CAST_SET(msg));
+      rv = _om_update(cl, obj, CAST_SET(msg));
    case OM_SET:
-      rv += om_set(cl, obj, CAST_SET(msg));
+      rv += _om_set(cl, obj, CAST_SET(msg));
 
       rv += DoSuperMethodA(cl, obj, (Msg) msg);
 
@@ -1710,29 +1691,29 @@ IPTR class_dispatcher(Class *cl, Object *obj, Msg msg)
       }
       break;
    case GM_LAYOUT:
-      rv = AmigaGuide__GM_LAYOUT(cl, obj, CAST_GPL(msg));
+      rv = gm_layout(cl, obj, CAST_GPL(msg));
       break;
    case GM_RENDER:
-      rv = AmigaGuide__GM_RENDER(cl, obj, (struct gpRender *) msg);
+      rv = gm_render(cl, obj, (struct gpRender *) msg);
       break;
    case GM_GOACTIVE:
    case GM_HANDLEINPUT:
-      rv = AmigaGuide__GM_HANDLEINPUT(cl, obj, (struct gpInput *) msg);
+      rv = gm_input(cl, obj, (struct gpInput *) msg);
       break;
    case DTM_REMOVEDTOBJECT:
-      rv = AmigaGuide__DTM_REMOVEDTOBJECT(cl, obj, msg);
+      rv = dtm_removedtobject(cl, obj, msg);
       break;
    case DTM_PROCLAYOUT:
       rv = DoSuperMethodA(cl, obj, msg);
       /* fall through */
    case DTM_ASYNCLAYOUT:
-      rv = AmigaGuide__DTM_ASYNCLAYOUT(cl, obj, CAST_GPL(msg));
+      rv = dtm_asynclayout(cl, obj, CAST_GPL(msg));
       break;
    case DTM_TRIGGER:
-      rv = AmigaGuide__DTM_TRIGGER(cl, obj, (struct dtTrigger *) msg);
+      rv = dtm_trigger(cl, obj, (struct dtTrigger *) msg);
       break;
    case DTM_GOTO:
-      rv = AmigaGuide__DTM_GOTO(cl, obj, (struct dtGoto *) msg);
+      rv = dtm_goto(cl, obj, (struct dtGoto *) msg);
       break;
    default:
       rv = DoSuperMethodA(cl,obj,msg);
@@ -1741,3 +1722,4 @@ IPTR class_dispatcher(Class *cl, Object *obj, Msg msg)
    return rv;
 }
 
+#endif /* __AROS__ */
