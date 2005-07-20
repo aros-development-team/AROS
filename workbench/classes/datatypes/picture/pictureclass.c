@@ -59,6 +59,11 @@ ISG BOOL                  DestMode
 
 #ifndef __AROS__
 #include "compilerspecific.h"
+#else
+#ifdef STATIC
+#undef STATIC
+#endif
+#define STATIC
 #endif
 #include "debug.h"
 #include "pictureclass.h"
@@ -111,7 +116,7 @@ const IPTR SupportedMethods[] =
 
 /**************************************************************************************************/
 
-IPTR Picture__OM_SET(struct IClass *cl, struct Gadget *g, struct opSet *msg);
+STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg);
 
 /**************************************************************************************************/
 
@@ -122,7 +127,7 @@ STATIC ULONG NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1
 
 /**************************************************************************************************/
 
-struct Gadget *Picture__OM_NEW(struct IClass *cl, Object *o, struct opSet *msg)
+STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {
     struct Gadget *g;
     const struct TagItem *attrs = msg->ops_AttrList;
@@ -208,14 +213,14 @@ struct Gadget *Picture__OM_NEW(struct IClass *cl, Object *o, struct opSet *msg)
     }
 
     D(bug("picture.datatype/OM_NEW: Setting attributes\n"));
-    Picture__OM_SET(cl, g, msg);
+    DT_SetMethod(cl, g, msg);
 
     return g;
 }
 
 /**************************************************************************************************/
 
-IPTR Picture__OM_DISPOSE(struct IClass *cl, Object *o, Msg msg)
+STATIC IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 {
     struct Picture_Data *pd;
     IPTR RetVal;
@@ -237,7 +242,7 @@ IPTR Picture__OM_DISPOSE(struct IClass *cl, Object *o, Msg msg)
 
 /**************************************************************************************************/
 
-IPTR Picture__OM_SET(struct IClass *cl, struct Gadget *g, struct opSet *msg)
+STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     struct Picture_Data *pd;
     const struct TagItem *tl = msg->ops_AttrList;
@@ -398,7 +403,7 @@ IPTR Picture__OM_SET(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
 /**************************************************************************************************/
 
-IPTR Picture__OM_GET(struct IClass *cl, struct Gadget *g, struct opGet *msg)
+STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 {
     struct Picture_Data *pd;
 
@@ -559,7 +564,7 @@ IPTR Picture__OM_GET(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 
 /**************************************************************************************************/
 
-IPTR Picture__GM_RENDER(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
+STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct Picture_Data *pd;
     struct DTSpecialInfo *si;
@@ -630,7 +635,7 @@ IPTR Picture__GM_RENDER(struct IClass *cl, struct Gadget *g, struct gpRender *ms
 
 /**************************************************************************************************/
 
-IPTR Picture__GM_GOACTIVE(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
+STATIC IPTR DT_GoActiveMethod(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct DTSpecialInfo *dtsi = (struct DTSpecialInfo *)g->SpecialInfo;
     struct Picture_Data  *pd = INST_DATA(cl, g);
@@ -666,7 +671,7 @@ IPTR Picture__GM_GOACTIVE(struct IClass *cl, struct Gadget *g, struct gpInput *m
     return retval;
 }
 
-IPTR Picture__GM_HANDLEINPUT(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
+STATIC IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct DTSpecialInfo *dtsi = (struct DTSpecialInfo *)g->SpecialInfo;
     struct Picture_Data  *pd = INST_DATA(cl, g);
@@ -744,7 +749,7 @@ IPTR Picture__GM_HANDLEINPUT(struct IClass *cl, struct Gadget *g, struct gpInput
 
 /**************************************************************************************************/
 
-IPTR Picture__GM_LAYOUT(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+STATIC IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
     IPTR RetVal;
 
@@ -763,7 +768,7 @@ IPTR Picture__GM_LAYOUT(struct IClass *cl, struct Gadget *g, struct gpLayout *ms
 
 /**************************************************************************************************/
 
-IPTR Picture__DTM_ASYNCLAYOUT(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
     struct Picture_Data *pd;
     struct DTSpecialInfo *si;
@@ -968,7 +973,7 @@ IPTR Picture__DTM_ASYNCLAYOUT(struct IClass *cl, struct Gadget *g, struct gpLayo
 
 /**************************************************************************************************/
 
-IPTR Picture__DTM_PROCLAYOUT(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+STATIC IPTR DT_ProcLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
     IPTR RetVal;
 
@@ -979,12 +984,12 @@ IPTR Picture__DTM_PROCLAYOUT(struct IClass *cl, struct Gadget *g, struct gpLayou
 
     RetVal=DoSuperMethodA(cl, (Object *) g, (Msg) msg);
 
-    return Picture__DTM_ASYNCLAYOUT(cl, g, msg);
+    return DT_AsyncLayout(cl, g, msg);
 }
 
 /**************************************************************************************************/
 
-IPTR Picture__PDTM_WRITEPIXELARRAY(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
+STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
 {
     struct Picture_Data *pd;
 
@@ -1102,7 +1107,7 @@ IPTR Picture__PDTM_WRITEPIXELARRAY(struct IClass *cl, struct Gadget *g, struct p
 
 /**************************************************************************************************/
 
-IPTR Picture__PDTM_READPIXELARRAY(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
+STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
 {
     struct Picture_Data *pd;
 
@@ -1215,7 +1220,7 @@ IPTR Picture__PDTM_READPIXELARRAY(struct IClass *cl, struct Gadget *g, struct pd
 
 /**************************************************************************************************/
 
-IPTR Picture__PDTM_SCALE(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
+STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
 {
     struct Picture_Data *pd;
     ULONG xscale, yscale;
@@ -1258,7 +1263,7 @@ IPTR Picture__PDTM_SCALE(struct IClass *cl, struct Gadget *g, struct pdtScale *m
 
 /**************************************************************************************************/
 
-IPTR Picture__DTM_FRAMEBOX(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
+STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
 {
     struct Picture_Data *pd;
     ULONG Width, Height, Depth;
@@ -1291,7 +1296,7 @@ IPTR Picture__DTM_FRAMEBOX(struct IClass *cl, struct Gadget *g, struct dtFrameBo
 
 /**************************************************************************************************/
 
-IPTR Picture__DTM_OBTAINDRAWINFO(struct IClass *cl, struct Gadget *g, struct opSet *msg)
+STATIC IPTR DT_ObtainDrawInfo(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     struct Picture_Data *pd;
     IPTR RetVal;
@@ -1315,7 +1320,7 @@ IPTR Picture__DTM_OBTAINDRAWINFO(struct IClass *cl, struct Gadget *g, struct opS
 
 /**************************************************************************************************/
 
-IPTR Picture__DTM_DRAW(struct IClass *cl, struct Gadget *g, struct dtDraw *msg)
+STATIC IPTR DT_Draw(struct IClass *cl, struct Gadget *g, struct dtDraw *msg)
 {
     struct Picture_Data *pd;
     IPTR RetVal;
@@ -1355,7 +1360,7 @@ IPTR Picture__DTM_DRAW(struct IClass *cl, struct Gadget *g, struct dtDraw *msg)
 
 /**************************************************************************************************/
 
-IPTR Picture__DTM_RELEASEDRAWINFO(struct IClass *cl, struct Gadget *g, struct dtReleaseDrawInfo *msg)
+STATIC IPTR DT_ReleaseDrawInfo(struct IClass *cl, struct Gadget *g, struct dtReleaseDrawInfo *msg)
 {
     struct Picture_Data *pd;
     IPTR RetVal;
@@ -1395,14 +1400,14 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
         case OM_NEW:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method OM_NEW\n"));
-            RetVal=(IPTR) Picture__OM_NEW(cl, o, (struct opSet *) msg);
+            RetVal=(IPTR) DT_NewMethod(cl, o, (struct opSet *) msg);
             break;
         }
 
         case OM_GET:
         {
             // DGS(bug("picture.datatype/DT_Dispatcher: Method OM_GET\n"));
-            RetVal=(IPTR) Picture__OM_GET(cl, (struct Gadget *) o, (struct opGet *) msg);
+            RetVal=(IPTR) DT_GetMethod(cl, (struct Gadget *) o, (struct opGet *) msg);
             break;
         }
 
@@ -1410,105 +1415,105 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
         case OM_UPDATE:
         {
             DGS(bug("picture.datatype/DT_Dispatcher: Method %s\n", (msg->MethodID==OM_UPDATE) ? "OM_UPDATE" : "OM_SET"));
-            RetVal=(IPTR) Picture__OM_SET(cl, (struct Gadget *) o, (struct opSet *) msg);
+            RetVal=(IPTR) DT_SetMethod(cl, (struct Gadget *) o, (struct opSet *) msg);
             break;
         }
 
         case OM_DISPOSE:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method OM_DISPOSE\n"));
-            RetVal=(IPTR) Picture__OM_DISPOSE(cl, o, (Msg) msg);
+            RetVal=(IPTR) DT_DisposeMethod(cl, o, (Msg) msg);
             break;
         }
 
         case GM_LAYOUT:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method GM_LAYOUT\n"));
-            RetVal=(IPTR) Picture__GM_LAYOUT(cl, (struct Gadget *) o, (struct gpLayout *) msg);
+            RetVal=(IPTR) DT_Layout(cl, (struct Gadget *) o, (struct gpLayout *) msg);
             break;
         }
 
     	case GM_GOACTIVE:
 	{
             D(bug("picture.datatype/DT_Dispatcher: Method GM_GOACTIVE\n"));
-	    RetVal = Picture__GM_GOACTIVE(cl, (struct Gadget *)o, (struct gpInput *)msg);
+	    RetVal = DT_GoActiveMethod(cl, (struct Gadget *)o, (struct gpInput *)msg);
 	    break;
 	}
 	   
 	case GM_HANDLEINPUT:
 	{
             D(bug("picture.datatype/DT_Dispatcher: Method GM_HANDLEINPUT\n"));
-	    RetVal = Picture__GM_HANDLEINPUT(cl, (struct Gadget *)o, (struct gpInput *)msg);
+	    RetVal = DT_HandleInputMethod(cl, (struct Gadget *)o, (struct gpInput *)msg);
 	    break;
 	}
 	   
         case DTM_PROCLAYOUT:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method DTM_PROCLAYOUT\n"));
-            RetVal=(IPTR) Picture__DTM_PROCLAYOUT(cl, (struct Gadget *) o, (struct gpLayout *) msg);
+            RetVal=(IPTR) DT_ProcLayout(cl, (struct Gadget *) o, (struct gpLayout *) msg);
 	    break;
         }
 
         case DTM_ASYNCLAYOUT:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method DTM_ASYNCLAYOUT\n"));
-            RetVal=(IPTR) Picture__DTM_ASYNCLAYOUT(cl, (struct Gadget *) o, (struct gpLayout *) msg);
+            RetVal=(IPTR) DT_AsyncLayout(cl, (struct Gadget *) o, (struct gpLayout *) msg);
             break;
         }
 
         case GM_RENDER:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method GM_RENDER\n"));
-            RetVal=(IPTR) Picture__GM_RENDER(cl, (struct Gadget *) o, (struct gpRender *) msg);
+            RetVal=(IPTR) DT_Render(cl, (struct Gadget *) o, (struct gpRender *) msg);
             break;
         }
 
         case DTM_FRAMEBOX:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method DTM_FRAMEBOX\n"));
-            RetVal=(IPTR) Picture__DTM_FRAMEBOX(cl, (struct Gadget *) o, (struct dtFrameBox *) msg);
+            RetVal=(IPTR) DT_FrameBox(cl, (struct Gadget *) o, (struct dtFrameBox *) msg);
             break;
         }
 
         case DTM_OBTAINDRAWINFO:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method DTM_OBTAINDRAWINFO\n"));
-            RetVal=(IPTR) Picture_DTM_OBTAINDRAWINFO(cl, (struct Gadget *) o, (struct opSet *) msg);
+            RetVal=(IPTR) DT_ObtainDrawInfo(cl, (struct Gadget *) o, (struct opSet *) msg);
             break;
         }
 
         case DTM_DRAW:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method DTM_DRAW\n"));
-            RetVal=(IPTR) Picture__DTM_DRAW(cl, (struct Gadget *) o, (struct dtDraw *) msg);
+            RetVal=(IPTR) DT_Draw(cl, (struct Gadget *) o, (struct dtDraw *) msg);
             break;
         }
 
         case DTM_RELEASEDRAWINFO:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method DTM_RELEASEDRAWINFO\n"));
-            RetVal=(IPTR) Picture__DTM_RELEASEDRAWINFO(cl, (struct Gadget *) o, (struct dtReleaseDrawInfo *) msg);
+            RetVal=(IPTR) DT_ReleaseDrawInfo(cl, (struct Gadget *) o, (struct dtReleaseDrawInfo *) msg);
             break;
         }
 
         case PDTM_WRITEPIXELARRAY:
         {
             // D(bug("picture.datatype/DT_Dispatcher: Method PDTM_WRITEPIXELARRAY\n"));
-            RetVal=(IPTR) Picture__PDTM_WRITEPIXELARRAY(cl, (struct Gadget *) o, (struct pdtBlitPixelArray *) msg);
+            RetVal=(IPTR) PDT_WritePixelArray(cl, (struct Gadget *) o, (struct pdtBlitPixelArray *) msg);
             break;
         }
 
         case PDTM_READPIXELARRAY:
         {
             // D(bug("picture.datatype/DT_Dispatcher: Method PDTM_READPIXELARRAY\n"));
-            RetVal=(IPTR) Picture__PDTM_READPIXELARRAY(cl, (struct Gadget *) o, (struct pdtBlitPixelArray *) msg);
+            RetVal=(IPTR) PDT_ReadPixelArray(cl, (struct Gadget *) o, (struct pdtBlitPixelArray *) msg);
             break;
         }
 
         case PDTM_SCALE:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method PDTM_SCALE\n"));
-            RetVal=(IPTR) Picture__PDTM_SCALE(cl, (struct Gadget *) o, (struct pdtScale *) msg);
+            RetVal=(IPTR) PDT_Scale(cl, (struct Gadget *) o, (struct pdtScale *) msg);
             break;
         }
 

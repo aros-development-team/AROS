@@ -163,24 +163,25 @@ ADD2LIBS("gadgets/tapedeck.gadget", -40, struct Library *, TapeDeckBase)
 #ifndef __AROS__
 IPTR Dispatcher(REG(a0,Class *cl), REG(a2,Object *o), REG(a1,Msg msg));
 #endif
-IPTR __regargs Sound__OM_NEW( Class *cl, Object *o, struct opSet *ops );
-IPTR __regargs Sound__OM_GET( Class *cl, Object *o, struct opGet *ops );
-IPTR __regargs Sound__OM_SET( Class *cl, Object *o, struct opSet *ops );
-IPTR __regargs Sound__OM_UPDATE( Class *cl, Object *o, struct opUpdate *opu );
-IPTR __regargs Sound__OM_DISPOSE( Class *cl, Object *o, Msg msg );
-IPTR __regargs Sound__GM_RENDER( Class *cl, Object *o, struct gpRender *gpr );
-IPTR __regargs Sound__GM_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi );
-IPTR __regargs Sound__DTM_TRIGGER( Class *cl, Object *o, struct dtTrigger *dtt );
-IPTR __regargs Sound__DTM_WRITE( Class *cl, Object *o, struct dtWrite *dtw );
-IPTR __regargs Sound__GM_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl );
-IPTR __regargs Sound__GM_DOMAIN( Class *cl, Object *o, struct gpDomain *gpd );
-LONG __regargs Sound__DTM_SELECT( Class *cl, Object *o, struct dtSelect *dts );
-LONG __regargs Sound__DTM_CLEARSELECTED( Class *cl, Object *o, struct dtGeneral *dtg );
-IPTR __regargs Sound__GM_HITTEST( Class *cl, Object *o, struct gpHitTest *gpht );
-IPTR __regargs Sound__GM_GOINACTIVE( Class *cl, Object *o, struct gpGoInactive *gpgi );
-IPTR __regargs Sound__DTM_OBTAINDRAWINFO( Class *cl, Object *o, struct opSet *ops );
-IPTR __regargs Sound__DTM_DRAW( Class *cl, Object *o, struct dtDraw *dtd );
-IPTR __regargs Sound__DTM_REMOVEDTOBJECT( Class *cl, Object *o, Msg msg );
+IPTR __regargs Sound_NEW( Class *cl, Object *o, struct opSet *ops );
+IPTR __regargs Sound_GET( Class *cl, Object *o, struct opGet *ops );
+IPTR __regargs Sound_SET( Class *cl, Object *o, struct opSet *ops );
+IPTR __regargs Sound_UPDATE( Class *cl, Object *o, struct opUpdate *opu );
+IPTR __regargs Sound_DISPOSE( Class *cl, Object *o, Msg msg );
+IPTR __regargs Sound_RENDER( Class *cl, Object *o, struct gpRender *gpr );
+IPTR __regargs Sound_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi );
+IPTR __regargs Sound_TRIGGER( Class *cl, Object *o, struct dtTrigger *dtt );
+IPTR __regargs Sound_WRITE( Class *cl, Object *o, struct dtWrite *dtw );
+IPTR __regargs Sound_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl );
+IPTR __regargs Sound_DOMAIN( Class *cl, Object *o, struct gpDomain *gpd );
+LONG __regargs Sound_SELECT( Class *cl, Object *o, struct dtSelect *dts );
+LONG __regargs Sound_CLEARSELECTED( Class *cl, Object *o, struct dtGeneral *dtg );
+IPTR __regargs Sound_HITTEST( Class *cl, Object *o, struct gpHitTest *gpht );
+IPTR __regargs Sound_GOINACTIVE( Class *cl, Object *o, struct gpGoInactive *gpgi );
+IPTR __regargs Sound_DRAW( Class *cl, Object *o, struct dtDraw *dtd );
+IPTR __regargs Sound_OBTAINDRAWINFO( Class *cl, Object *o, struct opSet *ops );
+IPTR __regargs Sound_REMOVEDTOBJECT( Class *cl, Object *o, Msg msg );
+IPTR __regargs Sound_RELEASEDRAWINFO( Class *cl, Object *o, Msg msg );
 LONG __regargs hex2long( STRPTR hex );
 BOOL __regargs parsetaglist( Class *cl, Object *o, struct opSet *ops, ULONG *cnt_p );
 struct Process * __regargs CreatePlayerProc( struct ClassBase *cb, struct MsgPort **mp );
@@ -286,75 +287,75 @@ IPTR Dispatcher(REG(a0,Class *cl), REG(a2,Object *o), REG(a1,Msg msg))
 	switch( msg->MethodID )
 	{
 		case OM_NEW:
-			retval = Sound__OM_NEW( cl, o, (struct opSet *)msg );
+			retval = Sound_NEW( cl, o, (struct opSet *)msg );
 		break;
 
 		case OM_GET:
-			retval = Sound__OM_GET( cl, o, (struct opGet *)msg );
+			retval = Sound_GET( cl, o, (struct opGet *)msg );
 		break;
 		
 		case OM_UPDATE:
-			retval = Sound__OM_UPDATE( cl, o, (struct opUpdate *)msg );
+			retval = Sound_UPDATE( cl, o, (struct opUpdate *)msg );
 		break;
 
 		case OM_SET:		
-			retval = Sound__OM_SET( cl, o, (struct opSet *)msg );
+			retval = Sound_SET( cl, o, (struct opSet *)msg );
 		break;		
 
 		case OM_DISPOSE:
-			retval = Sound__OM_DISPOSE( cl, o, msg );
+			retval = Sound_DISPOSE( cl, o, msg );
 		break;
 		
 		case GM_HELPTEST:
 		case GM_HITTEST:
-			retval = Sound__GM_HITTEST( cl, o, (struct gpHitTest *) msg );
+			retval = Sound_HITTEST( cl, o, (struct gpHitTest *) msg );
 		break;
 
 		case GM_GOACTIVE:
 		case GM_HANDLEINPUT:
-			retval = Sound__GM_HANDLEINPUT( cl, o, (struct gpInput *)msg );
+			retval = Sound_HANDLEINPUT( cl, o, (struct gpInput *)msg );
 		break;
 
 		case GM_GOINACTIVE:
-			retval = Sound__GM_GOINACTIVE( cl, o, (struct gpGoInactive *) msg );
+			retval = Sound_GOINACTIVE( cl, o, (struct gpGoInactive *) msg );
 		break;
 
 		case GM_DOMAIN:
-			retval = Sound__GM_DOMAIN( cl, o, (struct gpDomain *)msg );
+			retval = Sound_DOMAIN( cl, o, (struct gpDomain *)msg );
 		break;
 
 		case GM_LAYOUT:
 		case DTM_PROCLAYOUT:
-			retval = Sound__GM_LAYOUT( cl, o, (struct gpLayout *)msg );
+			retval = Sound_LAYOUT( cl, o, (struct gpLayout *)msg );
 		break;
 
 		case GM_RENDER:
-			retval = Sound__GM_RENDER( cl, o, (struct gpRender *)msg );
+			retval = Sound_RENDER( cl, o, (struct gpRender *)msg );
 		break;
 
 		case DTM_TRIGGER:
-			retval = Sound__DTM_TRIGGER( cl, o, (struct dtTrigger *)msg );
+			retval = Sound_TRIGGER( cl, o, (struct dtTrigger *)msg );
 		break;
 
 		case DTM_COPY:
 		case DTM_WRITE:
-			retval = Sound__DTM_WRITE( cl, o, (struct dtWrite *)msg );
+			retval = Sound_WRITE( cl, o, (struct dtWrite *)msg );
 		break;
 
 		case DTM_SELECT:
-			retval = Sound__DTM_SELECT( cl, o, (struct dtSelect *) msg );
+			retval = Sound_SELECT( cl, o, (struct dtSelect *) msg );
 		break;
 
 		case DTM_CLEARSELECTED:
-			retval = Sound__DTM_CLEARSELECTED( cl, o, (struct dtGeneral *) msg );
+			retval = Sound_CLEARSELECTED( cl, o, (struct dtGeneral *) msg );
 		break;
 		
 		case DTM_OBTAINDRAWINFO:
-			retval = Sound__DTM_OBTAINDRAWINFO( cl, o, (struct opSet *) msg );
+			retval = Sound_OBTAINDRAWINFO( cl, o, (struct opSet *) msg );
 		break;
 		
 		case DTM_DRAW:
-			retval = Sound__DTM_DRAW( cl, o, (struct dtDraw *) msg );
+			retval = Sound_DRAW( cl, o, (struct dtDraw *) msg );
 		break;
 		
 		case DTM_RELEASEDRAWINFO:
@@ -365,7 +366,7 @@ IPTR Dispatcher(REG(a0,Class *cl), REG(a2,Object *o), REG(a1,Msg msg))
 		break;
 		
 		case DTM_REMOVEDTOBJECT:
-			retval = Sound__DTM_REMOVEDTOBJECT(cl, o, msg);
+			retval = Sound_REMOVEDTOBJECT(cl, o, msg);
 		break;
 		
 		//case OM_NOTIFY:
@@ -423,7 +424,7 @@ LONG SendObjectMsg( struct InstanceData *id, ULONG Command, APTR Data )
 
 /****************************************************************************/
 
-LONG __regargs Sound__DTM_CLEARSELECTED( Class *cl, Object *o, struct dtGeneral *dtg )
+LONG __regargs Sound_CLEARSELECTED( Class *cl, Object *o, struct dtGeneral *dtg )
 {
 	struct RastPort		*rp;
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
@@ -453,7 +454,7 @@ LONG __regargs Sound__DTM_CLEARSELECTED( Class *cl, Object *o, struct dtGeneral 
 
 /****************************************************************************/
 
-LONG __regargs Sound__DTM_SELECT( Class *cl, Object *o, struct dtSelect *dts )
+LONG __regargs Sound_SELECT( Class *cl, Object *o, struct dtSelect *dts )
 {
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
 	struct ClassBase		*cb = (struct ClassBase *) cl->cl_UserData;
@@ -849,7 +850,7 @@ void CreateTapeDeck( struct ClassBase *cb, struct InstanceData *id, Object *o )
 
 /****************************************************************************/
 
-IPTR __regargs Sound__OM_NEW( Class *cl, Object *o, struct opSet *ops )
+IPTR __regargs Sound_NEW( Class *cl, Object *o, struct opSet *ops )
 {
 	struct ClassBase	*cb = (struct ClassBase *)cl->cl_UserData;
 	struct TagItem	ti[6];
@@ -1200,7 +1201,7 @@ dbug( kprintf( "NextTagItem done.\n" ); )
 
 /****************************************************************************/
 
-IPTR __regargs Sound__OM_GET( Class *cl, Object *o, struct opGet *opg )
+IPTR __regargs Sound_GET( Class *cl, Object *o, struct opGet *opg )
 {
 	struct ClassBase		*cb = (struct ClassBase *) cl->cl_UserData;
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
@@ -1445,7 +1446,7 @@ IPTR __regargs Sound__OM_GET( Class *cl, Object *o, struct opGet *opg )
 
 /****************************************************************************/
 
-IPTR __regargs Sound__OM_SET( Class *cl, Object *o, struct opSet *ops )
+IPTR __regargs Sound_SET( Class *cl, Object *o, struct opSet *ops )
 {
 	struct ClassBase		*cb = (struct ClassBase *) cl->cl_UserData;
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
@@ -1477,7 +1478,7 @@ IPTR __regargs Sound__OM_SET( Class *cl, Object *o, struct opSet *ops )
 
 /****************************************************************************/
 
-IPTR __regargs Sound__OM_UPDATE( Class *cl, Object *o, struct opUpdate *opu )
+IPTR __regargs Sound_UPDATE( Class *cl, Object *o, struct opUpdate *opu )
 {
 	struct ClassBase	*cb = (struct ClassBase *)cl->cl_UserData;
 	STATIC IPTR		 methodID = ICM_CHECKLOOP;	
@@ -1493,12 +1494,12 @@ IPTR __regargs Sound__OM_UPDATE( Class *cl, Object *o, struct opUpdate *opu )
 
 	dbug( kprintf("no loop %08lx\n", (ULONG)opu); )
 
-	return Sound__OM_SET( cl, o, (struct opSet *) opu );
+	return Sound_SET( cl, o, (struct opSet *) opu );
 }
 
 /****************************************************************************/
 
-IPTR __regargs Sound__OM_DISPOSE( Class *cl, Object *o, Msg msg )
+IPTR __regargs Sound_DISPOSE( Class *cl, Object *o, Msg msg )
 {
 	struct ClassBase		*cb = (struct ClassBase *) cl->cl_UserData;
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
@@ -1553,7 +1554,7 @@ IPTR __regargs Sound__OM_DISPOSE( Class *cl, Object *o, Msg msg )
 
 /****************************************************************************/
 
-IPTR __regargs Sound__GM_DOMAIN( Class *cl, Object *o, struct gpDomain *gpd )
+IPTR __regargs Sound_DOMAIN( Class *cl, Object *o, struct gpDomain *gpd )
 {
 	struct ClassBase		*cb = (struct ClassBase *) cl->cl_UserData;
 	struct InstanceData 	*id = (struct InstanceData *) INST_DATA( cl, o );
@@ -1588,7 +1589,7 @@ IPTR __regargs Sound__GM_DOMAIN( Class *cl, Object *o, struct gpDomain *gpd )
 
 /****************************************************************************/
 
-IPTR __regargs Sound__GM_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
+IPTR __regargs Sound_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
 {
 	struct ClassBase		*cb = (struct ClassBase *)cl->cl_UserData;
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
@@ -1885,7 +1886,7 @@ void __regargs DrawWaveform( struct ClassBase *cb, struct RastPort *rp, struct I
 
 /****************************************************************************/
 
-IPTR __regargs Sound__GM_RENDER( Class *cl, Object *o, struct gpRender *gpr )
+IPTR __regargs Sound_RENDER( Class *cl, Object *o, struct gpRender *gpr )
 {
 	struct ClassBase		*cb = (struct ClassBase *)cl->cl_UserData;
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
@@ -1986,7 +1987,7 @@ IPTR __regargs Sound__GM_RENDER( Class *cl, Object *o, struct gpRender *gpr )
 
 /****************************************************************************/
 
-IPTR __regargs Sound__DTM_DRAW( Class *cl, Object *o, struct dtDraw *dtd )
+IPTR __regargs Sound_DRAW( Class *cl, Object *o, struct dtDraw *dtd )
 {
 	struct InstanceData	*id = INST_DATA( cl, o );
 	struct ClassBase		*cb = (struct ClassBase *) cl->cl_UserData;
@@ -2055,7 +2056,7 @@ IPTR __regargs Sound__DTM_DRAW( Class *cl, Object *o, struct dtDraw *dtd )
 
 /****************************************************************************/
 
-IPTR __regargs Sound__GM_HITTEST( Class *cl, Object *o, struct gpHitTest *gpht )
+IPTR __regargs Sound_HITTEST( Class *cl, Object *o, struct gpHitTest *gpht )
 {
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
 	IPTR				retval = GMR_GADGETHIT;
@@ -2107,7 +2108,7 @@ IPTR __regargs Sound__GM_HITTEST( Class *cl, Object *o, struct gpHitTest *gpht )
 
 /****************************************************************************/
 
-IPTR __regargs Sound__GM_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi )
+IPTR __regargs Sound_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi )
 {
 	struct ClassBase		*cb = (struct ClassBase *) cl->cl_UserData;
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
@@ -2313,7 +2314,7 @@ IPTR __regargs Sound__GM_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi 
 
 /****************************************************************************/
 
-IPTR __regargs Sound__GM_GOINACTIVE( Class *cl, Object *o, struct gpGoInactive *gpgi )
+IPTR __regargs Sound_GOINACTIVE( Class *cl, Object *o, struct gpGoInactive *gpgi )
 {
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
 	struct ClassBase		*cb = (struct ClassBase *) cl->cl_UserData;
@@ -2340,7 +2341,7 @@ IPTR __regargs Sound__GM_GOINACTIVE( Class *cl, Object *o, struct gpGoInactive *
 
 /****************************************************************************/
 
-IPTR __regargs Sound__DTM_TRIGGER( Class *cl, Object *o, struct dtTrigger *dtt )
+IPTR __regargs Sound_TRIGGER( Class *cl, Object *o, struct dtTrigger *dtt )
 {
 	struct ClassBase		*cb = (struct ClassBase *)cl->cl_UserData;
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
@@ -2807,7 +2808,7 @@ LONG __regargs WriteSVX( struct ClassBase *cb, Object *o, struct IFFHandle *iff,
 
 /****************************************************************************/
 
-IPTR __regargs Sound__DTM_WRITE( Class *cl, Object *o, struct dtWrite *dtw )
+IPTR __regargs Sound_WRITE( Class *cl, Object *o, struct dtWrite *dtw )
 {
 	struct ClassBase		*cb = (struct ClassBase *)cl->cl_UserData;
 	struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
@@ -4317,7 +4318,7 @@ unsigned __regargs StrLen( STRPTR str )
 
 /****************************************************************************/
 
-IPTR __regargs Sound__DTM_OBTAINDRAWINFO( Class *cl, Object *o, struct opSet *ops )
+IPTR __regargs Sound_OBTAINDRAWINFO( Class *cl, Object *o, struct opSet *ops )
 {
     struct InstanceData	*id = INST_DATA( cl, o );
 			
@@ -4330,14 +4331,14 @@ IPTR __regargs Sound__DTM_OBTAINDRAWINFO( Class *cl, Object *o, struct opSet *op
 
 /****************************************************************************/
 
-IPTR __regargs Sound__DTM_RELEASEDRAWINFO( Class *cl, Object *o, Msg msg )
+IPTR __regargs Sound_RELEASEDRAWINFO( Class *cl, Object *o, Msg msg )
 {
     return (IPTR)0;
 }
 
 /****************************************************************************/
 
-IPTR __regargs Sound__DTM_REMOVEDTOBJECT( Class *cl, Object *o, Msg msg )
+IPTR __regargs Sound_REMOVEDTOBJECT( Class *cl, Object *o, Msg msg )
 {
     struct InstanceData	*id = INST_DATA( cl, o );
     /* prevent other tasks (cursor- or playertask) from reading this */

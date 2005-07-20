@@ -2528,7 +2528,7 @@ STATIC ULONG _OM_SET(struct IClass * cl, struct Gadget * g, struct opSet * msg)
     return retval;
 }
 
-ULONG Text__OM_NEW(struct IClass *cl, Object * o, struct opSet *msg)
+ULONG DT_NewMethod(struct IClass *cl, Object * o, struct opSet *msg)
 {
     struct Gadget *retval = _OM_NEW(cl, o, msg);
 #ifdef MORPHOS_AG_EXTENSION
@@ -2538,7 +2538,7 @@ ULONG Text__OM_NEW(struct IClass *cl, Object * o, struct opSet *msg)
     return (ULONG)retval;
 }
 
-VOID Text__OM_DISPOSE(struct IClass * cl, Object * o, Msg msg)
+VOID DT_DisposeMethod(struct IClass * cl, Object * o, Msg msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
 
@@ -2546,7 +2546,7 @@ VOID Text__OM_DISPOSE(struct IClass * cl, Object * o, Msg msg)
     DoSuperMethodA(cl, o, msg);
 }
 
-ULONG Text__OM_GET(struct IClass *cl, struct Gadget *g, struct opGet *msg)
+ULONG DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
 
@@ -2604,7 +2604,7 @@ ULONG Text__OM_GET(struct IClass *cl, struct Gadget *g, struct opGet *msg)
     return 1;
 }
 
-ULONG Text__OM_SET(struct IClass *cl, struct Gadget *g, struct opSet *msg)
+ULONG DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     ULONG retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
     retval += _OM_SET(cl, g, msg);
@@ -2626,12 +2626,8 @@ ULONG Text__OM_SET(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
     return retval;
 }
-ULONG Text__OM_UPDATE(struct IClass *cl, struct Gadget *g, struct opSet *msg)
-{
-    return Text__OM_SET(cl, g, msg);
-}
 
-ULONG Text__GM_RENDER(struct IClass * cl, struct Gadget * g, struct gpRender * msg)
+ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
     struct DTSpecialInfo *si = (struct DTSpecialInfo *) g->SpecialInfo;
@@ -2746,7 +2742,7 @@ ULONG Text__GM_RENDER(struct IClass * cl, struct Gadget * g, struct gpRender * m
     return retval;
 }
 
-LONG Text__GM_HANDLEINPUT(struct IClass * cl, struct Gadget * g, struct gpInput * msg)
+LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct gpInput * msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
     struct InputEvent *ievent = msg->gpi_IEvent;
@@ -2939,7 +2935,7 @@ LONG Text__GM_HANDLEINPUT(struct IClass * cl, struct Gadget * g, struct gpInput 
     return retval;
 }
 
-BOOL Text__DTM_WRITE(struct IClass * cl, struct Gadget * g, struct dtWrite * msg)
+BOOL DT_Write(struct IClass * cl, struct Gadget * g, struct dtWrite * msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
 
@@ -2990,7 +2986,7 @@ BOOL Text__DTM_WRITE(struct IClass * cl, struct Gadget * g, struct dtWrite * msg
     return TRUE;
 }
 
-VOID Text__DTM_PRINT(struct IClass *cl, struct Gadget *g, struct dtPrint *msg)
+VOID DT_Print(struct IClass *cl, struct Gadget *g, struct dtPrint *msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
 
@@ -3307,7 +3303,7 @@ STATIC VOID DT_SearchString(Class *cl,Object *obj,LONG direction, struct GadgetI
 #endif /* !__AROS__ */
 
 #ifndef MORPHOS_AG_EXTENSION
-VOID Text__DTM_TRIGGER(struct IClass *cl, Object *o, struct dtTrigger *msg)
+VOID DT_Trigger(struct IClass *cl, Object *o, struct dtTrigger *msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
     ULONG function = ((struct dtTrigger*)msg)->dtt_Function;
@@ -3335,7 +3331,7 @@ VOID Text__DTM_TRIGGER(struct IClass *cl, Object *o, struct dtTrigger *msg)
 }
 #endif /* !MORPHOS_AG_EXTENSION */
 
-ULONG Text__GM_LAYOUT(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+ULONG DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
     struct GadgetInfo *gi = msg->gpl_GInfo;
@@ -3363,7 +3359,7 @@ ULONG Text__GM_LAYOUT(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
    return DoSuperMethodA(cl, (Object*)g, (Msg) msg);
 }
 
-ULONG Text__DTM_CLEARSELECTED(struct IClass *cl, Object *o, Msg msg)
+ULONG DT_ClearSelectedMethod(struct IClass *cl, Object *o, Msg msg)
 {
     struct RastPort *rp;
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
@@ -3376,7 +3372,7 @@ ULONG Text__DTM_CLEARSELECTED(struct IClass *cl, Object *o, Msg msg)
     return 1;
 }
 
-ULONG Text__DTM_COPY(struct IClass *cl, Object *o, Msg msg)
+ULONG DT_Copy(struct IClass *cl, Object *o, Msg msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
 
@@ -3402,50 +3398,47 @@ ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object *
     switch (*msg)
     {
     case OM_NEW: D(bug("text.datatype: Dispatcher called (MethodID: OM_NEW)!\n"));
-	return Text__OM_NEW(cl, o, (struct opSet *) msg);
+	return DT_NewMethod(cl, o, (struct opSet *) msg);
 
     case OM_DISPOSE: D(bug("text.datatype: Dispatcher called (MethodID: OM_DISPOSE)!\n"));
-	Text__OM_DISPOSE(cl, o, (Msg) msg);
+	DT_DisposeMethod(cl, o, (Msg) msg);
 	break;
 
     case OM_UPDATE: D(bug("text.datatype: Dispatcher called (MethodID: OM_UPDATE)!\n"));
     case OM_SET: if (*msg == OM_SET) D(bug("text.datatype: Dispatcher called (MethodID: OM_SET)\n"));
-	return Text__OM_SET(cl, o, (Msg)msg);
+	return DT_SetMethod(cl, o, (Msg)msg);
 
     case OM_GET: D(bug("text.datatype: Dispatcher called (MethodID: OM_GET)!\n"));
-	return Text__OM_GET(cl, (struct Gadget *) o, (struct opGet *) msg);
+	return DT_GetMethod(cl, (struct Gadget *) o, (struct opGet *) msg);
 
     case GM_RENDER:
 	D(bug("text.datatype: Dispatcher called (MethodID: GM_RENDER)!\n"));
-	return Text__GM_RENDER(cl, (struct Gadget *) o, (struct gpRender *)msg);
+	return DT_Render(cl, (struct Gadget *) o, (struct gpRender *)msg);
 
     case DTM_PROCLAYOUT:
     case GM_LAYOUT:
 	D(bug("text.datatype: Dispatcher called (MethodID: GM_LAYOUT)!\n"));
-	return Text__GM_LAYOUT(cl, (struct Gadget *)o, (struct gpLayout *)msg);
+	return DT_Layout(cl, (struct Gadget *)o, (struct gpLayout *)msg);
 
     case GM_GOACTIVE:
-	D(bug("text.datatype: Dispatcher called (MethodID: GM_GOACTIVE)!\n"));
-	return (ULONG) DT_HandleInputMethod(cl, (struct Gadget *) o, (struct gpInput *) msg);
-
     case GM_HANDLEINPUT:
 	D(bug("text.datatype: Dispatcher called (MethodID: GM_HANLDEINPUT)!\n"));
 	return (ULONG) DT_HandleInputMethod(cl, (struct Gadget *) o, (struct gpInput *) msg);
 
     case DTM_CLEARSELECTED:
 	D(bug("text.datatype: Dispatcher called (MethodID: DTM_CLEARSELECTED)!\n"));
-	return Text__DTM_CLEARSELECTED(cl, o, msg);
+	return DT_ClearSelectedMethod(cl, o, msg);
 
     case DTM_COPY:
 	D(bug("text.datatype: Dispatcher called (MethodID: DTM_COPY)!\n"));
-	return Text__DTM_COPY(cl, o, msg);
+	return DT_Copy(cl, o, msg);
 	
     case DTM_SELECT: D(bug("text.datatype: Dispatcher called (MethodID: DTM_SELECT)!\n"));
 	break;
 
     case DTM_WRITE:
 	D(bug("text.datatype: Dispatcher called (MethodID: DTM_WRITE)!\n"));
-	return (ULONG) Text__DTM_WRITE(cl, (struct Gadget *) o, (struct dtWrite *) msg);
+	return (ULONG) DT_Write(cl, (struct Gadget *) o, (struct dtWrite *) msg);
 
     case DTM_PRINT:
 	D(bug("text.datatype: Dispatcher called (MethodID: DTM_PRINT)!\n"));
@@ -3467,7 +3460,7 @@ ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object *
 
     case DTM_TRIGGER:
 	D(bug("text.datatype: Dispatcher called (MethodID: DTM_TRIGGER)!\n"));
-	Text__DTM_TRIGGER(cl,o,(struct dtTrigger*)msg);
+	DT_Trigger(cl,o,(struct dtTrigger*)msg);
 	break;
 
     default:
