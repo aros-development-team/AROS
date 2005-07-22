@@ -2,7 +2,7 @@
 #define GADGETS_COLORWHEEL_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: MethodIDs and AttrIDs for the colorwheel class.
@@ -17,7 +17,7 @@
 #   include <utility/tagitem.h>
 #endif
 
-#define COLORWHEELCLASS "colorwheel.aros"
+#define COLORWHEELCLASS "colorwheel.gadget"
 #define COLORWHEELNAME "Gadgets/colorwheel.gadget"
 
 

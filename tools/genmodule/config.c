@@ -417,7 +417,7 @@ static void readsectionconfig(struct config *cfg)
                 "basename", "libbase", "libbasetype", "libbasetypeextern",
                 "version", "date", "copyright", "libcall", "forcebase", "superclass",
 		"residentpri", "options", "sysbase_field", "seglist_field",
-		"rootbase_field", "classptr_field", "classname", "classdatatype",
+		"rootbase_field", "classptr_field", "classid", "classdatatype",
 		"beginio_func", "abortio_func", "dispatcher"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
@@ -580,10 +580,10 @@ static void readsectionconfig(struct config *cfg)
 		cfg->classptr_field = strdup(s);
 		break;
 		
-	    case 17: /* classname */
+	    case 17: /* classid */
 		if (cfg->modtype != GADGET && cfg->modtype != DATATYPE)
-		    exitfileerror(20, "classname specified when not a BOOPSI class\n");
-		cfg->classname = strdup(s);
+		    exitfileerror(20, "classid specified when not a BOOPSI class\n");
+		cfg->classid = strdup(s);
 		break;
 		
 	    case 18: /* classdatatype */
@@ -661,19 +661,19 @@ static void readsectionconfig(struct config *cfg)
     )
 	exitfileerror(20, "please specify both beginio_func and abortio_func\n");
 
-    if (cfg->classname == NULL)
+    if (cfg->classid == NULL)
     {
 	if (cfg->modtype == GADGET)
 	{
 	    char s[256];
-	    sprintf(s, "%sclass", cfg->modulename);
-	    cfg->classname = strdup(s);
+	    sprintf(s, "\"%sclass\"", cfg->modulename);
+	    cfg->classid = strdup(s);
 	}
 	else if (cfg->modtype == DATATYPE)
 	{
 	    char s[256];
-	    sprintf(s, "%s.datatype", cfg->modulename);
-	    cfg->classname = strdup(s);
+	    sprintf(s, "\"%s.datatype\"", cfg->modulename);
+	    cfg->classid = strdup(s);
 	}
     }
 

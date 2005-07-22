@@ -210,11 +210,11 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         "\n"
         "    struct IClass *cl = NULL;\n"
         "    \n"
-        "    cl = MakeClass(\"%s\", %s, NULL, %s_DATA_SIZE, 0);\n"
+        "    cl = MakeClass(%s, %s, NULL, %s_DATA_SIZE, 0);\n"
         "    if (cl != NULL)\n"
         "    {\n"
         "        GM_CLASSPTR_FIELD(LIBBASE) = cl;\n",
-        cfg->classname, cfg->superclass, cfg->basename
+        cfg->classid, cfg->superclass, cfg->basename
     );
 
     if (cfg->dispatcher == NULL)
