@@ -277,7 +277,7 @@ static int parsemethodname(char *name,
 	       strncmp(name, cfg->modulename, strlen(cfg->modulename)) == 0
 	    && strcmp(name+strlen(cfg->modulename), "_Dispatcher") == 0
 	)
-	    cfg->customdispatcher = 1;	
+	    cfg->dispatcher = strdup(name);	
 
 	while (*prefixptr != NULL && sep == NULL)
 	{

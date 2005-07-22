@@ -54,8 +54,8 @@ void writeinclibdefs(struct config *cfg)
         "#define MAJOR_VERSION    %u\n"
         "#define REVISION_NUMBER  %u\n"
         "#define MINOR_VERSION    %u\n"
-        "#define VERSION_STRING   \"$VER: %s.%s %u.%u (%s)\\r\\n\"\n"
-        "#define COPYRIGHT_STRING \"\"\n"
+        "#define VERSION_STRING   \"$VER: %s.%s %u.%u (%s) %s\\r\\n\"\n"
+        "#define COPYRIGHT_STRING \"%s\"\n"
         "#define LIBEND           GM_UNIQUENAME(End)\n"
         "#define LIBFUNCTABLE     GM_UNIQUENAME(FuncTable)\n"
         "#define RESIDENTPRI      %d\n"
@@ -66,6 +66,7 @@ void writeinclibdefs(struct config *cfg)
         cfg->majorversion, cfg->majorversion,
         cfg->minorversion, cfg->minorversion,
         cfg->modulename, cfg->suffix, cfg->majorversion, cfg->minorversion, cfg->datestring,
+        cfg->copyright, cfg->copyright,
         cfg->residentpri,
         residentflags
     );

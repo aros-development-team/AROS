@@ -49,49 +49,30 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
         "\n"
         "/*** Instance data structure size ***************************************/\n"
         "#ifndef NO_CLASS_DATA\n"
-        "#   define %s_DATA_SIZE (sizeof(struct %s_DATA))\n"
-        "#else\n"
-        "#   define %s_DATA_SIZE (0)\n"
-        "#endif\n",
-        cfg->basename, cfg->basename, cfg->basename
     );
-    
+    if (cfg->classdatatype == NULL)
+	fprintf
+        (
+	     out,
+	     "#   define %s_DATA_SIZE (sizeof(struct %s_DATA))\n",
+	     cfg->basename, cfg->basename
+	);
+    else
+	fprintf
+        (
+	     out,
+	     "#   define %s_DATA_SIZE (sizeof(%s))\n",
+	     cfg->basename, cfg->classdatatype
+	);
     fprintf
     (
         out,
-        "\n"
-        "\n"
-        "/*** Prototypes *************************************************************/\n"
+        "#else\n"
+        "#   define %s_DATA_SIZE (0)\n"
+        "#endif\n",
+        cfg->basename
     );
     
-    for 
-    (
-        methlistit = functions->methlist; 
-        methlistit != NULL; 
-        methlistit = methlistit->next)
-    {
-        int first = 1;
-        
-        fprintf(out, "%s %s(", methlistit->type, methlistit->name);
-        
-        for 
-        (
-            arglistit = methlistit->arguments; 
-            arglistit != NULL; 
-            arglistit = arglistit->next
-	)
-        {
-            if (!first)
-                fprintf(out, ", ");
-            else
-                first = 0;
-            
-            fprintf(out, "%s", arglistit->arg);
-        }
-        
-        fprintf(out, ");\n");
-    }
-
     writeboopsidispatcher(out, cfg, functions);
     
     fprintf
@@ -104,7 +85,24 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
         "{\n"
         "    AROS_SET_LIBFUNC_INIT\n"
         "    \n"
-        "    GM_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass((struct Library *) LIBBASE, %s, NULL, %s_DATA_SIZE, %s_Dispatcher);\n"
+    );
+    if (cfg->dispatcher == NULL)
+	fprintf
+	(
+	    out,
+	    "    GM_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass((struct Library *) LIBBASE, %s, NULL, %s_DATA_SIZE, %s_Dispatcher);\n",
+	    cfg->superclass, cfg->basename, cfg->basename
+	);
+    else
+	fprintf
+	(
+	    out,
+	    "    GM_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass((struct Library *) LIBBASE, %s, NULL, %s_DATA_SIZE, %s);\n",
+	    cfg->superclass, cfg->basename, cfg->dispatcher
+	);
+    fprintf
+    (
+        out,
         "    \n"
         "    return GM_CLASSPTR_FIELD(LIBBASE) != NULL;\n"
         "    \n"
@@ -122,7 +120,6 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
         "}\n"
         "\n"
         "ADD2INITLIB(MCC_Startup, 0);\n"
-        "ADD2EXPUNGELIB(MCC_Shutdown, 0);\n",
-        cfg->superclass, cfg->basename, cfg->basename
+        "ADD2EXPUNGELIB(MCC_Shutdown, 0);\n"
     );
 }

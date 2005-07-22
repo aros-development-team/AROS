@@ -414,11 +414,11 @@ static void readsectionconfig(struct config *cfg)
 	{
 	    const char *names[] = 
             {
-                "basename", "libbase", "libbasetype", "libbasetypeextern", 
-                "version", "date", "libcall", "forcebase", "superclass",
+                "basename", "libbase", "libbasetype", "libbasetypeextern",
+                "version", "date", "copyright", "libcall", "forcebase", "superclass",
 		"residentpri", "options", "sysbase_field", "seglist_field",
 		"rootbase_field", "classptr_field", "classname", "classdatatype",
-		"beginio_func", "abortio_func"
+		"beginio_func", "abortio_func", "dispatcher"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -480,20 +480,24 @@ static void readsectionconfig(struct config *cfg)
 		}
 		cfg->datestring = strdup(s);
 		break;
+
+	    case 7: /* copyright */
+		cfg->copyright = strdup(s);
+		break;
 		
-	    case 7: /* libcall */
+	    case 8: /* libcall */
 		fprintf(stderr, "libcall specification is deprecated and ignored\n");
 		break;
 		
-	    case 8: /* forcebase */
+	    case 9: /* forcebase */
 		slist_append(&cfg->forcelist, s);
 		break;
                 
-            case 9: /* superclass */
+            case 10: /* superclass */
                 cfg->superclass = strdup(s);
                 break;
 		
-	    case 10: /* residentpri */
+	    case 11: /* residentpri */
 		{
 		    int count;
 		    char dummy;
@@ -508,7 +512,7 @@ static void readsectionconfig(struct config *cfg)
 		}
 		break;
 
-	    case 11: /* options */
+	    case 12: /* options */
 		do {
 		    static const char *optionnames[] =
 		    {
@@ -552,19 +556,19 @@ static void readsectionconfig(struct config *cfg)
 		} while(*s !='\0');
 		break;
 
-	    case 12: /* sysbase_field */
+	    case 13: /* sysbase_field */
 		cfg->sysbase_field = strdup(s);
 		break;
 		
-	    case 13: /* seglist_field */
+	    case 14: /* seglist_field */
 		cfg->seglist_field = strdup(s);
 		break;
 		
-	    case 14: /* rootbase_field */
+	    case 15: /* rootbase_field */
 		cfg->rootbase_field = strdup(s);
 		break;
 		
-	    case 15: /* classptr_field */
+	    case 16: /* classptr_field */
 		if (cfg->boopsimprefix == NULL)
 		{
 		    exitfileerror
@@ -576,28 +580,36 @@ static void readsectionconfig(struct config *cfg)
 		cfg->classptr_field = strdup(s);
 		break;
 		
-	    case 16: /* classname */
+	    case 17: /* classname */
 		if (cfg->modtype != GADGET && cfg->modtype != DATATYPE)
 		    exitfileerror(20, "classname specified when not a BOOPSI class\n");
 		cfg->classname = strdup(s);
 		break;
 		
-	    case 17: /* classdatatype */
+	    case 18: /* classdatatype */
 		if (cfg->boopsimprefix == NULL)
 		    exitfileerror(20, "classdatatype specified when not a BOOPSI class\n");
 		cfg->classdatatype = strdup(s);
 		break;
 		
-	    case 18: /* beginio_func */
+	    case 19: /* beginio_func */
 		if (cfg->modtype != DEVICE)
 		    exitfileerror(20, "beginio_func specified when not a device\n");
 		cfg->beginiofunc = strdup(s);
 		break;
 		
-	    case 19: /* abortio_func */
+	    case 20: /* abortio_func */
 		if (cfg->modtype != DEVICE)
 		    exitfileerror(20, "abortio_func specified when not a device\n");
 		cfg->abortiofunc = strdup(s);
+		break;
+		
+	    case 21: /* dispatcher */
+		if (cfg->boopsimprefix == NULL)
+		    exitfileerror(20, "dispatcher specified when not a BOOPSI class\n");
+		cfg->dispatcher = strdup(s);
+		/* function references are not needed when dispatcher is specified */
+		cfg->intcfg |= CFG_NOREADREF;
 		break;
 	    }
 	}
@@ -641,6 +653,9 @@ static void readsectionconfig(struct config *cfg)
     if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
 	exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
 
+    if (cfg->copyright == NULL)
+	cfg->copyright = "";
+    
     if ( (cfg->beginiofunc != NULL && cfg->abortiofunc == NULL)
 	 || (cfg->beginiofunc == NULL && cfg->abortiofunc != NULL)
     )
@@ -699,9 +714,11 @@ static void readsectionconfig(struct config *cfg)
 	switch (cfg->modtype)
 	{
 	case MUI:
-	case MCP:
 	case MCC:
 	    cfg->superclass = "MUIC_Area";
+	    break;
+	case MCP:
+	    cfg->superclass = "MUIC_Mccprefs";
 	    break;
 	case GADGET:
 	    cfg->superclass = "GADGETCLASS";
