@@ -133,8 +133,10 @@ void AddKeyBinding (STRPTR keystring, UWORD action, struct KeyAction *storage);
 void ConvertKeyString (STRPTR keystring, UWORD action, struct KeyAction *storage);
 void KeyToString(STRPTR buffer, struct KeyAction *ka);
 STRPTR FunctionName(UWORD func);
+#ifndef __AROS__
 BOOL CreateSubClasses(void);
 void DeleteSubClasses(void);
+#endif
 
 // main class methods
 ULONG New(REG(a0, struct IClass *cl), REG(a2, Object *obj), REG(a1, struct opSet *msg));

@@ -3,7 +3,8 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-classes-zune-texteditor-class : includes linklibs
 
-USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcp
+#USER_INCLUDES = -I. -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcp
+USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcp -I..
 
 FILES := AllocBitMap \
 	 AllocFunctions \
@@ -31,10 +32,10 @@ FILES := AllocBitMap \
 	 TextFunctions \
 	 UndoFunctions
 	 
-%build_module_macro mmake=workbench-classes-zune-texteditor-class \
+%build_module mmake=workbench-classes-zune-texteditor-class \
   modname=TextEditor modtype=mcc \
-  initfile=library files=$(FILES) \
-  uselibs="amiga mui rom m"
+  files=$(FILES) conffile=texteditor.conf \
+  uselibs="rexxsyslib amiga mui rom m"
 
 
 #MM includes-copy

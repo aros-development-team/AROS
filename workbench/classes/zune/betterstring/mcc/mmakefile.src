@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-classes-zune-betterstring-class : includes linklibs
 
-USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcp
+USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcp -I..
 
 FILES := AllocBitMap \
 	 AllocFunctions \
@@ -15,9 +15,9 @@ FILES := AllocBitMap \
 	 PrintString \
 	 TextFunctions
 	 
-%build_module_macro mmake=workbench-classes-zune-betterstring-class \
+%build_module mmake=workbench-classes-zune-betterstring-class \
   modname=BetterString modtype=mcc \
-  initfile=library files=$(FILES) \
+  files=$(FILES) conffile=betterstring.conf \
   uselibs="amiga mui rom m"
 
 

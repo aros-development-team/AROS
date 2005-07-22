@@ -6,15 +6,15 @@ include $(TOP)/config/make.cfg
 #MM					    workbench-classes-zune-betterstring-class \
 #MM					    workbench-classes-zune-betterstring-mcp-locale
 
-USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcc
+USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcc -I..
 
 FILES := locale \
 	 CreatePrefsGroup \
 	 Dispatcher
 	 
-%build_module_macro mmake=workbench-classes-zune-betterstring-mcp \
+%build_module mmake=workbench-classes-zune-betterstring-mcp \
   modname=BetterString modtype=mcp \
-  initfile=library files=$(FILES) \
+  files=$(FILES) conffile=betterstring.conf \
   uselibs="amiga mui rom m"
 
 
