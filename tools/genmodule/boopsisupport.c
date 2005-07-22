@@ -14,8 +14,45 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
     struct stringlist *aliasit;
     int i;
 
-    if (!cfg->customdispatcher)
+    if (cfg->dispatcher == NULL)
     {
+	fprintf
+	(
+	    out,
+	    "\n"
+            "\n"
+            "/*** Prototypes *************************************************************/\n"
+	);
+    
+	for 
+	(
+	    methlistit = functions->methlist; 
+            methlistit != NULL; 
+            methlistit = methlistit->next
+	)
+	{
+	    int first = 1;
+        
+	    fprintf(out, "%s %s(", methlistit->type, methlistit->name);
+        
+	    for 
+	    (
+                arglistit = methlistit->arguments; 
+                arglistit != NULL; 
+                arglistit = arglistit->next
+	    )
+	    {
+		if (!first)
+		    fprintf(out, ", ");
+		else
+		    first = 0;
+            
+		fprintf(out, "%s", arglistit->arg);
+	    }
+        
+	    fprintf(out, ");\n");
+	}
+
         fprintf
         (
             out,
@@ -112,8 +149,8 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
             "\n"
             "\n"
             "/*** Custom dispatcher prototype ********************************************/\n"
-            "BOOPSI_DISPATCHER_PROTO(IPTR, %s_Dispatcher, CLASS, object, message);\n",
-            cfg->basename
+            "BOOPSI_DISPATCHER_PROTO(IPTR, %s, CLASS, object, message);\n",
+            cfg->dispatcher
         );
     }
 }
@@ -151,41 +188,6 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         fprintf(out, "%s\n", linelistit->s);
     }
 
-    fprintf
-    (
-        out,
-        "/*** Prototypes *************************************************************/\n"
-    );
-    
-    for 
-    (
-        methlistit = functions->methlist; 
-        methlistit != NULL; 
-        methlistit = methlistit->next
-    )
-    {
-        int first = 1;
-        
-        fprintf(out, "%s %s(", methlistit->type, methlistit->name);
-        
-        for 
-        (
-            arglistit = methlistit->arguments; 
-            arglistit != NULL; 
-            arglistit = arglistit->next
-	)
-        {
-            if (!first)
-                fprintf(out, ", ");
-            else
-                first = 0;
-            
-            fprintf(out, "%s", arglistit->arg);
-        }
-        
-        fprintf(out, ");\n");
-    }
-
     writeboopsidispatcher(out, cfg, functions);
 
     if (cfg->classdatatype == NULL)
@@ -211,8 +213,24 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         "    cl = MakeClass(\"%s\", %s, NULL, %s_DATA_SIZE, 0);\n"
         "    if (cl != NULL)\n"
         "    {\n"
-        "        GM_CLASSPTR_FIELD(LIBBASE) = cl;\n"
-        "        cl->cl_Dispatcher.h_Entry = (APTR)%s_Dispatcher;\n"
+        "        GM_CLASSPTR_FIELD(LIBBASE) = cl;\n",
+        cfg->classname, cfg->superclass, cfg->basename
+    );
+
+    if (cfg->dispatcher == NULL)
+	fprintf(out,
+		"        cl->cl_Dispatcher.h_Entry = (APTR)%s_Dispatcher;\n",
+		cfg->basename
+	);
+    else
+	fprintf(out,
+		"        cl->cl_Dispatcher.h_Entry = (APTR)%s;\n",
+		cfg->dispatcher
+	);
+
+    fprintf
+    (
+        out,
 	"        cl->cl_Dispatcher.h_SubEntry = NULL;\n"
         "        cl->cl_UserData = (IPTR)LIBBASE\n;"
         "\n"
@@ -243,8 +261,7 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         "}\n"
         "\n"
         "ADD2INITLIB(BOOPSI_Startup, 1);\n"
-        "ADD2EXPUNGELIB(BOOPSI_Shutdown, 1);\n",
-        cfg->classname, cfg->superclass, cfg->basename, cfg->basename
+        "ADD2EXPUNGELIB(BOOPSI_Shutdown, 1);\n"
     );
 }
 
