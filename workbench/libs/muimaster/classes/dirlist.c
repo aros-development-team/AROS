@@ -124,6 +124,15 @@ IPTR Dirlist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
+IPTR Dirlist__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct Dirlist_DATA *data = INST_DATA(cl, obj);
+
+    if (data->path) FreeVec(data->path);
+    
+    return DoSuperMethodA(cl, obj, msg);
+}
+
 static void ReadDirectory(Object *obj, struct Dirlist_DATA *data)
 {
     struct FileInfoBlock *fib;
@@ -229,7 +238,7 @@ IPTR Dirlist__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	*tag, *tags;
     BOOL    	    	 directory_changed = FALSE;
     
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
         IPTR tidata = tag->ti_Data;
 
@@ -366,7 +375,35 @@ IPTR Dirlist__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 	    return 1;
 	    
 	case MUIA_Dirlist_Path:
-	    /* TODO */
+	    if (data->path)
+	    {
+	    	FreeVec(data->path);
+		data->path = NULL;
+	    }
+	    
+	    STORE = 0;
+	    
+	    if (data->status == MUIV_Dirlist_Status_Valid)
+	    {
+	    	struct FileInfoBlock *fib;
+		
+	    	DoMethod(obj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &fib);
+		
+		if (fib)
+		{
+		    WORD len = strlen(fib->fib_FileName) + strlen(data->directory) + 3;
+		    
+		    data->path = AllocVec(len, MEMF_ANY);
+		    if (data->path)
+		    {
+		    	strcpy(data->path, data->directory);
+			if (AddPart(data->path, fib->fib_FileName, len))
+			{
+			    STORE = (IPTR)data->path;
+			}
+		    }
+		}
+	    }
 	    return 1;
 	    
 	case MUIA_Dirlist_RejectIcons:
@@ -405,6 +442,7 @@ BOOPSI_DISPATCHER(IPTR, Dirlist_Dispatcher, cl, obj, msg)
     switch (msg->MethodID)
     {
 	case OM_NEW: return Dirlist__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Dirlist__OM_DISPOSE(cl, obj, msg);
 	case OM_SET: return Dirlist__OM_SET(cl, obj, (struct opSet *)msg);
 	case OM_GET: return Dirlist__OM_GET(cl, obj, (struct opGet *)msg);
         default:     return DoSuperMethodA(cl, obj, msg);

@@ -26,6 +26,7 @@ struct Dirlist_DATA
     UBYTE date_string[20];
     UBYTE time_string[20];
     UBYTE prot_string[8];
+    STRPTR path;
 };
 
 struct Dirlist_Entry
