@@ -105,7 +105,7 @@ struct config
     
     /* BOOPSI specific data */
     const char **boopsimprefix;
-    char *classname, *superclass;
+    char *classid, *superclass;
     char *dispatcher; /* == NULL when the generated dispatcher is used,
 		       * otherwise it is the function name of the dispatcher */;
     char *classdatatype; /* The type of the data for every object */
