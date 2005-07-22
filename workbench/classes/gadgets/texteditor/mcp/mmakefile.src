@@ -8,7 +8,7 @@ include $(TOP)/config/make.cfg
 #MM					    workbench-classes-zune-betterstring-class \
 #MM					    workbench-classes-zune-hotkeystring-class
 
-USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcc
+USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcc -I..
 
 FILES := locale \
 	 CreatePrefsGroup \
@@ -18,9 +18,9 @@ FILES := locale \
 	 ObjectCreator \
 	 UserKeys
 	 
-%build_module_macro mmake=workbench-classes-zune-texteditor-mcp \
+%build_module mmake=workbench-classes-zune-texteditor-mcp \
   modname=TextEditor modtype=mcp \
-  initfile=library files=$(FILES) \
+  files=$(FILES) conffile=texteditor.conf \
   uselibs="amiga mui rom m"
 
 

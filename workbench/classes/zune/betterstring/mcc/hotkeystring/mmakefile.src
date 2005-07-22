@@ -3,14 +3,14 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-classes-zune-hotkeystring-class : includes linklibs
 
-USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcp
+USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros
 
 FILES := Dispatcher \
 	 HandleInput
 	 
-%build_module_macro mmake=workbench-classes-zune-hotkeystring-class \
+%build_module mmake=workbench-classes-zune-hotkeystring-class \
   modname=HotkeyString modtype=mcc \
-  initfile=library files=$(FILES) \
+  files=$(FILES) conffile=hotkeystring.conf \
   uselibs="amiga mui rom m"
 
 
