@@ -430,7 +430,7 @@ ignore_undefined_symbols=""
 
 # X11 Xshm
 DO_XSHM_SUPPORT="1"
-
+DO_VIDMODE_SUPPORT="1"
 
 #-----------------------------------------------------------------------------
 
@@ -953,13 +953,21 @@ HAVE_XSHM_SUPPORT=0
 AC_MSG_RESULT(no))
 fi
 
+#-----------------------------------------------------------------------------
+# See if we can compile VIDMODE support
+HAVE_VIDMODE_SUPPORT=0
+if [[ "x$no_x" != "xyes" ]]; then
+  LIBS=""
+  AC_CHECK_LIB(Xxf86vm, XF86VidModeQueryExtension, HAVE_VIDMODE_SUPPORT=1, HAVE_VIDMODE_SUPPORT=0, [ -L/usr/X11R6/lib -lXext -lX11 ])
+fi
+
 
 # Find the system include path. We can suggest that an alternative is
 # used if we don't get it correct. The default is to use /usr/include.
 # Which is set in the aros_target_incl_def variable.
 
 AC_ARG_ENABLE(includes,
-[  --enable-includes=dir   Alternative system include directory],
+AC_HELP_STRING([--enable-includes=dir],[Alternative system include directory]),
 [aros_target_incl=$enable_includes], [aros_target_incl=$aros_target_incl_def])
 
 dnl find out about the target cc's include path
@@ -998,7 +1006,7 @@ AC_MSG_RESULT($aros_target_cc_includes)
 
 dnl Check if user specified --with-resolution=XRESxYRESxDEPTH
 AC_MSG_CHECKING([for default resolution of WBScreen])
-AC_ARG_WITH(resolution,[  --with-resolution=XRESxYRESxDEPTH        Default resolution of the initial WorkbenchScreen],resolution=$withval,resolution=none)
+AC_ARG_WITH(resolution,AC_HELP_STRING([--with-resolution=XRESxYRESxDEPTH],[Default resolution of the initial WorkbenchScreen]),resolution=$withval,resolution=none)
 # We require an argument, so map --with/--without ("yes"/"no") to "none" specified
 if test "$resolution" = "yes" ; then
     resolution="none"
@@ -1018,7 +1026,7 @@ aros_cv_default_wbdepth=$aros_default_wbdepth
 
 dnl See if the user wants the BOCHS hack for native flavour
 AC_MSG_CHECKING([if bochs hack is enabled])
-AC_ARG_ENABLE(bochs_hack,[  --enable-bochs-hack     Enable hacks to make BOCHS (partly) work (default=no)],bochs_hack="yes",bochs_hack="no")
+AC_ARG_ENABLE(bochs_hack,AC_HELP_STRING([--enable-bochs-hack],[Enable hacks to make BOCHS (partly) work (default=no)]),bochs_hack="yes",bochs_hack="no")
 if test "$bochs_hack" = "yes" ; then
     aros_bochs_hack="1"
 fi
@@ -1026,7 +1034,7 @@ AC_MSG_RESULT($bochs_hack)
 
 dnl See if the user wants the serial debug output for native flavour
 AC_MSG_CHECKING([if serial debug is enabled])
-AC_ARG_WITH(serial-debug,[  --with-serial-debug   Enable serial debug output in native (default=no)],serial_debug=$withval,serial_debug=none)
+AC_ARG_WITH(serial-debug,AC_HELP_STRING([--with-serial-debug],[Enable serial debug output in native (default=no)]),serial_debug=$withval,serial_debug=none)
 if test "$serial_debug" = "yes" ; then
     serial_debug="2"
 fi
@@ -1042,7 +1050,7 @@ fi
 
 dnl See if the user wants the palm debug output hack for palm native flavour
 AC_MSG_CHECKING([if palm debug hack is enabled])
-AC_ARG_ENABLE(palm_debug_hack,[  --enable-palm-debug-hack   Enable palm debug output hack in palm native (default=no)],palm_debug_hack="yes",palm_debug_hack="no")
+AC_ARG_ENABLE(palm_debug_hack,AC_HELP_STRING([--enable-palm-debug-hack],[Enable palm debug output hack in palm native (default=no)]),palm_debug_hack="yes",palm_debug_hack="no")
 if test "$palm_debug_hack" = "yes" ; then
     aros_palm_debug_hack="1"
 fi
@@ -1051,7 +1059,7 @@ AC_MSG_RESULT($palm_debug_hack)
 
 dnl See if the user wants nesting supervisor activated for unix flavour
 AC_MSG_CHECKING([if nesting supervisor support is enabled])
-AC_ARG_ENABLE(nesting_supervisor,[  --enable-nesting-supervisor   Enable nesting supervisor support in unix (default=no)],nesting_supervisor="yes",nesting_supervisor="no")
+AC_ARG_ENABLE(nesting_supervisor,AC_HELP_STRING([--enable-nesting-supervisor],[Enable nesting supervisor support in unix (default=no)]),nesting_supervisor="yes",nesting_supervisor="no")
 if test "$nesting_supervisor" = "yes" ; then
     aros_nesting_supervisor="1"
 fi
@@ -1062,7 +1070,7 @@ AC_MSG_RESULT($nesting_supervisor)
 if test "$HAVE_XSHM_SUPPORT" = "1" ; then
   dnl See if the user wants the X11 MIT-SHM extension to be enabled
   AC_MSG_CHECKING([if X11 MIT-SHM extension is enabled])
-  AC_ARG_ENABLE(xshm_extension,[  --enable-xshm-extension Enable X11 MIT-SHM extension [default=yes]],xshm_extension="$enableval",xshm_extension="yes")
+  AC_ARG_ENABLE(xshm_extension,AC_HELP_STRING([--enable-xshm-extension],[Enable X11 MIT-SHM extension (default=yes)]),xshm_extension="$enableval",xshm_extension="yes")
   if test "$xshm_extension" = "no" ; then
       DO_XSHM_SUPPORT="0"
   fi
@@ -1071,11 +1079,22 @@ else
   DO_XSHM_SUPPORT="0"
 fi
 
+if test "$HAVE_VIDMODE_SUPPORT" = "1" ; then
+  dnl See if the user wants the X11 vidmode extension to be enabled
+  AC_MSG_CHECKING([if vidmode extension is enabled])
+  AC_ARG_ENABLE(vidmodeextension,AC_HELP_STRING([--enable-vidmode-extension],[Enable X11 vidmode extension (default=yes)]),vidmode_extension="$enableval",vidmode_extension="yes")
+  if test "$vidmode_extension" = "no" ; then
+      DO_VIDMODE_SUPPORT="0"
+  fi
+  AC_MSG_RESULT($vidmode_extension)
+else
+  DO_VIDMODE_SUPPORT="0"
+fi
 
 
 dnl See if the user wants dbus.library
 AC_MSG_CHECKING([if building of dbus.library is enabled])
-AC_ARG_ENABLE(dbus,[  --enable-dbus           Enable DBUS support via dbus.library (default=no)],dbus="yes",dbus="no")
+AC_ARG_ENABLE(dbus,AC_HELP_STRING([--enable-dbus],[Enable DBUS support via dbus.library (default=no)]),dbus="yes",dbus="no")
 if test "$dbus" = "yes" ; then
     ENABLE_DBUS=1
     DBUS_CFLAGS=`pkg-config --cflags dbus-1`
@@ -1161,6 +1180,7 @@ AC_SUBST(aros_default_wbwidth)
 AC_SUBST(aros_default_wbheight)
 AC_SUBST(aros_default_wbdepth)
 AC_SUBST(DO_XSHM_SUPPORT)
+AC_SUBST(DO_VIDMODE_SUPPORT)
 
 # Native version related
 AC_SUBST(aros_bochs_hack)
@@ -1224,6 +1244,10 @@ if test -z "$aros_gui_basedir" ; then
     else
       aros_gui_libflags="-lX11"
     fi
+    if test "$HAVE_VIDMODE_SUPPORT" = "1"; then
+      aros_gui_libflags="$aros_gui_libflags -lXxf86vm"
+    fi
+    
     aros_gui_incdir="$x_includes"
     if test -z "$x_includes" ; then
 	aros_gui_ccflags=""

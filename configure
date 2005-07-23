@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE aros_host_ld aros_host_aclocal aros_host_autoconf aros_host_autoheader aros_host_automake HOST_AR HOST_RANLIB RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP CAT BISON PNGTOPNM PPMTOILBM STRIP SED CHMOD PYTHON PYTHON_VERSION PYTHON_PREFIX PYTHON_EXEC_PREFIX PYTHON_PLATFORM pythondir pkgpythondir pyexecdir pkgpyexecdir FOR IF TEST CMP EGREP LIBOBJS aros_target_ar_ln aros_target_nm_ln aros_target_objcopy_ln aros_target_objdump_ln aros_target_ranlib_ln aros_target_strip_ln DISTCC CCACHE SHARED_LD KERNEL_LD TARGET_CC TARGET_AS TARGET_LD NOSTDINC_CFLAGS NOSTARTUP_LDFLAGS NIX_LDFLAGS DETACH_LDFLAGS NOSTDLIB_LDFLAGS aros_cc_pre AR RANLIB NM NM_PLAIN OBJDUMP OBJCOPY aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_host_arch aros_host_cpu aros_host_cc aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_tools_dir aros_target_arch aros_target_cpu aros_target_variant aros_target_suffix aros_target_incl aros_target_cc aros_target_cc_includes aros_target_cc_path aros_target_objdump aros_target_objcopy aros_target_strip aros_target_as aros_target_nm aros_shared_default aros_object_format aros_compiler_libs aros_config_cflags aros_config_aflags aros_target_ld aros_config_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor ENABLE_DBUS DBUS_CFLAGS DBUS_LIBFLAGS KERNEL_DBUS_KOBJ KERNEL_DBUS_INCLUDES aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug ignore_undefined_symbols gcc_target_cpu LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE aros_host_ld aros_host_aclocal aros_host_autoconf aros_host_autoheader aros_host_automake HOST_AR HOST_RANLIB RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP CAT BISON PNGTOPNM PPMTOILBM STRIP SED CHMOD PYTHON PYTHON_VERSION PYTHON_PREFIX PYTHON_EXEC_PREFIX PYTHON_PLATFORM pythondir pkgpythondir pyexecdir pkgpyexecdir FOR IF TEST CMP EGREP LIBOBJS aros_target_ar_ln aros_target_nm_ln aros_target_objcopy_ln aros_target_objdump_ln aros_target_ranlib_ln aros_target_strip_ln DISTCC CCACHE SHARED_LD KERNEL_LD TARGET_CC TARGET_AS TARGET_LD NOSTDINC_CFLAGS NOSTARTUP_LDFLAGS NIX_LDFLAGS DETACH_LDFLAGS NOSTDLIB_LDFLAGS aros_cc_pre AR RANLIB NM NM_PLAIN OBJDUMP OBJCOPY aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_host_arch aros_host_cpu aros_host_cc aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_tools_dir aros_target_arch aros_target_cpu aros_target_variant aros_target_suffix aros_target_incl aros_target_cc aros_target_cc_includes aros_target_cc_path aros_target_objdump aros_target_objcopy aros_target_strip aros_target_as aros_target_nm aros_shared_default aros_object_format aros_compiler_libs aros_config_cflags aros_config_aflags aros_target_ld aros_config_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT DO_VIDMODE_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor ENABLE_DBUS DBUS_CFLAGS DBUS_LIBFLAGS KERNEL_DBUS_KOBJ KERNEL_DBUS_INCLUDES aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug ignore_undefined_symbols gcc_target_cpu LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -866,10 +866,17 @@ Optional Features:
   --enable-target-variant=NAME
                           Enable a specific target variant(default=none)
   --enable-includes=dir   Alternative system include directory
-  --enable-bochs-hack     Enable hacks to make BOCHS (partly) work (default=no)
-  --enable-palm-debug-hack   Enable palm debug output hack in palm native (default=no)
-  --enable-nesting-supervisor   Enable nesting supervisor support in unix (default=no)
-  --enable-xshm-extension Enable X11 MIT-SHM extension default=yes
+  --enable-bochs-hack     Enable hacks to make BOCHS (partly) work
+                          (default=no)
+  --enable-palm-debug-hack
+                          Enable palm debug output hack in palm native
+                          (default=no)
+  --enable-nesting-supervisor
+                          Enable nesting supervisor support in unix
+                          (default=no)
+  --enable-xshm-extension Enable X11 MIT-SHM extension (default=yes)
+  --enable-vidmode-extension
+                          Enable X11 vidmode extension (default=yes)
   --enable-dbus           Enable DBUS support via dbus.library (default=no)
 
 Optional Packages:
@@ -878,8 +885,9 @@ Optional Packages:
   --with-x                use the X Window System
   --with-optimization=FLAGS
                           Use optimization flags FLAGS (default=-O2).
-  --with-resolution=XRESxYRESxDEPTH        Default resolution of the initial WorkbenchScreen
-  --with-serial-debug   Enable serial debug output in native (default=no)
+  --with-resolution=XRESxYRESxDEPTH
+                          Default resolution of the initial WorkbenchScreen
+  --with-serial-debug     Enable serial debug output in native (default=no)
 
 Some influential environment variables:
   CC          C compiler command
@@ -7584,7 +7592,7 @@ ignore_undefined_symbols=""
 
 # X11 Xshm
 DO_XSHM_SUPPORT="1"
-
+DO_VIDMODE_SUPPORT="1"
 
 #-----------------------------------------------------------------------------
 
@@ -8380,6 +8388,83 @@ rm -f conftest.err conftest.$ac_objext \
       conftest$ac_exeext conftest.$ac_ext
 fi
 
+#-----------------------------------------------------------------------------
+# See if we can compile VIDMODE support
+HAVE_VIDMODE_SUPPORT=0
+if [ "x$no_x" != "xyes" ]; then
+  LIBS=""
+  echo "$as_me:$LINENO: checking for XF86VidModeQueryExtension in -lXxf86vm" >&5
+echo $ECHO_N "checking for XF86VidModeQueryExtension in -lXxf86vm... $ECHO_C" >&6
+if test "${ac_cv_lib_Xxf86vm_XF86VidModeQueryExtension+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lXxf86vm  -L/usr/X11R6/lib -lXext -lX11  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char XF86VidModeQueryExtension ();
+int
+main ()
+{
+XF86VidModeQueryExtension ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_Xxf86vm_XF86VidModeQueryExtension=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_Xxf86vm_XF86VidModeQueryExtension=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_Xxf86vm_XF86VidModeQueryExtension" >&5
+echo "${ECHO_T}$ac_cv_lib_Xxf86vm_XF86VidModeQueryExtension" >&6
+if test $ac_cv_lib_Xxf86vm_XF86VidModeQueryExtension = yes; then
+  HAVE_VIDMODE_SUPPORT=1
+else
+  HAVE_VIDMODE_SUPPORT=0
+fi
+
+fi
+
 
 # Find the system include path. We can suggest that an alternative is
 # used if we don't get it correct. The default is to use /usr/include.
@@ -8548,6 +8633,24 @@ else
   DO_XSHM_SUPPORT="0"
 fi
 
+if test "$HAVE_VIDMODE_SUPPORT" = "1" ; then
+    echo "$as_me:$LINENO: checking if vidmode extension is enabled" >&5
+echo $ECHO_N "checking if vidmode extension is enabled... $ECHO_C" >&6
+  # Check whether --enable-vidmodeextension or --disable-vidmodeextension was given.
+if test "${enable_vidmodeextension+set}" = set; then
+  enableval="$enable_vidmodeextension"
+  vidmode_extension="$enableval"
+else
+  vidmode_extension="yes"
+fi;
+  if test "$vidmode_extension" = "no" ; then
+      DO_VIDMODE_SUPPORT="0"
+  fi
+  echo "$as_me:$LINENO: result: $vidmode_extension" >&5
+echo "${ECHO_T}$vidmode_extension" >&6
+else
+  DO_VIDMODE_SUPPORT="0"
+fi
 
 
 echo "$as_me:$LINENO: checking if building of dbus.library is enabled" >&5
@@ -8643,6 +8746,7 @@ echo "${ECHO_T}$dbus" >&6
 
 
 
+
 # Native version related
 
 
@@ -8703,6 +8807,10 @@ if test -z "$aros_gui_basedir" ; then
     else
       aros_gui_libflags="-lX11"
     fi
+    if test "$HAVE_VIDMODE_SUPPORT" = "1"; then
+      aros_gui_libflags="$aros_gui_libflags -lXxf86vm"
+    fi
+
     aros_gui_incdir="$x_includes"
     if test -z "$x_includes" ; then
 	aros_gui_ccflags=""
@@ -9550,6 +9658,7 @@ s,@aros_default_wbwidth@,$aros_default_wbwidth,;t t
 s,@aros_default_wbheight@,$aros_default_wbheight,;t t
 s,@aros_default_wbdepth@,$aros_default_wbdepth,;t t
 s,@DO_XSHM_SUPPORT@,$DO_XSHM_SUPPORT,;t t
+s,@DO_VIDMODE_SUPPORT@,$DO_VIDMODE_SUPPORT,;t t
 s,@aros_bochs_hack@,$aros_bochs_hack,;t t
 s,@aros_serial_debug@,$aros_serial_debug,;t t
 s,@aros_palm_debug_hack@,$aros_palm_debug_hack,;t t
