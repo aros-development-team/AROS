@@ -30,6 +30,7 @@
 #define AROS_STACK_DEBUG    	    	@aros_stack_debug@
 #define AROS_MODULES_DEBUG		@aros_modules_debug@
 #define USE_XSHM	    	    	@DO_XSHM_SUPPORT@
+#define USE_VIDMODE			@DO_VIDMODE_SUPPORT@
 
 #define ENABLE_DBUS			@ENABLE_DBUS@
 
