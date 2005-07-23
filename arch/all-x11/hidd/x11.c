@@ -43,6 +43,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
+#include <X11/keysym.h>
 
 #include "x11.h"
 #include "fullscreen.h"
@@ -133,6 +134,9 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     struct MinList  	     xwindowlist;    
     struct x11task_params    xtp;
     ULONG   	    	     hostclipboardmask;
+    BOOL    	    	     f12_down = FALSE;
+    KeySym  	    	     ks;
+    
 #if NOUNIXIO
     struct Interrupt 	     myint;
 #else
@@ -431,12 +435,18 @@ D(bug("Got input from unixio\n"));
 	    #if BETTER_REPEAT_HANDLING
 	    	if (keyrelease_pending)
 		{
+		    if (XLookupKeysym((XKeyEvent *)&keyrelease_event, 0) == XK_F12)
+		    {
+			f12_down = FALSE;
+		    }
+
 	    	    ObtainSemaphoreShared( &xsd->sema );
 		    if (xsd->kbdhidd)
 		    {
 			Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &keyrelease_event);
 		    }
 		    ReleaseSemaphore( &xsd->sema );
+		    keyrelease_pending = FALSE;
 		}		
 	    #endif
 	    
@@ -474,6 +484,13 @@ D(bug("Got input from unixio\n"));
 		    /* Drop both previous keyrelease and this keypress event. */
 		    continue;
 		}
+		
+		LOCK_X11
+		if (XLookupKeysym((XKeyEvent *)&keyrelease_event, 0) == XK_F12)
+		{
+		    f12_down = FALSE;
+		}
+    	    	UNLOCK_X11
 		
 	    	ObtainSemaphoreShared( &xsd->sema );
 		if (xsd->kbdhidd)
@@ -623,12 +640,21 @@ D(bug("Got input from unixio\n"));
 	    	    case KeyPress:
 		    	xsd->x_time = event.xkey.time;
 			
-		    #if !BETTER_REPEAT_HANDLING
     	    	    	LOCK_X11
+		    #if !BETTER_REPEAT_HANDLING
     			XAutoRepeatOff(XSD(cl)->display);
+		    #endif		    
+		    	ks = XLookupKeysym ((XKeyEvent *)&event, 0);
+			if (ks == XK_F12)
+			{
+			    f12_down = TRUE;
+			}
+			else if (f12_down && ((ks == XK_Q) || (ks == XK_q)))
+			{
+			    raise(SIGINT);
+			}
     	    	    	UNLOCK_X11	
-		    #endif
-		    
+
 	    		ObtainSemaphoreShared( &xsd->sema );
 			if (xsd->kbdhidd)
 			{
@@ -640,12 +666,16 @@ D(bug("Got input from unixio\n"));
 
 	    	    case KeyRelease:
 		    	xsd->x_time = event.xkey.time;
-			
+						
 		    #if BETTER_REPEAT_HANDLING
 		    	keyrelease_pending = TRUE;
 			keyrelease_event = event;
 		    #else		    
     	    	    	LOCK_X11
+		    	if (XLookupKeysym (&event, 0) == XK_F12)
+			{
+			    f12_down = FALSE;
+			}
 			XAutoRepeatOn(XSD(cl)->display);
     	    	    	UNLOCK_X11
 
@@ -706,7 +736,7 @@ D(bug("Got input from unixio\n"));
          	    case ClientMessage:
             		if (event.xclient.data.l[0] == xsd->delete_win_atom)
 			{
-		            kill(getpid(), SIGINT);
+		            raise(SIGINT);
 			}
 			break;
     	    	#endif
