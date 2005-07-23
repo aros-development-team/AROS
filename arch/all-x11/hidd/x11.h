@@ -189,6 +189,8 @@ struct x11_staticdata
     APTR	    	     callbackdata;
 #endif    
 
+    BOOL    	    	    fullscreen;
+    
     struct MsgPort  	    *hostclipboardmp;
     struct Message  	    *hostclipboardmsg;
     ULONG   	    	     hostclipboard_readstate;
