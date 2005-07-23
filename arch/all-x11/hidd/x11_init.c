@@ -26,6 +26,7 @@
 #include <aros/debug.h>
 
 #include "x11.h"
+#include "fullscreen.h"
 
 #undef SysBase
 
@@ -210,6 +211,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 		    	xsd->local_display = TRUE;
 		    }
 		    
+		    
 		    /* Do not need to singlethead this
 		       since no other tasks are using X currently
 		    */
@@ -222,6 +224,11 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 
 			XSetErrorHandler (MyErrorHandler);
 			XSetIOErrorHandler (MySysErrorHandler);
+
+			if (getenv("AROS_X11_FULLSCREEN"))
+			{
+		    	    xsd->fullscreen = x11_fullscreen_supported(xsd->display);
+			}
 			
 			xsd->delete_win_atom 	     = XInternAtom(xsd->display, "WM_DELETE_WINDOW", FALSE);
 			xsd->clipboard_atom  	     = XInternAtom(xsd->display, "CLIPBOARD", FALSE);

@@ -45,6 +45,7 @@
 #include <X11/Xatom.h>
 
 #include "x11.h"
+#include "fullscreen.h"
 #include "x11gfx_intern.h"
 
 #define DEBUG 0
@@ -330,14 +331,16 @@ D(bug("Got input from unixio\n"));
 			xwc.width  = nmsg->width;
 			xwc.height = nmsg->height;
 
-
-    	    		LOCK_X11	
+    	    		LOCK_X11
+			if (xsd->fullscreen)
+			{
+			    x11_fullscreen_switchmode(nmsg->xdisplay, &xwc.width, &xwc.height);   
+			}	
 			XConfigureWindow(nmsg->xdisplay
 		    	    , nmsg->masterxwindow
 		    	    , CWWidth | CWHeight
 			    , &xwc
 			);
-
 			XFlush(nmsg->xdisplay);
     	    		UNLOCK_X11
 			
@@ -352,8 +355,14 @@ D(bug("Got input from unixio\n"));
 				    XMapWindow(nmsg->xdisplay, nmsg->xwindow);
 	    			#if ADJUST_XWIN_SIZE
 		    		    XMapRaised(nmsg->xdisplay, nmsg->masterxwindow);
-				    XFlush(nmsg->xdisplay);		
 				#endif
+				    if (xsd->fullscreen)
+				    {
+    	    	    	    	    	XGrabKeyboard(nmsg->xdisplay,nmsg->xwindow,False,GrabModeAsync,GrabModeAsync,CurrentTime);
+    	    	    	    	    	XGrabPointer (nmsg->xdisplay,nmsg->xwindow, 1, PointerMotionMask | ButtonPressMask | ButtonReleaseMask,
+		    	    	    	    	      GrabModeAsync, GrabModeAsync, nmsg->xwindow, None, CurrentTime);
+				    }
+				    XFlush(nmsg->xdisplay);		
 				    UNLOCK_X11
 
     	    	    	    	    nmsg->notify_type = NOTY_MAPWINDOW;

@@ -188,6 +188,12 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	    XSetWindowAttributes winattr;
 	    unsigned long 	 valuemask = 0;
 
+    	    if (XSD(cl)->fullscreen)
+	    {
+    	    	winattr.override_redirect = True;
+    	    	valuemask |= CWOverrideRedirect;
+	    }
+	    
 	    if (data->flags & BMDF_COLORMAP_ALLOCED)
 	    {
 		winattr.colormap = data->colmap;

@@ -14,7 +14,7 @@ USER_CFLAGS := -D__AROS__
 
 X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 
-FILES	   := x11 support x11gfx onbitmap offbitmap support x11kbd x11mouse x11clipboard xshm
+FILES	   := x11 support x11gfx onbitmap offbitmap support x11kbd x11mouse x11clipboard xshm fullscreen
 
 %build_module_macro mmake=kernel-x11gfx \
   modname=x11gfx modtype=hidd \
