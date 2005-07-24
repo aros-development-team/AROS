@@ -48,7 +48,7 @@ extern char **__argv;
 extern int  __argc;
 extern struct DosLibrary *DOSBase;
 
-extern struct aros_startup __aros_startup;
+static struct aros_startup __aros_startup;
 
 #warning TODO: reset and initialize the FPU
 #warning TODO: resident startup
@@ -144,7 +144,6 @@ int  __argc;
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 struct WBStartup *WBenchMsg;
-static struct aros_startup __aros_startup;
 
 DEFINESET(CTORS);
 DEFINESET(DTORS);
