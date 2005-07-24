@@ -27,11 +27,6 @@ static int parsemacroname(char *name,
 			  struct config *cfg,
 			  struct functions *functions
 );
-static int parsefunctionname(char *name,
-			     struct _parseinfo *parseinfo,
-			     struct config *cfg,
-			     struct functions *functions
-);
 
 void readref(struct config *cfg, struct functions *functions)
 {
@@ -115,7 +110,6 @@ void readref(struct config *cfg, struct functions *functions)
 		(
 		       parsemethodname(begin, &parseinfo, cfg, functions)
 		    || parsemacroname(begin, &parseinfo, cfg, functions)
-		    || parsefunctionname(begin, &parseinfo, cfg, functions)
 		);
 	    }
 	    else if (parseinfo.infunction)
@@ -403,72 +397,4 @@ static int parsemacroname(char *name,
     }
     else
 	return 0;
-}
-
-static int parsefunctionname(char *name,
-			     struct _parseinfo *parseinfo,
-			     struct config *cfg,
-			     struct functions *functions
-)
-{
-    struct conffuncinfo *conffuncit;
-    
-    for (conffuncit = cfg->conffunclist;
-	 conffuncit!=NULL && strcmp(conffuncit->name, name)!=0;
-	 conffuncit = conffuncit->next
-    )
-	;
-
-    /* Add function in the list ordered by lvo number */
-    if (conffuncit==NULL)
-	return 0;
-    else
-    {
-	struct functionhead *func, *funclistit;
-
-	if (conffuncit->regcount < 0)
-	{
-	    func = newfunctionhead(name, STACK);
-	    cfg->intcfg |= CFG_GENASTUBS;
-	}
-	else
-	    func = newfunctionhead(name, REGISTER);
-
-	func->lvo      = conffuncit->lvo;
-	func->novararg = 1;
-	func->priv     = 0;
-
-	if (functions->funclist == NULL || functions->funclist->lvo > func->lvo)
-	{
-	    func->next = functions->funclist;
-	    functions->funclist = func;
-	}
-	else
-	{
-	    for
-	    (
-	        funclistit = functions->funclist;
-	        funclistit->next != NULL && funclistit->next->lvo < func->lvo;
-	        funclistit = funclistit->next
-	    )
-		;
-	 
-	    if (funclistit->next != NULL && funclistit->next->lvo == func->lvo)
-	    {
-		fprintf(stderr,
-			"Function '%s' and '%s' have the same LVO number\n",
-			funclistit->next->name, func->name
-		);
-		exit(20);
-	    }
-		
-	    func->next = funclistit->next;
-	    funclistit->next = func;
-	}
-
-	parseinfo->currreg = conffuncit->regs;
-	parseinfo->currentfunc = func;
-	
-	return 1;
-    }
 }

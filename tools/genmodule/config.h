@@ -35,19 +35,6 @@ enum intcfgflags
     CFG_NOREADREF = 1<<BIT_NOREADREF
 };
 
-struct conffuncinfo {
-    struct conffuncinfo *next;
-    char *name;
-    unsigned int lvo;
-    struct stringlist *regs;
-    int regcount;
-    /* regcount <  0 => stack based calling
-     * regcount == 0 => register based calling, 0 arguments, libbase in A6
-     * regcount >  0 => register based calling, regcount argument,s libbase in A6
-     */
-    struct stringlist *aliases;
-};
-
 struct config
 {
     /* members that store filename and paths derived from argv */
@@ -96,9 +83,6 @@ struct config
 
     /* Code to add to the generated files */
     struct stringlist *cdeflines, *cdefprivatelines;
-
-    /* The function config data present in the functionlist section */
-    struct conffuncinfo *conffunclist;
 
     /* device specific data */
     char *beginiofunc, *abortiofunc;
