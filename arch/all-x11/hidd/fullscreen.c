@@ -1,8 +1,8 @@
 #include <aros/config.h>
+#include <X11/Xlib.h>
 
 #if USE_VIDMODE
 
-#include <X11/Xlib.h>
 #include <X11/extensions/xf86vmode.h>
 #include <X11/extensions/xf86dga.h>
 
