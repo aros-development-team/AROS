@@ -216,6 +216,7 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
                     AROS_ATOMIC_AND(im->IDCMPWindow->Flags, ~WFLG_WINDOWTICKED);
                     break;
 
+    	    #if USE_IDCMPUPDATE_MESSAGECACHE
         	case IDCMP_IDCMPUPDATE:
                     IW(im->IDCMPWindow)->num_idcmpupdate--;
 
@@ -225,7 +226,8 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
                 	IW(im->IDCMPWindow)->messagecache = 0;
                     }
                     break;
-
+    	    #endif
+	    
         	case IDCMP_MENUVERIFY:
                 {
                     struct Window    *w = im->IDCMPWindow;

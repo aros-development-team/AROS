@@ -47,7 +47,7 @@ static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdat
     {
         imsg->Class 	= class;
         imsg->Code  	= code;
-        imsg->Qualifier = (msg->opu_Flags == OPUF_INTERIM) ? IEQUALIFIER_REPEAT : 0; //tells SendIntuiMessage if the message is OK to be dropped
+        imsg->Qualifier = (msg->opu_Flags & OPUF_INTERIM) ? IEQUALIFIER_REPEAT : 0; //tells SendIntuiMessage if the message is OK to be dropped
         imsg->IAddress  = IAddress;
         imsg->MouseX    = msg->opu_GInfo->gi_Window->MouseX;
         imsg->MouseY    = msg->opu_GInfo->gi_Window->MouseY;
@@ -154,11 +154,13 @@ AROS_LH4(IPTR, DoNotify,
                     {
                         if (msg->opu_GInfo)
 			{
-                            if (msg->opu_GInfo->gi_Window)
+			    struct Window *win;
+			    
+                            if ((win = msg->opu_GInfo->gi_Window))
 			    {
-                                if (msg->opu_GInfo->gi_Window->UserPort)
+                                if (win->UserPort)
 				{
-                                    if (msg->opu_GInfo->gi_Window->IDCMPFlags & IDCMP_IDCMPUPDATE)
+                                    if (win->IDCMPFlags & IDCMP_IDCMPUPDATE)
                                     {
                                         struct TagItem  *ti;
                                         UWORD       	 code = 0;
@@ -167,13 +169,25 @@ AROS_LH4(IPTR, DoNotify,
                                         {
                                             code = ti->ti_Data & 0xFFFF;
                                         }
-                                        SendIDCMPUpdate( cl, o, msg, IDCMP_IDCMPUPDATE,
-                                                         code, ic->ic_CloneTags, IntuitionBase );
+					
+				    #if !USE_IDCMPUPDATE_MESSAGECACHE
+				    	if (!(msg->opu_Flags & OPUF_INTERIM) ||
+					    (IW(win)->num_repeatevents < IW(win)->repeatqueue))
+					{
+    	    	    	    	    #endif	    	    
 
-                                        /* in this case the cloned tagitems will be freed in the Intuition
-                                           InputHandler when the app has replied the IntuiMessage */
+                                            SendIDCMPUpdate( cl, o, msg, IDCMP_IDCMPUPDATE,
+                                                             code, ic->ic_CloneTags, IntuitionBase );
 
-                                        ic->ic_CloneTags = NULL;
+                                            /* in this case the cloned tagitems will be freed in the Intuition
+                                               InputHandler when the app has replied the IntuiMessage */
+
+                                            ic->ic_CloneTags = NULL;
+
+				    #if !USE_IDCMPUPDATE_MESSAGECACHE
+				    	}
+    	    	    	    	    #endif	    	    
+
                                     }
 				}
 			    }

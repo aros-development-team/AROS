@@ -123,10 +123,12 @@ AROS_LH2(void, SendIntuiMessage,
         IW(window)->num_repeatevents++;
     }
 
+#if USE_IDCMPUPDATE_MESSAGECACHE
     if (imsg->Class == IDCMP_IDCMPUPDATE)
     {
         if (IW(window)->num_idcmpupdate && !IW(window)->messagecache)
         {
+kprintf("======= setting messagecache\n");
             IW(window)->messagecache = imsg;
             Permit();
             return;
@@ -152,6 +154,7 @@ AROS_LH2(void, SendIntuiMessage,
 
         IW(window)->num_idcmpupdate++;
     }
+#endif
 
     Forbid();
     GetSysTime(&((struct IntWindow *)(window))->lastmsgsent);
