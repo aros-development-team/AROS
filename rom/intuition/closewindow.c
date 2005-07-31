@@ -86,7 +86,9 @@ AROS_LH1(void, CloseWindow,
     struct CloseWindowActionMsg  msg;
     struct IIHData          	*iihd;
     struct MsgPort          	*userport;
+#if USE_IDCMPUPDATE_MESSAGECACHE
     struct IntuiMessage     	*messagecache;
+#endif
     struct Screen           	*screen;
     BOOL            	    	 do_unlockscreen;
 
@@ -148,7 +150,10 @@ AROS_LH1(void, CloseWindow,
     /* We must save this here, because after we have returned from
        the Wait() the window is gone  */
     userport = window->UserPort;
+
+#if USE_IDCMPUPDATE_MESSAGECACHE
     messagecache = IW(window)->messagecache;
+#endif
 
     DEBUG_CLOSEWINDOW(dprintf("CloseWindow: Userport 0x%lx\n", userport));
 
@@ -177,7 +182,7 @@ AROS_LH1(void, CloseWindow,
     /* As of now intuition has removed us from th list of
        windows, and we will recieve no more messages
     */
-
+#if USE_IDCMPUPDATE_MESSAGECACHE
     if (messagecache)
     {
         messagecache->IDCMPWindow = 0;//zero or we'll trash mem in inputhandler!
@@ -185,6 +190,7 @@ AROS_LH1(void, CloseWindow,
         messagecache->Qualifier = 0;
         ReplyMsg(&messagecache->ExecMessage);
     }
+#endif
 
     if (userport)
     {

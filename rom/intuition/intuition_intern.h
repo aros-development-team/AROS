@@ -247,6 +247,8 @@ void * memclr(APTR, ULONG);
 
 #define TITLEBUFFERLEN      	    	    255
 
+#define USE_IDCMPUPDATE_MESSAGECACHE	    0
+
 #ifdef __MORPHOS__
 #if INCLUDE_VERSION < 50
 
@@ -811,9 +813,11 @@ struct IntWindow
        messages sent to this window */
     WORD                    num_repeatevents;
 
+#if USE_IDCMPUPDATE_MESSAGECACHE
     /* number of unreplied IDCMP_IDCMPUPDATE messages sent to window
        used in few hacks :) */
     WORD                    num_idcmpupdate;
+#endif
 
     WORD                    sizeimage_width;
     WORD                    sizeimage_height;
@@ -845,7 +849,9 @@ struct IntWindow
 #endif
     char                    titlebuffer[TITLEBUFFERLEN+1];
 
+#if USE_IDCMPUPDATE_MESSAGECACHE
     struct IntuiMessage    *messagecache; //for idcmpupdate cache
+#endif
 
     struct Layer           *wlayer;
     struct Layer           *borderlayer;
