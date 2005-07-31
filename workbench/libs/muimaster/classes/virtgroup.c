@@ -20,7 +20,6 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
-#include "virtgroup_private.h"
 
 extern struct Library *MUIMasterBase;
 

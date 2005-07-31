@@ -43,20 +43,8 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
         fprintf(out, "%s\n", linelistit->s);
     }
 
-    fprintf
-    (
-        out,
-        "\n"
-        "/*** Instance data structure size ***************************************/\n"
-        "#ifndef NO_CLASS_DATA\n"
-    );
     if (cfg->classdatatype == NULL)
-	fprintf
-        (
-	     out,
-	     "#   define %s_DATA_SIZE (sizeof(struct %s_DATA))\n",
-	     cfg->basename, cfg->basename
-	);
+	fprintf(out, "#   define %s_DATA_SIZE (0)\n", cfg->basename);
     else
 	fprintf
         (
@@ -64,14 +52,6 @@ void writemccinit(FILE *out, struct config *cfg, struct functions *functions)
 	     "#   define %s_DATA_SIZE (sizeof(%s))\n",
 	     cfg->basename, cfg->classdatatype
 	);
-    fprintf
-    (
-        out,
-        "#else\n"
-        "#   define %s_DATA_SIZE (0)\n"
-        "#endif\n",
-        cfg->basename
-    );
     
     writeboopsidispatcher(out, cfg, functions);
     
