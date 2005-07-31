@@ -4,7 +4,6 @@
 #if USE_VIDMODE
 
 #include <X11/extensions/xf86vmode.h>
-#include <X11/extensions/xf86dga.h>
 
 static XF86VidModeModeInfo **videomodes;
 static int  	    	     num_videomodes;
