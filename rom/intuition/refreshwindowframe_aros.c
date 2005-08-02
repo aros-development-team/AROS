@@ -6,6 +6,7 @@
 
 #include <intuition/gadgetclass.h>
 #include <intuition/intuitionbase.h>
+#include <intuition/windecorclass.h>
 #include <graphics/rpattr.h>
 #include <cybergraphx/cybergraphics.h>
 
@@ -81,7 +82,6 @@ VOID int_RefreshWindowFrame(struct Window *window,
 #endif
 
     WORD             old_scroll_x, old_scroll_y;
-    int     	     left = 0, right = window->Width - 1;
 
     if (!(window->Flags & WFLG_BORDERLESS))
     {
@@ -102,7 +102,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
 
     	#endif
 
-            LockLayer(NULL,rp->Layer);
+            LockLayer(0,rp->Layer);
 
             old_scroll_x = rp->Layer->Scroll_X;
             old_scroll_y = rp->Layer->Scroll_Y;
@@ -133,160 +133,34 @@ VOID int_RefreshWindowFrame(struct Window *window,
     	    old_clipregion = InstallClipRegion(rp->Layer, NULL);
     	#endif
 
-            SetAPen(rp, dri->dri_Pens[SHINEPEN]);
-            if (window->BorderTop > 0)  CheckRectFill(rp,
-                        0,
-                        0,
-                        window->Width - 1,
-                        0,
-                        IntuitionBase);
+    	    LOCKSHARED_WINDECOR(dri);
+	    
+    	    {
+    		struct wdpDrawWinBorder  msg;
 
-            if (!(mustbe & REFRESHGAD_TOPBORDER))
-            {
-                if (window->BorderLeft > 0) CheckRectFill(rp,
-                            0,
-                            0,
-                            0,
-                            window->Height - 1,
-                            IntuitionBase);
-
-                if (window->BorderRight > 1) CheckRectFill(rp,
-                            window->Width - window->BorderRight,
-                            window->BorderTop,
-                            window->Width - window->BorderRight,
-                            window->Height - window->BorderBottom,
-                            IntuitionBase);
-
-                if (window->BorderBottom > 1) CheckRectFill(rp,
-                            window->BorderLeft,
-                            window->Height - window->BorderBottom,
-                            window->Width - window->BorderRight,
-                            window->Height - window->BorderBottom,
-                            IntuitionBase);
-            }
-
-            SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
-            if (!(mustbe & REFRESHGAD_TOPBORDER))
-            {
-                if (window->BorderRight > 0) CheckRectFill(rp,
-                            window->Width - 1,
-                            1,
-                            window->Width - 1,
-                            window->Height - 1,
-                            IntuitionBase);
-
-                if (window->BorderBottom > 0) CheckRectFill(rp,
-                            1,
-                            window->Height - 1,
-                            window->Width - 1,
-                            window->Height - 1,
-                            IntuitionBase);
-
-                if (window->BorderLeft > 1) CheckRectFill(rp,
-                            window->BorderLeft - 1,
-                            window->BorderTop - 1,
-                            window->BorderLeft - 1,
-                            window->Height - window->BorderBottom,
-                            IntuitionBase);
-            }
-
-            if (window->BorderTop > 1) CheckRectFill(rp,
-                        window->BorderLeft - 1,
-                        window->BorderTop - 1,
-                        window->Width - window->BorderRight,
-                        window->BorderTop - 1,
-                        IntuitionBase);
-
-            SetAPen(rp, dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
-
-            if (window->BorderTop > 2)  CheckRectFill(rp,
-                        1,
-                        1,
-                        window->Width - 2,
-                        window->BorderTop - 2,
-                        IntuitionBase);
-
-            if (!(mustbe & REFRESHGAD_TOPBORDER))
-            {
-                if (window->BorderLeft > 2) CheckRectFill(rp,
-                            1,
-                            1,
-                            window->BorderLeft - 2,
-                            window->Height - 2,
-                            IntuitionBase);
-
-                if (window->BorderRight > 2) CheckRectFill(rp,
-                            window->Width - window->BorderRight + 1,
-                            1,
-                            window->Width - 2,
-                            window->Height - 2,
-                            IntuitionBase);
-
-                if (window->BorderBottom > 2) CheckRectFill(rp,
-                            1,
-                            window->Height - window->BorderBottom + 1,
-                            window->Width - 2,
-                            window->Height - 2,
-                            IntuitionBase);
-            }
-
-
-            {
-                struct Gadget *g;
-
-                for (g = window->FirstGadget; g; g = g->NextGadget)
-                {
-                    if (g->Activation & GACT_TOPBORDER && g != (struct Gadget *)IW(window)->sysgads[DRAGBAR])
-                    {
-                        if (g->LeftEdge >= 0)
-                        {
-                            if (g->LeftEdge + g->Width > left)
-                                left = g->LeftEdge + g->Width;
-                        }
-                        else
-                        {
-                            if (g->LeftEdge + window->Width < right)
-                                right = g->LeftEdge + window->Width;
-                        }
-                    }
-                }
-            }
-
-
+		msg.MethodID 	    	= WDM_DRAW_WINBORDER;
+		msg.wdp_Window 	    	= window;
+		msg.wdp_RPort     	= rp;
+    	    	msg.wdp_Flags	    	= (mustbe == REFRESHGAD_TOPBORDER) ? WD_DWBF_TOP_ONLY : 0;
+		
+		DoMethodA(((struct IntDrawInfo *)(dri))->dri_WinDecorObj, (Msg)&msg);	
+    	    }
+	    
             /* Render the titlebar */
             if (NULL != window->Title)
             {
+    		struct wdpDrawWinTitle  msg;
 
-                if (right - left > 6)
-                {
-                    ULONG   	    	textlen, titlelen;
-                    struct TextExtent 	te;
+		msg.MethodID 	    	= WDM_DRAW_WINTITLE;
+		msg.wdp_Window 	    	= window;
+		msg.wdp_RPort     	= rp;
+    	    	msg.wdp_TitleAlign  	= WD_DWTA_LEFT;
+		
+		DoMethodA(((struct IntDrawInfo *)(dri))->dri_WinDecorObj, (Msg)&msg);	
+    	    }
 
-                    SetFont(rp, dri->dri_Font);
-
-                    titlelen = strlen(window->Title);
-                    textlen = TextFit(rp
-                                      , window->Title
-                                      , titlelen
-                                      , &te
-                                      , NULL
-                                      , 1
-                                      , right - left - 6
-                                      , window->BorderTop - 2);
-
-
-                    SetRPAttrs(rp, RPTAG_DrMd,JAM1,
-                               RPTAG_APen,dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN],
-                               TAG_DONE);
-    	    	#ifdef __MORPHOS__
-                    Move(rp, left + 3, dri->dri_Font->tf_Baseline + 1);
-    	    	#else
-		    Move(rp, left + 3, dri->dri_Font->tf_Baseline + 2);
-    	    	#endif
-                    Text(rp, window->Title, textlen);
-                }
-            }
-
+	    UNLOCK_WINDECOR(dri);
+	    
     	#ifdef GADGETCLIPPING
             InstallClipRegion(rp->Layer,NULL);
     	#endif

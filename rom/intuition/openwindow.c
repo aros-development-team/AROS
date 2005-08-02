@@ -9,6 +9,7 @@
 #include <graphics/gfx.h>
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
+#include <intuition/windecorclass.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/extensions.h>
 #include <utility/tagitem.h>
@@ -683,7 +684,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     #endif
         /* Georg Steger: ??? font ??? */
         if (w->WScreen->Font)
-            w->BorderTop += ((struct IntScreen *)(w->WScreen))->DInfo.dri_Font->tf_YSize + 1;
+            w->BorderTop += ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_Font->tf_YSize + 1;
         else
             w->BorderTop += GfxBase->DefaultFont->tf_YSize + 1;
     #ifndef TITLEHACK
@@ -910,10 +911,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
     /* Amiga and checkmark images for menus */
 
     IW(w)->Checkmark = Checkmark ? Checkmark :
-                    	    	   ((struct IntScreen *)(w->WScreen))->DInfo.dri_CheckMark;
+                    	    	   ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_CheckMark;
 
     IW(w)->AmigaKey  = AmigaKey  ? AmigaKey  :
-                    	    	   ((struct IntScreen *)(w->WScreen))->DInfo.dri_AmigaKey;
+                    	    	   ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_AmigaKey;
 
 #ifndef __MORPHOS__
     /* child support */
@@ -967,7 +968,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     }
     else
     {
-    	w->IFont = SafeReopenFont(IntuitionBase, &(GetPrivScreen(w->WScreen)->DInfo.dri_Font));
+    	w->IFont = SafeReopenFont(IntuitionBase, &(GetPrivScreen(w->WScreen)->DInfo.dri.dri_Font));
     }
     
     if (w->IFont == NULL)
@@ -1052,6 +1053,18 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     if (nw.FirstGadget)
     {
+    	struct IntDrawInfo     	      *dri = &((struct IntScreen *)(w->WScreen))->DInfo;
+    	struct wdpLayoutBorderGadgets  msg;
+
+	msg.MethodID 	    	= WDM_LAYOUT_BORDERGADGETS;
+	msg.wdp_Window 	    	= w;
+	msg.wdp_Gadgets     	= nw.FirstGadget;
+	msg.wdp_Flags   	= WD_LBGF_INITIAL | WD_LBGF_MULTIPLE;
+
+	LOCKSHARED_WINDECOR(dri);
+	DoMethodA(dri->dri_WinDecorObj, (Msg)&msg);	
+	UNLOCK_WINDECOR(dri);
+
         AddGList(w, nw.FirstGadget, -1, -1, NULL);
     }
 

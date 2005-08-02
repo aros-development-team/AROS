@@ -192,6 +192,8 @@ AROS_LH1(BOOL, CloseScreen,
     /* Free the RastPort's contents */
     DeinitRastPort(&screen->RastPort);
 
+    DisposeObject(((struct IntScreen *)screen)->DInfo.dri_WinDecorObj);
+    
 #ifdef SKINS
     if (((struct IntScreen *)screen)->DInfo.dri_Customize)
     {
@@ -204,11 +206,11 @@ AROS_LH1(BOOL, CloseScreen,
     }
 #endif
 
-    DisposeObject(((struct IntScreen *)screen)->DInfo.dri_CheckMark);
-    DisposeObject(((struct IntScreen *)screen)->DInfo.dri_AmigaKey);
+    DisposeObject(((struct IntScreen *)screen)->DInfo.dri.dri_CheckMark);
+    DisposeObject(((struct IntScreen *)screen)->DInfo.dri.dri_AmigaKey);
 
     /* Close the font */
-    CloseFont(((struct IntScreen *)screen)->DInfo.dri_Font);
+    CloseFont(((struct IntScreen *)screen)->DInfo.dri.dri_Font);
 
     /* Free the ColorMap */
     FreeColorMap(screen->ViewPort.ColorMap);

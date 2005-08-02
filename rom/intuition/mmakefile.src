@@ -6,7 +6,8 @@ FILES := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
          requesters strgadgets strgclass  pointerclass windowclasses \
          intuition_misc inputhandler_support inputhandler_actions \
          menus barlabelclass fillrectclass groupgclass wbtasktalk \
-         rootclass icclass modelclass itexticlass misc sysiclass menutask
+         rootclass icclass modelclass itexticlass misc sysiclass menutask \
+	 windecorclass
 
 FUNCS := \
 	activategadget \
@@ -24,6 +25,7 @@ FUNCS := \
 	buildsysrequest_aros \
 	changescreenbuffer \
 	changewindowbox \
+	changewindowdecoration \
 	changewindowshape \
 	cleardmrequest \
 	clearmenustrip \

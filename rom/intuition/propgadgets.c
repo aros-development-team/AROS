@@ -376,7 +376,7 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
                         struct Requester * req, struct IntuitionBase * IntuitionBase)
 {
     struct PropInfo 	*pi;
-    struct IntDrawInfo  *dri;
+    struct DrawInfo  	*dri;
     struct GadgetInfo 	 gi;
     struct RastPort 	*rp = 0;
     struct BBox     	 bbox, kbox;
@@ -386,7 +386,7 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
 
     onborder = (IS_BORDER_GADGET(gadget) || isonborder(gadget,window));
 
-    if ((dri = (struct IntDrawInfo *)GetScreenDrawInfo(window->WScreen)))
+    if ((dri = GetScreenDrawInfo(window->WScreen)))
     {
 
         SetupGInfo(&gi, window, req, gadget, IntuitionBase);
@@ -487,7 +487,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                             struct BBox * knob, struct Window * window, struct Requester * req,
                             struct IntuitionBase * IntuitionBase)
 {
-    struct IntDrawInfo  *dri;
+    struct DrawInfo  *dri;
     struct RastPort 	*rp;
     struct PropInfo 	*pi;
     struct GadgetInfo    gi;
@@ -502,7 +502,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
     pi = (struct PropInfo *)gadget->SpecialInfo;
     flags = pi->Flags;
 
-    if ((dri = (struct IntDrawInfo *)GetScreenDrawInfo(window->WScreen)))
+    if ((dri = GetScreenDrawInfo(window->WScreen)))
     {
         SetupGInfo(&gi, window, req, gadget, IntuitionBase);
 

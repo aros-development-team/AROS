@@ -13,6 +13,7 @@
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
+#include <intuition/windecorclass.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/extensions.h>
@@ -34,6 +35,8 @@
 
 #include "gadgets.h" /* Some handy rendering funtions */
 
+#define INTDRI(dri) ((struct IntDrawInfo *)(dri))
+
 #if 0
 extern BYTE *ibPrefs;
 extern BYTE *ibSnapshot;
@@ -53,12 +56,6 @@ extern void DrawJUMP(struct RastPort *rp,ULONG state,LONG cx,LONG cy,struct Intu
 #include <aros/debug.h>
 
 /**************************************************************************************************/
-
-#ifdef __AROS__
-#define USE_AROS_DEFSIZE 1
-#else
-#define USE_AROS_DEFSIZE 0
-#endif
 
 #define DEFSIZE_WIDTH  14
 #define DEFSIZE_HEIGHT 14
@@ -115,14 +112,11 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     struct TagItem  	*taglist, *tag;
     struct TextFont 	*reffont = NULL;
     int     	     	 size = SYSISIZE_MEDRES;
-    int     	     	 def_low_width = DEFSIZE_WIDTH, def_low_height = DEFSIZE_HEIGHT;
-    int     	     	 def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
-    int     	     	 def_high_width = DEFSIZE_WIDTH, def_high_height = DEFSIZE_HEIGHT;
     BOOL    	     	 unsupported = FALSE;
     BOOL    	     	 set_width = FALSE, set_height = FALSE;
 
     taglist = msg->ops_AttrList;
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
         switch(tag->ti_Tag)
         {
@@ -208,145 +202,25 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     if ((!data->dri) || (unsupported))
         return FALSE;
 
-    #define REFHEIGHT (reffont->tf_YSize)
-    #define REFWIDTH  REFHEIGHT
-    
-    //  if (!data->screen) data->screen = int_FindScreenByDrawInfo(data->dri,IntuitionBase);
-
-    switch(data->type)
     {
-	case LEFTIMAGE:
-	case RIGHTIMAGE:
-	#if USE_AROS_DEFSIZE
-    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-	#else
-            def_low_width = 16;
-            def_med_width = 16;
-            def_high_width = 23;
-            def_low_height = 11;
-            def_med_height = 10;
-            def_high_height = 22;
-	#endif
-            break;
-
-	case UPIMAGE:
-	case DOWNIMAGE:
-	#if USE_AROS_DEFSIZE
-    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-	#else
-            def_low_width = 13;
-            def_med_width = 18;
-            def_high_width = 23;
-            def_low_height = 11;
-            def_med_height = 11;
-            def_high_height = 22;
-	#endif
-            break;
-
-	case DEPTHIMAGE:
-	case ZOOMIMAGE:
-	case ICONIFYIMAGE:
-	case LOCKIMAGE:
-	case MUIIMAGE:
-	case POPUPIMAGE:
-	case SNAPSHOTIMAGE:
-	case JUMPIMAGE:
-	#if USE_AROS_DEFSIZE
-    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-	#else
-            def_low_width = 18;
-            def_med_width = 24;
-            def_high_width = 24;
-	#endif
-            if ((data->type == DEPTHIMAGE)||(data->type == ZOOMIMAGE)) IM(obj)->LeftEdge = -1;
-            break;
-
-	case SDEPTHIMAGE:
-	#if USE_AROS_DEFSIZE
-    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-	#else
-            def_low_width = 17;
-            def_med_width = 23;
-            def_high_width = 23;
-	#endif
-            break;
-
-	case CLOSEIMAGE:
-	#if USE_AROS_DEFSIZE
-    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-	#else
-            def_low_width = 15;
-            def_med_width = 20;
-            def_high_width = 20;
-	#endif
-            break;
-
-	case SIZEIMAGE:
-	#if USE_AROS_DEFSIZE
-    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-	#else
-            def_low_width = 13;
-            def_med_width = 18;
-            def_high_width = 18;
-            def_low_height = 11;
-            def_med_height = 10;
-            def_high_height = 10;
-	#endif
-            break;
-
-	case MENUCHECK:
-            def_low_width  = REFWIDTH / 2 + 4; // reffont->tf_XSize * 3 / 2;
-            def_low_height = REFHEIGHT;
-            size = SYSISIZE_LOWRES;
-            break;
-
-	case AMIGAKEY:
-            if (MENUS_AMIGALOOK)
-            {
-        	def_low_width  = REFWIDTH * 3 / 2; //reffont->tf_XSize * 2;
-        	def_low_height = REFHEIGHT;
-            }
-            else
-            {
-        	def_low_width  = (REFWIDTH + 1) * 3 / 2; // reffont->tf_XSize * 2;
-        	def_low_height = REFHEIGHT + 1;
-            }
-            size = SYSISIZE_LOWRES;
-            break;
-
-	case MXIMAGE:
-            /*
-             * We really need some aspect ratio here..this sucks
-             */
-            def_low_width  = (REFWIDTH + 1) * 2; // reffont->tf_XSize * 3 - 1;
-            def_low_height = REFHEIGHT + 1;
-            size = SYSISIZE_LOWRES;
-            break;
-
-	case CHECKIMAGE:
-            /*
-             * We really need some aspect ratio here..this sucks
-             */
-            def_low_width  = (REFWIDTH + 3) * 2;//reffont->tf_XSize * 2;
-            def_low_height = REFHEIGHT + 3;
-            size = SYSISIZE_LOWRES;
-            break;
-
-    } /* switch(data->type) */
-
-    if (!set_width)
-        IM(obj)->Width = size == SYSISIZE_LOWRES ? def_low_width :
-                         (size == SYSISIZE_HIRES ? def_high_width : def_med_width);
-    if (!set_height)
-        IM(obj)->Height = size == SYSISIZE_LOWRES ? def_low_height :
-                          (size == SYSISIZE_HIRES ? def_high_height : def_med_height);
-
+    	struct wdpGetDefSizeSysImage  msg;
+	ULONG       	    	      width = DEFSIZE_WIDTH, height = DEFSIZE_HEIGHT;
+	
+	msg.MethodID 	    	= WDM_GETDEFSIZE_SYSIMAGE;
+	msg.wdp_Which 	    	= data->type;
+	msg.wdp_SysiSize     	= size;
+	msg.wdp_ReferenceFont 	= reffont;
+	msg.wdp_Width 	    	= &width;
+	msg.wdp_Height	    	= &height;
+	
+	LOCKSHARED_WINDECOR(data->dri);
+	DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&msg);	
+	UNLOCK_WINDECOR(data->dri);
+	
+    	if (!set_width) IM(obj)->Width = width;
+    	if (!set_height) IM(obj)->Height = height;	
+    }
+    
     return TRUE;
 }
 
@@ -455,14 +329,24 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
 
 void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 {
-    struct SysIData *data = INST_DATA(cl, obj);
-    struct RastPort *rport = msg->imp_RPort;
-    WORD    	     left = IM(obj)->LeftEdge + msg->imp_Offset.X;
-    WORD    	     top = IM(obj)->TopEdge + msg->imp_Offset.Y;
-    UWORD   	     width = IM(obj)->Width;
-    UWORD   	     height = IM(obj)->Height;
-    WORD    	     right = left + width - 1;
-    WORD    	     bottom = top + height - 1;
+    struct SysIData 	    *data = INST_DATA(cl, obj);
+    struct RastPort 	    *rport = msg->imp_RPort;
+    WORD    	    	     left = IM(obj)->LeftEdge + msg->imp_Offset.X;
+    WORD    	    	     top = IM(obj)->TopEdge + msg->imp_Offset.Y;
+    UWORD   	    	     width = IM(obj)->Width;
+    UWORD   	    	     height = IM(obj)->Height;
+    WORD    	    	     right = left + width - 1;
+    WORD    	    	     bottom = top + height - 1;
+    struct wdpDrawSysImage   decormsg;
+
+    decormsg.MethodID  = WDM_DRAW_SYSIMAGE;
+    decormsg.wdp_RPort = rport;
+    decormsg.wdp_X = left;
+    decormsg.wdp_Y = top;
+    decormsg.wdp_Width = width;
+    decormsg.wdp_Height = height;
+    decormsg.wdp_Which = data->type;
+    decormsg.wdp_State = msg->imp_State;
 
     SetDrMd(rport, JAM1);
 
@@ -601,6 +485,14 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             UWORD hspacing,vspacing;
             WORD  cy;
 
+            if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
+	    {
+		LOCKSHARED_WINDECOR(data->dri)
+    		DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&decormsg);	
+		UNLOCK_WINDECOR(data->dri)
+	    	break;
+	    }
+	    
             hspacing = HSPACING;
             vspacing = VSPACING;
 
@@ -698,6 +590,14 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         {
             UWORD hspacing,vspacing;
             WORD  cx;
+
+            if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
+	    {
+		LOCKSHARED_WINDECOR(data->dri)
+    		DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&decormsg);	
+		UNLOCK_WINDECOR(data->dri)
+	    	break;
+	    }
 
             hspacing = HSPACING;
             vspacing = VSPACING;
@@ -797,6 +697,14 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         {
             UWORD hspacing,vspacing;
             WORD  cy;
+
+            if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
+	    {
+		LOCKSHARED_WINDECOR(data->dri)
+    		DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&decormsg);	
+		UNLOCK_WINDECOR(data->dri)
+	    	break;
+	    }
 
             hspacing = HSPACING;
             vspacing = VSPACING;
@@ -898,6 +806,14 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             UWORD hspacing,vspacing;
             WORD  cx;
  
+            if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
+	    {
+		LOCKSHARED_WINDECOR(data->dri)
+    		DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&decormsg);	
+		UNLOCK_WINDECOR(data->dri)
+	    	break;
+	    }
+
             hspacing = HSPACING;
             vspacing = VSPACING;
 
@@ -992,7 +908,6 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    	case DEPTHIMAGE:
     	case SDEPTHIMAGE:
         {
             UWORD *pens = data->dri->dri_Pens;
@@ -1100,166 +1015,13 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         }
 
     	case CLOSEIMAGE:
+	case ZOOMIMAGE:
+	case DEPTHIMAGE:
+	case SIZEIMAGE:
         {
-            UWORD *pens = data->dri->dri_Pens;
-            WORD   h_spacing;
-            WORD   v_spacing;
-
-            if (!(data->flags & SYSIFLG_NOBORDER))
-            {
-                renderimageframe(rport, CLOSEIMAGE, msg->imp_State, pens,
-                                 left, top, width, height, IntuitionBase);
-                left++ ;
-                top++;
-                width -= 3; /* 3 is no bug! */
-                height -= 2;
-            }
-
-            right = left + width - 1;
-            bottom = top + height - 1;
-            h_spacing = width * 4 / 10;
-            v_spacing = height * 3 / 10;
-
-            SetAPen(rport, getbgpen(msg->imp_State, pens));
-            RectFill(rport, left, top, right, bottom);
-
-            left += h_spacing;
-            right -= h_spacing;
-            top += v_spacing;
-            bottom -= v_spacing;
-
-            SetAPen(rport, pens[SHADOWPEN]);
-            RectFill(rport, left, top, right, bottom);
-
-            left++;
-            top++;
-            right--;
-            bottom--;
-
-            SetAPen(rport, pens[(msg->imp_State == IDS_NORMAL) ? SHINEPEN : BACKGROUNDPEN]);
-            RectFill(rport, left, top, right, bottom);
-
-            break;
-        }
-
-    	case ZOOMIMAGE:
-        {
-            UWORD *pens = data->dri->dri_Pens;
-            UWORD  bg;
-            WORD   h_spacing;
-            WORD   v_spacing;
-
-            if (!(data->flags & SYSIFLG_NOBORDER))
-            {
-                renderimageframe(rport, ZOOMIMAGE, msg->imp_State, pens,
-                                 left, top, width, height, IntuitionBase);
-                left += 2;
-                top++;
-                width -= 3;
-                height -= 2;
-            }
-
-            right = left + width - 1;
-            bottom = top + height - 1 ;
-            h_spacing = width / 6;
-            v_spacing = height / 6;
-
-            bg = getbgpen(msg->imp_State, pens);
-
-            /* Clear background into correct color */
-            SetAPen(rport, bg);
-            RectFill(rport, left, top, right, bottom);
-
-            left += h_spacing;
-            right -= h_spacing;
-            top += v_spacing;
-            bottom -= v_spacing;
-
-            SetAPen(rport, pens[SHADOWPEN]);
-            RectFill(rport, left, top, right, bottom);
-
-            SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? SHINEPEN :
-                                (msg->imp_State == IDS_NORMAL) ? FILLPEN : BACKGROUNDPEN]);
-            RectFill(rport, left + 1, top + 1, right - 1, bottom - 1);
-
-            right = left + (right - left + 1) / 2;
-            bottom = top + (bottom - top + 1) / 2;
-
-            if (right - left <  4) right = left + 4;
-
-            SetAPen(rport, pens[SHADOWPEN]);
-            RectFill(rport, left, top, right, bottom);
-
-            left += 2;
-            right -= 2;
-            top += 1;
-            bottom -= 1;
-
-            SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN :
-                                (msg->imp_State == IDS_NORMAL) ? SHINEPEN : BACKGROUNDPEN]);
-            RectFill(rport,left, top, right, bottom);
-            break;
-        }
-
-
-    	case SIZEIMAGE:
-        {
-            UWORD *pens = data->dri->dri_Pens;
-            UWORD  bg;
-            WORD   h_spacing;
-            WORD   v_spacing;
-            WORD   x, y;
-
-            if (!(data->flags & SYSIFLG_NOBORDER))
-            {
-                renderimageframe(rport, SIZEIMAGE, msg->imp_State, pens,
-                                 left, top, width, height, IntuitionBase);
-                left++;
-                top++;
-                right--;
-                bottom--;
-                width -= 2;
-                height -= 2;
-            }
-
-            h_spacing = width  / 5;
-            v_spacing = height / 5;
-
-            bg = getbgpen(msg->imp_State, pens);
-
-            /* Clear background into correct color */
-            SetAPen(rport, bg);
-            RectFill(rport, left, top, right, bottom);
-
-            /* A triangle image */
-
-            left += h_spacing;
-            top  += v_spacing;
-
-            right  = left + width  - 1 - (h_spacing * 2);
-            bottom = top  + height - 1 - (v_spacing * 2);
-
-            width  = right  - left + 1;
-            height = bottom - top  + 1;
-
-            if (msg->imp_State != IDS_INACTIVENORMAL)
-            {
-                SetAPen(rport, pens[SHINEPEN]);
-		
-                for(y = top; y <= bottom; y++)
-                {
-                    x = left + (bottom - y) * width / height;
-                    RectFill(rport, x, y, right, y);
-                }
-            }
-
-            SetAPen(rport, pens[SHADOWPEN]);
-            /* Draw triangle border */
-            Move(rport, left, bottom);
-            Draw(rport, right, top);
-            Draw(rport, right, bottom);
-            Draw(rport, left, bottom);
-
+	    LOCKSHARED_WINDECOR(data->dri)
+    	    DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&decormsg);	
+	    UNLOCK_WINDECOR(data->dri)
             break;
         }
 

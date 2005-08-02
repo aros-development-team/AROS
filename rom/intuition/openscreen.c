@@ -11,6 +11,7 @@
 #include <intuition/screens.h>
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
+#include <intuition/windecorclass.h>
 #include <intuition/gadgetclass.h>
 #include <graphics/modeid.h>
 #include <graphics/videocontrol.h>
@@ -1446,16 +1447,17 @@ AROS_LH1(struct Screen *, OpenScreen,
         }
         D(bug("layers intited screen\n"));
 
-        screen->DInfo.dri_Version = DRI_VERSION;
-        screen->DInfo.dri_NumPens = NUMDRIPENS;
-        screen->DInfo.dri_Pens = screen->Pens;
+        screen->DInfo.dri.dri_Version = DRI_VERSION;
+        screen->DInfo.dri.dri_NumPens = NUMDRIPENS;
+        screen->DInfo.dri.dri_Pens = screen->Pens;
         /* dri_Depth is 8 on hi/true color screens like in AmigaOS with picasso96/cybergraphx */
-        screen->DInfo.dri_Depth = (ns.Depth <= 8) ? ns.Depth : 8;
+        screen->DInfo.dri.dri_Depth = (ns.Depth <= 8) ? ns.Depth : 8;
 #warning These are probably monitor dependent
-        screen->DInfo.dri_Resolution.X = 44;
-        screen->DInfo.dri_Resolution.Y = 44;
-        screen->DInfo.dri_Flags = 0;
-
+        screen->DInfo.dri.dri_Resolution.X = 44;
+        screen->DInfo.dri.dri_Resolution.Y = 44;
+        screen->DInfo.dri.dri_Flags = 0;
+    	screen->DInfo.dri_Screen = &screen->Screen;
+	InitSemaphore(&screen->DInfo.dri_WinDecorSem);
 
         /* SA_SysFont overrides SA_Font! */
 
@@ -1471,14 +1473,14 @@ AROS_LH1(struct Screen *, OpenScreen,
     	#if 1
             /* Use safe OpenFont here - Piru
              */
-            screen->DInfo.dri_Font = SafeReopenFont(IntuitionBase, &GetPrivIBase(IntuitionBase)->ScreenFont);
+            screen->DInfo.dri.dri_Font = SafeReopenFont(IntuitionBase, &GetPrivIBase(IntuitionBase)->ScreenFont);
     	#else
 
     	    #warning: Really hacky way of re-opening ScreenFont
 
             Forbid();
-            screen->DInfo.dri_Font = GetPrivIBase(IntuitionBase)->ScreenFont;
-            screen->DInfo.dri_Font->tf_Accessors++;
+            screen->DInfo.dri.dri_Font = GetPrivIBase(IntuitionBase)->ScreenFont;
+            screen->DInfo.dri.dri_Font->tf_Accessors++;
             Permit();
     	#endif
 	
@@ -1489,11 +1491,11 @@ AROS_LH1(struct Screen *, OpenScreen,
         }
         else if (ns.Font)
         {
-            screen->DInfo.dri_Font = OpenFont(ns.Font);
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: custom font 0x%lx\n",screen->DInfo.dri_Font));
+            screen->DInfo.dri.dri_Font = OpenFont(ns.Font);
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: custom font 0x%lx\n",screen->DInfo.dri.dri_Font));
         }
 
-        if (!screen->DInfo.dri_Font)
+        if (!screen->DInfo.dri.dri_Font)
         {
             /* GfxBase->DefaultFont is *not* always topaz 8. It
                can be set with the Font prefs program!! */
@@ -1501,19 +1503,19 @@ AROS_LH1(struct Screen *, OpenScreen,
     	#if 1
             /* Use safe OpenFont.. - Piru
              */
-            screen->DInfo.dri_Font = SafeReopenFont(IntuitionBase, &GfxBase->DefaultFont);
+            screen->DInfo.dri.dri_Font = SafeReopenFont(IntuitionBase, &GfxBase->DefaultFont);
     	#else
 
     	    #warning: Really hacky way of re-opening system default font
 
             Forbid();
-            screen->DInfo.dri_Font = GfxBase->DefaultFont;
-            screen->DInfo.dri_Font->tf_Accessors++;
+            screen->DInfo.dri.dri_Font = GfxBase->DefaultFont;
+            screen->DInfo.dri.dri_Font->tf_Accessors++;
             Permit();
     	#endif
         }
 
-        if (!screen->DInfo.dri_Font) ok = FALSE;
+        if (!screen->DInfo.dri.dri_Font) ok = FALSE;
 
     } /* if (ok) */
 
@@ -1531,7 +1533,7 @@ AROS_LH1(struct Screen *, OpenScreen,
         if (ns.Depth > 1)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set NewLook\n"));
-            screen->DInfo.dri_Flags |= DRIF_NEWLOOK;
+            screen->DInfo.dri.dri_Flags |= DRIF_NEWLOOK;
         }
 
 
@@ -1722,6 +1724,22 @@ AROS_LH1(struct Screen *, OpenScreen,
 
     if (ok)
     {
+        struct TagItem windecor_tags[] =
+        {
+            {WDA_DrawInfo   , (IPTR)&screen->DInfo  },
+	    {WDA_Screen     , (IPTR)screen  	    },
+            {TAG_DONE                       	    }
+        };
+    	
+	screen->DInfo.dri_WinDecorObj = NewObjectA(NULL, WINDECORCLASS, windecor_tags);
+	if (!screen->DInfo.dri_WinDecorObj)
+	{
+	    ok = FALSE;
+	}
+    }
+    
+    if (ok)
+    {
         struct TagItem sysi_tags[] =
         {
             {SYSIA_Which    , MENUCHECK     	    },
@@ -1729,15 +1747,15 @@ AROS_LH1(struct Screen *, OpenScreen,
             {TAG_DONE                       	    }
         };
 
-        screen->DInfo.dri_CheckMark = NewObjectA(NULL, "sysiclass", sysi_tags);
+        screen->DInfo.dri.dri_CheckMark = NewObjectA(NULL, "sysiclass", sysi_tags);
         DEBUG_OPENSCREEN(dprintf("OpenScreen: CheckMark 0x%lx\n",
                                  screen->DInfo.dri_CheckMark));
 
         sysi_tags[0].ti_Data = AMIGAKEY;
 
-        screen->DInfo.dri_AmigaKey  = NewObjectA(NULL, "sysiclass", sysi_tags);
+        screen->DInfo.dri.dri_AmigaKey  = NewObjectA(NULL, "sysiclass", sysi_tags);
         DEBUG_OPENSCREEN(dprintf("OpenScreen: AmigaKey 0x%lx\n",
-                                 screen->DInfo.dri_AmigaKey));
+                                 screen->DInfo.dri.dri_AmigaKey));
 #ifdef SKINS
         sysi_tags[0].ti_Data = SUBMENUIMAGE;
         screen->DInfo.dri_Customize->submenu  = NewObjectA(NULL, "sysiclass", sysi_tags);
@@ -1747,12 +1765,12 @@ AROS_LH1(struct Screen *, OpenScreen,
             !screen->DInfo.dri_Customize->menutoggle) ok = FALSE;
 #endif
 
-        if (!screen->DInfo.dri_CheckMark || !screen->DInfo.dri_AmigaKey) ok = FALSE;
+        if (!screen->DInfo.dri.dri_CheckMark || !screen->DInfo.dri.dri_AmigaKey) ok = FALSE;
     }
 
     if (ok)
     {
-        SetFont(&screen->Screen.RastPort, screen->DInfo.dri_Font);
+        SetFont(&screen->Screen.RastPort, screen->DInfo.dri.dri_Font);
 
         AskFont(&screen->Screen.RastPort, (struct TextAttr *) &screen->textattr);
 
@@ -1773,10 +1791,10 @@ AROS_LH1(struct Screen *, OpenScreen,
         screen->Screen.MenuHBorder = 4;
 #endif
 #ifdef TITLEHACK
-        screen->Screen.BarHeight   = screen->DInfo.dri_Font->tf_YSize + screen->Screen.WBorTop-2 +
+        screen->Screen.BarHeight   = screen->DInfo.dri.dri_Font->tf_YSize + screen->Screen.WBorTop-2 +
                                      screen->Screen.BarVBorder * 2; /* real layer will be 1 pixel higher! */
 #else
-        screen->Screen.BarHeight   = screen->DInfo.dri_Font->tf_YSize +
+        screen->Screen.BarHeight   = screen->DInfo.dri.dri_Font->tf_YSize +
                                      screen->Screen.BarVBorder * 2; /* real layer will be 1 pixel higher! */
 #endif
 
@@ -1862,9 +1880,9 @@ AROS_LH1(struct Screen *, OpenScreen,
         {
             int i;
 	    
-            for (i = 0;i <= screen->DInfo.dri_NumPens; i++)
+            for (i = 0;i <= screen->DInfo.dri.dri_NumPens; i++)
             {
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: dri_Pen[%ld] = %ld\n",i,screen->DInfo.dri_Pens[i]));
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: dri_Pen[%ld] = %ld\n",i,screen->DInfo.dri.dri_Pens[i]));
             }
         }
 #endif
@@ -1996,27 +2014,32 @@ AROS_LH1(struct Screen *, OpenScreen,
             KillScreenBar(&screen->Screen, IntuitionBase);
         }
 
+    	if (screen->DInfo.dri_WinDecorObj)
+	{
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose WinDecor Object\n"));
+            DisposeObject(screen->DInfo.dri_WinDecorObj);	    
+	}
 #ifdef SKINS
         DisposeObject(screen->DInfo.dri_Customize->submenu);
         DisposeObject(screen->DInfo.dri_Customize->menutoggle);
         if (screen->DInfo.dri_Customize) FreeMem(screen->DInfo.dri_Customize,sizeof (struct IntuitionCustomize));
         if (screen->DInfo.dri_Colors) FreeMem(screen->DInfo.dri_Colors,4 * DRIPEN_NUMDRIPENS);
 #endif
-        if (screen->DInfo.dri_AmigaKey)
+        if (screen->DInfo.dri.dri_AmigaKey)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose AmigaKey Object\n"));
-            DisposeObject(screen->DInfo.dri_AmigaKey);
+            DisposeObject(screen->DInfo.dri.dri_AmigaKey);
         }
-        if (screen->DInfo.dri_CheckMark)
+        if (screen->DInfo.dri.dri_CheckMark)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose CheckMark Object\n"));
-            DisposeObject(screen->DInfo.dri_CheckMark);
+            DisposeObject(screen->DInfo.dri.dri_CheckMark);
         }
 
-        if (screen->DInfo.dri_Font)
+        if (screen->DInfo.dri.dri_Font)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Close Font\n"));
-            CloseFont(screen->DInfo.dri_Font);
+            CloseFont(screen->DInfo.dri.dri_Font);
         }
 
         if (screen->AllocatedBitmap && !(ns.Type & CUSTOMBITMAP))
