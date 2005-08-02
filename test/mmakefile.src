@@ -77,7 +77,8 @@ FILES := \
     openlib \
     dumpmem \
     simplepng \
-    truecolorpens
+    truecolorpens \
+    windecor
 
 EXEDIR := $(AROS_TESTS)
 
