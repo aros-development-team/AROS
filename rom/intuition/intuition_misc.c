@@ -15,6 +15,7 @@
 #include <intuition/intuitionbase.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
+#include <intuition/windecorclass.h>
 #include <intuition/preferences.h>
 #include <intuition/extensions.h>
 #include <graphics/layers.h>
@@ -166,6 +167,44 @@ void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 
 #define TITLEBAR_HEIGHT (w->BorderTop)
 
+Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
+    	    	    	  struct DrawInfo *dri, struct IntuitionBase *IntuitionBase)
+{
+    Object *im;
+    
+    struct TagItem image_tags[] =
+    {
+	{SYSIA_Which    , which        	    	    	    },
+	{SYSIA_DrawInfo , (IPTR)dri         	    	    },
+	{SYSIA_Size 	, scr->Flags & SCREENHIRES ?
+                	  SYSISIZE_MEDRES : SYSISIZE_LOWRES },
+	{TAG_DONE                   	    	    	    }
+    };
+
+    im = NewObjectA(NULL, SYSICLASS, image_tags);
+    if (im)
+    {
+    	struct TagItem size_tags[] =
+	{
+	    {IA_Width	, 0 	    	    },
+	    {IA_Height	, preferred_height  },
+	    {TAG_DONE	    	    	    }
+	};	
+    	IPTR width, height;
+	
+	GetAttr(IA_Width, im, &width);
+	GetAttr(IA_Height, im, &height);
+		
+	size_tags[0].ti_Data = preferred_height * width / height;
+	
+	SetAttrsA(im, size_tags);
+    }
+    
+    return im;
+}
+
+/**********************************************************************************/
+
 BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 {
 
@@ -262,27 +301,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 {GA_RelVerify   , TRUE              },
                 {TAG_DONE                   	    }
             };
-
-            struct TagItem image_tags[] =
-            {
-    	#ifdef SKINS
-            	{TAG_IGNORE 	, 0         	    	    	    },
-    	#else
-            	{IA_Left    	, -1                	    	    },
-    	#endif
-    	    #if SQUARE_WIN_GADGETS
-                {IA_Width   	, TITLEBAR_HEIGHT + 1       	    },
-	    #endif
-                {IA_Height  	, TITLEBAR_HEIGHT   	    	    },
-                {SYSIA_Which    , DEPTHIMAGE        	    	    },
-                {SYSIA_DrawInfo , (IPTR)dri         	    	    },
-                {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ?
-                    	    	  SYSISIZE_MEDRES : SYSISIZE_LOWRES },
-                {TAG_DONE                   	    	    	    }
-            };
             Object *im;
 
-            im = NewObjectA(NULL, SYSICLASS, image_tags);
+            im = CreateStdSysImage(DEPTHIMAGE, TITLEBAR_HEIGHT, w->WScreen, dri, IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -304,9 +325,6 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                     GetAttr(GA_Width, SYSGAD(w, DEPTHGAD), &width);
 
                     /*****/
-#ifndef SKINS
-                    --width;
-#endif
 
                     relright -= width;
                     db_width -= width;
@@ -349,26 +367,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 {TAG_DONE                   	    }
             };
 
-            struct TagItem image_tags[] =
-            {
-    	    #ifdef SKINS
-                {TAG_IGNORE 	, 0         	    	    	    },
-    	    #else
-                {IA_Left    	, -1                	    	    },
-    	    #endif
-    	    #if SQUARE_WIN_GADGETS
-                {IA_Width   	, TITLEBAR_HEIGHT + 1       	    },
-	    #endif
-                {IA_Height  	, TITLEBAR_HEIGHT   	    	    },
-                {SYSIA_Which    , ZOOMIMAGE         	    	    },
-                {SYSIA_DrawInfo , (IPTR)dri         	    	    },
-                {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ?
-                    	    	  SYSISIZE_MEDRES : SYSISIZE_LOWRES },
-                {TAG_DONE                   	    	    	    }
-            };
             Object *im;
 
-            im = NewObjectA(NULL, SYSICLASS, image_tags);
+            im = CreateStdSysImage(ZOOMIMAGE, TITLEBAR_HEIGHT, w->WScreen, dri, IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -388,8 +389,6 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 {
                     IPTR width;
                     GetAttr(GA_Width, SYSGAD(w, ZOOMGAD), &width);
-
-                    --width;
 
                     relright -= width;
                     db_width -= width;
@@ -468,21 +467,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 {GA_RelVerify   , TRUE              },
                 {TAG_DONE                   	    }
             };
-            struct TagItem image_tags[] =
-            {
-	    #if SQUARE_WIN_GADGETS
-                {IA_Width 	, TITLEBAR_HEIGHT + 1 	    	    },
-	    #endif
-                {IA_Height      , TITLEBAR_HEIGHT	    	    },
-                {SYSIA_Which    , CLOSEIMAGE            	    },
-                {SYSIA_DrawInfo , (IPTR)dri     	    	    },
-                {SYSIA_Size     , w->WScreen->Flags & SCREENHIRES ?
-                     	    	  SYSISIZE_MEDRES : SYSISIZE_LOWRES },
-                {TAG_DONE               	    	    	    }
-            };
             Object *im;
 
-            im = NewObjectA(NULL, SYSICLASS, image_tags);
+            im = CreateStdSysImage(CLOSEIMAGE, TITLEBAR_HEIGHT, w->WScreen, dri,IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -550,7 +537,20 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
             for (i = NUM_SYSGADS; --i >= 0; )
             {
                 if (SYSGAD(w, i))
+		{
+    		    struct wdpLayoutBorderGadgets  msg;
+
+		    msg.MethodID 	    	= WDM_LAYOUT_BORDERGADGETS;
+		    msg.wdp_Window 	    	= w;
+		    msg.wdp_Gadgets     	= SYSGAD(w, i);
+		    msg.wdp_Flags   	 	= WD_LBGF_SYSTEMGADGET | WD_LBGF_INITIAL;
+
+		    LOCKSHARED_WINDECOR(dri);
+		    DoMethodA(((struct IntDrawInfo *)dri)->dri_WinDecorObj, (Msg)&msg);	
+		    UNLOCK_WINDECOR(dri);
+	  		
                     AddGadget(w, (struct Gadget *)SYSGAD(w, i), 0);
+		}
             }
 
             ReturnBool("CreateWinSysGadgets", TRUE);
@@ -630,7 +630,7 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 
         if (scr->BarLayer)
         {
-            SetFont(scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri_Font);
+            SetFont(scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri.dri_Font);
             RenderScreenBar(scr, FALSE, IntuitionBase);
         }
 
@@ -660,7 +660,7 @@ void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase)
 {
 
-    struct DrawInfo *dri = &((struct IntScreen *)scr)->DInfo;
+    struct DrawInfo *dri = &((struct IntScreen *)scr)->DInfo.dri;
     struct RastPort *rp;
 
     if (scr->BarLayer)

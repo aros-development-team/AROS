@@ -95,11 +95,6 @@
 #   define ASSERT_VALID_PTR_ROMOK(ptr)
 #endif
 
-// FIXME: needs better solution...
-#ifndef SKINS
-#   define IntDrawInfo DrawInfo
-#endif
-
 // FIXME: seems only used for RefreshWindowTitles() ? -> better names
 // FIXME: what are the correct values?
 #define NO_DOUBLEBUFFER         (0)
@@ -556,16 +551,24 @@ void ReleaseSharedPointer(struct SharedPointer *, struct IntuitionBase *);
 void sn_DoNotify(ULONG type, APTR value, struct Library *_ScreenNotifyBase);
 #endif
 
+struct IntDrawInfo
+{
+    struct DrawInfo 	     dri;
+    struct Screen   	    *dri_Screen;
+    struct SignalSemaphore   dri_WinDecorSem;
+    Object  	    	    *dri_WinDecorObj;
+};
+
+#define LOCK_WINDECOR(dri)   	 ObtainSemaphore(&((struct IntDrawInfo *)(dri))->dri_WinDecorSem);
+#define LOCKSHARED_WINDECOR(dri) ObtainSemaphoreShared(&((struct IntDrawInfo *)(dri))->dri_WinDecorSem);
+#define UNLOCK_WINDECOR(dri) 	 ReleaseSemaphore(&((struct IntDrawInfo *)(dri))->dri_WinDecorSem);
+
 struct IntScreen
 {
     struct Screen            Screen;
 
     /* Private fields */
-#ifdef SKINS
     struct IntDrawInfo       DInfo;
-#else
-    struct DrawInfo          DInfo;
-#endif
     struct TTextAttr         textattr;
     ULONG                    textattrtags[3];
     UWORD                    Pens[NUMDRIPENS];
