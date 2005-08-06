@@ -141,7 +141,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
 		msg.MethodID 	    	= WDM_DRAW_WINBORDER;
 		msg.wdp_Window 	    	= window;
 		msg.wdp_RPort     	= rp;
-    	    	msg.wdp_Flags	    	= (mustbe == REFRESHGAD_TOPBORDER) ? WD_DWBF_TOP_ONLY : 0;
+    	    	msg.wdp_Flags	    	= (mustbe == REFRESHGAD_TOPBORDER) ? WDF_DWB_TOP_ONLY : 0;
 		
 		DoMethodA(((struct IntDrawInfo *)(dri))->dri_WinDecorObj, (Msg)&msg);	
     	    }
@@ -155,6 +155,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
 		msg.wdp_Window 	    	= window;
 		msg.wdp_RPort     	= rp;
     	    	msg.wdp_TitleAlign  	= WD_DWTA_LEFT;
+		msg.wdp_Flags	    	= 0;
 		
 		DoMethodA(((struct IntDrawInfo *)(dri))->dri_WinDecorObj, (Msg)&msg);	
     	    }
