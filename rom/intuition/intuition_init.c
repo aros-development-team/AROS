@@ -70,6 +70,7 @@ struct IClass *InitPropGClass (LIBBASETYPEPTR LIBBASE);
 struct IClass *InitStrGClass (LIBBASETYPEPTR LIBBASE);
 struct IClass *InitGroupGClass (LIBBASETYPEPTR LIBBASE);
 struct IClass *InitWinDecorClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitScrDecorClass (LIBBASETYPEPTR LIBBASE);
 
 struct IClass *InitMenuBarLabelClass (LIBBASETYPEPTR LIBBASE);
 
@@ -200,6 +201,8 @@ AROS_SET_LIBFUNC(IntuitionInit, LIBBASETYPE, LIBBASE)
     InitGroupGClass (LIBBASE);      /* After GADGETCLASS    */
     DEBUG_INIT(dprintf("LIB_Init: create windecorclass\n"));
     InitWinDecorClass (LIBBASE);    /* After ROOTCLASS    */
+    DEBUG_INIT(dprintf("LIB_Init: create scrdecorclass\n"));
+    InitScrDecorClass (LIBBASE);    /* After ROOTCLASS    */
     
 #ifdef __MORPHOS__
     GetPrivIBase(LIBBASE)->mosmenuclass = InitMuiMenuClass(LIBBASE);
