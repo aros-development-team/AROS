@@ -1059,7 +1059,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 	msg.MethodID 	    	= WDM_LAYOUT_BORDERGADGETS;
 	msg.wdp_Window 	    	= w;
 	msg.wdp_Gadgets     	= nw.FirstGadget;
-	msg.wdp_Flags   	= WD_LBGF_INITIAL | WD_LBGF_MULTIPLE;
+	msg.wdp_Flags   	= WDF_LBG_INITIAL | WDF_LBG_MULTIPLE;
 
 	LOCKSHARED_WINDECOR(dri);
 	DoMethodA(dri->dri_WinDecorObj, (Msg)&msg);	
