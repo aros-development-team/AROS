@@ -12,6 +12,7 @@
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
 #include <intuition/windecorclass.h>
+#include <intuition/scrdecorclass.h>
 #include <intuition/gadgetclass.h>
 #include <graphics/modeid.h>
 #include <graphics/videocontrol.h>
@@ -482,7 +483,7 @@ AROS_LH1(struct Screen *, OpenScreen,
             sharepens = TRUE; /* not sure */
         }
 
-        while((tag = NextTagItem (&tagList)))
+        while((tag = NextTagItem ((const struct TagItem **)&tagList)))
         {
 #if 1
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Tag 0x%08lx Data 0x%08lx\n",
@@ -1033,8 +1034,8 @@ AROS_LH1(struct Screen *, OpenScreen,
     }
 #else
     if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
-        GetDisplayInfoData(displayinfo, &dimensions, sizeof(dimensions), DTAG_DIMS, modeid) &&
-        GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid))
+        GetDisplayInfoData(displayinfo, (UBYTE *)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid) &&
+        GetDisplayInfoData(displayinfo, (UBYTE *)&monitor, sizeof(monitor), DTAG_MNTR, modeid))
     {
         screen->Monitor = monitor.Mspc;
 
@@ -1258,7 +1259,7 @@ AROS_LH1(struct Screen *, OpenScreen,
 
     if (ok)
     {
-        struct Color32 *p;
+        // struct Color32 *p;
         int 	    	k;
         UWORD 	       *q;
 
@@ -1458,6 +1459,7 @@ AROS_LH1(struct Screen *, OpenScreen,
         screen->DInfo.dri.dri_Flags = 0;
     	screen->DInfo.dri_Screen = &screen->Screen;
 	InitSemaphore(&screen->DInfo.dri_WinDecorSem);
+	InitSemaphore(&screen->DInfo.dri_ScrDecorSem);
 
         /* SA_SysFont overrides SA_Font! */
 
@@ -1737,6 +1739,22 @@ AROS_LH1(struct Screen *, OpenScreen,
 	    ok = FALSE;
 	}
     }
+
+    if (ok)
+    {
+        struct TagItem scrdecor_tags[] =
+        {
+            {SDA_DrawInfo   , (IPTR)&screen->DInfo  },
+	    {SDA_Screen     , (IPTR)screen  	    },
+            {TAG_DONE                       	    }
+        };
+    	
+	screen->DInfo.dri_ScrDecorObj = NewObjectA(NULL, SCRDECORCLASS, scrdecor_tags);
+	if (!screen->DInfo.dri_ScrDecorObj)
+	{
+	    ok = FALSE;
+	}
+    }
     
     if (ok)
     {
@@ -1819,27 +1837,12 @@ AROS_LH1(struct Screen *, OpenScreen,
                 {TAG_DONE	             	}
             };
 
-            struct TagItem image_tags[] =
-            {
-            #if SQUARE_WIN_GADGETS
-		{IA_Left    	, -1	    	    	    	    	},
-                {IA_Width   	, SDEPTH_HEIGHT + 1  	    	    	},
-	    #else
-		{IA_Left    	, 0 	    	    	    	    	},
-	    #endif
-                {IA_Height   	, SDEPTH_HEIGHT     	    	    	},
-                {SYSIA_Which    , SDEPTHIMAGE       	    	    	},
-                {SYSIA_DrawInfo , (IPTR)&screen->DInfo      	    	},
-                {SYSIA_Size 	, screen->Screen.Flags & SCREENHIRES ?
-                    	    	  SYSISIZE_MEDRES : SYSISIZE_LOWRES 	},
-                {TAG_DONE                   	    	    	    	}
-            };
-
-            struct Object *im = 0;
+            Object *im = 0;
 
             if (!(screen->Screen.Flags & SCREENQUIET))
             {
-                im = NewObjectA(NULL, SYSICLASS, image_tags);
+                im = CreateStdSysImage(SDEPTHIMAGE, SDEPTH_HEIGHT, &screen->Screen,
+		    	    	       (struct DrawInfo *)&screen->DInfo, IntuitionBase);
             }
 
             sdepth_tags[0].ti_Data = (IPTR)im;
@@ -1852,6 +1855,21 @@ AROS_LH1(struct Screen *, OpenScreen,
             screen->Screen.FirstGadget = (struct Gadget *)screen->depthgadget;
             if (screen->Screen.FirstGadget)
             {
+    		struct IntDrawInfo     	      *dri = &screen->DInfo;
+    		struct sdpLayoutScreenGadgets  msg;
+
+                screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
+
+		msg.MethodID 	    	= SDM_LAYOUT_SCREENGADGETS;
+		msg.sdp_Layer 	    	= screen->Screen.BarLayer;
+		msg.sdp_Gadgets     	= screen->Screen.FirstGadget;
+		msg.sdp_Flags   	= SDF_LSG_INITIAL | SDF_LSG_MULTIPLE;
+
+		LOCKSHARED_SCRDECOR(dri);
+		DoMethodA(dri->dri_ScrDecorObj, (Msg)&msg);	
+		UNLOCK_SCRDECOR(dri);
+	    
+	    #if 0
                 struct TagItem gadtags[] =
                 {
                     {GA_RelRight, 0 },
@@ -1860,13 +1878,11 @@ AROS_LH1(struct Screen *, OpenScreen,
                 IPTR width;
 
                 GetAttr(GA_Width, screen->depthgadget, &width);
-    	    #if SQUARE_WIN_GADGETS
-		width--;
-	    #endif
  	     
                 gadtags[0].ti_Data = -width + 1;
                 SetAttrsA(screen->depthgadget, gadtags);
-                screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
+    	    #endif
+		
             }
             else
             {
@@ -2013,6 +2029,12 @@ AROS_LH1(struct Screen *, OpenScreen,
             DEBUG_OPENSCREEN(dprintf("OpenScreen: KillScreenBar\n"));
             KillScreenBar(&screen->Screen, IntuitionBase);
         }
+
+    	if (screen->DInfo.dri_ScrDecorObj)
+	{
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose ScrDecor Object\n"));
+            DisposeObject(screen->DInfo.dri_ScrDecorObj);	    
+	}
 
     	if (screen->DInfo.dri_WinDecorObj)
 	{
