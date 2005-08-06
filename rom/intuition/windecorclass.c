@@ -220,6 +220,10 @@ static IPTR windecor_get(Class *cl, Object *obj, struct opGet *msg)
 	    *msg->opg_Storage = (IPTR)data->scr;
 	    break;
 	    
+	case WDA_TrueColorOnly:
+	    *msg->opg_Storage = FALSE;
+	    break;
+	    
 	default:
 	    return DoSuperMethodA(cl, obj, (Msg)msg);
     }
@@ -942,7 +946,7 @@ IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *ms
     	CheckRectFill(rp, 0, 0, window->Width - 1, 0, IntuitionBase);
     }
 
-    if (!(msg->wdp_Flags & WD_DWBF_TOP_ONLY))
+    if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
 	if (window->BorderLeft > 0)
 	{
@@ -974,7 +978,7 @@ IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *ms
     
     SetAPen(rp, pens[SHADOWPEN]);
     
-    if (!(msg->wdp_Flags & WD_DWBF_TOP_ONLY))
+    if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
 	if (window->BorderRight > 0)
 	{
@@ -1021,7 +1025,7 @@ IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *ms
     	CheckRectFill(rp, 1, 1, window->Width - 2, window->BorderTop - 2, IntuitionBase);
     }
 
-    if (!(msg->wdp_Flags & WD_DWBF_TOP_ONLY))
+    if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
 	if (window->BorderLeft > 2)
 	{
@@ -1152,8 +1156,8 @@ IPTR windecor_draw_wintitle(Class *cl, Object *obj, struct wdpDrawWinTitle *msg)
 
 IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorderGadgets *msg)
 {
-    struct windecor_data *data = INST_DATA(cl, obj);
-    struct Window   	 *window = msg->wdp_Window;
+    //struct windecor_data *data = INST_DATA(cl, obj);
+    //struct Window   	 *window = msg->wdp_Window;
     struct Gadget   	 *gadget = msg->wdp_Gadgets;
 
     while(gadget)
@@ -1188,7 +1192,7 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
 		break;
 	}
 	
-	if (msg->wdp_Flags & WD_LBGF_MULTIPLE)
+	if (msg->wdp_Flags & WDF_LBG_MULTIPLE)
 	{
 	    gadget = gadget->NextGadget;
 	}
@@ -1200,6 +1204,117 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
     
     return TRUE;
 }
+
+/**************************************************************************************************/
+
+IPTR windecor_draw_borderpropback(Class *cl, Object *obj, struct wdpDrawBorderPropBack *msg)
+{
+    struct windecor_data *data = INST_DATA(cl, obj);
+    struct Window   	 *window = msg->wdp_Window;
+    struct RastPort 	 *rp = msg->wdp_RPort;
+    struct Gadget   	 *gadget = msg->wdp_Gadget;
+    struct Rectangle	 *r = msg->wdp_RenderRect;
+    struct PropInfo 	 *pi = ((struct PropInfo *)gadget->SpecialInfo);
+    UWORD   	    	 *pens = DRI(data->dri)->dri_Pens;
+
+    SetDrMd(rp, JAM2);
+    
+    if (pi->Flags & PROPNEWLOOK)
+    {
+        static UWORD pattern[] = {0x5555,0xAAAA};
+	
+    	SetAfPt(rp, pattern, 1);
+	SetAPen(rp, pens[SHADOWPEN]);
+	SetBPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);	
+	RectFill(rp, r->MinX, r->MinY, r->MaxX, r->MaxY);
+    	SetAfPt(rp, NULL, 0);
+    }
+    else
+    {
+    	SetAPen(rp, pens[BACKGROUNDPEN]);
+	RectFill(rp, r->MinX, r->MinY, r->MaxX, r->MaxY);
+    }
+    
+    return TRUE;
+}
+
+/**************************************************************************************************/
+
+IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPropKnob *msg)
+{
+    struct windecor_data *data = INST_DATA(cl, obj);
+    struct Window   	 *window = msg->wdp_Window;
+    struct RastPort 	 *rp = msg->wdp_RPort;
+    struct Gadget   	 *gadget = msg->wdp_Gadget;
+    struct Rectangle	 *r = msg->wdp_RenderRect;
+    struct PropInfo 	 *pi = ((struct PropInfo *)gadget->SpecialInfo);
+    UWORD   	    	 *pens = DRI(data->dri)->dri_Pens;
+
+    SetDrMd(rp, JAM2);
+    
+    if (pi->Flags & PROPBORDERLESS)
+    {
+        SetAPen(rp, pens[SHINEPEN]);
+
+        /* Top edge */
+        RectFill(rp, r->MinX, r->MinY, r->MaxX - 1, r->MinY);
+
+        /* Left edge */
+        RectFill(rp, r->MinX, r->MinY + 1, r->MinX, r->MaxY - 1);
+
+        SetAPen(rp, pens[SHADOWPEN]);
+
+        /* Right edge */
+        RectFill(rp, r->MaxX, r->MinY, r->MaxX, r->MaxY);
+
+        /* Bottom edge */
+        RectFill(rp, r->MinX, r->MaxY, r->MaxX - 1, r->MaxY);
+
+    	r->MinX++;
+	r->MinY++;
+	r->MaxX--;
+	r->MaxY--;
+
+    } /* PROPBORDERLESS */
+    else
+    {
+        SetAPen(rp, pens[SHADOWPEN]);
+
+        if (pi->Flags & FREEHORIZ)
+        {
+            /* black line at the left and at the right */
+
+            RectFill(rp, r->MinX, r->MinY, r->MinX, r->MaxY);
+            RectFill(rp, r->MaxX, r->MinY, r->MaxX, r->MaxY);
+
+    	    r->MinX++;
+	    r->MaxX--;
+	    
+        }
+
+        if (pi->Flags & FREEVERT)
+        {
+            /* black line at the top and at the bottom */
+
+            RectFill(rp, r->MinX, r->MinY, r->MaxX, r->MinY);
+            RectFill(rp, r->MinX, r->MaxY, r->MaxX, r->MaxY);
+
+            r->MinY++,
+	    r->MaxY--;
+        }
+
+
+    } /* not PROPBORDERLESS */
+
+
+    SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
+
+    /* interior */
+    RectFill(rp, r->MinX, r->MinY, r->MaxX, r->MaxY);
+
+    return TRUE;
+}
+
 
 /**************************************************************************************************/
 
@@ -1243,6 +1358,14 @@ AROS_UFH3S(IPTR, dispatch_windecorclass,
 	    retval = windecor_layout_bordergadgets(cl, o, (struct wdpLayoutBorderGadgets *)msg);
 	    break;
 	    
+	case WDM_DRAW_BORDERPROPBACK:
+	    retval = windecor_draw_borderpropback(cl, o, (struct wdpDrawBorderPropBack *)msg);
+	    break;
+
+	case WDM_DRAW_BORDERPROPKNOB:
+	    retval = windecor_draw_borderpropknob(cl, o, (struct wdpDrawBorderPropKnob *)msg);
+	    break;
+
 	default:
             retval = DoSuperMethodA(cl, o, msg);
             break;
