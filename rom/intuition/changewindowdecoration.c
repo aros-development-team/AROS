@@ -99,8 +99,8 @@ static VOID int_changewindowdecoration(struct ChangeWindowDecorationActionMsg *m
 	    layoutmsg.MethodID    = WDM_LAYOUT_BORDERGADGETS;
 	    layoutmsg.wdp_Window  = win;
 	    layoutmsg.wdp_Gadgets = win->FirstGadget;
-	    layoutmsg.wdp_Flags   = WD_LBGF_MULTIPLE |
-	    	    	      	    WD_LBGF_INGADLIST;
+	    layoutmsg.wdp_Flags   = WDF_LBG_MULTIPLE |
+	    	    	      	    WDF_LBG_INGADLIST;
 
 	    LOCKSHARED_WINDECOR(msg->dri);
 	    DoMethodA(((struct IntDrawInfo *)msg->dri)->dri_WinDecorObj, (Msg)&layoutmsg);	
