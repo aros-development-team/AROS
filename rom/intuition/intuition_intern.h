@@ -557,11 +557,17 @@ struct IntDrawInfo
     struct Screen   	    *dri_Screen;
     struct SignalSemaphore   dri_WinDecorSem;
     Object  	    	    *dri_WinDecorObj;
+    struct SignalSemaphore   dri_ScrDecorSem;
+    Object  	    	    *dri_ScrDecorObj;    
 };
 
 #define LOCK_WINDECOR(dri)   	 ObtainSemaphore(&((struct IntDrawInfo *)(dri))->dri_WinDecorSem);
 #define LOCKSHARED_WINDECOR(dri) ObtainSemaphoreShared(&((struct IntDrawInfo *)(dri))->dri_WinDecorSem);
 #define UNLOCK_WINDECOR(dri) 	 ReleaseSemaphore(&((struct IntDrawInfo *)(dri))->dri_WinDecorSem);
+
+#define LOCK_SCRDECOR(dri)   	 ObtainSemaphore(&((struct IntDrawInfo *)(dri))->dri_ScrDecorSem);
+#define LOCKSHARED_SCRDECOR(dri) ObtainSemaphoreShared(&((struct IntDrawInfo *)(dri))->dri_ScrDecorSem);
+#define UNLOCK_SCRDECOR(dri) 	 ReleaseSemaphore(&((struct IntDrawInfo *)(dri))->dri_ScrDecorSem);
 
 struct IntScreen
 {
@@ -943,6 +949,8 @@ ULONG TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase);
 
 /* intuition_misc protos */
 extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
+Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
+    	    	    	  struct DrawInfo *dri, struct IntuitionBase *IntuitionBase);
 extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, struct IntuitionBase * IntuitionBase);
 extern BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase);
 extern VOID KillWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase);
