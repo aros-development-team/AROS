@@ -49,7 +49,8 @@
 
 /* public classes existing only in AROS but not AmigaOS */
 #define MENUBARLABELCLASS "menubarlabelclass"
-#define WINDECORCLASS	  "windecoreclass"
+#define WINDECORCLASS	  "windecorclass"
+#define SCRDECORCLASS	  "scrdecorclass"
 
 #define OM_Dummy     0x0100
 #define OM_NEW       (OM_Dummy + 1)
