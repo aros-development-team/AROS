@@ -16,6 +16,7 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/windecorclass.h>
+#include <intuition/scrdecorclass.h>
 #include <intuition/preferences.h>
 #include <intuition/extensions.h>
 #include <graphics/layers.h>
@@ -540,10 +541,10 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 		{
     		    struct wdpLayoutBorderGadgets  msg;
 
-		    msg.MethodID 	    	= WDM_LAYOUT_BORDERGADGETS;
-		    msg.wdp_Window 	    	= w;
-		    msg.wdp_Gadgets     	= SYSGAD(w, i);
-		    msg.wdp_Flags   	 	= WD_LBGF_SYSTEMGADGET | WD_LBGF_INITIAL;
+		    msg.MethodID    = WDM_LAYOUT_BORDERGADGETS;
+		    msg.wdp_Window  = w;
+		    msg.wdp_Gadgets = (struct Gadget *)SYSGAD(w, i);
+		    msg.wdp_Flags   = WDF_LBG_SYSTEMGADGET | WDF_LBG_INITIAL;
 
 		    LOCKSHARED_WINDECOR(dri);
 		    DoMethodA(((struct IntDrawInfo *)dri)->dri_WinDecorObj, (Msg)&msg);	
@@ -677,7 +678,7 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
            when calling refreshgadget inside layer update state */
         LockLayerInfo(scr->BarLayer->LayerInfo);
         LOCKGADGET
-        LockLayer(NULL,scr->BarLayer);
+        LockLayer(0, scr->BarLayer);
 
 #if USE_NEWDISPLAYBEEP
         beeping = (scr->Flags & BEEPING) && GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8;
@@ -685,33 +686,33 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 
         if (refresh) BeginUpdate(scr->BarLayer);
 
+    	LOCKSHARED_SCRDECOR(dri);
 
-        /* real BarHeight = scr->BarHeight + 1 !!! */
+    	{
+    	    struct sdpDrawScreenBar  msg;
 
+	    msg.MethodID    = SDM_DRAW_SCREENBAR;
+	    msg.sdp_Layer   = scr->BarLayer;
+	    msg.sdp_RPort   = rp;
+    	    msg.sdp_Flags   = 0;
 
-        SetDrMd(rp, JAM2);
-        SetAPen(rp, dri->dri_Pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
-        RectFill(rp, 0, 0, scr->Width - 1, scr->BarHeight - 1);
+	    DoMethodA(((struct IntDrawInfo *)(dri))->dri_ScrDecorObj, (Msg)&msg);	
+    	}
 
-        SetAPen(rp, dri->dri_Pens[beeping ? BARDETAILPEN : BARTRIMPEN]);
-        RectFill(rp, 0, scr->BarHeight, scr->Width - 1, scr->BarHeight);
-
-        if (scr->Title)
+        /* Render the titlebar */
+        if (NULL != scr->Title)
         {
-#ifdef __MORPHOS__
-            CONST_STRPTR title = patchScreenTitle(scr->Title);
-#else
-            //FIXME: what's patchScreenTitle supposed to do? anything we want for AROS?
-            CONST_STRPTR title = scr->Title;
-#endif /* __MORPHOS__ */
+    	    struct sdpDrawScreenTitle  msg;
 
-            SetAPen(rp, dri->dri_Pens[beeping ? BARBLOCKPEN: BARDETAILPEN]);
-            SetBPen(rp, dri->dri_Pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
+	    msg.MethodID    = SDM_DRAW_SCREENTITLE;
+	    msg.sdp_Layer   = scr->BarLayer;
+	    msg.sdp_RPort   = rp;
+	    msg.sdp_Flags   = 0;
 
-            Move(rp, scr->BarHBorder, scr->BarVBorder + rp->TxBaseline);
+	    DoMethodA(((struct IntDrawInfo *)(dri))->dri_ScrDecorObj, (Msg)&msg);	
+    	}
 
-            Text(rp, title, strlen(title));
-        }
+	UNLOCK_SCRDECOR(dri);
 
         if (scr->FirstGadget)
         {
