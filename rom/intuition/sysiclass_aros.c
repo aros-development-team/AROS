@@ -207,7 +207,8 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     	struct wdpGetDefSizeSysImage  msg;
 	ULONG       	    	      width = DEFSIZE_WIDTH, height = DEFSIZE_HEIGHT;
 	
-	msg.MethodID 	    	= WDM_GETDEFSIZE_SYSIMAGE;
+	msg.MethodID 	    	= (data->type == SDEPTHIMAGE) ? SDM_GETDEFSIZE_SYSIMAGE :
+	    	    	    	    	    	    	    	WDM_GETDEFSIZE_SYSIMAGE;
 	msg.wdp_Which 	    	= data->type;
 	msg.wdp_SysiSize     	= size;
 	msg.wdp_ReferenceFont 	= reffont;
@@ -215,9 +216,18 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 	msg.wdp_Height	    	= &height;
 	msg.wdp_Flags	    	= 0;
 	
-	LOCKSHARED_WINDECOR(data->dri);
-	DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&msg);	
-	UNLOCK_WINDECOR(data->dri);
+	if (data->type == SDEPTHIMAGE)
+	{
+	    LOCKSHARED_SCRDECOR(data->dri);
+	    DoMethodA(INTDRI(data->dri)->dri_ScrDecorObj, (Msg)&msg);	
+	    UNLOCK_SCRDECOR(data->dri);
+	}
+	else
+	{
+	    LOCKSHARED_WINDECOR(data->dri);
+	    DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&msg);	
+	    UNLOCK_WINDECOR(data->dri);
+	}
 	
     	if (!set_width) IM(obj)->Width = width;
     	if (!set_height) IM(obj)->Height = height;	
