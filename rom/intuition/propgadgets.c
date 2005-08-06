@@ -12,6 +12,7 @@
 #include <intuition/cghooks.h>
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
+#include <intuition/windecorclass.h>
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/rpattr.h>
 #include "intuition_intern.h"
@@ -36,39 +37,49 @@ extern ULONG HookEntry();
 
 BOOL isonborder(struct Gadget *gadget,struct Window *window);
 
-static void RenderPropBackground(struct Window *win, struct DrawInfo *dri,
-    	    	    	    	 struct Rectangle *rect, struct PropInfo *pi,
-				 struct RastPort *rp, BOOL onborder, struct IntuitionBase *IntuitionBase)
+static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct DrawInfo *dri,
+    	    	    	    	 struct Rectangle *rect, struct Rectangle *proprect,
+				 struct Rectangle *knobrect, struct PropInfo *pi,
+				 struct RastPort *rp, BOOL onborder,
+				 struct IntuitionBase *IntuitionBase)
 {
-    static UWORD    	pattern[] = {0x5555,0xAAAA};
-    struct Rectangle 	r = *rect;
-       
-#if 0
-    if (!(pi->Flags & PROPBORDERLESS))
+    if (onborder)
     {
-    	r.MinX++;
-	r.MinY++;
-	r.MaxX--;
-	r.MaxY--;
-    }
-#endif
-    
-    SetDrMd(rp, JAM2);
-    
-    if (pi->Flags & PROPNEWLOOK)
-    {
-    	SetAfPt(rp, pattern, 1);
-	SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
-	SetBPen(rp, dri->dri_Pens[(!onborder || !(win->Flags & WFLG_WINDOWACTIVE)) ?
-	    	    	    	  BACKGROUNDPEN : FILLPEN]);
-	
-	RectFill(rp, r.MinX, r.MinY, r.MaxX, r.MaxY);
-    	SetAfPt(rp, NULL, 0);
+	struct wdpDrawBorderPropBack msg;
+
+	msg.MethodID 	    = WDM_DRAW_BORDERPROPBACK;
+	msg.wdp_Window      = win;
+	msg.wdp_RPort 	    = rp;
+	msg.wdp_Gadget      = gad;
+	msg.wdp_RenderRect  = rect;
+	msg.wdp_PropRect    = proprect;
+	msg.wdp_KnobRect    = knobrect;
+	msg.wdp_Flags 	    = 0;
+
+	LOCKSHARED_WINDECOR(dri);
+	DoMethodA(((struct IntDrawInfo *)dri)->dri_WinDecorObj, (Msg)&msg);	
+	UNLOCK_WINDECOR(dri);
     }
     else
     {
-    	SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
-	RectFill(rp, r.MinX, r.MinY, r.MaxX, r.MaxY);
+	static UWORD	 pattern[] = {0x5555,0xAAAA};
+
+	SetDrMd(rp, JAM2);
+
+	if (pi->Flags & PROPNEWLOOK)
+	{
+    	    SetAfPt(rp, pattern, 1);
+	    SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+	    SetBPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+
+	    RectFill(rp, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
+    	    SetAfPt(rp, NULL, 0);
+	}
+	else
+	{
+    	    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+	    RectFill(rp, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
+	}
     }
 }
 
@@ -418,6 +429,9 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
                                  bbox.Left + bbox.Width - 1,
                                  bbox.Top + bbox.Height - 1,
                                  IntuitionBase);
+				 
+                        bbox.Left ++; bbox.Top ++;
+                        bbox.Width -= 2; bbox.Height -= 2;
                     }
 
                     RefreshPropGadgetKnob (gadget, &bbox, &kbox, window, req, IntuitionBase);
@@ -454,7 +468,8 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
                         tmprect.MinY = bbox.Top;
                         tmprect.MaxY = bbox.Top + bbox.Height - 1;
 
-                        RenderPropBackground(window,dri,&tmprect,pi,rp,onborder,IntuitionBase);
+                        RenderPropBackground(gadget, window, dri, &tmprect, &tmprect, NULL,
+			    	    	     pi, rp, onborder, IntuitionBase);
                     }
                 } // if (CalcKnob
                 break;
@@ -487,7 +502,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                             struct BBox * knob, struct Window * window, struct Requester * req,
                             struct IntuitionBase * IntuitionBase)
 {
-    struct DrawInfo  *dri;
+    struct DrawInfo  	*dri;
     struct RastPort 	*rp;
     struct PropInfo 	*pi;
     struct GadgetInfo    gi;
@@ -508,6 +523,21 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 
         if ((rp = ObtainGIRPort(&gi)))
         {
+            struct BBox      bbox;
+    	    struct Rectangle brect;
+	    struct Rectangle krect;
+	    
+            CalcBBox (window, req, gadget, &bbox);
+    	    brect.MinX = bbox.Left;
+	    brect.MinY = bbox.Top;
+	    brect.MaxX = bbox.Left + bbox.Width - 1;
+	    brect.MaxY = bbox.Top + bbox.Height - 1;
+	    
+    	    krect.MinX = knob->Left;
+	    krect.MinY = knob->Top;
+	    krect.MaxX = knob->Left + knob->Width - 1;
+	    krect.MaxY = knob->Top + knob->Height - 1;
+
             SetDrMd (rp, JAM2);
 
             if (clear)
@@ -603,7 +633,8 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 
                 for(i = 0; i < nrects; i++)
                 {
-                    RenderPropBackground(window,dri,&clearrects[i],pi,rp,onborder,IntuitionBase);
+                    RenderPropBackground(gadget, window, dri, &clearrects[i], &brect, &krect,
+		    	    	    	 pi, rp, onborder, IntuitionBase);
                 }
 
             } /* if (clear) */
@@ -620,103 +651,26 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 
                 if (onborder)
                 {
-                    BOOL stdlook = TRUE;
+		    struct wdpDrawBorderPropKnob msg;
+		    struct Rectangle 	    	 knobrect;
+		    
+		    knobrect.MinX = knob->Left;
+		    knobrect.MinY = knob->Top;
+		    knobrect.MaxX = knob->Left + knob->Width - 1;
+		    knobrect.MaxY = knob->Top + knob->Height - 1;
+		    
+		    msg.MethodID    	= WDM_DRAW_BORDERPROPKNOB;
+		    msg.wdp_Window  	= window;
+		    msg.wdp_RPort   	= rp;
+		    msg.wdp_Gadget  	= gadget;
+		    msg.wdp_RenderRect  = &knobrect;
+		    msg.wdp_PropRect	= &brect;
+		    msg.wdp_Flags   	= hit ? WDF_DBPK_HIT : 0;
 
-                    #ifdef SKINS
-                    stdlook = RenderOnBorderPropKnob(window,dri,rp,pi,knob,hit,IntuitionBase);
-                    #endif
-
-                    if (stdlook)
-                    {
-                        if (flags & PROPBORDERLESS)
-                        {
-                            SetAPen(rp,dri->dri_Pens[SHINEPEN]);
-
-                            /* Top edge */
-                            RectFill(rp,knob->Left,
-                                     knob->Top,
-                                     knob->Left + knob->Width - 2,
-                                     knob->Top);
-
-                            /* Left edge */
-                            RectFill(rp,knob->Left,
-                                     knob->Top + 1,
-                                     knob->Left,
-                                     knob->Top + knob->Height - 2);
-
-                            SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
-
-                            /* Right edge */
-                            RectFill(rp,knob->Left + knob->Width - 1,
-                                     knob->Top,
-                                     knob->Left + knob->Width - 1,
-                                     knob->Top + knob->Height - 1);
-
-                            /* Bottom edge */
-                            RectFill(rp,knob->Left,
-                                     knob->Top + knob->Height - 1,
-                                     knob->Left + knob->Width - 2,
-                                     knob->Top + knob->Height - 1);
-
-                            knob->Left++;
-                            knob->Top++;
-                            knob->Width -= 2;
-                            knob->Height -= 2;
-
-                        } /* PROPBORDERLESS */
-                        else
-                        {
-                            SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
-
-                            if (flags & FREEHORIZ)
-                            {
-                                /* black line at the left and at the right */
-
-                                RectFill(rp,knob->Left,
-                                         knob->Top,
-                                         knob->Left,
-                                         knob->Top + knob->Height - 1);
-
-                                RectFill(rp,knob->Left + knob->Width - 1,
-                                         knob->Top,
-                                         knob->Left + knob->Width - 1,
-                                         knob->Top + knob->Height - 1);
-
-                                knob->Left++,
-                                knob->Width -= 2;
-                            }
-
-                            if (flags & FREEVERT)
-                            {
-                                /* black line at the top and at the bottom */
-
-                                RectFill(rp,knob->Left,
-                                         knob->Top,
-                                         knob->Left + knob->Width - 1,
-                                         knob->Top);
-
-                                RectFill(rp,knob->Left,
-                                         knob->Top + knob->Height - 1,
-                                         knob->Left + knob->Width - 1,
-                                         knob->Top + knob->Height - 1);
-
-                                knob->Top++;
-                                knob->Height -= 2;
-                            }
-
-
-                        } /* not PROPBORDERLESS */
-
-
-                        SetAPen(rp, dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
-
-                        /* interior */
-                        RectFill(rp,knob->Left,
-                                 knob->Top,
-                                 knob->Left + knob->Width - 1,
-                                 knob->Top + knob->Height - 1);
-                    } /* stdlook */
-
+		    LOCKSHARED_WINDECOR(dri);
+		    DoMethodA(((struct IntDrawInfo *)dri)->dri_WinDecorObj, (Msg)&msg);	
+		    UNLOCK_WINDECOR(dri);
+		                           
                 } /* gadget inside window border */
                 else
                 {
@@ -805,9 +759,6 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
             else
             {
                 struct Image *image = (struct Image *)gadget->GadgetRender;
-                struct BBox   bbox;
-
-                CalcBBox (window, req, gadget, &bbox);
 
                 if (knob->Top + image->Height <= bbox.Top + bbox.Height &&
                         knob->Left + image->Width <= bbox.Left + bbox.Width)
@@ -826,15 +777,9 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 
             if (gadget->Flags & GFLG_DISABLED)
             {
-                struct BBox bbox;
-
-                CalcBBox (window, req, gadget, &bbox);
-
-                RenderDisabledPattern(rp, (struct DrawInfo *)dri, bbox.Left,
-                                      bbox.Top,
-                                      bbox.Left + bbox.Width - 1,
-                                      bbox.Top + bbox.Height - 1,
-                                      IntuitionBase);
+                RenderDisabledPattern(rp, (struct DrawInfo *)dri,
+		    	    	      brect.MinX, brect.MinY,
+                                      brect.MaxX, brect.MaxY, IntuitionBase);
             }
 
             ReleaseGIRPort(rp);
