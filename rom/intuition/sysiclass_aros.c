@@ -14,6 +14,7 @@
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
 #include <intuition/windecorclass.h>
+#include <intuition/scrdecorclass.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/extensions.h>
@@ -212,6 +213,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 	msg.wdp_ReferenceFont 	= reffont;
 	msg.wdp_Width 	    	= &width;
 	msg.wdp_Height	    	= &height;
+	msg.wdp_Flags	    	= 0;
 	
 	LOCKSHARED_WINDECOR(data->dri);
 	DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&msg);	
@@ -347,7 +349,8 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     decormsg.wdp_Height = height;
     decormsg.wdp_Which = data->type;
     decormsg.wdp_State = msg->imp_State;
-
+    decormsg.wdp_Flags = 0;
+    
     SetDrMd(rport, JAM1);
 
     switch(data->type)
@@ -908,112 +911,6 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    	case SDEPTHIMAGE:
-        {
-            UWORD *pens = data->dri->dri_Pens;
-            UWORD  bg;
-            WORD   h_spacing;
-            WORD   v_spacing;
-
-            if (!(data->flags & SYSIFLG_NOBORDER))
-            {
-                renderimageframe(rport, DEPTHIMAGE, msg->imp_State, pens,
-                                 left, top, width, height, IntuitionBase);
-                left += 2;
-                top++;
-                right--;
-                bottom--;
-                width -= 3;
-                height -= 2;
-            }
-
-            h_spacing = width / 6;
-            v_spacing = height / 6;
-
-            if (data->type == DEPTHIMAGE)
-            {
-                bg = getbgpen(msg->imp_State, pens);
-            }
-            else
-            {
-                bg = pens[BACKGROUNDPEN];
-            }
-
-            /* Clear background into correct color */
-            SetAPen(rport, bg);
-            RectFill(rport, left, top, right, bottom);
-
-            /* Draw a image of two partly overlapped tiny windows,
-            */
-
-            left += h_spacing;
-            top  += v_spacing;
-
-            width  -= h_spacing * 2;
-            height -= v_spacing * 2;
-
-            right  = left + width  - 1;
-            bottom = top  + height - 1;
-
-            /* Render top left window  */
-
-            SetAPen(rport, pens[SHADOWPEN]);
-            drawrect(rport
-                     , left
-                     , top
-                     , right - (width / 3 )
-                     , bottom - (height / 3)
-                     , IntuitionBase);
-
-
-            /* Fill top left window (inside of the frame above) */
-
-            if ((msg->imp_State != IDS_INACTIVENORMAL) &&
-                    (data->type != SDEPTHIMAGE))
-            {
-                SetAPen(rport,pens[BACKGROUNDPEN]);
-                RectFill(rport
-                         , left         + 1
-                         , top          + 1
-                         , right - (width / 3)   - 1
-                         , bottom - (height / 3) - 1);
-
-            }
-
-            /* Render bottom right window  */
-            SetAPen(rport, pens[SHADOWPEN]);
-            drawrect(rport
-                     , left + (width / 3)
-                     , top + (height / 3)
-                     , right
-                     , bottom
-                     , IntuitionBase);
-
-            /* Fill bottom right window (inside of the frame above) */
-            SetAPen(rport, pens[((msg->imp_State == IDS_INACTIVENORMAL) &&
-                                 (data->type != SDEPTHIMAGE)) ? BACKGROUNDPEN : SHINEPEN]);
-            RectFill(rport
-                     , left + (width / 3)   + 1
-                     , top + (height / 3)   + 1
-                     , right            - 1
-                     , bottom       - 1);
-
-
-            if (msg->imp_State == IDS_SELECTED)
-            {
-                /* Re-Render top left window  */
-
-                SetAPen(rport, pens[SHADOWPEN]);
-                drawrect(rport
-                         , left
-                         , top
-                         , right - (width / 3 )
-                         , bottom - (height / 3)
-                         , IntuitionBase);
-            }
-            break;
-        }
-
     	case CLOSEIMAGE:
 	case ZOOMIMAGE:
 	case DEPTHIMAGE:
@@ -1025,6 +922,16 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
+    	case SDEPTHIMAGE:
+	{
+	    decormsg.MethodID  = SDM_DRAW_SYSIMAGE;
+
+	    LOCKSHARED_SCRDECOR(data->dri)
+    	    DoMethodA(INTDRI(data->dri)->dri_ScrDecorObj, (Msg)&decormsg);	
+	    UNLOCK_SCRDECOR(data->dri)
+	    break;
+	}
+	
     	case MENUCHECK:
         {
             UWORD *pens = data->dri->dri_Pens;
