@@ -192,6 +192,7 @@ AROS_LH1(BOOL, CloseScreen,
     /* Free the RastPort's contents */
     DeinitRastPort(&screen->RastPort);
 
+    DisposeObject(((struct IntScreen *)screen)->DInfo.dri_ScrDecorObj);
     DisposeObject(((struct IntScreen *)screen)->DInfo.dri_WinDecorObj);
     
 #ifdef SKINS
