@@ -257,6 +257,8 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
         GetPrivScreen(screen)->pubScrNode = 0;
     }
 
+    RemoveResourceFromList(screen, RESOURCE_SCREEN, IntuitionBase);
+
     DEBUG_CLOSESCREEN(dprintf("CloseScreen: LockIBase\n"));
 
     lock = LockIBase(0);

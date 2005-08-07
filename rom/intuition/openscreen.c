@@ -2151,6 +2151,8 @@ static VOID int_openscreen(struct OpenScreenActionMsg *msg,
 
     D(bug("set active screen\n"));
 
+    AddResourceToList(screen, RESOURCE_SCREEN, IntuitionBase);
+
 }
 
 
