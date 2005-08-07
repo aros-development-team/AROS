@@ -23,9 +23,9 @@ FUNCS := \
 	beginrefresh \
 	buildeasyrequestargs_aros \
 	buildsysrequest_aros \
+	changedecorationa \
 	changescreenbuffer \
 	changewindowbox \
-	changewindowdecoration \
 	changewindowshape \
 	cleardmrequest \
 	clearmenustrip \
