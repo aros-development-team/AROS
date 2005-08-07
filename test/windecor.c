@@ -1,6 +1,7 @@
 #include <dos/dos.h>
 #include <intuition/classusr.h>
 #include <intuition/windecorclass.h>
+#include <intuition/scrdecorclass.h>
 #include <graphics/rpattr.h>
 #include <graphics/gfxmacros.h>
 #include <utility/tagitem.h>
@@ -10,6 +11,7 @@
 #include <proto/layers.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/cybergraphics.h>
 #include <clib/alib_protos.h>
 
 #include <stdio.h>
@@ -18,8 +20,9 @@
 
 /**************************************************************************************************/
 
-struct IClass 	*cl;
+struct IClass 	*cl, *scrcl;
 Object	      	*thisdecorobj, *olddecorobj;
+Object	      	*thisscrdecorobj, *oldscrdecorobj;
 struct Screen 	*scr;
 struct DrawInfo *dri;
 
@@ -1330,6 +1333,216 @@ IPTR windecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
     return retval;
 }
 
+/**************************************************************************************************/
+
+struct scrdecor_data
+{
+    struct DrawInfo *dri;
+    struct Screen *scr;
+};
+
+/**************************************************************************************************/
+
+static IPTR scrdecor_new(Class *cl, Object *obj, struct opSet *msg)
+{
+    struct scrdecor_data *data;
+
+    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
+    if (obj)
+    {
+    	data = INST_DATA(cl, obj);
+	
+	data->dri = (struct DrawInfo *)GetTagData(SDA_DrawInfo, 0, msg->ops_AttrList);
+	data->scr = (struct Screen *)GetTagData(SDA_Screen, 0, msg->ops_AttrList);
+	
+	if (!data->dri || !data->scr)
+	{
+    	    STACKULONG method = OM_DISPOSE;
+	    
+    	    CoerceMethodA(cl, obj, (Msg)&method);
+	    
+	    return 0;
+	}	
+	
+    }
+    
+    return (IPTR)obj;
+}
+
+/**************************************************************************************************/
+
+static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
+{
+    //struct scrdecor_data *data = INST_DATA(cl, obj);
+
+    switch(msg->opg_AttrID)
+    {
+	case SDA_TrueColorOnly:
+	    *msg->opg_Storage = TRUE;
+	    break;
+	    
+	default:
+	    return DoSuperMethodA(cl, obj, (Msg)msg);
+    }
+    
+    return 1;    
+}
+
+/**************************************************************************************************/
+
+static void findscrtitlearea(struct Screen *scr, LONG *left, LONG *right)
+{
+    struct Gadget *g;
+
+    *left = 0;
+    *right = scr->Width - 1;
+    
+    for (g = scr->FirstGadget; g; g = g->NextGadget)
+    {
+        if (!(g->Flags & GFLG_RELRIGHT))
+        {
+            if (g->LeftEdge + g->Width > *left)
+                *left = g->LeftEdge + g->Width;
+        }
+        else
+        {
+            if (g->LeftEdge + scr->Width - 1 - 1 < *right)
+                *right = g->LeftEdge + scr->Width - 1 - 1;
+        }
+    }
+    
+}
+    
+/**************************************************************************************************/
+
+ULONG coltab[] =
+{
+    0xEEEEEE,
+    0xFFFFFF,
+    0xFFFFFF,
+    0xFFFFFF,
+    0xEEEEEE,
+    0xFFFFFF,
+    0xFFFFFF,
+    0xFFFFFF,
+    0xEEEEEE,
+    0xFFFFFF,
+    0xFFFFFF,
+    0xFFFFFF,
+    0xDDDDDD,
+    0x777777
+};
+
+/**************************************************************************************************/
+
+IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+    struct RastPort 	 *rp = msg->sdp_RPort;
+    UWORD   	    	 *pens = data->dri->dri_Pens;
+    LONG    	    	  left, right, y;
+   
+    SetDrMd(rp, JAM1);
+    for(y = 0; y <= data->scr->BarHeight; y++)
+    {
+    	ULONG col;
+	
+	col = coltab[y * (sizeof(coltab) / sizeof(coltab[0])) / data->scr->BarHeight];
+	
+    	FillPixelArray(rp, 0, y, data->scr->Width, 1, col);
+    }
+    
+    findscrtitlearea(data->scr, &left, &right);
+
+    SetAPen(rp, pens[SHADOWPEN]);
+    RectFill(rp, right, 1, right, data->scr->BarHeight - 1);
+        
+    FillPixelArray(rp, data->scr->BarHBorder + 4, 4,
+    	    	       data->scr->BarHeight - 8, data->scr->BarHeight - 8,
+		       0);
+    FillPixelArray(rp, data->scr->BarHBorder + 4, 4,
+    	    	       data->scr->BarHeight - 8, 1,
+		       0x777777);
+    FillPixelArray(rp, data->scr->BarHBorder + 4, 4,
+    	    	       1, data->scr->BarHeight - 8,
+		       0x777777);
+    FillPixelArray(rp, data->scr->BarHBorder + 5, 5,
+    	    	       data->scr->BarHeight - 9, data->scr->BarHeight - 9,
+		       0x0b750e);
+    
+    return TRUE;
+}
+
+/**************************************************************************************************/
+
+IPTR scrdecor_draw_screentitle(Class *cl, Object *obj, struct sdpDrawScreenTitle *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+    struct RastPort 	 *rp = msg->sdp_RPort;
+    LONG    	    	  right, left, y;
+    WORD    	    	  oldspacing;
+    
+    findscrtitlearea(data->scr, &left, &right);
+
+    SetDrMd(rp, JAM1);
+    for(y = 0; y <= data->scr->BarHeight; y++)
+    {
+    	ULONG col;
+	
+	col = coltab[y * (sizeof(coltab) / sizeof(coltab[0])) / data->scr->BarHeight];
+	
+    	FillPixelArray(rp, data->scr->BarHBorder + data->scr->BarHeight, y, (right - 1) - (left + 1) + 1, 1, col);
+    }
+
+    oldspacing = rp->TxSpacing;
+    rp->TxSpacing = 1;
+
+    Move(rp, data->scr->BarHBorder + data->scr->BarHeight + data->scr->BarHBorder, data->scr->BarVBorder + rp->TxBaseline);
+    Text(rp, data->scr->Title, strlen(data->scr->Title));
+    Move(rp, data->scr->BarHBorder + data->scr->BarHeight + data->scr->BarHBorder + 1, data->scr->BarVBorder + rp->TxBaseline);
+    Text(rp, data->scr->Title, strlen(data->scr->Title));
+    
+    rp->TxSpacing = oldspacing;
+        
+    return TRUE;
+}
+
+
+/**************************************************************************************************/
+
+IPTR scrdecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
+{
+    IPTR retval;
+    
+    switch(msg->MethodID)
+    {
+    	case OM_NEW:
+	    retval = scrdecor_new(cl, obj, (struct opSet *)msg);
+	    break;
+
+    	case OM_GET:
+	    retval = scrdecor_get(cl, obj, (struct opGet *)msg);
+	    break;
+	    
+	case SDM_DRAW_SCREENBAR:
+	    retval = scrdecor_draw_screenbar(cl, obj, (struct sdpDrawScreenBar *)msg);
+	    break;
+	    
+	case SDM_DRAW_SCREENTITLE:
+	    retval = scrdecor_draw_screentitle(cl, obj, (struct sdpDrawScreenTitle *)msg);
+	    break;
+	    
+	default:
+	    retval = DoSuperMethodA(cl, obj, msg);
+	    break;
+	    
+    }
+    
+    return retval;
+}
+
+/**************************************************************************************************/
+
 int main(void)
 {
     scr = LockPubScreen(NULL);
@@ -1345,21 +1558,50 @@ int main(void)
             	cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)windecor_dispatcher;
 		
 		AddClass(cl);
-				
-   	    	if ((olddecorobj = ChangeDecorationA(DECORATION_WINDOW, "testwindecor", dri, NULL)))
+	    	
+		scrcl = MakeClass("testscrdecor", SCRDECORCLASS, NULL, sizeof(struct scrdecor_data), 0);
+		if (scrcl)
 		{
-		    puts("Press CTRL-C to quit\n");
-		    Wait(SIGBREAKF_CTRL_C);
-		    thisdecorobj = ChangeDecorationA(DECORATION_WINDOW, OCLASS(olddecorobj)->cl_ID, dri, NULL);
+            	    scrcl->cl_Dispatcher.h_Entry    = HookEntry;
+            	    scrcl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)scrdecor_dispatcher;
+		
+		    AddClass(scrcl);
+		
+   	    	    olddecorobj = ChangeDecorationA(DECORATION_WINDOW, "testwindecor", dri, NULL);
+		    if (!olddecorobj) puts("Coult not change window decoration!\n");
+
+   	    	    oldscrdecorobj = ChangeDecorationA(DECORATION_SCREEN, "testscrdecor", dri, NULL);
+		    if (!oldscrdecorobj) puts("Coult not change screen decoration!\n");
 		    
-		    DisposeObject(olddecorobj);
-		    DisposeObject(thisdecorobj);
+		    if (olddecorobj || oldscrdecorobj)
+		    {
+		    	puts("Press CTRL-C to quit\n");
+		    	Wait(SIGBREAKF_CTRL_C);
+		    }
+			
+		    if (olddecorobj)
+		    {
+			thisdecorobj = ChangeDecorationA(DECORATION_WINDOW, OCLASS(olddecorobj)->cl_ID, dri, NULL);
+
+			DisposeObject(olddecorobj);
+			DisposeObject(thisdecorobj);
+		    }
+
+		    if (oldscrdecorobj)
+		    {
+			thisscrdecorobj = ChangeDecorationA(DECORATION_SCREEN, OCLASS(oldscrdecorobj)->cl_ID, dri, NULL);
+
+			DisposeObject(oldscrdecorobj);
+			DisposeObject(thisscrdecorobj);
+		    }		    
+		    
+		    FreeClass(scrcl);
 		}
-		else puts("Coult not change window decoration!\n");
+		else puts("Could not create testscrdecor class!\n");
 		
     		FreeClass(cl);
 	    }
-	    else puts("Coult not create testwindecor class\n");
+	    else puts("Coult not create testwindecor class!\n");
 	    
 	    FreeScreenDrawInfo(scr, dri);
 	}
