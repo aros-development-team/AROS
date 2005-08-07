@@ -1491,7 +1491,8 @@ IPTR scrdecor_draw_screentitle(Class *cl, Object *obj, struct sdpDrawScreenTitle
 	
 	col = coltab[y * (sizeof(coltab) / sizeof(coltab[0])) / data->scr->BarHeight];
 	
-    	FillPixelArray(rp, data->scr->BarHBorder + data->scr->BarHeight, y, (right - 1) - (left + 1) + 1, 1, col);
+    	FillPixelArray(rp, data->scr->BarHBorder + data->scr->BarHeight, y,
+	    	    	   (right - 1) - (data->scr->BarHBorder + data->scr->BarHeight) + 1, 1, col);
     }
 
     oldspacing = rp->TxSpacing;
