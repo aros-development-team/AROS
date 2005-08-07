@@ -953,6 +953,11 @@ void AddResourceToList(APTR resource, UWORD resourcetype, struct IntuitionBase *
 	    hn = &((struct IntWindow *)resource)->hashnode;
 	    hn->type = RESOURCE_WINDOW;
 	    break;
+
+    	case RESOURCE_SCREEN:
+	    hn = &((struct IntScreen *)resource)->hashnode;
+	    hn->type = RESOURCE_SCREEN;
+	    break;
 	    
 	default:
 	    D(bug("AddResourceToList: Unknown resource type!!!\n"));
@@ -979,6 +984,10 @@ void RemoveResourceFromList(APTR resource, UWORD resourcetype, struct IntuitionB
     {	
     	case RESOURCE_WINDOW:
 	    hn = &((struct IntWindow *)resource)->hashnode;
+	    break;
+
+    	case RESOURCE_SCREEN:
+	    hn = &((struct IntScreen *)resource)->hashnode;
 	    break;
 	    
 	default:
