@@ -366,6 +366,7 @@ struct IntScreen;
 #define RESOURCELIST_HASHSIZE 	256
 
 #define RESOURCE_WINDOW     	1
+#define RESOURCE_SCREEN	    	2
 
 struct HashNode
 {
@@ -574,6 +575,7 @@ struct IntScreen
     struct Screen            Screen;
 
     /* Private fields */
+    struct HashNode          hashnode;
     struct IntDrawInfo       DInfo;
     struct TTextAttr         textattr;
     ULONG                    textattrtags[3];
