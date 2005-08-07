@@ -148,6 +148,7 @@ static VOID int_changedecoration(struct ChangeDecorationActionMsg *msg,
 	    break;
 	    
 	case DECORATION_SCREEN:
+    	    RenderScreenBar(scr, FALSE, IntuitionBase);
 	    break;
 	    
     } /* switch(msg->which) */
