@@ -1346,11 +1346,11 @@ int main(void)
 		
 		AddClass(cl);
 				
-   	    	if ((olddecorobj = ChangeWindowDecorationA(dri, "testwindecor", NULL)))
+   	    	if ((olddecorobj = ChangeDecorationA(DECORATION_WINDOW, "testwindecor", dri, NULL)))
 		{
 		    puts("Press CTRL-C to quit\n");
 		    Wait(SIGBREAKF_CTRL_C);
-		    thisdecorobj = ChangeWindowDecorationA(dri, OCLASS(olddecorobj)->cl_ID, NULL);
+		    thisdecorobj = ChangeDecorationA(DECORATION_WINDOW, OCLASS(olddecorobj)->cl_ID, dri, NULL);
 		    
 		    DisposeObject(olddecorobj);
 		    DisposeObject(thisdecorobj);
