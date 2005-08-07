@@ -286,8 +286,11 @@ struct DrawInfo
 #define PEN_C2 0xFEFD
 #define PEN_C3 0xFEFC
 
-                                  /* Errors */
+/* Values for ChangeDecorationA which param */
+#define DECORATION_WINDOW 0
+#define DECORATION_SCREEN 1
 
+/* Errors */
 #define OSERR_NOMONITOR    1
 #define OSERR_NOCHIPS      2
 #define OSERR_NOMEM        3
