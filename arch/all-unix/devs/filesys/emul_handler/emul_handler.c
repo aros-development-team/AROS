@@ -106,12 +106,22 @@ static const UBYTE datatable;
 /*********************************************************************************************/
 
 struct emulbase * AROS_SLIB_ENTRY(init,emul_handler) ();
-void AROS_SLIB_ENTRY(open,emul_handler) ();
-BPTR AROS_SLIB_ENTRY(close,emul_handler) ();
-BPTR AROS_SLIB_ENTRY(expunge,emul_handler) ();
-int AROS_SLIB_ENTRY(null,emul_handler) ();
-void AROS_SLIB_ENTRY(beginio,emul_handler) ();
-LONG AROS_SLIB_ENTRY(abortio,emul_handler) ();
+AROS_LD3(void, open,
+ AROS_LDA(struct IOFileSys *, iofs, A1),
+ AROS_LDA(ULONG,              unitnum, D0),
+ AROS_LDA(ULONG,              flags, D1),
+	   struct emulbase *, emulbase, 1, emul_handler);
+AROS_LD1(BPTR, close,
+ AROS_LDA(struct IOFileSys *, iofs, A1),
+	   struct emulbase *, emulbase, 2, emul_handler);
+AROS_LD0(BPTR, expunge, struct emulbase *, emulbase, 3, emul_handler);
+AROS_LD0I(int, null, struct emulbase *, emulbase, 4, emul_handler);
+AROS_LD1(void, beginio,
+ AROS_LDA(struct IOFileSys *, iofs, A1),
+	   struct emulbase *, emulbase, 5, emul_handler);
+AROS_LD1(LONG, abortio,
+ AROS_LDA(struct IOFileSys *, iofs, A1),
+	  struct emulbase *, emulbase, 6, emul_handler);
 
 /*********************************************************************************************/
 
