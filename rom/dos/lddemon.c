@@ -34,11 +34,25 @@
 #define CHECK_DEPENDENCY 1
 
 /* Please leave them here! They are needed on Linux-M68K */
-struct Library * Dos_OpenLibrary();
-BYTE Dos_OpenDevice();
-void Dos_CloseLibrary();
-void Dos_CloseDevice();
-void Dos_RemLibrary();
+AROS_LD2(struct Library *, OpenLibrary,
+    AROS_LDA(STRPTR, libname, A1),
+    AROS_LDA(ULONG, version, D0),
+    struct ExecBase *, SysBase, 0, Dos);
+AROS_LD4(BYTE, OpenDevice,
+    AROS_LDA(STRPTR, devname, A0),
+    AROS_LDA(ULONG, unitNumber, D0),
+    AROS_LDA(struct IORequest *, iORequest, A1),
+    AROS_LDA(ULONG, flags, D1),
+    struct ExecBase *, SysBase, 0, Dos);
+AROS_LD1(void, CloseLibrary,
+    AROS_LDA(struct Library *, library, A1),
+    struct ExecBase *, SysBase, 0, Dos);
+AROS_LD1(void, CloseDevice,
+    AROS_LDA(struct IORequest *, iORequest, A1),
+    struct ExecBase *, SysBase, 0, Dos);
+AROS_LD1(void, RemLibrary,
+    AROS_LDA(struct Library *, library, A1),
+    struct ExecBase *, SysBase, 0, Dos);
 
 struct LDDMsg
 {
