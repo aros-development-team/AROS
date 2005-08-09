@@ -12,7 +12,10 @@
 ULONG s;
 
 /* Function prototype needed on Linux-M68K*/
-ULONG Test_handler();
+AROS_LD2(ULONG,handler,
+    AROS_LDA(ULONG,signals,D0),
+    AROS_LDA(APTR,exceptData,A1),
+    struct ExecBase *,SysBase,0,Test);
 
 AROS_LH2(ULONG,handler,
     AROS_LHA(ULONG,signals,D0),
