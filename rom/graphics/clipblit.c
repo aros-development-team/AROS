@@ -15,6 +15,10 @@
 #include <graphics/clip.h>
 #include "gfxfuncsupport.h"
 
+#include <aros/debug.h>
+
+#define NEW_INTERNAL_CLIPBLIT 1
+
 #define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
 
 /*****************************************************************************
@@ -106,6 +110,11 @@
     FIX_GFXCOORD(xDest);
     FIX_GFXCOORD(yDest);
 
+#if NEW_INTERNAL_CLIPBLIT
+    if (!OBTAIN_DRIVERDATA(srcRP, GfxBase))
+    	return;
+#endif
+
     /* overlapping and non-overlapping blits are handled differently. */
 
     if (srcRP->Layer &&
@@ -130,24 +139,12 @@
     /* check for overlapping blits */
     if ( srcRP == destRP )
     {
-	struct Region * R = NewRegion();
+	struct Region * R;
 	struct Rectangle Rect;
 	struct RegionRectangle * RR;
 
-	/* did I get the region structure? */
-	if (NULL == R)
-	    goto exit;
-
-	/* define the rectangle of the destination */
-	Rect.MinX = xDest;
-	Rect.MaxX = xDest+xSize-1;
-	Rect.MinY = yDest;
-	Rect.MaxY = yDest+ySize-1;
-	/* define the region with this rectangle */
-	/* check whether operation succeeds = enough memory available*/
-	if (FALSE == OrRectRegion(R,&Rect))
+    	if (!(R = NewRectRegion(xDest, yDest, xDest + xSize - 1, yDest + ySize - 1)))
 	{
-	    DisposeRegion(R);
 	    goto exit;
 	}
 
@@ -157,7 +154,7 @@
 	Rect.MinY = ySrc;
 	Rect.MaxY = ySrc+ySize-1;
 	/* combine them to check for overlapping areas */
-	AndRectRegion(R,&Rect); /* this call cannot fail! */
+	AndRectRegion(R, &Rect); /* this call cannot fail! */
 
 	RR = R->RegionRectangle;
 
@@ -170,6 +167,7 @@
                will have to split this up into several calls to the
                internal ClipBlit routine
 	    */
+
 	    xs = xDest-xSrc;
 	    ys = yDest-ySrc;
 	    if (xs < 0) xs = -xs;
@@ -200,18 +198,24 @@
 	    }
 	    else
 	    {
+	    	LONG dx, dy;
+		
         	/*
         	   This case is not as difficult as the overlapping
         	   part can be copied first and then the other parts can
         	   be copied.
         	*/
         	/* first copy the overlapping part to its destination */
+		
+		dx = R->bounds.MinX + RR->bounds.MinX - xSrc;
+		dy = R->bounds.MinY + RR->bounds.MinY - ySrc;
+		
         	internal_ClipBlit(srcRP,
-                        	  xSrc+RR->bounds.MinX,
-                        	  ySrc+RR->bounds.MinY,
+                        	  xSrc + dx,
+                        	  ySrc + dy,
                         	  srcRP,
-                        	  xDest+RR->bounds.MinX,
-                        	  yDest+RR->bounds.MinY,
+                        	  xDest + dx,
+                        	  yDest + dy,
                         	  RR->bounds.MaxX-RR->bounds.MinX+1,
                         	  RR->bounds.MaxY-RR->bounds.MinY+1,
                         	  minterm,
@@ -228,12 +232,15 @@
 
         	while (NULL != RR)
         	{
+		    dx = R->bounds.MinX + RR->bounds.MinX - xSrc;
+		    dy = R->bounds.MinY + RR->bounds.MinY - ySrc;
+
         	    internal_ClipBlit(srcRP,
-                        	      xSrc+RR->bounds.MinX,
-                        	      ySrc+RR->bounds.MinY,
+                        	      xSrc + dx,
+                        	      ySrc + dy,
                         	      srcRP,
-                        	      xDest+RR->bounds.MinX,
-                        	      yDest+RR->bounds.MinY,
+                        	      xDest + dx,
+                        	      yDest + dy,
                         	      RR->bounds.MaxX-RR->bounds.MinX+1,
                         	      RR->bounds.MaxY-RR->bounds.MinY+1,
                         	      minterm,
@@ -288,11 +295,70 @@ exit:
 
     if (srcRP->Layer)  UnlockLayerRom( srcRP->Layer);
 
+#if NEW_INTERNAL_CLIPBLIT
+    RELEASE_DRIVERDATA(srcRP, GfxBase);
+#endif
+
     return;
 
     AROS_LIBFUNC_EXIT
 
 } /* ClipBlit */
+
+#if NEW_INTERNAL_CLIPBLIT
+
+struct clipblit_render_data
+{
+    struct render_special_info   rsi;
+    ULONG   	    	         minterm;
+    struct RastPort 	    	*destRP;
+    LONG    	    	    	 xDest;
+    LONG    	    	    	 yDest;
+};
+
+static ULONG clipblit_render(APTR data, LONG srcx, LONG srcy,
+    	    	    	     OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			     LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase)
+{
+    struct clipblit_render_data *crd = data;
+
+    BltBitMapRastPort(crd->rsi.curbm, x1, y1,
+    	    	      crd->destRP, crd->xDest + srcx, crd->yDest + srcy,
+		      x2 - x1 + 1,
+		      y2 - y1 + 1,
+		      crd->minterm);
+		      
+    return 0;		      
+}
+
+void internal_ClipBlit(struct RastPort * srcRP,
+                       LONG xSrc,
+                       LONG ySrc,
+                       struct RastPort * destRP,
+                       LONG xDest,
+                       LONG yDest,
+                       LONG xSize,
+                       LONG ySize,
+                       UBYTE minterm,
+                       struct GfxBase * GfxBase)
+{
+    struct clipblit_render_data data;
+    struct Rectangle	    	rect;
+    
+    data.minterm 	= minterm;
+    data.destRP 	= destRP;
+    data.xDest  	= xDest;
+    data.yDest  	= yDest;
+    
+    rect.MinX = xSrc;
+    rect.MinY = ySrc;
+    rect.MaxX = xSrc + xSize - 1;
+    rect.MaxY = ySrc + ySize - 1;
+
+    do_render_func(srcRP, NULL, &rect, clipblit_render, &data, TRUE, GfxBase);
+}
+
+#else
 
 void internal_ClipBlit(struct RastPort * srcRP,
                        LONG xSrc,
@@ -616,5 +682,7 @@ void internal_ClipBlit(struct RastPort * srcRP,
 
   return;
 }
+
+#endif /* NEW_INTERNAL_CLIPBLIT */
 
 #undef LayersBase
