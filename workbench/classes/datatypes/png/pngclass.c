@@ -294,6 +294,8 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	    png.png_format = PBPAFMT_ARGB;
 	    png_set_swap_alpha(png.png_ptr);
 	#endif
+	
+	    bmhd->bmh_Masking = mskHasAlpha;
 	    break;
 
 	default:
