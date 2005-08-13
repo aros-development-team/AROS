@@ -52,6 +52,12 @@
 
     LONG                 *errorCode    = NULL;
     struct TagItem      **errorTagItem = NULL;
+    struct NativeIcon 	 *nativeicon = NULL;
+    
+    if (icon)
+    {
+    	nativeicon = GetNativeIcon(icon, LB(IconBase));
+    }
     
 #   define STORE(pointer, value)   (pointer != NULL ? *pointer = (value) : (value))
 #   define SET_ERRORCODE(value)    STORE(errorCode, (value))
@@ -152,57 +158,147 @@
             
             /* Local tags --------------------------------------------------*/
             case ICONCTRLA_GetImageMask1:
+	    	if (nativeicon)
+		{
+		    STORE((PLANEPTR *)tag->ti_Data, (PLANEPTR)nativeicon->icon35.img1.mask);
+		}
+		else
+		{
+		    STORE((PLANEPTR *)tag->ti_Data, 0);
+		}
+		processed++;
                 break;
                 
             case ICONCTRLA_GetImageMask2:
+	    	if (nativeicon)
+		{
+		    STORE((PLANEPTR *)tag->ti_Data, (PLANEPTR)nativeicon->icon35.img2.mask);
+		}
+		else
+		{
+		    STORE((PLANEPTR *)tag->ti_Data, 0);
+		}
+		processed++;
                 break;
                 
             case ICONCTRLA_SetTransparentColor1:
                 break;
                 
             case ICONCTRLA_GetTransparentColor1:
+	    	if (nativeicon && (nativeicon->icon35.img1.flags & IMAGE35F_HASTRANSPARENTCOLOR))
+		{
+		    STORE((LONG *)tag->ti_Data, (LONG)nativeicon->icon35.img1.transparentcolor);
+		}
+		else
+		{
+		    STORE((LONG *)tag->ti_Data, -1);
+		}
+		processed++;
                 break;
                 
             case ICONCTRLA_SetTransparentColor2:
                 break;
                 
             case ICONCTRLA_GetTransparentColor2:
+	    	if (nativeicon && (nativeicon->icon35.img2.flags & IMAGE35F_HASTRANSPARENTCOLOR))
+		{
+		    STORE((LONG *)tag->ti_Data, (LONG)nativeicon->icon35.img2.transparentcolor);
+		}
+		else
+		{
+		    STORE((LONG *)tag->ti_Data, -1);
+		}
+		processed++;
                 break;
                 
             case ICONCTRLA_SetPalette1:
                 break;
                 
             case ICONCTRLA_GetPalette1:
+	    	if (nativeicon)
+		{
+		    STORE((struct ColorRegister **)tag->ti_Data, (struct ColorRegister *)nativeicon->icon35.img1.palette);
+		}
+		else
+		{
+		    STORE((struct ColorRegister **)tag->ti_Data, 0);
+		}
+		processed++;
                 break;
                 
             case ICONCTRLA_SetPalette2:
                 break;
                 
             case ICONCTRLA_GetPalette2:
+	    	if (nativeicon)
+		{
+		    STORE((struct ColorRegister **)tag->ti_Data, (struct ColorRegister *)nativeicon->icon35.img2.palette);
+		}
+		else
+		{
+		    STORE((struct ColorRegister **)tag->ti_Data, 0);
+		}
+		processed++;
                 break;
                 
             case ICONCTRLA_SetPaletteSize1:
                 break;
                 
             case ICONCTRLA_GetPaletteSize1:
+	    	if (nativeicon)
+		{
+		    STORE((ULONG *)tag->ti_Data, nativeicon->icon35.img1.numcolors);
+		}
+		else
+		{
+		    STORE((ULONG *)tag->ti_Data, 0);
+		}
+		processed++;
                 break;
                 
             case ICONCTRLA_SetPaletteSize2:
                 break;
                 
             case ICONCTRLA_GetPaletteSize2:
+	    	if (nativeicon)
+		{
+		    STORE((ULONG *)tag->ti_Data, nativeicon->icon35.img2.numcolors);
+		}
+		else
+		{
+		    STORE((ULONG *)tag->ti_Data, 0);
+		}
+		processed++;
                 break;
                 
             case ICONCTRLA_SetImageData1:
                 break;
                 
             case ICONCTRLA_GetImageData1:
+	    	if (nativeicon)
+		{
+		    STORE((UBYTE **)tag->ti_Data, nativeicon->icon35.img1.imagedata);
+		}
+		else
+		{
+		    STORE((UBYTE **)tag->ti_Data, 0);
+		}
+		processed++;
                 break;
                 
             case ICONCTRLA_SetImageData2:
                 break;
                 
             case ICONCTRLA_GetImageData2:
+	    	if (nativeicon)
+		{
+		    STORE((UBYTE **)tag->ti_Data, nativeicon->icon35.img2.imagedata);
+		}
+		else
+		{
+		    STORE((UBYTE **)tag->ti_Data, 0);
+		}
+		processed++;
                 break;
                 
             case ICONCTRLA_SetFrameless:
@@ -227,21 +323,87 @@
                 break;
                 
             case ICONCTRLA_GetWidth:
+		processed++;
+	    	if (nativeicon)
+		{
+		    if (nativeicon->iconPNG.img1)
+		    {
+		    	STORE((ULONG *)tag->ti_Data, nativeicon->iconPNG.width);
+			break;
+		    }
+		    
+		    if (nativeicon->icon35.img1.imagedata)
+		    {
+		    	STORE((ULONG *)tag->ti_Data, nativeicon->icon35.width);
+			break;
+		    }			
+		}
+		
+		if (icon)
+		{
+		    STORE((ULONG *)tag->ti_Data, icon->do_Gadget.Width);
+		}
+		else
+		{
+		    STORE((ULONG *)tag->ti_Data, 0);
+		}
                 break;
                 
             case ICONCTRLA_SetHeight:
                 break;
                 
             case ICONCTRLA_GetHeight:
+		processed++;
+	    	if (nativeicon)
+		{
+		    if (nativeicon->iconPNG.img1)
+		    {
+		    	STORE((ULONG *)tag->ti_Data, nativeicon->iconPNG.height);
+			break;
+		    }
+		    
+		    if (nativeicon->icon35.img1.imagedata)
+		    {
+		    	STORE((ULONG *)tag->ti_Data, nativeicon->icon35.height);
+			break;
+		    }			
+		}
+		
+		if (icon)
+		{
+		    STORE((ULONG *)tag->ti_Data, icon->do_Gadget.Height);
+		}
+		else
+		{
+		    STORE((ULONG *)tag->ti_Data, 0);
+		}
                 break;
                 
             case ICONCTRLA_IsPaletteMapped:
+	    	if (nativeicon && nativeicon->icon35.img1.imagedata)
+		{
+		    STORE((LONG *)tag->ti_Data, 1);
+		}
+		else
+		{
+		    STORE((LONG *)tag->ti_Data, 0);
+		}
+		processed++;				
                 break;
                 
             case ICONCTRLA_IsNewIcon:
                 break;
                 
             case ICONCTRLA_IsNativeIcon:
+	    	if (nativeicon)
+		{
+		    STORE((LONG *)tag->ti_Data, 1);
+		}
+		else
+		{
+		    STORE((LONG *)tag->ti_Data, 0);
+		}
+		processed++;
                 break;
                 
             case ICONGETA_IsDefaultIcon:
@@ -252,6 +414,31 @@
                 
             case ICONCTRLA_HasRealImage2:
                 break;
+		
+	    case ICONCTRLA_GetARGBImageData1:
+	    	if (nativeicon)
+		{
+		    STORE((ULONG **)tag->ti_Data, (ULONG *)nativeicon->iconPNG.img1);
+		}
+		else
+		{
+		    STORE((ULONG **)tag->ti_Data, 0);
+		}
+		processed++;
+	    	break;
+
+	    case ICONCTRLA_GetARGBImageData2:
+	    	if (nativeicon)
+		{
+		    STORE((ULONG **)tag->ti_Data, (ULONG *)nativeicon->iconPNG.img2);
+		}
+		else
+		{
+		    STORE((ULONG **)tag->ti_Data, 0);
+		}
+		processed++;
+	    	break;
+		
         }
     }
     
