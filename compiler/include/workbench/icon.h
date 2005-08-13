@@ -131,6 +131,10 @@
 /* Check whether the icon is of the NewIcon type (LONG *) */
 #define ICONCTRLA_IsNewIcon             (ICONA_BASE+79)
 
+/* Image data: In RECTFMT_ARGB32 format (ULONG **) */
+#define ICONCTRLA_GetARGBImageData1 	(ICONA_BASE+301)
+#define ICONCTRLA_GetARGBImageData2 	(ICONA_BASE+303)
+
 /*
     Check if this icon was allocated by icon.library or if it consists
     solely of a statically allocated DiskObject. (LONG *)
