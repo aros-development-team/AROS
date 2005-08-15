@@ -116,6 +116,11 @@
 		library->lib_Version      = resident->rt_Version;
 		library->lib_IdString     = resident->rt_IdString;
 		library->lib_Flags	  = LIBF_SUMUSED|LIBF_CHANGED;
+		
+		if (resident->rt_Flags & RTF_EXTENDED)
+		{
+		    library->lib_Revision = resident->rt_Revision;
+		}
 	    }
 
 	    /*
