@@ -357,6 +357,9 @@ ROM_STATIC := \
 	snprintf \
 	sprintf \
 	sscanf \
+	stcd_l \
+	stch_l \
+	stcl_d \
 	strtol \
 	strtoll \
 	strtoul \
