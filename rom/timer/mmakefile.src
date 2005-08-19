@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FILES := timervblank
-FUNCS := abortio addtime beginio cmptime getsystime subtime
+FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
 
 #MM- kernel-timer : includes linklibs
 #MM- kernel-timer-linklib : includes linklibs

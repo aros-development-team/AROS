@@ -62,6 +62,8 @@ struct TimerBase
     
     /* Lists for waiting vblank, waituntil, microhz, eclock, waiteclock */
     struct MinList	 tb_Lists[NUM_LISTS];
+    
+    UQUAD                tb_ticks_total;
 };
 
 #define GetTimerBase(tb)	((struct TimerBase *)(tb))
