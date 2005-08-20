@@ -49,36 +49,34 @@ void    handle_events(UBYTE proto, struct mouse_data *);
 
 /* mouse_usleep - sleep for usec microseconds */
 #warning: Incompatible with BOCHS busy loop! Change to precise timer.device!
-void mouse_usleep(ULONG usec)
+
+#define TIMER_RPROK 3599597124UL
+
+static ULONG usec2tick(ULONG usec)
 {
-    ULONG hz;
-    int step;
-    int latch;
+    ULONG ret;
+    asm volatile("movl $0,%%eax; divl %2":"=eax"(ret):"edx"(usec),"m"(TIMER_RPROK));
+    return ret;
+}
 
-    while (usec)
+void mouse_usleep(LONG usec)
+{
+    int oldtick, tick;
+    usec = usec2tick(usec);
+
+    outb(0x80, 0x43);
+    oldtick = inb(0x42);
+    oldtick += inb(0x42) << 8;
+    
+    while (usec > 0)
     {
-        /*
-         * If we want to wait longer than 50000 usec, then we have to do it
-         * in several steps
-         */
+        outb(0x80, 0x43);
+        tick = inb(0x42);
+        tick += inb(0x42) << 8;
 
-        step = (usec > 50000) ? 50000 : usec;
-        hz = 1000000 / step;
-
-        latch = (1193180 + (hz >> 1)) / hz;
-
-        /* Do the timer like cpu.c file */
-
-        outb((inb(0x61) & ~0x02) | 0x01, 0x61);
-        outb(0xb0, 0x43);           /* binary, mode 0, LSB/MSB, Ch 2 */
-        outb(latch & 0xff, 0x42); /* LSB of count */
-        outb(latch >> 8, 0x42);   /* MSB of count */
-
-        /* Speaker counter will start now. Just wait till it finishes */
-        do {} while ((inb(0x61) & 0x20) == 0);
-
-        /* Decrease wait counter */
-	    usec -= step;
+        usec -= (oldtick - tick);
+        if (tick > oldtick) usec -= 0x10000;
+        oldtick = tick;            
     }
 }
 
