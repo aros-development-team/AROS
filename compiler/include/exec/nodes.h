@@ -92,6 +92,14 @@ struct MinNode
 #define NT_USER 	254	/* User node types work down from here	    */
 #define NT_EXTENDED	255
 
+/***************************************
+    Macros
+****************************************/
+
+#define SetNodeName(node,name)   \
+    (((struct Node *)(node))->ln_Name = (char *)(name))
+#define GetNodeName(node)        \
+    (((struct Node *)(node))->ln_Name)
 
 /******************************************************************************
 *****  ENDE exec/nodes.h
