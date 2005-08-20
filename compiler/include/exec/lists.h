@@ -146,20 +146,20 @@ do                                                        \
     l->lh_TailPred->ln_Pred ? REMOVE(l->lh_TailPred) : (struct Node *)0; \
 })
 
-#define ForeachNode(l,n)                       \
-for                                            \
-(                                              \
-    n=(void *)(((struct List *)(l))->lh_Head); \
-    ((struct Node *)(n))->ln_Succ;             \
-    n=(void *)(((struct Node *)(n))->ln_Succ)  \
+#define ForeachNode(list, node)                        \
+for                                                    \
+(                                                      \
+    node = (void *)(((struct List *)(list))->lh_Head); \
+    ((struct Node *)(node))->ln_Succ;                 \
+    node = (void *)(((struct Node *)(node))->ln_Succ)  \
 )
 
-#define ForeachNodeSafe(l,n,n2)                 \
-for                                             \
-(                                               \
-    n=(void *)(((struct List *)(l))->lh_Head);  \
-    (n2=(void *)((struct Node *)(n))->ln_Succ); \
-    n=(void *)n2                                \
+#define ForeachNodeSafe(list, current, next)              \
+for                                                       \
+(                                                         \
+    current = (void *)(((struct List *)(list))->lh_Head); \
+    (next = (void *)((struct Node *)(current))->ln_Succ); \
+    current = (void *)next                                \
 )
 
 #define SetNodeName(node,name)   \
