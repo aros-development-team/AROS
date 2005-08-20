@@ -18,6 +18,7 @@
 #include <dos/bptr.h>
 
 #include <proto/exec.h>
+#include <devices/timer.h>
 
 #include "ata.h"
 
@@ -72,43 +73,13 @@ static VOID outsl(APTR address, UWORD port, ULONG count)
     asm volatile ("rep outsl"::"Nd"(port),"c"(count >> 2),"S"(address));
 }
 
-/*
-    Busy loop using PC speaker. This is really tricky and shouldn't exist
-    here. But unfortunatelly UNIT_MICROHZ in timer.device is still unusable
-
-    This function uses 1193180Hz timer and is quite precise.
-*/
-
-static VOID __usleep(ULONG usec)
+void ata_usleep(struct timerequest *tr, ULONG usec)
 {
-    UWORD div;
-
-    /* Don't allow timer overfill, otherwise loop will be wrong */
-    if (usec > 50000) usec = 50000;
+    tr->tr_node.io_Command = TR_ADDREQUEST;
+    tr->tr_time.tv_micro = usec % 1000000;
+    tr->tr_time.tv_secs = usec / 1000000;
     
-    div = (ULONG)(usec * 59659) / 50000;
-    
-    outb((inb(0x61) & 0xfd) | 1, 0x61);
-    outb(0xb0, 0x43);
-
-    outb(div & 0xff, 0x42);
-    outb(div >> 8, 0x42);
-
-    while ((inb(0x61) & 0x20) == 0);
-}
-
-/*
-    As the upper function is a little bit limited with it's maximal delays,
-    here is a little bit extended version
-*/
-VOID ata_usleep(ULONG usec)
-{
-    while(usec > 50000)
-    {
-	__usleep(50000);
-	usec-=50000;
-    }
-    __usleep(usec);
+    DoIO((struct IORequest *)tr);
 }
 
 /*
@@ -164,6 +135,11 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
     struct ata_Bus *bus=NULL;
     struct ata_Unit *unit=NULL;
 
+    struct MsgPort *port = CreateMsgPort();
+    struct timerequest *tr = (struct timerequest *)CreateIORequest((struct MsgPort *)port,
+        sizeof(struct timerequest));
+    OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)tr, 0);
+
     for (b=0; b < MAX_BUS; b++)
     {
 	if (LIBBASE->ata_Buses[b])
@@ -198,7 +174,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 		    /* Disable IRQ, select device */
 		    ata_out(0x0a, ata_Control, bus->ab_Port);
 		    ata_out(unit->au_DevMask, ata_DevHead, bus->ab_Port);
-		    ata_usleep(200);
+		    ata_usleep(tr, 200);
 		    while (ata_in(ata_Status, bus->ab_Port) & ATAF_BUSY);
 	
 		    if (bus->ab_Dev[u] > DEV_ATA)
@@ -376,6 +352,10 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 	    }
 	}
     }
+    
+    CloseDevice((struct IORequest *)tr);
+    DeleteIORequest((struct IORequest *)tr);
+    DeleteMsgPort(port);
 }
 
 
@@ -386,7 +366,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 /*
     Device scan routines
 */
-void ata_ResetBus(struct ata_Bus *bus)
+void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 {
     ULONG port = bus->ab_Port;
     int cnt;
@@ -399,11 +379,11 @@ void ata_ResetBus(struct ata_Bus *bus)
     /* Issue software reset */
     ata_out(0x0e, ata_Control, port);
     /* wait a while */
-    ata_usleep(400);
+    ata_usleep(tr, 400);
     /* Clear reset signal */
     ata_out(0x0a, ata_Control, port);
     /* And wait again */
-    ata_usleep(400);
+    ata_usleep(tr, 400);
     /* wait for dev0 to come online. Limited delay up to 30µs */
     if (bus->ab_Dev[0] != DEV_NONE)
     {
@@ -412,7 +392,7 @@ void ata_ResetBus(struct ata_Bus *bus)
 	{
 	    if ((ata_in(ata_Status, port) & ATAF_BUSY) == 0)
 		break;
-	    ata_usleep(1000);
+	    ata_usleep(tr, 1000);
 	}
     }
 
@@ -420,7 +400,7 @@ void ata_ResetBus(struct ata_Bus *bus)
     if (bus->ab_Dev[1] != DEV_NONE)
     {
 	ata_out(0xb0, ata_DevHead, port);
-	ata_usleep(100);
+	ata_usleep(tr, 100);
 
 	cnt=400;
 	while (cnt--)
@@ -428,7 +408,7 @@ void ata_ResetBus(struct ata_Bus *bus)
 	    if ((ata_in(ata_Status, port) & ATAF_BUSY) == 0)
 		break;
 
-	    ata_usleep(1000);
+	    ata_usleep(tr, 1000);
 	}
     }
 
@@ -439,6 +419,11 @@ void ata_ScanBus(struct ata_Bus *bus)
 {
     ULONG port = bus->ab_Port;
     UBYTE tmp1, tmp2;
+
+    struct MsgPort *p = CreateMsgPort();
+    struct timerequest *tr = (struct timerequest *)CreateIORequest((struct MsgPort *)p,
+        sizeof(struct timerequest));
+    OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)tr, 0);
 
     /* Exclusive use of ATA registers */
     ObtainSemaphore(&bus->ab_Lock);
@@ -451,7 +436,7 @@ void ata_ScanBus(struct ata_Bus *bus)
 
     /* Select device 0 */
     ata_out(0xa0, ata_DevHead, port);
-    ata_usleep(100);
+    ata_usleep(tr, 100);
 
     /* Write some pattern to registers */
     ata_out(0x55, ata_Count, port);
@@ -469,7 +454,7 @@ void ata_ScanBus(struct ata_Bus *bus)
 
     /* Select device 1 */
     ata_out(0xb0, ata_DevHead, port);
-    ata_usleep(100);
+    ata_usleep(tr, 100);
 
     /* Write some pattern to registers */
     ata_out(0x55, ata_Count, port);
@@ -491,12 +476,12 @@ void ata_ScanBus(struct ata_Bus *bus)
 	well respond as dev0. Do more precise test now.
     */
     ata_out(0xa0, ata_DevHead, port);
-    ata_usleep(100);
-    ata_ResetBus(bus);
+    ata_usleep(tr, 100);
+    ata_ResetBus(tr, bus);
     
     /* check device 0 */
     ata_out(0xa0, ata_DevHead, port);
-    ata_usleep(100);
+    ata_usleep(tr, 100);
 
     /* Check basic signature. All live devices should provide it */
     tmp1 = ata_in(ata_Count, port);
@@ -519,7 +504,7 @@ void ata_ScanBus(struct ata_Bus *bus)
 
     /* check device 1 */
     ata_out(0xb0, ata_DevHead, port);
-    ata_usleep(100);
+    ata_usleep(tr, 100);
 
     /* Check basic signature. All live devices should provide it */
     tmp1 = ata_in(ata_Count, port);
@@ -541,6 +526,10 @@ void ata_ScanBus(struct ata_Bus *bus)
     }
 
     ReleaseSemaphore(&bus->ab_Lock);
+
+    CloseDevice((struct IORequest *)tr);
+    DeleteIORequest((struct IORequest *)tr);
+    DeleteMsgPort(p);
 }
 
 #define bus (unit->au_Bus)
