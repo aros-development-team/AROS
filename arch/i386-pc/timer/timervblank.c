@@ -43,20 +43,15 @@ AROS_UFH4(ULONG, VBlankInt,
     	that have completed. A completed request is one whose time
     	is less than that of the elapsed time.
     */
-    tr = (struct timerequest *)TimerBase->tb_Lists[TL_VBLANK].mlh_Head;
-
-    while(tr && ((struct Node *)tr)->ln_Succ != NULL)
+    ForeachNodeSafe(&TimerBase->tb_Lists[TL_VBLANK], tr, next)
     {
         if(CmpTime(&TimerBase->tb_Elapsed, &tr->tr_time) <= 0)
         {
             /* This request has finished */
-            next = (struct timerequest *)tr->tr_node.io_Message.mn_Node.ln_Succ;
             Remove((struct Node *)tr);
             tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
             tr->tr_node.io_Error = 0;
             ReplyMsg((struct Message *)tr);
-        
-            tr = next;
         }
         else
         {
@@ -64,7 +59,7 @@ AROS_UFH4(ULONG, VBlankInt,
             	The first request hasn't finished, as all requests are in
             	order, we don't bother searching through the remaining
             */
-            tr = NULL;
+            break;
         }
     }
 
@@ -72,29 +67,24 @@ AROS_UFH4(ULONG, VBlankInt,
 	The other this is the "wait until a specified time". Here a request
 	is complete if the time we are waiting for is before the current time.
     */
-    tr = (struct timerequest *)TimerBase->tb_Lists[TL_WAITVBL].mlh_Head;
-
-    while(tr && ((struct Node *)tr)->ln_Succ != NULL)
+    ForeachNodeSafe(&TimerBase->tb_Lists[TL_WAITVBL], tr, next)
     {
         if(CmpTime(&TimerBase->tb_CurrentTime, &tr->tr_time) <= 0)
-	{
-	    /* This request has finished */
-	    next = (struct timerequest *)tr->tr_node.io_Message.mn_Node.ln_Succ;
-	    Remove((struct Node *)tr);
-	    tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
-	    tr->tr_node.io_Error = 0;
-	    ReplyMsg((struct Message *)tr);
-
-	    tr = next;
-	}
-	else
-	{
-	    /*
-		The first request hasn't finished, as all requests are in
-		order, we don't bother searching through the remaining
-	    */
-	    tr = NULL;
-	}
+    	{
+    	    /* This request has finished */
+    	    Remove((struct Node *)tr);
+    	    tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
+    	    tr->tr_node.io_Error = 0;
+    	    ReplyMsg((struct Message *)tr);
+    	}
+    	else
+    	{
+    	    /*
+    		The first request hasn't finished, as all requests are in
+    		order, we don't bother searching through the remaining
+    	    */
+    	    break;
+    	}
     }
 
     Timer0Setup(TimerBase);

@@ -2,6 +2,7 @@
 
 //#include <aros/debug.h>
 #include <exec/types.h>
+#include <proto/exec.h>
 #include <asm/io.h>
 
 #include <proto/timer.h>
@@ -31,10 +32,12 @@ void EClockUpdate(struct TimerBase *TimerBase)
 
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     /* Latch the current time value */
+    Disable();
     outb(0x80, 0x43);
     /* Read out current 16-bit time */
     time = inb(0x42);
     time += inb(0x42) << 8;
+    Disable();
     
     diff = (TimerBase->tb_prev_tick - time);
 
@@ -83,7 +86,9 @@ void Timer0Setup(struct TimerBase *TimerBase)
 {
     struct timeval time;
     ULONG delay = 23864;
-    struct timerequest *tr = (struct timerequest *)TimerBase->tb_Lists[TL_WAITVBL].mlh_Head;
+    struct timerequest *tr;
+    
+    tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_WAITVBL]);
 
     if (tr)
     {    
@@ -102,7 +107,7 @@ void Timer0Setup(struct TimerBase *TimerBase)
         }
     }
 
-    tr = (struct timerequest *)TimerBase->tb_Lists[TL_VBLANK].mlh_Head;
+    tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_VBLANK]);
 
     if (tr)
     {    

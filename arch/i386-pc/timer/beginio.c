@@ -223,9 +223,7 @@ addToWaitList(	struct TimerBase *TimerBase,
     struct timerequest *tr;
     BOOL added = FALSE;
 
-    tr = (struct timerequest *)list->mlh_Head;
-
-    while(tr->tr_node.io_Message.mn_Node.ln_Succ != NULL)
+    ForeachNode(list, tr)
     {
     	/* If the time in the new request is less than the next request */
     	if(CmpTime(&tr->tr_time, &iotr->tr_time) < 0)
@@ -239,7 +237,6 @@ addToWaitList(	struct TimerBase *TimerBase,
     	    added = TRUE;
     	    break;
     	}
-    	tr = (struct timerequest *)tr->tr_node.io_Message.mn_Node.ln_Succ;
     }
 
     /*
