@@ -64,6 +64,9 @@ struct TimerBase
     struct MinList	 tb_Lists[NUM_LISTS];
     
     UQUAD                tb_ticks_total;
+    ULONG                tb_ticks_sec;
+    ULONG                tb_ticks_elapsed;
+    ULONG                tb_prev_tick;
 };
 
 #define GetTimerBase(tb)	((struct TimerBase *)(tb))
