@@ -150,7 +150,7 @@ do                                                        \
 for                                                    \
 (                                                      \
     node = (void *)(((struct List *)(list))->lh_Head); \
-    ((struct Node *)(node))->ln_Succ;                 \
+    ((struct Node *)(node))->ln_Succ;                  \
     node = (void *)(((struct Node *)(node))->ln_Succ)  \
 )
 
@@ -161,11 +161,6 @@ for                                                       \
     (next = (void *)((struct Node *)(current))->ln_Succ); \
     current = (void *)next                                \
 )
-
-#define SetNodeName(node,name)   \
-    (((struct Node *)(node))->ln_Name = (char *)(name))
-#define GetNodeName(node)        \
-    (((struct Node *)(node))->ln_Name)
 
 #define ListLength(list,count)     \
 do {		                   \
