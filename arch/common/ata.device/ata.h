@@ -346,8 +346,8 @@ int ata_WaitBusy(struct ata_Unit *);
 int ata_WaitBusyLong(struct ata_Unit *);
 int ata_WaitBusySlow(struct ata_Unit *);
 
-void ata_usleep(ULONG);
-void ata_ResetBus(struct ata_Bus *);
+void ata_usleep(struct timerequest *, ULONG);
+void ata_ResetBus(struct timerequest *, struct ata_Bus *);
 void ata_ScanBus(struct ata_Bus *);
 void ata_InitUnits(LIBBASETYPEPTR);
 
