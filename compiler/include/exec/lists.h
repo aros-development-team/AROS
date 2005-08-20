@@ -1,20 +1,12 @@
-/*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
-*/
-
 #ifndef EXEC_LISTS_H
 #define EXEC_LISTS_H
 
-/******************************************************************************
+/*
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+        
+    Structures and macros for exec lists.
+*/
 
-    FILE
-	$Id$
-
-    DESCRIPTION
-	Prototypes and macros for exec-lists.
-
-******************************************************************************/
 
 /**************************************
 		Includes
@@ -181,9 +173,5 @@ do {		                   \
     count = 0;		           \
     ForeachNode (list,__n) count ++; \
 } while (0)
-
-/******************************************************************************
-*****  ENDE exec/lists.h
-******************************************************************************/
 
 #endif /* EXEC_LISTS_H */
