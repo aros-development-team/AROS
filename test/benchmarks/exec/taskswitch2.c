@@ -83,7 +83,7 @@ int __nocommandline = 1;
 
    Beware that it can introduce some overhead (although very little).
 */
-#define SELF_TIMED_TEST 1
+#define SELF_TIMED_TEST 0
 
 int main(void)
 {
@@ -96,7 +96,8 @@ int main(void)
     (
         "The test is starting.\n"
         #if !SELF_TIMED_TEST
-        "Press CTRL-C to stop the test and get the results.\n\n"
+        "Press CTRL-C to stop the test and get the results.\n"
+	"Wait a few seconds before doing so, in order to get a more accurate result\n\n"
         #endif
     );
 

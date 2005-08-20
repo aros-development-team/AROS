@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES           := allocvec allocpooled
+FILES           := allocvec allocpooled taskswitch2
 EXEDIR          := $(AROS_TESTS)/benchmarks/exec
 
 #MM- test-benchmarks : test-benchmarks-exec
