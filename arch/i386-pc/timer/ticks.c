@@ -37,7 +37,7 @@ void EClockUpdate(struct TimerBase *TimerBase)
     /* Read out current 16-bit time */
     time = inb(0x42);
     time += inb(0x42) << 8;
-    Disable();
+    Enable();
     
     diff = (TimerBase->tb_prev_tick - time);
 
