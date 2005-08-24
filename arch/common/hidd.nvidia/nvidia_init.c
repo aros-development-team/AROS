@@ -520,6 +520,7 @@ static const struct NVDevice {
     { 0x10de, 0x00C9, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x0C9 */
     { 0x10de, 0x00CC, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x0CC */
     { 0x10de, 0x00CE, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x0CE */
+    { 0x10de, 0x00F1, NV36,     NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6600 / GeForce 6600 GT (Verified: LeadTek GeForce 6600 GT) */
     { 0x10de, 0x0140, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6600 GT */
     { 0x10de, 0x0141, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6600 */
     { 0x10de, 0x0142, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0142 */
