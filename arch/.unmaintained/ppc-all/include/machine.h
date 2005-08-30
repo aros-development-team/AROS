@@ -27,20 +27,7 @@
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm __attribute__((stackparm))
 
-
-#define GET_SP(x) \
-    __asm__ __volatile__ (	\
-    "stw  1,%0 \n\t"		\
-    : "=m"(x)			\
-    :				\
-    : "memory", "cc")
-
-#define SET_SP(x) \
-    __asm__ __volatile__ (	\
-    "lwz  1,%0 \n\t"		\
-    :				\
-    : "m"(x)			\
-    : "cc")
+register unsigned char* AROS_GET_SP asm("%sp");
 
 #define FLUSH_CACHES 1
 #define CACHE_BLOCK_SIZE 32
