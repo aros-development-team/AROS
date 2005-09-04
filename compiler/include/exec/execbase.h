@@ -82,7 +82,7 @@ struct ExecBase
 
     UBYTE              VBlankFrequency;      /* (readable) */
     UBYTE              PowerSupplyFrequency; /* (readable) */
-
+    	    	    	    	    	     /* AROS PRIVATE: VBlankFreq * PowerSupplyFreq = Timer Tick Rate */
     struct List        SemaphoreList;
 
 /* Kickstart */
