@@ -754,7 +754,8 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
     ExecBase->Quantum = 4;
     ExecBase->VBlankFrequency = 50;
-
+    ExecBase->PowerSupplyFrequency = 1;
+    
     rkprintf("OK\nBuilding JumpTable...");
 
     /* Build the jumptable */
