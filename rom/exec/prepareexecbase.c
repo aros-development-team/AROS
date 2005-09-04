@@ -180,6 +180,9 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->TaskSigAlloc   = 0xFFFF;
     SysBase->TaskTrapAlloc  = 0;
 
+    SysBase->VBlankFrequency = 50;
+    SysBase->PowerSupplyFrequency = 1;
+    
     SysBase->DebugAROSBase  = PrepareAROSSupportBase(SysBase);
 
     return SysBase;
