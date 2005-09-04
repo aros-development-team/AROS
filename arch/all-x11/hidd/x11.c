@@ -171,7 +171,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     myint.is_Node.ln_Pri  = 0;
     myint.is_Node.ln_Type = NT_INTERRUPT;
 	
-    AddIntServer(INTB_VERTB100, &myint);
+    AddIntServer(INTB_TIMERTICK, &myint);
 
 
     Signal(xtp.parent, xtp.ok_signal);
