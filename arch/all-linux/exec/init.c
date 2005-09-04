@@ -251,6 +251,7 @@ int main(int argc, char **argv)
     struct termios t;
     int psize = 0;
     int i = 0, x;
+    int ticrate = 100;
     BOOL mapSysBase   = FALSE;
     BOOL _use_hostmem = FALSE;
 
@@ -264,11 +265,15 @@ int main(int argc, char **argv)
             "usage: %s [options]\n"
             " -h                 show this page\n"
             " -m <size>          allocate <size> Megabytes of memory for AROS\n"
-            " -M                 allows programs to read SysBase from Address $4; SysBase is"
+            " -M                 allows programs to read SysBase from Address $4; SysBase is\n"
             "                    found there in big endian format\n"
+	    " -t <value>         timer ticks per second. Must be Multiple of 50; max value\n"
+	    "                    working on 2.4 kernels is 100; on 2.6 kernels it is 1000;\n"
+	    "                    default is 100.\n"
             " --help             same as '-h'\n"
             " --memsize <size>   same as '-m <size>'\n"
             " --mapsysbase       same as '-M'\n"
+	    " --tickrate <value> same as '-t <value>'\n"
 	    " --hostmem          Let AROS use the host operating system's facilities to\n"
 	    "                    manage memory, rather than the AROS' builtin ones.\n"
             "\n"
@@ -294,6 +299,19 @@ int main(int argc, char **argv)
       if (!strcmp(argv[i], "--mapsysbase") || !strcmp(argv[i], "-M"))
       {
         mapSysBase = TRUE;
+        i++;
+      }
+      else
+      if (!strcmp(argv[i], "--ticrate") || !strcmp(argv[i], "-t"))
+      {
+        i++;
+        x = 0;
+        ticrate = 0;
+        while ((argv[i])[x] >= '0' && (argv[i])[x] <= '9')
+        {
+          ticrate = ticrate * 10 + (argv[i])[x] - '0';
+          x++;
+        }
         i++;
       }
       else
@@ -395,7 +413,8 @@ int main(int argc, char **argv)
 	call functions, it will also set up the memory list.
     */
     SysBase = PrepareExecBase(mh);
-
+    SysBase->PowerSupplyFrequency = ticrate / SysBase->VBlankFrequency;
+    
     use_hostmem = _use_hostmem;
     
     /* ROM memory header. This special memory header covers all ROM code and data sections
