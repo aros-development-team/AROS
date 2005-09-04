@@ -44,8 +44,8 @@
 
 /* AROS extensions */
 
-/* Virtual 100 Hz vblank timer */
-#define INTB_VERTB100 	INTB_COPER
-#define INTF_VERTB100	INTF_COPER
+/* SysBase->VBlankFrequency * SysBase->PowerSupplyFrequency Hz timer */
+#define INTB_TIMERTICK 	INTB_COPER
+#define INTF_TIMERTICK	INTF_COPER
 
 #endif /* HARDWARE_INTBITS_H */
