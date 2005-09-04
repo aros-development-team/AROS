@@ -48,7 +48,7 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, LIBBASE)
     LIBBASE->tb_CurrentTime.tv_secs = 0;
     LIBBASE->tb_CurrentTime.tv_micro = 0;
     LIBBASE->tb_VBlankTime.tv_secs = 0;
-    LIBBASE->tb_VBlankTime.tv_micro = 1000000 / SysBase->VBlankFrequency;
+    LIBBASE->tb_VBlankTime.tv_micro = 1000000 / (SysBase->VBlankFrequency * SysBase->PowerSupplyFrequency);
     LIBBASE->tb_Elapsed.tv_secs = 0;
     LIBBASE->tb_Elapsed.tv_micro = 0;
 
