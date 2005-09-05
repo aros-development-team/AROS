@@ -45,6 +45,8 @@ AROS_UFH4(ULONG, VBlankInt,
     FastAddTime(&TimerBase->tb_CurrentTime, &TimerBase->tb_VBlankTime);
     FastAddTime(&TimerBase->tb_Elapsed, &TimerBase->tb_VBlankTime);
 
+    TimerBase->tb_ticks_total++;
+    
     /*
 	Go through the "wait for x seconds" list and return requests
 	that have completed. A completed request is one whose time
