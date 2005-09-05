@@ -9,6 +9,7 @@
 /*****************************************************************************
 
     NAME */
+#include <exec/execbase.h>
 #include <devices/timer.h>
 #include <proto/timer.h>
 #include <proto/exec.h>
@@ -59,7 +60,8 @@
     dest->ev_hi = (ULONG)(TimerBase->tb_ticks_total >> 32);
     dest->ev_lo = (ULONG)(TimerBase->tb_ticks_total & 0xffffffff);
     Enable();
-    return 50;
+    
+    return (SysBase->VBlankFrequency * SysBase->PowerSupplyFrequency);
 
     AROS_LIBFUNC_EXIT
 } /* CmpTime */
