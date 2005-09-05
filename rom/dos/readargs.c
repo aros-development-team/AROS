@@ -374,8 +374,15 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
             continue;
         }
 
+    #if 0 /* stegerg: if so a template of CLOSE/S,QUICK/S,COMMAND/F would
+                      not work correctly if command line for example is
+		      "CLOSE QUICK" it would all end up being eaten by COMMAND/F
+		      argument */
+		      
         /* If the current option is of type /F do not look for keywords */
         if ((flags[arg] & TYPEMASK) != REST)
+    #endif
+    	
         {
             /* Get item. Quoted items are no keywords. */
             it = ReadItem(s1, ~0ul / 2, cs);
@@ -394,10 +401,9 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
                     nextarg = arg;
                     arg = item;
 
-                    /* /S /T and /F may not be given as 'OPTION=VALUE'. */
+                    /* /S /T may not be given as 'OPTION=VALUE'. */
                     if ((flags[item] & TYPEMASK) != SWITCH
-                        && (flags[item] & TYPEMASK) != TOGGLE
-                        && (flags[item] & TYPEMASK) != REST)
+                        && (flags[item] & TYPEMASK) != TOGGLE)
                     {
                         /* Get value. */
                         it = ReadItem(s1, ~0ul / 2, cs);
@@ -429,6 +435,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
         /* TODO: Take care of quoted strings(?) */
         if ((flags[arg] & TYPEMASK) == REST)
         {
+	#if 0
             /* Skip leading whitespace */
             while (cs->CS_CurChr < cs->CS_Length
                 && (cs->CS_Buffer[cs->CS_CurChr] == ' '
@@ -436,10 +443,17 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
             {
                 cs->CS_CurChr++;
             }
-            
+        #endif
+            argbuf[arg] = s1;
+
+    	    /* Copy part already read above by ReadItem() */
+            while (*s1)
+            {
+	    	s1++;
+            }
+
             /* Find the last non-whitespace character */
             s2 = s1 - 1;
-            argbuf[arg] = s1;
 
             while (cs->CS_CurChr < cs->CS_Length
                 && cs->CS_Buffer[cs->CS_CurChr]
