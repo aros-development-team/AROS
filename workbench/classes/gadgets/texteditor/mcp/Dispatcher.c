@@ -35,10 +35,6 @@
 #include "SDI_compiler.h"
 #include "SDI_hook.h"
 
-#ifdef __AROS__
-#include <aros/symbolsets.h>
-#endif
-
 // the main mcp dispatcher
 DISPATCHERPROTO(_DispatcherP)
 {
@@ -129,13 +125,9 @@ struct MUI_CustomClass *speedslider_mcc = NULL;
 struct MUI_CustomClass *text_mcc = NULL;
 
 #ifndef __AROS__
+
 BOOL CreateSubClasses(void)
 {
-#else
-AROS_SET_LIBFUNC(CreateSubClasses, APTR, lh)
-{
-  AROS_SET_LIBFUNC_INIT
-#endif
   if((widthslider_mcc = MUI_CreateCustomClass(NULL, "Slider.mui", NULL, 0, ENTRY(WidthSlider_Dispatcher))))
   {
     if((speedslider_mcc = MUI_CreateCustomClass(NULL, "Slider.mui", NULL, 0, ENTRY(SpeedSlider_Dispatcher))))
@@ -148,20 +140,10 @@ AROS_SET_LIBFUNC(CreateSubClasses, APTR, lh)
   }
 
   return FALSE;
-
-#ifdef __AROS__
-  AROS_SET_LIBFUNC_EXIT
-#endif
 }
 
-#ifndef __AROS__
 void DeleteSubClasses(void)
 {
-#else
-AROS_SET_LIBFUNC(DeleteSubClasses, APTR, lh)
-{
-  AROS_SET_LIBFUNC_INIT
-#endif
   if(text_mcc)
   {
     MUI_DeleteCustomClass(text_mcc);
@@ -179,15 +161,6 @@ AROS_SET_LIBFUNC(DeleteSubClasses, APTR, lh)
     MUI_DeleteCustomClass(widthslider_mcc);
     widthslider_mcc = NULL;
   }
-    
-#ifdef __AROS__
-  return TRUE;
-    
-  AROS_SET_LIBFUNC_EXIT
-#endif
 }
 
-#ifdef __AROS__
-ADD2INITLIB(CreateSubClasses, 0);
-ADD2EXPUNGELIB(DeleteSubClasses, 0);
-#endif
+#endif /*__AROS__*/
