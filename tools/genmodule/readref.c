@@ -19,16 +19,14 @@ struct _parseinfo
 /* Prototypes of static functions */
 static int parsemethodname(char *name,
 			   struct _parseinfo *parseinfo,
-			   struct config *cfg,
-			   struct functions *functions
+			   struct config *cfg
 );
 static int parsemacroname(char *name,
 			  struct _parseinfo *parseinfo,
-			  struct config *cfg,
-			  struct functions *functions
+			  struct config *cfg
 );
 
-void readref(struct config *cfg, struct functions *functions)
+void readref(struct config *cfg)
 {
     struct functionhead *funclistit = NULL;
     struct functionhead *currentfunc = NULL; /* will be either funclistit or methlistit */
@@ -108,8 +106,8 @@ void readref(struct config *cfg, struct functions *functions)
 		
 		parseinfo.infunction =
 		(
-		       parsemethodname(begin, &parseinfo, cfg, functions)
-		    || parsemacroname(begin, &parseinfo, cfg, functions)
+		       parsemethodname(begin, &parseinfo, cfg)
+		    || parsemacroname(begin, &parseinfo, cfg)
 		);
 	    }
 	    else if (parseinfo.infunction)
@@ -232,7 +230,7 @@ void readref(struct config *cfg, struct functions *functions)
     /* Checking to see if every function has a prototype */
     for 
     (
-        funclistit = functions->funclist; 
+        funclistit = cfg->funclist; 
         funclistit != NULL; 
         funclistit =  funclistit->next
     )
@@ -252,26 +250,26 @@ void readref(struct config *cfg, struct functions *functions)
 
 static int parsemethodname(char *name,
 			   struct _parseinfo *parseinfo,
-			   struct config *cfg,
-			   struct functions *functions
+			   struct config *cfg
 )
 {
     int ok = 0;
-
-    if (cfg->boopsimprefix != NULL)
+    struct classinfo *cl;
+    
+    for (cl = cfg->classlist; cl != NULL; cl = cl->next)
     {
 	char *sep = NULL;
-	const char **prefixptr = cfg->boopsimprefix;
+	const char **prefixptr = cl->boopsimprefix;
 	
 	/* For a BOOPSI class a custom dispatcher has the name
 	 * 'modulename_Dispatcher'
 	 */
 	if
 	(
-	       strncmp(name, cfg->modulename, strlen(cfg->modulename)) == 0
-	    && strcmp(name+strlen(cfg->modulename), "_Dispatcher") == 0
+	       strncmp(name, cl->basename, strlen(cl->basename)) == 0
+	    && strcmp(name+strlen(cl->basename), "_Dispatcher") == 0
 	)
-	    cfg->dispatcher = strdup(name);	
+	    cl->dispatcher = strdup(name);	
 
 	while (*prefixptr != NULL && sep == NULL)
 	{
@@ -282,18 +280,18 @@ static int parsemethodname(char *name,
 	if 
 	(
 	       sep != NULL
-	    && strncmp(cfg->basename, name, sep - name) == 0
+	    && strncmp(cl->basename, name, sep - name) == 0
 	)
 	{
 	    struct functionhead *method, *it;
 
 	    method = newfunctionhead(sep+2, STACK);
 	    
-	    if (functions->methlist == NULL )
-		functions->methlist = method;
+	    if (cl->methlist == NULL )
+		cl->methlist = method;
 	    else
 	    {
-		it = functions->methlist;
+		it = cl->methlist;
 		
 		while (it->next != NULL) it = it->next;
 		
@@ -311,8 +309,7 @@ static int parsemethodname(char *name,
 
 static int parsemacroname(char *name,
 			  struct _parseinfo *parseinfo,
-			  struct config *cfg,
-			  struct functions *functions
+			  struct config *cfg
 )
 {
     if
@@ -363,16 +360,16 @@ static int parsemacroname(char *name,
 	func->novararg = novararg;
 	func->priv     = priv;
 
-	if (functions->funclist == NULL || functions->funclist->lvo > func->lvo)
+	if (cfg->funclist == NULL || cfg->funclist->lvo > func->lvo)
 	{
-	    func->next = functions->funclist;
-	    functions->funclist = func;
+	    func->next = cfg->funclist;
+	    cfg->funclist = func;
 	}
 	else
 	{
 	    for
 	    (
-	        funclistit = functions->funclist;
+	        funclistit = cfg->funclist;
 	        funclistit->next != NULL && funclistit->next->lvo < func->lvo;
 	        funclistit = funclistit->next
 	    )

@@ -6,7 +6,7 @@
 */
 #include "genmodule.h"
 
-void writefunclist(struct config *cfg, struct functions *functions)
+void writefunclist(struct config *cfg)
 {
     FILE *out;
     char line[256];
@@ -24,12 +24,18 @@ void writefunclist(struct config *cfg, struct functions *functions)
         exit(20);
     }
 
-    if (cfg->boopsimprefix == NULL
-	|| functions->funclist != NULL)
+    /* When not a BOOPSI class write out the functionlist even if it is empty
+     * when it is a BOOPSI write only the list when it is not empty
+     * When cfg->basename != cfg->classlist->basename this means we are not in a BOOPSI class
+     * but there are extra classes defined
+     */
+    if (cfg->classlist == NULL
+	|| strcmp(cfg->basename, cfg->classlist->basename) != 0
+	|| cfg->funclist != NULL)
     {
 	fprintf(out, "##begin functionlist\n");
 	
-	for (funclistit = functions->funclist, lvo = cfg->firstlvo - 1;
+	for (funclistit = cfg->funclist, lvo = cfg->firstlvo - 1;
 	     funclistit != NULL;
 	     funclistit = funclistit->next
 	)
@@ -96,11 +102,11 @@ void writefunclist(struct config *cfg, struct functions *functions)
 	fprintf(out, "##end functionlist\n");
     }
 
-    if (cfg->boopsimprefix != NULL)
+    if (cfg->classlist != NULL && strcmp(cfg->basename, cfg->classlist->basename) == 0)
     {
 	fprintf(out, "##begin methodlist\n");
 	
-	for(funclistit = functions->methlist;
+	for(funclistit = cfg->classlist->methlist;
 	    funclistit != NULL;
 	    funclistit = funclistit->next
 	)

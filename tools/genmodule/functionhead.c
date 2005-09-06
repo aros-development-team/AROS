@@ -64,22 +64,6 @@ struct stringlist *funcaddalias(struct functionhead *funchead, const char *alias
     return slist_append(&funchead->aliases, alias);
 }
 
-struct functions *functionsinit(void)
-{
-    struct functions *functions = malloc(sizeof(struct functions));
-    
-    if (functions == NULL)
-    {
-	fprintf(stderr, "Out of memory\n");
-	exit (20);
-    }
-    functions->funclist = NULL;
-    functions->methlist = NULL;
-    
-    return functions;
-}
-
-
 char *getargtype(const struct functionarg *funcarg)
 {
     char *s, *begin, *end;

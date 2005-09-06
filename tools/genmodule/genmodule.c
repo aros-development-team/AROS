@@ -9,29 +9,28 @@
 int main(int argc, char **argv)
 {
     char *s;
-    struct functions *functions = functionsinit();
-    struct config *cfg = initconfig(argc, argv, functions);
+    struct config *cfg = initconfig(argc, argv);
 
     switch (cfg->command)
     {
     case FILES:
 	if (!(cfg->intcfg & CFG_NOREADREF))
-	    readref(cfg, functions);
-	writestart(cfg, functions);
+	    readref(cfg);
+	writestart(cfg);
 	writeend(cfg);
 	if (cfg->modtype == LIBRARY)
 	    writeautoinit(cfg);
-	writestubs(cfg, functions);
+	writestubs(cfg);
 	break;
 	
     case INCLUDES:
 	if (!(cfg->intcfg & CFG_NOREADREF))
-	    readref(cfg, functions);
+	    readref(cfg);
 	/* fall through */
     case DUMMY:
         writeincproto(cfg);
-        writeincclib(cfg, functions);
-        writeincdefines(cfg, functions);
+        writeincclib(cfg);
+        writeincdefines(cfg);
 	break;
 	
     case LIBDEFS:
@@ -46,11 +45,12 @@ int main(int argc, char **argv)
 	/* Ignore the functionlist and the methodlist that are available in the
 	 * .conf file.
 	 */
-	functions->funclist = NULL;
-	functions->methlist = NULL;
+	cfg->funclist = NULL;
+	if (cfg->classlist != NULL)
+	    cfg->classlist->methlist = NULL;
 
-	readref(cfg, functions);
-	writefunclist(cfg, functions);
+	readref(cfg);
+	writefunclist(cfg);
 	break;
 	
     default:

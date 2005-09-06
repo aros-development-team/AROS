@@ -40,8 +40,8 @@ const static char usage[] =
     "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs|writefunclist} modname modtype\n"
 ;
 
-static void readconfig(struct config *, struct functions *);
-
+static void readconfig(struct config *);
+static struct classinfo *newclass(struct config *);
 
 /* the method prefices for the supported classes */
 static const char *muimprefix[] =
@@ -69,7 +69,7 @@ static const char *dtmprefix[] =
 /* Create a config struct. Initialize with the values from the programs command
  * line arguments and the contents of the modules .conf file
  */
-struct config *initconfig(int argc, char **argv, struct functions *functions)
+struct config *initconfig(int argc, char **argv)
 {
     struct config *cfg;
     char *s, **argvit = argv + 1;
@@ -202,43 +202,13 @@ struct config *initconfig(int argc, char **argv, struct functions *functions)
     }
     else
     {
-	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);
+	fprintf(stderr, "Unknown modtype \"%s\" specified for second argument\n", argv[2]);
 	exit(20);
     }
 
     if (!hassuffix)
 	cfg->suffix = argv[optind+2];
 
-    cfg->boopsimprefix = NULL;
-    switch (cfg->modtype)
-    {
-    case LIBRARY:
-        cfg->firstlvo = 5;
-	break;
-    case DEVICE:
-	cfg->firstlvo = 7;
-	break;
-    case MCC:
-    case MUI:
-    case MCP:
-        cfg->firstlvo = 6;
-	cfg->boopsimprefix = muimprefix;
-	break;
-    case RESOURCE:
-	cfg->firstlvo = 1;
-	break;
-    case GADGET:
-	cfg->firstlvo = 5;
-	cfg->boopsimprefix = gadgetmprefix;
-	break;
-    case DATATYPE:
-	cfg->firstlvo = 6;
-	cfg->boopsimprefix = dtmprefix;
-	break;
-    default:
-	fprintf(stderr, "Internal error: unsupported modtype for firstlvo\n");
-	exit(20);
-    }
 
     
     /* Fill fields with default value if not specified on the command line */
@@ -264,18 +234,9 @@ struct config *initconfig(int argc, char **argv, struct functions *functions)
 	    snprintf(tmpbuf, sizeof(tmpbuf), "%s.ref", cfg->modulename);
 	    cfg->reffile = strdup(tmpbuf);
 	}
-	
-	/* Set default date to current date */
-	{
-	    time_t now = time(NULL);
-
-	    strftime(tmpbuf, sizeof(tmpbuf), "%d.%m.%Y", localtime(&now));
-
-	    cfg->datestring = strdup(tmpbuf);
-	}
     }
     
-    readconfig(cfg, functions);
+    readconfig(cfg);
     
     /* For a device add the functions given in beginiofunc and abortiofunc to the functionlist
      * if they are provided
@@ -292,8 +253,8 @@ struct config *initconfig(int argc, char **argv, struct functions *functions)
 	funchead->lvo = 5;
 	funcaddarg(funchead, "struct IORequest *ioreq", "A1");
 	
-	funchead->next = functions->funclist;
-	functions->funclist = funchead;
+	funchead->next = cfg->funclist;
+	cfg->funclist = funchead;
 	
 	/* Add abortio_func to the list of functions */
 	funchead = newfunctionhead(cfg->abortiofunc, REGISTERMACRO);
@@ -301,8 +262,8 @@ struct config *initconfig(int argc, char **argv, struct functions *functions)
 	funchead->lvo = 6;
 	funcaddarg(funchead, "struct IORequest *ioreq", "A1");
 	
-	funchead->next = functions->funclist->next;
-	functions->funclist->next = funchead;
+	funchead->next = cfg->funclist->next;
+	cfg->funclist->next = funchead;
     }
     else if (cfg->modtype == DEVICE && cfg->intcfg & CFG_NOREADREF)
     {
@@ -321,15 +282,60 @@ struct config *initconfig(int argc, char **argv, struct functions *functions)
 
 #include "fileread.h"
 
-static void readsectionconfig(struct config *);
+static char *readsections(struct config *, struct classinfo *, int);
+static void readsectionconfig(struct config *, struct classinfo *, int);
 static void readsectioncdef(struct config *);
 static void readsectioncdefprivate(struct config *);
-static void readsectionfunctionlist(struct config *, struct functions *);
-static void readsectionmethodlist(struct config *, struct functions *);
+static void readsectionfunctionlist(struct config *);
+static void readsectionmethodlist(struct classinfo *);
+static void readsectionclass(struct config *);
 
-static void readconfig(struct config *cfg, struct functions *functions)
+static void readconfig(struct config *cfg)
 {
-    char *line, *s, *s2;
+    struct classinfo *mainclass = NULL;
+
+    /* Create a classinfo structure if this module is a class */
+    switch (cfg->modtype)
+    {
+    case MCC:
+    case MUI:
+    case MCP:
+    case GADGET:
+    case DATATYPE:
+	mainclass = newclass(cfg);
+	mainclass->classtype = cfg->modtype;
+	break;
+    }
+    
+    switch (cfg->modtype)
+    {
+    case LIBRARY:
+        cfg->firstlvo = 5;
+	break;
+    case DEVICE:
+	cfg->firstlvo = 7;
+	break;
+    case MCC:
+    case MUI:
+    case MCP:
+        cfg->firstlvo = 6;
+	mainclass->boopsimprefix = muimprefix;
+	break;
+    case RESOURCE:
+	cfg->firstlvo = 1;
+	break;
+    case GADGET:
+	cfg->firstlvo = 5;
+	mainclass->boopsimprefix = gadgetmprefix;
+	break;
+    case DATATYPE:
+	cfg->firstlvo = 6;
+	mainclass->boopsimprefix = dtmprefix;
+	break;
+    default:
+	fprintf(stderr, "Internal error: unsupported modtype for firstlvo\n");
+	exit(20);
+    }
 
     if (!fileopen(cfg->conffile))
     {
@@ -337,19 +343,44 @@ static void readconfig(struct config *cfg, struct functions *functions)
 	exit(20);
     }
 
+    /* Read all sections and see that we are at the end of the file */
+    if (readsections(cfg, mainclass, 0) != NULL)
+	exitfileerror(20, "Syntax error");
+    
+    fileclose();
+}
+
+/* readsections will scan through all the sections in the config file.
+ * arguments:
+ * struct config *cfg: The module config data which may be updated by
+ *     the information in the sections
+ * struct classinfo *cl: The classdata to be filled with data from the sections.
+ *     This may be NULL if this is the main part of the configuration file and the
+ *     type of the module is not a class
+ * int inclass: Boolean to indicate if we are in a class part. If not we are in the main
+ *     part of the config file.
+ */
+static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
+{
+    char *line, *s, *s2;
+    
     while ((line=readline())!=NULL)
     {
 	if (strncmp(line, "##", 2)==0)
 	{
-	    static char *parts[] = {"config", "cdefprivate", "cdef", "functionlist", "methodlist"};
+	    static char *parts[] =
+	    {
+		"config", "cdefprivate", "cdef", "functionlist", "methodlist", "class"
+	    };
 	    const unsigned int nums = sizeof(parts)/sizeof(char *);
 	    unsigned int partnum;
 	    int i, atend = 0;
 	    
 	    s = line+2;
 	    while (isspace(*s)) s++;
+	    
 	    if (strncmp(s, "begin", 5)!=0)
-		exitfileerror(20, "\"##begin\" expected\n");
+		return line;
 
 	    s += 5;
 	    if (!isspace(*s))
@@ -372,34 +403,50 @@ static void readconfig(struct config *cfg, struct functions *functions)
 	    switch (partnum)
 	    {
 	    case 1: /* config */
-		readsectionconfig(cfg);
+		readsectionconfig(cfg, cl, inclass);
 		break;
 		
 	    case 2: /* cdefprivate */
+		if (inclass)
+		    exitfileerror(20, "cdefprivate section not allowed in class section\n");
 		readsectioncdefprivate(cfg);
 		break;
 		
 	    case 3: /* cdef */
+		if (inclass)
+		    exitfileerror(20, "cdef section not allowed in class section\n");
 		readsectioncdef(cfg);
 		break;
 
 	    case 4: /* functionlist */
-		readsectionfunctionlist(cfg, functions);
+		if (inclass)
+		    exitfileerror(20, "functionlist section not allow in class section\n");
+		readsectionfunctionlist(cfg);
+		cfg->intcfg |= CFG_NOREADREF;
 		break;
 
 	    case 5: /* methodlist */
-		readsectionmethodlist(cfg, functions);
+		if (cl == NULL)
+		    exitfileerror(20, "methodlist section when not in a class\n");
+		readsectionmethodlist(cl);
+		cfg->intcfg |= CFG_NOREADREF;
+		break;
+		
+	    case 6: /* class */
+		if (inclass)
+		    exitfileerror(20, "class section may not be nested\n");
+		readsectionclass(cfg);
 		break;
 	    }
 	}
 	else if (strlen(line)!=0)
 	    filewarning("warning line outside section ignored\n");
     }
-    fileclose();
+    
+    return NULL;
 }
 
-
-static void readsectionconfig(struct config *cfg)
+static void readsectionconfig(struct config *cfg, struct classinfo *cl, int inclass)
 {
     int atend = 0, i;
     char *line, *s, *s2, *libbasetypeextern = NULL;
@@ -417,8 +464,8 @@ static void readsectionconfig(struct config *cfg)
                 "basename", "libbase", "libbasetype", "libbasetypeextern",
                 "version", "date", "copyright", "libcall", "forcebase", "superclass",
 		"residentpri", "options", "sysbase_field", "seglist_field",
-		"rootbase_field", "classptr_field", "classid", "classdatatype",
-		"beginio_func", "abortio_func", "dispatcher"
+		"rootbase_field", "classptr_field", "classptr_var", "classid", "classdatatype",
+		"beginio_func", "abortio_func", "dispatcher", "initpri", "type"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -450,31 +497,46 @@ static void readsectionconfig(struct config *cfg)
 	    switch (namenum)
 	    {
 	    case 1: /* basename */
-		cfg->basename = strdup(s);
+		if (!inclass)
+		    cfg->basename = strdup(s);
+		if (cl != NULL)
+		    cl->basename = strdup(s);
 		break;
 		
 	    case 2: /* libbase */
+		if (inclass)
+		    exitfileerror(20, "libbase not valid config option when in a class section\n");
 		cfg->libbase = strdup(s);
 		break;
 		
 	    case 3: /* libbasetype */
+		if (inclass)
+		    exitfileerror(20, "libbasetype not valid config option when in a class section\n");
 		cfg->libbasetype = strdup(s);
 		break;
 		
 	    case 4: /* libbasetypeextern */
+		if (inclass)
+		    exitfileerror(20, "libbasetype not valid config option when in a class section\n");
 		libbasetypeextern = strdup(s);
 		break;
 		
 	    case 5: /* version */
+		if (inclass)
+		    exitfileerror(20, "version not valid config option when in a class section\n");
 		if (sscanf(s, "%u.%u", &cfg->majorversion, &cfg->minorversion)!=2)
 		    exitfileerror(20, "wrong version string \"%s\"\n", s);
 		break;
 		
 	    case 6: /* date */
+		if (inclass)
+		    exitfileerror(20, "date not valid config option when in a class section\n");
 		if (!(strlen(s)==10 && isdigit(s[0]) && isdigit(s[1]) &&
 		      s[2]=='.' && isdigit(s[3]) && isdigit(s[4]) &&
 		      s[5]=='.' && isdigit(s[6]) && isdigit(s[7]) &&
-		      isdigit(s[8]) && isdigit(s[9])))
+		      isdigit(s[8]) && isdigit(s[9])
+		     )
+	        )
 		{
 		    exitfileerror(20, "date string has have dd.mm.yyyy format\n");
 		}
@@ -482,6 +544,8 @@ static void readsectionconfig(struct config *cfg)
 		break;
 
 	    case 7: /* copyright */
+		if (inclass)
+		    exitfileerror(20, "copyright not valid config option when in a class section\n");
 		cfg->copyright = strdup(s);
 		break;
 		
@@ -490,14 +554,19 @@ static void readsectionconfig(struct config *cfg)
 		break;
 		
 	    case 9: /* forcebase */
+		if (inclass)
+		    exitfileerror(20, "forcebase not valid config option when in a class section\n");
 		slist_append(&cfg->forcelist, s);
 		break;
                 
             case 10: /* superclass */
-                cfg->superclass = strdup(s);
+		if (cl == NULL)
+		    exitfileerror(20, "superclass specified when not a BOOPSI class\n");
+                cl->superclass = strdup(s);
                 break;
 		
 	    case 11: /* residentpri */
+		if (!inclass)
 		{
 		    int count;
 		    char dummy;
@@ -510,10 +579,13 @@ static void readsectionconfig(struct config *cfg)
 			exitfileerror(20, "residentpri number format error\n");
 		    }
 		}
+		else
+		    exitfileerror(20, "residentpri not valid config option when in a class section\n");
 		break;
 
 	    case 12: /* options */
-		do {
+		if (!inclass)
+		{
 		    static const char *optionnames[] =
 		    {
 			"noautolib", "noexpunge", "noresident", "peropenerbase"
@@ -521,95 +593,201 @@ static void readsectionconfig(struct config *cfg)
 		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
 		    int optionnum;
 
-		    for (i = 0, optionnum = 0; optionnum==0 && i<optionnums; i++)
+		    do
 		    {
-			if (strncmp(s, optionnames[i], strlen(optionnames[i]))==0)
+			for (i = 0, optionnum = 0; optionnum==0 && i<optionnums; i++)
 			{
-			    optionnum = i + 1;
-			    s += strlen(optionnames[i]);
-			    while (isspace(*s)) s++;
-			    if (*s == ',')
-				s++;
-			    else if (*s != '\0')
-				exitfileerror(20, "Unrecognized option\n");
+			    if (strncmp(s, optionnames[i], strlen(optionnames[i]))==0)
+			    {
+				optionnum = i + 1;
+				s += strlen(optionnames[i]);
+				while (isspace(*s)) s++;
+				if (*s == ',')
+				    s++;
+				else if (*s != '\0')
+				    exitfileerror(20, "Unrecognized option\n");
+			    }
 			}
-		    }
-		    if (optionnum == 0)
-			exitfileerror(20, "Unrecognized option\n");
-		    switch (optionnum)
+			if (optionnum == 0)
+			    exitfileerror(20, "Unrecognized option\n");
+			switch (optionnum)
+			{
+			case 1: /* noautolib */
+			    cfg->options |= OPTION_NOAUTOLIB;
+			    break;
+			case 2: /* noexpunge */
+			    cfg->options |= OPTION_NOEXPUNGE;
+			    break;
+			case 3: /* noresident */
+			    cfg->options |= OPTION_NORESIDENT;
+			    cfg->firstlvo = 1;
+			    break;
+			case 4: /* peropenerbase */
+			    cfg->options |= OPTION_DUPBASE;
+			    break;
+			}
+			while (isspace(*s)) s++;
+		    } while(*s !='\0');
+		}
+		else
+		{
+		    static const char *optionnames[] =
 		    {
-		    case 1: /* noautolib */
-			cfg->options |= OPTION_NOAUTOLIB;
-			break;
-		    case 2: /* noexpunge */
-			cfg->options |= OPTION_NOEXPUNGE;
-			break;
-		    case 3: /* noresident */
-			cfg->options |= OPTION_NORESIDENT;
-			cfg->firstlvo = 1;
-			break;
-		    case 4: /* peropenerbase */
-			cfg->options |= OPTION_DUPBASE;
-			break;
-		    }
-		    while (isspace(*s)) s++;
-		} while(*s !='\0');
+			"private"
+		    };
+		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
+		    int optionnum;
+
+		    do
+		    {
+			for (i = 0, optionnum = 0; optionnum==0 && i<optionnums; i++)
+			{
+			    if (strncmp(s, optionnames[i], strlen(optionnames[i]))==0)
+			    {
+				optionnum = i + 1;
+				s += strlen(optionnames[i]);
+				while (isspace(*s)) s++;
+				if (*s == ',')
+				    s++;
+				else if (*s != '\0')
+				    exitfileerror(20, "Unrecognized option\n");
+			    }
+			}
+			if (optionnum == 0)
+			    exitfileerror(20, "Unrecognized option\n");
+			switch (optionnum)
+			{
+			case 1: /* private */
+			    cl->options |= COPTION_PRIVATE;
+			    break;
+			}
+			while (isspace(*s)) s++;
+		    } while(*s !='\0');
+		}
 		break;
 
 	    case 13: /* sysbase_field */
+		if (inclass)
+		    exitfileerror(20, "sysbase_field not valid config option when in a class section\n");
 		cfg->sysbase_field = strdup(s);
 		break;
 		
 	    case 14: /* seglist_field */
+		if (inclass)
+		    exitfileerror(20, "seglist_field not valid config option when in a class section\n");
 		cfg->seglist_field = strdup(s);
 		break;
 		
 	    case 15: /* rootbase_field */
+		if (inclass)
+		    exitfileerror(20, "rootbase_field not valid config option when in a class section\n");
 		cfg->rootbase_field = strdup(s);
 		break;
 		
 	    case 16: /* classptr_field */
-		if (cfg->boopsimprefix == NULL)
+		if (cl == NULL)
 		{
 		    exitfileerror
 		    (
 		        20,
-		        "classptr_field specified for a module that is not a BOOPSI class\n"
+		        "classptr_field specified when not a BOOPSI class\n"
 		    );
 		}
-		cfg->classptr_field = strdup(s);
+		cl->classptr_field = strdup(s);
 		break;
 		
-	    case 17: /* classid */
-		if (cfg->modtype != GADGET && cfg->modtype != DATATYPE)
+	    case 17: /* classptr_var */
+		if (cl == NULL)
+		{
+		    exitfileerror
+		    (
+		        20,
+		        "classptr_var specified when not a BOOPSI class\n"
+		    );
+		}
+		cl->classptr_var = strdup(s);
+		break;
+		
+	    case 18: /* classid */
+		if (cl == NULL)
 		    exitfileerror(20, "classid specified when not a BOOPSI class\n");
-		cfg->classid = strdup(s);
+		if (cl->classid != NULL)
+		    exitfileerror(20, "classid specified twice\n");
+		cl->classid = strdup(s);
+		if (strcmp(cl->classid, "NULL") == 0)
+		    cl->options |= COPTION_PRIVATE;
 		break;
 		
-	    case 18: /* classdatatype */
-		if (cfg->boopsimprefix == NULL)
+	    case 19: /* classdatatype */
+		if (cl == NULL)
 		    exitfileerror(20, "classdatatype specified when not a BOOPSI class\n");
-		cfg->classdatatype = strdup(s);
+		cl->classdatatype = strdup(s);
 		break;
 		
-	    case 19: /* beginio_func */
+	    case 20: /* beginio_func */
+		if (inclass)
+		    exitfileerror(20, "beginio_func not valid config option when in a class section\n");
 		if (cfg->modtype != DEVICE)
 		    exitfileerror(20, "beginio_func specified when not a device\n");
 		cfg->beginiofunc = strdup(s);
 		break;
 		
-	    case 20: /* abortio_func */
+	    case 21: /* abortio_func */
+		if (inclass)
+		    exitfileerror(20, "abortio_func not valid config option when in a class section\n");
 		if (cfg->modtype != DEVICE)
 		    exitfileerror(20, "abortio_func specified when not a device\n");
 		cfg->abortiofunc = strdup(s);
 		break;
 		
-	    case 21: /* dispatcher */
-		if (cfg->boopsimprefix == NULL)
+	    case 22: /* dispatcher */
+		if (cl == NULL)
 		    exitfileerror(20, "dispatcher specified when not a BOOPSI class\n");
-		cfg->dispatcher = strdup(s);
+		cl->dispatcher = strdup(s);
 		/* function references are not needed when dispatcher is specified */
 		cfg->intcfg |= CFG_NOREADREF;
+		break;
+
+	    case 23: /* initpri */
+		if (cl != NULL)
+		{
+		    int count;
+		    char dummy;
+		    
+		    count = sscanf(s, "%d%c", &cl->initpri, &dummy);
+		    if (count != 1 ||
+			cl->initpri < -128 || cl->initpri > 127
+		    )
+		    {
+			exitfileerror(20, "initpri number format error\n");
+		    }
+		}
+		else
+		    exitfileerror(20, "initpri only valid config option for a BOOPSI class\n");
+		break;
+	    
+	    case 24: /* type */
+		if (!inclass)
+		    exitfileerror(20, "type only valid config option in a class section\n");
+		if (strcmp(s,"mcc")==0)
+		    cl->classtype = MCC;
+		else if (strcmp(s,"mui")==0)
+		    cl->classtype = MUI;
+		else if (strcmp(s,"mcp")==0)
+		    cl->classtype = MCP;
+		else if (strcmp(s, "image")==0)
+		    cl->classtype = IMAGE;
+		else if (strcmp(s, "gadget")==0)
+		    cl->classtype = GADGET;
+		else if (strcmp(s, "datatype")==0)
+		    cl->classtype = DATATYPE;
+		else if (strcmp(s, "class")==0)
+		    cl->classtype = CLASS;
+		else
+		{
+		    fprintf(stderr, "Unknown type \"%s\" specified\n", s);
+		    exit(20);
+		}
 		break;
 	    }
 	}
@@ -636,98 +814,143 @@ static void readsectionconfig(struct config *cfg)
 	    atend = 1;
 	}
     }
-    
-    if (cfg->basename==NULL)
-    {
-	cfg->basename = strdup(cfg->modulename);
-	*cfg->basename = toupper(*cfg->basename);
-    }
-    if (cfg->libbase==NULL)
-    {
-	unsigned int len = strlen(cfg->basename)+5;
-	cfg->libbase = malloc(len);
-	snprintf(cfg->libbase, len, "%sBase", cfg->basename);
-    }
-    if (cfg->sysbase_field != NULL && cfg->libbasetype == NULL)
-	exitfileerror(20, "sysbase_field specified when no libbasetype is given\n");
-    if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
-	exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
 
-    if (cfg->copyright == NULL)
-	cfg->copyright = "";
-    
-    if ( (cfg->beginiofunc != NULL && cfg->abortiofunc == NULL)
-	 || (cfg->beginiofunc == NULL && cfg->abortiofunc != NULL)
-    )
-	exitfileerror(20, "please specify both beginio_func and abortio_func\n");
+    /* When not in a class section fill in default values for fields in cfg */
+    if (!inclass)
+    {
+	if (cfg->basename==NULL)
+	{
+	    cfg->basename = strdup(cfg->modulename);
+	    *cfg->basename = toupper(*cfg->basename);
+	}
+	if (cfg->libbase==NULL)
+	{
+	    unsigned int len = strlen(cfg->basename)+5;
+	    cfg->libbase = malloc(len);
+	    snprintf(cfg->libbase, len, "%sBase", cfg->basename);
+	}
+	if (cfg->sysbase_field != NULL && cfg->libbasetype == NULL)
+	    exitfileerror(20, "sysbase_field specified when no libbasetype is given\n");
+	if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
+	    exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
 
-    if (cfg->classid == NULL)
-    {
-	if (cfg->modtype == GADGET)
+	/* Set default date to current date */
+	if (cfg->datestring == NULL)
 	{
-	    char s[256];
-	    sprintf(s, "\"%sclass\"", cfg->modulename);
-	    cfg->classid = strdup(s);
-	}
-	else if (cfg->modtype == DATATYPE)
-	{
-	    char s[256];
-	    sprintf(s, "\"%s.datatype\"", cfg->modulename);
-	    cfg->classid = strdup(s);
-	}
-    }
+	    char tmpbuf[256];
+	    time_t now = time(NULL);
+	
+	    strftime(tmpbuf, sizeof(tmpbuf), "%d.%m.%Y", localtime(&now));
 
-    if (libbasetypeextern==NULL)
-    {
-	switch (cfg->modtype)
-	{
-	case DEVICE:
-	    cfg->libbasetypeptrextern = "struct Device *";
-	    break;
-	case RESOURCE:
-	    cfg->libbasetypeptrextern = "APTR ";
-	    break;
-	case LIBRARY:
-	case MUI:
-	case MCP:
-	case MCC:
-	case GADGET:
-	case DATATYPE:
-	    cfg->libbasetypeptrextern = "struct Library *";
-	    break;
-	default:
-	    fprintf(stderr, "Internal error: Unsupported modtype for libbasetypeptrextern\n");
-	    exit(20);
+	    cfg->datestring = strdup(tmpbuf);
 	}
-    }
-    else
-    {
-	cfg->libbasetypeptrextern = malloc(strlen(libbasetypeextern)+3);
-	strcpy(cfg->libbasetypeptrextern, libbasetypeextern);
-	strcat(cfg->libbasetypeptrextern, " *");
-	free(libbasetypeextern);
+
+	if (cfg->copyright == NULL)
+	    cfg->copyright = "";
+    
+	if ( (cfg->beginiofunc != NULL && cfg->abortiofunc == NULL)
+	     || (cfg->beginiofunc == NULL && cfg->abortiofunc != NULL)
+	)
+	    exitfileerror(20, "please specify both beginio_func and abortio_func\n");
+	
+	if (libbasetypeextern==NULL)
+	{
+	    switch (cfg->modtype)
+	    {
+	    case DEVICE:
+		cfg->libbasetypeptrextern = "struct Device *";
+		break;
+	    case RESOURCE:
+		cfg->libbasetypeptrextern = "APTR ";
+		break;
+	    case LIBRARY:
+	    case MUI:
+	    case MCP:
+	    case MCC:
+	    case GADGET:
+	    case DATATYPE:
+		cfg->libbasetypeptrextern = "struct Library *";
+		break;
+	    default:
+		fprintf(stderr, "Internal error: Unsupported modtype for libbasetypeptrextern\n");
+		exit(20);
+	    }
+	}
+	else
+	{
+	    cfg->libbasetypeptrextern = malloc(strlen(libbasetypeextern)+3);
+	    strcpy(cfg->libbasetypeptrextern, libbasetypeextern);
+	    strcat(cfg->libbasetypeptrextern, " *");
+	    free(libbasetypeextern);
+	}
     }
     
-    /* Give default value to superclass if it is not specified */
-    if (cfg->superclass == NULL)
+    /* When class was given to fill in fill in some defaults when not specified */
+    if (cl != NULL)
     {
-	switch (cfg->modtype)
+	if (cl->classtype == UNSPECIFIED)
+	    cl->classtype = CLASS;
+	
+	if (cl->basename == NULL)
 	{
-	case MUI:
-	case MCC:
-	    cfg->superclass = "MUIC_Area";
-	    break;
-	case MCP:
-	    cfg->superclass = "MUIC_Mccprefs";
-	    break;
-	case GADGET:
-	    cfg->superclass = "GADGETCLASS";
-	    break;
-	case DATATYPE:
-	    cfg->superclass = "DATATYPESCLASS";
-	    break;
-	default:
-	    break;
+	    if (!inclass)
+		cl->basename = cfg->basename;
+	    else
+		exitfileerror(20, "basename has to be specified in the config section inside of a class section\n");
+	}
+
+	if (cl->classid == NULL
+	    && (cl->classtype != MUI && cl->classtype != MCC && cl->classtype != MCP)
+	)
+	{
+	    if (cl->options & COPTION_PRIVATE)
+	    {
+		cl->classid = "NULL";
+	    }
+	    else
+	    {
+		char s[256] = "";
+	
+		if (cl->classtype == GADGET || cl->classtype == IMAGE || cl->classtype == CLASS)
+		{
+		    sprintf(s, "\"%sclass\"", inclass ? cl->basename : cfg->modulename);
+		}
+		else if (cl->classtype == DATATYPE)
+		{
+		    sprintf(s, "\"%s.datatype\"", inclass ? cl->basename : cfg->modulename);
+		}
+		cl->classid = strdup(s);
+	    }
+	}
+	
+	/* Give default value to superclass if it is not specified */
+	if (cl->superclass == NULL)
+	{
+	    switch (cl->classtype)
+	    {
+	    case MUI:
+	    case MCC:
+		cl->superclass = "MUIC_Area";
+		break;
+	    case MCP:
+		cl->superclass = "MUIC_Mccprefs";
+		break;
+	    case IMAGE:
+		cl->superclass = "IMAGECLASS";
+		break;
+	    case GADGET:
+		cl->superclass = "GADGETCLASS";
+		break;
+	    case DATATYPE:
+		cl->superclass = "DATATYPESCLASS";
+		break;
+	    case CLASS:
+		cl->superclass = "ROOTCLASS";
+		break;
+	    default:
+		exitfileerror(20, "Internal error: unhandled classtype in readsectionconfig\n");
+		break;
+	    }
 	}
     }
 }
@@ -806,18 +1029,16 @@ static void readsectioncdefprivate(struct config *cfg)
     }
 }
 
-static void readsectionfunctionlist(struct config *cfg, struct functions *functions)
+static void readsectionfunctionlist(struct config *cfg)
 {
     int atend = 0, i;
     char *line, *s, *s2;
     unsigned int lvo = cfg->firstlvo;
-    struct functionhead **funclistptr = &functions->funclist;
+    struct functionhead **funclistptr = &cfg->funclist;
     
     if (cfg->basename==NULL)
 	exitfileerror(20, "section functionlist has to come after section config\n");
 
-    cfg->intcfg |= CFG_NOREADREF;
-    
     while (!atend)
     {
 	line = readline();
@@ -1098,18 +1319,15 @@ static void readsectionfunctionlist(struct config *cfg, struct functions *functi
     }
 }
 
-static void readsectionmethodlist(struct config *cfg, struct functions *functions)
+static void readsectionmethodlist(struct classinfo *cl)
 {
     int atend = 0, i;
     char *line, *s, *s2;
-    unsigned int lvo = cfg->firstlvo;
-    struct functionhead **methlistptr = &functions->methlist;
+    struct functionhead **methlistptr = &cl->methlist;
     
-    if (cfg->basename==NULL)
+    if (cl->basename==NULL)
 	exitfileerror(20, "section methodlist has to come after section config\n");
 
-    cfg->intcfg |= CFG_NOREADREF;
-    
     while (!atend)
     {
 	line = readline();
@@ -1222,10 +1440,10 @@ static void readsectionmethodlist(struct config *cfg, struct functions *function
 	    if (*s != '\0')
 		exitfileerror(20, "Only letters, digits and an underscore allowed in a methodname\n");
 
-	    s2 = malloc(strlen(cfg->basename) + 2 + strlen(line) + 1);
+	    s2 = malloc(strlen(cl->basename) + 2 + strlen(line) + 1);
 	    if (s2 == NULL)
 		exitfileerror(20, "Out of memory\n");
-	    sprintf(s2, "%s__%s", cfg->basename, line);
+	    sprintf(s2, "%s__%s", cl->basename, line);
 	    
 	    if (*methlistptr != NULL)
 		methlistptr = &((*methlistptr)->next);
@@ -1242,4 +1460,72 @@ static void readsectionmethodlist(struct config *cfg, struct functions *function
 	else
 	    exitfileerror(20, "Methodname has to begin with a letter\n");
     }
+}
+
+static void
+readsectionclass(struct config *cfg)
+{
+    char *s;
+    struct classinfo *cl;
+    
+    cl = newclass(cfg);
+    s = readsections(cfg, cl, 1);
+    if (s == NULL)
+	exitfileerror(20, "Unexpected end of file\n");
+
+    if (strncmp(s, "##", 2) != 0)
+	exitfileerror(20, "'##end class' expected\n");
+    s += 2;
+
+    while (isspace(*s)) s++;
+    
+    if (strncmp(s, "end", 3) != 0)
+	exitfileerror(20, "'##end class' expected\n");
+    s += 3;
+
+    if (!isspace(*s))
+	exitfileerror(20, "'##end class' expected\n");
+    while (isspace(*s)) s++;
+    
+    if (strncmp(s, "class", 5) != 0)
+	exitfileerror(20, "'##end class' expected\n");
+    s += 5;
+    
+    while (isspace(*s)) s++;
+    if (*s != '\0')
+	exitfileerror(20, "'##end class' expected\n");
+}
+
+static struct classinfo *newclass(struct config *cfg)
+{
+    struct classinfo *cl, *classlistit;
+
+    cl = malloc(sizeof(struct classinfo));
+    if (cl == NULL)
+    {
+	fprintf(stderr, "Out of memory\n");
+	exit(20);
+    }
+    memset(cl, 0, sizeof(struct classinfo));
+    
+    /* By default the classes are initialized with a priority of 1 so they
+     * are initialized before any user added initialization with priority 1
+     */
+    cl->initpri = 1;
+    
+    if (cfg->classlist == NULL)
+	cfg->classlist = cl;
+    else
+    {
+	for
+	(
+	    classlistit = cfg->classlist;
+	    classlistit->next != NULL;
+	    classlistit = classlistit->next
+	)
+	    ;
+	classlistit->next = cl;
+    }
+    
+    return cl;
 }

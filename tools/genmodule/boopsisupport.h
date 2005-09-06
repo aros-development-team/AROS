@@ -3,4 +3,6 @@
 
 #include <stdio.h>
 
-void writeboopsidispatcher(FILE *out, struct config *, struct functions *);
+void writeboopsiincludes(FILE *out);
+void writeclassinit(FILE *out, struct classinfo *);
+void writeboopsidispatcher(FILE *out, struct classinfo *);

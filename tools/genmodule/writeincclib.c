@@ -6,7 +6,7 @@
 */
 #include "genmodule.h"
 
-void writeincclib(struct config *cfg, struct functions *functions)
+void writeincclib(struct config *cfg)
 {
     FILE *out;
     char line[256];
@@ -39,7 +39,7 @@ void writeincclib(struct config *cfg, struct functions *functions)
     {
 	char *type, *name;
 	
-	for (funclistit = functions->funclist;
+	for (funclistit = cfg->funclist;
 	     funclistit!=NULL;
 	     funclistit = funclistit->next
 	)
