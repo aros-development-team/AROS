@@ -8,7 +8,7 @@
 
 #include "genmodule.h"
 
-void writestubs(struct config *cfg, struct functions *functions)
+void writestubs(struct config *cfg)
 {
     FILE *out, *outasm;
     char line[256], *type, *name;
@@ -62,7 +62,7 @@ void writestubs(struct config *cfg, struct functions *functions)
         "\n"
     );
     
-    for (funclistit = functions->funclist;
+    for (funclistit = cfg->funclist;
 	 funclistit!=NULL;
 	 funclistit = funclistit->next
     )

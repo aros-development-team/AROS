@@ -6,6 +6,9 @@
     This code is partly based on code in CLib37x.lha from Andreas R. Kleinert
 */
 #include "genmodule.h"
+#include "muisupport.h"
+#include "dtsupport.h"
+#include "boopsisupport.h"
 
 static void writedecl(FILE *, struct config *);
 static void writedeclsets(FILE *, struct config *);
@@ -15,13 +18,14 @@ static void writeopenlib(FILE *, struct config *);
 static void writecloselib(FILE *, struct config *);
 static void writeexpungelib(FILE *, struct config *);
 static void writeextfunclib(FILE *, struct config *);
-static void writefunctable(FILE *, struct config *, struct functions *);
+static void writefunctable(FILE *, struct config *);
 static void writesets(FILE *, struct config *);
 
-void writestart(struct config *cfg, struct functions *functions)
+void writestart(struct config *cfg)
 {
     FILE *out;
     char line[256];
+    struct classinfo *cl;
     
     snprintf(line, 255, "%s/%s_start.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
@@ -53,19 +57,30 @@ void writestart(struct config *cfg, struct functions *functions)
 	}
 	writesets(out, cfg);
     }
-    writefunctable(out, cfg, functions);
-    
-    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
+    writefunctable(out, cfg);
+
+    for (cl = cfg->classlist; cl != NULL; cl = cl->next)
     {
-        writemccinit(out, cfg, functions);
-    }
-    else if (cfg->modtype == GADGET)
-    {
-	writeclassinit(out, cfg, functions);
-    }
-    else if (cfg->modtype == DATATYPE)
-    {
-	writeclassinit(out, cfg, functions);
+	switch (cl->classtype)
+	{
+	case MCC:
+	case MUI:
+	case MCP:
+	    /* Second argument to next call: the class is not the main class if it is not
+	     * the first class or the modtype is not a MUI class
+	     */
+	    writemccinit(out, cl != cfg->classlist || cfg->modtype != cl->classtype, cl);
+	    break;
+	case GADGET:
+	case DATATYPE:
+	case CLASS:
+	case IMAGE:
+	    writeclassinit(out, cl);
+	    break;
+	default:
+	    fprintf(stdout, "Internal error: unsupported classtype in writestart\n");
+	    exit(20);
+	}
     }
     
     fclose(out);
@@ -75,7 +90,12 @@ void writestart(struct config *cfg, struct functions *functions)
 static void writedecl(FILE *out, struct config *cfg)
 {
     struct stringlist *linelistit;
-
+    int muiinc=0;
+    struct functionhead *funclistit;
+    struct functionarg *arglistit;
+    struct classinfo *classlistit;
+    char *type, *name;
+    
     if (cfg->modtype == DEVICE)
     {
 	fprintf(out,
@@ -93,18 +113,159 @@ static void writedecl(FILE *out, struct config *cfg)
 	    "#include <dos/dos.h>\n"
 	    "\n"
 	    "#include \"%s_libdefs.h\"\n"
+	    "\n"
+	    "#include <proto/exec.h>\n"
 	    "\n",
 	    cfg->modulename
     );
 
-    for (linelistit = cfg->cdeflines; linelistit!=NULL; linelistit = linelistit->next)
-	fprintf(out, "%s\n", linelistit->s);
+    /* Write out declaration section provided in the config file */
+    for (linelistit = cfg->cdeflines; linelistit != NULL; linelistit = linelistit->next)
+    {
+        fprintf(out, "%s\n", linelistit->s);
+    }
 
-    fprintf(out,
-	    "\n"
-	    "#include <proto/exec.h>\n"
-	    "\n"
-    );
+    /* Write out the prototypes for the functions of the function table */
+    for (funclistit = cfg->funclist; funclistit != NULL; funclistit = funclistit->next)
+    {
+	switch (funclistit->libcall)
+	{
+	case STACK:
+	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+	    {
+		if (arglistit!=funclistit->arguments)
+		    fprintf(out, ", ");
+		fprintf(out, "%s", arglistit->arg);
+	    }
+	    fprintf(out, ");\n");
+	    break;
+	    
+	case REGISTER:
+	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+	    {
+		if (arglistit!=funclistit->arguments)
+		    fprintf(out, ", ");
+		fprintf(out, "%s", arglistit->arg);
+	    }
+	    fprintf(out,
+		    ");\nAROS_LH%d(%s, %s,\n",
+		    funclistit->argcount, funclistit->type, funclistit->name
+	    );
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+	    {
+		type = getargtype(arglistit);
+		name = getargname(arglistit);
+		assert(name != NULL && type != NULL);
+		
+		fprintf(out,
+			"         AROS_LHA(%s, %s, %s),\n",
+			type, name, arglistit->reg
+		);
+		free(type);
+		free(name);
+	    }
+	    fprintf(out,
+		    "         %s, %s, %u, %s)\n"
+		    "{\n"
+		    "    AROS_LIBFUNC_INIT\n\n"
+		    "    return %s(",
+		    cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename,
+		    funclistit->name
+	    );
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+	    {
+		name = getargname(arglistit);
+		assert(name != NULL);
+		
+		if (arglistit!=funclistit->arguments)
+		    fprintf(out, ", ");
+		fprintf(out, "%s", name);
+		free(name);
+	    }
+	    fprintf(out,
+		    ");\n\n"
+		    "    AROS_LIBFUNC_EXIT\n"
+		    "}\n\n");
+	    break;
+	    
+	case REGISTERMACRO:
+	    fprintf(out,
+		    "AROS_LD%d(%s, %s,\n",
+		    funclistit->argcount, funclistit->type, funclistit->name
+	    );
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+	    {
+		type = getargtype(arglistit);
+		name = getargname(arglistit);
+		assert(type != NULL && name != NULL);
+		
+		fprintf(out,
+			"         AROS_LDA(%s, %s, %s),\n",
+			type, name, arglistit->reg
+		);
+		free(type);
+		free(name);
+	    }
+	    fprintf(out,
+		    "         LIBBASETYPEPTR, %s, %u, %s\n"
+		    ");\n",
+		    cfg->libbase, funclistit->lvo, cfg->basename
+	    );
+	    break;
+
+	default:
+	    fprintf(stderr, "Internal error: unhandled libcall in writestart\n");
+	    exit(20);
+	    break;
+	}
+    }
+    fprintf(out, "\n");
+    
+    /* Write out the includes needed for the classes */
+    if (cfg->classlist != NULL)
+	writeboopsiincludes(out);
+    
+    for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
+    {
+	switch (classlistit->classtype)
+	{
+	case GADGET:
+	case DATATYPE:
+	case CLASS:
+	case IMAGE:
+	    /* None */
+	    break;
+	case MUI:
+	case MCC:
+	case MCP:
+	    if (!muiinc)
+	    {
+		writemuiincludes(out);
+		muiinc = 1;
+	    }
+	    break;
+	default:
+	    fprintf(stderr, "Internal error: unhandled classtype in writedecl\n");
+	    exit(20);
+	}
+    }
 }
 
 
@@ -122,8 +283,15 @@ static void writedeclsets(FILE *out, struct config *cfg)
 	    "DECLARESET(CLOSELIB)\n"
 	    "DECLARESET(OPENDEV)\n"
 	    "DECLARESET(CLOSEDEV)\n"
-	    "\n"
     );
+    if (cfg->classlist != NULL)
+	fprintf(out,
+		"DECLARESET(CLASSESINIT)\n"
+		"DECLARESET(CLASSESEXPUNGE)\n"
+		"#define ADD2INITCLASSES(symbol, pri) ADD2SET(symbol, classesinit, pri)\n"
+		"#define ADD2EXPUNGECLASSES(symbol, pri) ADD2SET(symbol, classesexpunge, pri)\n"
+	);
+    fprintf(out, "\n");
 }
 
 
@@ -311,6 +479,8 @@ static void writeinitlib(FILE *out, struct config *cfg)
     fprintf(out, "    if ( ");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "set_open_libraries() && ");
+    if (cfg->classlist != NULL)
+	fprintf(out, "set_call_libfuncs(SETNAME(CLASSESINIT), 1, lh) && ");
     fprintf(out,
 	    "set_call_funcs(SETNAME(INIT), 1, 1) )\n"
 	    "    {\n"
@@ -327,6 +497,8 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 	    "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
     );
+    if (cfg->classlist != NULL)
+	fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE),-1,lh);\n");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "        set_close_libraries();\n");
     fprintf(out,
@@ -550,6 +722,8 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 		"        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 		"        set_call_funcs(SETNAME(EXIT),-1,0);\n"
 	);
+	if (cfg->classlist != NULL)
+	    fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE),-1,lh);\n");
 	if (!(cfg->options & OPTION_NOAUTOLIB))
 	    fprintf(out, "        set_close_libraries();\n");
 	fprintf(out,
@@ -592,8 +766,7 @@ static void writeextfunclib(FILE *out, struct config *cfg)
 
 static void
 writefunctable(FILE *out,
-	       struct config *cfg,
-	       struct functions *functions
+	       struct config *cfg
 )
 {
     struct functionhead *funclistit;
@@ -602,117 +775,6 @@ writefunctable(FILE *out,
     int i;
     char *name, *type;
     
-    for (funclistit = functions->funclist; funclistit != NULL; funclistit = funclistit->next)
-    {
-	switch (funclistit->libcall)
-	{
-	case STACK:
-	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-		if (arglistit!=funclistit->arguments)
-		    fprintf(out, ", ");
-		fprintf(out, "%s", arglistit->arg);
-	    }
-	    fprintf(out, ");\n");
-	    break;
-	    
-	case REGISTER:
-	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-		if (arglistit!=funclistit->arguments)
-		    fprintf(out, ", ");
-		fprintf(out, "%s", arglistit->arg);
-	    }
-	    fprintf(out,
-		    ");\nAROS_LH%d(%s, %s,\n",
-		    funclistit->argcount, funclistit->type, funclistit->name
-	    );
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-		type = getargtype(arglistit);
-		name = getargname(arglistit);
-		assert(name != NULL && type != NULL);
-		
-		fprintf(out,
-			"         AROS_LHA(%s, %s, %s),\n",
-			type, name, arglistit->reg
-		);
-		free(type);
-		free(name);
-	    }
-	    fprintf(out,
-		    "         %s, %s, %u, %s)\n"
-		    "{\n"
-		    "    AROS_LIBFUNC_INIT\n\n"
-		    "    return %s(",
-		    cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename,
-		    funclistit->name
-	    );
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-		name = getargname(arglistit);
-		assert(name != NULL);
-		
-		if (arglistit!=funclistit->arguments)
-		    fprintf(out, ", ");
-		fprintf(out, "%s", name);
-		free(name);
-	    }
-	    fprintf(out,
-		    ");\n\n"
-		    "    AROS_LIBFUNC_EXIT\n"
-		    "}\n\n");
-	    break;
-	    
-	case REGISTERMACRO:
-	    fprintf(out,
-		    "AROS_LD%d(%s, %s,\n",
-		    funclistit->argcount, funclistit->type, funclistit->name
-	    );
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-		type = getargtype(arglistit);
-		name = getargname(arglistit);
-		assert(type != NULL && name != NULL);
-		
-		fprintf(out,
-			"         AROS_LDA(%s, %s, %s),\n",
-			type, name, arglistit->reg
-		);
-		free(type);
-		free(name);
-	    }
-	    fprintf(out,
-		    "         LIBBASETYPEPTR, %s, %u, %s\n"
-		    ");\n",
-		    cfg->libbase, funclistit->lvo, cfg->basename
-	    );
-	    break;
-
-	default:
-	    fprintf(stderr, "Internal error: unhandled libcall in writestart\n");
-	    exit(20);
-	    break;
-	}
-    }
-
     /* lvo contains the number of functions already printed in the functable */
     lvo = 0;
     
@@ -750,7 +812,7 @@ writefunctable(FILE *out,
 	    );
 	    lvo++;
 	}
-	funclistit = functions->funclist;
+	funclistit = cfg->funclist;
     }
     else /* NORESIDENT */
     {
@@ -759,7 +821,7 @@ writefunctable(FILE *out,
 	    int neednull = 0;
 	    struct functionhead *funclistit2;
 	
-	    funclistit = functions->funclist;
+	    funclistit = cfg->funclist;
 	    if (funclistit->lvo != 1)
 	    {
 		fprintf(stderr, "Module without a generated resident structure has to provide the Open function (LVO==1)\n");
@@ -800,7 +862,7 @@ writefunctable(FILE *out,
 			cfg->modulename
 		);
 	
-	    funclistit = functions->funclist;
+	    funclistit = cfg->funclist;
 	    funclistit2 = funclistit->next;
 	    fprintf(out,
 		    "\n"
@@ -881,6 +943,11 @@ static void writesets(FILE *out, struct config *cfg)
 	    "DEFINESET(CLOSELIB)\n"
 	    "DEFINESET(OPENDEV)\n"
 	    "DEFINESET(CLOSEDEV)\n"
-	    "\n"
     );
+    if (cfg->classlist != NULL)
+	fprintf(out,
+		"DEFINESET(CLASSESINIT)\n"
+		"DEFINESET(CLASSESEXPUNGE)\n"
+	);
+    fprintf(out, "\n");
 }

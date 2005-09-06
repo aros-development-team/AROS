@@ -12,14 +12,12 @@
 #include "functionhead.h"
 #include "config.h"
 
-void readref(struct config *, struct functions *);
+void readref(struct config *);
 void writeincproto(struct config *);
-void writeincclib(struct config *, struct functions *);
-void writeincdefines(struct config *, struct functions *);
+void writeincclib(struct config *);
+void writeincdefines(struct config *);
 void writeinclibdefs(struct config *);
-void writestart(struct config *, struct functions *);
+void writestart(struct config *);
 void writeend(struct config *);
 void writeautoinit(struct config *);
-void writestubs(struct config *, struct functions *);
-void writemccinit(FILE *, struct config *, struct functions *);
-void writemccquery(FILE *, struct config *);
+void writestubs(struct config *);

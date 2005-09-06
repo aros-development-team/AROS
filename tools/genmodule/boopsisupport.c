@@ -6,15 +6,32 @@
 */
 #include "config.h"
 #include "functionhead.h"
+#include "boopsisupport.h"
 
-void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *functions)
+void writeboopsiincludes(FILE *out)
+{
+    fprintf
+    (
+        out,
+        "#include <intuition/classes.h>\n"
+        "#include <intuition/classusr.h>\n"
+        "\n"
+        "#include <proto/utility.h>\n"
+        "#include <proto/intuition.h>\n"
+        "\n"
+        "#include <aros/symbolsets.h>\n"
+        "\n"
+    );
+}
+
+void writeboopsidispatcher(FILE *out, struct classinfo *cl)
 {
     struct functionhead *methlistit;
     struct functionarg *arglistit;
     struct stringlist *aliasit;
     int i;
 
-    if (cfg->dispatcher == NULL)
+    if (cl->dispatcher == NULL)
     {
 	fprintf
 	(
@@ -26,7 +43,7 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
     
 	for 
 	(
-	    methlistit = functions->methlist; 
+	    methlistit = cl->methlist; 
             methlistit != NULL; 
             methlistit = methlistit->next
 	)
@@ -63,12 +80,12 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
             "{\n"
             "    switch (message->MethodID)\n"
             "    {\n",
-            cfg->basename
+            cl->basename
         );
         
         for 
         (
-            methlistit = functions->methlist; 
+            methlistit = cl->methlist; 
             methlistit != NULL; 
             methlistit = methlistit->next
 	)
@@ -150,16 +167,15 @@ void writeboopsidispatcher(FILE *out, struct config *cfg, struct functions *func
             "\n"
             "/*** Custom dispatcher prototype ********************************************/\n"
             "BOOPSI_DISPATCHER_PROTO(IPTR, %s, CLASS, object, message);\n",
-            cfg->dispatcher
+            cl->dispatcher
         );
     }
 }
 
-void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
+void writeclassinit(FILE *out, struct classinfo *cl)
 {
     struct functionhead *methlistit;
     struct functionarg *arglistit;
-    struct stringlist *linelistit;
     unsigned int lvo;
     
     fprintf
@@ -168,34 +184,16 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         "/* Initialisation routines for a BOOPSI class */\n"
         "/* ===========================================*/\n"
         "\n"
-        "#include <intuition/classes.h>\n"
-        "#include <intuition/classusr.h>\n"
-        "\n"
-        "#include <proto/exec.h>\n"
-        "#include <proto/utility.h>\n"
-        "#include <proto/dos.h>\n"
-        "#include <proto/graphics.h>\n"
-        "#include <proto/intuition.h>\n"
-        "#include <proto/muimaster.h>\n"
-        "\n"
-        "#include <aros/symbolsets.h>\n"
-        "\n",
-        cfg->modulename
     );
         
-    for(linelistit = cfg->cdeflines; linelistit != NULL; linelistit = linelistit->next)
-    {
-        fprintf(out, "%s\n", linelistit->s);
-    }
+    writeboopsidispatcher(out, cl);
 
-    writeboopsidispatcher(out, cfg, functions);
-
-    if (cfg->classdatatype == NULL)
-	fprintf(out, "#define %s_DATA_SIZE (0)\n", cfg->basename);
+    if (cl->classdatatype == NULL)
+	fprintf(out, "#define %s_DATA_SIZE (0)\n", cl->basename);
     else
 	fprintf(out,
 		"#define %s_DATA_SIZE (sizeof(%s))\n",
-		cfg->basename, cfg->classdatatype
+		cl->basename, cl->classdatatype
 	);
     
     fprintf
@@ -204,7 +202,7 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         "\n"
         "\n"
         "/*** Library startup and shutdown *******************************************/\n"
-        "AROS_SET_LIBFUNC(BOOPSI_Startup, LIBBASETYPE, LIBBASE)\n"
+        "AROS_SET_LIBFUNC(BOOPSI_%s_Startup, LIBBASETYPE, LIBBASE)\n"
         "{\n"
         "    AROS_SET_LIBFUNC_INIT\n"
         "\n"
@@ -213,19 +211,24 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         "    cl = MakeClass(%s, %s, NULL, %s_DATA_SIZE, 0);\n"
         "    if (cl != NULL)\n"
         "    {\n"
-        "        GM_CLASSPTR_FIELD(LIBBASE) = cl;\n",
-        cfg->classid, cfg->superclass, cfg->basename
+        "#if %s_STORE_CLASSPTR\n"
+        "        %s_CLASSPTR_FIELD(LIBBASE) = cl;\n"
+        "#endif\n",
+        cl->basename,
+        cl->classid, cl->superclass, cl->basename,
+        cl->basename,
+        cl->basename
     );
 
-    if (cfg->dispatcher == NULL)
+    if (cl->dispatcher == NULL)
 	fprintf(out,
 		"        cl->cl_Dispatcher.h_Entry = (APTR)%s_Dispatcher;\n",
-		cfg->basename
+		cl->basename
 	);
     else
 	fprintf(out,
 		"        cl->cl_Dispatcher.h_Entry = (APTR)%s;\n",
-		cfg->dispatcher
+		cl->dispatcher
 	);
 
     fprintf
@@ -233,8 +236,19 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         out,
 	"        cl->cl_Dispatcher.h_SubEntry = NULL;\n"
         "        cl->cl_UserData = (IPTR)LIBBASE\n;"
-        "\n"
-        "        AddClass(cl);\n"
+    );
+    
+    if (!(cl->options & COPTION_PRIVATE))
+	fprintf
+	(
+	    out,
+	    "\n"
+	    "        AddClass(cl);\n"
+	);
+    
+    fprintf
+    (
+        out,
         "\n"
         "        return TRUE;\n"
         "    }\n"
@@ -244,15 +258,26 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         "    AROS_SET_LIBFUNC_EXIT\n"
         "}\n"
         "\n"
-        "AROS_SET_LIBFUNC(BOOPSI_Shutdown, LIBBASETYPE, LIBBASE)\n"
+        "AROS_SET_LIBFUNC(BOOPSI_%s_Shutdown, LIBBASETYPE, LIBBASE)\n"
         "{\n"
         "    AROS_SET_LIBFUNC_INIT\n"
         "    \n"
-        "    if (GM_CLASSPTR_FIELD(LIBBASE) != NULL)\n"
-        "    {\n"
-        "        RemoveClass(GM_CLASSPTR_FIELD(LIBBASE));\n"
-        "        FreeClass(GM_CLASSPTR_FIELD(LIBBASE));\n"
-        "        GM_CLASSPTR_FIELD(LIBBASE) = NULL;\n"
+        "    if (%s_CLASSPTR_FIELD(LIBBASE) != NULL)\n"
+        "    {\n",
+        cl->basename, cl->basename
+    );
+    if (!(cl->options & COPTION_PRIVATE))
+	fprintf(out,
+		"        RemoveClass(%s_CLASSPTR_FIELD(LIBBASE));\n",
+		cl->basename
+	);
+    fprintf
+    (
+        out,
+        "        FreeClass(%s_CLASSPTR_FIELD(LIBBASE));\n"
+        "#if %s_STORE_CLASSPTR\n"
+        "        %s_CLASSPTR_FIELD(LIBBASE) = NULL;\n"
+        "#endif\n"
         "    }\n"
         "\n"
         "    return TRUE;\n"
@@ -260,8 +285,13 @@ void writeclassinit(FILE *out, struct config *cfg, struct functions *functions)
         "    AROS_SET_LIBFUNC_EXIT\n"
         "}\n"
         "\n"
-        "ADD2INITLIB(BOOPSI_Startup, 1);\n"
-        "ADD2EXPUNGELIB(BOOPSI_Shutdown, 1);\n"
+        "ADD2INITCLASSES(BOOPSI_%s_Startup, %d);\n"
+        "ADD2EXPUNGECLASSES(BOOPSI_%s_Shutdown, %d);\n",
+        cl->basename,
+        cl->basename,
+        cl->basename,
+        cl->basename, -cl->initpri,
+        cl->basename, -cl->initpri
     );
 }
 

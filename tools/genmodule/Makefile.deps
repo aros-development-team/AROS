@@ -5,6 +5,7 @@ GENMODULE_SRCS := \
     dtsupport.c \
     fileread.c \
     functionhead.c \
+    muisupport.c \
     readref.c \
     stringlist.c \
     writeincclib.c \
@@ -16,8 +17,6 @@ GENMODULE_SRCS := \
     writeend.c \
     writeautoinit.c \
     writestubs.c \
-    writemccinit.c \
-    writemccquery.c \
     writefunclist.c
 GENMODULE_INCS := genmodule.h fileread.h functionhead.h
 GENMODULE_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENMODULE_SRCS) $(GENMODULE_INCS) include/aros/libcall.h) \

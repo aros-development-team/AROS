@@ -11,7 +11,7 @@ static void writedefinevararg(FILE *, struct functionhead *, struct config *);
 static void writedefinestack(FILE *, struct functionhead *, struct config *);
 static void writealiases(FILE *, struct functionhead *, struct config *);
 
-void writeincdefines(struct config *cfg, struct functions *functions)
+void writeincdefines(struct config *cfg)
 {
     FILE *out;
     char line[256];
@@ -44,7 +44,7 @@ void writeincdefines(struct config *cfg, struct functions *functions)
     );
     if (cfg->command!=DUMMY)
     {
-	for (funclistit = functions->funclist; funclistit!=NULL; funclistit = funclistit->next)
+	for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)
 	{
 	    if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
 	    {

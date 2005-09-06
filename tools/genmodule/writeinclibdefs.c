@@ -13,7 +13,8 @@ void writeinclibdefs(struct config *cfg)
     struct stringlist *linelistit;
     char *_libbasetype = (cfg->libbasetype==NULL) ? "struct GM_LibHeader" : cfg->libbasetype;
     char *residentflags;
-
+    struct classinfo *classlistit;
+    
     if (cfg->residentpri >= 105)
 	residentflags = "RTF_AUTOINIT|RTF_SINGLETASK";
     else if (cfg->residentpri >= -50)
@@ -89,8 +90,23 @@ void writeinclibdefs(struct config *cfg)
 	);
 	if (cfg->options & OPTION_DUPBASE)
 	    fprintf(out, "    LIBBASETYPEPTR   lh_RootBase;\n");
-	if (cfg->boopsimprefix != NULL)
-	    fprintf(out, "    APTR             lh_ClassPtr;\n");
+	for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
+	{
+	    /* For the main class basename is the same a the module basename */
+	    if (classlistit->classptr_field != NULL)
+		fprintf(out,
+			"    APTR             %s;\n",
+			classlistit->classptr_field
+		);
+	    else if (strcmp(classlistit->basename, cfg->basename) == 0)
+		fprintf(out, "    APTR             lh_ClassPtr;\n");
+	    else if (classlistit->classptr_var == NULL)
+		fprintf(out, "    APTR             lh_%sClassPtr;\n", classlistit->basename);
+	    fprintf(out,
+		    "#define %s_STORE_CLASSPTR 1\n",
+		    classlistit->basename
+	    );
+	}
 	fprintf(out,
 		"};\n"
 		"#define GM_SYSBASE_FIELD(lh) ((lh)->lh_SysBase)\n"
@@ -98,8 +114,53 @@ void writeinclibdefs(struct config *cfg)
 	);
 	if (cfg->options & OPTION_DUPBASE)
 	    fprintf(out, "#define GM_ROOTBASE_FIELD(lh) ((lh)->lh_RootBase)\n");
-	if (cfg->boopsimprefix != NULL)
-	    fprintf(out, "#define GM_CLASSPTR_FIELD(lh) ((lh)->lh_ClassPtr)\n");
+	for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
+	{
+	    /* For the main class basename is the same a the module basename */
+	    if (strcmp(classlistit->basename, cfg->basename) == 0)
+	    {
+		if (classlistit->classptr_field == NULL)
+		{
+		    fprintf(out, "#define GM_CLASSPTR_FIELD(lh) ((lh)->lh_ClassPtr)\n");
+		    fprintf(out,
+			    "#define %s_CLASSPTR_FIELD(lh) ((lh)->lh_ClassPtr)\n",
+			    classlistit->basename
+		    );
+		}
+		else
+		{
+		    fprintf(out, "#define GM_CLASSPTR_FIELD(lh) ((lh)->%s)\n", classlistit->classptr_field);
+		    fprintf(out,
+			    "#define %s_CLASSPTR_FIELD(lh) ((lh)->%s)\n",
+			    classlistit->basename, classlistit->classptr_field
+		    );
+		}
+	    }
+	    else
+	    {
+		if (classlistit->classptr_field != NULL)
+		{
+		    fprintf(out,
+			    "#define %s_CLASSPTR_FIELD(lh) ((lh)->%s)\n",
+			    classlistit->basename, classlistit->classptr_field
+		    );
+		}
+		else if (classlistit->classptr_var != NULL)
+		{
+		    fprintf(out,
+			    "#define %s_CLASSPTR_FIELD(lh) (%s)\n",
+			    classlistit->basename, classlistit->classptr_var
+		    );
+		}
+		else
+		{
+		    fprintf(out,
+			    "#define %s_CLASSPTR_FIELD(lh) ((lh)->lh_%sClassPtr)\n",
+			    classlistit->basename, classlistit->basename
+		    );
+		}
+	    }
+	}
     }
     else
     {
@@ -113,11 +174,41 @@ void writeinclibdefs(struct config *cfg)
 		    "#define GM_SEGLIST_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
 		    cfg->seglist_field
 	    );
-	if (cfg->classptr_field != NULL)
+	for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
+	{
+	    int storeptr;
+	    
+	    if (classlistit->classptr_field != NULL)
+	    {
+		storeptr = 1;
+		snprintf(line, 1023, "((LIBBASETYPEPTR)lh)->%s", classlistit->classptr_field);
+	    }
+	    else if (classlistit->classptr_var != NULL)
+	    {
+		storeptr = 1;
+		snprintf(line, 1023, "%s", classlistit->classptr_var);
+	    }
+	    else
+	    {
+		storeptr = 0;
+		snprintf(line, 1023, "FindClass(%s)", classlistit->classid);
+	    }
+
 	    fprintf(out,
-		    "#define GM_CLASSPTR_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
-		    cfg->classptr_field
+		    "#define %s_STORE_CLASSPTR %d\n",
+		    classlistit->basename, storeptr
 	    );
+	    
+	    /* When class is the main class also define GM_CLASSPTR_FIELD for legacy */
+	    if (strcmp(classlistit->basename, cfg->basename) == 0)
+		fprintf(out, "#define GM_CLASSPTR_FIELD(lh) (%s)\n", line);
+
+	    fprintf(out,
+		    "#define %s_CLASSPTR_FIELD(lh) (%s)\n",
+		    classlistit->basename, line
+	    );
+	}
+	
 	if ((cfg->options & OPTION_DUPBASE) && cfg->rootbase_field != NULL)
 	    fprintf(out,
 		    "#define GM_ROOTBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",

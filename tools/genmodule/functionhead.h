@@ -35,19 +35,6 @@ struct functionhead {
     int priv     : 1; /* Is function private */
 };
 
-struct functions {
-    /* In funclist the information of all the functions of the module will be stored.
-     * The list has to be sorted on the lvonum field
-     */
-    struct functionhead *funclist;
-
-    /* In methlist the information of all the methods of the class will be 
-     * stored. We (mis)use struct functionlist for this, but don't use certain
-     * fields (like lvo and reg (in struct arglist)).
-     */
-    struct functionhead *methlist;
-};
-
 struct functionhead *newfunctionhead(const char *name, enum libcall libcall);
 struct functionarg *funcaddarg(
     struct functionhead *funchead,
@@ -65,7 +52,5 @@ struct stringlist *funcaddalias(struct functionhead *funchead, const char *alias
  */
 char *getargtype(const struct functionarg *funcarg);
 char *getargname(const struct functionarg *funcarg);
-
-struct functions *functionsinit(void);
 
 #endif //FUNCTIONHEAD_H
