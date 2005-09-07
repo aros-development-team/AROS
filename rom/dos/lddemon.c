@@ -685,7 +685,9 @@ AROS_LH1(void, RemLibrary,
     BPTR seglist;
 
     Forbid();
-    seglist = AROS_LVO_CALL0(BPTR, struct Library *, library, 3, );
+    seglist = AROS_LVO_CALL1(BPTR,
+    	    	AROS_LCA(struct Library *, library, D0),
+    	    	struct Library *, library, 3, );
     if( seglist )
     {
 	DOSBase->dl_LDReturn = MEM_TRY_AGAIN;
