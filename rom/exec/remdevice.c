@@ -74,7 +74,9 @@
     Forbid();
 
     /* Call expunge vector */
-    NATIVE(seglist =) AROS_LVO_CALL0(BPTR,struct Device *,device,3,);
+    NATIVE(seglist =) AROS_LVO_CALL1(BPTR,
+    	    	    	AROS_LCA(struct Device *,device, D0),
+    	    	    	struct Device *,device,3,);
     /*
 	Normally you'd expect the device to be expunged if this returns
 	non-zero, but this is only exec which doesn't know anything about

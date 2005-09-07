@@ -73,7 +73,9 @@
     Forbid();
 
     /* Call expunge vector */
-    NATIVE(seglist =) AROS_LVO_CALL0(BPTR,struct Library *,library,3,);
+    NATIVE(seglist =) AROS_LVO_CALL1(BPTR,
+    	    	    	AROS_LCA(struct Library *, library, D0),
+    	    	    	struct Library *,library,3,);
     /*
 	Normally you'd expect the library to be expunged if this returns
 	non-zero, but this is only exec which doesn't know anything about
