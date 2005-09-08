@@ -23,6 +23,8 @@ FILES	   := x11 support x11gfx onbitmap offbitmap support x11kbd x11mouse x11cli
   genfunctable=yes \
   compiler=host
 
+#MM- kernel-x11gfx-setup : default-x11keymaptable
+
 #MM x11keymaptable
 x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_FILE)
 	@$(NOP)
@@ -32,8 +34,11 @@ change-x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable
 	$(TOOLDIR)/makexkeytable -o $(X11KEYMAPTABLE_FILE)
 
 #MM default-x11keymaptable
-default-x11keymaptable : setup-x11keymaptable
-	@$(CP) def-x11-keycode2rawkey.table $(X11KEYMAPTABLE_FILE)
+default-x11keymaptable : $(X11KEYMAPTABLE_FILE)
+	@$(NOP)
+
+$(X11KEYMAPTABLE_FILE) : def-x11-keycode2rawkey.table  setup-x11keymaptable
+	@$(CP) $< $@
 
 #MM backup-x11keymaptable
 backup-x11keymaptable :
@@ -56,10 +61,7 @@ restore-x11keymaptable : setup-x11keymaptable
 	else \
 	    $(ECHO) "There is no x11 keymaptable backup existing (\"~/aros-x11-keycode2rawkey.table\")!?" ; \
 	fi
-	
-$(X11KEYMAPTABLE_FILE) :
-	$(TOOLDIR)/makexkeytable -o $(X11KEYMAPTABLE_FILE)
-	
+		
 setup-x11keymaptable :
 	%mkdirs_q $(AROS_DEVS)/Keymaps $(AROS_DEVS)/Keymaps/X11
 		
