@@ -3,7 +3,13 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := support support_builtin diskobjio diskobj35io diskobjPNGio identify
+FILES := support 	 \
+	 support_builtin \
+	 diskobjio 	 \
+	 diskobj35io 	 \
+	 diskobjNIio 	 \
+	 diskobjPNGio 	 \
+	 identify
 
 FUNCS := \
     addfreelist \
