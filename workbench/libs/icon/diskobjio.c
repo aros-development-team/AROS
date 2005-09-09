@@ -99,6 +99,12 @@ AROS_UFP3S(ULONG, ProcessIcon35,
     AROS_UFPA(struct SDData *, data, A1)
 );
 
+AROS_UFP3S(ULONG, ProcessIconNI,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
+);
+
 static const struct Hook ProcessClearMemHook =
 {
     { NULL, NULL}, AROS_ASMSYMNAME(ProcessClearMem), NULL, NULL
@@ -142,6 +148,10 @@ ProcessToolTypesHook =
 ProcessIcon35Hook =
 {
     { NULL, NULL}, AROS_ASMSYMNAME(ProcessIcon35), NULL, NULL
+},
+ProcessIconNIHook =
+{
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessIconNI), NULL, NULL
 };
 
 /****************************************************************************************/
@@ -235,6 +245,7 @@ const IPTR IconDesc[] =
     SDM_SPECIAL(0,&ProcessToolWindowHook),
     SDM_SPECIAL(0,&ProcessNewDrawerDataHook),
     SDM_SPECIAL(0,&ProcessIcon35Hook),
+    SDM_SPECIAL(0,&ProcessIconNIHook),
     SDM_END
 };
 
@@ -693,14 +704,14 @@ static STRPTR ReadIconString (struct Hook * streamhook, BPTR file)
     if (!ReadLong (streamhook, &len, file))
 	return NULL;
 
-    str = AllocMem (len, MEMF_ANY);
+    str = AllocVec (len, MEMF_ANY);
 
     if (!str)
 	return NULL;
 
     if (FRead (file, str, len, 1) == EOF)
     {
-	FreeMem (str, len);
+	FreeVec (str);
 	return NULL;
     }
 
@@ -766,7 +777,7 @@ kprintf ("ProcessDefaultTool\n");
 	    str = DO(data->sdd_Dest)->do_DefaultTool;
     	    if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_DEFAULTTOOL_READ)
 	    {
-	    	FreeMem (str, strlen (str)+1);
+	    	FreeVec (str);
     	    }
 	    break;
 	}
@@ -818,7 +829,7 @@ kprintf ("ProcessToolWindow\n");
 	    str = DO(data->sdd_Dest)->do_ToolWindow;
     	    if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_TOOLWINDOW_READ)
 	    {
-	    	FreeMem (str, strlen (str)+1);
+	    	FreeVec (str);
     	    }
 	    break;
 	}
@@ -859,7 +870,7 @@ kprintf ("ProcessToolTypes\n");
 
 	    count = (count >> 2) - 1; /* How many entries */
 
-	    ttarray = AllocMem ((count+1)*sizeof(STRPTR), MEMF_ANY);
+	    ttarray = AllocVec ((count+1)*sizeof(STRPTR), MEMF_ANY);
 	    if (!ttarray) return FALSE;
 
 #if 0
@@ -879,10 +890,10 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 
 		    for (i=0; i<t; i++)
 		    {
-			FreeMem (ttarray[t], strlen (ttarray[t])+1);
+			FreeVec(ttarray[t]);
 		    }
 
-		    FreeMem (ttarray, (count+1)*sizeof(STRPTR));
+		    FreeVec (ttarray);
 
 		    return FALSE;
 		}
@@ -938,9 +949,9 @@ kprintf ("Free tooltypes (%p)\n", count, ttarray);
 #if 0
 kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 #endif
-		FreeMem (ttarray[t], strlen (ttarray[t])+1);
+		FreeVec(ttarray[t]);
 	    }
-	    FreeMem (ttarray, (t+1)*sizeof(STRPTR));
+	    FreeVec (ttarray);
 
 	    break;
 	}
@@ -1039,6 +1050,43 @@ kprintf ("ProcessIcon35\n");
     
     AROS_USERFUNC_EXIT
 } /* ProcessIcon35 */
+
+/****************************************************************************************/
+
+AROS_UFH3S(ULONG, ProcessIconNI,
+    AROS_UFHA(struct Hook *,   hook, A0),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
+    AROS_UFHA(struct SDData *, data, A1)
+)
+{
+    AROS_USERFUNC_INIT
+    
+    IPTR retval = TRUE;
+
+#if 0
+kprintf ("ProcessIconNI\n");
+#endif
+    
+    switch (data->sdd_Mode)
+    {
+    	case SDV_SPECIALMODE_READ:
+	    ReadIconNI(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
+    	    break;	    
+
+    	case SDV_SPECIALMODE_FREE:
+	    FreeIconNI(NATIVEICON(DO(data->sdd_Dest)), (IconBase_T *)NATIVEICON(DO(data->sdd_Dest))->iconbase);
+	    break;
+
+    	case SDV_SPECIALMODE_WRITE:
+	    retval = WriteIconNI(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
+    	    break;	    
+
+    }
+    
+    return retval;
+    
+    AROS_USERFUNC_EXIT
+} /* ProcessIconNI */
 
 /****************************************************************************************/
 

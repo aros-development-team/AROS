@@ -138,6 +138,45 @@ static char *Decode35(UBYTE *buffer, UBYTE *outbuffer, LONG numbytes, LONG bits,
 
 /****************************************************************************************/
 
+VOID MakeMask35(UBYTE *imgdata, UBYTE *imgmask, UBYTE transpcolor, LONG imagew, LONG imageh)
+{
+    UBYTE *src, *dst;
+    WORD x, y, bpr, mask;
+
+    memset(imgmask, 0xFF, RASSIZE(imagew, imageh));
+
+    bpr = ((imagew + 15) & ~15) / 8;
+    src = imgdata;
+    dst = imgmask;
+
+    for(y = 0; y < imageh; y++)
+    {
+	UBYTE *dstx = dst;
+
+	mask = 0x80;
+
+	for(x = 0; x < imagew; x++)
+	{
+	    if (*src++ == transpcolor)
+	    {
+		*dstx &= ~mask;
+	    }
+
+	    mask >>= 1;
+	    if (!mask)
+	    {
+		mask = 0x80;
+		dstx++;
+	    }
+	}
+	dst += bpr;
+	
+    }    
+    
+}
+
+/****************************************************************************************/
+
 STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
     	    	    	struct FileImageChunk *ic, UBYTE **imgdataptr,
 			UBYTE **imgpalptr, UBYTE **imgmaskptr, struct IconBase *IconBase)
@@ -255,45 +294,13 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
 
     if (ic->Flags & IMAGE35F_HASTRANSPARENTCOLOR)
     {
-    	UBYTE *dst, transpcolor;
-    	WORD x, y, bpr, mask;
-
     	imgmask = imgdata + imagew * imageh;
 	if (ic->Flags & IMAGE35F_HASPALETTE)
 	{
 	    imgmask += numcols * sizeof(struct ColorRegister);
 	}
 	
-	memset(imgmask, 0xFF, RASSIZE(imagew, imageh));
-	
-	bpr = ((imagew + 15) & ~15) / 8;
-	src = imgdata;
-	dst = imgmask;
-	
-	transpcolor = ic->TransparentColor;
-	
-	for(y = 0; y < imageh; y++)
-	{
-	    UBYTE *dstx = dst;
-	    
-	    mask = 0x80;
-	    
-	    for(x = 0; x < imagew; x++)
-	    {
-	    	if (*src++ == transpcolor)
-		{
-		    *dstx &= ~mask;
-		}
-		
-	    	mask >>= 1;
-		if (!mask)
-		{
-		    mask = 0x80;
-		    dstx++;
-		}
-	    }
-	    dst += bpr;
-	}
+	MakeMask35(imgdata, imgmask,ic->TransparentColor, imagew, imageh);
     }
     
     *imgdataptr = imgdata;
@@ -730,6 +737,9 @@ VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase)
 {
     if (icon->icon35.img1.imagedata) FreeVec(icon->icon35.img1.imagedata);
     if (icon->icon35.img2.imagedata) FreeVec(icon->icon35.img2.imagedata);
+    
+    icon->icon35.img1.imagedata = NULL;
+    icon->icon35.img2.imagedata = NULL;
     
     /* We don't free img.palette/img.mask because imagedata/palette/mask
        were allocated together in one AllocVec() call */
