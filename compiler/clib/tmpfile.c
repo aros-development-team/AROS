@@ -29,9 +29,8 @@
         mkstemp(3).  The created file is unlinked before tmpfile()
         returns, causing the file to be automatically deleted when the
         last reference to it is closed.  The file is opened with the
-        access value `w+'.  The file is created in the directory
-        determined by the environment variable TMPDIR if set.  The
-        default location if TMPDIR is not set is /tmp.
+        access value `w+'.  The file is created in the T: directory,
+        which is the standard AROS temp directory.
 
 
     INPUTS
@@ -69,40 +68,35 @@
 	}
 
     BUGS
-        The temporary file is neither closed nor deleted.
+        BUG1: The temporary file is neither closed nor deleted. Ideally,
+        unlink() could be used to mark the temp file for removal (see
+        BUG1 in the source code) - but I suspect a bug in unlink() itself,
+        whereby it tries to remove the file straight away, rather than
+        waiting for all references to it to be closed. The bug is not too
+        serious, because all temp files are written to the T: directory,
+        which get zapped when AROS is closed down. However, problems may
+        exist when you start creating over 26 temp files with the same PID.
 
-	Does not respect TMPDIR or /tmp; uses current directory instead.
 
     SEE ALSO
-        fdopen(), mkstemp()
+        fopen(), mkstemp()
 
     INTERNALS
 
 ******************************************************************************/
 {
-  #define TEMPLATE "temp.XXXXXX"
+  #define TEMPLATE "T:temp.XXXXXX"
   char * filename;
+  FILE *fp;
 
   filename = (char *)malloc(MAXPATHLEN);
-  if (!filename) {return NULL;}
+  if (!filename) { puts("FIXME: mktemp() malloc failed"); return NULL;}
   strcpy(filename, TEMPLATE);
 
   mktemp(filename);
-  puts(filename);
+  fp = fopen(filename, "w+");
+  /* unlink(filename); -- see BUG1 in BUGS section */
   free(filename);
-  return fopen(filename, "w+");
-
-  /* FIXME implement properly
-     A better way to implement this function would be along the lines of:
-     int fd;
-     fd  = mkstemp(filename);
-     unlink(filename);
-     return fdopen(fd, "w+");
-
-     However, it appears that fdopen returns NULL when you try to do this, and 
-     I don't understand why. It has nothing to do with unlink(); because even 
-     if you comment it out, the problem still occurs.
-  */
-
+  return fp;
  
 } /* tmpfile() */
