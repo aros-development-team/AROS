@@ -8,7 +8,11 @@ int main()
   int i;
   FILE * fp;
 
-  for(i = 0; i<3; i++) /* repeat test to catch problems */
+  /* FIXME: loop over about 30 to test that tmpfile() copes with
+     more temp files than there are letters in the alphabet. This
+     is known to be a bug as at 11-Sep-2005
+     */
+  for(i = 0; i<20; i++) /* repeat test to catch problems */
     {
       fp = tmpfile();
       TEST((fp != NULL));
