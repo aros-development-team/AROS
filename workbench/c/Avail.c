@@ -11,11 +11,11 @@
 
     NAME
 
-        Avail [CHIP | FAST | TOTAL | FLUSH]
+        Avail [CHIP | FAST | TOTAL | FLUSH] [H | HUMAN]
 
     SYNOPSIS
 
-        CHIP/S, FAST/S, TOTAL/S, FLUSH/S        
+        CHIP/S, FAST/S, TOTAL/S, FLUSH/S, H=HUMAN/S        
 
     LOCATION
 
@@ -34,6 +34,8 @@
 	FAST   --  show only "fast" memory
 	TOTAL  --  show information on memory regardless of type
 	FLUSH  --  remove unnecessary things residing in memory
+	HUMAN  --  display more human-readable values (gigabytes as "G",
+		   megabytes as "M", kilobytes as "K")
 
     RESULT
 
@@ -61,10 +63,10 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-static const char version[] = "$VER: Avail 41.1 (14.3.1997)\n";
+static const char version[] = "$VER: Avail 42.0 (13.9.2005)\n";
 
 
-#define  ARG_TEMPLATE  "CHIP/S,FAST/S,TOTAL/S,FLUSH/S"
+#define  ARG_TEMPLATE  "CHIP/S,FAST/S,TOTAL/S,FLUSH/S,H=HUMAN/S"
 
 enum
 {
@@ -72,9 +74,11 @@ enum
     ARG_FAST,
     ARG_TOTAL,
     ARG_FLUSH,
+    ARG_HUMAN
     NOOFARGS
 };
 
+LONG printm(struct localdata *ld, CONST_STRPTR head, ULONG *array, LONG num);
 
 int __nocommandline = 1;
 
@@ -83,10 +87,11 @@ int main(void)
     IPTR           args[NOOFARGS] = { (IPTR)FALSE,
 				      (IPTR)FALSE,
 				      (IPTR)FALSE, 
+				      (IPTR)FALSE,
 				      (IPTR)FALSE };
     struct RDArgs *rda;
     LONG           error = 0;
-    
+    BOOL bPrintErr = TRUE;
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
     
     if (rda != NULL)
@@ -95,6 +100,7 @@ int main(void)
 	BOOL  aFast  = (BOOL)args[ARG_FAST];
 	BOOL  aTotal = (BOOL)args[ARG_TOTAL];
 	BOOL  aFlush = (BOOL)args[ARG_FLUSH];
+	BOOL  aHuman = (BOOL)args[ARG_HUMAN];
 	
 	ULONG chip[4], fast[4], total[4];
 	
@@ -102,7 +108,8 @@ int main(void)
 	if (aChip + aFast + aTotal > 1)
 	{
 	    FPuts(Output(),"Only one of CHIP, FAST or TOTAL allowed\n");
-	    FreeArgs(rda);
+	    bPrintErr = FALSE;
+            FreeArgs(rda);
 
 	    return RETURN_FAIL;
 	}
@@ -110,7 +117,11 @@ int main(void)
 	{
 	    if (aFlush)
 	    {
-		FreeVec(AllocVec(~0ul/2, MEMF_ANY));
+                    APTR Mem;
+
+                    Mem = AllocMem(0x7ffffff0, MEMF_PUBLIC);
+                    if (Mem)
+                        FreeMem(Mem, 0x7ffffff0);
 	    }
 	    
 	    if(aChip)
@@ -118,7 +129,7 @@ int main(void)
 		
 		chip[0] = AvailMem(MEMF_CHIP);
 		
-		if (VPrintf("%ld\n",chip) < 0)
+		if (printm(NULL, chip, 1) < 0)
 		{
 		    error = RETURN_ERROR;
 		}
@@ -127,7 +138,7 @@ int main(void)
 	    {
 		fast[0] = AvailMem(MEMF_FAST);
 
-		if (VPrintf("%ld\n", fast) < 0)
+		if (printm(NULL, fast, 1) < 0)
 		{
 		    error = RETURN_ERROR;
 		}
@@ -136,7 +147,7 @@ int main(void)
 	    {
 		total[0] = AvailMem(MEMF_ANY);
 
-		if (VPrintf("%ld\n", total) < 0)
+		if (printm(NULL, total, 1) < 0)
 		{
 		    error = RETURN_ERROR;
 		}
@@ -161,9 +172,9 @@ int main(void)
 		Permit();
 
 		if (PutStr("Type  Available    In-Use   Maximum   Largest\n") < 0 ||
-		    VPrintf("chip %10.ld%10.ld%10.ld%10.ld\n", chip) < 0 ||
-		    VPrintf("fast %10.ld%10.ld%10.ld%10.ld\n", fast) < 0 ||
-		    VPrintf("total%10.ld%10.ld%10.ld%10.ld\n", total) < 0)
+		    printm("chip", chip, 4) < 0 ||
+		    printm("fast", fast, 4) < 0 ||
+		    printm("total", total, 4) < 0)
 		{
 		    error = RETURN_ERROR;
 		}
@@ -177,7 +188,7 @@ int main(void)
 	error = RETURN_FAIL;
     }
     
-    if(error != RETURN_OK)
+    if(error != RETURN_OK && bPrintErr)
     {
 	PrintFault(IoErr(), "Avail");
     }
@@ -185,3 +196,122 @@ int main(void)
     return error;
 }
 
+static
+void fmtlarge(UBYTE *buf, ULONG num)
+{
+    UQUAD d;
+    UBYTE ch;
+    struct
+    {
+        ULONG val;
+        LONG  dec;
+    } array =
+    {
+        num,
+        0
+    };
+
+    if (num >= 1073741824)
+    {
+        array.val = num >> 30;
+        d = ((UQUAD)num * 10 + 536870912) / 1073741824;
+        array.dec = d % 10;
+        ch = 'G';
+    }
+    else if (num >= 1048576)
+    {
+        array.val = num >> 20;
+        d = ((UQUAD)num * 10 + 524288) / 1048576;
+        array.dec = d % 10;
+        ch = 'M';
+    }
+    else if (num >= 1024)
+    {
+        array.val = num >> 10;
+        d = (num * 10 + 512) / 1024;
+        array.dec = d % 10;
+        ch = 'K';
+    }
+    else
+    {
+        array.val = num;
+        array.dec = 0;
+        d = 0;
+        ch = 'B';
+    }
+
+    if (!array.dec && (d > array.val * 10))
+    {
+        array.val++;
+    }
+
+    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+    while (*buf) { buf++; }
+    *buf++ = ch;
+    *buf   = '\0';
+}
+
+LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
+{
+    LONG res = -1;
+    CONST_STRPTR fmt;
+    UBYTE buf[10];
+
+    if (head)
+    {
+        LONG len = 16 - strlen(head);
+        RawDoFmt(aHuman ? "%%%lds" : "%%%ldlu", &len, NULL, buf);
+        fmt = buf;
+        PutStr(head);
+    }
+    else
+    {
+        fmt = aHuman ? "%9s" : "%9lu";
+    }
+
+    if (aHuman)
+    {
+        if (num == 1)
+        {
+            fmtlarge(ld, buf, *array);
+            res = PutStr(buf);
+        }
+        else
+        {
+            while (num--)
+            {
+                UBYTE tmp[10];
+
+                fmtlarge(ld, tmp, *array);
+                res = Printf(fmt, (ULONG) tmp);
+                if (res < 0)
+                    break;
+
+                fmt = " %9s";
+                array++;
+            }
+        }
+    }
+    else
+    {
+        if (num == 1)
+        {
+            res = VPrintf("%lu", array);
+        }
+        else
+        {
+            while (num--)
+            {
+                res = VPrintf(fmt, array);
+                if (res < 0)
+                    break;
+
+                fmt = " %9lu";
+                array++;
+            }
+        }
+    }
+    PutStr("\n");
+
+    return res;
+}
