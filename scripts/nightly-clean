@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##############################################################################
-# Removes stale nightly build files from the upload directory.
+# Removes incomplete or broken nightly build files from the upload directory.
 
 #-- Setup & Configuration ----------------------------------------------------
 ROOT=/home/groups/a/ar/aros
