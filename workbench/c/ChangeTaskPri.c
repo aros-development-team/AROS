@@ -62,7 +62,7 @@
 #define ARG_PROCESS	1
 #define TOTAL_ARGS	2
 
-static const char version[] = "$VER: ChangeTaskPri 41.1 (3.1.1998)";
+static const char version[] = "$VER: ChangeTaskPri 41.2 (13.09.2005)";
 static const char exthelp[] =
     "ChangeTaskPri : Change the priority of a CLI task\n"
     "\tPRI=PRIORITY/A/N	     New priority of task\n"
@@ -85,6 +85,7 @@ int main(void)
 	rdargs = ReadArgs(ARG_TEMPLATE, (IPTR *)args, rda);
 	if( rdargs != NULL )
 	{
+	    Forbid();
 	    if( args[ARG_PROCESS] != 0 )
     		pr = FindCliProc(args[ARG_PROCESS]);
 	    else
@@ -100,10 +101,13 @@ int main(void)
 		else
     		    /* Set the priority */
     		    SetTaskPri( (struct Task *)pr, pri);
+		Permit();
 	    }
 	    else
 	    {
-		BPTR errStream = Output();
+		BPTR errStream;
+		Permit();
+		errStream = Output();
 
 		pr = (struct Process *)FindTask(NULL);
 		if( pr->pr_CES != NULL )
