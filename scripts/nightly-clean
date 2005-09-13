@@ -1,7 +1,30 @@
-#!/bin/zsh
+#!/bin/bash
 
-# Script that runs from cron once every day on the SourceForge shell server
-# and cleans the uploads directory.
+##############################################################################
+# Removes stale nightly build files from the upload directory.
 
-cd /home/groups/a/ar/aros/uploads/nightly
-rm -rf *
+#-- Setup & Configuration ----------------------------------------------------
+ROOT=/home/groups/a/ar/aros
+SRC="$ROOT/uploads/nightly"
+LOCK="$SRC.lock"
+
+#-- Acquire Lock -------------------------------------------------------------
+lockfile -r 0 "$LOCK"
+if [[ $? != 0 ]]; then
+    echo Could not acquire lock. Aborting...
+    exit 1
+fi
+
+#-- Remove Stale Files -------------------------------------------------------
+cd "$SRC"
+
+count=$(($(ls -1 | wc -l) - 1))
+for directory in *; do
+    if [[ $count -gt 0 ]]; then
+        rm -rf "$directory"
+        count=$((count - 1))
+    fi
+done
+
+#-- Release Lock -------------------------------------------------------------
+rm -f "$LOCK"

@@ -1,47 +1,55 @@
-#!/bin/sh
+#!/bin/bash
 
-# Script that runs from cron every 30 minutes on the SourceForge shell server
-# and moves nightly build files from the uploads directory to the download
+##############################################################################
+# Moves nightly build files from the uploads directory to the download
 # directory. Checks the integrity of files before moving, so incomplete or
 # broken files are not available for download.
 
-#-- Configuration ------------------------------------------------------------
+#-- Configuration & Setup ----------------------------------------------------
 ROOT=/home/groups/a/ar/aros
 SRC=$ROOT/uploads/nightly
 DST=$ROOT/htdocs/downloads/nightly
+LOCK=$SRC.lock
 
-#-- Support functions --------------------------------------------------------
+umask 0002 
+
+#-- Support Functions --------------------------------------------------------
 function md5check()
 {
     # Description:
-    # Check MD5 sum of the given file. Will return failure if the MD5 sum is
-    # incorrect, the file is missing, or the MD5 sum file is missing. 
+    # Checks the MD5 sum of the given file. Will return failure if the MD5 sum
+    # is incorrect, the file is missing, or the MD5 sum file is missing. 
     #
     # The MD5 sum must be stored in a separate file with the same name as the 
     # file to be tested, with ".md5" appended. Eg., if the file is "foo.txt",
     # then the MD5 sum must be stored in "foo.txt.md5". The format of the file
-    # is that of the output from the 'md5sum' command.
+    # is that of the output from the GNU md5sum command.
     #
     # Inputs:
-    # $1 - path to file to check.
+    # $1 - path of file to check.
     # 
     # Outputs:
     # $? - 0 if file is OK, !0 if FAILED.
     
-    oldpwd=$PWD
+    local oldpwd="$PWD"
     cd "$(dirname $1)"
-    
     md5sum -c "$(basename $1).md5" >/dev/null 2>&1; rc=$?
-    
     cd "$oldpwd"
+    
     return $rc
 }
 
-#-- Process pending files ----------------------------------------------------
-cd $SRC
+#-- Acquire Lock -------------------------------------------------------------
+lockfile -r 0 "$LOCK"
+if [[ $? != 0 ]]; then
+    echo Could not acquire lock. Aborting...
+    exit 1
+fi
 
-OLDIFS=$IFS
-IFS=";"
+#-- Process Pending Files ----------------------------------------------------
+cd "$SRC"
+
+OLDIFS=$IFS; IFS=";"
 for file in $(find . -type f -not -name "*.md5" -printf "%p;"); do
     if [ ! -z "$file" ]; then
         md5check "$file"
@@ -50,15 +58,19 @@ for file in $(find . -type f -not -name "*.md5" -printf "%p;"); do
             
             dst="$DST/$(dirname $file)"
             mkdir -p "$dst"
-	    if [ "${file:${#file}-4:4}" = ".xml" ]; then
-	        cl="$(basename ${file:0:${#file}-4})"
-	        xsltproc -o $dst/$cl.php --stringparam date ${cl:5:8} --stringparam module ${cl:24} /home/groups/a/ar/aros/scripts/cl2html.xslt "$file"
-		rm "$file"
-		rm "$file.md5"
-	    else
+
+            if [ "${file:${#file}-4:4}" = ".xml" ]; then
+                cl="$(basename ${file:0:${#file}-4})"
+                xsltproc -o $dst/$cl.php --stringparam date ${cl:5:8} --stringparam module ${cl:24} $ROOT/scripts/cl2html.xslt "$file"
+
+                if [ $? = 0 ]; then
+                    rm "$file"
+                    rm "$file.md5"
+                fi
+            else
                 mv -f "$file" $dst
                 mv -f "$file.md5" $dst
-	    fi
+            fi
         else
             echo "! $file"
         fi
@@ -66,13 +78,16 @@ for file in $(find . -type f -not -name "*.md5" -printf "%p;"); do
 done
 IFS=$OLDIFS
 
-#-- Prune downloads directory ------------------------------------------------
-cd $DST
+#-- Prune Downloads Directory ------------------------------------------------
+cd "$SRC"
 
-count=$(($(ls -1 | wc -l) - 3))
+count=$(($(ls -1 | wc -l) - 1))
 for directory in *; do
     if [[ $count -gt 0 ]]; then
-        rm -rf $directory
+        rm -rf "$directory"
         count=$((count - 1))
     fi
 done
+
+#-- Release Lock -------------------------------------------------------------
+rm -f "$LOCK"
