@@ -104,13 +104,14 @@ UBYTE Version[]="$VER: AddDatatypes 41.0";
 #define EXCL_LEN 18
 UBYTE ExcludePattern[] = "#?.(info|backdrop)";
 
-UBYTE Template[] = "FILES/M,QUIET/S,REFRESH/S";
+UBYTE Template[] = "FILES/M,QUIET/S,REFRESH/S,LIST/S";
 
 struct ArgArray
 {
     UBYTE **aa_Files;
     IPTR    aa_Quiet;
     IPTR   aa_Refresh;
+    IPTR   aa_List;
 };
 
 #define  ID_DTCD  MAKE_ID('D','T','C','D')
@@ -246,6 +247,45 @@ int main(void)
 			}
 		    }
 	        }
+
+		if(AA.aa_List)
+		{
+			struct DataTypesList *dtl = NULL;
+			struct NamedObject   *no  = NULL;
+			DEBUG(dprintf(__FUNCTION__ ":\n"));
+			if((no = FindNamedObject(NULL, DATATYPESLIST, NULL)))
+			{
+				dtl = (struct DataTypesList*)no->no_Object;
+				ReleaseNamedObject(no);
+				if(dtl != NULL)
+				{
+					struct Node *node=dtl->dtl_SortedList.lh_Head;
+					while(node->ln_Succ != NULL)
+					{
+						// sorted list points to DT.dtn_Node2 ....
+						struct CompoundDatatype *cdt;
+						struct DataTypeHeader *dth;
+						STRPTR argarray[2];
+
+						if(CheckSignal(SIGBREAKF_CTRL_C))
+						{
+							Flush(Output());
+							PrintFault(ERROR_BREAK,0);
+							break;
+						}
+						cdt=(struct CompoundDatatype *)(node-1);
+						dth=cdt->DT.dtn_Header;
+
+						argarray[0] = dth->dth_BaseName;
+						argarray[1] = dth->dth_Name;
+
+						VPrintf("%s, \"%s\"\n",argarray);
+						node = node->ln_Succ;
+					}
+				}
+			}
+
+		}
 
 		result = RETURN_OK;
 		FreeArgs(RDArgs);
