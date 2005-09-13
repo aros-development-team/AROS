@@ -15,7 +15,7 @@
 	Break <process> [ALL|C|D|E|F]
 
     SYNOPSIS
-	PROCESS/A/N,ALL/S,C/S,D/S,E/S,F/S
+	PROCESS/N,PORT,ALL/S,C/S,D/S,E/S,F/S
 
     LOCATION
 	Workbench:c
@@ -24,11 +24,13 @@
 	BREAK sends one or more signals to a CLI process.
 	The argument |PROCESS| specifies the numeric ID of the CLI process that
 	you wish to send the signal to. The STATUS command will list all currently
-    running CLI processes along with ther ID.
+        running CLI processes along with ther ID.
+	You can also specify a public port name and send signal's to the
+	port's task.
 
 	You can send all signals at once via option ALL or any combination of the
-    flags CTRL-C, CTRL-D, CTRL-E and CTRL-F by their respective options.
-    When only the CLI process ID is specified the CTRL-C signal will be sent.
+        flags CTRL-C, CTRL-D, CTRL-E and CTRL-F by their respective options.
+        When only the CLI process ID is specified the CTRL-C signal will be sent.
 
 	The effect of using the BREAK command is the same as selecting
 	the console window of a process and pressing the relevant key
@@ -64,20 +66,22 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#define ARG_TEMPLATE	"PROCESS/A/N,C/S,D/S,E/S,F/S,ALL/S"
+#define ARG_TEMPLATE	"PROCESS/N,PORT,C/S,D/S,E/S,F/S,ALL/S"
 #define ARG_PROCESS	0
-#define ARG_C		1
-#define ARG_D		2
-#define ARG_E		3
-#define ARG_F		4
-#define ARG_ALL		5
-#define TOTAL_ARGS	6
+#define ARG_PORT	1
+#define ARG_C		2
+#define ARG_D		3
+#define ARG_E		4
+#define ARG_F		5
+#define ARG_ALL		6
+#define TOTAL_ARGS	7
 
-static const char version[] = "$VER: Break 41.2 (20.2.2005)";
+static const char version[] = "$VER: Break 42.0 (13.09.2005)";
 
 static const char exthelp[] =
     "Break: Send break signal(s) to a CLI process\n"
-    "\tPROCESS/A/N  signal receiver's CLI process number\n"
+    "\tPROCESS/N    signal receiver's CLI process number\n"
+    "\tPORT         Portname for the Process to set flags for\n"
     "\tC/S          send CTRL-C signal\n"
     "\tD/S          send CTRL-D signal\n"
     "\tE/S          send CTRL-E signal\n"
@@ -92,7 +96,7 @@ main(void)
 {
     struct RDArgs *rd, *rda = NULL;
 
-    IPTR args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL, NULL };
+    IPTR args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 
     int error = 0;
 
@@ -102,9 +106,18 @@ main(void)
 
         if ((rd = ReadArgs(ARG_TEMPLATE, (LONG *) args, rda)))
         {
-                struct Process
-            *pr = FindCliProc(*(IPTR *) args[ARG_PROCESS]);
-
+	    struct Process *pr = NULL;
+	    Forbid();
+            if (args[ARG_PROCESS])
+                    pr = FindCliProc(*(IPTR *) args[ARG_PROCESS]);
+	    else if (args[ARG_PORT])
+            {
+                    struct MsgPort *MyPort;
+                    if (MyPort=(struct MsgPort*) FindPort((char*) args[ARG_PORT]))
+                    {
+                        pr =(struct Process*) MyPort->mp_SigTask;
+                    }
+            }
             if (pr != NULL)
             {
                     ULONG
@@ -130,19 +143,31 @@ main(void)
                 }
 
                 Signal((struct Task *) pr, mask);
+		Permit();
             }
             else
             {
                 /* There is no relevant error code, OBJECT_NOT_FOUND
                  * is a filesystem error, so we can't use that... */
-
+		Permit();
                 pr = (struct Process *) FindTask(NULL);
 
                 BPTR errStream = (pr->pr_CES != NULL)
                     ? pr->pr_CES
                     : Output();
 
-                VFPrintf(errStream, "Break: Process not found.\n", NULL);
+                if (args[ARG_PROCESS])
+		{
+                        VFPrintf(errStream, "Break: Process %ld does not exist.\n", (APTR) args[ARG_PROCESS]);
+                }
+                else if (args[ARG_PORT])
+                {
+                        FPrintf(errStream, "Break: Port \"%s\" does not exist.\n", (LONG) args[ARG_PORT]);
+                }
+                else
+                {
+                        FPuts(errStream, "Break: Either PROCESS or PORT is required.\n");
+                }
                 error = -1;
             }
 
