@@ -99,7 +99,7 @@ void FreeFunc(UBYTE *memory, ULONG size);
 
 /********************************* CONSTANTS *********************************/
 
-UBYTE Version[]="$VER: AddDatatypes 41.0";
+UBYTE Version[]="$VER: AddDatatypes 42.0";
 
 #define EXCL_LEN 18
 UBYTE ExcludePattern[] = "#?.(info|backdrop)";
