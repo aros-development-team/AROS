@@ -65,7 +65,7 @@
 static const char version[] = "$VER: ChangeTaskPri 41.2 (13.09.2005)";
 static const char exthelp[] =
     "ChangeTaskPri : Change the priority of a CLI task\n"
-    "\tPRI=PRIORITY/A/N	     New priority of task\n"
+    "\tPRI=PRIORITY/A/N      New priority of task\n"
     "\tPROCESS/K             Optional process number of change\n";
 
 int __nocommandline = 1;
