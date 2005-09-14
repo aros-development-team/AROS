@@ -62,6 +62,7 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <utility/tagitem.h>
+#include <string.h>
 
 static const char version[] = "$VER: Avail 42.0 (13.9.2005)\n";
 
@@ -74,13 +75,15 @@ enum
     ARG_FAST,
     ARG_TOTAL,
     ARG_FLUSH,
-    ARG_HUMAN
+    ARG_HUMAN,
     NOOFARGS
 };
 
-LONG printm(struct localdata *ld, CONST_STRPTR head, ULONG *array, LONG num);
+LONG printm(CONST_STRPTR head, ULONG *array, LONG num);
 
 int __nocommandline = 1;
+
+BOOL aHuman;
 
 int main(void)
 {
@@ -100,7 +103,8 @@ int main(void)
 	BOOL  aFast  = (BOOL)args[ARG_FAST];
 	BOOL  aTotal = (BOOL)args[ARG_TOTAL];
 	BOOL  aFlush = (BOOL)args[ARG_FLUSH];
-	BOOL  aHuman = (BOOL)args[ARG_HUMAN];
+	
+	aHuman = (BOOL)args[ARG_HUMAN];
 	
 	ULONG chip[4], fast[4], total[4];
 	
@@ -273,7 +277,7 @@ LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
     {
         if (num == 1)
         {
-            fmtlarge(ld, buf, *array);
+            fmtlarge(buf, *array);
             res = PutStr(buf);
         }
         else
@@ -282,7 +286,7 @@ LONG printm(CONST_STRPTR head, ULONG *array, LONG num)
             {
                 UBYTE tmp[10];
 
-                fmtlarge(ld, tmp, *array);
+                fmtlarge(tmp, *array);
                 res = Printf(fmt, (ULONG) tmp);
                 if (res < 0)
                     break;
