@@ -252,7 +252,6 @@ int main(void)
 		{
 			struct DataTypesList *dtl = NULL;
 			struct NamedObject   *no  = NULL;
-			DEBUG(dprintf(__FUNCTION__ ":\n"));
 			if((no = FindNamedObject(NULL, DATATYPESLIST, NULL)))
 			{
 				dtl = (struct DataTypesList*)no->no_Object;
