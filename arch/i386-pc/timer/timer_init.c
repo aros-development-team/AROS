@@ -67,8 +67,8 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, LIBBASE)
     /* Start the timer2 */
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     outb(0xb4, 0x43);   /* Binary mode on Timer2, count mode 2 */
-    outb(0xff, 0x42);   /* We're counting whole range */
-    outb(0xff, 0x42);
+    outb(0x00, 0x42);   /* We're counting whole range */
+    outb(0x00, 0x42);
     
     LIBBASE->tb_prev_tick = 0xffff;
 
