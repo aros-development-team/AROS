@@ -128,7 +128,8 @@ void Timer0Setup(struct TimerBase *TimerBase)
     }
     
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
-    outb(0x34, 0x43);   /* Binary, mode 2, LSB&MSB */
+//    outb(0x34, 0x43);   /* Binary, mode 2, LSB&MSB */
+    outb(0x38, 0x43);   /* Binary, mode 2, LSB&MSB */
     outb(delay & 0xff, 0x40);
     outb(delay >> 8, 0x40);  
 }
