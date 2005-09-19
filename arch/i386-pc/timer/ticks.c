@@ -14,7 +14,7 @@ const ULONG TIMER_RPROK = 3599597124UL;
 ULONG tick2usec(ULONG tick)
 {
     ULONG ret, rest;
-    asm volatile("mull %3":"=edx"(ret),"=eax"(rest):"eax"(TIMER_RPROK),"m"(tick));
+    asm volatile("mull %3":"=d"(ret),"=a"(rest):"a"(TIMER_RPROK),"m"(tick));
     ret+=rest>>31;
     return ret;
 }
@@ -22,7 +22,7 @@ ULONG tick2usec(ULONG tick)
 ULONG usec2tick(ULONG usec)
 {
     ULONG ret;
-    asm volatile("movl $0,%%eax; divl %2":"=eax"(ret):"edx"(usec),"m"(TIMER_RPROK));
+    asm volatile("movl $0,%%eax; divl %2":"=a"(ret):"d"(usec),"m"(TIMER_RPROK));
     return ret;
 }
 
@@ -30,14 +30,15 @@ void EClockUpdate(struct TimerBase *TimerBase)
 {
     ULONG time, diff;
 
+    Disable();
+    
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     /* Latch the current time value */
-    Disable();
+
     outb(0x80, 0x43);
     /* Read out current 16-bit time */
     time = inb(0x42);
     time += inb(0x42) << 8;
-    Enable();
     
     diff = (TimerBase->tb_prev_tick - time);
 
@@ -62,6 +63,8 @@ void EClockUpdate(struct TimerBase *TimerBase)
     
     TimerBase->tb_Elapsed.tv_micro = tick2usec(TimerBase->tb_ticks_elapsed);
     TimerBase->tb_CurrentTime.tv_micro = tick2usec(TimerBase->tb_ticks_sec);
+    
+    Enable();
 }
 
 void EClockSet(struct TimerBase *TimerBase)
@@ -98,7 +101,11 @@ void Timer0Setup(struct TimerBase *TimerBase)
         EClockUpdate(TimerBase);
         SubTime(&time, &TimerBase->tb_CurrentTime);
     
-        if (time.tv_secs == 0)
+    	if ((LONG)time.tv_secs < 0)
+	{
+	    delay = 0;
+	}
+        else if (time.tv_secs == 0)
         {
             if (time.tv_micro < 20000)
             {
@@ -117,7 +124,11 @@ void Timer0Setup(struct TimerBase *TimerBase)
         EClockUpdate(TimerBase);
         SubTime(&time, &TimerBase->tb_Elapsed);
     
-        if (time.tv_secs == 0)
+    	if ((LONG)time.tv_secs < 0)
+	{
+	    delay = 0;
+	}
+        else if (time.tv_secs == 0)
         {
             if (time.tv_micro < 20000)
             {
@@ -126,6 +137,8 @@ void Timer0Setup(struct TimerBase *TimerBase)
             }
         }
     }
+    
+    if (delay < 2) delay = 2;
     
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     outb(0x38, 0x43);   /* Binary, mode 4, LSB&MSB */
