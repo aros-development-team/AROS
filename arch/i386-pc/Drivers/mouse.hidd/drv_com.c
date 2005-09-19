@@ -55,7 +55,7 @@ void    handle_events(UBYTE proto, struct mouse_data *);
 static ULONG usec2tick(ULONG usec)
 {
     ULONG ret;
-    asm volatile("movl $0,%%eax; divl %2":"=eax"(ret):"edx"(usec),"m"(TIMER_RPROK));
+    asm volatile("movl $0,%%eax; divl %2":"=a"(ret):"d"(usec),"m"(TIMER_RPROK));
     return ret;
 }
 
