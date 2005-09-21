@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -48,44 +48,34 @@
 #endif
 
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(x) ((struct ExtGadget *)(x))
-
 #define CLASS_ASLBASE ((struct AslBase_intern *)cl->cl_UserData)
 #define HOOK_ASLBASE  ((struct AslBase_intern *)hook->h_Data)
 
 #define AslBase CLASS_ASLBASE
 
-/********************** ASL FONTPREVIEW CLASS **************************************************/
+/********************** ASL ERASER CLASS **************************************************/
 
-struct AslEraserData
+IPTR AslEraser__OM_NEW(Class * cl, Object * o, struct opSet * msg)
 {
-    UBYTE dummy;
-};
+    struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
 
-/***********************************************************************************/
-
-static IPTR asleraser_new(Class * cl, Object * o, struct opSet * msg)
-{
-    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
-
-    if (o)
+    if (g)
     {
-    	G(o)->Flags |= GFLG_RELSPECIAL;
+    	g->Flags |= GFLG_RELSPECIAL;
 	
-	G(o)->LeftEdge = 20000;
-	G(o)->TopEdge  = 20000;
-	G(o)->Width    = 1;
-	G(o)->Height   = 1;
+	g->LeftEdge = 20000;
+	g->TopEdge  = 20000;
+	g->Width    = 1;
+	g->Height   = 1;
 		
-    } /* if (o) */
+    } /* if (g) */
 
-    return (IPTR)o;
+    return (IPTR)g;
 }
 
 /***********************************************************************************/
 
-static IPTR asleraser_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+IPTR AslEraser__GM_HITTEST(Class *cl, Object *o, struct gpHitTest *msg)
 {
     return 0;
 }
@@ -93,14 +83,10 @@ static IPTR asleraser_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 
 /***********************************************************************************/
 
-static IPTR asleraser_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR AslEraser__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
-    struct AslEraserData *data;
-    
     WORD x, y, w, h, x2, y2;
 
-    data = INST_DATA(cl, o);
-    
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
     	struct Window *win = msg->gpr_GInfo->gi_Window;
@@ -156,66 +142,3 @@ static IPTR asleraser_render(Class *cl, Object *o, struct gpRender *msg)
 }
 
 /***********************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_asleraserclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-        case OM_NEW:
-	    retval = asleraser_new(cl, obj, (struct opSet *)msg);
-	    break;
-	    
-	case GM_HITTEST:
-	    retval = asleraser_hittest(cl, obj, (struct gpHitTest *)msg);
-	    break;
-	
-	case GM_RENDER:
-	    retval = asleraser_render(cl, obj, (struct gpRender *)msg);
-	    break;
-	
-	default:
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
-
-    } /* switch (msg->MethodID) */
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/***********************************************************************************/
-
-#undef AslBase
-
-Class *makeasleraserclass(struct AslBase_intern * AslBase)
-{
-    Class *cl = NULL;
-
-    if (AslBase->asleraserclass)
-	return AslBase->asleraserclass;
-
-    cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct AslEraserData), 0UL);
-
-    if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_asleraserclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) AslBase;
-
-    AslBase->asleraserclass = cl;
-
-    return cl;
-}
-
-/***********************************************************************************/
-

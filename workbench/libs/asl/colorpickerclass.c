@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,9 +27,6 @@
 
 #include <aros/debug.h>
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(x) ((struct ExtGadget *)(x))
-
 #define CLASS_ASLBASE ((struct AslBase_intern *)cl->cl_UserData)
 #define HOOK_ASLBASE  ((struct AslBase_intern *)hook->h_Data)
 
@@ -46,56 +43,22 @@
 
 /***********************************************************************************/
 
-struct AslColorPickerData
-{
-    Object	       *frame;
-    struct Window      *popupwindow;
-    struct RastPort    *rp;
-    UBYTE   	       *colortable;
-    WORD   	    	numcolors;
-    WORD   	    	color;
-    WORD    	    	selected;
-    WORD    	    	menuwidth;
-    WORD    	    	menuheight;
-    WORD    	    	menux1;
-    WORD    	    	menuy1;
-    WORD    	    	menux2;
-    WORD    	    	menuy2;
-    WORD    	    	layerx1;
-    WORD    	    	layery1;
-    WORD    	    	layerx2;
-    WORD    	    	layery2;
-    WORD    	    	columns;
-    WORD    	    	rows;
-    WORD    	    	cellwidth;
-    WORD    	    	cellheight;
-    WORD    	    	cellspacex;
-    WORD    	    	cellspacey;
-    WORD    	    	borderleft;
-    WORD    	    	bordertop;
-    WORD    	    	borderright;
-    WORD    	    	borderbottom;
-    BYTE    	    	sentgadgetup;
-};
-
+IPTR AslColorPicker__OM_SET(Class * cl, struct Gadget * g, struct opSet *msg);
 
 /***********************************************************************************/
 
-static IPTR aslcolorpicker_set(Class * cl, Object * o, struct opSet *msg);
-
-/***********************************************************************************/
-
-static void RenderObject_Update(Class *cl, Object *o, struct GadgetInfo *gi)
+static void RenderObject_Update(Class *cl, struct Gadget *g, struct GadgetInfo *gi)
 {
     struct RastPort *rp;
     
     if ((rp = ObtainGIRPort(gi)))
     {
-        DoMethod(o, GM_RENDER,
-		    (IPTR) gi,
-		    (IPTR) rp,
-		    GREDRAW_UPDATE);
-		    
+        DoMethod((Object *)g, GM_RENDER,
+		              (IPTR) gi,
+		              (IPTR) rp,
+		              GREDRAW_UPDATE
+	);
+
         ReleaseGIRPort(rp);
     }
 }
@@ -120,9 +83,8 @@ static void DrawArrow(Class *cl, struct RastPort *rp, WORD x1, WORD y1, WORD typ
 
 /***********************************************************************************/
 
-static void DrawCell(Class *cl, Object *o, WORD index)
+static void DrawCell(Class *cl, struct AslColorPickerData  *data, WORD index)
 {
-    struct AslColorPickerData  *data = INST_DATA(cl, o);
     WORD    	    	    	x1, y1, x2, y2, col, row;
     
     row = index % data->columns;
@@ -141,9 +103,8 @@ static void DrawCell(Class *cl, Object *o, WORD index)
 
 /***********************************************************************************/
 
-static void DrawCellMark(Class *cl, Object *o, struct DrawInfo *dri, WORD index, BOOL selected)
+static void DrawCellMark(Class *cl, struct AslColorPickerData  *data, struct DrawInfo *dri, WORD index, BOOL selected)
 {
-    struct AslColorPickerData  *data = INST_DATA(cl, o);
     WORD    	    	    	x1, y1, x2, y2, col, row;
     
     row = index % data->columns;
@@ -167,20 +128,19 @@ static void DrawCellMark(Class *cl, Object *o, struct DrawInfo *dri, WORD index,
 
 /***********************************************************************************/
 
-static void DrawAllCells(Class *cl, Object *o)
+static void DrawAllCells(Class *cl, struct AslColorPickerData  *data)
 {
-    struct AslColorPickerData  *data = INST_DATA(cl, o);
     WORD    	    	    	i;
     
     for(i = 0; i < data->numcolors; i++)
     {
-    	DrawCell(cl, o, i);
+    	DrawCell(cl, data, i);
     }
 }
 
 /***********************************************************************************/
 
-static IPTR aslcolorpicker_new(Class * cl, Object * o, struct opSet *msg)
+IPTR AslColorPicker__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 {
     struct AslColorPickerData  *data;
     struct TagItem 	    	fitags[] =
@@ -189,35 +149,35 @@ static IPTR aslcolorpicker_new(Class * cl, Object * o, struct opSet *msg)
 	{IA_EdgesOnly, FALSE	   },
 	{TAG_DONE    , 0UL	   }
     };
-    IPTR 		        rc = 0;
-    
-    if ((o = (Object *)DoSuperMethodA(cl, o, (Msg)msg)))
+
+    struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
+    if (g)
     {
-	data = INST_DATA(cl, o);
+	data = INST_DATA(cl, g);
 
 	/* We want to get a GM_LAYOUT message, no matter if gadget is GFLG_RELRIGHT/RELBOTTOM/
 	   RELWIDTH/RELHEIGHT or not */	   
-	G(o)->Flags |= GFLG_RELSPECIAL;
+	g->Flags |= GFLG_RELSPECIAL;
 
 	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);	
 	if (data->frame)
 	{
-	    aslcolorpicker_set(cl, o, msg);
-	    
-	    rc = (ULONG)o;
+	    AslColorPicker__OM_SET(cl, g, msg);
+
 	} else {
 
-	    CoerceMethod(cl, o, OM_DISPOSE);
+	    CoerceMethod(cl, (Object *)g, OM_DISPOSE);
+	    g = NULL;
 
 	}
     };
     
-    return rc;
+    return (IPTR)g;
 }
 
 /***********************************************************************************/
 
-static IPTR aslcolorpicker_dispose(Class * cl, Object * o, Msg msg)
+IPTR AslColorPicker__OM_DISPOSE(Class * cl, Object * o, Msg msg)
 {
     struct AslColorPickerData *data = INST_DATA(cl, o);
 
@@ -228,14 +188,14 @@ static IPTR aslcolorpicker_dispose(Class * cl, Object * o, Msg msg)
 
 /***********************************************************************************/
 
-static IPTR aslcolorpicker_set(Class * cl, Object * o, struct opSet *msg)
+IPTR AslColorPicker__OM_SET(Class * cl, struct Gadget * g, struct opSet *msg)
 {
-    struct AslColorPickerData 	*data = INST_DATA(cl, o);
+    struct AslColorPickerData 	*data = INST_DATA(cl, g);
     struct TagItem 	    	*tag;
     const struct TagItem *tstate = msg->ops_AttrList;
     IPTR		    	 retval, tidata;
     
-    retval = DoSuperMethod(cl, o, OM_SET, (IPTR) msg->ops_AttrList, (IPTR) msg->ops_GInfo);
+    retval = DoSuperMethod(cl, (Object *)g, OM_SET, (IPTR) msg->ops_AttrList, (IPTR) msg->ops_GInfo);
     
     while((tag = NextTagItem(&tstate)))
     {
@@ -264,7 +224,7 @@ static IPTR aslcolorpicker_set(Class * cl, Object * o, struct opSet *msg)
     
     if (retval)
     {
-        RenderObject_Update(cl, o, msg->ops_GInfo);
+        RenderObject_Update(cl, g, msg->ops_GInfo);
     }
     
     return retval;    
@@ -273,7 +233,7 @@ static IPTR aslcolorpicker_set(Class * cl, Object * o, struct opSet *msg)
 
 /***********************************************************************************/
 
-static IPTR aslcolorpicker_get(Class * cl, Object * o, struct opGet *msg)
+IPTR AslColorPicker__OM_GET(Class * cl, Object * o, struct opGet *msg)
 {
     struct AslColorPickerData *data = INST_DATA(cl, o);
     IPTR    	    	       retval = 1;
@@ -294,9 +254,9 @@ static IPTR aslcolorpicker_get(Class * cl, Object * o, struct opGet *msg)
 
 /***********************************************************************************/
 
-static IPTR aslcolorpicker_render(Class * cl, Object * o, struct gpRender *msg)
+IPTR AslColorPicker__GM_RENDER(Class * cl, struct Gadget * g, struct gpRender *msg)
 {
-    struct AslColorPickerData 	*data = INST_DATA(cl, o);
+    struct AslColorPickerData 	*data = INST_DATA(cl, g);
     struct RastPort	    	*rp   = msg->gpr_RPort;
     struct DrawInfo 	    	*dri  = msg->gpr_GInfo->gi_DrInfo;
     WORD 		    	 gadx, gady, gadw, gadh, x, y, y2, a1, a2; 
@@ -310,7 +270,7 @@ static IPTR aslcolorpicker_render(Class * cl, Object * o, struct gpRender *msg)
 	    {TAG_DONE		}
 	};
  
-        getgadgetcoords(G(o), msg->gpr_GInfo, &gadx, &gady, &gadw, &gadh);
+        getgadgetcoords(g, msg->gpr_GInfo, &gadx, &gady, &gadw, &gadh);
 
     	if (msg->gpr_Redraw == GREDRAW_REDRAW)
 	{
@@ -323,7 +283,7 @@ static IPTR aslcolorpicker_render(Class * cl, Object * o, struct gpRender *msg)
 			   (struct Image *)data->frame,
 			   gadx,
 			   gady,
-			   (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+			   (g->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
 			   msg->gpr_GInfo->gi_DrInfo);
 
 	    x = gadx + gadw - CYCLEIMAGEWIDTH;
@@ -353,14 +313,14 @@ static IPTR aslcolorpicker_render(Class * cl, Object * o, struct gpRender *msg)
 	
     } /* if (rp) */
     
-    return 0;
+    return (IPTR)0;
 }
 
 /***********************************************************************************/
 
-static IPTR aslcolorpicker_goactive(Class * cl, Object * o, struct gpInput *msg)
+IPTR AslColorPicker__GM_GOACTIVE(Class * cl, struct Gadget * g, struct gpInput *msg)
 {
-    struct AslColorPickerData 	*data = INST_DATA(cl, o);
+    struct AslColorPickerData 	*data = INST_DATA(cl, g);
     struct DrawInfo 	    	*dri = msg->gpi_GInfo->gi_DrInfo;
     WORD 		    	 x, y, x2, y2, gadx, gady, gadw, gadh;   
     IPTR 		    	 rc = GMR_MEACTIVE;
@@ -369,7 +329,7 @@ static IPTR aslcolorpicker_goactive(Class * cl, Object * o, struct gpInput *msg)
 
     data->sentgadgetup = FALSE;
     
-    getgadgetcoords(G(o), msg->gpi_GInfo, &gadx, &gady, &gadw, &gadh);
+    getgadgetcoords(g, msg->gpi_GInfo, &gadx, &gady, &gadw, &gadh);
 
     data->borderleft 	= 4;
     data->bordertop  	= 4;
@@ -470,7 +430,7 @@ static IPTR aslcolorpicker_goactive(Class * cl, Object * o, struct gpInput *msg)
 	SetAPen (data->rp, dri->dri_Pens[SHINEPEN]);
 	RectFill(data->rp, x + 1, y  + 1, x2  - 1, y2 - 1);
 	
-	DrawAllCells(cl, o);
+	DrawAllCells(cl, data);
     }
     else
     {
@@ -482,13 +442,13 @@ static IPTR aslcolorpicker_goactive(Class * cl, Object * o, struct gpInput *msg)
 
 /***********************************************************************************/
 
-static IPTR aslcolorpicker_handleinput(Class * cl, Object * o, struct gpInput *msg)
+IPTR AslColorPicker__GM_HANDLEINPUT(Class * cl, struct Gadget * g, struct gpInput *msg)
 {
-    struct AslColorPickerData  *data = INST_DATA(cl, o);
+    struct AslColorPickerData  *data = INST_DATA(cl, g);
     WORD 		    	gadx, gady, gadw, gadh, x, y, sel;
     IPTR 		    	rc = GMR_MEACTIVE;
 
-    getgadgetcoords(G(o), msg->gpi_GInfo, &gadx, &gady, &gadw, &gadh);
+    getgadgetcoords(g, msg->gpi_GInfo, &gadx, &gady, &gadw, &gadh);
     
     switch(msg->gpi_IEvent->ie_Class)
     {
@@ -525,7 +485,7 @@ static IPTR aslcolorpicker_handleinput(Class * cl, Object * o, struct gpInput *m
 	    {
 	    	if (data->selected != -1)
 		{
-		    DrawCellMark(cl, o, msg->gpi_GInfo->gi_DrInfo, data->selected, FALSE);
+		    DrawCellMark(cl, data, msg->gpi_GInfo->gi_DrInfo, data->selected, FALSE);
 		    data->selected = -1;
     		}		
 	    }
@@ -543,14 +503,14 @@ static IPTR aslcolorpicker_handleinput(Class * cl, Object * o, struct gpInput *m
 		{
 		    if (data->selected != -1)
 		    {
-		    	DrawCellMark(cl, o, msg->gpi_GInfo->gi_DrInfo, data->selected, FALSE);
+		    	DrawCellMark(cl, data, msg->gpi_GInfo->gi_DrInfo, data->selected, FALSE);
 			data->selected = -1;
 		    }
 		    
 		    if (sel < data->numcolors)
 		    {
 		    	data->selected = sel;
-		    	DrawCellMark(cl, o, msg->gpi_GInfo->gi_DrInfo, data->selected, TRUE);		    
+		    	DrawCellMark(cl, data, msg->gpi_GInfo->gi_DrInfo, data->selected, TRUE);		    
 		    }
 		}
 		
@@ -565,9 +525,9 @@ static IPTR aslcolorpicker_handleinput(Class * cl, Object * o, struct gpInput *m
 
 /***********************************************************************************/
 
-static IPTR aslcolorpicker_goinactive(Class * cl, Object * o, struct gpGoInactive *msg)
+IPTR AslColorPicker__GM_GOINACTIVE(Class * cl, struct Gadget * g, struct gpGoInactive *msg)
 {
-    struct AslColorPickerData *data = INST_DATA(cl, o);
+    struct AslColorPickerData *data = INST_DATA(cl, g);
     
     if (data->popupwindow)
     {
@@ -577,91 +537,10 @@ static IPTR aslcolorpicker_goinactive(Class * cl, Object * o, struct gpGoInactiv
 
     if (data->sentgadgetup)
     {
-        RenderObject_Update(cl, o, msg->gpgi_GInfo);
+        RenderObject_Update(cl, g, msg->gpgi_GInfo);
     }
          
     return 0;
-}
-
-/***********************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_aslcolorpickerclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, o, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-        case OM_NEW:
-	    retval = aslcolorpicker_new(cl, o, (struct opSet *)msg);
-	    break;
-	
-	case OM_DISPOSE:
-	    retval = aslcolorpicker_dispose(cl, o, msg);
-	    break;
-
-	case OM_SET:
-	    retval = aslcolorpicker_set(cl, o, (struct opSet *)msg);
-	    break;
-	    
-	case OM_GET:
-	    retval = aslcolorpicker_get(cl, o, (struct opGet *)msg);
-	    break;
-	
-	case GM_RENDER:
-	    retval = aslcolorpicker_render(cl, o, (struct gpRender *)msg);
-	    break;
-	
-	case GM_GOACTIVE:
-	    retval = aslcolorpicker_goactive(cl, o, (struct gpInput *)msg);
-	    break;
-	
-	case GM_HANDLEINPUT:
-	    retval = aslcolorpicker_handleinput(cl, o, (struct gpInput *)msg);
-	    break;
-	
-	case GM_GOINACTIVE:
-	    retval = aslcolorpicker_goinactive(cl, o, (struct gpGoInactive *)msg);
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-
-    } /* switch (msg->MethodID) */
-    
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/***********************************************************************************/
-
-#undef AslBase
-
-Class *makeaslcolorpickerclass(struct AslBase_intern * AslBase)
-{
-    Class *cl = NULL;
-
-    if (AslBase->aslcolorpickerclass)
-	return AslBase->aslcolorpickerclass;
-
-    cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct AslColorPickerData), 0UL);
-    if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_aslcolorpickerclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) AslBase;
-
-    AslBase->aslcolorpickerclass = cl;
-
-    return cl;
 }
 
 /***********************************************************************************/

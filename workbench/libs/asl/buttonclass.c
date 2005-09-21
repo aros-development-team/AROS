@@ -1,13 +1,10 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
-
-#define OWN_INPUT_HANDLING 1
-
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -40,9 +37,6 @@
 
 #include <aros/debug.h>
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(x) ((struct ExtGadget *)(x))
-
 #define CLASS_ASLBASE ((struct AslBase_intern *)cl->cl_UserData)
 #define HOOK_ASLBASE  ((struct AslBase_intern *)hook->h_Data)
 
@@ -50,17 +44,7 @@
 
 /********************** ASL BUTTON CLASS **************************************************/
 
-struct AslButtonData
-{
-    Object 		*frame;
-    struct LayoutData 	*ld;
-    struct CoolImage  	*coolimage;
-    ULONG		*coolimagepal;
-};
-
-/***********************************************************************************/
-
-static IPTR aslbutton_new(Class * cl, Object * o, struct opSet * msg)
+IPTR AslButton__OM_NEW(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslButtonData *data;
     struct TagItem fitags[] =
@@ -70,17 +54,17 @@ static IPTR aslbutton_new(Class * cl, Object * o, struct opSet * msg)
 	{TAG_DONE, 0UL}
     };
     
-    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+    struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
 
-    if (o)
+    if (g)
     {
-    	data = INST_DATA(cl, o);
+    	data = INST_DATA(cl, g);
 	
 	/* {GA_Image, whatever} means, a frame shall be created */
 
 	if (FindTagItem(GA_Image, msg->ops_AttrList))
 	{
-	    if (G(o)->GadgetText) fitags[1].ti_Tag = TAG_IGNORE;
+	    if (g->GadgetText) fitags[1].ti_Tag = TAG_IGNORE;
 	    data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
 	}
 	
@@ -90,8 +74,8 @@ static IPTR aslbutton_new(Class * cl, Object * o, struct opSet * msg)
 	
 	if (!data->ld)
 	{
-	    CoerceMethod(cl, o, OM_DISPOSE);
-	    o = NULL;
+	    CoerceMethod(cl, (Object *)g, OM_DISPOSE);
+	    g = NULL;
 	} else {
 	    if (data->coolimage && data->ld->ld_TrueColor && CyberGfxBase)
 	    {
@@ -121,14 +105,14 @@ static IPTR aslbutton_new(Class * cl, Object * o, struct opSet * msg)
 	    }
 	}
 	
-    } /* if (o) */
+    } /* if (g) */
 
-    return (IPTR)o;
+    return (IPTR)g;
 }
 
 /***********************************************************************************/
 
-static IPTR aslbutton_dispose(Class * cl, Object * o, Msg msg)
+IPTR AslButton__OM_DISPOSE(Class * cl, Object * o, Msg msg)
 {
     struct AslButtonData *data;
     IPTR retval;
@@ -144,11 +128,11 @@ static IPTR aslbutton_dispose(Class * cl, Object * o, Msg msg)
 
 /***********************************************************************************/
 
-static IPTR aslbutton_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+IPTR AslButton__GM_HITTEST(Class *cl, struct Gadget *g, struct gpHitTest *msg)
 {
     WORD gadx, gady, gadw, gadh;
     
-    getgadgetcoords(G(o), msg->gpht_GInfo, &gadx, &gady, &gadw, &gadh);
+    getgadgetcoords(g, msg->gpht_GInfo, &gadx, &gady, &gadw, &gadh);
 
     return ((msg->gpht_Mouse.X >= 0) &&
     	    (msg->gpht_Mouse.Y >= 0) &&
@@ -158,11 +142,11 @@ static IPTR aslbutton_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 
 /***********************************************************************************/
 
-#if OWN_INPUT_HANDLING
+#if BUTTON_OWN_INPUT_HANDLING
 
 /***********************************************************************************/
 
-static IPTR aslbutton_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR AslButton__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct GadgetInfo  	*gi = msg->gpi_GInfo;
     IPTR		retval = GMR_NOREUSE;
@@ -173,9 +157,9 @@ static IPTR aslbutton_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 	if (rp)
 	{
-	    EG(o)->Flags |= GFLG_SELECTED;
+	    g->Flags |= GFLG_SELECTED;
 
-	    DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
+	    DoMethod((Object *)g, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
 	    ReleaseGIRPort(rp);
 
 	    retval = GMR_MEACTIVE;
@@ -187,7 +171,7 @@ static IPTR aslbutton_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 /***********************************************************************************/
 
-static IPTR aslbutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR AslButton__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct GadgetInfo 	*gi = msg->gpi_GInfo;
     IPTR    	    	retval = GMR_MEACTIVE;
@@ -202,16 +186,16 @@ static IPTR aslbutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		switch( ie->ie_Code )
 		{
 		    case SELECTUP:
-	        	if( EG(o)->Flags & GFLG_SELECTED )
+	        	if( g->Flags & GFLG_SELECTED )
 			{
 			    struct RastPort *rp;
 
 			    /* mouse is over gadget */
-			    EG(o)->Flags &= ~GFLG_SELECTED;
+			    g->Flags &= ~GFLG_SELECTED;
 
 			    if ((rp = ObtainGIRPort(gi)))
 			    {
-				DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
+				DoMethod((Object *)g, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
 				ReleaseGIRPort(rp);
 			    }
 			    retval = GMR_NOREUSE | GMR_VERIFY;
@@ -237,34 +221,34 @@ static IPTR aslbutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 			       left button is depressed and the mouse is moved
 			       around on/off the gadget bounds.
 			    */
-			    if ( DoMethodA(o, (Msg)&gpht) == GMR_GADGETHIT )
+			    if ( DoMethodA((Object *)g, (Msg)&gpht) == GMR_GADGETHIT )
 			    {
-				if ( (EG(o)->Flags & GFLG_SELECTED) == 0 )
+				if ( (g->Flags & GFLG_SELECTED) == 0 )
 				{
 				    struct RastPort *rp;
 
 				    /* mouse is over gadget */
-				    EG(o)->Flags |= GFLG_SELECTED;
+				    g->Flags |= GFLG_SELECTED;
 
 				    if ((rp = ObtainGIRPort(gi)))
 				    {
-					DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
+					DoMethod((Object *)g, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
 					ReleaseGIRPort(rp);
 				    }
 				}
 			    }
 			    else
 			    {
-				if ( (EG(o)->Flags & GFLG_SELECTED) != 0 )
+				if ( (g->Flags & GFLG_SELECTED) != 0 )
 				{
 				    struct RastPort *rp;
 
 				    /* mouse is not over gadget */
-				    EG(o)->Flags &= ~GFLG_SELECTED;
+				    g->Flags &= ~GFLG_SELECTED;
 
 				    if ((rp = ObtainGIRPort(gi)))
 				    {
-					DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
+					DoMethod((Object *)g, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
 					ReleaseGIRPort(rp);
 				    }
 				}
@@ -293,11 +277,11 @@ static IPTR aslbutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /***********************************************************************************/
 
-static IPTR aslbutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+IPTR AslButton__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
     struct GadgetInfo *gi = msg->gpgi_GInfo;
 
-    EG(o)->Flags &= ~GFLG_SELECTED;
+    g->Flags &= ~GFLG_SELECTED;
  
     if (gi)
     {
@@ -305,7 +289,7 @@ static IPTR aslbutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 	
 	if (rp)
 	{
-	    DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
+	    DoMethod((Object *)g, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
 	    ReleaseGIRPort(rp);
 	}
     }
@@ -315,14 +299,29 @@ static IPTR aslbutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 
 /***********************************************************************************/
 
-#endif /* OWN_INPUT_HANDLING */
+#else /* BUTTON_OWN_INPUT_HANDLING */
+
+IPTR AslButton__GM_GOACTIVE(Class *cl, Object *o, Msg msg)
+{
+    return DoSuperMethodA(cl, o, msg);
+}
+IPTR AslButton__GM_HANDLEINPUT(Class *cl, Object *o, Msg msg)
+{
+    return DoSuperMethodA(cl, o, msg);
+}
+IPTR AslButton__GM_GOINACTIVE(Class *cl, Object *o, Msg msg)
+{
+    return DoSuperMethodA(cl, o, msg);
+}
+
+#endif /* BUTTON_OWN_INPUT_HANDLING */
 
 /***********************************************************************************/
 
-static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR AslButton__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct AslButtonData *data;
-    char *text = (STRPTR)G(o)->GadgetText;
+    char *text = (STRPTR)g->GadgetText;
     struct TagItem im_tags[] =
     {
 	{IA_Width	, 0	},
@@ -331,9 +330,9 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
     };
     WORD x, y, w, h;
 
-    getgadgetcoords(G(o), msg->gpr_GInfo, &x, &y, &w, &h);
+    getgadgetcoords(g, msg->gpr_GInfo, &x, &y, &w, &h);
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     if (data->frame)
     {
@@ -346,7 +345,7 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
 		       (struct Image *)data->frame,
 		       x,
 		       y,
-		       (!text || (G(o)->Flags & GFLG_SELECTED)) ? IDS_SELECTED : IDS_NORMAL,
+		       (!text || (g->Flags & GFLG_SELECTED)) ? IDS_SELECTED : IDS_NORMAL,
 		       msg->gpr_GInfo->gi_DrInfo);
     }
     
@@ -369,7 +368,7 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
 	if (data->frame)
 	{
 	    SetABPenDrMd(msg->gpr_RPort,
-			 data->ld->ld_Dri->dri_Pens[(G(o)->Flags & GFLG_SELECTED) ? FILLTEXTPEN : TEXTPEN],
+			 data->ld->ld_Dri->dri_Pens[(g->Flags & GFLG_SELECTED) ? FILLTEXTPEN : TEXTPEN],
 			 0,
 			 JAM1);
 	}
@@ -379,7 +378,7 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
 	    struct TextExtent te;
 	    struct IBox obox, ibox;
 	    
-    	    getgadgetcoords(G(o), msg->gpr_GInfo, &obox.Left, &obox.Top, &obox.Width, &obox.Height);
+    	    getgadgetcoords(g, msg->gpr_GInfo, &obox.Left, &obox.Top, &obox.Width, &obox.Height);
 
 	    TextExtent(msg->gpr_RPort, text, len, &te);
 
@@ -396,7 +395,7 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
 	        
 	#endif	
 	    SetABPenDrMd(msg->gpr_RPort,
-			 data->ld->ld_Dri->dri_Pens[(G(o)->Flags & GFLG_SELECTED) ? FILLTEXTPEN : TEXTPEN],
+			 data->ld->ld_Dri->dri_Pens[(g->Flags & GFLG_SELECTED) ? FILLTEXTPEN : TEXTPEN],
 			 data->ld->ld_Dri->dri_Pens[BACKGROUNDPEN],
 			 JAM2);
 	    
@@ -415,7 +414,7 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
 	{
 	    struct IBox ibox, fbox;
 	    
-    	    getgadgetcoords(G(o), msg->gpr_GInfo, &fbox.Left, &fbox.Top, &fbox.Width, &fbox.Height);
+    	    getgadgetcoords(g, msg->gpr_GInfo, &fbox.Left, &fbox.Top, &fbox.Width, &fbox.Height);
 
 	    ibox.Left = x;
 	    ibox.Top = y;
@@ -434,7 +433,7 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
     #endif
     		 
 	SetABPenDrMd(msg->gpr_RPort,
-		     data->ld->ld_Dri->dri_Pens[(G(o)->Flags & GFLG_SELECTED) ? FILLPEN : BACKGROUNDPEN],
+		     data->ld->ld_Dri->dri_Pens[(g->Flags & GFLG_SELECTED) ? FILLPEN : BACKGROUNDPEN],
 		     0,
 		     JAM1);
         
@@ -446,7 +445,7 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
         struct ColorMap *cm = msg->gpr_GInfo->gi_Screen->ViewPort.ColorMap;
         ULONG bg[3];
 
-	GetRGB32(cm, data->ld->ld_Dri->dri_Pens[(G(o)->Flags & GFLG_SELECTED) ? FILLPEN : BACKGROUNDPEN], 1, bg);
+	GetRGB32(cm, data->ld->ld_Dri->dri_Pens[(g->Flags & GFLG_SELECTED) ? FILLPEN : BACKGROUNDPEN], 1, bg);
 	data->coolimagepal[0] = ((bg[0] & 0xFF000000) >> 8) + ((bg[1] & 0xFF000000) >> 16) + ((bg[2] & 0xFF000000) >> 24);
 		
 	WriteLUTPixelArray((APTR)data->coolimage->data,
@@ -468,7 +467,7 @@ static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
 
 /***********************************************************************************/
 
-static IPTR aslbutton_layout(Class * cl, Object * o, struct gpLayout * msg)
+IPTR AslButton__GM_LAYOUT(Class * cl, struct Gadget * g, struct gpLayout * msg)
 {
     struct AslButtonData *data;
     IPTR retval;
@@ -476,11 +475,11 @@ static IPTR aslbutton_layout(Class * cl, Object * o, struct gpLayout * msg)
     WORD spacing;
     WORD x;
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
        
-    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
     
-    switch (G(o)->GadgetID)
+    switch (g->GadgetID)
     {
         case ID_MAINBUTTON_OK:
 	case ID_MAINBUTTON_MIDDLELEFT:
@@ -501,99 +500,12 @@ static IPTR aslbutton_layout(Class * cl, Object * o, struct gpLayout * msg)
     	    spacing = (innerwidth - data->ld->ld_ButWidth * data->ld->ld_NumButtons) * 16 /
 	    	      (data->ld->ld_NumButtons - 1);
  
-	    x += (G(o)->GadgetID - ID_MAINBUTTON_OK) * (data->ld->ld_ButWidth * 16 + spacing);
-	    G(o)->LeftEdge = x / 16;
+	    x += (g->GadgetID - ID_MAINBUTTON_OK) * (data->ld->ld_ButWidth * 16 + spacing);
+	    g->LeftEdge = x / 16;
 	    break;
     }
    
     return retval;
-}
-
-/***********************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_aslbuttonclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-        case OM_NEW:
-	    retval = aslbutton_new(cl, obj, (struct opSet *)msg);
-	    break;
-	    
-	case OM_DISPOSE:
-	    retval = aslbutton_dispose(cl, obj, msg);
-	    break;
-	
-	case GM_HITTEST:
-	    retval = aslbutton_hittest(cl, obj, (struct gpHitTest *)msg);
-	    break;
-
-#if OWN_INPUT_HANDLING
-    	case GM_GOACTIVE:
-	    retval = aslbutton_goactive(cl, obj, (struct gpInput *)msg);
-	    break;
-	    
-	case GM_HANDLEINPUT:
-	    retval = aslbutton_handleinput(cl, obj, (struct gpInput *)msg);
-	    break;
-	    
-	case GM_GOINACTIVE:
-	    retval = aslbutton_goinactive(cl, obj, (struct gpGoInactive *)msg);
-	    break;
-#endif	    
-	case GM_RENDER:
-	    retval = aslbutton_render(cl, obj, (struct gpRender *)msg);
-	    break;
-	
-	case GM_LAYOUT:
-	    retval = aslbutton_layout(cl, obj, (struct gpLayout *)msg);
-	    break;
-
-	default:
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
-
-    } /* switch (msg->MethodID) */
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/***********************************************************************************/
-
-#undef AslBase
-
-Class *makeaslbuttonclass(struct AslBase_intern * AslBase)
-{
-    Class *cl = NULL;
-
-    if (AslBase->aslbuttonclass)
-	return AslBase->aslbuttonclass;
-
-#if OWN_INPUT_HANDLING
-    cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct AslButtonData), 0UL);
-#else
-    cl = MakeClass(NULL, BUTTONGCLASS, NULL, sizeof(struct AslButtonData), 0UL);
-#endif
-
-    if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_aslbuttonclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) AslBase;
-
-    AslBase->aslbuttonclass = cl;
-
-    return cl;
 }
 
 /***********************************************************************************/
