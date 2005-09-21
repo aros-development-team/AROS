@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -44,95 +44,30 @@
 
 /****************************************************************************/
 
-/* Some handy transparent base class object casting defines.
- */
-#define G(o)  ((struct Gadget *)o)
-#define EG(o) ((struct ExtGadget *)o)
-#define IM(o) ((struct Image *)o)
-
 #undef IntuitionBase
 #define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
 
 /****************************************************************************/
 
-LONG itext_draw(Class *cl, Object *o, struct impDraw *msg)
+IPTR ITextIClass__IM_DRAW(Class *cl, struct Image *im, struct impDraw *msg)
 {
     struct RastPort *rp = msg->imp_RPort;
-    LONG    	     retval = 0;
+    IPTR    	     retval = (IPTR)0;
 
     if (rp)
     {
-        struct IntuiText    *iText = (struct IntuiText *)IM(o)->ImageData;
-        int 	    	     leftOffset = msg->imp_Offset.X + IM(o)->LeftEdge;
-        int 	    	     topOffset = msg->imp_Offset.Y + IM(o)->TopEdge;
+        struct IntuiText    *iText = (struct IntuiText *)im->ImageData;
+        int 	    	     leftOffset = msg->imp_Offset.X + im->LeftEdge;
+        int 	    	     topOffset = msg->imp_Offset.Y + im->TopEdge;
  
-        SetABPenDrMd(rp, IM(o)->PlanePick, 0 ,JAM1);
+        SetABPenDrMd(rp, im->PlanePick, 0 ,JAM1);
 
     	int_PrintIText(rp, iText, leftOffset, topOffset, TRUE, IntuitionBase);
 	
-        retval = 1;
+        retval = (IPTR)1;
     }
 
     return retval;
 }
 
-/****************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_itexticlass,
-           AROS_UFHA(Class *,  cl,  A0),
-           AROS_UFHA(Object *, o,   A2),
-           AROS_UFHA(Msg,      msg, A1)
-          )
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch(msg->MethodID)
-    {
-	case IM_DRAW:
-            retval = itext_draw(cl, o, (struct impDraw *)msg);
-            break;
-
-    #warning itexticlass/IM_DRAWFRAME not implemented
-    #if 0
-	case IM_DRAWFRAME:
-            itext_drawframe(cl, o, (struct impDraw *)msg);
-            break;
-    #endif
-
-	default:
-            retval = DoSuperMethodA(cl, o, msg);
-            break;
-
-    } /* switch */
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}  /* dispatch_itexticlass */
-
-
-#undef IntuitionBase
-
-/****************************************************************************/
-
-struct IClass *InitITextIClass (struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the itexticlass...
-    */
-    if ( (cl = MakeClass(ITEXTICLASS, IMAGECLASS, NULL, 0, 0)) )
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_itexticlass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-        AddClass (cl);
-    }
-
-    return (cl);
-}
-
-/****************************************************************************/
+#warning ITextIClass::IM_DRAWFRAME not implemented

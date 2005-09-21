@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -16,7 +16,6 @@
 #include <proto/intuition.h>
 
 #include "intuition_intern.h"
-#include "icclass.h"
 
 #define DEBUG_NOTIFY(x) ;
 

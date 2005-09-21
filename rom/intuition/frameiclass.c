@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -43,33 +43,14 @@
 
 /* Some handy transparent base class object casting defines.
  */
-#define G(o)  ((struct Gadget *)o)
-#define EG(o) ((struct ExtGadget *)o)
 #define IM(o) ((struct Image *)o)
-
-/****************************************************************************/
-
-/* FrameIClass specific instance data.
- */
-struct FrameIData
-{
-    /* render bevel only with no fill? */
-    BOOL fid_EdgesOnly;
-
-    /* inverted bevel pens? */
-    BOOL fid_Recessed;
-
-    /* frame style? */
-    WORD fid_FrameType;
-
-    WORD fid_HOffset;
-    WORD fid_VOffset;
-};
 
 /****************************************************************************/
 
 #undef IntuitionBase
 #define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
+
+/****************************************************************************/
 
 /* This is utility function used by frameiclass to draw a simple
  * bevel.
@@ -150,10 +131,90 @@ static void DrawFrame(Class * cl, struct RastPort *rport, UWORD shine, UWORD sha
 
 /****************************************************************************/
 
-/* frame render method */
-static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg, WORD width, WORD height)
+/* frame attribute setting method */
+static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
 {
-    struct FrameIData *fid = INST_DATA(cl, o);
+    struct FrameIData   *fid = INST_DATA(cl, o);
+
+    struct TagItem  	*tstate = msg->ops_AttrList;
+    struct TagItem  	*tag;
+    ULONG            	 retval = 0UL;
+
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+    {
+        switch(tag->ti_Tag)
+        {
+            case IA_Recessed:
+        	fid->fid_Recessed   = (BOOL)( ( tag->ti_Data != FALSE ) ? TRUE : FALSE );
+        	break;
+
+            case IA_EdgesOnly:
+        	fid->fid_EdgesOnly  = (BOOL)( ( tag->ti_Data != FALSE ) ? TRUE : FALSE );
+        	break;
+
+            case IA_FrameType:
+        	/*
+        	Data values for IA_FrameType (recognized by FrameIClass)
+
+        	FRAME_DEFAULT:  The standard V37-type frame, which has
+        	thin edges.
+        	FRAME_BUTTON:  Standard button gadget frames, having thicker
+        	sides and edged corners.
+        	FRAME_RIDGE:  A ridge such as used by standard string gadgets.
+        	You can recess the ridge to get a groove image.
+        	FRAME_ICONDROPBOX: A broad ridge which is the standard imagery
+        	for areas in AppWindows where icons may be dropped.
+        	*/
+        	fid->fid_FrameType = (WORD)tag->ti_Data;
+
+        	switch(fid->fid_FrameType)
+        	{
+        	    case FRAME_DEFAULT:
+                	fid->fid_HOffset = fid->fid_VOffset = 1;
+                	break;
+
+        	    case FRAME_BUTTON:
+                	DEBUG_IFRAME(dprintf("draw_frameiclass: FRAME_BUTTON\n"));
+                	fid->fid_HOffset = 1;
+                	fid->fid_VOffset = 1;
+                	break;
+
+        	    case FRAME_RIDGE:
+                	fid->fid_HOffset = 2;
+                	fid->fid_VOffset = 2;
+                	break;
+
+        	    case FRAME_ICONDROPBOX:
+                	fid->fid_HOffset = 3;
+                	fid->fid_VOffset = 3;
+                	break;
+
+        	} /* switch(fid->fid_FrameType) */
+
+        	if (FRAME_SIZE > 0)
+        	{
+                    fid->fid_HOffset *= 2;
+        	}
+		
+        	if (FRAME_SIZE == 2)
+        	{
+                    fid->fid_VOffset *= 2;
+        	}
+        	break;
+
+        } /* switch */
+	
+    } /* while */
+
+    return(retval);
+} /* set_frameiclass */
+
+/****************************************************************************/
+
+/* frame render method */
+static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, WORD width, WORD height)
+{
+    struct FrameIData *fid = INST_DATA(cl, (Object *)im);
 
     /*
     Default pen array, this should be globally accessable from
@@ -255,8 +316,8 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg, WORD wi
             shadow = tmp;
         } /* if */
 
-        left = IM(o)->LeftEdge + msg->imp_Offset.X;
-        top  = IM(o)->TopEdge  + msg->imp_Offset.Y;
+        left = im->LeftEdge + msg->imp_Offset.X;
+        top  = im->TopEdge  + msg->imp_Offset.Y;
 
         DEBUG_IFRAME(dprintf("draw_frameiclass: type %ld height %ld\n",fid->fid_FrameType));
 
@@ -347,88 +408,8 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg, WORD wi
 
 /****************************************************************************/
 
-/* frame attribute setting method */
-static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
-{
-    struct FrameIData   *fid = INST_DATA(cl, o);
-
-    struct TagItem  	*tstate = msg->ops_AttrList;
-    struct TagItem  	*tag;
-    ULONG            	 retval = 0UL;
-
-    while ((tag = NextTagItem(&tstate)))
-    {
-        switch(tag->ti_Tag)
-        {
-            case IA_Recessed:
-        	fid->fid_Recessed   = (BOOL)( ( tag->ti_Data != FALSE ) ? TRUE : FALSE );
-        	break;
-
-            case IA_EdgesOnly:
-        	fid->fid_EdgesOnly  = (BOOL)( ( tag->ti_Data != FALSE ) ? TRUE : FALSE );
-        	break;
-
-            case IA_FrameType:
-        	/*
-        	Data values for IA_FrameType (recognized by FrameIClass)
-
-        	FRAME_DEFAULT:  The standard V37-type frame, which has
-        	thin edges.
-        	FRAME_BUTTON:  Standard button gadget frames, having thicker
-        	sides and edged corners.
-        	FRAME_RIDGE:  A ridge such as used by standard string gadgets.
-        	You can recess the ridge to get a groove image.
-        	FRAME_ICONDROPBOX: A broad ridge which is the standard imagery
-        	for areas in AppWindows where icons may be dropped.
-        	*/
-        	fid->fid_FrameType = (WORD)tag->ti_Data;
-
-        	switch(fid->fid_FrameType)
-        	{
-        	    case FRAME_DEFAULT:
-                	fid->fid_HOffset = fid->fid_VOffset = 1;
-                	break;
-
-        	    case FRAME_BUTTON:
-                	DEBUG_IFRAME(dprintf("draw_frameiclass: FRAME_BUTTON\n"));
-                	fid->fid_HOffset = 1;
-                	fid->fid_VOffset = 1;
-                	break;
-
-        	    case FRAME_RIDGE:
-                	fid->fid_HOffset = 2;
-                	fid->fid_VOffset = 2;
-                	break;
-
-        	    case FRAME_ICONDROPBOX:
-                	fid->fid_HOffset = 3;
-                	fid->fid_VOffset = 3;
-                	break;
-
-        	} /* switch(fid->fid_FrameType) */
-
-        	if (FRAME_SIZE > 0)
-        	{
-                    fid->fid_HOffset *= 2;
-        	}
-		
-        	if (FRAME_SIZE == 2)
-        	{
-                    fid->fid_VOffset *= 2;
-        	}
-        	break;
-
-        } /* switch */
-	
-    } /* while */
-
-    return(retval);
-} /* set_frameiclass */
-
-/****************************************************************************/
-
 /* frameiclass framebox method */
-static ULONG framebox_frameiclass(Class *cl, Object *o, struct impFrameBox *msg)
+IPTR FrameIClass__IM_FRAMEBOX(Class *cl, Object *o, struct impFrameBox *msg)
 {
     struct FrameIData *fid = INST_DATA(cl, o);
 
@@ -466,105 +447,46 @@ static ULONG framebox_frameiclass(Class *cl, Object *o, struct impFrameBox *msg)
                          msg->imp_FrameBox->Width,
                          msg->imp_FrameBox->Height));
 
-    return 1UL;
+    return (IPTR)1;
 } /* framebox_frameiclass */
 
-/****************************************************************************/
-
-/* frameiclass boopsi dispatcher
- */
-AROS_UFH3S(IPTR, dispatch_frameiclass,
-           AROS_UFHA(Class *,  cl,  A0),
-           AROS_UFHA(Object *, o,   A2),
-           AROS_UFHA(Msg,      msg, A1)
-          )
+IPTR FrameIClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    DEBUG_IFRAME(dprintf("dispatch_frameiclass: Class 0x%lx Object 0x%lx Msg 0x%lx\n",cl,o,msg));
-    switch(msg->MethodID)
-    {
-	case IM_FRAMEBOX:
-            DEBUG_IFRAME(dprintf("dispatch_frameiclass: framebox content Width %ld Height %ld\n",
-                        	 ((struct impFrameBox *)msg)->imp_ContentsBox->Width,
-                        	 ((struct impFrameBox *)msg)->imp_ContentsBox->Height));
-            retval = framebox_frameiclass(cl, o, (struct impFrameBox *)msg);
-            DEBUG_IFRAME(dprintf("dispatch_frameiclass: framebox =content Width %ld Height %ld framebox Width %ld Height %ld\n",
-                        	 ((struct impFrameBox *)msg)->imp_ContentsBox->Width,
-                        	 ((struct impFrameBox *)msg)->imp_ContentsBox->Height,
-                        	 ((struct impFrameBox *)msg)->imp_FrameBox->Width,
-                        	 ((struct impFrameBox *)msg)->imp_FrameBox->Height));
-            break;
-
-	case IM_DRAWFRAME:
-            DEBUG_IFRAME(dprintf("dispatch_frameiclass: drawframe Width %ld Height %ld\n",((struct impDraw *)msg)->imp_Dimensions.Width,((struct impDraw *)msg)->imp_Dimensions.Height));
-            retval = draw_frameiclass(cl, o, (struct impDraw *)msg,
-                                      ((struct impDraw *)msg)->imp_Dimensions.Width,
-                                      ((struct impDraw *)msg)->imp_Dimensions.Height);
-            break;
-
-	case IM_DRAW:
-            DEBUG_IFRAME(dprintf("dispatch_frameiclass: draw Width %ld Height %ld\n",IM(o)->Width, IM(o)->Height));
-            retval = draw_frameiclass(cl, o, (struct impDraw *)msg, IM(o)->Width, IM(o)->Height);
-            break;
-
-	case OM_SET:
-            DEBUG_IFRAME(dprintf("dispatch_frameiclass: set\n"));
-            retval = DoSuperMethodA(cl, o, msg);
-            retval += (IPTR)set_frameiclass(cl, o, (struct opSet *)msg);
-            break;
-
-	case OM_NEW:
-            DEBUG_IFRAME(dprintf("dispatch_frameiclass: new\n"));
-            retval = DoSuperMethodA(cl, o, msg);
-            if (retval)
-            {
-        	struct FrameIData *fid = INST_DATA(cl, retval);
-
-        	/* set some defaults */
-        	fid->fid_EdgesOnly = FALSE;
-        	fid->fid_Recessed  = FALSE;
-        	fid->fid_FrameType = FRAME_DEFAULT;
-        	fid->fid_HOffset   = 1;
-        	fid->fid_VOffset   = 1;
-
-        	/* Handle our special tags - overrides defaults */
-        	set_frameiclass(cl, (Object*)retval, (struct opSet *)msg);
-            }
-            break;
-
-	default:
-            retval = DoSuperMethodA(cl, o, msg);
-            break;
-    } /* switch */
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}  /* dispatch_frameiclass */
-
-#undef IntuitionBase
-
-/****************************************************************************/
-
-/* Initialize our image class. */
-struct IClass *InitFrameIClass (struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the frameiclass...
-    */
-    if ((cl = MakeClass(FRAMEICLASS, IMAGECLASS, NULL, sizeof(struct FrameIData), 0)))
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_frameiclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-        AddClass (cl);
-    }
-
-    return (cl);
+    DEBUG_IFRAME(dprintf("dispatch_frameiclass: set\n"));
+    return DoSuperMethodA(cl, o, (Msg)msg) + (IPTR)set_frameiclass(cl, o, msg);
 }
 
+IPTR FrameIClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
+{
+    DEBUG_IFRAME(dprintf("dispatch_frameiclass: new\n"));
+
+    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+    if (o)
+    {
+	struct FrameIData *fid = INST_DATA(cl, o);
+
+	/* set some defaults */
+	fid->fid_EdgesOnly = FALSE;
+	fid->fid_Recessed  = FALSE;
+	fid->fid_FrameType = FRAME_DEFAULT;
+	fid->fid_HOffset   = 1;
+	fid->fid_VOffset   = 1;
+ 
+	/* Handle our special tags - overrides defaults */
+	set_frameiclass(cl, o, msg);
+    }
+    
+    return (IPTR)o;
+}
+
+IPTR FrameIClass__IM_DRAWFRAME(Class *cl, struct Image *im, struct impDraw *msg)
+{
+    DEBUG_IFRAME(dprintf("dispatch_frameiclass: drawframe Width %ld Height %ld\n", msg->imp_Dimensions.Width, msg->imp_Dimensions.Height));
+    return draw_frameiclass(cl, im, msg, msg->imp_Dimensions.Width, msg->imp_Dimensions.Height);
+}
+
+IPTR FrameIClass__IM_DRAW(Class *cl, struct Image *im, struct impDraw *msg)
+{
+    DEBUG_IFRAME(dprintf("dispatch_frameiclass: draw Width %ld Height %ld\n",im->Width, im->Height));
+    return draw_frameiclass(cl, im, msg, im->Width, im->Height);
+}

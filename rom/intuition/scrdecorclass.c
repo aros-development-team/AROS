@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id: imageclass.c 20651 2004-01-17 20:57:12Z chodorowski $
 */
@@ -60,14 +60,6 @@
 #define VSPACING_SMALL 1
 
 #define DRI(dri) ((struct DrawInfo *)(dri))
-
-/**************************************************************************************************/
-
-struct scrdecor_data
-{
-    struct IntDrawInfo  *dri;
-    struct Screen   	*scr;
-};
 
 /**************************************************************************************************/
 
@@ -141,7 +133,7 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
 
 /**************************************************************************************************/
 
-static IPTR scrdecor_new(Class *cl, Object *obj, struct opSet *msg)
+IPTR ScrDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct scrdecor_data *data;
     
@@ -169,7 +161,7 @@ static IPTR scrdecor_new(Class *cl, Object *obj, struct opSet *msg)
 
 /**************************************************************************************************/
 
-static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
+IPTR ScrDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
 
@@ -197,7 +189,7 @@ static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
 
 /**************************************************************************************************/
 
-IPTR scrdecor_getdefsize_sysimage(Class *cl, Object *obj, struct sdpGetDefSizeSysImage *msg)
+IPTR ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct sdpGetDefSizeSysImage *msg)
 {
     ULONG def_low_width = DEFSIZE_WIDTH, def_low_height = DEFSIZE_HEIGHT;
     ULONG def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
@@ -244,7 +236,7 @@ IPTR scrdecor_getdefsize_sysimage(Class *cl, Object *obj, struct sdpGetDefSizeSy
 
 /**************************************************************************************************/
 
-IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImage *msg)
+IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysImage *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->sdp_RPort;
@@ -356,7 +348,7 @@ static void findtitlearea(struct Screen *scr, LONG *left, LONG *right)
 
 /**************************************************************************************************/
 
-IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
+IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->sdp_RPort;
@@ -388,7 +380,7 @@ IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *ms
 
 /**************************************************************************************************/
 
-IPTR scrdecor_draw_screentitle(Class *cl, Object *obj, struct sdpDrawScreenTitle *msg)
+IPTR ScrDecorClass__SDM_DRAW_SCREENTITLE(Class *cl, Object *obj, struct sdpDrawScreenTitle *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->sdp_RPort;
@@ -421,7 +413,7 @@ IPTR scrdecor_draw_screentitle(Class *cl, Object *obj, struct sdpDrawScreenTitle
 
 /**************************************************************************************************/
 
-IPTR scrdecor_layout_screengadgets(Class *cl, Object *obj, struct sdpLayoutScreenGadgets *msg)
+IPTR ScrDecorClass__SDM_LAYOUT_SCREENGADGETS(Class *cl, Object *obj, struct sdpLayoutScreenGadgets *msg)
 {
     struct Gadget *gadget = msg->sdp_Gadgets;
 
@@ -452,80 +444,3 @@ IPTR scrdecor_layout_screengadgets(Class *cl, Object *obj, struct sdpLayoutScree
 }
 
 /**************************************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_scrdecorclass,
-           AROS_UFHA(Class *,  cl,  A0),
-           AROS_UFHA(Object *, o,   A2),
-           AROS_UFHA(Msg,      msg, A1)
-          )
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval;
-
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-    	    retval = scrdecor_new(cl, o, (struct opSet *)msg);
-	    break;
-
-    	case OM_GET:
-	    retval = scrdecor_get(cl, o, (struct opGet *)msg);
-	    break;
-	    
-    	case SDM_GETDEFSIZE_SYSIMAGE:
-	    retval = scrdecor_getdefsize_sysimage(cl, o, (struct sdpGetDefSizeSysImage *)msg);
-	    break;
-	    
-	case SDM_DRAW_SYSIMAGE:
-	    retval = scrdecor_draw_sysimage(cl, o, (struct sdpDrawSysImage *)msg);
-	    break;
-	    
-	case SDM_DRAW_SCREENBAR:
-	    retval = scrdecor_draw_screenbar(cl, o, (struct sdpDrawScreenBar *)msg);
-	    break;
-	    
-	case SDM_DRAW_SCREENTITLE:
-	    retval = scrdecor_draw_screentitle(cl, o, (struct sdpDrawScreenTitle *)msg);
-	    break;
-	
-	case SDM_LAYOUT_SCREENGADGETS:
-	    retval = scrdecor_layout_screengadgets(cl, o, (struct sdpLayoutScreenGadgets *)msg);
-	    break;
-	    
-	default:
-            retval = DoSuperMethodA(cl, o, msg);
-            break;
-
-    } /* switch */
-
-    return (retval);
-
-    AROS_USERFUNC_EXIT
-}
-
-/**************************************************************************************************/
-
-#undef IntuitionBase
-
-/**************************************************************************************************/
-
-struct IClass *InitScrDecorClass (struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the scrdecor class...
-    */
-    if ((cl = MakeClass(SCRDECORCLASS, ROOTCLASS, NULL, sizeof(struct scrdecor_data), 0)))
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_scrdecorclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-        AddClass (cl);
-    }
-
-    return (cl);
-}
-
-/***********************************************************************************/

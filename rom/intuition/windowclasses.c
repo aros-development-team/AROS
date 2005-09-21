@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
     
@@ -65,57 +65,6 @@ on screen.
 
 //#define DELAYEDDRAG
 //#define DELAYEDSIZE
-
-/***********************************************************************************/
-
-#define G(o)  ((struct Gadget *)o)
-#define EG(o) ((struct ExtGadget *)o)
-#define IM(o) ((struct Image *)o)
-
-/***********************************************************************************/
-
-struct dragbar_data
-{
-    /* Current left- and topedge of moving window. Ie when the user releases
-    the LMB after a windowdrag, the window's new coords will be (curleft, curtop)
-    */
-
-    LONG    	     curleft;
-    LONG    	     curtop;
-
-    /* The current x and y coordinates relative to curleft/curtop */
-    LONG    	     mousex;
-    LONG    	     mousey;
-
-    /* Whether the dragframe is currently drawn or erased */
-    BOOL    	     isrendered;
-
-    /* Used to tell GM_GOINACTIVE whether the drag was canceled or not */
-    BOOL    	     drag_canceled;
-
-    /* Used to tell GM_GOINACTIVE whether UnlockLayer() or not */
-    BOOL    	     drag_layerlock;
-#ifdef USEGADGETLOCK
-    BOOL    	     drag_gadgetlock;
-#endif
-    BOOL    	     drag_refreshed;
-
-    /* Rastport to use during update */
-    struct RastPort *rp;
-
-    UQUAD   	     lasteventtime;
-    
-    LONG    	     startleft;
-    LONG    	     starttop;
-
-#ifdef USEWINDOWLOCK
-    /* used to prevent windows from opening/closing while user drags a window */
-    BOOL    	     drag_windowlock;
-#endif
-
-    struct Task     *movetask;
-
-};
 
 /***********************************************************************************/
 
@@ -297,12 +246,12 @@ static void drawwindowframe(struct Screen *scr, struct RastPort *rp,
 /***********************************************************************************/
 
 #if 0
-static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
+IPTR DragBarClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender * msg)
 {
     EnterFunc(bug("DragBar::Render()\n"));
     /* We will let the AROS gadgetclass test if it is safe to render */
 
-    if ( DoSuperMethodA(cl, o, (Msg)msg) != 0)
+    if ( DoSuperMethodA(cl, (Object *)g, (Msg)msg) != 0)
     {
         struct DrawInfo     *dri = msg->gpr_GInfo->gi_DrInfo;
         UWORD               *pens = dri->dri_Pens;
@@ -311,7 +260,7 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
         struct Window       *win = msg->gpr_GInfo->gi_Window;
         struct TextExtent    te;
 
-        GetGadgetIBox(o, msg->gpr_GInfo, &container);
+        GetGadgetIBox(g, msg->gpr_GInfo, &container);
 
         if (container.Width <= 1 || container.Height <= 1)
             return;
@@ -383,13 +332,13 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 
     }  /* if (allowed to render) */
 
-    ReturnVoid("DragBar::Render");
+    return (IPTR)0;
 }
 #endif
 
 /***********************************************************************************/
 
-static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct InputEvent *ie = msg->gpi_IEvent;
     IPTR    	       retval = GMR_NOREUSE;
@@ -406,7 +355,7 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 
         w = msg->gpi_GInfo->gi_Window;
 
-        data = INST_DATA(cl, o);
+        data = INST_DATA(cl, g);
 
     #ifdef USEWINDOWLOCK
         /* do NOT ObtainSemaphore here since this would lead to deadlocks!!! */
@@ -548,16 +497,16 @@ fail:
 
 /***********************************************************************************/
 
-static IPTR dragbar_movetest(Class *cl, Object *o, struct gpInput *msg)
+IPTR DragBarClass__GM_MOVETEST(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
-    struct dragbar_data *data = INST_DATA(cl, o);
+    IPTR    	    	 retval = MOVETEST_MOVE;
+#ifdef SKINS
+    struct dragbar_data *data = INST_DATA(cl, g);
     struct Window       *w = msg->gpi_GInfo->gi_Window;
     struct InputEvent 	 myie;
     LONG            	 new_left;
     LONG            	 new_top;
-    IPTR    	    	 retval = MOVETEST_MOVE;
 
-#ifdef SKINS
     CopyMem(msg->gpi_IEvent,&myie,sizeof (struct InputEvent));
     myie.ie_Code = 0x68; //mouse_leftpress
 
@@ -597,9 +546,10 @@ static IPTR dragbar_movetest(Class *cl, Object *o, struct gpInput *msg)
     return retval;
 
 }
+
 /***********************************************************************************/
 
-static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct GadgetInfo *gi = msg->gpi_GInfo;
     IPTR    	       retval = GMR_MEACTIVE;
@@ -607,7 +557,7 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
     if (gi)
     {
         struct InputEvent   *ie = msg->gpi_IEvent;
-        struct dragbar_data *data = INST_DATA(cl, o);
+        struct dragbar_data *data = INST_DATA(cl, g);
         struct Window       *w = msg->gpi_GInfo->gi_Window;
 
         switch (ie->ie_Class)
@@ -876,12 +826,12 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /***********************************************************************************/
 
-static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
     struct dragbar_data *data;
     struct Window   	*w;
 
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     w = msg->gpgi_GInfo->gi_Window;
 
@@ -985,69 +935,29 @@ static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 
 /***********************************************************************************/
 
-/***********  Window dragbar class **********************************/
-
-AROS_UFH3S(IPTR, dispatch_dragbarclass,
-           AROS_UFHA(Class *,  cl,  A0),
-           AROS_UFHA(Object *, o,   A2),
-           AROS_UFHA(Msg,      msg, A1)
-          )
+IPTR DragBarClass__NOP(Class *cl, Object *o, Msg msg)
 {
-    AROS_USERFUNC_INIT
+    return (IPTR)0;
+}
 
-    IPTR retval = 0UL;
+/***********************************************************************************/
 
-    EnterFunc(bug("dragbar_dispatcher(mid=%d)\n", msg->MethodID));
+IPTR DragBarClass__GM_HITTEST(Class *cl, Object *o, Msg msg)
+{
+    return (IPTR)1;
+}
 
-    switch (msg->MethodID)
+/***********************************************************************************/
+
+IPTR DragBarClass__OM_NEW(Class *cl, Object *o, Msg msg)
+{
+    struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, msg);
+    if (g)
     {
-	case GM_RENDER:
-            //dragbar_render(cl, o, (struct gpRender *)msg);
-            break;
-
-	case GM_LAYOUT:
-            break;
-
-	case GM_DOMAIN:
-            break;
-
-	case GM_GOACTIVE:
-            retval = dragbar_goactive(cl, o, (struct gpInput *)msg);
-            break;
-
-	case GM_GOINACTIVE:
-            retval = dragbar_goinactive(cl, o, (struct gpGoInactive *)msg);
-            break;
-
-	case GM_HANDLEINPUT:
-            retval = dragbar_handleinput(cl, o, (struct gpInput *)msg);
-            break;
-
-	case GM_HITTEST:
-            retval = 1;
-            break;
-
-	case GM_MOVETEST:
-            retval = dragbar_movetest(cl, o, (struct gpInput *)msg);
-            break;
-
-	case OM_NEW:
-            retval = DoSuperMethodA(cl, o, msg);
-            if (retval)
-            {
-        	((struct Gadget *)retval)->GadgetType |= GTYP_SYSGADGET | GTYP_WDRAGGING;
-            }
-            break;
-
-
-	default:
-            retval = DoSuperMethodA(cl, o, msg);
-            break;
+	g->GadgetType |= GTYP_SYSGADGET | GTYP_WDRAGGING;
     }
-
-    ReturnPtr ("dragbar_dispatcher", IPTR, retval);
-
-    AROS_USERFUNC_EXIT
+    
+    return (IPTR)g;
 }
 
 /***********************************************************************************/
@@ -1055,57 +965,6 @@ AROS_UFH3S(IPTR, dispatch_dragbarclass,
 /*********************
 ** The SizeButtonClass
 *********************/
-
-struct sizebutton_data
-{
-
-    /* The current width and height of the rubber band frame */
-    ULONG   	     width;
-    ULONG   	     height;
-    ULONG   	     top;
-    ULONG   	     left;
-
-    /* holds original sizes */
-    ULONG   	     Width;
-    ULONG   	     Height;
-    ULONG   	     TopEdge;
-    ULONG   	     LeftEdge;
-
-    /* the offset of the mouse pointer to the rubber band frame*/
-    LONG    	     mouseoffsetx;
-    LONG    	     mouseoffsety;
-
-    /* Whether the dragframe is currently drawn or erased */
-    BOOL    	     isrendered;
-
-    /* Used to tell GM_GOINACTIVE whether the drag was canceled or not */
-    BOOL    	     drag_canceled;
-
-    /* Used to tell GM_GOINACTIVE whether UnlockLayer() or not */
-    BOOL    	     drag_layerlock;
-#ifdef USEGADGETLOCK
-    BOOL    	     drag_gadgetlock;
-#endif
-
-    BOOL    	     drag_refreshed;
-
-    /* Rastport to use during update */
-    struct RastPort *rp;
-
-    UQUAD   	     lasteventtime;
-
-#ifdef USEWINDOWLOCK
-    /* used to prevent windows from opening/closing while user drags a window */
-    BOOL    	     drag_windowlock;
-#endif
-
-#ifdef SKINS
-    ULONG   	     drag_type;
-#endif
-
-    ULONG   	     drag_ticks;
-
-};
 
 #ifdef SKINS
 #define SIZETYPE_RIGHTBOTTOM 1
@@ -1180,7 +1039,7 @@ void smartresize(struct Window *w,struct sizebutton_data *data,Class *cl)
 
 /***********************************************************************************/
 
-static IPTR sizebutton_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR SizeButtonClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct InputEvent   *ie = msg->gpi_IEvent;
     IPTR            	 retval = GMR_NOREUSE;
@@ -1197,7 +1056,7 @@ static IPTR sizebutton_goactive(Class *cl, Object *o, struct gpInput *msg)
 
         w = msg->gpi_GInfo->gi_Window;
 
-        data = INST_DATA(cl, o);
+        data = INST_DATA(cl, g);
 
     #ifdef USEWINDOWLOCK
         /* do NOT ObtainSemaphore here since this would lead to deadlocks!!! */
@@ -1336,7 +1195,7 @@ fail:
 
 /***********************************************************************************/
 
-static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct GadgetInfo   *gi = msg->gpi_GInfo;
     IPTR            	 retval = GMR_MEACTIVE;
@@ -1344,7 +1203,7 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
     if (gi)
     {
         struct InputEvent   	*ie = msg->gpi_IEvent;
-        struct sizebutton_data  *data = INST_DATA(cl, o);
+        struct sizebutton_data  *data = INST_DATA(cl, g);
         struct Window       	*w = msg->gpi_GInfo->gi_Window;
 
         switch (ie->ie_Class)
@@ -1622,12 +1481,12 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /***********************************************************************************/
 
-static IPTR sizebutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
     struct sizebutton_data  *data;
     struct Window           *w;
 
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     w = msg->gpgi_GInfo->gi_Window;
 
     /* Allways clear last drawn frame */
@@ -1711,98 +1570,15 @@ static IPTR sizebutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg
 
 /***********************************************************************************/
 
-/***********  Size Button class **********************************/
-
-AROS_UFH3S(IPTR, dispatch_sizebuttonclass,
-           AROS_UFHA(Class *,  cl,  A0),
-           AROS_UFHA(Object *, o,   A2),
-           AROS_UFHA(Msg,      msg, A1)
-          )
+IPTR SizeButtonClass__OM_NEW(Class *cl, Object *o, Msg msg)
 {
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    EnterFunc(bug("sizebutton_dispatcher(mid=%d)\n", msg->MethodID));
+    struct Gadget *g = DoSuperMethodA(cl, o, msg);
+    if (g)
+    {
+	g->GadgetType |= GTYP_SYSGADGET | GTYP_SIZING;
+    }
     
-    switch (msg->MethodID)
-    {
-	case GM_LAYOUT:
-            break;
-
-	case GM_DOMAIN:
-            break;
-
-	case GM_GOACTIVE:
-            retval = sizebutton_goactive(cl, o, (struct gpInput *)msg);
-            break;
-
-	case GM_GOINACTIVE:
-            retval = sizebutton_goinactive(cl, o, (struct gpGoInactive *)msg);
-            break;
-
-	case GM_HANDLEINPUT:
-            retval = sizebutton_handleinput(cl, o, (struct gpInput *)msg);
-            break;
-
-	case OM_NEW:
-            retval = DoSuperMethodA(cl, o, msg);
-            if (retval)
-            {
-        	((struct Gadget *)retval)->GadgetType |= GTYP_SYSGADGET | GTYP_SIZING;
-            }
-            break;
-
-	default:
-            retval = DoSuperMethodA(cl, o, msg);
-            break;
-    }
-
-    ReturnPtr ("sizebutton_dispatcher", IPTR, retval);
-
-    AROS_USERFUNC_EXIT
-}
-
-
-/***********************************************************************************/
-
-#undef IntuitionBase
-
-/***********************************************************************************/
-
-struct IClass *InitDragBarClass (struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the dragbarclass...
-    */
-    if ( (cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof (struct dragbar_data), 0)) )
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_dragbarclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-    }
-
-    return (cl);
-}
-
-/***********************************************************************************/
-
-struct IClass *InitSizeButtonClass (struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the dragbarclass...
-    */
-    if ( (cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof (struct sizebutton_data), 0)) )
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_sizebuttonclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-    }
-
-    return (cl);
+    return (IPTR)g;
 }
 
 /***********************************************************************************/

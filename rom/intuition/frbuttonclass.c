@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -46,18 +46,12 @@
 
 /****************************************************************************/
 
-/* Some handy transparent base class object casting defines.
- */
-#define G(o)  ((struct Gadget *)o)
-#define EG(o) ((struct ExtGadget *)o)
-#define IM(o) ((struct Image *)o)
-
 #undef IntuitionBase
 #define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
 
 /****************************************************************************/
 
-void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR FrButtonClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     /* We will let the AROS gadgetclass test if it is safe to render */
 #warning FIXME:
@@ -74,22 +68,22 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
                            msg->gpr_GInfo->gi_RastPort, msg->gpr_GInfo->gi_RastPort->Layer));
     SANITY_CHECK(rp)
     
-    GetGadgetIBox(o, msg->gpr_GInfo, &container);
+    GetGadgetIBox(g, msg->gpr_GInfo, &container);
 
     if (container.Width <= 1 || container.Height <= 1)
-        return;
+        return (IPTR)0;
 
-    if ((EG(o)->Flags & GFLG_GADGIMAGE) == 0) /* not an image-button */
+    if ((g->Flags & GFLG_GADGIMAGE) == 0) /* not an image-button */
     {
         /* draw border */
-        if ((EG(o)->SelectRender != NULL ) &&  (EG(o)->Flags & GFLG_SELECTED))
+        if ((g->SelectRender != NULL ) &&  (g->Flags & GFLG_SELECTED))
             DrawBorder(rp,
-                       ((struct Border *)EG(o)->SelectRender),
+                       ((struct Border *)g->SelectRender),
                        container.Left,
                        container.Top);
-        else if (EG(o)->GadgetRender != NULL)
+        else if (g->GadgetRender != NULL)
             DrawBorder(rp,
-                       ((struct Border *)EG(o)->GadgetRender),
+                       ((struct Border *)g->GadgetRender),
                        container.Left,
                        container.Top);
     }
@@ -97,54 +91,52 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
     {
         struct TagItem image_tags[] =
         {
-            {IA_Width , EG(o)->Width },
-            {IA_Height, EG(o)->Height},
+            {IA_Width , g->Width },
+            {IA_Height, g->Height},
             {TAG_DONE        	     }
         };
 
-        if ((EG(o)->SelectRender != NULL) &&
-            (EG(o)->Flags & GFLG_SELECTED)) /* render selected image */
+        if ((g->SelectRender != NULL) &&
+            (g->Flags & GFLG_SELECTED)) /* render selected image */
         {
             ULONG x, y;
-
-            if(((struct Image *)(EG(o)->SelectRender))->Depth == CUSTOMIMAGEDEPTH)
+	    struct Image *sr = g->SelectRender;
+	    
+            if(sr->Depth == CUSTOMIMAGEDEPTH)
             {
                 // ONLY DO THIS FOR REAL IMAGE OBJECTS (cyfm 31/12/02)
                 /* center image position, we assume image top and left is 0 */
-                SetAttrsA(EG(o)->SelectRender, image_tags);
+                SetAttrsA(g->SelectRender, image_tags);
             }
 
-            x = container.Left + (container.Width / 2) -
-                (IM(EG(o)->SelectRender)->Width / 2);
-            y = container.Top + (container.Height / 2) -
-                (IM(EG(o)->SelectRender)->Height / 2);
+            x = container.Left + (container.Width / 2) - (sr->Width / 2);
+            y = container.Top + (container.Height / 2) - (sr->Height / 2);
 
             DrawImageState(rp,
-                           IM(EG(o)->SelectRender),
+                           sr,
                            x, y,
                            IDS_SELECTED,
                            msg->gpr_GInfo->gi_DrInfo );
         }
-        else if ( EG(o)->GadgetRender != NULL ) /* render normal image */
+        else if ( g->GadgetRender != NULL ) /* render normal image */
         {
             ULONG x, y;
-
-            if(((struct Image *)(EG(o)->GadgetRender))->Depth == CUSTOMIMAGEDEPTH)
+	    struct Image *gr = g->GadgetRender;
+	    
+            if(gr->Depth == CUSTOMIMAGEDEPTH)
             {
                 // ONLY DO THIS FOR REAL IMAGE OBJECTS (cyfm 31/12/02)
                 /* center image position, we assume image top and left is 0 */
-                SetAttrsA(EG(o)->GadgetRender, image_tags);
+                SetAttrsA(gr, image_tags);
             }
 
-            x = container.Left + (container.Width / 2) -
-                (IM(EG(o)->GadgetRender)->Width / 2);
-            y = container.Top + (container.Height / 2) -
-                (IM(EG(o)->GadgetRender)->Height / 2);
+            x = container.Left + (container.Width / 2) - (gr->Width / 2);
+            y = container.Top + (container.Height / 2) - (gr->Height / 2);
 
             DrawImageState(rp,
-                           IM(EG(o)->GadgetRender),
+                           gr,
                            x, y,
-                           ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
+                           ((g->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
                            msg->gpr_GInfo->gi_DrInfo);
         }
     }
@@ -152,9 +144,9 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
     /* print label */
     SetABPenDrMd(rp, pens[TEXTPEN], 0, JAM1);
     
-    printgadgetlabel(cl, o, msg, IntuitionBase);
+    printgadgetlabel(cl, (Object *)g, msg, IntuitionBase);
 
-    if ( EG(o)->Flags & GFLG_DISABLED )
+    if ( g->Flags & GFLG_DISABLED )
     {
         UWORD pattern[] = { 0x8888, 0x2222 };
 
@@ -170,31 +162,33 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
                  container.Top + container.Height - 1 );
     }
     /* } FIXME */
+    
+    return (IPTR)0;
 }
 
 /***********************************************************************************/
 
-void frbutton_setsize(Class *cl, Object *o, struct opSet *msg)
+void frbutton_setsize(Class *cl, struct Gadget *g, struct opSet *msg)
 {
-    struct Image *image = (struct Image *)EG(o)->GadgetRender;
+    struct Image *image = (struct Image *)g->GadgetRender;
 
     DEBUG_FRBUTTON(dprintf("frbutton_setsize: o %p\n", o));
 
     if ((FindTagItem(GA_Width, msg->ops_AttrList) == NULL ||
             FindTagItem(GA_Height, msg->ops_AttrList) == NULL) &&
-            image && EG(o)->Flags & GFLG_GADGIMAGE)
+            image && g->Flags & GFLG_GADGIMAGE)
     {
         struct IBox 	 contents, frame;
         struct DrawInfo *dri = msg->ops_GInfo ? msg->ops_GInfo->gi_DrInfo : NULL;
         BOOL 	    	 do_framebox = TRUE;
 	
-        DEBUG_FRBUTTON(dprintf("frbutton_setsize: image %p flags 0x%lx\n", image,EG(o)->Flags));
+        DEBUG_FRBUTTON(dprintf("frbutton_setsize: image %p flags 0x%lx\n", image,g->Flags));
 
         dri = (APTR)GetTagData(GA_DrawInfo, (IPTR)dri, msg->ops_AttrList);
         contents.Left = 0;
         contents.Top = 0;
 
-        switch (EG(o)->Flags & GFLG_LABELMASK)
+        switch (g->Flags & GFLG_LABELMASK)
         {
           //case GFLG_LABELITEXT:
           //break;
@@ -203,7 +197,7 @@ void frbutton_setsize(Class *cl, Object *o, struct opSet *msg)
         	if (dri)
         	{
                     struct RastPort rp;
-                    STRPTR  	    text = (STRPTR)EG(o)->GadgetText;
+                    STRPTR  	    text = (STRPTR)g->GadgetText;
 
                     InitRastPort(&rp);
                     SetFont(&rp, dri->dri_Font);
@@ -218,8 +212,8 @@ void frbutton_setsize(Class *cl, Object *o, struct opSet *msg)
         	break;
 
             case GFLG_LABELIMAGE:
-        	contents.Width  = ((struct Image *)EG(o)->GadgetText)->Width;
-        	contents.Height = ((struct Image *)EG(o)->GadgetText)->Height;
+        	contents.Width  = ((struct Image *)g->GadgetText)->Width;
+        	contents.Height = ((struct Image *)g->GadgetText)->Height;
         	break;
 
             default:
@@ -253,23 +247,23 @@ void frbutton_setsize(Class *cl, Object *o, struct opSet *msg)
                 DEBUG_FRBUTTON(dprintf("frbutton_setsize: bad, w=%d h=%d\n", width, height));
             }
 
-            EG(o)->Width = width;
-            EG(o)->Height = height;
+            g->Width = width;
+            g->Height = height;
         }
     }
 }
 
 /***********************************************************************************/
 
-IPTR frbutton_hittest(Class *cl, Object * o, struct gpHitTest * msg)
+IPTR FrButtonClass__GM_HITTEST(Class *cl, struct Gadget * g, struct gpHitTest * msg)
 {
-    Object *image = (Object *)EG(o)->GadgetRender;
+    struct Image *image = (struct Image *)g->GadgetRender;
 
     IPTR retval = GMR_GADGETHIT;
 
     if (image)
     {
-        if (((struct Image *)image)->Depth == CUSTOMIMAGEDEPTH)
+        if (image->Depth == CUSTOMIMAGEDEPTH)
         {
             struct impHitTest imph;
 
@@ -277,7 +271,7 @@ IPTR frbutton_hittest(Class *cl, Object * o, struct gpHitTest * msg)
             imph.imp_Point.X = msg->gpht_Mouse.X;
             imph.imp_Point.Y = msg->gpht_Mouse.Y;
 
-            retval = DoMethodA(image, (Msg)&imph) ? GMR_GADGETHIT : 0;
+            retval = DoMethodA((Object *)image, (Msg)&imph) ? GMR_GADGETHIT : 0;
         }
     }
 
@@ -286,104 +280,52 @@ IPTR frbutton_hittest(Class *cl, Object * o, struct gpHitTest * msg)
 
 /****************************************************************************/
 
-AROS_UFH3S(IPTR, dispatch_frbuttonclass,
-           AROS_UFHA(Class *,  cl,  A0),
-           AROS_UFHA(Object *, o,   A2),
-           AROS_UFHA(Msg,      msg, A1)
-          )
+IPTR FrButtonClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    DEBUG_FRBUTTON(dprintf("dispatch_frbuttonclass: Cl 0x%lx o 0x%lx msg 0x%lx\n",cl,o,msg));
-
-    switch(msg->MethodID)
+    struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
+    if (g)
     {
-	case OM_NEW:
-            retval = DoSuperMethodA(cl, o, msg);
-            if (retval)
-            {
-        	frbutton_setsize(cl, (Object *)retval, (struct opSet *)msg);
-            }
-            break;
-
-	case GM_RENDER:
-            frbutton_render(cl, o, (struct gpRender *)msg);
-            break;
-
-	case GM_HITTEST:
-            retval = frbutton_hittest(cl, o, (struct gpHitTest *)msg);
-            break;
-
-	case OM_SET:
-	case OM_UPDATE:
-            retval = DoSuperMethodA(cl, o, msg);
-
-            /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
-            * because it would circumvent the subclass from fully overriding it.
-            * The check of cl == OCLASS(o) should fail if we have been
-            * subclassed, and we have gotten here via DoSuperMethodA().
-            */
-            if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(o)) ) )
-            {
-        	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
-		
-        	if (gi)
-        	{
-                    struct RastPort *rp = ObtainGIRPort(gi);
-		    
-                    if (rp)
-                    {
-                	struct gpRender method;
-			
-                	method.MethodID   = GM_RENDER;
-                	method.gpr_GInfo  = gi;
-                	method.gpr_RPort  = rp;
-                	method.gpr_Redraw = GREDRAW_REDRAW;
-			
-                	DoMethodA(o, (Msg)&method);
-			
-                	ReleaseGIRPort(rp);
-                    }
-        	}
-            }
-            break;
-
-	default:
-            retval = DoSuperMethodA(cl, o, msg);
-            break;
-
-    } /* switch */
-
-    DEBUG_FRBUTTON(dprintf("dispatch_frbuttongclass: retval 0x%lx\n",retval));
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}  /* dispatch_frbuttonclass */
-
-
-#undef IntuitionBase
-
-/****************************************************************************/
-
-struct IClass *InitFrButtonClass (struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the frbuttonclass...
-    */
-    if ( (cl = MakeClass(FRBUTTONCLASS, BUTTONGCLASS, NULL, 0, 0)) )
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_frbuttonclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-        AddClass (cl);
+	frbutton_setsize(cl, g, msg);
     }
+    return (IPTR)g;
+}
 
-    return (cl);
+/***********************************************************************************/
+
+IPTR FrButtonClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
+{
+    IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
+    
+    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
+     * because it would circumvent the subclass from fully overriding it.
+     * The check of cl == OCLASS(o) should fail if we have been
+     * subclassed, and we have gotten here via DoSuperMethodA().
+     */
+    if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(o)) ) )
+    {
+	struct GadgetInfo *gi = msg->ops_GInfo;
+		
+	if (gi)
+	{
+	    struct RastPort *rp = ObtainGIRPort(gi);
+		    
+	    if (rp)
+	    {
+		struct gpRender method;
+			
+		method.MethodID   = GM_RENDER;
+		method.gpr_GInfo  = gi;
+		method.gpr_RPort  = rp;
+		method.gpr_Redraw = GREDRAW_REDRAW;
+			
+		DoMethodA(o, (Msg)&method);
+			
+		ReleaseGIRPort(rp);
+	    }
+	}
+    }
+    
+    return retval;
 }
 
 /****************************************************************************/

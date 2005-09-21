@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -50,7 +50,7 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg,
 
     if (!(EG(o)->GadgetText)) return;
 
-    GetGadgetIBox(o, msg->gpr_GInfo, &container);
+    GetGadgetIBox((struct Gadget *)o, msg->gpr_GInfo, &container);
     //dprintf("printgadgetlabel: o %p ibox %d %d %d %d\n",o,container.Left,container.Top,container.Width,container.Height);
 
     SetFont(rp, msg->gpr_GInfo->gi_DrInfo->dri_Font);
@@ -122,30 +122,30 @@ void CalcBBox (struct Window * window, struct Requester * req, struct Gadget * g
 /* Figure out the size of the gadget rectangle, taking relative
  * positioning into account.
  */
-VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
+VOID GetGadgetIBox(struct Gadget *g, struct GadgetInfo *gi, struct IBox *ibox)
 {
-    ibox->Left   = EG(o)->LeftEdge;
-    ibox->Top    = EG(o)->TopEdge;
-    ibox->Width  = EG(o)->Width;
-    ibox->Height = EG(o)->Height;
+    ibox->Left   = g->LeftEdge;
+    ibox->Top    = g->TopEdge;
+    ibox->Width  = g->Width;
+    ibox->Height = g->Height;
 
     if (gi)
     {
-        if (EG(o)->Flags & GFLG_RELRIGHT)
+        if (g->Flags & GFLG_RELRIGHT)
             ibox->Left   += gi->gi_Domain.Width - 1;
 
-        if (EG(o)->Flags & GFLG_RELBOTTOM)
+        if (g->Flags & GFLG_RELBOTTOM)
             ibox->Top    += gi->gi_Domain.Height - 1;
 
-        if (EG(o)->Flags & GFLG_RELWIDTH)
+        if (g->Flags & GFLG_RELWIDTH)
             ibox->Width  += gi->gi_Domain.Width;
 
-        if (EG(o)->Flags & GFLG_RELHEIGHT)
+        if (g->Flags & GFLG_RELHEIGHT)
             ibox->Height += gi->gi_Domain.Height;
     }
 
     DEBUG_GETGADGETIBOX(dprintf("GetGadgetIBox: Gadget 0x%lx GInfo 0x%lx Flags 0x%lx Left %ld Top %ld Width %ld Height %ld\n",
-                                o, gi, EG(o)->Flags, ibox->Left, ibox->Top, ibox->Width, ibox->Height));
+                                o, gi, g->Flags, ibox->Left, ibox->Top, ibox->Width, ibox->Height));
 }
 
 /**********************************************************************************************/

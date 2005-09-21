@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -44,38 +44,29 @@
 #define SUPPORT_TABCYCLE    1
 
 #define IntuitionBase       ((struct IntuitionBase *)(cl->cl_UserData))
-#define G(x)            ((struct ExtGadget *)(x))
 
 /****************************************************************************************/
 
-struct GroupGData
+static void recalcgroupsize(Class *cl, struct Gadget *g)
 {
-    struct MinList   memberlist;
-    Object          *activeobj;
-};
+    struct GroupGData   *data = INST_DATA(cl, g);
+    struct Gadget      	*member, *memberstate;
+    WORD            	 w, h, width = 0/*g->Width*/, height = 0/*g->Height*/;
 
-/****************************************************************************************/
-
-static void recalcgroupsize(Class *cl, Object *obj)
-{
-    struct GroupGData   *data = INST_DATA(cl, obj);
-    Object          	*member, *memberstate;
-    WORD            	 w, h, width = 0/*G(obj)->Width*/, height = 0/*G(obj)->Height*/;
-
-    memberstate = (Object *)data->memberlist.mlh_Head;
+    memberstate = (struct Gadget *)data->memberlist.mlh_Head;
     while((member = NextObject(&memberstate)))
     {
         /* No "width - 1" / "height - 1" here! Coords of members are absolute here! */
 
-        w = G(member)->LeftEdge - G(obj)->LeftEdge + G(member)->Width;
-        h = G(member)->TopEdge  - G(obj)->TopEdge  + G(member)->Height;
+        w = member->LeftEdge - g->LeftEdge + member->Width;
+        h = member->TopEdge  - g->TopEdge  + member->Height;
 
         if (w > width)  width  = w;
         if (h > height) height = h;
     }
 
-    G(obj)->Width  = width;
-    G(obj)->Height = height;
+    g->Width  = width;
+    g->Height = height;
 }
 
 /****************************************************************************************/
@@ -84,15 +75,15 @@ static void recalcgroupsize(Class *cl, Object *obj)
 
 /****************************************************************************************/
 
-Object *next_tabcycleobject(Class *cl, Object *obj)
+struct Gadget *next_tabcycleobject(Class *cl, struct Gadget *g)
 {
-    struct GroupGData   *data = INST_DATA(cl, obj);
-    Object          	*member, *memberstate, *actobj;
-    Object          	*rc = NULL;
+    struct GroupGData   *data = INST_DATA(cl, g);
+    struct Gadget      	*member, *memberstate, *actobj;
+    struct Gadget      	*rc = NULL;
 
-    actobj = data->activeobj;
+    actobj = data->activegad;
 
-    memberstate = (Object *)data->memberlist.mlh_Head;
+    memberstate = (struct Gadget *)data->memberlist.mlh_Head;
     while ((member = NextObject(&memberstate)))
     {
         if (member == actobj) break;
@@ -102,7 +93,7 @@ Object *next_tabcycleobject(Class *cl, Object *obj)
     {
         while ((member = NextObject(&memberstate)))
         {
-            if ( (G(member)->Flags & (GFLG_TABCYCLE | GFLG_DISABLED)) == GFLG_TABCYCLE )
+            if ( (member->Flags & (GFLG_TABCYCLE | GFLG_DISABLED)) == GFLG_TABCYCLE )
             {
                 rc = member;
                 break;
@@ -111,12 +102,12 @@ Object *next_tabcycleobject(Class *cl, Object *obj)
 
         if (!member)
         {
-            memberstate = (Object *)data->memberlist.mlh_Head;
+            memberstate = (struct Gadget *)data->memberlist.mlh_Head;
             while ((member = NextObject(&memberstate)))
             {
                 if (member == actobj) break;
 
-                if (G(member)->Flags & GFLG_TABCYCLE)
+                if (member->Flags & GFLG_TABCYCLE)
                 {
                     rc = member;
                     break;
@@ -132,15 +123,15 @@ Object *next_tabcycleobject(Class *cl, Object *obj)
 
 /****************************************************************************************/
 
-Object *prev_tabcycleobject(Class *cl, Object *obj)
+struct Gadget *prev_tabcycleobject(Class *cl, struct Gadget *g)
 {
-    struct GroupGData   *data = INST_DATA(cl, obj);
-    Object          	*member, *memberstate, *actobj;
-    Object          	*prevmember = NULL, *rc = NULL;
+    struct GroupGData   *data = INST_DATA(cl, g);
+    struct Gadget      	*member, *memberstate, *actobj;
+    struct Gadget      	*prevmember = NULL, *rc = NULL;
 
-    actobj = data->activeobj;
+    actobj = data->activegad;
 
-    memberstate = (Object *)data->memberlist.mlh_Head;
+    memberstate = (struct Gadget *)data->memberlist.mlh_Head;
     while ((member = NextObject(&memberstate)))
     {
         if (member == actobj)
@@ -149,7 +140,7 @@ Object *prev_tabcycleobject(Class *cl, Object *obj)
             break;
         }
 
-        if ( (G(member)->Flags & (GFLG_TABCYCLE | GFLG_DISABLED)) == GFLG_TABCYCLE )
+        if ( (member->Flags & (GFLG_TABCYCLE | GFLG_DISABLED)) == GFLG_TABCYCLE )
         {
             prevmember = member;
         }
@@ -180,40 +171,40 @@ Object *prev_tabcycleobject(Class *cl, Object *obj)
 
 /****************************************************************************************/
 
-static IPTR groupg_new(Class *cl, Object *obj, struct opSet *msg)
+IPTR GroupGClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct GroupGData *data;
 
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-    if (obj)
+    struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, obj, (Msg)msg);
+    if (g)
     {
-        data = INST_DATA(cl, obj);
+        data = INST_DATA(cl, g);
 
         NEWLIST(&data->memberlist);
 
         /* Width and height of group gadget is determined by members. No members -> 0 size */
 
-        G(obj)->Width  = 0;
-        G(obj)->Height = 0;
+        g->Width  = 0;
+        g->Height = 0;
     }
 
-    return (IPTR)obj;
+    return (IPTR)g;
 }
 
 /****************************************************************************************/
 
-static IPTR groupg_set(Class *cl, Object *obj, struct opSet *msg)
+IPTR GroupGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
-    struct GroupGData   *data = INST_DATA(cl, obj);
-    Object          	*member, *memberstate;
-    WORD            	 dx, new_groupleft, old_groupleft = G(obj)->LeftEdge;
-    WORD            	 dy, new_grouptop , old_grouptop  = G(obj)->TopEdge;
+    struct GroupGData   *data = INST_DATA(cl, g);
+    struct Gadget      	*member, *memberstate;
+    WORD            	 dx, new_groupleft, old_groupleft = g->LeftEdge;
+    WORD            	 dy, new_grouptop , old_grouptop  = g->TopEdge;
     IPTR            	 rc;
 
-    rc = DoSuperMethodA(cl, obj, (Msg)msg);
+    rc = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
 
-    new_groupleft = G(obj)->LeftEdge;
-    new_grouptop  = G(obj)->TopEdge;
+    new_groupleft = g->LeftEdge;
+    new_grouptop  = g->TopEdge;
 
     dx = new_groupleft - old_groupleft;
     dy = new_grouptop  - old_grouptop;
@@ -231,12 +222,12 @@ static IPTR groupg_set(Class *cl, Object *obj, struct opSet *msg)
         tags[1].ti_Tag = GA_Top;
         tags[2].ti_Tag = TAG_DONE;
 
-        memberstate = (Object *)data->memberlist.mlh_Head;
+        memberstate = (struct Gadget *)data->memberlist.mlh_Head;
         while((member = NextObject(&memberstate)))
         {
-            tags[0].ti_Data = G(member)->LeftEdge + dx;
-            tags[1].ti_Data = G(member)->TopEdge  + dy;
-            DoMethodA(member, (Msg)&m);
+            tags[0].ti_Data = member->LeftEdge + dx;
+            tags[1].ti_Data = member->TopEdge  + dy;
+            DoMethodA((Object *)member, (Msg)&m);
         }
 
     } /* if (dx || dy) */
@@ -247,36 +238,36 @@ static IPTR groupg_set(Class *cl, Object *obj, struct opSet *msg)
 
 /****************************************************************************************/
 
-static IPTR groupg_dispose(Class *cl, Object *obj, Msg msg)
+IPTR GroupGClass__OM_DISPOSE(Class *cl, struct Gadget *g, Msg msg)
 {
-    struct GroupGData *data = INST_DATA(cl, obj);
+    struct GroupGData *data = INST_DATA(cl, g);
 
     /* Free all members */
 
     for(;;)
     {
-        Object *member, *memberstate;
+        struct Gadget *member, *memberstate;
         ULONG method;
 
-        memberstate = (Object *)data->memberlist.mlh_Head;
+        memberstate = (struct Gadget *)data->memberlist.mlh_Head;
         member = NextObject(&memberstate);
         if (!member) break;
 
         method = OM_REMOVE;
-        DoMethodA(member, (Msg)&method);
+        DoMethodA((Object *)member, (Msg)&method);
         DisposeObject(member);
     }
 
-    DoSuperMethodA(cl, obj, msg);
+    DoSuperMethodA(cl, (Object *)g, msg);
 
     return 0;
 }
 
 /****************************************************************************************/
 
-static IPTR groupg_addmember(Class *cl, Object *obj, struct opMember *msg)
+IPTR GroupGClass__OM_ADDMEMBER(Class *cl, struct Gadget *g, struct opMember *msg)
 {
-    struct GroupGData   *data = INST_DATA(cl, obj);
+    struct GroupGData   *data = INST_DATA(cl, g);
     struct opAddTail     m;
     struct opSet         m2;
     struct TagItem  	 tags[3];
@@ -295,21 +286,21 @@ static IPTR groupg_addmember(Class *cl, Object *obj, struct opMember *msg)
     m2.ops_GInfo = NULL;
 
     tags[0].ti_Tag  = GA_Left;
-    tags[0].ti_Data = G(msg->opam_Object)->LeftEdge + G(obj)->LeftEdge;
+    tags[0].ti_Data = ((struct Gadget *)msg->opam_Object)->LeftEdge + g->LeftEdge;
     tags[1].ti_Tag  = GA_Top;
-    tags[1].ti_Data = G(msg->opam_Object)->TopEdge + G(obj)->TopEdge;
+    tags[1].ti_Data = ((struct Gadget *)msg->opam_Object)->TopEdge + g->TopEdge;
     tags[2].ti_Tag  = TAG_DONE;
 
     DoMethodA(msg->opam_Object, (Msg)&m2);
 
-    recalcgroupsize(cl, obj);
+    recalcgroupsize(cl, g);
 
     return rc;
 }
 
 /****************************************************************************************/
 
-static IPTR groupg_remmember(Class *cl, Object *obj, struct opMember *msg)
+IPTR GroupGClass__OM_REMMEMBER(Class *cl, struct Gadget *g, struct opMember *msg)
 {
     struct opSet    m2;
     struct TagItem  tags[3];
@@ -326,25 +317,25 @@ static IPTR groupg_remmember(Class *cl, Object *obj, struct opMember *msg)
     m2.ops_GInfo    = NULL;
 
     tags[0].ti_Tag  = GA_Left;
-    tags[0].ti_Data = G(msg->opam_Object)->LeftEdge - G(obj)->LeftEdge;
+    tags[0].ti_Data = ((struct Gadget *)msg->opam_Object)->LeftEdge - g->LeftEdge;
     tags[1].ti_Tag  = GA_Top;
-    tags[1].ti_Data = G(msg->opam_Object)->TopEdge - G(obj)->TopEdge;
+    tags[1].ti_Data = ((struct Gadget *)msg->opam_Object)->TopEdge - g->TopEdge;
     tags[2].ti_Tag  = TAG_DONE;
 
     DoMethodA(msg->opam_Object, (Msg)&m2);
 
-    recalcgroupsize(cl, obj);
+    recalcgroupsize(cl, g);
 
     return rc;
 }
 
 /****************************************************************************************/
 
-static IPTR groupg_hittest(Class *cl, Object *obj, struct gpHitTest *msg)
+IPTR GroupGClass__GM_HITTEST(Class *cl, struct Gadget *g, struct gpHitTest *msg)
 {
-    struct GroupGData   *data = INST_DATA(cl, obj);
+    struct GroupGData   *data = INST_DATA(cl, g);
     struct gpHitTest     m;
-    Object          	*member, *memberstate;
+    struct Gadget      	*member, *memberstate;
     WORD            	 x, y;
     IPTR            	 rc = 0;
 
@@ -352,34 +343,34 @@ static IPTR groupg_hittest(Class *cl, Object *obj, struct gpHitTest *msg)
 
     /* gpht_Mouse.X/Y are relative to (group) gadget */
 
-    x = msg->gpht_Mouse.X + G(obj)->LeftEdge;
-    y = msg->gpht_Mouse.Y + G(obj)->TopEdge;
+    x = msg->gpht_Mouse.X + g->LeftEdge;
+    y = msg->gpht_Mouse.Y + g->TopEdge;
 
-    memberstate = (Object *)data->memberlist.mlh_Head;
+    memberstate = (struct Gadget *)data->memberlist.mlh_Head;
     while((member = NextObject(&memberstate)))
     {
-        if (!(G(member)->Flags & GFLG_DISABLED))
+        if (!(member->Flags & GFLG_DISABLED))
         {
             /* make mouse coords relative to member gadget */
 
-            m.gpht_Mouse.X = x - G(member)->LeftEdge;
-            m.gpht_Mouse.Y = y - G(member)->TopEdge;
+            m.gpht_Mouse.X = x - member->LeftEdge;
+            m.gpht_Mouse.Y = y - member->TopEdge;
 
             if ((m.gpht_Mouse.X >= 0) &&
                 (m.gpht_Mouse.Y >= 0) &&
-                (m.gpht_Mouse.X < G(member)->Width) &&
-                (m.gpht_Mouse.Y < G(member)->Height))
+                (m.gpht_Mouse.X < member->Width) &&
+                (m.gpht_Mouse.Y < member->Height))
             {
-                rc = DoMethodA(member, (Msg)&m);
+                rc = DoMethodA((Object *)member, (Msg)&m);
                 if (rc == GMR_GADGETHIT)
                 {
-                    data->activeobj = member;
+                    data->activegad = member;
                     break;
                 }
 
             }
 
-        } /* if (!(G(member)->Flags & GFLG_DISABLED)) */
+        } /* if (!(member->Flags & GFLG_DISABLED)) */
 
     } /* while((member = NextObject(&memberstate))) */
 
@@ -388,20 +379,20 @@ static IPTR groupg_hittest(Class *cl, Object *obj, struct gpHitTest *msg)
 
 /****************************************************************************************/
 
-static IPTR groupg_input(Class *cl, Object *obj, struct gpInput *msg)
+IPTR GroupGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
-    struct GroupGData   *data = INST_DATA(cl, obj);
+    struct GroupGData   *data = INST_DATA(cl, g);
     struct gpInput  	 m;
     IPTR            	 rc;
 
-    /* If someone activates us with ActivateGadget(), activeobj will be NULL.
+    /* If someone activates us with ActivateGadget(), activegad will be NULL.
      * In that case, activate the first object.
      */
-    if (!data->activeobj)
+    if (!data->activegad)
     {
-        Object *memberstate = (Object *)data->memberlist.mlh_Head;
+        struct Gadget *memberstate = (struct Gadget *)data->memberlist.mlh_Head;
 	
-        data->activeobj = NextObject(&memberstate);
+        data->activegad = NextObject(&memberstate);
     }
 
     m = *msg;
@@ -409,19 +400,19 @@ static IPTR groupg_input(Class *cl, Object *obj, struct gpInput *msg)
     /* gpi_Mouse coords are relative to group gadget. Make them relative
        to activate object */
 
-    m.gpi_Mouse.X = G(obj)->LeftEdge + msg->gpi_Mouse.X - G(data->activeobj)->LeftEdge;
-    m.gpi_Mouse.Y = G(obj)->TopEdge  + msg->gpi_Mouse.Y - G(data->activeobj)->TopEdge;
+    m.gpi_Mouse.X = g->LeftEdge + msg->gpi_Mouse.X - data->activegad->LeftEdge;
+    m.gpi_Mouse.Y = g->TopEdge  + msg->gpi_Mouse.Y - data->activegad->TopEdge;
 
-    rc = DoMethodA(data->activeobj, (Msg)&m);
+    rc = DoMethodA((Object *)data->activegad, (Msg)&m);
 
 #if SUPPORT_TABCYCLE
     {
-        Object *newobj = NULL;
+        struct Gadget *newgad = NULL;
 
-        if (rc & GMR_NEXTACTIVE) newobj = next_tabcycleobject(cl, obj);
-        if (rc & GMR_PREVACTIVE) newobj = prev_tabcycleobject(cl, obj);
+        if (rc & GMR_NEXTACTIVE) newgad = next_tabcycleobject(cl, g);
+        if (rc & GMR_PREVACTIVE) newgad = prev_tabcycleobject(cl, g);
 
-        if (newobj && (newobj != data->activeobj))
+        if (newgad && (newgad != data->activegad))
         {
             struct gpGoInactive im;
 
@@ -431,17 +422,17 @@ static IPTR groupg_input(Class *cl, Object *obj, struct gpInput *msg)
             im.gpgi_GInfo = msg->gpi_GInfo;
             im.gpgi_Abort = 0;          /* The gadget itself wanted to be deactivated */
 
-            DoMethodA(data->activeobj, (Msg)&im);
+            DoMethodA((Object *)data->activegad, (Msg)&im);
 
             /* Make new member gadget active */
 
-            data->activeobj = newobj;
+            data->activegad = newgad;
 
             m.MethodID    = GM_GOACTIVE;
-            m.gpi_Mouse.X = G(obj)->LeftEdge + msg->gpi_Mouse.X - G(newobj)->LeftEdge;
-            m.gpi_Mouse.Y = G(obj)->TopEdge  + msg->gpi_Mouse.Y - G(newobj)->TopEdge;
+            m.gpi_Mouse.X = g->LeftEdge + msg->gpi_Mouse.X - newgad->LeftEdge;
+            m.gpi_Mouse.Y = g->TopEdge  + msg->gpi_Mouse.Y - newgad->TopEdge;
 
-            rc = DoMethodA(newobj, (Msg)&m);
+            rc = DoMethodA((Object *)newgad, (Msg)&m);
 
         }
 
@@ -453,118 +444,33 @@ static IPTR groupg_input(Class *cl, Object *obj, struct gpInput *msg)
 
 /****************************************************************************************/
 
-static IPTR groupg_goinactive(Class *cl, Object *obj, struct gpGoInactive *msg)
+IPTR GroupGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
-    struct GroupGData   *data = INST_DATA(cl, obj);
+    struct GroupGData   *data = INST_DATA(cl, g);
     IPTR            	 rc;
 
-    ASSERT_VALID_PTR(data->activeobj);
+    ASSERT_VALID_PTR(data->activegad);
 
-    rc = DoMethodA(data->activeobj, (Msg)msg);
-    data->activeobj = NULL;
+    rc = DoMethodA((Object *)data->activegad, (Msg)msg);
+    data->activegad = NULL;
 
     return rc;
 }
 
 /****************************************************************************************/
 
-static IPTR groupg_render(Class *cl, Object *obj, struct gpRender *msg)
+IPTR GroupGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
-    struct GroupGData   *data = INST_DATA(cl, obj);
-    Object      *member, *memberstate;
+    struct GroupGData	*data = INST_DATA(cl, g);
+    struct Gadget	*member, *memberstate;
 
-    memberstate = (Object *)data->memberlist.mlh_Head;
+    memberstate = (struct Gadget *)data->memberlist.mlh_Head;
     while((member = NextObject(&memberstate)))
     {
-        DoMethodA(member, (Msg)msg);
+        DoMethodA((Object *)member, (Msg)msg);
     }
 
     return 0;
-}
-
-/****************************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_groupgclass,
-           AROS_UFHA(Class *, cl, A0),
-           AROS_UFHA(Object *, obj, A2),
-           AROS_UFHA(Msg, msg, A1)
-          )
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval;
-
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-            retval = groupg_new(cl, obj, (struct opSet *)msg);
-            break;
-
-	case OM_SET:
-	case OM_UPDATE:
-            retval = groupg_set(cl, obj, (struct opSet *)msg);
-            break;
-
-	case OM_DISPOSE:
-            retval = groupg_dispose(cl, obj, msg);
-            break;
-
-	case OM_ADDMEMBER:
-            retval = groupg_addmember(cl, obj, (struct opMember *)msg);
-            break;
-
-	case OM_REMMEMBER:
-            retval = groupg_remmember(cl, obj, (struct opMember *)msg);
-            break;
-
-	case GM_HITTEST:
-            retval = groupg_hittest(cl, obj, (struct gpHitTest *)msg);
-            break;
-
-	case GM_GOACTIVE:
-	case GM_HANDLEINPUT:
-            retval = groupg_input(cl, obj, (struct gpInput *)msg);
-            break;
-
-	case GM_GOINACTIVE:
-            retval = groupg_goinactive(cl, obj, (struct gpGoInactive *)msg);
-            break;
-
-	case GM_RENDER:
-            retval = groupg_render(cl, obj, (struct gpRender *)msg);
-            break;
-
-	default:
-            retval = DoSuperMethodA(cl, obj, msg);
-            break;
-
-    } /* switch (msg->MethodID) */
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/****************************************************************************************/
-
-#undef IntuitionBase
-
-/****************************************************************************************/
-
-struct IClass *InitGroupGClass (struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl;
-
-    if ( (cl = MakeClass(GROUPGCLASS, GADGETCLASS, NULL, sizeof(struct GroupGData), 0)) )
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_groupgclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-        AddClass (cl);
-    }
-
-    return (cl);
 }
 
 /****************************************************************************************/

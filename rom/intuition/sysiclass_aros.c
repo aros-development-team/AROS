@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -78,14 +78,6 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
 
 
 /**************************************************************************************************/
-
-struct SysIData
-{
-    struct DrawInfo *dri;
-    struct Image    *frame;
-    ULONG            type;
-    UWORD            flags;
-};
 
 #define SYSIFLG_GADTOOLS 1
 #define SYSIFLG_NOBORDER 2
@@ -238,7 +230,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 
 /**************************************************************************************************/
 
-Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
+Object *SysIClass__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 {
     struct SysIData *data;
     Object  	    *obj;
@@ -339,7 +331,7 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
 #define HSPACING_SMALL 1
 #define VSPACING_SMALL 1
 
-void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
+IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 {
     struct SysIData 	    *data = INST_DATA(cl, obj);
     struct RastPort 	    *rport = msg->imp_RPort;
@@ -1188,78 +1180,29 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     #endif
     } /* switch (image type) */
 
-    return;
+    return (IPTR)0;
 }
 
-/**************************************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_sysiclass,
-           AROS_UFHA(Class *,  cl,  A0),
-           AROS_UFHA(Object *, obj, A2),
-           AROS_UFHA(Msg,      msg, A1)
-          )
+IPTR SysIClass__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
-    AROS_USERFUNC_INIT
+    struct SysIData *data = INST_DATA(cl, obj);
+    
+    DisposeObject(data->frame);
+    return DoSuperMethodA(cl, obj, msg);
+}
 
-    struct SysIData *data;
-    IPTR    	     retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-            retval = (IPTR)sysi_new(cl, (Class *)obj, (struct opSet *)msg);
-            break;
-
-	case OM_DISPOSE:
-            data = INST_DATA(cl, obj);
-            DisposeObject(data->frame);
-            retval = DoSuperMethodA(cl, obj, msg);
-            break;
-
-	case OM_SET:
-            data = INST_DATA(cl, obj);
-            if (data->frame)
-        	DoMethodA((Object *)data->frame, msg);
-            retval = DoSuperMethodA(cl, obj, msg);
-            break;
-
-	case IM_DRAW:
-            sysi_draw(cl, obj, (struct impDraw *)msg);
-            break;
-
-	default:
-            retval = DoSuperMethodA(cl, obj, msg);
-            break;
-    }
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
+IPTR SysIClass__OM_SET(Class *cl, Object *obj, Msg msg)
+{
+    struct SysIData *data = INST_DATA(cl, obj);
+    
+    if (data->frame)
+	DoMethodA((Object *)data->frame, msg);
+    return DoSuperMethodA(cl, obj, msg);
 }
 
 /**************************************************************************************************/
 
 #undef IntuitionBase
-
-/**************************************************************************************************/
-
-/* Initialize our class. */
-struct IClass *InitSysIClass (struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl = NULL;
-
-    cl = MakeClass(SYSICLASS, IMAGECLASS, NULL, sizeof(struct SysIData), 0);
-    if (cl == NULL)
-        return NULL;
-
-    cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_sysiclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData              = (IPTR)IntuitionBase;
-
-    AddClass (cl);
-
-    return (cl);
-}
 
 /**************************************************************************************************/
 
