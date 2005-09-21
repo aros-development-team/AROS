@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GadTools initialization code.
@@ -30,21 +30,8 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     
     /* This function is single-threaded by exec by calling Forbid. */
 
-    LIBBASE->buttonclass = NULL;
-    LIBBASE->textclass	 = NULL;
-    LIBBASE->sliderclass = NULL;
-    LIBBASE->scrollerclass = NULL;
-    LIBBASE->arrowclass = NULL;
-    LIBBASE->stringclass = NULL;
-    LIBBASE->listviewclass = NULL;
-    LIBBASE->checkboxclass = NULL;
-    LIBBASE->cycleclass = NULL;
-    LIBBASE->mxclass = NULL;
-    LIBBASE->paletteclass = NULL;
-    
     InitSemaphore(&LIBBASE->bevelsema);
     LIBBASE->bevel = NULL;
-    InitSemaphore(&LIBBASE->classsema);
     
     /* You would return NULL here if the init failed. */
     return TRUE;
@@ -108,50 +95,6 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 	DisposeObject(LIBBASE->bevel);
     LIBBASE->bevel = NULL;
 
-    if (LIBBASE->buttonclass)
-	FreeClass(LIBBASE->buttonclass);
-    LIBBASE->buttonclass = NULL;
-
-    if (LIBBASE->textclass)
-	FreeClass(LIBBASE->textclass);
-    LIBBASE->textclass = NULL;
-
-    if (LIBBASE->sliderclass)
-	FreeClass(LIBBASE->sliderclass);
-    LIBBASE->sliderclass = NULL;
-	    
-    if (LIBBASE->scrollerclass)
-	FreeClass(LIBBASE->scrollerclass);
-    LIBBASE->scrollerclass = NULL;
-
-    if (LIBBASE->arrowclass)
-	FreeClass(LIBBASE->arrowclass);
-    LIBBASE->arrowclass = NULL;
-
-    if (LIBBASE->stringclass)
-	FreeClass(LIBBASE->stringclass);
-    LIBBASE->stringclass = NULL;
-
-    if (LIBBASE->listviewclass)
-	freelistviewclass(LIBBASE->listviewclass, LIBBASE);
-    LIBBASE->listviewclass = NULL;
-
-    if (LIBBASE->checkboxclass)
-	FreeClass(LIBBASE->checkboxclass);
-    LIBBASE->checkboxclass = NULL;
-	
-    if (LIBBASE->cycleclass)
-	FreeClass(LIBBASE->cycleclass);
-    LIBBASE->cycleclass = NULL;
-	
-    if (LIBBASE->mxclass)
-	FreeClass(LIBBASE->mxclass);
-    LIBBASE->mxclass = NULL;
-
-    if (LIBBASE->paletteclass)
-	FreeClass(LIBBASE->paletteclass);
-    LIBBASE->paletteclass = NULL;
-	    
     return TRUE;
     
     AROS_SET_LIBFUNC_EXIT;

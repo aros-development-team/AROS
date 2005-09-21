@@ -2,7 +2,7 @@
 #define GADTOOLS_INTERN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for gadtools.library.
@@ -72,23 +72,6 @@ void DoDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 
 /****************************************************************************************/
 	       
-Class *makebuttonclass(struct GadToolsBase_intern *GadToolsBase);
-Class *maketextclass(struct GadToolsBase_intern *GadToolsBase);
-Class *makesliderclass(struct GadToolsBase_intern *GadToolsBase);
-Class *makescrollerclass(struct GadToolsBase_intern *GadToolsBase);
-Class *makearrowclass(struct GadToolsBase_intern *GadToolsBase);
-Class *makestringclass(struct GadToolsBase_intern *GadToolsBase);
-Class *makelistviewclass(struct GadToolsBase_intern *GadToolsBase);
-Class *makecheckboxclass(struct GadToolsBase_intern *GadToolsBase);
-Class *makecycleclass(struct GadToolsBase_intern *GadToolsBase);
-Class *makemxclass(struct GadToolsBase_intern *GadToolsBase);
-Class *makepaletteclass(struct GadToolsBase_intern *GadToolsBase);
-
-/* Listview class has some data that must be freed */
-VOID freelistviewclass(Class *cl, struct GadToolsBase_intern *GadToolsBase);
-
-/****************************************************************************************/
-
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
 			  struct TagItem stdgadtags[],
 			  struct VisualInfo *vi,
@@ -287,7 +270,9 @@ struct GadToolsBase_intern
     struct SignalSemaphore   	bevelsema;
     /* Actually an Object *. The image used for bevel boxes. */
     struct Image           	* bevel;
-    struct SignalSemaphore   	classsema;
+    
+    /* RenderHook for GTListView class */
+    struct Hook                 lv_RenderHook;
 };
 
 /* extended intuimsg as used by GT_GetIMsg, GT_FilterIMsg, ... */
@@ -471,5 +456,172 @@ struct gpDomain
 #define DEBUG_REFRESHWINDOW(x)	;
 
 void	DumpMenu(struct Menu *menu);
+
+/* Structures for the class private data */
+
+/* GTButton class */
+struct ButtonData
+{
+    struct DrawInfo 	*dri;
+    struct Image 	*frame;
+};
+
+/* GTText class */
+struct TextData
+{
+    struct DrawInfo 	*dri;
+    Object 		*frame;    
+    STRPTR 		format;
+    IPTR 		toprint;
+    UBYTE 		frontpen;
+    UBYTE 		backpen;
+    UBYTE 		justification;
+    UBYTE 		flags;
+    struct TextFont 	*font;
+    UWORD 		maxnumberlength;
+    WORD 		gadgetkind;
+    LONG  		(*dispfunc)(struct Gadget *, WORD);
+    UBYTE 		labelplace;
+    
+};
+
+/* GTSlider class */
+struct SliderData
+{
+    Object 	*frame;
+    WORD  	min;
+    WORD  	max;
+    WORD  	level;
+    WORD        freedom;
+    UBYTE 	labelplace;
+};
+
+/* GTScroller class */
+struct ScrollerData
+{
+    Object 		*frame;
+    struct Gadget 	*arrow1;
+    struct Gadget	*arrow2;
+    WORD 		gadgetkind;
+    UBYTE 		labelplace;
+};
+
+/* GTArrow class */
+struct ArrowData
+{
+    Object 	*arrowimage;
+    Object 	*frame;
+    Object	*scroller;
+    WORD 	gadgetkind;
+    WORD 	arrowtype;
+};
+
+/* GTString class */
+struct StringData
+{
+    Object		*frame;
+    struct TextFont 	*font;
+    WORD		gadgetkind;
+    UBYTE		labelplace;
+};
+
+/* GTListView class */
+struct LVData
+{
+    struct Hook 	*ld_CallBack;
+    struct List		*ld_Labels;
+    struct DrawInfo 	*ld_Dri;
+    struct TextFont 	*ld_Font;
+    Object		*ld_Frame;
+    Object		*ld_Scroller;
+    struct Gadget	*ld_ShowSelected;
+    WORD		ld_Top;
+    WORD		ld_Selected;
+    WORD		ld_Spacing;
+    WORD		ld_ItemHeight;
+    
+    /* The number of first damaged entry, counting from first visible.
+    ** A value o -1 means "nothing has to be redrawn"
+    */
+    WORD		ld_FirstDamaged;
+    UWORD		ld_NumDamaged;
+
+    /* Number of entries the listview should scroll in GM_RENDER.
+    ** Negative valu means scroll up.
+    */
+    WORD		ld_ScrollEntries;
+    WORD		ld_NumEntries;
+
+    UBYTE		ld_Flags;
+    UBYTE		ld_LabelPlace;
+};
+
+/* GTCheckBox class */
+struct CheckBoxData
+{
+    struct DrawInfo *dri;
+    LONG    	    labelplace;
+    LONG    	    flags;
+};
+
+/* GTCycle class */
+struct CycleData
+{
+    struct TextFont *font;
+    STRPTR  	    *labels;
+    UWORD   	    active;
+    UWORD   	    numlabels;
+    UWORD   	    labelplace;
+};
+
+/* GTMX class */
+struct MXData
+{
+    struct DrawInfo 	*dri;
+    struct TextAttr 	*tattr;
+    struct Image    	*mximage;
+    struct TextFont 	*font;
+    struct Rectangle	bbox;
+    STRPTR  	    	*labels;
+    ULONG   	    	active, newactive;  	    /* The active tick and the tick to be activated */
+    ULONG   	    	numlabels;  	    	    /* The number of labels */
+    LONG    	    	labelplace, ticklabelplace;
+    UWORD   	    	fontheight;
+    UWORD   	    	spacing;
+    UWORD   	    	maxtextwidth;
+};
+
+/* GTPalette class */
+struct PaletteData
+{
+    UWORD		pd_NumColors;
+    UBYTE		*pd_ColorTable;
+    UBYTE		pd_Color;
+    /* For state info, to know what selected entry to delete in GM_RENDER, GREDRAW_UPDATE */
+    UBYTE		pd_OldColor; 
+    
+    UBYTE		pd_ColorOffset;
+    UWORD		pd_IndWidth;
+    UWORD		pd_IndHeight;
+
+    struct IBox 	pd_GadgetBox;	 /* Box surrounding whole palette 	*/
+    struct IBox 	pd_PaletteBox;	 /* Box surrounding palette 		*/
+    struct IBox 	pd_IndicatorBox; /* Box surrounding indicator		*/
+    
+    UWORD		pd_ColWidth;
+    UWORD		pd_RowHeight;
+    UBYTE		pd_NumCols;
+    UBYTE		pd_NumRows;
+
+    /* This one is used to backup pd_Color if left is clicked. This
+    ** way the old state can be restored if the left is released
+    ** outside the gadget.
+    */
+    UBYTE		pd_ColorBackup;
+    struct TextAttr 	*pd_TAttr;
+    LONG		pd_LabelPlace;
+    Object		*pd_Frame;
+};
+
 
 #endif /* GADTOOLS_INTERN_H */

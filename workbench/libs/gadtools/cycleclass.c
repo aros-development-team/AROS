@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools cycle class.
@@ -36,22 +36,7 @@
 
 #define CYCLEIMAGEWIDTH     19 
 
-#define G(x) 	    	    ((struct Gadget *)(x))
-#define EG(x) 	    	    ((struct ExtGadget *)(x))
-#define IM(x)	    	    ((struct Image *)(x))
-
 #define GadToolsBase 	    ((struct GadToolsBase_intern *)cl->cl_UserData)
-
-/**********************************************************************************************/
-
-struct CycleData
-{
-    struct TextFont *font;
-    STRPTR  	    *labels;
-    UWORD   	    active;
-    UWORD   	    numlabels;
-    UWORD   	    labelplace;
-};
 
 /**********************************************************************************************/
 
@@ -114,7 +99,7 @@ BOOL pointingadget(struct Gadget *gad, struct GadgetInfo *gi, WORD x, WORD y)
 
 /**********************************************************************************************/
 
-STATIC IPTR cycle_new(Class *cl, Object *objcl, struct opSet *msg)
+IPTR GTCycle__OM_NEW(Class *cl, Object *objcl, struct opSet *msg)
 { 
     struct CycleData 	*data;
     struct TextAttr 	*tattr;
@@ -127,16 +112,16 @@ STATIC IPTR cycle_new(Class *cl, Object *objcl, struct opSet *msg)
         { TAG_DONE	, 0UL 		}
     };
     STRPTR  	    	*labels;
-    Object  	    	*o;
+    struct Gadget    	*g;
     
-    o = (Object *)DoSuperMethodA(cl, objcl, (Msg)msg);
-    if (!o)
-        return NULL;
+    g = (struct Gadget *)DoSuperMethodA(cl, objcl, (Msg)msg);
+    if (!g)
+        return (IPTR)NULL;
 
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     data->active     = GetTagData(GTCY_Active, 0, msg->ops_AttrList);
-    data->labels     = (STRPTR *)GetTagData(GTCY_Labels, NULL, msg->ops_AttrList);
+    data->labels     = (STRPTR *)GetTagData(GTCY_Labels, (IPTR)NULL, msg->ops_AttrList);
     data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, msg->ops_AttrList);
 
     data->numlabels = 0;
@@ -151,42 +136,43 @@ STATIC IPTR cycle_new(Class *cl, Object *objcl, struct opSet *msg)
         }
     }
 
-    tattr = (struct TextAttr *)GetTagData(GA_TextAttr, NULL, msg->ops_AttrList);
+    tattr = (struct TextAttr *)GetTagData(GA_TextAttr, (IPTR)NULL, msg->ops_AttrList);
     if (tattr) data->font = OpenFont(tattr);
     
-    imgtags[0].ti_Data = (IPTR)EG(o)->Width;
-    imgtags[1].ti_Data = (IPTR)EG(o)->Height;
+    imgtags[0].ti_Data = (IPTR)g->Width;
+    imgtags[1].ti_Data = (IPTR)g->Height;
 
-    EG(o)->GadgetRender = NewObjectA(NULL, FRAMEICLASS, imgtags);
-    if (!(EG(o)->GadgetRender))
+    g->GadgetRender = NewObjectA(NULL, FRAMEICLASS, imgtags);
+    if (!(g->GadgetRender))
     {
-        CoerceMethod(cl, o, OM_DISPOSE);
-        o = NULL;
+        CoerceMethod(cl, (Object *)g, OM_DISPOSE);
+        g = NULL;
     }
 
-    return (IPTR)o;
+    return (IPTR)g;
 }
 
 /**********************************************************************************************/
 
-STATIC IPTR cycle_dispose(Class *cl, Object *o, Msg msg)
+IPTR GTCycle__OM_DISPOSE(Class *cl, struct Gadget * g, Msg msg)
 {
-    struct CycleData *data = INST_DATA(cl, o);
+    struct CycleData *data = INST_DATA(cl, g);
     
-    if (EG(o)->GadgetRender)
-        DisposeObject(EG(o)->GadgetRender);
+    if (g->GadgetRender)
+        DisposeObject(g->GadgetRender);
 	
     if (data->font) CloseFont(data->font);
     
-    return DoSuperMethodA(cl,o,msg);
+    return DoSuperMethodA(cl,(Object *)g,msg);
 }
 
 /**********************************************************************************************/
 
-STATIC IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
+IPTR GTCycle__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     struct CycleData 	*data = INST_DATA(cl, o);
-    struct TagItem  	*tag, *taglist = msg->ops_AttrList;
+    struct TagItem  	*tag;
+    const struct TagItem *taglist = msg->ops_AttrList;
     STRPTR  	    	*mylabels;
     BOOL    	    	rerender = FALSE;
     IPTR    	    	result;
@@ -249,7 +235,7 @@ STATIC IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR cycle_get(Class *cl, Object *o, struct opGet *msg)
+IPTR GTCycle__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct CycleData *data   = INST_DATA(cl, o);
     IPTR    	      retval = FALSE;
@@ -280,14 +266,14 @@ STATIC IPTR cycle_get(Class *cl, Object *o, struct opGet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR cycle_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR GTCycle__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
-    struct CycleData *data = INST_DATA(cl, o);
+    struct CycleData *data = INST_DATA(cl, g);
 
     /* Full redraw: clear and draw border */
-    DrawImageState(msg->gpr_RPort,IM(EG(o)->GadgetRender),
-                   EG(o)->LeftEdge, EG(o)->TopEdge,
-                   (EG(o)->Flags & GFLG_SELECTED)? IDS_SELECTED : IDS_NORMAL,
+    DrawImageState(msg->gpr_RPort,(struct Image *)g->GadgetRender,
+                   g->LeftEdge, g->TopEdge,
+                   (g->Flags & GFLG_SELECTED)? IDS_SELECTED : IDS_NORMAL,
                    msg->gpr_GInfo->gi_DrInfo);
 
     if (data->font)
@@ -297,24 +283,24 @@ STATIC IPTR cycle_render(Class *cl, Object *o, struct gpRender *msg)
 
     if (data->labels)
     {
-        rendercyclelabel(cl, G(o), data->labels[data->active], msg->gpr_RPort, msg->gpr_GInfo);
+        rendercyclelabel(cl, g, data->labels[data->active], msg->gpr_RPort, msg->gpr_GInfo);
     }
     
     /* Draw disabled pattern */
-    if (G(o)->Flags & GFLG_DISABLED)
+    if (g->Flags & GFLG_DISABLED)
     {
         DoDisabledPattern(msg->gpr_RPort,
-                          G(o)->LeftEdge,
-			  G(o)->TopEdge,
-                          G(o)->LeftEdge + G(o)->Width - 1,
-			  G(o)->TopEdge + G(o)->Height - 1,
+                          g->LeftEdge,
+			  g->TopEdge,
+                          g->LeftEdge + g->Width - 1,
+			  g->TopEdge + g->Height - 1,
 			  msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN],
 			  GadToolsBase);
     }
     
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
-       renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);
+       renderlabel(GadToolsBase, g, msg->gpr_RPort, data->labelplace);
     }
 
     return 0;
@@ -322,9 +308,9 @@ STATIC IPTR cycle_render(Class *cl, Object *o, struct gpRender *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR cycle_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+IPTR GTCycle__GM_HITTEST(Class *cl, struct Gadget *g, struct gpHitTest *msg)
 {
-    return pointingadget(G(o),
+    return pointingadget(g,
     			 msg->gpht_GInfo,
 			 msg->gpht_Mouse.X,
 			 msg->gpht_Mouse.Y) ? GMR_GADGETHIT : 0;
@@ -332,15 +318,15 @@ STATIC IPTR cycle_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR cycle_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR GTCycle__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {	
     struct CycleData 	*data;    
     struct RastPort 	*rp;
     IPTR    	    	retval;
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
-    EG(o)->Flags |= GFLG_SELECTED;
+    g->Flags |= GFLG_SELECTED;
     
     rp = ObtainGIRPort(msg->gpi_GInfo);
     if (rp)
@@ -352,7 +338,7 @@ STATIC IPTR cycle_goactive(Class *cl, Object *o, struct gpInput *msg)
 	    rp,
 	    GREDRAW_UPDATE
 	};
-        DoMethodA(o, (Msg)&rmsg);
+        DoMethodA((Object *)g, (Msg)&rmsg);
         ReleaseGIRPort(rp);
         retval = GMR_MEACTIVE;
     }
@@ -366,19 +352,19 @@ STATIC IPTR cycle_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR cycle_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR GTCycle__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct RastPort 	*rp;
     struct CycleData 	*data;
     IPTR    	    	retval = GMR_MEACTIVE;
 
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     if (msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE)
     {
         if (msg->gpi_IEvent->ie_Code == SELECTUP)
         {
-            if (G(o)->Flags & GFLG_SELECTED)
+            if (g->Flags & GFLG_SELECTED)
             {
                 /* mouse is over gadget */
 		
@@ -406,11 +392,11 @@ STATIC IPTR cycle_handleinput(Class *cl, Object *o, struct gpInput *msg)
                 { msg->gpi_Mouse.X, msg->gpi_Mouse.Y },
             };
 	    
-            if (DoMethodA(o, (Msg)&htmsg) != GMR_GADGETHIT)
+            if (DoMethodA((Object *)g, (Msg)&htmsg) != GMR_GADGETHIT)
             {
-                if (EG(o)->Flags & GFLG_SELECTED)
+                if (g->Flags & GFLG_SELECTED)
                 {
-                    G(o)->Flags &= ~GFLG_SELECTED;
+                    g->Flags &= ~GFLG_SELECTED;
                     rp = ObtainGIRPort(msg->gpi_GInfo);
                     if (rp)
                     {
@@ -422,16 +408,16 @@ STATIC IPTR cycle_handleinput(Class *cl, Object *o, struct gpInput *msg)
 			    GREDRAW_UPDATE
 			};
 			
-                        DoMethodA(o, (Msg)&rmsg);
+                        DoMethodA((Object *)g, (Msg)&rmsg);
                         ReleaseGIRPort(rp);
                     }
                 }
             }
 	    else
             {
-                if (!(EG(o)->Flags & GFLG_SELECTED))
+                if (!(g->Flags & GFLG_SELECTED))
                 {
-                    EG(o)->Flags |= GFLG_SELECTED;
+                    g->Flags |= GFLG_SELECTED;
                     rp = ObtainGIRPort(msg->gpi_GInfo);
                     if (rp)
                     {
@@ -443,7 +429,7 @@ STATIC IPTR cycle_handleinput(Class *cl, Object *o, struct gpInput *msg)
 			    GREDRAW_UPDATE
 			};
 			
-                        DoMethodA(o, (Msg)&rmsg);
+                        DoMethodA((Object *)g, (Msg)&rmsg);
                         ReleaseGIRPort(rp);
                     }
                 }
@@ -460,11 +446,11 @@ STATIC IPTR cycle_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR cycle_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+IPTR GTCycle__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
     struct RastPort *rp;
 
-    EG(o)->Flags &= ~GFLG_SELECTED;
+    g->Flags &= ~GFLG_SELECTED;
 
     rp = ObtainGIRPort(msg->gpgi_GInfo);
     if (rp)
@@ -477,102 +463,11 @@ STATIC IPTR cycle_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 	    GREDRAW_UPDATE
 	};
 	
-        DoMethodA(o, (Msg)&rmsg);
+        DoMethodA((Object *)g, (Msg)&rmsg);
         ReleaseGIRPort(rp);
     }
     
     return 0;
-}
-
-/**********************************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_cycleclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, o, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval;
-	    
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
- 	    retval = cycle_new(cl, o, (struct opSet *)msg);
-	    break;
-	    
-	case OM_DISPOSE:
-	    retval = cycle_dispose(cl, o, msg);
-	    break;
-	    
-	case OM_UPDATE:
-	case OM_SET:
-	    retval = cycle_set(cl, o, (struct opSet *)msg);
-	    
-	case OM_GET:
-	    retval = cycle_get(cl, o, (struct opGet *)msg);
-	    break;
-
-	case GM_RENDER:
-    	    retval = cycle_render(cl, o, (struct gpRender *)msg);
-	    break;
-
-    	case GM_HITTEST:
-	    retval = cycle_hittest(cl, o, (struct gpHitTest *)msg);
-	    break;
-	    
-	case GM_GOACTIVE:
-	    retval = cycle_goactive(cl, o, (struct gpInput *)msg);
-	    break;
-	    
-	case GM_HANDLEINPUT:
-	    retval = cycle_handleinput(cl, o, (struct gpInput *)msg);
-	    break;
-	    
-	case GM_GOINACTIVE:
-	    retval = cycle_goinactive(cl, o, (struct gpGoInactive *)msg);
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    }
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/**********************************************************************************************/
-
-#undef GadToolsBase
-
-/**********************************************************************************************/
-
-Class *makecycleclass(struct GadToolsBase_intern *GadToolsBase)
-{
-    Class *cl;
-
-    ObtainSemaphore(&GadToolsBase->classsema);
-
-    cl = GadToolsBase->cycleclass;
-    if (!cl)
-    {
-	cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct CycleData), 0UL);
-	if (cl)
-	{
-	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_cycleclass);
-	    cl->cl_Dispatcher.h_SubEntry = NULL;
-	    cl->cl_UserData = (IPTR) GadToolsBase;
-
-	    GadToolsBase->cycleclass = cl;
-	}
-    }
-    
-    ReleaseSemaphore(&GadToolsBase->classsema);
-  
-    return cl;
 }
 
 /**********************************************************************************************/

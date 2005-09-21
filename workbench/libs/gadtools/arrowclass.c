@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal GadTools arrow class.
@@ -35,25 +35,11 @@
 
 /**********************************************************************************************/
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(X) ((struct ExtGadget *)(x))
-
 #define GadToolsBase ((struct GadToolsBase_intern *)cl->cl_UserData)
 
 /**********************************************************************************************/
 
-struct ArrowData
-{
-    Object 	*arrowimage;
-    Object 	*frame;
-    Object	*scroller;
-    WORD 	gadgetkind;
-    WORD 	arrowtype;
-};
-
-/**********************************************************************************************/
-
-STATIC Object *arrow_new(Class * cl, Object * o, struct opSet *msg)
+Object *GTArrow__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 {
      struct DrawInfo	*dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
      Object 		*frame = NULL, *arrowimage = NULL;
@@ -187,7 +173,7 @@ failure:
 
 /**********************************************************************************************/
 
-STATIC IPTR arrow_get(Class * cl, Object * o, struct opGet *msg)
+IPTR GTArrow__OM_GET(Class * cl, Object * o, struct opGet *msg)
 {
     struct ArrowData 	*data = INST_DATA(cl, o);
     IPTR 		retval;
@@ -224,7 +210,7 @@ STATIC IPTR arrow_get(Class * cl, Object * o, struct opGet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR arrow_dispose(Class * cl, Object * o, Msg msg)
+IPTR GTArrow__OM_DISPOSE(Class * cl, Object * o, Msg msg)
 {
     struct ArrowData *data = INST_DATA(cl, o);
 
@@ -235,80 +221,3 @@ STATIC IPTR arrow_dispose(Class * cl, Object * o, Msg msg)
 }
 
 /**********************************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_arrowclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, o, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-
-    AROS_USERFUNC_INIT
-
-    IPTR retval;
-
-    D(bug("dispatch_arrowclass: Cl 0x%lx o 0x%lx msg 0x%lx\n",cl,o,msg));
-
-
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-    	    D(bug("dispatch_arrowclass: OM_NEW\n"));
-	    retval = (IPTR) arrow_new(cl, o, (struct opSet *) msg);
-	    break;
-
-	case OM_GET:
-            D(bug("dispatch_arrowclass: OM_GET\n"));
-	    retval = arrow_get(cl, o, (struct opGet *) msg);
-	    break;
-
-	case OM_DISPOSE:
-            D(bug("dispatch_arrowclass: OM_DISPOSE\n"));
-	    retval = arrow_dispose(cl, o, msg);
-	    break;
-
-	default:
-            D(bug("dispatch_arrowclass: MethodID 0x%lx\n",msg->MethodID));
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    }
-
-    D(bug("dispatch_arrowclass: retval 0x%lx\n",retval));
-
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/**********************************************************************************************/
-
-#undef GadToolsBase
-
-Class *makearrowclass(struct GadToolsBase_intern * GadToolsBase)
-{
-    Class *cl;
-
-    ObtainSemaphore(&GadToolsBase->classsema);
-
-    cl = GadToolsBase->arrowclass;
-    if (!cl)
-    {
-	cl = MakeClass(NULL, FRBUTTONCLASS, NULL, sizeof(struct ArrowData), 0UL);
-	if (cl)
-	{
-	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_arrowclass);
-	    cl->cl_Dispatcher.h_SubEntry = NULL;
-	    cl->cl_UserData = (IPTR) GadToolsBase;
-
-	    GadToolsBase->arrowclass = cl;
-	}
-    }
-    
-    ReleaseSemaphore(&GadToolsBase->classsema);
-
-    return cl;
-}
-
-/**********************************************************************************************/
-
