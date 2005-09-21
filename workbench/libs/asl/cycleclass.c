@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -32,9 +32,6 @@
 
 #include <aros/debug.h>
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(x) ((struct ExtGadget *)(x))
-
 #define CLASS_ASLBASE ((struct AslBase_intern *)cl->cl_UserData)
 #define HOOK_ASLBASE  ((struct AslBase_intern *)hook->h_Data)
 
@@ -60,59 +57,7 @@
 
 /***********************************************************************************/
 
-struct CycleItem
-{
-    char	*string;
-    WORD	charlen;
-    WORD	pixellen;
-};
-
-struct AslCycleData
-{
-    Object			*frame;
-    struct CycleItem		*itemmemory;
-    struct RastPort		*rp;
-    struct RastPort		clonerp;
-    struct DrawInfo		*dri;
-    struct TextFont		*font;
-    struct Window		*popupwindow;
-    char			**labels;
-    WORD			itemheight;
-    WORD			itemwidth;
-    WORD			menuleft;
-    WORD			menutop;
-    WORD			menuwidth;
-    WORD			menuheight;
-    WORD			numitems;
-    WORD			active;
-    WORD			visible;
-    WORD			top;
-    WORD			selected;
-    WORD			menux1;
-    WORD			menuy1;
-    WORD			menux2;
-    WORD			menuy2;
-    WORD			layerx1;
-    WORD			layery1;
-    WORD			layerx2;
-    WORD			layery2;
-    BYTE			borderleft;
-    BYTE			borderright;
-    BYTE			bordertop;
-    BYTE			borderbottom;
-    BYTE			maypopup;
-    BYTE			popup;
-    BYTE			popupwindowtype;
-    BYTE			uparrowblack;
-    BYTE			downarrowblack;
-    BYTE			sentgadgetup;
-    BYTE			turbocountdown;
-};
-
-
-/***********************************************************************************/
-
-static IPTR aslcycle_set(Class * cl, Object * o, struct opSet *msg);
+IPTR AslCycle__OM_SET(Class * cl, Object * o, struct opSet *msg);
 
 /***********************************************************************************/
 
@@ -194,9 +139,8 @@ static void DrawDownArrow(Class *cl, struct AslCycleData *data, struct DrawInfo 
 
 /***********************************************************************************/
 
-static void DrawItem(Class *cl, Object *o, struct DrawInfo *dri, WORD num, BOOL nowhitefill)
+static void DrawItem(Class *cl, struct AslCycleData *data, struct DrawInfo *dri, WORD num, BOOL nowhitefill)
 {
-    struct AslCycleData *data = INST_DATA(cl, o);
     struct CycleItem	*item;
     WORD		off,x,y;
 
@@ -229,9 +173,8 @@ static void DrawItem(Class *cl, Object *o, struct DrawInfo *dri, WORD num, BOOL 
 
 /***********************************************************************************/
 
-static void DrawMenu(Class *cl, Object *o, struct DrawInfo *dri)
+static void DrawMenu(Class *cl, struct AslCycleData *data, struct DrawInfo *dri)
 {
-    struct AslCycleData *data = INST_DATA(cl, o);
     WORD		 i, x1, y1, x2, y2;
 
     x1 = data->menuleft;
@@ -251,7 +194,7 @@ static void DrawMenu(Class *cl, Object *o, struct DrawInfo *dri)
 
     for(i = data->top;i < data->top + data->visible;i++)
     {
-	DrawItem(cl, o, dri, i,TRUE);
+	DrawItem(cl, data, dri, i,TRUE);
     }
 
     DrawUpArrow(cl, data, dri, TRUE);
@@ -260,19 +203,18 @@ static void DrawMenu(Class *cl, Object *o, struct DrawInfo *dri)
 
 /***********************************************************************************/
 
-static void UnselectActiveItem(Class *cl, Object *o, struct DrawInfo *dri)
+static void UnselectActiveItem(Class *cl, struct AslCycleData *data, struct DrawInfo *dri)
 {
-    struct AslCycleData *data = INST_DATA(cl, o);
     WORD 		old;
 
     old = data->selected;
     data->selected = -1;
-    DrawItem(cl, o, dri, old, FALSE);
+    DrawItem(cl, data, dri, old, FALSE);
 }
 
 /***********************************************************************************/
 
-static IPTR aslcycle_new(Class * cl, Object * o, struct opSet *msg)
+IPTR AslCycle__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 {
     struct AslCycleData *data;
     struct TagItem 	fitags[] =
@@ -281,35 +223,33 @@ static IPTR aslcycle_new(Class * cl, Object * o, struct opSet *msg)
 	{IA_EdgesOnly, FALSE	   },
 	{TAG_DONE    , 0UL	   }
     };
-    IPTR 		rc = 0;
-    
-    if ((o = (Object *)DoSuperMethodA(cl, o, (Msg)msg)))
+
+    struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
+    if (g)
     {
-	data = INST_DATA(cl, o);
+	data = INST_DATA(cl, g);
 
 	/* We want to get a GM_LAYOUT message, no matter if gadget is GFLG_RELRIGHT/RELBOTTOM/
 	   RELWIDTH/RELHEIGHT or not */	   
-	G(o)->Flags |= GFLG_RELSPECIAL;
+	g->Flags |= GFLG_RELSPECIAL;
 
 	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);	
 	if (data->frame)
 	{
-	    aslcycle_set(cl, o, msg);
-	    
-	    rc = (ULONG)o;
+	    AslCycle__OM_SET(cl, (Object *)g, msg);
 	} else {
 
-	    CoerceMethod(cl, o, OM_DISPOSE);
+	    CoerceMethod(cl, (Object *)g, OM_DISPOSE);
 
 	}
     };
     
-    return rc;
+    return (IPTR)g;
 }
 
 /***********************************************************************************/
 
-static IPTR aslcycle_dispose(Class * cl, Object * o, Msg msg)
+IPTR AslCycle__OM_DISPOSE(Class * cl, Object * o, Msg msg)
 {
     struct AslCycleData *data = INST_DATA(cl, o);
 
@@ -321,7 +261,7 @@ static IPTR aslcycle_dispose(Class * cl, Object * o, Msg msg)
 
 /***********************************************************************************/
 
-static IPTR aslcycle_set(Class * cl, Object * o, struct opSet *msg)
+IPTR AslCycle__OM_SET(Class * cl, Object * o, struct opSet *msg)
 {
     struct AslCycleData *data = INST_DATA(cl, o);
     struct TagItem 	*tag;
@@ -415,7 +355,7 @@ static IPTR aslcycle_set(Class * cl, Object * o, struct opSet *msg)
 
 /***********************************************************************************/
 
-static IPTR aslcycle_get(Class * cl, Object * o, struct opGet *msg)
+IPTR AslCycle__OM_GET(Class * cl, Object * o, struct opGet *msg)
 {
     struct AslCycleData *data = INST_DATA(cl, o);
 
@@ -437,14 +377,14 @@ static IPTR aslcycle_get(Class * cl, Object * o, struct opGet *msg)
 
 /***********************************************************************************/
 
-static IPTR aslcycle_layout(Class * cl, Object * o, struct gpLayout *msg)
+IPTR AslCycle__GM_LAYOUT(Class * cl, struct Gadget * g, struct gpLayout *msg)
 {
-    struct AslCycleData *data = INST_DATA(cl, o);
+    struct AslCycleData *data = INST_DATA(cl, g);
     struct CycleItem 	*item;
     WORD 		len, i;
     WORD 		x, y, w, h;
 
-    getgadgetcoords(G(o), msg->gpl_GInfo, &x, &y, &w, &h);
+    getgadgetcoords(g, msg->gpl_GInfo, &x, &y, &w, &h);
     
     if (!data->font) data->font = msg->gpl_GInfo->gi_DrInfo->dri_Font;
     
@@ -512,9 +452,9 @@ static IPTR aslcycle_layout(Class * cl, Object * o, struct gpLayout *msg)
 
 /***********************************************************************************/
 
-static IPTR aslcycle_render(Class * cl, Object * o, struct gpRender *msg)
+IPTR AslCycle__GM_RENDER(Class * cl, struct Gadget * g, struct gpRender *msg)
 {
-    struct AslCycleData *data = INST_DATA(cl, o);
+    struct AslCycleData *data = INST_DATA(cl, g);
     struct RastPort	*rp   = msg->gpr_RPort;
     struct DrawInfo 	*dri  = msg->gpr_GInfo->gi_DrInfo;
     struct CycleItem 	*item;
@@ -531,7 +471,7 @@ static IPTR aslcycle_render(Class * cl, Object * o, struct gpRender *msg)
 	    {TAG_DONE		}
 	};
  
-        getgadgetcoords(G(o), msg->gpr_GInfo, &gadx, &gady, &gadw, &gadh);
+        getgadgetcoords(g, msg->gpr_GInfo, &gadx, &gady, &gadw, &gadh);
 
 	im_tags[0].ti_Data = gadw;
 	im_tags[1].ti_Data = gadh;
@@ -542,13 +482,13 @@ static IPTR aslcycle_render(Class * cl, Object * o, struct gpRender *msg)
 		       (struct Image *)data->frame,
 		       gadx,
 		       gady,
-		       (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+		       (g->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
 		       msg->gpr_GInfo->gi_DrInfo);
 		       
 	
 	if (data->labels)
 	{
-	    selected = (G(o)->Flags & GFLG_SELECTED) ? TRUE: FALSE;
+	    selected = (g->Flags & GFLG_SELECTED) ? TRUE: FALSE;
 	    SetABPenDrMd(rp, dri->dri_Pens[selected ? FILLTEXTPEN : TEXTPEN], 0, JAM1);
 
 	    item = &data->itemmemory[data->active];
@@ -588,9 +528,9 @@ static IPTR aslcycle_render(Class * cl, Object * o, struct gpRender *msg)
 
 /***********************************************************************************/
 
-static IPTR aslcycle_goactive(Class * cl, Object * o, struct gpInput *msg)
+IPTR AslCycle__GM_GOACTIVE(Class * cl, struct Gadget * g, struct gpInput *msg)
 {
-    struct AslCycleData *data = INST_DATA(cl, o);
+    struct AslCycleData *data = INST_DATA(cl, g);
     WORD 		x, y, x2, y2, gadx, gady, gadw, gadh;
     
     IPTR 		rc = GMR_MEACTIVE;
@@ -601,7 +541,7 @@ static IPTR aslcycle_goactive(Class * cl, Object * o, struct gpInput *msg)
     data->sentgadgetup = FALSE;
     data->turbocountdown = TURBOCOUNTDOWN;
 
-    getgadgetcoords(G(o), msg->gpi_GInfo, &gadx, &gady, &gadw, &gadh);
+    getgadgetcoords(g, msg->gpi_GInfo, &gadx, &gady, &gadw, &gadh);
 
     x = msg->gpi_GInfo->gi_Window->MouseX;
 
@@ -651,14 +591,14 @@ static IPTR aslcycle_goactive(Class * cl, Object * o, struct gpInput *msg)
 	    SetFont(data->rp, data->font);
 
 	    data->popup = TRUE;
-	    DrawMenu(cl, o, msg->gpi_GInfo->gi_DrInfo);
+	    DrawMenu(cl, data, msg->gpi_GInfo->gi_DrInfo);
 	}
 
     } /* if (data->maypopup && (data->numitems > 2) && (x < gadx + gadw - CYCLEIMAGEWIDTH)) */
     else
     {
-         G(o)->Flags |= GFLG_SELECTED;
-	 RenderObject_Update(cl, o, msg->gpi_GInfo);
+         g->Flags |= GFLG_SELECTED;
+	 RenderObject_Update(cl, (Object *)g, msg->gpi_GInfo);
     }
 	
     return rc;
@@ -666,13 +606,13 @@ static IPTR aslcycle_goactive(Class * cl, Object * o, struct gpInput *msg)
 
 /***********************************************************************************/
 
-static IPTR aslcycle_handleinput(Class * cl, Object * o, struct gpInput *msg)
+IPTR AslCycle__GM_HANDLEINPUT(Class * cl, struct Gadget * g, struct gpInput *msg)
 {
-    struct AslCycleData *data = INST_DATA(cl, o);
+    struct AslCycleData *data = INST_DATA(cl, g);
     WORD 		gadx, gady, gadw, gadh, x, y, i;
     IPTR 		rc = GMR_MEACTIVE;
 
-    getgadgetcoords(G(o), msg->gpi_GInfo, &gadx, &gady, &gadw, &gadh);
+    getgadgetcoords(g, msg->gpi_GInfo, &gadx, &gady, &gadw, &gadh);
     
     if (data->popup)
     {
@@ -697,13 +637,13 @@ static IPTR aslcycle_handleinput(Class * cl, Object * o, struct gpInput *msg)
 	
 	if ((x < data->menux1) || (x > data->menux2))
 	{
-	    UnselectActiveItem(cl, o, msg->gpi_GInfo->gi_DrInfo);
+	    UnselectActiveItem(cl, data, msg->gpi_GInfo->gi_DrInfo);
 	} else {
 	    i = (y - data->menuy1) / data->itemheight;
 
 	    if ((i >= data->visible) || (y < data->menuy1))
 	    {
-		UnselectActiveItem(cl, o, msg->gpi_GInfo->gi_DrInfo);
+		UnselectActiveItem(cl, data, msg->gpi_GInfo->gi_DrInfo);
 
 		if (data->turbocountdown && (msg->gpi_IEvent->ie_Class == IECLASS_TIMER))
 		{
@@ -720,7 +660,7 @@ static IPTR aslcycle_handleinput(Class * cl, Object * o, struct gpInput *msg)
 			    ClipBlit(data->rp, data->menux1 + data->menuleft, data->menuy1 + data->menutop + data->itemheight,
 			             data->rp, data->menux1 + data->menuleft, data->menuy1 + data->menutop, data->itemwidth, data->itemheight * (data->visible - 1), 192);
 			    data->top++;
-			    DrawItem(cl, o, msg->gpi_GInfo->gi_DrInfo, data->top + data->visible - 1, FALSE);
+			    DrawItem(cl, data, msg->gpi_GInfo->gi_DrInfo, data->top + data->visible - 1, FALSE);
 			    DrawUpArrow(cl, data, msg->gpi_GInfo->gi_DrInfo, FALSE);
 			    DrawDownArrow(cl, data, msg->gpi_GInfo->gi_DrInfo, FALSE);
 			}
@@ -731,7 +671,7 @@ static IPTR aslcycle_handleinput(Class * cl, Object * o, struct gpInput *msg)
 			    ClipBlit(data->rp, data->menux1 + data->menuleft, data->menuy1 + data->menutop,
 				     data->rp, data->menux1 + data->menuleft, data->menuy1 + data->menutop + data->itemheight, data->itemwidth, data->itemheight * (data->visible - 1), 192);
 			    data->top--;
-			    DrawItem(cl, o, msg->gpi_GInfo->gi_DrInfo, data->top, FALSE);
+			    DrawItem(cl, data, msg->gpi_GInfo->gi_DrInfo, data->top, FALSE);
 			    DrawUpArrow(cl, data, msg->gpi_GInfo->gi_DrInfo, FALSE);
 			    DrawDownArrow(cl, data, msg->gpi_GInfo->gi_DrInfo, FALSE);
 			}
@@ -745,8 +685,8 @@ static IPTR aslcycle_handleinput(Class * cl, Object * o, struct gpInput *msg)
 		data->selected = data->top + i;
 		if (data->selected != x)
 		{
-		    DrawItem(cl, o, msg->gpi_GInfo->gi_DrInfo, x, FALSE);
-		    DrawItem(cl, o, msg->gpi_GInfo->gi_DrInfo, data->selected, FALSE);
+		    DrawItem(cl, data, msg->gpi_GInfo->gi_DrInfo, x, FALSE);
+		    DrawItem(cl, data, msg->gpi_GInfo->gi_DrInfo, data->selected, FALSE);
 		}
 	    }
 	}
@@ -761,15 +701,15 @@ static IPTR aslcycle_handleinput(Class * cl, Object * o, struct gpInput *msg)
 		switch(msg->gpi_IEvent->ie_Code)
 		{
 		    case IECODE_LBUTTON | IECODE_UP_PREFIX:
-			if (G(o)->Flags & GFLG_SELECTED)
+			if (g->Flags & GFLG_SELECTED)
 			{
 			    data->active++;
 			    if (data->active >= data->numitems) data->active = 0;
 
-			    G(o)->Flags &= (~GFLG_SELECTED);
-			    RenderObject_Update(cl, o, msg->gpi_GInfo);
+			    g->Flags &= (~GFLG_SELECTED);
+			    RenderObject_Update(cl, (Object *)g, msg->gpi_GInfo);
 			    rc |= GMR_VERIFY;
-			    *msg->gpi_Termination = G(o)->GadgetID;
+			    *msg->gpi_Termination = g->GadgetID;
 			}
 			rc |= GMR_NOREUSE;
 			break;
@@ -780,16 +720,16 @@ static IPTR aslcycle_handleinput(Class * cl, Object * o, struct gpInput *msg)
 			    (msg->gpi_Mouse.X <  gadw) &&
 			    (msg->gpi_Mouse.Y <  gadh))
 			{
-			    if (!(G(o)->Flags & GFLG_SELECTED))
+			    if (!(g->Flags & GFLG_SELECTED))
 			    {
-				G(o)->Flags |= GFLG_SELECTED;
-				RenderObject_Update(cl, o, msg->gpi_GInfo);
+				g->Flags |= GFLG_SELECTED;
+				RenderObject_Update(cl, (Object *)g, msg->gpi_GInfo);
 			    }
 			} else {
-			    if (G(o)->Flags & GFLG_SELECTED)
+			    if (g->Flags & GFLG_SELECTED)
 			    {
-				G(o)->Flags &= (~GFLG_SELECTED);
-				RenderObject_Update(cl, o, msg->gpi_GInfo);
+				g->Flags &= (~GFLG_SELECTED);
+				RenderObject_Update(cl, (Object *)g, msg->gpi_GInfo);
 			    }
 			}
 			rc = GMR_MEACTIVE;
@@ -810,7 +750,7 @@ done:
 
 /***********************************************************************************/
 
-static IPTR aslcycle_goinactive(Class * cl, Object * o, struct gpGoInactive *msg)
+IPTR AslCycle__GM_GOINACTIVE(Class * cl, Object * o, struct gpGoInactive *msg)
 {
     struct AslCycleData *data = INST_DATA(cl, o);
     
@@ -826,91 +766,6 @@ static IPTR aslcycle_goinactive(Class * cl, Object * o, struct gpGoInactive *msg
     }
     
     return 0;
-}
-
-/***********************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_aslcycleclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, o, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-        case OM_NEW:
-	    retval = aslcycle_new(cl, o, (struct opSet *)msg);
-	    break;
-	
-	case OM_DISPOSE:
-	    retval = aslcycle_dispose(cl, o, msg);
-	    break;
-
-	case OM_SET:
-	    retval = aslcycle_set(cl, o, (struct opSet *)msg);
-	    break;
-	    
-	case OM_GET:
-	    retval = aslcycle_get(cl, o, (struct opGet *)msg);
-	    break;
-	
-	case GM_LAYOUT:
-	    retval = aslcycle_layout(cl, o, (struct gpLayout *)msg);
-	    break;
-
-	case GM_RENDER:
-	    retval = aslcycle_render(cl, o, (struct gpRender *)msg);
-	    break;
-	
-	case GM_GOACTIVE:
-	    retval = aslcycle_goactive(cl, o, (struct gpInput *)msg);
-	    break;
-	
-	case GM_HANDLEINPUT:
-	    retval = aslcycle_handleinput(cl, o, (struct gpInput *)msg);
-	    break;
-	
-	case GM_GOINACTIVE:
-	    retval = aslcycle_goinactive(cl, o, (struct gpGoInactive *)msg);
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-
-    } /* switch (msg->MethodID) */
-    
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/***********************************************************************************/
-
-#undef AslBase
-
-Class *makeaslcycleclass(struct AslBase_intern * AslBase)
-{
-    Class *cl = NULL;
-
-    if (AslBase->aslcycleclass)
-	return AslBase->aslcycleclass;
-
-    cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct AslCycleData), 0UL);
-    if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_aslcycleclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) AslBase;
-
-    AslBase->aslcycleclass = cl;
-
-    return cl;
 }
 
 /***********************************************************************************/

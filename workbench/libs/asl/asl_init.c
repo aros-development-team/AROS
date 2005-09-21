@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     ASL initialization code.
@@ -185,56 +185,6 @@ AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
 
     InitReqInfo(LIBBASE);
 
-    if (!LIBBASE->aslpropclass)
-        LIBBASE->aslpropclass = makeaslpropclass(LIBBASE);
-    if (!LIBBASE->aslpropclass)
-        return FALSE;
-
-    if (!LIBBASE->aslarrowclass)
-        LIBBASE->aslarrowclass = makeaslarrowclass(LIBBASE);
-    if (!LIBBASE->aslarrowclass)
-        return FALSE;
-	
-    if (!LIBBASE->asllistviewclass)
-        LIBBASE->asllistviewclass = makeasllistviewclass(LIBBASE);
-    if (!LIBBASE->asllistviewclass)
-        return FALSE;
-
-    if (!LIBBASE->aslbuttonclass)
-        LIBBASE->aslbuttonclass = makeaslbuttonclass(LIBBASE);
-    if (!LIBBASE->aslbuttonclass)
-        return FALSE;
-
-    if (!LIBBASE->aslstringclass)
-        LIBBASE->aslstringclass = makeaslstringclass(LIBBASE);
-    if (!LIBBASE->aslstringclass)
-        return FALSE;
-
-    if (!LIBBASE->aslcycleclass)
-        LIBBASE->aslcycleclass = makeaslcycleclass(LIBBASE);
-    if (!LIBBASE->aslcycleclass)
-        return FALSE;
-
-    if (!LIBBASE->aslfontpreviewclass)
-        LIBBASE->aslfontpreviewclass = makeaslfontpreviewclass(LIBBASE);
-    if (!LIBBASE->aslfontpreviewclass)
-        return FALSE;
-
-    if (!LIBBASE->aslfontstyleclass)
-        LIBBASE->aslfontstyleclass = makeaslfontstyleclass(LIBBASE);
-    if (!LIBBASE->aslfontstyleclass)
-        return FALSE;
- 
-    if (!LIBBASE->aslcolorpickerclass)
-        LIBBASE->aslcolorpickerclass = makeaslcolorpickerclass(LIBBASE);
-    if (!LIBBASE->aslcolorpickerclass)
-        return FALSE;
-
-    if (!LIBBASE->asleraserclass)
-        LIBBASE->asleraserclass = makeasleraserclass(LIBBASE);
-    if (!LIBBASE->asleraserclass)
-        return FALSE;
-
     return TRUE;
     
     AROS_SET_LIBFUNC_EXIT;
@@ -242,77 +192,7 @@ AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
 
 /*****************************************************************************************/
 
-AROS_SET_LIBFUNC(CleanUp, LIBBASETYPE, LIBBASE)
-{
-    AROS_SET_LIBFUNC_INIT;
-    
-    if (LIBBASE->aslpropclass)
-    {
-	FreeClass(LIBBASE->aslpropclass);
-	LIBBASE->aslpropclass = NULL;
-    }
-
-    if (LIBBASE->aslarrowclass)
-    {
-	FreeClass(LIBBASE->aslarrowclass);
-	LIBBASE->aslarrowclass = NULL;
-    }
-	
-    if (LIBBASE->asllistviewclass)
-    {
-	FreeClass(LIBBASE->asllistviewclass);
-	LIBBASE->asllistviewclass = NULL;
-    }
-	
-    if (LIBBASE->aslbuttonclass)
-    {
-	FreeClass(LIBBASE->aslbuttonclass);
-	LIBBASE->aslbuttonclass = NULL;
-    }
-
-    if (LIBBASE->aslstringclass)
-    {
-	FreeClass(LIBBASE->aslstringclass);
-	LIBBASE->aslstringclass = NULL;
-    }
-
-    if (LIBBASE->aslcycleclass)
-    {
-	FreeClass(LIBBASE->aslcycleclass);
-	LIBBASE->aslcycleclass = NULL;
-    }
-
-    if (LIBBASE->aslfontpreviewclass)
-    {
-	FreeClass(LIBBASE->aslfontpreviewclass);
-	LIBBASE->aslfontpreviewclass = NULL;
-    }
-
-    if (LIBBASE->aslfontstyleclass)
-    {
-	FreeClass(LIBBASE->aslfontstyleclass);
-	LIBBASE->aslfontstyleclass = NULL;
-    }
-
-    if (LIBBASE->aslcolorpickerclass)
-    {
-	FreeClass(LIBBASE->aslcolorpickerclass);
-	LIBBASE->aslcolorpickerclass = NULL;
-    }
-
-    if (LIBBASE->asleraserclass)
-    {
-	FreeClass(LIBBASE->asleraserclass);
-	LIBBASE->asleraserclass = NULL;
-    }
-	
-    return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT;
-}
-
 ADD2INITLIB(InitBase, 0);
-ADD2EXPUNGELIB(CleanUp, 0);
 
 /*****************************************************************************************/
 

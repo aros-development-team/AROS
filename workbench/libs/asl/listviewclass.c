@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -29,53 +29,10 @@
 
 #include <aros/debug.h>
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(x) ((struct ExtGadget *)(x))
-
 #define CLASS_ASLBASE ((struct AslBase_intern *)cl->cl_UserData)
 #define HOOK_ASLBASE  ((struct AslBase_intern *)hook->h_Data)
 
 #define AslBase CLASS_ASLBASE
-
-/***********************************************************************************/
-
-struct AslListViewData
-{
-    Object		*frame;
-    struct LayoutData 	*ld;
-    struct List		*labels;
-    struct Node		**nodetable;
-    struct List		emptylist;
-    struct Hook		default_renderhook;
-    struct Hook		*renderhook;
-    struct TextFont 	*font;
-    struct Rectangle	*renderrect;
-    ULONG  		clicksec;
-    ULONG		clickmicro;
-    WORD		minx;
-    WORD   		miny;
-    WORD		maxx;
-    WORD		maxy;
-    WORD		width;
-    WORD		height;
-    WORD		itemheight;
-    WORD		spacing;
-    LONG		lineheight;
-    LONG		visible;
-    LONG		top;
-    LONG		total;
-    LONG		active;
-    LONG    	    	visiblepixels;
-    LONG    	    	toppixel;
-    LONG    	    	totalpixels;
-    WORD		rendersingleitem;
-    WORD		scroll;
-    BYTE		layouted;
-    BYTE		doubleclicked;
-    BYTE		domultiselect;
-    BYTE		multiselecting;
-    BYTE		readonly;
-};
 
 /***********************************************************************************/
 
@@ -423,7 +380,7 @@ static void notifytop(Class *cl, Object *o, struct GadgetInfo *gi, STACKULONG fl
 
 /***********************************************************************************/
 
-static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
+IPTR AslListView__OM_SET(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslListViewData 	*data = INST_DATA(cl, o);
     struct TagItem 		*tag;
@@ -616,7 +573,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 
 /***********************************************************************************/
 
-static IPTR asllistview_new(Class * cl, Object * o, struct opSet * msg)
+IPTR AslListView__OM_NEW(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslListViewData 	*data;
     struct TagItem 		fitags[] =
@@ -626,22 +583,22 @@ static IPTR asllistview_new(Class * cl, Object * o, struct opSet * msg)
 	{TAG_DONE, 0UL}
     };
     
-    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
-    if (o)
+    struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
+    if (g)
     {
-    	data = INST_DATA(cl, o);
+    	data = INST_DATA(cl, g);
 
 	/* We want to get a GM_LAYOUT message, no matter if gadget is GFLG_RELRIGHT/RELBOTTOM/
 	   RELWIDTH/RELHEIGHT or not */	   
-	G(o)->Flags |= GFLG_RELSPECIAL;
+	g->Flags |= GFLG_RELSPECIAL;
 	
 	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
 	data->ld = (struct LayoutData *)GetTagData(GA_UserData, 0, msg->ops_AttrList);
 	
 	if (!data->ld || !data->frame)
 	{
-	    CoerceMethod(cl, o, OM_DISPOSE);
-	    o = NULL;
+	    CoerceMethod(cl, (Object *)g, OM_DISPOSE);
+	    g = NULL;
 	}
 	else
 	{
@@ -661,16 +618,16 @@ static IPTR asllistview_new(Class * cl, Object * o, struct opSet * msg)
     	   data->default_renderhook.h_Data = (APTR)AslBase;
 	   if (!data->renderhook) data->renderhook = &data->default_renderhook;
 
-	   asllistview_set(cl, o, msg);
+	   AslListView__OM_SET(cl, (Object *)g, msg);
 	}
     }
 
-    return (IPTR)o;
+    return (IPTR)g;
 }
 
 /***********************************************************************************/
 
-static IPTR asllistview_get(Class * cl, Object * o, struct opGet *msg)
+IPTR AslListView__OM_GET(Class * cl, Object * o, struct opGet *msg)
 {
     struct AslListViewData 	*data;
     IPTR 			retval = 1;
@@ -718,7 +675,7 @@ static IPTR asllistview_get(Class * cl, Object * o, struct opGet *msg)
 
 /***********************************************************************************/
 
-static IPTR asllistview_dispose(Class * cl, Object * o, Msg msg)
+IPTR AslListView__OM_DISPOSE(Class * cl, Object * o, Msg msg)
 {
     struct AslListViewData 	*data;
     IPTR 			retval;
@@ -733,7 +690,7 @@ static IPTR asllistview_dispose(Class * cl, Object * o, Msg msg)
 
 /***********************************************************************************/
 
-static IPTR asllistview_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR AslListView__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     struct AslListViewData 	*data;
     WORD 			i;
@@ -819,7 +776,7 @@ static IPTR asllistview_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 /***********************************************************************************/
 
-static IPTR asllistview_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR AslListView__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
     struct AslListViewData *data;
     UWORD		   code;
@@ -927,19 +884,19 @@ static IPTR asllistview_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /***********************************************************************************/
 
-static IPTR asllistview_layout(Class *cl, Object *o, struct gpLayout *msg)
+IPTR AslListView__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
 {
     struct AslListViewData 	*data;
     IPTR 			retval = 0;
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     if (msg->gpl_GInfo)
     {
         LONG newtop = data->toppixel;
 	LONG newvisible = data->visiblepixels;
 	
-	getgadgetcoords(G(o), msg->gpl_GInfo, &data->minx, &data->miny, &data->width, &data->height);
+	getgadgetcoords(g, msg->gpl_GInfo, &data->minx, &data->miny, &data->width, &data->height);
 
 	data->maxx = data->minx + data->width  - 1;
 	data->maxy = data->miny + data->height - 1;
@@ -958,7 +915,7 @@ static IPTR asllistview_layout(Class *cl, Object *o, struct gpLayout *msg)
 	    data->visiblepixels = newvisible;
 	    data->visible = newvisible / data->lineheight;
 	    
-	    notifyall(cl, o, msg->gpl_GInfo, 0);
+	    notifyall(cl, (Object *)g, msg->gpl_GInfo, 0);
 	}
 		
 	data->layouted = TRUE;
@@ -971,7 +928,7 @@ static IPTR asllistview_layout(Class *cl, Object *o, struct gpLayout *msg)
 
 /***********************************************************************************/
 
-static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR AslListView__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct AslListViewData 	*data;
     struct Region   	    	*clip, *oldclip;
@@ -1133,88 +1090,6 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
     }
     
     return retval;
-}
-
-/***********************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_asllistviewclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-        case OM_NEW:
-	    retval = asllistview_new(cl, obj, (struct opSet *)msg);
-	    break;
-	
-	case OM_UPDATE:
-	case OM_SET:
-	    retval = asllistview_set(cl, obj, (struct opSet *)msg);
-	    break;
-
-	case OM_GET:
-	    retval = asllistview_get(cl, obj, (struct opGet *)msg);
-	    break;
-	    
-	case OM_DISPOSE:
-	    retval = asllistview_dispose(cl, obj, msg);
-	    break;
-	
-	case GM_GOACTIVE:
-	    retval = asllistview_goactive(cl, obj , (struct gpInput *)msg);
-	    break;
-	    
-	case GM_HANDLEINPUT:
-	    retval = asllistview_handleinput(cl, obj , (struct gpInput *)msg);
-	    break;
-	    
-	case GM_LAYOUT:
-	    retval = asllistview_layout(cl, obj, (struct gpLayout *)msg);
-	    break;
-	    
-	case GM_RENDER:
-	    retval = asllistview_render(cl, obj, (struct gpRender *)msg);
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
-
-    } /* switch (msg->MethodID) */
-     
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/***********************************************************************************/
-
-#undef AslBase
-
-Class *makeasllistviewclass(struct AslBase_intern * AslBase)
-{
-    Class *cl = NULL;
-
-    if (AslBase->asllistviewclass)
-	return AslBase->asllistviewclass;
-
-    cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct AslListViewData), 0UL);
-    if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_asllistviewclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) AslBase;
-
-    AslBase->asllistviewclass = cl;
-
-    return cl;
 }
 
 /***********************************************************************************/

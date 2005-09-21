@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -46,9 +46,6 @@
 #endif
 
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(x) ((struct ExtGadget *)(x))
-
 #define CLASS_ASLBASE ((struct AslBase_intern *)cl->cl_UserData)
 #define HOOK_ASLBASE  ((struct AslBase_intern *)hook->h_Data)
 
@@ -60,17 +57,7 @@
 
 /********************** ASL FONTPREVIEW CLASS **************************************************/
 
-struct AslFontPreviewData
-{
-    Object 		*frame;
-    struct TextFont 	*font;
-    STRPTR  	    	 previewtext;
-    UBYTE   	    	 apen, bpen, drawstyle;
-};
-
-/***********************************************************************************/
-
-static IPTR aslfontpreview_new(Class * cl, Object * o, struct opSet * msg)
+IPTR AslFontPreview__OM_NEW(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslFontPreviewData *data;
     struct TagItem fitags[] =
@@ -102,7 +89,7 @@ static IPTR aslfontpreview_new(Class * cl, Object * o, struct opSet * msg)
 
 /***********************************************************************************/
 
-static IPTR aslfontpreview_dispose(Class * cl, Object * o, Msg msg)
+IPTR AslFontPreview__OM_DISPOSE(Class * cl, Object * o, Msg msg)
 {
     struct AslFontPreviewData *data;
     IPTR retval;
@@ -117,7 +104,7 @@ static IPTR aslfontpreview_dispose(Class * cl, Object * o, Msg msg)
 
 /***********************************************************************************/
 
-static IPTR aslfontpreview_set(Class * cl, Object * o, struct opSet * msg)
+IPTR AslFontPreview__OM_SET(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslFontPreviewData 	*data;
     struct TagItem  	    	*tag;
@@ -179,7 +166,7 @@ static IPTR aslfontpreview_set(Class * cl, Object * o, struct opSet * msg)
 
 /***********************************************************************************/
 
-static IPTR aslfontpreview_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+IPTR AslFontPreview__GM_HITTEST(Class *cl, Object *o, struct gpHitTest *msg)
 {
     return 0;
 }
@@ -187,7 +174,7 @@ static IPTR aslfontpreview_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 
 /***********************************************************************************/
 
-static IPTR aslfontpreview_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR AslFontPreview__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct AslFontPreviewData *data;
     struct RastPort 	      *rp;
@@ -201,9 +188,9 @@ static IPTR aslfontpreview_render(Class *cl, Object *o, struct gpRender *msg)
     
     WORD x, y, w, h, x2, y2;
 
-    getgadgetcoords(G(o), msg->gpr_GInfo, &x, &y, &w, &h);
+    getgadgetcoords(g, msg->gpr_GInfo, &x, &y, &w, &h);
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     rp = msg->gpr_RPort;
     
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
@@ -304,74 +291,3 @@ static IPTR aslfontpreview_render(Class *cl, Object *o, struct gpRender *msg)
 }
 
 /***********************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_aslfontpreviewclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-        case OM_NEW:
-	    retval = aslfontpreview_new(cl, obj, (struct opSet *)msg);
-	    break;
-	    
-	case OM_SET:
-	    retval = aslfontpreview_set(cl, obj, (struct opSet *)msg);
-	    break;
-	    
-	case OM_DISPOSE:
-	    retval = aslfontpreview_dispose(cl, obj, msg);
-	    break;
-	
-	case GM_HITTEST:
-	    retval = aslfontpreview_hittest(cl, obj, (struct gpHitTest *)msg);
-	    break;
-	
-	case GM_RENDER:
-	    retval = aslfontpreview_render(cl, obj, (struct gpRender *)msg);
-	    break;
-	
-	default:
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
-
-    } /* switch (msg->MethodID) */
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/***********************************************************************************/
-
-#undef AslBase
-
-Class *makeaslfontpreviewclass(struct AslBase_intern * AslBase)
-{
-    Class *cl = NULL;
-
-    if (AslBase->aslfontpreviewclass)
-	return AslBase->aslfontpreviewclass;
-
-    cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct AslFontPreviewData), 0UL);
-
-    if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_aslfontpreviewclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) AslBase;
-
-    AslBase->aslfontpreviewclass = cl;
-
-    return cl;
-}
-
-/***********************************************************************************/
-

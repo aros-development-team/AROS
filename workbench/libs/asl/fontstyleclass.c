@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,24 +27,12 @@
 
 #include <aros/debug.h>
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(x) ((struct ExtGadget *)(x))
-
 #define CLASS_ASLBASE ((struct AslBase_intern *)cl->cl_UserData)
 #define HOOK_ASLBASE  ((struct AslBase_intern *)hook->h_Data)
 
 #define AslBase CLASS_ASLBASE
 
 /********************** ASL FONTPREVIEW CLASS **************************************************/
-
-struct AslFontStyleData
-{
-    Object 		*frame;
-    STRPTR  	    	 text[3];
-    UBYTE   	    	 style;
-};
-
-/***********************************************************************************/
 
 static const UBYTE gadindextostylemap[3] =
 {
@@ -55,7 +43,7 @@ static const UBYTE gadindextostylemap[3] =
 
 /***********************************************************************************/
 
-static IPTR aslfontstyle_new(Class * cl, Object * o, struct opSet * msg)
+IPTR AslFontStyle__OM_NEW(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslFontStyleData *data;
     struct TagItem fitags[] =
@@ -96,7 +84,7 @@ static IPTR aslfontstyle_new(Class * cl, Object * o, struct opSet * msg)
 
 /***********************************************************************************/
 
-static IPTR aslfontstyle_dispose(Class * cl, Object * o, Msg msg)
+IPTR AslFontStyle__OM_DISPOSE(Class * cl, Object * o, Msg msg)
 {
     struct AslFontStyleData *data;
     IPTR retval;
@@ -111,7 +99,7 @@ static IPTR aslfontstyle_dispose(Class * cl, Object * o, Msg msg)
 
 /***********************************************************************************/
 
-static IPTR aslfontstyle_set(Class * cl, Object * o, struct opSet * msg)
+IPTR AslFontStyle__OM_SET(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslFontStyleData 	*data;
     struct TagItem  	    	*tag;
@@ -159,7 +147,7 @@ static IPTR aslfontstyle_set(Class * cl, Object * o, struct opSet * msg)
 
 /***********************************************************************************/
 
-static IPTR aslfontstyle_get(Class *cl, Object *o, struct opGet *msg)
+IPTR AslFontStyle__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct AslFontStyleData *data = INST_DATA(cl, o);
 
@@ -182,15 +170,15 @@ static IPTR aslfontstyle_get(Class *cl, Object *o, struct opGet *msg)
 
 /***********************************************************************************/
 
-static IPTR aslfontstyle_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR AslFontStyle__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct AslFontStyleData 	*data;
     struct RastPort 	      	*rp;
     WORD    	    	    	 x, y, w, h, i, sw;
 
-    getgadgetcoords(G(o), msg->gpr_GInfo, &x, &y, &w, &h);
+    getgadgetcoords(g, msg->gpr_GInfo, &x, &y, &w, &h);
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     rp = msg->gpr_RPort;
     
     sw = w / 3;
@@ -240,7 +228,7 @@ static IPTR aslfontstyle_render(Class *cl, Object *o, struct gpRender *msg)
 
 /***********************************************************************************/
 
-static IPTR aslfontstyle_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR AslFontStyle__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct AslFontStyleData *data;
     struct RastPort 	    *rp;
@@ -248,9 +236,9 @@ static IPTR aslfontstyle_goactive(Class *cl, Object *o, struct gpInput *msg)
 
     if (!msg->gpi_IEvent) return GMR_NOREUSE;
     
-    getgadgetcoords(G(o), msg->gpi_GInfo, &x, &y, &w, &h);
+    getgadgetcoords(g, msg->gpi_GInfo, &x, &y, &w, &h);
 
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
 
     w /= 3;
     x = msg->gpi_Mouse.X / w;
@@ -267,7 +255,7 @@ static IPTR aslfontstyle_goactive(Class *cl, Object *o, struct gpInput *msg)
 	gpr.gpr_RPort  = rp;
 	gpr.gpr_Redraw = GREDRAW_UPDATE;
 
-	DoMethodA(o, (Msg)&gpr);
+	DoMethodA((Object *)g, (Msg)&gpr);
 	
     	ReleaseGIRPort(rp);
     }
@@ -279,78 +267,3 @@ static IPTR aslfontstyle_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 
 /***********************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_aslfontstyleclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-        case OM_NEW:
-	    retval = aslfontstyle_new(cl, obj, (struct opSet *)msg);
-	    break;
-	    
-	case OM_SET:
-	    retval = aslfontstyle_set(cl, obj, (struct opSet *)msg);
-	    break;
-	    
-	case OM_GET:
-	    retval = aslfontstyle_get(cl, obj, (struct opGet *)msg);
-	    break;
-	    
-	case OM_DISPOSE:
-	    retval = aslfontstyle_dispose(cl, obj, msg);
-	    break;
-	
-	case GM_RENDER:
-	    retval = aslfontstyle_render(cl, obj, (struct gpRender *)msg);
-	    break;
-	
-	case GM_GOACTIVE:
-	    retval = aslfontstyle_goactive(cl, obj, (struct gpInput *)msg);
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
-
-    } /* switch (msg->MethodID) */
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/***********************************************************************************/
-
-#undef AslBase
-
-Class *makeaslfontstyleclass(struct AslBase_intern * AslBase)
-{
-    Class *cl = NULL;
-
-    if (AslBase->aslfontstyleclass)
-	return AslBase->aslfontstyleclass;
-
-    cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct AslFontStyleData), 0UL);
-
-    if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_aslfontstyleclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) AslBase;
-
-    AslBase->aslfontstyleclass = cl;
-
-    return cl;
-}
-
-/***********************************************************************************/
-

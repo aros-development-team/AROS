@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -334,19 +334,6 @@ void PaintInnerFrame(struct RastPort *rp, struct DrawInfo *dri, Object *frameobj
 void PaintBoxFrame(struct RastPort *rp, struct IBox *outerbox, struct IBox *innerbox, 
     	    	   ULONG pen, struct AslBase_intern *AslBase);
 
-/* classes.c */
-
-Class *makeaslpropclass(struct AslBase_intern *AslBase);
-Class *makeaslarrowclass(struct AslBase_intern *AslBase);
-Class *makeasllistviewclass(struct AslBase_intern *AslBase);
-Class *makeaslbuttonclass(struct AslBase_intern *AslBase);
-Class *makeaslstringclass(struct AslBase_intern *AslBase);
-Class *makeaslcycleclass(struct AslBase_intern *AslBase);
-Class *makeaslfontpreviewclass(struct AslBase_intern *AslBase);
-Class *makeaslfontstyleclass(struct AslBase_intern *AslBase);
-Class *makeaslcolorpickerclass(struct AslBase_intern *AslBase);
-Class *makeasleraserclass(struct AslBase_intern *AslBase);
-
 /* gadgets.c */
 
 BOOL makescrollergadget(struct ScrollerGadget *scrollergad, struct LayoutData *ld, 
@@ -422,5 +409,184 @@ AROS_UFP3(ULONG, SMGadgetryHook,
 
 #undef ASLB
 #define ASLB(b) ((struct AslBase_intern *)b)
+
+/*****************************************************************************************/
+
+/* Private for asl internal classes */
+
+/* AslProp class */
+struct AslPropData
+{
+    Object *frame;
+    LONG    deltafactor;
+};
+
+/* AslArrow class */
+struct AslArrowData
+{
+    WORD scrollticker;
+};
+
+/* AslListView class */
+struct AslListViewData
+{
+    Object		*frame;
+    struct LayoutData 	*ld;
+    struct List		*labels;
+    struct Node		**nodetable;
+    struct List		emptylist;
+    struct Hook		default_renderhook;
+    struct Hook		*renderhook;
+    struct TextFont 	*font;
+    struct Rectangle	*renderrect;
+    ULONG  		clicksec;
+    ULONG		clickmicro;
+    WORD		minx;
+    WORD   		miny;
+    WORD		maxx;
+    WORD		maxy;
+    WORD		width;
+    WORD		height;
+    WORD		itemheight;
+    WORD		spacing;
+    LONG		lineheight;
+    LONG		visible;
+    LONG		top;
+    LONG		total;
+    LONG		active;
+    LONG    	    	visiblepixels;
+    LONG    	    	toppixel;
+    LONG    	    	totalpixels;
+    WORD		rendersingleitem;
+    WORD		scroll;
+    BYTE		layouted;
+    BYTE		doubleclicked;
+    BYTE		domultiselect;
+    BYTE		multiselecting;
+    BYTE		readonly;
+};
+
+/* AslButton class */
+struct AslButtonData
+{
+    Object 		*frame;
+    struct LayoutData 	*ld;
+    struct CoolImage  	*coolimage;
+    ULONG		*coolimagepal;
+};
+
+#define BUTTON_OWN_INPUT_HANDLING 1
+#if BUTTON_OWN_INPUT_HANDLING
+#define BUTTONSUPERCLASS GADGETCLASS
+#else
+#define BUTTONSUPERCLASS BUTTONGCLASS
+#endif
+
+/* AslString class */
+struct AslStringData
+{
+    Object *frame;
+};
+
+/* AslCycle class */
+struct CycleItem
+{
+    char	*string;
+    WORD	charlen;
+    WORD	pixellen;
+};
+
+struct AslCycleData
+{
+    Object			*frame;
+    struct CycleItem		*itemmemory;
+    struct RastPort		*rp;
+    struct RastPort		clonerp;
+    struct DrawInfo		*dri;
+    struct TextFont		*font;
+    struct Window		*popupwindow;
+    char			**labels;
+    WORD			itemheight;
+    WORD			itemwidth;
+    WORD			menuleft;
+    WORD			menutop;
+    WORD			menuwidth;
+    WORD			menuheight;
+    WORD			numitems;
+    WORD			active;
+    WORD			visible;
+    WORD			top;
+    WORD			selected;
+    WORD			menux1;
+    WORD			menuy1;
+    WORD			menux2;
+    WORD			menuy2;
+    WORD			layerx1;
+    WORD			layery1;
+    WORD			layerx2;
+    WORD			layery2;
+    BYTE			borderleft;
+    BYTE			borderright;
+    BYTE			bordertop;
+    BYTE			borderbottom;
+    BYTE			maypopup;
+    BYTE			popup;
+    BYTE			popupwindowtype;
+    BYTE			uparrowblack;
+    BYTE			downarrowblack;
+    BYTE			sentgadgetup;
+    BYTE			turbocountdown;
+};
+
+/* AslFontPreview class */
+struct AslFontPreviewData
+{
+    Object 		*frame;
+    struct TextFont 	*font;
+    STRPTR  	    	 previewtext;
+    UBYTE   	    	 apen, bpen, drawstyle;
+};
+
+/* ASlFontStyle class */
+struct AslFontStyleData
+{
+    Object 		*frame;
+    STRPTR  	    	 text[3];
+    UBYTE   	    	 style;
+};
+
+/* AslColorPicker class */
+struct AslColorPickerData
+{
+    Object	       *frame;
+    struct Window      *popupwindow;
+    struct RastPort    *rp;
+    UBYTE   	       *colortable;
+    WORD   	    	numcolors;
+    WORD   	    	color;
+    WORD    	    	selected;
+    WORD    	    	menuwidth;
+    WORD    	    	menuheight;
+    WORD    	    	menux1;
+    WORD    	    	menuy1;
+    WORD    	    	menux2;
+    WORD    	    	menuy2;
+    WORD    	    	layerx1;
+    WORD    	    	layery1;
+    WORD    	    	layerx2;
+    WORD    	    	layery2;
+    WORD    	    	columns;
+    WORD    	    	rows;
+    WORD    	    	cellwidth;
+    WORD    	    	cellheight;
+    WORD    	    	cellspacex;
+    WORD    	    	cellspacey;
+    WORD    	    	borderleft;
+    WORD    	    	bordertop;
+    WORD    	    	borderright;
+    WORD    	    	borderbottom;
+    BYTE    	    	sentgadgetup;
+};
+
 
 #endif /* ASL_INTERN_H */

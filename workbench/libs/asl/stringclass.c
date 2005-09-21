@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
     
     Desc:
@@ -32,9 +32,6 @@
 
 #include <aros/debug.h>
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(x) ((struct ExtGadget *)(x))
-
 #define CLASS_ASLBASE ((struct AslBase_intern *)cl->cl_UserData)
 #define HOOK_ASLBASE  ((struct AslBase_intern *)hook->h_Data)
 
@@ -42,14 +39,7 @@
 
 /********************** ASL STRING CLASS **************************************************/
 
-struct AslStringData
-{
-    Object *frame;
-};
-
-/***********************************************************************************/
-
-static IPTR aslstring_new(Class * cl, Object * o, struct opSet * msg)
+IPTR AslString__OM_NEW(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslStringData *data;
     struct TagItem fitags[] =
@@ -58,36 +48,36 @@ static IPTR aslstring_new(Class * cl, Object * o, struct opSet * msg)
 	{TAG_DONE, 0UL}
     };
     
-    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
-    if (o)
+    struct ExtGadget *eg = (struct ExtGadget *)DoSuperMethodA(cl, o, (Msg)msg);
+    if (eg)
     {
-    	data = INST_DATA(cl, o);
+    	data = INST_DATA(cl, eg);
 
-	EG(o)->BoundsLeftEdge = G(o)->LeftEdge;
-	EG(o)->BoundsTopEdge  = G(o)->TopEdge;
-	EG(o)->BoundsWidth    = G(o)->Width;
-	EG(o)->BoundsHeight   = G(o)->Height;
-	EG(o)->MoreFlags |= GMORE_BOUNDS;
+	eg->BoundsLeftEdge = eg->LeftEdge;
+	eg->BoundsTopEdge  = eg->TopEdge;
+	eg->BoundsWidth    = eg->Width;
+	eg->BoundsHeight   = eg->Height;
+	eg->MoreFlags |= GMORE_BOUNDS;
 	
-	G(o)->LeftEdge += BORDERSTRINGSPACINGX;
-	G(o)->TopEdge  += BORDERSTRINGSPACINGY;
-	G(o)->Width    -= BORDERSTRINGSPACINGX * 2;
-	G(o)->Height   -= BORDERSTRINGSPACINGY * 2;
+	eg->LeftEdge += BORDERSTRINGSPACINGX;
+	eg->TopEdge  += BORDERSTRINGSPACINGY;
+	eg->Width    -= BORDERSTRINGSPACINGX * 2;
+	eg->Height   -= BORDERSTRINGSPACINGY * 2;
 
 	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
 	if (!data->frame)
 	{
-	    CoerceMethod(cl, o, OM_DISPOSE);
-	    o = NULL;
+	    CoerceMethod(cl, (Object *)eg, OM_DISPOSE);
+	    eg = NULL;
 	}
     }
 
-    return (IPTR)o;
+    return (IPTR)eg;
 }
 
 /***********************************************************************************/
 
-static IPTR aslstring_dispose(Class * cl, Object * o, Msg msg)
+IPTR AslString__OM_DISPOSE(Class * cl, Object * o, Msg msg)
 {
     struct AslStringData *data;
     IPTR retval;
@@ -102,12 +92,12 @@ static IPTR aslstring_dispose(Class * cl, Object * o, Msg msg)
 
 /***********************************************************************************/
 
-static IPTR aslstring_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR AslString__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct AslStringData *data;
     IPTR retval;
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
@@ -119,7 +109,7 @@ static IPTR aslstring_render(Class *cl, Object *o, struct gpRender *msg)
 	};	
 	WORD x, y, w, h;
 	
-	getgadgetcoords(G(o), msg->gpr_GInfo, &x, &y, &w, &h);
+	getgadgetcoords(g, msg->gpr_GInfo, &x, &y, &w, &h);
 	
 	x -= BORDERSTRINGSPACINGX;
 	y -= BORDERSTRINGSPACINGY;
@@ -140,70 +130,9 @@ static IPTR aslstring_render(Class *cl, Object *o, struct gpRender *msg)
 
     } /* if (msg->gpr_Redraw == GREDRAW_REDRAW) */
     
-    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
     
     return retval;
-}
-
-/***********************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_aslstringclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-        case OM_NEW:
-	    retval = aslstring_new(cl, obj, (struct opSet *)msg);
-	    break;
-	
-	case OM_DISPOSE:
-	    retval = aslstring_dispose(cl, obj, msg);
-	    break;
-	    
-	case GM_RENDER:
-	    retval = aslstring_render(cl, obj, (struct gpRender *)msg);
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
-
-    } /* switch (msg->MethodID) */
-    
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/***********************************************************************************/
-
-#undef AslBase
-
-Class *makeaslstringclass(struct AslBase_intern * AslBase)
-{
-    Class *cl = NULL;
-
-    if (AslBase->aslstringclass)
-	return AslBase->aslstringclass;
-
-   cl = MakeClass(NULL, STRGCLASS, NULL, sizeof(struct AslStringData), 0UL);
-    if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_aslstringclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) AslBase;
-
-    AslBase->aslstringclass = cl;
-
-    return cl;
 }
 
 /***********************************************************************************/
