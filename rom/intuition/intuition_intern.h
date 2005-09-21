@@ -2,7 +2,7 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -31,6 +31,9 @@
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
+#ifndef EXEC_LISTS_H
+#   include <exec/lists.h>
+#endif
 #ifndef GRAPHICS_GFXBASE_H
 #   include <graphics/gfxbase.h>
 #endif
@@ -57,6 +60,9 @@
 #endif
 #ifndef INTUITION_CGHOOKS_H
 #   include <intuition/cghooks.h>
+#endif
+#ifndef INTUITION_SGHOOKS_H
+#   include <intuition/sghooks.h>
 #endif
 #ifndef INTUITION_SCREENS_H
 #   include <intuition/screens.h>
@@ -448,7 +454,6 @@ struct IntIntuitionBase
 
     struct IClass           	*dragbarclass;
     struct IClass           	*sizebuttonclass;
-    struct IClass           	*propgclass;
 
     APTR                    	*mosmenuclass;
 
@@ -1124,5 +1129,224 @@ AROS_UFPA(APTR  , args      , A1));
 #define DEBUG_LOCKPUBSCREENLIST(x)  	;
 #define DEBUG_UNLOCKPUBSCREENLIST(x)    ;
 #define DEBUG_RETHINKDISPLAY(x)     	;
+
+/*
+ * Private data structures of the classes defined by intuition.library
+ */
+
+/* ICClass */
+struct ICData
+{
+    Object          *ic_Target;
+    struct TagItem  *ic_Mapping;
+    struct TagItem  *ic_CloneTags;
+    ULONG            ic_LoopCounter;
+};
+
+/* ModelClass */
+struct ModelData
+{
+    struct MinList memberlist;
+};
+
+/* FrameIClass */
+struct FrameIData
+{
+    /* render bevel only with no fill? */
+    BOOL fid_EdgesOnly;
+
+    /* inverted bevel pens? */
+    BOOL fid_Recessed;
+
+    /* frame style? */
+    WORD fid_FrameType;
+
+    WORD fid_HOffset;
+    WORD fid_VOffset;
+};
+
+/* SysIClass */
+struct SysIData
+{
+    struct DrawInfo *dri;
+    struct Image    *frame;
+    ULONG            type;
+    UWORD            flags;
+};
+
+/* FillRectClass */
+struct FillRectData
+{
+    WORD apatsize;
+    WORD mode;
+};
+
+/* GadgetClass */
+struct GadgetData
+{
+    struct ExtGadget    EG;
+    struct ICData       IC;
+};
+
+/* PropGClass */
+struct PropGData
+{
+    /* We use a propinfo structure, because we use the same routines
+    for intuition propgadtets and in propgclass */
+
+    struct PropInfo  propinfo;
+
+    /* A little kludge: since the HandleMouseMove function
+    wants dx/dy and not absolute mouse coords, we
+    have to remember the last ones */
+
+    UWORD            last_x;
+    UWORD            last_y;
+
+    /* One only have to store total or visble, and use some other
+    formulas than those in the RKRM:L, but for
+    code simplicity I store them all.  */
+    UWORD            top, visible, total;
+
+    UWORD            flags;
+    struct BBox     *old_knobbox;
+};
+
+/* StrGClass */
+struct StrGData
+{
+    struct StringInfo   StrInfo;
+    struct StringExtend StrExtend;
+    UBYTE           	Flags;
+};
+
+/* GroupGClass */
+struct GroupGData
+{
+    struct MinList   memberlist;
+    struct Gadget    *activegad;
+};
+
+/* DragBarClass */
+struct dragbar_data
+{
+    /* Current left- and topedge of moving window. Ie when the user releases
+    the LMB after a windowdrag, the window's new coords will be (curleft, curtop)
+    */
+
+    LONG    	     curleft;
+    LONG    	     curtop;
+
+    /* The current x and y coordinates relative to curleft/curtop */
+    LONG    	     mousex;
+    LONG    	     mousey;
+
+    /* Whether the dragframe is currently drawn or erased */
+    BOOL    	     isrendered;
+
+    /* Used to tell GM_GOINACTIVE whether the drag was canceled or not */
+    BOOL    	     drag_canceled;
+
+    /* Used to tell GM_GOINACTIVE whether UnlockLayer() or not */
+    BOOL    	     drag_layerlock;
+#ifdef USEGADGETLOCK
+    BOOL    	     drag_gadgetlock;
+#endif
+    BOOL    	     drag_refreshed;
+
+    /* Rastport to use during update */
+    struct RastPort *rp;
+
+    UQUAD   	     lasteventtime;
+    
+    LONG    	     startleft;
+    LONG    	     starttop;
+
+#ifdef USEWINDOWLOCK
+    /* used to prevent windows from opening/closing while user drags a window */
+    BOOL    	     drag_windowlock;
+#endif
+
+    struct Task     *movetask;
+
+};
+
+/* SizeButtonClass */
+struct sizebutton_data
+{
+
+    /* The current width and height of the rubber band frame */
+    ULONG   	     width;
+    ULONG   	     height;
+    ULONG   	     top;
+    ULONG   	     left;
+
+    /* holds original sizes */
+    ULONG   	     Width;
+    ULONG   	     Height;
+    ULONG   	     TopEdge;
+    ULONG   	     LeftEdge;
+
+    /* the offset of the mouse pointer to the rubber band frame*/
+    LONG    	     mouseoffsetx;
+    LONG    	     mouseoffsety;
+
+    /* Whether the dragframe is currently drawn or erased */
+    BOOL    	     isrendered;
+
+    /* Used to tell GM_GOINACTIVE whether the drag was canceled or not */
+    BOOL    	     drag_canceled;
+
+    /* Used to tell GM_GOINACTIVE whether UnlockLayer() or not */
+    BOOL    	     drag_layerlock;
+#ifdef USEGADGETLOCK
+    BOOL    	     drag_gadgetlock;
+#endif
+
+    BOOL    	     drag_refreshed;
+
+    /* Rastport to use during update */
+    struct RastPort *rp;
+
+    UQUAD   	     lasteventtime;
+
+#ifdef USEWINDOWLOCK
+    /* used to prevent windows from opening/closing while user drags a window */
+    BOOL    	     drag_windowlock;
+#endif
+
+#ifdef SKINS
+    ULONG   	     drag_type;
+#endif
+
+    ULONG   	     drag_ticks;
+
+};
+
+/* MenuBarLabelClass */
+struct MenuBarLabelData
+{
+    struct DrawInfo *dri;
+};
+
+/* PointerClass */
+struct PointerData
+{
+    struct SharedPointer *shared_pointer;
+};
+
+/* WinDecorClass */
+struct windecor_data
+{
+    struct IntDrawInfo  *dri;
+    struct Screen   	*scr;
+};
+
+/* ScrDecorClass */
+struct scrdecor_data
+{
+    struct IntDrawInfo  *dri;
+    struct Screen   	*scr;
+};
 
 #endif /* INTUITION_INTERN_H */

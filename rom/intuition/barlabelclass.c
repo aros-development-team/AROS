@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -53,138 +53,98 @@
 
 /*************************** BarLabelClass *****************************/
 
-struct MenuBarLabelData
+IPTR MenuBarLabelClass__OM_NEW(Class *cl, Object *obj, Msg msg)
 {
-    struct DrawInfo *dri;
-};
-
-AROS_UFH3S(IPTR, dispatch_menubarlabelclass,
-           AROS_UFHA(Class *, cl, A0),
-           AROS_UFHA(Object *, obj, A2),
-           AROS_UFHA(Msg, msg, A1)
-          )
-{
-    AROS_USERFUNC_INIT
-
-    struct MenuBarLabelData *data;
-    struct RastPort         *rp;
-    struct TagItem          *ti;
-    WORD            	     x1, y1, x2, y2;
-
-    IPTR            	     retval = 0UL;
-
-    switch (msg->MethodID)
+    struct Image *im = (struct Image *)DoSuperMethodA(cl, obj, msg);
+    
+    if (im)
     {
-	case OM_NEW:
-            obj = (Object *)DoSuperMethodA(cl, obj, msg);
-            if (obj)
-            {
-        	data = INST_DATA(cl, obj);
-        	data->dri = NULL;
-
-        	retval = (IPTR)obj;
-            }
-            break;
-
-	case OM_SET:
-            if ((ti = FindTagItem(SYSIA_DrawInfo, ((struct opSet *)msg)->ops_AttrList)))
-            {
-        	data = INST_DATA(cl, obj);
-
-        	data->dri = (struct DrawInfo *)ti->ti_Data;
-            }
-            retval = DoSuperMethodA(cl, obj, msg);
-            break;
-
-	case OM_GET:
-            switch(((struct opGet *)msg)->opg_AttrID)
-            {
-        	case IA_SupportsDisable:
-        	    if (MENUS_AMIGALOOK)
-        	    {
-                	*(((struct opGet *)msg)->opg_Storage) = 0;
-        	    }
-        	    else
-        	    {
-                	*(((struct opGet *)msg)->opg_Storage) = 1;
-        	    }
-
-        	    retval = 1;
-        	    break;
-
-        	default:
-        	    retval = DoSuperMethodA(cl, obj, msg);
-        	    break;
-            }
-            break;
-
-	case IM_DRAW:
-            data = INST_DATA(cl, obj);
-
-            if (data->dri)
-            {
-        	rp = ((struct impDraw *)msg)->imp_RPort;
-
-        	if (!rp) break;
-
-        	SetDrMd(rp, JAM1);
-
-        	x1 = ((struct Image *)obj)->LeftEdge + ((struct impDraw *)msg)->imp_Offset.X;
-        	y1 = ((struct Image *)obj)->TopEdge  + ((struct impDraw *)msg)->imp_Offset.Y;
-        	x2 = x1 + ((struct Image *)obj)->Width  - 1;
-        	y2 = y1 + ((struct Image *)obj)->Height - 1;
-
-
-        	if (MENUS_AMIGALOOK)
-        	{
-                    SetAPen(rp, data->dri->dri_Pens[BARDETAILPEN]);
-                    RectFill(rp, x1, y1, x2, y2);
-        	}
-        	else
-        	{
-                    /* Will only work if imageheight = 2 */
-                    SetAPen(rp, data->dri->dri_Pens[SHADOWPEN]);
-                    RectFill(rp, x1, y1, x2 - 1, y1);
-                    WritePixel(rp, x1, y2);
-
-                    SetAPen(rp, data->dri->dri_Pens[SHINEPEN]);
-                    RectFill(rp, x1 + 1, y2, x2, y2);
-                    WritePixel(rp, x2, y1);
-        	}
-		
-            } /* if (data->dri) */
-            break;
-
-	default:
-            retval = DoSuperMethodA(cl, obj, msg);
-            break;
-
-    } /* switch (msg->MethodID) */
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/****************************************************************************/
-
-#undef IntuitionBase
-
-/****************************************************************************/
-
-struct IClass *InitMenuBarLabelClass (struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl;
-
-    if ( (cl = MakeClass(MENUBARLABELCLASS, IMAGECLASS, NULL, sizeof(struct MenuBarLabelData), 0)) )
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_menubarlabelclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-        AddClass (cl);
+	struct MenuBarLabelData *data = INST_DATA(cl, im);
+	data->dri = NULL;
     }
-
-    return (cl);
+    
+    return (IPTR)im;
 }
 
+/****************************************************************************/
+
+IPTR MenuBarLabelClass__OM_SET(Class *cl, struct Image *im, struct opSet *msg)
+{
+    struct TagItem *ti;
+    
+    if ((ti = FindTagItem(SYSIA_DrawInfo, msg->ops_AttrList)))
+    {
+	struct MenuBarLabelData *data = INST_DATA(cl, im);
+
+	data->dri = (struct DrawInfo *)ti->ti_Data;
+    }
+    
+    return DoSuperMethodA(cl, (Object *)im, (Msg)msg);
+}
+
+/****************************************************************************/
+
+IPTR MenuBarLabelClass__OM_GET(Class *cl, struct Image *im, struct opGet *msg)
+{
+    switch(msg->opg_AttrID)
+    {
+    case IA_SupportsDisable:
+	if (MENUS_AMIGALOOK)
+	{
+	    *(msg->opg_Storage) = 0;
+	}
+	else
+	{
+	    *(msg->opg_Storage) = 1;
+	}
+	return (IPTR)1;
+	
+    default:
+	return DoSuperMethodA(cl, (Object *)im, (Msg)msg);
+    }
+}
+
+/****************************************************************************/
+
+IPTR MenuBarLabelClass__IM_DRAW(Class *cl, struct Image *im, struct impDraw *msg)
+{
+    struct MenuBarLabelData *data = INST_DATA(cl, im);
+
+    if (data->dri)
+    {
+	struct RastPort *rp = msg->imp_RPort;
+	WORD x1, y1, x2, y2;
+	
+	if (!rp) return (IPTR)0;
+
+	SetDrMd(rp, JAM1);
+
+	x1 = im->LeftEdge + msg->imp_Offset.X;
+	y1 = im->TopEdge  + msg->imp_Offset.Y;
+	x2 = x1 + im->Width  - 1;
+	y2 = y1 + im->Height - 1;
+
+	
+	if (MENUS_AMIGALOOK)
+	{
+	    SetAPen(rp, data->dri->dri_Pens[BARDETAILPEN]);
+	    RectFill(rp, x1, y1, x2, y2);
+	}
+	else
+	{
+	    /* Will only work if imageheight = 2 */
+	    SetAPen(rp, data->dri->dri_Pens[SHADOWPEN]);
+	    RectFill(rp, x1, y1, x2 - 1, y1);
+	    WritePixel(rp, x1, y2);
+
+	    SetAPen(rp, data->dri->dri_Pens[SHINEPEN]);
+	    RectFill(rp, x1 + 1, y2, x2, y2);
+	    WritePixel(rp, x2, y1);
+	}
+		
+    } /* if (data->dri) */
+    
+    return (IPTR)0;
+}
+
+/****************************************************************************/

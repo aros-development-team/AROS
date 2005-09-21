@@ -2,7 +2,7 @@
 #define _GADGETS_H_
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -35,7 +35,7 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg,
 
 /* Calculate the size of the Bounding Box of the gadget */
 void CalcBBox (struct Window *, struct Requester *, struct Gadget *, struct BBox *);
-void GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox);
+void GetGadgetIBox(struct Gadget *g, struct GadgetInfo *gi, struct IBox *ibox);
 
 /* Render a label */
 ULONG LabelWidth (struct RastPort *, STRPTR label, ULONG len,

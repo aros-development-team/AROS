@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -823,7 +823,7 @@ struct Gadget * FindGadget (struct Screen *scr, struct Window * window,
 
                 /* Get coords relative to window */
 
-                GetGadgetIBox((Object *)gadget, gi, &ibox);
+                GetGadgetIBox(gadget, gi, &ibox);
 
                 xrel = x - gi->gi_Domain.Left;
                 yrel = y - gi->gi_Domain.Top;

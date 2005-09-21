@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -60,269 +60,205 @@
 
 /***********************************************************************************/
 
-/* Some handy transparent base class object casting defines.
- */
-#define G(o)  ((struct Gadget *)o)
-#define EG(o) ((struct ExtGadget *)o)
-#define IM(o) ((struct Image *)o)
-
-/***********************************************************************************/
-
 #undef IntuitionBase
 #define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
 
 /***********************************************************************************/
 
-AROS_UFH3S(IPTR, dispatch_imageclass,
-           AROS_UFHA(Class *,  cl,  A0),
-           AROS_UFHA(Object *, o,   A2),
-           AROS_UFHA(Msg,      msg, A1)
-          )
+IPTR _om_set(Class *cl, struct Image *im, struct TagItem *tags)
 {
-    AROS_USERFUNC_INIT
+    struct TagItem *tstate = tags;
+    struct TagItem *tag;
+    IPTR   tidata;
+    BOOL   unsupported = FALSE;
 
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID)
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
-	case OM_NEW:
-            D(kprintf("ImageClass OM_NEW\n"));
+	tidata = tag->ti_Data;
 
-            if (cl)
-            {
-        	retval = (IPTR)DoSuperMethodA(cl, o, msg);
-
-        	if(retval)
-        	{
-                    /*
-                    This is how Intuition knows an image is a boopsi
-                    object!
-                    */
-                    /*
-                      The instance object is contains cleared memory!
-                      memset ((void *)retval, 0, (cl->cl_InstOffset + cl->cl_InstSize));
-                    */
-                    IM(retval)->Width = 80;
-                    IM(retval)->Height = 40;
-                    IM(retval)->Depth = CUSTOMIMAGEDEPTH;
-        	}
-            }
-
-            o = (Object *)retval;
-            /*
-            Fall through -> allow the class the set all the initial
-            attributes
-            */
-
-	case OM_SET:
-        {
-            struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
-            struct TagItem *tag;
-            IPTR 	    	tidata;
-            BOOL 	    	unsupported = FALSE;
-
-            D( kprintf("ImageClass OM_SET\n") );
-
-            while ((tag = NextTagItem(&tstate)))
-            {
-                tidata = tag->ti_Data;
-
-                switch (tag->ti_Tag)
-                {
-                    case IA_Left:
-                	IM(o)->LeftEdge = (WORD) tidata;
-                	break;
-
-                    case IA_Top:
-                	IM(o)->TopEdge = (WORD) tidata;
-                	break;
-
-                    case IA_Width:
-                	IM(o)->Width = (WORD) tidata;
-                	break;
-
-                    case IA_Height:
-                	IM(o)->Height = (WORD) tidata;
-                	break;
-
-                    case IA_FGPen:
-                	IM(o)->PlanePick = (WORD) tidata;
-                	break;
-
-                    case IA_BGPen:
-                	IM(o)->PlaneOnOff = (WORD) tidata;
-                	break;
-
-                    case IA_Data:
-                	IM(o)->ImageData = (UWORD *) tidata;
-                	break;
-
-                    default:
-                	unsupported = TRUE;
-                	break;
-
-                } /* switch (Tag) */
-
-            } /* while (Tag) */
-
-            /*
-            If all attributes were supported and there is no retval yet,
-            set retval to 1.
-            */
-            if (!unsupported && !retval)
-                retval = 1UL;
-            /*
-            Because we are a direct subclass of rootclass
-            which has no settable/gettable attributes we
-            we will NOT pass this method to our superclass!
-            */
-            break;
-        }
-
-	case OM_GET:
-            D( kprintf("ImageClass OM_GET\n") );
-
-            retval = 1UL;
-
-            switch (((struct opGet *)msg)->opg_AttrID)
-            {
-        	case IA_Left:
-        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->LeftEdge;
-        	    break;
-
-        	case IA_Top:
-        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->TopEdge;
-        	    break;
-
-        	case IA_Width:
-        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->Width;
-        	    break;
-
-        	case IA_Height:
-        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->Height;
-        	    break;
-
-        	case IA_FGPen:
-        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->PlanePick;
-        	    break;
-
-        	case IA_BGPen:
-        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->PlaneOnOff;
-        	    break;
-
-        	case IA_Data:
-        	    *((struct opGet *)msg)->opg_Storage = (IPTR) IM(o)->ImageData;
-        	    break;
-
-        	default:
-        	    retval = 0UL;
-        	    break;
-
-            } /* switch */
-
-            /*
-            Because we are a direct subclass of rootclass
-            which has no settable/gettable attributes we
-            we will NOT pass this method to our superclass!
-            */
-            break;
-
-	case IM_ERASE:
-            /*
-            Both erase methods are documented as handled the same
-            at this level, so we will fall thru...
-            */
-	case IM_ERASEFRAME:
-        {
-            WORD left, top, width, height;
-
-            D(kprintf("ImageClass IM_ERASE(FRAME)\n") );
-
-            left   = IM(o)->LeftEdge + ((struct impErase *)msg)->imp_Offset.X;
-            top    = IM(o)->TopEdge + ((struct impErase *)msg)->imp_Offset.Y;
-            width  = IM(o)->Width - 1;
-            height = IM(o)->Height - 1;
-
-            if (((struct impErase *)msg)->imp_RPort)
-	    {
-        	EraseRect(((struct impErase *)msg)->imp_RPort,
-                	  left, top,
-                	  left + width, top + height);
-    	    }
-            /* Leave retval=0: No further rendering necessary */
-            break;
-        }
-
-	case IM_HITFRAME:
-	case IM_HITTEST:
-        {
-            struct impHitTest *imp = (struct impHitTest *)msg;
-
-            /*
-            Loosing my sanity, better check that I do not
-            have my X/Y mixed up here. :)
-            */
-            if ((imp->imp_Point.X >= IM(o)->LeftEdge && imp->imp_Point.X < IM(o)->LeftEdge + IM(o)->Width) &&
-                    (imp->imp_Point.Y >= IM(o)->TopEdge  && imp->imp_Point.Y < IM(o)->TopEdge + IM(o)->Height))
-	    {
-                retval = 1UL;
-	    }
-	    
-            DEBUG_HIT(dprintf("image: HITTEST %d %d (%d,%d) %d×%d = %d\n", imp->imp_Point.X, imp->imp_Point.Y,
-                              IM(o)->LeftEdge, IM(o)->TopEdge, IM(o)->Width, IM(o)->Height, retval));
-            break;
-        }
-
-    #if 0 /* for imageclass, IM_HITFRAME==IM_HITTEST */
-	case IM_HITFRAME:
+	switch (tag->ti_Tag)
 	{
-            struct impHitTest *imp = (struct impHitTest *)msg;
+	case IA_Left:
+	    im->LeftEdge = (WORD) tidata;
+	    break;
 
-            /*
-            Loosing my sanity, better check that I do not
-            have my X/Y mixed up here. :)
-            */
-            if ((imp->imp_Point.X >= IM(o)->LeftEdge && imp->imp_Point.X < IM(o)->LeftEdge + imp->imp_Dimensions.Width) &&
-                    (imp->imp_Point.Y >= IM(o)->TopEdge  && imp->imp_Point.Y < IM(o)->TopEdge + imp->imp_Dimensions.Height))
-        	retval = 1UL;
-            break;
-	}
-    #endif
+	case IA_Top:
+	    im->TopEdge = (WORD) tidata;
+	    break;
 
-            /* case OM_DISPOSE */
+	case IA_Width:
+	    im->Width = (WORD) tidata;
+	    break;
+
+	case IA_Height:
+	    im->Height = (WORD) tidata;
+	    break;
+
+	case IA_FGPen:
+	    im->PlanePick = (WORD) tidata;
+	    break;
+
+	case IA_BGPen:
+	    im->PlaneOnOff = (WORD) tidata;
+	    break;
+	    
+	case IA_Data:
+	    im->ImageData = (UWORD *) tidata;
+	    break;
+
 	default:
-            retval = DoSuperMethodA(cl, o, msg);
-            break;
+	    unsupported = TRUE;
+	    break;
 
+	} /* switch (Tag) */
+
+    } /* while (Tag) */
+
+    /*
+     * If all attributes were supported and there is no retval yet,
+     * set retval to 1.
+     */
+    if (!unsupported)
+	return (IPTR)1;
+    else
+	return (IPTR)0;
+}
+
+IPTR ImageClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
+{
+    struct Image *im;
+    
+    D(kprintf("ImageClass OM_NEW\n"));
+
+    if (cl)
+    {
+	im = (struct Image *)DoSuperMethodA(cl, o, (Msg)msg);
+
+	if(im)
+	{
+	    /*
+	     * This is how Intuition knows an image is a boopsi
+	     * object!
+	     */
+	    /*
+	     * The instance object is contains cleared memory!
+	     * memset ((void *)retval, 0, (cl->cl_InstOffset + cl->cl_InstSize));
+	     */
+	    im->Width = 80;
+	    im->Height = 40;
+	    im->Depth = CUSTOMIMAGEDEPTH;
+	    
+	    _om_set(cl, im, msg->ops_AttrList);
+	    
+	    return (IPTR)im;
+	}
+	else
+	    return (IPTR)NULL;
+    }
+    else
+	return (IPTR)NULL;
+}
+
+IPTR ImageClass__OM_SET(Class *cl, struct Image *im, struct opSet *msg)
+{
+    D( kprintf("ImageClass OM_SET\n") );
+
+    /*
+     * Because we are a direct subclass of rootclass
+     * which has no settable/gettable attributes we
+     * we will NOT pass this method to our superclass!
+     */
+    return _om_set(cl, im, msg->ops_AttrList);
+}
+
+IPTR ImageClass__OM_GET(Class *cl, struct Image *im, struct opGet *msg)
+{
+    D( kprintf("ImageClass OM_GET\n") );
+
+    switch (msg->opg_AttrID)
+    {
+    case IA_Left:
+	*msg->opg_Storage = (IPTR) im->LeftEdge;
+	break;
+
+    case IA_Top:
+	*msg->opg_Storage = (IPTR) im->TopEdge;
+	break;
+
+    case IA_Width:
+	*msg->opg_Storage = (IPTR) im->Width;
+	break;
+
+    case IA_Height:
+	*msg->opg_Storage = (IPTR) im->Height;
+	break;
+
+    case IA_FGPen:
+	*msg->opg_Storage = (IPTR) im->PlanePick;
+	break;
+
+    case IA_BGPen:
+	*msg->opg_Storage = (IPTR) im->PlaneOnOff;
+	break;
+
+    case IA_Data:
+	*msg->opg_Storage = (IPTR) im->ImageData;
+	break;
+
+    default:
+	return (IPTR)0;
     } /* switch */
 
-    return (retval);
+    /*
+     * Because we are a direct subclass of rootclass
+     * which has no settable/gettable attributes we
+     * we will NOT pass this method to our superclass!
+     */
+    return (IPTR)1;
+}
 
-    AROS_USERFUNC_EXIT
-} /* dispatch_imageclass */
-
-/***********************************************************************************/
-
-#undef IntuitionBase
-
-/***********************************************************************************/
-
-struct IClass *InitImageClass (struct IntuitionBase * IntuitionBase)
+IPTR ImageClass__IM_ERASE(Class *cl, struct Image *im, struct impErase *msg)
 {
-    struct IClass *cl = NULL;
+    /*
+     * Both erase methods are documented as handled the same
+     * at this level, so we will fall thru...
+     */
+    WORD left, top, width, height;
 
-    /* This is the code to make the image class...
-    */
-    if ((cl = MakeClass(IMAGECLASS, ROOTCLASS, NULL, sizeof(struct Image), 0)))
+    D(kprintf("ImageClass IM_ERASE(FRAME)\n") );
+
+    left   = im->LeftEdge + msg->imp_Offset.X;
+    top    = im->TopEdge + msg->imp_Offset.Y;
+    width  = im->Width - 1;
+    height = im->Height - 1;
+
+    if (msg->imp_RPort)
     {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_imageclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-        AddClass (cl);
+	EraseRect(msg->imp_RPort,
+		  left, top,
+		  left + width, top + height
+	);
     }
+    
+    return (IPTR)0;
+}
 
-    return (cl);
+IPTR ImageClass__IM_HITTEST(Class *cl, struct Image *im, struct impHitTest *imp)
+{
+    int hit;
+    
+    /*
+     * Loosing my sanity, better check that I do not
+     * have my X/Y mixed up here. :)
+     */
+    hit = (imp->imp_Point.X >= im->LeftEdge && imp->imp_Point.X < im->LeftEdge + im->Width)
+	  && (imp->imp_Point.Y >= im->TopEdge  && imp->imp_Point.Y < im->TopEdge + im->Height)
+    ;
+    
+    DEBUG_HIT(dprintf("image: HITTEST %d %d (%d,%d) %d×%d = %d\n", imp->imp_Point.X, imp->imp_Point.Y,
+		      im->LeftEdge, im->TopEdge, im->Width, im->Height, hit));
+
+    return (IPTR)hit;
 }
 
 /***********************************************************************************/

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -43,14 +43,6 @@
 
 /****************************************************************************/
 
-struct FillRectData
-{
-    WORD apatsize;
-    WORD mode;
-};
-
-/****************************************************************************/
-
 IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem  	*tag, *tstate = msg->ops_AttrList;
@@ -84,7 +76,7 @@ IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
 
 /****************************************************************************/
 
-IPTR fillrect_draw(Class *cl, Object *obj, struct impDraw *msg)
+IPTR FillRectClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 {
     struct FillRectData *data = INST_DATA(cl, obj);
     struct RastPort      rp;
@@ -121,68 +113,20 @@ IPTR fillrect_draw(Class *cl, Object *obj, struct impDraw *msg)
 
 /****************************************************************************/
 
-AROS_UFH3S(IPTR, dispatch_fillrectclass,
-           AROS_UFHA(Class *, cl, A0),
-           AROS_UFHA(Object *, obj, A2),
-           AROS_UFHA(Msg, msg, A1)
-          )
+IPTR FillRectClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
-    AROS_USERFUNC_INIT
+    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
+    if (obj)
+	fillrect_set(cl, obj, msg);
 
-    IPTR retval = 0UL;
-
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-            obj = (Object *)DoSuperMethodA(cl, obj, msg);
-            if (obj)
-            {
-        	fillrect_set(cl, obj, (struct opSet *)msg);
-        	retval = (IPTR)obj;
-            }
-            break;
-
-	case OM_SET:
-            retval = fillrect_set(cl, obj, (struct opSet *)msg);
-            retval += DoSuperMethodA(cl, obj, msg);
-            break;
-
-
-	case IM_DRAW:
-	case IM_DRAWFRAME:
-            retval = fillrect_draw(cl, obj, (struct impDraw *)msg);
-            break;
-
-	default:
-            retval = DoSuperMethodA(cl, obj, msg);
-            break;
-
-    } /* switch (msg->MethodID) */
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
+    return (IPTR)obj;
 }
 
 /****************************************************************************/
 
-#undef IntuitionBase
-
-/****************************************************************************/
-
-struct IClass *InitFillRectClass (struct IntuitionBase * IntuitionBase)
+IPTR FillRectClass__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
-    struct IClass *cl;
-
-    if ( (cl = MakeClass(FILLRECTCLASS, IMAGECLASS, NULL, sizeof(struct FillRectData), 0)) )
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_fillrectclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-        AddClass (cl);
-    }
-
-    return (cl);
+    return fillrect_set(cl, obj, msg) + DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
+/****************************************************************************/

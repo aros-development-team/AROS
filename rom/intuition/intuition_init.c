@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -56,27 +56,6 @@ AROS_UFP3(ULONG, rootDispatcher,
           AROS_UFPA(Object *, obj, A2),
           AROS_UFPA(Msg,      msg, A1)
          );
-
-struct IClass *InitICClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitModelClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitImageClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitFrameIClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitSysIClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitFillRectClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitGadgetClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitButtonGClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitFrButtonClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitPropGClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitStrGClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitGroupGClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitWinDecorClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitScrDecorClass (LIBBASETYPEPTR LIBBASE);
-
-struct IClass *InitMenuBarLabelClass (LIBBASETYPEPTR LIBBASE);
-
-struct IClass *InitDragBarClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitSizeButtonClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitPointerClass (LIBBASETYPEPTR LIBBASE);
 
 /****************************************************************************************/
 
@@ -159,72 +138,9 @@ AROS_SET_LIBFUNC(IntuitionInit, LIBBASETYPE, LIBBASE)
 
 #endif
 
-    InitSemaphore(&GetPrivIBase(LIBBASE)->ClassListLock);
-    NEWLIST(&GetPrivIBase(LIBBASE)->ClassList);
-
-    /* Setup root class */
-
-    GetPrivIBase(LIBBASE)->RootClass.cl_Dispatcher.h_Entry = (APTR)AROS_ASMSYMNAME(rootDispatcher);
-    GetPrivIBase(LIBBASE)->RootClass.cl_ID                 = (ClassID)ROOTCLASS;
-    GetPrivIBase(LIBBASE)->RootClass.cl_UserData           = (IPTR)LIBBASE;
-    DEBUG_INIT(dprintf("LIB_Init: create rootclass\n"));
-    AddClass(&(GetPrivIBase(LIBBASE)->RootClass));
-
-    /* Add all other classes */
-
-    DEBUG_INIT(dprintf("LIB_Init: create icclass\n"));
-    InitICClass (LIBBASE);      /* After ROOTCLASS  */
-    DEBUG_INIT(dprintf("LIB_Init: create modelclass\n"));
-    InitModelClass (LIBBASE);       /* After ICCLASS    */
-        
-    DEBUG_INIT(dprintf("LIB_Init: create imageclass\n"));
-    InitImageClass (LIBBASE);       /* After ROOTCLASS  */
-    DEBUG_INIT(dprintf("LIB_Init: create frameiclass\n"));
-    InitFrameIClass (LIBBASE);      /* After IMAGECLASS */
-    DEBUG_INIT(dprintf("LIB_Init: create sysiclass\n"));
-    InitSysIClass (LIBBASE);        /* After IMAGECLASS */
-    DEBUG_INIT(dprintf("LIB_Init: create fillrectclass\n"));
-    InitFillRectClass (LIBBASE);    /* After IMAGECLASS */
-    DEBUG_INIT(dprintf("LIB_Init: create itexticlass\n"));
-    InitITextIClass (LIBBASE);      /* After IMAGECLASS */
-    DEBUG_INIT(dprintf("LIB_Init: create gadgetclass\n"));
-    InitGadgetClass (LIBBASE);      /* After ROOTCLASS  */
-    DEBUG_INIT(dprintf("LIB_Init: create buttonclass\n"));
-    InitButtonGClass (LIBBASE);     /* After GADGETCLASS    */
-    DEBUG_INIT(dprintf("LIB_Init: create frbuttonclass\n"));
-    InitFrButtonClass (LIBBASE);    /* After BUTTONGCLASS   */
-    DEBUG_INIT(dprintf("LIB_Init: create propgclass\n"));
-    GetPrivIBase(LIBBASE)->propgclass = InitPropGClass (LIBBASE); /* After GADGETCLASS    */
-    DEBUG_INIT(dprintf("LIB_Init: create strgclass\n"));
-    InitStrGClass (LIBBASE);        /* After GADGETCLASS    */
-    DEBUG_INIT(dprintf("LIB_Init: create groupgclass\n"));
-    InitGroupGClass (LIBBASE);      /* After GADGETCLASS    */
-    DEBUG_INIT(dprintf("LIB_Init: create windecorclass\n"));
-    InitWinDecorClass (LIBBASE);    /* After ROOTCLASS    */
-    DEBUG_INIT(dprintf("LIB_Init: create scrdecorclass\n"));
-    InitScrDecorClass (LIBBASE);    /* After ROOTCLASS    */
-    
 #ifdef __MORPHOS__
     GetPrivIBase(LIBBASE)->mosmenuclass = InitMuiMenuClass(LIBBASE);
 #endif
-
-    DEBUG_INIT(dprintf("LIB_Init: create menubarlabelclass\n"));
-    InitMenuBarLabelClass (LIBBASE); /* After IMAGECLASS */
-
-    DEBUG_INIT(dprintf("LIB_Init: create dragbarclass\n"));
-    GetPrivIBase(LIBBASE)->dragbarclass = InitDragBarClass (LIBBASE); /* After GADGETCLASS */
-    if (!GetPrivIBase(LIBBASE)->dragbarclass)
-	return FALSE;
-
-    DEBUG_INIT(dprintf("LIB_Init: create sizebuttonclass\n"));
-    GetPrivIBase(LIBBASE)->sizebuttonclass = InitSizeButtonClass (LIBBASE); /* After GADGETCLASS */
-    if (!GetPrivIBase(LIBBASE)->sizebuttonclass)
-	return FALSE;
-
-    DEBUG_INIT(dprintf("LIB_Init: create pointerclass\n"));
-    GetPrivIBase(LIBBASE)->pointerclass = InitPointerClass (LIBBASE);
-    if (!GetPrivIBase(LIBBASE)->pointerclass)
-	return FALSE;
 
     DEBUG_INIT(dprintf("LIB_Init: create menu handler task\n"));
     /* FIXME: no cleanup routines for MenuHandler task */
@@ -265,6 +181,26 @@ AROS_SET_LIBFUNC(IntuitionInit, LIBBASETYPE, LIBBASE)
 
     return TRUE;
     
+    AROS_SET_LIBFUNC_EXIT
+}
+
+AROS_SET_LIBFUNC(InitRootClass, LIBBASETYPE, LIBBASE)
+{
+    AROS_SET_LIBFUNC_INIT
+
+    InitSemaphore(&GetPrivIBase(LIBBASE)->ClassListLock);
+    NEWLIST(&GetPrivIBase(LIBBASE)->ClassList);
+
+    /* Setup root class */
+
+    GetPrivIBase(LIBBASE)->RootClass.cl_Dispatcher.h_Entry = (APTR)AROS_ASMSYMNAME(rootDispatcher);
+    GetPrivIBase(LIBBASE)->RootClass.cl_ID                 = (ClassID)ROOTCLASS;
+    GetPrivIBase(LIBBASE)->RootClass.cl_UserData           = (IPTR)LIBBASE;
+    DEBUG_INIT(dprintf("LIB_Init: create rootclass\n"));
+    AddClass(&(GetPrivIBase(LIBBASE)->RootClass));
+    
+    return TRUE;
+
     AROS_SET_LIBFUNC_EXIT
 }
 
@@ -492,5 +428,7 @@ AROS_SET_LIBFUNC(IntuitionOpen, LIBBASETYPE, LIBBASE)
     AROS_SET_LIBFUNC_EXIT
 }
 
+DECLARESET(CLASSESINIT);
+ADD2SET(InitRootClass, classesinit, -20);
 ADD2INITLIB(IntuitionInit, 0);
 ADD2OPENLIB(IntuitionOpen, 0);

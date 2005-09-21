@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -27,14 +27,6 @@
 
 #undef IntuitionBase
 #define IntuitionBase 	    	((struct IntuitionBase *)(cl->cl_UserData))
-#define EG(o) 	    	    	((struct ExtGadget *)o)
-
-struct StrGData
-{
-    struct StringInfo   StrInfo;
-    struct StringExtend StrExtend;
-    UBYTE           	Flags;
-};
 
 #define SFLG_BUFFER_ALLOCATED   (1 << 2)
 #define SFLG_WORKBUF_ALLOCATED  (1 << 3)
@@ -79,11 +71,11 @@ else                \
 flagvar &= ~flag;
 
 
-STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
+STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
 {
     struct TagItem  *tag, *tstate;
-    struct StrGData *data = INST_DATA(cl, o);
-    IPTR    	     retval = 0UL;
+    struct StrGData *data = INST_DATA(cl, g);
+    IPTR    	     retval = (IPTR)0;
 
     for (tstate = msg->ops_AttrList; (tag = NextTagItem(&tstate)); )
     {
@@ -104,7 +96,7 @@ STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
                     set_buffer_str(&data->StrInfo);
                     //snprintf(data->StrInfo.Buffer, data->StrInfo.MaxChars, "%d", data->StrInfo.LongInt);
 
-                    EG(o)->Activation |= GACT_LONGINT;
+                    g->Activation |= GACT_LONGINT;
                     retval = 1UL;
                     notify = TRUE;
         	}
@@ -116,7 +108,7 @@ STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
                     /* OM_NEW STRINGA_TextVal is handled in strg_new! */
 
                     strcpy(data->StrInfo.Buffer, (STRPTR)tidata);
-                    EG(o)->Activation &= ~GACT_LONGINT;
+                    g->Activation &= ~GACT_LONGINT;
                     retval = 1UL;
                     notify = TRUE;
         	}
@@ -190,7 +182,7 @@ STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
         	break;
 
             case STRINGA_Justification: /* [IS] */
-        	EG(o)->Activation |= (UWORD)tidata;
+        	g->Activation |= (UWORD)tidata;
         	retval = 1UL;
         	break;
 
@@ -207,7 +199,7 @@ STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
             struct TagItem notify_tags[] =
             {
         	{ 0UL	    , 0UL   	    	},
-        	{ GA_ID     , EG(o)->GadgetID	},
+        	{ GA_ID     , g->GadgetID	},
         	{ TAG_END   	    	    	}
             };
             struct opUpdate nmsg =
@@ -217,7 +209,7 @@ STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
             notify_tags[0].ti_Tag  = tag->ti_Tag;
             notify_tags[0].ti_Data = tidata;
 
-            DoSuperMethodA(cl, o, (Msg)&nmsg);
+            DoSuperMethodA(cl, (Object *)g, (Msg)&nmsg);
 	    
         } /* if (the currently parsed attr supports notification) */
 #endif
@@ -230,29 +222,29 @@ STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
 **  StrG::Get()  **
 ******************/
 
-STATIC IPTR strg_get(Class *cl, Object * o, struct opGet *msg)
+IPTR StrGClass__OM_GET(Class *cl, struct Gadget * g, struct opGet *msg)
 {
-    struct StrGData *data = INST_DATA(cl, o);
+    struct StrGData *data = INST_DATA(cl, g);
     IPTR    	     retval = 1UL;
 
     switch (msg->opg_AttrID)
     {
 	case STRINGA_LongVal:   /* [ISGNU] */
-            if (EG(o)->Activation & GACT_LONGINT)
+            if (g->Activation & GACT_LONGINT)
         	*(msg->opg_Storage) = (IPTR)data->StrInfo.LongInt;
             else
         	*(msg->opg_Storage) = 0UL;
             break;
 
 	case STRINGA_TextVal:   /* [ISGNU] */
-            if (!(EG(o)->Activation & GACT_LONGINT))
+            if (!(g->Activation & GACT_LONGINT))
         	*(msg->opg_Storage) = (IPTR)data->StrInfo.Buffer;
             else
         	*(msg->opg_Storage) = 0UL;
             break;
 
 	default:
-            retval = DoSuperMethodA(cl, o, (Msg)msg);
+            retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
             break;
     }
     return (retval);
@@ -262,13 +254,13 @@ STATIC IPTR strg_get(Class *cl, Object * o, struct opGet *msg)
 **  StrG::New()  **
 ******************/
 
-STATIC Object *strg_new(Class *cl, Object * o, struct opSet *msg)
+IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
 {
-    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
-    if (o)
+    struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
+    if (g)
     {
         struct TagItem  *ti;
-        struct StrGData *data = INST_DATA(cl, o);
+        struct StrGData *data = INST_DATA(cl, g);
         STRPTR      	 textval;
         WORD        	 maxchars;
 
@@ -281,7 +273,7 @@ STATIC Object *strg_new(Class *cl, Object * o, struct opSet *msg)
         /* Set some defaults */
         data->StrInfo.MaxChars = 80;
 
-        strg_set(cl, o, msg);
+        strg_set(cl, g, msg);
 
         /* If no buffers have been supplied, then allocate them */
         maxchars = data->StrInfo.MaxChars;
@@ -319,7 +311,7 @@ STATIC Object *strg_new(Class *cl, Object * o, struct opSet *msg)
         {
             strcpy(data->StrInfo.Buffer, textval);
             D(bug("strgclass:Initializing string gadget to text value %s\n", textval));
-            EG(o)->Activation &= ~GACT_LONGINT;
+            g->Activation &= ~GACT_LONGINT;
         }
 	
         ti = FindTagItem(STRINGA_LongVal, msg->ops_AttrList);
@@ -332,27 +324,27 @@ STATIC Object *strg_new(Class *cl, Object * o, struct opSet *msg)
             //snprintf(data->StrInfo.Buffer, data->StrInfo.MaxChars, "%d", val);
 
             D(bug("strgclass:Initializing string gadget to integer value %d\n", val));
-            EG(o)->Activation |= GACT_LONGINT;
+            g->Activation |= GACT_LONGINT;
         }
 
-        EG(o)->SpecialInfo = &(data->StrInfo);
-        EG(o)->Flags |= GFLG_STRINGEXTEND;
+        g->SpecialInfo = &(data->StrInfo);
+        g->Flags |= GFLG_STRINGEXTEND;
         data->StrInfo.Extension = &(data->StrExtend);
     }
-    return (o);
+    return (IPTR)g;
 
 failure:
     {
         STACKULONG method = OM_DISPOSE;
-        CoerceMethodA(cl, o, (Msg)&method);
+        CoerceMethodA(cl, (Object *)g, (Msg)&method);
     }
-    return (NULL);
+    return (IPTR)NULL;
 }
 
 /**********************
 **  StrG::Dispose()  **
 **********************/
-STATIC VOID strg_dispose(Class *cl, Object *o, Msg msg)
+IPTR StrGClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct StrGData *data = INST_DATA(cl, o);
     
@@ -365,25 +357,27 @@ STATIC VOID strg_dispose(Class *cl, Object *o, Msg msg)
     if ((data->StrExtend.WorkBuffer) && (data->Flags & SFLG_WORKBUF_ALLOCATED))
         FreeVec(data->StrExtend.WorkBuffer);
 
-    DoSuperMethodA(cl, o, msg);
+    return DoSuperMethodA(cl, o, msg);
 }
+
 /*********************
 **  Strg::Render()  **
 *********************/
-
-STATIC VOID strg_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR StrGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
-    UpdateStrGadget((struct Gadget *)o,
+    UpdateStrGadget(g,
         	    msg->gpr_GInfo->gi_Window,
         	    msg->gpr_GInfo->gi_Requester,
         	    IntuitionBase);
+    
+    return (IPTR)0;
 }
 
 
 /**************************
 **  StrG::HandleInput()  **
 **************************/
-STATIC IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR StrGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
 
     IPTR    	    	 ret;
@@ -397,7 +391,7 @@ STATIC IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
         {
             struct IBox container;
 
-            GetGadgetIBox(o, msg->gpi_GInfo, &container);
+            GetGadgetIBox(g, msg->gpi_GInfo, &container);
 
             D(bug("*** click: mouse = %d,%d (%d %d) box = %d,%d - %d %d (%d x %d)\n ***\n",
                   ie->ie_X,
@@ -436,11 +430,12 @@ STATIC IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
     if (retval == GMR_MEACTIVE)
     {
 
-        ret = HandleStrInput((struct Gadget *)o
-                     ,msg->gpi_GInfo
+        ret = HandleStrInput(g
+		     ,msg->gpi_GInfo
                      ,ie
                      ,&imsgcode
-                     ,IntuitionBase);
+                     ,IntuitionBase
+	);
 
 
         if (ret & (SGA_END|SGA_PREVACTIVE|SGA_NEXTACTIVE))
@@ -470,14 +465,14 @@ STATIC IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
 /*************************
 **  Strg::GoInactive()  **
 *************************/
-STATIC IPTR strg_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+IPTR StrGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
     struct RastPort *rp;
     struct opUpdate  nmsg;
     struct TagItem   tags[3];
-    struct StrGData *data = INST_DATA(cl, o);
+    struct StrGData *data = INST_DATA(cl, g);
 
-    EG(o)->Flags &= ~GFLG_SELECTED;
+    g->Flags &= ~GFLG_SELECTED;
 
     /* Rerender gadget in inactive state */
     rp = ObtainGIRPort(msg->gpgi_GInfo);
@@ -489,14 +484,14 @@ STATIC IPTR strg_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
         method.gpr_GInfo  = msg->gpgi_GInfo;
         method.gpr_RPort  = rp;
         method.gpr_Redraw = GREDRAW_REDRAW;
-        DoMethodA(o, (Msg)&method);
+        DoMethodA((Object *)g, (Msg)&method);
 
         ReleaseGIRPort(rp);
     }
 
     /* Notify evt. change of string gadget contents */
 
-    if (EG(o)->Activation & GACT_LONGINT)
+    if (g->Activation & GACT_LONGINT)
     {
         tags[0].ti_Tag  = STRINGA_LongVal;
         tags[0].ti_Data = (IPTR)data->StrInfo.LongInt;
@@ -508,7 +503,7 @@ STATIC IPTR strg_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
     }
 
     tags[1].ti_Tag  = GA_ID;
-    tags[1].ti_Data = EG(o)->GadgetID;
+    tags[1].ti_Data = g->GadgetID;
     tags[2].ti_Tag  = TAG_END;
 
     nmsg.MethodID   	= OM_NOTIFY;
@@ -516,162 +511,92 @@ STATIC IPTR strg_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
     nmsg.opu_GInfo  	= msg->gpgi_GInfo;
     nmsg.opu_Flags  	= 0;
 
-    DoSuperMethodA(cl, o, (Msg)&nmsg);
+    DoSuperMethodA(cl, (Object *)g, (Msg)&nmsg);
 
-    return (0UL);
+    return (IPTR)0;
 }
 
-
-/*****************
-**  Dispatcher  **
-*****************/
-
-#define gpR(msg) ((struct gpRender *)msg)
-#define gpI(msg) ((struct gpInput  *)msg)
-
-AROS_UFH3S(IPTR, dispatch_strgclass,
-           AROS_UFHA(Class *,  cl,  A0),
-           AROS_UFHA(Object *, o,   A2),
-           AROS_UFHA(Msg,      msg, A1)
-          )
+/***********************
+**  Strg::GoActive()  **
+***********************/
+IPTR StrGClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-
-    switch(msg->MethodID)
+    if (msg->gpi_IEvent)
     {
-	case GM_RENDER:
-            strg_render(cl, o, (struct gpRender *)msg);
-            break;
+	UWORD imsgcode;
 
-	case GM_GOACTIVE:
+	HandleStrInput(g, msg->gpi_GInfo,
+		       msg->gpi_IEvent, &imsgcode, IntuitionBase
+	);
 
-            if (gpI(msg)->gpi_IEvent)
-            {
-        	UWORD imsgcode;
-
-        	HandleStrInput((struct Gadget *)o, gpI(msg)->gpi_GInfo,
-                	       gpI(msg)->gpi_IEvent, &imsgcode, IntuitionBase);
-
-            }
-            else
-            {
-        	struct StrGData   *data = INST_DATA(cl, o);
-        	struct RastPort   *rp;
-        	struct GadgetInfo *gi = gpI(msg)->gpi_GInfo;
-
-        	EG(o)->Flags |= GFLG_SELECTED;
-        	if (data->StrInfo.UndoBuffer)
-        	{
-                    strcpy(data->StrInfo.UndoBuffer, data->StrInfo.Buffer);
-        	}
-
-        	if ((rp = ObtainGIRPort(gi)))
-        	{
-                    struct gpRender method;
-		    
-                    method.MethodID   = GM_RENDER;
-                    method.gpr_GInfo  = gi;
-                    method.gpr_RPort  = rp;
-                    method.gpr_Redraw = GREDRAW_REDRAW;
-		    
-                    DoMethodA(o, (Msg)&method);
-		    
-                    ReleaseGIRPort(rp);
-        	}
-            }
-            retval = GMR_MEACTIVE;
-            break;
-
-	case GM_HANDLEINPUT:
-            retval = strg_handleinput(cl, o, (struct gpInput *)msg);
-            break;
-
-	case GM_GOINACTIVE:
-            retval = strg_goinactive(cl, o, (struct gpGoInactive *)msg);
-            break;
-
-	case OM_NEW:
-            retval = (IPTR)strg_new(cl, o, (struct opSet *)msg);
-            break;
-
-	case OM_DISPOSE:
-            strg_dispose(cl, o, msg);
-            break;
-
-	case OM_SET:
-	case OM_UPDATE:
-            retval = DoSuperMethodA(cl, o, msg);
-            retval += (IPTR)strg_set(cl, o, (struct opSet *)msg);
-
-            /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
-             * because it would circumvent the subclass from fully overriding it.
-             * The check of cl == OCLASS(o) should fail if we have been
-             * subclassed, and we have gotten here via DoSuperMethodA().
-             */
-            if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(o)) ) )
-            {
-        	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
-		
-        	if (gi)
-        	{
-                    struct RastPort *rp = ObtainGIRPort(gi);
-		    
-                    if (rp)
-                    {
-                	struct gpRender method;
-			
-                	method.MethodID   = GM_RENDER;
-                	method.gpr_GInfo  = gi;
-                	method.gpr_RPort  = rp;
-                	method.gpr_Redraw = GREDRAW_REDRAW;
-			
-                	DoMethodA(o, (Msg)&method);
-			
-                	ReleaseGIRPort(rp);
-                    } /* if */
-        	} /* if */
-            } /* if */
-            break;
-
-
-	case OM_GET:
-            retval = (IPTR)strg_get(cl, o, (struct opGet *)msg);
-            break;
-
-	default:
-            retval = DoSuperMethodA(cl, o, msg);
-            break;
-	    
-    } /* switch */
-
-    return (retval);
-
-    AROS_USERFUNC_EXIT
-}  /* dispatch_strgclass */
-
-
-#undef IntuitionBase
-
-/****************************************************************************/
-
-/* Initialize our strg class. */
-struct IClass *InitStrGClass(struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the strgclass...
-     */
-    if ((cl = MakeClass(STRGCLASS, GADGETCLASS, NULL, sizeof(struct StrGData), 0)))
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_strgclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-        AddClass (cl);
     }
+    else
+    {
+	struct StrGData   *data = INST_DATA(cl, g);
+	struct RastPort   *rp;
+	struct GadgetInfo *gi = msg->gpi_GInfo;
+	
+	g->Flags |= GFLG_SELECTED;
+	if (data->StrInfo.UndoBuffer)
+	{
+	    strcpy(data->StrInfo.UndoBuffer, data->StrInfo.Buffer);
+	}
 
-    return (cl);
+	if ((rp = ObtainGIRPort(gi)))
+	{
+	    struct gpRender method;
+		    
+	    method.MethodID   = GM_RENDER;
+	    method.gpr_GInfo  = gi;
+	    method.gpr_RPort  = rp;
+	    method.gpr_Redraw = GREDRAW_REDRAW;
+		    
+	    DoMethodA((Object *)g, (Msg)&method);
+		    
+	    ReleaseGIRPort(rp);
+	}
+    }
+    return (IPTR)GMR_MEACTIVE;
 }
 
+/******************
+**  Strg::Set()  **
+******************/
+IPTR StrGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
+{
+    IPTR retval;
+    
+    retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
+    retval += (IPTR)strg_set(cl, g, msg);
+
+    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
+     * because it would circumvent the subclass from fully overriding it.
+     * The check of cl == OCLASS(o) should fail if we have been
+     * subclassed, and we have gotten here via DoSuperMethodA().
+     */
+    if ( retval && ( (msg->MethodID != OM_UPDATE) || (cl == OCLASS(g)) ) )
+    {
+	struct GadgetInfo *gi = msg->ops_GInfo;
+	
+	if (gi)
+	{
+	    struct RastPort *rp = ObtainGIRPort(gi);
+		    
+	    if (rp)
+	    {
+		struct gpRender method;
+			
+		method.MethodID   = GM_RENDER;
+		method.gpr_GInfo  = gi;
+		method.gpr_RPort  = rp;
+		method.gpr_Redraw = GREDRAW_REDRAW;
+			
+		DoMethodA((Object *)g, (Msg)&method);
+			
+		ReleaseGIRPort(rp);
+	    } /* if */
+	} /* if */
+    } /* if */
+
+    return retval;
+}

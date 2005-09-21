@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id: imageclass.c 20651 2004-01-17 20:57:12Z chodorowski $
 */
@@ -60,14 +60,6 @@
 #define VSPACING_SMALL 1
 
 #define DRI(dri) ((struct DrawInfo *)(dri))
-
-/**************************************************************************************************/
-
-struct windecor_data
-{
-    struct IntDrawInfo  *dri;
-    struct Screen   	*scr;
-};
 
 /**************************************************************************************************/
 
@@ -178,7 +170,7 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
 
 /**************************************************************************************************/
 
-static IPTR windecor_new(Class *cl, Object *obj, struct opSet *msg)
+IPTR WinDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct windecor_data *data;
     
@@ -206,7 +198,7 @@ static IPTR windecor_new(Class *cl, Object *obj, struct opSet *msg)
 
 /**************************************************************************************************/
 
-static IPTR windecor_get(Class *cl, Object *obj, struct opGet *msg)
+IPTR WinDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct windecor_data *data = INST_DATA(cl, obj);
 
@@ -234,7 +226,7 @@ static IPTR windecor_get(Class *cl, Object *obj, struct opGet *msg)
 
 /**************************************************************************************************/
 
-IPTR windecor_getdefsize_sysimage(Class *cl, Object *obj, struct wdpGetDefSizeSysImage *msg)
+IPTR WinDecorClass__WDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct wdpGetDefSizeSysImage *msg)
 {
     ULONG def_low_width = DEFSIZE_WIDTH, def_low_height = DEFSIZE_HEIGHT;
     ULONG def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
@@ -380,7 +372,7 @@ IPTR windecor_getdefsize_sysimage(Class *cl, Object *obj, struct wdpGetDefSizeSy
 
 /**************************************************************************************************/
 
-IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImage *msg)
+IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysImage *msg)
 {
     struct windecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->wdp_RPort;
@@ -928,7 +920,7 @@ static void findtitlearea(struct Window *win, LONG *left, LONG *right)
 
 /**************************************************************************************************/
 
-IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *msg)
+IPTR WinDecorClass__WDM_DRAW_WINBORDER(Class *cl, Object *obj, struct wdpDrawWinBorder *msg)
 {
     struct windecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->wdp_RPort;
@@ -1077,7 +1069,7 @@ IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *ms
 
 /**************************************************************************************************/
 
-IPTR windecor_draw_wintitle(Class *cl, Object *obj, struct wdpDrawWinTitle *msg)
+IPTR WinDecorClass__WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinTitle *msg)
 {
     struct windecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->wdp_RPort;
@@ -1154,7 +1146,7 @@ IPTR windecor_draw_wintitle(Class *cl, Object *obj, struct wdpDrawWinTitle *msg)
 
 /**************************************************************************************************/
 
-IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorderGadgets *msg)
+IPTR WinDecorClass__WDM_LAYOUT_BORDERGADGETS(Class *cl, Object *obj, struct wdpLayoutBorderGadgets *msg)
 {
     //struct windecor_data *data = INST_DATA(cl, obj);
     //struct Window   	 *window = msg->wdp_Window;
@@ -1207,7 +1199,7 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
 
 /**************************************************************************************************/
 
-IPTR windecor_draw_borderpropback(Class *cl, Object *obj, struct wdpDrawBorderPropBack *msg)
+IPTR WinDecorClass__WDM_DRAW_BORDERPROPBACK(Class *cl, Object *obj, struct wdpDrawBorderPropBack *msg)
 {
     struct windecor_data *data = INST_DATA(cl, obj);
     struct Window   	 *window = msg->wdp_Window;
@@ -1240,7 +1232,7 @@ IPTR windecor_draw_borderpropback(Class *cl, Object *obj, struct wdpDrawBorderPr
 
 /**************************************************************************************************/
 
-IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPropKnob *msg)
+IPTR WinDecorClass__WDM_DRAW_BORDERPROPKNOB(Class *cl, Object *obj, struct wdpDrawBorderPropKnob *msg)
 {
     struct windecor_data *data = INST_DATA(cl, obj);
     struct Window   	 *window = msg->wdp_Window;
@@ -1317,88 +1309,3 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
 
 
 /**************************************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_windecorclass,
-           AROS_UFHA(Class *,  cl,  A0),
-           AROS_UFHA(Object *, o,   A2),
-           AROS_UFHA(Msg,      msg, A1)
-          )
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval;
-
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-    	    retval = windecor_new(cl, o, (struct opSet *)msg);
-	    break;
-
-    	case OM_GET:
-	    retval = windecor_get(cl, o, (struct opGet *)msg);
-	    break;
-	    
-    	case WDM_GETDEFSIZE_SYSIMAGE:
-	    retval = windecor_getdefsize_sysimage(cl, o, (struct wdpGetDefSizeSysImage *)msg);
-	    break;
-	    
-	case WDM_DRAW_SYSIMAGE:
-	    retval = windecor_draw_sysimage(cl, o, (struct wdpDrawSysImage *)msg);
-	    break;
-	    
-	case WDM_DRAW_WINBORDER:
-	    retval = windecor_draw_winborder(cl, o, (struct wdpDrawWinBorder *)msg);
-	    break;
-	    
-	case WDM_DRAW_WINTITLE:
-	    retval = windecor_draw_wintitle(cl, o, (struct wdpDrawWinTitle *)msg);
-	    break;
-	
-	case WDM_LAYOUT_BORDERGADGETS:
-	    retval = windecor_layout_bordergadgets(cl, o, (struct wdpLayoutBorderGadgets *)msg);
-	    break;
-	    
-	case WDM_DRAW_BORDERPROPBACK:
-	    retval = windecor_draw_borderpropback(cl, o, (struct wdpDrawBorderPropBack *)msg);
-	    break;
-
-	case WDM_DRAW_BORDERPROPKNOB:
-	    retval = windecor_draw_borderpropknob(cl, o, (struct wdpDrawBorderPropKnob *)msg);
-	    break;
-
-	default:
-            retval = DoSuperMethodA(cl, o, msg);
-            break;
-
-    } /* switch */
-
-    return (retval);
-
-    AROS_USERFUNC_EXIT
-}
-
-/**************************************************************************************************/
-
-#undef IntuitionBase
-
-/**************************************************************************************************/
-
-struct IClass *InitWinDecorClass (struct IntuitionBase * IntuitionBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the windecor class...
-    */
-    if ((cl = MakeClass(WINDECORCLASS, ROOTCLASS, NULL, sizeof(struct windecor_data), 0)))
-    {
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_windecorclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)IntuitionBase;
-
-        AddClass (cl);
-    }
-
-    return (cl);
-}
-
-/***********************************************************************************/
