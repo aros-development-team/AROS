@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools checkbox class.
@@ -34,22 +34,10 @@
 
 /**********************************************************************************************/
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(X) ((struct ExtGadget *)(x))
-
 #define CF_MouseOverGad 0x0001
 #define CF_CustomImage  0x0002
 
 #define GadToolsBase ((struct GadToolsBase_intern *)cl->cl_UserData)
-
-/**********************************************************************************************/
-
-struct CheckBoxData
-{
-    struct DrawInfo *dri;
-    LONG    	    labelplace;
-    LONG    	    flags;
-};
 
 /**********************************************************************************************/
 
@@ -111,29 +99,29 @@ STATIC VOID drawimage(Class *cl, struct Gadget *gad, struct RastPort *rp,
 
 /**********************************************************************************************/
 
-STATIC IPTR checkbox_set(Class *cl, Object *o, struct opSet *msg)
+IPTR GTCheckBox__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
     struct CheckBoxData *data;
-    struct TagItem   	*tag, *taglist;
+    struct TagItem   	*tag;
+    const struct TagItem *taglist = msg->ops_AttrList;
     struct RastPort  	*rp;
     IPTR    	     	retval = FALSE;
 
-    data = INST_DATA(cl, o);
-    taglist = msg->ops_AttrList;
+    data = INST_DATA(cl, g);
     
     if (data->flags & CF_CustomImage)
     {
         tag = FindTagItem(GA_Image, taglist);
         if (tag)
         {
-            DisposeObject(G(o)->GadgetRender);
-            G(o)->GadgetRender = NULL;
+            DisposeObject(g->GadgetRender);
+            g->GadgetRender = NULL;
             data->flags &= ~CF_CustomImage;
         }
     }
 
     if (msg->MethodID != OM_NEW)
-        retval = DoSuperMethodA(cl, o, (Msg)msg);
+        retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
 
     while ((tag = NextTagItem(&taglist)))
     {
@@ -160,9 +148,9 @@ STATIC IPTR checkbox_set(Class *cl, Object *o, struct opSet *msg)
 		
 	    case GTCB_Checked:
 		if (tag->ti_Data)
-		    G(o)->Flags |= GFLG_SELECTED;
+		    g->Flags |= GFLG_SELECTED;
 		else
-		    G(o)->Flags &= ~GFLG_SELECTED;
+		    g->Flags &= ~GFLG_SELECTED;
         	retval = TRUE;
 		break;
 		
@@ -170,20 +158,20 @@ STATIC IPTR checkbox_set(Class *cl, Object *o, struct opSet *msg)
 	
     } /* while ((tag = NextTagItem(&taglist))) */
 
-    if (G(o)->Width == 0)
-        G(o)->Width = CHECKBOX_WIDTH;
-    if (G(o)->Height == 0)
-        G(o)->Height = CHECKBOX_HEIGHT;
+    if (g->Width == 0)
+        g->Width = CHECKBOX_WIDTH;
+    if (g->Height == 0)
+        g->Height = CHECKBOX_HEIGHT;
 
     /* Redraw ourself? */
     
     if ((retval) && (msg->MethodID != OM_NEW) &&
-        ((msg->MethodID != OM_UPDATE) || (OCLASS(o) == cl)))
+        ((msg->MethodID != OM_UPDATE) || (OCLASS(g) == cl)))
     {
 	rp = ObtainGIRPort(msg->ops_GInfo);
 	if (rp)
 	{
-	    DoMethod(o, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
+	    DoMethod((Object *)g, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 	    ReleaseGIRPort(rp);
 	    retval = FALSE;
 	}
@@ -194,12 +182,12 @@ STATIC IPTR checkbox_set(Class *cl, Object *o, struct opSet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR checkbox_get(Class *cl, Object *o, struct opGet *msg)
+IPTR GTCheckBox__OM_GET(Class *cl, struct Gadget *g, struct opGet *msg)
 {
     struct CheckBoxData *data;
     IPTR    	    	retval;
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     switch (msg->opg_AttrID)
     {
@@ -210,12 +198,12 @@ STATIC IPTR checkbox_get(Class *cl, Object *o, struct opGet *msg)
 	    break;
 
     	case GTCB_Checked:
-	    *(msg->opg_Storage) = (G(o)->Flags & GFLG_SELECTED) ? TRUE : FALSE;
+	    *(msg->opg_Storage) = (g->Flags & GFLG_SELECTED) ? TRUE : FALSE;
 	    retval = 1UL;
 	    break;
 	    
 	default:
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
 	    break;
     }
     
@@ -224,7 +212,7 @@ STATIC IPTR checkbox_get(Class *cl, Object *o, struct opGet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR checkbox_new(Class *cl, Object *supercl, struct opSet *msg)
+IPTR GTCheckBox__OM_NEW(Class *cl, Object *supercl, struct opSet *msg)
 {
     struct CheckBoxData *data;
     struct TagItem  	tags[] =
@@ -235,74 +223,74 @@ STATIC IPTR checkbox_new(Class *cl, Object *supercl, struct opSet *msg)
 	{SYSIA_Which	, CHECKIMAGE},
 	{TAG_DONE   	    	    }
     };
-    Object  	    	*o;
+    struct Gadget   	*g;
 
-    o = (Object *)DoSuperMethodA(cl, supercl, (Msg)msg);
-    if (!o)
-	return 0;
+    g = (struct Gadget *)DoSuperMethodA(cl, supercl, (Msg)msg);
+    if (!g)
+	return (IPTR)0;
 
-    G(o)->Activation |= GACT_RELVERIFY;
+    g->Activation |= GACT_RELVERIFY;
 
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     data->dri = NULL;
     data->flags = 0;
-    checkbox_set(cl, o, msg);
+    GTCheckBox__OM_SET(cl, g, msg);
 
-    if (!G(o)->GadgetRender)
+    if (!g->GadgetRender)
     {
-        tags[0].ti_Data = G(o)->Width;
-        tags[1].ti_Data = G(o)->Height;
+        tags[0].ti_Data = g->Width;
+        tags[1].ti_Data = g->Height;
         tags[2].ti_Data = (IPTR) data->dri;
-        G(o)->GadgetRender = (struct Image *) NewObjectA(NULL, SYSICLASS,
+        g->GadgetRender = (struct Image *) NewObjectA(NULL, SYSICLASS,
                                                            tags);
         data->flags |= CF_CustomImage;
     }
     
-    if ((!data->dri) || (!G(o)->GadgetRender)) 
+    if ((!data->dri) || (!g->GadgetRender)) 
     {
-	CoerceMethod(cl, o, OM_DISPOSE);
-	o = 0;
+	CoerceMethod(cl, (Object *)g, OM_DISPOSE);
+	g = NULL;
     }
 
-    return (IPTR)o;
+    return (IPTR)g;
 }
 
 /**********************************************************************************************/
 
-STATIC IPTR checkbox_dispose(Class *cl, Object *o, Msg msg)
+IPTR GTCheckBox__OM_DISPOSE(Class *cl, struct Gadget *g, Msg msg)
 {
     struct CheckBoxData *data;
     IPTR    	    	retval;
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     if (data->flags & CF_CustomImage)
     {
-        DisposeObject(G(o)->GadgetRender);
-        G(o)->GadgetRender = NULL;
+        DisposeObject(g->GadgetRender);
+        g->GadgetRender = NULL;
     }
-    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
     
     return retval;
 }
 
 /**********************************************************************************************/
 
-STATIC IPTR checkbox_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR GTCheckBox__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct CheckBoxData *data;
     IPTR    	     	result = TRUE;
 
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     /* Render image */
-    drawimage(cl, G(o), msg->gpr_RPort,
-              G(o)->Flags&GFLG_SELECTED, G(o)->Flags&GFLG_DISABLED);
+    drawimage(cl, g, msg->gpr_RPort,
+              g->Flags&GFLG_SELECTED, g->Flags&GFLG_DISABLED);
 
     /* Render gadget label */
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
-        result = renderlabel(GadToolsBase, G(o), msg->gpr_RPort, data->labelplace);
+        result = renderlabel(GadToolsBase, g, msg->gpr_RPort, data->labelplace);
     }
     
     return result;
@@ -310,19 +298,19 @@ STATIC IPTR checkbox_render(Class *cl, Object *o, struct gpRender *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR checkbox_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR GTCheckBox__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct CheckBoxData *data;
     struct RastPort 	*rp;
     IPTR    	    	retval;
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     data->flags |= CF_MouseOverGad;
     
     rp = ObtainGIRPort(msg->gpi_GInfo);
     if (rp)
     {
-        drawimage(cl, G(o), rp, (G(o)->Flags&GFLG_SELECTED) ? FALSE : TRUE, FALSE);
+        drawimage(cl, g, rp, (g->Flags&GFLG_SELECTED) ? FALSE : TRUE, FALSE);
         ReleaseGIRPort(rp);
         retval = GMR_MEACTIVE;
     }
@@ -336,13 +324,13 @@ STATIC IPTR checkbox_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR checkbox_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR GTCheckBox__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct CheckBoxData *data;
     struct RastPort 	*rp;
     IPTR    	    	retval = GMR_MEACTIVE;
 
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     if (msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE) 
     {
@@ -352,9 +340,9 @@ STATIC IPTR checkbox_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	    {
 		/* mouse is over gadget */
 		
-		G(o)->Flags ^= GFLG_SELECTED;
+		g->Flags ^= GFLG_SELECTED;
 
-		*msg->gpi_Termination = G(o)->Flags&GFLG_SELECTED?TRUE:FALSE;
+		*msg->gpi_Termination = g->Flags&GFLG_SELECTED?TRUE:FALSE;
 		retval = GMR_NOREUSE | GMR_VERIFY;
 	    }
 	    else
@@ -366,15 +354,15 @@ STATIC IPTR checkbox_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	else if (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON)
 	{
 	    if ((msg->gpi_Mouse.X < 0) || (msg->gpi_Mouse.Y < 0) ||
-	    	(msg->gpi_Mouse.X >= G(o)->Width ) || (msg->gpi_Mouse.Y >= G(o)->Height))
+		(msg->gpi_Mouse.X >= g->Width ) || (msg->gpi_Mouse.Y >= g->Height))
 	    {
 		if (data->flags & CF_MouseOverGad)
 		{
 		    rp = ObtainGIRPort(msg->gpi_GInfo);
 		    if (rp)
 		    {
-                        drawimage(cl, G(o), rp,
-                                  G(o)->Flags&GFLG_SELECTED, FALSE);
+                        drawimage(cl, g, rp,
+                                  g->Flags&GFLG_SELECTED, FALSE);
 			ReleaseGIRPort(rp);
 		    }
 		    data->flags &= ~CF_MouseOverGad;
@@ -387,8 +375,8 @@ STATIC IPTR checkbox_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    rp = ObtainGIRPort(msg->gpi_GInfo);
 		    if (rp)
 		    {
-                        drawimage(cl, G(o), rp,
-                                  (G(o)->Flags&GFLG_SELECTED)?FALSE:TRUE, FALSE);
+                        drawimage(cl, g, rp,
+                                  (g->Flags&GFLG_SELECTED)?FALSE:TRUE, FALSE);
 			ReleaseGIRPort(rp);
 		    }
 		    data->flags |= CF_MouseOverGad;
@@ -408,107 +396,21 @@ STATIC IPTR checkbox_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR checkbox_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+IPTR GTCheckBox__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
     struct CheckBoxData *data;
     struct RastPort    	*rp;
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     data->flags &= ~CF_MouseOverGad;
     rp = ObtainGIRPort(msg->gpgi_GInfo);
     if (rp)
     {
-        drawimage(cl, G(o), rp, G(o)->Flags & GFLG_SELECTED, FALSE);
+        drawimage(cl, g, rp, g->Flags & GFLG_SELECTED, FALSE);
 	ReleaseGIRPort(rp);
     }
     
     return 0;
-}
-
-/**********************************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_checkboxclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, o, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval;
-
-    switch (msg->MethodID)
-    {
-    	case OM_NEW:
-	    retval = checkbox_new(cl, o, (struct opSet *)msg);
-	    break;
-	    
-	case OM_DISPOSE:
-	    retval = checkbox_dispose(cl, o, msg);
-	    break;
-	
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = checkbox_set(cl, o, (struct opSet *)msg);
-	    break;
-	    	   
-	case OM_GET:
-	    retval = checkbox_get(cl, o, (struct opGet *)msg);
-	    break;
-	    
-	case GM_RENDER:
-	    retval = checkbox_render(cl, o, (struct gpRender *)msg);
-	    break;
-	    
-	case GM_GOACTIVE:
-	    retval = checkbox_goactive(cl, o, (struct gpInput *)msg);
-	    break;
-	    
-	case GM_HANDLEINPUT:
-	    retval = checkbox_handleinput(cl, o, (struct gpInput *)msg);
-	    break;
-	    
-	case GM_GOINACTIVE:
-	    retval = checkbox_goinactive(cl, o, (struct gpGoInactive *)msg);
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    }
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/**********************************************************************************************/
-
-#undef GadToolsBase
-
-Class *makecheckboxclass(struct GadToolsBase_intern *GadToolsBase)
-{
-    Class *cl;
-
-    ObtainSemaphore(&GadToolsBase->classsema);
-
-    cl = GadToolsBase->checkboxclass;
-    if (!cl)
-    {
-	cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct CheckBoxData), 0UL);
-	if (cl)
-	{
-	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_checkboxclass);
-	    cl->cl_Dispatcher.h_SubEntry = NULL;
-	    cl->cl_UserData = (IPTR) GadToolsBase;
-
-	    GadToolsBase->checkboxclass = cl;
-	}
-    }
-    
-    ReleaseSemaphore(&GadToolsBase->classsema);
-  
-    return cl;
 }
 
 /**********************************************************************************************/

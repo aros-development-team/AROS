@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools button class.
@@ -34,22 +34,11 @@
 
 /**********************************************************************************************/
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(X) ((struct ExtGadget *)(x))
-
 #define GadToolsBase ((struct GadToolsBase_intern *)cl->cl_UserData)
 
 /**********************************************************************************************/
 
-struct ButtonData
-{
-    struct DrawInfo 	*dri;
-    struct Image 	*frame;
-};
-
-/**********************************************************************************************/
-
-STATIC Object *button_new(Class * cl, Object * obj, struct opSet *msg)
+Object *GTButton__OM_NEW(Class * cl, Object * obj, struct opSet *msg)
 {
     struct ButtonData	*data;
     struct DrawInfo 	*dri;
@@ -92,7 +81,7 @@ STATIC Object *button_new(Class * cl, Object * obj, struct opSet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
+IPTR GTButton__OM_SET(Class * cl, Object * obj, struct opSet * msg)
 {
     IPTR 		retval = 0UL;
     struct TagItem 	*tag, tags[2];
@@ -124,7 +113,7 @@ STATIC IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
 
 /**********************************************************************************************/
 
-static IPTR button_get(Class * cl, Object * obj, struct opGet *msg)
+IPTR GTButton__OM_GET(Class * cl, Object * obj, struct opGet *msg)
 {
     IPTR retval;
     
@@ -147,7 +136,7 @@ static IPTR button_get(Class * cl, Object * obj, struct opGet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR button_render(Class * cl, Object * obj, struct gpRender * msg)
+IPTR GTButton__GM_RENDER(Class * cl, struct Gadget * g, struct gpRender * msg)
 {
     IPTR 		retval = 0UL;
     UWORD 		old_gadgetflags;
@@ -156,105 +145,32 @@ STATIC IPTR button_render(Class * cl, Object * obj, struct gpRender * msg)
     /* Georg Steger: Hack, because IntuiTexts are not centered
        by button gadget class */
        
-    old_gadgetflags = G(obj)->Flags;
-    old_gadgettext = G(obj)->GadgetText;
+    old_gadgetflags = g->Flags;
+    old_gadgettext = g->GadgetText;
     
-    G(obj)->Flags &= ~GFLG_LABELMASK;
-    G(obj)->Flags |= GFLG_LABELITEXT;
-    G(obj)->GadgetText = 0;
+    g->Flags &= ~GFLG_LABELMASK;
+    g->Flags |= GFLG_LABELITEXT;
+    g->GadgetText = 0;
     
-    retval = DoSuperMethodA(cl, obj, (Msg)msg);
+    retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
  
-    G(obj)->GadgetText  = old_gadgettext;
-    G(obj)->Flags = old_gadgetflags;
+    g->GadgetText  = old_gadgettext;
+    g->Flags = old_gadgetflags;
  
-    renderlabel(GadToolsBase, (struct Gadget *)obj, msg->gpr_RPort, GV_LabelPlace_In);
+    renderlabel(GadToolsBase, g, msg->gpr_RPort, GV_LabelPlace_In);
   
     return retval;
 }
 
 /**********************************************************************************************/
 
-STATIC IPTR button_dispose(Class * cl, Object * obj, Msg msg)
+IPTR GTButton__OM_DISPOSE(Class * cl, Object * obj, Msg msg)
 {
     struct ButtonData *data = INST_DATA(cl, obj);
     
     if (data->frame) DisposeObject(data->frame);
     
     return DoSuperMethodA(cl, obj, msg);
-}
-
-/**********************************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_buttonclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, obj, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval;
-
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-	    retval = (IPTR) button_new(cl, obj, (struct opSet *) msg);
-	    break;
-
-	case OM_DISPOSE:
-            retval = button_dispose(cl, obj, msg);
-	    break;
-
-	case OM_SET:
-	    retval = button_set(cl, obj, (struct opSet *) msg);
-	    break;
-
-	case OM_GET:
-	    retval = button_get(cl, obj, (struct opGet *) msg);
-	    break;
-
-	case GM_RENDER:
-    	    retval = button_render(cl, obj, (struct gpRender *) msg);
-	    break;
-
-	default:
-	    retval = DoSuperMethodA(cl, obj, msg);
-	    break;
-    }
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/**********************************************************************************************/
-
-#undef GadToolsBase
-
-Class *makebuttonclass(struct GadToolsBase_intern * GadToolsBase)
-{
-    Class *cl;
-
-    ObtainSemaphore(&GadToolsBase->classsema);
-
-    cl = GadToolsBase->buttonclass;
-    if (!cl)
-    {	
-	cl = MakeClass(NULL, FRBUTTONCLASS, NULL, sizeof(struct ButtonData), 0UL);
-	if (cl)
-	{
-	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_buttonclass);
-	    cl->cl_Dispatcher.h_SubEntry = NULL;
-	    cl->cl_UserData = (IPTR) GadToolsBase;
-
-	    GadToolsBase->buttonclass = cl;
-	}
-    }
-    
-    ReleaseSemaphore(&GadToolsBase->classsema);
-
-    return cl;
 }
 
 /**********************************************************************************************/

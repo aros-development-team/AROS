@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools mx class.
@@ -35,35 +35,15 @@
 
 /**********************************************************************************************/
 
-#define G(x) 	    	((struct Gadget *)(x))
-#define EG(x) 	    	((struct ExtGadget *)(x))
-
 #define GadToolsBase 	((struct GadToolsBase_intern *)cl->cl_UserData)
-
-/**********************************************************************************************/
-
-struct MXData
-{
-    struct DrawInfo 	*dri;
-    struct TextAttr 	*tattr;
-    struct Image    	*mximage;
-    struct TextFont 	*font;
-    struct Rectangle	bbox;
-    STRPTR  	    	*labels;
-    ULONG   	    	active, newactive;  	    /* The active tick and the tick to be activated */
-    ULONG   	    	numlabels;  	    	    /* The number of labels */
-    LONG    	    	labelplace, ticklabelplace;
-    UWORD   	    	fontheight;
-    UWORD   	    	spacing;
-    UWORD   	    	maxtextwidth;
-};
 
 /**********************************************************************************************/
 
 STATIC VOID mx_setnew(Class *cl, Object *o, struct opSet *msg)
 {
     struct MXData  *data = INST_DATA(cl, o);
-    struct TagItem *tag, *taglist = msg->ops_AttrList;
+    struct TagItem *tag;
+    const struct TagItem *taglist = msg->ops_AttrList;
 
     while ((tag = NextTagItem(&taglist)))
     {
@@ -105,7 +85,7 @@ STATIC VOID mx_setnew(Class *cl, Object *o, struct opSet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR mx_new(Class *cl, Object *objcl, struct opSet *msg)
+IPTR GTMX__OM_NEW(Class *cl, Object *objcl, struct opSet *msg)
 {
     struct MXData   *data;
     struct TagItem  tags[] =
@@ -116,15 +96,15 @@ STATIC IPTR mx_new(Class *cl, Object *objcl, struct opSet *msg)
 	{SYSIA_Which	, MXIMAGE   	},
 	{TAG_DONE   	, 0L	    	}
     };
-    Object  	    *o;
+    struct Gadget    *g;
 
-    o = (Object *) DoSuperMethodA(cl, objcl, (Msg)msg);
-    if (!o)
-	return NULL;
+    g = (struct Gadget *) DoSuperMethodA(cl, objcl, (Msg)msg);
+    if (!g)
+	return (IPTR)NULL;
 
-    G(o)->Activation = GACT_IMMEDIATE;
+    g->Activation = GACT_IMMEDIATE;
 
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     data->dri 	    	 = NULL;
     data->tattr     	 = NULL;
@@ -134,7 +114,7 @@ STATIC IPTR mx_new(Class *cl, Object *objcl, struct opSet *msg)
     data->labelplace 	 = GV_LabelPlace_Above;
     data->ticklabelplace = GV_LabelPlace_Right;
     
-    mx_setnew(cl, o, msg);
+    mx_setnew(cl, (Object *)g, msg);
 
     if (data->tattr)
     	data->font = OpenFont(data->tattr);
@@ -142,35 +122,35 @@ STATIC IPTR mx_new(Class *cl, Object *objcl, struct opSet *msg)
     /* Calculate fontheight */
     if (data->tattr)
         data->fontheight = data->tattr->ta_YSize;
-    else if ((G(o)->Flags & GFLG_LABELITEXT) && (G(o)->GadgetText))
-        data->fontheight = G(o)->GadgetText->ITextFont->ta_YSize;
+    else if ((g->Flags & GFLG_LABELITEXT) && (g->GadgetText))
+        data->fontheight = g->GadgetText->ITextFont->ta_YSize;
     else
-        data->fontheight = G(o)->Height;
+        data->fontheight = g->Height;
 
     /* Calculate gadget size */
-    if (G(o)->Width == 0)
-        G(o)->Width = MX_WIDTH;
+    if (g->Width == 0)
+        g->Width = MX_WIDTH;
 	
-    G(o)->Height = (data->fontheight + data->spacing) *data->numlabels -
-                     data->spacing;
+    g->Height = (data->fontheight + data->spacing) *data->numlabels -
+                data->spacing;
 
-    tags[0].ti_Data = G(o)->Width;
+    tags[0].ti_Data = g->Width;
     tags[1].ti_Data = GetTagData(GTMX_TickHeight, MX_HEIGHT, msg->ops_AttrList);
     tags[2].ti_Data = (IPTR) data->dri;
     data->mximage = (struct Image *) NewObjectA(NULL, SYSICLASS, tags);
 
     if ((!data->dri) || (!data->labels) || (!data->mximage) || (!data->numlabels))
     {
-	CoerceMethod(cl, o, OM_DISPOSE);
-	o = NULL;
+	CoerceMethod(cl, (Object *)g, OM_DISPOSE);
+	g = NULL;
     }
     
-    return (IPTR)o;
+    return (IPTR)g;
 }
 
 /**********************************************************************************************/
 
-STATIC IPTR mx_dispose(Class *cl, Object *o, Msg msg)
+IPTR GTMX__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct MXData   *data = INST_DATA(cl, o);
     IPTR    	    retval;
@@ -185,10 +165,11 @@ STATIC IPTR mx_dispose(Class *cl, Object *o, Msg msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR mx_set(Class *cl, Object *o, struct opSet *msg)
+IPTR GTMX__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     struct MXData   *data = INST_DATA(cl, o);
-    struct TagItem  *tag, *taglist = msg->ops_AttrList;
+    struct TagItem  *tag;
+    const struct TagItem *taglist = msg->ops_AttrList;
     IPTR    	    retval = FALSE;
 
     if (msg->MethodID != OM_NEW)
@@ -230,7 +211,7 @@ STATIC IPTR mx_set(Class *cl, Object *o, struct opSet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR mx_get(Class *cl, Object *o, struct opGet *msg)
+IPTR GTMX__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct MXData   *data;
     IPTR    	    retval;
@@ -260,10 +241,10 @@ STATIC IPTR mx_get(Class *cl, Object *o, struct opGet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR mx_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR GTMX__GM_RENDER(Class *cl, struct ExtGadget *g, struct gpRender *msg)
 {
-    struct MXData   *data = INST_DATA(cl, o);
-    WORD    	    ypos = G(o)->TopEdge;
+    struct MXData   *data = INST_DATA(cl, g);
+    WORD    	    ypos = g->TopEdge;
     UWORD   	    maxtextwidth;
     int     	    y;
 
@@ -271,11 +252,11 @@ STATIC IPTR mx_render(Class *cl, Object *o, struct gpRender *msg)
     {
         /* Only redraw the current and the last tick activated */
         DrawImageState(msg->gpr_RPort, data->mximage,
-                       G(o)->LeftEdge, ypos + data->active *(data->fontheight + data->spacing),
+                       g->LeftEdge, ypos + data->active *(data->fontheight + data->spacing),
                        IDS_NORMAL, data->dri);
 
         DrawImageState(msg->gpr_RPort, data->mximage,
-                       G(o)->LeftEdge, ypos + data->newactive *(data->fontheight + data->spacing),
+                       g->LeftEdge, ypos + data->newactive *(data->fontheight + data->spacing),
                        IDS_SELECTED, data->dri);
     }
     else
@@ -299,7 +280,7 @@ STATIC IPTR mx_render(Class *cl, Object *o, struct gpRender *msg)
             else
                 state = IDS_NORMAL;
             DrawImageState(msg->gpr_RPort, data->mximage,
-                           G(o)->LeftEdge, ypos,
+                           g->LeftEdge, ypos,
                            state, data->dri);
             ypos += data->fontheight + data->spacing;
         }
@@ -310,21 +291,21 @@ STATIC IPTR mx_render(Class *cl, Object *o, struct gpRender *msg)
                      data->dri->dri_Pens[BACKGROUNDPEN],
                      JAM1);
 
-        ypos = G(o)->TopEdge;
+        ypos = g->TopEdge;
 
 	maxtextwidth = 0;
 	
-	minx = G(o)->LeftEdge;
-	miny = G(o)->TopEdge;
-	maxx = minx + G(o)->Width - 1;
-	maxy = miny + G(o)->Height - 1;
+	minx = g->LeftEdge;
+	miny = g->TopEdge;
+	maxx = minx + g->Width - 1;
+	maxy = miny + g->Height - 1;
 	
         for (labels = data->labels; *labels; labels++)
 	{
 	    struct TextExtent 	te;
 	    WORD    	    	x, y, width, height, len;
 	    
-	    x = G(o)->LeftEdge;
+	    x = g->LeftEdge;
 	    y = ypos;
 
             len = strlen(*labels);
@@ -373,11 +354,11 @@ STATIC IPTR mx_render(Class *cl, Object *o, struct gpRender *msg)
             ypos += data->fontheight + data->spacing;
         }
 
-	EG(o)->BoundsLeftEdge = minx;
-	EG(o)->BoundsTopEdge  = miny;
-	EG(o)->BoundsWidth    = maxx - minx + 1;
-	EG(o)->BoundsHeight   = maxy - miny + 1;
-	EG(o)->MoreFlags |= GMORE_BOUNDS;
+	g->BoundsLeftEdge = minx;
+	g->BoundsTopEdge  = miny;
+	g->BoundsWidth    = maxx - minx + 1;
+	g->BoundsHeight   = maxy - miny + 1;
+	g->MoreFlags |= GMORE_BOUNDS;
 
 	data->maxtextwidth = maxtextwidth;
 	
@@ -395,19 +376,19 @@ STATIC IPTR mx_render(Class *cl, Object *o, struct gpRender *msg)
 	*/
 	
         renderlabel(GadToolsBase,
-                    G(o),
+                    (struct Gadget *)g,
 		    msg->gpr_RPort,
                     data->labelplace);
 
     }
 
     /* Draw disabled pattern */
-    if (G(o)->Flags & GFLG_DISABLED)
+    if (g->Flags & GFLG_DISABLED)
         DoDisabledPattern(msg->gpr_RPort,                            
-                          G(o)->LeftEdge,
-			  G(o)->TopEdge,
-                          G(o)->LeftEdge + G(o)->Width - 1,
-			  G(o)->TopEdge + G(o)->Height - 1,
+                          g->LeftEdge,
+			  g->TopEdge,
+                          g->LeftEdge + g->Width - 1,
+			  g->TopEdge + g->Height - 1,
 			  data->dri->dri_Pens[SHADOWPEN],
 			  GadToolsBase);
 
@@ -416,7 +397,7 @@ STATIC IPTR mx_render(Class *cl, Object *o, struct gpRender *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR mx_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR GTMX__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     struct MXData   *data = INST_DATA(cl, o);
     int     	    y, blobheight = data->spacing + data->fontheight;
@@ -448,84 +429,6 @@ STATIC IPTR mx_goactive(Class *cl, Object *o, struct gpInput *msg)
     }
 
     return retval;
-}
-
-/**********************************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_mxclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, o, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval;
-
-    switch (msg->MethodID)
-    {
-    	case OM_NEW:
-	    retval = mx_new(cl, o, (struct opSet *)msg);
-	    break;
-	    
-	case OM_DISPOSE:
-	    retval = mx_dispose(cl, o, msg);
-	    break;
-	    
-    	case OM_SET:
-	case OM_UPDATE:
-	    retval = mx_set(cl, o, (struct opSet *)msg);
-	    break;
-	    
-	case OM_GET:
-            retval = mx_get(cl, o, (struct opGet *)msg);
-	    break;
-
-    	case GM_RENDER:
-	    retval = mx_render(cl, o, (struct gpRender *)msg);
-	    break;
-	    
-	case GM_GOACTIVE:
-	    retval = mx_goactive(cl, o, (struct gpInput *)msg);
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    }
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/**********************************************************************************************/
-
-#undef GadToolsBase
-
-Class *makemxclass(struct GadToolsBase_intern *GadToolsBase)
-{
-    Class *cl;
-
-    ObtainSemaphore(&GadToolsBase->classsema);
-
-    cl = GadToolsBase->mxclass;
-    if (!cl)
-    {
-	cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct MXData), 0UL);
-	if (cl)
-	{
-	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_mxclass);
-	    cl->cl_Dispatcher.h_SubEntry = NULL;
-	    cl->cl_UserData = (IPTR) GadToolsBase;
-
-	    GadToolsBase->mxclass = cl;
-	}
-    }
-    
-    ReleaseSemaphore(&GadToolsBase->classsema);
-  
-    return cl;
 }
 
 /**********************************************************************************************/

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools scroller class.
@@ -34,36 +34,21 @@
 
 /**********************************************************************************************/
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(X) ((struct ExtGadget *)(x))
-
 #define GadToolsBase ((struct GadToolsBase_intern *)cl->cl_UserData)
 
 /**********************************************************************************************/
 
-struct ScrollerData
-{
-    Object 		*frame;
-    struct Gadget 	*arrow1;
-    struct Gadget	*arrow2;
-    WORD 		gadgetkind;
-    UBYTE 		labelplace;
-};
-
-/**********************************************************************************************/
-
-#define opU(x) ((struct opUpdate *)msg)
-
 STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 {
     IPTR 		retval = 0UL;
-    struct TagItem 	*tag, *tstate, tags[] =
+    struct TagItem 	*tag, tags[] =
     {
     	{PGA_Total	, 0	},
     	{PGA_Top	, 0	},
     	{PGA_Visible	, 0	},
     	{TAG_MORE		}
     };
+    const struct TagItem *tstate = msg->ops_AttrList;
 
     struct ScrollerData *data = INST_DATA(cl, o);
 
@@ -81,7 +66,6 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 		tags[1].ti_Data,
 		tags[2].ti_Data));
 
-    tstate = msg->ops_AttrList;
     
     while ((tag = NextTagItem(&tstate)))
     {
@@ -173,7 +157,7 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR scroller_get(Class * cl, Object * o, struct opGet *msg)
+IPTR GTScroller__OM_GET(Class * cl, Object * o, struct opGet *msg)
 {
     struct ScrollerData *data = INST_DATA(cl, o);
     struct opGet 	cloned_msg = *msg;
@@ -214,7 +198,7 @@ STATIC IPTR scroller_get(Class * cl, Object * o, struct opGet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR scroller_new(Class * cl, Object * o, struct opSet *msg)
+IPTR GTScroller__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 {
     struct ScrollerData *data;
     struct DrawInfo 	*dri;
@@ -257,33 +241,33 @@ STATIC IPTR scroller_new(Class * cl, Object * o, struct opSet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR scroller_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR GTScroller__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct ScrollerData *data;
     IPTR 		retval;
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(cl, g);
     
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
 	DrawImageState(msg->gpr_RPort,
 		(struct Image *)data->frame,
-		G(o)->LeftEdge - BORDERPROPSPACINGX,
-		G(o)->TopEdge  - BORDERPROPSPACINGY,
+		g->LeftEdge - BORDERPROPSPACINGX,
+		g->TopEdge  - BORDERPROPSPACINGY,
 		IDS_NORMAL,
 		msg->gpr_GInfo->gi_DrInfo);
 
-        renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);   
+        renderlabel(GadToolsBase, g, msg->gpr_RPort, data->labelplace);   
     }
     
-    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
     
     ReturnInt("Scroller::Render", IPTR, retval);
 }
 
 /**********************************************************************************************/
 
-STATIC IPTR scroller_dispose(Class *cl, Object *o, Msg msg)
+IPTR GTScroller__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct ScrollerData *data = INST_DATA(cl, o);
 
@@ -294,102 +278,30 @@ STATIC IPTR scroller_dispose(Class *cl, Object *o, Msg msg)
 
 /**********************************************************************************************/
 
-AROS_UFH3S(IPTR, dispatch_scrollerclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, o, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
+IPTR GTScroller__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    AROS_USERFUNC_INIT
+    IPTR retval = scroller_set(cl, o, msg);
 
-    IPTR retval;
-
-    D(bug("dispatch_scrollerclass: cl 0x%lx o 0x%lx msg 0x%lx\n",cl,o,msg));
-    switch (msg->MethodID)
+    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
+     * because it would circumvent the subclass from fully overriding it.
+     * The check of cl == OCLASS(o) should fail if we have been
+     * subclassed, and we have gotten here via DoSuperMethodA().
+     */
+    if ( retval && ( (msg->MethodID != OM_UPDATE) ||  (cl == OCLASS(o)) ) )
     {
-	case OM_NEW:
-	    D(bug("dispatch_scrollerclass: OM_NEW\n"));
-	    retval = scroller_new(cl, o, (struct opSet *) msg);
-	    break;
-
-	case OM_DISPOSE:
-	    D(bug("dispatch_scrollerclass: OM_DISPOSE\n"));
-	    retval = scroller_dispose(cl, o, msg);
-	    break;
-	
-	case OM_UPDATE:
-	case OM_SET:
-	    D(bug("dispatch_scrollerclass: OM_SET\n"));
-	    retval = scroller_set(cl, o, (struct opSet *) msg);
-	    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
-	     * because it would circumvent the subclass from fully overriding it.
-	     * The check of cl == OCLASS(o) should fail if we have been
-	     * subclassed, and we have gotten here via DoSuperMethodA().
-	     */
-	    if ( retval && ( (msg->MethodID != OM_UPDATE) ||  (cl == OCLASS(o)) ) )
-	    {
-		struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
-		if (gi)
-		{
-		    struct RastPort *rp = ObtainGIRPort(gi);
-		    if (rp)
-		    {
-			DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
-			ReleaseGIRPort(rp);
-		    } /* if */
-		} /* if */
-	    } /* if */
-	    break;
-
-	case OM_GET:
-	    D(bug("dispatch_scrollerclass: OM_GET\n"));
-	    retval = scroller_get(cl, o, (struct opGet *)msg);
-    	    break;
-
-	case GM_RENDER:
-	    D(bug("dispatch_scrollerclass: OM_RENDER\n"));
-    	    retval = scroller_render(cl, o, (struct gpRender *)msg);
-	    break;
-
-	default:
-	    D(bug("dispatch_scrollerclass: gate..\n"));
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    }
-
-    D(bug("dispatch_scrollerclass: retval 0x%lx\n",retval));
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/**********************************************************************************************/
-
-#undef GadToolsBase
-
-Class *makescrollerclass(struct GadToolsBase_intern * GadToolsBase)
-{
-    Class *cl;
-
-    ObtainSemaphore(&GadToolsBase->classsema);
-
-    cl = GadToolsBase->scrollerclass;
-    if (!cl)
-    {
-	cl = MakeClass(NULL, PROPGCLASS, NULL, sizeof(struct ScrollerData), 0UL);
-	if (cl)
+	struct GadgetInfo *gi = msg->ops_GInfo;
+	if (gi)
 	{
-	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_scrollerclass);
-	    cl->cl_Dispatcher.h_SubEntry = NULL;
-	    cl->cl_UserData = (IPTR) GadToolsBase;
-
-	    GadToolsBase->scrollerclass = cl;
-	}
-    }
+	    struct RastPort *rp = ObtainGIRPort(gi);
+	    if (rp)
+	    {
+		DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
+		ReleaseGIRPort(rp);
+	    } /* if */
+	} /* if */
+    } /* if */
     
-    ReleaseSemaphore(&GadToolsBase->classsema);
-
-    return cl;
+    return retval;
 }
 
 /**********************************************************************************************/

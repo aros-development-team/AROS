@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
  
     Internal GadTools text class (NUMERIC_KIND and TEXT_KIND) .
@@ -33,9 +33,6 @@
 
 /**********************************************************************************************/
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(X) ((struct ExtGadget *)(x))
-
 #define GadToolsBase ((struct GadToolsBase_intern *)cl->cl_UserData)
 
 /**********************************************************************************************/
@@ -43,24 +40,6 @@
 #define TEXTF_CLIPPED	(1 << 0)
 #define TEXTF_BORDER	(1 << 1)
 #define TEXTF_COPYTEXT	(1 << 2)
-
-struct TextData
-{
-    struct DrawInfo 	*dri;
-    Object 		*frame;    
-    STRPTR 		format;
-    IPTR 		toprint;
-    UBYTE 		frontpen;
-    UBYTE 		backpen;
-    UBYTE 		justification;
-    UBYTE 		flags;
-    struct TextFont 	*font;
-    UWORD 		maxnumberlength;
-    WORD 		gadgetkind;
-    LONG  		(*dispfunc)(struct Gadget *, WORD);
-    UBYTE 		labelplace;
-    
-};
 
 /**********************************************************************************************/
 
@@ -188,7 +167,7 @@ STATIC IPTR text_set(Class * cl, Object * o, struct opSet * msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR text_get(Class * cl, Object * o, struct opGet *msg)
+IPTR GTText__OM_GET(Class * cl, Object * o, struct opGet *msg)
 {
     struct TextData 	*data = INST_DATA(cl, o);
     IPTR		retval;
@@ -211,7 +190,7 @@ STATIC IPTR text_get(Class * cl, Object * o, struct opGet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR text_new(Class * cl, Object * o, struct opSet *msg)
+IPTR GTText__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 {
 
     EnterFunc(bug("Text::New()\n"));
@@ -322,21 +301,21 @@ AROS_UFH2 (void, puttostr,
 
 /**********************************************************************************************/
 
-STATIC IPTR text_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR GTText__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     UWORD 		*pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
     UBYTE 		textbuf[256], *str;
-    struct TextData 	*data = INST_DATA(cl, o);
+    struct TextData 	*data = INST_DATA(cl, g);
     WORD 		left, left2, top, width, height, numchars, tlength;
     struct TextFont 	*oldfont;
     struct RastPort 	*rp = msg->gpr_RPort;
     
     EnterFunc(bug("Text::Render()\n"));
 
-    left   = G(o)->LeftEdge;
-    top    = G(o)->TopEdge;
-    width  = G(o)->Width;
-    height = G(o)->Height;
+    left   = g->LeftEdge;
+    top    = g->TopEdge;
+    width  = g->Width;
+    height = g->Height;
 
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
@@ -350,7 +329,7 @@ STATIC IPTR text_render(Class *cl, Object *o, struct gpRender *msg)
 		    msg->gpr_GInfo->gi_DrInfo);
 	}
 	
-	renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);
+	renderlabel(GadToolsBase, g, msg->gpr_RPort, data->labelplace);
     }
     
     if (data->toprint || (data->gadgetkind != TEXT_KIND))
@@ -371,8 +350,8 @@ STATIC IPTR text_render(Class *cl, Object *o, struct gpRender *msg)
 	{
     	    left += VBORDER + 1;
     	    top  += HBORDER + 1;
-    	    width  = G(o)->Width -  (VBORDER + 1) * 2;
-    	    height = G(o)->Height - (HBORDER + 1) * 2;
+    	    width  = g->Width -  (VBORDER + 1) * 2;
+    	    height = g->Height - (HBORDER + 1) * 2;
 	}
 
 	if (data->flags & TEXTF_CLIPPED)
@@ -380,7 +359,7 @@ STATIC IPTR text_render(Class *cl, Object *o, struct gpRender *msg)
     	    struct TextExtent te;
 
     	    /* See how many chars fits into the display area */
-    	    numchars = TextFit(rp, textbuf, numchars, &te, NULL, 1, width, G(o)->Height);
+    	    numchars = TextFit(rp, textbuf, numchars, &te, NULL, 1, width, g->Height);
 	}
 
 	tlength = TextLength(rp, textbuf, numchars);
@@ -417,7 +396,7 @@ STATIC IPTR text_render(Class *cl, Object *o, struct gpRender *msg)
 
 /**********************************************************************************************/
 
-static IPTR text_dispose(Class *cl, Object *o, Msg msg)
+IPTR GTText__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct TextData *data = INST_DATA(cl, o);
     
@@ -431,100 +410,40 @@ static IPTR text_dispose(Class *cl, Object *o, Msg msg)
 
 /**********************************************************************************************/
 
-AROS_UFH3S(IPTR, dispatch_textclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, o, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
+IPTR GTText__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    AROS_USERFUNC_INIT
-
     IPTR retval;
+    
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    retval += text_set(cl, o, msg);
 
-    switch (msg->MethodID)
+    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
+     * because it would circumvent the subclass from fully overriding it.
+     * The check of cl == OCLASS(o) should fail if we have been
+     * subclassed, and we have gotten here via DoSuperMethodA().
+     */
+    if ( retval && ( msg->MethodID == OM_UPDATE ) && ( cl == OCLASS(o) ) )
     {
-	case OM_NEW:
-	    retval = text_new(cl, o, (struct opSet *) msg);
-	    break;
-
-	case OM_DISPOSE:
-    	    retval = text_dispose(cl, o, msg);
-	    break;
-
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    retval += text_set(cl, o, (struct opSet *) msg);
-
-	    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
-	     * because it would circumvent the subclass from fully overriding it.
-	     * The check of cl == OCLASS(o) should fail if we have been
-	     * subclassed, and we have gotten here via DoSuperMethodA().
-	     */
-	    if ( retval && ( msg->MethodID == OM_UPDATE ) && ( cl == OCLASS(o) ) )
+	struct GadgetInfo *gi = msg->ops_GInfo;
+	if (gi)
+	{
+	    struct RastPort *rp = ObtainGIRPort(gi);
+	    if (rp)
 	    {
-		struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
-		if (gi)
-		{
-		    struct RastPort *rp = ObtainGIRPort(gi);
-		    if (rp)
-		    {
-			DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
-			ReleaseGIRPort(rp);
-		    } /* if */
-		} /* if */
+		DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
+		ReleaseGIRPort(rp);
 	    } /* if */
-	    break;
-
-	case GM_RENDER:
-    	    retval = text_render(cl, o, (struct gpRender *)msg);
-    	    break;
-
-	case GM_GOACTIVE:
-    	    retval = GMR_NOREUSE;
-    	    break;
-
-	case OM_GET:
-    	    retval = text_get(cl, o, (struct opGet *)msg);
-	    break;
-
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    }
+	} /* if */
+    } /* if */
 
     return retval;
-
-    AROS_USERFUNC_EXIT
 }
 
 /**********************************************************************************************/
 
-#undef GadToolsBase
-
-Class *maketextclass(struct GadToolsBase_intern * GadToolsBase)
+IPTR GTText__GM_GOACTIVE(Class *cl, Object *o, Msg msg)
 {
-    Class *cl;
-
-    ObtainSemaphore(&GadToolsBase->classsema);
-
-    cl = GadToolsBase->textclass;
-    if (!cl)
-    {
-	cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct TextData), 0UL);
-	if (cl)
-	{
-	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_textclass);
-	    cl->cl_Dispatcher.h_SubEntry = NULL;
-	    cl->cl_UserData = (IPTR) GadToolsBase;
-
-	    GadToolsBase->textclass = cl;
-	}
-    }
-    
-    ReleaseSemaphore(&GadToolsBase->classsema);
-
-    return cl;
+    return (IPTR)GMR_NOREUSE;
 }
 
 /**********************************************************************************************/

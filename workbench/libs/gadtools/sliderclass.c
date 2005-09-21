@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-200¤, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal GadTools slider class.
@@ -33,25 +33,6 @@
 
 /**********************************************************************************************/
 
-#define G(x) ((struct Gadget *)(x))
-#define EG(X) ((struct ExtGadget *)(x))
-
-#define GadToolsBase ((struct GadToolsBase_intern *)cl->cl_UserData)
-
-/**********************************************************************************************/
-
-struct SliderData
-{
-    Object 	*frame;
-    WORD  	min;
-    WORD  	max;
-    WORD  	level;
-    WORD        freedom;
-    UBYTE 	labelplace;
-};
-
-/**********************************************************************************************/
-
 #undef GadToolsBase
 
 STATIC VOID notifylevel(Class *cl, Object *o, WORD level, struct GadgetInfo *ginfo,
@@ -74,7 +55,7 @@ STATIC VOID notifylevel(Class *cl, Object *o, WORD level, struct GadgetInfo *gin
 
 /**********************************************************************************************/
 
-STATIC IPTR slider_set(Class * cl, Object * o, struct opSet * msg)
+IPTR GTSlider__OM_SET(Class * cl, Object * o, struct opSet * msg)
 {
     IPTR 		retval = 0UL;
     struct TagItem 	*tag, *tstate, *dosuper_tags, tags[] =
@@ -137,7 +118,7 @@ STATIC IPTR slider_set(Class * cl, Object * o, struct opSet * msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR slider_new(Class * cl, Object * o, struct opSet *msg)
+IPTR GTSlider__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 {
     struct DrawInfo	*dri;
     
@@ -173,7 +154,7 @@ STATIC IPTR slider_new(Class * cl, Object * o, struct opSet *msg)
 	    data->max   = 15;
 	    data->level = data->freedom==FREEHORIZ?data->min:data->max;
 
-	    slider_set(cl, o, msg);
+	    GTSlider__OM_SET(cl, o, msg);
 	    
 	    data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, msg->ops_AttrList);
 	} else {
@@ -187,7 +168,7 @@ STATIC IPTR slider_new(Class * cl, Object * o, struct opSet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR slider_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR GTSlider__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     IPTR 		retval;
     struct SliderData 	*data = INST_DATA(cl, o);
@@ -205,7 +186,7 @@ STATIC IPTR slider_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR slider_get(Class *cl, Object *o, struct opGet *msg)
+IPTR GTSlider__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct SliderData 	*data = INST_DATA(cl, o);
     IPTR 		retval = 1UL;
@@ -239,7 +220,7 @@ STATIC IPTR slider_get(Class *cl, Object *o, struct opGet *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR slider_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR GTSlider__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
     struct InputEvent 	*ie = msg->gpi_IEvent;
     IPTR 		retval;
@@ -277,119 +258,38 @@ STATIC IPTR slider_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /**********************************************************************************************/
 
-STATIC IPTR slider_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR GTSlider__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
-    struct SliderData 	*data = INST_DATA(cl, o);
+    struct SliderData 	*data = INST_DATA(cl, g);
     IPTR 		retval;
     
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
 	DrawImageState(msg->gpr_RPort,
 		(struct Image *)data->frame,
-		G(o)->LeftEdge - BORDERPROPSPACINGX,
-		G(o)->TopEdge  - BORDERPROPSPACINGY,
+		g->LeftEdge - BORDERPROPSPACINGX,
+		g->TopEdge  - BORDERPROPSPACINGY,
 		IDS_NORMAL,
 		msg->gpr_GInfo->gi_DrInfo);
    
     }
     
-    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);
 
-    renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);
+    renderlabel(GadToolsBase, g, msg->gpr_RPort, data->labelplace);
 
     ReturnInt("Slider::Render", IPTR, retval);
 }
 
 /**********************************************************************************************/
 
-STATIC IPTR slider_dispose(Class *cl, Object *o, Msg msg)
+IPTR GTSlider__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct SliderData *data = INST_DATA(cl, o);
 
     if (data->frame) DisposeObject(data->frame);
 
     return DoSuperMethodA(cl, o, msg);
-}
-
-/**********************************************************************************************/
-
-AROS_UFH3S(IPTR, dispatch_sliderclass,
-	  AROS_UFHA(Class *, cl, A0),
-	  AROS_UFHA(Object *, o, A2),
-	  AROS_UFHA(Msg, msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval;
-
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-	    retval = slider_new(cl, o, (struct opSet *)msg);
-	    break;
-
-	case OM_DISPOSE:
-	    retval = slider_dispose(cl, o, msg);
-	    break;
-
-	case OM_SET:
-	    retval = slider_set(cl, o, (struct opSet *)msg);
-	    break;
-
-	case OM_GET:
-	    retval = slider_get(cl, o, (struct opGet *)msg);
-	    break;
-
-	case GM_GOACTIVE:
-    	    retval = slider_goactive(cl, o, (struct gpInput *)msg);
-    	    break;
-
-	case GM_HANDLEINPUT:
-    	    retval = slider_handleinput(cl, o, (struct gpInput *)msg);
-    	    break;
-
-	case GM_RENDER:
-    	    retval = slider_render(cl, o, (struct gpRender *)msg);
-	    break;
-
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    }
-
-    return retval;
-
-    AROS_USERFUNC_EXIT
-}
-
-/**********************************************************************************************/
-
-#undef GadToolsBase
-
-Class *makesliderclass(struct GadToolsBase_intern * GadToolsBase)
-{
-    Class *cl;
-
-    ObtainSemaphore(&GadToolsBase->classsema);
-
-    cl = GadToolsBase->sliderclass;
-    if (!cl)
-    {
-	cl = MakeClass(NULL, PROPGCLASS, NULL, sizeof(struct SliderData), 0UL);
-	if (cl)
-	{
-	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_sliderclass);
-	    cl->cl_Dispatcher.h_SubEntry = NULL;
-	    cl->cl_UserData = (IPTR) GadToolsBase;
-
-	    GadToolsBase->sliderclass = cl;
-	}
-    }
-    
-    ReleaseSemaphore(&GadToolsBase->classsema);
-
-    return cl;
 }
 
 /**********************************************************************************************/
