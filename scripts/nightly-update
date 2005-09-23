@@ -79,7 +79,7 @@ done
 IFS=$OLDIFS
 
 #-- Prune Downloads Directory ------------------------------------------------
-cd "$SRC"
+cd "$DST"
 
 count=$(($(ls -1 | wc -l) - 1))
 for directory in *; do
