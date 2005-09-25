@@ -80,8 +80,18 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, LIBBASE)
     LIBBASE->tb_VBlankInt.is_Code = (APTR)&VBlankInt;
     LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
 
-    AddIntServer(INTB_VERTB, &LIBBASE->tb_VBlankInt);
+    AddIntServer(INTB_TIMERTICK, &LIBBASE->tb_VBlankInt);
 
+    /* VBlank EMU */
+    
+    LIBBASE->tb_vblank_timerequest.tr_node.io_Command = TR_ADDREQUEST;
+    LIBBASE->tb_vblank_timerequest.tr_node.io_Device = (struct Device *)TimerBase;        
+    LIBBASE->tb_vblank_timerequest.tr_node.io_Unit = (struct Unit *)UNIT_MICROHZ;    
+    LIBBASE->tb_vblank_timerequest.tr_time.tv_secs = 0;
+    LIBBASE->tb_vblank_timerequest.tr_time.tv_micro = 1000000 / SysBase->VBlankFrequency;
+    
+    SendIO(&LIBBASE->tb_vblank_timerequest.tr_node);
+    
     return TRUE;
 
     AROS_SET_LIBFUNC_EXIT
