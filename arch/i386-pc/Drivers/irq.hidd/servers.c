@@ -121,10 +121,10 @@ void init_Servers(struct irq_staticdata *isd)
     timer = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
     if (timer)
     {
-	timer->h_Node.ln_Name = "INT_VERTB emulator";
+	timer->h_Node.ln_Name = "INTB_TIMERTICK";
 	timer->h_Node.ln_Type = NT_INTERRUPT;
 	timer->h_Node.ln_Pri = 0;
-	timer->h_Data = &SysBase->IntVects[INTB_VERTB];
+	timer->h_Data = &SysBase->IntVects[INTB_TIMERTICK];
 	timer->h_Code = timer_interrupt;
 	
 	Enqueue((struct List *)&isd->irqlist[0], (struct Node *)timer);
