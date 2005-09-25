@@ -7,6 +7,7 @@
 */
 #include <exec/types.h>
 #include <exec/execbase.h>
+#include <hardware/intbits.h>
 #include <proto/exec.h>
 #include <proto/timer.h>
 #include <aros/debug.h>
@@ -26,6 +27,8 @@
 	(d)->tv_micro -= 1000000;\
     }
 
+BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timerequest *);
+
 AROS_UFH4(ULONG, VBlankInt,
     AROS_UFHA(ULONG, dummy, A0),
     AROS_UFHA(struct TimerBase *, TimerBase, A1),
@@ -36,6 +39,7 @@ AROS_UFH4(ULONG, VBlankInt,
     AROS_USERFUNC_INIT
 
     struct timerequest *tr, *next;
+
     EClockUpdate(TimerBase);
 
     /*
@@ -47,11 +51,42 @@ AROS_UFH4(ULONG, VBlankInt,
     {
         if(CmpTime(&TimerBase->tb_Elapsed, &tr->tr_time) <= 0)
         {
-            /* This request has finished */
-            Remove((struct Node *)tr);
-            tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
-            tr->tr_node.io_Error = 0;
-            ReplyMsg((struct Message *)tr);
+	    if (tr == &TimerBase->tb_vblank_timerequest)
+	    {
+	    	struct IntVector *iv = &SysBase->IntVects[INTB_VERTB];
+
+	    	/* VBlank Emu */
+		
+		if (iv->iv_Code)
+		{
+		    AROS_UFC5(void, iv->iv_Code,
+			AROS_UFCA(ULONG, 0, D1),
+			AROS_UFCA(ULONG, 0, A0),
+			AROS_UFCA(APTR, iv->iv_Data, A1),
+			AROS_UFCA(APTR, iv->iv_Code, A5),
+			AROS_UFCA(struct ExecBase *, SysBase, A6)
+		    );
+		}
+		
+		/* Automatically requeue/reactivate request */
+		
+		Remove((struct Node *)tr);
+		tr->tr_node.io_Command = TR_ADDREQUEST;
+		tr->tr_time.tv_secs = 0;
+		tr->tr_time.tv_micro = 1000000 / SysBase->VBlankFrequency;
+                AddTime(&tr->tr_time, &TimerBase->tb_Elapsed);
+		
+		timer_addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_VBLANK], tr);	
+		
+	    }
+	    else
+	    {
+            	/* This request has finished */
+            	Remove((struct Node *)tr);
+            	tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
+            	tr->tr_node.io_Error = 0;
+            	ReplyMsg((struct Message *)tr);
+	    }
         }
         else
         {
