@@ -67,6 +67,8 @@ struct TimerBase
     ULONG                tb_ticks_sec;
     ULONG                tb_ticks_elapsed;
     ULONG                tb_prev_tick;
+    
+    struct timerequest   tb_vblank_timerequest; /* For vblank emulation */
 };
 
 #define GetTimerBase(tb)	((struct TimerBase *)(tb))
