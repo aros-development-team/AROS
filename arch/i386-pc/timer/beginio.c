@@ -36,7 +36,7 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-static void addToWaitList(struct TimerBase *, struct MinList *, struct timerequest *);
+BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timerequest *);
 
 /*****i***********************************************************************
 
@@ -159,7 +159,11 @@ static void addToWaitList(struct TimerBase *, struct MinList *, struct timereque
                     else
                     {
                         /* Ok, we add this to the list */
-                        addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_WAITVBL], timereq);
+                        if (timer_addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_WAITVBL], timereq))
+			{
+    	    	            outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
+    	    	            Timer0Setup(TimerBase);
+			}
                         Enable();
                         replyit = FALSE;
                         timereq->tr_node.io_Flags &= ~IOF_QUICK;
@@ -170,8 +174,12 @@ static void addToWaitList(struct TimerBase *, struct MinList *, struct timereque
                 case UNIT_VBLANK:
                     Disable();
                     AddTime(&timereq->tr_time, &TimerBase->tb_Elapsed);
-                    /* Slot it into the list */
-                    addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_VBLANK], timereq);
+                    /* Slot it into the list */		    
+                    if (timer_addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_VBLANK], timereq))
+		    {
+    	    	    	outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
+    	    	    	Timer0Setup(TimerBase);
+		    }
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;
                     replyit = FALSE;
@@ -214,10 +222,10 @@ static void addToWaitList(struct TimerBase *, struct MinList *, struct timereque
     AROS_LIBFUNC_EXIT
 } /* BeginIO */
 
-static void 
-addToWaitList(	struct TimerBase *TimerBase,
-		struct MinList *list,
-		struct timerequest *iotr)
+BOOL 
+timer_addToWaitList(struct TimerBase *TimerBase,
+    	      	    struct MinList *list,
+	      	    struct timerequest *iotr)
 {
     /* We are disabled, so we should take as little time as possible. */
     struct timerequest *tr;
@@ -246,7 +254,9 @@ addToWaitList(	struct TimerBase *TimerBase,
 
     if(!added)
     	AddTail((struct List *)list, (struct Node *)iotr);
+	
+    /* Return TRUE if it ended up on head of list */
     
-    outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
-    Timer0Setup(TimerBase);
+    return ((struct timerequest *)list->mlh_Head == iotr) ? TRUE : FALSE;
+    
 }
