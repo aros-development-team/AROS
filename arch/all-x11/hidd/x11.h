@@ -135,7 +135,7 @@ struct x11_staticdata
        on when some event occurs, for example MapNotify
     */
     struct MsgPort  	    *x11task_notify_port;
-    
+    struct MsgPort  	    *x11task_quit_port;
     struct Library  	    *oopbase;
     struct Library  	    *utilitybase;
     struct ExecBase 	    *sysbase;
