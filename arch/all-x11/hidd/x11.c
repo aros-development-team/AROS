@@ -160,6 +160,16 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     if (NULL == xsd->x11task_notify_port)
     	goto failexit;
 	
+    xsd->x11task_quit_port = CreateMsgPort();
+    if (xsd->x11task_quit_port)
+    {
+    	xsd->x11task_quit_port->mp_Node.ln_Name = "AROS Hosted Power Switch";
+    	xsd->x11task_quit_port->mp_Node.ln_Pri  = -128;
+	
+	AddPort(xsd->x11task_quit_port);
+	
+    }
+    	
     NEWLIST(&nmsg_list);
     NEWLIST(&xwindowlist);
   
@@ -204,11 +214,12 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     #endif        
 	struct notify_msg   *nmsg;	
 	ULONG 	    	     notifysig = 1L << xsd->x11task_notify_port->mp_SigBit;
+	ULONG	    	     quitsig = xsd->x11task_quit_port ? (1L << xsd->x11task_quit_port->mp_SigBit) : 0;
 	ULONG 	    	     sigs;
 
 #if NOUNIXIO
 
-	sigs = Wait(SIGBREAKF_CTRL_D | notifysig | xtp.kill_signal | hostclipboardmask);
+	sigs = Wait(SIGBREAKF_CTRL_D | notifysig | xtp.kill_signal | hostclipboardmask | quitsig);
 	
 #else	
 
@@ -221,7 +232,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 				    vHidd_UnixIO_Read,
 				    unixio_callback,
 				    (APTR)xsd,
-				    xtp.kill_signal | notifysig | hostclipboardmask);
+				    xtp.kill_signal | notifysig | hostclipboardmask | quitsig);
 			
 			
     #else
@@ -246,7 +257,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 	    }
 	}
 	
-	sigs = Wait(notifysig | unixiosig | xtp.kill_signal);			
+	sigs = Wait(notifysig | unixiosig | xtp.kill_signal | hostclipboardmask | quitsig);			
 D(bug("Got input from unixio\n"));
 /*			
 	if (ret != 0)
@@ -256,6 +267,7 @@ D(bug("Got input from unixio\n"));
 	
 	
 */
+	
 	if (sigs & unixiosig)
 	{
 	     struct uioMessage *uiomsg;
@@ -276,6 +288,10 @@ D(bug("Got input from unixio\n"));
 
 
 #endif
+    	if (sigs & quitsig)
+	{
+    	    raise(SIGINT);
+	}
 
 	if (sigs & xtp.kill_signal)
 	    goto failexit;
@@ -752,18 +768,31 @@ D(bug("Got input from unixio\n"));
 failexit:
     #warning "Also try to free window node list ?"
 
-    if (NULL != xsd->x11task_notify_port)
+    if (xsd->x11task_quit_port)
+    {
+    	RemPort(xsd->x11task_quit_port);
+	DeleteMsgPort(xsd->x11task_quit_port);
+    }
+    
+    if (xsd->x11task_notify_port)
+    {
 	DeleteMsgPort(xsd->x11task_notify_port);
+    }
 		
 
 #if (!NOUNIXIO)
     if (NULL != unixio_port)
+    {
     	DeleteMsgPort(unixio_port);
+    }
 	
     if (NULL != unixio)
+    {
     	OOP_DisposeObject(unixio);
+    }
 #endif
-     Signal(xtp.parent, xtp.fail_signal);
+
+    Signal(xtp.parent, xtp.fail_signal);
     
 }
 
