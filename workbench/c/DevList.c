@@ -82,6 +82,8 @@ int main(void)
 {
     IPTR size;
     struct dev *buffer,*devs,*devs2;
+    LONG error=RETURN_OK;
+
     for(size=2048;;size+=2048)
     {
         buffer=AllocVec(size,MEMF_ANY);
