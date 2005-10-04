@@ -273,7 +273,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 
 	    /* If this is a directory, we enter it regardless if the ALL
 	       switch is set. */
-	    if (isDirectory(&ap->ap_Info))
+	    if (isDirectory(ap, forcelinks))
 	    {
 		/* This is a directory. It's important to check if we just left
 		   the directory or is about to enter it. This is because we
@@ -324,7 +324,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                     deleteit = FALSE;
                 }
             }
-            isfile = !isDirectory(ap, forcelinks, DOSBase);
+            isfile = !isDirectory(ap, forcelinks);
             strcpy(name, ap->ap_Buf);
 	}
         MatchEnd(ap);
