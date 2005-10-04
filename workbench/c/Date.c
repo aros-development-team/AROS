@@ -114,20 +114,21 @@ int setdate(STRPTR *day_date_time)
 
 		if((!realdate && !realtime) || (StrToDate(&dt) == 0))
 		{
-		    PutStr("***Bad args:\n- use DD-MMM-YY or <dayname> or yesterday "
-			   "etc. to set date\n HH:MM:SS or HH:MM to set time\n");
-		    CloseDevice(&timerReq->tr_node);
-		    exit(RETURN_FAIL);
-		}
+		    PutStr("***Bad args:\n"
+			   "- use DD-MMM-YY or <dayname> or yesterday etc. to set date\n"
+			   "      HH:MM:SS or HH:MM to set time\n");
+		    error = RETURN_FAIL;
+		} else {
 
-		timerReq->tr_time.tv_secs = dt.dat_Stamp.ds_Days*60*60*24 +
+			timerReq->tr_time.tv_secs = dt.dat_Stamp.ds_Days*60*60*24 +
 	                        	   dt.dat_Stamp.ds_Minute*60 +
 	                        	   dt.dat_Stamp.ds_Tick / TICKS_PER_SECOND;
-		timerReq->tr_time.tv_micro = 0;
-		timerReq->tr_node.io_Command = TR_SETSYSTIME;
-		timerReq->tr_node.io_Flags |= IOF_QUICK;
+			timerReq->tr_time.tv_micro = 0;
+			timerReq->tr_node.io_Command = TR_SETSYSTIME;
+			timerReq->tr_node.io_Flags |= IOF_QUICK;
 
-		DoIO(&timerReq->tr_node);
+			DoIO(&timerReq->tr_node);
+		}
 
         	CloseDevice(&timerReq->tr_node);
 	    } 
