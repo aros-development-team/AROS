@@ -72,7 +72,7 @@
 #include <string.h>
 
 
-#define ARG_TEMPLATE    "FILE/M/A,ALL/S,QUIET/S,FORCE/S"
+#define ARG_TEMPLATE    "FILE/M/A,ALL/S,QUIET/S,FORCE/S,FOLLOWLINKS/S"
 
 enum 
 {
@@ -80,19 +80,20 @@ enum
     ARG_ALL,
     ARG_QUIET,
     ARG_FORCE,
+    ARG_FOLLOWLINKS,
     NOOFARGS
 };
 
 
 /* Maximum file path length */
-#define MAX_PATH_LEN    512
+#define MAX_PATH_LEN    2048
 
 static const char version[] = "$VER: Delete 41.2 (6.1.2000)\n";
 static char cmdname[] = "Delete";
 
 
 int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
-	     BOOL force);
+	     BOOL force, BOOL forcelinks);
 
 int __nocommandline;
 
@@ -100,7 +101,7 @@ int main(void)
 {
     struct RDArgs      *rda;
     struct AnchorPath  *ap;
-    IPTR                args[NOOFARGS] = { (IPTR) NULL, FALSE, FALSE, FALSE };
+    IPTR                args[NOOFARGS] = { (IPTR) NULL, FALSE, FALSE, FALSE, FALSE };
     int	                retval         = RETURN_OK;
 
     ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN,
@@ -119,8 +120,9 @@ int main(void)
 	    BOOL    all = (BOOL)args[ARG_ALL];
 	    BOOL    quiet = (BOOL)args[ARG_QUIET];
 	    BOOL    force = (BOOL)args[ARG_FORCE];
+	    BOOL    followlinks = (BOOL)args[ARG_FOLLOWLINKS];
 
-	    retval = doDelete(ap, files, all, quiet, force);
+	    retval = doDelete(ap, files, all, quiet, force, followlinks);
 	    
 	    FreeArgs(rda);
 	}
@@ -140,17 +142,82 @@ int main(void)
     return retval;
 } /* main */
 
+static inline BOOL isDirectory(struct AnchorPath *ap, BOOL followflag)
+{
+    BOOL isdir;
 
-#define isDirectory(fib) ((fib)->fib_DirEntryType >= 0)
+    if (ap->ap_Info.fib_DirEntryType == ST_SOFTLINK)
+    {
+        /* Softlink to dir/file - Default don't enter it, unless
+           flag is set and the destination is really softlink.
+
+           We have all lost some files due to braindead behaviour
+           of the original delete regarding softlinks. - Piru
+        */
+        isdir = FALSE;
+
+        if (followflag)
+        {
+            /* Okay flag set, figure out if this is a softlink to directory
+            */
+            BPTR lock;
+
+            lock = Lock(ap->ap_Buf, ACCESS_READ);
+            if (lock)
+            {
+                struct FileInfoBlock *fib;
+
+                fib = AllocDosObject(DOS_FIB, NULL);
+                if (fib)
+                {
+                    if (Examine(lock, fib))
+                    {
+                        /* Just extra sanity check so it can't be softlink
+                           anymore (weird, fucked up, fs?).
+                        */
+                        isdir = (fib->fib_DirEntryType >= 0 &&
+                                 fib->fib_DirEntryType != ST_SOFTLINK);
+                    }
+                    FreeDosObject(DOS_FIB, fib);
+                }
+                UnLock(lock);
+            }
+        }
+    }
+    else if (ap->ap_Info.fib_DirEntryType == ST_LINKDIR)
+    {
+        /* Hardlink to directory - Only follow it if flag set.
+
+           It is debatable whether hardlinks should be followed by
+           default. IMHO not. - Piru
+        */
+        isdir = followflag;
+    }
+    else
+    {
+        isdir = ap->ap_Info.fib_DirEntryType >= 0;
+    }
+    return isdir;
+}
 
 #define isDeletable(fib) (!((fib)->fib_Protection & FIBF_DELETE))
 
 int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
-	     BOOL force)
+	     BOOL force, BOOL forcelinks)
 {
     LONG  match;
     int   i;
-    BOOL  matched = FALSE;
+    char  name[MAX_PATH_LEN];
+    BOOL  isfile = TRUE;
+    BOOL  deleteit = FALSE;
+    BOOL  deletedfile = FALSE;
+    BOOL  firstmatch = TRUE;
+    STRPTR file;
+
+    if (!files)
+    {
+        return RETURN_OK;
+    }
 
     for (i = 0; files[i] != NULL; i++)
     {
@@ -176,7 +243,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 	for (match = MatchFirst(files[i], ap); match == 0;
 	     match = MatchNext(ap))
 	{
-	    matched = TRUE;
+	    firstmatch = FALSE;
 
 	    if (CheckSignal(SIGBREAKF_CTRL_C))
 	    {
@@ -185,6 +252,24 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 
 		return  RETURN_ERROR;
 	    }
+
+            if (deleteit)
+            {
+                /* Try to delete the file or directory */
+                if (!DeleteFile(name))
+                {
+                    LONG ioerr = IoErr();
+                    Printf("%s  Not Deleted", (ULONG)name);
+                    PrintFault(ioerr, "");
+                }
+                else if (!quiet)
+                {
+                    Printf("%s  Deleted\n", (ULONG)name);
+                }
+
+                deletedfile = TRUE;
+                deleteit = FALSE;
+            }
 
 	    /* If this is a directory, we enter it regardless if the ALL
 	       switch is set. */
@@ -221,52 +306,59 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 		       in case the directory was not empty. */
 		}
 	    }
+            /* Mark the entry for deletion */
+            deleteit = TRUE;
 
 	    /* Check permissions */
-	    if (!force)
-	    {
-		if (!isDeletable(&ap->ap_Info))
-		{
-		    Printf("%s  Not Deleted", ap->ap_Buf);
-		    PrintFault(ERROR_DELETE_PROTECTED, "");
+            if (!isDeletable(&ap->ap_Info))
+            {
+                /* Consider delete protected file/dir 'deleted' */
+                deletedfile = TRUE;
 
-		    if(!all)
-		    {
-			MatchEnd(ap);
-
-			return RETURN_FAIL;
-		    }
-		}
-	    }
-
-	    /* Try to delete the file or directory */
-	    if (!DeleteFile(ap->ap_Buf))
-	    {
-		Printf("%s  Not Deleted", ap->ap_Buf);
-		PrintFault(IoErr(), "");
-		
-		/* If ALL is given as a parameter, we continue */
-		if (!all)
-		{
-		    MatchEnd(ap);
-		    
-		    return RETURN_FAIL;
-		}
-	    }
-	    
-	    if (!quiet)
-	    {
-		Printf("%s  Deleted\n", ap->ap_Buf);
-	    }
+                if (force)
+                    SetProtection(ap->ap_Buf, 0);
+                else
+                {
+                    Printf("%s  Not Deleted", (ULONG)ap->ap_Buf);
+                    PrintFault(ERROR_DELETE_PROTECTED, "");
+                    deleteit = FALSE;
+                }
+            }
+            isfile = !isDirectory(ap, forcelinks, DOSBase);
+            strcpy(name, ap->ap_Buf);
 	}
+        MatchEnd(ap);
+        if (deleteit)
+        {
+            /* Try to delete the file or directory */
+            if (!DeleteFile(name))
+            {
+                LONG ioerr = IoErr();
+                Printf("%s  Not Deleted", (ULONG)name);
+                PrintFault(ioerr, "");
+            }
+            else if (!quiet)
+            {
+                Printf("%s  Deleted\n", (ULONG)name);
+            }
+
+            deletedfile = TRUE;
+            deleteit = FALSE;
+        }
     }
 
-    if (!matched)
+    if (firstmatch && match &&
+        match != ERROR_OBJECT_NOT_FOUND &&
+        match != ERROR_NO_MORE_ENTRIES)
     {
-	PutStr("No file to delete\n");
+        PrintFault(match, NULL);
+        return RETURN_WARN;
     }
 
-    MatchEnd(ap);
-
+    if (!deletedfile)
+    {
+        PutStr("No file to delete\n");
+        return RETURN_WARN;
+    }
     return RETURN_OK;
 }
