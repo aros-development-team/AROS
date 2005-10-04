@@ -21,6 +21,8 @@ struct dev
     STRPTR name;
     APTR address;
     WORD version;
+    WORD revision;
+    ULONG flags;
     WORD opencnt;
 };
 
@@ -28,9 +30,11 @@ static int adddev(struct Device *dev, struct dev **l, STRPTR *e)
 {
     STRPTR s1, s2;
 
-    (*l)->address = dev;
-    (*l)->version = dev->dd_Library.lib_Version;
-    (*l)->opencnt = dev->dd_Library.lib_OpenCnt;
+    (*l)->address  = dev;
+    (*l)->version  = dev->dd_Library.lib_Version;
+    (*l)->revision = dev->dd_Library.lib_Revision;
+    (*l)->opencnt  = dev->dd_Library.lib_OpenCnt;
+    (*l)->flags    = dev->dd_Library.lib_Flags;
 
     s1 = dev->dd_Library.lib_Node.ln_Name;
 
@@ -41,12 +45,12 @@ static int adddev(struct Device *dev, struct dev **l, STRPTR *e)
             ;
         while(s2>s1)
         {
-            if(*e<=(STRPTR)l)
+            if(*e<=(STRPTR)(*l+2))
                 return 0;
             *--(*e)=*--s2;
         }
     }
-    if((STRPTR)(*l+1)>*e)
+    if((STRPTR)(*l+2)>*e)
         return 0;
 
     (*l)->name=*e;
@@ -89,21 +93,34 @@ int main(void)
         devs=buffer;
         if(fillbuffer(&devs,size))
         {
-	    FPuts(Output(),"address\t\tversion\topencnt\tname\n"
+	    FPuts(Output(),"address\t\tversion\trev\topencnt\tflags\tname\n"
                            "------------------------------------------------------------\n");
 	    for(devs2=buffer;devs2<devs;devs2++)
 	    {
-		IPTR args[4];
+		IPTR args[6];
 		args[0] = (IPTR)devs2->address;
 		args[1] = (IPTR)devs2->version;
-		args[2] = (IPTR)devs2->opencnt;
-		args[3] = (IPTR)devs2->name;
+                args[2] = (IPTR)devs2->revision;
+		args[3] = (IPTR)devs2->opencnt;
+                args[4] = (IPTR)devs2->flags;
+		args[5] = (IPTR)devs2->name;
 
-		VPrintf("0x%08.lx\t%ld\t%ld\t%s\n", args);
+		VPrintf("0x%08.lx\t%ld\t%ld\t%ld\t\t0x%lx\t%s\n", args);
+                if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+                {
+                        error = RETURN_FAIL;
+                        SetIoErr(ERROR_BREAK);
+                        break;
+                }
 	    }
 	    FreeVec(buffer);
-            return 0; 
+            break;
         }
         FreeVec(buffer);
     }
+    if (error != RETURN_OK)
+    {
+            PrintFault(IoErr(), NULL);
+    }
+    return(error);
 }
