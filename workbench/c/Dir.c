@@ -265,7 +265,7 @@ int main(int argc, char **argv)
                FALSE
     };
 
-    LONG  error = RETURN_FAIL;
+    LONG  error = RETURN_ERROR;
 
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
@@ -322,14 +322,26 @@ int main(int argc, char **argv)
 	}
 
 	error = doPatternDir(dir, all, dirs, files, inter);
-
+        if (error != RETURN_OK)
+        {
+                    LONG ioerr = IoErr();
+                    switch (ioerr)
+                    {
+                    case ERROR_NO_MORE_ENTRIES:
+                        ioerr = 0;
+                        break;
+                    case ERROR_OBJECT_WRONG_TYPE:
+                        Printf("%s is not a directory\n", (ULONG)dir);
+                        ioerr = ERROR_DIR_NOT_FOUND;
+                        break;
+                    default:
+                        Printf("Could not get information for %s\n", (ULONG)dir);
+                    }
+                    PrintFault(ioerr, NULL);
+        }
 	FreeArgs(rda);
-    }
-
-    if (error != RETURN_OK)
-    {
+    } else
 	PrintFault(IoErr(), NULL);
-    }
 
     return error;
 }
