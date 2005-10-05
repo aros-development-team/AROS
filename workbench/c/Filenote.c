@@ -152,7 +152,7 @@ int main(void)
         {
             PrintFault(IoErr(), ERROR_HEADER);
 
-            Return_Value = RETURN_FAIL;
+            Return_Value = RETURN_ERROR;
         }
     }
     else
