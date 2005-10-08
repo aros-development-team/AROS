@@ -21,6 +21,8 @@ struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
 	funchead->argcount = 0;
 	funchead->arguments = NULL;
 	funchead->aliases = NULL;
+	funchead->novararg = 0;
+	funchead->priv= 0;
     }
     else
     {
