@@ -96,7 +96,9 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			   mididevicedata->Name!=NULL &&
 			   mididevicedata->Init!=NULL &&
 			   isPointerInSeglist(mididevicedata->Init,seglist,4) &&			   
+    	    	    #ifndef __AROS__
 			   (((ULONG)(mididevicedata->Init)&(AROS_PTRALIGN-1))==0) &&
+    	    	    #endif
 			   isPointerInSeglist(
 					      mididevicedata->Name,
 					      seglist,mystrlen(findonlyfilename(name))
@@ -106,15 +108,19 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			   (
 			    mididevicedata->Expunge==NULL  ||
 			    (
-			     isPointerInSeglist(mididevicedata->Expunge,seglist,4) && 				  
-			     (((ULONG)(mididevicedata->Expunge)&(AROS_PTRALIGN-1))==0)									       
+			     isPointerInSeglist(mididevicedata->Expunge,seglist,4)
+    	    	    #ifndef __AROS__			     
+			     && (((ULONG)(mididevicedata->Expunge)&(AROS_PTRALIGN-1))==0)									       
+    	    	    #endif			     
 			     )
 			    )
 			   &&
 			   (
 			    mididevicedata->OpenPort==NULL ||
 			    (
+    	    	    #ifndef __AROS__			    
 			     (((ULONG)(mididevicedata->OpenPort)&(AROS_PTRALIGN-1))==0) &&
+		    #endif
 			     isPointerInSeglist(mididevicedata->OpenPort,seglist,4)
 			     )
 			    )
@@ -122,7 +128,9 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			   (
 			    mididevicedata->ClosePort==NULL ||
 			    (
+    	    	    #ifndef __AROS__			    
 			     (((ULONG)(mididevicedata->ClosePort)&(AROS_PTRALIGN-1))==0) &&
+		    #endif
 			     isPointerInSeglist(mididevicedata->ClosePort,seglist,4)
 			     )
 			    )
