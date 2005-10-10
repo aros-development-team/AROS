@@ -13,14 +13,16 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-static const char version[] = "$VER: liblist 41.1 (14.3.1997)\n";
+static const char version[] = "$VER: liblist 41.2 (10.10.2005)\n";
 
 struct lib
 {
     STRPTR name;
     APTR address;
     WORD version;
+    WORD revision;
     WORD opencnt;
+    UBYTE flags;
 };
 
 static int addlib(struct Library *lib, struct lib **l, STRPTR *e)
@@ -29,7 +31,9 @@ static int addlib(struct Library *lib, struct lib **l, STRPTR *e)
 
     (*l)->address = lib;
     (*l)->version = lib->lib_Version;
+    (*l)->revision = lib->lib_Revision;
     (*l)->opencnt = lib->lib_OpenCnt;
+    (*l)->flags    = lib->lib_Flags;
 
     s1 = lib->lib_Node.ln_Name;
 
@@ -88,21 +92,33 @@ int main(void)
         libs=buffer;
         if(fillbuffer(&libs,size))
         {
-	    FPuts(Output(),"address\t\tversion\topencnt\tname\n"
+	    FPuts(Output(),"address\t\tversion\trev\topencnt\tflags\tname\n"
                            "------------------------------------------------------------\n");
 	    for(libs2=buffer;libs2<libs;libs2++)
 	    {
-		IPTR args[4];
+		IPTR args[6];
 		args[0] = (IPTR)libs2->address;
 		args[1] = (IPTR)libs2->version;
-		args[2] = (IPTR)libs2->opencnt;
-		args[3] = (IPTR)libs2->name;
+                args[2] = (IPTR)libs2->revision;
+		args[3] = (IPTR)libs2->opencnt;
+                args[4] = (IPTR)libs2->flags;
+		args[5] = (IPTR)libs2->name;
 
-		VPrintf("0x%08.lx\t%ld\t%ld\t%s\n", args);
+		VPrintf("0x%08.lx\t%ld\t%ld\t%ld\t0x%lx\t%s\n", args);
+                if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+                {
+                        error = RETURN_FAIL;
+                        SetIoErr(ERROR_BREAK);
+                        break;
+                }
 	    }
 	    FreeVec(buffer);
             return 0; 
         }
         FreeVec(buffer);
+        if (error != RETURN_OK)
+        {
+            PrintFault(IoErr(), NULL);
+        }
     }
 }
