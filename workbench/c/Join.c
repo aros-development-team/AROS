@@ -106,12 +106,8 @@ int main( void )
 	    if( (destfile = Open( destination , MODE_NEWFILE )) )
 	    {
 		rc = doJoin(files, destfile);
-
-		if (rc == RETURN_OK)
-		{
-		    Close(destfile);
-		}
-		else
+		Close(destfile);
+		if (rc != RETURN_OK)
 		{
 		    Printf(", %s.\n", getstring(STR_REMOVINGDEST));
 		    DeleteFile(destination);
@@ -165,6 +161,8 @@ int doJoin(STRPTR *files, BPTR destfile)
     /* Loop over the arguments */
     for (i = 0; files[i] != NULL; i++)
     {
+        ap->ap_BreakBits  = SIGBREAKF_CTRL_C;
+        ap->ap_FoundBreak = 0;
 	for (match = MatchFirst(files[i], ap); match == 0;
 	     match = MatchNext(ap))
 	{	
@@ -177,6 +175,13 @@ int doJoin(STRPTR *files, BPTR destfile)
 	}
 	
 	MatchEnd(ap);
+        if (ap->ap_FoundBreak & SIGBREAKF_CTRL_C)
+        {
+            PrintFault(IoErr(), NULL);
+            SetIoErr(ERROR_BREAK);
+            rc = RETURN_FAIL;
+            break;
+        }
     }
 
     FreeVec(ap);
@@ -197,9 +202,10 @@ LONG append(BPTR destfile, STRPTR srcfilename)
     {
 	if ( (srcfile = Open( srcfilename , MODE_OLDFILE )) )
 	{
-	    while( (actualLength = Read(srcfile, buffer, BUFFERSIZE)) != -1 )
+	    ULONG brk;
+	    while(!(brk = SetSignal(0,0) & SIGBREAKF_CTRL_C) && (actualLength = Read(srcfile, buffer, BUFFERSIZE)) != -1 )
 	    {
-		if (Write(destfile, buffer, actualLength) == -1 )
+		if (Write(destfile, buffer, actualLength) != actualLength )
 		{
 		    Printf("%s: %s.\n", ERROR_HEADER, getstring(STR_ERR_WRITING));
 		    rc = RETURN_FAIL;
@@ -212,11 +218,26 @@ LONG append(BPTR destfile, STRPTR srcfilename)
 		    break;
 		}
 	    }
+            if (actualLength == -1)
+            {
+                PrintFault(IoErr(), NULL);
+                Printf( "%s: %s.\n", (ULONG)ERROR_HEADER,
+                       (ULONG)getstring(STR_ERR_READING));
+                rc = RETURN_FAIL;
+            }
+
+            if (brk)
+            {
+                PrintFault(ERROR_BREAK, NULL);
+                SetIoErr(ERROR_BREAK);
+                rc = RETURN_FAIL;
+            }
 	    
 	    Close(srcfile);
 	}
 	else
 	{
+            PrintFault(IoErr(), NULL);
 	    Printf("%s: %s: '%s'\n",
 		ERROR_HEADER,
 		getstring(STR_ERR_OPENREAD),
