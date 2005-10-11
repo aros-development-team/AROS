@@ -72,6 +72,8 @@
 #define STR_ERR_OPENREAD  3   /* Error opening file for reading         */
 #define STR_ERR_NOMEM     4   /* Error allocating memory                */
 #define STR_ERR_WRITING   5   /* Error while writing to file            */
+#define STR_ERR_OPENWRITE 6   /* Error opening file for writing         */
+#define STR_ERR_READING   7   /* Error while reading from file          */
 
 /****** Version- and error-header ***************************************/
 
@@ -276,6 +278,12 @@ STRPTR getstring(LONG stringid)
 
     case STR_ERR_WRITING:
 	return "Error while writing";
+
+    case STR_ERR_OPENWRITE:
+        return "Could not open file for writing";
+
+    case STR_ERR_READING:
+        return "Error while writing";
 
     default:
 	return "[Error: Unknown StringID]";
