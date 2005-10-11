@@ -81,13 +81,17 @@ int main(void)
 {
     IPTR size;
     struct lib *buffer,*libs,*libs2;
+    LONG error=RETURN_OK;
+    
     for(size=2048;;size+=2048)
     {
         buffer=AllocVec(size,MEMF_ANY);
         if(buffer==NULL)
         {
             FPuts(Output(),"Not Enough memory for library buffer\n");
-            return 20;
+	    SetIoErr(ERROR_NO_FREE_STORE);
+	    error = RETURN_FAIL;
+            break;
         }
         libs=buffer;
         if(fillbuffer(&libs,size))
@@ -107,18 +111,22 @@ int main(void)
 		VPrintf("0x%08.lx\t%ld\t%ld\t%ld\t0x%lx\t%s\n", args);
                 if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                 {
-                        error = RETURN_FAIL;
-                        SetIoErr(ERROR_BREAK);
-                        break;
+                    error = RETURN_FAIL;
+                    SetIoErr(ERROR_BREAK);
+                    break;
                 }
 	    }
 	    FreeVec(buffer);
-            return 0; 
+            break; 
         }
         FreeVec(buffer);
-        if (error != RETURN_OK)
-        {
-            PrintFault(IoErr(), NULL);
-        }
     }
+
+    if (error != RETURN_OK)
+    {
+	PrintFault(IoErr(), NULL);
+    }
+    
+    return error;
+    
 }
