@@ -12,7 +12,7 @@
     SYNOPSIS
 
     Search [FROM] {(name | pattern} [SEARCH] (string | pattern) [ALL] 
-           [NONUM] [QUIET] [QUICK] [FILE] [PATTERN]
+           [NONUM] [QUIET] [QUICK] [FILE] [PATTERN] [LINES=Number]
 
     LOCATION
 
@@ -36,6 +36,8 @@
     FILE     --  look for a file with a specific name rather than a string
                  in a file
     PATTERN  --  use pattern matching when searching
+    CASE     --  use case sensitive pattern matching when searching
+    LINES    --  extra lines after a line match which should be shown
 
     RESULT
 
@@ -91,6 +93,8 @@ enum
     ARG_QUICK,
     ARG_FILE,
     ARG_PATTERN,
+    ARG_CASE,
+    ARG_LINES,
     ARG_COUNT
 };
 
@@ -109,8 +113,8 @@ BOOL  MatchStringNoCase(TEXT *string, TEXT *text, TEXT *text_end, UBYTE *pi,
 // *****  String information (version, messages) ***
 
 const TEXT template[] =
-     "FROM/M,SEARCH/A,ALL/S,NONUM/S,QUIET/S,QUICK/S,FILE/S,PATTERN/S";
-const TEXT version_string[] = "$VER: Search 41.3 (2.11.2000)";
+     "FROM/M,SEARCH/A,ALL/S,NONUM/S,QUIET/S,QUICK/S,FILE/S,PATTERN/S,CASE/S,LINES/N";
+const TEXT version_string[] = "$VER: Search 42.3 (18.10.2005)";
 const TEXT locale_name[]    = "locale.library";
 
 const TEXT control_codes[]  = { 0x9b, 'K', 13 };
@@ -175,10 +179,19 @@ int main(void)
 		    }
 		    
 		    CopyMem((TEXT *)args[ARG_SEARCH], text, pat_length);
-		    
-		    if(ParsePatternNoCase(user_pattern, pattern, 
+		    if (args[ARG_CASE])
+		    {
+			if (ParsePattern(user_pattern, pattern, pat_buf_length) < 0)
+			{
+				success = FALSE;
+			}
+		    }
+		    else
+		    {		    
+		        if(ParsePatternNoCase(user_pattern, pattern, 
 					  pat_buf_length) < 0)
-			success = FALSE;
+			    success = FALSE;
+		    }
 		}
 		else
 		{
@@ -422,6 +435,7 @@ BOOL FindString(struct AnchorPath *anchor, ULONG *args, TEXT *pattern,
     TEXT  *p, *q, *r, *line, *buffer = NULL, ch;
     ULONG  max_line_length = 0, line_length, offset = 0, file_size, buf_size,
 	   line_start = 0, line_count = 1;
+    ULONG Lines=0;
     ULONG  sigs;
     LONG   read_length = 1;
     
@@ -478,6 +492,7 @@ BOOL FindString(struct AnchorPath *anchor, ULONG *args, TEXT *pattern,
 	    
 	    if(buf_size <= max_line_length)
 	    {
+		FreeMem(buffer, buf_size);
 		buf_size = max_line_length + 1;
 		buffer = AllocMem(buf_size, MEMF_ANY);
 	    }
@@ -509,13 +524,20 @@ BOOL FindString(struct AnchorPath *anchor, ULONG *args, TEXT *pattern,
 		    {
 			*p = '\0';
 			
-			if(args[ARG_PATTERN])
-			    line_matches = MatchPatternNoCase(pattern, line);
+			if (args[ARG_CASE])
+			{
+				if (args[ARG_PATTERN])
+					line_matches = MatchPattern(pattern, line);
+				else
+					line_matches = MatchString(pattern, line, p, pi, locale);
+			}
 			else
-			    line_matches =
-				MatchStringNoCase(pattern, line, p, pi, 
-						  locale);
-			
+			{
+				if(args[ARG_PATTERN])
+			    		line_matches = MatchPatternNoCase(pattern, line);
+				else
+			    		line_matches = MatchStringNoCase(pattern, line, p, pi, locale);
+			}
 			if(line_matches)
 			{
 			    if(!found && args[ARG_QUICK])
@@ -541,9 +563,27 @@ BOOL FindString(struct AnchorPath *anchor, ULONG *args, TEXT *pattern,
 				}
 				
 				VPrintf("%s\n", (IPTR *)&line);
-			    }
+				if (args[ARG_LINES])
+				{
+					Lines = *((ULONG*) args[ARG_LINES]);
+				}			    }
 			}
-			
+			else
+			{
+				if (Lines != 0)
+				{
+					Printf("%6lu: ", line_count);
+					/* Replace invisible characters with dots */
+
+					for (r = line; r < p; r++)
+					{
+						if (!IsPrint(locale, *r))
+							*r='.';
+					}
+					PutStr(line); PutStr("\n");
+					Lines--;
+				}
+			}			
 			line = p + 1;
 			
 			if(ch == '\n')
@@ -606,5 +646,28 @@ BOOL MatchStringNoCase(TEXT *string, TEXT *text, TEXT *text_end, UBYTE *pi,
     return FALSE;
 }
 
+BOOL MatchString(TEXT *string, TEXT *text, TEXT *text_end, UBYTE *pi,
+                 struct Locale *locale)
+{
+	TEXT *s, ch;
+
+	s = string;
+
+	while (text < text_end)
+	{
+		ch = *(text++);
+
+		while ((s != string) && (*s != ch))
+			s = string + pi[s - string - 1];
+
+		if (ch == *s)
+			s++;
+
+		if (!*s)
+			return TRUE;
+	}
+
+	return FALSE;
+}
 
 

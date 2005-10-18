@@ -274,18 +274,6 @@ int main(void)
     return retval;
 }
 
-
-/* Defines whether MatchFirst(), etc has matched a file. */
-#define MATCHED_FILE    0
-
-int Do_Recursion(struct AnchorPath *, LONG, LONG, LONG *, LONG);
-void AddBitMask(struct AnchorPath *, STRPTR, LONG *, BOOL);
-void SubBitMask(struct AnchorPath *, STRPTR, LONG *, BOOL);
-void NewBitMask(struct AnchorPath *, STRPTR, LONG *);
-void PrintFileName(struct AnchorPath *, LONG);
-int SafeSetProtection(struct AnchorPath *, LONG);
-
-
 #define  isDir(fib) ((fib)->fib_DirEntryType >= 0)
 
 int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
@@ -321,23 +309,37 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
 	error = setProtection(ap->ap_Buf, ap->ap_Info.fib_Protection, flags,
 			      flagsSet, add, sub);
 
-	/* Fix indentation level */
-	for (i = 0; i < indent; i++)
-	{
-	    Printf("  ");
-	}
+        if (!quiet)
+        {
+            LONG ioerr = IoErr();
 
-	if (!quiet || error)
-	{
-	    Printf(FilePart(ap->ap_Buf));
+            /* Fix indentation level */
+            for (i = 0; i < indent; i++)
+            {
+                PutStr("     ");
+            }
 
-	    if (isDir(&ap->ap_Info))
-	    {
-		Printf(" (dir)");
-	    }
+            if (!isDir(&ap->ap_Info))
+            {
+                PutStr("   ");
+            }
 
-	    Printf("...Done\n");
-	}
+            PutStr(ap->ap_Info.fib_FileName);
+
+            if (isDir(&ap->ap_Info))
+            {
+                PutStr(" (dir)");
+            }
+
+            if (!error)
+            {
+                PrintFault(ioerr, "..error");
+            }
+            else
+            {
+                PutStr("..done\n");
+            }
+        }
     }
 
     MatchEnd(ap);
@@ -397,332 +399,3 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
     
     return TRUE;
 }
-
-
-
-int Do_Protect(struct AnchorPath *a, STRPTR file, STRPTR flags,
-               BOOL add, BOOL sub, BOOL all, BOOL quiet)
-{
-    LONG Result,
-	TabValue,
-	BitMask;
-    int  retval = RETURN_OK;
-    IPTR DevArg[2];
-
-    TabValue     = 0L;
-    BitMask      = 0L;
-
-    if(IsDosEntryA(file, LDF_VOLUMES | LDF_DEVICES) && !all)
-    {
-        DevArg[0] = (IPTR)file;
-	
-        VPrintf("Can't set protection for %s - ", DevArg);
-        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-        PrintFault(IoErr(), NULL);
-        
-        retval = RETURN_FAIL;
-    }
-    else
-    {
-        Result = MatchFirst(file, a);
-	
-        if (Result == MATCHED_FILE)
-        {
-            do
-            {
-                if (flags != NULL)  /* Flags are given */
-                {
-                    if (add)
-                    {
-                        /* Add the permission bits to the bitmask.
-                         * In other words - Enable permissions.
-                         */
-    
-                        AddBitMask(a, flags, &BitMask, TRUE);
-                        retval = Do_Recursion(a, all, quiet, &TabValue, BitMask);
-                    }
-                    else if (sub)
-                    {
-                        /* Remove the permission bits from the bitmask.
-                         * In other words - Disable permissions. */
-
-                        SubBitMask(a, flags, &BitMask, TRUE);
-                        retval = Do_Recursion(a, all, quiet, &TabValue, BitMask);
-                    }
-                    else
-                    {
-                        /* Clear all permissions then set the ones given.
-                         */
-			
-                        NewBitMask(a, flags, &BitMask);
-                        retval = Do_Recursion(a, all, quiet, &TabValue, BitMask);
-                    }
-                }
-                else    /* No flags are given */
-                {
-                    if (!add && !sub)
-                    {
-                        /* Remove all permissions bits from the bitmask.
-                         * In other words - Disable ALL permissions. */
-
-                        SubBitMask(a, "sparwed", &BitMask, TRUE);
-                        retval = Do_Recursion(a, all, quiet, &TabValue, BitMask);
-                    }
-                }
-            }
-
-            while (((Result = MatchNext(a)) == MATCHED_FILE) &&
-                retval != RETURN_FAIL);
-        }
-        else
-        {
-            PrintFault(IoErr(), "Protect");
-            retval = RETURN_FAIL;
-        }
-
-        MatchEnd(a);
-    }
-
-    return retval;    
-}
-
-
-int Do_Recursion(struct AnchorPath *a,
-                  LONG  All,
-                  LONG  Quiet,
-                  LONG *TabValue,
-                  LONG  BitMask)
-{
-    BOOL Return_Value;
-
-    Return_Value = RETURN_OK;
-
-    if (NOT_SET(All))
-    {
-        Return_Value = SafeSetProtection(a, BitMask);
-        if (NOT_SET(Quiet))
-        {
-            PrintFileName(a, *TabValue);
-        }
-    }    
-    else
-    {
-        /* Allow a recursive scan.
-         */
-            
-        if (a->ap_Info.fib_DirEntryType > 0)
-        {
-            /* Enter directory.
-             */
-            if (!(a->ap_Flags & APF_DIDDIR))
-            {
-                a->ap_Flags |= APF_DODIR;
-
-                Return_Value = SafeSetProtection(a, BitMask);
-
-                if (NOT_SET(Quiet))
-                {
-                    PrintFileName(a, *TabValue);
-                }
-                (*TabValue)++;
-            }
-            else
-            {
-                /* Leave directory.
-                 */
-
-                a->ap_Flags &= ~APF_DIDDIR;
-                (*TabValue)--;
-            }
-        }
-        else
-        {
-            Return_Value = SafeSetProtection(a, BitMask);
-            if (NOT_SET(Quiet))
-            {
-                PrintFileName(a, *TabValue);
-            }
-        }
-    }
-
-    return (Return_Value);
-
-} /* Do_Recursion */
-
-
-/* AddBitMask
- *
- * Create a bitmask that unsets the appropriate bits.
- */
-void AddBitMask(struct AnchorPath *a, STRPTR f, LONG *b, BOOL copy)
-{
-    int LoopCount;
-
-    LoopCount = 0;
-
-    if (copy == TRUE)
-    {
-        *b        = a->ap_Info.fib_Protection;
-    }
-
-    while (f[LoopCount] != NULL)
-    {
-        /* The SetProtect() function uses a clear bit to denote
-         * that one of the RWED permissions are allowed.
-         *
-         * It also uses a set bit to denote that one of the
-         * SPA permissions are allowed.
-         */
-
-        switch (f[LoopCount])
-        {
-	    case 'h':	/* Hold */
-	    	Bit_Set(*b, FIBB_HOLD);
-		break;
-		
-            case 's':   /* Script */
-                Bit_Set(*b, FIBB_SCRIPT);
-                break;
-            case 'p':   /* Pure */
-                Bit_Set(*b, FIBB_PURE);
-                break;
-            case 'a':   /* Archive */
-                Bit_Set(*b, FIBB_ARCHIVE);
-                break;
-            case 'r':   /* Read */
-                Bit_Clear(*b, FIBB_READ);
-                break;
-            case 'w':   /* Write */
-                Bit_Clear(*b, FIBB_WRITE);
-                break;
-            case 'e':   /* Execute */
-                Bit_Clear(*b, FIBB_EXECUTE);
-                break;
-            case 'd':   /* Delete */
-                Bit_Clear(*b, FIBB_DELETE);
-                break;
-            default:
-                break;
-        }
-
-        LoopCount++;
-    }
-} /* AddBitMask */
-
-
-/* SubBitMask
- *
- * Create a bitmask that sets the appropriate bits.
- */
-void SubBitMask(struct AnchorPath *a, STRPTR f, LONG *b, BOOL copy)
-{
-    int LoopCount;
-
-    LoopCount = 0;
-
-    if (copy == TRUE)
-    {
-        *b        = a->ap_Info.fib_Protection;
-    }
-
-    while (f[LoopCount] != NULL)
-    {
-        /* The SetProtect() function uses a set bit to denote
-         * that one of the RWED permissions is not allowed.
-         *
-         * It also uses a set bit to denote that one of the
-         * SPA permissions is not allowed.
-         */
-
-        switch (f[LoopCount])
-        {
-	    case 'h':	/* Hold */
-	    	Bit_Clear(*b, FIBB_HOLD);
-		break;
-		
-            case 's':   /* Script */
-                Bit_Clear(*b, FIBB_SCRIPT);
-                break;
-            case 'p':   /* Pure */
-                Bit_Clear(*b, FIBB_PURE);
-                break;
-            case 'a':   /* Archive */
-                Bit_Clear(*b, FIBB_ARCHIVE);
-                break;
-            case 'r':   /* Read */
-                Bit_Set(*b, FIBB_READ);
-                break;
-            case 'w':   /* Write */
-                Bit_Set(*b, FIBB_WRITE);
-                break;
-            case 'e':   /* Execute */
-                Bit_Set(*b, FIBB_EXECUTE);
-                break;
-            case 'd':   /* Delete */
-                Bit_Set(*b, FIBB_DELETE);
-                break;
-            default:
-                break;
-        }
-
-        LoopCount++;
-    }
-} /* SubBitMask */
-
-
-/* NewBitMask
- *
- * Create a new bitmask that has the appropriate bits set.
- */
-void NewBitMask(struct AnchorPath *a, STRPTR f, LONG *b)
-{
-    int LoopCount;
-
-    LoopCount = 0;
-
-    SubBitMask(a, "hsparwed", b, TRUE);
-    AddBitMask(a, f, b, FALSE);
-} /* NewBitMask */
-
-
-void PrintFileName(struct AnchorPath *a, LONG t)
-{
-    int i;
-    IPTR args[2];
-
-    args[0] = (IPTR)FilePart(&a->ap_Buf[0]);
-    args[1] = (IPTR)NULL;
-
-    VPrintf("   ", NULL);
-
-    for (i = 0; i != t; i++)
-    {
-        VPrintf("  ", NULL);
-    }
-
-    VPrintf("%s", args);
-
-    if (a->ap_Info.fib_DirEntryType > 0)
-    {
-        VPrintf(" (dir)", NULL);
-    }
-
-    VPrintf("...Done\n", NULL);
-
-} /* PrintFileName */
-
-
-int SafeSetProtection(struct AnchorPath *a, LONG b)
-{
-    int Return_Value;
-
-    Return_Value = RETURN_OK;
-
-    if (!SetProtection(a->ap_Buf, b))
-    {
-        Return_Value = RETURN_WARN;
-    }
-
-    return(Return_Value);
-
-} /* SafeSetProtection */

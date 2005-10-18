@@ -119,6 +119,7 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
 		    BOOL add, BOOL remove);
 static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 			BOOL vols, BOOL dirs, BOOL devices);
+static int removeAssign(struct DosLibrary *DOSBase, STRPTR name);
 static STRPTR GetFullPath(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 			  BPTR lock);
 
@@ -139,7 +140,6 @@ AROS_SHA(BOOL, ,DEVICES,/S,FALSE))
     AROS_SHCOMMAND_INIT
     int error = RETURN_OK;
 
-
     if (SHArg(ADD) + SHArg(REMOVE) + SHArg(PATH) + SHArg(DEFER) > 1)
     {
 	PutStr("Only one of ADD, REMOVE, PATH or DEFER is allowed\n");
@@ -147,6 +147,23 @@ AROS_SHA(BOOL, ,DEVICES,/S,FALSE))
 	return RETURN_FAIL;
     }
 
+    /* Check device name
+     */
+    if (MyArgList->name)
+    {
+	char *pos;
+
+	/* Correct assign name construction? The rule is that the device name
+	 * should end with a colon at the same time as no other colon may be
+	 * in the name.
+	 */
+	pos = strchr(MyArgList->name, ':');
+	if (!pos || pos[1])
+	{
+		VPrintf("Invalid device name %s\n", &MyArgList->name);
+		return RETURN_FAIL;
+	}
+    }
     /* If the EXISTS keyword is specified, we only care about NAME */
     if (SHArg(EXISTS))
     {
@@ -216,8 +233,6 @@ static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 	{
 	    VPrintf("%s [Mounted]\n", (IPTR *)&tdl->dol_DevName);
 	}
-	
-	PutStr("\n");
     }
     
     if (dirs)
@@ -232,7 +247,7 @@ static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 	{
 	    PutStr(tdl->dol_DevName);
 	    
-	    for(count = 15 - strlen(tdl->dol_DevName); count > 0; count--)
+	    for(count = 14 - strlen(tdl->dol_DevName); count > 0; count--)
 	    {
 		PutStr(" ");
 	    }
@@ -286,8 +301,6 @@ static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 		break;
 	    }
 	} /* while(NextDosEntry() != NULL) */
-	
-	PutStr("\n");
     }
     
     if (devices)
@@ -362,126 +375,274 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
     int    i;			/* Loop variable */
 
     int  error = RETURN_OK;
-    
+    LONG ioerr = 0;
+    BOOL cancel = FALSE;
+    BOOL success = TRUE;
+   
     colon = strchr(name, ':');
-    
-    /* Correct assign name construction? The rule is that the device name
-       should end with a colon at the same time as no other colon may be
-       in the name. */
-    if ((colon == NULL) || (colon == name) || (colon[1] != 0))
-    {
-	VPrintf("Invalid device name %s\n", (IPTR *)&name);
-	
-	return RETURN_FAIL;
-    }
-    
     *colon = 0;		      /* Remove trailing colon; name[] is changed! */
 
     /* This is a little bit messy... We first remove the 'name' assign
        and later in the loop the target assigns. */
-    if(target == NULL || *target == NULL || remove)
+    if (dismount)
     {
-	AssignLock(name, NULL);
+
+	struct DosList *dl;
+	struct DosList *fdl;
+
+	dl = LockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
+
+	fdl = FindDosEntry(dl, name, LDF_VOLUMES | LDF_DEVICES);
+
+	/* Note the ! for conversion to boolean value */
+	if (fdl)
+		success = RemDosEntry(fdl);
+
+	UnLockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
     }
+    else
+    {
+        if(target == NULL || *target == NULL || remove)
+        {
+		error = removeAssign(DOSBase, name);
+		if (error)
+		{
+			ioerr = IoErr();
+			cancel = TRUE;
+		}
+        }
+    }
+    /* AmigaDOS doesn't use RETURN_WARN here... but it should? */
+    error = success ? error : RETURN_WARN;
 
     // The Loop over multiple targets starts here
 
-    if (target) for (i = 0; target[i] != NULL; i++)
+    if (target)
     {
-	if (!(path || defer || dismount))
-	{
-	    lock = Lock(target[i], SHARED_LOCK);
+	for (i = 0; target[i] != NULL; i++)
+        {
+		cancel = FALSE;
+		if (!(path || defer || dismount))
+		{
+	    		lock = Lock(target[i], SHARED_LOCK);
 	    
-	    if (lock == NULL)
-	    {
-		VPrintf("Can't find %s\n", (IPTR *)&target[i]);
+	    		if (lock == NULL)
+	    		{
+				VPrintf("Can't find %s\n", (IPTR *)&target[i]);
 
-		return RETURN_FAIL;
-	    }
-	}
+				return RETURN_FAIL;
+	    		}
+		}
 
-	if (remove)
-	{
-	    AssignLock(target[i], NULL);
-	    UnLock(lock);
-	}
-	else if(dismount)
-	{
-	    struct DosList *dl;
-	    BOOL            success;
+		if (remove)
+		{
+	    		AssignLock(target[i], NULL);
+	    		UnLock(lock);
+		}
+		else if (path)
+		{
+			if (!AssignPath(name, target[i]))
+			{
+				ioerr = IoErr();
+				error = RETURN_FAIL;
+			}
+		}
+		else if (add)
+		{
+	    		if (AssignAdd(name, lock) == DOSFALSE)
+	    		{
+				struct DosList *dl;
 
-	    dl = LockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
+				error = RETURN_FAIL;
+				ioerr = IoErr();
+				/* Check if the assign doesn't exist at all. If so, create it.
+				 * This fix bug id 145. - Piru
+				 */
+				dl = LockDosList(LDF_ASSIGNS | LDF_READ);
+				dl = FindDosEntry(dl, name, LDF_ASSIGNS);
+				UnLockDosList(LDF_ASSIGNS | LDF_READ);
 
-	    /* Note the ! for conversion to boolean value */
-	    success = !RemDosEntry(FindDosEntry(dl, name,
-						LDF_VOLUMES | LDF_DEVICES));
-	    
-	    UnLockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
+				if (!dl)
+				{
+					if (AssignLock(name, lock))
+					{
+						error = RETURN_OK;
+						lock = NULL;
+					}
+					else
+					{
+						ioerr = IoErr();
+					}
+				}
 
-	    /* AmigaDOS doesn't use RETURN_WARN here... but it should? */
-	    error = success ? error : RETURN_WARN;
-	}
-	else if (path)
+				if (lock)
+					UnLock(lock);
+
+				if (error && ioerr != ERROR_OBJECT_EXISTS)
+				{
+					STRPTR Args[] = {target[i], name};
+					VPrintf("Can't add %s to %s\n", Args);
+				}
+			}
+		}
+		else if (defer)
+		{
+	    		if (AssignLate(name, target[i]) == DOSFALSE)
+	    		{
+				ioerr = IoErr();
+				UnLock(lock);
+				error = RETURN_FAIL;
+		    	}
+		}
+		else
+		{
+	    		/* If no extra parameters are specified we just do a regular
+	    		   assign (replacing any possible previous assign with that
+	    		   name. The case of target being NULL is taken care of above. */
+	    		if (AssignLock(name, lock) == DOSFALSE)
+	    		{
+				ioerr = IoErr();
+				cancel = TRUE;
+				UnLock(lock);
+				error = RETURN_FAIL;
+	    		}
+
+            		/* If there are several targets, the next ones have to be added. */
+            		add = TRUE;
+		}
+	
+		/* We break as soon as we get a serious error */
+		if (error >= RETURN_FAIL)
+		{
+			return error;
+		}
+
+	} /* loop through all targets */
+    }
+    if (error)
+    {
+	if (ioerr == ERROR_OBJECT_EXISTS)
 	{
-	    error = AssignPath(name, target[i]) == DOSTRUE ? error : RETURN_FAIL;
-	}
-	else if (add)
-	{
-	    if (AssignAdd(name, lock) == DOSFALSE)
-	    {
-		UnLock(lock);
-		error = RETURN_FAIL;
-	    }
-	}
-	else if (defer)
-	{
-	    if (AssignLate(name, target[i]) == DOSFALSE)
-	    {
-		UnLock(lock);
-		error = RETURN_FAIL;
-	    }
+		STRPTR Args[] = {cancel ? "cancel" : "assign", name};
+		VPrintf("Can't %s %s\n", Args);
 	}
 	else
 	{
-	    /* If no extra parameters are specified we just do a regular
-	       assign (replacing any possible previous assign with that
-	       name. The case of target being NULL is taken care of above. */
-	    if (AssignLock(name, lock) == DOSFALSE)
-	    {
-		UnLock(lock);
-		error = RETURN_FAIL;
-	    }
-
-            /* If there are several targets, the next ones have to be added. */
-            add = TRUE;
+		PrintFault(ioerr, NULL);
 	}
-	
-	/* We break as soon as we get a serious error */
-	if (error == RETURN_FAIL)
-	{
-	    return error;
-	}
-
-    } /* loop through all targets */
-
+    }
     return error;
 }
 
+static int removeAssign(struct DosLibrary *DOSBase, STRPTR name)
+{
+	/* In case no target is given, the 'name' assign should be removed.
+	 * The AmigaDOS semantics for this is apparently that the error
+	 * code is never set even if the assign didn't exist.
+	 */
+
+	if (!AssignLock(name, NULL))
+	{
+		return RETURN_FAIL;
+	}
+	return RETURN_OK;
+}
 
 static int checkAssign(struct DosLibrary *DOSBase, STRPTR name)
 {
+    STRPTR colon;
     struct DosList *dl;
     int             error = RETURN_OK;
 
-    dl = LockDosList(LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES | LDF_READ);
+    if (!name)
+	name = "";
 
-    if (FindDosEntry(dl, name, LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES) == NULL)
+    colon = strchr(name, ':');
+    if (colon)
     {
-	error = RETURN_WARN;
+	*colon = '\0';
     }
 
-    UnLockDosList(LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES | LDF_READ);
+    dl = LockDosList(LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES | LDF_READ);
+    dl = FindDosEntry(dl, name, LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES);
+    if (dl)
+    {
+	struct DosList *tdl = dl;
+	int             count;
 
+	switch (dl->dol_Type)
+	{
+	case DLT_DEVICE:
+		VPrintf("%b\n", &tdl->dol_Name);
+		break;
+
+	case DLT_VOLUME:
+		VPrintf("%s [Mounted]\n", &tdl->dol_Name);
+		break;
+
+	case DLT_DIRECTORY:
+	case DLT_LATE:
+	case DLT_NONBINDING:
+
+		VPrintf("%b ", &tdl->dol_Name);
+
+		for (count = 14 - *((UBYTE*)BADDR(tdl->dol_Name)); count > 0; count--)
+		{
+			PutStr(" ");
+		}
+
+		switch (tdl->dol_Type)
+		{
+		case DLT_LATE:
+			VPrintf("<%s>\n", (IPTR) &tdl->dol_misc.dol_assign.dol_AssignName);
+			break;
+
+		case DLT_NONBINDING:
+			VPrintf("[%s]\n", (IPTR) &tdl->dol_misc.dol_assign.dol_AssignName);
+			break;
+
+		default:
+			{
+				STRPTR             dirName;     /* For NameFromLock() */
+				struct AssignList *nextAssign;  /* For multiassigns */
+
+				dirName = GetFullPath(ld, tdl->dol_Lock);
+
+				if (dirName)
+				{
+					PutStr(dirName);
+					FreeVec(dirName);
+				}
+				PutStr("\n");
+
+				nextAssign = tdl->dol_misc.dol_assign.dol_List;
+
+				while (nextAssign)
+				{
+					dirName = GetFullPath(ld, nextAssign->al_Lock);
+
+					if (dirName)
+					{
+						VPrintf("             + %s\n", (IPTR) &dirName);
+						FreeVec(dirName);
+					}
+
+					nextAssign = nextAssign->al_Next;
+				}
+			}
+		}
+		break;
+	}
+    }
+    else
+    {
+	VPrintf("%s: not assigned\n", &name);
+
+	error = RETURN_WARN;
+    }
+    UnLockDosList(LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES | LDF_READ);
+    if (colon)
+	*colon = ':';
     return error;
 }
 
