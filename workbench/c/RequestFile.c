@@ -15,7 +15,7 @@
 
         DRAWER,FILE/K,PATTERN/K,TITLE/K,POSITIVE/K,NEGATIVE/K,
         ACCEPTPATTERN/K,REJECTPATTERN/K,SAVEMODE/S,MULTISELECT/S,
-        DRAWERSONLY/S,NOICONS/S,PUBSCREEN/K
+        DRAWERSONLY/S,NOICONS/S,PUBSCREEN/K,INITIALVOLUMES/S
 
     LOCATION
 
@@ -60,7 +60,7 @@
 #define ARG_TEMPLATE    "DRAWER,FILE/K,PATTERN/K,TITLE/K,POSITIVE/K," \
                         "NEGATIVE/K,ACCEPTPATTERN/K,REJECTPATTERN/K," \
                         "SAVEMODE/S,MULTISELECT/S,DRAWERSONLY/S," \
-                        "NOICONS/S,PUBSCREEN/K"
+                        "NOICONS/S,PUBSCREEN/K,INITIALVOLUMES/S"
 			
 #define MAX_PATH_LEN    512
 			
@@ -68,9 +68,9 @@
 enum { ARG_DRAWER = 0, ARG_FILE, ARG_PATTERN, ARG_TITLE, ARG_POSITIVE,
        ARG_NEGATIVE, ARG_ACCEPTPAT, ARG_REJECTPAT, ARG_SAVEMODE,
        ARG_MULTISELECT, ARG_DRAWERSONLY, ARG_NOICONS, ARG_PUBSCREEN,
-       TOTAL_ARGS };
+       ARG_INITIALVOLUMES, TOTAL_ARGS };
 
-static const char version[] = "$VER: RequestFile 41.1 (29.12.1999)\n";
+static const char version[] = "$VER: RequestFile 42.1 (18.10.2005)\n";
 
 extern struct Library *AslBase;
 
@@ -91,6 +91,7 @@ struct TagItem FileTags[] =
     { ASLFR_RejectIcons   ,        FALSE },
     { ASLFR_PubScreenName , (IPTR) NULL  },
     { ASLFR_DoPatterns    ,        FALSE },
+    { ASLFR_InitialShowVolumes,     TRUE },
     { TAG_DONE            , (IPTR) NULL  }
 };
 
@@ -104,7 +105,7 @@ int main(void)
     IPTR                 *args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL,
 					       NULL, NULL, NULL, NULL,
 					       NULL, NULL, NULL, NULL,
-					       NULL };
+					       NULL, NULL };
     int                   Return_Value = RETURN_OK;
     IPTR                  DisplayArgs[1];
     char                 *Buffer;
@@ -137,6 +138,10 @@ int main(void)
             FileTags[ARG_NOICONS].ti_Data       = DoIcons;
             FileTags[ARG_PUBSCREEN].ti_Data     = (ULONG)args[ARG_PUBSCREEN];
             FileTags[ARG_PUBSCREEN + 1].ti_Data = DoPattern;
+	    if (!args[ARG_INITIALVOLUMES])
+	    {
+		FileTags[ARG_INITIALVOLUMES + 1].ti_Tag = TAG_IGNORE;
+	    }
 
             FileReq = (struct FileRequester *)AllocAslRequest(ASL_FileRequest,
                                                               FileTags);

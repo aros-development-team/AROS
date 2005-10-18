@@ -122,7 +122,7 @@ int main(void)
     struct RDArgs *rda;           /* ReadArgs standard struct */
     BOOL   found = FALSE;         /* Indicates whether we've found a file
 				     or not -- used for ALL ReadArgs() tag. */
-    int    error = RETURN_OK;     /* Error value to return */
+    int    error = RETURN_WARN;     /* Error value to return */
 
     struct FileInfoBlock *fib;    /* Used in Examine(). Allocated at top level
 				     to skip multiple calls to
@@ -159,6 +159,10 @@ int main(void)
 		/* Check C: multiassign */
 		found |= FindCommandinC(commandName, checkAll, fib);
 		kprintf("C:\n");
+	    }
+	    if (found)
+	    {
+		error = RETURN_OK;
 	    }
 	
 	    FreeDosObject(DOS_FIB, fib);

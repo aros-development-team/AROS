@@ -97,7 +97,7 @@ enum
 };
 
 
-#define MAX_PATH_LEN	512
+#define MAX_PATH_LEN	2048
 
 static const char version[] = "$VER: Rename 41.2 (23.11.2000)\n";
 
@@ -127,6 +127,11 @@ int main(void)
 	
 	FreeArgs(rda);
     }
+    else
+    {
+	PrintFault(IoErr(), APPNAME);
+	retval = RETURN_ERROR;
+    }
 
     return retval;
 }
@@ -134,143 +139,217 @@ int main(void)
 
 int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 {
-    struct AnchorPath *ap;
+#define ERROR(n) retval = (n); goto cleanup
 
-    char    pathName[MAX_PATH_LEN];
-    STRPTR  fileStart;
-    BOOL    destIsDir = FALSE;
-    BOOL    destExists = FALSE;
-    LONG    match;
-    BPTR    lock;
-    ULONG   i;
+	struct AnchorPath *ap;
 
+	UBYTE   *pathName;
+	STRPTR  fileStart;
+	BOOL    destIsDir = FALSE;
+	BOOL    destExists = FALSE;
+	LONG    match;
+	BPTR    tolock = NULL;
+	ULONG   i;
+	int     retval;
+	LONG    ioerr = 0;
+	UBYTE   itsWild;
+	BOOL    isSingle;
 
-
-    /* First we check if the destination is a directory */
-    lock = Lock(to, SHARED_LOCK);
-
-    if(lock != NULL)
-    {
- 	struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
-
-	destExists = TRUE;
-
-	if(fib == NULL)
+	ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN + MAX_PATH_LEN,
+	                                   MEMF_ANY | MEMF_CLEAR);
+	if (!ap)
 	{
-	    UnLock(lock);
-	    PrintFault(IoErr(), "Rename");
-
-	    return RETURN_FAIL;
+		ioerr = IoErr();
+		ERROR(RETURN_FAIL);
 	}
 
-	if(Examine(lock, fib))
+	pathName = ((UBYTE *) (ap + 1)) + MAX_PATH_LEN;
+
+	ap->ap_BreakBits = SIGBREAKF_CTRL_C;
+	ap->ap_Flags     = APF_DOWILD;
+	ap->ap_Strlen    = MAX_PATH_LEN;
+	if (MatchFirst(from[0], ap) != 0)
 	{
-	    if(fib->fib_DirEntryType >= 0)
-	    {
-		destIsDir = TRUE;
-	    }
+		ioerr = IoErr();
+		if (ioerr == ERROR_OBJECT_NOT_FOUND)
+		{
+			Printf("Can't rename %s as %s because ", (ULONG)from[0], (ULONG)to);
+		}
+		ERROR(RETURN_FAIL);
+	}
+	itsWild = ap->ap_Flags & APF_ITSWILD;
+	MatchEnd(ap);
+
+	/* First we check if the destination is a directory */
+	tolock = Lock(to, SHARED_LOCK);
+	if (tolock)
+	{
+		struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+		LONG entrytype;
+
+		destExists = TRUE;
+
+		if (!fib)
+		{
+			PrintFault(IoErr(), APPNAME);
+
+			ERROR(RETURN_FAIL);
+		}
+
+		i = Examine(tolock, fib);
+		entrytype = fib->fib_EntryType;
+		FreeDosObject(DOS_FIB, fib);
+
+		if (i)
+		{
+			if (entrytype >= 0)
+			{
+				destIsDir = TRUE;
+			}
+		}
+		else
+		{
+			PrintFault(IoErr(), APPNAME);
+
+			ERROR(RETURN_FAIL);
+		}
+	}
+
+
+	/* Check if dest is not a dir and src is pattern or multi */
+	if (!destIsDir && (itsWild || from[1]))
+	{
+		Printf("Destination \"%s\" is not a directory.\n", (ULONG)to);
+		ERROR(RETURN_FAIL);
+	}
+
+
+	/* Handle single file name change */
+	isSingle =!destIsDir;
+	/* 15th Jan 2004 bugfix, (destIsDir && ...) not (!destisDir && ...) ! - Piru */
+	if (destIsDir && !from[1])
+	{
+		BPTR fromlock;
+
+		fromlock = Lock(from[0], ACCESS_READ);
+		if (fromlock)
+		{
+			isSingle = SameLock(fromlock, tolock) == LOCK_SAME;
+
+			UnLock(fromlock);
+		}
+
+		/* 4th May 2003 bugfix: be quiet about single object renames - Piru */
+		quiet = TRUE;
+	}
+	if (isSingle)
+	{
+		if (ParsePattern(from[0], pathName, MAX_PATH_LEN) > -1 &&
+		    Rename(pathName, to))
+		{
+			ERROR(RETURN_OK);
+		}
+
+		ioerr = IoErr();
+		Printf("Can't rename %s as %s because ", (ULONG)from[0], (ULONG)to);
+		ERROR(RETURN_FAIL);
+	}
+
+	if (tolock)
+	{
+		if (!NameFromLock(tolock, pathName, MAX_PATH_LEN))
+		{
+			if (IoErr() == ERROR_LINE_TOO_LONG)
+			{
+				PrintFault(IoErr(), APPNAME);
+
+				ERROR(RETURN_FAIL);
+			}
+
+			pathName[0] = '\0';
+		}
+	}
+
+	if (!pathName[0])
+	{
+		stccpy(pathName, to, MAX_PATH_LEN);
+	}
+
+
+	/* Now either only one specific file should be renamed or the
+	   destination is really a directory. We can use the same routine
+	   for both cases! */
+
+	fileStart = pathName + strlen(pathName);
+
+	ap->ap_BreakBits = SIGBREAKF_CTRL_C;
+	ap->ap_Strlen    = MAX_PATH_LEN;
+
+	for (i = 0; from[i]; i++)
+	{
+		for (match = MatchFirst(from[i], ap); match == 0; match = MatchNext(ap))
+		{
+			/* Check for identical 'from' and 'to'? */
+
+			if (destIsDir)
+			{
+				/* Clear former filename */
+				*fileStart = '\0';
+				if (!AddPart(pathName, FilePart(ap->ap_Buf), MAX_PATH_LEN))
+				{
+					MatchEnd(ap);
+
+					PrintFault(ERROR_LINE_TOO_LONG, APPNAME);
+					SetIoErr(ERROR_LINE_TOO_LONG);
+
+					ERROR(RETURN_FAIL);
+				}
+			}
+
+			if (!quiet)
+			{
+				Printf("Renaming %s as %s\n", (ULONG)ap->ap_Buf, (ULONG)pathName);
+			}
+
+			if (!Rename(ap->ap_Buf, pathName))
+			{
+				ioerr = IoErr();
+				MatchEnd(ap);
+
+				Printf("Can't rename %s as %s because ", (ULONG)ap->ap_Buf, (ULONG)pathName);
+				ERROR(RETURN_FAIL);
+			}
+		}
+
+		MatchEnd(ap);
+	}
+
+	if (ap->ap_FoundBreak & SIGBREAKF_CTRL_C)
+	{
+		PrintFault(ERROR_BREAK, NULL);
+
+		retval = RETURN_WARN;
 	}
 	else
 	{
-	    UnLock(lock);
-	    PrintFault(IoErr(), "Rename");
-
-	    return RETURN_FAIL;
+		retval = RETURN_OK;
 	}
 
-	UnLock(lock);
-    }
-
-    
-    /* If the source is a pattern or multiple defined files, the destination
-       'to' have to be a directory. */
-    for(i = 0; from[i] != NULL; i++);
-    
-    if(i > 1 || ParsePattern(from[0], pathName, sizeof(pathName)) == 1)
-    {
-	if(!destExists)
+cleanup:
+	if (tolock)
 	{
-	    Printf("Destination directory \"%s\" does not exist.\n", to);
-	    
-	    return RETURN_FAIL;
-	}	
-
-	if(!destIsDir)
-	{
-	    Printf("Destination \"%s\" is not a directory.\n", to);
-
-	    return RETURN_FAIL;
+		UnLock(tolock);
 	}
-    }
-    else
-    {
-	if(destExists)
-	{
-	    Printf("Can't rename %s as %s because", from[0], to);
-	    PrintFault(ERROR_OBJECT_EXISTS, "");
 
-	    return RETURN_FAIL;
-	}
-    }
-
-    /* Now either only one specific file should be renamed or the
-       destination is really a directory. We can use the same routine
-       for both cases! */
-    
-    ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath),
-				       MEMF_ANY | MEMF_CLEAR);
-    
-    if(ap == NULL)
-    {
-	SetIoErr(ERROR_NO_FREE_STORE);
-	PrintFault(IoErr(), "Rename");
-	
-	return RETURN_FAIL;
-    }
-    
-    strncpy(pathName, to, MAX_PATH_LEN);
-    
-    fileStart = pathName + strlen(pathName);
-    
-    for(i = 0; from[i] != NULL; i++)
-    {
-	for(match = MatchFirst(from[i], ap); match == 0; match = MatchNext(ap))
+	if (ioerr)
 	{
-	    BOOL ok;
-	    BPTR olddir;
-	    
-	    /* Check for identical 'from' and 'to'? */
-		
-	    if(destIsDir)
-	    {
-		/* Clear former filename */
-		*fileStart = 0;
-		AddPart(pathName, ap->ap_Info.fib_FileName, MAX_PATH_LEN);
-	    }
-	    
-	    if(!quiet)
-	    {
-		Printf("Renaming %s as %s\n", ap->ap_Info.fib_FileName, pathName);
-	    }
-	    
-	    olddir = CurrentDir(ap->ap_Current->an_Lock);	    
-	    ok = Rename(ap->ap_Info.fib_FileName, pathName);
-	    CurrentDir(olddir);
-	    
-	    if(!ok)
-	    {
-		MatchEnd(ap);
-		FreeVec(ap);
-		PrintFault(IoErr(), "Rename");
-		
-		return RETURN_FAIL;
-	    }
+		//MatchEnd(ap);
+		PrintFault(ioerr, NULL);
+		SetIoErr(ioerr);
+		//retval = ERROR_FAIL;
 	}
-	
-	MatchEnd(ap);
-    }
-    
-    FreeVec(ap);
-    
-    return RETURN_OK;
+
+	FreeVec(ap);
+
+	return retval;
 }

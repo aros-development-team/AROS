@@ -57,7 +57,7 @@ int __nocommandline;
 
 int main(void)
 {
-    int  retval = RETURN_OK;
+    int  retval = RETURN_FAIL;
     IPTR args[] = { (IPTR) NULL, (IPTR) NULL };
     struct RDArgs *rda;
     
@@ -67,12 +67,38 @@ int main(void)
     {
 	if(strchr((STRPTR)args[ARG_NAME], ':') == NULL)
 	{
-	    if(Relabel((STRPTR)args[ARG_DRIVE], (STRPTR)args[ARG_NAME]) ==
-	       DOSFALSE)
-	    {
-		PrintFault(IoErr(), "Relabel");
-		retval = RETURN_FAIL;
-	    }
+		ULONG len = strlen(args[ARG_DRIVE]);
+		UBYTE tmp[len + 1];
+		struct DosList *dl;
+
+		if (!len || args[ARG_DRIVE][len - 1] != ':')
+			goto invalid;
+
+		len--;
+		memcpy(tmp, args[ARG_DRIVE], len);
+		tmp[len] = '\0';
+
+		dl = LockDosList(LDF_READ | LDF_DEVICES | LDF_VOLUMES);
+		dl = FindDosEntry(dl, tmp, LDF_DEVICES | LDF_VOLUMES);
+		UnLockDosList(LDF_READ | LDF_DEVICES | LDF_VOLUMES);
+
+		if (dl)
+		{
+			if (Relabel(args[ARG_DRIVE], args[ARG_NAME]))
+			{
+				retval = RETURN_OK;
+			}
+			else
+			{
+				PrintFault(IoErr(), NULL);
+			}
+		}
+		else
+		{
+invalid:
+			PutStr("Invalid device or volume name\n");
+		}
+
 	}
 	else
 	{
