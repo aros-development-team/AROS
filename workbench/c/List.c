@@ -970,7 +970,7 @@ int main(void)
 
     if ((BOOL)args[ARG_ALL])
     {
-	Printf("TOTAL: %ld files - %ld directories - %ld blocks used\n",
+	Printf("\nTOTAL: %ld files - %ld directories - %ld blocks used\n",
 	       stats.nFiles, stats.nDirs, stats.nBlocks);
     }
 
