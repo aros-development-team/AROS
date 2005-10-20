@@ -491,8 +491,7 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 		    Printf("  <Dir> %7s ", flags);
 		}
 		
-		if (dates || 
-		    (!quick && !noDates))
+		if (!noDates && (!quick || dates))
 		{
 		    Printf("%-11s %s", date, time);
 		}
@@ -554,7 +553,7 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 		Printf("%7s ", flags);
 	    }
 	    
-	    if (dates || (!quick && !noDates))
+	    if (!noDates && (!quick || dates))
 	    {
 		Printf("%-11s %s", date, time);
 	    }
@@ -830,9 +829,6 @@ int main(void)
 	    sinceDatetime.dat_StrTime = NULL;
 	    sinceDatetime.dat_Format = FORMAT_DEF;
 	    sinceDatetime.dat_Flags = 0;
-
-	    kprintf("Found SINCE parameter %s\n", since);
-
 	    if (StrToDate(&sinceDatetime) == DOSFALSE)
 	    {
 		FreeArgs(rda);
@@ -922,8 +918,6 @@ int main(void)
 
 		return RETURN_FAIL;
 	    }
-
-	    kprintf("Output file %s opened\n", toFile);
 	    oldOutput = SelectOutput(file);
 	}
 
@@ -963,7 +957,7 @@ int main(void)
 		    break;
 		}
 		    
-		Printf("\n");
+//		Printf("\n");
 	    } 
 	}
 	
