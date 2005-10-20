@@ -148,6 +148,7 @@ int doJoin(STRPTR *files, BPTR destfile)
     LONG  i;			/* Loop variable over patterns */
     LONG  match;		/* Loop variable over files */
     LONG  rc = RETURN_OK;
+    ULONG numfiles;
     
     ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) +
 				       MAX_PATH_LEN, MEMF_CLEAR);
@@ -165,6 +166,7 @@ int doJoin(STRPTR *files, BPTR destfile)
     {
         ap->ap_BreakBits  = SIGBREAKF_CTRL_C;
         ap->ap_FoundBreak = 0;
+	numfiles = 0;
 	for (match = MatchFirst(files[i], ap); match == 0;
 	     match = MatchNext(ap))
 	{	
@@ -174,16 +176,21 @@ int doJoin(STRPTR *files, BPTR destfile)
 		rc = RETURN_FAIL;
 		break;
 	    }
+	    numfiles++;
 	}
 	
 	MatchEnd(ap);
         if (ap->ap_FoundBreak & SIGBREAKF_CTRL_C)
         {
-            PrintFault(IoErr(), NULL);
             SetIoErr(ERROR_BREAK);
-            rc = RETURN_FAIL;
-            break;
+            numfiles = 0;
         }
+	if (!numfiles)
+	{
+	    PrintFaulf(IoErr(), NULL);
+	    rc = RETURN_FAIL;
+	    break;
+	}
     }
 
     FreeVec(ap);

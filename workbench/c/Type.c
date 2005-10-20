@@ -13,7 +13,7 @@
 
 #include <string.h>
 
-static const char version[] = "$VER: Type 41.1 (14.3.1997)\n";
+static const char version[] = "$VER: Type 42.0 (20.10.2005)\n";
 
 #define BUFSIZE 8192
 
@@ -313,6 +313,29 @@ LONG dumpfile(struct file *in, struct file *out, BOOL showline)
     return retval;
 }
 
+static LONG processfile(CONST_STRPTR name, struct file *in, struct file *out, IPTR *args, LONG *numfiles)
+{
+	LONG error = 0;
+
+	in->fd = Open(name, MODE_OLDFILE);
+	if (in->fd)
+	{
+		(*numfiles)++;
+		in->cnt = 0;
+
+		if (args[2])
+			error = hexdumpfile(in, out);
+		else
+			error = dumpfile(in, out, args[3]);
+
+		Close(in->fd);
+	}
+	else
+		error = IoErr();
+
+	return error;
+}
+
 int __nocommandline;
 
 int main (void)
@@ -322,6 +345,7 @@ int main (void)
     struct file *in, *out;
     STRPTR *names;
     int retcode = RETURN_OK;
+    struct AnchorPath apath;
     
     rda=ReadArgs("FROM/A/M,TO/K,OPT/K,HEX/S,NUMBER/S",args,NULL);
     if(rda==NULL)
@@ -338,32 +362,63 @@ int main (void)
     {
 	out->cur=out->buf;
 	out->cnt=BUFSIZE;
-	out->fd=Output();
-	while(*names!=NULL)
+	apath.ap_BreakBits  = SIGBREAKF_CTRL_C;
+	apath.ap_FoundBreak = 0;
+	apath.ap_Flags      = 0;
+	apath.ap_Strlen     = MAX_PATH_LEN;
+	if (args[1])
+		out->fd = Open((STRPTR) args[1], MODE_NEWFILE);
+	else
+		out->fd=Output();
+	if (out->fd)
 	{
-	    in->fd=Open(*names,MODE_OLDFILE);
-	    if(in->fd)
-	    {
-		in->cnt=0;
-		if(args[3] || (args[2] && (!strcmp((const char *)args[2], "h"))))
-		    retcode = hexdumpfile(in,out);
-		else if (args[4] || (args[2] && (!strcmp((const char *)args[2], "n"))))
-		    retcode = dumpfile(in,out,TRUE);
-		else
-		    retcode = dumpfile(in,out,FALSE);
-		Close(in->fd);
-		
-		if (retcode == RETURN_WARN)
+		while(*names!=NULL)
 		{
-		    PrintFault(ERROR_BREAK, NULL);
+			ULONG numfiles = 0;
+			LONG error;
+
+			for (error = MatchFirst(*names, &apath);
+			     !error;
+			     error = MatchNext(&apath))
+			{
+				error = processfile(apath.ap_Buf, in, out, args, &numfiles);
+				if (error)
+					break;
+			}
+			MatchEnd(&apath);
+
+			if (numfiles == 0 && error == ERROR_NO_MORE_ENTRIES)
+			{
+				error = -1;
+			}
+
+			if (error && error != ERROR_NO_MORE_ENTRIES)
+			{
+				if (*names && error != ERROR_BREAK)
+				{
+					Printf("TYPE: can't open %s\n", (LONG) *names);
+				}
+
+				if (error != -1)
+				{
+					PrintFault(error, NULL);
+					SetIoErr(error);
+				}
+
+				break;
+			}
+		names++;
 		}
-	    }else
-	    {
-		PrintFault(IoErr(),"Type");
-		retcode = RETURN_ERROR;
-		break;
-	    }
-	    names++;
+
+		if (args[ARG_TO])
+			Close(data->out.fd);
+
+		/* If all files got dumped, return ok, else error.
+		*/
+		retval = *names ? RETURN_ERROR : RETURN_OK;
+	} else
+	{
+		PrintFault(IoErr(), NULL);
 	}
     }else
     {
