@@ -88,6 +88,8 @@
 
 #define ARG_TEMPLATE	"FROM/A/M,TO=AS/A,QUIET/S"
 
+#define APPNAME     	"Rename"
+
 enum
 {
     ARG_FROM = 0,
