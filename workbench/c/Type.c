@@ -349,6 +349,12 @@ static LONG processfile(CONST_STRPTR name, struct file *in, struct file *out, IP
 
 int __nocommandline;
 
+struct MyAnchorPath
+{
+    struct AnchorPath apath;
+    UBYTE buf[MAX_PATH_LEN - 1];
+};
+
 int main (void)
 {
     IPTR args[5]={ 0, 0, 0, 0, 0 };
@@ -356,7 +362,7 @@ int main (void)
     struct file *in, *out;
     STRPTR *names;
     int retval = RETURN_OK;
-    struct AnchorPath apath;
+    struct MyAnchorPath apath;
     
     rda=ReadArgs("FROM/A/M,TO/K,OPT/K,HEX/S,NUMBER/S",args,NULL);
     if(rda==NULL)
@@ -373,10 +379,10 @@ int main (void)
     {
 	out->cur=out->buf;
 	out->cnt=BUFSIZE;
-	apath.ap_BreakBits  = SIGBREAKF_CTRL_C;
-	apath.ap_FoundBreak = 0;
-	apath.ap_Flags      = 0;
-	apath.ap_Strlen     = MAX_PATH_LEN;
+	apath.apath.ap_BreakBits  = SIGBREAKF_CTRL_C;
+	apath.apath.ap_FoundBreak = 0;
+	apath.apath.ap_Flags      = 0;
+	apath.apath.ap_Strlen     = MAX_PATH_LEN;
 	if (args[1])
 		out->fd = Open((STRPTR) args[1], MODE_NEWFILE);
 	else
@@ -388,15 +394,15 @@ int main (void)
 			ULONG numfiles = 0;
 			LONG error;
 
-			for (error = MatchFirst(*names, &apath);
+			for (error = MatchFirst(*names, &apath.apath);
 			     !error;
-			     error = MatchNext(&apath))
+			     error = MatchNext(&apath.apath))
 			{
-				error = processfile(apath.ap_Buf, in, out, args, &numfiles);
+				error = processfile(apath.apath.ap_Buf, in, out, args, &numfiles);
 				if (error)
 					break;
 			}
-			MatchEnd(&apath);
+			MatchEnd(&apath.apath);
 
 			if (numfiles == 0 && error == ERROR_NO_MORE_ENTRIES)
 			{
