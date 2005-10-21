@@ -108,6 +108,8 @@ BOOL  FindString(struct AnchorPath *anchor, ULONG *args, TEXT *pattern,
 		 struct Locale *locale, UBYTE *pi);
 BOOL  MatchStringNoCase(TEXT *string, TEXT *text, TEXT *text_end, UBYTE *pi,
 			struct Locale *locale);
+BOOL MatchString(TEXT *string, TEXT *text, TEXT *text_end, UBYTE *pi,
+                 struct Locale *locale);
 
 
 // *****  String information (version, messages) ***
