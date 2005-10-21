@@ -113,7 +113,7 @@
 ******************************************************************************/
 /* Prototypes */
 
-static int checkAssign(struct DosLibrary *DOSBase, STRPTR name);
+static int checkAssign(struct ExecBase *SysBase, struct DosLibrary *DOSBase, STRPTR name);
 static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
 		    BOOL dismount, BOOL defer, BOOL path,
 		    BOOL add, BOOL remove);
@@ -149,7 +149,7 @@ AROS_SHA(BOOL, ,DEVICES,/S,FALSE))
 
     /* Check device name
      */
-    if (MyArgList->name)
+    if (SHArg(NAME))
     {
 	char *pos;
 
@@ -157,17 +157,17 @@ AROS_SHA(BOOL, ,DEVICES,/S,FALSE))
 	 * should end with a colon at the same time as no other colon may be
 	 * in the name.
 	 */
-	pos = strchr(MyArgList->name, ':');
+	pos = strchr(SHArg(NAME), ':');
 	if (!pos || pos[1])
 	{
-		VPrintf("Invalid device name %s\n", &MyArgList->name);
+		VPrintf("Invalid device name %s\n", &SHArg(NAME));
 		return RETURN_FAIL;
 	}
     }
     /* If the EXISTS keyword is specified, we only care about NAME */
     if (SHArg(EXISTS))
     {
-        error = checkAssign(DOSBase, SHArg(NAME));
+        error = checkAssign(SysBase, DOSBase, SHArg(NAME));
     }
     else if (SHArg(NAME) != NULL)
     {
@@ -548,7 +548,7 @@ static int removeAssign(struct DosLibrary *DOSBase, STRPTR name)
 	return RETURN_OK;
 }
 
-static int checkAssign(struct DosLibrary *DOSBase, STRPTR name)
+static int checkAssign(struct ExecBase *SysBase, struct DosLibrary *DOSBase, STRPTR name)
 {
     STRPTR colon;
     struct DosList *dl;
@@ -573,20 +573,20 @@ static int checkAssign(struct DosLibrary *DOSBase, STRPTR name)
 	switch (dl->dol_Type)
 	{
 	case DLT_DEVICE:
-		VPrintf("%b\n", &tdl->dol_Name);
+		VPrintf("%s\n", &tdl->dol_OldName);
 		break;
 
 	case DLT_VOLUME:
-		VPrintf("%s [Mounted]\n", &tdl->dol_Name);
+		VPrintf("%s [Mounted]\n", &tdl->dol_OldName);
 		break;
 
 	case DLT_DIRECTORY:
 	case DLT_LATE:
 	case DLT_NONBINDING:
 
-		VPrintf("%b ", &tdl->dol_Name);
+		VPrintf("%s ", &tdl->dol_OldName);
 
-		for (count = 14 - *((UBYTE*)BADDR(tdl->dol_Name)); count > 0; count--)
+		for (count = 14 - *((UBYTE*)tdl->dol_OldName); count > 0; count--)
 		{
 			PutStr(" ");
 		}
@@ -606,7 +606,7 @@ static int checkAssign(struct DosLibrary *DOSBase, STRPTR name)
 				STRPTR             dirName;     /* For NameFromLock() */
 				struct AssignList *nextAssign;  /* For multiassigns */
 
-				dirName = GetFullPath(ld, tdl->dol_Lock);
+				dirName = GetFullPath(SysBase, DOSBase, tdl->dol_Lock);
 
 				if (dirName)
 				{
@@ -619,7 +619,7 @@ static int checkAssign(struct DosLibrary *DOSBase, STRPTR name)
 
 				while (nextAssign)
 				{
-					dirName = GetFullPath(ld, nextAssign->al_Lock);
+					dirName = GetFullPath(SysBase, DOSBase, nextAssign->al_Lock);
 
 					if (dirName)
 					{
