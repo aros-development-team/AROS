@@ -67,15 +67,15 @@ int main(void)
     {
 	if(strchr((STRPTR)args[ARG_NAME], ':') == NULL)
 	{
-		ULONG len = strlen(args[ARG_DRIVE]);
+		ULONG len = strlen((STRPTR)args[ARG_DRIVE]);
 		UBYTE tmp[len + 1];
 		struct DosList *dl;
 
-		if (!len || args[ARG_DRIVE][len - 1] != ':')
+		if (!len || ((STRPTR)args[ARG_DRIVE])[len - 1] != ':')
 			goto invalid;
 
 		len--;
-		memcpy(tmp, args[ARG_DRIVE], len);
+		memcpy(tmp, (STRPTR)args[ARG_DRIVE], len);
 		tmp[len] = '\0';
 
 		dl = LockDosList(LDF_READ | LDF_DEVICES | LDF_VOLUMES);
@@ -84,7 +84,7 @@ int main(void)
 
 		if (dl)
 		{
-			if (Relabel(args[ARG_DRIVE], args[ARG_NAME]))
+			if (Relabel((STRPTR)args[ARG_DRIVE], (STRPTR)args[ARG_NAME]))
 			{
 				retval = RETURN_OK;
 			}
