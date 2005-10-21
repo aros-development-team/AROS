@@ -187,7 +187,7 @@ int doJoin(STRPTR *files, BPTR destfile)
         }
 	if (!numfiles)
 	{
-	    PrintFaulf(IoErr(), NULL);
+	    PrintFault(IoErr(), NULL);
 	    rc = RETURN_FAIL;
 	    break;
 	}
