@@ -16,6 +16,17 @@
 static const char version[] = "$VER: Type 42.0 (20.10.2005)\n";
 
 #define BUFSIZE 8192
+#define MAX_PATH_LEN	512
+
+enum
+{
+    ARG_FROM = 0,
+    ARG_TO,
+    ARG_OPT,
+    ARG_HEX,
+    ARG_NUMBER,
+    NUMARGS
+};
 
 struct file
 {
@@ -344,7 +355,7 @@ int main (void)
     struct RDArgs *rda;
     struct file *in, *out;
     STRPTR *names;
-    int retcode = RETURN_OK;
+    int retval = RETURN_OK;
     struct AnchorPath apath;
     
     rda=ReadArgs("FROM/A/M,TO/K,OPT/K,HEX/S,NUMBER/S",args,NULL);
@@ -411,7 +422,7 @@ int main (void)
 		}
 
 		if (args[ARG_TO])
-			Close(data->out.fd);
+			Close(out->fd);
 
 		/* If all files got dumped, return ok, else error.
 		*/
@@ -423,7 +434,7 @@ int main (void)
     }else
     {
 	PrintFault(ERROR_NO_FREE_STORE,"Type");
-	retcode = RETURN_ERROR;
+	retval = RETURN_ERROR;
     }
 
     if(in!=NULL)
@@ -433,5 +444,5 @@ int main (void)
     if(rda!=NULL)
 	FreeArgs(rda);
 	
-    return retcode;
+    return retval;
 }
