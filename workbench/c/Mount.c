@@ -13,9 +13,13 @@
 #include <dos/rdargs.h>
 #include <dos/bptr.h>
 #include <proto/dos.h>
+#include <proto/icon.h>
 #include <proto/utility.h>
 #include <proto/expansion.h>
 #include <libraries/expansion.h>
+#include <workbench/startup.h>
+#include <workbench/workbench.h>
+#include <stdlib.h>
 #include <string.h>
 
 # define   DEBUG 1
@@ -166,8 +170,8 @@ int main(void)
     STRPTR  args[2];
     IPTR *params;
     char dirname[512];
-    STRPTR  mem;
-    LONG    size;
+/*    STRPTR  mem;
+    LONG    size;*/
     LONG    error = RETURN_FAIL;
 
     struct RDArgs    *rda;
@@ -190,8 +194,7 @@ int main(void)
             {
               while (*MyDevPtr)
               {
-                if ((params = AllocVec(PARAMSLENGTH,
-                                       MEMF_PUBLIC | MEMF_CLEAR)))
+                if ((params = AllocVec(PARAMSLENGTH, MEMF_PUBLIC | MEMF_CLEAR)))
                 {
                   StackSize			=	8192;
                   Priority			=	5;
@@ -211,17 +214,13 @@ int main(void)
                     if ((error=CheckDevice(dirname))==RETURN_OK)
                     {
                       if (args[1])
-                      {
                         error=readmountlist(params, dirname, args[1]);
-                      }
                       else
                       {
                         char	**SearchPtr;
                         ULONG	slen;
 
-                        for (SearchPtr=(char**) SearchTable;
-                             *SearchPtr;
-                             SearchPtr++)
+                        for (SearchPtr=(char**) SearchTable; *SearchPtr; SearchPtr++)
                         {
                           if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                           {
@@ -236,11 +235,8 @@ int main(void)
                           dirname[slen]		=	'\0';
                           strcat(dirname, *MyDevPtr);
                           dirname[slen+len-1]	=	'\0';
-                          if ((error=readmountfile(params,
-                                                   dirname))==RETURN_OK)
-                          {
+                          if ((error=readmountfile(params, dirname))==RETURN_OK)
                             break;
-                          }
                         }
                         if (error!=RETURN_OK)
                         {
@@ -264,20 +260,14 @@ int main(void)
                     memset(MyAp,0,sizeof(struct AnchorPath));
 
                     dirname[0]	=	'\0';
-                    for (err = MatchFirst(*MyDevPtr,MyAp);
-                         err == 0;
-                         err = MatchNext(MyAp))
+                    for (err = MatchFirst(*MyDevPtr,MyAp); err == 0; err = MatchNext(MyAp))
                     {
-                      if (NameFromLock(MyAp->ap_Current->an_Lock,
-                                       dirname,
-                                       sizeof(dirname)) == FALSE)
+                      if (NameFromLock(MyAp->ap_Current->an_Lock, dirname, sizeof(dirname)) == FALSE)
                       {
                         PrintFault(IoErr(),"Error on NameFromLock");
                         break;
                       }
-                      if (AddPart(dirname,
-                                  &(MyAp->ap_Info.fib_FileName[0]),
-                                  sizeof(dirname)) == FALSE)
+                      if (AddPart(dirname, &(MyAp->ap_Info.fib_FileName[0]), sizeof(dirname)) == FALSE)
                       {
                         PrintFault(IoErr(),"Error on AddPart");
                         break;
@@ -286,7 +276,6 @@ int main(void)
                       {
                         /* clear the completed directory flag */
                         MyAp->ap_Flags     &=      ~APF_DIDDIR;
-
                       }
                       else
                       {
@@ -1248,102 +1237,6 @@ void preparefile(STRPTR buf, LONG size)
 /************************************************************************************************/
 
 
-struct FileSysEntry	*GetFileSysEntry(ULONG	DosType)
-{
-struct FileSysResource	*MyFileSysRes;
-struct FileSysEntry	*MyFileSysEntry;
-struct FileSysEntry	*CurrentFileSysEntry;
-
-  MyFileSysEntry		=	NULL;
-  if ((MyFileSysRes=OpenResource(FSRNAME)))
-  {
-    Forbid();
-    CurrentFileSysEntry		=(struct FileSysEntry*) MyFileSysRes->fsr_FileSysEntries.lh_Head;
-    while (CurrentFileSysEntry->fse_Node.ln_Succ)
-    {
-      if (CurrentFileSysEntry->fse_DosType == DosType)
-      {
-        if (MyFileSysEntry)
-        {
-          if (CurrentFileSysEntry->fse_Version > MyFileSysEntry->fse_Version)
-          {
-            MyFileSysEntry	=	CurrentFileSysEntry;
-          }
-        }
-        else
-        {
-          MyFileSysEntry	=	CurrentFileSysEntry;
-        }
-      }
-      CurrentFileSysEntry	=(struct FileSysEntry*) CurrentFileSysEntry->fse_Node.ln_Succ;
-    }
-    Permit();
-  }
-  return MyFileSysEntry;
-}
-
-/************************************************************************************************/
-/************************************************************************************************/
-
-
-void	PatchDosNode(struct DeviceNode	*MyDeviceNode,
-                     ULONG		DosType)
-{
-struct FileSysEntry	*MyFileSysEntry;
-ULONG			MyPatchFlags;
-
-  DEBUG_PATCHDOSNODE(Printf("MakeDosNode: DeviceNode 0x%lx\n",
-                    (ULONG)MyDeviceNode));
-
-  if ((MyFileSysEntry=GetFileSysEntry(DosType)))
-  {
-    MyPatchFlags		=	MyFileSysEntry->fse_PatchFlags;
-
-    DEBUG_PATCHDOSNODE(Printf("PatchDosNode: FileSysEntry 0x%lx PatchFlags 0x%lx\n",
-                      (ULONG)MyFileSysEntry,
-                      MyPatchFlags));
-
-    if (MyPatchFlags)
-    {
-      ULONG	*PatchDeviceNode;
-      ULONG	*PatchDeviceNodeEnd;
-      ULONG	*PatchFileSysEntry;
-
-      PatchFileSysEntry		=(ULONG*) &MyFileSysEntry->fse_Type;
-      PatchDeviceNode		=(ULONG*) &MyDeviceNode->dn_Type;
-      PatchDeviceNodeEnd	=(ULONG*) ((ULONG) MyDeviceNode + sizeof(struct DeviceNode));
-
-      while (MyPatchFlags)
-      {
-        if (MyPatchFlags & 1)
-        {
-          *PatchDeviceNode	=	*PatchFileSysEntry;
-        }
-        PatchDeviceNode++;
-        PatchFileSysEntry++;
-
-        if (PatchDeviceNode >= PatchDeviceNodeEnd)
-        {
-          /* Savety */
-          break;
-        }
-
-        MyPatchFlags	>>=	1;
-      }
-    }
-  }
-  else
-  {
-    /* Mount with no BootNode */
-    DEBUG_PATCHDOSNODE(Printf("PatchDosNode: Can't get FileSysEntry..no bootnode\n"));
-  }
-}
-
-
-/************************************************************************************************/
-/************************************************************************************************/
-
-
 
 //#define	DOSNAME_INDEX		0
 #define	EXECNAME_INDEX		1
@@ -1412,8 +1305,8 @@ ULONG				Status=FALSE;
     DEBUG_MAKEDOSNODE(Printf("MakeDosNode: MyDeviceNode 0x%lx\n",
                               (ULONG)MyDeviceNode));
 
-    MyDeviceNode->dn_StackSize		=	600;
-    MyDeviceNode->dn_Priority		=	10;
+/*    MyDeviceNode->dn_StackSize		=	600;
+    MyDeviceNode->dn_Priority		=	10;*/
 
     if ((MyString=AllocVec(((DosNameSize+2+4) & ~3) +
                            ((ExecNameSize+2+4) & ~3) +
@@ -1425,8 +1318,8 @@ ULONG				Status=FALSE;
       strcpy(&MyString[1],
              DosName);
 
-      MyDeviceNode->dn_Name	=	MKBADDR(MyString);
-
+      MyDeviceNode->dn_OldName = MKBADDR(MyString);
+      MyDeviceNode->dn_NewName = MyString;
 
       if (ParameterPkt)
       {
@@ -1444,9 +1337,6 @@ ULONG				Status=FALSE;
             DEBUG_MAKEDOSNODE(Printf("MakeDosNode: MyDosEnvec 0x%lx\n",
                                       (ULONG)MyDosEnvec));
 
-
-            #if 1
-
             ExecNamePtr		=	&MyString[(1+DosNameSize+2+3) & ~3];
 
             /* .device name must absolutely **NOT** include the 0 in the
@@ -1463,29 +1353,6 @@ ULONG				Status=FALSE;
             }
 
             MyFileSysStartupMsg->fssm_Device	=	MKBADDR(ExecNamePtr);
-
-            #else
-
-            /* IMO this is more correct than above, but I could be wrong.. - Piru */
-
-            if (ParameterPkt[EXECNAME_INDEX])
-            {
-              ExecNamePtr		=	&MyString[(1+DosNameSize+2+3) & ~3];
-
-              /* .device name must absolutely **NOT** include the 0 in the
-               * length!!
-               *
-               * the string *MUST* be 0 terminated, however!
-               */
-              ExecNamePtr[0]	=	ExecNameSize;
-
-              strcpy(&ExecNamePtr[1],
-                     (UBYTE*) ParameterPkt[EXECNAME_INDEX]);
-
-              MyFileSysStartupMsg->fssm_Device	=	MKBADDR(ExecNamePtr);
-            }
-            #endif
-
             MyFileSysStartupMsg->fssm_Unit	=	ParameterPkt[UNIT_INDEX];
             MyFileSysStartupMsg->fssm_Flags	=	ParameterPkt[FLAGS_INDEX];
             MyFileSysStartupMsg->fssm_Environ	=	MKBADDR(MyDosEnvec);
@@ -1505,43 +1372,11 @@ ULONG				Status=FALSE;
         if (StartupName && StartupNameSize)
         {
           char	*StartupNamePtr;
-#if 0
-          BOOL Space=FALSE;
-          int i;
-
-/*
- * This code can't be normal..disabled
- * Ralph 10.11.2003
- */
-          for (i=0;i<StartupNameSize;i++)
-          {
-            if (StartupName[i]==' ')
-            {
-              DEBUG_MAKEDOSNODE(Printf("MakeDosNode: SPACE found\n"));
-              Space = TRUE;
-              break;
-            }
-          }
-          if (Space)
-          {
-            StartupNamePtr	=	&MyString[(1+DosNameSize+2+3) & ~3];
-            StartupNamePtr[0]	=	StartupNameSize+2;
-            StartupNamePtr[1]	=	'"';
-
-            strcpy(&StartupNamePtr[2],
-                   StartupName);
-            StartupNamePtr[2+StartupNameSize]	=	'"';
-            StartupNamePtr[2+StartupNameSize+1]	=	'\0';
-          }
-          else
-#endif
-          {
             StartupNamePtr	=	&MyString[(1+DosNameSize+2+3) & ~3];
             StartupNamePtr[0]	=	StartupNameSize;
 
             strcpy(&StartupNamePtr[1],
                    StartupName);
-          }
           MyDeviceNode->dn_Startup	=	MKBADDR(StartupNamePtr);
         }
         Status=TRUE;
@@ -1761,7 +1596,7 @@ struct DosEnvec *vec;
 LONG		error = RETURN_OK;
 ULONG		Flags;
 
-    strupr(name);
+//  strupr(name);
     DEBUG_MOUNT(Printf("MountDev: <%s>\n",(ULONG)name));
 
     if ((error=checkmount(params))!=RETURN_OK)
@@ -1771,14 +1606,6 @@ ULONG		Flags;
     }
 
     vec = (struct DosEnvec *)&params[4];
-
-#if 0
-    if ((HandlerString==NULL) && (!flagargs.DosType))
-    {
-	Printf("Mount: No specified Handler or DosType\n");
-	return ERROR_REQUIRED_ARG_MISSING;
-    }
-#endif
 
     DEBUG_MOUNT(Printf("MountDev: DosName <%s>\n",(ULONG)name));
     DEBUG_MOUNT(Printf("MountDev: Filesystem <%s>\n",(ULONG)HandlerString+1));
@@ -1822,22 +1649,16 @@ ULONG		Flags;
 	    DEBUG_MOUNT(Printf("MountDev: DeviceNode 0x%lx\n",(ULONG)dn));
 
 
-	    dn->dn_StackSize	=	StackSize;
+/*	    dn->dn_StackSize	=	StackSize;
 	    dn->dn_Priority	=	Priority;
-	    dn->dn_GlobalVec	=	GlobalVec;
+	    dn->dn_GlobalVec	=	GlobalVec;*/
 
 	    if (flagargs.Startup && !StartupString)
 	    {
 		dn->dn_Startup = StartupValue;
 	    }
 
-	    if ((ForceLoad==0) && (HandlerString==NULL))
-	    {
-		DEBUG_MOUNT(Printf("MountDev: patchdosnode\n"));
-		PatchDosNode(dn,vec->de_DosType);
-	    }
-
-	    if (ForceLoad || dn->dn_SegList==NULL)
+	    if (ForceLoad)
 	    {
 		DEBUG_MOUNT(Printf("MountDev: Load Handler\n"));
 		dn->dn_Handler	=	MKBADDR(HandlerString);
@@ -1855,13 +1676,13 @@ ULONG		Flags;
 	    }
 	    DEBUG_MOUNT(Printf("MountDev:      Name %b\n",dn->dn_Name));
 	    DEBUG_MOUNT(Printf("MountDev:   Handler 0x%lx <%b>\n",dn->dn_Handler,dn->dn_Handler));
-	    DEBUG_MOUNT(Printf("MountDev:   SegList 0x%lx\n",dn->dn_SegList));
+/*	    DEBUG_MOUNT(Printf("MountDev:   SegList 0x%lx\n",dn->dn_SegList));
 	    DEBUG_MOUNT(Printf("MountDev: StackSize %ld\n",dn->dn_StackSize));
-	    DEBUG_MOUNT(Printf("MountDev:  Priority %ld\n",dn->dn_Priority));
+	    DEBUG_MOUNT(Printf("MountDev:  Priority %ld\n",dn->dn_Priority));*/
 	    DEBUG_MOUNT(Printf("MountDev:   Startup 0x%lx\n",dn->dn_Startup));
-	    DEBUG_MOUNT(Printf("MountDev: GlobalVec %ld\n",dn->dn_GlobalVec));
+//	    DEBUG_MOUNT(Printf("MountDev: GlobalVec %ld\n",dn->dn_GlobalVec));
 
-	    if (dn->dn_SegList || dn->dn_Handler)
+	    if (dn->dn_Handler)
 	    {
 		if (Activate)
 		{
