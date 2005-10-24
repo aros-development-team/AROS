@@ -350,6 +350,7 @@ int main(void)
         {
             error = ERROR_NO_FREE_STORE;
         }
+      }
     }
     return error;
 }
