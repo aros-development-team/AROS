@@ -348,7 +348,7 @@ STATIC BOOL GetFileList(struct DirEntry *direntry, struct DiskfontBase_intern *D
 
 /****************************************************************************************/
 
-STATIC BOOL StreamOutFileList(struct MinList *filelist, struct FileHandle *fh, struct DiskfontBase_intern *DiskfontBase)
+STATIC BOOL StreamOutFileList(struct MinList *filelist, BPTR fh, struct DiskfontBase_intern *DiskfontBase)
 {
     struct FileEntry *fe;
     ULONG i;
@@ -391,7 +391,7 @@ STATIC BOOL StreamOutFileList(struct MinList *filelist, struct FileHandle *fh, s
 
 /****************************************************************************************/
 
-STATIC BOOL StreamInFileList(struct DirEntry *direntry, struct FileHandle *fh, struct DiskfontBase_intern *DiskfontBase)
+STATIC BOOL StreamInFileList(struct DirEntry *direntry, BPTR fh, struct DiskfontBase_intern *DiskfontBase)
 {
     struct FileEntry *fe, fe2;
     ULONG i, numtags, totnumtags;
@@ -537,7 +537,7 @@ STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, st
     APTR oldwinptr;
     struct FileInfoBlock *fib;
     BPTR olddir;
-    struct FileHandle *fh;
+    BPTR fh;
 
     D(bug("ReadDirEntry(dirlock=0x%lx, direntry=0x%lx)\n", dirlock, direntry));
     
@@ -964,7 +964,7 @@ APTR DF_IteratorInit(struct TTextAttr *reqattr, struct DiskfontBase_intern *Disk
 
 struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
 {
-    struct TTextAttr *retval;
+    struct TTextAttr *retval = NULL;
     struct DF_Data *df_data = (struct DF_Data *)iterator;
 
     D(bug("DF_IteratorGetNext(iterator=0x%lx)\n", iterator));
@@ -1149,10 +1149,10 @@ VOID DF_IteratorRemember(APTR iterator, struct DiskfontBase_intern *DiskfontBase
 struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
 {
     struct DF_Data *df_data = (struct DF_Data *)iterator;
-    struct FontDescrHeader *fdh;
-    struct TTextAttr *RememberAttr;
+    struct FontDescrHeader *fdh = NULL;
+    struct TTextAttr *RememberAttr = NULL;
     struct TextFont *tf = NULL;
-    BPTR olddir, lock, dirlock;
+    BPTR olddir = 0, lock, dirlock;
 
     D(bug("DF_IteratorRememberOpen(iterator=0x%lx)\n", iterator));
 
