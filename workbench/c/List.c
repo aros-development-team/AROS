@@ -927,10 +927,10 @@ int main(void)
 	    dirs = TRUE;
 	}
 
-	if (!dates && !noDates)
+/*	if (!dates && !noDates)
 	{
 	    dates = TRUE;
-	}
+	}*/
 
 	if ((directories == NULL) || (*directories == NULL))
 	{
