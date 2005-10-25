@@ -574,18 +574,18 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 
 
 /* Print directory summary information */
-void printSummary(int files, int dirs, int nBlocks, BOOL noHead)
+void printSummary(int files, int dirs, int nBlocks, BOOL noHead, BOOL PrintEmpty)
 {
     if (noHead)
     {
 	return;
     }
 
-    if ((files == 0) && (dirs == 0))
+    if ((files == 0) && (dirs == 0) && PrintEmpty)
     {
 	Printf("Directory is empty\n");
     }
-    else
+    if (files || dirs)
     {
 	if (files != 0)
 	{
@@ -606,7 +606,7 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
              STRPTR parsedPattern, BOOL noHead, STRPTR lFormat, BOOL quick,
 	     BOOL dates, BOOL noDates, BOOL block, struct DateStamp *sinceDate,
 	     struct DateStamp *uptoDate, BOOL doSince, BOOL doUpto,
-	     STRPTR subpatternStr, BOOL all, BOOL keys, Statistics *stats)
+	     STRPTR subpatternStr, BOOL all, BOOL keys, Statistics *stats, BOOL PrintEmpty)
 {
     struct AnchorPath *ap;
     struct List DirList, FreeDirNodeList;
@@ -721,7 +721,7 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 	    PrintFault(error, NULL);
 	}
 
-	printSummary(files, dirs, nBlocks, noHead);
+	printSummary(files, dirs, nBlocks, noHead, PrintEmpty);
 
 	/* Update global statistics for (possiblr) ALL option */
 	stats->nFiles += files;
@@ -939,7 +939,7 @@ int main(void)
 			     lFormat, quick, dates, noDates, block,
 			     &sinceDatetime.dat_Stamp, &uptoDatetime.dat_Stamp,
 			     since != NULL, upto != NULL, subpatternStr, all,
-			     keys, &stats);
+			     keys, &stats, TRUE);
 	}
 	else
 	{
@@ -950,7 +950,7 @@ int main(void)
 				 block, &sinceDatetime.dat_Stamp,
 				 &uptoDatetime.dat_Stamp, since != NULL,
 				 upto != NULL, subpatternStr, all, keys,
-				 &stats);
+				 &stats, FALSE);
 		
 		if (error != RETURN_OK)
 		{
