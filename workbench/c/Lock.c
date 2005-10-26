@@ -119,7 +119,7 @@ int main(void)
 {
     struct Process *pr = (struct Process *)FindTask(NULL);
     struct RDArgs *rd, *rda = NULL;
-    IPTR args[TOTAL_ARGS] = { NULL, TRUE, FALSE, NULL };
+    IPTR args[TOTAL_ARGS] = { NULL, FALSE, FALSE, NULL };
     struct IOFileSys *iofs;
     struct DevProc *dp;
     int error = 0;
@@ -159,21 +159,18 @@ int main(void)
 		    iofs->IOFS.io_Command = FSA_MOUNT_MODE;
 
 		    DoIO((struct IORequest *)iofs);
-
-		    if(    (args[ARG_ON] == TRUE && args[ARG_OFF] == FALSE)
-			|| (args[ARG_ON] == FALSE && args[ARG_OFF] == FALSE)
-		    )
+		    if (args[ARG_ON] && args[ARG_OFF])
 		    {
-			error = lockDevice(iofs, (STRPTR)args[ARG_PASSKEY]);
+			/* Both are set? */
+			error = ERROR_TOO_MANY_ARGS;
 		    }
-		    else if(args[ARG_ON] == FALSE && args[ARG_OFF] == TRUE)
+		    else if (args[ARG_OFF])
 		    {
 			error = unlockDevice(iofs, (STRPTR)args[ARG_PASSKEY]);
 		    }
 		    else
 		    {
-			/* Both are set? */
-			error = ERROR_TOO_MANY_ARGS;
+			error = lockDevice(iofs, (STRPTR)args[ARG_PASSKEY]);
 		    }
 		    DeleteIORequest((struct IORequest *)iofs);
 
