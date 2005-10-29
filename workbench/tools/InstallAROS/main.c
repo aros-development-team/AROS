@@ -1740,9 +1740,9 @@ IPTR Install__MUIM_Format
 	struct Install_DATA *data    = INST_DATA(CLASS, self);
 	char			dev_nametmp[100];
 	char			fmt_nametmp[100];
-	BOOL                 success = FALSE;
+	BOOL			success = FALSE;
 	IPTR 			option = FALSE;
-	BPTR                 lock;
+	BPTR			lock;
 
 #if	defined(USE_FORMAT64)
 	char tmp[100];
@@ -1788,12 +1788,21 @@ IPTR Install__MUIM_Format
 		D(bug("[INSTALLER] (info) Using '%s'\n",tmp));
 		success = (BOOL)Execute(tmp, NULL, NULL);
 #endif
-		if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
-		else
+		if (success)
 		{
-			D(bug("[INSTALLER] (Warning) Failed to format chosen work partition : defaulting to sys only\n"));
-			work_Path = dest_Path;
-		}    
+				set(data->gauge2, MUIA_Gauge_Current, 100);
+				BPTR lock = Lock(work_Path, SHARED_LOCK);     /* check the dest dir exists */
+				if(lock == 0)
+				{
+					D(bug("[INSTALLER] (Warning) Failed to format chosen work partition : defaulting to sys only\n"));
+					work_Path = dest_Path;
+				}    
+				else
+				{
+						UnLock(lock);
+						lock = 0;
+				}
+		}
 	}
 	if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
     
