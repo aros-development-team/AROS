@@ -23,10 +23,10 @@
 #include <gadgets/colorwheel.h>
 
 #include <libraries/asl.h>
-#include	<libraries/expansionbase.h>
+#include <libraries/expansionbase.h>
 
-#include	<devices/trackdisk.h>
-#include	<devices/scsidisk.h>
+#include <devices/trackdisk.h>
+#include <devices/scsidisk.h>
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -40,29 +40,29 @@
 
 #include "install.h"
 
-#define kBufSize  			(4*65536)
-#define kExallBufSize  			(4096)
+#define kBufSize  		(4*65536)
+#define kExallBufSize  		(4096)
 
-#define kDstPartVol 			"DH0"
-#define kDstWorkVol 			"DH1"
-#define package_Path			"SYS:"
-#define kDstPartName 			"AROS"
+#define kDstPartVol 		"DH0"
+#define kDstWorkVol 		"DH1"
+#define package_Path		"SYS:"
+#define kDstPartName 		"AROS"
 #define kDstWorkName 		"Work"
 
-#define installertmp_path     		"T:Installer"
-#define instalationtmp_path     		"T:Installer/InstallAROS"
+#define installertmp_path     	"T:Installer"
+#define instalationtmp_path     "T:Installer/InstallAROS"
 
-#define localeFile_path     		"Prefs/Locale\""
-#define inputFile_path      		"Prefs/Input\""
-#define prefssrc_path      		"ENV:SYS"
-#define prefs_path          		"Prefs/Env-Archive/SYS"
+#define localeFile_path     	"Prefs/Locale\""
+#define inputFile_path      	"Prefs/Input\""
+#define prefssrc_path      	"ENV:SYS"
+#define prefs_path          	"Prefs/Env-Archive/SYS"
 
-#define locale_prfs_file			"locale.prefs"						/* please note the suffixed \" */
-#define input_prfs_file			"input.prefs"
+#define locale_prfs_file		"locale.prefs"						/* please note the suffixed \" */
+#define input_prfs_file		"input.prefs"
 
-#define DEF_INSTALL_IMAGE          "IMAGES:Logos/install.logo"
-#define DEF_BACK_IMAGE              "IMAGES:Logos/install.logo"
-#define DEF_LIGHTBACK_IMAGE      "IMAGES:Logos/install.logo"
+#define DEF_INSTALL_IMAGE       "IMAGES:Logos/install.logo"
+#define DEF_BACK_IMAGE          "IMAGES:Logos/install.logo"
+#define DEF_LIGHTBACK_IMAGE     "IMAGES:Logos/install.logo"
 
 /** Start - NEW!! this is part of the "class" change ;) **/
 
@@ -91,22 +91,26 @@ struct	Process			*ThisProcess = NULL;
 
 struct	ExpansionBase		*ExpansionBase = NULL;
 
-char						*firstfound_path=NULL;
+char				*firstfound_path=NULL;
 
-char						*source_Path=NULL;				/* full path to source "tree" */
-char						*source_Name=NULL;
+char						*source_Path=NULL;		/* full path to source "tree" */
+char				*source_Name=NULL;
 
-char						*dest_Path=NULL;				/* VOLUME NAME of part used to store "aros" */
-char						*work_Path=NULL;				/* VOLUME NAME of part used to store "work" */
+char						*dest_Path=NULL;		/* VOLUME NAME of part used to store "aros" */
+char						*work_Path=NULL;		/* VOLUME NAME of part used to store "work" */
 
-char						*boot_Device=NULL;
-ULONG					boot_Unit = 0;
+char				*boot_Device=NULL;
+ULONG				boot_Unit = 0;
 
-Object* 					check_copytowork = NULL;
-Object* 					check_work = NULL;
+Object* 			check_copytowork = NULL;
+Object* 			check_work = NULL;
+Object* 			show_formatsys = NULL;
+Object* 			show_formatwork = NULL;
+Object* 			check_formatsys = NULL;
+Object* 			check_formatwork = NULL;
 
-Object* 					dest_volume = NULL;
-Object* 					work_volume = NULL;
+Object* 			dest_volume = NULL;
+Object* 			work_volume = NULL;
 
 //extern ULONG InitTask(void);
 int CopyDirArray( Class *CLASS, Object *self, struct Install_DATA* data, TEXT *copy_files[], TEXT *destination_Path);
@@ -557,6 +561,19 @@ IPTR Install__MUIM_IC_NextStep
 		break;
 
 	case EDestOptionsStage:
+		if ((BOOL)XGET(data->instc_options_main->opt_format, MUIA_Selected))
+		{
+			set(show_formatsys,MUIA_ShowMe,TRUE);
+			set(show_formatwork,MUIA_ShowMe,TRUE);
+
+		}
+		else
+		{
+			set(check_formatsys,MUIA_Selected,FALSE);
+			set(check_formatwork,MUIA_Selected,FALSE);
+			set(show_formatsys,MUIA_ShowMe,FALSE);
+			set(show_formatwork,MUIA_ShowMe,FALSE);
+		}
 		data->instc_stage_next = EInstallMessageStage;
 		next_stage = EDestOptionsStage;
 		break;
@@ -1006,7 +1023,7 @@ IPTR Install__MUIM_Partition
 		set(data->proceed, MUIA_Disabled, TRUE);
 
 		char tmpcmd[100];
-		get(check_work,MUIA_Selected,&option);
+		get(check_work, MUIA_Selected, &option);
 		if (option==FALSE)
 		{
 			get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
@@ -1117,13 +1134,13 @@ IPTR Install__MUIM_IC_Install
 
 /** setup work name to use **/
 
-	get(check_copytowork,MUIA_Selected,&option);
+	get(check_copytowork, MUIA_Selected, &option);
 	if (((BOOL)option==FALSE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		work_Path = dest_Path;
 	}
 
-	get(check_work,MUIA_Selected,&option);
+	get(check_work, MUIA_Selected, &option);
 	if (((BOOL)option==FALSE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		work_Path = dest_Path;
@@ -1131,10 +1148,10 @@ IPTR Install__MUIM_IC_Install
 
 /** STEP : FORMAT **/
 
-	get(data->instc_options_main->opt_format,MUIA_Selected,&option);
+	get(data->instc_options_main->opt_format, MUIA_Selected, &option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
-		get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
+		get(data->instc_options_main->opt_partmethod, MUIA_Radio_Active, &option);
 
 		DoMethod(self, MUIM_Format);
 	    
@@ -1144,15 +1161,13 @@ IPTR Install__MUIM_IC_Install
 
 /** STEP : LOCALE **/
 
-	get(data->instc_options_main->opt_locale,MUIA_Selected,&option);
+	get(data->instc_options_main->opt_locale, MUIA_Selected, &option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		D(bug("[INSTALLER] Launching Locale Prefs...\n"));
 
-		ULONG srcLen = strlen(source_Path);
-		ULONG dstLen = (strlen(dest_Path)+1);
-		ULONG envsrcLen = strlen(prefssrc_path);
-		ULONG envdstLen = strlen(prefs_path);
+		ULONG srcLen = strlen(source_Path), dstLen = (strlen(dest_Path)+1);
+		ULONG envsrcLen = strlen(prefssrc_path), envdstLen = strlen(prefs_path);
 
 		ULONG localeFileLen = srcLen + strlen(localeFile_path) + 3;
 		ULONG inputFileLen = srcLen + strlen(inputFile_path) + 3;
@@ -1161,14 +1176,15 @@ IPTR Install__MUIM_IC_Install
 
 		ULONG inputPFileLen = dstLen + envdstLen + strlen(input_prfs_file) + 4;
 
-		TEXT envDstDir[dstLen + envdstLen];
+		ULONG envdstdirLen = 1024;
+		TEXT envDstDir[envdstdirLen];								/* "DH0:Prefs/Env-Archive/SYS" */
 
-		TEXT localeFile[localeFileLen];
-		TEXT localesrcPFile[localePFileLen];
-		TEXT localePFile[localePFileLen];
-		TEXT inputFile[inputFileLen];
-		TEXT inputsrcPFile[inputPFileLen];
-		TEXT inputPFile[inputPFileLen];
+		TEXT localeFile[localeFileLen];							/* "CD0:Prefs/Locale" */
+		TEXT localesrcPFile[localePFileLen];				/* "ENV:SYS/locale.prefs" */
+		TEXT localePFile[localePFileLen];						/* "DH0:Prefs/Env-Archive/SYS/locale.prefs" */
+		TEXT inputFile[inputFileLen];								/* "CD0:Prefs/Input" */
+		TEXT inputsrcPFile[inputPFileLen];					/* "ENV:SYS/input.prefs" */
+		TEXT inputPFile[inputPFileLen];							/* "DH0:Prefs/Env-Archive/SYS/input.prefs" */
 
 		sprintf(envDstDir,"%s:",dest_Path);
 		sprintf(localeFile,"\"%s",source_Path);
@@ -1225,15 +1241,17 @@ IPTR Install__MUIM_IC_Install
 			{
 createdirfaild:
 				D(bug("[INSTALLER] Failed to create %s dir!!\n",envDstDir));
-				data->inst_success = MUIV_Inst_Failed;
-				return 0;
+#warning TODO: Should prompt on failure to try again/continue anyhow/exit.
+				goto localecopydone;
+				//data->inst_success = MUIV_Inst_Failed;
+				//return 0;
 			}
 		}
 
 		bootDirLock=NULL;
 		lock = NULL;
 
-		AddPart(envDstDir, "Env-Archive", dstLen + envdstLen);
+		AddPart(envDstDir, "Env-Archive", envdstdirLen);
 		D(bug("[INSTALLER] Create Dir '%s' \n",envDstDir));
 		if ((lock = Lock(envDstDir, ACCESS_READ))!=NULL)
 		{
@@ -1250,7 +1268,7 @@ createdirfaild:
 		bootDirLock=NULL;
 		lock = NULL;
 
-		AddPart(envDstDir, "SYS", dstLen + envdstLen);
+		AddPart(envDstDir, "SYS", envdstdirLen);
 		D(bug("[INSTALLER] Create Dir '%s' \n",envDstDir));
 		if ((lock = Lock(envDstDir, ACCESS_READ))!=NULL)
 		{
@@ -1283,13 +1301,14 @@ createdirfaild:
 			UnLock(lock);
 			DoMethod(self, MUIM_IC_CopyFile, inputsrcPFile, inputPFile);
 		}
+localecopydone:
 	}
 
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
 
 /** STEP : COPY CORE **/
 
-	get(data->instc_options_main->opt_copycore,MUIA_Selected,&option);
+	get(data->instc_options_main->opt_copycore, MUIA_Selected, &option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		TEXT     *core_dirs[((11+1)*2)] = 
@@ -1319,7 +1338,7 @@ createdirfaild:
 
 /** STEP : COPY EXTRAS **/
 
-	get(data->instc_options_main->opt_copyextra,MUIA_Selected,&option);
+	get(data->instc_options_main->opt_copyextra, MUIA_Selected, &option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		TEXT     *extras_dirs[((2+1)*2)] = 
@@ -1341,7 +1360,7 @@ createdirfaild:
 
 /** STEP : COPY DEVELOPMENT **/
 
-	get(data->instc_options_main->opt_development,MUIA_Selected,&option);
+	get(data->instc_options_main->opt_development, MUIA_Selected, &option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		ULONG srcLen = strlen(source_Path);
@@ -1375,7 +1394,7 @@ createdirfaild:
 
 /** STEP : INSTALL BOOTLOADER **/
 
-	get(data->instc_options_main->opt_bootloader,MUIA_Selected,&option);
+	get(data->instc_options_main->opt_bootloader, MUIA_Selected, &option);
 	if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		int numgrubfiles = 3,file_count = 0;
@@ -1440,14 +1459,14 @@ createdirfaild:
 		char		*fixuppackage_dirs = AllocVec((fixupdir_count+1)*sizeof(IPTR),MEMF_PUBLIC|MEMF_CLEAR);
 		int		curfixup = 0;
 
-		get(data->instc_options_main->opt_copyextra,MUIA_Selected,&option);
+		get(data->instc_options_main->opt_copyextra, MUIA_Selected, &option);
 		if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 		{
 			fixuppackage_dirs[curfixup] = "Demos"; curfixup++;
 			fixuppackage_dirs[curfixup] = "Extras"; curfixup++;
 		}
 
-		get(data->instc_options_main->opt_development,MUIA_Selected,&option);
+		get(data->instc_options_main->opt_development, MUIA_Selected, &option);
 		if (((BOOL)option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 		{
 			fixuppackage_dirs[curfixup] = "Development"; curfixup++;
@@ -1725,6 +1744,10 @@ IPTR Install__MUIM_Format
 	IPTR 			option = FALSE;
 	BPTR                 lock;
 
+#if	defined(USE_FORMAT64)
+	char tmp[100];
+#endif
+	
 	sprintf(fmt_nametmp,"Formatting %s ...",dest_Path);
 	D(bug("[INSTALLER] %s\n",fmt_nametmp));
 	set(data->label, MUIA_Text_Contents, fmt_nametmp);
@@ -1733,19 +1756,21 @@ IPTR Install__MUIM_Format
 	/* Format Vol0 */
 	sprintf(dev_nametmp,"%s:",dest_Path);
 
+	if ((BOOL)XGET(check_formatsys,MUIA_Selected))
+	{
 #if	!defined(USE_FORMAT64)
 	D(bug("[INSTALLER] (info) Using FormatPartition\n"));
 	success = FormatPartition(dev_nametmp, kDstPartName);
 #else
-	char tmp[100];
 	sprintf(tmp,"SYS:Extras/aminet/Format64 DRIVE=%s NAME=%s FFS QUICK",dev_nametmp, kDstPartName);
 	D(bug("[INSTALLER] (info) Using '%s'\n",tmp));
 	success = (BOOL)Execute(tmp, NULL, NULL);
 #endif
 	if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
+	}
 
-	get(check_work,MUIA_Selected,&option);
-	if ((BOOL)option==TRUE)
+	get(check_work, MUIA_Selected, &option);
+	if (((BOOL)option==TRUE)&&((BOOL)XGET(check_formatwork,MUIA_Selected)))
 	{
 		/* Format Vol1, if it's not already formated */
 		sprintf(fmt_nametmp,"Formatting %s ...",work_Path);
@@ -1764,7 +1789,11 @@ IPTR Install__MUIM_Format
 		success = (BOOL)Execute(tmp, NULL, NULL);
 #endif
 		if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
-    
+		else
+		{
+			D(bug("[INSTALLER] (Warning) Failed to format chosen work partition : defaulting to sys only\n"));
+			work_Path = dest_Path;
+		}    
 	}
 	if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
     
@@ -2268,7 +2297,7 @@ IPTR Install__MUIM_Reboot
 
 	IPTR                    option = FALSE;
 
-	get(data->instc_options_main->opt_reboot,MUIA_Selected,&option);        // Make sure the user wants to reboot
+	get(data->instc_options_main->opt_reboot, MUIA_Selected, &option);        // Make sure the user wants to reboot
 	if ((option==TRUE)&&( data->inst_success ==  MUIV_Inst_InProgress))
 	{
 		D(bug("[INSTALLER] Cold rebooting...\n"));
@@ -2460,7 +2489,9 @@ int main(int argc,char *argv[])
 
 	check_copytowork = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
 	check_work = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
-
+	check_formatsys  = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
+	check_formatwork  = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
+	
 	install_opts = AllocMem( sizeof(struct Install_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	grub_opts = AllocMem( sizeof(struct Grub_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	source_path = AllocVec( 256, MEMF_CLEAR | MEMF_PUBLIC );
@@ -2597,7 +2628,16 @@ int main(int argc,char *argv[])
 									Child, (IPTR) VGroup,
 										Child, (IPTR) CLabel(KMsgDestOptions),
 										Child, (IPTR) HVSpace,
-										Child, (IPTR) LLabel(KMsgDestVolume),
+										Child, (IPTR) ColGroup(2),
+											Child, (IPTR) ColGroup(2),
+												Child, (IPTR) LLabel(KMsgDestVolume),
+												Child, (IPTR) HVSpace,
+											End,
+											Child, (IPTR) show_formatsys = ColGroup(2),
+												Child, (IPTR) LLabel("Format Partition:"),
+												Child, (IPTR) check_formatsys,
+											End,
+										End,
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) (dest_volume = StringObject, MUIA_String_Contents, (IPTR) dest_Path,End),
 										Child, (IPTR) HVSpace,
@@ -2608,7 +2648,17 @@ int main(int argc,char *argv[])
 											Child, (IPTR) check_copytowork,
 										End,
 										Child, (IPTR) HVSpace,
-										Child, (IPTR) LLabel(KMsgWorkVolume),
+
+										Child, (IPTR) ColGroup(2),
+											Child, (IPTR) ColGroup(2),
+												Child, (IPTR) LLabel(KMsgWorkVolume),
+												Child, (IPTR) HVSpace,
+											End,
+											Child, (IPTR) show_formatwork = ColGroup(2),
+												Child, (IPTR) LLabel("Format Partition:"),
+												Child, (IPTR) check_formatwork,
+											End,
+										End,
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) (work_volume = StringObject, MUIA_String_Contents, (IPTR) work_Path,End),
 										Child, (IPTR) HVSpace,
