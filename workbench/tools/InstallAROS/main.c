@@ -250,7 +250,7 @@ IPTR Install__OM_NEW
 
 	if ( data->instc_undoenabled==TRUE)
 	{
-		lock = NULL;
+		lock = 0;
 		NEWLIST((struct List *)&data->instc_undorecord);
 
 		if ((lock = Lock(installertmp_path, ACCESS_READ))!=NULL)
@@ -1154,9 +1154,30 @@ IPTR Install__MUIM_IC_Install
 		get(data->instc_options_main->opt_partmethod, MUIA_Radio_Active, &option);
 
 		DoMethod(self, MUIM_Format);
-	    
 	}
 
+/* MAKE SURE THE WORK PART EXISTS TO PREVENT CRASHING! */
+
+	if((strcmp(dest_Path, work_Path)!=0))
+	{
+		D(bug("[INSTALLER] Install : SYS Part != Work Part - checking validity .."));
+		if((lock = Lock(work_Path, SHARED_LOCK)))     /* check the dest dir exists */
+		{
+				D(bug("OK!\n"));
+				UnLock(lock);
+		}
+		else
+		{
+			D(bug("FAILED!\n[INSTALLER] (Warning) INSTALL - Failed to locate chosen work partition '%s' : defaulting to sys only\n",work_Path));
+			work_Path = dest_Path;
+		}
+		lock = 0;
+	}
+	else
+	{
+		D(bug("[INSTALLER] Install: SYS Part (%s) == Work Part (%s)\n", dest_Path, work_Path));
+	}
+	
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
 
 /** STEP : LOCALE **/
@@ -1249,7 +1270,7 @@ createdirfaild:
 		}
 
 		bootDirLock=NULL;
-		lock = NULL;
+		lock = 0;
 
 		AddPart(envDstDir, "Env-Archive", envdstdirLen);
 		D(bug("[INSTALLER] Create Dir '%s' \n",envDstDir));
@@ -1266,7 +1287,7 @@ createdirfaild:
 		}
 
 		bootDirLock=NULL;
-		lock = NULL;
+		lock = 0;
 
 		AddPart(envDstDir, "SYS", envdstdirLen);
 		D(bug("[INSTALLER] Create Dir '%s' \n",envDstDir));
@@ -1283,7 +1304,7 @@ createdirfaild:
 		}
 
 		bootDirLock=NULL;
-		lock = NULL;
+		lock = 0;
 
 		D(bug("[INSTALLER] Copying files\n"));
 
@@ -1294,7 +1315,7 @@ createdirfaild:
 		}
 
 		bootDirLock=NULL;
-		lock = NULL;
+		lock = 0;
 
 		if ((lock = Lock(inputsrcPFile, ACCESS_READ))!=NULL)
 		{
@@ -1643,7 +1664,7 @@ int CopyDirArray( Class *CLASS, Object *self, struct Install_DATA* data, TEXT *c
 			dir_count = 0,
 			skip_count = 0;
         int		noOfFiles = 0;
-        BPTR		lock = NULL;
+        BPTR		lock = 0;
 	ULONG					retry=0;
         ULONG	srcLen = strlen(source_Path);
         ULONG	dstLen = (strlen(destination_Path)+1);
@@ -1791,10 +1812,10 @@ IPTR Install__MUIM_Format
 		if (success)
 		{
 				set(data->gauge2, MUIA_Gauge_Current, 100);
-				BPTR lock = Lock(work_Path, SHARED_LOCK);     /* check the dest dir exists */
+				lock = Lock(kDstWorkName, SHARED_LOCK);     /* check the dest dir exists */
 				if(lock == 0)
 				{
-					D(bug("[INSTALLER] (Warning) Failed to format chosen work partition : defaulting to sys only\n"));
+					D(bug("[INSTALLER] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", kDstWorkName));
 					work_Path = dest_Path;
 				}    
 				else
@@ -1982,7 +2003,7 @@ IPTR Install__MUIM_IC_CopyFiles
                             case ST_USERDIR:
 				if(data->instc_undoenabled==TRUE)
 				{
-					BPTR		dlock = NULL;
+					BPTR		dlock = 0;
 					if ((dlock = Lock(message->dstDir, ACCESS_READ))==NULL) break;
 					UnLock(dlock);
 
@@ -2050,7 +2071,7 @@ IPTR Install__MUIM_IC_CopyFile
 
 	BPTR 					from=NULL,
 							to=NULL,
-							lock = NULL;
+							lock = 0;
 
 	if((to = Open(message->dstFile, MODE_OLDFILE)))
 	{
@@ -2508,7 +2529,7 @@ int main(int argc,char *argv[])
 	dest_path = AllocVec( 256, MEMF_CLEAR | MEMF_PUBLIC );
 	work_path = AllocVec( 256, MEMF_CLEAR | MEMF_PUBLIC );
 
-	BPTR lock = NULL;
+	BPTR lock = 0;
 
 	if (!(ExpansionBase = OpenLibrary("expansion.library", 0))) goto main_error;
 
@@ -2534,7 +2555,7 @@ int main(int argc,char *argv[])
 	dest_Path = dest_path;
 	sprintf(dest_Path,"" kDstPartVol);
 
-	work_Path =work_path;
+	work_Path = work_path;
 	sprintf(work_Path,"" kDstWorkVol);
 /**/
 
