@@ -208,7 +208,7 @@ int main(void)
             }
             else
             {
-                PrintFault(IoErr(), "RequestFile #2");
+                PrintFault(IoErr(), "RequestFile");
 		Return_Value = RETURN_ERROR;
             }
 	    
@@ -216,7 +216,7 @@ int main(void)
         }
         else
         {
-            PrintFault(IoErr(), "RequestFile #1");
+            PrintFault(IoErr(), "RequestFile");
 	    Return_Value = RETURN_ERROR;
         }
 	
