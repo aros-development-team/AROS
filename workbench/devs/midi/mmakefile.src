@@ -11,4 +11,10 @@ EXEDIR := $(AROS_DEVS)/Midi
     progname=debugdriver targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="arossupport rom m"
 
+#MM workbench-devs-midi-hostmidi : includes linklibs
+
+%build_prog mmake=workbench-devs-midi-hostmidi \
+    progname=hostmidi targetdir=$(EXEDIR) \
+    files=hostmidi uselibs="arossupport rom m hiddstubs"
+
 %common
