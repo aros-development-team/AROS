@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Makefile to make MultiView.
+#   Makefile to make IPrefs.
 
 include $(TOP)/config/make.cfg
 
