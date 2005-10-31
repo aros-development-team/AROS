@@ -175,7 +175,7 @@ int main(void)
 
 		Permit();
 
-		if (PutStr("Type  Available    In-Use   Maximum   Largest\n") < 0 ||
+		if (PutStr("Type   Available    In-Use   Maximum   Largest\n") < 0 ||
 		    printm("chip", chip, 4) < 0 ||
 		    printm("fast", fast, 4) < 0 ||
 		    printm("total", total, 4) < 0)
