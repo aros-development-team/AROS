@@ -146,7 +146,7 @@ void FontPrefs_Handler(STRPTR filename)
     } /* if ((iff = CreateIFF(filename))) */
     
     
-    D(bug("In IPrefs:FontPrefs_Handler. Done.\n", filename));
+    D(bug("In IPrefs:FontPrefs_Handler. Done with '%s'.\n", filename));
 }
 
 /*********************************************************************************************/
