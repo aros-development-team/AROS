@@ -1160,8 +1160,10 @@ IPTR Install__MUIM_IC_Install
 
 	if((strcmp(dest_Path, work_Path)!=0))
 	{
+		char tmp[100];
+		sprintf(tmp,"%s:",kDstWorkName);
 		D(bug("[INSTALLER] Install : SYS Part != Work Part - checking validity .."));
-		if((lock = Lock(work_Path, SHARED_LOCK)))     /* check the dest dir exists */
+		if((lock = Lock(tmp, SHARED_LOCK)))     /* check the dest dir exists */
 		{
 				D(bug("OK!\n"));
 				UnLock(lock);
@@ -1763,7 +1765,7 @@ IPTR Install__MUIM_Format
 	char			fmt_nametmp[100];
 	BOOL			success = FALSE;
 	IPTR 			option = FALSE;
-	BPTR			lock;
+	BPTR			lock = NULL;
 
 #if	defined(USE_FORMAT64)
 	char tmp[100];
@@ -1811,11 +1813,12 @@ IPTR Install__MUIM_Format
 #endif
 		if (success)
 		{
+				sprintf(tmp,"%s:",kDstWorkName);
 				set(data->gauge2, MUIA_Gauge_Current, 100);
-				lock = Lock(kDstWorkName, SHARED_LOCK);     /* check the dest dir exists */
+				lock = Lock(tmp, SHARED_LOCK);     /* check the dest dir exists */
 				if(lock == 0)
 				{
-					D(bug("[INSTALLER] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", kDstWorkName));
+					D(bug("[INSTALLER] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", tmp));
 					work_Path = dest_Path;
 				}    
 				else
