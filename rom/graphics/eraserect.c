@@ -82,7 +82,7 @@ static ULONG eraserect_render(APTR err_data, LONG srcx, LONG srcy,
     struct eraserect_render_data errd;
     struct Rectangle 	    	 rr;
     
-    EnterFunc(bug("EraseRect(%d, %d, %d, %d)\n", x1, y1, x2, y2));
+    EnterFunc(bug("EraseRect(%d, %d, %d, %d)\n", xMin, yMin, xMax, yMax));
 
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
     	ReturnVoid("EraseRect(No driverdata)");

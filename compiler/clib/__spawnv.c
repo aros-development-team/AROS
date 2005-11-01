@@ -143,8 +143,6 @@ static char *join_args(char * const *argv);
 	       the usedsata field of the task structure.  */
 	    childdata.command = seg;
 
-	    D(bug("Command loaded = %s\n", apath));
-
 	    tags[4].ti_Data = (IPTR)join_args(&argv[1]);
 	    if (!tags[4].ti_Data)
 	        break;
@@ -155,7 +153,7 @@ static char *join_args(char * const *argv);
 	    out = DupFHFromfd(STDOUT_FILENO, FMF_WRITE);
 	    err = DupFHFromfd(STDERR_FILENO, FMF_WRITE);
 
-	    D(bug("in = %p - out = %p - err = %p\n", BADDR(in), BADDR(out), BADDR(err)))
+	    D(bug("in = %p - out = %p - err = %p\n", BADDR(in), BADDR(out), BADDR(err)));
 
 	    if (in)  tags[1].ti_Data = (IPTR)in;
 	    else     tags[1].ti_Tag  = TAG_IGNORE;
@@ -172,7 +170,7 @@ static char *join_args(char * const *argv);
 	    else
 	        ret = -1;
 
-	    D(bug("Process created successfully: %s\n", ret == -1 ? "NO" : "YES"))
+	    D(bug("Process created successfully: %s\n", ret == -1 ? "NO" : "YES"));
 
 	    Close(in); Close(out); Close(err);
 
