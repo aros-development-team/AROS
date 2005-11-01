@@ -57,7 +57,7 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-#define ARG_TEMPLATE	"PRI=PRIORITY/A/N,PROCESS/K/N"
+#define ARG_TEMPLATE	"PRI=PRIORITY/A/N,PROCESS/N"
 #define ARG_PRI		0
 #define ARG_PROCESS	1
 #define TOTAL_ARGS	2
@@ -86,11 +86,13 @@ int main(void)
 	if( rdargs != NULL )
 	{
 	    Forbid();
-	    if( args[ARG_PROCESS] != 0 )
-    		pr = FindCliProc(args[ARG_PROCESS]);
+	    if( args[ARG_PROCESS] != 0 ) {
+//	        Printf("PROCESS = %ld\n", *(LONG *)args[ARG_PROCESS]);
+    		pr = FindCliProc(*(LONG *)args[ARG_PROCESS]);
+	    }
 	    else
 		pr = (struct Process *)FindTask(NULL);
-
+//	    Printf("pr = 0x%08lx\n", pr);
 	    if( pr != NULL )
 	    {
 	    	LONG pri = (LONG)(*(IPTR *)args[ARG_PRI]);
@@ -119,10 +121,12 @@ int main(void)
 	    }
 	    FreeArgs(rdargs);
 	} /* ReadArgs() ok */
-
+	else
+	    error = IoErr();
 	FreeDosObject(DOS_RDARGS, rda);
     } /* Got a RDArgs * */
-
+    else
+	error = IoErr();
     if( error != -1 && error != 0 )
     {
 	PrintFault(error, "ChangeTaskPri");
