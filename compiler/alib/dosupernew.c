@@ -49,25 +49,17 @@
     return DoSuperMethod(CLASS, object, OM_NEW, tags, gadgetInfo);
 } /* DoSuperNewTagList() */
 
-ULONG DoSuperNewTags
+IPTR DoSuperNewTags
 (
-    Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo,
-    Tag tag1, ...
+    Class *CLASS,
+    Object *object,
+    struct GadgetInfo *gadgetInfo,
+    Tag tag1,
+    ...
 )
 {
-    AROS_SLOWSTACKMETHODS_PRE(tag1)
-    
     if (CLASS == NULL || object == NULL)
-    {
-        retval = NULL;
-    }
-    else
-    {
-        retval = DoSuperNewTagList
-        (
-            CLASS, object, gadgetInfo, (struct TagItem *) AROS_SLOWSTACKMETHODS_ARG(tag1)
-        );
-    }
+        return NULL;
 
-    AROS_SLOWSTACKMETHODS_POST
+    return DoSuperNewTagList(CLASS, object, gadgetInfo, (struct TagItem *) &tag1);
 } /* DoSuperNewTags() */
