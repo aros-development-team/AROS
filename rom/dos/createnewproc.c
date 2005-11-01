@@ -557,7 +557,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase)
     struct Task    *task   = (struct Task *)tid;
     struct Process *parent = (struct Process *)(GetETask(task)->et_Parent);
 
-    D(bug("Awakening the parent task %p (called %s)\n", parent, parent->tc_Node.ln_Name));
+    D(bug("Awakening the parent task %p (called %s)\n", parent, parent->pr_Task.tc_Node.ln_Name));
 
     parent->pr_Flags &= ~PRF_WAITINGFORCHILD;
     Signal(&parent->pr_Task, SIGF_SINGLE);
