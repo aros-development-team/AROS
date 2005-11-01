@@ -66,19 +66,10 @@ ULONG DoMethod (Object * obj, ULONG MethodID, ...)
 {
     AROS_GET_SYSBASE_OK
 
-    AROS_SLOWSTACKMETHODS_PRE(MethodID)
     ASSERT_VALID_PTR(obj);
     if (!obj)
-    {
-    	retval = 0L;
-    }
-    else
-    {
-    	ASSERT_VALID_PTR(OCLASS(obj));
- 	retval = CALLHOOKPKT
-        (
-            (struct Hook *) OCLASS(obj), obj, AROS_SLOWSTACKMETHODS_ARG(MethodID)
-        );
-    }
-    AROS_SLOWSTACKMETHODS_POST
+    	return 0L;
+
+    ASSERT_VALID_PTR(OCLASS(obj));
+    return CALLHOOKPKT((struct Hook *) OCLASS(obj), obj, &MethodID);
 } /* DoMethod() */

@@ -57,13 +57,8 @@
 
 ULONG CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...)
 {
-    AROS_SLOWSTACKMETHODS_PRE(MethodID)
     if ((!obj) || (!cl))
-        retval = 0L;
-    else
-        retval = CALLHOOKPKT
-        (
-            (struct Hook *) cl, obj, AROS_SLOWSTACKMETHODS_ARG(MethodID)
-        );
-    AROS_SLOWSTACKMETHODS_POST
+        return 0L;
+
+    return CALLHOOKPKT((struct Hook *) cl, obj, &MethodID);
 } /* CoerceMethod() */
