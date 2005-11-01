@@ -12,8 +12,6 @@
 
 #include LC_LIBDEFS_FILE
 
-static struct Library *mylib;
-
 AROS_LH0(struct GlyphEngine *, OpenEngine,
 	 LIBBASETYPEPTR, LIBBASE, 5, FreeType2
 )
@@ -23,11 +21,11 @@ AROS_LH0(struct GlyphEngine *, OpenEngine,
     static UBYTE *EngineName = "freetype2";
     FT_GlyphEngine *ge=NULL;
 
-    D(bug("OpenEngine libbase = 0x%lx\n", mylib));
+    D(bug("OpenEngine libbase = 0x%lx\n", LIBBASE));
 
     if((ge = AllocGE()))
     {
-	ge->gle_Library = mylib;
+	ge->gle_Library = (struct Library *)LIBBASE;
 	ge->gle_Name = EngineName;
 
 	D(bug(" returning FT_GlyphEngine 0x%lx\n",ge));
@@ -41,13 +39,3 @@ AROS_LH0(struct GlyphEngine *, OpenEngine,
     AROS_LIBFUNC_EXIT
 }
 
-static AROS_SET_LIBFUNC(getbase, struct Library *, FTBase)
-{
-    AROS_SET_LIBFUNC_INIT;
-    mylib = FTBase;
-    
-    return TRUE;
-    AROS_SET_LIBFUNC_EXIT;
-}
-
-ADD2INITLIB(getbase, 0);
