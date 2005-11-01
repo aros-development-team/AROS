@@ -144,21 +144,21 @@ int main(void)
 	    {
 		/* Check resident lists */
 		found |= FindResidentCommand(commandName);
-		kprintf("Resident list\n");
+//		Printf("Resident list\n");
 	    }
 
 	    if(!found && !resOnly)
 	    {
 		/* Check all available paths */
 		found |= FindCommandinPath(commandName, checkAll, fib);
-		kprintf("Path\n");
+//		Printf("Path\n");
 	    }
 
 	    if(!found && !resOnly)
 	    {
 		/* Check C: multiassign */
 		found |= FindCommandinC(commandName, checkAll, fib);
-		kprintf("C:\n");
+//		Printf("C:\n");
 	    }
 	    if (found)
 	    {
@@ -226,25 +226,26 @@ BOOL FindCommandinPath(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
     BPTR *paths;                /* Loop variable */
 
     struct CommandLineInterface *cli = Cli();
-    
+//  Printf("checkAll = %ld\n", checkAll);
     /* Can this happen at all? */
     if(cli == NULL)
 	return FALSE;
 
     /* Check the current directory */
-    kprintf("Calling CheckDirectory()\n");
+//  Printf("Calling CheckDirectory()\n");
     found = CheckDirectory(name, fib);
 
     oldCurDir = CurrentDir(NULL);
 
     /* Check all paths */
     paths = (BPTR *)BADDR(cli->cli_CommandDir);
+//  Printf("paths = 0x%08lx\n", paths);
 
-    while((!found || checkAll) && paths != NULL)
+    while((!found || checkAll) && (paths != NULL))
     {
 	CurrentDir(paths[1]);
 
-	kprintf("Calling CheckDirectory()\n");
+//	Printf("Calling CheckDirectory()\n");
 	found |= CheckDirectory(name, fib);
 	
 	paths = (BPTR *)BADDR(paths[0]);    /* Go on with the next path */
@@ -264,15 +265,15 @@ BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
 
     lock = Lock(name, SHARED_LOCK);
 
-    kprintf("Locked command %s\n", name);
+//  Printf("Locked command %s\n", name);
     
     if(lock != NULL)
     {
-	kprintf("Calling Examine()\n");
+//	Printf("Calling Examine()\n");
 
 	if(Examine(lock, fib) == DOSTRUE)
 	{
-	    kprintf("Calling GetFullPath()\n");
+//	    Printf("Calling GetFullPath()\n");
 
 	    pathName = GetFullPath(lock);
 
