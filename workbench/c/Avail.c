@@ -103,13 +103,13 @@ int main(void)
 	BOOL  aFast  = (BOOL)args[ARG_FAST];
 	BOOL  aTotal = (BOOL)args[ARG_TOTAL];
 	BOOL  aFlush = (BOOL)args[ARG_FLUSH];
-	
 	aHuman = (BOOL)args[ARG_HUMAN];
 	
 	ULONG chip[4], fast[4], total[4];
 	
+//	Printf("aChip = %ld, aFast = %ld, aTotal = %ld\n", aChip, aFast, aTotal);
 	/* BOOL to int hack: */
-	if (aChip + aFast + aTotal > 1)
+	if (aChip + aFast + aTotal < -1)
 	{
 	    FPuts(Output(),"Only one of CHIP, FAST or TOTAL allowed\n");
 	    bPrintErr = FALSE;
