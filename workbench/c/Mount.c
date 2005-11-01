@@ -23,6 +23,14 @@
 
 static const char version[] = "$VER: Mount 41.2 (27.10.2001)\n";
 
+const char *SearchTable[]=
+{
+	"",
+	"DEVS:DOSDrivers/",
+	"SYS:Storage/DOSDrivers/",
+	NULL
+};
+
 extern struct Library     *ExpansionBase;
 
 LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
@@ -41,7 +49,7 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 
 	    if (*size != -1)
 	    {
-		*mem = (STRPTR)AllocVec(*size, MEMF_ANY);
+		*mem = (STRPTR)AllocVec(*size+1, MEMF_ANY);
 
 		if (*mem != NULL)
 		{
@@ -53,7 +61,7 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 			if (!rest)
 			{
 			    Close(ml);
-
+			    *buf = '\0';
 			    return 0;
 			}
 
@@ -191,21 +199,16 @@ static const UBYTE options[]=
 "BUFFERS/K/N,BUFMEMTYPE/K/N,MAXTRANSFER/K/N,MASK/K/N,BOOTPRI/K/N,"
 "DOSTYPE/K/N,BAUD/K/N,CONTROL/K";
 
-static LONG mount(STRPTR name, STRPTR buf, LONG size)
+LONG mount (STRPTR name, struct RDArgs *rda)
 {
     IPTR *args[18]=
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
       NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 
-    IPTR            *params;	     /* MakeDosNode() paramPacket */
+    IPTR *params;	     /* MakeDosNode() paramPacket */
     struct DosEnvec *vec;
-
-    UBYTE  buffer[1024];
-    LONG   error, res;
-    STRPTR end = buf + size;
-    STRPTR s2;
     struct RDArgs *rd;
-    struct RDArgs rda = { { NULL, 0, 0 }, 0, NULL, 0, NULL, RDAF_NOPROMPT };
+    LONG error;
 
     params = AllocVec(sizeof(struct DosEnvec) + sizeof(IPTR)*4,
 		      MEMF_PUBLIC | MEMF_CLEAR);
@@ -216,6 +219,85 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
     }
 
     vec = (struct DosEnvec *)&params[4];
+
+    rd = ReadArgs((STRPTR)options, (IPTR *)args, rda);
+
+    if (rd == NULL)
+    {
+	FreeVec(params);
+	return IoErr();
+    }
+
+    vec->de_TableSize      = (IPTR)19;
+    vec->de_SizeBlock      = (IPTR)(args[3]  ? *args[3]  : 512)/4;
+    vec->de_SecOrg         = args[3]  ? (IPTR)*args[3]  : (IPTR)512;
+    vec->de_Surfaces       = args[4]  ? (IPTR)*args[4]  : (IPTR)2;
+    vec->de_SectorPerBlock = 1;
+    vec->de_BlocksPerTrack = args[5]  ? (IPTR)*args[5]  : (IPTR)11;
+    vec->de_Reserved       = args[6]  ? (IPTR)*args[6]  : (IPTR)2;
+    vec->de_Interleave     = args[7]  ? (IPTR)*args[7]  : (IPTR)0;
+    vec->de_LowCyl         = args[8]  ? (IPTR)*args[8]  : (IPTR)0;
+    vec->de_HighCyl        = args[9]  ? (IPTR)*args[9]  : (IPTR)79;
+    vec->de_NumBuffers     = args[10] ? (IPTR)*args[10] : (IPTR)20;
+    vec->de_BufMemType     = args[11] ? (IPTR)*args[11] : (IPTR)1;
+    vec->de_MaxTransfer    = args[12] ? (IPTR)*args[12] : (IPTR)~0ul;
+    vec->de_Mask           = args[13] ? (IPTR)*args[13] : (IPTR)~0ul;
+    vec->de_BootPri        = args[14] ? (IPTR)*args[14] : (IPTR)0;
+    vec->de_DosType        = args[15] ? (IPTR)*args[15] : (IPTR)0x444f5301;
+    vec->de_Baud           = args[16] ? (IPTR)*args[16] : (IPTR)9600;
+    vec->de_Control        = args[17] ? (IPTR)*args[17] : (IPTR)"";
+    vec->de_BootBlocks     = 0;
+
+    params[0] = (IPTR)args[0];
+    params[1] = (IPTR)args[1];
+    params[2] = (IPTR)args[2] ? *args[2] : 0;
+    params[3] = 0;
+
+    /* NOTE: The 'params' may not be freed! */
+
+    {
+	struct DeviceNode *dn = MakeDosNode(params);
+
+	if (dn != NULL)
+	{
+	    /* Use the name found in the mountlist */
+	    dn->dn_OldName = DuplicateBSTRVolumeName(name);
+
+	    if (dn->dn_OldName != NULL)
+	    {
+		dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
+
+		if (AddDosNode(vec->de_BootPri, ADNF_STARTPROC, dn))
+		{
+		    FreeArgs(rd);
+		    return 0;
+		}
+		else
+		    error = ERROR_INVALID_RESIDENT_LIBRARY;
+	    }
+	    else
+	    {
+		error = ERROR_NO_FREE_STORE;
+	    }
+	}
+	else
+	{
+	    error = ERROR_NO_FREE_STORE;
+	}
+    }
+    FreeVec(params);
+    FreeArgs(rd);
+
+    return error;
+}
+
+static LONG parsemountlist(STRPTR name, STRPTR buf, LONG size)
+{
+    UBYTE  buffer[1024];
+    LONG res;
+    STRPTR end = buf + size;
+    STRPTR s2;
+    struct RDArgs rda = { { NULL, 0, 0 }, 0, NULL, 0, NULL, RDAF_NOPROMPT };
 
     rda.RDA_Source.CS_Buffer = buf;
     rda.RDA_Source.CS_Length = end - buf;
@@ -259,73 +341,10 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 	   (!name[s2 - (STRPTR)buffer] || (name[s2 - (STRPTR)buffer] == ':' ||
 				   !name[s2 - (STRPTR)buffer + 1])))
 	{
-	    rd = ReadArgs((STRPTR)options, (IPTR *)args, &rda);
-
-	    if (rd == NULL)
-	    {
-		return IoErr();
-	    }
-
-	    vec->de_TableSize      = (IPTR)19;
-	    vec->de_SizeBlock      = (IPTR)(args[3]  ? *args[3]  : 512)/4;
-	    vec->de_SecOrg         = args[3]  ? (IPTR)*args[3]  : (IPTR)512;
-	    vec->de_Surfaces       = args[4]  ? (IPTR)*args[4]  : (IPTR)2;
-	    vec->de_SectorPerBlock = 1;
-	    vec->de_BlocksPerTrack = args[5]  ? (IPTR)*args[5]  : (IPTR)11;
-	    vec->de_Reserved       = args[6]  ? (IPTR)*args[6]  : (IPTR)2;
-	    vec->de_Interleave     = args[7]  ? (IPTR)*args[7]  : (IPTR)0;
-	    vec->de_LowCyl         = args[8]  ? (IPTR)*args[8]  : (IPTR)0;
-	    vec->de_HighCyl        = args[9]  ? (IPTR)*args[9]  : (IPTR)79;
-	    vec->de_NumBuffers     = args[10] ? (IPTR)*args[10] : (IPTR)20;
-	    vec->de_BufMemType     = args[11] ? (IPTR)*args[11] : (IPTR)1;
-	    vec->de_MaxTransfer    = args[12] ? (IPTR)*args[12] : (IPTR)~0ul;
-	    vec->de_Mask           = args[13] ? (IPTR)*args[13] : (IPTR)~0ul;
-	    vec->de_BootPri        = args[14] ? (IPTR)*args[14] : (IPTR)0;
-	    vec->de_DosType        = args[15] ? (IPTR)*args[15] : (IPTR)0x444f5301;
-	    vec->de_Baud           = args[16] ? (IPTR)*args[16] : (IPTR)9600;
-	    vec->de_Control        = args[17] ? (IPTR)*args[17] : (IPTR)"";
-	    vec->de_BootBlocks     = 0;
-
-	    params[0] = (IPTR)args[0];
-	    params[1] = (IPTR)args[1];
-	    params[2] = (IPTR)args[2] ? *args[2] : 0;
-	    params[3] = 0;
-
-	    /* NOTE: The 'params' may not be freed! */
-
-	    {
-		struct DeviceNode *dn = MakeDosNode(params);
-
-		if (dn != NULL)
-		{
-		    /* Use the name found in the mountlist */
-		    dn->dn_OldName = DuplicateBSTRVolumeName(buffer);
-
-		    if (dn->dn_OldName != NULL)
-		    {
-			dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
-
-			if (AddDosNode(vec->de_BootPri, ADNF_STARTPROC, dn))
-			    error = 0;
-			else
-			    error = ERROR_INVALID_RESIDENT_LIBRARY;
-		    }
-		    else
-		    {
-			error = ERROR_NO_FREE_STORE;
-		    }
-		}
-		else
-		{
-		    error = ERROR_NO_FREE_STORE;
-		}
-	    }
-
-	    FreeArgs(rd);
-
-	    return error;
+		res = mount (buffer, &rda);
+		if (res)
+			return res;
 	}
-
 	while (rda.RDA_Source.CS_CurChr < rda.RDA_Source.CS_Length)
 	{
 	    if (!rda.RDA_Source.CS_Buffer[rda.RDA_Source.CS_CurChr++])
@@ -338,6 +357,17 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
     return 1;
 }
 
+static LONG parsemountfile(STRPTR name, STRPTR buf, LONG size)
+{
+    STRPTR end = buf + size;
+    struct RDArgs rda = { { NULL, 0, 0 }, 0, NULL, 0, NULL, RDAF_NOPROMPT };
+
+    rda.RDA_Source.CS_Buffer = buf;
+    rda.RDA_Source.CS_Length = end - buf;
+    rda.RDA_Source.CS_CurChr = 0;
+
+    return mount (name, &rda);
+}
 
 int __nocommandline;
 
@@ -346,10 +376,13 @@ int ExpansionBase_version = 0;
 
 int main(void)
 {
-    STRPTR  args[2] = { NULL, "Devs:Mountlist" };
-    STRPTR  mem;
-    LONG    size;
-    LONG    error = 0;
+    STRPTR args[2] = { NULL, NULL };
+    STRPTR mem, mem2;
+    LONG   size, size2;
+    LONG   error = 0;
+    LONG   error2;
+    int    i;
+    char   name[512];
 
     struct RDArgs    *rda;
 
@@ -357,26 +390,62 @@ int main(void)
 
     if (rda != NULL)
     {
-	error = readfile(args[1], &mem, &size);
-
-	if (!error)
+	if (args[1])
 	{
-	    STRPTR *dev = (STRPTR *)args[0];
-	    preparefile(mem, size);
+		error = readfile(args[1], &mem, &size);
 
-	    if (dev) while (*dev)
-	    {
-		error = mount(*dev++, mem, size);
-
-		if (error)
+		if (!error)
 		{
-		    break;
+		    STRPTR *dev = (STRPTR *)args[0];
+		    preparefile(mem, size);
+
+		    if (dev) while (*dev)
+		    {
+			error = parsemountlist(*dev++, mem, size);
+
+			if (error)
+			{
+			    break;
+			}
+		    }
+		    FreeVec(mem);
 		}
-	    }
-
-	    FreeVec(mem);
 	}
-
+	else
+	{
+		STRPTR *dev = (STRPTR *)args[0];
+		error2 = readfile("DEVS:Mountlist", &mem, &size);
+		if ((!error2) || (error2 == ERROR_OBJECT_NOT_FOUND))
+		{
+			if (!error2)
+				preparefile(mem, size);
+			if (dev) while (*dev)
+			{
+		                for (i=0; SearchTable[i]; i++)
+        		        {
+					strcpy(name,SearchTable[i]);
+					strcat(name, *dev);
+					name[strlen(name)-1] = '\0';
+					error = readfile(name, &mem2, &size2);
+					if (!error)
+					{
+						preparefile(mem2, size2);
+						error = parsemountfile(*dev, mem2, size2);
+						FreeVec(mem2);
+					}
+					if (error != ERROR_OBJECT_NOT_FOUND)
+						break;
+				}
+				if ((error == ERROR_OBJECT_NOT_FOUND) && (!error2))
+					error = parsemountlist(*dev, mem, size);
+				if (error)
+					break;
+				*dev++;
+			}
+			if (!error2)
+				FreeVec(mem);
+		}
+	}
 	FreeArgs(rda);
     } /* if (rda != NULL) */
     else
