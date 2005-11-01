@@ -16,6 +16,8 @@
 #include <proto/utility.h>
 #include <proto/expansion.h>
 #include <libraries/expansion.h>
+#include <workbench/startup.h>
+#include <workbench/workbench.h>
 #include <string.h>
 
 # define   DEBUG 1
@@ -376,16 +378,40 @@ int ExpansionBase_version = 0;
 
 int main(void)
 {
-    STRPTR args[2] = { NULL, NULL };
-    STRPTR mem, mem2;
-    LONG   size, size2;
-    LONG   error = 0;
-    LONG   error2;
-    int    i;
-    char   name[512];
+  extern struct WBStartup *WBenchMsg;
+  STRPTR args[2] = { NULL, NULL };
+  STRPTR mem, mem2;
+  LONG   size, size2;
+  LONG   error = 0;
+  LONG   error2;
+  int    i;
+  char   name[512];
+  struct RDArgs    *rda;
 
-    struct RDArgs    *rda;
+  if (WBenchMsg)
+  {
+      if (WBenchMsg->sm_NumArgs >= 2)
+      {
+            for (i = 1; i < WBenchMsg->sm_NumArgs; i++)
+            {
+                BPTR olddir;
 
+                olddir = CurrentDir(WBenchMsg->sm_ArgList[i].wa_Lock);
+                error=readfile(WBenchMsg->sm_ArgList[i].wa_Name, &mem, &size);
+                CurrentDir(olddir);
+		if (!error)
+		{
+			preparefile(mem, size);
+			error = parsemountfile(WBenchMsg->sm_ArgList[i].wa_Name, mem, size);
+			FreeVec(mem);
+		}
+		if (error != ERROR_OBJECT_NOT_FOUND)
+			break;
+            }
+      }
+  }
+  else
+  {
     rda = ReadArgs("DEVICE/M,FROM/K", (ULONG *)args, NULL);
 
     if (rda != NULL)
@@ -452,13 +478,11 @@ int main(void)
     {
 	error = IoErr();
     }
-
-    if (error)
-    {
-	PrintFault(error,"Mount");
-
-	return RETURN_FAIL;
-    }
-
-    return RETURN_OK;
+  }
+  if (error)
+  {
+    PrintFault(error,"Mount");
+    return RETURN_FAIL;
+  }
+  return RETURN_OK;
 }
