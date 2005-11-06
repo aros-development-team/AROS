@@ -99,19 +99,31 @@ int main(void)
     
     if (rda != NULL)
     {
+        UWORD typeCount = 0;
 	BOOL  aChip  = (BOOL)args[ARG_CHIP];
 	BOOL  aFast  = (BOOL)args[ARG_FAST];
 	BOOL  aTotal = (BOOL)args[ARG_TOTAL];
 	BOOL  aFlush = (BOOL)args[ARG_FLUSH];
 	aHuman = (BOOL)args[ARG_HUMAN];
-	
+
+        if (aChip)
+        {
+            typeCount++;
+        }
+        if (aFast)
+        {
+            typeCount++;
+        }
+        if (aTotal)
+        {
+            typeCount++;
+        }
+
 	ULONG chip[4], fast[4], total[4];
-	
-//	Printf("aChip = %ld, aFast = %ld, aTotal = %ld\n", aChip, aFast, aTotal);
-	/* BOOL to int hack: */
-	if (aChip + aFast + aTotal < -1)
+
+	if (typeCount > 1)
 	{
-	    FPuts(Output(),"Only one of CHIP, FAST or TOTAL allowed\n");
+	    FPuts(Output(), "Only one of CHIP, FAST or TOTAL allowed\n");
 	    bPrintErr = FALSE;
             FreeArgs(rda);
 
