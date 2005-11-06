@@ -18,7 +18,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Region *,    region1, A0),
-	AROS_LHA(struct Region *,    region2, A0),
+	AROS_LHA(struct Region *,    region2, A1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 192, Graphics)
