@@ -302,7 +302,7 @@ int main(int argc, char **argv)
 		    break;
 
 		default:
-		    Printf("%c option ignored\n", *opt);
+		    Printf("%lc option ignored\n", *opt);
 		    break;
 		}
 

@@ -392,13 +392,13 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 		break;
 		
 	    default:
-		Printf("%%%c", *format);
+		Printf("%%%lc", *format);
 		break;
 	    }
 	}
 	else
 	{
-	    Printf("%c", c);
+	    Printf("%lc", c);
 	}
     }
     
