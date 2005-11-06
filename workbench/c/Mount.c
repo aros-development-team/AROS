@@ -344,8 +344,8 @@ static LONG parsemountlist(STRPTR name, STRPTR buf, LONG size)
 				   !name[s2 - (STRPTR)buffer + 1])))
 	{
 		res = mount (buffer, &rda);
-		if (res)
-			return res;
+
+		return res;
 	}
 	while (rda.RDA_Source.CS_CurChr < rda.RDA_Source.CS_Length)
 	{
