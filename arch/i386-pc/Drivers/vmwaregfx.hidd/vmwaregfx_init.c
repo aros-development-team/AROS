@@ -11,17 +11,15 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <hidd/graphics.h>
-#include <hidd/pcibus.h>
+#include <hidd/pci.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
-#warning: prototypes which should actually be in some public header
-HIDDT_PCI_Device **HIDD_PCI_FindDevice(OOP_Object *obj, struct TagItem *tags);
-VOID HIDD_PCI_FreeQuery(OOP_Object *obj, HIDDT_PCI_Device **devices);
 
 #include "onbitmap.h"
 #include "offbitmap.h"
 #include "hardware.h"
 #include "vmwaregfxclass.h"
+#include "svga_reg.h"
 #undef SysBase
 
 /* Customize libheader.c */
@@ -62,6 +60,7 @@ struct VMWareGfxBase
 #define OOPBase xsd->oopBase
 
 static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
+OOP_AttrBase HiddPCIDeviceAttrBase;
 
 static struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
@@ -122,51 +121,84 @@ static VOID freeclasses(struct VMWareGfx_staticdata *xsd)
     return;
 }
 
-STATIC BOOL findCard(struct VMWareGfx_staticdata *xsd) {
-HIDDT_PCI_Device **ptr;
-HIDDT_PCI_Device **res;
-struct TagItem findpcitags[] =
+
+AROS_UFH3(void, Enumerator,
+    AROS_UFHA(struct Hook *,    hook,           A0),
+    AROS_UFHA(OOP_Object *,     pciDevice,      A2),
+    AROS_UFHA(APTR,             message,        A1))
 {
+    AROS_USERFUNC_INIT
+    struct VMWareGfx_staticdata *xsd = (struct VMWareGfx_staticdata *)hook->h_Data;
+    
+    IPTR ProductID, VendorID, SubClass;
+    
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_SubClass, &SubClass);
+    
+    if (
+    	SubClass == 0x80 && /* other */
+	ProductID == DEVICE_VMWARE0710
+    )
+    {
+        xsd->data.indexReg = SVGA_LEGACY_BASE_PORT + SVGA_INDEX_PORT*sizeof(ULONG);
+        xsd->data.valueReg = SVGA_LEGACY_BASE_PORT + SVGA_VALUE_PORT*sizeof(ULONG);
+
+        bug("[VMWare] Found vmwareSVGA 0710 device\n");
+	xsd->card = pciDevice;
+    }
+    else if (
+		SubClass == 0x00 && /* VGA */
+		ProductID == DEVICE_VMWARE0405
+    )
+    {
+        IPTR mmio;
+        
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &mmio);
+        
+        xsd->data.indexReg = mmio+SVGA_INDEX_PORT;
+        xsd->data.valueReg = mmio+SVGA_VALUE_PORT;
+
+        bug("[VMWare] Found vmwareSVGA 0405 device\n");
+	xsd->card = pciDevice;
+    }
+
+    if (xsd->card)
+    {
+	if (!initVMWareGfxHW(&xsd->data, xsd->card))
+	{
+		bug("[VMWare] Found unsupported vmware svga device, aborting\n");
+		xsd->card = NULL;
+	}
+    }
+    
+    AROS_USERFUNC_EXIT
+}
+
+STATIC BOOL findCard(struct VMWareGfx_staticdata *xsd) {
+    struct Hook findHook = {
+        h_Entry:        (IPTR (*)())Enumerator,
+        h_Data:         xsd,
+    };
+    
+    struct TagItem Requirements[] = {
 	{tHidd_PCI_VendorID, VENDOR_VMWARE},
 	{tHidd_PCI_Class,       3}, /* Display */
 	{tHidd_PCI_Interface,   0},
 	{TAG_DONE,            0UL}
-	
-};
-	xsd->card = NULL;
-	res = ptr = HIDD_PCI_FindDevice(xsd->pcihidd, findpcitags);
-	while (*ptr)
+    };
+    
+    HIDD_PCI_EnumDevices(xsd->pcihidd, &findHook, (struct TagItem *)&Requirements);
+
+    if (xsd->card)
+    {
+	if (!initVMWareGfxHW(&xsd->data, xsd->card))
 	{
-		if (
-				((*ptr)->SubClass == 0x80) && /* other */
-				((*ptr)->DeviceID == DEVICE_VMWARE0710)
-			)
-		{
-			bug("[VMWare] Found vmwareSVGA 0710 device\n");
-			xsd->card = *ptr;
-			break;
-		}
-		else if (
-						((*ptr)->SubClass == 0x00) && /* VGA */
-						((*ptr)->DeviceID == DEVICE_VMWARE0405)
-					)
-		{
-			bug("[VMWare] Found vmwareSVGA 0405 device\n");
-			xsd->card = *ptr;
-			break;
-		}
-		ptr++;
+		bug("[VMWare] Found unsupported vmware svga device, aborting\n");
+		xsd->card = NULL;
 	}
-	HIDD_PCI_FreeQuery(xsd->pcihidd, res);
-	if (xsd->card)
-	{
-		if (!initVMWareGfxHW(&xsd->data, xsd->card))
-		{
-			bug("[VMWare] Found unsupported vmware svga device, aborting\n");
-			xsd->card = NULL;
-		}
-	}
-	return (xsd->card) ? TRUE : FALSE;
+    }
+    return (xsd->card) ? TRUE : FALSE;
 }
 
 #undef SysBase
@@ -185,10 +217,11 @@ struct VMWareGfx_staticdata *xsd;
 			xsd->utilityBase = OpenLibrary(UTILITYNAME, 37);
 			if (xsd->utilityBase)
 			{
-				xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCIBus, NULL);
+				xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 				if (xsd->pcihidd)
 				{
-					if (findCard(xsd))
+                                        HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+                                        if (findCard(xsd))
 					{
 						D(bug("Found VMWareSVGA\n"));
 						if (initclasses(xsd))

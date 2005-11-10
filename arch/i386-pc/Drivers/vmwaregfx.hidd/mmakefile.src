@@ -11,7 +11,7 @@ FILES	:=	\
   modname=vmwaregfx modtype=hidd \
   files=$(FILES) \
   conffile=lib.conf \
-  genfunctable=yes
+  genfunctable=yes uselibs="rom amiga hiddgraphicsstubs hiddstubs"
 
 %common
 

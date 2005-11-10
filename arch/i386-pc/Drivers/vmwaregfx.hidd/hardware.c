@@ -83,21 +83,10 @@ ULONG *fifo;
 		fifo[SVGA_FIFO_NEXT_CMD] = fifo[SVGA_FIFO_MIN];
 }
 
-BOOL initVMWareGfxHW(struct HWData *data, HIDDT_PCI_Device *device) {
+BOOL initVMWareGfxHW(struct HWData *data, OOP_Object *device) {
 ULONG *ba;
 ULONG id;
 
-	if (device->DeviceID == DEVICE_VMWARE0710)
-	{
-		data->indexReg = SVGA_LEGACY_BASE_PORT + SVGA_INDEX_PORT*sizeof(ULONG);
-		data->valueReg = SVGA_LEGACY_BASE_PORT + SVGA_VALUE_PORT*sizeof(ULONG);
-	}
-	else
-	{
-		ULONG mmio = (ULONG)device->BaseAddress[0] & ~0x01;
-		data->indexReg = mmio+SVGA_INDEX_PORT;
-		data->valueReg = mmio+SVGA_VALUE_PORT;
-	}
 	id = getVMWareSVGAID(data);
 	if ((id == SVGA_ID_0) || (id == SVGA_ID_INVALID))
 	{

@@ -28,7 +28,7 @@ struct VMWareGfx_staticdata {
 	OOP_Class *onbmclass;
 	OOP_Class *offbmclass;
 	OOP_Object *vmwaregfxhidd;
-	HIDDT_PCI_Device *card;
+	OOP_Object *card;
 	OOP_Object *pcihidd;
 	struct bitmap_data *visible;
 	VOID	(*activecallback)(APTR, OOP_Object *, BOOL);

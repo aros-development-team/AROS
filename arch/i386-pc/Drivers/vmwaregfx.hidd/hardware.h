@@ -2,7 +2,7 @@
 #define HARDWARE_H
 
 #include <exec/libraries.h>
-#include <hidd/pcibus.h>
+#include <hidd/pci.h>
 #include <oop/oop.h>
 #include "bitmap.h"
 #include "mouse.h"
@@ -105,7 +105,7 @@ struct HWData  {
 void vmwareWriteReg(struct HWData *, ULONG, ULONG);
 VOID writeVMWareGfxFIFO(struct HWData *, ULONG);
 VOID syncVMWareGfxFIFO(struct HWData *);
-BOOL initVMWareGfxHW(struct HWData *, HIDDT_PCI_Device *);
+BOOL initVMWareGfxHW(struct HWData *, OOP_Object *);
 VOID setModeVMWareGfx(struct HWData *, ULONG, ULONG);
 VOID refreshAreaVMWareGfx(struct HWData *, struct Box *);
 VOID rectFillVMWareGfx(struct HWData *, ULONG, LONG, LONG, LONG, LONG);
