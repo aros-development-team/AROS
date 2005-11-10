@@ -9,6 +9,7 @@
 #include <exec/alerts.h>
 #include <string.h>    // memset() prototype
 #include "svga_reg.h"
+#include "hardware.h"
 
 #undef DEBUG
 #define DEBUG 0
@@ -313,67 +314,77 @@ static VOID MNAME(getimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 
 /*********  BitMap::FillRect()  ***************************/
 
-static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg) {
-struct BitmapData *data =OOP_INST_DATA(cl, o);
-HIDDT_Pixel pixel;
-HIDDT_DrawMode mode;
+static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+{
+	struct BitmapData *data =OOP_INST_DATA(cl, o);
+	struct HWData *hw;
+	HIDDT_Pixel pixel;
+	HIDDT_DrawMode mode;
 
 #ifdef OnBitmap
 	pixel = GC_FG(msg->gc);
 	mode = GC_DRMD(msg->gc);
-	switch (mode)
+	hw = data->data;
+	if (hw->capabilities & SVGA_CAP_RASTER_OP)
 	{
-	case vHidd_GC_DrawMode_Clear:
-		clearFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_And:
-		andFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_AndReverse:
-		andReverseFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_Copy:
-		copyFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_AndInverted:
-		andInvertedFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_NoOp:
-		noOpFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_Xor:
-		xorFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_Or:
-		orFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_Nor:
-		norFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_Equiv:
-		equivFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_Invert:
-		invertFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_OrReverse:
-		orReverseFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_CopyInverted:
-		copyInvertedFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_OrInverted:
-		orInvertedFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_Nand:
-		nandFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	case vHidd_GC_DrawMode_Set:
-		setFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
-		break;
-	default:
+	    switch (mode)
+	    {
+		case vHidd_GC_DrawMode_Clear:
+		    clearFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_And:
+		    andFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_AndReverse:
+		    andReverseFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_Copy:
+		    copyFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_AndInverted:
+		    andInvertedFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_NoOp:
+		    noOpFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_Xor:
+		    xorFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_Or:
+		    orFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_Nor:
+		    norFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_Equiv:
+		    equivFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_Invert:
+		    invertFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_OrReverse:
+		    orReverseFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_CopyInverted:
+		    copyInvertedFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_OrInverted:
+		    orInvertedFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_Nand:
+		    nandFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		case vHidd_GC_DrawMode_Set:
+		    setFillVMWareGfx(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+		    break;
+		default:
+		    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+		    break;
+	    }
+	}
+	else
+	{
 		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-		break;
 	}
 #else
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

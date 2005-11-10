@@ -8,7 +8,7 @@
 
 
 #include <asm/io.h>
-#define DEBUG 0 /* no SysBase */
+#define DEBUG 1 /* no SysBase */
 #include <aros/debug.h>
 
 #include "hardware.h"
@@ -28,8 +28,9 @@ void vmwareWriteReg(struct HWData *data, ULONG reg, ULONG val) {
 #undef SysBase
 extern struct ExecBase *SysBase;
 
-ULONG getVMWareSVGAID(struct HWData *data) {
-ULONG id;
+ULONG getVMWareSVGAID(struct HWData *data)
+{
+	ULONG id;
 
 	vmwareWriteReg(data, SVGA_REG_ID, SVGA_ID_2);
 	id = vmwareReadReg(data, SVGA_REG_ID);
@@ -39,16 +40,16 @@ ULONG id;
 	id = vmwareReadReg(data, SVGA_REG_ID);
 	if (id == SVGA_ID_1)
 		return id;
-//	vmwareWriteReg(data, SVGA_REG_ID, SVGA_ID_0);
-//	id = vmwareReadReg(data, SVGA_REG_ID);
 	if (id == SVGA_ID_0)
 		return id;
 	return SVGA_ID_INVALID;
 }
 
-VOID initVMWareGfxFIFO(struct HWData *data) {
-ULONG *fifo;
+VOID initVMWareGfxFIFO(struct HWData *data)
+{
+	ULONG *fifo;
 
+	vmwareWriteReg(data, SVGA_REG_CONFIG_DONE, 0);		//Stop vmware from reading the fifo
 	fifo = data->mmiobase = vmwareReadReg(data, SVGA_REG_MEM_START);
 	data->mmiosize = vmwareReadReg(data, SVGA_REG_MEM_SIZE) & ~3;
 	fifo[SVGA_FIFO_MIN] = 16;
@@ -93,6 +94,7 @@ ULONG id;
 		return FALSE;
 	}
 	initVMWareGfxFIFO(data);
+	data->capabilities = vmwareReadReg(data, SVGA_REG_CAPABILITIES);
 	data->depth = vmwareReadReg(data, SVGA_REG_DEPTH);
 	data->redmask = vmwareReadReg(data, SVGA_REG_RED_MASK);
 	data->greenmask = vmwareReadReg(data, SVGA_REG_GREEN_MASK);
@@ -102,21 +104,40 @@ ULONG id;
 		data->bytesperpixel = 4;
 	else if (data->depth>8)
 		data->bytesperpixel = 2;
-	data->bitsperpixel = vmwareReadReg(data, SVGA_REG_BITS_PER_PIXEL);
+	if (data->capabilities & SVGA_CAP_8BIT_EMULATION)
+	{
+	    data->bitsperpixel = vmwareReadReg(data, SVGA_REG_HOST_BITS_PER_PIXEL);
+	    vmwareWriteReg(data,SVGA_REG_BITS_PER_PIXEL, data->bitsperpixel);
+	}
+	else
+	    data->bitsperpixel = vmwareReadReg(data, SVGA_REG_BITS_PER_PIXEL);
 	data->vramsize = vmwareReadReg(data, SVGA_REG_FB_MAX_SIZE);
 	data->vrambase = vmwareReadReg(data, SVGA_REG_FB_START);
 	data->pseudocolor = vmwareReadReg(data, SVGA_REG_PSEUDOCOLOR);
+
+	D(bug("[VMWare] Init: caps : 0x%08x\n",data->capabilities));
+	D(bug("[VMWare] Init: depth: %d\n",data->depth));
+	D(bug("[VMWare] Init: bpp  : %d\n",data->bitsperpixel));
 	return TRUE;
 }
 
-VOID setModeVMWareGfx(struct HWData *data, ULONG width, ULONG height) {
-
+VOID setModeVMWareGfx(struct HWData *data, ULONG width, ULONG height)
+{
+    	D(bug("[VMWare] SetMode: %dx%d\n",width,height));
+    	vmwareWriteReg(data, SVGA_REG_ENABLE, 0);
 	vmwareWriteReg(data, SVGA_REG_WIDTH, width);
 	vmwareWriteReg(data, SVGA_REG_HEIGHT, height);
-	data->fboffset = vmwareReadReg(data, SVGA_REG_FB_OFFSET);
-	/* bytes per line, green mask, red mask? */
+	if (data->capabilities & SVGA_CAP_8BIT_EMULATION)
+	    vmwareWriteReg(data, SVGA_REG_BITS_PER_PIXEL,data->bitsperpixel);
 	vmwareWriteReg(data, SVGA_REG_ENABLE, 1);
+
+	data->fboffset = vmwareReadReg(data, SVGA_REG_FB_OFFSET);
 	data->bytesperline = vmwareReadReg(data, SVGA_REG_BYTES_PER_LINE);
+	data->depth = vmwareReadReg(data, SVGA_REG_DEPTH);
+	data->redmask = vmwareReadReg(data, SVGA_REG_RED_MASK);
+	data->greenmask = vmwareReadReg(data, SVGA_REG_GREEN_MASK);
+	data->bluemask = vmwareReadReg(data, SVGA_REG_BLUE_MASK);
+	data->pseudocolor = vmwareReadReg(data, SVGA_REG_PSEUDOCOLOR);
 }
 
 VOID refreshAreaVMWareGfx(struct HWData *data, struct Box *box) {
@@ -163,14 +184,14 @@ VOID ropCopyVMWareGfx(struct HWData *data, LONG sx, LONG sy, LONG dx, LONG dy, U
 	syncVMWareGfxFIFO(data);
 }
 
-VOID defineCursorVMWareGfx(struct HWData *data, struct MouseData *mouse) {
-int i;
-ULONG *cshape = mouse->shape;
-struct Box box;
-ULONG andmask[SVGA_PIXMAP_SIZE(mouse->width, mouse->height, data->bitsperpixel)];
-ULONG *a;
-ULONG *b;
-
+VOID defineCursorVMWareGfx(struct HWData *data, struct MouseData *mouse)
+{
+	int i;
+	ULONG *cshape = mouse->shape;
+	struct Box box;
+	ULONG andmask[SVGA_PIXMAP_SIZE(mouse->width, mouse->height, data->bitsperpixel)];
+	ULONG *a;
+	ULONG *b;
 
 #warning "convert mouse shape to current depth"
 	writeVMWareGfxFIFO(data, SVGA_CMD_DEFINE_CURSOR);

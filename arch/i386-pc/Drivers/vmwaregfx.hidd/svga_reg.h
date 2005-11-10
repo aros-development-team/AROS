@@ -13,10 +13,6 @@
 #ifndef _SVGA_REG_H_
 #define _SVGA_REG_H_
 
-#define INCLUDE_ALLOW_USERLEVEL
-#define INCLUDE_ALLOW_MONITOR
-//#include "includeCheck.h"
-
 #include "svga_limits.h"
 
 /*
@@ -25,14 +21,6 @@
 
 #define SVGA_MAX_WIDTH			2364
 #define SVGA_MAX_HEIGHT			1773
-
-#ifdef VMX86_SERVER
-#define SVGA_DEFAULT_MAX_WIDTH		1600
-#define SVGA_DEFAULT_MAX_HEIGHT		1200
-#else
-#define SVGA_DEFAULT_MAX_WIDTH		SVGA_MAX_WIDTH
-#define SVGA_DEFAULT_MAX_HEIGHT		SVGA_MAX_HEIGHT
-#endif
 
 #define SVGA_MAX_BITS_PER_PIXEL		32
 #if SVGA_MAX_WIDTH * SVGA_MAX_HEIGHT * SVGA_MAX_BITS_PER_PIXEL / 8 > \
@@ -74,6 +62,12 @@
 /* This port is deprecated, but retained because of old drivers. */
 #define SVGA_LEGACY_ACCEL_PORT	0x3
 
+/* Legal values for the SVGA_REG_CURSOR_ON register in cursor bypass mode */
+#define SVGA_CURSOR_ON_HIDE               0x0    /* Must be 0 to maintain backward compatibility */
+#define SVGA_CURSOR_ON_SHOW               0x1    /* Must be 1 to maintain backward compatibility */
+#define SVGA_CURSOR_ON_REMOVE_FROM_FB     0x2    /* Remove the cursor from the framebuffer because we need to see what's under it */
+#define SVGA_CURSOR_ON_RESTORE_TO_FB      0x3    /* Put the cursor back in the framebuffer so the user can see it */
+
 /*
  * Registers
  */
@@ -108,8 +102,9 @@ enum {
    SVGA_REG_CURSOR_X = 25,	   /* Set cursor X position */
    SVGA_REG_CURSOR_Y = 26,	   /* Set cursor Y position */
    SVGA_REG_CURSOR_ON = 27,	   /* Turn cursor on/off */
+   SVGA_REG_HOST_BITS_PER_PIXEL = 28, /* Current bpp in the host */
 
-   SVGA_REG_TOP = 28,		   /* Must be 1 greater than the last register */
+   SVGA_REG_TOP = 30,		   /* Must be 1 greater than the last register */
 
    SVGA_PALETTE_BASE = 1024	   /* Base of SVGA color map */
 };
@@ -119,13 +114,21 @@ enum {
  *  Capabilities
  */
 
-#define	SVGA_CAP_RECT_FILL	 0x0001
-#define	SVGA_CAP_RECT_COPY	 0x0002
-#define	SVGA_CAP_RECT_PAT_FILL   0x0004
-#define	SVGA_CAP_OFFSCREEN       0x0008
-#define	SVGA_CAP_RASTER_OP	 0x0010
-#define	SVGA_CAP_CURSOR		 0x0020
-#define	SVGA_CAP_CURSOR_BYPASS	 0x0040
+#define	SVGA_CAP_NONE               0x0000
+#define	SVGA_CAP_RECT_FILL	    0x0001
+#define	SVGA_CAP_RECT_COPY	    0x0002
+#define	SVGA_CAP_RECT_PAT_FILL      0x0004
+#define	SVGA_CAP_LEGACY_OFFSCREEN   0x0008
+#define	SVGA_CAP_RASTER_OP	    0x0010
+#define	SVGA_CAP_CURSOR		    0x0020
+#define	SVGA_CAP_CURSOR_BYPASS	    0x0040
+#define	SVGA_CAP_CURSOR_BYPASS_2    0x0080
+#define	SVGA_CAP_8BIT_EMULATION     0x0100
+#define SVGA_CAP_ALPHA_CURSOR       0x0200
+#define SVGA_CAP_GLYPH              0x0400
+#define SVGA_CAP_GLYPH_CLIPPING     0x0800
+#define SVGA_CAP_OFFSCREEN_1        0x1000
+#define SVGA_CAP_ALPHA_BLEND        0x2000
 
 
 /*
@@ -179,6 +182,8 @@ enum {
 #define SVGA_BITMAP_SCANLINE_SIZE(w) (( (w)+31 ) >> 5)
 #define SVGA_PIXMAP_SIZE(w,h,d) ((( ((w)*(d))+31 ) >> 5) * (h))
 #define SVGA_PIXMAP_SCANLINE_SIZE(w,d) (( ((w)*(d))+31 ) >> 5)
+#define SVGA_GLYPH_SIZE(w,h) ((((((w) + 7) >> 3) * (h)) + 3) >> 2)
+#define SVGA_GLYPH_SCANLINE_SIZE(w) (((w) + 7) >> 3)
 
 /*
  *  Increment from one scanline to the next of a bitmap or pixmap
@@ -278,6 +283,39 @@ enum {
 	/* FIFO layout:
 	   X, Y */
 
-#define	SVGA_CMD_MAX			  22
+#define SVGA_CMD_DEFINE_ALPHA_CURSOR      22
+	/* FIFO layout:
+	   ID, Hotspot X, Hotspot Y, Width, Height,
+	   <scanlines> */
+
+#define SVGA_CMD_DRAW_GLYPH               23
+	/* FIFO layout:
+	   X, Y, W, H, FGCOLOR, <stencil buffer> */
+
+#define SVGA_CMD_DRAW_GLYPH_CLIPPED       24
+	/* FIFO layout:
+	   X, Y, W, H, FGCOLOR, BGCOLOR, <cliprect>, <stencil buffer>
+           Transparent color expands are done by setting BGCOLOR to ~0 */
+
+#define	SVGA_CMD_UPDATE_VERBOSE	          25
+        /* FIFO layout:
+	   X, Y, Width, Height, Reason */
+
+#define SVGA_CMD_SURFACE_FILL             26
+        /* FIFO layout:
+	   color, dstSurfaceOffset, x, y, w, h, rop */
+
+#define SVGA_CMD_SURFACE_COPY             27
+        /* FIFO layout:
+	   srcSurfaceOffset, dstSurfaceOffset, srcX, srcY,
+           destX, destY, w, h, rop */
+
+#define SVGA_CMD_SURFACE_ALPHA_BLEND      28
+        /* FIFO layout:
+	   srcSurfaceOffset, dstSurfaceOffset, srcX, srcY,
+           destX, destY, w, h, op (SVGA_BLENDOP*), flags (SVGA_BLENDFLAGS*), 
+           param1, param2 */
+
+#define	SVGA_CMD_MAX			  29
 
 #endif

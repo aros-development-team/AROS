@@ -33,6 +33,7 @@ struct HWData  {
 	APTR mmiobase;
 	ULONG fboffset; /* last byte in framebuffer of current screen mode */
 	ULONG pseudocolor;
+	ULONG capabilities;
 };
 
 #define clearCopyVMWareGfx(d, sx, sy, dx, dy, w, h) \
