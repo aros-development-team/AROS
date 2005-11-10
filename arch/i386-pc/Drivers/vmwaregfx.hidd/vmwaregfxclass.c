@@ -382,19 +382,38 @@ struct Box box;
 				while (xcnt)
 				{
 					/* get pixel from source */
-					if (srcbd->bytesperpix == 1)
+				    	switch (srcbd->bytesperpix)
+					{
+					    case 1:
 						pixel = (ULONG)*((UBYTE *)sbuffer)++;
-					else if (srcbd->bytesperpix == 2)
+						break;
+					    case 2:
 						pixel = (ULONG)*((UWORD *)sbuffer)++;
-					else if (srcbd->bytesperpix == 4)
+						break;
+					    case 4:
 						pixel = (ULONG)*((ULONG *)sbuffer)++;
+						break;
+					    default:
+						D(bug("[VMWare] Copy: Unknown number of bytes per pixel (%d) in source!\n",srcbd->bytesperpix));
+						pixel = 0;
+						break;
+					}
 					/* write pixel to destination */
-					if (dstbd->bytesperpix == 1)
+					switch (dstbd->bytesperpix)
+					{
+					    case 1:
 						*((UBYTE *)dbuffer)++ = (UBYTE)pixel;
-					else if (dstbd->bytesperpix == 2)
+						break;
+					    case 2:
 						*((UWORD *)dbuffer)++ = (UWORD)pixel;
-					else if (dstbd->bytesperpix == 4)
+						break;
+					    case 4:	
 						*((ULONG *)dbuffer)++ = (ULONG)pixel;
+						break;
+					    default:
+						D(bug("[VMWare] Copy: Unknown number of bytes per pixel (%d) in destination!\n",dstbd->bytesperpix));
+						break;
+					}
 					xcnt--;
 				}
 				sbuffer += srestadd;

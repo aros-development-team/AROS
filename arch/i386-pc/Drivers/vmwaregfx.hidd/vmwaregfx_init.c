@@ -122,7 +122,7 @@ static VOID freeclasses(struct VMWareGfx_staticdata *xsd)
 }
 
 
-AROS_UFH3(void, Enumerator,
+AROS_UFH3(void, VMEnumerator,
     AROS_UFHA(struct Hook *,    hook,           A0),
     AROS_UFHA(OOP_Object *,     pciDevice,      A2),
     AROS_UFHA(APTR,             message,        A1))
@@ -136,10 +136,7 @@ AROS_UFH3(void, Enumerator,
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_SubClass, &SubClass);
     
-    if (
-    	SubClass == 0x80 && /* other */
-	ProductID == DEVICE_VMWARE0710
-    )
+    if (ProductID == DEVICE_VMWARE0710)
     {
         xsd->data.indexReg = SVGA_LEGACY_BASE_PORT + SVGA_INDEX_PORT*sizeof(ULONG);
         xsd->data.valueReg = SVGA_LEGACY_BASE_PORT + SVGA_VALUE_PORT*sizeof(ULONG);
@@ -147,10 +144,7 @@ AROS_UFH3(void, Enumerator,
         bug("[VMWare] Found vmwareSVGA 0710 device\n");
 	xsd->card = pciDevice;
     }
-    else if (
-		SubClass == 0x00 && /* VGA */
-		ProductID == DEVICE_VMWARE0405
-    )
+    else if (ProductID == DEVICE_VMWARE0405)
     {
         IPTR mmio;
         
@@ -163,21 +157,12 @@ AROS_UFH3(void, Enumerator,
 	xsd->card = pciDevice;
     }
 
-    if (xsd->card)
-    {
-	if (!initVMWareGfxHW(&xsd->data, xsd->card))
-	{
-		bug("[VMWare] Found unsupported vmware svga device, aborting\n");
-		xsd->card = NULL;
-	}
-    }
-    
     AROS_USERFUNC_EXIT
 }
 
 STATIC BOOL findCard(struct VMWareGfx_staticdata *xsd) {
     struct Hook findHook = {
-        h_Entry:        (IPTR (*)())Enumerator,
+        h_Entry:        (IPTR (*)())VMEnumerator,
         h_Data:         xsd,
     };
     
