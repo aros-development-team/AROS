@@ -24,15 +24,6 @@ printx()
     print '>>>' $*
 }
 
-cd()
-{
-    printx "cd" $*
-    chdir $*
-    if [ $? != 0 ]; then
-        printe "Command 'cd $*' returned error. ABORTING BUILD!"
-        exit 5
-    fi
-}
 
 execute()
 {
@@ -57,7 +48,7 @@ archive()
     oldpwd=$(pwd)
     
     makedir $archdir
-    execute tar cjvf $1 --exclude=CVS $2
+    execute tar cjvf $1 --exclude=.svn $2
     cd      $archdir
     echo    ">>> md5sum $archname >$archname.md5"
     md5sum  $archname >$archname.md5
