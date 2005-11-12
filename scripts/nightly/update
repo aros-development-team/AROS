@@ -12,14 +12,18 @@ cd      $SOURCE_CONTRIB
 execute svn update
 
 printi  "Updating necessary module sources..."
-cd      $SOURCE_AROS
-execute cvs checkout necessary
-delete  $SOURCE_NECESSARY
-move    contrib $SOURCE_NECESSARY
+cd      $SOURCE_NECESSARY
+execute svn update
+
+#OLD
+#cd      $SOURCE_AROS
+#execute svn checkout necessary
+#delete  $SOURCE_NECESSARY
+#move    contrib $SOURCE_NECESSARY
 
 printi  "Updating documentation sources..."
 cd      $SOURCE_DOCS
-execute svn update
+execute svn update 
 
 cd      $ROOT
 resetl
