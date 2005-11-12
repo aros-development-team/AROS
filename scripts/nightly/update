@@ -5,11 +5,11 @@ printi  "Updating sources..."
 
 printi  "Updating AROS sources..."
 cd      $SOURCE_AROS
-execute cvs update -dP
+execute svn update
 
 printi  "Updating contrib sources..."
 cd      $SOURCE_CONTRIB
-execute cvs update -dP
+execute svn update
 
 printi  "Updating necessary module sources..."
 cd      $SOURCE_AROS
@@ -19,7 +19,7 @@ move    contrib $SOURCE_NECESSARY
 
 printi  "Updating documentation sources..."
 cd      $SOURCE_DOCS
-execute cvs update -dP
+execute svn update
 
 cd      $ROOT
 resetl
