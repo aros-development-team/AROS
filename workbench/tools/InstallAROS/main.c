@@ -1325,6 +1325,7 @@ createdirfaild:
 			DoMethod(self, MUIM_IC_CopyFile, inputsrcPFile, inputPFile);
 		}
 localecopydone:
+            ;
 	}
 
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
