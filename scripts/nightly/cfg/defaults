@@ -12,7 +12,7 @@ CFG_CC=gcc
 # Allowed: yes, no
 CFG_MAIL_ENABLE=no
 
-# Adressess
+# Addresses
 CFG_MAIL_TO=aros-dev@lists.hepe.com
 CFG_MAIL_CC=MUST_BE_SET
 
