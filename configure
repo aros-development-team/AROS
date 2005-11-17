@@ -3036,12 +3036,13 @@ echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 
 
 	        	case $host_os in
-	    freebsd[56]*)
-		aros_object_format="elf_i386_fbsd"
-		;;
+	    freebsd[234]*)
+		aros_object_format="elf_i386"
+                ;;
 
 	    *)
-		aros_object_format="elf_i386"
+		aros_object_format="elf_i386_fbsd"
+                ;;
 	esac
 
 	;;
