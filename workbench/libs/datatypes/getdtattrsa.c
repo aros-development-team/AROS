@@ -58,10 +58,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG           result = 0;
-    struct TagItem *tstate = attrs;
-    struct TagItem *tag;
-    struct opGet    opGet;
+    ULONG                 result = 0;
+    const struct TagItem *tstate = attrs;
+    struct TagItem       *tag;
+    struct opGet          opGet;
 
     if(o == NULL || attrs == NULL)
 	return 0;
