@@ -93,7 +93,7 @@ struct GfxBase *GfxBase=NULL;
 /*the screen and window that the various pictures will be shown on*/
 struct NewScreen newScreen=
 {
-   0,0,0,0,0,1,0,NULL,CUSTOMSCREEN|SCREENBEHIND|AUTOSCROLL,NULL,NULL,NULL,
+   0,0,0,0,0,1,0,0,CUSTOMSCREEN|SCREENBEHIND|AUTOSCROLL,NULL,NULL,NULL,
    NULL
 };
 
@@ -157,7 +157,7 @@ struct TagItem TagList[]=
       /* necessary to have a line like this in here in order to get      */
       /* 2.0 autoscrolling to work.                                      */
    {SA_Overscan,OSCAN_VIDEO},
-   {TAG_DONE,NULL}
+   {TAG_DONE,0}
 };
 
 char *about1="2View";
@@ -181,14 +181,10 @@ UWORD numFilenames=0,numSlots;
 int main(int argc, char ** argv)
 {
    UWORD c;
-   LONG args[7];
+   IPTR args[7] = { 0 };
    char **filenames = NULL;
    char curFilename[140];
    BYTE playList = FALSE; /*True if a playlist is being used, false otherwise*/
-
-      /*Initialize the argument buffers to NULL*/
-   for(c=0;c<7;c++)
-      args[c]=NULL;
 
       /*Open the libraries*/
    IFFParseBase=(struct Library *)OpenLibrary("iffparse.library",0L);
@@ -218,7 +214,7 @@ int main(int argc, char ** argv)
       ParseArgs(args);
 
          /*If a playlist filename was provided, store it for later use*/
-      if(args[4]!=NULL)
+      if((char *)args[4]!=NULL)
       {
          playListFilename=(char *)args[4];
          playList=TRUE;
@@ -227,16 +223,16 @@ int main(int argc, char ** argv)
          playList=FALSE;
 
          /*If a time was provided (in ticks), use it*/
-      if(args[1]!=NULL)
+      if((ULONG *)args[1]!=NULL)
          ticks=*(ULONG *)args[1]*50;
 
          /*If a time was provided (in seconds), use it (overrides ticks)*/
-      if(args[2]!=NULL && *(ULONG *)args[2]!=0)
+      if((ULONG *)args[2]!=NULL && *(ULONG *)args[2]!=0)
          ticks=*(ULONG *)args[2];
 
          /*If neither a picture filename, nor a playlist filename, was*/
          /*specified, print an error and exit.*/
-      if(args[0]==NULL && !playList)
+      if((char **)args[0]==NULL && !playList)
       {
          printError("Please enter one or more filenames");
          cleanup();
@@ -244,14 +240,14 @@ int main(int argc, char ** argv)
       }
 
          /*Determine if we should print the pictures we display or not*/
-      printPics=(args[5]!=NULL);
+      printPics=((BOOL *)args[5]!=NULL);
 
          /*Get the pointer to the list of filename*/
       filenames=(char **)args[0];
 
          /*Will we loop back to the beginning once we finish displaying all*/
          /*the pictures?*/
-      loop=(args[3]!=NULL);
+      loop=((BOOL *)args[3]!=NULL);
    }
    else
       if(WBenchMsg->sm_NumArgs==1)
@@ -317,7 +313,7 @@ int main(int argc, char ** argv)
          while(picFilename!=NULL && picFilename[0]==0x0A);
 
          if(picFilename!=NULL)        /*If not NULL, it's a valid filename*/
-            picFilename[strlen(picFilename)-1]=NULL; /*Remove the linefeed*/
+            picFilename[strlen(picFilename)-1]='\0'; /*Remove the linefeed*/
       }
       else  /*Otherwise, if a playlist isn't being used, get the current*/
          picFilename=filenames[0];     /*filename*/
@@ -327,7 +323,7 @@ int main(int argc, char ** argv)
          /*there are still files to display*/
       for(c=0;!ExitFlag && picFilename!=NULL;c++)
       {
-         if((iff->iff_Stream=(IPTR)Open(picFilename,MODE_OLDFILE))==NULL)
+         if((iff->iff_Stream=(IPTR)Open(picFilename,MODE_OLDFILE))==0)
          {     /*If the ILBM file can't be opened...*/
 
                /*Print an error...*/
@@ -370,7 +366,7 @@ int main(int argc, char ** argv)
             while(picFilename!=NULL && picFilename[0]==0x0A);
 
             if(picFilename!=NULL)
-               picFilename[strlen(picFilename)-1]=NULL;
+               picFilename[strlen(picFilename)-1]='\0';
          }
          else  /*or the command line*/
             picFilename=filenames[c+1];
@@ -475,7 +471,7 @@ void ReadAndDisplay(char *filename,struct IFFHandle *iff)
    }
 
       /*Prepare to determine screen modes*/
-   newScreen.ViewModes=NULL;
+   newScreen.ViewModes=0;
 
       /*If there was a CAMG chunk, use it to get the viewmodes*/
    if(camg!=NULL)

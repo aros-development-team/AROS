@@ -68,7 +68,7 @@ void GetALine(BYTE *src,
 			unsigned char Compression);
 
 void getBMHD(UBYTE *bmhd);
-void ParseArgs(ULONG *args);
+void ParseArgs(IPTR *args);
 ButtonTypes checkButton(void);
 void printError(char *fmt,...);
 void cleanup();
