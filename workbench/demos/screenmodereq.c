@@ -96,7 +96,7 @@ struct TagItem smtags[] =
     { ASLSM_PositiveText,       (IPTR)"Use Screenmode" },
     { ASLSM_NegativeText,       (IPTR)"Forget it" },
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 struct TagItem smtags2[] =
@@ -105,7 +105,7 @@ struct TagItem smtags2[] =
     { ASLSM_TitleText,	        (IPTR)"DoOverscanType" },
     { ASLSM_DoOverscanType,     TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 struct TagItem smtags3[] =
@@ -114,7 +114,7 @@ struct TagItem smtags3[] =
     { ASLSM_TitleText,	        (IPTR)"DoWidth" },
     { ASLSM_DoWidth,            TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 struct TagItem smtags4[] =
@@ -123,7 +123,7 @@ struct TagItem smtags4[] =
     { ASLSM_TitleText,	        (IPTR)"DoHeight" },
     { ASLSM_DoHeight,		TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 struct TagItem smtags5[] =
@@ -132,7 +132,7 @@ struct TagItem smtags5[] =
     { ASLSM_TitleText,	        (IPTR)"DoDepth" },
     { ASLSM_DoDepth,		TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 struct TagItem smtags6[] =
@@ -141,7 +141,7 @@ struct TagItem smtags6[] =
     { ASLSM_TitleText,	        (IPTR)"DoAutoScroll" },
     { ASLSM_DoAutoScroll,	TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 
@@ -155,7 +155,7 @@ struct TagItem smtags7[] =
     { ASLSM_DoDepth,		TRUE},
     { ASLSM_DoAutoScroll,	TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 static void showrequester(char *msg, struct TagItem *tags)
