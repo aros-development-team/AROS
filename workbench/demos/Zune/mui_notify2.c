@@ -162,9 +162,9 @@ Test_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG 
 Test_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct TestData *data = INST_DATA(cl, obj);
-    struct TagItem  *tags = msg->ops_AttrList;
-    struct TagItem  *tag;
+    struct TestData       *data = INST_DATA(cl, obj);
+    const struct TagItem  *tags = msg->ops_AttrList;
+    struct TagItem        *tag;
 
     /* There are many ways to find out what tag items provided by set()
     ** we do know. The best way should be using NextTagItem() and simply
