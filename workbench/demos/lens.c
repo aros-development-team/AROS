@@ -183,7 +183,7 @@ static void DoLens(struct Window * win, LONG dx, LONG dy)
 	ULONG QHeight = win->Height / 4;
 	ULONG HWidth  = win->Width  / 2;
 	ULONG HHeight = win->Height / 2;
-	h.h_Entry = (IPTR*)LensCallback;
+	h.h_Entry = (IPTR (*)())LensCallback;
 	h.h_Data  = (void *)&lp;
 
 	rect.MinX = dx + win->LeftEdge + QWidth  - HWidth;
