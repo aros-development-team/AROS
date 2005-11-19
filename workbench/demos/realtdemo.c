@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 
     {
 	struct TagItem tags[] = { { PLAYER_Ready, TRUE },
-				  { TAG_DONE,     NULL } };
+				  { TAG_DONE,     0 } };
 
 	SetPlayerAttrsA(player, tags);
     }
