@@ -155,7 +155,7 @@ struct RDArgs ra=
 };
 
 /*Parse the argument list, using ReadArgs()*/
-void ParseArgs(ULONG *args)
+void ParseArgs(IPTR *args)
 {
    ReadArgs("FILE/A/M,SECS=SECONDS/K/N,TICKS/K/N,LOOP/S,FROM/K,PRINT/S",
 	    args,&ra);
