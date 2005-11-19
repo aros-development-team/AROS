@@ -21,7 +21,7 @@
 #include "locale.h"
 
 #define APPNAME "ScreenGrabber"
-#define VERSION "ScreenGrabber 0.1 (02.12.2004)"
+#define VERSION "ScreenGrabber 0.2 (19.11.2005)"
 
 static const char version[] = "$VER: " VERSION "\n";
 
@@ -416,4 +416,6 @@ int main()
 	DTImage = NULL;
     }
     Locale_Deinitialize();
+
+    return 0;
 }
