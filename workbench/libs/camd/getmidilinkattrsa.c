@@ -57,7 +57,7 @@
 
 	ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
 
-	while((tag=NextTagItem((struct TagItem **)&tstate))){
+	while((tag=NextTagItem(&tstate))){
 		ret++;
 		where=(ULONG *)tag->ti_Data;
 		switch(tag->ti_Tag){
