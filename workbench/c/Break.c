@@ -113,9 +113,9 @@ main(void)
 	    else if (args[ARG_PORT])
             {
                     struct MsgPort *MyPort;
-                    if (MyPort=(struct MsgPort*) FindPort((char*) args[ARG_PORT]))
+                    if ((MyPort = (struct MsgPort*) FindPort((STRPTR) args[ARG_PORT])) != NULL)
                     {
-                        pr =(struct Process*) MyPort->mp_SigTask;
+                        pr = (struct Process*) MyPort->mp_SigTask;
                     }
             }
             if (pr != NULL)
