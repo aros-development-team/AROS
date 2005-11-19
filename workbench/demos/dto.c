@@ -91,7 +91,8 @@ int main (int argc, char **argv)
     struct IntuiMessage *imsg;
     ULONG sigr;
 
-    struct TagItem *tstate, *tag;
+    const struct TagItem *tstate;
+    struct TagItem *tag;
     struct TagItem *tags;
     ULONG tidata;
     ULONG errnum;
@@ -224,7 +225,7 @@ int main (int argc, char **argv)
 			AddDTObject (win, NULL, dto, -1);
 
 			/* Refresh the DataType object */
-			RefreshDTObjects (dto, win, NULL, NULL);
+			RefreshDTObjectA (dto, win, NULL, NULL);
 
 			/* Keep going until we're told to stop */
 			while (going)
@@ -276,7 +277,7 @@ int main (int argc, char **argv)
 						case DTA_ErrorLevel:
 						    if (tidata)
 						    {
-							errnum = GetTagData (DTA_ErrorNumber, NULL, tags);
+							errnum = GetTagData (DTA_ErrorNumber, 0, tags);
 							PrintErrorMsg (errnum, (STRPTR) options[OPT_NAME]);
 						    }
 						    break;
@@ -284,7 +285,7 @@ int main (int argc, char **argv)
 						/* Time to refresh */
 						case DTA_Sync:
 						    /* Refresh the DataType object */
-						    RefreshDTObjects (dto, win, NULL, NULL);
+						    RefreshDTObjectA (dto, win, NULL, NULL);
 						    break;
 					    }
 					}
