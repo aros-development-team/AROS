@@ -49,7 +49,7 @@ struct StringDef __dtStrings[]=
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH1(STRPTR, GetDTString,
+	AROS_LH1(CONST_STRPTR, GetDTString,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, id, D0),
@@ -85,7 +85,7 @@ struct StringDef __dtStrings[]=
 {
     AROS_LIBFUNC_INIT
 
-    STRPTR            str = NULL;
+    CONST_STRPTR      str = NULL;
     struct StringDef *sd;
    
     if((LocaleBase != NULL) && 
