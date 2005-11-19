@@ -206,7 +206,7 @@ AROS_UFH3(void, grab_function,
 			ReadPixelArray(dst, 0, 0, 4*screen->Width, &screen->RastPort, 0, y, screen->Width, 1, RECTFMT_ARGB);
 			dtb.pbpa_Top = y;
 
-		        DoMethodA(DTImage, &dtb);
+		        DoMethodA(DTImage, (Msg) &dtb);
 		    }
 		    
 		    set(SaveButton, MUIA_Disabled, FALSE);
@@ -246,7 +246,7 @@ AROS_UFH3(void, save_function,
         dtw.dtw_Mode = DTWM_RAW;
         dtw.dtw_AttrList = NULL;
 
-        DoMethodA(DTImage, &dtw);
+        DoMethodA(DTImage, (Msg) &dtw);
 
         Close(fh);
     }
