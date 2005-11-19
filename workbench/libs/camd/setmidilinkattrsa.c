@@ -76,7 +76,7 @@
 
 	ULONG *ErrorCode = (ULONG *)GetTagData(MLINK_ErrorCode, (IPTR) NULL,tags);
 
-	while((tag=NextTagItem((struct TagItem **)&tstate))){
+	while((tag=NextTagItem(&tstate))){
 		switch(tag->ti_Tag){
 			case MLINK_Name:
 				midilink->ml_Node.ln_Name=(char *)tag->ti_Data;

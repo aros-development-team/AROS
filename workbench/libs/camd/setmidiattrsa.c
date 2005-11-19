@@ -107,7 +107,7 @@
 
 	ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 
-	while((tag=NextTagItem((struct TagItem**)&tstate))){
+	while((tag=NextTagItem(&tstate))){
 		switch(tag->ti_Tag){
 			case MIDI_Name:
 				midinode->mi_Node.ln_Name=(char *)tag->ti_Data;
