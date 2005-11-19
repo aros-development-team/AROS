@@ -62,7 +62,7 @@ enum
     NOOFARGS
 };
 
-LONG CreateDirAll(STRPTR name);
+BPTR CreateDirAll(STRPTR name);
 
 int __nocommandline;
 
@@ -132,7 +132,7 @@ int main(void)
  * This routine is smart enough to try optimize multiple '/'s.
  */
 
-LONG CreateDirAll(STRPTR name)
+BPTR CreateDirAll(STRPTR name)
 {
     STRPTR pt = name;
     BOOL first = TRUE;
@@ -249,5 +249,5 @@ LONG CreateDirAll(STRPTR name)
     }
 
     //Printf("return error\n");
-    return 0;
+    return NULL;
 }
