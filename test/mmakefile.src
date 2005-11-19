@@ -84,7 +84,7 @@ EXEDIR := $(AROS_TESTS)
 
 USER_CFLAGS := -I$(TOP)/workbench/libs
 
-#MM test : test-clib test-zune test-desktop
+#MM test : test-clib test-zune 
 #MM test : includes includes-copy workbench-datatypes-png-includes
 
 %build_progs mmake=test \
