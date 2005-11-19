@@ -71,7 +71,7 @@ struct TagItem frtags[] =
     { ASLFR_SetSortBy,		ASLFRSORTBY_Size  },
     { ASLFR_SetSortOrder,	ASLFRSORTORDER_Descend },
     { ASLFR_SetSortDrawers,	ASLFRSORTDRAWERS_Mix	},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 struct TagItem frtags2[] =
@@ -79,7 +79,7 @@ struct TagItem frtags2[] =
     { ASLFR_TextAttr, (IPTR)&mytextattr},
     { ASLFR_TitleText,	        (IPTR)"Save mode" },
     { ASLFR_DoSaveMode,         TRUE},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 struct TagItem frtags3[] =
@@ -88,7 +88,7 @@ struct TagItem frtags3[] =
     { ASLFR_TitleText,	        (IPTR)"DoPatterns" },
     { ASLFR_DoSaveMode,         TRUE},
     { ASLFR_DoPatterns,		TRUE},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 struct TagItem frtags4[] =
@@ -96,7 +96,7 @@ struct TagItem frtags4[] =
     { ASLFR_TextAttr, (IPTR)&mytextattr},
     { ASLFR_TitleText,	        (IPTR)"Drawers Only" },
     { ASLFR_DrawersOnly,	TRUE},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 struct TagItem frtags5[] =
@@ -105,7 +105,7 @@ struct TagItem frtags5[] =
     { ASLFR_TitleText,	        (IPTR)"Drawers Only + DoPatterns (pattern hasn't any effect like on AmigaoS)" },
     { ASLFR_DrawersOnly,	TRUE},
     { ASLFR_DoPatterns,		TRUE},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 struct TagItem frtags6[] =
@@ -116,7 +116,7 @@ struct TagItem frtags6[] =
     { ASLFR_InitialDrawer,      (IPTR)"Libs:"},
     { ASLFR_InitialFile,	(IPTR)"Initial file"},
     { ASLFR_DoPatterns,		TRUE},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 
@@ -135,7 +135,7 @@ struct TagItem frtags_[] =
     { ASLFR_DoSaveMode,         TRUE},
     { ASLFR_DoPatterns,		TRUE},
     { ASLFR_DoMultiSelect,      TRUE},
-    { TAG_DONE,       	        NULL }
+    { TAG_DONE,       	        0 }
 };
 
 static void showrequester(char *msg, struct TagItem *tags)
