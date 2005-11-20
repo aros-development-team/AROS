@@ -245,7 +245,7 @@ void RenderGlyph(FT_GlyphEngine *ge, int glyph_8bits)
     }
 
     /*bitmap.bitmap= AllocPooled(ge->GlyphPool,(ULONG)bitmap.size); */
-    bitmap.buffer = AllocVec(bitmap.rows*bitmap.pitch, MEMF_PUBLIC | MEMF_CLEAR);
+    bitmap.buffer = AllocVec(bitmap.rows*bitmap.pitch+1, MEMF_PUBLIC | MEMF_CLEAR);
 
     if (bitmap.buffer == NULL)
     {
