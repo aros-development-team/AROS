@@ -17,7 +17,7 @@
 	AROS_LH1(void, RemSemaphore,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct SignalSemaphore *, sigSem, A0),
+	AROS_LHA(struct SignalSemaphore *, sigSem, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 101, Exec)
