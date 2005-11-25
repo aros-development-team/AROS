@@ -196,16 +196,16 @@ BSTR DuplicateBSTRVolumeName(STRPTR name)
 
 
 static const UBYTE options[]=
-"HANDLER=FILESYSTEM/A/K,DEVICE/K,UNIT/K/N,BLOCKSIZE/K/N,SURFACES/K/N,"
+"HANDLER=FILESYSTEM/A/K,DEVICE/K,UNIT/K/N,BLOCKSIZE/K/N,SURFACES/K/N,SECTORPERBLOCK/K/N,"
 "BLOCKSPERTRACK/K/N,RESERVED/K/N,INTERLEAVE/K/N,LOWCYL/K/N,HIGHCYL/K/N,"
 "BUFFERS/K/N,BUFMEMTYPE/K/N,MAXTRANSFER/K/N,MASK/K/N,BOOTPRI/K/N,"
 "DOSTYPE/K/N,BAUD/K/N,CONTROL/K";
 
 LONG mount (STRPTR name, struct RDArgs *rda)
 {
-    IPTR *args[18]=
+    IPTR *args[19]=
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 
     IPTR *params;	     /* MakeDosNode() paramPacket */
     struct DosEnvec *vec;
@@ -234,20 +234,20 @@ LONG mount (STRPTR name, struct RDArgs *rda)
     vec->de_SizeBlock      = (IPTR)(args[3]  ? *args[3]  : 512)/4;
     vec->de_SecOrg         = args[3]  ? (IPTR)*args[3]  : (IPTR)512;
     vec->de_Surfaces       = args[4]  ? (IPTR)*args[4]  : (IPTR)2;
-    vec->de_SectorPerBlock = 1;
-    vec->de_BlocksPerTrack = args[5]  ? (IPTR)*args[5]  : (IPTR)11;
-    vec->de_Reserved       = args[6]  ? (IPTR)*args[6]  : (IPTR)2;
-    vec->de_Interleave     = args[7]  ? (IPTR)*args[7]  : (IPTR)0;
-    vec->de_LowCyl         = args[8]  ? (IPTR)*args[8]  : (IPTR)0;
-    vec->de_HighCyl        = args[9]  ? (IPTR)*args[9]  : (IPTR)79;
-    vec->de_NumBuffers     = args[10] ? (IPTR)*args[10] : (IPTR)20;
-    vec->de_BufMemType     = args[11] ? (IPTR)*args[11] : (IPTR)1;
-    vec->de_MaxTransfer    = args[12] ? (IPTR)*args[12] : (IPTR)~0ul;
-    vec->de_Mask           = args[13] ? (IPTR)*args[13] : (IPTR)~0ul;
-    vec->de_BootPri        = args[14] ? (IPTR)*args[14] : (IPTR)0;
-    vec->de_DosType        = args[15] ? (IPTR)*args[15] : (IPTR)0x444f5301;
-    vec->de_Baud           = args[16] ? (IPTR)*args[16] : (IPTR)9600;
-    vec->de_Control        = args[17] ? (IPTR)*args[17] : (IPTR)"";
+    vec->de_SectorPerBlock = args[5]  ? (IPTR)*args[5]  : (IPTR)1;
+    vec->de_BlocksPerTrack = args[6]  ? (IPTR)*args[6]  : (IPTR)11;
+    vec->de_Reserved       = args[7]  ? (IPTR)*args[7]  : (IPTR)2;
+    vec->de_Interleave     = args[8]  ? (IPTR)*args[8]  : (IPTR)0;
+    vec->de_LowCyl         = args[9]  ? (IPTR)*args[9]  : (IPTR)0;
+    vec->de_HighCyl        = args[10] ? (IPTR)*args[10]  : (IPTR)79;
+    vec->de_NumBuffers     = args[11] ? (IPTR)*args[11] : (IPTR)20;
+    vec->de_BufMemType     = args[12] ? (IPTR)*args[12] : (IPTR)1;
+    vec->de_MaxTransfer    = args[13] ? (IPTR)*args[13] : (IPTR)~0ul;
+    vec->de_Mask           = args[14] ? (IPTR)*args[14] : (IPTR)~0ul;
+    vec->de_BootPri        = args[15] ? (IPTR)*args[15] : (IPTR)0;
+    vec->de_DosType        = args[16] ? (IPTR)*args[16] : (IPTR)0x444f5301;
+    vec->de_Baud           = args[17] ? (IPTR)*args[17] : (IPTR)9600;
+    vec->de_Control        = args[18] ? (IPTR)*args[18] : (IPTR)"";
     vec->de_BootBlocks     = 0;
 
     params[0] = (IPTR)args[0];
