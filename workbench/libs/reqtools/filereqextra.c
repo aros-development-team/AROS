@@ -1258,8 +1258,11 @@ void REGARGS ShowFontSample (GlobData *glob, int refresh, int dowait)
 	    struct ColorFontColors *cfc;
 
 	    cfc = ((struct ColorTextFont *)font)->ctf_ColorFontColors;
-	    count = cfc->cfc_Count;
-	    cmap = cfc->cfc_ColorTable;
+	    if (cfc)
+	    {
+	    	count = cfc->cfc_Count;
+	    	cmap = cfc->cfc_ColorTable;
+	    }
 	}
 	
 	if (glob->flags & FREQF_CHANGEPALETTE)
