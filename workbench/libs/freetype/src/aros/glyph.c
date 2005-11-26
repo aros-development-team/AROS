@@ -245,6 +245,10 @@ void RenderGlyph(FT_GlyphEngine *ge, int glyph_8bits)
     }
 
     /*bitmap.bitmap= AllocPooled(ge->GlyphPool,(ULONG)bitmap.size); */
+    
+    /* stegerg: Always add 1 to allocation size to prevent debugging tools
+                to warn about AllocVec(0) calls */
+		
     bitmap.buffer = AllocVec(bitmap.rows*bitmap.pitch+1, MEMF_PUBLIC | MEMF_CLEAR);
 
     if (bitmap.buffer == NULL)
