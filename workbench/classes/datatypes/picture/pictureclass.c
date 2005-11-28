@@ -1281,6 +1281,32 @@ STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *
     D(bug("picture.datatype/DTM_FRAMEBOX: Height %ld\n", (long) Height));
     D(bug("picture.datatype/DTM_FRAMEBOX: Depth %ld\n", (long) Depth));
 
+#warning "CHECKME: DT_FrameBox implementation"
+
+    /* It is not really clear/documented what's the correct thing to do
+       here. And what effect FRAMEF_SPECIFY has *here*. The demo sources on 
+       the Amiga Dev CD 2.1 are conflicting. 
+       
+       ClipView source on Amiga Dev CD 2.1 uses ContentsInfo and FRAMEF_SPECIFY
+       and (!) uninitialized FrameInfo. So accessing FrameInfo here would crash.
+       
+       Most other sources on the Dev CD set both ContentsInfo and FrameInfo
+       to the same struct. Without using FRAMEF_SPECIFY.
+       
+       Another source (Reference/Amiga_Mail_Vol2/IV-101/dtpic.c) uses FrameInfo
+       and NULLs ContentsInfo and no FRAMEF_SPECIFY. */
+       
+#if 1
+    if(msg->dtf_ContentsInfo)
+    {
+        msg->dtf_ContentsInfo->fri_Dimensions.Height = Height;
+        msg->dtf_ContentsInfo->fri_Dimensions.Width  = Width;
+        msg->dtf_ContentsInfo->fri_Dimensions.Depth  = Depth;
+        msg->dtf_ContentsInfo->fri_Flags             = FIF_SCROLLABLE;
+
+        RetVal = 1;
+    }
+#else
     if(msg->dtf_FrameInfo)
     {
         msg->dtf_FrameInfo->fri_Dimensions.Height = Height;
@@ -1290,6 +1316,7 @@ STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *
 
         RetVal = 1;
     }
+#endif
 
     return(RetVal);
 }
