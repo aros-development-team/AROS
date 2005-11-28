@@ -58,6 +58,8 @@
     ULONG mask;
     ULONG mask1;
 
+    signalNum = (BYTE)signalNum; /* AOS/68k compatibility. Apps may set up only D0.b */
+    
     ThisTask = FindTask(NULL);
     mask = ThisTask->tc_SigAlloc;
 
