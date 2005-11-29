@@ -934,7 +934,7 @@ void driver_Text (struct RastPort * rp, CONST_STRPTR string, LONG len,
 	     /* A character which there is no glyph for. We just
 	        draw the last glyph in the font
 	     */
-	     idx = tf->tf_HiChar - tf->tf_LoChar;
+	     idx = NUMCHARS(tf) - 1;
 	}
 	else
 	{

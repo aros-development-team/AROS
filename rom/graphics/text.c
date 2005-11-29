@@ -143,7 +143,7 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 	    
 	    if (c < tf->tf_LoChar || c > tf->tf_HiChar)
 	    {
-	    	idx = tf->tf_HiChar - tf->tf_LoChar;
+	    	idx = NUMCHARS(tf) - 1;
 	    }
 	    else
 	    {
@@ -373,7 +373,7 @@ void BltTemplateAlphaBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len
 	    
 	    if (c < tf->tf_LoChar || c > tf->tf_HiChar)
 	    {
-	    	idx = tf->tf_HiChar - tf->tf_LoChar;
+	    	idx = NUMCHARS(tf) - 1;
 	    }
 	    else
 	    {
@@ -568,7 +568,7 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 	    
 	    if (c < tf->tf_LoChar || c > tf->tf_HiChar)
 	    {
-	    	idx = tf->tf_HiChar - tf->tf_LoChar;
+	    	idx = NUMCHARS(tf) - 1;
 	    }
 	    else
 	    {
