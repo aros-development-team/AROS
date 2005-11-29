@@ -928,7 +928,7 @@ ULONG fiNew(Class *cl, Object *o, struct opSet *msg)
 			MUIA_String_Accept, "0123456789",
 			MUIA_String_AdvanceOnCR, TRUE,
 			MUIA_String_MaxLen, 6,
-			MUIA_String_Integer, face->max_advance_width * 250.0 / 72.307,
+			MUIA_String_Integer, (ULONG)(face->max_advance_width * 250.0 / 72.307),
 			MUIA_CycleChain, TRUE,
 			End,
 		Child, Label1("Fixed width"),
