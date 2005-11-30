@@ -68,7 +68,10 @@
     
     colon = strchr(devicename, ':');
 
-    if (colon != NULL)
+    /* CHECKME: If devicename starts with ":" always assume that it is a filesystem.
+                When doing "Copy c:type :" IsFileSystem(":") is called. */    
+		
+    if ((colon != NULL) && (colon != devicename))
     {
 	UWORD stringlen = (UWORD)(colon - devicename + 1);
 	
@@ -151,7 +154,7 @@
 	    
 	} /* if (devicename_copy != NULL) */
 	
-    } /* if (colon != NULL) */
+    } /* ((colon != NULL) && (colon != devicename)) */
 
     return success;
     
