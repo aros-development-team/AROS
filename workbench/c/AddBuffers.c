@@ -95,6 +95,11 @@ int main(void)
 
 	result = AddBuffers(drive, buffers);
 
+	if (result != DOSFALSE)
+	{
+	    Printf("%s has %ld buffers\n", drive, IoErr());
+	}
+#if 0
 	if (result == -1)
 	{
 	    Printf("%s has %ld buffers\n", drive, IoErr());
@@ -103,6 +108,7 @@ int main(void)
 	{
 	    Printf("%s has %ld buffers\n", drive, (LONG)result);
 	}
+#endif
 	else
 	{
 	    PrintFault(IoErr(), "AddBuffers");
