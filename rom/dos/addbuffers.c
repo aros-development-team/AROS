@@ -15,7 +15,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, AddBuffers,
+	AROS_LH2(LONG, AddBuffers,
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, devicename, D1),
@@ -54,7 +54,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     
-    BOOL success = FALSE;
+    LONG success = DOSFALSE;
 
     /* Use stackspace for IO request. */
     struct IOFileSys iofs;
@@ -67,7 +67,7 @@
     iofs.IOFS.io_Device = GetDevice(devicename, &iofs.IOFS.io_Unit, DOSBase);
 
     if(iofs.IOFS.io_Device == NULL)
-	return FALSE;
+	return DOSFALSE;
 
     iofs.io_Union.io_MORE_CACHE.io_NumBuffers = numbuffers;
     
@@ -79,7 +79,7 @@
     {
 	/* IoErr() gives the number of buffers! */
 	SetIoErr(iofs.io_Union.io_MORE_CACHE.io_NumBuffers);
-	success = TRUE;
+	success = DOSTRUE;
     }
     else
 	SetIoErr(iofs.io_DosError);
