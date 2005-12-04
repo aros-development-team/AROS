@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,7 +37,7 @@ struct BlockCache *blockbuffer;
 
 	if ((blockbuffer=getBlock(afsbase, volume,block))==0)
 	{
-		showText(afsbase, "Couldnt read bitmap block %d\nCount used blocks failed!",block);
+		showText(afsbase, "Couldn't read bitmap block %lu\nCount used blocks failed!",block);
 		return count;
 	}
 	if (!calcChkSum(volume->SizeBlock, blockbuffer->buffer))
@@ -131,7 +131,7 @@ struct BlockCache *blockbuffer;
 				showText
 					(
 						afsbase,
-						"Couldnt read bitmap extension block %d\nCount used blocks failed!",
+						"Couldn't read bitmap extension block %lu\nCount used blocks failed!",
 						curblock
 					);
 				return count;
@@ -190,7 +190,7 @@ ULONG i, blocks, maxinbitmap;
 		if (maxinbitmap > blocks)
 			maxinbitmap = blocks;
 		volume->bitmapblockpointers[i] = bitmapblock->blocknum;
-		writeBlock(afsbase, volume, bitmapblock);
+		writeBlock(afsbase, volume, bitmapblock, -1);
 		bitmapblock->blocknum += 1;
 		blocks = blocks - maxinbitmap;
 		if (blocks == 0)
@@ -217,7 +217,7 @@ ULONG i, blocks, maxinbitmap;
 					maxinbitmap = blocks;
 				bitmapblock->blocknum += 1;
 				extensionblock->buffer[i] = OS_LONG2BE(bitmapblock->blocknum);
-				writeBlock(afsbase, volume, bitmapblock);
+				writeBlock(afsbase, volume, bitmapblock, -1);
 				blocks = blocks-maxinbitmap;
 				if (blocks == 0)
 					break;
@@ -227,7 +227,7 @@ ULONG i, blocks, maxinbitmap;
 				/* fill next extension */
 				extensionblock->buffer[volume->SizeBlock-1]=OS_LONG2BE(bitmapblock->blocknum+1);
 			}
-			writeBlock(afsbase, volume, extensionblock);
+			writeBlock(afsbase, volume, extensionblock, -1);
 			bitmapblock->blocknum += 1;
 		} while (blocks != 0);
 	}
@@ -245,14 +245,13 @@ struct BlockCache *blockbuffer;
 	if (blockbuffer == NULL)
 		return DOSFALSE;
 	blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)] = flag;
-	blockbuffer->buffer[BLK_CHECKSUM] = 0;
-	blockbuffer->buffer[BLK_CHECKSUM] =
-		OS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
-	writeBlock(afsbase, volume, blockbuffer);
-	/* in case of a concurrent access */
-	blockbuffer->blocknum = 0;
-	blockbuffer->volume = 0;
-	blockbuffer->acc_count = 0;
+	if ((blockbuffer->flags & BCF_WRITE) == 0)
+	{
+		writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM);
+		blockbuffer->flags |= BCF_WRITE;
+	}
+	else
+		writeBlockDeferred(afsbase, volume, blockbuffer, BLK_CHECKSUM);
 	return DOSTRUE;
 }
 
@@ -278,11 +277,7 @@ LONG validBitmap(struct AFSBase *afsbase, struct Volume *volume) {
 
 	if (volume->bitmapblock->flags & BCF_WRITE)
 	{
-		volume->bitmapblock->buffer[0] = 0;
-		volume->bitmapblock->buffer[0] =
-			OS_LONG2BE(0-calcChkSum(volume->SizeBlock,volume->bitmapblock->buffer));
-		writeBlock(afsbase, volume, volume->bitmapblock);
-		volume->bitmapblock->flags &= ~BCF_WRITE;
+		writeBlockDeferred(afsbase, volume, volume->bitmapblock, 0);
 	}
 	volume->bitmapblock->flags &= ~BCF_USED;
 	setBitmapFlag(afsbase, volume, -1);
@@ -324,11 +319,7 @@ ULONG bblock,togo,maxinbitmap;
 		bblock = block/maxinbitmap; /* in the bblock-th bitmap block is "block" marked */
 		if (volume->bitmapblock->flags & BCF_WRITE)
 		{
-			volume->bitmapblock->buffer[0] = 0;
-			volume->bitmapblock->buffer[0] =
-				OS_LONG2BE(0-calcChkSum(volume->SizeBlock,volume->bitmapblock->buffer));
-			writeBlock(afsbase, volume, volume->bitmapblock);
-			volume->bitmapblock->flags &= ~BCF_WRITE;
+			writeBlockDeferred(afsbase, volume, volume->bitmapblock, 0);
 		}
 		volume->bitmapblock->flags &= ~BCF_USED;
 		/* load new block */
@@ -339,18 +330,18 @@ ULONG bblock,togo,maxinbitmap;
 		else
 		{
 			volume->lastextensionblock = volume->bitmapextensionblock;
-//kprintf("get block from extension %ld\n", volume->lastextensionblock);
+//kprintf("get block from extension %lu\n", volume->lastextensionblock);
 			/* 25 entries in rootblock already processed */
 			volume->lastposition = bblock-25;
 			/* do we have to go to another extensionblock ? */
 			togo = volume->lastposition / (volume->SizeBlock-1);
-//kprintf("togo=%ld\n", togo);
+//kprintf("togo=%lu\n", togo);
 			volume->lastposition %= volume->SizeBlock-1;
-//kprintf("lp=%ld\n", volume->lastposition);
+//kprintf("lp=%lu\n", volume->lastposition);
 			extensionblock=getBlock(afsbase, volume, volume->lastextensionblock);
 			if (extensionblock == NULL)
 			{
-				showText(afsbase, "Could not read bitmap extionsion block %ld!", volume->lastextensionblock);
+				showText(afsbase, "Could not read bitmap extionsion block %lu!", volume->lastextensionblock);
 				return FALSE;
 			}
 //if (volume->lastposition == 5)
@@ -369,7 +360,7 @@ ULONG bblock,togo,maxinbitmap;
 						);
 				if (extensionblock == NULL)
 				{
-					showText(afsbase, "Could not read bitmap extension block %ld!", OS_BE2LONG(extensionblock->buffer[volume->SizeBlock-1]));
+					showText(afsbase, "Could not read bitmap extension block %lu!", OS_BE2LONG(extensionblock->buffer[volume->SizeBlock-1]));
 					return FALSE;
 				}
 				volume->lastextensionblock = extensionblock->blocknum;
@@ -397,7 +388,7 @@ ULONG bblock,togo,maxinbitmap;
 LONG markBlock(struct AFSBase *afsbase, struct Volume *volume, ULONG block, ULONG mode) {
 ULONG bitnr, longnr,null=0;
 
-	D(bug("[afs]    markBlock: block=%ld mode=%ld\n",block,mode));
+	D(bug("[afs]    markBlock: block=%lu mode=%lu\n",block,mode));
 	if (block>=volume->countblocks)
 		null = null/null;
 	if (!gotoBitmapBlock(afsbase, volume, block, &longnr, &bitnr))
@@ -557,7 +548,7 @@ ULONG block;
 	block = getFreeBlock(afsbase, volume);
 	if (block != 0)
 	{
-		D(bug("[afs]    allocBlock: found a free block on %ld\n", block));
+		D(bug("[afs]    allocBlock: found a free block on %lu\n", block));
 		if (!markBlock(afsbase, volume,block,0))
 			block = 0;
 	}

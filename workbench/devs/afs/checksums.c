@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,9 +7,16 @@
 #include "checksums.h"
 
 ULONG calcChkSum(ULONG SizeBlock, ULONG *buffer) {
-ULONG sum=0,count=0;
+ULONG sum=0, value;
+ULONG *p, *end;
 
-	for (count=0;count<SizeBlock;count++)
-		sum += OS_BE2LONG(buffer[count]);
+	p = buffer;
+	end = buffer + SizeBlock;
+	while (p < end)
+	{
+		value = *p++;
+		sum += OS_BE2LONG(value);
+	}
 	return sum;
 }
+

@@ -21,6 +21,7 @@ struct AFSBase
 	struct MsgPort rport;		/* replyport of the handler */
 	struct IOFileSys *iofs;		/* to be aborted iofs or NULL */
 	struct List device_list;	/* list of mounted devices (struct Volume) */
+	struct timerequest *timer_request;
 };
 
 #endif

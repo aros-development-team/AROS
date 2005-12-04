@@ -18,8 +18,11 @@ typedef signed long    LONG;
 typedef unsigned long  ULONG;
 typedef void*          APTR;
 typedef char*          STRPTR;
+typedef unsigned char  TEXT;
 typedef unsigned long  IPTR;
 typedef unsigned long  BPTR;
+typedef short          BOOL;
+#define VOID  void
 #define FALSE 0L
 #define TRUE  1L
 

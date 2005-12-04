@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -53,28 +53,44 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, afsbase)
 			{
 				afsbase->port.mp_SigTask = task;
 				afsbase->port.mp_Flags = PA_IGNORE;
-				NEWLIST(&task->tc_MemEntry);
-				task->tc_Node.ln_Type = NT_TASK;
-				task->tc_Node.ln_Name = "afs.handler task";
-				stack = AllocMem(AROS_STACKSIZE, MEMF_PUBLIC);
-				if (stack != NULL)
+
+				/* Open timer */
+				afsbase->timer_request = (struct timerequest *)
+					CreateIORequest(&afsbase->port,
+						sizeof(struct timerequest));
+				if (afsbase->timer_request != NULL)
 				{
-				    	struct TagItem tags[] =
+					if (OpenDevice("timer.device", UNIT_VBLANK,
+						(APTR)afsbase->timer_request, 0) == 0)
 					{
-					    {TASKTAG_ARG1, (IPTR)afsbase},
-					    {TAG_DONE	    	    	}
-					};
-					
-					task->tc_SPLower = stack;
-					task->tc_SPUpper = (BYTE *)stack+AROS_STACKSIZE;
-    	    	    	    	    #if AROS_STACK_GROWS_DOWNWARDS
-					task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET;
-    	    	    	    	    #else
-					task->tc_SPReg = (BYTE *)task->tc_SPLower+SP_OFFSET;
-   	    	    	    	    #endif
-					if (NewAddTask(task,AFS_work,NULL,tags) != NULL)
-						return TRUE;
-					FreeMem(stack, AROS_STACKSIZE);
+						/* Create handler task */
+						NEWLIST(&task->tc_MemEntry);
+						task->tc_Node.ln_Type = NT_TASK;
+						task->tc_Node.ln_Name = "afs.handler task";
+						stack = AllocMem(AROS_STACKSIZE, MEMF_PUBLIC);
+						if (stack != NULL)
+						{
+					    		struct TagItem tags[] =
+							{
+							    {TASKTAG_ARG1, (IPTR)afsbase},
+							    {TAG_DONE	    	    	}
+							};
+
+							task->tc_SPLower = stack;
+							task->tc_SPUpper = (BYTE *)stack+AROS_STACKSIZE;
+    	    			    	    	    #if AROS_STACK_GROWS_DOWNWARDS
+							task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET;
+    	    	    	    			    #else
+							task->tc_SPReg = (BYTE *)task->tc_SPLower+SP_OFFSET;
+	   		    	    	    	    #endif
+
+							if (NewAddTask(task,AFS_work,NULL,tags) != NULL)
+								return TRUE;
+							FreeMem(stack, AROS_STACKSIZE);
+						}
+						CloseDevice((struct IORequest *)afsbase->timer_request);
+					}
+					DeleteIORequest((struct IORequest *)afsbase->timer_request);
 				}
 				FreeMem(task, sizeof(struct Task));
 			}
@@ -143,6 +159,8 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, afsbase)
 {
 	AROS_SET_LIBFUNC_INIT
 
+	CloseDevice((struct IORequest *)afsbase->timer_request);
+	DeleteIORequest((struct IORequest *)afsbase->timer_request);
 	RemTask(afsbase->port.mp_SigTask);
 	FreeMem(((struct Task *)afsbase->port.mp_SigTask)->tc_SPLower,AROS_STACKSIZE);
 	FreeMem(afsbase->port.mp_SigTask, sizeof(struct Task));

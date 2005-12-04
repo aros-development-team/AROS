@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,31 +33,27 @@ ULONG writeHeader
 {
 struct DateStamp ds;
 
+	/* store current time as modification date for this object and all its ancestors */
 	DateStamp(&ds);
 	for (;;)
 	{
 		blockbuffer->buffer[BLK_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
 		blockbuffer->buffer[BLK_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
 		blockbuffer->buffer[BLK_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
-		blockbuffer->buffer[BLK_CHECKSUM] = 0;
 		if (blockbuffer->buffer[BLK_PARENT(volume)] == 0)
 			break;
-		blockbuffer->buffer[BLK_CHECKSUM] =
-			OS_LONG2BE(0-calcChkSum(volume->SizeBlock, blockbuffer->buffer));
-		writeBlock(afsbase, volume, blockbuffer);
+		writeBlockDeferred(afsbase, volume, blockbuffer, BLK_CHECKSUM);
 		blockbuffer = getBlock
-			(afsbase, volume, OS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)]));
+			(afsbase, volume, OS_BE2LONG(blockbuffer->buffer[BLK_PARENT(volume)]));
 		if (blockbuffer == NULL)
 			return ERROR_UNKNOWN;
 	}
-	/* last block is not written -> its the rootblock */
+	/* last block is not written yet - it's the rootblock */
 	/* we have to change BLK_VOLUME_xxx */
 	blockbuffer->buffer[BLK_VOLUME_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
 	blockbuffer->buffer[BLK_VOLUME_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
 	blockbuffer->buffer[BLK_VOLUME_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
-	blockbuffer->buffer[BLK_CHECKSUM] =
-		OS_LONG2BE(0-calcChkSum(volume->SizeBlock, blockbuffer->buffer));
-	writeBlock(afsbase, volume, blockbuffer);
+	writeBlockDeferred(afsbase, volume, blockbuffer, BLK_CHECKSUM);
 	return 0;
 }
 
@@ -157,7 +153,7 @@ UWORD i;
 	{
 		blockbuffer->buffer[0] = OS_LONG2BE(dostype);
 		blockbuffer->buffer[2] = OS_LONG2BE(volume->rootblock);
-		writeBlock(afsbase, volume, blockbuffer);
+		writeBlock(afsbase, volume, blockbuffer, -1);
 		blockbuffer = getFreeCacheBlock(afsbase, volume, volume->rootblock);
 		if (blockbuffer != NULL)
 		{
@@ -205,10 +201,7 @@ UWORD i;
 			blockbuffer->buffer[volume->SizeBlock-3] = 0;
 			blockbuffer->buffer[volume->SizeBlock-2] = 0;
 			blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)] = OS_LONG2BE(ST_ROOT);
-			blockbuffer->buffer[BLK_CHECKSUM] = 0;
-			blockbuffer->buffer[BLK_CHECKSUM] = 
-				OS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
-			writeBlock(afsbase, volume, blockbuffer);
+			writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM);
 			blockbuffer->flags &= ~BCF_USED;
 			invalidBitmap(afsbase, volume);
 			markBlock(afsbase, volume, volume->rootblock, 0);
@@ -247,10 +240,7 @@ struct DateStamp ds;
 	blockbuffer->buffer[BLK_VOLUME_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
 	blockbuffer->buffer[BLK_VOLUME_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
 	blockbuffer->buffer[BLK_VOLUME_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
-	blockbuffer->buffer[BLK_CHECKSUM] = 0;
-	blockbuffer->buffer[BLK_CHECKSUM] =
-		OS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
-	writeBlock(afsbase, volume, blockbuffer);
+	writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM);
 	/* update os specific information of the medium */
 	osMediumInit(afsbase, volume, blockbuffer);
 	return DOSTRUE;

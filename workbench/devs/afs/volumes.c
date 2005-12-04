@@ -13,7 +13,7 @@
 #include "afsblocks.h"
 #include "baseredef.h"
 
-LONG mediumPresent(struct IOHandle *ioh) {
+BOOL mediumPresent(struct IOHandle *ioh) {
 	return (ioh->ioflags & IOHF_DISK_IN)==IOHF_DISK_IN;
 }
 
@@ -63,9 +63,8 @@ LONG error;
 	}
 	else
 	{
-		blockbuffer->flags |= BCF_USED;
+		blockbuffer->flags |= BCF_USED;	// won't be cleared until volume is ejected
 		volume->usedblockscount=countUsedBlocks(afsbase, volume);
-		blockbuffer->flags &= ~BCF_USED;
 	}
 	error = osMediumInit(afsbase, volume, blockbuffer);
 	if (error != 0)
@@ -112,7 +111,7 @@ struct Volume *volume;
 		else
 			volume->bootblocks=devicedef->de_Reserved;
 		volume->blockcache=initCache(afsbase, volume, devicedef->de_NumBuffers);
-		if (volume->blockcache)
+		if (volume->blockcache != NULL)
 		{
 			if (openBlockDevice(afsbase, &volume->ioh)!= NULL)
 			{
@@ -176,7 +175,7 @@ struct Volume *volume;
 void uninitVolume(struct AFSBase *afsbase, struct Volume *volume) {
 
 	osMediumFree(afsbase, volume, TRUE);
-	if (volume->blockcache)
+	if (volume->blockcache != NULL)
 		freeCache(afsbase, volume->blockcache);
 	closeBlockDevice(afsbase, &volume->ioh);
 	FreeMem(volume,sizeof(struct Volume));

@@ -19,9 +19,9 @@ struct Volume;
 
 LONG osMediumInit(struct AFSBase *, struct Volume *, struct BlockCache *);
 void osMediumFree(struct AFSBase *, struct Volume *, LONG);
-ULONG readDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
-ULONG writeDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
-ULONG flush(struct AFSBase *, struct Volume *);
+LONG readDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
+LONG writeDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
+BOOL flush(struct AFSBase *, struct Volume *);
 struct IOHandle *openBlockDevice(struct AFSBase *, struct IOHandle *);
 void closeBlockDevice(struct AFSBase *, struct IOHandle *);
 void check64BitSupport(struct AFSBase *, struct Volume *);
