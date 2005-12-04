@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,18 +7,17 @@
 #define DEBUG 0
 #endif
 
-#include <stdio.h>
-
 #include "os.h"
 #include "cache.h"
+#include "checksums.h"
 #include "error.h"
 #include "afsblocks.h"
 #include "baseredef.h"
 
 /********************************************************
  Name  : initCache
- Descr.: initialzes block cache for a volume
- Input : volume  - the volume to initialzes cache for
+ Descr.: initializes block cache for a volume
+ Input : volume  - the volume to initializes cache for
          numBuffers - number of buffers for cache
  Output: first buffer (main cache pointer)
 *********************************************************/
@@ -49,11 +48,11 @@ ULONG i;
 			cache = cache->next;
 		}
 		cache->buffer = (ULONG *)((char *)cache+sizeof(struct BlockCache));
-		cache->next = 0;
+		cache->next = NULL;
 	}
 	D(bug
 		(
-			"initCache: my Mem is %p size %lx\n",
+			"initCache: my Mem is 0x%p size 0x%lx\n",
 			head,
 			numBuffers*(sizeof(struct BlockCache)+BLOCK_SIZE(volume))
 		));
@@ -65,36 +64,57 @@ void freeCache(struct AFSBase *afsbase, struct BlockCache *cache) {
 		FreeVec(cache);
 }
 
-void flushCache(struct BlockCache *cache) {
+void clearCache(struct AFSBase *afsbase, struct BlockCache *cache) {
 
 	while (cache != NULL)
 	{
-		cache->volume = 0;
-		cache->blocknum = 0;
-		cache->acc_count = 0;
-		//if (cache->flags & BCF_WRITE) writeBlock(...)
-		cache->flags = 0;
+		if ((cache->flags & BCF_WRITE) == 0)
+		{
+			cache->blocknum = 0;
+			cache->newness = 0;
+			cache->flags = 0;
+		}
+		else
+			showText(afsbase, "You MUST re-insert ejected volume");
 		cache = cache->next;
 	}
 }
 
-struct BlockCache *getFreeCacheBlock
+VOID flushCache
+	(struct AFSBase *afsbase, struct Volume *volume)
+{
+struct BlockCache *block;
+
+	for (block = volume->blockcache; block != NULL; block = block->next)
+	{
+		if ((block->flags & (BCF_WRITE | BCF_USED)) == BCF_WRITE)
+		{
+			writeDisk(afsbase, volume, block->blocknum, 1, block->buffer);
+			block->flags &= ~BCF_WRITE;
+		}
+	}
+}
+
+struct BlockCache *getCacheBlock
 	(struct AFSBase *afsbase, struct Volume *volume, ULONG blocknum)
 {
 struct BlockCache *cache;
-struct BlockCache *smallest=NULL;
+struct BlockCache *bestcache=NULL;
+BOOL found = FALSE;
 
-	D(bug("[afs]    getFreeCacheBlock: getting cacheblock %ld\n",blocknum));
+	/* Check if block is already cached, or else reuse least-recently-used buffer */
+	D(bug("[afs]    getCacheBlock: getting cacheblock %lu\n",blocknum));
 	cache = volume->blockcache;
-	while (cache != NULL)
+	while ((cache != NULL) && !found)
 	{
 		if (cache->blocknum == blocknum)
 		{
 			if (!(cache->flags & BCF_USED))
 			{
-				D(bug("[afs]    getFreeCacheBlock: already cached %ld\n", cache->acc_count));
-				cache->acc_count += 1;
-				return cache;
+				D(bug("[afs]    getCacheBlock: already cached (counter=%lu)\n",
+					cache->newness));
+				bestcache = cache;
+				found = TRUE;
 			}
 			else
 			{
@@ -102,43 +122,88 @@ struct BlockCache *smallest=NULL;
 				{
 					/*	should only occur while using setBitmap()
 						->that's ok (see setBitmap()) */
-					D(bug("Concurrent access on block %ld!\n",blocknum));
+					D(bug("Concurrent access on block %lu!\n",blocknum));
+				}
+				else
+				{
+					bestcache = cache;
+					found = TRUE;
 				}
 			}
 		}
-		if (!(cache->flags & BCF_USED))
+		else if ((cache->flags & (BCF_USED | BCF_WRITE)) == 0)
 		{
-			if (smallest != NULL)
+			if (bestcache != NULL)
 			{
-				if (smallest->acc_count > cache->acc_count)
-					smallest = cache;
+				if (bestcache->newness > cache->newness)
+					bestcache = cache;
 			}
 			else
 			{
-				smallest = cache;
+				bestcache = cache;
 			}
 		}
 		cache = cache->next;
 	}
-	/* block not cached */
-	if (smallest != NULL)
+
+	if (bestcache != NULL)
 	{
-		smallest->acc_count = 1;
-		smallest->blocknum = blocknum;
-		smallest->volume = volume;
+		if (!found)
+			bestcache->blocknum = 0;
+
+		/* Mark buffer as the most recently used */
+		bestcache->newness = ++volume->cachecounter;
+
+		/* Reset cache history if counter has overflowed */
+		if (volume->cachecounter == 0)
+		{
+			for (cache = volume->blockcache; cache != NULL; cache = cache->next)
+				cache->newness = 0;
+		}
 	}
 	else
-		showText(afsbase, "Oh, ohhhhh, where is all the cache gone? BUG!!!");
-	return smallest;
+	{
+		/* We should only run out of cache blocks if blocks need to be
+		   written, so write them and try again */
+		flushCache(afsbase, volume);
+		bestcache = getCacheBlock(afsbase, volume, blocknum);
+		if (bestcache == NULL)
+			showText(afsbase, "Oh, ohhhhh, where is all the cache gone? BUG!!!");
+	}
+
+	return bestcache;
 }
 
-void checkCache(struct AFSBase *afsbase, struct BlockCache *bc) {
+/***************************************************************************
+ Name  : getFreeCacheBlock
+ Descr.: Get a cache block to fill. The returned cache block's buffer will
+         have arbitrary contents. However, to ensure cache integrity, an
+         existing cache block for the specified block will be returned if
+         present.
+ Input : volume  - the volume the block is on.
+         blocknum - the block number the cache block will be used for.
+ Output: an unfilled cache block for the specified block.
+***************************************************************************/
+struct BlockCache *getFreeCacheBlock
+	(struct AFSBase *afsbase, struct Volume *volume, ULONG blocknum)
+{
+struct BlockCache *cache;
 
+	cache = getCacheBlock(afsbase, volume, blocknum);
+	cache->blocknum = blocknum;
+	cache->newness = 0;
+	return cache;
+}
+
+void checkCache(struct AFSBase *afsbase, struct Volume *volume) {
+struct BlockCache *bc;
+
+	bc = volume->blockcache;
 	while (bc != NULL)
 	{
-		if (bc->flags & BCF_USED)
+		if (((bc->flags & BCF_USED) != 0) && (bc->blocknum != volume->rootblock))
 		{
-			showText(afsbase, "not released block: %ld!", bc->blocknum);
+			showText(afsbase, "Unreleased block: %lu!", bc->blocknum);
 		}
 		bc = bc->next;
 	}
@@ -162,17 +227,19 @@ struct BlockCache *getBlock
 {
 struct BlockCache *blockbuffer;
 
-	blockbuffer = getFreeCacheBlock(afsbase, volume, blocknum);
+	blockbuffer = getCacheBlock(afsbase, volume, blocknum);
 	if (blockbuffer != NULL)
 	{
-		if (blockbuffer->acc_count == 1)
+		if (blockbuffer->blocknum == 0)
 		{
+			blockbuffer->blocknum = blocknum;
 			if (readDisk(afsbase, volume, blocknum, 1, blockbuffer->buffer) != 0)
 			{
 				blockbuffer = NULL;
 			}
 		}
 	}
+	D(bug("[afs]    getBlock: using cache block with address 0x%p\n", blockbuffer));
 	return blockbuffer;
 }
 
@@ -180,11 +247,46 @@ LONG writeBlock
 	(
 		struct AFSBase *afsbase,
 		struct Volume *volume,
-		struct BlockCache *blockbuffer
+		struct BlockCache *blockbuffer,
+		LONG checksumoffset
 	)
 {
+	/* Update checksum if requested by caller */
+	if(checksumoffset != -1)
+	{
+		blockbuffer->buffer[checksumoffset] = 0;
+		blockbuffer->buffer[checksumoffset] =
+			OS_LONG2BE(0 - calcChkSum(volume->SizeBlock,blockbuffer->buffer));
+	}
 
+	/* Ensure bitmap isn't marked valid while there are dirty blocks in the cache */
+	if (blockbuffer->blocknum == volume->rootblock)
+		flushCache(afsbase, volume);
+
+	/* Write block to disk */
 	writeDisk(afsbase, volume, blockbuffer->blocknum, 1, blockbuffer->buffer);
+	blockbuffer->flags &= ~BCF_WRITE;
 	return DOSTRUE;
+}
+
+VOID writeBlockDeferred
+	(
+		struct AFSBase *afsbase,
+		struct Volume *volume,
+		struct BlockCache *blockbuffer,
+		LONG checksumoffset
+	)
+{
+	/* Update checksum if requested by caller */
+	if(checksumoffset != -1)
+	{
+		blockbuffer->buffer[checksumoffset] = 0;
+		blockbuffer->buffer[checksumoffset] =
+			OS_LONG2BE(0 - calcChkSum(volume->SizeBlock,blockbuffer->buffer));
+	}
+
+	/* Mark block as needing to be written when the time comes */
+	blockbuffer->flags |= BCF_WRITE;
+	return;
 }
 

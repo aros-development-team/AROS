@@ -25,5 +25,6 @@ enum {
 
 void showText(struct AFSBase *, char *, ...);
 void showError(struct AFSBase *, ULONG, ...);
+LONG showRetriableError(struct AFSBase *, TEXT *, ...);
 
 #endif

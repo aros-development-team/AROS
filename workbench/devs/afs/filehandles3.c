@@ -197,7 +197,7 @@ ULONG error,i,block;
 		return error;
 	}
 	error = getNextExamineBlock(afsbase, ah, &ah->dirpos, &i);
-#warning "if ah->dirpos is a entry stored in a hashchain we return entries twice"
+#warning "if ah->dirpos is an entry stored in a hashchain we return entries twice"
 	if (error != 0)
 		return error;
 	last = ead;

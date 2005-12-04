@@ -50,7 +50,7 @@ char *texts[]={0,
 	}
 }
 
-ULONG readDisk
+LONG readDisk
 	(
 		struct AFSBase *afsbase,
 		struct Volume *volume,
@@ -70,7 +70,7 @@ struct IOHandle *ioh;
 	return 1;
 }
 
-ULONG writeDisk
+LONG writeDisk
 	(
 		struct AFSBase *afsbase,
 		struct Volume *volume,
@@ -110,8 +110,8 @@ void closeBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh) {
 	fclose(ioh->fh);
 }
 
-ULONG flush(struct AFSBase *afsbase, struct Volume *volume) {
-	printf("%s: ommand not supported yet!\n", __FUNCTION__);
+BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
+	printf("%s: Command not supported yet!\n", __FUNCTION__);
 	return DOSFALSE;
 }
 

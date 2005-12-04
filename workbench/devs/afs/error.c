@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,7 +19,7 @@ struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,"Cancel"};
 	if (IntuitionBase->FirstScreen != NULL)
 	{
 #endif
-		EasyRequestArgs(0,&es,0,args);
+		EasyRequestArgs(NULL,&es,NULL,args);
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 	}
 	else
@@ -44,11 +44,11 @@ char *texts[] =
 	"Couldn't open device %s",
 	"Couldn't add disk as dosentry",
 	"Disk is not validated!\n",
-	"Wrong data block %ld",
-	"Wrong checksum on block %ld",
+	"Wrong data block %lu",
+	"Wrong checksum on block %lu",
 	"Missing some more bitmap blocks",
-	"Wrong blocktype on block %ld",
-	"Read/Write Error (%ld)",
+	"Wrong blocktype on block %lu",
+	"Read/Write Error %ld accessing block %lu",
 	NULL,
 	"Unknown error"
 };
@@ -61,3 +61,24 @@ char *texts[] =
 	else
 		showPtrArgsText(afsbase, texts[error], (ULONG *)(&error+1));
 }
+
+LONG showRetriableError(struct AFSBase *afsbase, TEXT *string, ...) {
+struct EasyStruct es = {sizeof (struct EasyStruct), 0, "AFFS", string, "Retry|Cancel"};
+LONG result = 0;
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+	if (IntuitionBase->FirstScreen != NULL)
+	{
+#endif
+		result = EasyRequestArgs(NULL, &es, NULL, (ULONG *)(&string+1));
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+	}
+	else
+	{
+		vkprintf(string, (va_list)(&string+1));
+		kprintf("\n");
+	}
+#endif
+	return result;
+}
+

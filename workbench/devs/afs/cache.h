@@ -2,7 +2,7 @@
 #define BLOCKACCESS_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,9 +11,8 @@
 
 struct BlockCache {
 	struct BlockCache *next;
-	ULONG acc_count;
-	struct Volume *volume;
-	ULONG blocknum;
+	ULONG newness;
+	ULONG blocknum;         /* zero means block is empty */
 	ULONG *buffer;
 	ULONG flags;
 };
@@ -25,8 +24,10 @@ struct BlockCache *initCache(struct AFSBase *, struct Volume *volume, ULONG);
 void freeCache(struct AFSBase *, struct BlockCache *);
 struct BlockCache *getFreeCacheBlock(struct AFSBase *, struct Volume *, ULONG);
 struct BlockCache *getBlock(struct AFSBase *, struct Volume *, ULONG);
-LONG writeBlock(struct AFSBase *, struct Volume *, struct BlockCache *);
-void flushCache(struct BlockCache *);
-void checkCache(struct AFSBase *, struct BlockCache *);
+LONG writeBlock(struct AFSBase *, struct Volume *, struct BlockCache *, LONG);
+VOID writeBlockDeferred(struct AFSBase *, struct Volume *, struct BlockCache *, LONG);
+void clearCache(struct AFSBase *, struct BlockCache *);
+VOID flushCache(struct AFSBase *, struct Volume *);
+void checkCache(struct AFSBase *, struct Volume *);
 
 #endif

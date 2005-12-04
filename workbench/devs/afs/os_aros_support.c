@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -439,16 +439,17 @@ UWORD *cmdcheck;
  Input : volume  - volume to flush
  Output: DOSTRUE
 ********************************************/
-ULONG flush(struct AFSBase *afsbase, struct Volume *volume) {
+BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
 
-	flushCache(volume->blockcache);
+	flushCache(afsbase, volume);
 	volume->ioh.ioreq->iotd_Req.io_Command = CMD_UPDATE;
 	DoIO((struct IORequest *)&volume->ioh.ioreq->iotd_Req);
+	clearCache(afsbase, volume->blockcache);
 	/* turn off motor */
 	return DOSTRUE;
 }
 
-ULONG readwriteDisk
+static ULONG readwriteDisk
 	(
 		struct AFSBase *afsbase,
 		struct Volume *volume,
@@ -458,11 +459,10 @@ ULONG readwriteDisk
 		ULONG cmd
 	)
 {
-ULONG retval;
+LONG retval;
 struct IOHandle *ioh = &volume->ioh;
 UQUAD offset;
 
-	D(bug("[afs]    readDisk: reading block %ld\n", start));
 	if (
 			((volume->startblock+start) <= volume->lastblock) &&
 			((volume->startblock+start+count-1) <= volume->lastblock)
@@ -478,8 +478,6 @@ UQUAD offset;
 		ioh->ioreq->iotd_Req.io_Offset = 0xFFFFFFFF & offset;
 		ioh->ioreq->iotd_Req.io_Actual = offset>>32;
 		retval = DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
-		if (retval != 0)
-			showError(afsbase, ERR_READWRITE, retval);
 		if (ioh->ioflags & IOHF_TRACKDISK)
 		{
 			ioh->moff_time = 100;
@@ -489,19 +487,48 @@ UQUAD offset;
 	}
 	else
 	{
-		showText(afsbase, "Attempted to read/write block outside range!\n\nrange: %ld-%ld, start: %ld, count: %ld", volume->startblock, volume->lastblock, start, count);
+		showText(afsbase, "Attempted to read/write block outside range!\n\n"
+			"range: %lu-%lu, start: %lu, count: %lu",
+			volume->startblock, volume->lastblock, start, count);
 		retval = 1;
 	}
 	return retval;
 }
 
-ULONG readDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
-	return readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdread);
+LONG readDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
+LONG result = 0;
+BOOL retry = TRUE;
+
+	while (retry)
+	{
+		D(bug("[afs]    readDisk: reading blocks %lu to %lu\n", start, start+count-1));
+		result = readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdread);
+		if (result == 0)
+			retry = FALSE;
+		else
+			retry = showRetriableError(afsbase, "Read error %ld on block %lu", result, start) == 1;
+	}
+
+	return result;
 }
 
-ULONG writeDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
-	return readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdwrite);
+LONG writeDisk(struct AFSBase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR data) {
+LONG result = 0;
+BOOL retry = TRUE;
+
+	while (retry)
+	{
+		D(bug("[afs]    writeDisk: writing blocks %lu to %lu\n", start, start+count-1));
+		result = readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdwrite);
+		if (result == 0)
+			retry = FALSE;
+		else
+			retry = showRetriableError(afsbase, "Write error %ld on block %lu", result, start) == 1;
+	}
+
+	return result;
 }
+
 #undef SysBase
 
 AROS_UFH4(int, timercode,

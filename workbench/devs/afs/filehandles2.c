@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,7 +22,7 @@
 extern ULONG error;
 
 /********************************************
- Name  : setHeaderData
+ Name  : setHeaderDate
  Descr.: set actual date for an object
  Input : volume      - 
          blockbuffer - header block of object
@@ -40,18 +40,15 @@ ULONG setHeaderDate
 
 	D(bug
 		(
-			"[afs] setHeaderDate: for headerblock %ld\n",
+			"[afs] setHeaderDate: for headerblock %lu\n",
 			blockbuffer->blocknum)
 		);
 	blockbuffer->buffer[BLK_DAYS(volume)] = OS_LONG2BE(ds->ds_Days);
 	blockbuffer->buffer[BLK_MINS(volume)] = OS_LONG2BE(ds->ds_Minute);
 	blockbuffer->buffer[BLK_TICKS(volume)] = OS_LONG2BE(ds->ds_Tick);
-	blockbuffer->buffer[BLK_CHECKSUM] = 0;
-	blockbuffer->buffer[BLK_CHECKSUM] =
-		OS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
-	writeBlock(afsbase, volume, blockbuffer);
+	writeBlockDeferred(afsbase, volume, blockbuffer, BLK_CHECKSUM);
 	blockbuffer = getBlock
-		(afsbase, volume, OS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)]));
+		(afsbase, volume, OS_BE2LONG(blockbuffer->buffer[BLK_PARENT(volume)]));
 	if (blockbuffer == NULL)
 		return ERROR_UNKNOWN;
 	return writeHeader(afsbase, volume, blockbuffer);
@@ -158,7 +155,7 @@ void unLinkBlock
 {
 ULONG key;
 
-	D(bug("[afs] unlinkBlock: unlinking %ld\n", entry->blocknum));
+	D(bug("[afs] unlinkBlock: unlinking %lu\n", entry->blocknum));
 	/* find the "member" where entry is linked
 		->linked into hashchain or hashtable */
 	key = BLK_HASHCHAIN(volume);
@@ -196,8 +193,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 		return ERROR_OBJECT_IN_USE;
 	if (OS_BE2LONG(blockbuffer->buffer[BLK_PROTECT(ah->volume)]) & FIBF_DELETE)
 		return ERROR_DELETE_PROTECTED;
-	/* if we try to delete a directory
-      check if it is empty */
+	/* if we try to delete a directory, check if it is empty */
 	if (
 			OS_BE2LONG
 				(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)]) == ST_USERDIR
@@ -216,7 +212,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 		blockbuffer->flags &= ~BCF_USED;
 		return ERROR_UNKNOWN;
 	}
-	if (calcChkSum(ah->volume->SizeBlock, priorbuffer->buffer))
+	if (calcChkSum(ah->volume->SizeBlock, priorbuffer->buffer) != 0)
 	{
 		blockbuffer->flags &= ~BCF_USED;
 		showError(afsbase, ERR_CHECKSUM, priorbuffer->blocknum);
@@ -225,7 +221,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	priorbuffer->flags |= BCF_USED;
 	unLinkBlock(afsbase, ah->volume, priorbuffer, blockbuffer);
 	invalidBitmap(afsbase, ah->volume);
-	writeBlock(afsbase, ah->volume, priorbuffer);
+	writeBlock(afsbase, ah->volume, priorbuffer, -1);
 	markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1);
 	if (
 			OS_BE2LONG
@@ -234,7 +230,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	{
 		for (;;)
 		{
-			D(bug("[afs]   extensionblock=%ld\n", blockbuffer->blocknum));
+			D(bug("[afs]   extensionblock=%lu\n", blockbuffer->blocknum));
 			for
 				(
 					key = BLK_TABLE_END(ah->volume);
@@ -282,11 +278,11 @@ struct BlockCache *blockbuffer, *priorbuffer;
  Input : dir  - directory to link in
          file - file to link
  Output: the block which must be written to disk
-         -> if hashtable of directory changed its the same
+         -> if hashtable of directory changed it's the same
             pointer as arg1; otherwise a HASHCHAIN pointer
-            changed so we dont have to write this block but
+            changed so we don't have to write this block but
             another one
-         0 if error
+         NULL if error
 *********************************************/
 struct BlockCache *linkNewBlock
 	(
@@ -347,7 +343,7 @@ STRPTR name;
          entryname - will be filled with a copy
                      of the last component of
                      name
- Output: 0 for error (global error will be set);
+ Output: NULL for error (global error will be set);
          pointer to a struct BlockCache otherwise
 *********************************************/
 struct BlockCache *getDirBlockBuffer
@@ -492,7 +488,7 @@ UBYTE newentryname[34];
 	/* concurrent access if newdir=rootblock! */
 	dirblock->flags |= BCF_USED;
 	/*
-		mark it as used, so that this buffer isnt
+		mark it as used, so that this buffer isn't
 		used in invalidating volume!
 	*/
 	if (!setBitmapFlag(afsbase, dirah->volume, 0))
@@ -508,13 +504,13 @@ UBYTE newentryname[34];
 		syscrash after this: 2 dirs pointing to the same
 		dir and one wrong linked entry->recoverable
 	*/
-	writeBlock(afsbase, dirah->volume, dirblock);
+	writeBlock(afsbase, dirah->volume, dirblock, -1);
 	/*
 		syscrash after this: directory pointing is now
 		correct but one wrong linked entry->recoverable
 	*/
-	writeBlock(afsbase, dirah->volume, lastlink);
-	writeBlock(afsbase, dirah->volume, oldfile);
+	writeBlock(afsbase, dirah->volume, lastlink, -1);
+	writeBlock(afsbase, dirah->volume, oldfile, -1);
 	oldfile->flags &= ~BCF_USED;
 	lastlink->flags &= ~BCF_USED;
 	/*
@@ -609,8 +605,7 @@ ULONG i;
 	{
 		markBlock(afsbase, volume, newblock->blocknum, -1);
 		newblock->flags &= ~BCF_USED;
-		newblock->acc_count = 0;
-		newblock->volume = 0;
+		newblock->newness = 0;
 		validBitmap(afsbase, volume);
 		return NULL;
 	}
@@ -618,9 +613,9 @@ ULONG i;
 		if crash after this block not yet linked->block
 		not written to disk, bitmap corrected
 	*/
-	writeBlock(afsbase, volume, newblock);
+	writeBlock(afsbase, volume, newblock, -1);
 	/* consistent after this */
-	writeBlock(afsbase, volume, dirblock);
+	writeBlock(afsbase, volume, dirblock, -1);
 	validBitmap(afsbase, volume);
 	newblock->flags &= ~BCF_USED;
 	return newblock;

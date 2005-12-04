@@ -22,6 +22,7 @@ struct Volume {
 	ULONG unit;
 	struct IOHandle ioh;
 	struct BlockCache *blockcache;
+	ULONG cachecounter;           /* Keeps track of cache usage */
 
 	ULONG usedblockscount;       /* nr of used blocks */
 	ULONG countblocks;           /* nr of blocks in filesystem */
@@ -44,7 +45,7 @@ struct Volume {
 
 #define VOLF_TRACKDISK    (1 <<  8)
 
-LONG mediumPresent(struct IOHandle *);
+BOOL mediumPresent(struct IOHandle *);
 struct Volume *initVolume(struct AFSBase *, struct Device *, STRPTR, ULONG, struct DosEnvec *, ULONG *);
 void uninitVolume(struct AFSBase *, struct Volume *);
 LONG newMedium(struct AFSBase *, struct Volume *);
