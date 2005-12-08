@@ -380,7 +380,8 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_StringData *data;
     struct TagItem *tags,*tag;
     CONST_STRPTR str = NULL;
-
+    char    	 integerbuf[20];
+    
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				   /*  MUIA_FillArea, TRUE, */
 				   TAG_MORE, (IPTR) msg->ops_AttrList);
@@ -429,7 +430,8 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_String_Integer:
-		set(obj, MUIA_String_Integer, tag->ti_Data);
+		snprintf(integerbuf, 19, "%ld", tag->ti_Data);
+		str = integerbuf;
 		break;
 
 	    case MUIA_String_LonelyEditHook:
