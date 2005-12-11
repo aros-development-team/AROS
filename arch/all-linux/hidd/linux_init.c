@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux hidd initialization code.
@@ -19,53 +19,15 @@
 #include <oop/oop.h>
 #include <hidd/graphics.h>
 
+#include <aros/symbolsets.h>
+
 #include "linux_intern.h"
 
-#undef SysBase
-
-static VOID cleanup_linux_hidd(struct linux_staticdata *lsd);
-static struct linux_staticdata *init_linux_hidd(struct ExecBase *SysBase);
-
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->sysbase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->seglist)
-#define LC_RESIDENTNAME		LinuxHidd_resident
-#define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
-#define LC_RESIDENTPRI		9
-#define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
-#define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->library)
-
-#define LC_NO_INITLIB
-#define LC_NO_EXPUNGELIB
-#define LC_NO_CLOSELIB
-
-
-/* to avoid removing the gfxhiddclass from memory add #define NOEXPUNGE */
-
-struct linux_base
-{
-    struct Library library;
-    struct ExecBase *sysbase;
-    BPTR	seglist;
-    struct linux_staticdata lsd;
-};
-
-#include <libcore/libheader.c>
-
+#include LC_LIBDEFS_FILE
 #undef  SDEBUG
 #undef  DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
-
-#define SysBase      (LC_SYSBASE_FIELD(lh))
-
-#undef XSD
-#undef SysBase
-#undef OOPBase
-
-#define OOPBase lsd->oopbase
-
 
 static OOP_AttrBase HiddPixFmtAttrBase = 0;
 
@@ -74,115 +36,58 @@ static struct OOP_ABDescr abd[] = {
 	{ NULL, NULL }
 };
 
-static struct linux_staticdata *init_linux_hidd(struct ExecBase *SysBase)
+static AROS_SET_LIBFUNC(Init_Hidd, LIBBASETYPE, LIBBASE)
 {
-    struct linux_staticdata *lsd = NULL;
-    lsd = AllocMem( sizeof (struct linux_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
-    if (NULL != lsd) {
-	InitSemaphore(&lsd->sema);
-        lsd->sysbase = SysBase;
+    AROS_SET_LIBFUNC_INIT
 
-    #if BUFFERED_VRAM
-	InitSemaphore(&lsd->framebufferlock);
-    #endif
+    InitSemaphore(&LIBBASE->lsd.sema);
+
+#if BUFFERED_VRAM
+    InitSemaphore(&LIBBASE->lsd.framebufferlock);
+#endif
 	
-        lsd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
-	if (NULL == lsd->oopbase) goto failure;
-	
-	lsd->utilitybase = OpenLibrary(UTILITYNAME, 37);
-	if (NULL == lsd->utilitybase) goto failure;
+    LIBBASE->lsd.utilitybase = OpenLibrary(UTILITYNAME, 37);
+    if (NULL == LIBBASE->lsd.utilitybase)
+	return FALSE;
 
 kprintf("GOT LIBS\n");
- 	
-	lsd->kbd_inited = init_linuxkbd(lsd);
-	if (!lsd->kbd_inited) goto failure;
 
-kprintf("KBD INITED\n");
-
-	lsd->mouse_inited = init_linuxmouse(lsd);
-	if (!lsd->mouse_inited) goto failure;
-kprintf("MOUSE INITED\n");
-
-	if (!OOP_ObtainAttrBases(abd))
-	    goto failure;
+    if (!OOP_ObtainAttrBases(abd))
+	return FALSE;
 kprintf("OBTAINED ATTRBASES\n");	    
 
-	lsd->input_task = init_linuxinput_task(lsd);
-	if (NULL == lsd->input_task) goto failure;
+    LIBBASE->lsd.input_task = init_linuxinput_task(&LIBBASE->lsd);
+    if (NULL == LIBBASE->lsd.input_task)
+	return FALSE;
 kprintf("GOT INPUT TASK\n");
 
-	lsd->gfxclass = init_linuxgfxclass(lsd);
-	if (NULL == lsd->gfxclass) goto failure;
-
-	lsd->bmclass = init_linuxbmclass(lsd);
-	if (NULL == lsd->bmclass) goto failure;
-kprintf("GOT GFX CLASS\n");
-	
-	lsd->kbdclass = init_linuxkbdclass(lsd);
-	if (NULL == lsd->kbdclass) goto failure;
-kprintf("GOT KBD CLASS\n");
-	lsd->mouseclass = init_linuxmouseclass(lsd);
-	if (NULL == lsd->mouseclass) goto failure;
-kprintf("GOT MOUSECLASS\n");
-    }
+    return TRUE;
     
-    return lsd;
-    
-failure:
-    cleanup_linux_hidd(lsd);
-    
-    return NULL;
-	
+    AROS_SET_LIBFUNC_EXIT
 }
 
-static VOID cleanup_linux_hidd(struct linux_staticdata *lsd)
+AROS_SET_LIBFUNC(Expunge_Hidd, LIBBASETYPE, LIBBASE)
 {
-    if (NULL != lsd) {
-	if (NULL != lsd->mouseclass)
-	    free_linuxmouseclass(lsd);
+    AROS_SET_LIBFUNC_INIT
 
-	if (NULL != lsd->kbdclass)
-	    free_linuxkbdclass(lsd);
-    
-	if (NULL != lsd->bmclass)
-	    free_linuxbmclass(lsd);
+    OOP_ReleaseAttrBases(abd);
 
-	if (NULL != lsd->gfxclass)
-	    free_linuxgfxclass(lsd);
-
-	OOP_ReleaseAttrBases(abd);
-
-
-	if (NULL != lsd->input_task)
-	    kill_linuxinput_task(lsd);
+    if (NULL != LIBBASE->lsd.input_task)
+	kill_linuxinput_task(&LIBBASE->lsd);
 	    
-	if (lsd->mouse_inited)
-	    cleanup_linuxmouse(lsd);
+    if (LIBBASE->lsd.mouse_inited)
+	cleanup_linuxmouse(&LIBBASE->lsd);
 
-	if (lsd->kbd_inited)
-	    cleanup_linuxkbd(lsd);
+    if (LIBBASE->lsd.kbd_inited)
+	cleanup_linuxkbd(&LIBBASE->lsd);
 		
-	if (NULL != lsd->utilitybase)
-	    CloseLibrary(lsd->utilitybase);
+    if (NULL != LIBBASE->lsd.utilitybase)
+	CloseLibrary(LIBBASE->lsd.utilitybase);
 	    
-	if (NULL != lsd->oopbase)
-	    CloseLibrary(lsd->oopbase);
-
-	FreeMem(lsd, sizeof (*lsd));
-    }
-    return;	
+    return TRUE;	
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
-
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
-{
-    struct linux_staticdata *lsd;
-
-kprintf("LINUX_OPENLIB\n");    
-    lsd = init_linux_hidd(SysBase);
-kprintf("LSD: %p\n", lsd);
-    if (NULL != lsd)
-    	return TRUE;
-
-    return FALSE;
-}
+ADD2INITLIB(Init_Hidd, 1)
+ADD2EXPUNGELIB(Expunge_Hidd, 1)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux fbdev gfx HIDD for AROS.
@@ -28,8 +28,12 @@
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 
+#include <aros/symbolsets.h>
+
 #include "linux_intern.h"
 #include "bitmap.h"
+
+#include LC_LIBDEFS_FILE
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -51,12 +55,6 @@ static struct OOP_ABDescr attrbases[] =
     { NULL  	    	, NULL      	    	}
 };
 
-/* Private instance data for Gfx hidd class */
-struct gfx_data
-{
-    int dummy;   
-};
-
 static BOOL setup_linuxfb(struct linux_staticdata *fsd);
 static VOID cleanup_linuxfb(struct linux_staticdata *fsd);
 static BOOL get_pixfmt(HIDDT_PixelFormat *pf, struct linux_staticdata *fsd);
@@ -65,7 +63,7 @@ static BOOL get_pixfmt(HIDDT_PixelFormat *pf, struct linux_staticdata *fsd);
 
 
 
-static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     UBYTE sync_description[32];
     
@@ -214,12 +212,8 @@ kprintf("FB;  mask: (%p, %p, %p, %p), shift: (%d, %d, %d, %d)\n"
 }
 
 /********** FBGfx::Dispose()  ******************************/
-static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID LinuxFB__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct gfx_data *data;
-    
-    data = OOP_INST_DATA(cl, o);
-    
     cleanup_linuxfb(LSD(cl));
     
     OOP_DoSuperMethod(cl, o, msg);
@@ -228,7 +222,7 @@ static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 }
 
 /********** FBGfx::NewBitMap()  ****************************/
-static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *LinuxFB__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
 
     BOOL displayable;
@@ -266,7 +260,7 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+VOID LinuxFB__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     BOOL src = FALSE, dest = FALSE;
     ULONG mode;
@@ -374,7 +368,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 }
 
 /******* FBGfx::Set()  ********************************************/
-static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     
@@ -404,90 +398,31 @@ static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /********************  init_gfxclass()  *********************************/
 
-#define NUM_ROOT_METHODS 3
-#define NUM_GFXHIDD_METHODS 2
-
-OOP_Class *init_linuxgfxclass (struct linux_staticdata *fsd)
+AROS_SET_LIBFUNC(Init_GfxClass, LIBBASETYPE, LIBBASE)
 {
-    OOP_Class *cl = NULL;
+    AROS_SET_LIBFUNC_INIT
 
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-    	{(IPTR (*)())gfx_new	, moRoot_New	},
-    	{(IPTR (*)())gfx_dispose, moRoot_Dispose},
-    	{(IPTR (*)())gfx_get	, moRoot_Get	},
-	{NULL	    	    	, 0UL	    	}
-    };
+    return OOP_ObtainAttrBases(attrbases);
     
-    struct OOP_MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
-    {
-    	{(IPTR (*)())gfxhidd_newbitmap	, moHidd_Gfx_NewBitMap	},
-    	{(IPTR (*)())gfxhidd_copybox	, moHidd_Gfx_CopyBox	},
-	{NULL	    	    	    	, 0UL	    	    	}
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] = 
-    {
-    	{root_descr 	, IID_Root  	, NUM_ROOT_METHODS  },
-    	{gfxhidd_descr	, IID_Hidd_Gfx	, NUM_GFXHIDD_METHODS	},
-	{NULL	    	, NULL	    	, 0 	    	    	}
-    };
-    
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-	
-    struct TagItem tags[] =
-    {
-	{ aMeta_SuperID     	, (IPTR)CLID_Hidd_Gfx	    	},
-	{ aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	},
-	{ aMeta_InstSize    	, (IPTR)sizeof (struct gfx_data)},
-	{ aMeta_ID  	    	, (IPTR)CLID_Hidd_LinuxFB   	},
-	{ TAG_DONE  	    	, 0UL	    	    	    	}
-    };
-    
-    if (MetaAttrBase)
-    {
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if(cl)
-	{
-	    
-	    if (OOP_ObtainAttrBases(attrbases))
-	    {
-		cl->UserData = (APTR)fsd;
-		fsd->gfxclass = cl;
-	    	OOP_AddClass(cl);
-	    }
-	    else
-	    {
-	    	free_linuxgfxclass( fsd );
-		cl = NULL;
-	    }
-	}
-	OOP_ReleaseAttrBase(IID_Meta);
-    }
-    return cl;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 
 
 
 /*************** free_gfxclass()  **********************************/
-VOID free_linuxgfxclass(struct linux_staticdata *fsd)
+AROS_SET_LIBFUNC(Expunge_GfxClass, LIBBASETYPE, LIBBASE)
 {
-    if(NULL != fsd)
-    {
+    AROS_SET_LIBFUNC_INIT
+
+    OOP_ReleaseAttrBases(attrbases);
+    return TRUE;
     
-    	if (NULL != fsd->gfxclass)
-	{
-	    OOP_RemoveClass(fsd->gfxclass);
-	    OOP_DisposeObject((OOP_Object *) fsd->gfxclass);
-	    
-	    fsd->gfxclass = NULL;
-	}
-	
-	OOP_ReleaseAttrBases(attrbases);
-    }
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(Init_GfxClass, 0)
+ADD2EXPUNGELIB(Expunge_GfxClass, 0)
 
 
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Task used for wainting on events from linux
@@ -49,9 +49,6 @@ struct mouse_state {
     BYTE dx;
     BYTE dy;
 };
-
-#undef OOPBase
-#define OOPBase lsd->oopbase
 
 #undef LSD
 #define LSD lsd
@@ -121,9 +118,9 @@ kprintf("INSIDE INPUT TASK\n");
     lsd = itp.lsd;
 kprintf("in inputtask: lsd = %p\n", lsd);
 
-kprintf("CREATING UNIXIO,,, OOPBase=%p\n", lsd->oopbase);
+kprintf("CREATING UNIXIO,,, OOPBase=%p\n", OOPBase);
 kprintf("now\n");
-    unixio = (HIDD)New_UnixIO(lsd->oopbase, SysBase);
+    unixio = (HIDD)New_UnixIO(OOPBase, SysBase);
 kprintf("UNIXIO %p\n", unixio);
     if (NULL == unixio) {
     	goto failexit;

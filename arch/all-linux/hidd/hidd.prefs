@@ -6,14 +6,14 @@ library DRIVERS:graphics.hidd
 
 # Uncomment following lines to activate X11 driver
 
-library x11cl.library
+library x11gfx.hidd
 gfx	hidd.gfx.x11
 mouse	hidd.mouse.x11
 kbd	hidd.kbd.x11
 
 # Uncomment following lines to activate framebuffer driver
 
-#library linux.library
+#library linux.hidd
 #gfx	hidd.gfx.linuxfb
 #mouse	hidd.mouse.linux
 #kbd	hidd.kbd.linux

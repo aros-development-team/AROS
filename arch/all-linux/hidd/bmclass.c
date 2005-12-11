@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Onscreen bitmap class for linux fb device
@@ -17,8 +17,12 @@
 
 #include <hidd/graphics.h>
 
+#include <aros/symbolsets.h>
+
 #include "linux_intern.h"
 #include "bitmap.h"
+
+#include LC_LIBDEFS_FILE
 
 static OOP_AttrBase HiddBitMapAttrBase = 0;
 
@@ -33,7 +37,7 @@ static struct OOP_ABDescr attrbases[] =
  
 /*********** BitMap::New() *************************************/
 
-static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *LinuxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL ok = TRUE;
     
@@ -107,7 +111,7 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 }
 
 /**********  Bitmap::Dispose()  ***********************************/
-static VOID bitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID LinuxBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
@@ -118,7 +122,7 @@ static VOID bitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 }
 
 /*********  BitMap::ObtainDirectAccess()  *************************************/
-static BOOL bitmap_obtaindirectaccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
+BOOL LinuxBM__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
 {
     ULONG width, height;
     
@@ -135,7 +139,7 @@ static BOOL bitmap_obtaindirectaccess(OOP_Class *cl, OOP_Object *o, struct pHidd
     return TRUE;
 }
 
-static VOID bitmap_releasedirectaccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
+VOID LinuxBM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
 {
      /* Do nothing */
 #warning Here we can use mprotect() to detect accesses while no access is granted
@@ -143,7 +147,7 @@ static VOID bitmap_releasedirectaccess(OOP_Class *cl, OOP_Object *o, struct pHid
 }
 
 /*********** BitMap::PutPixel() ***********************************************/
-static VOID bitmap_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
+VOID LinuxBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     struct BitmapData  *data;
     UBYTE   	    	*addr;
@@ -221,7 +225,7 @@ static VOID bitmap_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 }
 
 /*********** BitMap::GetPixel() ***********************************************/
-static HIDDT_Pixel  bitmap_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
+HIDDT_Pixel  LinuxBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     struct BitmapData  *data;
     UBYTE   	    	*addr;
@@ -262,7 +266,7 @@ static HIDDT_Pixel  bitmap_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 
 /*********  BitMap::FillRect()  ***************************/
 
-static VOID bitmap_fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+VOID LinuxBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct BitmapData  *data =OOP_INST_DATA(cl, o);
     HIDDT_Pixel     	 fg = GC_FG(msg->gc);
@@ -351,7 +355,7 @@ static VOID bitmap_fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 
 /*********  BitMap::PutImage()  ***************************/
 
-static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
+VOID LinuxBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
@@ -494,7 +498,7 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 /*********  BitMap::GetImage()  ***************************/
 
-static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+VOID LinuxBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
@@ -628,7 +632,7 @@ static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 
 /*** BitMap::PutImageLUT() **********************************************/
 
-static VOID bitmap_putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+VOID LinuxBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
@@ -697,7 +701,7 @@ static VOID bitmap_putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 
 /*** BitMap::BlitColorExpansion() **********************************************/
 
-static VOID bitmap_blitcolorexpansion(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
+VOID LinuxBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     struct BitmapData  *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel     	fg, bg, pix;
@@ -788,102 +792,28 @@ static VOID bitmap_blitcolorexpansion(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 /*** init_onbmclass *********************************************************/
 
-#undef LSD
-#define LSD(cl) fsd
-
-#define NUM_ROOT_METHODS	2
-#define NUM_BITMAP_METHODS	9
-
-OOP_Class *init_linuxbmclass(struct linux_staticdata *fsd)
+AROS_SET_LIBFUNC(Init_BMClass, LIBBASETYPE, LIBBASE)
 {
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-        {(IPTR (*)())bitmap_new    , moRoot_New     },
-        {(IPTR (*)())bitmap_dispose, moRoot_Dispose },
-        {NULL, 0UL}
-    };
+    AROS_SET_LIBFUNC_INIT
 
-    struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
-    {
-        {(IPTR (*)())bitmap_obtaindirectaccess	, moHidd_BitMap_ObtainDirectAccess	},
-        {(IPTR (*)())bitmap_releasedirectaccess , moHidd_BitMap_ReleaseDirectAccess	},
-        {(IPTR (*)())bitmap_putpixel	    	, moHidd_BitMap_PutPixel		},
-        {(IPTR (*)())bitmap_getpixel	    	, moHidd_BitMap_GetPixel		},
-        {(IPTR (*)())bitmap_fillrect	    	, moHidd_BitMap_FillRect		},
-        {(IPTR (*)())bitmap_putimage	    	, moHidd_BitMap_PutImage		},
-        {(IPTR (*)())bitmap_getimage	    	, moHidd_BitMap_GetImage		},
-        {(IPTR (*)())bitmap_putimagelut     	, moHidd_BitMap_PutImageLUT		},
-        {(IPTR (*)())bitmap_blitcolorexpansion	, moHidd_BitMap_BlitColorExpansion	},
-	
-        {NULL, 0UL}
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] = 
-    {
-        {root_descr 	, IID_Root          , NUM_ROOT_METHODS	},
-        {bitMap_descr	, IID_Hidd_BitMap   , NUM_BITMAP_METHODS},
-        {NULL	    	, NULL	    	    , 0     	    	}
-    };
+    /* Get attrbase for the BitMap interface */
+     return OOP_ObtainAttrBases(attrbases);
 
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID	    	, (IPTR)CLID_Hidd_BitMap	    },
-        {aMeta_InterfaceDescr	, (IPTR)ifdescr			    },
-        {aMeta_InstSize     	, (IPTR)sizeof(struct BitmapData)   },
-        {TAG_DONE   	    	, 0UL	    	    	    	    }
-    };
-    
-    OOP_Class *cl = NULL;
-
-    if(0 != MetaAttrBase)
-    {
-        cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-	if(NULL != cl)
-	{
-            cl->UserData     = (APTR) fsd;
-           
-            /* Get attrbase for the BitMap interface */
-	    if (OOP_ObtainAttrBases(attrbases))
-	    {
-	    	fsd->bmclass = cl;
-                OOP_AddClass(cl);
-            }
-	    else
-	    {
-    	    	#warning "The failure handling code is buggy. How do we know if the class was successfully added before removing it in free_onbcmlass ?"
-                free_linuxbmclass( fsd );
-                cl = NULL;
-            }
-        }
-	
-	/* We don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-	
-    } /* if(MetaAttrBase) */
-    
-    return cl;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 
 /*** free_bitmapclass *********************************************************/
 
-void free_linuxbmclass(struct linux_staticdata *fsd)
+AROS_SET_LIBFUNC(Expunge_BMClass, LIBBASETYPE, LIBBASE)
 {
-    if(NULL != fsd)
-    {
-    
-        if(NULL != fsd->bmclass)
-	{
-	    OOP_RemoveClass(fsd->bmclass);
-	    OOP_DisposeObject((OOP_Object *) fsd->bmclass);
-            fsd->bmclass = NULL;
-	}
-	
-	OOP_ReleaseAttrBases(attrbases);	
-    }
-    
-    return;
+    AROS_SET_LIBFUNC_INIT
 
+    OOP_ReleaseAttrBases(attrbases);	
+    return TRUE;
+
+    AROS_SET_LIBFUNC_EXIT
 }
+
+ADD2INITLIB(Init_BMClass, 0)
+ADD2EXPUNGELIB(Expunge_BMClass, 0)

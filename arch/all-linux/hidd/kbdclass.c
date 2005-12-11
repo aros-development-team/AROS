@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux hidd handling keyboard
@@ -18,6 +18,8 @@
 #include <devices/inputevent.h>
 #include <devices/rawkeycodes.h>
 
+#include <aros/symbolsets.h>
+
 /* hack: prevent linux include header <bits/time.h> to re-define timeval struct */
 #  define _STRUCT_TIMEVAL 1
 
@@ -29,23 +31,17 @@
 
 #include "linux_intern.h"
 
+#include LC_LIBDEFS_FILE
+
+#define DEBUG 0
 #include <aros/debug.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define IID_Hidd_LinuxKbd	"hidd.kbd.linux"
-#define CLID_Hidd_LinuxKbd	"hidd.kbd.linux"
 
 static UBYTE scancode2rawkey[256];
 static BOOL havetable;
 void setup_sighandling(void);
 void cleanup_sighandling();
-
-struct linuxkbd_data
-{
-    VOID (*kbd_callback)(APTR, UWORD);
-    APTR callbackdata;
-};
 
 static OOP_AttrBase HiddKbdAB = 0;
 
@@ -61,7 +57,7 @@ static BOOL havetable = FALSE;
 static UWORD scancode2hidd(UBYTE scancode, struct linux_staticdata *lsd);
 
 /***** Kbd::New()  ***************************************/
-static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object * LinuxKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL    	    has_kbd_hidd = FALSE;
     struct TagItem *tag, *tstate;
@@ -123,7 +119,7 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 }
 
 
-static VOID kbd_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID LinuxKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     ObtainSemaphore(&LSD(cl)->sema);
     LSD(cl)->kbdhidd = NULL;
@@ -134,7 +130,7 @@ static VOID kbd_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /***** LinuxKbd::HandleEvent()  ***************************************/
 
-static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxKbd_HandleEvent *msg)
+VOID LinuxKbd__Hidd_LinuxKbd__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxKbd_HandleEvent *msg)
 {
     struct linuxkbd_data  *data;
     UBYTE   	    	   scancode;
@@ -385,99 +381,33 @@ static void LoadScanCode2RawKeyTable(struct linux_staticdata *lsd)
 /********************  init_kbdclass()  *********************************/
 
 
-#define NUM_ROOT_METHODS     2
-#define NUM_LINUXKBD_METHODS 1
-
-OOP_Class *init_linuxkbdclass (struct linux_staticdata *lsd)
+AROS_SET_LIBFUNC(Init_KbdClass, LIBBASETYPE, LIBBASE)
 {
-    OOP_Class *cl = NULL;
-
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-    	{ OOP_METHODDEF(kbd_new)    , moRoot_New    	},
-    	{ OOP_METHODDEF(kbd_dispose), moRoot_Dispose 	},
-	{ NULL	    	    	    , 0UL   	    	}
-    };
-    
-    struct OOP_MethodDescr kbdhidd_descr[NUM_LINUXKBD_METHODS + 1] = 
-    {
-    	{ OOP_METHODDEF(kbd_handleevent), moHidd_LinuxKbd_HandleEvent 	},
-	{ NULL	    	    	    	, 0UL 	    	    	    	}
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-    	{ root_descr	, IID_Root  	    , NUM_ROOT_METHODS	    },
-    	{ kbdhidd_descr , IID_Hidd_LinuxKbd , NUM_LINUXKBD_METHODS  },
-	{ NULL	    	, NULL	    	    , 0     	    	    }
-    };
-    
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-	
-    struct TagItem tags[] =
-    {
-	{ aMeta_SuperID     	, (IPTR)CLID_Hidd 			},
-	{ aMeta_InterfaceDescr	, (IPTR)ifdescr				},
-	{ aMeta_InstSize    	, (IPTR)sizeof (struct linuxkbd_data)	},
-	{ aMeta_ID  	    	, (IPTR)CLID_Hidd_LinuxKbd		},
-	{ TAG_DONE  	    	, 0UL	    	    	    	    	}
-    };
+    AROS_SET_LIBFUNC_INIT
 
 #if 0
-    LoadScanCode2RawKeyTable(lsd);
+    LoadScanCode2RawKeyTable(&LIBBASE->lsd);
 #endif
 
-    if (MetaAttrBase)
-    {
+    return OOP_ObtainAttrBases(attrbases);
     
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if (NULL != cl)
-	{
-	    
-	    if (OOP_ObtainAttrBases(attrbases))
-	    {
-		cl->UserData = (APTR)lsd;
-		lsd->kbdclass = cl;
-		
-	    	OOP_AddClass(cl);
-	    }
-	    else
-	    {
-	    	free_linuxkbdclass(lsd);
-		cl = NULL;
-	    }
-	}
-	
-	/* Don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-    }
-    
-    return cl;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 
 /*************** free_kbdclass()  **********************************/
-VOID free_linuxkbdclass(struct linux_staticdata *lsd)
+AROS_SET_LIBFUNC(Expunge_KbdClass, LIBBASETYPE, LIBBASE)
 {
-    EnterFunc(bug("free_kbdclass(lsd=%p)\n", lsd));
+    AROS_SET_LIBFUNC_INIT
 
-    if(NULL != lsd)
-    {
-	
-        if (NULL != lsd->kbdclass)
-	{
-        	OOP_RemoveClass(lsd->kbdclass);
-	
-		OOP_DisposeObject((OOP_Object *) lsd->kbdclass);
-        	lsd->kbdclass = NULL;
-	}
-	
-	OOP_ReleaseAttrBases(attrbases);
-
-    }
-
-    ReturnVoid("free_kbdclass");
+    OOP_ReleaseAttrBases(attrbases);
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
+
+ADD2INITLIB(Init_KbdClass, 0)
+ADD2EXPUNGELIB(Expunge_KbdClass, 0)
 
 
 int set_kbd_mode(int fd, int mode, int *oldmode)
@@ -685,9 +615,6 @@ void cleanup_sighandling()
     }	
 }
 
-
-#undef OOPBase
-#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(o)))->UserData)
 
 VOID HIDD_LinuxKbd_HandleEvent(OOP_Object *o, UBYTE scanCode)
 {

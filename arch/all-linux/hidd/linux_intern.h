@@ -2,7 +2,7 @@
 #define LINUX_INTERN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux hidd for AROS
@@ -27,6 +27,9 @@
 #ifndef HIDD_GRAPHICS_H
 #   include <hidd/graphics.h>
 #endif
+
+/* hack: prevent linux include header <bits/time.h> to re-define timeval struct */
+#  define _STRUCT_TIMEVAL 1
 
 #include <linux/fb.h>
 #include <linux/kd.h>
@@ -69,6 +72,14 @@ struct pHidd_LinuxKbd_HandleEvent
 };
 VOID HIDD_LinuxKbd_HandleEvent(OOP_Object *o, UBYTE scanCode);
 
+/* Data */
+struct linuxkbd_data
+{
+    VOID (*kbd_callback)(APTR, UWORD);
+    APTR callbackdata;
+};
+
+
 /***** Linux Mouse HIDD *******************/
 
 /* IDs */
@@ -90,13 +101,18 @@ struct pHidd_LinuxMouse_HandleEvent
 
 VOID HIDD_LinuxMouse_HandleEvent(OOP_Object *o, struct pHidd_Mouse_Event *mouseEvent);
 
+/* Data */
+struct mouse_data
+{
+    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
+    APTR callbackdata;
+};
 
 /*** Shared data ***/
 struct linux_staticdata {
     struct SignalSemaphore sema;
     
     struct ExecBase *sysbase;
-    struct Library *oopbase;
     struct Library *utilitybase;
     
     OOP_Class *gfxclass;
@@ -127,17 +143,13 @@ struct linux_staticdata {
 #endif    
 };
 
-OOP_Class *init_linuxgfxclass (struct linux_staticdata *lsd);
-VOID free_linuxgfxclass(struct linux_staticdata *lsd);
-
-OOP_Class *init_linuxbmclass(struct linux_staticdata *lsd);
-VOID free_linuxbmclass(struct linux_staticdata *lsd);
-
-OOP_Class *init_linuxmouseclass(struct linux_staticdata *lsd);
-VOID free_linuxmouseclass(struct linux_staticdata *lsd);
-
-OOP_Class *init_linuxkbdclass(struct linux_staticdata *lsd);
-VOID free_linuxkbdclass(struct linux_staticdata *lsd);
+struct linux_base
+{
+    struct Library library;
+    struct ExecBase *sysbase;
+    BPTR	seglist;
+    struct linux_staticdata lsd;
+};
 
 struct Task *init_linuxinput_task(struct linux_staticdata *lsd);
 VOID kill_linuxinput_task(struct linux_staticdata *lsd);
@@ -157,12 +169,8 @@ VOID fbRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2);
 #define UNLOCK_FRAMEBUFFER(lsd) ReleaseSemaphore(&lsd->framebufferlock)
 #endif
 
-#define LSD(cl) ((struct linux_staticdata *)cl->UserData)
+#define LSD(cl) (&((struct linux_base *)cl->UserData)->lsd)
 
-#define OOPBase		(LSD(cl)->oopbase)
 #define UtilityBase	(LSD(cl)->utilitybase)
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct linux_base *, LIBBASE, 3, Linux)
 
 #endif /* LINUX_INTERN_H */
