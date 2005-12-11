@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux init code for emulated (Unix) systems.
@@ -42,8 +42,8 @@ extern const struct Resident
     Aros_ROMTag,
 /*    BOOPSI_resident,*/
     OOP_ROMTag,
-    HIDD_resident,
-    UnixIO_resident,
+    HIDDCl_ROMTag,
+    UXIO_ROMTag,
     Graphics_ROMTag,
     Layers_ROMTag,
     Timer_ROMTag,
@@ -53,8 +53,8 @@ extern const struct Resident
     Keymap_ROMTag,
     Input_ROMTag,
     Intuition_ROMTag,
-    X11Hidd_resident,
-    LinuxHidd_resident,
+    X11Cl_ROMTag,
+    LinuxFB_ROMTag,
     Cybergraphics_ROMTag,
     Console_ROMTag,
 #if ENABLE_DBUS == 1
@@ -66,8 +66,8 @@ extern const struct Resident
     Dos_ROMTag,
     LDDemon_resident,
     emul_handler_resident,
-    hiddserial_resident,
-    hiddparallel_resident,
+    UXSer_ROMTag,
+    UXPar_ROMTag,
     boot_resident,
     Con_ROMTag,
     Nil_ROMTag,
@@ -86,8 +86,8 @@ static const struct Resident *romtagList[] =
     &BOOPSI_resident,			/* ColdStart,   95	 */
 #endif
     &OOP_ROMTag,			/* ColdStart,   94	 */
-    &HIDD_resident,			/* ColdStart,   92	 */
-    &UnixIO_resident,			/* ColdStart,   91	 */
+    &HIDDCl_ROMTag,			/* ColdStart,   92	 */
+    &UXIO_ROMTag,			/* ColdStart,   91	 */
     &Graphics_ROMTag, 			/* ColdStart,   65	 */
     &Layers_ROMTag,			/* ColdStart,   60   */
     &Timer_ROMTag,			/* ColdStart,   50	 */
@@ -97,16 +97,16 @@ static const struct Resident *romtagList[] =
     &Keymap_ROMTag,			/* ColdStart,   40	 */
     &Input_ROMTag,			/* ColdStart,   30	 */
     &Intuition_ROMTag,			/* ColdStart,   10	 */
-    &X11Hidd_resident,			/* ColdStart,   9	 */
-    &LinuxHidd_resident,		/* ColdStart,   9	 */
+    &X11Cl_ROMTag,			/* ColdStart,   9	 */
+    &LinuxFB_ROMTag,			/* ColdStart,   9	 */
     &Cybergraphics_ROMTag,		/* ColdStart,   8	 */
     &Console_ROMTag,			/* ColdStart,   5	 */
 #if ENABLE_DBUS == 1
     &Dbus_ROMTag,			/* ColdStart,   0	 */
 #endif
     &emul_handler_resident,		/* ColdStart,   0	 */
-    &hiddserial_resident,   	    	/* ColdStart,   0    */
-    &hiddparallel_resident,   	    	/* ColdStart,   0    */
+    &UXSer_ROMTag,	   	    	/* ColdStart,   0    */
+    &UXPar_ROMTag,	   	    	/* ColdStart,   0    */
     &Workbench_ROMTag,			/* ColdStart,  -120  */
     &Mathffp_ROMTag,			/* ColdStart,  -120  */
 
