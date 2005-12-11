@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: $(ARCH) init code for emulated (Unix) systems.
@@ -34,8 +34,8 @@ extern const struct Resident
     Aros_ROMTag,
 /*    BOOPSI_resident,*/
     OOP_ROMTag,
-    HIDD_resident,
-    UnixIO_resident,
+    HIDDCl_ROMTag,
+    UXIO_ROMTag,
     Graphics_ROMTag,
     Layers_ROMTag,
     Timer_ROMTag,
@@ -45,7 +45,7 @@ extern const struct Resident
     Keymap_ROMTag,
     Input_ROMTag,
     Intuition_ROMTag,
-    X11Hidd_resident,
+    X11Cl_ROMTag,
     Cybergraphics_ROMTag,
     Console_ROMTag,
     Mathffp_ROMTag,
@@ -54,8 +54,8 @@ extern const struct Resident
     Dos_ROMTag,
     LDDemon_resident,
     emul_handler_resident,
-    hiddserial_resident,
-    hiddparallel_resident,
+    UXSer_ROMTag,
+    UXPar_ROMTag,
     boot_resident,
     Con_ROMTag,
     Nil_ROMTag,
@@ -66,33 +66,33 @@ extern const struct Resident
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
-    &Expansion_ROMTag,		    /* SingleTask,  110  */
+    &Expansion_ROMTag,			    /* SingleTask,  110  */
     &Exec_resident,			    /* SingleTask,  105  */
     &Utility_ROMTag,			    /* ColdStart,   103  */
     &Aros_ROMTag,			    /* ColdStart,   102  */
-    &Mathieeesingbas_ROMTag,              /* ColdStart,   101  */
+    &Mathieeesingbas_ROMTag,                /* ColdStart,   101  */
 #if 0
     &BOOPSI_resident,			    /* ColdStart,   95	 */
 #endif
     &OOP_ROMTag,			    /* ColdStart,   94	 */
-    &HIDD_resident,			    /* ColdStart,   92	 */
-    &UnixIO_resident,			    /* ColdStart,   91	 */
-    &Graphics_ROMTag, 		    /* ColdStart,   65	 */
+    &HIDDCl_ROMTag,			    /* ColdStart,   92	 */
+    &UXIO_ROMTag,			    /* ColdStart,   91	 */
+    &Graphics_ROMTag, 			    /* ColdStart,   65	 */
     &Layers_ROMTag,			    /* ColdStart,   60   */
     &Timer_ROMTag,			    /* ColdStart,   50	 */
-    &Battclock_ROMTag,		    /* ColdStart,   45	 */
+    &Battclock_ROMTag,			    /* ColdStart,   45	 */
     &Keyboard_ROMTag,			    /* ColdStart,   44	 */
     &Gameport_ROMTag,			    /* ColdStart,   43	 */
     &Keymap_ROMTag,			    /* ColdStart,   40	 */
     &Input_ROMTag,			    /* ColdStart,   30	 */
-    &Intuition_ROMTag,		    /* ColdStart,   10	 */
-    &X11Hidd_resident,			    /* ColdStart,   9	 */
+    &Intuition_ROMTag,			    /* ColdStart,   10	 */
+    &X11Cl_ROMTag,			    /* ColdStart,   9	 */
     &Cybergraphics_ROMTag,		    /* ColdStart,   8	 */
     &Console_ROMTag,			    /* ColdStart,   5	 */
     &emul_handler_resident,		    /* ColdStart,   0	 */
-    &hiddserial_resident,   	    	    /* ColdStart,   0    */
-    &hiddparallel_resident,   	    	    /* ColdStart,   0    */
-    &Workbench_ROMTag,		    /* ColdStart,  -120  */
+    &UXSer_ROMTag,	   	    	    /* ColdStart,   0    */
+    &UXPar_ROMTag,	   	    	    /* ColdStart,   0    */
+    &Workbench_ROMTag,			    /* ColdStart,  -120  */
     &Mathffp_ROMTag,			    /* ColdStart,  -120  */
 
     /*
