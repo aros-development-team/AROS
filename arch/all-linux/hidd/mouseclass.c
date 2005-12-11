@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux hidd handling mouse events.
@@ -20,18 +20,14 @@
 #include <hidd/hidd.h>
 #include <hidd/mouse.h>
 
+#include <aros/symbolsets.h>
+
 #include "linux_intern.h"
+
+#include LC_LIBDEFS_FILE
 
 #define DEBUG 0
 #include <aros/debug.h>
-
-#define CLID_Hidd_LinuxMouse	"hidd.mouse.linux"
-#define IID_Hidd_LinuxMouse	"hidd.mouse.linux"
-struct mouse_data
-{
-    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
-    APTR callbackdata;
-};
 
 static OOP_AttrBase HiddMouseAB;
 
@@ -42,7 +38,7 @@ static struct OOP_ABDescr attrbases[] =
 };
 
 
-static OOP_Object *mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *LinuxMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
 
@@ -89,7 +85,7 @@ static OOP_Object *mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     return o;
 }
 
-static VOID mouse_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID LinuxMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     ObtainSemaphore(&LSD(cl)->sema);
     LSD(cl)->mousehidd = NULL;
@@ -100,7 +96,7 @@ static VOID mouse_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 }
 
 
-static VOID mouse_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID LinuxMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
 
@@ -118,7 +114,7 @@ static VOID mouse_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 }
 
 
-static VOID mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxMouse_HandleEvent *msg)
+VOID LinuxMouse__Hidd_LinuxMouse__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxMouse_HandleEvent *msg)
 {
 
     struct mouse_data *data = OOP_INST_DATA(cl, o);
@@ -130,85 +126,31 @@ static VOID mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxMo
 
 /********************  init_mouseclass()  *********************************/
 
-#undef LSD
-#define LSD(cl) lsd
-
-#define NUM_ROOT_METHODS 3
-#define NUM_X11MOUSE_METHODS 1
-
-OOP_Class *init_linuxmouseclass (struct linux_staticdata *lsd)
+AROS_SET_LIBFUNC(Init_LinuxMouseClass, LIBBASETYPE, LIBBASE)
 {
-    OOP_Class *cl = NULL;
+    AROS_SET_LIBFUNC_INIT
 
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-    {
-    	{OOP_METHODDEF(mouse_new),			moRoot_New},
-    	{OOP_METHODDEF(mouse_dispose),		moRoot_Dispose},
-    	{OOP_METHODDEF(mouse_get),			moRoot_Get},
-	{NULL, 0UL}
-    };
-    struct OOP_MethodDescr mousehidd_descr[NUM_X11MOUSE_METHODS + 1] = 
-    {
-    	{OOP_METHODDEF(mouse_handleevent),	moHidd_LinuxMouse_HandleEvent},
-	{NULL, 0UL}
-    };
-    struct OOP_InterfaceDescr ifdescr[] = {
-    	{root_descr,	  IID_Root, 		NUM_ROOT_METHODS},
-    	{mousehidd_descr, IID_Hidd_LinuxMouse, 	NUM_X11MOUSE_METHODS},
-	{NULL, NULL, 0}
-    };
+    return OOP_ObtainAttrBases(attrbases);
     
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-	
-    struct TagItem tags[] = {
-	{ aMeta_SuperID,		(IPTR)CLID_Hidd },
-	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{ aMeta_InstSize,		(IPTR)sizeof (struct mouse_data) },
-	{ aMeta_ID,			(IPTR)CLID_Hidd_LinuxMouse },
-	{TAG_DONE, 0UL}
-    };
-
-    if (MetaAttrBase) {
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if(NULL != cl) {
-	    
-	    if (OOP_ObtainAttrBases(attrbases)) {
-	    
-	    	cl->UserData = (APTR)lsd;
-		lsd->mouseclass = cl;
-		
-	    	OOP_AddClass(cl);
-	    } else {
-	    	free_linuxmouseclass(lsd);
-		cl = NULL;
-	    }
-	}
-	/* Don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-    }
-    return cl;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 
 
 
 /*************** free_mouseclass()  **********************************/
-VOID free_linuxmouseclass(struct linux_staticdata *lsd)
+AROS_SET_LIBFUNC(Expunge_LinuxMouseClass, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
 
-    if(NULL != lsd) {
-
-	if (NULL != lsd->mouseclass) {
-	    OOP_RemoveClass(lsd->mouseclass);
-	
-	    OOP_DisposeObject((OOP_Object *) lsd->mouseclass);
-            lsd->mouseclass = NULL;
-	}
-	OOP_ReleaseAttrBases(attrbases);
-
-    }
-    return;
+    OOP_ReleaseAttrBases(attrbases);
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
+
+ADD2INITLIB(Init_LinuxMouseClass, 0)
+ADD2EXPUNGELIB(Expunge_LinuxMouseClass, 0)
 
 
 #undef LSD
@@ -240,9 +182,6 @@ VOID cleanup_linuxmouse(struct linux_staticdata *lsd)
     }
     return;
 }
-
-#undef OOPBase
-#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(o)))->UserData)
 
 VOID HIDD_LinuxMouse_HandleEvent(OOP_Object *o, struct pHidd_Mouse_Event *mouseEvent)
 {

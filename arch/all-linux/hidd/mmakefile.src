@@ -1,14 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	   := gfxclass bmclass kbdclass mouseclass inputtask
+FILES := linux_init gfxclass bmclass kbdclass mouseclass inputtask
 
-%build_module_macro mmake=kernel-hidd-linux \
+%build_module mmake=kernel-hidd-linux \
   modname=linux modtype=hidd \
-  files=$(FILES) \
-  conffile=lib.conf \
-  genfunctable=yes \
-  cflags="$(HOST_CFLAGS) -I$(GENINCDIR) -D__AROS__" \
+  files=$(FILES)  cflags="$(HOST_CFLAGS) -I$(GENINCDIR) -D__AROS__" \
   compiler=host
 
 
@@ -18,6 +15,3 @@ workbench-s-hiddprefs-linux-$(CPU) : $(AROS_S)/hidd.prefs
 	
 $(AROS_S)/hidd.prefs : hidd.prefs
 	@$(CP) $< $@
-
-%common
-
