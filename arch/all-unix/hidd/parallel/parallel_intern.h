@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -79,21 +79,14 @@ struct IntHIDDParallelBase
     struct ExecBase          *hdg_SysBase;
     struct Library           *hdg_UtilityBase;
 
-    struct class_static_data *hdg_csd;
+    struct class_static_data  hdg_csd;
 };
 
 
-#define CSD(x) ((struct class_static_data *)x)
-
-#undef SysBase
-#define SysBase (CSD(cl->UserData)->sysbase)
+#define CSD(cl) (&((struct IntHIDDParallelBase *)cl)->hdg_csd)
 
 #undef UtilityBase
-#define UtilityBase (CSD(cl->UserData)->utilitybase)
-
-#undef OOPBase
-#define OOPBase (CSD(cl->UserData)->oopbase)
-
+#define UtilityBase (CSD(cl)->utilitybase)
 
 /* pre declarations */
 
