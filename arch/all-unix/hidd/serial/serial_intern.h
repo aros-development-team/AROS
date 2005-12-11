@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -40,16 +40,14 @@ struct HIDDSerialData
 
 struct class_static_data
 {
-    struct ExecBase      * sysbase;
     struct Library       * utilitybase;
-    struct Library       * oopbase;
 
     OOP_Class		 *serialhiddclass;
     OOP_Class		 *serialunitclass;
     OOP_AttrBase          hiddSerialUnitAB;
 };
 
-#define __IHidd_SerialUnitAB   (csd->hiddSerialUnitAB)
+#define __IHidd_SerialUnitAB   (CSD(cl)->hiddSerialUnitAB)
 
 struct HIDDSerialUnitData
 {
@@ -93,29 +91,14 @@ struct IntHIDDSerialBase
     struct ExecBase          *hdg_SysBase;
     struct Library           *hdg_UtilityBase;
 
-    struct class_static_data *hdg_csd;
+    struct class_static_data  hdg_csd;
 };
 
 
-#define CSD(x) ((struct class_static_data *)x)
-
-#undef SysBase
-#define SysBase (CSD(cl->UserData)->sysbase)
+#define CSD(cl) (&((struct IntHIDDSerialBase *)cl->UserData)->hdg_csd)
 
 #undef UtilityBase
-#define UtilityBase (CSD(cl->UserData)->utilitybase)
-
-#undef OOPBase
-#define OOPBase (CSD(cl->UserData)->oopbase)
-
-
-/* pre declarations */
-
-OOP_Class *init_serialhiddclass(struct class_static_data *csd);
-void   free_serialhiddclass(struct class_static_data *csd);
-
-OOP_Class *init_serialunitclass(struct class_static_data *csd);
-void   free_serialunitclass(struct class_static_data *csd);
+#define UtilityBase (CSD(cl)->utilitybase)
 
 
 #endif /* SERIAL_HIDD_INTERN_H */

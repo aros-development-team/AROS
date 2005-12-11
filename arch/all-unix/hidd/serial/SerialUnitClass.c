@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Serial Unit hidd class implementation.
@@ -34,8 +34,12 @@
 #include <devices/serial.h>
 #include <intuition/preferences.h>
 
+#include <aros/symbolsets.h>
+
 
 #include "serial_intern.h"
+
+#include LC_LIBDEFS_FILE
 #undef timeval
 
 #undef  SDEBUG
@@ -63,7 +67,7 @@ static char * unitname[] =
 /*************************** Classes *****************************/
 
 /******* SerialUnit::New() ***********************************/
-static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
+OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
   struct HIDDSerialUnitData * data;
   static const struct TagItem tags[] = {{ TAG_END, 0}};
@@ -78,7 +82,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
   {
       ULONG idx;
 
-#define csd CSD(cl->UserData)
+#define csd CSD(cl)
       if (IS_HIDDSERIALUNIT_ATTR(tag->ti_Tag, idx))
 #undef csd
       {
@@ -229,7 +233,7 @@ exit:
 }
 
 /******* SerialUnit::Dispose() ***********************************/
-static OOP_Object *serialunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
+OOP_Object *UXSerUnit__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
 {
   struct HIDDSerialUnitData * data;
   EnterFunc(bug("SerialUnit::Dispose()\n"));
@@ -262,7 +266,7 @@ static OOP_Object *serialunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
 
 
 /******* SerialUnit::Init() **********************************/
-BOOL serialunit_init(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Init *msg)
+BOOL UXSerUnit__Hidd_SerialUnit__Init(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Init *msg)
 {
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   
@@ -277,7 +281,7 @@ BOOL serialunit_init(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Init 
 }
 
 /******* SerialUnit::Write() **********************************/
-ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Write *msg)
+ULONG UXSerUnit__Hidd_SerialUnit__Write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Write *msg)
 {
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   ULONG len = 0;
@@ -355,7 +359,7 @@ static LONG unix_baudrates[] =
 ********************************/
 
 /******* SerialUnit::SetBaudrate() **********************************/
-ULONG serialunit_setbaudrate(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SetBaudrate *msg)
+ULONG UXSerUnit__Hidd_SerialUnit__SetBaudrate(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SetBaudrate *msg)
 {
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   BOOL valid = FALSE;
@@ -407,7 +411,7 @@ static UBYTE unix_datalengths[] =
 };
 
 /******* SerialUnit::SetParameters() **********************************/
-ULONG serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SetParameters *msg)
+ULONG UXSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SetParameters *msg)
 {
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   BOOL valid = TRUE;
@@ -479,7 +483,7 @@ ULONG serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_Serial
 }
 
 /******* SerialUnit::SendBreak() **********************************/
-BYTE serialunit_sendbreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SendBreak *msg)
+BYTE UXSerUnit__Hidd_SerialUnit__SendBreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SendBreak *msg)
 {
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   
@@ -490,7 +494,7 @@ BYTE serialunit_sendbreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_
 }
 
 /******* SerialUnit::Start() **********************************/
-VOID serialunit_start(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Start *msg)
+VOID UXSerUnit__Hidd_SerialUnit__Start(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Start *msg)
 {
 	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
 
@@ -510,7 +514,7 @@ VOID serialunit_start(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Star
   
 
 /******* SerialUnit::Stop() **********************************/
-VOID serialunit_stop(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Stop *msg)
+VOID UXSerUnit__Hidd_SerialUnit__Stop(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Stop *msg)
 {
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
 
@@ -522,7 +526,7 @@ VOID serialunit_stop(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Stop 
 }
 
 /****** SerialUnit::GetCapabilities ********************************/
-VOID serialunit_getcapabilities(OOP_Class * cl, OOP_Object *o, struct TagItem * tags)
+VOID UXSerUnit__Hidd_SerialUnit__GetCapabilities(OOP_Class * cl, OOP_Object *o, struct TagItem * tags)
 {
   if (NULL != tags)
   {
@@ -550,7 +554,7 @@ VOID serialunit_getcapabilities(OOP_Class * cl, OOP_Object *o, struct TagItem * 
 }
 
 /****** SerialUnit::GetStatus ********************************/
-UWORD serialunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_GetStatus *msg)
+UWORD UXSerUnit__Hidd_SerialUnit__GetStatus(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_GetStatus *msg)
 {
 //	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
 
@@ -560,8 +564,6 @@ UWORD serialunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit
 /************* The software interrupt handler that gets data from UART *****/
 
 
-#undef OOPBase
-#undef SysBase
 #undef UtilityBase
 
 #define READBUFFER_SIZE 513
@@ -631,98 +633,24 @@ AROS_UFH3(void, serialunit_write_more_data,
 
 /******* init_serialunitclass ********************************/
 
-#define SysBase     (csd->sysbase)
-#define OOPBase     (csd->oopbase)
-#define UtilityBase (csd->utilitybase)
+#define UtilityBase (LIBBASE->hdg_csd.utilitybase)
+#undef __IHidd_SerialUnitAB
+#define __IHidd_SerialUnitAB (LIBBASE->hdg_csd.hiddSerialUnitAB)
 
-
-#define NUM_ROOT_METHODS 2
-#define NUM_SERIALUNIT_METHODS moHidd_SerialUnit_NumMethods
-
-OOP_Class *init_serialunitclass (struct class_static_data *csd)
+AROS_SET_LIBFUNC(UXSerUnit_InitAttrBase, LIBBASETYPE, LIBBASE)
 {
-    OOP_Class *cl = NULL;
+    AROS_SET_LIBFUNC_INIT
+
+    EnterFunc(bug("    UXSerUnit_InitAttrBase(LIBBASE=%p)\n", LIBBASE));
+
+    __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
+
+    ReturnInt("UXSerUnit_InitAttrBase", ULONG, __IHidd_SerialUnitAB != 0);
     
-    struct OOP_MethodDescr serialunithiddroot_descr[NUM_ROOT_METHODS + 1] = 
-    {
-        {(IPTR (*)())serialunit_new,		moRoot_New},
-        {(IPTR (*)())serialunit_dispose,	moRoot_Dispose},
-/*
-        {(IPTR (*)())serialunit_set,		moRoot_Set},
-        {(IPTR (*)())serialunit_get,		moRoot_Get},
-*/
-        {NULL, 0UL}
-    };
-    
-    struct OOP_MethodDescr serialunithidd_descr[NUM_SERIALUNIT_METHODS + 1] =
-    {
-        {(IPTR (*)())serialunit_init,		moHidd_SerialUnit_Init},
-        {(IPTR (*)())serialunit_write,		moHidd_SerialUnit_Write},
-        {(IPTR (*)())serialunit_setbaudrate,	moHidd_SerialUnit_SetBaudrate},
-        {(IPTR (*)())serialunit_setparameters,	moHidd_SerialUnit_SetParameters},
-        {(IPTR (*)())serialunit_sendbreak,	moHidd_SerialUnit_SendBreak},
-        {(IPTR (*)())serialunit_start,          moHidd_SerialUnit_Start},
-        {(IPTR (*)())serialunit_stop,           moHidd_SerialUnit_Stop}, 
-        {(IPTR (*)())serialunit_getcapabilities,moHidd_SerialUnit_GetCapabilities},
-        {(IPTR (*)())serialunit_getstatus,      moHidd_SerialUnit_GetStatus},
-        {NULL, 0UL}
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {serialunithiddroot_descr	, IID_Root		, NUM_ROOT_METHODS},
-        {serialunithidd_descr		, IID_Hidd_SerialUnit	, NUM_SERIALUNIT_METHODS},
-        {NULL, NULL, 0}
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-        
-    struct TagItem tags[] =
-    {
-        { aMeta_SuperID,                (IPTR)CLID_Root},
-        { aMeta_InterfaceDescr,         (IPTR)ifdescr},
-        { aMeta_ID,                     (IPTR)CLID_Hidd_SerialUnit},
-        { aMeta_InstSize,               (IPTR)sizeof (struct HIDDSerialUnitData) },
-        {TAG_DONE, 0UL}
-    };
-
-
-    EnterFunc(bug("    init_serialunitclass(csd=%p)\n", csd));
-
-    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    D(bug("Class=%p\n", cl));
-    if(cl)
-    {
-        __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
-        if (NULL != __IHidd_SerialUnitAB) {
-            D(bug("SerialUnit Class ok\n"));
-            cl->UserData = (APTR)csd;
-
-            OOP_AddClass(cl);
-	} else {
-	    free_serialunitclass(csd);
-	    cl = NULL;
-	}
-    }
-
-    ReturnPtr("init_serialunitclass", OOP_Class *, cl);
+    AROS_SET_LIBFUNC_EXIT
 }
 
-
-void free_serialunitclass(struct class_static_data *csd)
-{
-    EnterFunc(bug("free_serialhiddclass(csd=%p)\n", csd));
-
-    if(csd)
-    {
-        OOP_RemoveClass(csd->serialhiddclass);
-	
-        if(csd->serialhiddclass) OOP_DisposeObject((OOP_Object *) csd->serialhiddclass);
-        csd->serialhiddclass = NULL;
-    }
-
-    ReturnVoid("free_serialhiddclass");
-}
+ADD2INITLIB(UXSerUnit_InitAttrBase, 0)
 
 
 /**************************************************************/
