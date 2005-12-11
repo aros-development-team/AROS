@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -106,7 +106,7 @@ static void SwapImageEndianess(XImage *image)
 
 /****************************************************************************************/
 
-static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
+BOOL MNAME(Hidd_BitMap__SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
     struct bitmap_data  *data = OOP_INST_DATA(cl, o);
     HIDDT_PixelFormat 	*pf;    
@@ -157,7 +157,7 @@ static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_S
 
 /****************************************************************************************/
 
-static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
+VOID MNAME(Hidd_BitMap__PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
      
@@ -172,7 +172,7 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 /****************************************************************************************/
 
-static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
+HIDDT_Pixel MNAME(Hidd_BitMap__GetPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel     	pixel = -1;    
@@ -199,7 +199,7 @@ static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 
 /****************************************************************************************/
 
-static ULONG MNAME(drawpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg)
+ULONG MNAME(Hidd_BitMap__DrawPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     XGCValues 	    	gcval;
@@ -219,7 +219,7 @@ static ULONG MNAME(drawpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 
 /****************************************************************************************/
 
-static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     XGCValues 	    	gcval;
@@ -627,7 +627,7 @@ static void getimage_xlib(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
 
 /****************************************************************************************/
 
-static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+VOID MNAME(Hidd_BitMap__GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {    
     ASSERT(msg->width > 0 && msg->height > 0);
     
@@ -647,7 +647,7 @@ static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 
 /****************************************************************************************/
 
-static VOID MNAME(getimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
+VOID MNAME(Hidd_BitMap__GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
     ASSERT(msg->width != 0 && msg->height != 0);
 #if USE_XSHM
@@ -1125,7 +1125,7 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
 
 /****************************************************************************************/
 	
-static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
+VOID MNAME(Hidd_BitMap__PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     EnterFunc(bug("X11Gfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));
@@ -1150,7 +1150,7 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 /****************************************************************************************/
 
-static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+VOID MNAME(Hidd_BitMap__PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     EnterFunc(bug("X11Gfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));
@@ -1181,8 +1181,9 @@ static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 
 /****************************************************************************************/
 
-static VOID MNAME(blitcolorexpansion)(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	      struct pHidd_BitMap_BlitColorExpansion *msg)
+VOID MNAME(Hidd_BitMap__BlitColorExpansion)(OOP_Class *cl, OOP_Object *o,
+					    struct pHidd_BitMap_BlitColorExpansion *msg
+)
 {
     struct bitmap_data  *data = OOP_INST_DATA(cl, o);
     XImage  	    	*dest_im;
@@ -1317,7 +1318,7 @@ static VOID MNAME(blitcolorexpansion)(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID MNAME(Root__Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     ULONG   	    	idx;
@@ -1348,7 +1349,7 @@ static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
-VOID MNAME(drawline)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawLine *msg)
+VOID MNAME(Hidd_BitMap__DrawLine)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawLine *msg)
 {
     struct bitmap_data  *data = OOP_INST_DATA(cl, o);
     OOP_Object      	*gc = msg->gc;
@@ -1393,7 +1394,7 @@ VOID MNAME(drawline)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawLine 
 
 /****************************************************************************************/
 
-VOID MNAME(drawellipse)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawEllipse *msg)
+VOID MNAME(Hidd_BitMap__DrawEllipse)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawEllipse *msg)
 {
     struct bitmap_data  *data = OOP_INST_DATA(cl, o);
     OOP_Object      	*gc = msg->gc;

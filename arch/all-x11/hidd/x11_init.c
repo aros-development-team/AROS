@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd initialization code.
@@ -20,50 +20,22 @@
 #include <oop/oop.h>
 #include <hidd/graphics.h>
 
+#include <aros/symbolsets.h>
+
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
+
+#include LC_LIBDEFS_FILE
 
 #include "x11.h"
 #include "fullscreen.h"
 
-#undef SysBase
-
 /****************************************************************************************/
-
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->sysbase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->seglist)
-#define LC_RESIDENTNAME		X11Hidd_resident
-#define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
-#define LC_RESIDENTPRI		9
-#define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
-#define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->library)
-
-#define LC_NO_INITLIB
-#define LC_NO_EXPUNGELIB
-#define LC_NO_CLOSELIB
-
-/* to avoid removing the gfxhiddclass from memory add #define NOEXPUNGE */
-
-/****************************************************************************************/
-
-struct x11clbase
-{
-    struct Library   library;
-    struct ExecBase *sysbase;
-    BPTR	     seglist;
-};
-
-#include <libcore/libheader.c>
 
 #undef XSD
 #undef SysBase
-#undef OOPBase
-
-#define OOPBase     	xsd->oopbase
 
 /****************************************************************************************/
 
@@ -91,26 +63,6 @@ static BOOL initclasses(struct x11_staticdata *xsd)
     if (!OOP_ObtainAttrBases(abd))
     	goto failure;
 
-    xsd->gfxclass = init_gfxclass(xsd);
-    if (NULL == xsd->gfxclass)
-    	goto failure;
-
-    xsd->onbmclass = init_onbmclass(xsd);
-    if (NULL == xsd->onbmclass)
-    	goto failure;
-
-    xsd->offbmclass = init_offbmclass(xsd);
-    if (NULL == xsd->offbmclass)
-    	goto failure;
-
-    xsd->mouseclass = init_mouseclass(xsd);
-    if (NULL == xsd->mouseclass)
-    	goto failure;
-
-    xsd->kbdclass = init_kbdclass(xsd);
-    if (NULL == xsd->kbdclass)
-    	goto failure;
-
     return TRUE;
         
 failure:
@@ -123,21 +75,6 @@ failure:
 
 static VOID freeclasses(struct x11_staticdata *xsd)
 {
-    if (xsd->kbdclass)
-    	free_kbdclass(xsd);
-
-    if (xsd->mouseclass)
-    	free_mouseclass(xsd);
-
-    if (xsd->gfxclass)
-    	free_gfxclass(xsd);
-
-    if (xsd->offbmclass)
-    	free_offbmclass(xsd);
-
-    if (xsd->onbmclass)
-    	free_onbmclass(xsd);
-
     OOP_ReleaseAttrBases(abd);
 }
 
@@ -176,100 +113,96 @@ static int MySysErrorHandler (Display * display)
 
 /****************************************************************************************/
 
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
+AROS_SET_LIBFUNC(X11_Init, LIBBASETYPE, LIBBASE)
 {
-    struct x11_staticdata *xsd;
+    AROS_SET_LIBFUNC_INIT
+
+    struct x11_staticdata *xsd = &LIBBASE->xsd;
+    STRPTR displayname;
+
+    D(bug("Entering X11_Init\n"));
     
-    xsd = AllocMem( sizeof (struct x11_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
-    if (xsd)
-    {
-        xsd->sysbase = SysBase;
+    xsd->sysbase = SysBase;
 	
-	InitSemaphore( &xsd->sema );
-	InitSemaphore( &xsd->x11sema );
+    InitSemaphore( &xsd->sema );
+    InitSemaphore( &xsd->x11sema );
 		
-        xsd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
-	if (xsd->oopbase)
+    xsd->dosbase = OpenLibrary("dos.library", 0);
+    xsd->utilitybase = OpenLibrary("utility.library", 0);
+
+    if (   xsd->dosbase != NULL
+	&& xsd->utilitybase != NULL
+    )
+    {
+	/* Try to get the display */
+	if (!(displayname = (STRPTR)getenv("DISPLAY")))
+	    displayname =":0.0";
+
+	if ((strncmp(displayname, ":", 1) == 0) ||
+	    (strncmp(displayname, "unix:", 5) == 0))
 	{
-	    xsd->utilitybase = OpenLibrary(UTILITYNAME, 37);
-	    if (xsd->utilitybase)
-	    {
-    	    #if X11_LOAD_KEYMAPTABLE
-	        xsd->dosbase = OpenLibrary(DOSNAME, 37);
-		if (xsd->dosbase)
-    	    #endif
-		{
-	            STRPTR displayname;
-
-		    /* Try to get the display */
-		    if (!(displayname = (STRPTR)getenv("DISPLAY")))
-			displayname =":0.0";
-
-    	    	    if ((strncmp(displayname, ":", 1) == 0) ||
-		        (strncmp(displayname, "unix:", 5) == 0))
-		    {
-		    	xsd->local_display = TRUE;
-		    }
-		    
-		    
-		    /* Do not need to singlethead this
-		       since no other tasks are using X currently
-		    */
-
-    		    xsd->display = XOpenDisplay(displayname);
-		    if (xsd->display)
-		    {
-    			struct x11task_params 	 xtp;
-		        struct Task 	    	*x11task;
-
-			XSetErrorHandler (MyErrorHandler);
-			XSetIOErrorHandler (MySysErrorHandler);
-
-			if (getenv("AROS_X11_FULLSCREEN"))
-			{
-		    	    xsd->fullscreen = x11_fullscreen_supported(xsd->display);
-			}
-			
-			xsd->delete_win_atom 	     = XInternAtom(xsd->display, "WM_DELETE_WINDOW", FALSE);
-			xsd->clipboard_atom  	     = XInternAtom(xsd->display, "CLIPBOARD", FALSE);
-    	    	    	xsd->clipboard_property_atom = XInternAtom(xsd->display, "AROS_HOSTCLIP", FALSE);
-    	    	    	xsd->clipboard_incr_atom     = XInternAtom(xsd->display, "INCR", FALSE);
-    	    	    	xsd->clipboard_targets_atom  = XInternAtom(xsd->display, "TARGETS", FALSE);
-			
-    			xtp.parent = FindTask(NULL);
-    			xtp.ok_signal	= SIGBREAKF_CTRL_E;
-    			xtp.fail_signal = SIGBREAKF_CTRL_F;
-			xtp.kill_signal = SIGBREAKF_CTRL_C;
-    			xtp.xsd 	= xsd;
-
-    			if ((x11task = create_x11task(&xtp, SysBase)))
-    			{			
-    		    	    if (initclasses(xsd))
-			    {
-				return TRUE;
-    			    }
-			    
-			    Signal(x11task, xtp.kill_signal);
-			}
-
-			XCloseDisplay(xsd->display);
-
-		    }
-    	    	#if X11_LOAD_KEYMAPTABLE
-		    CloseLibrary(xsd->dosbase);
-    	    	#endif
-		}
-		CloseLibrary(xsd->utilitybase);
-	    }
-	    CloseLibrary(xsd->oopbase);
+	    xsd->local_display = TRUE;
 	}
-	FreeMem(xsd, sizeof (struct x11_staticdata));
-    }
+		    
+		    
+	/* Do not need to singlethead this
+	 * since no other tasks are using X currently
+	 */
 
+	xsd->display = XOpenDisplay(displayname);
+	if (xsd->display)
+	{
+	    struct x11task_params 	 xtp;
+	    struct Task 	    	*x11task;
+
+	    XSetErrorHandler (MyErrorHandler);
+	    XSetIOErrorHandler (MySysErrorHandler);
+
+	    if (getenv("AROS_X11_FULLSCREEN"))
+	    {
+		xsd->fullscreen = x11_fullscreen_supported(xsd->display);
+	    }
+			
+	    xsd->delete_win_atom         = XInternAtom(xsd->display, "WM_DELETE_WINDOW", FALSE);
+	    xsd->clipboard_atom          = XInternAtom(xsd->display, "CLIPBOARD", FALSE);
+	    xsd->clipboard_property_atom = XInternAtom(xsd->display, "AROS_HOSTCLIP", FALSE);
+	    xsd->clipboard_incr_atom     = XInternAtom(xsd->display, "INCR", FALSE);
+	    xsd->clipboard_targets_atom  = XInternAtom(xsd->display, "TARGETS", FALSE);
+	
+	    xtp.parent = FindTask(NULL);
+	    xtp.ok_signal	= SIGBREAKF_CTRL_E;
+	    xtp.fail_signal	= SIGBREAKF_CTRL_F;
+	    xtp.kill_signal	= SIGBREAKF_CTRL_C;
+	    xtp.xsd		= xsd;
+
+	    if ((x11task = create_x11task(&xtp, SysBase)))
+	    {			
+		if (initclasses(xsd))
+		{
+		    D(bug("X11_Init succeeded\n"));
+		    return TRUE;
+		}
+		
+		Signal(x11task, xtp.kill_signal);
+	    }
+
+	    XCloseDisplay(xsd->display);
+
+	}
+    }
+    
+    if (xsd->dosbase != NULL)
+	CloseLibrary(xsd->dosbase);
+    if (xsd->utilitybase != NULL)
+	CloseLibrary(xsd->utilitybase);
+
+    D(bug("X11_Init failed\n"));
+    
     return FALSE;
-        
+
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-
+ADD2INITLIB(X11_Init, 0);

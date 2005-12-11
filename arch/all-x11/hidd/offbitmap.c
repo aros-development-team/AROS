@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Offscreen bitmap class for X11 hidd.
@@ -30,9 +30,13 @@
 
 #include <hidd/graphics.h>
 
+#include <aros/symbolsets.h>
+
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
+
+#include LC_LIBDEFS_FILE
 
 #include "x11gfx_intern.h"
 #include "x11.h"
@@ -63,7 +67,7 @@ static struct OOP_ABDescr attrbases[] =
 
 #define DRAWABLE(data)  (data)->drawable.pixmap
 
-#define MNAME(x)    	offbitmap_ ## x
+#define MNAME(x)    	X11OffBM__ ## x
 
 /* !!! Include methods whose implementation is eqaul for windows and pixmaps
  (except the DRAWABLE) */
@@ -78,7 +82,7 @@ static struct OOP_ABDescr attrbases[] =
 
 /****************************************************************************************/
 
-static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *X11OffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     OOP_Object  *friend = NULL, *pixfmt;
     Drawable 	 friend_drawable = 0, d = 0;
@@ -228,7 +232,7 @@ dispose_pixmap:
 
 /****************************************************************************************/
 
-static VOID offbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID X11OffBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
@@ -256,7 +260,7 @@ static VOID offbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-static VOID offbitmap_clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
+VOID X11OffBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     ULONG   	    	width, height;
@@ -287,123 +291,32 @@ static VOID offbitmap_clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Cl
 
 
 #undef XSD
-#define XSD(cl) xsd
-
-#define NUM_ROOT_METHODS   4
-
-#if USE_X11_DRAWFUNCS
-#   define NUM_BITMAP_METHODS 13
-#else
-#   define NUM_BITMAP_METHODS 11
-#endif
+#define XSD(cl) (&LIBBASE->xsd)
 
 /****************************************************************************************/
 
-OOP_Class *init_offbmclass(struct x11_staticdata *xsd)
+AROS_SET_LIBFUNC(X11OffBM_Init, LIBBASETYPE, LIBBASE)
 {
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-        {(IPTR (*)())MNAME(new)     , moRoot_New    },
-        {(IPTR (*)())MNAME(dispose) , moRoot_Dispose},
-#if 0
-        {(IPTR (*)())MNAME(set)     , moRoot_Set    },
-#endif
-        {(IPTR (*)())MNAME(get)     , moRoot_Get    },
-        {NULL	    	    	    , 0UL   	    } 
-    };
+    AROS_SET_LIBFUNC_INIT
 
-    struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
-    {
-        {(IPTR (*)())MNAME(setcolors)	    	, moHidd_BitMap_SetColors   	    },
-    	{(IPTR (*)())MNAME(putpixel)	    	, moHidd_BitMap_PutPixel    	    },
-    	{(IPTR (*)())MNAME(clear)   	    	, moHidd_BitMap_Clear	    	    },
-    	{(IPTR (*)())MNAME(getpixel)	    	, moHidd_BitMap_GetPixel    	    },
-    	{(IPTR (*)())MNAME(drawpixel)	    	, moHidd_BitMap_DrawPixel   	    },
-    	{(IPTR (*)())MNAME(fillrect)	    	, moHidd_BitMap_FillRect    	    },
-    	{(IPTR (*)())MNAME(getimage)	    	, moHidd_BitMap_GetImage    	    },
-    	{(IPTR (*)())MNAME(putimage)	    	, moHidd_BitMap_PutImage    	    },
-    	{(IPTR (*)())MNAME(blitcolorexpansion)	, moHidd_BitMap_BlitColorExpansion  },
-    	{(IPTR (*)())MNAME(putimagelut)     	, moHidd_BitMap_PutImageLUT 	    },
-    	{(IPTR (*)())MNAME(getimagelut)     	, moHidd_BitMap_GetImageLUT 	    },
-#if USE_X11_DRAWFUNCS
-    	{(IPTR (*)())MNAME(drawline)	    	, moHidd_BitMap_DrawLine    	    },
-    	{(IPTR (*)())MNAME(drawellipse)     	, moHidd_BitMap_DrawEllipse 	    },
-#endif
-        {NULL	    	    	    	    	, 0UL	    	    	    	    }
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr 	, IID_Root          , NUM_ROOT_METHODS	},
-        {bitMap_descr	, IID_Hidd_BitMap   , NUM_BITMAP_METHODS},
-        {NULL	    	, NULL	    	    , 0     	    	}
-    };
+    return OOP_ObtainAttrBases(attrbases);
 
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID	    	, (IPTR) CLID_Hidd_BitMap   	    },
-        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    },
-        {aMeta_InstSize     	, (IPTR) sizeof(struct bitmap_data) },
-        {TAG_DONE   	    	, 0UL	    	    	    	    }
-    };
-    
-    OOP_Class *cl = NULL;
-
-    EnterFunc(bug("init_bitmapclass(xsd=%p)\n", xsd));
-        
-    D(bug("Metattrbase: %x\n", MetaAttrBase));
-
-    if(MetaAttrBase)
-    {
-        D(bug("Got attrbase\n"));
-       
-        cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-        if(cl)
-        {
-            D(bug("BitMap class ok\n"));
-	    
-            xsd->offbmclass = cl;
-            cl->UserData     = (APTR) xsd;
-           
-            /* Get attrbase for the BitMap interface */
-	    if (OOP_ObtainAttrBases(attrbases))
-            {	    
-                OOP_AddClass(cl);
-            }
-            else
-            {
-                free_offbmclass( xsd );
-                cl = NULL;
-            }
-        }
-	
-	/* We don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-	
-    } /* if(MetaAttrBase) */
-
-    ReturnPtr("init_bmclass", Class *,  cl);
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-void free_offbmclass(struct x11_staticdata *xsd)
+AROS_SET_LIBFUNC(X11OffBM_Expunge, LIBBASETYPE, LIBBASE)
 {
-    EnterFunc(bug("free_bmclass(xsd=%p)\n", xsd));
+    AROS_SET_LIBFUNC_INIT
 
-    if(xsd)
-    {
-        OOP_RemoveClass(xsd->offbmclass);
-	
-        if(xsd->offbmclass) OOP_DisposeObject((OOP_Object *) xsd->offbmclass);
-        xsd->offbmclass = NULL;
-	
-	OOP_ReleaseAttrBases(attrbases);	
-    }
+    OOP_ReleaseAttrBases(attrbases);
+    return TRUE;
 
-    ReturnVoid("free_bmclass");
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
+
+ADD2INITLIB(X11OffBM_Init, 0);
+ADD2EXPUNGELIB(X11OffBM_Expunge, 0);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd. Connects to the X server and receives events.
@@ -75,8 +75,6 @@ Cause() a software irq, but Cause() does not work at the moment..
 
 #define XTASK_STACKSIZE (AROS_STACKSIZE)
 
-#define XSD(cl)     	((struct x11_staticdata *)cl->UserData)
-#define OOPBase		((struct Library *)XSD(cl)->oopbase)
 #define UtilityBase	((struct Library *)XSD(cl)->utilitybase)
 
 #undef XSD

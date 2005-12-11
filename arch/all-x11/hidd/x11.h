@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -40,6 +40,14 @@
 
 /***** X11Mouse HIDD *******************/
 
+/* Private data */
+struct pHidd_Mouse_Event;
+struct x11mouse_data
+{
+    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
+    APTR callbackdata;
+};
+
 /* IDs */
 #define IID_Hidd_X11Mouse	"hidd.mouse.x11"
 #define CLID_Hidd_X11Mouse	"hidd.mouse.x11"
@@ -60,6 +68,14 @@ struct pHidd_X11Mouse_HandleEvent
 VOID Hidd_X11Mouse_HandleEvent(OOP_Object *o, XEvent *event);
 
 /***** X11Kbd HIDD *******************/
+
+/* Private data */
+struct x11kbd_data
+{
+    VOID  (*kbd_callback)(APTR, UWORD);
+    APTR    callbackdata;
+    UWORD   prev_keycode;
+};
 
 /* IDs */
 #define IID_Hidd_X11Kbd		"hidd.kbd.x11"
@@ -203,6 +219,28 @@ struct x11_staticdata
     ULONG   	    	     hostclipboard_write_chunks;
 };
 
+struct x11clbase
+{
+    struct Library        library;
+    BPTR	          seglist;
+    
+    struct x11_staticdata xsd;
+};
+
+/* Private instance data for Gfx hidd class */
+struct gfx_data
+{
+    Display	*display;
+    int		 screen;
+    int		 depth;
+    Colormap	 colmap;
+    Cursor	 cursor;
+    Window	 fbwin; /* Frame buffer window */
+#if ADJUST_XWIN_SIZE
+    Window	 masterwin;
+#endif
+};
+
 #define HOSTCLIPBOARDSTATE_IDLE     	0
 #define HOSTCLIPBOARDSTATE_READ     	1
 #define HOSTCLIPBOARDSTATE_READ_INCR    2
@@ -231,12 +269,12 @@ VOID  x11clipboard_handle_commands(struct x11_staticdata *);
 BOOL  x11clipboard_want_event(XEvent *);
 VOID  x11clipboard_handle_event(struct x11_staticdata *, XEvent *);
 
-#define XSD(cl)     	((struct x11_staticdata *)cl->UserData)
+#undef XSD
+#define XSD(cl)     	(&((struct x11clbase *)cl->UserData)->xsd)
 
-#define OOPBase		((struct Library *)XSD(cl)->oopbase)
 #define UtilityBase	((struct Library *)XSD(cl)->utilitybase)
 #define SysBase		(XSD(cl)->sysbase)
-#define DosBase		(XSD(cl)->dosbase)
+#define DOSBase		(XSD(cl)->dosbase)
 
 
 /* This lock has two uses:
