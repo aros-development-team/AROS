@@ -1052,7 +1052,8 @@ GLOB_MKDIRS += $(BD_TARGETDIR$(BDID)) $(BD_OBJDIR$(BDID))
   linklibfiles= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   reffile=$(BD_DEFREFFILE) noref= \
-  linklibname=$(BD_DEFLINKLIBNAME) uselibs= compiler=target genincludes=
+  linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
+  compiler=target genincludes=
 
 # Define metamake targets and their dependencies
 #MM- includes-all : %(mmake)-includes
@@ -1251,7 +1252,8 @@ BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))
 
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
-		 endobj=$(BD_ENDOBJS) err=$(BD_MODNAME).err uselibs="%(uselibs)"
+		 endobj=$(BD_ENDOBJS) err=$(BD_MODNAME).err \
+		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
 # Link static lib
 ifneq ($(BD_LINKLIB),)
