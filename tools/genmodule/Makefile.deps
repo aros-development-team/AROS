@@ -6,6 +6,7 @@ GENMODULE_SRCS := \
     fileread.c \
     functionhead.c \
     muisupport.c \
+    oopsupport.c \
     readref.c \
     stringlist.c \
     writeincclib.c \

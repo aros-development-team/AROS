@@ -5,7 +5,9 @@
     The code for storing information of functions present in the module
 */
 #include <string.h>
+#include <assert.h>
 #include "functionhead.h"
+#include "config.h"
 
 struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
 {
@@ -21,6 +23,8 @@ struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
 	funchead->argcount = 0;
 	funchead->arguments = NULL;
 	funchead->aliases = NULL;
+	funchead->interface = NULL;
+	funchead->method = NULL;
 	funchead->novararg = 0;
 	funchead->priv= 0;
     }
@@ -66,6 +70,129 @@ struct stringlist *funcaddalias(struct functionhead *funchead, const char *alias
     return slist_append(&funchead->aliases, alias);
 }
 
+void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclist)
+{
+    struct functionhead *funclistit;
+    struct functionarg *arglistit;
+    char *type, *name;
+    int first;
+    
+    for(funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
+    {
+	switch (funclistit->libcall)
+	{
+	case STACK:
+	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
+        
+	    for(arglistit = funclistit->arguments, first = 1;
+		arglistit != NULL;
+		arglistit = arglistit->next, first = 0
+	    )
+	    {
+		if (!first)
+		    fprintf(out, ", ");
+            
+		fprintf(out, "%s", arglistit->arg);
+	    }
+	    fprintf(out, ");\n");
+	    break;
+	    
+	case REGISTER:
+	    assert(cfg);
+	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
+	    for (arglistit = funclistit->arguments, first = 1;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next, first = 0
+	    )
+	    {
+		if (!first)
+		    fprintf(out, ", ");
+		fprintf(out, "%s", arglistit->arg);
+	    }
+	    fprintf(out,
+		    ");\nAROS_LH%d(%s, %s,\n",
+		    funclistit->argcount, funclistit->type, funclistit->name
+	    );
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+	    {
+		type = getargtype(arglistit);
+		name = getargname(arglistit);
+		assert(name != NULL && type != NULL);
+		
+		fprintf(out,
+			"         AROS_LHA(%s, %s, %s),\n",
+			type, name, arglistit->reg
+		);
+		free(type);
+		free(name);
+	    }
+	    fprintf(out,
+		    "         %s, %s, %u, %s)\n"
+		    "{\n"
+		    "    AROS_LIBFUNC_INIT\n\n"
+		    "    return %s(",
+		    cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename,
+		    funclistit->name
+	    );
+	    for (arglistit = funclistit->arguments, first = 1;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next, first = 0
+	    )
+	    {
+		name = getargname(arglistit);
+		assert(name != NULL);
+		
+		if (!first)
+		    fprintf(out, ", ");
+		fprintf(out, "%s", name);
+		free(name);
+	    }
+	    fprintf(out,
+		    ");\n\n"
+		    "    AROS_LIBFUNC_EXIT\n"
+		    "}\n\n");
+	    break;
+	    
+	case REGISTERMACRO:
+	    assert(cfg);
+	    fprintf(out,
+		    "AROS_LD%d(%s, %s,\n",
+		    funclistit->argcount, funclistit->type, funclistit->name
+	    );
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+	    {
+		type = getargtype(arglistit);
+		name = getargname(arglistit);
+		assert(type != NULL && name != NULL);
+		
+		fprintf(out,
+			"         AROS_LDA(%s, %s, %s),\n",
+			type, name, arglistit->reg
+		);
+		free(type);
+		free(name);
+	    }
+	    fprintf(out,
+		    "         LIBBASETYPEPTR, %s, %u, %s\n"
+		    ");\n",
+		    cfg->libbase, funclistit->lvo, cfg->basename
+	    );
+	    break;
+
+	default:
+	    fprintf(stderr, "Internal error: unhandled libcall in writefuncprotos\n");
+	    exit(20);
+	    break;
+	}
+    }
+}
+    
 char *getargtype(const struct functionarg *funcarg)
 {
     char *s, *begin, *end;
