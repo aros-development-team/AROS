@@ -39,7 +39,6 @@ struct class_static_data
 {
     struct ExecBase             *sysBase;
     struct Library              *UtilityBase;
-    struct Library              *OOPBase;
     OOP_AttrBase                hiddAttrBase;  // keep lower case so it does not clash with define.
 
     OOP_Class                   *hiddclass;
@@ -55,29 +54,21 @@ struct IntHIDDClassBase
 {
     struct Library            hd_LibNode;
     BPTR                      hd_SegList;
-    struct ExecBase          *hd_SysBase;
 
-    struct class_static_data *hd_csd;
+    struct class_static_data  hd_csd;
 };
 
 
-#define CSD(x) ((struct class_static_data *)x)
+#define CSD(cl) (&((struct IntHIDDClassBase *)cl->UserData)->hd_csd)
+#define csd CSD(cl)
 
 #undef SysBase
-#define SysBase (CSD(cl->UserData)->sysBase)
+#define SysBase (csd->sysBase)
 
 #undef UtilityBase
-#define UtilityBase (CSD(cl->UserData)->UtilityBase)
-
-#undef OOPBase
-#define OOPBase (CSD(cl->UserData)->OOPBase)
+#define UtilityBase (csd->UtilityBase)
 
 #undef HiddAttrBase
-#define HiddAttrBase	(CSD(cl->UserData)->hiddAttrBase)
-
-/* pre declarations */
-
-ULONG init_hiddclass(struct IntHIDDClassBase *lh);
-VOID  free_hiddclass(struct IntHIDDClassBase *lh);
+#define HiddAttrBase	(csd->hiddAttrBase)
 
 #endif /* HIDD_CLASS_INTERN_H */
