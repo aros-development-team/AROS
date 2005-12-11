@@ -40,35 +40,8 @@ void writeboopsidispatcher(FILE *out, struct classinfo *cl)
             "\n"
             "/*** Prototypes *************************************************************/\n"
 	);
-    
-	for 
-	(
-	    methlistit = cl->methlist; 
-            methlistit != NULL; 
-            methlistit = methlistit->next
-	)
-	{
-	    int first = 1;
-        
-	    fprintf(out, "%s %s(", methlistit->type, methlistit->name);
-        
-	    for 
-	    (
-                arglistit = methlistit->arguments; 
-                arglistit != NULL; 
-                arglistit = arglistit->next
-	    )
-	    {
-		if (!first)
-		    fprintf(out, ", ");
-		else
-		    first = 0;
-            
-		fprintf(out, "%s", arglistit->arg);
-	    }
-        
-	    fprintf(out, ");\n");
-	}
+
+	writefuncprotos(out, NULL, cl->methlist);
 
         fprintf
         (
@@ -207,15 +180,32 @@ void writeclassinit(FILE *out, struct classinfo *cl)
         "    AROS_SET_LIBFUNC_INIT\n"
         "\n"
         "    struct IClass *cl = NULL;\n"
-        "    \n"
-        "    cl = MakeClass(%s, %s, NULL, %s_DATA_SIZE, 0);\n"
+        "    \n",
+        cl->basename
+    );
+    if (cl->superclass != NULL)
+	fprintf(out,
+		"    cl = MakeClass(%s, %s, NULL, %s_DATA_SIZE, 0);\n",
+		cl->classid, cl->superclass, cl->basename
+	);
+    else if (cl->superclass_field != NULL)
+	fprintf(out,
+		"    cl = MakeClass(%s, NULL, LIBBASE->%s, %s_DATA_SIZE, 0);\n",
+		cl->classid, cl->superclass_field, cl->basename
+	);
+    else
+    {
+	fprintf(stderr, "Internal error: both superclass and superclass_field are NULL\n");
+	exit(20);
+    }
+    fprintf
+    (
+        out,
         "    if (cl != NULL)\n"
         "    {\n"
         "#if %s_STORE_CLASSPTR\n"
         "        %s_CLASSPTR_FIELD(LIBBASE) = cl;\n"
         "#endif\n",
-        cl->basename,
-        cl->classid, cl->superclass, cl->basename,
         cl->basename,
         cl->basename
     );

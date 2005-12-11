@@ -200,6 +200,11 @@ struct config *initconfig(int argc, char **argv)
 	cfg->modtype = DATATYPE;
 	cfg->moddir = "Classes/Datatypes";
     }
+    else if (strcmp(argv[optind+2], "hidd")==0)
+    {
+	cfg->modtype = HIDD;
+	cfg->moddir = "Devs/Drivers";
+    }
     else
     {
 	fprintf(stderr, "Unknown modtype \"%s\" specified for second argument\n", argv[2]);
@@ -297,14 +302,24 @@ static void readconfig(struct config *cfg)
     /* Create a classinfo structure if this module is a class */
     switch (cfg->modtype)
     {
+    case LIBRARY:
+    case DEVICE:
+    case RESOURCE:
+	break;
+	
     case MCC:
     case MUI:
     case MCP:
     case GADGET:
     case DATATYPE:
+    case HIDD:
 	mainclass = newclass(cfg);
 	mainclass->classtype = cfg->modtype;
 	break;
+	
+    default:
+ 	fprintf(stderr, "Internal error: unsupported modtype for classinfo creation\n");
+	exit(20);
     }
     
     switch (cfg->modtype)
@@ -332,8 +347,12 @@ static void readconfig(struct config *cfg)
 	cfg->firstlvo = 6;
 	mainclass->boopsimprefix = dtmprefix;
 	break;
+    case HIDD:
+	cfg->firstlvo = 5;
+	/* FIXME: need boopsimprefix ? */
+	break;
     default:
-	fprintf(stderr, "Internal error: unsupported modtype for firstlvo\n");
+ 	fprintf(stderr, "Internal error: unsupported modtype for firstlvo\n");
 	exit(20);
     }
 
@@ -463,9 +482,10 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
             {
                 "basename", "libbase", "libbasetype", "libbasetypeextern",
                 "version", "date", "copyright", "libcall", "forcebase", "superclass",
-		"residentpri", "options", "sysbase_field", "seglist_field",
-		"rootbase_field", "classptr_field", "classptr_var", "classid", "classdatatype",
-		"beginio_func", "abortio_func", "dispatcher", "initpri", "type"
+		"superclass_field", "residentpri", "options", "sysbase_field",
+		"seglist_field", "rootbase_field", "classptr_field", "classptr_var",
+		"classid", "classdatatype", "beginio_func", "abortio_func", "dispatcher",
+		"initpri", "type"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -564,8 +584,14 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    exitfileerror(20, "superclass specified when not a BOOPSI class\n");
                 cl->superclass = strdup(s);
                 break;
+
+	    case 11: /* superclass_field */
+		if (cl == NULL)
+		    exitfileerror(20, "superclass_field specified when not a BOOPSI class\n");
+		cl->superclass_field = strdup(s);
+		break;
 		
-	    case 11: /* residentpri */
+	    case 12: /* residentpri */
 		if (!inclass)
 		{
 		    int count;
@@ -583,7 +609,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    exitfileerror(20, "residentpri not valid config option when in a class section\n");
 		break;
 
-	    case 12: /* options */
+	    case 13: /* options */
 		if (!inclass)
 		{
 		    static const char *optionnames[] =
@@ -666,25 +692,25 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		}
 		break;
 
-	    case 13: /* sysbase_field */
+	    case 14: /* sysbase_field */
 		if (inclass)
 		    exitfileerror(20, "sysbase_field not valid config option when in a class section\n");
 		cfg->sysbase_field = strdup(s);
 		break;
 		
-	    case 14: /* seglist_field */
+	    case 15: /* seglist_field */
 		if (inclass)
 		    exitfileerror(20, "seglist_field not valid config option when in a class section\n");
 		cfg->seglist_field = strdup(s);
 		break;
 		
-	    case 15: /* rootbase_field */
+	    case 16: /* rootbase_field */
 		if (inclass)
 		    exitfileerror(20, "rootbase_field not valid config option when in a class section\n");
 		cfg->rootbase_field = strdup(s);
 		break;
 		
-	    case 16: /* classptr_field */
+	    case 17: /* classptr_field */
 		if (cl == NULL)
 		{
 		    exitfileerror
@@ -696,7 +722,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		cl->classptr_field = strdup(s);
 		break;
 		
-	    case 17: /* classptr_var */
+	    case 18: /* classptr_var */
 		if (cl == NULL)
 		{
 		    exitfileerror
@@ -707,8 +733,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		}
 		cl->classptr_var = strdup(s);
 		break;
-		
-	    case 18: /* classid */
+
+	    case 19: /* classid */
 		if (cl == NULL)
 		    exitfileerror(20, "classid specified when not a BOOPSI class\n");
 		if (cl->classid != NULL)
@@ -718,13 +744,13 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    cl->options |= COPTION_PRIVATE;
 		break;
 		
-	    case 19: /* classdatatype */
+	    case 20: /* classdatatype */
 		if (cl == NULL)
 		    exitfileerror(20, "classdatatype specified when not a BOOPSI class\n");
 		cl->classdatatype = strdup(s);
 		break;
 		
-	    case 20: /* beginio_func */
+	    case 21: /* beginio_func */
 		if (inclass)
 		    exitfileerror(20, "beginio_func not valid config option when in a class section\n");
 		if (cfg->modtype != DEVICE)
@@ -732,7 +758,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		cfg->beginiofunc = strdup(s);
 		break;
 		
-	    case 21: /* abortio_func */
+	    case 22: /* abortio_func */
 		if (inclass)
 		    exitfileerror(20, "abortio_func not valid config option when in a class section\n");
 		if (cfg->modtype != DEVICE)
@@ -740,7 +766,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		cfg->abortiofunc = strdup(s);
 		break;
 		
-	    case 22: /* dispatcher */
+	    case 23: /* dispatcher */
 		if (cl == NULL)
 		    exitfileerror(20, "dispatcher specified when not a BOOPSI class\n");
 		cl->dispatcher = strdup(s);
@@ -748,7 +774,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		cfg->intcfg |= CFG_NOREADREF;
 		break;
 
-	    case 23: /* initpri */
+	    case 24: /* initpri */
 		if (cl != NULL)
 		{
 		    int count;
@@ -766,7 +792,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    exitfileerror(20, "initpri only valid config option for a BOOPSI class\n");
 		break;
 	    
-	    case 24: /* type */
+	    case 25: /* type */
 		if (!inclass)
 		    exitfileerror(20, "type only valid config option in a class section\n");
 		if (strcmp(s,"mcc")==0)
@@ -783,6 +809,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    cl->classtype = DATATYPE;
 		else if (strcmp(s, "class")==0)
 		    cl->classtype = CLASS;
+		else if (strcmp(s, "hidd")==0)
+		    cl->classtype = HIDD;
 		else
 		{
 		    fprintf(stderr, "Unknown type \"%s\" specified\n", s);
@@ -869,6 +897,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    case MCC:
 	    case GADGET:
 	    case DATATYPE:
+	    case HIDD:
 		cfg->libbasetypeptrextern = "struct Library *";
 		break;
 	    default:
@@ -884,7 +913,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    free(libbasetypeextern);
 	}
     }
-    
+
     /* When class was given to fill in fill in some defaults when not specified */
     if (cl != NULL)
     {
@@ -903,7 +932,11 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    && (cl->classtype != MUI && cl->classtype != MCC && cl->classtype != MCP)
 	)
 	{
-	    if (cl->options & COPTION_PRIVATE)
+	    if (cl->classtype == HIDD)
+	    {
+		cl->options &= COPTION_PRIVATE;
+	    }
+	    else if (cl->options & COPTION_PRIVATE)
 	    {
 		cl->classid = "NULL";
 	    }
@@ -922,9 +955,13 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		cl->classid = strdup(s);
 	    }
 	}
-	
+
+	/* Only specify superclass or superclass_field */
+	if (cl->superclass != NULL && cl->superclass_field != NULL)
+	    exitfileerror(20, "Only specify one of superclass or superclass_field in config section\n");
+	    
 	/* Give default value to superclass if it is not specified */
-	if (cl->superclass == NULL)
+	if (cl->superclass == NULL && cl->superclass == NULL)
 	{
 	    switch (cl->classtype)
 	    {
@@ -946,6 +983,9 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		break;
 	    case CLASS:
 		cl->superclass = "ROOTCLASS";
+		break;
+	    case HIDD:
+		cl->superclass = "CLID_Root";
 		break;
 	    default:
 		exitfileerror(20, "Internal error: unhandled classtype in readsectionconfig\n");
@@ -1324,6 +1364,7 @@ static void readsectionmethodlist(struct classinfo *cl)
     int atend = 0, i;
     char *line, *s, *s2;
     struct functionhead **methlistptr = &cl->methlist;
+    struct stringlist *interface = NULL;
     
     if (cl->basename==NULL)
 	exitfileerror(20, "section methodlist has to come after section config\n");
@@ -1429,33 +1470,82 @@ static void readsectionmethodlist(struct classinfo *cl)
 		free((*methlistptr)->name);
 		(*methlistptr)->name = strdup(s2);
 	    }
+	    else if (strncmp(s, "interface", 9) == 0)
+	    {
+		if (cl->classtype != HIDD)
+		    exitfileerror(20, "interface only valid for a HIDD\n");
+		
+		s += 9;
+		
+		if (!isspace(*s))
+		    exitfileerror(20, "Syntax error\n");
+
+		while (isspace(*s)) s++;
+		if (*s == '\0' || !isalpha(*s))
+		    exitfileerror(20, "syntax is '.interface name'\n");
+
+		s2 = s;
+		s++;
+		while (isalnum(*s) || *s == '_') s++;
+
+		if (isspace(*s))
+		{
+		    *s = '\0';
+		    do {
+			s++;
+		    } while (isspace(*s));
+		}
+
+		if (*s != '\0')
+		    exitfileerror(20, "syntax is '.interface name'\n");
+		
+		interface = slist_append(&cl->interfaces, s2);
+	    }
 	    else
 		exitfileerror(20, "Syntax error");
 	}
 	else if (isalpha(*line))
 	{
+	    char stmp[256];
+	    
 	    for (s = line + 1; isalnum(*s) || *s == '_'; s++)
 		;
-	
+
+	    if (cl->classtype == HIDD && interface == NULL)
+		exitfileerror(20, "For a HIDD the first method has to come after an .interface line\n");
+	    
 	    if (*s != '\0')
 		exitfileerror(20, "Only letters, digits and an underscore allowed in a methodname\n");
 
-	    s2 = malloc(strlen(cl->basename) + 2 + strlen(line) + 1);
-	    if (s2 == NULL)
-		exitfileerror(20, "Out of memory\n");
-	    sprintf(s2, "%s__%s", cl->basename, line);
-	    
 	    if (*methlistptr != NULL)
 		methlistptr = &((*methlistptr)->next);
-	    *methlistptr = newfunctionhead(s2, STACK);
-	    (*methlistptr)->type = "IPTR";
-	    funcaddarg(*methlistptr, "Class *cl", NULL);
-	    funcaddarg(*methlistptr, "Object *o", NULL);
-	    funcaddarg(*methlistptr, "Msg msg", NULL);
+	    if (cl->classtype != HIDD)
+	    {
+		if (snprintf(stmp, 256, "%s__%s", cl->basename, line) >= 256)
+		    exitfileerror(20, "Method name too large\n");
 	    
+		*methlistptr = newfunctionhead(stmp, STACK);
+		(*methlistptr)->type = "IPTR";
+		funcaddarg(*methlistptr, "Class *cl", NULL);
+		funcaddarg(*methlistptr, "Object *o", NULL);
+		funcaddarg(*methlistptr, "Msg msg", NULL);
+	    }
+	    else
+	    {
+		if (snprintf(stmp, 256, "%s__%s__%s", cl->basename, interface->s, line) >= 256)
+		    exitfileerror(20, "Method name too large\n");
+	    
+		*methlistptr = newfunctionhead(stmp, STACK);
+		(*methlistptr)->type = "IPTR";
+		funcaddarg(*methlistptr, "OOP_Class *cl", NULL);
+		funcaddarg(*methlistptr, "OOP_Object *o", NULL);
+		funcaddarg(*methlistptr, "OOP_Msg msg", NULL);
+		(*methlistptr)->interface = interface;
+		if (snprintf(stmp, 256, "mo%s_%s", interface->s, line) >= 256)
+		    exitfileerror(20, "Method name too large\n");
+		(*methlistptr)->method = strdup(stmp);
+	    }
 	    slist_append(&(*methlistptr)->aliases, line);
-	    
-	    free(s2);
 	}
 	else
 	    exitfileerror(20, "Methodname has to begin with a letter\n");

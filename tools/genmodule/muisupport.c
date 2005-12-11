@@ -77,13 +77,26 @@ void writemccinit(FILE *out, int inclass, struct classinfo *cl)
 	    base = "(struct Library *)LIBBASE";
 	else
 	    base = "NULL";
-	
-	fprintf
-	(
-	    out,
-	    "    %s_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass(%s, %s, NULL, %s_DATA_SIZE, %s);\n",
-	    cl->basename, base, cl->superclass, cl->basename, disp
-	);
+
+	if (cl->superclass != NULL)
+	    fprintf
+	    (
+	        out,
+	        "    %s_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass(%s, %s, NULL, %s_DATA_SIZE, %s);\n",
+	        cl->basename, base, cl->superclass, cl->basename, disp
+	    );
+	else if (cl->superclass_field != NULL)
+	    fprintf
+	    (
+	        out,
+	        "    %s_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass(%s, NULL, LIBBASE->%s, %s_DATA_SIZE, %s);\n",
+	        cl->basename, base, cl->superclass_field, cl->basename, disp
+	    );
+	else
+	{
+	    fprintf(out, "Internal error: both superclass and superclass_field are NULL\n");
+	    exit(20);
+	}
     }
     else
     {
@@ -95,10 +108,29 @@ void writemccinit(FILE *out, int inclass, struct classinfo *cl)
 	else
 	    strncpy(disp, cl->dispatcher, 256);
 
+	if (cl->superclass != NULL)
+	    fprintf
+	    (
+	        out,
+	        "    Class *superclass = MUI_GetClass(%s),\n",
+	        cl->superclass
+	    );
+	else if (cl->superclass_field != NULL)
+	    fprintf
+	    (
+	        out,
+	        "    Class *superclass = LIBBASE->%s,\n",
+	        cl->superclass_field
+	    );
+	else
+	{
+	    fprintf(stderr, "Internal error: both superclass and superclass_field are NULL\n");
+	    exit(20);
+	}
+	
 	fprintf
 	(
 	    out,
-	    "    Class *superclass = MUI_GetClass(%s),\n"
 	    "          *cl = NULL;\n"
 	    "\n"
 	    "    if (superclass)\n"
@@ -106,7 +138,6 @@ void writemccinit(FILE *out, int inclass, struct classinfo *cl)
 	    "    if (cl)\n"
 	    "        cl->cl_Dispatcher.h_Entry = %s;\n"
 	    "    %s_CLASSPTR_FIELD(LIBBASE) = cl;\n",
-	    cl->superclass,
 	    cl->classid, cl->basename,
 	    disp,
 	    cl->basename

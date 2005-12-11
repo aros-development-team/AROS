@@ -91,6 +91,7 @@ void writemakefile(struct config *cfg)
     case MCC:
     case MUI:
     case MCP:
+    case HIDD:
 	fprintf(out, "\n");
 	break;
 	

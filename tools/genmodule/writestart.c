@@ -77,6 +77,9 @@ void writestart(struct config *cfg)
 	case IMAGE:
 	    writeclassinit(out, cl);
 	    break;
+	case HIDD:
+	    writeoopinit(out, cl);
+	    break;
 	default:
 	    fprintf(stdout, "Internal error: unsupported classtype in writestart\n");
 	    exit(20);
@@ -90,7 +93,7 @@ void writestart(struct config *cfg)
 static void writedecl(FILE *out, struct config *cfg)
 {
     struct stringlist *linelistit;
-    int muiinc=0;
+    int boopsiinc=0, muiinc=0, oopinc=0;
     struct functionhead *funclistit;
     struct functionarg *arglistit;
     struct classinfo *classlistit;
@@ -126,116 +129,7 @@ static void writedecl(FILE *out, struct config *cfg)
     }
 
     /* Write out the prototypes for the functions of the function table */
-    for (funclistit = cfg->funclist; funclistit != NULL; funclistit = funclistit->next)
-    {
-	switch (funclistit->libcall)
-	{
-	case STACK:
-	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-		if (arglistit!=funclistit->arguments)
-		    fprintf(out, ", ");
-		fprintf(out, "%s", arglistit->arg);
-	    }
-	    fprintf(out, ");\n");
-	    break;
-	    
-	case REGISTER:
-	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-		if (arglistit!=funclistit->arguments)
-		    fprintf(out, ", ");
-		fprintf(out, "%s", arglistit->arg);
-	    }
-	    fprintf(out,
-		    ");\nAROS_LH%d(%s, %s,\n",
-		    funclistit->argcount, funclistit->type, funclistit->name
-	    );
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-		type = getargtype(arglistit);
-		name = getargname(arglistit);
-		assert(name != NULL && type != NULL);
-		
-		fprintf(out,
-			"         AROS_LHA(%s, %s, %s),\n",
-			type, name, arglistit->reg
-		);
-		free(type);
-		free(name);
-	    }
-	    fprintf(out,
-		    "         %s, %s, %u, %s)\n"
-		    "{\n"
-		    "    AROS_LIBFUNC_INIT\n\n"
-		    "    return %s(",
-		    cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename,
-		    funclistit->name
-	    );
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-		name = getargname(arglistit);
-		assert(name != NULL);
-		
-		if (arglistit!=funclistit->arguments)
-		    fprintf(out, ", ");
-		fprintf(out, "%s", name);
-		free(name);
-	    }
-	    fprintf(out,
-		    ");\n\n"
-		    "    AROS_LIBFUNC_EXIT\n"
-		    "}\n\n");
-	    break;
-	    
-	case REGISTERMACRO:
-	    fprintf(out,
-		    "AROS_LD%d(%s, %s,\n",
-		    funclistit->argcount, funclistit->type, funclistit->name
-	    );
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
-	    {
-		type = getargtype(arglistit);
-		name = getargname(arglistit);
-		assert(type != NULL && name != NULL);
-		
-		fprintf(out,
-			"         AROS_LDA(%s, %s, %s),\n",
-			type, name, arglistit->reg
-		);
-		free(type);
-		free(name);
-	    }
-	    fprintf(out,
-		    "         LIBBASETYPEPTR, %s, %u, %s\n"
-		    ");\n",
-		    cfg->libbase, funclistit->lvo, cfg->basename
-	    );
-	    break;
-
-	default:
-	    fprintf(stderr, "Internal error: unhandled libcall in writestart\n");
-	    exit(20);
-	    break;
-	}
-    }
+    writefuncprotos(out, cfg, cfg->funclist);
     fprintf(out, "\n");
     
     /* Write out the includes needed for the classes */
@@ -246,12 +140,6 @@ static void writedecl(FILE *out, struct config *cfg)
     {
 	switch (classlistit->classtype)
 	{
-	case GADGET:
-	case DATATYPE:
-	case CLASS:
-	case IMAGE:
-	    /* None */
-	    break;
 	case MUI:
 	case MCC:
 	case MCP:
@@ -259,6 +147,23 @@ static void writedecl(FILE *out, struct config *cfg)
 	    {
 		writemuiincludes(out);
 		muiinc = 1;
+	    }
+	    /* Fall through: also write boopsi includes */
+	case GADGET:
+	case DATATYPE:
+	case CLASS:
+	case IMAGE:
+	    if (!boopsiinc)
+	    {
+		writeboopsiincludes(out);
+		boopsiinc = 1;
+	    }
+	    break;
+	case HIDD:
+	    if (!oopinc)
+	    {
+		writeoopincludes(out);
+		oopinc = 1;
 	    }
 	    break;
 	default:
@@ -360,6 +265,7 @@ static void writeresident(FILE *out, struct config *cfg)
     case MCP:
     case GADGET:
     case DATATYPE:
+    case HIDD:
 	fprintf(out, "    NT_LIBRARY,\n");
 	break;
     case DEVICE:
@@ -416,6 +322,7 @@ static void writeresident(FILE *out, struct config *cfg)
     case MCP:
     case GADGET:
     case DATATYPE:
+    case HIDD:
 	fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_LIBRARY),\n");
 	break;
     case DEVICE:
@@ -476,7 +383,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
     if (cfg->options & OPTION_DUPBASE)
 	fprintf(out, "    GM_ROOTBASE_FIELD(lh) = (LIBBASETYPEPTR)lh;\n");
-    fprintf(out, "    if ( ");
+    fprintf(out, "    if (");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "set_open_libraries() && ");
     if (cfg->classlist != NULL)

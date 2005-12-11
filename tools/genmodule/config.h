@@ -15,7 +15,7 @@
 
 enum command { CMD_UNSPECIFIED, DUMMY, FILES, LIBDEFS, INCLUDES, MAKEFILE, WRITEFUNCLIST };
 enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE, IMAGE, GADGET,
-	       DATATYPE, CLASS
+	       DATATYPE, CLASS, HIDD
 };
 
 enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT,
@@ -56,12 +56,15 @@ struct classinfo
     enum coptionflags options;
     
     const char **boopsimprefix;
-    char *classid, *superclass, *classptr_field, *classptr_var;
+    char *classid, *superclass, *superclass_field, *classptr_field, *classptr_var;
     char *dispatcher; /* == NULL when the generated dispatcher is used,
 		       * otherwise it is the function name of the dispatcher */;
     char *classdatatype; /* The type of the data for every object */
     
     struct functionhead *methlist;
+
+    /* Interfaces used in this class (only for HIDD classes) */
+    struct stringlist *interfaces;
 };
 
 struct config
