@@ -2,7 +2,7 @@
 #define OOP_OOP_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -116,9 +116,11 @@ struct OOP_InterfaceDescr
     ULONG   	    	    NumMethods; /* Number of methods in the methodtable */
 };
 
+typedef IPTR (*OOP_MethodFunc)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg);
+
 struct OOP_MethodDescr
 {
-    IPTR    (*MethodFunc)();
+    OOP_MethodFunc MethodFunc;
     ULONG   MethodIdx;
 };
 
@@ -227,10 +229,10 @@ enum {
 
 typedef struct
 {
-    OOP_Object	*targetObject;
-    OOP_Msg	message;
-    OOP_Class	*methodClass;
-    IPTR	(*methodFunc)(OOP_Class *, OOP_Object *, OOP_Msg);
+    OOP_Object		*targetObject;
+    OOP_Msg		message;
+    OOP_Class		*methodClass;
+    OOP_MethodFunc 	methodFunc;
 } OOP_Method;
 
 
