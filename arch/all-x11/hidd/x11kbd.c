@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd handling keypresses.
@@ -27,9 +27,12 @@
 
 #include <devices/inputevent.h>
 
+#include <aros/symbolsets.h>
 
 //#define DEBUG 1
 #include <aros/debug.h>
+
+#include LC_LIBDEFS_FILE
 
 #include "x11.h"
 
@@ -39,13 +42,6 @@ static UBYTE keycode2rawkey[256];
 static BOOL  havetable;
 
 long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
-
-struct x11kbd_data
-{
-    VOID  (*kbd_callback)(APTR, UWORD);
-    APTR    callbackdata;
-    UWORD   prev_keycode;
-};
 
 static OOP_AttrBase HiddKbdAB;
 
@@ -475,8 +471,8 @@ static struct _keytable template_keytable[] =
 #endif
 
 /****************************************************************************************/
-                        
-static OOP_Object * x11kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+
+OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL    	    has_kbd_hidd = FALSE;
     struct TagItem *tag, *tstate;
@@ -545,7 +541,7 @@ static OOP_Object * x11kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
 /****************************************************************************************/
 
-static VOID x11kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11Kbd_HandleEvent *msg)
+VOID X11Kbd__Hidd_X11Kbd__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11Kbd_HandleEvent *msg)
 {
     struct x11kbd_data  *data;    
     XKeyEvent 	    	*xk;
@@ -649,13 +645,6 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 
 /****************************************************************************************/
 
-#ifdef DOSBase
-#undef DOSBase
-#endif
-#define DOSBase ((struct DosLibrary *)(xsd->dosbase))
-
-/****************************************************************************************/
-
 static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 {
     char *filename = "DEVS:Keymaps/X11/keycode2rawkey.table";
@@ -710,105 +699,44 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 
 /****************************************************************************************/
 
-#undef DOSBase
-
-/****************************************************************************************/
-
 #endif
 
 /****************************************************************************************/
 
-#define NUM_ROOT_METHODS 1
-#define NUM_X11KBD_METHODS 1
+#undef XSD
+#define XSD(cl) (&LIBBASE->xsd)
 
 /****************************************************************************************/
 
-OOP_Class *init_kbdclass (struct x11_staticdata *xsd)
+AROS_SET_LIBFUNC(kbd_init, LIBBASETYPE, LIBBASE) 
 {
-    OOP_Class *cl = NULL;
-
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-    {
-    	{OOP_METHODDEF(x11kbd_new)  , moRoot_New},
-	{NULL	    	    	    , 0UL   	}
-    };
-    
-    struct OOP_MethodDescr kbdhidd_descr[NUM_X11KBD_METHODS + 1] = 
-    {
-    	{OOP_METHODDEF(x11kbd_handleevent)  , moHidd_X11Kbd_HandleEvent },
-	{NULL	    	    	    	    , 0UL   	    	    	}
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-    	{root_descr 	, IID_Root  	    , NUM_ROOT_METHODS	    },
-    	{kbdhidd_descr	, IID_Hidd_X11Kbd   , NUM_X11KBD_METHODS    },
-	{NULL	    	, NULL	    	    , 0     	    	    }
-    };
-    
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-	
-    struct TagItem tags[] =
-    {
-	{ aMeta_SuperID     	, (IPTR)CLID_Hidd   	    	    },
-	{ aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
-	{ aMeta_InstSize    	, (IPTR)sizeof (struct x11kbd_data) },
-	{ aMeta_ID  	    	, (IPTR)CLID_Hidd_X11Kbd    	    },
-	{ TAG_DONE  	    	, 0UL	    	    	    	    }
-    };
-
-    EnterFunc(bug("KbdHiddClass init\n"));
+    AROS_SET_LIBFUNC_INIT
 
 #if X11_LOAD_KEYMAPTABLE
-    LoadKeyCode2RawKeyTable(xsd);
+    LoadKeyCode2RawKeyTable(&LIBBASE->xsd);
 #endif
 
-    if (MetaAttrBase)
-    {
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if(cl)
-    	{
-	    cl->UserData = (APTR)xsd;
-	    xsd->kbdclass = cl;
-	    
-	    if (OOP_ObtainAttrBases(attrbases))
-	    {
-		D(bug("KbdHiddClass ok\n"));
-		
-	    	OOP_AddClass(cl);
-	    }
-	    else
-	    {
-	    	free_kbdclass(xsd);
-		cl = NULL;
-	    }
-	}
-	/* Don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-    }
+    return OOP_ObtainAttrBases(attrbases);
     
-    ReturnPtr("init_kbdclass", OOP_Class *, cl);
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-VOID free_kbdclass(struct x11_staticdata *xsd)
+AROS_SET_LIBFUNC(kbd_expunge, LIBBASETYPE, LIBBASE)
 {
-    EnterFunc(bug("free_kbdclass(xsd=%p)\n", xsd));
+    AROS_SET_LIBFUNC_INIT
 
-    if(xsd)
-    {
-        OOP_RemoveClass(xsd->kbdclass);
-	
-        if(xsd->kbdclass) OOP_DisposeObject((OOP_Object *) xsd->kbdclass);
-        xsd->kbdclass = NULL;
-	
-	OOP_ReleaseAttrBases(attrbases);
+    OOP_ReleaseAttrBases(attrbases);
 
-    }
-
-    ReturnVoid("free_kbdclass");
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
+ADD2INITLIB(kbd_init, 0);
+ADD2EXPUNGELIB(kbd_expunge, 0);
+
+/****************************************************************************************/

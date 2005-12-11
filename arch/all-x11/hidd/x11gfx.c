@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -31,9 +31,13 @@
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 
+#include <aros/symbolsets.h>
+
 #include "x11gfx_intern.h"
 #include "x11.h"
 #include "bitmap.h"
+
+#include LC_LIBDEFS_FILE
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -67,26 +71,12 @@ static struct OOP_ABDescr attrbases[] =
 };
 
 
-/* Private instance data for Gfx hidd class */
-struct gfx_data
-{
-    Display	*display;
-    int		 screen;
-    int		 depth;
-    Colormap	 colmap;
-    Cursor	 cursor;
-    Window	 fbwin; /* Frame buffer window */
-#if ADJUST_XWIN_SIZE
-    Window	 masterwin;
-#endif
-};
-
 static VOID cleanupx11stuff(struct x11_staticdata *xsd);
 static BOOL initx11stuff(struct x11_staticdata *xsd);
 
 /****************************************************************************************/
 
-static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem pftags[] =
     {
@@ -238,7 +228,7 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     EnterFunc(bug("X11Gfx::New()\n"));
 
-	/* Do GfxHidd initalization here */
+    /* Do GfxHidd initalization here */
     if (!initx11stuff(XSD(cl)))
     {
 	kprintf("!!! initx11stuff() FAILED IN X11Gfx::New() !!!\n");
@@ -351,7 +341,7 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 }
 
 /********** GfxHidd::Dispose()  ******************************/
-static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID X11Cl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gfx_data *data;
     
@@ -368,7 +358,7 @@ static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
     BOOL    	    	    	 displayable, framebuffer;    
     struct pHidd_Gfx_NewBitMap   p;
@@ -499,7 +489,7 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /****************************************************************************************/
 
-static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID X11Cl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct gfx_data *data = OOP_INST_DATA(cl, o);
     ULONG   	     idx;
@@ -552,7 +542,7 @@ static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
-static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+OOP_Object *X11Cl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
     OOP_Object      *fb = 0;
     IPTR    	     width, height, modeid;
@@ -617,7 +607,7 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 
 /****************************************************************************************/
 
-static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+VOID X11Cl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     ULONG   	     	 mode;
     Drawable 	     	 src = 0, dest = 0;
@@ -670,7 +660,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 
 /****************************************************************************************/
 
-static BOOL gfxhidd_setcursorshape(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+BOOL X11Cl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     /* Dummy implementation */
     return TRUE;
@@ -678,7 +668,7 @@ static BOOL gfxhidd_setcursorshape(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+BOOL X11Cl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     /* Dummy implementation */
     return TRUE;
@@ -686,114 +676,10 @@ static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID X11Cl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     /* Dummy implementation */
     return;
-}
-
-/****************************************************************************************/
-
-#undef XSD
-#define XSD(cl) xsd
-
-#define NUM_ROOT_METHODS 3
-#define NUM_GFXHIDD_METHODS 6
-
-/****************************************************************************************/
-
-OOP_Class *init_gfxclass (struct x11_staticdata *xsd)
-{
-    OOP_Class *cl = NULL;
-
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-    {
-    	{(IPTR (*)())gfx_new	, moRoot_New	},
-    	{(IPTR (*)())gfx_dispose, moRoot_Dispose},
-    	{(IPTR (*)())gfx_get	, moRoot_Get	},
-	{NULL	    	    	, 0UL	    	}
-    };
-    
-    struct OOP_MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
-    {
-    	{(IPTR (*)())gfxhidd_newbitmap	    	, moHidd_Gfx_NewBitMap		},
-    	{(IPTR (*)())gfxhidd_show   	    	, moHidd_Gfx_Show		},
-    	{(IPTR (*)())gfxhidd_copybox	    	, moHidd_Gfx_CopyBox		},
-    	{(IPTR (*)())gfxhidd_setcursorshape 	, moHidd_Gfx_SetCursorShape	},
-    	{(IPTR (*)())gfxhidd_setcursorpos   	, moHidd_Gfx_SetCursorPos	},
-    	{(IPTR (*)())gfxhidd_setcursorvisible	, moHidd_Gfx_SetCursorVisible	},
-	{NULL	    	    	    	    	, 0UL	    	    	    	}
-    };
-    
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-    	{root_descr 	, IID_Root  	, NUM_ROOT_METHODS  	},
-    	{gfxhidd_descr	, IID_Hidd_Gfx	, NUM_GFXHIDD_METHODS	},
-	{NULL	    	, NULL	    	, 0 	    	    	}
-    };
-    
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-	
-    struct TagItem tags[] =
-    {
-	{ aMeta_SuperID     	, (IPTR)CLID_Hidd_Gfx	    	    },
-	{ aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
-	{ aMeta_InstSize    	, (IPTR)sizeof (struct gfx_data)    },
-	{ aMeta_ID  	    	, (IPTR)CLID_Hidd_X11Gfx    	    },
-	{ TAG_DONE  	    	, 0UL	    	    	    	    }
-    };
-
-    EnterFunc(bug("GfxHiddClass init\n"));
-    
-    if (MetaAttrBase)
-    {
-
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    
-    	if(cl)
-    	{
-	    cl->UserData = (APTR)xsd;
-	    xsd->gfxclass = cl;
-	    
-	    if (OOP_ObtainAttrBases(attrbases))
-	    {
-		D(bug("GfxHiddClass ok\n"));
-	    	OOP_AddClass(cl);
-	    }
-	    else
-	    {
-	    	free_gfxclass( xsd );
-		cl = NULL;
-	    }
-	}
-	
-	/* Don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-    }
-    
-    ReturnPtr("init_gfxclass", Class *, cl);
-}
-
-/****************************************************************************************/
-
-VOID free_gfxclass(struct x11_staticdata *xsd)
-{
-    EnterFunc(bug("free_gfxclass(xsd=%p)\n", xsd));
-
-    if(xsd)
-    {
-
-        OOP_RemoveClass(xsd->gfxclass);
-	
-        if(xsd->gfxclass) OOP_DisposeObject((OOP_Object *) xsd->gfxclass);
-        xsd->gfxclass = NULL;
-	
-	OOP_ReleaseAttrBases(attrbases);
-
-    }
-
-    ReturnVoid("free_gfxclass");
 }
 
 /****************************************************************************************/
@@ -817,6 +703,9 @@ static ULONG mask_to_shift(ULONG mask)
 
 /****************************************************************************************/
 
+#undef XSD
+#define XSD(cl) xsd
+
 /*
    Inits sysdisplay, sysscreen, colormap, etc.. */
 static BOOL initx11stuff(struct x11_staticdata *xsd)
@@ -831,7 +720,6 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 
 
     EnterFunc(bug("initx11stuff()\n"));
-
 
     LOCK_X11	
 
@@ -993,8 +881,39 @@ static VOID cleanupx11stuff(struct x11_staticdata *xsd)
 #endif 
    
     UNLOCK_X11
-
 }
 
 /****************************************************************************************/
 
+#define xsd (&LIBBASE->xsd)
+
+/****************************************************************************************/
+
+AROS_SET_LIBFUNC(x11gfx_init, LIBBASETYPE, LIBBASE) 
+{
+    AROS_SET_LIBFUNC_INIT
+
+    return OOP_ObtainAttrBases(attrbases);
+    
+    AROS_SET_LIBFUNC_EXIT
+}
+
+/****************************************************************************************/
+
+AROS_SET_LIBFUNC(x11gfx_expunge, LIBBASETYPE, LIBBASE)
+{
+    AROS_SET_LIBFUNC_INIT
+
+    OOP_ReleaseAttrBases(attrbases);
+
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
+}
+
+/****************************************************************************************/
+
+ADD2INITLIB(x11gfx_init, 0);
+ADD2EXPUNGELIB(x11gfx_expunge, 0);
+
+/****************************************************************************************/
