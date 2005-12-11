@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO
@@ -21,6 +21,7 @@
 #include <utility/hooks.h>
 #include <hidd/unixio.h>
 #include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include <hardware/intbits.h>
 #include <hardware/custom.h>
 
@@ -39,9 +40,14 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/ioctl.h>
 #include <string.h>
 #include <errno.h>
 #undef timeval
+
+#include "unixio.h"
+
+#include LC_LIBDEFS_FILE
 
 #ifdef __AROS__
 #include <aros/asmcall.h>
@@ -50,33 +56,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 #endif /* __AROS__ */
-
-static const UBYTE name[];
-static const UBYTE version[];
-
-static void * AROS_SLIB_ENTRY(init,UnixIO)();
-
-
-extern const char UnixIO_End;
-
-int unixio_entry(void)
-{
-    return -1;
-}
-
-const struct Resident UnixIO_resident =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&UnixIO_resident,
-    (APTR)&UnixIO_End,
-    RTF_COLDSTART,
-    41,
-    NT_UNKNOWN,
-    91, /* Has to be after OOP */
-    (UBYTE *)name,
-    (UBYTE *)version,
-    (APTR)&AROS_SLIB_ENTRY(init,UnixIO)
-};
 
 struct newMemList
 {
@@ -96,28 +75,7 @@ static const struct newMemList MemTemplate =
 };
 
 
-static const UBYTE name[] = "unixioclass";
-static const UBYTE version[] = "unixioclass 41.1 (27.10.1997)\r\n";
-
 /************************************************************************/
-
-/* instance data for the unixioclass */
-struct UnixIOData
-{
-    struct MsgPort		* uio_ReplyPort;
-};
-
-/* static data for the unixioclass */
-struct uio_data
-{
-    struct Library		* ud_UtilityBase;
-    struct Library		* ud_OOPBase;
-    struct ExecBase		* ud_SysBase;
-
-    struct Task 		* ud_WaitForIO;
-    struct MsgPort		* ud_Port;
-};
-
 
 AROS_UFH5 (void, SigIO_IntServer,
     AROS_UFHA (ULONG             ,dummy,  D0),
@@ -157,14 +115,9 @@ static int unixio_start_timer(struct timerequest * timerio)
 /******************
 **  UnixIO task  **
 ******************/
-#ifdef SysBase
-stop
-#undef SysBase
-#endif
 static void WaitForIO (void)
 {
     struct uio_data * ud = FindTask(NULL)->tc_UserData;
-    struct ExecBase * SysBase = ud->ud_SysBase;
     int maxfd;
     int selecterr;
     int err;
@@ -468,7 +421,6 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
     } /* Forever */
 }
 
-#define OOPBase	(((struct uio_data *)cl->UserData)->ud_OOPBase)
 #define UtilityBase	(((struct uio_data *)cl->UserData)->ud_UtilityBase)
 
 /* This is the dispatcher for the UnixIO HIDD class. */
@@ -477,7 +429,7 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
 /********************
 **  UnixIO::New()  **
 ********************/
-static OOP_Object *unixio_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *UXIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("UnixIO::New(cl=%s)\n", cl->ClassNode.ln_Name));
     D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
@@ -511,7 +463,7 @@ kprintf("\tUnixIO::New(): Task %s (%x) Replyport: %x\n",FindTask(NULL)->tc_Node.
 /***********************
 **  UnixIO::Dispose()  **
 ***********************/
-static IPTR unixio_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+IPTR UXIO__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct UnixIOData *id = OOP_INST_DATA(cl, o);
 
@@ -524,13 +476,13 @@ static IPTR unixio_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*********************
 **  UnixIO::Wait()  **
 *********************/
-static IPTR unixio_wait(OOP_Class *cl, OOP_Object *o, struct uioMsg *msg)
+IPTR UXIO__Hidd_UnixIO__Wait(OOP_Class *cl, OOP_Object *o, struct uioMsg *msg)
 {
     IPTR retval = 0UL;
 //    struct UnixIOData *id = OOP_INST_DATA(cl, o);
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
     struct MsgPort  * port = CreatePort(NULL, 0);
-    struct uio_data *ud = (struct uio_data *)cl->UserData;
+    struct uio_data *ud = UD(cl);
 
     if (umsg  && port)
     {
@@ -570,12 +522,12 @@ kprintf("\tUnixIO::Wait() Task %s (%x) waiting on port %x\n",FindTask(NULL)->tc_
 /************************
 **  UnixIO::AsyncIO()  **
 ************************/
-static IPTR unixio_asyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAsyncIO *msg)
+IPTR UXIO__Hidd_UnixIO__AsyncIO(OOP_Class *cl, OOP_Object *o, struct uioMsgAsyncIO *msg)
 {
     IPTR retval = 0UL;
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
     struct MsgPort  * port = msg->um_ReplyPort;
-    struct uio_data *ud = (struct uio_data *)cl->UserData;
+    struct uio_data *ud = UD(cl);
 
     if (umsg)
     {
@@ -614,10 +566,10 @@ static IPTR unixio_asyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAsyncIO *m
 /*****************************
 **  UnixIO::AbortAsyncIO()  **
 *****************************/
-static VOID unixio_abortasyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAbortAsyncIO *msg)
+VOID UXIO__Hidd_UnixIO__AbortAsyncIO(OOP_Class *cl, OOP_Object *o, struct uioMsgAbortAsyncIO *msg)
 {
     struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
-    struct uio_data *ud = (struct uio_data *)cl->UserData;
+    struct uio_data *ud = UD(cl);
     struct MsgPort  * port = CreatePort(NULL, 0);
 
     if (umsg  && port)
@@ -643,7 +595,7 @@ static VOID unixio_abortasyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAbort
 /*****************************
 **  UnixIO::OpenFile()      **
 *****************************/
-static APTR unixio_openfile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpenFile *msg)
+APTR UXIO__Hidd_UnixIO__OpenFile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpenFile *msg)
 {
     APTR retval = (APTR)open((const char *)msg->um_FileName, (int)msg->um_Flags, (int)msg->um_Mode);
     
@@ -655,7 +607,7 @@ static APTR unixio_openfile(OOP_Class *cl, OOP_Object *o, struct uioMsgOpenFile 
 /*****************************
 **  UnixIO::CloseFile()      **
 *****************************/
-static VOID unixio_closefile(OOP_Class *cl, OOP_Object *o, struct uioMsgCloseFile *msg)
+VOID UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgCloseFile *msg)
 {
     if (msg->um_FD != (APTR)-1) close((int)msg->um_FD);
     if (msg->um_ErrNoPtr) *msg->um_ErrNoPtr = errno;
@@ -664,7 +616,7 @@ static VOID unixio_closefile(OOP_Class *cl, OOP_Object *o, struct uioMsgCloseFil
 /*****************************
 **  UnixIO::WriteFile()     **
 *****************************/
-static IPTR unixio_writefile(OOP_Class *cl, OOP_Object *o, struct uioMsgWriteFile *msg)
+IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWriteFile *msg)
 {
     IPTR retval = (IPTR)-1;
     
@@ -672,10 +624,8 @@ static IPTR unixio_writefile(OOP_Class *cl, OOP_Object *o, struct uioMsgWriteFil
     {
     	do
 	{
-	    static int count;
-	    
     	    retval = (IPTR)write((int)msg->um_FD, (const void *)msg->um_Buffer, (size_t)msg->um_Count);
-    	    //kprintf(" unixio_writefile[%04ld]: retval %d errno %d  buff %x  count %d\n", count++, retval, errno, msg->um_Buffer, msg->um_Count);
+    	    //kprintf(" UXIO__Hidd_UnixIO__WriteFile[%04ld]: retval %d errno %d  buff %x  count %d\n", count++, retval, errno, msg->um_Buffer, msg->um_Count);
 
     	    if (msg->um_ErrNoPtr) break;
 	    	    
@@ -684,7 +634,7 @@ static IPTR unixio_writefile(OOP_Class *cl, OOP_Object *o, struct uioMsgWriteFil
 
     if (msg->um_ErrNoPtr) *msg->um_ErrNoPtr = errno;
     
-    //if ((int)retval == -1) kprintf("unixio_writefile: errno %d  buff %x  count %d\n", errno, msg->um_Buffer, msg->um_Count);
+    //if ((int)retval == -1) kprintf("UXIO__Hidd_UnixIO__WriteFile: errno %d  buff %x  count %d\n", errno, msg->um_Buffer, msg->um_Count);
     
     return retval;
 }
@@ -692,7 +642,7 @@ static IPTR unixio_writefile(OOP_Class *cl, OOP_Object *o, struct uioMsgWriteFil
 /*****************************
 **  UnixIO::IOControlFile() **
 *****************************/
-static IPTR unixio_iocontrolfile(OOP_Class *cl, OOP_Object *o, struct uioMsgIOControlFile *msg)
+IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct uioMsgIOControlFile *msg)
 {
     IPTR retval = (IPTR)-1;
 
@@ -707,96 +657,40 @@ static IPTR unixio_iocontrolfile(OOP_Class *cl, OOP_Object *o, struct uioMsgIOCo
 }
 
 /* This is the initialisation code for the HIDD class itself. */
-#undef OOPBase
 #undef UtilityBase
 
 
-#define NUM_ROOT_METHODS 2
-#define NUM_UNIXIO_METHODS 7
-
-AROS_UFH3(static void *, AROS_SLIB_ENTRY(init,UnixIO),
-    AROS_UFHA(ULONG, dummy1, D0),
-    AROS_UFHA(ULONG, dummy2, A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
+AROS_SET_LIBFUNC(UXIO_Init, LIBBASETYPE, LIBBASE)
 {
-    AROS_USERFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
 
-    struct Library  * OOPBase;
-    struct OOP_IClass * cl;
-    struct uio_data * ud;
     struct Task     * newtask,
 		    * task2 = NULL; /* keep compiler happy */
     struct newMemList nml;
     struct MemList  * ml;
     struct Interrupt * is;
 
-    struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
-    {
-    	{ (IPTR (*)())unixio_new,	moRoot_New	},
-    	{ (IPTR (*)())unixio_dispose,	moRoot_Dispose	},
-    	{ NULL, 0UL }
-    };
-
-    struct OOP_MethodDescr unixio_mdescr[NUM_UNIXIO_METHODS + 1] =
-    {
-    	{ (IPTR (*)())unixio_wait   	    , moHidd_UnixIO_Wait	    },
-    	{ (IPTR (*)())unixio_asyncio	    , moHidd_UnixIO_AsyncIO 	    },
-    	{ (IPTR (*)())unixio_abortasyncio   , moHidd_UnixIO_AbortAsyncIO    },
-    	{ (IPTR (*)())unixio_openfile  	    , moHidd_UnixIO_OpenFile	    },
-    	{ (IPTR (*)())unixio_closefile 	    , moHidd_UnixIO_CloseFile	    },
-    	{ (IPTR (*)())unixio_writefile 	    , moHidd_UnixIO_WriteFile	    },
-    	{ (IPTR (*)())unixio_iocontrolfile  , moHidd_UnixIO_IOControlFile   },
-    	{ NULL	    	    	    	    , 0UL   	    	    	    }
-    };
-
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-    	{root_mdescr, IID_Root, NUM_ROOT_METHODS},
-	{unixio_mdescr, IID_Hidd_UnixIO, NUM_UNIXIO_METHODS},
-	{NULL, NULL, 0UL}
-    };
-
-    
     /*
 	We map the memory into the shared memory space, because it is
 	to be accessed by many processes, eg searching for a HIDD etc.
 
 	Well, maybe once we've got MP this might help...:-)
     */
-    ud = AllocMem(sizeof(struct uio_data), MEMF_CLEAR|MEMF_PUBLIC);
-    if(ud == NULL)
-    {
-	/* If you are not running from ROM, don't use Alert() */
-	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
-	return NULL;
-    }
 
-    ud->ud_SysBase = SysBase;
-
-    OOPBase = ud->ud_OOPBase = OpenLibrary("oop.library", 0);
-    if(ud->ud_OOPBase == NULL)
+    LIBBASE->uio_csd.ud_UtilityBase = OpenLibrary("utility.library",0);
+    if(LIBBASE->uio_csd.ud_UtilityBase == NULL)
     {
-	FreeMem(ud, sizeof(struct uio_data));
-	Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown);
-	return NULL;
-    }
-
-    ud->ud_UtilityBase = OpenLibrary("utility.library",0);
-    if(ud->ud_UtilityBase == NULL)
-    {
-	CloseLibrary(ud->ud_UtilityBase);
-	FreeMem(ud, sizeof(struct uio_data));
+	CloseLibrary(LIBBASE->uio_csd.ud_UtilityBase);
 	Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_UtilityLib);
-	return NULL;
+	return FALSE;
     }
 
-    ud->ud_Port = CreatePort (NULL, 0);
-    if(ud->ud_Port == NULL)
+    LIBBASE->uio_csd.ud_Port = CreatePort (NULL, 0);
+    if(LIBBASE->uio_csd.ud_Port == NULL)
     {
 	/* If you are not running from ROM, don't use Alert() */
 	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
-	return NULL;
+	return FALSE;
     }
 
     nml = MemTemplate;
@@ -821,7 +715,7 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init,UnixIO),
 	newtask->tc_SPLower = ml->ml_ME[1].me_Addr;
 	newtask->tc_SPUpper = newtask->tc_SPReg;
 
-	newtask->tc_UserData = ud;
+	newtask->tc_UserData = &LIBBASE->uio_csd;
 
 	NEWLIST (&newtask->tc_MemEntry);
 	AddHead (&newtask->tc_MemEntry, (struct Node *)ml);
@@ -841,50 +735,27 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init,UnixIO),
     {
 	/* If you are not running from ROM, don't use Alert() */
 	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
-	return NULL;
+	return FALSE;
     }
 
-    ud->ud_WaitForIO = task2;
+    LIBBASE->uio_csd.ud_WaitForIO = task2;
 
-    ud->ud_Port->mp_Flags   = PA_SIGNAL;
-    ud->ud_Port->mp_SigTask = task2;
+    LIBBASE->uio_csd.ud_Port->mp_Flags   = PA_SIGNAL;
+    LIBBASE->uio_csd.ud_Port->mp_SigTask = task2;
 
     is=(struct Interrupt *)AllocMem(sizeof(struct Interrupt),MEMF_PUBLIC);
     if (!is)
     {
 	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
-	return NULL;
+	return FALSE;
     }
     is->is_Code=(void (*)())&SigIO_IntServer;
-    is->is_Data=(APTR)ud;
+    is->is_Data=(APTR)&LIBBASE->uio_csd;
     SetIntVector(INTB_DSKBLK,is);
 
-    /* Create the class structure for the "unixioclass" */
-    
-    {
-        OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-	
-        struct TagItem tags[] =
-    	{
-            {aMeta_SuperID,		(IPTR)CLID_Hidd},
-	    {aMeta_InterfaceDescr,	(IPTR)ifdescr},
-	    {aMeta_ID,			(IPTR)CLID_Hidd_UnixIO},
-	    {aMeta_InstSize,		(IPTR)sizeof (struct UnixIOData) },
-	    {TAG_DONE, 0UL}
-    	};
+    return TRUE;
 
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    
-    	if(cl)
-    	{
-	    cl->UserData = (APTR)ud;
-
-	    OOP_AddClass(cl);
-        }
-    }
-    return NULL;
-
-    AROS_USERFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
-
+ADD2INITLIB(UXIO_Init, 0)

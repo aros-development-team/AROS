@@ -1,23 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-%build_module_macro mmake=kernel-unixio-hidd \
+USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
+%build_module mmake=kernel-unixio \
     modname=unixio modtype=hidd \
-    initfile=unixio_class \
-    files=unixio_end \
-    conffile=lib.conf \
-    cflags="$(HOST_CFLAGS) -I$(GENINCDIR) -D__AROS__" \
+    files=unixio_class \
     compiler=host
-
-#MM- kernel-hidd : includes kernel-hidd-$(ARCH)-$(CPU)
-
-#MM
-kernel-hidd-unix : $(LIB)
-
-#MM
-kernel-unixio : $(LIB)
-
-#MM- kernel-unixio-kobj : kernel-unixio-hidd-kobj
 
 STUBS := unixio_stubs
 
@@ -40,4 +28,3 @@ $(GENINCDIR)/hidd/%.h : include/%.h
 setup-includes :
 	%mkdirs_q $(GENINCDIR) $(AROS_INCLUDES) $(GENINCDIR)/hidd $(AROS_INCLUDES)/hidd
 
-%common
