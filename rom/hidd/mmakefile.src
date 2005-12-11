@@ -2,14 +2,10 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DAROS_USE_OOP
-%build_module_macro mmake=kernel-hidd \
+%build_module mmake=kernel-hidd \
   modname=hiddclass modtype=hidd \
-  files=hiddclass initfile=hiddclass_init \
-  conffile=lib.conf \
-  genfunctable=yes
+  files=hiddclass
 
 INCLUDE_FILES   :=  $(wildcard include/*.h)
 %copy_includes path=hidd
-
-%common
 

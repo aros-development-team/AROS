@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Main class for HIDD.
@@ -22,7 +22,11 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
+#include <aros/symbolsets.h>
+
 #include "hiddclass_intern.h"
+
+#include LC_LIBDEFS_FILE
 
 #undef  SDEBUG
 #undef  DEBUG
@@ -34,12 +38,12 @@ static const char unknown[]  = "--unknown device--";
 #define IS_HIDD_ATTR(attr, idx) ((idx = attr - HiddAttrBase) < num_Hidd_Attrs)
 
 /* Implementation of root HIDD class methods. */
-static VOID hidd_set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg);
+VOID HIDDCl__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg);
 
 
 /*** HIDD::New() **************************************************************/
 
-static OOP_Object *hidd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("HIDD::New(cl=%s)\n", cl->ClassNode.ln_Name));
     D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
@@ -80,7 +84,7 @@ static OOP_Object *hidd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 
         set_msg.attrList = msg->attrList;
-        hidd_set(cl, o, &set_msg);
+        HIDDCl__Root__Set(cl, o, &set_msg);
     }
     
     ReturnPtr("HIDD::New", OOP_Object *, o);
@@ -89,7 +93,7 @@ static OOP_Object *hidd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 /*** HIDD::Set() **************************************************************/
 
-static VOID hidd_set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+VOID HIDDCl__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
 
     struct TagItem  *tstate = msg->attrList;
@@ -120,7 +124,7 @@ static VOID hidd_set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
 /*** HIDD::Get() **************************************************************/
 
-static VOID hidd_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID HIDDCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct HIDDData *hd = OOP_INST_DATA(cl, o);
     ULONG idx;
@@ -321,157 +325,75 @@ static VOID hidd_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /*************************** Classes *****************************/
 
-#undef SysBase
-#undef UtilityBase
-#undef OOPBase
+#undef csd
 
-#define SysBase     (lh->hd_SysBase)
-#define UtilityBase (csd->UtilityBase)
-#define OOPBase     (csd->OOPBase)
-
-#define NUM_ROOT_METHODS 3
-#define NUM_HIDD_METHODS 0
-
-ULONG init_hiddclass(struct IntHIDDClassBase *lh)
+AROS_SET_LIBFUNC(init_hiddclass, LIBBASETYPE, lh)
 {
-    OOP_Class  *cl = NULL;
+    AROS_SET_LIBFUNC_INIT
     struct  class_static_data *csd;
-    ULONG   alert = AT_DeadEnd | AN_Unknown | AO_Unknown;
+    ULONG   alert;
     ULONG   ok    = 0;
-
-    struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
-    {
-        { (IPTR (*)())hidd_new,         moRoot_New              },
-        { (IPTR (*)())hidd_set,         moRoot_Set              },
-        { (IPTR (*)())hidd_get,         moRoot_Get              },
-        { NULL, 0UL }
-    };
-
-    
-    struct OOP_MethodDescr hidd_mdescr[NUM_HIDD_METHODS + 1] =
-    {
-        { NULL, 0UL }
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_mdescr, IID_Root, NUM_ROOT_METHODS},
-        {hidd_mdescr, IID_Hidd, NUM_HIDD_METHODS},
-        {NULL, NULL, 0UL}
-    
-    };
-    
-    
-    /*
-        We map the memory into the shared memory space, because it is
-        to be accessed by many processes, eg searching for a HIDD etc.
-
-        Well, maybe once we've got MP this might help...:-)
-    */
 
     EnterFunc(bug("HIDD::Init()\n"));
 
     /* If you are not running from ROM, don't use Alert() */
 
-    alert = AT_DeadEnd | AG_NoMemory | AN_Unknown;
-    csd = lh->hd_csd = AllocMem(sizeof(struct class_static_data), MEMF_CLEAR|MEMF_PUBLIC);
-    if(csd)
-    {
-    	D(bug("Got CSD\n"));
-        NEWLIST(&csd->hiddList);
-        InitSemaphore(&csd->listLock);
+    csd = &lh->hd_csd;
+
+    NEWLIST(&csd->hiddList);
+    InitSemaphore(&csd->listLock);
 	
-	csd->sysBase = SysBase;
+    alert = AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown;
 
-        alert = AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown;
-        OOPBase = OpenLibrary(AROSOOP_NAME, 0);
-        if(OOPBase)
-        {
-	    D(bug("Got OOPBase\n"));
-            UtilityBase = OpenLibrary("utility.library", 0);
-            if(UtilityBase)
-            {
-                /* Create the class structure for the "hiddclass" */
+    UtilityBase = OpenLibrary("utility.library", 0);
+    if(UtilityBase)
+    {
+	/* Create the class structure for the "hiddclass" */
+	D(bug("Got UtilityBase\n"));
 
-                OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
+	alert = AT_DeadEnd | AN_Unknown | AO_Unknown;
 
-                struct TagItem tags[] =
-                {
-                    {aMeta_SuperID,             (IPTR)CLID_Root},
-                    {aMeta_InterfaceDescr,      (IPTR)ifdescr},
-                    {aMeta_ID,                  (IPTR)CLID_Hidd},
-                    {aMeta_InstSize,            (IPTR)sizeof (struct HIDDData) },
-                    {TAG_DONE, 0UL}
-                };
-
-	    	D(bug("Got UtilityBase\n"));
-
-                alert = AT_DeadEnd | AN_Unknown | AO_Unknown;
-                cl = csd->hiddclass = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-                if(cl)
-                {
-		    D(bug("Class created\n"));
-                    cl->UserData = csd;
-
-                    HiddAttrBase = OOP_ObtainAttrBase(IID_Hidd);
-                    if(HiddAttrBase)
-                    {
-		    	D(bug("Got HiddAttrBase\n"));
-                        OOP_AddClass(cl);
-                        ok = 1;
-                    } /* if(HiddAttrBase) */
-
-                } /* if(cl) */
-
-            } /* if(UtilityBase) */
-
-        } /* if(OOPBase) */
-    }
+	HiddAttrBase = OOP_ObtainAttrBase(IID_Hidd);
+	if(HiddAttrBase)
+	{
+	    D(bug("Got HiddAttrBase\n"));
+	    ok = 1;
+	} /* if(HiddAttrBase) */
+    } /* if(UtilityBase) */
 
     if(ok == 0)
     {
-        free_hiddclass(lh);
-
-        lh->hd_csd = NULL;
-
         /* If you are not running from ROM, don't use Alert() */
 
         Alert(alert);
     }
 
     ReturnInt("HIDD::Init", ULONG, ok);
+
+    AROS_SET_LIBFUNC_EXIT
 }
 
 
-VOID free_hiddclass(struct IntHIDDClassBase *lh)
+AROS_SET_LIBFUNC(free_hiddclass, LIBBASETYPE, lh)
 {
-    struct class_static_data *csd = lh->hd_csd;
+    AROS_SET_LIBFUNC_INIT
+
+    struct class_static_data *csd = &lh->hd_csd;
 
     EnterFunc(bug("HIDD::Free()\n"));
 
-    if(csd)
+    if(csd->hiddAttrBase)
     {
-        if(csd->hiddclass)
-        {
-            OOP_RemoveClass(csd->hiddclass);
-            if(csd->hiddAttrBase)
-            {
-                OOP_ReleaseAttrBase(IID_Hidd);
-                csd->hiddAttrBase = 0;
-            }
-
-            OOP_DisposeObject((OOP_Object *) csd->hiddclass);
-        }
-
-
-        if(OOPBase)     CloseLibrary(OOPBase);
-        if(UtilityBase) CloseLibrary(UtilityBase);
-
-        FreeMem(csd, sizeof(struct class_static_data));
-
-        lh->hd_csd = NULL;
+	OOP_ReleaseAttrBase(IID_Hidd);
+	csd->hiddAttrBase = 0;
     }
 
-    ReturnVoid("HIDD::Free");
+    if(UtilityBase) CloseLibrary(UtilityBase);
+
+    ReturnInt("HIDD::Free", ULONG, TRUE);
+
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(init_hiddclass, 0)
+ADD2EXPUNGELIB(free_hiddclass, 0)
