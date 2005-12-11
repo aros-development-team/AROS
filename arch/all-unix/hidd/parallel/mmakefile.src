@@ -1,18 +1,14 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-FILES       := ParallelClass ParallelUnitClass #unix_funcs
+FILES       := parallel_init ParallelClass ParallelUnitClass #unix_funcs
 
 USER_CFLAGS := -DAROS_USE_OOP -D__AROS__
 USER_INCLUDES := -I$(GENINCDIR)
-%build_module_macro mmake=workbench-hidd-unix-parallel \
+%build_module mmake=workbench-hidd-unix-parallel \
   modname=parallel modtype=hidd \
   files=$(FILES) \
-  conffile=lib.conf \
   uselibs="amiga hiddstubs" usehostlibs=c \
-  genfunctable=yes \
   compiler=host
 
 #MM workbench-hidd-unix-parallel : kernel-unixio
-
-%common

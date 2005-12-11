@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Serial hidd initialization code.
@@ -10,103 +10,45 @@
 
 #include <proto/exec.h>
 
+#include <aros/symbolsets.h>
+
 #include "parallel_intern.h"
 
-
-#undef SysBase
-
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hdg_SysBase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hdg_SegList)
-#define LC_RESIDENTNAME         hiddparallel_resident
-#define LC_RESIDENTFLAGS        RTF_COLDSTART | RTF_AUTOINIT
-#define LC_RESIDENTPRI          0
-#define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
-#define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->hdg_LibNode)
-
-#define LC_NO_OPENLIB
-#define LC_NO_CLOSELIB
-
-/* to avoid removing the parallelhiddclass from memory add #define NOEXPUNGE */
-
-#include <libcore/libheader.c>
+#include LC_LIBDEFS_FILE
 
 #undef  SDEBUG
 #undef  DEBUG
 #define DEBUG 1
 #include <aros/debug.h>
 
-#define sysBase      (LC_SYSBASE_FIELD(lh))
-
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
+AROS_SET_LIBFUNC(UXPar_Init, LIBBASETYPE, LIBBASE)
 {
-    struct class_static_data *csd; /* ParallelHidd static data */
+    AROS_SET_LIBFUNC_INIT
 
-    EnterFunc(bug("ParallelHIDD_Init()\n"));
-
-    /*
-        We map the memory into the shared memory space, because it is
-        to be accessed by many processes, eg searching for a HIDD etc.
-
-        Well, maybe once we've got MP this might help...:-)
-    */
-    csd = AllocVec(sizeof(struct class_static_data), MEMF_CLEAR|MEMF_PUBLIC);
-    lh->hdg_csd = csd;
-    if(csd)
+    LIBBASE->hdg_csd.utilitybase = OpenLibrary("utility.library", 37);
+    if (LIBBASE->hdg_csd.utilitybase)
     {
-        csd->sysbase = sysBase;
-        
-        D(bug("  Got csd\n"));
-
-        csd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
-        if (csd->oopbase)
-        {
-            D(bug("  Got OOPBase\n"));
-            csd->utilitybase = OpenLibrary("utility.library", 37);
-            if (csd->utilitybase)
-            {
-                D(bug("  Got UtilityBase\n"));
-
-                csd->parallelhiddclass = init_parallelhiddclass(csd);
-
-                D(bug("  ParallelHiddClass: %p\n", csd->parallelhiddclass));
-
-                if(csd->parallelhiddclass)
-                {
-                    D(bug("  Got ParallelHIDDClass\n"));
-                    ReturnInt("ParallelHIDD_Init", ULONG, TRUE);
-                }
-
-                CloseLibrary(csd->utilitybase);
-            }
-            CloseLibrary(csd->oopbase);
-        }
-
-        FreeVec(csd);
-        lh->hdg_csd = NULL;
+	D(bug("  Got UtilityBase\n"));
+	ReturnInt("ParallelHIDD_Init", ULONG, TRUE);
     }
-
 
     ReturnInt("ParallelHIDD_Init", ULONG, FALSE);
-        
+
+    AROS_SET_LIBFUNC_EXIT
 }
 
-
-void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
+AROS_SET_LIBFUNC(UXPar_Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+
     EnterFunc(bug("ParallelHIDD_Expunge()\n"));
 
-    if(lh->hdg_csd)
-    {
-        free_parallelhiddclass(lh->hdg_csd);
+    CloseLibrary(LIBBASE->hdg_csd.utilitybase);
 
-        CloseLibrary(lh->hdg_csd->utilitybase);
-        CloseLibrary(lh->hdg_csd->oopbase);
-
-        FreeVec(lh->hdg_csd);
-    }
-
-    ReturnVoid("ParallelHIDD_Expunge");
+    ReturnInt("ParallelHIDD_Expunge", ULONG, TRUE);
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(UXPar_Init, 0)
+ADD2EXPUNGELIB(UXPar_Expunge, 0)
