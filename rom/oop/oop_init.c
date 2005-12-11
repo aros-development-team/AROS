@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP Library
@@ -41,56 +41,59 @@ static void FreeAllClasses(struct Library *BOOPIBase)
 #endif
 */
 
+struct Library *OOPBase;
 
-AROS_SET_LIBFUNC(OOPInit, LIBBASETYPE, LIBBASE)
+AROS_SET_LIBFUNC(OOPInit, LIBBASETYPE, lh)
 {
     AROS_SET_LIBFUNC_INIT
 
-    struct IDDescr intern_ids[] =
-    {
-    	/* We must make sure that Root gets ID 0 and Meta gets ID 1 */
-	{ IID_Root,		&__IRoot		},
-	{ IID_Meta,		&__IMeta		},
-	
-#if 0	
-	{ IID_Method,		&__IMethod		},
-	{ IID_Server,		&__IServer		},
-	{ IID_Proxy,		&__IProxy		},
-	{ IID_Interface,	&__IInterface		},
-#endif
-	{ NULL,	NULL }
-    };
+    OOPBase = (struct Library *)lh;
+    
+    NEWLIST(&GetOBase(lh)->ob_ClassList);
+    InitSemaphore(&GetOBase(lh)->ob_ClassListLock);
 
-    NEWLIST(&GetOBase(LIBBASE)->ob_ClassList);
-    InitSemaphore(&GetOBase(LIBBASE)->ob_ClassListLock);
+    NEWLIST(&GetOBase(lh)->ob_ServerList);
+    InitSemaphore(&GetOBase(lh)->ob_ServerListLock);
 
-    NEWLIST(&GetOBase(LIBBASE)->ob_ServerList);
-    InitSemaphore(&GetOBase(LIBBASE)->ob_ServerListLock);
-
-    InitSemaphore(&GetOBase(LIBBASE)->ob_IIDTableLock);
+    InitSemaphore(&GetOBase(lh)->ob_IIDTableLock);
     
     SDInit();
 	
     UtilityBase = OpenLibrary (UTILITYNAME, 0);
     if (UtilityBase)
     {
-    	GetOBase(LIBBASE)->ob_IIDTable = NewHash(NUM_IDS, HT_STRING, GetOBase(LIBBASE));
-    	if (GetOBase(LIBBASE)->ob_IIDTable)
+    	GetOBase(lh)->ob_IIDTable = NewHash(NUM_IDS, HT_STRING, GetOBase(lh));
+    	if (GetOBase(lh)->ob_IIDTable)
 	{
+	    struct IDDescr intern_ids[] =
+	    {
+		/* We must make sure that Root gets ID 0 and Meta gets ID 1 */
+		{ IID_Root,		&__IRoot		},
+		{ IID_Meta,		&__IMeta		},
+	
+#if 0	
+		{ IID_Method,		&__IMethod		},
+		{ IID_Server,		&__IServer		},
+		{ IID_Proxy,		&__IProxy		},
+		{ IID_Interface,	&__IInterface		},
+#endif
+		{ NULL,	NULL }
+	    };
+
 	    /* Get some IDs that are used internally */
-    	    if (GetIDs(intern_ids, (struct IntOOPBase *)OOPBase))
+    	    if (GetIDs(intern_ids, (struct IntOOPBase *)lh))
     	    {
-            	if (init_rootclass(GetOBase(OOPBase)))
+            	if (init_rootclass(GetOBase(lh)))
 	    	{
-            	    if (init_basemeta(GetOBase(OOPBase)))
+            	    if (init_basemeta(GetOBase(lh)))
 	    	    {
-		    	if (init_ifmetaclass(GetOBase(OOPBase)))
+		    	if (init_ifmetaclass(GetOBase(lh)))
 			{
-			    GetOBase(OOPBase)->ob_HIDDMetaClass
-			    	= init_hiddmetaclass(GetOBase(OOPBase));
-			    if (GetOBase(OOPBase)->ob_HIDDMetaClass)
+			    GetOBase(lh)->ob_HIDDMetaClass
+			    	= init_hiddmetaclass(GetOBase(lh));
+			    if (GetOBase(lh)->ob_HIDDMetaClass)
 			    {
-	    	    	    	if (InitUtilityClasses((struct IntOOPBase *)OOPBase))
+	    	    	    	if (InitUtilityClasses((struct IntOOPBase *)lh))
 			    	    return (TRUE);
 			    }
 			}
