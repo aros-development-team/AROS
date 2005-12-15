@@ -39,7 +39,7 @@ title AROS VGA  640x480   4bpp
 kernel /boot/aros-pc-i386.gz ATA=32bit,forcedma
 
 title AROS NVIDIA
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=nvidia.hidd ATA=32bit,forcedma
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=DRIVERS:nvidia.hidd ATA=32bit,forcedma
 
 #title AROS VMWare
 #kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vmware lib=vmwaregfx.hidd ATA=32bit,forcedma
