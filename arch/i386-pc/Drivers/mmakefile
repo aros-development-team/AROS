@@ -14,7 +14,7 @@ $Id$
 #MM    kernel-pci-kobj \
 #MM    kernel-pci-pcipc-kobj \
 #MM    kernel-ata-kobj \
-#MM    kernel-hidd-nvidia-kobj
+#MM    kernel-hidd-nvidia
 
 # Disabled kernel-pc-i386-driver
 ##MM    kernel-pc-i386-usb-kobj \
