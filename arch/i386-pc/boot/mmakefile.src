@@ -11,7 +11,7 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap \
 	   bootmenu partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil ram cdrom afs
-KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc nvidia
+KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
 KRSRCS  := battclock bootloader misc
 #Disabled RSRC cpu
 #Disabled HIDD vmwaregfx usbuhci
