@@ -42,7 +42,7 @@ LONG rxsupp_closeport(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYT
         msg2->rm_Private1 = msg->rm_Private1;
         msg2->rm_Private2 = msg->rm_Private2;
 	msg2->rm_Action = RXREMRSRC;
-	ARG0(msg2) = (IPTR)data->self;
+	msg2->rm_Args[0] = (IPTR)data->self;
 	PutMsg(rexxport, (struct Message *)msg2);
 	do {
 	    WaitPort(replyport);
