@@ -30,7 +30,7 @@
 #define SysBase (((struct LibHeader *)bootmenubase)->lh_SysBase)
 
 #warning "Argh! A functionless library doesn't get a function table!?"
-STATIC VOID *const LIBFUNCTABLE[] =
+VOID *const LIBFUNCTABLE[] =
 {
 	&LibHeader_BootmenuOpenLib,
 	&LibHeader_BootmenuCloseLib,
