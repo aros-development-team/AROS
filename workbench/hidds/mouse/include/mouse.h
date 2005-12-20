@@ -17,7 +17,9 @@
 
 #define HiddMouseAB __abHidd_Mouse
 
+#ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddMouseAB;
+#endif
 
 /* Attrs */
 

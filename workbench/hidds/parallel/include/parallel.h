@@ -32,7 +32,9 @@
 
 /**** Graphics definitions ****************************************************/
 
+#ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddParallelUnitAB;
+#endif
 
 enum {
     aoHidd_ParallelUnit_Unit,
