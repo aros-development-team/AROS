@@ -834,8 +834,8 @@ LoadConfig( STRPTR fname )
         return( FALSE );
     }
 #ifdef __AROS__
-#define READ_ULONG *((ULONG *)configptr)++
-#define READ_UWORD *((UWORD *)configptr)++
+#define READ_ULONG *((ULONG *)configptr); configptr += sizeof(ULONG)
+#define READ_UWORD *((UWORD *)configptr); configptr += sizeof(UWORD)
 
     {
         UBYTE *configptr = configbuffer;
@@ -888,8 +888,8 @@ SaveConfig( STRPTR fname )
     }
 
 #ifdef __AROS__
-#define WRITE_ULONG *((ULONG *)configptr)++ = AROS_LONG2BE(val)
-#define WRITE_UWORD *((UWORD *)configptr)++ = AROS_WORD2BE(val)
+#define WRITE_ULONG *((ULONG *)configptr) = AROS_LONG2BE(val); configptr += sizeof(ULONG)
+#define WRITE_UWORD *((UWORD *)configptr) = AROS_WORD2BE(val); configptr += sizeof(UWORD)
 
     {
         UBYTE *configptr = configbuffer;
