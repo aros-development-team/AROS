@@ -80,10 +80,18 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
        the real program.  */
     if (!cli)
     {
+#if 0 /* gcc 4.0 trouble. static follows non-static bla bla bla */
         AROS_UFC3(LONG, SETELEM(__detach_entry, program_entries)[1],
         AROS_UFHA(char *,argstr,A0),
         AROS_UFHA(ULONG,argsize,D0),
         AROS_UFHA(struct ExecBase *,SysBase,A6));
+#else
+        AROS_UFC3(LONG, SETNAME(PROGRAM_ENTRIES)[1 + 1],
+        AROS_UFHA(char *,argstr,A0),
+        AROS_UFHA(ULONG,argsize,D0),
+        AROS_UFHA(struct ExecBase *,SysBase,A6));
+#endif
+
     }  
 
     mysegment = cli->cli_Module;
@@ -155,11 +163,19 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     
     if (!__detached_manages_detach)
        __Detach(RETURN_OK);
+
+#if 0 /* gcc 4.0 trouble. static follows non-static bla bla bla */
     
     retval = AROS_UFC3(LONG, SETELEM(__detach_entry, program_entries)[1],
              AROS_UFHA(char *,argstr,A0),
              AROS_UFHA(ULONG,argsize,D0),
              AROS_UFHA(struct ExecBase *,SysBase,A6));
+#else
+    retval = AROS_UFC3(LONG, SETNAME(PROGRAM_ENTRIES)[1 + 1],
+             AROS_UFHA(char *,argstr,A0),
+             AROS_UFHA(ULONG,argsize,D0),
+             AROS_UFHA(struct ExecBase *,SysBase,A6));
+#endif
     
     /* At this point the detacher process might still be around, 
       If the program forgot to detach, or if it couldn't, but in any
