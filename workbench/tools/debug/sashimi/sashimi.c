@@ -11,6 +11,8 @@
 
 /****************************************************************************/
 
+#define __TIMER_NOLIBBASE__
+
 #include <exec/execbase.h>
 #include <exec/memory.h>
 
