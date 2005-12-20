@@ -182,7 +182,7 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 
 	cliList = (struct List *)&root->rn_CliList;
 
-	ForeachNode(cliList, (struct CLIInfo *)ci)
+	ForeachNode(cliList, ci)
 	{
 	    printProcess(DOSBase, full, tcb, ci->ci_Process);
 	}
