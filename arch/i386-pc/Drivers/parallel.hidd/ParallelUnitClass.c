@@ -81,7 +81,7 @@ ULONG bases[] = { 0x3bc, 0x378, 0x278};
 ULONG bases[] = { 0x378, 0x278, 0x3bc};
 #endif
 
-static OOP_AttrBase HiddParallelUnitAB;
+OOP_AttrBase HiddParallelUnitAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
