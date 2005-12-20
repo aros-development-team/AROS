@@ -15,6 +15,8 @@
 #include <string.h>
 #include "graphics_intern.h"
 
+/****************************************************************************************/
+
 struct size_check
 {
     ULONG struct_id;
@@ -22,7 +24,18 @@ struct size_check
     STRPTR struct_name;
 };
 
-extern const struct size_check size_checks[];
+#define PRIV_DTAG_QHDR 0x80005000
+
+static const struct size_check size_checks[] = 
+{
+    { DTAG_DISP,	sizeof(struct DisplayInfo),	"DisplayInfo"	},
+    { DTAG_DIMS,	sizeof(struct DimensionInfo),	"DimensionInfo"	},
+    { DTAG_MNTR,	sizeof(struct MonitorInfo),	"MonitorInfo"	},
+    { DTAG_NAME,	sizeof(struct NameInfo), 	"NameInfo"	},
+    { DTAG_VEC,		sizeof(struct VecInfo), 	"VecInfo"	},
+    { PRIV_DTAG_QHDR,	sizeof(struct QueryHeader), 	"QueryHeader"	}
+    
+};
 
 static BOOL check_sizes(ULONG tagID, ULONG size);
 static ULONG compute_numbits(HIDDT_Pixel mask);
@@ -382,21 +395,6 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
     AROS_LIBFUNC_EXIT
 
 } /* GetDisplayInfoData */
-
-/****************************************************************************************/
-
-#define PRIV_DTAG_QHDR 0x80005000
-
-static const struct size_check size_checks[] = 
-{
-    { DTAG_DISP,	sizeof(struct DisplayInfo),	"DisplayInfo"	},
-    { DTAG_DIMS,	sizeof(struct DimensionInfo),	"DimensionInfo"	},
-    { DTAG_MNTR,	sizeof(struct MonitorInfo),	"MonitorInfo"	},
-    { DTAG_NAME,	sizeof(struct NameInfo), 	"NameInfo"	},
-    { DTAG_VEC,		sizeof(struct VecInfo), 	"VecInfo"	},
-    { PRIV_DTAG_QHDR,	sizeof(struct QueryHeader), 	"QueryHeader"	}
-    
-};
 
 /****************************************************************************************/
 
