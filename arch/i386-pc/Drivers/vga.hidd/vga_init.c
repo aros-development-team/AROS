@@ -59,7 +59,7 @@ extern struct vgaModeDesc vgaDefMode[];
 
 #define OOPBase xsd->oopbase
 
-static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
+OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
 
 static struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},

@@ -109,7 +109,9 @@ void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2
     {
     	for(x = 0; x < w / 4; x++)
 	{
-	    *((ULONG *)dst)++ = *((ULONG *)src)++;
+	    *((ULONG *)dst) = *((ULONG *)src);
+	    dst += 1;
+	    src += 1;
 	}
 	src += srcmod;
 	dst += dstmod;

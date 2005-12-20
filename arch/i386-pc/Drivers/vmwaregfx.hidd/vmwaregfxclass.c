@@ -26,12 +26,12 @@
 #include "bitmap.h"
 #include "hardware.h"
 
-static OOP_AttrBase HiddBitMapAttrBase;  
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddVMWareGfxAttrBase;
-static OOP_AttrBase HiddVMWareGfxBitMapAttrBase;
+OOP_AttrBase HiddBitMapAttrBase;  
+OOP_AttrBase HiddPixFmtAttrBase;
+OOP_AttrBase HiddGfxAttrBase;
+OOP_AttrBase HiddSyncAttrBase;
+OOP_AttrBase HiddVMWareGfxAttrBase;
+OOP_AttrBase HiddVMWareGfxBitMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {

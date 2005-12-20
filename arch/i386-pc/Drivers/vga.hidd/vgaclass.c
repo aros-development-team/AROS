@@ -39,12 +39,12 @@
 
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
-static OOP_AttrBase HiddBitMapAttrBase;  
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddVGAAB;
-static OOP_AttrBase HiddVGABitMapAB;
+OOP_AttrBase HiddBitMapAttrBase;  
+OOP_AttrBase HiddPixFmtAttrBase;
+OOP_AttrBase HiddGfxAttrBase;
+OOP_AttrBase HiddSyncAttrBase;
+OOP_AttrBase HiddVGAAB;
+OOP_AttrBase HiddVGABitMapAB;
 
 static struct OOP_ABDescr attrbases[] =
 {

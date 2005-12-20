@@ -59,7 +59,7 @@ struct VMWareGfxBase
 #define SysBase xsd->sysBase
 #define OOPBase xsd->oopBase
 
-static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
+OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
 OOP_AttrBase HiddPCIDeviceAttrBase;
 
 static struct OOP_ABDescr abd[] = {
