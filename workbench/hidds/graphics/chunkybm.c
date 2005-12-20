@@ -662,23 +662,26 @@ static VOID chunkybm_blitcolorexpansion(OOP_Class *cl, OOP_Object *o, struct pHi
 		    break;
 
 		case 2:
-		    *((UWORD *)mem)++ = pix;
+		    *((UWORD *)mem) = pix;
+		    mem += 2;
     	    	    break;
 
 		case 3:
 		#if AROS_BIG_ENDIAN
-		    *((UBYTE *)mem)++ = pix >> 16;
-		    *((UBYTE *)mem)++ = pix >> 8;
-		    *((UBYTE *)mem)++ = pix;
+		    mem[0] = pix >> 16;
+		    mem[1] = pix >> 8;
+		    mem[2] = pix;
 		#else
-		    *((UBYTE *)mem)++ = pix;
-		    *((UBYTE *)mem)++ = pix >> 8;
-		    *((UBYTE *)mem)++ = pix >> 16;
+		    mem[0] = pix;
+		    mem[1] = pix >> 8;
+		    mem[2] = pix >> 16;
 		#endif
+		    mem += 3;
 		    break;
 
 		case 4:
-		    *((ULONG *)mem)++ = pix;
+		    *((ULONG *)mem) = pix;
+		    mem += 4;
 		    break;
 
 	    }
