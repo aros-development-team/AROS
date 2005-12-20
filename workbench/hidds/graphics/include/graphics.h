@@ -49,13 +49,12 @@ typedef struct OOP_Object *HIDDT_GC;
 
 #define HiddPixFmtAttrBase	__IHidd_PixFmt
 
+#ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddGCAttrBase;
 extern OOP_AttrBase HiddGfxAttrBase;
 extern OOP_AttrBase HiddBitMapAttrBase;
-
-
 extern OOP_AttrBase HiddPixFmtAttrBase;
-
+#endif
 
 /**** Graphics definitions ****************************************************/
 
@@ -1961,7 +1960,10 @@ enum
 
 #define HiddPlanarBMAttrBase __IHidd_PlanarBM
 
+
+#ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddPlanarBMAttrBase;
+#endif
 
 enum
 {
@@ -2000,7 +2002,9 @@ enum
 
 #define HiddColorMapAttrBase __IHidd_ColorMap
 
+#ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddColorMapAttrBase;
+#endif
 
 /* Methods */
 enum
@@ -2060,7 +2064,9 @@ enum
 #define HiddSyncAttrBase __IHidd_Sync
 #define IID_Hidd_Sync "hidd.gfx.sync"
 
+#ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddSyncAttrBase;
+#endif
 
 enum
 {
