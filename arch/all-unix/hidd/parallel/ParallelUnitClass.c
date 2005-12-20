@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define __OOP_NOATTRBASES__
+
 /* Some POSIX includes */
 #include <stdio.h>
 #include <termios.h>
