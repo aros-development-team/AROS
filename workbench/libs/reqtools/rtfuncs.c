@@ -134,8 +134,8 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
 
 	    D(bug("reqtools.library: Inside libopen func. Configfile loaded successfully\n"));
 	    
-#define READ_ULONG 	*((ULONG *)configptr)++
-#define READ_UWORD 	*((UWORD *)configptr)++
+#define READ_ULONG 	*((ULONG *)configptr);configptr += sizeof(ULONG)
+#define READ_UWORD 	*((UWORD *)configptr);configptr += sizeof(UWORD)
 #define RTPREFS 	(RTBase->ReqToolsPrefs)
 
 	    val = READ_ULONG;
