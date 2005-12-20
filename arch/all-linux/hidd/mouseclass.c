@@ -6,6 +6,8 @@
     Lang: English.
 */
 
+#define __OOP_NOATTRBASES__
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
