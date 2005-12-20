@@ -75,7 +75,6 @@ FILES := \
     testide \
     playoss \
     openlib \
-    dumpmem \
     simplepng \
     truecolorpens \
     windecor
