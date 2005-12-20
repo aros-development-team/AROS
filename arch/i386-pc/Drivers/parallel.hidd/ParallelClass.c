@@ -26,7 +26,7 @@
 
 /*static AttrBase HiddGCAttrBase;*/
 
-static OOP_AttrBase HiddParallelUnitAB;
+OOP_AttrBase HiddParallelUnitAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
