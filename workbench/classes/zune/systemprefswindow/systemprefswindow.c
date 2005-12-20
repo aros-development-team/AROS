@@ -111,12 +111,12 @@ Object *SystemPrefsWindow__OM_NEW
                 Child, (IPTR) MakeMenuitem(NM_BARLABEL),
                 */
                 
-                Child, (IPTR) testMI   = MakeMenuitem(_(MSG_MENU_PREFS_TEST)),
-                Child, (IPTR) revertMI = MakeMenuitem(_(MSG_MENU_PREFS_REVERT)),
-                Child, (IPTR) MakeMenuitem(NM_BARLABEL),
-                Child, (IPTR) saveMI   = MakeMenuitem(_(MSG_MENU_PREFS_SAVE)),
-                Child, (IPTR) useMI    = MakeMenuitem(_(MSG_MENU_PREFS_USE)),
-                Child, (IPTR) cancelMI = MakeMenuitem(_(MSG_MENU_PREFS_CANCEL)),
+                Child, (IPTR)(testMI   = MakeMenuitem(_(MSG_MENU_PREFS_TEST))),
+                Child, (IPTR)(revertMI = MakeMenuitem(_(MSG_MENU_PREFS_REVERT))),
+                Child, MakeMenuitem(NM_BARLABEL),
+                Child, (IPTR)(saveMI   = MakeMenuitem(_(MSG_MENU_PREFS_SAVE))),
+                Child, (IPTR)(useMI    = MakeMenuitem(_(MSG_MENU_PREFS_USE))),
+                Child, (IPTR)(cancelMI = MakeMenuitem(_(MSG_MENU_PREFS_CANCEL))),
             End,
         End, 
         
