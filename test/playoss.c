@@ -8,6 +8,8 @@
     Default number of channels is 2 (stereo) and default playback rate is 44100 (CD quality).
 */
 
+#define __OSS_NOLIBBASE__
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
