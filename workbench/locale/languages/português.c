@@ -106,11 +106,11 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language),
     */
     language->library.lib_Node.ln_Type = NT_LIBRARY;
     language->library.lib_Node.ln_Pri = -120;
-    (const UBYTE *)language->library.lib_Node.ln_Name = name;
+    language->library.lib_Node.ln_Name = (char *)name;
     language->library.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
     language->library.lib_Version = LANGVER;
     language->library.lib_Revision = LANGREV;
-    (const UBYTE *)language->library.lib_IdString = &version[7];
+    language->library.lib_IdString = (APTR)&version[7];
 
     language->seglist = segList;
     language->sysbase = SysBase;
@@ -264,7 +264,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-static const STRPTR __portugues_strings[] =
+const STRPTR __portugues_strings[] =
 {
     /* A blank string */
     "",
