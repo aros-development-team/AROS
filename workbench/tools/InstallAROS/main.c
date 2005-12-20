@@ -482,7 +482,8 @@ void w2strcpy(STRPTR name, UWORD *wstr, ULONG len)
 {
 	while (len)
 	{
-		*((UWORD *)name)++ = AROS_BE2WORD(*wstr);
+		*((UWORD *)name) = AROS_BE2WORD(*wstr);
+		name += sizeof(UWORD);
 		len -= 2;
 		wstr++;
 	}
@@ -2667,10 +2668,10 @@ int main(int argc,char *argv[])
 												Child, (IPTR) LLabel(KMsgDestVolume),
 												Child, (IPTR) HVSpace,
 											End,
-											Child, (IPTR) show_formatsys = ColGroup(2),
+											Child, (IPTR) (show_formatsys = ColGroup(2),
 												Child, (IPTR) LLabel("Format Partition:"),
 												Child, (IPTR) check_formatsys,
-											End,
+											End),
 										End,
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) (dest_volume = StringObject, MUIA_String_Contents, (IPTR) dest_Path,End),
@@ -2688,10 +2689,10 @@ int main(int argc,char *argv[])
 												Child, (IPTR) LLabel(KMsgWorkVolume),
 												Child, (IPTR) HVSpace,
 											End,
-											Child, (IPTR) show_formatwork = ColGroup(2),
+											Child, (IPTR) (show_formatwork = ColGroup(2),
 												Child, (IPTR) LLabel("Format Partition:"),
 												Child, (IPTR) check_formatwork,
-											End,
+											End),
 										End,
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) (work_volume = StringObject, MUIA_String_Contents, (IPTR) work_Path,End),
@@ -2703,10 +2704,10 @@ int main(int argc,char *argv[])
 									Child, (IPTR) VGroup,
 										Child, (IPTR) CLabel(KMsgPartitionOptions),
 										Child, (IPTR) HVSpace,
-										Child, (IPTR) radio_part = RadioObject, 
+										Child, (IPTR) (radio_part = RadioObject, 
 											GroupFrame,
 											MUIA_Radio_Entries, (IPTR) opt_partentries,
-										End,
+										End),
 										Child, (IPTR) HVSpace,
 									End,
 								End,
