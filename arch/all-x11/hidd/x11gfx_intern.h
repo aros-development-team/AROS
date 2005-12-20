@@ -48,7 +48,7 @@ VOID free_ximage(XImage *image);
 
 #define HiddX11GfxAB  	    	__abHidd_X11Gfx
 
-extern OOP_AttrBase HiddX11GfxAB;
+/* extern OOP_AttrBase HiddX11GfxAB; */
 
 enum
 {

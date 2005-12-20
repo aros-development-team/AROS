@@ -6,6 +6,7 @@
     Lang: English.
 */
 
+#define __OOP_NOATTRBASES__
 
 #include <dos/dos.h>
 

@@ -6,6 +6,8 @@
     Lang: English.
 */
 
+#define __OOP_NOATTRBASES__
+
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
