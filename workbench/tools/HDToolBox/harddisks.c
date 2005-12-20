@@ -22,7 +22,8 @@ void w2strcpy(STRPTR name, UWORD *wstr, ULONG len) {
 
 	while (len)
 	{
-		*((UWORD *)name)++ = AROS_BE2WORD(*wstr);
+		*((UWORD *)name) = AROS_BE2WORD(*wstr);
+		name += sizeof(UWORD);
 		len -= 2;
 		wstr++;
 	}
