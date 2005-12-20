@@ -15,7 +15,7 @@
 
 #define HiddX11BitMapAB __abHidd_X11BitMap
 
-extern OOP_AttrBase HiddX11BitMapAB;
+/* extern OOP_AttrBase HiddX11BitMapAB; */
 
 enum
 {

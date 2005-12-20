@@ -8,6 +8,8 @@
 
 /****************************************************************************************/
 
+#define __OOP_NOATTRBASES__
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <X11/Xlib.h>
