@@ -81,7 +81,7 @@
     which   =   (WORD)GetTagData(TOOLA_Which, -1, attrs);
     ltype   =   (WORD)GetTagData(TOOLA_LaunchType, -1, attrs);
 
-    ForeachNode(toollist, (struct Node *)tNode)
+    ForeachNode(toollist, tNode)
     {
 	/* Match program name */
 	if(program != NULL)
