@@ -327,7 +327,7 @@ AROS_LH4(ULONG, strconvert,
     {
         while(--length && *string1)
         {
-            (ULONG)(*string2++) = collTab[ (UBYTE)*string1 ];
+            *string2++ = collTab[ (UBYTE)*string1 ];
             count++;
         }
         *string2 = '\0';
