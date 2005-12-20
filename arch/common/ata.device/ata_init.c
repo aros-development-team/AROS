@@ -139,8 +139,8 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                 {
                     if( !unit->au_DevType )
                     {
-                        AROS_BSTR_putchar(devnode->dn_OldName, 0, 'D');
-                        AROS_BSTR_putchar(devnode->dn_OldName, 1, 'H');
+                        AROS_BSTR_putchar(devnode->dn_OldName, 0, 'H');
+                        AROS_BSTR_putchar(devnode->dn_OldName, 1, 'D');
                         AROS_BSTR_putchar(devnode->dn_OldName, 2, '0' + volnum);
                     }
                     else

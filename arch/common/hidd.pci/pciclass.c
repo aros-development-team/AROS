@@ -255,10 +255,10 @@ static void _PCI_EnumDevs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_EnumDev
     ObtainSemaphore(&PSD(cl)->driver_lock);
 
     /* For every driver in the system... */
-    ForeachNode(&(PSD(cl)->drivers), (struct Node *)dn)
+    ForeachNode(&PSD(cl)->drivers, dn)
     {
 	/* ...and for every device handled by this driver */
-	ForeachNode(&(dn->devices), (struct Node *)dev)
+	ForeachNode(&dn->devices, dev)
 	{
 	    /* check the requirements with it's properties */
 	    ok = TRUE;
@@ -336,7 +336,7 @@ static BOOL _PCI_RemHwDrv(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_RemHard
     {
 	/* Get exclusive lock on driver list */
 	ObtainSemaphore(&PSD(cl)->driver_lock);
-	ForeachNodeSafe(&PSD(cl)->drivers, (struct Node *)dn, (struct Node *)next)
+	ForeachNodeSafe(&PSD(cl)->drivers, dn, next)
 	{
 	    if (dn->driverClass == msg->driverClass)
 	    {
@@ -352,7 +352,7 @@ static BOOL _PCI_RemHwDrv(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_RemHard
 	    struct PciDevice *dev, *next;
 
 	    /* For every device */
-	    ForeachNodeSafe(&rem->devices, (struct Node *)dev, (struct Node *)next)
+	    ForeachNodeSafe(&rem->devices, dev, next)
 	    {
 		/* Dispose PCIDevice object instance */
 		OOP_DisposeObject(dev->device);
