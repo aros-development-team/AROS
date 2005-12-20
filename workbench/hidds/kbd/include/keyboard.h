@@ -18,9 +18,9 @@
 
 #define HiddKbdAB __abHidd_Kbd
 
-
+#ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddKbdAB;
-
+#endif
 
 enum {
    aoHidd_Kbd_IrqHandler,
