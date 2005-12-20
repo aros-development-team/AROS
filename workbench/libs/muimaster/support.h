@@ -67,5 +67,6 @@ void *Node_Next(APTR node);
 void *List_First(APTR list);
 
 WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
+ULONG IsObjectVisible(Object *child, struct Library *MUIMasterBase);
 
 #endif /* _MUIMASTER_SUPPORT_H */

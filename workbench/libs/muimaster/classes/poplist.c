@@ -73,12 +73,12 @@ IPTR Poplist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNewTags
     (
         cl, obj, NULL,
-	MUIA_Popobject_Object, (IPTR)lv = ListviewObject,
-	    MUIA_Listview_List, (IPTR)list = ListObject,
+	MUIA_Popobject_Object, (IPTR)(lv = ListviewObject,
+	    MUIA_Listview_List, (IPTR)(list = ListObject,
         	InputListFrame,
 	    	array ? MUIA_List_SourceArray : TAG_IGNORE, (IPTR)array,
-	    	End,
-	    End,
+	    	End),
+	    End),
         TAG_MORE, (IPTR) msg->ops_AttrList
     );
     

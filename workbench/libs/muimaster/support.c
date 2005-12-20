@@ -196,3 +196,23 @@ WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Recta
     return numrects;
 
 }
+
+ULONG IsObjectVisible(Object *child, struct Library *MUIMasterBase)
+{
+    Object *wnd;
+    Object *obj;
+
+    wnd = _win(child);
+    obj = child;
+
+    while (get(obj,MUIA_Parent, (IPTR *)&obj))
+    {
+    	if (!obj) break;
+	if (obj == wnd) break;
+
+	if (_right(child) < _mleft(obj) || _left(child) > _mright(obj)
+	    || _bottom(child) < _mtop(obj) || _top(child) > _mbottom(obj))
+	    return FALSE;
+    }
+    return TRUE;
+}
