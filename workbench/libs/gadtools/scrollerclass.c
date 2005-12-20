@@ -94,7 +94,7 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
              case GTA_Scroller_Dec:
             	if (tags[1].ti_Data > 0)
             	{
-            	    ((ULONG)tags[1].ti_Data) --;
+            	    tags[1].ti_Data --;
             	    retval = 1UL;
             	}
                 break;
@@ -103,7 +103,7 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
         	/* Top < (Total - Visible) ? */
         	if (tags[1].ti_Data < (tags[0].ti_Data - tags[2].ti_Data))
         	{
-            	    ((ULONG)tags[1].ti_Data) ++;
+            	    tags[1].ti_Data ++;
            	    retval = 1UL;
         	}
                 break;

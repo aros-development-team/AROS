@@ -859,7 +859,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 	    DEBUG_CREATESCROLLER(bug("makescroller: arrow_dec gadget 0x%lx\n",arrow_dec));
 	    DEBUG_CREATESCROLLER(bug("makescroller: arrow_dec nextgadget 0x%lx\n",arrow_dec->NextGadget));
     	    
-    	    ((ULONG)atags[1].ti_Data) += arrowdim;
+    	    atags[1].ti_Data += arrowdim;
     	    atags[4].ti_Data = DOWNIMAGE;
     	    atags[6].ti_Data = (IPTR)arrow_dec;
 	
@@ -893,7 +893,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 
 	    DEBUG_CREATESCROLLER(bug("makescroller: arrow_dec gadget 0x%lx\n",arrow_dec));
     	    
-    	    ((ULONG)atags[0].ti_Data) += arrowdim;
+    	    atags[0].ti_Data += arrowdim;
     	    atags[4].ti_Data = RIGHTIMAGE;
     	    atags[6].ti_Data = (IPTR)arrow_dec;
 
