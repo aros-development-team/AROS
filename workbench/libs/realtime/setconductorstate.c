@@ -97,7 +97,7 @@
     /* Don't report phony states */
     if (state >= 0)
     {
-	ForeachNode((struct List *)&conductor->cdt_Players, pl)
+	ForeachNode(&conductor->cdt_Players, pl)
 	{
 	    /* Filter out QUIET players? */
 	    if (pl->pl_Hook != NULL)
@@ -136,8 +136,7 @@
 	    conductor->cdt_Barrier = FindTask(NULL);
 	    ReleaseSemaphore(&conductor->cdt_Lock);
 
-	    ForeachNode((struct List *)&conductor->cdt_Players,
-			(struct Node *)pl)
+	    ForeachNode(&conductor->cdt_Players, pl)
 	    {
 		BOOL isReady = FALSE;
 
@@ -184,8 +183,7 @@
 	       of time. */
 	    struct Player *maestro = NULL;
 
-	    ForeachNode((struct List *)&conductor->cdt_Players,
-			(struct Node *)pl)
+	    ForeachNode(&conductor->cdt_Players,pl)
 	    {
 		if (pl->pl_Flags & PLAYERF_CONDUCTED)
 		{
@@ -218,7 +216,7 @@
 
 	timeMsg.pmt_Method = PM_SHUTTLE;
 	
-	ForeachNode((struct List *)&conductor->cdt_Players, pl)
+	ForeachNode(&conductor->cdt_Players, pl)
 	{
 	    if (pl->pl_Hook != NULL)
 	    {

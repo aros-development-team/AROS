@@ -74,8 +74,7 @@ AROS_UFH3(void, Pulse,
 
 	lock = LockRealTime(RT_CONDUCTORS);
 
-	ForeachNode((struct List *)&GPB(RealTimeBase)->rtb_ConductorList,
-		    (struct Node *)conductor)
+	ForeachNode(&GPB(RealTimeBase)->rtb_ConductorList, conductor)
 	{
 	    if (conductor->cdt_State == CONDSTATE_RUNNING)
 	    {
@@ -116,8 +115,7 @@ AROS_UFH3(void, Pulse,
 		
 		conductor->cdt_Flags &= ~CONDUCTF_METROSET;
 		
-		ForeachNode((struct List *)&conductor->cdt_Players,
-			    (struct Node *)player)
+		ForeachNode(&conductor->cdt_Players, player)
 		{
 		    // kprintf("Found player '%s' ready = %i, quiet = %i\n", 
 		    //	       player->pl_Link.ln_Name,
