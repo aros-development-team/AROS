@@ -1103,7 +1103,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     window = IconWindowObject,
         MUIA_UserData,                     1,
         MUIA_Window_ScreenTitle,    (IPTR) GetScreenTitle(),
-        MUIA_Window_Menustrip,      (IPTR) menustrip = MUI_MakeObject(MUIO_MenustripNM, (IPTR) nm, (IPTR) NULL),
+        MUIA_Window_Menustrip,      (IPTR) (menustrip = MUI_MakeObject(MUIO_MenustripNM, (IPTR) nm, (IPTR) NULL)),
         MUIA_IconWindow_ActionHook, (IPTR) &hook_action,
         
         MUIA_IconWindow_IsRoot,            isWorkbenchWindow ? TRUE : FALSE,
