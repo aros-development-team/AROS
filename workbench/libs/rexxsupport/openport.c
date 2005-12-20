@@ -80,7 +80,7 @@ LONG rxsupp_openport(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
 	    msg2->rm_Private1 = msg->rm_Private1;
 	    msg2->rm_Private2 = msg->rm_Private2;
 	    msg2->rm_Action = RXADDRSRC;
-	    ARG0(msg2) = (IPTR)node;
+	    msg2->rm_Args[0] = (IPTR)node;
 	    PutMsg(rexxport, (struct Message *)msg2);
 	    do {
 	        WaitPort(replyport);
