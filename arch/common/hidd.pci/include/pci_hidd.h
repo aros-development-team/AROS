@@ -33,7 +33,9 @@
 
 #define HiddPCIAttrBase	__IHidd_PCI
 
+#ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddPCIAttrBase;
+#endif
 
 /* PCI Class methods */
 enum
@@ -84,7 +86,9 @@ struct pHidd_PCI_RemHardwareDriver
 
 #define HiddPCIDeviceAttrBase	__IHidd_PCIDev
 
+#ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddPCIDeviceAttrBase;
+#endif
 
 enum
 {
