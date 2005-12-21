@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define __OOP_NOATTRBASES__
+
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <exec/types.h>
@@ -59,8 +61,8 @@ struct VMWareGfxBase
 #define SysBase xsd->sysBase
 #define OOPBase xsd->oopBase
 
-OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
-OOP_AttrBase HiddPCIDeviceAttrBase;
+static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
+static OOP_AttrBase HiddPCIDeviceAttrBase;
 
 static struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},

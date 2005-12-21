@@ -6,6 +6,8 @@
     Lang: English.
 */
 
+#define __OOP_NOATTRBASES__
+
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -26,12 +28,12 @@
 #include "bitmap.h"
 #include "hardware.h"
 
-OOP_AttrBase HiddBitMapAttrBase;  
-OOP_AttrBase HiddPixFmtAttrBase;
-OOP_AttrBase HiddGfxAttrBase;
-OOP_AttrBase HiddSyncAttrBase;
-OOP_AttrBase HiddVMWareGfxAttrBase;
-OOP_AttrBase HiddVMWareGfxBitMapAttrBase;
+static OOP_AttrBase HiddBitMapAttrBase;  
+static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddGfxAttrBase;
+static OOP_AttrBase HiddSyncAttrBase;
+static OOP_AttrBase HiddVMWareGfxAttrBase;
+static OOP_AttrBase HiddVMWareGfxBitMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
@@ -385,13 +387,16 @@ struct Box box;
 				    	switch (srcbd->bytesperpix)
 					{
 					    case 1:
-						pixel = (ULONG)*((UBYTE *)sbuffer)++;
+						pixel = (ULONG)*((UBYTE *)sbuffer);
+						sbuffer++;
 						break;
 					    case 2:
-						pixel = (ULONG)*((UWORD *)sbuffer)++;
+						pixel = (ULONG)*((UWORD *)sbuffer);
+						sbuffer += 2;
 						break;
 					    case 4:
-						pixel = (ULONG)*((ULONG *)sbuffer)++;
+						pixel = (ULONG)*((ULONG *)sbuffer);
+						sbuffer += 4;
 						break;
 					    default:
 						D(bug("[VMWare] Copy: Unknown number of bytes per pixel (%d) in source!\n",srcbd->bytesperpix));
@@ -402,13 +407,16 @@ struct Box box;
 					switch (dstbd->bytesperpix)
 					{
 					    case 1:
-						*((UBYTE *)dbuffer)++ = (UBYTE)pixel;
+						*((UBYTE *)dbuffer) = (UBYTE)pixel;
+						dbuffer++;
 						break;
 					    case 2:
-						*((UWORD *)dbuffer)++ = (UWORD)pixel;
+						*((UWORD *)dbuffer) = (UWORD)pixel;
+						dbuffer += 2;
 						break;
 					    case 4:	
-						*((ULONG *)dbuffer)++ = (ULONG)pixel;
+						*((ULONG *)dbuffer) = (ULONG)pixel;
+						dbuffer += 4;
 						break;
 					    default:
 						D(bug("[VMWare] Copy: Unknown number of bytes per pixel (%d) in destination!\n",dstbd->bytesperpix));
@@ -506,14 +514,26 @@ struct VMWareGfx_staticdata *data = XSD(cl);
 						}
 					}
 					if (pixelbytes == 1)
-						*((UBYTE *)shape)++ = (UBYTE)pixel;
+					{
+						*((UBYTE *)shape) = (UBYTE)pixel;
+						shape++;
+					}
 					else if (pixelbytes == 2)
-						*((UWORD *)shape)++ = (UWORD)pixel;
+					{
+						*((UWORD *)shape) = (UWORD)pixel;
+						shape += 2;
+					}
 					else if (pixelbytes == 4)
-						*((ULONG *)shape)++ = (ULONG)pixel;
+					{
+						*((ULONG *)shape) = (ULONG)pixel;
+						shape += 4;
+					}
 				}
 				for (bytecnt=linebytes-(data->mouse.width*pixelbytes);bytecnt;bytecnt--)
-					*((UBYTE *)shape)++ = 0; /* fill up to long boundary */
+				{
+					*((UBYTE *)shape) = 0; /* fill up to long boundary */
+					shape++;
+				}
 			}
 			defineCursorVMWareGfx(&XSD(cl)->data, &data->mouse);
 			return TRUE;

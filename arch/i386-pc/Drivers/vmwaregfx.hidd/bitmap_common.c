@@ -185,11 +185,20 @@ UBYTE *src=(UBYTE *)msg->pixels;
 			while (xcnt)
 			{
 				if (data->bytesperpix == 1)
-					*((UBYTE *)buffer)++ = (UBYTE)*p++;
+				{
+					*((UBYTE *)buffer) = (UBYTE)*p++;
+					buffer++;
+				}
 				else if (data->bytesperpix == 2)
-					*((UWORD *)buffer)++ = (UWORD)*p++;
+				{
+					*((UWORD *)buffer) = (UWORD)*p++;
+					buffer += 2;
+				}
 				else if (data->bytesperpix == 4)
-					*((ULONG *)buffer)++ = (ULONG)*p++;
+				{
+					*((ULONG *)buffer) = (ULONG)*p++;
+				    	buffer += 4;
+				}
 				xcnt--;
 			}
 			buffer += restadd;
@@ -239,11 +248,20 @@ UBYTE *src=msg->pixels;
 			while (xcnt)
 			{
 				if (data->bytesperpix == 1)
-					*p++ = (HIDDT_Pixel)*((UBYTE *)buffer)++;
+				{
+					*p++ = (HIDDT_Pixel)*((UBYTE *)buffer);
+					buffer++;
+				}
 				else if (data->bytesperpix == 2)
-					*p++ = (HIDDT_Pixel)*((UWORD *)buffer)++;
+				{
+					*p++ = (HIDDT_Pixel)*((UWORD *)buffer);
+					buffer += 2;
+				}
 				else if (data->bytesperpix == 4)
-					*p++ = (HIDDT_Pixel)*((ULONG *)buffer)++;
+				{
+					*p++ = (HIDDT_Pixel)*((ULONG *)buffer);
+					buffer += 4;
+				}
 				xcnt--;
 			}
 			buffer += restadd;
@@ -284,11 +302,20 @@ UBYTE *src=msg->pixels;
 		while (xcnt)
 		{
 			if (data->bytesperpix == 1)
-				*((UBYTE *)buffer)++ = (UBYTE)msg->pixlut->pixels[*src++];
+			{
+				*((UBYTE *)buffer) = (UBYTE)msg->pixlut->pixels[*src++];
+				buffer++;
+			}
 			else if (data->bytesperpix == 2)
-				*((UWORD *)buffer)++ = (UWORD)msg->pixlut->pixels[*src++];
+			{
+				*((UWORD *)buffer) = (UWORD)msg->pixlut->pixels[*src++];
+				buffer += 2;
+			}
 			else if (data->bytesperpix == 4)
-				*((ULONG *)buffer)++ = (ULONG)msg->pixlut->pixels[*src++];
+			{
+				*((ULONG *)buffer) = (ULONG)msg->pixlut->pixels[*src++];
+				buffer += 4;
+			}
 			xcnt--;
 		}
 		buffer += restadd;
