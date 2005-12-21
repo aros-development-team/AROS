@@ -17,7 +17,7 @@
 #define IID_Hidd_VMWareGfxBitMap "hidd.bitmap.vmwarebitmap"
 
 #define HiddVMWareGfxBitMapAttrBase __abHidd_VMWareGfxBitMap
-extern OOP_AttrBase HiddVMWareGfxBitMapAttrBase;
+/* extern OOP_AttrBase HiddVMWareGfxBitMapAttrBase; */
 
 enum {
 	aoHidd_VMWareGfxBitMap_Drawable,

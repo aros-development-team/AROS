@@ -205,7 +205,12 @@ VOID defineCursorVMWareGfx(struct HWData *data, struct MouseData *mouse)
 	b = cshape;
 	a = andmask;
 	for (i = 0; i<(SVGA_PIXMAP_SIZE(mouse->width, mouse->height, data->bitsperpixel)*2);i++)
-		*((UWORD *)a)++ = *((UWORD *)b)++ ? 0 : ~0;
+	{
+		*((UWORD *)a) = *((UWORD *)b) ? 0 : ~0;
+		
+		a = ((UWORD *)a) + 1;
+		b = ((UWORD *)b) + 1;
+	}
 	a = andmask;
 	for (i = 0; i<SVGA_PIXMAP_SIZE(mouse->width, mouse->height, data->bitsperpixel);i++)
 		writeVMWareGfxFIFO(data, *a++);
