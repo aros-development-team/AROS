@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define __OOP_NOATTRBASES__
+
 /* the rest are Amiga includes */
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -81,7 +83,7 @@ ULONG bases[] = { 0x3bc, 0x378, 0x278};
 ULONG bases[] = { 0x378, 0x278, 0x3bc};
 #endif
 
-OOP_AttrBase HiddParallelUnitAB;
+static OOP_AttrBase HiddParallelUnitAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
