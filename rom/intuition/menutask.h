@@ -115,8 +115,8 @@ void AddToSelection(struct MenuHandlerData *mhd, struct SmallMenuEntry *entry,st
 BOOL HandleCheckItem(struct MenuHandlerData *mhd, struct SmallMenuEntry *entry,
                      struct IntuitionBase *IntuitionBase);
 #else
-void AddToSelection(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
-void HandleCheckItem(struct Window *win, struct MenuItem *item,
+static void AddToSelection(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
+static void HandleCheckItem(struct Window *win, struct MenuItem *item,
                      struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 
 #endif
