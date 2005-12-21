@@ -6,6 +6,7 @@
     Lang: English.
 */
 
+#define __OOP_NOATTRBASES__
 
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -29,12 +30,12 @@
 
 /* Don't initialize static variables with "=0", otherwise they go into DATA segment */
 
-OOP_AttrBase HiddBitMapAttrBase;
-OOP_AttrBase HiddPixFmtAttrBase;
-OOP_AttrBase HiddGfxAttrBase;
-OOP_AttrBase HiddSyncAttrBase;
-OOP_AttrBase HiddVGAGfxAB;
-OOP_AttrBase HiddVGABitMapAB;
+static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddGfxAttrBase;
+static OOP_AttrBase HiddSyncAttrBase;
+static OOP_AttrBase HiddVGAGfxAB;
+static OOP_AttrBase HiddVGABitMapAB;
 
 static struct OOP_ABDescr attrbases[] = 
 {
