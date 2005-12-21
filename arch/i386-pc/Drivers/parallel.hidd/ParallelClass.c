@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define __OOP_NOATTRBASES__
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -26,7 +28,7 @@
 
 /*static AttrBase HiddGCAttrBase;*/
 
-OOP_AttrBase HiddParallelUnitAB;
+static OOP_AttrBase HiddParallelUnitAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
