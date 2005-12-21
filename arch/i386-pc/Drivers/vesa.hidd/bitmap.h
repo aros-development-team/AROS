@@ -18,7 +18,7 @@
 
 #define HiddVesaGfxBitMapAttrBase __abHidd_VesaGfxBitMap
 
-extern OOP_AttrBase HiddVesaGfxBitMapAttrBase;
+/* extern OOP_AttrBase HiddVesaGfxBitMapAttrBase; */
 
 enum
 {

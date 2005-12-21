@@ -6,6 +6,7 @@
     Lang: English.
 */
 
+#define __OOP_NOATTRBASES__
 
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -26,11 +27,11 @@
 
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
-OOP_AttrBase HiddBitMapAttrBase;
-OOP_AttrBase HiddPixFmtAttrBase;
-OOP_AttrBase HiddGfxAttrBase;
-OOP_AttrBase HiddVesaGfxAttrBase;
-OOP_AttrBase HiddVesaGfxBitMapAttrBase;
+static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddGfxAttrBase;
+static OOP_AttrBase HiddVesaGfxAttrBase;
+static OOP_AttrBase HiddVesaGfxBitMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] = 
 {
