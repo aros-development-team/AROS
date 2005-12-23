@@ -1059,6 +1059,7 @@ GLOB_MKDIRS += $(BD_TARGETDIR$(BDID)) $(BD_OBJDIR$(BDID))
 #MM- includes-all : %(mmake)-includes
 #MM %(mmake) : %(mmake)-includes
 #MM %(mmake)-kobj : %(mmake)-includes
+#MM %(mmake)-linklib : %(mmake)-includes
 #MM %(mmake)-quick : %(mmake)-includes-quick
 #MM %(mmake)-includes : %(mmake)-makefile includes-generate-deps
 #MM %(mmake)-includes-quick
@@ -1068,7 +1069,7 @@ GLOB_MKDIRS += $(BD_TARGETDIR$(BDID)) $(BD_OBJDIR$(BDID))
 
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-includes %(mmake)-clean %(mmake)-quick \
-    %(mmake)-kobj %(mmake)-funclist
+    %(mmake)-kobj %(mmake)-funclist %(mmake)-linklib
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile %(mmake)-objdir
 
@@ -1243,7 +1244,8 @@ endif
 
 %(mmake)-quick : %(mmake)
 %(mmake) : $(BD_MODULE) $(BD_LINKLIB)
-%(mmake)-kobj : $(BD_KOBJ)
+%(mmake)-kobj : $(BD_KOBJ) $(BD_LINKLIB)
+%(mmake)-linklib : $(BD_LINKLIB)
 
 BD_OBJS       := $(addsuffix .o,$(BD_STARTFILES)) $(BD_ARCHOBJS) \
 	     	 $(addsuffix .o, $(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES))))
