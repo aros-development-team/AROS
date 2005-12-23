@@ -51,6 +51,33 @@
 
 #define SWAPBYTES_WORD(x) ((((x) >> 8) & 0x00FF) | (((x) & 0x00FF) << 8))
 
+struct colormap_data
+{
+    HIDDT_ColorLUT clut;
+};
+
+struct pixfmt_data
+{
+     HIDDT_PixelFormat pf; 
+};
+
+struct planarbm_data
+{
+    UBYTE   **planes;
+    ULONG   planebuf_size;
+    ULONG   bytesperrow;
+    ULONG   rows;
+    UBYTE   depth;
+    BOOL    planes_alloced;
+};
+
+struct chunkybm_data
+{
+    UBYTE *buffer;
+    ULONG bytesperrow;
+    ULONG bytesperpixel;
+};
+
 struct sync_data {
     ULONG pixtime; /* pixel time in pico seconds */
     
@@ -268,7 +295,6 @@ struct class_static_data
 {
     struct ExecBase      * sysbase;
     struct Library       * utilitybase;
-    struct Library       * oopbase;
  
     OOP_AttrBase    	 hiddPixFmtAttrBase;
     OOP_AttrBase    	 hiddBitMapAttrBase;
@@ -322,86 +348,24 @@ struct IntHIDDGraphicsBase
     struct ExecBase          *hdg_SysBase;
     struct Library           *hdg_UtilityBase;
 
-    struct class_static_data *hdg_csd;
+    struct class_static_data  hdg_csd;
 };
 
 
-#define CSD(x) ((struct class_static_data *)x->UserData)
-
-#undef SysBase
-#define SysBase (CSD(cl)->sysbase)
-
-#undef UtilityBase
-#define UtilityBase (CSD(cl)->utilitybase)
-
-#undef OOPBase
-#define OOPBase (CSD(cl)->oopbase)
-
-
 /* pre declarations */
-
-OOP_Class *init_gfxhiddclass(struct class_static_data *csd);
-void   free_gfxhiddclass(struct class_static_data *csd);
-
-OOP_Class *init_bitmapclass(struct class_static_data *csd);
-void   free_bitmapclass(struct class_static_data *csd);
-
-OOP_Class *init_gcclass(struct class_static_data *csd);
-void   free_gcclass(struct class_static_data *csd);
-
-OOP_Class *init_gfxmodeclass(struct class_static_data *csd);
-void   free_gfxmodeclass(struct class_static_data *csd);
-
-OOP_Class *init_pixfmtclass(struct class_static_data *csd);
-void   free_pixfmtclass(struct class_static_data *csd);
-
-OOP_Class *init_syncclass(struct class_static_data *csd);
-void   free_syncclass(struct class_static_data *csd);
-
-OOP_Class *init_colormapclass(struct class_static_data *csd);
-void free_colormapclass(struct class_static_data *csd);
-
-
-VOID  bitmap_putpixel(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_PutPixel *msg);
-ULONG bitmap_getpixel(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_GetPixel *msg);
-VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ConvertPixels *msg);
-VOID bitmap_fillmemrect8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect8 *msg);
-VOID bitmap_fillmemrect16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect16 *msg);
-VOID bitmap_fillmemrect24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect24 *msg);
-VOID bitmap_fillmemrect32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect32 *msg);
-VOID bitmap_invertmemrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_InvertMemRect *msg);
-VOID bitmap_copymembox8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox8 *msg);
-VOID bitmap_copymembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox16 *msg);
-VOID bitmap_copymembox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox24 *msg);
-VOID bitmap_copymembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox32 *msg);
-VOID bitmap_copylutmembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox16 *msg);
-VOID bitmap_copylutmembox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox24 *msg);
-VOID bitmap_copylutmembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox32 *msg);
-VOID bitmap_putmem32image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image8 *msg);
-VOID bitmap_putmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image16 *msg);
-VOID bitmap_putmem32image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image24 *msg);
-VOID bitmap_getmem32image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image8 *msg);
-VOID bitmap_getmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image16 *msg);
-VOID bitmap_getmem32image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image24 *msg);
-VOID bitmap_putmemtemplate8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate8 *msg);
-VOID bitmap_putmemtemplate16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate16 *msg);
-VOID bitmap_putmemtemplate24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate24 *msg);
-VOID bitmap_putmemtemplate32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate32 *msg);
-VOID bitmap_putmempattern8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern8 *msg);
-VOID bitmap_putmempattern16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern16 *msg);
-VOID bitmap_putmempattern24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern24 *msg);
-VOID bitmap_putmempattern32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern32 *msg);
-
-OOP_Class *init_planarbmclass(struct class_static_data *csd);
-void   free_planarbmclass(struct class_static_data *csd);
-
-OOP_Class *init_chunkybmclass(struct class_static_data *csd);
-void   free_chunkybmclass(struct class_static_data *csd);
 
 inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf);
 BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrcheck, struct class_static_data *csd);
 BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG attrcheck, struct class_static_data *csd);
 
 
+#define CSD(x) (&((struct IntHIDDGraphicsBase *)x->UserData)->hdg_csd)
+#define csd CSD(cl)
+
+#undef SysBase
+#define SysBase (csd->sysbase)
+
+#undef UtilityBase
+#define UtilityBase (csd->utilitybase)
 
 #endif /* GRAPHICS_HIDD_INTERN_H */

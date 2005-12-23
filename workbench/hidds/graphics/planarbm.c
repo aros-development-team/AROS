@@ -30,21 +30,7 @@
 
 /****************************************************************************************/
 
-struct planarbm_data
-{
-    UBYTE   **planes;
-    ULONG   planebuf_size;
-    ULONG   bytesperrow;
-    ULONG   rows;
-    UBYTE   depth;
-    BOOL    planes_alloced;
-};
-
-#define csd ((struct class_static_data *)cl->UserData)
-
-/****************************************************************************************/
-
-static OOP_Object *planarbm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     ULONG width, height, depth;
     
@@ -140,7 +126,7 @@ static OOP_Object *planarbm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
 /****************************************************************************************/
 
-static VOID planarbm_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID PBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct planarbm_data    *data;
     UBYTE   	    	    i;
@@ -169,8 +155,8 @@ static VOID planarbm_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-static VOID planarbm_putpixel(OOP_Class *cl, OOP_Object *o,
-    	    	    	      struct pHidd_BitMap_PutPixel *msg)
+VOID PBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
+				struct pHidd_BitMap_PutPixel *msg)
 {
     UBYTE   	    	    **plane;
     struct planarbm_data    *data;
@@ -206,8 +192,8 @@ static VOID planarbm_putpixel(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static ULONG planarbm_getpixel(OOP_Class *cl, OOP_Object *o,
-    	    	    	       struct pHidd_BitMap_GetPixel *msg)
+ULONG PBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
+				 struct pHidd_BitMap_GetPixel *msg)
 {
     struct planarbm_data    *data;
     UBYTE   	    	    **plane;
@@ -244,8 +230,8 @@ static ULONG planarbm_getpixel(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID planarbm_putimage(OOP_Class *cl, OOP_Object *o,
-    	    	    	      struct pHidd_BitMap_PutImage *msg)
+VOID PBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
+				struct pHidd_BitMap_PutImage *msg)
 {
     WORD    	    	    x, y, d;
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
@@ -374,8 +360,8 @@ static VOID planarbm_putimage(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID planarbm_putimagelut(OOP_Class *cl, OOP_Object *o,
-    	    	    	    struct pHidd_BitMap_PutImageLUT *msg)
+VOID PBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
+				   struct pHidd_BitMap_PutImageLUT *msg)
 {
     WORD    	    	    x, y, d;
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
@@ -439,8 +425,8 @@ static VOID planarbm_putimagelut(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID planarbm_getimagelut(OOP_Class *cl, OOP_Object *o,
-    	    	    	    struct pHidd_BitMap_GetImageLUT *msg)
+VOID PBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
+				   struct pHidd_BitMap_GetImageLUT *msg)
 {
     WORD    	    	    x, y, d;
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
@@ -520,8 +506,8 @@ static VOID planarbm_getimagelut(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID planarbm_blitcolorexpansion(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	    	struct pHidd_BitMap_BlitColorExpansion *msg)
+VOID PBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
+					  struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     WORD    	    	    x, y, d;
     UBYTE   	    	    **plane;
@@ -702,8 +688,8 @@ static VOID planarbm_blitcolorexpansion(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-BOOL planarbm_setbitmap(OOP_Class *cl, OOP_Object *o,
-    	    	    	struct pHidd_PlanarBM_SetBitMap *msg)
+BOOL PBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
+				   struct pHidd_PlanarBM_SetBitMap *msg)
 {
     struct planarbm_data *data;
     struct BitMap   	 *bm;
@@ -794,110 +780,6 @@ BOOL planarbm_setbitmap(OOP_Class *cl, OOP_Object *o,
     }
 
     return TRUE;
-}
-
-/****************************************************************************************/
-
-#undef OOPBase
-#undef SysBase
-
-#undef csd
-
-#define OOPBase (csd->oopbase)
-#define SysBase (csd->sysbase)
-
-#define NUM_ROOT_METHODS   2
-#define NUM_BITMAP_METHODS 6
-#define NUM_PLANARBM_METHODS 1
-
-/****************************************************************************************/
-
-OOP_Class *init_planarbmclass(struct class_static_data *csd)
-{
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-        {(IPTR (*)())planarbm_new    , moRoot_New    	},
-        {(IPTR (*)())planarbm_dispose, moRoot_Dispose	},
-        {NULL	    	    	     , 0UL  	    	}
-    };
-
-    struct OOP_MethodDescr bitmap_descr[NUM_BITMAP_METHODS + 1] =
-    {
-        {(IPTR (*)())planarbm_putpixel	    	, moHidd_BitMap_PutPixel	    },
-        {(IPTR (*)())planarbm_getpixel	    	, moHidd_BitMap_GetPixel	    },
-	{(IPTR (*)())planarbm_putimage      	, moHidd_BitMap_PutImage 	    },
-	{(IPTR (*)())planarbm_putimagelut   	, moHidd_BitMap_PutImageLUT 	    },
-	{(IPTR (*)())planarbm_getimagelut   	, moHidd_BitMap_GetImageLUT 	    },
-	{(IPTR (*)())planarbm_blitcolorexpansion, moHidd_BitMap_BlitColorExpansion  },
-        {NULL	    	    	    	    	, 0UL	    	    	    	    }
-    };
-
-    struct OOP_MethodDescr planarbm_descr[NUM_PLANARBM_METHODS + 1] =
-    {
-        {(IPTR (*)())planarbm_setbitmap	, moHidd_PlanarBM_SetBitMap },
-        {NULL	    	    	    	, 0UL	    	    	    }
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr 	, IID_Root          , NUM_ROOT_METHODS	    },
-        {bitmap_descr	, IID_Hidd_BitMap   , NUM_BITMAP_METHODS    },
-        {planarbm_descr , IID_Hidd_PlanarBM , NUM_PLANARBM_METHODS  },
-        {NULL	    	, NULL	    	    , 0     	    	    }
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID	    	, (IPTR) CLID_Hidd_BitMap   	    	},
-        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    	},
-        {aMeta_ID   	    	, (IPTR) CLID_Hidd_PlanarBM 	    	},
-        {aMeta_InstSize     	, (IPTR) sizeof(struct planarbm_data)	},
-        {TAG_DONE   	    	, 0UL	    	    	    	    	}
-    };
-    
-    OOP_Class *cl = NULL;
-
-    EnterFunc(bug("init_planarbmclass(csd=%p)\n", csd));
-
-    if(MetaAttrBase) 
-    {
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if(NULL != cl)
-	{
-            D(bug("BitMap class ok\n"));
-            csd->planarbmclass = cl;
-            cl->UserData     = (APTR) csd;
-
-    	    OOP_AddClass(cl);
-        }
-	
-    } /* if(MetaAttrBase) */
-    
-    if (NULL == cl)
-	free_planarbmclass(csd);
-
-    ReturnPtr("init_planarbmclass", OOP_Class *,  cl);
-}
-
-/****************************************************************************************/
-
-void free_planarbmclass(struct class_static_data *csd)
-{
-    EnterFunc(bug("free_planarbmclass(csd=%p)\n", csd));
-
-    if(NULL != csd)
-    {  
-	if (NULL != csd->planarbmclass)
-	{
-    	    OOP_RemoveClass(csd->planarbmclass);
-	    OOP_DisposeObject((OOP_Object *) csd->planarbmclass);
-    	    csd->planarbmclass = NULL;
-	}
-    }
-
-    ReturnVoid("free_planarbmclass");
 }
 
 /****************************************************************************************/

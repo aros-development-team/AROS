@@ -13,7 +13,7 @@
 
 /****************************************************************************************/
 
-VOID bitmap_fillmemrect8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect8 *msg)
+VOID BM__Hidd_BitMap__FillMemRect8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect8 *msg)
 {
     UBYTE *start;
     LONG phase, width, height, w, p;
@@ -61,7 +61,7 @@ VOID bitmap_fillmemrect8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillM
 
 /****************************************************************************************/
 
-VOID bitmap_fillmemrect16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect16 *msg)
+VOID BM__Hidd_BitMap__FillMemRect16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect16 *msg)
 {
     UBYTE *start;
     LONG phase, width, height, w, p;
@@ -110,7 +110,7 @@ VOID bitmap_fillmemrect16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Fill
 
 /****************************************************************************************/
 
-VOID bitmap_fillmemrect24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect24 *msg)
+VOID BM__Hidd_BitMap__FillMemRect24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect24 *msg)
 {
     UBYTE *start;
     LONG width, height, w;
@@ -149,7 +149,7 @@ VOID bitmap_fillmemrect24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Fill
 
 /****************************************************************************************/
 
-VOID bitmap_fillmemrect32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect32 *msg)
+VOID BM__Hidd_BitMap__FillMemRect32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_FillMemRect32 *msg)
 {
     UBYTE *start;
     LONG width, height, w;
@@ -179,7 +179,7 @@ VOID bitmap_fillmemrect32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Fill
 
 /****************************************************************************************/
 
-VOID bitmap_invertmemrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_InvertMemRect *msg)
+VOID BM__Hidd_BitMap__InvertMemRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_InvertMemRect *msg)
 {
     UBYTE *start;
     LONG phase, width, height, w, p;
@@ -228,7 +228,7 @@ VOID bitmap_invertmemrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Inve
 
 /****************************************************************************************/
 
-VOID bitmap_copymembox8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox8 *msg)
+VOID BM__Hidd_BitMap__CopyMemBox8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox8 *msg)
 {
     UBYTE *src_start, *dst_start;
     LONG phase, width, height, w, p;
@@ -323,7 +323,7 @@ VOID bitmap_copymembox8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMe
 
 /****************************************************************************************/
 
-VOID bitmap_copymembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox16 *msg)
+VOID BM__Hidd_BitMap__CopyMemBox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox16 *msg)
 {
     UBYTE *src_start, *dst_start;
     LONG phase, width, height, w, p;
@@ -419,7 +419,7 @@ VOID bitmap_copymembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyM
 
 /****************************************************************************************/
 
-VOID bitmap_copymembox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox24 *msg)
+VOID BM__Hidd_BitMap__CopyMemBox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox24 *msg)
 {
     UBYTE *src_start, *dst_start;
     LONG width, height, w;
@@ -486,7 +486,7 @@ VOID bitmap_copymembox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyM
 
 /****************************************************************************************/
 
-VOID bitmap_copymembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox32 *msg)
+VOID BM__Hidd_BitMap__CopyMemBox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyMemBox32 *msg)
 {
     UBYTE *src_start, *dst_start;
     LONG width, height, w;
@@ -551,7 +551,7 @@ VOID bitmap_copymembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyM
 
 /****************************************************************************************/
 
-VOID bitmap_copylutmembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox16 *msg)
+VOID BM__Hidd_BitMap__CopyLUTMemBox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox16 *msg)
 {
     HIDDT_Pixel *pixlut = msg->pixlut->pixels;
     UBYTE *src_start, *dst_start;
@@ -585,7 +585,7 @@ VOID bitmap_copylutmembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Co
 
 /****************************************************************************************/
 
-VOID bitmap_copylutmembox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox24 *msg)
+VOID BM__Hidd_BitMap__CopyLUTMemBox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox24 *msg)
 {
     HIDDT_Pixel *pixlut = msg->pixlut->pixels;
     UBYTE *src_start, *dst_start;
@@ -628,7 +628,7 @@ VOID bitmap_copylutmembox24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Co
 
 /****************************************************************************************/
 
-VOID bitmap_copylutmembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox32 *msg)
+VOID BM__Hidd_BitMap__CopyLUTMemBox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox32 *msg)
 {
     HIDDT_Pixel *pixlut = msg->pixlut->pixels;
     UBYTE *src_start, *dst_start;
@@ -662,7 +662,7 @@ VOID bitmap_copylutmembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Co
 
 /****************************************************************************************/
 
-VOID bitmap_putmem32image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image8 *msg)
+VOID BM__Hidd_BitMap__PutMem32Image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image8 *msg)
 {
     UBYTE *src_start, *dst_start;
     LONG width, height, w;
@@ -693,7 +693,7 @@ VOID bitmap_putmem32image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
 
 /****************************************************************************************/
 
-VOID bitmap_putmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image16 *msg)
+VOID BM__Hidd_BitMap__PutMem32Image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image16 *msg)
 {
     UBYTE *src_start, *dst_start;
     LONG width, height, w;
@@ -724,7 +724,7 @@ VOID bitmap_putmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 /****************************************************************************************/
 
-VOID bitmap_putmem32image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image24 *msg)
+VOID BM__Hidd_BitMap__PutMem32Image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMem32Image24 *msg)
 {
     UBYTE *src_start, *dst_start;
     LONG width, height, w;
@@ -767,7 +767,7 @@ VOID bitmap_putmem32image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 /****************************************************************************************/
 
-VOID bitmap_getmem32image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image8 *msg)
+VOID BM__Hidd_BitMap__GetMem32Image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image8 *msg)
 {
     UBYTE *src_start, *dst_start;
     LONG width, height, w;
@@ -798,7 +798,7 @@ VOID bitmap_getmem32image8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Get
 
 /****************************************************************************************/
 
-VOID bitmap_getmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image16 *msg)
+VOID BM__Hidd_BitMap__GetMem32Image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image16 *msg)
 {
     UBYTE *src_start, *dst_start;
     LONG width, height, w;
@@ -829,7 +829,7 @@ VOID bitmap_getmem32image16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 
 /****************************************************************************************/
 
-VOID bitmap_getmem32image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image24 *msg)
+VOID BM__Hidd_BitMap__GetMem32Image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetMem32Image24 *msg)
 {
     UBYTE *src_start, *dst_start;
     LONG width, height, w;
@@ -869,7 +869,7 @@ VOID bitmap_getmem32image24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 
 /****************************************************************************************/
 
-VOID bitmap_putmemtemplate8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate8 *msg)
+VOID BM__Hidd_BitMap__PutMemTemplate8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate8 *msg)
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *bitarray, *buf;
@@ -1014,7 +1014,7 @@ VOID bitmap_putmemtemplate8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 /****************************************************************************************/
 
-VOID bitmap_putmemtemplate16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate16 *msg)
+VOID BM__Hidd_BitMap__PutMemTemplate16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate16 *msg)
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *bitarray, *buf;
@@ -1160,7 +1160,7 @@ VOID bitmap_putmemtemplate16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_P
 
 /****************************************************************************************/
 
-VOID bitmap_putmemtemplate24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate24 *msg)
+VOID BM__Hidd_BitMap__PutMemTemplate24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate24 *msg)
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *bitarray, *buf;
@@ -1368,7 +1368,7 @@ VOID bitmap_putmemtemplate24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_P
 
 /****************************************************************************************/
 
-VOID bitmap_putmemtemplate32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate32 *msg)
+VOID BM__Hidd_BitMap__PutMemTemplate32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemTemplate32 *msg)
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *bitarray, *buf;
@@ -1514,7 +1514,7 @@ VOID bitmap_putmemtemplate32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_P
 
 /****************************************************************************************/
 
-VOID bitmap_putmempattern8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern8 *msg)
+VOID BM__Hidd_BitMap__PutMemPattern8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern8 *msg)
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *patarray, *buf, *maskarray = 0;
@@ -1776,7 +1776,7 @@ VOID bitmap_putmempattern8(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
 
 /****************************************************************************************/
 
-VOID bitmap_putmempattern16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern16 *msg)
+VOID BM__Hidd_BitMap__PutMemPattern16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern16 *msg)
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *patarray, *buf, *maskarray = 0;
@@ -2037,7 +2037,7 @@ VOID bitmap_putmempattern16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 }
 /****************************************************************************************/
 
-VOID bitmap_putmempattern24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern24 *msg)
+VOID BM__Hidd_BitMap__PutMemPattern24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern24 *msg)
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *patarray, *buf, *maskarray = 0;
@@ -2372,7 +2372,7 @@ VOID bitmap_putmempattern24(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 /****************************************************************************************/
 
-VOID bitmap_putmempattern32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern32 *msg)
+VOID BM__Hidd_BitMap__PutMemPattern32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutMemPattern32 *msg)
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *patarray, *buf, *maskarray = 0;

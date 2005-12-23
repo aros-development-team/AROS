@@ -21,16 +21,7 @@
 
 /****************************************************************************************/
 
-struct pixfmt_data
-{
-     HIDDT_PixelFormat pf; 
-};
-
-#define csd ((struct class_static_data *)cl->UserData)
-
-/****************************************************************************************/
-
-OOP_Object *pixfmt_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *PF__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     DECLARE_ATTRCHECK(pixfmt);
     
@@ -73,7 +64,7 @@ OOP_Object *pixfmt_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 /****************************************************************************************/
 
-static VOID pixfmt_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID PF__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     HIDDT_PixelFormat 	*pf;
     struct pixfmt_data  *data;
@@ -169,94 +160,4 @@ static VOID pixfmt_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     return;    
 }
      
-/****************************************************************************************/
-
-#undef OOPBase
-#undef SysBase
-
-#undef csd
-
-#define OOPBase (csd->oopbase)
-#define SysBase (csd->sysbase)
-
-#define NUM_ROOT_METHODS   2
-#define NUM_PIXFMT_METHODS 0
-
-/****************************************************************************************/
-
-OOP_Class *init_pixfmtclass(struct class_static_data *csd)
-{
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-        {(IPTR (*)())pixfmt_new , moRoot_New},
-        {(IPTR (*)())pixfmt_get , moRoot_Get},
-	{NULL	    	    	, 0UL 	    }
-    };
-    
-    struct OOP_MethodDescr pixfmt_descr[NUM_PIXFMT_METHODS + 1] = 
-    {
-	{ NULL, 0UL }
-    };
-        
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr 	, IID_Root       , NUM_ROOT_METHODS 	},
-        {pixfmt_descr	, IID_Hidd_PixFmt, NUM_PIXFMT_METHODS	},
-        {NULL	    	, NULL	    	 , 0	    	    	}
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID	    	, (IPTR) CLID_Root  	    	    },
-        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    },
-        {aMeta_InstSize     	, (IPTR) sizeof (struct pixfmt_data)},
-        {TAG_DONE   	    	, 0UL	    	    	    	    }
-    };
-    
-    OOP_Class *cl = NULL;
-
-    EnterFunc(bug("init_pixfmtclass(csd=%p)\n", csd));
-
-    if(MetaAttrBase) 
-    {
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if(NULL != cl) 
-	{
-            D(bug("PixFmt class ok\n"));
-            csd->pixfmtclass = cl;
-    	    D(bug("init_pixfmtclass: csd=%p\n", csd));
-            cl->UserData     = (APTR) csd;
-	    OOP_AddClass(cl);
-
-        }
-
-    } /* if(MetaAttrBase) */
-    
-    if (NULL == cl)
-	free_pixfmtclass(csd);
-
-    ReturnPtr("init_pixfmtclass", OOP_Class *,  cl);
-}
-
-/****************************************************************************************/
-
-void free_pixfmtclass(struct class_static_data *csd)
-{
-    EnterFunc(bug("free_pixfmtclass(csd=%p)\n", csd));
-
-    if(NULL != csd)
-    {
-        if (NULL !=csd->pixfmtclass)
-	{
-    	    OOP_RemoveClass(csd->pixfmtclass);
-	    OOP_DisposeObject((OOP_Object *) csd->pixfmtclass);
-            csd->pixfmtclass = NULL;
-	}	
-    }
-
-    ReturnVoid("free_pixfmtclass");
-}
-
 /****************************************************************************************/

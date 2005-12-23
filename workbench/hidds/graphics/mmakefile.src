@@ -2,20 +2,19 @@
 include $(TOP)/config/make.cfg
 
 #MM- workbench-hidds : workbench-hidd-graphics
-#MM- workbench-hidd-graphics : workbench-hidd-graphics-module
+#MM- workbench-hidd-graphics : kernel-oop-linklib
+#MM- workbench-hidd-graphics-kobj : kernel-oop-linklib
 #MM- linklibs : workbench-hidd-graphics-stubs
 
-FILES       := GraphicsClass BM_Class CM_Class GC_Class  \
+FILES       := graphics_init GraphicsClass BM_Class CM_Class GC_Class  \
                planarbm chunkybm convertpixels memblit	\
 	       pixfmt sync
 
 USER_CFLAGS      := -DAROS_USE_OOP
-%build_module_macro mmake=workbench-hidd-graphics \
+%build_module mmake=workbench-hidd-graphics \
   modname=graphics modtype=hidd \
   files=$(FILES) \
-  conffile=lib.conf \
-  uselibs="hiddgraphicsstubs rom" \
-  genfunctable=yes
+  uselibs="hiddgraphicsstubs oop rom"
 
 LIBNAME     := graphics
 STUBS       := $(LIBNAME)_stubs
@@ -28,9 +27,10 @@ workbench-hidd-graphics-setup : setup
 #MM workbench-hidd-graphics-stubs : workbench-hidd-graphics-setup
 workbench-hidd-graphics-stubs : $(STUB_FILE)
 
-$(STUB_FILE) : $(STUB_OBJS) $(MY_INCLS)
+$(STUB_FILE) : $(STUB_OBJS) $(MY_INCLS) 
 	%mklib_q from=$(STUB_OBJS)
 
+$(STUB_OBJS) : | $(OBJDIR)
 $(STUB_OBJS) : $(OBJDIR)/%.o : %.c	
 	%compile_q	
 

@@ -403,8 +403,8 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID bitmap_convertpixels(OOP_Class *cl, OOP_Object *o,
-    	    	    	  struct pHidd_BitMap_ConvertPixels *msg)
+VOID BM__Hidd_BitMap__ConvertPixels(OOP_Class *cl, OOP_Object *o,
+				    struct pHidd_BitMap_ConvertPixels *msg)
 {
     /* For now we assume truecolor */
     HIDDT_PixelFormat *srcfmt, *dstfmt;
