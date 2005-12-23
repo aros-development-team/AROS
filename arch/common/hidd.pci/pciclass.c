@@ -15,6 +15,8 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 
+#include <aros/symbolsets.h>
+
 #include "pci.h"
 
 #define DEBUG 1
@@ -32,8 +34,6 @@
 #define HiddPCIDeviceAttrBase	(PSD(cl)->hiddPCIDeviceAB)
 #define HiddAttrBase		(PSD(cl)->hiddAB)
 
-#define SysBase		(PSD(cl)->sysbase)
-#define OOPBase 	(PSD(cl)->oopbase)
 #define UtilityBase	(PSD(cl)->utilitybase)
 
 /* 
@@ -94,7 +94,7 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
     The PCI bus handled through driver added is scanned, and all available
     PCI devices are added to the device chain.
 */
-static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
+void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCI_AddHardwareDriver *msg)
 {
     struct DriverNode *dn = NULL;
@@ -231,7 +231,7 @@ static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
     iterates not only through one PCI bus, but instead through all buses
     managed by all drivers present in the system.
 */
-static void _PCI_EnumDevs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_EnumDevices *msg)
+void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_EnumDevices *msg)
 {
     ULONG   VendorID, ProductID, RevisionID, Interface, _Class, SubClass, 
 	    SubsystemVendorID, SubsystemID;
@@ -321,7 +321,7 @@ static void _PCI_EnumDevs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_EnumDev
     ReleaseSemaphore(&PSD(cl)->driver_lock);
 }
 
-static BOOL _PCI_RemHwDrv(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_RemHardwareDriver *msg)
+BOOL PCI__Hidd_PCI__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_RemHardwareDriver *msg)
 {
     struct DriverNode *dn = NULL, *next = NULL, *rem = NULL;
     BOOL freed = FALSE;
@@ -381,13 +381,13 @@ static BOOL _PCI_RemHwDrv(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_RemHard
     return freed;
 }
 
-static OOP_Object *_PCI_New(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+OOP_Object *PCI__Root__New(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     AROS_ATOMIC_INC(PSD(cl)->users);
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, msg);
 }
 
-static VOID _PCI_Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID PCI__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     AROS_ATOMIC_DEC(PSD(cl)->users);
     OOP_DoSuperMethod(cl, o, msg);
@@ -395,102 +395,46 @@ static VOID _PCI_Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /* Class initialization and destruction */
 
-#undef OOPBase
-#undef SysBase
 #undef UtilityBase
-
-#define SysBase	    (psd->sysbase)
-#define OOPBase	    (psd->oopbase)
 #define UtilityBase (psd->utilitybase)
 
-void free_pciclass(struct pci_staticdata *psd, OOP_Class *cl)
+AROS_SET_LIBFUNC(PCI_ExpungeClass, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+
     D(bug("[PCI] Base Class destruction\n"));
     
-    if (psd)
-    {
-	OOP_RemoveClass(cl);
+    OOP_ReleaseAttrBase(IID_Hidd_PCI);
+    OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
+    OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
+    OOP_ReleaseAttrBase(IID_Hidd);
 
-	if (cl)
-	    OOP_DisposeObject((OOP_Object *)cl);
-	
-	OOP_ReleaseAttrBase(IID_Hidd_PCI);
-	OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
-	OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
-	OOP_ReleaseAttrBase(IID_Hidd);
-    }
+    return TRUE;
+
+    AROS_SET_LIBFUNC_EXIT
 }
 	
-#define _NUM_ROOT_METHODS	2
-#define _NUM_PCI_METHODS	3 //NUM_PCIDRIVER_METHODS
-
-OOP_Class *init_pciclass(struct pci_staticdata *psd)
+AROS_SET_LIBFUNC(PCI_InitClass, LIBBASETYPE, LIBBASE)
 {
-    OOP_Class *cl = NULL;
-
-    struct OOP_MethodDescr root_descr[_NUM_ROOT_METHODS + 1] =
-    {
-	{ OOP_METHODDEF(_PCI_New),	moRoot_New },
-	{ OOP_METHODDEF(_PCI_Dispose),	moRoot_Dispose },
-	{ NULL, 0UL }
-    };
-    
-    struct OOP_MethodDescr pci_descr[_NUM_PCI_METHODS + 1] =
-    {
-	{ OOP_METHODDEF(_PCI_AddHwDrv), moHidd_PCI_AddHardwareDriver },
-	{ OOP_METHODDEF(_PCI_EnumDevs), moHidd_PCI_EnumDevices },
-	{ OOP_METHODDEF(_PCI_RemHwDrv), moHidd_PCI_RemHardwareDriver },
-	{ NULL, 0UL }
-    };
-
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-	{ root_descr,	    IID_Root,		_NUM_ROOT_METHODS },
-	{ pci_descr,  	    IID_Hidd_PCI,	_NUM_PCI_METHODS },
-	{ NULL, NULL, 0UL }
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-	{ aMeta_SuperID,	(IPTR)CLID_Hidd },
-	{ aMeta_InterfaceDescr,	(IPTR)ifdescr },
-	{ aMeta_InstSize,	(IPTR)0 },
-	{ aMeta_ID,		(IPTR)CLID_Hidd_PCI },
-	{ TAG_DONE, 0UL }
-    };
+    AROS_SET_LIBFUNC_INIT
 
     D(bug("[PCI] base class initialization\n"));
 
-    if (MetaAttrBase)
-    {
-	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-	if (cl)
-	{
-	    cl->UserData = (APTR)psd;
-	    psd->hiddPCIAB = OOP_ObtainAttrBase(IID_Hidd_PCI);
-	    psd->hiddPCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-	    psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
-	    psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
+    LIBBASE->psd.hiddPCIAB = OOP_ObtainAttrBase(IID_Hidd_PCI);
+    LIBBASE->psd.hiddPCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+    LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
+    LIBBASE->psd.hiddAB = OOP_ObtainAttrBase(IID_Hidd);
 
-	    if (psd->hiddPCIAB && psd->hiddPCIDeviceAB && psd->hiddPCIDriverAB && psd->hiddAB)
-	    {
-		D(bug("[PCI] Everything OK\n"));
-		OOP_AddClass(cl);
-		psd->pciClass = cl;
-	    }
-	    else
-	    {
-		free_pciclass(psd, cl);
-		cl = NULL;
-	    }
-	}
-	OOP_ReleaseAttrBase(IID_Meta);
+    if (LIBBASE->psd.hiddPCIAB && LIBBASE->psd.hiddPCIDeviceAB && LIBBASE->psd.hiddPCIDriverAB && LIBBASE->psd.hiddAB)
+    {
+	D(bug("[PCI] Everything OK\n"));
+	return TRUE;
     }
 
-    D(bug("[PCI] ClassPtr = 0x%08x\n", cl));
-
-    return cl;
+    return FALSE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(PCI_InitClass, 0)
+ADD2EXPUNGELIB(PCI_ExpungeClass, 0)

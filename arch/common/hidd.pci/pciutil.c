@@ -23,8 +23,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OOPBase	(psd->oopbase)
-
 /*
   Fetch text descriptions of the different PCI device classes
 */

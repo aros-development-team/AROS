@@ -28,8 +28,6 @@
 
 #define	HiddPCIDeviceAttrBase	(PSD(cl)->hiddPCIDeviceAB)
 
-#define SysBase		(PSD(cl)->sysbase)
-#define OOPBase 	(PSD(cl)->oopbase)
 #define UtilityBase	(PSD(cl)->utilitybase)
 
 static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
@@ -131,32 +129,32 @@ static UBYTE getByte(OOP_Class *cl, OOP_Object *o, ULONG reg)
     return OOP_DoMethod(driver, (OOP_Msg)&msg);  
 }
 
-static UBYTE pcidevice_RB(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigByte *msg)
+UBYTE PCIDev__Hidd_PCIDevice__ReadConfigByte(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigByte *msg)
 {
     return getByte(cl, o, msg->reg);
 }
 
-static UWORD pcidevice_RW(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigWord *msg)
+UWORD PCIDev__Hidd_PCIDevice__ReadConfigWord(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigWord *msg)
 {
     return getWord(cl, o, msg->reg);
 }
 
-static UBYTE pcidevice_RL(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigLong *msg)
+UBYTE PCIDev__Hidd_PCIDevice__ReadConfigLong(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReadConfigLong *msg)
 {
     return getLong(cl, o, msg->reg);
 }
 
-static VOID pcidevice_WB(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_WriteConfigByte *msg)
+VOID PCIDev__Hidd_PCIDevice__WriteConfigByte(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_WriteConfigByte *msg)
 {
     setByte(cl, o, msg->reg, msg->val);
 }
 
-static VOID pcidevice_WW(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_WriteConfigWord *msg)
+VOID PCIDev__Hidd_PCIDevice__WriteConfigWord(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_WriteConfigWord *msg)
 {
     setWord(cl, o, msg->reg, msg->val);
 }
 
-static VOID pcidevice_WL(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_WriteConfigLong *msg)
+VOID PCIDev__Hidd_PCIDevice__WriteConfigLong(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_WriteConfigLong *msg)
 {
     setLong(cl, o, msg->reg, msg->val);
 }
@@ -167,7 +165,7 @@ static VOID pcidevice_WL(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_Wr
     class information about the driver this class should use and location of 
     created device on the PCI bus handled by given driver.
 */
-static OOP_Object *pcidevice_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     int i;
     
@@ -570,7 +568,7 @@ const static void (*Dispatcher[num_Hidd_PCIDevice_Attrs])(OOP_Class *, OOP_Objec
 
 };
 
-static void pcidevice_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
@@ -639,7 +637,7 @@ static void pcidevice_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 }
 
-static void pcidevice_set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+void PCIDev__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     ULONG idx;
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
@@ -781,92 +779,3 @@ static void pcidevice_set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 	}
     }
 }
-
-/* Class initialization and destruction */
-
-#undef OOPBase
-#undef SysBase
-#undef UtilityBase
-
-#define SysBase	    (psd->sysbase)
-#define OOPBase	    (psd->oopbase)
-#define UtilityBase (psd->utilitybase)
-
-void free_pcideviceclass(struct pci_staticdata *psd, OOP_Class *cl)
-{
-    D(bug("[PCIDevice] Class destruction\n"));
-    
-    if (psd)
-    {
-	OOP_RemoveClass(cl);
-
-	if (cl)
-	    OOP_DisposeObject((OOP_Object *)cl);
-    }
-}
-	
-#define _NUM_ROOT_METHODS	3
-#define _NUM_PCIDEVICE_METHODS	6   /*NUM_PCIDRIVER_METHODS*/
-
-OOP_Class *init_pcideviceclass(struct pci_staticdata *psd)
-{
-    OOP_Class *cl = NULL;
-
-    struct OOP_MethodDescr root_descr[_NUM_ROOT_METHODS + 1] = 
-    {
-	{ OOP_METHODDEF(pcidevice_new), moRoot_New },
-	{ OOP_METHODDEF(pcidevice_get),	moRoot_Get },
-	{ OOP_METHODDEF(pcidevice_set), moRoot_Set },
-	{ NULL, 0UL }
-    };
-
-    struct OOP_MethodDescr pcidevice_descr[_NUM_PCIDEVICE_METHODS + 1] =
-    {
-	{ OOP_METHODDEF(pcidevice_RB),  moHidd_PCIDevice_ReadConfigByte },
-	{ OOP_METHODDEF(pcidevice_RW),  moHidd_PCIDevice_ReadConfigWord },
-	{ OOP_METHODDEF(pcidevice_RL),  moHidd_PCIDevice_ReadConfigLong },
-	{ OOP_METHODDEF(pcidevice_WB),  moHidd_PCIDevice_WriteConfigByte },
-	{ OOP_METHODDEF(pcidevice_WW),  moHidd_PCIDevice_WriteConfigWord },
-	{ OOP_METHODDEF(pcidevice_WL),  moHidd_PCIDevice_WriteConfigLong },
-	{ NULL, 0UL }
-    };
-
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-	{ root_descr,	    IID_Root,		_NUM_ROOT_METHODS },
-	{ pcidevice_descr,  IID_Hidd_PCIDevice,	_NUM_PCIDEVICE_METHODS },
-	{ NULL, NULL, 0UL }
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-	{ aMeta_SuperID,	(IPTR)CLID_Hidd },
-	{ aMeta_InterfaceDescr,	(IPTR)ifdescr },
-	{ aMeta_InstSize,	(IPTR)sizeof(struct DeviceData) },
-	{ aMeta_ID,		(IPTR)CLID_Hidd_PCIDevice },
-	{ TAG_DONE, 0UL }
-    };
-
-    D(bug("[PCIDevice] initialization\n"));
-
-    if (MetaAttrBase)
-    {
-	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-	if (cl)
-	{
-	    cl->UserData = (APTR)psd;
-
-	    OOP_AddClass(cl);
-	    D(bug("[PCIDevice] Class OK\n"));
-	    psd->pciDeviceClass = cl;
-	}
-	OOP_ReleaseAttrBase(IID_Meta);
-    }
-
-    D(bug("[PCIDevice] ClassPtr = 0x08%x\n", cl));
-
-    return cl;
-}
-
