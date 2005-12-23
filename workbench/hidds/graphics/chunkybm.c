@@ -27,18 +27,7 @@
 
 /****************************************************************************************/
 
-struct chunkybm_data
-{
-    UBYTE *buffer;
-    ULONG bytesperrow;
-    ULONG bytesperpixel;
-};
-
-#define csd ((struct class_static_data *)cl->UserData)
-
-/****************************************************************************************/
-
-static OOP_Object *chunkybm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct chunkybm_data    *data;
     
@@ -91,7 +80,7 @@ static OOP_Object *chunkybm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
 /****************************************************************************************/
 
-static void chunkybm_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+void CBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct chunkybm_data *data;
     
@@ -107,8 +96,8 @@ static void chunkybm_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-static VOID chunkybm_putpixel(OOP_Class *cl, OOP_Object *o,
-    	    	    	      struct pHidd_BitMap_PutPixel *msg)
+VOID CBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
+				struct pHidd_BitMap_PutPixel *msg)
 {
     UBYTE *dest;
     
@@ -162,8 +151,8 @@ static VOID chunkybm_putpixel(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static ULONG chunkybm_getpixel(OOP_Class *cl, OOP_Object *o,
-    	    	    	       struct pHidd_BitMap_GetPixel *msg)
+ULONG CBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
+				 struct pHidd_BitMap_GetPixel *msg)
 {
     HIDDT_Pixel     	    retval = 0;
     UBYTE   	    	    *src;
@@ -204,7 +193,7 @@ static ULONG chunkybm_getpixel(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID chunkybm_fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+VOID CBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct chunkybm_data  *data =OOP_INST_DATA(cl, o);
     HIDDT_Pixel     	   fg = GC_FG(msg->gc);
@@ -285,7 +274,7 @@ static VOID chunkybm_fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 
 /****************************************************************************************/
 
-static VOID chunkybm_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
+VOID CBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
 
@@ -419,7 +408,7 @@ static VOID chunkybm_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 
 /****************************************************************************************/
 
-static VOID chunkybm_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+VOID CBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
 
@@ -553,7 +542,7 @@ static VOID chunkybm_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 
 /****************************************************************************************/
 
-static VOID chunkybm_putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+VOID CBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
 
@@ -613,7 +602,7 @@ static VOID chunkybm_putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 
 /****************************************************************************************/
 
-static VOID chunkybm_blitcolorexpansion(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
+VOID CBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     struct chunkybm_data   *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel     	    fg, bg, pix;
@@ -696,7 +685,7 @@ static VOID chunkybm_blitcolorexpansion(OOP_Class *cl, OOP_Object *o, struct pHi
 
 /****************************************************************************************/
 
-static VOID chunkybm_puttemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
+VOID CBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
 
@@ -772,7 +761,7 @@ static VOID chunkybm_puttemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 
 /****************************************************************************************/
 
-static VOID chunkybm_putpattern(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPattern *msg)
+VOID CBM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPattern *msg)
 {
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
 
@@ -868,107 +857,6 @@ static VOID chunkybm_putpattern(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 	    
     } /* switch(data->bytesperpixel) */
     
-}
-/****************************************************************************************/
-
-
-#undef OOPBase
-#undef SysBase
-
-#undef csd
-
-#define OOPBase (csd->oopbase)
-#define SysBase (csd->sysbase)
-
-#define NUM_ROOT_METHODS   2
-#define NUM_BITMAP_METHODS 9
-
-/****************************************************************************************/
-
-OOP_Class *init_chunkybmclass(struct class_static_data *csd)
-{
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-        {(IPTR (*)())chunkybm_new    	, moRoot_New    },
-        {(IPTR (*)())chunkybm_dispose	, moRoot_Dispose},
-        {NULL	    	    	    	, 0UL	    	}
-    };
-
-    struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
-    {
-        {(IPTR (*)())chunkybm_putpixel	    	, moHidd_BitMap_PutPixel	    },
-        {(IPTR (*)())chunkybm_getpixel	    	, moHidd_BitMap_GetPixel	    },
-        {(IPTR (*)())chunkybm_fillrect	    	, moHidd_BitMap_FillRect	    },
-        {(IPTR (*)())chunkybm_putimage	    	, moHidd_BitMap_PutImage	    },
-        {(IPTR (*)())chunkybm_getimage	    	, moHidd_BitMap_GetImage	    },
-        {(IPTR (*)())chunkybm_putimagelut   	, moHidd_BitMap_PutImageLUT 	    },
-        {(IPTR (*)())chunkybm_blitcolorexpansion, moHidd_BitMap_BlitColorExpansion  },
-        {(IPTR (*)())chunkybm_puttemplate   	, moHidd_BitMap_PutTemplate 	    },
-        {(IPTR (*)())chunkybm_putpattern   	, moHidd_BitMap_PutPattern 	    },
-        {NULL	    	    	    	    	, 0UL   	    	    	    }
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr 	, IID_Root          , NUM_ROOT_METHODS	},
-        {bitMap_descr	, IID_Hidd_BitMap   , NUM_BITMAP_METHODS},
-        {NULL	    	, NULL	    	    , 0     	    	}
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID	    	, (IPTR) CLID_Hidd_BitMap   	    	},
-        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    	},
-        {aMeta_ID   	    	, (IPTR) CLID_Hidd_ChunkyBM 	    	},
-        {aMeta_InstSize     	, (IPTR) sizeof(struct chunkybm_data)	},
-        {TAG_DONE   	    	, 0UL	    	    	    	    	}
-    };
-    
-    OOP_Class *cl = NULL;
-
-    EnterFunc(bug("init_chunkybmclass(csd=%p)\n", csd));
-
-    if(MetaAttrBase)
-    {
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-	
-    	if(NULL != cl)
-	{
-            D(bug("Chunky BitMap class ok\n"));
-
-            csd->chunkybmclass = cl;
-            cl->UserData     = (APTR) csd;
-	    OOP_AddClass(cl);
-
-        }
-	
-    } /* if(MetaAttrBase) */
-    
-    if (NULL == cl)
-	free_chunkybmclass(csd);
-
-    ReturnPtr("init_chunkybmclass", OOP_Class *, cl);
-}
-
-/****************************************************************************************/
-
-void free_chunkybmclass(struct class_static_data *csd)
-{
-    EnterFunc(bug("free_chunkybmclass(csd=%p)\n", csd));
-
-    if(NULL != csd)
-    {   
-	if (NULL != csd->chunkybmclass)
-	{
-    	    OOP_RemoveClass(csd->chunkybmclass);
-	    OOP_DisposeObject((OOP_Object *)csd->chunkybmclass);
-    	    csd->chunkybmclass = NULL;
-	}
-    }
-
-    ReturnVoid("free_chunkybmclass");
 }
 
 /****************************************************************************************/

@@ -22,11 +22,7 @@
 
 /****************************************************************************************/
 
-#define csd ((struct class_static_data *)cl->UserData)
-
-/****************************************************************************************/
-
-OOP_Object *sync_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct sync_data 	*data;
     BOOL    	    	ok = FALSE;
@@ -69,7 +65,7 @@ OOP_Object *sync_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 /****************************************************************************************/
 
-static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct sync_data 	*data;    
     ULONG   	    	idx;
@@ -176,92 +172,6 @@ static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     
     return;
     
-}
-
-/****************************************************************************************/
-
-#undef OOPBase
-#undef SysBase
-
-#undef csd
-
-#define OOPBase (csd->oopbase)
-#define SysBase (csd->sysbase)
-
-#define NUM_ROOT_METHODS 3
-#define NUM_SYNC_METHODS 0
-
-/****************************************************************************************/
-
-OOP_Class *init_syncclass(struct class_static_data *csd)
-{
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-        {(IPTR (*)())sync_new, moRoot_New   },
-        {(IPTR (*)())sync_get, moRoot_Get   },
-	{ NULL	    	     , 0UL  	    }
-    };
-    
-    struct OOP_MethodDescr sync_descr[NUM_SYNC_METHODS + 1] =
-    {
-	{ NULL, 0UL }
-    };
-        
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr , IID_Root      , NUM_ROOT_METHODS	},
-        {sync_descr , IID_Hidd_Sync , NUM_SYNC_METHODS	},
-        {NULL	    , NULL  	    , 0     	    	}
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID	    	, (IPTR) CLID_Root  	    	    },
-        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    },
-        {aMeta_InstSize     	, (IPTR) sizeof (struct sync_data)  },
-        {TAG_DONE   	    	, 0UL	    	    	    	    }
-    };
-    
-    OOP_Class *cl = NULL;
-
-    EnterFunc(bug("init_syncclass(csd=%p)\n", csd));
-
-    if(MetaAttrBase)
-    {
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if(NULL != cl)
-	{
-            D(bug("Sync class ok\n"));
-            csd->syncclass = cl;
-            cl->UserData     = (APTR) csd;
-        }
-
-    } /* if(MetaAttrBase) */
-    
-    if (NULL == cl)
-	free_syncclass(csd);
-
-    ReturnPtr("init_syncclass", OOP_Class *,  cl);
-}
-
-/****************************************************************************************/
-
-void free_syncclass(struct class_static_data *csd)
-{
-    EnterFunc(bug("free_syncclass(csd=%p)\n", csd));
-
-    if(NULL != csd)
-    {
-	if (NULL != csd->syncclass)
-	{
-	    OOP_DisposeObject((OOP_Object *) csd->syncclass);
-            csd->syncclass = NULL;
-	}
-    }
-
-    ReturnVoid("free_syncclass");
 }
 
 /****************************************************************************************/

@@ -31,15 +31,13 @@
 
 /****************************************************************************************/
 
-static VOID gc_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg);
+VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg);
 
 #define IS_GC_ATTR(attr, idx) ( ( (idx) = (attr) - HiddGCAttrBase) < num_Hidd_GC_Attrs)
 
-#define csd ((struct class_static_data *)cl->UserData)
-
 /****************************************************************************************/
 
-static OOP_Object *gc_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
+OOP_Object *GC__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
     HIDDT_GC_Intern *data;
 
@@ -66,7 +64,7 @@ static OOP_Object *gc_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
         /* Override defaults with user suplied attrs */
 
 	OOP_SetAttrs(obj, msg->attrList);
-    	/* gc_set(cl, obj, &set_msg); */
+    	/* GC__Root__Set(cl, obj, &set_msg); */
 
     } /* if(obj) */
 
@@ -75,7 +73,7 @@ static OOP_Object *gc_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 /****************************************************************************************/
 
-static VOID gc_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
+VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     HIDDT_GC_Intern *data = OOP_INST_DATA(cl, obj);
     struct TagItem  *tag, *tstate;
@@ -134,7 +132,7 @@ static VOID gc_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
 /****************************************************************************************/
 
-static VOID gc_get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
+VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 {
     HIDDT_GC_Intern *data = OOP_INST_DATA(cl, obj);
     ULONG   	    idx;
@@ -195,7 +193,7 @@ static VOID gc_get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
-VOID gc_setcliprect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetClipRect *msg)
+VOID GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetClipRect *msg)
 {
      HIDDT_GC_Intern *data;
      
@@ -211,7 +209,7 @@ VOID gc_setcliprect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetClipRect *m
 
 /****************************************************************************************/
 
-VOID gc_unsetcliprect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_UnsetClipRect *msg)
+VOID GC__Hidd_GC__UnsetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_UnsetClipRect *msg)
 {
      HIDDT_GC_Intern *data;
      
@@ -219,105 +217,6 @@ VOID gc_unsetcliprect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_UnsetClipRec
      
      data->doClip = FALSE;
     
-}
-
-/****************************************************************************************/
-
-#undef OOPBase
-#undef SysBase
-#undef UtilityBase
-
-#undef csd
-
-#define OOPBase (csd->oopbase)
-#define SysBase (csd->sysbase)
-#define UtilityBase (csd->utilitybase)
-
-#define NUM_ROOT_METHODS   3
-#define NUM_GC_METHODS    2
-
-/****************************************************************************************/
-
-OOP_Class *init_gcclass(struct class_static_data *csd)
-{
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-        {(IPTR (*)())gc_new         , moRoot_New    },
-        {(IPTR (*)())gc_set         , moRoot_Set    },
-        {(IPTR (*)())gc_get         , moRoot_Get    },
-        {NULL	    	    	    , 0UL   	    }
-    };
-
-    struct OOP_MethodDescr gc_descr[NUM_GC_METHODS + 1] =
-    {
-    	{(IPTR (*)())gc_setcliprect	, moHidd_GC_SetClipRect	    },
-    	{(IPTR (*)())gc_unsetcliprect	, moHidd_GC_UnsetClipRect   },
-        {NULL	    	    	    	, 0UL	    	    	    }
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr , IID_Root      , NUM_ROOT_METHODS	},
-        {gc_descr   , IID_Hidd_GC   , NUM_GC_METHODS  	},
-        {NULL	    , NULL  	    , 0     	    	}
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID	    	, (IPTR) CLID_Root  	    	},
-        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	},
-        {aMeta_ID   	    	, (IPTR) CLID_Hidd_GC	    	},
-        {aMeta_InstSize     	, (IPTR) sizeof(HIDDT_GC_Intern)},
-        {TAG_DONE   	    	, 0UL	    	    	    	}
-    };
-    
-    OOP_Class *cl = NULL;
-
-    EnterFunc(bug("init_gcclass(csd=%p)\n", csd));
-
-    if(MetaAttrBase)
-    {
-        cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-
-        if(NULL != cl)
-	{
-            D(bug("GC class ok\n"));
-            csd->gcclass = cl;
-            cl->UserData = (APTR) csd;
-
-            OOP_AddClass(cl);
-
-        }
-
-    } /* if(MetaAttrBase) */
-    
-    if (NULL == cl)
-	free_gcclass(csd);
-    
-    ReturnPtr("init_gcclass", OOP_Class *, cl);
-
-}
-
-/****************************************************************************************/
-
-void free_gcclass(struct class_static_data *csd)
-{
-    EnterFunc(bug("free_gcclass(csd=%p)\n", csd));
-
-    if(NULL != csd)
-    {
-	if (NULL != csd->gcclass)
-	{
-    	    OOP_RemoveClass(csd->gcclass);
-    	    OOP_DisposeObject((OOP_Object *) csd->gcclass);
-
-    	    csd->gcclass = NULL;
-	}
-    }
-
-    ReturnVoid("free_gcclass");
 }
 
 /****************************************************************************************/

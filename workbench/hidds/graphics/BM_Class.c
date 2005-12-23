@@ -69,8 +69,6 @@
 
 #define BM_NONDISP_AF 	    ( BMAF(Width) | BMAF(Height) | BMAF(PixFmt) )
 
-#define csd 	    	    ((struct class_static_data *)cl->UserData)
-
 
 #define PIXBUFBYTES 	    (50000*4)
 
@@ -116,7 +114,7 @@
     
 /****************************************************************************************/
 
-static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
+OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
     EnterFunc(bug("BitMap::New()\n"));
 
@@ -317,7 +315,7 @@ static OOP_Object *bitmap_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *
 
 /****************************************************************************************/
 
-static void bitmap_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
+void BM__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
 {
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
 
@@ -339,7 +337,7 @@ static void bitmap_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
 
 /****************************************************************************************/
 
-static VOID bitmap_get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
+VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 {
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
     ULONG   	    	   idx;
@@ -427,7 +425,7 @@ static VOID bitmap_get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
-static BOOL bitmap_setcolors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
+BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
     /* Copy the colors into the internal buffer */
     struct HIDDBitMapData *data;
@@ -500,8 +498,8 @@ static BOOL bitmap_setcolors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_S
 
 *****************************************************************************************/
 
-static ULONG bitmap_drawpixel(OOP_Class *cl, OOP_Object *obj,
-    	    	    	      struct pHidd_BitMap_DrawPixel *msg)
+ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
+				 struct pHidd_BitMap_DrawPixel *msg)
 {
     HIDDT_Pixel     	    	    src, dest, val;
     HIDDT_DrawMode  	    	    mode;
@@ -626,7 +624,7 @@ static ULONG bitmap_drawpixel(OOP_Class *cl, OOP_Object *obj,
 
 *****************************************************************************************/
 
-static VOID bitmap_drawline
+VOID BM__Hidd_BitMap__DrawLine
 (
     OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawLine *msg
 )
@@ -892,8 +890,8 @@ static VOID bitmap_drawline
 
 *****************************************************************************************/
 
-static VOID bitmap_drawrect(OOP_Class *cl, OOP_Object *obj,
-    	    	    	    struct pHidd_BitMap_DrawRect *msg)
+VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
+			       struct pHidd_BitMap_DrawRect *msg)
 {
     OOP_Object *gc = msg->gc;
     WORD    	addX, addY;
@@ -952,8 +950,8 @@ static VOID bitmap_drawrect(OOP_Class *cl, OOP_Object *obj,
 
 *****************************************************************************************/
 
-static VOID bitmap_fillrect(OOP_Class *cl, OOP_Object *obj,
-    	    	    	    struct pHidd_BitMap_DrawRect *msg)
+VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
+			       struct pHidd_BitMap_DrawRect *msg)
 {
     OOP_Object *gc = msg->gc;
     WORD    	y = msg->minY;
@@ -1017,8 +1015,8 @@ static VOID bitmap_fillrect(OOP_Class *cl, OOP_Object *obj,
 
 #warning Try to opimize clipping here
 
-static VOID bitmap_drawellipse(OOP_Class *cl, OOP_Object *obj,
-    	    	    	       struct pHidd_BitMap_DrawEllipse *msg)
+VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
+				  struct pHidd_BitMap_DrawEllipse *msg)
 {
     OOP_Object *gc = msg->gc;
     WORD    	x = msg->rx, y = 0;     /* ellipse points */
@@ -1173,8 +1171,8 @@ static VOID bitmap_drawellipse(OOP_Class *cl, OOP_Object *obj,
 
 *****************************************************************************************/
 
-static VOID bitmap_fillellipse(OOP_Class *cl, OOP_Object *obj,
-    	    	    	       struct pHidd_BitMap_DrawEllipse *msg)
+VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
+				  struct pHidd_BitMap_DrawEllipse *msg)
 {
     OOP_Object *gc = msg->gc;
     WORD    	x = msg->rx, y = 0;     /* ellipse points */
@@ -1272,8 +1270,8 @@ static VOID bitmap_fillellipse(OOP_Class *cl, OOP_Object *obj,
 
 *****************************************************************************************/
 
-static VOID bitmap_drawpolygon(OOP_Class *cl, OOP_Object *obj,
-    	    	    	       struct pHidd_BitMap_DrawPolygon *msg)
+VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
+				  struct pHidd_BitMap_DrawPolygon *msg)
 {
     OOP_Object *gc = msg->gc;
     WORD    	i;
@@ -1329,7 +1327,7 @@ static VOID bitmap_drawpolygon(OOP_Class *cl, OOP_Object *obj,
 
 *****************************************************************************************/
 
-static VOID bitmap_fillpolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawPolygon *msg)
+VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawPolygon *msg)
 {
 
     EnterFunc(bug("BitMap::FillPolygon()"));
@@ -1382,8 +1380,8 @@ static VOID bitmap_fillpolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 
 *****************************************************************************************/
 
-static VOID bitmap_drawtext(OOP_Class *cl, OOP_Object *obj,
-    	    	    	    struct pHidd_BitMap_DrawText *msg)
+VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
+			       struct pHidd_BitMap_DrawText *msg)
 {
     OOP_Object      *gc = msg->gc;
     struct TextFont *font  = GC_FONT(gc);
@@ -1495,12 +1493,12 @@ static VOID bitmap_drawtext(OOP_Class *cl, OOP_Object *obj,
 
 *****************************************************************************************/
 
-static VOID bitmap_drawfilltext(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
+VOID BM__Hidd_BitMap__FillText(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
 {
 
-    EnterFunc(bug("BitMap::DrawFillText()\n"));
+    EnterFunc(bug("BitMap::FillText()\n"));
 
-    D(bug("Sorry, DrawFillText() not implemented yet in bitmap baseclass\n"));
+    D(bug("Sorry, FillText() not implemented yet in bitmap baseclass\n"));
 
     ReturnVoid("BitMap::DrawFillText");
 }
@@ -1540,7 +1538,7 @@ static VOID bitmap_drawfilltext(OOP_Class *cl, OOP_Object *obj, struct pHidd_Bit
 
 *****************************************************************************************/
 
-static VOID bitmap_fillspan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
+VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_DrawText *msg)
 {
 
     EnterFunc(bug("BitMap::FillSpan()\n"));
@@ -1585,7 +1583,7 @@ static VOID bitmap_fillspan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
 
 *****************************************************************************************/
 
-static VOID bitmap_clear(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_Clear *msg)
+VOID BM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_Clear *msg)
 {
     WORD  x, y;
     ULONG width, height;
@@ -1645,8 +1643,8 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
 
 /****************************************************************************************/
 
-static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o,
-    	    	    	    struct pHidd_BitMap_GetImage *msg)
+VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
+			       struct pHidd_BitMap_GetImage *msg)
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
@@ -1761,8 +1759,8 @@ static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o,
-    	    	    	    struct pHidd_BitMap_PutImage *msg)
+VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
+			       struct pHidd_BitMap_PutImage *msg)
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
@@ -1893,8 +1891,8 @@ __attribute__((always_inline, const)) do_alpha(int a, int v)
     return ((tmp<<8) + tmp + 32768)>>16;
 }
 
-static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
-    	    	    	    struct pHidd_BitMap_PutAlphaImage *msg)
+VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
+				    struct pHidd_BitMap_PutAlphaImage *msg)
 {
     WORD    	    	    x, y;
     ULONG   	    	    *pixarray = (ULONG *)msg->pixels;
@@ -2069,8 +2067,8 @@ static VOID bitmap_putalphaimage(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID bitmap_puttemplate(OOP_Class *cl, OOP_Object *o,
-    	    	    	    struct pHidd_BitMap_PutTemplate *msg)
+VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
+				  struct pHidd_BitMap_PutTemplate *msg)
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *bitarray;
@@ -2280,8 +2278,8 @@ static VOID bitmap_puttemplate(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
-    	    	    	    struct pHidd_BitMap_PutAlphaTemplate *msg)
+VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
+				       struct pHidd_BitMap_PutAlphaTemplate *msg)
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *pixarray = msg->alpha;
@@ -2545,8 +2543,8 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID bitmap_putpattern(OOP_Class *cl, OOP_Object *o,
-    	    	    	      struct pHidd_BitMap_PutPattern *msg)
+VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
+				 struct pHidd_BitMap_PutPattern *msg)
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *patarray;
@@ -2876,8 +2874,8 @@ static VOID bitmap_putpattern(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID bitmap_putimagelut(OOP_Class *cl, OOP_Object *o,
-    	    	    	    struct pHidd_BitMap_PutImageLUT *msg)
+VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
+				  struct pHidd_BitMap_PutImageLUT *msg)
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
@@ -2964,8 +2962,8 @@ static VOID bitmap_putimagelut(OOP_Class *cl, OOP_Object *o,
     ReturnVoid("BitMap::PutImageLUT");
 }
 
-static VOID bitmap_puttranspimagelut(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	     struct pHidd_BitMap_PutTranspImageLUT *msg)
+VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
+					struct pHidd_BitMap_PutTranspImageLUT *msg)
 {
     WORD    	    	     x, y;
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
@@ -3075,8 +3073,8 @@ static VOID bitmap_puttranspimagelut(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID bitmap_getimagelut(OOP_Class *cl, OOP_Object *o,
-    	    	    	    struct pHidd_BitMap_GetImageLUT *msg)
+VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
+				  struct pHidd_BitMap_GetImageLUT *msg)
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
@@ -3153,8 +3151,8 @@ static VOID bitmap_getimagelut(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID bitmap_blitcolexp(OOP_Class *cl, OOP_Object *o,
-    	    	    	      struct pHidd_BitMap_BlitColorExpansion *msg)
+VOID BM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
+					 struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     ULONG   cemd;
     ULONG   fg, bg;
@@ -3217,7 +3215,7 @@ else
 
 /****************************************************************************************/
 
-static ULONG bitmap_bytesperline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BytesPerLine *msg)
+ULONG BM__Hidd_BitMap__BytesPerLine(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BytesPerLine *msg)
 {
      ULONG bpl;
 
@@ -3271,7 +3269,7 @@ static ULONG bitmap_bytesperline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 
 /****************************************************************************************/
 
-static VOID bitmap_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
+VOID BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     struct HIDDBitMapData   *data = OOP_INST_DATA(cl, obj);
     struct TagItem  	    *tag, *tstate;
@@ -3313,8 +3311,8 @@ static VOID bitmap_set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
 /****************************************************************************************/
 
-static OOP_Object *bitmap_setcolormap(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	      struct pHidd_BitMap_SetColorMap *msg)
+OOP_Object *BM__Hidd_BitMap__SetColorMap(OOP_Class *cl, OOP_Object *o,
+					 struct pHidd_BitMap_SetColorMap *msg)
 {
     struct HIDDBitMapData   *data;
     OOP_Object	    	    *old;
@@ -3329,8 +3327,8 @@ static OOP_Object *bitmap_setcolormap(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static HIDDT_Pixel bitmap_mapcolor(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	   struct pHidd_BitMap_MapColor *msg)
+HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
+				      struct pHidd_BitMap_MapColor *msg)
 {
     HIDDT_PixelFormat *pf = BM_PIXFMT(o);
 
@@ -3348,7 +3346,7 @@ static HIDDT_Pixel bitmap_mapcolor(OOP_Class *cl, OOP_Object *o,
     {
     	if (HIDD_PF_SWAPPIXELBYTES(pf))
 	{
-	    #warning "bitmap_mapcolor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
+	    #warning "BM__Hidd_BitMap__MapColor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
 
 	    HIDDT_Pixel pixel = MAP_RGBA(red, green, blue, alpha, pf);
 
@@ -3375,7 +3373,7 @@ static HIDDT_Pixel bitmap_mapcolor(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID bitmap_unmappixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnmapPixel *msg)
+VOID BM__Hidd_BitMap__UnmapPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnmapPixel *msg)
 {
 
     HIDDT_PixelFormat *pf = BM_PIXFMT(o);
@@ -3418,8 +3416,8 @@ static VOID bitmap_unmappixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 
 /****************************************************************************************/
 
-static BOOL bitmap_obtaindirectaccess(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	      struct pHidd_BitMap_ObtainDirectAccess *msg)
+BOOL BM__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
+					 struct pHidd_BitMap_ObtainDirectAccess *msg)
 {
     /* Default implementation of direct access funcs. Just return FALSE */
     return FALSE;
@@ -3427,8 +3425,8 @@ static BOOL bitmap_obtaindirectaccess(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID bitmap_releasedirectaccess(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	       struct pHidd_BitMap_ReleaseDirectAccess *msg)
+VOID BM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o,
+					  struct pHidd_BitMap_ReleaseDirectAccess *msg)
 {
      D(bug("!!! BitMap BaseClasse ReleaseDirectAccess() called !!!\n"));
      D(bug("!!! This should never happen and is probably due to a buggy implementation in the subclass !!!\n"));
@@ -3438,8 +3436,8 @@ static VOID bitmap_releasedirectaccess(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o,
-    	    	    	       struct pHidd_BitMap_BitMapScale * msg)
+VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
+				  struct pHidd_BitMap_BitMapScale * msg)
 {
     struct BitScaleArgs     *bsa = msg->bsa;
     UWORD   	    	    ys = bsa-> bsa_SrcY;
@@ -3530,8 +3528,8 @@ static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
-    	    	    	    	 struct pHidd_BitMap_SetBitMapTags *msg)
+BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o,
+				    struct pHidd_BitMap_SetBitMapTags *msg)
 {
     struct HIDDBitMapData   *data;
     OOP_Object      	    *pf;
@@ -3571,165 +3569,6 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 
     return TRUE;
 }
-
-/****************************************************************************************/
-
-#undef OOPBase
-#undef SysBase
-
-#undef csd
-
-#define OOPBase     	    (csd->oopbase)
-#define SysBase     	    (csd->sysbase)
-
-#define NUM_ROOT_METHODS    4
-
-#define NUM_BITMAP_METHODS  58
-
-/****************************************************************************************/
-
-OOP_Class *init_bitmapclass(struct class_static_data *csd)
-{
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-        {(IPTR (*)())bitmap_new     , moRoot_New    },
-        {(IPTR (*)())bitmap_dispose , moRoot_Dispose},
-        {(IPTR (*)())bitmap_get     , moRoot_Get    },
-        {(IPTR (*)())bitmap_set	    , moRoot_Set    },
-        {NULL	    	    	    , 0UL   	    }
-    };
-
-    struct OOP_MethodDescr bitmap_descr[NUM_BITMAP_METHODS + 1] =
-    {
-        {(IPTR (*)())bitmap_setcolors	  	, moHidd_BitMap_SetColors	    },
-        {(IPTR (*)())bitmap_drawpixel		, moHidd_BitMap_DrawPixel	    },
-        {(IPTR (*)())bitmap_drawline		, moHidd_BitMap_DrawLine	    },
-        {(IPTR (*)())bitmap_drawrect		, moHidd_BitMap_DrawRect	    },
-        {(IPTR (*)())bitmap_fillrect 		, moHidd_BitMap_FillRect	    },
-        {(IPTR (*)())bitmap_drawellipse		, moHidd_BitMap_DrawEllipse	    },
-        {(IPTR (*)())bitmap_fillellipse		, moHidd_BitMap_FillEllipse	    },
-        {(IPTR (*)())bitmap_drawpolygon		, moHidd_BitMap_DrawPolygon	    },
-        {(IPTR (*)())bitmap_fillpolygon		, moHidd_BitMap_FillPolygon	    },
-        {(IPTR (*)())bitmap_drawtext		, moHidd_BitMap_DrawText	    },
-        {(IPTR (*)())bitmap_drawfilltext	, moHidd_BitMap_FillText	    },
-        {(IPTR (*)())bitmap_fillspan		, moHidd_BitMap_FillSpan	    },
-        {(IPTR (*)())bitmap_clear		, moHidd_BitMap_Clear		    },
-        {(IPTR (*)())bitmap_putimage		, moHidd_BitMap_PutImage	    },
-        {(IPTR (*)())bitmap_putalphaimage	, moHidd_BitMap_PutAlphaImage	    },
-        {(IPTR (*)())bitmap_puttemplate	    	, moHidd_BitMap_PutTemplate         },
-        {(IPTR (*)())bitmap_putalphatemplate	, moHidd_BitMap_PutAlphaTemplate    },
-        {(IPTR (*)())bitmap_putpattern	    	, moHidd_BitMap_PutPattern          },
-	{(IPTR (*)())bitmap_putimagelut     	, moHidd_BitMap_PutImageLUT 	    },
-	{(IPTR (*)())bitmap_puttranspimagelut	, moHidd_BitMap_PutTranspImageLUT   },
-        {(IPTR (*)())bitmap_getimage		, moHidd_BitMap_GetImage	    },
-        {(IPTR (*)())bitmap_getimagelut		, moHidd_BitMap_GetImageLUT	    },
-        {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColorExpansion  },
-        {(IPTR (*)())bitmap_bytesperline	, moHidd_BitMap_BytesPerLine	    },
-	{(IPTR (*)())bitmap_convertpixels	, moHidd_BitMap_ConvertPixels	    },
-	{(IPTR (*)())bitmap_fillmemrect8    	, moHidd_BitMap_FillMemRect8	    },
-	{(IPTR (*)())bitmap_fillmemrect16    	, moHidd_BitMap_FillMemRect16	    },
-	{(IPTR (*)())bitmap_fillmemrect24    	, moHidd_BitMap_FillMemRect24	    },
-	{(IPTR (*)())bitmap_fillmemrect32    	, moHidd_BitMap_FillMemRect32	    },
-	{(IPTR (*)())bitmap_invertmemrect    	, moHidd_BitMap_InvertMemRect	    },
-	{(IPTR (*)())bitmap_copymembox8    	, moHidd_BitMap_CopyMemBox8	    },
-	{(IPTR (*)())bitmap_copymembox16    	, moHidd_BitMap_CopyMemBox16	    },
-	{(IPTR (*)())bitmap_copymembox24    	, moHidd_BitMap_CopyMemBox24	    },
-	{(IPTR (*)())bitmap_copymembox32    	, moHidd_BitMap_CopyMemBox32	    },
-	{(IPTR (*)())bitmap_copylutmembox16    	, moHidd_BitMap_CopyLUTMemBox16	    },
-	{(IPTR (*)())bitmap_copylutmembox24    	, moHidd_BitMap_CopyLUTMemBox24	    },
-	{(IPTR (*)())bitmap_copylutmembox32    	, moHidd_BitMap_CopyLUTMemBox32	    },
-	{(IPTR (*)())bitmap_putmem32image8  	, moHidd_BitMap_PutMem32Image8	    },
-	{(IPTR (*)())bitmap_putmem32image16  	, moHidd_BitMap_PutMem32Image16	    },
-	{(IPTR (*)())bitmap_putmem32image24  	, moHidd_BitMap_PutMem32Image24	    },
-	{(IPTR (*)())bitmap_getmem32image8  	, moHidd_BitMap_GetMem32Image8	    },
-	{(IPTR (*)())bitmap_getmem32image16  	, moHidd_BitMap_GetMem32Image16	    },
-	{(IPTR (*)())bitmap_getmem32image24  	, moHidd_BitMap_GetMem32Image24	    },
-	{(IPTR (*)())bitmap_putmemtemplate8 	, moHidd_BitMap_PutMemTemplate8     },
-	{(IPTR (*)())bitmap_putmemtemplate16 	, moHidd_BitMap_PutMemTemplate16    },
-	{(IPTR (*)())bitmap_putmemtemplate24 	, moHidd_BitMap_PutMemTemplate24    },
-	{(IPTR (*)())bitmap_putmemtemplate32 	, moHidd_BitMap_PutMemTemplate32    },	
-	{(IPTR (*)())bitmap_putmempattern8 	, moHidd_BitMap_PutMemPattern8      },
-	{(IPTR (*)())bitmap_putmempattern16 	, moHidd_BitMap_PutMemPattern16     },
-	{(IPTR (*)())bitmap_putmempattern24 	, moHidd_BitMap_PutMemPattern24     },
-	{(IPTR (*)())bitmap_putmempattern32 	, moHidd_BitMap_PutMemPattern32     },	
-	{(IPTR (*)())bitmap_setcolormap		, moHidd_BitMap_SetColorMap	    },
-	{(IPTR (*)())bitmap_mapcolor		, moHidd_BitMap_MapColor	    },
-	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	    },
-	{(IPTR (*)())bitmap_obtaindirectaccess	, moHidd_BitMap_ObtainDirectAccess  },
-	{(IPTR (*)())bitmap_releasedirectaccess	, moHidd_BitMap_ReleaseDirectAccess },
-	{(IPTR (*)())bitmap_scalebitmap         , moHidd_BitMap_BitMapScale         },
-
-	/* PRIVATE METHODS */
-#warning This is a hack to make the late initialization of planar bitmaps work
-	{(IPTR (*)())bitmap_setbitmaptags	, moHidd_BitMap_SetBitMapTags	    },
-
-        {NULL	    	    	    	    	, 0UL	    	    	    	    }
-    };
-
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr 	, IID_Root          , NUM_ROOT_METHODS 	    },
-        {bitmap_descr	, IID_Hidd_BitMap   , NUM_BITMAP_METHODS    },
-        {NULL	    	, NULL	    	    , 0     	    	    }
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID	    	, (IPTR) CLID_Root  	    	    	},
-        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    	},
-        {aMeta_ID   	    	, (IPTR) CLID_Hidd_BitMap   	    	},
-        {aMeta_InstSize     	, (IPTR) sizeof(struct HIDDBitMapData)	},
-        {TAG_DONE   	    	, 0UL	    	    	    	    	}
-    };
-
-    OOP_Class *cl = NULL;
-
-    EnterFunc(bug("init_bitmapclass(csd=%p)\n", csd));
-
-    if(MetaAttrBase)
-    {
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if(NULL != cl)
-	{
-            D(bug("BitMap class ok\n"));
-            csd->bitmapclass = cl;
-            cl->UserData     = (APTR) csd;
-	    OOP_AddClass(cl);
-        }
-
-    } /* if(MetaAttrBase) */
-
-    if (NULL == cl)
-	free_bitmapclass(csd);
-
-    ReturnPtr("init_bitmapclass", OOP_Class *,  cl);
-}
-
-/****************************************************************************************/
-
-void free_bitmapclass(struct class_static_data *csd)
-{
-    EnterFunc(bug("free_bitmapclass(csd=%p)\n", csd));
-
-    if(NULL != csd)
-    {
-	if (NULL != csd->bitmapclass)
-	{
-	    OOP_RemoveClass(csd->bitmapclass);
-    	    OOP_DisposeObject((OOP_Object *) csd->bitmapclass);
-    	    csd->bitmapclass = NULL;
-	}
-    }
-
-    ReturnVoid("free_bitmapclass");
-}
-
-/****************************************************************************************/
-
-#undef OOPBase
-#define OOPBase (OOP_OOPBASE(o))
 
 /****************************************************************************************/
 
