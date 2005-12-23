@@ -5,9 +5,7 @@ USER_INCLUDES := -I.
 
 CFLAGS := $(CFLAGS) -D__KERNEL__
 
-LIBNAME := pci
-
-FILES	:= pcidriverclass pcideviceclass pciclass pciutil
+FILES	:= pci_init pcidriverclass pcideviceclass pciclass pciutil
 
 #MM
 includes-copy : $(AROS_INCLUDES)/hidd/pci.h $(GENINCDIR)/hidd/pci.h $(AROS_INCLUDES)/libraries/pci.h $(GENINCDIR)/libraries/pci.h
@@ -32,10 +30,7 @@ $(AROS_DEVS)/pci.ids : pci.ids
 
 #unused MM- kernel-objs: kernel-pci-kobj
 
-%build_module_macro mmake=kernel-pci \
+%build_module mmake=kernel-pci \
     modname=pci modtype=hidd \
     files="$(FILES)" \
-    conffile=lib.conf genfunctable=yes \
-    uselibs="rom amiga"
-
-%common
+    uselibs="oop rom amiga"

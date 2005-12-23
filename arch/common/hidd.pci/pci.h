@@ -26,19 +26,16 @@
 
 /* Private data and structures unavailable outside the pci base classes */
 
-extern UBYTE LIBEND;
-
-AROS_UFP3(struct pcibase *, Pci_init,
-    AROS_UFHA(struct pcibase *, pcibase, D0),
-    AROS_UFHA(BPTR, slist, A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6));
-
 struct DriverNode {
     struct Node		node;
     OOP_Class		*driverClass;	/* Driver class */
     OOP_Object		*driverObject;	/* Driver object */
     ULONG		highBus;
     struct List		devices;	/* List of defices behind this node */
+};
+
+struct DrvInstData {
+    BOOL DirectBus;
 };
 
 struct PciDevice {
@@ -76,7 +73,6 @@ typedef struct DeviceData {
 
 struct pci_staticdata {
     struct ExecBase	*sysbase;
-    struct Library	*oopbase;
     struct Library	*utilitybase;
     
     struct SignalSemaphore driver_lock;
@@ -110,19 +106,15 @@ struct pcibase {
     struct ExecBase		*sysBase;
     BPTR			segList;
     APTR			MemPool;
-    struct pci_staticdata	*psd;
+    struct pci_staticdata	psd;
 };
 
-OOP_Class *init_pciclass(struct pci_staticdata *);
-OOP_Class *init_pcidriverclass(struct pci_staticdata *);
 OOP_Class *init_pcideviceclass(struct pci_staticdata *);
-void free_pciclass(struct pci_staticdata *, OOP_Class *cl);
 void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
-void free_pcidriverclass(struct pci_staticdata *, OOP_Class *cl);
 
 #define BASE(lib) ((struct pcibase*)(lib))
 
-#define PSD(cl) ((struct pci_staticdata*)cl->UserData)
+#define PSD(cl) (&BASE(cl->UserData)->psd)
 
 /* PCI Configspace offsets */
 #define PCICS_VENDOR		0x00
