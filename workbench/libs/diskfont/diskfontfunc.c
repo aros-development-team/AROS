@@ -751,6 +751,7 @@ STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct Diskfont
 	{
 	    struct DevProc *dp = NULL;
 	    struct MinList newdirlist;
+	    struct DirEntry *direntry, *direntry2;
 
 	    df_data->Type = DF_FONTSDATA;
 	    
@@ -785,7 +786,6 @@ STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct Diskfont
 	    NEWLIST(&newdirlist);
 	    while((dp = GetDeviceProc(FONTSDIR, dp))!=NULL)
 	    {
-		struct DirEntry *direntry, *direntry2;
 		BPTR lock;
 	    
 		D(bug("AllocResources: FONTS: lock = 0x%lx\n", dp->dvp_Lock));
@@ -818,22 +818,23 @@ STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct Diskfont
 		    ADDTAIL(&newdirlist, direntry);
 		}
 		else
-		    D(bug("AllocResources: Error reading DirEntry\n"));
-	    
-		/* Clean up directory lists that are in memory but not in the
-		 * FONTS: assign anymore */
-		ForeachNodeSafe(&DiskfontBase->fontsdirentrylist, direntry, direntry2)
-		{
-		    REMOVE(direntry);
-		    FreeDirEntry(direntry, DiskfontBase);
-		}
-	    
-		ForeachNodeSafe(&newdirlist, direntry, direntry2)
-		{
-		    REMOVE(direntry);
-		    ADDTAIL(&DiskfontBase->fontsdirentrylist, direntry);
-		}
+		    D(bug("AllocResources: Error reading DirEntry\n"));	    
 	    }
+
+	    /* Clean up directory lists that are in memory but not in the
+	     * FONTS: assign anymore */
+	    ForeachNodeSafe(&DiskfontBase->fontsdirentrylist, direntry, direntry2)
+	    {
+		REMOVE(direntry);
+		FreeDirEntry(direntry, DiskfontBase);
+	    }
+
+	    ForeachNodeSafe(&newdirlist, direntry, direntry2)
+	    {
+		REMOVE(direntry);
+		ADDTAIL(&DiskfontBase->fontsdirentrylist, direntry);
+	    }
+
 	    FreeDeviceProc(dp);
 	}
 	else
@@ -1033,18 +1034,22 @@ struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *
 	    df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetSucc(df_data->u.FontsData.CurrentFileEntry);
 	    df_data->u.FontsData.AttrsIndex = 0;
 	    if (df_data->u.FontsData.CurrentFileEntry == NULL)
-	    {
+	    {	    	    
+	    	while (df_data->u.FontsData.CurrentDirEntry != NULL && df_data->u.FontsData.CurrentFileEntry == NULL)
+	    	{	        
 #ifdef PROGDIRFONTSDIR
-		if (df_data->u.FontsData.CurrentDirEntry == df_data->u.FontsData.ProgdirDirEntry)
-		    df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetHead(&DiskfontBase->fontsdirentrylist);
-		else
-		    df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetSucc(df_data->u.FontsData.CurrentDirEntry);
+		    if (df_data->u.FontsData.CurrentDirEntry == df_data->u.FontsData.ProgdirDirEntry)
+			df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetHead(&DiskfontBase->fontsdirentrylist);
+		    else
+			df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetSucc(df_data->u.FontsData.CurrentDirEntry);
 #else
-		df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetSucc(df_data->u.FontsData.CurrentDirEntry);
+		    df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetSucc(df_data->u.FontsData.CurrentDirEntry);
 #endif
-		if (df_data->u.FontsData.CurrentDirEntry != NULL)
-		    df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(&df_data->u.FontsData.CurrentDirEntry->FileList);
+		    if (df_data->u.FontsData.CurrentDirEntry != NULL)
+			df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(&df_data->u.FontsData.CurrentDirEntry->FileList);
+	    	}
 	    }
+	
 	}
 	else
 	    df_data->u.FontsData.AttrsIndex++;
