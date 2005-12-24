@@ -181,7 +181,7 @@ $(OSGENDIR)/boot/aros.iso: $(BINDIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/grub/me
 		-b boot/grub/iso9660_stage1_5 \
 		-c boot/boot.catalog \
                 -no-emul-boot \
-                -boot-load-size 32 \
+                -boot-load-size 4 \
                 -boot-info-table \
 		-allow-leading-dots \
                 -V "AROS Live CD" \
