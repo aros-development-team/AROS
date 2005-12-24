@@ -1,7 +1,7 @@
 /* char_io.c - basic console input and output */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -107,7 +107,7 @@ convert_to_ascii (char *buf, int c,...)
   char *ptr = buf;
 
 #ifndef STAGE1_5
-  if (c == 'x' || c == 'X' || c == 'b')
+  if (c == 'x' || c == 'X')
     mult = 16;
 
   if ((num & 0x80000000uL) && c == 'd')
@@ -154,7 +154,6 @@ grub_printf (const char *format,...)
 {
   int *dataptr = (int *) &format;
   char c, str[16];
-  unsigned long mask = 0xFFFFFFFF;
   
   dataptr++;
 
@@ -166,16 +165,12 @@ grub_printf (const char *format,...)
 	switch (c = *(format++))
 	  {
 #ifndef STAGE1_5
-	  case 'b':
-	    mask = 0xFF;
-	    /* Fall down intentionally!  */
 	  case 'd':
 	  case 'x':
 	  case 'X':
 #endif
 	  case 'u':
-	    *convert_to_ascii (str, c, *((unsigned long *) dataptr++) & mask)
-	      = 0;
+	    *convert_to_ascii (str, c, *((unsigned long *) dataptr++)) = 0;
 	    grub_putstr (str);
 	    break;
 
@@ -847,7 +842,6 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
   setcursor (old_cursor);
   return ret;
 }
-#endif /* STAGE1_5 */
 
 int
 safe_parse_maxint (char **str_ptr, int *myint_ptr)
@@ -902,7 +896,9 @@ safe_parse_maxint (char **str_ptr, int *myint_ptr)
 
   return 1;
 }
+#endif /* STAGE1_5 */
 
+#if !defined(STAGE1_5) || defined(FSYS_FAT)
 int
 grub_tolower (int c)
 {
@@ -911,17 +907,26 @@ grub_tolower (int c)
 
   return c;
 }
+#endif /* ! STAGE1_5 || FSYS_FAT */
 
 int
 grub_isspace (int c)
 {
-  if (c == ' ' || c == '\t' || c == '\r' || c == '\n')
-    return 1;
+  switch (c)
+    {
+    case ' ':
+    case '\t':
+    case '\r':
+    case '\n':
+      return 1;
+    default:
+      break;
+    }
 
   return 0;
 }
 
-#ifndef STAGE1_5
+#if !defined(STAGE1_5) || defined(FSYS_ISO9660)
 int
 grub_memcmp (const char *s1, const char *s2, int n)
 {
@@ -938,7 +943,9 @@ grub_memcmp (const char *s1, const char *s2, int n)
 
   return 0;
 }
+#endif /* ! STAGE1_5 || FSYS_ISO9660 */
 
+#ifndef STAGE1_5
 int
 grub_strncat (char *s1, const char *s2, int n)
 {
@@ -1171,7 +1178,10 @@ int
 memcheck (int addr, int len)
 {
 #ifdef GRUB_UTIL
-  static int start_addr (void)
+  auto int start_addr (void);
+  auto int end_addr (void);
+  
+  auto int start_addr (void)
     {
       int ret;
 # if defined(HAVE_START_SYMBOL)
@@ -1182,7 +1192,7 @@ memcheck (int addr, int len)
       return ret;
     }
 
-  static int end_addr (void)
+  auto int end_addr (void)
     {
       int ret;
 # if defined(HAVE_END_SYMBOL)
@@ -1210,7 +1220,9 @@ memcheck (int addr, int len)
 void *
 grub_memmove (void *to, const void *from, int len)
 {
-   if (memcheck ((int) to, len))
+   /* The following check breaks a number of network drivers.
+    if (memcheck ((int) to, len))
+   */
      {
        /* This assembly code is stolen from
 	  linux-2.2.2/include/asm-i386/string.h. This is not very fast
@@ -1240,7 +1252,10 @@ grub_memmove (void *to, const void *from, int len)
 	 }
      }
 
-   return errnum ? NULL : to;
+   /* I believe this also needs to be commented out to make netboot work.
+    return errnum ? NULL : to;
+   */
+   return to;
 }
 
 void *
@@ -1265,3 +1280,9 @@ grub_strcpy (char *dest, const char *src)
   return dest;
 }
 #endif /* ! STAGE1_5 */
+
+#ifndef GRUB_UTIL
+# undef memcpy
+/* GCC emits references to memcpy() for struct copies etc.  */
+void *memcpy (void *dest, const void *src, int n)  __attribute__ ((alias ("grub_memmove")));
+#endif

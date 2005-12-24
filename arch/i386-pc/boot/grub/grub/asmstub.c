@@ -1,7 +1,7 @@
 /* asmstub.c - a version of shared_src/asm.S that works under Unix */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@ char **device_map = 0;
 static jmp_buf env_for_exit;
 
 /* The current color for console.  */
-static int console_current_color = A_NORMAL;
+int console_current_color = A_NORMAL;
 
 /* The file descriptor for a serial device.  */
 static int serial_fd = -1;
@@ -113,31 +113,33 @@ grub_stage2 (void)
   char *scratch, *simstack;
   int i;
 
+  auto void doit (void);
+  
   /* We need a nested function so that we get a clean stack frame,
      regardless of how the code is optimized. */
-  static volatile void doit ()
-  {
-    /* Make sure our stack lives in the simulated memory area. */
-    asm volatile ("movl %%esp, %0\n\tmovl %1, %%esp\n"
-		  : "=&r" (realstack) : "r" (simstack));
-
-    /* Do a setjmp here for the stop command.  */
-    if (! setjmp (env_for_exit))
-      {
-	/* Actually enter the generic stage2 code.  */
-	status = 0;
-	init_bios_info ();
-      }
-    else
-      {
-	/* If ERRNUM is non-zero, then set STATUS to non-zero.  */
-	if (errnum)
-	  status = 1;
-      }
-
-    /* Replace our stack before we use any local variables. */
-    asm volatile ("movl %0, %%esp\n" : : "r" (realstack));
-  }
+  void doit (void)
+    {
+      /* Make sure our stack lives in the simulated memory area. */
+      asm volatile ("movl %%esp, %0\n\tmovl %1, %%esp\n"
+		    : "=&r" (realstack) : "r" (simstack));
+      
+      /* Do a setjmp here for the stop command.  */
+      if (! setjmp (env_for_exit))
+	{
+	  /* Actually enter the generic stage2 code.  */
+	  status = 0;
+	  init_bios_info ();
+	}
+      else
+	{
+	  /* If ERRNUM is non-zero, then set STATUS to non-zero.  */
+	  if (errnum)
+	    status = 1;
+	}
+      
+      /* Replace our stack before we use any local variables. */
+      asm volatile ("movl %0, %%esp\n" : : "r" (realstack));
+    }
 
   assert (grub_scratch_mem == 0);
   scratch = malloc (0x100000 + EXTENDED_MEMSIZE + 15);
@@ -779,7 +781,7 @@ get_diskinfo (int drive, struct geometry *geometry)
 
       if (disks[drive].flags == -1)
 	{
-	  if (read_only || errno == EACCES || errno == EROFS)
+	  if (read_only || errno == EACCES || errno == EROFS || errno == EPERM)
 	    {
 	      disks[drive].flags = open (devname, O_RDONLY);
 	      if (disks[drive].flags == -1)

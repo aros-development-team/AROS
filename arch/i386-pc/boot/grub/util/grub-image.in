@@ -21,15 +21,15 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 sbindir=@sbindir@
-datadir=@datadir@
+libdir=@libdir@
 PACKAGE=@PACKAGE@
 host_cpu=@host_cpu@
 host_os=@host_os@
 host_vendor=@host_vendor@
 context=${host_cpu}-${host_vendor}
-pkgdatadir=${datadir}/${PACKAGE}/${context}
+pkglibdir=${libdir}/${PACKAGE}/${context}
 
-mke2fs=/sbin/mke2fs
+mke2fs=`which mke2fs`
 
 progname=`echo "$0" | sed 's%^.*/%%'`
 thisdir=`echo "$0" | sed 's%/[^/]*$%%'`
@@ -43,8 +43,8 @@ if test -f $thisdir/../stage2/stage2; then
   stage2dir="$thisdir/../stage2"
 else
   grub_shell=${sbindir}/grub
-  stage1dir="$pkgdatadir"
-  stage2dir="$pkgdatadir"
+  stage1dir="$pkglibdir"
+  stage2dir="$pkglibdir"
 fi
 
 # Exit on any error.

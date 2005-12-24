@@ -1,5 +1,6 @@
 bin_PROGRAMS = mbchk
-sbin_SCRIPTS = grub-install grub-md5-crypt grub-terminfo
+sbin_SCRIPTS = grub-install grub-md5-crypt grub-terminfo \
+	grub-set-default
 noinst_SCRIPTS = grub-image mkbimage
 
 EXTRA_DIST = mkbimage

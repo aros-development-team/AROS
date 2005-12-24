@@ -1,7 +1,7 @@
 /* shared.h - definitions used in all GRUB-specific code */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -73,10 +73,11 @@ extern char *grub_scratch_mem;
 /*
  *  BIOS disk defines
  */
-#define BIOSDISK_READ		    0x0
-#define BIOSDISK_WRITE		    0x1
-#define BIOSDISK_ERROR_GEOMETRY     0x100
-#define BIOSDISK_FLAG_LBA_EXTENSION 0x1
+#define BIOSDISK_READ			0x0
+#define BIOSDISK_WRITE			0x1
+#define BIOSDISK_ERROR_GEOMETRY		0x100
+#define BIOSDISK_FLAG_LBA_EXTENSION	0x1
+#define BIOSDISK_FLAG_CDROM		0x2
 
 /*
  *  This is the filesystem (not raw device) buffer.
@@ -96,8 +97,12 @@ extern char *grub_scratch_mem;
 #define PASSWORD_BUF		RAW_ADDR (0x78000)
 #define PASSWORD_BUFLEN		0x200
 
+/* THe buffer for the filename of "/boot/grub/default".  */
+#define DEFAULT_FILE_BUF	(PASSWORD_BUF + PASSWORD_BUFLEN)
+#define DEFAULT_FILE_BUFLEN	0x60
+
 /* The buffer for the command-line.  */
-#define CMDLINE_BUF		(PASSWORD_BUF + PASSWORD_BUFLEN)
+#define CMDLINE_BUF		(DEFAULT_FILE_BUF + DEFAULT_FILE_BUFLEN)
 #define CMDLINE_BUFLEN		MAX_CMDLINE
 
 /* The kill buffer for the command-line.  */
@@ -119,7 +124,7 @@ extern char *grub_scratch_mem;
 
 /* The buffer for the menu entries.  */
 #define MENU_BUF		(UNIQUE_BUF + UNIQUE_BUFLEN)
-#define MENU_BUFLEN		(0x8000 + PASSWORD_BUF - UNIQUE_BUF)
+#define MENU_BUFLEN		(0x8000 + PASSWORD_BUF - MENU_BUF)
 
 /* The size of the drive map.  */
 #define DRIVE_MAP_SIZE		8
@@ -207,6 +212,7 @@ extern char *grub_scratch_mem;
 #define STAGE2_ID_XFS_STAGE1_5		8
 #define STAGE2_ID_AFFS_STAGE1_5		9
 #define STAGE2_ID_ISO9660_STAGE1_5	10
+#define STAGE2_ID_UFS2_STAGE1_5		11
 
 #ifndef STAGE1_5
 # define STAGE2_ID	STAGE2_ID_STAGE2
@@ -231,6 +237,8 @@ extern char *grub_scratch_mem;
 #  define STAGE2_ID	STAGE2_ID_AFFS_STAGE1_5
 # elif defined(FSYS_ISO9660)
 #  define STAGE2_ID	STAGE2_ID_ISO9660_STAGE1_5
+# elif defined(FSYS_UFS2)
+#  define STAGE2_ID	STAGE2_ID_UFS2_STAGE1_5
 # else
 #  error "unknown Stage 2"
 # endif
@@ -378,7 +386,6 @@ extern char *grub_scratch_mem;
 
 #include "mb_header.h"
 #include "mb_info.h"
-extern unsigned long mb_header_flags;
 
 /* For the Linux/i386 boot protocol version 2.03.  */
 struct linux_kernel_header
@@ -585,7 +592,9 @@ extern void assign_device_name (int drive, const char *device);
 
 #ifndef STAGE1_5
 /* GUI interface variables. */
-extern int fallback_entry;
+# define MAX_FALLBACK_ENTRIES	8
+extern int fallback_entries[MAX_FALLBACK_ENTRIES];
+extern int fallback_entryno;
 extern int default_entry;
 extern int current_entryno;
 
@@ -665,10 +674,11 @@ extern int filemax;
  */
 
 extern struct multiboot_info mbi;
-extern struct vbe_controller vbe_info_block;
-extern struct vbe_mode mode_info_block;
+extern struct vbe_controller mbi_vbe_controller;
+extern struct vbe_mode mbi_vbe_mode_info;
 extern unsigned long saved_drive;
 extern unsigned long saved_partition;
+extern unsigned long cdrom_drive;
 #ifndef STAGE1_5
 extern unsigned long saved_mem_upper;
 extern unsigned long extended_memory;
@@ -765,6 +775,10 @@ int get_vbe_mode_info (int mode_number, struct vbe_mode *mode);
 
 /* Set VBE mode.  */
 int set_vbe_mode (int mode_number);
+
+/* Match VBE mode, returns mode number if successful, 0 otherwise.
+   If set_mode is true, switches to the mode and sets the MBI info*/
+int match_vbe(int width, int height, int bpp, int set_mode);
 
 /* Convert 32-bit pointer to 16-bit segment:offset style pointer */
 #define VBE_FAR_PTR(p) (((p >> 16) << 4) + (p & 0xFFFF))

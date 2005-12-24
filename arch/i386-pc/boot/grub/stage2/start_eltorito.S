@@ -1,6 +1,7 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001   Free Software Foundation, Inc.
+ *  Copyright (C) 1994-2002  H. Peter Anvin
+ *  Copyright (C) 1999,2000,2001,2004	Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,12 +18,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
+	
 /*
-* Most of this file was originally "isolinux.asm" from SYSLINUX package,
-* written by H. Peter Anvin. It has been very heavily modified.
-
- SYSLINUX is Copyright 1994-2002 H. Peter Anvin, and is free software;
-
+ Most of this file was originally "isolinux.asm" from SYSLINUX package.
+ It has been very heavily modified.
 */
 
 #define ASM_FILE
@@ -60,24 +59,24 @@
 	.globl	start, _start
 
 /*
- * Primary entry point.  Because BIOSes are buggy, we only load the first
+ * Primary entry point.	 Because BIOSes are buggy, we only load the first
  * CD-ROM sector (2K) of the file, so the number one priority is actually
  * loading the rest.
  */
 start:
 _start:
-        cli
-        ljmp    $0, $ABS(real_start)
+	cli
+	ljmp	$0, $ABS(real_start)
 
-        . = _start + 8                      /* Pad to file offset 8 */
+	. = _start + 8			    /* Pad to file offset 8 */
 
-                /* This table gets filled in by mkisofs using the
-                   -boot-info-table option */
-bi_pvd:         .long 0xDEADBEEF            /* LBA of primary volume descript */
-bi_file:        .long 0xDEADBEEF            /* LBA of boot file */
-bi_length:      .long 0xDEADBEEF            /* Length of boot file */
-bi_csum:        .long 0xDEADBEEF            /* Checksum of boot file */
-bi_reserved:    .space (10*4)               /* Reserved */
+		/* This table gets filled in by mkisofs using the
+		   -boot-info-table option */
+bi_pvd:		.long 0xDEADBEEF	    /* LBA of primary volume descript */
+bi_file:	.long 0xDEADBEEF	    /* LBA of boot file */
+bi_length:	.long 0xDEADBEEF	    /* Length of boot file */
+bi_csum:	.long 0xDEADBEEF	    /* Checksum of boot file */
+bi_reserved:	.space (10*4)		    /* Reserved */
 
 real_start:
 	xor	%ax, %ax
@@ -100,8 +99,8 @@ load_image:
 	/* Set up boot file sector, size, load address */
 	mov	ABS(bi_length), %eax
 	add	$(ISO_SECTOR_SIZE-1), %eax
-	shr	$ISO_SECTOR_BITS, %eax 	    /* dwords->sectors */
-	mov	%ax, %bp    		    /* boot file sectors */
+	shr	$ISO_SECTOR_BITS, %eax	    /* dwords->sectors */
+	mov	%ax, %bp		    /* boot file sectors */
 	mov	$(STAGE_ADDR >> 4), %bx
 	mov	%bx, %es
 	xor	%bx, %bx
@@ -130,12 +129,12 @@ stop:	jmp	stop
  * to 16 sectors (32K) per request.
  *
  * Input:
- *       EAX     - Linear sector number
- *       ES:BX   - Target buffer
- *       BP      - Sector count
+ *	 EAX	 - Linear sector number
+ *	 ES:BX	 - Target buffer
+ *	 BP	 - Sector count
  */
 getlinsec:
-	mov	$ABS(dapa), %si            /* Load up the DAPA */
+	mov	$ABS(dapa), %si		   /* Load up the DAPA */
 	mov	%bx, 4(%si)
 	mov	%es, %bx
 	mov	%bx, 6(%si)
@@ -149,22 +148,22 @@ getlinsec:
 2:
 	mov	%bp, 2(%si)
 	mov	ABS(BootDrive), %dl
-	mov	$0x42, %ah                  /* Extended Read */
+	mov	$0x42, %ah		    /* Extended Read */
 	call	xint13
 	pop	%si
 	pop	%bp
-	movzwl	2(%si), %eax           	    /* Sectors we read */
-	add	%eax, 8(%si)                /* Advance sector pointer */
-	sub	%ax, %bp                    /* Sectors left */
+	movzwl	2(%si), %eax		    /* Sectors we read */
+	add	%eax, 8(%si)		    /* Advance sector pointer */
+	sub	%ax, %bp		    /* Sectors left */
 	shl	$(ISO_SECTOR_BITS-4), %ax   /* 2048-byte sectors -> segment */
-	add	%ax, 6(%si)                 /* Advance buffer pointer */
+	add	%ax, 6(%si)		    /* Advance buffer pointer */
 
 	pushal
 	MSG(notification_step)
 	popal
 	cmp	$0, %bp
 	ja	1b
-	mov	8(%si), %eax                /* Return next sector */
+	mov	8(%si), %eax		    /* Return next sector */
 	ret
 
 /*
@@ -183,16 +182,16 @@ xint13:
 	decb	ABS(RetryCount)
 	jz	.real_error
 	mov	ABS(RetryCount), %al
-	mov	ABS(dapa+2), %ah            /* Sector transfer count */
-	cmp	$2, %al                     /* Only 2 attempts left */
+	mov	ABS(dapa+2), %ah	    /* Sector transfer count */
+	cmp	$2, %al			    /* Only 2 attempts left */
 	ja	2f
-	mov	$1, %ah                     /* Drop transfer size to 1 */
+	mov	$1, %ah			    /* Drop transfer size to 1 */
 	jmp	.setmaxtr
 2:
 	cmp	$3, %al
-	ja	3f                          /* First time, just try again */
-	shr	$1, %ah                     /* Otherwise, try to reduce */
-	adc	$0, %ah                     /* the max transfer size, but not */
+	ja	3f			    /* First time, just try again */
+	shr	$1, %ah			    /* Otherwise, try to reduce */
+	adc	$0, %ah			    /* the max transfer size, but not */
 .setmaxtr:
 	mov	%ah, ABS(MaxTransfer)
 	mov	%ah, ABS(dapa+2)
@@ -281,18 +280,18 @@ read_error_string:	.string "Read error 0x"
  * EBIOS disk address packet
  */
 		.align 8
-dapa:		.byte 16                   /* Packet size */
+dapa:		.byte 16		   /* Packet size */
 		.byte 0			   /* reserved */
-		.word 0                    /* +2 Block count */
-		.word 0                    /* +4 Offset of buffer */
-		.word 0                    /* +6 Segment of buffer */
-		.long 0                    /* +8 LBA (LSW) */
-		.long 0                    /* +C LBA (MSW) */
+		.word 0			   /* +2 Block count */
+		.word 0			   /* +4 Offset of buffer */
+		.word 0			   /* +6 Segment of buffer */
+		.long 0			   /* +8 LBA (LSW) */
+		.long 0			   /* +C LBA (MSW) */
 
 VARIABLE(BootDrive)
 	.byte 0xFF
 VARIABLE(MaxTransfer)
-	.word 16                           /* Max sectors per transfer (32Kb) */
+	.word 16			   /* Max sectors per transfer (32Kb) */
 VARIABLE(RetryCount)
 	.byte 0
 
@@ -309,19 +308,19 @@ VARIABLE(RetryCount)
 
 	. = _start + SECTOR_SIZE - BOOTSEC_LISTSIZE
 
-        /* fill the first data listing with the default */
+	/* fill the first data listing with the default */
 blocklist_default_start:/* this is the sector start parameter, in logical
-                           sectors from the start of the disk, sector 0 */
+			   sectors from the start of the disk, sector 0 */
 	.long 0
 
-blocklist_default_len:  /* this is the number of sectors to read */
+blocklist_default_len:	/* this is the number of sectors to read */
 #ifdef STAGE1_5
 	.word 0
 #else
 	.word (STAGE2_SIZE + ISO_SECTOR_SIZE - 1) >> ISO_SECTOR_BITS
 #endif
-blocklist_default_seg:  /* this is the segment of the starting address
-                           to load the data into */
+blocklist_default_seg:	/* this is the segment of the starting address
+			   to load the data into */
 	.word (STAGE_ADDR + SECTOR_SIZE) >> 4
 
 firstlist:	/* this label has to be after the list data!!! */

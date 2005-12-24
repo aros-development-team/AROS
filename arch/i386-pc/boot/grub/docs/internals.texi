@@ -1,5 +1,5 @@
 @node Internals
-@chapter Hacking GRUB
+@appendix Hacking GRUB
 
 This chapter documents the user-invisible aspect of GRUB.
 

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000,2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2002,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -208,7 +208,7 @@ buf_fill (int abort)
 	/* Neither TFTP_OACK nor TFTP_DATA.  */
 	break;
 
-      if ((block || bcounter) && (block != prevblock + 1))
+      if ((block || bcounter) && (block != prevblock + (unsigned short) 1))
 	/* Block order should be continuous */
 	tp.u.ack.block = htons (block = prevblock);
       

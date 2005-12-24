@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000, 2001   Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2005   Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -149,8 +149,7 @@ fat_mount (void)
 	  FAT_SUPER->clust_eof_marker = 0xff8;
 	}
     }
-  
-  
+
   /* Now do some sanity checks */
   
   if (FAT_CVT_U16(bpb.bytes_per_sect) != (1 << FAT_SUPER->sectsize_bits)
@@ -184,7 +183,11 @@ fat_mount (void)
       magic = 0x0f00;
     }
 
-  if (first_fat != (magic | bpb.media))
+  /* Ignore the 3rd bit, because some BIOSes assigns 0xF0 to the media
+     descriptor, even if it is a so-called superfloppy (e.g. an USB key).
+     The check may be too strict for this kind of stupid BIOSes, as
+     they overwrite the media descriptor.  */
+  if ((first_fat | 0x8) != (magic | bpb.media | 0x8))
     return 0;
 
   FAT_SUPER->cached_fat = - 2 * FAT_CACHE_SIZE;

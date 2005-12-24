@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000,2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2002,2004,2005  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -390,7 +390,7 @@ restart:
 		gotoxy (3, 22);
 	      printf ("                                                                    ");
 	      grub_timeout = -1;
-	      fallback_entry = -1;
+	      fallback_entryno = -1;
 	      if (! (current_term->flags & TERM_DUMB))
 		gotoxy (74, 4 + entryno);
 	    }
@@ -661,7 +661,7 @@ restart:
 
 		      saved_drive = boot_drive;
 		      saved_partition = install_partition;
-		      current_drive = GRUB_NO_DRIVE;
+		      current_drive = GRUB_INVALID_DRIVE;
 
 		      if (! get_cmdline (PACKAGE " edit> ", new_heap,
 					 NEW_HEAPSIZE + 1, 0, 1))
@@ -731,15 +731,18 @@ restart:
       
       if (run_script (cur_entry, heap))
 	{
-	  if (fallback_entry < 0)
-	    break;
-	  else
+	  if (fallback_entryno >= 0)
 	    {
 	      cur_entry = NULL;
 	      first_entry = 0;
-	      entryno = fallback_entry;
-	      fallback_entry = -1;
+	      entryno = fallback_entries[fallback_entryno];
+	      fallback_entryno++;
+	      if (fallback_entryno >= MAX_FALLBACK_ENTRIES
+		  || fallback_entries[fallback_entryno] < 0)
+		fallback_entryno = -1;
 	    }
+	  else
+	    break;
 	}
       else
 	break;
@@ -844,7 +847,7 @@ cmain (void)
       menu_entries = (char *) MENU_BUF;
       init_config ();
     }
-      
+  
   /* Initialize the environment for restarting Stage 2.  */
   grub_setjmp (restart_env);
   
@@ -864,6 +867,38 @@ cmain (void)
       if (use_config_file)
 #endif /* GRUB_UTIL */
 	{
+	  char *default_file = (char *) DEFAULT_FILE_BUF;
+	  int i;
+	  
+	  /* Get a saved default entry if possible.  */
+	  saved_entryno = 0;
+	  *default_file = 0;
+	  grub_strncat (default_file, config_file, DEFAULT_FILE_BUFLEN);
+	  for (i = grub_strlen(default_file); i >= 0; i--)
+	    if (default_file[i] == '/')
+	      {
+		i++;
+		break;
+	      }
+	  default_file[i] = 0;
+	  grub_strncat (default_file + i, "default", DEFAULT_FILE_BUFLEN - i);
+	  if (grub_open (default_file))
+	    {
+	      char buf[10]; /* This is good enough.  */
+	      char *p = buf;
+	      int len;
+	      
+	      len = grub_read (buf, sizeof (buf));
+	      if (len > 0)
+		{
+		  buf[sizeof (buf) - 1] = 0;
+		  safe_parse_maxint (&p, &saved_entryno);
+		}
+
+	      grub_close ();
+	    }
+	  errnum = ERR_NONE;
+	  
 	  do
 	    {
 	      /* STATE 0:  Before any title command.
@@ -969,16 +1004,42 @@ cmain (void)
 	      grub_memmove (config_entries + config_len, menu_entries,
 			    menu_len);
 	      menu_entries = config_entries + config_len;
-	      
+
+	      /* Make sure that all fallback entries are valid.  */
+	      if (fallback_entryno >= 0)
+		{
+		  for (i = 0; i < MAX_FALLBACK_ENTRIES; i++)
+		    {
+		      if (fallback_entries[i] < 0)
+			break;
+		      if (fallback_entries[i] >= num_entries)
+			{
+			  grub_memmove (fallback_entries + i,
+					fallback_entries + i + 1,
+					((MAX_FALLBACK_ENTRIES - i - 1)
+					 * sizeof (int)));
+			  i--;
+			}
+		    }
+
+		  if (fallback_entries[0] < 0)
+		    fallback_entryno = -1;
+		}
 	      /* Check if the default entry is present. Otherwise reset
 		 it to fallback if fallback is valid, or to DEFAULT_ENTRY 
 		 if not.  */
 	      if (default_entry >= num_entries)
 		{
-		  if (fallback_entry < 0 || fallback_entry >= num_entries)
-		    default_entry = 0;
+		  if (fallback_entryno >= 0)
+		    {
+		      default_entry = fallback_entries[0];
+		      fallback_entryno++;
+		      if (fallback_entryno >= MAX_FALLBACK_ENTRIES
+			  || fallback_entries[fallback_entryno] < 0)
+			fallback_entryno = -1;
+		    }
 		  else
-		    default_entry = fallback_entry;
+		    default_entry = 0;
 		}
 	      
 	      if (is_preset)

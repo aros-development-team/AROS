@@ -1,7 +1,7 @@
 /* -*-Asm-*- */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002   Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2004   Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -91,8 +91,7 @@ cylinder_start:
 stage1_version:	
 	.byte	COMPAT_VERSION_MAJOR, COMPAT_VERSION_MINOR
 boot_drive:	
-	.byte	GRUB_NO_DRIVE	/* the disk to load stage2 from */
-				/* 0xff means use the boot drive */
+	.byte	GRUB_INVALID_DRIVE	/* the disk to load stage2 from */
 force_lba:
 	.byte	0
 stage2_address:
@@ -109,12 +108,18 @@ after_BPB:
 
 	/*
 	 * This is a workaround for buggy BIOSes which don't pass boot
-	 * drive correctly. If GRUB is installed into a HDD, do
-	 * "orb $0x80, %dl", otherwise "orb $0x00, %dl" (i.e. nop).
+	 * drive correctly. If GRUB is installed into a HDD, check if
+	 * DL is masked correctly. If not, assume that the BIOS passed
+	 * a bogus value and set DL to 0x80, since this is the only
+	 * possible boot drive. If GRUB is installed into a floppy,
+	 * this does nothing (only jump).
 	 */
-	.byte	0x80, 0xca
-boot_drive_mask:
-	.byte	0x00
+boot_drive_check:	
+	jmp	1f
+	testb	$0x80, %dl
+	jnz	1f
+	movb	$0x80, %dl
+1:	
 
 	/*
 	 * ljmp to the next instruction because some bogus BIOSes
@@ -138,7 +143,7 @@ real_start:
 	 *  Check if we have a forced disk reference here
 	 */
 	MOV_MEM_TO_AL(ABS(boot_drive))	/* movb	ABS(boot_drive), %al */
-	cmpb	$GRUB_NO_DRIVE, %al
+	cmpb	$GRUB_INVALID_DRIVE, %al
 	je	1f
 	movb	%al, %dl
 1:

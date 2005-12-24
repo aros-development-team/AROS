@@ -5,9 +5,9 @@ noinst_SCRIPTS = $(TESTS)
 # For dist target.
 noinst_HEADERS = apic.h defs.h dir.h disk_inode.h disk_inode_ffs.h \
         fat.h filesys.h freebsd.h fs.h hercules.h i386-elf.h \
-	imgact_aout.h iso9660.h jfs.h mb_header.h mb_info.h md5.h nbi.h \
-	pc_slice.h serial.h shared.h smp-imps.h term.h terminfo.h \
-	tparm.h nbi.h vstafs.h xfs.h
+	imgact_aout.h iso9660.h jfs.h mb_header.h mb_info.h md5.h \
+	nbi.h pc_slice.h serial.h shared.h smp-imps.h term.h \
+	terminfo.h tparm.h nbi.h ufs2.h vstafs.h xfs.h
 EXTRA_DIST = setjmp.S apm.S $(noinst_SCRIPTS)
 
 # For <stage1.h>.
@@ -16,39 +16,42 @@ INCLUDES = -I$(top_srcdir)/stage1
 # The library for /sbin/grub.
 noinst_LIBRARIES = libgrub.a
 libgrub_a_SOURCES = boot.c builtins.c char_io.c cmdline.c common.c \
-	disk_io.c fsys_ext2fs.c fsys_fat.c fsys_ffs.c fsys_jfs.c \
-	fsys_minix.c fsys_reiserfs.c fsys_vstafs.c fsys_xfs.c fsys_affs.c fsys_iso9660.c \
-	gunzip.c md5.c serial.c stage2.c terminfo.c tparm.c
+	disk_io.c fsys_ext2fs.c fsys_fat.c fsys_ffs.c fsys_iso9660.c \
+	fsys_jfs.c fsys_minix.c fsys_reiserfs.c fsys_ufs2.c \
+	fsys_vstafs.c fsys_xfs.c fsys_affs.c gunzip.c md5.c serial.c stage2.c \
+	terminfo.c tparm.c
 libgrub_a_CFLAGS = $(GRUB_CFLAGS) -I$(top_srcdir)/lib \
-	-DGRUB_UTIL=1 -DFSYS_EXT2FS=1 -DFSYS_FAT=1 -DFSYS_FFS=1 -DFSYS_ISO9660 \
-	-DFSYS_JFS=1 -DFSYS_MINIX=1 -DFSYS_REISERFS=1 -DFSYS_VSTAFS=1 \
-	-DFSYS_XFS=1 -DFSYS_AFFS -DUSE_MD5_PASSWORDS=1 \
-	-DSUPPORT_SERIAL=1 -DSUPPORT_HERCULES=1 -fwritable-strings
+	-DGRUB_UTIL=1 -DFSYS_EXT2FS=1 -DFSYS_FAT=1 -DFSYS_FFS=1 \
+	-DFSYS_ISO9660=1 -DFSYS_JFS=1 -DFSYS_MINIX=1 -DFSYS_REISERFS=1 \
+	-DFSYS_UFS2=1 -DFSYS_VSTAFS=1 -DFSYS_XFS=1 -DFSYS_AFFS=1  \
+	-DUSE_MD5_PASSWORDS=1 -DSUPPORT_SERIAL=1 -DSUPPORT_HERCULES=1
 
 # Stage 2 and Stage 1.5's.
-pkgdatadir = $(datadir)/$(PACKAGE)/$(host_cpu)-$(host_vendor)
+pkglibdir = $(libdir)/$(PACKAGE)/$(host_cpu)-$(host_vendor)
 
 EXTRA_PROGRAMS = nbloader.exec pxeloader.exec diskless.exec
 
 if DISKLESS_SUPPORT
-pkgdata_DATA = stage2 stage2_eltorito e2fs_stage1_5 fat_stage1_5 ffs_stage1_5 \
-	jfs_stage1_5 minix_stage1_5 reiserfs_stage1_5 vstafs_stage1_5 \
-	xfs_stage1_5 affs_stage1_5 iso9660_stage1_5 nbgrub pxegrub
-noinst_DATA = pre_stage2 start nbloader pxeloader diskless
-noinst_PROGRAMS = pre_stage2.exec start.exec e2fs_stage1_5.exec \
-	fat_stage1_5.exec ffs_stage1_5.exec jfs_stage1_5.exec \
-	minix_stage1_5.exec reiserfs_stage1_5.exec vstafs_stage1_5.exec \
-	xfs_stage1_5.exec affs_stage1_5.exec iso9660_stage1_5.exec \
-	nbloader.exec pxeloader.exec diskless.exec
+pkglib_DATA = stage2 stage2_eltorito e2fs_stage1_5 fat_stage1_5 \
+	ffs_stage1_5 iso9660_stage1_5 jfs_stage1_5 minix_stage1_5 \
+	reiserfs_stage1_5 ufs2_stage1_5 vstafs_stage1_5 xfs_stage1_5 affs_stage1_5  \
+	nbgrub pxegrub
+noinst_DATA = pre_stage2 start start_eltorito nbloader pxeloader diskless
+noinst_PROGRAMS = pre_stage2.exec start.exec start_eltorito.exec \
+	e2fs_stage1_5.exec fat_stage1_5.exec ffs_stage1_5.exec \
+	iso9660_stage1_5.exec jfs_stage1_5.exec minix_stage1_5.exec \
+	reiserfs_stage1_5.exec ufs2_stage1_5.exec vstafs_stage1_5.exec \
+	xfs_stage1_5.exec affs_stage1_5.exec nbloader.exec pxeloader.exec diskless.exec
 else
-pkgdata_DATA = stage2 stage2_eltorito e2fs_stage1_5 fat_stage1_5 ffs_stage1_5 \
-	jfs_stage1_5 minix_stage1_5 reiserfs_stage1_5 vstafs_stage1_5 \
-	xfs_stage1_5 affs_stage1_5 iso9660_stage1_5
+pkglib_DATA = stage2 stage2_eltorito e2fs_stage1_5 fat_stage1_5 \
+	ffs_stage1_5 iso9660_stage1_5 jfs_stage1_5 minix_stage1_5 \
+	reiserfs_stage1_5 ufs2_stage1_5 vstafs_stage1_5 xfs_stage1_5 affs_stage1_5
 noinst_DATA = pre_stage2 start start_eltorito
-noinst_PROGRAMS = pre_stage2.exec start.exec start_eltorito.exec e2fs_stage1_5.exec \
-	fat_stage1_5.exec ffs_stage1_5.exec jfs_stage1_5.exec \
-	minix_stage1_5.exec reiserfs_stage1_5.exec vstafs_stage1_5.exec \
-	xfs_stage1_5.exec affs_stage1_5.exec iso9660_stage1_5.exec
+noinst_PROGRAMS = pre_stage2.exec start.exec start_eltorito.exec \
+	e2fs_stage1_5.exec fat_stage1_5.exec ffs_stage1_5.exec \
+	iso9660_stage1_5.exec jfs_stage1_5.exec minix_stage1_5.exec \
+	reiserfs_stage1_5.exec ufs2_stage1_5.exec vstafs_stage1_5.exec \
+	xfs_stage1_5.exec affs_stage1_5.exec 
 endif
 MOSTLYCLEANFILES = $(noinst_PROGRAMS)
 
@@ -56,6 +59,7 @@ PRE_STAGE2_LINK = -nostdlib -Wl,-N -Wl,-Ttext -Wl,8200
 START_LINK = -nostdlib -Wl,-N -Wl,-Ttext -Wl,8000
 NBLOADER_LINK = -nostdlib -Wl,-N -Wl,-Ttext -Wl,0
 PXELOADER_LINK = -nostdlib -Wl,-N -Wl,-Ttext -Wl,7C00
+START_ELTORITO_LINK = -nostdlib -Wl,-N -Wl,-Ttext -Wl,7C00
 
 if NETBOOT_SUPPORT
 NETBOOT_FLAGS = -I$(top_srcdir)/netboot -DSUPPORT_NETBOOT=1
@@ -84,8 +88,8 @@ STAGE1_5_COMPILE = $(STAGE2_COMPILE) -DNO_DECOMPRESSION=1 -DSTAGE1_5=1
 # For stage2 target.
 pre_stage2_exec_SOURCES = asm.S bios.c boot.c builtins.c char_io.c \
 	cmdline.c common.c console.c disk_io.c fsys_ext2fs.c \
-	fsys_fat.c fsys_ffs.c fsys_jfs.c fsys_minix.c fsys_reiserfs.c \
-	fsys_vstafs.c fsys_xfs.c fsys_affs.c fsys_iso9660.c gunzip.c \
+	fsys_fat.c fsys_ffs.c fsys_iso9660.c fsys_jfs.c fsys_minix.c \
+	fsys_reiserfs.c fsys_ufs2.c fsys_vstafs.c fsys_xfs.c fsys_affs.c gunzip.c \
 	hercules.c md5.c serial.c smp-imps.c stage2.c terminfo.c tparm.c
 pre_stage2_exec_CFLAGS = $(STAGE2_COMPILE) $(FSYS_CFLAGS)
 pre_stage2_exec_CCASFLAGS = $(STAGE2_COMPILE) $(FSYS_CFLAGS)
@@ -101,7 +105,7 @@ else
 BUILT_SOURCES = stage2_size.h
 endif
 
-CLEANFILES = $(pkgdata_DATA) $(noinst_DATA) $(BUILT_SOURCES)
+CLEANFILES = $(pkglib_DATA) $(noinst_DATA) $(BUILT_SOURCES)
 
 stage2_size.h: pre_stage2
 	-rm -f stage2_size.h
@@ -123,8 +127,8 @@ stage2: pre_stage2 start
 	cat start pre_stage2 > stage2
 
 start_eltorito_exec_SOURCES = start_eltorito.S
-start_eltorito_exec_ASFLAGS = $(STAGE2_COMPILE)
-start_eltorito_exec_LDFLAGS = $(PXELOADER_LINK)
+start_eltorito_exec_CCASFLAGS = $(STAGE2_COMPILE)
+start_eltorito_exec_LDFLAGS = $(START_ELTORITO_LINK)
 
 start_eltorito_exec-start.$(OBJEXT): stage2_size.h
 
@@ -158,6 +162,15 @@ ffs_stage1_5_exec_CFLAGS = $(STAGE1_5_COMPILE) -DFSYS_FFS=1 \
 ffs_stage1_5_exec_CCASFLAGS = $(STAGE1_5_COMPILE) -DFSYS_FFS=1 \
 	-DNO_BLOCK_FILES=1
 ffs_stage1_5_exec_LDFLAGS = $(STAGE1_5_LINK)
+
+# For ufs2_stage1_5 target.
+ufs2_stage1_5_exec_SOURCES = start.S asm.S common.c char_io.c disk_io.c \
+	stage1_5.c fsys_ufs2.c bios.c
+ufs2_stage1_5_exec_CFLAGS = $(STAGE1_5_COMPILE) -DFSYS_UFS2=1 \
+	-DNO_BLOCK_FILES=1
+ufs2_stage1_5_exec_CCASFLAGS = $(STAGE1_5_COMPILE) -DFSYS_UFS2=1 \
+	-DNO_BLOCK_FILES=1
+ufs2_stage1_5_exec_LDFLAGS = $(STAGE1_5_LINK)
 
 # For minix_stage1_5 target.
 minix_stage1_5_exec_SOURCES = start.S asm.S common.c char_io.c disk_io.c \
@@ -218,7 +231,7 @@ iso9660_stage1_5_exec_SOURCES = start_eltorito.S asm.S common.c char_io.c \
 	disk_io.c stage1_5.c fsys_iso9660.c bios.c
 iso9660_stage1_5_exec_CFLAGS = $(STAGE1_5_COMPILE) -DFSYS_ISO9660=1 \
 	-DNO_BLOCK_FILES=1
-iso9660_stage1_5_exec_ASFLAGS = $(STAGE1_5_COMPILE) -DFSYS_ISO9660=1 \
+iso9660_stage1_5_exec_CCASFLAGS = $(STAGE1_5_COMPILE) -DFSYS_ISO9660=1 \
 	-DNO_BLOCK_FILES=1
 iso9660_stage1_5_exec_LDFLAGS = $(STAGE1_5_LINK)
 
@@ -263,5 +276,6 @@ pxegrub: pxeloader diskless
 	cat $^ > $@
 
 # General rule for making a raw binary.
-%: %.exec
+SUFFIXES = .exec
+.exec:
 	$(OBJCOPY) -O binary $< $@

@@ -38,7 +38,6 @@ cmain (void)
 
   if (grub_open (config_file))
     {
-
       int ret;
 
       disk_read_hook = disk_read_savesect_func;

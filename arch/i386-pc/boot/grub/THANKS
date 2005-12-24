@@ -8,6 +8,7 @@ generally assist in the GRUB maintainership process:
 
 Adam Lackorzynski <adam@os.inf.tu-dresden.de>
 Adrian Phillips <a.phillips@dnmi.no>
+Alban Crequy <alban.crequy@apinc.org>
 Alessandro Rubini <rubini@gnu.org>
 Alexander K. Hudek <alexhudek@home.com>
 Alexander Langer <alex@big.endian.de>
@@ -17,12 +18,16 @@ Andrew Walrond <andrew@walrond.org>
 Ben Liblit <liblit@eecs.berkeley.edu>
 Bernhard Treutwein <Bernhard.Treutwein@Verwaltung.Uni-Muenchen.DE>
 Bodo Rueskamp <br@itchigo.com>.
+Boji Tony Kannanthanam <boji.t.kannanthanam@intel.com>
 Bradford Hovinen <hovinen@redrose.net>
 Brian Brunswick <brian@skarpsey.demon.co.uk>
 Bryan Ford <baford@cs.utah.edu>
 Cedric Ware <ware@com.enst.fr>
 Chip Salzenberg <chip@valinux.com>
+Christian Jones <chjones@aleph0.com>
 Christoph Plattner <Christoph.Plattner@dot.at>
+Damian Ivereigh <damian@cisco.com>
+David Weinehall <tao@debian.org>
 Dan J. Walters <djw@cs.utexas.edu>
 Daniel Farrell <s2108287@student.rmit.edu.au>
 Daniel Pittman <daniel@rimspace.net>
@@ -31,6 +36,7 @@ Danilo Godec <danci@agenda.si>
 Dennis Kitzman <dennis-kitzman@uiowa.edu>
 Derrik Pates <dpates@dsdk12.net>
 Edmund GRIMLEY EVANS <edmundo@rano.demon.co.uk>
+Eduard Guzovsky <eguzovsk@enterasys.com>
 Edward Killips <ekillips@triton.net>
 Egmont Koblinger <egmont@uhulinux.hu>
 Eric Hanchrow <erich@microsoft.com>
@@ -70,6 +76,7 @@ Klaus Reichl <klaus.reichl@alcatel.at>
 Kristoffer Branemyr <ztion@swipnet.se>
 Kunihiro Ishiguro <kunihiro@zebra.org>
 Leendert Meyer <leen.meyer@home.nl>
+Leonid Lisovskiy <lly@pisem.net>
 M. Meiarashi <mes@st.rim.or.jp>
 Mark Kettenis <kettenis@chello.nl>
 Mark Lundeberg <aa026@pgfn.bc.ca>
@@ -81,6 +88,7 @@ Michael Hohmuth <hohmuth@innocent.com>
 Michael Sullivan <mike@trdlnk.com>
 Mike Meyer <mwm@mired.org>
 Miles Bader <miles@gnu.org>
+NATORI Shin <natori@adm.s.u-tokyo.ac.jp>
 Neal H Walfield <neal@walfield.org>
 Neelkanth Natu <neelnatu@yahoo.com>
 OKUJI Yoshinori <okuji@kuicr.kyoto-u.ac.jp>
@@ -92,10 +100,12 @@ Ramon van Handel <vhandel@chem.vu.nl>
 Robert Millan  <robertmh@gnu.org>
 Roderich Schupp <rsch@ExperTeam.de>
 Rogelio M. Serrano Jr. <rogelio@victorio.com>
+Sergey Matveychuk <sem@ciam.ru>
 Serguei Tzukanov <tzukanov@narod.ru>
 Stefan Ondrejicka <ondrej@idata.sk>
 Stephen Early <steve@greenend.org.uk>
 Steven Dick <ssd.gnu@mmae.ucf.edu>
+Sven Wegener <swegener@gentoo.org>
 Takehiro Suzuki <takehiro@coral.ocn.ne.jp>
 Taketo Kabe <kabe@sra-tohoku.co.jp>
 Thierry DELHAISE <thierry.delhaise@delhaise.com>

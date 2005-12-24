@@ -881,7 +881,8 @@ await_reply (int type, int ival, void *ptr, int timeout)
 			 + sizeof (struct udphdr))];
 	  if (type == AWAIT_BOOTP
 #ifdef NO_DHCP_SUPPORT
-	      && (nic.packetlen >= (ETH_HLEN + sizeof (struct bootp_t)))
+	      && (nic.packetlen
+		  >= (ETH_HLEN + sizeof (struct bootp_t) - BOOTP_VENDOR_LEN))
 #else
 	      && (nic.packetlen
 		  >= (ETH_HLEN + sizeof (struct bootp_t) - DHCP_OPT_LEN))

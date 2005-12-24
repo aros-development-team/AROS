@@ -1,7 +1,7 @@
 /* disk_io.c - implement abstract BIOS disk input and output */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -72,13 +72,15 @@ struct fsys_entry fsys_table[NUM_FSYS + 1] =
 # ifdef FSYS_XFS
   {"xfs", xfs_mount, xfs_read, xfs_dir, 0, 0},
 # endif
+# ifdef FSYS_UFS2
+  {"ufs2", ufs2_mount, ufs2_read, ufs2_dir, 0, ufs2_embed},
+# endif
 #ifdef FSYS_ISO9660
   { "iso9660", iso9660_mount, iso9660_read, iso9660_dir, 0, 0},
 #endif
 # ifdef FSYS_AFFS
   {"aFFS", affs_mount, affs_read, affs_dir, 0, 0},
 # endif
-
   /* XX FFS should come last as it's superblock is commonly crossing tracks
      on floppies from track 1 to 2, while others only use 1.  */
 # ifdef FSYS_FFS
@@ -90,7 +92,7 @@ struct fsys_entry fsys_table[NUM_FSYS + 1] =
 
 /* These have the same format as "boot_drive" and "install_partition", but
    are meant to be working values. */
-unsigned long current_drive = GRUB_NO_DRIVE;
+unsigned long current_drive = GRUB_INVALID_DRIVE;
 unsigned long current_partition;
 
 #ifndef STAGE1_5
@@ -132,8 +134,8 @@ static inline unsigned long
 log2 (unsigned long word)
 {
   asm volatile ("bsfl %1,%0"
-:          "=r" (word)
-:          "r" (word));
+		: "=r" (word)
+		: "r" (word));
   return word;
 }
 
@@ -141,7 +143,7 @@ int
 rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 {
   int slen, sectors_per_vtrack;
-  int sect_size_lg2 = log2(buf_geom.sector_size);
+  int sector_size_bits = log2 (buf_geom.sector_size);
 
   if (byte_len <= 0)
     return 1;
@@ -164,7 +166,7 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	    }
 	  buf_drive = drive;
 	  buf_track = -1;
-	  sect_size_lg2 = log2(buf_geom.sector_size);
+	  sector_size_bits = log2 (buf_geom.sector_size);
 	}
 
       /* Make sure that SECTOR is valid.  */
@@ -173,19 +175,22 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	  errnum = ERR_GEOM;
 	  return 0;
 	}
-
-      slen = (byte_offset + byte_len + buf_geom.sector_size - 1) >> sect_size_lg2;
-      /* Eliminate buffer overflow */
-      if ((buf_geom.sectors << sect_size_lg2) > BUFFERLEN)
-          sectors_per_vtrack = (BUFFERLEN >> sect_size_lg2);
+      
+      slen = ((byte_offset + byte_len + buf_geom.sector_size - 1)
+	      >> sector_size_bits);
+      
+      /* Eliminate a buffer overflow.  */
+      if ((buf_geom.sectors << sector_size_bits) > BUFFERLEN)
+	sectors_per_vtrack = (BUFFERLEN >> sector_size_bits);
       else
-          sectors_per_vtrack = buf_geom.sectors;
-
-      /*  Get first sector of track  */
+	sectors_per_vtrack = buf_geom.sectors;
+      
+      /* Get the first sector of track.  */
       soff = sector % sectors_per_vtrack;
       track = sector - soff;
       num_sect = sectors_per_vtrack - soff;
-      bufaddr = (char *)BUFFERADDR + (soff * buf_geom.sector_size) + byte_offset;
+      bufaddr = ((char *) BUFFERADDR
+		 + (soff << sector_size_bits) + byte_offset);
 
       if (track != buf_track)
 	{
@@ -200,7 +205,7 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	    {
 	      read_start = sector;
 	      read_len = num_sect;
-	      bufaddr = (char *)BUFFERADDR + byte_offset;
+	      bufaddr = (char *) BUFFERADDR + byte_offset;
 	    }
 
 	  bios_err = biosdisk (BIOSDISK_READ, drive, &buf_geom,
@@ -222,7 +227,7 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 				   sector, slen, BUFFERSEG))
 		    errnum = ERR_READ;
 
-		  bufaddr = (char *)BUFFERADDR + byte_offset;
+		  bufaddr = (char *) BUFFERADDR + byte_offset;
 		}
 	    }
 	  else
@@ -251,8 +256,8 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	    }
 	}
 	  
-      if (size > ((num_sect * buf_geom.sector_size) - byte_offset))
-	size = (num_sect * buf_geom.sector_size) - byte_offset;
+      if (size > ((num_sect << sector_size_bits) - byte_offset))
+	size = (num_sect << sector_size_bits) - byte_offset;
 
       /*
        *  Instrumentation to tell which sectors were read and used.
@@ -276,7 +281,7 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	    }
 	}
 
-      memmove (buf, bufaddr, size);
+      grub_memmove (buf, bufaddr, size);
 
       buf += size;
       byte_len -= size;
@@ -364,7 +369,8 @@ int
 devwrite (int sector, int sector_count, char *buf)
 {
 #if defined(GRUB_UTIL) && defined(__linux__)
-  if (current_partition != 0xFFFFFF)
+  if (current_partition != 0xFFFFFF
+      && is_disk_device (device_map, current_drive))
     {
       /* If the grub shell is running under Linux and the user wants to
 	 embed a Stage 1.5 into a partition instead of a MBR, use system
@@ -397,7 +403,8 @@ sane_partition (void)
     return 1;
   
   if (!(current_partition & 0xFF000000uL)
-/*      && (current_drive & 0xFFFFFF7F) < 8	FIXME: El-Torito > 8 */
+      && ((current_drive & 0xFFFFFF7F) < 8
+	  || current_drive == cdrom_drive)
       && (current_partition & 0xFF) == 0xFF
       && ((current_partition & 0xFF00) == 0xFF00
 	  || (current_partition & 0xFF00) < 0x800)
@@ -545,14 +552,13 @@ set_partition_hidden_flag (int hidden)
 
 
 static void
-check_and_print_mount (int flags)
+check_and_print_mount (void)
 {
   attempt_mount ();
   if (errnum == ERR_FSYS_MOUNT)
     errnum = ERR_NONE;
   if (!errnum)
     print_fsys_type ();
-  if (!flags)
   print_error ();
 }
 #endif /* STAGE1_5 */
@@ -828,7 +834,7 @@ real_open_partition (int flags)
 				 current_partition >> 16);
 
 		  if (! IS_PC_SLICE_TYPE_BSD (current_slice))
-		    check_and_print_mount (flags);
+		    check_and_print_mount ();
 		  else
 		    {
 		      int got_part = 0;
@@ -847,7 +853,7 @@ real_open_partition (int flags)
 			  
 			  grub_printf ("     BSD Partition num: \'%c\', ",
 				       bsd_part + 'a');
-			  check_and_print_mount (flags);
+			  check_and_print_mount ();
 			}
 
 		      if (! got_part)
@@ -902,19 +908,10 @@ real_open_partition (int flags)
 #ifndef STAGE1_5
   if (flags)
     {
-      errnum = ERR_NONE;
       if (! (current_drive & 0x80))
 	{
 	  current_partition = 0xFFFFFF;
-	  current_slice = 0;
-	  part_start = 0;
-	  part_length = buf_geom.total_sectors;
-	  check_and_print_mount (flags);
-	}
-      else
-	{
-          cur_part_addr = 0;
-          cur_part_offset = 0;
+	  check_and_print_mount ();
 	}
       
       errnum = ERR_NONE;
@@ -955,7 +952,7 @@ set_device (char *device)
   int partition = dev & 0xFFFFFF;
 
   /* If DRIVE is disabled, use SAVED_DRIVE instead.  */
-  if (drive == GRUB_NO_DRIVE)
+  if (drive == GRUB_INVALID_DRIVE)
     current_drive = saved_drive;
   else
     current_drive = drive;
@@ -985,10 +982,12 @@ set_device (char *device)
 	{
 	  char ch = *device;
 #ifdef SUPPORT_NETBOOT
-	  if (*device == 'f' || *device == 'h' ||
-	      (*device == 'n' && network_ready))
+	  if (*device == 'f' || *device == 'h'
+	      || (*device == 'n' && network_ready)
+	      || (*device == 'c' && cdrom_drive != GRUB_INVALID_DRIVE))
 #else
-	  if (*device == 'f' || *device == 'h')
+	  if (*device == 'f' || *device == 'h'
+	      || (*device == 'c' && cdrom_drive != GRUB_INVALID_DRIVE))
 #endif /* SUPPORT_NETBOOT */
 	    {
 	      /* user has given '([fhn]', check for resp. add 'd' and
@@ -1004,26 +1003,31 @@ set_device (char *device)
 		return device + 2;
 	    }
 
+	  if ((*device == 'f'
+	       || *device == 'h'
 #ifdef SUPPORT_NETBOOT
-	  if ((*device == 'f' || *device == 'h' ||
-	       (*device == 'n' && network_ready))
-#else
-	  if ((*device == 'f' || *device == 'h')
-#endif /* SUPPORT_NETBOOT */
+	       || (*device == 'n' && network_ready)
+#endif
+	       || (*device == 'c' && cdrom_drive != GRUB_INVALID_DRIVE))
 	      && (device += 2, (*(device - 1) != 'd')))
 	    errnum = ERR_NUMBER_PARSING;
-
+	  
 #ifdef SUPPORT_NETBOOT
 	  if (ch == 'n' && network_ready)
 	    current_drive = NETWORK_DRIVE;
 	  else
 #endif /* SUPPORT_NETBOOT */
 	    {
-	      safe_parse_maxint (&device, (int *) &current_drive);
-	      
-	      disk_choice = 0;
-	      if (ch == 'h')
-		current_drive += 0x80;
+	      if (ch == 'c' && cdrom_drive != GRUB_INVALID_DRIVE)
+		current_drive = cdrom_drive;
+	      else
+		{
+		  safe_parse_maxint (&device, (int *) &current_drive);
+		  
+		  disk_choice = 0;
+		  if (ch == 'h')
+		    current_drive += 0x80;
+		}
 	    }
 	}
 
@@ -1181,7 +1185,7 @@ setup_part (char *filename)
 
   if (! (filename = set_device (filename)))
     {
-      current_drive = GRUB_NO_DRIVE;
+      current_drive = GRUB_INVALID_DRIVE;
       return 0;
     }
   
@@ -1198,7 +1202,7 @@ setup_part (char *filename)
     {
       if ((filename = set_device (filename)) == 0)
 	{
-          current_drive = GRUB_NO_DRIVE;
+	  current_drive = GRUB_INVALID_DRIVE;
 	  return 0;
 	}
 # ifndef NO_BLOCK_FILES
@@ -1373,9 +1377,12 @@ print_completions (int is_filename, int is_completion)
 	      if (! is_completion)
 		grub_printf (" Possible disks are: ");
 
+	      if (!ptr
+		  || *(ptr-1) != 'd'
 #ifdef SUPPORT_NETBOOT
-	      if (!ptr || *(ptr-1) != 'd' || *(ptr-2) != 'n')
+		  || *(ptr-2) != 'n'
 #endif /* SUPPORT_NETBOOT */
+		  || *(ptr-2) != 'c')
 		{
 		  for (i = (ptr && (*(ptr-1) == 'd' && *(ptr-2) == 'h') ? 1:0);
 		       i < (ptr && (*(ptr-1) == 'd' && *(ptr-2) == 'f') ? 1:2);
@@ -1395,11 +1402,20 @@ print_completions (int is_filename, int is_completion)
 			}
 		    }
 		}
+
+	      if (cdrom_drive != GRUB_INVALID_DRIVE
+		  && (disk_choice || cdrom_drive == current_drive)
+		  && (!ptr
+		      || *(ptr-1) == '('
+		      || (*(ptr-1) == 'd' && *(ptr-2) == 'c')))
+		print_a_completion ("cd");
+
 # ifdef SUPPORT_NETBOOT
-	      if (network_ready &&
-		  (disk_choice || NETWORK_DRIVE == current_drive) &&
-		  (!ptr || *(ptr-1) == '(' ||
-		   (*(ptr-1) == 'd' && *(ptr-2) == 'n')))
+	      if (network_ready
+		  && (disk_choice || NETWORK_DRIVE == current_drive)
+		  && (!ptr
+		      || *(ptr-1) == '('
+		      || (*(ptr-1) == 'd' && *(ptr-2) == 'n')))
 		print_a_completion ("nd");
 # endif /* SUPPORT_NETBOOT */
 
@@ -1559,9 +1575,7 @@ grub_open (char *filename)
 	    {
 	      if ((*ptr && *ptr != '/' && !isspace (*ptr))
 		  || tmp == 0 || tmp > filemax)
-              {
-                  errnum = ERR_BAD_FILENAME;
-              }
+		errnum = ERR_BAD_FILENAME;
 	      else
 		filemax = tmp;
 

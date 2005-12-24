@@ -1,7 +1,7 @@
 #!/bin/sh
 # MaKe a Bootable IMAGE --- 1.44, 2.88 and El Torito no-emulation mode
 # C) 2001,2002,2003 Thierry Laronde <tlaronde@polynum.org>
-# C) 2001,2002,2003 Robert Millan <zeratul2@wanadoo.es>
+# C) 2001,2002,2003 Robert Millan <robertmh@gnu.org>
 
 
 # This program is free software; you can redistribute it and/or modify
@@ -178,9 +178,12 @@ mkbimage_cp ()
   esac
 
   if [ "$offset" = 0 ] && which $cp > /dev/null ; then
-    $mkdir ${image}:/boot
-    $mkdir ${image}:/boot/grub
-    $cp ${image}1/boot/grub/* ${image}:/boot/grub/
+    for dir in $(cd ${image}1 && find -type d) ; do
+	$mkdir ${image}:$dir
+    done
+    for file in $(cd ${image}1 && find -type f) ; do
+	$cp ${image}1/$file ${image}:$file
+    done
   elif [ "`id -u`" = "0" ] ; then
     losetup $lo_options /dev/loop1 $image
     mkdir ${image}.mnt
@@ -229,10 +232,10 @@ done
 
 if [ ! "$image_type" ]; then
 	image_type=hd;
-elif [ "$image_type" != "1.20" -a "$image_type" != "1.44" \
-  -a "$image_type" != "1.60" -a "$image_type" != "1.68" \
-  -a "$image_type" != "2.88" -a "$image_type" != "1.74" \
-  -a "$image_type" != "hd" -a "$image_type" != "1.60" ] ; then
+elif [ "$image_type" != "1.20" ] && [ "$image_type" != "1.44" ] \
+  && [ "$image_type" != "1.60" ] && [ "$image_type" != "1.68" ] \
+  && [ "$image_type" != "2.88" ] && [ "$image_type" != "1.74" ] \
+  && [ "$image_type" != "hd" ] && [ "$image_type" != "1.60" ] ; then
   error wrong_type ;
 fi
 
@@ -345,7 +348,7 @@ if [ "$image_type" = "hd" ]; then
 
 
 EOT
-  offset="-o $(($sectors * $block_size))" 
+  offset="$(($sectors * $block_size))" 
   type_option=
 else
   offset="0"
@@ -355,7 +358,8 @@ fi
 mkbimage_mkfs
 
 # then untar the files
-mkdir ${image}1 2>/dev/null
+[ ! -e ${image}1 ] || { echo "${image}1 exists, please remove it first"; exit 1;}
+mkdir -p ${image}1
 $decompress $tarfile | tar -C ${image}1 $debug -xf -
 
 # copy the untarred files into the filesystem image
@@ -364,7 +368,7 @@ mkbimage_cp
 #We verify that the stage2 exists and we search the name
 stage2_os_name=`find ${image}1 -name stage2 -type f`
 
-[ ! $stage2_os_name ] && { echo "I can't find stage2!"; exit 1;}
+[ -r "$stage2_os_name" ] || { echo "I can't find stage2!"; exit 1;}
 
 #------------------------- GRUB stuff
 if [ "$image_type" = "hd" ]; then
@@ -407,5 +411,7 @@ mkisofs -b <image> -hard-disk-boot -c boot.catalog -o raw.iso <dir>
 
 Enjoy!
 EOF
+
+rm -rf ${image}1
 
 exit 0
