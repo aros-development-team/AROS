@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Install GRUB on your drive.
-#   Copyright (C) 1999,2000,2001,2002,2003 Free Software Foundation, Inc.
+#   Copyright (C) 1999,2000,2001,2002,2003,2004 Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -21,15 +21,16 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 sbindir=@sbindir@
-datadir=@datadir@
+libdir=@libdir@
 PACKAGE=@PACKAGE@
 VERSION=@VERSION@
 host_cpu=@host_cpu@
 host_os=@host_os@
 host_vendor=@host_vendor@
-pkgdatadir=${datadir}/${PACKAGE}/${host_cpu}-${host_vendor}
+pkglibdir=${libdir}/${PACKAGE}/${host_cpu}-${host_vendor}
 
 grub_shell=${sbindir}/grub
+grub_set_default=${sbindir}/grub-set-default
 log_file=/tmp/grub-install.log.$$
 img_file=/tmp/grub-install.img.$$
 rootdir=
@@ -72,6 +73,10 @@ Install GRUB on your drive.
 
 INSTALL_DEVICE can be a GRUB device name or a system device filename.
 
+grub-install copies GRUB images into the DIR/boot directory specfied by
+--root-directory, and uses the grub shell to install grub into the boot
+sector.
+
 Report bugs to <bug-grub@gnu.org>.
 EOF
 }
@@ -92,26 +97,28 @@ convert () {
     case "$host_os" in
     linux*)
 	tmp_disk=`echo "$1" | sed -e 's%\([sh]d[a-z]\)[0-9]*$%\1%' \
+				  -e 's%\(d[0-9]*\)p[0-9]*$%\1%' \
 				  -e 's%\(fd[0-9]*\)$%\1%' \
 				  -e 's%/part[0-9]*$%/disc%' \
 				  -e 's%\(c[0-7]d[0-9]*\).*$%\1%'`
 	tmp_part=`echo "$1" | sed -e 's%.*/[sh]d[a-z]\([0-9]*\)$%\1%' \
+				  -e 's%.*d[0-9]*p%%' \
 				  -e 's%.*/fd[0-9]*$%%' \
 				  -e 's%.*/floppy/[0-9]*$%%' \
 				  -e 's%.*/\(disc\|part\([0-9]*\)\)$%\2%' \
-				  -e 's%.*c[0-7]d[0-9]*p*%%'`
+				  -e 's%.*c[0-7]d[0-9]*p%%'`
 	;;
     gnu*)
 	tmp_disk=`echo "$1" | sed 's%\([sh]d[0-9]*\).*%\1%'`
 	tmp_part=`echo "$1" | sed "s%$tmp_disk%%"` ;;
-    freebsd*)
+    freebsd* | kfreebsd*-gnu)
 	tmp_disk=`echo "$1" | sed 's%r\{0,1\}\([saw]d[0-9]*\).*$%r\1%' \
 			    | sed 's%r\{0,1\}\(da[0-9]*\).*$%r\1%'`
 	tmp_part=`echo "$1" \
 	    | sed "s%.*/r\{0,1\}[saw]d[0-9]\(s[0-9]*[a-h]\)%\1%" \
        	    | sed "s%.*/r\{0,1\}da[0-9]\(s[0-9]*[a-h]\)%\1%"`
 	;;
-    netbsd*)
+    netbsd* | knetbsd*-gnu)
 	tmp_disk=`echo "$1" | sed 's%r\{0,1\}\([sw]d[0-9]*\).*$%r\1d%' \
 	    | sed 's%r\{0,1\}\(fd[0-9]*\).*$%r\1a%'`
 	tmp_part=`echo "$1" \
@@ -152,7 +159,7 @@ convert () {
 		    | sed "s%)%,$tmp_bsd_partition)%"`
 	    fi
 	    echo "$tmp_drive" ;;
-	freebsd*)
+	freebsd* | kfreebsd*-gnu)
 	    if echo $tmp_part | grep "^s" >/dev/null; then
 		tmp_pc_slice=`echo $tmp_part \
 		    | sed "s%s\([0-9]*\)[a-h]*$%\1%"`
@@ -166,7 +173,7 @@ convert () {
 		    | sed "s%)%,$tmp_bsd_partition)%"`
 	    fi
 	    echo "$tmp_drive" ;;
-	netbsd*)
+	netbsd* | knetbsd*-gnu)
 	    if echo $tmp_part | grep "^[abe-p]$" >/dev/null; then
 		tmp_bsd_partition=`echo "$tmp_part" \
 		    | sed "s%\([a-p]\)$%\1%"`
@@ -271,8 +278,8 @@ fi
 
 # Initialize these directories here, since ROOTDIR was initialized.
 case "$host_os" in
-netbsd*)
-    # Because /boot is used for the boot block in NetBSD, use /grub
+netbsd* | openbsd*)
+    # Because /boot is used for the boot block in NetBSD and OpenBSD, use /grub
     # instead of /boot/grub.
     grub_prefix=/grub
     bootdir=${rootdir}
@@ -286,25 +293,27 @@ esac
 grubdir=${bootdir}/grub
 device_map=${grubdir}/device.map
 
-# Check if GRUB is installed
-if test -f "$grub_shell"; then
+# Check if GRUB is installed.
+# This is necessary, because the user can specify "grub --read-only".
+set $grub_shell dummy
+if test -f "$1"; then
     :
 else
-    echo "${grub_shell}: Not found." 1>&2
+    echo "$1: Not found." 1>&2
     exit 1
 fi
 
-if test -f "$pkgdatadir/stage1"; then
+if test -f "$pkglibdir/stage1"; then
     :
 else
-    echo "${pkgdatadir}/stage1: Not found." 1>&2
+    echo "${pkglibdir}/stage1: Not found." 1>&2
     exit 1
 fi
 
-if test -f "$pkgdatadir/stage2"; then
+if test -f "$pkglibdir/stage2"; then
     :
 else
-    echo "${pkgdatadir}/stage2: Not found." 1>&2
+    echo "${pkglibdir}/stage2: Not found." 1>&2
     exit 1
 fi
 
@@ -402,9 +411,12 @@ for file in ${grubdir}/stage1 ${grubdir}/stage2 ${grubdir}/*stage1_5; do
     rm -f $file || exit 1
 done
 for file in \
-    ${pkgdatadir}/stage1 ${pkgdatadir}/stage2 ${pkgdatadir}/*stage1_5; do
+    ${pkglibdir}/stage1 ${pkglibdir}/stage2 ${pkglibdir}/*stage1_5; do
     cp -f $file ${grubdir} || exit 1
 done
+
+# Make a default file.
+${grub_set_default} --root-directory=${rootdir} default
 
 # Make sure that GRUB reads the same images as the host OS.
 test -n "$mkimg" && img_file=`$mkimg`

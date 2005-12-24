@@ -371,6 +371,7 @@ serial_putchar (int c)
 	  break;
 	  
 	case '\b':
+	case 127:
 	  if (serial_x > 0)
 	    serial_x--;
 	  break;

@@ -1,5 +1,5 @@
 dnl Configure script for GRUB.
-dnl Copyright 1999,2000,2001,2002,2003 Free Software Foundation, Inc.
+dnl Copyright 1999,2000,2001,2002,2003,2004,2005 Free Software Foundation, Inc.
 
 dnl Permission to use, copy, modify and distribute this software and its
 dnl documentation is hereby granted, provided that both the copyright
@@ -13,7 +13,7 @@ dnl LIABILITY OF ANY KIND FOR ANY DAMAGES WHATSOEVER RESULTING FROM THE
 dnl USE OF THIS SOFTWARE.
 
 AC_PREREQ(2.57)
-AC_INIT([GRUB], [0.94], [bug-grub@gnu.org])
+AC_INIT([GRUB], [0.97], [bug-grub@gnu.org])
 AC_CONFIG_SRCDIR([stage2/stage2.c])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
@@ -96,6 +96,21 @@ if test "x$ac_cv_prog_gcc" = xyes; then
       STAGE2_CFLAGS="-Os"
     else
       STAGE2_CFLAGS="-O2 -fno-strength-reduce -fno-unroll-loops"
+    fi
+    # OpenBSD has a GCC extension for protecting applications from
+    # stack smashing attacks, but GRUB doesn't want this feature.
+    AC_CACHE_CHECK([whether gcc has -fno-stack-protector],
+		   no_stack_protector_flag, [
+      saved_CFLAGS=$CFLAGS
+      CFLAGS="-fno-stack-protector"
+      AC_TRY_COMPILE(,
+		     ,
+		     no_stack_protector_flag=yes,
+		     no_stack_protector_flag=no)
+      CFLAGS=$saved_CFLAGS
+    ])
+    if test "x$no_stack_protector_flag" = xyes; then
+      STAGE2_CFLAGS="$STAGE2_CFLAGS -fno-stack-protector"
     fi
   fi
 fi
@@ -193,9 +208,9 @@ AC_CHECK_LIB(util, opendisk, [GRUB_LIBS="$GRUB_LIBS -lutil"
 # Unless the user specify --without-curses, check for curses.
 if test "x$with_curses" != "xno"; then
   AC_CHECK_LIB(ncurses, wgetch, [GRUB_LIBS="$GRUB_LIBS -lncurses"
-  AC_DEFINE(HAVE_LIBCURSES)],
+  AC_DEFINE(HAVE_LIBCURSES, 1, [Define if you have a curses library])],
     [AC_CHECK_LIB(curses, wgetch, [GRUB_LIBS="$GRUB_LIBS -lcurses"
-       AC_DEFINE(HAVE_LIBCURSES)])])
+       AC_DEFINE(HAVE_LIBCURSES, 1, [Define if you have a curses library])])])
 fi
 
 AC_SUBST(GRUB_LIBS)
@@ -225,6 +240,13 @@ AC_ARG_ENABLE(ffs,
 
 if test x"$enable_ffs" != xno; then
   FSYS_CFLAGS="$FSYS_CFLAGS -DFSYS_FFS=1"
+fi
+
+AC_ARG_ENABLE(ufs2,
+  [  --disable-ufs2          disable UFS2 support in Stage 2])
+
+if test x"$enable_ufs2" != xno; then
+  FSYS_CFLAGS="$FSYS_CFLAGS -DFSYS_UFS2=1"
 fi
 
 AC_ARG_ENABLE(minix,
@@ -612,7 +634,8 @@ if test "x$enable_preset_menu" = x; then
   :
 else
   if test -r $enable_preset_menu; then
-    grub_DEFINE_FILE(PRESET_MENU_STRING, [$enable_preset_menu])
+    grub_DEFINE_FILE(PRESET_MENU_STRING, [$enable_preset_menu],
+    		     [Define if there is user specified preset menu string])
   else
     AC_MSG_ERROR([Cannot read the preset menu file $enable_preset_menu])
   fi
@@ -631,7 +654,7 @@ AC_ARG_ENABLE(auto-linux-mem-opt,
 if test "x$enable_auto_linux_mem_opt" = xno; then
   :
 else
-  AC_DEFINE(AUTO_LINUX_MEM_OPT)
+  AC_DEFINE(AUTO_LINUX_MEM_OPT, 1, [Define if you don't want to pass the mem= option to Linux])
 fi
 
 dnl Now substitute the variables.
@@ -650,5 +673,5 @@ AC_CONFIG_FILES([Makefile stage1/Makefile stage2/Makefile \
 		 docs/Makefile lib/Makefile util/Makefile \
 		 grub/Makefile netboot/Makefile util/grub-image \
 		 util/grub-install util/grub-md5-crypt \
-		 util/grub-terminfo])
+		 util/grub-terminfo util/grub-set-default])
 AC_OUTPUT

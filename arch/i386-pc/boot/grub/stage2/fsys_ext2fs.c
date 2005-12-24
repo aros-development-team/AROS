@@ -432,12 +432,16 @@ ext2fs_read (char *buf, int len)
       if (size > len)
 	size = len;
 
-      disk_read_func = disk_read_hook;
+      if (map == 0) {
+        memset ((char *) buf, 0, size);
+      } else {
+        disk_read_func = disk_read_hook;
 
-      devread (map * (EXT2_BLOCK_SIZE (SUPERBLOCK) / DEV_BSIZE),
-	       offset, size, buf);
+        devread (map * (EXT2_BLOCK_SIZE (SUPERBLOCK) / DEV_BSIZE),
+	         offset, size, buf);
 
-      disk_read_func = NULL;
+        disk_read_func = NULL;
+      }
 
       buf += size;
       len -= size;

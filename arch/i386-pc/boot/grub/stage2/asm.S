@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002 Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2004 Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -87,6 +87,7 @@ ENTRY(main)
 
 VARIABLE(install_partition)
 	.long	0xFFFFFF
+/* This variable is here only because of a historical reason.  */
 VARIABLE(saved_entryno)
 	.long	0
 VARIABLE(stage2_id)
@@ -211,9 +212,14 @@ ENTRY(hard_stop)
  * jumped to with a known state.
  */
 ENTRY(stop_floppy)
-	movw	$0x3F2, %dx
-	xorb	%al, %al
-	outb	%al, %dx
+	pusha
+	call	EXT_C(prot_to_real)
+	.code16
+	xorb	%dl, %dl
+	int	$0x13
+	DATA32  call EXT_C(real_to_prot)
+	.code32
+	popa
 	ret
 
 /*
@@ -946,8 +952,6 @@ ENTRY(biosdisk_int13_extensions)
 
 	pushl	%esi
 	pushl	%ebx
-	pushl	%ecx
-	pushl	%edx	
 
 	/* compute the address of disk_address_packet */
 	movl	0x10(%ebp), %eax
@@ -977,8 +981,6 @@ ENTRY(biosdisk_int13_extensions)
 
 	movb	%dl, %al	/* return value in %eax */
 
-	popl	%edx
-	popl	%ecx
 	popl	%ebx
 	popl	%esi
 	popl	%ebp
@@ -1105,51 +1107,6 @@ ENTRY(check_int13_extensions)
 	popl	%ebx
 	popl	%ebp
 
-	ret
-
-/*
- *   int get_diskinfo_int13_extensions (int drive, void *drp)
- *
- *   Return the geometry of DRIVE in a drive parameters, DRP. If an error
- *   occurs, then return non-zero, otherwise zero.
- */
-
-ENTRY(get_diskinfo_int13_extensions)
-	pushl	%ebp
-	movl	%esp, %ebp
-
-	pushl	%ebx
-	pushl	%esi
-
-	/* compute the address of drive parameters */
-	movl	0xc(%ebp), %eax
-	movw	%ax, %si
-	xorw	%ax, %ax
-	shrl	$4, %eax
-	movw	%ax, %bx	/* save the segment into %bx */
-	/* drive */
-	movb	0x8(%ebp), %dl
-	/* enter real mode */
-	call	EXT_C(prot_to_real)
-
-	.code16
-	movb	$0x48, %ah
-	movw	%bx, %ds
-	int	$0x13		/* do the operation */
-	movb	%ah, %bl	/* save return value in %bl */
-	/* clear the data segment */
-	xorw	%ax, %ax
-	movw	%ax, %ds
-	/* back to protected mode */
-	DATA32	call	EXT_C(real_to_prot)
-	.code32
-
-	movb	%bl, %al	/* return value in %eax */
-
-	popl	%esi
-	popl	%ebx
-	popl	%ebp
-	
 	ret
 
 

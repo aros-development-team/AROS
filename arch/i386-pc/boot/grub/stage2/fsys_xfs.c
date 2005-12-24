@@ -334,7 +334,7 @@ next_dentry (xfs_ino_t *ino)
 {
 	int namelen = 1;
 	int toread;
-	static char *usual[2] = {".", ".."};
+	static char usual[2][3] = {".", ".."};
 	static xfs_dir2_sf_entry_t *sfe;
 	char *name = usual[0];
 

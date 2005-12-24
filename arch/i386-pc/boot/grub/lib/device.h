@@ -1,7 +1,7 @@
 /* device.h - Define macros and declare prototypes for device.c */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ extern int init_device_map (char ***map, const char *map_file,
 extern void restore_device_map (char **map);
 
 #ifdef __linux__
+extern int is_disk_device (char **map, int drive);
 extern int write_to_partition (char **map, int drive, int partition,
 			       int offset, int size, const char *buf);
 #endif /* __linux__ */

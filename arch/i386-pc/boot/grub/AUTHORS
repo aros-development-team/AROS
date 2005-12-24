@@ -50,3 +50,5 @@ KB Sriram added a better detection of FAT filesystem and fixed a
 network device completion.
 
 Eric Kvaalen fixed a lot of problems in the GRUB manual.
+
+Leonid Lisovskiy added El Torito support.

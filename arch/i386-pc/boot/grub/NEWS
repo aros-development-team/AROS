@@ -1,5 +1,27 @@
 NEWS - list of user-visible changes between releases of GRUB
 
+New in 0.97 - 2005-05-08:
+* Fix the prototypes and the definitions of nested functions. This was
+  required for gcc-4.
+* Implement a more robust workaround for buggy BIOSes which don't pass
+  boot drive correctly (notably for HP Vectra).
+
+New in 0.96 - 2005-01-30:
+* The command "fallback" supports mutiple fallback entries.
+* The command "savedefault" supports an optional argument which
+  is the number of next boot entry or the special keyword `fallback'.
+* New utility "grub-set-default".
+* New section "Making your system robust" in the manual.
+
+New in 0.95 - 2004-06-13:
+* Add support for ReiserFS 3.
+* Fix support for FreeBSD 5.
+* Support ATARAID for Linux in the grub shell and grub-install.
+* Add CDROM support for El Torito with no emulation mode. You can use
+  (cd) as a CDROM drive in the config file.
+* Option --no-mem-option is implied for Linux 2.4.18 and newer.
+* Add support for UFS2.
+
 New in 0.94 - 2004-01-25:
 * Support building on x86-64 with gcc -m32.
 * Use a BIOS call to turn on/off Gate A20. This should solve various

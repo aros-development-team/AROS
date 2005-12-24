@@ -93,7 +93,7 @@ cmain (unsigned long magic, unsigned long addr)
               (int) mbi->mods_count, (int) mbi->mods_addr);
       for (i = 0, mod = (module_t *) mbi->mods_addr;
            i < mbi->mods_count;
-           i++, mod += sizeof (module_t))
+           i++, mod++)
         printf (" mod_start = 0x%x, mod_end = 0x%x, string = %s\n",
                 (unsigned) mod->mod_start,
                 (unsigned) mod->mod_end,

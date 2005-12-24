@@ -15,10 +15,7 @@
  *                  the am7990 (LANCE) chip used for writing a
  *                  network device driver which uses this chip
  *
- * $Log$
- * Revision 1.4  2004/01/05 14:00:21  falemagn
- * Updated to the newest sources and converted mmakefile.src to use the build_with_configure macro
- *
+ * $Log: sk_g16.h,v $
  * Revision 1.3  2000/07/29 19:22:54  okuji
  * update the network support to etherboot-4.6.4.
  *

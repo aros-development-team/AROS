@@ -216,6 +216,12 @@ operates.
 `--disable-xfs'
      Omit the XFS support in Stage 2.
 
+`--disable-ufs2'
+     Omit the UFS2 support in Stage 2.
+
+`--disable-iso9660'
+     Omit the ISO9660 support in Stage 2.
+
 `--disable-gunzip'
      Omit the decompression support in Stage 2.
 

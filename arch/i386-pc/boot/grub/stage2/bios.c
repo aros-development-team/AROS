@@ -1,7 +1,7 @@
 /* bios.c - implement C part of low-level BIOS disk input and output */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2003  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2003,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -86,10 +86,9 @@ biosdisk (int read, int drive, struct geometry *geometry,
 #ifndef NO_INT13_FALLBACK
       if (err)
 	{
-	  /* We can't switch to CHS mode */
-          if (geometry->cylinders == 0)
-	      return err;
-
+	  if (geometry->flags & BIOSDISK_FLAG_CDROM)
+	    return err;
+	  
 	  geometry->flags &= ~BIOSDISK_FLAG_LBA_EXTENSION;
 	  geometry->total_sectors = (geometry->cylinders
 				     * geometry->heads
@@ -122,9 +121,9 @@ biosdisk (int read, int drive, struct geometry *geometry,
   return err;
 }
 
-/* Check bootable CD-ROM emulation status */
+/* Check bootable CD-ROM emulation status.  */
 static int
-get_cdinfo(int drive, struct geometry *geometry)
+get_cdinfo (int drive, struct geometry *geometry)
 {
   int err;
   struct iso_spec_packet
@@ -141,19 +140,19 @@ get_cdinfo(int drive, struct geometry *geometry)
     unsigned char cylinders;
     unsigned char sectors;
     unsigned char heads;
-
+    
     unsigned char dummy[16];
   } __attribute__ ((packed)) cdrp;
-
+  
   grub_memset (&cdrp, 0, sizeof (cdrp));
-  cdrp.size = sizeof(cdrp) - sizeof(cdrp.dummy);
+  cdrp.size = sizeof (cdrp) - sizeof (cdrp.dummy);
   err = biosdisk_int13_extensions (0x4B01, drive, &cdrp);
-  if (!err && cdrp.drive_no == drive)
+  if (! err && cdrp.drive_no == drive)
     {
       if ((cdrp.media_type & 0x0F) == 0)
         {
           /* No emulation bootable CD-ROM */
-          geometry->flags = BIOSDISK_FLAG_LBA_EXTENSION;
+          geometry->flags = BIOSDISK_FLAG_LBA_EXTENSION | BIOSDISK_FLAG_CDROM;
           geometry->cylinders = 0;
           geometry->heads = 1;
           geometry->sectors = 15;
@@ -163,15 +162,16 @@ get_cdinfo(int drive, struct geometry *geometry)
         }
       else
         {
-	   /* Floppy or hard-disk emulation */
-          geometry->cylinders = (unsigned int )cdrp.cylinders
-			      + (((unsigned int )(cdrp.sectors & 0xC0)) << 2);
+	  /* Floppy or hard-disk emulation */
+          geometry->cylinders
+	    = ((unsigned int) cdrp.cylinders
+	       + (((unsigned int) (cdrp.sectors & 0xC0)) << 2));
           geometry->heads = cdrp.heads;
           geometry->sectors = cdrp.sectors & 0x3F;
           geometry->sector_size = SECTOR_SIZE;
           geometry->total_sectors = (geometry->cylinders
-				      * geometry->heads
-				      * geometry->sectors);
+				     * geometry->heads
+				     * geometry->sectors);
           return -1;
         }
     }
@@ -187,93 +187,103 @@ get_diskinfo (int drive, struct geometry *geometry)
 
   /* Clear the flags.  */
   geometry->flags = 0;
-  geometry->total_sectors = 0;
   
   if (drive & 0x80)
     {
       /* hard disk or CD-ROM */
       int version;
-        struct drive_parameters
-        {
-            unsigned short size;
-            unsigned short flags;
-            unsigned long cylinders;
-            unsigned long heads;
-            unsigned long sectors;
-            unsigned long long total_sectors;
-            unsigned short bytes_per_sector;
-            /* ver 2.0 or higher */
-            unsigned long EDD_configuration_parameters;
-            /* ver 3.0 or higher */
-            unsigned short signature_dpi;
-            unsigned char length_dpi;
-            unsigned char reserved[3];
-            unsigned char name_of_host_bus[4];
-            unsigned char name_of_interface_type[8];
-            unsigned char interface_path[8];
-            unsigned char device_path[8];
-            unsigned char reserved2;
-            unsigned char checksum;
-
-            /* XXX: This is necessary, because the BIOS of Thinkpad X20
-	        writes a garbage to the tail of drive parameters,
-	        regardless of a size specified in a caller.  */
-            unsigned char dummy[16];
-        } __attribute__ ((packed)) drp;
-
-      /* It is safe to clear out DRP.  */
-      grub_memset (&drp, 0, sizeof (drp));
-      /* Request only ver 1.xx info! */
-      drp.size = 0x001A;
-
+      unsigned long total_sectors = 0;
+      
       version = check_int13_extensions (drive);
 
       if (drive >= 0x88 || version)
-      {
-	/* Possible CD-ROM - check status */
-	if (get_cdinfo(drive, geometry))
+	{
+	  /* Possible CD-ROM - check the status.  */
+	  if (get_cdinfo (drive, geometry))
 	    return 0;
-      }
-
+	}
+      
       if (version)
 	{
+	  struct drive_parameters
+	  {
+	    unsigned short size;
+	    unsigned short flags;
+	    unsigned long cylinders;
+	    unsigned long heads;
+	    unsigned long sectors;
+	    unsigned long long total_sectors;
+	    unsigned short bytes_per_sector;
+	    /* ver 2.0 or higher */
+	    unsigned long EDD_configuration_parameters;
+	    /* ver 3.0 or higher */
+	    unsigned short signature_dpi;
+	    unsigned char length_dpi;
+	    unsigned char reserved[3];
+	    unsigned char name_of_host_bus[4];
+	    unsigned char name_of_interface_type[8];
+	    unsigned char interface_path[8];
+	    unsigned char device_path[8];
+	    unsigned char reserved2;
+	    unsigned char checksum;
+
+	    /* XXX: This is necessary, because the BIOS of Thinkpad X20
+	       writes a garbage to the tail of drive parameters,
+	       regardless of a size specified in a caller.  */
+	    unsigned char dummy[16];
+	  } __attribute__ ((packed)) drp;
+
+	  /* It is safe to clear out DRP.  */
+	  grub_memset (&drp, 0, sizeof (drp));
+	  
+	  /* PhoenixBIOS 4.0 Revision 6.0 for ZF Micro might understand 
+	     the greater buffer size for the "get drive parameters" int 
+	     0x13 call in its own way.  Supposedly the BIOS assumes even 
+	     bigger space is available and thus corrupts the stack.  
+	     This is why we specify the exactly necessary size of 0x42 
+	     bytes. */
+	  drp.size = sizeof (drp) - sizeof (drp.dummy);
+	  
 	  err = biosdisk_int13_extensions (0x4800, drive, &drp);
 	  if (! err)
 	    {
 	      /* Set the LBA flag.  */
 	      geometry->flags = BIOSDISK_FLAG_LBA_EXTENSION;
 
+	      /* I'm not sure if GRUB should check the bit 1 of DRP.FLAGS,
+		 so I omit the check for now. - okuji  */
+	      /* if (drp.flags & (1 << 1)) */
+	       
 	      /* FIXME: when the 2TB limit becomes critical, we must
 		 change the type of TOTAL_SECTORS to unsigned long
 		 long.  */
 	      if (drp.total_sectors)
-		geometry->total_sectors = drp.total_sectors & ~0L;
-	    }
+		total_sectors = drp.total_sectors & ~0L;
 	      else
-	    {
-	      /* int13 extensions 0x4800 call failed */
-	      version = 0;
+		/* Some buggy BIOSes doesn't return the total sectors
+		   correctly but returns zero. So if it is zero, compute
+		   it by C/H/S returned by the LBA BIOS call.  */
+		total_sectors = drp.cylinders * drp.heads * drp.sectors;
 	    }
 	}
 
       /* Don't pass GEOMETRY directly, but pass each element instead,
 	 so that we can change the structure easily.  */
       err = get_diskinfo_standard (drive,
-				   &drp.cylinders,
-				   &drp.heads,
-				   &drp.sectors);
-
+				   &geometry->cylinders,
+				   &geometry->heads,
+				   &geometry->sectors);
       if (err)
+	return err;
+
+      if (! total_sectors)
 	{
-	  return err;
+	  total_sectors = (geometry->cylinders
+			   * geometry->heads
+			   * geometry->sectors);
 	}
-      else
-	{
-	  geometry->cylinders = drp.cylinders;
-	  geometry->heads = drp.heads;
-	  geometry->sectors = drp.sectors;
-          geometry->sector_size = SECTOR_SIZE;
-	}
+      geometry->total_sectors = total_sectors;
+      geometry->sector_size = SECTOR_SIZE;
     }
   else
     {
@@ -297,18 +307,10 @@ get_diskinfo (int drive, struct geometry *geometry)
       if (err)
 	return err;
 
-      geometry->sector_size = SECTOR_SIZE;
-    }
-
-  if (! geometry->total_sectors)
-    {
-      /* Some buggy BIOSes doesn't return the total sectors
-	 correctly but returns zero. So if it is zero, compute
-	 it by C/H/S returned by the BIOS call.  */
-
       geometry->total_sectors = (geometry->cylinders
 				 * geometry->heads
 				 * geometry->sectors);
+      geometry->sector_size = SECTOR_SIZE;
     }
 
   return 0;

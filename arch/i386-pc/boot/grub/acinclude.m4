@@ -2,7 +2,7 @@ dnl grub_ASM_USCORE checks if C symbols get an underscore after
 dnl compiling to assembler.
 dnl Written by Pavel Roskin. Based on grub_ASM_EXT_C written by
 dnl Erich Boleyn and modified by OKUJI Yoshinori
-AC_DEFUN(grub_ASM_USCORE,
+AC_DEFUN([grub_ASM_USCORE],
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if C symbols get an underscore after compilation])
 AC_CACHE_VAL(grub_cv_asm_uscore,
@@ -40,7 +40,7 @@ AC_MSG_RESULT([$grub_cv_asm_uscore])
 
 dnl Some versions of `objcopy -O binary' vary their output depending
 dnl on the link address.
-AC_DEFUN(grub_PROG_OBJCOPY_ABSOLUTE,
+AC_DEFUN([grub_PROG_OBJCOPY_ABSOLUTE],
 [AC_MSG_CHECKING([whether ${OBJCOPY} works for absolute addresses])
 AC_CACHE_VAL(grub_cv_prog_objcopy_absolute,
 [cat > conftest.c <<\EOF
@@ -88,7 +88,7 @@ dnl
 dnl We only support the newer versions, because the old versions cause
 dnl major pain, by requiring manual assembly to get 16-bit instructions into
 dnl stage1/stage1.S.
-AC_DEFUN(grub_ASM_ADDR32,
+AC_DEFUN([grub_ASM_ADDR32],
 [AC_REQUIRE([AC_PROG_CC])
 AC_REQUIRE([grub_ASM_PREFIX_REQUIREMENT])
 AC_MSG_CHECKING([for .code16 addr32 assembler support])
@@ -118,7 +118,7 @@ dnl
 dnl Later versions of GAS requires that addr32 and data32 prefixes
 dnl appear in the same lines as the instructions they modify, while
 dnl earlier versions requires that they appear in separate lines.
-AC_DEFUN(grub_ASM_PREFIX_REQUIREMENT,
+AC_DEFUN([grub_ASM_PREFIX_REQUIREMENT],
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING(dnl
 [whether addr32 must be in the same line as the instruction])
@@ -154,7 +154,7 @@ AC_MSG_RESULT([$grub_cv_asm_prefix_requirement])])
 dnl
 dnl Older versions of GAS require that absolute indirect calls/jumps are
 dnl not prefixed with `*', while later versions warn if not prefixed.
-AC_DEFUN(grub_ASM_ABSOLUTE_WITHOUT_ASTERISK,
+AC_DEFUN([grub_ASM_ABSOLUTE_WITHOUT_ASTERISK],
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING(dnl
 [whether an absolute indirect call/jump must not be prefixed with an asterisk])
@@ -175,7 +175,7 @@ fi
 rm -f conftest*])
 
 if test "x$grub_cv_asm_absolute_without_asterisk" = xyes; then
-  AC_DEFINE([ABSOLUTE_WITHOUT_ASTERISK])
+  AC_DEFINE(ABSOLUTE_WITHOUT_ASTERISK, 1, [Define if an absolute indirect call/jump must NOT be prefixed with `*'])
 fi
 
 AC_MSG_RESULT([$grub_cv_asm_absolute_without_asterisk])])
@@ -184,7 +184,7 @@ dnl
 dnl grub_CHECK_START_SYMBOL checks if start is automatically defined by
 dnl the compiler.
 dnl Written by OKUJI Yoshinori
-AC_DEFUN(grub_CHECK_START_SYMBOL,
+AC_DEFUN([grub_CHECK_START_SYMBOL],
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if start is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_start_symbol,
@@ -193,7 +193,7 @@ AC_CACHE_VAL(grub_cv_check_start_symbol,
    grub_cv_check_start_symbol=no)])
 
 if test "x$grub_cv_check_start_symbol" = xyes; then
-  AC_DEFINE([HAVE_START_SYMBOL])
+  AC_DEFINE(HAVE_START_SYMBOL, 1, [Define if start is defined])
 fi
 
 AC_MSG_RESULT([$grub_cv_check_start_symbol])
@@ -203,7 +203,7 @@ dnl
 dnl grub_CHECK_USCORE_START_SYMBOL checks if _start is automatically
 dnl defined by the compiler.
 dnl Written by OKUJI Yoshinori
-AC_DEFUN(grub_CHECK_USCORE_START_SYMBOL,
+AC_DEFUN([grub_CHECK_USCORE_START_SYMBOL],
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if _start is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_uscore_start_symbol,
@@ -212,7 +212,7 @@ AC_CACHE_VAL(grub_cv_check_uscore_start_symbol,
    grub_cv_check_uscore_start_symbol=no)])
 
 if test "x$grub_cv_check_uscore_start_symbol" = xyes; then
-  AC_DEFINE([HAVE_USCORE_START_SYMBOL])
+  AC_DEFINE(HAVE_USCORE_START_SYMBOL, 1, [Define if _start is defined])
 fi
 
 AC_MSG_RESULT([$grub_cv_check_uscore_start_symbol])
@@ -222,7 +222,7 @@ dnl
 dnl grub_CHECK_USCORE_USCORE_BSS_START_SYMBOL checks if __bss_start is
 dnl automatically defined by the compiler.
 dnl Written by Michael Hohmoth.
-AC_DEFUN(grub_CHECK_USCORE_USCORE_BSS_START_SYMBOL,
+AC_DEFUN([grub_CHECK_USCORE_USCORE_BSS_START_SYMBOL],
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if __bss_start is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_uscore_uscore_bss_start_symbol,
@@ -231,7 +231,7 @@ AC_CACHE_VAL(grub_cv_check_uscore_uscore_bss_start_symbol,
    grub_cv_check_uscore_uscore_bss_start_symbol=no)])
 
 if test "x$grub_cv_check_uscore_uscore_bss_start_symbol" = xyes; then
-  AC_DEFINE([HAVE_USCORE_USCORE_BSS_START_SYMBOL])
+  AC_DEFINE(HAVE_USCORE_USCORE_BSS_START_SYMBOL, 1, [Define if __bss_start is defined])
 fi
 
 AC_MSG_RESULT([$grub_cv_check_uscore_uscore_bss_start_symbol])
@@ -241,7 +241,7 @@ dnl
 dnl grub_CHECK_EDATA_SYMBOL checks if edata is automatically defined by the
 dnl compiler.
 dnl Written by Michael Hohmuth.
-AC_DEFUN(grub_CHECK_EDATA_SYMBOL,
+AC_DEFUN([grub_CHECK_EDATA_SYMBOL],
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if edata is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_edata_symbol,
@@ -250,7 +250,7 @@ AC_CACHE_VAL(grub_cv_check_edata_symbol,
    grub_cv_check_edata_symbol=no)])
 
 if test "x$grub_cv_check_edata_symbol" = xyes; then
-  AC_DEFINE([HAVE_EDATA_SYMBOL])
+  AC_DEFINE(HAVE_EDATA_SYMBOL, 1, [Define if edata is defined])
 fi
 
 AC_MSG_RESULT([$grub_cv_check_edata_symbol])
@@ -260,7 +260,7 @@ dnl
 dnl grub_CHECK_USCORE_EDATA_SYMBOL checks if _edata is automatically
 dnl defined by the compiler.
 dnl Written by Michael Hohmuth.
-AC_DEFUN(grub_CHECK_USCORE_EDATA_SYMBOL,
+AC_DEFUN([grub_CHECK_USCORE_EDATA_SYMBOL],
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if _edata is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_uscore_edata_symbol,
@@ -269,7 +269,7 @@ AC_CACHE_VAL(grub_cv_check_uscore_edata_symbol,
    grub_cv_check_uscore_edata_symbol=no)])
 
 if test "x$grub_cv_check_uscore_edata_symbol" = xyes; then
-  AC_DEFINE([HAVE_USCORE_EDATA_SYMBOL])
+  AC_DEFINE(HAVE_USCORE_EDATA_SYMBOL, 1, [Define if _edata is defined])
 fi
 
 AC_MSG_RESULT([$grub_cv_check_uscore_edata_symbol])
@@ -279,7 +279,7 @@ dnl
 dnl grub_CHECK_END_SYMBOL checks if end is automatically defined by the
 dnl compiler.
 dnl Written by OKUJI Yoshinori
-AC_DEFUN(grub_CHECK_END_SYMBOL,
+AC_DEFUN([grub_CHECK_END_SYMBOL],
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if end is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_end_symbol,
@@ -288,7 +288,7 @@ AC_CACHE_VAL(grub_cv_check_end_symbol,
    grub_cv_check_end_symbol=no)])
 
 if test "x$grub_cv_check_end_symbol" = xyes; then
-  AC_DEFINE([HAVE_END_SYMBOL])
+  AC_DEFINE(HAVE_END_SYMBOL, 1, [Define if end is defined])
 fi
 
 AC_MSG_RESULT([$grub_cv_check_end_symbol])
@@ -298,7 +298,7 @@ dnl
 dnl grub_CHECK_USCORE_END_SYMBOL checks if _end is automatically defined
 dnl by the compiler.
 dnl Written by OKUJI Yoshinori
-AC_DEFUN(grub_CHECK_USCORE_END_SYMBOL,
+AC_DEFUN([grub_CHECK_USCORE_END_SYMBOL],
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if _end is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_uscore_end_symbol,
@@ -307,18 +307,18 @@ AC_CACHE_VAL(grub_cv_check_uscore_end_symbol,
    grub_cv_check_uscore_end_symbol=no)])
 
 if test "x$grub_cv_check_uscore_end_symbol" = xyes; then
-  AC_DEFINE([HAVE_USCORE_END_SYMBOL])
+  AC_DEFINE(HAVE_USCORE_END_SYMBOL, 1, [Define if end is defined])
 fi
 
 AC_MSG_RESULT([$grub_cv_check_uscore_end_symbol])
 ])
 
-dnl grub_DEFINE_FILE(MACRO_NAME, FILE_NAME)
+dnl grub_DEFINE_FILE(MACRO_NAME, FILE_NAME, DESCRIPTION)
 dnl grub_DEFINE_FILE defines a macro as the contents of a file safely.
 dnl Replace some escape sequences, because autoconf doesn't handle them
 dnl gracefully.
 dnl Written by OKUJI Yoshinori.
-AC_DEFUN(grub_DEFINE_FILE,
+AC_DEFUN([grub_DEFINE_FILE],
 [AC_REQUIRE([AC_PROG_CC])
 # Because early versions of GNU sed 3.x are too buggy, use a C program
 # instead of shell commands. *sigh*
@@ -361,6 +361,6 @@ else
   AC_MSG_ERROR([${CC-cc} failed to produce an executable file])
 fi
 
-AC_DEFINE_UNQUOTED([$1], "$grub_tmp_value")
+AC_DEFINE_UNQUOTED([$1], "$grub_tmp_value", [$3])
 rm -f conftest*
 ])

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2005  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -249,13 +249,31 @@ defconfig =
  *  Exported globals here.
  */
 
+/*
+ *  "imps_any_new_apics" is non-zero if any of the APICS (local or I/O)
+ *  are *not* an 82489DX.  This is useful to determine if more than 15
+ *  CPUs can be supported (true if zero).
+ */
 static int imps_any_new_apics = 0;
 #if 0
 volatile int imps_release_cpus = 0;
 #endif
+/*
+ *  "imps_enabled" is non-zero if the probe sequence found IMPS
+ *  information and was successful.
+ */
 static int imps_enabled = 0;
+/*
+ *  This represents the number of CPUs found.
+ */
 static int imps_num_cpus = 1;
+/*
+ *  This contains the local APIC hardware address.
+ */
 static unsigned imps_lapic_addr = ((unsigned) (&lapic_dummy)) - LAPIC_ID;
+/*
+ *  These map from virtual cpu numbers to APIC id's and back.
+ */
 static unsigned char imps_cpu_apic_map[IMPS_MAX_CPUS];
 static unsigned char imps_apic_cpu_map[IMPS_MAX_CPUS];
 

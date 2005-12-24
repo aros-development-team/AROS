@@ -183,36 +183,6 @@ struct imps_interrupt
  */
 
 /*
- *  "imps_any_new_apics" is non-zero if any of the APICS (local or I/O)
- *  are *not* an 82489DX.  This is useful to determine if more than 15
- *  CPUs can be supported (true if zero).
- */
-extern int imps_any_new_apics;
-
-/*
- *  "imps_enabled" is non-zero if the probe sequence found IMPS
- *  information and was successful.
- */
-extern int imps_enabled;
-
-/*
- *  This contains the local APIC hardware address.
- */
-extern unsigned imps_lapic_addr;
-
-/*
- *  This represents the number of CPUs found.
- */
-extern int imps_num_cpus;
-
-/*
- *  These map from virtual cpu numbers to APIC id's and back.
- */
-extern unsigned char imps_cpu_apic_map[IMPS_MAX_CPUS];
-extern unsigned char imps_apic_cpu_map[IMPS_MAX_CPUS];
-
-
-/*
  *  This is the primary function for probing for Intel MPS 1.1/1.4
  *  compatible hardware and BIOS information.  While probing the CPUs
  *  information returned from the BIOS, this also starts up each CPU

@@ -229,7 +229,7 @@ struct ringbuffer {
 	unsigned char status;
 	unsigned char next;
 	unsigned short len;
-};
+} __attribute__((packed));
 /*
  * Local variables:
  *  c-basic-offset: 8

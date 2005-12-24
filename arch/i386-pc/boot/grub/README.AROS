@@ -1,23 +1,40 @@
-changed files to support FastFileSystem
----------------------------------------
+This File Lists specific patches/changes made to support AROS.
+
+Changes
+-------
+
+24/12/2005 - Merged SVN codebase with Grub 0.97 tree.  Replaced old setvbe patch with newer version.
+             (vbeset/vbematch - setvbe patch no longer functioned).
+
+26/03/2004 - Merged CVS codebase with Grub 0.94 tree.
+
+Support Files
+-------------
 
 stage2/disk_io.c
-	added affs support
+	include affs support
+
 stage2/filesys.h
-	added affs support
+	include affs support
+
 stage2/shared.h
-        added affs support
+   added affs support
+
 stage2/fsys_affs.c
-	added
+	Code implementing AFFS support for grub
+
 stage2/Makefile.am
 	added various *fsys_affs* + -DFSYS_AFFS=1
+
 stage2/boot.c
 stage2/builtins.c
 stage2/common.c
-	added support for setting VESA modes and passing info on them to
-	the kernel
+	VBESET/MATCH patches to support setting VESA modes,
+	and passing info on them to the kernel
+
 stage2/shared.h
-	likewise, plus affs support
+	include vbe + affs support
+
 configure.in
 	added AFFS enable/disable support
 

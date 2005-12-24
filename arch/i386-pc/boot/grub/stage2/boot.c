@@ -1,7 +1,7 @@
 /* boot.c - load and bootstrap a kernel */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -87,14 +87,22 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	    }
 	  type = KERNEL_TYPE_MULTIBOOT;
 	  str2 = "Multiboot";
+
+	  /* Check to see if the kernel wants a video mode
+	   */
+	  if ( (flags & MULTIBOOT_VIDEO_MODE) != 0 )
+	  {
+            struct multiboot_header* mbh = (struct multiboot_header *) (buffer + i);
+
+            if (mbh->mode_type == 0) {
+              match_vbe(mbh->width, mbh->height, mbh->depth, 1);
+            } else {
+              // EGA mode... umm
+            }
+	  }
+	  
 	  break;
 	}
-    }
-  /* Handle graphics request for multiboot kernels */
-  if (type == KERNEL_TYPE_MULTIBOOT &&
-      mbi.flags & MB_INFO_VIDEO_INFO)
-    {
-      mbi.vbe_mode = 0x03;
     }
 
   /* Use BUFFER as a linux kernel header, if the image is Linux zImage
@@ -272,7 +280,7 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 
       data_len = setup_sects << 9;
       text_len = filemax - data_len - SECTOR_SIZE;
-      
+
       linux_data_tmp_addr = (char *) LINUX_BZIMAGE_ADDR + text_len;
       
       if (! big_linux
@@ -286,8 +294,8 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	errnum = ERR_WONT_FIT;
       else
 	{
-      grub_printf ("   [Linux-%s, setup=0x%x, size=0x%x]\n",
-		   (big_linux ? "bzImage" : "zImage"), data_len, text_len);
+	  grub_printf ("   [Linux-%s, setup=0x%x, size=0x%x]\n",
+		       (big_linux ? "bzImage" : "zImage"), data_len, text_len);
 
 	  /* Video mode selection support. What a mess!  */
 	  /* NOTE: Even the word "mess" is not still enough to
@@ -296,14 +304,14 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	     any more. -okuji  */
 	  {
 	    char *vga;
-
+	
 	    /* Find the substring "vga=".  */
 	    vga = grub_strstr (arg, "vga=");
 	    if (vga)
 	      {
 		char *value = vga + 4;
 		int vid_mode;
-
+	    
 		/* Handle special strings.  */
 		if (substring ("normal", value) < 1)
 		  vid_mode = LINUX_VID_MODE_NORMAL;
@@ -320,11 +328,11 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 		    grub_close ();
 		    return KERNEL_TYPE_NONE;
 		  }
-
+	    
 		lh->vid_mode = vid_mode;
 	      }
 	  }
-		
+
 	  /* Check the mem= option to limit memory used for initrd.  */
 	  {
 	    char *mem;
@@ -390,14 +398,14 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	      grub_read (linux_data_tmp_addr + MULTIBOOT_SEARCH,
 			 data_len + SECTOR_SIZE - MULTIBOOT_SEARCH);
 	    }
-
+	  
 	  if (lh->header != LINUX_MAGIC_SIGNATURE ||
 	      lh->version < 0x0200)
 	    /* Clear the heap space.  */
 	    grub_memset (linux_data_tmp_addr + ((setup_sects + 1) << 9),
 			 0,
 			 (64 - setup_sects - 1) << 9);
-
+      
 	  /* Copy command-line plus memory hack to staging area.
 	     NOTE: Linux has a bug that it doesn't handle multiple spaces
 	     between two options and a space after a "mem=" option isn't
@@ -409,14 +417,28 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 	  {
 	    char *src = skip_to (0, arg);
 	    char *dest = linux_data_tmp_addr + LINUX_CL_OFFSET;
-
+	
 	    while (dest < linux_data_tmp_addr + LINUX_CL_END_OFFSET && *src)
 	      *(dest++) = *(src++);
-	    
-	    /* Add a mem option automatically only if the user doesn't
-	       specify it explicitly.  */
+	
+	    /* Old Linux kernels have problems determining the amount of
+	       the available memory.  To work around this problem, we add
+	       the "mem" option to the kernel command line.  This has its
+	       own drawbacks because newer kernels can determine the
+	       memory map more accurately.  Boot protocol 2.03, which
+	       appeared in Linux 2.4.18, provides a pointer to the kernel
+	       version string, so we could check it.  But since kernel
+	       2.4.18 and newer are known to detect memory reliably, boot
+	       protocol 2.03 already implies that the kernel is new
+	       enough.  The "mem" option is added if neither of the
+	       following conditions is met:
+	       1) The "mem" option is already present.
+	       2) The "kernel" command is used with "--no-mem-option".
+	       3) GNU GRUB is configured not to pass the "mem" option.
+	       4) The kernel supports boot protocol 2.03 or newer.  */
 	    if (! grub_strstr (arg, "mem=")
 		&& ! (load_flags & KERNEL_LOAD_NO_MEM_OPTION)
+		&& lh->version < 0x0203		/* kernel version < 2.4.18 */
 		&& dest + 15 < linux_data_tmp_addr + LINUX_CL_END_OFFSET)
 	      {
 		*dest++ = ' ';
@@ -424,24 +446,24 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 		*dest++ = 'e';
 		*dest++ = 'm';
 		*dest++ = '=';
-		
+	    
 		dest = convert_to_ascii (dest, 'u', (extended_memory + 0x400));
 		*dest++ = 'K';
 	      }
-
+	
 	    *dest = 0;
 	  }
-
+      
 	  /* offset into file */
 	  grub_seek (data_len + SECTOR_SIZE);
-
+      
 	  cur_addr = (int) linux_data_tmp_addr + LINUX_SETUP_MOVE_SIZE;
 	  grub_read ((char *) LINUX_BZIMAGE_ADDR, text_len);
       
 	  if (errnum == ERR_NONE)
 	    {
 	      grub_close ();
-
+	  
 	      /* Sanity check.  */
 	      if (suggested_type != KERNEL_TYPE_NONE
 		  && ((big_linux && suggested_type != KERNEL_TYPE_BIG_LINUX)
@@ -450,10 +472,10 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
 		  errnum = ERR_EXEC_FORMAT;
 		  return KERNEL_TYPE_NONE;
 		}
-
+	  
 	      /* Ugly hack.  */
 	      linux_text_len = text_len;
-	      
+	  
 	      return big_linux ? KERNEL_TYPE_BIG_LINUX : KERNEL_TYPE_LINUX;
 	    }
 	}
