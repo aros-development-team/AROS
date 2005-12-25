@@ -136,8 +136,8 @@ AROS_UFH3(void, Enumerator,
 {
     AROS_USERFUNC_INIT
 
-    UWORD ProductID, VendorID;
-    ULONG IOBase;
+    IPTR ProductID, VendorID;
+    IPTR IOBase;
     OOP_AttrBase __IHidd_PCIDev = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
     struct TagItem attrs[] = {
@@ -147,9 +147,9 @@ AROS_UFH3(void, Enumerator,
 
     D(bug("[ATA.scanbus] got device\n"));
     
-    OOP_GetAttr(Device, aHidd_PCIDevice_ProductID, (APTR)&ProductID);
-    OOP_GetAttr(Device, aHidd_PCIDevice_VendorID,  (APTR)&VendorID);
-    OOP_GetAttr(Device, aHidd_PCIDevice_Base4,  (APTR)&IOBase);
+    OOP_GetAttr(Device, aHidd_PCIDevice_ProductID, &ProductID);
+    OOP_GetAttr(Device, aHidd_PCIDevice_VendorID,  &VendorID);
+    OOP_GetAttr(Device, aHidd_PCIDevice_Base4,  &IOBase);
 
     D(bug("[ATA.scanbus] IDE device %04x:%04x - DMA registers at %x\n",
 	ProductID, VendorID, IOBase));
