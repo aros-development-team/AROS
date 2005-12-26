@@ -253,7 +253,7 @@
     			a larger depth than that supplied, so
     			we should get back the correct depth.
     			This is because layers.library might
-    			want to allocate offscreen bimaps to
+    			want to allocate offscreen bitmaps to
     			store obscured areas, and then those
     			offscreen bitmaps should be of the same depth as
     			the onscreen ones.
