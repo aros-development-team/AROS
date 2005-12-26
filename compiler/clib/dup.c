@@ -27,7 +27,8 @@
         an open file, read(),  write() and lseek() calls all move a single
         pointer into the file, and append mode, non-blocking I/O and asynchronous
         I/O options are shared between the references.  If a separate pointer in­
-        to the file is desired, a different object reference to the file must be     obtained by issuing an additional open(2) call.  The close-on-exec flag
+        to the file is desired, a different object reference to the file must be
+        obtained by issuing an additional open(2) call.  The close-on-exec flag
         on the new file descriptor is unset.
 
     INPUTS
