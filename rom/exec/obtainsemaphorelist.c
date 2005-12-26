@@ -81,19 +81,28 @@
 	ss->ss_QueueCount++;
 	if(ss->ss_QueueCount != 0)
 	{
-	    /*
-	     *	Locked, post a wait message. We use the field
-	     *	ss_MultipleLink, which is why this function requires an
-	     *	external arbitrator.
-	     */
-	    ss->ss_MultipleLink.sr_Waiter = me;
-	    AddTail
-	    (
-		(struct List *)&ss->ss_WaitQueue,
-		(struct Node *)&ss->ss_MultipleLink
-	    );
-	    failedObtain++;
-	}
+    	    /* sem already locked by me? */
+            if (ss->ss_Owner != me) 
+            {
+		/*
+		 *	Locked by someone else, post a wait message. We use the field
+		 *	ss_MultipleLink, which is why this function requires an
+		 *	external arbitrator.
+		 */
+		ss->ss_MultipleLink.sr_Waiter = me;
+		AddTail
+		(
+		    (struct List *)&ss->ss_WaitQueue,
+		    (struct Node *)&ss->ss_MultipleLink
+		);
+		failedObtain++;
+	    }
+	    else
+	    {
+	    	/* Already locked by me */
+	    	ss->ss_NestCount++;
+	    }
+ 	}
 	else
 	{
 	    /* We have it... */
