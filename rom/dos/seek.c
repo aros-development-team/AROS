@@ -59,6 +59,7 @@
 
     /* Get pointer to filehandle. */
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);
+    LONG               offset = 0, ret;
 
     /* If the file is in append mode, seeking is not allowed. */
     if( fh->fh_Flags & FHF_APPEND )
@@ -73,15 +74,20 @@
     }
     else
     {
-	if (position || mode != OFFSET_CURRENT)
-	{
-	    /* Read mode. Just reinit the buffers. We can't call
-	       Flush() in this case as that would end up in recursion. */
-	    fh->fh_Pos = fh->fh_End = fh->fh_Buf;
-	}
+	/* Read mode. Adjust the offset so that buffering is
+	   taken into account. */
+	if (fh->fh_Pos < fh->fh_End && mode == OFFSET_CURRENT)
+	    offset = (LONG)(fh->fh_Pos - fh->fh_End);
+	    
+	    
+        /* Read mode. Just reinit the buffers. We can't call
+           Flush() in this case as that would end up in
+	   recursion. */
+        fh->fh_Pos = fh->fh_End = fh->fh_Buf;
     }
 
-    return InternalSeek( fh, position, mode, DOSBase );
+    ret = InternalSeek( fh, position + offset, mode, DOSBase );
+    return (ret == -1) ? -1 : (ret + offset);
     
     AROS_LIBFUNC_EXIT
 } /* Seek */
