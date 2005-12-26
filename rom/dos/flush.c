@@ -65,8 +65,12 @@
     }
     else if( fh->fh_Pos < fh->fh_End )
     {
+    	int offset = fh->fh_Pos - fh->fh_End;
+	
+	fh->fh_Pos = fh->fh_End = fh->fh_Buf;
+	
         /* Read mode. Try to seek back to the current position. */
-        if( Seek( file, fh->fh_Pos - fh->fh_End, OFFSET_CURRENT ) < 0 )
+        if( InternalSeek( file, offset, OFFSET_CURRENT, DOSBase ) < 0 )
         {
             return FALSE;
         }
