@@ -54,6 +54,7 @@ FILES := \
     Type \
     Version \
     Wait \
+    WaitForPort \
     OpenPci \
     Which
 
