@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <proto/alib.h>
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 STRPTR version = "$VER: WaitForPort 0.0.1 (26.12.2005)";
