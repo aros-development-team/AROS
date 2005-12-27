@@ -85,6 +85,7 @@ D(bug("[WaitForPort] Recieved timer signal? ..\n"));
                         if (timerIORequest)
                         {
                            AROSTCP_Port = FindPort(WaitForPort_Arguments[0]);
+                           wait_time += 1000000;
                            if (!(AROSTCP_Port))
                            {
                               if (wait_time > wait_limit)
@@ -101,7 +102,6 @@ D(bug("[WaitForPort] Port found ... escaping from wait loop\n"));
                            }
                      	   timerIORequest->tr_node.io_Command = TR_ADDREQUEST;
                            timerIORequest->tr_time.tv_micro = 1000000;
-                           wait_time += timerIORequest->tr_time.tv_micro;
                            BeginIO((struct IORequest *)timerIORequest);
                         }
                      }
@@ -138,5 +138,5 @@ D(bug("[WaitForPort] Port found ... escaping from wait loop\n"));
 
    if (AROSTCP_Port) return RETURN_OK;
 
-   return RETURN_FAIL;
+   return RETURN_WARN;
 }
