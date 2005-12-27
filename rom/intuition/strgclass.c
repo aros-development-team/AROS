@@ -73,7 +73,7 @@ flagvar &= ~flag;
 
 STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
 {
-    struct TagItem  *tag, *tstate;
+    const struct TagItem  *tag, *tstate;
     struct StrGData *data = INST_DATA(cl, g);
     IPTR    	     retval = (IPTR)0;
 
@@ -107,7 +107,7 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
         	{
                     /* OM_NEW STRINGA_TextVal is handled in strg_new! */
 
-                    strcpy(data->StrInfo.Buffer, (STRPTR)tidata);
+                    strcpy(data->StrInfo.Buffer, (STRPTR)tidata ? (STRPTR)tidata : (STRPTR)"");
                     g->Activation &= ~GACT_LONGINT;
                     retval = 1UL;
                     notify = TRUE;
@@ -306,7 +306,7 @@ IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
         }
 
         /* Get inital string contents */
-        textval = (STRPTR)GetTagData(STRINGA_TextVal, NULL, msg->ops_AttrList);
+        textval = (STRPTR)GetTagData(STRINGA_TextVal, 0, msg->ops_AttrList);
         if (textval)
         {
             strcpy(data->StrInfo.Buffer, textval);
