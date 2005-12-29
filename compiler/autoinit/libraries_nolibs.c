@@ -7,15 +7,18 @@
     Lang: english
 */
 
+#include <aros/symbolsets.h>
 
-int set_open_libraries(void)   __attribute__ ((weak));
-void set_close_libraries(void) __attribute__ ((weak));
+DEFINESET(LIBS)
 
-int set_open_libraries(void)
+int set_open_libraries_list(const void *list[])   __attribute__ ((weak));
+void set_close_libraries_list(const void *list[]) __attribute__ ((weak));
+
+int set_open_libraries_list(const void *list[])
 {
     return 1;
 }
 
-void set_close_libraries(void)
+void set_close_libraries_list(const void *list[])
 {
 }

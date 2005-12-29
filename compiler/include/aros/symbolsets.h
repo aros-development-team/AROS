@@ -21,26 +21,6 @@ struct libraryset
     void  **baseptr;
 };
 
-extern int set_call_funcs(const void *set[], int direction, int test_fail);
-extern
-AROS_UFP3(int, set_call_libfuncs,
-	  AROS_UFPA(const void**, set, A0),
-	  AROS_UFPA(int, order, D0),
-	  AROS_UFPA(void*, libbase, A6)
-);
-extern
-AROS_UFP6(int, set_call_devfuncs,
-	  AROS_UFPA(const void**, set, A0),
-	  AROS_UFPA(int, order, D2),
-	  AROS_UFPA(void*, ioreq, A1),
-	  AROS_UFPA(ULONG, unitnum, D0),
-	  AROS_UFPA(ULONG, flags, D1),
-	  AROS_UFPA(void*, libbase, A6)
-);
-
-extern int set_open_libraries(void);
-extern void set_close_libraries(void);
-
 #define SETNAME(set) __##set##_LIST__
 
 #define DECLARESET(set) \
@@ -173,3 +153,28 @@ for                                                                          \
     AROS_EXPORT_ASM_SYM(__this_program_requires_symbol_sets_handling);
     
 #endif
+
+/* Function prototypes from autoinit and libinit */
+extern int set_call_funcs(const void *set[], int direction, int test_fail);
+extern
+AROS_UFP3(int, set_call_libfuncs,
+	  AROS_UFPA(const void**, set, A0),
+	  AROS_UFPA(int, order, D0),
+	  AROS_UFPA(void*, libbase, A6)
+);
+extern
+AROS_UFP6(int, set_call_devfuncs,
+	  AROS_UFPA(const void**, set, A0),
+	  AROS_UFPA(int, order, D2),
+	  AROS_UFPA(void*, ioreq, A1),
+	  AROS_UFPA(ULONG, unitnum, D0),
+	  AROS_UFPA(ULONG, flags, D1),
+	  AROS_UFPA(void*, libbase, A6)
+);
+
+DECLARESET(LIBS)
+
+#define set_open_libraries() set_open_libraries_list(SETNAME(LIBS))
+#define set_close_libraries() set_close_libraries_list(SETNAME(LIBS))
+extern int set_open_libraries_list(const void *list[]);
+extern void set_close_libraries_list(const void *list[]);
