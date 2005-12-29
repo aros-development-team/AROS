@@ -8,4 +8,4 @@ USER_CFLAGS := -Dmain=submain
   arch=pc-i386 \
   files="boot aros inithidds"
 
-%common
+#MM- kernel-dos-pc-i386 : kernel-bootloader-pc-i386-includes
