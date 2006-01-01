@@ -5,7 +5,7 @@ LIBNAME := pcilinux
 
 FILES	:= driverclass
 
-%build_module_macro mmake=kernel-pci-pcilinux \
+%build_module_macro mmake=kernel-pci-x86_64-pcilinux \
     modname=pcilinux modtype=hidd \
     files=$(FILES) \
     conffile=lib.conf genfunctable=yes \
