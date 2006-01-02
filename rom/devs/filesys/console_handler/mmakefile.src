@@ -7,6 +7,5 @@ FILES := con_task support completion
 
 %build_module mmake=kernel-fs-con \
     modname=con modtype=device modsuffix=handler \
-    conffile=console.conf files="con_handler $(FILES)" \
-    uselibs="amiga rom arosc m"
+    conffile=console.conf files="con_handler $(FILES)"
 
