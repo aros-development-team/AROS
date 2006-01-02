@@ -46,7 +46,7 @@
 #define __NR_close  (6)
 
 #ifndef __ROM__
-static LONG __no_exec()
+__used static LONG __no_exec() 
 {
     return -1;
 }
@@ -58,11 +58,11 @@ static const char Pci_Name[] = NAME_STRING;
 static const APTR inittabl[4];
 extern void *const LIBFUNCTABLE[];
 
-static const struct Resident Pci_Resident = {
+const struct Resident Pci_Resident = {
     RTC_MATCHWORD,
     &Pci_Resident,
     &LIBEND,
-    RTF_SINGLETASK | RTF_AUTOINIT,
+    RTF_COLDSTART | RTF_AUTOINIT,
     VERSION_NUMBER,
     NT_LIBRARY,
     90,
