@@ -21,5 +21,26 @@ machine :
 #MM- demos : includes linklibs
 #MM- contrib : includes linklibs
 
-%common
+#MM- core-linklibs: \
+#MM      kernel-expansion-linklib \
+#MM      kernel-utility-linklib \
+#MM      kernel-oop-linklib \
+#MM      kernel-graphics-linklib \
+#MM      kernel-layers-linklib \
+#MM      kernel-intuition-linklib \
+#MM      kernel-cgfx-linklib \
+#MM      kernel-dos-linklib \
+#MM      kernel-workbench-linklib
+
+#MM- core-includes: \
+#MM      kernel-expansion-includes \
+#MM      kernel-utility-includes \
+#MM      kernel-oop-includes \
+#MM      kernel-graphics-includes \
+#MM      kernel-layers-includes \
+#MM      kernel-intuition-includes \
+#MM      kernel-cgfx-includes \
+#MM      kernel-dos-includes \
+#MM      kernel-workbench-includes
+
 %include_deps $(TOP)/bin/$(AROS_TARGET_ARCH)-$(TARGET_CPU)/gen/config/host.cfg

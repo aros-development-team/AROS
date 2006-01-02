@@ -1057,8 +1057,8 @@ GLOB_MKDIRS += $(BD_TARGETDIR$(BDID)) $(BD_OBJDIR$(BDID))
 
 # Define metamake targets and their dependencies
 #MM- includes-all : %(mmake)-includes
-#MM %(mmake) : %(mmake)-includes
-#MM %(mmake)-kobj : %(mmake)-includes
+#MM %(mmake) : %(mmake)-includes core-linklibs
+#MM %(mmake)-kobj : %(mmake)-includes core-linklibs
 #MM %(mmake)-linklib : %(mmake)-includes
 #MM %(mmake)-quick : %(mmake)-includes-quick
 #MM %(mmake)-includes : %(mmake)-makefile includes-generate-deps
@@ -1266,11 +1266,18 @@ GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
 endif
 
 # Link kernel object file
+BD_KAUTOLIB := workbench dos cybergraphics intuition layers graphics oop utility \
+    expansion
+BD_KBASE := WorkbenchBase DOSBase CyberGfxBase IntuitionBase LayersBase \
+    GfxBase OOPBase UtilityBase ExpansionBase
+BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
+BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
+$(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
+$(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_KBASE))
 $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 	@$(ECHO) "Linking $@"
-	@$(AROS_LD) -Ur -o $@ $^
-	@$(OBJCOPY) $@ `$(NM_PLAIN) $@ | $(AWK) '$$3 ~ /^__.*_(LIST|END)__$$/ {print "-L " $$3;}'`
-
+	@$(AROS_LD) -Ur -o $@ $^ -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
+	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
 
 ## Dependency fine-tuning
 ##
