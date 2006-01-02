@@ -19,7 +19,7 @@ FUNCS :=    addclass		\
 	    removeclass		\
 	    setattrs
 
-USER_CFLAGS := -DAROS_USE_OOP
+USER_CFLAGS := -DAROS_USE_OOP -D__OOP_NOLIBBASE__
 
 #MM kernel-oop-includes : \
 #MM     kernel-exec-includes \
