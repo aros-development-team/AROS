@@ -17,9 +17,9 @@
 #include LC_LIBDEFS_FILE
 
 #include "hash.h"
-#undef SDEBUG
+//#undef SDEBUG
 #undef DEBUG
-#define SDEBUG 0
+//#define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -41,70 +41,67 @@ static void FreeAllClasses(struct Library *BOOPIBase)
 #endif
 */
 
-struct Library *OOPBase;
-
-AROS_SET_LIBFUNC(OOPInit, LIBBASETYPE, lh)
+AROS_SET_LIBFUNC(OOPInit, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
 
-    OOPBase = (struct Library *)lh;
+    D(bug("Enter OOPInit\n"));
     
-    NEWLIST(&GetOBase(lh)->ob_ClassList);
-    InitSemaphore(&GetOBase(lh)->ob_ClassListLock);
+    NEWLIST(&LIBBASE->ob_ClassList);
+    InitSemaphore(&LIBBASE->ob_ClassListLock);
 
-    NEWLIST(&GetOBase(lh)->ob_ServerList);
-    InitSemaphore(&GetOBase(lh)->ob_ServerListLock);
+    NEWLIST(&LIBBASE->ob_ServerList);
+    InitSemaphore(&LIBBASE->ob_ServerListLock);
 
-    InitSemaphore(&GetOBase(lh)->ob_IIDTableLock);
+    InitSemaphore(&LIBBASE->ob_IIDTableLock);
     
     SDInit();
 	
-    UtilityBase = OpenLibrary (UTILITYNAME, 0);
-    if (UtilityBase)
+    LIBBASE->ob_IIDTable = NewHash(NUM_IDS, HT_STRING, LIBBASE);
+    if (LIBBASE->ob_IIDTable)
     {
-    	GetOBase(lh)->ob_IIDTable = NewHash(NUM_IDS, HT_STRING, GetOBase(lh));
-    	if (GetOBase(lh)->ob_IIDTable)
+	struct IDDescr intern_ids[] =
 	{
-	    struct IDDescr intern_ids[] =
-	    {
-		/* We must make sure that Root gets ID 0 and Meta gets ID 1 */
-		{ IID_Root,		&__IRoot		},
-		{ IID_Meta,		&__IMeta		},
+	    /* We must make sure that Root gets ID 0 and Meta gets ID 1 */
+	    { IID_Root,		&__IRoot		},
+	    { IID_Meta,		&__IMeta		},
 	
 #if 0	
-		{ IID_Method,		&__IMethod		},
-		{ IID_Server,		&__IServer		},
-		{ IID_Proxy,		&__IProxy		},
-		{ IID_Interface,	&__IInterface		},
+	    { IID_Method,		&__IMethod		},
+	    { IID_Server,		&__IServer		},
+	    { IID_Proxy,		&__IProxy		},
+	    { IID_Interface,	&__IInterface		},
 #endif
-		{ NULL,	NULL }
-	    };
+	    { NULL,	NULL }
+	};
 
-	    /* Get some IDs that are used internally */
-    	    if (GetIDs(intern_ids, (struct IntOOPBase *)lh))
-    	    {
-            	if (init_rootclass(GetOBase(lh)))
-	    	{
-            	    if (init_basemeta(GetOBase(lh)))
-	    	    {
-		    	if (init_ifmetaclass(GetOBase(lh)))
+	/* Get some IDs that are used internally */
+	if (GetIDs(intern_ids, LIBBASE))
+	{
+	    if (init_rootclass(LIBBASE))
+	    {
+		if (init_basemeta(LIBBASE))
+		{
+		    if (init_ifmetaclass(LIBBASE))
+		    {
+			LIBBASE->ob_HIDDMetaClass
+			    = init_hiddmetaclass(LIBBASE);
+			if (LIBBASE->ob_HIDDMetaClass)
 			{
-			    GetOBase(lh)->ob_HIDDMetaClass
-			    	= init_hiddmetaclass(GetOBase(lh));
-			    if (GetOBase(lh)->ob_HIDDMetaClass)
+			    if (InitUtilityClasses(LIBBASE))
 			    {
-	    	    	    	if (InitUtilityClasses((struct IntOOPBase *)lh))
-			    	    return (TRUE);
+				D(bug("OOPInit all OK\n"));
+				return (TRUE);
 			    }
 			}
 		    }
-	    	}
-   	    }
+		}
+	    }
 	}
-	
-	CloseLibrary(UtilityBase);
     }
-    
+
+    D(bug("OOPInit failed\n"));
+	
     return (FALSE);
     
     AROS_SET_LIBFUNC_EXIT

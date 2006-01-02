@@ -86,8 +86,6 @@ struct IDDescr
 #define __IInterface	(GetOBase(OOPBase)->ob_InternIDs[IDX_IInterface])
 
 #define GetOBase(lib)           ((struct IntOOPBase *)(lib))
-#define SysBase 		(GetOBase(OOPBase)->ob_SysBase)
-#define UtilityBase		(GetOBase(OOPBase)->ob_UtilityBase)
 
 /*****************
 **  Prototypes  **
@@ -275,7 +273,6 @@ struct IntOOPBase
 {
     struct Library		 ob_LibNode;
     struct ExecBase	       * ob_SysBase;
-    struct Library	       * ob_UtilityBase;
     BPTR			 ob_SegList;
 
     struct SignalSemaphore	 ob_ClassListLock;
