@@ -72,7 +72,8 @@ extern const struct Resident
     Con_ROMTag,
     Nil_ROMTag,
     Ram_ROMTag,
-    Pci_Resident;
+    Pci_Resident,
+    PCI_ROMTag;
 
 
 /* This list MUST be in the correct order (priority). */
@@ -90,6 +91,7 @@ static const struct Resident *romtagList[] =
     &HIDDCl_ROMTag,			/* ColdStart,   92	 */
     &UXIO_ROMTag,			/* ColdStart,   91	 */
 #ifdef __i386__
+    &PCI_ROMTag,                      /* ColdStart,   90       */
     &Pci_Resident,                      /* ColdStart,   90       */
 #endif
     &Graphics_ROMTag, 			/* ColdStart,   65	 */
