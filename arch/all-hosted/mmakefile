@@ -16,7 +16,7 @@ KHIDDS  := hiddclass unixio x11gfx parallel serial
 ifeq ("$(AROS_HOST_ARCH)","linux")
 KHIDDS  += linux
     ifeq ("$(AROS_HOST_CPU)","i386")
-	KHIDDS	+= pcilinux
+	KHIDDS	+= pci pcilinux
     endif
 endif
 KRSRCS  := battclock
