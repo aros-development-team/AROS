@@ -26,7 +26,7 @@
 /*  FUNCTION
 
     INPUTS
-        sprite - pointer to programmer´s ExtSprite (from AllocSpriteData())
+        sprite - pointer to programmer's ExtSprite (from AllocSpriteData())
         tags   - a standard tag list
 
     RESULT
