@@ -35,7 +35,7 @@ struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, struct DiskfontBase
     UWORD   	    	     aword, numentries, numtags;
     UWORD   	    	    *availsizes = NULL;
     UWORD   	    	     numoutlineentries = 0;
-    UBYTE   	    	     strbuf[MAXFONTNAME];
+    UBYTE   	    	     strbuf[MAXFONTPATH + 1];
 
     D(bug("ReadFontDescr(filename=%s\n", filename));
     
