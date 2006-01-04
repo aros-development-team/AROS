@@ -575,6 +575,8 @@ VOID open_window()
 			    | IDCMP_GADGETUP
 			    | IDCMP_MENUPICK
 			    | IDCMP_CLOSEWINDOW
+			    | LISTVIEWIDCMP
+			    | BUTTONIDCMP
 	, WA_Flags,	    WFLG_DRAGBAR
 			    | WFLG_DEPTHGADGET
 			    | WFLG_CLOSEGADGET
@@ -621,7 +623,7 @@ struct NewGadget swinfogad =
 	, WA_Top,		0
 	, WA_InnerWidth,	580
 	, WA_InnerHeight,	250
-	, WA_IDCMP,		IDCMP_CLOSEWINDOW
+	, WA_IDCMP,		IDCMP_CLOSEWINDOW | LISTVIEWIDCMP
 	, WA_Flags,		WFLG_DRAGBAR
 				| WFLG_DEPTHGADGET
 				| WFLG_CLOSEGADGET
@@ -901,435 +903,448 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 
     if ( ( port & iw_sigbit ) != 0L )
     {
-      msg = (struct IntuiMessage *) GetMsg ( InfoWindow->UserPort );
-      class = msg->Class;
-      code = msg->Code;
-      if ( class == IDCMP_CLOSEWINDOW )
+      BOOL close_iw = FALSE;
+      
+      while((msg = GT_GetIMsg ( InfoWindow->UserPort )))
       {
-	close_infowindow();
+	class = msg->Class;
+	code = msg->Code;
+	if ( class == IDCMP_CLOSEWINDOW )
+	{
+	  close_iw = TRUE;
+	}
+	GT_ReplyIMsg((struct Message *)msg);
       }
+      
+      if (close_iw) close_infowindow();
     }
-    else if ( ( port & w_sigbit ) != 0L )
+    
+    if ( ( port & w_sigbit ) != 0L )
     {
-      msg = (struct IntuiMessage *) GetMsg ( Window->UserPort );
-      class = msg->Class;
-      code = msg->Code;
-      switch ( class )
+      while((msg = GT_GetIMsg ( Window->UserPort )))
       {
-	case IDCMP_CLOSEWINDOW :
-		quit = 1;
-		break;
+	class = msg->Class;
+	code = msg->Code;
+	switch ( class )
+	{
+	  case IDCMP_CLOSEWINDOW :
+		  quit = 1;
+		  break;
 
-	case IDCMP_MENUPICK :
-		while ( code != MENUNULL )
-		{
-//		  printf ( "Menu: %d %d %d\n", MENUNUM(code), ITEMNUM(code), SUBNUM(code) );
-		  switch ( MENUNUM ( code ) )
+	  case IDCMP_MENUPICK :
+		  while ( code != MENUNULL )
 		  {
-		    case 0: /* Project */
-			switch ( ITEMNUM ( code ) )
-			{
-			  case 0: /* About */
-				es.es_TextFormat = ABOUT_TXT;
-				es.es_GadgetFormat = CONTINUE_TXT;
-				ClearIDCMP();
-				EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-				ResetIDCMP();
-				break;
-			  case 2: /* Quit */
-				quit = 1;
-				break;
-			}
-			break;
-		    case 1: /* Window List */
-			object = getsw ( &type );
-			switch ( ITEMNUM ( code ) )
-			{
-			  case 0: /* Update List */
-				/* Update will be done after this switch() */
-				break;
-			  case 2: /* Kill */
-				if ( type == Screen_type || type == Window_type )
-				{
-				int killit;
-				  switch ( type )
+  //		  printf ( "Menu: %d %d %d\n", MENUNUM(code), ITEMNUM(code), SUBNUM(code) );
+		    switch ( MENUNUM ( code ) )
+		    {
+		      case 0: /* Project */
+			  switch ( ITEMNUM ( code ) )
+			  {
+			    case 0: /* About */
+				  es.es_TextFormat = ABOUT_TXT;
+				  es.es_GadgetFormat = CONTINUE_TXT;
+				  ClearIDCMP();
+				  EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
+				  ResetIDCMP();
+				  break;
+			    case 2: /* Quit */
+				  quit = 1;
+				  break;
+			  }
+			  break;
+		      case 1: /* Window List */
+			  object = getsw ( &type );
+			  switch ( ITEMNUM ( code ) )
+			  {
+			    case 0: /* Update List */
+				  /* Update will be done after this switch() */
+				  break;
+			    case 2: /* Kill */
+				  if ( type == Screen_type || type == Window_type )
 				  {
-				    case Screen_type :
-					es.es_TextFormat = CLOSESCREEN_TXT;
-					es.es_GadgetFormat = YESNO_TXT;
-					ClearIDCMP();
-					killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-					ResetIDCMP();
-					if ( killit == EASYTRUE )
-					{
-					  CloseScreen ( (struct Screen *)object );
-					}
-					break;
-				    case Window_type :
-					es.es_TextFormat = CLOSEWINDOW_TXT;
-					es.es_GadgetFormat = YESNO_TXT;
-					ClearIDCMP();
-					killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-					ResetIDCMP();
-					if ( killit == EASYTRUE )
-					{
-					  CloseWindow ( (struct Window *)object );
-					}
-					break;
-				    default:
-					break;
+				  int killit;
+				    switch ( type )
+				    {
+				      case Screen_type :
+					  es.es_TextFormat = CLOSESCREEN_TXT;
+					  es.es_GadgetFormat = YESNO_TXT;
+					  ClearIDCMP();
+					  killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
+					  ResetIDCMP();
+					  if ( killit == EASYTRUE )
+					  {
+					    CloseScreen ( (struct Screen *)object );
+					  }
+					  break;
+				      case Window_type :
+					  es.es_TextFormat = CLOSEWINDOW_TXT;
+					  es.es_GadgetFormat = YESNO_TXT;
+					  ClearIDCMP();
+					  killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
+					  ResetIDCMP();
+					  if ( killit == EASYTRUE )
+					  {
+					    CloseWindow ( (struct Window *)object );
+					  }
+					  break;
+				      default:
+					  break;
+				    }
 				  }
-				}
-				break;
-			  case 3: /* To Front */
-				if ( type == Screen_type || type == Window_type )
-				{
-				  switch ( type )
+				  break;
+			    case 3: /* To Front */
+				  if ( type == Screen_type || type == Window_type )
 				  {
-				    case Screen_type :
-					ScreenToFront ( (struct Screen *)object );
-					break;
-				    case Window_type :
-					WindowToFront ( (struct Window *) object );
-					break;
-				    default:
-					break;
+				    switch ( type )
+				    {
+				      case Screen_type :
+					  ScreenToFront ( (struct Screen *)object );
+					  break;
+				      case Window_type :
+					  WindowToFront ( (struct Window *) object );
+					  break;
+				      default:
+					  break;
+				    }
 				  }
-				}
-				break;
-			  case 4: /* To Back */
-				if ( type == Screen_type || type == Window_type )
-				{
-				  switch ( type )
+				  break;
+			    case 4: /* To Back */
+				  if ( type == Screen_type || type == Window_type )
 				  {
-				    case Screen_type :
-					ScreenToBack ( (struct Screen *)object );
-					break;
-				    case Window_type :
-					WindowToBack ( (struct Window *) object );
-					break;
-				    default:
-					break;
+				    switch ( type )
+				    {
+				      case Screen_type :
+					  ScreenToBack ( (struct Screen *)object );
+					  break;
+				      case Window_type :
+					  WindowToBack ( (struct Window *) object );
+					  break;
+				      default:
+					  break;
+				    }
 				  }
-				}
-				break;
-			  case 5: /* To Origin */
-				if ( type == Screen_type || type == Window_type )
-				{
-				  switch ( type )
+				  break;
+			    case 5: /* To Origin */
+				  if ( type == Screen_type || type == Window_type )
 				  {
-				    case Screen_type :
-					MoveScreen ( (struct Screen *)object,
-						-((struct Screen *)object)->LeftEdge,
-						-((struct Screen *)object)->TopEdge );
-					break;
-				    case Window_type :
-					MoveWindow ( (struct Window *)object,
-						-((struct Window *)object)->RelLeftEdge,
-						-((struct Window *)object)->RelTopEdge );
-					break;
-				    default:
-					break;
+				    switch ( type )
+				    {
+				      case Screen_type :
+					  MoveScreen ( (struct Screen *)object,
+						  -((struct Screen *)object)->LeftEdge,
+						  -((struct Screen *)object)->TopEdge );
+					  break;
+				      case Window_type :
+					  MoveWindow ( (struct Window *)object,
+						  -((struct Window *)object)->RelLeftEdge,
+						  -((struct Window *)object)->RelTopEdge );
+					  break;
+				      default:
+					  break;
+				    }
+				    Delay ( 5 );
+				  }
+				  break;
+			    case 6: /* Activate */
+				  if ( type == Window_type )
+				  {
+				    ActivateWindow ( (struct Window *)object );
+				  }
+				  break;
+			    case 7: /* Zip */
+				  if ( type == Window_type )
+				  {
+				    ZipWindow ( (struct Window *)object );
+				  }
+				  break;
+			    case 8: /* Hide */
+				  if ( type == Window_type )
+				  {
+				    if ( (struct Window *)object == Window )
+				    {
+				      /* TODO: Iconify WiMP */
+				    }
+				    else
+				    {
+				      HideWindow ( (struct Window *)object );
+				    }
 				  }
 				  Delay ( 5 );
-				}
-				break;
-			  case 6: /* Activate */
-				if ( type == Window_type )
-				{
-				  ActivateWindow ( (struct Window *)object );
-				}
-				break;
-			  case 7: /* Zip */
-				if ( type == Window_type )
-				{
-				  ZipWindow ( (struct Window *)object );
-				}
-				break;
-			  case 8: /* Hide */
-				if ( type == Window_type )
-				{
-				  if ( (struct Window *)object == Window )
+				  break;
+			    case 9: /* Show */
+				  if ( type == Window_type )
 				  {
-				    /* TODO: Iconify WiMP */
+				    ShowWindow ( (struct Window *)object );
 				  }
-				  else
+				  Delay ( 5 );
+				  break;
+			    case 11: /* Info */
+				  if ( type == Window_type )
 				  {
-				    HideWindow ( (struct Window *)object );
+				    WindowInfo ( (struct Window *)object );
 				  }
-				}
-				Delay ( 5 );
-				break;
-			  case 9: /* Show */
-				if ( type == Window_type )
-				{
-				  ShowWindow ( (struct Window *)object );
-				}
-				Delay ( 5 );
-				break;
-			  case 11: /* Info */
-				if ( type == Window_type )
-				{
-				  WindowInfo ( (struct Window *)object );
-				}
-				else if ( type == Screen_type )
-				{
-				  ScreenInfo ( (struct Screen *)object );
-				}
-				break;
-			}
-			update_list();
-			break;
-		    case 2: /* Generic */
-			switch ( ITEMNUM ( code ) )
-			{
-			  case 0: /* Rescue All */
-				rescue_all();
-				Delay ( 5 );
-				update_list();
-				break;
+				  else if ( type == Screen_type )
+				  {
+				    ScreenInfo ( (struct Screen *)object );
+				  }
+				  break;
+			  }
+			  update_list();
+			  break;
+		      case 2: /* Generic */
+			  switch ( ITEMNUM ( code ) )
+			  {
+			    case 0: /* Rescue All */
+				  rescue_all();
+				  Delay ( 5 );
+				  update_list();
+				  break;
 
-			  case 1: /* Show All */
-				show_all();
-				Delay ( 5 );
-				update_list();
-				break;
+			    case 1: /* Show All */
+				  show_all();
+				  Delay ( 5 );
+				  update_list();
+				  break;
 
-			  case 2: /* RethinkDisplay */
-				RethinkDisplay();
-				update_list();
-				break;
+			    case 2: /* RethinkDisplay */
+				  RethinkDisplay();
+				  update_list();
+				  break;
 
-			  default:
-				break;
-			}
-			break;
-		    default:
-			break;
+			    default:
+				  break;
+			  }
+			  break;
+		      default:
+			  break;
+		    }
+		    if ( (item = ItemAddress ( menus, code ) ) != NULL )
+		    {
+		      code = item->NextSelect;
+		    }
+		    else
+		    {
+		      code = MENUNULL;
+		    }
 		  }
-		  if ( (item = ItemAddress ( menus, code ) ) != NULL )
+
+		  break;
+
+	  case IDCMP_GADGETUP :
+		  switch ( ((struct Gadget *)(msg->IAddress))->GadgetID )
 		  {
-		    code = item->NextSelect;
-		  }
-		  else
-		  {
-		    code = MENUNULL;
-		  }
-		}
-		  
-		break;
+		    case ID_UPDATE:
+			  update_list();
+			  break;
 
-	case IDCMP_GADGETUP :
-		switch ( ((struct Gadget *)(msg->IAddress))->GadgetID )
-		{
-		  case ID_UPDATE:
-			update_list();
-			break;
+		    case ID_ABOUT:
+			  es.es_TextFormat = ABOUT_TXT;
+			  es.es_GadgetFormat = CONTINUE_TXT;
+			  ClearIDCMP();
+			  EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
+			  ResetIDCMP();
+			  break;
 
-		  case ID_ABOUT:
-			es.es_TextFormat = ABOUT_TXT;
-			es.es_GadgetFormat = CONTINUE_TXT;
-			ClearIDCMP();
-			EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-			ResetIDCMP();
-			break;
+		    case ID_RETHINK:
+			  RethinkDisplay();
+			  update_list();
+			  break;
 
-		  case ID_RETHINK:
-			RethinkDisplay();
-			update_list();
-			break;
-
-		  case ID_SHOW:
-			object = getsw ( &type );
-			if ( type == Window_type )
-			{
-			  ShowWindow ( (struct Window *)object );
-			}
-			Delay ( 5 );
-			update_list();
-			break;
-
-		  case ID_HIDE:
-			object = getsw ( &type );
-			if ( type == Window_type )
-			{
-			  if ( (struct Window *)object == Window )
-			  {
-			    /* TODO: Iconify WiMP */
-			  }
-			  else
-			  {
-			    HideWindow ( (struct Window *)object );
-			  }
-			}
-			Delay ( 5 );
-			update_list();
-			break;
-
-		  case ID_ZIP:
-			object = getsw ( &type );
-			if ( type == Window_type )
-			{
-			  ZipWindow ( (struct Window *)object );
-			}
-			update_list();
-			break;
-
-		  case ID_ACTIVATE:
-			object = getsw ( &type );
-			if ( type == Window_type )
-			{
-			  ActivateWindow ( (struct Window *)object );
-			}
-			update_list();
-			break;
-
-		  case ID_FRONT:
-			object = getsw ( &type );
-			if ( type == Screen_type || type == Window_type )
-			{
-			  switch ( type )
-			  {
-			    case Screen_type :
-				ScreenToFront ( (struct Screen *)object );
-				break;
-			    case Window_type :
-				WindowToFront ( (struct Window *)object );
-				break;
-			    default:
-				break;
-			  }
-			}
-			update_list();
-			break;
-
-		  case ID_BACK:
-			object = getsw ( &type );
-			if ( type == Screen_type || type == Window_type )
-			{
-			  switch ( type )
-			  {
-			    case Screen_type :
-				ScreenToBack ( (struct Screen *)object );
-				break;
-			    case Window_type :
-				WindowToBack ( (struct Window *)object );
-				break;
-			    default:
-				break;
-			  }
-			}
-			update_list();
-			break;
-
-		  case ID_ORIGIN:
-			object = getsw ( &type );
-			if ( type == Screen_type || type == Window_type )
-			{
-			  switch ( type )
-			  {
-			    case Screen_type :
-				MoveScreen ( (struct Screen *)object,
-					-((struct Screen *)object)->LeftEdge,
-					-((struct Screen *)object)->TopEdge );
-				break;
-			    case Window_type :
-				MoveWindow ( (struct Window *)object,
-					-((struct Window *)object)->RelLeftEdge,
-					-((struct Window *)object)->RelTopEdge );
-				break;
-			    default:
-				break;
-			  }
-			  Delay ( 5 );
-			}
-			update_list();
-			break;
-
-		  case ID_KILL:
-			object = getsw ( &type );
-			if ( type == Screen_type || type == Window_type )
-			{
-			int killit;
-			  switch ( type )
-			  {
-			    case Screen_type :
-				es.es_TextFormat = CLOSESCREEN_TXT;
-				es.es_GadgetFormat = YESNO_TXT;
-				ClearIDCMP();
-				killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-				ResetIDCMP();
-				if ( killit == EASYTRUE )
-				{
-				  CloseScreen ( (struct Screen *)object );
-				}
-				break;
-			    case Window_type :
-				es.es_TextFormat = CLOSEWINDOW_TXT;
-				es.es_GadgetFormat = YESNO_TXT;
-				ClearIDCMP();
-				killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-				ResetIDCMP();
-				if ( killit == EASYTRUE )
-				{
-				  CloseWindow ( (struct Window *)object );
-				}
-				break;
-			    default:
-				break;
-			  }
-			}
-			update_list();
-			break;
-
-		  case ID_RESCUE:
-			rescue_all();
-			Delay(5);
-			update_list();
-			break;
-
-		  case ID_SHOWALL:
-			show_all();
-			Delay(5);
-			update_list();
-			break;
-
-		  case ID_LISTVIEW:
-			CurrentTime( &sec2, &msec2 );
-			GT_GetGadgetAttrs ( screenlistg,Window,NULL,
-      					GTLV_Selected, (IPTR)&sel2,
-      					TAG_DONE );
-			if ( sel1 == sel2
-			     && DoubleClick ( sec1, msec1, sec2, msec2 )
-      			   )
-      			{
+		    case ID_SHOW:
 			  object = getsw ( &type );
 			  if ( type == Window_type )
 			  {
-			    WindowInfo ( (struct Window *)object );
+			    ShowWindow ( (struct Window *)object );
 			  }
-			  else if ( type == Screen_type )
+			  Delay ( 5 );
+			  update_list();
+			  break;
+
+		    case ID_HIDE:
+			  object = getsw ( &type );
+			  if ( type == Window_type )
 			  {
-			    ScreenInfo ( (struct Screen *)object );
+			    if ( (struct Window *)object == Window )
+			    {
+			      /* TODO: Iconify WiMP */
+			    }
+			    else
+			    {
+			      HideWindow ( (struct Window *)object );
+			    }
 			  }
-      			}
-      			sec1 = sec2;
-      			msec1 = msec2;
-      			sel1 = sel2;
-			update_actionglist();
-			break;
+			  Delay ( 5 );
+			  update_list();
+			  break;
 
-		  default:
-			break;
-		}
-		break;
+		    case ID_ZIP:
+			  object = getsw ( &type );
+			  if ( type == Window_type )
+			  {
+			    ZipWindow ( (struct Window *)object );
+			  }
+			  update_list();
+			  break;
 
-	default :
-		break;
-      }
-    }
-    ReplyMsg ( (struct Message *)msg );
-  }
+		    case ID_ACTIVATE:
+			  object = getsw ( &type );
+			  if ( type == Window_type )
+			  {
+			    ActivateWindow ( (struct Window *)object );
+			  }
+			  update_list();
+			  break;
+
+		    case ID_FRONT:
+			  object = getsw ( &type );
+			  if ( type == Screen_type || type == Window_type )
+			  {
+			    switch ( type )
+			    {
+			      case Screen_type :
+				  ScreenToFront ( (struct Screen *)object );
+				  break;
+			      case Window_type :
+				  WindowToFront ( (struct Window *)object );
+				  break;
+			      default:
+				  break;
+			    }
+			  }
+			  update_list();
+			  break;
+
+		    case ID_BACK:
+			  object = getsw ( &type );
+			  if ( type == Screen_type || type == Window_type )
+			  {
+			    switch ( type )
+			    {
+			      case Screen_type :
+				  ScreenToBack ( (struct Screen *)object );
+				  break;
+			      case Window_type :
+				  WindowToBack ( (struct Window *)object );
+				  break;
+			      default:
+				  break;
+			    }
+			  }
+			  update_list();
+			  break;
+
+		    case ID_ORIGIN:
+			  object = getsw ( &type );
+			  if ( type == Screen_type || type == Window_type )
+			  {
+			    switch ( type )
+			    {
+			      case Screen_type :
+				  MoveScreen ( (struct Screen *)object,
+					  -((struct Screen *)object)->LeftEdge,
+					  -((struct Screen *)object)->TopEdge );
+				  break;
+			      case Window_type :
+				  MoveWindow ( (struct Window *)object,
+					  -((struct Window *)object)->RelLeftEdge,
+					  -((struct Window *)object)->RelTopEdge );
+				  break;
+			      default:
+				  break;
+			    }
+			    Delay ( 5 );
+			  }
+			  update_list();
+			  break;
+
+		    case ID_KILL:
+			  object = getsw ( &type );
+			  if ( type == Screen_type || type == Window_type )
+			  {
+			  int killit;
+			    switch ( type )
+			    {
+			      case Screen_type :
+				  es.es_TextFormat = CLOSESCREEN_TXT;
+				  es.es_GadgetFormat = YESNO_TXT;
+				  ClearIDCMP();
+				  killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
+				  ResetIDCMP();
+				  if ( killit == EASYTRUE )
+				  {
+				    CloseScreen ( (struct Screen *)object );
+				  }
+				  break;
+			      case Window_type :
+				  es.es_TextFormat = CLOSEWINDOW_TXT;
+				  es.es_GadgetFormat = YESNO_TXT;
+				  ClearIDCMP();
+				  killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
+				  ResetIDCMP();
+				  if ( killit == EASYTRUE )
+				  {
+				    CloseWindow ( (struct Window *)object );
+				  }
+				  break;
+			      default:
+				  break;
+			    }
+			  }
+			  update_list();
+			  break;
+
+		    case ID_RESCUE:
+			  rescue_all();
+			  Delay(5);
+			  update_list();
+			  break;
+
+		    case ID_SHOWALL:
+			  show_all();
+			  Delay(5);
+			  update_list();
+			  break;
+
+		    case ID_LISTVIEW:
+			  CurrentTime( &sec2, &msec2 );
+			  GT_GetGadgetAttrs ( screenlistg,Window,NULL,
+      					  GTLV_Selected, (IPTR)&sel2,
+      					  TAG_DONE );
+			  if ( sel1 == sel2
+			       && DoubleClick ( sec1, msec1, sec2, msec2 )
+      			     )
+      			  {
+			    object = getsw ( &type );
+			    if ( type == Window_type )
+			    {
+			      WindowInfo ( (struct Window *)object );
+			    }
+			    else if ( type == Screen_type )
+			    {
+			      ScreenInfo ( (struct Screen *)object );
+			    }
+      			  }
+      			  sec1 = sec2;
+      			  msec1 = msec2;
+      			  sel1 = sel2;
+			  update_actionglist();
+			  break;
+
+		    default:
+			  break;
+		  }
+		  break;
+
+	  default :
+		  break;
+	}
+      	GT_ReplyIMsg( (struct Message *)msg );
+	
+      } /* while((msg = GT_GetIMsg ( Window->UserPort ))) */
+      
+    } /* if ( ( port & w_sigbit ) != 0L ) */
+    
+  } /* while ( quit == 0 ) */
 
   close_infowindow();
   close_window();
