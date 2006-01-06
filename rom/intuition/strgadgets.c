@@ -34,7 +34,7 @@ size_t  stccpy(char *s1, const char *s2, size_t n);
 
 #define CURSORPEN   0
 #define STRBACKPEN  1
-#define STRTEXTPEN  4
+#define STRTEXTPEN  2
 
 #define NUMPENS 3
 #define STRALIGNMASK    (GACT_STRINGLEFT|GACT_STRINGCENTER|GACT_STRINGRIGHT)
