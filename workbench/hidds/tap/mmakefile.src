@@ -1,0 +1,22 @@
+#$Id: mmakefile.src 11526 2001-07-25 10:15:56Z iaint $
+include $(TOP)/config/make.cfg
+
+MODNAME	:=  tap
+MODTYPE	:=  hidd
+
+USER_CFLAGS :=	-DAROS_USE_OOP -I.
+
+FILES       :=
+STUBS	    := $(MODNAME)_stubs
+
+INCLUDE_FILES := $(wildcard include/*.h)
+
+# When there is actually a hidd.tap class for here, generate the whole
+# lot.
+%make_hidd_stubs hidd=tap
+
+#MM includes-copy
+%copy_includes path=hidd
+
+%include_deps
+%common
