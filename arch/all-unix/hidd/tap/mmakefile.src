@@ -1,0 +1,14 @@
+#$Id: mmakefile.src 23803 2005-12-11 11:58:09Z verhaegs $
+include $(TOP)/config/make.cfg
+
+FILES       := tap_init TapClass TapUnitClass
+
+USER_CFLAGS := -DAROS_USE_OOP -D__AROS__
+USER_INCLUDES := -I$(GENINCDIR)
+%build_module mmake=workbench-hidd-unix-tap \
+  modname=tap modtype=hidd \
+  files=$(FILES) \
+  uselibs="amiga hiddstubs" usehostlibs=c \
+  compiler=host
+
+#MM workbench-hidd-unix-tap : kernel-unixio
