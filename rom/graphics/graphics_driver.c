@@ -1957,10 +1957,10 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
 	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 	    
 	    if (depth < 8) {
-	    	retval = FALSE;
+	    	retval = 0;
 	    } else {
 	    /* We allways have a HIDD bitmap */
-	    	retval = TRUE;
+	    	retval = 0xFFFFFFFF; /* Some apps seem to rely on this retval */
 	    }
 	    break; }
 	
