@@ -35,6 +35,7 @@
 
     INPUTS
 	gad -     Gadget, for which the specified attributes should be set for.
+	          May be be NULL. If so this functions does nothing.
 	win -     Window, in which the gadget is.
 	req -     Not used. Specify NULL for now.
 	tagList - List of attributes to set.
@@ -60,6 +61,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
+    if (!gad) return; /* Since V39 gad pointer may be NULL */
+    
     if ((gad->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
     {
 	if (win || req)
@@ -75,8 +78,8 @@
     {
     	/* must be GENERIC_KIND gadget */
 
-    struct TagItem       *tag;
-    const struct TagItem *tstate = tagList;
+    	struct TagItem       *tag;
+    	const struct TagItem *tstate = tagList;
 	BOOL	    	      redraw = FALSE;
 	
 	while((tag = NextTagItem(&tstate)))
