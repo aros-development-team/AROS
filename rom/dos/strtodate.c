@@ -65,35 +65,32 @@ const char *const Dos_SubstDateTable[]=
 	DateTime - a pointer to an initialized DateTime structure.
 		The structure should be initialized as follows:
 
-		\begin{description}
-		\item{dat_Stamp} The converted date will be written here
+		dat_Stamp: The converted date will be written here
 
-		\item{dat_Format} How to convert the datestamp into
+		dat_Format: How to convert the datestamp into
 		    dat_StrDate. Can be any of the following:
 
-		    \begin{description}
-		    \item{FORMAT_DOS} AmigaDOS format (dd-mmm-yy). This
+		    FORMAT_DOS: AmigaDOS format (dd-mmm-yy). This
 			    is the default if you specify something other
 			    than any entry in this list.
 
-		    \item{FORMAT_INT} International format (yy-mmm-dd).
+		    FORMAT_INT: International format (yy-mmm-dd).
 
-		    \item{FORMAT_USA} American format (mm-dd-yy).
+		    FORMAT_USA: American format (mm-dd-yy).
 
-		    \item{FORMAT_CDN} Canadian format (dd-mm-yy).
+		    FORMAT_CDN: Canadian format (dd-mm-yy).
 
-		    \item{FORMAT_DEF} default format for locale.
+		    FORMAT_DEF: default format for locale.
 
-		    \end{description}
 
-		\item{dat_Flags} Modifies dat_Format. The only flag
-		    used by this function is DTF_FUTURE. If set, then
-		    a string like "Monday" refers to the next monday.
-		    Otherwise it refers to the last monday.
+		dat_Flags: Modifies dat_Format. The only flag
+			used by this function is DTF_FUTURE. If set, then
+			a string like "Monday" refers to the next monday.
+			Otherwise it refers to the last monday.
 
-		\item{dat_StrDay} Ignored.
+		dat_StrDay: Ignored.
 
-		\item{dat_StrDate} Pointer to valid string representing the
+		dat_StrDate: Pointer to valid string representing the
 			date. This can be a "DTF_SUBST" style string such
 			as "Today" "Tomorrow" "Monday", or it may be a
 			string as specified by the dat_Format byte. This
@@ -101,13 +98,12 @@ const char *const Dos_SubstDateTable[]=
 			DateStamp. If this pointer is NULL,
 			DateStamp->ds_Days will not be affected.
 
-		\item{dat_StrTime} Pointer to a buffer which contains the
+		dat_StrTime: Pointer to a buffer which contains the
 			time in the ASCII format hh:mm:ss. This will be
 			converted to the ds_Minutes and ds_Ticks portions
 			of the DateStamp.  If this pointer is NULL,
 			ds_Minutes and ds_Ticks will be unchanged.
 
-		\end{description}
 
     RESULT
 	A zero return indicates that a conversion could not be performed. A
