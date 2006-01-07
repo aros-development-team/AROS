@@ -30,7 +30,8 @@
         Get a list of attributes from a specific gadget.
 
     INPUTS
-        gad -     the gadget from which to get attributes
+        gad -     the gadget from which to get attributes.
+	    	  may be null. if so, this function returns 0.
 	win -     the window, in which the gadget is
 	req -     the requester, in which the gadget is, or NULL
 	taglist - the list of attributes to get. ti_Tag specifies the attribute
