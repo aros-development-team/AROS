@@ -22,9 +22,26 @@
         Workbench:c
 
     FUNCTION
-
+    
+        Creates file requester. The selected files will be displayed separated
+        by spaces. If no file is selected the return code is 5 (warn).
+    
     INPUTS
-
+        DRAWER          -- initial content of drawer field
+        FILE            -- initial content of file field
+        PATTERN         -- content of pattern field (e.g. #?.c)
+        TITLE           -- title of the dialog box
+        POSITIVE        -- string for the left button
+        NEGATIVE        -- string for the right button
+        ACCEPTPATTERN   -- only files which match the pattern are displayed
+        REJECTPATTERN   -- files which match the pattern aren't displayed
+        SAVEMODE        -- requester is displayed as save requester
+        MULTISELECT     -- more than one file can be selected
+        DRAWERSONLY     -- only drawers are displayed
+        NOICONS         -- no icon files (#?.info) are displayed
+        PUBSCREEN       -- requester is opened on the given public screen
+        INITIALVOLUMES  -- shows the volumes
+        
     RESULT
 
         Standard DOS error codes.

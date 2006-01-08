@@ -61,7 +61,7 @@
 
     SEE ALSO
 
-        SetProtection()
+        dos.library/SetProtection()
 
     INTERNALS
 

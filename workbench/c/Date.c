@@ -5,6 +5,51 @@
     Desc: Date CLI command
     Lang: English
 */
+/******************************************************************************
+
+    NAME
+
+        Date [<day>] [<date>] [<time>] [TO | VER <filename>]
+
+    SYNOPSIS
+
+        DAY,DATE,TIME,TO=VER/K
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+        Displays or sets the system date and/or time.
+
+    INPUTS
+
+	DAY  -- sets date by name (monday, tuesday, ... , tomorrow, yesterday)
+	DATE -- sets date in format DD-MMM-YY.
+	        For MMM either the number or the first 3 letters of the
+	        month in English	
+	TIME -- sets time in format HH:MM:SS
+	TO   -- output is sent to file          
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+	date 2-feb-06
+	date 21:10
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
 
 #include <stdio.h>
 #include <proto/exec.h>

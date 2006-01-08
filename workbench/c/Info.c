@@ -42,11 +42,11 @@
 
     EXAMPLE
 
-  Info
+    Info
 
-  Unit                 Size    Used    Free Full Errs   State    Type Name
-  Foreign harddisk:  964.1M  776.7M  187.4M  81%    0 read/write  OFS Workbench
-  RAM:                 8.0M    7.1M    7.1M  12%    0 read/write  OFS Ram Disk
+    Unit                 Size    Used    Free Full Errs   State    Type Name
+    Foreign harddisk:  964.1M  776.7M  187.4M  81%    0 read/write  OFS Workbench
+    RAM:                 8.0M    7.1M    7.1M  12%    0 read/write  OFS Ram Disk
 
     BUGS
 

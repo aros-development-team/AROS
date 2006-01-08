@@ -6,6 +6,48 @@
     Lang:
 */
 
+/******************************************************************************
+
+    NAME
+
+        Echo [<string>] [NOLINE] [FIRST <n>] [LEN <n>] [TO <filename>]
+
+    SYNOPSIS
+
+        STRING/M,NOLINE/S,FIRST/K/N,LEN/K/N,TO/K
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+        Displays string.
+
+    INPUTS
+
+        STRING -- the strings to display
+	NOLINE -- no newline at end of string
+	FIRST  -- first displayed character
+	LEN    -- number of characters to display
+	TO     -- file or device to output to 
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #define DEBUG 0
 
 #include <exec/execbase.h>

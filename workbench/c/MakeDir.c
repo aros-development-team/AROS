@@ -37,6 +37,7 @@ static const char version[] = "$VER: MakeDir 42.4 (17.10.2005)\n";
     INPUTS
 
         NAME  --  names of the directories that should be created
+        ALL   --  creates intermediate directories
 
     RESULT
 

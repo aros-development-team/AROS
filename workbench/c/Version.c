@@ -6,6 +6,53 @@
     Lang: english
 */
 
+/******************************************************************************
+
+    NAME
+
+        Version [<library|device|file>] [<version #>] [<revision #>] [FILE] [FULL] [RES] 
+
+    SYNOPSIS
+
+        NAME/M,MD5SUM/S,VERSION/N,REVISION/N,FILE/S,FULL/S,RES/S
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+	Prints or checks the version and revision information of a file, library or device.
+	  
+    INPUTS
+
+	NAME      -- name of file, library or device to check. If not given it
+	             prints version and revision of Kickstart.
+	MD5SUM    -- #FIXME what is that?
+	VERSION   -- checks for version and returns error code 5 (warn) if the
+	             version of the file is lower.
+	REVISION  -- checks for revision and returns error code 5 (warn) if the
+	             revision of the file is lower.
+	FILE      -- reads from file and ignores currently loaded libraries and devices
+	FULL      -- prints additional information
+	RES       -- gets version of resident commands
+	
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <aros/arosbase.h>
 #include <aros/config.h>
 #include <aros/inquire.h>

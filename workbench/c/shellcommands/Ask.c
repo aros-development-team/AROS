@@ -6,6 +6,47 @@
     Lang: English
 */
 
+/******************************************************************************
+
+    NAME
+
+        Ask <prompt>
+
+    SYNOPSIS
+
+        PROMPT/A
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+        Prompts the user for an input. Possible inputs are y for yes
+        and n or Return for no. Selecting y sets the return code to 5.
+
+    INPUTS
+
+        PROMPT -- the string is displayed in the window
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        
+        RequestChoice
+        
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <stdio.h>
 #include <string.h>
 #include <proto/exec.h>
