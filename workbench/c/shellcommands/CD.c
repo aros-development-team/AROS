@@ -5,6 +5,42 @@
     Desc: Cd CLI command
     Lang: English
 */
+/*****************************************************************************
+
+    NAME
+
+        CD
+
+    SYNOPSIS
+
+        DIR
+
+    LOCATION
+
+        Workbench:C/
+	   
+    FUNCTION
+
+	Without argument it shows the name of the current directory.
+	With argument it changes the current directory.
+	
+    INPUTS
+
+	DIR -- path to change to current directory
+
+    RESULT
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
 
 #include <exec/execbase.h>
 #include <exec/memory.h>

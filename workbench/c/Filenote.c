@@ -69,7 +69,7 @@
 
     SEE ALSO
 
-        SetComment()
+        dos.library/SetComment()
 
     INTERNALS
 

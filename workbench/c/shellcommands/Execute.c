@@ -5,6 +5,45 @@
     Desc:
     Lang:
 */
+
+/******************************************************************************
+
+    NAME
+
+        Execute <script> [{<arguments>}]
+
+    SYNOPSIS
+
+        FILE/A
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+        Executes a script with DOS commands.
+
+    INPUTS
+
+        FILE -- file to execute
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <proto/exec.h>
 #include <dos/filesystem.h>
 #include <dos/dos.h>

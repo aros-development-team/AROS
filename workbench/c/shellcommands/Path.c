@@ -3,6 +3,54 @@
     $Id$
 
 */
+
+/*****************************************************************************
+
+    NAME
+
+        Path [{<dir>}] [ADD] [SHOW] [RESET] [REMOVE] [QUIET] [HEAD]
+
+    SYNOPSIS
+
+        PATH/M,ADD/S,SHOW/S,RESET/S,REMOVE/S,QUIET/S,HEAD/S
+
+    LOCATION
+
+        Workbench:c
+
+    FUNCTION
+        
+        Changes the search path for commands. Without arguments it shows the path.
+        
+    INPUTS
+
+        PATH    -- path  
+        ADD     -- adds path
+        SHOW    -- shows path
+        RESET   -- removes existing path and replaces it by new path
+        REMOVE  -- removes the given path
+        QUIET   -- suppresses dialog when a path is not found
+        HEAD    -- inserts path at beginning of path list
+        
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+        path dh0:work add
+        
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+
+******************************************************************************/
+
 #include <exec/memory.h>
 #include <proto/exec.h>
 

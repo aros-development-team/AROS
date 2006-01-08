@@ -11,11 +11,7 @@
 
         Sort
 
-    FORMAT
-
-        Sort
-		
-    TEMPLATE
+    SYNOPSIS
 
         FROM/A,TO/A,COLSTART/K,CASE/S,NUMERIC/S
 
@@ -25,7 +21,15 @@
 	   
     FUNCTION
 
+	Sorts the contents of a text file
+	
     INPUTS
+
+	FROM      -- file to read from
+	TO        -- file to output to
+	COLSTART  -- column at which the comparison begins
+	CASE      -- sort is case sensitive. Uppercase items are output first
+	NUMERIC   -- lines are interpreted as numbers
 
     RESULT
 

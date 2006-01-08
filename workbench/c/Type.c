@@ -5,6 +5,53 @@
     Desc: Type CLI command
     Lang: English
 */
+
+/******************************************************************************
+
+    NAME
+
+        Type {<file | pattern>} [TO <name>] [OPT H | N] [HEX | NUMBER]
+
+    SYNOPSIS
+
+        FROM/A/M,TO/K,OPT/K,HEX/S,NUMBER/S
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+	Displays content of a file
+	
+    INPUTS
+
+	FROM   -- one or more files to display
+	TO     -- print output to file
+	OPT    -- H or N (see HEX or NUMBER)
+	HEX    -- displays output in hexadecimal format
+	NUMBER -- the lines are numbered
+	          HEX and NUMBER are mutually exclusive
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+	type abc.txt
+	type xyz.dat hex
+	
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
