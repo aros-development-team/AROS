@@ -264,7 +264,7 @@ void ProcessEvents (struct inputbase *InputDevice)
 	    timer_ie.ie_Class 		 = IECLASS_TIMER;
 	    timer_ie.ie_SubClass 	 = 0;
 	    timer_ie.ie_Code 		 = 0;
-	    timer_ie.ie_Qualifier 	 = 0;
+	    timer_ie.ie_Qualifier 	 = InputDevice->ActQualifier;
 	    timer_ie.ie_position.ie_addr = 0;
 	    
 	    /* Add a timestamp to the event */
@@ -368,7 +368,7 @@ void ProcessEvents (struct inputbase *InputDevice)
 			IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
 			IEQUALIFIER_RALT       | IEQUALIFIER_LALT     | \
 			IEQUALIFIER_RCOMMAND   | IEQUALIFIER_RCOMMAND | \
-			IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
+			IEQUALIFIER_NUMERICPAD /* | IEQUALIFIER_REPEAT */)
 		    
 	    InputDevice->ActQualifier &= ~KEY_QUALIFIERS;
 	    InputDevice->ActQualifier |= (kbdie->ie_Qualifier & KEY_QUALIFIERS);
