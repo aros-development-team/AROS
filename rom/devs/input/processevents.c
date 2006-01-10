@@ -50,6 +50,16 @@
 	WaitIO(&keytimerio->tr_node); \
 	SetSignal(0, keytimersig); 
 
+#define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
+			IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
+			IEQUALIFIER_RALT       | IEQUALIFIER_LALT     | \
+			IEQUALIFIER_RCOMMAND   | IEQUALIFIER_RCOMMAND | \
+			IEQUALIFIER_NUMERICPAD /* | IEQUALIFIER_REPEAT */)
+
+#define MOUSE_QUALIFIERS (IEQUALIFIER_LEFTBUTTON | IEQUALIFIER_RBUTTON | \
+			  IEQUALIFIER_MIDBUTTON)
+		    
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -364,14 +374,11 @@ void ProcessEvents (struct inputbase *InputDevice)
 	    if (kbdio->io_Error != 0)
 	    	continue;
 	    
-#define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
-			IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
-			IEQUALIFIER_RALT       | IEQUALIFIER_LALT     | \
-			IEQUALIFIER_RCOMMAND   | IEQUALIFIER_RCOMMAND | \
-			IEQUALIFIER_NUMERICPAD /* | IEQUALIFIER_REPEAT */)
-		    
 	    InputDevice->ActQualifier &= ~KEY_QUALIFIERS;
 	    InputDevice->ActQualifier |= (kbdie->ie_Qualifier & KEY_QUALIFIERS);
+	    
+	    kbdie->ie_Qualifier &= ~MOUSE_QUALIFIERS;
+	    kbdie->ie_Qualifier |= (InputDevice->ActQualifier & MOUSE_QUALIFIERS);
 	    
 	    /* Add event to queue */
 	    AddEQTail(kbdie, InputDevice);
@@ -415,12 +422,12 @@ void ProcessEvents (struct inputbase *InputDevice)
 	    GetMsg(gpdmp); /* Only one message */
 	    if (gpdio->io_Error != 0)
 	    	continue;
-	    
-#define MOUSE_QUALIFIERS (IEQUALIFIER_LEFTBUTTON | IEQUALIFIER_RBUTTON | \
-			  IEQUALIFIER_MIDBUTTON)
-		    
+	    		    
 	    InputDevice->ActQualifier &= ~MOUSE_QUALIFIERS;
 	    InputDevice->ActQualifier |= (gpdie->ie_Qualifier & MOUSE_QUALIFIERS);
+
+	    gpdie->ie_Qualifier &= ~KEY_QUALIFIERS;
+	    gpdie->ie_Qualifier |= (InputDevice->ActQualifier & KEY_QUALIFIERS);
 	    
 	    /* Gameport just returns the frame count since the last
 	       report in ie_TimeStamp.tv_secs; we therefore must add
