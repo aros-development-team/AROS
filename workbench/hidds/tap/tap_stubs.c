@@ -26,10 +26,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#warning FIXME: Extremely ugly hack to get OOPBase.
-
 #undef OOPBase
-#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
+#define OOPBase ((struct Library *)OOP_OCLASS(obj)->OOPBasePtr)
 
 #define STATIC_MID static OOP_MethodID mid
 

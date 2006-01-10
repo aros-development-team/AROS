@@ -28,10 +28,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#warning FIXME: Extremely ugly hack to get OOPBase.
-
 #undef OOPBase
-#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
+#define OOPBase ((struct Library *)OOP_OCLASS(obj)->OOPBasePtr)
 
 #ifdef AROS_CREATE_ROM
 # define STATIC_MID OOP_MethodID mid = 0

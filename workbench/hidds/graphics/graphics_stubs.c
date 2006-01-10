@@ -29,7 +29,7 @@
 #include <aros/debug.h>
 
 #undef OOPBase
-#define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
+#define OOPBase ((struct Library *)OOP_OCLASS(obj)->OOPBasePtr)
 
 #ifndef AROS_CREATE_ROM
 #  define STATIC_MID static OOP_MethodID mid
