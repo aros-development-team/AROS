@@ -15,7 +15,22 @@
 #include <exec/errors.h>
 #include <exec/memory.h>
 #include <libraries/partition.h>
+
+#define DEBUG 0
 #include <aros/debug.h>
+
+/* Defines for grub data */
+/* Stage 1 pointers */
+#define MBR_BPBEND		    0x3e
+#define GRUB_BOOT_DRIVE	    0x40
+#define GRUB_FORCE_LBA	    0x41
+#define GRUB_STAGE2_SECTOR	 0x44
+#define MBR_PARTSTART	    0x1be
+#define MBR_PARTEND		    0x1fe
+/* Stage 2 pointers */
+
+/* BIOS drive flag */
+#define BIOS_HDISK_FLAG	    0x80
 
 struct Volume {
    struct MsgPort *mp;
@@ -39,11 +54,22 @@ struct BlockNode {
 	UWORD seg_adr;
 };
 
+char *template =
+	"DEVICE/A,"
+	"UNIT/N/K/A,"
+	"PARTITIONNUMBER=PN/K/N,"
+	"GRUB/K/A,"
+	"KERNEL/K/A,"
+   "FORCELBA/S";
+IPTR myargs[7] = {0,0,0,0,0,0};
+
 struct FileSysStartupMsg *getDiskFSSM(STRPTR path) {
 struct DosList *dl;
 struct DeviceNode *dn;
 char dname[32];
 UBYTE i;
+
+D(bug("[install-i386] getDiskFSSM('%s')\n", path));
 
 	for (i=0;(path[i]) && (path[i]!=':');i++)
 		dname[i] = path[i];
@@ -76,6 +102,8 @@ UBYTE i;
 void nsdCheck(struct Volume *volume) {
 struct NSDeviceQueryResult nsdq;
 UWORD *cmdcheck;
+
+D(bug("[install-i386] nsdCheck(%x)\n", volume));
 
 	if (
 			(
@@ -127,6 +155,8 @@ UWORD *cmdcheck;
 struct Volume *initVolume(STRPTR device, ULONG unit, ULONG flags, ULONG size) {
 struct Volume *volume;
 LONG error=0;
+
+D(bug("[install-i386] initVolume(%s:%d)\n", device, unit));
 
 	volume = AllocVec(sizeof(struct Volume), MEMF_PUBLIC | MEMF_CLEAR);
 	if (volume)
@@ -181,7 +211,10 @@ LONG error=0;
 	return 0;
 }
 
-void uninitVolume(struct Volume *volume) {
+void uninitVolume(struct Volume *volume)
+{
+
+D(bug("[install-i386] uninitVolume(%x)\n", volume));
 
 	CloseDevice((struct IORequest *)volume->iotd);
 	FreeVec(volume->blockbuffer);
@@ -199,6 +232,8 @@ ULONG readwriteBlock
 {
 UQUAD offset;
 ULONG retval=0;
+
+D(bug("[install-i386] readwriteBlock(vol:%x, block:%d, %d bytes)\n", volume, block, length));
 
 	volume->iotd->iotd_Req.io_Command = command;
 	volume->iotd->iotd_Req.io_Length = length;
@@ -220,6 +255,8 @@ BOOL isvalidFileSystem(struct Volume *volume, STRPTR device, ULONG unit) {
 BOOL retval = FALSE;
 struct PartitionBase *PartitionBase;
 struct PartitionHandle *ph;
+
+D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 
 	if (readwriteBlock(volume, 0, volume->blockbuffer, 512, volume->readcmd))
 	{
@@ -321,6 +358,8 @@ struct PartitionHandle *ph;
 void fillGeometry(struct Volume *volume, struct DosEnvec *de) {
 ULONG spc;
 
+D(bug("[install-i386] fillGeometry(%x)\n", volume));
+
 	spc = de->de_Surfaces*de->de_BlocksPerTrack;
 	volume->SizeBlock = de->de_SizeBlock;
 	volume->startblock = de->de_LowCyl*spc;
@@ -336,6 +375,8 @@ struct Volume *getGrubStageVolume
 	)
 {
 struct Volume *volume;
+
+D(bug("[install-i386] getGrubStageVolume(%x)\n", volume));
 
 	volume = initVolume(device, unit, flags, de->de_SizeBlock);
 	if (volume)
@@ -365,6 +406,8 @@ struct PartitionBase *PartitionBase;
 struct PartitionHandle *ph;
 ULONG type;
 BOOL retval=FALSE;
+
+D(bug("[install-i386] isvalidPartition(%s:%d, part:%d)\n", device, unit, pnum));
 
 	PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 1);
 	if (PartitionBase)
@@ -468,6 +511,8 @@ struct Volume *getBBVolume(STRPTR device, ULONG unit, LONG *partnum) {
 struct Volume *volume;
 struct DosEnvec de;
 
+D(bug("[install-i386] getBBVolume(%s:%d, %d)\n", device, unit, partnum));
+
 	if (isvalidPartition(device, unit, partnum, &de))
 	{
 		volume = initVolume(device, unit, 0, de.de_SizeBlock);
@@ -475,7 +520,10 @@ struct DosEnvec de;
 		fillGeometry(volume, &de);
 		readwriteBlock(volume, 0, volume->blockbuffer, 512, volume->readcmd);
 		if (AROS_BE2LONG(volume->blockbuffer[0]) != IDNAME_RIGIDDISK)
+		{
+		   memset(volume->blockbuffer,0x00, 446); /* Clear the boot sector region! */
 			return volume;
+	   }
 		else
 			printf("no space for bootblock (RDB is on block 0)\n");
 	}
@@ -493,13 +541,19 @@ ULONG retval, first_block;
 WORD blk_count,count;
 UWORD i;
 
+D(bug("[install-i386] collectBlockList(%x, %d, %x)\n", volume, block, blocklist));
+
 #warning "TODO: logical/physical blocks"
 	/*
 		initialze stage2-blocklist
 		(it is NULL-terminated)
 	*/
-	for (blk_count=-1;blocklist[blk_count].sector!=0;blk_count--)
-		blocklist[blk_count].sector = 0;
+//	for (blk_count=-1;blocklist[blk_count].sector!=0;blk_count--)
+//		blocklist[blk_count].sector = 0;
+
+   memset((char *)&blocklist[-20],0x00, 20*sizeof(struct BlockNode)); /* Clear the stage2 sector pointers region! */
+D(bug("[install-i386] collectBlockList: Cleared sector list (20 entries) [start: %x, end %x]\n", &blocklist[-20], &blocklist[-1]));
+
 	/*
 		the first block of stage2 will be stored in stage1
 		so skip the first filekey in the first loop
@@ -510,9 +564,20 @@ UWORD i;
 			volume, block, volume->blockbuffer, volume->SizeBlock<<2,
 			volume->readcmd
 		);
+   if (retval)
+	{
+D(bug("[install-i386] collectBlockList: ERROR reading block (error: %ld\n", retval));
+			printf("ReadError %ld\n", retval);
+			return 0;
+		}
+
 	i = volume->SizeBlock - 52;
 	first_block = AROS_BE2LONG(volume->blockbuffer[volume->SizeBlock-51]);
 	blk_count=0;
+	
+D(bug("[install-i386] collectBlockList: First block @ %x, i:%d\n", first_block, i));
+
+	
 	do
 	{
 		retval=readwriteBlock
@@ -522,11 +587,14 @@ UWORD i;
 			);
 		if (retval)
 		{
+D(bug("[install-i386] collectBlockList: ERROR reading block (error: %ld)\n", retval));
 			printf("ReadError %ld\n", retval);
 			return 0;
 		}
+D(bug("[install-i386] collectBlockList: read block %lx, i = %d\n", block, i));
 		while ((i>=6) && (volume->blockbuffer[i]))
 		{
+D(bug("[install-i386] collectBlockList: i = %d\n", i));
 			/*
 				if current sector follows right after last sector
 				then we don't need a new element
@@ -538,15 +606,19 @@ UWORD i;
 				)
 			{
 				blocklist[blk_count].count += 1;
+D(bug("[install-i386] collectBlockList: sector %d follows previous - increasing count of block %d to %d\n", i, blk_count, blocklist[blk_count].count));
 			}
 			else
 			{
 				blk_count--; /* decrement first */
+D(bug("[install-i386] collectBlockList: store new block (%d)\n", blk_count));
 				if (blocklist[blk_count-1].sector != 0)
 				{
+D(bug("[install-i386] collectBlockList: ERROR: out of block space at sector %d, block %d\n", i, blk_count));
 					printf("There is no more space to save blocklist in stage2\n");
 					return 0;
 				}
+D(bug("[install-i386] collectBlockList: storing sector pointer for %d in block %d\n", i, blk_count));
 				blocklist[blk_count].sector = AROS_BE2LONG(volume->blockbuffer[i]);
 				blocklist[blk_count].count = 1;
 			}
@@ -554,22 +626,29 @@ UWORD i;
 		}
 		i = volume->SizeBlock - 51;
 		block = AROS_BE2LONG(volume->blockbuffer[volume->SizeBlock - 2]);
+D(bug("[install-i386] collectBlockList: next block %d, i = %d\n", block, i));
 	} while (block);
 	/*
 		blocks in blocklist are relative to the first
 		sector of the HD (not partition)
 	*/
+D(bug("[install-i386] collectBlockList: successfully updated pointers for %d blocks\n", blk_count));
+
 	i = 0;
 	for (count=-1;count>=blk_count;count--)
 	{
 		blocklist[count].sector += volume->startblock;
 		blocklist[count].seg_adr = 0x820 + (i*32);
 		i += blocklist[count].count;
+D(bug("[install-i386] collectBlockList: correcting block %d for partition start\n", count));
+D(bug("[install-i386] collectBlockList: sector : %x seg_adr : %x\n", blocklist[count].sector, blocklist[count].seg_adr));
 	}
 	return first_block;
 }
 
 void copyRootPath(char *dst, char *rpdos, BOOL isRDB) {
+
+D(bug("[install-i386] copyRootPath()\n"));
 
 	if (isRDB)
 	{
@@ -631,6 +710,8 @@ BOOL setupMenu(BPTR fh)
         "title AROS HD\n"
         "root (hd0,0)\n"
         "configfile /dh0/boot/grub/menu.lst\n";
+    
+D(bug("[install-i386] setupMenu(%x)\n", fh));
     
     /* Get the filesize and reset the position */
     Seek(fh, 0, OFFSET_END);
@@ -707,6 +788,8 @@ BOOL retval = FALSE;
 UBYTE menupath[256];
 char *menuname;
 
+D(bug("[install-i386] writeStage2(%x)\n", volume));
+
 	if (Seek(fh, 0, OFFSET_BEGINNING) != -1)
 	{
 		/* write back first block */
@@ -762,6 +845,8 @@ ULONG block = 0;
 struct FileInfoBlock fib;
 BPTR fh;
 
+D(bug("[install-i386] changeStage2(%x)\n", volume));
+
 	fh = Open(stage2path, MODE_OLDFILE);
 	if (fh)
 	{
@@ -775,6 +860,7 @@ BPTR fh;
 				*/
 				block = collectBlockList
 					(volume, fib.fib_DiskKey, (struct BlockNode *)&buffer[128]);
+
 				if (block)
 				{
 					if (!writeStage2(fh, (UBYTE *)buffer, kernelpath, volume))
@@ -806,37 +892,64 @@ BOOL retval = FALSE;
 LONG error = 0;
 BPTR fh;
 
+D(bug("[install-i386] writeStage1(%x)\n", volume));
+
 	fh = Open(stage1path, MODE_OLDFILE);
 	if (fh)
 	{
 		if (Read(fh, volume->blockbuffer, 512) == 512)
 		{
-			volume->blockbuffer[17] = block;
 			/* install into MBR ? */
 			if ((volume->startblock == 0) && (!(volume->flags & VF_IS_TRACKDISK)))
 			{
-				/* add stage2 partition startblock */
-				volume->blockbuffer[17] += s2vol->startblock;
-				/* read old MBR */
+D(bug("[install-i386] writeStage1: Install to HARDDISK\n"));
+				// read old MBR
 				error = readwriteBlock
 					(volume, 0,	s2vol->blockbuffer, 512, volume->readcmd);
-				/* copy BPB (BIOS Parameter Block)*/
+
+D(bug("[install-i386] writeStage1: MBR Buffer @ %x\n", volume->blockbuffer));					
+D(bug("[install-i386] writeStage1: Copying MBR BPB to %x\n", (char *)volume->blockbuffer + 0x04));
+				// copy BPB (BIOS Parameter Block)
 				CopyMem
 					(
-						(APTR)((char *)s2vol->blockbuffer+0x3),
-						(APTR)((char *)volume->blockbuffer+0x3),
-						0x3B
+						(APTR)((char *)s2vol->blockbuffer + 0x04),
+						(APTR)((char *)volume->blockbuffer + 0x04),
+						(MBR_BPBEND - 4)
 					);
-				/* copy partition table */
+				// copy partition table - [Overwrites Floppy boot code]
+D(bug("[install-i386] writeStage1: Copying MBR Partitions to %x\n", (char *)volume->blockbuffer + MBR_PARTSTART));
 				CopyMem
 					(
-						(APTR)((char *)s2vol->blockbuffer+0x1BE),
-						(APTR)((char *)volume->blockbuffer+0x1BE),
-						0x40
+						(APTR)((char *)s2vol->blockbuffer + MBR_PARTSTART),
+						(APTR)((char *)volume->blockbuffer + MBR_PARTSTART),
+						(MBR_PARTEND - MBR_PARTSTART)
 					);
-				/* store the drive num stage2 is stored on */
-				((char *)volume->blockbuffer)[0x40] = unit+0x80;
+				// store the drive num stage2 is stored on
+				((char *)volume->blockbuffer)[GRUB_BOOT_DRIVE] = unit + BIOS_HDISK_FLAG;
+				// Store the stage 2 pointer ..
+				ULONG * stage2_sector_start = (char *)volume->blockbuffer + GRUB_STAGE2_SECTOR;
+D(bug("[install-i386] writeStage1: writing stage2 pointer @ %x\n", stage2_sector_start));
+	  			stage2_sector_start[0] = block;
+D(bug("[install-i386] writeStage1: stage2 pointer = %x\n", stage2_sector_start[0]));	  			
+	 			stage2_sector_start[0] += s2vol->startblock;
+D(bug("[install-i386] writeStage1: + offset [%d] = %x\n", s2vol->startblock, stage2_sector_start[0]));	
+	 			
+	 			if (myargs[5]!=0)
+	 			{
+D(bug("[install-i386] writeStage1: Forcing LBA\n"));
+   	 			 ((char *)volume->blockbuffer)[GRUB_FORCE_LBA] = 1;
+   	 		}
+   	 	   else
+   	 	   {
+D(bug("[install-i386] writeStage1: NOT Forcing LBA\n"));
+   	 	   	 ((char *)volume->blockbuffer)[GRUB_FORCE_LBA] = 0;
+   	 	   }
 			}
+			else
+			{
+D(bug("[install-i386] writeStage1: Install to FLOPPY\n"));
+			}
+
 			if (error == 0)
 			{
 				error = readwriteBlock
@@ -871,6 +984,8 @@ BOOL retval = FALSE;
 char stagename[256];
 ULONG block;
 
+D(bug("[install-i386] installStageFiles(%x)\n", s1vol));
+
 	AddPart(stagename, stagepath, 256);
 	AddPart(stagename, "stage2", 256);
 	block = changeStage2(stagename, kernelpath, s2vol, s1vol->blockbuffer);
@@ -885,27 +1000,25 @@ ULONG block;
 }
 
 int main(int argc, char **argv) {
-char *template =
-	"DEVICE/A,"
-	"UNIT/N/K/A,"
-	"PARTITIONNUMBER=PN/K/N,"
-	"GRUB/K/A,"
-	"KERNEL/K/A";
-IPTR myargs[6] = {0,0,0,0,0};
+
 struct RDArgs *rdargs;
 struct Volume *grubvol;
 struct Volume *bbvol;
 struct FileSysStartupMsg *fssm;
 
+D(bug("[install-i386] main()\n"));
+
 	rdargs = ReadArgs(template, myargs, NULL);
 	if (rdargs)
 	{
+D(bug("[install-i386] FORCELBA = %d\n",myargs[5]));
+
 		fssm = getDiskFSSM((STRPTR)myargs[3]);
 		if ((fssm) && (getDiskFSSM((STRPTR)myargs[4])))
 		{
 			if (
-					(strcmp(AROS_BSTR_ADDR(fssm->fssm_Device),(char*)myargs[0])==0)//&&
-//					(fssm->fssm_Unit == *((LONG *)myargs[1]))
+					(strcmp(AROS_BSTR_ADDR(fssm->fssm_Device),(char*)myargs[0])==0)
+//					&& (fssm->fssm_Unit == *((LONG *)myargs[1]))
 				)
 			{
 				grubvol = getGrubStageVolume
