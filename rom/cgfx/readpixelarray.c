@@ -54,15 +54,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
     
-    return driver_ReadPixelArray(dst
-    	, destx, desty
-	, dstmod
-	, rp
-	, srcx, srcy
-	, width, height
-	, dstformat
-	, CyberGfxBase
-    );
+    if (width && height)
+    {
+	return driver_ReadPixelArray(dst
+    	    , destx, desty
+	    , dstmod
+	    , rp
+	    , srcx, srcy
+	    , width, height
+	    , dstformat
+	    , CyberGfxBase
+	);
+    }
+    else return 0;
     
     AROS_LIBFUNC_EXIT
 } /* ReadPixelArray */
