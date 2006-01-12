@@ -108,6 +108,7 @@
 #define PC_SLICE_TYPE_FAT32_LBA		0xc
 #define PC_SLICE_TYPE_FAT16_LBA		0xe
 #define PC_SLICE_TYPE_WIN95_EXTENDED	0xf
+#define PC_SLICE_TYPE_AFFS		   0x30        /* AROS MBR Hosted RDB partitions */
 #define PC_SLICE_TYPE_EZD        	0x55
 #define PC_SLICE_TYPE_MINIX		0x80
 #define PC_SLICE_TYPE_LINUX_MINIX	0x81

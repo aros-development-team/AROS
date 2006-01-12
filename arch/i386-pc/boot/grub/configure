@@ -5524,6 +5524,17 @@ if test x"$enable_xfs" != xno; then
   FSYS_CFLAGS="$FSYS_CFLAGS -DFSYS_XFS=1"
 fi
 
+# Check whether --enable-affs or --disable-affs was given.
+if test "${enable_affs+set}" = set; then
+  enableval="$enable_affs"
+
+fi;
+
+if test x"$enable_affs" != xno; then
+  FSYS_CFLAGS="$FSYS_CFLAGS -DFSYS_AFFS=1"
+fi
+
+
 # Check whether --enable-iso9660 or --disable-iso9660 was given.
 if test "${enable_iso9660+set}" = set; then
   enableval="$enable_iso9660"

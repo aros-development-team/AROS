@@ -291,11 +291,12 @@ struct CacheBlock *cblock;
 int i;
 
 	if (
-			(current_drive & 0x80) &&
+//			(current_drive & 0x80) &&
 			(current_partition != 0xFFFFFF) &&
 			(current_slice != 0x30)
 		)
 		return 0;
+
 	fsysb = (struct FSysBuffer *)FSYS_BUF;
 	blockoffset = 0;
 	initCache();
