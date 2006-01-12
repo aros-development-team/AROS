@@ -18,7 +18,7 @@
 
 
 
-SOURCES = $(libgrub_a_SOURCES) $(diskless_exec_SOURCES) $(e2fs_stage1_5_exec_SOURCES) $(fat_stage1_5_exec_SOURCES) $(ffs_stage1_5_exec_SOURCES) $(iso9660_stage1_5_exec_SOURCES) $(jfs_stage1_5_exec_SOURCES) $(minix_stage1_5_exec_SOURCES) $(nbloader_exec_SOURCES) $(pre_stage2_exec_SOURCES) $(pxeloader_exec_SOURCES) $(reiserfs_stage1_5_exec_SOURCES) $(start_exec_SOURCES) $(start_eltorito_exec_SOURCES) $(ufs2_stage1_5_exec_SOURCES) $(vstafs_stage1_5_exec_SOURCES) $(xfs_stage1_5_exec_SOURCES) $(affs_stage1_5_exec_SOURCES)
+SOURCES = $(libgrub_a_SOURCES) $(diskless_exec_SOURCES) $(e2fs_stage1_5_exec_SOURCES) $(fat_stage1_5_exec_SOURCES) $(ffs_stage1_5_exec_SOURCES) $(affs_stage1_5_exec_SOURCES) $(iso9660_stage1_5_exec_SOURCES) $(jfs_stage1_5_exec_SOURCES) $(minix_stage1_5_exec_SOURCES) $(nbloader_exec_SOURCES) $(pre_stage2_exec_SOURCES) $(pxeloader_exec_SOURCES) $(reiserfs_stage1_5_exec_SOURCES) $(start_exec_SOURCES) $(start_eltorito_exec_SOURCES) $(ufs2_stage1_5_exec_SOURCES) $(vstafs_stage1_5_exec_SOURCES) $(xfs_stage1_5_exec_SOURCES)
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -49,20 +49,21 @@ EXTRA_PROGRAMS = nbloader.exec$(EXEEXT) pxeloader.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_FALSE@	e2fs_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_FALSE@	fat_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_FALSE@	ffs_stage1_5.exec$(EXEEXT) \
+@DISKLESS_SUPPORT_FALSE@	affs_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_FALSE@	iso9660_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_FALSE@	jfs_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_FALSE@	minix_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_FALSE@	reiserfs_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_FALSE@	ufs2_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_FALSE@	vstafs_stage1_5.exec$(EXEEXT) \
-@DISKLESS_SUPPORT_FALSE@	xfs_stage1_5.exec$(EXEEXT) \
-@DISKLESS_SUPPORT_FALSE@	affs_stage1_5.exec$(EXEEXT)
+@DISKLESS_SUPPORT_FALSE@	xfs_stage1_5.exec$(EXEEXT)
 @DISKLESS_SUPPORT_TRUE@noinst_PROGRAMS = pre_stage2.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	start.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	start_eltorito.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	e2fs_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	fat_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	ffs_stage1_5.exec$(EXEEXT) \
+@DISKLESS_SUPPORT_TRUE@	affs_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	iso9660_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	jfs_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	minix_stage1_5.exec$(EXEEXT) \
@@ -70,7 +71,6 @@ EXTRA_PROGRAMS = nbloader.exec$(EXEEXT) pxeloader.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	ufs2_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	vstafs_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	xfs_stage1_5.exec$(EXEEXT) \
-@DISKLESS_SUPPORT_TRUE@	affs_stage1_5.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	nbloader.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	pxeloader.exec$(EXEEXT) \
 @DISKLESS_SUPPORT_TRUE@	diskless.exec$(EXEEXT)
@@ -95,11 +95,11 @@ am_libgrub_a_OBJECTS = libgrub_a-boot.$(OBJEXT) \
 	libgrub_a-cmdline.$(OBJEXT) libgrub_a-common.$(OBJEXT) \
 	libgrub_a-disk_io.$(OBJEXT) libgrub_a-fsys_ext2fs.$(OBJEXT) \
 	libgrub_a-fsys_fat.$(OBJEXT) libgrub_a-fsys_ffs.$(OBJEXT) \
-	libgrub_a-fsys_iso9660.$(OBJEXT) libgrub_a-fsys_jfs.$(OBJEXT) \
-	libgrub_a-fsys_minix.$(OBJEXT) \
+	libgrub_a-fsys_affs.$(OBJEXT) libgrub_a-fsys_iso9660.$(OBJEXT) \
+	libgrub_a-fsys_jfs.$(OBJEXT) libgrub_a-fsys_minix.$(OBJEXT) \
 	libgrub_a-fsys_reiserfs.$(OBJEXT) \
 	libgrub_a-fsys_ufs2.$(OBJEXT) libgrub_a-fsys_vstafs.$(OBJEXT) \
-	libgrub_a-fsys_xfs.$(OBJEXT) libgrub_a-fsys_affs.$(OBJEXT) \
+	libgrub_a-fsys_xfs.$(OBJEXT) \
     libgrub_a-gunzip.$(OBJEXT) \
 	libgrub_a-md5.$(OBJEXT) libgrub_a-serial.$(OBJEXT) \
 	libgrub_a-stage2.$(OBJEXT) libgrub_a-terminfo.$(OBJEXT) \
@@ -116,6 +116,7 @@ am__objects_1 = diskless_exec-asm.$(OBJEXT) \
 	diskless_exec-fsys_ext2fs.$(OBJEXT) \
 	diskless_exec-fsys_fat.$(OBJEXT) \
 	diskless_exec-fsys_ffs.$(OBJEXT) \
+	diskless_exec-fsys_affs.$(OBJEXT) \
 	diskless_exec-fsys_iso9660.$(OBJEXT) \
 	diskless_exec-fsys_jfs.$(OBJEXT) \
 	diskless_exec-fsys_minix.$(OBJEXT) \
@@ -123,7 +124,6 @@ am__objects_1 = diskless_exec-asm.$(OBJEXT) \
 	diskless_exec-fsys_ufs2.$(OBJEXT) \
 	diskless_exec-fsys_vstafs.$(OBJEXT) \
 	diskless_exec-fsys_xfs.$(OBJEXT) \
-	diskless_exec-fsys_affs.$(OBJEXT) \
 	diskless_exec-gunzip.$(OBJEXT) \
 	diskless_exec-hercules.$(OBJEXT) diskless_exec-md5.$(OBJEXT) \
 	diskless_exec-serial.$(OBJEXT) \
@@ -133,6 +133,16 @@ am__objects_1 = diskless_exec-asm.$(OBJEXT) \
 am_diskless_exec_OBJECTS = $(am__objects_1)
 diskless_exec_OBJECTS = $(am_diskless_exec_OBJECTS)
 diskless_exec_DEPENDENCIES = ../netboot/libdrivers.a
+am_affs_stage1_5_exec_OBJECTS = affs_stage1_5_exec-start.$(OBJEXT) \
+	affs_stage1_5_exec-asm.$(OBJEXT) \
+	affs_stage1_5_exec-common.$(OBJEXT) \
+	affs_stage1_5_exec-char_io.$(OBJEXT) \
+	affs_stage1_5_exec-disk_io.$(OBJEXT) \
+	affs_stage1_5_exec-stage1_5.$(OBJEXT) \
+	affs_stage1_5_exec-fsys_affs.$(OBJEXT) \
+	affs_stage1_5_exec-bios.$(OBJEXT)
+affs_stage1_5_exec_OBJECTS = $(am_affs_stage1_5_exec_OBJECTS)
+affs_stage1_5_exec_LDADD = $(LDADD)
 am_e2fs_stage1_5_exec_OBJECTS = e2fs_stage1_5_exec-start.$(OBJEXT) \
 	e2fs_stage1_5_exec-asm.$(OBJEXT) \
 	e2fs_stage1_5_exec-common.$(OBJEXT) \
@@ -208,6 +218,7 @@ am_pre_stage2_exec_OBJECTS = pre_stage2_exec-asm.$(OBJEXT) \
 	pre_stage2_exec-fsys_ext2fs.$(OBJEXT) \
 	pre_stage2_exec-fsys_fat.$(OBJEXT) \
 	pre_stage2_exec-fsys_ffs.$(OBJEXT) \
+	pre_stage2_exec-fsys_affs.$(OBJEXT) \
 	pre_stage2_exec-fsys_iso9660.$(OBJEXT) \
 	pre_stage2_exec-fsys_jfs.$(OBJEXT) \
 	pre_stage2_exec-fsys_minix.$(OBJEXT) \
@@ -277,16 +288,6 @@ am_xfs_stage1_5_exec_OBJECTS = xfs_stage1_5_exec-start.$(OBJEXT) \
 	xfs_stage1_5_exec-bios.$(OBJEXT)
 xfs_stage1_5_exec_OBJECTS = $(am_xfs_stage1_5_exec_OBJECTS)
 xfs_stage1_5_exec_LDADD = $(LDADD)
-am_affs_stage1_5_exec_OBJECTS = affs_stage1_5_exec-start.$(OBJEXT) \
-	affs_stage1_5_exec-asm.$(OBJEXT) \
-	affs_stage1_5_exec-common.$(OBJEXT) \
-	affs_stage1_5_exec-char_io.$(OBJEXT) \
-	affs_stage1_5_exec-disk_io.$(OBJEXT) \
-	affs_stage1_5_exec-stage1_5.$(OBJEXT) \
-	affs_stage1_5_exec-fsys_affs.$(OBJEXT) \
-	affs_stage1_5_exec-bios.$(OBJEXT)
-affs_stage1_5_exec_OBJECTS = $(am_affs_stage1_5_exec_OBJECTS)
-affs_stage1_5_exec_LDADD = $(LDADD)
 SCRIPTS = $(noinst_SCRIPTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -298,22 +299,24 @@ CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libgrub_a_SOURCES) $(diskless_exec_SOURCES) \
 	$(e2fs_stage1_5_exec_SOURCES) $(fat_stage1_5_exec_SOURCES) \
-	$(ffs_stage1_5_exec_SOURCES) $(iso9660_stage1_5_exec_SOURCES) \
+	$(ffs_stage1_5_exec_SOURCES) $(affs_stage1_5_exec_SOURCES) \
+	$(iso9660_stage1_5_exec_SOURCES) \
 	$(jfs_stage1_5_exec_SOURCES) $(minix_stage1_5_exec_SOURCES) \
 	$(nbloader_exec_SOURCES) $(pre_stage2_exec_SOURCES) \
 	$(pxeloader_exec_SOURCES) $(reiserfs_stage1_5_exec_SOURCES) \
 	$(start_exec_SOURCES) $(start_eltorito_exec_SOURCES) \
 	$(ufs2_stage1_5_exec_SOURCES) $(vstafs_stage1_5_exec_SOURCES) \
-	$(xfs_stage1_5_exec_SOURCES) $(affs_stage1_5_exec_SOURCES)
+	$(xfs_stage1_5_exec_SOURCES)
 DIST_SOURCES = $(libgrub_a_SOURCES) $(diskless_exec_SOURCES) \
 	$(e2fs_stage1_5_exec_SOURCES) $(fat_stage1_5_exec_SOURCES) \
-	$(ffs_stage1_5_exec_SOURCES) $(iso9660_stage1_5_exec_SOURCES) \
+	$(ffs_stage1_5_exec_SOURCES) $(affs_stage1_5_exec_SOURCES) \
+	$(iso9660_stage1_5_exec_SOURCES) \
 	$(jfs_stage1_5_exec_SOURCES) $(minix_stage1_5_exec_SOURCES) \
 	$(nbloader_exec_SOURCES) $(pre_stage2_exec_SOURCES) \
 	$(pxeloader_exec_SOURCES) $(reiserfs_stage1_5_exec_SOURCES) \
 	$(start_exec_SOURCES) $(start_eltorito_exec_SOURCES) \
 	$(ufs2_stage1_5_exec_SOURCES) $(vstafs_stage1_5_exec_SOURCES) \
-	$(xfs_stage1_5_exec_SOURCES) $(affs_stage1_5_exec_SOURCES)
+	$(xfs_stage1_5_exec_SOURCES)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -459,24 +462,24 @@ INCLUDES = -I$(top_srcdir)/stage1
 # The library for /sbin/grub.
 noinst_LIBRARIES = libgrub.a
 libgrub_a_SOURCES = boot.c builtins.c char_io.c cmdline.c common.c \
-	disk_io.c fsys_ext2fs.c fsys_fat.c fsys_ffs.c fsys_iso9660.c \
+	disk_io.c fsys_ext2fs.c fsys_fat.c fsys_ffs.c fsys_affs.c fsys_iso9660.c \
 	fsys_jfs.c fsys_minix.c fsys_reiserfs.c fsys_ufs2.c \
-	fsys_vstafs.c fsys_xfs.c fsys_affs.c gunzip.c md5.c serial.c stage2.c \
+	fsys_vstafs.c fsys_xfs.c gunzip.c md5.c serial.c stage2.c \
 	terminfo.c tparm.c
 
 libgrub_a_CFLAGS = $(GRUB_CFLAGS) -I$(top_srcdir)/lib \
 	-DGRUB_UTIL=1 -DFSYS_EXT2FS=1 -DFSYS_FAT=1 -DFSYS_FFS=1 \
-	-DFSYS_ISO9660=1 -DFSYS_JFS=1 -DFSYS_MINIX=1 -DFSYS_REISERFS=1 \
-	-DFSYS_UFS2=1 -DFSYS_VSTAFS=1 -DFSYS_XFS=1 -DFSYS_AFFS=1 \
+	-DFSYS_AFFS=1 -DFSYS_ISO9660=1 -DFSYS_JFS=1 -DFSYS_MINIX=1 -DFSYS_REISERFS=1 \
+	-DFSYS_UFS2=1 -DFSYS_VSTAFS=1 -DFSYS_XFS=1 \
 	-DUSE_MD5_PASSWORDS=1 -DSUPPORT_SERIAL=1 -DSUPPORT_HERCULES=1
 
 @DISKLESS_SUPPORT_FALSE@pkglib_DATA = stage2 stage2_eltorito e2fs_stage1_5 fat_stage1_5 \
-@DISKLESS_SUPPORT_FALSE@	ffs_stage1_5 iso9660_stage1_5 jfs_stage1_5 minix_stage1_5 \
-@DISKLESS_SUPPORT_FALSE@	reiserfs_stage1_5 ufs2_stage1_5 vstafs_stage1_5 xfs_stage1_5 affs_stage1_5
+@DISKLESS_SUPPORT_FALSE@	ffs_stage1_5 affs_stage1_5 iso9660_stage1_5 jfs_stage1_5 minix_stage1_5 \
+@DISKLESS_SUPPORT_FALSE@	reiserfs_stage1_5 ufs2_stage1_5 vstafs_stage1_5 xfs_stage1_5
 
 @DISKLESS_SUPPORT_TRUE@pkglib_DATA = stage2 stage2_eltorito e2fs_stage1_5 fat_stage1_5 \
-@DISKLESS_SUPPORT_TRUE@	ffs_stage1_5 iso9660_stage1_5 jfs_stage1_5 minix_stage1_5 \
-@DISKLESS_SUPPORT_TRUE@	reiserfs_stage1_5 ufs2_stage1_5 vstafs_stage1_5 xfs_stage1_5 affs_stage1_5 \
+@DISKLESS_SUPPORT_TRUE@	ffs_stage1_5 affs_stage1_5 iso9660_stage1_5 jfs_stage1_5 minix_stage1_5 \
+@DISKLESS_SUPPORT_TRUE@	reiserfs_stage1_5 ufs2_stage1_5 vstafs_stage1_5 xfs_stage1_5 \
 @DISKLESS_SUPPORT_TRUE@	nbgrub pxegrub
 
 @DISKLESS_SUPPORT_FALSE@noinst_DATA = pre_stage2 start start_eltorito
@@ -502,8 +505,8 @@ STAGE1_5_COMPILE = $(STAGE2_COMPILE) -DNO_DECOMPRESSION=1 -DSTAGE1_5=1
 # For stage2 target.
 pre_stage2_exec_SOURCES = asm.S bios.c boot.c builtins.c char_io.c \
 	cmdline.c common.c console.c disk_io.c fsys_ext2fs.c \
-	fsys_fat.c fsys_ffs.c fsys_iso9660.c fsys_jfs.c fsys_minix.c \
-	fsys_reiserfs.c fsys_ufs2.c fsys_vstafs.c fsys_xfs.c fsys_affs.c gunzip.c \
+	fsys_fat.c fsys_ffs.c fsys_affs.c fsys_iso9660.c fsys_jfs.c fsys_minix.c \
+	fsys_reiserfs.c fsys_ufs2.c fsys_vstafs.c fsys_xfs.c gunzip.c \
 	hercules.c md5.c serial.c smp-imps.c stage2.c terminfo.c tparm.c
 
 pre_stage2_exec_CFLAGS = $(STAGE2_COMPILE) $(FSYS_CFLAGS)
@@ -628,18 +631,6 @@ xfs_stage1_5_exec_CCASFLAGS = $(STAGE1_5_COMPILE) -DFSYS_XFS=1 \
 
 xfs_stage1_5_exec_LDFLAGS = $(STAGE1_5_LINK)
 
-# For iso9660_stage1_5 target.
-iso9660_stage1_5_exec_SOURCES = start_eltorito.S asm.S common.c char_io.c \
-	disk_io.c stage1_5.c fsys_iso9660.c bios.c
-
-iso9660_stage1_5_exec_CFLAGS = $(STAGE1_5_COMPILE) -DFSYS_ISO9660=1 \
-	-DNO_BLOCK_FILES=1
-
-iso9660_stage1_5_exec_CCASFLAGS = $(STAGE1_5_COMPILE) -DFSYS_ISO9660=1 \
-	-DNO_BLOCK_FILES=1
-
-iso9660_stage1_5_exec_LDFLAGS = $(STAGE1_5_LINK)
-
 # For affs_stage1_5 target.
 affs_stage1_5_exec_SOURCES = start.S asm.S common.c char_io.c \
 	disk_io.c stage1_5.c fsys_affs.c bios.c
@@ -651,6 +642,18 @@ affs_stage1_5_exec_CCASFLAGS = $(STAGE1_5_COMPILE) -DFSYS_AFFS=1 \
 	-DNO_BLOCK_FILES=1
 
 affs_stage1_5_exec_LDFLAGS = $(STAGE1_5_LINK)
+
+# For iso9660_stage1_5 target.
+iso9660_stage1_5_exec_SOURCES = start_eltorito.S asm.S common.c char_io.c \
+	disk_io.c stage1_5.c fsys_iso9660.c bios.c
+
+iso9660_stage1_5_exec_CFLAGS = $(STAGE1_5_COMPILE) -DFSYS_ISO9660=1 \
+	-DNO_BLOCK_FILES=1
+
+iso9660_stage1_5_exec_CCASFLAGS = $(STAGE1_5_COMPILE) -DFSYS_ISO9660=1 \
+	-DNO_BLOCK_FILES=1
+
+iso9660_stage1_5_exec_LDFLAGS = $(STAGE1_5_LINK)
 
 # For diskless target.
 diskless_exec_SOURCES = $(pre_stage2_exec_SOURCES)
@@ -785,10 +788,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-console.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-disk_io.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-fsys_affs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-fsys_ext2fs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-fsys_fat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-fsys_ffs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-fsys_affs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-fsys_iso9660.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-fsys_jfs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-fsys_minix.Po@am__quote@
@@ -804,12 +807,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-stage2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-terminfo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-tparm.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-bios.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-char_io.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-common.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-disk_io.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-stage1_5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/e2fs_stage1_5_exec-bios.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/e2fs_stage1_5_exec-char_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/e2fs_stage1_5_exec-common.Po@am__quote@
@@ -828,6 +825,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffs_stage1_5_exec-disk_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffs_stage1_5_exec-fsys_ffs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ffs_stage1_5_exec-stage1_5.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-bios.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-char_io.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-disk_io.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affs_stage1_5_exec-stage1_5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/iso9660_stage1_5_exec-bios.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/iso9660_stage1_5_exec-char_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/iso9660_stage1_5_exec-common.Po@am__quote@
@@ -846,10 +849,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-cmdline.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-disk_io.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-fsys_affs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-fsys_ext2fs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-fsys_fat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-fsys_ffs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-fsys_affs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-fsys_iso9660.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-fsys_jfs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-fsys_minix.Po@am__quote@
@@ -877,10 +880,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-console.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-disk_io.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-fsys_affs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-fsys_ext2fs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-fsys_fat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-fsys_ffs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-fsys_affs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-fsys_iso9660.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-fsys_jfs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-fsys_minix.Po@am__quote@
@@ -1235,6 +1238,21 @@ libgrub_a-fsys_ffs.obj: fsys_ffs.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_ffs.obj `if test -f 'fsys_ffs.c'; then $(CYGPATH_W) 'fsys_ffs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_ffs.c'; fi`
 
+
+libgrub_a-fsys_affs.o: fsys_affs.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-fsys_affs.o -MD -MP -MF "$(DEPDIR)/libgrub_a-fsys_affs.Tpo" -c -o libgrub_a-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-fsys_affs.Tpo" "$(DEPDIR)/libgrub_a-fsys_affs.Po"; else rm -f "$(DEPDIR)/libgrub_a-fsys_affs.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='libgrub_a-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c
+
+libgrub_a-fsys_affs.obj: fsys_affs.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-fsys_affs.obj -MD -MP -MF "$(DEPDIR)/libgrub_a-fsys_affs.Tpo" -c -o libgrub_a-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-fsys_affs.Tpo" "$(DEPDIR)/libgrub_a-fsys_affs.Po"; else rm -f "$(DEPDIR)/libgrub_a-fsys_affs.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='libgrub_a-fsys_affs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`
+
 libgrub_a-fsys_iso9660.o: fsys_iso9660.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-fsys_iso9660.o -MD -MP -MF "$(DEPDIR)/libgrub_a-fsys_iso9660.Tpo" -c -o libgrub_a-fsys_iso9660.o `test -f 'fsys_iso9660.c' || echo '$(srcdir)/'`fsys_iso9660.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-fsys_iso9660.Tpo" "$(DEPDIR)/libgrub_a-fsys_iso9660.Po"; else rm -f "$(DEPDIR)/libgrub_a-fsys_iso9660.Tpo"; exit 1; fi
@@ -1333,20 +1351,6 @@ libgrub_a-fsys_xfs.obj: fsys_xfs.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_xfs.obj `if test -f 'fsys_xfs.c'; then $(CYGPATH_W) 'fsys_xfs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_xfs.c'; fi`
 
-libgrub_a-fsys_affs.o: fsys_affs.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-fsys_affs.o -MD -MP -MF "$(DEPDIR)/libgrub_a-fsys_affs.Tpo" -c -o libgrub_a-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-fsys_affs.Tpo" "$(DEPDIR)/libgrub_a-fsys_affs.Po"; else rm -f "$(DEPDIR)/libgrub_a-fsys_affs.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='libgrub_a-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c
-
-libgrub_a-fsys_affs.obj: fsys_affs.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-fsys_affs.obj -MD -MP -MF "$(DEPDIR)/libgrub_a-fsys_affs.Tpo" -c -o libgrub_a-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-fsys_affs.Tpo" "$(DEPDIR)/libgrub_a-fsys_affs.Po"; else rm -f "$(DEPDIR)/libgrub_a-fsys_affs.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='libgrub_a-fsys_affs.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`
-
 libgrub_a-gunzip.o: gunzip.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-gunzip.o -MD -MP -MF "$(DEPDIR)/libgrub_a-gunzip.Tpo" -c -o libgrub_a-gunzip.o `test -f 'gunzip.c' || echo '$(srcdir)/'`gunzip.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-gunzip.Tpo" "$(DEPDIR)/libgrub_a-gunzip.Po"; else rm -f "$(DEPDIR)/libgrub_a-gunzip.Tpo"; exit 1; fi
@@ -1430,90 +1434,6 @@ libgrub_a-tparm.obj: tparm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tparm.c' object='libgrub_a-tparm.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-tparm.obj `if test -f 'tparm.c'; then $(CYGPATH_W) 'tparm.c'; else $(CYGPATH_W) '$(srcdir)/tparm.c'; fi`
-
-affs_stage1_5_exec-common.o: common.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-common.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-common.Tpo" -c -o affs_stage1_5_exec-common.o `test -f 'common.c' || echo '$(srcdir)/'`common.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-common.Tpo" "$(DEPDIR)/affs_stage1_5_exec-common.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-common.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='common.c' object='affs_stage1_5_exec-common.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-common.o `test -f 'common.c' || echo '$(srcdir)/'`common.c
-
-affs_stage1_5_exec-common.obj: common.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-common.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-common.Tpo" -c -o affs_stage1_5_exec-common.obj `if test -f 'common.c'; then $(CYGPATH_W) 'common.c'; else $(CYGPATH_W) '$(srcdir)/common.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-common.Tpo" "$(DEPDIR)/affs_stage1_5_exec-common.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-common.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='common.c' object='affs_stage1_5_exec-common.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-common.obj `if test -f 'common.c'; then $(CYGPATH_W) 'common.c'; else $(CYGPATH_W) '$(srcdir)/common.c'; fi`
-
-affs_stage1_5_exec-char_io.o: char_io.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-char_io.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo" -c -o affs_stage1_5_exec-char_io.o `test -f 'char_io.c' || echo '$(srcdir)/'`char_io.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo" "$(DEPDIR)/affs_stage1_5_exec-char_io.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='char_io.c' object='affs_stage1_5_exec-char_io.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-char_io.o `test -f 'char_io.c' || echo '$(srcdir)/'`char_io.c
-
-affs_stage1_5_exec-char_io.obj: char_io.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-char_io.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo" -c -o affs_stage1_5_exec-char_io.obj `if test -f 'char_io.c'; then $(CYGPATH_W) 'char_io.c'; else $(CYGPATH_W) '$(srcdir)/char_io.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo" "$(DEPDIR)/affs_stage1_5_exec-char_io.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='char_io.c' object='affs_stage1_5_exec-char_io.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-char_io.obj `if test -f 'char_io.c'; then $(CYGPATH_W) 'char_io.c'; else $(CYGPATH_W) '$(srcdir)/char_io.c'; fi`
-
-affs_stage1_5_exec-disk_io.o: disk_io.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-disk_io.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo" -c -o affs_stage1_5_exec-disk_io.o `test -f 'disk_io.c' || echo '$(srcdir)/'`disk_io.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo" "$(DEPDIR)/affs_stage1_5_exec-disk_io.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='disk_io.c' object='affs_stage1_5_exec-disk_io.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-disk_io.o `test -f 'disk_io.c' || echo '$(srcdir)/'`disk_io.c
-
-affs_stage1_5_exec-disk_io.obj: disk_io.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-disk_io.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo" -c -o affs_stage1_5_exec-disk_io.obj `if test -f 'disk_io.c'; then $(CYGPATH_W) 'disk_io.c'; else $(CYGPATH_W) '$(srcdir)/disk_io.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo" "$(DEPDIR)/affs_stage1_5_exec-disk_io.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='disk_io.c' object='affs_stage1_5_exec-disk_io.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-disk_io.obj `if test -f 'disk_io.c'; then $(CYGPATH_W) 'disk_io.c'; else $(CYGPATH_W) '$(srcdir)/disk_io.c'; fi`
-
-affs_stage1_5_exec-stage1_5.o: stage1_5.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-stage1_5.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo" -c -o affs_stage1_5_exec-stage1_5.o `test -f 'stage1_5.c' || echo '$(srcdir)/'`stage1_5.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo" "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stage1_5.c' object='affs_stage1_5_exec-stage1_5.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-stage1_5.o `test -f 'stage1_5.c' || echo '$(srcdir)/'`stage1_5.c
-
-affs_stage1_5_exec-stage1_5.obj: stage1_5.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-stage1_5.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo" -c -o affs_stage1_5_exec-stage1_5.obj `if test -f 'stage1_5.c'; then $(CYGPATH_W) 'stage1_5.c'; else $(CYGPATH_W) '$(srcdir)/stage1_5.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo" "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stage1_5.c' object='affs_stage1_5_exec-stage1_5.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-stage1_5.obj `if test -f 'stage1_5.c'; then $(CYGPATH_W) 'stage1_5.c'; else $(CYGPATH_W) '$(srcdir)/stage1_5.c'; fi`
-
-affs_stage1_5_exec-fsys_affs.o: fsys_affs.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-fsys_affs.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo" -c -o affs_stage1_5_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo" "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='affs_stage1_5_exec-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c
-
-affs_stage1_5_exec-fsys_affs.obj: fsys_affs.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-fsys_affs.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo" -c -o affs_stage1_5_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo" "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='affs_stage1_5_exec-fsys_affs.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`
-
-affs_stage1_5_exec-bios.o: bios.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-bios.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo" -c -o affs_stage1_5_exec-bios.o `test -f 'bios.c' || echo '$(srcdir)/'`bios.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo" "$(DEPDIR)/affs_stage1_5_exec-bios.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bios.c' object='affs_stage1_5_exec-bios.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-bios.o `test -f 'bios.c' || echo '$(srcdir)/'`bios.c
-
-affs_stage1_5_exec-bios.obj: bios.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-bios.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo" -c -o affs_stage1_5_exec-bios.obj `if test -f 'bios.c'; then $(CYGPATH_W) 'bios.c'; else $(CYGPATH_W) '$(srcdir)/bios.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo" "$(DEPDIR)/affs_stage1_5_exec-bios.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bios.c' object='affs_stage1_5_exec-bios.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-bios.obj `if test -f 'bios.c'; then $(CYGPATH_W) 'bios.c'; else $(CYGPATH_W) '$(srcdir)/bios.c'; fi`
 
 diskless_exec-bios.o: bios.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-bios.o -MD -MP -MF "$(DEPDIR)/diskless_exec-bios.Tpo" -c -o diskless_exec-bios.o `test -f 'bios.c' || echo '$(srcdir)/'`bios.c; \
@@ -1669,6 +1589,20 @@ diskless_exec-fsys_ffs.obj: fsys_ffs.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-fsys_ffs.obj `if test -f 'fsys_ffs.c'; then $(CYGPATH_W) 'fsys_ffs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_ffs.c'; fi`
 
+diskless_exec-fsys_affs.o: fsys_affs.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-fsys_affs.o -MD -MP -MF "$(DEPDIR)/diskless_exec-fsys_affs.Tpo" -c -o diskless_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-fsys_affs.Tpo" "$(DEPDIR)/diskless_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/diskless_exec-fsys_affs.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='diskless_exec-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c
+
+diskless_exec-fsys_affs.obj: fsys_affs.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-fsys_affs.obj -MD -MP -MF "$(DEPDIR)/diskless_exec-fsys_affs.Tpo" -c -o diskless_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-fsys_affs.Tpo" "$(DEPDIR)/diskless_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/diskless_exec-fsys_affs.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='diskless_exec-fsys_affs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`
+
 diskless_exec-fsys_iso9660.o: fsys_iso9660.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-fsys_iso9660.o -MD -MP -MF "$(DEPDIR)/diskless_exec-fsys_iso9660.Tpo" -c -o diskless_exec-fsys_iso9660.o `test -f 'fsys_iso9660.c' || echo '$(srcdir)/'`fsys_iso9660.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-fsys_iso9660.Tpo" "$(DEPDIR)/diskless_exec-fsys_iso9660.Po"; else rm -f "$(DEPDIR)/diskless_exec-fsys_iso9660.Tpo"; exit 1; fi
@@ -1766,20 +1700,6 @@ diskless_exec-fsys_xfs.obj: fsys_xfs.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_xfs.c' object='diskless_exec-fsys_xfs.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-fsys_xfs.obj `if test -f 'fsys_xfs.c'; then $(CYGPATH_W) 'fsys_xfs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_xfs.c'; fi`
-
-diskless_exec-fsys_affs.o: fsys_affs.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-fsys_affs.o -MD -MP -MF "$(DEPDIR)/diskless_exec-fsys_affs.Tpo" -c -o diskless_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-fsys_affs.Tpo" "$(DEPDIR)/diskless_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/diskless_exec-fsys_affs.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='diskless_exec-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c
-
-diskless_exec-fsys_affs.obj: fsys_affs.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-fsys_affs.obj -MD -MP -MF "$(DEPDIR)/diskless_exec-fsys_affs.Tpo" -c -o diskless_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-fsys_affs.Tpo" "$(DEPDIR)/diskless_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/diskless_exec-fsys_affs.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='diskless_exec-fsys_affs.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`
 
 diskless_exec-gunzip.o: gunzip.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-gunzip.o -MD -MP -MF "$(DEPDIR)/diskless_exec-gunzip.Tpo" -c -o diskless_exec-gunzip.o `test -f 'gunzip.c' || echo '$(srcdir)/'`gunzip.c; \
@@ -2144,6 +2064,91 @@ ffs_stage1_5_exec-bios.obj: bios.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bios.c' object='ffs_stage1_5_exec-bios.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ffs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o ffs_stage1_5_exec-bios.obj `if test -f 'bios.c'; then $(CYGPATH_W) 'bios.c'; else $(CYGPATH_W) '$(srcdir)/bios.c'; fi`
+
+
+affs_stage1_5_exec-common.o: common.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-common.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-common.Tpo" -c -o affs_stage1_5_exec-common.o `test -f 'common.c' || echo '$(srcdir)/'`common.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-common.Tpo" "$(DEPDIR)/affs_stage1_5_exec-common.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-common.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='common.c' object='affs_stage1_5_exec-common.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-common.o `test -f 'common.c' || echo '$(srcdir)/'`common.c
+
+affs_stage1_5_exec-common.obj: common.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-common.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-common.Tpo" -c -o affs_stage1_5_exec-common.obj `if test -f 'common.c'; then $(CYGPATH_W) 'common.c'; else $(CYGPATH_W) '$(srcdir)/common.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-common.Tpo" "$(DEPDIR)/affs_stage1_5_exec-common.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-common.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='common.c' object='affs_stage1_5_exec-common.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-common.obj `if test -f 'common.c'; then $(CYGPATH_W) 'common.c'; else $(CYGPATH_W) '$(srcdir)/common.c'; fi`
+
+affs_stage1_5_exec-char_io.o: char_io.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-char_io.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo" -c -o affs_stage1_5_exec-char_io.o `test -f 'char_io.c' || echo '$(srcdir)/'`char_io.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo" "$(DEPDIR)/affs_stage1_5_exec-char_io.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='char_io.c' object='affs_stage1_5_exec-char_io.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-char_io.o `test -f 'char_io.c' || echo '$(srcdir)/'`char_io.c
+
+affs_stage1_5_exec-char_io.obj: char_io.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-char_io.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo" -c -o affs_stage1_5_exec-char_io.obj `if test -f 'char_io.c'; then $(CYGPATH_W) 'char_io.c'; else $(CYGPATH_W) '$(srcdir)/char_io.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo" "$(DEPDIR)/affs_stage1_5_exec-char_io.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-char_io.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='char_io.c' object='affs_stage1_5_exec-char_io.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-char_io.obj `if test -f 'char_io.c'; then $(CYGPATH_W) 'char_io.c'; else $(CYGPATH_W) '$(srcdir)/char_io.c'; fi`
+
+affs_stage1_5_exec-disk_io.o: disk_io.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-disk_io.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo" -c -o affs_stage1_5_exec-disk_io.o `test -f 'disk_io.c' || echo '$(srcdir)/'`disk_io.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo" "$(DEPDIR)/affs_stage1_5_exec-disk_io.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='disk_io.c' object='affs_stage1_5_exec-disk_io.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-disk_io.o `test -f 'disk_io.c' || echo '$(srcdir)/'`disk_io.c
+
+affs_stage1_5_exec-disk_io.obj: disk_io.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-disk_io.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo" -c -o affs_stage1_5_exec-disk_io.obj `if test -f 'disk_io.c'; then $(CYGPATH_W) 'disk_io.c'; else $(CYGPATH_W) '$(srcdir)/disk_io.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo" "$(DEPDIR)/affs_stage1_5_exec-disk_io.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-disk_io.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='disk_io.c' object='affs_stage1_5_exec-disk_io.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-disk_io.obj `if test -f 'disk_io.c'; then $(CYGPATH_W) 'disk_io.c'; else $(CYGPATH_W) '$(srcdir)/disk_io.c'; fi`
+
+affs_stage1_5_exec-stage1_5.o: stage1_5.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-stage1_5.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo" -c -o affs_stage1_5_exec-stage1_5.o `test -f 'stage1_5.c' || echo '$(srcdir)/'`stage1_5.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo" "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stage1_5.c' object='affs_stage1_5_exec-stage1_5.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-stage1_5.o `test -f 'stage1_5.c' || echo '$(srcdir)/'`stage1_5.c
+
+affs_stage1_5_exec-stage1_5.obj: stage1_5.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-stage1_5.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo" -c -o affs_stage1_5_exec-stage1_5.obj `if test -f 'stage1_5.c'; then $(CYGPATH_W) 'stage1_5.c'; else $(CYGPATH_W) '$(srcdir)/stage1_5.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo" "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-stage1_5.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stage1_5.c' object='affs_stage1_5_exec-stage1_5.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-stage1_5.obj `if test -f 'stage1_5.c'; then $(CYGPATH_W) 'stage1_5.c'; else $(CYGPATH_W) '$(srcdir)/stage1_5.c'; fi`
+
+affs_stage1_5_exec-fsys_affs.o: fsys_affs.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-fsys_affs.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo" -c -o affs_stage1_5_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo" "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='affs_stage1_5_exec-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c
+
+affs_stage1_5_exec-fsys_affs.obj: fsys_affs.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-fsys_affs.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo" -c -o affs_stage1_5_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo" "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-fsys_affs.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='affs_stage1_5_exec-fsys_affs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`
+
+affs_stage1_5_exec-bios.o: bios.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-bios.o -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo" -c -o affs_stage1_5_exec-bios.o `test -f 'bios.c' || echo '$(srcdir)/'`bios.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo" "$(DEPDIR)/affs_stage1_5_exec-bios.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bios.c' object='affs_stage1_5_exec-bios.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-bios.o `test -f 'bios.c' || echo '$(srcdir)/'`bios.c
+
+affs_stage1_5_exec-bios.obj: bios.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT affs_stage1_5_exec-bios.obj -MD -MP -MF "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo" -c -o affs_stage1_5_exec-bios.obj `if test -f 'bios.c'; then $(CYGPATH_W) 'bios.c'; else $(CYGPATH_W) '$(srcdir)/bios.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo" "$(DEPDIR)/affs_stage1_5_exec-bios.Po"; else rm -f "$(DEPDIR)/affs_stage1_5_exec-bios.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bios.c' object='affs_stage1_5_exec-bios.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(affs_stage1_5_exec_CFLAGS) $(CFLAGS) -c -o affs_stage1_5_exec-bios.obj `if test -f 'bios.c'; then $(CYGPATH_W) 'bios.c'; else $(CYGPATH_W) '$(srcdir)/bios.c'; fi`
 
 iso9660_stage1_5_exec-common.o: common.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(iso9660_stage1_5_exec_CFLAGS) $(CFLAGS) -MT iso9660_stage1_5_exec-common.o -MD -MP -MF "$(DEPDIR)/iso9660_stage1_5_exec-common.Tpo" -c -o iso9660_stage1_5_exec-common.o `test -f 'common.c' || echo '$(srcdir)/'`common.c; \
@@ -2551,6 +2556,20 @@ pre_stage2_exec-fsys_ffs.obj: fsys_ffs.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-fsys_ffs.obj `if test -f 'fsys_ffs.c'; then $(CYGPATH_W) 'fsys_ffs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_ffs.c'; fi`
 
+pre_stage2_exec-fsys_affs.o: fsys_affs.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-fsys_affs.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo" -c -o pre_stage2_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo" "$(DEPDIR)/pre_stage2_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='pre_stage2_exec-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c
+
+pre_stage2_exec-fsys_affs.obj: fsys_affs.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-fsys_affs.obj -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo" -c -o pre_stage2_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo" "$(DEPDIR)/pre_stage2_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='pre_stage2_exec-fsys_affs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`
+
 pre_stage2_exec-fsys_iso9660.o: fsys_iso9660.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-fsys_iso9660.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-fsys_iso9660.Tpo" -c -o pre_stage2_exec-fsys_iso9660.o `test -f 'fsys_iso9660.c' || echo '$(srcdir)/'`fsys_iso9660.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-fsys_iso9660.Tpo" "$(DEPDIR)/pre_stage2_exec-fsys_iso9660.Po"; else rm -f "$(DEPDIR)/pre_stage2_exec-fsys_iso9660.Tpo"; exit 1; fi
@@ -2648,20 +2667,6 @@ pre_stage2_exec-fsys_xfs.obj: fsys_xfs.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_xfs.c' object='pre_stage2_exec-fsys_xfs.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-fsys_xfs.obj `if test -f 'fsys_xfs.c'; then $(CYGPATH_W) 'fsys_xfs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_xfs.c'; fi`
-
-pre_stage2_exec-fsys_affs.o: fsys_affs.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-fsys_affs.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo" -c -o pre_stage2_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo" "$(DEPDIR)/pre_stage2_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='pre_stage2_exec-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-fsys_affs.o `test -f 'fsys_affs.c' || echo '$(srcdir)/'`fsys_affs.c
-
-pre_stage2_exec-fsys_affs.obj: fsys_affs.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-fsys_affs.obj -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo" -c -o pre_stage2_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo" "$(DEPDIR)/pre_stage2_exec-fsys_affs.Po"; else rm -f "$(DEPDIR)/pre_stage2_exec-fsys_affs.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fsys_affs.c' object='pre_stage2_exec-fsys_affs.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-fsys_affs.obj `if test -f 'fsys_affs.c'; then $(CYGPATH_W) 'fsys_affs.c'; else $(CYGPATH_W) '$(srcdir)/fsys_affs.c'; fi`
 
 pre_stage2_exec-gunzip.o: gunzip.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-gunzip.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-gunzip.Tpo" -c -o pre_stage2_exec-gunzip.o `test -f 'gunzip.c' || echo '$(srcdir)/'`gunzip.c; \

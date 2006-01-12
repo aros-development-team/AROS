@@ -75,17 +75,17 @@ struct fsys_entry fsys_table[NUM_FSYS + 1] =
 # ifdef FSYS_UFS2
   {"ufs2", ufs2_mount, ufs2_read, ufs2_dir, 0, ufs2_embed},
 # endif
+#ifdef FSYS_AFFS
+  {"affs", affs_mount, affs_read, affs_dir, 0, 0},
+#endif
 #ifdef FSYS_ISO9660
   { "iso9660", iso9660_mount, iso9660_read, iso9660_dir, 0, 0},
 #endif
-# ifdef FSYS_AFFS
-  {"aFFS", affs_mount, affs_read, affs_dir, 0, 0},
-# endif
   /* XX FFS should come last as it's superblock is commonly crossing tracks
      on floppies from track 1 to 2, while others only use 1.  */
-# ifdef FSYS_FFS
+#ifdef FSYS_FFS
   {"ffs", ffs_mount, ffs_read, ffs_dir, 0, ffs_embed},
-# endif
+#endif
   {0, 0, 0, 0, 0, 0}
 };
 

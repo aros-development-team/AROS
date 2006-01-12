@@ -6,9 +6,9 @@ include $(TOP)/config/make.cfg
 GRUBOPTS := --enable-preset-menu=$(TOP)/$(CURDIR)/../menu.lst
 
 ifneq ($(AROS_TARGET_VARIANT),tiny)
-GRUBOPTS += 
+GRUBOPTS += --enable-affs
 else
-GRUBOPTS += --disable-fat --disable-ffs --disable-minix --disable-reiserfs \
+GRUBOPTS += --enable-affs --disable-fat --disable-ffs --disable-minix --disable-reiserfs \
             --disable-vstafs --disable-jfs --disable-xfs --disable-md5-password \
             --disable-packet-retransmission --disable-ext2fs --disable-serial \
             --disable-hercules
