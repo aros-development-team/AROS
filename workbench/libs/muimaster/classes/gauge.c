@@ -34,7 +34,8 @@ extern struct Library *MUIMasterBase;
 IPTR Gauge__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Gauge_DATA   *data;
-    struct TagItem  	    *tag, *tags;
+    struct TagItem *tag;
+    const struct TagItem *tags;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return FALSE;
@@ -99,8 +100,9 @@ IPTR Gauge__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
 IPTR Gauge__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct Gauge_DATA   *data;
-    struct TagItem  	    *tag, *tags;
+    struct Gauge_DATA      *data;
+    struct TagItem         *tag;
+    const struct TagItem   *tags;
     int info_changed = 0;
     int need_redraw = 0;
 
@@ -304,8 +306,12 @@ IPTR Gauge__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     if (data->horiz)
     {
 	ULONG w;
-        w = _mwidth(obj) * data->current / data->max; /* NOTE: should be 64 bit */
-
+	if (data->max != 0)
+	{
+        	w = _mwidth(obj) * data->current / data->max; /* NOTE: should be 64 bit */
+	} else {
+		w = 0;
+	}
     	SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_FILL],0,JAM1);
     	RectFill(_rp(obj),_mleft(obj),_mtop(obj),_mleft(obj) + w - 1, _mbottom(obj));
 
