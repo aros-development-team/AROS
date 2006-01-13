@@ -55,6 +55,8 @@ struct MUI_CustomClass *MCC_Query(ULONG d0);
 #endif
 #endif
 
+#define ZUNEVERSION "$VER: Zune 0.1 (13.01.2006) ©AROS Dev Team"
+
 /************************************************************************/
 
 void load_prefs(CONST_STRPTR name);
@@ -438,6 +440,10 @@ int init_gui(void)
     }
 
     app = ApplicationObject,
+        MUIA_Application_Title, (IPTR) "Zune",
+        MUIA_Application_Version, (IPTR) ZUNEVERSION,
+        MUIA_Application_Copyright, (IPTR) "© 2006, The AROS Development Team",
+        MUIA_Application_Description, wintitle,
 	MUIA_Application_Menustrip, MenuitemObject,
 	    MUIA_Family_Child, MenuitemObject,
 	    	MUIA_Menuitem_Title, "Project",
