@@ -14,6 +14,8 @@
 #include "args.h"
 #include "fpeditor.h"
 
+#define VERSION "$VER: Fonts 0.1 ("ADATE") ©AROS Dev Team"
+
 int main(void)
 {
     Object *application,  *window;
@@ -32,6 +34,10 @@ int main(void)
     }
     
     application = ApplicationObject,
+        MUIA_Application_Title,  __(MSG_NAME),
+        MUIA_Application_Version, (IPTR) VERSION,
+        MUIA_Application_Description,  __(MSG_DESCRIPTION),
+
         SubWindow, (IPTR) (window = SystemPrefsWindowObject,
             WindowContents, (IPTR) FPEditorObject,
             End,
