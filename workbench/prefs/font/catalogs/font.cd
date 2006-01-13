@@ -53,3 +53,6 @@ System:
 MSG_SCREEN (//)
 Screen:
 ;
+MSG_DESCRIPTION (//)
+Fonts preferences
+;
