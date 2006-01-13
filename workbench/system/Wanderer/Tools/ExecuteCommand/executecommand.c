@@ -25,7 +25,9 @@
 #include "executecommand.h"
 #include "locale.h"
 #include "support.h"
-          
+
+#define VERSION "$VER: Execute 0.2 (13.01.2006) ©AROS Dev Team"
+
 /*** Private methods ********************************************************/
 #define MUIM_ExecuteCommand_ExecuteCommand  (TAG_USER | 0x20000000)
 struct  MUIP_ExecuteCommand_ExecuteCommand  { ULONG MethodID; ULONG delayed; };
@@ -105,9 +107,11 @@ Object *ExecuteCommand__OM_NEW
         CLASS, self, NULL,
         
         MUIA_Application_Title, __(MSG_TITLE),
-        
+        MUIA_Application_Version, (IPTR) VERSION,
+        MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
+        MUIA_Application_Description, __(MSG_DESCRIPTION),
         SubWindow, (IPTR) (window = WindowObject,
-            MUIA_Window_Title,       __(MSG_TITLE),
+            MUIA_Window_Title,       __(MSG_DESCRIPTION),
             MUIA_Window_Activate,    TRUE,
             MUIA_Window_NoMenus,     TRUE,
             MUIA_Window_CloseGadget, FALSE,
