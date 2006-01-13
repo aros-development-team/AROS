@@ -110,6 +110,10 @@ int main(void)
     GetArguments();
     
     application = ApplicationObject,
+        MUIA_Application_Title, (IPTR) MSG(MSG_WINDOW_TITLE),
+        MUIA_Application_Version, (IPTR) versionString,
+        MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
+        MUIA_Application_Description, (IPTR) MSG(MSG_DESCRIPTION),
         SubWindow, (IPTR) (window = WindowObject,
             MUIA_Window_Title,    (IPTR) MSG(MSG_WINDOW_TITLE),
             MUIA_Window_Activate,        TRUE,

@@ -8,7 +8,7 @@
 
 #define VERSION 	1
 #define REVISION 	2
-#define DATESTR 	"27.05.2003"
-#define VERSIONSTR	"$VER: Clock 1.2 (" DATESTR ")"
+#define DATESTR 	"13.01.2006"
+#define VERSIONSTR	"$VER: Clock 1.3 (" DATESTR ") ©AROS Dev Team"
 
 #endif /* _VERSION_H */

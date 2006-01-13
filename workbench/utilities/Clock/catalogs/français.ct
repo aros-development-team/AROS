@@ -10,6 +10,9 @@ MSG_WINDOW_TITLE
 Horloge
 ; Clock
 ;
+MSG_DESCRIPTION
+Une Horloge pour Wanderer
+;
 MSG_OK
 Ok
 ; Ok

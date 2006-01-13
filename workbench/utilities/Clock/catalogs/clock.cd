@@ -5,5 +5,8 @@ Error: Can't create application object.
 MSG_WINDOW_TITLE (//)
 Clock
 ;
+MSG_DESCRIPTION (//)
+Wanderer Clock
+;
 MSG_OK (//)
 Ok
