@@ -110,14 +110,14 @@ static void CheckTaskStack(struct Task *task)
 	unusedstack++;
     }
     
-    out("Task %x (%s\t)  Stack-Size = %6d\tUnused stack = %6d\tStack Usage %s %6d: %s\n",
+    out("Task %x (%25s) Stack Size =%6d, Left =%6d, Used %s%6d%s\n",
    		task,
     		task->tc_Node.ln_Name ? task->tc_Node.ln_Name : "<NONAME>",
 		stacksize,
 		unusedstack,
 		((stacksize - unusedstack) < stacksize) ? "=" : ">",
 		stacksize - unusedstack,
-		(unusedstack < 512) ? " Needs more stack!!!!!!!!!" : "");
+		(unusedstack < 512) ? ": Needs more stack!!!!!!!!!" : "");
 }
 
 static void Action(void)
