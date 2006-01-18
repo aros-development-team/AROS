@@ -55,7 +55,7 @@
     return CALLHOOKPKT((struct Hook *) cl, obj, message);
 } /* CoerceMethodA() */
 
-ULONG CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...)
+IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...)
 {
     if ((!obj) || (!cl))
         return 0L;
