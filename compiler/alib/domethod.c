@@ -62,7 +62,7 @@
     return CALLHOOKPKT((struct Hook *) OCLASS(obj), obj, message);
 } /* DoMethodA */
 
-ULONG DoMethod (Object * obj, ULONG MethodID, ...)
+IPTR DoMethod (Object * obj, ULONG MethodID, ...)
 {
     AROS_GET_SYSBASE_OK
 
