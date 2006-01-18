@@ -58,7 +58,7 @@
 } /* DoSuperMethodA() */
 
 
-ULONG DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...)
+IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...)
 {
     if ((!obj) || (!cl))
         return 0L;
