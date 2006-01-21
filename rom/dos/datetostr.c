@@ -62,47 +62,43 @@ const char *const Dos_SubstDateTable[]=
 
     INPUTS
 	DateTime - a pointer to an initialized DateTime structure. The
-		DateTime structure should be initialized as follows:
+		   DateTime structure should be initialized as follows:
 
-		\begin{description}
-		\item{dat_Stamp} The datestamp to convert to ascii
+		dat_Stamp: The datestamp to convert to ascii
 
-		\item{dat_Format} How to convert the datestamp into
-		    dat_StrDate. Can be any of the following:
+		dat_Format: How to convert the datestamp into
+			dat_StrDate. Can be any of the following:
 
-		    \begin{description}
-		    \item{FORMAT_DOS} AmigaDOS format (dd-mmm-yy). This
-			    is the default if you specify something other
-			    than any entry in this list.
+		    FORMAT_DOS: AmigaDOS format (dd-mmm-yy). This
+			is the default if you specify something other
+			than any entry in this list.
 
-		    \item{FORMAT_INT} International format (yy-mmm-dd).
+		    FORMAT_INT: International format (yy-mmm-dd).
 
-		    \item{FORMAT_USA} American format (mm-dd-yy).
+		    FORMAT_USA: American format (mm-dd-yy).
 
-		    \item{FORMAT_CDN} Canadian format (dd-mm-yy).
+		    FORMAT_CDN: Canadian format (dd-mm-yy).
 
-		    \item{FORMAT_DEF} default format for locale.
+		    FORMAT_DEF default format for locale.
 
-		    \end{description}
 
-		\item{dat_Flags} Modifies dat_Format. The only flag
-		    used by this function is DTF_SUBST. If set, then
-		    a string like "Today" or "Monday" is generated
-		    instead of the normal format if possible.
+		dat_Flags: Modifies dat_Format. The only flag
+			used by this function is DTF_SUBST. If set, then
+			a string like "Today" or "Monday" is generated
+			instead of the normal format if possible.
 
-		\item{dat_StrDay} Pointer to a buffer to receive the day of
+		dat_StrDay: Pointer to a buffer to receive the day of
 			the week string. (Monday, Tuesday, etc.). If null,
 			this string will not be generated.
 
-		\item{dat_StrDate} Pointer to a buffer to receive the date
+		dat_StrDate: Pointer to a buffer to receive the date
 			string, in the format requested by dat_Format,
 			subject to possible modifications by DTF_SUBST. If
 			null, this string will not be generated.
 
-		\item{dat_StrTime} Pointer to a buffer to receive the time
+		dat_StrTime: Pointer to a buffer to receive the time
 			of day string. If NULL, this will not be generated.
 
-		\end{description}
 
     RESULT
 	A zero return indicates that the DateStamp was invalid, and could

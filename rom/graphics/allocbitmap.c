@@ -45,38 +45,37 @@
 
     INPUTS
 	sizex, sizey - The width and height in pixels
+	
 	depth - The depth of the bitmap. A depth of 1 will allocate a
 	    bitmap for two colors, a depth of 24 will allocate a bitmap for
 	    16 million colors. Pixels with AT LEAST this many bits will be
 	    allocated.
+	
 	flags - One of these flags:
 
-	    \begin{description}
-	    \item{BMF_CLEAR} Fill the bitmap with color 0.
+	    BMF_CLEAR: Fill the bitmap with color 0.
 
-	    \item{BMF_DISPLAYABLE} to specify that this bitmap data should
+	    BMF_DISPLAYABLE: to specify that this bitmap data should
 		be allocated in such a manner that it can be displayed.
 		Displayable data has more severe alignment restrictions
 		than non-displayable data in some systems.
 
-	    \item{BMF_INTERLEAVED} tells graphics that you would like your
+	    BMF_INTERLEAVED: tells graphics that you would like your
 		bitmap to be allocated with one large chunk of display
 		memory for all bitplanes. This minimizes color flashing on
 		deep displays. If there is not enough contiguous RAM for an
 		interleaved bitmap, graphics.library will fall back to a
 		non-interleaved one.
 
-	    \item{BMF_MINPLANES} causes graphics to only allocate enough
+	    BMF_MINPLANES: causes graphics to only allocate enough
 		space in the bitmap structure for "depth" plane pointers.
 		This is for system use and should not be used by
 		applications use as it is inefficient, and may waste
 		memory.
 
-	    \item{BMF_SPECIALFMT} causes graphics to allocate a bitmap
+	    BMF_SPECIALFMT: causes graphics to allocate a bitmap
 	    	of a standard CyberGraphX format. The format
 		(PIXFMT_????) must be stored in the 8 most significant bits.
-
-	    \end{description}
 
 	friend_bitmap - pointer to another bitmap, or NULL. If this pointer
 	    is passed, then the bitmap data will be allocated in
@@ -93,16 +92,13 @@
 	Screen->RastPort->BitMap won't be in standard amiga format. The
 	only safe operations to perform on a non-standard BitMap are:
 
-	    \begin{itemize}
-	    \item blitting it to another bitmap, which must be either a
+	    blitting it to another bitmap, which must be either a
 		standard Amiga bitmap, or a friend_bitmap of this bitmap.
 
-	    \item blitting from this bitmap to a friend_bitmap bitmap or to a
+	    blitting from this bitmap to a friend_bitmap bitmap or to a
 		standard Amiga bitmap.
 
-	    \item attaching it to a rastport and making rendering calls.
-
-	    \end{itemize}
+	    attaching it to a rastport and making rendering calls.
 
 	Good arguments to pass for the friend_bitmap are your window's
 	RPort->BitMap, and your screen's RastPort->BitMap. Do NOT pass
