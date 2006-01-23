@@ -466,7 +466,7 @@ int main(int argc, char **argv)
     /* We might also be interested in using the BS key instead of the
        delete key, this will do that
     */
-#if !defined(__x86_64__)
+#if 0 /* !defined(__x86_64__) */
     tcgetattr(0, &t);
     t.c_cc[VERASE] = '\b';
 #ifndef TCSASOFT
