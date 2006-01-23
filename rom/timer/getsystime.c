@@ -57,6 +57,9 @@
     Disable();
     dest->tv_secs = timerBase->tb_CurrentTime.tv_secs;
     dest->tv_micro = timerBase->tb_CurrentTime.tv_micro;
+#if 0 /* Messes up (accelerates) time if called very often
+         in short period of time (Doom). */
+	 
     timerBase->tb_CurrentTime.tv_micro += 1;
     if(timerBase->tb_CurrentTime.tv_micro > 999999)
     {
@@ -64,6 +67,7 @@
 	/* MUST be zero since we are only adding 1 */
 	timerBase->tb_CurrentTime.tv_micro = 0;
     }
+#endif
     Enable();
 
     AROS_LIBFUNC_EXIT
