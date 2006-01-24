@@ -1498,17 +1498,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         
                         switch(GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks)
                         {
-                            case 1:
-                                iihdata->DeltaMouseX <<= 1;
-                                iihdata->DeltaMouseY <<= 1;
-                                break;
-                            
-                            case 2:
-                                break;
+                            case 0:
+                                 break;
                             
                             default:
-                                iihdata->DeltaMouseX >>= 1;
-                                iihdata->DeltaMouseY >>= 1;
+                                iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+                                iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
                                 break;
                         }
 
