@@ -69,11 +69,10 @@ static struct KeyMapNode *KeymapAlreadyOpen(struct KeyMapResource *KeyMapResourc
 
 static void SetInputPrefs(struct FileInputPrefs *prefs)
 {
-    struct MsgPort  	*inputmp;
-    struct timerequest  *inputio;
     struct KeyMapResource *KeyMapResource;
     struct KeyMapNode	  *kmn;
-
+    struct Preferences	   p;
+    
     if ((KeyMapResource = OpenResource("keymap.resource")))
     {
     	kmn = KeymapAlreadyOpen(KeyMapResource, prefs->ip_Keymap);
@@ -119,55 +118,28 @@ static void SetInputPrefs(struct FileInputPrefs *prefs)
 	
     } /* if ((KeyMapResource = OpenResource("keymap.resource"))) */
 
-    if ((inputmp = CreateMsgPort()))
+    GetPrefs(&p, sizeof(p));
+    
+    #define GETLONG(x) ((x[0] << 24) | (x[1] << 16) | (x[2] << 8) | x[3])
+    #define GETWORD(x) ((x[0] << 8) | x[1])
+    
+    p.PointerTicks         = GETWORD(prefs->ip_PointerTicks);
+    p.DoubleClick.tv_secs  = GETLONG(prefs->ip_DoubleClick_secs);
+    p.DoubleClick.tv_micro = GETLONG(prefs->ip_DoubleClick_micro);
+    p.KeyRptDelay.tv_secs  = GETLONG(prefs->ip_KeyRptDelay_secs);
+    p.KeyRptDelay.tv_micro = GETLONG(prefs->ip_KeyRptDelay_micro);
+    p.KeyRptSpeed.tv_secs  = GETLONG(prefs->ip_KeyRptSpeed_secs);
+    p.KeyRptSpeed.tv_micro = GETLONG(prefs->ip_KeyRptSpeed_micro);
+    if (GETWORD(prefs->ip_MouseAccel))
     {
-    	if ((inputio = (struct timerequest *)CreateIORequest(inputmp, sizeof(struct IOStdReq))))
-	{
-	    if (!OpenDevice("input.device", 0, (struct IORequest *)inputio, 0))
-	    {
-	    	/* Set repeat rate */
-		
-	    	inputio->tr_node.io_Command = IND_SETPERIOD;
-		
-		inputio->tr_time.tv_secs = (prefs->ip_KeyRptSpeed_secs[0] << 24) |
-		    	    	    	   (prefs->ip_KeyRptSpeed_secs[1] << 16) |
-					   (prefs->ip_KeyRptSpeed_secs[2] << 8) |
-					   (prefs->ip_KeyRptSpeed_secs[3]);
-					  
-		inputio->tr_time.tv_micro = (prefs->ip_KeyRptSpeed_micro[0] << 24) |
-		    	    	    	    (prefs->ip_KeyRptSpeed_micro[1] << 16) |
-					    (prefs->ip_KeyRptSpeed_micro[2] << 8) |
-					    (prefs->ip_KeyRptSpeed_micro[3]);
-					    
-	    	DoIO((struct IORequest *)inputio);
-		
-		/* Set repeat delay */
-
-	    	inputio->tr_node.io_Command = IND_SETTHRESH;
-		
-		inputio->tr_time.tv_secs = (prefs->ip_KeyRptDelay_secs[0] << 24) |
-		    	    	    	   (prefs->ip_KeyRptDelay_secs[1] << 16) |
-					   (prefs->ip_KeyRptDelay_secs[2] << 8) |
-					   (prefs->ip_KeyRptDelay_secs[3]);
-
-		inputio->tr_time.tv_micro = (prefs->ip_KeyRptDelay_micro[0] << 24) |
-		    	    	    	    (prefs->ip_KeyRptDelay_micro[1] << 16) |
-					    (prefs->ip_KeyRptDelay_micro[2] << 8) |
-					    (prefs->ip_KeyRptDelay_micro[3]);
-					  
-	    	DoIO((struct IORequest *)inputio);
-
-	    	CloseDevice((struct IORequest *)inputio);
-		
-	    } /* if (!OpenDevice("input.device", 0, (struct IORequest *)inputio, 0)) */
-	    
-	    DeleteIORequest((struct IORequest *)inputio);
-	    
-	} /* if ((inputio = (struct IoStdReq *)CreateIORequest(inputmp, sizeof(*inputio)))) */
-	
-	DeleteMsgPort(inputmp);
-	
-    } /* if ((inputmp = CreateMsgPort())) */
+    	p.EnableCLI |= MOUSE_ACCEL;
+    }
+    else
+    {
+    	p.EnableCLI &= ~MOUSE_ACCEL;
+    }     
+    
+    SetPrefs(&p, sizeof(p), FALSE);
     
 }
 
