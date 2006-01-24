@@ -42,13 +42,15 @@
 /*********************************************************************************************/
 
 static struct Gadget *gadlist, *gad, *leftmapgad, *rightmapgad, *midmapgad;
-static struct Gadget *doublegad, *showdoublegad;
+static struct Gadget *doublegad, *showdoublegad, *speedgad, *accelgad;
 static WORD minwidth, minheight;
 static WORD domleft, domtop, domwidth, domheight;
 static WORD mapgroupwidth, mapgroupheight, mapgroupx1, mapgroupy1;
 static WORD doublegroupwidth, doublegroupheight;
 static WORD doublegroupx1, doublegroupy1;
 static WORD mapgadwidth, computermousex1, computermousey1;
+static WORD speedgroupwidth, speedgroupheight;
+static WORD speedgroupx1, speedgroupy1, speedgadwidth;
 static WORD leftlinex1, leftliney1, rightlinex1, rightliney1, midlinex1, midliney1;
 static WORD showtimewidth;
 static BOOL init_done;
@@ -57,11 +59,14 @@ static UBYTE computermouse_chunky[COMPUTERMOUSE_WIDTH * COMPUTERMOUSE_HEIGHT];
 static UBYTE *computermouse_chunky_remapped;
 
 static CONST_STRPTR maplabels[4];
+static CONST_STRPTR speedlabels[4];
 static ULONG computermouse_coltab[256];
 static WORD  remaptable[256];
 static UBYTE showdoubleclickbuf[30];
 
-static BOOL pens_alloced, page_active;
+static BOOL pens_alloced, page_active, intuiprefs_changed;
+
+static struct Preferences restore_intui_prefs;
 
 /*********************************************************************************************/
 
@@ -102,6 +107,31 @@ static UBYTE *unpack_byterun1(UBYTE *source, UBYTE *dest, LONG unpackedsize)
 
 /*********************************************************************************************/
 
+static void try_setting_mousespeed(void)
+{
+    struct Preferences p;
+    
+    GetPrefs(&p, sizeof(p));
+    p.PointerTicks = inputprefs.ip_PointerTicks;
+    p.DoubleClick  = inputprefs.ip_DoubleClick;
+    p.KeyRptDelay  = inputprefs.ip_KeyRptDelay;
+    p.KeyRptSpeed  = inputprefs.ip_KeyRptSpeed;
+    if (inputprefs.ip_MouseAccel)
+    {
+    	p.EnableCLI |= MOUSE_ACCEL;
+    }
+    else
+    {
+    	p.EnableCLI &= ~MOUSE_ACCEL;
+    }
+    
+    SetPrefs(&p, sizeof(p), FALSE);
+    
+    intuiprefs_changed = TRUE;
+}
+
+/*********************************************************************************************/
+
 static void DrawFrames(void)
 {
     DrawFrameWithTitle(win->RPort,
@@ -118,6 +148,13 @@ static void DrawFrames(void)
 		       doublegroupy1 + doublegroupheight - 1,
 		       MSG(MSG_GAD_MOUSE_DOUBLECLICK_DELAY));
 
+    DrawFrameWithTitle(win->RPort,
+    	    	       speedgroupx1,
+		       speedgroupy1,
+		       speedgroupx1 + speedgroupwidth - 1,
+		       speedgroupy1 + speedgroupheight - 1,
+		       MSG(MSG_GAD_MOUSE_SPEED));
+
 }
 
 /*********************************************************************************************/
@@ -126,6 +163,8 @@ static LONG mouse_init(void)
 {
     WORD i;
 
+    GetPrefs(&restore_intui_prefs, sizeof(restore_intui_prefs));
+    
     if (!truecolor)
     {
     	computermouse_chunky_remapped = AllocVec(COMPUTERMOUSE_WIDTH * COMPUTERMOUSE_HEIGHT, MEMF_PUBLIC);
@@ -263,6 +302,12 @@ static LONG mouse_layout(void)
 	MSG_GAD_MOUSE_MAPPING_MENU,
 	MSG_GAD_MOUSE_MAPPING_THIRD
     };
+    static LONG speedids[] =
+    {
+    	MSG_GAD_MOUSE_SPEED_SLOW,
+	MSG_GAD_MOUSE_SPEED_NORMAL,
+	MSG_GAD_MOUSE_SPEED_FAST
+    };
     struct RastPort temprp;
     WORD    	    i, w, biggestw;
     
@@ -319,8 +364,30 @@ static LONG mouse_layout(void)
     }
 
     doublegroupheight = dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT + FRAME_FRAMEHEIGHT;
+
+    /* Speed gadgets */
     
-    minwidth  = mapgroupwidth;
+    biggestw = 0;
+    for(i = 0; i < 3; i++)
+    {
+    	speedlabels[i] = MSG(speedids[i]);
+	w = TextLength(&temprp, speedlabels[i], strlen(speedlabels[i]));
+	if (w > biggestw) biggestw = w;
+    }
+
+    speedgadwidth = biggestw + CYCLE_EXTRAWIDTH;
+    speedgroupwidth = TextLength(&temprp,
+    	    	    	    	 MSG(MSG_GAD_MOUSE_SPEED),
+				 strlen(MSG(MSG_GAD_MOUSE_SPEED)));
+    speedgroupwidth += FRAMETITLE_EXTRAWIDTH;
+    if (speedgroupwidth < speedgadwidth + LABELSPACE_X)
+    {
+    	speedgroupwidth = speedgadwidth + LABELSPACE_X;
+    }
+    speedgroupwidth += FRAME_FRAMEWIDTH;
+    speedgroupheight = (dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT) * 2 + GROUPSPACE_X + FRAME_FRAMEHEIGHT;
+    
+    minwidth  = mapgroupwidth + GROUPSPACE_X + speedgroupwidth;
     minheight = mapgroupheight + GROUPSPACE_Y + doublegroupheight;
 
     DeinitRastPort(&temprp);
@@ -374,7 +441,58 @@ static void update_double_gad(void)
     
     GT_SetGadgetAttrsA(doublegad, win, NULL, scsettags);
     
-    update_showdouble_gad();}
+    update_showdouble_gad();
+}
+
+/*********************************************************************************************/
+
+static void update_speed_gad(void)
+{
+    struct TagItem cysettags[] =
+    {
+    	{GTCY_Active, 0 },
+	{TAG_DONE   	}
+    };
+    LONG active;
+    
+    switch(inputprefs.ip_PointerTicks)
+    {	    
+	case 3:
+	case 4:
+	    active = 0;
+	    break;
+
+	case 2:
+	    active = 1;
+	    break;
+	    	    
+	case 1:
+	default:
+	    active = 2;
+	    break;
+
+    }
+
+    cysettags[0].ti_Data = active;
+    
+    GT_SetGadgetAttrsA(speedgad, win, NULL, cysettags);
+}
+
+/*********************************************************************************************/
+
+static void update_accel_gad(void)
+{
+    struct TagItem cbsettags[] =
+    {
+    	{GTCB_Checked, 0},
+	{TAG_DONE   	}
+    };
+    
+    cbsettags[0].ti_Data = inputprefs.ip_MouseAccel ? TRUE : FALSE;    
+
+    GT_SetGadgetAttrsA(accelgad, win, NULL, cbsettags);
+}
+
 
 /*********************************************************************************************/
 
@@ -389,6 +507,21 @@ static LONG mouse_input(struct IntuiMessage *msg)
     switch(msg->Class)
     {
 	case IDCMP_GADGETUP:
+	    if (gad == speedgad)
+	    {
+	    	inputprefs.ip_PointerTicks = 1 << (2 - msg->Code);
+		try_setting_mousespeed();
+		break;
+	    }
+	    else if (gad == accelgad)
+	    {
+	    	inputprefs.ip_MouseAccel = msg->Code ? 1 : 0;
+		try_setting_mousespeed();
+	    	break;
+	    }
+	    
+	    /* Fall through */
+	    
 	case IDCMP_GADGETDOWN:
 	case IDCMP_MOUSEMOVE:
     	    if (gad == doublegad)
@@ -432,6 +565,12 @@ static void mouse_cleanup(void)
     
     if (gadlist) FreeGadgets(gadlist);
     gadlist = NULL;
+    
+    if (intuiprefs_changed)
+    {
+    	SetPrefs(&restore_intui_prefs, sizeof(restore_intui_prefs), FALSE);
+    }
+
 }
 
 /*********************************************************************************************/
@@ -502,7 +641,24 @@ static LONG mouse_makegadgets(void)
     gad = doublegad = CreateGadget(SCROLLER_KIND, gad, &ng, GTSC_Total, DOUBLECLICK_DELAY_TICS_RANGE + 9,
     	    	    	    	    	    	    	    GTSC_Visible, 10,
 							    TAG_DONE);
-							    
+			    			
+    ng.ng_LeftEdge = speedgroupx1 + FRAME_OFFX;
+    ng.ng_TopEdge  = speedgroupy1 + FRAME_OFFY;
+    ng.ng_Width    = speedgroupwidth - FRAME_FRAMEWIDTH;
+    ng.ng_Height   = dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT;
+    ng.ng_GadgetID = MSG_GAD_MOUSE_SPEED;
+    
+    gad = speedgad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR)speedlabels,
+    	    	    	    	    	    	    	    	     TAG_DONE);
+
+    ng.ng_TopEdge    += ng.ng_Height + GROUPSPACE_X;
+    ng.ng_Width      = ng.ng_Height;
+    ng.ng_GadgetID   = MSG_GAD_MOUSE_ACCELERATED;
+    ng.ng_GadgetText = MSG(MSG_GAD_MOUSE_ACCELERATED);
+    ng.ng_Flags      = PLACETEXT_RIGHT;
+    
+    gad = accelgad = CreateGadget(CHECKBOX_KIND, gad, &ng, GTCB_Scaled, TRUE, TAG_DONE);
+            							    
     return gad ? TRUE : FALSE;
 }
 
@@ -513,6 +669,8 @@ static void mouse_prefs_changed(void)
     if (page_active)
     {
     	update_double_gad();
+	update_speed_gad();
+	update_accel_gad();
     }
 }
 
@@ -542,15 +700,18 @@ LONG page_mouse_handler(LONG cmd, IPTR param)
 	    
 	case PAGECMD_SETDOMLEFT:
 	    domleft = param;
-	    kprintf("setdomleft. domleft = %d\n", domleft);
+	    //kprintf("setdomleft. domleft = %d\n", domleft);
+    	    speedgroupx1 = domleft + mapgroupwidth + GROUPSPACE_X;
 	    break;
 	    
 	case PAGECMD_SETDOMTOP:
 	    domtop = param;
+    	    speedgroupy1 = domtop;
 	    break;
 	    
 	case PAGECMD_SETDOMWIDTH:
 	    domwidth = param;
+	    speedgroupwidth  = domleft + domwidth - speedgroupx1;
 	    break;
 	    
 	case PAGECMD_SETDOMHEIGHT:

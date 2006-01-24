@@ -60,7 +60,7 @@ static void try_setting_test_keymap(void)
     struct KeyMapResource *KeyMapResource;
     struct KeyMapNode	  *kmn = NULL;
     struct Node     	  *node;
-    BPTR    	    	   lock, seg, olddir;
+    BPTR    	    	   lock, seg, olddir, oldseg = 0;
     
     if ((KeyMapResource = OpenResource("keymap.resource")))
     {
@@ -90,7 +90,7 @@ static void try_setting_test_keymap(void)
 	    if ((seg = LoadSeg(inputprefs.ip_Keymap)))
 	    {
 	    	kmn = (struct KeyMapNode *) (((UBYTE *)BADDR(seg)) + sizeof(APTR));
-		if (testkeymap_seg) UnLoadSeg(testkeymap_seg);
+		oldseg = testkeymap_seg;
 		testkeymap_seg = seg;
 	    }
 	    
@@ -104,6 +104,9 @@ static void try_setting_test_keymap(void)
     	SetGadgetAttrs(testgad, win, NULL, STRINGA_AltKeyMap, (IPTR)&kmn->kn_KeyMap,
 	    	    	    	    	   TAG_DONE);
     }
+    
+    if (oldseg) UnLoadSeg(oldseg);
+    
 }
 
 /*********************************************************************************************/
