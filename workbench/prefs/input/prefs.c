@@ -493,14 +493,14 @@ BOOL DefaultPrefs(void)
     TellGUI(PAGECMD_PREFS_CHANGING);
     
     strcpy(inputprefs.ip_Keymap, "amiga_usa0");
-    inputprefs.ip_PointerTicks         = 0;
+    inputprefs.ip_PointerTicks         = 1;
     inputprefs.ip_DoubleClick.tv_secs  = 0;
     inputprefs.ip_DoubleClick.tv_micro = 500000;
     inputprefs.ip_KeyRptDelay.tv_secs  = 0;
     inputprefs.ip_KeyRptDelay.tv_micro = 500000;
     inputprefs.ip_KeyRptSpeed.tv_secs  = 0;
     inputprefs.ip_KeyRptSpeed.tv_micro = 40000;
-    inputprefs.ip_MouseAccel           = 0;
+    inputprefs.ip_MouseAccel           = 1;
     
     TellGUI(PAGECMD_PREFS_CHANGED);
     

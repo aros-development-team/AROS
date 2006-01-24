@@ -116,3 +116,12 @@ Third
 MSG_GAD_MOUSE_DOUBLECLICK_DELAY (//)
 Double-Click Delay
 ;
+MSG_GAD_MOUSE_SPEED_SLOW (//)
+Slow
+;
+MSG_GAD_MOUSE_SPEED_NORMAL (//)
+Normal
+;
+MSG_GAD_MOUSE_SPEED_FAST (//)
+Fast
+;
