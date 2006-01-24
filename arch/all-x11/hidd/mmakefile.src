@@ -21,7 +21,7 @@ FILES	   := x11_init x11 support x11gfx onbitmap offbitmap x11kbd x11mouse x11cl
   files=$(FILES) compiler=host \
   uselibs=oop
 
-#MM- kernel-x11gfx-setup : default-x11keymaptable
+#MM- kernel-x11gfx-kobj: default-x11keymaptable
 
 #MM x11keymaptable
 x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_FILE)
