@@ -22,6 +22,7 @@
                               with the highest priority is started first.
                               
                 WAIT=n        Wait n seconds after execution.
+                              n can be between 0 and 60.  
                 
                 DONOTWAIT     don't wait till the program is finished.	
 
@@ -55,9 +56,9 @@ struct InfoNode
         BOOL donotwait;
 };
 
-const TEXT version_string[] = "$VER: ExecuteStartup 0.1 (24.1.2006)";
+const TEXT version_string[] = "$VER: ExecuteStartup 0.2 (29.1.2006)";
 
-static TEXT fileNameBuffer[255];
+static TEXT fileNameBuffer[MAXFILENAMELENGTH + 1];
 
 static BOOL checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait);
 static BOOL searchInfo(struct List *infoList);
@@ -68,7 +69,7 @@ int
 main(void)
 {
         executeWBStartup();
-        return 0;
+        return RETURN_OK;
 }                                       
 
 static BOOL
@@ -91,23 +92,25 @@ checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait)
         {
                 const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
                 STRPTR s;
-                if ((s = FindToolType((const STRPTR *)toolarray, "STARTPRI")))
+                if ((s = FindToolType(toolarray, "STARTPRI")))
                 {
                         *pri = atol(s);
                         if (*pri < -128) *pri = -128;
                         if (*pri > 127) *pri = 127;
                 }
-                if ((s = FindToolType((const STRPTR *)toolarray, "WAIT")))
+                if ((s = FindToolType(toolarray, "WAIT")))
                 {
                         *time = atol(s);
+                        if (*time > 60) *time = 60;
                 }
-                if ((s = FindToolType((const STRPTR *)toolarray, "DONOTWAIT")))
+                if ((s = FindToolType(toolarray, "DONOTWAIT")))
                 {
                         *notwait = TRUE;
                 }
                 FreeDiskObject(dobj);
+                return TRUE;
         }
-        return TRUE;
+        return FALSE;
 }
 
 static BOOL
@@ -208,9 +211,28 @@ executeWBStartup(void)
         NEWLIST(&infoList);
         BOOL retvalue = FALSE;
         BPTR olddir = (BPTR)-1;
+        BPTR startupdir = 0;
         
-        BPTR startupdir = Lock(STARTUPDIR, ACCESS_READ);
-        if (startupdir)
+        struct FileInfoBlock *fib = AllocDosObjectTags(DOS_FIB, TAG_END);
+        if (fib == NULL)
+        {
+                struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+                        "Error", "ExecuteStartup\nOut of memory for FileInfoBlock", "OK"};
+                EasyRequest(0, &es, 0);
+                goto exit;
+        }
+        
+        startupdir = Lock(STARTUPDIR, ACCESS_READ);
+        if ( ! Examine(startupdir, fib))
+        {
+                struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+                        "Error", "ExecuteStartup\nCouldn't examine " STARTUPDIR, "OK"};
+                EasyRequest(0, &es, 0);
+                goto exit;
+        }
+        
+        // check if startupdir is a directory
+        if (startupdir && (fib->fib_DirEntryType >= 0))
         {
                 olddir = CurrentDir(startupdir);
                 if (searchInfo(&infoList))
@@ -221,20 +243,21 @@ executeWBStartup(void)
         }        
         else
         {
-                struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-                        "Warning", "ExecuteStartup\nCouldn't lock " STARTUPDIR, "OK"};
-                EasyRequest(0, &es, 0);
+                D(bug("ExecuteStartup: Couldn't lock " STARTUPDIR "\n"));
         }
 
+exit:
         // Cleanup
         if (startupdir) UnLock(startupdir);
         if (olddir != (BPTR)-1) CurrentDir(olddir);
-
+        if (fib) FreeDosObject(fib, DOS_FIB);
+        
         struct Node *node;
         while ((node = GetHead(&infoList)))
         {
                 FreeVec(node->ln_Name);
                 Remove(node);
+                FreeVec(node);
         }
 
         return retvalue;
