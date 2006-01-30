@@ -236,9 +236,9 @@ struct gfx_data
     Colormap	 colmap;
     Cursor	 cursor;
     Window	 fbwin; /* Frame buffer window */
-#if ADJUST_XWIN_SIZE
+//#if ADJUST_XWIN_SIZE
     Window	 masterwin;
-#endif
+//#endif
 };
 
 #define HOSTCLIPBOARDSTATE_IDLE     	0
