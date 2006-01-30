@@ -222,7 +222,12 @@ executeWBStartup(void)
                 goto exit;
         }
         
-        startupdir = Lock(STARTUPDIR, ACCESS_READ);
+        if ( (startupdir = Lock(STARTUPDIR, ACCESS_READ) ) == 0)
+        {
+                D(bug("ExecuteStartup: Couldn't lock " STARTUPDIR "\n"));
+                goto exit;
+        }        
+        
         if ( ! Examine(startupdir, fib))
         {
                 struct EasyStruct es = {sizeof(struct EasyStruct), 0,
@@ -232,7 +237,7 @@ executeWBStartup(void)
         }
         
         // check if startupdir is a directory
-        if (startupdir && (fib->fib_DirEntryType >= 0))
+        if (fib->fib_DirEntryType >= 0)
         {
                 olddir = CurrentDir(startupdir);
                 if (searchInfo(&infoList))
@@ -243,14 +248,14 @@ executeWBStartup(void)
         }        
         else
         {
-                D(bug("ExecuteStartup: Couldn't lock " STARTUPDIR "\n"));
+                D(bug("ExecuteStartup: " STARTUPDIR " isn't a directory\n"));
         }
 
 exit:
         // Cleanup
         if (startupdir) UnLock(startupdir);
         if (olddir != (BPTR)-1) CurrentDir(olddir);
-        if (fib) FreeDosObject(fib, DOS_FIB);
+        if (fib) FreeDosObject(DOS_FIB, fib);
         
         struct Node *node;
         while ((node = GetHead(&infoList)))
