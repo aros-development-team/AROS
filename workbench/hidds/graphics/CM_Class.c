@@ -36,6 +36,7 @@ OOP_Object *CM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     struct TagItem  	    *tag, *tstate;
     BOOL    	    	    ok = FALSE;
     
+    EnterFunc(bug("ColorMap::New()\n"));
     numentries = 256;
     
     for (tstate = msg->attrList; (tag = NextTagItem((const struct TagItem **)&tstate)); )
@@ -84,7 +85,7 @@ OOP_Object *CM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	o = NULL;
     }
     
-    return o;
+    ReturnPtr("ColorMap::New", OOP_Object *, o);
 }
 
 /****************************************************************************************/
@@ -115,6 +116,7 @@ VOID CM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct colormap_data *data;
     ULONG   	    	idx;
     
+    EnterFunc(bug("ColorMap::Get()\n"));
     data = OOP_INST_DATA(cl, o);
     
     if (IS_COLORMAP_ATTR(msg->attrID, idx))
@@ -136,7 +138,7 @@ VOID CM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     
-    return;
+    ReturnVoid("ColorMap::Get");
 }
 
 /****************************************************************************************/
