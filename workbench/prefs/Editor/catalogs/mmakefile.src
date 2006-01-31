@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-prefs-editor-catalogs \
-                name=EditorPrefs subdir=Prefs
+                name=EditorPrefs subdir=System/Prefs
