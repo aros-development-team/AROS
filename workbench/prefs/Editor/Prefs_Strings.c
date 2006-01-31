@@ -75,7 +75,7 @@ void prefs_local(void)
 {
 	WORD MsgID;
 	/* Custom prefs messages */
-	if( (prefs_cat = (void *) OpenCatalogA(NULL,"Prefs/EditorPrefs.catalog",NULL)) &&
+	if( (prefs_cat = (void *) OpenCatalogA(NULL,"System/Prefs/EditorPrefs.catalog",NULL)) &&
 	    (jano_cat = (void *) OpenCatalogA(NULL,"System/Tools/Editor.catalog",NULL)) )
 	{
 		{	/* Various message of pref */
