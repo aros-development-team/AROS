@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-tools-screengrabber-catalogs \
-                name=ScreenGrabber subdir=Tools
+                name=ScreenGrabber subdir=System/Tools
