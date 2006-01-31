@@ -2,6 +2,8 @@
     Copyright © 2003-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -68,7 +70,7 @@ LONG __FindType_WB(BPTR lock, struct Library *IconBase)
                         
                         if
                         (
-                               dth->dth_GroupID == GID_SYSTEM 
+                               dth->dth_GroupID == GID_SYSTEM
                             && dth->dth_ID      == ID_EXECUTABLE
                         )
                         {
@@ -129,11 +131,15 @@ struct DiskObject *__FindDefaultIcon_WB
             )
         )
         {
-            if (strlen(device) == 4) 
+            if (strlen(device) <= 5) 
             {
                 if (strcasecmp(device, "RAM:") == 0)
                 {
                     icon = GetDefaultIconFromName("RAM", iim->iim_Tags);
+                }
+                else if (strncasecmp(device, "RAD", 3) == 0)
+                {
+                    icon = GetDefaultIconFromName("RAD", iim->iim_Tags);
                 }
                 else if (strncasecmp(device, "DF", 2) == 0)
                 {
@@ -152,18 +158,19 @@ struct DiskObject *__FindDefaultIcon_WB
                 {
                     icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
                 }
+                else if (strcasecmp(device, "HOME:") == 0)
+                {
+                    icon = GetDefaultIconFromName("Home", iim->iim_Tags);
+                }
             }
-            else if (strcasecmp(device, "HOME:") == 0)
+            else
             {
-                icon = GetDefaultIconFromName("Home", iim->iim_Tags);
-                
                 /* Fall back to generic harddisk icon */
                 if (icon ==  NULL)
                 {
                     icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
                 }
             }
-            
         }
         
         /* Fall back to generic disk icon */
@@ -186,23 +193,27 @@ struct DiskObject *__FindDefaultIcon_WB
         {
             /* Is iim_ParentLock a root? */
             BPTR root = ParentDir(iim->iim_ParentLock);
-            
+
             if (root == NULL)
             {
                 /* Yes, it's a root. See if it contains our trashcan. */
                 BPTR cd   = CurrentDir(iim->iim_ParentLock);
-                BPTR lock = Lock("Trashcan", ACCESS_READ);
-                
+
+                UBYTE buffer[MAXFILENAMELENGTH], buffer1[MAXFILENAMELENGTH];
+
+                /* SFS .recycled Trashcan */ 
+                BPTR lock = Lock(".recycled", ACCESS_READ);
+                NameFromLock(iim->iim_FileLock, buffer, MAXFILENAMELENGTH);
+
                 if (lock != NULL)
                 {
-                    if (SameLock(iim->iim_FileLock, lock) == LOCK_SAME)
+                    NameFromLock(lock, buffer1, MAXFILENAMELENGTH);
+                    if (strcasecmp(buffer, buffer1) == 0)
                     {
                         icon = GetDefaultIconFromType(WBGARBAGE, iim->iim_Tags);
                     }
-                
                     UnLock(lock);
                 }
-                
                 CurrentDir(cd);
             }
             else
