@@ -25,6 +25,7 @@ int main(int argc, char **argv)
     ULONG relMajor, relMinor, vers;
     ULONG kickbase, kicksize;
     UWORD kickver, kickrev;
+    STRPTR variant;
 
     rc = 0;
 
@@ -50,10 +51,12 @@ int main(int argc, char **argv)
 	AI_KickstartSize,	(IPTR) &kicksize,
 	AI_KickstartVersion,	(IPTR) &kickver,
 	AI_KickstartRevision,	(IPTR) &kickrev,
+	AI_ArosVariant,         (IPTR) &variant,
 	TAG_DONE);
 
     printf ("AROS release = %ld.%ld\n", relMajor, relMinor);
     printf ("AROS module major version = V%ld\n", vers);
+    printf ("AROS Variant = %s\n", variant);
 
     if (kicksize)
     {
