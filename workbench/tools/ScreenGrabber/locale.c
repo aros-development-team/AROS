@@ -13,7 +13,7 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#define CATALOG_NAME     "Tools/ScreenGrabber.catalog"
+#define CATALOG_NAME     "System/Tools/ScreenGrabber.catalog"
 #define CATALOG_VERSION  0
 
 /*** Variables **************************************************************/

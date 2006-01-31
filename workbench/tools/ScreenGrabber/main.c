@@ -267,6 +267,7 @@ BOOL GUIInit()
 	    MUIA_Application_Version, (IPTR)VERSION,
 	    MUIA_Application_Copyright, (IPTR)"© 2004, The AROS Development Team",
 	    MUIA_Application_Author, (IPTR)"Michal Schulz",
+	    MUIA_Application_Description, __(MSG_WINDOW_TITLE),
 	    MUIA_Application_Base, (IPTR)APPNAME,
 	    // MUIA_Application_Description, ...,
 
