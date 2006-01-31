@@ -60,6 +60,32 @@ IPTR kickbase(void);
 		is stored. Do not forget to clear the location before, as
 		queries not understood will be left untouched.
 
+	AI_KickstartBase APTR
+	AI_KickstartSize ULONG
+	AI_KickstartVersion UWORD
+	AI_KickstartRevision UWORD
+		Only support these tags if we are on the native machine. On other machines this
+		call will not touch the storage space. Set the storage space to 0 if you want to
+		see if this call touches it.
+
+	AI_ArosVersion IPTR
+		aros.library version masquerades as AROS version. This means
+		that all aros modules must have the same major version number.
+
+	AI_ArosReleaseMajor IPTR
+		Update this whenever a new AROS is released.
+
+	AI_ArosReleaseMinor IPTR
+		Update this whenever a new AROS is released.
+
+	AI_ArosReleaseDate IPTR
+		Update this whenever a new AROS is released.
+
+	AI_ArosBuildDate IPTR
+		Given in the format: <d>.<m>.<y>
+	AI_ArosVariant IPTR
+		Configure time variant name.
+
     RESULT
 	All queries understood by this call will have appropriate values
 	assigned to the location a tag's ti_Data pointed to.
@@ -152,6 +178,11 @@ IPTR kickbase(void);
 
         case AI_ArosBuildDate:
             SetData (tag, IPTR, (IPTR)__DATE__);
+
+            break;
+
+        case AI_ArosVariant:
+            SetData (tag, IPTR, (IPTR) VARIANT);
             break;
 
         default:
