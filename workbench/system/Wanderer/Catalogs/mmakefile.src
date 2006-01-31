@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-system-wanderer-catalogs \
-                name=Wanderer subdir=System
+                name=Wanderer subdir=System/System
