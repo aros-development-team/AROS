@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-system-wanderer-tools-executecommand-catalogs \
-                name=ExecuteCommand subdir=System/Wanderer/Tools
+                name=ExecuteCommand subdir=System/System/Wanderer/Tools

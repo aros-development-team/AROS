@@ -1,0 +1,12 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src,v 1.8 2004/03/25 22:53:12 chodorowski Exp $
+
+include $(TOP)/config/make.cfg
+
+ICONS := \
+   Wanderer
+
+#MM workbench-system-wanderer-icons :
+
+%build_icons mmake=workbench-system-wanderer-icons icons=$(ICONS) \
+             dir=$(AROS_SYSTEM)/Wanderer

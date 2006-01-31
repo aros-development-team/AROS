@@ -9,7 +9,7 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#define CATALOG_NAME     "System/Wanderer/Tools/ExecuteCommand.catalog"
+#define CATALOG_NAME     "System/System/Wanderer/Tools/ExecuteCommand.catalog"
 #define CATALOG_VERSION  0
 
 /*** Variables **************************************************************/

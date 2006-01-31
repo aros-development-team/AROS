@@ -2,8 +2,156 @@
 ## language français
 ## codeset 0
 ;
+MSG_TITLE
+Wanderer
+; Wanderer
+MSG_DESCRIPTION
+Gestionnaire de fichiers
+; File Manager
+MSG_SCREENTITLE
+Wanderer %s mémoire graphique, %s autre mémoire
+;Wanderer %s graphics mem %s other mem
+MSG_MEM_B
+o
+; B
+MSG_MEM_K
+K
 ;
-MSG_DUMMY
-BIDON
-; DUMMY
-
+MSG_MEM_M
+M
+;
+MSG_MEM_G
+G
+;
+MSG_MEN_WANDERER
+Wanderer
+;
+MSG_MEN_BACKDROP
+Fond d'écran
+;
+MSG_MEN_SC_BACKDROP
+B
+;
+MSG_MEN_EXECUTE
+Exécuter...
+;
+MSG_MEN_SC_EXECUTE
+E
+;
+MSG_MEN_SHELL
+Shell...
+;
+MSG_MEN_SC_SHELL
+W
+;
+MSG_MEN_GUISET
+Préférences Zune...
+;
+MSG_MEN_ABOUT
+À propos...
+;
+MSG_MEN_SC_ABOUT
+?
+;
+MSG_MEN_QUIT
+Quitter...
+;
+MSG_MEN_SC_QUIT
+Q
+;
+MSG_MEN_WINDOW
+Fenêtre
+;
+MSG_MEN_NEWDRAW
+Nouveau dossier...
+;
+MSG_MEN_SC_NEWDRAW
+N
+;
+MSG_MEN_OPENPAR
+Ouvrir Parent
+;
+MSG_MEN_CLOSE
+Fermer
+;
+MSG_MEN_SC_CLOSE
+K
+;
+MSG_MEN_UPDATE
+Rafraîchir
+;
+MSG_MEN_CONTENTS
+Tout sélectionner
+;
+MSG_MEN_SC_CONTENTS
+A
+;
+MSG_MEN_CLRSEL
+Aucune selection
+;
+MSG_MEN_SC_CLRSEL
+Z
+;
+MSG_MEN_SNAPSHT
+Snapshot
+;
+MSG_MEN_ALL
+Tout
+;
+MSG_MEN_VIEW
+Vue
+;
+MSG_MEN_ICVIEW
+Vue des icônes
+;
+MSG_MEN_DCVIEW
+Vue détaillée
+;
+MSG_MEN_ALLFIL
+Tous les fichiers
+;
+MSG_MEN_SORTIC
+Trié
+;
+MSG_MEN_CLNUP
+Nettoyé
+;
+MSG_MEN_SC_CLNUP
+U
+;
+MSG_MEN_BYNAME
+Par nom
+;
+MSG_MEN_BYDATE
+Par date
+;
+MSG_MEN_BYSIZE
+Par taille
+;
+MSG_MEN_REVERSE
+Inverse
+;
+MSG_MEN_DRWFRST
+Dossiers en premier
+;
+MSG_MEN_ICON
+Icône
+;
+MSG_MEN_OPEN
+Ouvrir
+;
+MSG_MEN_SC_OPEN
+O
+;
+MSG_MEN_INFO
+Information
+;
+MSG_MEN_SC_INFO
+I
+;
+MSG_MEN_DELETE
+Effacer
+;
+MSG_MEN_TOOLS
+Outils
+;
