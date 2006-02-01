@@ -3,25 +3,18 @@
 
 include $(TOP)/config/make.cfg
 
-FILES       := main 
+FILES       := main locale
 EXEDIR      := $(AROS_WANDERER)/Tools
 
-#MM- workbench-system-wanderer : workbench-system-wanderer-tools-info 
-#MM workbench-system-wanderer-tools-info : includes linklibs \
-#MM     workbench-system-wanderer-tools-info-icons
+#MM- workbench-system-wanderer : workbench-system-wanderer-tools-info
+#MM  workbench-system-wanderer-tools-info : \
+#MM  workbench-system-wanderer-tools-info-icons \
+#MM  workbench-system-wanderer-tools-info-catalogs
+
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%y')\""
 
 %build_prog mmake=workbench-system-wanderer-tools-info \
     progname=Info targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="mui arossupport amiga arosc m"
-
-
-ICONS       := Info
-ICONFILES   := $(foreach f, $(ICONS), $(EXEDIR)/$(f).info)
-
-#MM
-workbench-system-wanderer-tools-info-icons : $(ICONFILES)
-
-$(EXEDIR)/%.info : icons/%.info.src icons/%_N.png icons/%_S.png | $(EXEDIR)
-	%makeicon2
 
 %rule_makedirs dirs=$(EXEDIR)
