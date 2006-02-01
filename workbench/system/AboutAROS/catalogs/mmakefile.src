@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-system-aboutaros-catalogs \
-                name=About subdir=System
+                name=About subdir=System/System
