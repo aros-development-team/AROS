@@ -32,6 +32,9 @@
 #define AI_ArosBuildDate	(AI_Base + 5)
 	/* STRPTR */
 
+#define AI_ArosVariant      (AI_Base + 6)
+    /* STRPTR */
+
 /* Architecture specific tags */
 
 /* Native Amiga */
