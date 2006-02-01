@@ -1,0 +1,133 @@
+;
+MSG_TITLE (//)
+Informations
+;
+MSG_DESCRIPTION (//)
+Icon informations
+;
+MSG_COPYRIGHT (//)
+Icon informations\n©AROS Dev Team
+;
+MSG_ICON (//)
+Icon
+;
+MSG_NAME (//)
+Name
+;
+MSG_COMMENT (//)
+Comment
+;
+MSG_STACK (//)
+Stack
+;
+MSG_DEFTOOL (//)
+Tool
+;
+MSG_ICONTYPE (//)
+Icon type
+;
+MSG_DISK (//)
+Disk
+;
+MSG_DRAWER (//)
+Drawer
+;
+MSG_TOOL (//)
+Tool
+;
+MSG_PROJECT (//)
+Project
+;
+MSG_GARBAGE (//)
+Garbage
+;
+MSG_DEVICE (//)
+Device
+;
+MSG_KICK (//)
+Kick
+;
+MSG_APPICON (//)
+AppIcon
+;
+MSG_INFORMATION (//)
+Information
+;
+MSG_PROTECTION (//)
+Protection
+;
+MSG_TOOLTYPES (//)
+Tooltypes
+;
+MSG_ERROR_SHELLSTART (//)
+Error: Cannot be started from shell
+;
+MSG_ABOUT (//)
+About...
+;
+MSG_QUIT (//)
+Quit
+;
+MSG_READ (//)
+Read
+;
+MSG_WRITE (//)
+Write
+;
+MSG_EXECUTE (//)
+Execute
+;
+MSG_DELETE (//)
+Delete
+;
+MSG_SCRIPT (//)
+Script
+;
+MSG_PURE (//)
+Pure
+;
+MSG_ARCHIVED (//)
+Archived
+;
+MSG_STICKY (//)
+Sticky
+;
+MSG_SIZE (//)
+Size
+;
+MSG_VERSION (//)
+Version
+;
+MSG_OWNERID (//)
+Owner ID
+;
+MSG_GROUPID (//)
+Group ID
+;
+MSG_OWNERNAME (//)
+Owner
+;
+MSG_GROUPNAME (//)
+Group
+;
+MSG_TYPE (//)
+Type
+;
+MSG_DATE (//)
+Date
+;
+MSG_NEW_KEY (//)
+New key
+;
+MSG_DELETE_KEY (//)
+Delete key
+;
+MSG_SAVE (//)
+_Save
+;
+MSG_CANCEL (//)
+_Cancel
+;
+MSG_OK (//)
+Ok
+;

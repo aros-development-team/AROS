@@ -1,0 +1,137 @@
+## version $VER: info.catalog 1.1 (13.8.2003)
+## language français
+## codeset 0
+;
+;
+MSG_TITLE
+Informations
+;
+MSG_DESCRIPTION
+Informations des icônes
+;
+MSG_COPYRIGHT
+Informations des icônes\n©AROS Dev Team
+;
+MSG_ICON
+Icône
+;
+MSG_NAME
+Nom
+;
+MSG_COMMENT
+Commentaire
+;
+MSG_STACK
+Pile
+;
+MSG_DEFTOOL
+Outil
+;
+MSG_ICONTYPE
+Type d'icône
+;
+MSG_DISK
+Disque
+;
+MSG_DRAWER
+Répertoire
+;
+MSG_TOOL
+Outil
+;
+MSG_PROJECT
+Projet
+;
+MSG_GARBAGE
+Poubelle
+;
+MSG_DEVICE
+Pilote
+;
+MSG_KICK
+Kick
+;
+MSG_APPICON
+AppIcon
+;
+MSG_INFORMATION
+Information
+;
+MSG_PROTECTION
+Protection
+;
+MSG_TOOLTYPES
+Tooltypes
+;
+MSG_ERROR_SHELLSTART
+Erreur : Ne peut être démarré depuis le shell
+;
+MSG_ABOUT
+À propos...
+;
+MSG_QUIT
+Quitter
+;
+MSG_READ
+Lisible
+;
+MSG_WRITE
+Modifiable
+;
+MSG_EXECUTE
+Executable
+;
+MSG_DELETE
+Effaçable
+;
+MSG_SCRIPT
+Script
+;
+MSG_PURE
+Pur
+;
+MSG_ARCHIVED
+Archivé
+;
+MSG_STICKY
+Adhésif
+;
+MSG_SIZE
+Taille
+;
+MSG_VERSION
+Version
+;
+MSG_OWNERID
+n° Propriétaire
+;
+MSG_GROUPID
+n° Groupe
+;
+MSG_OWNERNAME
+Propriétaire
+;
+MSG_GROUPNAME
+Groupe
+;
+MSG_TYPE
+Type
+;
+MSG_DATE
+Date
+;
+MSG_NEW_KEY
+Nouvelle entrée
+;
+MSG_DELETE_KEY
+Effacer l'entrée
+;
+MSG_SAVE
+_Sauver
+;
+MSG_CANCEL
+_Annuler
+;
+MSG_OK
+Ok
+;
