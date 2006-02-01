@@ -10,10 +10,12 @@
 
 #include <aros/debug.h>
 #include <aros/build.h>
+#include <aros/inquire.h>
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <libraries/mui.h>
 
+#include <proto/aros.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -24,6 +26,7 @@
 #include <zune/aboutwindow.h>
 #include <zune/customclasses.h>
 
+
 #include <string.h>
 
 #include "aboutaros.h"
@@ -33,6 +36,8 @@
 #include "authors.h"
 #include "sponsors.h"
 #include "acknowledgements.h"
+
+#define VERSION "$VER: AboutAROS 0.1 ("ADATE") ©AROS Dev Team"
 
 #define WINDOW_BG   ((IPTR) "2:00000000,00000000,00000000")
 #define REGISTER_BG ((IPTR) "7:V,00000000,92000000,91000000-00000000,82000000,81000000")
@@ -177,6 +182,8 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                           *acknowledgementsList;
 
     STRPTR                 pages[4]       = { NULL };
+    STRPTR                 builddate;
+    STRPTR                 variant;
     BOOL                   showLogotype;
     BPTR                   lock;
     APTR                   pool;
@@ -196,6 +203,11 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         showLogotype = FALSE;
     }
 
+    /* Retrieve the build date and the variant name ------------------------*/
+    ArosInquire(AI_ArosBuildDate, (IPTR) &builddate,
+                AI_ArosVariant, (IPTR) &variant,
+                TAG_DONE);
+
     /* Initialize page labels ----------------------------------------------*/
     pages[0] = _(MSG_PAGE_AUTHORS);
     pages[1] = _(MSG_PAGE_SPONSORS);
@@ -207,6 +219,9 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         CLASS, self, NULL,
 
         MUIA_Application_Title, __(MSG_TITLE),
+        MUIA_Application_Version, (IPTR)VERSION,
+        MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
+        MUIA_Application_Description, __(MSG_TITLE),
 
         SubWindow, (IPTR) (window = WindowObject,
             MUIA_Window_Title,    __(MSG_TITLE),
@@ -239,13 +254,19 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                        MUIA_Text_Contents,        __(MSG_BUILD_TYPE),
+                        MUIA_Text_Contents, (IPTR) __(MSG_BUILD_TYPE),
                         MUIA_Weight,               0,
                     End,
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                        MUIA_Text_Contents, (IPTR) DATE,
+                        MUIA_Text_Contents, (IPTR) variant,
+                        MUIA_Weight,               0,
+                    End,
+                    Child, (IPTR) TextObject,
+                        MUIA_Font,                 MUIV_Font_Big,
+                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_Contents, (IPTR) builddate,
                         MUIA_Weight,               0,
                     End,
                     Child, (IPTR) HVSpace,
