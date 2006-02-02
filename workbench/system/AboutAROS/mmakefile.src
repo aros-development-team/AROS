@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 FILES 	    := main aboutaros locale
 EXEDIR      := $(AROS_SYSTEM)
 
-USER_CFLAGS     := -DDATE="\"$(shell date '+%d.%m.%y')\""
+USER_CFLAGS     := -DADATE="\"$(shell date '+%d.%m.%y')\""
 
 #MM- workbench-system : workbench-system-aboutaros
 #MM workbench-system-aboutaros : includes linklibs \
