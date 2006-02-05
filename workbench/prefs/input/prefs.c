@@ -110,6 +110,7 @@ struct nameexp layout_expansion_table[] =
     {"lt"   , "Lithuanian"          },
     {"hu"   , "Magyar"    	    },
     {"n"    , "Norsk"	    	    },
+    {"pl"   , "Polski"		    },
     {"po"   , "Português"   	    },
     {"ru"   , "Russian"     	    },
     {"sg"   , "Schweiz"     	    },
