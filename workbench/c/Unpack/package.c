@@ -8,6 +8,7 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <aros/macros.h>
 
 #include "support.h"
 #include "modes.h"
@@ -58,18 +59,21 @@ LONG /* error */ PKG_ExtractFile( APTR pkg )
     
     /* Read the path length */
     rc = PKG_Read( pkg, &pathLength, sizeof( pathLength ) );
+    pathLength = AROS_BE2LONG(pathLength);
+    
     if( rc == -1 ) { result = -1; goto cleanup; }
     if( rc == 0  ) { result =  0; goto cleanup; }
     
     /* Read the path */
     path = AllocMem( pathLength + 1, MEMF_ANY );
     if( path == NULL ) { result = -1; goto cleanup; }
-    rc = PKG_Read( pkg, path, pathLength );
+    rc = PKG_Read( pkg, path, pathLength + 1 );
     if( rc == -1 || rc == 0) { result = -1; goto cleanup; }
-    path[pathLength] = '\0';
  
     /* Read the data lendth */
     rc = PKG_Read( pkg, &dataLength, sizeof( dataLength ) );
+    dataLength = AROS_BE2LONG(dataLength);
+    
     if( rc == -1 || rc == 0 ) { result = -1; goto cleanup; }
     
     //Printf( "Extracting %s (%ld bytes)...\n", path, dataLength );
