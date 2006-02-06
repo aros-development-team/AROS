@@ -1,0 +1,48 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+TARGETDIR 	:= $(GENDIR)/$(CURDIR)
+KOBJS 		:=
+FILES		:= bootstrap screen elfloader support
+
+#MM kernel-bootstrap-x86_64: kernel-x86_64-kobj
+kernel-bootstrap-x86_64: $(TARGETDIR)/aros.bin.o $(BINDIR)/boot/aros-x86_64
+
+$(BINDIR)/boot/aros-x86_64: $(KOBJSDIR)/bootstrap.o
+	$(HOST_LD) -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T ldscript.lds \
+	-o $@ $< $(KOBJS) 
+	@strip --strip-unneeded -R .note -R .comment $@
+
+$(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
+	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/aros.bin.o -o $@
+
+$(TARGETDIR)/aros.bin.o: $(TARGETDIR)/aros.o
+	cd $(TARGETDIR) && $(HOST_LD) -r --format binary --oformat elf32-i386 aros.o -o aros.bin.o
+	
+$(TARGETDIR)/aros.o: $(KOBJSDIR)/kernel.o $(foreach f, $(KOBJS), $(KOBJSDIR)/$(f).o)
+	$(HOST_LD) -melf_x86_64 -r \
+	-o $@ $(KOBJSDIR)/kernel.o $(foreach f, $(KOBJS), $(KOBJSDIR)/$(f).o)
+
+#MM
+setup-pc-x86_64:
+	%mkdirs_q $(BINDIR)/boot
+	%mkdirs_q $(OSGENDIR)/boot
+	%mkdirs_q $(TARGETDIR)
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(TARGETDIR)/%.o : %.c
+	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer"
+
+$(TARGETDIR)/%.o : %.S
+	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer"
+
+$(TARGETDIR)/%.d : %.c
+	%mkdepend_q
+
+DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+-include $(DEPS)
+
+%common
