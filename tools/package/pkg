@@ -8,8 +8,8 @@ PKG_VERSION                = 0
 
 PKG_HEADER_FORMAT          = '3cB' 
 
-PKG_FILE_PATHLENGTH_FORMAT = 'L'
-PKG_FILE_DATALENGTH_FORMAT = 'L'
+PKG_FILE_PATHLENGTH_FORMAT = '!I'
+PKG_FILE_DATALENGTH_FORMAT = '!I'
 
 def readHeader( file ):
     'readHeader( file ) -> version'
@@ -43,6 +43,7 @@ def readFile( file ):
     )
     
     path = file.read( pathLength[0] )
+    file.read(1)
     
     dataLength = struct.unpack(
         PKG_FILE_DATALENGTH_FORMAT,
@@ -58,7 +59,7 @@ def writeFile( file, path, data ):
     'writeFile( file, path, data ) -> None'
     
     file.write( struct.pack( PKG_FILE_PATHLENGTH_FORMAT, len( path ) ) )
-    file.write( path )
+    file.write( path + "\0")
     file.write( struct.pack( PKG_FILE_DATALENGTH_FORMAT, len( data ) ) )
     file.write( data )
 
