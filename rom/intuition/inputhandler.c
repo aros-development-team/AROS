@@ -802,7 +802,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 #endif
                     if (gadget && new_gadget)
                     {
-                        if (w->IDCMPFlags & IDCMP_SIZEVERIFY &&
+                        if (w && (w->IDCMPFlags & IDCMP_SIZEVERIFY) &&
                             ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING /*||
                                                  (gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WZOOM*/))
                         {
