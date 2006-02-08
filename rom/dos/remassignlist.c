@@ -80,10 +80,21 @@
 		This is a bit tricky, me move the first element
 		in the list to the header
 	    */
-	    dl->dol_misc.dol_assign.dol_List = al->al_Next;
+	    
 	    UnLock(dl->dol_Lock);
-	    dl->dol_Lock = al->al_Lock;
-	    FreeVec(al);
+
+	    if (al)
+    	    {	    
+	    	dl->dol_misc.dol_assign.dol_List = al->al_Next;
+	    	dl->dol_Lock = al->al_Lock;
+	    	FreeVec(al);
+	    }
+	    else
+	    {
+	    	RemDosEntry(dl);
+		FreeDosEntry(dl);
+	    }
+	    
 	    res = DOSTRUE;
 	}
 	else
