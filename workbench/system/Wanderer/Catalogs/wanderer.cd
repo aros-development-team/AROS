@@ -30,28 +30,28 @@ MSG_MEN_SC_BACKDROP (//)
 B
 ;
 MSG_MEN_EXECUTE (//)
-Execute...
+Execute ...
 ;
 MSG_MEN_SC_EXECUTE (//)
 E
 ;
 MSG_MEN_SHELL (//)
-Shell...
+Shell ...
 ;
 MSG_MEN_SC_SHELL (//)
 W
 ;
 MSG_MEN_GUISET (//)
-GuiSettings...
+GUI Settings ...
 ;
 MSG_MEN_ABOUT (//)
-About...
+About ...
 ;
 MSG_MEN_SC_ABOUT (//)
 ?
 ;
 MSG_MEN_QUIT (//)
-Quit...
+Quit ...
 ;
 MSG_MEN_SC_QUIT (//)
 Q
@@ -60,7 +60,7 @@ MSG_MEN_WINDOW (//)
 Window
 ;
 MSG_MEN_NEWDRAW (//)
-New Drawer...
+New Drawer ...
 ;
 MSG_MEN_SC_NEWDRAW (//)
 N
@@ -141,13 +141,13 @@ MSG_MEN_SC_OPEN (//)
 O
 ;
 MSG_MEN_INFO (//)
-Info
+Information ...
 ;
 MSG_MEN_SC_INFO (//)
 I
 ;
 MSG_MEN_DELETE (//)
-Delete
+Delete ...
 ;
 MSG_MEN_TOOLS  (//)
 Tools
