@@ -45,7 +45,7 @@ B
 ; B
 ;
 MSG_MEN_EXECUTE
-Befehl ausfÃ¼hren ...
+Befehl ausführen ...
 ; Execute...
 ;
 MSG_MEN_SC_EXECUTE
@@ -53,7 +53,7 @@ E
 ; E
 ;
 MSG_MEN_SHELL
-Shell Ã¶ffnen
+Shell öffnen
 ; Shell...
 ;
 MSG_MEN_SC_SHELL
@@ -61,11 +61,11 @@ W
 ; W
 ;
 MSG_MEN_GUISET
-BenutzeroberflÃ¤che einstellen ...
+Benutzeroberfläche einstellen ...
 ; GuiSettings...
 ;
 MSG_MEN_ABOUT
-Ãœber
+Über
 ; About...
 ;
 MSG_MEN_SC_ABOUT
@@ -93,11 +93,11 @@ N
 ; N
 ;
 MSG_MEN_OPENPAR
-Ãœbergeordnete Schublade Ã¶ffnen
+Übergeordnete Schublade öffnen
 ; Open Parent
 ;
 MSG_MEN_CLOSE
-SchlieÃŸen
+Schließen
 ; Close
 ;
 MSG_MEN_SC_CLOSE
@@ -109,7 +109,7 @@ Aktualisieren
 ; Update
 ;
 MSG_MEN_CONTENTS
-Alles auswÃ¤hlen
+Alles auswählen
 ; Select Contents
 ;
 MSG_MEN_SC_CONTENTS
@@ -117,7 +117,7 @@ A
 ; A
 ;
 MSG_MEN_CLRSEL
-Markierung lÃ¶schen
+Markierung löschen
 ; Clear selection
 ;
 MSG_MEN_SC_CLRSEL
@@ -153,7 +153,7 @@ Inhalt auflisten
 ; Sorted
 ;
 MSG_MEN_CLNUP
-AufrÃ¤umen
+Aufräumen
 ; Clean Up
 ;
 MSG_MEN_SC_CLNUP
@@ -169,7 +169,7 @@ nach Datum
 ; By Date
 ;
 MSG_MEN_BYSIZE
-nach GrÃ¶ÃŸe
+nach Größe
 ; By size
 ;
 MSG_MEN_REVERSE
@@ -185,7 +185,7 @@ Piktogramm
 ; Icon
 ;
 MSG_MEN_OPEN
-Ã–ffnen
+Öffnen
 ; Open
 ;
 MSG_MEN_SC_OPEN
@@ -201,7 +201,7 @@ I
 ; I
 ;
 MSG_MEN_DELETE
-LÃ¶schen ...
+Löschen ...
 ; Delete
 ;
 MSG_MEN_TOOLS
