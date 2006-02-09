@@ -1,157 +1,160 @@
+## version $VER: wanderer.catalog 1.0 (08.02.2006)
+## language italiano
+## codeset 0
 ;
-MSG_TITLE (//)
+MSG_TITLE
 Wanderer
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Gestione File
 ;
-MSG_SCREENTITLE (//)
+MSG_SCREENTITLE
 Wanderer %s Memoria Grafica %s altra Memoria
 ;
-MSG_MEM_B (//)
+MSG_MEM_B
 B
 ;
-MSG_MEM_K (//)
+MSG_MEM_K
 K
 ;
-MSG_MEM_M (//)
+MSG_MEM_M
 M
 ;
-MSG_MEM_G (//)
+MSG_MEM_G
 G
 ;
-MSG_MEN_WANDERER (//)
+MSG_MEN_WANDERER
 Wanderer
 ;
-MSG_MEN_BACKDROP (//)
+MSG_MEN_BACKDROP
 Sfondo
 ;
-MSG_MEN_SC_BACKDROP (//)
+MSG_MEN_SC_BACKDROP
 S
 ;
-MSG_MEN_EXECUTE (//)
+MSG_MEN_EXECUTE
 Esegui...
 ;
-MSG_MEN_SC_EXECUTE (//)
+MSG_MEN_SC_EXECUTE
 E
 ;
-MSG_MEN_SHELL (//)
+MSG_MEN_SHELL
 Shell...
 ;
-MSG_MEN_SC_SHELL (//)
+MSG_MEN_SC_SHELL
 W
 ;
-MSG_MEN_GUISET (//)
+MSG_MEN_GUISET
 Impostazioni Gui...
 ;
-MSG_MEN_ABOUT (//)
+MSG_MEN_ABOUT
 Informazioni...
 ;
-MSG_MEN_SC_ABOUT (//)
+MSG_MEN_SC_ABOUT
 ?
 ;
-MSG_MEN_QUIT (//)
+MSG_MEN_QUIT
 Termina...
 ;
-MSG_MEN_SC_QUIT (//)
+MSG_MEN_SC_QUIT
 T
 ;
-MSG_MEN_WINDOW (//)
+MSG_MEN_WINDOW
 Finestra
 ;
-MSG_MEN_NEWDRAW (//)
+MSG_MEN_NEWDRAW
 Nuovo Cassetto...
 ;
-MSG_MEN_SC_NEWDRAW (//)
+MSG_MEN_SC_NEWDRAW
 N
 ;
-MSG_MEN_OPENPAR (//)
+MSG_MEN_OPENPAR
 Apri Cassetto Padre
 ;
-MSG_MEN_CLOSE (//)
+MSG_MEN_CLOSE
 Chiudi
 ;
-MSG_MEN_SC_CLOSE (//)
+MSG_MEN_SC_CLOSE
 K
 ;
-MSG_MEN_UPDATE (//)
+MSG_MEN_UPDATE
 Aggiorna
 ;
-MSG_MEN_CONTENTS (//)
+MSG_MEN_CONTENTS
 Seleziona Contenuto
 ;
-MSG_MEN_SC_CONTENTS (//)
+MSG_MEN_SC_CONTENTS
 C
 ;
-MSG_MEN_CLRSEL (//)
+MSG_MEN_CLRSEL
 Annulla Selezione
 ;
-MSG_MEN_SC_CLRSEL (//)
+MSG_MEN_SC_CLRSEL
 A
 ;
-MSG_MEN_SNAPSHT (//)
+MSG_MEN_SNAPSHT
 Fotografa
 ;
-MSG_MEN_ALL (//)
+MSG_MEN_ALL
 Tutto
 ;
-MSG_MEN_VIEW (//)
+MSG_MEN_VIEW
 Vista
 ;
-MSG_MEN_ICVIEW (//)
+MSG_MEN_ICVIEW
 Vista a icone
 ;
-MSG_MEN_DCVIEW (//)
+MSG_MEN_DCVIEW
 Vista dettagliata
 ;
-MSG_MEN_ALLFIL (//)
+MSG_MEN_ALLFIL
 Tutti i files
 ;
-MSG_MEN_SORTIC (//)
+MSG_MEN_SORTIC
 Ordinato
 ;
-MSG_MEN_CLNUP (//)
+MSG_MEN_CLNUP
 Pulisci
 ;
-MSG_MEN_SC_CLNUP (//)
+MSG_MEN_SC_CLNUP
 P
 ;
-MSG_MEN_BYNAME (//)
+MSG_MEN_BYNAME
 Per nome
 ;
-MSG_MEN_BYDATE (//)
+MSG_MEN_BYDATE
 Per data
 ;
-MSG_MEN_BYSIZE (//)
+MSG_MEN_BYSIZE
 Per dimensione
 ;
-MSG_MEN_REVERSE (//)
+MSG_MEN_REVERSE
 Inverso
 ;
-MSG_MEN_DRWFRST (//)
+MSG_MEN_DRWFRST
 I cassetti per primi
 ;
-MSG_MEN_ICON (//)
+MSG_MEN_ICON
 Icona
 ;
-MSG_MEN_OPEN (//)
+MSG_MEN_OPEN
 Apri
 ;
-MSG_MEN_SC_OPEN (//)
+MSG_MEN_SC_OPEN
 A
 ;
-MSG_MEN_INFO (//)
+MSG_MEN_INFO
 Informazioni
 ;
-MSG_MEN_SC_INFO (//)
+MSG_MEN_SC_INFO
 I
 ;
-MSG_MEN_DELETE (//)
+MSG_MEN_DELETE
 Elimina
 ;
-MSG_MEN_TOOLS  (//)
+MSG_MEN_TOOLS
 Strumenti
 ;
-MSG_DUMMY (//)
+MSG_DUMMY
 DUMMY
 ; DUMMY :)
