@@ -1,34 +1,37 @@
-## version $VER: AboutAROS.catalog 1.0 (12.8.2003)
+## version $VER: AboutAROS.catalog 1.1 (9.2.2006)
 ## language deutsch
 ## codeset 0
+;
 ;
 MSG_TITLE
 Über AROS
 ; About AROS
 ;
-;MSG_PERSONAL_BUILD
-;** Personal Build
+MSG_PERSONAL_BUILD
+Personal Build
 ; Personal Build
+; FIXME: shall I translate this?
 ;
-;MSG_NIGHTLY_BUILD
-;** Nightly Build
+MSG_NIGHTLY_BUILD
+Nightly Build
 ; Nightly Build
+; FIXME: shall I translate this?
 ;
-;MSG_SNAPSHOT
-;** Snapshot
+MSG_SNAPSHOT
+Schnappschuss
 ; Snapshot
 ;
-;MSG_MILESTONE
-;** Milestone
+MSG_MILESTONE
+Meilenstein
 ; Milestone
 ;
-;MSG_RELEASE
-;** Release
+MSG_RELEASE
+Ausgabe
 ; Release
 ;
 MSG_COPYRIGHT
-Copyright © 1995-2005, The AROS Development Team. Alle Rechte vorbehalten.
-; Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+Copyright © 1995-2006, The AROS Development Team. Alle Rechte vorbehalten.
+; Copyright © 1995-2006, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Veröffentlicht gemäß den Richtlinien der
@@ -39,7 +42,7 @@ AROS Public License
 ; AROS Public License
 ;
 MSG_LICENSE_3
-, version 1.1.
+, Version 1.1.
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
@@ -61,54 +64,72 @@ Danksagung
 MSG_SECTION_COORDINATION
 Koordination
 ; Coordination
+;
 MSG_SECTION_EVANGELISM
 Evangelismus
 ; Evangelism
+;
 MSG_SECTION_HIDD
 HIDD Subsystem
-; HIDD Subsystem
+; HIDD subsystem
+;
 MSG_SECTION_INTUITION
 Intuition
 ; Intuition
+;
 MSG_SECTION_GRAPHICS
 Graphics
 ; Graphics
+;
 MSG_SECTION_SHELL_COMMANDS
 Shell Kommandos
 ; Shell Commands
+;
 MSG_SECTION_WORKBENCH
 Workbench
 ; Workbench
+;
 MSG_SECTION_TOOLS
 Tools
 ; Tools
+;
 MSG_SECTION_PREFERENCES
 Voreinstellungen
 ; Preferences
+;
 MSG_SECTION_BGUI
 BGUI
 ; BGUI
+;
 MSG_SECTION_ZUNE
 Zune
 ; Zune
+;
 MSG_SECTION_KERNEL
 Kernel
 ; Kernel
+;
 MSG_SECTION_DOS
 DOS
 ; DOS
+;
 MSG_SECTION_LIBC_POSIX
 C Link Library und POSIX Layer
 ; C link library and POSIX layer
+;
 MSG_SECTION_DOCUMENTATION
 Dokumentation
 ; Documentation
+;
 MSG_SECTION_TRANSLATION
 Übersetzungen
 ; Translation
+;
 MSG_SECTION_ARTISTRY
 Kunstwerke
 ; Artistry
+;
 MSG_SECTION_WEBSITE
 Webseiten
 ; Website
+;

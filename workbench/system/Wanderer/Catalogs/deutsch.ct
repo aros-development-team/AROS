@@ -1,7 +1,212 @@
-## version $VER: wanderer.catalog 1.0 (21.02.2004)
+## version $VER: wanderer.catalog 1.1 (9.2.2006)
 ## language deutsch
 ## codeset 0
 ;
+;
+MSG_TITLE
+Wanderer
+; Wanderer
+;
+MSG_DESCRIPTION
+Dateimanager
+; File Manager
+;
+;
+MSG_SCREENTITLE
+Wanderer %s Grafikspeicher %s sonstiger Speicher
+; Wanderer %s graphics mem %s other mem
+;
+MSG_MEM_B
+B
+; B
+;
+MSG_MEM_K
+K
+; K
+;
+MSG_MEM_M
+M
+; M
+;
+MSG_MEM_G
+G
+; G
+;
+MSG_MEN_WANDERER
+Wanderer
+; Wanderer
+;
+MSG_MEN_BACKDROP
+Wanderer als Hintergrund
+; Backdrop
+;
+MSG_MEN_SC_BACKDROP
+B
+; B
+;
+MSG_MEN_EXECUTE
+Befehl ausführen ...
+; Execute...
+;
+MSG_MEN_SC_EXECUTE
+E
+; E
+;
+MSG_MEN_SHELL
+Shell öffnen
+; Shell...
+;
+MSG_MEN_SC_SHELL
+W
+; W
+;
+MSG_MEN_GUISET
+Benutzeroberfläche einstellen ...
+; GuiSettings...
+;
+MSG_MEN_ABOUT
+Über
+; About...
+;
+MSG_MEN_SC_ABOUT
+?
+; ?
+;
+MSG_MEN_QUIT
+Wanderer beenden ...
+; Quit...
+;
+MSG_MEN_SC_QUIT
+Q
+; Q
+;
+MSG_MEN_WINDOW
+Fenster
+; Window
+;
+MSG_MEN_NEWDRAW
+Neue Schublade anlegen ...
+; New Drawer...
+;
+MSG_MEN_SC_NEWDRAW
+N
+; N
+;
+MSG_MEN_OPENPAR
+Übergeordnete Schublade öffnen
+; Open Parent
+;
+MSG_MEN_CLOSE
+Schließen
+; Close
+;
+MSG_MEN_SC_CLOSE
+K
+; K
+;
+MSG_MEN_UPDATE
+Aktualisieren
+; Update
+;
+MSG_MEN_CONTENTS
+Alles auswählen
+; Select Contents
+;
+MSG_MEN_SC_CONTENTS
+A
+; A
+;
+MSG_MEN_CLRSEL
+Markierung löschen
+; Clear selection
+;
+MSG_MEN_SC_CLRSEL
+Z
+; Z
+;
+MSG_MEN_SNAPSHT
+Fixieren
+; Snapshot
+;
+MSG_MEN_ALL
+alles
+; All
+;
+MSG_MEN_VIEW
+Inhalt anzeigen
+; View
+;
+MSG_MEN_ICVIEW
+nur Dateien mit Piktogramm
+; Icon view
+;
+MSG_MEN_DCVIEW
+Details anzeigen
+; Detail view
+;
+MSG_MEN_ALLFIL
+alle Dateien
+; All files
+;
+MSG_MEN_SORTIC
+Inhalt auflisten
+; Sorted
+;
+MSG_MEN_CLNUP
+Aufräumen
+; Clean Up
+;
+MSG_MEN_SC_CLNUP
+U
+; U
+;
+MSG_MEN_BYNAME
+nach Name
+; By name
+;
+MSG_MEN_BYDATE
+nach Datum
+; By Date
+;
+MSG_MEN_BYSIZE
+nach Größe
+; By size
+;
+MSG_MEN_REVERSE
+umgekehrt
+; Reverse
+;
+MSG_MEN_DRWFRST
+Schubladen zuerst
+; Drawers first
+;
+MSG_MEN_ICON
+Piktogramm
+; Icon
+;
+MSG_MEN_OPEN
+Öffnen
+; Open
+;
+MSG_MEN_SC_OPEN
+O
+; O
+;
+MSG_MEN_INFO
+Informationen anzeigen ...
+; Info
+;
+MSG_MEN_SC_INFO
+I
+; I
+;
+MSG_MEN_DELETE
+Löschen ...
+; Delete
+;
+MSG_MEN_TOOLS
+Hilfsmittel
+; Tools
 ;
 MSG_DUMMY
 DUMMY
