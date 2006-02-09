@@ -1,10 +1,10 @@
-## version $VER: fontprefs.catalog 1.0 (27.9.2001)
+## version $VER: fontprefs.catalog 1.1 (9.2.2006)
 ## language deutsch
 ## codeset 0
 ;
 ;
 MSG_ERROR_CANT_CREATE_APPLICATION
-*** Can't create application object.
+Kann Application-Objekt nicht erzeugen.
 ; Can't create application object.
 ;
 MSG_CANT_CREATE_REQ
@@ -13,7 +13,7 @@ Kann Datei Requester nicht erzeugen!
 ;
 MSG_CANT_CREATE_CONTEXT
 Kann Kontext für Gadtools nicht erzeugen!
-;Can't create context for Gadtools!
+; Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
 Kann IFF Stream nicht öffnen!
@@ -40,15 +40,15 @@ Zeichensatz-Voreinsteller (Font)
 ; Font Preferences
 ;
 MSG_MENU_PREFERENCES
-*** Preferences
+Vorgaben
 ; Preferences
 ;
 MSG_MENU_PREFERENCES_IMPORT
-I\0*** Import...
+I\0Import...
 ; I\0Import...
 ;
 MSG_MENU_PREFERENCES_EXPORT
-E\0*** Export...
+E\0Export...
 ; E\0Export...
 ;
 MSG_ASL_OPEN_TITLE
@@ -64,7 +64,7 @@ Ok
 ; Ok
 ;
 MSG_ICONS
-*** Icons:
+Piktogramme:
 ; Icons:
 ;
 MSG_SYSTEM
@@ -74,4 +74,8 @@ System:
 MSG_SCREEN
 Schirm:
 ; Screen:
+;
+MSG_DESCRIPTION
+Font-Vorgaben
+; Fonts preferences
 ;
