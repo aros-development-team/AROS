@@ -1,0 +1,183 @@
+## version $VER: info.catalog 1.0 (9.2.2006)
+## language deutsch
+## codeset 0
+;
+;
+MSG_TITLE
+Informationen
+; Informations
+;
+MSG_DESCRIPTION
+Piktogramm Informationen
+; Icon informations
+;
+MSG_COPYRIGHT
+Piktogramm Informationen\n© AROS Development Team
+; Icon informations\n©AROS Dev Team
+;
+MSG_ICON
+Piktogramm
+; Icon
+;
+MSG_NAME
+Name
+; Name
+;
+MSG_COMMENT
+Kommentar
+; Comment
+;
+MSG_STACK
+Stapelgröße
+; Stack
+;
+MSG_DEFTOOL
+Standardprogramm
+; Tool
+;
+MSG_ICONTYPE
+Piktogrammtyp
+; Icon type
+;
+MSG_DISK
+Datenträger
+; Disk
+;
+MSG_DRAWER
+Schublade
+; Drawer
+;
+MSG_TOOL
+Programm
+; Tool
+;
+MSG_PROJECT
+Projekt
+; Project
+;
+MSG_GARBAGE
+Papierkorb
+; Garbage
+;
+MSG_DEVICE
+Gerät
+; Device
+;
+MSG_KICK
+Kick
+; Kick
+; FIXME: Übersetzung?
+;
+MSG_APPICON
+AppIcon
+; AppIcon
+; FIXME: Übersetzung?
+;
+MSG_INFORMATION
+Information
+; Information
+;
+MSG_PROTECTION
+Schutz
+; Protection
+;
+MSG_TOOLTYPES
+Merkmale
+; Tooltypes
+;
+MSG_ERROR_SHELLSTART
+Fehler: Kann nicht von der Shell gestarted werden
+; Error: Cannot be started from shell
+;
+MSG_ABOUT
+Über ...
+; About...
+;
+MSG_QUIT
+Beenden
+; Quit
+;
+MSG_READ
+Lesbar
+; Read
+;
+MSG_WRITE
+Schreibbar
+; Write
+;
+MSG_EXECUTE
+Ausführbar
+; Execute
+;
+MSG_DELETE
+Löschbar
+; Delete
+;
+MSG_SCRIPT
+Skript
+; Script
+;
+MSG_PURE
+Pur
+; Pure
+;
+MSG_ARCHIVED
+Archiviert
+; Archived
+;
+MSG_STICKY
+Sticky
+; Sticky
+; FIXME: Übersetzung?
+;
+MSG_SIZE
+Größe
+; Size
+;
+MSG_VERSION
+Version
+; Version
+;
+MSG_OWNERID
+Besitzer ID
+; Owner ID
+;
+MSG_GROUPID
+Gruppe ID
+; Group ID
+;
+MSG_OWNERNAME
+Besitzer
+; Owner
+;
+MSG_GROUPNAME
+Gruppe
+; Group
+;
+MSG_TYPE
+Typ
+; Type
+;
+MSG_DATE
+Datum
+; Date
+;
+MSG_NEW_KEY
+Neues Merkmal
+; New key
+;
+MSG_DELETE_KEY
+Merkmal löschen
+; Delete key
+;
+MSG_SAVE
+_Speichern
+; _Save
+;
+MSG_CANCEL
+_Abbrechen
+; _Cancel
+;
+MSG_OK
+Ok
+; Ok
