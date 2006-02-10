@@ -10,3 +10,7 @@ Wanderer Clock
 ;
 MSG_OK (//)
 Ok
+;
+MSG_ERROR_DISKOBJECT (//)
+Error: Can't create diskobject
+;

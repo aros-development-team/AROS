@@ -1,13 +1,15 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <exec/types.h>
+#include <workbench/startup.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/icon.h>
 
 #define MUIMASTER_YES_INLINE_STDARG
 #include <proto/muimaster.h>
@@ -80,34 +82,74 @@ void Cleanup(CONST_STRPTR message)
         exit(0);
 }
 
-static void GetArguments(void)
+static void GetArguments(int argc, char **argv)
 {
-#   define TMPSIZE 256
-    TEXT           tmp[TMPSIZE];
-    struct RDArgs *rdargs = NULL;
-    IPTR           args[NUM_ARGS];
-    
-    memset(args, 0, sizeof(args));
-    rdargs = ReadArgs(ARG_TEMPLATE, args, NULL);
-    if (rdargs == NULL)
+    if (argc == 0) /* started from WB */
     {
-	Fault(IoErr(), 0, tmp, TMPSIZE);
-	Cleanup(tmp);
-    }
-
-    if (args[ARG_LEFT])   optionLeft   = *(IPTR *) args[ARG_LEFT];
-    if (args[ARG_TOP])    optionTop    = *(IPTR *) args[ARG_TOP];
-    if (args[ARG_WIDTH])  optionWidth  = *(IPTR *) args[ARG_WIDTH];
-    if (args[ARG_HEIGHT]) optionHeight = *(IPTR *) args[ARG_HEIGHT];
+        struct WBStartup *wbmsg;
+        struct WBArg *wbarg;
+        struct DiskObject *dobj;
         
-    FreeArgs(rdargs);
-#   undef TMPSIZE 
+        if ( (wbmsg = (struct WBStartup *)argv) )
+        {
+            wbarg = wbmsg->sm_ArgList;
+            if ( wbarg && wbarg->wa_Name && (dobj = GetDiskObject(wbarg->wa_Name) ) )
+            {
+                const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
+                STRPTR s;
+                if ((s = FindToolType(toolarray, "LEFT")))
+                {
+                    optionLeft = atol(s);
+                }
+                if ((s = FindToolType(toolarray, "TOP")))
+                {
+                    optionTop = atol(s);
+                }
+                if ((s = FindToolType(toolarray, "WIDTH")))
+                {
+                    optionWidth = atol(s);
+                }
+                if ((s = FindToolType(toolarray, "HEIGHT")))
+                {
+                    optionHeight = atol(s);
+                }
+                FreeDiskObject(dobj);
+            }
+            else
+            {
+                ShowMessage("Clock", MSG(MSG_ERROR_DISKOBJECT), MSG(MSG_OK));
+            }
+        } 
+    }
+    else
+    {
+#       define TMPSIZE 256
+        TEXT           tmp[TMPSIZE];
+        struct RDArgs *rdargs = NULL;
+        IPTR           args[NUM_ARGS];
+    
+        memset(args, 0, sizeof(args));
+        rdargs = ReadArgs(ARG_TEMPLATE, args, NULL);
+        if (rdargs == NULL)
+        {
+            Fault(IoErr(), 0, tmp, TMPSIZE);
+            Cleanup(tmp);
+        }
+
+        if (args[ARG_LEFT])   optionLeft   = *(IPTR *) args[ARG_LEFT];
+        if (args[ARG_TOP])    optionTop    = *(IPTR *) args[ARG_TOP];
+        if (args[ARG_WIDTH])  optionWidth  = *(IPTR *) args[ARG_WIDTH];
+        if (args[ARG_HEIGHT]) optionHeight = *(IPTR *) args[ARG_HEIGHT];
+        
+        FreeArgs(rdargs);
+#       undef TMPSIZE
+    }
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     Locale_Initialize();
-    GetArguments();
+    GetArguments(argc, argv);
     
     application = ApplicationObject,
         MUIA_Application_Title, (IPTR) MSG(MSG_WINDOW_TITLE),

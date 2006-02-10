@@ -18,3 +18,8 @@ Wanderer Uhr
 MSG_OK
 Ok
 ; Ok
+;
+MSG_ERROR_DISKOBJECT
+Kann DiskObject nicht erzeugen
+; Error: Can't create diskobject
+;
