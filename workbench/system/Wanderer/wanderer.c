@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -31,7 +31,7 @@
 
 #include "locale.h"
 
-#define VERSION "$VER: Wanderer 0.2 (30.01.2006) ©AROS Dev Team"
+#define VERSION "$VER: Wanderer 0.2 (30.01.2006) © AROS Dev Team"
 
 VOID DoAllMenuNotifies(Object *strip, char *path);
 Object *FindMenuitem(Object* strip, int id);
@@ -110,7 +110,7 @@ STRPTR GetScreenTitle(VOID)
     UBYTE chip[10], fast[10];
     fmtlarge(chip,AvailMem(MEMF_CHIP));
     fmtlarge(fast,AvailMem(MEMF_FAST));
-    /* AROS probably don't have graphics mem but without it look so empty */
+    /* AROS probably don't have graphics mem but without it looks so empty */
     sprintf(title, _(MSG_SCREENTITLE), chip, fast);
 
     return title;
@@ -158,7 +158,7 @@ enum
 
 
 /**************************************************************************
- Open the execute window. Simliar to above but you can also set the
+ Open the execute window. Similar to below but you can also set the
  command. Called when item is openend
 **************************************************************************/
 void execute_open_with_command(BPTR cd, char *contents)
@@ -233,10 +233,10 @@ void window_open_parent(char **cdptr)
 	
 	last_letter = *((char *)(thispath-1));
 	
-	if (last_letter==(char *)0x3a) path_len = (thispath-(IPTR)(*cdptr));
-	else path_len = (thispath-(IPTR)(*cdptr))-1;
+	if (last_letter==(char *)0x3a) path_len = (IPTR)(thispath-(IPTR)(*cdptr));
+	else path_len = (IPTR)((thispath-(IPTR)(*cdptr))-1);
 	
-	CONST_STRPTR buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);	
+	STRPTR buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);	
 	CopyMem(*cdptr, buf, path_len);
 	
 	Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
@@ -357,7 +357,7 @@ void window_sort_type(Object **pstrip)
     {
 		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
 
-		/*type = both date and size bits both set*/
+		/*type = both date and size bits set*/
 		sort_bits |= (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE);
 
     	DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
@@ -500,7 +500,7 @@ void wanderer_about(void)
 
 void wanderer_quit(void)
 {
-    if (MUI_RequestA(app,NULL,0,"Wanderer", "*Ok|Cancel", "Do you really want to quit Wanderer?",NULL))
+    if (MUI_RequestA(app, NULL, 0, "Wanderer", _(MSG_YESNO), _(MSG_REALLYQUIT), NULL))
 	DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
@@ -738,8 +738,8 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         
         MUIA_Application_Title,       (IPTR) "Wanderer",
 	MUIA_Application_Base,        (IPTR) "WANDERER",
-	MUIA_Application_Version,     (IPTR) "$VER: Wanderer 0.1 (10.12.02)", // FIXME
-	MUIA_Application_Description, (IPTR) "File manager",
+	MUIA_Application_Version,     (IPTR) VERSION,
+	MUIA_Application_Description, (IPTR) _(MSG_DESCRIPTION),
 	MUIA_Application_SingleTask,         TRUE,
     	
         TAG_MORE, (IPTR) message->ops_AttrList
@@ -855,7 +855,7 @@ IPTR Wanderer__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     SETUP_INST_DATA;
     struct TagItem *tstate = message->ops_AttrList, *tag;
 
-    while ((tag = NextTagItem(&tstate)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem**)&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
