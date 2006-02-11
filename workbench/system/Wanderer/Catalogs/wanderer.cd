@@ -152,6 +152,12 @@ Delete ...
 MSG_MEN_TOOLS  (//)
 Tools
 ;
+MSG_REALLYQUIT (//)
+Do you really want to quit Wanderer?
+;
+MSG_YESNO (//)
+*Yes|No
+;
 MSG_DUMMY (//)
 DUMMY
 ; DUMMY :)

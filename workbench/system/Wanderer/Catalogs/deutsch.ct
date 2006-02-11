@@ -11,7 +11,6 @@ MSG_DESCRIPTION
 Dateimanager
 ; File Manager
 ;
-;
 MSG_SCREENTITLE
 Wanderer %s Grafikspeicher %s sonstiger Speicher
 ; Wanderer %s graphics mem %s other mem
@@ -46,7 +45,7 @@ B
 ;
 MSG_MEN_EXECUTE
 Befehl ausführen ...
-; Execute...
+; Execute ...
 ;
 MSG_MEN_SC_EXECUTE
 E
@@ -54,7 +53,7 @@ E
 ;
 MSG_MEN_SHELL
 Shell öffnen
-; Shell...
+; Shell ...
 ;
 MSG_MEN_SC_SHELL
 W
@@ -62,11 +61,11 @@ W
 ;
 MSG_MEN_GUISET
 Benutzeroberfläche einstellen ...
-; GuiSettings...
+; GUI Settings ...
 ;
 MSG_MEN_ABOUT
 Über
-; About...
+; About ...
 ;
 MSG_MEN_SC_ABOUT
 ?
@@ -74,7 +73,7 @@ MSG_MEN_SC_ABOUT
 ;
 MSG_MEN_QUIT
 Wanderer beenden ...
-; Quit...
+; Quit ...
 ;
 MSG_MEN_SC_QUIT
 Q
@@ -86,7 +85,7 @@ Fenster
 ;
 MSG_MEN_NEWDRAW
 Neue Schublade anlegen ...
-; New Drawer...
+; New Drawer ...
 ;
 MSG_MEN_SC_NEWDRAW
 N
@@ -194,7 +193,7 @@ O
 ;
 MSG_MEN_INFO
 Informationen anzeigen ...
-; Info
+; Information ...
 ;
 MSG_MEN_SC_INFO
 I
@@ -202,12 +201,23 @@ I
 ;
 MSG_MEN_DELETE
 Löschen ...
-; Delete
+; Delete ...
 ;
 MSG_MEN_TOOLS
 Hilfsmittel
 ; Tools
 ;
+MSG_REALLYQUIT
+Möchten Sie Wanderer wirklich beenden?
+; Do you really want to quit Wanderer?
+;
+MSG_YESNO
+*Ja|Nein
+; *Yes|No
+;
+; ***NEW***
+;
 MSG_DUMMY
 DUMMY
 ; DUMMY
+; DUMMY :)
