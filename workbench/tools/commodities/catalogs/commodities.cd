@@ -161,6 +161,9 @@ Shrink Window
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE (//)
 Toggle Window Size
 ;
+MSG_FKEY_CMD_RESCUE_WIN (//)
+Rescue Window
+;
 MSG_FKEY_CMD_INSERT_TEXT (//)
 Insert Text
 ;

@@ -133,7 +133,7 @@ Opaque
 ;
 MSG_OPAQUE_CXTITLE
 Opaque Fenster
-; Opaque windows
+; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
 Echtzeit Verschieben von Fenstern
@@ -145,7 +145,7 @@ AutoPoint
 ;
 MSG_AUTOPOINT_CXTITLE
 Autofokus
-; Automatic window activator
+; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
 Aktiviert Fenstert unter Mauszeiger
@@ -218,6 +218,10 @@ Fenster verkleinern
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE
 Fenstergröße umschalten
 ; Toggle Window Size
+;
+MSG_FKEY_CMD_RESCUE_WIN
+Fenster retten
+; Rescue Window
 ;
 MSG_FKEY_CMD_INSERT_TEXT
 Text einfügen
