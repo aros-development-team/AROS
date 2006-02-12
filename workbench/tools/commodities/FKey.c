@@ -7,6 +7,7 @@ MAKESMALL
 CYCLE
 CYCLESCREEN
 ZIPWINDOW
+RESCUEWIN
 INSERT text
 RUN command
 AREXX script
@@ -54,7 +55,7 @@ Quit Q
 */
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -95,9 +96,9 @@ Quit Q
 /*********************************************************************************************/
 
 #define VERSION 	1
-#define REVISION 	0
-#define DATESTR 	"15.08.2003"
-#define VERSIONSTR	"$VER: FKey 1.0 (" DATESTR ")"
+#define REVISION 	1
+#define DATESTR 	"12.02.2006"
+#define VERSIONSTR	"$VER: FKey 1.1 (" DATESTR ")"
 
 /*********************************************************************************************/
 
@@ -118,9 +119,10 @@ Quit Q
 #define ACTION_ENLARGE_WIN   2
 #define ACTION_SHRINK_WIN    3
 #define ACTION_TOGGLE_WIN    4
-#define ACTION_INSERT_TEXT   5
-#define ACTION_RUN_PROG      6
-#define ACTION_RUN_AREXX     7
+#define ACTION_RESCUE_WIN    5
+#define ACTION_INSERT_TEXT   6
+#define ACTION_RUN_PROG      7
+#define ACTION_RUN_AREXX     8
 
 #define RETURNID_NEWKEY      1
 #define RETURNID_DELKEY      2
@@ -415,6 +417,7 @@ static void MakeGUI(void)
     	(CONST_STRPTR)MSG_FKEY_CMD_ENLARGE_WIN,
     	(CONST_STRPTR)MSG_FKEY_CMD_SHRINK_WIN,
     	(CONST_STRPTR)MSG_FKEY_CMD_TOGGLE_WIN_SIZE,
+	(CONST_STRPTR)MSG_FKEY_CMD_RESCUE_WIN,
     	(CONST_STRPTR)MSG_FKEY_CMD_INSERT_TEXT,
     	(CONST_STRPTR)MSG_FKEY_CMD_RUN_PROG,
     	(CONST_STRPTR)MSG_FKEY_CMD_RUN_AREXX,
@@ -491,7 +494,8 @@ static void MakeGUI(void)
 			Child, HVSpace, /* enlarge win */
 			Child, HVSpace, /* shrink win */
 			Child, HVSpace, /* Toggle win */
-			Child, insertstr = StringObject, StringFrame, End, /* Insert text */
+			Child, HVSpace, /* rescue win */
+                        Child, insertstr = StringObject, StringFrame, End, /* Insert text */
 			Child, runprogstr = StringObject, StringFrame, End, /* Run prog */
 			Child, runarexxstr = StringObject, StringFrame, End, /* Run ARexx */		
 		    	End,
@@ -839,6 +843,28 @@ void HandleAction(void)
 	    }
 	    break;
 	    
+	case ACTION_RESCUE_WIN:
+	    if (win)
+	    {
+		WORD dx = 0, dy = 0;
+		if (win->LeftEdge < 0)
+			dx = -win->LeftEdge;
+		else if (win->LeftEdge + win->Width > win->WScreen->Width)
+			dx = win->WScreen->Width - win->Width - win->LeftEdge;
+		
+		if (win->TopEdge + win->Height > win->WScreen->Height)
+			dy = win->WScreen->Height - win->Height - win->TopEdge;
+		else if (win->TopEdge < win->WScreen->BarHeight)
+			// try to keep the screen title bar visible
+			if (win->WScreen->BarHeight + win->Height < win->WScreen->Height)
+				dy = -win->TopEdge + win->WScreen->BarHeight;
+			else
+				dy = win->WScreen->Height - win->Height - win->TopEdge;
+		
+		MoveWindow(win, dx, dy);
+	    }
+	    break;
+	    
 	case ACTION_TOGGLE_WIN:
 	    if (win) ZipWindow(win);
 	    break;
@@ -908,6 +934,10 @@ UBYTE *BuildToolType(struct KeyInfo *ki)
 	    
 	case ACTION_TOGGLE_WIN:
 	    param1 = "ZIPWINDOW";
+	    break;
+	    
+	case ACTION_RESCUE_WIN:
+	    param1 = "RESCUEWIN";
 	    break;
 	    
 	case ACTION_INSERT_TEXT:
@@ -1164,6 +1194,10 @@ void LoadSettings(void)
 		else if (strncmp(quote_end + 2, "ZIPWINDOW", 9 + 1) == 0)
 		{
 		    ki.action = ACTION_TOGGLE_WIN;
+		}
+		else if (strncmp(quote_end + 2, "RESCUEWIN", 9 + 1) == 0)
+		{
+			ki.action = ACTION_RESCUE_WIN;
 		}
 		else if (strncmp(quote_end + 2, "INSERT ", 7) == 0)
 		{
