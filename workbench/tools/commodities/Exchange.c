@@ -81,11 +81,13 @@
 #include <libraries/gadtools.h>
 #include <libraries/locale.h>
 #include <intuition/intuition.h>
+#include <devices/rawkeycodes.h>
 
 #include <string.h>
 
 #include <stdio.h>
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define CATCOMP_NUMBERS
@@ -102,6 +104,9 @@
 #define LABELSPACEY  4
 
 UBYTE version[] = "$VER: Exchange 0.3 (14.10.2001)";
+
+static struct Gadget *lvgad;
+static WORD lvtop, lvheight;
 
 struct ExchangeState
 {
@@ -264,7 +269,7 @@ BOOL readShellArgs(struct ExchangeState *ec)
     }
     else
     {
-	ec->ec_cxPopKey = "ctrl alt help";
+	ec->ec_cxPopKey = "ctrl alt h";
     }
 
     FreeArgs(rda);
@@ -292,7 +297,7 @@ BOOL readWBArgs(int argc, char **argv, struct ExchangeState *ec)
     tt = ArgArrayInit(argc, (UBYTE **)argv);
     
     ec->ec_cxPri    = ArgInt(tt, "CX_PRIORITY", 0);
-    ec->ec_cxPopKey = ArgString(tt, "CX_POPKEY", "ctrl alt help");
+    ec->ec_cxPopKey = ArgString(tt, "CX_POPKEY", "ctrl alt h");
     popUp = ArgString(tt, "CX_POPUP", "YES");
 
     if (Stricmp(popUp, "YES") == 0)
@@ -340,12 +345,12 @@ BOOL getResources(struct ExchangeState *ec)
 
 	if (ec->ec_catalog == NULL)
 	{
-	    P(kprintf("OpenCatalog() failed!\n"));
+	    D(bug("OpenCatalog() failed!\n"));
 	}
     }
     else
     {
-	P(kprintf("Warning: Can't open locale.library V40!\n"));
+	D(bug("Warning: Can't open locale.library V40!\n"));
     }
 
     while (tmpLibTable->lT_Library)
@@ -363,13 +368,13 @@ BOOL getResources(struct ExchangeState *ec)
 	}
 	else
 	{
-	    P(kprintf("Library %s opened!\n", tmpLibTable->lT_Name));
+	    D(bug("Library %s opened!\n", tmpLibTable->lT_Name));
 	}
 
 	tmpLibTable++;
     }    
 
-    P(kprintf("Libraries opened!"));
+    D(bug("Libraries opened!\n"));
  
     /* Then, allocate the rest of the resources */
     
@@ -400,7 +405,7 @@ BOOL getResources(struct ExchangeState *ec)
 	return FALSE;
     }
     
-    P(kprintf("Broker: %s Flags: %i\n", ec->ec_broker->co_Ext.co_BExt->bext_Name,
+    D(bug("Broker: %s Flags: %i\n", ec->ec_broker->co_Ext.co_BExt->bext_Name,
 	      ec->ec_broker->co_Flags));
 
 
@@ -478,6 +483,7 @@ BOOL getResources(struct ExchangeState *ec)
 				                    LISTVIEWIDCMP | 
 				                    IDCMP_CLOSEWINDOW |
 				                    IDCMP_GADGETUP |
+						    IDCMP_RAWKEY |
 				                    IDCMP_MENUPICK |
 						    IDCMP_VANILLAKEY,
 				   WA_DragBar,      TRUE,
@@ -642,9 +648,9 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
 
     y = scr->WBorTop + fontHeight + 1 + BORDERY + fontHeight + LABELSPACEY;
     h = fontHeight + EXTRAHEIGHT;
-    
-    listView.ng_TopEdge = y;
-    listView.ng_Height  = h * 4 + SPACEY * 3;
+
+    listView.ng_TopEdge = lvtop = y;
+    listView.ng_Height  = lvheight = h * 4 + SPACEY*3;
     
     showBut.ng_TopEdge = y + 2 * (h + SPACEY);
     showBut.ng_Height  = h;
@@ -664,7 +670,7 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
     textGad2.ng_TopEdge = y + 1 * (h + SPACEY);
     textGad2.ng_Height  = h;
     
-    ec->ec_listView = gad =  CreateGadget(LISTVIEW_KIND, gad,
+    ec->ec_listView = gad = lvgad = CreateGadget(LISTVIEW_KIND, gad,
 					  &listView,
 					  GTLV_Labels, (IPTR) NULL,
 					  GTLV_ShowSelected, (IPTR) NULL,
@@ -725,7 +731,7 @@ void freeResources(struct ExchangeState *ec)
 	    ClearMenuStrip(ec->ec_window);
 	    CloseWindow(ec->ec_window);
 	    
-	    P(kprintf("Closed window\n"));
+	    D(bug("Closed window\n"));
 	}
     }
 
@@ -738,7 +744,7 @@ void freeResources(struct ExchangeState *ec)
 
     	UnlockPubScreen(NULL, ec->ec_screen);
 	
-	P(kprintf("Freed visualinfo\n"));
+	D(bug("Freed visualinfo\n"));
     }
 
     if (CxBase != NULL)
@@ -754,7 +760,7 @@ void freeResources(struct ExchangeState *ec)
     {
 	CloseCatalog(ec->ec_catalog);
 
-	P(kprintf("Closed catalog\n"));
+	D(bug("Closed catalog\n"));
 
 	CloseLibrary((struct Library *)LocaleBase);
     }
@@ -764,14 +770,38 @@ void freeResources(struct ExchangeState *ec)
 	if (tmpLibTable->lT_Library != NULL)
 	{
 	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
-	    P(kprintf("Closed %s!\n", tmpLibTable->lT_Name));
+	    D(bug("Closed %s!\n", tmpLibTable->lT_Name));
 	}
 
     	tmpLibTable++;
     }
 }
 
+void ScrollListview(struct ExchangeState *ec, struct Gadget *gad, WORD delta)
+{
+    IPTR top, visible, total;
+    LONG newtop;
+    
+    GT_GetGadgetAttrs(gad, ec->ec_window, NULL, GTLV_Top, (IPTR)&top,
+    	    	    	    	      GTLV_Visible, (IPTR)&visible,
+				      GTLV_Total, (IPTR)&total,
+				      TAG_DONE);
+				      
+    newtop = (LONG)top + delta * 3;
 
+    if (newtop + visible > total)
+    {
+    	newtop = total - visible;
+    }
+    
+    if (newtop < 0) newtop = 0;
+    
+    if (newtop != top)
+    {
+    	GT_SetGadgetAttrs(gad, ec->ec_window, NULL, GTLV_Top, newtop, TAG_DONE);
+    }
+    				      
+}
 
 void realMain(struct ExchangeState *ec)
 {
@@ -790,7 +820,7 @@ void realMain(struct ExchangeState *ec)
 
 	    while ((msg = GT_GetIMsg(ec->ec_window->UserPort)) != NULL)
 	    {
-		P(kprintf("Got win signal %i\n", msg->Class));
+		D(bug("Got win signal %i\n", msg->Class));
 
 		switch (msg->Class)
 		{
@@ -845,7 +875,7 @@ void realMain(struct ExchangeState *ec)
 			    {
 				menuNum = item->NextSelect;
 				
-				P(kprintf("Menu selection: %i",
+				D(bug("Menu selection: %i",
 					  (int)GTMENUITEM_USERDATA(item)));
 
 				switch ((LONG)GTMENUITEM_USERDATA(item))
@@ -862,8 +892,36 @@ void realMain(struct ExchangeState *ec)
 			    }
 			}
 		    }
-
 		    break;
+
+		case IDCMP_RAWKEY:
+		    {
+			WORD delta;
+			
+			switch(msg->Code)
+			{
+			case RAWKEY_NM_WHEEL_UP:
+				delta = -1;
+				break;
+				
+			case RAWKEY_NM_WHEEL_DOWN:
+				delta = 1;
+				break;
+				
+			default:
+				delta = 0;
+				break;
+			}
+			
+			if (delta)
+			{
+				if (lvgad)
+				{
+					ScrollListview(ec, lvgad, delta);
+				}
+			}
+		    }
+		    break;    
 		} /* switch(msg->Class) */
 		
 		GT_ReplyIMsg(msg);
@@ -877,7 +935,7 @@ void realMain(struct ExchangeState *ec)
 	    
 	    while ((cxm = (CxMsg *)GetMsg(ec->ec_msgPort)) != NULL)
 	    {
-		P(kprintf("Got cx signal %i\n", CxMsgID(cxm)));
+		D(bug("Got cx signal %i\n", CxMsgID(cxm)));
 
 		if (CxMsgType(cxm) == CXM_COMMAND)
 		{
@@ -955,7 +1013,7 @@ void informBroker(LONG command, struct ExchangeState *ec)
 
     bc = getNth(&ec->ec_brokerList, whichGad);
 
-    P(kprintf("Informing the broker <%s>. Reason %d\n", bc->bc_Node.ln_Name,
+    D(bug("Informing the broker <%s>. Reason %d\n", bc->bc_Node.ln_Name,
 	      (int)command));
 
     /* We don't care about errors for now */
@@ -1002,13 +1060,13 @@ void updateInfo(struct ExchangeState *ec)
 
     	strncpy(ec->ec_lvitemname, brokerCopy->bc_Name, sizeof(ec->ec_lvitemname));
 	
-	P(kprintf("Broker: %s Flags: %i\n", brokerCopy->bc_Name,
+	D(bug("Broker: %s Flags: %i\n", brokerCopy->bc_Name,
 		  brokerCopy->bc_Flags));
 
 	setText(ec->ec_textGad,  (STRPTR)&brokerCopy->bc_Title, ec);
 	setText(ec->ec_textGad2, (STRPTR)&brokerCopy->bc_Descr,	ec);
 
-	P(kprintf("%s show/hide gadgets.\n", showHide ? "Disabling" : "Enabling"));
+	D(bug("%s show/hide gadgets.\n", showHide ? "Disabling" : "Enabling"));
 	setGadgetState(ec->ec_hideBut, showHide, ec);
 	setGadgetState(ec->ec_showBut, showHide, ec);
 
@@ -1053,11 +1111,11 @@ void redrawList(struct ExchangeState *ec)
 
     n = GetBrokerList(&ec->ec_brokerList);
 
-    P(kprintf("Antal %i\n", n));
+    D(bug("Antal %i\n", n));
 
-    P(kprintf("First broker: %s\n", GetHead(&ec->ec_brokerList)->ln_Name));
+    D(bug("First broker: %s\n", GetHead(&ec->ec_brokerList)->ln_Name));
 
-    P(kprintf("Calling GT_SetGadgetAttrs()\n"));
+    D(bug("Calling GT_SetGadgetAttrs()\n"));
     GT_SetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
 		      GTLV_Labels, (IPTR)&ec->ec_brokerList,
 		      TAG_DONE);
