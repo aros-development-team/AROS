@@ -108,7 +108,8 @@ static LONG  mouseBottom, mouseRight;
 static LONG  mouseTop, mouseLeft;
 static LONG  gadgetLeft, gadgetTop;
 static LONG  gadgetWidth, gadgetHeight;
-static UBYTE actionsig, icontrolsig, actiontype;
+static BYTE  actionsig, icontrolsig;
+static UBYTE actiontype;
 static BOOL quitme, disabled;
 static BOOL offScreenLayersFlag;
 static struct NotifyRequest *IControlChangeNR;
@@ -371,7 +372,7 @@ static void Init(void)
     actionmask = 1L << actionsig;
 
     /* create "IControl pref changes" signal */
-    if((icontrolsig = AllocSignal(-1L)) != -1) 
+    if((icontrolsig = AllocSignal(-1L)) != -1)
     {
     icontrolmask = 1L << icontrolsig;
     if ((IControlChangeNR = AllocMem(sizeof(struct NotifyRequest), MEMF_CLEAR)))
