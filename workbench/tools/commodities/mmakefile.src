@@ -15,7 +15,7 @@ FILES	:= \
 
 USER_CFLAGS := -I$(TOP)/workbench/libs/commodities
 
-#MM- workbench: workbench-tools \
+#MM- workbench-tools : workbench-tools-commodities
 #MM workbench-tools-commodities : includes linklibs workbench-tools-commodities-catalogs
 
 %build_progs mmake=workbench-tools-commodities \
