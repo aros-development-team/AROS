@@ -325,7 +325,7 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 	return FALSE;
     }
     
-    InputBase = (struct Library *)inputIO->io_Device;
+    InputBase = (struct Device *)inputIO->io_Device;
 
     return TRUE;
 }
