@@ -855,12 +855,13 @@ void HandleAction(void)
 		if (win->TopEdge + win->Height > win->WScreen->Height)
 			dy = win->WScreen->Height - win->Height - win->TopEdge;
 		else if (win->TopEdge < win->WScreen->BarHeight)
+        {
 			// try to keep the screen title bar visible
 			if (win->WScreen->BarHeight + win->Height < win->WScreen->Height)
 				dy = -win->TopEdge + win->WScreen->BarHeight;
 			else
 				dy = win->WScreen->Height - win->Height - win->TopEdge;
-		
+		}
 		MoveWindow(win, dx, dy);
 	    }
 	    break;
