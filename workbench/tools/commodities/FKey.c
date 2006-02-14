@@ -64,6 +64,7 @@ Quit Q
 #include <intuition/classusr.h>
 #include <graphics/layers.h>
 #include <graphics/clip.h>
+#include <libraries/asl.h>
 #include <libraries/locale.h>
 #include <libraries/gadtools.h>
 #include <libraries/commodities.h>
@@ -96,9 +97,9 @@ Quit Q
 /*********************************************************************************************/
 
 #define VERSION 	1
-#define REVISION 	1
-#define DATESTR 	"12.02.2006"
-#define VERSIONSTR	"$VER: FKey 1.1 (" DATESTR ")"
+#define REVISION 	2
+#define DATESTR 	"14.02.2006"
+#define VERSIONSTR	"$VER: FKey 1.2 (" DATESTR ")"
 
 /*********************************************************************************************/
 
@@ -169,17 +170,41 @@ static UBYTE	      	 s[257];
 
 /*********************************************************************************************/
 
-CONST_STRPTR MSG(ULONG id);
-void FreeArguments(void);
-void CleanupLocale(void);
-void KillCX(void);
-void KillGUI(void);
-void ListToString(void);
-void StringToKey(void);
+static void broker_func(struct Hook *hook, Object *obj, CxMsg *msg);
+static UBYTE *BuildToolType(struct KeyInfo *ki);
+static UBYTE **BuildToolTypes(UBYTE **src_ttypes);
+static void Cleanup(CONST_STRPTR msg);
+static void CleanupLocale(void);
+static void CmdToKey(void);
+static void DelKey(void);
+static struct DiskObject *LoadProgIcon(BPTR *icondir, STRPTR iconname);
+static void FreeArguments(void);
+static void FreeToolTypes(UBYTE **ttypes);
+static void GetArguments(int argc, char **argv);
+static void HandleAction(void);
+static void HandleAll(void);
+static void InitCX(void);
+static void InitLocale(STRPTR catname, ULONG version);
+static void InitMenus(void);
+static APTR keylist_construct_func(struct Hook *hook, APTR pool, struct KeyInfo *ki);
+static void keylist_destruct_func(struct Hook *hook, APTR pool, struct KeyInfo *ki);
+static void keylist_disp_func(struct Hook *hook, char **array, struct KeyInfo *ki);
+static void KillCX(void);
+static void KillGUI(void);
+static void ListToString(void);
+static void LoadSettings(void);
+static void MakeGUI(void);
+static CONST_STRPTR MSG(ULONG id);
+static void NewKey(void);
+static void RethinkAction(void);
+static void RethinkKey(struct KeyInfo *ki);
+static void SaveSettings(void);
+static WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext);
+static void StringToKey(void);
 
 /*********************************************************************************************/
 
-WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext)
+static WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext)
 {
     struct EasyStruct es;
     
@@ -194,7 +219,7 @@ WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext)
 
 /*********************************************************************************************/
 
-void Cleanup(CONST_STRPTR msg)
+static void Cleanup(CONST_STRPTR msg)
 {
     if (msg)
     {
@@ -219,20 +244,20 @@ void Cleanup(CONST_STRPTR msg)
 
 /*********************************************************************************************/
 
-void InitCX(void)
+static void InitCX(void)
 {
     maintask = FindTask(NULL);
 }
 
 /*********************************************************************************************/
 
-void KillCX(void)
+static void KillCX(void)
 {
 }
 
 /*********************************************************************************************/
 
-void InitLocale(STRPTR catname, ULONG version)
+static void InitLocale(STRPTR catname, ULONG version)
 {
     LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 39);
     if (LocaleBase)
@@ -244,7 +269,7 @@ void InitLocale(STRPTR catname, ULONG version)
 
 /*********************************************************************************************/
 
-void CleanupLocale(void)
+static void CleanupLocale(void)
 {
     if (catalog) CloseCatalog(catalog);
     if (LocaleBase) CloseLibrary((struct Library *)LocaleBase);
@@ -252,7 +277,7 @@ void CleanupLocale(void)
 
 /*********************************************************************************************/
 
-CONST_STRPTR MSG(ULONG id)
+static CONST_STRPTR MSG(ULONG id)
 {
     if (catalog != NULL)
     {
@@ -266,7 +291,7 @@ CONST_STRPTR MSG(ULONG id)
 
 /*********************************************************************************************/
 
-struct NewMenu nm[] =
+static struct NewMenu nm[] =
 {
     {NM_TITLE, (STRPTR)MSG_FKEY_MEN_PROJECT         },
      {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_SAVE    },
@@ -280,7 +305,7 @@ struct NewMenu nm[] =
 
 /*********************************************************************************************/
 
-void InitMenus(void)
+static void InitMenus(void)
 {
     struct NewMenu *actnm = nm;
     
@@ -308,7 +333,7 @@ void InitMenus(void)
 
 /*********************************************************************************************/
 
-void FreeArguments(void)
+static void FreeArguments(void)
 {
     if (myargs) FreeArgs(myargs);
     ArgArrayDone();
@@ -316,14 +341,14 @@ void FreeArguments(void)
 
 /*********************************************************************************************/
 
-void KillGUI(void)
+static void KillGUI(void)
 {
     DisposeObject(app);
 }
 
 /*********************************************************************************************/
 
-void GetArguments(int argc, char **argv)
+static void GetArguments(int argc, char **argv)
 {
     if (argc)
     {
@@ -451,7 +476,7 @@ static void MakeGUI(void)
     app = ApplicationObject,
 	MUIA_Application_Title, (IPTR)MSG(MSG_FKEY_CXNAME),
 	MUIA_Application_Version, (IPTR)VERSIONSTR,
-	MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2003, The AROS Development Team",
+	MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2006, The AROS Development Team",
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, (IPTR)MSG(MSG_FKEY_CXDESCR),
 	MUIA_Application_BrokerPri, cx_pri,
@@ -496,9 +521,17 @@ static void MakeGUI(void)
 			Child, HVSpace, /* Toggle win */
 			Child, HVSpace, /* rescue win */
                         Child, insertstr = StringObject, StringFrame, End, /* Insert text */
-			Child, runprogstr = StringObject, StringFrame, End, /* Run prog */
-			Child, runarexxstr = StringObject, StringFrame, End, /* Run ARexx */		
-		    	End,
+			Child, PopaslObject, /* Run prog */
+				MUIA_Popstring_String, runprogstr = StringObject, StringFrame, End,
+				MUIA_Popstring_Button, PopButton(MUII_PopFile),
+				ASLFR_RejectIcons, TRUE,
+			End,		
+			Child, PopaslObject, /* Run AREXX */
+				MUIA_Popstring_String, runarexxstr = StringObject, StringFrame, End,
+				MUIA_Popstring_Button, PopButton(MUII_PopFile),
+				ASLFR_RejectIcons, TRUE,
+			End,	
+		    End,
 		    Child, HVSpace,
 		    End,
 		End,
@@ -567,7 +600,7 @@ static void MakeGUI(void)
 
 /*********************************************************************************************/
 
-void RethinkKey(struct KeyInfo *ki)
+static void RethinkKey(struct KeyInfo *ki)
 {
     if (ki->filter) DeleteCxObjAll(ki->filter);
     if (ki->translist)
@@ -619,7 +652,7 @@ void RethinkKey(struct KeyInfo *ki)
 
 /*********************************************************************************************/
 
-void RethinkAction(void)
+static void RethinkAction(void)
 {
     struct KeyInfo *ki = NULL;
     
@@ -664,7 +697,7 @@ void RethinkAction(void)
 
 /*********************************************************************************************/
 
-void NewKey(void)
+static void NewKey(void)
 {
     struct KeyInfo ki = {0};
     
@@ -681,7 +714,7 @@ void NewKey(void)
 
 /*********************************************************************************************/
 
-void DelKey(void)
+static void DelKey(void)
 {
     struct KeyInfo *ki = NULL;
 
@@ -703,7 +736,7 @@ void DelKey(void)
 
 /*********************************************************************************************/
 
-void StringToKey(void)
+static void StringToKey(void)
 {
     struct KeyInfo *ki = NULL;
     STRPTR  	    text;
@@ -721,13 +754,14 @@ void StringToKey(void)
 
 /*********************************************************************************************/
 
-void ListToString(void)
+static void ListToString(void)
 {
     struct KeyInfo *ki = NULL;
 
     DoMethod(list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&ki);
     if (!ki) return;
     
+    nnset(liststr, MUIA_Disabled, FALSE);
     nnset(liststr, MUIA_String_Contents, ki->descr);
     
     switch(ki->action)
@@ -751,14 +785,14 @@ void ListToString(void)
 
 /*********************************************************************************************/
 
-void CmdToKey(void)
+static void CmdToKey(void)
 {
     RethinkAction();
 }
 
 /*********************************************************************************************/
 
-void HandleAction(void)
+static void HandleAction(void)
 {
     struct KeyInfo  *ki;
     struct Window   *win;
@@ -909,7 +943,7 @@ void HandleAction(void)
 
 /*********************************************************************************************/
 
-UBYTE *BuildToolType(struct KeyInfo *ki)
+static UBYTE *BuildToolType(struct KeyInfo *ki)
 {
     static UBYTE  ttstring[500];
     UBYTE   	 *param1 = "";
@@ -970,7 +1004,7 @@ UBYTE *BuildToolType(struct KeyInfo *ki)
 
 /*********************************************************************************************/
 
-UBYTE **BuildToolTypes(UBYTE **src_ttypes)
+static UBYTE **BuildToolTypes(UBYTE **src_ttypes)
 {
     APTR     pool = CreatePool(MEMF_CLEAR, 200, 200);
     Object  *listobj = list;
@@ -1061,7 +1095,7 @@ UBYTE **BuildToolTypes(UBYTE **src_ttypes)
 
 /*********************************************************************************************/
 
-void FreeToolTypes(UBYTE **ttypes)
+static void FreeToolTypes(UBYTE **ttypes)
 {
     if (ttypes)
     {
@@ -1071,7 +1105,7 @@ void FreeToolTypes(UBYTE **ttypes)
 
 /*********************************************************************************************/
 
-struct DiskObject *LoadProgIcon(BPTR *icondir, STRPTR iconname)
+static struct DiskObject *LoadProgIcon(BPTR *icondir, STRPTR iconname)
 {
     struct DiskObject *progicon;
     
@@ -1106,7 +1140,7 @@ struct DiskObject *LoadProgIcon(BPTR *icondir, STRPTR iconname)
 
 /*********************************************************************************************/
 
-void SaveSettings(void)
+static void SaveSettings(void)
 {
     struct DiskObject 	 *progicon;
     UBYTE   	    	**ttypes, **old_ttypes;
@@ -1148,7 +1182,7 @@ void SaveSettings(void)
 
 /*********************************************************************************************/
 
-void LoadSettings(void)
+static void LoadSettings(void)
 {
     struct DiskObject *progicon;
     UBYTE   	       iconname[256];
@@ -1247,7 +1281,7 @@ void LoadSettings(void)
 
 /*********************************************************************************************/
 
-void HandleAll(void)
+static void HandleAll(void)
 {
     ULONG sigs = 0;
     LONG  returnid;
