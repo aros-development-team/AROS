@@ -29,6 +29,7 @@
 #define HIDD_BM_COLMOD(bitmap)    (*(HIDDT_ColorModel *)&((bitmap)->Planes[3]))
 #define HIDD_BM_PIXTAB(bitmap)	  (*(HIDDT_Pixel **)&((bitmap)->Planes[4]))
 #define HIDD_BM_REALDEPTH(bitmap) (*(LONG *)&((bitmap)->Planes[5]))
+#define HIDD_BM_FLAGS(bitmap)	  (*(ULONG *)&((bitmap)->Planes[6]))
 
 #define OBTAIN_HIDD_BM(bitmap)	\
 	( ( IS_HIDD_BM(bitmap))	\
@@ -52,6 +53,10 @@ do                                                                             \
 #define BM_PIXEL(bitmap, pen) ((!IS_HIDD_BM(bitmap) || !HIDD_BM_COLMAP(bitmap)) ? (pen) :  \
     	    	    	       HIDD_CM_GetPixel(HIDD_BM_COLMAP(bitmap), pen))
 #endif
+
+/* HIDD BM Flags */
+
+#define HIDD_BMF_SHARED_PIXTAB    	1
 
 /* Minterms and GC drawmodes are in opposite order */
 #define MINTERM_TO_GCDRMD(minterm) 	\

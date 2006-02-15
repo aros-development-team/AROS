@@ -58,12 +58,21 @@
 
     if (bm->pad != 0 || (bm->Flags & BMF_AROS_HIDD))
     {
-	HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, (OOP_Object *)HIDD_BM_OBJ(bm));
-
-	if (bm->Flags & BMF_DISPLAYABLE)
+    	if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SHARED_PIXTAB)
+	{
+	    /* NULL colormap otherwise bitmap killing also kills
+	       the colormap object of the bitmap object
+	       from which we shared it = to which it belongs */
+	       
+	    HIDD_BM_SetColorMap(HIDD_BM_OBJ(bm), NULL);
+	}
+	else if (bm->Flags & BMF_DISPLAYABLE)
 	{
     	    FreeVec(HIDD_BM_PIXTAB(bm));
 	}
+
+	HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, (OOP_Object *)HIDD_BM_OBJ(bm));
+
 	FreeMem(bm, sizeof (struct BitMap));
     }
     else

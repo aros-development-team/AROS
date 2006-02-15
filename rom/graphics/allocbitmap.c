@@ -125,7 +125,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    struct BitMap * nbm;
+    struct BitMap *nbm;
     ULONG attributes;
     HIDDT_ModeID hiddmode = vHidd_ModeID_Invalid;
 
@@ -139,9 +139,9 @@
 
     if ((LONG)depth < 0)
     {
-	depth 	      = (ULONG)(-((LONG)depth));
-	hiddmode      = (HIDDT_ModeID)friend_bitmap;
-	friend_bitmap = NULL;
+	depth 	      	   = (ULONG)(-((LONG)depth));
+	hiddmode      	   = (HIDDT_ModeID)friend_bitmap;
+	friend_bitmap 	   = NULL;
     }
     else if (flags & BMF_DISPLAYABLE) 
     {
@@ -156,7 +156,6 @@
 	    
 	    OOP_GetAttr(HIDD_BM_OBJ(friend_bitmap), aHidd_BitMap_ModeID, &val);
 	    hiddmode = val;
-	    friend_bitmap = NULL;    
 	}
 	else
 	{
@@ -286,39 +285,59 @@
 
     		    if (flags & BMF_DISPLAYABLE)
 		    {
-    			/* Allcoate a pixtab */
-    			HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
-    			if (NULL != HIDD_BM_PIXTAB(nbm))
+		    	if (friend_bitmap)
 			{
-    			    /* Set this palette to all black by default */
+			    OOP_Object *oldcolmap;
+			    
+			    oldcolmap = HIDD_BM_SetColorMap(HIDD_BM_OBJ(nbm), HIDD_BM_COLMAP(friend_bitmap));
+			    if (oldcolmap) OOP_DisposeObject(oldcolmap);
 
-    			    HIDDT_Color col;
-    			    ULONG   	i;
+    	    	    	    HIDD_BM_COLMAP(nbm)     = HIDD_BM_COLMAP(friend_bitmap);			    
+			    HIDD_BM_PIXTAB(nbm)     = HIDD_BM_PIXTAB(friend_bitmap);
+     			    HIDD_BM_COLMOD(nbm)     = HIDD_BM_COLMOD(friend_bitmap);
+    	    	    	    HIDD_BM_REALDEPTH(nbm)  = HIDD_BM_REALDEPTH(friend_bitmap);
 
-    			    col.red     = 0;
-    			    col.green   = 0;
-    			    col.blue    = 0;
-    			    col.alpha   = 0;
-
-    			    if (vHidd_ColorModel_Palette == colmod ||
-			        vHidd_ColorModel_TrueColor == colmod)
+			    HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SHARED_PIXTAB;
+			    
+			    ok = TRUE;
+			}
+			else
+			{
+    			    /* Allcoate a pixtab */
+    			    HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
+			
+    			    if (NULL != HIDD_BM_PIXTAB(nbm))
 			    {
+    				/* Set this palette to all black by default */
 
-    				ULONG numcolors;
+    				HIDDT_Color col;
+    				ULONG   	i;
 
-				numcolors = 1L << ((depth <= 8) ? depth : 8);
+    				col.red     = 0;
+    				col.green   = 0;
+    				col.blue    = 0;
+    				col.alpha   = 0;
 
-    				/* Set palette to all black */
-    				for (i = 0; i < numcolors; i ++)
+    				if (vHidd_ColorModel_Palette == colmod ||
+			            vHidd_ColorModel_TrueColor == colmod)
 				{
-    				    HIDD_BM_SetColors(HIDD_BM_OBJ(nbm), &col, i, 1);
-    				    HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
-    				}
-				
-    			    }
-    			    ok = TRUE;
+    				    ULONG numcolors;
 
-    			} /* if (pixtab successfully allocated) */
+				    numcolors = 1L << ((depth <= 8) ? depth : 8);
+
+    				    /* Set palette to all black */
+    				    for (i = 0; i < numcolors; i ++)
+				    {
+    					HIDD_BM_SetColors(HIDD_BM_OBJ(nbm), &col, i, 1);
+    	    	    	    		HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
+    				    }
+
+    				}
+    				ok = TRUE;
+
+    			    } /* if (pixtab successfully allocated) */
+			
+			}
 			
     		    } /* if (flags & BMF_DISPLAYABLE) */
     		    else
