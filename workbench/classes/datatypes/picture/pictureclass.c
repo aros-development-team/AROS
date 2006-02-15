@@ -28,6 +28,7 @@ ISG BOOL                  UseFriendBM;
 ISG BOOL                  DestMode
 */
 
+#define DEBUG 1
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -257,6 +258,11 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
     {
         switch (ti->ti_Tag)
         {
+	    case DTA_VisibleHoriz:
+	    case DTA_VisibleVert:
+	    	RetVal = 1;
+		break;
+		
             case PDTA_ModeID:
                 pd->ModeID = (ULONG) ti->ti_Data;
                 DGS(bug("picture.datatype/OM_SET: Tag PDTA_ModeID: 0x%lx\n", (long)pd->ModeID));
