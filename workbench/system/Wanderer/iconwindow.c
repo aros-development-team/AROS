@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -59,7 +59,9 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         
         MUIA_Window_Width,              300,
         MUIA_Window_Height,             300,
-        MUIA_Window_ScreenTitle, (IPTR) "",
+        MUIA_Window_AltWidth,           100,
+	MUIA_Window_AltHeight,           80,
+	MUIA_Window_ScreenTitle, (IPTR) "",
         
         WindowContents, (IPTR) VGroup,
             InnerSpacing(0, 0),
@@ -114,7 +116,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     SETUP_INST_DATA;
     struct TagItem *tstate = message->ops_AttrList, *tag;
 
-    while ((tag = NextTagItem(&tstate)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem**)&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
