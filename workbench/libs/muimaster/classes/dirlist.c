@@ -142,23 +142,26 @@ static void ReadDirectory(Object *obj, struct Dirlist_DATA *data)
     {
 	if ((lock = Lock(data->directory, SHARED_LOCK)))
 	{
-    	    BOOL success, isdir;
+    	    BOOL success;
 	    
 	    success = Examine(lock, fib);
-	    isdir = (fib->fib_DirEntryType > 0);
 	    
 	    if (success && (fib->fib_DirEntryType > 0))
 	    {
 	    	for(;;)
 		{		    
+		    BOOL isdir;
+		    
 		    success = ExNext(lock, fib);
 		    
     	    	    if (!success)
 		    {
-		    	if (IoErr() == ERROR_NO_MORE_ENTRIES) break;
-			success = FALSE;
+		    	if (IoErr() == ERROR_NO_MORE_ENTRIES) success = TRUE;
+			
 			break;
 		    }
+
+	    	    isdir = (fib->fib_DirEntryType > 0);
 		    
 		    if (data->filterhook)
 		    {
