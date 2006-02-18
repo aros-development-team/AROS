@@ -1,6 +1,12 @@
+/*
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #define MUIMASTER_YES_INLINE_STDARG
 #define DEBUG 0
 
+#include <aros/debug.h>
 #include <dos/dos.h>
 
 #include <proto/muimaster.h>
@@ -11,8 +17,8 @@
 #include "locale.h"
 #include "smeditor.h"
 
-#define VERSION "ScreenMode Preferences 1.1 (25/01/2005)"
-#define COPYRIGHT "Copyright © 1995-2005, The AROS Development Team"
+#define VERSION "ScreenMode Preferences 1.2 (18.02.2006)"
+#define COPYRIGHT "Copyright © 1995-2006, The AROS Development Team"
 
 static const char vers[] = VERSION;
 static const char version[] = "$VER: " VERSION "\n";
@@ -32,7 +38,8 @@ int main()
         MUIA_Application_Copyright, (IPTR) COPYRIGHT,
         MUIA_Application_Author, (IPTR) "The AROS Development Team",
         MUIA_Application_Description, (IPTR) __(MSG_NAME),
-        SubWindow, (IPTR)(win = SystemPrefsWindowObject,
+        MUIA_Application_SingleTask, TRUE, 
+	SubWindow, (IPTR)(win = SystemPrefsWindowObject,
             WindowContents, (IPTR) SMEditorObject,
             End,
 	End),
@@ -50,10 +57,13 @@ int main()
 
 	return RETURN_ERROR;        
     }
-
+    else
+    {
+        D(bug("screenmode preferences: couldn't create application"));
+    }
+    
     Locale_Deinitialize();
 
     return RETURN_OK;
 }
-
 

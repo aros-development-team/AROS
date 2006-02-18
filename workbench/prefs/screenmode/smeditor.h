@@ -1,3 +1,8 @@
+/*
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef _SMEDITOR_H
 #define _SMEDITOR_H
 
