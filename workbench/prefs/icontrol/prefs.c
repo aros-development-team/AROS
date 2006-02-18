@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -287,7 +287,9 @@ BOOL DefaultPrefs(void)
     	    	    	     ICF_MODEPROMOTE | 
     	    	    	     ICF_MENUSNAP |
 			     ICF_STRGAD_FILTER |
-			     ICF_COERCE_LACE;
+			     ICF_COERCE_LACE |
+			     ICF_OFFSCREENLAYERS;
+    			     /* FIXME: check whether ICF_DEFPUBSCREEN is set as default */
     icontrolprefs.ic_WBtoFront = 'N';
     icontrolprefs.ic_FrontToBack = 'M';
     icontrolprefs.ic_ReqTrue = 'V';

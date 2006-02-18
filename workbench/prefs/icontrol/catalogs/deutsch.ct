@@ -1,6 +1,7 @@
 ## version $VER: icontrolprefs.catalog 1.0 (25.08.2003)
-## codeset 0
 ## language deutsch
+## codeset 0
+;
 ;
 MSG_CANT_OPEN_LIB
 Kann %s V%ld nicht öffnen!\n
@@ -9,6 +10,10 @@ Kann %s V%ld nicht öffnen!\n
 MSG_CANT_CREATE_APP
 Kann Applikations-Objekt nicht erzeugen!
 ; Can't create application object!
+;
+MSG_CANT_CREATE_CUSTOM_CLASS
+Kann Klasse 'Preferenceswindow' nicht erzeugen
+; Can't create custom preferenceswindow class
 ;
 MSG_WINTITLE
 IControl-Voreinsteller
@@ -66,7 +71,6 @@ MSG_OK
 Ok
 ; Ok
 ;
-;
 MSG_MENUS_GROUP
 Menüs
 ; Menus
@@ -94,4 +98,28 @@ Klassisch
 MSG_MENUS_LOOK_3D
 3D
 ; 3D
+;
+MSG_WINDOWS
+Fenster
+; Windows
+;
+MSG_OFFSCREEN_MOVE
+Außer-Bildschirm-Verschiebung:
+; Offscreen move:
+;
+MSG_SCREENS
+Bildschirme
+; Screens
+;
+MSG_FRONTMOST_DEFAULT
+Vorderster als voreingesteller öffentlicher Bildschirm:
+; Frontmost set as DefaultPubScreen:
+;
+MSG_OFFSCREEN_DESC
+Ermöglicht das Verschieben von Fenstern\naußerhalb des sichtbaren Bereichs
+; Allow windows to be moved out of\nthe visible area
+;
+MSG_FRONTMOST_DEFAULT_DESC
+Macht den vordersten öffentlichen Bildschirm\nzum voreingestellten öffentlichen Bildschirm
+; Make the frontmost public screen\nthe default public screen
 ;

@@ -5,6 +5,9 @@ Can't open %s V%ld!\n
 MSG_CANT_CREATE_APP (//)
 Can't create application object!
 ;
+MSG_CANT_CREATE_CUSTOM_CLASS (//)
+Can't create custom preferenceswindow class
+;
 MSG_WINTITLE (//)
 IControl Preferences
 ;
@@ -67,4 +70,22 @@ Classic
 ;
 MSG_MENUS_LOOK_3D (//)
 3D
+;
+MSG_WINDOWS (//)
+Windows
+;
+MSG_OFFSCREEN_MOVE (//)
+Offscreen move:
+;
+MSG_SCREENS (//)
+Screens
+;
+MSG_FRONTMOST_DEFAULT (//)
+Frontmost set as DefaultPubScreen:
+;
+MSG_OFFSCREEN_DESC (//)
+Allow windows to be moved out of\nthe visible area
+;
+MSG_FRONTMOST_DEFAULT_DESC (//)
+Make the frontmost public screen\nthe default public screen
 ;

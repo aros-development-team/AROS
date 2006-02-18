@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -277,11 +277,11 @@ IPTR IPWindow__OM_NEW
 		End,
 	    Child, VGroup,
     		Child, VGroup,
-    		    GroupFrameT("Windows"),
+    		    GroupFrameT(MSG(MSG_WINDOWS)),
 	            Child, VSpace(0),
     		    Child, ColGroup(4),
 	                Child, HSpace(0),
-    			Child, Label1("Offscreen move:"),
+    			Child, Label1(MSG(MSG_OFFSCREEN_MOVE)),
     			Child, offscreenobj = MUI_MakeObject(MUIO_Checkmark,
     							     NULL),
 	                Child, HSpace(0),
@@ -289,11 +289,11 @@ IPTR IPWindow__OM_NEW
 	            Child, VSpace(0),
 	            End,
     		Child, VGroup,
-    		    GroupFrameT("Screens"),
+    		    GroupFrameT(MSG(MSG_SCREENS)),
 	            Child, VSpace(0),
     		    Child, ColGroup(4),
 	                Child, HSpace(0),
-    			Child, Label1("Frontmost set as DefaultPubScreen:"),
+    			Child, Label1(MSG(MSG_FRONTMOST_DEFAULT)),
     			Child, defpubscrobj = MUI_MakeObject(MUIO_Checkmark,
     						    NULL),
 	                Child, HSpace(0),
@@ -312,10 +312,10 @@ IPTR IPWindow__OM_NEW
     data->menulookobj = menulookobj;
     data->offscreenobj = offscreenobj;
     set(data->offscreenobj, MUIA_ShortHelp,
-	(IPTR)"Allow windows to be moved out of\nthe visible area");
+	(IPTR)MSG(MSG_OFFSCREEN_DESC));
     data->defpubscrobj = defpubscrobj;
     set(data->defpubscrobj, MUIA_ShortHelp,
-	(IPTR)"Make the frontmost public screen\nthe default public screen");
+	(IPTR)MSG(MSG_FRONTMOST_DEFAULT_DESC));
 
     DoMethod(menutypeobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
     	     (IPTR)previewpage, 3, MUIM_CallHook, (IPTR)&previewhook, (IPTR)data);
@@ -359,7 +359,8 @@ IPTR IPWindow__MUIM_PrefsWindow_Revert
     
     RestorePrefs();
     Prefs2Gadgets(data, &icontrolprefs);
-    
+    SavePrefs(CONFIGNAME_ENV);
+     
     return 0;
 }
 
@@ -621,7 +622,7 @@ static void PreviewFunc(struct Hook *hook, Object *previewpage, struct IPWindow_
 
 void MakeGUI(void)
 {
-    if (!IPWindow_Initialize()) Cleanup("Error creating custom preferenceswindow class!");
+    if (!IPWindow_Initialize()) Cleanup(MSG(MSG_CANT_CREATE_CUSTOM_CLASS));
     
     InitImages();
     
@@ -631,15 +632,24 @@ void MakeGUI(void)
     app = ApplicationObject,
 	MUIA_Application_Title, (IPTR)"IControl",
 	MUIA_Application_Version, (IPTR)VERSIONSTR,
-	MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2003, The AROS Development Team",
+	MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2006, The AROS Development Team",
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, (IPTR)MSG(MSG_WINTITLE),
 	MUIA_Application_Base, (IPTR)"Icontrol",
+	MUIA_Application_SingleTask, TRUE,
   	SubWindow, (IPTR) (wnd = NewObject(IPWindow_CLASS->mcc_Class, NULL, TAG_DONE)),
 	End;
 
-    if (!app) Cleanup(MSG(MSG_CANT_CREATE_APP));
-
+    if (!app)
+    {
+#if 1
+	D(bug("icontrol: Can't create application"));
+	Cleanup(NULL);
+#else
+	Cleanup(MSG(MSG_CANT_CREATE_APP));
+#endif
+    }
+    
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_OPEN, (IPTR) wnd, 1, MUIM_IPWindow_Open);    

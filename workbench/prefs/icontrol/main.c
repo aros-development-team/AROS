@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -61,7 +61,7 @@ static IPTR                 	args[NUM_ARGS];
 
 static void CloseLibs(void);
 static void FreeArguments(void);
-static void FreeVisual(void);
+
 
 /*********************************************************************************************/
 
@@ -95,7 +95,7 @@ void Cleanup(STRPTR msg)
     }
     
     KillGUI();
-    FreeVisual();
+
     FreeArguments();
     CloseLibs();
     CleanupLocale();
@@ -158,17 +158,17 @@ static void FreeArguments(void)
 
 /*********************************************************************************************/
 
-static void GetVisual(void)
-{
-}
 
-/*********************************************************************************************/
 
-static void FreeVisual(void)
-{
-}
 
-/*********************************************************************************************/
+
+
+
+
+
+
+
+
 
 static void HandleAll(void)
 {
@@ -202,7 +202,7 @@ int main(void)
     OpenLibs();
     GetArguments();
     InitPrefs((STRPTR)args[ARG_FROM], (args[ARG_USE] ? TRUE : FALSE), (args[ARG_SAVE] ? TRUE : FALSE));
-    GetVisual();
+
     MakeGUI();
     HandleAll();
     Cleanup(NULL);
