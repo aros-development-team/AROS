@@ -1,4 +1,4 @@
-## version $VER: icontrolprefs.catalog 1.0 (15.10.2001)
+## version $VER: icontrolprefs.catalog 1.1 (18.02.2006)
 ## codeset 0
 ## language français
 ;
@@ -9,6 +9,10 @@ Impossible d'ouvrir %s V%ld !\n
 MSG_CANT_CREATE_APP
 Impossible de créer l'application !
 ;
+;
+MSG_CANT_CREATE_CUSTOM_CLASS
+Impossible de créer la classe preferenceswindow
+;Can't create custom preferenceswindow class
 ;
 MSG_WINTITLE
 Préférences IControl
@@ -93,4 +97,25 @@ Classique
 MSG_MENUS_LOOK_3D
 3D
 ; 3D
+;
+MSG_WINDOWS
+Fenêtres
+;
+MSG_OFFSCREEN_MOVE
+Mouvement hors de l'écran :
+;
+MSG_SCREENS
+Écrans
+;
+MSG_FRONTMOST_DEFAULT
+L'écran en avant est l'écran par défaut :
+;Frontmost set as DefaultPubScreen:
+;
+MSG_OFFSCREEN_DESC
+Permet aux fenêtres d'être déplacées\nhors de la partie visible
+;Allow windows to be moved out of\nthe visible area
+;
+MSG_FRONTMOST_DEFAULT_DESC
+Fait de l'écran en avant\nl'écran public par défaut
+;Make the frontmost public screen\nthe default public screen
 ;
