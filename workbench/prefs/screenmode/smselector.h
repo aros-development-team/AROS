@@ -1,3 +1,8 @@
+/*
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef _SMSELECTOR_H
 #define _SMSELECTOR_H
 
