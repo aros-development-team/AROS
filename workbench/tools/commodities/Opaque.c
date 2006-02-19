@@ -48,7 +48,7 @@
 
 /************************************************************************************/
 
-UBYTE version[] = "$VER: Opaque 0.2 (13.10.2001)";
+UBYTE version[] = "$VER: Opaque 0.3 (19.02.2006)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
 
@@ -217,7 +217,7 @@ BOOL GetOFFSCREENLAYERSPref()
 {
     static struct FileIControlPrefs loadprefs;
     struct IFFHandle 	    	    *iff;    
-    BOOL                      retval = FALSE;
+    BOOL                      retval = TRUE;
 
     if ((iff = AllocIFF()))
     {
@@ -248,7 +248,7 @@ BOOL GetOFFSCREENLAYERSPref()
 				icontrolprefs.ic_MetaDrag = ARRAY_TO_WORD(loadprefs.ic_MetaDrag);
 				return icontrolprefs.ic_Flags = ARRAY_TO_LONG(loadprefs.ic_Flags);
 				*/
-				if (ARRAY_TO_LONG(loadprefs.ic_Flags) & ICF_OFFSCREENLAYERS) retval = TRUE;
+				if ( ! (ARRAY_TO_LONG(loadprefs.ic_Flags) & ICF_OFFSCREENLAYERS) ) retval = FALSE;
 				/*
 				icontrolprefs.ic_WBtoFront = loadprefs.ic_WBtoFront;
 				icontrolprefs.ic_FrontToBack = loadprefs.ic_FrontToBack;
