@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,7 +48,7 @@
 
 /************************************************************************************/
 
-UBYTE version[] = "$VER: Opaque 0.3 (19.02.2006)";
+UBYTE version[] = "$VER: Opaque 0.4 (20.02.2006)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
 
@@ -749,7 +749,8 @@ static void HandleCx(void)
 		     disabled = FALSE;
         	     break;
 
-        	  case CXCMD_KILL:
+		  case CXCMD_UNIQUE:
+		  case CXCMD_KILL:
         	     quitme = TRUE;
         	     break;
 

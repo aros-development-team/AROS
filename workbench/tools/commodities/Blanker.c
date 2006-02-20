@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,7 +33,7 @@
 
 /************************************************************************************/
 
-UBYTE version[] = "$VER: Blanker 0.9 (02.10.2002)";
+UBYTE version[] = "$VER: Blanker 0.10 (20.02.2006)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,SECONDS=SEC/N/K,STARS=ST/N/K"
 
@@ -569,7 +569,8 @@ static void HandleCx(void)
 		     disabled = FALSE;
         	     break;
 
-        	  case CXCMD_KILL:
+		  case CXCMD_UNIQUE:
+		  case CXCMD_KILL:
         	     quitme = TRUE;
         	     break;
 
