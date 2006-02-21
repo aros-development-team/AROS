@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <workbench/startup.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <graphics/gfx.h>
@@ -16,6 +17,7 @@
 #include <proto/commodities.h>
 #include <proto/alib.h>
 #include <proto/locale.h>
+#include <proto/icon.h>
 
 #ifdef __AROS__
 #    include <aros/debug.h>
@@ -90,13 +92,14 @@ libTable[] =
     { &IntuitionBase, "intuition.library"   , 39L },
     { &GfxBase	    , "graphics.library"    , 39L },
     { &CxBase	    , "commodities.library" , 39L },
+    { &IconBase     , "icon.library"        , 39L },
     { NULL  	    	    	    	    	  }
 };
 
 #ifndef __MORPHOS__
 struct LocaleBase   	*LocaleBase    = NULL;
 #endif
-struct Library      	*GadToolsBase  = NULL;
+struct Library      	*IconBase      = NULL;
 struct Library      	*CxBase        = NULL;
 struct IntuitionBase 	*IntuitionBase = NULL;
 
@@ -269,27 +272,57 @@ static void OpenLibs(void)
 
 /************************************************************************************/
 
-static void GetArguments(void)
+static void GetArguments(int argc, char **argv)
 {
-    if (!(myargs = ReadArgs(ARG_TEMPLATE, args, 0)))
+    if (argc == 0)
     {
-	DosError();
+	struct WBStartup *wbmsg;
+	struct WBArg *wbarg;
+	struct DiskObject *dobj;
+	if ( (wbmsg = (struct WBStartup *)argv) )
+        {
+	    wbarg = wbmsg->sm_ArgList;
+	    if ( wbarg && wbarg->wa_Name && (dobj = GetDiskObject(wbarg->wa_Name) ) )
+	    {
+		const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
+		STRPTR s;
+		if ((s = FindToolType(toolarray, "CX_PRIORITY")))
+		{
+		    nb.nb_Pri = atol(s);
+		}
+		if ((s = FindToolType(toolarray, "SECONDS")))
+		{
+		    blankwait = atol(s);
+		}
+		if ((s = FindToolType(toolarray, "STARS")))
+		{
+		    num_stars = atol(s);
+		}		
+		FreeDiskObject(dobj);
+	    }
+	}    
     }
-    
-    if (args[ARG_PRI]) nb.nb_Pri = *(LONG *)args[ARG_PRI];
-
-    if (args[ARG_SEC]) blankwait = *(LONG *)args[ARG_SEC];
-
-    if (args[ARG_STARS])
+    else
     {
-    	num_stars = *(LONG *)args[ARG_STARS];
-	if (num_stars < 0)
+	if (!(myargs = ReadArgs(ARG_TEMPLATE, args, 0)))
 	{
-	    num_stars = 0;
-	} else if (num_stars > MAX_STARS)
-	{
-	    num_stars = MAX_STARS;
+	    DosError();
 	}
+    
+	if (args[ARG_PRI]) nb.nb_Pri = *(LONG *)args[ARG_PRI];
+
+	if (args[ARG_SEC]) blankwait = *(LONG *)args[ARG_SEC];
+
+	if (args[ARG_STARS]) num_stars = *(LONG *)args[ARG_STARS];
+    }	
+
+    if (num_stars < 0)
+    {
+	num_stars = 0;
+    }
+    else if (num_stars > MAX_STARS)
+    {
+	num_stars = MAX_STARS;
     }
 }
 
@@ -614,7 +647,7 @@ static void HandleAll(void)
 
 /************************************************************************************/
 
-int main(void)
+int main(int argc, char **argv)
 {
     Init();
     OpenLibs();
@@ -623,7 +656,7 @@ int main(void)
     nb.nb_Title = getCatalog(catalogPtr, MSG_BLANKER_CXTITLE);
     nb.nb_Descr = getCatalog(catalogPtr, MSG_BLANKER_CXDESCR);
 
-    GetArguments();
+    GetArguments(argc, argv);
     InitCX();
     HandleAll();
     Cleanup(0);
