@@ -2,7 +2,7 @@
 #define COMPILER_H
 
 #ifndef __AROS__
-#error "write compiler.h!"
+#define MREG(reg,type,var) type var = REG_##reg
 #endif
 
 #include <aros/asmcall.h>
@@ -10,7 +10,9 @@
 #define REGARGS(x) x
 #define ALIGNED
 #define REG(reg,var) var
+#ifndef MREG
 #define MREG(reg,type,var) 
+#endif
 
 #define LibCall
 #define ClassCall

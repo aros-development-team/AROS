@@ -32,7 +32,7 @@ DIRS       =
 
 #DEFINES = -D__MORPHOS_DIRECTCALL -DUSE_INLINE_STDARG -DDEBUG
 DEFINES = -D__MORPHOS_DIRECTCALL -DUSE_INLINE_STDARG
-INCLUDES= -I./ -I../include -I../../include
+INCLUDES= -I./include -I../include -I../../include
 
 #LDLIBS  = -labox -lmath -lc -lm -ldebug
 LDLIBS  = -labox -lmath -lc -lm
@@ -51,8 +51,13 @@ all: $(DIRS) $(DATATYPE)
 $(DATATYPE) : $(OBJS)
 	$(LD) -L/gg/morphos/lib -o $@ $(LDFLAGS) $^ $(LDLIBS)
 	protect $@ FLAGS=E SUB
-	copy $@ $(BCLASSDEST)
-	remlibs ${@F}
+#	copy $@ $(BCLASSDEST)
+#	remlibs ${@F}
+
+$(BASENAME): $(BASENAME).s
+	sc $? link nostartup noicons
+	delete $(BASENAME).lnk $(BASENAME).o
+	ed $(BASENAME)
 
 autodoc:
 	makedoc FILES $(SRCS) BEGIN "/************ " END "******" AUTODOC $(AUTODOC) VERBOSE
@@ -81,5 +86,13 @@ $(DIRS):
 #
 
 clean:
-	rm $(OBJS) $(DATATYPE)
+	-rm $(OBJS) $(DATATYPE)
 
+install:
+	strip -R .comment $(DATATYPE) -o MOSSYS:Classes/Datatypes/$(DATATYPE)
+	copy $(BASENAME) MOSSYS:Devs/Datatypes/
+	avail flush >nil:
+	adddatatypes $(BASENAME)
+
+archive: clean
+	lha -r u RAM:AmigaGuideDT // $(BASENAME) MOSSYS:Classes/Datatypes/$(DATATYPE)
