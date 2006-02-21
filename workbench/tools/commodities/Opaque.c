@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <workbench/startup.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <graphics/gfx.h>
@@ -17,6 +18,7 @@
 #include <proto/locale.h>
 #include <proto/alib.h>
 #include <proto/iffparse.h>
+#include <proto/icon.h>
 #include <prefs/prefhdr.h>
 #include <prefs/icontrol.h>
 
@@ -432,14 +434,37 @@ inline WORD WITHOUTACCEL(WORD raw) { if (ABS(raw) > ACCELERATOR_THRESH) return(r
 
 /************************************************************************************/
 
-static void GetArguments(void)
+static void GetArguments(int argc, char **argv)
 {
-    if (!(myargs = ReadArgs(ARG_TEMPLATE, args, 0)))
+    if (argc == 0)
     {
-	DosError();
+	struct WBStartup *wbmsg;
+	struct WBArg *wbarg;
+	struct DiskObject *dobj;
+	if ( (wbmsg = (struct WBStartup *)argv) )
+        {
+	    wbarg = wbmsg->sm_ArgList;
+	    if ( wbarg && wbarg->wa_Name && (dobj = GetDiskObject(wbarg->wa_Name) ) )
+	    {
+		const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
+		STRPTR s;
+		if ((s = FindToolType(toolarray, "CX_PRIORITY")))
+		{
+		    nb.nb_Pri = atol(s);
+		}
+		FreeDiskObject(dobj);
+	    }
+	}    
     }
+    else
+    {
+	if (!(myargs = ReadArgs(ARG_TEMPLATE, args, 0)))
+	{
+	    DosError();
+	}
     
-    if (args[ARG_PRI]) nb.nb_Pri = *(LONG *)args[ARG_PRI];
+	if (args[ARG_PRI]) nb.nb_Pri = *(LONG *)args[ARG_PRI];
+    }
 }
 
 /************************************************************************************/
@@ -785,7 +810,7 @@ static void HandleAll(void)
 
 /************************************************************************************/
 
-int main(void)
+int main(int argc, char **argv)
 {
     Init();
     OpenLibs();
@@ -794,7 +819,7 @@ int main(void)
     nb.nb_Title = getCatalog(catalogPtr, MSG_OPAQUE_CXTITLE);
     nb.nb_Descr = getCatalog(catalogPtr, MSG_OPAQUE_CXDESCR);
 
-    GetArguments();
+    GetArguments(argc, argv);
     InitCX();
     HandleAll();
     Cleanup(0);
