@@ -1,0 +1,640 @@
+## version $VER: Zune.catalog 0.1 (22.02.2006)
+## language français
+## codeset 0
+;
+;
+; buttonsp.c
+;-----------
+MSG_GENERAL
+Général
+;
+MSG_BACKGROUND_COLON
+Fond :
+;
+MSG_BACKGROUND_PRESSED
+Fond sélectionné
+;
+MSG_TEXT_BUTTONS
+Boutons texte
+;
+MSG_FRAME_COLON
+Cadre
+;
+MSG_FONT
+Fonte :
+;
+MSG_IMAGE_BUTTONS
+Boutons image
+;
+MSG_ADJUST_FRAME
+Ajuster le cadre
+;
+MSG_CHECKMARKS
+Coches
+;
+MSG_LOOK_COLON
+Aspect :
+;
+MSG_CHECKMARK
+Coche
+;
+MSG_RADIO_BUTTONS
+Boutons radio
+;
+MSG_RADIOBUTTON
+Bouton radio
+;
+MSG_LOOK
+Aspect
+;
+MSG_H
+H
+;
+MSG_V
+V
+;
+MSG_SPACING
+Espacement
+;
+;=============================
+; cyclesp.c
+;----------
+MSG_BELOW
+dessous
+;
+MSG_ON_ACTIVE
+sur la sélection
+;
+MSG_CYCLE_GADGET_DESIGN
+Aspect
+;
+MSG_CYCLE
+Cycle
+;
+MSG_POPUP_MENU_CONTROL
+Contrôle
+;
+MSG_POSITION
+Position :
+;
+MSG_LEVEL
+Niveau :
+;
+MSG_SPEED
+Vitesse :
+;
+MSG_POPUP_MENU_DESIGN
+Design
+;
+MSG_FRAME
+Cadre
+;
+MSG_ADJUST_BACKGROUND
+Ajuster le fond
+;
+MSG_BACKGROUND
+Fond
+;
+MSG_RECESSED_ENTRIES
+Encastré :
+;
+;=============================
+; groupsp.c
+;__________
+MSG_ABOVE
+dessus
+;
+MSG_CENTERED
+centré
+;
+MSG_STANDARD
+normal
+;
+MSG_HILITE
+surligné
+;
+MSG_3D
+3d
+;
+MSG_OUTLINE
+détouré
+;
+MSG_TITLE
+Titre
+;
+MSG_COLOR
+Couleur :
+;
+MSG_HORIZONTAL
+Horizontal :
+;
+MSG_VERTICAL
+Vertical :
+;
+MSG_REGISTER
+Entourage
+;
+MSG_DEFAULT_SIZE_TRUNCATE_TITLES
+Tronquer les titres :
+;
+MSG_NORMAL
+Normal
+;
+MSG_VIRTUAL
+Virtuel
+;
+MSG_FRAMED
+Encadré
+;
+MSG_PAGE
+Page
+;
+;=============================
+; listviewsp.c
+;-------------
+MSG_SHIFTED
+décalé
+;
+MSG_ALWAYS
+toujours
+;
+MSG_LINEAR
+linéaire
+;
+MSG_MIXED
+mélangé
+;
+MSG_CONTROL
+Contrôle
+;
+MSG_MULTI
+Multi :
+;
+MSG_REFRESH
+Rafraîchissement :
+;
+MSG_SMOOTH
+Douceur :
+;
+MSG_FONTS
+Fontes
+;
+MSG_NORMAL_COLON
+Normal :
+;
+MSG_FIXED
+Fixé :
+;
+MSG_LEADING
+En tête
+;
+MSG_DESIGN
+Design
+;
+MSG_INPUT_LISTS
+Listes \nactives :
+;
+MSG_READONLY_LISTS
+Listes \npassives :
+;
+MSG_CURSOR
+Curseur
+;
+MSG_ACTIVE
+Actif :
+;
+MSG_ACTIVE_SELECTED
+Actif et\nSelectionné :
+;
+MSG_SELECTED
+Selectionné :
+;
+;=============================
+; navigationp.c
+;______________
+MSG_ALWAYS_SOLID
+toujours solide
+;
+MSG_GHOSTED_ON_BOX
+flouté au dessus
+;
+MSG_GHOSTED_OUTSIDE_BOX
+flouté en dehors
+;
+MSG_ALWAYS_GHOSTED
+toujours flouté
+;
+MSG_SHOW_FRAMES
+voir les cadres
+;
+MSG_SHOW_OBJECTS
+voir les objets
+;
+MSG_KL_PRESS
+Presser :
+;
+MSG_KL_TOGGLE
+Échanger:
+;
+MSG_KL_UP
+Haut :
+;
+MSG_KL_DOWN
+Bas :
+;
+MSG_KL_PAGE_UP
+Page précédente :
+;
+MSG_KL_PAGE_DOWN
+Page suivante :
+;
+MSG_KL_TOP
+Début :
+;
+MSG_KL_BOTTOM
+Fin :
+;
+MSG_KL_LEFT
+Gauche :
+;
+MSG_KL_RIGHT
+Droite :
+;
+MSG_KL_WORD_LEFT
+Gauche du Mot :
+;
+MSG_KL_WORD_RIGHT
+Droite du mot:
+;
+MSG_KL_LINE_START
+Début de ligne :
+;
+MSG_KL_LINE_END
+Fin de ligne :
+;
+MSG_KL_NEXT_GADGET
+Gadget suivant :
+;
+MSG_KL_PREV_GADGET
+Gadget suivant :
+;
+MSG_KL_GADGET_OFF
+Pas de gadget :
+;
+MSG_KL_CLOSE_WINDOW
+Fermer la fenêtre :
+;
+MSG_KL_NEXT_WINDOW
+Fenêtre suivante :
+;
+MSG_KL_PREV_WINDOW
+Fenêtre précédente :
+;
+MSG_KL_HELP
+Aide :
+;
+MSG_KL_POPUP
+Popup :
+;
+MSG_DRAG_DROP
+Glisser & Déposer
+;
+MSG_LEFT_BUTTON
+Bouton gauche :
+;
+MSG_MIDDLE_BUTTON
+Bouton central:
+;
+MSG_AUTOSTART
+Démarrage :
+;
+MSG_PIXEL
+%ld pixel
+;
+MSG_BALANCING_GROUPS
+Groupes balancés
+;
+MSG_EXAMPLE
+Example :
+;
+MSG_TRY_WITH
+Essayer avec
+;
+MSG_SHIFT
+shift
+;
+MSG_TOO
+aussi !
+;
+MSG_KEYBOARD_CONTROL
+Clavier
+;
+MSG_COLOR_ACTIVE_OBJ
+Couleur de l'objet actif :
+;
+MSG_NEWLOOK
+newlook
+;
+MSG_CUSTOM
+custom
+;
+MSG_ARROWS
+Flêches
+;
+MSG_UP
+haut
+;
+MSG_ARROW_UP
+Flêche haut
+;
+MSG_ARROW_DOWN
+Flêche bas
+;
+MSG_DOWN
+bas
+;
+MSG_LEFT
+gauche
+;
+MSG_ARROW_LEFT
+Flêche gauche
+;
+MSG_ARROW_RIGHT
+Flêche droite
+;
+MSG_RIGHT
+droite
+;
+MSG_BAR
+Barre
+;
+MSG_GADGET_TYPE
+Design :
+;
+MSG_SCROLLER
+Ascenseur
+;
+MSG_KNOB
+Poignée
+;
+MSG_ARRANGEMENT
+Arrangement
+;
+;=============================
+; slidersp.c
+;-----------
+MSG_CONTAINER_DESIGN
+Conteneur
+;
+MSG_KNOB_DESIGN
+Poignée
+;
+MSG_EXAMPLE_SLIDERS
+Exemple
+;
+;=============================
+; specialp.c
+;-----------
+MSG_TEXT_FIELDS
+Champs de texte
+;
+MSG_EXAMPLE_TEXTFIELD
+Exemple de champ de texte
+;
+MSG_PROGRESS_INDICATOR
+Barre de progression
+;
+MSG_DEVICE_IMAGES
+Périphériques
+;
+MSG_DRAWER
+Répertoire
+;
+MSG_HARDDISK
+Disque dur
+;
+MSG_DISK
+Disque
+;
+MSG_RAM
+RAM
+;
+MSG_VOLUME
+Volume
+;
+MSG_NETWORK
+Réseau
+;
+MSG_ASSIGN
+Assign
+;
+MSG_TAPE_IMAGES
+Lecteur
+;
+MSG_TAPE_PLAY
+lire
+;
+MSG_TAPE_PLAYBACK
+rembobiner
+;
+MSG_TAPE_PAUSE
+pause
+;
+MSG_TAPE_STOP
+stop
+;
+MSG_TAPE_RECORD
+enregistrer
+;
+MSG_TAPE_UP
+arrière
+;
+MSG_TAPE_DOWN
+avant
+;
+;=============================
+; stringsp.c
+;-----------
+MSG_STRING_FRAME
+Cadre
+;
+MSG_SPECIAL_POPUP_BUTTONS
+Boutons spéciaux
+;
+MSG_POPUP
+Popup
+;
+MSG_DEFAULT
+Par défaut
+;
+MSG_FILE
+Fichier
+;
+MSG_POPUP_FILE
+Popup fichier
+;
+MSG_POPUP_DRAWER
+Popup répertoire
+;
+MSG_INACTIVE_STRING_COLORS
+Inactif
+;
+MSG_TEXT
+Texte
+;
+MSG_ACTIVE_STRING_COLORS
+Actif
+;
+MSG_MARKED_STRING_COLORS
+Sélection
+;
+MSG_EXAMPLE_STRING_GADGET
+Exemple de gadget texte
+;
+;=============================
+; windowp.c
+;----------
+MSG_FORGET_ON_EXIT
+oublier
+;
+MSG_REMEMBER_ON_EXIT
+se souvenir
+;
+MSG_SAVE_ON_EXIT
+sauver
+;
+MSG_SMART
+smart
+;
+MSG_SIMPLE
+simple
+;
+MSG_WITHOUT_CLEAR
+conserver
+;
+MSG_WITH_CLEAR
+effacer
+;
+MSG_POSITIONS
+Positions :
+;
+MSG_REDRAW
+Redessiner :
+;
+MSG_TINY
+Petit :
+;
+MSG_BIG
+Grand :
+;
+MSG_WINDOW
+Fenêtre
+;
+MSG_REQUESTER
+Requête
+;
+MSG_L
+L
+;
+MSG_T
+T
+;
+MSG_R
+R
+;
+MSG_B
+B
+;
+;=============================
+; zune.c
+;-------
+MSG_WINTITLE1
+Zune - Préférences générales
+;
+MSG_WINTITLE2
+Zune - Prefs pour : %s
+;
+MSG_MEN_PROJECT
+Projet
+;
+MSG_MEN_OPEN
+Ouvrir ...
+;
+MSG_MEN_OPEN_SC
+O
+;
+MSG_MEN_APPEND
+Ajouter à ...
+;
+MSG_MEN_SAVEAS
+Sauver sous ...
+;
+MSG_MEN_SAVEAS_SC
+A
+;
+MSG_MEN_ABOUT
+À propos de Zune ...
+;
+MSG_MEN_ABOUT_SC
+?
+;
+MSG_MEN_QUIT
+Quitter
+;
+MSG_MEN_QUIT_SC
+Q
+;
+MSG_FRAME_CLIPBOARD
+Cadre Clipboard
+;
+MSG_IMAGE_CLIPBOARD
+Clipboard image
+;
+MSG_GAD_TEST
+_Test
+;
+MSG_GAD_SAVE
+_Sauver
+;
+MSG_GAD_USE
+_Utiliser
+;
+MSG_GAD_CANCEL
+_Annuler
+;
+MSG_DSC_WINDOWS
+Fenêtres
+;
+MSG_DSC_GROUPS
+Groupes
+;
+MSG_DSC_BUTTONS
+Boutons
+;
+MSG_DSC_CYCLES
+Cycles
+;
+MSG_DSC_SLIDERS
+Glissières
+;
+MSG_DSC_SCROLLBARS
+Ascenseurs
+;
+MSG_DSC_LISTVIEWS
+Listes
+;
+MSG_DSC_STRINGS
+Textes
+;
+MSG_DSC_NAVIGATION
+Navigation
+;
+MSG_DSC_SPECIAL
+Spécial
+;
+;=============================
+; zunestuff.c
+;------------
+MSG_ADJUST_PEN
+Crayon
+;
