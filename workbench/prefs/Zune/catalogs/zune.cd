@@ -1,0 +1,636 @@
+;
+; buttonsp.c
+;-----------
+MSG_GENERAL (//)
+General
+;
+MSG_BACKGROUND_COLON (//)
+Background:
+;
+MSG_BACKGROUND_PRESSED (//)
+Background in\npressed state:
+;
+MSG_TEXT_BUTTONS (//)
+Text Buttons
+;
+MSG_FRAME_COLON (//)
+Frame:
+;
+MSG_FONT (//)
+Font:
+;
+MSG_IMAGE_BUTTONS (//)
+Image Buttons
+;
+MSG_ADJUST_FRAME (//)
+Adjust Frame
+;
+MSG_CHECKMARKS (//)
+Checkmarks
+;
+MSG_LOOK_COLON (//)
+Look:
+;
+MSG_CHECKMARK (//)
+Checkmark
+;
+MSG_RADIO_BUTTONS (//)
+Radio Buttons
+;
+MSG_RADIOBUTTON (//)
+Radiobutton
+;
+MSG_LOOK (//)
+Look
+;
+MSG_H (//)
+H
+;
+MSG_V (//)
+V
+;
+MSG_SPACING (//)
+Spacing
+;
+;=============================
+; cyclesp.c
+;----------
+MSG_BELOW (//)
+below
+;
+MSG_ON_ACTIVE (//)
+on active
+;
+MSG_CYCLE_GADGET_DESIGN (//)
+Cycle Gadget Design
+;
+MSG_CYCLE (//)
+Cycle
+;
+MSG_POPUP_MENU_CONTROL (//)
+Popup Menu Control
+;
+MSG_POSITION (//)
+Position:
+;
+MSG_LEVEL (//)
+Level:
+;
+MSG_SPEED (//)
+Speed:
+;
+MSG_POPUP_MENU_DESIGN (//)
+Popup Menu Design
+;
+MSG_FRAME (//)
+Frame
+;
+MSG_ADJUST_BACKGROUND (//)
+Adjust Background
+;
+MSG_BACKGROUND (//)
+Background
+;
+MSG_RECESSED_ENTRIES (//)
+Recessed Entries:
+;
+;=============================
+; groupsp.c
+;__________
+MSG_ABOVE (//)
+above
+;
+MSG_CENTERED (//)
+centered
+;
+MSG_STANDARD (//)
+standard
+;
+MSG_HILITE (//)
+hilite
+;
+MSG_3D (//)
+3d
+;
+MSG_OUTLINE (//)
+outline
+;
+MSG_TITLE (//)
+Title
+;
+MSG_COLOR (//)
+Color:
+;
+MSG_HORIZONTAL (//)
+Horizontal:
+;
+MSG_VERTICAL (//)
+Vertical:
+;
+MSG_REGISTER (//)
+Register
+;
+MSG_DEFAULT_SIZE_TRUNCATE_TITLES (//)
+Default size truncate titles:
+;
+MSG_NORMAL (//)
+Normal
+;
+MSG_VIRTUAL (//)
+Virtual
+;
+MSG_FRAMED (//)
+Framed
+;
+MSG_PAGE (//)
+Page
+;
+;=============================
+; listviewsp.c
+;-------------
+MSG_SHIFTED (//)
+shifted
+;
+MSG_ALWAYS (//)
+always
+;
+MSG_LINEAR (//)
+linear
+;
+MSG_MIXED (//)
+mixed
+;
+MSG_CONTROL (//)
+Control
+;
+MSG_MULTI (//)
+Multi:
+;
+MSG_REFRESH (//)
+Refresh:
+;
+MSG_SMOOTH (//)
+Smooth:
+;
+MSG_FONTS (//)
+Fonts
+;
+MSG_NORMAL_COLON (//)
+Normal:
+;
+MSG_FIXED (//)
+Fixed:
+;
+MSG_LEADING (//)
+Leading
+;
+MSG_DESIGN (//)
+Design
+;
+MSG_INPUT_LISTS (//)
+Input \nLists:
+;
+MSG_READONLY_LISTS (//)
+Readonly \nLists:
+;
+MSG_CURSOR (//)
+Cursor
+;
+MSG_ACTIVE (//)
+Active:
+;
+MSG_ACTIVE_SELECTED (//)
+Active &\nSelected:
+;
+MSG_SELECTED (//)
+Selected:
+;
+;=============================
+; navigationp.c
+;______________
+MSG_ALWAYS_SOLID (//)
+always solid
+;
+MSG_GHOSTED_ON_BOX (//)
+ghosted on box
+;
+MSG_GHOSTED_OUTSIDE_BOX (//)
+ghosted outside box
+;
+MSG_ALWAYS_GHOSTED (//)
+always ghosted
+;
+MSG_SHOW_FRAMES (//)
+show frames
+;
+MSG_SHOW_OBJECTS (//)
+show objects
+;
+MSG_KL_PRESS (//)
+Press:
+;
+MSG_KL_TOGGLE (//)
+Toggle:
+;
+MSG_KL_UP (//)
+Up:
+;
+MSG_KL_DOWN (//)
+Down:
+;
+MSG_KL_PAGE_UP (//)
+Page up:
+;
+MSG_KL_PAGE_DOWN (//)
+Page down:
+;
+MSG_KL_TOP (//)
+Top:
+;
+MSG_KL_BOTTOM (//)
+Bottom:
+;
+MSG_KL_LEFT (//)
+Left:
+;
+MSG_KL_RIGHT (//)
+Right:
+;
+MSG_KL_WORD_LEFT (//)
+Word left:
+;
+MSG_KL_WORD_RIGHT (//)
+Word right:
+;
+MSG_KL_LINE_START (//)
+Line start:
+;
+MSG_KL_LINE_END (//)
+Line end:
+;
+MSG_KL_NEXT_GADGET (//)
+Next gadget:
+;
+MSG_KL_PREV_GADGET (//)
+Prev. gadget:
+;
+MSG_KL_GADGET_OFF (//)
+Gadget off:
+;
+MSG_KL_CLOSE_WINDOW (//)
+Close window:
+;
+MSG_KL_NEXT_WINDOW (//)
+Next window:
+;
+MSG_KL_PREV_WINDOW (//)
+Prev. window:
+;
+MSG_KL_HELP (//)
+Help:
+;
+MSG_KL_POPUP (//)
+Popup:
+;
+MSG_DRAG_DROP (//)
+Drag & Drop
+;
+MSG_LEFT_BUTTON (//)
+Left Button:
+;
+MSG_MIDDLE_BUTTON (//)
+Middle Button:
+;
+MSG_AUTOSTART (//)
+Autostart:
+;
+MSG_PIXEL (//)
+%ld pixel
+;
+MSG_BALANCING_GROUPS (//)
+Balancing Groups
+;
+MSG_EXAMPLE (//)
+Example:
+;
+MSG_TRY_WITH (//)
+Try with
+;
+MSG_SHIFT (//)
+shift
+;
+MSG_TOO (//)
+too!
+;
+MSG_KEYBOARD_CONTROL (//)
+Keyboard Control
+;
+MSG_COLOR_ACTIVE_OBJ (//)
+Color of active object:
+;
+MSG_NEWLOOK (//)
+newlook
+;
+MSG_CUSTOM (//)
+custom
+;
+MSG_ARROWS (//)
+Arrows
+;
+MSG_UP (//)
+up
+;
+MSG_ARROW_UP (//)
+Arrow up
+;
+MSG_ARROW_DOWN (//)
+Arrow down
+;
+MSG_DOWN (//)
+down
+;
+MSG_LEFT (//)
+left
+;
+MSG_ARROW_LEFT (//)
+Arrow left
+;
+MSG_ARROW_RIGHT (//)
+Arrow right
+;
+MSG_RIGHT (//)
+right
+;
+MSG_BAR (//)
+Bar
+;
+MSG_GADGET_TYPE (//)
+Gadget Type:
+;
+MSG_SCROLLER (//)
+Scroller
+;
+MSG_KNOB (//)
+Knob
+;
+MSG_ARRANGEMENT (//)
+Arrangement
+;
+;=============================
+; slidersp.c
+;-----------
+MSG_CONTAINER_DESIGN (//)
+Container Design
+;
+MSG_KNOB_DESIGN (//)
+Knob Design
+;
+MSG_EXAMPLE_SLIDERS (//)
+Example Sliders
+;
+;=============================
+; specialp.c
+;-----------
+MSG_TEXT_FIELDS (//)
+Text fields
+;
+MSG_EXAMPLE_TEXTFIELD (//)
+Example Textfield
+;
+MSG_PROGRESS_INDICATOR (//)
+Progress Indicator
+;
+MSG_DEVICE_IMAGES (//)
+Device Images
+;
+MSG_DRAWER (//)
+Drawer
+;
+MSG_HARDDISK (//)
+Harddisk
+;
+MSG_DISK (//)
+Disk
+;
+MSG_RAM (//)
+RAM
+;
+MSG_VOLUME (//)
+Volume
+;
+MSG_NETWORK (//)
+Network
+;
+MSG_ASSIGN (//)
+Assign
+;
+MSG_TAPE_IMAGES (//)
+Tape Images
+;
+MSG_TAPE_PLAY (//)
+Tape play
+;
+MSG_TAPE_PLAYBACK (//)
+Tape playback
+;
+MSG_TAPE_PAUSE (//)
+Tape pause
+;
+MSG_TAPE_STOP (//)
+Tape stop
+;
+MSG_TAPE_RECORD (//)
+Tape record
+;
+MSG_TAPE_UP (//)
+Tape up
+;
+MSG_TAPE_DOWN (//)
+Tape down
+;
+;=============================
+; stringsp.c
+;-----------
+MSG_STRING_FRAME (//)
+String Frame
+;
+MSG_SPECIAL_POPUP_BUTTONS (//)
+Special Popup Buttons
+;
+MSG_POPUP (//)
+Popup
+;
+MSG_DEFAULT (//)
+Default
+;
+MSG_FILE (//)
+File
+;
+MSG_POPUP_FILE (//)
+Popup file
+;
+MSG_POPUP_DRAWER (//)
+Popup drawer
+;
+MSG_INACTIVE_STRING_COLORS (//)
+Inactive String Colors
+;
+MSG_TEXT (//)
+Text
+;
+MSG_ACTIVE_STRING_COLORS (//)
+Active String Colors
+;
+MSG_MARKED_STRING_COLORS (//)
+Marked String Colors
+;
+MSG_EXAMPLE_STRING_GADGET (//)
+Example String Gadget
+;
+;=============================
+; windowp.c
+;----------
+MSG_FORGET_ON_EXIT (//)
+forget on exit
+;
+MSG_REMEMBER_ON_EXIT (//)
+remember on exit
+;
+MSG_SAVE_ON_EXIT (//)
+save on exit
+;
+MSG_SMART (//)
+smart
+;
+MSG_SIMPLE (//)
+simple
+;
+MSG_WITHOUT_CLEAR (//)
+without clear
+;
+MSG_WITH_CLEAR (//)
+with clear
+;
+MSG_POSITIONS (//)
+Positions:
+;
+MSG_REDRAW (//)
+Redraw:
+;
+MSG_TINY (//)
+Tiny:
+;
+MSG_BIG (//)
+Big:
+;
+MSG_WINDOW (//)
+Window
+;
+MSG_REQUESTER (//)
+Requester
+;
+MSG_L (//)
+L
+;
+MSG_T (//)
+T
+;
+MSG_R (//)
+R
+;
+MSG_B (//)
+B
+;
+;=============================
+; zune.c
+;-------
+MSG_WINTITLE1 (//)
+Zune - Global Prefs
+;
+MSG_WINTITLE2 (//)
+Zune - Prefs for : %s
+;
+MSG_MEN_PROJECT (//)
+Project
+;
+MSG_MEN_OPEN (//)
+Open ...
+;
+MSG_MEN_OPEN_SC (//)
+O
+;
+MSG_MEN_APPEND (//)
+Append ...
+;
+MSG_MEN_SAVEAS (//)
+Save As ...
+;
+MSG_MEN_SAVEAS_SC (//)
+A
+;
+MSG_MEN_ABOUT (//)
+About Zune ...
+;
+MSG_MEN_ABOUT_SC (//)
+?
+;
+MSG_MEN_QUIT (//)
+Quit
+;
+MSG_MEN_QUIT_SC (//)
+Q
+;
+MSG_FRAME_CLIPBOARD (//)
+Frame Clipboard
+;
+MSG_IMAGE_CLIPBOARD (//)
+Image Clipboard
+;
+MSG_GAD_TEST (//)
+_Test
+;
+MSG_GAD_SAVE (//)
+_Save
+;
+MSG_GAD_USE (//)
+_Use
+;
+MSG_GAD_CANCEL (//)
+_Cancel
+;
+MSG_DSC_WINDOWS (//)
+Windows
+;
+MSG_DSC_GROUPS (//)
+Groups
+;
+MSG_DSC_BUTTONS (//)
+Buttons
+;
+MSG_DSC_CYCLES (//)
+Cycles
+;
+MSG_DSC_SLIDERS (//)
+Sliders
+;
+MSG_DSC_SCROLLBARS (//)
+Scrollbars
+;
+MSG_DSC_LISTVIEWS (//)
+Listviews
+;
+MSG_DSC_STRINGS (//)
+Strings
+;
+MSG_DSC_NAVIGATION (//)
+Navigation
+;
+MSG_DSC_SPECIAL (//)
+Special
+;
+;=============================
+; zunestuff.c
+;------------
+MSG_ADJUST_PEN (//)
+Adjust Pen
+;

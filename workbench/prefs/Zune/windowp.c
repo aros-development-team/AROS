@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,33 +41,24 @@ struct MUI_WindowPData
     Object *spacing_bottom_slider;
 };
 
-static CONST_STRPTR positions_labels[] =
-{
-    "forget on exit",
-    "remember on exit",
-    "save on exit",
-    NULL,
-};
-
-static CONST_STRPTR refresh_labels[] =
-{
-    "smart",
-    "simple",
-    NULL,
-};
-
-static CONST_STRPTR redraw_labels[] =
-{
-    "without clear",
-    "with clear",
-    NULL,
-};
-
+static CONST_STRPTR positions_labels[4];
+static CONST_STRPTR refresh_labels[3];
+static CONST_STRPTR redraw_labels[3];
 
 static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowPData *data;
     struct MUI_WindowPData d;
+
+    positions_labels[0] = _(MSG_FORGET_ON_EXIT);
+    positions_labels[1] = _(MSG_REMEMBER_ON_EXIT);
+    positions_labels[2] = _(MSG_SAVE_ON_EXIT);
+
+    refresh_labels[0] = _(MSG_SMART);
+    refresh_labels[1] = _(MSG_SIMPLE);
+    
+    redraw_labels[0] = _(MSG_WITHOUT_CLEAR);
+    redraw_labels[1] = _(MSG_WITH_CLEAR);
 
     obj = (Object *) DoSuperNewTags
     (
@@ -76,29 +67,29 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         Child, (IPTR) HGroup,
 	   Child, (IPTR) VGroup,
 	       Child, (IPTR) VGroup,
-                   GroupFrameT("Control"),
+                   GroupFrameT(_(MSG_CONTROL)),
 		   Child, (IPTR) VSpace(0),
 		   Child, (IPTR) ColGroup(2),
 		      MUIA_Group_VertSpacing, 2,
-		      Child, (IPTR) Label("Positions:"),
-		      Child, (IPTR) (d.positions_cycle = MakeCycle("Positions:", positions_labels)),
-		      Child, (IPTR) Label("Refresh:"),
-		      Child, (IPTR) (d.refresh_cycle = MakeCycle("Refresh:", refresh_labels)),
-		      Child, (IPTR) Label("Redraw:"),
-		      Child, (IPTR) (d.redraw_cycle = MakeCycle("Redraw:", redraw_labels)),
+		      Child, (IPTR) Label(_(MSG_POSITIONS)),
+		      Child, (IPTR) (d.positions_cycle = MakeCycle(_(MSG_POSITIONS), positions_labels)),
+		      Child, (IPTR) Label(_(MSG_REFRESH)),
+		      Child, (IPTR) (d.refresh_cycle = MakeCycle(_(MSG_REFRESH), refresh_labels)),
+		      Child, (IPTR) Label(_(MSG_REDRAW)),
+		      Child, (IPTR) (d.redraw_cycle = MakeCycle(_(MSG_REDRAW), redraw_labels)),
 		      End,
 		   Child, (IPTR) VSpace(0),
 		   End,
    	       Child, (IPTR) VGroup,
-   		   GroupFrameT("Fonts"),
+   		   GroupFrameT(_(MSG_FONTS)),
 	           Child, (IPTR) VSpace(0),
 		   Child, (IPTR) ColGroup(2),
 		       MUIA_Group_VertSpacing, 2,
-   		       Child, (IPTR) Label("Normal:"),
+   		       Child, (IPTR) Label(_(MSG_NORMAL_COLON)),
    		       Child, (IPTR) (d.font_normal_string = MakePopfont(FALSE)),
-   		       Child, (IPTR) Label("Tiny:"),
+   		       Child, (IPTR) Label(_(MSG_TINY)),
    		       Child, (IPTR) (d.font_tiny_string = MakePopfont(FALSE)),
-   		       Child, (IPTR) Label("Big:"),
+   		       Child, (IPTR) Label(_(MSG_BIG)),
    		       Child, (IPTR) (d.font_big_string = MakePopfont(FALSE)),
                     End,
                     Child, (IPTR) VSpace(0),
@@ -106,30 +97,30 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	        End,
 	     Child, (IPTR) VGroup,
                 Child, (IPTR) HGroup,
-		   GroupFrameT("Background"),
+		   GroupFrameT(_(MSG_BACKGROUND)),
 		   MUIA_Group_SameWidth, TRUE,
 		   Child, (IPTR) VGroup,
 		      MUIA_Group_VertSpacing, 1,
 		      Child, (IPTR) (d.background_window_popimage = MakeBackgroundPopimage()),
-		      Child, (IPTR) CLabel("Window"),
+		      Child, (IPTR) CLabel(_(MSG_WINDOW)),
 		      End,
 		   Child, (IPTR) VGroup,
 		      MUIA_Group_VertSpacing, 1,
 		      Child, (IPTR) (d.background_requester_popimage = MakeBackgroundPopimage()),
-		      Child, (IPTR) CLabel("Requester"),
+		      Child, (IPTR) CLabel(_(MSG_REQUESTER)),
 	              End,
 		   End,
 	        Child, (IPTR) ColGroup(4),
-                   GroupFrameT("Spacing"),
+                   GroupFrameT(_(MSG_SPACING)),
 			       MUIA_Group_Spacing, 2,
-			       Child, (IPTR) Label("L"),
+			       Child, (IPTR) Label(_(MSG_L)),
 			       Child, (IPTR) (d.spacing_left_slider = MakeSpacingSlider()),
 			       Child, (IPTR) (d.spacing_top_slider = MakeSpacingSlider()),
-			       Child, (IPTR) Label("T"),
-			       Child, (IPTR) Label("R"),
+			       Child, (IPTR) Label(_(MSG_T)),
+			       Child, (IPTR) Label(_(MSG_R)),
 			       Child, (IPTR) (d.spacing_right_slider = MakeSpacingSlider()),
 			       Child, (IPTR) (d.spacing_bottom_slider = MakeSpacingSlider()),
-			       Child, (IPTR) Label("B"),
+			       Child, (IPTR) Label(_(MSG_B)),
 			       End,
 		End,
 	    End,

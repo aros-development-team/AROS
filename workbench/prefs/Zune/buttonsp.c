@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -49,48 +49,48 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
             Child, (IPTR) VGroup, /* Text Buttons */
 	        MUIA_Weight, 130,
                 Child, (IPTR) ColGroup(2),
-                    GroupFrameT("General"),                    
+                    GroupFrameT(_(MSG_GENERAL)),                    
 	            MUIA_Group_SameHeight, TRUE,
 	            MUIA_Group_VertSpacing, 1,
-                    Child, (IPTR) FreeLabel("Background:"),
+                    Child, (IPTR) FreeLabel(_(MSG_BACKGROUND_COLON)),
                     Child, (IPTR) (d.text_background_popimage = MakeBackgroundPopimage()),
 	Child, RectangleObject, MUIA_MaxHeight, 0, End,
 	Child, HGroup,
 	Child, RectangleObject, MUIA_MaxHeight, 0, MUIA_FixWidth, 28, End,
 	Child, RectangleObject, MUIA_MaxHeight, 0, End,
 	End,
-                    Child, (IPTR) FreeLabel("Background in\npressed state:"),
+                    Child, (IPTR) FreeLabel(_(MSG_BACKGROUND_PRESSED)),
                     Child, (IPTR) (d.text_selbackground_popimage = MakeBackgroundPopimage()),
                     End,
                 Child, (IPTR) ColGroup(2),
-                    GroupFrameT("Text Buttons"),
+                    GroupFrameT(_(MSG_TEXT_BUTTONS)),
 	            MUIA_Group_VertSpacing, 2,
-                    Child, (IPTR) FreeLabel("Frame:"),
+                    Child, (IPTR) FreeLabel(_(MSG_FRAME_COLON)),
                     Child, (IPTR) (d.button_popframe = MakePopframe()),
-                    Child, (IPTR) Label("Font:"),
+                    Child, (IPTR) Label(_(MSG_FONT)),
                     Child, (IPTR) (d.text_font_string = MakePopfont(FALSE)),
                 End,
             End, /* Text Buttons */
             Child, (IPTR) VGroup, /* other buttons */
                 Child, (IPTR) HGroup, /* Image Buttons */
-                    GroupFrameT("Image Buttons"),
+                    GroupFrameT(_(MSG_IMAGE_BUTTONS)),
                     
                     Child, (IPTR) HSpace(0),
-                    Child, (IPTR) FreeLabel("Frame:"),
+                    Child, (IPTR) FreeLabel(_(MSG_FRAME_COLON)),
                     Child, (IPTR) (d.imagebutton_popframe = MUI_NewObject
                     (
                         MUIC_Popframe,
                         MUIA_CycleChain,          1,
                         MUIA_FixWidth,            28,
-                        MUIA_Window_Title, (IPTR) "Adjust Frame",
+                        MUIA_Window_Title, (IPTR) _(MSG_ADJUST_FRAME),
                         TAG_DONE
                     )),
                     Child, (IPTR) HSpace(0),
                 End, /* Image Buttons */
                 Child, (IPTR) HGroup, /* Checkmarks */
-                    GroupFrameT("Checkmarks"),
+                    GroupFrameT(_(MSG_CHECKMARKS)),
                     Child, (IPTR) HSpace(0),
-                    Child, (IPTR) FreeLabel("Look:"),
+                    Child, (IPTR) FreeLabel(_(MSG_LOOK_COLON)),
                     Child, (IPTR) (d.checkmark_look_popimage = MUI_NewObject
                     (
                         MUIC_Popimage,
@@ -100,13 +100,13 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                         MUIA_MaxHeight,              28,
                         MUIA_Imagedisplay_FreeHoriz, FALSE,
                         MUIA_Imagedisplay_FreeVert,  FALSE,
-                        MUIA_Window_Title,           (IPTR) "Checkmark",
+                        MUIA_Window_Title,           (IPTR) _(MSG_CHECKMARK),
                         TAG_DONE
                     )),
                     Child, (IPTR) HSpace(0),
                     End, /* Checkmarks */
                 Child, (IPTR) HGroup, /* Radio Buttons */
-                    GroupFrameT("Radio Buttons"),
+                    GroupFrameT(_(MSG_RADIO_BUTTONS)),
                     /* MUIA_Group_SameHeight, TRUE, */
                     
 	            Child, (IPTR) HSpace(0),
@@ -122,21 +122,21 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			    MUIA_Weight, 300,
                             MUIA_Imagedisplay_FreeHoriz, FALSE,
                             MUIA_Imagedisplay_FreeVert, FALSE,
-                            MUIA_Window_Title, (IPTR)"Radiobutton",
+                            MUIA_Window_Title, (IPTR) _(MSG_RADIOBUTTON),
                             TAG_DONE
                         )),
-	                Child, (IPTR) CLabel("Look"),
+	                Child, (IPTR) CLabel(_(MSG_LOOK)),
                     End,
                     Child, (IPTR) HSpace(4),
                     Child, (IPTR) ColGroup(2),
                         MUIA_Group_VertSpacing, 1,
                         MUIA_Group_HorizSpacing, 2,
-                        Child, (IPTR) Label("H"),
+                        Child, (IPTR) Label(_(MSG_H)),
                         Child, (IPTR) (d.spacing_horiz_slider = MakeSpacingSlider()),
-                        Child, (IPTR) Label("V"),
+                        Child, (IPTR) Label(_(MSG_V)),
                         Child, (IPTR) (d.spacing_vert_slider = MakeSpacingSlider()),
                         Child, (IPTR) HVSpace,
-                        Child, (IPTR) CLabel("Spacing"),
+                        Child, (IPTR) CLabel(_(MSG_SPACING)),
                         End, /* ColGroup */
                     Child, (IPTR) HSpace(0),
                     End, /* Radio Buttons */

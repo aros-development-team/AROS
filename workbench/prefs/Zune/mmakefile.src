@@ -5,12 +5,12 @@
 include $(TOP)/config/make.cfg
 
 FILES  := zune zunestuff windowp buttonsp groupsp cyclesp slidersp \
-scrollbarsp listviewsp stringsp specialp navigationp
+scrollbarsp listviewsp stringsp specialp navigationp locale
 
-EXEDIR := $(AROSDIR)/Prefs
+EXEDIR := $(AROS_PREFS)
 
 #MM- workbench-prefs : workbench-prefs-zune
-#MM workbench-prefs-zune : includes linklibs
+#MM workbench-prefs-zune : includes linklibs workbench-prefs-zune-catalogs
 
 %build_prog mmake=workbench-prefs-zune \
     progname=Zune targetdir=$(EXEDIR) \

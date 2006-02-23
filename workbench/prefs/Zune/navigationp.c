@@ -1,7 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -45,47 +43,9 @@ struct MUI_NavigationPData
     Object *keyboard_string[NSHORTCUTS];
 };
 
-static CONST_STRPTR dnd_labels[] =
-{
-    "always solid",
-    "ghosted on box",
-    "ghosted outside box",
-    "always ghosted",
-    NULL,
-};
-
-static CONST_STRPTR balancing_labels[] =
-{
-    "show frames",
-    "show objects",
-    NULL,
-};
-
-static CONST_STRPTR keyboard_label[NSHORTCUTS] =
-{
-    "Press:",
-    "Toggle:",
-    "Up:",
-    "Down:",
-    "Page up:",
-    "Page down:",
-    "Top:",
-    "Bottom:",
-    "Left:",
-    "Right:",
-    "Word left:",
-    "Word right:",
-    "Line start:",
-    "Line end:",
-    "Next gadget:",
-    "Prev. gadget:",
-    "Gadget off:",
-    "Close window:",
-    "Next window:",
-    "Prev. window:",
-    "Help:",
-    "Popup:",
-};
+static CONST_STRPTR dnd_labels[5];
+static CONST_STRPTR balancing_labels[3];
+static CONST_STRPTR keyboard_label[NSHORTCUTS];
 
 static Object *MakeScrollgroup (struct MUI_NavigationPData *data)
 {
@@ -116,66 +76,96 @@ static IPTR NavigationP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NavigationPData *data;
     struct MUI_NavigationPData d;
-    
+
+    dnd_labels[0] = _(MSG_ALWAYS_SOLID);
+    dnd_labels[1] = _(MSG_GHOSTED_ON_BOX);
+    dnd_labels[2] = _(MSG_GHOSTED_OUTSIDE_BOX);
+    dnd_labels[3] = _(MSG_ALWAYS_GHOSTED);
+
+    balancing_labels[0] = _(MSG_SHOW_FRAMES);
+    balancing_labels[1] = _(MSG_SHOW_OBJECTS);
+    keyboard_label[ 0] = _(MSG_KL_PRESS);
+    keyboard_label[ 1] = _(MSG_KL_TOGGLE);
+    keyboard_label[ 2] = _(MSG_KL_UP);
+    keyboard_label[ 3] = _(MSG_KL_DOWN);
+    keyboard_label[ 4] = _(MSG_KL_PAGE_UP);
+    keyboard_label[ 5] = _(MSG_KL_PAGE_DOWN);
+    keyboard_label[ 6] = _(MSG_KL_TOP);
+    keyboard_label[ 7] = _(MSG_KL_BOTTOM);
+    keyboard_label[ 8] = _(MSG_KL_LEFT);
+    keyboard_label[ 9] = _(MSG_KL_RIGHT);
+    keyboard_label[10] = _(MSG_KL_WORD_LEFT);
+    keyboard_label[11] = _(MSG_KL_WORD_RIGHT);
+    keyboard_label[12] = _(MSG_KL_LINE_START);
+    keyboard_label[13] = _(MSG_KL_LINE_END);
+    keyboard_label[14] = _(MSG_KL_NEXT_GADGET);
+    keyboard_label[15] = _(MSG_KL_PREV_GADGET);
+    keyboard_label[16] = _(MSG_KL_GADGET_OFF);
+    keyboard_label[17] = _(MSG_KL_CLOSE_WINDOW);
+    keyboard_label[18] = _(MSG_KL_NEXT_WINDOW);
+    keyboard_label[19] = _(MSG_KL_PREV_WINDOW);
+    keyboard_label[20] = _(MSG_KL_HELP);
+    keyboard_label[21] = _(MSG_KL_POPUP);
+
     obj = (Object *) DoSuperNewTags
     (
         cl, obj, NULL,
 	MUIA_Group_Horiz, TRUE,
 	Child, (IPTR) VGroup,
 	Child, (IPTR) VGroup,
-	GroupFrameT("Drag & Drop"),
+	GroupFrameT(_(MSG_DRAG_DROP)),
 	Child, (IPTR) ColGroup(3),
-	Child, (IPTR) Label("Left Button:"),
+	Child, (IPTR) Label(_(MSG_LEFT_BUTTON)),
 	Child, (IPTR) (d.drag_leftbutton_checkmark = MakeCheck(NULL)),
 	Child, (IPTR) (d.drag_leftbutton_string = MakeString()),
 
-	Child, (IPTR) Label("Middle Button:"),
+	Child, (IPTR) Label(_(MSG_MIDDLE_BUTTON)),
 	Child, (IPTR) (d.drag_middlebutton_checkmark = MakeCheck(NULL)),
 	Child, (IPTR) (d.drag_middlebutton_string = MakeString()),
 
-	Child, (IPTR) Label("Autostart:"),
+	Child, (IPTR) Label(_(MSG_AUTOSTART)),
 	Child, (IPTR) (d.drag_autostart_checkmark = MakeCheck(NULL)),
 	Child, (IPTR) (d.drag_autostart_slider = SliderObject,
 		       MUIA_CycleChain, 1,
-		       MUIA_Numeric_Format, (IPTR) "%ld pixel",
+		       MUIA_Numeric_Format, (IPTR) _(MSG_PIXEL),
 		       MUIA_Numeric_Min, 1,
 		       MUIA_Numeric_Max, 20,
 	End), // Slider
 	End, // ColGroup(3)
 	Child, ColGroup(2),
-	Child, (IPTR) FreeLabel("Frame:"),
+	Child, (IPTR) FreeLabel(_(MSG_FRAME_COLON)),
 	Child, (IPTR) (d.dnd_popframe = MakePopframe()),
-	Child, (IPTR) Label("Look:"),
+	Child, (IPTR) Label(_(MSG_LOOK_COLON)),
 	Child, (IPTR) (d.drag_look_cycle = MakeCycle(NULL, dnd_labels)),
 	End, // ColGroup(2),
 	End, // Drag & Drop
 	Child, VGroup,
-	GroupFrameT("Balancing Groups"),
+	GroupFrameT(_(MSG_BALANCING_GROUPS)),
 	Child, (IPTR) HVSpace,
 	Child, (IPTR) ColGroup(2),
-	Child, (IPTR) Label("Look:"),
+	Child, (IPTR) Label(_(MSG_LOOK_COLON)),
 	Child, (IPTR) (d.balance_look_cycle = MakeCycle(NULL, balancing_labels)),
-	Child, (IPTR) Label("Example:"),
+	Child, (IPTR) Label(_(MSG_EXAMPLE)),
 	Child, (IPTR) HGroup,
 	Child, (IPTR) TextObject,
 	TextFrame,
 	MUIA_Text_SetMin, FALSE,
 	MUIA_Text_PreParse, "\33c",
-	MUIA_Text_Contents, "Try with",
+	MUIA_Text_Contents, _(MSG_TRY_WITH),
 	End,
 	Child, (IPTR) BalanceObject, End,
 	Child, (IPTR) TextObject,
 	TextFrame,
 	MUIA_Text_SetMin, FALSE,
 	MUIA_Text_PreParse, "\33c",
-	MUIA_Text_Contents, "shift",
+	MUIA_Text_Contents, _(MSG_SHIFT),
 	End,
 	Child, (IPTR) BalanceObject, End,
 	Child, (IPTR) TextObject,
 	TextFrame,
 	MUIA_Text_SetMin, FALSE,
 	MUIA_Text_PreParse, "\33c",
-	MUIA_Text_Contents, "too!",
+	MUIA_Text_Contents, _(MSG_TOO),
 	End,	
 	End, // HGroup
 	End, // ColGroup
@@ -183,12 +173,12 @@ static IPTR NavigationP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	End, // Balancing Groups
 	End, // VGroup Left
 	Child, (IPTR) VGroup,
-	GroupFrameT("Keyboard Control"),
+	GroupFrameT(_(MSG_KEYBOARD_CONTROL)),
 	Child, (IPTR) HGroup,
 	Child, (IPTR) VGroup,
 	MUIA_Group_VertSpacing, 0,
 	Child, (IPTR) VSpace(3),
-	Child, (IPTR) Label("Color of active object:"),
+	Child, (IPTR) Label(_(MSG_COLOR_ACTIVE_OBJ)),
 	Child, (IPTR) VSpace(3),
 	End, // VGroup label
 	Child, (IPTR) (d.active_poppen = MakePoppen()),

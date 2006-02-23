@@ -2,6 +2,7 @@
 *.info
 *.bak
 *.lnk
+strings.h
 SCOPTIONS
 mmakefile
 Zune.map

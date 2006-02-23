@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -55,7 +55,7 @@ struct MUI_CustomClass *MCC_Query(ULONG d0);
 #endif
 #endif
 
-#define ZUNEVERSION "$VER: Zune 0.1 (13.01.2006) ©AROS Dev Team"
+#define ZUNEVERSION "$VER: Zune 0.2 (22.02.2006) ©AROS Dev Team"
 
 /************************************************************************/
 
@@ -153,21 +153,22 @@ struct page_entry
 
 #define MAX_PAGE_ENTRIES 100
 
+/* the name field is set in init_gui() */
 struct page_entry main_page_entries[MAX_PAGE_ENTRIES + 1] =
 {
 /*      {"Info",NULL,NULL,NULL}, */
 /*      {"System",NULL,NULL,NULL}, */
-    { "Windows",    NULL, NULL, &_MUIP_Windows_desc    },
-    { "Groups",     NULL, NULL, &_MUIP_Groups_desc     },
-    { "Buttons",    NULL, NULL, &_MUIP_Buttons_desc    },
-    { "Cycles",     NULL, NULL, &_MUIP_Cycles_desc     },
-    { "Sliders",    NULL, NULL, &_MUIP_Sliders_desc    },
-    { "Scrollbars", NULL, NULL, &_MUIP_Scrollbars_desc },
-    { "Listviews",  NULL, NULL, &_MUIP_Listviews_desc  },
-    { "Strings",    NULL, NULL, &_MUIP_Strings_desc    },
-    { "Navigation", NULL, NULL, &_MUIP_Navigation_desc },
-    { "Special",    NULL, NULL, &_MUIP_Special_desc    },
-    { NULL,         NULL, NULL, NULL                   },
+    { "",   NULL, NULL, &_MUIP_Windows_desc    },
+    { "",   NULL, NULL, &_MUIP_Groups_desc     },
+    { "",   NULL, NULL, &_MUIP_Buttons_desc    },
+    { "",   NULL, NULL, &_MUIP_Cycles_desc     },
+    { "",   NULL, NULL, &_MUIP_Sliders_desc    },
+    { "",   NULL, NULL, &_MUIP_Scrollbars_desc },
+    { "",   NULL, NULL, &_MUIP_Listviews_desc  },
+    { "",   NULL, NULL, &_MUIP_Strings_desc    },
+    { "",   NULL, NULL, &_MUIP_Navigation_desc },
+    { "",   NULL, NULL, &_MUIP_Special_desc    },
+    { NULL, NULL, NULL, NULL                   },
 };
 
 struct MUI_CustomClass *create_class(const struct __MUIBuiltinClass *desc)
@@ -408,7 +409,7 @@ void deinit_gui(void)
 }
 
 /****************************************************************
- Allocalte resources for gui
+ Allocate resources for gui
 *****************************************************************/
 int init_gui(void)
 {
@@ -418,6 +419,17 @@ int init_gui(void)
     Object *cancel_button;
     STRPTR wintitle;
     char titlebuf[255];
+    
+    main_page_entries[ 0].name = (char *)_(MSG_DSC_WINDOWS);
+    main_page_entries[ 1].name = (char *)_(MSG_DSC_GROUPS);
+    main_page_entries[ 2].name = (char *)_(MSG_DSC_BUTTONS);
+    main_page_entries[ 3].name = (char *)_(MSG_DSC_CYCLES);
+    main_page_entries[ 4].name = (char *)_(MSG_DSC_SLIDERS);
+    main_page_entries[ 5].name = (char *)_(MSG_DSC_SCROLLBARS);
+    main_page_entries[ 6].name = (char *)_(MSG_DSC_LISTVIEWS);
+    main_page_entries[ 7].name = (char *)_(MSG_DSC_STRINGS);
+    main_page_entries[ 8].name = (char *)_(MSG_DSC_NAVIGATION);
+    main_page_entries[ 9].name = (char *)_(MSG_DSC_SPECIAL);
 
     static struct Hook page_display_hook;
 
@@ -432,10 +444,10 @@ int init_gui(void)
 #endif
 
     if (!strcmp(appname, "global"))
-	wintitle = "Zune - Global Prefs";
+	wintitle = _(MSG_WINTITLE1);
     else
     {
-	snprintf(titlebuf, 255, "Zune - Prefs for : %s", appname);
+	snprintf(titlebuf, 255, _(MSG_WINTITLE2), appname);
 	wintitle = titlebuf;
     }
 
@@ -446,19 +458,28 @@ int init_gui(void)
         MUIA_Application_Description, wintitle,
 	MUIA_Application_Menustrip, MenuitemObject,
 	    MUIA_Family_Child, MenuitemObject,
-	    	MUIA_Menuitem_Title, "Project",
-	    	MUIA_Family_Child, open_menuitem = MenuitemObject, MUIA_Menuitem_Title, "Open...", MUIA_Menuitem_Shortcut, "O", End,
-	    	MUIA_Family_Child, append_menuitem = MenuitemObject, MUIA_Menuitem_Title, "Append...", End,
-	    	MUIA_Family_Child, saveas_menuitem = MenuitemObject, MUIA_Menuitem_Title, "Save As...", MUIA_Menuitem_Shortcut, "A", End,
+	    	MUIA_Menuitem_Title, _(MSG_MEN_PROJECT),
+	    	MUIA_Family_Child, open_menuitem = MenuitemObject,
+		    MUIA_Menuitem_Title, _(MSG_MEN_OPEN), MUIA_Menuitem_Shortcut, _(MSG_MEN_OPEN_SC),
+		End,
+	    	MUIA_Family_Child, append_menuitem = MenuitemObject, MUIA_Menuitem_Title, _(MSG_MEN_APPEND), End,
+	    	MUIA_Family_Child, saveas_menuitem = MenuitemObject,
+		    MUIA_Menuitem_Title, _(MSG_MEN_SAVEAS), MUIA_Menuitem_Shortcut, _(MSG_MEN_SAVEAS_SC),
+		End,
 	    	MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, ~0, End,
-	    	MUIA_Family_Child, aboutzune_menuitem = MenuitemObject, MUIA_Menuitem_Title, "About Zune...", MUIA_Menuitem_Shortcut, "?", End,
+	    	MUIA_Family_Child, aboutzune_menuitem = MenuitemObject,
+		    MUIA_Menuitem_Title, _(MSG_MEN_ABOUT), MUIA_Menuitem_Shortcut, _(MSG_MEN_ABOUT_SC),
+		End,
 	    	MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, ~0, End,
-	    	MUIA_Family_Child, quit_menuitem = MenuitemObject, MUIA_Menuitem_Title, "Quit", MUIA_Menuitem_Shortcut, "Q", End,
+	    	MUIA_Family_Child, quit_menuitem = MenuitemObject,
+		    MUIA_Menuitem_Title, _(MSG_MEN_QUIT), MUIA_Menuitem_Shortcut, _(MSG_MEN_QUIT_SC),
+		End,
 	    	End,
 	    End,
     	SubWindow, main_wnd = WindowObject,
     	    MUIA_Window_Title, (IPTR)wintitle,
 	    MUIA_Window_Activate, TRUE,
+	    MUIA_Window_CloseGadget, FALSE,
 
 	    WindowContents, VGroup,
 	        MUIA_Group_VertSpacing, 10,
@@ -475,12 +496,12 @@ int init_gui(void)
 		    Child, HGroup,
 	                Child, MUI_NewObject(MUIC_Popframe,
 					     MUIA_FixHeight, 20,
-					     MUIA_Window_Title, (IPTR)"Frame Clipboard",
+					     MUIA_Window_Title, (IPTR) _(MSG_FRAME_CLIPBOARD),
 					     TAG_DONE),
 	                Child, MUI_NewObject(MUIC_Popimage,
 					     MUIA_FixHeight, 20,
 					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
-					     MUIA_Window_Title, (IPTR)"Image Clipboard",
+					     MUIA_Window_Title, (IPTR) _(MSG_IMAGE_CLIPBOARD),
 					     TAG_DONE),
 		        End, /* HGroup */
 	            End,
@@ -494,13 +515,11 @@ int init_gui(void)
 			End,
 		    End,
 		Child, HGroup,
-		    Child, save_button = MakeButton("Save"),
-	            Child, HVSpace,
-		    Child, use_button = MakeButton("Use"),
-	            Child, HVSpace,
-		    Child, test_button = MakeButton("Test"),
-	            Child, HVSpace,
-		    Child, cancel_button = MakeButton("Cancel"),
+		    Child, test_button = MakeButton(_(MSG_GAD_TEST)),
+		    Child, HVSpace,
+		    Child, save_button = MakeButton(_(MSG_GAD_SAVE)),
+		    Child, use_button = MakeButton(_(MSG_GAD_USE)),
+		    Child, cancel_button = MakeButton(_(MSG_GAD_CANCEL)),
 		    End,
 		End,
     	    End,
@@ -670,13 +689,13 @@ void loop(void)
 *****************************************************************/
 int main(void)
 {
+    Locale_Initialize();
     int  retval = RETURN_OK;
     struct RDArgs *rda;
     IPTR args[] = { 0 };
     enum { ARG_APPNAME = 0 };
 
     rda = ReadArgs("APPNAME", args, NULL);
-
     if(rda != NULL)
     {
 	appname = (STRPTR)args[ARG_APPNAME];
@@ -714,5 +733,6 @@ int main(void)
     
     FreeArgs(rda);
 
+    Locale_Deinitialize();
     return retval;
 }

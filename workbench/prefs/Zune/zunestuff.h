@@ -2,12 +2,13 @@
 #define _ZUNE_ZUNESTUFF_H
 
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <intuition/classusr.h>
 #include <libraries/asl.h>
+#include "locale.h"
 
 Object *MakeButton (CONST_STRPTR str);
 Object *MakeCycle (CONST_STRPTR label, CONST_STRPTR entries[]);
@@ -43,5 +44,6 @@ LONG XGET(Object * obj, ULONG attr);
 #ifdef __amigaos4__
 Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...);
 #endif
+
 
 #endif /* _ZUNE_ZUNESTUFF_H */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -47,19 +47,8 @@ struct MUI_ListviewsPData
     Object *activeselected_popimage;
 };
 
-static CONST_STRPTR multi_labels[] =
-{
-    "shifted",
-    "always",
-    NULL,
-};
-
-static CONST_STRPTR refresh_labels[] =
-{
-    "linear",
-    "mixed",
-    NULL,
-};
+static CONST_STRPTR multi_labels[3];
+static CONST_STRPTR refresh_labels[3];
 
 static Object*MakeListviewspSlider (void)
 {
@@ -73,6 +62,12 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ListviewsPData *data;
     struct MUI_ListviewsPData d;
     
+    multi_labels[0] = _(MSG_SHIFTED);
+    multi_labels[1] = _(MSG_ALWAYS);
+
+    refresh_labels[0] = _(MSG_LINEAR);
+    refresh_labels[1] = _(MSG_MIXED);
+
     obj = (Object *) DoSuperNewTags
     (
         cl, obj, NULL,
@@ -80,16 +75,16 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         MUIA_Group_Columns, 2,
         MUIA_Group_SameSize, TRUE,
         Child, (IPTR) VGroup,
-            GroupFrameT("Control"),
+            GroupFrameT(_(MSG_CONTROL)),
             MUIA_Group_VertSpacing, 0,
             Child, (IPTR) VSpace(0),
             Child, (IPTR) ColGroup(2),
                 MUIA_Group_VertSpacing, 2,
-                Child, (IPTR) Label("Multi:"),
-                Child, (IPTR) (d.multi_cycle = MakeCycle("Multi:", multi_labels)),
-                Child, (IPTR) Label("Refresh:"),
-                Child, (IPTR) (d.refresh_cycle = MakeCycle("Refresh:", refresh_labels)),
-                Child, (IPTR) Label("Smooth:"),
+                Child, (IPTR) Label(_(MSG_MULTI)),
+                Child, (IPTR) (d.multi_cycle = MakeCycle(_(MSG_MULTI), multi_labels)),
+                Child, (IPTR) Label(_(MSG_REFRESH)),
+                Child, (IPTR) (d.refresh_cycle = MakeCycle(_(MSG_REFRESH), refresh_labels)),
+                Child, (IPTR) Label(_(MSG_SMOOTH)),
                 Child, (IPTR) HGroup,
                     MUIA_Group_HorizSpacing, 4,
                     Child, (IPTR) (d.smooth_checkmark = MakeCheck(NULL)),
@@ -100,16 +95,16 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         End, /* Control VGroup */
     
         Child, (IPTR) VGroup,
-            GroupFrameT("Fonts"),
+            GroupFrameT(_(MSG_FONTS)),
             MUIA_Group_VertSpacing, 0,
             Child, (IPTR) VSpace(0),
             Child, (IPTR) ColGroup(2),
                 MUIA_Group_VertSpacing, 2,
-                Child, (IPTR) Label("Normal:"),
+                Child, (IPTR) Label(_(MSG_NORMAL_COLON)),
                 Child, (IPTR) (d.fonts_normal_string = MakePopfont(FALSE)),
-                Child, (IPTR) Label("Fixed:"),
+                Child, (IPTR) Label(_(MSG_FIXED)),
                 Child, (IPTR) (d.fonts_fixed_string = MakePopfont(TRUE)),
-                Child, (IPTR) Label("Leading:"),
+                Child, (IPTR) Label(_(MSG_LEADING)),
                 Child, (IPTR) (d.fonts_leading_slider = MakeListviewspSlider()),
             
             End, /* ColGroup */
@@ -117,30 +112,30 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         End, /* Fonts */
             
         Child, (IPTR) ColGroup(3),
-            GroupFrameT("Design"),
+            GroupFrameT(_(MSG_DESIGN)),
             MUIA_Group_VertSpacing, 2,
-            Child, (IPTR) FreeLabel("Input \nLists:"),
+            Child, (IPTR) FreeLabel(_(MSG_INPUT_LISTS)),
             Child, (IPTR) (d.input_popframe = MakePopframe()),                  
             Child, (IPTR) (d.input_popimage = MakeBackgroundPopimage()),
-            Child, (IPTR) FreeLabel("Readonly \nLists:"),
+            Child, (IPTR) FreeLabel(_(MSG_READONLY_LISTS)),
             Child, (IPTR) (d.readonly_popframe = MakePopframe()),
             Child, (IPTR) (d.readonly_popimage = MakeBackgroundPopimage()),
             Child, (IPTR) VSpace(0),
-            Child, (IPTR) CLabel("Frame"),
-            Child, (IPTR) CLabel("Background"),
+            Child, (IPTR) CLabel(_(MSG_FRAME)),
+            Child, (IPTR) CLabel(_(MSG_BACKGROUND)),
         End, /* Design ColGroup(3) */
             
         Child, (IPTR) ColGroup(3),
-            GroupFrameT("Cursor"),
+            GroupFrameT(_(MSG_CURSOR)),
             MUIA_Group_VertSpacing, 2,
             MUIA_Group_SameSize, TRUE,
-            Child, (IPTR) FreeLabel("Active:"),
+            Child, (IPTR) FreeLabel(_(MSG_ACTIVE)),
             Child, (IPTR) (d.active_popimage = MakeBackgroundPopimage()),
             Child, (IPTR) VGroup,
                 Child, (IPTR) HVSpace,
-                Child, (IPTR) CLabel("Active &\nSelected:"),
+                Child, (IPTR) CLabel(_(MSG_ACTIVE_SELECTED)),
             End, /* VGroup */
-            Child, (IPTR) FreeLabel("Selected:"),
+            Child, (IPTR) FreeLabel(_(MSG_SELECTED)),
             Child, (IPTR) (d.selected_popimage = MakeBackgroundPopimage()),
             Child, (IPTR) (d.activeselected_popimage = MakeBackgroundPopimage()),
         End, /* Cursor ColGroup */

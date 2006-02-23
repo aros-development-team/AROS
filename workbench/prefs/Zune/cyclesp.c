@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,13 +37,7 @@ struct MUI_CyclesPData
     Object *recessed_entries_checkmark;
 };
 
-static CONST_STRPTR positions_labels[] =
-{
-    "below",
-    "on active",
-    NULL,
-};
-
+static CONST_STRPTR positions_labels[3];
 
 static Object*MakeLevelSlider (void)
 {
@@ -66,13 +60,16 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_CyclesPData *data;
     struct MUI_CyclesPData d;
     
+    positions_labels[0] = _(MSG_BELOW);
+    positions_labels[1] = _(MSG_ON_ACTIVE);
+
     obj = (Object *) DoSuperNewTags
     (
         cl, obj, NULL,
         
         MUIA_Group_Horiz, FALSE,
         Child, (IPTR) HGroup,
-            GroupFrameT("Cycle Gadget Design"),
+            GroupFrameT(_(MSG_CYCLE_GADGET_DESIGN)),
             Child, (IPTR) HVSpace,
             Child, (IPTR) (d.cycle_popimage =
             MUI_NewObject
@@ -84,35 +81,35 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                 MUIA_MaxHeight,              28,
                 MUIA_Imagedisplay_FreeHoriz, FALSE,
                 MUIA_Imagedisplay_FreeVert,  FALSE,
-                MUIA_Window_Title,           (IPTR) "Cycle",
+                MUIA_Window_Title,           (IPTR) _(MSG_CYCLE),
                 TAG_DONE
             )),
             Child, (IPTR) HVSpace,
         End, /* Cycle Gadget Design */
         Child, (IPTR) HGroup,
             Child, (IPTR) VGroup,
-                GroupFrameT("Popup Menu Control"),
+                GroupFrameT(_(MSG_POPUP_MENU_CONTROL)),
                 Child, (IPTR) VSpace(0),
                 Child, (IPTR) ColGroup(2),
                     MUIA_Group_VertSpacing, 2,
-                    Child, (IPTR) Label("Position:"),
-                    Child, (IPTR) (d.menu_position_cycle = MakeCycle("Position:", positions_labels)),
-                    Child, (IPTR) Label("Level:"),
+                    Child, (IPTR) Label(_(MSG_POSITION)),
+                    Child, (IPTR) (d.menu_position_cycle = MakeCycle(_(MSG_POSITION), positions_labels)),
+                    Child, (IPTR) Label(_(MSG_LEVEL)),
                     Child, (IPTR) (d.menu_level_slider = MakeLevelSlider()),
-                    Child, (IPTR) Label("Speed:"),
+                    Child, (IPTR) Label(_(MSG_SPEED)),
                     Child, (IPTR) (d.menu_speed_slider = MakeSpeedSlider()),
                 End,
                 Child, (IPTR) VSpace(0),
             End, /* Popup Menu Control */
             Child, (IPTR) VGroup,
                 MUIA_Group_VertSpacing, 2,
-                GroupFrameT("Popup Menu Design"),
+                GroupFrameT(_(MSG_POPUP_MENU_DESIGN)),
                 Child, (IPTR) HGroup,
                     MUIA_Group_SameWidth, TRUE,
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
                         Child, (IPTR) (d.menu_popframe = MakePopframe()),
-                        Child, (IPTR) CLabel("Frame"),
+                        Child, (IPTR) CLabel(_(MSG_FRAME)),
                     End, /* VGroup */
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
@@ -120,15 +117,15 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                         (
                             MUIC_Popimage,
                             MUIA_CycleChain,          1,
-                            MUIA_Window_Title, (IPTR) "Adjust Background",
+                            MUIA_Window_Title, (IPTR) _(MSG_ADJUST_BACKGROUND),
                             TAG_DONE
                         )),
-                        Child, (IPTR) CLabel("Background"),
+                        Child, (IPTR) CLabel(_(MSG_BACKGROUND)),
                     End, /* VGroup */
                 End, /* HGroup */
                 Child, (IPTR) HGroup,
                     Child, (IPTR) HSpace(0),
-                    Child, (IPTR) Label1("Recessed Entries:"),
+                    Child, (IPTR) Label1(_(MSG_RECESSED_ENTRIES)),
                     Child, (IPTR) (d.recessed_entries_checkmark = MakeCheck(NULL)),
                 End, /* HGroup recessed CM */
             End, /* Popup Menu Design */

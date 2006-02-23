@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -56,7 +54,7 @@ Object *MakeBackgroundPopimage(void)
     return MUI_NewObject(MUIC_Popimage,
 		     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
 		     MUIA_CycleChain, 1,
-		     MUIA_Window_Title, (IPTR)"Adjust Background",
+		     MUIA_Window_Title, (IPTR) _(MSG_ADJUST_BACKGROUND),
 		     TAG_DONE);
 }
 
@@ -64,7 +62,7 @@ Object *MakePopframe(void)
 {
     return MUI_NewObject(MUIC_Popframe,
 		     MUIA_CycleChain, 1,
-		     MUIA_Window_Title, (IPTR)"Adjust Frame",
+		     MUIA_Window_Title, (IPTR) _(MSG_ADJUST_FRAME),
 		     TAG_DONE);
 }
 
@@ -72,7 +70,7 @@ Object *MakePoppen(void)
 {
     return MUI_NewObject(MUIC_Poppen,
 		     MUIA_CycleChain, 1,
-		     MUIA_Window_Title, (IPTR)"Adjust Pen",
+		     MUIA_Window_Title, (IPTR) _(MSG_ADJUST_PEN),
 		     TAG_DONE);
 }
 
