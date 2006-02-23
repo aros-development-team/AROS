@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,13 +39,7 @@ struct MUI_ScrollbarsPData
     Object *pos_radios[3];
 };
 
-static CONST_STRPTR gadget_type_labels[] =
-{
-    "standard",
-    "newlook",
-    "custom",
-    NULL,
-};
+static CONST_STRPTR gadget_type_labels[4];
 
 #define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
 
@@ -93,6 +87,10 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ScrollbarsPData *data;
     struct MUI_ScrollbarsPData d;
+gadget_type_labels[0] = _(MSG_STANDARD);
+gadget_type_labels[1] = _(MSG_NEWLOOK);
+gadget_type_labels[2] = _(MSG_CUSTOM);
+
 
     obj = (Object *) DoSuperNewTags
     (
@@ -102,7 +100,7 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	Child, (IPTR) VGroup, /* left */
 	
 	    Child, (IPTR) VGroup,
-	        GroupFrameT("Arrows"),
+	        GroupFrameT(_(MSG_ARROWS)),
 	        MUIA_Group_Spacing, 0,
   	        Child, (IPTR) MakeSpacer(),
 	        Child, (IPTR) HGroup,
@@ -110,14 +108,14 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
   	            Child, (IPTR) MakeSpacer(),
 	            Child, (IPTR) ColGroup(4),
 	                MUIA_Group_SameHeight, TRUE,
-	                Child, (IPTR) FreeLabel("up"),
-	                Child, (IPTR) (d.arrow_up_popimage = MakeArrowPopimage("Arrow up")),
-	                Child, (IPTR) (d.arrow_down_popimage = MakeArrowPopimage("Arrow down")),
-	                Child, (IPTR) FreeLLabel("down"),
-	                Child, (IPTR) FreeLabel("left"),
-	                Child, (IPTR) (d.arrow_left_popimage = MakeArrowPopimage("Arrow left")),
-	                Child, (IPTR) (d.arrow_right_popimage = MakeArrowPopimage("Arrow right")),
-	                Child, (IPTR) FreeLLabel("right"),
+	                Child, (IPTR) FreeLabel(_(MSG_UP)),
+	                Child, (IPTR) (d.arrow_up_popimage = MakeArrowPopimage(_(MSG_ARROW_UP))),
+	                Child, (IPTR) (d.arrow_down_popimage = MakeArrowPopimage(_(MSG_ARROW_DOWN))),
+	                Child, (IPTR) FreeLLabel(_(MSG_DOWN)),
+	                Child, (IPTR) FreeLabel(_(MSG_LEFT)),
+	                Child, (IPTR) (d.arrow_left_popimage = MakeArrowPopimage(_(MSG_ARROW_LEFT))),
+	                Child, (IPTR) (d.arrow_right_popimage = MakeArrowPopimage(_(MSG_ARROW_RIGHT))),
+	                Child, (IPTR) FreeLLabel(_(MSG_RIGHT)),
                     End, /* ColGroup(6) */
   	            Child, (IPTR) MakeSpacer(),
                 End, /* HGroup */
@@ -125,10 +123,10 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
             End, /* Arrows */
 	
 	    Child, (IPTR) VGroup,
-	        GroupFrameT("Bar"),
+	        GroupFrameT(_(MSG_BAR)),
 	        Child, (IPTR) HGroup,
-	            Child, (IPTR) Label("Gadget Type:"),
-	            Child, (IPTR) (d.gadget_type_cycle = MakeCycle("Gadget Type:", gadget_type_labels)),
+	            Child, (IPTR) Label(_(MSG_GADGET_TYPE)),
+	            Child, (IPTR) (d.gadget_type_cycle = MakeCycle(_(MSG_GADGET_TYPE), gadget_type_labels)),
                 End, /* HGroup Gadget Type */
 	        Child, (IPTR) HGroup,
 	            MUIA_Group_SameWidth, TRUE,
@@ -141,26 +139,26 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                             MUIA_CycleChain, 1,
                             MUIA_Imagedisplay_FreeHoriz, FALSE,
                             MUIA_Imagedisplay_FreeVert, FALSE,
-                            MUIA_Window_Title, (IPTR)"Scroller",
+                            MUIA_Window_Title, (IPTR) _(MSG_SCROLLER),
                             TAG_DONE
                         )),
-	                Child, (IPTR) CLabel("Knob"),
+	                Child, (IPTR) CLabel(_(MSG_KNOB)),
                     End, /* VGroup Knob */
 	            Child, (IPTR) VGroup,
 	                MUIA_Group_VertSpacing, 1,
 	                Child, (IPTR) (d.background_popimage = MakeBackgroundPopimage()),
-	                Child, (IPTR) CLabel("Background"),
+	                Child, (IPTR) CLabel(_(MSG_BACKGROUND)),
                     End, /* VGroup Background */
                 End, /* HGroup Images */
             End, /* Bar VGroup*/	     
         End, /* VGroup left */
 	Child, (IPTR) VGroup,
 	    Child, (IPTR) VGroup,
-	        GroupFrameT("Frame"),
+	        GroupFrameT(_(MSG_FRAME)),
 	        Child, (IPTR) (d.popframe = MakePopframe()),
 	        End, /* Frame VGroup*/
 	    Child, (IPTR) ColGroup(3),
-	        GroupFrameT("Arrangement"),
+	        GroupFrameT(_(MSG_ARRANGEMENT)),
 		MUIA_CycleChain, 1,
 		Child, (IPTR) (d.pos_radios[0] = MakeSingleRadio()),
 		Child, (IPTR) (d.pos_radios[1] = MakeSingleRadio()),

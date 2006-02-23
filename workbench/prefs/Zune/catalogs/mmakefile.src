@@ -1,0 +1,7 @@
+# Copyright © 2006, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+%build_catalogs mmake=workbench-prefs-zune-catalogs \
+                name=Zune subdir=System/Prefs

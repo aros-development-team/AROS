@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -88,45 +88,45 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         Child, (IPTR) HGroup,
             MUIA_VertWeight, 800,
             Child, (IPTR) HGroup,
-                GroupFrameT("Container Design"),
+                GroupFrameT(_(MSG_CONTAINER_DESIGN)),
                 Child, (IPTR) HGroup,
                     MUIA_Group_SameWidth, TRUE,
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
                         Child, (IPTR) (d.container_background_popimage = MakeBackgroundPopimage()),
-                        Child, (IPTR) CLabel("Background"),
+                        Child, (IPTR) CLabel(_(MSG_BACKGROUND)),
                     End, /* VGroup BG */
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
                         Child, (IPTR) (d.container_popframe = MakePopframe()),
-                        Child, (IPTR) CLabel("Frame"),
+                        Child, (IPTR) CLabel(_(MSG_FRAME)),
                     End, /* VGroup Frame */
                 End, /* HGroup Frame/BG */
             End, /* HGroup Container Design */
             Child, (IPTR) VGroup,
-                GroupFrameT("Knob Design"),
+                GroupFrameT(_(MSG_KNOB_DESIGN)),
                 Child, (IPTR) HGroup,
                     MUIA_Group_SameWidth, TRUE,
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
                         Child, (IPTR) (d.knob_background_popimage = MakeBackgroundPopimage()),
-                        Child, (IPTR) CLabel("Background"),
+                        Child, (IPTR) CLabel(_(MSG_BACKGROUND)),
                     End, /* VGroup BG */
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
                         Child, (IPTR) (d.knob_popframe = MakePopframe()),
-                        Child, (IPTR) CLabel("Frame"),
+                        Child, (IPTR) CLabel(_(MSG_FRAME)),
                     End, /* VGroup Frame */
                 End, /* HGroup Frame/BG */
                 Child, (IPTR) HGroup,
-                    Child, (IPTR) Label2("Font:"),
+                    Child, (IPTR) Label2(_(MSG_FONT)),
                     Child, (IPTR) (d.knob_font_string = MakePopfont(FALSE)),
                 End, /* HGroup font */
             End, /* VGroup Knob Design */
         End, /* HGroup Container/Knob design */
         
         Child, (IPTR) VGroup,
-            GroupFrameT("Example Sliders"),
+            GroupFrameT(_(MSG_EXAMPLE_SLIDERS)),
             Child, (IPTR) VSpace(0),
             Child, (IPTR) HGroup,
                 Child, (IPTR) VGroup,

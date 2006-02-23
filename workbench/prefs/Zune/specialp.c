@@ -1,7 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -85,32 +83,32 @@ static IPTR SpecialP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	Child, (IPTR) ColGroup(2),
 
 	Child, (IPTR) VGroup,
-	GroupFrameT("Text fields"),
+	GroupFrameT(_(MSG_TEXT_FIELDS)),
 	Child, (IPTR) HGroup,
 	MUIA_Group_SameWidth, TRUE,
 	Child, (IPTR) VGroup,
 	MUIA_Group_VertSpacing, 1,
 	Child, (IPTR) (d.text_popframe = MakePopframe()),
-	Child, (IPTR) CLabel("Frame"),
+	Child, (IPTR) CLabel(_(MSG_FRAME)),
 	End, // VGroup
 	Child, (IPTR) VGroup,
 	MUIA_Group_VertSpacing, 1,
 	Child, (IPTR) (d.text_popimage = MakeBackgroundPopimage()),
-	Child, (IPTR) CLabel("Background"),
+	Child, (IPTR) CLabel(_(MSG_BACKGROUND)),
 	End, // VGroup
 	End, // HGroup
 	Child, (IPTR) TextObject,
 	TextFrame,
 	MUIA_Background, MUII_TextBack,
 	MUIA_Text_PreParse, (IPTR) "\33c",
-	MUIA_Text_Contents, (IPTR) "Example Textfield",
+	MUIA_Text_Contents, (IPTR) _(MSG_EXAMPLE_TEXTFIELD),
 	End, // TextObject
 	End, // VGroup
 	Child, (IPTR) ColGroup(2),
-	GroupFrameT("Progress Indicator"),
-	Child, (IPTR) FreeLabel("Frame:"),
+	GroupFrameT(_(MSG_PROGRESS_INDICATOR)),
+	Child, (IPTR) FreeLabel(_(MSG_FRAME_COLON)),
 	Child, (IPTR) (d.gauge_popframe = MakePopframe()),
-	Child, (IPTR) Label("Example:"),
+	Child, (IPTR) Label(_(MSG_EXAMPLE)),
 	Child, (IPTR) (d.gauge = GaugeObject, MUIA_Gauge_InfoText, "%ld %%",
 		       GaugeFrame, MUIA_Gauge_Horiz, TRUE, End),
 	Child, (IPTR) VSpace(0),
@@ -118,27 +116,27 @@ static IPTR SpecialP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	End, // Progress Indicator
 	End, // HGroup
 	Child, (IPTR) HGroup,
-	GroupFrameT("Device Images"),
+	GroupFrameT(_(MSG_DEVICE_IMAGES)),
 	Child, (IPTR) HSpace(0),
-	Child, d.popimage[0] = MakeSpecialPopimage("Drawer"),
-	Child, d.popimage[1] = MakeSpecialPopimage("Harddisk"),
-	Child, d.popimage[2] = MakeSpecialPopimage("Disk"),
-	Child, d.popimage[3] = MakeSpecialPopimage("RAM"),
-	Child, d.popimage[4] = MakeSpecialPopimage("Volume"),
-	Child, d.popimage[5] = MakeSpecialPopimage("Network"),
-	Child, d.popimage[6] = MakeSpecialPopimage("Assign"),
+	Child, d.popimage[0] = MakeSpecialPopimage(_(MSG_DRAWER)),
+	Child, d.popimage[1] = MakeSpecialPopimage(_(MSG_HARDDISK)),
+	Child, d.popimage[2] = MakeSpecialPopimage(_(MSG_DISK)),
+	Child, d.popimage[3] = MakeSpecialPopimage(_(MSG_RAM)),
+	Child, d.popimage[4] = MakeSpecialPopimage(_(MSG_VOLUME)),
+	Child, d.popimage[5] = MakeSpecialPopimage(_(MSG_NETWORK)),
+	Child, d.popimage[6] = MakeSpecialPopimage(_(MSG_ASSIGN)),
 	Child, (IPTR) HSpace(0),
 	End, // Device Images
 	Child, (IPTR) HGroup,
-	GroupFrameT("Tape Images"),
+	GroupFrameT(_(MSG_TAPE_IMAGES)),
 	Child, (IPTR) HSpace(0),
-	Child, d.popimage[7] = MakeSpecialPopimage("Tape play"),
-	Child, d.popimage[8] = MakeSpecialPopimage("Tape playback"),
-	Child, d.popimage[9] = MakeSpecialPopimage("Tape pause"),
-	Child, d.popimage[10] = MakeSpecialPopimage("Tape stop"),
-	Child, d.popimage[11] = MakeSpecialPopimage("Tape record"),
-	Child, d.popimage[12] = MakeSpecialPopimage("Tape up"),
-	Child, d.popimage[13] = MakeSpecialPopimage("Tape down"),
+	Child, d.popimage[7] = MakeSpecialPopimage(_(MSG_TAPE_PLAY)),
+	Child, d.popimage[8] = MakeSpecialPopimage(_(MSG_TAPE_PLAYBACK)),
+	Child, d.popimage[9] = MakeSpecialPopimage(_(MSG_TAPE_PAUSE)),
+	Child, d.popimage[10] = MakeSpecialPopimage(_(MSG_TAPE_STOP)),
+	Child, d.popimage[11] = MakeSpecialPopimage(_(MSG_TAPE_RECORD)),
+	Child, d.popimage[12] = MakeSpecialPopimage(_(MSG_TAPE_UP)),
+	Child, d.popimage[13] = MakeSpecialPopimage(_(MSG_TAPE_DOWN)),
 	Child, (IPTR) HSpace(0),
 	End, // Tape Images
 	

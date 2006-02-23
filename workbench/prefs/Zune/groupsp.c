@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,28 +41,22 @@ struct MUI_GroupsPData
     Object *title_color_cycle;
 };
 
-static CONST_STRPTR positions_labels[] =
-{
-    "above",
-    "centered",
-    NULL,
-};
-
-static CONST_STRPTR color_labels[] =
-{
-    "standard",
-    "hilite",
-    "3d",
-    "outline",
-    NULL,
-};
-
+static CONST_STRPTR positions_labels[3];
+static CONST_STRPTR color_labels[5];
 
 static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupsPData *data;
     struct MUI_GroupsPData d;
     
+    positions_labels[0] = _(MSG_ABOVE);
+    positions_labels[1] = _(MSG_CENTERED);
+
+    color_labels[0] = _(MSG_STANDARD);
+    color_labels[1] = _(MSG_HILITE);
+    color_labels[2] = _(MSG_3D);
+    color_labels[3] = _(MSG_OUTLINE);
+
     obj = (Object *) DoSuperNewTags
     (
         cl, obj, NULL,
@@ -71,39 +65,39 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	MUIA_Group_Horiz, TRUE,
         Child, (IPTR) VGroup,
     	    Child, (IPTR) VGroup,
-    		GroupFrameT("Title"),
+    		GroupFrameT(_(MSG_TITLE)),
     		Child, (IPTR) VSpace(0),
     		Child, (IPTR) ColGroup(2),
     		    MUIA_Group_VertSpacing, 2,
-    		    Child, (IPTR) Label("Position:"),
+    		    Child, (IPTR) Label(_(MSG_POSITION)),
     		    Child, (IPTR) (d.title_position_cycle =
-    			       MakeCycle("Position:", positions_labels)),
-    		    Child, (IPTR) Label("Color:"),
+    			       MakeCycle(_(MSG_POSITION), positions_labels)),
+    		    Child, (IPTR) Label(_(MSG_COLOR)),
     		    Child, (IPTR) (d.title_color_cycle =
-    			       MakeCycle("Color:", color_labels)),
-    		    Child, (IPTR) Label("Font:"),
+    			       MakeCycle(_(MSG_COLOR), color_labels)),
+    		    Child, (IPTR) Label(_(MSG_FONT)),
     		    Child, (IPTR) (d.font_title_string = MakePopfont(FALSE)),
     		End, /* Title */
     		Child, (IPTR) VSpace(0),
     	    End,
     	    Child, (IPTR) VGroup,
-    		GroupFrameT("Spacing"),
+    		GroupFrameT(_(MSG_SPACING)),
     		Child, (IPTR) VSpace(0),
     		Child, (IPTR) ColGroup(2),
     		    MUIA_Group_VertSpacing, 2,
-    		    Child, (IPTR) Label("Horizontal:"),
+    		    Child, (IPTR) Label(_(MSG_HORIZONTAL)),
     		    Child, (IPTR) (d.spacing_horiz_slider = (Object*)MakeSpacingSlider()),
-    		    Child, (IPTR) Label("Vertical:"),
+    		    Child, (IPTR) Label(_(MSG_VERTICAL)),
     		    Child, (IPTR) (d.spacing_vert_slider = (Object*)MakeSpacingSlider()),
     		End, /* Spacing */
     		Child, (IPTR) VSpace(0),
     	    End,
     	    Child, (IPTR) VGroup,
-    		GroupFrameT("Register"),
+    		GroupFrameT(_(MSG_REGISTER)),
     		Child, (IPTR) VSpace(0),
     		Child, (IPTR) HGroup,
     		    Child, (IPTR) HSpace(0),
-    		    Child, (IPTR) Label1("Default size truncate titles:"),
+    		    Child, (IPTR) Label1(_(MSG_DEFAULT_SIZE_TRUNCATE_TITLES)),
     		    Child, (IPTR) (d.truncate_titles_checkmark = MakeCheck(NULL)),
     		End, /* HGroup recessed CM */
     		Child, (IPTR) VSpace(0),
@@ -111,36 +105,36 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	End,
 	Child, (IPTR) VGroup,
     	    Child, (IPTR) HGroup,
-    		GroupFrameT("Frame"),
+    		GroupFrameT(_(MSG_FRAME)),
     		MUIA_Group_SameWidth, TRUE,
     		Child, (IPTR) VGroup,
     		   MUIA_Group_VertSpacing, 1,
     		   Child, (IPTR) (d.normal_popframe = MakePopframe()),
-    		   Child, (IPTR) CLabel("Normal"),
+    		   Child, (IPTR) CLabel(_(MSG_NORMAL)),
     		End,
     		Child, (IPTR) VGroup,
     		    MUIA_Group_VertSpacing, 1,
     		    Child, (IPTR) (d.virtual_popframe = MakePopframe()),
-    		    Child, (IPTR) CLabel("Virtual"),
+    		    Child, (IPTR) CLabel(_(MSG_VIRTUAL)),
     		End,
     	    End, /* Frame */
     	    Child, (IPTR) HGroup,
-    		GroupFrameT("Background"),
+    		GroupFrameT(_(MSG_BACKGROUND)),
     		MUIA_Group_SameWidth, TRUE,
     		Child, (IPTR) VGroup,
     		    MUIA_Group_VertSpacing, 1,
     		    Child, (IPTR) (d.background_framed_popimage = MakeBackgroundPopimage()),
-    		    Child, (IPTR) CLabel("Framed"),
+    		    Child, (IPTR) CLabel(_(MSG_FRAMED)),
     		End,
     		Child, (IPTR) VGroup,
     		    MUIA_Group_VertSpacing, 1,
     		    Child, (IPTR) (d.background_page_popimage = MakeBackgroundPopimage()),
-    		    Child, (IPTR) CLabel("Page"),
+    		    Child, (IPTR) CLabel(_(MSG_PAGE)),
     		End,
     		Child, (IPTR) VGroup,
     		    MUIA_Group_VertSpacing, 1,
     		    Child, (IPTR) (d.background_register_popimage = MakeBackgroundPopimage()),
-    		    Child, (IPTR) CLabel("Register"),
+    		    Child, (IPTR) CLabel(_(MSG_REGISTER)),
     		End,
     	    End, /* Background */
     	End,
