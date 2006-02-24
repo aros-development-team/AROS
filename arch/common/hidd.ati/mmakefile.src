@@ -1,0 +1,24 @@
+#   $Id: mmakefile.src 21317 2004-03-20 12:53:41Z schulz $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+CFLAGS := $(CFLAGS) -D__KERNEL__
+
+LIBNAME := ati
+
+FILES	:= ati_class radeon_driver ids
+
+#unused MM- kernel-objs: kernel-pci-kobj
+
+%build_module_macro mmake=kernel-hidd-ati \
+    modname=ati modtype=hidd \
+    files="$(FILES)" \
+    conffile=lib.conf genfunctable=yes \
+    uselibs="rom amiga"
+
+#MM kernel-hidd-ati
+kernel-hidd-ati:
+		cp $(AROS_DRIVERS)/ati.hidd /aros/Devs/Drivers/
+
+%common
