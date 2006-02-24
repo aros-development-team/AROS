@@ -1477,8 +1477,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         struct Screen *scr;
                         //ULONG Thresh;
 
-                        iihdata->DeltaMouseX = ie->ie_X;
-                        iihdata->DeltaMouseY = ie->ie_Y;
+    	    	    	/* Add delta information lost in previous mousemove event. See below. */			
+                        iihdata->DeltaMouseX = ie->ie_X + iihdata->DeltaMouseX_Correction;
+                        iihdata->DeltaMouseY = ie->ie_Y + iihdata->DeltaMouseY_Correction;
 
 #define ACCELERATOR_THRESH      2
 #define ACCELERATOR_MULTI       2
@@ -1499,9 +1500,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         switch(GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks)
                         {
                             case 0:
-                                 break;
+			    	iihdata->DeltaMouseX_Correction = 0;
+			    	iihdata->DeltaMouseX_Correction = 0;
+                                break;
                             
                             default:
+			    	/* Remember the delta information which gets lost because of division by PointerTicks.
+				   Will be added to prescaled deltas of next mousemove event. If this is not done, moving
+				   the mouse very slowly would cause it to not move at all */
+				   
+    				iihdata->DeltaMouseX_Correction = iihdata->DeltaMouseX % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+    				iihdata->DeltaMouseY_Correction = iihdata->DeltaMouseY % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+				
                                 iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
                                 iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
                                 break;

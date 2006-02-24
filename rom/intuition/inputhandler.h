@@ -56,6 +56,8 @@ struct IIHData
     WORD                     LastMouseY;
     WORD                     DeltaMouseX;
     WORD                     DeltaMouseY;
+    WORD                     DeltaMouseX_Correction;
+    WORD                     DeltaMouseY_Correction;
     BOOL                     MouseBoundsActiveFlag;
     LONG                    MouseBoundsLeft;
     LONG                    MouseBoundsTop;
