@@ -242,7 +242,7 @@ STRPTR GetFileName(ULONG msgtextid)
     static UBYTE         pathbuffer[300];
     static UBYTE         filebuffer[300];
     struct FileRequester *req;
-    STRPTR               retval = NULL;
+    STRPTR               filepart, retval = NULL;
     
     AslBase = OpenLibrary("asl.library", 39);
     if (AslBase)
@@ -252,7 +252,8 @@ STRPTR GetFileName(ULONG msgtextid)
 	
 	strncpy(filebuffer, FilePart(filenamebuffer), 299);
 	strncpy(pathbuffer, filenamebuffer, 299);
-	*(FilePart(pathbuffer)) = 0;
+	filepart = FilePart(pathbuffer);
+	*filepart = 0;
 	
 	req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR)MSG(msgtextid),
 						   ASLFR_DoPatterns   , TRUE                         ,
