@@ -4,7 +4,7 @@
     Copyright © 2006, The AROS Development Team. All rights reserved.
     $Id:$
 
-    Desc: ati.hidd initialization
+    Desc: PCI ids for ATI
     Lang: English
 */
 
