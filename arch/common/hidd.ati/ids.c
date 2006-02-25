@@ -2,7 +2,7 @@
     Copyright © 2006, The AROS Development Team. All rights reserved.
     $Id:$
 
-    Desc: ati.hidd initialization
+    Desc: List of ATI cards supported by this driver
     Lang: English
 */
 
