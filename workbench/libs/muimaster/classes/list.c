@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <graphics/gfx.h>
 #include <graphics/view.h>
+#include <devices/rawkeycodes.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -586,7 +587,7 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	DoMethod(obj, MUIM_List_Insert, (IPTR)array, i, MUIV_List_Insert_Top);
     }
 
-    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
+    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
@@ -737,6 +738,11 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			    } else DoMethod(obj,MUIM_List_SelectChange,MUIV_List_Active_Off,MUIV_List_Select_Off,0);
 
 			    set(obj,MUIA_Listview_SelectChange,TRUE);
+			    
+			    if (new_entries_active != -1)
+			    {
+			    	DoMethod(obj, MUIM_List_Jump, MUIV_List_Jump_Active);
+			    }
 			}
 		    }
 		    break;
@@ -866,7 +872,7 @@ static IPTR List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
     zune_imspec_cleanup(data->list_selcur);
 
     DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+    data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
     data->mouse_click = 0;
     
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -984,10 +990,10 @@ static IPTR List_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
 #if 0
-    if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
+    if (data->ehn.ehn_Events & (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS))
     {
 	DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-	data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+	data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
 	DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
     }
     data->mouse_click = 0;
@@ -1187,10 +1193,55 @@ static VOID List_MakeActive(struct IClass *cl, Object *obj, LONG relx, LONG rely
     LONG eclicky = rely + _top(obj) - data->entries_top_pixel; /* y coordinates transfromed to the entries */
     LONG new_act = eclicky / data->entry_maxheight + data->entries_first;
 
+    if (eclicky < 0)
+    {
+    	new_act = data->entries_first - 1;
+    }
+    else if (new_act > data->entries_first + data->entries_visible)
+    {
+    	new_act = data->entries_first + data->entries_visible;
+    }
+    
     if (new_act >= data->entries_num) new_act = data->entries_num - 1;
     else if (new_act < 0) new_act = 0;
 
     set(obj, MUIA_List_Active, new_act);
+}
+
+static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely, UWORD qual)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    LONG new = data->entries_first;
+    
+    if (qual & IEQUALIFIER_CONTROL)
+    {
+    	if (wheely < 0) new = 0;
+	if (wheely > 0) new = data->entries_num;
+    }
+    else if (qual & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+    {
+    	new += (wheely * data->entries_visible);
+    }
+    else
+    {
+    	new += wheely * 3;
+    }
+    
+    if (new > data->entries_num - data->entries_visible)
+    {
+    	new = data->entries_num - data->entries_visible;
+    }
+    
+    if (new < 0)
+    {
+    	new = 0;
+    }
+    
+    if (new != data->entries_first)
+    {
+    	set(obj, MUIA_List_First, new);
+    }
+    
 }
 
 /**************************************************************************
@@ -1232,7 +1283,7 @@ static IPTR List_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleE
 			    }
 
 			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+			    data->ehn.ehn_Events |= (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
 			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
 			    return MUI_EventHandlerRC_Eat;
@@ -1242,7 +1293,7 @@ static IPTR List_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleE
 			if (msg->imsg->Code == SELECTUP && data->mouse_click)
 			{
 			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+			    data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
 			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 			    data->mouse_click = 0;
 			    return 0;
@@ -1250,12 +1301,35 @@ static IPTR List_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleE
 		    }
 		    break;
 
+    	    case    IDCMP_INTUITICKS:
 	    case    IDCMP_MOUSEMOVE:
 		    if (data->mouse_click)
 		    {
 			List_MakeActive(cl, obj, mx, my);
 		    }
 		    break;
+		    
+	    case    IDCMP_RAWKEY:
+	    	    switch(msg->imsg->Code)
+		    {
+    	    	        case RAWKEY_NM_WHEEL_UP:
+			    if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
+			    {
+			    	DoWheelMove(cl, obj, -1, msg->imsg->Qualifier);
+			    }
+			    break;
+			    
+		    	case RAWKEY_NM_WHEEL_DOWN:
+			    if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
+			    {
+			    	DoWheelMove(cl, obj, 1, msg->imsg->Qualifier);
+			    }
+			    break;
+				
+		    }
+	    	    break;
+		    
+		    
 	}
     }
 
@@ -1831,6 +1905,62 @@ STATIC IPTR List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP_List_De
     return 0;
 }
 
+/**************************************************************************
+ MUIM_List_Jump
+**************************************************************************/
+STATIC IPTR List_Jump(struct IClass *cl, Object *obj, struct MUIP_List_Jump *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    LONG pos = msg->pos;
+    
+    switch(pos)
+    {
+    	case MUIV_List_Jump_Top:
+	    pos = 0;
+	    break;
+	    
+	case MUIV_List_Jump_Active:
+	    pos = data->entries_active;
+	    break;
+	    
+	case MUIV_List_Jump_Bottom:
+	    pos = data->entries_num - 1;
+	    break;
+	    
+	case MUIV_List_Jump_Down:
+	    pos = data->entries_first + data->entries_visible;
+	    break;
+	    
+	case MUIV_List_Jump_Up:
+	    pos = data->entries_first - 1;
+	    break;
+    
+    }
+
+    if (pos > data->entries_num)
+    {
+    	pos = data->entries_num - 1;
+    }
+    if (pos < 0) pos = 0;
+    
+    if (pos < data->entries_first)
+    {
+    	set(obj, MUIA_List_First, pos);
+    }
+    else if (pos >= data->entries_first + data->entries_visible)
+    {
+    	pos -= (data->entries_visible - 1);
+	if (pos < 0) pos = 0;
+	if (pos != data->entries_first)
+	{
+	    set(obj, MUIA_List_First, pos);
+	}
+    }
+    
+      
+    return TRUE;
+}
+
 
 
 
@@ -1866,6 +1996,7 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 	case MUIM_List_InsertSingleAsTree: return List_InsertSingleAsTree(cl,obj,(APTR)msg);
 	case MUIM_List_CreateImage: return List_CreateImage(cl,obj,(APTR)msg);
 	case MUIM_List_DeleteImage: return List_DeleteImage(cl,obj,(APTR)msg);
+	case MUIM_List_Jump: return List_Jump(cl,obj,(APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
