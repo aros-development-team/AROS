@@ -1238,6 +1238,11 @@ STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
 
     pd->DestWidth = msg->ps_NewWidth;
     pd->DestHeight = msg->ps_NewHeight;
+    
+#warning "CHECKME: PDT_Scale() set bmh_Width/bmh_Height to new size yes or no?"    
+    pd->bmhd.bmh_Width = msg->ps_NewWidth;   
+    pd->bmhd.bmh_Height = msg->ps_NewHeight;   
+
     if( pd->SrcWidth == pd->DestWidth && pd->SrcHeight == pd->DestHeight )
 	pd->Scale = FALSE;
     else
