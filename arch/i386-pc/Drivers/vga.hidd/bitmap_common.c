@@ -41,89 +41,6 @@ static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear
     return;
 }
 
-#if 0
-
-/* this function does not really make sense for LUT bitmaps */
-
-static HIDDT_Pixel MNAME(mapcolor)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_MapColor *msg)
-{
-    int i,f;
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-
-    HIDDT_Pixel red	= msg->color->red >> 8;
-    HIDDT_Pixel green	= msg->color->green >> 8;
-    HIDDT_Pixel blue	= msg->color->blue >> 8;
-
-    HIDDT_Pixel color = red | (green << 8) | (blue << 16);
-    
-    i = 0;
-    f = 1;
-    
-    do
-    {
-	if (data->cmap[i] < 0x01000000)	/* Is empty? */
-	{
-	    f = 0;			/* Got color */
-	    data->cmap[i] = 0x01000000 | red | (green << 8) | (blue << 16);
-	    data->Regs->DAC[i*3] = red >> 2;
-	    data->Regs->DAC[i*3+1] = green >> 2;
-	    data->Regs->DAC[i*3+2] = blue >> 2;
-#ifdef OnBitmap
-	    ObtainSemaphore(&XSD(cl)->HW_acc);
-	    vgaRestore(data->Regs);
-	    ReleaseSemaphore(&XSD(cl)->HW_acc);
-#endif /* OnBitmap */
-	}
-	else if ((data->cmap[i] & 0xffffff) == color)
-	{
-	    if ((data->cmap[i] & 0xff000000) != 0xff000000)
-	    {
-		data->cmap[i] += 0x01000000;
-	    }
-	    f=0;
-	}
-	else i++;	    
-    } while (f && (i<16));
-
-    return i;
-}
-
-#endif
-
-#if 0
-
-/* this function does not really make sense for LUT bitmaps */
-
-static VOID MNAME(unmappixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnmapPixel *msg)
-{
-    int i,f;
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-
-    HIDDT_Pixel red	= msg->color->red >> 8;
-    HIDDT_Pixel green	= msg->color->green >> 8;
-    HIDDT_Pixel blue	= msg->color->blue >> 8;
-
-    HIDDT_Pixel color = red | (green << 8) | (blue << 16);
-
-    i = 0;
-    f = 1;
-
-    do
-    {
-	if ((data->cmap[i] & 0xffffff) == color)	/* Find color */
-	{
-	    f = 0;					/* Got color */
-	    if (data->cmap[i] & 0xff000000)		/* Dealloc it if used */
-	    {
-		data->cmap[i] -= 0x01000000;
-	    }
-	}
-	else i++;
-    } while (f && (i<16));
-}
-
-#endif
-
 void vgaRestore(struct vgaHWRec *, BOOL onlyDAC);
 
 static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
@@ -240,54 +157,6 @@ static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
     /* Get pen number from colortab */
     return pixel;
 }
-
-#if 0
-
-/*********  BitMap::DrawPixel()  ***************************/
-
-static VOID MNAME(drawpixel)(OOP_Class *cl,OOP_ Object *o, struct pHidd_BitMap_DrawPixel *msg)
-{
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    HIDDT_Pixel fg;
-    unsigned char *ptr;
-
-#ifdef OnBitmap
-    int pix;
-    int i;
-    unsigned char *ptr2;
-#endif /* OnBitmap */
-
-    fg = GC_FG(msg->gc);
-
-    ptr = (char *)(data->VideoData + msg->x + (msg->y * data->width));
-    *ptr = (char) fg;
-
-#ifdef OnBitmap
-    ptr2 = (char *)(0xa0000 + (msg->x + (msg->y * data->width)) / 8);
-    pix = 0x8000 >> (msg->x % 8);
-    ObtainSemaphore(&XSD(cl)->HW_acc);
-
-    outw(0x3c4,0x0f02);
-    outw(0x3ce,pix | 8);
-    outw(0x3ce,0x0005);
-    outw(0x3ce,0x0003);
-    outw(0x3ce,(fg << 8));
-    outw(0x3ce,0x0f01);
-
-    *ptr2 |= 1;		// This or'ed value isn't important
-
-    if (((msg->x >= XSD(cl)->mouseX) && (msg->x < (XSD(cl)->mouseX + XSD(cl)->mouseW))) ||
-	((msg->y >= XSD(cl)->mouseY) && (msg->y < (XSD(cl)->mouseY + XSD(cl)->mouseH))))
-	draw_mouse(XSD(cl));
-
-    ReleaseSemaphore(&XSD(cl)->HW_acc);
-
-#endif /* OnBitmap */
-
-    return;
-}
-
-#endif
 
 /*********  BitMap::PutImage()  ***************************/
 
@@ -455,28 +324,18 @@ static VOID MNAME(getimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
-    int i;
+    HIDD_BM_CopyMemBox8(o,
+			data->VideoData,
+			msg->x,
+			msg->y,
+			msg->pixels,
+			0,
+			0,
+			msg->width,
+			msg->height,
+			data->width,
+			msg->modulo);
 
-    // start of Source data
-    unsigned char *buff = data->VideoData +
-                                 msg->x + (msg->y * data->width);
-    // adder for each line
-    ULONG add = data->width - msg->width;
-    ULONG cnt = msg->height;
-
-    unsigned char *s_start = msg->pixels;
-
-    while (cnt > 0)
-    {
-        i = msg->width;
-        while (i)
-        {
-	    *s_start++ = *buff++;
-            i--;
-        }
-        buff += add;
-        cnt--;
-    }
 }
 
 /*********  BitMap::FillRect()  ***************************/
