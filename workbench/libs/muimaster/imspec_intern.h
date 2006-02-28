@@ -83,10 +83,15 @@ struct MUI_ImageSpec_intern /* _intern */
 	    LONG muiimg;                           /* index in prefs->imagespecs[] */
 	} cfg;
 	struct {
+	    struct MUI_RenderInfo *mri;
             UWORD angle;                     /* integer values in [0,360) */
             Object *obj;
             ULONG start_rgb[3];
             ULONG end_rgb[3];
+	    ULONG start_pen;
+	    ULONG end_pen;
+	    BOOL  start_pen_is_allocated;
+	    BOOL  end_pen_is_allocated;
 	} gradient;
     } u;
 
@@ -108,5 +113,8 @@ VOID zune_gradient_draw
     WORD x1, WORD y1, WORD x2, WORD y2,
     WORD xoff, WORD yoff
 );
+
+BOOL zune_gradientspec_setup(struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo *mri);
+VOID zune_gradientspec_cleanup(struct MUI_ImageSpec_intern *spec);
 
 #endif

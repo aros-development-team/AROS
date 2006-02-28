@@ -551,6 +551,7 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
 
         case IST_SCALED_GRADIENT:
         case IST_TILED_GRADIENT:
+	    zune_gradientspec_setup(spec, mri);
             break;
     }
     return spec;
@@ -608,6 +609,7 @@ void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec)
 
         case IST_SCALED_GRADIENT:
         case IST_TILED_GRADIENT:
+	    zune_gradientspec_cleanup(spec);
             break;
 
     }

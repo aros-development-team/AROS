@@ -305,11 +305,12 @@ VOID zune_gradient_draw
     ULONG *start_rgb = spec->u.gradient.start_rgb;
     ULONG *end_rgb   = spec->u.gradient.end_rgb;
 
-    if (!(CyberGfxBase && (GetBitMapAttr(mri->mri_RastPort->BitMap, BMA_DEPTH) >= 15)))
-        return;
-
-    if (spec->u.gradient.obj == NULL)
-	return;
+    if (!(CyberGfxBase && (mri->mri_Flags & MUIMRI_TRUECOLOR) && spec->u.gradient.obj))
+    {
+    	SetAPen(mri->mri_RastPort, spec->u.gradient.start_pen);
+	RectFill(mri->mri_RastPort, x1, y1, x2, y2);
+    	return;
+    }
 
     switch(spec->u.gradient.angle)
     {
@@ -544,4 +545,72 @@ VOID zune_tiled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
                  spec->u.gradient.end_rgb[0]*0x01010101,
                  spec->u.gradient.end_rgb[1]*0x01010101,
                  spec->u.gradient.end_rgb[2]*0x01010101);
+}
+
+BOOL zune_gradientspec_setup(struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo *mri)
+{
+    spec->u.gradient.mri = mri;
+    
+    if (!(mri->mri_Flags & MUIMRI_TRUECOLOR))
+    {
+	ULONG *rgbptr  = spec->u.gradient.start_rgb;
+	ULONG *penptr  = &spec->u.gradient.start_pen;
+	BOOL  *flagptr = &spec->u.gradient.start_pen_is_allocated;
+    	LONG   pen, i;
+	
+	struct TagItem obp_tags[] =
+	{
+	    { OBP_FailIfBad, FALSE  },
+	    { TAG_DONE	    	    }
+	};
+
+    	for(i = 0; i < 2; i++)
+	{
+	    ULONG r = rgbptr[0] * 0x01010101;
+	    ULONG g = rgbptr[1] * 0x01010101;
+	    ULONG b = rgbptr[2] * 0x01010101;
+	    
+    	    pen = ObtainBestPenA(mri->mri_Colormap, r, g, b, obp_tags);
+	    
+	    if (pen == -1)
+	    {
+	    	*flagptr = FALSE;
+		*penptr = FindColor(mri->mri_Colormap, r, g, b, -1);
+	    }
+	    else
+	    {
+	    	*flagptr = TRUE;
+		*penptr = pen;
+	    }
+	    
+	    rgbptr  = spec->u.gradient.end_rgb;
+	    penptr  = &spec->u.gradient.end_pen;
+	    flagptr = &spec->u.gradient.end_pen_is_allocated;
+	}
+	
+    }
+    else
+    {
+    	spec->u.gradient.start_pen_is_allocated = FALSE;
+    	spec->u.gradient.end_pen_is_allocated = FALSE;	
+    }
+    
+    return TRUE;
+}
+
+void zune_gradientspec_cleanup(struct MUI_ImageSpec_intern *spec)
+{
+    if (spec->u.gradient.start_pen_is_allocated)
+    {
+    	ReleasePen(spec->u.gradient.mri->mri_Colormap, spec->u.gradient.start_pen);
+	spec->u.gradient.start_pen_is_allocated = FALSE;
+    }
+
+    if (spec->u.gradient.end_pen_is_allocated)
+    {
+    	ReleasePen(spec->u.gradient.mri->mri_Colormap, spec->u.gradient.end_pen);
+	spec->u.gradient.end_pen_is_allocated = FALSE;
+    }
+    
+    spec->u.gradient.mri = NULL;
 }
