@@ -1617,16 +1617,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 #endif
                     /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
 		    if (iihdata->MouseBoundsActiveFlag)
-		    {
-		    	if (iihdata->MouseBoundsKillTimer)
-			{
-			    iihdata->MouseBoundsKillTimer--;
-			    if (iihdata->MouseBoundsKillTimer == 0)
-			    {
-			    	iihdata->MouseBoundsActiveFlag = FALSE;
-			    }
-			}
-			
+		    {			
                         if (ie->ie_X < iihdata->MouseBoundsLeft)
 			{
 			    ie->ie_X = iihdata->MouseBoundsLeft;
@@ -2323,6 +2314,15 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
             break; /* case IECLASS_RAWKEY */
 
         case IECLASS_TIMER:
+	    if (iihdata->MouseBoundsKillTimer)
+	    {
+		iihdata->MouseBoundsKillTimer--;
+		if (iihdata->MouseBoundsKillTimer == 0)
+		{
+		    iihdata->MouseBoundsActiveFlag = FALSE;
+		}
+	    }
+
             if (GetPrivIBase(IntuitionBase)->PointerDelay)
             {
                 ULONG lock = LockIBase(0);
