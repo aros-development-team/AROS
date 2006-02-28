@@ -1616,14 +1616,34 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     }
 #endif
                     /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
-		    if (iihdata->MouseBoundsActiveFlag) {
-                        if (ie->ie_X < iihdata->MouseBoundsLeft) ie->ie_X = iihdata->MouseBoundsLeft;
-                        else
-                            if (ie->ie_X > iihdata->MouseBoundsRight) ie->ie_X = iihdata->MouseBoundsRight;
+		    if (iihdata->MouseBoundsActiveFlag)
+		    {
+		    	if (iihdata->MouseBoundsKillTimer)
+			{
+			    iihdata->MouseBoundsKillTimer--;
+			    if (iihdata->MouseBoundsKillTimer == 0)
+			    {
+			    	iihdata->MouseBoundsActiveFlag = FALSE;
+			    }
+			}
+			
+                        if (ie->ie_X < iihdata->MouseBoundsLeft)
+			{
+			    ie->ie_X = iihdata->MouseBoundsLeft;
+			}
+                        else if (ie->ie_X > iihdata->MouseBoundsRight)
+			{
+			    ie->ie_X = iihdata->MouseBoundsRight;
+			}
                         
-                        if (ie->ie_Y < iihdata->MouseBoundsTop) ie->ie_Y = iihdata->MouseBoundsTop;
-                        else
-                            if (ie->ie_Y > iihdata->MouseBoundsBottom) ie->ie_Y = iihdata->MouseBoundsBottom;
+                        if (ie->ie_Y < iihdata->MouseBoundsTop)
+			{
+			    ie->ie_Y = iihdata->MouseBoundsTop;
+			}
+                        else if (ie->ie_Y > iihdata->MouseBoundsBottom)
+			{
+			    ie->ie_Y = iihdata->MouseBoundsBottom;
+			}
 		    }
 
     	    	    #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP

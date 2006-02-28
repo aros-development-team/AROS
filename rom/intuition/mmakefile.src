@@ -126,6 +126,7 @@ FUNCS := \
 	setmenustrip \
 	setmousequeue \
 	setpointer \
+	setpointerbounds \
 	setprefs \
 	setpubscreenmodes \
 	setwindowpointera \
