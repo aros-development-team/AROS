@@ -103,11 +103,10 @@ static struct RDArgs *myargs;
 static CxObj *cxbroker, *cxcust;
 static ULONG cxmask, actionmask, icontrolmask;
 static WORD  winoffx, winoffy, winwidth, winheight;
-static LONG  newWindowX, newWindowY;
-static LONG  resizeOffsetX, resizeOffsetY;
-static LONG  trackMouseX, trackMouseY;
-static LONG  mouseBottom, mouseRight;
-static LONG  mouseTop, mouseLeft;
+#if !USE_CHANGEWINDOWBOX
+static WORD actionstart_winx, actionstart_winy;
+#endif
+static struct Rectangle mousebounds;
 static LONG  gadgetLeft, gadgetTop;
 static LONG  gadgetWidth, gadgetHeight;
 static BYTE  actionsig, icontrolsig;
@@ -147,26 +146,15 @@ struct FileIControlPrefs
 #define MINWINDOWWIDTH (5)
 #define MINWINDOWHEIGHT (5)
 
-void SetMouseBounds()
-{
-    struct Screen *scr;
-    struct Layer *lay;
-    struct Window *win;
+#define mouseLeft    mousebounds.MinX
+#define mouseTop     mousebounds.MinY
+#define mouseRight   mousebounds.MaxX
+#define mouseBottom  mousebounds.MaxY
 
+void SetMouseBounds(struct Window *win)
+{
     WORD minheight, minwidth, maxheight, maxwidth;
 
-    if (IntuitionBase->ActiveWindow)
-        scr = IntuitionBase->ActiveWindow->WScreen;
-    else
-        scr = IntuitionBase->ActiveScreen;
-
-    lay = WhichLayer(&scr->LayerInfo, scr->MouseX, scr->MouseY);
-
-    if (lay)
-        win = (struct Window *)lay->Window;
-    else
-        win = NULL;
-		
     if (win) {
         if (actiontype == ACTIONTYPE_DRAGGING) {
             if (offScreenLayersFlag) {
@@ -213,6 +201,7 @@ void SetMouseBounds()
                 mouseBottom = (win->WScreen->Height - (win->Height - winoffy));
         }
     }
+    
 }
 
 BOOL GetOFFSCREENLAYERSPref()
@@ -553,19 +542,15 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 			winoffy   = win->WScreen->MouseY - win->TopEdge;
 			winwidth  = win->Width;
 			winheight = win->Height;
-			/* set mouse boundaries appropriately */
-			/* these need to be set initially to the window, they represent where Opaque
-			thinks that the window should be, sometimes it takes the window some time to 
-			actually move there however */
-		        newWindowX = win->LeftEdge;
-		        newWindowY = win->TopEdge;
-			resizeOffsetX = winwidth - win->WScreen->MouseX;
-			resizeOffsetY = winheight - win->WScreen->MouseY;
-		        trackMouseX = actionwin->WScreen->MouseX;
-		        trackMouseY = actionwin->WScreen->MouseY;
+		    #if !USE_CHANGEWINDOWBOX
+			actionstart_winx = win->LeftEdge;
+			actionstart_winy = win->TopEdge;
+		    #endif
 			DisposeCxMsg(msg);
 			/* reset mouse bounds */
-		        SetMouseBounds();
+		        SetMouseBounds(actionwin);
+			if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
+			
 			//Signal(maintask, icontrolmask);
 		    }
 		    
@@ -576,6 +561,7 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 	        if (opaque_active)
 		{
 		    opaque_active = FALSE;
+    	    	    if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, NULL, 0, NULL);
 		    DisposeCxMsg(msg);
 		}
 		break;
@@ -583,107 +569,26 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 	    case IECODE_NOBUTTON:
 	        if (opaque_active)
 		{ 
-		    if (IEQUALIFIER_RELATIVEMOUSE & ie->ie_Qualifier) { /* relative */
-		        trackMouseX = actionwin->WScreen->MouseX;
-		        trackMouseY = actionwin->WScreen->MouseY;
-		        WORD mouseshiftX = ie->ie_X;
-		        WORD mouseshiftY = ie->ie_Y;
-			WORD newX = trackMouseX + WITHACCEL(mouseshiftX);
-			WORD newY = trackMouseY + WITHACCEL(mouseshiftY);
+		    if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
 
-			/* predict if the mouse move will take the pointer "out-of-bounds", clip it */
-		        if (newX < mouseLeft) {  /* mouse pointer will be out-of bounds x-wise to the left */
-			    mouseshiftX = WITHOUTACCEL(mouseLeft - trackMouseX);
-			    newX = trackMouseX + WITHACCEL(mouseshiftX);
-			}
-		        else {
-			    if (newX > mouseRight) {  /* mouse pointer will be out-of bounds x-wise to the right */
-			    	mouseshiftX = WITHOUTACCEL(mouseRight - trackMouseX);
-			        newX = trackMouseX + WITHACCEL(mouseshiftX);
-			    }
-			}
-
-			if (newY < mouseTop) {  /* mouse pointer will be out-of bounds y-wise to the top */
-			    mouseshiftY = WITHOUTACCEL(mouseTop - trackMouseY);
-			    newY = trackMouseY + WITHACCEL(mouseshiftY);
-			}
-		        else {
-			    if (newY > mouseBottom) {  /* mouse pointer will be out-of bounds y-wise to the bottom */
-			    	mouseshiftY = WITHOUTACCEL(mouseBottom - trackMouseY);
-			        newY = trackMouseY + WITHACCEL(mouseshiftY);
-			    }
-			}
-
-		        if ((mouseshiftX == 0) && (mouseshiftY == 0)) {
-			    DisposeCxMsg(msg);
-			}
-			else {
-			    /* new proposed window position */
-    			    if (actiontype == ACTIONTYPE_DRAGGING) {
-		            	newWindowX = newX - winoffx;
-		            	newWindowY = newY - winoffy;
-			    }
-			    else {
-		                newWindowX = newX + resizeOffsetX;
-		                newWindowY = newY + resizeOffsetY;
-			    }
-
-			    /* new mouse relative coords */
-			    ie->ie_X = mouseshiftX;
-			    ie->ie_Y = mouseshiftY;
-
-		            #if CALL_WINDOWFUNCS_IN_INPUTHANDLER
-	    	                HandleAction();
-		            #else
-		                Signal(maintask, actionmask);
-	    	            #endif
-			}
-		    }
-		    else { /* absolute */
-		        WORD mouseX = actionwin->WScreen->MouseX;
-		        WORD mouseY = actionwin->WScreen->MouseY;
-			WORD newX = ie->ie_X;
-			WORD newY = ie->ie_Y;
-			WORD mouseshiftX, mouseshiftY;
-
-		        if (newX < mouseLeft) newX = mouseLeft;
-		        else if (newX > mouseRight) newX = mouseRight;
-		        if (newY < mouseTop) newY = mouseTop;
-		        else if (newY > mouseBottom) newY = mouseBottom;
-
-			/* reduce mouseshift if it goes too far */
-			mouseshiftX = newX - mouseX;
-			mouseshiftY = newY - mouseY;
-
-		        if ((mouseshiftX == 0) && (mouseshiftY == 0)) {
-			    DisposeCxMsg(msg);
-			}
-			else {
-			    /* new proposed window position */
-    			    if (actiontype == ACTIONTYPE_DRAGGING) {
-		                newWindowX = newX - winoffx;
-		                newWindowY = newY - winoffy;
-			    }
-			    else {
-		                newWindowX = newX + resizeOffsetX;
-		                newWindowY = newY + resizeOffsetY;
-			    }
-			    /* new mouse relative coords */
-			    ie->ie_X = mouseshiftX;
-			    ie->ie_Y = mouseshiftY;
-		            #if CALL_WINDOWFUNCS_IN_INPUTHANDLER
-	    	                HandleAction();
-		            #else
-		                Signal(maintask, actionmask);
-	    	            #endif
-			}
-		    }
-		}
+		#if CALL_WINDOWFUNCS_IN_INPUTHANDLER
+	    	    HandleAction();
+		#else
+		    Signal(maintask, actionmask);
+	    	#endif
+		}	
 		break;
 		
 	} /* switch(ie->ie_Code) */
 	
     } /* if (ie->ie_Class == IECLASS_RAWMOUSE) */
+    else if (ie->ie_Class == IECLASS_TIMER)
+    {
+    	if (opaque_active && !offScreenLayersFlag)
+	{
+	    SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
+	}
+    }
 }
 
 /************************************************************************************/
@@ -729,21 +634,23 @@ static void HandleAction(void)
 {
     if (actiontype == ACTIONTYPE_DRAGGING)
     {
-    	WORD newx = newWindowX; 
-    	WORD newy = newWindowY;
+    	WORD newx = actionwin->WScreen->MouseX - winoffx; 
+    	WORD newy = actionwin->WScreen->MouseY - winoffy;
 
     	/* MoveWindow(actionwin, newx - actionwin->LeftEdge, newy - actionwin->TopEdge); */
     #if USE_CHANGEWINDOWBOX
      	ChangeWindowBox(actionwin, newx, newy, actionwin->Width, actionwin->Height);
     #else
-    	MoveWindow(actionwin, newx - actionwin->LeftEdge, newy - actionwin->TopEdge);
+    	MoveWindow(actionwin, newx - actionstart_winx, newy - actionstart_winy);
+	actionstart_winx = newx;
+	actionstart_winy = newy;
     #endif
     }
     else
     {
-    	LONG neww = newWindowX;
-    	LONG newh = newWindowY;
-	
+    	LONG neww = winwidth  + actionwin->WScreen->MouseX - actionwin->LeftEdge - winoffx;
+    	LONG newh = winheight + actionwin->WScreen->MouseY - actionwin->TopEdge  - winoffy;
+ 	
 	if ((neww != actionwin->Width) || (newh != actionwin->Height))
 	{
 	    /* SizeWindow(actionwin, neww - actionwin->Width, newh - actionwin->Height); */
