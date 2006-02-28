@@ -38,6 +38,9 @@ vbematch 1280 1024 32
 title AROS VGA  640x480   4bpp
 kernel /boot/aros-pc-i386.gz ATA=32bit,forcedma
 
+title AROS VGA  640x480   4bpp slow ATA
+kernel /boot/aros-pc-i386.gz
+
 title AROS NVIDIA
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=DRIVERS:nvidia.hidd ATA=32bit,forcedma
 
