@@ -59,10 +59,11 @@ struct IIHData
     WORD                     DeltaMouseX_Correction;
     WORD                     DeltaMouseY_Correction;
     BOOL                     MouseBoundsActiveFlag;
-    LONG                    MouseBoundsLeft;
-    LONG                    MouseBoundsTop;
-    LONG                    MouseBoundsRight;
-    LONG                    MouseBoundsBottom;
+    WORD    	    	     MouseBoundsKillTimer;
+    LONG                     MouseBoundsLeft;
+    LONG                     MouseBoundsTop;
+    LONG                     MouseBoundsRight;
+    LONG                     MouseBoundsBottom;
     UWORD                    ActQualifier;
     UWORD                    PrevKeyMouseState;
     UWORD                    ActKeyMouseState;
