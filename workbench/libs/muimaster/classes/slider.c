@@ -106,7 +106,7 @@ static IPTR Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
 
     if (!obj)
     {
-	return NULL;
+	return 0;
     }
 
     data = INST_DATA(cl, obj);
@@ -467,7 +467,7 @@ static IPTR Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 	    } else if (oldko != data->knob_offset)
 	    {
 	    	data->same_knop_value = 1;
-	    	MUI_Redraw(obj, MADF_DRAWOBJECT);
+	    	MUI_Redraw(obj, MADF_DRAWUPDATE);
 	    }
 	    data->keep_knob_offset = 0;
 	}
