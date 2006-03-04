@@ -97,9 +97,9 @@ Quit Q
 /*********************************************************************************************/
 
 #define VERSION 	1
-#define REVISION 	2
-#define DATESTR 	"14.02.2006"
-#define VERSIONSTR	"$VER: FKey 1.2 (" DATESTR ")"
+#define REVISION 	3
+#define DATESTR 	"04.03.2006"
+#define VERSIONSTR	"$VER: FKey 1.3 (" DATESTR ")"
 
 /*********************************************************************************************/
 
@@ -413,6 +413,13 @@ static void keylist_disp_func(struct Hook *hook, char **array, struct KeyInfo *k
 
 static void broker_func(struct Hook *hook, Object *obj, CxMsg *msg)
 {
+    D(bug("FKey: broker_func called\n"));
+    if ( (CxMsgType(msg) == CXM_COMMAND) && (CxMsgID(msg) == CXCMD_APPEAR) )
+    {
+	// This opens the window if FKey was started with CX_POPUP=NO
+	set(wnd, MUIA_Window_Open, TRUE);
+	D(bug("FKey: CXCMD_APPEAR message\n"));
+    }
 }
 
 
@@ -550,7 +557,8 @@ static void MakeGUI(void)
     get(app, MUIA_Application_Broker, &broker);  
     get(app, MUIA_Application_BrokerPort, &brokermp);  
     
-    if (!broker || !brokermp) Cleanup(MSG(MSG_CANT_CREATE_GADGET));
+    if (!broker || !brokermp)
+	Cleanup(MSG(MSG_CANT_CREATE_GADGET));
 
     {
     	CxObj *popfilter = CxFilter(cx_popkey);
@@ -579,11 +587,11 @@ static void MakeGUI(void)
     DoMethod(app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_DOUBLESTART);
     
     //DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_QUIT, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_HIDE, (IPTR) wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_ICONIFY, (IPTR) wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_HIDE, (IPTR) app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_ICONIFY, (IPTR) app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_SAVE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_SAVE);
     
     DoMethod(cmdcycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR)cmdpage, 3, MUIM_Set, MUIA_Group_ActivePage, MUIV_TriggerValue);
@@ -1337,7 +1345,8 @@ static void HandleAll(void)
 	    if (sigs & SIGBREAKF_CTRL_E) HandleAction();
 	    if (sigs & SIGBREAKF_CTRL_F)
 	    {
-	    	set(wnd, MUIA_Window_Open, TRUE);
+	    	set(app, MUIA_Application_Iconified, FALSE);
+		set(wnd, MUIA_Window_Open, TRUE);
 		DoMethod(wnd, MUIM_Window_ToFront);
 	    }
 	}
