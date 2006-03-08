@@ -1,0 +1,24 @@
+#   $Id: mmakefile.src 23870 2005-12-23 13:57:24Z verhaegs $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+CFLAGS := $(CFLAGS) -D__KERNEL__
+
+FILES	:= i2c_init i2cdeviceclass i2cclass
+
+#MM
+includes-copy : $(AROS_INCLUDES)/hidd/i2c.h $(GENINCDIR)/hidd/i2c.h
+
+$(AROS_INCLUDES)/hidd/i2c.h: include/i2c.h
+	$(CP) include/i2c.h $(AROS_INCLUDES)/hidd/i2c.h
+
+$(GENINCDIR)/hidd/i2c.h: include/i2c.h
+	$(CP) include/i2c.h $(GENINCDIR)/hidd/i2c.h
+
+#unused MM- kernel-objs: kernel-i2c-kobj
+
+%build_module mmake=kernel-i2c \
+    modname=i2c modtype=hidd \
+    files="$(FILES)" \
+    uselibs="oop rom amiga"
