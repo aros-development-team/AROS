@@ -31,7 +31,7 @@ AROS_SET_LIBFUNC(I2C_Init, LIBBASETYPE, LIBBASE)
 
     InitSemaphore(&LIBBASE->sd.driver_lock);
 
-    LIBBASE->sd.utilitybase = OpenLibrary(UTILITYNAME, 0);
+    LIBBASE->sd.utilitybase = OpenLibrary((STRPTR)UTILITYNAME, 0);
     if (LIBBASE->sd.utilitybase != NULL)
     {
         D(bug("[I2C] Got UtilityBase @ 0x%08x\n", LIBBASE->sd.utilitybase));

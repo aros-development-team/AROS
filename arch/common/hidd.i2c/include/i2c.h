@@ -2,7 +2,7 @@
 #define HIDD_I2C_H
 
 /*
-    Copyright ï¿½ 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,6 +41,7 @@ enum
     moHidd_I2C_PutByte,
     moHidd_I2C_GetByte,
     moHidd_I2C_WriteRead,
+    moHidd_I2C_ProbeAddress,
 
     NUM_I2C_METHODS
 };
@@ -53,6 +54,7 @@ enum
     aoHidd_I2C_AcknTimeout,
     aoHidd_I2C_StartTimeout,
     aoHidd_I2C_RiseFallTime,
+    aoHidd_I2C_Name,
     
     num_Hidd_I2C_Attrs
 };
@@ -63,15 +65,15 @@ enum
 #define aHidd_I2C_AcknTimeout   (HiddI2CAttrBase + aoHidd_I2C_AcknTimeout)
 #define aHidd_I2C_StartTimeout  (HiddI2CAttrBase + aoHidd_I2C_StartTimeout)
 #define aHidd_I2C_RiseFallTime  (HiddI2CAttrBase + aoHidd_I2C_RiseFallTime)
+#define aHidd_I2C_Name          (HiddI2CAttrBase + aoHidd_I2C_Name)
 
 #define IS_I2C_ATTR(attr, idx) \
     (((idx) = (attr) - HiddI2CAttrBase) < num_Hidd_I2C_Attrs)
 
-
 struct pHidd_I2C_UDelay
 {
     OOP_MethodID    mID;
-    ULONG   	    *delay;
+    ULONG   	    delay;
 };
 
 struct pHidd_I2C_PutBits
@@ -132,6 +134,12 @@ struct pHidd_I2C_WriteRead
     ULONG           readLength;
 };
 
+struct pHidd_I2C_ProbeAddress
+{
+    OOP_MethodID    mID;
+    UWORD           address;
+};
+
 /* I2C device class */
 
 #define CLID_Hidd_I2CDevice	"hidd.i2c.device"
@@ -170,6 +178,7 @@ enum
     aoHidd_I2CDevice_AcknTimeout,
     aoHidd_I2CDevice_StartTimeout,
     aoHidd_I2CDevice_RiseFallTime,
+    aoHidd_I2CDevice_Name,
     
     num_Hidd_I2CDevice_Attrs
 };
@@ -182,6 +191,7 @@ enum
 #define aHidd_I2CDevice_AcknTimeout   (HiddI2CDeviceAttrBase + aoHidd_I2CDevice_AcknTimeout)
 #define aHidd_I2CDevice_StartTimeout  (HiddI2CDeviceAttrBase + aoHidd_I2CDevice_StartTimeout)
 #define aHidd_I2CDevice_RiseFallTime  (HiddI2CDeviceAttrBase + aoHidd_I2CDevice_RiseFallTime)
+#define aHidd_I2CDevice_Name          (HiddI2CDeviceAttrBase + aoHidd_I2CDevice_Name)
 
 #define IS_I2CDEV_ATTR(attr, idx) \
     (((idx) = (attr) - HiddI2CDeviceAttrBase) < num_Hidd_I2CDevice_Attrs)
