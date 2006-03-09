@@ -319,7 +319,7 @@ static ULONG Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
      * check for notifications
      */
     if (!data->mnd_NotifyList || no_notify)
-	return TRUE;
+	return 0;
 
     tags = msg->ops_AttrList;
     while ((tag = NextTagItem(&tags)))
@@ -335,7 +335,7 @@ static ULONG Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
    }
 
-    return TRUE;
+    return 0;
 }
 
 
