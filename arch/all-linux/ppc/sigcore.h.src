@@ -1,15 +1,15 @@
-#ifndef _SIGCORE_H
-#define _SIGCORE_H
-
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macros to handle unix signals
     Lang: english
 */
 
-#define USE_SA_SIGINFO 0
+#ifndef _SIGCORE_H
+#define _SIGCORE_H
+
+#define USE_SA_SIGINFO 1
 
 #if USE_SA_SIGINFO
 #define SIGCORE_NEED_SA_SIGINFO 1
@@ -46,8 +46,8 @@ typedef @sighandler@ SignalHandler;
 
 #else
 
-// browsing the memory
-// sc pattern was found at offset 24 + 64
+// Browsing the memory sc pattern was found at offset 24 + 64.
+// This did only work for -O0.
 #define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc);    \
 								\
