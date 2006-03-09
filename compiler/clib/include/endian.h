@@ -15,6 +15,10 @@
 
 #include <sys/cdefs.h>
 
+#if defined(_BIG_ENDIAN)
+#   undef  _BIG_ENDIAN
+#endif
+
 #define _LITTLE_ENDIAN      1234
 #define _BIG_ENDIAN         4321
 #define _PDP_ENDIAN         3412
