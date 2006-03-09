@@ -32,15 +32,6 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 #include <string.h>
 
 #define SysBase	    (DOSBase->dl_SysBase)
-LONG AROS_SLIB_ENTRY(RunProcess,Dos)
-(
-   struct Process        * proc,
-   struct StackSwapStruct * sss,
-   STRPTR          argptr,
-   ULONG        argsize,
-   LONG_FUNC       entry,
-   struct DosLibrary      * DOSBase
-) __stackparm;
 
 /**************************************************************************
 
