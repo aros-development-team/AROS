@@ -1,0 +1,14 @@
+#$Id: mmakefile.src 20797 2004-02-05 00:00:47Z schulz $
+include $(TOP)/config/make.cfg
+
+MODNAME	:=  i2c
+MODTYPE	:=  hidd
+
+USER_CFLAGS :=	-DAROS_USE_OOP -I.
+
+FILES       :=
+STUBS	    := $(MODNAME)_stubs
+
+%make_hidd_stubs hidd=i2c
+
+%common
