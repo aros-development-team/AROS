@@ -16,9 +16,7 @@ $(AROS_INCLUDES)/hidd/i2c.h: include/i2c.h
 $(GENINCDIR)/hidd/i2c.h: include/i2c.h
 	$(CP) include/i2c.h $(GENINCDIR)/hidd/i2c.h
 
-#unused MM- kernel-objs: kernel-i2c-kobj
-
-%build_module mmake=kernel-i2c \
+%build_module mmake=hidd-i2c \
     modname=i2c modtype=hidd \
     files="$(FILES)" \
     uselibs="oop rom amiga"
