@@ -9,7 +9,8 @@ EXEDIR      := $(AROS_WANDERER)/Tools
 #MM- workbench-system-wanderer : workbench-system-wanderer-tools-info
 #MM  workbench-system-wanderer-tools-info : \
 #MM  workbench-system-wanderer-tools-info-icons \
-#MM  workbench-system-wanderer-tools-info-catalogs
+#MM  workbench-system-wanderer-tools-info-catalogs \
+#MM  workbench-classes-zune-texteditor
 
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%y')\""
 
