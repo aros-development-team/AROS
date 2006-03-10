@@ -357,6 +357,10 @@ void METHOD(I2CDev, Root, Get)
         
             case aoHidd_I2CDevice_Address:
                 *msg->storage = dev->address;
+                break;
+            
+            case aoHidd_I2CDevice_Name:
+                *msg->storage = dev->name;
         
             case aoHidd_I2CDevice_HoldTime:
                 *msg->storage = dev->HoldTime;
