@@ -16,12 +16,12 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Navigation.c,v 1.3 2005/04/04 21:59:02 damato Exp $
+ $Id: Navigation.c,v 1.10 2005/08/07 14:17:16 damato Exp $
 
 ***************************************************************************/
 
 #include <clib/alib_protos.h>
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/locale.h>
 
@@ -32,43 +32,97 @@ struct pos_info pos;
 
 ULONG FlowSpace (UWORD flow, STRPTR text, struct InstData *data)
 {
-    ULONG flowspace = 0;
+  ULONG flowspace = 0;
+
+  ENTER();
 
   if(flow != MUIV_TextEditor_Flow_Left)
   {
-    flowspace  = (data->innerwidth-MyTextLength(data->font, text, LineCharsWidth(text, data)-1));
-    flowspace -= (data->CursorWidth == 6) ? MyTextLength(data->font, "n", 1) : data->CursorWidth;
+    flowspace  = (data->innerwidth-TextLength(&data->tmprp, text, LineCharsWidth(text, data)-1));
+    flowspace -= (data->CursorWidth == 6) ? TextLength(&data->tmprp, " ", 1) : data->CursorWidth;
     if(flow == MUIV_TextEditor_Flow_Center)
     {
       flowspace /= 2;
     }
   }
+
+  RETURN(flowspace);
   return(flowspace);
 }
 
-ULONG CursorOffset (struct InstData *data)
+static ULONG CursorOffset(struct InstData *data)
 {
-    struct line_node *line = data->actualline;
-    STRPTR text = line->line.Contents+data->CPos_X;
-    LONG  offset = data->pixel_x-FlowSpace(line->line.Flow, text, data);
+  struct line_node *line = data->actualline;
+  STRPTR text = line->line.Contents+data->CPos_X;
+  ULONG res;
+  LONG offset = data->pixel_x-FlowSpace(line->line.Flow, text, data);
+  struct TextExtent tExtend;
+  ULONG lineCharsWidth;
+
+  ENTER();
 
   if(offset < 1)
     offset = 1;
 
-  return(MyTextFit(data->font, text, LineCharsWidth(text, data)-1, offset, 1));
+  // call TextFit() to find out how many chars would fit.
+  lineCharsWidth = LineCharsWidth(text, data);
+  res = TextFit(&data->tmprp, text, lineCharsWidth, &tExtend, NULL, 1, offset, data->font->tf_YSize);
+
+  // in case of a hard-wrapped line we have to deal with
+  // the possibility that the user tries to
+  // select the last char in a line which should normally by a white space
+  // due to soft-wrapping. So in this case we have to lower res by one so
+  // that it is not possible to select that last white space. However, for
+  // a hard wrapped line it still have to be possible to select that last char.
+  if(lineCharsWidth-res == 0 &&
+     text[lineCharsWidth-1] <= ' ')
+  {
+    res--;
+  }
+
+  RETURN(res);
+  return res;
+}
+
+/*---------------------------------------*
+ * Return the number of pixels to cursor *
+ *---------------------------------------*/
+static LONG GetPosInPixels(LONG bytes, LONG x, struct InstData *data)
+{
+  LONG pos;
+
+  ENTER();
+
+  pos = TextLength(&data->tmprp, data->actualline->line.Contents+bytes, x);
+
+  if(*(data->actualline->line.Contents+data->CPos_X) == '\n')
+    pos += TextLength(&data->tmprp, " ", 1)/2;
+  else
+    pos += TextLength(&data->tmprp, data->actualline->line.Contents+data->CPos_X, 1)/2;
+
+  pos += FlowSpace(data->actualline->line.Flow, data->actualline->line.Contents+bytes, data);
+
+  RETURN(pos);
+  return(pos);
 }
 
 VOID SetBookmark (UWORD nr, struct InstData *data)
 {
+  ENTER();
+
   if(nr < 4)
   {
     data->bookmarks[nr].line = data->actualline;
     data->bookmarks[nr].x    = data->CPos_X;
   }
+
+  LEAVE();
 }
 
 VOID GotoBookmark (UWORD nr, struct InstData *data)
 {
+  ENTER();
+
   if(nr < 4)
   {
     if(data->bookmarks[nr].line)
@@ -97,25 +151,37 @@ VOID GotoBookmark (UWORD nr, struct InstData *data)
       DoMethod(data->object, MUIM_TextEditor_HandleError, Error_NoBookmarkInstalled);
     }
   }
+
+  LEAVE();
 }
 
 /*---- CursorUp ---- */
 
 void  GoTop (struct InstData *data)
 {
+  ENTER();
+
   data->actualline = data->firstline;
   data->CPos_X = 0;
+
+  LEAVE();
 }
 
 void  GoPreviousLine (struct InstData *data)
 {
+  ENTER();
+
   if(data->CPos_X == 0 && data->actualline->previous)
     data->actualline = data->actualline->previous;
   data->CPos_X = 0;
+
+  LEAVE();
 }
 
 void  GoPreviousPage (struct InstData *data)
 {
+  ENTER();
+
   if(data->shown)
   {
     OffsetToLines(data->CPos_X, data->actualline, &pos, data);
@@ -160,10 +226,14 @@ void  GoPreviousPage (struct InstData *data)
       GoTop(data);
     }
   }
+
+  LEAVE();
 }
 
 void  GoUp  (struct InstData *data)
 {
+  ENTER();
+
   if(data->shown)
   {
     OffsetToLines(data->CPos_X, data->actualline, &pos, data);
@@ -181,6 +251,7 @@ void  GoUp  (struct InstData *data)
       else
       {
 //        data->CPos_X = 0;
+        LEAVE();
         return;
       }
     }
@@ -193,29 +264,42 @@ void  GoUp  (struct InstData *data)
       }
       data->CPos_X += CursorOffset(data);
     }
-    else  DisplayBeep(NULL);
+    else
+      DisplayBeep(NULL);
   }
+
+  LEAVE();
 }
 
 /*---- CursorDown ---- */
 
 void  GoBottom (struct InstData *data)
 {
+  ENTER();
+
   while(data->actualline->next)
     data->actualline = data->actualline->next;
   data->CPos_X = data->actualline->line.Length-1;
+
+  LEAVE();
 }
 
 void  GoNextLine  (struct InstData *data)
 {
+  ENTER();
+
   data->CPos_X = 0;
   if(data->actualline->next)
       data->actualline = data->actualline->next;
   else  data->CPos_X = data->actualline->line.Length-1;
+
+  LEAVE();
 }
 
 void  GoNextPage  (struct InstData *data)
 {
+  ENTER();
+
   if(data->shown)
   {
     OffsetToLines(data->CPos_X, data->actualline, &pos, data);
@@ -251,10 +335,14 @@ void  GoNextPage  (struct InstData *data)
       GoBottom(data);
     }
   }
+
+  LEAVE();
 }
 
 void  GoDown   (struct InstData *data)
 {
+  ENTER();
+
   if(data->shown)
   {
     OffsetToLines(data->CPos_X, data->actualline, &pos, data);
@@ -262,6 +350,7 @@ void  GoDown   (struct InstData *data)
     {
       data->pixel_x = GetPosInPixels(pos.bytes, pos.x, data);
     }
+
     if(pos.lines == data->actualline->visual)
     {
       if(data->actualline->next)
@@ -282,22 +371,30 @@ void  GoDown   (struct InstData *data)
       data->CPos_X += CursorOffset(data);
     }
   }
+
+  LEAVE();
 }
 
 /*---- CursorRight ---- */
 
 void  GoEndOfLine (struct InstData *data)
 {
+  ENTER();
+
   if(data->shown)
   {
     OffsetToLines(data->CPos_X, data->actualline, &pos, data);
     data->CPos_X = pos.bytes + LineCharsWidth(data->actualline->line.Contents+pos.bytes, data) - 1;
   }
+
+  LEAVE();
 }
 
 void  GoNextWord  (struct InstData *data)
 {
   //BOOL EOL = (data->CPos_X == data->actualline->line.Length);
+
+  ENTER();
 
   if(!CheckSep(*(data->actualline->line.Contents+data->CPos_X), data) && (data->CPos_X < data->actualline->line.Length))
   {
@@ -321,10 +418,14 @@ FindNextWord:
     }
     else  data->CPos_X--;
   }
+
+  LEAVE();
 }
 
 void  GoNextSentence (struct InstData *data)
 {
+  ENTER();
+
   while((!CheckSent(*(data->actualline->line.Contents+data->CPos_X), data)) && (data->CPos_X < data->actualline->line.Length))
     data->CPos_X++;
   while(CheckSent(*(data->actualline->line.Contents+data->CPos_X), data) && (data->CPos_X < data->actualline->line.Length))
@@ -338,24 +439,34 @@ void  GoNextSentence (struct InstData *data)
     if(data->CPos_X == data->actualline->line.Length-1)
       NextLine(data);
   }
+
+  LEAVE();
 }
 
 void  GoRight  (struct InstData *data)
 {
+  ENTER();
+
   if((LONG)data->actualline->line.Length > (data->CPos_X+1))
       data->CPos_X++;
   else  NextLine(data);
+
+  LEAVE();
 }
 
 /*---- CursorLeft ---- */
 
 void  GoStartOfLine  (struct InstData *data)
 {
+  ENTER();
+
   if(data->shown)
   {
     OffsetToLines  (data->CPos_X, data->actualline, &pos, data);
     data->CPos_X = pos.bytes;
   }
+
+  LEAVE();
 }
 
 
@@ -363,6 +474,8 @@ void  GoPreviousWord (struct InstData *data)
 {
   //BOOL SOL = (!data->CPos_X);
   BOOL moved = FALSE;
+
+  ENTER();
 
 FindWord:
 
@@ -390,11 +503,14 @@ FindWord:
   {
     data->CPos_X--;
   }
-}
 
+  LEAVE();
+}
 
 void  GoPreviousSentence   (struct InstData *data)
 {
+  ENTER();
+
   while(data->CPos_X == 0 && data->actualline->previous)
   {
     data->actualline = data->actualline->previous;
@@ -416,10 +532,14 @@ void  GoPreviousSentence   (struct InstData *data)
         data->CPos_X++;
     }
   }
+
+  LEAVE();
 }
 
 void  GoLeft   (struct InstData *data)
 {
+  ENTER();
+
   if(data->CPos_X > 0)
     data->CPos_X--;
   else
@@ -430,6 +550,8 @@ void  GoLeft   (struct InstData *data)
       data->CPos_X = data->actualline->line.Length-1;
     }
   }
+
+  LEAVE();
 }
 
 /*-----------------------------------------*
@@ -459,6 +581,8 @@ long CheckSent(unsigned char character, UNUSED struct InstData *data)
  *-----------------------------------*/
 void  NextLine (struct InstData *data)
 {
+  ENTER();
+
   if(data->actualline->next)
   {
     data->actualline = data->actualline->next;
@@ -468,53 +592,52 @@ void  NextLine (struct InstData *data)
   {
     data->CPos_X = data->actualline->line.Length-1;
   }
-}
-/*---------------------------------------*
- * Return the number of pixels to cursor *
- *---------------------------------------*/
-LONG   GetPosInPixels (LONG bytes, LONG x, struct InstData *data)
-{
-    LONG  pos = MyTextLength(data->font, data->actualline->line.Contents+bytes, x);
 
-  if(*(data->actualline->line.Contents+data->CPos_X) == '\n')
-      pos += MyTextLength(data->font, " ", 1)/2;
-  else  pos += MyTextLength(data->font, data->actualline->line.Contents+data->CPos_X, 1)/2;
-  pos += FlowSpace(data->actualline->line.Flow, data->actualline->line.Contents+bytes, data);
-  return(pos);
+  LEAVE();
 }
 
 /*-----------------------------------------*
  * Place the cursor, based on an X Y coord *
  *-----------------------------------------*/
-void  PosFromCursor(WORD MouseX, WORD MouseY, struct InstData *data)
+void PosFromCursor(WORD MouseX, WORD MouseY, struct InstData *data)
 {
-    struct pos_info pos;
+  struct pos_info pos;
 #ifdef ClassAct
-    LONG limit = 0;
+  LONG limit = 0;
 #else
-    LONG limit = data->ypos;
+  LONG limit = data->ypos;
 #endif
 
+  ENTER();
+
   if(data->maxlines < (data->totallines-data->visual_y+1))
-      limit += (data->maxlines * data->height);
-  else  limit += (data->totallines-data->visual_y+1)*data->height;
+    limit += (data->maxlines * data->height);
+  else
+    limit += (data->totallines-data->visual_y+1)*data->height;
 
   if(MouseY >= limit)
     MouseY = limit-1;
+
 #ifndef ClassAct
   GetLine(((MouseY - data->ypos)/data->height) + data->visual_y, &pos, data);
 #else
   GetLine((MouseY/data->height) + data->visual_y, &pos, data);
 #endif
+
   data->actualline = pos.line;
+
 #ifdef ClassAct
   data->pixel_x = MouseX-data->BevelHoriz-2;
 #else
   data->pixel_x = MouseX-data->xpos+1;
 #endif
+
   if(data->pixel_x < 1)
     data->pixel_x = 1;
+
   data->CPos_X  = pos.x;
   data->CPos_X += CursorOffset(data);
   data->pixel_x = 0;
+
+  LEAVE();
 }

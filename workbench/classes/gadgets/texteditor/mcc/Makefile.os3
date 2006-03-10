@@ -16,7 +16,7 @@
 #
 # TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 #
-# $Id: Makefile.os3,v 1.1 2005/03/28 11:29:48 damato Exp $
+# $Id: Makefile.os3,v 1.5 2005/06/12 08:20:20 damato Exp $
 #
 #***************************************************************************/
 
@@ -37,9 +37,9 @@ CPU      = -m68020-60 -msoft-float
 CDEFS    = -D__NLV_VERDATE=\"`date +%d.%m.%Y`\" -D__NLV_VERDAYS="`expr \`date +%s\` / 86400 - 2922`"
 WARN     = -W -Wall
 OPTFLAGS = -O3 -fomit-frame-pointer -funroll-loops
-DEBUG    = -DWITH_DEBUG -g -O0
+DEBUG    = -DDEBUG -g -O0
 CFLAGS   = -noixemul -I. -I../mcp -I../includes -c $(CPU) $(WARN) $(OPTFLAGS) $(DEBUG)
-LDFLAGS  = -noixemul -nostartfiles
+LDFLAGS  = -noixemul -nostartfiles $(CPU)
 LDLIBS   = -lmui -ldebug
 
 # CPU and DEBUG can be defined outside, defaults to above
@@ -60,6 +60,7 @@ MCCOBJS = $(OBJDIR)/library.o \
           $(OBJDIR)/BlockOperators.o \
           $(OBJDIR)/CaseConversion.o \
           $(OBJDIR)/ColorOperators.o \
+          $(OBJDIR)/Debug.o \
           $(OBJDIR)/Dispatcher.o \
           $(OBJDIR)/EditorStuff.o \
           $(OBJDIR)/ExportHook.o \
@@ -78,7 +79,6 @@ MCCOBJS = $(OBJDIR)/library.o \
           $(OBJDIR)/Search.o \
           $(OBJDIR)/SpellChecker.o \
           $(OBJDIR)/StyleOperators.o \
-          $(OBJDIR)/TextFunctions.o \
           $(OBJDIR)/UndoFunctions.o
 
 TESTOBJS= $(OBJDIR)/TextEditor-Test.o \
@@ -87,6 +87,7 @@ TESTOBJS= $(OBJDIR)/TextEditor-Test.o \
           $(OBJDIR)/BlockOperators.o \
           $(OBJDIR)/CaseConversion.o \
           $(OBJDIR)/ColorOperators.o \
+          $(OBJDIR)/Debug.o \
           $(OBJDIR)/Dispatcher.o \
           $(OBJDIR)/EditorStuff.o \
           $(OBJDIR)/ExportHook.o \
@@ -105,7 +106,6 @@ TESTOBJS= $(OBJDIR)/TextEditor-Test.o \
           $(OBJDIR)/Search.o \
           $(OBJDIR)/SpellChecker.o \
           $(OBJDIR)/StyleOperators.o \
-          $(OBJDIR)/TextFunctions.o \
           $(OBJDIR)/UndoFunctions.o
 
 #

@@ -16,7 +16,7 @@
 #
 # TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 #
-# $Id: Makefile.os4,v 1.3 2005/04/10 08:23:48 damato Exp $
+# $Id: Makefile.os4,v 1.6 2005/06/04 11:57:46 damato Exp $
 #
 #***************************************************************************/
 
@@ -40,12 +40,12 @@ CPUFLAGS = -mmultiple
 CDEFS    = -D__TE_VERDATE=\"`date +%d.%m.%Y`\" -D__TE_VERDAYS="`expr \`date +%s\` / 86400 - 2922`"
 WARN     = -W -Wall
 OPTFLAGS = -O3 -finline-functions -fomit-frame-pointer -funroll-loops
-DEBUG    = -DWITH_DEBUG -g -O0
+DEBUG    = -DDEBUG -g -O0
 REDEFINE =
 CFLAGS   = -I. -I../mcc -I../includes $(CPU) $(CPUFLAGS) $(WARN) $(OPTFLAGS) $(DEBUG)\
            -D__USE_INLINE__ $(REDEFINE) -c
-LDFLAGS  = -nostartfiles
-LDLIBS   =
+LDFLAGS  = -nostartfiles $(CPU)
+LDLIBS   = -ldebug
 
 # CPU and DEBUG can be defined outside, defaults to above
 # using e.g. "make DEBUG= CPU=-mcpu=603e" produces optimized non-debug PPC-603e version
@@ -64,19 +64,19 @@ M68KSTUBS = $(OBJDIR)/mccclass_68k.o
 MCPOBJS = $(OBJDIR)/library.o \
           $(OBJDIR)/locale.o \
           $(OBJDIR)/CreatePrefsGroup.o \
+          $(OBJDIR)/Debug.o \
           $(OBJDIR)/Dispatcher.o \
           $(OBJDIR)/Keybindings.o \
           $(OBJDIR)/KeyStorage.o \
-          $(OBJDIR)/ObjectCreator.o \
-          $(OBJDIR)/UserKeys.o
+          $(OBJDIR)/ObjectCreator.o
 
 PREFOBJS= $(OBJDIR)/locale.o \
           $(OBJDIR)/CreatePrefsGroup.o \
+          $(OBJDIR)/Debug.o \
           $(OBJDIR)/Dispatcher.o \
           $(OBJDIR)/Keybindings.o \
           $(OBJDIR)/KeyStorage.o \
           $(OBJDIR)/ObjectCreator.o \
-          $(OBJDIR)/UserKeys.o \
           $(OBJDIR)/Preference.o
 
 #

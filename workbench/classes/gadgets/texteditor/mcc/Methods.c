@@ -16,13 +16,13 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Methods.c,v 1.3 2005/04/04 21:59:02 damato Exp $
+ $Id: Methods.c,v 1.9 2005/12/06 23:41:22 damato Exp $
 
 ***************************************************************************/
 
 #include <intuition/intuition.h>
 #include <proto/exec.h>
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 
 #include "TextEditor_mcc.h"
@@ -33,6 +33,9 @@ ULONG FlowSpace(UWORD, STRPTR, struct InstData *);
 ULONG OM_BlockInfo(struct MUIP_TextEditor_BlockInfo *msg, struct InstData *data)
 {
   ULONG result = FALSE;
+
+  ENTER();
+
   if(Enabled(data))
   {
     struct marking newblock;
@@ -44,11 +47,15 @@ ULONG OM_BlockInfo(struct MUIP_TextEditor_BlockInfo *msg, struct InstData *data)
 
     result = TRUE;
   }
+
+  RETURN(result);
   return(result);
 }
 
 ULONG OM_MarkText (struct MUIP_TextEditor_MarkText *msg, struct InstData *data)
 {
+  ENTER();
+
   if(Enabled(data))
   {
     data->blockinfo.enabled = FALSE;
@@ -70,20 +77,23 @@ ULONG OM_MarkText (struct MUIP_TextEditor_MarkText *msg, struct InstData *data)
   ScrollIntoDisplay(data);
   MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
 
+  RETURN(TRUE);
   return(TRUE);
 }
 
 ULONG ClearText (struct InstData *data)
 {
   struct line_node *newcontents;
+
+  ENTER();
   
-  if((newcontents = AllocPooled(data->mypool, sizeof(struct line_node))))
+  if((newcontents = AllocLine(data)))
   {
     if(Init_LineNode(newcontents, NULL, "\n", data))
     {
       if(data->undosize)
       {
-          struct  marking newblock;
+        struct  marking newblock;
 
         newblock.startx = 0;
         newblock.startline = data->firstline;
@@ -98,21 +108,25 @@ ULONG ClearText (struct InstData *data)
         data->actualline = data->firstline;
         AddToUndoBuffer(deleteblock, (char *)&newblock, data);
       }
-      FreeTextMem(data->mypool, data->firstline);
+      FreeTextMem(data->firstline, data);
       data->firstline = newcontents;
       ResetDisplay(data);
     }
     else
     {
-      FreePooled(data->mypool, newcontents, sizeof(struct line_node));
+      FreeLine(newcontents, data);
     }
   }
+
+  RETURN(TRUE);
   return(TRUE);
 }
 
 
 ULONG ToggleCursor (struct InstData *data)
 {
+  ENTER();
+
   if(data->flags & FLG_Active)
   {
     if(data->cursor_shown)
@@ -126,11 +140,15 @@ ULONG ToggleCursor (struct InstData *data)
       data->cursor_shown = TRUE;
     }
   }
+
+  RETURN(TRUE);
   return(TRUE);
 }
 
 ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
 {
+  ENTER();
+
   if(data->smooth_wait == 1 && data->scrollaction)
   {
     if(data->ypos != data->realypos)
@@ -173,6 +191,8 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
     {
       data->mousemove = FALSE;
       RejectInput(data);
+
+      RETURN(TRUE);
       return(TRUE);
     }
 
@@ -217,11 +237,13 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
     }
 
     if(data->blockinfo.enabled && Scroll && data->blockinfo.stopline == data->actualline && data->blockinfo.stopx == data->CPos_X)
+    {
       PosFromCursor(MouseX, MouseY, data);
+    }
 
     if(data->selectmode != 0)
     {
-        struct marking tmpblock;
+      struct marking tmpblock;
 
       NiceBlock(&data->blockinfo, &tmpblock);
       if(data->blockinfo.startx == tmpblock.startx && data->blockinfo.startline == tmpblock.startline)
@@ -248,7 +270,7 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
         OffsetToLines(data->CPos_X, data->actualline, &pos, data);
         flow = FlowSpace(data->actualline->line.Flow, data->actualline->line.Contents+pos.bytes, data);
         
-        if(MouseX <= (LONG)(data->xpos+flow+MyTextLength(data->font, data->actualline->line.Contents+pos.bytes, pos.extra-pos.bytes-1)))
+        if(MouseX <= (LONG)(data->xpos+flow+TextLength(&data->tmprp, data->actualline->line.Contents+pos.bytes, pos.extra-pos.bytes-1)))
         {
           if(data->selectmode == 1)
           {
@@ -264,12 +286,31 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
       }
     }
 
-    if(data->blockinfo.enabled)
+    if(data->blockinfo.enabled || data->selectmode == 0)
     {
-      if(data->blockinfo.stopline != data->actualline || data->blockinfo.stopx != data->CPos_X)
+      // if selectmode == 2, then the user has trippleclicked at the line
+      // and wants to get the whole line marked
+      if(data->selectmode == 2 || data->selectmode == 3)
       {
+        data->selectmode = 2;
+
+        // if the line is a hard wrapped one we have to increase CPos_X by one
+        if(data->actualline->line.Contents[data->CPos_X] > ' ')
+        {
+          data->CPos_X++;
+          MarkText(data->blockinfo.stopx, data->blockinfo.stopline, data->CPos_X, data->actualline, data);
+        }
+        else
+          MarkText(data->blockinfo.stopx, data->blockinfo.stopline, data->CPos_X+1, data->actualline, data);
+
+        data->selectmode = 3;
+      }
+      else if(data->blockinfo.stopline != data->actualline || data->blockinfo.stopx != data->CPos_X)
+      {
+        data->blockinfo.enabled = TRUE;
         MarkText(data->blockinfo.stopx, data->blockinfo.stopline, data->CPos_X, data->actualline, data);
       }
+
       data->blockinfo.stopline = data->actualline;
       data->blockinfo.stopx = data->CPos_X;
     }
@@ -287,6 +328,7 @@ ULONG InputTrigger(UNUSED struct IClass *cl, struct InstData *data)
   }
 #endif
 
+  RETURN(TRUE);
   return(TRUE);
 }
 
@@ -297,7 +339,9 @@ ULONG InsertText (struct InstData *data, STRPTR text, BOOL movecursor)
   UWORD x = data->CPos_X;
   UWORD realx = 0;
 
-  if((line = ImportText(text, data->mypool, data->ImportHook, data->ImportWrap)))
+  ENTER();
+
+  if((line = ImportText(text, data, data->ImportHook, data->ImportWrap)))
   {
     long  oneline = FALSE;
     long  newline = FALSE;
@@ -378,5 +422,7 @@ ULONG InsertText (struct InstData *data, STRPTR text, BOOL movecursor)
       data->actualline = line;
     }
   }
+
+  RETURN(TRUE);
   return(TRUE);
 }

@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: library.c,v 1.4 2005/04/07 23:47:47 damato Exp $
+ $Id: library.c,v 1.5 2005/05/24 23:01:56 damato Exp $
 
 ***************************************************************************/
 
@@ -105,4 +105,5 @@ VOID ClassExitFunc(UNUSED struct Library *base)
 
 #include "icon.bh"
 
+#define USE_UTILITYBASE
 #include "mccheader.c"

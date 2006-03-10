@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: CaseConversion.c,v 1.2 2005/03/31 17:35:28 sba Exp $
+ $Id: CaseConversion.c,v 1.3 2005/05/14 00:27:14 damato Exp $
 
 ***************************************************************************/
 
@@ -29,6 +29,8 @@ VOID MangleCharacters(UBYTE (*change)(UBYTE c), struct InstData *data)
 {
   LONG startx, stopx, _startx;
   struct line_node *startline, *stopline, *_startline;
+
+  ENTER();
 
   if(Enabled(data))
   {
@@ -67,6 +69,8 @@ VOID MangleCharacters(UBYTE (*change)(UBYTE c), struct InstData *data)
 
   data->HasChanged = TRUE;
   RedrawArea(_startx, _startline, stopx, stopline, data);
+
+  LEAVE();
 }
 
 UBYTE ChangeToUpper(UBYTE c)

@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: TODO,v 1.2 2005/04/08 07:55:24 sba Exp $
+ $Id: TODO,v 1.3 2005/07/04 20:32:25 itix Exp $
 
 ***************************************************************************/
 
@@ -29,3 +29,4 @@ Items that ought to be implemented in future TextEditor.mcc releases:
 * Implement more different Import/Export hooks.
 * Change all import/export hooks to use a flex template whereever possible.
 * Inline image display
+* Fix background rendering when certain types of gradients are used.

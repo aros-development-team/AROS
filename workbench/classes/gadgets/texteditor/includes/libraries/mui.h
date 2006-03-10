@@ -107,23 +107,23 @@
 #define LIBRARIES_MUI_H
 
 #ifndef EXEC_TYPES_H
-#include "exec/types.h"
+#include <exec/types.h>
 #endif
 
 #ifndef DOS_DOS_H
-#include "dos/dos.h"
+#include <dos/dos.h>
 #endif
 
 #ifndef INTUITION_CLASSES_H
-#include "intuition/classes.h"
+#include <intuition/classes.h>
 #endif
 
 #ifndef INTUITION_SCREENS_H
-#include "intuition/screens.h"
+#include <intuition/screens.h>
 #endif
 
-#ifndef CLIB_INTUITION_PROTOS_H
-#include "clib/intuition_protos.h"
+#ifndef PROTO_INTUITION_H
+#include <proto/intuition.h>
 #endif
 
 #include "amiga-align.h"

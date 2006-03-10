@@ -1,0 +1,57 @@
+Short:    Texteditor custom class for MUI (v15.17) [OS3/OS4/MOS]
+Author:   TextEditor.mcc Open Source Team, Allan Odgaard <duff@diku.dk>
+Uploader: Jens Langner <Jens.Langner@light-speed.de>
+Version:  15.17 (07-Dec-05)
+Type:     dev/mui
+Requires: AmigaOS 3.0+ or MorphOS, MUI 3.8+, 68020+/PPC604e+
+Replaces: dev/mui/MCC_TextEditor.lha
+Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2
+
+TextEditor.mcc is a multiline string gadget which holds most of the features
+of a normal text editor, but embedded in a MUI custom class. It is used by a
+wide range of well-known MUI-based application like YAM (Yet Another Mailer) or
+SimpleMail as the main textediting MUI gadget.
+
+The gadget was originally written in 1997, ans is Copyright (c) 1997-2000 by
+Allan Odgaard. As of version 15.10, release in April 2005, the gadget is
+maintained and Copyright (c) by the TextEditor.mcc Open Source Team.
+
+It was released under the GNU Lesser Public License in April 2005 and its
+development is hosted at:
+
+http://www.sourceforge.net/projects/texteditor-mcc/
+
+Please consult the included "COPYING" file for a more detailed information
+on the licensing of the gadget and its source code.
+
+Its main features are:
+---------------------
+
+ - Text can be colored (limited syntax highlighting)
+ - WYSIWYG for bold, italic and underline soft styles
+ - Multilevel undo & redo
+ - Lines with different alignments (left, right, centered)
+ - Ability to insert thick or thin separators with an optional title.
+ - Easy marking either using the mouse or keyboard
+ - Full clipboard support
+ - Email light text highlighting based on an opened ">" character
+ - Easy support for external spell checker, both doing type'n spell and word
+   guessing.
+ - Configurable keys, colors, cursor types and blinkspeed, undolevel and much
+   more.
+ - Ability to have a bitmap as a background.
+ - Proportional fonts with floating wordwrap as well as full anti-aliasing font
+   support.
+ - Smooth scrolling.
+ - direct AREXX interface for scripted programming.
+
+Please refer to the included ChangeLog in the archive for a detailed information
+on the changes since the last version release.
+
+Please enjoy this release and if you find any bugs or have suggestions please always
+prefer to go to the project homepage http://www.sf.net/projects/texteditor-mcc/ and
+use the Bug/Feature Trackers there to report anything to the authors!
+
+Have phun,
+
+Your TextEditor.mcc Open Source Team

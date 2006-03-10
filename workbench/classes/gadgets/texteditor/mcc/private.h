@@ -16,17 +16,14 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: private.h,v 1.7 2005/04/07 10:10:53 sba Exp $
+ $Id: private.h,v 1.16 2005/08/16 21:21:01 damato Exp $
 
 ***************************************************************************/
 
 #ifndef TEXTEDITOR_MCC_PRIV_H
 #define TEXTEDITOR_MCC_PRIV_H
 
-#include <exec/types.h>
-#include <intuition/classes.h>
 #include <graphics/rastport.h>
-#include <devices/clipboard.h>
 
 #ifndef ClassAct
 #include <libraries/mui.h>
@@ -44,9 +41,9 @@
 #endif
 
 #include <mcc_common.h>
-#include <mcc_debug.h>
 
 #include "TextEditor_mcc.h"
+#include "Debug.h"
 
 #define EOS        (unsigned short)-1
 
@@ -54,6 +51,17 @@
 #define BOLD      0x02
 #define ITALIC    0x04
 #define COLOURED  0x08
+
+// some own usefull MUI-style macros to check mouse positions in objects
+#define _between(a,x,b) 					((x)>=(a) && (x)<=(b))
+#define _isinobject(o,x,y) 				(_between(_mleft(o),(x),_mright (o)) && _between(_mtop(o) ,(y),_mbottom(o)))
+#define _isinwholeobject(o,x,y) 	(_between(_left(o),(x),_right (o)) && _between(_top(o) ,(y),_bottom(o)))
+
+// own common macros
+#define Enabled(data)   ((data)->blockinfo.enabled && \
+                         ((data)->blockinfo.startx != (data)->blockinfo.stopx || \
+                          (data)->blockinfo.startline != (data)->blockinfo.stopline || \
+                           data->selectmode == 3))
 
 struct bookmark
 {
@@ -130,6 +138,7 @@ struct InstData
   WORD    scr_direction;      // Scroll direction
   struct  RastPort  doublerp; // Doublebuffer rastport
   struct  RastPort  copyrp;
+  struct  RastPort  tmprp;    // temporary rastport (for TextFit/TextLength checks)
   struct  marking   blockinfo;
   struct  Rectangle CursorPosition;
   struct  RastPort  *rport;
@@ -227,15 +236,10 @@ VOID SAVEDS ASM MUIG_FreeBitMap(REG(a0, struct BitMap *));
 void  RequestInput  (struct InstData *);
 void  RejectInput   (struct InstData *);
 
-long  MyTextLength  (struct TextFont *, char *, long);
-long  MyTextFit   (struct TextFont *, char *, long, long, long);
-
-long  ReactOnRawKey(unsigned char key, ULONG qualifier, struct IntuiMessage *, struct InstData *);
 void  ScrollIntoDisplay (struct InstData *);
 long  CheckSep    (unsigned char, struct InstData *);
 long  CheckSent   (unsigned char, struct InstData *);
 void  NextLine    (struct InstData *);
-LONG  GetPosInPixels (LONG, LONG, struct InstData *);
 
 unsigned long convert (unsigned long);
 LONG  PrintLine   (LONG, struct line_node *, LONG, BOOL, struct InstData *);
@@ -287,7 +291,6 @@ void  PosFromCursor     (short, short, struct InstData *);
 void  MarkText        (LONG, struct line_node *, LONG, struct line_node *, struct InstData *);
 
 VOID  RedrawArea        (UWORD, struct line_node *, UWORD, struct line_node *, struct InstData *);
-long  Enabled         (struct InstData *);
 void  NiceBlock       (struct marking *, struct marking *);
 LONG  CutBlock        (struct InstData *, long, long, BOOL);
 
@@ -299,16 +302,19 @@ void  AddStyleToLine      (LONG, struct line_node *, LONG, UWORD, struct InstDat
 void  *MyAllocPooled    (void *, unsigned long);
 void  MyFreePooled      (void *, void *);
 
+struct line_node  *AllocLine(struct InstData *data);
+void FreeLine(struct line_node *line, struct InstData *data);
+
 /* ------------ */
 
 extern SAVEDS ASM ULONG _Dispatcher(REG(a0, struct IClass * cl), REG(a2, Object * obj), REG(a1, Msg msg));
 
-void  InitConfig        (void *, struct InstData *);
-void  FreeConfig        (struct InstData *, struct MUI_RenderInfo *);
+void  InitConfig(Object *, struct InstData *);
+void  FreeConfig(struct InstData *, struct MUI_RenderInfo *);
 
 ULONG HandleARexx (struct InstData *, STRPTR command);
 
-struct line_node *ImportText(char *, void *, struct Hook *, LONG);
+struct line_node *ImportText(char *, struct InstData *, struct Hook *, LONG);
 void *ExportText(struct line_node *, struct Hook *, LONG);
 
 struct  line_node *loadtext (void);
@@ -326,7 +332,7 @@ ULONG ClearText   (struct InstData *);
 ULONG ToggleCursor  (struct InstData *);
 ULONG InputTrigger  (struct IClass *, struct InstData *);
 ULONG InsertText    (struct InstData *, STRPTR, BOOL);
-void  FreeTextMem   (void *, struct line_node *);
+void  FreeTextMem   (struct line_node *, struct InstData *);
 void  ResetDisplay  (struct InstData *);
 
 void CheckWord    (struct InstData *);
@@ -453,25 +459,26 @@ extern struct Hook ExportHookEMail;
 
   enum
   {
-    FLG_HScroll   = 1L << 0,
-    FLG_NumLock   = 1L << 1,
-    FLG_ReadOnly  = 1L << 2,
+    FLG_HScroll     = 1L << 0,
+    FLG_NumLock     = 1L << 1,
+    FLG_ReadOnly    = 1L << 2,
     FLG_FastCursor  = 1L << 3,
     FLG_CheckWords  = 1L << 4,
     FLG_InsertMode  = 1L << 5,
-    FLG_Quiet   = 1L << 6,
-    FLG_PopWindow = 1L << 7,
-    FLG_UndoLost  = 1L << 8,
-    FLG_Draw      = 1L << 9,
-    FLG_InVGrp    = 1L << 10,
-    FLG_Ghosted   = 1L << 11,
-    FLG_OwnBkgn   = 1L << 12,
-    FLG_FreezeCrsr = 1L << 13,
-    FLG_Active    = 1L << 14,
-    FLG_OwnFrame  = 1L << 15,
-    FLG_ARexxMark = 1L << 16,
-    FLG_FirstInit = 1L << 17,
-    FLG_AutoClip  = 1L << 18,
+    FLG_Quiet       = 1L << 6,
+    FLG_PopWindow   = 1L << 7,
+    FLG_UndoLost    = 1L << 8,
+    FLG_Draw        = 1L << 9,
+    FLG_InVGrp      = 1L << 10,
+    FLG_Ghosted     = 1L << 11,
+    FLG_OwnBkgn     = 1L << 12,
+    FLG_FreezeCrsr  = 1L << 13,
+    FLG_Active      = 1L << 14,
+    FLG_OwnFrame    = 1L << 15,
+    FLG_ARexxMark   = 1L << 16,
+    FLG_FirstInit   = 1L << 17,
+    FLG_AutoClip    = 1L << 18,
+    FLG_Activated   = 1L << 19, // the gadget was activated by MUIM_GoActive()
 
     FLG_NumberOf
   };

@@ -1,0 +1,603 @@
+## version $VER: TextEditor_mcp.catalog 2.4 (17.01.2006) © Michael Malyshev (Amiga-1251)
+## language russian
+## codeset 2104
+## chunk AUTH Translated by <Michael_Malyshev@mail.ru> (Amiga-1251)
+;-----------------------------------------------------------------------------
+;
+; CATALOG TRANSLATION REVISION HISTORY
+;
+; 2.2 (07.02.1999) <mmalyshev>
+; - original final build
+;
+; 2.3 (07.04.2005) <mmalyshev>
+; - amazing recovery of original mcp sources after 6 years!
+; - updated to new cd format and prepared for CVS
+; - updated some strings
+;
+; 2.4 (17.01.2006) <mmalyshev>
+; - public release
+;
+;-----------------------------------------------------------------------------
+;
+; TextEditor_mcp.cd - TextEditor MUI custom prefs catalog description file
+; $Id: russian.ct,v 1.1 2006/01/17 22:31:23 damato Exp $
+;
+;-----------------------------------------------------------------------------
+;
+;
+HelpBubble_BlockQual
+Переместите курсор и нажмите клавишу спецификатора\n\
+для установки маркера на выбранное место текста.
+; Move the cursor key and hold down the qualifier\n\
+; that you set here to mark text.
+;
+HelpBubble_CheckWord
+Если включено, редактор попытается найти слово\n\
+и покажет советы, если слово не прошло коррекцию.
+; If enabled, then the editor will lookup the word,\n\
+; and only show suggestions if the word is misspelled.
+;
+HelpBubble_Smooth
+Включение плавной прокрутки.
+; This will enable pixel smooth scrolling.
+;
+HelpBubble_TypeNSpell
+Разрешение редактору искать слова\n\
+во время их набора.
+; Enable this to let the editor\n\
+; lookup the words while you type them.
+;
+HelpBubble_UndoLevel
+Каждая отмена занимает 10 байт памяти.\n\
+Вырезка и Копирование - больше,\n\
+в зависимости от размера блока!
+; Each undo eats 10 bytes of memory.\n\
+; Cut and Copy takes a little more,\n\
+; depends on the block size!
+;
+MSG_Button_DefaultKeys
+_Клавиши по умолчанию
+; Default _keys
+;
+MSG_Button_Delete
+_Удалить
+; _Delete
+;
+MSG_Button_Insert
+_Вставить
+; _Insert
+;
+MSG_ConfigMenu_CheckWord
+Проверка слова
+; Check word
+;
+MSG_ConfigMenu_TypeNSpell
+Набор-и-проверка
+; Type'n'spell
+;
+MSG_CycleItem_Alt
+Alt
+; Alt
+;
+MSG_CycleItem_Ctrl
+Control
+; Control
+;
+MSG_CycleItem_Mouse
+(только мышь)
+; (mouse only)
+;
+MSG_CycleItem_Shift
+Shift
+; Shift
+;
+MSG_Execution_ARexx
+ARexx
+; ARexx
+;
+MSG_Execution_CLI
+CLI
+; CLI
+;
+MSG_Function_BOL
+Начало строки
+; Begin Of Line
+;
+MSG_Function_Backspace
+Забой
+; Backspace
+;
+MSG_Function_Bottom
+Конец
+; Bottom
+;
+MSG_Function_Copy
+Копировать
+; Copy
+;
+MSG_Function_Cut
+Вырезать
+; Cut
+;
+MSG_Function_DelBOL
+Удалить до начала строки
+; Delete to BOL
+;
+MSG_Function_DelBOW
+Удалить до начала слова
+; Delete to BOW
+;
+MSG_Function_DelEOL
+Удалить до конца строки
+; Delete to EOL
+;
+MSG_Function_DelEOW
+Удалить до конца слова
+; Delete to EOW
+;
+MSG_Function_Delete
+Удалить
+; Delete
+;
+MSG_Function_Down
+Вниз
+; Down
+;
+MSG_Function_EOL
+Конец строки
+; End Of Line
+;
+MSG_Function_Left
+Влево
+; Left
+;
+MSG_Function_NextGadget
+Следующее поле
+; Next gadget
+;
+MSG_Function_NxtPage
+Следующая страница
+; Next Page
+;
+MSG_Function_NxtPara
+Следующий абзац
+; Next Paragraph
+;
+MSG_Function_NxtSent
+Следующее предложение
+; Next Sentence
+;
+MSG_Function_NxtWord
+Следующее слово
+; Next Word
+;
+MSG_Function_Paste
+Вставить
+; Paste
+;
+MSG_Function_PrvPage
+Предыдущая страница
+; Prev Page
+;
+MSG_Function_PrvPara
+Предыдущий абзац
+; Prev Paragraph
+;
+MSG_Function_PrvSent
+Предыдущее предложение
+; Prev Sentence
+;
+MSG_Function_PrvWord
+Предыдущее слово
+; Prev Word
+;
+MSG_Function_Redo
+Вернуть
+; Redo
+;
+MSG_Function_Return
+Ввод
+; Return
+;
+MSG_Function_Right
+Вправо
+; Right
+;
+MSG_Function_SuggestSpelling
+Подсказать правописание
+; Suggest spelling
+;
+MSG_Function_Tab
+Табуляция
+; Tab
+;
+MSG_Function_Top
+Начало
+; Top
+;
+MSG_Function_Undo
+Отменить
+; Undo
+;
+MSG_Function_Up
+Вверх
+; Up
+;
+MSG_GroupTitle_Control
+Управление
+; Control
+;
+MSG_GroupTitle_Cursor
+Курсор
+; Cursor
+;
+MSG_GroupTitle_Design
+Дизайн
+; Design
+;
+MSG_GroupTitle_Fonts
+Шрифты
+; Fonts
+;
+MSG_GroupTitle_Separator
+Разделитель
+; Separator
+;
+MSG_HelpTxt_SpellChecker
+\33u Информация \33n\n\
+\n\
+Класс TextEditor предлагает Вам простой путь интегрирования внешних корректоров орфографии, \
+что позволяет использовать как метод набор'и'проверка, так и обычный слово-предлагающий метод.\n\
+\n\
+\33u Команда Поиска \33n\n\
+\n\
+Метод набор'и'проверка предполагает наличие команды поиска, \
+запускающей средство для поиска слова и для установки переменной \
+окружающей среды \"Found\", имеющей два значения: 0 (не найдено) или 1 (найдено).\n\
+Это предпочитаемый алгоритм, он является основным в AlphaSpell.\n\
+В месте подстановки слова необходимо написать %s.\n\
+Если Вы используете AlphaSpell, то Вы можете написать:\n\
+\33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\
+\n\
+\33bНе забывайте\33n о кавычках, это позволит запустить ARexx \
+на работу со строкой как с командой, а не как со скриптом.\n\
+\n\
+\33u Команда Совета \33n\n\
+\n\
+Эта команда вызывается на исполнение, если Вы нажмёте HELP над словом. \
+Последовательность %s подменяется на текущее слово.\n\
+Ваша процедура должна создать файл \"Matches\" в каталоге T:. \
+Этот файл затем будет считан классом, и содержимое файла будет показано \
+во всплывающем списке просмотра, из которого Вы сможете выбрать слово \
+для замены не прошедшего проверку.\n\
+Опять же, пользователи AlphaSpell могут написать:\n\
+\33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\
+\n\
+Если Вы пользуетесь вышеописанными методами, \
+то Вам необходимо запустить AlphaSpell с ключом \"ARexx\".\n\
+\n\
+Рекомендуется хранить Ваш словарь в памяти, \
+если Вы используете метод набор'и'проверка.
+;
+;  \33u Intro \33n\n\
+; \n\
+; The TextEditor gadget offers you easy integration of external spell checkers, \
+; this allows you to have both type'n'spell and also normal word-guessing.\n\
+; \n\
+;  \33u Lookup command \33n\n\
+; \n\
+; For the type'n'spell you'll have to set the lookup command to a script that \
+; will lookup the word and set the environment variable \"Found\" to either 0 \
+; (for not found) or 1 (for a match).\n\
+; I have chosen this behavior because it is the default for AlphaSpell.\n\
+; You write %s where you want the word.\n\
+; If you use AlphaSpell, then you can write:\n\
+; \33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\
+; \n\
+; You \33bmust\33n remember the quotes, this will let ARexx execute it \
+; as a command instead of a script.\n\
+; \n\
+;  \33u Suggest command \33n\n\
+; \n\
+; If you press HELP over a word, then the editor will launch this command, \
+; again with %s substituted with the current word.\n\
+; Your script should produce a file in T: named \"Matches\". This file are \
+; then read by the gadget, and the contents are shown in a popup-listview, \
+; from where you can choose a word which will replace the misspelled one.\n\
+; Again, AlphaSpell users can write:\n\
+; \33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\
+; \n\
+; If you use the methods described above, then you must start AlphaSpell \
+; with the \"ARexx\" switch.\n\
+; \n\
+; It is advised to keep your dictionary in RAM if you enable \
+; the type'n'spell feature.
+;
+MSG_LVLabel_Action
+\33c\0333Действие:
+; \33c\0333Action:
+;
+MSG_LVLabel_Key
+\33c\0333Клавиша:
+; \33c\0333Key:
+;
+MSG_Label_Background
+Фон
+; Background
+;
+MSG_Label_BlinkSpeed
+Частота мигания
+; Blinkspeed
+;
+MSG_Label_BlkQual
+Спецификатор
+; Block qualifier
+;
+MSG_Label_Cursor
+Курсор
+; Cursor
+;
+MSG_Label_Fixed
+Фиксированный
+; Fixed
+;
+MSG_Label_Frame
+Рамка
+; Frame
+;
+MSG_Label_Highlight
+Выделение
+; Highlight
+;
+MSG_Label_LookupCmd
+Команда поиска
+; Lookup command
+;
+MSG_Label_LookupWords
+Искать слово перед советом?
+; Lookup word before suggesting?
+;
+MSG_Label_Normal
+Нормальный
+; Normal
+;
+MSG_Label_Selected
+Выбранный
+; Selected
+;
+MSG_Label_SeparatorShadow
+Тёмный
+; Shadow
+;
+MSG_Label_SeparatorShine
+Светлый
+; Shine
+;
+MSG_Label_Smooth
+Плавность
+; Smooth
+;
+MSG_Label_SpellNType
+Проверять орфографию набора?
+; Spell check as you type?
+;
+MSG_Label_SuggestCmd
+Команда совета
+; Suggest command
+;
+MSG_Label_TabSize
+Табуляция
+; Tab size
+;
+MSG_Label_Text
+Текст
+; Text
+;
+MSG_Label_UndoLevel
+Уровень отмены
+; Undo levels
+;
+MSG_Label_Width
+Ширина
+; Width
+;
+MSG_MenuItem_Background
+Фон
+; Background
+;
+MSG_MenuItem_Bold
+Жирно
+; Bold
+;
+MSG_MenuItem_Center
+По центру
+; Center
+;
+MSG_MenuItem_Copy
+Копировать
+; Copy
+;
+MSG_MenuItem_Cut
+Вырезать
+; Cut
+;
+MSG_MenuItem_Delete
+Удалить
+; Delete
+;
+MSG_MenuItem_Fill
+Заполнение
+; Fill
+;
+MSG_MenuItem_Halfshadow
+Полутень
+; Halfshadow
+;
+MSG_MenuItem_Halfshine
+Подсветка
+; Halfshine
+;
+MSG_MenuItem_Italic
+Курсив
+; Italic
+;
+MSG_MenuItem_Left
+Левое
+; Left
+;
+MSG_MenuItem_Mark
+Метка
+; Mark
+;
+MSG_MenuItem_Normal
+Стандартно
+; Normal
+;
+MSG_MenuItem_Paste
+Вставить
+; Paste
+;
+MSG_MenuItem_Redo
+Вернуть
+; Redo
+;
+MSG_MenuItem_Right
+Правое
+; Right
+;
+MSG_MenuItem_Shadow
+Тень
+; Shadow
+;
+MSG_MenuItem_Shine
+Подсветка
+; Shine
+;
+MSG_MenuItem_Text
+Текст
+; Text
+;
+MSG_MenuItem_Underline
+Подчёркивание
+; Underline
+;
+MSG_MenuItem_Undo
+Отменить
+; Undo
+;
+MSG_MenuSubTitle_Alignment
+Выравнивание
+; Alignment
+;
+MSG_MenuSubTitle_Color
+Цвет
+; Color
+;
+MSG_MenuTitle_Edit
+Редактор
+; Edit
+;
+MSG_Page_Keybindings
+Клавиатура
+; Keybindings
+;
+MSG_Page_Sample
+Пример
+; Sample
+;
+MSG_Page_Settings
+Настройки
+; Settings
+;
+MSG_Page_SpellChecker
+Орфография
+; Spell checker
+;
+MSG_PopWinTitle_Background
+Выбор фона
+; Select background
+;
+MSG_PopWinTitle_Cursor
+Выбор цвета курсора
+; Select cursor color
+;
+MSG_PopWinTitle_Frame
+Выбор рамки
+; Select frame
+;
+MSG_PopWinTitle_Highlight
+Выбор цвета выделения
+; Select highlight color
+;
+MSG_PopWinTitle_Selected
+Выбор цвета блока
+; Select block color
+;
+MSG_PopWinTitle_SeparatorShadow
+Выбор тёмного цвета разделителей
+; Select separators shadow color
+;
+MSG_PopWinTitle_SeparatorShine
+Выбор светлого цвета разделителей
+; Select separators shine color
+;
+MSG_PopWinTitle_Text
+Выбор цвета текста
+; Select text color
+;
+MSG_SliderText_MaxWidth
+Как символ
+; Same as char
+;
+MSG_SliderText_MinSpeed
+Выкл.
+; Off
+;
+MSG_SliderText_MinWidth
+1 точка
+; 1 pixel
+;
+MSG_SliderText_StdSpeed
+\33r%ld мс
+; \33r%ld ms
+;
+MSG_SliderText_StdWidth
+%ld точки
+; %ld pixels
+;
+MSG_SliderText_TabSize
+%ld пробела
+; %ld spaces
+;
+MSG_Function_GotoBookmark1
+Перейти на закладку 1
+; Goto Bookmark 1
+;
+MSG_Function_GotoBookmark2
+Перейти на закладку 2
+; Goto Bookmark 2
+;
+MSG_Function_GotoBookmark3
+Перейти на закладку 3
+; Goto Bookmark 3
+;
+MSG_Function_SetBookmark1
+Установить закладку 1
+; Set Bookmark 1
+;
+MSG_Function_SetBookmark2
+Установить закладку 2
+; Set Bookmark 2
+;
+MSG_Function_SetBookmark3
+Установить закладку 3
+; Set Bookmark 3
+;
+MSG_Button_Snoop
+Определить
+; Snoop
+;
+MSG_Function_DelLine
+Удалить строку
+; Delete line
+;

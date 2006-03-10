@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor_mcc
 
- $Id: mcc_common.h,v 1.1 2005/03/28 11:29:48 damato Exp $
+ $Id: mcc_common.h,v 1.2 2005/06/24 18:10:57 gnikl Exp $
 
 ***************************************************************************/
 
@@ -26,6 +26,9 @@
 #include "SDI_stdarg.h"
 
 #ifdef __amigaos4__
+
+#include <proto/intuition.h>
+
 /* redefine some defines to allow complexer macro use later on */
 #define DoMethod				IDoMethod
 #define DoMethodA 			IDoMethodA
@@ -51,8 +54,9 @@
 
 #else
 
+#include <clib/alib_protos.h>
+
 #define GETINTERFACE(iface, base)	TRUE
 #define DROPINTERFACE(iface)
 
-#endif /* __amigaos4__ */
-
+#endif /* ! __amigaos4__ */

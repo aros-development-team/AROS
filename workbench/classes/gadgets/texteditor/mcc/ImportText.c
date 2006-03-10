@@ -16,16 +16,13 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: ImportText.c,v 1.5 2005/04/05 15:35:03 sba Exp $
+ $Id: ImportText.c,v 1.9 2005/08/06 20:07:48 damato Exp $
 
 ***************************************************************************/
 
-#include <stdio.h>
 #include <string.h>
-#include <exec/types.h>
-#include <clib/dos_protos.h>
-#include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/exec.h>
 
 #include "TextEditor_mcc.h"
 #include "private.h"
@@ -34,17 +31,23 @@
  Import the given 0 terminated text by invoking the gicen import Hook
  for every line
 ***********************************************************************/
-struct line_node *ImportText(char *contents, void *mempool, struct Hook *importHook, LONG wraplength)
+struct line_node *ImportText(char *contents, struct InstData *data, struct Hook *importHook, LONG wraplength)
 {
 	struct line_node *first_line, *line;
 	struct ImportMessage im;
 
+	ENTER();
+
 	im.Data = contents;
 	im.ImportWrap = wraplength;
-	im.PoolHandle = mempool;
+	im.PoolHandle = data->mypool;
 
-	line = AllocPooled(mempool,sizeof(struct line_node));
-	if (!line) return NULL;
+	line = AllocLine(data);
+	if(!line)
+	{
+		RETURN(NULL);
+		return NULL;
+	}
 
 	memset(line,0,sizeof(*line));
 	first_line = line;
@@ -68,40 +71,46 @@ struct line_node *ImportText(char *contents, void *mempool, struct Hook *importH
 				{
 					line->previous->next = NULL;
 
-  				FreePooled(mempool,line,sizeof(struct line_node));
+					FreeLine(line, data);
 				}
 				else
 				{
-          char *ctext;
+					char *ctext;
 
 					// if the line has nor predecessor it was obviously the first line
-          // so we prepare a "fake" line_node to let the textEditor clear our
-          // text
-          if((ctext = MyAllocPooled(mempool, 2)))
-          {
-            ctext[0] = '\n';
-            ctext[1] = '\0';
-            line->line.Contents = ctext;
-            line->line.Length   = 1;
-          } else
-          {
-	  				FreePooled(mempool,first_line,sizeof(struct line_node));
-          	first_line = NULL;
-          }
+					// so we prepare a "fake" line_node to let the textEditor clear our
+					// text
+					if((ctext = MyAllocPooled(data->mypool, 2)))
+					{
+						ctext[0] = '\n';
+						ctext[1] = '\0';
+						line->line.Contents = ctext;
+						line->line.Length	 = 1;
+					} else
+					{
+						FreeLine(first_line, data);
+						first_line = NULL;
+					}
 				}
 			}
 			break;
 		}
 
-		if (!(new_line = AllocPooled(mempool,sizeof(struct line_node))))
+		if(!(new_line = AllocLine(data)))
 			break;
+
 		memset(new_line,0,sizeof(*new_line));
-		/* Inherit the flow from the previous line */
-		new_line->line.Flow = line->line.Flow;
+
+		// Inherit the flow from the previous line, but only if
+		// the clearFlow variable is not set
+		if(line->line.clearFlow == FALSE)
+			new_line->line.Flow = line->line.Flow;
+
 		new_line->previous = line;
 		line->next = new_line;
 		line = new_line;
 	}
 
+	RETURN(first_line);
 	return first_line;
 }

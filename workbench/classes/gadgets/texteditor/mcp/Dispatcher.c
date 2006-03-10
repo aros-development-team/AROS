@@ -125,7 +125,6 @@ struct MUI_CustomClass *speedslider_mcc = NULL;
 struct MUI_CustomClass *text_mcc = NULL;
 
 #ifndef __AROS__
-
 BOOL CreateSubClasses(void)
 {
   if((widthslider_mcc = MUI_CreateCustomClass(NULL, "Slider.mui", NULL, 0, ENTRY(WidthSlider_Dispatcher))))
@@ -163,4 +162,4 @@ void DeleteSubClasses(void)
   }
 }
 
-#endif /*__AROS__*/
+#endif

@@ -16,7 +16,7 @@
 #
 # TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 #
-# $Id: Makefile.os3,v 1.3 2005/03/31 09:34:47 sba Exp $
+# $Id: Makefile.os3,v 1.5 2005/06/04 11:57:46 damato Exp $
 #
 #***************************************************************************/
 
@@ -38,7 +38,7 @@ CPU      = -m68020-60 -msoft-float
 CDEFS    = -D__NLV_VERDATE=\"`date +%d.%m.%Y`\" -D__NLV_VERDAYS="`expr \`date +%s\` / 86400 - 2922`"
 WARN     = -W -Wall
 OPTFLAGS = -O3 -fomit-frame-pointer -funroll-loops
-DEBUG    = -DWITH_DEBUG -g -O0
+DEBUG    = -DDEBUG -g -O0
 CFLAGS   = -noixemul -I. -I../mcc -I../includes -c $(CPU) $(WARN) $(OPTFLAGS) $(DEBUG)
 LDFLAGS  = -noixemul -nostartfiles $(CPU)
 LDLIBS   = -lmui -ldebug -lamiga
@@ -58,19 +58,19 @@ PREFTARGET= $(BINDIR)/TextEditor-Prefs
 MCPOBJS = $(OBJDIR)/library.o \
           $(OBJDIR)/locale.o \
           $(OBJDIR)/CreatePrefsGroup.o \
+          $(OBJDIR)/Debug.o \
           $(OBJDIR)/Dispatcher.o \
           $(OBJDIR)/Keybindings.o \
           $(OBJDIR)/KeyStorage.o \
-          $(OBJDIR)/ObjectCreator.o \
-          $(OBJDIR)/UserKeys.o
+          $(OBJDIR)/ObjectCreator.o
 
 PREFOBJS =$(OBJDIR)/locale.o \
           $(OBJDIR)/CreatePrefsGroup.o \
+          $(OBJDIR)/Debug.o \
           $(OBJDIR)/Dispatcher.o \
           $(OBJDIR)/Keybindings.o \
           $(OBJDIR)/KeyStorage.o \
           $(OBJDIR)/ObjectCreator.o \
-          $(OBJDIR)/UserKeys.o \
           $(OBJDIR)/Preference.o
 
 #

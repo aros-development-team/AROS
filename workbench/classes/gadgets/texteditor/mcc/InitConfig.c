@@ -16,22 +16,22 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: InitConfig.c,v 1.4 2005/04/04 21:59:02 damato Exp $
+ $Id: InitConfig.c,v 1.9 2005/08/16 21:21:01 damato Exp $
 
 ***************************************************************************/
 
-#include <stdio.h>
 #include <string.h>
 
-#include <clib/alib_protos.h>
+#include <exec/memory.h>
 #include <libraries/mui.h>
-#include <proto/dos.h>
-#include <proto/diskfont.h>
-#include <proto/exec.h>
-#include <proto/graphics.h>
-#include <proto/intuition.h>
-#include <proto/keymap.h>
+#include <clib/alib_protos.h>
 #include <proto/muimaster.h>
+#include <proto/intuition.h>
+#include <proto/diskfont.h>
+#include <proto/graphics.h>
+#include <proto/keymap.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
 
 #include "TextEditor_mcc.h"
 #include "TextEditor_mcp.h"
@@ -43,54 +43,78 @@ struct TextFont *GetFont(UNUSED struct InstData *data, void *obj, long attr)
 {
   char *setting;
   char *fontname;
- 	char *size_ptr;
+  char *size_ptr;
   struct TextFont *f;
   struct TextAttr myfont;
 
-  if (!DoMethod(obj, MUIM_GetConfigItem, attr, &setting)) return NULL;
-	if (!setting) return NULL;
-  if (!(fontname = AllocVec(strlen(setting)+6,0))) return NULL;
+  ENTER();
 
-	f = NULL;
+  if(!DoMethod(obj, MUIM_GetConfigItem, attr, &setting))
+  {
+    RETURN(NULL);
+    return NULL;
+  }
+
+  if(!setting)
+  {
+    RETURN(NULL);
+    return NULL;
+  }
+
+  if(!(fontname = AllocVec(strlen(setting)+6, MEMF_ANY|MEMF_CLEAR)))
+  {
+    RETURN(NULL);
+    return NULL;
+  }
+
+  f = NULL;
 
   myfont.ta_Name = fontname;
   myfont.ta_YSize = 8;
   myfont.ta_Style = FS_NORMAL;
   myfont.ta_Flags = 0;
 
-	strcpy(fontname,setting);
-	size_ptr = strchr(fontname,'/');
-	if (size_ptr)
-	{
-		long size;
+  strcpy(fontname,setting);
+  size_ptr = strchr(fontname,'/');
+  if (size_ptr)
+  {
+    LONG size;
 
-   	StrToLong(size_ptr + 1, &size);
-   	strncpy(size_ptr, ".font", 6);
-   	myfont.ta_YSize = size;
-	}
+    StrToLong(size_ptr + 1, &size);
+    strncpy(size_ptr, ".font", 6);
+    myfont.ta_YSize = size;
+  }
 
   f = OpenDiskFont(&myfont);
   FreeVec(fontname);
-	return f;
+
+  RETURN(f);
+  return f;
 }
 
 void SetCol (struct InstData *data, void *obj, long item, ULONG *storage, long bit)
 {
-    struct MUI_PenSpec *spec;
+  struct MUI_PenSpec *spec;
+
+  ENTER();
 
   if(DoMethod(obj, MUIM_GetConfigItem, item, &spec))
   {
     *storage = MUI_ObtainPen(muiRenderInfo(obj), spec, 0L);
     data->allocatedpens |= 1<<bit;
   }
+
+  LEAVE();
 }
 
 BOOL iswarned = FALSE;
 
-void InitConfig (void *obj, struct InstData *data)
+void InitConfig(Object *obj, struct InstData *data)
 {
-    long  setting;
-    UWORD *muipens = _pens(obj);
+  long  setting;
+  UWORD *muipens = _pens(obj);
+
+  ENTER();
 
   data->allocatedpens = 0;
   data->textcolor         = *(muipens+MPEN_TEXT);
@@ -204,9 +228,9 @@ void InitConfig (void *obj, struct InstData *data)
         set(obj, MUIA_Frame, DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Frame, &setting) ? (STRPTR)setting : (STRPTR)"302200");
     else  set(obj, MUIA_Frame, MUIV_Frame_String);
   #else
-    set(obj, MUIA_Frame, MUIV_Frame_String);
-    #warning "FIXME AROS/Zune: does not support things like MUIA_Frame, "302200"!"
-  #endif    
+     set(obj, MUIA_Frame, MUIV_Frame_String);
+     #warning "FIXME AROS/Zune: does not support things like MUIA_Frame, "302200"!"
+  #endif
   }
 
   data->TypeAndSpell = FALSE;
@@ -338,8 +362,8 @@ void InitConfig (void *obj, struct InstData *data)
       {
         if((mykeys+count)->keydata.code >= 500)
         {
-            UBYTE  RAW[4];
-            UBYTE  code = (mykeys+count)->keydata.code-500;
+          char RAW[4];
+          char code = (mykeys+count)->keydata.code-500;
 
           MapANSI(&code, 1, RAW, 1, NULL);
 
@@ -359,10 +383,14 @@ void InitConfig (void *obj, struct InstData *data)
       }
     }
   }
+
+  LEAVE();
 }
 
 void  FreeConfig  (struct InstData *data, struct MUI_RenderInfo *mri)
 {
+  ENTER();
+
   if(data->RawkeyBindings)
     MyFreePooled(data->mypool, data->RawkeyBindings);
 
@@ -393,5 +421,7 @@ void  FreeConfig  (struct InstData *data, struct MUI_RenderInfo *mri)
     DoMethod(_app(data->object), MUIM_Application_RemInputHandler, &data->blinkhandler);
     data->BlinkSpeed = 1;
   }
+
+  LEAVE();
 }
 

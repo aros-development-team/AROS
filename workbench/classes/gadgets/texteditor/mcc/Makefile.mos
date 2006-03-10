@@ -16,7 +16,7 @@
 #
 # TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 #
-# $Id: Makefile.mos,v 1.2 2005/04/06 16:49:00 itix Exp $
+# $Id: Makefile.mos,v 1.7 2005/08/10 22:16:02 itix Exp $
 #
 #***************************************************************************/
 
@@ -38,10 +38,10 @@ CPUFLAGS = -mmultiple
 CDEFS    = -D__NLVP_VERDATE=\"`date +%d.%m.%Y`\" -D__NLVP_VERDAYS="`expr \`date +%s\` / 86400 - 2922`"
 WARN     = -W -Wall
 OPTFLAGS = -O3 -finline-functions -fomit-frame-pointer -funroll-loops
-DEBUG    = -DWITH_DEBUG -g -O0
+DEBUG    = -DDEBUG -g -O0
 CFLAGS   = -noixemul -I. -I../mcp -I../includes $(CPU) $(CPUFLAGS) $(WARN) $(OPTFLAGS)\
-           $(DEBUG) -c -DZERO=0
-LDFLAGS  = -noixemul -nostartfiles
+           $(DEBUG) -c
+LDFLAGS  = -noixemul -nostartfiles $(CPU)
 LDLIBS   = -ldebug
 
 # CPU and DEBUG can be defined outside, defaults to above
@@ -62,6 +62,7 @@ MCCOBJS = $(OBJDIR)/library.o \
           $(OBJDIR)/BlockOperators.o \
           $(OBJDIR)/CaseConversion.o \
           $(OBJDIR)/ColorOperators.o \
+          $(OBJDIR)/Debug.o \
           $(OBJDIR)/Dispatcher.o \
           $(OBJDIR)/EditorStuff.o \
           $(OBJDIR)/ExportHook.o \
@@ -80,7 +81,6 @@ MCCOBJS = $(OBJDIR)/library.o \
           $(OBJDIR)/Search.o \
           $(OBJDIR)/SpellChecker.o \
           $(OBJDIR)/StyleOperators.o \
-          $(OBJDIR)/TextFunctions.o \
           $(OBJDIR)/UndoFunctions.o
 
 TESTOBJS= $(OBJDIR)/TextEditor-Test.o \
@@ -89,6 +89,7 @@ TESTOBJS= $(OBJDIR)/TextEditor-Test.o \
           $(OBJDIR)/BlockOperators.o \
           $(OBJDIR)/CaseConversion.o \
           $(OBJDIR)/ColorOperators.o \
+          $(OBJDIR)/Debug.o \
           $(OBJDIR)/Dispatcher.o \
           $(OBJDIR)/EditorStuff.o \
           $(OBJDIR)/ExportHook.o \
@@ -107,7 +108,6 @@ TESTOBJS= $(OBJDIR)/TextEditor-Test.o \
           $(OBJDIR)/Search.o \
           $(OBJDIR)/SpellChecker.o \
           $(OBJDIR)/StyleOperators.o \
-          $(OBJDIR)/TextFunctions.o \
           $(OBJDIR)/UndoFunctions.o
 
 #
@@ -147,6 +147,9 @@ $(OBJDIR)/library.o: library.c ../includes/mccheader.c \
 
 $(OBJDIR)/library.o: library.c ../includes/mccheader.c TextEditor_mcc.h \
   private.h rev.h
+
+dump:
+	ppc-morphos-objdump --section-headers --all-headers --reloc --syms --disassemble-all $(TESTTARGET).debug >$(TESTTARGET).dump
 
 #
 

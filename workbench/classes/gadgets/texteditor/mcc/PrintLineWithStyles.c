@@ -16,15 +16,14 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: PrintLineWithStyles.c,v 1.3 2005/04/04 21:59:02 damato Exp $
+ $Id: PrintLineWithStyles.c,v 1.12 2005/08/07 14:17:17 damato Exp $
 
 ***************************************************************************/
 
-#include <math.h>
-
+#include <graphics/text.h>
 #include <clib/alib_protos.h>
-#include <proto/graphics.h>
 #include <proto/intuition.h>
+#include <proto/graphics.h>
 
 #include "TextEditor_mcc.h"
 #include "private.h"
@@ -54,6 +53,8 @@ ULONG ConvertPen (UWORD color, BOOL highlight, struct InstData *data)
 
 VOID DrawSeparator (struct RastPort *rp, WORD X, WORD Y, WORD Width, WORD Height, struct InstData *data)
 {
+  ENTER();
+
   if(Width > 3*Height)
   {
 /*    SetAPen(rp, data->separatorshadow);
@@ -77,43 +78,36 @@ VOID DrawSeparator (struct RastPort *rp, WORD X, WORD Y, WORD Width, WORD Height
       RectFill(rp, X+1, Y+1, X+Width-2, Y+(2*Height)-2);
     }
 */  }
+
+  LEAVE();
 }
 
-LONG  PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, struct InstData *data)
+LONG PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer, struct InstData *data)
 {
-    STRPTR  text    = line->line.Contents;
-    LONG    length  = LineCharsWidth(text+x, data);
-    struct RastPort *rp = &data->doublerp;
+  STRPTR text = line->line.Contents;
+  LONG length;
+  struct RastPort *rp = &data->doublerp;
 
-/*  switch(text[x+length-1])
-  {
-    case ' ':
-    case '\n':
-    case '\0':
-    break;
+  ENTER();
 
-    default:
-      kprintf("%2d\n", text[x+length-1]);
-      length--;
-    break;
-  }
-*/
+  length  = LineCharsWidth(text+x, data);
+
   if(!doublebuffer)
   {
     doublebuffer = FALSE;
     rp = &data->copyrp;
   }
 
-  if((line_nr > 0) && (data->update) && !(data->flags & FLG_Quiet))
+  if((line_nr > 0) && (data->update) && !(data->flags & FLG_Quiet) && data->rport != NULL && data->shown == TRUE)
   {
-      LONG  c_length = length-1;
-      LONG  startx = 0, stopx = 0;
-      LONG  starty = 0, xoffset = ((data->height-rp->TxBaseline+1)>>1)+1;
-      LONG  flow = 0;
-      UWORD *styles = line->line.Styles;
-      UWORD *colors = line->line.Colors;
-      struct marking block;
-      BOOL  cursor = FALSE;
+    LONG c_length = length;
+    LONG startx = 0, stopx = 0;
+    LONG starty = 0, xoffset = ((data->height-rp->TxBaseline+1)>>1)+1;
+    LONG flow = 0;
+    UWORD *styles = line->line.Styles;
+    UWORD *colors = line->line.Colors;
+    struct marking block;
+    BOOL cursor = FALSE;
 
     if(line->line.Color && x == 0 && line->line.Length == 1)
       line->line.Color = FALSE;
@@ -129,10 +123,12 @@ LONG  PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer,
 
     if(Enabled(data))
     {
-        struct line_node *blkline;
+      struct line_node *blkline;
 
       NiceBlock(&data->blockinfo, &block);
+
       blkline = block.startline->next;
+
       if(block.startline == block.stopline)
       {
         if(block.startline == line)
@@ -170,29 +166,36 @@ LONG  PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer,
     }
 
     {
-        UWORD blockstart = 0, blockwidth = 0;
+      UWORD blockstart = 0, blockwidth = 0;
 #ifndef ClassAct
-        struct RastPort *old = muiRenderInfo(data->object)->mri_RastPort;
+      struct RastPort *old = muiRenderInfo(data->object)->mri_RastPort;
 #else
-        struct RastPort *old = data->rport;
+      struct RastPort *old = data->rport;
 #endif
 
-      if(startx <= x+c_length && stopx > x)
+      if(startx < x+c_length && stopx > x)
       {
         if(startx > x)
-            blockstart = MyTextLength(data->font, text+x, startx-x);
-        else  startx = x;
+          blockstart = TextLength(&data->tmprp, text+x, startx-x);
+        else
+          startx = x;
 
-        blockwidth = ((stopx > c_length+x) ? data->innerwidth-(blockstart+flow) : MyTextLength(data->font, text+startx, stopx-startx));
+        blockwidth = ((stopx >= c_length+x) ? data->innerwidth-(blockstart+flow) : TextLength(&data->tmprp, text+startx, stopx-startx));
       }
-      else
+      else if(!(data->flags & (FLG_ReadOnly | FLG_Ghosted)) &&
+              line == data->actualline && data->CPos_X >= x &&
+              data->CPos_X < x+c_length && !Enabled(data) &&
+              !data->scrollaction && (data->flags & FLG_Active))
       {
-        if(!(data->flags & (FLG_ReadOnly | FLG_Ghosted)) && line == data->actualline && data->CPos_X >= x && data->CPos_X <= x+c_length && !Enabled(data) && !data->scrollaction && (data->flags & FLG_Active))
-        {
-          cursor = TRUE;
-          blockstart = MyTextLength(data->font, text+x, data->CPos_X-x);
-          blockwidth = (data->CursorWidth == 6) ? MyTextLength(data->font, (*(text+data->CPos_X) == '\n') ? (char *)"n" : (char *)(text+data->CPos_X), 1) : data->CursorWidth;
-        }
+        cursor = TRUE;
+        blockstart = TextLength(&data->tmprp, text+x, data->CPos_X-x);
+
+        // calculate the cursor width
+        // if it is set to 6 then we should find out how the width of the current char is
+        if(data->CursorWidth == 6)
+          blockwidth = TextLength(&data->tmprp, (*(text+data->CPos_X) < ' ') ? (char *)" " : (char *)(text+data->CPos_X), 1);
+        else
+          blockwidth = data->CursorWidth;
       }
 
       SetDrMd(rp, JAM1);
@@ -201,20 +204,34 @@ LONG  PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer,
 #else
       data->rport = rp;
 #endif
+
+      // clear the background first
+      DoMethod(data->object, MUIM_DrawBackground, xoffset, starty, flow+blockstart, data->height, (data->flags & FLG_InVGrp) ? 0 : data->xpos, (data->flags & FLG_InVGrp) ? data->height*(data->visual_y+line_nr-2) : data->realypos+data->height * (data->visual_y+line_nr-2));
+
       if(blockwidth)
       {
-        if(blockstart || cursor)
-        {
-          DoMethod(data->object, MUIM_DrawBackground, xoffset, starty, flow+blockstart, data->height, (data->flags & FLG_InVGrp) ? 0 : data->xpos, (data->flags & FLG_InVGrp) ? data->height*(data->visual_y+line_nr-2) : data->realypos+data->height * (data->visual_y+line_nr-2));
-          SetAPen(rp, cursor ? data->cursorcolor : data->markedcolor);
-          RectFill(rp, xoffset+flow+blockstart, starty, xoffset+flow+blockstart+blockwidth-1, starty+data->height-1);
-        }
-        else
+        // if selectmode == 2 then a whole line should be drawn as being marked, so
+        // we have to start at xoffset instead of xoffset+flow+blockstart.
+        // Please note that the second part of the following "empiric" evaluation should
+        // prevent that centered or right aligned lines are not correctly marked right
+        // from the beginning of the line. However, it seems to be not cover 100% of all different
+        // cases so that the evaluation if a line should be completely marked should be probably
+        // moved elsewhere in future.
+        if(data->selectmode == 2 ||
+           (flow && data->selectmode != 1 && startx-x == 0 && cursor == FALSE &&
+            ((data->blockinfo.startline != data->blockinfo.stopline) || x > 0)))
         {
           SetAPen(rp, data->markedcolor);
           RectFill(rp, xoffset, starty, xoffset+flow+blockwidth-1, starty+data->height-1);
         }
+        else
+        {
+          SetAPen(rp, cursor ? data->cursorcolor : data->markedcolor);
+          RectFill(rp, xoffset+flow+blockstart, starty, xoffset+flow+blockstart+blockwidth-1, starty+data->height-1);
+        }
       }
+
+
       {
         LONG  x_start = xoffset+blockstart+blockwidth,
             y_start = starty,
@@ -234,6 +251,7 @@ LONG  PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer,
           x_ptrn += data->xpos;
           y_ptrn += data->realypos;
         }
+
         DoMethod(data->object, MUIM_DrawBackground, x_start, y_start, x_width, y_width, x_ptrn, y_ptrn);
       }
 #ifndef ClassAct
@@ -249,9 +267,10 @@ LONG  PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer,
     }
 
     SetAPen(rp, (line->line.Color ? data->highlightcolor : data->textcolor));
+
     while(c_length)
     {
-        LONG p_length = c_length;
+      LONG p_length = c_length;
 
       SetSoftStyle(rp, convert(GetStyle(x, line)), ~0);
       if(styles)
@@ -297,7 +316,13 @@ LONG  PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer,
             SetAPen(rp, (line->color ? data->highlightcolor : data->textcolor));
         }
       }
-*/      Text(rp, text+x, p_length);
+*/
+
+      if(text[x+p_length-1] < ' ')
+        Text(rp, text+x, p_length-1);
+      else
+        Text(rp, text+x, p_length);
+
       x += p_length;
       c_length -= p_length;
     }
@@ -412,5 +437,6 @@ LONG  PrintLine(LONG x, struct line_node *line, LONG line_nr, BOOL doublebuffer,
   if(data->flags & FLG_HScroll)
     length = line->line.Length;
 
+  RETURN(length);
   return(length);
 }
