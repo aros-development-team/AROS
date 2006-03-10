@@ -27,6 +27,7 @@
 #include <workbench/icon.h>
 #include <devices/inputevent.h>
 
+#include <MUI/TextEditor_mcc.h>
 #include <zune/iconimage.h>
 
 #include "locale.h"
@@ -53,12 +54,70 @@
 #define  MAX_TOOLTYPE_LINE 256
 #define BUFFERSIZE 1024
 
-static Object *window, *list, *liststr, *commentspace=NULL, *filename_string = NULL, *stackspace = NULL, *savebutton=NULL;
+#define USE_TEXTEDITOR 1
+
+static Object *window, *commentspace, *filename_string, *stackspace, *savebutton;
+#if USE_TEXTEDITOR
+static Object *editor, *slider;
+#else
+static Object *list, *editor, *liststr;
+#endif
+
 BOOL file_altered = FALSE;
 BOOL icon_altered = FALSE;
 
 UBYTE **BuildToolTypes(UBYTE **src_ttypes)
 {
+#if USE_TEXTEDITOR
+    APTR     pool = CreatePool(MEMF_CLEAR, 200, 200);
+    STRPTR   contents, sp, *dst_ttypes;
+    ULONG    lines = 1;
+
+    if (!pool) return NULL;
+    contents = (STRPTR)DoMethod(editor, MUIM_TextEditor_ExportText);
+
+    if (!contents || !contents[0])
+    {
+    	DeletePool(pool);
+	return NULL;
+    }
+    
+    sp = contents;
+    
+    while((sp = strchr(sp, '\n')))
+    {
+    	sp++;
+	lines++;
+    }
+    
+    dst_ttypes = AllocPooled(pool, (lines + 3) * sizeof(STRPTR));
+    if (!dst_ttypes)
+    {
+    	FreeVec(contents);
+	DeletePool(pool);
+	return NULL;
+    }
+    
+    *dst_ttypes++ = (STRPTR)pool;
+    *dst_ttypes++ = (STRPTR)contents;
+    
+    for(sp = contents, lines = 0; sp; lines++)
+    {
+	dst_ttypes[lines] = sp;	
+    	sp = strchr(sp, '\n');
+	if (sp)
+	{
+	    *sp++ = '\0';
+	}
+	else
+	{
+	    dst_ttypes[lines] = 0;
+	}
+    }
+    dst_ttypes[lines] = 0;
+     
+    return dst_ttypes;   
+#else
     APTR     pool = CreatePool(MEMF_CLEAR, 200, 200);
     Object  *listobj = list;
     WORD     list_index = 0, num_ttypes = 0, alloc_ttypes = 10;
@@ -102,14 +161,23 @@ UBYTE **BuildToolTypes(UBYTE **src_ttypes)
     }
     dst_ttypes[0] = (APTR)pool;
     return dst_ttypes + 1;
+#endif    
 }
 
 void FreeToolTypes(UBYTE **ttypes)
 {
+#if USE_TEXTEDITOR
+    if (ttypes)
+    {
+        DeletePool((APTR)ttypes[-2]);
+	FreeVec((APTR)ttypes[-1]);
+    }
+#else
     if (ttypes)
     {
         DeletePool((APTR)ttypes[-1]);
     }
+#endif
 }
 
 void SaveIcon(struct DiskObject *icon, STRPTR name, BPTR cd)
@@ -160,6 +228,7 @@ void SaveFile(struct AnchorPath * ap, BPTR cd)
     file_altered = FALSE;
 }
 
+#if !USE_TEXTEDITOR
 void ListToString(void)
 {
     STRPTR text = NULL;
@@ -220,6 +289,7 @@ void DelKey(void)
         }
     }
 }
+#endif
 
 int main(int argc, char **argv)
 {
@@ -376,7 +446,7 @@ int main(int argc, char **argv)
         type = (char *) typeNames[icon->do_Type];
         D(bug("[WBInfo] icon type is: %s\n", type));
         sprintf(stack, "%ld", icon->do_StackSize);
-        sprintf(deftool, "%s", icon->do_DefaultTool);
+        if (icon->do_DefaultTool) sprintf(deftool, "%s", icon->do_DefaultTool);
     } else {
         FreeVec(ap);
         Locale_Deinitialize();
@@ -501,6 +571,7 @@ int main(int argc, char **argv)
                             Child, (IPTR) HGroup,
                                 Child, (IPTR) VGroup,
                                 GroupSpacing(0),
+				#if !USE_TEXTEDITOR
                                     Child, (IPTR) ListviewObject,
                                         MUIA_Listview_List, (IPTR) (list = ListObject,
                                         InputListFrame,
@@ -513,13 +584,24 @@ int main(int argc, char **argv)
                                         MUIA_Disabled, TRUE,
                                         StringFrame,
                                     End),
+				#else
+				    Child, (IPTR) HGroup,
+				        GroupSpacing(0),
+				    	Child, (IPTR) (editor = MUI_NewObject(MUIC_TextEditor,
+				    	TAG_DONE)),
+					Child, (IPTR) (slider = ScrollbarObject,
+					End),
+				    End,
+				#endif
                                 End,
                             End,
+			#if !USE_TEXTEDITOR
                             Child, (IPTR) HGroup,
                                 MUIA_Group_SameSize, TRUE,
                                 Child, (IPTR) (newkey = SimpleButton(__(MSG_NEW_KEY))),
                                 Child, (IPTR) (delkey = SimpleButton(__(MSG_DELETE_KEY))),
                             End,
+			#endif
                         End,
                     End, /* end hgroup tooltypes pannel */
                 End,
@@ -540,8 +622,10 @@ int main(int argc, char **argv)
     {
         ULONG signals = 0;
 
+    #if !USE_TEXTEDITOR
         set(liststr, MUIA_String_AttachedList, (IPTR)list);
-
+    #endif
+    
         DoMethod(quit, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
             (IPTR) application, 2, MUIM_Application_ReturnID,
             MUIV_Application_ReturnID_Quit);
@@ -563,6 +647,7 @@ int main(int argc, char **argv)
         DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
             (IPTR) application, 2, MUIM_Application_ReturnID,
             MUIV_Application_ReturnID_Quit );
+    #if !USE_TEXTEDITOR
         DoMethod(newkey, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_NEWKEY);
         DoMethod(delkey, MUIM_Notify, MUIA_Pressed, FALSE,
@@ -571,9 +656,45 @@ int main(int argc, char **argv)
             (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_LVACK);
         DoMethod(liststr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
             (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_STRINGACK);
+    #endif
         DoMethod(commentspace, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
             (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_COMMENTACK);
 
+    #if USE_TEXTEDITOR
+    	set(editor, MUIA_TextEditor_Slider, slider);
+
+        if (icon->do_ToolTypes)
+        {
+            char *tt = NULL, *contents;
+            int   i  = 0;
+	    int   first = 1;
+	    ULONG len = 0;
+	    
+            while ((tt = icon->do_ToolTypes[i]) != NULL)
+            {
+	    	len = len + strlen(icon->do_ToolTypes[i]) + 1;
+		i++;
+	    }
+	    
+	    contents = AllocVec(len + 1, MEMF_ANY);
+	    if (contents)
+	    {
+	    	contents[0] = 0;
+		i = 0;
+
+        	while ((tt = icon->do_ToolTypes[i]) != NULL)
+        	{
+		    strcat(contents, icon->do_ToolTypes[i]);
+		    strcat(contents, "\n");
+		    i++;
+		}
+
+    	    	set(editor, MUIA_TextEditor_Contents, contents);
+		FreeVec(contents);
+            }
+        }
+    #else
+    	
         if (icon->do_ToolTypes)
         {
             char *tt = NULL;
@@ -584,7 +705,8 @@ int main(int argc, char **argv)
                 i++;
             }
         }
-
+    #endif
+    
         switch(icon->do_Type)
         {
             case 4:
@@ -669,6 +791,7 @@ int main(int argc, char **argv)
                         if (MUI_RequestA(application,NULL,0,
                             _(MSG_ABOUT), _(MSG_OK), _(MSG_COPYRIGHT), NULL))
                         break;
+		#if !USE_TEXTEDITOR
                     case RETURNID_NEWKEY:
                         NewKey();
                         break;
@@ -683,8 +806,11 @@ int main(int argc, char **argv)
                         StringToKey();
                         icon_altered = TRUE;
                         break;
+		#endif
                     case RETURNID_SAVE:
+		    #if !USE_TEXTEDITOR
                         if (icon_altered)
+		    #endif
                             SaveIcon(icon, name, lock);
                         if (file_altered)
                             SaveFile(ap, lock);
