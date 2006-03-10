@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: ColorOperators.c,v 1.2 2005/03/31 17:35:28 sba Exp $
+ $Id: ColorOperators.c,v 1.3 2005/05/14 00:27:14 damato Exp $
 
 ***************************************************************************/
 
@@ -24,8 +24,10 @@
 
 UWORD GetColor (UWORD x, struct line_node *line)
 {
-    UWORD color = 0;
-    UWORD *colors = line->line.Colors;
+  UWORD color = 0;
+  UWORD *colors = line->line.Colors;
+
+  ENTER();
 
   if(colors)
   {
@@ -35,14 +37,18 @@ UWORD GetColor (UWORD x, struct line_node *line)
       colors += 2;
     }
   }
+
+  RETURN(color);
   return(color);
 }
 
 void  AddColorToLine (UWORD x, struct line_node *line, UWORD length, UWORD color, struct InstData *data)
 {
-    UWORD *colors   = line->line.Colors;
-    UWORD *oldcolors  = colors;
-    UWORD *newcolors;
+  UWORD *colors   = line->line.Colors;
+  UWORD *oldcolors  = colors;
+  UWORD *newcolors;
+
+  ENTER();
 
   x++;
 
@@ -52,7 +58,7 @@ void  AddColorToLine (UWORD x, struct line_node *line, UWORD length, UWORD color
 
   if(newcolors)
   {
-      UWORD oldcol = 0;
+    UWORD oldcol = 0;
 
     line->line.Colors = newcolors;
     if(colors)
@@ -97,13 +103,17 @@ void  AddColorToLine (UWORD x, struct line_node *line, UWORD length, UWORD color
       MyFreePooled(data->mypool, oldcolors);
     }
   }
+
+  LEAVE();
 }
 
 VOID AddColor (struct marking *realblock, UWORD color, struct InstData *data)
 {
-    struct marking    newblock;
-    struct line_node  *startline, *stopline;
-    UWORD         startx, stopx;
+  struct marking    newblock;
+  struct line_node  *startline, *stopline;
+  UWORD         startx, stopx;
+
+  ENTER();
 
   data->HasChanged = TRUE;
   if(realblock->enabled && (realblock->startx != realblock->stopx || realblock->startline != realblock->stopline))
@@ -139,4 +149,6 @@ VOID AddColor (struct marking *realblock, UWORD color, struct InstData *data)
     AddColorToLine(0, line, stopx, color, data);
   }
   RedrawArea(startx, startline, stopx, stopline, data);
+
+  LEAVE();
 }

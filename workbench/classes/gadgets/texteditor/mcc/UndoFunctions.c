@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: UndoFunctions.c,v 1.4 2005/04/04 21:59:02 damato Exp $
+ $Id: UndoFunctions.c,v 1.6 2005/06/04 11:55:00 damato Exp $
 
 ***************************************************************************/
 
@@ -29,30 +29,40 @@
 
 unsigned short LineNr (struct line_node *line, struct InstData *data)
 {
-    unsigned short result = 1;
-    struct line_node *actual = data->firstline;
+  unsigned short result = 1;
+  struct line_node *actual = data->firstline;
+
+  ENTER();
 
   while(line != actual)
   {
     result++;
     actual = actual->next;
   }
+
+  RETURN(result);
   return(result);
 }
 
 struct line_node *LineNode (unsigned short linenr, struct InstData *data)
 {
-    struct line_node *actual = data->firstline;
+  struct line_node *actual = data->firstline;
+
+  ENTER();
 
   while(--linenr && actual->next)
   {
     actual = actual->next;
   }
+
+  RETURN(actual);
   return(actual);
 }
 
 long Undo (struct InstData *data)
 {
+  ENTER();
+
   if(data->undosize && data->undobuffer != data->undopointer)
   {
     struct UserAction *buffer;
@@ -87,10 +97,10 @@ long Undo (struct InstData *data)
         RemoveChars(data->CPos_X, data->actualline, 1, data);
         break;
       case backspacechar:
-        PasteChars(data->CPos_X++, data->actualline, 1, &buffer->del.character, buffer, data);
+        PasteChars(data->CPos_X++, data->actualline, 1, (char *)&buffer->del.character, buffer, data);
         break;
       case deletechar:
-        PasteChars(data->CPos_X, data->actualline, 1, &buffer->del.character, buffer, data);
+        PasteChars(data->CPos_X, data->actualline, 1, (char *)&buffer->del.character, buffer, data);
         break;
       case splitline:
         MergeLines(data->actualline, data);
@@ -114,7 +124,7 @@ long Undo (struct InstData *data)
             char  *clip = GetBlock(&block, data);
 
           CutBlock2(data, FALSE, FALSE, &block, TRUE);
-          buffer->clip = clip;
+          buffer->clip = (unsigned char *)clip;
         }
         break;
       case deleteblock_nomove:
@@ -122,7 +132,7 @@ long Undo (struct InstData *data)
       case deleteblock:
       {
           struct Hook *oldhook = data->ImportHook;
-          char *clip = buffer->clip;
+          char *clip = (char *)buffer->clip;
 
           data->ImportHook = &ImPlainHook;
           InsertText(data, clip, crsr_move);
@@ -148,17 +158,23 @@ long Undo (struct InstData *data)
       if(!(data->flags & FLG_UndoLost))
         data->HasChanged = FALSE;
     }
+
+    RETURN(TRUE);
     return(TRUE);
   }
   else
   {
     DoMethod(data->object, MUIM_TextEditor_HandleError, Error_NothingToUndo);
+
+    RETURN(FALSE);
     return(FALSE);
   }
 }
 
 long Redo (struct InstData *data)
 {
+  ENTER();
+
   if(data->undosize && *(short *)data->undopointer != 0xff)
   {
       struct UserAction *buffer = (struct UserAction *)data->undopointer;
@@ -182,7 +198,7 @@ long Redo (struct InstData *data)
     switch(buffer->type)
     {
       case pastechar:
-        PasteChars(data->CPos_X++, data->actualline, 1, &buffer->del.character, buffer, data);
+        PasteChars(data->CPos_X++, data->actualline, 1, (char *)&buffer->del.character, buffer, data);
         break;
       case backspacechar:
       case deletechar:
@@ -200,7 +216,7 @@ long Redo (struct InstData *data)
             struct Hook *oldhook = data->ImportHook;
 
           data->ImportHook = &ImPlainHook;
-          InsertText(data, buffer->clip, TRUE);
+          InsertText(data, (char *)buffer->clip, TRUE);
           data->ImportHook = oldhook;
           MyFreePooled(data->mypool, buffer->clip);
 
@@ -222,7 +238,7 @@ long Redo (struct InstData *data)
             char  *clip = GetBlock(&block, data);
 
           CutBlock2(data, FALSE, FALSE, &block, TRUE);
-          buffer->clip = clip;
+          buffer->clip = (unsigned char *)clip;
         }
         break;
     }
@@ -231,17 +247,23 @@ long Redo (struct InstData *data)
       SetCursor(data->CPos_X, data->actualline, TRUE, data);
     if(*(short *)data->undopointer == 0xff)
       set(data->object, MUIA_TextEditor_RedoAvailable, FALSE);
+
+    RETURN(TRUE);
     return(TRUE);
   }
   else
   {
     DoMethod(data->object, MUIM_TextEditor_HandleError, Error_NothingToRedo);
+
+    RETURN(FALSE);
     return(FALSE);
   }
 }
 
 void ResetUndoBuffer(struct InstData *data)
 {
+  ENTER();
+
   if(data->undosize)
   {
     struct UserAction *buffer = (struct UserAction *)data->undobuffer;
@@ -269,10 +291,14 @@ void ResetUndoBuffer(struct InstData *data)
     data->undopointer = data->undobuffer;
     *(short *)data->undopointer = 0xff;
   }
+
+  LEAVE();
 }
 
 long AddToUndoBuffer (long eventtype, char *eventdata, struct InstData *data)
 {
+  ENTER();
+
   if(data->undosize)
   {
     struct UserAction *buffer;
@@ -344,7 +370,7 @@ long AddToUndoBuffer (long eventtype, char *eventdata, struct InstData *data)
           {
             buffer->x = block->startx;
             buffer->y = LineNr(block->startline, data);
-            buffer->clip = text;
+            buffer->clip = (unsigned char *)text;
             if(data->flags & FLG_FreezeCrsr)
             {
               buffer->type = deleteblock_nomove;
@@ -359,5 +385,7 @@ long AddToUndoBuffer (long eventtype, char *eventdata, struct InstData *data)
         break;
     }
   }
+
+  RETURN(TRUE);
   return(TRUE);
 }

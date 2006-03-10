@@ -16,29 +16,31 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: SpellChecker.c,v 1.9 2005/04/08 12:04:20 itix Exp $
+ $Id: SpellChecker.c,v 1.19 2005/08/16 21:21:01 damato Exp $
 
 ***************************************************************************/
 
 #include <stdio.h>
 #include <string.h>
 
-#include <dos/dos.h>
+#include <exec/memory.h>
+#include <dos/dosextens.h>
 #include <dos/dostags.h>
-#include <clib/alib_protos.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <proto/intuition.h>
-#include <proto/locale.h>
-#include <proto/muimaster.h>
-#include <proto/rexxsyslib.h>
-#include <proto/wb.h>
+#include <dos/var.h>
 #include <rexx/storage.h>
+#include <workbench/workbench.h>
+#include <clib/alib_protos.h>
+#include <proto/rexxsyslib.h>
+#include <proto/muimaster.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/locale.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/wb.h>
 
 #include "TextEditor_mcc.h"
 #include "private.h"
-
-#include "SDI_hook.h"
 
 #ifdef __AROS__
 #include "MUI/NFloattext_mcc.h"
@@ -62,11 +64,14 @@ HOOKPROTONH(SelectCode, void, void *lvobj, long **parms)
 {
   HOOK_INIT
   
-    struct InstData *data = (struct InstData *)*parms;
-    struct marking block;
-    char *entry;
+  struct InstData *data = (struct InstData *)*parms;
+  struct marking block;
+  char *entry;
+
+  ENTER();
 
   DoMethod(lvobj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &entry);
+
   if(entry)
   {
       int length = strlen(entry);
@@ -87,24 +92,28 @@ HOOKPROTONH(SelectCode, void, void *lvobj, long **parms)
   set(data->SuggestWindow, MUIA_Window_Open, FALSE);
   DoMethod(lvobj, MUIM_List_Clear);
   set(data->object, MUIA_TextEditor_AreaMarked, FALSE);
+
+  LEAVE();
   
   HOOK_EXIT
 }
 MakeStaticHook(SelectHook, SelectCode);
 
-long SendRexx (char *word, char *command, struct InstData *data)
+LONG SendRexx (char *word, char *command, struct InstData *data)
 {
-    struct MsgPort *rexxport;
-    struct RexxMsg *rxmsg;
-    char    buffer[512];
-    LONG    result = FALSE;
+  struct MsgPort *rexxport;
+  struct RexxMsg *rxmsg;
+  char buffer[512];
+  LONG result = FALSE;
+
+  ENTER();
 
   if((rexxport = FindPort("REXX")) && (data->clipport = CreateMsgPort()))
   {
     rxmsg = CreateRexxMsg(data->clipport, NULL, NULL);
     rxmsg->rm_Action = RXCOMM;
     sprintf(buffer, command, word);
-    rxmsg->rm_Args[0] = (UBYTE *)CreateArgstring(buffer, strlen(buffer));
+    rxmsg->rm_Args[0] = (APTR)CreateArgstring(buffer, strlen(buffer));
 
     PutMsg(rexxport, (struct Message *)rxmsg);
     if(Wait((1 << data->clipport->mp_SigBit) | SIGBREAKF_CTRL_C) != SIGBREAKF_CTRL_C)
@@ -121,13 +130,20 @@ long SendRexx (char *word, char *command, struct InstData *data)
     DeleteRexxMsg(rxmsg);
     DeleteMsgPort(data->clipport);
   }
+
+  RETURN(result);
   return result;
 }
 
-#if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
+#if !defined(__amigaos4__) && !defined(__MORPHOS__) &&!defined(__AROS__)
+#undef WorkbenchControl
 BOOL WorkbenchControl(STRPTR name, ...)
-{
-  return WorkbenchControlA(name, (struct TagItem *)(&name+1));
+{ BOOL ret;
+  va_list args;
+  va_start(args, name);
+  ret=WorkbenchControlA(name, (struct TagItem *)args);
+  va_end(args);
+  return ret;
 }
 #endif
 
@@ -137,23 +153,21 @@ BOOL WorkbenchControl(STRPTR name, ...)
 ************************************************************************/
 static BPTR CloneSearchPath(void)
 {
-	BPTR path = 0;
+  BPTR path = 0;
 
-	if (WorkbenchBase && WorkbenchBase->lib_Version >= 44)
-	{
+  if (WorkbenchBase)
+  {
     WorkbenchControl(NULL, WBCTRLA_DuplicateSearchPath, &path, TAG_DONE);
-	} else
-	{
-		/* We don't like this evil code in OS4 compile, as we should have
-		 * a recent enough workbench available */
+  } else
+  {
+    /* We don't like this evil code in OS4 compile, as we should have
+     * a recent enough workbench available */
 #if !defined(__amigaos4__) && !defined(__AROS__)
-		struct Process *pr;
+    struct Process *pr = (struct Process*)FindTask(NULL);
 
-		pr = (struct Process*)FindTask(NULL);
-
-		if (pr->pr_Task.tc_Node.ln_Type == NT_PROCESS)
-		{
-			struct CommandLineInterface *cli = BADDR(pr->pr_CLI);
+    if (pr->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    {
+      struct CommandLineInterface *cli = BADDR(pr->pr_CLI);
 
       if (cli)
       {
@@ -183,11 +197,11 @@ static BPTR CloneSearchPath(void)
           *p = MKBADDR(node);
           p = &node->pn_Next;
         }
-		  }
-		}
+      }
+    }
 #endif
-	}
-	return path;
+  }
+  return path;
 }
 
 /***********************************************************************
@@ -195,41 +209,46 @@ static BPTR CloneSearchPath(void)
 ************************************************************************/
 static VOID FreeSearchPath(BPTR path)
 {
-	if (path == 0) return;
+  if (path == 0)
+    return;
 
-	if (WorkbenchBase && WorkbenchBase->lib_Version >= 44)
-	{
-		WorkbenchControl(NULL, WBCTRLA_FreeSearchPath, path, TAG_DONE);
-	} else
-	{
+  if (WorkbenchBase)
+  {
+    WorkbenchControl(NULL, WBCTRLA_FreeSearchPath, path, TAG_DONE);
+  } else
+  {
 #ifndef __amigaos4__
-  	 while (path)
-  	 {
-  	    struct PathNode *node = BADDR(path);
-  	    path = node->pn_Next;
-  	    UnLock(node->pn_Lock);
-  	    FreeVec(node);
-  	 }
+     while (path)
+     {
+        struct PathNode *node = BADDR(path);
+        path = node->pn_Next;
+        UnLock(node->pn_Lock);
+        FreeVec(node);
+     }
 #endif
-	}
+  }
 }
 
-long SendCLI(char *word, char *command, UNUSED struct InstData *data)
+LONG SendCLI(char *word, char *command, UNUSED struct InstData *data)
 {
   char buffer[512];
-  long result = TRUE;
+  LONG result;
   BPTR path;
 
   sprintf(buffer, command, word);
 
-	/* path maybe 0, which is allowed */
-	path = CloneSearchPath();
+  /* path maybe 0, which is allowed */
+  path = CloneSearchPath();
 
   if (SystemTags(buffer, NP_Path, path, TAG_DONE) == -1)
   {
+    FreeSearchPath(path);
     result = FALSE;
-		FreeSearchPath(path);
+  } else
+  {
+    result = TRUE;
   }
+
   return result;
 }
 
@@ -284,15 +303,16 @@ void *SuggestWindow (struct InstData *data)
 
 BOOL LookupWord(STRPTR word, struct InstData *data)
 {
-    ULONG res;
+    char buf[4];
+    LONG res;
 
   if(data->LookupSpawn)
       res = SendRexx(word, data->LookupCmd, data);
   else  res = SendCLI(word, data->LookupCmd, data);
   if(res)
   {
-    GetVar("Found", (STRPTR)&res, 4, GVF_GLOBAL_ONLY);
-    if(res >> 24 == '0')
+    GetVar("Found", &buf[0], sizeof(buf), GVF_GLOBAL_ONLY);
+    if(buf[0] == '0')
     {
       return(FALSE);
     }
@@ -333,7 +353,7 @@ void SuggestWord (struct InstData *data)
     OffsetToLines(data->CPos_X, line, &pos, data);
     get(_win(data->object), MUIA_Window_LeftEdge, &left);
     get(_win(data->object), MUIA_Window_TopEdge, &top);
-    left  += data->xpos + FlowSpace(line->line.Flow, line->line.Contents+(data->CPos_X-pos.x), data) + MyTextLength(data->font, line->line.Contents+(data->CPos_X-pos.x), pos.x);
+    left  += data->xpos + FlowSpace(line->line.Flow, line->line.Contents+(data->CPos_X-pos.x), data) + TextLength(&data->tmprp, line->line.Contents+(data->CPos_X-pos.x), pos.x);
     top += data->ypos + (data->height * (line_nr + pos.lines));
 
     while(data->CPos_X < line->line.Length && (IsAlpha(data->mylocale, *(line->line.Contents+data->CPos_X)) || *(line->line.Contents+data->CPos_X) == '-' || *(line->line.Contents+data->CPos_X) == '\''))
@@ -355,7 +375,6 @@ void SuggestWord (struct InstData *data)
     if(data->blockinfo.stopx-data->blockinfo.startx < 256)
     {
         char word[256];
-        long res;
 
       strncpy(word, line->line.Contents+data->blockinfo.startx, data->blockinfo.stopx-data->blockinfo.startx);
       word[data->blockinfo.stopx-data->blockinfo.startx] = '\0';
@@ -366,11 +385,7 @@ void SuggestWord (struct InstData *data)
       {
         Object *group;
 
-    #ifdef __AROS__
-        get(data->SuggestWindow, MUIA_Window_RootObject, &group);
-    #else
-        get(data->SuggestWindow, MUIA_Window_RootObject, (APTR)&group);
-    #endif	
+        get(data->SuggestWindow, MUIA_Window_RootObject, (IPTR *)&group);
         set(group, MUIA_Group_ActivePage, MUIV_Group_ActivePage_First);
         SetAttrs(data->SuggestWindow,
               MUIA_Window_Activate, TRUE,
@@ -380,6 +395,8 @@ void SuggestWord (struct InstData *data)
       }
       else
       {
+          LONG res;
+
         if(data->SuggestSpawn)
             res = SendRexx(word, data->SuggestCmd, data);
         else  res = SendCLI(word, data->SuggestCmd, data);
@@ -400,11 +417,7 @@ void SuggestWord (struct InstData *data)
             }
             Close(fh);
 
-        #ifdef __AROS__
-	    get(data->SuggestWindow, MUIA_Window_RootObject, &group);
-	#else
-	    get(data->SuggestWindow, MUIA_Window_RootObject, (APTR)&group);
-    	#endif
+            get(data->SuggestWindow, MUIA_Window_RootObject, (IPTR *)&group);
             set(group, MUIA_Group_ActivePage, MUIV_Group_ActivePage_Last);
             SetAttrs(data->SuggestWindow,
                   MUIA_Window_Activate, TRUE,

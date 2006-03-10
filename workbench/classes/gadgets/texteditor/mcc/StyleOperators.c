@@ -16,11 +16,10 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: StyleOperators.c,v 1.2 2005/03/31 17:35:28 sba Exp $
+ $Id: StyleOperators.c,v 1.4 2005/06/24 14:38:44 gnikl Exp $
 
 ***************************************************************************/
 
-#include <clib/graphics_protos.h>
 #include <proto/intuition.h>
 
 #include "TextEditor_mcc.h"
@@ -31,7 +30,7 @@ VOID NotifySet (Object *, struct GadgetInfo *, ULONG, ULONG);
 
 void  CA_UpdateStyles (struct GadgetInfo *GInfo, struct InstData *data)
 {
-    UWORD style;
+  UWORD style;
 
   if(Enabled(data))
   {
@@ -88,7 +87,9 @@ void  CA_UpdateStyles (struct GadgetInfo *GInfo, struct InstData *data)
 
 void  UpdateStyles (struct InstData *data)
 {
-    UWORD style;
+  UWORD style;
+
+  ENTER();
 
   if(Enabled(data))
   {
@@ -139,13 +140,17 @@ void  UpdateStyles (struct InstData *data)
         set(data->object, MUIA_TextEditor_StyleUnderline, FALSE);
     }
   }
+
+  LEAVE();
 }
 
 #endif
 
 LONG  GetStyle (LONG x, struct line_node *line)
 {
-    LONG  style = 0;
+  LONG  style = 0;
+
+  ENTER();
 
   if(line->line.Styles)
   {
@@ -158,16 +163,20 @@ LONG  GetStyle (LONG x, struct line_node *line)
       else  style |= *styles++;
     }
   }
+
+  RETURN(style);
   return(style);
 }
 
 void  AddStyleToLine  (LONG x, struct line_node *line, LONG length, unsigned short style, struct InstData *data)
 {
-    unsigned short *styles    = line->line.Styles;
-    unsigned short *oldstyles = styles;
-    unsigned short *newstyles;
-    unsigned short cur_style = 0;
-    unsigned short end_style = GetStyle(x+length, line);
+  unsigned short *styles    = line->line.Styles;
+  unsigned short *oldstyles = styles;
+  unsigned short *newstyles;
+  unsigned short cur_style = 0;
+  unsigned short end_style = GetStyle(x+length, line);
+
+  ENTER();
 
   x++;
 
@@ -238,24 +247,35 @@ void  AddStyleToLine  (LONG x, struct line_node *line, LONG length, unsigned sho
       MyFreePooled(data->mypool, oldstyles);
     }
   }
+
+  LEAVE();
 }
 
 void  AddStyle (struct marking *realblock, unsigned short style, long Set, struct InstData *data)
 {
-    struct  marking newblock;
-      LONG  startx, stopx;
-    struct  line_node *startline, *stopline;
+  struct  marking newblock;
+  LONG  startx, stopx;
+  struct  line_node *startline, *stopline;
+
+  ENTER();
 
   if(!Set)
   {
     if(!(data->style & style))
+    {
+      LEAVE();
       return;
+    }
+
     style = ~style;
   }
   else
   {
     if(data->style & style)
+    {
+      LEAVE();
       return;
+    }
   }
   data->HasChanged = TRUE;
 
@@ -281,7 +301,7 @@ void  AddStyle (struct marking *realblock, unsigned short style, long Set, struc
   }
   else
   {
-      struct  line_node *line = startline->next;
+    struct line_node *line = startline->next;
 
     AddStyleToLine(startx, startline, startline->line.Length-startx-1, style, data);
     while(line != stopline)
@@ -296,4 +316,6 @@ void  AddStyle (struct marking *realblock, unsigned short style, long Set, struc
   if(style > 0xff)
       data->style &= style;
   else  data->style |= style;
+
+  LEAVE();
 }

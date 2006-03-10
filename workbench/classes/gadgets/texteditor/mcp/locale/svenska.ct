@@ -1,0 +1,504 @@
+## chunk AUTH Pär Boberg
+## language svenska
+## version $VER: TextEditor_mcp.ct 2.0 (28.07.05)
+HelpBubble_BlockQual
+Håll nere tangenten som du har valt här\noch flytta markören för att markera text.
+;#DEF Move the cursor key and hold down the qualifier\nthat you set here to mark text.
+;#SET (0//)
+HelpBubble_CheckWord
+Om denna funktion är påslagen, kommer editorn att kontrollera\nordet och visa förslag men endast om ordet är felstavat.
+;#DEF If enabled, then the editor will lookup the word,\nand only show suggestions if the word is misspelled.
+;#SET (1//)
+HelpBubble_Smooth
+Detta aktiverar bildpunktsjämn rullning.
+;#DEF This will enable pixel smooth scrolling.
+;#SET (2//)
+HelpBubble_TypeNSpell
+Aktivera detta, för att låta editorn\nkontrollera orden medan du skriver dem.
+;#DEF Enable this to let the editor\nlookup the words while you type them.
+;#SET (3//)
+HelpBubble_UndoLevel
+Varje ångernivå kräver 10 byte minne.\nKlipp ut och Kopiera kräver lite mera,\nberoende på storleken på den markerade texten!
+;#DEF Each undo eats 10 bytes of memory.\nCut and Copy takes a little more,\ndepends on the block size!
+;#SET (4//)
+MSG_Button_DefaultKeys
+_Standardknappar
+;#DEF Default _keys
+;#SET (5//)
+MSG_Button_Delete
+_Ta bort
+;#DEF _Delete
+;#SET (6//)
+MSG_Button_Insert
+_Lägg till
+;#DEF _Insert
+;#SET (7//)
+MSG_ConfigMenu_CheckWord
+Kontrollera ord
+;#DEF Check word
+;#SET (8//)
+MSG_ConfigMenu_TypeNSpell
+Skriv och kontrollera
+;#DEF Type'n'spell
+;#SET (9//)
+MSG_CycleItem_Alt
+Alt
+;#DEF Alt
+;#SET (10//)
+MSG_CycleItem_Ctrl
+Kontroll
+;#DEF Control
+;#SET (11//)
+MSG_CycleItem_Mouse
+(endast mus)
+;#DEF (mouse only)
+;#SET (12//)
+MSG_CycleItem_Shift
+Shift
+;#DEF Shift
+;#SET (13//)
+MSG_Execution_ARexx
+ARexx
+;#DEF ARexx
+;#SET (14//)
+MSG_Execution_CLI
+CLI
+;#DEF CLI
+;#SET (15//)
+MSG_Function_BOL
+Början av rad
+;#DEF Begin Of Line
+;#SET (16//)
+MSG_Function_Backspace
+Baksteg
+;#DEF Backspace
+;#SET (17//)
+MSG_Function_Bottom
+Nederst
+;#DEF Bottom
+;#SET (18//)
+MSG_Function_Copy
+Kopiera
+;#DEF Copy
+;#SET (19//)
+MSG_Function_Cut
+Klipp ut
+;#DEF Cut
+;#SET (20//)
+MSG_Function_DelBOL
+Radera till början av raden
+;#DEF Delete to BOL
+;#SET (21//)
+MSG_Function_DelBOW
+Radera till början av ordet
+;#DEF Delete to BOW
+;#SET (22//)
+MSG_Function_DelEOL
+Radera till slutet av raden
+;#DEF Delete to EOL
+;#SET (23//)
+MSG_Function_DelEOW
+Radera till slutet av ordet
+;#DEF Delete to EOW
+;#SET (24//)
+MSG_Function_Delete
+Radera
+;#DEF Delete
+;#SET (25//)
+MSG_Function_Down
+Ner
+;#DEF Down
+;#SET (26//)
+MSG_Function_EOL
+Slutet av raden
+;#DEF End Of Line
+;#SET (27//)
+MSG_Function_Left
+Vänster
+;#DEF Left
+;#SET (28//)
+MSG_Function_NextGadget
+Nästa knapp
+;#DEF Next gadget
+;#SET (29//)
+MSG_Function_NxtPage
+Nästa sida
+;#DEF Next Page
+;#SET (30//)
+MSG_Function_NxtPara
+Nästa paragraf
+;#DEF Next Paragraph
+;#SET (31//)
+MSG_Function_NxtSent
+Nästa mening
+;#DEF Next Sentence
+;#SET (32//)
+MSG_Function_NxtWord
+Nästa ord
+;#DEF Next Word
+;#SET (33//)
+MSG_Function_Paste
+Klistra in
+;#DEF Paste
+;#SET (34//)
+MSG_Function_PrvPage
+Föregående sida
+;#DEF Prev Page
+;#SET (35//)
+MSG_Function_PrvPara
+Föregående paragraf
+;#DEF Prev Paragraph
+;#SET (36//)
+MSG_Function_PrvSent
+Föregående mening
+;#DEF Prev Sentence
+;#SET (37//)
+MSG_Function_PrvWord
+Föregående ord
+;#DEF Prev Word
+;#SET (38//)
+MSG_Function_Redo
+Gör om
+;#DEF Redo
+;#SET (39//)
+MSG_Function_Return
+Retur
+;#DEF Return
+;#SET (40//)
+MSG_Function_Right
+Höger
+;#DEF Right
+;#SET (41//)
+MSG_Function_SuggestSpelling
+Föreslå stavning
+;#DEF Suggest spelling
+;#SET (42//)
+MSG_Function_Tab
+Tab
+;#DEF Tab
+;#SET (43//)
+MSG_Function_Top
+Överst
+;#DEF Top
+;#SET (44//)
+MSG_Function_Undo
+Ångra
+;#DEF Undo
+;#SET (45//)
+MSG_Function_Up
+Upp
+;#DEF Up
+;#SET (46//)
+MSG_GroupTitle_Control
+Kontroll
+;#DEF Control
+;#SET (47//)
+MSG_GroupTitle_Cursor
+Markör
+;#DEF Cursor
+;#SET (48//)
+MSG_GroupTitle_Design
+Design
+;#DEF Design
+;#SET (49//)
+MSG_GroupTitle_Fonts
+Typsnitt
+;#DEF Fonts
+;#SET (50//)
+MSG_GroupTitle_Separator
+Skiljelinje
+;#DEF Separator
+;#SET (51//)
+MSG_HelpTxt_SpellChecker
+\33u Inledning \33n\n\nTextEditor-funktionen erbjuder en enkel integration med externa stavningskontroller, vilket tillåter dig att använda både kontrollera-medan-du-skriverfunktionen samt normal ordgissning.\n\n \33u Kontrollera kommandot \33n\n\nFör att använda kontrollera-medan-du-skriverfunktionen måste du ställa in kontrollera-kommandot att peka på ett skript som kontrollerar ordet och ställer in den globala variabeln \"Found\" till endera 0 (för inte funnen) eller 1 (för funnen).\nJag har valt det här förfarandet för att det är standard i AlphaSpell.\nDu skriver %s där du vill ha ordet.\nOm du använder AlphaSpell kan du skriva:\n\33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\nDu \33bmåste\33n komma ihåg citationstecknen. De säger till ARexx att exekvera raden som ett kommando istället för som ett skript.\n\n \33u Föreslå-kommandot \33n\n\nOm du trycker på HELP-tangenten när du står på ett ord kommer editorn att exekvera detta\
+ kommando, återigen med %s ersatt med det aktuella ordet.\nDitt skript kommer att skapa en fil i T: med namnet \"Matches\". Denna fil läses och innehållet visas i ett popup-listfönster, varifrån du kan välja det ord som ska ersätta det felstavade ordet.\nAlphaSpell-användare kan skriva:\n\33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\nOm du använder dig av metoderna beskrivna ovan måste du starta AlphaSpell med \"ARexx\"-parametern.\n\nJag rekommenderar att du placerar ordlistan i RAM: om du har kontrollera-medan-du-skriverfunktionen påslagen.
+;#DEF  \33u Intro \33n\n\nThe TextEditor gadget offers you easy integration of external spell checkers, this allows you to have both type'n'spell and also normal word-guessing.\n\n \33u Lookup command \33n\n\nFor the type'n'spell you'll have to set the lookup command to a script that will lookup the word and set the environment variable \"Found\" to either 0 (for not found) or 1 (for a match).\nI have chosen this behavior because it is the default for AlphaSpell.\nYou write %s where you want the word.\nIf you use AlphaSpell, then you can write:\n\33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\nYou \33bmust\33n remember the quotes, this will let ARexx execute it as a command instead of a script.\n\n \33u Suggest command \33n\n\nIf you press HELP over a word, then the editor will launch this command, again with %s substituted with the current word.\nYour script should produce a file in T: named \"Matches\". This file are then read by the gadget, and the contents are shown in a popup-listview, from where you can choose a word which will replace the misspelled one.\nAgain, AlphaSpell users can write:\n\33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\nIf you use the methods described above, then you must start AlphaSpell with the \"ARexx\" switch.\n\nIt is advised to keep your dictionary in RAM if you enable the type'n'spell feature.
+;#SET (52//)
+MSG_LVLabel_Action
+\33c\0333Kommando:
+;#DEF \33c\0333Action:
+;#SET (53//)
+MSG_LVLabel_Key
+\33c\0333Tangent:
+;#DEF \33c\0333Key:
+;#SET (54//)
+MSG_Label_Background
+Bakgrund
+;#DEF Background
+;#SET (55//)
+MSG_Label_BlinkSpeed
+Blinkhastighet
+;#DEF Blinkspeed
+;#SET (56//)
+MSG_Label_BlkQual
+Markeringskombination
+;#DEF Block qualifier
+;#SET (57//)
+MSG_Label_Cursor
+Markör
+;#DEF Cursor
+;#SET (58//)
+MSG_Label_Fixed
+Bestämt
+;#DEF Fixed
+;#SET (59//)
+MSG_Label_Frame
+Ram
+;#DEF Frame
+;#SET (60//)
+MSG_Label_Highlight
+Markera
+;#DEF Highlight
+;#SET (61//)
+MSG_Label_LookupCmd
+Kontrollera-kommando
+;#DEF Lookup command
+;#SET (62//)
+MSG_Label_LookupWords
+Kontrollera ordet innan förslag på andra ord ges?
+;#DEF Lookup word before suggesting?
+;#SET (63//)
+MSG_Label_Normal
+Normalt
+;#DEF Normal
+;#SET (64//)
+MSG_Label_Selected
+Markerad
+;#DEF Selected
+;#SET (65//)
+MSG_Label_SeparatorShadow
+Skugga
+;#DEF Shadow
+;#SET (66//)
+MSG_Label_SeparatorShine
+Ljus
+;#DEF Shine
+;#SET (67//)
+MSG_Label_Smooth
+Utjämna
+;#DEF Smooth
+;#SET (68//)
+MSG_Label_SpellNType
+Kontrollera stavning medan du skriver?
+;#DEF Spell check as you type?
+;#SET (69//)
+MSG_Label_SuggestCmd
+Föreslå-kommando
+;#DEF Suggest command
+;#SET (70//)
+MSG_Label_TabSize
+Tab-storlek
+;#DEF Tab size
+;#SET (71//)
+MSG_Label_Text
+Text
+;#DEF Text
+;#SET (72//)
+MSG_Label_UndoLevel
+Ångernivåer
+;#DEF Undo levels
+;#SET (73//)
+MSG_Label_Width
+Bredd
+;#DEF Width
+;#SET (74//)
+MSG_MenuItem_Background
+Bakgrund
+;#DEF Background
+;#SET (75//)
+MSG_MenuItem_Bold
+Fet
+;#DEF Bold
+;#SET (76//)
+MSG_MenuItem_Center
+Mitten
+;#DEF Center
+;#SET (77//)
+MSG_MenuItem_Copy
+Kopiera
+;#DEF Copy
+;#SET (78//)
+MSG_MenuItem_Cut
+Klipp ut
+;#DEF Cut
+;#SET (79//)
+MSG_MenuItem_Delete
+Radera
+;#DEF Delete
+;#SET (80//)
+MSG_MenuItem_Fill
+Fyll
+;#DEF Fill
+;#SET (81//)
+MSG_MenuItem_Halfshadow
+Halvskugga
+;#DEF Halfshadow
+;#SET (82//)
+MSG_MenuItem_Halfshine
+Halvljus
+;#DEF Halfshine
+;#SET (83//)
+MSG_MenuItem_Italic
+Kursiv
+;#DEF Italic
+;#SET (84//)
+MSG_MenuItem_Left
+Vänster
+;#DEF Left
+;#SET (85//)
+MSG_MenuItem_Mark
+Markera
+;#DEF Mark
+;#SET (86//)
+MSG_MenuItem_Normal
+Normal
+;#DEF Normal
+;#SET (87//)
+MSG_MenuItem_Paste
+Klistra in
+;#DEF Paste
+;#SET (88//)
+MSG_MenuItem_Redo
+Gör om
+;#DEF Redo
+;#SET (89//)
+MSG_MenuItem_Right
+Höger
+;#DEF Right
+;#SET (90//)
+MSG_MenuItem_Shadow
+Skugga
+;#DEF Shadow
+;#SET (91//)
+MSG_MenuItem_Shine
+Ljus
+;#DEF Shine
+;#SET (92//)
+MSG_MenuItem_Text
+Text
+;#DEF Text
+;#SET (93//)
+MSG_MenuItem_Underline
+Understruken
+;#DEF Underline
+;#SET (94//)
+MSG_MenuItem_Undo
+Ångra
+;#DEF Undo
+;#SET (95//)
+MSG_MenuSubTitle_Alignment
+Justering
+;#DEF Alignment
+;#SET (96//)
+MSG_MenuSubTitle_Color
+Färg
+;#DEF Color
+;#SET (97//)
+MSG_MenuTitle_Edit
+Redigera
+;#DEF Edit
+;#SET (98//)
+MSG_Page_Keybindings
+Tangentkombinationer
+;#DEF Keybindings
+;#SET (99//)
+MSG_Page_Sample
+Exempel
+;#DEF Sample
+;#SET (100//)
+MSG_Page_Settings
+Inställningar
+;#DEF Settings
+;#SET (101//)
+MSG_Page_SpellChecker
+Stavningskontroll
+;#DEF Spell checker
+;#SET (102//)
+MSG_PopWinTitle_Background
+Välj bakgrund
+;#DEF Select background
+;#SET (103//)
+MSG_PopWinTitle_Cursor
+Välj markörfärg
+;#DEF Select cursor color
+;#SET (104//)
+MSG_PopWinTitle_Frame
+Välj ram
+;#DEF Select frame
+;#SET (105//)
+MSG_PopWinTitle_Highlight
+Välj markeringsfärg
+;#DEF Select highlight color
+;#SET (106//)
+MSG_PopWinTitle_Selected
+Välj markeringsfärg
+;#DEF Select block color
+;#SET (107//)
+MSG_PopWinTitle_SeparatorShadow
+Välj skiljelinjens skuggfärg
+;#DEF Select separators shadow color
+;#SET (108//)
+MSG_PopWinTitle_SeparatorShine
+Välj skiljelinjens ljusfärg
+;#DEF Select separators shine color
+;#SET (109//)
+MSG_PopWinTitle_Text
+Välj textfärg
+;#DEF Select text color
+;#SET (110//)
+MSG_SliderText_MaxWidth
+Samma som bokstav
+;#DEF Same as char
+;#SET (111//)
+MSG_SliderText_MinSpeed
+Av
+;#DEF Off
+;#SET (112//)
+MSG_SliderText_MinWidth
+1 bildpunkt
+;#DEF 1 pixel
+;#SET (113//)
+MSG_SliderText_StdSpeed
+\33r%ld ms
+;#DEF \33r%ld ms
+;#SET (114//)
+MSG_SliderText_StdWidth
+%ld bildpunkter
+;#DEF %ld pixels
+;#SET (115//)
+MSG_SliderText_TabSize
+%ld mellanslag
+;#DEF %ld spaces
+;#SET (116//)
+MSG_Function_GotoBookmark1
+Gå till Bokmärke 1
+;#DEF Goto Bookmark 1
+;#SET (117//)
+MSG_Function_GotoBookmark2
+Gå till Bokmärke 2
+;#DEF Goto Bookmark 2
+;#SET (118//)
+MSG_Function_GotoBookmark3
+Gå till Bokmärke 3
+;#DEF Goto Bookmark 3
+;#SET (119//)
+MSG_Function_SetBookmark1
+Välj Bokmärke 1
+;#DEF Set Bookmark 1
+;#SET (120//)
+MSG_Function_SetBookmark2
+Välj Bokmärke 2
+;#DEF Set Bookmark 2
+;#SET (121//)
+MSG_Function_SetBookmark3
+Välj Bokmärke 3
+;#DEF Set Bookmark 3
+;#SET (122//)
+MSG_Button_Snoop
+Avläs
+;#DEF Snoop
+;#SET (123//)
+MSG_Function_DelLine
+Radera rad
+;#DEF Delete line
+;#SET (124//)

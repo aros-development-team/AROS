@@ -2,8 +2,327 @@
 MUI TextEditor MCC class - ChangeLog
 ------------------------------------
 
-$Id: ChangeLog,v 1.32 2005/04/11 03:04:38 tactica Exp $
+$Id: ChangeLog,v 1.89 2006/01/17 22:31:23 damato Exp $
 $Source: /cvsroot/texteditor-mcc/ChangeLog,v $
+
+2006-01-17 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcp/locale: added russian catalog translation kindly created and
+     provided by Michael Malyshev
+
+2005-12-09 Gunther Nikl <gni@gecko.de>
+
+   * mcp/private.h (FunctionName): Make "char *".
+     mcp/ObjectCreator.c (FunctionName): Adapt.
+     (PrefsObject): Use loops to initialize arrays.
+
+#### v15.17 RELEASE ############################################################
+
+2005-12-07 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/HandleInput.c,Methods.c: fixed the long-standing bug #1286500 where
+     TextEditor.mcc deleted/overwrote certain text passages if the mouse was
+     initially used to position the cursor within some text. This really was
+     a very old bug, very hard to reproduce and very annoying. But due to
+     the help of the reporter of that bug it was much more easier to identify
+     and eliminate. Thanks AlexC.
+
+2005-08-16 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/Dispatcher.c: fixed a crash bug in the MUIM_Setup function where we did
+     forgot to initialize the font pointer if no explicit font was configured by
+     the user.
+
+2005-08-11 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+   * mcc/Makefile.mos: Added 'dump' rule to actually make some use of debug
+     binaries. Didn't change other makefiles (probably not interesting).
+
+2005-08-08 Gunther Nikl <gni@gecko.de>
+
+   * mcc/ExportText.c, mcc/TextEditor-Test.c, ChangeLog: Fix typos.
+
+2005-08-07 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc: reverted ilkka's fix on VisualHeight() because it didn't catch all
+     cases which gave trouble on a hidden TextEditor object. Now all TextFit()
+     and TextLength() functions always use a temporary rastport for finding
+     out the text limits. In addition, some checks for data->rport and
+     data->shown were added to various functions such that a texteditor object
+     should not crash anymore if it is used in a hidden state (e.g. hidden in
+     a registergroup)
+
+2005-08-06 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/AllocFunctions.c: implemented new AllocLine/FreeLine functions where
+     certain operations during the allocation/memory freeing times can be
+     performed to ensure the consistency of certian other structures. In fact
+     by adding checks for the global blockinfo structure in FreeLine() a
+     crash bug is now fixed that occurred when having deleted some empty
+     lines at the end of a document.
+   * mcc/ExportHook.c,ExportText.c: fixed another bug in the undo/redo
+     processing where TextEditor.mcc did always strip the last newline char
+     of a line due to the bugfix of bug #1227680. Now the proper bugfix for
+     that bug is located in ExportText.c instead.
+
+2005-08-03 Gunther Nikl <gni@gecko.de>
+
+  * mcp/CreatePrefsGroup.c/CreatePrefsGroup (editpopupdata): Move GetStr()
+    calls into a separate loop to save stackspace and to reduce programsize.
+
+2005-08-02 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * mcc/Debug.c,mcc/Debug.h,mcp/Debug.c,mcp/Debug.h: Fixed KPutFmt() to use
+    VNewRawDoFmt() call in MorphOS for proper vararg handling.
+  * mcc/MixedFunctions.c: Added proper test for antialiased fonts in MorphOS.
+  * mcc/MixedFunctions.c: Fixed VisualHeight() to not call LineCharsWidth()
+    when object is not visible. Editor no longer crash in a hidden state when
+    inserting text.
+
+#### v15.16 RELEASE ############################################################
+
+2005-08-01 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/MixedFunctions.c: fixed a bug #1249673 in the SetCursor() function where
+     on use of a non antialiased font, the cursor background was not successfully
+     cleared and caused the cursor to leave graphical trails.
+
+#### v15.15 RELEASE ############################################################
+
+2005-07-31 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/ImportHook.c: fixed bug #1235375 that caused the EMail import hook not
+     to stop analyzing a string at the line end and caused e.g. single slashes in
+     a line to set text to italic if some other text on more lines contain a
+     slash as well.
+   * mcc/ExportHook.c: fixed bug #1235756 where the ExportHook always cleared out
+     the last character of an export operation instead of checking for the
+     particular newline character we wanted to clear. This had the effect that the
+     undo/redo operations of TextEditor was slightly broken and did always redo
+     one character less that the undo operation cutted.
+   * mcc/Dispatcher.c: fixed bug #1246944 where the use of MUIA_TextEditor_Columns
+     seemed to have caused crashes because the rastport was not completly ready
+     at the time the AskMinMax() method was called by MUI. Now we take the
+     nominal fontwidth size attribute tf_XSize instead of using TextLength(), so
+     that this function should now also hopefully match the column with a bit
+     better.
+
+2005-07-30 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/HandleInput.c,Dispatcher.c: added IDCMP_EXTENDEDMOUSE support to
+     catch the new wheelmouse events supported since intuition.library
+     v51.28+ in AmigaOS4.
+   * mcp/KeyStorage.c: changed the rawkey based wheelmouse name to carry
+     a "nm_" prefix so that it refers to newmouse based wheelmouse events
+     and doesn't conflict with the new wheelmouse events in AmigaOS4.
+
+2005-07-25 Jens Langner <Jens.Langner@light-speed.de>
+
+   * mcc/ImportHook.c: fixed a minor bug in the ImportHook routines where
+     upon an import of bold/italic/underline via escape sequences always
+     terminating grow elements where inserted for all possible soft-types.
+
+2005-07-14 Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+   * mcc/TextEditor-Test.c: Request version 36 of rexxsyslib for AmigaOS
+     3.0/3.1 compatibility.
+
+2005-07-07 Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/library.c: added missing USEDCLASSESP define so that MUI knowns
+      which mcp class belongs to the mcc.
+		
+2005-07-05 Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/MixedFunctions.c: fixed another possible signedness problem which
+      might have caused problem with characters > 127 and was found by Georg
+      Steger.
+
+2005-07-04  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+    * mcc/MixedFunctions.c: Antialias font detection didnt work in MorphOS
+      (there isn't FSF_ANTIALIAS flag) and cursor background was not cleared
+      accordingly. Rather assume font is always antialiased what is true in
+      most cases.
+
+#### v15.14 RELEASE ############################################################
+
+2005-07-02 Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/ImportHook.c: fixed bug #1229129 where the new "EMail" import hook
+      didn't correctly parse lines with typical email like highlight chars,
+      which in fact caused applications using this import to display some
+      hightligthed sections incorrect.
+    * mcc/Search.c: fixed bug #1231207 where the MUIM_TextEditor_Search method
+      was broken due to a changed datatype.
+    * mcc/HandleInput.c: fixed a bug where after having tripleclicked on an empty
+      line, another normal click on another line caused the empty line to stay
+      marked.
+
+2005-07-02 Sebastian Bauer <mail@sebastianbauer.info>
+
+    * doc/MCC_TextEditor.doc: Described that for other import hooks than the
+      plain hook, escape sequences have to be supported as well, as some
+      progams have insisted on this former undocumented "feature".
+
+2005-06-30 Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/HandleInput.c: if the user tripleclicks on a character that is
+      a separating character the texteditor previously didn't allow to mark
+      the whole line. Now always the whole line is marked if the user
+      tripleclicks somewhere on a line.
+    * mcc/PrintLineWithStyles.c: fixed a minor bug in the text marking display
+      routines where on centered and right aligned lines not always the whole
+      line was correctly displayed as being marked. Now it should be fairly
+      better, however the current solution still doesn't cover all cases and
+      probably requires a rewrite in some day in future :)
+
+2005-06-28 Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/HandleInput.c: fixed bug #1229170 where due to a signedness problem
+      characters with a code >128 couldn't be typed in under OS3.
+
+#### v15.13 RELEASE ############################################################
+
+2005-06-26 Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/PrintLineWithStyles.c: fixed a bug where we did also paint the
+      non printable newline characters at the end of each line. This caused
+      that with some fonts the newlines where printed with special glyphes.
+    * mcc/ExportHook.c: fixed bug #1227680 where the ExportText() method did
+      always export one line too much due to not clearing the last 0x0a, which
+      in fact is always articial.
+    * mcc/HandleInput.c, mcc/Methods.c, mcc/Navigation.c, misc: fixed another
+      bunch of problems with hard wrapped lines. There were still some problems
+      in correctly selecting a whole hard wrapped line by tripleclicking on it.
+      Now TextEditor.mcc should hopefully behave correct with hard wrapped lines
+      and display it as correct as it allows to select such lines.
+    * mcc/HandleInput.c, mcc/PrintLineWithStyle.c: on a doubleclick on a word
+      the editor always marked the block from zero which in fact was a bit
+      unintuitive and uncommon compared to other editors. Now if a user double-
+      clicks on a word that is e.g. centered only the word is marked.
+      In contrast, now also the whole line is drawed marked if the line is
+      triple clicked.
+
+2005-06-24  Gunther Nikl <gni@gecko.de>
+
+    * mcc/library.c: Only open V36 of layers.library, keymap.library and
+      diskfont.library
+    * mcc/BlockOperators.c, mcc/EditorStuff.c, mcc/TextEditor-Test.c: Added
+      "#include <devices/clipboard.h>" for <libraries/iffparse.h>.
+    * mcc/Dispatcher.c, mcc/GetSetAttrs.c, mcc/HandleInput.c: Added
+      "#include <intuition/classes.h>" for INST_DATA #define.
+    * mcc/private.h: Cleanup #include statements.
+    * mcc/AllocBitMap.c: Free allocated bitmap on failure in non-V39 case.
+      Move version check into USE_OS3 #define.
+      (MUIG_AllocBitMap): Improved friend handling.
+    * mcc/AllocFunctions.c: Minor changes.
+    * mcc/BlockOperators.c, mcc/Dispatcher.c, mcc/EditorStuff.c, mcc/ExportHook.c,
+      mcc/ExportText.c, GetSetAttrs.c, mcc/HandleARexx.c, mcc/HandleInput.c,
+      mcc/ImportHook.c, mcc/ImportText.c, mcc/InitConfig.c, mcc/MixedFunctions.c,
+      mcc/PrintLineWithStyles.c, mcc/Search.c, mcc/SpellChecker.c,
+      mcc/StyleOperators.c: Cleanup #include statements.
+    * mcc/SpellChecker.c: Fixed WorkbenchControl() replacement for GCC 3.4.x
+      and newer (has to use stdarg.h macros!)
+      (CloneSearchPath, FreeSearchPath): Delete >=44 check since thats what     
+      OpenLibrary() requests.
+      (SendRexx, SendCLI): Use LONG as return type.
+      (LookupWord, SuggestWord): Update to match SendRexx and SendCLI.
+
+2005-06-18  Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/Navigation.c: fixed a bug in the CursorOffset() function which cures
+      the problem with being unable to select the last character of a hard
+      wrapped line with the mouse.
+
+2005-06-14  Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcp/KeyStorage.c: improved the extended keycode recognition to also
+      recognize NUMLOCK and the newmouse wheel events as well as the
+      media keys. So now a user might more intuitively connect commands
+      to these extended keycodes as well.
+
+2005-06-12  Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/MixedFunctions.c: fixed bug #1215342 where on hard wrapped lines a
+      single character was missing at the end of the wrapped line.
+    * mcc/HandleInput.c: applied a patch from Gunther Nikl which removes the
+      forbidden floating point math in the wheelmouse scrolling code to due
+      our shared library nature.
+    * mcc/ImportHook.c: fixed the Plain ImportHook to also call AddGrow for
+      every style/color item found instead of combining them. This in fact fixes
+      problems with being unable to set text bold on text that was imported.
+    * mcc/TextFunctions.c: replaced own anyway slightly buggy TextLength/TextFit
+      functions with the OS's own TextLength/TextFit functions and adapted sources
+      accordingly.
+
+2005-06-04  Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/ImportHook.c: reworked the MIME/Email based ImportHook to properly
+      recognize the ESC sequences like the plain import hook does. This in fact
+      seems to be the same behaviour than the old 68k ASM based ImportHooks had.
+      Also improved the termination/recognition of the /,*,#,_ chars to make it
+      possible to set soft styles on a particular text. This should also fix
+      bug #1210745.
+    * mcp: added keycodes for the extended keys available in AmigaOS4/MorphOS for
+      example. Now keys like PAGE_UP/PAGE_DOWN are properly recognized by the
+      preference pane and more intuitively configurable.
+
+2005-06-01  Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/GetSetAttrs.c: if MUIA_Disabled is used on a TextEditor object, an
+      existing slider was not automatically disabled as well. bug #1212811
+
+#### v15.12 RELEASE ############################################################
+
+2005-05-28  Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcp/CreatePrefsGroup.c: fixed a crash bug where the InsertHook() was
+      using the passed function parameters incorrectly.
+    * mcc: fixed bug #1187007 where upon using anti-aliased proportional fonts
+      caused the texteditor to not correctly clear the whole cursor areas and
+      therefore left some cursor "signs" back in the editor.
+    * mcc/Dispatcher.c, mcc/HandleInput.c: fixed bug #1178168 where upon switching
+      from another gadget to a texteditor object via the TAB key automatically
+      caused that a TAB key is inserted into the text.
+    * mcc/HandleInput.c: implemented wheel-mouse event recognition via the rawkey
+      based NEWMOUSE standard. Now, each TextEditor.mcc object should allow to
+      use an existing wheel-mouse to scroll text up/down. Previously each
+      application had to implement that on its own. However, for those apps
+      already having implemented it, nothing will change.
+
+2005-05-25  Jens Langner <Jens.Langner@light-speed.de>
+
+    * library.c: added missing USE_UTILITYBASE define which in fact was the reason
+      why the last two previous releases crashed on OS3 machines. bug #1180094
+
+#### v15.11 RELEASE ############################################################
+
+2005-05-14  Jens Langner <Jens.Langner@light-speed.de>
+
+    * mcc/TextFunctions.c: with help of the new debugging scheme I was
+      finally able to find and fix the reason why under certain circumstances
+      a texteditor.mcc gadget could end up in an endless loop if used in write
+      mode. This should fix bug #1180094, #1181948.
+    * misc: after having finally found a reproduceable case for bug #1180094
+      and similar reports, I tight together a complete runtime debugging
+      system similar to the one in YAM. It should help in finding this and
+      other bugs more easily in future. This new debugging system will search
+      for an "texteditor.mcc.debug" ENV variable and does accept similar
+      variable content identifies like in YAM. E.g. to pull out all possible
+      debug information, compile with -DDEBUG (is the default) and set
+      the env variable to "@all all". However, please review the YAM
+      ChangeLog for a more detailed description on the debugging scheme.
+
+2005-04-20  Sebastian Bauer <mail@sebastianbauer.info>
+
+    * mcc/Keybinings.c: The default keybindings array has to be
+      terminated with a -1. Problem found by Georg Steger.
+
+2005-04-17  Sebastian Bauer <mail@sebastianbauer.info>
+
+    * mcc/Dispatcher.c: Don't add MBQ_MUI_MAXMAX when requesting maximal
+      dimension in MUIM_AskMinMax but assign MUI_MAXMAX instead.
 
 2005-04-11  David Rey <tactica@users.sourceforge.net>
 
@@ -29,12 +348,14 @@ $Source: /cvsroot/texteditor-mcc/ChangeLog,v $
 
     * includes/mccheader.c: updated common MCC include file to reflect the
       latest changes done in the nlist.mcc project.
-    * includes/mccclass_68k: replaced the assembler based OS4/68k stub by a easier
-      manageable C-based variant.
+    * includes/mccclass_68k: replaced the assembler based OS4/68k stub by an
+      easier manageable C-based variant.
 	 
 2005-04-10  Ilkka Lehtoranta <ilkleht@isoveli.org>
 
     * mcc/library.c: Request rexxsyslib.library V36 (KS 3.1) instead of V38.
+
+#### v15.10 RELEASE ############################################################
 
 2005-04-09  Jens Langner <Jens.Langner@light-speed.de>
 

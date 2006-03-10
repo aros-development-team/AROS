@@ -16,83 +16,205 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: HandleInput.c,v 1.3 2005/04/04 21:59:02 damato Exp $
+ $Id: HandleInput.c,v 1.27 2005/12/06 23:41:22 damato Exp $
 
 ***************************************************************************/
 
-#include <clib/alib_protos.h>
 #include <libraries/mui.h>
-#include <proto/graphics.h>
+#include <intuition/classes.h>
+#include <clib/alib_protos.h>
+#include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/keymap.h>
 #include <proto/locale.h>
-#include <proto/muimaster.h>
 #include <proto/utility.h>
 
 #include "TextEditor_mcc.h"
 #include "private.h"
 
+#ifdef __AROS__
+#include "../includes/newmouse.h"
+#elif !defined(__amigaos4__)
+#include "newmouse.h"
+#endif
+
 extern struct keybindings keys[];
 
-ULONG RAWToANSI (struct IntuiMessage *imsg)
+static LONG ReactOnRawKey(UBYTE key, ULONG qualifier, struct IntuiMessage *imsg, struct InstData *data);
+
+static ULONG RAWToANSI(struct IntuiMessage *imsg)
 {
-    struct  InputEvent  event;
-    UBYTE   code = 0;
+  struct InputEvent event;
+  UBYTE code = 0;
 
-  event.ie_NextEvent      = NULL;
-  event.ie_Class          = IECLASS_RAWKEY;
-  event.ie_SubClass       = 0;
-  event.ie_Code           = imsg->Code;
-  event.ie_Qualifier      = imsg->Qualifier;
-  event.ie_EventAddress   = (APTR *) *((ULONG *)imsg->IAddress);
+  ENTER();
 
-  MapRawKey(&event, &code, 1, NULL);
+  event.ie_NextEvent    = NULL;
+  event.ie_Class        = IECLASS_RAWKEY;
+  event.ie_SubClass     = 0;
+  event.ie_Code         = imsg->Code;
+  event.ie_Qualifier    = imsg->Qualifier;
+  event.ie_EventAddress = (APTR *) *((ULONG *)imsg->IAddress);
+
+  MapRawKey(&event, (STRPTR)&code, 1, NULL);
+
+  SHOWVALUE(DBF_INPUT, code);
+
+  RETURN(code);
   return(code);
 }
 
 ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
-    struct InstData *data = INST_DATA(cl, obj);
-    long  tresult;
+  struct InstData *data = INST_DATA(cl, obj);
+  BOOL wasActivated;
+
+  ENTER();
+
+  // check if the gadget was activate recently (via TAB key?)
+  wasActivated = (data->flags & FLG_Activated) == FLG_Activated;
+  data->flags &= ~FLG_Activated; // clear the activated flag immediately
 
   if((msg->muikey == MUIKEY_UP) && data->KeyUpFocus && _win(obj) && (data->firstline == data->actualline))
   {
     set(_win(obj), MUIA_Window_ActiveObject, data->KeyUpFocus);
+
+    RETURN(MUI_EventHandlerRC_Eat);
     return MUI_EventHandlerRC_Eat;
   }
-  else if(!(data->flags & FLG_Ghosted) && data->shown && msg->imsg && (msg->muikey != MUIKEY_GADGET_PREV) && (msg->muikey != MUIKEY_GADGET_NEXT))
+  else if(!(data->flags & FLG_Ghosted) && data->shown && msg->imsg &&
+          (msg->muikey != MUIKEY_GADGET_PREV) && (msg->muikey != MUIKEY_GADGET_NEXT) && // if the user moves to another obj with TAB
+          (msg->muikey != MUIKEY_GADGET_OFF)) // user deselected gadget with CTRL+TAB
   {
-      ULONG activeobj, defaultobj;
+    Object *activeobj;
+    Object *defaultobj;
+    struct IntuiMessage *imsg = msg->imsg;
 
-    get(_win(obj), MUIA_Window_ActiveObject, &activeobj);
-    get(_win(obj), MUIA_Window_DefaultObject, &defaultobj);
+    get(_win(obj), MUIA_Window_ActiveObject, (IPTR *)&activeobj);
+    get(_win(obj), MUIA_Window_DefaultObject, (IPTR *)&defaultobj);
 
-    if(data->CtrlChar && activeobj != (ULONG)obj && defaultobj != (ULONG)obj && RAWToANSI(msg->imsg) == data->CtrlChar)
+    if(data->CtrlChar && activeobj != obj && defaultobj != obj && RAWToANSI(imsg) == data->CtrlChar)
     {
       set(_win(obj), MUIA_Window_ActiveObject, obj);
+
+      RETURN(MUI_EventHandlerRC_Eat);
       return(MUI_EventHandlerRC_Eat);
     }
 
-    if((msg->imsg->Class == IDCMP_MOUSEBUTTONS) || (activeobj == (ULONG)obj) || (data->flags & FLG_ReadOnly && defaultobj == (ULONG)obj && !activeobj))
+    #if defined(__amigaos4__)
+    if((imsg->Class == IDCMP_MOUSEBUTTONS) || (activeobj == obj) ||
+       (data->flags & FLG_ReadOnly && defaultobj == obj && !activeobj) ||
+       (imsg->Class == IDCMP_EXTENDEDMOUSE && imsg->Code & IMSGCODE_INTUIWHEELDATA))
+    #else
+    if((imsg->Class == IDCMP_MOUSEBUTTONS) || (activeobj == obj) ||
+       (data->flags & FLG_ReadOnly && defaultobj == obj && !activeobj) ||
+       (imsg->Class == IDCMP_RAWKEY &&
+        (imsg->Code == NM_WHEEL_UP || imsg->Code == NM_WHEEL_DOWN ||
+         imsg->Code == NM_WHEEL_LEFT || imsg->Code == NM_WHEEL_RIGHT)))
+    #endif
     {
       if(!(data->flags & FLG_Draw))
       {
         data->UpdateInfo = msg;
         MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+        RETURN((ULONG)data->UpdateInfo);
         return((ULONG)data->UpdateInfo);
       }
 
-      switch(msg->imsg->Class)
+      switch(imsg->Class)
       {
         case IDCMP_RAWKEY:
-          if(data->ypos != data->realypos)
+        {
+          if(data->ypos != data->realypos ||
+             (wasActivated && imsg->Code == 66)) // ignore TAB key if the gadget was activated recently
+          {
+            RETURN(MUI_EventHandlerRC_Eat);
             return(MUI_EventHandlerRC_Eat);
-          tresult = ReactOnRawKey(msg->imsg->Code, msg->imsg->Qualifier, msg->imsg, data);
-          if(tresult == 0)
-            return(0);
-          break;
+          }
 
-/*        case IDCMP_INACTIVEWINDOW:
+          #if !defined(__amigaos4__)
+          // we check wheter the mouse is currently within our object borders
+          // and if so we check wheter the newmouse wheel stuff is used or not
+          if(data->slider &&
+             _isinwholeobject(obj, imsg->MouseX, imsg->MouseY))
+          {
+            // MouseWheel events are only possible if the mouse is above the
+            // object
+            if(imsg->Code == NM_WHEEL_UP   || imsg->Code == NM_WHEEL_LEFT ||
+               imsg->Code == NM_WHEEL_DOWN || imsg->Code == NM_WHEEL_RIGHT)
+            {
+              LONG visible;
+
+              get(obj, MUIA_TextEditor_Prop_Visible, &visible);
+              if(visible > 0)
+              {
+                // we scroll about 1/6 of the displayed text by default
+                LONG delta = (visible + 3) / 6;
+
+                // make sure that we scroll at least 1 line
+                if(delta < 1) delta = 1;
+
+                if(imsg->Code == NM_WHEEL_UP || imsg->Code == NM_WHEEL_LEFT)
+                {
+                  DoMethod(data->slider, MUIM_Prop_Decrease, delta);
+                }
+                else
+                  DoMethod(data->slider, MUIM_Prop_Increase, delta);
+              }
+
+              RETURN(MUI_EventHandlerRC_Eat);
+              return MUI_EventHandlerRC_Eat;
+            }
+          }
+          #endif
+
+          // if not we check wheter we have to react on that particular RAWKEY event
+          if(ReactOnRawKey(imsg->Code, imsg->Qualifier, imsg, data) == 0)
+          {
+            RETURN(0);
+            return(0);
+          }
+        }
+        break;
+
+        #if defined(__amigaos4__)
+        case IDCMP_EXTENDEDMOUSE:
+        {
+          if(data->slider &&
+             _isinwholeobject(obj, imsg->MouseX, imsg->MouseY))
+          {
+            LONG visible;
+
+            get(obj, MUIA_TextEditor_Prop_Visible, &visible);
+            if(visible > 0)
+            {
+          		struct IntuiWheelData *iwd = (struct IntuiWheelData *)imsg->IAddress;
+
+              // we scroll about 1/6 of the displayed text by default
+              LONG delta = (visible + 3) / 6;
+
+              // make sure that we scroll at least 1 line
+              if(delta < 1) delta = 1;
+
+          		if(iwd->WheelY < 0 || iwd->WheelX < 0)
+                DoMethod(data->slider, MUIM_Prop_Decrease, delta);
+	            else if(iwd->WheelY > 0 || iwd->WheelX > 0)
+                DoMethod(data->slider, MUIM_Prop_Increase, delta);
+            }
+
+            RETURN(MUI_EventHandlerRC_Eat);
+            return MUI_EventHandlerRC_Eat;
+          }
+
+          RETURN(0);
+          return(0);
+        }
+        break;
+        #endif
+
+/*
+        case IDCMP_INACTIVEWINDOW:
         {
           if(data->mousemove)
           {
@@ -102,46 +224,56 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
         }
         break;
 */
-/*        case IDCMP_MOUSEMOVE:
+/*
+        case IDCMP_MOUSEMOVE:
           if(data->mousemove && !data->smooth_wait)
             InputTrigger(cl, data);
           break;
-*/        case IDCMP_MOUSEBUTTONS:
+*/
+        case IDCMP_MOUSEBUTTONS:
+        {
           if(data->ypos != data->realypos)
           {
+            RETURN(0);
             return(0);
           }
-          if((msg->imsg->Code == (IECODE_LBUTTON | IECODE_UP_PREFIX)) && data->mousemove)
+
+          if((imsg->Code == (IECODE_LBUTTON | IECODE_UP_PREFIX)) && data->mousemove)
           {
             data->mousemove = FALSE;
             RejectInput(data);
+
             if((data->flags & FLG_ReadOnly) && (data->flags & FLG_AutoClip) && Enabled(data))
               Key_Copy(data);
           }
           else
           {
-            if(msg->imsg->Code == IECODE_LBUTTON)
+            if(imsg->Code == IECODE_LBUTTON)
             {
-                struct MUI_AreaData *ad = muiAreaData(obj);
+              struct MUI_AreaData *ad = muiAreaData(obj);
 
-              if(((msg->imsg->MouseX >= ad->mad_Box.Left) &&
-                 (msg->imsg->MouseX <  ad->mad_Box.Left + ad->mad_Box.Width) &&
-                 (msg->imsg->MouseY >= data->ypos) &&
-                 (msg->imsg->MouseY <  data->ypos+(data->maxlines * data->height))))
+              if(((imsg->MouseX >= ad->mad_Box.Left) &&
+                 (imsg->MouseX <  ad->mad_Box.Left + ad->mad_Box.Width) &&
+                 (imsg->MouseY >= data->ypos) &&
+                 (imsg->MouseY <  data->ypos+(data->maxlines * data->height))))
               {
-                UWORD last_x = data->CPos_X; struct line_node *lastline = data->actualline;
+                UWORD last_x = data->CPos_X;
+                struct line_node *lastline = data->actualline;
+
                 RequestInput(data);
                 data->mousemove = TRUE;
                 SetCursor(data->CPos_X, data->actualline, FALSE, data);
-                PosFromCursor(msg->imsg->MouseX, msg->imsg->MouseY, data);
+                PosFromCursor(imsg->MouseX, imsg->MouseY, data);
 
-                if(msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+                if(imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
                 {
                   data->selectmode  = 0;
                 }
 
-                if(!((data->blockinfo.enabled) && (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))))
+                if(!(data->blockinfo.enabled && (imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))))
                 {
+                  // if we already have an enabled block we have to disable it
+                  // and clear the marking area with MarkText()
                   if(Enabled(data))
                   {
                     data->blockinfo.enabled = FALSE;
@@ -151,52 +283,81 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                   data->blockinfo.enabled = TRUE;
                   data->blockinfo.startline = data->actualline;
                   data->blockinfo.startx = data->CPos_X;
-                  if(last_x == data->CPos_X && lastline == data->actualline && DoubleClick(data->StartSecs, data->StartMicros, msg->imsg->Seconds, msg->imsg->Micros))
+                  if(last_x == data->CPos_X && lastline == data->actualline && DoubleClick(data->StartSecs, data->StartMicros, imsg->Seconds, imsg->Micros))
                   {
                     if((data->DoubleClickHook && !CallHook(data->DoubleClickHook, (Object *)data->object, data->actualline->line.Contents, data->CPos_X)) || (!data->DoubleClickHook))
                     {
                       if(!CheckSep(data->actualline->line.Contents[data->CPos_X], data))
-//                      if(*(data->actualline->line.Contents+data->CPos_X) != ' ' && *(data->actualline->line.Contents+data->CPos_X) != '\n')
                       {
-                        if(data->selectmode)
+                        if(data->selectmode > 0)
                         {
                           GoStartOfLine(data);
                           data->blockinfo.startx = data->CPos_X;
                           GoEndOfLine(data);
-                          data->blockinfo.stopline = data->actualline;
-                          data->blockinfo.stopx = data->CPos_X;
-                          MarkText(data->blockinfo.stopx, data->blockinfo.stopline, data->CPos_X, data->actualline, data);
-                          data->selectmode  = 2;
+
+                          // set selectmode to 2 so that PrintLine() knows that the user has tripleclicked
+                          // on a line, it will afterwards automatically set to 3 anyway.
+                          data->selectmode = 2;
+
+                          // reset the time values
                           data->StartSecs = 0;
                           data->StartMicros = 0;
                         }
                         else
                         {
-                            int x = data->CPos_X;
+                          int x = data->CPos_X;
 
                           while(x > 0 && !CheckSep(*(data->actualline->line.Contents+x-1), data))
-//                          while(x > 0 && *(data->actualline->line.Contents+x-1) != ' ')
                             x--;
 
                           data->blockinfo.startx = x;
                           data->selectmode  = 1;
-                          data->StartSecs = msg->imsg->Seconds;
-                          data->StartMicros = msg->imsg->Micros;
+                          data->StartSecs = imsg->Seconds;
+                          data->StartMicros = imsg->Micros;
                         }
                       }
                       else
                       {
-                        data->selectmode  = 0;
-                        data->StartSecs = msg->imsg->Seconds;
-                        data->StartMicros = msg->imsg->Micros;
+                        // if the user clicked somewhere where we didn't find any separator
+                        // we have to check wheter this is already a tripleclick or still a doubleclick
+                        // because we ensure that on a tripleclick ALWAYS the whole line is marked
+                        // regardless if the user clicked on a actual word that can be separated or not.
+                        if(data->selectmode == 1)
+                        {
+                          GoStartOfLine(data);
+                          data->blockinfo.startx = data->CPos_X;
+                          GoEndOfLine(data);
+
+                          // set selectmode to 2 so that PrintLine() knows that the user has tripleclicked
+                          // on a line, it will afterwards automatically set to 3 anyway.
+                          data->selectmode = 2;
+
+                          // reset the time values
+                          data->StartSecs = 0;
+                          data->StartMicros = 0;
+                        }
+                        else
+                        {
+                          if(data->selectmode == 0)
+                            data->selectmode = 1;
+                          else
+                          {
+                            data->blockinfo.enabled = FALSE;
+                            data->selectmode = 0;
+                          }
+
+                          data->StartSecs = imsg->Seconds;
+                          data->StartMicros = imsg->Micros;
+                        }
                       }
                     }
                   }
                   else
                   {
+                    data->blockinfo.enabled = FALSE;
                     data->selectmode  = 0;
-                    data->StartSecs = msg->imsg->Seconds;
-                    data->StartMicros = msg->imsg->Micros;
+                    data->StartSecs = imsg->Seconds;
+                    data->StartMicros = imsg->Micros;
                   }
                 }
                 else
@@ -204,6 +365,7 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                   if(data->blockinfo.stopline != data->actualline || data->blockinfo.stopx != data->CPos_X)
                     MarkText(data->blockinfo.stopx, data->blockinfo.stopline, data->CPos_X, data->actualline, data);
                 }
+
                 data->blockinfo.stopline = data->actualline;
                 data->blockinfo.stopx = data->CPos_X;
 
@@ -213,33 +375,56 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
               }
               else
               {
+                RETURN(0);
                 return(0);
               }
             }
             else
             {
+              RETURN(0);
               return(0);
             }
           }
-          break;
+        }
+        break;
+
         default:
+        {
+          RETURN(0);
           return(0);
+        }
       }
+
+      RETURN(MUI_EventHandlerRC_Eat);
       return(MUI_EventHandlerRC_Eat);
     }
-    else  return(0);
+    else
+    {
+      RETURN(0);
+      return(0);
+    }
   }
-  else  return(0);
+  else
+  {
+    RETURN(0);
+    return(0);
+  }
 }
 
-VOID DoBlock (BOOL clipboard, BOOL erase, struct InstData *data)
+static VOID DoBlock(BOOL clipboard, BOOL erase, struct InstData *data)
 {
+  ENTER();
+
   data->blockinfo.enabled = FALSE;
   CutBlock(data, clipboard, !erase, TRUE);
+
+  LEAVE();
 }
 
-VOID EraseBlock (BOOL clipboard, struct InstData *data)
+static VOID EraseBlock(BOOL clipboard, struct InstData *data)
 {
+  ENTER();
+
   if(Enabled(data))
   {
     DoBlock(clipboard, TRUE, data);
@@ -249,17 +434,25 @@ VOID EraseBlock (BOOL clipboard, struct InstData *data)
   {
     DoMethod(data->object, MUIM_TextEditor_HandleError, Error_NoAreaMarked);
   }
+
+  LEAVE();
 }
 
-void Key_Clear (struct InstData *data)
+void Key_Clear(struct InstData *data)
 {
+  ENTER();
+
   EraseBlock(FALSE, data);
+
+  LEAVE();
 }
 
 enum {Del_BOL = 0, Del_EOL, Del_BOW, Del_EOW};
 
-void Key_DelSomething (ULONG what, struct InstData *data)
+void Key_DelSomething(ULONG what, struct InstData *data)
 {
+  ENTER();
+
   if(data->blockinfo.enabled)
   {
     data->blockinfo.enabled = FALSE;
@@ -293,10 +486,14 @@ void Key_DelSomething (ULONG what, struct InstData *data)
       Key_Clear(data);
   else  data->blockinfo.enabled = FALSE;
   data->flags &= ~FLG_FreezeCrsr;
+
+  LEAVE();
 }
 
-void Key_DelLine (struct InstData *data)
+void Key_DelLine(struct InstData *data)
 {
+  ENTER();
+
   if(data->blockinfo.enabled)
   {
     data->blockinfo.enabled = FALSE;
@@ -321,16 +518,24 @@ void Key_DelLine (struct InstData *data)
       Key_Clear(data);
   else  data->blockinfo.enabled = FALSE;
 //  data->flags &= ~FLG_FreezeCrsr;
+
+  LEAVE();
 }
 
 
-void Key_Cut (struct InstData *data)
+void Key_Cut(struct InstData *data)
 {
+  ENTER();
+
   EraseBlock(TRUE, data);
+
+  LEAVE();
 }
 
 void Key_Copy (struct InstData *data)
 {
+  ENTER();
+
   if(Enabled(data))
   {
     DoBlock(TRUE, FALSE, data);
@@ -339,12 +544,16 @@ void Key_Copy (struct InstData *data)
   {
     DoMethod(data->object, MUIM_TextEditor_HandleError, Error_NoAreaMarked);
   }
+
+  LEAVE();
 }
 
 void Key_Paste (struct InstData *data)
 {
-    BOOL  update;
-    struct marking block;
+  BOOL update;
+  struct marking block;
+
+  ENTER();
 
   if(Enabled(data))
     Key_Clear(data);
@@ -361,10 +570,14 @@ void Key_Paste (struct InstData *data)
     AddToUndoBuffer(pasteblock, (char *)&block, data);
     data->pixel_x = 0;
   }
+
+  LEAVE();
 }
 
 void Key_Tab (struct InstData *data)
 {
+  ENTER();
+
   if(Enabled(data))
     Key_Clear(data);
 
@@ -385,10 +598,14 @@ void Key_Tab (struct InstData *data)
     data->CPos_X += data->TabSize;
     PasteChars(data->CPos_X-data->TabSize, data->actualline, data->TabSize, "            ", NULL, data);
   }
+
+  LEAVE();
 }
 
 void Key_Return (struct InstData *data)
 {
+  ENTER();
+
   if(Enabled(data))
     Key_Clear(data);
 
@@ -397,10 +614,14 @@ void Key_Return (struct InstData *data)
 #endif
   AddToUndoBuffer(splitline, NULL, data);
   SplitLine(data->CPos_X, data->actualline, TRUE, NULL, data);
+
+  LEAVE();
 }
 
 void Key_Backspace (struct InstData *data)
 {
+  ENTER();
+
   if(Enabled(data))
   {
     Key_Clear(data);
@@ -423,10 +644,14 @@ void Key_Backspace (struct InstData *data)
       }
     }
   }
+
+  LEAVE();
 }
 
 void Key_Delete (struct InstData *data)
 {
+  ENTER();
+
   if(Enabled(data))
   {
     Key_Clear(data);
@@ -447,7 +672,10 @@ void Key_Delete (struct InstData *data)
       }
     }
   }
+
+  LEAVE();
 }
+
 /*
 void cutcopypasteerase (UBYTE key, ULONG qualifier, struct InstData *data)
 {
@@ -499,8 +727,10 @@ void cutcopypasteerase (UBYTE key, ULONG qualifier, struct InstData *data)
 }
 */
 
-void Key_Normal (UBYTE key, struct InstData *data)
+void Key_Normal(UBYTE key, struct InstData *data)
 {
+  ENTER();
+
   if(Enabled(data))
   {
     Key_Clear(data);
@@ -512,10 +742,10 @@ void Key_Normal (UBYTE key, struct InstData *data)
 #endif
 
   AddToUndoBuffer(pastechar, NULL, data);
-  PasteChars(data->CPos_X++, data->actualline, 1, &key, NULL, data);
+  PasteChars(data->CPos_X++, data->actualline, 1, (char *)&key, NULL, data);
   if(data->WrapBorder && (data->CPos_X > data->WrapBorder) && (key != ' '))
   {
-      ULONG xpos = data->CPos_X;
+    ULONG xpos = data->CPos_X;
 
     while(--xpos && *(data->actualline->line.Contents+xpos) != ' ');
     if(xpos)
@@ -530,30 +760,39 @@ void Key_Normal (UBYTE key, struct InstData *data)
       RemoveChars(0, data->actualline, 1, data);
     }
   }
+
+  LEAVE();
 }
 
 /*----------------*
  * Convert Rawkey *
  *----------------*/
-long  ConvertKey (UBYTE key, ULONG qualifier, struct IntuiMessage *imsg, struct InstData *data)
+static LONG ConvertKey(UBYTE key, ULONG qualifier, struct IntuiMessage *imsg, struct InstData *data)
 {
-    long    result = TRUE;
-    unsigned char        code;
+  LONG result = TRUE;
+  UBYTE code = 0;
 #ifndef ClassAct
-    struct   InputEvent  event;
+  struct InputEvent event;
 
-  event.ie_NextEvent      = NULL;
-  event.ie_Class          = IECLASS_RAWKEY;
-  event.ie_SubClass       = 0;
-  event.ie_Code           = key;
-  event.ie_Qualifier      = qualifier;
-  event.ie_EventAddress   = (APTR *) *((ULONG *)imsg->IAddress);
+  ENTER();
 
-  if(MapRawKey(&event, &code, 1, NULL) > 0)
+  event.ie_NextEvent    = NULL;
+  event.ie_Class        = IECLASS_RAWKEY;
+  event.ie_SubClass     = 0;
+  event.ie_Code         = key;
+  event.ie_Qualifier    = qualifier;
+  event.ie_EventAddress = (APTR *) *((ULONG *)imsg->IAddress);
+
+  if(MapRawKey(&event, (STRPTR)&code, 1, NULL) > 0)
 #else
-  if(MapRawKey((struct InputEvent *)imsg, &code, 1, NULL) > 0)
+  ENTER();
+
+  // XXX: why shall imsg be an InputEvent!?
+  if(MapRawKey((struct InputEvent *)imsg, (STRPTR)&code, 1, NULL) > 0)
 #endif
   {
+    SHOWVALUE(DBF_INPUT, code);
+
 #ifdef FILTER_NONPRINTABLE
     if((code < 32) || ((code > 126) && (code < 160)))
 #else
@@ -570,16 +809,18 @@ long  ConvertKey (UBYTE key, ULONG qualifier, struct IntuiMessage *imsg, struct 
   }
   else  result = FALSE;
 
+  RETURN(result);
   return(result);
 }
 
 /*  data->pixel_x = 0;
   return(MUI_EventHandlerRC_Eat);
-
 */
 
-BOOL MatchQual (ULONG input, ULONG match, UWORD action, struct InstData *data)
+static BOOL MatchQual(ULONG input, ULONG match, UWORD action, struct InstData *data)
 {
+  ENTER();
+
   if((match & IEQUALIFIER_SHIFT) && (input & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
   {
     match &= ~IEQUALIFIER_SHIFT;
@@ -595,6 +836,8 @@ BOOL MatchQual (ULONG input, ULONG match, UWORD action, struct InstData *data)
     match &= ~IEQUALIFIER_COMMAND;
     input &= ~(IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND);
   }
+
+  LEAVE();
   return(input == match || (((input & ~data->blockqual) == match) && action < kSuggestWord));
 }
 
@@ -602,10 +845,12 @@ BOOL MatchQual (ULONG input, ULONG match, UWORD action, struct InstData *data)
 /*---------------------------------*
  * Function to handle a cursormove *
  *---------------------------------*/
-long FindKey (unsigned char key, unsigned long qualifier, struct InstData *data)
+static LONG FindKey (UBYTE key, ULONG qualifier, struct InstData *data)
 {
-  struct   keybindings *t_keys = data->RawkeyBindings;
-  BOOL    speed = FALSE;
+  struct keybindings *t_keys = data->RawkeyBindings;
+  BOOL speed = FALSE;
+
+  ENTER();
 
   if(t_keys == 0)
     t_keys = keys;
@@ -671,6 +916,8 @@ long FindKey (unsigned char key, unsigned long qualifier, struct InstData *data)
           if(new_y < 0)
             new_y = 0;
           set(data->object, MUIA_TextEditor_Prop_First, new_y*data->height);
+
+          RETURN(4);
           return(4);
         }
       }
@@ -680,59 +927,75 @@ long FindKey (unsigned char key, unsigned long qualifier, struct InstData *data)
         {
           case mTop:
             GoTop(data);
+            RETURN(TRUE);
             return(TRUE);
           case mPreviousLine:
             GoPreviousLine(data);
+            RETURN(TRUE);
             return(TRUE);
           case mPreviousPage:
             GoPreviousPage(data);
+            RETURN(FALSE);
             return(FALSE);
           case mUp:
             GoUp(data);
             if(speed)
               GoUp(data);
+            RETURN(FALSE);
             return(FALSE);
           case mBottom:
             GoBottom(data);
+            RETURN(TRUE);
             return(TRUE);
           case mNextLine:
             GoNextLine(data);
+            RETURN(TRUE);
             return(TRUE);
           case mNextPage:
             GoNextPage(data);
+            RETURN(FALSE);
             return(FALSE);
           case mDown:
             GoDown(data);
             if(speed)
               GoDown(data);
+            RETURN(FALSE);
             return(FALSE);
           case mNextWord:
             GoNextWord(data);
+            RETURN(TRUE);
             return(TRUE);
           case mNextSentence:
             GoNextSentence(data);
+            RETURN(TRUE);
             return(TRUE);
           case mEndOfLine:
             GoEndOfLine(data);
+            RETURN(TRUE);
             return(TRUE);
           case mRight:
             GoRight(data);
             if(speed)
               GoRight(data);
+            RETURN(TRUE);
             return(TRUE);
           case mPreviousWord:
             GoPreviousWord(data);
+            RETURN(TRUE);
             return(TRUE);
           case mPreviousSentence:
             GoPreviousSentence(data);
+            RETURN(TRUE);
             return(TRUE);
           case mStartOfLine:
             GoStartOfLine(data);
+            RETURN(TRUE);
             return(TRUE);
           case mLeft:
             GoLeft(data);
             if(speed)
               GoLeft(data);
+            RETURN(TRUE);
             return(TRUE);
           case kSuggestWord:
 #ifndef ClassAct
@@ -788,12 +1051,15 @@ long FindKey (unsigned char key, unsigned long qualifier, struct InstData *data)
             break;
           case kGotoBookmark1:
             GotoBookmark(0, data);
+            RETURN(TRUE);
             return(TRUE);
           case kGotoBookmark2:
             GotoBookmark(1, data);
+            RETURN(TRUE);
             return(TRUE);
           case kGotoBookmark3:
             GotoBookmark(2, data);
+            RETURN(TRUE);
             return(TRUE);
           case kSetBookmark1:
             SetBookmark(0, data);
@@ -805,29 +1071,35 @@ long FindKey (unsigned char key, unsigned long qualifier, struct InstData *data)
             SetBookmark(2, data);
             break;
         }
+
+        RETURN(3);
         return(3);
       }
     }
     t_keys++;
   }
+
+  RETURN(2);
   return(2);
 }
 
-long ReactOnRawKey(unsigned char key, ULONG qualifier, struct IntuiMessage *imsg, struct InstData *data)
+static LONG ReactOnRawKey(UBYTE key, ULONG qualifier, struct IntuiMessage *imsg, struct InstData *data)
 {
-  BOOL result = TRUE;
-  long dummy;
   struct line_node *oldactualline = data->actualline;
   UWORD oldCPos_X = data->CPos_X;
+  LONG result = TRUE;
+
+  ENTER();
 
   if(key <= IECODE_KEY_CODE_LAST)
   {
-    dummy = FindKey(key, qualifier, data);
-    if(dummy == TRUE)
+    LONG dummy = FindKey(key, qualifier, data);
+    if(dummy == 1)
     {
       data->pixel_x = 0;
     }
-    if(dummy == TRUE || dummy == FALSE)
+
+    if(dummy == 1 || dummy == 0)
     {
       if((data->CPos_X != oldCPos_X || oldactualline != data->actualline) || (!(qualifier & data->blockqual) && data->blockinfo.enabled))
       {
@@ -845,6 +1117,7 @@ long ReactOnRawKey(unsigned char key, ULONG qualifier, struct IntuiMessage *imsg
               data->blockinfo.startline = oldactualline;
               data->blockinfo.startx = oldCPos_X;
             }
+
             MarkText(oldCPos_X, oldactualline, data->CPos_X, data->actualline, data);
           }
           else
@@ -856,6 +1129,7 @@ long ReactOnRawKey(unsigned char key, ULONG qualifier, struct IntuiMessage *imsg
               MarkText(data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline, data);
             }
           }
+
           ScrollIntoDisplay(data);
           SetCursor(data->CPos_X, data->actualline, TRUE, data);
         }
@@ -878,12 +1152,14 @@ long ReactOnRawKey(unsigned char key, ULONG qualifier, struct IntuiMessage *imsg
         {
           result = TRUE;
         }
-/*        else
+/*
+        else
         {
           if(((data->flags & FLG_ReadOnly || qualifier & IEQUALIFIER_RCOMMAND) || !ConvertKey(key, qualifier, imsg, data)))
             result = FALSE;
         }
-*/      }
+*/
+      }
     }
   }
   else
@@ -894,15 +1170,18 @@ long ReactOnRawKey(unsigned char key, ULONG qualifier, struct IntuiMessage *imsg
   if(result)
     ScrollIntoDisplay(data);
 
+  RETURN(result);
   return(result);
 }
 /*------------------------------------------------------*
  * Make sure that the cursor is inside the visible area *
  *------------------------------------------------------*/
-void  ScrollIntoDisplay (struct InstData *data)
+void ScrollIntoDisplay(struct InstData *data)
 {
-    struct   pos_info pos;
-    LONG      diff;
+  struct pos_info pos;
+  LONG diff;
+
+  ENTER();
 
   if(data->shown)
   {
@@ -919,15 +1198,26 @@ void  ScrollIntoDisplay (struct InstData *data)
       ScrollDown(0, (-diff)+1, data);
     }
   }
+
+  LEAVE();
 }
 /*------------------------*
  * Update the marked area *
  *------------------------*/
-void  MarkText    (LONG x1, struct line_node *line1, LONG x2, struct line_node *line2, struct InstData *data)
+void MarkText(LONG x1, struct line_node *line1, LONG x2, struct line_node *line2, struct InstData *data)
 {
-    struct   marking  newblock, fakeblock;
-      LONG   startx, stopx;
-    struct   line_node   *startline, *stopline;
+  struct marking newblock;
+  struct marking fakeblock;
+  struct line_node *startline;
+  struct line_node *stopline;
+  struct pos_info pos1;
+  struct pos_info pos2;
+  LONG startx;
+  LONG stopx;
+  LONG line_nr1;
+  LONG line_nr2;
+
+  ENTER();
 
   fakeblock.startx = x1;
   fakeblock.startline = line1;
@@ -940,24 +1230,23 @@ void  MarkText    (LONG x1, struct line_node *line1, LONG x2, struct line_node *
   startline = newblock.startline;
   stopline  = newblock.stopline;
 
-  {
-      struct pos_info pos1, pos2;
-      LONG   line_nr1 = LineToVisual(startline, data) - 1,
-          line_nr2 = LineToVisual(stopline, data) - 1;
+  line_nr1 = LineToVisual(startline, data) - 1;
+  line_nr2 = LineToVisual(stopline, data) - 1;
 
-    OffsetToLines(startx, startline, &pos1, data);
-    OffsetToLines(stopx, stopline, &pos2, data);
+  OffsetToLines(startx, startline, &pos1, data);
+  OffsetToLines(stopx, stopline, &pos2, data);
 
-    data->blockinfo.stopx = x2;
-    data->blockinfo.stopline = line2;
+  data->blockinfo.stopx = x2;
+  data->blockinfo.stopline = line2;
 
-    if((line_nr1 += pos1.lines-1) < 0)
-      line_nr1 = 0;
-    if((line_nr2 += pos2.lines-1) >= data->maxlines)
-      line_nr2 = data->maxlines-1;
-    if(line_nr1 <= line_nr2)
-    {
-      DumpText(data->visual_y+line_nr1, line_nr1, line_nr2+1, FALSE, data);
-    }
-  }
+  if((line_nr1 += pos1.lines-1) < 0)
+    line_nr1 = 0;
+
+  if((line_nr2 += pos2.lines-1) >= data->maxlines)
+    line_nr2 = data->maxlines-1;
+
+  if(line_nr1 <= line_nr2)
+    DumpText(data->visual_y+line_nr1, line_nr1, line_nr2+1, FALSE, data);
+
+  LEAVE();
 }

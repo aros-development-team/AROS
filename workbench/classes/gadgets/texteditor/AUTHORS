@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: AUTHORS,v 1.1 2005/03/28 11:29:48 damato Exp $
+ $Id: AUTHORS,v 1.2 2005/12/07 00:19:05 damato Exp $
 
 ***************************************************************************/
 
@@ -24,6 +24,7 @@ TextEditor.mcc is an Open Source development effort with the code base and
 design provided by the following people:
 
 Allan Odgaard      <duff2@users.sourceforge.net>
+Ilkka Lehtoranta   <ilkleht@isoveli.org>
 Jens Langner       <damato@users.sourceforge.net>
 Sebastian Bauer    <sba@users.sourceforge.net>
 

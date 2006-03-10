@@ -16,22 +16,21 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: GetSetAttrs.c,v 1.5 2005/04/07 10:10:53 sba Exp $
+ $Id: GetSetAttrs.c,v 1.14 2005/08/16 21:21:01 damato Exp $
 
 ***************************************************************************/
 
+#include <intuition/classes.h>
 #include <utility/tagitem.h>
 #include <clib/alib_protos.h>
-#include <proto/exec.h>
-#include <proto/diskfont.h>
 #include <proto/graphics.h>
-#include <proto/intuition.h>
-#include <proto/layers.h>
 #include <proto/utility.h>
+#include <proto/layers.h>
+#include <proto/intuition.h>
 
 #ifndef ClassAct
-#include <proto/muimaster.h>
 #include <libraries/mui.h>
+#include <proto/muimaster.h>
 #else
 #include <images/bevel.h>
 #include <intuition/gadgetclass.h>
@@ -55,23 +54,28 @@ ULONG Get(struct IClass *cl, Object *obj, struct opGet *msg)
   struct InstData *data = INST_DATA(cl, obj);
   ULONG ti_Data;
 
+  ENTER();
+
   switch(msg->opg_AttrID)
   {
     case MUIA_TextEditor_CursorPosition:
     {
       UWORD xplace, yplace, cursor_width;
-
       UWORD x = data->CPos_X;
-
       struct line_node *line = data->actualline;
       LONG line_nr = LineToVisual(line, data) - 1;
-
       struct pos_info pos;
+
       OffsetToLines(x, line, &pos, data);
 
-      cursor_width = (data->CursorWidth == 6) ? MyTextLength(data->font, (line->line.Contents[x] == '\n') ? (char *)"n" : (char *)&line->line.Contents[x], 1) : data->CursorWidth;
+      // calculate the cursor width
+      // if it is set to 6 then we should find out how the width of the current char is
+      if(data->CursorWidth == 6)
+        cursor_width = TextLength(&data->tmprp, line->line.Contents[x] < ' ' ? (char *)" " : (char *)&line->line.Contents[x], 1);
+      else
+        cursor_width = data->CursorWidth;
 
-      xplace  = data->xpos + MyTextLength(data->font, &line->line.Contents[x-pos.x], pos.x);
+      xplace  = data->xpos + TextLength(&data->tmprp, &line->line.Contents[x-pos.x], pos.x);
       xplace += FlowSpace(line->line.Flow, line->line.Contents+pos.bytes, data);
       yplace  = data->ypos + (data->height * (line_nr + pos.lines - 1));
 
@@ -186,20 +190,26 @@ ULONG Get(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_TextEditor_WrapBorder:
       ti_Data = data->WrapBorder;
       break;
+
     default:
+      LEAVE();
       return(DoSuperMethodA(cl, obj, (Msg)msg));
   }
   *msg->opg_Storage = ti_Data;
+
+  RETURN(TRUE);
   return(TRUE);
 }
 
 ULONG Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct InstData *data = INST_DATA(cl, obj);
-    struct TagItem *tags, *tag;
-    char  *contents = NULL;
-    ULONG result = FALSE;
-    ULONG crsr_x = 0xffff, crsr_y = 0xffff;
+  struct InstData *data = INST_DATA(cl, obj);
+  struct TagItem *tags, *tag;
+  char  *contents = NULL;
+  ULONG result = FALSE;
+  ULONG crsr_x = 0xffff, crsr_y = 0xffff;
+
+  ENTER();
 
 #ifndef ClassAct
   if(data->shown && !(data->flags & FLG_Draw))
@@ -212,6 +222,8 @@ ULONG Set(struct IClass *cl, Object *obj, struct opSet *msg)
     }
     data->UpdateInfo = msg;
     MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+    RETURN((ULONG)data->UpdateInfo);
     return((ULONG)data->UpdateInfo);
   }
 
@@ -240,8 +252,14 @@ ULONG Set(struct IClass *cl, Object *obj, struct opSet *msg)
       case MUIA_Disabled:
 #endif
         if(ti_Data)
-            data->flags |= FLG_Ghosted;
-        else  data->flags &= ~FLG_Ghosted;
+          data->flags |= FLG_Ghosted;
+        else
+          data->flags &= ~FLG_Ghosted;
+
+        // make sure an eventually existing slider is disabled as well
+        if(data->slider)
+          set(data->slider, MUIA_Disabled, ti_Data);
+
 #ifndef ClassAct
 
         MUI_Redraw(obj, MADF_DRAWOBJECT);
@@ -521,6 +539,11 @@ ULONG Set(struct IClass *cl, Object *obj, struct opSet *msg)
               data->font = data->normalfont;
               data->use_fixedfont = FALSE;
             }
+
+            // now we check whether we have a valid font or not
+            // and if not we take the default one of our muiAreaData
+            if(data->font == NULL)
+              data->font = muiAreaData(obj)->mad_Font;
           }
           break;
         }
@@ -658,9 +681,9 @@ ULONG Set(struct IClass *cl, Object *obj, struct opSet *msg)
   {
     struct line_node *newcontents;
 
-    if((newcontents = ImportText(contents, data->mypool, data->ImportHook, data->ImportWrap)))
+    if((newcontents = ImportText(contents, data, data->ImportHook, data->ImportWrap)))
     {
-      FreeTextMem(data->mypool, data->firstline);
+      FreeTextMem(data->firstline, data);
       data->firstline = newcontents;
       ResetDisplay(data);
       ResetUndoBuffer(data);
@@ -689,5 +712,6 @@ ULONG Set(struct IClass *cl, Object *obj, struct opSet *msg)
     result = TRUE;
   }
 
+  RETURN(result);
   return result;
 }

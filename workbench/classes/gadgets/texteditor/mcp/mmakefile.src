@@ -16,7 +16,7 @@ FILES := locale \
 	 Keybindings \
 	 KeyStorage \
 	 ObjectCreator \
-	 UserKeys
+	 Debug
 	 
 %build_module mmake=workbench-classes-zune-texteditor-mcp \
   modname=TextEditor modtype=mcp \

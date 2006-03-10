@@ -16,13 +16,12 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: ExportText.c,v 1.2 2005/04/04 12:27:04 sba Exp $
+ $Id: ExportText.c,v 1.6 2005/08/08 11:28:15 gnikl Exp $
 
 ***************************************************************************/
 
 #include <string.h>
 
-#include <proto/exec.h>
 #include <proto/utility.h>
 
 #include "TextEditor_mcc.h"
@@ -32,6 +31,8 @@ void *ExportText(struct line_node *node, struct Hook *exportHook, LONG wraplen)
 {
 	struct ExportMessage emsg;
 	void *user_data = NULL;
+
+	ENTER();
 
 	memset(&emsg,0,sizeof(emsg));
 
@@ -50,9 +51,16 @@ void *ExportText(struct line_node *node, struct Hook *exportHook, LONG wraplen)
 		emsg.ExportWrap = wraplen;
 		emsg.Last = !next_node;
 
+		// to make sure that for the last line we don't export the additional,
+		// artificial newline '\n' we reduce the passed length value by one.
+		if(next_node == NULL && emsg.Contents[node->line.Length-1] == '\n')
+		  emsg.Length--;
+
 		user_data = (void*)CallHookPkt(exportHook, NULL, &emsg);
 
 		node = next_node;
 	}
-  return user_data;
+
+	RETURN(user_data);
+	return user_data;
 }

@@ -16,15 +16,13 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: ImportHook.c,v 1.19 2005/04/06 09:38:56 sba Exp $
+ $Id: ImportHook.c,v 1.26 2005/07/31 12:39:36 damato Exp $
 
 ***************************************************************************/
 
-#include <stdio.h>
 #include <string.h>
-#include <exec/types.h>
+
 #include <proto/dos.h>
-#include <proto/exec.h>
 
 #include "TextEditor_mcc.h"
 #include "private.h"
@@ -123,7 +121,6 @@ STATIC char *FindEOL(char *src, int *tabs_ptr)
 	return eol;
 }
 
-
 /************************************************************************
  Adds two new values to the given grow. This function guarantees
  that there is at least space for 2 additional values.
@@ -153,6 +150,28 @@ STATIC VOID AddToGrow(struct grow *grow, UWORD val1, UWORD val2)
 		grow->array[grow->current*2+1] = val2;
 		grow->current++;
 	}
+}
+
+// searches through a string and returns TRUE if the string contains
+// any text (except newlines) until the stopchar is found
+static BOOL ContainsText(char *str, char stopchar)
+{
+  if(str)
+  {
+    BOOL foundText = FALSE;
+
+    while(*str >= ' ')
+    {
+      if(*str == stopchar)
+        return foundText;
+      else if(*str > ' ') // greater than 0x20 (space) == readable text
+        foundText = TRUE;
+
+      str++;
+    }
+  }
+
+  return FALSE;
 }
 
 /************************************************************************
@@ -190,30 +209,33 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
 #endif
 {
     	HOOK_INIT
-
+	
 	char *eol;
 	char *src = msg->Data;
 	int len;
 	int tabs;
 	struct LineNode *line = msg->linenode;
+	ULONG wrap = msg->ImportWrap;
 
 	if (!(eol = FindEOL(src,&tabs)))
 		return NULL;
 
-	len = eol - src;
-	if ((line->Contents = MyAllocPooled(msg->PoolHandle,len+2+tabs*4)))
+	len = eol - src + 4 * tabs;
+
+ /* allocate some more memory for the possible quote mark '>', note that if
+  * a '=' is detected at the end of a line this memory is not sufficient! */
+	if ((line->Contents = MyAllocPooled(msg->PoolHandle,len+4)))
 	{
-		unsigned char *dest = (unsigned char*)line->Contents;
+		unsigned char *dest_start = (unsigned char *)line->Contents;
+		unsigned char *dest = dest_start;
+		unsigned char *dest_word_start = dest_start;
+		unsigned char *src_word_start = (unsigned char *)src;
 
-		int current_style = 0;
-		int new_style = 0;
+		/* Style and color state */
+		int state = 0;
+
 		struct grow style_grow;
-
-		int current_color = 0;
-		int new_color = 0;
 		struct grow color_grow;
-
-		int pos = 0;
 
 		memset(&color_grow,0,sizeof(color_grow));
 		memset(&style_grow,0,sizeof(style_grow));
@@ -224,83 +246,121 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
 		while (src < eol)
 		{
 			unsigned char c = *src++;
-			if (c == '\033')
+
+			if(c == '\t')
 			{
-				switch (*src++)
+				int i;
+				for (i=(dest - dest_start)% 4; i < 4; i++)
+					*dest++ = ' ';
+				continue;
+			}
+      else if(c == '\033') // ESC sequence
+			{
+				switch(*src++)
 				{
-					case	'b': new_style |= BOLD; break;
-					case	'i': new_style |= ITALIC; break;
-					case	'u': new_style |= UNDERLINE; break;
-					case	'h': line->Color = TRUE; break;
-					case	'n': new_style = ~new_style; break;
-					case	'l': line->Flow = 0; break;
-					case	'c': line->Flow = 1; break;
-					case	'r': line->Flow = 2; break;
-					case	'p':
-								if (*src == '[')
+					case 'b':
+    				AddToGrow(&style_grow, dest - dest_start + 1, BOLD);
+            state |= BOLD;
+          break;
+
+					case 'i':
+    				AddToGrow(&style_grow, dest - dest_start + 1, ITALIC);
+            state |= ITALIC;
+          break;
+
+					case 'u':
+    				AddToGrow(&style_grow, dest - dest_start + 1, UNDERLINE);
+            state |= UNDERLINE;
+					break;
+
+          case 'h':
+            line->Color = TRUE;
+          break;
+
+          case 'n':
+            if(state & BOLD)      AddToGrow(&style_grow, dest - dest_start + 1, ~BOLD);
+    				if(state & ITALIC)    AddToGrow(&style_grow, dest - dest_start + 1, ~ITALIC);
+    				if(state & UNDERLINE) AddToGrow(&style_grow, dest - dest_start + 1, ~UNDERLINE);
+            state ^= ~(BOLD | ITALIC | UNDERLINE);
+          break;
+
+					case 'l': line->Flow = MUIV_TextEditor_Flow_Left; break; // left
+          case 'c': line->Flow = MUIV_TextEditor_Flow_Center; break; // centered
+					case 'r': line->Flow = MUIV_TextEditor_Flow_Right; break; // right
+
+					case 'p':
+          {
+					  if(*src == '[')
+						{
+						  LONG pen;
+							src++;
+
+              if(GetLong(&src,&pen))
+							{
+							  if(*src == ']')
 								{
-									LONG pen;
-									src++;
-									if (GetLong(&src,&pen))
+          				AddToGrow(&color_grow, dest - dest_start + 1, pen);
+
+                  if(pen == 0)
+                    state ^= COLOURED;
+                  else
+                    state |= COLOURED;
+
+                  src++;
+								}
+							}
+						}
+          }
+					break;
+
+          case '[':
+					{
+            if(*src == 's')
+						{
+						  if(*(++src) == ':')
+							{
+							  LONG flags;
+								src++;
+
+                if(GetLong(&src,&flags))
+								{
+								  if(*src == ']')
 									{
-										if (*src == ']')
-										{
-											new_color = pen;
-											src++;
-										}
+									  line->Separator = flags;
+									  src++;
 									}
 								}
-								break;
-					case	'[':
-								if (*src == 's')
-								{
-									if (*(++src) == ':')
-									{
-										LONG flags;
-										src++;
-										if (GetLong(&src,&flags))
-										{
-											if (*src == ']')
-											{
-												line->Separator = flags;
-												src++;
-											}
-										}
-									}
-								}
-								break;
+							}
+						}
+					}
+          break;
 				}
+
 				continue;
 			}
 
-			if (c == '\t')
+			if(c == ' ')
 			{
-				int i;
+				/* src is already advanced */
+				src_word_start = (unsigned char *)src;
+				dest_word_start = dest;
+			}
 
-				for (i=(pos )% 4; i < 4; i++)
+			if (wrap && ((ULONG)(dest - dest_start)) >= wrap)
+			{
+				/* Only leave the loop, if we really have added some characters
+				 * (at least one word) to the line */
+				if (dest_word_start != dest_start)
 				{
-					*dest++ = ' ';
-					pos++;
+					/* src points to the real word start, but we add one when we return eol */
+					eol = (char *)(src_word_start - 1);
+					dest = dest_word_start;
+					break;
 				}
-				continue;
 			}
 
 			*dest++ = c;
-			pos++;
 
-			/* Handle color changes */
-			if (new_color != current_color)
-			{
-				AddToGrow(&color_grow, dest - (unsigned char*)line->Contents, new_color);
-				current_color = new_color;
-			}
-
-			/* Handle style changes */
-			if (new_style != current_style)
-			{
-				AddToGrow(&style_grow, dest - (unsigned char*)line->Contents, new_style);
-				current_style = new_style;
-			}
 		} /* while (src < eol) */
 
 		line->Colors = color_grow.array;
@@ -323,17 +383,43 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
 		*dest++ = '\n';
 		*dest = 0;
 
-		line->Length = dest - line->Contents; /* this excludes \n */
+		line->Length = dest - dest_start; /* this excludes \n */
 	}
-	if (eol[0] == 0) return NULL;
+
+	if (!eol || eol[0] == 0) return NULL;
 	return eol + 1;
-    	HOOK_EXIT
 	
+	HOOK_EXIT
 }
 MakeHook(ImPlainHook, PlainImportHookFunc);
 
 /************************************************************************
  The MIME import hook. It supports following escape sequences:
+
+  <ESC> + u      Set the soft style to underline.
+  <ESC> + b      Set the soft style to bold.
+  <ESC> + i      Set the soft style to italic.
+  <ESC> + n      Set the soft style back to normal.
+  <ESC> + h      Highlight the current line.
+  <ESC> + p[x]   Change to color x, where x is taken from the colormap.
+                 0 means normal. The color is reset for each new line.
+
+
+ The following sequences are only valid at the beginning of a line.
+
+  <ESC> + l      Left justify current and following lines.
+  <ESC> + r      Right justify current and following lines.
+  <ESC> + c      Center current and following lines.
+  <ESC> + [s:x]  Create a separator. x is a bit combination of flags:
+                 Placement (mutually exclusive):
+                     1 = Top
+                     2 = Middle
+                     4 = Bottom
+                 Cosmetical:
+                     8 = StrikeThru   - Draw separator ontop of text.
+                     16 = Thick        - Make separator extra thick.
+
+ Note: Tabs are converted to spaces with a tab size of 4.
 *************************************************************************/
 STATIC STRPTR MimeImport(struct ImportMessage *msg, LONG type)
 {
@@ -347,22 +433,22 @@ STATIC STRPTR MimeImport(struct ImportMessage *msg, LONG type)
 	if (!(eol = FindEOL(src,&tabs)))
 		return NULL;
 
-	/* Clear the flow */
-	line->Flow = 0;
-
 	len = eol - src + 4 * tabs;
 
  /* allocate some more memory for the possible quote mark '>', note that if
   * a '=' is detected at the end of a line this memory is not sufficient! */
 	if ((line->Contents = MyAllocPooled(msg->PoolHandle,len+4)))
 	{
-		unsigned char *dest_start = line->Contents;
+    BOOL lastWasSeparator = TRUE;
+		unsigned char *dest_start = (unsigned char *)line->Contents;
 		unsigned char *dest = dest_start;
 		unsigned char *dest_word_start = dest_start;
-		unsigned char *src_word_start = src;
+		unsigned char *src_word_start = (unsigned char *)src;
 		
 		/* Style and color state */
 		int state = 0;
+    int escstate = 0;
+    int shownext = 0;
 
 		struct grow style_grow;
 		struct grow color_grow;
@@ -372,20 +458,23 @@ STATIC STRPTR MimeImport(struct ImportMessage *msg, LONG type)
 
 		color_grow.pool = style_grow.pool = msg->PoolHandle;
 
-		if (src[0] == '>') line->Color = TRUE;
+		if (src[0] == '>')
+      line->Color = TRUE;
 		else if (src[0] == '<')
 		{
 			if (src[1] == 's' && src[2] == 'b' && src[3] == '>')
 			{
 				line->Separator = 2;	
 				src+= 4;
-				line->Flow = 1;
+				line->Flow = MUIV_TextEditor_Flow_Center;
+        line->clearFlow = TRUE;
 			}
 			else if (src[1] == 't' && src[2] == 's' && src[3] == 'b' && src[4] == '>')
 			{
 				src += 5;
 				line->Separator = 18;
-				line->Flow = 1;
+				line->Flow = MUIV_TextEditor_Flow_Center;
+        line->clearFlow = TRUE;
 			}
 		}
 
@@ -398,43 +487,107 @@ STATIC STRPTR MimeImport(struct ImportMessage *msg, LONG type)
 		/* Copy loop */
 		while (src < eol)
 		{
-			unsigned char c = *src++;
+      unsigned char c = *src++;
 
-			if (c == '\t')
+      if(c == '\n')
+      {
+        lastWasSeparator = TRUE;
+      }
+			else if(c == '\t')
 			{
 				int i;
-				for (i=(dest - dest_start)% 4; i < 4; i++)
+				
+        for(i=(dest - dest_start)% 4; i < 4; i++)
 					*dest++ = ' ';
+
+        lastWasSeparator = TRUE;
+
 				continue;				
-			} else
-			if (c == '/')
+			}
+      else if(c == '/')
 			{
-				AddToGrow(&style_grow, dest - dest_start + 1, (state & ITALIC)?~ITALIC:ITALIC);
-				state ^= ITALIC;
-				continue;
-			} else
-			if (c == '*')
+        if(escstate == 0)
+        {
+          if(shownext & ITALIC)
+            shownext ^= ITALIC;
+          else if((state & ITALIC) || (lastWasSeparator && ContainsText(src, '/')))
+          {
+				    AddToGrow(&style_grow, dest - dest_start + 1, (state & ITALIC) ? ~ITALIC : ITALIC);
+				    state ^= ITALIC;
+
+            lastWasSeparator = TRUE;
+            continue;
+          }
+          else
+            shownext |= ITALIC;
+				}
+
+        lastWasSeparator = TRUE;
+			}
+      else if(c == '*')
 			{
-				AddToGrow(&style_grow, dest - dest_start + 1, (state & BOLD)?~BOLD:BOLD);
-				state ^= BOLD;
-				continue;
-			} else
-			if (c == '_')
+        if(escstate == 0)
+        {
+          if(shownext & BOLD)
+            shownext ^= BOLD;
+          else if((state & BOLD) || (lastWasSeparator && ContainsText(src, '*')))
+    			{
+          	AddToGrow(&style_grow, dest - dest_start + 1, (state & BOLD) ? ~BOLD : BOLD);
+	    			state ^= BOLD;
+
+            lastWasSeparator = TRUE;
+            continue;
+          }
+          else
+            shownext |= BOLD;
+		    }
+
+        lastWasSeparator = TRUE;
+			}
+      else if(c == '_')
 			{
-				AddToGrow(&style_grow, dest - dest_start + 1, (state & UNDERLINE)?~UNDERLINE:UNDERLINE);
-				state ^= UNDERLINE;
-				continue;
-			} else
-			if (c == '#')
+        if(escstate == 0)
+        {
+          if(shownext & UNDERLINE)
+            shownext ^= UNDERLINE;
+          else if((state & UNDERLINE) || (lastWasSeparator && ContainsText(src, '_')))
+  				{
+            AddToGrow(&style_grow, dest - dest_start + 1, (state & UNDERLINE) ? ~UNDERLINE : UNDERLINE);
+	  			  state ^= UNDERLINE;
+
+            lastWasSeparator = TRUE;
+            continue;
+          }
+          else
+            shownext |= UNDERLINE;
+        }
+
+        lastWasSeparator = TRUE;
+			}
+      else if(c == '#')
 			{
-				AddToGrow(&color_grow, dest - dest_start + 1, (state & COLOURED)?0:7);
-				state ^= COLOURED;
-				continue;
-			} else
-			if (c == '=' && type > 0)
+        if(escstate == 0)
+        {
+          if(shownext & COLOURED)
+            shownext ^= COLOURED;
+          else if((state & COLOURED) || (lastWasSeparator && ContainsText(src, '#')))
+          {
+  				  AddToGrow(&color_grow, dest - dest_start + 1, (state & COLOURED) ? 0 : 7);
+	  			  state ^= COLOURED;
+
+            lastWasSeparator = TRUE;
+            continue;
+          }
+          else
+            shownext |= COLOURED;
+		    }
+
+        lastWasSeparator = TRUE;
+			}
+      else if(c == '=')
 			{
 				/* This is a concatenated line */
-				if (!GetQP(&src,&c))
+				if(type > 0 && !GetQP(&src,&c))
 				{
 					int i;
 					
@@ -462,27 +615,126 @@ STATIC STRPTR MimeImport(struct ImportMessage *msg, LONG type)
 						/* Update all dest variables */
 						dest_word_start = new_dest_start + (dest_word_start - dest_start);
 						dest = new_dest_start + (dest - dest_start);
-						dest_start = line->Contents = new_dest_start;
+            line->Contents = (char *)new_dest_start;
+						dest_start = (unsigned char *)line->Contents;
+
+            lastWasSeparator = FALSE;
 						continue;
 					}
 				}
 			}
-
-			if (c == ' ')
+      else if(c == '\033') // like the plain import hook we manage ESC sequences as well
 			{
-				/* src is already advanced */
-				src_word_start = src;
-				dest_word_start = dest;
+				switch(*src++)
+				{
+					case 'b':
+    				AddToGrow(&style_grow, dest - dest_start + 1, BOLD);
+            escstate |= BOLD;
+          break;
+
+					case 'i':
+    				AddToGrow(&style_grow, dest - dest_start + 1, ITALIC);
+            escstate |= ITALIC;
+          break;
+
+					case 'u':
+    				AddToGrow(&style_grow, dest - dest_start + 1, UNDERLINE);
+            escstate |= UNDERLINE;
+					break;
+
+          case 'h':
+            line->Color = TRUE;
+          break;
+					
+          case 'n':
+            if(state & BOLD)      AddToGrow(&style_grow, dest - dest_start + 1, ~BOLD);
+    				if(state & ITALIC)    AddToGrow(&style_grow, dest - dest_start + 1, ~ITALIC);
+    				if(state & UNDERLINE) AddToGrow(&style_grow, dest - dest_start + 1, ~UNDERLINE);
+            state ^= ~(BOLD | ITALIC | UNDERLINE);
+            escstate ^= ~(BOLD | ITALIC | UNDERLINE);
+          break;
+
+					case 'l': line->Flow = MUIV_TextEditor_Flow_Left; break; // left
+          case 'c': line->Flow = MUIV_TextEditor_Flow_Center; break; // centered
+					case 'r': line->Flow = MUIV_TextEditor_Flow_Right; break; // right
+
+					case 'p':
+          {
+					  if(*src == '[')
+						{
+						  LONG pen;
+							src++;
+							
+              if(GetLong(&src,&pen))
+							{
+							  if(*src == ']')
+								{
+          				AddToGrow(&color_grow, dest - dest_start + 1, pen);
+
+                  if(pen == 0)
+                    escstate ^= COLOURED;
+                  else
+                    escstate |= COLOURED;
+
+                  src++;
+								}
+							}
+						}
+          }
+					break;
+					
+          case '[':
+					{
+            if(*src == 's')
+						{
+						  if(*(++src) == ':')
+							{
+							  LONG flags;
+								src++;
+								
+                if(GetLong(&src,&flags))
+								{
+								  if(*src == ']')
+									{
+									  line->Separator = flags;
+									  src++;
+									}
+								}
+							}
+						}
+					}
+          break;
+				}
+
+        lastWasSeparator = FALSE;
+				continue;
 			}
 
-			if (wrap && ((ULONG)(dest - dest_start)) >= wrap)
+			if(c == ' ')
+			{
+				/* src is already advanced */
+				src_word_start = (unsigned char *)src;
+				dest_word_start = dest;
+
+        lastWasSeparator = TRUE;
+			}
+      else if(c == '\n')
+      {
+        lastWasSeparator = TRUE;
+      }
+      else
+      {
+        lastWasSeparator = FALSE;
+      }
+
+			if(wrap && ((ULONG)(dest - dest_start)) >= wrap)
 			{
 				/* Only leave the loop, if we really have added some characters
 				 * (at least one word) to the line */
 				if (dest_word_start != dest_start)
 				{
 					/* src points to the real word start, but we add one when we return eol */
-					eol = src_word_start - 1;
+					eol = (char *)(src_word_start - 1);
 					dest = dest_word_start;
 					break;
 				}

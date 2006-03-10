@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: library.c,v 1.4 2005/04/09 23:41:38 itix Exp $
+ $Id: library.c,v 1.8 2005/07/07 06:39:46 damato Exp $
 
 ***************************************************************************/
 
@@ -44,6 +44,9 @@
 #define UserLibID     "$VER: TextEditor.mcc " LIB_REV_STRING CPU " (" LIB_DATE ") " LIB_COPYRIGHT
 #define MASTERVERSION 19
 
+#define USEDCLASSESP  used_classesP
+static const STRPTR used_classesP[] = { "TextEditor.mcp", NULL };
+
 #define ClassInit
 #define ClassExit
 
@@ -65,31 +68,34 @@ struct Interface *IWorkbench = NULL;
 
 BOOL ClassInitFunc(UNUSED struct Library *base)
 {
+  ENTER();
+
   if((LocaleBase = OpenLibrary("locale.library", 38)) &&
      GETINTERFACE(ILocale, LocaleBase))
   {
-    if((LayersBase = OpenLibrary("layers.library", 38)) &&
+    if((LayersBase = OpenLibrary("layers.library", 36)) &&
        GETINTERFACE(ILayers, LayersBase))
     {
-      if((KeymapBase = OpenLibrary("keymap.library", 38)) &&
+      if((KeymapBase = OpenLibrary("keymap.library", 36)) &&
          GETINTERFACE(IKeymap, KeymapBase))
       {
         if((RexxSysBase = OpenLibrary("rexxsyslib.library", 36)) &&
            GETINTERFACE(IRexxSys, RexxSysBase))
         {
-          if((DiskfontBase = OpenLibrary("diskfont.library", 38)) &&
+          if((DiskfontBase = OpenLibrary("diskfont.library", 36)) &&
              GETINTERFACE(IDiskfont, DiskfontBase))
           {
-          	/* workbench.library is optional */
-          	if ((WorkbenchBase = OpenLibrary("workbench.library", 44)))
-          	{
-          		if (!(GETINTERFACE(IWorkbench, WorkbenchBase)))
-          		{
-          			CloseLibrary(WorkbenchBase);
-          			WorkbenchBase = NULL;
-          		}
-          	}
+            /* workbench.library is optional */
+            if ((WorkbenchBase = OpenLibrary("workbench.library", 44)))
+            {
+              if (!(GETINTERFACE(IWorkbench, WorkbenchBase)))
+              {
+                CloseLibrary(WorkbenchBase);
+                WorkbenchBase = NULL;
+              }
+            }
 
+            RETURN(TRUE);
             return(TRUE);
           }
 
@@ -113,18 +119,21 @@ BOOL ClassInitFunc(UNUSED struct Library *base)
     LocaleBase  = NULL;
   }
 
+  RETURN(FALSE);
   return(FALSE);
 }
 
 
 VOID ClassExitFunc(UNUSED struct Library *base)
 {
-	if(WorkbenchBase)
-	{
+  ENTER();
+
+  if(WorkbenchBase)
+  {
     DROPINTERFACE(IWorkbench);
     CloseLibrary(WorkbenchBase);
     WorkbenchBase = NULL;
-	}
+  }
 
   if(DiskfontBase)
   {
@@ -160,6 +169,8 @@ VOID ClassExitFunc(UNUSED struct Library *base)
     CloseLibrary(LocaleBase);
     LocaleBase = NULL;
   }
+
+  LEAVE();
 }
 
 /******************************************************************************/
@@ -168,4 +179,5 @@ VOID ClassExitFunc(UNUSED struct Library *base)
 /*                                                                            */
 /******************************************************************************/
 
+#define USE_UTILITYBASE
 #include "mccheader.c"

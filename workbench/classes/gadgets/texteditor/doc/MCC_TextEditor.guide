@@ -1,5 +1,5 @@
 @DataBase TextEditor.guide
-@$VER: TextEditor.Guide 15.11 (11.4.2005)
+@$VER: TextEditor.Guide 15.17 (07.12.2005)
 
 @Node Main "TextEditor - AmigaGuide(R) documentation"
 
@@ -156,10 +156,10 @@ TextEditor requires:
 - @{"Magic User Interface" Link MUI} 3.6 or above.
 
 TextEditor.mcp requires BetterString.mcc and HotkeyString.mcc,
-http:\//www.diku.dk/students/duff/
+http:\//www.sf.net/projects/bstring-mcc/
 
-TextEditor-Demo requires Toolbar.mcc and InfoText.mcc by Benny Kjær Nielsen
-<Floyd@Amiga,DK>, http:\//www.diku.dk/students/benny/
+TextEditor-Demo requires Toolbar.mcc and InfoText.mcc by Benny Kjær Nielsen,
+http:\//main.aminet.net/package.php?package=dev/mui/MCC_Toolbar.lha
 
 
 Automatic installation
@@ -338,11 +338,69 @@ History
 (Please check the @{" ChangeLog " link ChangeLog/main} for a more detailed and complete
 list of changes since 15.9)
 
+Quick summary:
 
-15.11 (xx.xx.2005)
+15.17 (07.12.2005)
 
+- fixed a long-standing bug where a too much text might have been deleted/overwritten
+  if the mouse pointer was used to initially start editing some text.
+- fixed another crash bug that happend on remove operation of some empty lines at the
+  end of an document.
+- fixed certain crash conditions when a TextEditor.mcc object as in a hidden state
+  (in a RegisterGroup)
+- fixed some important bugs in the undo/redo processing
 
-15.10 (9.4.2005)
+15.16 (01.08.2005)
+
+- fixed a major bug introduced in version 15.15 which caused to cursor trails because
+  of an uncleared background if non anti-aliased fonts where used on OS3/OS4 systems.
+
+15.15 (31.07.2005)
+
+- added AmigaOS4 specific IDCMP_EXTENDEDMOUSE wheelmouse support.
+- fixed a bug where the use of MUIA_TextEditor_Columns was broken.
+- fixed a bug in the import/export hooks where some soft-style recognition was still
+  broken.
+
+15.14 (03.07.2005)
+
+- fixed the "EMail" importhook to only use soft styles on a line if the /*_ characters
+  are prefixed by a linear white space.
+- fixed a bug that prevented the MUIM_TextEditor_Search method to work properly.
+- a tripleclick on a line now always marks the whole line, regardless if the user clicks
+  on a separating/non existing character.
+- fixed a bug where centered/right aligned text wasn't displayed correctly if marked
+  with the mouse.
+- fixed a bug where under m68k characters > 126 couldn't be typed.
+
+15.13 (27.06.2005)
+
+- fixed doubleclick behaviour on the first words of a line that is displayed either
+  centered or right aligned.
+- fixed some bugs concerning hard wrapped lines. Now TextEditor.mcc should properly
+  wrap lines without any spaces, as well as allowing to mark them properly.
+- fixed the plain ImportHook to also recognize escape sequences like the old 15.9
+  version did.
+- added recognition for the extended keycodes mainly known to OS4/MOS. This also includes
+  the keycodes for the newmouse standard.
+- if a texteditor.mcc object is now being disabled a connected slider also gets
+  automatically disabled as well.
+
+15.12 (28.05.2005)
+
+- fixed some graphics bugs where the cursor was not completely erased
+- implemented general wheel-mouse support (newmouse)
+- fixed some important bugs like general crashes on OS3 while deleting some text.
+
+15.11 (22.05.2005)
+
+- fixed crash/hang bug where it could have happened that the gadgets caused a total
+  system hang [damato]
+- fixed problems with keybindings of texteditor.mcc [sba]
+- fixed problems in using TextEditor.mcc on systems with a rexxsyslib.library
+  V36 on OS3.1 systems [ilkka]
+
+15.10 (09.04.2005)
 
 - First update from the TextEditor.mcc Open Source team under the LGPL.
   Read @{" this " Link Background} to know how it all was made possible!

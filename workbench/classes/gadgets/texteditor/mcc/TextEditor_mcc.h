@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: TextEditor_mcc.h,v 1.2 2005/04/01 16:59:42 sba Exp $
+ $Id: TextEditor_mcc.h,v 1.3 2005/06/04 15:50:30 damato Exp $
 
 ***************************************************************************/
 
@@ -211,7 +211,8 @@ struct LineNode
   UWORD    *Colors;       /* The colors to use (allocated via the poolhandle) the format is: pos,color,pos,color,...,-1,-0 */
   BOOL     Color;         /* Set this to TRUE if you want the line to be highlighted */
   UWORD    Flow;          /* Use the MUIV_TextEditor_Flow_xxx values... */
-  UWORD    Separator;     /* See definitions bellow */
+  UWORD    Separator;     /* See definitions below */
+  BOOL     clearFlow;     /* if the flow definition should be cleared on the next line */
 };
 
 /* Definitions for Separator type */

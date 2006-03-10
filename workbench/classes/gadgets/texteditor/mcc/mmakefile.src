@@ -11,6 +11,7 @@ FILES := AllocBitMap \
 	 BlockOperators \
 	 CaseConversion \
 	 ColorOperators \
+	 Debug \
 	 Dispatcher \
 	 EditorStuff \
 	 ExportHook \
@@ -29,7 +30,6 @@ FILES := AllocBitMap \
 	 Search \
 	 SpellChecker \
 	 StyleOperators \
-	 TextFunctions \
 	 UndoFunctions
 	 
 %build_module mmake=workbench-classes-zune-texteditor-class \

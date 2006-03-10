@@ -16,20 +16,20 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Dispatcher.c,v 1.7 2005/04/07 10:10:53 sba Exp $
+ $Id: Dispatcher.c,v 1.19 2005/08/16 21:20:34 damato Exp $
 
 ***************************************************************************/
 
 #include <string.h>
-#include <clib/alib_protos.h>
+
 #include <exec/memory.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
+#include <intuition/classes.h>
+#include <clib/alib_protos.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
-#include <proto/layers.h>
-#include <proto/locale.h>
 #include <proto/utility.h>
+#include <proto/locale.h>
+#include <proto/exec.h>
 
 #ifdef __MORPHOS__
 #include <proto/alib.h>
@@ -50,8 +50,10 @@
 
 void ResetDisplay(struct InstData *data)
 {
-    struct  line_node *line = data->firstline;
-    LONG    lines = 0;
+  struct  line_node *line = data->firstline;
+  LONG    lines = 0;
+
+  ENTER();
 
   data->blockinfo.enabled = FALSE;
   data->visual_y = 1;
@@ -79,25 +81,21 @@ void ResetDisplay(struct InstData *data)
     data->Flow = data->actualline->line.Flow;
     data->Separator = data->actualline->line.Separator;
     data->NoNotify = TRUE;
-#ifdef ClassAct
     SetAttrs(data->object,  MUIA_TextEditor_Pen,            data->Pen,
                     MUIA_TextEditor_Flow,         data->Flow,
                     MUIA_TextEditor_Separator,        data->Separator,
+#ifdef ClassAct
                     MUIA_TextEditor_Prop_Entries,     lines,
                     MUIA_TextEditor_Prop_Visible,     data->maxlines,
                     MUIA_TextEditor_Prop_First,     (data->visual_y-1),
                     MUIA_TextEditor_Prop_DeltaFactor, 1,
-                    TAG_DONE);
 #else
-    SetAttrs(data->object,  MUIA_TextEditor_Pen,            data->Pen,
-                    MUIA_TextEditor_Flow,         data->Flow,
-                    MUIA_TextEditor_Separator,        data->Separator,
                     MUIA_TextEditor_Prop_Entries,     lines*data->height,
                     MUIA_TextEditor_Prop_Visible,     data->maxlines*data->height,
                     MUIA_TextEditor_Prop_First,     (data->visual_y-1)*data->height,
                     MUIA_TextEditor_Prop_DeltaFactor, data->height,
-                    TAG_DONE);
 #endif
+                    TAG_DONE);
     data->NoNotify = FALSE;
 
 
@@ -112,27 +110,39 @@ void ResetDisplay(struct InstData *data)
       SetCursor(data->CPos_X, data->actualline, TRUE, data);
     }
 */  }
+
+  LEAVE();
 }
 
 void  RequestInput(struct InstData *data)
 {
+  ENTER();
+
 #ifndef ClassAct
   if(!(data->scrollaction || (data->mousemove)))
     DoMethod(_app(data->object), MUIM_Application_AddInputHandler, &data->ihnode);
 #endif
+
+  LEAVE();
 }
 
 void  RejectInput(struct InstData *data)
 {
+  ENTER();
+
 #ifndef ClassAct
   if(!(data->scrollaction || (data->mousemove)))
     DoMethod(_app(data->object), MUIM_Application_RemInputHandler, &data->ihnode);
 #endif
+
+  LEAVE();
 }
 
 
 ULONG New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
+  ENTER();
+
   if((obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg)))
   {
     struct InstData *data = INST_DATA(cl, obj);
@@ -142,40 +152,16 @@ ULONG New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
       if((data->mylocale = OpenLocale(NULL)))
       {
-        if((data->firstline = AllocPooled(data->mypool, sizeof(struct line_node))))
+        if((data->firstline = AllocLine(data)))
         {
           if(Init_LineNode(data->firstline, NULL, "\n", data))
           {
             data->actualline = data->firstline;
-/*            data->CPos_X = 0;
-
-            data->flags  = 0L;
-
-            data->clipcount = 0;
-
-              data->shown  = FALSE;
-*/            data->update = TRUE;
-/*            data->use_fixedfont = FALSE;
-            data->font = NULL;
-
-            data->DoubleClickHook = NULL;
-            data->WrapBorder = 0;
-
-*/            data->ImportHook = &ImPlainHook;
+            data->update = TRUE;
+            data->ImportHook = &ImPlainHook;
             data->ImportWrap = 1023;
 
             data->ExportHook = &ExportHookPlain;
-/*            data->ExportWrap = 0;
-
-            data->slider = NULL;
-
-            data->colormap = NULL;
-
-            data->HasChanged = FALSE;
-            data->undosize = 0L;
-
-            data->NoNotify = FALSE;
-*/
             data->flags |= FLG_AutoClip;
 #ifndef ClassAct
             if(FindTagItem(MUIA_Background, msg->ops_AttrList))
@@ -183,13 +169,10 @@ ULONG New(struct IClass *cl, Object *obj, struct opSet *msg)
             if(FindTagItem(MUIA_Frame, msg->ops_AttrList))
               data->flags |= FLG_OwnFrame;
 #endif
-            Set(cl, obj, (struct opSet *)msg);
 
-//            data->blockinfo.enabled = FALSE;
+            Set(cl, obj, (struct opSet *)msg);
             data->visual_y = 1;
-/*            data->pixel_x = 0;
-            data->undosize = 0;
-*/
+
 #ifdef ClassAct
             InitSemaphore(&data->semaphore);
 /*
@@ -213,6 +196,8 @@ ULONG New(struct IClass *cl, Object *obj, struct opSet *msg)
               data->BevelVert  = (UWORD)temp;
             }
 #endif
+
+            RETURN((long)obj);
             return((long)obj);
           }
         }
@@ -220,12 +205,16 @@ ULONG New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
     CoerceMethod(cl, obj, OM_DISPOSE);
   }
+
+  RETURN(FALSE);
   return(FALSE);
 }
 
 ULONG Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct InstData *data = INST_DATA(cl, obj);
+  struct InstData *data = INST_DATA(cl, obj);
+
+  ENTER();
 
   if(data->undosize)
   {
@@ -238,20 +227,39 @@ ULONG Dispose(struct IClass *cl, Object *obj, Msg msg)
   if(data->mypool)
     DeletePool(data->mypool);
 
+  LEAVE();
   return(DoSuperMethodA(cl, obj, msg));
 }
 
 #ifndef ClassAct
 ULONG Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
 {
-    struct InstData *data = INST_DATA(cl, obj);
+  struct InstData *data = INST_DATA(cl, obj);
 
+  ENTER();
+
+  // initialize the configuration of our TextEditor
+  // object from the configuration set by the user
   InitConfig(obj, data);
+
   if(DoSuperMethodA(cl, obj, (Msg)rinfo))
   {
     if(!(data->flags & FLG_ReadOnly))
       _flags(obj) |= (1<<7);
-    if(SuggestWindow(data))
+
+    // now we check whether we have a valid font or not
+    // and if not we take the default one of our muiAreaData
+    if(data->font == NULL)
+      data->font = muiAreaData(obj)->mad_Font;
+
+    // initialize our temporary rastport
+    InitRastPort(&data->tmprp);
+    SetFont(&data->tmprp, data->font);
+
+    // make sure we have a proper font setup here and
+    // that our spellchecker suggest window object is also
+    // correctly initialized.
+    if(data->font && SuggestWindow(data))
     {
       DoMethod(_app(obj), OM_ADDMEMBER, data->SuggestWindow);
 
@@ -260,7 +268,11 @@ ULONG Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
       data->ehnode.ehn_Flags    = MUI_EHF_GUIMODE;
       data->ehnode.ehn_Object   = obj;
       data->ehnode.ehn_Class    = cl;
-      data->ehnode.ehn_Events   = /*IDCMP_INACTIVEWINDOW |*/ IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY /* (data->flags & FLG_ReadOnly ? IDCMP_RAWKEY : 0) */ ;
+      data->ehnode.ehn_Events   = IDCMP_ACTIVEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
+
+      #if defined(__amigaos4__)
+      data->ehnode.ehn_Events  |= IDCMP_EXTENDEDMOUSE;
+      #endif
 
       data->ihnode.ihn_Object   = obj;
       data->ihnode.ihn_Millis   = 20;
@@ -272,17 +284,23 @@ ULONG Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
       data->smooth_wait = 0;
       data->scrollaction      = FALSE;
 
+      RETURN(TRUE);
       return(TRUE);
     }
   }
+
+  RETURN(FALSE);
   return(FALSE);
 }
 
 ULONG Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct InstData *data = INST_DATA(cl, obj);
+  struct InstData *data = INST_DATA(cl, obj);
+
+  ENTER();
 
   DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
+
   if(DoMethod(_app(obj), OM_REMMEMBER, data->SuggestWindow))
   {
     MUI_DisposeObject(data->SuggestWindow);
@@ -297,70 +315,80 @@ ULONG Cleanup(struct IClass *cl, Object *obj, Msg msg)
   }
 
   FreeConfig(data, muiRenderInfo(obj));
+
+#ifdef __AROS__
+  DeinitRastPort(&data->tmprp);
+#endif
+
+  LEAVE();
   return(DoSuperMethodA(cl, obj, msg));
 }
 
-ULONG AskMinMax (struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+ULONG AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
-    struct InstData *data = INST_DATA(cl, obj);
-    UWORD fontheight;
-    struct TextFont *font;
+  struct InstData *data = INST_DATA(cl, obj);
+	struct MUI_MinMax *mi;
+  ULONG fontheight;
 
-  DoSuperMethodA(cl,obj,(Msg)msg);
+  ENTER();
 
-  font = data->font ? data->font : muiAreaData(obj)->mad_Font;
+	// call the supermethod first
+	DoSuperMethodA(cl, obj, (Msg)msg);
+
+	mi = ((struct MUIP_AskMinMax *)msg)->MinMaxInfo;
+
   if(data->Columns)
   {
-    ULONG width = (data->Columns+1) * MyTextLength(font, "n", 1);
-    msg->MinMaxInfo->MinWidth += width;
-    msg->MinMaxInfo->DefWidth += width;
-    msg->MinMaxInfo->MaxWidth += width;
+    // for the font width we take the nominal font width provided by the tf_XSize attribute
+    ULONG width = data->Columns * (data->font ? data->font->tf_XSize : muiAreaData(obj)->mad_Font->tf_XSize);
+
+    mi->MinWidth += width;
+    mi->DefWidth += width;
+    mi->MaxWidth += width;
   }
   else
   {
-    msg->MinMaxInfo->MinWidth += 40;
-    msg->MinMaxInfo->DefWidth += 300;
-#warning "MBQ_MUI_MAXMAX???"
-#ifdef __AROS__
-    msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
-#else    
-    msg->MinMaxInfo->MaxWidth += MBQ_MUI_MAXMAX;
-#endif    
+    mi->MinWidth += 40;
+    mi->DefWidth += 300;
+    mi->MaxWidth = MUI_MAXMAX;
   }
 
-  fontheight = font->tf_YSize;
+  fontheight = data->font ? data->font->tf_YSize : muiAreaData(obj)->mad_Font->tf_YSize;
   if(data->Rows)
   {
     ULONG height = data->Rows * fontheight;
-    msg->MinMaxInfo->MinHeight += height;
-    msg->MinMaxInfo->DefHeight += height;
-    msg->MinMaxInfo->MaxHeight += height;
+
+    mi->MinHeight += height;
+    mi->DefHeight += height;
+    mi->MaxHeight += height;
   }
   else
   {
-    msg->MinMaxInfo->MinHeight +=  1 * fontheight;
-    msg->MinMaxInfo->DefHeight += 15 * fontheight;
-#warning "MBQ_MUI_MAXMAX???"
-#ifdef __AROS__
-    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
-#else    
-    msg->MinMaxInfo->MaxHeight += MBQ_MUI_MAXMAX;
-#endif    
+    mi->MinHeight +=  1 * fontheight;
+    mi->DefHeight += 15 * fontheight;
+    mi->MaxHeight = MUI_MAXMAX;
   }
+
+  RETURN(0);
   return(0);
 }
 
 ULONG Show(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct InstData *data = INST_DATA(cl, obj);
-    struct line_node  *line;
-    struct MUI_AreaData *ad = muiAreaData(obj);
-    LONG  lines = 0;
+  struct InstData *data = INST_DATA(cl, obj);
+  struct line_node  *line;
+  struct MUI_AreaData *ad = muiAreaData(obj);
+  LONG  lines = 0;
+
+  ENTER();
 
   DoSuperMethodA(cl, obj, msg);
 
+  // now we check whether we have a valid font or not
+  // and if not we take the default one of our muiAreaData
   if(!data->font)
-    data->font      = ad->mad_Font;
+    data->font = ad->mad_Font;
+
   data->rport       = muiRenderInfo(obj)->mri_RastPort;
   data->height      = data->font->tf_YSize;
   data->xpos        = ad->mad_Box.Left + ad->mad_addleft;
@@ -399,39 +427,54 @@ ULONG Show(struct IClass *cl, Object *obj, Msg msg)
             MUIA_TextEditor_Prop_Visible,     data->maxlines*data->height,
             TAG_DONE);
 
+  // initialize the doublebuffering rastport
   InitRastPort(&data->doublerp);
   data->doublebuffer = MUIG_AllocBitMap(data->innerwidth+((data->height-data->font->tf_Baseline+1)>>1)+1, data->height, GetBitMapAttr(data->rport->BitMap, BMA_DEPTH), (BMF_CLEAR | BMF_INTERLEAVED), data->rport->BitMap);
   data->doublerp.BitMap = data->doublebuffer;
   SetFont(&data->doublerp, data->font);
+
+  // initialize the copyrp rastport
   data->copyrp = *muiRenderInfo(obj)->mri_RastPort;
   SetFont(&data->copyrp, data->font);
 
-//#ifndef ClassAct
-//  DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
+  // initialize our temporary rastport
+  InitRastPort(&data->tmprp);
+  SetFont(&data->tmprp, data->font);
+
   set(data->SuggestWindow, MUIA_Window_Open, (data->flags & FLG_PopWindow ? TRUE : FALSE));
-//#endif
 
   data->shown   = TRUE;
+
+  RETURN(TRUE);
   return(TRUE);
 }
 
 ULONG Hide(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct InstData *data = INST_DATA(cl, obj);
+  struct InstData *data = INST_DATA(cl, obj);
+
+  ENTER();
 
   data->shown   = FALSE;
 
   nnset(data->SuggestWindow, MUIA_Window_Open, FALSE);
-//  DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
   set(_win(obj), MUIA_Window_DisableKeys, 0L);
   MUIG_FreeBitMap(data->doublebuffer);
-  data->rport   = NULL;
+#ifdef __AROS__
+  DeinitRastPort(&data->doublerp);
+#endif
+  data->doublerp.BitMap = NULL;
+  data->rport = NULL;
+
+  LEAVE();
   return(DoSuperMethodA(cl, obj, msg));
 }
 
 ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct InstData *data = INST_DATA(cl, obj);
+  struct InstData *data = INST_DATA(cl, obj);
+
+  ENTER();
 
   DoSuperMethodA(cl, obj, (Msg)msg);
 
@@ -444,7 +487,7 @@ ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
   if(msg->flags & MADF_DRAWOBJECT)
   {
-      struct MUI_AreaData *ad = muiAreaData(obj);
+    struct MUI_AreaData *ad = muiAreaData(obj);
 
     SetFont(data->rport, data->font);
 
@@ -473,9 +516,9 @@ ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     if(data->flags & FLG_Ghosted)
     {
-        UWORD *oldPattern = data->rport->AreaPtrn;
-        UBYTE oldSize = data->rport->AreaPtSz;
-        UWORD newPattern[] = {0x1111, 0x4444};
+      UWORD *oldPattern = data->rport->AreaPtrn;
+      UBYTE oldSize = data->rport->AreaPtSz;
+      UWORD newPattern[] = {0x1111, 0x4444};
 
       SetDrMd(data->rport, JAM1);
       SetAPen(data->rport, *(_pens(obj)+MPEN_SHADOW));
@@ -485,8 +528,11 @@ ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
       data->rport->AreaPtrn = oldPattern;
       data->rport->AreaPtSz = oldSize;
     }
+
     DumpText(data->visual_y, 0, data->maxlines, FALSE, data);
   }
+
+  RETURN(0);
   return(0);
 }
 
@@ -501,6 +547,8 @@ DISPATCHERPROTO(_Dispatcher)
   UWORD t_pen      = data->Pen;
   BOOL  areamarked  = Enabled(data);
   ULONG result;
+
+  ENTER();
 
 //  kprintf("Method: 0x%lx\n", msg->MethodID);
 //  kprintf("Stack usage: %ld\n", (ULONG)FindTask(NULL)->tc_SPUpper - (ULONG)FindTask(NULL)->tc_SPReg);
@@ -523,27 +571,21 @@ DISPATCHERPROTO(_Dispatcher)
         MUI_Redraw(obj, MADF_DRAWUPDATE);
         result = (ULONG)data->UpdateInfo;
         data->UpdateInfo = NULL;
+
+        RETURN(result);
         return(result);
     }
   }
 
   switch(msg->MethodID)
   {
-    case OM_NEW:
-      return(New(cl, obj, (struct opSet *)msg));
-    case MUIM_Setup:
-      return(Setup(cl, obj, (struct MUI_RenderInfo *)msg));
-    case MUIM_Show:
-      return(Show(cl, obj, msg));
-    case MUIM_AskMinMax:
-      return(AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg));
-    case MUIM_Draw:
-      return(mDraw(cl, obj, (struct MUIP_Draw *)msg));
-    case OM_GET:
-      return(Get(cl, obj, (struct opGet *)msg));
-    case OM_SET:
-      result = Set(cl, obj, (struct opSet *)msg);
-      break;
+    case OM_NEW:          result = New(cl, obj, (struct opSet *)msg); RETURN(result); return(result); break;
+    case MUIM_Setup:      result = Setup(cl, obj, (struct MUI_RenderInfo *)msg); RETURN(result); return(result); break;
+    case MUIM_Show:       result = Show(cl, obj, msg); RETURN(result); return(result); break;
+    case MUIM_AskMinMax:  result = AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg); RETURN(result); return(result); break;
+    case MUIM_Draw:       result = mDraw(cl, obj, (struct MUIP_Draw *)msg); RETURN(result); return(result); break;
+    case OM_GET:          result = Get(cl, obj, (struct opGet *)msg); RETURN(result); return(result); break;
+    case OM_SET:          result = Set(cl, obj, (struct opSet *)msg); break;
     case MUIM_HandleEvent:
     {
       ULONG oldx = data->CPos_X;
@@ -552,7 +594,10 @@ DISPATCHERPROTO(_Dispatcher)
 
       result = HandleInput(cl, obj, (struct MUIP_HandleEvent *)msg);
       if(result == 0)
+      {
+        RETURN(0);
         return(0);
+      }
 
       data->NoNotify = TRUE;
       
@@ -568,52 +613,43 @@ DISPATCHERPROTO(_Dispatcher)
     }
     break;
 
-//#ifndef ClassAct
     case MUIM_GoActive:
-      data->flags |= FLG_Active;
+    {
+      // set the gadgets flags to active and also "activated" so that
+      // other functions know that the gadget was activated recently.
+      data->flags |= (FLG_Active | FLG_Activated);
 
-/*      DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-      data->ehnode.ehn_Events |= IDCMP_RAWKEY;
-      DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
-*/      if(data->shown)
+      if(data->shown)
       {
         SetCursor(data->CPos_X, data->actualline, TRUE, data);
         if(!(data->flags & FLG_ReadOnly))
           set(_win(obj), MUIA_Window_DisableKeys, MUIKEYF_GADGET_NEXT);
       }
-/*      else
-      {
-        data->ehnode.ehn_Events   |= IDCMP_RAWKEY;// | IDCMP_MOUSEMOVE;
-      }
-*/
+
       if(data->BlinkSpeed == 1)
       {
         DoMethod(_app(obj), MUIM_Application_AddInputHandler, &data->blinkhandler);
         data->BlinkSpeed = 2;
       }
 
-//      if(data->flags & FLG_ReadOnly)
-        DoSuperMethodA(cl, obj, msg);
+      DoSuperMethodA(cl, obj, msg);
+
+      RETURN(TRUE);
       return(TRUE);
+    }
+    break;
 
     case MUIM_GoInactive:
+    {
+      // clear the active and activated flag so that others know about it
       data->flags &= ~FLG_Active;
+      data->flags &= ~FLG_Activated;
 
-//      if(~data->flags & FLG_ReadOnly)
-/*      {
-        DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-        data->ehnode.ehn_Events &= ~IDCMP_RAWKEY;
-        DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
-      }
-*/      if(data->shown)
+      if(data->shown)
       {
         set(_win(obj), MUIA_Window_DisableKeys, 0L);
       }
-/*      else
-      {
-        data->ehnode.ehn_Events   &= ~(IDCMP_RAWKEY | IDCMP_VANILLAKEY);
-      }
-*/
+
       if(data->mousemove)
       {
         data->mousemove = FALSE;
@@ -630,54 +666,39 @@ DISPATCHERPROTO(_Dispatcher)
       }
       SetCursor(data->CPos_X, data->actualline, FALSE, data);
 
-//      if(data->flags & FLG_ReadOnly)
-        DoSuperMethodA(cl, obj, msg);
+      DoSuperMethodA(cl, obj, msg);
+
+      RETURN(TRUE);
       return(TRUE);
-//#endif
+    }
+    break;
 
-    case MUIM_Hide:
-      return(Hide(cl, obj, msg));
-    case MUIM_Cleanup:
-      return(Cleanup(cl, obj, msg));
-    case OM_DISPOSE:
-      return(Dispose(cl, obj, msg));
-    case MUIM_TextEditor_ClearText:
-      result = ClearText(data);
-      break;
-    case MUIM_TextEditor_ToggleCursor:
-      return(ToggleCursor(data));
-    case MUIM_TextEditor_InputTrigger:
-      result = InputTrigger(cl, data);
-      break;
+    case MUIM_Hide:                     result = Hide(cl, obj, msg); RETURN(result); return(result); break;
+    case MUIM_Cleanup:                  result = Cleanup(cl, obj, msg); RETURN(result); return(result); break;
+    case OM_DISPOSE:                    result = Dispose(cl, obj, msg); RETURN(result); return(result); break;
+    case MUIM_TextEditor_ClearText:     result = ClearText(data); break;
+    case MUIM_TextEditor_ToggleCursor:  result = ToggleCursor(data); RETURN(result); return(result); break;
+    case MUIM_TextEditor_InputTrigger:  result = InputTrigger(cl, data);  break;
     case MUIM_TextEditor_InsertText:
-      {
-          struct marking block;
+    {
+      struct MUIP_TextEditor_InsertText *ins_msg = (struct MUIP_TextEditor_InsertText *)msg;
+      struct marking block;
 
-        block.startx = data->CPos_X,
-        block.startline = data->actualline,
-        result = InsertText(data, (STRPTR)*((long *)msg+1), TRUE);
-        block.stopx = data->CPos_X,
-        block.stopline = data->actualline,
-        AddToUndoBuffer(pasteblock, (char *)&block, data);
-        break;
-      }
-    case MUIM_TextEditor_ExportText:
-      return((ULONG)ExportText(data->firstline, data->ExportHook, data->ExportWrap));
-    case MUIM_TextEditor_ARexxCmd:
-      result = HandleARexx(data, (char *)*((long *)msg+1));
-      break;
-    case MUIM_TextEditor_MarkText:
-      result = OM_MarkText((struct MUIP_TextEditor_MarkText *)msg, data);
-      break;
-    case MUIM_TextEditor_BlockInfo:
-      result = OM_BlockInfo((struct MUIP_TextEditor_BlockInfo *)msg, data);
-      break;
-    case MUIM_TextEditor_Search:
-      result = OM_Search((struct MUIP_TextEditor_Search *)msg, data);
-      break;
-    case MUIM_TextEditor_Replace:
-      result = OM_Replace(obj, (struct MUIP_TextEditor_Replace *)msg, data);
-      break;
+      block.startx = data->CPos_X;
+      block.startline = data->actualline;
+      result = InsertText(data, ins_msg->text, TRUE);
+      block.stopx = data->CPos_X;
+      block.stopline = data->actualline;
+      AddToUndoBuffer(pasteblock, (char *)&block, data);
+    }
+    break;
+
+    case MUIM_TextEditor_ExportText:  result = (ULONG)ExportText(data->firstline, data->ExportHook, data->ExportWrap); RETURN(result); return(result); break;
+    case MUIM_TextEditor_ARexxCmd:    result = HandleARexx(data, (char *)*((long *)msg+1)); break;
+    case MUIM_TextEditor_MarkText:    result = OM_MarkText((struct MUIP_TextEditor_MarkText *)msg, data); break;
+    case MUIM_TextEditor_BlockInfo:   result = OM_BlockInfo((struct MUIP_TextEditor_BlockInfo *)msg, data); break;
+    case MUIM_TextEditor_Search:      result = OM_Search((struct MUIP_TextEditor_Search *)msg, data); break;
+    case MUIM_TextEditor_Replace:     result = OM_Replace(obj, (struct MUIP_TextEditor_Replace *)msg, data); break;
 
     case MUIM_Export:
     {
@@ -713,7 +734,12 @@ DISPATCHERPROTO(_Dispatcher)
     break;
 
     default:
-      return(DoSuperMethodA(cl, obj, msg));
+    {
+      result = DoSuperMethodA(cl, obj, msg);
+
+      RETURN(result);
+      return(result);
+    }
   }
 
   if(t_haschanged != data->HasChanged)
@@ -723,11 +749,15 @@ DISPATCHERPROTO(_Dispatcher)
 
   if(msg->MethodID == OM_SET)
   {
-      ULONG newresult = DoSuperMethodA(cl, obj, msg);
+    ULONG newresult = DoSuperMethodA(cl, obj, msg);
 
     if(result)
-        result = newresult;
-    else  return(newresult);
+      result = newresult;
+    else
+    {
+      RETURN(newresult);
+      return(newresult);
+    }
   }
 
   if((data->visual_y != t_visual_y) || (data->totallines != t_totallines))
@@ -746,7 +776,7 @@ DISPATCHERPROTO(_Dispatcher)
   data->NoNotify = TRUE;
   if(Enabled(data))
   {
-      struct marking newblock;
+    struct marking newblock;
 
     NiceBlock(&data->blockinfo, &newblock);
     data->Pen = GetColor(data->blockinfo.stopx - ((data->blockinfo.stopx && newblock.startx == data->blockinfo.startx && newblock.startline == data->blockinfo.startline) ? 1 : 0), data->blockinfo.stopline);
@@ -778,11 +808,10 @@ DISPATCHERPROTO(_Dispatcher)
   data->NoNotify = FALSE;
   UpdateStyles(data);
 
-//  kprintf("               result 0x%lx\n", result);
+  RETURN(result);
   return(result);
   
   DISPATCHER_EXIT
 }
 
 #endif
-

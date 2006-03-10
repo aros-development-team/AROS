@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: CreatePrefsGroup.c,v 1.5 2005/04/11 03:04:38 tactica Exp $
+ $Id: CreatePrefsGroup.c,v 1.8 2005/08/03 12:48:53 gnikl Exp $
 
 ***************************************************************************/
 
@@ -26,10 +26,8 @@
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 #include <libraries/mui.h>
-
 #include <MUI/BetterString_mcc.h>
 #include <MUI/HotkeyString_mcc.h>
-
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -51,8 +49,11 @@ HOOKPROTONH(ListDisplayFunc, void, char **array, struct te_key *entry)
 #endif
 {
   HOOK_INIT
+  
   static char buffer[118];
   struct KeyAction ka;
+
+  ENTER();
 
   if(entry)
   {
@@ -79,6 +80,9 @@ HOOKPROTONH(ListDisplayFunc, void, char **array, struct te_key *entry)
     *array++ = "";
     *array = GetStr(MSG_LVLabel_Action);
   }
+
+  LEAVE();
+  
   HOOK_EXIT
 }
 MakeStaticHook(ListDisplayHook, ListDisplayFunc);
@@ -90,14 +94,19 @@ HOOKPROTONH(ListConstructFunc, APTR, APTR pool, struct te_key *entry)
 #endif
 {
   HOOK_INIT
-  struct te_key *newplace = AllocPooled(pool, sizeof(struct te_key));
 
+  struct te_key *newplace;
+  ENTER();
+
+  newplace = AllocPooled(pool, sizeof(struct te_key));
   if(newplace)
   {
     CopyMem(entry, newplace, sizeof(struct te_key));
   }
 
+  RETURN(newplace);
   return(newplace);
+  
   HOOK_EXIT
 }
 MakeStaticHook(ListConstructHook, ListConstructFunc);
@@ -109,7 +118,11 @@ HOOKPROTONH(ListDestructFunc, void, APTR pool, struct te_key *entry)
 #endif
 {
   HOOK_INIT
+  
+  ENTER();
   FreePooled(pool, entry, sizeof(struct te_key));
+  LEAVE();
+  
   HOOK_EXIT
 }
 MakeStaticHook(ListDestructHook, ListDestructFunc);
@@ -121,7 +134,11 @@ HOOKPROTONH(Popstring_WindowCode, void, Object *pop, Object *win)
 #endif
 {
   HOOK_INIT
+  
+  ENTER();
   set(win, MUIA_Window_DefaultObject, pop);
+  LEAVE();
+  
   HOOK_EXIT
 }
 MakeStaticHook(Popstring_WindowHook, Popstring_WindowCode);
@@ -133,12 +150,16 @@ HOOKPROTONH(Popstring_OpenCode, BOOL, Object *pop, Object *text)
 #endif
 {
   HOOK_INIT
+  
   LONG active;
+  ENTER();
 
   get(text, MUIA_UserData, &active);
   set(pop, MUIA_List_Active, active);
   
+  RETURN(TRUE);
   return(TRUE);
+  
   HOOK_EXIT
 }
 MakeStaticHook(Popstring_OpenHook, Popstring_OpenCode);
@@ -150,10 +171,15 @@ HOOKPROTONH(Popstring_CloseCode, void, Object *pop, Object *text)
 #endif
 {
   HOOK_INIT
+  
   LONG active;
+  ENTER();
 
   get(pop, MUIA_List_Active, &active);
   set(text, MUIA_UserData, active);
+
+  LEAVE();
+  
   HOOK_EXIT
 }
 MakeStaticHook(Popstring_CloseHook, Popstring_CloseCode);
@@ -165,10 +191,12 @@ HOOKPROTONHNO(InsertCode, void, APTR **array)
 #endif
 {
   HOOK_INIT
-  
+
   static const struct te_key constentry = {76, 0, 0};
   Object *keylist = (Object *)*array++;
   ULONG entry;
+
+  ENTER();
 
   get(keylist, MUIA_List_Active, &entry);
 
@@ -179,6 +207,8 @@ HOOKPROTONHNO(InsertCode, void, APTR **array)
 
   DoMethod(keylist, MUIM_List_InsertSingle, &constentry, entry);
   set(keylist, MUIA_List_Active, entry);
+
+  LEAVE();
   
   HOOK_EXIT
 }
@@ -191,15 +221,18 @@ HOOKPROTONHNO(SelectCode, void, APTR **array)
 #endif
 {
   HOOK_INIT
+  
   struct InstData_MCP *data = (struct InstData_MCP *)*array++;
   Object *keylist = (Object *)*array++;
   struct te_key *entry;
+
+  ENTER();
 
   DoMethod(keylist, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &entry);
   
   if(entry)
   {
-    UBYTE buffer[100];
+    char buffer[100];
     struct KeyAction ka;
     ULONG result;
 
@@ -220,6 +253,9 @@ HOOKPROTONHNO(SelectCode, void, APTR **array)
     KeyToString(buffer, &ka);
     nnset(data->hotkey, MUIA_String_Contents, buffer);
   }
+
+  LEAVE();
+  
   HOOK_EXIT
 }
 MakeStaticHook(SelectHook, SelectCode);
@@ -237,6 +273,8 @@ HOOKPROTONHNO(UpdateCode, void, APTR **array)
   struct te_key entry;
   ULONG result;
   ULONG active;
+
+  ENTER();
 
   get(keylist, MUIA_List_Active, &active);
   
@@ -274,13 +312,15 @@ HOOKPROTONHNO(UpdateCode, void, APTR **array)
                 MUIA_NoNotify,    TRUE,
                 TAG_DONE);
   }
+
+  LEAVE();
+  
   HOOK_EXIT
 }
 MakeStaticHook(UpdateHook, UpdateCode);
 
 static APTR TxtLabel (STRPTR text, ULONG weight)
 {
-
 /*    APTR result = TextEditorObject,
         MUIA_Background, MUII_GroupBack,
         MUIA_TextEditor_ReadOnly, TRUE,
@@ -308,39 +348,47 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
          *editor, *keylist, *defaultkeys, *functionname,
          *plist, *popbutton;
 
-  struct NewMenu editpopupdata[] =
+  struct NewMenu *nm, editpopupdata[] =
   {
-    { NM_TITLE, GetStr(MSG_MenuTitle_Edit),    0, 0, 0, (APTR)0 },
-    { NM_ITEM,  GetStr(MSG_MenuItem_Cut),       NULL, NM_COMMANDSTRING, 0, (APTR)1 },
-    { NM_ITEM,  GetStr(MSG_MenuItem_Copy),     NULL, NM_COMMANDSTRING, 0, (APTR)2 },
-    { NM_ITEM,  GetStr(MSG_MenuItem_Paste),   NULL, NM_COMMANDSTRING, 0, (APTR)3 },
-    { NM_ITEM,  GetStr(MSG_MenuItem_Delete), NULL, NM_COMMANDSTRING, 0, (APTR)4 },
+    { NM_TITLE, MSG_MenuTitle_Edit,    0, 0, 0, (APTR)0 },
+    { NM_ITEM,  MSG_MenuItem_Cut,       NULL, NM_COMMANDSTRING, 0, (APTR)1 },
+    { NM_ITEM,  MSG_MenuItem_Copy,     NULL, NM_COMMANDSTRING, 0, (APTR)2 },
+    { NM_ITEM,  MSG_MenuItem_Paste,   NULL, NM_COMMANDSTRING, 0, (APTR)3 },
+    { NM_ITEM,  MSG_MenuItem_Delete, NULL, NM_COMMANDSTRING, 0, (APTR)4 },
     { NM_ITEM,  NM_BARLABEL, 0, 0, 0, (APTR)0 },
-    { NM_ITEM,  GetStr(MSG_MenuItem_Undo), NULL, NM_COMMANDSTRING, 0, (APTR)5 },
-    { NM_ITEM,  GetStr(MSG_MenuItem_Redo), NULL, NM_COMMANDSTRING, 0, (APTR)6 },
+    { NM_ITEM,  MSG_MenuItem_Undo, NULL, NM_COMMANDSTRING, 0, (APTR)5 },
+    { NM_ITEM,  MSG_MenuItem_Redo, NULL, NM_COMMANDSTRING, 0, (APTR)6 },
     { NM_ITEM,  NM_BARLABEL, 0, 0, 0, (APTR)0 },
-    { NM_ITEM,  GetStr(MSG_MenuItem_Bold), NULL, NM_COMMANDSTRING | CHECKIT|MENUTOGGLE, 0, (APTR)7 },
-    { NM_ITEM,  GetStr(MSG_MenuItem_Italic), NULL, NM_COMMANDSTRING | CHECKIT|MENUTOGGLE, 0, (APTR)8 },
-    { NM_ITEM,  GetStr(MSG_MenuItem_Underline), NULL, NM_COMMANDSTRING | CHECKIT|MENUTOGGLE, 0, (APTR)9 },
+    { NM_ITEM,  MSG_MenuItem_Bold, NULL, NM_COMMANDSTRING | CHECKIT|MENUTOGGLE, 0, (APTR)7 },
+    { NM_ITEM,  MSG_MenuItem_Italic, NULL, NM_COMMANDSTRING | CHECKIT|MENUTOGGLE, 0, (APTR)8 },
+    { NM_ITEM,  MSG_MenuItem_Underline, NULL, NM_COMMANDSTRING | CHECKIT|MENUTOGGLE, 0, (APTR)9 },
     { NM_ITEM,  NM_BARLABEL, 0, 0, 0, (APTR)0 },
-    { NM_ITEM,  GetStr(MSG_MenuSubTitle_Alignment), 0, 0, 0, (APTR)0 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Left), NULL, NM_COMMANDSTRING | CHECKIT|CHECKED, ~1, (APTR)10 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Center), NULL, NM_COMMANDSTRING | CHECKIT, ~2, (APTR)11 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Right), NULL, NM_COMMANDSTRING | CHECKIT, ~4, (APTR)12 },
+    { NM_ITEM,  MSG_MenuSubTitle_Alignment, 0, 0, 0, (APTR)0 },
+    { NM_SUB,   MSG_MenuItem_Left, NULL, NM_COMMANDSTRING | CHECKIT|CHECKED, ~1, (APTR)10 },
+    { NM_SUB,   MSG_MenuItem_Center, NULL, NM_COMMANDSTRING | CHECKIT, ~2, (APTR)11 },
+    { NM_SUB,   MSG_MenuItem_Right, NULL, NM_COMMANDSTRING | CHECKIT, ~4, (APTR)12 },
 
-    { NM_ITEM,  GetStr(MSG_MenuSubTitle_Color), 0, 0, 0, (APTR)0 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Normal), NULL, NM_COMMANDSTRING | CHECKIT|CHECKED, ~1, (APTR)13 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Shine), NULL, NM_COMMANDSTRING | CHECKIT, ~2, (APTR)14 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Halfshine), NULL, NM_COMMANDSTRING | CHECKIT, ~4, (APTR)15 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Background), NULL, NM_COMMANDSTRING | CHECKIT, ~8, (APTR)16 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Halfshadow), NULL, NM_COMMANDSTRING | CHECKIT, ~16, (APTR)17 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Shadow), NULL, NM_COMMANDSTRING | CHECKIT, ~32, (APTR)18 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Text), NULL, NM_COMMANDSTRING | CHECKIT, ~64, (APTR)19 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Fill), NULL, NM_COMMANDSTRING | CHECKIT, ~128, (APTR)20 },
-    { NM_SUB,   GetStr(MSG_MenuItem_Mark), NULL, NM_COMMANDSTRING | CHECKIT, ~256, (APTR)21 },
+    { NM_ITEM,  MSG_MenuSubTitle_Color, 0, 0, 0, (APTR)0 },
+    { NM_SUB,   MSG_MenuItem_Normal, NULL, NM_COMMANDSTRING | CHECKIT|CHECKED, ~1, (APTR)13 },
+    { NM_SUB,   MSG_MenuItem_Shine, NULL, NM_COMMANDSTRING | CHECKIT, ~2, (APTR)14 },
+    { NM_SUB,   MSG_MenuItem_Halfshine, NULL, NM_COMMANDSTRING | CHECKIT, ~4, (APTR)15 },
+    { NM_SUB,   MSG_MenuItem_Background, NULL, NM_COMMANDSTRING | CHECKIT, ~8, (APTR)16 },
+    { NM_SUB,   MSG_MenuItem_Halfshadow, NULL, NM_COMMANDSTRING | CHECKIT, ~16, (APTR)17 },
+    { NM_SUB,   MSG_MenuItem_Shadow, NULL, NM_COMMANDSTRING | CHECKIT, ~32, (APTR)18 },
+    { NM_SUB,   MSG_MenuItem_Text, NULL, NM_COMMANDSTRING | CHECKIT, ~64, (APTR)19 },
+    { NM_SUB,   MSG_MenuItem_Fill, NULL, NM_COMMANDSTRING | CHECKIT, ~128, (APTR)20 },
+    { NM_SUB,   MSG_MenuItem_Mark, NULL, NM_COMMANDSTRING | CHECKIT, ~256, (APTR)21 },
 
     { NM_END,   NULL, 0, 0, 0, (APTR)0 }
   };
+
+  ENTER();
+
+  nm = editpopupdata;
+  do {
+    if (nm->nm_Label != NM_BARLABEL)
+      nm->nm_Label = GetStr(nm->nm_Label);
+  } while (++nm,nm->nm_Type != NM_END);
 
   data->editpopup = MUI_MakeObject(MUIO_MenustripNM, editpopupdata, NULL);
 
@@ -672,7 +720,7 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
 
     DoMethod(data->insertkey, MUIM_Notify,
         MUIA_Pressed, FALSE,
-        MUIV_Notify_Self, 4, MUIM_CallHook, &InsertHook, data, keylist);
+        MUIV_Notify_Self, 3, MUIM_CallHook, &InsertHook, keylist);
 
     DoMethod(keylist, MUIM_Notify,
         MUIA_List_Active, MUIV_EveryTime,
@@ -789,5 +837,6 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
     DoMethod(editor, MUIM_Notify, MUIA_TextEditor_RedoAvailable, MUIV_EveryTime, (Object *)DoMethod(data->editpopup,MUIM_FindUData, 6), 3, MUIM_Set, MUIA_Menuitem_Enabled, MUIV_TriggerValue);
   }
 
+  RETURN(group);
   return(group);
 }

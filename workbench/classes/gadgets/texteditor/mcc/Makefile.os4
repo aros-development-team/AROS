@@ -16,7 +16,7 @@
 #
 # TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 #
-# $Id: Makefile.os4,v 1.2 2005/04/10 08:23:48 damato Exp $
+# $Id: Makefile.os4,v 1.5 2005/06/12 08:11:45 damato Exp $
 #
 #***************************************************************************/
 
@@ -38,12 +38,12 @@ CPUFLAGS = -mmultiple
 CDEFS    = -D__TE_VERDATE=\"`date +%d.%m.%Y`\" -D__TE_VERDAYS="`expr \`date +%s\` / 86400 - 2922`"
 WARN     = -W -Wall
 OPTFLAGS = -O3 -finline-functions -fomit-frame-pointer -funroll-loops
-DEBUG    = -DWITH_DEBUG -g -O0
+DEBUG    = -DDEBUG -g -O0
 REDEFINE =
 CFLAGS   = -I. -I../mcp -I../includes $(CPU) $(CPUFLAGS) $(WARN) $(OPTFLAGS) $(DEBUG)\
            -D__USE_INLINE__ $(REDEFINE) -c
-LDFLAGS  = -nostartfiles
-LDLIBS   =
+LDFLAGS  = -nostartfiles $(CPU)
+LDLIBS   = -ldebug
 
 # CPU and DEBUG can be defined outside, defaults to above
 # using e.g. "make DEBUG= CPU=-mcpu=603e" produces optimized non-debug PPC-603e version
@@ -65,6 +65,7 @@ MCCOBJS = $(OBJDIR)/library.o \
           $(OBJDIR)/BlockOperators.o \
           $(OBJDIR)/CaseConversion.o \
           $(OBJDIR)/ColorOperators.o \
+          $(OBJDIR)/Debug.o \
           $(OBJDIR)/Dispatcher.o \
           $(OBJDIR)/EditorStuff.o \
           $(OBJDIR)/ExportHook.o \
@@ -83,7 +84,6 @@ MCCOBJS = $(OBJDIR)/library.o \
           $(OBJDIR)/Search.o \
           $(OBJDIR)/SpellChecker.o \
           $(OBJDIR)/StyleOperators.o \
-          $(OBJDIR)/TextFunctions.o \
           $(OBJDIR)/UndoFunctions.o
 
 TESTOBJS= $(OBJDIR)/TextEditor-Test.o \
@@ -92,6 +92,7 @@ TESTOBJS= $(OBJDIR)/TextEditor-Test.o \
           $(OBJDIR)/BlockOperators.o \
           $(OBJDIR)/CaseConversion.o \
           $(OBJDIR)/ColorOperators.o \
+          $(OBJDIR)/Debug.o \
           $(OBJDIR)/Dispatcher.o \
           $(OBJDIR)/EditorStuff.o \
           $(OBJDIR)/ExportHook.o \
@@ -110,7 +111,6 @@ TESTOBJS= $(OBJDIR)/TextEditor-Test.o \
           $(OBJDIR)/Search.o \
           $(OBJDIR)/SpellChecker.o \
           $(OBJDIR)/StyleOperators.o \
-          $(OBJDIR)/TextFunctions.o \
           $(OBJDIR)/UndoFunctions.o
 
 #

@@ -16,34 +16,89 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: AllocFunctions.c,v 1.1 2005/03/28 11:29:48 damato Exp $
+ $Id: AllocFunctions.c,v 1.5 2005/08/08 15:02:31 damato Exp $
 
 ***************************************************************************/
 
 #include <proto/exec.h>
 
-void *MyAllocPooled(void *pool, unsigned long length)
-{
-  long *mem;
+#include "private.h"
 
-  if((mem = AllocPooled(pool, length+4)))
+#include "Debug.h"
+
+APTR MyAllocPooled(APTR pool, ULONG length)
+{
+  ULONG *mem;
+
+  ENTER();
+
+  length += sizeof(ULONG);
+  if((mem = AllocPooled(pool, length)))
   {
-    *mem = length+4;
+    *mem = length;
     mem += 1;
-    
-    return(mem);
   }
-  else
-    return(NULL);
+
+  RETURN(mem);
+  return(mem);
 }
 
-void MyFreePooled(void *pool, void *mem)
+VOID MyFreePooled(APTR pool, APTR mem)
 {
-  long *memptr = (long *)mem;
-  long length;
+  ULONG *memptr, length;
 
-  memptr -= 1;
-  length = *(memptr);
+  ENTER();
+
+  memptr = &((ULONG *)mem)[-1];
+  length = *memptr;
 
   FreePooled(pool, memptr, length);
+
+  LEAVE();
+}
+
+struct line_node *AllocLine(struct InstData *data)
+{
+  struct line_node *newline;
+
+  ENTER();
+
+  newline = AllocPooled(data->mypool, sizeof(struct line_node));
+
+  RETURN(newline);
+  return newline;
+}
+
+void FreeLine(struct line_node* line, struct InstData *data)
+{
+  ENTER();
+
+  // we make sure the line is not references by other
+  // structures as well such as the global blockinfo structure.
+  if(data->blockinfo.startline == line)
+  {
+    if(line->next)
+      data->blockinfo.startline = line->next;
+    else
+    {
+      data->blockinfo.startline = NULL;
+      data->blockinfo.enabled = FALSE;
+    }
+  }
+
+  if(data->blockinfo.stopline == line)
+  {
+    if(line->previous)
+      data->blockinfo.stopline = line->previous;
+    else
+    {
+      data->blockinfo.stopline = NULL;
+      data->blockinfo.enabled = FALSE;
+    }
+  }
+
+  // lets use FreePooled to free the memory of the line
+  FreePooled(data->mypool, line, sizeof(struct line_node));
+
+  LEAVE();
 }

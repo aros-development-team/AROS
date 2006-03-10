@@ -191,46 +191,46 @@ static const char UserLibName[] = CLASS;
 /* Here's our global data, described above. */
 
 #if defined(__amigaos4__)
-struct Library *MUIMasterBase;
-struct Library *SysBase;
-struct Library *UtilityBase;
-struct Library *DOSBase;
-struct Library *GfxBase;
-struct Library *IntuitionBase;
-struct MUIMasterIFace *IMUIMaster;
-struct ExecIFace *IExec;
-struct UtilityIFace *IUtility;
-struct DOSIFace *IDOS;
-struct GraphicsIFace *IGraphics;
-struct IntuitionIFace *IIntuition;
+struct Library *MUIMasterBase = NULL;
+struct Library *SysBase       = NULL;
+struct Library *UtilityBase   = NULL;
+struct Library *DOSBase       = NULL;
+struct Library *GfxBase       = NULL;
+struct Library *IntuitionBase = NULL;
+struct MUIMasterIFace *IMUIMaster = NULL;
+struct ExecIFace *IExec           = NULL;
+struct UtilityIFace *IUtility     = NULL;
+struct DOSIFace *IDOS             = NULL;
+struct GraphicsIFace *IGraphics   = NULL;
+struct IntuitionIFace *IIntuition = NULL;
 #else
-struct Library        *MUIMasterBase;
-struct ExecBase       *SysBase;
-struct Library        *UtilityBase;
-struct DosLibrary     *DOSBase;
-struct GfxBase        *GfxBase;
-struct IntuitionBase  *IntuitionBase;
+struct Library        *MUIMasterBase = NULL;
+struct ExecBase       *SysBase       = NULL;
+struct Library        *UtilityBase   = NULL;
+struct DosLibrary     *DOSBase       = NULL;
+struct GfxBase        *GfxBase       = NULL;
+struct IntuitionBase  *IntuitionBase = NULL;
 #endif
 
 #ifdef SUPERCLASS
-static struct MUI_CustomClass *ThisClass;
+static struct MUI_CustomClass *ThisClass = NULL;
 #endif
 
 #ifdef SUPERCLASSP
-static struct MUI_CustomClass *ThisClassP;
+static struct MUI_CustomClass *ThisClassP = NULL;
 #endif
 
 #ifdef __GNUC__
   #ifdef USE_UTILITYBASE
-  struct Library *__UtilityBase; // required by libnix & clib2
+  struct Library *__UtilityBase = NULL; // required by libnix & clib2
   #endif
   #ifdef __libnix__
     /* these one are needed copies for libnix.a */
     #ifdef USE_MATHIEEEDOUBBASBASE
-    struct Library *__MathIeeeDoubBasBase;
+    struct Library *__MathIeeeDoubBasBase = NULL;
     #endif
     #ifdef USE_MATHIEEEDOUBTRANSBASE
-    struct Library *__MathIeeeDoubTransBase;
+    struct Library *__MathIeeeDoubTransBase = NULL;
     #endif
   #endif
 #endif /* __GNUC__ */
@@ -468,7 +468,7 @@ struct LibraryHeader * ASM SAVEDS LibInit(struct LibraryHeader *base, BPTR libra
   IExec = pIExec;
   SysBase = (struct Library *)sb;
 
-  D(bug("start... (segment=%08lx)\n",librarySegment));
+  D(DBF_STARTUP, "start... (segment=%08lx)", librarySegment);
 
   base->lh_Library.lib_Node.ln_Type = NT_LIBRARY;
   base->lh_Library.lib_Node.ln_Pri  = 0;
@@ -513,7 +513,7 @@ struct LibraryHeader * ASM SAVEDS LibInit(REG(a0, BPTR Segment), REG(a6, struct 
 
   SysBase = sb;
 
-  D(bug( "Start...\n" ) );
+  D(DBF_STARTUP, "Start..." );
 
   // make sure that this is really a 68020+ machine if optimized for 020+
   #if _M68060 || _M68040 || _M68030 || _M68020 || __mc68020 || __mc68030 || __mc68040 || __mc68060
@@ -529,13 +529,13 @@ struct LibraryHeader * ASM SAVEDS LibInit(REG(a0, BPTR Segment), REG(a6, struct 
   stack->stk_Upper  = (ULONG)( (ULONG)stack->stk_Lower + 8192 );
   stack->stk_Pointer  = (APTR)stack->stk_Upper;
 
-  D(bug( "Before StackSwap()\n" ) );
+  D(DBF_STARTUP, "Before StackSwap()");
   StackSwap( stack );
   #endif
 
   if((base = (struct LibraryHeader *)MakeLibrary((APTR)LibVectors,NULL,NULL,sizeof(struct LibraryHeader),NULL)))
   {
-    D(bug( "After MakeLibrary()\n" ) );
+    D(DBF_STARTUP, "After MakeLibrary()");
 
     base->lh_Library.lib_Node.ln_Type = NT_LIBRARY;
     base->lh_Library.lib_Node.ln_Name = (char *)UserLibName;
@@ -556,7 +556,7 @@ struct LibraryHeader * ASM SAVEDS LibInit(REG(a0, BPTR Segment), REG(a6, struct 
 
     //if(UserLibInit((struct Library *)base))
     {
-      D(bug( "AddLibrary()\n") );
+      D(DBF_STARTUP, "AddLibrary()");
       AddLibrary((struct Library *)base);
     }
     /*else
@@ -568,13 +568,13 @@ struct LibraryHeader * ASM SAVEDS LibInit(REG(a0, BPTR Segment), REG(a6, struct 
   }
   else
   {
-    D(bug("\7MakeLibrary() failed\n") );
+    D(DBF_STARTUP, "\7MakeLibrary() failed");
   }
 
   #if defined(CLASS_STACKSWAP)
   StackSwap(base->lh_Stack);
   FreeMem(base->lh_Stack, sizeof(struct StackSwapStruct) + 8192);
-  D(bug( "After second StackSwap()\n" ) );
+  D(DBF_STARTUP, "After second StackSwap()");
   #endif
 
   return(base);
@@ -598,19 +598,19 @@ BPTR ASM SAVEDS LibExpunge(REG(a6, struct LibraryHeader *base))
 #endif
   BPTR rc;
 
-  D(bug( "OpenCount = %ld\n", base->lh_Library.lib_OpenCnt ) );
+  D(DBF_STARTUP, "OpenCount = %ld", base->lh_Library.lib_OpenCnt);
 
   if(base->lh_Library.lib_OpenCnt > 0)
   {
     base->lh_Library.lib_Flags |= LIBF_DELEXP;
-    D(bug("Setting LIBF_DELEXP\n") );
+    D(DBF_STARTUP, "Setting LIBF_DELEXP");
     return(0);
   }
 
   /*
   if(!UserLibExpunge(&base->lh_Library))
   {
-    D(bug("UserLibExpunge() failed, setting LIBF_DELEXP\n"));
+    D(DBF_STARTUP, "UserLibExpunge() failed, setting LIBF_DELEXP");
     base->lh_Library.lib_Flags |= LIBF_DELEXP;
     return(0);
   }
@@ -650,7 +650,7 @@ struct LibraryHeader * ASM SAVEDS LibOpen(REG(a6, struct LibraryHeader *base))
 
   base->lh_Library.lib_OpenCnt++;
 
-  D(bug( "OpenCount = %ld\n", base->lh_Library.lib_OpenCnt ) );
+  D(DBF_STARTUP, "OpenCount = %ld", base->lh_Library.lib_OpenCnt);
 
   if(UserLibOpen(&base->lh_Library))
   {
@@ -665,7 +665,7 @@ struct LibraryHeader * ASM SAVEDS LibOpen(REG(a6, struct LibraryHeader *base))
   {
     rc = NULL;
     base->lh_Library.lib_OpenCnt--;
-    D(bug("\7UserLibOpen() failed\n") );
+    D(DBF_STARTUP, "\7UserLibOpen() failed");
   }
 
   #ifdef USE_SEMAPHORE
@@ -696,7 +696,7 @@ BPTR ASM SAVEDS LibClose(REG(a6, struct LibraryHeader *base))
   ObtainSemaphore(&base->lh_Semaphore);
   #endif
 
-  D(bug( "OpenCount = %ld %s\n", base->lh_Library.lib_OpenCnt, base->lh_Library.lib_OpenCnt == 0 ? "\7ERROR" : "" ) );
+  D(DBF_STARTUP, "OpenCount = %ld %s", base->lh_Library.lib_OpenCnt, base->lh_Library.lib_OpenCnt == 0 ? "\7ERROR" : "");
 
   UserLibClose((struct Library *)base);
 
@@ -737,7 +737,7 @@ BOOL UserLibOpen(struct Library *base)
   BOOL PreClassInitFunc(void);
   BOOL ClassInitFunc(struct Library *base);
 
-  D(bug( "OpenCount = %ld\n", base->lib_OpenCnt ) );
+  D(DBF_STARTUP, "OpenCount = %ld", base->lib_OpenCnt);
 
   if (base->lib_OpenCnt!=1)
     return(TRUE);
@@ -746,7 +746,7 @@ BOOL UserLibOpen(struct Library *base)
   #define MASTERVERSION MUIMASTER_VMIN
   #endif
 
-  if((MUIMasterBase = OpenLibrary("muimaster.library", MASTERVERSION)) &&
+  if((MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MASTERVERSION)) &&
      GETINTERFACE(IMUIMaster, MUIMasterBase))
   {
   	    #ifdef PreClassInit
@@ -787,6 +787,10 @@ BOOL UserLibOpen(struct Library *base)
            GETINTERFACE(IGraphics, GfxBase) &&
            GETINTERFACE(IIntuition, IntuitionBase))
         {
+          #if defined(DEBUG)
+          SetupDebug();
+          #endif
+
           #ifndef ClassInit
           return(TRUE);
           #else
@@ -819,7 +823,7 @@ BOOL UserLibOpen(struct Library *base)
     MUIMasterBase = NULL;
   }
 
-  D(bug("fail.: %08lx %s\n",base,base->lib_Node.ln_Name) );
+  D(DBF_STARTUP, "fail.: %08lx %s",base,base->lib_Node.ln_Name);
 
   return(FALSE);
 }
@@ -832,7 +836,7 @@ BOOL UserLibClose(struct Library *base)
   VOID PostClassExitFunc(void);
   VOID ClassExitFunc(struct Library *base);
 
-  D(bug( "OpenCount = %ld\n", base->lib_OpenCnt ) );
+  D(DBF_STARTUP, "OpenCount = %ld", base->lib_OpenCnt);
 
   if (base->lib_OpenCnt==1)
   {

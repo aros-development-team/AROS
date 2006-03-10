@@ -16,15 +16,15 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: rev.h,v 1.4 2005/04/11 03:04:38 tactica Exp $
+ $Id: rev.h,v 1.18 2005/12/06 23:41:22 damato Exp $
 
 ***************************************************************************/
 
 #define LIB_VERSION    15
-#define LIB_REVISION   11
+#define LIB_REVISION   17
 
-#define LIB_REV_STRING "15.11"
-#define LIB_DATE       "09.04.2005"
+#define LIB_REV_STRING "15.17"
+#define LIB_DATE       "07.12.2005"
 
 #if defined(__PPC__)
   #if defined(__MORPHOS__)

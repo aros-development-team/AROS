@@ -16,11 +16,10 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Search.c,v 1.2 2005/03/31 17:35:28 sba Exp $
+ $Id: Search.c,v 1.8 2005/08/16 21:21:01 damato Exp $
 
 ***************************************************************************/
 
-#include <ctype.h>
 #include <string.h>
 
 #include <clib/alib_protos.h>
@@ -32,6 +31,8 @@
 
 VOID SimpleMarkText (UWORD startx, struct line_node *startline, UWORD stopx, struct line_node *stopline, struct InstData *data)
 {
+  ENTER();
+
   if(Enabled(data))
   {
     data->blockinfo.enabled = FALSE;
@@ -50,24 +51,28 @@ VOID SimpleMarkText (UWORD startx, struct line_node *startline, UWORD stopx, str
 
   ScrollIntoDisplay(data);
   MarkText(startx, startline, stopx, stopline, data);
+
+  LEAVE();
 }
 
-LONG Native_strncmp (STRPTR str1, STRPTR str2, LONG len) { return strncmp(str1, str2, len); }
-LONG Utility_strnicmp (STRPTR str1, STRPTR str2, LONG len) { return Strnicmp(str1, str2, len); }
+static LONG Native_strncmp (STRPTR str1, STRPTR str2, LONG len) { return strncmp(str1, str2, len); }
+static LONG Utility_strnicmp (STRPTR str1, STRPTR str2, LONG len) { return Strnicmp(str1, str2, len); }
 
 ULONG OM_Search (struct MUIP_TextEditor_Search *msg, struct InstData *data)
 {
   STRPTR str = msg->SearchString;
   LONG len = strlen(str), step = 0;
 
+  ENTER();
+
   if(len && len <= 120)
   {
     BYTE map[256];
-//    int (*StrCmp) (const char *, const char *, size_t);
-    LONG (*StrCmp) (STRPTR, STRPTR, LONG);
-
+    LONG (*StrCmp)(STRPTR, STRPTR, LONG);
     UWORD cursor;
     struct line_node *line;
+
+    // if the FromTop flag is set we start the search right from the top
     if(msg->Flags & MUIF_TextEditor_Search_FromTop)
     {
       cursor = 0;
@@ -80,11 +85,15 @@ ULONG OM_Search (struct MUIP_TextEditor_Search *msg, struct InstData *data)
     }
 
     memset(map, len, 256);
+
+    // if a casesensitive search is requested we use a different
+    // compare function.
     if(msg->Flags & MUIF_TextEditor_Search_CaseSensitive)
     {
       StrCmp = Native_strncmp;
+
       while(*str)
-        map[*str++] = step--;
+        map[(int)*str++] = step--;
     }
     else
     {
@@ -99,17 +108,23 @@ ULONG OM_Search (struct MUIP_TextEditor_Search *msg, struct InstData *data)
     while(line)
     {
       LONG skip;
-      STRPTR contents = line->line.Contents + cursor + len-1, upper = line->line.Contents + line->line.Length;
+      STRPTR contents = line->line.Contents + cursor + len-1;
+      STRPTR upper = line->line.Contents + line->line.Length;
+
       while(contents < upper)
       {
-        skip = map[*contents];
+        skip = map[(int)(*contents)];
         contents += skip;
+
         if(skip <= 0)
         {
           if(!StrCmp(contents, msg->SearchString, len))
           {
             UWORD startx = contents - line->line.Contents;
+
             SimpleMarkText(startx, line, startx+len, line, data);
+
+            RETURN(TRUE);
             return TRUE;
           }
           contents += len;
@@ -120,12 +135,17 @@ ULONG OM_Search (struct MUIP_TextEditor_Search *msg, struct InstData *data)
       line = line->next;
     }
   }
+
+  RETURN(FALSE);
   return FALSE;
 }
 
 ULONG OM_Replace (Object *obj, struct MUIP_TextEditor_Replace *msg, struct InstData *data)
 {
   ULONG res = FALSE;
+
+  ENTER();
+
   if(Enabled(data))
   {
     Key_Clear(data);
@@ -136,5 +156,7 @@ ULONG OM_Replace (Object *obj, struct MUIP_TextEditor_Replace *msg, struct InstD
 #endif
     res = TRUE;
   }
+
+  RETURN(res);
   return res;
 }

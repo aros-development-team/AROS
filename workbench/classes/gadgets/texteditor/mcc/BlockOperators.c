@@ -16,30 +16,20 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: BlockOperators.c,v 1.7 2005/04/07 10:10:53 sba Exp $
+ $Id: BlockOperators.c,v 1.13 2005/08/06 20:07:48 damato Exp $
 
 ***************************************************************************/
 
-#include <stdio.h>
-#include <string.h>
-
+#include <exec/io.h>
+#include <devices/clipboard.h>
 #include <libraries/iffparse.h>
 
 #include <clib/alib_protos.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <proto/intuition.h>
-#include <proto/iffparse.h>
 #include <proto/utility.h>
-#include <dos/dostags.h>
+#include <proto/exec.h>
 
 #include "TextEditor_mcc.h"
 #include "private.h"
-
-#ifdef __MORPHOS__
-// doesnt belong here -itix
-#define DebugPrintF(x) NewRawDoFmt(x, (APTR)1, NULL, NULL)
-#endif
 
 #ifdef __AROS__
 #include <aros/macros.h>
@@ -60,6 +50,8 @@ VOID RedrawArea(UWORD startx, struct line_node *startline, UWORD stopx, struct l
   LONG line_nr1 = LineToVisual(startline, data) - 1;
   LONG line_nr2 = LineToVisual(stopline, data) - 1;
 
+  ENTER();
+
   OffsetToLines(startx, startline, &pos1, data);
 
   if(stopx >= stopline->line.Length)
@@ -75,6 +67,8 @@ VOID RedrawArea(UWORD startx, struct line_node *startline, UWORD stopx, struct l
   {
     DumpText(data->visual_y+line_nr1, line_nr1, line_nr2+1, TRUE, data);
   }
+
+  LEAVE();
 }
 
 char *GetBlock (struct marking *block, struct InstData *data)
@@ -83,6 +77,8 @@ char *GetBlock (struct marking *block, struct InstData *data)
   struct  line_node *startline, *stopline, *act;
   char    *text = NULL;
   struct  ExportMessage emsg;
+
+  ENTER();
 
   startx    = block->startx;
   stopx     = block->stopx;
@@ -286,21 +282,18 @@ char *GetBlock (struct marking *block, struct InstData *data)
     if(emsg.Styles)
       MyFreePooled(data->mypool, emsg.Styles);
   }
-  return(text);
-}
 
-long Enabled  (struct InstData *data)
-{
-  if(data->blockinfo.enabled && (data->blockinfo.startx != data->blockinfo.stopx || data->blockinfo.startline != data->blockinfo.stopline))
-      return(TRUE);
-  else  return(FALSE);
+  RETURN(text);
+  return(text);
 }
 
 void NiceBlock (struct marking *realblock, struct marking *newblock)
 {
-    LONG  startx = realblock->startx, stopx = realblock->stopx;
-    struct line_node *startline = realblock->startline,
-                *stopline = realblock->stopline;
+  LONG  startx = realblock->startx, stopx = realblock->stopx;
+  struct line_node *startline = realblock->startline;
+  struct line_node *stopline = realblock->stopline;
+
+  ENTER();
 
   if(startline == stopline)
   {
@@ -341,16 +334,21 @@ void NiceBlock (struct marking *realblock, struct marking *newblock)
   newblock->stopx     = stopx;
   newblock->startline = startline;
   newblock->stopline  = stopline;
+
+  LEAVE();
 }
 
 BOOL InitClipboard (struct InstData *data)
 {
+  ENTER();
+
   if((data->clipport = CreateMsgPort()))
   {
     if((data->clipboard = (struct IOClipReq*)CreateIORequest(data->clipport, sizeof(struct IOClipReq))))
     {
       if(!OpenDevice("clipboard.device", 0, (struct IORequest*)data->clipboard, 0))
       {
+        RETURN(TRUE);
         return TRUE;
       }
 
@@ -359,14 +357,18 @@ BOOL InitClipboard (struct InstData *data)
     DeleteIORequest((struct IORequest*)data->clipboard);
   }
   DeleteMsgPort(data->clipport);
+
+  RETURN(FALSE);
   return(FALSE);
 }
 
 void EndClipSession (struct InstData *data)
 {
-  long clipheader[] = { LONG2BE(MAKE_ID('F','O','R','M')), 0, LONG2BE(MAKE_ID('F','T','X','T'))};
+  ULONG clipheader[] = { LONG2BE(MAKE_ID('F','O','R','M')), 0, LONG2BE(MAKE_ID('F','T','X','T'))};
 
-  clipheader[1] = LONG2BE(data->clipboard->io_Offset-8);
+  ENTER();
+
+  clipheader[1] = data->clipboard->io_Offset-8;
   data->clipboard->io_Offset    = 0;
   data->clipboard->io_Data    = (STRPTR)clipheader;
   data->clipboard->io_Length    = sizeof(clipheader);
@@ -378,13 +380,17 @@ void EndClipSession (struct InstData *data)
   CloseDevice((struct IORequest*)data->clipboard);
   DeleteIORequest((struct IORequest*)data->clipboard);
   DeleteMsgPort(data->clipport);
+
+  LEAVE();
 }
 
 void ClipInfo (struct line_node *line, struct InstData *data)
 {
-    long  highlightheader[]  = { LONG2BE(MAKE_ID('H','I','G','H')), LONG2BE(2)};
-    long  separatorheader[]  = { LONG2BE(MAKE_ID('S','B','A','R')), LONG2BE(2)};
-    long  flowheader[]    = { LONG2BE(MAKE_ID('F','L','O','W')), LONG2BE(2)};
+  ULONG  highlightheader[]  = { LONG2BE(MAKE_ID('H','I','G','H')), LONG2BE(2)};
+  ULONG  separatorheader[]  = { LONG2BE(MAKE_ID('S','B','A','R')), LONG2BE(2)};
+  ULONG  flowheader[]    = { LONG2BE(MAKE_ID('F','L','O','W')), LONG2BE(2)};
+
+  ENTER();
 
   if(line->line.Flow != MUIV_TextEditor_Flow_Left)
   {
@@ -415,17 +421,21 @@ void ClipInfo (struct line_node *line, struct InstData *data)
     data->clipboard->io_Length    = BE2LONG(highlightheader[1]);
     DoIO((struct IORequest*)data->clipboard);
   }
+
+  LEAVE();
 }
 
 void ClipChars (LONG x, struct line_node *line, LONG length, struct InstData *data)
 {
-    long  colorheader[]   = { LONG2BE(MAKE_ID('C','O','L','S')), 0};
-    long  styleheader[]   = { LONG2BE(MAKE_ID('S','T','Y','L')), 0};
-    long  textheader[]    = { LONG2BE(MAKE_ID('C','H','R','S')), 0};
-    UWORD style[2] = {1, GetStyle(x-1, line)};
-    UWORD color[2] = {1, 0};
-    ULONG t_offset;
-    UWORD *colors = line->line.Colors;
+  long  colorheader[]   = { LONG2BE(MAKE_ID('C','O','L','S')), 0};
+  long  styleheader[]   = { LONG2BE(MAKE_ID('S','T','Y','L')), 0};
+  long  textheader[]    = { LONG2BE(MAKE_ID('C','H','R','S')), 0};
+  UWORD style[2] = {1, GetStyle(x-1, line)};
+  UWORD color[2] = {1, 0};
+  ULONG t_offset;
+  UWORD *colors = line->line.Colors;
+
+  ENTER();
 
   ClipInfo(line, data);
 
@@ -550,15 +560,19 @@ void ClipChars (LONG x, struct line_node *line, LONG length, struct InstData *da
   DoIO((struct IORequest*)data->clipboard);
 
   data->clipboard->io_Offset += data->clipboard->io_Offset & 1;
+
+  LEAVE();
 }
 
 void ClipLine (struct line_node *line, struct InstData *data)
 {
-    long  colorheader[] = { LONG2BE(MAKE_ID('C','O','L','S')), 0};
-    long  styleheader[] = { LONG2BE(MAKE_ID('S','T','Y','L')), 0};
-    long  textheader[]  = { LONG2BE(MAKE_ID('C','H','R','S')), 0};
-    UWORD *styles = line->line.Styles;
-    UWORD *colors = line->line.Colors;
+  long  colorheader[] = { LONG2BE(MAKE_ID('C','O','L','S')), 0};
+  long  styleheader[] = { LONG2BE(MAKE_ID('S','T','Y','L')), 0};
+  long  textheader[]  = { LONG2BE(MAKE_ID('C','H','R','S')), 0};
+  UWORD *styles = line->line.Styles;
+  UWORD *colors = line->line.Colors;
+
+  ENTER();
 
   ClipInfo(line, data);
 
@@ -596,7 +610,7 @@ void ClipLine (struct line_node *line, struct InstData *data)
   data->clipboard->io_Length    = BE2LONG(styleheader[1]);
   DoIO((struct IORequest*)data->clipboard);
 
-  textheader[1] = LONG2BE(line->line.Length);
+  textheader[1] = line->line.Length;
   data->clipboard->io_Data    = (STRPTR)textheader;
   data->clipboard->io_Length    = sizeof(textheader);
   DoIO((struct IORequest*)data->clipboard);
@@ -605,16 +619,21 @@ void ClipLine (struct line_node *line, struct InstData *data)
   DoIO((struct IORequest*)data->clipboard);
 
   data->clipboard->io_Offset += data->clipboard->io_Offset & 1;
+
+  LEAVE();
 }
 
 LONG CutBlock (struct InstData *data, long Clipboard, long NoCut, BOOL update)
 {
-    struct  marking newblock;
+  struct  marking newblock;
+
+  ENTER();
 
   NiceBlock(&data->blockinfo, &newblock);
   if(!NoCut)
     AddToUndoBuffer(deleteblock, (char *)&newblock, data);
 
+  LEAVE();
   return(CutBlock2(data, Clipboard, NoCut, &newblock, update));
 }
 
@@ -666,10 +685,12 @@ VOID CutBlockProcess (REG(a0) STRPTR arguments)
 LONG CutBlock2 (struct InstData *data, long Clipboard, long NoCut, struct marking *newblock, BOOL update)
 {
 #endif
-      LONG  tvisual_y;
-      LONG  startx, stopx;
-      LONG  res = 0;
-    struct  line_node *startline, *stopline;
+  LONG  tvisual_y;
+  LONG  startx, stopx;
+  LONG  res = 0;
+  struct  line_node *startline, *stopline;
+
+  ENTER();
 
 #ifdef ClassAct
   ObtainSemaphore(&data->semaphore);
@@ -715,7 +736,8 @@ LONG CutBlock2 (struct InstData *data, long Clipboard, long NoCut, struct markin
           MyFreePooled(data->mypool, c_startline->line.Styles);
         data->totallines -= c_startline->visual;
         c_startline = c_startline->next;
-        FreePooled(data->mypool, cc_startline, sizeof(struct line_node));
+
+        FreeLine(cc_startline, data);
       }
       else  c_startline = c_startline->next;
     }
@@ -795,6 +817,8 @@ end:
     Signal(args->task, 1 << args->sigbit);
   }
 #else
+
+  RETURN(res);
   return res;
 #endif
 }

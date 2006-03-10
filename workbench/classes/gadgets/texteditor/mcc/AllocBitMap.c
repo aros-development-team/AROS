@@ -16,53 +16,54 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: AllocBitMap.c,v 1.1 2005/03/28 11:29:48 damato Exp $
+ $Id: AllocBitMap.c,v 1.5 2005/06/24 12:47:14 gnikl Exp $
 
 ***************************************************************************/
 
-#include <proto/exec.h>
-#include <proto/graphics.h>
-#include <exec/libraries.h>
 #include <exec/memory.h>
-#include <graphics/gfxbase.h>
+#include <proto/graphics.h>
+#include <proto/exec.h>
 
 #include "SDI_compiler.h"
+#include "Debug.h"
 
-#if defined(__amigaos4__)
-extern struct Library *GfxBase;
+#if 0
+#define USE_OS3 (1)
 #else
-extern struct GfxBase *GfxBase;
+#define USE_OS3 (((struct Library *)GfxBase)->lib_Version >= 39)
 #endif
 
 struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG width), REG(d1, LONG height), REG(d2, LONG depth), REG(d3, LONG flags), REG(a0, struct BitMap *friend))
 {
-  if(((struct Library *)GfxBase)->lib_Version >= 39)
+  ENTER();
+
+  if(USE_OS3)
   {
-  #ifndef __AROS__
-    BOOL CyberGFX = FindSemaphore("cybergraphics.library") ? TRUE : FALSE;
-  #else
-    BOOL CyberGFX = TRUE;
-  #endif
+    if(friend != NULL)
+    {
+    #ifndef __AROS__
+      BOOL CyberGFX = FindSemaphore("cybergraphics.library") ? TRUE : FALSE;
+    #else
+      BOOL CyberGFX = TRUE;
+    #endif
+      if(CyberGFX
+         && (GetBitMapAttr(friend,BMA_FLAGS) & BMF_INTERLEAVED) == 0)
+        flags |= BMF_MINPLANES;
+      else
+        friend = NULL;
+    }
 
-    if(friend && !CyberGFX)
-      friend = NULL;
-
-    if(friend && (GetBitMapAttr(friend,BMA_FLAGS) & BMF_INTERLEAVED))
-      friend = NULL;
-
-    if(friend)
-      flags |= BMF_MINPLANES;
-
+    LEAVE();
     return AllocBitMap(width,height,depth,flags,friend);
   }
   else
   {
-    struct BitMap *bm;
-    int plsize = RASSIZE(width,height);
-    int i;
+    struct BitMap *bm = AllocMem(sizeof(struct BitMap), MEMF_CLEAR);
 
-    if((bm = AllocMem(sizeof(struct BitMap), MEMF_CLEAR)))
+    if(bm != NULL)
     {
+      int i, plsize=RASSIZE(width,height);
+
       InitBitMap(bm,depth,width,height);
 
       if((bm->Planes[0] = AllocVec(plsize*depth,(flags & BMF_CLEAR) ? MEMF_CHIP|MEMF_CLEAR : MEMF_CHIP))) // !!!
@@ -70,10 +71,16 @@ struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG width), REG(d1, LONG he
         for(i=1;i<depth;i++)
           bm->Planes[i] = (PLANEPTR)(((ULONG)bm->Planes[i-1]) + plsize);
 
-        return (struct BitMap *)bm;
+        LEAVE();
+        return bm;
+      }
+      else
+      {
+        FreeMem(bm,sizeof(struct BitMap));
       }
     }
 
+    RETURN(NULL);
     return NULL;
   }
 }
@@ -81,9 +88,11 @@ struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG width), REG(d1, LONG he
 
 VOID SAVEDS ASM MUIG_FreeBitMap(REG(a0, struct BitMap *bm))
 {
+  ENTER();
+
   WaitBlit();
 
-  if(((struct Library *)GfxBase)->lib_Version >= 39)
+  if(USE_OS3)
   {
     FreeBitMap(bm);
   }
@@ -92,4 +101,6 @@ VOID SAVEDS ASM MUIG_FreeBitMap(REG(a0, struct BitMap *bm))
     FreeVec(bm->Planes[0]);
     FreeMem(bm,sizeof(struct BitMap));
   }
+
+  LEAVE();
 }

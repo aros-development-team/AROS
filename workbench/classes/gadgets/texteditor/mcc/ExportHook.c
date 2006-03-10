@@ -16,14 +16,14 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: ExportHook.c,v 1.2 2005/04/07 10:10:53 sba Exp $
+ $Id: ExportHook.c,v 1.9 2005/08/06 16:19:21 damato Exp $
 
 ***************************************************************************/
 
 #include <stdio.h>
 #include <string.h>
-#include <exec/types.h>
-#include <clib/dos_protos.h>
+
+#include <exec/memory.h>
 #include <proto/exec.h>
 
 #include "TextEditor_mcc.h"
@@ -45,40 +45,44 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
 {
   HOOK_INIT
   
-  struct Buffer   *buf    = emsg->UserData;
-  LONG       length;
-  UWORD       *styles = emsg->Styles;
-  UWORD       *colors = emsg->Colors;
-  UWORD       lastpos = 0;
-  UWORD       currentstyle = 0;
-  STRPTR      result, startx;
-  struct      InstData *data = emsg->data;
-  LONG        expand;
+  struct Buffer *buf = emsg->UserData;
+  LONG length;
+  UWORD *styles = emsg->Styles;
+  UWORD *colors = emsg->Colors;
+  UWORD lastpos = 0;
+  UWORD currentstyle = 0;
+  STRPTR result, startx;
+  struct InstData *data = emsg->data;
+  LONG expand;
+
+  ENTER();
 
   if(!buf)
   {
     if(data)
     {
-      buf       = MyAllocPooled(data->mypool, sizeof(struct Buffer));
-      buf->buffer   = MyAllocPooled(data->mypool, 512);
+      buf         = MyAllocPooled(data->mypool, sizeof(struct Buffer));
+      buf->buffer = MyAllocPooled(data->mypool, 512);
       buf->size   = 512;
     }
     else
     {
-      buf       = AllocVec(sizeof(struct Buffer), 0L);
-      buf->buffer   = AllocVec(1024, 0L);
+      buf         = AllocVec(sizeof(struct Buffer), MEMF_ANY|MEMF_CLEAR);
+      buf->buffer = AllocVec(1024, MEMF_ANY|MEMF_CLEAR);
       buf->size   = 1024;
     }
+
     buf->pointer  = buf->buffer;
     buf->flow   = 0;
   }
 
   expand = 10*emsg->Length;
+
   if(buf->buffer+buf->size < buf->pointer+expand)
   {
-      STRPTR oldbuf = buf->buffer;
-      ULONG oldsize = buf->size;
-      ULONG  offset = buf->pointer - oldbuf;
+    STRPTR oldbuf = buf->buffer;
+    ULONG oldsize = buf->size;
+    ULONG offset = buf->pointer - oldbuf;
 
     if(data)
     {
@@ -87,40 +91,46 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
     }
     else
     {
-      buf->buffer = AllocVec(oldsize+expand+1024, 0L);
+      buf->buffer = AllocVec(oldsize+expand+1024, MEMF_ANY|MEMF_CLEAR);
       buf->size = oldsize+expand+1024;
     }
     buf->pointer = buf->buffer+offset;
 
     CopyMem(oldbuf, buf->buffer, offset);
+
     if(data)
-        MyFreePooled(data->mypool, oldbuf);
-    else  FreeVec(oldbuf);
+      MyFreePooled(data->mypool, oldbuf);
+    else
+      FreeVec(oldbuf);
   }
 
   // if h_Data is TRUE then this is an EMailHook call
   if(emsg->Highlight && !hook->h_Data)
   {
-    *buf->pointer++ = '\33';
+    *buf->pointer++ = '\033';
     *buf->pointer++ = 'h';
   }
 
   // if h_Data is TRUE then this is an EMailHook call
   if(!hook->h_Data && emsg->Flow != buf->flow)
   {
-    *buf->pointer++ = '\33';
+    *buf->pointer++ = '\033';
+
     switch(emsg->Flow)
     {
       case MUIV_TextEditor_Flow_Right:
         *buf->pointer++ = 'r';
-        break;
+      break;
+
       case MUIV_TextEditor_Flow_Center:
         *buf->pointer++ = 'c';
-        break;
+      break;
+
       case MUIV_TextEditor_Flow_Left:
       default:
         *buf->pointer++ = 'l';
     }
+
     buf->flow = emsg->Flow;
   }
 
@@ -128,8 +138,10 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
   {
     // if h_Data is TRUE then this is an EMailHook call
     if(!hook->h_Data)
-        sprintf(buf->pointer, "\33[s:%d]", emsg->Separator);
-    else  sprintf(buf->pointer, ((emsg->Separator & LNSF_Thick) ? "<tsb>" : "<sb>"));
+      sprintf(buf->pointer, "\033[s:%ld]", (LONG)emsg->Separator);
+    else
+      strcpy(buf->pointer, ((emsg->Separator & LNSF_Thick) ? "<tsb>" : "<sb>"));
+
     buf->pointer += strlen(buf->pointer);
   }
 
@@ -137,14 +149,14 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
   length = emsg->Length;
   if(styles || colors)
   {
-      UWORD pos;
-      UWORD style;
-      BOOL  coloured = FALSE;
-      UWORD colour_state = 7;
+    UWORD pos;
+    WORD style;
+    BOOL coloured = FALSE;
+    UWORD colour_state = 7;
 
     while((styles && *styles != 0xffff) || (colors && *colors != 0xffff))
     {
-        BOOL color;
+      BOOL color;
 
       if(colors == NULL || (styles && (coloured ? *styles < *colors : *styles <= *colors)))
       {
@@ -179,16 +191,24 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
           {
             case UNDERLINE:
             case ~UNDERLINE:
+            {
               *buf->pointer++ = '_';
-              break;
+            }
+            break;
+
             case BOLD:
             case ~BOLD:
+            {
               *buf->pointer++ = '*';
-              break;
+            }
+            break;
+
             case ITALIC:
             case ~ITALIC:
+            {
               *buf->pointer++ = '/';
-              break;
+            }
+            break;
           }
         }
       }
@@ -196,7 +216,7 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
       {
         if(color)
         {
-          sprintf(buf->pointer, "\33p[%d]", style);
+          sprintf(buf->pointer, "\033p[%ld]", (LONG)style);
           buf->pointer += strlen(buf->pointer);
         }
         else
@@ -204,49 +224,61 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
           switch(style)
           {
             case UNDERLINE:
-              *buf->pointer++ = '\33';
+            {
+              *buf->pointer++ = '\033';
               *buf->pointer++ = 'u';
               currentstyle |= UNDERLINE;
-              break;
+            }
+            break;
+
             case BOLD:
-              *buf->pointer++ = '\33';
+            {
+              *buf->pointer++ = '\033';
               *buf->pointer++ = 'b';
               currentstyle |= BOLD;
-              break;
+            }
+            break;
+
             case ITALIC:
-              *buf->pointer++ = '\33';
+            {
+              *buf->pointer++ = '\033';
               *buf->pointer++ = 'i';
               currentstyle |= ITALIC;
-              break;
+            }
+            break;
+
             case ~UNDERLINE:
             case ~BOLD:
             case ~ITALIC:
+            {
               currentstyle &= style;
+
               if(pos+1 != *styles || *(styles+1) < 0x8000)
               {
-                *buf->pointer++ = '\33';
+                *buf->pointer++ = '\033';
                 *buf->pointer++ = 'n';
                 if(currentstyle & UNDERLINE)
                 {
-                  *buf->pointer++ = '\33';
+                  *buf->pointer++ = '\033';
                   *buf->pointer++ = 'u';
                 }
                 if(currentstyle & BOLD)
                 {
-                  *buf->pointer++ = '\33';
+                  *buf->pointer++ = '\033';
                   *buf->pointer++ = 'b';
                 }
                 if(currentstyle & ITALIC)
                 {
-                  *buf->pointer++ = '\33';
+                  *buf->pointer++ = '\033';
                   *buf->pointer++ = 'i';
                 }
-                break;
               }
+            }
+            break;
           }
         }
       }
-      
+
       length -= pos-lastpos;
       
       if(length == -1)
@@ -260,12 +292,12 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
 
   while(emsg->ExportWrap && buf->pointer-startx > (LONG)emsg->ExportWrap)
   {
-   ULONG max = emsg->ExportWrap+1;
+    ULONG max = emsg->ExportWrap+1;
 
     if(startx[emsg->ExportWrap] != '\n')
     {
       while(--max && *(startx+max) != ' ')
-        ;
+        ; // empty while
     }
 
     if(max)
@@ -274,7 +306,9 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
     }
     else
     {
-      while(++startx < buf->pointer && *(startx) != ' ');
+      while(++startx < buf->pointer && *(startx) != ' ')
+        ; // empty while
+
       if(buf->pointer != startx)
       {
         *startx = '\n';
@@ -284,8 +318,8 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
 
   if(emsg->Last)
   {
-    *buf->pointer = '\0';
     result = buf->buffer;
+
     if(data)
     {
       MyFreePooled(data->mypool, buf);
@@ -299,6 +333,8 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
   {
     result = (STRPTR)buf;
   }
+
+  RETURN(result);
   return(result);
   
   HOOK_EXIT
