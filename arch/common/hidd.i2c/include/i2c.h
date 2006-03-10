@@ -164,6 +164,7 @@ enum
     moHidd_I2CDevice_WriteBytes,
     moHidd_I2CDevice_WriteWord,
     moHidd_I2CDevice_WriteVec,
+    moHidd_I2CDevice_WriteRead,
 
     NUM_I2CDEV_METHODS
 };
@@ -265,6 +266,15 @@ struct pHidd_I2CDevice_WriteVec
     OOP_MethodID    mID;
     UBYTE           *data;
     ULONG           length;
+};
+
+struct pHidd_I2CDevice_WriteRead
+{
+    OOP_MethodID    mID;
+    UBYTE           *writeBuffer;
+    ULONG           writeLength;
+    UBYTE           *readBuffer;
+    ULONG           readLength;
 };
 
 #endif
