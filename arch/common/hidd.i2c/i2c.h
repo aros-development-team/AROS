@@ -89,12 +89,23 @@ struct i2cbase {
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
 
+#if 0
+
 #define LOCK_DEV    ObtainSemaphore(&dev->lock);
 #define UNLOCK_DEV  ReleaseSemaphore(&dev->lock);
 
 #define LOCK_HW     ObtainSemaphore(&SD(cl)->driver_lock);
 #define UNLOCK_HW   ReleaseSemaphore(&SD(cl)->driver_lock);
 
+#else
+
+#define LOCK_DEV    /* */
+#define UNLOCK_DEV  /* */
+
+#define LOCK_HW     /* */
+#define UNLOCK_HW   /* */
+
+#endif
 
 #define I2C_UDelay(__o, __delay) \
     ({ \

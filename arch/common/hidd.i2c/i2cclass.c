@@ -200,13 +200,17 @@ BOOL METHOD(I2C, Hidd_I2C, ProbeAddress)
 {
     struct TagItem attrs[] = {
         { aHidd_I2CDevice_Driver,   (IPTR)o         },
+        { aHidd_I2CDevice_Address,  msg->address    },
         { aHidd_I2CDevice_Name,     (IPTR)"Probing" },
         { TAG_DONE, 0UL }
     };
     
     BOOL r = FALSE;
-    
+
+    D(bug("[I2C] I2C::ProbeAddress(%04x)\n", msg->address));
+        
     OOP_Object *probing = OOP_NewObject(SD(cl)->i2cDeviceClass, NULL, attrs);
+
     
     if (probing)
     {
@@ -392,6 +396,10 @@ void METHOD(I2C, Root, Get)
 
             case aoHidd_I2C_RiseFallTime:
                 *msg->storage = SD(cl)->RiseFallTime;
+                break;
+            
+            case aoHidd_I2C_Name:
+                *msg->storage = (IPTR)SD(cl)->name;
                 break;
         }
     }
