@@ -216,6 +216,13 @@ BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteVec)
     return r;
 }
 
+BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteRead)
+{
+    tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
+
+    return I2C_WriteRead(dev->driver, o, msg->writeBuffer, msg->writeLength, msg->readBuffer, msg->readLength);
+}
+
 /*** Root */
 
 OOP_Object *METHOD(I2CDev, Root, New)
