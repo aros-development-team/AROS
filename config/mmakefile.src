@@ -30,7 +30,8 @@ machine :
 #MM      kernel-intuition-linklib \
 #MM      kernel-cgfx-linklib \
 #MM      kernel-dos-linklib \
-#MM      kernel-workbench-linklib
+#MM      kernel-workbench-linklib \
+#MM      kernel-keymap-linklib
 
 #MM- core-includes: \
 #MM      kernel-expansion-includes \

@@ -1045,6 +1045,126 @@ GLOB_MKDIRS += $(BD_TARGETDIR$(BDID)) $(BD_OBJDIR$(BDID))
 
 
 #------------------------------------------------------------------------------
+# Build a module.
+# This is a bare version: It just compiles and links the given files. It is
+# assumed that all needed boiler plate code is in the files. This should only
+# be used for compiling external code. For AROS code use %build_module
+%define build_module_simple mmake=/A modname=/A modtype=/A \
+    files="$(basename $(wildcard *.c))" \
+    cflags=$(CFLAGS) dflags=$(BD_DEFDFLASGS) \
+    objdir=$(OBJDIR) moduledir= \
+    uselibs= usehostlibs= compiler=target
+
+# Define metamake targets and their dependencies
+#MM %(mmake) : core-linklibs includes-generate-deps
+#MM %(mmake)-kobj : core-linklibs includes-generate-deps
+#MM %(mmake)-quick
+#MM %(mmake)-clean
+
+BD_ALLTARGETS := %(mmake) %(mmake)-clean %(mmake)-quick %(mmake)-kobj
+
+.PHONY : $(BD_ALLTARGETS)
+
+ifeq (%(modname),)
+$(error using %build_module_simple: modname may not be empty)
+endif
+ifeq (%(modtype),)
+$(error using %build_module_simple: $(MODTYPE) has to be defined with the type of the module)
+endif
+
+# Default values for variables and arguments
+BD_DEFLINKLIBNAME := %(modname)
+BD_DEFREFFILE := %(objdir)/%(modname)_ALL.ref
+BD_DEFDFLAGS := %(cflags)
+OBJDIR ?= $(GENDIR)/$(CURDIR)
+BD_MODDIR := %(moduledir)
+ifeq ($(BD_MODDIR),)
+  ifeq (%(modtype),library)
+    BD_MODDIR  := $(AROS_LIBS)
+  endif
+  ifeq (%(modtype),gadget)
+    BD_MODDIR  := $(AROS_GADGETS)
+  endif
+  ifeq (%(modtype),datatype)
+    BD_MODDIR  := $(AROS_DATATYPES)
+  endif
+  ifeq (%(modtype),handler)
+    BD_MODDIR  := $(AROS_FS)
+  endif
+  ifeq (%(modtype),device)
+    BD_MODDIR  := $(AROS_DEVS)
+  endif
+  ifeq (%(modtype),resource)
+    BD_MODDIR  := $(AROS_RESOURCES)
+  endif
+  ifeq (%(modtype),mui)
+    BD_MODDIR  := $(AROS_CLASSES)/Zune
+  endif
+  ifeq (%(modtype),mcc)
+    BD_MODDIR  := $(AROS_CLASSES)/Zune
+  endif
+  ifeq (%(modtype),mcp)
+    BD_MODDIR  := $(AROS_CLASSES)/Zune
+  endif
+  ifeq (%(modtype),hidd)
+    BD_MODDIR  := $(AROS_DRIVERS)
+  endif
+endif
+ifeq ($(BD_MODDIR),)
+  $(error Don't where to put the file for modtype %(modtype). Specify moduledir=)
+endif
+
+%rule_compile_multi \
+    basenames="%(files)" targetdir="%(objdir)" \
+    cflags="%(cflags)" dflags="%(dflags)" \
+    compiler=%(compiler)
+
+BD_MODULE := $(BD_MODDIR)/%(modname).%(modtype)
+BD_KOBJ := $(KOBJSDIR)/%(modname)_%(modtype).o
+
+%(mmake)-quick : %(mmake)
+%(mmake) : $(BD_MODULE)
+%(mmake)-kobj : $(BD_KOBJ)
+
+# The module is linked from all the compiled .o files
+BD_OBJS       := $(addprefix %(objdir)/, $(addsuffix .o,%(files)))
+%rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
+		 endobj= err=%(modname).err \
+		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
+
+# Link kernel object file
+BD_KAUTOLIB := workbench dos cybergraphics intuition layers graphics oop utility \
+    expansion keymap
+BD_KBASE := WorkbenchBase DOSBase CyberGfxBase IntuitionBase LayersBase \
+    GfxBase OOPBase UtilityBase ExpansionBase KeymapBase
+BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
+BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
+$(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
+$(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_KBASE))
+$(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
+	@$(ECHO) "Linking $@"
+	@$(AROS_LD) -Ur -o $@ $^ -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
+	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__$$/) || ($$3 ~ /^libraryset_.*$$/) {print "-L " $$3;}'`
+
+
+## Dependency fine-tuning
+##
+BD_DEPS       := $(addprefix %(objdir), $(addsuffix .o,%(files)))
+%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps=$(BD_DEPS)
+
+$(BD_OBJS) $(BD_DEPS) $(BD_REFS) : | %(objdir)
+$(BD_MODULE) : | $(BD_MODDIR)
+$(BD_KOBJ) : | $(KOBJSDIR)
+GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
+
+%(mmake)-clean : FILES := $(BD_OBJS) $(BD_MODULE) $(BD_KOBJ) $(BD_DEPS)
+%(mmake)-clean ::
+	@$(ECHO) "Cleaning up for module %(modname)"
+	@$(RM) $(BD_OBJS) $(BD_KOBJ)
+%end
+
+
+#------------------------------------------------------------------------------
 # Build a module
 # Explanation of this macro is done in the developer's manual
 %define build_module mmake=/A modname=/A modtype=/A modsuffix= \
@@ -1071,7 +1191,7 @@ GLOB_MKDIRS += $(BD_TARGETDIR$(BDID)) $(BD_OBJDIR$(BDID))
 BD_ALLTARGETS := %(mmake) %(mmake)-includes %(mmake)-clean %(mmake)-quick \
     %(mmake)-kobj %(mmake)-funclist %(mmake)-linklib
 
-.PHONY : $(BD_ALLTARGETS) %(mmake)-makefile %(mmake)-objdir
+.PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
 ifeq (%(modname),)
 $(error using %build_module: modname may not be empty)
@@ -1267,9 +1387,9 @@ endif
 
 # Link kernel object file
 BD_KAUTOLIB := workbench dos cybergraphics intuition layers graphics oop utility \
-    expansion
+    expansion keymap
 BD_KBASE := WorkbenchBase DOSBase CyberGfxBase IntuitionBase LayersBase \
-    GfxBase OOPBase UtilityBase ExpansionBase
+    GfxBase OOPBase UtilityBase ExpansionBase KeymapBase
 BD_KLIB := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
 $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
