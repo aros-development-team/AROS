@@ -77,7 +77,7 @@
     D(bug("Call FreeMem (%08lx, %ld)\n", memoryBlock, byteSize));
 
     /* If there is no memory free nothing */
-    if(!byteSize)
+    if(!byteSize || !memoryBlock)
 	ReturnVoid ("FreeMem");
 
     RT_Free (RTT_MEMORY, memoryBlock, byteSize);
