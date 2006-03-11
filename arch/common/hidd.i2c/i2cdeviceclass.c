@@ -31,56 +31,29 @@
 BOOL METHOD(I2CDev, Hidd_I2CDevice, Read)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
-    BOOL r;
-    LOCK_DEV
 
-    r = I2C_WriteRead(dev->driver, o, NULL, 0, msg->readBuffer, msg->readLength);
-
-    UNLOCK_DEV
-    
-    return r;
+    return I2C_WriteRead(dev->driver, o, NULL, 0, msg->readBuffer, msg->readLength);
 }
 
 BOOL METHOD(I2CDev, Hidd_I2CDevice, ReadByte)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
-    BOOL r;
-    
-    LOCK_DEV
 
-    r = I2C_WriteRead(dev->driver, o, &msg->subaddr, 1, msg->data, 1);
-
-    UNLOCK_DEV   
-    
-    return r;
+    return I2C_WriteRead(dev->driver, o, &msg->subaddr, 1, msg->data, 1);
 }
 
 BOOL METHOD(I2CDev, Hidd_I2CDevice, ReadBytes)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
-    BOOL r;
-    
-    LOCK_DEV
 
-    r = I2C_WriteRead(dev->driver, o, &msg->subaddr, 1, msg->data, msg->length);
-
-    UNLOCK_DEV    
-    
-    return r;
+    return I2C_WriteRead(dev->driver, o, &msg->subaddr, 1, msg->data, msg->length);
 }
 
 BOOL METHOD(I2CDev, Hidd_I2CDevice, ReadStatus)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
-    BOOL r;
-    
-    LOCK_DEV
 
-    r = I2C_WriteRead(dev->driver, o, NULL, 0, msg->status, 1);
-
-    UNLOCK_DEV
-    
-    return r;
+    return I2C_WriteRead(dev->driver, o, NULL, 0, msg->status, 1);
 }
 
 BOOL METHOD(I2CDev, Hidd_I2CDevice, ReadWord)
@@ -89,47 +62,30 @@ BOOL METHOD(I2CDev, Hidd_I2CDevice, ReadWord)
     BOOL r;
     UBYTE buff[2];
     
-    LOCK_DEV
-
     if ((r = I2C_WriteRead(dev->driver, o, &msg->subaddr, 1, buff, 2)))
     {
         *msg->data = (buff[0] << 8) | buff[1];
     }
 
-    UNLOCK_DEV
-    
     return r;
 }
 
 BOOL METHOD(I2CDev, Hidd_I2CDevice, Write)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
-    BOOL r;
-    LOCK_DEV
 
-    r = I2C_WriteRead(dev->driver, o, msg->writeBuffer, msg->writeLength, NULL, 0);
-
-    UNLOCK_DEV
-    
-    return r;
+    return I2C_WriteRead(dev->driver, o, msg->writeBuffer, msg->writeLength, NULL, 0);
 }
 
 BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteByte)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
-    BOOL r;
     UBYTE buff[2];
     
     buff[0] = msg->subaddr;
     buff[1] = msg->data;
     
-    LOCK_DEV
-
-    r = I2C_WriteRead(dev->driver, o, buff, 2, NULL, 0);
-
-    UNLOCK_DEV
-    
-    return r;
+    return I2C_WriteRead(dev->driver, o, buff, 2, NULL, 0);
 }
 
 BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteBytes)
@@ -139,8 +95,6 @@ BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteBytes)
     ULONG nWrite = msg->length;
     UBYTE *WriteBuffer = msg->data;
     
-    LOCK_DEV
-
     if (nWrite > 0)
     {
         if ((r = I2C_Address(dev->driver, o, dev->address & ~1)))
@@ -156,28 +110,19 @@ BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteBytes)
         }
     }
 
-    UNLOCK_DEV
-    
     return r;
 }
 
 BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteWord)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
-    BOOL r;
     UBYTE buff[3];
     
     buff[0] = msg->subaddr;
     buff[1] = msg->data >> 8;
     buff[2] = msg->data & 0xff;
     
-    LOCK_DEV
-
-    r = I2C_WriteRead(dev->driver, o, buff, 2, NULL, 0);
-
-    UNLOCK_DEV
-    
-    return r;
+    return I2C_WriteRead(dev->driver, o, buff, 2, NULL, 0);
 }
 
 BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteVec)
@@ -188,8 +133,6 @@ BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteVec)
     ULONG nValues = msg->length;
     UBYTE *vec = msg->data;
     
-    LOCK_DEV
-
     if (nValues > 0)
     {
         for (; nValues > 0; nValues--, vec+=2)
@@ -209,8 +152,6 @@ BOOL METHOD(I2CDev, Hidd_I2CDevice, WriteVec)
         if (s > 0) I2C_Stop(dev->driver, o);
     }
 
-    UNLOCK_DEV
-    
     return r;
 }
 
@@ -233,8 +174,6 @@ OOP_Object *METHOD(I2CDev, Root, New)
         tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
         OOP_Object *driver = NULL;
         UWORD address = 0;
-
-        InitSemaphore(&dev->lock);
 
         dev->HoldTime = -1;
         dev->AcknTimeout = -1;
