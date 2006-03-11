@@ -28,8 +28,6 @@
 #define HiddI2CDeviceAttrBase   (SD(cl)->hiddI2CDeviceAB)
 #define HiddAttrBase            (SD(cl)->hiddAB)
 
-#define UtilityBase             (SD(cl)->utilitybase)
-
 BOOL METHOD(I2CDev, Hidd_I2CDevice, Read)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
@@ -367,7 +365,7 @@ void METHOD(I2CDev, Root, Get)
                 break;
             
             case aoHidd_I2CDevice_Name:
-                *msg->storage = dev->name;
+                *msg->storage = (IPTR)dev->name;
                 break;
         
             case aoHidd_I2CDevice_HoldTime:

@@ -32,8 +32,7 @@ extern OOP_AttrBase HiddI2CAttrBase;
 /* I2C Class methods */
 enum
 {
-    moHidd_I2C_UDelay = 0,
-    moHidd_I2C_PutBits,
+    moHidd_I2C_PutBits = 0,
     moHidd_I2C_GetBits,
     moHidd_I2C_Start,
     moHidd_I2C_Address,
@@ -69,12 +68,6 @@ enum
 
 #define IS_I2C_ATTR(attr, idx) \
     (((idx) = (attr) - HiddI2CAttrBase) < num_Hidd_I2C_Attrs)
-
-struct pHidd_I2C_UDelay
-{
-    OOP_MethodID    mID;
-    ULONG   	    delay;
-};
 
 struct pHidd_I2C_PutBits
 {

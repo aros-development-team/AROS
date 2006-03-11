@@ -41,7 +41,6 @@ typedef struct DevInstData {
 
 struct i2c_staticdata {
     struct ExecBase	        *sysbase;
-    struct Library	        *utilitybase;
     
     struct SignalSemaphore  driver_lock;
     struct MinList          devices;
@@ -62,7 +61,6 @@ struct i2c_staticdata {
     OOP_Class		*i2cClass;
     OOP_Class		*i2cDeviceClass;
     
-    OOP_MethodID    mid_I2C_UDelay;
     OOP_MethodID    mid_I2C_Start;
     OOP_MethodID    mid_I2C_Stop;
     OOP_MethodID    mid_I2C_PutBits;
@@ -89,6 +87,7 @@ struct i2cbase {
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
 
+
 #if 0
 
 #define LOCK_DEV    ObtainSemaphore(&dev->lock);
@@ -106,16 +105,6 @@ struct i2cbase {
 #define UNLOCK_HW   /* */
 
 #endif
-
-#define I2C_UDelay(__o, __delay) \
-    ({ \
-        struct pHidd_I2C_UDelay __p, *__m=&__p;    \
-        if (!SD(cl)->mid_I2C_UDelay)               \
-            SD(cl)->mid_I2C_UDelay = OOP_GetMethodID((STRPTR)IID_Hidd_I2C, moHidd_I2C_UDelay);    \
-        __p.mID   = SD(cl)->mid_I2C_UDelay;        \
-        __p.delay = (__delay);                        \
-        OOP_DoMethod((__o), (OOP_Msg)__m);          \
-    })
 
 #define I2C_Start(__o, __timeout) \
     ({ \

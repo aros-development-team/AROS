@@ -17,10 +17,6 @@
 
 #include <aros/symbolsets.h>
 
-#if AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE
-#include <asm/io.h>
-#endif
-
 #include "i2c.h"
 
 #define DEBUG 1
@@ -38,7 +34,13 @@
 #define HiddI2CDeviceAttrBase   (SD(cl)->hiddI2CDeviceAB)
 #define HiddAttrBase            (SD(cl)->hiddAB)
 
-#define UtilityBase             (SD(cl)->utilitybase)
+static void I2C_UDelay(ULONG delay)
+{
+    volatile long cnt;
+    if (delay > 0)
+        for (cnt = delay * 500; cnt > 0; cnt--);
+}
+
 
 static BOOL RaiseSCL(OOP_Class *cl, OOP_Object *o, BOOL sda, ULONG timeout)
 {
@@ -46,13 +48,13 @@ static BOOL RaiseSCL(OOP_Class *cl, OOP_Object *o, BOOL sda, ULONG timeout)
     BOOL scl;
     
     I2C_PutBits(o, 1, sda);
-    I2C_UDelay(o, SD(cl)->RiseFallTime);
+    I2C_UDelay(SD(cl)->RiseFallTime);
     
     for (i=timeout; i>0; i -= SD(cl)->RiseFallTime)
     {
         I2C_GetBits(o, &scl, &sda);
         if (scl) break;
-        I2C_UDelay(o, SD(cl)->RiseFallTime);
+        I2C_UDelay(SD(cl)->RiseFallTime);
     }
     
     if (i <= 0)
@@ -69,13 +71,13 @@ static BOOL WriteBit(OOP_Class *cl, OOP_Object *o, BOOL sda, ULONG timeout)
     BOOL r;
     
     I2C_PutBits(o, 0, sda);
-    I2C_UDelay(o, SD(cl)->RiseFallTime);
+    I2C_UDelay(SD(cl)->RiseFallTime);
     
     r = RaiseSCL(cl, o, sda, timeout);
-    I2C_UDelay(o, SD(cl)->HoldTime);
+    I2C_UDelay(SD(cl)->HoldTime);
 
     I2C_PutBits(o, 0, sda);
-    I2C_UDelay(o, SD(cl)->HoldTime);
+    I2C_UDelay(SD(cl)->HoldTime);
 
     return r;
 }
@@ -85,63 +87,17 @@ static BOOL ReadBit(OOP_Class *cl, OOP_Object *o, BOOL *sda, ULONG timeout)
     BOOL scl, r;
     
     r = RaiseSCL(cl, o, 1, timeout);
-    I2C_UDelay(o, SD(cl)->HoldTime);
+    I2C_UDelay(SD(cl)->HoldTime);
     
     I2C_GetBits(o, &scl, sda);
 
     I2C_PutBits(o, 0, 1);
-    I2C_UDelay(o, SD(cl)->HoldTime);
+    I2C_UDelay(SD(cl)->HoldTime);
     
     return r;
 }
 
 /*** Hidd::I2C */
-
-#if AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE
-
-#warning: Incompatible with BOCHS busy loop! Change to precise timer.device!
-
-#define TIMER_RPROK 3599597124UL
-
-static ULONG usec2tick(ULONG usec)
-{
-    ULONG ret;
-    ULONG prok = TIMER_RPROK;
-    asm volatile("movl $0,%%eax; divl %2":"=a"(ret):"d"(usec),"m"(prok));
-    return ret;
-}
-
-void METHOD(I2C, Hidd_I2C, UDelay)
-{
-    int oldtick, tick;
-    ULONG usec = usec2tick(msg->delay);
-
-    outb(0x80, 0x43);
-    oldtick = inb(0x42);
-    oldtick += inb(0x42) << 8;
-
-    while (usec > 0)
-    {
-        outb(0x80, 0x43);
-        tick = inb(0x42);
-        tick += inb(0x42) << 8;
-
-        usec -= (oldtick - tick);
-        if (tick > oldtick) usec -= 0x10000;
-        oldtick = tick;
-    }
-}
-
-#else
-
-void METHOD(I2C, Hidd_I2C, UDelay)
-{
-    volatile long cnt;
-    if (msg->delay > 0)
-        for (cnt = msg->delay * 500; cnt > 0; cnt--);
-}
-
-#endif
 
 void METHOD(I2C, Hidd_I2C, PutBits)
 {
@@ -161,9 +117,9 @@ BOOL METHOD(I2C, Hidd_I2C, Start)
         return FALSE;
     
     I2C_PutBits(o, 1, 0);
-    I2C_UDelay(o, SD(cl)->HoldTime);
+    I2C_UDelay(SD(cl)->HoldTime);
     I2C_PutBits(o, 0, 0);
-    I2C_UDelay(o, SD(cl)->HoldTime);
+    I2C_UDelay(SD(cl)->HoldTime);
 
     D(bug("\n[I2C]: <"));
 
@@ -210,7 +166,6 @@ BOOL METHOD(I2C, Hidd_I2C, ProbeAddress)
     D(bug("[I2C] I2C::ProbeAddress(%04x)\n", msg->address));
         
     OOP_Object *probing = OOP_NewObject(SD(cl)->i2cDeviceClass, NULL, attrs);
-
     
     if (probing)
     {
@@ -233,12 +188,12 @@ void METHOD(I2C, Hidd_I2C, Stop)
     LOCK_HW
 
     I2C_PutBits(o, 0, 0);
-    I2C_UDelay(o, SD(cl)->RiseFallTime);
+    I2C_UDelay(SD(cl)->RiseFallTime);
     
     I2C_PutBits(o, 1, 0);
-    I2C_UDelay(o, SD(cl)->HoldTime);
+    I2C_UDelay(SD(cl)->HoldTime);
     I2C_PutBits(o, 1, 1);
-    I2C_UDelay(o, SD(cl)->HoldTime);
+    I2C_UDelay(SD(cl)->HoldTime);
 
     D(bug(">\n"));
     
@@ -261,7 +216,7 @@ BOOL METHOD(I2C, Hidd_I2C, PutByte)
             return FALSE;
 
     I2C_PutBits(o, 0, 1);
-    I2C_UDelay(o, SD(cl)->RiseFallTime);
+    I2C_UDelay(SD(cl)->RiseFallTime);
 
     r = RaiseSCL(cl, o, 1, SD(cl)->HoldTime);
 
@@ -269,7 +224,7 @@ BOOL METHOD(I2C, Hidd_I2C, PutByte)
     {
         for (i = dev->AcknTimeout; i > 0; i -= SD(cl)->HoldTime)
         {
-            I2C_UDelay(o, SD(cl)->HoldTime);
+            I2C_UDelay(SD(cl)->HoldTime);
             I2C_GetBits(o, &scl, &sda);
             if (sda == 0) break;
         }
@@ -285,7 +240,7 @@ BOOL METHOD(I2C, Hidd_I2C, PutByte)
     }
 
     I2C_PutBits(o, 0, 1);
-    I2C_UDelay(o, SD(cl)->HoldTime);
+    I2C_UDelay(SD(cl)->HoldTime);
     
     UNLOCK_HW
     
@@ -301,7 +256,7 @@ BOOL METHOD(I2C, Hidd_I2C, GetByte)
     LOCK_HW
 
     I2C_PutBits(o, 0, 1);
-    I2C_UDelay(o, SD(cl)->RiseFallTime);
+    I2C_UDelay(SD(cl)->RiseFallTime);
 
     if (!ReadBit(cl, o, &sda, dev->ByteTimeout))
         return FALSE;
@@ -514,8 +469,8 @@ OOP_Object *METHOD(I2C, Root, New)
 
 /* Class initialization and destruction */
 
-#undef UtilityBase
-#define UtilityBase (sd->utilitybase)
+//#undef UtilityBase
+//#define UtilityBase (sd->utilitybase)
 
 AROS_SET_LIBFUNC(I2C_ExpungeClass, LIBBASETYPE, LIBBASE)
 {

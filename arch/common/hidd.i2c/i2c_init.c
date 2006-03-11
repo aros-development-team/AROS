@@ -30,32 +30,9 @@ AROS_SET_LIBFUNC(I2C_Init, LIBBASETYPE, LIBBASE)
     AROS_SET_LIBFUNC_INIT
 
     InitSemaphore(&LIBBASE->sd.driver_lock);
-
-    LIBBASE->sd.utilitybase = OpenLibrary((STRPTR)UTILITYNAME, 0);
-    if (LIBBASE->sd.utilitybase != NULL)
-    {
-        D(bug("[I2C] Got UtilityBase @ 0x%08x\n", LIBBASE->sd.utilitybase));
-        return TRUE;
-    }
-
-    return FALSE;
+    return TRUE;
     
     AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(I2C_Expunge, LIBBASETYPE, LIBBASE)
-{
-    AROS_SET_LIBFUNC_INIT
-
-    D(bug("[I2C] Closing libraries\n"));
-    CloseLibrary(LIBBASE->sd.utilitybase);
-
-    D(bug("[I2C] Goodbye\n"));
-   
-    return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
-}
-
 ADD2INITLIB(I2C_Init, 0)
-ADD2EXPUNGELIB(I2C_Expunge, 0)
