@@ -53,6 +53,8 @@
     
     struct ProtectedPool *pool = (struct ProtectedPool *)poolHeader;
 
+    if (!memory || !memSize) return;
+    
     if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
     {
     	ObtainSemaphore(&pool->sem);
