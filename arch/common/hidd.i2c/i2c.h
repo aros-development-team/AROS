@@ -27,7 +27,6 @@
 /* Private data and structures unavailable outside the i2c base classes */
 
 typedef struct DevInstData {
-    struct SignalSemaphore  lock;
     OOP_Object  *driver;
     STRPTR      name;
     UWORD       address;
@@ -88,23 +87,8 @@ struct i2cbase {
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
 
 
-#if 0
-
-#define LOCK_DEV    ObtainSemaphore(&dev->lock);
-#define UNLOCK_DEV  ReleaseSemaphore(&dev->lock);
-
 #define LOCK_HW     ObtainSemaphore(&SD(cl)->driver_lock);
 #define UNLOCK_HW   ReleaseSemaphore(&SD(cl)->driver_lock);
-
-#else
-
-#define LOCK_DEV    /* */
-#define UNLOCK_DEV  /* */
-
-#define LOCK_HW     /* */
-#define UNLOCK_HW   /* */
-
-#endif
 
 #define I2C_Start(__o, __timeout) \
     ({ \
