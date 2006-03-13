@@ -283,7 +283,7 @@ static ULONG CalcHashStr_KR(struct HashTable *ht, IPTR id)
     for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
         {val += *str; i ++; }
 
-    return  (val % HashMask(ht));
+    return  (val & HashSize(ht));
 }
 
 static ULONG CalcHashStr_DJB2(struct HashTable *ht, IPTR id)
@@ -294,7 +294,7 @@ static ULONG CalcHashStr_DJB2(struct HashTable *ht, IPTR id)
     for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
         {val = ((val << 5) + val) ^ *str; i ++; }
 
-    return  (val % HashMask(ht));
+    return  (val & HashSize(ht));
 }
 
 ULONG CalcHashStr_SDBM(struct HashTable *ht, IPTR id)
@@ -305,7 +305,7 @@ ULONG CalcHashStr_SDBM(struct HashTable *ht, IPTR id)
     for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
         {val = *str + (val << 6) + (val << 16) - val; i ++; }
 
-    return  (val % HashMask(ht));
+    return  (val & HashSize(ht));
 }
 
 ULONG CalcHashStr_Org(struct HashTable *ht, IPTR id)
@@ -316,35 +316,40 @@ ULONG CalcHashStr_Org(struct HashTable *ht, IPTR id)
     for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
     	{val += *str; i ++; }
 	
-    return  (val % HashMask(ht));
+    return  (val & HashSize(ht));
 }
 
 ULONG CalcHashStr(struct HashTable *ht, IPTR id)
 {
-    return CalcHashStr_SDBM(ht, id);
+    return CalcHashStr_KR(ht, id);
 }
 
 /* Prints contents of a hastable */
 VOID print_table(struct HashTable *ht, struct IntOOPBase *OOPBase)
 {
     ULONG idx;
+    ULONG filled=0;
     
     for (idx = 0; idx < HashSize(ht); idx ++)
     {
     	struct Bucket *b;
+        BOOL ok = FALSE;
 	D(bug("idx %ld: ", idx));
 	for (b = ht->Table[idx]; b; b = b->Next)
 	{
+      ok = TRUE;
 #if DEBUG
 	    if (ht->Type == HT_INTEGER)
 	    	bug("%ld ", b->ID);
 	    else
-	    	bug("%s (%ld)", (STRPTR)b->ID, ((struct iid_bucket *)b)->refcount);
+	    	bug("%s(%ld) ", (STRPTR)b->ID, ((struct iid_bucket *)b)->refcount);
 #endif	    
 	}
 	D(bug("\n"));
+    if (ok) filled++;
 	
     }
+    D(bug("HashTable fill ratio: %d %%\n", filled * 100 / HashSize(ht)));
     return;
     
 }
