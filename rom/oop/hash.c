@@ -321,7 +321,7 @@ ULONG CalcHashStr_Org(struct HashTable *ht, IPTR id)
 
 ULONG CalcHashStr(struct HashTable *ht, IPTR id)
 {
-    return CalcHashStr_DJB2(ht, id);
+    return CalcHashStr_SDBM(ht, id);
 }
 
 /* Prints contents of a hastable */

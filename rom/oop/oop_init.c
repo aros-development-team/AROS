@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#define NUM_IDS 10
+#define NUM_IDS 31
 
 #include <utility/utility.h>
 #include <proto/oop.h>
