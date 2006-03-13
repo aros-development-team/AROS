@@ -8,6 +8,7 @@
 #include <exec/lists.h>
 #include <proto/exec.h>
 #include "intern.h"
+#include "hash.h"
 #include <aros/debug.h>
 #define MD(x) ((struct metadata *)x)
 
@@ -100,7 +101,7 @@
     p.attrList = tagList;
     
 /*    print_table(GetOBase(OOPBase)->ob_IIDTable, GetOBase(OOPBase));
-*/    
+*/  
     D(bug("mid=%ld\n", p.mID));
 
     /* Call the New() method of the specified class */
