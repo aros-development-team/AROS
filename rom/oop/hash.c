@@ -272,10 +272,43 @@ VOID RemoveBucket(struct  HashTable *ht, struct Bucket *b)
 ULONG CalcHashULONG(struct HashTable *ht, IPTR id)
 {
     /* Return idx into hashtable for an integer */
-    return  (HashMask(ht) & id);
+    return  (id % HashMask(ht));
 }
 
-ULONG CalcHashStr(struct HashTable *ht, IPTR id)
+static ULONG CalcHashStr_KR(struct HashTable *ht, IPTR id)
+{
+    STRPTR str = (STRPTR)id;
+    ULONG val, i;
+    /* Return idx into hashtable for a string */
+    for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
+        {val += *str; i ++; }
+
+    return  (val % HashMask(ht));
+}
+
+static ULONG CalcHashStr_DJB2(struct HashTable *ht, IPTR id)
+{
+    STRPTR str = (STRPTR)id;
+    ULONG val, i;
+    /* Return idx into hashtable for a string */
+    for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
+        {val = ((val << 5) + val) ^ *str; i ++; }
+
+    return  (val % HashMask(ht));
+}
+
+ULONG CalcHashStr_SDBM(struct HashTable *ht, IPTR id)
+{
+    STRPTR str = (STRPTR)id;
+    ULONG val, i;
+    /* Return idx into hashtable for a string */
+    for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
+        {val = *str + (val << 6) + (val << 16) - val; i ++; }
+
+    return  (val % HashMask(ht));
+}
+
+ULONG CalcHashStr_Org(struct HashTable *ht, IPTR id)
 {
     STRPTR str = (STRPTR)id;
     ULONG val, i;
@@ -283,10 +316,13 @@ ULONG CalcHashStr(struct HashTable *ht, IPTR id)
     for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
     	{val += *str; i ++; }
 	
-    return  (val & HashMask(ht));
+    return  (val % HashMask(ht));
 }
 
-
+ULONG CalcHashStr(struct HashTable *ht, IPTR id)
+{
+    return CalcHashStr_DJB2(ht, id);
+}
 
 /* Prints contents of a hastable */
 VOID print_table(struct HashTable *ht, struct IntOOPBase *OOPBase)

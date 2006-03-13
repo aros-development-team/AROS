@@ -18,7 +18,7 @@
 /* Macros */
 #define HashMask(ht) ( (ht)->HashMask )
 #define HashSize(ht)  ( HashMask(ht) + 1 )
-#define MAX_HASH_CHARS 3    
+#define MAX_HASH_CHARS 320
 
 /* Types of hashtables. Can hash integers or strings */
 #define HT_INTEGER	1
