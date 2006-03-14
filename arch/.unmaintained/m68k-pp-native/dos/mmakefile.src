@@ -1,32 +1,13 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR := $(OSGENDIR)/dos
-OS_INCLUDES := -I$(AROS_INCLUDES)
-CFLAGS2 := $(CFLAGS) -I.. -I$(TOP)/rom/dos
-AFLAGS2 :=
-TESTS :=
+USER_INCLUDES := -I.. -I$(TOP)/rom/dos
+USER_CFLAGS := -Dmain=submain
+%build_archspecific \
+	mainmmake=kernel-dos maindir=rom/dos \
+	arch=pp-m68k \
+	files="boot aros dosboot hidds"
 
-FILES := aros dosboot boot
-
-#MM
-dos-pp-m68k : $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
-	@$(NOP)
-
-#MM
-setup-dos-pp-m68k :
-	%mkdirs_q $(OBJDIR)
-	%add_objects $(foreach f,$(FILES), rom/dos/$(f))
-	%exclude_files $(foreach f, $(FILES), rom/dos/$(f))
-
-#MM
-clean ::
-	-$(RM) $(TESTS)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS2) -Dmain=submain"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- kernel-dos-pp-m68k : kernel-bootloader-pp-m68k-includes
 
 %common

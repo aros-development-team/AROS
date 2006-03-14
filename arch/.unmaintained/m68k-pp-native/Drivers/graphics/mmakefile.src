@@ -1,46 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I. -I$(TOP)/workbench/hidds/graphics
-
-FILES	:=	graphics_init functable
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
-END_FILE :=	$(OBJDIR)/endtag
-ENDFUNC :=	$(END_FILE).o
-
-#MM Drivers-pp-m68k : hidd-graphics-module
-Drivers-pp-m68k : $(OSGENDIR)/boot/hidd_graphics.o
-
-$(OSGENDIR)/boot/hidd_graphics.o : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/hidd_graphics
-	@m68k-linux-ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(OSGENDIR)/boot/hidd_graphics.o
-	@$(OBJCOPY) -R .note -R .comment $(OSGENDIR)/boot/hidd_graphics.o
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup-pp-m68k :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-	
-%libdefs_rule
-	
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-	
-%mkfunctable_arch
-
-%mkendtag_q
+USER_INCLUDES := -I$(TOP)/workbench/hidds/graphics
+%build_module_macro mmake=kernel-pp-m68k-gfx \
+	modname=graphics modtype=hidd \
+	conffile=lib.conf \
+	genfunctable=yes
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d

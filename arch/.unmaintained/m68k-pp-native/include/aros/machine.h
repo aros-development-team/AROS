@@ -73,7 +73,8 @@ do                                                       \
 
 /* Use these to acces a vector table */
 #define LIB_VECTSIZE			(sizeof (struct JumpVec))
-#define __AROS_GETJUMPVEC(lib,n)        ((struct JumpVec *)(((UBYTE *)lib)-(n*LIB_VECTSIZE)))
+//#define __AROS_GETJUMPVEC(lib,n)        ((struct JumpVec *)(((UBYTE *)lib)-(n*LIB_VECTSIZE)))
+#define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(n)])
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GET_VEC(__AROS_GETJUMPVEC(lib,n)))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
 #define __AROS_INITVEC(lib,n)           __AROS_GETJUMPVEC(lib,n)->jmp = __AROS_ASMJMP, \
@@ -96,14 +97,19 @@ do                                                       \
 
 */
 
-#define STUBCODE                                       \
+#define STUBCODE_INIT                                       \
 		"#define EMITSTUB(fname, bname, vec) " \
 		".globl fname ; "                      \
 		"fname : "                             \
 		"movl bname , %%a0; "                  \
 		"movl vec(%%a0),%%a0;"                 \
 		"jmp (%%a0);\n"                        \
+		"#define EMITALIAS(fname, alias) "     \
+		".weak alias; .set alias, fname\n"
+#define STUBCODE					\
 		"EMITSTUB(%s, %s, %d) "
+#define ALIASCODE                              \
+		"EMITALIAS(%s, %s)\n"
 
 /*
    We want to activate the execstubs and preserve all registers

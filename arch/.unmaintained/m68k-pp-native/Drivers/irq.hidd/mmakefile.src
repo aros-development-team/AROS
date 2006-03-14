@@ -1,48 +1,19 @@
 # $Id$
-TOP = ../../../..
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+#MM kernel-pp-m68k-irq-kobj : hidd-irq-stubs
+#MM kernel-pp-m68k-irq : hidd-irq-stubs
 
-FILES   :=      irq_init irqclass servers functable
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
-END_FILE :=	$(OBJDIR)/endtag
-ENDFUNC :=	$(END_FILE).o
+FILES       := irqclass servers
 
-#MM Drivers-pp-m68k : 
-Drivers-pp-m68k : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/hidd_irq
-	@m68k-linux-ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(OSGENDIR)/boot/hidd_irq.o
-	@$(OBJCOPY) -R .note -R .comment $(OSGENDIR)/boot/hidd_irq.o
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) libdefs.h *.err
+USER_INCLUDES := -I$(TOP)/workbench/hidds/graphics
+%build_module_macro mmake=kernel-pp-m68k-irq \
+	modname=irq modtype=hidd \
+	conffile=lib.conf \
+	genfunctable=yes
 
 #MM
 setup-pp-m68k :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-onbitmap.s: onbitmap.c
-	%ctoasm_q
-
-%libdefs_rule
-	
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
-%mkfunctable_arch
-
-%mkendtag_q
+        %mkdirs_q $(OBJDIR)
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d

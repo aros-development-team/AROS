@@ -1,47 +1,14 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+FILES   :=      displayclass displayhw offbitmap onbitmap
 
-FILES   :=      display_init functable displayclass displayhw offbitmap onbitmap
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
-END_FILE :=	$(OBJDIR)/endtag
-ENDFUNC :=	$(END_FILE).o
+%build_module_macro mmake=kernel-pp-m68k-display \
+	modname=display modtype=hidd \
+	files=$(FILES) \
+	conffile=lib.conf \
+	uselibs=hiddstubs \
+	genfunctable=yes
 
-#MM Drivers-pp-m68k : 
-Drivers-pp-m68k : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/display_driver
-	@m68k-linux-ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(OSGENDIR)/boot/display_driver.o
-	@$(OBJCOPY) -R .note -R .comment $(OSGENDIR)/boot/display_driver.o
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup-pp-m68k :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-onbitmap.s: onbitmap.c
-	%ctoasm_q
-
-%libdefs_rule
-	
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
-%mkfunctable_arch
-
-%mkendtag_q
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d
