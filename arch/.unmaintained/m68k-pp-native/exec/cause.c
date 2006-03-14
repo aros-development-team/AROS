@@ -204,6 +204,8 @@ AROS_UFH5(void, SoftIntDispatch,
     AROS_UFHA(IPTR, intCode, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+	AROS_USERFUNC_INIT
+
 	struct Interrupt *intr;
 	UBYTE i;
 
@@ -232,5 +234,6 @@ AROS_UFH5(void, SoftIntDispatch,
 		/* We now re-enable software interrupts. */
 		softblock = 0;
 	}
+	AROS_USERFUNC_EXIT
 }
 

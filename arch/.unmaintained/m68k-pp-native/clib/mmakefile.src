@@ -1,54 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-COMMONOBJDIR    := $(GENDIR)/compiler/clib
-OBJDIR		:= $(COMMONOBJDIR)/static
-SOBJDIR		:= $(COMMONOBJDIR)/shared
-
-ASMFILES  := setjmp longjmp
-
-OBJS  := $(foreach f, $(ASMFILES)   , $(COMMONOBJDIR)/$(f).o)
-
-AFLAGS2         := $(AFLAGS) -I..
-
-#MM
-clib-pp-m68k : $(OBJS)
-	@$(NOP)
-
-#MM
-setup-clib-pp-m68k :
-	%mkdirs_q $(OBJDIR) $(SOBJDIR)
-
-
-#MM
-clean ::
-	-$(RM) $(TESTS)
-
-$(COMMONOBJDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS)
-
-$(COMMONOBJDIR)/%.o : %.s
-	%assemble_q opt=$(AFLAGS2)
-
-$(COMMONOBJDIR)/%.d : %.c
-	%mkdepend_q
-
-$(SOBJDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS)
-
-$(SOBJDIR)/%.o : %.s
-	%assemble_q opt=$(AFLAGS)
-
-$(SOBJDIR)/%.d : %.c
-	%mkdepend_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS)
-
-$(OBJDIR)/%.o : %.s
-	%assemble_q opt=$(AFLAGS)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+USER_CFLAGS     := $(SHARED_CFLAGS) -I$(TOP)/compiler/clib -I..
+SPECIAL_AFLAGS  := -I..
+%build_archspecific \
+	mainmmake=linklibs-clib maindir=compiler/clib \
+	arch=m68k \
+	asmfiles="longjmp setjmp"
 
 %common
