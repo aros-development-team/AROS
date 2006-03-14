@@ -55,6 +55,8 @@ AROS_UFH3(void, boot,
     	b) Don't have a working console.device/CON: handler.
     */
 
+    AROS_USERFUNC_INIT
+
     struct DosLibrary *DOSBase;
 //    struct emulbase *emulbase;
 //    struct TagItem fhtags[]= { { TAG_END, 0 } };
@@ -131,4 +133,5 @@ AROS_UFH3(void, boot,
        Boot Process (having a CLI) is not removed from the rootnode.
        --> Dead stuff in there -> Crash
     */
+    AROS_USERFUNC_EXIT
 }
