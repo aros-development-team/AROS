@@ -1,76 +1,21 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR		:= $(OSGENDIR)/exec
-OS_INCLUDES	:= -I$(GENINCDIR)
-CFLAGS2 	:= $(CFLAGS) -g -I.. -I$(TOP)/rom/exec
-CFLAGS3 	:= $(OS_INCLUDES) -fomit-frame-pointer -O6
-AFLAGS2 	:= $(AFLAGS) -I.. -I$(TOP)/rom/exec -I$(GENINCDIR)
-TESTS		:=
+CFILES          := \
+        cache cause disable enable detect_memory idletask offsets \
+	preparecontext rawputchar switch sys_dispatch traps init
 
+AFILES          := coldreboot ints superstate sys_trap1_handler \
+		detect_memory_handlers setsr supervisor userstate \
+		execstubs stackswap switchtouser
 
-FILES := \
-	cache \
-	cause \
-	coldreboot \
-	disable \
-	enable \
-	idletask \
-	ints \
-	offsets \
-	preparecontext \
-	rawputchar \
-	setsr \
-	stackswap \
-	superstate \
-	supervisor \
-	switch \
-	switchtouser \
-	sys_dispatch \
-	sys_trap1_handler \
-	traps \
-	userstate
+#MM kernel-exec-pp-m68k : kernel-exec-includes
 
-COREFILES	:= \
-	core \
-	detect_memory \
-	detect_memory_handlers \
-	execstubs \
-	init
-
-
-#MM
-exec-pp-m68k : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
-	$(foreach f,$(COREFILES), $(OBJDIR)/$(f).o)
-	@$(NOP)
-
-#MM
-setup-exec-pp-m68k :
-	%mkdirs_q $(OBJDIR)
-	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
-	%add_objects $(foreach f,$(COREFILES), rom/exec/$(f))
-	%exclude_files $(foreach f,$(FILES), rom/exec/$(f))
-
-
-#MM
-includes-pp-m68k :
-	@$(NOP)
-
-#MM
-clean ::
-	-$(RM) $(TESTS)
-
-$(OBJDIR)/offsets.o : offsets.c
-	%compile_q opt=$(CFLAGS3)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2)
-
-$(OBJDIR)/%.o : %.s
-	%assemble_q opt=$(AFLAGS2)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
+#USER_CFLAGS    := -I../ -I$(TOP)/rom/exec -I$(GENINCDIR) -D__AROS__
+USER_CFLAGS     := -I../ -I$(TOP)/rom/exec -fomit-frame-pointer -O6
+USER_AFLAGS     := -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=pp-m68k \
+  files=$(CFILES) asmfiles=$(AFILES) modulename=exec
 
 %common

@@ -2,45 +2,13 @@
 
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I. -I../../include
+FILES   :=      touchscreenclass touchscreen_interrupt 
 
-FILES	:=	touchscreen_init touchscreenclass functable touchscreen_interrupt
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
-LIBS    :=	-L$(LIBDIR)
-END_FILE :=	$(OBJDIR)/endtag
-ENDFUNC :=	$(END_FILE).o
-
-#MM Drivers-pp-m68k : hidd-irq-stubs
-Drivers-pp-m68k : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/hidd_touchscreen_db
-	@m68k-linux-ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) $(LIBS) \
-	    -o $(OSGENDIR)/boot/hidd_touchscreen_db.o
-	@$(OBJCOPY) -R .note -R .comment $(OSGENDIR)/boot/hidd_touchscreen_db.o
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup-pp-m68k :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-%libdefs_rule
-
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
-%mkfunctable_arch
-
-%mkendtag_q
+%build_module_macro mmake=kernel-pp-m68k-touchscreen \
+	modname=touchscreen modtype=hidd \
+	files=$(FILES) \
+	conffile=lib.conf \
+	uselibs=hiddstubs \
+	genfunctable=yes
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d
