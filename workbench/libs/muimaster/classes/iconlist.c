@@ -1,8 +1,6 @@
 /*
-    Copyright © 2002, The AROS Development Team.
-    All rights reserved.
-
-    $Id$
+   Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+   $Id$
 */
 
 #include <string.h>
@@ -47,12 +45,12 @@ extern struct Library *MUIMasterBase;
 #define dol_Name dol_OldName /* This doesn't work really */
 #endif
 
-#define UPDATE_SINGLEICON		1
+#define UPDATE_SINGLEICON	1
 #define UPDATE_SCROLL		2
-#define UPDATE_SORT			3
+#define UPDATE_SORT		3
 
-#define LEFT_BUTTON			1
-#define RIGHT_BUTTON			2
+#define LEFT_BUTTON		1
+#define RIGHT_BUTTON		2
 #define MIDDLE_BUTTON		4
 
 struct IconEntry
@@ -107,13 +105,13 @@ struct MUI_IconData
     ULONG sort_bits;
     ULONG max_x;
     ULONG max_y;
-   
+
     /* Render stuff */
 
     /* values for update */
     /* UPDATE_SINGLEICON = draw the given single icon only */
     /* UPDATE_SCROLL = scroll the view by update_scrolldx/update_scrolldy */
-    
+
     ULONG update;
     WORD update_scrolldx;
     WORD update_scrolldy;
@@ -124,7 +122,7 @@ struct MUI_IconData
 
 /**************************************************************************
 
-**************************************************************************/
+ **************************************************************************/
 int RectAndRect(struct Rectangle *a, struct Rectangle *b)
 {
     if ((a->MinX > b->MaxX) || (a->MinY > b->MaxY) || (a->MaxX < b->MinX) || (a->MaxY < b->MinY))
@@ -133,40 +131,39 @@ int RectAndRect(struct Rectangle *a, struct Rectangle *b)
 }
 
 /**************************************************************************
- As we don't use the label drawing of icon.library we also have to do
- this by hand
-**************************************************************************/
+  As we don't use the label drawing of icon.library we also have to do
+  this by hand
+ **************************************************************************/
 static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
 {
-/*    int tx,txwidth; */
+    /*    int tx,txwidth; */
 
     GetIconRectangleA(NULL,icon->dob,NULL,rect,NULL);
 
-/*    if (icon->entry.label)
-    {
-    	SetFont(_rp(obj), _font(obj));
-	txwidth = TextLength(_rp(obj),icon->entry.label,strlen(icon->entry.label));
-	tx = (icon->width - txwidth)/2;
-	if (tx < rect->MinX) rect->MinX = tx;
-	if (tx + txwidth - 1 > rect->MaxX) rect->MaxX = tx + txwidth - 1;
-    }*/
+    /*    if (icon->entry.label)
+	  {
+	  SetFont(_rp(obj), _font(obj));
+	  txwidth = TextLength(_rp(obj),icon->entry.label,strlen(icon->entry.label));
+	  tx = (icon->width - txwidth)/2;
+	  if (tx < rect->MinX) rect->MinX = tx;
+	  if (tx + txwidth - 1 > rect->MaxX) rect->MaxX = tx + txwidth - 1;
+	  }*/
 
     rect->MaxY += _font(obj)->tf_YSize + 4;
 
     /*date/size sorting has the date/size appended under the icon label*/
-	if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE) )
-	
-    rect->MaxY += _font(obj)->tf_YSize + 2;
+    if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE) )
+	rect->MaxY += _font(obj)->tf_YSize + 2;
 }
 
 /**************************************************************************
- Draw the icon at its position
-**************************************************************************/
+  Draw the icon at its position
+ **************************************************************************/
 static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon)
 {
     struct Rectangle iconrect;
     struct Rectangle objrect;
-    
+
     LONG tx,ty;
     LONG txwidth; // txheight;
 
@@ -183,159 +180,159 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     objrect.MinY = _mtop(obj);
     objrect.MaxX = _mright(obj);
     objrect.MaxY = _mbottom(obj);
-    
+
     if (!RectAndRect(&iconrect, &objrect)) return;
- 
+
     /* data->update_rect1 and data->update_rect2 may
        point to rectangles to indicate that only icons
        in any of this rectangles need to be drawn */
-       
+
     if (data->update_rect1 && data->update_rect2)
     {
-    	if (!RectAndRect(&iconrect, data->update_rect1) &&
-	    !RectAndRect(&iconrect, data->update_rect2)) return;
+	if (!RectAndRect(&iconrect, data->update_rect1) &&
+		!RectAndRect(&iconrect, data->update_rect2)) return;
     }
     else if (data->update_rect1)
     {
-    	if (!RectAndRect(&iconrect, data->update_rect1)) return;
+	if (!RectAndRect(&iconrect, data->update_rect1)) return;
     }
     else if (data->update_rect2)
     {
-    	if (!RectAndRect(&iconrect, data->update_rect2)) return;
+	if (!RectAndRect(&iconrect, data->update_rect2)) return;
     }
-    
+
     SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
 
 #ifndef __AROS__
     DrawIconState
-    (
-        _rp(obj), icon->dob, NULL,
-        _mleft(obj) - data->view_x + icon->x, 
-        _mtop(obj) - data->view_y + icon->y, 
-        icon->selected ? IDS_SELECTED : IDS_NORMAL, 
-        ICONDRAWA_EraseBackground, FALSE, 
-        TAG_DONE
-    );
+	(
+	 _rp(obj), icon->dob, NULL,
+	 _mleft(obj) - data->view_x + icon->x, 
+	 _mtop(obj) - data->view_y + icon->y, 
+	 icon->selected ? IDS_SELECTED : IDS_NORMAL, 
+	 ICONDRAWA_EraseBackground, FALSE, 
+	 TAG_DONE
+	);
 #else
     DrawIconStateA
-    (
-        _rp(obj), icon->dob, NULL,
-        _mleft(obj) - data->view_x + icon->x, 
-        _mtop(obj) - data->view_y + icon->y, 
-        icon->selected ? IDS_SELECTED : IDS_NORMAL, 
-        TAG_DONE
-    );
+	(
+	 _rp(obj), icon->dob, NULL,
+	 _mleft(obj) - data->view_x + icon->x, 
+	 _mtop(obj) - data->view_y + icon->y, 
+	 icon->selected ? IDS_SELECTED : IDS_NORMAL, 
+	 TAG_DONE
+	);
 #endif
 
     if (icon->entry.label)
     {
-    	ULONG nameLength = strlen(icon->entry.label);
-    	ULONG n2 = nameLength;
+	ULONG nameLength = strlen(icon->entry.label);
+	ULONG n2 = nameLength;
 
-        SetFont(_rp(obj), _font(obj));
+	SetFont(_rp(obj), _font(obj));
 	txwidth = TextLength(_rp(obj), icon->entry.label, nameLength);
-		while( txwidth > (data->max_x + 4) )
-			txwidth = TextLength(_rp(obj), icon->entry.label, --nameLength);
+	while( txwidth > (data->max_x + 4) )
+	    txwidth = TextLength(_rp(obj), icon->entry.label, --nameLength);
 
-		memset( buf , 0 , sizeof( buf ) );
+	memset( buf , 0 , sizeof( buf ) );
 
-		if( nameLength < n2 )
-		{
-			strncpy( buf , icon->entry.label , nameLength-2 );
-			strcat( buf , ".." );
-		}
-		else
-		{
-			strncpy( buf , icon->entry.label , nameLength );
-		}
+	if( nameLength < n2 )
+	{
+	    strncpy( buf , icon->entry.label , nameLength-2 );
+	    strcat( buf , ".." );
+	}
+	else
+	{
+	    strncpy( buf , icon->entry.label , nameLength );
+	}
 
 	tx = _mleft(obj) - data->view_x + icon->x + (icon->width - txwidth)/2;
-		ty = _mtop(obj)  - data->view_y + icon->y + (icon->height/2) + (data->max_y/2) + _font(obj)->tf_Baseline + 1;
-	
-        // FIXME: this isn't a very optimal to make an outline...
-        SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
-        SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-        Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);
+	ty = _mtop(obj)  - data->view_y + icon->y + (icon->height/2) + (data->max_y/2) + _font(obj)->tf_Baseline + 1;
 
-        SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-        Move(_rp(obj), tx, ty);
-		Text(_rp(obj), buf, nameLength);
+	// FIXME: this isn't a very optimal to make an outline...
+	SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
+	SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+	Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
+	Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
+	Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
+	Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), buf, nameLength);
+	Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
+	Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
+	Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
+	Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);
 
-	    /*date/size sorting has the date/size appended under the icon label*/
+	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+	Move(_rp(obj), tx, ty);
+	Text(_rp(obj), buf, nameLength);
 
-		if( icon->entry.type != WBDRAWER && ((data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE)) )
+	/*date/size sorting has the date/size appended under the icon label*/
+
+	if( icon->entry.type != WBDRAWER && ((data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE)) )
+	{
+	    if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) && !(data->sort_bits & ICONLIST_SORT_BY_DATE) )
+	    {
+		int i = icon->fib.fib_Size;
+
+		/*show byte size for small files*/
+		if( i > 9999 )
+		    sprintf( buf , "%ld KB" , (LONG)(i/1024) );
+		else
+		    sprintf( buf , "%ld B" , (LONG)i );
+	    }
+	    else
+		if( !(data->sort_bits & ICONLIST_SORT_BY_SIZE) && (data->sort_bits & ICONLIST_SORT_BY_DATE) )
 		{
-			if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) && !(data->sort_bits & ICONLIST_SORT_BY_DATE) )
-			{
-				int i = icon->fib.fib_Size;
+		    struct DateStamp now;
+		    DateStamp(&now);
 
-				/*show byte size for small files*/
-				if( i > 9999 )
-					sprintf( buf , "%ldkb" , (LONG)(i/1000) );
-				else
-					sprintf( buf , "%ldb" , (LONG)i );
-			}
-			else
-			if( !(data->sort_bits & ICONLIST_SORT_BY_SIZE) && (data->sort_bits & ICONLIST_SORT_BY_DATE) )
-			{
-				 struct DateStamp now;
-				 DateStamp(&now);
-
-				/*if modified today show time, otherwise just show date*/
-				if( now.ds_Days == icon->fib.fib_Date.ds_Days )
-					sprintf( buf , "%s" ,icon->timebuf );
-				else
-					sprintf( buf , "%s" ,icon->datebuf );
-			}
-
-			nameLength = strlen(buf);
-
-			tx = _mleft(obj) - data->view_x + icon->x + (icon->width/2) - (TextLength(_rp(obj), buf, nameLength)/2);
-			ty = _mtop(obj)  - data->view_y + icon->y + (icon->height/2) + (data->max_y/2) + _font(obj)->tf_Baseline + _font(obj)->tf_YSize + 2;
-
-			// FIXME: this isn't a very optimal to make an outline...
-			SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
-			SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-			Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
-			Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
-			Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
-			Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), buf, nameLength);
-			Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
-			Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
-			Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
-			Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);
-
-			SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-			Move(_rp(obj), tx, ty);
-			Text(_rp(obj), buf, nameLength);
+		    /*if modified today show time, otherwise just show date*/
+		    if( now.ds_Days == icon->fib.fib_Date.ds_Days )
+			sprintf( buf , "%s" ,icon->timebuf );
+		    else
+			sprintf( buf , "%s" ,icon->datebuf );
 		}
+
+	    nameLength = strlen(buf);
+
+	    tx = _mleft(obj) - data->view_x + icon->x + (icon->width/2) - (TextLength(_rp(obj), buf, nameLength)/2);
+	    ty = _mtop(obj)  - data->view_y + icon->y + (icon->height/2) + (data->max_y/2) + _font(obj)->tf_Baseline + _font(obj)->tf_YSize + 2;
+
+	    // FIXME: this isn't a very optimal to make an outline...
+	    SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
+	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+	    Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
+	    Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
+	    Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
+	    Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), buf, nameLength);
+	    Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
+	    Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
+	    Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
+	    Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);
+
+	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+	    Move(_rp(obj), tx, ty);
+	    Text(_rp(obj), buf, nameLength);
+	}
     }
 }
 
 /**************************************************************************
- 
-**************************************************************************/
+
+ **************************************************************************/
 static void IconList_RethinkDimensions(Object *obj, struct MUI_IconData *data, struct IconEntry *singleicon)
 {
     struct IconEntry *icon;
     WORD    	      maxx = data->width - 1, maxy = data->height - 1;
 
     if (!(_flags(obj)&MADF_SETUP)) return;
-    
+
     icon = singleicon ? singleicon : List_First(&data->icon_list);
     while (icon)
     {
 	if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
 	{
 	    struct Rectangle icon_rect;
-	    
+
 	    IconList_GetIconRectangle(obj, data, icon, &icon_rect);
 
 	    icon_rect.MinX += icon->x;
@@ -345,106 +342,106 @@ static void IconList_RethinkDimensions(Object *obj, struct MUI_IconData *data, s
 
 	    if (icon_rect.MaxX > maxx) maxx = icon_rect.MaxX;
 	    if (icon_rect.MaxY > maxy) maxy = icon_rect.MaxY;
-	    
+
 	}
-	
+
 	if (singleicon) break;
-	
+
 	icon = Node_Next(icon);
     }
-    
+
     /* update our view */
     if (maxx + 1 > data->width)
     {
-    	data->width = maxx + 1;
+	data->width = maxx + 1;
 	set(obj, MUIA_IconList_Width, data->width);
     }
-    
+
     if (maxy + 1 > data->height)
     {
-    	data->height = maxy + 1;
+	data->height = maxy + 1;
 	set(obj, MUIA_IconList_Height, data->height);
     }
-    
+
 }
 
 /**************************************************************************
- Checks weather we can place a icon with the given dimesions at the
- suggested positions.
+  Checks weather we can place a icon with the given dimesions at the
+  suggested positions.
 
- atx and aty are absolute positions
-**************************************************************************/
+  atx and aty are absolute positions
+ **************************************************************************/
 /*
-static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *toplace, int atx, int aty)
-{
-    struct IconEntry *icon;
-    struct Rectangle toplace_rect;
+   static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *toplace, int atx, int aty)
+   {
+   struct IconEntry *icon;
+   struct Rectangle toplace_rect;
 
-    IconList_GetIconRectangle(obj, toplace, &toplace_rect);
-    toplace_rect.MinX += atx;
-    toplace_rect.MaxX += atx;
-    toplace_rect.MinY += aty;
-    toplace_rect.MaxY += aty;
+   IconList_GetIconRectangle(obj, toplace, &toplace_rect);
+   toplace_rect.MinX += atx;
+   toplace_rect.MaxX += atx;
+   toplace_rect.MinY += aty;
+   toplace_rect.MaxY += aty;
 
-    icon = List_First(&data->icon_list);
-    while (icon)
-    {
-	if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
-	{
-	    struct Rectangle icon_rect;
-	    IconList_GetIconRectangle(obj, icon, &icon_rect);
-	    icon_rect.MinX += icon->x;
-	    icon_rect.MaxX += icon->x;
-	    icon_rect.MinY += icon->y;
-	    icon_rect.MaxY += icon->y;
+   icon = List_First(&data->icon_list);
+   while (icon)
+   {
+   if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
+   {
+   struct Rectangle icon_rect;
+   IconList_GetIconRectangle(obj, icon, &icon_rect);
+   icon_rect.MinX += icon->x;
+   icon_rect.MaxX += icon->x;
+   icon_rect.MinY += icon->y;
+   icon_rect.MaxY += icon->y;
 
-	    if (RectAndRect(&icon_rect, &toplace_rect))
-		return FALSE; *//* There is already an icon on this place *//*
-	}
-	icon = Node_Next(icon);
-    }
-    return 1;
+   if (RectAndRect(&icon_rect, &toplace_rect))
+   return FALSE; *//* There is already an icon on this place *//*
+}
+icon = Node_Next(icon);
+}
+return 1;
 }
 */
 
 /**************************************************************************
- Place the icon at atx and aty.
+  Place the icon at atx and aty.
 
- atx and aty are absolute positions
-**************************************************************************/
+  atx and aty are absolute positions
+ **************************************************************************/
 /*
-static void IconList_PlaceIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *toplace, int atx, int aty)
-{
+   static void IconList_PlaceIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *toplace, int atx, int aty)
+   {
 #if 0
-    struct Rectangle toplace_rect;
+struct Rectangle toplace_rect;
 
-    IconList_GetIconRectangle(obj, toplace, &toplace_rect);
-    toplace_rect.MinX += atx + data->view_x;
-    toplace_rect.MaxX += atx + data->view_x;
-    toplace_rect.MinY += aty + data->view_y;
-    toplace_rect.MaxY += aty + data->view_y;
+IconList_GetIconRectangle(obj, toplace, &toplace_rect);
+toplace_rect.MinX += atx + data->view_x;
+toplace_rect.MaxX += atx + data->view_x;
+toplace_rect.MinY += aty + data->view_y;
+toplace_rect.MaxY += aty + data->view_y;
 #endif
-    toplace->x = atx;
-    toplace->y = aty;
+toplace->x = atx;
+toplace->y = aty;
 #if 0
-    *//* update our view *//*
-    if (toplace_rect.MaxX - data->view_x > data->width)
-    {
-    	data->width = toplace_rect.MaxX - data->view_x;
-	set(obj, MUIA_IconList_Width, data->width);
-    }
+*//* update our view *//*
+if (toplace_rect.MaxX - data->view_x > data->width)
+{
+    data->width = toplace_rect.MaxX - data->view_x;
+    set(obj, MUIA_IconList_Width, data->width);
+}
 
-    if (toplace_rect.MaxY - data->view_y > data->height)
-    {
-    	data->height = toplace_rect.MaxY - data->view_y;
-	set(obj, MUIA_IconList_Height, data->height);
-    }
+if (toplace_rect.MaxY - data->view_y > data->height)
+{
+    data->height = toplace_rect.MaxY - data->view_y;
+    set(obj, MUIA_IconList_Height, data->height);
+}
 #endif
 }
 */
 /**************************************************************************
- Place icons with NO_ICON_POSITION coords somewhere
-**************************************************************************/
+  Place icons with NO_ICON_POSITION coords somewhere
+ **************************************************************************/
 
 static ULONG IconList_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_IconList_PositionIcons *msg)
 {
@@ -456,39 +453,39 @@ static ULONG IconList_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_
     int cur_y = gridy / 2;
 
     /*date/size sorting has the date/size appended under the icon label*/
-	if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE) )
-		gridy += _font(obj)->tf_YSize + 2;
+    if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE) )
+	gridy += _font(obj)->tf_YSize + 2;
 
     icon = List_First(&data->icon_list);
     while (icon)
     {
-		if (icon->dob)
+	if (icon->dob)
+	{
+	    icon->x = cur_x - (icon->width)/2;
+	    icon->y = cur_y - (icon->height)/2;
+
+	    if( data->sort_bits & ICONLIST_DISP_VERTICAL )
+	    {
+		cur_y += gridy;
+
+		if (cur_y > data->view_width - (gridy / 2) )
 		{
-			icon->x = cur_x - (icon->width)/2;
-			icon->y = cur_y - (icon->height)/2;
-
-			if( data->sort_bits & ICONLIST_DISP_VERTICAL )
-			{
-				cur_y += gridy;
-
-				if (cur_y > data->view_width - (gridy / 2) )
-				{
-					cur_x += gridx;
-					cur_y = gridy / 2;
-				}
-			}
-			else
-			{
-				cur_x += gridx;
-
-				if (cur_x > data->view_width - (gridx / 2) )
-				{
-					cur_y += gridy;
-					cur_x = gridx / 2;
-				}
-			}
+		    cur_x += gridx;
+		    cur_y = gridy / 2;
 		}
-		icon = Node_Next(icon);
+	    }
+	    else
+	    {
+		cur_x += gridx;
+
+		if (cur_x > data->view_width - (gridx / 2) )
+		{
+		    cur_y += gridy;
+		    cur_x = gridx / 2;
+		}
+	    }
+	}
+	icon = Node_Next(icon);
     }
 
     IconList_RethinkDimensions(obj, data, NULL);
@@ -496,63 +493,63 @@ static ULONG IconList_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_
 }
 
 /*static void IconList_FixNoPositionIcons(Object *obj, struct MUI_IconData *data)
+  {
+  struct IconEntry *icon;
+  int cur_x = data->view_x + 36;
+  int cur_y = data->view_y + 4;
+
+  icon = List_First(&data->icon_list);
+  while (icon)
+  {
+  if (icon->dob && icon->x == NO_ICON_POSITION && icon->y == NO_ICON_POSITION)
+  {
+  int loops = 0;
+  int cur_x_save = cur_x;
+  int cur_y_save = cur_y;
+  struct Rectangle icon_rect;
+
+  IconList_GetIconRectangle(obj, icon, &icon_rect);
+  icon_rect.MinX += cur_x - icon->width/2 + data->view_x;
+  if (icon_rect.MinX < 0)
+  cur_x -= icon_rect.MinX;
+
+  while (!IconList_CouldPlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y) && loops < 5000)
+  {
+  cur_y++;
+
+  if (cur_y + icon->height > data->view_x + data->view_height) *//* on both sides -1 *//*
 {
-    struct IconEntry *icon;
-    int cur_x = data->view_x + 36;
-    int cur_y = data->view_y + 4;
+    cur_x += 72;
+    cur_y = data->view_y + 4;
+}
+}
 
-    icon = List_First(&data->icon_list);
-    while (icon)
-    {
-	if (icon->dob && icon->x == NO_ICON_POSITION && icon->y == NO_ICON_POSITION)
-	{
-	    int loops = 0;
-	    int cur_x_save = cur_x;
-	    int cur_y_save = cur_y;
-	    struct Rectangle icon_rect;
+IconList_PlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y);
 
-	    IconList_GetIconRectangle(obj, icon, &icon_rect);
-	    icon_rect.MinX += cur_x - icon->width/2 + data->view_x;
-	    if (icon_rect.MinX < 0)
-		cur_x -= icon_rect.MinX;
+if (icon_rect.MinX < 0)
+{
+    cur_x = cur_x_save;
+    cur_y = cur_y_save;
+}
+}
+icon = Node_Next(icon);
+}
 
-	    while (!IconList_CouldPlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y) && loops < 5000)
-	    {
-		cur_y++;
-
-		if (cur_y + icon->height > data->view_x + data->view_height) *//* on both sides -1 *//*
-		{
-		    cur_x += 72;
-		    cur_y = data->view_y + 4;
-		}
-	    }
-
-	    IconList_PlaceIcon(obj, data, icon, cur_x - icon->width/2, cur_y);
-
-	    if (icon_rect.MinX < 0)
-	    {
-		cur_x = cur_x_save;
-		cur_y = cur_y_save;
-	    }
-	}
-	icon = Node_Next(icon);
-    }
-    
-    IconList_RethinkDimensions(obj, data, NULL);
+IconList_RethinkDimensions(obj, data, NULL);
 }
 */
 /**************************************************************************
- OM_NEW
-**************************************************************************/
+  OM_NEW
+ **************************************************************************/
 static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconData   *data;
     struct TagItem  	    *tag, *tags;
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-	MUIA_Dropable, TRUE,
-	MUIA_Font, MUIV_Font_Tiny,
-    	TAG_MORE, (IPTR) msg->ops_AttrList);
+	    MUIA_Dropable, TRUE,
+	    MUIA_Font, MUIV_Font_Tiny,
+	    TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
@@ -565,7 +562,7 @@ static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-    	}
+	}
     }
 
     data->pool =  CreatePool(0,4096,4096);
@@ -582,13 +579,13 @@ static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Class    = cl;
 
     data->sort_bits = 0;
-    
+
     return (IPTR)obj;
 }
 
 /**************************************************************************
- OM_DISPOSE
-**************************************************************************/
+  OM_DISPOSE
+ **************************************************************************/
 static IPTR IconList_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -609,53 +606,53 @@ static IPTR IconList_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
 
 /**************************************************************************
- OM_SET
-**************************************************************************/
+  OM_SET
+ **************************************************************************/
 static IPTR IconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct TagItem  	*tag, *tags;
     WORD    	    	 oldleft = data->view_x, oldtop = data->view_y;
-    
+
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_IconList_Left:
-		    if (data->view_x != tag->ti_Data)
-		    {
-			data->view_x = tag->ti_Data;
-		    }
-		    break;
+		if (data->view_x != tag->ti_Data)
+		{
+		    data->view_x = tag->ti_Data;
+		}
+		break;
 
 	    case    MUIA_IconList_Top:
-		    if (data->view_y != tag->ti_Data)
-		    {
-			data->view_y = tag->ti_Data;
-		    }
-		    break;
-    	}
+		if (data->view_y != tag->ti_Data)
+		{
+		    data->view_y = tag->ti_Data;
+		}
+		break;
+	}
     }
 
     if ((oldleft != data->view_x) || (oldtop != data->view_y))
     {
-    	data->update = UPDATE_SCROLL;
+	data->update = UPDATE_SCROLL;
 	data->update_scrolldx = data->view_x - oldleft;
 	data->update_scrolldy = data->view_y - oldtop;
-	
+
 	MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
-    
+
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 /**************************************************************************
- OM_GET
-**************************************************************************/
+  OM_GET
+ **************************************************************************/
 static ULONG IconList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-/* small macro to simplify return value storage */
+    /* small macro to simplify return value storage */
 #define STORE *(msg->opg_Storage)
     struct MUI_IconData *data = INST_DATA(cl, obj);
 
@@ -675,8 +672,8 @@ static ULONG IconList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 /**************************************************************************
- MUIM_Setup
-**************************************************************************/
+  MUIM_Setup
+ **************************************************************************/
 static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -692,12 +689,12 @@ static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 	if (!node->dob)
 	{
 	    node->dob = GetIconTags
-            (
-                node->entry.filename, 
-                ICONGETA_FailIfUnavailable,        FALSE, 
-                ICONGETA_Label,             (IPTR) node->entry.label,
-                TAG_DONE
-            );
+		(
+		 node->entry.filename, 
+		 ICONGETA_FailIfUnavailable,        FALSE, 
+		 ICONGETA_Label,             (IPTR) node->entry.label,
+		 TAG_DONE
+		);
 	}
 	node = Node_Next(node);
     }
@@ -706,40 +703,40 @@ static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 }
 
 /**************************************************************************
- MUIM_Show
-**************************************************************************/
+  MUIM_Show
+ **************************************************************************/
 static IPTR IconList_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     WORD newleft, newtop;
     IPTR rc;
-    
+
     rc = DoSuperMethodA(cl, obj, (Msg)msg);
 
     newleft = data->view_x;
     newtop = data->view_y;
-    
+
     if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
     if (newleft < 0) newleft = 0;
-    
+
     if (newtop + _mheight(obj) > data->height) newtop = data->height - _mheight(obj);
     if (newtop < 0) newtop = 0;
 
     if ((newleft != data->view_x) || (newtop != data->view_y))
     {    
 	SetAttrs(obj, MUIA_IconList_Left, newleft,
-    	    	      MUIA_IconList_Top, newtop,
-		      TAG_DONE);
+		MUIA_IconList_Top, newtop,
+		TAG_DONE);
     }
-    
+
     SetFont(_rp(obj), _font(obj));
     return rc;
 }
 
 
 /**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
+  MUIM_Cleanup
+ **************************************************************************/
 static ULONG IconList_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -763,14 +760,14 @@ static ULONG IconList_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanu
 }
 
 /**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
+  MUIM_AskMinMax
+ **************************************************************************/
 static ULONG IconList_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     ULONG rc = DoSuperMethodA(cl, obj, (Msg) msg);
 
-//    msg->MinMaxInfo->MinWidth  += 0;
-//    msg->MinMaxInfo->MinHeight += 0;
+    //    msg->MinMaxInfo->MinWidth  += 0;
+    //    msg->MinMaxInfo->MinHeight += 0;
 
     msg->MinMaxInfo->DefWidth  += 200;
     msg->MinMaxInfo->DefHeight += 180;
@@ -782,8 +779,8 @@ static ULONG IconList_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
 }
 
 /**************************************************************************
- MUIM_Layout
-**************************************************************************/
+  MUIM_Layout
+ **************************************************************************/
 static ULONG IconList_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -794,8 +791,8 @@ static ULONG IconList_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *
 }
 
 /**************************************************************************
- MUIM_Draw
-**************************************************************************/
+  MUIM_Draw
+ **************************************************************************/
 static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -819,17 +816,17 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 
 	    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
-    	#if 1
-            DoMethod(obj, MUIM_DrawBackground, rect.MinX, rect.MinY,
-		     rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
-		     data->view_x + (rect.MinX - _mleft(obj)),
-		     data->view_y + (rect.MinY - _mtop(obj)), 0);
-	#else
-            DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
-		     _mwidth(obj), _mheight(obj),
-		     data->view_x, data->view_y, 0);
-    	#endif
-	
+#if 1
+	    DoMethod(obj, MUIM_DrawBackground, rect.MinX, rect.MinY,
+		    rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
+		    data->view_x + (rect.MinX - _mleft(obj)),
+		    data->view_y + (rect.MinY - _mtop(obj)), 0);
+#else
+	    DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
+		    _mwidth(obj), _mheight(obj),
+		    data->view_x, data->view_y, 0);
+#endif
+
 	    /* We could have deleted also other icons so they must be redrawn */
 	    icon = List_First(&data->icon_list);
 	    while (icon)
@@ -868,7 +865,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	    data->update = 0;
 
 	    if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
-	    	(abs(data->update_scrolldy) >= _mheight(obj)))
+		    (abs(data->update_scrolldy) >= _mheight(obj)))
 	    {
 		MUI_Redraw(obj, MADF_DRAWOBJECT);
 		return 0;
@@ -889,7 +886,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 		xrect.MaxY = _mbottom(obj);
 
 		OrRectRegion(region, &xrect);
-		
+
 		data->update_rect1 = &xrect;
 	    }
 	    else if (data->update_scrolldx < 0)
@@ -928,28 +925,28 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	    }
 
 	    ScrollRasterBF(_rp(obj),
-	    	    	   data->update_scrolldx,
-			   data->update_scrolldy,
-			   _mleft(obj),
-			   _mtop(obj),
-			   _mright(obj),
-			   _mbottom(obj));
+		    data->update_scrolldx,
+		    data->update_scrolldy,
+		    _mleft(obj),
+		    _mtop(obj),
+		    _mright(obj),
+		    _mbottom(obj));
 
-    	    scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+	    scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
 
 	    clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
 
 	    MUI_Redraw(obj, MADF_DRAWOBJECT);
 
-    	    data->update_rect1 = data->update_rect2 = NULL;
-	    
+	    data->update_rect1 = data->update_rect2 = NULL;
+
 	    MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
 
-//	    DisposeRegion(region);
+	    //	    DisposeRegion(region);
 
 	    if (scroll_caused_damage)
 	    {
-    		if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
+		if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
 		{
 		    /* Theoretically it might happen that more damage is caused
 		       after ScrollRaster. By something else, like window movement
@@ -1001,17 +998,17 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 }
 
 /**************************************************************************
- MUIM_IconList_Refresh
- Implemented by subclasses
-**************************************************************************/
+  MUIM_IconList_Refresh
+  Implemented by subclasses
+ **************************************************************************/
 static ULONG IconList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
 {
     return 1;
 }
 
 /**************************************************************************
- MUIM_IconList_Clear
-**************************************************************************/
+  MUIM_IconList_Clear
+ **************************************************************************/
 static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList_Clear *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -1022,7 +1019,7 @@ static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList
 	if (node->dob) FreeDiskObject(node->dob);
 	if (node->entry.label) FreePooled(data->pool,node->entry.label,strlen(node->entry.label)+1);
 	if (node->entry.filename) FreePooled(data->pool,node->entry.filename,strlen(node->entry.filename)+1);
-        FreePooled(data->pool,node,sizeof(struct IconEntry));
+	FreePooled(data->pool,node,sizeof(struct IconEntry));
     }
 
     data->first_selected = NULL;
@@ -1032,19 +1029,19 @@ static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList
     data->max_x = data->max_y = 32;	/*default icon size*/
 
     SetAttrs(obj, MUIA_IconList_Left, data->view_x,
-    	    	  MUIA_IconList_Top, data->view_y,
-		  MUIA_IconList_Width, data->width,
-		  MUIA_IconList_Height, data->height,
-		  TAG_DONE);
-		  
+	    MUIA_IconList_Top, data->view_y,
+	    MUIA_IconList_Width, data->width,
+	    MUIA_IconList_Height, data->height,
+	    TAG_DONE);
+
     MUI_Redraw(obj,MADF_DRAWOBJECT);
     return 1;
 }
 
 /**************************************************************************
- MUIM_IconList_Add.
- Returns 0 on failure otherwise 1
-**************************************************************************/
+  MUIM_IconList_Add.
+  Returns 0 on failure otherwise 1
+ **************************************************************************/
 static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Add *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -1054,16 +1051,16 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 
     struct DiskObject *dob;
     struct Rectangle rect;
-    
+
     /*disk object (icon)*/
     dob = GetIconTags
-    (
-        msg->filename, 
-        ICONGETA_FailIfUnavailable,        FALSE,
-        ICONGETA_Label,             (IPTR) msg->label,
-        TAG_DONE
-    );
-    
+	(
+	 msg->filename, 
+	 ICONGETA_FailIfUnavailable,        FALSE,
+	 ICONGETA_Label,             (IPTR) msg->label,
+	 TAG_DONE
+	);
+
     if (!dob) return 0;
 
     if (!(entry = AllocPooled(data->pool,sizeof(struct IconEntry))))
@@ -1074,7 +1071,7 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 
     memset(entry,0,sizeof(struct IconEntry));
 
-	/*alloc filename*/
+    /*alloc filename*/
     if (!(entry->entry.filename = AllocPooled(data->pool,strlen(msg->filename)+1)))
     {
 	FreePooled(data->pool,entry,sizeof(struct IconEntry));
@@ -1082,55 +1079,55 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 	return 0;
     }
 
-	/*alloc icon label*/
+    /*alloc icon label*/
     if (!(entry->entry.label = AllocPooled(data->pool,strlen(msg->label)+1)))
     {
-    	FreePooled(data->pool,entry->entry.filename,strlen(entry->entry.filename)+1);
+	FreePooled(data->pool,entry->entry.filename,strlen(entry->entry.filename)+1);
 	FreePooled(data->pool,entry,sizeof(struct IconEntry));
 	FreeDiskObject(dob);
 	return 0;
     }
 
-    	/*file info block*/
-	if( msg->fib )
+    /*file info block*/
+    if( msg->fib )
+    {
+	entry->fib = *msg->fib;
+
+	if (entry->fib.fib_DirEntryType > 0)
 	{
-		entry->fib = *msg->fib;
-
-		if (entry->fib.fib_DirEntryType > 0)
-		{
-			strcpy(entry->sizebuf, "Drawer");
-		}
-		else
-		{
-			sprintf(entry->sizebuf, "%ld", entry->fib.fib_Size);
-		}
-
-		dt.dat_Stamp    = entry->fib.fib_Date;
-		dt.dat_Format   = FORMAT_DEF;
-		dt.dat_Flags    = 0;
-		dt.dat_StrDay   = NULL;
-		dt.dat_StrDate  = entry->datebuf;
-		dt.dat_StrTime  = entry->timebuf;
-
-		DateToStr(&dt);
-
-		sp = entry->protbuf;
-		*sp++ = (entry->fib.fib_Protection & FIBF_SCRIPT)  ? 's' : '-';
-		*sp++ = (entry->fib.fib_Protection & FIBF_PURE)    ? 'p' : '-';
-		*sp++ = (entry->fib.fib_Protection & FIBF_ARCHIVE) ? 'a' : '-';
-		*sp++ = (entry->fib.fib_Protection & FIBF_READ)    ? '-' : 'r';
-		*sp++ = (entry->fib.fib_Protection & FIBF_WRITE)   ? '-' : 'w';
-		*sp++ = (entry->fib.fib_Protection & FIBF_EXECUTE) ? '-' : 'e';
-		*sp++ = (entry->fib.fib_Protection & FIBF_DELETE)  ? '-' : 'd';
-		*sp++ = '\0';
-
-    	entry->entry.type = entry->fib.fib_DirEntryType;
-
+	    strcpy(entry->sizebuf, "Drawer");
 	}
 	else
 	{
-    	entry->entry.type = ST_USERDIR;
+	    sprintf(entry->sizebuf, "%ld", entry->fib.fib_Size);
 	}
+
+	dt.dat_Stamp    = entry->fib.fib_Date;
+	dt.dat_Format   = FORMAT_DEF;
+	dt.dat_Flags    = 0;
+	dt.dat_StrDay   = NULL;
+	dt.dat_StrDate  = entry->datebuf;
+	dt.dat_StrTime  = entry->timebuf;
+
+	DateToStr(&dt);
+
+	sp = entry->protbuf;
+	*sp++ = (entry->fib.fib_Protection & FIBF_SCRIPT)  ? 's' : '-';
+	*sp++ = (entry->fib.fib_Protection & FIBF_PURE)    ? 'p' : '-';
+	*sp++ = (entry->fib.fib_Protection & FIBF_ARCHIVE) ? 'a' : '-';
+	*sp++ = (entry->fib.fib_Protection & FIBF_READ)    ? '-' : 'r';
+	*sp++ = (entry->fib.fib_Protection & FIBF_WRITE)   ? '-' : 'w';
+	*sp++ = (entry->fib.fib_Protection & FIBF_EXECUTE) ? '-' : 'e';
+	*sp++ = (entry->fib.fib_Protection & FIBF_DELETE)  ? '-' : 'd';
+	*sp++ = '\0';
+
+	entry->entry.type = entry->fib.fib_DirEntryType;
+
+    }
+    else
+    {
+	entry->entry.type = ST_USERDIR;
+    }
 
     strcpy(entry->entry.filename,msg->filename);
     strcpy(entry->entry.label,msg->label);
@@ -1152,16 +1149,16 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 
     if( entry->height > data->max_y ) data->max_y = entry->height;
 
-	AddHead((struct List*)&data->icon_list,(struct Node*)entry);
-    
+    AddHead((struct List*)&data->icon_list,(struct Node*)entry);
+
     return 1;
 }
 /*
-fib_DirEntryType,ST_USERDIR; LONG type
-*/
+   fib_DirEntryType,ST_USERDIR; LONG type
+   */
 
 static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheelx, LONG wheely,
-    	    	    	UWORD qual)
+	UWORD qual)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
 
@@ -1170,38 +1167,38 @@ static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheelx, LONG wheely
 
     /* If vertical wheel is used but there's nothing to scroll
        vertically (everything visible already), scroll horizontally. */  
-            
+
     if (wheely && !wheelx && data->height <= _mheight(obj))
     {
-    	wheelx = wheely; wheely = 0;
+	wheelx = wheely; wheely = 0;
     }
 
     /* If vertical wheel is used and one of the ALT keys is down,
        scroll horizontally */
-       
+
     if (wheely && !wheelx && (qual & (IEQUALIFIER_LALT | IEQUALIFIER_RALT)))
     {
-    	wheelx = wheely; wheely = 0;
+	wheelx = wheely; wheely = 0;
     }
-    
+
     if (qual & (IEQUALIFIER_CONTROL))
     {
-    	if (wheelx < 0) newleft = 0;
+	if (wheelx < 0) newleft = 0;
 	if (wheelx > 0) newleft = data->width;
-    	if (wheely < 0) newtop = 0;
+	if (wheely < 0) newtop = 0;
 	if (wheely > 0) newtop = data->height;
     }
     else if (qual & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
     {
-    	newleft += (wheelx * _mwidth(obj));
+	newleft += (wheelx * _mwidth(obj));
 	newtop += (wheely * _mheight(obj));
     }
     else
     {
-    	newleft += wheelx * 30;
+	newleft += wheelx * 30;
 	newtop += wheely * 30;
     }
-    
+
     if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
     if (newleft < 0) newleft = 0;
 
@@ -1211,58 +1208,58 @@ static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheelx, LONG wheely
     if ((newleft != data->view_x) || (newtop != data->view_y))
     {
 	SetAttrs(obj, MUIA_IconList_Left, newleft,
-		      MUIA_IconList_Top, newtop,
-		      TAG_DONE);
+		MUIA_IconList_Top, newtop,
+		TAG_DONE);
     }
 
 }
 
 /**************************************************************************
- MUIM_HandleEvent
-**************************************************************************/
+  MUIM_HandleEvent
+ **************************************************************************/
 static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
 
     if (msg->imsg)
     {
-    	LONG mx = msg->imsg->MouseX - _mleft(obj);
-    	LONG my = msg->imsg->MouseY - _mtop(obj);
-    	LONG wheelx = 0;
-    	LONG wheely = 0;
-	
+	LONG mx = msg->imsg->MouseX - _mleft(obj);
+	LONG my = msg->imsg->MouseY - _mtop(obj);
+	LONG wheelx = 0;
+	LONG wheely = 0;
+
 	switch (msg->imsg->Class)
 	{
 	    case IDCMP_RAWKEY:
-	    {		
-	    	switch(msg->imsg->Code)
-		{
-		    case RAWKEY_NM_WHEEL_UP:
-		    	wheely = -1;
-			break;
-			
-		    case RAWKEY_NM_WHEEL_DOWN:
-		    	wheely = 1;
-			break;
-			
-		    case RAWKEY_NM_WHEEL_LEFT:
-		    	wheelx = -1;
-			break;
-			
-		    case RAWKEY_NM_WHEEL_RIGHT:
-		    	wheelx = 1;
-			break;
-			
+		{		
+		    switch(msg->imsg->Code)
+		    {
+			case RAWKEY_NM_WHEEL_UP:
+			    wheely = -1;
+			    break;
+
+			case RAWKEY_NM_WHEEL_DOWN:
+			    wheely = 1;
+			    break;
+
+			case RAWKEY_NM_WHEEL_LEFT:
+			    wheelx = -1;
+			    break;
+
+			case RAWKEY_NM_WHEEL_RIGHT:
+			    wheelx = 1;
+			    break;
+
+		    }
 		}
-	    }
-	    
-	    if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY) &&
-	    	(wheelx || wheely))
-	    {
-	    	DoWheelMove(cl, obj, wheelx, wheely, msg->imsg->Qualifier);
-	    }
-	    break;
-		
+
+		if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY) &&
+			(wheelx || wheely))
+		{
+		    DoWheelMove(cl, obj, wheelx, wheely, msg->imsg->Qualifier);
+		}
+		break;
+
 	    case IDCMP_MOUSEBUTTONS:
 		if (msg->imsg->Code == SELECTDOWN)
 		{
@@ -1277,7 +1274,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 			while (node)
 			{
 			    if (mx >= node->x - data->view_x && mx < node->x - data->view_x + node->width &&
-			    	my >= node->y - data->view_y && my < node->y - data->view_y + node->height && !new_selected)
+				    my >= node->y - data->view_y && my < node->y - data->view_y + node->height && !new_selected)
 			    {
 				new_selected = node;
 
@@ -1342,9 +1339,9 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 		{
 		    if (!data->mouse_pressed)
 		    {
-		    	data->mouse_pressed |= MIDDLE_BUTTON;
+			data->mouse_pressed |= MIDDLE_BUTTON;
 
-    	    	    	data->click_x = data->view_x + mx;
+			data->click_x = data->view_x + mx;
 			data->click_y = data->view_y + my;
 
 			if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
@@ -1389,7 +1386,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 			data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
 			DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
-    	    	    	data->mouse_pressed &= ~LEFT_BUTTON;
+			data->mouse_pressed &= ~LEFT_BUTTON;
 
 			data->touch_x = move_x + data->view_x - data->first_selected->x;
 			data->touch_y = move_y + data->view_y - data->first_selected->y;
@@ -1414,8 +1411,8 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 		    if ((newleft != data->view_x) || (newtop != data->view_y))
 		    {
 			SetAttrs(obj, MUIA_IconList_Left, newleft,
-			    	      MUIA_IconList_Top, newtop,
-				      TAG_DONE);
+				MUIA_IconList_Top, newtop,
+				TAG_DONE);
 		    }
 
 		    return 0;
@@ -1429,8 +1426,8 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 }
 
 /**************************************************************************
- MUIM_IconList_NextSelected
-**************************************************************************/
+  MUIM_IconList_NextSelected
+ **************************************************************************/
 static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_IconList_NextSelected *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -1473,8 +1470,8 @@ static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_I
 }
 
 /**************************************************************************
- MUIM_CreateDragImage
-**************************************************************************/
+  MUIM_CreateDragImage
+ **************************************************************************/
 static ULONG IconList_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -1484,19 +1481,19 @@ static ULONG IconList_CreateDragImage(struct IClass *cl, Object *obj, struct MUI
 
     if ((img = (struct MUI_DragImage *)AllocVec(sizeof(struct MUIP_CreateDragImage),MEMF_CLEAR)))
     {
-    	struct IconEntry *node;
+	struct IconEntry *node;
 	LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
 
 	node = data->first_selected;
 
-    	img->width = node->width;
-    	img->height = node->height;
+	img->width = node->width;
+	img->height = node->height;
 
-    	if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES | BMF_CLEAR,_screen(obj)->RastPort.BitMap)))
-    	{
-    	    struct RastPort temprp;
-    	    InitRastPort(&temprp);
-    	    temprp.BitMap = img->bm;
+	if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES | BMF_CLEAR,_screen(obj)->RastPort.BitMap)))
+	{
+	    struct RastPort temprp;
+	    InitRastPort(&temprp);
+	    temprp.BitMap = img->bm;
 
 #ifndef __AROS__
 	    DrawIconState(&temprp,node->dob,NULL,0,0, node->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, TRUE, TAG_DONE);
@@ -1504,18 +1501,18 @@ static ULONG IconList_CreateDragImage(struct IClass *cl, Object *obj, struct MUI
 	    DrawIconStateA(&temprp,node->dob,NULL,0,0, node->selected?IDS_SELECTED:IDS_NORMAL, NULL);
 #endif
 	    DeinitRastPort(&temprp);
-    	}
+	}
 
-    	img->touchx = msg->touchx;
-    	img->touchy = msg->touchy;
-    	img->flags = 0;
+	img->touchx = msg->touchx;
+	img->touchy = msg->touchy;
+	img->flags = 0;
     }
     return (ULONG)img;
 }
 
 /**************************************************************************
- MUIM_DeleteDragImage
-**************************************************************************/
+  MUIM_DeleteDragImage
+ **************************************************************************/
 static ULONG IconList_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_DeleteDragImage *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -1531,8 +1528,8 @@ static ULONG IconList_DeleteDragImage(struct IClass *cl, Object *obj, struct MUI
 }
 
 /**************************************************************************
- MUIM_DragQuery
-**************************************************************************/
+  MUIM_DragQuery
+ **************************************************************************/
 static ULONG IconList_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
 {
     if (msg->obj == obj) return MUIV_DragQuery_Accept;
@@ -1545,8 +1542,8 @@ static ULONG IconList_DragQuery(struct IClass *cl, Object *obj, struct MUIP_Drag
 	{
 	    if (msg_cl == cl)
 	    {
-	    	is_iconlist = 1;
-	    	break;
+		is_iconlist = 1;
+		break;
 	    }
 	    msg_cl = msg_cl->cl_Super;
 	}
@@ -1557,8 +1554,8 @@ static ULONG IconList_DragQuery(struct IClass *cl, Object *obj, struct MUIP_Drag
 }
 
 /**************************************************************************
- MUIM_DragDrop
-**************************************************************************/
+  MUIM_DragDrop
+ **************************************************************************/
 static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -1566,23 +1563,23 @@ static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
     if (msg->obj == obj)
     {
 	struct IconEntry *icon = data->first_selected;
-	
+
 	if (icon)
 	{
 	    struct Rectangle old, new;
 	    struct Region    *region;
 	    APTR    	     clip = NULL;
-	    
+
 	    IconList_GetIconRectangle(obj, data, icon, &old);
 
 	    old.MinX += _mleft(obj) - data->view_x + icon->x;
 	    old.MaxX += _mleft(obj) - data->view_x + icon->x;
 	    old.MinY += _mtop(obj) - data->view_y + icon->y;
 	    old.MaxY += _mtop(obj) - data->view_y + icon->y;
-	    
+
 	    icon->x = msg->x - _mleft(obj) + data->view_x - data->touch_x;
 	    icon->y = msg->y - _mtop(obj) + data->view_y - data->touch_y;
-	    	    
+
 	    IconList_RethinkDimensions(obj, data, data->first_selected);
 
 	    IconList_GetIconRectangle(obj, data, data->first_selected, &new);
@@ -1591,34 +1588,34 @@ static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
 	    new.MaxX += _mleft(obj) - data->view_x + icon->x;
 	    new.MinY += _mtop(obj) - data->view_y + icon->y;
 	    new.MaxY += _mtop(obj) - data->view_y + icon->y;
-	    
+
 	    region = NewRegion();
 	    if (region)
 	    {
-	    	OrRectRegion(region, &old);
-	    	OrRectRegion(region, &new);
+		OrRectRegion(region, &old);
+		OrRectRegion(region, &new);
 		clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
 	    }
-	    
+
 	    MUI_Redraw(obj,MADF_DRAWOBJECT);
-	    
+
 	    if (region)
 	    {
-	    	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+		MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
 	    }
-	    
+
 	}
     } else
     {
-    	data->drop_entry = NULL;
-    	set(obj, MUIA_IconList_IconsDropped, (IPTR)data->drop_entry); /* Now notify */
+	data->drop_entry = NULL;
+	set(obj, MUIA_IconList_IconsDropped, (IPTR)data->drop_entry); /* Now notify */
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
 /**************************************************************************
- MUIM_UnselectAll
-**************************************************************************/
+  MUIM_UnselectAll
+ **************************************************************************/
 static ULONG IconList_UnselectAll(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
@@ -1647,8 +1644,8 @@ struct MUI_IconDrawerData
 };
 
 /**************************************************************************
- Read icons in
-**************************************************************************/
+  Read icons in
+ **************************************************************************/
 static int ReadIcons(struct IClass *cl, Object *obj)
 {
     struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
@@ -1656,249 +1653,249 @@ static int ReadIcons(struct IClass *cl, Object *obj)
     char filename[256];
 
     if (!data->drawer)
-    	return 1;
+	return 1;
 
-   	lock = Lock(data->drawer, SHARED_LOCK);
+    lock = Lock(data->drawer, SHARED_LOCK);
 
-	if (lock)
+    if (lock)
+    {
+	struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+	if (fib)
 	{
-		struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
-		if (fib)
+	    if (Examine(lock, fib))
+	    {
+		while(ExNext(lock, fib))
 		{
-			if (Examine(lock, fib))
-			{
-				while(ExNext(lock, fib))
-				{
-					int len;
+		    int len;
 
-					strcpy(filename,fib->fib_FileName);
-					len = strlen(filename);
+		    strcpy(filename,fib->fib_FileName);
+		    len = strlen(filename);
 
-					if (len >= 5)
-					{
-						/* reject all .info files, so we have a Show All mode */
-						if (!Stricmp(&filename[len-5],".info"))
-							continue;
-					}
+		    if (len >= 5)
+		    {
+			/* reject all .info files, so we have a Show All mode */
+			if (!Stricmp(&filename[len-5],".info"))
+			    continue;
+		    }
 
-					if (Stricmp(filename,"Disk")) /* skip disk.info */
-					{
-						char buf[512];
-						strcpy(buf,data->drawer);
-						AddPart(buf,filename,sizeof(buf));
+		    if (Stricmp(filename,"Disk")) /* skip disk.info */
+		    {
+			char buf[512];
+			strcpy(buf,data->drawer);
+			AddPart(buf,filename,sizeof(buf));
 
-						DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)filename,(IPTR) fib);
-					}
-				}
-			}
-
-			FreeDosObject(DOS_FIB, fib);
+			DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)filename,(IPTR) fib);
+		    }
 		}
+	    }
 
-		UnLock(lock);
+	    FreeDosObject(DOS_FIB, fib);
 	}
 
-	return 1;
+	UnLock(lock);
+    }
+
+    return 1;
 }
 
 /*
-static int OLDReadIcons(struct IClass *cl, Object *obj)
+   static int OLDReadIcons(struct IClass *cl, Object *obj)
+   {
+   struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
+   BPTR lock;
+
+   struct ExAllControl *eac;
+   struct ExAllData *entry;
+   void *ead;
+   LONG more;
+   BPTR olddir;
+//char pattern[40];
+char filename[256];
+
+if (!data->drawer) return 1;
+lock = Lock(data->drawer,ACCESS_READ);
+if (!lock) return 0;
+
+eac = (struct ExAllControl*)AllocDosObject(DOS_EXALLCONTROL,NULL);
+if (!eac)
 {
-    struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
-    BPTR lock;
+UnLock(lock);
+return 0;
+}
 
-    struct ExAllControl *eac;
-    struct ExAllData *entry;
-    void *ead;
-    LONG more;
-    BPTR olddir;
-    //char pattern[40];
-    char filename[256];
-
-    if (!data->drawer) return 1;
-    lock = Lock(data->drawer,ACCESS_READ);
-    if (!lock) return 0;
-
-    eac = (struct ExAllControl*)AllocDosObject(DOS_EXALLCONTROL,NULL);
-    if (!eac)
-    {
-	UnLock(lock);
-	return 0;
-    }
-
-    ead = AllocVec(1024,0);
-    if (!ead)
-    {
-	FreeDosObject(DOS_EXALLCONTROL,eac);
-	UnLock(lock);
-	return 0;
-    }
+ead = AllocVec(1024,0);
+if (!ead)
+{
+FreeDosObject(DOS_EXALLCONTROL,eac);
+UnLock(lock);
+return 0;
+}
 
 *//*
-    ParsePatternNoCase("#?.info",pattern,sizeof(pattern));
-    eac->eac_MatchString = pattern;
+ParsePatternNoCase("#?.info",pattern,sizeof(pattern));
+eac->eac_MatchString = pattern;
 *//*
 #ifdef __AROS__
 #warning AROS ExAll() doesnt support eac_MatchString
 #endif
-    eac->eac_MatchString = NULL;
-    eac->eac_LastKey = 0;
+eac->eac_MatchString = NULL;
+eac->eac_LastKey = 0;
 
-    olddir = CurrentDir(lock);
+olddir = CurrentDir(lock);
 
+do
+{
+    more = ExAll(lock,ead,1024,ED_TYPE,eac);
+    if ((!more) && (IoErr() != ERROR_NO_MORE_ENTRIES)) break;
+    if (eac->eac_Entries == 0) continue;
+
+    entry = (struct ExAllData*)ead;
     do
     {
-	more = ExAll(lock,ead,1024,ED_TYPE,eac);
-	if ((!more) && (IoErr() != ERROR_NO_MORE_ENTRIES)) break;
-	if (eac->eac_Entries == 0) continue;
+	int len;
 
-	entry = (struct ExAllData*)ead;
-	do
-	{
-	    int len;
+	strcpy(filename,entry->ed_Name);
 
-	    strcpy(filename,entry->ed_Name);
-
-*//*
+	*//*
 	    // if we only display icons
 
 	    filename[strlen(filename)-5]=0;
-*//*
-            len = strlen(filename);
-	    if (len >= 5)
-	    {
-		*//* reject all .info files, so we have a Show All mode *//*
+	*//*
+	    len = strlen(filename);
+	if (len >= 5)
+	{
+	    *//* reject all .info files, so we have a Show All mode *//*
 		if (!Stricmp(&filename[len-5],".info"))
 		    continue;
-	    }
+	}
 
-	    if (Stricmp(filename,"Disk")) *//* skip disk.info *//*
+	if (Stricmp(filename,"Disk")) *//* skip disk.info *//*
+	{
+	    char buf[512];
+	    strcpy(buf,data->drawer);
+	    AddPart(buf,filename,sizeof(buf));
+
+	    if (!(DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)filename,entry->ed_Type,NULL *//* udata *//*)))
 	    {
-		char buf[512];
-		strcpy(buf,data->drawer);
-		AddPart(buf,filename,sizeof(buf));
-
-		if (!(DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)filename,entry->ed_Type,NULL *//* udata *//*)))
-		{
-		}
 	    }
-	}   while ((entry = entry->ed_Next));
-    } while (more);
+	}
+    }   while ((entry = entry->ed_Next));
+} while (more);
 
-    CurrentDir(olddir);
+CurrentDir(olddir);
 
-    FreeVec(ead);
-    FreeDosObject(DOS_EXALLCONTROL,eac);
-    UnLock(lock);
-    return 1;
+FreeVec(ead);
+FreeDosObject(DOS_EXALLCONTROL,eac);
+UnLock(lock);
+return 1;
 }
 
 */
 /**************************************************************************
-ric - sortsort
-**************************************************************************/
+  ric - sortsort
+ **************************************************************************/
 ULONG IconList_Sort(struct IClass *cl, Object *obj, struct MUIP_IconList_Sort *msg)
 {
-	struct MUI_IconData *data = INST_DATA(cl, obj);
-	struct IconEntry *entry,*icon1,*icon2;
-	struct MinList list;
-	int sortme;
-	int i;
+    struct MUI_IconData *data = INST_DATA(cl, obj);
+    struct IconEntry *entry,*icon1,*icon2;
+    struct MinList list;
+    int sortme;
+    int i;
 
-	NewList((struct List*)&list);
+    NewList((struct List*)&list);
 
-	/*move list int out local list struct*/
-	while( (entry = (struct IconEntry *)RemTail((struct List*)&data->icon_list)) )
-		AddHead( (struct List*)&list , (struct Node *)entry );
+    /*move list int out local list struct*/
+    while( (entry = (struct IconEntry *)RemTail((struct List*)&data->icon_list)) )
+	AddHead( (struct List*)&list , (struct Node *)entry );
 
-	/*now copy each one back to the main list, sorting as we go*/
-	entry = List_First(&list);
+    /*now copy each one back to the main list, sorting as we go*/
+    entry = List_First(&list);
 
-	while((entry = (struct IconEntry *)RemTail((struct List*)&list)))
+    while((entry = (struct IconEntry *)RemTail((struct List*)&list)))
+    {
+	icon1 = List_First(&data->icon_list);
+	icon2 = NULL;
+	sortme = 0;
+
+	/*D(bug(" - %s %s %s %i\n",entry->entry.label,entry->datebuf,entry->timebuf,entry->fib.fib_Size));*/
+
+	while( icon1 )
 	{
-		icon1 = List_First(&data->icon_list);
-		icon2 = NULL;
-		sortme = 0;
 
-		/*D(bug(" - %s %s %s %i\n",entry->entry.label,entry->datebuf,entry->timebuf,entry->fib.fib_Size));*/
-
-		while( icon1 )
-		{
-
-			/*drawers mixed*/
-			if( data->sort_bits & ICONLIST_SORT_DRAWERS_MIXED )
+	    /*drawers mixed*/
+	    if( data->sort_bits & ICONLIST_SORT_DRAWERS_MIXED )
+	    {
+		sortme = 1;
+	    }
+	    else
+		/*drawers first*/
+	    {
+		if( icon1->entry.type == WBDRAWER && entry->entry.type == WBDRAWER )
+		    sortme = 1;
+		else
+		    if( icon1->entry.type != WBDRAWER && entry->entry.type != WBDRAWER )
+			sortme = 1;
+		    else
+			/*we are the first drawer to arrive or we need to insert ourselves due to being sorted to the end of the drawers*/
+			if( (!icon2 || icon2->entry.type == WBDRAWER) && entry->entry.type == WBDRAWER && icon1->entry.type != WBDRAWER )
 			{
-				sortme = 1;
+			    /*D(bug("force %s\n"),entry->entry.label);*/
+			    break;
+			}
+	    }
+
+	    if(sortme)
+	    {
+		i = 0;
+
+		/*date*/
+		if( (data->sort_bits & ICONLIST_SORT_BY_DATE) && !(data->sort_bits & ICONLIST_SORT_BY_SIZE) )
+		{
+		    i = CompareDates((const struct DateStamp *)&entry->fib.fib_Date,(const struct DateStamp *)&icon1->fib.fib_Date);
+		    /*D(bug("     -  %i\n",i));*/
+		}
+		else
+		    /*size*/
+		    if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) && !(data->sort_bits & ICONLIST_SORT_BY_DATE) )
+		    {
+			i = entry->fib.fib_Size - icon1->fib.fib_Size;
+			/*D(bug("     -  %i\n",i));*/
+
+		    }
+		    else
+			/*type*/
+			if( data->sort_bits & (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE) )
+			{
+
 			}
 			else
-			/*drawers first*/
+			    /*name*/
 			{
-				if( icon1->entry.type == WBDRAWER && entry->entry.type == WBDRAWER )
-					sortme = 1;
-				else
-				if( icon1->entry.type != WBDRAWER && entry->entry.type != WBDRAWER )
-					sortme = 1;
-				else
-				/*we are the first drawer to arrive or we need to insert ourselves due to being sorted to the end of the drawers*/
-				if( (!icon2 || icon2->entry.type == WBDRAWER) && entry->entry.type == WBDRAWER && icon1->entry.type != WBDRAWER )
-				{
-					/*D(bug("force %s\n"),entry->entry.label);*/
-					break;
-				}
+			    i = Stricmp(entry->entry.label,icon1->entry.label);
 			}
 
-			if(sortme)
-			{
-				i = 0;
 
-				/*date*/
-				if( (data->sort_bits & ICONLIST_SORT_BY_DATE) && !(data->sort_bits & ICONLIST_SORT_BY_SIZE) )
-				{
-					i = CompareDates((const struct DateStamp *)&entry->fib.fib_Date,(const struct DateStamp *)&icon1->fib.fib_Date);
-					/*D(bug("     -  %i\n",i));*/
-				}
-				else
-				/*size*/
-				if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) && !(data->sort_bits & ICONLIST_SORT_BY_DATE) )
-				{
-					i = entry->fib.fib_Size - icon1->fib.fib_Size;
-					/*D(bug("     -  %i\n",i));*/
+		if ( !(data->sort_bits & ICONLIST_SORT_REVERSE) && i<0 )
+		    break;
 
-				}
-				else
-				/*type*/
-				if( data->sort_bits & (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE) )
-				{
-
-				}
-				else
-				/*name*/
-				{
-					i = Stricmp(entry->entry.label,icon1->entry.label);
-				}
+		if ( (data->sort_bits & ICONLIST_SORT_REVERSE) && i>0)
+		    break;
 
 
-				if ( !(data->sort_bits & ICONLIST_SORT_REVERSE) && i<0 )
-					break;
+	    }
 
-				if ( (data->sort_bits & ICONLIST_SORT_REVERSE) && i>0)
-					break;
-
-
-			}
-
-			icon2 = icon1;
-			icon1 = Node_Next( icon1 );
-		}
-
-
-		Insert( (struct List*)&data->icon_list , (struct Node *)entry , (struct Node *)icon2 );
+	    icon2 = icon1;
+	    icon1 = Node_Next( icon1 );
 	}
 
-	/*debug, stomp it back in in reverse order instead
-	while( (entry = (struct IconEntry *)RemTail((struct List*)&list)) )
-		AddTail( (struct List*)&data->icon_list , (struct Node *)entry );
-	*/
+
+	Insert( (struct List*)&data->icon_list , (struct Node *)entry , (struct Node *)icon2 );
+    }
+
+    /*debug, stomp it back in in reverse order instead
+      while( (entry = (struct IconEntry *)RemTail((struct List*)&list)) )
+      AddTail( (struct List*)&data->icon_list , (struct Node *)entry );
+      */
 
     DoMethod(obj,MUIM_IconList_PositionIcons);
 
@@ -1908,30 +1905,30 @@ ULONG IconList_Sort(struct IClass *cl, Object *obj, struct MUIP_IconList_Sort *m
 }
 
 /**************************************************************************
-ric - set our sorting bits
-**************************************************************************/
+  ric - set our sorting bits
+ **************************************************************************/
 ULONG IconList_SetSortBits(struct IClass *cl, Object *obj, struct MUIP_IconList_SetSortBits *msg)
 {
-	struct MUI_IconData *data = INST_DATA(cl, obj);
+    struct MUI_IconData *data = INST_DATA(cl, obj);
     data->sort_bits = msg->sort_bits;
     return 1;
 }
 
 /**************************************************************************
-ric - return our sorting bits
-**************************************************************************/
+  ric - return our sorting bits
+ **************************************************************************/
 ULONG IconList_GetSortBits(struct IClass *cl, Object *obj, struct MUIP_IconList_GetSortBits *msg)
 {
-	struct MUI_IconData *data = INST_DATA(cl, obj);
+    struct MUI_IconData *data = INST_DATA(cl, obj);
     return data->sort_bits;
 }
 
 /**************************************************************************
   MUIM_DragReport. Since MUI doesn't change the drop object if the dragged
- object is moved above another window (while still in the bounds of the
- orginal drop object) we must do it here manually to be compatible with
- MUI. Maybe Zune should fix this bug somewhen.
-**************************************************************************/
+  object is moved above another window (while still in the bounds of the
+  orginal drop object) we must do it here manually to be compatible with
+  MUI. Maybe Zune should fix this bug somewhen.
+ **************************************************************************/
 static ULONG IconList_DragReport(struct IClass *cl, Object *obj, struct MUIP_DragReport *msg)
 {
     struct Window *wnd = _window(obj);
@@ -1973,22 +1970,22 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, cl, obj, msg)
 	case MUIM_IconList_SetSortBits: return IconList_SetSortBits(cl,obj,(APTR)msg);
 	case MUIM_IconList_PositionIcons: return IconList_PositionIcons(cl,obj,(APTR)msg);
     }
-    
+
     return DoSuperMethodA(cl, obj, msg);
 }
 BOOPSI_DISPATCHER_END
 
 
 /**************************************************************************
- OM_NEW
-**************************************************************************/
+  OM_NEW
+ **************************************************************************/
 static IPTR IconDrawerList_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconDrawerData   *data;
     struct TagItem  	    *tag, *tags;
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-    	TAG_MORE, (IPTR) msg->ops_AttrList);
+	    TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
@@ -1999,17 +1996,17 @@ static IPTR IconDrawerList_New(struct IClass *cl, Object *obj, struct opSet *msg
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_IconDrawerList_Drawer:
-		    data->drawer = StrDup((char*)tag->ti_Data);
-		    break;
-    	}
+		data->drawer = StrDup((char*)tag->ti_Data);
+		break;
+	}
     }
 
     return (IPTR)obj;
 }
 
 /**************************************************************************
- OM_DISPOSE
-**************************************************************************/
+  OM_DISPOSE
+ **************************************************************************/
 static IPTR IconDrawerList_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
@@ -2019,8 +2016,8 @@ static IPTR IconDrawerList_Dispose(struct IClass *cl, Object *obj, Msg msg)
 }
 
 /**************************************************************************
- OM_SET
-**************************************************************************/
+  OM_SET
+ **************************************************************************/
 static IPTR IconDrawerList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconDrawerData   *data = INST_DATA(cl, obj);
@@ -2032,22 +2029,22 @@ static IPTR IconDrawerList_Set(struct IClass *cl, Object *obj, struct opSet *msg
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_IconDrawerList_Drawer:
-		    if (data->drawer) FreeVec(data->drawer);
-		    data->drawer = StrDup((char*)tag->ti_Data);
-		    DoMethod(obj,MUIM_IconList_Update);
-		    break;
-    	}
+		if (data->drawer) FreeVec(data->drawer);
+		data->drawer = StrDup((char*)tag->ti_Data);
+		DoMethod(obj,MUIM_IconList_Update);
+		break;
+	}
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 /**************************************************************************
- OM_GET
-**************************************************************************/
+  OM_GET
+ **************************************************************************/
 static ULONG IconDrawerList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-/* small macro to simplify return value storage */
+    /* small macro to simplify return value storage */
 #define STORE *(msg->opg_Storage)
     struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
 
@@ -2062,8 +2059,8 @@ static ULONG IconDrawerList_Get(struct IClass *cl, Object *obj, struct opGet *ms
 }
 
 /**************************************************************************
- MUIM_IconList_Update
-**************************************************************************/
+  MUIM_IconList_Update
+ **************************************************************************/
 ULONG IconDrawerList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
 {
     //struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
@@ -2076,7 +2073,7 @@ ULONG IconDrawerList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList
     if (!(_flags(obj)&MADF_SETUP)) return 1;
     ReadIcons(cl,obj);
 
-	/*_Sort takes care of icon placement and redrawing for us*/
+    /*_Sort takes care of icon placement and redrawing for us*/
     DoMethod(obj,MUIM_IconList_Sort);
     return 1;
 }
@@ -2101,8 +2098,8 @@ BOOPSI_DISPATCHER_END
 
 struct NewDosList
 {
-	struct MinList list;
-	APTR pool;
+    struct MinList list;
+    APTR pool;
 };
 
 struct NewDosNode
@@ -2115,95 +2112,95 @@ struct NewDosNode
 
 static struct NewDosList *DosList_Create(void)
 {
-	APTR pool = CreatePool(MEMF_PUBLIC,4096,4096);
-	if (pool)
+    APTR pool = CreatePool(MEMF_PUBLIC,4096,4096);
+    if (pool)
+    {
+	struct NewDosList *ndl = (struct NewDosList*)AllocPooled(pool,sizeof(struct NewDosList));
+	if (ndl)
 	{
-		struct NewDosList *ndl = (struct NewDosList*)AllocPooled(pool,sizeof(struct NewDosList));
-		if (ndl)
+	    struct DosList *dl;
+
+	    NewList((struct List*)ndl);
+	    ndl->pool = pool;
+
+	    dl = LockDosList(LDF_VOLUMES|LDF_READ);
+	    while(( dl = NextDosEntry(dl, LDF_VOLUMES)))
+	    {
+		STRPTR name;
+#ifndef __AROS__
+		UBYTE *dosname = (UBYTE*)BADDR(dl->dol_Name);
+		LONG len = dosname[0];
+		dosname++;
+#else
+		UBYTE *dosname = dl->dol_DevName;
+		LONG len = strlen(dosname);
+#endif
+
+		if ((name = (STRPTR)AllocPooled(pool, len+1)))
 		{
-			struct DosList *dl;
+		    struct NewDosNode *ndn;
 
-			NewList((struct List*)ndl);
-			ndl->pool = pool;
+		    name[len] = 0;
+		    strncpy(name,dosname,len);
 
-			dl = LockDosList(LDF_VOLUMES|LDF_READ);
-			while(( dl = NextDosEntry(dl, LDF_VOLUMES)))
-			{
-				STRPTR name;
+		    if ((ndn = (struct NewDosNode*)AllocPooled(pool, sizeof(*ndn))))
+		    {
+			ndn->name = name;
+			ndn->device = NULL;
 #ifndef __AROS__
-				UBYTE *dosname = (UBYTE*)BADDR(dl->dol_Name);
-				LONG len = dosname[0];
-				dosname++;
+			ndn->port = dl->dol_Task;
 #else
-				UBYTE *dosname = dl->dol_DevName;
-				LONG len = strlen(dosname);
+			ndn->port = NULL;
 #endif
-
-				if ((name = (STRPTR)AllocPooled(pool, len+1)))
-				{
-					struct NewDosNode *ndn;
-
-					name[len] = 0;
-					strncpy(name,dosname,len);
-
-					if ((ndn = (struct NewDosNode*)AllocPooled(pool, sizeof(*ndn))))
-					{
-						ndn->name = name;
-						ndn->device = NULL;
-#ifndef __AROS__
-						ndn->port = dl->dol_Task;
-#else
-						ndn->port = NULL;
-#endif
-						AddTail((struct List*)ndl,(struct Node*)ndn);
-					}
-				}
-			}
-			UnLockDosList(LDF_VOLUMES|LDF_READ);
-
-#ifndef __AROS__
-			dl = LockDosList(LDF_DEVICES|LDF_READ);
-			while(( dl = NextDosEntry(dl, LDF_DEVICES)))
-			{
-				struct NewDosNode *ndn;
-
-				if (!dl->dol_Task) continue;
-
-				ndn = (struct NewDosNode*)List_First(ndl);
-				while ((ndn))
-				{
-					if (dl->dol_Task == ndn->port)
-					{
-						STRPTR name;
-						UBYTE *dosname = (UBYTE*)BADDR(dl->dol_Name);
-						LONG len = dosname[0];
-
-						if ((name = (STRPTR)AllocPooled(pool, len+1)))
-						{
-							name[len] = 0;
-							strncpy(name,&dosname[1],len);
-						}
-
-						ndn->device = name;
-						break;
-					}
-
-					ndn = (struct NewDosNode*)Node_Next(ndn);
-				}
-			}
-			UnLockDosList(LDF_DEVICES|LDF_READ);
-#endif
-
-			return ndl;
+			AddTail((struct List*)ndl,(struct Node*)ndn);
+		    }
 		}
-		DeletePool(pool);
+	    }
+	    UnLockDosList(LDF_VOLUMES|LDF_READ);
+
+#ifndef __AROS__
+	    dl = LockDosList(LDF_DEVICES|LDF_READ);
+	    while(( dl = NextDosEntry(dl, LDF_DEVICES)))
+	    {
+		struct NewDosNode *ndn;
+
+		if (!dl->dol_Task) continue;
+
+		ndn = (struct NewDosNode*)List_First(ndl);
+		while ((ndn))
+		{
+		    if (dl->dol_Task == ndn->port)
+		    {
+			STRPTR name;
+			UBYTE *dosname = (UBYTE*)BADDR(dl->dol_Name);
+			LONG len = dosname[0];
+
+			if ((name = (STRPTR)AllocPooled(pool, len+1)))
+			{
+			    name[len] = 0;
+			    strncpy(name,&dosname[1],len);
+			}
+
+			ndn->device = name;
+			break;
+		    }
+
+		    ndn = (struct NewDosNode*)Node_Next(ndn);
+		}
+	    }
+	    UnLockDosList(LDF_DEVICES|LDF_READ);
+#endif
+
+	    return ndl;
 	}
-	return NULL;
+	DeletePool(pool);
+    }
+    return NULL;
 }
 
 static void DosList_Dispose(struct NewDosList *ndl)
 {
-	if (ndl && ndl->pool) DeletePool(ndl->pool);
+    if (ndl && ndl->pool) DeletePool(ndl->pool);
 }
 /* sba: End SimpleFind3 */
 
@@ -2214,15 +2211,15 @@ struct MUI_IconVolumneData
 };
 
 /**************************************************************************
- OM_NEW
-**************************************************************************/
+  OM_NEW
+ **************************************************************************/
 static IPTR IconVolumeList_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconDrawerData   *data;
     struct TagItem  	    *tag, *tags;
-    
+
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-    	TAG_MORE, (IPTR) msg->ops_AttrList);
+	    TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
@@ -2232,15 +2229,15 @@ static IPTR IconVolumeList_New(struct IClass *cl, Object *obj, struct opSet *msg
     {
 	switch (tag->ti_Tag)
 	{
-    	}
+	}
     }
 
     return (IPTR)obj;
 }
 
 /**************************************************************************
- MUIM_IconList_Update
-**************************************************************************/
+  MUIM_IconList_Update
+ **************************************************************************/
 ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
 {
     //struct MUI_IconVolumeData *data = INST_DATA(cl, obj);
@@ -2272,7 +2269,7 @@ ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList
 	DosList_Dispose(ndl);
     }
 
-	/*deault display bits*/
+    /*deault display bits*/
     ULONG sort_bits = ICONLIST_DISP_VERTICAL;
 
     DoMethod(obj,MUIM_IconList_SetSortBits,sort_bits);
@@ -2289,7 +2286,7 @@ BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, cl, obj, msg)
 	case OM_NEW: return IconVolumeList_New(cl, obj, (struct opSet *)msg);
 	case MUIM_IconList_Update: return IconVolumeList_Update(cl,obj,(APTR)msg);
     }
-    
+
     return DoSuperMethodA(cl, obj, msg);
 }
 BOOPSI_DISPATCHER_END
