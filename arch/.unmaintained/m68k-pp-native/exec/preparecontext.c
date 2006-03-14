@@ -12,19 +12,20 @@
 #include "etask.h"
 #include "exec_util.h"
 
-#error "PrepareContext() has been changed. Additional tagList param, etc."
-#error "This one here needs to be rewritten!"
+//#error "PrepareContext() has been changed. Additional tagList param, etc."
+//#error "This one here needs to be rewritten!"
 
 /*****************************************************************************
 
     NAME */
 
-	AROS_LH3(BOOL, PrepareContext,
+	AROS_LH4(BOOL, PrepareContext,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Task *, task, A0),
 	AROS_LHA(APTR, entryPoint,   A1),
 	AROS_LHA(APTR, fallBack,     A2),
+	AROS_LHA(struct TagItem *, tagList, A3),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 6, Exec)
@@ -40,6 +41,7 @@
 		       becomes active.
 	fallBack     - Address to be called when the entryPoint function ended
 		       with an rts.
+	tagList      - 
 
     RESULT
 	The new Stackpointer with the underlying context.
