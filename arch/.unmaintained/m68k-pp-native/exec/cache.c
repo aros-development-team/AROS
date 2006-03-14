@@ -50,6 +50,7 @@
 
 ******************************************************************************/
 {
+	AROS_LIBFUNC_INIT
 #if 0
     ULONG scope, cpucache = 0;
 
@@ -66,6 +67,7 @@
 
     (void) cacheflush((unsigned long)address, scope, cpucache, length);
 #endif
+    AROS_LIBFUNC_EXIT
 } /* CacheClearE */
 
 /******************************************************************************
@@ -98,7 +100,10 @@
 
 ******************************************************************************/
 {
-#if 0
+    AROS_LIBFUNC_INIT
+#if 0 
 	(void) cacheflush(0, FLUSH_SCOPE_ALL, FLUSH_CACHE_BOTH, 0);
 #endif
+    AROS_LIBFUNC_EXIT
 } /* CacheClearU */
+

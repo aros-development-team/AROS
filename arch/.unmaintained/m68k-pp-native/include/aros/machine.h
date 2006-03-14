@@ -26,8 +26,10 @@
 
 #define AROS_GET_SYSBASE        struct ExecBase * SysBase = *(struct ExecBase **)0x4;
 #define AROS_GET_SYSBASE_OK     struct ExecBase * SysBase = *(struct ExecBase **)0x4;
-#define AROS_GET_DOSBASE        struct DosLibrary * DOSBase = (struct DosLibrary *)OpenLibrary((UBYTE *)"dos.library",0); \
-                                CloseLibrary(DOSBase);
+//#define AROS_GET_DOSBASE        struct DosLibrary * DOSBase = (struct DosLibrary *)OpenLibrary((UBYTE *)"dos.library",0); \
+//                                CloseLibrary(DOSBase);
+#define AROS_GET_DOSBASE        extern struct DosLibrary *DOSBase;
+
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm
 
