@@ -213,6 +213,7 @@ boot:
     if (lock != NULL)
     {
         AssignLock("DRIVERS", lock);
+        AssignAdd("LIBS", lock);        /* Let hidds in DRIVERS: directory be found by OpenLibrary */
     }
     
     /* Late binding ENVARC: assign, only if used */
