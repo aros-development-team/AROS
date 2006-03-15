@@ -91,7 +91,7 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 				irq->h_Code         = touchscreen_int;
 				irq->h_Data         = (APTR)data;
 
-				HIDD_IRQ_AddHandler(data->irqhidd, irq, vHidd_IRQ_Touchscreen);
+				HIDD_IRQ_AddHandler(data->irqhidd, irq, vHidd_IRQ_Mouse);
 				D(bug("Added IRQ Handler for TOUCHSCREEN (virq=%d)!\n",vHidd_IRQ_Mouse));
 			}
 			

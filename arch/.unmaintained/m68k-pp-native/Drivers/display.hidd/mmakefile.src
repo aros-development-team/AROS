@@ -10,5 +10,4 @@ FILES   :=      displayclass displayhw offbitmap onbitmap
 	uselibs=hiddstubs \
 	genfunctable=yes
 
-
 %common
