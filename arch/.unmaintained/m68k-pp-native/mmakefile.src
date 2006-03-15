@@ -42,7 +42,7 @@ create-mf-inc-again :
 #MM	kernel-boot-linklib-quick          \
 #MM	kernel-dos-pp-m68k                 \
 #MM	kernel-graphics-linklib            \
-#MM	graphics-gfxhidd                   \
+##MM	graphics-gfxhidd                   \
 #MM	kernel-graphics-pp-m68k            \
 #MM	kernel-layers-linklib              \
 #MM	kernel-intuition-pp-m68k           \
@@ -54,7 +54,7 @@ create-mf-inc-again :
 #MM	kernel-input-linklib               \
 #MM	kernel-console-linklib             \
 #MM	kernel-fs-con                      \
-#MM	Drivers-pp-m68k
+#MM	kernel-pp-m68k-drivers
 
 # Setup
 #MM- setup-pp-m68k : setup-exec-$(ARCH)-$(CPU) \
@@ -108,7 +108,7 @@ create-mf-inc-again :
 
 ##MM kernel-mathieeesingbas-pp-m68k :
 #kernel-mathieeesingbas-pp-m68k :
-	%add_objects rom/boot/libmathieeesingbas
+#	%add_objects rom/boot/libmathieeesingbas
 
 ##MM kernel-expansion-pp-m68k :
 #kernel-expansion-pp-m68k :
@@ -140,7 +140,7 @@ create-mf-inc-again :
 
 ##MM kernel-boot-pp-m68k :
 #kernel-boot-pp-m68k :
-	%add_objects rom/boot/libboot
+#	%add_objects rom/boot/libboot
 
 ##MM kernel-timer-pp-m68k :
 #kernel-timer-pp-m68k :

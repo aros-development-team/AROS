@@ -5,10 +5,13 @@
     Desc: Graphics hidd initialization code.
     Lang: English.
 */
-#include <stddef.h>
+//#include <stddef.h>
 #include <exec/types.h>
-
+#include <exec/lists.h>
 #include <proto/exec.h>
+#include <proto/oop.h>
+#include <oop/oop.h>
+#include <utility/utility.h>
 
 #include "graphics_intern.h"
 
@@ -34,7 +37,7 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0 
 #include <aros/debug.h>
 
 #define SysBase      (LC_SYSBASE_FIELD(lh))
@@ -43,7 +46,7 @@
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
-    struct class_static_data *csd; /* GfxHidd static data */
+    struct class_static_data *csdi; /* GfxHidd static data */
 
 //    SysBase = sysBase;    
     EnterFunc(bug("GfxHIDD_Init()\n"));
@@ -54,38 +57,38 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 
         Well, maybe once we've got MP this might help...:-)
     */
-    csd = AllocVec(sizeof(struct class_static_data), MEMF_CLEAR|MEMF_PUBLIC);
-    lh->hdg_csd = csd;
-    if(csd)
+    csdi = AllocVec(sizeof(struct class_static_data), MEMF_CLEAR|MEMF_PUBLIC);
+    lh->hdg_csd = csdi;
+    if(csdi)
     {
-        csd->sysbase = SysBase;
+        csdi->sysbase = SysBase;
         
         D(bug("  Got csd\n"));
 
-        csd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
-        if (csd->oopbase)
+        csdi->oopbase = OpenLibrary(AROSOOP_NAME, 0);
+        if (csdi->oopbase)
         {
             D(bug("  Got OOPBase\n"));
-            csd->utilitybase = OpenLibrary("utility.library", 37);
-            if (csd->utilitybase)
+            csdi->utilitybase = OpenLibrary("utility.library", 37);
+            if (csdi->utilitybase)
             {
                 D(bug("  Got UtilityBase\n"));
-                csd->gfxhiddclass = init_gfxhiddclass(csd);
+                csdi->gfxhiddclass = init_gfxhiddclass(csdi);
 
-                D(bug("  GfxHiddClass: %p\n", csd->gfxhiddclass));
+//                D(bug("  GfxHiddClass: %p\n", csd->gfxhiddclass))
 
-                if(csd->gfxhiddclass)
+                if(csdi->gfxhiddclass)
                 {
-                    D(bug("  Got GfxHIDDClass\n"));
+//                    D(bug("  Got GfxHIDDClass\n"))
                     ReturnInt("GfxHIDD_Init", ULONG, TRUE);
                 }
 
-                CloseLibrary(csd->utilitybase);
+                CloseLibrary(csdi->utilitybase);
             }
-            CloseLibrary(csd->oopbase);
+            CloseLibrary(csdi->oopbase);
         }
 
-        FreeVec(csd);
+        FreeVec(csdi);
         lh->hdg_csd = NULL;
     }
 
@@ -97,7 +100,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 
 void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 {
-    EnterFunc(bug("GfxHIDD_Expunge()\n"));
+    //EnterFunc(bug("GfxHIDD_Expunge()\n"))
 
     if(lh->hdg_csd)
     {

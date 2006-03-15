@@ -150,7 +150,7 @@ HIDDT_IRQ_Id translation_table[] = {
 /* 9 */	-1,
 	-1,
 	-1,
-	vHidd_IRQ_Touchscreen,
+	vHidd_IRQ_Mouse,
 /* 13 */-1,
 	-1,
 	-1

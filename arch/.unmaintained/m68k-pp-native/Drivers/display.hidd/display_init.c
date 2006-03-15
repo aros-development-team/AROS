@@ -2,9 +2,11 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: vga gfx Hidd for standalone i386 AROS
+    Desc: display Hidd for standalone palm AROS
     Lang: english
 */
+
+#define __OOP_NOATTRBASES__
 
 #include <exec/types.h>
 #include <exec/lists.h>
@@ -60,8 +62,9 @@ extern struct DisplayModeDesc DisplayDefMode[];
 #define OOPBase xsd->oopbase
 
 //static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
+#define AROS_CREATE_ROM_BUG 1
 
-#if 0
+#ifndef AROS_CREATE_ROM_BUG 
 static struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
 	{ NULL, NULL }
