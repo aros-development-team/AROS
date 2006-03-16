@@ -9,9 +9,6 @@ FILES := \
 
 USER_INCLUDES := -I$(TOP)/rom/devs
 
-%build_module_macro mmake=kernel-bootmenu \
-  modname=bootmenu modtype=library \
-  files=$(FILES) conffile=lib.conf \
-  uselibs=rom
-
-%common
+%build_module mmake=kernel-bootmenu \
+  modname=bootmenu modtype=resource \
+  files=$(FILES)
