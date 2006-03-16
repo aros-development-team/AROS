@@ -2,7 +2,7 @@
 #define BOOTMENU_INTERN_H
 
 /*
-	Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+	Copyright © 1995-2006, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Internal definitions for bootmenu
@@ -16,12 +16,8 @@
 #include "gadgets.h"
 #include LC_LIBDEFS_FILE
 
-#define SysBase (((struct LibHeader *)bootmenubase)->lh_SysBase)
-
 LIBBASETYPE {
 	struct LibHeader lh;
-	struct GfxBase *GfxBase;
-	struct IntuitionBase *IntuitionBase;
 	struct BootConfig bcfg;
 	struct Screen *scr;
 	struct Window *win;

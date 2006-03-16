@@ -7,6 +7,7 @@
 #include <exec/memory.h>
 #include <graphics/gfxbase.h>
 #include <libraries/bootmenu.h>
+#include <aros/symbolsets.h>
 #include <string.h>
 #include "devs_private.h"
 #define DEBUG 0
@@ -14,12 +15,9 @@
 
 #include "bootmenu_intern.h"
 
-#define BUFSIZE 100
+#include LC_LIBDEFS_FILE
 
-#undef GfxBase
-#undef IntuitionBase
-#define GfxBase bootmenubase->GfxBase
-#define IntuitionBase bootmenubase->IntuitionBase
+#define BUFSIZE 100
 
 #if 0
 struct GfxBase *GfxBase;
@@ -381,3 +379,36 @@ UBYTE matrix[16];
 #endif
 
 
+AROS_SET_LIBFUNC(CheckAndDisplay, LIBBASETYPE, LIBBASE)
+{
+    AROS_SET_LIBFUNC_INIT
+
+    static struct BootConfig bootcfg =
+    {
+	&bootcfg,
+	{"vga.hidd", "hidd.gfx.vga"},
+	{"kbd.hidd", "hidd.kbd.hw"},
+	{"mouse.hidd", "hidd.bus.mouse"},
+	NULL,
+	TRUE
+    };
+
+    LIBBASE->bcfg = bootcfg;
+
+    /* init keyboard + check */
+    if (buttonsPressed(LIBBASE, &LIBBASE->bcfg.defaultkbd))
+    {
+	kprintf("Entering Boot Menu ...\n");
+	/* init mouse + gfx */
+	if (initHidds(&LIBBASE->bcfg, LIBBASE))
+	{
+	    initScreen(LIBBASE, &LIBBASE->bcfg);
+	}
+    }
+
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
+}
+
+ADD2INITLIB(CheckAndDisplay, 0)
