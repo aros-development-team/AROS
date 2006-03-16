@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information for aros.library.
@@ -27,12 +27,8 @@ LIBBASETYPE
     /* The following information is private! */
 
     struct ExecBase *    aros_sysBase;
-    struct Library *     aros_utilityBase;
     BPTR                 aros_segList;
 
 };
-
-#define SysBase         LIBBASE->aros_sysBase
-#define UtilityBase	LIBBASE->aros_utilityBase
 
 #endif /* _AROS_INTERN_H */
