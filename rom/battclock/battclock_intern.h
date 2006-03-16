@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal data structures for battclock.resource and HIDD
@@ -26,13 +26,6 @@ struct BattClockBase
 {
     struct Node		 bb_Node;
     struct ExecBase	*bb_SysBase;
-    struct UtilityBase  *bb_UtilBase;
 };
-
-#define SysBase		(BattClockBase->bb_SysBase)
-#ifdef UtilityBase
-#   undef UtilityBase
-#endif
-#define UtilityBase     (BattClockBase->bb_UtilBase)
 
 #endif //BATTCLOCK_INTERN_H

@@ -8,4 +8,4 @@ FUNCTIONS := readbattclock resetbattclock writebattclock
 
 %build_module mmake=kernel-battclock \
     modname=battclock modtype=resource \
-    files="battclock_init $(FUNCTIONS)"
+    files="$(FUNCTIONS)"
