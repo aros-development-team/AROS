@@ -872,11 +872,17 @@ static ULONG ata_ReadDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APTR
 		/* Select ATA device */
 		if (ata_SetLBA28(unit, block))
 		{
+		    ULONG length;
+		    
 		    cnt = (count > 256) ? 256 : count;
+		    
+		    length = cnt << unit->au_SectorShift;
 
 		    ata_out(cnt & 0xff, ata_Count, port);
 		
 		    dma_SetupPRD(unit, buffer, cnt, TRUE);
+		    
+		    CachePreDMA(buffer, &length, DMA_ReadFromRAM);
 
 		    ata_out(ATA_READ_DMA, ata_Command, port);
 		    dma_StartDMA(unit);
@@ -917,6 +923,8 @@ static ULONG ata_ReadDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APTR
 		    *act += cnt << unit->au_SectorShift;
 
 		    dma_StopDMA(unit);
+
+		    CachePostDMA(buffer, &length, DMA_ReadFromRAM);
 
 		    count -= cnt;
 		    block += cnt;
@@ -1061,12 +1069,18 @@ static ULONG ata_ReadDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR
 		/* Select ATA device */
 		if (ata_SetLBA48(unit, block))
 		{
+		    ULONG length;
+
 		    cnt = (count > 65536) ? 65536 : count;
+
+		    length = cnt << unit->au_SectorShift;
 
 		    ata_out((cnt >> 8) & 0xff, ata_Count, port);
 		    ata_out(cnt & 0xff, ata_Count, port);
 		
 		    dma_SetupPRD(unit, buffer, cnt, TRUE);
+
+		    CachePreDMA(buffer, &length, DMA_ReadFromRAM);
 
 		    ata_out(ATA_READ_DMA64, ata_Command, port);
 		    dma_StartDMA(unit);
@@ -1099,6 +1113,8 @@ static ULONG ata_ReadDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR
 		    *act += cnt << unit->au_SectorShift;
 
 		    dma_StopDMA(unit);
+
+		    CachePostDMA(buffer, &length, DMA_ReadFromRAM);
 
 		    count -= cnt;
 		    block += cnt;
@@ -1256,11 +1272,17 @@ static ULONG ata_WriteDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APT
 		/* Select ATA device */
 		if (ata_SetLBA28(unit, block))
 		{
+		    ULONG length;
+		    
 		    cnt = (count > 256) ? 256 : count;
+		    
+		    length = cnt << unit->au_SectorShift;
 
 		    ata_out(cnt & 0xff, ata_Count, port);
 		
 		    dma_SetupPRD(unit, buffer, cnt, FALSE);
+		    
+		    CachePreDMA(buffer, &length, 0);
 
 		    ata_out(ATA_WRITE_DMA, ata_Command, port);
 		    dma_StartDMA(unit);
@@ -1297,6 +1319,8 @@ static ULONG ata_WriteDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APT
 
 		    dma_StopDMA(unit);
 
+		    CachePostDMA(buffer, &length, 0);
+
 		    count -= cnt;
 		    block += cnt;
 		}
@@ -1331,12 +1355,18 @@ static ULONG ata_WriteDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APT
 		/* Select ATA device */
 		if (ata_SetLBA48(unit, block))
 		{
+		    ULONG length;
+		    
 		    cnt = (count > 65536) ? 65536 : count;
+		    
+		    lengt = cnt << unit->au_SectorShift;
 
 		    ata_out((cnt >> 8) & 0xff, ata_Count, port);
 		    ata_out(cnt & 0xff, ata_Count, port);
 		
 		    dma_SetupPRD(unit, buffer, cnt, FALSE);
+		    
+		    CachePreDMA(buffer, &length, 0);
 
 		    ata_out(ATA_WRITE_DMA64, ata_Command, port);
 		    dma_StartDMA(unit);
@@ -1369,6 +1399,8 @@ static ULONG ata_WriteDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APT
 		    *act += cnt << unit->au_SectorShift;
 
 		    dma_StopDMA(unit);
+
+		    CachePostDMA(buffer, &length, 0);
 
 		    count -= cnt;
 		    block += cnt;
@@ -1653,6 +1685,8 @@ static ULONG atapi_Eject(struct ata_Unit *unit)
 static ULONG atapi_ReadDMA(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
 {
     UBYTE status;
+    ULONG length = count << unit->au_SectorShift;
+    ULONG err = 0;
 
     struct atapi_Read10 cmd = {
 	command:    SCSI_READ10,
@@ -1670,22 +1704,28 @@ static ULONG atapi_ReadDMA(struct ata_Unit *unit, ULONG block, ULONG count, APTR
 
     dma_SetupPRD(unit, buffer, count, TRUE);
 
+    CachePreDMA(buffer, &length, DMA_ReadFromRAM);
+
     if (atapi_SendPacket(unit, &cmd, sizeof(cmd), TRUE))
     {
 	if (ata_WaitSleepyStatus(unit, &status))
 	{
 	    *act+= count << unit->au_SectorShift;
-	    return atapi_EndCmd(unit);
+	    err = atapi_EndCmd(unit);
 	}
-	else return atapi_ErrCmd(unit);
+	else err = atapi_ErrCmd(unit);
     }
 
-    return atapi_ErrCmd();
+    CachePostDMA(buffer, &length, DMA_ReadFromRAM);
+
+    return err;
 }
 
 static ULONG atapi_WriteDMA(struct ata_Unit *unit, ULONG block, ULONG count, APTR buffer, ULONG *act)
 {
     UBYTE status;
+    ULONG length = count << unit->au_SectorShift;
+    ULONG err = 0;
 
     struct atapi_Write10 cmd = {
 	command:    SCSI_WRITE10,
@@ -1703,17 +1743,21 @@ static ULONG atapi_WriteDMA(struct ata_Unit *unit, ULONG block, ULONG count, APT
 
     dma_SetupPRD(unit, buffer, count, FALSE);
 
+    CachePreDMA(buffer, &length, 0);
+
     if (atapi_SendPacket(unit, &cmd, sizeof(cmd), TRUE))
     {
 	if (ata_WaitSleepyStatus(unit, &status))
 	{
 	    *act+= count << unit->au_SectorShift;
-	    return atapi_EndCmd(unit);
+	    err = atapi_EndCmd(unit);
 	}
-	else return atapi_ErrCmd(unit);
+	else err = atapi_ErrCmd(unit);
     }
 
-    return atapi_ErrCmd();
+    CachePostDMA(buffer, &length, 0);
+
+    return err;
 }
 
 
