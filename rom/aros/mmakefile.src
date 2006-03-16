@@ -16,4 +16,4 @@ USER_CFLAGS := -DDATE="\"$(shell date '+%d.%m.%y')\"" -DVARIANT="\"$(AROS_TARGET
 
 %build_module mmake=kernel-aros \
   modname=aros modtype=library \
-  files="aros_init arosinquirea"
+  files="arosinquirea"
