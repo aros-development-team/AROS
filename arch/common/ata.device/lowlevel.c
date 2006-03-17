@@ -704,7 +704,7 @@ static int ata_SetLBA28(struct ata_Unit *unit, ULONG block)
 static int ata_SetLBA48(struct ata_Unit *unit, UQUAD block)
 {
     ULONG port = unit->au_Bus->ab_Port;
-    BOOL ret = TRUE;
+    BOOL ret = FALSE;
 
     ata_out(0x40 | unit->au_DevMask, ata_DevHead, port);
     if (ata_WaitBusy(unit))
@@ -1359,7 +1359,7 @@ static ULONG ata_WriteDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APT
 		    
 		    cnt = (count > 65536) ? 65536 : count;
 		    
-		    lengt = cnt << unit->au_SectorShift;
+		    length = cnt << unit->au_SectorShift;
 
 		    ata_out((cnt >> 8) & 0xff, ata_Count, port);
 		    ata_out(cnt & 0xff, ata_Count, port);
