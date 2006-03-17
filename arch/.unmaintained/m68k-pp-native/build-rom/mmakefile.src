@@ -49,12 +49,3 @@ entrycode.o : entrycode.s
 
 #clean :
 #	$(RM) *.o aros.rom aros_rom *.s ~/.xcopilot/aros.rom
-
-# Delete generated makefiles
-#MM
-clean ::
-	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
-
-include $(TOP)/config/make.tail
-
-BDID := $(BDTARGETID)
