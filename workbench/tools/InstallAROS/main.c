@@ -6,7 +6,7 @@
 #define INTUITION_NO_INLINE_STDARG
 #define USE_FORMAT64
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -1470,7 +1470,7 @@ localecopydone:
 			file_count += 2;
 		}
 		TEXT tmp[100];
-		sprintf(tmp,"C:install-i386-pc DEVICE %s UNIT %d KERNEL %s:boot/aros-pc-i386.gz GRUB %s:boot/grub",boot_Device,boot_Unit,dest_Path,dest_Path);
+		sprintf(tmp,"C:install-i386-pc DEVICE %s UNIT %d KERNEL %s:boot/aros-pc-i386.gz GRUB %s:boot/grub FORCELBA",boot_Device,boot_Unit,dest_Path,dest_Path);
 		Execute(tmp, NULL, NULL);
 		set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
