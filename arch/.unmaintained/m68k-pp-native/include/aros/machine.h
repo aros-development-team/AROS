@@ -26,9 +26,11 @@
 
 #define AROS_GET_SYSBASE        struct ExecBase * SysBase = *(struct ExecBase **)0x4;
 #define AROS_GET_SYSBASE_OK     struct ExecBase * SysBase = *(struct ExecBase **)0x4;
-//#define AROS_GET_DOSBASE        struct DosLibrary * DOSBase = (struct DosLibrary *)OpenLibrary((UBYTE *)"dos.library",0); \
+/*#define AROS_GET_DOSBASE        struct DosLibrary * DOSBase = (struct DosLibrary *)OpenLibrary((UBYTE *)"dos.library",0); \*/
 //                                CloseLibrary(DOSBase);
 #define AROS_GET_DOSBASE        extern struct DosLibrary *DOSBase;
+
+#define AROS_NOFPU 1
 
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm
@@ -124,7 +126,8 @@ do                                                       \
 /* For debugging only: Pass errnos from the emulated OS. dos/Fault() will
    recognise them */
 #undef PassThroughErrnos
-#define PassThroughErrnos 0x40000000
+//#define PassThroughErrnos 0x40000000
+#define PassThroughErrnos 0
 
 /* Macros to test/set failure of AllocEntry() */
 #define AROS_ALLOCENTRY_FAILED(memType) \

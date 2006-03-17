@@ -24,6 +24,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define vHidd_IRQ_NumIRQ 16
+
 struct irq_data
 {
 	int	dummy;	//dummy!!!!!!!!!

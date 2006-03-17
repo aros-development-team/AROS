@@ -46,7 +46,7 @@
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
-    struct class_static_data *csdi; /* GfxHidd static data */
+    struct class_static_data *xsd; /* GfxHidd static data */
 
 //    SysBase = sysBase;    
     EnterFunc(bug("GfxHIDD_Init()\n"));
@@ -57,38 +57,38 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 
         Well, maybe once we've got MP this might help...:-)
     */
-    csdi = AllocVec(sizeof(struct class_static_data), MEMF_CLEAR|MEMF_PUBLIC);
-    lh->hdg_csd = csdi;
-    if(csdi)
+    xsd = AllocVec(sizeof(struct class_static_data), MEMF_CLEAR|MEMF_PUBLIC);
+    lh->hdg_csd = xsd;
+    if(xsd)
     {
-        csdi->sysbase = SysBase;
+        xsd->sysbase = SysBase;
         
         D(bug("  Got csd\n"));
 
-        csdi->oopbase = OpenLibrary(AROSOOP_NAME, 0);
-        if (csdi->oopbase)
+        xsd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
+        if (xsd->oopbase)
         {
             D(bug("  Got OOPBase\n"));
-            csdi->utilitybase = OpenLibrary("utility.library", 37);
-            if (csdi->utilitybase)
+            xsd->utilitybase = OpenLibrary("utility.library", 37);
+            if (xsd->utilitybase)
             {
                 D(bug("  Got UtilityBase\n"));
-                csdi->gfxhiddclass = init_gfxhiddclass(csdi);
+                xsd->gfxhiddclass = init_gfxhiddclass(xsd);
 
 //                D(bug("  GfxHiddClass: %p\n", csd->gfxhiddclass))
 
-                if(csdi->gfxhiddclass)
+                if(xsd->gfxhiddclass)
                 {
 //                    D(bug("  Got GfxHIDDClass\n"))
                     ReturnInt("GfxHIDD_Init", ULONG, TRUE);
                 }
 
-                CloseLibrary(csdi->utilitybase);
+                CloseLibrary(xsd->utilitybase);
             }
-            CloseLibrary(csdi->oopbase);
+            CloseLibrary(xsd->oopbase);
         }
 
-        FreeVec(csdi);
+        FreeVec(xsd);
         lh->hdg_csd = NULL;
     }
 

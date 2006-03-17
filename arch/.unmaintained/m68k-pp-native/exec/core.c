@@ -103,16 +103,16 @@ static void enable_db_irq(unsigned int virq)
 	 * that I want to enable.
 	 */
 	switch (virq) {
-		case vHidd_IRQ_Timer2:
+		case vHidd_IRQ_Timer:
 			imr &= ~(TMR2_F);
 		break;
-		case vHidd_IRQ_CustomD:
+		case vHidd_IRQ_HDD1:
 			imr &= ~(INT0_F | INT1_F | INT2_F | INT3_F | INT4_F | INT5_F | INT6_F | INT7_F);
 		break;
 		case vHidd_IRQ_Serial1:
 			imr &= ~(UART1_F);
 		break;
-		case vHidd_IRQ_Touchscreen:
+		case vHidd_IRQ_Mouse:
 			imr &= ~(PEN_F);
 		break;
 	}

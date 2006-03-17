@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES          := \
-        cache cause disable enable detect_memory idletask offsets \
+        core cause disable enable detect_memory idletask offsets \
 	preparecontext rawputchar switch sys_dispatch traps init
 
 AFILES          := coldreboot ints superstate sys_trap1_handler \

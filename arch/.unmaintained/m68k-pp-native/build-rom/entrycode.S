@@ -16,7 +16,7 @@ hardware_reset_init_1:
 	.dc.b  'b','o','o','t',0x27,0x10,0xff  // way, so xcopilot likes the
                                                // rom
 
-	.globl hardware_reset_init2
+	.globl hardware_reset_init_2
 	.align 8
 hardware_reset_init_2:
 	jmp main_init
