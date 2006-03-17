@@ -5,7 +5,7 @@ OS_INCLUDES   := -I$(GENINCDIR)
 
 #MM- AROS-pp-m68k : general-setup-pp-m68k     \
 #MM	kernel-pp-m68k                        \
-#MM	rom-pp-m68k
+#MM	kernel-link-pp-m68k
 
 #MM- general-setup-pp-m68k: setup-pp-m68k includes includes-pp-m68k compiler-nofpu
 
@@ -54,6 +54,9 @@ create-mf-inc-again :
 #MM	kernel-input-linklib               \
 #MM	kernel-console-linklib             \
 #MM	kernel-fs-con                      \
+#MM     kernel-misc-kobj \
+#MM     workbench-fs-afs-kobj \
+#MM     workbench-hidd-graphics-kobj \
 #MM	kernel-pp-m68k-drivers
 
 # Setup
@@ -88,98 +91,6 @@ create-mf-inc-again :
 #MM- kernel-battclock-pp-m68k : battclock-$(CPU) kernel-battclock-linklib
 
 #MM- kernel-dos-pp-m68k : dos-pp-m68k kernel-dos-linklib
-
-# Setup libraries
-##MM kernel-exec-pp-m68k :
-#kernel-exec-pp-m68k :
-#	%add_objects rom/boot/libexec
-
-##MM kernel-aros-pp-m68k :
-#kernel-aros-pp-m68k :
-#	%add_objects rom/boot/libaros
-
-##MM kernel-keymap-pp-m68k :
-#kernel-keymap-pp-m68k :
-#	%add_objects rom/boot/libkeymap
-
-##MM kernel-mathffp-pp-m68k :
-#kernel-mathffp-pp-m68k :
-#	%add_objects rom/boot/libmathffp
-
-##MM kernel-mathieeesingbas-pp-m68k :
-#kernel-mathieeesingbas-pp-m68k :
-#	%add_objects rom/boot/libmathieeesingbas
-
-##MM kernel-expansion-pp-m68k :
-#kernel-expansion-pp-m68k :
-#	%add_objects rom/boot/libexpansion
-
-##MM kernel-oop-pp-m68k :
-#kernel-oop-pp-m68k :
-#	%add_objects rom/boot/liboop
-
-##MM kernel-layers-pp-m68k :
-#kernel-layers-pp-m68k :
-#	%add_objects rom/boot/liblayers
-
-#MM kernel-workbench-pp-m68k :
-#kernel-workbench-pp-m68k :
-#	%add_objects rom/boot/libworkbench
-
-##MM kernel-hidd-pp-m68k :
-#kernel-hidd-pp-m68k :
-#	%add_objects rom/boot/libhiddclass
-
-##MM kernel-utility-pp-m68k :
-#kernel-utility-pp-m68k :
-#	%add_objects rom/boot/libutility
-
-##MM kernel-dos-pp-m68k :
-#kernel-dos-pp-m68k :
-#	%add_objects rom/boot/libdos
-
-##MM kernel-boot-pp-m68k :
-#kernel-boot-pp-m68k :
-#	%add_objects rom/boot/libboot
-
-##MM kernel-timer-pp-m68k :
-#kernel-timer-pp-m68k :
-#	%add_objects rom/boot/libtimer
-
-##MM kernel-battclock-pp-m68k :
-#kernel-battclock-pp-m68k :
-#	%add_objects rom/boot/libbattclock
-
-##MM kernel-misc-pp-m68k :
-#kernel-misc-pp-m68k :
-#	%add_objects rom/boot/libmisc
-
-##MM kernel-cgfx-pp-m68k :
-#kernel-cgfx-pp-m68k :
-#	%add_objects rom/boot/libcybergraphics
-
-##MM kernel-graphics-pp-m68k :
-#kernel-graphics-pp-m68k :
-#	%add_objects rom/boot/libgraphics
-#	%add_objects rom/boot/libhiddgraphicsstubs
-
-##MM kernel-intuition-pp-m68k :
-#kernel-intuition-pp-m68k :
-#	%add_objects rom/boot/libintuition
-
-##MM kernel-filesys-pp-m68k :
-#kernel-filesys-pp-m68k :
-#	%add_objects rom/boot/libcon_handler
-
-##MM kernel-devs-pp-m68k :
-#kernel-devs-pp-m68k :
-#	%add_objects rom/boot/libgameport
-#	%add_objects rom/boot/libinput
-#	%add_objects rom/boot/libkeyboard
-#	%add_objects rom/boot/libconsole
-#	%add_objects rom/boot/libtrackdisk
-#	%add_objects rom/boot/libide
-#	%add_objects rom/boot/libafs
 
 #MM
 includes-pp-m68k : $(INCFILES)

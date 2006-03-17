@@ -9,6 +9,7 @@ FILES       := irqclass servers
 USER_INCLUDES := -I$(TOP)/workbench/hidds/graphics
 %build_module_macro mmake=kernel-pp-m68k-irq \
 	modname=irq modtype=hidd \
+        files=$(FILES) \
 	conffile=lib.conf \
 	genfunctable=yes
 

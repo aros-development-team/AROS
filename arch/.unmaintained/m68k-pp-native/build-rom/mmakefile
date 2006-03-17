@@ -1,75 +1,60 @@
-TOP = ../../..
-
-AROS_HOST_ARCH   = linux
-AROS_HOST_CPU    = i386
-AROS_TARGET_CPU  = m68k
-AROS_TARGET_ARCH = pp
-
 include $(TOP)/config/make.cfg
 
-INC = -I $(AROS_INCLUDES)
+FILES   := libexec
+USELIBS := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit gcc1
+LIBS    := $(addprefix -l,$(USELIBS))
+DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-OBJS := $(OSGENDIR)/graphics/graphics_driver.o				\
-	$(OSGENDIR)/graphics/objcache.o					\
-	$(OSGENDIR)/graphics/dispinfo.o					\
-	$(OSGENDIR)/graphics/fakegfxhidd.o				\
-	$(OSGENDIR)/boot/hidd_graphics.o				\
-	$(OSGENDIR)/boot/display_driver.o				\
-	$(OSGENDIR)/boot/hidd_irq.o					\
-	$(OSGENDIR)/boot/hidd_serial.o
+KLIBS   := exec aros dos graphics utility intuition keymap \
+           mathieeesingbas expansion oop layers workbench cybergraphics
 
-LIBS = -L$(LIBDIR)    \
-	-lexec        \
-	-laros        \
-	-larossupport \
-	-lbattclock   \
-	-lboot        \
-	-lcon         \
-	-lconsole     \
-	-ldos         \
-	-lexpansion   \
-	-lgameport    \
-	-lgraphics    \
-	-lhiddclass   \
-	-lhiddgraphicsstubs \
-	-linput       \
-	-lintuition   \
-	-lkeyboard    \
-	-lkeymap      \
-	-llayers      \
-	-lmathffp     \
-	-lmathieeesingbas \
-	-lmisc        \
-	-loop         \
-	-ltimer       \
-	-lutility     \
-	-lworkbench   \
-	-lamiga       \
-	-larosc       \
-	-lgcc1       \
+KDEVS   := timer input keyboard console
+KHNDLRS := con nil ram
+KHIDDS  := hiddclass serial touchscreen irq graphics
+KRSRCS  := battclock misc
 
+KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
 
-#MM rom-pp-m68k
-rom-pp-m68k: clean aros.rom
+#MM kernel-link-pp-m68k : setup-pp-m68k
+kernel-link-pp-m68k : $(BINDIR)/aros-pp-m68k $(BINDIR)/aros.bin
+
+$(BINDIR)/aros-pp-m68k : entrycode.o $(OBJS) $(DEPLIBS)
+	@$(ECHO) Linking $@...
+	$(CC) $^ $(KOBJS) -o $@ -Wl,-T,linkerscript -L$(LIBDIR) $(LIBS) -nostdlib
+	@$(ECHO) "Generating $(BINDIR)/aros.rom..."
+	@$(OBJCOPY) -O binary $@ $(BINDIR)/aros.rom -v -S --pad-to=0x100000
+
+$(BINDIR)/aros.bin : entrycode.o
+	@$(ECHO) Linking $@...
+	@$(TARGET_LD)  -N -e entrycode -Ttext 0x00100000 -Map $(BINDIR)/aros.map \
+	-o $@ $^ $(KOBJS) -L$(LIBDIR) $(LIBS)
+
+#rom-pp-m68k: clean aros.rom
 
 entrycode.o : entrycode.s
 	@$(ECHO) Assembling $^...
 	@$(CC) -c $^
 
-%.o : %.c
-	@$(ECHO) Compiling $^...
-	@$(CC) -c $^ -o $@ $(CFLAGS)
+#aros.rom : aros_rom
+#	@$(ECHO) "Generating $@..."
+#	@$(OBJCOPY) -O binary $^ $@ -v -S --pad-to=0x10d00000
+#	@$(MKDIR) $(HOME)/.xcopilot
+#	@$(RM) $(HOME)/.xcopilot/aros.rom
+#	@$(CP) $@ $(HOME)/.xcopilot/aros.rom
 
-aros_rom : entrycode.o
-	@$(ECHO) Linking $^...
-	$(CC) $^ $(OBJS) -o $@ -Wl,-T,linkerscript $(LIBS) -nostdlib
+#clean :
+#	$(RM) *.o aros.rom aros_rom *.s ~/.xcopilot/aros.rom
 
-aros.rom : aros_rom
-	@$(ECHO) "Generating $@..."
-	@$(OBJCOPY) -O binary $^ $@ -v -S --pad-to=0x10d00000
-	@$(MKDIR) $(HOME)/.xcopilot
-	@$(RM) $(HOME)/.xcopilot/aros.rom
-	@$(CP) $@ $(HOME)/.xcopilot/aros.rom
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
 
-clean :
-	$(RM) *.o aros.rom aros_rom *.s ~/.xcopilot/aros.rom
+include $(TOP)/config/make.tail
+
+BDID := $(BDTARGETID)
