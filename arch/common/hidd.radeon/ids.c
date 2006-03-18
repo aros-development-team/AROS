@@ -1,6 +1,6 @@
 /*
     Copyright © 2006, The AROS Development Team. All rights reserved.
-    $Id: ids.c 24110 2006-02-25 07:12:37 +0100 (Sat, 25 Feb 2006) schulz $
+    $Id$
 
     Desc: List of ATI cards supported by this driver
     Lang: English

@@ -1,4 +1,5 @@
-/* $XFree86: xc/programs/Xserver/hw/xfree86/drivers/ati/radeon_macros.h,v 1.2 2003/07/08 15:39:48 tsi Exp $ */
+/* Greetings text left due to code "borrowed" from XFree86 project */
+
 /*
  * Copyright 2000 ATI Technologies Inc., Markham, Ontario, and
  *                VA Linux Systems Inc., Fremont, California.

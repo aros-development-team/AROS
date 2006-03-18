@@ -1,3 +1,8 @@
+/*
+    Copyright © 2004, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <utility/tagitem.h>
 
 #include <proto/exec.h>
