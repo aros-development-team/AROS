@@ -1,0 +1,13 @@
+#   $Id: mmakefile.src 23870 2005-12-23 13:57:24Z verhaegs $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+CFLAGS := $(CFLAGS) -D__KERNEL__
+
+FILES	:= ati_init ati_class ati_bitmap ati_i2c radeon_driver radeon_bios ids
+
+%build_module mmake=hidd-radeon \
+    modname=radeon modtype=hidd \
+    files="$(FILES)" \
+    uselibs="oop rom amiga hiddstubs"
