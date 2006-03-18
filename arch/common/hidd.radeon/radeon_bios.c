@@ -2,7 +2,7 @@
     Copyright © 2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ATI radeon driver 
+    Desc: ATI radeon driver. BIOS part.
     Lang: English
 */
 

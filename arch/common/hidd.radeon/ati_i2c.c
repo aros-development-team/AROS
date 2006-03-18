@@ -1,3 +1,8 @@
+/*
+    Copyright © 2004, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include "ati.h"
 #include "radeon.h"
 #include "radeon_reg.h"
