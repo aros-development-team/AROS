@@ -31,10 +31,11 @@
 
 #include "locale.h"
 
-#define VERSION "$VER: Wanderer 0.2 (30.01.2006) © AROS Dev Team"
+#define VERSION "$VER: Wanderer 0.3 (19.03.2006) © AROS Dev Team"
 
 VOID DoAllMenuNotifies(Object *strip, char *path);
 Object *FindMenuitem(Object* strip, int id);
+void window_update(void);
 
 extern Object *app;
 struct Hook hook_standard;
@@ -221,17 +222,47 @@ void wanderer_backdrop(Object **pstrip)
     }
 }
 
+void window_new_drawer(char **cdptr)
+{
+    kprintf("NewDrawer %s\n", *cdptr);
+
+    Object *actwindow = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *wbwindow = (Object *) XGET(app, MUIA_Wanderer_WorkbenchWindow);
+    if (actwindow == wbwindow)
+    {
+	/* This check is necessary because WorkbenchWindow has path RAM: */
+	kprintf("Can't call WBNewDrawer for WorkbenchWindow\n");
+	return;
+    }
+    if ( XGET(actwindow, MUIA_Window_Open) == FALSE )
+    {
+	kprintf("Can't call WBNewDrawer: the active window isn't open\n");
+	return;
+    }
+
+    BPTR lock = Lock(*cdptr, ACCESS_READ);
+    OpenWorkbenchObject
+	(
+	 "WANDERER:Tools/WBNewDrawer",
+	 WBOPENA_ArgLock, (IPTR) lock,
+	 WBOPENA_ArgName, 0,
+	 TAG_DONE
+	);
+    UnLock(lock);
+    window_update(); // FIXME: Doesn't work
+}
+
 void window_open_parent(char **cdptr)
 {
 	IPTR	path_len=0;
 	char	*last_letter=NULL;
-	last_letter = *((char *)(*cdptr+strlen(*cdptr)-1));
+	last_letter = (char*)(*((char *)(*cdptr+strlen(*cdptr)-1)));
 	
 	STRPTR thispath = FilePart(*cdptr);
 	
 	if (last_letter==(char *)0x3a) return; /* Top Drawer has no parent to open */
 	
-	last_letter = *((char *)(thispath-1));
+	last_letter = (char*)(*((char *)(thispath-1)));
 	
 	if (last_letter==(char *)0x3a) path_len = (IPTR)(thispath-(IPTR)(*cdptr));
 	else path_len = (IPTR)((thispath-(IPTR)(*cdptr))-1);
@@ -678,27 +709,28 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
 
     if (!strip) return;
 
-    DoMenuNotify(strip,MEN_WANDERER_EXECUTE,execute_open, path);
-    DoMenuNotify(strip,MEN_WANDERER_SHELL,shell_open,path);
-    DoMenuNotify(strip,MEN_WANDERER_GUISETTINGS,wanderer_guisettings,NULL);
-    DoMenuNotify(strip,MEN_WANDERER_ABOUT,wanderer_about,NULL);
-    DoMenuNotify(strip,MEN_WANDERER_QUIT,wanderer_quit,NULL);
+    DoMenuNotify(strip, MEN_WANDERER_EXECUTE,       execute_open,           path);
+    DoMenuNotify(strip, MEN_WANDERER_SHELL,         shell_open,             path);
+    DoMenuNotify(strip, MEN_WANDERER_GUISETTINGS,   wanderer_guisettings,   NULL);
+    DoMenuNotify(strip, MEN_WANDERER_ABOUT,         wanderer_about,         NULL);
+    DoMenuNotify(strip, MEN_WANDERER_QUIT,          wanderer_quit,          NULL);
 
-    DoMenuNotify(strip,MEN_WINDOW_OPEN_PARENT,window_open_parent,path);
-    DoMenuNotify(strip,MEN_WINDOW_CLOSE,window_close,NULL);
-    DoMenuNotify(strip,MEN_WINDOW_UPDATE,window_update,NULL);
-    DoMenuNotify(strip,MEN_WINDOW_SORT_NAME,window_sort_name,strip);
-    DoMenuNotify(strip,MEN_WINDOW_SORT_TYPE,window_sort_type,strip);
-    DoMenuNotify(strip,MEN_WINDOW_SORT_DATE,window_sort_date,strip);
-    DoMenuNotify(strip,MEN_WINDOW_SORT_SIZE,window_sort_size,strip);
-    DoMenuNotify(strip,MEN_WINDOW_SORT_REVERSE,window_sort_reverse,strip);
-    DoMenuNotify(strip,MEN_WINDOW_SORT_TOPDRAWERS,window_sort_topdrawers,strip);
+    DoMenuNotify(strip, MEN_WINDOW_NEW_DRAWER,      window_new_drawer,      path);
+    DoMenuNotify(strip, MEN_WINDOW_OPEN_PARENT,     window_open_parent,     path);
+    DoMenuNotify(strip, MEN_WINDOW_CLOSE,           window_close,           NULL);
+    DoMenuNotify(strip, MEN_WINDOW_UPDATE,          window_update,          NULL);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_NAME,       window_sort_name,       strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_TYPE,       window_sort_type,       strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_DATE,       window_sort_date,       strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_SIZE,       window_sort_size,       strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_REVERSE,    window_sort_reverse,    strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_TOPDRAWERS, window_sort_topdrawers, strip);
 
-    DoMenuNotify(strip,MEN_ICON_OPEN,icon_open,NULL);
-    DoMenuNotify(strip,MEN_ICON_INFORMATION,icon_information,NULL);
-    DoMenuNotify(strip,MEN_ICON_DELETE,icon_delete,NULL);
+    DoMenuNotify(strip, MEN_ICON_OPEN,              icon_open,              NULL);
+    DoMenuNotify(strip, MEN_ICON_INFORMATION,       icon_information,       NULL);
+    DoMenuNotify(strip, MEN_ICON_DELETE,            icon_delete,            NULL);
     
-    if ((item = FindMenuitem(strip,MEN_WANDERER_BACKDROP)))
+    if ((item = FindMenuitem(strip, MEN_WANDERER_BACKDROP)))
     {
 	DoMethod
         (
