@@ -1,0 +1,18 @@
+# Copyright © 2006, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := \
+    WBNewDrawer
+EXEDIR := \
+    $(AROS_WANDERER)/Tools
+
+#MM- workbench-system-wanderer : workbench-system-wanderer-tools-wbnewdrawer 
+#MM workbench-system-wanderer-tools-wbnewdrawer : \
+#MM workbench-system-wanderer-tools-wbnewdrawer-icons
+
+%build_progs mmake=workbench-system-wanderer-tools-wbnewdrawer \
+    targetdir=$(EXEDIR) files=$(FILES) uselibs="mui arossupport amiga arosc m"
+
+%common
