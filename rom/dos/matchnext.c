@@ -58,7 +58,8 @@
     struct AChain 	*ac = AP->ap_Current;
     BPTR 		origdir, old_current_lock;
     LONG 		error = 0;
-
+    BOOL    	    	dir_changed = FALSE;
+    
     origdir = CurrentDir(0);
     CurrentDir(origdir);
 
@@ -93,7 +94,9 @@
 	    
 	    ac->an_String[0] = P_ANY;
 	    ac->an_String[1] = 0;
-	    ac->an_Flags = DDF_PatternBit | DDF_AllBit;	    
+	    ac->an_Flags = DDF_PatternBit | DDF_AllBit;
+	    
+	    dir_changed = TRUE;	    
 	}
 	
 	/*
@@ -131,6 +134,8 @@
 	    ** AChain is "in". !
 	    */
 	   
+	    dir_changed = TRUE;
+	    
 	    if (ac->an_Parent)
 	    {
 		CurrentDir(ac->an_Parent->an_Lock);
@@ -200,7 +205,7 @@
 		{
 		    /* It does not exist, so if possible go back one step */
 		    
-		    if (ac->an_Parent)
+		    if ((AP->ap_Flags & APF_ITSWILD) && (ac->an_Parent))
 		    {
 		        /* [2] */
 			
@@ -361,6 +366,8 @@
 		goto done;
 	    }
 	    
+	    dir_changed = TRUE;
+	    
 	    /* Yep. It is possible. So let's cleanup the AChain. */
 	    
 	    CurrentDir(ac->an_Parent->an_Lock);
@@ -411,6 +418,8 @@
 	    
 	    ac = ac->an_Child;
 	    AP->ap_Current = ac;
+	    
+	    dir_changed = TRUE; /* CHECKME!!! Really? */
 	}
 
     } /* for(;;) */
@@ -422,7 +431,7 @@ done:
     
     AP->ap_Flags &= ~APF_DODIR;
     
-    if (old_current_lock != AP->ap_Current->an_Lock)
+    if (dir_changed)
     {
         AP->ap_Flags |= APF_DirChanged;
     }
