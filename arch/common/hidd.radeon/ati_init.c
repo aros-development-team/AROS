@@ -64,6 +64,9 @@ AROS_UFH3(void, Enumerator,
     IPTR ProductID;
     IPTR VendorID;
 
+    if (sd->PCIDevice != NULL)
+        return;
+
     /* Get the Device's ProductID */
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
