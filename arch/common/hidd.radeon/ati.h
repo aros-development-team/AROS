@@ -68,11 +68,17 @@ typedef struct __bm {
     UBYTE   fbgfx;      // is framebuffer in gfx memory
     ULONG   usecount;   // counts BitMap accesses
 
+    ULONG   dp_gui_master_cntl;
+    ULONG   dp_gui_master_cntl_clip;
+    ULONG   accel_pitch;
+    ULONG   pitch_offset;
+    UBYTE   datatype;
+/*
     ULONG   surface_format;
     ULONG   pattern_format;
     ULONG   rect_format;
     ULONG   line_format;
-
+*/
     struct CardState *state;
 } atiBitMap;
 
@@ -173,7 +179,7 @@ struct planarbm_data
 #define LOCK_BITMAP_BM(bm)   { ObtainSemaphore(&(bm)->bmLock); }
 #define UNLOCK_BITMAP_BM(bm) { ReleaseSemaphore(&(bm)->bmLock); }
 
-#define LOCK_MULTI_BITMAP    { ObtainSemaphore(&SD(cl)->MultiBMLock); }
-#define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&SD(cl)->MultiBMLock); }
+#define LOCK_MULTI_BITMAP    { ObtainSemaphore(&sd->MultiBMLock); }
+#define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&sd->MultiBMLock); }
 
 #endif /* _ATI_H */

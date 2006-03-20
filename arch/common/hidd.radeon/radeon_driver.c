@@ -33,7 +33,7 @@ static int RADEONDiv(int n, int d)
  * CLOCK_CNTL_INDEX register access.  If not, register reads afterward
  * may not be correct.
  */
-static void R300CGWorkaround(struct ati_staticdata *sd)
+void R300CGWorkaround(struct ati_staticdata *sd)
 {
     ULONG         save, tmp;
 
@@ -45,7 +45,7 @@ static void R300CGWorkaround(struct ati_staticdata *sd)
 }
 
 /* Read PLL information */
-static unsigned RADEONINPLL(struct ati_staticdata *sd, int addr)
+unsigned RADEONINPLL(struct ati_staticdata *sd, int addr)
 {
     ULONG   data;
 
@@ -2055,11 +2055,12 @@ IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
     ULONG bpp, BOOL must_have)
 {
     IPTR result;
-    
+    ULONG size = (((width * bpp + 255) & ~255) * height + 1023) & ~1023;
+
     LOCK_HW
     
     Forbid();
-    result = (IPTR)Allocate(&sd->CardMem, ((width * bpp + 255) & ~255) * height);
+    result = (IPTR)Allocate(&sd->CardMem, size);
     Permit();
 
     D(bug("[ATI] AllocBitmapArea(%dx%d@%d) = %p\n", width, height, bpp, result));
@@ -2080,6 +2081,7 @@ IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
 VOID FreeBitmapArea(struct ati_staticdata *sd, IPTR bmp, ULONG width, ULONG height, ULONG bpp)
 {
     APTR ptr = (APTR)(bmp + sd->Card.FrameBuffer);
+    ULONG size = (((width * bpp + 255) & ~255) * height + 1023) & ~1023;
 
     LOCK_HW
 
@@ -2087,7 +2089,7 @@ VOID FreeBitmapArea(struct ati_staticdata *sd, IPTR bmp, ULONG width, ULONG heig
     bmp, width, height, bpp));
 
     Forbid();
-    Deallocate(&sd->CardMem, ptr, ((width * bpp + 255) & ~255) * height);
+    Deallocate(&sd->CardMem, ptr, size);
     Permit();
     
     UNLOCK_HW

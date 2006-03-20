@@ -5,7 +5,7 @@ USER_INCLUDES := -I.
 
 CFLAGS := $(CFLAGS) -D__KERNEL__
 
-FILES	:= ati_init ati_class ati_bitmap ati_i2c radeon_driver radeon_bios ids
+FILES	:= ati_init ati_class ati_bitmap ati_i2c radeon_driver radeon_bios radeon_accel ids
 
 %build_module mmake=hidd-radeon \
     modname=radeon modtype=hidd \
