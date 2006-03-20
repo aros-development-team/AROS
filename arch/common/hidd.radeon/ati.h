@@ -70,7 +70,6 @@ typedef struct __bm {
 
     ULONG   dp_gui_master_cntl;
     ULONG   dp_gui_master_cntl_clip;
-    ULONG   accel_pitch;
     ULONG   pitch_offset;
     UBYTE   datatype;
 /*

@@ -153,6 +153,8 @@ void RADEONEngineReset(struct ati_staticdata *sd)
     OUTREG(RADEON_CLOCK_CNTL_INDEX, clock_cntl_index);
     OUTPLL(RADEON_MCLK_CNTL, mclk_cntl);
     if (sd->Card.R300CGWorkaround) R300CGWorkaround(sd);
+    
+    OUTREG(RADEON_RB3D_CNTL, 0);
 }
 
 /* Restore the acceleration hardware to its previous state */
@@ -182,14 +184,6 @@ void RADEONEngineRestore(struct ati_staticdata *sd)
     RADEONWaitForFifo(sd, 1);
     OUTREG(RADEON_DEFAULT_SC_BOTTOM_RIGHT, (RADEON_DEFAULT_SC_RIGHT_MAX
                                             | RADEON_DEFAULT_SC_BOTTOM_MAX));
-
-#warning FIXME: info->dp_gui_master_cntl
-#if 0
-    RADEONWaitForFifo(sd, 1);
-    OUTREG(RADEON_DP_GUI_MASTER_CNTL, (info->dp_gui_master_cntl
-                                       | RADEON_GMC_BRUSH_SOLID_COLOR
-                                       | RADEON_GMC_SRC_DATATYPE_COLOR));
-#endif
 
     RADEONWaitForFifo(sd, 7);
     OUTREG(RADEON_DST_LINE_START,    0);

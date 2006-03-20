@@ -16,7 +16,7 @@
 #include "radeon_accel.h"
 #include "radeon_macros.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define sd ((struct ati_staticdata*)SD(cl))
@@ -264,7 +264,7 @@ void METHOD(ATI, Hidd_Gfx, CopyBox)
             WORD w = msg->width;
             WORD h = msg->height;
             
-            if (bm_src->accel_pitch == bm_dst->accel_pitch)
+            if (bm_src->pitch_offset == bm_dst->pitch_offset)
             {
                 xdir = xb - xa;
                 ydir = ya - yb;
@@ -287,12 +287,13 @@ void METHOD(ATI, Hidd_Gfx, CopyBox)
             bm_dst->dp_gui_master_cntl_clip = (bm_dst->dp_gui_master_cntl
                                      | RADEON_GMC_BRUSH_NONE
                                      | RADEON_GMC_SRC_DATATYPE_COLOR
+                                     | RADEON_GMC_SRC_PITCH_OFFSET_CNTL
                                      | RADEON_ROP[mode].rop
                                      | RADEON_DP_SRC_SOURCE_MEMORY);
 
             RADEONWaitForFifo(sd, 6);
             OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm_dst->dp_gui_master_cntl_clip);
-            OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm_dst->depth);
+            OUTREG(RADEON_DP_WRITE_MASK,      ~0);
             OUTREG(RADEON_DP_CNTL,
                   ((xdir >= 0 ? RADEON_DST_X_LEFT_TO_RIGHT : 0) |
                    (ydir >= 0 ? RADEON_DST_Y_TOP_TO_BOTTOM : 0)));
@@ -547,11 +548,11 @@ OOP_Object *METHOD(ATI, Root, New)
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_16bpp  },
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_15bpp  },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1280x1024_60 },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_640x480_60   },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_800x600_56   },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1024x768_60  },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1152x864_60  },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_1280x1024_60 },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1600x1200_60 },
         { TAG_DONE, 0UL }
     };
