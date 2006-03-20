@@ -7,6 +7,7 @@
 #include "radeon.h"
 #include "radeon_reg.h"
 #include "radeon_bios.h"
+#include "radeon_accel.h"
 #include "radeon_macros.h"
 
 #include <oop/oop.h>
@@ -16,7 +17,7 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define sd ((struct ati_staticdata*)SD(cl))
@@ -103,6 +104,35 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
         bm->BitMap = o;
         bm->usecount = 0;
         
+        if (bm->framebuffer != -1)
+        {
+            ULONG pitch64 = ((width * (depth / 8) + 0x3f)) >> 6;
+            
+            switch(depth)
+            {
+                case 15:
+                    bm->datatype = 3;
+                    break;
+                    
+                case 16:
+                    bm->datatype = 4;
+                    break;
+                    
+                case 32:
+                    bm->datatype = 6;
+                    break;
+            }
+            
+            bm->accel_pitch = width / 8;
+            bm->dp_gui_master_cntl = 
+                        ((bm->datatype << RADEON_GMC_DST_DATATYPE_SHIFT)
+                        |RADEON_GMC_CLR_CMP_CNTL_DIS
+                        |RADEON_GMC_SRC_PITCH_OFFSET_CNTL
+                        |RADEON_GMC_DST_PITCH_OFFSET_CNTL);
+            
+            bm->pitch_offset = ((bm->framebuffer >> 10) | (pitch64 << 22));
+        }
+        
         if (cl == sd->OnBMClass)
         {
             if (fb && bm->framebuffer != -1)
@@ -123,7 +153,10 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
             
                     LoadState(sd, bm->state);
                     DPMS(sd, sd->dpms);
-            
+                    
+                    RADEONEngineReset(sd);
+                    RADEONEngineRestore(sd);
+                                
                     UNLOCK_HW
             
                     return o;
@@ -180,6 +213,9 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
                 
                         LoadState(sd, bm->state);
                         DPMS(sd, sd->dpms);
+
+                        RADEONEngineReset(sd);
+                        RADEONEngineRestore(sd);
                 
                         UNLOCK_HW
                 
@@ -223,7 +259,7 @@ VOID METHOD(ATIOnBM, Root, Dispose)
     LOCK_BITMAP
     LOCK_HW
 //    NVDmaKickoff(&sd->Card);
-//    NVSync(sd);
+    RADEONWaitForIdleMMIO(sd);
     
     if (bm->fbgfx)
     {
@@ -277,6 +313,337 @@ VOID METHOD(ATIOnBM, Root, Get)
 }
 
 
+VOID METHOD(ATIOffBM, Hidd_BitMap, Clear)
+    __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, Clear))));
+
+VOID METHOD(ATIOnBM, Hidd_BitMap, Clear)
+{
+    atiBitMap *bm = OOP_INST_DATA(cl, o);
+
+    D(bug("[ATI] Clear(%p)\n",
+        bm->framebuffer));
+    
+    LOCK_BITMAP
+    
+    if (bm->fbgfx)
+    {
+        LOCK_HW
+        sd->Card.Busy = TRUE;
+        bm->usecount++;
+
+        RADEONWaitForFifo(sd, 1);
+        OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
+
+        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl
+                                     | RADEON_GMC_BRUSH_SOLID_COLOR
+                                     | RADEON_GMC_SRC_DATATYPE_COLOR
+                                     | RADEON_ROP[GC_DRMD(vHidd_GC_DrawMode_Copy)].pattern);
+
+        RADEONWaitForFifo(sd, 4);
+    
+        OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_BG(msg->gc));
+        OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm->depth);
+        OUTREG(RADEON_DP_CNTL,            (RADEON_DST_X_LEFT_TO_RIGHT
+                                          | RADEON_DST_Y_TOP_TO_BOTTOM));
+
+        RADEONWaitForFifo(sd, 2);
+
+        OUTREG(RADEON_DST_Y_X,          0);
+        OUTREG(RADEON_DST_WIDTH_HEIGHT, (bm->width << 16) | bm->height);
+
+        UNLOCK_HW
+    }
+    else
+    {
+        ULONG *ptr = (ULONG*)bm->framebuffer;
+        ULONG val = 0;
+        int i = (bm->pitch * bm->height) >> 2;
+        
+        switch (bm->bpp)
+        {
+            case 2:
+                val = GC_BG(msg->gc) << 16 | (GC_BG(msg->gc) & 0xffff);
+                break;
+
+            default:
+                val = GC_BG(msg->gc) << 16 | (GC_BG(msg->gc) & 0xffff);
+                break;
+        }
+        
+        do { *ptr++ = val; } while(--i);
+    }
+    
+    UNLOCK_BITMAP
+}
+
+struct pHidd_BitMap_FillRect {
+    struct pHidd_BitMap_DrawRect dr;
+};
+
+VOID METHOD(ATIOffBM, Hidd_BitMap, FillRect)
+    __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, FillRect))));
+
+VOID METHOD(ATIOnBM, Hidd_BitMap, FillRect)
+{
+    OOP_Object *gc = msg->dr.gc;
+    atiBitMap *bm = OOP_INST_DATA(cl, o);
+
+    D(bug("[ATI] FillRect(%p, %d:%d - %d:%d)\n",
+        bm->framebuffer, msg->dr.minX, msg->dr.minY, msg->dr.maxX, msg->dr.maxY));
+
+    LOCK_BITMAP
+
+    if (bm->fbgfx)
+    {
+        LOCK_HW
+        sd->Card.Busy = TRUE;
+        bm->usecount++;
+
+        RADEONWaitForFifo(sd, 1);
+        OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
+
+        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl
+                                     | RADEON_GMC_BRUSH_SOLID_COLOR
+                                     | RADEON_GMC_SRC_DATATYPE_COLOR
+                                     | RADEON_ROP[GC_DRMD(gc)].pattern);
+
+        RADEONWaitForFifo(sd, 4);
+    
+        OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
+        OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm->depth);
+        OUTREG(RADEON_DP_CNTL,            (RADEON_DST_X_LEFT_TO_RIGHT
+                                          | RADEON_DST_Y_TOP_TO_BOTTOM));
+
+        RADEONWaitForFifo(sd, 2);
+
+        OUTREG(RADEON_DST_Y_X,          (msg->dr.minY << 16) | msg->dr.minX);
+        OUTREG(RADEON_DST_WIDTH_HEIGHT, ((msg->dr.maxX - msg->dr.minX + 1) << 16) | (msg->dr.maxY - msg->dr.minY + 1));
+
+        UNLOCK_HW
+    }
+    else
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+
+    UNLOCK_BITMAP
+    
+}
+
+
+VOID METHOD(ATIOffBM, Hidd_BitMap, DrawLine)
+    __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, DrawLine))));
+
+VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
+{
+    OOP_Object *gc = msg->gc;
+    atiBitMap *bm = OOP_INST_DATA(cl, o);
+
+    D(bug("[ATI] DrawLine(%p, %d:%d - %d:%d)\n",
+        bm->framebuffer, msg->x1, msg->y1, msg->x2, msg->y2));
+
+    LOCK_BITMAP
+    
+    if ((GC_LINEPAT(gc) =! (UWORD)~0) || !bm->fbgfx)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+    else
+    {
+        LOCK_HW
+        sd->Card.Busy = TRUE;
+        bm->usecount++;
+
+        RADEONWaitForFifo(sd, 1);
+        OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
+        
+        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl 
+                                     | RADEON_GMC_BRUSH_SOLID_COLOR
+                                     | RADEON_GMC_SRC_DATATYPE_COLOR
+                                     | RADEON_ROP[GC_DRMD(gc)].pattern);
+        
+        if (sd->Card.Type >= RV200) {
+            RADEONWaitForFifo(sd, 1);
+            OUTREG(RADEON_DST_LINE_PATCOUNT,
+                      0x55 << RADEON_BRES_CNTL_SHIFT);
+        }
+
+        if (GC_DOCLIP(gc))
+        {
+            bm->dp_gui_master_cntl_clip |= RADEON_GMC_DST_CLIPPING;
+            
+            RADEONWaitForFifo(sd, 2);
+            OUTREG(RADEON_SC_TOP_LEFT,        (GC_CLIPY1(gc) << 16) | GC_CLIPX1(gc));
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (GC_CLIPY2(gc) << 16) | GC_CLIPX2(gc));
+        }
+
+        RADEONWaitForFifo(sd, 3);
+
+        OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
+        OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm->depth);
+
+        RADEONWaitForFifo(sd, 4);
+
+        OUTREG(RADEON_DST_LINE_START, (msg->y1 << 16) | msg->x1);
+        OUTREG(RADEON_DST_LINE_END,   (msg->y2 << 16) | msg->x2);
+        OUTREG(RADEON_DST_LINE_START, (msg->y2 << 16) | msg->x2);
+        OUTREG(RADEON_DST_LINE_END,   ((msg->y2+1) << 16) | (msg->x2+1));
+        
+        UNLOCK_HW
+    }
+
+    UNLOCK_BITMAP
+}
+
+
+VOID METHOD(ATIOffBM, Hidd_BitMap, DrawRect)
+    __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, DrawRect))));
+
+VOID METHOD(ATIOnBM, Hidd_BitMap, DrawRect)
+{
+    OOP_Object *gc = msg->gc;
+    atiBitMap *bm = OOP_INST_DATA(cl, o);
+    UWORD addX, addY;
+
+    D(bug("[ATI] DrawRect(%p, %d:%d - %d:%d)\n",
+        bm->framebuffer, msg->minX, msg->minY, msg->maxX, msg->maxY));
+
+    if (msg->minX == msg->maxX) addX = 1; else addX = 0;
+    if (msg->minY == msg->maxY) addY = 1; else addY = 0;
+
+    LOCK_BITMAP
+    
+    if ((GC_LINEPAT(gc) =! (UWORD)~0) || !bm->fbgfx)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+    else
+    {
+        LOCK_HW
+        sd->Card.Busy = TRUE;
+        bm->usecount++;
+
+        RADEONWaitForFifo(sd, 1);
+        OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
+        
+        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl 
+                                     | RADEON_GMC_BRUSH_SOLID_COLOR
+                                     | RADEON_GMC_SRC_DATATYPE_COLOR
+                                     | RADEON_ROP[GC_DRMD(gc)].pattern);
+        
+        if (sd->Card.Type >= RV200) {
+            RADEONWaitForFifo(sd, 1);
+            OUTREG(RADEON_DST_LINE_PATCOUNT,
+                      0x55 << RADEON_BRES_CNTL_SHIFT);
+        }
+
+        if (GC_DOCLIP(gc))
+        {
+            bm->dp_gui_master_cntl_clip |= RADEON_GMC_DST_CLIPPING;
+            
+            RADEONWaitForFifo(sd, 2);
+            OUTREG(RADEON_SC_TOP_LEFT,        (GC_CLIPY1(gc) << 16) | GC_CLIPX1(gc));
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (GC_CLIPY2(gc) << 16) | GC_CLIPX2(gc));
+        }
+
+        RADEONWaitForFifo(sd, 3);
+
+        OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
+        OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm->depth);
+
+        RADEONWaitForFifo(sd, 8);
+
+        OUTREG(RADEON_DST_LINE_START, (msg->minY << 16) | (msg->minX & 0xffff));
+        OUTREG(RADEON_DST_LINE_END,   (msg->minY << 16) | (msg->maxX & 0xffff));
+        
+        OUTREG(RADEON_DST_LINE_START, ((msg->minY + addY) << 16) | (msg->maxX & 0xffff));
+        OUTREG(RADEON_DST_LINE_END,   ((msg->maxY << 16)) | (msg->maxX & 0xffff));
+
+        OUTREG(RADEON_DST_LINE_START, ((msg->maxY << 16)) | ((msg->maxX - addX) & 0xffff));
+        OUTREG(RADEON_DST_LINE_END,   ((msg->maxY << 16)) | ((msg->minX) & 0xffff));
+        
+        OUTREG(RADEON_DST_LINE_START, ((msg->maxY - addY) << 16) | (msg->minX & 0xffff));
+        OUTREG(RADEON_DST_LINE_END,   ((msg->minY + addY) << 16) | (msg->minX & 0xffff));
+       
+        UNLOCK_HW
+    }
+
+    UNLOCK_BITMAP
+}
+
+
+VOID METHOD(ATIOffBM, Hidd_BitMap, DrawPolygon)
+    __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, DrawPolygon))));
+
+VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
+{
+    OOP_Object *gc = msg->gc;
+    atiBitMap *bm = OOP_INST_DATA(cl, o);
+    ULONG i;
+
+    D(bug("[ATI] DrawPolygon(%p)\n",
+        bm->framebuffer));
+
+    LOCK_BITMAP
+    
+    if ((GC_LINEPAT(gc) =! (UWORD)~0) || !bm->fbgfx)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+    else
+    {
+        LOCK_HW
+        sd->Card.Busy = TRUE;
+        bm->usecount++;
+
+        RADEONWaitForFifo(sd, 1);
+        OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
+        
+        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl 
+                                     | RADEON_GMC_BRUSH_SOLID_COLOR
+                                     | RADEON_GMC_SRC_DATATYPE_COLOR
+                                     | RADEON_ROP[GC_DRMD(gc)].pattern);
+        
+        if (sd->Card.Type >= RV200) {
+            RADEONWaitForFifo(sd, 1);
+            OUTREG(RADEON_DST_LINE_PATCOUNT,
+                      0x55 << RADEON_BRES_CNTL_SHIFT);
+        }
+
+        if (GC_DOCLIP(gc))
+        {
+            bm->dp_gui_master_cntl_clip |= RADEON_GMC_DST_CLIPPING;
+            
+            RADEONWaitForFifo(sd, 2);
+            OUTREG(RADEON_SC_TOP_LEFT,        (GC_CLIPY1(gc) << 16) | GC_CLIPX1(gc));
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (GC_CLIPY2(gc) << 16) | GC_CLIPX2(gc));
+        }
+
+        RADEONWaitForFifo(sd, 3);
+
+        OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
+        OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
+        OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm->depth);
+
+        for (i = 2; i < (2 * msg->n); i+=2)
+        {
+            RADEONWaitForFifo(sd, 2);
+            OUTREG(RADEON_DST_LINE_START, (msg->coords[i-1] << 16) | msg->coords[i-2]);
+            OUTREG(RADEON_DST_LINE_END,   (msg->coords[i+1] << 16) | msg->coords[i]);
+        }
+        
+        UNLOCK_HW
+    }
+
+    UNLOCK_BITMAP
+}
+
+
+
 VOID METHOD(ATIOffBM, Hidd_BitMap, PutPixel)
     __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, PutPixel))));
 
@@ -295,7 +662,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPixel)
         {
             LOCK_HW
 #warning TODO: NVSync(sd)
-//            NVSync(sd);
+            RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
     }
@@ -336,7 +703,7 @@ HIDDT_Pixel METHOD(ATIOnBM, Hidd_BitMap, GetPixel)
         {
             LOCK_HW
 #warning TODO: NVSync(sd)
-//            NVSync(sd);
+            RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
     }
@@ -389,7 +756,7 @@ BOOL METHOD(ATIOnBM, Hidd_BitMap, ObtainDirectAccess)
         {
             LOCK_HW
 #warning TODO: NVSync(sd)
-//            NVSync(sd);
+            RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
     }   
@@ -436,8 +803,8 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImageLUT)
         {
             LOCK_HW
 #warning TODO: NVSync(sd)
-//      NVSync(sd);
-           UNLOCK_HW
+            RADEONWaitForIdleMMIO(sd);
+            UNLOCK_HW
         }
     }
 
@@ -514,7 +881,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
         {
             LOCK_HW
 #warning TODO: NVSync(sd)
-//           NVSync(sd);
+            RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
     }
@@ -673,7 +1040,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, GetImage)
         {
             LOCK_HW
 #warning TODO: NVSync(sd)
-    //      NVSync(sd);
+            RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
     }   
@@ -836,7 +1203,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutTemplate)
         {
             LOCK_HW
 #warning TODO: NVSync(sd)
-//            NVSync(sd);
+            RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
     }   
@@ -929,7 +1296,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPattern)
         {
             LOCK_HW
 #warning TODO: NVSync(sd)
-//            NVSync(sd);
+            RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
     }   

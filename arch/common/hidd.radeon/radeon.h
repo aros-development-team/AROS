@@ -297,7 +297,8 @@ struct Card {
     ULONG           RamWidth;
     ULONG           BusCntl;
     ULONG           MemCntl;
-
+    
+    ULONG           FIFOSlots;
 };
 
 #define V_DBLSCAN       0x00000001
@@ -310,6 +311,14 @@ struct Card {
 #define RADEON_IDLE_ENTRY   16
 #define RADEON_TIMEOUT      2000000
 #define RADEON_MMIOSIZE     0x80000
+
+#define RADEONWaitForFifo(sd, entries)                                  \
+do {                                                                    \
+    if (sd->Card.FIFOSlots < entries)                                   \
+        RADEONWaitForFifoFunction(sd, entries);                         \
+    sd->Card.FIFOSlots -= entries;                                      \
+} while (0)
+
 
 struct ati_staticdata;
 void SaveState(struct ati_staticdata *sd, struct CardState *save);
@@ -326,7 +335,7 @@ BOOL RADEONInit(struct ati_staticdata *sd);
 IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
     ULONG bpp, BOOL must_have);
 VOID FreeBitmapArea(struct ati_staticdata *sd, IPTR bmp, ULONG width, ULONG height, ULONG bpp);
-
-
+void R300CGWorkaround(struct ati_staticdata *sd);
+unsigned RADEONINPLL(struct ati_staticdata *sd, int addr);
 
 #endif /*RADEON_H_*/

@@ -13,6 +13,7 @@
 #include "radeon.h"
 #include "radeon_reg.h"
 #include "radeon_bios.h"
+#include "radeon_accel.h"
 #include "radeon_macros.h"
 
 #define DEBUG 1
@@ -88,6 +89,9 @@ OOP_Object *METHOD(ATI, Hidd_Gfx, Show)
         
                 fb = bm->BitMap;
                 ShowHideCursor(sd, sd->Card.cursorVisible);
+                
+                RADEONEngineReset(sd);
+                RADEONEngineRestore(sd);
                 
                 UNLOCK_HW
             }
@@ -231,16 +235,88 @@ void METHOD(ATI, Hidd_Gfx, CopyBox)
         atiBitMap *bm_src = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
         atiBitMap *bm_dst = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
 
-#warning TODO: Implement native ATI::CopyBox();
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-
         D(bug("[ATI] CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
                 bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
                 bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
                 msg->width, msg->height));
     
+        /* Case -1: (To be fixed) one of the bitmaps have chunky outside GFX mem */
+        if (!bm_src->fbgfx || !bm_dst->fbgfx)
+        {
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        }
+        /* Case 0: one of bitmaps is 8bpp, whereas the other is TrueColor one */
+        else if ((bm_src->depth <= 8 || bm_dst->depth <= 8) &&
+            (bm_src->depth != bm_dst->depth))
+        {
+            /* Unsupported case */
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            return;
+        }
+        /* Case 1: both bitmaps have the same depth - use Blit engine */
+        else if (bm_src->depth == bm_dst->depth)
+        {
+            int xdir = 0, ydir = 0;
+            WORD xa = msg->srcX;
+            WORD ya = msg->srcY;
+            WORD xb = msg->destX;
+            WORD yb = msg->destY;
+            WORD w = msg->width;
+            WORD h = msg->height;
+            
+            if (bm_src->accel_pitch == bm_dst->accel_pitch)
+            {
+                xdir = xb - xa;
+                ydir = ya - yb;
+                
+                if (xdir < 0) xa += w - 1, xb += w - 1;
+                if (ydir < 0) ya += h - 1, yb += h - 1;    
+            }
+            
+            LOCK_MULTI_BITMAP
+            LOCK_BITMAP_BM(bm_src)
+            LOCK_BITMAP_BM(bm_dst)
+            UNLOCK_MULTI_BITMAP
+
+            LOCK_HW
+
+            RADEONWaitForFifo(sd, 2);
+            OUTREG(RADEON_DST_PITCH_OFFSET, bm_dst->pitch_offset);
+            OUTREG(RADEON_SRC_PITCH_OFFSET, bm_src->pitch_offset);
+
+            bm_dst->dp_gui_master_cntl_clip = (bm_dst->dp_gui_master_cntl
+                                     | RADEON_GMC_BRUSH_NONE
+                                     | RADEON_GMC_SRC_DATATYPE_COLOR
+                                     | RADEON_ROP[mode].rop
+                                     | RADEON_DP_SRC_SOURCE_MEMORY);
+
+            RADEONWaitForFifo(sd, 6);
+            OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm_dst->dp_gui_master_cntl_clip);
+            OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm_dst->depth);
+            OUTREG(RADEON_DP_CNTL,
+                  ((xdir >= 0 ? RADEON_DST_X_LEFT_TO_RIGHT : 0) |
+                   (ydir >= 0 ? RADEON_DST_Y_TOP_TO_BOTTOM : 0)));
+
+//            RADEONWaitForFifo(sd, 3);
+        
+            OUTREG(RADEON_SRC_Y_X,          (ya << 16) | xa);
+            OUTREG(RADEON_DST_Y_X,          (yb << 16) | xb);
+            OUTREG(RADEON_DST_HEIGHT_WIDTH, (h  << 16) | w);
+
+            UNLOCK_HW
+            
+            UNLOCK_BITMAP_BM(bm_src)
+            UNLOCK_BITMAP_BM(bm_dst)
+        }
+        else /* Case 2: different bitmaps. HELP? */
+        {
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        }
+          
         bm_src->usecount++;
         bm_dst->usecount++;
+        
+        
     }
 }
 
@@ -477,7 +553,6 @@ OOP_Object *METHOD(ATI, Root, New)
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1152x864_60  },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1280x1024_60 },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1600x1200_60 },
-        
         { TAG_DONE, 0UL }
     };
     
