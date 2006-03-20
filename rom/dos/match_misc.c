@@ -317,6 +317,28 @@ done:
 
 LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase)
 {
+#if 1
+    LONG error = 0;
+
+    ap->ap_Info = ap->ap_Current->an_Info;
+    if (ap->ap_Strlen)
+    {
+        struct AChain *ac;
+
+	ap->ap_Buf[0] = 0;
+	
+	for(ac = ap->ap_Base; (ac && !error); ac = ac->an_Child)
+	{
+	    if (!AddPart(ap->ap_Buf, 
+	    	    	 ((ac->an_Flags & DDF_PatternBit) ? ac->an_Info.fib_FileName : ac->an_String),
+			 ap->ap_Strlen))
+	    {
+	    	error = IoErr();
+	    }
+	}
+	
+    }
+#else
     LONG error = 0;
 
     ap->ap_Info = ap->ap_Current->an_Info;
@@ -333,6 +355,7 @@ LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase)
 	    error = IoErr();
 	}
     }
+#endif
 
     return error;
 }
