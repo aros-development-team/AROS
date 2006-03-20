@@ -95,7 +95,7 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
         
         bm->width = width;
         bm->height = height;
-        bm->pitch = (width * bytesPerPixel + 255) & ~255;
+        bm->pitch = (width * bytesPerPixel + 63) & ~63;
         bm->depth = depth;
         bm->bpp = bytesPerPixel;
         bm->framebuffer = AllocBitmapArea(sd, bm->width, bm->height, bm->bpp, TRUE);
@@ -106,7 +106,7 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
         
         if (bm->framebuffer != -1)
         {
-            ULONG pitch64 = ((width * (depth / 8) + 0x3f)) >> 6;
+            ULONG pitch64 = ((bm->pitch)) >> 6;
             
             switch(depth)
             {
@@ -121,16 +121,16 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
                 case 32:
                     bm->datatype = 6;
                     break;
-            }
-            
-            bm->accel_pitch = width / 8;
+            }         
+
             bm->dp_gui_master_cntl = 
                         ((bm->datatype << RADEON_GMC_DST_DATATYPE_SHIFT)
                         |RADEON_GMC_CLR_CMP_CNTL_DIS
-                        |RADEON_GMC_SRC_PITCH_OFFSET_CNTL
                         |RADEON_GMC_DST_PITCH_OFFSET_CNTL);
             
-            bm->pitch_offset = ((bm->framebuffer >> 10) | (pitch64 << 22));
+            bm->pitch_offset = ((bm->framebuffer >> 10) | (bm->pitch << 16));
+            
+            D(bug("[ATIBitMap] PITCH_OFFSET=%08x\n", bm->pitch_offset));
         }
         
         if (cl == sd->OnBMClass)
@@ -343,7 +343,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, Clear)
     
         OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
         OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_BG(msg->gc));
-        OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm->depth);
+        OUTREG(RADEON_DP_WRITE_MASK,      ~0);
         OUTREG(RADEON_DP_CNTL,            (RADEON_DST_X_LEFT_TO_RIGHT
                                           | RADEON_DST_Y_TOP_TO_BOTTOM));
 
@@ -412,7 +412,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, FillRect)
     
         OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
         OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
-        OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm->depth);
+        OUTREG(RADEON_DP_WRITE_MASK,      ~0);
         OUTREG(RADEON_DP_CNTL,            (RADEON_DST_X_LEFT_TO_RIGHT
                                           | RADEON_DST_Y_TOP_TO_BOTTOM));
 
@@ -441,8 +441,8 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
     OOP_Object *gc = msg->gc;
     atiBitMap *bm = OOP_INST_DATA(cl, o);
 
-    D(bug("[ATI] DrawLine(%p, %d:%d - %d:%d)\n",
-        bm->framebuffer, msg->x1, msg->y1, msg->x2, msg->y2));
+    D(bug("[ATI] DrawLine(%p, %d:%d - %d:%d) %08x\n",
+        bm->framebuffer, msg->x1, msg->y1, msg->x2, msg->y2,GC_FG(gc)));
 
     LOCK_BITMAP
     
@@ -483,7 +483,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
 
         OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
         OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
-        OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm->depth);
+        OUTREG(RADEON_DP_WRITE_MASK,      ~0);
 
         RADEONWaitForFifo(sd, 4);
 
@@ -553,7 +553,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawRect)
 
         OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
         OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
-        OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm->depth);
+        OUTREG(RADEON_DP_WRITE_MASK,      ~0);
 
         RADEONWaitForFifo(sd, 8);
 
@@ -627,7 +627,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
 
         OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
         OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
-        OUTREG(RADEON_DP_WRITE_MASK,      ~0 << bm->depth);
+        OUTREG(RADEON_DP_WRITE_MASK,      ~0);
 
         for (i = 2; i < (2 * msg->n); i+=2)
         {

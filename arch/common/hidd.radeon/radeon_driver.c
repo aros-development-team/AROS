@@ -532,6 +532,8 @@ static BOOL RADEONInitCrtcRegisters(struct ati_staticdata *sd, struct CardState 
               ((mode->bpp * 8) -1)) /
              (mode->bpp * 8));
 
+    D(bug("[RADEON] crtc_pitch = %08x\n", save->crtc_pitch));
+
     save->crtc_pitch |= save->crtc_pitch << 16;
 
     save->crtc_more_cntl = 0;
@@ -1568,6 +1570,8 @@ void LoadState(struct ati_staticdata *sd, struct CardState *restore)
     OUTREG(RADEON_GRPH_BUFFER_CNTL, restore->grph_buffer_cntl);
     OUTREG(RADEON_GRPH2_BUFFER_CNTL, restore->grph2_buffer_cntl);
 
+    OUTREG(RADEON_SURFACE_CNTL,       restore->surface_cntl);
+
     if (!sd->Card.HasCRTC2)
     {
         // Common
@@ -1582,7 +1586,6 @@ void LoadState(struct ati_staticdata *sd, struct CardState *restore)
         OUTREG(RADEON_CAP0_TRIG_CNTL,     restore->cap0_trig_cntl);
         OUTREG(RADEON_CAP1_TRIG_CNTL,     restore->cap1_trig_cntl);
         OUTREG(RADEON_BUS_CNTL,           restore->bus_cntl);
-        OUTREG(RADEON_SURFACE_CNTL,       restore->surface_cntl);
 
         // CRTC
         OUTREG(RADEON_CRTC_GEN_CNTL, restore->crtc_gen_cntl);
@@ -2055,22 +2058,22 @@ IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
     ULONG bpp, BOOL must_have)
 {
     IPTR result;
-    ULONG size = (((width * bpp + 255) & ~255) * height + 1023) & ~1023;
+    ULONG size = (((width * bpp + 63) & ~63) * height + 1023) & ~1023;
 
     LOCK_HW
     
     Forbid();
     result = (IPTR)Allocate(&sd->CardMem, size);
     Permit();
-
-    D(bug("[ATI] AllocBitmapArea(%dx%d@%d) = %p\n", width, height, bpp, result));
-    
+   
     /*
         If Allocate failed, make the 0xffffffff as return. If it succeeded, make
         the memory pointer relative to the begin of GFX memory
     */
     if (result == 0) --result;
     else result -= (IPTR)sd->Card.FrameBuffer;
+
+    D(bug("[ATI] AllocBitmapArea(%dx%d@%d) = %p\n", width, height, bpp, result));
 
     UNLOCK_HW
 
@@ -2081,7 +2084,7 @@ IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
 VOID FreeBitmapArea(struct ati_staticdata *sd, IPTR bmp, ULONG width, ULONG height, ULONG bpp)
 {
     APTR ptr = (APTR)(bmp + sd->Card.FrameBuffer);
-    ULONG size = (((width * bpp + 255) & ~255) * height + 1023) & ~1023;
+    ULONG size = (((width * bpp + 63) & ~63) * height + 1023) & ~1023;
 
     LOCK_HW
 
