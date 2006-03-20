@@ -211,14 +211,15 @@ int printDirHeader(STRPTR dirname, BOOL noHead)
 
 struct lfstruct
 {
-    BOOL    isdir;
-    STRPTR  date;
-    STRPTR  time;
-    STRPTR  flags;
-    STRPTR  filename;
-    STRPTR  comment;
-    ULONG   size;
-    ULONG   key;
+    struct AnchorPath *ap;
+    BOOL    	       isdir;
+    STRPTR  	       date;
+    STRPTR  	       time;
+    STRPTR  	       flags;
+    STRPTR  	       filename;
+    STRPTR  	       comment;
+    ULONG   	       size;
+    ULONG   	       key;
 };
 
 
@@ -276,17 +277,20 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 		/* Path incl. volume name*/
 	    case 'F':
 		{
-		    STRPTR pEnd = FilePart(lf->filename);
-		    UBYTE  token;
+		    UBYTE buf[256];
 		    
-		    token = pEnd[0];
-		    pEnd[0] = 0;
-		    
-		    Printf(lf->filename);
-
-		    /* Restore filename */
-		    pEnd[0] = token;
-
+		    if (NameFromLock(lf->ap->ap_Current->an_Lock, buf, 256))
+		    {
+		    	int len;
+			
+			Printf(buf);
+			
+		    	len = strlen(buf);
+			if ((len > 0) && (buf[len - 1] != ':') && (buf[len - 1] != '/'))
+			{
+			    Printf("/");
+			}
+		    }
 		}
 
 		break;
@@ -367,19 +371,11 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 	    case 'P':
 		{
 		    STRPTR end = FilePart(lf->filename);
-		    STRPTR start = strchr(lf->filename, ':');
 		    UBYTE  token = *end;
 		    
 		    *end = 0;
 
-		    if (start == NULL)
-		    {
-			Printf(lf->filename);
-		    }
-		    else
-		    {
-			Printf(start + 1);
-		    }
+		    Printf(lf->filename);
 		    
 		    /* Restore pathname */
 		    *end = token;
@@ -406,8 +402,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 }
 
 
-int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds, 
-                  ULONG protection, ULONG size, STRPTR filenote, LONG diskKey,
+int printFileData(struct AnchorPath *ap,
                   BOOL showFiles, BOOL showDirs, STRPTR parsedPattern,
                   ULONG *files, ULONG *dirs, ULONG *nBlocks, STRPTR lFormat,
 		  BOOL quick, BOOL dates, BOOL noDates, BOOL block,
@@ -415,6 +410,14 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 		  BOOL doSince, BOOL doUpto, STRPTR subpatternStr,
 		  BOOL keys)
 {
+    STRPTR  	       filename = ap->ap_Buf;
+    BOOL    	       isDir = (ap->ap_Info.fib_DirEntryType >= 0);
+    struct DateStampe *ds = &ap->ap_Info.fib_Date;
+    ULONG   	       protection = ap->ap_Info.fib_Protection;
+    ULONG   	       size = ap->ap_Info.fib_Size;
+    STRPTR  	       filenote = ap->ap_Info.fib_Comment;
+    LONG    	       diskKey = ap->ap_Info.fib_DiskKey;
+    
     int error = RETURN_OK;
 
     UBYTE date[LEN_DATSTRING];
@@ -472,7 +475,7 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 	{
       	    if (lFormat != NULL)
 	    {
-		struct lfstruct lf = { isDir, date, time, flags, filename,
+		struct lfstruct lf = { ap, isDir, date, time, flags, filename,
 				       filenote, size, diskKey};
 
 		printLformat(lFormat, &lf);
@@ -506,7 +509,7 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
     {
 	if (lFormat != NULL)
         {
-	    struct lfstruct lf = { isDir, date, time, flags, filename,
+	    struct lfstruct lf = { ap, isDir, date, time, flags, filename,
 				   filenote, size, diskKey };
 
 	    printLformat(lFormat, &lf);
@@ -606,7 +609,7 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
              STRPTR parsedPattern, BOOL noHead, STRPTR lFormat, BOOL quick,
 	     BOOL dates, BOOL noDates, BOOL block, struct DateStamp *sinceDate,
 	     struct DateStamp *uptoDate, BOOL doSince, BOOL doUpto,
-	     STRPTR subpatternStr, BOOL all, BOOL keys, Statistics *stats, BOOL PrintEmpty)
+	     STRPTR subpatternStr, BOOL all, BOOL keys, Statistics *stats)
 {
     struct AnchorPath *ap;
     struct List DirList, FreeDirNodeList;
@@ -621,7 +624,7 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
     NewList(&FreeDirNodeList);
      
     do 
-    {
+    {	
 	ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_CLEAR);
 
 	if (ap == NULL)
@@ -641,7 +644,7 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 	    {
 		if (ap->ap_Info.fib_DirEntryType >= 0)
 		{
-		    error = printDirHeader(filename, noHead);
+		    //error = printDirHeader(filename, noHead);
 		    ap->ap_Flags |= APF_DODIR;
 
 		    if (0 == error)
@@ -649,27 +652,53 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 			error = MatchNext(ap);
 		    }
 		}
-	    }
+	    }	    
 	}
 
 	if (0 == error)
 	{
-    	    ap->ap_BreakBits = SIGBREAKF_CTRL_C;
+    	    BOOL first = TRUE;
 
-	    do
+    	    ap->ap_BreakBits = SIGBREAKF_CTRL_C;
+	    if (FilePart(ap->ap_Buf) == ap->ap_Buf)
 	    {
+    	    	ap->ap_Flags &= ~APF_DirChanged;
+	    }
+	    
+	    do
+	    {		
 		/*
 		** There's something to show.
 		*/
 		if (!(ap->ap_Flags & APF_DIDDIR))
 		{
-		    error = printFileData(ap->ap_Buf,
-					  ap->ap_Info.fib_DirEntryType >= 0,
-					  &ap->ap_Info.fib_Date,
-					  ap->ap_Info.fib_Protection,
-					  ap->ap_Info.fib_Size,
-					  ap->ap_Info.fib_Comment,
-					  ap->ap_Info.fib_DiskKey,
+	    	    if (ap->ap_Flags & APF_DirChanged)
+		    {
+			STRPTR p;
+			UBYTE c;
+
+			if (!first) printSummary(files, dirs, nBlocks, noHead, TRUE);
+
+			/* Update global statistics for (possiblr) ALL option */
+			stats->nFiles += files;
+			stats->nDirs += dirs;
+			stats->nBlocks += nBlocks;
+
+			files = 0;
+			dirs = 0;
+			nBlocks = 0;
+
+    	    		p = PathPart(ap->ap_Buf);
+			c = *p;
+			*p = 0;
+
+			error = printDirHeader(ap->ap_Buf, noHead);
+
+			*p = c;
+
+		    }
+
+		    error = printFileData(ap,
 					  showFiles,
 					  showDirs,
 					  parsedPattern,
@@ -708,6 +737,8 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 		}
 
 		error = MatchNext(ap);
+		
+		first = FALSE;
 
 	    } while (0 == error);
 	}
@@ -721,7 +752,15 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 	    PrintFault(error, NULL);
 	}
 
-	printSummary(files, dirs, nBlocks, noHead, PrintEmpty);
+	if (error == ERROR_NO_MORE_ENTRIES)
+	{
+	    error = 0;
+	}
+
+    	if ((error == 0) || (error == ERROR_BREAK))
+	{
+	    printSummary(files, dirs, nBlocks, noHead, TRUE);
+	}
 
 	/* Update global statistics for (possiblr) ALL option */
 	stats->nFiles += files;
@@ -732,10 +771,6 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 	dirs = 0;
 	nBlocks = 0;
 
-	if (error == ERROR_NO_MORE_ENTRIES)
-	{
-	    error = 0;
-	}
 
     	if (error) break;
 	
@@ -787,7 +822,7 @@ int main(void)
                FALSE,   // ARG_LFORMAT
                FALSE    // ARG_ALL
     };
-        
+    static const STRPTR *default_directories[] = {"", 0};
     struct RDArgs *rda;		       
 
     LONG     error = RETURN_OK;
@@ -932,34 +967,32 @@ int main(void)
 	    dates = TRUE;
 	}*/
 
+    	if (lFormat)
+	{
+	    noHead = TRUE;
+	}
+	
 	if ((directories == NULL) || (*directories == NULL))
 	{
-	    /* No file to list given. Just list the current directory */
-	    error = listFile("#?", files, dirs, parsedPattern, noHead,
-			     lFormat, quick, dates, noDates, block,
-			     &sinceDatetime.dat_Stamp, &uptoDatetime.dat_Stamp,
-			     since != NULL, upto != NULL, subpatternStr, all,
-			     keys, &stats, TRUE);
+	    directories = default_directories;
 	}
-	else
+	
+	for (i = 0; directories[i] != NULL; i++)
 	{
-	    for (i = 0; directories[i] != NULL; i++)
+	    error = listFile(directories[i], files, dirs, parsedPattern,
+			     noHead, lFormat, quick, dates, noDates,
+			     block, &sinceDatetime.dat_Stamp,
+			     &uptoDatetime.dat_Stamp, since != NULL,
+			     upto != NULL, subpatternStr, all, keys,
+			     &stats);
+
+	    if (error != RETURN_OK)
 	    {
-		error = listFile(directories[i], files, dirs, parsedPattern,
-				 noHead, lFormat, quick, dates, noDates,
-				 block, &sinceDatetime.dat_Stamp,
-				 &uptoDatetime.dat_Stamp, since != NULL,
-				 upto != NULL, subpatternStr, all, keys,
-				 &stats, FALSE);
-		
-		if (error != RETURN_OK)
-		{
-		    break;
-		}
-		    
-//		Printf("\n");
-	    } 
-	}
+		break;
+	    }
+
+//	    Printf("\n");
+	} 
 	
 	FreeArgs(rda);
     } 
@@ -968,7 +1001,7 @@ int main(void)
 	error = IoErr();;
     }
 
-    if ((BOOL)args[ARG_ALL])
+    if ((BOOL)args[ARG_ALL] && (stats.nFiles || stats.nDirs))
     {
 	Printf("\nTOTAL: %ld files - %ld directories - %ld blocks used\n",
 	       stats.nFiles, stats.nDirs, stats.nBlocks);
