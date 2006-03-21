@@ -3,25 +3,16 @@
 
 include $(TOP)/config/make.cfg
 
-FILES       := main 
+FILES       := main locale
 EXEDIR      := $(AROS_WANDERER)/Tools
 
 #MM- workbench-system-wanderer : workbench-system-wanderer-tools-delete
-#MM workbench-system-wanderer-tools-delete : includes linklibs \
-#MM     workbench-system-wanderer-tools-delete-icons
+#MM  workbench-system-wanderer-tools-delete : \
+#MM  workbench-system-wanderer-tools-delete-icons \
+#MM  workbench-system-wanderer-tools-delete-catalogs
 
 %build_prog mmake=workbench-system-wanderer-tools-delete \
     progname=Delete targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="arossupport amiga arosc"
 
-
-ICONS       := Delete
-ICONFILES   := $(foreach f, $(ICONS), $(EXEDIR)/$(f).info)
-
-#MM
-workbench-system-wanderer-tools-delete-icons : $(ICONFILES)
-
-$(EXEDIR)/%.info : icons/%.info.src icons/%_N.png icons/%_S.png | $(EXEDIR)
-	%makeicon2
-
-%rule_makedirs dirs=$(EXEDIR)
+%common

@@ -1,0 +1,37 @@
+; 
+MSG_TITLE (//)
+Delete
+;
+MSG_DELETE_REQUEST (//)
+Delete?
+;
+MSG_DELETE_CHOICE (//)
+Delete|Cancel
+;
+MSG_REQUEST (//)
+Are you sure you want to delete '%s'?
+;
+MSG_ERROR (//)
+Error
+;
+MSG_OK (//)
+OK
+;
+MSG_COULDNT_DELETE (//)
+Could not delete file.
+;
+MSG_COULDNT_ALLOCATE (//)
+Could not allocate memory.
+;
+MSG_COULDNT_LOCK (//)
+Could not lock file for deletion.
+;
+MSG_INFO (//)
+Info
+;
+MSG_WRONG_ARGS (//)
+Error: Wrong number of arguments.
+;
+MSG_WB_ONLY (//)
+Error: Must be started from Wanderer.\n
+;

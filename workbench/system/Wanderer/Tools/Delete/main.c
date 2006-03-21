@@ -22,10 +22,15 @@
 
 #include <string.h>
 
+#include "locale.h"
+
 STRPTR AllocateNameFromLock(BPTR lock);
 
 int main(int argc, char **argv)
 {
+	int result = RETURN_OK;
+	Locale_Initialize();
+
     if (argc == 0)
     {
         struct WBStartup *startup = (struct WBStartup *) argv;
@@ -40,8 +45,8 @@ int main(int argc, char **argv)
                 MUI_Request
                 (
                     NULL, NULL, 0,
-                    "Delete?", "Delete|Cancel",
-                    "Are you sure you want to delete \"%s\"?", (IPTR) name
+                    _(MSG_DELETE_REQUEST), _(MSG_DELETE_CHOICE),
+                    _(MSG_REQUEST), (IPTR) name
                 ) == 1
             )
             {
@@ -65,8 +70,8 @@ int main(int argc, char **argv)
                             MUI_Request
                             (
                                 NULL, NULL, 0,
-                                "Error", "OK",
-                                "Could not delete file."
+                                _(MSG_ERROR), _(MSG_OK),
+                                _(MSG_COULDNT_DELETE)
                             );
                         }
                     
@@ -77,8 +82,8 @@ int main(int argc, char **argv)
                         MUI_Request
                         (
                             NULL, NULL, 0,
-                            "Error", "OK",
-                            "Could not allocate memory."
+                            _(MSG_ERROR), _(MSG_OK),
+                            _(MSG_COULDNT_ALLOCATE)
                         );
                     }
                 }
@@ -87,8 +92,8 @@ int main(int argc, char **argv)
                     MUI_Request
                     (
                         NULL, NULL, 0,
-                        "Error", "OK",
-                        "Could not lock file for deletion."
+                        _(MSG_ERROR), _(MSG_OK),
+                        _(MSG_COULDNT_LOCK)
                     );
                 }
                 
@@ -103,7 +108,7 @@ int main(int argc, char **argv)
             {
                 OpenWorkbenchObject
                 (
-                    "SYS:System/Delete",
+                    "WANDERER:Tools/Delete",
                     WBOPENA_ArgLock, (IPTR) startup->sm_ArgList[i].wa_Lock,
                     WBOPENA_ArgName, (IPTR) startup->sm_ArgList[i].wa_Name,
                     TAG_DONE
@@ -115,18 +120,18 @@ int main(int argc, char **argv)
             MUI_RequestA
             (
                 NULL, NULL, 0, 
-                "Info", "OK", "Error: Wrong number of arguments.", NULL
+                _(MSG_INFO), _(MSG_OK), _(MSG_WRONG_ARGS), NULL
             );
-            return 20;
+            result = RETURN_ERROR;
         }
     }
     else
     {
-        PutStr("Error: Must be started from Wanderer.\n");
-        return 40;
+        PutStr(_(MSG_WB_ONLY));
+        result = RETURN_FAIL;
     }
-
-    return 0;
+	Locale_Deinitialize();
+    return result;
 }
 
 STRPTR AllocateNameFromLock(BPTR lock)
