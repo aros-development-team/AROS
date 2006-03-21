@@ -1,0 +1,42 @@
+## version $VER: delete.catalog 1.0 (21.03.2006)
+## language français
+## codeset 0
+;
+;
+;
+MSG_TITLE
+Effacer
+;
+MSG_DELETE_REQUEST
+Effacer ?
+;
+MSG_DELETE_CHOICE
+_Effacer|A_nnuler
+;
+MSG_REQUEST
+Êtes vous sûr de vouloir effacer '%s' ?
+;
+MSG_ERROR
+Erreur
+;
+MSG_OK
+OK
+;
+MSG_COULDNT_DELETE
+Impossible d'effacer le fichier.
+;
+MSG_COULDNT_ALLOCATE
+Impossible d'allouer de la mémoire.
+;
+MSG_COULDNT_LOCK
+Impossible de verrouiller le fichier.
+;
+MSG_INFO
+Info
+;
+MSG_WRONG_ARGS
+Erreur: Nombre d'arguments faux.
+;
+MSG_WB_ONLY
+Erreur: doit être démarré depuis le Wanderer !\n
+;
