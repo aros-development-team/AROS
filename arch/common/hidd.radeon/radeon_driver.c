@@ -7,7 +7,10 @@
 #include "radeon.h"
 #include "radeon_reg.h"
 #include "radeon_bios.h"
+#include "radeon_accel.h"
 #include "radeon_macros.h"
+
+#include <math.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -1759,6 +1762,8 @@ void LoadState(struct ati_staticdata *sd, struct CardState *restore)
     RADEONUnblank(sd);
     
     RADEONInitDispBandwidth(sd, restore);
+
+    SetGamma(sd, 1.0, 1.0, 1.0);
 }
 
 
@@ -2096,4 +2101,24 @@ VOID FreeBitmapArea(struct ati_staticdata *sd, IPTR bmp, ULONG width, ULONG heig
     Permit();
     
     UNLOCK_HW
+}
+
+VOID SetGamma(struct ati_staticdata *sd, float r, float g, float b)
+{
+    int i;
+    
+    if (sd->Card.IsSecondary)
+        PAL_SELECT(1);
+    else
+        PAL_SELECT(0);
+    
+    for (i=0; i < 256; i++)
+    {
+        int ri = 256.0*pow((double)i / 256.0, 1/r);
+        int gi = 256.0*pow((double)i / 256.0, 1/g);
+        int bi = 256.0*pow((double)i / 256.0, 1/b);
+        
+        RADEONWaitForFifo(sd, 32);
+        OUTPAL(i, ri, gi, bi);
+    }
 }

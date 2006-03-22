@@ -10,4 +10,4 @@ FILES	:= ati_init ati_class ati_bitmap ati_i2c radeon_driver radeon_bios radeon_
 %build_module mmake=hidd-radeon \
     modname=radeon modtype=hidd \
     files="$(FILES)" \
-    uselibs="oop rom amiga hiddstubs"
+    uselibs="oop rom amiga m hiddstubs"

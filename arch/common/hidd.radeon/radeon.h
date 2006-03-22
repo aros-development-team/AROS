@@ -337,5 +337,6 @@ IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
 VOID FreeBitmapArea(struct ati_staticdata *sd, IPTR bmp, ULONG width, ULONG height, ULONG bpp);
 void R300CGWorkaround(struct ati_staticdata *sd);
 unsigned RADEONINPLL(struct ati_staticdata *sd, int addr);
+VOID SetGamma(struct ati_staticdata *sd, float r, float g, float b);
 
 #endif /*RADEON_H_*/
