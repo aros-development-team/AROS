@@ -4,15 +4,19 @@
 include $(TOP)/config/make.cfg
 
 FILES := \
-    WBNewDrawer
+    WBNewDrawer \
+    locale
+
 EXEDIR := \
     $(AROS_WANDERER)/Tools
 
 #MM- workbench-system-wanderer : workbench-system-wanderer-tools-wbnewdrawer 
 #MM workbench-system-wanderer-tools-wbnewdrawer : \
-#MM workbench-system-wanderer-tools-wbnewdrawer-icons
+#MM workbench-system-wanderer-tools-wbnewdrawer-icons \
+#MM workbench-system-wanderer-tools-wbnewdrawer-catalogs
 
-%build_progs mmake=workbench-system-wanderer-tools-wbnewdrawer \
-    targetdir=$(EXEDIR) files=$(FILES) uselibs="mui arossupport amiga arosc m"
+%build_prog mmake=workbench-system-wanderer-tools-wbnewdrawer \
+    progname=WBNewDrawer targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
 
 %common

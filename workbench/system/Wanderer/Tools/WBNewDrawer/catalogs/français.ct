@@ -1,0 +1,61 @@
+## version $VER: wbnewdrawer.catalog 1.1 (13.8.2003)
+## language français
+## codeset 0
+;
+;
+;
+MSG_TITLE
+WBNewDrawer
+;Nouveau Répertoire
+MSG_DESCRIPTION
+Crée des répertoires et leurs icônes
+;
+MSG_COPYRIGHT
+©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Crée un répertoire
+;
+MSG_LINE
+Entrez le nom du répertoire
+;
+MSG_NAME
+Nouveau Nom :
+;
+MSG_ICON
+Icône :
+;
+MSG_OK
+_OK
+;
+MSG_CANCEL
+A_nnuler
+;
+MSG_BASENAME
+Renommez_Moi
+;
+MSG_ERROR_TITLE
+WBNewDrawer Erreur
+;
+;
+MSG_ALREADY_EXIST
+'%s' existe déjà !
+;
+MSG_CANT_CREATE
+Impossible de créer '%s' !
+;
+MSG_INFO_ALREADY
+'%s'.info existe déjà !
+;
+MSG_NEEDS_MORE_ARGS
+Demande 2 arguments!
+;
+MSG_INVALID_LOCK
+Verrou invalide !
+;
+MSG_WB_ONLY
+Ne peut être démarré depuis le shell !\n
+;
+MSG_FAILED_CREATE_APP
+Impossible de créer l'application !
+;

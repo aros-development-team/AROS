@@ -3,7 +3,9 @@
     $Id$
 */
 
-#define DEBUG 1
+#define MUIMASTER_YES_INLINE_STDARG
+
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -17,11 +19,13 @@
 #include <libraries/mui.h>
 #include <workbench/startup.h>
 
+#include "locale.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBNewDrawer 0.1 (19.03.2006)";
+char versionstring[] = "$VER: WBNewDrawer 0.2 (21.03.2006) ©2006 AROS Dev Team";
 
 static void bt_ok_hook_function(void);
 static void Cleanup(STRPTR s);
@@ -37,72 +41,86 @@ int main(int argc, char **argv)
 {
     struct WBStartup *startup;
 
-    if (argc != 0)
-	Cleanup("Cannot be started from shell\n");
+    Locale_Initialize();
 
+    if (argc != 0)
+    {
+	PutStr(_(MSG_WB_ONLY));
+	Cleanup(NULL);
+    }
     startup = (struct WBStartup *) argv;
 
     D(bug("[NewDrawer] Args %d\n", startup->sm_NumArgs));
 
     if (startup->sm_NumArgs != 2)
-	Cleanup("Need 2 arguments\n");
+	Cleanup(_(MSG_NEEDS_MORE_ARGS));
 
     dirlock = startup->sm_ArgList[1].wa_Lock;
     if (dirlock == NULL)
-	Cleanup("Invalid directory lock\n");
+	Cleanup(_(MSG_INVALID_LOCK));
 
     oldlock = CurrentDir(dirlock);
     MakeGUI();
+
+    Locale_Deinitialize();
+
     Cleanup(NULL);
     return RETURN_OK;
 }
 
 static void MakeGUI(void)
 {
-    const STRPTR defname = SelectDefaultName("Rename_Me");
+    const STRPTR defname = SelectDefaultName(_(MSG_BASENAME));
     bt_ok_hook.h_Entry = (APTR)bt_ok_hook_function;
-    app = ApplicationObject,
-	MUIA_Application_Title      , "WBNewDrawer",
-	MUIA_Application_Version    , versionstring,
-	MUIA_Application_Copyright  , "©2006, AROS Development Team",
-	MUIA_Application_Author     , "AROS Development Team",
-	MUIA_Application_Description, "Creates new drawer with optional icon",
-	MUIA_Application_Base       , "NEWDRAWER",
+    (IPTR)(app = ApplicationObject,
+	MUIA_Application_Title      , __(MSG_TITLE),
+	MUIA_Application_Version    , (IPTR) versionstring,
+	MUIA_Application_Copyright  , __(MSG_COPYRIGHT),
+	MUIA_Application_Author     , (IPTR) "The AROS Development Team",
+	MUIA_Application_Description, __(MSG_DESCRIPTION),
+	MUIA_Application_Base       , (IPTR) "NEWDRAWER",
 	MUIA_Application_UseCommodities, FALSE,
 	MUIA_Application_UseRexx, FALSE,
-	SubWindow, window = WindowObject,
-	    MUIA_Window_Title, "Create new drawer",
-	    MUIA_Window_ID   , MAKE_ID('M','K','D','R'),
-	    WindowContents, VGroup,
+	SubWindow, (IPTR)(window = WindowObject,
+	    MUIA_Window_Title, __(MSG_WINDOW_TITLE),
+	    MUIA_Window_NoMenus, TRUE,
+	    MUIA_Window_CloseGadget, FALSE,
+	    WindowContents, (IPTR) (VGroup,
 		MUIA_Frame, MUIV_Frame_Group,
-		Child, Label(MUIX_C "Enter the name of the new drawer"),
-		Child, ColGroup(2),
-		    Child, Label("New drawer name:"),
-		    Child, str_name = StringObject,
-			MUIA_String_Contents, defname,
+		Child, (IPTR) (HGroup,
+		    Child, (IPTR) HVSpace,
+		    Child, (IPTR) Label2(__(MSG_LINE)),
+		End),
+		Child, (IPTR) (ColGroup(2),
+		    Child, (IPTR) Label2(__(MSG_NAME)),
+		    Child, (IPTR)(str_name = StringObject,
+			MUIA_CycleChain, 1,
+			MUIA_String_Contents, (IPTR) defname,
 			MUIA_String_MaxLen, MAXFILENAMELENGTH,
-			MUIA_String_Reject, "\":#?*", // Doesn't work :-(
-			MUIA_String_Columns, 25,
+			MUIA_String_Reject, (IPTR) "\":#?*", // Doesn't work :-(
+			MUIA_String_Columns, -1,
 			MUIA_Frame, MUIV_Frame_String,
-		    End,
-		    Child, Label("Icon"),
-		    Child, cm_icons = MUI_MakeObject(MUIO_Checkmark, NULL),
-		End,
-		Child, (IPTR) RectangleObject, 
-		    MUIA_Rectangle_HBar, TRUE, 
-		    MUIA_FixHeight,      2, 
-		End,
-		Child, HGroup,
-		    Child, bt_ok = SimpleButton("OK"),
-		    Child, bt_cancel = SimpleButton("Cancel"),
-		End,
-	    End,
-	End,
-    End;
-
+		    End),
+		    Child, (IPTR) Label2(__(MSG_ICON)),
+		    Child, (IPTR)(HGroup,
+			Child, (IPTR) (cm_icons = MUI_MakeObject(MUIO_Checkmark, NULL)),
+			Child, (IPTR) HVSpace,
+		    End),
+		End),
+		Child, (IPTR) (RectangleObject, 
+		    MUIA_Rectangle_HBar, TRUE,
+		    MUIA_FixHeight,      2,
+		End),
+		Child, (IPTR) (HGroup,
+		    Child, (IPTR) (bt_ok = ImageButton(__(MSG_OK), "THEME:Images/Gadgets/Prefs/Save")),
+		    Child, (IPTR) (bt_cancel = ImageButton(__(MSG_CANCEL),"THEME:Images/Gadgets/Prefs/Cancel")),
+		End),
+	    End),
+	End),
+    End);
     FreeVec(defname);
     if (!app)
-	Cleanup("Failed to create Application.");
+	Cleanup(_(MSG_FAILED_CREATE_APP));
 
     DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
 	    app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -110,6 +128,7 @@ static void MakeGUI(void)
 	    app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(bt_ok, MUIM_Notify, MUIA_Pressed, FALSE,
 	    app, 2, MUIM_CallHook, (IPTR)&bt_ok_hook);
+    set(cm_icons, MUIA_CycleChain, 1);
     set(cm_icons, MUIA_Selected, TRUE);
     set(window, MUIA_Window_Open, TRUE);
     DoMethod(app, MUIM_Application_Execute);
@@ -119,42 +138,45 @@ static void bt_ok_hook_function(void)
 {
     BOOL icon = XGET(cm_icons, MUIA_Selected);
     STRPTR name = (STRPTR)XGET(str_name, MUIA_String_Contents);
-    BPTR test = 0;
+    BPTR test;
     struct DiskObject *dob;
     D(bug("WBNewDrawer name %s icon %d\n", name, icon));
-    
+
     test = Lock(name, ACCESS_READ);
     if (test)
     {
 	UnLock(test);
-	MUI_Request(app, window, 0, "WBNewDrawer Error", "OK", "'%s' already exists", name);
+	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), name);
 	return;
     }
+
+    dob = GetDiskObject(name);
+    // if icon exists it must be of type WBDRAWER
+    if (dob && (dob->do_Type != WBDRAWER))
+    {
+	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_WRONG_ICON_TYPE), name);
+	FreeDiskObject(dob);
+	return;
+    }
+
     // create drawer
     BPTR dstLock;
     if ((dstLock  = CreateDir(name)))
 	UnLock(dstLock);
     else
-	MUI_Request(app, window, 0, "WBNewDrawer Error", "OK", "Can't create drawer '%s'", name);
-    
+	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_CANT_CREATE), name);
 
     // create icon
-    if (icon)
+    // if the icon already exists and is of right type then no actions happens.
+    if (icon &&  (dob == NULL))
     {
-	dob = GetDiskObject(name);
-	if (dob)
-	{
-	    FreeDiskObject(dob);
-	    MUI_Request(app, window, 0, "WBNewDrawer Error", "OK", "'%s'.info already exists", name);
-	}
-	else
-	{
-	    dob = GetDiskObjectNew(name);
-	    PutDiskObject(name, dob);
-	    FreeDiskObject(dob);
-	}
+	dob = GetDiskObjectNew(name);
+	PutDiskObject(name, dob);
     }
-
+    
+    if (dob)
+	FreeDiskObject(dob);
+    
     UpdateWorkbenchObject(name, WBDRAWER, NULL);
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
@@ -175,12 +197,16 @@ static const STRPTR SelectDefaultName(STRPTR basename)
     STRPTR buffer = AllocVec(strlen(basename) + 3, MEMF_ANY);
     do
     {
-	number++;
-	sprintf(buffer,"%s_%ld", basename, number);
+	if (number == 0)
+	    strcpy(buffer, basename);   
+	else
+	    sprintf(buffer,"%s_%ld", basename, number);
+
 	test = Lock(buffer, ACCESS_READ);
 	UnLock(test);
+	number++;
     }
-    while ((number < 9) && (test != NULL));
+    while ((number < 10) && (test != NULL));
     return buffer;
 }
 
@@ -198,11 +224,11 @@ static void Cleanup(STRPTR s)
 	    struct EasyStruct es;
 	    es.es_StructSize = sizeof(struct EasyStruct);
 	    es.es_Flags = 0;
-	    es.es_Title = "WBNewDrawer Error";
+	    es.es_Title = _(MSG_ERROR_TITLE);
 	    es.es_TextFormat = s;
-	    es.es_GadgetFormat = "OK";
+	    es.es_GadgetFormat = _(MSG_OK);
 	    EasyRequest(NULL, &es, NULL, NULL);
-        }
+	}
 	else
 	{
 	    PutStr(s);

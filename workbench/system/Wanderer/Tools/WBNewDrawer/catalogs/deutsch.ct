@@ -1,0 +1,80 @@
+## version $VER: deutsch.catalog 0.1 (22.03.2006)
+## language deutsch
+## codeset 0
+;
+;
+MSG_TITLE
+WBNewDrawer
+; WBNewDrawer
+;
+MSG_DESCRIPTION
+Erzeugt neue Schublade mit optionalem Piktogramm
+; Creates new drawer with optional icon
+;
+MSG_COPYRIGHT
+©2006, AROS Dev Team
+; ©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Erzeuge neue Schublade
+; Create new drawer
+;
+MSG_LINE
+Geben Sie den Namen der neuen Schublade ein
+; Enter the name of the new drawer
+;
+MSG_NAME
+Name der neuen Schublade:
+; New drawer name:
+;
+MSG_ICON
+Piktogramm
+; Icon
+;
+MSG_OK
+_OK
+; _OK
+;
+MSG_CANCEL
+_Abbrechen
+; Ca_ncel
+;
+MSG_BASENAME
+Bitte_umbenennen
+; Rename_Me
+;
+MSG_ERROR_TITLE
+WBNewDrawer: Fehler
+; WBNewDrawer: Error
+;
+MSG_ALREADY_EXIST
+'%s' existiert bereits!
+; '%s' already exists!
+;
+MSG_CANT_CREATE
+Kann Schublade '%s' nicht erzeugen!
+; Can't create drawer '%s'!
+;
+MSG_INFO_ALREADY
+'%s'.info existiert bereits!
+; '%s'.info already exists!
+;
+MSG_NEEDS_MORE_ARGS
+Brauche 2 Argumente!
+; Need 2 arguments!
+;
+MSG_INVALID_LOCK
+Ungültiger Verzeichnis-Lock!
+; Invalid directory lock!
+;
+MSG_WB_ONLY
+Kann nicht von der Shell gestartet werden!\n
+; Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+Kann Application-Objekt nicht erzeugen!
+; Failed to create Application!
+;
+MSG_WRONG_ICON_TYPE
+Die vorhandene Piktrogramm-Datei '%s'.info\nist nicht vom Typ Schublade!
+; The existing icon file '%s'.info isn't of type Drawer!
