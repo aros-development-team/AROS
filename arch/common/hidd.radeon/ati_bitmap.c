@@ -476,7 +476,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
             
             RADEONWaitForFifo(sd, 2);
             OUTREG(RADEON_SC_TOP_LEFT,        (GC_CLIPY1(gc) << 16) | GC_CLIPX1(gc));
-            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (GC_CLIPY2(gc) << 16) | GC_CLIPX2(gc));
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((GC_CLIPY2(gc)+1) << 16) | (GC_CLIPX2(gc)+1));
         }
 
         RADEONWaitForFifo(sd, 3);
@@ -546,7 +546,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawRect)
             
             RADEONWaitForFifo(sd, 2);
             OUTREG(RADEON_SC_TOP_LEFT,        (GC_CLIPY1(gc) << 16) | GC_CLIPX1(gc));
-            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (GC_CLIPY2(gc) << 16) | GC_CLIPX2(gc));
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((GC_CLIPY2(gc)+1) << 16) | (GC_CLIPX2(gc)+1));
         }
 
         RADEONWaitForFifo(sd, 3);
@@ -620,7 +620,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
             
             RADEONWaitForFifo(sd, 2);
             OUTREG(RADEON_SC_TOP_LEFT,        (GC_CLIPY1(gc) << 16) | GC_CLIPX1(gc));
-            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (GC_CLIPY2(gc) << 16) | GC_CLIPX2(gc));
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((GC_CLIPY2(gc)+1) << 16) | (GC_CLIPX2(gc)+1));
         }
 
         RADEONWaitForFifo(sd, 3);
