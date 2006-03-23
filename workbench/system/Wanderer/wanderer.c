@@ -249,7 +249,6 @@ void window_new_drawer(char **cdptr)
 	 TAG_DONE
 	);
     UnLock(lock);
-    window_update(); // FIXME: Doesn't work
 }
 
 void window_open_parent(char **cdptr)

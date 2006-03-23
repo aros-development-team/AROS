@@ -25,8 +25,9 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBNewDrawer 0.2 (21.03.2006) ©2006 AROS Dev Team";
+char versionstring[] = "$VER: WBNewDrawer 0.3 (23.03.2006) ©2006 AROS Dev Team";
 
+static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
 static void Cleanup(STRPTR s);
 static void MakeGUI(void);
@@ -61,6 +62,10 @@ int main(int argc, char **argv)
 
     oldlock = CurrentDir(dirlock);
     MakeGUI();
+
+    STRPTR fullname = AllocateNameFromLock(dirlock);
+    UpdateWorkbenchObject(fullname, WBDRAWER, TAG_DONE);
+    FreeVec(fullname);
 
     Locale_Deinitialize();
 
@@ -176,8 +181,8 @@ static void bt_ok_hook_function(void)
     
     if (dob)
 	FreeDiskObject(dob);
-    
-    UpdateWorkbenchObject(name, WBDRAWER, NULL);
+
+    UpdateWorkbenchObject(name, WBDRAWER, TAG_DONE);
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
@@ -208,6 +213,55 @@ static const STRPTR SelectDefaultName(STRPTR basename)
     }
     while ((number < 10) && (test != NULL));
     return buffer;
+}
+
+static STRPTR AllocateNameFromLock(BPTR lock)
+{
+    ULONG  length = 512;
+    STRPTR buffer = NULL;
+    BOOL   done   = FALSE;
+
+    while (!done)
+    {
+	if (buffer != NULL) FreeVec(buffer);
+
+	buffer = AllocVec(length, MEMF_ANY);
+	if (buffer != NULL)
+	{
+	    if (NameFromLock(lock, buffer, length))
+	    {
+		done = TRUE;
+		break;
+	    }
+	    else
+	    {
+		if (IoErr() == ERROR_LINE_TOO_LONG)
+		{
+		    length += 512;
+		    continue;
+		}
+		else
+		{
+		    break;
+		}
+	    }
+	}
+	else
+	{
+	    SetIoErr(ERROR_NO_FREE_STORE);
+	    break;
+	}
+    }
+
+    if (done)
+    {
+	return buffer;
+    }
+    else
+    {
+	if (buffer != NULL) FreeVec(buffer);
+	return NULL;
+    }
 }
 
 static void Cleanup(STRPTR s)
