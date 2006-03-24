@@ -298,8 +298,6 @@ void METHOD(ATI, Hidd_Gfx, CopyBox)
                   ((xdir >= 0 ? RADEON_DST_X_LEFT_TO_RIGHT : 0) |
                    (ydir >= 0 ? RADEON_DST_Y_TOP_TO_BOTTOM : 0)));
 
-//            RADEONWaitForFifo(sd, 3);
-        
             OUTREG(RADEON_SRC_Y_X,          (ya << 16) | xa);
             OUTREG(RADEON_DST_Y_X,          (yb << 16) | xb);
             OUTREG(RADEON_DST_HEIGHT_WIDTH, (h  << 16) | w);
