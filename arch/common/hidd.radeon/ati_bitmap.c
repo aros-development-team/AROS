@@ -476,11 +476,8 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
             UWORD x1,y1,x2,y2;
             x1 = GC_CLIPX1(gc);
             y1 = GC_CLIPY1(gc);
-            x2 = GC_CLIPX2(gc);
-            y2 = GC_CLIPY2(gc);
-            
-            if (x1 == x2) x2++;
-            if (y1 == y2) y2++;
+            x2 = GC_CLIPX2(gc) + 1;
+            y2 = GC_CLIPY2(gc) + 1;
             
             RADEONWaitForFifo(sd, 2);
             OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
@@ -554,11 +551,8 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawRect)
             UWORD x1,y1,x2,y2;
             x1 = GC_CLIPX1(gc);
             y1 = GC_CLIPY1(gc);
-            x2 = GC_CLIPX2(gc);
-            y2 = GC_CLIPY2(gc);
-            
-            if (x1 == x2) x2++;
-            if (y1 == y2) y2++;
+            x2 = GC_CLIPX2(gc) + 1;
+            y2 = GC_CLIPY2(gc) + 1;
             
             RADEONWaitForFifo(sd, 2);
             OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
@@ -636,11 +630,8 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
             UWORD x1,y1,x2,y2;
             x1 = GC_CLIPX1(gc);
             y1 = GC_CLIPY1(gc);
-            x2 = GC_CLIPX2(gc);
-            y2 = GC_CLIPY2(gc);
-            
-            if (x1 == x2) x2++;
-            if (y1 == y2) y2++;
+            x2 = GC_CLIPX2(gc) + 1;
+            y2 = GC_CLIPY2(gc) + 1;
             
             RADEONWaitForFifo(sd, 2);
             OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
