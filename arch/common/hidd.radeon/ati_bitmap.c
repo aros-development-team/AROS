@@ -473,10 +473,18 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
         if (GC_DOCLIP(gc))
         {
             bm->dp_gui_master_cntl_clip |= RADEON_GMC_DST_CLIPPING;
+            UWORD x1,y1,x2,y2;
+            x1 = GC_CLIPX1(gc);
+            y1 = GC_CLIPY1(gc);
+            x2 = GC_CLIPX2(gc);
+            y2 = GC_CLIPY2(gc);
+            
+            if (x1 == x2) x2++;
+            if (y1 == y2) y2++;
             
             RADEONWaitForFifo(sd, 2);
-            OUTREG(RADEON_SC_TOP_LEFT,        (GC_CLIPY1(gc) << 16) | GC_CLIPX1(gc));
-            OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((GC_CLIPY2(gc)+1) << 16) | (GC_CLIPX2(gc)+1));
+            OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | x2);
         }
 
         RADEONWaitForFifo(sd, 3);
@@ -543,10 +551,18 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawRect)
         if (GC_DOCLIP(gc))
         {
             bm->dp_gui_master_cntl_clip |= RADEON_GMC_DST_CLIPPING;
+            UWORD x1,y1,x2,y2;
+            x1 = GC_CLIPX1(gc);
+            y1 = GC_CLIPY1(gc);
+            x2 = GC_CLIPX2(gc);
+            y2 = GC_CLIPY2(gc);
+            
+            if (x1 == x2) x2++;
+            if (y1 == y2) y2++;
             
             RADEONWaitForFifo(sd, 2);
-            OUTREG(RADEON_SC_TOP_LEFT,        (GC_CLIPY1(gc) << 16) | GC_CLIPX1(gc));
-            OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((GC_CLIPY2(gc)+1) << 16) | (GC_CLIPX2(gc)+1));
+            OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | x2);
         }
 
         RADEONWaitForFifo(sd, 3);
@@ -617,10 +633,18 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
         if (GC_DOCLIP(gc))
         {
             bm->dp_gui_master_cntl_clip |= RADEON_GMC_DST_CLIPPING;
+            UWORD x1,y1,x2,y2;
+            x1 = GC_CLIPX1(gc);
+            y1 = GC_CLIPY1(gc);
+            x2 = GC_CLIPX2(gc);
+            y2 = GC_CLIPY2(gc);
+            
+            if (x1 == x2) x2++;
+            if (y1 == y2) y2++;
             
             RADEONWaitForFifo(sd, 2);
-            OUTREG(RADEON_SC_TOP_LEFT,        (GC_CLIPY1(gc) << 16) | GC_CLIPX1(gc));
-            OUTREG(RADEON_SC_BOTTOM_RIGHT,    ((GC_CLIPY2(gc)+1) << 16) | (GC_CLIPX2(gc)+1));
+            OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
+            OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | x2);
         }
 
         RADEONWaitForFifo(sd, 3);
