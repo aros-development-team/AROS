@@ -44,6 +44,9 @@ kernel /boot/aros-pc-i386.gz
 title AROS NVIDIA
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=DRIVERS:nvidia.hidd ATA=32bit,forcedma
 
+title AROS ATI
+kernel /boot/aros-pc-i386.gz gfx=RadeonDriver lib=DRIVERS:radeon.hidd ATA=32bit,forcedma
+
 #title AROS VMWare
 #kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vmware lib=vmwaregfx.hidd ATA=32bit,forcedma
 
