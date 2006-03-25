@@ -5,6 +5,5 @@ include $(TOP)/config/make.cfg
 
 ICONS := Info
 
-#MM- workbench-system-wanderer-tools-info-icons:
 %build_icons mmake=workbench-system-wanderer-tools-info-icons \
              icons=$(ICONS) dir=$(AROS_WANDERER)/Tools
