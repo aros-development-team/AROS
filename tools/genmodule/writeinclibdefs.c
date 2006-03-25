@@ -12,17 +12,28 @@ void writeinclibdefs(struct config *cfg)
     char line[1024];
     struct stringlist *linelistit;
     char *_libbasetype = (cfg->libbasetype==NULL) ? "struct GM_LibHeader" : cfg->libbasetype;
-    char *residentflags;
+    char residentflags[256];
     struct classinfo *classlistit;
+
+    residentflags[0] = 0;
     
+	
     if (cfg->residentpri >= 105)
-	residentflags = "RTF_AUTOINIT|RTF_SINGLETASK";
+	strcpy(residentflags, "RTF_SINGLETASK");
     else if (cfg->residentpri >= -50)
-	residentflags = "RTF_AUTOINIT|RTF_COLDSTART";
+	strcpy(residentflags, "RTF_COLDSTART");
     else if (cfg->residentpri < -120)
-	residentflags = "RTF_AUTOINIT|RTF_AFTERDOS";
-    else
-	residentflags = "RTF_AUTOINIT";
+	strcpy(residentflags, "RTF_AFTERDOS");
+
+    if (cfg->modtype != RESOURCE)
+    {
+	if(strlen(residentflags) > 0)
+	    strcat(residentflags, "|");
+	strcat(residentflags, "RTF_AUTOINIT");
+    }
+
+    if (strlen(residentflags) == 0)
+	strcpy(residentflags, "0");
     
     snprintf(line, 1023, "%s/%s_libdefs.h", cfg->gendir, cfg->modulename);
 

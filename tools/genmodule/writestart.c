@@ -117,6 +117,10 @@ static void writedecl(FILE *out, struct config *cfg)
 	    "\n"
 	    "#include \"%s_libdefs.h\"\n"
 	    "\n"
+	    "#ifdef SysBase\n"
+	    "#undef SysBase\n"
+	    "#endif\n"
+	    "\n"
 	    "#include <proto/exec.h>\n"
 	    "\n",
 	    cfg->modulename
@@ -203,13 +207,12 @@ static void writedeclsets(FILE *out, struct config *cfg)
 static void writeresident(FILE *out, struct config *cfg)
 {
     fprintf(out,
-	    "#include <exec/initializers.h>\n"
-	    "#define INITPTR(offset,ptr) 0x80,(UBYTE)offset,(IPTR)ptr\n"
-	    "\n"
 	    "extern const int GM_UNIQUENAME(End);\n"
 	    "extern const APTR GM_UNIQUENAME(FuncTable)[];\n"
-	    "static const struct InitTable GM_UNIQUENAME(InitTable);\n"
-	    "static const struct DataTable GM_UNIQUENAME(DataTable);\n"
+    );
+    if (cfg->modtype != RESOURCE)
+	fprintf(out, "static const struct InitTable GM_UNIQUENAME(InitTable);\n");
+    fprintf(out,
 	    "\n"
 	    "extern const char GM_UNIQUENAME(LibName)[];\n"
 	    "extern const char GM_UNIQUENAME(LibID)[];\n"
@@ -217,18 +220,21 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "\n"
     );
 
-    fprintf(out,
-	    "#define __freebase(lh)\\\n"
-	    "do {\\\n"
-	    "    UWORD negsize, possize;\\\n"
-	    "    UBYTE *negptr = (UBYTE *)lh;\\\n"
-	    "    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
-	    "    negptr -= negsize;\\\n"
-	    "    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
-	    "    FreeMem (negptr, negsize+possize);\\\n"
-	    "} while(0)\n"
-	    "\n"
-    );
+    if (cfg->modtype != RESOURCE)
+    {
+	fprintf(out,
+		"#define __freebase(lh)\\\n"
+		"do {\\\n"
+		"    UWORD negsize, possize;\\\n"
+		"    UBYTE *negptr = (UBYTE *)lh;\\\n"
+		"    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
+		"    negptr -= negsize;\\\n"
+		"    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
+		"    FreeMem (negptr, negsize+possize);\\\n"
+		"} while(0)\n"
+		"\n"
+       	);
+    }
 	
     fprintf(out,
 	    "AROS_UFP3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
@@ -283,74 +289,33 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "    RESIDENTPRI,\n"
 	    "    (char *)&GM_UNIQUENAME(LibName)[0],\n"
 	    "    (char *)&GM_UNIQUENAME(LibID)[6],\n"
-	    "    (APTR)&GM_UNIQUENAME(InitTable)\n"
-	    "};\n"
-	    "\n"
-	    "static struct InitTable\n"
-	    "{\n"
-	    "    IPTR                   Size;\n"
-	    "    const APTR             *FuncTable;\n"
-	    "    const struct DataTable *DataTable;\n"
-	    "    APTR                    InitLibTable;\n"
-	    "}\n"
-	    "const GM_UNIQUENAME(InitTable) =\n"
-	    "{\n"
-	    "    sizeof(LIBBASETYPE),\n"
-	    "    &GM_UNIQUENAME(FuncTable)[0],\n"
-	    "    &GM_UNIQUENAME(DataTable),\n"
-	    "    (APTR)GM_UNIQUENAME(InitLib)\n"
-	    "};\n"
-	    "\n"
-	    "static struct DataTable\n"
-	    "{\n"
-	    "    UWORD ln_Type_Init; UWORD ln_Type_Offset; UWORD ln_Type_Content;\n"
-	    "    UBYTE ln_Name_Init; UBYTE ln_Name_Offset; IPTR ln_Name_Content;\n"
-	    "    UWORD lib_Flags_Init; UWORD lib_Flags_Offset; UWORD lib_Flags_Content;\n"
-	    "    UWORD lib_Version_Init; UWORD lib_Version_Offset; UWORD lib_Version_Content;\n"
-	    "    UWORD lib_Revision_Init; UWORD lib_Revision_Offset; UWORD lib_Revision_Content;\n"
-	    "    UBYTE lib_IdString_Init; UBYTE lib_IdString_Offset; IPTR lib_IdString_Content;\n"
-	    "    IPTR ENDMARK;\n"
-	    "}\n"
-	    "const GM_UNIQUENAME(DataTable) =\n"
-	    "{\n"
-    );
-    switch (cfg->modtype)
-    {
-    case LIBRARY:
-    case MUI:
-    case MCC:
-    case MCP:
-    case GADGET:
-    case DATATYPE:
-    case HIDD:
-	fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_LIBRARY),\n");
-	break;
-    case DEVICE:
-	fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_DEVICE),\n");
-	break;
-    case RESOURCE:
-	fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_RESOURCE),\n");
-	break;
-    default:
-	fprintf(stderr, "Internal error: unsupported modtype for NT_...\n");
-	exit(20);
-	break;
-    }
-    fprintf(out,
-	    "    INITPTR(OFFSET(Node, ln_Name), (IPTR) &GM_UNIQUENAME(LibName)[0]),\n"
     );
     if (cfg->modtype != RESOURCE)
     {
 	fprintf(out,
-		"    INITBYTE(OFFSET(Library, lib_Flags), LIBF_SUMUSED|LIBF_CHANGED),\n"
-		"    INITWORD(OFFSET(Library, lib_Version), VERSION_NUMBER),\n"
-		"    INITWORD(OFFSET(Library, lib_Revision), REVISION_NUMBER),\n"
-		"    INITPTR(OFFSET(Library, lib_IdString), (IPTR) &GM_UNIQUENAME(LibID)[0]),\n"
+		"    (APTR)&GM_UNIQUENAME(InitTable)\n"
+		"};\n"
+		"\n"
+		"static struct InitTable\n"
+		"{\n"
+		"    IPTR                   Size;\n"
+		"    const APTR             *FuncTable;\n"
+		"    const struct DataTable *DataTable;\n"
+		"    APTR                    InitLibTable;\n"
+		"}\n"
+		"const GM_UNIQUENAME(InitTable) =\n"
+		"{\n"
+		"    sizeof(LIBBASETYPE),\n"
+		"    &GM_UNIQUENAME(FuncTable)[0],\n"
+		"    NULL,\n"
+		"    (APTR)GM_UNIQUENAME(InitLib)\n"
+		"};\n"
 	);
     }
+    else /* RESOURCE */
+	fprintf(out, "    (APTR)GM_UNIQUENAME(InitLib)\n};\n");
+    
     fprintf(out,
-	    "    (IPTR) 0\n"
-	    "};\n"
 	    "\n"
 	    "const char GM_UNIQUENAME(LibName)[] = MOD_NAME_STRING;\n"
 	    "const char GM_UNIQUENAME(LibID)[] = VERSION_STRING;\n"
@@ -362,11 +327,6 @@ static void writeresident(FILE *out, struct config *cfg)
 static void writeinitlib(FILE *out, struct config *cfg)
 {
     fprintf(out,
-	    "#ifdef SysBase\n"
-	    "#undef SysBase\n"
-	    "#endif\n"
-	    "#define SysBase (GM_SYSBASE_FIELD(lh))\n"
-	    "\n"
 	    "AROS_UFH3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
 	    "    AROS_UFHA(LIBBASETYPEPTR, lh, D0),\n"
 	    "    AROS_UFHA(BPTR, segList, A0),\n"
@@ -377,8 +337,48 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "\n"
 	    "    int ok;\n"
 	    "\n"
-	    "    GM_SYSBASE_FIELD(lh) = sysBase;\n"
     );
+    if (cfg->modtype == RESOURCE)
+    {
+	unsigned int funccount;
+	struct functionhead *funclistit = cfg->funclist;
+	if (funclistit == NULL)
+	    funccount = cfg->firstlvo-1;
+	else
+	{
+	    while (funclistit->next != NULL)
+		funclistit = funclistit->next;
+	    
+	    funccount = funclistit->lvo;
+	}
+	fprintf(out,
+		"    int vecsize;\n"
+		"    struct Node *n;\n"
+		"    char *mem;\n"
+		"\n"
+		"    vecsize = %u*LIB_VECTSIZE;\n"
+		"    if (vecsize > 0)\n"
+		"        vecsize = ((vecsize-1)/sizeof(IPTR) + 1)*sizeof(IPTR);\n"
+		"    mem = AllocMem(vecsize+sizeof(LIBBASETYPE), MEMF_PUBLIC);\n"
+		"    if (mem == NULL)\n"
+		"         return NULL;\n"
+		"    lh = (LIBBASETYPEPTR)(mem + vecsize);\n"
+		"    n = (struct Node *)lh;\n"
+		"    n->ln_Type = NT_RESOURCE;\n"
+		"    n->ln_Pri = RESIDENTPRI;\n"
+		"    n->ln_Name = (char *)GM_UNIQUENAME(LibName);\n"
+		"    MakeFunctions(lh, (APTR)GM_UNIQUENAME(FuncTable), lh);\n",
+		funccount
+	);
+    }
+    else
+    {
+	fprintf(out,
+		"    GM_SYSBASE_FIELD(lh) = sysBase;\n"
+		"    ((struct Library *)lh)->lib_Revision = REVISION_NUMBER;\n"
+	);
+    }
+    
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
 	fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
     if (cfg->options & OPTION_DUPBASE)
@@ -408,9 +408,21 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE),-1,lh);\n");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "        set_close_libraries();\n");
+    if (cfg->modtype != RESOURCE)
+    {
+	fprintf(out,
+		"\n"
+		"        __freebase(lh);\n"
+	);
+    }
+    else
+    {
+	fprintf(out,
+		"\n"
+		"        FreeMem(mem, vecsize+sizeof(LIBBASETYPE));\n"
+	);
+    }
     fprintf(out,
-	    "\n"
-	    "        __freebase(lh);\n"
 	    "        return NULL;\n"
 	    "    }\n"
 	    "    else\n"
