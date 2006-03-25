@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 FILES       := main locale
 EXEDIR      := $(AROS_WANDERER)/Tools
 
-#MM- workbench-system-wanderer : workbench-system-wanderer-tools-info
+#MM- workbench-system-wanderer-tools : workbench-system-wanderer-tools-info
 #MM  workbench-system-wanderer-tools-info : \
 #MM  workbench-system-wanderer-tools-info-icons \
 #MM  workbench-system-wanderer-tools-info-catalogs \
