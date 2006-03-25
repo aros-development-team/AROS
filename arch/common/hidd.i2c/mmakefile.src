@@ -1,6 +1,8 @@
 #   $Id: mmakefile.src 23870 2005-12-23 13:57:24Z verhaegs $
 include $(TOP)/config/make.cfg
 
+#MM- workbench-hidds: hidd-i2c
+
 USER_INCLUDES := -I.
 
 CFLAGS := $(CFLAGS) -D__KERNEL__
