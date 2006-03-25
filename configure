@@ -7723,7 +7723,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in no
+for as_dir in $PATH
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -7790,7 +7790,6 @@ do
 done
 done
 
-  test -z "$ac_cv_prog_CCACHE" && ac_cv_prog_CCACHE="no"
 fi
 fi
 CCACHE=$ac_cv_prog_CCACHE
