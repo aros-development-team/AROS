@@ -206,6 +206,7 @@ BOOL ReadIconNI(struct NativeIcon *icon, struct Hook *streamhook,
     }
     
     tooltypes = icon->dobj.do_ToolTypes;
+    if ( ! tooltypes) return TRUE;
     while ((tt = *tooltypes))
     {
     	if (strcmp(tt, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
