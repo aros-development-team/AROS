@@ -10,7 +10,7 @@ FILES := \
 EXEDIR := \
     $(AROS_WANDERER)/Tools
 
-#MM- workbench-system-wanderer : workbench-system-wanderer-tools-wbnewdrawer 
+#MM- workbench-system-wanderer-tools : workbench-system-wanderer-tools-wbnewdrawer 
 #MM workbench-system-wanderer-tools-wbnewdrawer : \
 #MM workbench-system-wanderer-tools-wbnewdrawer-icons \
 #MM workbench-system-wanderer-tools-wbnewdrawer-catalogs
