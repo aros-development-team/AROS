@@ -431,7 +431,19 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "        return NULL;\n"
 	    "    }\n"
 	    "    else\n"
+	    "    {\n"
+    );
+    
+    if (cfg->modtype == RESOURCE)
+    {
+    	fprintf(out,
+	    	    "        AddResource(lh);\n"
+	);
+    }
+    
+    fprintf(out,
 	    "        return  lh;\n"
+	    "    }\n"
 	    "\n"
 	    "    AROS_USERFUNC_EXIT\n"
 	    "}\n"
