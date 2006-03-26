@@ -367,7 +367,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 		"    n->ln_Type = NT_RESOURCE;\n"
 		"    n->ln_Pri = RESIDENTPRI;\n"
 		"    n->ln_Name = (char *)GM_UNIQUENAME(LibName);\n"
-		"    MakeFunctions(lh, (APTR)GM_UNIQUENAME(FuncTable), lh);\n",
+		"    MakeFunctions(lh, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n",
 		funccount
 	);
     }
