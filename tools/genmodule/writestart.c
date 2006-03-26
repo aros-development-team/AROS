@@ -370,6 +370,11 @@ static void writeinitlib(FILE *out, struct config *cfg)
 		"    MakeFunctions(lh, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n",
 		funccount
 	);
+	
+	fprintf(out,
+	    	"#ifdef GM_SYSBASE_FIELD\n"
+		"    GM_SYSBASE_FIELD(lh) = sysBase;\n"
+		"#endif\n");
     }
     else
     {
