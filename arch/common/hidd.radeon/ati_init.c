@@ -166,9 +166,6 @@ AROS_UFH3(void, Enumerator,
         
                 D(bug("[ATI] Usable size: %dKB\n", sd->CardMem.mh_Free >> 10));
 
-#warning Temporary HACK!
-AllocBitmapArea(sd, 1600, 1200, 4, TRUE);
-
                 sd->scratch_buffer = AllocBitmapArea(sd, 4096, 16, 4, TRUE);
                 sd->Card.CursorStart = AllocBitmapArea(sd, 64, 64, 4, TRUE);
 
@@ -181,16 +178,6 @@ AllocBitmapArea(sd, 1600, 1200, 4, TRUE);
                 /*-------- DO NOT CHANGE/REMOVE -------------*/
                 bug("\003\n"); /* Tell vga text mode debug output to die */
                 /*-------- DO NOT CHANGE/REMOVE -------------*/
-        
-                InitMode(sd, state, 640, 480, 16, 25200, 0, 
-                    640, 480,
-                    656, 752, 800,
-                    490, 492, 525);
-                
-                LoadState(sd, state);
-                DPMS(sd,vHidd_Gfx_DPMSLevel_On);
-        
-//                sd->scratch_buffer = (IPTR)NULL;       
             }
             else
             {
