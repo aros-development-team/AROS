@@ -51,7 +51,6 @@ struct GameportBase
     ULONG   			gp_nTicks;          	/* Bookkeeping of frames */
     
     OOP_Object	   		*gp_Hidd;		/* Hidd object to use */
-    struct Library 		*gp_OOPBase;
     
     UBYTE   			gp_cTypes[GP_NUNITS];
 
@@ -81,16 +80,5 @@ typedef struct GPUnit
 #define GBUB_PENDING 		0			/* Unit has pending request for gameport
 				   			   events */
 #define GBUF_PENDING 		0x01
-
-
-#ifdef SysBase
-#undef SysBase
-#endif
-#define SysBase GPBase->gp_sysBase
-
-#ifdef OOPBase
-#undef OOPBase
-#endif
-#define OOPBase GPBase->gp_OOPBase
 
 #endif /* GAMEPORT_INTERN_H */
