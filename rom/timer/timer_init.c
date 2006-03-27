@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
@@ -62,16 +62,6 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, LIBBASE)
     NEWLIST( &LIBBASE->tb_Lists[3] );
     NEWLIST( &LIBBASE->tb_Lists[4] );
     
-#if 0
-    /* Open the boopsi.library */
-    LIBBASE->tb_BOOPSIBase = OpenLibrary("boopsi.library", 0);
-    if( BOOPSIBase == NULL )
-    {
-	/* timer.device couldn't open intuition.library (think about it!) */
-	Alert( AT_DeadEnd | AG_OpenLib | AO_Intuition | AN_TimerDev );
-    }
-#endif
-
     /* Start up the interrupt server. This is shared between us and the 
 	HIDD that deals with the vblank */
     LIBBASE->tb_VBlankInt.is_Node.ln_Pri = 0;
