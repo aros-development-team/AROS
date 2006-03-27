@@ -2,7 +2,7 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -401,18 +401,11 @@ struct IntIntuitionBase
 
     /* Put local shit here, invisible for the user */
     BPTR                         SegList;
-    struct GfxBase          	*GfxBase;
-    struct Library          	*LayersBase;
     struct ExecBase         	*ExecBase;
-    struct UtilityBase      	*UtilBase;
-    struct Library          	*KeymapBase;
-    struct Library          	*DOSBase;
 #ifdef __MORPHOS__
     struct Library          	*CyberGfxBase;
     struct Library          	*MUIMasterBase;
 #endif
-    struct Library          	*LocaleBase;
-
     
     struct Library          	*InputBase;
     struct Library          	*TimerBase;
@@ -652,28 +645,6 @@ struct IntIntuiMessage
 #define GetPubIBase(ib)     	((struct IntuitionBase *)ib)
 #define GetPrivIBase(ib)    	((struct IntIntuitionBase *)ib)
 
-#ifdef GfxBase
-#undef GfxBase
-#endif
-#define _GfxBase     	    	(GetPrivIBase(IntuitionBase)->GfxBase)
-#define GfxBase     	    	_GfxBase
-
-#ifdef LayersBase
-#undef LayersBase
-#endif
-#define _LayersBase         	(GetPrivIBase(IntuitionBase)->LayersBase)
-#define LayersBase          	_LayersBase
-
-#ifdef SysBase
-#undef SysBase
-#endif
-#define SysBase     	    	(GetPrivIBase(IntuitionBase)->ExecBase)
-
-#ifdef UtilityBase
-#undef UtilityBase
-#endif
-#define UtilityBase 	    	(GetPrivIBase(IntuitionBase)->UtilBase)
-
 #ifdef __MORPHOS__
 #ifdef CyberGfxBase
 #undef CyberGfxBase
@@ -684,16 +655,6 @@ struct IntIntuiMessage
 #define MUIMasterBase 	    	(GetPrivIBase(IntuitionBase)->MUIMasterBase)
 #endif
 #endif
-
-#ifdef LocaleBase
-#undef LocaleBase
-#endif
-#define LocaleBase  	    	(GetPrivIBase(IntuitionBase)->LocaleBase)
-
-#ifdef KeymapBase
-#undef KeymapBase
-#endif
-#define KeymapBase  	    	(GetPrivIBase(IntuitionBase)->KeymapBase)
 
 #ifdef InputBase
 #undef InputBase
@@ -715,16 +676,7 @@ struct IntIntuiMessage
 #endif
 #define TimerIO     	    	(GetPrivIBase(IntuitionBase)->TimerIO)
 
-#ifdef DOSBase
-#undef DOSBase
-#endif
-#define DOSBase     	    	(GetPrivIBase(IntuitionBase)->DOSBase)
-
 #define PublicClassList     	((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))
-
-/* Needed for close() */
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
 
 
 /* stegerg: one can have sysgadgets outside of window border! All sysgadgets in window

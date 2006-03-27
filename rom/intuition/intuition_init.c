@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -247,15 +247,6 @@ AROS_SET_LIBFUNC(IntuitionOpen, LIBBASETYPE, LIBBASE)
 	}
     }
 
-    if (!UtilityBase)
-    {
-	if (!(UtilityBase = (void *)OpenLibrary (UTILITYNAME, 39)) )
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't open utility.library\n"));
-	    return FALSE; /* don't close anything */
-	}
-    }
-
     if (!GetPrivIBase(LIBBASE)->InputHandler)
     {
 	D(bug("Initializing inputhandler\n"));
@@ -274,17 +265,11 @@ AROS_SET_LIBFUNC(IntuitionOpen, LIBBASETYPE, LIBBASE)
 	D(bug("DoIO() called\n"));
     }
 
+#ifdef __MORPHOS__
     if (!GfxBase)
     {
 	struct ViewExtra *ve;
 
-	if (!(GfxBase = (void *)OpenLibrary (GRAPHICSNAME, 39)) )
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't open graphics.library\n"));
-	    return FALSE;
-	}
-
-#ifdef __MORPHOS__
 	if (!(ve = GfxNew(VIEW_EXTRA_TYPE)))
 	{
 	    GfxBase = NULL;
@@ -299,50 +284,20 @@ AROS_SET_LIBFUNC(IntuitionOpen, LIBBASETYPE, LIBBASE)
 	GetPrivIBase(LIBBASE)->ViewLordExtra = ve;
 
 	GetPrivIBase(LIBBASE)->SpriteNum = -1;
+
+    }
 #endif
+    
+    if (!GetPrivIBase(LIBBASE)->ScreenFont)
 	GetPrivIBase(LIBBASE)->ScreenFont = GfxBase->DefaultFont;
 
 #if 0 /* CHECKME: stegerg: backport, disabled */
-	{
-	    struct TextAttr textattr = {"topaz.font",8,0,FPF_ROMFONT};
-		
-	    if (!(GetPrivIBase(LIBBASE)->TopazFont))
-                GetPrivIBase(LIBBASE)->TopazFont = OpenFont(&textattr);
-	}
+    if (!(GetPrivIBase(LIBBASE)->TopazFont))
+    {
+	struct TextAttr textattr = {"topaz.font",8,0,FPF_ROMFONT};
+	GetPrivIBase(LIBBASE)->TopazFont = OpenFont(&textattr);
+    }
 #endif
-    }
-
-    if (!LayersBase)
-    {
-	if (!(LayersBase = (void *)OpenLibrary ("layers.library", 39)) )
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't open layers.library\n"));
-	    return FALSE;
-	}
-    }
-
-    /* moved to OpenScreen!*/
-    //#ifdef __MORPHOS__
-    //    if (!CyberGfxBase)
-    //    {
-    //  if (!(CyberGfxBase = OpenLibrary ("cybergraphics.library", 39)) )
-    //  {
-    //      DEBUG_OPEN(dprintf("LIB_Open: can't open cybergraphics.library\n"));
-    //      return NULL; /* don't close anything */
-    //  }
-    //  DEBUG_OPEN(dprintf("LIB_Open: opened CyberGfxBase 0x%lx\n", CyberGfxBase));
-    //    }
-    //#endif
-
-    if (!KeymapBase)
-    {
-	if (!(KeymapBase = OpenLibrary ("keymap.library", 39)) )
-	{
-	    DEBUG_OPEN(dprintf("LIB_Open: can't open keymap.library\n"));
-	    return FALSE; /* don't close anything */
-	}
-	DEBUG_OPEN(dprintf("LIB_Open: opened KeymapBase 0x%lx\n", KeymapBase));
-    }
 
     if (!TimerBase)
     {
@@ -370,9 +325,8 @@ AROS_SET_LIBFUNC(IntuitionOpen, LIBBASETYPE, LIBBASE)
     }
 
 #if 0
-    if (!DOSBase)
+    if (((struct Library *)LIBBASE)->lib_OpenCnt == 0)
     {
-	DOSBase = OpenLibrary("dos.library", 0);
 	//check if dos is opened!!!
 	((struct DosLibrary *)DOSBase)->dl_IntuitionBase =
 	    (struct Library *)LIBBASE;
@@ -384,18 +338,12 @@ AROS_SET_LIBFUNC(IntuitionOpen, LIBBASETYPE, LIBBASE)
 			AROS_SLIB_ENTRY(DisplayError, Intuition));
     }
 #else
-    if (!DOSBase)
-    {
-	//DOSBase = OpenLibrary("dos.library", 50); /* CHECKME: stegerg: backport, disabled */
-
 # ifdef SKINS
-	if (DOSBase)
-	{
-	    InitSkinManager(IntuitionBase);
-	}
-# endif
-
+    if (((struct Library *)LIBBASE)->lib_OpenCnt == 0)
+    {
+	InitSkinManager(IntuitionBase);
     }
+# endif
 #endif
 
     /* FIXME: no cleanup routines for MenuHandler task */
