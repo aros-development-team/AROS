@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     The Workbench Handler process and associated functions.
@@ -60,7 +60,6 @@ static VOID __HandleIntuition_WB(struct IntuiMessage *message, struct HandlerCon
 #define HandleIntuition(message) (__HandleIntuition_WB((message), hc, WorkbenchBase))
 
 /*** Entry point ************************************************************/
-#undef SysBase
 AROS_UFH3
 (
     LONG, WorkbenchHandler,
@@ -194,7 +193,6 @@ AROS_UFH3
 
     AROS_USERFUNC_EXIT
 }
-#define SysBase (WorkbenchBase->wb_SysBase)
 
 
 static BOOL __Initialize_WB

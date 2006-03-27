@@ -2,7 +2,7 @@
 #define __WORKBENCH_INTERN_H__
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal header file for workbench.library.
@@ -42,10 +42,6 @@ struct WorkbenchBase
     BPTR                    wb_SegList;
 
     struct ExecBase        *wb_SysBase;
-    struct Library         *wb_DOSBase;
-    struct Library         *wb_UtilityBase;
-    struct Library         *wb_IntuitionBase;
-    struct Library         *wb_IconBase;
     
     struct MsgPort          wb_HandlerPort;            /* The handler's message port */
     struct MsgPort         *wb_WorkbenchPort;          /* The workbench application's message port */
@@ -67,12 +63,6 @@ struct WorkbenchBase
 };
 
 #define LB(lb)          ((struct WorkbenchBase *) (lb))
-
-#define SysBase         (WorkbenchBase->wb_SysBase)
-#define UtilityBase     ((struct UtilityBase *)(WorkbenchBase->wb_UtilityBase))
-#define IntuitionBase   ((struct IntuitionBase *)(WorkbenchBase->wb_IntuitionBase))
-#define DOSBase         ((struct DosLibrary *)(WorkbenchBase->wb_DOSBase))
-#define IconBase        (WorkbenchBase->wb_IconBase)
 
 #define LockWorkbench()   ObtainSemaphore(&(WorkbenchBase->wb_BaseSemaphore))
 #define UnlockWorkbench() ReleaseSemaphore(&(WorkbenchBase->wb_BaseSemaphore))
