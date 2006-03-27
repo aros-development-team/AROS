@@ -215,18 +215,6 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(open),
 
     gpUn->gpu_unitNum = unitnum;
         
-    if (!GPBase->gp_OOPBase)
-    {
-	GPBase->gp_OOPBase = OpenLibrary(AROSOOP_NAME, 0);
-
-	if(!GPBase->gp_OOPBase)
-	{
-	    ioreq->io_Error = IOERR_OPENFAIL;
-
-	    return FALSE;
-	}
-    }
-    
     if (!HiddMouseAB)
     {
         HiddMouseAB = OOP_ObtainAttrBase(IID_Hidd_Mouse);
