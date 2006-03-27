@@ -2,7 +2,7 @@
 #define  KEYBOARD_INTERN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -74,21 +74,6 @@ typedef struct KBUnit
 #define KBUB_PENDING 0		/* Unit has pending request for keyevents */
 
 #define KBUF_PENDING 0x01
-
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct KeyboardBase *, KBBase, 3, Keyboard)
-
-
-#ifdef SysBase
-#undef SysBase
-#endif
-#define SysBase KBBase->kb_sysBase
-
-#ifdef OOPBase
-#undef OOPBase
-#endif
-#define OOPBase KBBase->kb_OOPBase
 
 #define HiddKbdAB KBBase->HiddKbdAB_
 

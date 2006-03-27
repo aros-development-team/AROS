@@ -8,5 +8,3 @@ USER_INCLUDES := -I$(TOP)/rom/devs
 %build_module mmake=kernel-keyboard \
   modname=keyboard modtype=device \
   files=keyboard
-
-%common
