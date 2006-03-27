@@ -332,21 +332,15 @@ VOID HandlePendingReads(struct conbase *conbase, struct filehandle *fh)
 
 /****************************************************************************************/
 
-#undef SysBase
-#define SysBase sysbase
-
 AROS_UFH3(VOID, conTaskEntry,
     AROS_UFHA(STRPTR, argstr, A0),
     AROS_UFHA(ULONG, arglen, D0),
-    AROS_UFHA(struct ExecBase *, sysbase, A6)
+    AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
     AROS_USERFUNC_INIT
     
     struct conTaskParams *param = (struct conTaskParams *)FindTask(NULL)->tc_UserData;
-
-#undef SysBase
-#define SysBase conbase->sysbase
 
     struct conbase  	*conbase = param->conbase;
 
