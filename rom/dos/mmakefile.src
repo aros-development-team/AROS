@@ -2,6 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(TOP)/rom/devs
+USER_CFLAGS := -D__DOS_NOLIBBASE__
 
 IMAGE_TYPES := aos aout elf elf_aros
 FILES	  := devname doname dosboot errorlist inithidds lddemon runprocess \

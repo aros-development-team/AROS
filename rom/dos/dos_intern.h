@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal types and stuff for dos
@@ -18,14 +18,6 @@
 
 #include "dos_dosdoio.h"
 
-#ifdef SysBase
-#undef SysBase
-#endif
-#define SysBase (DOSBase->dl_SysBase)
-#ifdef UtilityBase
-#undef UtilityBase
-#endif
-#define UtilityBase (DOSBase->dl_UtilityBase)
 #ifdef TimerBase
 #undef TimerBase
 #endif
@@ -239,8 +231,8 @@ typedef struct FileHandle* FileHandlePtr;
 
 void vbuf_free(FileHandlePtr fh);
 
-IPTR vbuf_alloc(FileHandlePtr fh, ULONG size);
+IPTR vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase);
 
-LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length);
+LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOSBase);
     
 #endif /* DOS_INTERN_H */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code that loads and initializes necessary HIDDs.
@@ -42,7 +42,6 @@ struct initbase
     struct Library	*oopbase;
 };
 
-#define SysBase	(base->sysbase)
 #define DOSBase (base->dosbase)
 #define OOPBase (base->oopbase)
 

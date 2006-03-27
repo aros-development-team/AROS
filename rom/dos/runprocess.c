@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RunProcess() - Run a process from an entry point with args
@@ -31,7 +31,6 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 
 #include <string.h>
 
-#define SysBase	    (DOSBase->dl_SysBase)
 
 /**************************************************************************
 
@@ -135,7 +134,6 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 }
 
 #ifdef TEST
-#undef SysBase
 
 #include <stdio.h>
 

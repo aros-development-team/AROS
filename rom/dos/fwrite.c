@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Lang: english
@@ -65,7 +65,7 @@
 
     for(written = 0; written < numblocks; written++)
     {
-        if (FWriteChars(fh, ptr, blocklen) != blocklen)
+        if (FWriteChars(fh, ptr, blocklen, DOSBase) != blocklen)
         {
             return(EOF);
         }
@@ -82,7 +82,7 @@
 
 
 LONG
-FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length)
+FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOSBase)
 {
     ASSERT_VALID_PTR(file);
     ASSERT_VALID_PTR(buffer);
@@ -107,7 +107,7 @@ FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length)
         /* Is there a buffer? */
         if (fh->fh_Buf == NULL)
         {
-            if (NULL == vbuf_alloc(fh, IOBUFSIZE))
+            if (NULL == vbuf_alloc(fh, IOBUFSIZE, DOSBase))
             {
                 return(EOF);
             }

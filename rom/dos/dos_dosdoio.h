@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal proto and define for DosDoIO
@@ -8,6 +8,7 @@
 #ifndef DOS_DOSDOIO_H
 #define DOS_DOSDOIO_H
 
+#include <proto/exec.h>
 #include <exec/io.h>
 
 

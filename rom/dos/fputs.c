@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -54,7 +54,7 @@
         ULONG
     len = strlen(string);
 
-    return(FWriteChars(file, string, len) == len
+    return(FWriteChars(file, string, len, DOSBase) == len
         ? 0
         : -1);
 

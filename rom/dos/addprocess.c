@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a new Process
@@ -10,10 +10,6 @@
 #include <proto/exec.h>
 #include <aros/asmcall.h>
 #include "dos_intern.h"
-
-#ifdef SysBase
-#undef SysBase
-#endif
 
 LONG DosEntry (
     STRPTR argPtr,
@@ -36,9 +32,6 @@ LONG DosEntry (
 
 	return result;
 }
-
-#undef SysBase
-#define SysBase (DOSBase->dl_SysBase)
 
 struct Process *AddProcess(struct Process *process, STRPTR argPtr,
 			   ULONG argSize, APTR initialPC, APTR finalPC,
