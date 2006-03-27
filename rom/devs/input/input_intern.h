@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for the input.device
@@ -46,8 +46,7 @@ struct inputbase
 {
     struct Device   	device;
     struct ExecBase 	*sysBase;
-    struct GfxBase  	*gfxBase;
-    
+   
     BPTR    	    	seglist;
     
     /* The stuff below will never get deallocated, since
@@ -71,16 +70,6 @@ VOID AddEQTail(struct InputEvent *ie, struct inputbase *InputDevice);
 struct InputEvent *GetEventsFromQueue(struct inputbase *InputDevice);
 BOOL IsQualifierKey(UWORD key);
 BOOL IsRepeatableKey(UWORD key);
-
-#define expunge() \
-__AROS_LC0(BPTR, expunge, struct inputbase *, InputDevice, 3, Input)
-
-#ifdef SysBase
-    #undef SysBase
-#endif
-
-#define SysBase     	InputDevice->sysBase
-#define GfxBase     	InputDevice->gfxBase
 
 #endif /* INPUT_INTERN_H */
 
