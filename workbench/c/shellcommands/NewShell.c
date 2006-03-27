@@ -61,8 +61,7 @@
 		    SMART     --  if the window is enlarged the text will not
                                   expand
 		    WAIT      --  the window can only be closed by selecting
-                                  the close gadget is selected or entering
-				  CTRL-\.
+                                  the close gadget or entering CTRL-\.
 
 
         FROM    --  File to execute before resorting to normal shell
