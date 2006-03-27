@@ -262,10 +262,6 @@ struct ConsoleBase
     struct Device device;
     struct ExecBase * sysBase;
     BPTR seglist;
-    struct GfxBase *gfxBase;
-    struct IntuitionBase *intuitionBase;
-    struct Library *utilityBase;
-    struct Library *keymapBase;
     
     struct MinList unitList;
     struct SignalSemaphore unitListLock;
@@ -297,31 +293,6 @@ __AROS_LC0(BPTR, expunge, struct ConsoleBase *, ConsoleDevice, 3, Console)
 
 #undef CB
 #define CB(x) ((struct ConsoleBase *)x)
-
-#ifdef SysBase
-#   undef SysBase
-#endif
-#define SysBase CB(ConsoleDevice)->sysBase
-
-#ifdef GfxBase
-#   undef GfxBase
-#endif
-#define GfxBase CB(ConsoleDevice)->gfxBase
-
-#ifdef IntuitionBase
-#   undef IntuitionBase
-#endif
-#define IntuitionBase CB(ConsoleDevice)->intuitionBase
-
-#ifdef UtilityBase
-#   undef UtilityBase
-#endif
-#define UtilityBase CB(ConsoleDevice)->utilityBase
-
-#ifdef KeymapBase
-#   undef KeymapBase
-#endif
-#define KeymapBase  CB(ConsoleDevice)->keymapBase
 
 #endif /* CONSOLE_GCC_H */
 

@@ -18,4 +18,3 @@ FUNCS	:=  cdinputhandler rawkeyconvert
 INCLUDE_FILES := $(wildcard include/*.h)
 %copy_includes path=devices
 
-%common

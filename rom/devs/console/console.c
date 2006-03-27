@@ -73,22 +73,6 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, ConsoleDevice)
     InitSemaphore(&ConsoleDevice->unitListLock);
     InitSemaphore(&ConsoleDevice->consoleTaskLock);
     
-    ConsoleDevice->gfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
-    if (!ConsoleDevice->gfxBase)
-	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_GraphicsLib);
-
-    ConsoleDevice->intuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
-    if (!ConsoleDevice->intuitionBase)
-	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_Intuition);
-
-    ConsoleDevice->utilityBase = OpenLibrary("utility.library", 37);
-    if (!ConsoleDevice->utilityBase)
-	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_UtilityLib);
-
-    ConsoleDevice->keymapBase = OpenLibrary("keymap.library", 37);
-    if (!ConsoleDevice->keymapBase)
-	Alert(AT_DeadEnd | AN_ConsoleDev | AG_OpenLib | AO_KeyMapLib);
-    
     /* Create the console classes */
     CONSOLECLASSPTR = makeConsoleClass(ConsoleDevice);
     STDCONCLASSPTR = makeStdConClass(ConsoleDevice);
