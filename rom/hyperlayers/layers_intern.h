@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information for layers.library.
@@ -29,9 +29,7 @@ LIBBASETYPE
 
     BPTR	     	    lb_SegList;
     
-    struct GfxBase 	    *lb_GfxBase;
     struct ExecBase 	    *lb_SysBase;
-    struct UtilityBase      *lb_UtilityBase;
     struct SignalSemaphore  lb_MemLock;
     APTR    	    	    lb_ClipRectPool;
 };
@@ -83,10 +81,6 @@ struct ResourceNode
     struct ResData  rn_Data[48];
 };
 
-
-#define SysBase         LIBBASE->lb_SysBase
-#define GfxBase		LIBBASE->lb_GfxBase
-#define UtilityBase	LIBBASE->lb_UtilityBase
 
 /*
 ** The smart refresh flag is set for super bitmap as well as smart refresh
