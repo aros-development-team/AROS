@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new process
@@ -12,10 +12,13 @@
 #include <dos/filesystem.h>
 #include <dos/dostags.h>
 #include <dos/stdio.h>
+#define __DOS_NOLIBBASE__
 #include <proto/dos.h>
 #include <utility/tagitem.h>
+#include <aros/symbolsets.h>
 #include <proto/utility.h>
 #include "dos_intern.h"
+#include LC_LIBDEFS_FILE
 #include <string.h>
 
 static void KillCurrentProcess(void);
@@ -612,22 +615,25 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
     return TRUE;
 }
 
-#ifdef AROS_CREATE_ROM
-# ifdef SysBase
-#  undef SysBase
-# endif
-#endif
+#warning Q: Is there a better way to pass DOSBase to KillCurrentProcess ?
+static struct DosLibrary *DOSBase;
+
+AROS_SET_LIBFUNC(SetDosBase, LIBBASETYPE, __DOSBase)
+{
+    AROS_SET_LIBFUNC_INIT
+    D(bug("SetDosBase\n"));
+    DOSBase = __DOSBase;
+    return TRUE;
+    AROS_SET_LIBFUNC_EXIT
+}
+
+/* At pri -1 so it is executed before the DosInit in dos_init.c */
+ADD2INITLIB(SetDosBase, -1)
 
 static void KillCurrentProcess(void)
 {
     struct Process *me;
-#ifdef AROS_CREATE_ROM
-    AROS_GET_SYSBASE
-    AROS_GET_DOSBASE
-#else
-    /* I need the global here because there is no local way to get it */
-    extern struct DosLibrary * DOSBase;
-#endif
+
     me = (struct Process *)FindTask(NULL);
 
     /* Call user defined exit function before shutting down. */
@@ -723,7 +729,3 @@ static void KillCurrentProcess(void)
     
     CloseLibrary((struct Library * )DOSBase);
 }
-
-#ifdef AROS_CREATE_ROM
-#define SysBase (DOSBase->dl_SysBase)
-#endif

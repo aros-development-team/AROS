@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <proto/exec.h>
@@ -91,7 +91,7 @@
         }
     	else
     	{
-            if (NULL == vbuf_alloc(fh, size))
+            if (NULL == vbuf_alloc(fh, size, DOSBase))
             {
                 return(EOF);
             }
@@ -121,7 +121,7 @@ vbuf_free(FileHandlePtr fh)
 
 
 IPTR
-vbuf_alloc(FileHandlePtr fh, ULONG size)
+vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase)
 {
         STRPTR
     buf = AllocMem(size, MEMF_ANY);

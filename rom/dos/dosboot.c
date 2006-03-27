@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Start up the ol' Dos boot process.
@@ -258,12 +258,6 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
     }
 }
 
-#ifdef SysBase
-#undef SysBase
-#endif
-
-#define SysBase (DOSBase->dl_SysBase)
-
 BOOL mount( struct DeviceNode *dn, struct DosLibrary * DOSBase ) 
 {
     struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
@@ -309,12 +303,6 @@ BOOL mount( struct DeviceNode *dn, struct DosLibrary * DOSBase )
     return rc;
 }
 
-#ifdef SysBase
-#undef SysBase
-#endif
-
-#define SysBase (DOSBase->dl_SysBase)
-
 BOOL isBootable( CONST_STRPTR deviceName, struct DosLibrary * DOSBase )
 {
     BOOL            result = FALSE;
@@ -358,7 +346,3 @@ cleanup:
     
     return result;
 }
-
-#ifdef SysBase
-#undef SysBase
-#endif

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Header for dos.library
@@ -19,15 +19,11 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 #include <proto/alib.h>
+#include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <aros/debug.h>
 #include LC_LIBDEFS_FILE
 #include "dos_intern.h"
-
-#ifndef AROS_CREATE_ROM
-struct DosLibrary *DOSBase;
-struct DosLibrary **dosPtr = &DOSBase;
-#endif
 
 extern void DOSBoot(struct ExecBase *, struct DosLibrary *);
 
@@ -35,6 +31,8 @@ AROS_SET_LIBFUNC(DosInit, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
 
+    D(bug("DosInit\n"));
+    
     __AROS_SETVECADDR(LIBBASE, 15, __AROS_GETVECADDR(LIBBASE, 6));
     __AROS_SETVECADDR(LIBBASE, 62, __AROS_GETVECADDR(LIBBASE, 16));
     __AROS_SETVECADDR(LIBBASE, 65, __AROS_GETVECADDR(LIBBASE, 17));
@@ -55,13 +53,8 @@ AROS_SET_LIBFUNC(DosInit, LIBBASETYPE, LIBBASE)
 
     InitSemaphore(&LIBBASE->dl_DosListLock);
 
-    LIBBASE->dl_UtilityBase = OpenLibrary("utility.library",39L);
-
-    if(LIBBASE->dl_UtilityBase == NULL)
-    {
-	Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_UtilityLib);
-	return FALSE;
-    }
+    /* Initialize for the fools that illegally used this field */
+    LIBBASE->dl_UtilityBase = UtilityBase;
 
     LIBBASE->dl_IntuitionBase = NULL;
 
@@ -123,9 +116,6 @@ AROS_SET_LIBFUNC(DosInit, LIBBASETYPE, LIBBASE)
 	{
 	    LIBBASE->dl_TimerBase = LIBBASE->dl_TimerIO.tr_node.io_Device;
 
-#ifndef AROS_CREATE_ROM
-	    *dosPtr = LIBBASE;
-#endif
 	    AddLibrary((struct Library *)LIBBASE);
 
 	    /* This is where we start the RTC_AFTERDOS residents */
