@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Input device
@@ -72,11 +72,9 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, InputDevice)
     InputDevice->KeyRepeatInterval.tv_micro
 	= (DEFAULT_KEY_REPEAT_INTERVAL % 50) * 1000000 / 50;
 
-    GfxBase = (void *)OpenLibrary("graphics.library", 0);
-    
     /* Initialise the input.device task. */
     InputDevice->InputTask = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
-    if(InputDevice->InputTask && GfxBase)
+    if(InputDevice->InputTask)
     {
 	struct Task *task = InputDevice->InputTask;
 	APTR stack;
