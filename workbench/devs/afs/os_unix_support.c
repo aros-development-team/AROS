@@ -111,7 +111,8 @@ void closeBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh) {
 }
 
 BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
-	printf("%s: Command not supported yet!\n", __FUNCTION__);
+	flushCache(afsbase, volume);
+	clearCache(afsbase, volume->blockcache);
 	return DOSFALSE;
 }
 

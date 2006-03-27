@@ -395,6 +395,7 @@ struct Volume *volume;
 					printf("done\n");
 				}
 				retval = copyData(cfg, volume);
+				flush(afsbase, volume);
 			}
 			else
 				printf("Error %ld!\n", error);
