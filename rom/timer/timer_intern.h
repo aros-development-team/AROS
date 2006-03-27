@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information about the timer.device and HIDD's
@@ -73,9 +73,6 @@ struct TimerBase
 
 #define GetTimerBase(tb)	((struct TimerBase *)(tb))
 #define GetDevice(tb)		((struct Device *)(tb))
-
-#define SysBase			(GetTimerBase(TimerBase)->tb_SysBase)
-//#define BOOPSIBase		(GetTimerBase(TimerBase)->tb_BOOPSIBase)
 
 #define TF_GO		(1L<<0)
 #define TF_GotVBlank	(1L<<1)	/* HIDD used for VBlank units */
