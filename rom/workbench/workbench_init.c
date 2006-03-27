@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Initialization of workbench.library.
@@ -56,32 +56,6 @@ AROS_SET_LIBFUNC(WBOpen, LIBBASETYPE, LIBBASE)
     {
         struct CommandLineInterface *cli;
         
-        /* Open libraries --------------------------------------------------*/
-        //FIXME: error handling! libs not closed if open fails!
-        if (!(WorkbenchBase->wb_UtilityBase = OpenLibrary(UTILITYNAME, 37L)))
-        {
-            D(bug("Workbench: Failed to open utility.library!\n"));
-            return FALSE;
-        }
-        
-        if (!(WorkbenchBase->wb_IntuitionBase = OpenLibrary(INTUITIONNAME, 37L)))
-        {
-            D(bug("Workbench: Failed to open intuition.library!\n"));
-            return FALSE;
-        }
-
-        if (!(WorkbenchBase->wb_DOSBase = OpenLibrary(DOSNAME, 37L)))
-        {
-            D(bug("Workbench: Failed to open dos.library!\n"));
-            return FALSE;
-        }
-        
-        if (!(WorkbenchBase->wb_IconBase = OpenLibrary(ICONNAME, 37L)))
-        {
-            D(bug("Workbench: Failed to open icon.library!\n"));
-            return FALSE;
-        }
-        
         /* Duplicate the search path ---------------------------------------*/
         if ((cli = Cli()) != NULL)
         {
@@ -124,34 +98,5 @@ AROS_SET_LIBFUNC(WBOpen, LIBBASETYPE, LIBBASE)
     AROS_SET_LIBFUNC_EXIT
 } /* L_OpenLib */
 
-AROS_SET_LIBFUNC(WBExpunge, LIBBASETYPE, LIBBASE)
-{
-    AROS_SET_LIBFUNC_INIT
-    if ((WorkbenchBase->wb_IconBase))
-    {
-        CloseLibrary(WorkbenchBase->wb_IconBase);
-    }
-    
-    if ((WorkbenchBase->wb_DOSBase))
-    {
-        CloseLibrary(WorkbenchBase->wb_DOSBase);
-    }
-    
-    if ((WorkbenchBase->wb_IntuitionBase))
-    {
-        CloseLibrary(WorkbenchBase->wb_IntuitionBase);
-    }
-    
-    if ((WorkbenchBase->wb_UtilityBase))
-    {
-        CloseLibrary(WorkbenchBase->wb_UtilityBase);
-    }
-    // FIXME: handler not shut down 
-
-    return TRUE;
-    AROS_SET_LIBFUNC_EXIT
-}
-
 ADD2INITLIB(WBInit, 0);
 ADD2OPENLIB(WBOpen, 0);
-ADD2EXPUNGELIB(WBExpunge, 0);
