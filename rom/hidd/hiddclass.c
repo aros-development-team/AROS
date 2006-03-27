@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Main class for HIDD.
@@ -331,7 +331,6 @@ AROS_SET_LIBFUNC(init_hiddclass, LIBBASETYPE, lh)
 {
     AROS_SET_LIBFUNC_INIT
     struct  class_static_data *csd;
-    ULONG   alert;
     ULONG   ok    = 0;
 
     EnterFunc(bug("HIDD::Init()\n"));
@@ -343,29 +342,17 @@ AROS_SET_LIBFUNC(init_hiddclass, LIBBASETYPE, lh)
     NEWLIST(&csd->hiddList);
     InitSemaphore(&csd->listLock);
 	
-    alert = AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown;
-
-    UtilityBase = OpenLibrary("utility.library", 0);
-    if(UtilityBase)
+    HiddAttrBase = OOP_ObtainAttrBase(IID_Hidd);
+    if(HiddAttrBase)
     {
-	/* Create the class structure for the "hiddclass" */
-	D(bug("Got UtilityBase\n"));
-
-	alert = AT_DeadEnd | AN_Unknown | AO_Unknown;
-
-	HiddAttrBase = OOP_ObtainAttrBase(IID_Hidd);
-	if(HiddAttrBase)
-	{
-	    D(bug("Got HiddAttrBase\n"));
-	    ok = 1;
-	} /* if(HiddAttrBase) */
-    } /* if(UtilityBase) */
-
-    if(ok == 0)
+	D(bug("Got HiddAttrBase\n"));
+	ok = 1;
+    } /* if(HiddAttrBase) */
+    else
     {
         /* If you are not running from ROM, don't use Alert() */
 
-        Alert(alert);
+        Alert(AT_DeadEnd | AN_Unknown | AO_Unknown);
     }
 
     ReturnInt("HIDD::Init", ULONG, ok);
@@ -387,8 +374,6 @@ AROS_SET_LIBFUNC(free_hiddclass, LIBBASETYPE, lh)
 	OOP_ReleaseAttrBase(IID_Hidd);
 	csd->hiddAttrBase = 0;
     }
-
-    if(UtilityBase) CloseLibrary(UtilityBase);
 
     ReturnInt("HIDD::Free", ULONG, TRUE);
 

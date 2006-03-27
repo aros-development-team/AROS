@@ -38,7 +38,6 @@ struct HIDDData
 struct class_static_data
 {
     struct ExecBase             *sysBase;
-    struct Library              *UtilityBase;
     OOP_AttrBase                hiddAttrBase;  // keep lower case so it does not clash with define.
 
     OOP_Class                   *hiddclass;
@@ -61,12 +60,6 @@ struct IntHIDDClassBase
 
 #define CSD(cl) (&((struct IntHIDDClassBase *)cl->UserData)->hd_csd)
 #define csd CSD(cl)
-
-#undef SysBase
-#define SysBase (csd->sysBase)
-
-#undef UtilityBase
-#define UtilityBase (csd->UtilityBase)
 
 #undef HiddAttrBase
 #define HiddAttrBase	(csd->hiddAttrBase)
