@@ -21,6 +21,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
+#define __GADTOOLS_NOLIBBASE__
 #include <proto/gadtools.h>
 #include <proto/asl.h>
 #include "con_handler_intern.h"
@@ -47,9 +48,6 @@ struct completioninfo
 {
     struct conbase     *conbase;
     struct filehandle  *fh;
-    struct UtilityBase *utilitybase;
-    struct Library     *gadtoolsbase;
-    struct GfxBase     *gfxbase;
     struct List     	matchlist;
     APTR    	    	pool;
     WORD    	    	nummatchnodes;
@@ -63,12 +61,19 @@ struct completioninfo
 
 /****************************************************************************************/
 
+/* Delay opening of the gadtools.library to the first time InitCompletion is called */
+
+static struct Library *GadToolsBase = NULL;
+
 static struct completioninfo *InitCompletion(struct conbase *conbase, struct filehandle *fh)
 {
     struct completioninfo *ci = NULL;
     APTR    	    	   pool;
-    	
-    if (fh->lastwritetask)
+
+    if (GadToolsBase == NULL)
+	GadToolsBase = OpenLibrary("gadtools.library", 39);
+    
+    if (fh->lastwritetask && GadToolsBase)
     if (fh->lastwritetask->tc_Node.ln_Type == NT_PROCESS)
     {    
 	if ((pool = CreatePool(MEMF_CLEAR, 1024, 1024)))
@@ -77,30 +82,12 @@ static struct completioninfo *InitCompletion(struct conbase *conbase, struct fil
 
     	    if ((ci = (struct completioninfo *)AllocPooled(pool, sizeof(*ci))))
 	    {
-		if ((ci->utilitybase = (struct UtilityBase *)OpenLibrary("utility.library", 36)))
-		{
-	    	    if ((ci->gadtoolsbase = OpenLibrary("gadtools.library", 39)))
-		    {
-		    	if ((ci->gfxbase = (struct GfxBase *)OpenLibrary("graphics.library", 36)))
-			{
-	    		    ci->pool = pool;
-			    ci->conbase = conbase;
-	    		    ci->fh = fh;
-    	    		    NewList(&ci->matchlist);
-
-	    		    ok = TRUE;
-			}
-			else
-			{
-			    CloseLibrary(ci->gadtoolsbase);
-			    CloseLibrary((struct Library *)ci->utilitybase);
-			}
-		    }
-		    else
-		    {
-			CloseLibrary((struct Library *)ci->utilitybase);
-		    }
-		}
+		ci->pool = pool;
+		ci->conbase = conbase;
+		ci->fh = fh;
+		NewList(&ci->matchlist);
+		
+		ok = TRUE;
 	    }
 
 	    if (!ok)
@@ -118,9 +105,6 @@ static struct completioninfo *InitCompletion(struct conbase *conbase, struct fil
 
 static void CleanupCompletion(struct conbase *conbase, struct completioninfo *ci)
 {
-    CloseLibrary((struct Library *)ci->utilitybase);
-    CloseLibrary((struct Library *)ci->gadtoolsbase);
-    CloseLibrary((struct Library *)ci->gfxbase);
     DeletePool(ci->pool);
 }
 
@@ -286,10 +270,6 @@ static BOOL PreparePattern(struct conbase *conbase, struct completioninfo *ci)
 
 /****************************************************************************************/
 
-#define UtilityBase ci->utilitybase
-
-/****************************************************************************************/
-
 static void AddMatchNode(struct conbase *conbase, struct completioninfo *ci,
     	    	    	 STRPTR name, WORD type)
 {
@@ -337,10 +317,6 @@ static void AddMatchNode(struct conbase *conbase, struct completioninfo *ci,
 	}
     }
 }
-
-/****************************************************************************************/
-
-#undef UtilityBase
 
 /****************************************************************************************/
 
@@ -418,9 +394,6 @@ static void DoScan(struct conbase *conbase, struct completioninfo *ci)
 #define BUTTON_SPACING_X    	8
 #define LV_BUTTON_SPACING_Y 	4
 #define LV_EXTRA_HEIGHT     	4
-
-#define GadToolsBase ci->gadtoolsbase
-#define GfxBase      ci->gfxbase
 
 #define ID_LISTVIEW 1
 #define ID_OK       2
@@ -748,9 +721,6 @@ static BOOL DoChooseReq(struct conbase *conbase, struct completioninfo *ci)
     
     return retval;
 }
-
-#undef GadToolsBase
-#undef GfxBase
 
 /****************************************************************************************/
 

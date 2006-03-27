@@ -52,9 +52,7 @@ struct conbase
 {
     struct Device	device;
     struct ExecBase   * sysbase;
-    struct DosLibrary * dosbase;
     struct Device     * inputbase;
-    struct IntuitionBase *intuibase;
 
     BPTR seglist;
 };
@@ -111,18 +109,6 @@ struct filehandle
 
 typedef struct IntuitionBase IntuiBase;
 
-#ifdef SysBase
-#   undef SysBase
-#endif
-#define SysBase conbase->sysbase
-#ifdef DOSBase
-#   undef DOSBase
-#endif
-#define DOSBase conbase->dosbase
-#ifdef IntuitionBase
-#   undef IntuitionBase
-#endif
-#define IntuitionBase conbase->intuibase
 #ifdef InputBase
 #   undef InputBase
 #endif

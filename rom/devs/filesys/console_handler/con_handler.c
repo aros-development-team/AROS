@@ -61,75 +61,60 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, conbase)
     int     	      i;
 
 
-    conbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-    if (conbase->dosbase)
+    /* Really bad hack, but con_handler is in ROM, intuition.library is
+       open, if intuition.library is open, then Input.Device must be
+       open, too, ... and I don't like to OpenDevice just for Peek-
+       Qualifier */
+
+#warning InputDevice open hack. Hope this is not a problem since it is only used for PeekQualifier
+    Forbid();
+    conbase->inputbase = (struct Device *)FindName(&conbase->sysbase->DeviceList, "input.device");
+    Permit();
+
+    /* Install CON: and RAW: handlers into device list
+     *
+     * KLUDGE: con-handler should create only one device node, depending on
+     * the startup packet it gets. The mountlists for CON:/RAW: should be into dos.library bootstrap
+     * routines.
+     */
+    for(i = 0; i < 2; i++)
     {
-    	conbase->intuibase = (IntuiBase *)OpenLibrary("intuition.library", 37);
-	if (conbase->intuibase)
+	if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + 3 + 2, MEMF_CLEAR|MEMF_PUBLIC)))
 	{
-	    /* Really bad hack, but con_handler is in ROM, intuition.library is
-	       open, if intuition.library is open, then Input.Device must be
-	       open, too, ... and I don't like to OpenDevice just for Peek-
-	       Qualifier */
-
-	    #warning InputDevice open hack. Hope this is not a problem since it is only used for PeekQualifier
-	    Forbid();
-	    conbase->inputbase = (struct Device *)FindName(&conbase->sysbase->DeviceList, "input.device");
-	    Permit();
-
-	    /* Install CON: and RAW: handlers into device list
-	     *
-	     * KLUDGE: con-handler should create only one device node, depending on
-	     * the startup packet it gets. The mountlists for CON:/RAW: should be into dos.library bootstrap
-	     * routines.
-	     */
-	    for(i = 0; i < 2; i++)
+	    STRPTR s = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
+	    WORD   a;
+	    
+	    for(a = 0; a < 3; a++)
 	    {
-		if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + 3 + 2, MEMF_CLEAR|MEMF_PUBLIC)))
-		{
-		    STRPTR s = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
-		    WORD   a;
+		AROS_BSTR_putchar(s, a, devnames[i][a]);
+	    }
+	    AROS_BSTR_setstrlen(s, 3);
 
-		    for(a = 0; a < 3; a++)
-		    {
-		    	AROS_BSTR_putchar(s, a, devnames[i][a]);
-		    }
-		    AROS_BSTR_setstrlen(s, 3);
+	    dn->dn_Type		= DLT_DEVICE;
 
-		    dn->dn_Type		= DLT_DEVICE;
+	    /* 
+	       i equals 1 when dn_NewName is "RAW", and 0 otherwise. This
+	       tells con_task that it has to start in RAW mode
+	     */   
+	    dn->dn_Unit		= (struct Unit *)i;
 
-		    /* 
-		       i equals 1 when dn_NewName is "RAW", and 0 otherwise. This
-		       tells con_task that it has to start in RAW mode
-		    */   
-		    dn->dn_Unit		= (struct Unit *)i;
+	    dn->dn_Device	= &conbase->device;
+	    dn->dn_Handler	= NULL;
+	    dn->dn_Startup	= NULL;
+	    dn->dn_OldName	= MKBADDR(s);
+	    dn->dn_NewName	= AROS_BSTR_ADDR(dn->dn_OldName);
 
-		    dn->dn_Device	= &conbase->device;
-		    dn->dn_Handler	= NULL;
-		    dn->dn_Startup	= NULL;
-		    dn->dn_OldName	= MKBADDR(s);
-		    dn->dn_NewName	= AROS_BSTR_ADDR(dn->dn_OldName);
+	    if (AddDosEntry((struct DosList *)dn))
+	    {
+		if (i == 0)
+		    continue;
 
-		    if (AddDosEntry((struct DosList *)dn))
-		    {
-			if (i == 0)
-			    continue;
-
-			return TRUE;
-		    }
-
-	   	    FreeMem(dn, sizeof (struct DeviceNode));
-	    	}
+		return TRUE;
 	    }
 
-	    CloseLibrary((struct Library *)conbase->intuibase);
-
-    	} /* if (intuition opened) */
-
-	CloseLibrary((struct Library *)conbase->dosbase);
-   	/* Alert(AT_DeadEnd|AG_NoMemory|AN_Unknown); */
-
-    } /* if (dos opened) */
+	    FreeMem(dn, sizeof (struct DeviceNode));
+	}
+    }
 
     return FALSE;
 
@@ -146,19 +131,6 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
 )
 {
     AROS_SET_DEVFUNC_INIT
-
-/*
-    if(conbase->dosbase == NULL)
-    {
-	conbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-	if( conbase->dosbase == NULL )
-	{
-	    iofs->IOFS.io_Error = IOERR_OPENFAIL;
-	    return;
-	}
-    }
-
-*/
 
     /*
        Check whether the user mounted us as "RAW", in which case abuse of the
