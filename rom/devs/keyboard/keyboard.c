@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Keyboard device
@@ -172,16 +172,6 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
         KBBase->kb_Matrix = AllocMem(KB_MATRIXSIZE, MEMF_ANY|MEMF_CLEAR);
 
 	if (NULL == KBBase->kb_Matrix)
-	{
-	    ioreq->io_Error = IOERR_OPENFAIL;
-	    return FALSE;
-	}
-    }
-    
-    if (!KBBase->kb_OOPBase)
-    {
-	KBBase->kb_OOPBase = OpenLibrary(AROSOOP_NAME, 0);
-	if (!KBBase->kb_OOPBase)
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
 	    return FALSE;
