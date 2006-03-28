@@ -29,6 +29,9 @@ FUNCS := \
 #MM     workbench-libs-icon-includes \
 #MM     includes-copy
 
+#MM kernel-workbench-kobj : workbench-libs-icon-linklib
+#MM kernel-workbench : workbench-libs-icon-linklib
+
 %build_module mmake=kernel-workbench \
   modname=workbench modtype=library \
   files="workbench_init $(FUNCS) $(FILES)" \
