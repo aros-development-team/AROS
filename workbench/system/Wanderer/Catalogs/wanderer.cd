@@ -140,6 +140,12 @@ Open
 MSG_MEN_SC_OPEN (//)
 O
 ;
+MSG_MEN_RENAME (//)
+Rename ...
+;
+MSG_MEN_SC_RENAME (//)
+R
+;
 MSG_MEN_INFO (//)
 Information ...
 ;

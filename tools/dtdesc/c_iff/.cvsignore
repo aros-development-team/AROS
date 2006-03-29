@@ -1,6 +1,0 @@
-libc_iff.a
-*.o
-c_iff.txt
-example
-test1.iff
-mmakefile
