@@ -152,6 +152,7 @@ enum
 	MEN_WINDOW_SORT_GROUP,
     
     MEN_ICON_OPEN,
+    MEN_ICON_RENAME,
     MEN_ICON_INFORMATION,
     MEN_ICON_DELETE,
 };
@@ -452,6 +453,44 @@ void icon_open()
     DoMethod(window, MUIM_IconWindow_DoubleClicked);
 }
 
+void icon_rename(void)
+{
+    Object                *window   = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextSelected_Start;
+    
+    do
+    {
+        DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
+        
+        if ((int)entry != MUIV_IconList_NextSelected_End) 
+        {
+            BPTR lock   = Lock(entry->filename, ACCESS_READ);
+            BPTR parent = ParentDir(lock);
+            UnLock(lock);
+            
+            kprintf("*** selected: %s\n", entry->filename);
+            
+            OpenWorkbenchObject
+            (
+                "WANDERER:Tools/WBRename",
+                WBOPENA_ArgLock, (IPTR) parent,
+                WBOPENA_ArgName, (IPTR) FilePart(entry->filename),
+                TAG_DONE
+            );
+            
+            kprintf("*** selected: %s\n", entry->filename);
+            
+            UnLock(parent);
+        }
+        else
+        {
+            break;
+        }
+    } while (TRUE);
+}
+
+
 void icon_information()
 {
     Object                *window   = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);   
@@ -726,6 +765,7 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
     DoMenuNotify(strip, MEN_WINDOW_SORT_TOPDRAWERS, window_sort_topdrawers, strip);
 
     DoMenuNotify(strip, MEN_ICON_OPEN,              icon_open,              NULL);
+    DoMenuNotify(strip, MEN_ICON_RENAME,            icon_rename,            NULL);
     DoMenuNotify(strip, MEN_ICON_INFORMATION,       icon_information,       NULL);
     DoMenuNotify(strip, MEN_ICON_DELETE,            icon_delete,            NULL);
     
@@ -1182,7 +1222,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     {NM_TITLE,    _(MSG_MEN_ICON),     NULL, NM_MENUDISABLED},
         {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), 0, 0, (APTR) MEN_ICON_OPEN},
   //    {NM_ITEM,  "Close","C" },
-  //    {NM_ITEM,  "Rename...", "R"},
+        {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), 0, 0, (APTR) MEN_ICON_RENAME},
         {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), 0, 0, (APTR) MEN_ICON_INFORMATION},
   //    {NM_ITEM,  "Snapshot", "S" },
   //    {NM_ITEM,  "Unsnapshot", "U" },
