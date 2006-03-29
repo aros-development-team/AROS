@@ -1,0 +1,69 @@
+## version $VER: deutsch.catalog 0.1 (30.03.2006)
+## language deutsch
+## codeset 0
+;
+;
+MSG_TITLE
+WBRename
+; WBRename
+;
+MSG_DESCRIPTION
+Benennt Dateien und Schubladen um
+; Renames files and drawers
+;
+MSG_COPYRIGHT
+©2006, AROS Dev Team
+; ©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Umbenennen
+; Rename
+;
+MSG_LINE
+Geben Sie einen neuen Namen ein
+; Enter a new name
+;
+MSG_NAME
+Neuer Name:
+; New name:
+;
+MSG_OK
+_OK
+; _OK
+;
+MSG_CANCEL
+_Abbrechen
+; Ca_ncel
+;
+MSG_ERROR_TITLE
+WBRename: Fehler
+; WBRename: Error
+;
+MSG_ALREADY_EXIST
+'%s' existiert bereits!
+; '%s' already exists!
+;
+MSG_FAILED
+Beim Umbenennen von '%s' trat der Fehler %ld auf!
+; Rename of '%s' failed with error %ld!
+;
+MSG_ILLEGAL_CHARS
+'%s' enthält unerlaubte Zeichen!
+; '%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS
+Brauche 2 Argumente!
+; Need 2 arguments!
+;
+MSG_INVALID_LOCK
+Ungültiger Verzeichnis-Lock!
+; Invalid directory lock!
+;
+MSG_WB_ONLY
+Kann nicht von der Shell gestartet werden!\n
+; Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+Kann Application-Objekt nicht erzeugen!
+; Failed to create Application!
+;

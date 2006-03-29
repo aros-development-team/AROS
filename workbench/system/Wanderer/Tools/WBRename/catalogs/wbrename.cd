@@ -1,0 +1,49 @@
+;
+MSG_TITLE (//)
+WBRename
+;
+MSG_DESCRIPTION (//)
+Renames files and drawers
+;
+MSG_COPYRIGHT (//)
+©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE (//)
+Rename
+;
+MSG_LINE (//)
+Enter a new name
+;
+MSG_NAME (//)
+New name:
+;
+MSG_OK (//)
+_OK
+;
+MSG_CANCEL (//)
+Ca_ncel
+;
+MSG_ERROR_TITLE (//)
+WBRename: Error
+;
+MSG_ALREADY_EXIST (//)
+'%s' already exists!
+;
+MSG_FAILED (//)
+Rename of '%s' failed with error %ld!
+;
+MSG_ILLEGAL_CHARS (//)
+'%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS (//)
+Need 2 arguments!
+;
+MSG_INVALID_LOCK (//)
+Invalid directory lock!
+;
+MSG_WB_ONLY (//)
+Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP (//)
+Failed to create Application!
+;
