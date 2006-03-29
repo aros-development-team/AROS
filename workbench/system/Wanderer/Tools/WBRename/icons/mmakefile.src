@@ -1,0 +1,14 @@
+# Copyright © 2006, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+EXEDIR := \
+    $(AROS_WANDERER)/Tools
+
+ICONS := WBRename
+
+%build_icons mmake=workbench-system-wanderer-tools-wbrename-icons icons=$(ICONS) \
+             dir=$(EXEDIR)
+
+%common

@@ -1,0 +1,19 @@
+# Copyright © 2006, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := main locale
+
+EXEDIR := $(AROS_WANDERER)/Tools
+
+#MM- workbench-system-wanderer-tools : workbench-system-wanderer-tools-wbrename 
+#MM workbench-system-wanderer-tools-wbrename : \
+#MM workbench-system-wanderer-tools-wbrename-icons \
+#MM workbench-system-wanderer-tools-wbrename-catalogs
+
+%build_prog mmake=workbench-system-wanderer-tools-wbrename \
+    progname=WBRename targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+
+%common
