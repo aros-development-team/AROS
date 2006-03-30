@@ -25,11 +25,12 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBNewDrawer 0.3 (23.03.2006) ©2006 AROS Dev Team";
+char versionstring[] = "$VER: WBNewDrawer 0.4 (30.03.2006) ©2006 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
 static void Cleanup(STRPTR s);
+static BOOL doNewDrawer(void);
 static void MakeGUI(void);
 static const STRPTR SelectDefaultName(STRPTR basename);
 
@@ -37,6 +38,7 @@ static Object *app, *window, *bt_ok, *bt_cancel, *cm_icons, *str_name;
 static struct Hook bt_ok_hook;
 BPTR dirlock = (BPTR)-1;
 BPTR oldlock = (BPTR)-1;
+STRPTR illegal_chars = "/:";
 
 int main(int argc, char **argv)
 {
@@ -102,7 +104,7 @@ static void MakeGUI(void)
 			MUIA_CycleChain, 1,
 			MUIA_String_Contents, (IPTR) defname,
 			MUIA_String_MaxLen, MAXFILENAMELENGTH,
-			MUIA_String_Reject, (IPTR) "\":#?*", // Doesn't work :-(
+			MUIA_String_Reject, (IPTR) illegal_chars,
 			MUIA_String_Columns, -1,
 			MUIA_Frame, MUIV_Frame_String,
 		    End),
@@ -141,18 +143,34 @@ static void MakeGUI(void)
 
 static void bt_ok_hook_function(void)
 {
+    if (doNewDrawer())
+    {
+	DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    }
+}
+
+
+static BOOL doNewDrawer(void)
+{
+    BOOL retval = FALSE;
     BOOL icon = XGET(cm_icons, MUIA_Selected);
     STRPTR name = (STRPTR)XGET(str_name, MUIA_String_Contents);
     BPTR test;
-    struct DiskObject *dob;
+    struct DiskObject *dob = NULL;
     D(bug("WBNewDrawer name %s icon %d\n", name, icon));
+
+    if (strpbrk(name, illegal_chars))
+    {
+	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ILLEGAL_CHARS), name);
+	goto end;
+    }
 
     test = Lock(name, ACCESS_READ);
     if (test)
     {
 	UnLock(test);
 	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), name);
-	return;
+	goto end;
     }
 
     dob = GetDiskObject(name);
@@ -160,8 +178,7 @@ static void bt_ok_hook_function(void)
     if (dob && (dob->do_Type != WBDRAWER))
     {
 	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_WRONG_ICON_TYPE), name);
-	FreeDiskObject(dob);
-	return;
+	goto end;
     }
 
     // create drawer
@@ -169,8 +186,11 @@ static void bt_ok_hook_function(void)
     if ((dstLock  = CreateDir(name)))
 	UnLock(dstLock);
     else
+    {
 	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_CANT_CREATE), name);
-
+	goto end;
+    }
+    
     // create icon
     // if the icon already exists and is of right type then no actions happens.
     if (icon &&  (dob == NULL))
@@ -179,11 +199,13 @@ static void bt_ok_hook_function(void)
 	PutDiskObject(name, dob);
     }
     
+    UpdateWorkbenchObject(name, WBDRAWER, TAG_DONE);
+    retval = TRUE;
+    
+end:
     if (dob)
 	FreeDiskObject(dob);
-
-    UpdateWorkbenchObject(name, WBDRAWER, TAG_DONE);
-    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    return retval;
 }
 
 

@@ -1,4 +1,4 @@
-## version $VER: deutsch.catalog 0.1 (22.03.2006)
+## version $VER: deutsch.catalog 0.2 (30.03.2006)
 ## language deutsch
 ## codeset 0
 ;
@@ -58,6 +58,10 @@ Kann Schublade '%s' nicht erzeugen!
 MSG_INFO_ALREADY
 '%s'.info existiert bereits!
 ; '%s'.info already exists!
+;
+MSG_ILLEGAL_CHARS
+'%s' enthält unerlaubte Zeichen!
+; '%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
 Brauche 2 Argumente!
