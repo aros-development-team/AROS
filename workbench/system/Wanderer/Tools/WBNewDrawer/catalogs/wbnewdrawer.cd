@@ -41,6 +41,9 @@ Can't create drawer '%s'!
 MSG_INFO_ALREADY (//)
 '%s'.info already exists!
 ;
+MSG_ILLEGAL_CHARS (//)
+'%s' contains illegal characters!
+;
 MSG_NEEDS_MORE_ARGS (//)
 Need 2 arguments!
 ;

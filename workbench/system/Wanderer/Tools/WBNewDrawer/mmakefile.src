@@ -3,9 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := \
-    WBNewDrawer \
-    locale
+FILES := main locale
 
 EXEDIR := \
     $(AROS_WANDERER)/Tools
