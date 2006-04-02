@@ -2090,7 +2090,7 @@ endef
 	done
 	@m="$(GENDIR)/$(CURDIR)/%(mmake)-auxiliary.mak";                           \
 	for f in $(%(mmake)_FILES); do                                            \
-	    $(ECHO) "\$$(DST)/$$f: \$$(SRC)/$$f | \$$\$$(@D); $(CP) \$$< \$$@" >> $$m; \
+	    $(ECHO) "\$$(DST)/$$f: \$$(SRC)/$$f | \$$(dir \$$(DST)/$$f); $(CP) \$$< \$$@" >> $$m; \
 	done;  \
 	for dst in %(dst); do \
 	    $(MAKE) -f $$m DST=$$dst SRC=%(src) all; \
