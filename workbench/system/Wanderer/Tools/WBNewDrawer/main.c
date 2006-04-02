@@ -44,8 +44,6 @@ int main(int argc, char **argv)
 {
     struct WBStartup *startup;
 
-    Locale_Initialize();
-
     if (argc != 0)
     {
 	PutStr(_(MSG_WB_ONLY));
@@ -68,8 +66,6 @@ int main(int argc, char **argv)
     STRPTR fullname = AllocateNameFromLock(dirlock);
     UpdateWorkbenchObject(fullname, WBDRAWER, TAG_DONE);
     FreeVec(fullname);
-
-    Locale_Deinitialize();
 
     Cleanup(NULL);
     return RETURN_OK;

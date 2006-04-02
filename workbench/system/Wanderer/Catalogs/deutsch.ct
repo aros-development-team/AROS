@@ -191,6 +191,13 @@ MSG_MEN_SC_OPEN
 O
 ; O
 ;
+MSG_MEN_RENAME
+Umbenennen ...
+;
+MSG_MEN_SC_RENAME
+R
+; R
+;
 MSG_MEN_INFO
 Informationen anzeigen ...
 ; Information ...
@@ -214,8 +221,6 @@ Möchten Sie Wanderer wirklich beenden?
 MSG_YESNO
 *Ja|Nein
 ; *Yes|No
-;
-; ***NEW***
 ;
 MSG_DUMMY
 DUMMY

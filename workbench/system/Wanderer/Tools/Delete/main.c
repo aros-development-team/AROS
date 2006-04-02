@@ -29,7 +29,6 @@ STRPTR AllocateNameFromLock(BPTR lock);
 int main(int argc, char **argv)
 {
 	int result = RETURN_OK;
-	Locale_Initialize();
 
     if (argc == 0)
     {
@@ -130,7 +129,6 @@ int main(int argc, char **argv)
         PutStr(_(MSG_WB_ONLY));
         result = RETURN_FAIL;
     }
-	Locale_Deinitialize();
     return result;
 }
 

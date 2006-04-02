@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBRename 0.1 (27.03.2006) ©2006 AROS Dev Team";
+char versionstring[] = "$VER: WBRename 0.2 (02.04.2006) ©2006 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
@@ -38,14 +38,12 @@ static struct Hook bt_ok_hook;
 BPTR parentlock = (BPTR)-1;
 STRPTR oldname;
 BPTR oldlock = (BPTR)-1;
-STRPTR illegal_chars = "/";
+STRPTR illegal_chars = "/:";
 
 int main(int argc, char **argv)
 {
     struct WBStartup *startup;
     STRPTR fullname;
-
-    Locale_Initialize();
 
     if (argc != 0)
     {
@@ -72,8 +70,6 @@ int main(int argc, char **argv)
     fullname = AllocateNameFromLock(parentlock);
     UpdateWorkbenchObject(fullname, WBDRAWER, TAG_DONE);
     FreeVec(fullname);
-
-    Locale_Deinitialize();
 
     Cleanup(NULL);
     return RETURN_OK;
