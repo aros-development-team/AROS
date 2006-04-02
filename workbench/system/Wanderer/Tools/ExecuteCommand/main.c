@@ -25,7 +25,6 @@
 void cleanup(CONST_STRPTR message)
 {
     ExecuteCommand_Deinitialize();
-    Locale_Deinitialize();
     
     if (message != NULL)
     {
@@ -44,7 +43,6 @@ int main(int argc, char **argv)
     BPTR    parent  = NULL;
     STRPTR  initial = NULL;
     
-    if (!Locale_Initialize()) cleanup(_(MSG_ERROR_LOCALE));
     if (!ExecuteCommand_Initialize()) cleanup(_(MSG_ERROR_CLASSES));
     
     if (argc == 0)

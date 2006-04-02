@@ -2,10 +2,7 @@
 #define _LOCALE_H
 
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
-    This file is part of the About program, which is distributed under
-    the terms of version 2 of the GNU General Public License.
-    
+    Copyright © 2006, The AROS Development Team. All rights reserved.
     $Id: locale.h,v 1.1 2005/02/05 17:51:19 olivier Exp $
 */
 

@@ -321,8 +321,6 @@ int main(int argc, char **argv)
     char datetime[2*LEN_DATSTRING];
     UBYTE flags[8], lname[MAXFILENAMELENGTH];
 
-    Locale_Initialize();
-
     char *pages[] = {_(MSG_INFORMATION),_(MSG_PROTECTION),_(MSG_TOOLTYPES),NULL};
     char * typeNames[] =
     {
@@ -340,7 +338,6 @@ int main(int argc, char **argv)
     if (argc != 0)
     {
         /* start from wanderer only */
-        Locale_Deinitialize();
         PrintFault(ERROR_FILE_NOT_OBJECT, argv[0]);
         return RETURN_FAIL;
     }
@@ -350,7 +347,6 @@ int main(int argc, char **argv)
     if (startup->sm_NumArgs < 2)
     {
         /* need atleast 1 arg */
-        Locale_Deinitialize();
         PrintFault(ERROR_REQUIRED_ARG_MISSING, argv[0]);
         D(bug("[WBInfo] required arg missing\n"));
         return RETURN_FAIL;
@@ -364,7 +360,6 @@ int main(int argc, char **argv)
     if (name == NULL)
     {
         /* directory not found*/
-        Locale_Deinitialize();
         PrintFault(ERROR_DIR_NOT_FOUND, argv[0]);
         D(bug("[WBInfo] dir not found\n"));
         return RETURN_FAIL;
@@ -373,7 +368,6 @@ int main(int argc, char **argv)
     ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_CLEAR);
     if (ap == NULL)
     {
-        Locale_Deinitialize();
         PrintFault(ERROR_NO_FREE_STORE, argv[0]);
         D(bug("[WBInfo] no free store\n"));
         return RETURN_FAIL;
@@ -390,7 +384,6 @@ int main(int argc, char **argv)
             WBOPENA_ArgName, (IPTR) startup->sm_ArgList[1].wa_Name,
             TAG_DONE);
         FreeVec(ap);
-        Locale_Deinitialize();
         return RETURN_OK;
     };
 
@@ -449,7 +442,6 @@ int main(int argc, char **argv)
         if (icon->do_DefaultTool) sprintf(deftool, "%s", icon->do_DefaultTool);
     } else {
         FreeVec(ap);
-        Locale_Deinitialize();
         PrintFault(ERROR_OBJECT_WRONG_TYPE, argv[0]);
         return RETURN_FAIL;
     }
@@ -848,6 +840,5 @@ int main(int argc, char **argv)
     }
     FreeDiskObject(icon);
     FreeVec(ap);
-    Locale_Deinitialize();
     return RETURN_OK;
 }

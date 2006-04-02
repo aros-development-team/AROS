@@ -21,8 +21,6 @@ int __forceerrorrequester = 1;
 
 int main(void)
 {
-    Locale_Initialize();
-    
     LONG retval = RETURN_ERROR;
     
     if ((app = WandererObject, End) != NULL)
@@ -30,8 +28,6 @@ int main(void)
 	retval = DoMethod(app, MUIM_Application_Execute);        
 	MUI_DisposeObject(app);
     }
-    
-    Locale_Deinitialize();
     
     return retval;
 }
