@@ -30,6 +30,7 @@
 #define HIDD_BM_PIXTAB(bitmap)	  (*(HIDDT_Pixel **)&((bitmap)->Planes[4]))
 #define HIDD_BM_REALDEPTH(bitmap) (*(LONG *)&((bitmap)->Planes[5]))
 #define HIDD_BM_FLAGS(bitmap)	  (*(ULONG *)&((bitmap)->Planes[6]))
+#define HIDD_BM_HIDDMODE(bitmap)  (*(ULONG *)&((bitmap)->Planes[7]))
 
 #define OBTAIN_HIDD_BM(bitmap)	\
 	( ( IS_HIDD_BM(bitmap))	\

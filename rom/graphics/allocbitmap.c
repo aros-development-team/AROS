@@ -152,10 +152,7 @@
 	   
     	if (friend_bitmap && IS_HIDD_BM(friend_bitmap) && (friend_bitmap->Flags & BMF_DISPLAYABLE))
 	{
-	    IPTR val;
-	    
-	    OOP_GetAttr(HIDD_BM_OBJ(friend_bitmap), aHidd_BitMap_ModeID, &val);
-	    hiddmode = val;
+    	    hiddmode = HIDD_BM_HIDDMODE(friend_bitmap);
 	}
 	else
 	{
@@ -271,6 +268,7 @@
     		    HIDD_BM_COLMOD(nbm)     = colmod;
     		    HIDD_BM_COLMAP(nbm)     = colmap;
 		    HIDD_BM_REALDEPTH(nbm)  = depth;
+		    HIDD_BM_HIDDMODE(nbm)   = hiddmode;
 		    
     		    nbm->Rows   = height;
     		    nbm->BytesPerRow = WIDTH_TO_BYTES(width);
