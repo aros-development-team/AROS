@@ -118,6 +118,9 @@ struct MUI_WindowData
     Object *wd_HelpObject;
     APTR    wd_HelpBubble;
     WORD    wd_HelpTicker;
+    
+    struct Screen *wd_UserScreen;
+    STRPTR  	   wd_UserPublicScreen;
 };
 
 #ifndef WFLG_SIZEGADGET
@@ -145,6 +148,7 @@ struct MUI_WindowData
 #define MUIWF_ISSUBWINDOW       (1<<12) /* Dont get automatically disposed with app */
 #define MUIWF_BUBBLEMODE        (1<<13) /* Quick bubble mode. Bubbles appear quick when moving */
 #define MUIWF_OPENONUNHIDE      (1<<14) /* Open the window when unhiding */
+#define MUIWF_SCREENLOCKED  	(1<<15) /* A pub screen was locked in SetupRenderInfo. Unlock it in CleanupRenderInfo! */
 
 #define BUBBLEHELP_TICKER_FIRST 10
 #define BUBBLEHELP_TICKER_LATER 3
@@ -208,10 +212,27 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     ULONG val;
     int i;
 
-    if (!(mri->mri_Screen = LockPubScreen(NULL))) return FALSE;
+    if (data->wd_UserScreen)
+    {
+    	mri->mri_Screen = data->wd_UserScreen;
+    }
+    else
+    {
+     	if (!(mri->mri_Screen = LockPubScreen(data->wd_UserPublicScreen)))
+    	{
+    	    return FALSE;
+	}
+	
+	data->wd_Flags |= MUIWF_SCREENLOCKED;
+    }
+        
     if (!(mri->mri_DrawInfo = GetScreenDrawInfo(mri->mri_Screen)))
     {
-	UnlockPubScreen(NULL,mri->mri_Screen);
+	if (data->wd_Flags & MUIWF_SCREENLOCKED)
+	{
+	    UnlockPubScreen(NULL,mri->mri_Screen);
+	    data->wd_Flags &= ~MUIWF_SCREENLOCKED;
+	}
 	return FALSE;
     }
 
@@ -327,7 +348,7 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     return TRUE;
 }
 
-static void CleanupRenderInfo(struct MUI_RenderInfo *mri)
+static void CleanupRenderInfo(struct MUI_WindowData *data, struct MUI_RenderInfo *mri)
 {
     int i;
 
@@ -355,7 +376,11 @@ static void CleanupRenderInfo(struct MUI_RenderInfo *mri)
     FreeScreenDrawInfo(mri->mri_Screen, mri->mri_DrawInfo);
     mri->mri_DrawInfo = NULL;
 
-    UnlockPubScreen(NULL, mri->mri_Screen);
+    if (data->wd_Flags & MUIWF_SCREENLOCKED)
+    {
+    	UnlockPubScreen(NULL, mri->mri_Screen);
+	data->wd_Flags &= ~MUIWF_SCREENLOCKED;
+    }
     mri->mri_Screen = NULL;
 }
 
@@ -1019,7 +1044,7 @@ static Object *ObjectUnderPointer(struct MUI_WindowData *data, Object *obj,
         return NULL;
     }
 
-    if (get(obj, MUIA_Group_ChildList, (ULONG *)&(ChildList)))
+    if (get(obj, MUIA_Group_ChildList, (IPTR *)&(ChildList)))
     {
         cstate = (Object *)ChildList->mlh_Head;
         while ((child = NextObject(&cstate)))
@@ -1054,7 +1079,7 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
         return FALSE;
     }
 
-    if (get(obj, MUIA_Group_ChildList, (ULONG *)&(ChildList)))
+    if (get(obj, MUIA_Group_ChildList, (IPTR *)&(ChildList)))
     {
         cstate = (Object *)ChildList->mlh_Head;
         while ((child = NextObject(&cstate)))
@@ -2515,6 +2540,14 @@ static IPTR Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Window_RefWindow:
 		data->wd_RefWindow = (Object *)tag->ti_Data;
 		break;
+		
+	    case MUIA_Window_Screen:
+	    	data->wd_UserScreen = (struct Screen *)tag->ti_Data;
+		break;
+		
+	    case MUIA_Window_PublicScreen:
+	    	data->wd_UserPublicScreen = (STRPTR)tag->ti_Data;
+		break;
 	}
     }
 
@@ -2736,6 +2769,15 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->wd_ReqWidth = (LONG)tag->ti_Data;
 		data->wd_Height = 0;
 		break;
+		
+	    case MUIA_Window_Screen:
+	    	data->wd_UserScreen = (struct Screen *)tag->ti_Data;
+		break;
+		
+	    case MUIA_Window_PublicScreen:
+	    	data->wd_UserPublicScreen = (STRPTR)tag->ti_Data;
+		break;
+	    
 
 	}
     }
@@ -2764,6 +2806,14 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
             STORE = (IPTR)data->wd_RenderInfo.mri_Window;
             return TRUE;
 	
+	case MUIA_Window_Screen:
+	    STORE = (IPTR)data->wd_RenderInfo.mri_Screen;
+	    return TRUE;
+	
+	case MUIA_Window_PublicScreen:
+	    STORE = (IPTR)data->wd_UserPublicScreen;
+	    break;
+	        
 	case MUIA_Window_ActiveObject:
 	    if ((data->wd_ActiveObject != NULL)
 		&& (DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
@@ -3275,7 +3325,7 @@ static IPTR Window_Cleanup(struct IClass *cl, Object *obj, Msg msg)
     	data->wd_dnd = NULL;
     }
 
-    CleanupRenderInfo(&data->wd_RenderInfo);
+    CleanupRenderInfo(data, &data->wd_RenderInfo);
     return TRUE;
 }
 
