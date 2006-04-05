@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: nvidia.hidd initialization
@@ -71,6 +71,8 @@
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 
+#include <aros/symbolsets.h>
+
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -80,45 +82,11 @@
 #include LC_LIBDEFS_FILE
 #include "nv.h"
 
-static __attribute__((unused)) LONG __no_exec()
-{
-    return -1;
-}
-
-static const char nv_VersionID[] = VERSION_STRING;
-static const char nv_Name[] = NAME_STRING;
-
-static const APTR inittabl[4];
-extern void *const LIBFUNCTABLE[];
-
-const struct Resident nv_Resident TEXT_SECTION = {
-    RTC_MATCHWORD,
-    (struct Resident*)&nv_Resident,
-    &LIBEND,
-    RTF_AUTOINIT,
-    VERSION_NUMBER,
-    NT_HIDD,
-    0,
-    (STRPTR)nv_Name,
-    (STRPTR)&nv_VersionID[6],
-    (ULONG*)inittabl
-};
-
-static const APTR inittabl[4] = {
-    (APTR)sizeof(LIBBASETYPE),
-    (APTR)LIBFUNCTABLE,
-    NULL,
-    nv_init
-};
-
 #undef HiddPCIDeviceAttrBase
 #undef HiddGfxAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
-#define SysBase			(sd->sysbase)
-#define OOPBase			(sd->oopbase)
-#define UtilityBase		(sd->utilitybase)
 #define HiddPCIDeviceAttrBase	(sd->pciAttrBase)
 #define HiddBitMapAttrBase	(sd->bitMapAttrBase)
 #define HiddNVidiaBitMapAttrBase (sd->nvBitMapAttrBase)
@@ -773,98 +741,50 @@ static void Find_NV_Card(struct staticdata *sd)
     }
 }
 
-#undef SysBase
-AROS_UFH3(LIBBASETYPEPTR, nv_init,
-    AROS_UFHA(LIBBASETYPEPTR,	LIBBASE,D0),
-    AROS_UFHA(BPTR,		slist,	A0),
-    AROS_UFHA(struct ExecBase*,	SysBase,A6))
+AROS_SET_LIBFUNC(NV_Init, LIBBASETYPE, LIBBASE)
 {
-    AROS_USERFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
 
     D(bug("[NVidia] Initialization\n"));
-
-    /* Pre-initialization */
-    LIBBASE->segList = slist;
-    LIBBASE->sysbase = SysBase;
-
-    /* Make library look properly */
-    LIBBASE->LibNode.lib_Node.ln_Pri	= nv_Resident.rt_Pri;
-    LIBBASE->LibNode.lib_Node.ln_Name	= nv_Resident.rt_Name;
-    LIBBASE->LibNode.lib_Node.ln_Type	= nv_Resident.rt_Type;
-    
-    LIBBASE->LibNode.lib_Flags	    = LIBF_SUMUSED | LIBF_CHANGED;
-    LIBBASE->LibNode.lib_Version    = VERSION_NUMBER;
-    LIBBASE->LibNode.lib_Revision   = REVISION_NUMBER;
-    LIBBASE->LibNode.lib_IdString   = (STRPTR)&nv_VersionID[6];
 
     /* Global memory pool and static data creation */
     LIBBASE->memPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED, 8192, 4096);
     if (LIBBASE->memPool)
     {
-	struct staticdata *sd;
-	sd = LIBBASE->sd = AllocPooled(LIBBASE->memPool, sizeof(struct staticdata));
-	if (LIBBASE->sd)
-	{
-	    sd->memPool = LIBBASE->memPool;
-	    sd->sysbase = SysBase;
-	    sd->CardMem = &LIBBASE->mh;
-	    
-	    InitSemaphore(&sd->HWLock);
-    	    InitSemaphore(&sd->MultiBMLock);
-	    
-	    sd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
-	    sd->dpms = vHidd_Gfx_DPMSLevel_On;
-
-	    if (sd->oopbase)
-	    {
-		struct OOP_ABDescr attrbases[] = 
-		{
-		    { IID_Hidd_PCIDevice,   &HiddPCIDeviceAttrBase },
-		    { IID_Hidd_BitMap,	    &HiddBitMapAttrBase },
-		    { IID_Hidd_PixFmt,	    &HiddPixFmtAttrBase },
-		    { IID_Hidd_Sync,	    &HiddSyncAttrBase },
-		    { IID_Hidd_Gfx,	    &HiddGfxAttrBase },
-		    { IID_Hidd_nvBitMap,    &HiddNVidiaBitMapAttrBase },
-		    { IID_Hidd_PlanarBM,    &__IHidd_PlanarBM },
-		    { NULL, NULL }
-		};
-		
-		if (OOP_ObtainAttrBases(attrbases))
-		{
-		    sd->utilitybase = OpenLibrary(UTILITYNAME, 0);
-
-		    if (sd->utilitybase)
-		    {
-			Find_NV_Card(sd);
-		    
-			if (sd->Device)
-			{
-			    if (init_nvclass(sd))
-			    {
-				if (init_onbitmapclass(sd))
-				{
-				    if (init_offbitmapclass(sd))
-				    {
-					if (init_nvplanarbmclass(sd))
-					{
-					    D(bug("[NVidia] nvBase=%08x\n", LIBBASE));
-					    return LIBBASE;
-					}
-				    }
-				}
-			    }
-			}
-	    	    }
-
-		    OOP_ReleaseAttrBases(attrbases);
-
-		    OOP_DisposeObject(sd->pci);
+	struct staticdata *sd = &LIBBASE->sd;
 	
-		    CloseLibrary(sd->utilitybase);
-		}
-		CloseLibrary(sd->oopbase);
-	    }
+	sd->memPool = LIBBASE->memPool;
+	sd->CardMem = &LIBBASE->mh;
 	    
+	InitSemaphore(&sd->HWLock);
+	InitSemaphore(&sd->MultiBMLock);
+	    
+	sd->dpms = vHidd_Gfx_DPMSLevel_On;
+
+	{
+	    struct OOP_ABDescr attrbases[] = 
+	    {
+		{ IID_Hidd_PCIDevice,   &HiddPCIDeviceAttrBase },
+		{ IID_Hidd_BitMap,	    &HiddBitMapAttrBase },
+		{ IID_Hidd_PixFmt,	    &HiddPixFmtAttrBase },
+		{ IID_Hidd_Sync,	    &HiddSyncAttrBase },
+		{ IID_Hidd_Gfx,	    &HiddGfxAttrBase },
+		{ IID_Hidd_nvBitMap,    &HiddNVidiaBitMapAttrBase },
+		{ IID_Hidd_PlanarBM,    &__IHidd_PlanarBM },
+		{ NULL, NULL }
+	    };
+		
+	    if (OOP_ObtainAttrBases(attrbases))
+	    {
+		Find_NV_Card(sd);
+		
+		if (sd->Device != NULL)
+		    return TRUE;
+	    }
+
+	    OOP_ReleaseAttrBases(attrbases);
+
+	    OOP_DisposeObject(sd->pci);
 	}
     }
 
@@ -874,76 +794,13 @@ AROS_UFH3(LIBBASETYPEPTR, nv_init,
     */
     DeletePool(LIBBASE->memPool);
     
-    UBYTE *negptr = (UBYTE*)LIBBASE;
-    ULONG negsize, possize, totalsize;
-
-    negsize = LIBBASE->LibNode.lib_NegSize;
-    possize = LIBBASE->LibNode.lib_PosSize;
-    totalsize = negsize + possize;
-    negptr -= negsize;
-
-    FreeMem(negptr, totalsize);
-    LIBBASE = NULL;
-
     D(bug("[NVidia] nvBase=%x. FAILURE! Now freezing so you can check debug output!\n", LIBBASE));
     
     Disable(); for(;;) ;
     
-    return LIBBASE;
+    return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
-#undef SysBase
-#undef OOPBase
-#undef UtilityBase
-#define SysBase	    (LIBBASE->sysbase)
-#define SD(cl)	    (LIBBASE->sd)
-#define OOPBase	    (SD(x)->oopbase)
-#define UtilityBase (SD(x)->utilitybase)
-
-AROS_LH1(LIBBASETYPEPTR, open,
-    AROS_LHA(ULONG, version, D0),
-    LIBBASETYPEPTR, LIBBASE, 1, nvidia)
-{
-    AROS_LIBFUNC_INIT
-
-    LIBBASE->LibNode.lib_OpenCnt++;
-    return LIBBASE;
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0(APTR, close,
-    LIBBASETYPEPTR, LIBBASE, 2, nvidia)
-{
-    AROS_LIBFUNC_INIT
-
-    LIBBASE->LibNode.lib_OpenCnt--;
-    return NULL;
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH1(BPTR, expunge,
-    AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
-    struct ExecBase *, sysBase, 3, nvidia)
-{
-    AROS_LIBFUNC_INIT
-
-    LIBBASE->LibNode.lib_Flags |= LIBF_DELEXP;
-    return NULL;
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(LONG, null,
-    LIBBASETYPEPTR, LIBBASE, 4, nvidia)
-{
-    AROS_LIBFUNC_INIT
-
-    return 0;
-
-    AROS_LIBFUNC_EXIT
-}
-
+ADD2INITLIB(NV_Init, 0)

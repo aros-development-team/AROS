@@ -1,7 +1,7 @@
 #ifndef _NV_H
 #define _NV_H
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-6, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: private header file
@@ -40,19 +40,6 @@ enum {
 
 #define IS_BM_ATTR(attr, idx) (((idx)=(attr)-HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 #define IS_NVBM_ATTR(attr, idx) (((idx)=(attr)-HiddNVidiaBitMapAttrBase) < num_Hidd_nvBitMap_Attrs)
-
-extern UBYTE LIBEND;
-
-#undef LIBBASETYPEPTR
-#undef LIBBASETYPE
-
-#define LIBBASETYPE	struct nvbase
-#define LIBBASETYPEPTR	struct nvbase *
-
-AROS_UFP3(LIBBASETYPEPTR, nv_init,
-    AROS_UFHA(LIBBASETYPEPTR,	nvbase,	D0),
-    AROS_UFHA(BPTR,		slist,	A0),
-    AROS_UFHA(struct ExecBase*,	SysBase,A6));
 
 typedef enum {
     NV04 = 0,	NV05,	NV05M64,    NV06,   NV10,
@@ -189,10 +176,6 @@ typedef struct Card {
 } RIVA_HW_INST, *NVPtr;
 
 struct staticdata {
-    struct ExecBase	    *sysbase;
-    struct Library	    *oopbase;
-    struct Library	    *utilitybase;
-
     struct MemHeader	    *CardMem;
 
     struct SignalSemaphore  HWLock;	    /* Hardware exclusive semaphore */
@@ -286,8 +269,8 @@ struct planarbm_data
     BOOL    planes_alloced;
 };
 
-#define LOCK_HW		     { ObtainSemaphore(&sd->HWLock); }
-#define UNLOCK_HW	     { ReleaseSemaphore(&sd->HWLock); }
+#define LOCK_HW		     { ObtainSemaphore(&_sd->HWLock); }
+#define UNLOCK_HW	     { ReleaseSemaphore(&_sd->HWLock); }
 
 #define LOCK_BITMAP	     { ObtainSemaphore(&bm->bmLock); }
 #define UNLOCK_BITMAP	     { ReleaseSemaphore(&bm->bmLock); }
@@ -295,25 +278,22 @@ struct planarbm_data
 #define LOCK_BITMAP_BM(bm)   { ObtainSemaphore(&(bm)->bmLock); }
 #define UNLOCK_BITMAP_BM(bm) { ReleaseSemaphore(&(bm)->bmLock); }
 
-#define LOCK_MULTI_BITMAP    { ObtainSemaphore(&sd->MultiBMLock); }
-#define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&sd->MultiBMLock); }
+#define LOCK_MULTI_BITMAP    { ObtainSemaphore(&_sd->MultiBMLock); }
+#define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&_sd->MultiBMLock); }
+
+#include LC_LIBDEFS_FILE
 
 LIBBASETYPE {
     struct Library	LibNode;
     struct ExecBase	*sysbase;
     BPTR		segList;
     APTR		memPool;    
-    struct staticdata	*sd;
+    struct staticdata	sd;
     struct MemHeader	mh;
 };
 
 #define V_DBLSCAN   0x01
 #define V_LACE	    0x02
-
-OOP_Class *init_nvclass(struct staticdata*);
-OOP_Class *init_onbitmapclass(struct staticdata *);
-OOP_Class *init_offbitmapclass(struct staticdata *);
-OOP_Class *init_nvplanarbmclass(struct staticdata *sd);
 
 void LoadState(struct staticdata *, struct CardState *);
 void SaveState(struct staticdata *, struct CardState *);
