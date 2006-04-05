@@ -26,18 +26,11 @@ struct BootLoaderBase
 {
     struct Node		 bl_Node;
     struct ExecBase	*bl_SysBase;
-    struct Library	*bl_UtilityBase;
     ULONG		 Flags;
     STRPTR		 LdrName;
     struct List		 Args;
     struct List		 DriveInfo;
     struct VesaInfo	 Vesa;
 };
-
-#define SysBase		(BootLoaderBase->bl_SysBase)
-#ifdef UtilityBase
-#undef UtilityBase
-#endif
-#define UtilityBase	(BootLoaderBase->bl_UtilityBase)
 
 #endif //BOOTLOADER_INTERN_H
