@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IRQ servers for standalone i386 AROS
@@ -28,10 +28,6 @@
 #include <proto/oop.h>
 
 #include "irq.h"
-
-#ifdef SysBase
-#undef SysBase
-#endif /* SysBase */
 
 void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *);
 
@@ -73,8 +69,6 @@ static struct irqServer irq13 = { math_error_irq, "fpu", NULL};
  */
 
 static struct irqServer irq2  = { no_action, "cascade", NULL};
-
-#define SysBase (isd->sysbase)
 
 void irqSet(int, struct irqServer *);
 
@@ -131,8 +125,6 @@ void init_Servers(struct irq_staticdata *isd)
     }
 }
 
-#undef SysBase
-
 /*******************************************************************************
     This timer interrupt is used to keep compatibility with old Amiga software
 *******************************************************************************/
@@ -183,9 +175,6 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     defined ids.
 *******************************************************************************/
 
-#undef SysBase
-#define SysBase (isd->sysbase)
-
 void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *regs)
 {
     HIDDT_IRQ_Id	id;
@@ -233,7 +222,7 @@ void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *regs)
 #endif
     
     hwinfo.Error = 0;	/* No errorcode */
-    hwinfo.sysBase = isd->sysbase;
+    hwinfo.sysBase = SysBase;
 
     if (cpl == 11) { D(bug("IRQ%02d",cpl)); }
 
