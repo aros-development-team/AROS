@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,10 +37,6 @@ struct HIDDParallelData
 
 struct class_static_data
 {
-    struct ExecBase      * sysbase;
-    struct Library       * utilitybase;
-    struct Library       * oopbase;
-
     OOP_Class		 *parallelhiddclass;
     OOP_Class		 *parallelunitclass;
 };
@@ -77,29 +73,11 @@ struct IntHIDDParallelBase
     struct ExecBase          *hdg_SysBase;
     struct Library           *hdg_UtilityBase;
 
-    struct class_static_data *hdg_csd;
+    struct class_static_data  hdg_csd;
 };
 
 
 #define CSD(x) ((struct class_static_data *)x)
-
-#undef SysBase
-#define SysBase (CSD(cl->UserData)->sysbase)
-
-#undef UtilityBase
-#define UtilityBase (CSD(cl->UserData)->utilitybase)
-
-#undef OOPBase
-#define OOPBase (CSD(cl->UserData)->oopbase)
-
-
-/* pre declarations */
-
-OOP_Class *init_parallelhiddclass(struct class_static_data *csd);
-void   free_parallelhiddclass(struct class_static_data *csd);
-
-OOP_Class *init_parallelunitclass(struct class_static_data *csd);
-void   free_parallelunitclass(struct class_static_data *csd);
 
 /*
  * Define some names for the registers

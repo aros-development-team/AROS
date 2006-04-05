@@ -3,11 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES	:=	ParallelClass ParallelUnitClass
 
-%build_module_macro mmake=kernel-pc-i386-parallel \
+%build_module mmake=kernel-pc-i386-parallel \
   modname=parallel modtype=hidd \
   files=$(FILES) \
-  conffile=lib.conf \
-  uselibs=hiddstubs \
-  genfunctable=yes
-
-%common
+  uselibs=hiddstubs

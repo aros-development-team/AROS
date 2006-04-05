@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Parallel Unit hidd class implementation.
@@ -18,6 +18,7 @@
 #include <exec/memory.h>
 #include <exec/interrupts.h>
 #include <exec/lists.h>
+#include <aros/symbolsets.h>
 
 #include <utility/tagitem.h>
 #include <hidd/parallel.h>
@@ -25,6 +26,8 @@
 #include <hidd/irq.h>
 
 #include "parallel_intern.h"
+
+#include LC_LIBDEFS_FILE
 
 #undef  SDEBUG
 #undef  DEBUG
@@ -92,7 +95,7 @@ static struct OOP_ABDescr attrbases[] =
 };
 
 /******* ParallelUnit::New() ***********************************/
-static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
+OOP_Object *PCParUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
 	struct HIDDParallelUnitData * data;
 //	static const struct TagItem tags[] = {{ TAG_END, 0}};
@@ -148,7 +151,7 @@ static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot
 }
 
 /******* ParallelUnit::Dispose() ***********************************/
-static OOP_Object *parallelunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
+OOP_Object *PCParUnit__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
 {
 	struct HIDDParallelUnitData * data;
 	EnterFunc(bug("ParallelUnit::Dispose()\n"));
@@ -167,7 +170,7 @@ static OOP_Object *parallelunit_dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg 
 
 
 /******* ParallelUnit::Init() **********************************/
-BOOL parallelunit_init(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Init *msg)
+BOOL PCParUnit__Hidd_ParallelUnit__Init(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Init *msg)
 {
     struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
 
@@ -181,7 +184,7 @@ BOOL parallelunit_init(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_I
 }
 
 /******* ParallelUnit::Write() **********************************/
-ULONG parallelunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Write *msg)
+ULONG PCParUnit__Hidd_ParallelUnit__Write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Write *msg)
 {
 	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
 	ULONG len = msg->Length, count;
@@ -218,7 +221,7 @@ ULONG parallelunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit
 }
 
 /******* ParallelUnit::Start() **********************************/
-VOID parallelunit_start(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Start *msg)
+VOID PCParUnit__Hidd_ParallelUnit__Start(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Start *msg)
 {
 	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
 
@@ -237,7 +240,7 @@ VOID parallelunit_start(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_
 }  
 
 /******* ParallelUnit::Stop() **********************************/
-VOID parallelunit_stop(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Stop *msg)
+VOID PCParUnit__Hidd_ParallelUnit__Stop(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Stop *msg)
 {
 	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
 
@@ -249,7 +252,7 @@ VOID parallelunit_stop(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_S
 }
 
 /****** ParallelUnit::GetStatus ********************************/
-UWORD parallelunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_GetStatus *msg)
+UWORD PCParUnit__Hidd_ParallelUnit__GetStatus(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_GetStatus *msg)
 {
 	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
 
@@ -273,10 +276,6 @@ UWORD parallelunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_Parallel
 
 /************* The software interrupt handler that gets data from PORT *****/
 
-
-#undef OOPBase
-#undef SysBase
-#undef UtilityBase
 
 #define READBUFFER_SIZE 513
 
@@ -333,94 +332,25 @@ AROS_UFH3(void, parallelunit_write_more_data,
 
 /******* init_parallelunitclass ********************************/
 
-#undef SysBase
-#define SysBase     (csd->sysbase)
-
-#undef OOPBase
-#define OOPBase     (csd->oopbase)
-
-#undef UtilityBase
-#define UtilityBase (csd->utilitybase)
-
-
-#define NUM_ROOT_METHODS 2
-#define NUM_PARALLELUNIT_METHODS 5
-
-OOP_Class *init_parallelunitclass (struct class_static_data *csd)
+AROS_SET_LIBFUNC(PCParUnit_Init, LIBBASETYPE, LIBBASE)
 {
-	OOP_Class *cl = NULL;
-		
-	struct OOP_MethodDescr parallelunithiddroot_descr[NUM_ROOT_METHODS + 1] = 
-	{
-		{(IPTR (*)())parallelunit_new,      moRoot_New},
-		{(IPTR (*)())parallelunit_dispose,  moRoot_Dispose},
-/*
-		{(IPTR (*)())parallelunit_set,      moRoot_Set},
-		{(IPTR (*)())parallelunit_get,      moRoot_Get},
-*/
-		{NULL, 0UL}
-	};
-		
-	struct OOP_MethodDescr parallelunithidd_descr[NUM_PARALLELUNIT_METHODS + 1] =
-	{
-		{(IPTR (*)())parallelunit_init,      moHidd_ParallelUnit_Init},
-		{(IPTR (*)())parallelunit_write,     moHidd_ParallelUnit_Write},
-		{(IPTR (*)())parallelunit_stop,      moHidd_ParallelUnit_Stop},
-		{(IPTR (*)())parallelunit_start,     moHidd_ParallelUnit_Start},
-		{(IPTR (*)())parallelunit_getstatus, moHidd_ParallelUnit_GetStatus},
-		{NULL, 0UL}
-	};
-		
-	struct OOP_InterfaceDescr ifdescr[] =
-	{
-		{parallelunithiddroot_descr , IID_Root               , NUM_ROOT_METHODS},
-		{parallelunithidd_descr	    , IID_Hidd_ParallelUnit  , NUM_PARALLELUNIT_METHODS},
-		{NULL, NULL, 0}
-	};
-
-	OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
-			
-	struct TagItem tags[] =
-	{
-		{ aMeta_SuperID,        (IPTR)CLID_Root},
-		{ aMeta_InterfaceDescr, (IPTR)ifdescr},
-		{ aMeta_ID,             (IPTR)CLID_Hidd_ParallelUnit},
-		{ aMeta_InstSize,       (IPTR)sizeof (struct HIDDParallelUnitData) },
-		{TAG_DONE, 0UL}
-	};
-
-
-	EnterFunc(bug("   init_parallelunitclass(csd=%p)\n", csd));
-
-	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-	D(bug("Class=%p\n", cl));
-	if(cl) {
-		if (OOP_ObtainAttrBases(attrbases)) {
-			D(bug("ParallelUnit Class ok\n"));
-			cl->UserData = (APTR)csd;
-
-			OOP_AddClass(cl);
-		} else {
-			free_parallelunitclass(csd);
-			cl = NULL;
-		}
-	}
-
-	ReturnPtr("init_parallelunitclass", OOP_Class *, cl);
+    AROS_SET_LIBFUNC_INIT
+	
+    ReturnInt("PCParUnit_Init", ULONG, OOP_ObtainAttrBases(attrbases));
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
 
-void free_parallelunitclass(struct class_static_data *csd)
+AROS_SET_LIBFUNC(PCParUnit_Expunge, LIBBASETYPE, LIBBASE)
 {
-	EnterFunc(bug("free_parallelhiddclass(csd=%p)\n", csd));
-
-	if(csd) {
-		OOP_RemoveClass(csd->parallelhiddclass);
-		if(csd->parallelhiddclass) 
-			OOP_DisposeObject((OOP_Object *) csd->parallelhiddclass);
-		csd->parallelhiddclass = NULL;
-	}
-
-	ReturnVoid("free_parallelhiddclass");
+    AROS_SET_LIBFUNC_INIT
+	
+    OOP_ReleaseAttrBases(attrbases);
+    ReturnInt("PCParUnit_Expunge", ULONG, TRUE);
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(PCParUnit_Init, 0)
+ADD2EXPUNGELIB(PCParUnit_Expunge, 0)
