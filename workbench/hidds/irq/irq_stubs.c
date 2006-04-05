@@ -69,12 +69,12 @@ VOID HIDD_IRQ_RemHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler)
 
 /*****************************************************************/
 
-VOID HIDD_CauseIRQ(OOP_Object *obj, HIDDT_IRQ_Id id, HIDDT_IRQ_HwInfo *hwinfo)
+VOID HIDD_IRQ_CauseIRQ(OOP_Object *obj, HIDDT_IRQ_Id id, HIDDT_IRQ_HwInfo *hwinfo)
 {
     STATIC_MID;
-    struct pHidd_CauseIRQ p;
+    struct pHidd_IRQ_CauseIRQ p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_CauseIRQ);
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_CauseIRQ);
 
     p.mID           = mid;
     p.id            = id;
