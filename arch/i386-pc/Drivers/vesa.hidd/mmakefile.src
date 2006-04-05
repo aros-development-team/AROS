@@ -2,16 +2,14 @@
 include $(TOP)/config/make.cfg
 
 FILES	:=	\
+	vesagfx_init \
 	vesagfxclass \
 	hardware \
 	offbitmap \
 	onbitmap
 
-%build_module_macro mmake=kernel-pc-i386-vesa \
+%build_module mmake=kernel-pc-i386-vesa \
   modname=vesagfx modtype=hidd \
-  files=$(FILES) \
-  conffile=lib.conf \
-  genfunctable=yes
+  files=$(FILES)
 
-%common
 

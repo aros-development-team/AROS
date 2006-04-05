@@ -2,7 +2,7 @@
 #define HIDD_VESAGFXCLASS_H
 
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some VesaGfx useful data.
@@ -25,9 +25,6 @@
 
 struct VesaGfx_staticdata
 {
-    struct ExecBase 	    *sysBase;
-    struct Library  	    *oopBase;
-    struct Library  	    *utilityBase;
     struct MemHeader 	    mh;
     OOP_Class 	    	    *vesagfxclass;
     OOP_Class 	    	    *onbmclass;
@@ -44,17 +41,20 @@ struct VesaGfx_staticdata
 #endif
 };
 
+struct VesaGfxBase
+{
+    struct Library library;
+    struct ExecBase *sysBase;
+    BPTR	SegList;
+    
+    struct VesaGfx_staticdata vsd;
+};
+
 #if BUFFERED_VRAM
 #define LOCK_FRAMEBUFFER(xsd)	ObtainSemaphore(&xsd->framebufferlock)
 #define UNLOCK_FRAMEBUFFER(xsd) ReleaseSemaphore(&xsd->framebufferlock)
 #endif
 
-#define XSD(cl)     	    	((struct VesaGfx_staticdata *)cl->UserData)
-#define UtilityBase 	    	((struct Library *)XSD(cl)->utilityBase)
-#define OOPBase     	    	((struct Library *)XSD(cl)->oopBase)
-#define SysBase     	    	(XSD(cl)->sysBase)
-
-OOP_Class *init_vesagfxclass(struct VesaGfx_staticdata *);
-VOID free_vesagfxclass(struct VesaGfx_staticdata *);
+#define XSD(cl)     	    	(&((struct VesaGfxBase *)cl->UserData)->vsd)
 
 #endif /* HIDD_VESAGFXCLASS_H */
