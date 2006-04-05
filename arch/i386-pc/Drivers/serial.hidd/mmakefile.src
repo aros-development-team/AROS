@@ -1,13 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	:=	SerialClass SerialUnitClass
+FILES	:=	serial_init SerialClass SerialUnitClass
 
-%build_module_macro mmake=kernel-pc-i386-serial \
+%build_module mmake=kernel-pc-i386-serial \
   modname=serial modtype=hidd \
   files=$(FILES) \
-  conffile=lib.conf \
-  uselibs=hiddstubs \
-  genfunctable=yes
-
-%common
+  uselibs=hiddstubs
+  
