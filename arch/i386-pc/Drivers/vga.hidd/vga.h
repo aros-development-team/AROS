@@ -2,7 +2,7 @@
 #define HIDD_VGA_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the vga gfx HIDD.
@@ -63,9 +63,6 @@ struct vga_staticdata
 {
     struct SignalSemaphore	sema;	/* Protecting this whole struct */
     struct SignalSemaphore	HW_acc;	/* Exclusive hardware use */
-    struct Library	*oopbase;
-    struct Library	*utilitybase;
-    struct ExecBase	*sysbase;
     struct List		modelist;	/* List of modes supported */
     struct bitmap_data	*visible;	/* Point to visible bitmap */
 
@@ -90,29 +87,23 @@ struct vga_staticdata
     APTR	callbackdata;
 };
 
+struct vgabase
+{
+    struct Library library;
+    struct ExecBase *sysbase;
+    BPTR	seglist;
+    
+    struct vga_staticdata vsd;
+};
+
 #if 0
     /* nlorentz: This function is no lonfger necessary	*/
 BOOL set_pixelformat(OOP_Object *);
 
 #endif
 
-OOP_Class *init_vgaclass  ( struct vga_staticdata * );
-OOP_Class *init_onbmclass  ( struct vga_staticdata * );
-OOP_Class *init_offbmclass  ( struct vga_staticdata * );
-
-VOID free_vgaclass  ( struct vga_staticdata * );
-VOID free_onbmclass  ( struct vga_staticdata * );
-VOID free_offbmclass  ( struct vga_staticdata * );
-
-OOP_Class *init_mouseclass (struct vga_staticdata * );
-VOID free_mouseclass ( struct vga_staticdata * );
-
 void draw_mouse (struct vga_staticdata *);
 
-#define XSD(cl) ((struct vga_staticdata *)cl->UserData)
-
-#define OOPBase		((struct Library *)XSD(cl)->oopbase)
-#define UtilityBase	((struct Library *)XSD(cl)->utilitybase)
-#define SysBase		(XSD(cl)->sysbase)
+#define XSD(cl) (&((struct vgabase *)cl->UserData)->vsd)
 
 #endif /* HIDD_VGA_H */

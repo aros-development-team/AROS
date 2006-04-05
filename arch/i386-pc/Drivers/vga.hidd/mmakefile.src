@@ -1,12 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	:=	vgaclass vgahw offbitmap onbitmap
+FILES	:=	vga_init vgaclass vgahw offbitmap onbitmap
 
-%build_module_macro mmake=kernel-pc-i386-vga \
+%build_module mmake=kernel-pc-i386-vga \
   modname=vgah modtype=hidd \
-  initfile=vga_init files=$(FILES) \
-  conffile=lib.conf \
-  genfunctable=yes
-
-%common
+  files=$(FILES)
