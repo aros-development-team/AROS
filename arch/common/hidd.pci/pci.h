@@ -2,7 +2,7 @@
 #define _PCI_H
 
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -72,9 +72,6 @@ typedef struct DeviceData {
 } tDeviceData;
 
 struct pci_staticdata {
-    struct ExecBase	*sysbase;
-    struct Library	*utilitybase;
-    
     struct SignalSemaphore driver_lock;
     struct List		drivers;
 

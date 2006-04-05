@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Base PCI driver class
@@ -33,8 +33,6 @@
 
 #define	HiddPCIDriverAttrBase	(PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase (PSD(cl)->hiddAB)
-
-#define UtilityBase (PSD(cl)->utilitybase)
 
 typedef union _pcicfg
 {

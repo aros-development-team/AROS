@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,8 +33,6 @@
 #define	HiddPCIAttrBase		(PSD(cl)->hiddPCIAB)
 #define HiddPCIDeviceAttrBase	(PSD(cl)->hiddPCIDeviceAB)
 #define HiddAttrBase		(PSD(cl)->hiddAB)
-
-#define UtilityBase	(PSD(cl)->utilitybase)
 
 /* 
     Returns 0 for no device, 1 for non-multi device and 2 for
@@ -394,9 +392,6 @@ VOID PCI__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 }
 
 /* Class initialization and destruction */
-
-#undef UtilityBase
-#define UtilityBase (psd->utilitybase)
 
 AROS_SET_LIBFUNC(PCI_ExpungeClass, LIBBASETYPE, LIBBASE)
 {
