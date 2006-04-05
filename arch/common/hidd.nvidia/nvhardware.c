@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: nvidia.hidd initialization
@@ -77,10 +77,7 @@
 #include "nv_local.h"
 #include "nv_dma.h"
 
-#define SysBase			(sd->sysbase)
-#define OOPBase			(sd->oopbase)
-#define UtilityBase		(sd->utilitybase)
-
+#define _sd                     sd
 static inline __attribute__((always_inline))
     ULONG pciReadLong(struct staticdata *sd,
 	UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
@@ -828,11 +825,11 @@ static void nv10UpdateArbitrationSettings (
 
 static void nv30UpdateArbitrationSettings (
     NVPtr        pNv,
-    unsigned     *burst,
-    unsigned     *lwm
+    ULONG        *burst,
+    ULONG        *lwm
 )   
 {
-    unsigned int MClk, NVClk;
+    ULONG MClk, NVClk;
     unsigned int fifo_size, burst_size, graphics_lwm;
 
     fifo_size = 2048;

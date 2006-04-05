@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NVidia gfx class
@@ -22,26 +22,23 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define sd ((struct staticdata*)cl->UserData)
+#define _sd (&((LIBBASETYPEPTR)cl->UserData)->sd)
 
 #undef HiddPCIDeviceAttrBase
 #undef HiddGfxAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
-#define SysBase			(sd->sysbase)
-#define OOPBase			(sd->oopbase)
-#define UtilityBase		(sd->utilitybase)
-#define HiddPCIDeviceAttrBase	(sd->pciAttrBase)
-#define HiddNVidiaBitMapAttrBase (sd->nvBitMapAttrBase)
-#define HiddBitMapAttrBase	(sd->bitMapAttrBase)
-#define HiddPixFmtAttrBase	(sd->pixFmtAttrBase)
-#define HiddGfxAttrBase		(sd->gfxAttrBase)
-#define HiddSyncAttrBase	(sd->syncAttrBase)
+#define HiddPCIDeviceAttrBase	(_sd->pciAttrBase)
+#define HiddNVidiaBitMapAttrBase (_sd->nvBitMapAttrBase)
+#define HiddBitMapAttrBase	(_sd->bitMapAttrBase)
+#define HiddPixFmtAttrBase	(_sd->pixFmtAttrBase)
+#define HiddGfxAttrBase		(_sd->gfxAttrBase)
+#define HiddSyncAttrBase	(_sd->syncAttrBase)
 
 /* Class methods */
 
-static VOID nv__get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID NV__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     BOOL found = FALSE;
@@ -55,7 +52,7 @@ static VOID nv__get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		break;
 
 	    case aoHidd_Gfx_DPMSLevel:
-		*msg->storage = sd->dpms;
+		*msg->storage = _sd->dpms;
 		found = TRUE;
 		break;
         }
@@ -67,7 +64,7 @@ static VOID nv__get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     return;
 }
 
-static VOID nv__set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+VOID NV__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     ULONG idx;
     struct TagItem *tags, *tag;
@@ -83,8 +80,8 @@ static VOID nv__set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 		case aoHidd_Gfx_DPMSLevel:
 		    LOCK_HW
 		    
-		    DPMS(sd, tag->ti_Data);
-		    sd->dpms = tag->ti_Data;
+		    DPMS(_sd, tag->ti_Data);
+		    _sd->dpms = tag->ti_Data;
 		    
 		    UNLOCK_HW
 		    break;
@@ -109,7 +106,7 @@ static VOID nv__set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 		{ aHidd_Sync_Description,   	(IPTR)descr},	\
 		{ TAG_DONE, 0UL }}
 
-static OOP_Object *nv__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem pftags_24bpp[] = {
 	{ aHidd_PixFmt_RedShift,	8	}, /* 0 */
@@ -226,13 +223,13 @@ static OOP_Object *nv__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-	sd->nvobject = o;
+	_sd->nvobject = o;
     }
 
     return o;
 }
 
-static OOP_Object *nv__newbitmap(OOP_Class *cl, OOP_Object *o, 
+OOP_Object *NV__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, 
 	    struct pHidd_Gfx_NewBitMap *msg)
 {
     BOOL displayable, framebuffer;
@@ -249,11 +246,11 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
     if (framebuffer)
     {
 	/* If the user asks for a framebuffer map we must ALLWAYS supply a class */ 
-	classptr = sd->onbmclass;
+	classptr = _sd->onbmclass;
     }
     else if (displayable)
     {
-    	classptr = sd->onbmclass;	//offbmclass;
+    	classptr = _sd->onbmclass;	//offbmclass;
     }
     else
     {
@@ -285,7 +282,7 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
 	if (vHidd_ModeID_Invalid != modeid) {
 	    /* User supplied a valid modeid. We can use our offscreen class */
-	    classptr = sd->onbmclass;
+	    classptr = _sd->onbmclass;
 	} else {
 	    /* We may create an offscreen bitmap if the user supplied a friend
 	       bitmap. But we need to check that he did not supplied a StdPixFmt
@@ -293,7 +290,7 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 	    HIDDT_StdPixFmt stdpf;
 	    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
 	    if (vHidd_StdPixFmt_Plane == stdpf) {
-		classptr = sd->planarbmclass;
+		classptr = _sd->planarbmclass;
 	    }
 	    else if (vHidd_StdPixFmt_Unknown == stdpf) {
 		/* No std pixfmt supplied */
@@ -308,7 +305,7 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (APTR)&gfxhidd);
 		    if (gfxhidd == o) {
 			/* Friend was NVidia hidd bitmap. Now we can supply our own class */
-			classptr = sd->offbmclass;		    
+			classptr = _sd->offbmclass;		    
 		    }
 		}
 	    }
@@ -336,7 +333,7 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
     return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-static OOP_Object *nv__show(OOP_Class *cl, OOP_Object *o, 
+OOP_Object *NV__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, 
 		        struct pHidd_Gfx_Show *msg)
 {
     OOP_Object *fb = NULL;
@@ -353,11 +350,11 @@ static OOP_Object *nv__show(OOP_Class *cl, OOP_Object *o,
 		
 		LOCK_HW
 
-		LoadState(sd, bm->state);
-		DPMS(sd, sd->dpms);
+		LoadState(_sd, bm->state);
+		DPMS(_sd, _sd->dpms);
 
 		fb = bm->BitMap;
-		NVShowHideCursor(sd, sd->Card.cursorVisible);
+		NVShowHideCursor(_sd, _sd->Card.cursorVisible);
 	    
 		UNLOCK_HW
 	    }
@@ -370,7 +367,7 @@ static OOP_Object *nv__show(OOP_Class *cl, OOP_Object *o,
     return fb;
 }
 
-static VOID nv__copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+VOID NV__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     ULONG mode = GC_DRMD(msg->gc);
     IPTR src=0, dst=0;
@@ -413,48 +410,48 @@ static VOID nv__copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 	    
 	    LOCK_HW
 
-    	    sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
-    	    sd->gpu_busy = TRUE;
+    	    _sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
+    	    _sd->gpu_busy = TRUE;
 	    
-	    NVSetRopSolid(sd, mode, ~0 << bm_src->depth);
+	    NVSetRopSolid(_sd, mode, ~0 << bm_src->depth);
 
-	    if (bm_dst->surface_format != sd->surface_format)
+	    if (bm_dst->surface_format != _sd->surface_format)
 	    {
-		NVDmaStart(&sd->Card, SURFACE_FORMAT, 1);
-		NVDmaNext(&sd->Card, bm_dst->surface_format);
-		sd->surface_format = bm_dst->surface_format;
-//		D(bug("[NVidia] surface_format <- %d\n", sd->surface_format));
+		NVDmaStart(&_sd->Card, SURFACE_FORMAT, 1);
+		NVDmaNext(&_sd->Card, bm_dst->surface_format);
+		_sd->surface_format = bm_dst->surface_format;
+//		D(bug("[NVidia] surface_format <- %d\n", _sd->surface_format));
 	    }
-	    if ((bm_dst->pitch != sd->dst_pitch) || (bm_src->pitch != sd->src_pitch))
+	    if ((bm_dst->pitch != _sd->dst_pitch) || (bm_src->pitch != _sd->src_pitch))
 	    {
-		NVDmaStart(&sd->Card, SURFACE_PITCH, 1);
-		NVDmaNext(&sd->Card, (bm_dst->pitch << 16) | bm_src->pitch);
-		sd->src_pitch = bm_src->pitch;
-		sd->dst_pitch = bm_dst->pitch;
-//		D(bug("[NVidia] pitch <- %08x\n", (sd->dst_pitch << 16) | sd->src_pitch));
+		NVDmaStart(&_sd->Card, SURFACE_PITCH, 1);
+		NVDmaNext(&_sd->Card, (bm_dst->pitch << 16) | bm_src->pitch);
+		_sd->src_pitch = bm_src->pitch;
+		_sd->dst_pitch = bm_dst->pitch;
+//		D(bug("[NVidia] pitch <- %08x\n", (_sd->dst_pitch << 16) | _sd->src_pitch));
 	    }
-	    if (bm_src->framebuffer != sd->src_offset)
+	    if (bm_src->framebuffer != _sd->src_offset)
 	    {
-		NVDmaStart(&sd->Card, SURFACE_OFFSET_SRC, 1);
-		NVDmaNext(&sd->Card, bm_src->framebuffer);
-		sd->src_offset = bm_src->framebuffer;
-//		D(bug("[NVidia] src_offset=%p\n", sd->src_offset));
+		NVDmaStart(&_sd->Card, SURFACE_OFFSET_SRC, 1);
+		NVDmaNext(&_sd->Card, bm_src->framebuffer);
+		_sd->src_offset = bm_src->framebuffer;
+//		D(bug("[NVidia] src_offset=%p\n", _sd->src_offset));
 	    }
-	    if (bm_dst->framebuffer != sd->dst_offset)
+	    if (bm_dst->framebuffer != _sd->dst_offset)
 	    {
-		NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
-		NVDmaNext(&sd->Card, bm_dst->framebuffer);
-		sd->dst_offset = bm_dst->framebuffer;
-//		D(bug("[NVidia] dst_offset=%p\n", sd->dst_offset));
+		NVDmaStart(&_sd->Card, SURFACE_OFFSET_DST, 1);
+		NVDmaNext(&_sd->Card, bm_dst->framebuffer);
+		_sd->dst_offset = bm_dst->framebuffer;
+//		D(bug("[NVidia] dst_offset=%p\n", _sd->dst_offset));
 	    }
 
-	    NVDmaStart(&sd->Card, BLIT_POINT_SRC, 3);
-	    NVDmaNext(&sd->Card, (msg->srcY << 16) | (msg->srcX & 0xffff));
-	    NVDmaNext(&sd->Card, (msg->destY << 16) | (msg->destX & 0xffff));
-	    NVDmaNext(&sd->Card, (msg->height << 16) | (msg->width & 0xffff));
+	    NVDmaStart(&_sd->Card, BLIT_POINT_SRC, 3);
+	    NVDmaNext(&_sd->Card, (msg->srcY << 16) | (msg->srcX & 0xffff));
+	    NVDmaNext(&_sd->Card, (msg->destY << 16) | (msg->destX & 0xffff));
+	    NVDmaNext(&_sd->Card, (msg->height << 16) | (msg->width & 0xffff));
 	    
-	    NVDmaKickoff(&sd->Card);
-	    //NVSync(sd);
+	    NVDmaKickoff(&_sd->Card);
+	    //NVSync(_sd);
 
 	    UNLOCK_HW
 	    
@@ -471,87 +468,87 @@ static VOID nv__copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 
 	    LOCK_HW
 
-    	    sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
-    	    sd->gpu_busy = TRUE;
+    	    _sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
+    	    _sd->gpu_busy = TRUE;
 
-	    if ((bm_dst->surface_format != sd->surface_format) && bm_dst->depth != 15)
+	    if ((bm_dst->surface_format != _sd->surface_format) && bm_dst->depth != 15)
 	    {
 		
-		NVDmaStart(&sd->Card, SURFACE_FORMAT, 1);
-		NVDmaNext(&sd->Card, bm_dst->surface_format);
-		sd->surface_format = bm_dst->surface_format;
-//		D(bug("[NVidia] surface_format <- %d\n", sd->surface_format));
+		NVDmaStart(&_sd->Card, SURFACE_FORMAT, 1);
+		NVDmaNext(&_sd->Card, bm_dst->surface_format);
+		_sd->surface_format = bm_dst->surface_format;
+//		D(bug("[NVidia] surface_format <- %d\n", _sd->surface_format));
 	    }
 
 	    if (bm_dst->depth == 15)
 	    {
-		NVDmaStart(&sd->Card, SURFACE_FORMAT, 1);
-		NVDmaNext(&sd->Card, SURFACE_FORMAT_DEPTH15);
-		sd->surface_format = SURFACE_FORMAT_DEPTH16;
+		NVDmaStart(&_sd->Card, SURFACE_FORMAT, 1);
+		NVDmaNext(&_sd->Card, SURFACE_FORMAT_DEPTH15);
+		_sd->surface_format = SURFACE_FORMAT_DEPTH16;
 	    }
 
-	    if (bm_dst->pitch != sd->dst_pitch)
+	    if (bm_dst->pitch != _sd->dst_pitch)
 	    {
-		NVDmaStart(&sd->Card, SURFACE_PITCH, 1);
-		NVDmaNext(&sd->Card, (bm_dst->pitch << 16) | sd->src_pitch);
-		sd->dst_pitch = bm_dst->pitch;
-//		D(bug("[NVidia] pitch <- %08x\n", (sd->dst_pitch << 16) | sd->src_pitch));
+		NVDmaStart(&_sd->Card, SURFACE_PITCH, 1);
+		NVDmaNext(&_sd->Card, (bm_dst->pitch << 16) | _sd->src_pitch);
+		_sd->dst_pitch = bm_dst->pitch;
+//		D(bug("[NVidia] pitch <- %08x\n", (_sd->dst_pitch << 16) | _sd->src_pitch));
 	    }
 
-	    if (bm_dst->framebuffer != sd->dst_offset)
+	    if (bm_dst->framebuffer != _sd->dst_offset)
 	    {
-		NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
-		NVDmaNext(&sd->Card, bm_dst->framebuffer);
-		sd->dst_offset = bm_dst->framebuffer;
-//		D(bug("[NVidia] dst_offset=%p\n", sd->dst_offset));
+		NVDmaStart(&_sd->Card, SURFACE_OFFSET_DST, 1);
+		NVDmaNext(&_sd->Card, bm_dst->framebuffer);
+		_sd->dst_offset = bm_dst->framebuffer;
+//		D(bug("[NVidia] dst_offset=%p\n", _sd->dst_offset));
 	    }
 
-	    NVDmaStart(&sd->Card, RECT_SOLID_COLOR, 1);
-	    NVDmaNext(&sd->Card, 0);
+	    NVDmaStart(&_sd->Card, RECT_SOLID_COLOR, 1);
+	    NVDmaNext(&_sd->Card, 0);
 
-	    NVDmaStart(&sd->Card, STRETCH_BLIT_FORMAT, 1);
+	    NVDmaStart(&_sd->Card, STRETCH_BLIT_FORMAT, 1);
 	    switch (bm_src->depth)
 	    {
 		case 15:
-		    NVDmaNext(&sd->Card, STRETCH_BLIT_FORMAT_DEPTH15);
+		    NVDmaNext(&_sd->Card, STRETCH_BLIT_FORMAT_DEPTH15);
 		    break;
 		case 16:
-		    NVDmaNext(&sd->Card, STRETCH_BLIT_FORMAT_DEPTH16);
+		    NVDmaNext(&_sd->Card, STRETCH_BLIT_FORMAT_DEPTH16);
 		    break;
 		case 24:
-		    NVDmaNext(&sd->Card, STRETCH_BLIT_FORMAT_DEPTH24);
+		    NVDmaNext(&_sd->Card, STRETCH_BLIT_FORMAT_DEPTH24);
 		    break;
 		default:
-		    NVDmaNext(&sd->Card, STRETCH_BLIT_FORMAT_DEPTH8);
+		    NVDmaNext(&_sd->Card, STRETCH_BLIT_FORMAT_DEPTH8);
 		    break;
 	    }
 
-	    NVDmaStart(&sd->Card, STRETCH_BLIT_CLIP_POINT, 6);
-	    NVDmaNext(&sd->Card, 0x00000000);    // dst_CLip
-	    NVDmaNext(&sd->Card, 0xffffffff);    // dst_Clip
-	    NVDmaNext(&sd->Card, (msg->destY << 16) | (msg->destX));// dst_y | dst_x
-	    NVDmaNext(&sd->Card, (msg->height << 16)| (msg->width));// dst_h | dst_w
-	    NVDmaNext(&sd->Card, 1 << 20);  // src_w / dst_w 1:1
-	    NVDmaNext(&sd->Card, 1 << 20);  // src_h / dst_h 1:1
+	    NVDmaStart(&_sd->Card, STRETCH_BLIT_CLIP_POINT, 6);
+	    NVDmaNext(&_sd->Card, 0x00000000);    // dst_CLip
+	    NVDmaNext(&_sd->Card, 0xffffffff);    // dst_Clip
+	    NVDmaNext(&_sd->Card, (msg->destY << 16) | (msg->destX));// dst_y | dst_x
+	    NVDmaNext(&_sd->Card, (msg->height << 16)| (msg->width));// dst_h | dst_w
+	    NVDmaNext(&_sd->Card, 1 << 20);  // src_w / dst_w 1:1
+	    NVDmaNext(&_sd->Card, 1 << 20);  // src_h / dst_h 1:1
 
-	    NVDmaStart(&sd->Card, STRETCH_BLIT_SRC_SIZE, 4);
-	    NVDmaNext(&sd->Card, (msg->height << 16) | (msg->width));// src_h | src_w
-	    NVDmaNext(&sd->Card, 
+	    NVDmaStart(&_sd->Card, STRETCH_BLIT_SRC_SIZE, 4);
+	    NVDmaNext(&_sd->Card, (msg->height << 16) | (msg->width));// src_h | src_w
+	    NVDmaNext(&_sd->Card, 
 		(STRETCH_BLIT_SRC_FORMAT_FILTER_POINT_SAMPLE << 24) |   // BILINEAR | _POINT_SAMPLE
 		(STRETCH_BLIT_SRC_FORMAT_ORIGIN_CORNER << 16) |
 		(bm_src->pitch));				    // src_pitch
-	    NVDmaNext(&sd->Card, bm_src->framebuffer);		    // src_offset
-	    NVDmaNext(&sd->Card, ((msg->srcY << 20) & 0xffff0000) 
+	    NVDmaNext(&_sd->Card, bm_src->framebuffer);		    // src_offset
+	    NVDmaNext(&_sd->Card, ((msg->srcY << 20) & 0xffff0000) 
 		    | ((msg->srcX << 4) & 0xffff)); // src_y | src_x
 
-	    NVDmaKickoff(&sd->Card);
+	    NVDmaKickoff(&_sd->Card);
 
 	    if (bm_dst->depth == 15)
 	    {
-		NVDmaStart(&sd->Card, SURFACE_FORMAT, 1);
-		NVDmaNext(&sd->Card, SURFACE_FORMAT_DEPTH16);
+		NVDmaStart(&_sd->Card, SURFACE_FORMAT, 1);
+		NVDmaNext(&_sd->Card, SURFACE_FORMAT_DEPTH16);
 	    }
-	    //NVSync(sd);
+	    //NVSync(_sd);
 
 	    UNLOCK_HW
 
@@ -577,14 +574,14 @@ D(bug("[NVidia] CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
 
 static void TransformCursor(struct staticdata *);
 
-static BOOL nv__setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+BOOL NV__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
 //    bug("SetCursorShape %p\n", msg->shape);
 //    return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (msg->shape == NULL)
     {
-	NVShowHideCursor(sd, 0);
-	sd->Card.cursorVisible = 0;
+	NVShowHideCursor(_sd, 0);
+	_sd->Card.cursorVisible = 0;
     }
     else
     {
@@ -596,7 +593,7 @@ static BOOL nv__setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	ULONG		width, height, x, y;
 	ULONG		maxw,maxh;
 
-	ULONG		*curimg = (ULONG*)((IPTR)sd->Card.CursorStart + (IPTR)sd->Card.FrameBuffer);
+	ULONG		*curimg = (ULONG*)((IPTR)_sd->Card.CursorStart + (IPTR)_sd->Card.FrameBuffer);
 
 	struct pHidd_BitMap_GetPixel __gp = {
 	    mID:    OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetPixel)
@@ -613,7 +610,7 @@ static BOOL nv__setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	OOP_GetAttr(pfmt, aHidd_PixFmt_StdPixFmt, &pixfmt);
 	OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (APTR)&colormap);
 
-	if (sd->Card.alphaCursor)
+	if (_sd->Card.alphaCursor)
 	{
 	    if (width > 64) width = 64;
 	    if (height > 64) height = 64;
@@ -669,24 +666,26 @@ static BOOL nv__setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	UNLOCK_HW
     }
 
-    TransformCursor(sd);
+    TransformCursor(_sd);
     return TRUE;
 }
 
-static VOID nv__setcursorvisible(OOP_Class *cl, OOP_Object *o, 
+VOID NV__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, 
 		struct pHidd_Gfx_SetCursorVisible *msg)
 {
-    NVShowHideCursor(sd, msg->visible);
-    sd->Card.cursorVisible = msg->visible;
+    NVShowHideCursor(_sd, msg->visible);
+    _sd->Card.cursorVisible = msg->visible;
 }
 
-static VOID nv__setcursorpos(OOP_Class *cl, OOP_Object *o,
+VOID NV__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o,
 	        struct pHidd_Gfx_SetCursorPos *msg)
 {
-    sd->Card.PRAMDAC[0x0300 / 4] = (msg->y << 16) | (msg->x & 0xffff);
+    _sd->Card.PRAMDAC[0x0300 / 4] = (msg->y << 16) | (msg->x & 0xffff);
 }
-#undef sd
 /* Class related functions */
+
+#undef _sd
+#define _sd sd
 
 static void TransformCursor(struct staticdata *sd)
 {
@@ -729,68 +728,6 @@ static void TransformCursor(struct staticdata *sd)
     FreePooled(sd->memPool, tmp, 4*64*64);
 }
 
-
-#define NUM_ROOT_METHODS    3
-#define	NUM_GFX_METHODS	    6
-
-OOP_Class *init_nvclass(struct staticdata *sd)
-{
-    OOP_Class *cl = NULL;
-
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = {
-	{ OOP_METHODDEF(nv__new),   moRoot_New },
-	{ OOP_METHODDEF(nv__get),   moRoot_Get },
-	{ OOP_METHODDEF(nv__set),   moRoot_Set },
-	{ NULL, 0 }
-    };
-
-    struct OOP_MethodDescr gfx_descr[NUM_GFX_METHODS + 1] = {
-	{ OOP_METHODDEF(nv__newbitmap),	moHidd_Gfx_NewBitMap },
-	{ OOP_METHODDEF(nv__show),	moHidd_Gfx_Show },
-	{ OOP_METHODDEF(nv__copybox),	moHidd_Gfx_CopyBox },
-	{ OOP_METHODDEF(nv__setcursorvisible),	moHidd_Gfx_SetCursorVisible },
-	{ OOP_METHODDEF(nv__setcursorpos),	moHidd_Gfx_SetCursorPos },
-	{ OOP_METHODDEF(nv__setcursorshape),	moHidd_Gfx_SetCursorShape },
-	{ NULL, 0 }
-    };
-
-    struct OOP_InterfaceDescr ifdescr[] = {
-	{ root_descr,	IID_Root,	NUM_ROOT_METHODS },
-	{ gfx_descr,	IID_Hidd_Gfx,	NUM_GFX_METHODS	 },
-	{ NULL, NULL, 0 }
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-
-    struct TagItem tags[] = {
-	{ aMeta_SuperID,	(IPTR)CLID_Hidd_Gfx },
-	{ aMeta_InterfaceDescr,	(IPTR)ifdescr },
-	{ aMeta_InstSize,	0 },
-	{ aMeta_ID,		(IPTR)CLID_Hidd_Gfx_nVidia },
-	{ TAG_DONE, 0UL }
-    };
-
-    EnterFunc(bug("[NVidia] " CLID_Hidd_Gfx_nVidia " class init.\n"));
-
-    if (MetaAttrBase)
-    {
-	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-
-	if (cl)
-	{
-	    cl->UserData = sd;
-	    sd->nvclass = cl;
-
-	    OOP_AddClass(cl);
-	}
-	
-	OOP_ReleaseAttrBase(IID_Meta);
-    }
-
-    D(bug("[NVidia] init_nvclass=%p\n", cl));
-
-    return cl;
-}
 
 /*
     Allocates some memory area on GFX card, which may be sufficient for bitmap
