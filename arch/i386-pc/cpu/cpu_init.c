@@ -25,8 +25,6 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, CPUBase)
     struct i386_compat_intern       *BootCPU_intern = NULL;
     struct  ACPIBase                *ACPIBase = NULL;
 
-    CPUBase->CPUB_UtilBase = OpenLibrary("utility.library", 0);
-
     CPUBase->CPUB_BOOT_Physical = -1;                                                   /* set to a single cpu for now          */
     CPUBase->CPUB_BOOT_Logical = -1;
 
@@ -92,9 +90,7 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, CPUBase)
 
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
 
-#ifdef SysBase  /* WARNING!!! THIS NEXT FUNCTION RUS IN KERNEL LAND _ NO DEBUG OUTPUT ETC>> BE CAREFULL! */
-#undef SysBase
-#endif
+/* WARNING!!! THIS NEXT FUNCTION RUS IN KERNEL LAND _ NO DEBUG OUTPUT ETC>> BE CAREFULL! */
 
 void prepare_primary_cpu(struct ExecBase *SysBase)
 {

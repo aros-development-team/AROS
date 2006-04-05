@@ -101,13 +101,6 @@ struct CPUBase *CPUBase;
 
 #define APICBase        (CPUBase->CPUB_APICBase)
 
-#define SysBase		(CPUBase->CPUB_SysBase)
-#ifdef UtilityBase
-#   undef UtilityBase
-#endif
-#define UtilityBase     (CPUBase->CPUB_UtilBase)
-
-
 /**********************************************************************/
 /* from smp.c ........... */
 void    MP_processor_info ( struct mpc_config_processor *mc, struct SMP_Definition *SMP_Group );
