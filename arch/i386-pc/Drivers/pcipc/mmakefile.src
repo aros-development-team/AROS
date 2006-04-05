@@ -1,14 +1,9 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-LIBNAME := pcipc
+FILES	:= pcipc_init driverclass
 
-FILES	:= driverclass
-
-%build_module_macro mmake=kernel-pci-pcipc \
+%build_module mmake=kernel-pci-pcipc \
     modname=pcipc modtype=hidd \
     files=$(FILES) \
-    conffile=lib.conf genfunctable=yes \
     uselibs="rom amiga"
-
-%common
