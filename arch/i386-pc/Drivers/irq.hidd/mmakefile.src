@@ -4,33 +4,9 @@ include $(TOP)/config/make.cfg
 #MM kernel-pc-i386-irq-kobj : hidd-irq-stubs
 #MM kernel-pc-i386-irq : hidd-irq-stubs
 
-FILES	    := irqclass servers
+FILES	    := irq_init irqclass servers
 
-%build_module_macro mmake=kernel-pc-i386-irq \
+%build_module mmake=kernel-pc-i386-irq \
   modname=irq modtype=hidd \
-  files=$(FILES) \
-  conffile=lib.conf \
-  genfunctable=yes
-  
-##MY_INCLS    := $(wildcard include/*.h)
-##DEST_INC    := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))
-##GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
-##
-###MM
-##includes-pc-i386 : $(DEST_INC) $(GEN_INC)
-##
-##$(AROS_INCLUDES)/hidd/%.h : include/%.h
-##	$(CP) include/$(notdir $<) $@
-##
-##$(GENINCDIR)/hidd/%.h : include/%.h
-##	$(CP) include/$(notdir $<) $@
-##
-##MM
-##setup-includes :
-##	%mkdirs_q $(GENINCDIR) $(AROS_INCLUDES) $(GENINCDIR)/hidd $(AROS_INCLUDES)/hidd
+  files=$(FILES)
 
-#MM
-setup-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-
-%common

@@ -37,23 +37,22 @@
 
 struct irq_staticdata
 {
-    struct Library	*oopbase;
-    struct Library	*utilitybase;
-    struct ExecBase	*sysbase;
     OOP_Class		*irqclass;
     
     struct List		irqlist[16];    
     ULONG		transtable[16];
 };
 
-OOP_Class *init_irqclass  ( struct irq_staticdata * );
-VOID free_irqclass  ( struct irq_staticdata * );
+struct irqbase
+{
+    struct Library          library;
+    struct ExecBase         *sysbase;
+    BPTR                    seglist;
+    struct irq_staticdata   isd;
+};
+
 void init_Servers  ( struct irq_staticdata * );
 
-#define ISD(cl) ((struct irq_staticdata *)cl->UserData)
-
-#define OOPBase		((struct Library *)ISD(cl)->oopbase)
-#define UtilityBase	((struct Library *)ISD(cl)->utilitybase)
-#define SysBase		(ISD(cl)->sysbase)
+#define ISD(cl) (&((struct irqbase *)cl->UserData)->isd)
 
 #endif /* _HIDD_IRQ_H */
