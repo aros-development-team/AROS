@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$ 
 
     Desc: Mouse hidd (COM/PS2/USB) for standalone i386 AROS
@@ -12,68 +12,30 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
+#include <aros/symbolsets.h>
 
 #include "mouse.h"
 
-#undef SysBase
-
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->sysbase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->seglist)
-#define LC_RESIDENTNAME         mouseHidd_resident
-#define LC_RESIDENTFLAGS        RTF_AUTOINIT|RTF_COLDSTART
-#define LC_RESIDENTPRI          9
-#define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
-#define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->library)
-
-#define LC_NO_INITLIB
-#define LC_NO_EXPUNGELIB
-#define LC_NO_CLOSELIB
-
-
-#define NOEXPUNGE
-
-struct mousebase
-{
-    struct Library library;
-    struct ExecBase *sysbase;
-    BPTR   seglist;
-};
-
-#include <libcore/libheader.c>
+#include LC_LIBDEFS_FILE
 
 #undef  SDEBUG
 #undef  DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
 
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
+AROS_SET_LIBFUNC(PCMouse_Init, LIBBASETYPE, LIBBASE)
 {
-    struct mouse_staticdata *msd;
+    AROS_SET_LIBFUNC_INIT
+
+    struct mouse_staticdata *msd = &LIBBASE->msd;
 
     D(bug("_mouse: Initializing\n"));
 
-    msd = AllocMem( sizeof (struct mouse_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
-    if (msd)
-    {
-        InitSemaphore(&msd->sema);
-        msd->sysbase = SysBase;
-        msd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
-        if (msd->oopbase)
-        {
-            msd->utilitybase = OpenLibrary(UTILITYNAME, 37);
-            if (msd->utilitybase)
-            {
-                if (_init_mouseclass(msd))
-                {
-                    return TRUE;
-                }
-            }
-            CloseLibrary(msd->oopbase);
-        }
-        FreeMem(msd, sizeof (struct mouse_staticdata));
-    }
-    return FALSE;
+    InitSemaphore(&msd->sema);
+
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(PCMouse_Init, 0)

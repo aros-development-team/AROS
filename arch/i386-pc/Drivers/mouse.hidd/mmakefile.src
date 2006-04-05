@@ -2,15 +2,11 @@
 
 include $(TOP)/config/make.cfg
 
-FILES	:=	mouseclass drv_usb drv_ps2 drv_com
+FILES	:=	mouse_init mouseclass drv_usb drv_ps2 drv_com
 
 USER_INCLUDES := -I../../include
-%build_module_macro mmake=kernel-pc-i386-mouse \
+%build_module mmake=kernel-pc-i386-mouse \
   modname=mouse modtype=hidd \
   files=$(FILES) \
-  conffile=lib.conf \
-  genfunctable=yes \
   uselibs=hiddstubs
-
-%common
 
