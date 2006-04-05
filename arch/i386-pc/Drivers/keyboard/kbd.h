@@ -2,7 +2,7 @@
 #define HIDD_KBD_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the kbd HIDD.
@@ -131,10 +131,6 @@ struct kbd_staticdata
 {
     struct SignalSemaphore 	sema; /* Protexting this whole struct */
 
-    struct Library 		*oopbase;
-    struct Library 		*utilitybase;
-    struct ExecBase     *sysbase;
-
     OOP_Class 			*kbdclass;
 
     OOP_Object 			*irqhidd;
@@ -144,22 +140,33 @@ struct kbd_staticdata
     HIDDT_IRQ_Handler	*irq;
 };
 
+struct kbdbase
+{
+    struct Library library;
+    struct ExecBase *sysbase;
+    BPTR	seglist;
+    
+    struct kbd_staticdata ksd;
+};
+
+struct kbd_data
+{
+    VOID    (*kbd_callback)(APTR, UWORD);
+    APTR    callbackdata;
+
+    ULONG   kbd_keystate;
+    WORD    prev_amigacode;
+    UWORD   prev_keycode;
+};
+
 /****************************************************************************************/
 
 BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase);
 VOID releaseattrbases(struct abdescr *abd, struct Library *OOPBase);
 
-OOP_Class *init_kbdclass  ( struct kbd_staticdata * );
-
-VOID free_kbdclass  ( struct kbd_staticdata * );
-
 /****************************************************************************************/
 
-#define XSD(cl) 	((struct kbd_staticdata *)cl->UserData)
-
-#define OOPBase		((struct Library *)XSD(cl)->oopbase)
-#define UtilityBase	((struct Library *)XSD(cl)->utilitybase)
-#define SysBase		(XSD(cl)->sysbase)
+#define XSD(cl) 	(&((struct kbdbase *)cl->UserData)->ksd)
 
 /****************************************************************************************/
 
