@@ -1,16 +1,20 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal defs for trackdisk
     Lang: English
 */
+#ifndef TRACKDISK_DEVICE_H
+#define TRACKDISK_DEVICE_H
 
 #include <exec/types.h>
 #include <exec/devices.h>
 #include <exec/semaphores.h>
 #include <exec/interrupts.h>
 #include <exec/tasks.h>
+
+#include <devices/trackdisk.h>
 
 /* Stack size - 4096 longwords should be enough */
 #define STACK_SIZE      16384
@@ -71,3 +75,5 @@ struct TrackDiskBase
     UBYTE			td_pcn;
     UBYTE			td_inttmo;
 };
+
+#endif /* TRACKDISK_DEVICE_H */
