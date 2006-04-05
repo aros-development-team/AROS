@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,7 +8,6 @@
 
 #include <hidd/graphics.h>
 #include "mouse.h"
-#include "hardware.h"
 /*
    This attribute interface is common for both vga onscreen and offscreen bitmap
    classes, although they don't have a common superclass
@@ -39,9 +38,18 @@ enum {
    onbitmap and offbitmap classes.
 */
 
+struct Box
+{
+    int x1, y1;
+    int x2, y2;
+};
+
 struct HWRegs {
 	UBYTE clt[768];
 };
+
+/* Only include hardware.h now so that struct Box is known */
+#include "hardware.h"
 
 struct BitmapData {
 	struct HWRegs  regs;
@@ -55,19 +63,5 @@ struct BitmapData {
 	BYTE disp;        /* !=0 - displayable */
 	struct MouseData *mouse;
 };
-
-struct Box
-{
-    int x1, y1;
-    int x2, y2;
-};
-
-#if 0
-VOID bitmap_clear(OOP_Class *, OOP_Object *, struct pHidd_BitMap_Clear *);
-BOOL bitmap_setcolors(OOP_Class *, OOP_Object *, struct pHidd_BitMap_SetColors *);
-VOID bitmap_putpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_PutPixel *);
-HIDDT_Pixel bitmap_getpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_GetPixel *);
-ULONG bitmap_drawpixel(OOP_Class *, OOP_Object *, struct pHidd_BitMap_DrawPixel *);
-#endif
 
 #endif /* _BITMAP_H */

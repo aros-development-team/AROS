@@ -2,7 +2,7 @@
 #define HIDD_VMWAREGFXCLASS_H
 
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some VMWareGfx useful data.
@@ -14,15 +14,11 @@
 #include <exec/types.h>
 #include "hardware.h"
 #include "bitmap.h"
-#include "mouse.h"
 
 #define IID_Hidd_VMWareGfx  "hidd.gfx.vmware"
 #define CLID_Hidd_VMWareGfx "hidd.gfx.vmware"
 
 struct VMWareGfx_staticdata {
-	struct ExecBase *sysBase;
-	struct Library *oopBase;
-	struct Library *utilityBase;
 	struct MemHeader mh;
 	OOP_Class *vmwaregfxclass;
 	OOP_Class *onbmclass;
@@ -37,12 +33,15 @@ struct VMWareGfx_staticdata {
 	struct HWData data;
 };
 
-#define XSD(cl) ((struct VMWareGfx_staticdata *)cl->UserData)
-#define UtilityBase ((struct Library *)XSD(cl)->utilityBase)
-#define OOPBase ((struct Library *)XSD(cl)->oopBase)
-#define SysBase (XSD(cl)->sysBase)
+struct VMWareGfxBase
+{
+    struct Library library;
+    struct ExecBase *sysBase;
+    BPTR	SegList;
+    
+    struct VMWareGfx_staticdata vsd;    
+};
 
-OOP_Class *init_vmwaregfxclass(struct VMWareGfx_staticdata *);
-VOID free_vmwaregfxclass(struct VMWareGfx_staticdata *);
+#define XSD(cl) (&((struct VMWareGfxBase *)cl->UserData)->vsd)
 
-#endif /* HIDD_VGACLASS_H */
+#endif /* HIDD_VMWAREGFXCLASS_H */
