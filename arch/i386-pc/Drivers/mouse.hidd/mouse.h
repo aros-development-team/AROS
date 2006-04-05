@@ -2,7 +2,7 @@
 #define _MOUSE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse native HIDD.
@@ -61,15 +61,20 @@ struct mouse_staticdata
 {
     struct SignalSemaphore      sema; /* Protexting this whole struct */
     
-    struct Library	*oopbase;
-    struct Library	*utilitybase;
-    struct ExecBase	*sysbase;
-
     OOP_AttrBase	hiddMouseAB;
 
     OOP_Class		*mouseclass;
 
     OOP_Object		*mousehidd;
+};
+
+struct mousebase
+{
+    struct Library library;
+    struct ExecBase *sysbase;
+    BPTR   seglist;
+    
+    struct mouse_staticdata msd;
 };
 
 /* 488 byte long ring buffer used to read data with timeout defined */
@@ -219,14 +224,7 @@ struct mouse_data
 /****************************************************************************************/
 
 
-OOP_Class *_init_mouseclass  ( struct mouse_staticdata * );
-VOID _free_mouseclass  ( struct mouse_staticdata * );
-
-#define MSD(cl)         ((struct mouse_staticdata *)cl->UserData)
-
-#define OOPBase         ((struct Library *)MSD(cl)->oopbase)
-#define UtilityBase     ((struct Library *)MSD(cl)->utilitybase)
-#define SysBase         (MSD(cl)->sysbase)
+#define MSD(cl)         (&((struct mousebase *)cl->UserData)->msd)
 
 #endif /* _MOUSE_H */
 

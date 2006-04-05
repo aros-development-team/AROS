@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main mouse class.
@@ -31,7 +31,11 @@
 #include <devices/inputevent.h>
 #include <string.h>
 
+#include <aros/symbolsets.h>
+
 #include "mouse.h"
+
+#include LC_LIBDEFS_FILE
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -67,7 +71,7 @@ void getps2State(OOP_Class *, OOP_Object *, struct pHidd_Mouse_Event *);
 #define MIDDLE_BUTTON	4
 
 /***** Mouse::New()  ***************************************/
-static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
    
@@ -149,7 +153,7 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     return o;
 }
 
-STATIC VOID _mouse_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID PCMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
 
@@ -176,7 +180,7 @@ STATIC VOID _mouse_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 }
 
 /***** Mouse::Get()  ***************************************/
-static VOID _mouse_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
     ULONG   	       idx;
@@ -210,7 +214,7 @@ static VOID _mouse_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /***** Mouse::HandleEvent()  ***************************************/
 
-static VOID _mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_HandleEvent *msg)
+VOID PCMouse__Hidd_Mouse__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_HandleEvent *msg)
 {
     struct mouse_data * data;
 
@@ -223,106 +227,43 @@ static VOID _mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_
     ReturnVoid("_Mouse::HandleEvent");
 }
 
-#undef MSD
-#define MSD(cl) msd
-
 /********************  init_kbdclass()  *********************************/
 
-#define NUM_ROOT_METHODS 3
-#define NUM_MOUSE_METHODS 1
-
-OOP_Class *_init_mouseclass (struct mouse_staticdata *msd)
+AROS_SET_LIBFUNC(PCMouse_InitAttrs, LIBBASETYPE, LIBBASE)
 {
-    OOP_Class *cl = NULL;
+    AROS_SET_LIBFUNC_INIT
 
     struct OOP_ABDescr attrbases[] =
     {
-        { IID_Hidd_Mouse, &msd->hiddMouseAB },
+        { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
         { NULL	    	, NULL      	    }
     };
 	
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-    {
-        {OOP_METHODDEF(_mouse_new)  	, moRoot_New	},
-        {OOP_METHODDEF(_mouse_dispose)	, moRoot_Dispose},
-        {OOP_METHODDEF(_mouse_get)  	, moRoot_Get	},
-        {NULL	    	    	    	, 0UL	    	}
-    };
-    
-    struct OOP_MethodDescr mousehidd_descr[NUM_MOUSE_METHODS + 1] = 
-    {
-        {OOP_METHODDEF(_mouse_handleevent)  , moHidd_Mouse_HandleEvent	},
-        {NULL	    	    	    	    , 0UL   	    	    	}
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr 	    	, IID_Root	    , NUM_ROOT_METHODS	},
-        {mousehidd_descr    	, IID_Hidd_PCmouse  , NUM_MOUSE_METHODS },
-        {NULL	    	    	, NULL	    	    , 0     	    	}
-    };
-    
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
+    EnterFunc(bug("PCMouse_InitAttrs\n"));
 
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID	    	, (IPTR)CLID_Hidd   	    	    },
-        {aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
-        {aMeta_InstSize     	, (IPTR)sizeof (struct mouse_data)  },
-        {aMeta_ID   	    	, (IPTR)CLID_Hidd_PCmouse   	    },
-        {TAG_DONE   	    	, 0UL	    	    	    	    }
-    };
-
-    EnterFunc(bug("_MouseHiddClass init\n"));
+    ReturnInt("PCMouse_InitAttr", ULONG, OOP_ObtainAttrBases(attrbases));
     
-    if (MetaAttrBase)
-    {
-        cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-        if(cl)
-        {
-            cl->UserData = (APTR)msd;
-            msd->mouseclass = cl;
-    
-            if (OOP_ObtainAttrBases(attrbases))
-            {
-                D(bug("_MouseHiddClass ok\n"));
-
-                OOP_AddClass(cl);
-            }
-            else
-            {
-                _free_mouseclass(msd);
-                cl = NULL;
-            }
-        }
-        /* Don't need this anymore */
-        OOP_ReleaseAttrBase(IID_Meta);
-    }
-    
-    ReturnPtr("_init_mouseclass", Class *, cl);
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /*************** free_kbdclass()  **********************************/
-VOID _free_mouseclass(struct mouse_staticdata *msd)
+AROS_SET_LIBFUNC(PCMouse_ExpungeAttrs, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+
     struct OOP_ABDescr attrbases[] =
     {
-        { IID_Hidd_Mouse, &msd->hiddMouseAB },
+        { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
         { NULL	    	, NULL      	    }
     };
     
-    EnterFunc(bug("_free_mouseclass(msd=%p)\n", msd));
+    EnterFunc(bug("PCMouse_InitClass\n"));
 
-    if(msd)
-    {
-        OOP_RemoveClass(msd->mouseclass);
-
-        if(msd->mouseclass) OOP_DisposeObject((OOP_Object *) msd->mouseclass);
-        msd->mouseclass = NULL;
-
-        OOP_ReleaseAttrBases(attrbases);
-    }
+    OOP_ReleaseAttrBases(attrbases);
+    return TRUE;
     
-    ReturnVoid("_free_mouseclass");
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(PCMouse_InitAttrs, 0)
+ADD2EXPUNGELIB(PCMouse_ExpungeAttrs, 0)
