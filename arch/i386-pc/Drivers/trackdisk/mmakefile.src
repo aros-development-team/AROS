@@ -5,9 +5,7 @@ include $(TOP)/config/make.cfg
 #MM- kernel-pc-i386-trackdisk-kobj : includes
 
 USER_INCLUDES := -I$(TOP)/rom/devs
-%build_module_macro mmake=kernel-pc-i386-trackdisk \
+%build_module mmake=kernel-pc-i386-trackdisk \
   modname=trackdisk modtype=device \
-  files=trackdisk_hw initfile=trackdisk_device \
-  conffile=lib.conf
+  files="trackdisk_device trackdisk_hw"
 
-%common

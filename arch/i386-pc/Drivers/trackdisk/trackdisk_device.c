@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Amigastyle device for trackdisk
@@ -19,8 +19,7 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <clib/alib_protos.h>
-#include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include <aros/bootloader.h>
 #include <oop/oop.h>
 
@@ -36,24 +35,13 @@
 #include "trackdisk_device.h"
 #include "trackdisk_hw.h"
 
+#include LC_LIBDEFS_FILE
+
 #define DEBUG 0
 #include <aros/debug.h>
 
 #undef kprintf
 
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-static const UBYTE datatable;
-
-struct TrackDiskBase *AROS_SLIB_ENTRY(init, TrackDisk)();
-void AROS_SLIB_ENTRY(open, TrackDisk)();
-BPTR AROS_SLIB_ENTRY(close, TrackDisk)();
-BPTR AROS_SLIB_ENTRY(expunge, TrackDisk)();
-int  AROS_SLIB_ENTRY(null, TrackDisk)();
-void AROS_SLIB_ENTRY(beginio, TrackDisk)();
-LONG AROS_SLIB_ENTRY(abortio, TrackDisk)();
 void td_floppytimer(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 void td_floppyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 int td_getbyte(unsigned char *, struct TrackDiskBase *);
@@ -61,51 +49,6 @@ int td_sendbyte(unsigned char, struct TrackDiskBase *);
 ULONG TD_InitTask(struct TrackDiskBase *);
 void TD_DevTask(struct TrackDiskBase *);
 BOOL TD_PerformIO( struct IOExtTD *, struct TrackDiskBase *);
-
-static const char end;
-
-int __used AROS_SLIB_ENTRY(entry,TrackDisk)(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-static const struct Resident TrackDisk_resident __used =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&TrackDisk_resident,
-    (APTR)&end,
-    RTF_AUTOINIT|RTF_COLDSTART,
-    41,
-    NT_DEVICE,
-    0,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[] = "trackdisk.device";
-
-static const char version[] = "$VER: trackdisk.device 41.1 (2001-10-08)\r\n";
-
-static const APTR inittabl[4] =
-{
-    (APTR)sizeof(struct TrackDiskBase),
-    (APTR)functable,
-    (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init, TrackDisk)
-};
-
-static void *const functable[] =
-{
-    &AROS_SLIB_ENTRY(open, TrackDisk),
-    &AROS_SLIB_ENTRY(close, TrackDisk),
-    &AROS_SLIB_ENTRY(expunge, TrackDisk),
-    &AROS_SLIB_ENTRY(null, TrackDisk),
-    &AROS_SLIB_ENTRY(beginio, TrackDisk),
-    &AROS_SLIB_ENTRY(abortio, TrackDisk),
-    (void *)-1
-};
 
 struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 {
@@ -164,7 +107,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 	    if (pp)
 	    {
 		pp[0] = (IPTR)"afs.handler";
-		pp[1] = (IPTR)name;
+		pp[1] = (IPTR)MOD_NAME_STRING;
 		pp[2] = num;
 		pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
 		pp[DE_SIZEBLOCK + 4] = 128;
@@ -208,12 +151,9 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     return (unit);
 }
 
-AROS_LH2(struct TrackDiskBase *, init,
- AROS_LHA(struct TrackDiskBase *, TDBase, D0),
- AROS_LHA(BPTR, segList, A0),
- struct ExecBase *, sysBase, 0, TrackDisk)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, TDBase)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
     struct Library *OOPBase;
     struct BootLoaderBase *BootLoaderBase;
     ULONG i;
@@ -237,7 +177,7 @@ AROS_LH2(struct TrackDiskBase *, init,
 		if (0 == strncmp(node->ln_Name,"nofdc",5))
 		{
 		    bug("[Floppy] Disabled with bootloader argument\n");
-		    ReturnPtr("Trackdisk",struct TrackDiskBase *,NULL);
+		    return FALSE;
 		}
 		if (0 == strncmp(node->ln_Name,"noclick",7))
 		{
@@ -258,7 +198,7 @@ AROS_LH2(struct TrackDiskBase *, init,
     {
     	/* No drives here. abort */
     	D(bug("TD: No drives defined in BIOS\n"));
-    	ReturnPtr("Trackdisk",struct TrackDiskBase *,NULL);
+    	return FALSE;
     }
     /* This bit causes some problems, apparently */
 #if 0
@@ -299,7 +239,7 @@ AROS_LH2(struct TrackDiskBase *, init,
 		Alert(AT_DeadEnd|AO_TrackDiskDev|AN_IntrMem);
 	    }
 	    irq->h_Node.ln_Pri=127;		/* Set the highest pri */
-	    irq->h_Node.ln_Name = (STRPTR)name;
+	    irq->h_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
 	    irq->h_Code = td_floppyint;
 	    irq->h_Data = (APTR)TDBase;
 
@@ -313,7 +253,7 @@ AROS_LH2(struct TrackDiskBase *, init,
 		Alert(AT_DeadEnd|AO_TrackDiskDev|AN_IntrMem);
 	    }
 	    irq->h_Node.ln_Pri=10;		/* Set the highest pri */
-	    irq->h_Node.ln_Name = (STRPTR)name;
+	    irq->h_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
 	    irq->h_Code = td_floppytimer;
 	    irq->h_Data = (APTR)TDBase;
 
@@ -340,17 +280,21 @@ AROS_LH2(struct TrackDiskBase *, init,
     /* Create the message processor task */
     TD_InitTask(TDBase);
 
-    ReturnPtr("Trackdisk",struct TrackDiskBase *,TDBase);
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_LH3(void, open,
- AROS_LHA(struct IOExtTD *, iotd, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
- struct TrackDiskBase *, TDBase, 1, TrackDisk)
+AROS_SET_OPENDEVFUNC
+(
+    GM_UNIQUENAME(Open),
+    LIBBASETYPE, TDBase,
+    struct IOExtTD, iotd,
+    unitnum,
+    flags
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 
     D(bug("TD: Open\n"));
     iotd->iotd_Req.io_Error = IOERR_OPENFAIL;
@@ -366,49 +310,30 @@ AROS_LH3(void, open,
         unit = TDBase->td_Units[unitnum];
         iotd->iotd_Req.io_Unit = (struct Unit *)unit;
 
-        ((struct Library *) TDBase)->lib_OpenCnt++;
         ((struct Unit *)    unit)->unit_OpenCnt++;
-
-        ((struct Library *) TDBase)->lib_Flags &= ~LIBF_DELEXP;
 
         iotd->iotd_Req.io_Error = 0;
     }
-    AROS_LIBFUNC_EXIT
+    AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IOExtTD *, iotd, A1),
- struct TrackDiskBase *, TDBase, 2, TrackDisk)
+AROS_SET_CLOSEDEVFUNC
+(
+    GM_UNIQUENAME(Close),
+    LIBBASETYPE, TDBase,
+    struct IOExtTD, iotd
+)
 {
-    AROS_LIBFUNC_INIT
-
-    D(bug("TD: Close\n"));
-
-    /* Let any following attemps to use the device crash hard. */
-    iotd->iotd_Req.io_Device = (struct Device *)-1;
-
-    /* We do not wish to be unloaded */
-    return (NULL);
-
-    AROS_LIBFUNC_EXIT
+    AROS_SET_DEVFUNC_INIT
+	
+    iotd->iotd_Req.io_Unit->unit_OpenCnt --;
+    
+    AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_LH0(BPTR, expunge, struct TrackDiskBase *, TDBase, 3, TrackDisk)
-{
-    AROS_LIBFUNC_INIT
-
-    D(bug("TD: Expunge\n"));
-    return ((BPTR)IOERR_NOCMD);
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(int, null, struct TrackDiskBase *, TDBase, 4, TrackDisk)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOExtTD *, iotd, A1),
@@ -770,10 +695,6 @@ void TD_DevTask(struct TrackDiskBase *tdb)
     }
 }
 
-#ifdef SysBase
-#undef SysBase
-#endif
-#define SysBase (hw->sysBase)
 #define TDBase ((struct TrackDiskBase *)irq->h_Data)
 void td_floppytimer(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
