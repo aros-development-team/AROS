@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Offscreen bitmap class for VGA hidd.
@@ -19,12 +19,16 @@
 #include <oop/oop.h>
 #include <exec/alerts.h>
 
+#include <aros/symbolsets.h>
+
 #include <hidd/graphics.h>
 
 #include <assert.h>
 
 #include "vga.h"
 #include "vgaclass.h"
+
+#include LC_LIBDEFS_FILE
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -54,13 +58,14 @@ static struct OOP_ABDescr attrbases[] =
 void free_offbmclass(struct vga_staticdata *);
 void vgaRefreshArea(struct bitmap_data *, int , struct Box *);
 
-#define MNAME(x) offbitmap_ ## x
+#define MNAME_ROOT(x) PCVGAOffBM__Root__ ## x
+#define MNAME_BM(x) PCVGAOffBM__Hidd_BitMap__ ## x
 
 #include "bitmap_common.c"
 
 /*********** BitMap::New() *************************************/
 
-static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *PCVGAOffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("VGAGfx.BitMap::New()\n"));
     
@@ -159,7 +164,7 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
 /**********  Bitmap::Dispose()  ***********************************/
 
-static VOID offbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID PCVGAOffBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     EnterFunc(bug("VGAGfx.BitMap::Dispose()\n"));
@@ -185,113 +190,32 @@ static VOID offbitmap_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /*** init_bmclass *********************************************************/
 
-#undef XSD
-#define XSD(cl) xsd
-
-
-#define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 10
-
-
-OOP_Class *init_offbmclass(struct vga_staticdata *xsd)
+AROS_SET_LIBFUNC(PCVGAOffBM_Init, LIBBASETYPE, LIBBASE)
 {
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-        {(IPTR (*)())MNAME(new), 	moRoot_New    },
-        {(IPTR (*)())MNAME(dispose),	moRoot_Dispose},
-#if 0
-        {(IPTR (*)())MNAME(set),	moRoot_Set},
-#endif
-        {(IPTR (*)())MNAME(get),	moRoot_Get},
-        {NULL, 0UL}
-    };
+    AROS_SET_LIBFUNC_INIT
 
-    struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
-    {
-        {(IPTR (*)())MNAME(setcolors),		moHidd_BitMap_SetColors},
-    	{(IPTR (*)())MNAME(putpixel),		moHidd_BitMap_PutPixel},
-    	{(IPTR (*)())MNAME(clear),		moHidd_BitMap_Clear},
-    	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},
-/*    	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},*/
-    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
-    	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
-    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
-    	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
-    	{(IPTR (*)())MNAME(putimagelut),	moHidd_BitMap_PutImageLUT},
-    	{(IPTR (*)())MNAME(getimagelut),	moHidd_BitMap_GetImageLUT},
-        {NULL, 0UL}
-    };
+    EnterFunc(bug("PCVGAOffBM_Init\n"));
     
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr,    IID_Root       , NUM_ROOT_METHODS},
-        {bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
-        {NULL, NULL, 0}
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        {aMeta_SuperID,        (IPTR) CLID_Hidd_BitMap},
-        {aMeta_InterfaceDescr, (IPTR) ifdescr},
-        {aMeta_InstSize,       (IPTR) sizeof(struct bitmap_data)},
-        {TAG_DONE, 0UL}
-    };
+    ReturnInt("PCVGAOffBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
     
-    OOP_Class *cl = NULL;
-
-    EnterFunc(bug("init_bitmapclass(xsd=%p)\n", xsd));
-    
-    
-    D(bug("Metattrbase: %x\n", MetaAttrBase));
-
-
-    if(MetaAttrBase)
-    {
-       D(bug("Got attrbase\n"));
-       
-/*    for (;;) {cl = cl; } */
-        cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-        if(cl)
-        {
-            D(bug("BitMap class ok\n"));
-            xsd->offbmclass = cl;
-            cl->UserData     = (APTR) xsd;
-           
-            /* Get attrbase for the BitMap interface */
-	    if (OOP_ObtainAttrBases(attrbases))
-            {
-                OOP_AddClass(cl);
-            }
-            else
-            {
-                free_offbmclass( xsd );
-                cl = NULL;
-            }
-        }
-	
-	/* We don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-    } /* if(MetaAttrBase) */
-
-    ReturnPtr("init_bmclass", Class *,  cl);
+    AROS_SET_LIBFUNC_EXIT
 }
 
+/*** expunge_onbmclass *******************************************************/
 
-/*** free_offbitmapclass *********************************************************/
-
-void free_offbmclass(struct vga_staticdata *xsd)
+AROS_SET_LIBFUNC(PCVGAOffBM_Expunge, LIBBASETYPE, LIBBASE)
 {
-    EnterFunc(bug("free_bmclass(xsd=%p)\n", xsd));
+    AROS_SET_LIBFUNC_INIT
 
-    if(xsd)
-    {
-        OOP_RemoveClass(xsd->offbmclass);
-        if(xsd->offbmclass) OOP_DisposeObject((OOP_Object *) xsd->offbmclass);
-        xsd->offbmclass = NULL;
-	
-	OOP_ReleaseAttrBases(attrbases);
-    }
-    ReturnVoid("free_bmclass");
+    EnterFunc(bug("PCVGAOffBM_Expunge\n"));
+
+    OOP_ReleaseAttrBases(attrbases);
+    ReturnInt("PCVGAOffBM_Expunge", ULONG, TRUE);
+    
+    AROS_SET_LIBFUNC_EXIT
 }
+
+/*****************************************************************************/
+
+ADD2INITLIB(PCVGAOffBM_Init, 0)
+ADD2EXPUNGELIB(PCVGAOffBM_Expunge, 0)

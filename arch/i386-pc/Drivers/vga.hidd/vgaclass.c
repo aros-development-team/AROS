@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VGA and compatible cards.
@@ -19,8 +19,7 @@
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 
-#include <aros/system.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 
 #include <hardware/custom.h>
 
@@ -30,6 +29,8 @@
 #include "vga.h"
 #include "vgaclass.h"
 #include "bitmap.h"
+
+#include LC_LIBDEFS_FILE
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -57,11 +58,6 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_Sync,		&HiddSyncAttrBase	},
     { IID_Hidd_Gfx, 	    	&HiddGfxAttrBase    	},
     { NULL, NULL }
-};
-
-struct vga_data
-{
-    int	i;	//dummy!!!!!!!!!
 };
 
 /* Default graphics modes */
@@ -129,7 +125,7 @@ VOID init_sync_tags(struct TagItem *tags, struct vgaModeDesc *md, STRPTR name)
     tags[10].ti_Tag = TAG_DONE;
 }
 
-static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem pftags[] = {
     	{ aHidd_PixFmt_RedShift,	0	}, /* 0 */
@@ -242,13 +238,13 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     ReturnPtr("VGAGfx::New", OOP_Object *, NULL);
 }
 
-static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID PCVGA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     return;
 }
 
-static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID PCVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     BOOL found = FALSE;
@@ -268,7 +264,7 @@ static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 }
 
 /********** GfxHidd::NewBitMap()  ****************************/
-static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *PCVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
 
     BOOL displayable, framebuffer;
@@ -369,7 +365,7 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /*********  GfxHidd::CopyBox()  ***************************/
 
-static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     ULONG mode;
     unsigned char *src = 0, *dest = 0;
@@ -691,7 +687,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
     ReturnVoid("VGAGfx.BitMap::CopyBox");
 }
 
-static VOID gfxhidd_showimminentreset(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID PCVGA__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct bitmap_data *data;
     
@@ -714,7 +710,7 @@ static VOID gfxhidd_showimminentreset(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /********** GfxHidd::SetCursorShape()  ****************************/
 
-static BOOL gfxhidd_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+BOOL PCVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
     /* hmm ... moHidd_Gfx_SetCursorShape seems to have a HIDD bitmap in msg->shape, while
        the old (obsolete?) native moHidd_Gfx_SetMouseShape seems to expect a simple
@@ -726,7 +722,7 @@ static BOOL gfxhidd_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 
 /********** GfxHidd::SetCursorPos()  ****************************/
 
-static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+BOOL PCVGA__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
     struct Box box = {0, 0, 0, 0};
 
@@ -760,7 +756,7 @@ static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
 /********** GfxHidd::SetCursorVisible()  ****************************/
 
-static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+VOID PCVGA__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
     XSD(cl)->mouseVisible = msg->visible;
 
@@ -771,102 +767,42 @@ static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /* end of stuff added by stegerg */
 
-#undef XSD
-#define XSD(cl) xsd
-
 /********************  init_vgaclass()  *********************************/
 
-#define NUM_ROOT_METHODS 3
-#define NUM_VGA_METHODS 6
-
-OOP_Class *init_vgaclass (struct vga_staticdata *xsd)
+AROS_SET_LIBFUNC(PCVGA_InitAttrs, LIBBASETYPE, LIBBASE)
 {
-    OOP_Class *cl = NULL;
+    AROS_SET_LIBFUNC_INIT
 
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-    {
-    	{(IPTR (*)())gfx_new,		moRoot_New},
-    	{(IPTR (*)())gfx_dispose,	moRoot_Dispose},
-    	{(IPTR (*)())gfx_get,		moRoot_Get},
-	{NULL, 0UL}
-    };
-    
-    struct OOP_MethodDescr vgahidd_descr[NUM_VGA_METHODS + 1] = 
-    {
-    	{(IPTR (*)())gfxhidd_newbitmap,		moHidd_Gfx_NewBitMap},
-	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox},
-/* stegerg */
-	{(IPTR (*)())gfxhidd_setcursorshape,	moHidd_Gfx_SetCursorShape},
-	{(IPTR (*)())gfxhidd_setcursorpos,	moHidd_Gfx_SetCursorPos},
-	{(IPTR (*)())gfxhidd_setcursorvisible,	moHidd_Gfx_SetCursorVisible},
-	{(IPTR (*)())gfxhidd_showimminentreset,	moHidd_Gfx_ShowImminentReset},
-/* end stegerg */
+    EnterFunc(bug("PCVGA_Init\n"));
 
-	{NULL, 0UL}
-    };
+    ReturnInt("PCVGA_Init", ULONG, OOP_ObtainAttrBases(attrbases));
     
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-    	{root_descr, 	IID_Root, 		NUM_ROOT_METHODS},
-    	{vgahidd_descr, IID_Hidd_Gfx,	 	NUM_VGA_METHODS},
-	{NULL, NULL, 0}
-    };
-    
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-	
-    struct TagItem tags[] =
-    {
-	{ aMeta_SuperID,		(IPTR)CLID_Hidd_Gfx},
-	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{ aMeta_InstSize,		(IPTR)sizeof (struct vga_data) },
-	{ aMeta_ID,			(IPTR)CLID_Hidd_VGAgfx },
-	{TAG_DONE, 0UL}
-    };
-
-    EnterFunc(bug("VgaHiddClass init\n"));
-    
-    if (MetaAttrBase)
-    {
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if(cl)
-    	{
-	    cl->UserData = (APTR)xsd;
-	    xsd->vgaclass = cl;
-	    
-	    if (OOP_ObtainAttrBases(attrbases))
-	    {
-		D(bug("VgaHiddClass ok\n"));
-		
-	    	OOP_AddClass(cl);
-	    }
-	    else
-	    {
-	    	free_vgaclass(xsd);
-		cl = NULL;
-	    }
-	}
-	/* Don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-    }
-    ReturnPtr("init_vgaclass", OOP_Class *, cl);
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /*************** free_vgaclass()  **********************************/
-VOID free_vgaclass(struct vga_staticdata *xsd)
+AROS_SET_LIBFUNC(PCVGA_ExpungeAttrs, LIBBASETYPE, LIBBASE)
 {
-    EnterFunc(bug("free_vgaclass(xsd=%p)\n", xsd));
+    AROS_SET_LIBFUNC_INIT
 
-    if(xsd)
-    {
-        OOP_RemoveClass(xsd->vgaclass);
-	
-        if(xsd->vgaclass) OOP_DisposeObject((OOP_Object *) xsd->vgaclass);
-        xsd->vgaclass = NULL;
-	
-	OOP_ReleaseAttrBases(attrbases);
-    }
-    ReturnVoid("free_vgaclass");
+    EnterFunc(bug("PCVGA_Expunge\n", xsd));
+
+    OOP_ReleaseAttrBases(attrbases);
+    
+    ReturnInt("PCVGA_Expunge", ULONG, TRUE);
+    
+    AROS_SET_LIBFUNC_EXIT
 }
+
+/*******************************************************************/
+
+ADD2INITLIB(PCVGA_InitAttrs, 0)
+ADD2EXPUNGELIB(PCVGA_ExpungeAttrs, 0)
+
+/*******************************************************************/
+	       
+#undef XSD
+#define XSD(cl) xsd
 
 void draw_mouse(struct vga_staticdata *xsd)
 {
