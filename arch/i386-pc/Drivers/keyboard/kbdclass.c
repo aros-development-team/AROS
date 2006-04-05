@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main keyboard class.
@@ -22,7 +22,7 @@
 #include <hidd/keyboard.h>
 
 #include <aros/system.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 
 #include <hardware/custom.h>
 
@@ -31,6 +31,8 @@
 
 #include "kbd.h"
 #include "keys.h"
+
+#include LC_LIBDEFS_FILE
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -59,16 +61,6 @@ int  kbd_read_data(void);
 #undef HiddKbdAB
 #define HiddKbdAB   (XSD(cl)->hiddKbdAB)
 
-struct kbd_data
-{
-    VOID    (*kbd_callback)(APTR, UWORD);
-    APTR    callbackdata;
-
-    ULONG   kbd_keystate;
-    WORD    prev_amigacode;
-    UWORD   prev_keycode;
-};
-
 /****************************************************************************************/
 
 #define NOKEY -1
@@ -83,7 +75,7 @@ struct kbd_data
 
 /****************************************************************************************/
 
-static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem *tag, *tstate;
     APTR    	    callback = NULL;
@@ -185,7 +177,7 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     ReturnPtr("Kbd::New", OOP_Object *, o);
 }
 
-STATIC VOID kbd_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID PCKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     ObtainSemaphore(&XSD(cl)->sema);
     XSD(cl)->kbdhidd = NULL;
@@ -198,7 +190,7 @@ STATIC VOID kbd_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_HandleEvent *msg)
+VOID PCKbd__Hidd_Kbd__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_HandleEvent *msg)
 {
     struct kbd_data * data;
 
@@ -212,109 +204,46 @@ static VOID kbd_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_Handl
 
 /****************************************************************************************/
 
-#undef XSD
-#define XSD(cl) xsd
-
-#define NUM_ROOT_METHODS 2
-#define NUM_KBD_METHODS 1
-
-/****************************************************************************************/
-
-OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
+AROS_SET_LIBFUNC(PCKbd_InitAttrs, LIBBASETYPE, LIBBASE)
 {
-    OOP_Class *cl = NULL;
-    
+    AROS_SET_LIBFUNC_INIT
+
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd_Kbd	, &xsd->hiddKbdAB   },
+        {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
         {NULL	    	, NULL      	    }
     };
     
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-    {
-        {OOP_METHODDEF(kbd_new) , moRoot_New},
-	{OOP_METHODDEF(kbd_dispose), moRoot_Dispose},
-        {NULL	    	    	, 0UL	    }
-    };
+    ReturnInt("PCKbd_InitAttrs", ULONG, OOP_ObtainAttrBases(attrbases));
     
-    struct OOP_MethodDescr kbdhidd_descr[NUM_KBD_METHODS + 1] = 
-    {
-        {OOP_METHODDEF(kbd_handleevent) , moHidd_Kbd_HandleEvent},
-        {NULL	    	    	    	, 0UL	    	    	}
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-        {root_descr 	, IID_Root  	, NUM_ROOT_METHODS  },
-        {kbdhidd_descr	, IID_Hidd_HwKbd, NUM_KBD_METHODS   },
-        {NULL	    	, NULL	    	, 0 	    	    }
-    };
-    
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-        { aMeta_SuperID     	, (IPTR)CLID_Hidd   	    	},
-        { aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	},
-        { aMeta_InstSize    	, (IPTR)sizeof (struct kbd_data)},
-        { aMeta_ID  	    	, (IPTR)CLID_Hidd_HwKbd     	},
-        { TAG_DONE  	    	    	    	    	    	}
-    };
-
-    EnterFunc(bug("KbdHiddClass init\n"));
-    
-    if (MetaAttrBase)
-    {
-        cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-        if(cl)
-        {
-            cl->UserData = (APTR)xsd;
-            xsd->kbdclass = cl;
-    
-            if (OOP_ObtainAttrBases(attrbases))
-            {
-                D(bug("KbdHiddClass ok\n"));
-
-                OOP_AddClass(cl);
-            }
-            else
-            {
-                free_kbdclass(xsd);
-                cl = NULL;
-            }
-        }
-	
-        /* Don't need this anymore */
-        OOP_ReleaseAttrBase(IID_Meta);
-    }
-    
-    ReturnPtr("init_kbdclass", OOP_Class *, cl);
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-VOID free_kbdclass(struct kbd_staticdata *xsd)
+AROS_SET_LIBFUNC(PCKbd_ExpungeAttrs, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd_Kbd	, &xsd->hiddKbdAB   },
+        {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
         {NULL	    	, NULL      	    }
     };
     
-    EnterFunc(bug("free_kbdclass(xsd=%p)\n", xsd));
+    EnterFunc(bug("PCKbd_ExpungeAttrs\n"));
 
-    if(xsd)
-    {
-        OOP_RemoveClass(xsd->kbdclass);
-
-        if(xsd->kbdclass) OOP_DisposeObject((OOP_Object *) xsd->kbdclass);
-        xsd->kbdclass = NULL;
-
-        OOP_ReleaseAttrBases(attrbases);
-    }
+    OOP_ReleaseAttrBases(attrbases);
     
-    ReturnVoid("free_kbdclass");
+    ReturnInt("PCKbd_ExpungeAttrs", ULONG, TRUE);
+    
+    AROS_SET_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
+
+ADD2INITLIB(PCKbd_InitAttrs, 0)
+ADD2EXPUNGELIB(PCKbd_ExpungeAttrs, 0)
 
 /****************************************************************************************/
 

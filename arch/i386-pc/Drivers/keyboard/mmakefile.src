@@ -1,10 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-%build_module_macro mmake=kernel-pc-i386-kbd \
-  modname=kbd modtype=hidd \
-  files="kbdclass kbd_common" \
-  conffile=lib.conf \
-  genfunctable=yes
-
-%common
+%build_module mmake=kernel-pc-i386-kbd \
+    modname=kbd modtype=hidd \
+    files="kbd_init kbdclass kbd_common"
