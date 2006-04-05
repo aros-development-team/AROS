@@ -23,17 +23,12 @@
 
 #include <string.h>
 
-#ifdef SysBase
-#undef SysBase
-#endif
-
 AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, BootLoaderBase)
 {
     AROS_SET_LIBFUNC_INIT
 
     struct arosmb *mb = (struct arosmb *)0x1000;
     
-    BootLoaderBase->bl_UtilityBase = OpenLibrary("utility.library",0);
     NEWLIST(&(BootLoaderBase->Args));
     NEWLIST(&(BootLoaderBase->DriveInfo));
 
