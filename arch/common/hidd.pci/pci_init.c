@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -38,14 +38,7 @@ AROS_SET_LIBFUNC(PCI_Init, LIBBASETYPE, LIBBASE)
     InitSemaphore(&LIBBASE->psd.driver_lock);
     NEWLIST(&LIBBASE->psd.drivers);
 
-    LIBBASE->psd.utilitybase = OpenLibrary(UTILITYNAME, 0);
-    if (LIBBASE->psd.MemPool != NULL && LIBBASE->psd.utilitybase != NULL)
-    {
-	D(bug("[PCI] Got UtilityBase @ 0x%08x\n", LIBBASE->psd.utilitybase));
-	return TRUE;
-    }
-
-    return FALSE;
+    return LIBBASE->psd.MemPool != NULL;
     
     AROS_SET_LIBFUNC_EXIT
 }
@@ -83,9 +76,6 @@ AROS_SET_LIBFUNC(PCI_Expunge, LIBBASETYPE, LIBBASE)
 
     /* All objects deleted by now. Free classes */
 #endif
-
-    D(bug("[PCI] Closing libraries\n"));
-    CloseLibrary(LIBBASE->psd.utilitybase);
 
     D(bug("[PCI] Destroying MemoryPool\n"));
     DeletePool(LIBBASE->MemPool);

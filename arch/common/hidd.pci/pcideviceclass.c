@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI device class
@@ -27,8 +27,6 @@
 #endif // HiddPCIDeviceAttrBase
 
 #define	HiddPCIDeviceAttrBase	(PSD(cl)->hiddPCIDeviceAB)
-
-#define UtilityBase	(PSD(cl)->utilitybase)
 
 static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
 {
