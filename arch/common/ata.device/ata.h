@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved
     $Id$
 
     Desc: ata.device main private include file
@@ -35,8 +35,6 @@
 #define STACK_SIZE  16384
 #define TASK_PRI    10
 
-extern UBYTE LIBEND;
-
 /*
     Don't blame me for information redundance here!
 
@@ -64,8 +62,6 @@ struct PRDEntry {
 struct ataBase {
     struct Device	    ata_Device;
     struct ExecBase	    *ata_SysBase;
-    struct UtilityBase	    *ata_UtilityBase;
-    struct Library	    *ata_OOPBase;
     
     struct Task		    *ata_Daemon;
     struct ata_Bus	    *ata_Buses[MAX_BUS];

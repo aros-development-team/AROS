@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -92,11 +92,6 @@ VOID ata_400ns(VOID)
     ata_in(ata_Control, 0x1f0);
     ata_in(ata_Control, 0x1f0);
 }
-
-#ifdef SysBase
-#undef SysBase
-#endif
-#define SysBase (LIBBASE->ata_SysBase)
 
 static void ata_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 {
@@ -359,10 +354,6 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 }
 
 
-#ifdef SysBase
-#undef SysBase
-#endif // SysBase
-#define SysBase ((bus)->ab_Base->ata_SysBase)
 /*
     Device scan routines
 */
