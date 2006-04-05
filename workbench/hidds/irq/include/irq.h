@@ -35,7 +35,7 @@ enum
 
     moHidd_IRQ_AddHandler = 0,       
     moHidd_IRQ_RemHandler,
-    moHidd_CauseIRQ,
+    moHidd_IRQ_CauseIRQ,
     moHidd_IRQ_NumMethods
 };
 
@@ -89,7 +89,7 @@ struct pHidd_IRQ_RemHandler
     HIDDT_IRQ_Handler   *handlerinfo;
 };
 
-struct pHidd_CauseIRQ
+struct pHidd_IRQ_CauseIRQ
 {
     OOP_MethodID        mID;
     HIDDT_IRQ_Id        id;
@@ -100,7 +100,7 @@ struct pHidd_CauseIRQ
 
 BOOL HIDD_IRQ_AddHandler    (OOP_Object *, HIDDT_IRQ_Handler *, HIDDT_IRQ_Id);
 VOID HIDD_IRQ_RemHandler    (OOP_Object *, HIDDT_IRQ_Handler *);
-VOID HIDD_CauseIRQ          (OOP_Object *, HIDDT_IRQ_Id, HIDDT_IRQ_HwInfo *);
+VOID HIDD_IRQ_CauseIRQ      (OOP_Object *, HIDDT_IRQ_Id, HIDDT_IRQ_HwInfo *);
 
 #endif /* HIDD_IRQ_H */
 
