@@ -2,16 +2,13 @@
 include $(TOP)/config/make.cfg
 
 FILES	:=	\
+	vmwaregfx_init \
 	vmwaregfxclass \
 	hardware \
 	offbitmap \
 	onbitmap
 
-%build_module_macro mmake=kernel-pc-i386-vmwaregfx \
+%build_module mmake=kernel-pc-i386-vmwaregfx \
   modname=vmwaregfx modtype=hidd \
   files=$(FILES) \
-  conffile=lib.conf \
-  genfunctable=yes uselibs="rom amiga hiddgraphicsstubs hiddstubs"
-
-%common
-
+  uselibs="hiddgraphicsstubs hiddstubs rom amiga"

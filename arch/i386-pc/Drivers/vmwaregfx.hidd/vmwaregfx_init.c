@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: vmware gfx Hidd for standalone i386 AROS
@@ -16,50 +16,18 @@
 #include <hidd/pci.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
+#include <aros/symbolsets.h>
 
-#include "onbitmap.h"
-#include "offbitmap.h"
 #include "hardware.h"
 #include "vmwaregfxclass.h"
 #include "svga_reg.h"
-#undef SysBase
 
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->sysBase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->SegList)
-#define LC_RESIDENTNAME		vmwareGfxHidd_resident
-#define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
-#define LC_RESIDENTPRI		9
-#define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
-#define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->library)
-
-#define LC_NO_INITLIB
-#define LC_NO_EXPUNGELIB
-#define LC_NO_CLOSELIB
-
-
-#define NOEXPUNGE
-
-struct VMWareGfxBase
-{
-    struct Library library;
-    struct ExecBase *sysBase;
-    BPTR	SegList;
-};
-
-#include <libcore/libheader.c>
+#include LC_LIBDEFS_FILE
 
 #undef  SDEBUG
 #undef  DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
-
-#undef SysBase
-#undef OOPBase
-
-#define SysBase xsd->sysBase
-#define OOPBase xsd->oopBase
 
 static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
 static OOP_AttrBase HiddPCIDeviceAttrBase;
@@ -68,61 +36,6 @@ static struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
 	{ NULL, NULL }
 };
-
-static VOID freeclasses(struct VMWareGfx_staticdata *xsd);
-
-static BOOL initclasses(struct VMWareGfx_staticdata *xsd) {
-
-    /* Get some attrbases */
-    
-	if (!OOP_ObtainAttrBases(abd))
-    	goto failure;
-
-    xsd->vmwaregfxclass = init_vmwaregfxclass(xsd);
-    if (NULL == xsd->vmwaregfxclass)
-    	goto failure;
-
-    xsd->onbmclass = init_vmwaregfxonbmclass(xsd);
-    if (NULL == xsd->onbmclass)
-    	goto failure;
-
-    xsd->offbmclass = init_vmwaregfxoffbmclass(xsd);
-    if (NULL == xsd->offbmclass)
-    	goto failure;
-#if 0
-    xsd->mouseclass = init_mouseclass(xsd);
-    if (NULL == xsd->mouseclass)
-    	goto failure;
-#endif
-    return TRUE;
-        
-failure:
-    freeclasses(xsd);
-
-    return FALSE;
-    
-}
-
-static VOID freeclasses(struct VMWareGfx_staticdata *xsd)
-{
-#if 0
-    if (xsd->mouseclass)
-    	free_mouseclass(xsd);
-#endif
-    if (xsd->vmwaregfxclass)
-    	free_vmwaregfxclass(xsd);
-
-    if (xsd->offbmclass)
-    	free_vmwaregfxoffbmclass(xsd);
-
-    if (xsd->onbmclass)
-    	free_vmwaregfxonbmclass(xsd);
-
-    OOP_ReleaseAttrBases(abd);
-	
-    return;
-}
-
 
 AROS_UFH3(void, VMEnumerator,
     AROS_UFHA(struct Hook *,    hook,           A0),
@@ -188,42 +101,49 @@ STATIC BOOL findCard(struct VMWareGfx_staticdata *xsd) {
     return (xsd->card) ? TRUE : FALSE;
 }
 
-#undef SysBase
-#define SysBase (LC_SYSBASE_FIELD(lh))
+AROS_SET_LIBFUNC(VMWareGfx_Init, LIBBASETYPE, LIBBASE)
+{
+    AROS_SET_LIBFUNC_INIT
 
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh) {
-struct VMWareGfx_staticdata *xsd;
+    struct VMWareGfx_staticdata *xsd = &LIBBASE->vsd;
 
-	xsd = AllocMem(sizeof(struct VMWareGfx_staticdata), MEMF_CLEAR | MEMF_PUBLIC);
-	if (xsd)
-	{
-		xsd->sysBase = SysBase;
-		xsd->oopBase = OpenLibrary(AROSOOP_NAME, 0);
-		if (xsd->oopBase)
-		{
-			xsd->utilityBase = OpenLibrary(UTILITYNAME, 37);
-			if (xsd->utilityBase)
-			{
-				xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-				if (xsd->pcihidd)
-				{
-                                        HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-                                        if (findCard(xsd))
-					{
-						D(bug("Found VMWareSVGA\n"));
-						if (initclasses(xsd))
-						{
-							D(bug("Everything OK\n"));
-							return TRUE;
-						}
-					}
-				}
-				CloseLibrary(xsd->utilityBase);
-			}
-			CloseLibrary(xsd->oopBase);
-		}
-		FreeMem(xsd, sizeof (struct VMWareGfx_staticdata));
+    if (!OOP_ObtainAttrBases(abd))
+	goto failure;
+
+    xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+    if (xsd->pcihidd == NULL)
+	goto failure;
+
+    HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+    if (HiddPCIDeviceAttrBase = 0)
+	goto failure;
+    
+    if (!findCard(xsd))
+	goto failure;
+    
+    D(bug("Found VMWareSVGA\n"));
+    return TRUE;
+
+failure:
+    D(bug("VMWareSVGA Init failesd\n"));
+    if (HiddPCIDeviceAttrBase != 0)
+    {
+	OOP_ReleaseAttrBase(HiddPCIDeviceAttrBase);
+	HiddPCIDeviceAttrBase = 0;
     }
+    
+    if (xsd->pcihidd != NULL)
+    {
+	OOP_DisposeObject(xsd->pcihidd);
+	xsd->pcihidd;
+    }
+    
+    OOP_ReleaseAttrBases(abd);
+    
     return FALSE;
+
+    AROS_SET_LIBFUNC_EXIT
 }
+
+ADD2INITLIB(VMWareGfx_Init, 0)
 

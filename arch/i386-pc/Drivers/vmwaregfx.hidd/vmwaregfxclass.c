@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VMWare.
@@ -11,8 +11,7 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
-#include <aros/system.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include <devices/inputevent.h>
 #include <exec/alerts.h>
 #include <exec/memory.h>
@@ -27,6 +26,8 @@
 #include "vmwaregfxclass.h"
 #include "bitmap.h"
 #include "hardware.h"
+
+#include LC_LIBDEFS_FILE
 
 static OOP_AttrBase HiddBitMapAttrBase;  
 static OOP_AttrBase HiddPixFmtAttrBase;
@@ -46,10 +47,6 @@ static struct OOP_ABDescr attrbases[] =
     {NULL, NULL}
 };
 
-struct VMWareGfxData {
-	int i;
-};
-
 STATIC ULONG mask_to_shift(ULONG mask)
 {
     ULONG i;
@@ -65,7 +62,7 @@ STATIC ULONG mask_to_shift(ULONG mask)
     return i;
 }
 
-STATIC OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
+OOP_Object *VMWareGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
 struct TagItem pftags[] =
 {
 	{aHidd_PixFmt_RedShift,     0}, /*  0 */
@@ -187,13 +184,13 @@ struct pRoot_New yourmsg;
 	ReturnPtr("VMWareGfx::New", OOP_Object *, NULL);
 }
 
-STATIC VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
+VOID VMWareGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
 	if (XSD(cl)->mouse.shape != NULL)
 		FreeVec(XSD(cl)->mouse.shape);
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-STATIC VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg) {
+VOID VMWareGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg) {
 ULONG idx;
 BOOL found = FALSE;
 
@@ -211,7 +208,7 @@ BOOL found = FALSE;
 		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-STATIC OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg) {
+OOP_Object *VMWareGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg) {
 BOOL displayable;
 BOOL framebuffer;
 OOP_Class *classptr = NULL;
@@ -264,7 +261,7 @@ struct pHidd_Gfx_NewBitMap yourmsg;
 	ReturnPtr("VMWareGfx::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
 }
 
-STATIC VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg) {
+VOID VMWareGfx__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg) {
 UBYTE *src = NULL;
 UBYTE *dst = NULL;
 HIDDT_DrawMode mode;
@@ -449,7 +446,7 @@ struct Box box;
 	ReturnVoid("VMWareGfx.BitMap::CopyBox");
 }
 
-STATIC BOOL gfxhidd_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg) {
+BOOL VMWareGfx__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg) {
 struct VMWareGfx_staticdata *data = XSD(cl);
 
 	if (msg->shape == NULL)
@@ -543,7 +540,7 @@ struct VMWareGfx_staticdata *data = XSD(cl);
 	return FALSE;
 }
 
-STATIC BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg) {
+BOOL VMWareGfx__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg) {
 struct Box box;
 
 	XSD(cl)->mouse.x = msg->x;
@@ -557,91 +554,47 @@ struct Box box;
 	return TRUE;
 }
 
-STATIC VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg) {
+VOID VMWareGfx__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg) {
 
 	XSD(cl)->mouse.visible = msg->visible;
 	displayCursorVMWareGfx(&XSD(cl)->data, msg->visible ? 1 : 0);
 }
 
-#undef XSD
-#define XSD(cl) xsd
 
-#define NUM_ROOT_METHODS 3
-#define NUM_VMWAREGFX_METHODS 4
+AROS_SET_LIBFUNC(VMWareGfx_InitStatic, LIBBASETYPE, LIBBASE)
+{
+    AROS_SET_LIBFUNC_INIT
 
-OOP_Class *init_vmwaregfxclass(struct VMWareGfx_staticdata *xsd) {
-OOP_Class *cl = NULL;
-struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-{
-	{(IPTR (*)())gfx_new,		moRoot_New},
-	{(IPTR (*)())gfx_dispose,	moRoot_Dispose},
-	{(IPTR (*)())gfx_get,		moRoot_Get},
-	{NULL, 0UL}
-};
-struct OOP_MethodDescr vmwaregfxhidd_descr[NUM_VMWAREGFX_METHODS + 1] = 
-{
-	{(IPTR (*)())gfxhidd_newbitmap,        moHidd_Gfx_NewBitMap},
-//	{(IPTR (*)())gfxhidd_copybox,          moHidd_Gfx_CopyBox},
-	{(IPTR (*)())gfxhidd_setcursorshape,   moHidd_Gfx_SetCursorShape},
-	{(IPTR (*)())gfxhidd_setcursorpos,     moHidd_Gfx_SetCursorPos},
-	{(IPTR (*)())gfxhidd_setcursorvisible, moHidd_Gfx_SetCursorVisible},
-	{NULL, 0UL}
-};
-struct OOP_InterfaceDescr ifdescr[] =
-{
-	{root_descr,          IID_Root,     NUM_ROOT_METHODS},
-	{vmwaregfxhidd_descr, IID_Hidd_Gfx, NUM_VMWAREGFX_METHODS},
-	{NULL, NULL, 0}
-};
-OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-struct TagItem tags[] =
-{
-	{aMeta_SuperID,        (IPTR)CLID_Hidd_Gfx},
-	{aMeta_InterfaceDescr, (IPTR)ifdescr},
-	{aMeta_InstSize,       (IPTR)sizeof(struct VMWareGfxData)},
-	{aMeta_ID,             (IPTR)CLID_Hidd_VMWareGfx},
-	{TAG_DONE, 0UL}
-};
+    EnterFunc(bug("VMWareGfx_InitStatic\n"));
 
-	EnterFunc(bug("VMWareGfxHiddClass init\n"));
-	if (MetaAttrBase)
-	{
-		cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-		if(cl)
-		{
-			xsd->mouse.x=0;
-			xsd->mouse.y=0;
-			xsd->mouse.shape = NULL;
-			cl->UserData = (APTR)xsd;
-			xsd->vmwaregfxclass = cl;
-			if (OOP_ObtainAttrBases(attrbases))
-			{
-				D(bug("VMWareGfxHiddClass ok\n"));
-				OOP_AddClass(cl);
-			}
-			else
-			{
-				free_vmwaregfxclass(xsd);
-				cl = NULL;
-			}
-		}
-		/* Don't need this anymore */
-		OOP_ReleaseAttrBase(IID_Meta);
-	}
-	ReturnPtr("init_vmwaregfxclass", OOP_Class *, cl);
+    LIBBASE->vsd.mouse.x=0;
+    LIBBASE->vsd.mouse.y=0;
+    LIBBASE->vsd.mouse.shape = NULL;
+
+    if (!OOP_ObtainAttrBases(attrbases))
+    {
+	D(bug("VMWareGfx_InitStatic attrbases init failed\n"));
+	return FALSE;
+    }
+    
+    D(bug("VMWareGfx_InitStatic ok\n"));
+
+    ReturnInt("VMWareGfx_InitStatic", UNLONG, TRUE);
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
-VOID free_vmwaregfxclass(struct VMWareGfx_staticdata *xsd) {
+AROS_SET_LIBFUNC(VMWareGfx_ExpungeStatic, LIBBASETYPE, LIBBASE)
+{
+    AROS_SET_LIBFUNC_INIT
 
-	EnterFunc(bug("free_vgaclass(xsd=%p)\n", xsd));
-	if(xsd)
-	{
-		OOP_RemoveClass(xsd->vmwaregfxclass);
-		if(xsd->vmwaregfxclass)
-			OOP_DisposeObject((OOP_Object *) xsd->vmwaregfxclass);
-		xsd->vmwaregfxclass = NULL;
-		OOP_ReleaseAttrBases(attrbases);
-	}
-	ReturnVoid("free_vmwaregfxclass");
+    EnterFunc(bug("VMWareGfx_ExpungeStatic\n"));
+
+    OOP_ReleaseAttrBases(attrbases);
+    ReturnInt("VMWareGfx_ExpungeStatic", ULONG, TRUE);
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(VMWareGfx_InitStatic, 0)
+ADD2EXPUNGELIB(VMWareGfx_ExpungeStatic, 0)

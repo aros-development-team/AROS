@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Offscreen bitmap class for VMWare hidd.
@@ -14,6 +14,7 @@
 #include <exec/alerts.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
+#include <aros/symbolsets.h>
 #include <graphics/gfx.h>
 #include <graphics/rastport.h>
 #include <hidd/graphics.h>
@@ -21,9 +22,10 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include "offbitmap.h"
 #include "bitmap.h"
 #include "vmwaregfxclass.h"
+
+#include LC_LIBDEFS_FILE
 
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
@@ -44,13 +46,14 @@ static struct OOP_ABDescr attrbases[] =
     {NULL, NULL}
 };
 
-#define MNAME(x) vmwaregfxoffbitmap_ ## x
+#define MNAME_ROOT(x) VMWareOffBM__Root__ ## x
+#define MNAME_BM(x) VMWareOffBM__Hidd_BitMap__ ## x
 
 #include "bitmap_common.c"
 
 /*********** BitMap::New() *************************************/
 
-static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
+OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
 	EnterFunc(bug("VMWareGfx.BitMap::New()\n"));
 	o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
 	if (o)
@@ -105,7 +108,7 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
 /**********  Bitmap::Dispose()  ***********************************/
 
-static VOID MNAME(dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
+VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
 struct BitmapData *data = OOP_INST_DATA(cl, o);
 
 	EnterFunc(bug("VMWareGfx.BitMap::Dispose()\n"));
@@ -126,97 +129,31 @@ struct BitmapData *data = OOP_INST_DATA(cl, o);
 
 /*** init_bmclass *********************************************************/
 
-#undef XSD
-#define XSD(cl) xsd
-
-
-#define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 10
-
-
-OOP_Class *init_vmwaregfxoffbmclass(struct VMWareGfx_staticdata *xsd) {
-struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
+AROS_SET_LIBFUNC(VMWareOffBM_Init, LIBBASETYPE, LIBBASE)
 {
-	{(IPTR (*)())MNAME(new),     moRoot_New    },
-	{(IPTR (*)())MNAME(dispose), moRoot_Dispose},
-//	{(IPTR (*)())MNAME(set),     moRoot_Set},
-	{(IPTR (*)())MNAME(get),     moRoot_Get},
-	{NULL, 0UL}
-};
-struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
-{
-	{(IPTR (*)())MNAME(setcolors),          moHidd_BitMap_SetColors},
-	{(IPTR (*)())MNAME(putpixel),           moHidd_BitMap_PutPixel},
-	{(IPTR (*)())MNAME(clear),              moHidd_BitMap_Clear},
-	{(IPTR (*)())MNAME(getpixel),           moHidd_BitMap_GetPixel},
-/*	{(IPTR (*)())MNAME(drawpixel),          moHidd_BitMap_DrawPixel},*/
-	{(IPTR (*)())MNAME(fillrect),           moHidd_BitMap_FillRect},
-	{(IPTR (*)())MNAME(getimage),           moHidd_BitMap_GetImage},
-	{(IPTR (*)())MNAME(putimage),           moHidd_BitMap_PutImage},
-	{(IPTR (*)())MNAME(blitcolorexpansion), moHidd_BitMap_BlitColorExpansion},
-	{(IPTR (*)())MNAME(putimagelut),        moHidd_BitMap_PutImageLUT},
-	{(IPTR (*)())MNAME(getimagelut),        moHidd_BitMap_GetImageLUT},
-	{NULL, 0UL}
-};
-struct OOP_InterfaceDescr ifdescr[] =
-{
-	{root_descr,    IID_Root       , NUM_ROOT_METHODS},
-	{bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
-	{NULL, NULL, 0}
-};
-OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-struct TagItem tags[] =
-{
-	{aMeta_SuperID,        (IPTR) CLID_Hidd_BitMap},
-	{aMeta_InterfaceDescr, (IPTR) ifdescr},
-	{aMeta_InstSize,       (IPTR) sizeof(struct BitmapData)},
-	{TAG_DONE, 0UL}
-};
-OOP_Class *cl = NULL;
+    AROS_SET_LIBFUNC_INIT
 
-	EnterFunc(bug("init_bitmapclass(xsd=%p)\n", xsd));
-	D(bug("Metattrbase: %x\n", MetaAttrBase));
-	if(MetaAttrBase)
-	{
-		D(bug("Got attrbase\n"));
-/*		for (;;) {cl = cl; } */
-		cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-		if(cl)
-		{
-			D(bug("BitMap class ok\n"));
-			xsd->offbmclass = cl;
-			cl->UserData     = (APTR) xsd;
-			/* Get attrbase for the BitMap interface */
-			if (OOP_ObtainAttrBases(attrbases))
-			{
-				OOP_AddClass(cl);
-			}
-			else
-			{
-				free_vmwaregfxoffbmclass( xsd );
-				cl = NULL;
-			}
-		}
-		/* We don't need this anymore */
-		OOP_ReleaseAttrBase(IID_Meta);
-	} /* if(MetaAttrBase) */
-	ReturnPtr("init_bmclass", OOP_Class *,  cl);
+    EnterFunc(bug("VMWareOffBM_Init\n"));
+
+    ReturnInt("VMWareOffBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
+    
+    AROS_SET_LIBFUNC_EXIT
 }
-
 
 /*** free_offbitmapclass *********************************************************/
 
-void free_vmwaregfxoffbmclass(struct VMWareGfx_staticdata *xsd) {
-EnterFunc(bug("free_bmclass(xsd=%p)\n", xsd));
+AROS_SET_LIBFUNC(VMWareOffBM_Expunge, LIBBASETYPE, LIBBASE)
+{
+    AROS_SET_LIBFUNC_INIT
 
-	if(xsd)
-	{
-		OOP_RemoveClass(xsd->offbmclass);
-		if(xsd->offbmclass)
-			OOP_DisposeObject((OOP_Object *) xsd->offbmclass);
-		xsd->offbmclass = NULL;
-		OOP_ReleaseAttrBases(attrbases);
-	}
-	ReturnVoid("free_bmclass");
+    EnterFunc(bug("VMWareOffBM_Expunge\n"));
+
+    OOP_ReleaseAttrBases(attrbases);
+
+    ReturnInt("VMWareOffBM_Expunge", ULONG, TRUE);
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(VMWareOffBM_Init, 0)
+ADD2EXPUNGELIB(VMWareOffBM_Expunge, 0)
