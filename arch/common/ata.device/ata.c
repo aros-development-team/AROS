@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -22,8 +22,6 @@
 
 #include "ata.h"
 
-#define SysBase (LIBBASE->ata_SysBase)
-#define OOPBase (LIBBASE->ata_OOPBase)
 //---------------------------IO Commands---------------------------------------
 
 /* Invalid comand does nothing, complains only. */
@@ -794,18 +792,6 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
 }
 
 /*
-    The Bus task goes here. If you for any reason would put anything below, 
-    remember that the SysBase refers now to the LIBBASE, which should be the
-    base of ata.device.
-*/
-#ifdef SysBase
-#undef SysBase
-#endif
-#define SysBase (LIBBASE->ata_SysBase)
-#undef LIBBASE
-#define LIBBASE (bus->ab_Base)
-
-/*
     As I duplicated task names are not really welcomed, use different names
     for all buses.
 */
@@ -883,7 +869,7 @@ static int CreateInterrupt(struct ata_Bus *bus)
     struct OOP_Object *o;
     int retval = 0;
 
-    HIDDT_IRQ_Handler *timeout_irq = AllocPooled(LIBBASE->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
+    HIDDT_IRQ_Handler *timeout_irq = AllocPooled(bus->ab_Base->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
     
     if (bus->ab_IntHandler && timeout_irq)
     {
@@ -982,7 +968,7 @@ static void TaskCode(struct ata_Bus *bus)
 	    {
 		/* And do IO's */
 		ObtainSemaphore(&bus->ab_Lock);
-		HandleIO(msg, LIBBASE);
+		HandleIO(msg, bus->ab_Base);
 		ReleaseSemaphore(&bus->ab_Lock);
 		/* TD_ADDCHANGEINT doesn't require reply */
 		if (msg->io_Command != TD_ADDCHANGEINT)

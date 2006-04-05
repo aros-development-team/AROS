@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -23,10 +23,6 @@
 #include <proto/oop.h>
 
 #include "ata.h"
-
-#undef LIBBASE
-#define LIBBASE (unit->au_Base)
-#define SysBase (LIBBASE->ata_SysBase)
 
 /*
     Prepare PRD entries for sectors transfer. This function assumes, that noone
@@ -121,10 +117,6 @@ VOID dma_StopDMA(struct ata_Unit *unit)
     inb(unit->au_DMAPort + dma_Status);
     outb(inb(unit->au_DMAPort + dma_Status) | DMAF_Error | DMAF_Interrupt, unit->au_DMAPort + dma_Status);
 }
-
-#undef LIBBASE
-#define LIBBASE (bus->ab_Base)
-#define OOPBase (LIBBASE->ata_OOPBase)
 
 #define bus ((struct ata_Bus*)hook->h_Data)
 
