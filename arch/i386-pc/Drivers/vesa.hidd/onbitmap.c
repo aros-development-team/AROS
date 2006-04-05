@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for Vesa hidd.
@@ -17,12 +17,15 @@
 #include <graphics/gfx.h>
 #include <hidd/graphics.h>
 #include <oop/oop.h>
+#include <aros/symbolsets.h>
 #define DEBUG 0
 #include <aros/debug.h>
 
 #include "onbitmap.h"
 #include "bitmap.h"
 #include "vesagfxclass.h"
+
+#include LC_LIBDEFS_FILE
 
 /* Don't initialize static variables with "=0", otherwise they go into DATA segment */
 
@@ -45,13 +48,14 @@ static struct OOP_ABDescr attrbases[] =
     { NULL  	    	    , NULL  	    	    	}
 };
 
-#define MNAME(x) vesagfxonbitmap_ ## x
+#define MNAME_ROOT(x) PCVesaOnBM__Root__ ## x
+#define MNAME_BM(x) PCVesaOnBM__Hidd_BitMap__ ## x
 
 #define OnBitmap 1
 #include "bitmap_common.c"
 
 /*********** BitMap::New() *************************************/
-static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("VesaGfx.BitMap::New()\n"));
     
@@ -128,7 +132,7 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 }
 
 /**********  Bitmap::Dispose()  ***********************************/
-STATIC VOID MNAME(dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
@@ -145,102 +149,28 @@ STATIC VOID MNAME(dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /*** init_onbmclass *********************************************************/
 
-#undef XSD
-#define XSD(cl) xsd
-
-#define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 9
-
-OOP_Class *init_vesagfxonbmclass(struct VesaGfx_staticdata *xsd)
+AROS_SET_LIBFUNC(PCVesaOnBM_Init, LIBBASETYPE, LIBBASE)
 {
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
-    {
-	{(IPTR (*)())MNAME(new)     , moRoot_New    },
-	{(IPTR (*)())MNAME(dispose) , moRoot_Dispose},
-	{(IPTR (*)())MNAME(get)	    , moRoot_Get    },
-	{NULL	    	    	    , 0UL   	    }
-    };
-    struct OOP_MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
-    {
-	{(IPTR (*)())MNAME(putpixel)	    	, moHidd_BitMap_PutPixel    	    },
-	{(IPTR (*)())MNAME(getpixel)	    	, moHidd_BitMap_GetPixel    	    },
-	{(IPTR (*)())MNAME(fillrect)	    	, moHidd_BitMap_FillRect    	    },
-	{(IPTR (*)())MNAME(putimage)	    	, moHidd_BitMap_PutImage    	    },
-	{(IPTR (*)())MNAME(getimage)	    	, moHidd_BitMap_GetImage    	    },
-    	{(IPTR (*)())MNAME(putimagelut)     	, moHidd_BitMap_PutImageLUT 	    },
-    	{(IPTR (*)())MNAME(blitcolorexpansion)	, moHidd_BitMap_BlitColorExpansion  },
-    	{(IPTR (*)())MNAME(puttemplate)	    	, moHidd_BitMap_PutTemplate 	    },
-    	{(IPTR (*)())MNAME(putpattern)	    	, moHidd_BitMap_PutPattern 	    },
-	{NULL	    	    	    	    	, 0UL	    	    	    	    }
-    };
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-	{root_descr 	, IID_Root       , NUM_ROOT_METHODS   	},
-	{bitMap_descr	, IID_Hidd_BitMap, NUM_BITMAP_METHODS 	},
-	{NULL	    	, NULL 	    	 , 0   	    	    	}
-    };
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-    struct TagItem tags[] =
-    {
-	{aMeta_SuperID	    	, (IPTR) CLID_Hidd_BitMap   	    },
-	{aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    },
-	{aMeta_InstSize     	, (IPTR) sizeof(struct BitmapData)  },
-	{TAG_DONE   	    	, 0UL	    	    	    	    }
-    };
-    OOP_Class *cl = NULL;
+    AROS_SET_LIBFUNC_INIT
 
-    EnterFunc(bug("init_vesagfxonbmclass(xsd=%p)\n", xsd));
+    EnterFunc(bug("PCVesaOnBM_Init\n"));
     
-    D(bug("Metattrbase: %x\n", MetaAttrBase));
-    
-    if(MetaAttrBase)
-    {
-	D(bug("Got attrbase\n"));
-	
-	/*		for (;;) {cl = cl; } */
-	
-	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-	if(cl)
-	{
-	    D(bug("BitMap class ok\n"));
-	    xsd->onbmclass = cl;
-	    cl->UserData     = (APTR) xsd;
-	    /* Get attrbase for the BitMap interface */
-	    if (OOP_ObtainAttrBases(attrbases))
-	    {
-		OOP_AddClass(cl);
-	    }
-	    else
-	    {
-		free_vesagfxonbmclass( xsd );
-		cl = NULL;
-	    }
-	}
-	
-	/* We don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-	
-    } /* if(MetaAttrBase) */
-    
-    ReturnPtr("init_vesagfxonbmclass", OOP_Class *,  cl);
+    ReturnPtr("PCVesaOnBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
+
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /*** free_bitmapclass *********************************************************/
-void free_vesagfxonbmclass(struct VesaGfx_staticdata *xsd)
+
+AROS_SET_LIBFUNC(PCVesaOnBM_Expunge, LIBBASETYPE, LIBBASE)
 {
-    EnterFunc(bug("free_vesagfxonbmclass(xsd=%p)\n", xsd));
-    
-    if(xsd)
-    {
-	OOP_RemoveClass(xsd->onbmclass);
-	
-	if(xsd->onbmclass)
-	    OOP_DisposeObject((OOP_Object *) xsd->onbmclass);
-	    
-	xsd->onbmclass = NULL;
-	
-	OOP_ReleaseAttrBases(attrbases);
-    }
-    
-    ReturnVoid("free_vesagfxonbmclass");
+    AROS_SET_LIBFUNC_INIT
+
+    OOP_ReleaseAttrBases(attrbases);
+    ReturnInt("PCVesaOnBM_Expunge", ULONG, TRUE);
+
+    AROS_SET_LIBFUNC_EXIT
 }
+
+ADD2INITLIB(PCVesaOnBM_Init, 0)
+ADD2EXPUNGELIB(PCVesaOnBM_Expunge, 0)

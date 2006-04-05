@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for Vesa.
@@ -11,8 +11,7 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
-#include <aros/system.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include <devices/inputevent.h>
 #include <exec/alerts.h>
 #include <exec/memory.h>
@@ -29,6 +28,8 @@
 #include "vesagfxclass.h"
 #include "bitmap.h"
 #include "hardware.h"
+
+#include LC_LIBDEFS_FILE
 
 static OOP_AttrBase HiddBitMapAttrBase;  
 static OOP_AttrBase HiddPixFmtAttrBase;
@@ -50,12 +51,7 @@ static struct OOP_ABDescr attrbases[] =
 
 static UBYTE syncdescription[100];
 
-struct VesaGfxData
-{
-    int i;
-};
-
-STATIC OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem pftags[] =
     {
@@ -140,14 +136,14 @@ STATIC OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     ReturnPtr("VesaGfx::New", OOP_Object *, NULL);
 }
 
-STATIC VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID PCVesa__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     if (XSD(cl)->mouse.shape != NULL)
 	FreeVec(XSD(cl)->mouse.shape);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-STATIC VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID PCVesa__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     BOOL found = FALSE;
@@ -168,7 +164,7 @@ STATIC VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-STATIC OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *PCVesa__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
     BOOL displayable;
     BOOL framebuffer;
@@ -222,7 +218,7 @@ STATIC OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     ReturnPtr("VesaGfx::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
 }
 
-static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+VOID PCVesa__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     unsigned char *src = 0, *dest = 0;
     ULONG mode;
@@ -328,91 +324,40 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 
 }
 
-static VOID gfxhidd_showimminentreset(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID PCVesa__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     memset(XSD(cl)->data.framebuffer,
     	   0,
 	   XSD(cl)->data.height * XSD(cl)->data.bytesperline);
 }
 
-#undef XSD
-#define XSD(cl) xsd
 
-#define NUM_ROOT_METHODS 3
-#define NUM_VESAGFX_METHODS 3
-
-OOP_Class *init_vesagfxclass(struct VesaGfx_staticdata *xsd)
+AROS_SET_LIBFUNC(PCVesa_InitClass, LIBBASETYPE, LIBBASE)
 {
-    OOP_Class *cl = NULL;
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-    {
-	{(IPTR (*)())gfx_new	, moRoot_New	},
-	{(IPTR (*)())gfx_dispose, moRoot_Dispose},
-	{(IPTR (*)())gfx_get	, moRoot_Get	},
-	{NULL	    	    	, 0UL	    	}
-    };
-    struct OOP_MethodDescr vesagfxhidd_descr[NUM_VESAGFX_METHODS + 1] = 
-    {
-	{(IPTR (*)())gfxhidd_newbitmap	    	, moHidd_Gfx_NewBitMap	    	},
-	{(IPTR (*)())gfxhidd_copybox	    	, moHidd_Gfx_CopyBox	    	},
-	{(IPTR (*)())gfxhidd_showimminentreset	, moHidd_Gfx_ShowImminentReset	},
-	{NULL	    	    	    	    	, 0UL	    	    	    	}
-    };
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-	{root_descr 	    , IID_Root	    , NUM_ROOT_METHODS	    },
-	{vesagfxhidd_descr  , IID_Hidd_Gfx  , NUM_VESAGFX_METHODS   },
-	{NULL	    	    , NULL  	    , 0     	    	    }
-    };
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-    struct TagItem tags[] =
-    {
-	{aMeta_SuperID	    	, (IPTR)CLID_Hidd_Gfx	    	    },
-	{aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
-	{aMeta_InstSize     	, (IPTR)sizeof(struct VesaGfxData)  },
-	{aMeta_ID   	    	, (IPTR)CLID_Hidd_VesaGfx   	    },
-	{TAG_DONE   	    	, 0UL	    	    	    	    }
-    };
+    AROS_SET_LIBFUNC_INIT
 
-    EnterFunc(bug("VesaGfxHiddClass init\n"));
-    if (MetaAttrBase)
-    {
-	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-	if(cl)
-	{
-	    xsd->mouse.x=0;
-	    xsd->mouse.y=0;
-	    xsd->mouse.shape = NULL;
-	    cl->UserData = (APTR)xsd;
-	    xsd->vesagfxclass = cl;
-	    if (OOP_ObtainAttrBases(attrbases))
-	    {
-		D(bug("VesaGfxHiddClass ok\n"));
-		OOP_AddClass(cl);
-	    }
-	    else
-	    {
-		free_vesagfxclass(xsd);
-		cl = NULL;
-	    }
-	}
-	/* Don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-    }
-    ReturnPtr("init_vesagfxclass", OOP_Class *, cl);
+    EnterFunc(bug("PCVesa_InitClass\n"));
+
+    LIBBASE->vsd.mouse.x=0;
+    LIBBASE->vsd.mouse.y=0;
+    LIBBASE->vsd.mouse.shape = NULL;
+
+    ReturnInt("PCVesa_InitClass", ULONG, OOP_ObtainAttrBases(attrbases));
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
-VOID free_vesagfxclass(struct VesaGfx_staticdata *xsd)
+AROS_SET_LIBFUNC(PCVesa_ExpungeClass, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+
     EnterFunc(bug("free_vesagfxclass(xsd=%p)\n", xsd));
-    if(xsd)
-    {
-	OOP_RemoveClass(xsd->vesagfxclass);
-	if(xsd->vesagfxclass)
-	    OOP_DisposeObject((OOP_Object *) xsd->vesagfxclass);
-	xsd->vesagfxclass = NULL;
-	OOP_ReleaseAttrBases(attrbases);
-    }
-    ReturnVoid("free_vesagfxclass");
+
+    OOP_ReleaseAttrBases(attrbases);
+    ReturnInt("PCVesa_ExpungeClass", ULONG, TRUE);
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(PCVesa_InitClass, 0)
+ADD2EXPUNGELIB(PCVesa_ExpungeClass, 0)

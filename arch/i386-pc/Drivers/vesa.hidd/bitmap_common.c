@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,7 +17,7 @@
 
 /*********  BitMap::PutPixel()  ***************************/
 
-static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
+VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     ULONG   	       offset;
@@ -91,7 +91,7 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 /*********  BitMap::GetPixel()  *********************************/
 
-static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
+HIDDT_Pixel MNAME_BM(GetPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     struct BitmapData 	*data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel     	 pixel;
@@ -134,7 +134,7 @@ static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 
 /*********  BitMap::FillRect()  ***************************/
 
-static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct BitmapData  *data =OOP_INST_DATA(cl, o);
     HIDDT_Pixel     	fg = GC_FG(msg->gc);
@@ -220,7 +220,7 @@ static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 
 /*********  BitMap::PutImage()  ***************************/
 
-static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
+VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
@@ -360,7 +360,7 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 /*********  BitMap::GetImage()  ***************************/
 
-static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
@@ -492,7 +492,7 @@ static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 	    
 }
 
-static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
@@ -557,7 +557,7 @@ static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 }
 
 /*** BitMap::BlitColorExpansion() **********************************************/
-static VOID MNAME(blitcolorexpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
+VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     struct BitmapData  *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel     	fg, bg, pix;
@@ -645,7 +645,7 @@ static VOID MNAME(blitcolorexpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 /*** BitMap::PutTemplate() **********************************************/
 
-static VOID MNAME(puttemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
+VOID MNAME_BM(PutTemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
@@ -727,7 +727,7 @@ static VOID MNAME(puttemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 
 /*** BitMap::PutPattern() **********************************************/
 
-static VOID MNAME(putpattern)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPattern *msg)
+VOID MNAME_BM(PutPattern)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPattern *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
@@ -834,7 +834,7 @@ static VOID MNAME(putpattern)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 
 /*** BitMap::Get() *******************************************/
 
-static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     ULONG   	       idx;
