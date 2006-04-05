@@ -1,14 +1,14 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+$(warning This hidd was converted to build_module without run-time checking)
+$(warning Remove this comment if uhci.hidd runs)
+
 FILES	:=	\
+	uhci_init \
 	bitmap \
 	hardware
 
-%build_module_macro mmake=kernel-pc-i386-usb \
+%build_module mmake=kernel-pc-i386-usb \
   modname=usbuhci modtype=hidd \
-  initfile=uhci_init files=$(FILES) \
-  conffile=lib.conf \
-  genfunctable=yes
-
-%common
+  files=$(FILES)

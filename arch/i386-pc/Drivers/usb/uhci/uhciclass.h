@@ -4,23 +4,22 @@
 #include "hardware.h"
 
 struct USBUHCI_staticdata {
-	struct ExecBase *sysBase;
-	struct Library *oopBase;
-	struct Library *utilityBase;
-	OOP_Object *uhcihidd;
-	HIDDT_PCI_Device *card;
-	OOP_Object *pcihidd;
-	struct UHCIData data;
+    OOP_Object *uhcihidd;
+    HIDDT_PCI_Device *card;
+    OOP_Object *pcihidd;
+    struct UHCIData data;
 };
 
-#if 0
-#define XSD(cl) ((struct USBUHCI_staticdata *)cl->UserData)
-#else
-#define XSD(cl) (xsd)
-#endif
-#define UtilityBase ((struct Library *)XSD(cl)->utilityBase)
-#define OOPBase ((struct Library *)XSD(cl)->oopBase)
-#define SysBase (XSD(cl)->sysBase)
+struct USBUHCIBase
+{
+    struct Library library;
+    struct ExecBase *sysBase;
+    BPTR	SegList;
+    
+    struct USBHCI_staticdata usd;
+};
+
+#define XSD(cl) (&((struct USBUHCIBase *)cl->UserData)->usd)
 
 #endif
 

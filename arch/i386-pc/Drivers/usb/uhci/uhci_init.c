@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: USB UHCI Host Controller Driver
@@ -20,44 +20,11 @@ VOID HIDD_PCI_FreeQuery(OOP_Object *obj, HIDDT_PCI_Device **devices);
 
 #include "hardware.h"
 #include "uhciclass.h"
-#undef SysBase
-
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->sysBase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->SegList)
-#define LC_RESIDENTNAME		USBUHCIHidd_resident
-#define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
-#define LC_RESIDENTPRI		9
-#define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
-#define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->library)
-
-#define LC_NO_EXPUNGELIB
-#define LC_NO_OPENLIB
-#define LC_NO_CLOSELIB
-
-
-#define NOEXPUNGE
-
-struct USBUHCIBase
-{
-    struct Library library;
-    struct ExecBase *sysBase;
-    BPTR	SegList;
-};
-
-#include <libcore/libheader.c>
 
 #undef  SDEBUG
 #undef  DEBUG
 #define DEBUG 1
 #include <aros/debug.h>
-
-#undef SysBase
-#undef OOPBase
-
-#define SysBase xsd->sysBase
-#define OOPBase xsd->oopBase
 
 STATIC BOOL findCard(struct USBUHCI_staticdata *xsd) {
 HIDDT_PCI_Device **ptr;
@@ -95,37 +62,39 @@ struct TagItem findpcitags[] =
 	return (xsd->card) ? TRUE : FALSE;
 }
 
-#undef SysBase
-#define SysBase (LC_SYSBASE_FIELD(lh))
+AROS_SET_LIBFUNC(PCUSB_Init, LIBBASETYPE, LIBBASE)
+{
+    AROS_SET_LIBFUNC_INIT
+    
+    struct USBUHCI_staticdata *xsd = &LIBBASE;
 
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh) {
-struct USBUHCI_staticdata *xsd;
-
-	xsd = AllocMem(sizeof(struct USBUHCI_staticdata), MEMF_CLEAR | MEMF_PUBLIC);
-	if (xsd)
+    xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCIBus, NULL);
+    if (xsd->pcihidd)
+    {
+	if (findCard(xsd))
 	{
-		xsd->sysBase = SysBase;
-		xsd->oopBase = OpenLibrary(AROSOOP_NAME, 0);
-		if (xsd->oopBase)
-		{
-			xsd->utilityBase = OpenLibrary(UTILITYNAME, 37);
-			if (xsd->utilityBase)
-			{
-				xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCIBus, NULL);
-				if (xsd->pcihidd)
-				{
-					if (findCard(xsd))
-					{
-						D(bug("Found USB UHCI\n"));
-						return TRUE;
-					}
-				}
-				CloseLibrary(xsd->utilityBase);
-			}
-			CloseLibrary(xsd->oopBase);
-		}
-		FreeMem(xsd, sizeof (struct USBUHCI_staticdata));
+	    D(bug("Found USB UHCI\n"));
+	    return TRUE;
+	}
     }
+    
     return FALSE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
+AROS_SET_LIBFUNC(PCUSB_Expunge, LIBBASETYPE, LIBBASE)
+{
+    AROS_SET_LIBFUNC_INIT
+    
+    struct USBUHCI_staticdata *xsd = &LIBBASE->usd;
+
+    OOP_DisposeObject(xsd->pcihidd);
+
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
+}
+
+ADD2INITLIB(PCUSB_Init, 0)
+ADD2INITLIB(PCUSB_Expunge, 0)

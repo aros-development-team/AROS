@@ -2,7 +2,9 @@
 #include <hidd/irq.h>
 #include "uhciclass.h"
 
-STATIC APTR uhci_new(struct USBUHCI_staticdata *xsd) {
+#if 0
+/* This is not used ATM */
+APTR PCUSB__Root__New(OOP_Class *cl, ) {
 struct UHCIData *data;
 
 	data = AllocMem(sizeof(struct UHCIData), MEMF_PUBLIC | MEMF_CLEAR);
@@ -23,3 +25,5 @@ struct UHCIData *data;
 	}
 	return NULL;
 }
+#endif
+    
