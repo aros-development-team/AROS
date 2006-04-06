@@ -1121,9 +1121,20 @@ STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBl
     pd = (struct Picture_Data *) INST_DATA(cl, g);
 
     /* Do some checks first */
-    if( !pd->SrcBuffer || !pd->DestMode )
+    if (!pd->DestMode)
     {
-        D(bug("picture.datatype/DTM_READPIXELARRAY: No source buffer or wrong DestMode\n"));
+        D(bug("picture.datatype/DTM_READPIXELARRAY: Wrong DestMode\n"));
+	return FALSE;
+    }
+    
+    if( !pd->SrcBuffer)
+    {
+    	ConvertBitmap2Chunky(pd);
+    }
+    
+    if (!pd->SrcBuffer)
+    {
+        D(bug("picture.datatype/DTM_READPIXELARRAY: No source buffer\n"));
 	return FALSE;
     }
     pixelformat = (long)msg->pbpa_PixelFormat;
