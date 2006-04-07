@@ -203,11 +203,13 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
                 CopyMem((APTR) ti->ti_Data, (APTR) pd->SparseTable, pd->NumSparse);
                 break;
 
+#ifdef __AROS__
             case PDTA_DelayRead:
             	if(!pd->NoDelay)
                     pd->DelayRead = (BOOL) ti->ti_Data;
                 DGS(bug("picture.datatype/OM_NEW: Tag ID PDTA_DelayRead: %ld\n", (long)pd->DelayRead));
                 break;
+#endif
         }
     }
 
@@ -333,10 +335,12 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
                 DGS(bug("picture.datatype/OM_SET: Tag PDTA_ScaleQuality: %ld\n", (long)pd->ScaleQuality));
 	        break;
 
+#ifdef __AROS__
 	    case PDTA_DelayedRead:
                 pd->DelayedRead = (BOOL) ti->ti_Data;
                 DGS(bug("picture.datatype/OM_SET: Tag PDTA_DelayedRead: %ld\n", (long)pd->DelayedRead));
 	        break;
+#endif
 
 #ifdef MYDEBUG
             default:
@@ -524,10 +528,12 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	    *(msg->opg_Storage)=(ULONG) pd->ScaleQuality;
 	    break;
 
+#ifdef __AROS__
 	case PDTA_DelayedRead:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_DelayedRead: 0x%lx\n", (long)pd->DelayedRead));
 	    *(msg->opg_Storage)=(ULONG) pd->DelayedRead;
 	    break;
+#endif
 
 	case DTA_Methods:
 	    DGS(bug("picture.datatype/OM_GET: Tag DTA_Methods: 0x%lx\n", (long)SupportedMethods));
@@ -1080,8 +1086,8 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
     /* Copy picture data */
     {
         long line, lines;
-        APTR srcstart;
-        APTR deststart;
+        STRPTR srcstart;
+        STRPTR deststart;
         long srcwidth, numbytes;
         long srcmod, destmod;
 
@@ -1144,8 +1150,8 @@ STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBl
     {
 	/* Copy picture data, as source pixmode = dest pixmode */
         long line, lines;
-        APTR srcstart;
-        APTR deststart;
+        STRPTR srcstart;
+        STRPTR deststart;
         long srcmod, destmod;
         long destwidth, numbytes;
 
@@ -1174,9 +1180,9 @@ STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBl
 	UBYTE r=0, g=0, b=0, a;
         long line, x, col;
 	int srcpixelformat;
-        APTR srcstart;
+        STRPTR srcstart;
 	UBYTE *srcptr;
-        APTR deststart;
+        STRPTR deststart;
 	UBYTE *destptr;
         long srcmod, destmod;
 	ULONG * colregs;
@@ -1261,12 +1267,14 @@ STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
 
     xscale = (pd->SrcWidth << 16) / pd->DestWidth;
     yscale = (pd->SrcHeight << 16) / pd->DestHeight;
+#ifdef __AROS__
     if( msg->ps_Flags & PScale_KeepAspect )
     {
 	xscale = yscale = MAX(xscale, yscale);
 	pd->DestWidth = (pd->SrcWidth << 16) / xscale;
 	pd->DestHeight = (pd->SrcHeight << 16) / yscale;
     }
+#endif
     pd->XScale = xscale;
     pd->YScale = yscale;
     D(bug("picture.datatype/PDTM_SCALE: srcwidth %ld srcheight %ld destwidth %ld destheight %ld xscale %06lx yscale %06lx\n", pd->SrcWidth, pd->SrcHeight, pd->DestWidth, pd->DestHeight, pd->XScale, pd->YScale));

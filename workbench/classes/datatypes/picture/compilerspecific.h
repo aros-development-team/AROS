@@ -32,7 +32,9 @@
 
 #else
 
+#ifdef __MORPHOS__
 typedef unsigned long IPTR;
+#endif
 
 #define SAVEDS  __saveds
 #define ASM     __asm
