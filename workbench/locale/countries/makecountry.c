@@ -30,6 +30,7 @@ struct CountryEntry
 };
 
 extern struct CountryPrefs
+    andorraPrefs,
     australiaPrefs,
     belgiePrefs,
     belgiquePrefs,
@@ -51,8 +52,10 @@ extern struct CountryPrefs
     italiaPrefs,
     jugoslavijaPrefs,
     letzebuergPrefs,
+    liechtensteinPrefs,
     lietuvaPrefs,
     magyarorszagPrefs,
+    monacoPrefs,
     nihonPrefs,
     nederlandPrefs,
     norgePrefs,
@@ -61,6 +64,7 @@ extern struct CountryPrefs
     portugalPrefs,
     romaniaPrefs,
     rossijaPrefs,
+    san_marinoPrefs,
     schweizPrefs,
     slovakiaPrefs,
     slovenijaPrefs,
@@ -78,6 +82,7 @@ extern struct CountryPrefs
 
 struct CountryEntry CountryArray[] =
 {
+    { "andorra"     	, &andorraPrefs     	},
     { "australia"   	, &australiaPrefs 	},
     { "belgië"	    	, &belgiePrefs    	},
     { "belgique"    	, &belgiquePrefs  	},
@@ -98,9 +103,11 @@ struct CountryEntry CountryArray[] =
     { "ísland"		, &islandPrefs		},
     { "italia"	    	, &italiaPrefs    	},
     { "jugoslavija" 	, &jugoslavijaPrefs 	},
+    { "liechtenstein"	, &liechtensteinPrefs	},
     { "lëtzebuerg"	, &letzebuergPrefs	},
     { "lietuva"		, &lietuvaPrefs		},
     { "magyarország" 	, &magyarorszagPrefs	},
+    { "monaco"	    	, &monacoPrefs	    	},
     { "nihon"	    	, &nihonPrefs	    	},
     { "nederland"   	, &nederlandPrefs 	},
     { "norge"	    	, &norgePrefs     	},
@@ -109,6 +116,7 @@ struct CountryEntry CountryArray[] =
     { "portugal"    	, &portugalPrefs  	},
     { "românia"		, &romaniaPrefs		},
     { "rossija"		, &rossijaPrefs		},
+    { "san_marino"  	, &san_marinoPrefs  	},
     { "schweiz"     	, &schweizPrefs   	},
     { "slovakia"    	, &slovakiaPrefs    	},
     { "slovenija"   	, &slovenijaPrefs   	},
