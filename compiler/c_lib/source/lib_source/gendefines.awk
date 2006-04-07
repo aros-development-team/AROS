@@ -299,7 +299,7 @@ function emit_struct(tname)
         }
         for (i = 0; i < ntagarg; i++)
         {
-            printf "#define %s(", substr(fname, 0, length(fname) - tagarg[i, 2]) tagarg[i, 3];
+            printf "#define %s(", substr(fname, 1, length(fname) - tagarg[i, 2]) tagarg[i, 3];
             for (t=0; t<narg; t++)
 	    {
                 if (tagarg[i, 1] == t) continue
