@@ -31,7 +31,7 @@ extern const char name[];
 extern const char version[];
 extern const APTR inittable[4];
 extern void *const functable[];
-extern struct PartitionBase *libinit();
+extern struct PartitionBase * SAVEDS ASM libinit();
 extern const char libend;
 
 /****************************************************************************************/
