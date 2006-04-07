@@ -114,7 +114,11 @@ static struct ButtonInfo bi[NUM_BUTTONS] =
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
 struct Library *GadToolsBase;
+#ifndef __MORPHOS__
 struct LocaleBase *LocaleBase;
+#else
+struct Library *LocaleBase;
+#endif
 
 static struct Screen *scr;
 static struct DrawInfo *dri;
@@ -292,7 +296,9 @@ static void InitGUI(void)
 	ledheight +
 	INNER_SPACING_Y * 2;
     
+#ifdef __AROS__
     DeinitRastPort(&temprp);
+#endif
     strcpy(ledstring,"0");
 }
 
