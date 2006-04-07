@@ -1,7 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-COUNTRIES := australia 		 \
+COUNTRIES := andorra		 \
+	     australia 		 \
 	     belgië 		 \
 	     belgique 		 \
 	     bosna_i_hercegovina \
@@ -22,8 +23,10 @@ COUNTRIES := australia 		 \
 	     italia 		 \
 	     jugoslavija	 \
 	     lëtzebuerg 	 \
+	     liechtenstein	 \
 	     lietuva 		 \
 	     magyarország 	 \
+	     monaco		 \
 	     nederland 		 \
 	     nihon		 \
 	     norge 		 \
@@ -32,6 +35,7 @@ COUNTRIES := australia 		 \
 	     portugal 		 \
 	     românia 		 \
 	     rossija 		 \
+	     san_marino		 \
 	     schweiz 		 \
 	     slovakia		 \
 	     slovenija		 \
