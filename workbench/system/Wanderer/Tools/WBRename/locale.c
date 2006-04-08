@@ -6,6 +6,7 @@
 #include <aros/symbolsets.h>
 #include <exec/types.h>
 #include <proto/locale.h>
+#include <proto/dos.h>
 
 #define CATCOMP_ARRAY
 #include "strings.h"
@@ -29,6 +30,13 @@ CONST_STRPTR _(ULONG id)
     {
         return CatCompArray[id].cca_Str;
     }
+}
+
+STRPTR GetDosErrorString(LONG code)
+{
+    static UBYTE buffer[80];
+    Fault(code, NULL, buffer, sizeof buffer);
+    return buffer;
 }
 
 /* Setup ********************************************************************/

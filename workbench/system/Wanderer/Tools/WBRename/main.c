@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBRename 0.2 (02.04.2006) ©2006 AROS Dev Team";
+char versionstring[] = "$VER: WBRename 0.3 (05.04.2006) ©2006 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
@@ -35,10 +35,11 @@ static void MakeGUI(void);
 
 static Object *app, *window, *bt_ok, *bt_cancel, *str_name;
 static struct Hook bt_ok_hook;
-BPTR parentlock = (BPTR)-1;
-STRPTR oldname;
-BPTR oldlock = (BPTR)-1;
-STRPTR illegal_chars = "/:";
+static BPTR parentlock = (BPTR)-1;
+static STRPTR oldname;
+static BPTR oldlock = (BPTR)-1;
+static STRPTR illegal_chars = "/:";
+
 
 int main(int argc, char **argv)
 {
@@ -69,11 +70,12 @@ int main(int argc, char **argv)
 
     fullname = AllocateNameFromLock(parentlock);
     UpdateWorkbenchObject(fullname, WBDRAWER, TAG_DONE);
-    FreeVec(fullname);
+    if (fullname) FreeVec(fullname);
 
     Cleanup(NULL);
     return RETURN_OK;
 }
+
 
 static void MakeGUI(void)
 {
@@ -150,12 +152,26 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
     if (( oldname == NULL) || (newname == NULL))
 	return retval;
 
+    STRPTR oldinfoname = NULL;
+    STRPTR newinfoname = NULL;
     BOOL infoexists=FALSE;
     BPTR test;
-    STRPTR oldinfoname = AllocVec(strlen(oldname) + 6, MEMF_ANY);
+
+    oldinfoname = AllocVec(strlen(oldname) + 6, MEMF_ANY);
+    if (!oldinfoname)
+    {
+	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_OUTOFMEMORY));
+	goto end;
+    }	
     strcpy(oldinfoname, oldname);
     strcat(oldinfoname, ".info");
-    STRPTR newinfoname = AllocVec(strlen(newname) + 6, MEMF_ANY);
+
+    newinfoname = AllocVec(strlen(newname) + 6, MEMF_ANY);
+    if (!newinfoname)
+    {
+	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_OUTOFMEMORY));
+	goto end;
+    }	
     strcpy(newinfoname, newname);
     strcat(newinfoname, ".info");
 
@@ -187,7 +203,7 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
 
     if (Rename(oldname, newname) == DOSFALSE)
     {
-	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_FAILED), oldname, IoErr());
+	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_FAILED), oldname, GetDosErrorString(IoErr()));
 	goto end;
     }
 
@@ -195,7 +211,7 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
     {
 	if ( Rename(oldinfoname, newinfoname) == DOSFALSE)
 	{
-	    MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_FAILED), oldinfoname, IoErr());
+	    MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_FAILED), oldinfoname, GetDosErrorString(IoErr()));
 	    goto end;
 	}
     }
@@ -203,8 +219,8 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
     retval = TRUE;
 
 end:
-    FreeVec(oldinfoname);
-    FreeVec(newinfoname);
+    if (oldinfoname) FreeVec(oldinfoname);
+    if (newinfoname) FreeVec(newinfoname);
     return retval;
 }
 
@@ -257,6 +273,7 @@ static STRPTR AllocateNameFromLock(BPTR lock)
 	return NULL;
     }
 }
+
 
 static void Cleanup(STRPTR s)
 {

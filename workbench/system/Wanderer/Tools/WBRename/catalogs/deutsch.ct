@@ -44,8 +44,8 @@ MSG_ALREADY_EXIST
 ; '%s' already exists!
 ;
 MSG_FAILED
-Beim Umbenennen von '%s' trat der Fehler %ld auf!
-; Rename of '%s' failed with error %ld!
+Beim Umbenennen von '%s' trat der Fehler\n%s auf!
+; Rename of '%s' failed with error '%ld'!
 ;
 MSG_ILLEGAL_CHARS
 '%s' enthält unerlaubte Zeichen!
