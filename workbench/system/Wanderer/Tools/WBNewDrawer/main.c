@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBNewDrawer 0.4 (30.03.2006) ©2006 AROS Dev Team";
+char versionstring[] = "$VER: WBNewDrawer 0.5 (05.04.2006) ©2006 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
@@ -36,9 +36,10 @@ static const STRPTR SelectDefaultName(STRPTR basename);
 
 static Object *app, *window, *bt_ok, *bt_cancel, *cm_icons, *str_name;
 static struct Hook bt_ok_hook;
-BPTR dirlock = (BPTR)-1;
-BPTR oldlock = (BPTR)-1;
-STRPTR illegal_chars = "/:";
+static BPTR dirlock = (BPTR)-1;
+static BPTR oldlock = (BPTR)-1;
+static STRPTR illegal_chars = "/:";
+
 
 int main(int argc, char **argv)
 {
@@ -65,11 +66,12 @@ int main(int argc, char **argv)
 
     STRPTR fullname = AllocateNameFromLock(dirlock);
     UpdateWorkbenchObject(fullname, WBDRAWER, TAG_DONE);
-    FreeVec(fullname);
+    if (fullname) FreeVec(fullname);
 
     Cleanup(NULL);
     return RETURN_OK;
 }
+
 
 static void MakeGUI(void)
 {
@@ -121,7 +123,8 @@ static void MakeGUI(void)
 	    End),
 	End),
     End);
-    FreeVec(defname);
+    if (defname) FreeVec(defname);
+
     if (!app)
 	Cleanup(_(MSG_FAILED_CREATE_APP));
 
@@ -136,6 +139,7 @@ static void MakeGUI(void)
     set(window, MUIA_Window_Open, TRUE);
     DoMethod(app, MUIM_Application_Execute);
 }
+
 
 static void bt_ok_hook_function(void)
 {
@@ -218,6 +222,9 @@ static const STRPTR SelectDefaultName(STRPTR basename)
     BPTR test;
     LONG number = 0;
     STRPTR buffer = AllocVec(strlen(basename) + 3, MEMF_ANY);
+    if (!buffer)
+	return buffer;
+    
     do
     {
 	if (number == 0)
@@ -232,6 +239,7 @@ static const STRPTR SelectDefaultName(STRPTR basename)
     while ((number < 10) && (test != NULL));
     return buffer;
 }
+
 
 static STRPTR AllocateNameFromLock(BPTR lock)
 {
@@ -281,6 +289,7 @@ static STRPTR AllocateNameFromLock(BPTR lock)
 	return NULL;
     }
 }
+
 
 static void Cleanup(STRPTR s)
 {

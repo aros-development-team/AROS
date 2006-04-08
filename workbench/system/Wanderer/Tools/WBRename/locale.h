@@ -15,6 +15,7 @@
 /* Main *********************************************************************/
 STRPTR  _(ULONG ID);            /* Get a message, as a STRPTR */
 #define __(id) ((IPTR) _(id))   /* Get a message, as an IPTR */
+STRPTR GetDosErrorString(LONG code); /* Get string from Dos error code */
 
 /* Setup ********************************************************************/
 BOOL Locale_Initialize(void);
