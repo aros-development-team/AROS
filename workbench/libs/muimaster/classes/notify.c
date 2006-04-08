@@ -100,7 +100,7 @@ typedef struct NotifyNode {
     ULONG       nn_TrigVal;
     APTR        nn_DestObj;
     ULONG       nn_NumParams;
-    ULONG       *nn_Params; /* FIXME: use nn_Params[1] and tweak stuff below */
+    IPTR       *nn_Params; /* FIXME: use nn_Params[1] and tweak stuff below */
 } *NNode;
 
 static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_Notify *msg)
@@ -116,7 +116,7 @@ static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_
     nnode->nn_DestObj   = msg->DestObj;
     nnode->nn_NumParams = msg->FollowParams;
 
-    if ((nnode->nn_Params = (ULONG *)mui_alloc(msg->FollowParams * sizeof(ULONG))))
+    if ((nnode->nn_Params = (IPTR *)mui_alloc(msg->FollowParams * sizeof(IPTR))))
     {
 	for (i = 0; i < msg->FollowParams; i++)
 	{
@@ -142,7 +142,7 @@ static ULONG Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg);
 /*
  * OM_NEW
  */
-static ULONG Notify_New(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR Notify_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NotifyData *data;
     struct TagItem        *tags = msg->ops_AttrList;
@@ -170,12 +170,12 @@ static ULONG Notify_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	        break;
 
 	    case MUIA_UserData:
-	        data->mnd_UserData = (ULONG)tag->ti_Data;
+	        data->mnd_UserData = (IPTR)tag->ti_Data;
 	        break;
 	}
     }
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 
@@ -353,7 +353,7 @@ static ULONG Notify_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     switch (msg->opg_AttrID)
     {
     case MUIA_ApplicationObject:
-	if (data->mnd_GlobalInfo) STORE = (ULONG)data->mnd_GlobalInfo->mgi_ApplicationObject;
+	if (data->mnd_GlobalInfo) STORE = (IPTR)data->mnd_GlobalInfo->mgi_ApplicationObject;
 	else  STORE = 0;
 	return 1;
 
@@ -362,19 +362,19 @@ static ULONG Notify_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	return 1;
 
     case MUIA_HelpLine:
-	STORE = (ULONG)data->mnd_HelpLine;
+	STORE = (IPTR)data->mnd_HelpLine;
 	return 1;
 
     case MUIA_HelpNode:
-	STORE = (ULONG)data->mnd_HelpNode;
+	STORE = (IPTR)data->mnd_HelpNode;
 	return 1;
 
     case MUIA_ObjectID:
-	STORE = (ULONG)data->mnd_ObjectID;
+	STORE = (IPTR)data->mnd_ObjectID;
 	return 1;
 
     case MUIA_Parent:
-	STORE = (ULONG)data->mnd_ParentObject;
+	STORE = (IPTR)data->mnd_ParentObject;
 	return 1;
 
     case MUIA_Revision:
@@ -415,13 +415,13 @@ static ULONG Notify_CallHook(struct IClass *cl, Object *obj, struct MUIP_CallHoo
  * MUIM_FindUData : tests if the MUIA_UserData of the object
  * contains the given <udata> and returns the object pointer in this case.
  */
-static ULONG Notify_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+static IPTR Notify_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
 
     if (data->mnd_UserData == msg->udata)
     {
-	return (ULONG)obj;
+	return (IPTR)obj;
     }
     return 0L;
 }
