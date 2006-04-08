@@ -9,7 +9,7 @@
 struct MUI_NotifyData
 {
     struct MUI_GlobalInfo *mnd_GlobalInfo;
-    ULONG                  mnd_UserData;
+    IPTR                  mnd_UserData;
     ULONG                  mnd_ObjectID;
 
     /* private starts here */
