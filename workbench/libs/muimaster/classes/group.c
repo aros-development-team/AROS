@@ -196,7 +196,7 @@ static int Group_GetNumVisibleChildren(struct MUI_GroupData *data, struct MinLis
 /**************************************************************************
  OM_NEW - Constructor
 **************************************************************************/
-static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupData *data;
     struct TagItem *tags,*tag;
@@ -320,13 +320,13 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static ULONG Group_Dispose(struct IClass *cl, Object *obj, Msg msg)
+static IPTR Group_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -529,7 +529,7 @@ static ULONG Group_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	Object               *child;
 	struct MinList       *ChildList;
 
-	get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+	get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
 	cstate = (Object *)ChildList->mlh_Head;
 	while ((child = NextObject(&cstate)))
 	    if (DoMethodA(child, (Msg)msg)) return 1;
@@ -613,7 +613,7 @@ static ULONG Group_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Con
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -640,7 +640,7 @@ static ULONG Group_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_
     Object               *child;
     struct MinList       *ChildList;
 
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -710,10 +710,10 @@ Group_Sort(struct IClass *cl, Object *obj, struct MUIP_Group_Sort *msg)
 
  Executes the given method but does not forward it to the children
 **************************************************************************/
-static ULONG Group_DoMethodNoForward(struct IClass *cl, Object *obj, struct MUIP_Group_DoMethodNoForward *msg)
+static IPTR Group_DoMethodNoForward(struct IClass *cl, Object *obj, struct MUIP_Group_DoMethodNoForward *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    ULONG rc;
+    IPTR rc;
     data->dont_forward_methods = 1; /* disable forwarding */
     rc = DoMethodA(obj, (Msg)&msg->DoMethodID); /* Probably doesn't not work correctly on AROS? */
     data->dont_forward_methods = 0;
@@ -733,7 +733,7 @@ Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->dont_forward_methods) return TRUE;
 
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
 	DoMethodA(child, (Msg)msg);
@@ -762,7 +762,7 @@ static ULONG Group_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	data->horiz_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_hspacing;
     if (!(data->flags & GROUP_VSPACING))
 	data->vert_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_vspacing;
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = cstate_copy = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -797,7 +797,7 @@ static ULONG Group_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static ULONG Group_Cleanup(struct IClass *cl, Object *obj, Msg msg)
+static IPTR Group_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -809,7 +809,7 @@ static ULONG Group_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     }
 
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -858,7 +858,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	
 	    OrRectRegion(region, &rect);
 	    page = -1;
-	    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+	    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
 	    cstate = (Object *)ChildList->mlh_Head;
 	    while ((child = NextObject(&cstate)))
 	    {
@@ -1034,7 +1034,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     group_rect = muiRenderInfo(obj)->mri_ClipRect;
     page = -1;
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -1511,7 +1511,7 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
      */
     childMsg.MethodID = msg->MethodID;
     childMsg.MinMaxInfo = &childMinMax;
-    get(data->family, MUIA_Family_List, (ULONG *)&(lm.lm_Children));
+    get(data->family, MUIA_Family_List, (IPTR *)&(lm.lm_Children));
 
     cstate = (Object *)lm.lm_Children->mlh_Head;
 
@@ -2428,7 +2428,7 @@ static ULONG Group_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *ms
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     struct MUI_LayoutMsg lm;
    
-    get(data->family, MUIA_Family_List, (ULONG *)&(lm.lm_Children));
+    get(data->family, MUIA_Family_List, (IPTR *)&(lm.lm_Children));
     if (data->flags & GROUP_PAGEMODE)
     {
 	group_layout_pagemode(cl, obj, lm.lm_Children);
@@ -2507,7 +2507,7 @@ static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     /* If msg is NULL, we won't want that the super method actually gets this call */
     if (msg) DoSuperMethodA(cl,obj,(Msg)msg);
 
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
 
     if (data->flags & GROUP_PAGEMODE)
@@ -2553,7 +2553,7 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     Object               *child;
     struct MinList       *ChildList;
 
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
 
     if (data->flags & GROUP_PAGEMODE)
@@ -2596,13 +2596,13 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
  * MUIM_FindUData : tests if the MUIA_UserData of the object
  * contains the given <udata> and returns the object pointer in this case.
  */
-static ULONG
+static IPTR
 Group_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
     if (muiNotifyData(obj)->mnd_UserData == msg->udata)
-	return (ULONG)obj;
+	return (IPTR)obj;
 
     return DoMethodA(data->family, (Msg)msg);
 }
@@ -2650,7 +2650,7 @@ Group_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  * Stop after the first udata found.
  */
-static ULONG
+static IPTR
 Group_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -2666,7 +2666,7 @@ Group_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 /**************************************************************************
  MUIM_DragQueryExtented
 **************************************************************************/
-static ULONG Group_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_DragQueryExtended *msg)
+static IPTR Group_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_DragQueryExtended *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -2674,7 +2674,7 @@ static ULONG Group_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP
     Object               *found_obj;
     struct MinList       *ChildList;
 
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate =  (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -2682,7 +2682,7 @@ static ULONG Group_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP
 	    continue;
 
 	if ((found_obj = (Object*)DoMethodA(child, (Msg)msg)))
-	    return (ULONG)found_obj;
+	    return (IPTR)found_obj;
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
@@ -2812,7 +2812,7 @@ static IPTR Group_FindAreaObject(struct IClass *cl, Object *obj,
 	return (IPTR)obj;
 
     // it's one of my childs ?
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -2821,7 +2821,7 @@ static IPTR Group_FindAreaObject(struct IClass *cl, Object *obj,
     }
 
     // let the childs find it
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -2861,7 +2861,7 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg
     /* We ourself didn't understand the notify tag so we try the children now */
     data->dont_forward_get = 0;
 
-    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
