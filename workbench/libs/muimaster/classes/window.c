@@ -2894,6 +2894,83 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 #undef STORE
 }
 
+/*
+ * MUIM_FindUData : tests if the MUIA_UserData of the object
+ * contains the given <udata> and returns the object pointer in this case.
+ */
+static IPTR Window_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+    if (muiNotifyData(obj)->mnd_UserData == msg->udata)
+	return (IPTR)obj;
+	
+    if (data->wd_RootObject)
+    	return DoMethodA(data->wd_RootObject, (Msg)msg);
+	
+    return 0;
+}
+
+
+/*
+ * MUIM_GetUData : This method tests if the MUIA_UserData of the object
+ * contains the given <udata> and gets <attr> to <storage> for itself
+ * in this case.
+ */
+static ULONG Window_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+    if (muiNotifyData(obj)->mnd_UserData == msg->udata)
+    {
+	get(obj, msg->attr, msg->storage);
+	return TRUE;
+    }
+
+    if (data->wd_RootObject)
+    	return DoMethodA(data->wd_RootObject, (Msg)msg);
+	
+    return FALSE;
+}
+
+
+/*
+ * MUIM_SetUData : This method tests if the MUIA_UserData of the object
+ * contains the given <udata> and sets <attr> to <val> for itself in this case.
+ */
+static ULONG Window_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+    if (muiNotifyData(obj)->mnd_UserData == msg->udata)
+	set(obj, msg->attr, msg->val);
+
+    if (data->wd_RootObject)
+    	DoMethodA(data->wd_RootObject, (Msg)msg);
+	
+    return TRUE;
+}
+
+
+/*
+ * MUIM_SetUDataOnce : This method tests if the MUIA_UserData of the object
+ * contains the given <udata> and sets <attr> to <val> for itself in this case.
+ */
+static ULONG Window_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+    if (muiNotifyData(obj)->mnd_UserData == msg->udata)
+    {
+	set(obj, msg->attr, msg->val);
+	return TRUE;
+    }
+    
+    if (data->wd_RootObject)
+    	return DoMethodA(data->wd_RootObject, (Msg)msg);
+	
+    return FALSE;
+}
 
 /**************************************************************************
  Called by Application (parent) object whenever this object is added.
@@ -3709,6 +3786,10 @@ BOOPSI_DISPATCHER(IPTR, Window_Dispatcher, cl, obj, msg)
 	case OM_DISPOSE: return Window_Dispose(cl, obj, msg);
 	case OM_SET: return Window_Set(cl, obj, (struct opSet *)msg);
 	case OM_GET: return Window_Get(cl, obj, (struct opGet *)msg);
+	case MUIM_FindUData: return Window_FindUData(cl, obj, (struct MUIP_FindUData *)msg);
+	case MUIM_GetUData: return Window_GetUData(cl, obj, (struct MUIP_GetUData *)msg);
+	case MUIM_SetUData: return Window_SetUData(cl, obj, (struct MUIP_SetUData *)msg);
+	case MUIM_SetUDataOnce: return Window_SetUDataOnce(cl, obj, (struct MUIP_SetUDataOnce *)msg);	
 	case MUIM_Window_AddEventHandler: return Window_AddEventHandler(cl, obj, (APTR)msg);
 	case MUIM_Window_RemEventHandler: return Window_RemEventHandler(cl, obj, (APTR)msg);
 	case MUIM_ConnectParent: return Window_ConnectParent(cl, obj, (APTR)msg);
