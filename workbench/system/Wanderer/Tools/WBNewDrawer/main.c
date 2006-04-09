@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBNewDrawer 0.5 (05.04.2006) ©2006 AROS Dev Team";
+char versionstring[] = "$VER: WBNewDrawer 0.5 (10.04.2006) ©2006 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
     STRPTR fullname = AllocateNameFromLock(dirlock);
     UpdateWorkbenchObject(fullname, WBDRAWER, TAG_DONE);
-    if (fullname) FreeVec(fullname);
+    FreeVec(fullname);
 
     Cleanup(NULL);
     return RETURN_OK;
@@ -123,7 +123,7 @@ static void MakeGUI(void)
 	    End),
 	End),
     End);
-    if (defname) FreeVec(defname);
+    FreeVec(defname);
 
     if (!app)
 	Cleanup(_(MSG_FAILED_CREATE_APP));
@@ -203,8 +203,7 @@ static BOOL doNewDrawer(void)
     retval = TRUE;
     
 end:
-    if (dob)
-	FreeDiskObject(dob);
+    FreeDiskObject(dob);
     return retval;
 }
 
@@ -223,7 +222,7 @@ static const STRPTR SelectDefaultName(STRPTR basename)
     LONG number = 0;
     STRPTR buffer = AllocVec(strlen(basename) + 3, MEMF_ANY);
     if (!buffer)
-	return buffer;
+	return 0;
     
     do
     {
@@ -249,7 +248,7 @@ static STRPTR AllocateNameFromLock(BPTR lock)
 
     while (!done)
     {
-	if (buffer != NULL) FreeVec(buffer);
+	FreeVec(buffer);
 
 	buffer = AllocVec(length, MEMF_ANY);
 	if (buffer != NULL)
@@ -285,7 +284,7 @@ static STRPTR AllocateNameFromLock(BPTR lock)
     }
     else
     {
-	if (buffer != NULL) FreeVec(buffer);
+	FreeVec(buffer);
 	return NULL;
     }
 }
@@ -293,7 +292,7 @@ static STRPTR AllocateNameFromLock(BPTR lock)
 
 static void Cleanup(STRPTR s)
 {
-    if (app) MUI_DisposeObject(app);
+    MUI_DisposeObject(app);
 
     if (oldlock != (BPTR)-1)
 	CurrentDir(oldlock);
