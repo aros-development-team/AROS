@@ -1,18 +1,14 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    $Id:$
 
     Desc: Country data for Éire (Ireland).
-    Lang:
 */
 
 #include <exec/types.h>
 #include <libraries/locale.h>
 #include <libraries/iffparse.h>
 #include <prefs/locale.h>
-
-/* éire.country: Stefan Haubenthal <polluks@sdf.lonestar.org> */
-/* Is probably wrong in a few places */
 
 struct CountryPrefs eirePrefs =
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for San Marino
@@ -9,9 +9,6 @@
 #include <libraries/locale.h>
 #include <prefs/locale.h>
 
-/* italia.country: based on this file on Amiga Developer CD 2.1: 
-   NDK/NDK_3.5/Examples/Locale/Countries/make_country_files.c */
-   
 struct CountryPrefs san_marinoPrefs =
 {
     /* Reserved */
