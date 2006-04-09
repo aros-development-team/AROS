@@ -25,9 +25,12 @@ extern const IPTR IconDesc[];
 	struct Library *, IconBase, 15, Icon)
 
 /*  FUNCTION
-
+	Frees all memory for a DiskObject structure.
+	
     INPUTS
-
+	diskobj --  a pointer to a DiskObject structure. A NULL pointer will be
+		    ignored.
+	
     RESULT
 
     NOTES
@@ -37,16 +40,20 @@ extern const IPTR IconDesc[];
     BUGS
 
     SEE ALSO
-
+	GetDiskObject()
+	
     INTERNALS
 
     HISTORY
-
+	2006-04-09 Test for NULL pointer added
+	
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
     
+    if ( ! diskobj) return;
+
     struct NativeIcon *nativeicon;
     
     nativeicon = NATIVEICON(diskobj);
