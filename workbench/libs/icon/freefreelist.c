@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -25,7 +25,7 @@
 	it via AddFreeList()).
 
     INPUTS
-	freelist  - pointer to FreeList struct.
+	freelist  - pointer to FreeList struct. It is save to use NULL.
 
     RESULT
 
@@ -41,11 +41,15 @@
     INTERNALS
 
     HISTORY
-
+	2006-04-10 Test for NULL pointer added
+	
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
+
+    if ( ! freelist) return;
+    
     struct MemList * node,
 		   * nextnode;
 
