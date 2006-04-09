@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBRename 0.3 (05.04.2006) ©2006 AROS Dev Team";
+char versionstring[] = "$VER: WBRename 0.3 (10.04.2006) ©2006 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 
     fullname = AllocateNameFromLock(parentlock);
     UpdateWorkbenchObject(fullname, WBDRAWER, TAG_DONE);
-    if (fullname) FreeVec(fullname);
+    FreeVec(fullname);
 
     Cleanup(NULL);
     return RETURN_OK;
@@ -219,8 +219,8 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
     retval = TRUE;
 
 end:
-    if (oldinfoname) FreeVec(oldinfoname);
-    if (newinfoname) FreeVec(newinfoname);
+    FreeVec(oldinfoname);
+    FreeVec(newinfoname);
     return retval;
 }
 
@@ -233,7 +233,7 @@ static STRPTR AllocateNameFromLock(BPTR lock)
 
     while (!done)
     {
-	if (buffer != NULL) FreeVec(buffer);
+	FreeVec(buffer);
 
 	buffer = AllocVec(length, MEMF_ANY);
 	if (buffer != NULL)
@@ -269,7 +269,7 @@ static STRPTR AllocateNameFromLock(BPTR lock)
     }
     else
     {
-	if (buffer != NULL) FreeVec(buffer);
+	FreeVec(buffer);
 	return NULL;
     }
 }
@@ -277,7 +277,7 @@ static STRPTR AllocateNameFromLock(BPTR lock)
 
 static void Cleanup(STRPTR s)
 {
-    if (app) MUI_DisposeObject(app);
+    MUI_DisposeObject(app);
 
     if (oldlock != (BPTR)-1)
 	CurrentDir(oldlock);
