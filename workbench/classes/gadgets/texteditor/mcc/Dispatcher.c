@@ -81,21 +81,25 @@ void ResetDisplay(struct InstData *data)
     data->Flow = data->actualline->line.Flow;
     data->Separator = data->actualline->line.Separator;
     data->NoNotify = TRUE;
+#ifdef ClassAct
     SetAttrs(data->object,  MUIA_TextEditor_Pen,            data->Pen,
                     MUIA_TextEditor_Flow,         data->Flow,
                     MUIA_TextEditor_Separator,        data->Separator,
-#ifdef ClassAct
                     MUIA_TextEditor_Prop_Entries,     lines,
                     MUIA_TextEditor_Prop_Visible,     data->maxlines,
                     MUIA_TextEditor_Prop_First,     (data->visual_y-1),
                     MUIA_TextEditor_Prop_DeltaFactor, 1,
+                    TAG_DONE);
 #else
+    SetAttrs(data->object,  MUIA_TextEditor_Pen,            data->Pen,
+                    MUIA_TextEditor_Flow,         data->Flow,
+                    MUIA_TextEditor_Separator,        data->Separator,
                     MUIA_TextEditor_Prop_Entries,     lines*data->height,
                     MUIA_TextEditor_Prop_Visible,     data->maxlines*data->height,
                     MUIA_TextEditor_Prop_First,     (data->visual_y-1)*data->height,
                     MUIA_TextEditor_Prop_DeltaFactor, data->height,
-#endif
                     TAG_DONE);
+#endif
     data->NoNotify = FALSE;
 
 
