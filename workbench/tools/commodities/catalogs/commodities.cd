@@ -140,6 +140,9 @@ _New Key
 MSG_FKEY_DELETE_KEY (//)
 _Delete Key
 ;
+MSG_FKEY_SAVE_KEY (//)
+Save Defined Keys
+;
 MSG_FKEY_COMMAND (//)
 Command
 ;

@@ -1,4 +1,4 @@
-## version $VER: Commodities.catalog 1.0 (14.10.2001)
+## version $VER: Commodities.catalog 1.1 (11.04.2006)
 ## language deutsch
 ## codeset 0
 ;
@@ -190,6 +190,10 @@ _Neue Taste
 MSG_FKEY_DELETE_KEY
 Taste _löschen
 ; _Delete Key
+;
+MSG_FKEY_SAVE_KEY
+Belegung speichern
+; Save Defined Keys
 ;
 MSG_FKEY_COMMAND
 Befehl
