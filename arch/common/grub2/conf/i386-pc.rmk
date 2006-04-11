@@ -1,0 +1,349 @@
+# -*- makefile -*-
+
+COMMON_ASFLAGS = -nostdinc -fno-builtin
+COMMON_CFLAGS = -fno-builtin -mrtd -mregparm=3 -m32
+COMMON_LDFLAGS = -melf_i386
+
+# Images.
+pkgdata_IMAGES = boot.img diskboot.img kernel.img pxeboot.img
+
+# For boot.img.
+boot_img_SOURCES = boot/i386/pc/boot.S
+boot_img_ASFLAGS = $(COMMON_ASFLAGS)
+boot_img_LDFLAGS = -nostdlib -Wl,-N,-Ttext,7C00
+
+# For pxeboot.img
+pxeboot_img_SOURCES = boot/i386/pc/pxeboot.S
+pxeboot_img_ASFLAGS = $(COMMON_ASFLAGS)
+pxeboot_img_LDFLAGS = -nostdlib -Wl,-N,-Ttext,7C00
+
+# For diskboot.img.
+diskboot_img_SOURCES = boot/i386/pc/diskboot.S
+diskboot_img_ASFLAGS = $(COMMON_ASFLAGS)
+diskboot_img_LDFLAGS = -nostdlib -Wl,-N,-Ttext,8000
+
+# For kernel.img.
+kernel_img_SOURCES = kern/i386/pc/startup.S kern/main.c kern/device.c \
+	kern/disk.c kern/dl.c kern/file.c kern/fs.c kern/err.c \
+	kern/misc.c kern/mm.c kern/loader.c kern/rescue.c kern/term.c \
+	kern/i386/dl.c kern/i386/pc/init.c kern/partition.c \
+	kern/env.c disk/i386/pc/biosdisk.c \
+	term/i386/pc/console.c \
+	symlist.c
+kernel_img_HEADERS = arg.h boot.h device.h disk.h dl.h elf.h env.h err.h \
+	file.h fs.h kernel.h loader.h misc.h mm.h net.h partition.h \
+	pc_partition.h rescue.h symbol.h term.h types.h \
+	machine/biosdisk.h machine/boot.h machine/console.h machine/init.h \
+	machine/memory.h machine/loader.h machine/time.h machine/vga.h \
+	machine/vbe.h
+kernel_img_CFLAGS = $(COMMON_CFLAGS)
+kernel_img_ASFLAGS = $(COMMON_ASFLAGS)
+kernel_img_LDFLAGS = -nostdlib -Wl,-N,-Ttext,8200 $(COMMON_CFLAGS)
+
+MOSTLYCLEANFILES += symlist.c kernel_syms.lst
+DEFSYMFILES += kernel_syms.lst
+
+symlist.c: $(addprefix include/grub/,$(kernel_img_HEADERS)) gensymlist.sh
+	sh $(srcdir)/gensymlist.sh $(filter %.h,$^) > $@
+
+kernel_syms.lst: $(addprefix include/grub/,$(kernel_img_HEADERS)) genkernsyms.sh
+	sh $(srcdir)/genkernsyms.sh $(filter %h,$^) > $@
+
+# Utilities.
+bin_UTILITIES = grub-mkimage
+sbin_UTILITIES = grub-setup grub-emu grub-mkdevicemap grub-probefs
+noinst_UTILITIES = genmoddep
+
+# For grub-mkimage.
+grub_mkimage_SOURCES = util/i386/pc/grub-mkimage.c util/misc.c \
+	util/resolve.c
+grub_mkimage_LDFLAGS = $(LIBLZO)
+
+# For grub-setup.
+grub_setup_SOURCES = util/i386/pc/grub-setup.c util/i386/pc/biosdisk.c \
+	util/misc.c util/i386/pc/getroot.c kern/device.c kern/disk.c \
+	kern/err.c kern/misc.c fs/fat.c fs/ext2.c fs/xfs.c fs/affs.c fs/iso9660.c \
+	fs/sfs.c kern/partition.c partmap/pc.c \
+	fs/ufs.c fs/minix.c fs/hfs.c fs/jfs.c kern/file.c kern/fs.c kern/env.c fs/fshelp.c
+
+# For grub-mkdevicemap.
+grub_mkdevicemap_SOURCES = util/i386/pc/grub-mkdevicemap.c util/misc.c
+
+# For grub-probefs.
+grub_probefs_SOURCES = util/i386/pc/grub-probefs.c	\
+	util/i386/pc/biosdisk.c	util/misc.c util/i386/pc/getroot.c	\
+	kern/device.c kern/disk.c kern/err.c kern/misc.c fs/fat.c	\
+	fs/ext2.c kern/partition.c partmap/pc.c fs/ufs.c fs/minix.c	\
+	fs/hfs.c fs/jfs.c kern/fs.c kern/env.c fs/fshelp.c fs/xfs.c 	\
+	fs/affs.c fs/iso9660.c fs/sfs.c
+
+# For grub-emu.
+grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c 	\
+	commands/configfile.c commands/default.c commands/help.c	\
+	commands/terminal.c commands/ls.c commands/search.c		\
+	commands/timeout.c						\
+	commands/i386/pc/halt.c commands/i386/pc/reboot.c		\
+	disk/loopback.c							\
+	fs/affs.c fs/ext2.c fs/fat.c fs/fshelp.c fs/hfs.c fs/iso9660.c	\
+	fs/jfs.c fs/minix.c fs/sfs.c fs/ufs.c fs/xfs.c			\
+	io/gzio.c							\
+	kern/device.c kern/disk.c kern/dl.c kern/env.c kern/err.c 	\
+	kern/file.c kern/fs.c kern/loader.c kern/main.c kern/misc.c	\
+	kern/partition.c kern/rescue.c kern/term.c			\
+	normal/arg.c normal/cmdline.c normal/command.c			\
+	normal/completion.c normal/context.c normal/main.c		\
+	normal/menu.c normal/menu_entry.c normal/misc.c			\
+	partmap/amiga.c	partmap/apple.c partmap/pc.c partmap/sun.c	\
+	util/console.c util/grub-emu.c util/misc.c			\
+	util/i386/pc/biosdisk.c util/i386/pc/getroot.c			\
+	util/i386/pc/misc.c
+
+grub_emu_LDFLAGS = $(LIBCURSES)
+
+# For genmoddep.
+genmoddep_SOURCES = util/genmoddep.c
+
+# Scripts.
+sbin_SCRIPTS = grub-install
+
+# For grub-install.
+grub_install_SOURCES = util/i386/pc/grub-install.in
+
+# Modules.
+pkgdata_MODULES = _chain.mod _linux.mod linux.mod fat.mod ufs.mod	\
+	ext2.mod minix.mod hfs.mod jfs.mod normal.mod hello.mod vga.mod	\
+	font.mod _multiboot.mod ls.mod boot.mod cmp.mod cat.mod		\
+	terminal.mod fshelp.mod chain.mod multiboot.mod amiga.mod	\
+	apple.mod pc.mod sun.mod loopback.mod reboot.mod halt.mod	\
+	help.mod default.mod timeout.mod configfile.mod vbe.mod		\
+	vesafb.mod vbetest.mod vbeinfo.mod search.mod gzio.mod		\
+	terminfo.mod serial.mod xfs.mod affs.mod iso9660.mod sfs.mod
+
+# For _chain.mod.
+_chain_mod_SOURCES = loader/i386/pc/chainloader.c
+_chain_mod_CFLAGS = $(COMMON_CFLAGS)
+_chain_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For chain.mod.
+chain_mod_SOURCES = loader/i386/pc/chainloader_normal.c
+chain_mod_CFLAGS = $(COMMON_CFLAGS)
+chain_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For fshelp.mod.
+fshelp_mod_SOURCES = fs/fshelp.c
+fshelp_mod_CFLAGS = $(COMMON_CFLAGS)
+fshelp_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For fat.mod.
+fat_mod_SOURCES = fs/fat.c
+fat_mod_CFLAGS = $(COMMON_CFLAGS)
+fat_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ext2.mod.
+ext2_mod_SOURCES = fs/ext2.c
+ext2_mod_CFLAGS = $(COMMON_CFLAGS)
+ext2_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ufs.mod.
+ufs_mod_SOURCES = fs/ufs.c
+ufs_mod_CFLAGS = $(COMMON_CFLAGS)
+ufs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For minix.mod.
+minix_mod_SOURCES = fs/minix.c
+minix_mod_CFLAGS = $(COMMON_CFLAGS)
+minix_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For hfs.mod.
+hfs_mod_SOURCES = fs/hfs.c
+hfs_mod_CFLAGS = $(COMMON_CFLAGS)
+hfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For jfs.mod.
+jfs_mod_SOURCES = fs/jfs.c
+jfs_mod_CFLAGS = $(COMMON_CFLAGS)
+jfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For iso9660.mod.
+iso9660_mod_SOURCES = fs/iso9660.c
+iso9660_mod_CFLAGS = $(COMMON_CFLAGS)
+iso9660_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For xfs.mod.
+xfs_mod_SOURCES = fs/xfs.c
+xfs_mod_CFLAGS = $(COMMON_CFLAGS)
+xfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For affs.mod.
+affs_mod_SOURCES = fs/affs.c
+affs_mod_CFLAGS = $(COMMON_CFLAGS)
+affs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For sfs.mod.
+sfs_mod_SOURCES = fs/sfs.c
+sfs_mod_CFLAGS = $(COMMON_CFLAGS)
+sfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For _linux.mod.
+_linux_mod_SOURCES = loader/i386/pc/linux.c
+_linux_mod_CFLAGS = $(COMMON_CFLAGS)
+_linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For linux.mod.
+linux_mod_SOURCES = loader/i386/pc/linux_normal.c
+linux_mod_CFLAGS = $(COMMON_CFLAGS)
+linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For normal.mod.
+normal_mod_SOURCES = normal/arg.c normal/cmdline.c normal/command.c	\
+	normal/completion.c normal/context.c normal/main.c		\
+	normal/menu.c normal/menu_entry.c normal/misc.c			\
+	normal/i386/setjmp.S
+normal_mod_CFLAGS = $(COMMON_CFLAGS)
+normal_mod_ASFLAGS = $(COMMON_ASFLAGS) -m32
+normal_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For hello.mod.
+hello_mod_SOURCES = hello/hello.c
+hello_mod_CFLAGS = $(COMMON_CFLAGS)
+hello_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For boot.mod.
+boot_mod_SOURCES = commands/boot.c
+boot_mod_CFLAGS = $(COMMON_CFLAGS)
+boot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For terminal.mod.
+terminal_mod_SOURCES = commands/terminal.c
+terminal_mod_CFLAGS = $(COMMON_CFLAGS)
+terminal_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ls.mod.
+ls_mod_SOURCES = commands/ls.c
+ls_mod_CFLAGS = $(COMMON_CFLAGS)
+ls_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For cmp.mod.
+cmp_mod_SOURCES = commands/cmp.c
+cmp_mod_CFLAGS = $(COMMON_CFLAGS)
+cmp_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For cat.mod.
+cat_mod_SOURCES = commands/cat.c
+cat_mod_CFLAGS = $(COMMON_CFLAGS)
+cat_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For help.mod.
+help_mod_SOURCES = commands/help.c
+help_mod_CFLAGS = $(COMMON_CFLAGS)
+help_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For reboot.mod.
+reboot_mod_SOURCES = commands/i386/pc/reboot.c
+reboot_mod_CFLAGS = $(COMMON_CFLAGS)
+reboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For halt.mod.
+halt_mod_SOURCES = commands/i386/pc/halt.c
+halt_mod_CFLAGS = $(COMMON_CFLAGS)
+halt_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For vga.mod.
+vga_mod_SOURCES = term/i386/pc/vga.c
+vga_mod_CFLAGS = $(COMMON_CFLAGS)
+vga_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For font.mod.
+font_mod_SOURCES = font/manager.c
+font_mod_CFLAGS = $(COMMON_CFLAGS)
+font_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For terminfo.mod.
+terminfo_mod_SOURCES = term/terminfo.c term/tparm.c
+terminfo_mod_CFLAGS = $(COMMON_CFLAGS)
+terminfo_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For serial.mod.
+serial_mod_SOURCES = term/i386/pc/serial.c
+serial_mod_CFLAGS = $(COMMON_CFLAGS)
+serial_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For _multiboot.mod.
+_multiboot_mod_SOURCES = loader/i386/pc/multiboot.c
+_multiboot_mod_CFLAGS = $(COMMON_CFLAGS)
+_multiboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For multiboot.mod.
+multiboot_mod_SOURCES = loader/i386/pc/multiboot_normal.c
+multiboot_mod_CFLAGS = $(COMMON_CFLAGS)
+multiboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For amiga.mod
+amiga_mod_SOURCES = partmap/amiga.c
+amiga_mod_CFLAGS = $(COMMON_CFLAGS)
+amiga_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For apple.mod
+apple_mod_SOURCES = partmap/apple.c
+apple_mod_CFLAGS = $(COMMON_CFLAGS)
+apple_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For pc.mod
+pc_mod_SOURCES = partmap/pc.c
+pc_mod_CFLAGS = $(COMMON_CFLAGS)
+pc_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For sun.mod
+sun_mod_SOURCES = partmap/sun.c
+sun_mod_CFLAGS = $(COMMON_CFLAGS)
+sun_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For loopback.mod
+loopback_mod_SOURCES = disk/loopback.c
+loopback_mod_CFLAGS = $(COMMON_CFLAGS)
+loopback_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For default.mod
+default_mod_SOURCES = commands/default.c
+default_mod_CFLAGS = $(COMMON_CFLAGS)
+default_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For timeout.mod
+timeout_mod_SOURCES = commands/timeout.c
+timeout_mod_CFLAGS = $(COMMON_CFLAGS)
+timeout_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For configfile.mod
+configfile_mod_SOURCES = commands/configfile.c
+configfile_mod_CFLAGS = $(COMMON_CFLAGS)
+configfile_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For vbe.mod.
+vbe_mod_SOURCES = video/i386/pc/vbe.c
+vbe_mod_CFLAGS = $(COMMON_CFLAGS)
+vbe_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For vesafb.mod.
+vesafb_mod_SOURCES = term/i386/pc/vesafb.c
+vesafb_mod_CFLAGS = $(COMMON_CFLAGS)
+vesafb_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For vbeinfo.mod.
+vbeinfo_mod_SOURCES = commands/i386/pc/vbeinfo.c
+vbeinfo_mod_CFLAGS = $(COMMON_CFLAGS)
+vbeinfo_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For vbetest.mod.
+vbetest_mod_SOURCES = commands/i386/pc/vbetest.c
+vbetest_mod_CFLAGS = $(COMMON_CFLAGS)
+vbetest_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For search.mod.
+search_mod_SOURCES = commands/search.c
+search_mod_CFLAGS = $(COMMON_CFLAGS)
+search_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For gzio.mod.
+gzio_mod_SOURCES = io/gzio.c
+gzio_mod_CFLAGS = $(COMMON_CFLAGS)
+gzio_mod_LDFLAGS = $(COMMON_LDFLAGS)

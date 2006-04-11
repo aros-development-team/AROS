@@ -1,0 +1,236 @@
+#! /bin/sh
+
+# Install GRUB on your drive.
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005 Free Software Foundation, Inc.
+#
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St - Suite 330, Boston, MA 02110, USA.
+
+# Initialize some variables.
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+sbindir=@sbindir@
+datadir=@datadir@
+PACKAGE_NAME=@PACKAGE_NAME@
+PACKAGE_TARNAME=@PACKAGE_TARNAME@
+PACKAGE_VERSION=@PACKAGE_VERSION@
+host_cpu=@host_cpu@
+host_os=@host_os@
+host_vendor=@host_vendor@
+pkgdatadir=${datadir}/${PACKAGE_TARNAME}/${host_cpu}-${host_vendor}
+
+grub_setup=${sbindir}/grub-setup
+grub_mkimage=${sbindir}/grub-mkimage
+grub_mkdevicemap=${sbindir}/grub-mkdevicemap
+grub_probefs=${sbindir}/grub-probefs
+rootdir=
+grub_prefix=/boot/grub
+modules=
+
+install_device=
+no_floppy=
+force_lba=
+recheck=no
+debug=no
+
+# Usage: usage
+# Print the usage.
+usage () {
+    cat <<EOF
+Usage: grub-install [OPTION] install_device
+Install GRUB on your drive.
+
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+  --modules=MODULES       pre-load specified modules MODULES
+  --root-directory=DIR    install GRUB images under the directory DIR
+                          instead of the root directory
+  --grub-setup=FILE       use FILE as grub-setup
+  --grub-mkimage=FILE     use FILE as grub-mkimage
+  --grub-mkdevicemap=FILE use FILE as grub-mkdevicemap
+  --grub-probefs=FILE     use FILE as grub-probefs
+  --no-floppy             do not probe any floppy drive
+  --recheck               probe a device map even if it already exists
+
+INSTALL_DEVICE can be a GRUB device name or a system device filename.
+
+grub-install copies GRUB images into the DIR/boot directory specfied by
+--root-directory, and uses grub-setup to install grub into the boot
+sector.
+
+Report bugs to <bug-grub@gnu.org>.
+EOF
+}
+
+# Check the arguments.
+for option in "$@"; do
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "grub-install (GNU GRUB ${PACKAGE_VERSION})"
+	exit 0 ;;
+    --modules=*)
+	modules=`echo "$option" | sed 's/--modules=//'` ;;
+    --root-directory=*)
+	rootdir=`echo "$option" | sed 's/--root-directory=//'` ;;
+    --grub-setup=*)
+	grub_setup=`echo "$option" | sed 's/--grub-setup=//'` ;;
+    --grub-mkimage=*)
+	grub_mkimage=`echo "$option" | sed 's/--grub-mkimage=//'` ;;
+    --grub-mkdevicemap=*)
+	grub_mkdevicemap=`echo "$option" | sed 's/--grub-mkdevicemap=//'` ;;
+    --grub-probefs=*)
+	grub_probefs=`echo "$option" | sed 's/--grub-probefs=//'` ;;
+    --no-floppy)
+	no_floppy="--no-floppy" ;;
+    --recheck)
+	recheck=yes ;;
+    # This is an undocumented feature...
+    --debug)
+	debug=yes ;;
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1
+	;;
+    *)
+	if test "x$install_device" != x; then
+	    echo "More than one install_devices?" 1>&2
+	    usage
+	    exit 1
+	fi
+	install_device="${option}" ;;
+    esac
+done
+
+if test "x$install_device" = x; then
+    echo "install_device not specified." 1>&2
+    usage
+    exit 1
+fi
+
+# If the debugging feature is enabled, print commands.
+if test $debug = yes; then
+    set -x
+fi
+
+# Initialize these directories here, since ROOTDIR was initialized.
+case "$host_os" in
+netbsd* | openbsd*)
+    # Because /boot is used for the boot block in NetBSD and OpenBSD, use /grub
+    # instead of /boot/grub.
+    grub_prefix=/grub
+    bootdir=${rootdir}
+    ;;
+*)
+    # Use /boot/grub by default.
+    bootdir=${rootdir}/boot
+    ;;
+esac
+
+grubdir=${bootdir}/grub
+device_map=${grubdir}/device.map
+
+# Check if GRUB is installed.
+set $grub_setup dummy
+if test -f "$1"; then
+    :
+else
+    echo "$1: Not found." 1>&2
+    exit 1
+fi
+
+set $grub_mkimage dummy
+if test -f "$1"; then
+    :
+else
+    echo "$1: Not found." 1>&2
+    exit 1
+fi
+
+set $grub_mkdevicemap dummy
+if test -f "$1"; then
+    :
+else
+    echo "$1: Not found." 1>&2
+    exit 1
+fi
+
+# Create the GRUB directory if it is not present.
+test -d "$bootdir" || mkdir "$bootdir" || exit 1
+test -d "$grubdir" || mkdir "$grubdir" || exit 1
+
+# If --recheck is specified, remove the device map, if present.
+if test $recheck = yes; then
+    rm -f $device_map
+fi
+
+# Create the device map file if it is not present.
+if test -f "$device_map"; then
+    :
+else
+    # Create a safe temporary file.
+    test -n "$mklog" && log_file=`$mklog`
+
+    $grub_mkdevicemap --device-map=$device_map $no_floppy || exit 1
+fi
+
+# Make sure that there is no duplicated entry.
+tmp=`sed -n '/^([fh]d[0-9]*)/s/\(^(.*)\).*/\1/p' $device_map \
+    | sort | uniq -d | sed -n 1p`
+if test -n "$tmp"; then
+    echo "The drive $tmp is defined multiple times in the device map $device_map" 1>&2
+    exit 1
+fi
+
+# Copy the GRUB images to the GRUB directory.
+for file in ${grubdir}/*.mod ${grubdir}/*.lst ${grubdir}/*.img; do
+    if test -f $file; then
+	rm -f $file || exit 1
+    fi
+done
+for file in ${pkgdatadir}/*.mod ${pkgdatadir}/*.lst ${pkgdatadir}/*.img; do
+    cp -f $file ${grubdir} || exit 1
+done
+
+# Create the core image. First, auto-detect the filesystme module.
+fs_module=`$grub_probefs --device-map=${device_map} ${grubdir}`
+if test "x$fs_module" = x -a "x$modules" = x; then
+    echo "Auto-detection of a filesystem module failed." 1>&2
+    echo "Please specify the module with the option `--modules' explicitly." 1>&2
+    exit 1
+fi
+
+# Typically, _chain and pc are required.
+modules="$modules $fs_module _chain pc"
+
+$grub_mkimage --output=${grubdir}/core.img $modules || exit 1
+
+# Now perform the installation.
+$grub_setup --directory=${grubdir} --device-map=${device_map} \
+    ${install_device} || exit 1
+
+# Prompt the user to check if the device map is correct.
+echo "Installation finished. No error reported."
+echo "This is the contents of the device map $device_map."
+echo "Check if this is correct or not. If any of the lines is incorrect,"
+echo "fix it and re-run the script \`grub-install'."
+echo
+
+cat $device_map
+
+# Bye.
+exit 0

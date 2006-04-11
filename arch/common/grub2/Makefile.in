@@ -1,0 +1,243 @@
+# -*- makefile -*-
+#
+# Copyright (C) 1994,1995,1996,1997,1998,1999,2000,2001,2002,2004,2005 Free Software Foundation, Inc.
+#
+# This Makefile.in is free software; the author
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+### The configure script will replace these variables.
+
+SHELL = /bin/sh
+
+@SET_MAKE@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+pkgdatadir = $(datadir)/@PACKAGE_TARNAME@/$(host_cpu)-$(host_vendor)
+pkglibdir = $(libdir)/@PACKAGE_TARNAME@
+
+PACKAGE_NAME = @PACKAGE_NAME@
+PACKAGE_TARNAME = @PACKAGE_TARNAME@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+PACKAGE_STRING = @PACKAGE_STRING@
+PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
+
+host_cpu = @host_cpu@
+host_vendor = @host_vendor@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+
+mkinstalldirs = $(srcdir)/mkinstalldirs
+
+CC = @CC@
+CFLAGS = @CFLAGS@
+CPPFLAGS = -I. -Iinclude -I$(srcdir)/include -Wall -W
+BUILD_CC = @BUILD_CC@
+BUILD_CFLAGS = -g -O2
+BUILD_CPPFLAGS = -I. -Iinclude -I$(srcdir)/include -Wall -W \
+	-DGRUB_DATADIR=\"$(pkgdatadir)\"
+OBJCOPY = @OBJCOPY@
+STRIP = @STRIP@
+NM = @NM@
+LD = @LD@
+RUBY = @RUBY@
+LIBCURSES = @LIBCURSES@
+LIBLZO = @LIBLZO@
+
+### General variables.
+
+RMKFILES = $(addprefix conf/,i386-pc.rmk powerpc-ieee1275.rmk)
+MKFILES = $(patsubst %.rmk,%.mk,$(RMKFILES))
+
+DATA = $(pkgdata_IMAGES) $(pkgdata_MODULES) $(pkgdata_PROGRAMS) \
+	$(pkgdata_DATA)
+PROGRAMS = $(bin_UTILITIES) $(sbin_UTILITIES)
+SCRIPTS = $(sbin_SCRIPTS)
+
+CLEANFILES =
+MOSTLYCLEANFILES = 
+DISTCLEANFILES = config.status config.cache config.log config.h \
+	Makefile stamp-h include/grub/cpu include/grub/machine
+MAINTAINER_CLEANFILES = $(srcdir)/configure $(addprefix $(srcdir)/,$(MKFILES))
+
+# The default target.
+all: all-local
+
+### Include an arch-specific Makefile.
+$(addprefix $(srcdir)/,$(MKFILES)): %.mk: %.rmk genmk.rb
+	if test "x$(RUBY)" = x; then \
+	  touch $@; \
+	else \
+	  $(RUBY) $(srcdir)/genmk.rb < $< > $@; \
+	fi
+
+include $(srcdir)/conf/$(host_cpu)-$(host_vendor).mk
+
+### General targets.
+
+all-local: $(PROGRAMS) $(DATA) $(SCRIPTS) $(MKFILES)
+
+install: install-local
+
+install-local: all
+	$(mkinstalldirs) $(DESTDIR)$(pkgdatadir)
+	@list='$(pkgdata_IMAGES) $(pkgdata_MODULES) $(pkgdata_DATA)'; \
+	for file in $$list; do \
+	  if test -f "$$file"; then dir=; else dir="$(srcdir)"; fi; \
+	  dest="`echo $$file | sed 's,.*/,,'`"; \
+	  $(INSTALL_DATA) $$dir$$file $(DESTDIR)$(pkgdatadir)/$$dest; \
+	done
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	@list='$(bin_UTILITIES)'; for file in $$list; do \
+	  if test -f "$$file"; then dir=; else dir="$(srcdir)"; fi; \
+	  dest="`echo $$file | sed 's,.*/,,'`"; \
+	  $(INSTALL_PROGRAM) $$dir$$file $(DESTDIR)$(bindir)/$$dest; \
+	done
+	$(mkinstalldirs) $(DESTDIR)$(sbindir)
+	@list='$(sbin_UTILITIES)'; for file in $$list; do \
+	  if test -f "$$file"; then dir=; else dir="$(srcdir)"; fi; \
+	  dest="`echo $$file | sed 's,.*/,,'`"; \
+	  $(INSTALL_PROGRAM) $$dir$$file $(DESTDIR)$(sbindir)/$$dest; \
+	done
+	@list='$(sbin_SCRIPTS)'; for file in $$list; do \
+	  if test -f "$$file"; then dir=; else dir="$(srcdir)"; fi; \
+	  dest="`echo $$file | sed 's,.*/,,'`"; \
+	  $(INSTALL_SCRIPT) $$dir$$file $(DESTDIR)$(sbindir)/$$dest; \
+	done
+
+install-strip:
+	$(MAKE) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" install
+
+uninstall:
+	@list='$(pkgdata_IMAGES) $(pkgdata_MODULES) $(pkgdata_DATA)'; \
+	for file in $$list; do \
+	  dest="`echo $$file | sed 's,.*/,,'`"; \
+	  rm -f $(DESTDIR)$(pkgdatadir)/$$dest; \
+	done
+	@list='$(bin_UTILITIES)'; for file in $$list; do \
+	  dest="`echo $$file | sed 's,.*/,,'`"; \
+	  rm -f $(DESTDIR)$(bindir)/$$dest; \
+	done
+	@list='$(sbin_UTILITIES) $(sbin_SCRIPTS)'; for file in $$list; do \
+	  dest="`echo $$file | sed 's,.*/,,'`"; \
+	  rm -f $(DESTDIR)$(sbindir)/$$dest; \
+	done
+
+clean:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
+
+mostlyclean: clean
+	-test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
+
+distclean: mostlyclean
+	-test -z "$(DISTCLEANFILES)" || rm -f $(DISTCLEANFILES)
+	-rm -rf $(srcdir)/autom4te.cache
+
+maintainer-clean: distclean
+	-test -z "$(MAINTAINER_CLEANFILES)" || rm -f $(MAINTAINER_CLEANFILES)
+
+info:
+
+dvi:
+
+distdir=$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)
+
+DISTLIST: gendistlist.sh
+	sh $(srcdir)/gendistlist.sh > $(srcdir)/DISTLIST
+
+distdir: DISTLIST
+	-chmod -R a+w $(distdir) >/dev/null 2>&1; rm -rf $(distdir)
+	$(mkinstalldirs) $(distdir)
+	for i in `cat $(srcdir)/DISTLIST`; do \
+	  dir=`echo "$$i" | sed 's:/[^/]*$$::'`; \
+	  if test -d $(srcdir)/$$dir; then \
+	    $(mkinstalldirs) $(distdir)/$$dir; \
+	  fi; \
+	  cp -p $(srcdir)/$$i $(distdir)/$$i || exit 1; \
+	done
+	chmod -R a+r $(distdir)
+
+GZIP_ENV = --best
+
+dist: distdir
+	tar chof - $(distdir) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	-chmod -R a+w $(distdir) >/dev/null 2>&1; rm -rf $(distdir)
+
+distcheck: dist
+	-chmod -R a+w $(distdir) >/dev/null 2>&1; rm -rf $(distdir)
+	GZIP=$(GZIP_ENV) gzip -cd $(distdir).tar.gz | tar xf -
+	chmod -R a-w $(distdir)
+	chmod a+w $(distdir)
+	mkdir $(distdir)/=build
+	mkdir $(distdir)/=inst
+	chmod a-w $(distdir)
+	dc_instdir=`CDPATH=: && cd $(distdir)/=inst && pwd` \
+	  && cd $(distdir)/=build \
+	  && ../configure --srcdir=.. --prefix=$$dc_instdir \
+	  && $(MAKE) all dvi check install uninstall \
+	  && (test `find $$dc_instdir -type f -print | wc -l` -le 1 \
+	     || (echo "Error: files left after uninstall" 1>&2; \
+	         exit 1)) \
+	  && $(MAKE) dist distclean \
+	  && rm -f $(distdir).tar.gz \
+	  && (test `find . -type f -print | wc -l` -eq 0 \
+	     || (echo "Error: files left after distclean" 1>&2; \
+	         exit 1))
+	-chmod -R a+w $(distdir) > /dev/null 2>&1; rm -rf $(distdir)
+	@echo "$(distdir).tar.gz is ready for distribution" | \
+	  sed 'h;s/./=/g;p;x;p;x'
+
+check:
+
+.SUFFIX:
+.SUFFIX: .c .o .S .d
+
+# Regenerate configure and Makefile automatically.
+$(srcdir)/configure: configure.ac aclocal.m4
+	cd $(srcdir) && autoconf
+
+$(srcdir)/config.h.in: stamp-h.in
+$(srcdir)/stamp-h.in: configure.ac aclocal.m4
+	cd $(srcdir) && autoheader
+	echo timestamp > $(srcdir)/stamp-h.in
+
+config.h: stamp-h
+stamp-h: config.h.in config.status
+	./config.status
+
+Makefile: Makefile.in config.status
+	./config.status
+
+config.status: configure
+	./config.status --recheck
+
+.PHONY: all install install-strip uninstall clean mostlyclean distclean
+.PHONY: maintainer-clean info dvi dist check
+
+# Prevent an overflow.
+.NOEXPORT:

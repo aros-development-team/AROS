@@ -1,0 +1,43 @@
+-*- Mode: Outline -*-
+
+Before working on anything in this file, it's very important that you
+make contact with the core GRUB developers. Things herein might be
+slightly out of date or otherwise not easy to understand at first
+glance. So write to <grub-devel@gnu.org> first.
+
+Priorities:
+  Reported bugs generally have top priority.
+  Non-reported and non-encountered bugs (things we know don't work,
+    but don't really impede things) have lower priority.
+  Things in this file are ranked with one to three !; the more, the
+  higher priority.
+
+
+* Add more filesystems (such as jfs, xfs and reiserfs). !
+
+* Add journal playback support to ext2fs (so it will become ext3fs).
+
+* Add support for internationalization. !!!
+
+* Add more loaders (such as NetBSD and FreeBSD). !!
+
+* Implement a more friendly installer.
+
+* Add more terminals (such as serial). !
+
+* Implement a normal mode. !!!
+
+* Write a manual.
+
+* Add support for compressed files.
+
+* Add support for network devices.
+
+* Fix the graphics mode completely and improve it to support VESA
+  as well as VGA modes. !
+
+* Add a fancy menu interface which utilizes the graphics mode
+  extensively with many eye-candies. This is important to beat
+  GRUB legacy. :)
+
+* Audit util/powerpc/ieee1275/grub-mkimage.c for endianness fixes.

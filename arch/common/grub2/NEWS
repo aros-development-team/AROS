@@ -1,0 +1,73 @@
+New in 1.91 - 2005-10-15:
+
+* Add support for LZO version 2.
+
+* Support completion in the entry editor.
+
+* Add VBE support.
+
+* New commands, "search", "vbetest" and "vbeinfo".
+
+* The option BOOT_IMAGE is passed to Linux.
+
+* Add support for automatic decompression for gzip.
+
+* Add support for terminfo and serial.
+
+* Add support for x86_64.
+
+* GRUB itself is a Multiboot-compliant kernel.
+
+* Add new filesystems: XFS, SFS, and AFFS.
+
+
+New in 1.90 - 2005-08-07:
+
+* Rename the project name PUPA to GRUB. Now this version is the
+  developmental version of GRUB officially.
+
+* The GRUB emulator ``grub-emu'' is added.
+
+* Add support for newworld Mac. This should work with other
+  PowerPC-based machines as well, if they use IEEE 1275
+  (Open Firmware).
+
+* Too many changes to describe. Look at ChangeLog for more details.
+
+
+New in 0.7:
+
+* Problems in cross-compiling PUPA are fixed.
+
+* Use -mrtd and -mregparm=3 to reduce the generated code sizes.	This
+  means that any missing prototypes could be fatal. Also, you must take
+  care when writing assembly code. See the comments at the beginning of
+  startup.S, for more details.
+
+* New utility, ``pupa-setup''. This sets up PUPA to make it bootable
+  from a real disk.
+
+* New commands, "prefix", "insmod", "rmmod" and "lsmod" are added into
+  the rescue mode to manipulate PUPA modules.
+
+* Linux support is added. Initrd is not support yet.
+
+* Reduce the size of a core image significantly by compressing a large
+  part of the core image and decompressing itself at boot time. The
+  currently used algorithm is LZO (more precisely, LZO1X-999). So you
+  have to install LZO to build PUPA. See
+  <http://www.oberhumer.com/opensource/lzo/>, for more information.
+
+
+New in 0.6 - 2002-12-27, Yoshinori K. Okuji:
+
+* The chainloader and the FAT filesystem are modularized.
+
+* The structure of the source tree is a bit changed.
+
+* Support for building loadable modules is added.
+
+* Some generic parts of pupa-mkimage are segregated.
+
+* Some documentation files are added, according to the GNU Coding
+  Standards.

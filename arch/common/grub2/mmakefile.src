@@ -1,0 +1,46 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 21398 2004-03-26 19:30:27Z NicJA $
+
+include $(TOP)/config/make.cfg
+
+GRUB2DEFMENU := $(TOP)/$(CURDIR)/../menu.lst
+GRUB2OPTS := --enable-preset-menu=$(GRUB2DEFMENU)
+
+ifneq ($(AROS_TARGET_VARIANT),tiny)
+GRUB2OPTS += 
+else
+GRUB2OPTS += --disable-fat --disable-ffs --disable-minix --disable-reiserfs \
+            --disable-vstafs --disable-jfs --disable-xfs --disable-md5-password \
+            --disable-packet-retransmission --disable-ext2fs --disable-serial \
+            --disable-hercules
+endif
+
+#MM- config-native-boot-grub2 : grub2-quick grub2-copy-stages
+
+CFLAGS := -minline-all-stringops
+export CFLAGS
+
+%build_with_configure mmake=grub2 host=yes install_target=  \
+    extraoptions="$(GRUBOPTS)" 
+
+GRUB2FILES := $(foreach                                          \
+                   f,                                           \
+                   $(wildcard                                   \
+                           $(GENDIR)/$(CURDIR)/*.mod            \
+                           $(GENDIR)/$(CURDIR)/*.img            \
+                   ),                                           \
+                   $(subst $(GENDIR)/$(CURDIR)/,$(AROSDIR)/boot/grub2/,$f)         \
+              )
+
+$(warning GRUB2FILES = $(GRUB2FILES))
+
+#MM
+grub2-copy-stages : $(GRUB2FILES)
+   
+$(AROSDIR)/boot/grub2/%.mod: $(GENDIR)/$(CURDIR)/%.mod
+	%mkdirs_q $(dir $@)
+	@$(CP) $< $@
+
+$(AROSDIR)/boot/grub2/%.img: $(GENDIR)/$(CURDIR)/%.img
+	%mkdirs_q $(dir $@)
+	@$(CP) $< $@

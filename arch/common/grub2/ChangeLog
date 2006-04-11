@@ -1,0 +1,3681 @@
+2005-10-15  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* configure.ac (AC_INIT): Increase the version number to 1.91.
+
+	* DISTLIST: Added include/grub/terminfo.h, include/grub/tparm.h,
+	include/grub/i386/pc/serial.h, term/terminfo.c, term/tparm.c and
+	term/i386/pc/serial.c.
+
+2005-10-15  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* kern/file.c (grub_file_seek): Seeking to an offset equal to a
+	file size must be permitted.
+
+	* kern/i386/pc/startup.S (multiboot_trampoline): Fix a mistake
+	between %ah and %al.
+
+2005-10-15  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* fs/xfs.c (grub_xfs_iterate_dir): Change the type of BLK to
+	grub_uint64_t.
+	Call the hook with a NUL-terminated filename.
+	(grub_xfs_mount): Use grub_be_to_cpu32 instead of
+	grub_cpu_to_be32.
+
+	* kern/term.c (cursor_state): New variable.
+	(grub_term_set_current): Reset the cursor state on a new
+	terminal.
+	(grub_setcursor): Rewritten to use CURSOR_STATE.
+	(grub_getcursor): New function.
+
+	* include/grub/term.h (grub_getcursor): New prototype.
+
+	* io/gzio.c (test_header): Align BUF for accessing it as 32-bit
+	integers on ARM. Reported by Timothy Baldwin
+	<T.E.Baldwin99@members.leeds.ac.uk>.
+
+2005-10-11  Marco Gerards  <mgerards@xs4all.nl>
+
+	* fs/sfs.c (grub_sfs_open): Don't free `data->label' if it is not
+	allocated.
+	(grub_sfs_dir): Likewise.
+
+2005-10-09  Marco Gerards  <mgerards@xs4all.nl>
+
+	Add support for the SFS filesystem.
+
+	* fs/sfs.c: New file.
+
+	* DISTLIST: Added `fs/sfs.c'.
+
+	* conf/i386-pc.rmk (grub_setup_SOURCES): Add `fs/sfs.c'.
+	(grub_probefs_SOURCES): Likewise.
+	(grub_emu_SOURCES): Likewise.
+	(pkgdata_MODULES): Add `sfs.mod'.
+	(sfs_mod_SOURCES): New variable.
+	(sfs_mod_CFLAGS): Likewise.
+	(sfs_mod_LDFLAGS): Likewise.
+
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add `fs/sfs.c'.
+	(pkgdata_MODULES): Add `sfs.mod'.
+	(sfs_mod_SOURCES): New variable.
+	(sfs_mod_CFLAGS): Likewise.
+
+	* util/grub-emu.c (main): Call `grub_sfs_init' and
+	`grub_sfs_fini'.
+
+	* include/grub/fs.h (grub_sfs_init): New prototype.
+	(grub_sfs_fini): Likewise.
+
+2005-10-07  Marco Gerards  <mgerards@xs4all.nl>
+
+	Add support for the AFFS filesystem.
+
+	* fs/affs.c: New file.
+
+	* DISTLIST: Added `fs/affs.c'.
+
+	* conf/i386-pc.rmk (grub_setup_SOURCES): Add `fs/affs.c'.
+	(grub_probefs_SOURCES): Likewise.
+	(grub_emu_SOURCES): Likewise.
+	(pkgdata_MODULES): Add `affs.mod'.
+	(affs_mod_SOURCES): New variable.
+	(affs_mod_CFLAGS): Likewise.
+	(affs_mod_LDFLAGS): Likewise.
+
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add `fs/affs.c'.
+	(pkgdata_MODULES): Add `affs.mod'.
+	(affs_mod_SOURCES): New variable.
+	(affs_mod_CFLAGS): Likewise.
+
+	* util/grub-emu.c (main): Call `grub_affs_init' and
+	`grub_affs_fini'.
+
+	* include/grub/fs.h (grub_affs_init): New prototype.
+	(grub_affs_fini): Likewise.
+
+2005-10-01  Marco Gerards  <mgerards@xs4all.nl>
+
+	* fs/xfs.c (grub_xfs_iterate_dir): Add parentheses.
+
+2005-10-01  Marco Gerards  <mgerards@xs4all.nl>
+
+	* configure.ac: Accept `x86_64' as host_cpu.  In that case add
+	`-m32' to CFLAGS.
+
+	* genmk.rb (class PModule): Always use `$(#{prefix}_LDFLAGS)' when
+	linking.
+	
+	* conf/i386-pc.rmk (COMMON_CFLAGS): Add `-m32'.
+	(COMMON_LDFLAGS): New variable.
+	(kernel_img_LDFLAGS): Include `COMMON_FLAGS'.
+	(_chain_mod_LDFLAGS, fshelp_mod_LDFLAGS, fat_mod_LDFLAGS)
+	(ext2_mod_LDFLAGS, ufs_mod_LDFLAGS, minix_mod_LDFLAGS)
+	(hfs_mod_LDFLAGS, jfs_mod_LDFLAGS, iso9660_mod_LDFLAGS)
+	(xfs_mod_LDFLAGS, _linux_mod_LDFLAGS, linux_mod_LDFLAGS)
+	(normal_mod_LDFLAGS, hello_mod_LDFLAGS, boot_mod_LDFLAGS)
+	(terminal_mod_LDFLAGS, ls_mod_LDFLAGS, cmp_mod_LDFLAGS)
+	(cat_mod_LDFLAGS, help_mod_LDFLAGS, reboot_mod_LDFLAGS)
+	(halt_mod_LDFLAGS, vga_mod_LDFLAGS, font_mod_LDFLAGS)
+	(terminfo_mod_LDFLAGS, serial_mod_LDFLAGS, _multiboot_mod_LDFLAGS)
+	(multiboot_mod_LDFLAGS, amiga_mod_LDFLAGS, apple_mod_LDFLAGS)
+	(pc_mod_LDFLAGS, sun_mod_LDFLAGS, loopback_mod_LDFLAGS)
+	(default_mod_LDFLAGS, timeout_mod_LDFLAGS, configfile_mod_LDFLAGS)
+	(vbe_mod_LDFLAGS, vesafb_mod_LDFLAGS, vbeinfo_mod_LDFLAGS)
+	(vbetest_mod_LDFLAGS, search_mod_LDFLAGS, gzio_mod_LDFLAGS): New
+	variables.
+	(normal_mod_ASFLAGS): Add `-m32'.
+
+	* include/grub/types.h (grub_host_addr_t, grub_host_off_t)
+	(grub_host_size_t, grub_host_ssize_t): New types.
+	(grub_addr_t, grub_off_t, grub_size_t, grub_ssize_t): Make type
+	dependant of `GRUB_CPU_SIZEOF_VOID_P' instead on
+	`GRUB_HOST_SIZEOF_VOID_P'.
+
+	* include/grub/kernel.h (struct grub_module_header): Type of
+	member offset changed to `grub_host_off_t'.  Type of member size
+	changed to `grub_host_size_t'.
+	(struct grub_module_info): Type of member offset changed to
+	`grub_host_off_t'.  Type of member size changed to
+	`grub_host_size_t'.
+
+2005-09-29  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	Make GRUB's kernel compliant to Multiboot Specification.
+	
+	* kern/i386/pc/startup.S (multiboot_header): New label.
+	(multiboot_entry): Likewise.
+	(multiboot_trampoline): Likewise.
+
+	* include/grub/i386/pc/kernel.h (GRUB_KERNEL_MACHINE_RAW_SIZE):
+	Increased to 0x4A0.
+
+	* fs/xfs.c (grub_xfs_iterate_dir): Fix a syntax error. You may not
+	put parentheses after a question mark.
+	[!GRUB_UTIL] (my_mod): New variable.
+
+	* util/grub-emu.c (main): Call grub_xfs_init and grub_xfs_fini.
+
+2005-09-28  Marco Gerards  <mgerards@xs4all.nl>
+
+	Adds support for the XFS filesystem.  Btrees are not supported
+	yet.
+
+	* fs/xfs.c: New file.
+
+	* DISTLIST: Added `fs/xfs.c'.
+
+	* conf/i386-pc.rmk (grub_setup_SOURCES): Add `fs/xfs.c'.
+	(grub_probefs_SOURCES): Likewise.
+	(grub_emu_SOURCES): Likewise.
+	(pkgdata_MODULES): Add `xfs.mod'.
+	(xfs_mod_SOURCES): New variable.
+	(xfs_mod_CFLAGS): Likewise.
+
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add `fs/xfs.c'.
+	(pkgdata_MODULES): Add `xfs.mod'.
+	(xfs_mod_SOURCES): New variable.
+	(xfs_mod_CFLAGS): Likewise.
+
+	* util/grub-emu.c (main): Call `grub_xfs_init' and
+	`grub_xfs_fini'.
+
+	* include/grub/fs.h (grub_xfs_init): New prototype.
+	(grub_xfs_fini): Likewise.
+
+	
+2005-09-18  Vesa Jaaskelainen  <chaac@nic.fi>
+
+	* video/i386/pc/vbe.c (grub_vbe_set_video_mode): In indexed
+	color modes, allow greater than 16 colors to be configured as
+	a default palette.
+
+2005-09-03  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* normal/completion.c (complete_arguments): Add the qualifier
+	const into OPTIONS.
+
+	From Omniflux <omniflux+lists@omniflux.com>:
+	* include/grub/terminfo.h: New file.
+	* include/grub/tparm.h: Likewise.
+	* include/grub/i386/pc/serial.h: Likewise.
+	* term/terminfo.c: Likewise.
+	* term/tparm.c: Likewise.
+	* term/i386/pc/serial.c: Likewise.
+	* conf/i386-pc.rmk (pkgdata_MODULES): Added terminfo.mod and
+	serial.mod.
+	(terminfo_mod_SOURCES): New variable.
+	(terminfo_mod_CFLAGS): Likewise.
+	(serial_mod_SOURCES): Likewise.
+	(serial_mod_CFLAGS): Likewise.
+
+2005-08-31  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* DISTLIST: Replaced boot/powerpc/ieee1275/crt0.S and
+	boot/powerpc/ieee1275/cmain.c with kern/powerpc/ieee1275/crt0.S
+	and kern/powerpc/ieee1275/cmain.c, respectively.
+
+	* boot/powerpc/ieee1275/crt0.S: Moved to ...
+	* kern/powerpc/ieee1275/crt0.S: ... here.
+
+	* boot/powerpc/ieee1275/cmain.c: Moved to ...
+	* kern/powerpc/ieee1275/cmain.c: ... here.
+	
+	* conf/powerpc-ieee1275.rmk (grubof_SOURCES): Use
+	kern/powerpc/ieee1275/crt0.S and kern/powerpc/ieee1275/cmain.c
+	instead of boot/powerpc/ieee1275/crt0.S and
+	boot/powerpc/ieee1275/cmain.c, respectively.
+
+	* boot/i386/pc/boot.S (lba_mode): Do not store the total number of
+	sectors. It was not used anyway.
+
+2005-08-30  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* term/ieee1275/ofconsole.c (grub_ofconsole_getcharwidth): Fix
+	`unused parameter' warning.
+
+2005-08-30  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* term/ieee1275/ofconsole.c (grub_ofconsole_getcharwidth): New
+	function.
+	(grub_ofconsole_term): Specify grub_ofconsole_getcharwidth as
+	getcharwidth.
+
+2005-08-28  Marco Gerards  <metgerards@student.han.nl>
+
+	* include/grub/normal.h (enum grub_completion_type): Added
+	`GRUB_COMPLETION_TYPE_ARGUMENT'.
+
+	* normal/cmdline.c (print_completion): Handle
+	the `GRUB_COMPLETION_TYPE_ARGUMENT' type.
+	* normal/menu_entry.c (store_completion): Likewise.
+
+	* normal/completion.c (complete_arguments): New function.
+	(grub_normal_do_completion): Call `complete_arguments' when the
+	current words start with a dash.
+
+2005-08-27  Marco Gerards  <metgerards@student.han.nl>
+
+	* conf/powerpc-ieee1275.rmk (pkgdata_MODULES): Fix typo (use
+	`gzio.mod' instead of `io.mod').
+
+2005-08-22  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* gendistlist.sh (EXTRA_DISTFILES): Added genfslist.sh.
+	(DISTDIRS): Added io and video.
+	Rewrite the search routine to make an output consistently.
+
+	* DISTLIST: Added conf/sparc64-ieee1275.mk,
+	conf/sparc64-ieee1275.rmk, include/grub/gzio.h,
+	include/grub/ieee1275/ieee1275.h, include/grub/ieee1275/ofdisk.h,
+	io/gzio.c, kern/sparc64/cache.c, kern/sparc64/dl.c,
+	kern/sparc64/ieee1275/init.c, kern/sparc64/ieee1275/openfw.c and
+	util/powerpc/ieee1275/misc.c.
+	
+	* include/grub/gzio.h: New file.
+	* io/gzio.c: Likewise.
+	
+	* kern/file.c (grub_file_close): Call grub_device_close only if
+	FILE->DEVICE is not NULL.
+
+	* include/grub/mm.h [!NULL] (NULL): New macro.
+
+	* include/grub/err.h (GRUB_ERR_BAD_GZIP_DATA): New constant.
+
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Added io/gzip.c.
+	(pkgdata_MODULES): Added gzio.mod.
+	(gzio_mod_SOURCES): New variable.
+	(gzio_mod_CFLAGS): Likewise.
+
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Added io/gzip.c.
+	(pkgdata_MODULES): Added gzio.mod.
+	(gzio_mod_SOURCES): New variable.
+	(gzio_mod_CFLAGS): Likewise.
+
+	* commands/cat.c: Include grub/gzio.h.
+	(grub_cmd_cat): Use grub_gzfile_open instead of
+	grub_file_open.
+	
+	* commands/cmp.c: Include grub/gzio.h.
+	(grub_cmd_cmp): Use grub_gzfile_open instead of
+	grub_file_open.
+
+	* loader/i386/pc/multiboot.c: Include grub/gzio.h.
+	(grub_rescue_cmd_multiboot): Use grub_gzfile_open instead of
+	grub_file_open.
+	(grub_rescue_cmd_module): Likewise.
+
+2005-08-21  Vincent Pelletier  <subdino2004@yahoo.fr>
+
+	* conf/sparc64-ieee1275.rmk (grubof_SOURCES): The first file must be
+	kern/sparc64/ieee1275/init.c because it contains _start.
+	* conf/sparc64-ieee1275.mk: Generated from conf/sparc64-ieee1275.rmk.
+
+2005-08-21  Vincent Pelletier  <subdino2004@yahoo.fr>
+
+	* configure.ac: Add support for sparc64 host with ieee1275
+	firmware.
+	* configure: Generated from configure.ac.
+	* disk/ieee1275/ofdisk.c (grub_ofdisk_open): Use grub_ssize_t
+	instead of int.
+	(grub_ofdisk_read): Likewise.
+	(grub_ofdisk_open): Use %p to print pointer values, and cast the
+	pointers as (void *) to remove a warning.
+	(grub_ofdisk_close): Likewise.
+	(grub_ofdisk_read): Likewise.
+	* kern/ieee1275/ieee1275.c (grub_ieee1275_exit): This never
+	returns, so make it return void to remove a warning.
+	* include/grub/ieee1275/ieee1275.h (grub_ieee1275_exit):
+	Corresponding prototype change.
+	* kern/mm.c (grub_mm_init_region): Use %p to print pointer
+	values, and cast the pointers as (void *) to remove a warning.
+	(grub_mm_dump): Likewise.
+	* conf/sparc64-ieee1275.mk: New file.
+	* conf/sparc64-ieee1275.rmk: Likewise.
+	* include/grub/sparc64/setjmp.h: Likewise.
+	* include/grub/sparc64/types.h: Likewise.
+	* include/grub/sparc64/ieee1275/console.h: Likewise.
+	* include/grub/sparc64/ieee1275/ieee1275.h: Likewise.
+	* include/grub/sparc64/ieee1275/kernel.h: Likewise.
+	* include/grub/sparc64/ieee1275/time.h: Likewise.
+	* kern/sparc64/cache.c: Likewise.
+	* kern/sparc64/dl.c: Likewise.
+	* kern/sparc64/ieee1275/init.c: Likewise.
+	* kern/sparc64/ieee1275/openfw.c: Likewise.
+
+2005-08-21  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* util/console.c (grub_ncurses_putchar): If C is greater than
+	0x7f, set C to a question mark.
+	(grub_ncurses_getcharwidth): New function.
+	(grub_ncurses_term): Specify grub_ncurses_getcharwidth as
+	getcharwidth.
+
+	* normal/menu.c (print_entry): Made aware of Unicode. First,
+	convert TITLE to UCS-4, and predict the cursor position by
+	grub_getcharwidth.
+
+	* include/grub/misc.h (grub_utf8_to_ucs4): Specify the qualifier
+	const to SRC.
+	* kern/misc.c (grub_utf16_to_utf8): Likewise.
+
+2005-08-20  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* loader/powerpc/ieee1275/linux.c (grub_rescue_cmd_linux): Specify
+	the boot file by the option BOOT_IMAGE. Use grub_stpcpy instead of
+	grub_strcat.
+
+	* loader/i386/pc/linux.c (grub_rescue_cmd_linux): Specify the boot
+	file by the option BOOT_IMAGE. Use grub_stpcpy instead of
+	grub_strcpy and grub_strlen. Take it into account that a space
+	character is inserted as a delimiter.
+
+2005-08-20  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* partmap/pc.c (pc_partition_map_iterate): Include the value of an
+	invalid magic in thre error.
+
+	* commands/search.c: New file.
+	
+	* util/grub-emu.c (main): Call grub_search_init and
+	grub_search_fini.
+
+	* kern/rescue.c (grub_rescue_print_disks): Removed.
+	(grub_rescue_print_devices): New function.
+	(grub_rescue_cmd_ls): Use grub_device_iterate with
+	grub_rescue_print_devices instead of grub_disk_dev_iterate with
+	grub_rescue_print_disks.
+
+	* kern/partition.c (grub_partition_iterate): Return the result of
+	PARTMAP->ITERATE instead of GRUB_ERRNO.
+
+	* kern/device.c: Include grub/partition.h.
+	(grub_device_iterate): New function.
+
+	* include/grub/partition.h (grub_partition_iterate): Return int
+	instead of grub_err_t.
+
+	* include/grub/normal.h [GRUB_UTIL] (grub_search_init): New
+	prototype.
+	[GRUB_UTIL] (grub_search_fini): Likewise.
+
+	* include/grub/device.h (grub_device_iterate): New prototype.
+
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Added
+	commands/search.c.
+	(pkgdata_MODULES): Added search.mod.
+	(search_mod_SOURCES): New variable.
+	(search_mod_CFLAGS): Likewise.
+
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Added commands/search.c.
+	(pkgdata_MODULES): Added search.mod.
+	(search_mod_SOURCES): New variable.
+	(search_mod_CFLAGS): Likewise.
+
+	* commands/ls.c (grub_ls_list_disks): Renamed to ...
+	(grub_ls_list_devices): ... this, and use grub_device_iterate.
+	All callers changed.
+
+	* DISTLIST: Added commands/search.c.
+
+2005-08-20  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* kern/term.c (grub_putchar): Use grub_utf8_to_ucs4 for the
+	conversion.
+	(grub_getcharwidth): New function.
+
+	* kern/misc.c (grub_utf8_to_ucs4): New function.
+
+	* include/grub/term.h (struct grub_term): Added a new member
+	"getcharwidth".
+	(grub_getcharwidth): New prototype.
+
+	* include/grub/misc.h (grub_utf8_to_ucs4): New prototype.
+
+	* term/i386/pc/console.c (map_char): New function. Segregated from
+	grub_console_putchar.
+	(grub_console_putchar): Use map_char.
+	(grub_console_getcharwidth): New function.
+	(grub_console_term): Specified grub_console_getcharwidth as
+	getcharwidth.
+
+	* term/i386/pc/vga.c (grub_vga_getcharwidth): New function.
+	(grub_vga_term): Specified grub_vga_getcharwidth as getcharwidth.
+
+	* term/i386/pc/vesafb.c (grub_virtual_screen_setup): Return
+	GRUB_ERRNO.
+	(grub_vesafb_init): Do not use RC. Instead, use GRUB_ERRNO. Rely
+	on grub_strtoul completely.
+	(write_char): Declare local variables in the beginning of the
+	function.
+	(grub_vesafb_getcharwidth): New function.
+	(grub_vesafb_term): Specified grub_vesafb_getcharwidth as
+	getcharwidth.
+
+2005-08-19  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* DISTLIST: Replace commands/i386/pc/vbe_list_modes.c and
+	commands/i386/pc/vbe_test.c with commands/i386/pc/vbeinfo.c and
+	commands/i386/pc/vbetest.c.
+
+	* video/i386/pc/vbe.c (grub_vbe_probe): If INFOBLOCK is not NULL,
+	call grub_vbe_get_controller_info again, because the returned
+	information is volatile.
+	(grub_vbe_set_video_mode): Mostly rewritten.
+	(grub_vbe_get_video_mode): Use grub_vbe_probe and use
+	grub_vbe_status_t correctly.
+	(grub_vbe_get_video_mode_info): Likewise.
+	(grub_vbe_set_pixel_rgb): Use a switch statement rather than
+	several if statements.
+
+	* commands/i386/pc/vbe_list_modes.c: Renamed to ...
+	* commands/i386/pc/vbeinfo.c: ... this.
+
+	* commands/i386/pc/vbe_test.c: Renamed to ...
+	* commands/i386/pc/vbetest.c: ... this.
+
+	* commands/i386/pc/vbeinfo.c (grub_cmd_vbe_list_modes): Renamed to
+	...
+	(grub_cmd_vbeinfo): ... this. Save video modes before
+	iterating. Skip a video mode, if it is not available, not enough
+	information is given or it is monochrome. Show the memory
+	model. Leave the interpretation of MODEVAR to grub_strtoul
+	completely.
+	(GRUB_MOD_INIT): Rename vbe_list_modes to vbeinfo.
+	(GRUB_MOD_FINI): Likewise.
+
+	* commands/i386/pc/vbetest.c (grub_cmd_vbe_test): Renamed to ...
+	(grub_cmd_vbetest): ... this. Don't print unnecessarily. Use
+	grub_err_t instead of grub_uint32_t. Don't use SPTR. Remove a
+	duplicated grub_env_get. Leave the interpretation of MODEVAR to
+	grub_strtoul completely.
+	(real2pm): Removed.
+	(GRUB_MOD_INIT): Rename vbe_test to vbetest.
+	(GRUB_MOD_FINI): Likewise.
+
+	* normal/misc.c: Include grub/mm.h.
+
+	* conf/i386-pc.rmk (pkgdata_MODULES): Replaced vbe_test.mod and
+	vbe_list_modes with vbetest.mod and vbeinfo.mod.
+	(vbe_list_modes_mod_SOURCES): Removed.
+	(vbe_list_modes_mod_CFLAGS): Likewise.
+	(vbe_test_mod_SOURCES): Likewise.
+	(vbe_test_mod_CFLAGS): Likewise.
+	(vbeinfo_mod_SOURCES): New variable.
+	(vbeinfo_mod_CFLAGS): Likewise.
+	(vbetest_mod_SOURCES): Likewise.
+	(vbetest_mod_CFLAGS): Likewise.
+
+2005-08-18  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* normal/misc.c: New file.
+
+	* DISTLIST: Added normal/misc.c.
+	
+	* partmap/amiga.c (amiga_partition_map_iterate): Add an argument
+	DISK to HOOK. Call HOOK with DISK.
+	* partmap/apple.c (apple_partition_map_iterate): Likewise.
+	* partmap/pc.c (pc_partition_map_iterate): Likewise.
+	* partmap/sun.c (sun_partition_map_iterate): Likewise.
+
+	* normal/menu_entry.c (struct screen): Added a new member
+	"completion_shown".
+	(completion_buffer): New global variable.
+	(make_screen): Set SCREEN->COMPLETION_SHOWN to zero.
+	(store_completion): New function.
+	(complete): Likewise.
+	(clear_completions): Likewise.
+	(grub_menu_entry_run): If SCREEN->COMPLETION_SHOWN is non-zero,
+	call clear_completions and reset SCREEN->COMPLETION_SHOWN. If C is
+	a tab, call complete.
+
+	* normal/completion.c (disk_dev): Removed.
+	(print_simple_completion): Likewise.
+	(print_partition_completion): Likewise.
+	(print_func): New global variable.
+	(add_completion): Do not take the arguments WHAT or PRINT any
+	longer. Added a new argument TYPE. Instead of printing directly,
+	call PRINT_FUNC if not NULL.
+	All callers changed.
+	(complete_device): Use a local variable DEV instead of
+	DISK_DEV. Do not move CURRENT_WORD to the end of a device name.
+	(grub_normal_do_completion): Take a new argument HOOK. Do not
+	initialize DISK_DEV. Initialize PRINT_FUNC to HOOK. If RET is an
+	empty string, return NULL instead.
+	All callers changed.
+
+	* normal/cmdline.c (print_completion): New function.
+
+	* kern/partition.c (grub_partition_iterate): Add an argument DISK
+	to HOOK.
+	All callers changed.
+
+	* kern/disk.c (grub_print_partinfo): Removed.
+
+	* include/grub/partition.h (struct grub_partition_map): Add a new
+	argument DISK into HOOK of ITERATE.
+	(grub_partition_iterate): Add a new argument DISK to HOOK.
+
+	* include/grub/normal.h (enum grub_completion_type): New enum.
+	(grub_completion_type_t): New type.
+	(GRUB_COMPLETION_TYPE_COMMAND): New constant.
+	(GRUB_COMPLETION_TYPE_DEVICE): Likewise.
+	(GRUB_COMPLETION_TYPE_PARTITION): Likewise.
+	(GRUB_COMPLETION_TYPE_FILE): Likewise.
+	(grub_normal_do_completion): Added a new argument HOOK.
+	(grub_normal_print_device_info): New prototype.
+
+	* include/grub/disk.h (grub_print_partinfo): Removed.
+
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Added normal/misc.c.
+	(normal_mod_SOURCES): Likewise.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Likewise.
+	(normal_mod_SOURCES): Likewise.
+
+	* commands/ls.c (grub_ls_list_disks): Use
+	grub_normal_print_device_info instead of grub_print_partinfo. Free
+	PNAME.
+	(grub_ls_list_files): Use grub_normal_print_device_info instead of
+	duplicating the code.
+
+2005-08-16  Vesa Jaaskelainen  <chaac@nic.fi>
+
+	* commands/i386/pc/vbe_list_modes.c: Update source formatting to
+        follow GCS more precisely.
+        * commands/i386/pc/vbe_test.c: Likewise.
+        * include/grub/i386/pc/vbe.h: Likewise.
+        * term/i386/pc/vesafb.c: Likewise.
+        * video/i386/pc/vbe.c: Likewise.
+
+2005-08-16  Vesa Jaaskelainen  <chaac@nic.fi>
+
+	* DISTLIST: Added term/i386/pc/vesafb.c
+	DISTLIST: Added video/i386/pc/vbe.c
+	DISTLIST: Added commands/i386/pc/vbe_list_modes.c.
+	DISTLIST: Added commands/i386/pc/vbe_test.c.
+	* commands/i386/pc/vbe_list_modes.c: New file.
+	* commands/i386/pc/vbe_test.c: Likewise.
+	* term/i386/pc/vesafb.c: Likewise.
+	* video/i386/pc/vbe.c: Likewise.
+	* include/grub/i386/pc/vbe.h (GRUB_VBE_DEFAULT_VIDEO_MODE): Added define.
+	(grub_vbe_probe) Added prototype.
+	(grub_vbe_set_video_mode) Likewise.
+	(grub_vbe_get_video_mode) Likewise.
+	(grub_vbe_get_video_mode_info) Likewise.
+	(grub_vbe_set_pixel_rgb) Likewise.
+	(grub_vbe_set_pixel_index) Likewise.
+	* conf/i386-pc.rmk (pkgdata_MODULES): Added vbe.mod.
+	(pkgdata_MODULES): Added vesafb.mod.
+	(pkgdata_MODULES): Added vbe_list_modes.mod.
+	(pkgdata_MODULES): Added vbe_test.mod.
+	(vbe_mod_SOURCES): Added.
+	(vbe_mod_CFLAGS): Likewise.
+	(vesafb_mod_SOURCES): Likewise.
+	(vesafb_mod_CFLAGS): Likewise.
+	(vbe_list_modes_mod_SOURCES): Likewise.
+	(vbe_list_modes_mod_CFLAGS): Likewise.
+	(vbe_test_mod_SOURCES): Likewise.
+	(vbe_test_mod_CFLAGS): Likewise.
+
+2005-08-14  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* normal/command.c (grub_command_execute): If INTERACTIVE is
+	false and GRUB_COMMAND_FLAG_NO_ECHO is not specified, print
+	CMDLINE. Disable the pager if INTERACTIVE is true.
+	All callers are changed.
+
+	* normal/main.c (grub_normal_execute): Read command.lst and fs.lst
+	before reading a config file.
+	* normal/main.c (read_config_file): Even if a command is not
+	found, register it if it is within an entry.
+
+	* util/grub-emu.c: Include sys/types.h and unistd.h.
+	(options): Added --hold.
+	(struct arguments): Added a new member "hold".
+	(parse_opt): If KEY is 'H', set ARGS->HOLD to ARG or -1 if ARG is
+	missing.
+	(main): Initialize ARGS.HOLD to zero. Wait until ARGS.HOLD is
+	cleared by a debugger, if it is not zero.
+
+	* include/grub/normal.h (grub_command_execute): Add an argument
+	INTERACTIVE.
+
+2005-08-14  Vesa Jaaskelainen  <chaac@nic.fi>
+
+	* DISTLIST: Added include/grub/i386/pc/vbe.h.
+
+2005-08-13  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* aclocal.m4 (grub_I386_CHECK_REGPARM_BUG): Replace the test
+	program with another one, because the old one didn't detect a bug
+	in gcc-3.4. Always use regparm 2, because the new test is still
+	not enough for gcc-4.0. Someone must investigate a simple test
+	case which detects a bug in gcc-4.0.
+
+2005-08-12  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* DISTLIST: Added normal/completion.c.
+
+	* normal/completion.c: New file.
+	
+	* term/i386/pc/console.c (grub_console_getwh): New function.
+	(grub_console_term): Assign grub_console_getwh to getwh.
+
+	* normal/cmdline.c (grub_tab_complete): Removed. Now the same
+	function is defined in normal/completion.c as
+	grub_normal_do_completion.
+	(grub_cmdline_get): Use grub_normal_do_completion instead of
+	grub_tab_complete.
+
+	* kern/partition.c (grub_partition_map_iterate): Return 1 if HOOK
+	returns non-zero, otherwise return 0.
+	(grub_partition_iterate): First, probe the partition map. Then,
+	call ITERATE only for this partition map.
+
+	* kern/misc.c (grub_strncmp): Rewritten.
+
+	* kern/disk.c (grub_disk_dev_iterate): Return 1 if P->ITERATE
+	returns non-zero. Otherwise return 0.
+
+	* include/grub/partition.h (grub_partition_map_iterate): Return
+	int instead of void.
+
+	* include/grub/normal.h (grub_normal_do_completion): New prototype.
+
+	* include/grub/misc.h (grub_strncmp): Change the type of N to
+	grub_size_t.
+
+	* include/grub/disk.h (grub_disk_dev_iterate): Return int instead
+	of void.
+
+	* normal/menu.c (draw_border): Cast GRUB_TERM_BORDER_WIDTH to
+	unsigned explictly before comparing it with I.
+
+	* kern/main.c (grub_env_write_root): Add the attribute unused into
+	VAR.
+
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Added
+	normal/completion.c.
+	(normal_mod_SOURCES): Likewise.
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Likewise.
+	(normal_mod_SOURCES): Likewise.
+
+	* normal/command.c (grub_iterate_commands): If ITERATE returns
+	non-zero, return one immediately.
+
+2005-08-09  Vesa Jaaskelainen  <chaac@nic.fi>
+
+	* conf/i386-pc.rmk (kernel_img_HEADERS): Added machine/vbe.h.
+	* kern/i386/pc/startup.S: Updated Global Descriptor table's
+	descriptions.
+	(grub_vbe_get_controller_info): New function.
+	(grub_vbe_get_mode_info): Likewise.
+	(grub_vbe_set_mode): Likewise.
+	(grub_vbe_get_mode): Likewise.
+	(grub_vbe_set_memory_window): Likewise.
+	(grub_vbe_get_memory_window): Likewise.
+	(grub_vbe_set_scanline_length): Likewise.
+	(grub_vbe_get_scanline_length): Likewise.
+	(grub_vbe_set_display_start): Likewise.
+	(grub_vbe_get_display_start): Likewise.
+	(grub_vbe_set_palette_data): Likewise.
+	* include/grub/i386/pc/vbe.h: New file.
+
+2005-08-08  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* conf/powerpc-ieee1275.rmk (grubof_SOURCES): Replaced
+	kern/ieee1275/of.c with kern/ieee1275/ieee1275.c.
+	* DISTLIST: Likewise.
+	* kern/ieee1275/of.c: Moved to ...
+	* kern/ieee1275/ieee1275.c: ... here.
+
+2005-08-08  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* term/ieee1275/ofconsole.c: Include <grub/mm.h>.
+	(grub_ofconsole_getwh): Cast -1 to type grub_ieee1275_ihandle_t.
+	Pass 0 as `end' parameter to grub_strtoul().
+
+2005-08-08  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* include/grub/powerpc/ieee1275/console.h: Do not include
+	<grub/types.h>.  Do not include <grub/symbol.h>.  Remove ASM_FILE
+	ifdef.
+	(grub_console_cur_color): Remove i386-specific prototype.
+	(grub_console_real_putchar): Likewise.
+	(grub_console_checkkey): Likewise.
+	(grub_console_getkey): Likewise.
+	(grub_console_getxy): Likewise.
+	(grub_console_gotoxy): Likewise.
+	(grub_console_cls): Likewise.
+	(grub_console_setcursor): Likewise.
+	* kern/powerpc/ieee1275/init.c: Don't include <grub/console.h>.
+	Include <grub/machine/console.h>.
+	* term/ieee1275/ofconsole.c: Likewise.
+
+2005-08-08  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* Makefile.in (LIBLZO): New variable.
+
+	* configure.ac: Check for LZO version 2.
+
+	* util/i386/pc/grub-mkimage.c [HAVE_LZO_LZO1X_H]: Include
+	lzo/lzo1x.h instead of lzo1x.h.
+
+	* conf/i386-pc.rmk (grub_mkimage_LDFLAGS): Use $(LIBLZO) instead
+	of -llzo.
+
+	* util/i386/pc/grub-setup.c (main): Do not free PREFIX
+	twice. Reported by Vladimir Serbinenko <phcoder@gmail.com>.
+
+	* partmap/pc.c (pc_partition_map_probe): Restore P->DATA after
+	copying the data from PARTITION to P.
+
+2005-08-07  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* kern/rescue.c (grub_rescue_cmd_rmmod): If the reference count is
+	negative, unload the module.
+
+	* util/i386/pc/grub-setup.c (setup): The name of the PC partition
+	map is "pc_partition_map" but not "pc".
+	(usage): Fix the description. The options are --boot-image and
+	--core-image but not --boot-file or --core-file.
+	(main): If not specified explicitly, make BOOT_FILE and CORE_FILE
+	based on DEFAULT_BOOT_FILE and DEFAULT_CORE_FILE with DIR or
+	DEFAULT_DIRECTORY.
+
+	* util/i386/pc/grub-install.in: Do not specify --boot-file or
+	--core-file. Specify INSTALL_DEVICE as an argument.
+
+	* util/console.c: Include config.h.
+	[HAVE_NCURSeS_CURSES_H]: Include ncurses/curses.h.
+	[HAVE_NCURSES_H]: Include ncurses.h.
+	[HAVE_CURSES_H]: Include curses.h.
+	[!A_NORMAL] (A_NORMAL): Defined as zero.
+	[!A_STANDOUT] (A_STANDOUT): Likewise.
+
+	* conf/i386-pc.rmk (grub_emu_LDFLAGS): Use $(LIBCURSES) instead of
+	-lncurses.
+	* conf/powerpc-ieee1275.rmk (grub_emu_LDFLAGS): Likewise.
+
+	* configure.ac: Check for curses libraries and headers.
+
+	* Makefile.in (LIBCURSES): New variable.
+
+	* genmk.rb (Script::rule): Set the executable bits.
+
+	* util/i386/pc/biosdisk.c (grub_util_biosdisk_get_grub_dev): The
+	name of the PC partition map is "pc_partition_map" but not "pc".
+
+2005-08-07  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* util/i386/pc/grub-install.in (grub_probefs): New variable.
+	(modules): Likewise.
+	(usage): Added descriptions for --modules and --grub-probefs.
+	Handle --modules and --grub-probefs. Save the arguments in MODULES
+	and GRUB_PROBEFS, respectively.
+	Auto-detect a filesystem module against GRUBDIR. If the result is
+	empty and modules are not specified explicitly, abort the
+	installation. Add the result to MODULES.
+
+	* DISTLIST: Removed boot/powerpc/ieee1275/ieee1275.c,
+	disk/powerpc/ieee1275/ofdisk.c,
+	include/grub/powerpc/ieee1275/init.h and
+	term/powerpc/ieee1275/ofconsole.c.
+	Added disk/ieee1275/ofdisk.c, kern/ieee1275/of.c and
+	term/ieee1275/ofconsole.c.
+
+	* include/grub/powerpc/ieee1275/console.h: Resurrected.
+
+	* COPYING: Upgraded to the latest version. Only the address of the
+	FSF office has changed.
+	
+2005-08-07  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* conf/powerpc-ieee1275.rmk (grubof_SOURCES): Replaced
+	kern/ieee1275.c with kern/ieee1275/of.c.
+
+	* kern/ieee1275.c: Moved to ...
+	* kern/ieee1275/of.c: ... here.
+
+2005-08-06  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* conf/i386-pc.rmk (kernel_img_HEADERS): Reordered for
+	readablity.
+
+	* config.guess: Updated to the latest version from gnulib.
+	* config.sub: Likewise.
+	* install.sh: Likewise.
+	* mkinstalldirs: Likewise.
+
+	* include/grub/console.h: Removed. This file is arch-specific. Do
+	not put this in include/grub.
+
+	* include/grub/i386/pc/console.h: Resurrected.
+
+	* util/console.c: Include grub/machine/console.h instead of
+	grub/console.h.
+	* util/grub-emu.c: Likewise.
+
+2005-08-04  Marco Gerards  <metgerards@student.han.nl>
+
+	* kern/term.c (grub_putcode): Use `grub_getwh' instead of
+	hardcoded value.
+		
+	From Vincent Pelletier  <subdino2004@yahoo.fr>
+	* include/grub/term.h (GRUB_TERM_WIDTH, GRUB_TERM_HEIGHT):
+	Redefined to use grub_getwh.
+	(grub_term): New member named getwh.
+	(grub_getwh): New prototype.
+	* kern/term.c (grub_getwh): New function.
+	* term/i386/pc/console.c (grub_console_getwh): New function.
+	(grub_console_term): New member `getwh'.
+	* term/i386/pc/vga.c (grub_vga_getwh): New function.
+	(grub_vga_term): New member `getwh'.
+	* term/ieee1275/ofconsole.c (grub_ofconsole_readkey): Use
+	grub_ssize_t.
+	(grub_ofconsole_getw): New function.
+	(grub_ofconsole_init): Use grub_ssize_t and unsigned char.
+	(grub_ofconsole_term): New field named getwh and new initial
+	value.
+
+2005-08-03  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* include/grub/powerpc/ieee1275/ieee1275.h: Move ...
+	* include/grub/ieee1275/ieee1275.h: ... to here.  All users updated.
+	Move `abort', `grub_reboot', and `grub_halt' prototypes ...
+	* include/grub/powerpc/ieee1275/kernel.h: ... to here.
+	* commands/ieee1275/halt.c: Include <grub/machine/kernel.h> instead
+	of <grub/machine/ieee1275.h>.
+	* commands/ieee1275/reboot.c: Likewise.
+	* boot/powerpc/ieee1275/ieee1275.c: Move ...
+	* kern/ieee1275.c: ... to here.  All users updated.  Change all
+	parameter structs to use new type `grub_ieee1275_cell_t'.
+	* term/powerpc/ieee1275/ofconsole.c: Move ...
+	* term/ieee1275/ofconsole.c: ... to here.  All users updated.
+	* disk/powerpc/ieee1275/ofdisk.c: Move ...
+	* disk/ieee1275/ofdisk.c: ... to here.  All users updated.
+	* boot/powerpc/ieee1275/cmain.c: Change `grub_ieee1275_entry_fn' type
+	to return int.
+	* include/grub/i386/pc/console.h: Move to include/grub/console.h.
+	Remove unused prototypes.  All users updated.
+	* include/grub/powerpc/ieee1275/console.h: Removed.
+	* include/grub/powerpc/ieee1275/ieee1275.h: Define
+	`grub_ieee1275_cell_t'.
+	* kern/powerpc/ieee1275/openfw.c: Include <grub/machine/kernel.h>.
+	Cast comparisons with -1 to the correct type.
+	* loader/powerpc/ieee1275/linux.c (kernel_entry_t): Change parameter
+	type to match `grub_ieee1275_entry_fn'.
+
+2005-08-01  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* DISTLIST: Added util/i386/pc/grub-probefs.c.
+
+	* conf/i386-pc.rmk (sbin_UTILITIES): Added grub-probefs.
+	(grub_setup_SOURCES): Removed partmap/amiga.c, partmap/apple.c and
+	partmap/sun.c.
+	(grub_probefs_SOURCES): New variable.
+
+	* util/i386/pc/grub-probefs.c: New file.
+
+	* util/i386/pc/grub-setup.c (main): Call
+	grub_pc_partition_map_init, grub_ufs_init, grub_minix_init,
+	grub_hfs_init and grub_jfs_init to initialize the system. Call
+	grub_ufs_fini, grub_minix_fini, grub_hfs_fini, grub_jfs_init and
+	grub_pc_partition_map_fini to finish the system.
+
+2005-07-31  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* loader/i386/pc/multiboot.c (grub_multiboot_is_elf32): New
+	function.
+	(grub_multiboot_load_elf32): Likewise.
+	(grub_multiboot_is_elf64): Likewise.
+	(grub_multiboot_load_elf64): Likewise.
+	(grub_multiboot_load_elf): Likewise.
+	(grub_rescue_cmd_multiboot): Call grub_multiboot_load_elf to load
+	an ELF32 or ELF64 file.
+	This is based on a patch from Ruslan Nikolaev <nruslan@mail.com>.
+
+	From Serbinenko Vladimir <serbinenko.vova@list.ru>:
+	* kern/disk.c (grub_print_partinfo): Check if FS->LABEL is not
+	NULL before calling FS->LABEL.
+	* fs/fat.c (grub_fat_dir): Initialize DIRNAME to NULL.
+	* commands/ls.c (grub_ls_list_files): Show labels, if possible.
+	(grub_ls_list_disks): Check if FS and FS->LABEL are not NULL
+	before calling FS->LABEL.
+
+2005-07-26  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* util/i386/pc/grub-install.in (datadir): New variable.
+	(libdir): Removed.
+	(pkgdatadir): New variable.
+	(pkglibdir): Removed.
+
+2005-07-24  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* DISTLIST: Added util/i386/pc/grub-install.in.
+
+	* util/i386/pc/grub-install.in: New file.
+
+	* conf/i386-pc.rmk (sbin_SCRIPTS): New variable.
+	(grub_install_SOURCES): Likewise.
+
+	* genmk.rb: Added support for scripts.
+	(Script): New class.
+	(scripts): New variable.
+
+	* Makefile.in (install-local): Install sbin_SCRIPTS by
+	INSTALL_SCRIPT.
+	(uninstall): Remove sbin_SCRIPTS.
+
+	* util/i386/pc/grub-setup.c (main): If the argument is not a GRUB
+	device, try to get a GRUB device by
+	grub_util_biosdisk_get_grub_dev.
+	Free DEST_DEV.
+
+	* util/i386/pc/grub-mkdevicemap.c (usage): Remove a duplicated
+	description for --device-map.
+
+2005-07-20  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	Change the semantics of variable hooks. They now return	strings
+	instead of error values.
+	
+	* util/i386/pc/grub-setup.c: Include grub/env.h.
+	(setup): Use grub_device_set_root instead of grub_env_set.
+
+	* kern/rescue.c (grub_rescue_cmd_root): Use grub_env_set and
+	grub_env_get instead of grub_device_set_root and
+	grub_device_get_root, respectively.
+
+	* kern/main.c (grub_env_write_root): New function.
+	(grub_set_root_dev): Register grub_env_write_hook for "root". Use
+	grub_env_set instead of grub_device_set_root.
+
+	* kern/env.c (HASHSZ): Reduced to 13, because GRUB does not need
+	many variables.
+	(grub_env_set): Set ENV->VALUE to the result of ENV->WRITE_HOOK
+	rather than calling ENV->WRITE_HOOK afterwards.
+	(grub_env_get): Return the result of ENV->READ_HOOK rather than
+	passing a pointer of a pointer.
+	(grub_register_variable_hook): Change the types of "read_hook" and
+	"write_hook" to grub_env_read_hook_t and grub_env_write_hook_t,
+	respectively.
+	Allocate the default empty string on the heap, because this string
+	may be freed later.
+
+	* kern/device.c: Include grub/env.h.
+	(grub_device_set_root): Removed.
+	(grub_device_get_root): Likewise.
+	(grub_device_open): Use grub_env_get instead of
+	grub_device_get_root.
+
+	* include/grub/env.h (grub_env_read_hook_t): New type.
+	(grub_env_write_hook_t): Likewise.
+	(grub_env_var): Change the types of "read_hook" and "write_hook"
+	to grub_env_read_hook_t and grub_env_write_hook_t, respectively.
+	(grub_register_variable_hook): Likewise.
+
+	* include/grub/device.h (grub_device_set_root): Removed.
+	(grub_device_set_root): Likewise.
+
+	* fs/fat.c (grub_fat_dir): Make a copy of PATH in DIRNAME, and
+	make sure that DIRNAME terminates with '/', so that
+	grub_fat_find_dir will fail if PATH is not a directory.
+
+	* commands/ls.c (grub_ls_list_files): Remove the qualifier const
+	from DIRNAME.
+	Use the qualifier auto for print_files and print_files_long.
+	If FS->DIR sets GRUB_ERRNO to GRUB_ERR_BAD_FILE_TYPE, try DIRNAME
+	as a regular file.
+	Put a newline only if there is no error.
+	(grub_cmd_ls): Remove grub_ls_print_files, because this is not
+	used.
+
+2005-07-20  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* kern/partition.c (grub_partition_probe): Initialize PART to
+	NULL. Otherwise, when no partition map is registered, this returns
+	a garbage.
+
+2005-07-19  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* partmap/apple.c (apple_partition_map_iterate): Check if POS
+	equals GRUB_DISK_SECTOR_SIZE to see if the partition table is
+	valid.
+
+2005-07-18  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* commands/ls.c (grub_ls_list_disks): Print the filesystem
+	information on each device, if it does not have partitions. Print
+	"Device" instead of "Disk", because this function is not specific
+	to disk devices.
+
+	* normal/main.c (grub_rescue_cmd_normal): Make the variable CONFIG
+	static to ensure that it is put on the memory rather than a
+	register.
+
+2005-07-17  Yoshinori Okuji  <okuji@enbug.org>
+
+	* commands/cat.c (GRUB_MOD_INIT): Use better documentation.
+	(grub_cat_init): Likewise.
+	* loader/i386/pc/chainloader_normal.c (GRUB_MOD_INIT): Likewise.
+	(options): Likewise.
+	* commands/configfile.c (GRUB_MOD_INIT): Likewise.
+	(grub_configfile_init): Likewise.
+	* font/manager.c (GRUB_MOD_INIT): Likewise.
+	* commands/help.c (GRUB_MOD_INIT): Likewise.
+	(grub_help_init): Likewise.
+	* normal/command.c (grub_command_init): Likewise.
+	* loader/i386/pc/linux_normal.c (GRUB_MOD_INIT): Likewise.
+	* disk/loopback.c (grub_loop_init): Likewise.
+	(GRUB_MOD_INIT): Likewise.
+	* commands/ls.c (grub_ls_init): Likewise.
+	(GRUB_MOD_INIT): Likewise.
+	(options): Likewise.
+	* commands/boot.c (grub_boot_init): Likewise.
+	(GRUB_MOD_INIT): Likewise.
+	* loader/i386/pc/multiboot_normal.c (GRUB_MOD_INIT): Likewise.
+	* commands/i386/pc/reboot.c (grub_reboot_init): Likewise.
+	(GRUB_MOD_INIT): Likewise.
+	* commands/cmp.c (grub_cmp_init): Likewise.
+	(GRUB_MOD_INIT): Likewise.
+
+	* normal/arg.c: Use <> instead of "" to include header files.
+	(SHORT_ARG_HELP): New macro.
+	(SHORT_ARG_USAGE): Likewise.
+	(help_options): Specify SHORT_ARG_HELP and SHORT_ARG_USAGE instead
+	of 'h' and 'u' for help and usage, respectively. Use more GNU-like
+	descriptions.
+	(find_short): Check if C is 'h' or 'u' explicitly.
+	(grub_arg_show_help): Use space characters instead of tabs. Treat
+	SHORT_ARG_HELP and SHORT_ARG_USAGE exceptionally so that -h and -u
+	are shown with --help and --usage only if they are not used for
+	the command itself.
+	(parse_option): Use SHORT_ARG_HELP and SHORT_ARG_USAGE instead of
+	'h' and 'u'.
+
+	* include/grub/arg.h (struct grub_arg_option): Add the qualifier
+	const into "longarg". Change the type of "shortarg" to int.
+
+2005-07-17  Yoshinori Okuji  <okuji@enbug.org>
+
+	* boot/i386/pc/boot.S (boot_drive_check): New label.
+
+	* include/grub/i386/pc/boot.h (GRUB_BOOT_MACHINE_DRIVE_CHECK): New
+	macro.
+
+	* util/i386/pc/grub-setup.c (setup): Added a workaround for BIOSes
+	which do not pass a boot drive correctly. Copied from GRUB Legacy.
+
+2005-07-17  Yoshinori Okuji  <okuji@enbug.org>
+
+	* kern/i386/pc/startup.S (gate_a20_try_system_control_port_a):
+	When turning off Gate A20, skip the check and return immediately,
+	because this is not fatal usually.
+
+2005-07-17  Yoshinori Okuji  <okuji@enbug.org>
+
+	* conf/i386-pc.rmk (pxeboot_img_LDFLAGS): The text address should
+	be 0x7C00 instead of 0x8000.
+
+	* boot/i386/pc/pxeboot.S: Rewritten.
+
+	* kern/i386/pc/startup.S (gate_a20_try_bios): No need to specify
+	EXT_C.
+	(gate_a20_check_state): Read a byte from 0x108000. Invert the
+	result.
+
+2005-07-16  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* kern/i386/pc/startup.S (grub_gate_a20): Rewritten for
+	robustness. This routine now supports a BIOS call and System
+	Control Port A to modify the gate A20.
+
+	* include/grub/i386/pc/kernel.h (GRUB_KERNEL_MACHINE_RAW_SIZE):
+	Increased to 0x440.
+
+2005-07-12  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* disk/powerpc/ieee1275/ofdisk.c (grub_ofdisk_open): dprintf the
+	device path and resulting ihandle.
+	(grub_ofdisk_close): dprintf the ihandle being closed.
+	(grub_ofdisk_read): dprintf function parameters.
+	* kern/mm.c (grub_mm_init_region): Likewise.
+	* loader/powerpc/ieee1275/linux.c: Remove extra whitespace.
+	(grub_linux_boot): dprintf the Linux entry point, initrd address and
+	size, and boot arguments.
+	(grub_rescue_cmd_linux): dprintf each ELF segment's address and size
+	before loading into memory.
+	(grub_rescue_cmd_initrd): dprintf the initrd's address and size
+	before loading into memory.
+
+2005-07-12  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* kern/mm.c: Added much documentation.
+	(GRUB_MM_ALIGN_LOG2): When GRUB_CPU_SIZEOF_VOID_P is
+	8, set to 5 instead of 8.
+
+2005-07-10  Yoshinori Okuji  <okuji@enbug.org>
+
+	* DISTLIST: Added util/i386/pc/grub-mkimage.c.
+
+	* conf/i386-pc.rmk (sbin_UTILITIES): Added grub-mkdevicemap.
+	(grub_mkdevicemap_SOURCES): New variable.
+
+	* util/i386/pc/grub-mkdevicemap.c: New file. Mostly copied from
+	lib/device.c of GRUB Legacy.
+
+2005-07-10  Yoshinori Okuji  <okuji@enbug.org>
+
+	* commands/ls.c (grub_ls_list_files): Check if *PATH is NUL
+	instead of PATH is NULL.
+
+2005-07-09  Vincent Pelletier  <subdino2004@yahoo.fr>
+
+	* commands/cmp.c (BUFFER_SIZE): New macro.
+	(grub_cmd_cmp): Close the right file at the right time.  Compare
+	only data just read.  Don't report files of different  size as
+	identical.  Dynamically allocate buffers.  Move variable
+	declarations at the beginning of function.
+
+2005-07-09  Yoshinori Okuji  <okuji@enbug.org>
+
+	* aclocal.m4 (grub_I386_CHECK_REGPARM_BUG): The return value was
+	reverse.
+
+2004-07-04  Vincent Pelletier  <subdino2004@yahoo.fr>
+
+	* normal/cmdline.c (grub_cmdline_get): Don't fallback on ctrl-d
+	when backspace is pressed at beginning of line.
+
+2005-07-03  Yoshinori Okuji  <okuji@enbug.org>
+
+	* DISTLIST: Added genfslist.sh.
+
+	* normal/main.c (fs_module_list): New variable.
+	(autoload_fs_module): New function.
+	(read_fs_list): Likewise.
+	(grub_normal_execute): Call read_fs_list.
+
+	* kern/fs.c (grub_fs_autoload_hook): New variable.
+	(grub_fs_probe): Added support for auto-loading.
+
+	* include/grub/normal.h (struct grub_fs_module_list): New struct.
+	(grub_fs_module_list_t): New type.
+
+	* include/grub/fs.h (grub_fs_autoload_hook_t): New type.
+	(grub_fs_autoload_hook): New prototype.
+
+	* genfslist.sh: New file.
+	
+	* genmk.rb: Added a rule to generate a filesystem list.
+
+2005-06-30  Marco Gerards  <metgerards@student.han.nl>
+
+	* configure.ac: Fix the test for cross-compiling.
+
+	* genmk.rb (Program): Use `$(CC)' instead of `$(BUILD_CC)'.  Don't
+	define GRUB_UTIL anymore.
+
+	* util/powerpc/ieee1275/grub-mkimage.c (load_note): Endian fixes
+	so this function works on other systems than just big endian.
+	(load_modules): Likewise.
+	(add_segments): Likewise.
+
+2005-06-23  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* kern/misc.c (grub_vsprintf): Add `longfmt'.  If format string
+	contains `l' modifier, get a long from va_arg().
+
+2005-06-23  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* kern/mm.c (grub_free): If the next free block which is being
+	merged is the first free block, set the first block to the block
+	being freed.
+	Reported by Vincent Guffens <guffens@inma.ucl.ac.be>.
+
+2005-05-08  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/cmain.c (cmain): Initialize
+	`grub_ieee1275_chosen'.
+
+2005-05-08  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/cmain.c	(module_info): Remove definition.
+	(grub_ieee1275_chosen): New variable.
+	(cmain): Initialize and use `grub_ieee1275_chosen' instead of
+	`chosen'.
+	* boot/powerpc/ieee1275/crt0.S (init_stack): Remove stack space.
+	* boot/powerpc/ieee1275/ieee1275.c (grub_ieee1275_get_property):
+	Rename first argument to `phandle' for consistency.
+	(grub_ieee1275_get_property_length): Likewise.
+	(grub_ieee1275_next_property): Likewise.  Change type of first argument
+	to grub_ieee1275_phandle_t.
+	* include/grub/powerpc/ieee1275/ieee1275.h (grub_ieee1275_entry_fn):
+	Move export next to declaration.
+	(grub_ieee1275_chosen): New variable.
+	* include/grub/powerpc/ieee1275/kernel.h (GRUB_IEEE1275_MODULE_BASE):
+	Correct cosmetic typo.
+	* kern/powerpc/ieee1275/init.c (grub_set_prefix): Use
+	`grub_ieee1275_chosen'.
+	* kern/powerpc/ieee1275/openfw.c (grub_map): Likewise.
+	* loader/powerpc/ieee1275/linux.c (grub_linux_boot): Likewise.
+	(grub_rescue_cmd_linux): Set `initrd_addr' to 0.
+	* term/powerpc/ieee1275/ofconsole.c (grub_ofconsole_refresh): Use
+	`grub_ieee1275_chosen'.
+
+2005-05-10  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/cmain.c (cmain): Remove code to parse
+	/chosen/bootargs.
+	* kern/powerpc/ieee1275/init.c (grub_machine_init): Parse
+	/chosen/bootargs as "variable=value" pairs.
+
+2005-05-08  Vincent Pelletier  <subdino2004@yahoo.fr>
+
+	* include/grub/misc.h (grub_dprintf): New macro.
+	(grub_real_dprintf): New prototype.
+	(grub_strword): Likewise.
+	(grub_iswordseparator): Likewise.
+	* kern/misc.c (grub_real_dprintf): New function.
+	(grub_strword): Likewise.
+	(grub_iswordseparator): Likewise.
+
+2005-04-30  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/cmain.c: Don't include grub/machine/init.h.
+	(roundup): Remove macro.
+	(grub_ieee1275_flags): Make static.
+	(grub_ieee1275_realmode): Remove.
+	(grub_ieee1275_test_flag): New function.
+	(grub_ieee1275_set_flag): Likewise.
+	(find_options): Rename to `grub_ieee1275_find_options'; update
+	callers. Set GRUB_IEEE1275_FLAG_REAL_MODE and
+	GRUB_IEEE1275_FLAG_0_BASED_PARTITIONS.
+	(cmain): New prototype.
+	(cmain): Use `grub_ieee1275_set_flag' instead of accessing
+	`grub_ieee1275_flags' directly.
+	* conf/powerpc-ieee1275.rmk (grubof_HEADERS): Remove
+	machine/biosdisk.h.
+	* disk/powerpc/ieee1275/ofdisk.c: Include grub/machine/ofdisk.h.
+	Don't include grub/machine/init.h.
+	(grub_ofdisk_open): Call `grub_ieee1275_test_flag'.
+	* include/grub/powerpc/ieee1275/ieee1275.h (grub_ieee1275_flags):
+	Remove prototype.
+	(grub_ieee1275_realmode): Likewise.
+	(grub_ieee1275_flag): New enum.
+	(grub_ieee1275_test_flag): New prototype.
+	(grub_ieee1275_set_flag): New prototype.
+	* include/grub/powerpc/ieee1275/init.h: Remove file.
+	* include/grub/powerpc/ieee1275/ofdisk.h: New file.
+	* kern/powerpc/ieee1275/init.c: Don't include grub/machine/init.h.
+	Include grub/machine/console.h.  Include grub/machine/ofdisk.h.
+	(grub_machine_fini): Don't call `grub_ieee1275_release'.  Remove
+	comment.
+	* kern/powerpc/ieee1275/openfw.c (grub_claimmap): Call
+	`grub_ieee1275_test_flag'.
+	(grub_ieee1275_encode_devname): Likewise.
+
+2005-04-21  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* include/grub/powerpc/ieee1275/ieee1275.h
+	(grub_ieee1275_encode_devname): New prototype.
+	(grub_ieee1275_get_filename): Likewise.
+	* kern/powerpc/ieee1275/init.c (grub_translate_ieee175_path): New
+	function.
+	(grub_set_prefix): Likewise.
+	(grub_machine_init): Call grub_set_prefix.
+	* kern/powerpc/ieee1275/openfw.c: Fix typos.
+	(grub_parse_type): New enum.
+	(grub_ieee1275_get_devargs): New function.
+	(grub_ieee1275_get_devname): Likewise.
+	(grub_ieee1275_parse_args): Likewise.
+	(grub_ieee1275_get_filename): Likewise.
+	(grub_ieee1275_encode_devname): Likewise.
+
+2005-03-30  Marco Gerards  <metgerards@student.han.nl>
+
+	* kern/powerpc/ieee1275/init.c (grub_machine_fini): Don't call
+	`grub_loader_unset'.
+
+2005-03-26  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* commands/ieee1275/halt.c (grub_cmd_halt): Call grub_halt
+	instead of grub_ieee1275_interpret.
+	(grub_halt_init): New function.
+	(grub_halt_fini): Likewise.
+	(GRUB_MOD_INIT): Correct message grammar.
+	* commands/ieee1275/reboot.c (grub_cmd_reboot): Call grub_reboot
+	instead of grub_ieee1275_interpret.
+	(grub_reboot_init): New function.
+	(grub_reboot_fini): Likewise.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Replace
+	commands/i386/pc/halt.c, commands/i386/pc/reboot.c, and
+	util/i386/pc/misc.c with commands/ieee1275/halt.c,
+	commands/ieee1275/reboot.c, and util/powerpc/ieee1275/misc.c.
+	* disk/powerpc/ieee1275/ofdisk.c (grub_ofdisk_fini): New
+	function.
+	* include/grub/powerpc/ieee1275/console.h (grub_console_fini):
+	Add prototype.
+	* include/grub/powerpc/ieee1275/ieee1275.h (grub_reboot): Add
+	prototype.
+	(grub_halt): Likewise.
+	* include/grub/powerpc/ieee1275/init.h: Remove inaccurate comment.
+	(cmain): Remove __attribute__((unused)).
+	* kern/powerpc/ieee1275/init.c (grub_heap_start): New variable.
+	(grub_heap_len): Likewise.
+	(grub_machine_fini): New function.
+	* kern/powerpc/ieee1275/openfw.c (grub_reboot): New function.
+	(grub_halt): Likewise.
+	* term/powerpc/ieee1275/ofconsole.c (grub_console_fini): New
+	function.
+	* util/powerpc/ieee1275/misc.c: New file.
+
+2005-03-19  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* DISTLIST: New file.
+	* gendistlist.sh: Likewise.
+	
+	* Makefile.in (COMMON_DISTFILES): Removed.
+	(BOOT_DISTFILES): Likewise.
+	(CONF_DISTFILES): Likewise.
+	(DISK_DISTFILES): Likewise.
+	(FS_DISTFILES): Likewise.
+	(INCLUDE_DISTFILES): Likewise.
+	(KERN_DISTFILES): Likewise.
+	(LOADER_DISTFILES): Likewise.
+	(TERM_DISTFILES): Likewise.
+	(UTIL_DISTFILES): Likewise.
+	(DISTFILES): Likewise.
+	(uninstall): Uninstall files in $(pkgdata_DATA).
+	(DISTLIST): New target.
+	(distdir): Use the contents of the file DISTLIST to get a list of
+	distributed files.
+
+2005-03-18  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* fs/fat.c (grub_fat_mount): Ignore the 3rd bit of a media
+	descriptor. This is ported from GRUB Legacy.
+
+	* gencmdlist.sh: Added an extra semicolon to make it work with
+	old sed versions. Reported by Robert Bihlmeyer
+	<robbe@orcus.priv.at>.
+
+2005-03-08  Yoshinori Okuji  <okuji@enbug.org>
+
+	Automatic loading of commands is supported.
+	
+	* normal/main.c (read_command_list): New function.
+	(grub_normal_execute): Call read_command_list.
+
+	* normal/command.c (grub_register_command): Return zero or CMD.
+	Allocate CMD->NAME from the heap.
+	Initialize CMD->MODULE_NAME to zero.
+	Find the same name as well. If the same command is found and it is
+	a dummy command, overwrite members. If it is not a dummy command,
+	return zero.
+	(grub_unregister_command): Free Q->NAME and Q->MODULE_NAME.
+	(grub_command_find): If a dummy command is found, load a module
+	and retry to find a command only once.
+
+	* normal/cmdline.c (grub_tab_complete): Call grub_command_find to
+	make sure that each command is loaded.
+
+	* include/grub/normal.h (GRUB_COMMAND_FLAG_NOT_LOADED): New
+	macro.
+	(struct grub_command): Remove const from the member `name'.
+	Add a new member `module_name'.
+	(grub_register_command): Return grub_command_t.
+
+	* commands/help.c (grub_cmd_help): Call grub_command_find to make
+	sure that each command is loaded.
+
+	* genmk.rb (PModule::rule): Specify a module name without the
+	suffix ".mod" to gencmdlist.sh.
+
+2005-03-02  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* gencmdlist.sh: New file.
+	
+	* genmk.rb (PModule::rule): Generate a rule for a command list.
+	Clean command.lst.
+	Generate command.lst from $(COMMANDFILES).
+
+	* Makefile.in (COMMON_DISTFILES): Added gencmdlist.sh.
+	(DATA): Added $(pkgdata_DATA).
+	(install-local): Install files in $(pkgdata_DATA).
+
+2005-03-02  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* term/i386/pc/vga.c (debug_command): Removed.
+	(GRUB_MOD_INIT): Do not register the command "debug".
+
+	From Hollis Blanchard:
+	* commands/configfile.c: New file.
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Added
+	commands/configfile.c.
+	(pkgdata_MODULES): Added configfile.mod.
+	(configfile_mod_SOURCES): New variable.
+	(configfile_mod_CFLAGS): Likewise.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Added
+	commands/configfile.c.
+	(pkgdata_MODULES): Added configfile.mod.
+	(configfile_mod_SOURCES): New variable.
+	(configfile_mod_CFLAGS): Likewise.
+	* util/grub-emu.c (main): Call grub_configfile_init and
+	grub_configfile_fini.
+	* include/grub/normal.h [GRUB_UTIL] (grub_configfile_init): New
+	prototype.
+	[GRUB_UTIL] (grub_configfile_fini): Likewise.
+	
+2005-02-27  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* normal/arg.c (grub_arg_show_help): Do not show the bug report
+	address.
+
+	* commands/help.c (grub_cmd_help): Do not print newlines after
+	the last command in print_command_help.
+
+2005-02-27  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* commands/default.h: New file.
+	* commands/timeout.h: Likewise.
+	* normal/context.c: Likewise.
+	
+	* util/misc.c: Do not include sys/times.h.
+	Include sys/time.h and grub/machine/time.h.
+	(grub_get_rtc): Rewritten with gettimeofday.
+
+	* util/grub-emu.c (main): Call grub_default_init and
+	grub_timeout_init before grub_normal_init, and call
+	grub_timeout_fini and grub_default_fini after grub_main.
+
+	* util/console.c (grub_ncurses_checkkey): Return the read
+	character or -1.
+
+	* normal/menu.c (run_menu): Set MENU->TIMEOUT to -1 once it
+	timeouts.
+
+	* normal/main.c (read_config_file): Push MENU. If this fails,
+	print an error and wait for a user input.
+	Print an error only if GRUB_ERRNO is not GRUB_ERR_NONE.
+	If a menu is empty or an error occurs, pop MENU.
+	(grub_normal_execute): Pop and free MENU after grub_menu_run
+	returns.
+
+	* kern/loader.c (grub_loader_boot): Call grub_machine_fini.
+
+	* include/grub/powerpc/ieee1275/time.h [GRUB_UTIL]: Do not
+	include	time.h.
+	[GRUB_UTIL] (GRUB_TICKS_PER_SECOND): Use the same definition as
+	without GRUB_UTIL.
+	* include/grub/i386/pc/time.h [GRUB_UTIL]: Do not include
+	time.h.
+	[GRUB_UTIL] (GRUB_TICKS_PER_SECOND): Use the same definition as
+	without GRUB_UTIL.
+
+	* include/grub/normal.h (struct grub_menu_list): New struct.
+	(grub_menu_list_t): New type.
+	(struct grub_context): New struct.
+	(grub_context_t): New type.
+	(grub_register_command): Got rid of EXPORT_FUNC.
+	(grub_unregister_command): Likewise.
+	(grub_context_get): New prototype.
+	(grub_context_get_current_menu): Likewise.
+	(grub_context_push_menu): Likewise.
+	(grub_context_pop_menu): Likewise.
+	[GRUB_UTIL] (grub_default_init): Likewise.
+	[GRUB_UTIL] (grub_default_fini): Likewise.
+	[GRUB_UTIL] (grub_timeout_init): Likewise.
+	[GRUB_UTIL] (grub_timeout_fini): Likewise.
+
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Added commands/default.c,
+	commands/timeout.c and normal/context.c.
+	(pkgdata_MODULES): Added default.mod and timeout.mod.
+	(normal_mod_SOURCES): Added normal/context.c.
+	(default_mod_SOURCES): New variable.
+	(default_mod_CFLAGS): Likewise.
+	(timeout_mod_SOURCES): Likewise.
+	(timeout_mod_CFLAGS): Likewise.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Copied from
+	conf/i386-pc.rmk.
+	(pkgdata_MODULES): Added default.mod and timeout.mod.
+	(normal_mod_SOURCES): Added normal/context.c.
+	(default_mod_SOURCES): New variable.
+	(default_mod_CFLAGS): Likewise.
+	(timeout_mod_SOURCES): Likewise.
+	(timeout_mod_CFLAGS): Likewise.
+
+	* Makefile.in (all-local): Added $(MKFILES).
+
+2005-02-21  Vincent Pelletier  <subdino2004@yahoo.fr>
+
+	* conf/i386-pc.rmk (grub_setup_SOURCES): Add `partmap/sun.c'.
+	(grub_emu_SOURCES): Likewise.
+	(pkgdata_MODULES): Add `sun.mod'.
+	(sun_mod_SOURCES, sun_mod_CFLAGS): New variables.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add
+	`partmap/sun.c'.
+	(pkgdata_MODULES): Add `sun.mod'.
+	(sun_mod_SOURCES, sun_mod_CFLAGS): New variables.
+	* include/grub/partition.h (grub_sun_partition_map_init): New
+	prototype.
+	(grub_sun_partition_map_fini): Likewise.
+	* partmap/sun.c: New file.
+	* util/grub-emu.c (main): Initialize and de-initialize the sun
+	partitionmap support.
+
+2005-02-19  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	This implements an Emacs-like menu entry editor.
+	
+	* normal/menu_entry.c: New file.
+	
+	* util/console.c (grub_ncurses_putchar): Translate some Unicode
+	characters to ASCII.
+	(saved_char): New variable.
+	(grub_ncurses_checkkey): Rewritten completely.
+	(grub_ncurses_getkey): Likewise.
+	(grub_ncurses_init): Call raw instead of cbreak.
+
+	* normal/menu.c (print_entry): Do not put a space.
+	(init_page): Renamed to ...
+	(grub_menu_init_page): ... this. All callers changed.
+	(edit_menu_entry): Removed.
+	(run_menu): Call grub_menu_entry_run instead of edit_menu_entry.
+
+	* normal/cmdline.c (grub_cmdline_run): Call grub_setcursor.
+
+	* kern/misc.c (grub_vprintf): Call grub_refresh.
+
+	* normal/menu.c (DISP_LEFT): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_DISP_LEFT): ... this.
+	* normal/menu.c (DISP_UP): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_DISP_UP): ... this.
+	* normal/menu.c (DISP_RIGHT): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_DISP_RIGHT): ... this.
+	* normal/menu.c (DISP_DOWN): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_DISP_DOWN): ... this.
+	* normal/menu.c (DISP_HLINE): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_DISP_HLINE): ... this.
+	* normal/menu.c (DISP_VLINE): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_DISP_VLINE): ... this.
+	* normal/menu.c (DISP_UL): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_DISP_UL): ... this.
+	* normal/menu.c (DISP_UR): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_DISP_UR): ... this.
+	* normal/menu.c (DISP_LL): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_DISP_LL): ... this.
+	* normal/menu.c (DISP_LR): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_DISP_LR): ... this.
+	* normal/menu.c (TERM_WIDTH): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_WIDTH): ... this.
+	* normal/menu.c (TERM_HEIGHT): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_HEIGHT): ... this.
+	* normal/menu.c (TERM_INFO_HEIGHT): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_INFO_HEIGHT): ... this.
+	* normal/menu.c (TERM_MARGIN): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_MARGIN): ... this.
+	* normal/menu.c (TERM_SCROLL_WIDTH): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_SCROLL_WIDTH): ... this.
+	* normal/menu.c (TERM_TOP_BORDER_Y): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_TOP_BORDER_Y): ... this.
+	* normal/menu.c (TERM_LEFT_BORDER_X): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_LEFT_BORDER_X): ... this.
+	* normal/menu.c (TERM_BORDER_WIDTH): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_BORDER_WIDTH): ... this.
+	* normal/menu.c (TERM_MESSAGE_HEIGHT): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_MESSAGE_HEIGHT): ... this.
+	* normal/menu.c (TERM_BORDER_HEIGHT): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_BORDER_HEIGHT): ... this.
+	* normal/menu.c (TERM_NUM_ENTRIES): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_NUM_ENTRIES): ... this.
+	* normal/menu.c (TERM_FIRST_ENTRY_Y): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_FIRST_ENTRY_Y): ... this.
+	* normal/menu.c (TERM_ENTRY_WIDTH): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_ENTRY_WIDTH): ... this.
+	* normal/menu.c (TERM_CURSOR_X): Renamed to ...
+	* include/grub/term.h (GRUB_TERM_CURSOR_X): ... this.
+	All callers changed.
+
+	* include/grub/normal.h: New prototype.
+
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Added
+	normal/menu_entry.c.
+	(normal_mod_SOURCES): Likewise.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Likewise.
+	(normal_mod_SOURCES): Likewise.
+
+2005-02-15  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* include/grub/normal.h (grub_halt_init): New prototype.
+	(grub_halt_fini): Likewise.
+	(grub_reboot_init): Likewise.
+	(grub_reboot_fini): Likewise.
+
+	* util/grub-emu.c: Include signal.h.
+	(main_env): New global variable.
+	(grub_machine_init): Ignore SIGINT. Otherwise grub-emu cannot
+	catch C-c.
+	(grub_machine_fini): New function.
+	(main): Call grub_halt_init and grub_reboot_init before
+	grub_main, and grub_reboot_fini and grub_halt_fini after it.
+	Call setjmp with MAIN_ENV to go back afterwards.
+	Call grub_machine_fini right before return.
+
+	* include/grub/util/misc.h: Include setjmp.h.
+	(main_env): New prototype.
+
+	* include/grub/kernel.h (grub_machine_fini): New prototype.
+	* include/grub/i386/pc/biosdisk.h (grub_biosdisk_fini): Likewise.
+	* include/grub/i386/pc/console.h (grub_console_fini): Likewise.
+
+	* disk/i386/pc/biosdisk.c (grub_biosdisk_fini): New function.
+	* kern/i386/pc/init.c (grub_machine_fini): Likewise.
+	* term/i386/pc/console.c (grub_console_fini): Likewise.
+	
+	* util/i386/pc/misc.c: New file.
+	
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Added
+	util/i386/pc/misc.c, commands/i386/pc/halt.c and
+	commands/i386/pc/reboot.c.
+
+2005-02-14  Guillem Jover  <guillem@hadrons.org>
+
+	* include/grub/dl.h (grub_dl_check_header): New prototype.
+	(grub_arch_dl_check_header): Change return type to grub_err_t,
+	remove size parameter and export function.  Update all callers.
+	* kern/dl.c (grub_dl_check_header): New function.
+	(grub_dl_load_core): Use `grub_dl_check_header' instead of
+	`grub_arch_dl_check_header'.  Check ELF type.  Check if sections
+	are inside the core.
+	* kern/i386/dl.c (grub_arch_dl_check_header): Remove arch
+	independent ELF header checks.
+	* kern/powerpc/dl.c (grub_arch_dl_check_header): Likewise.
+	* loader/i386/pc/multiboot.c (grub_rescue_cmd_multiboot): Use
+	`grub_dl_check_header' instead of explicit checks.  Check for the
+	ELF type.
+	* loader/powerpc/ieee1275/linux.c (grub_rescue_cmd_linux): Use
+	`grub_dl_check_header' instead of explicit checks.  Remove arch
+	specific ELF header checks.
+
+	* util/grub-emu.c (grub_arch_dl_check_header): Remove the
+	argument SIZE.
+
+2005-02-13  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* conf/powerpc-ieee1275.rmk (pkgdata_MODULES): Add ls.mod.
+	* include/grub/powerpc/libgcc.h (__mulsf3): New prototype.
+
+2005-02-12  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* kern/partition.c (grub_partition_probe): Clear `grub_errno' and
+	return 0 if `grub_errno' is GRUB_ERR_BAD_PART_TABLE. 
+	(part_map_iterate): Clear `grub_errno' and return 0 if
+	`partmap->iterate' returns GRUB_ERR_BAD_PART_TABLE. 
+	* partmap/amiga.c (amiga_partition_map_iterate): Return
+	GRUB_ERR_BAD_PART_TABLE if no partition map magic is found.
+	* partmap/apple.c (apple_partition_map_iterate): Likewise.
+
+2005-02-01  Guillem Jover  <guillem@hadrons.org>
+
+	* loader/i386/pc/multiboot_normal.c (GRUB_MOD_INIT): Fix module
+	help info.
+
+2005-01-31  Marco Gerards  <metgerards@student.han.nl>
+
+	* include/grub/powerpc/ieee1275/loader.h (grub_load_linux):
+	Removed prototype.
+	(grub_rescue_cmd_linux): New prototype.
+	(grub_rescue_cmd_initrd): Likewise.
+	* powerpc/ieee1275/linux.c (grub_linux_boot): Remove struct
+	`bi_rec'.
+	(grub_linux_release_mem): Release the memory for the initrd.
+	(grub_load_linux): Renamed from this...
+	(grub_rescue_cmd_linux): ...To this.  Changed all callers.
+	Changed `entry' not to be static.  Loop over memory regions to
+	find another one when the default fails.
+	(grub_rescue_cmd_initrd): New function.
+	(grub_linux_init): Remove function.
+	(grub_linux_fini): Likewise.
+	(GRUB_MOD_INIT): Register `initrd'.
+	(GRUB_MOD_FINI): Unregister `initrd'.
+	* powerpc/ieee1275/linux_normal.c (grub_linux_normal_init):
+	Function removed.
+	(grub_linux_normal_fini): Likewise.
+	(GRUB_MOD_INIT): Register `initrd'.
+	(GRUB_MOD_FINI): Unregister `initrd'.
+
+2005-01-31  Marco Gerards  <metgerards@student.han.nl>
+
+	* commands/help.c: New file.
+	* normal/arg.c (show_help): Renamed to...
+	(grub_arg_show_help): ... this.
+	* commands/i386/pc/halt.c: New file.
+	* commands/i386/pc/reboot.c: Likewise.
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Add `commands/help.c'.
+	(pkgdata_MODULES): Add `reboot.mod', `halt.mod' and `help.mod'.
+	(help_mod_SOURCES, help_mod_CFLAGS, reboot_mod_SOURCES)
+	(reboot_mod_CFLAGS, halt_mod_SOURCES, halt_mod_CFLAGS): New
+	variables.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add
+	`commands/help.c'.
+	(pkgdata_MODULES): Add `help.mod'.
+	(help_mod_SOURCES, help_mod_CFLAGS): New variables.
+	* grub/i386/pc/init.h (grub_reboot): New prototype.
+	(grub_halt): Likewise.
+	* include/grub/normal.h (grub_arg_show_help): New prototype.
+	(grub_help_init): Likewise.
+	(grub_help_fini): Likewise.
+	* util/grub-emu.c (main): Initialize and deinitialize the help
+	command.
+
+	* normal/cmdline.c (grub_cmdline_get): Doc fix.
+
+	* normal/command.c (grub_command_init): Fixed the description of
+	the `set' and `unset' commands.
+
+2005-01-31  Marco Gerards  <metgerards@student.han.nl>
+
+	* boot/powerpc/ieee1275/ieee1275.c (grub_ieee1275_interpret): New
+	function.
+	* commands/ieee1275/halt.c: New file.
+	* commands/ieee1275/reboot.c: Likewise.
+	* commands/ieee1275/suspend.c (grub_cmd_suspend): Use
+	`__attribute__ ((unused))'.  Some GCS related fixed.
+	(grub_suspend_init) [GRUB_UTIL]: Function removed.
+	(grub_suspend_fini): Likewise.
+	* conf/powerpc-ieee1275.rmk (pkgdata_MODULES): Add `reboot.mod'
+	and `halt.mod'.
+	(reboot_mod_SOURCES, reboot_mod_CFLAGS, halt_mod_SOURCES)
+	(halt_mod_CFLAGS): New variables.
+	* include/grub/powerpc/ieee1275/ieee1275.h
+	(grub_ieee1275_interpret): New prototype.
+
+2005-01-29  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* include/grub/misc.h (memmove): New prototype.
+	(memcpy): Likewise.
+
+2005-01-22  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* disk/powerpc/ieee1275/ofdisk.c (grub_ofdisk_open): Don't initialize
+	`devpath' to 0.  Use `name' instead of `devpath' with `grub_strndup'.
+
+2005-01-22  Marco Gerards  <metgerards@student.han.nl>
+
+	* kern/misc.c (grub_strndup): Function rewritten.
+
+2005-01-22  Vincent Pelletier  <subdino2004@yahoo.fr>
+
+	* normal/menu.c (TERM_WIDTH): Macro redefined.
+	(TERM_TOP_BORDER_Y): Likewise.
+	(draw_border): Replaced while-loop by a for-loop.  Make the number
+	of lines consistent with the number of lines displayed in
+	print_entries.  Added a margin below the rectangle.
+	(print_entry): Make the entry fit in the rectangle.
+	(print_entries): Display the scroll arrows next to the right
+	border.
+
+2005-01-21  Marco Gerards  <metgerards@student.han.nl>
+
+	* fs/minix.c (grub_minix_find_file): Reserve more space for
+	`fpath' so the \0 can be stored.  Use `grub_strcpy' instead of
+	`grub_strncpy' to copy `path' into it.
+
+2005-01-21  Marco Gerards  <metgerards@student.han.nl>
+
+	Add the loopback device, a device via which files can be accessed
+	as devices.
+	
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Add `disk/loopback.c'.
+	(pkgdata_MODULES): Add loopback.mod.
+	(loopback_mod_SOURCES): New variable.
+	(loopback_mod_CFLAGS): Likewise.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add
+	`disk/loopback.c'.
+	(pkgdata_MODULES): Add loopback.mod.
+	(loopback_mod_SOURCES): New variable.
+	(loopback_mod_CFLAGS): Likewise.
+	* disk/loopback.c: new file.
+	* include/grub/normal.h (grub_loop_init): New prototype.
+	(grub_loop_fini): New prototype.
+	* util/grub-emu.c (main): Initialize and de-initialize loopback
+	support.
+	* include/grub/disk.h (grub_disk_dev_id): Add
+	`GRUB_DISK_DEVICE_LOOPBACK_ID'.
+
+2005-01-20  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/ieee1275.c (grub_ieee1275_enter): New
+	function.
+	* conf/powerpc-ieee1275.rmk (pkgdata_MODULES): Add suspend.mod.
+	(suspend_mod_SOURCES): New variable.
+	(suspend_mod_CFLAGS): Likewise.
+	* include/grub/powerpc/ieee1275/ieee1275.h (grub_ieee1275_enter):
+	New prototype.
+	* commands/ieee1275/suspend.c: New file.
+
+2005-01-20  Timothy Baldwin  <T.E.Baldwin99@members.leeds.ac.uk>
+
+	* include/grub/dl.h (GRUB_MOD_INIT): Changed `__attribute__
+	((unused))' to `__attribute__ ((used))'.	
+	(GRUB_MOD_FINI): Likewise.
+	* kern/dl.c (grub_dl_load_file): Fix null pointer dereference.
+	* genmk.rb (PModule): Assign space to common symbols when linking
+	modules.
+
+2005-01-20  Marco Gerards  <metgerards@student.han.nl>
+
+	* include/grub/mm.h (grub_mm_init_region): Change the type of the
+	`unsigned' arguments to `grub_size_t'.
+	(grub_malloc): Likewise.
+	(grub_realloc): Likewise.
+	(grub_memalign): Likewise.
+	* kern/i386/dl.c (grub_arch_dl_check_header): Likewise.
+	* kern/powerpc/dl.c (grub_arch_dl_check_header): Likewise.
+	* util/misc.c (grub_malloc): Likewise.
+	(grub_realloc): Likewise.
+	* kern/mm.c (get_header_from_pointer): Change the casts to
+	`unsigned' into a cast to `grub_size_t'.
+
+	* fs/fshelp.c (grub_fshelp_find_file): The `oldnode' should always
+	point to `currnode' when `currnode' is changed.
+
+	* util/grub-emu.c (main): Initialize `progname'.  Reported by Nico
+	Schottelius <nico-linux@schottelius.org>.
+
+2005-01-09  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* util/powerpc/ieee1275/grub-mkimage.c: Include <string.h>.
+	(note_path): Remove variable.
+	(GRUB_IEEE1275_NOTE_NAME): New macro.
+	(GRUB_IEEE1275_NOTE_TYPE): Likewise.
+	(grub_ieee1275_note_hdr): New structure.
+	(grub_ieee1275_note_desc): Likewise.
+	(grub_ieee1275_note): Likewise.
+	(load_note): Remove `dir' argument.  All callers updated.  Remove
+	`note_img' and `path'.  Do not load a file from `note_path'.
+	Initialize a struct grub_ieee1275_note and write that to `out'.
+	Use GRUB_IEEE1275_MODULE_BASE instead of MODULE_BASE.
+
+2005-01-05  Marco Gerards  <metgerards@student.han.nl>
+
+	* util/misc.c (grub_util_read_image): Revert last change.  It
+	called `grub_util_read_at', which seeks from the beginning of the
+	file.
+
+2005-01-04  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* TODO: Add note about endianness in grub-mkimage.
+	* boot/powerpc/ieee1275/crt0.S (note): Remove unused .note
+	section.
+	* conf/powerpc-ieee1275.rmk (bin_UTILITIES): Add grub-mkimage.
+	(grub_mkimage_SOURCES): New target.
+	* include/grub/kernel.h (grub_start_addr): Remove variable.
+	(grub_end_addr): Likewise.
+	(grub_total_module_size): Likewise.
+	(grub_kernel_image_size): Likewise.
+	(GRUB_MODULE_MAGIC): New constant.
+	(grub_module_info): New structure.
+	(grub_arch_modules_addr): New prototype.
+	(grub_get_end_addr): Remove prototype.
+	* include/grub/i386/pc/kernel.h (grub_end_addr): New prototype.
+	* include/grub/powerpc/ieee1275/kernel.h: New file.
+	* include/grub/util/misc.h (grub_util_get_fp_size): New
+	prototype.
+	(grub_util_read_at): Likewise.
+	(grub_util_write_image_at): Likewise.
+	* kern/main.c (grub_get_end_addr): Remove function.
+	(grub_load_modules): Call grub_arch_modules_addr instead of using
+	grub_end_addr.  Look for a grub_module_info struct in memory.  Use
+	the grub_module_info fields instead of calling grub_get_end_addr
+	as loop conditions.  Move grub_add_unused_region code here.
+	(grub_add_unused_region): Remove function.
+	* kern/i386/pc/init.c: Include grub/cache.h.
+	(grub_machine_init): Remove call to grub_get_end_addr.  Remove
+	one call to add_mem_region.
+	(grub_arch_modules_addr): New function.
+	* kern/powerpc/ieee1275/init.c (grub_end_addr): Remove variable.
+	(grub_total_module_size): Likewise.
+	Include grub/machine/kernel.h.
+	(grub_arch_modules_addr): New function.
+	* util/grub-emu.c (grub_end_addr): Remove variable.
+	(grub_total_module_size): Likewise.
+	(grub_arch_modules_addr): New function.
+	* util/misc.c: Include unistd.h.
+	(grub_util_get_fp_size): New function.
+	(grub_util_read_at): Likewise.
+	(grub_util_write_image_at): Likewise.
+	(grub_util_read_image): Call grub_util_read_at.
+	(grub_util_write_image): Call grub_util_write_image_at.
+	* util/i386/pc/grub-mkimage.c (generate_image): Allocate
+	additional memory in kernel_img for a struct grub_module_info.
+	Fill in that grub_module_info.
+	* util/powerpc/ieee1275/grub-mkimage.c: New file.
+
+2005-01-03  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/ieee1275.c (grub_ieee1275_milliseconds):
+	New function.
+	* include/grub/powerpc/ieee1275/ieee1275.h
+	(grub_ieee1275_milliseconds): New prototype.
+	* include/grub/powerpc/ieee1275/time.h (GRUB_TICKS_PER_SECOND):
+	Change to 1000.
+	* kern/powerpc/ieee1275/init.c (grub_get_rtc): Call
+	grub_ieee1275_milliseconds.
+
+2005-01-03  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/cmain.c (grub_ieee1275_realmode): New
+	variable.
+	(find_options): New function.
+	(cmain): Call find_options.
+	* include/grub/powerpc/ieee1275/ieee1275.h
+	(grub_ieee1275_realmode): New extern variable.
+	* kern/powerpc/ieee1275/openfw.c (grub_claimmap): Only call
+	grub_map if grub_ieee1275_realmode is false.
+
+2004-12-29  Marco Gerards  <metgerards@student.han.nl>
+
+	* normal/cmdline.c (grub_cmdline_get): Redone logic so no empty
+	lines are inserted and make it work like readline.  Reported by
+	Vincent Pelletier <subdino2004@yahoo.fr>.
+
+2004-12-28  Marco Gerards  <metgerards@student.han.nl>
+
+	* boot/powerpc/ieee1275/crt0.S (_start): Don't set up the stack.
+
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCE): Remove
+	`kern/powerpc/cache.S'.
+
+2004-12-27  Marco Gerards  <metgerards@student.han.nl>
+
+	* genmk.rb: Handle the `Program' class in the main loop.  Written
+	by Johan Rydberg <jrydberg@gnu.org>.
+	(Program): New class.
+	(programs): New variable.
+	* boot/powerpc/ieee1275/cmain.c: Include <grub/machine/ieee1275.h>
+	instead of "grub/machine/ieee1275.h".  Include <grub/kernel.h>
+	instead of "grub/kernel.h".  Include <grub/machine/init.h>.
+	(help_arch): Function removed.
+	* conf/powerpc-ieee1275.rmk (grubof_HEADERS): Add
+	`powerpc/libgcc.h' and `loader.h'.
+	(pkgdata_PROGRAMS): New variable.
+	(sbin_UTILITIES): Variable removed.
+	(grub_emu_SOURCES): Added kern/powerpc/cache.S.
+	(grubof_SOURCES): Variable re-defined so it only includes the
+	core functionality.
+	(grubof_CFLAGS): Remove `-DGRUBOF'.
+	(pkgdata_MODULES, fshelp_mod_SOURCES, fshelp_mod_CFLAGS,
+	(fat_mod_SOURCES, fat_mod_CFLAGS, ext2_mod_SOURCES)
+	(ext2_mod_CFLAGS, ufs_mod_SOURCES, ufs_mod_CFLAGS)
+	(minix_mod_SOURCES, minix_mod_CFLAGS, hfs_mod_SOURCES)
+	(hfs_mod_CFLAGS, jfs_mod_SOURCES, jfs_mod_CFLAGS)
+	(iso9660_mod_SOURCES, iso9660_mod_CFLAGS, _linux_mod_SOURCES)
+	(_linux_mod_CFLAGS, linux_mod_SOURCES, linux_mod_CFLAGS)
+	(normal_mod_SOURCES, normal_mod_CFLAGS, normal_mod_ASFLAGS)
+	(hello_mod_SOURCES, hello_mod_CFLAGS, boot_mod_SOURCES)
+	(boot_mod_CFLAGS, terminal_mod_SOURCES, terminal_mod_CFLAGS)
+	(ls_mod_SOURCES, ls_mod_CFLAGS, cmp_mod_SOURCES, cmp_mod_CFLAGS)
+	(cat_mod_SOURCES, cat_mod_CFLAGS, font_mod_SOURCES)
+	(font_mod_CFLAGS, amiga_mod_SOURCES, amiga_mod_CFLAGS)
+	(apple_mod_SOURCES, apple_mod_CFLAGS, pc_mod_SOURCES)
+	(pc_mod_CFLAGS): New variables.
+	* disk/powerpc/ieee1275/ofdisk.c: Include <grub/machine/init.h>.
+	(grub_ofdisk_iterate): Add a prototype for `dev_iterate'.
+	* include/grub/dl.h (grub_arch_dl_sync_caches): New prototype.
+	* include/grub/loader.h (grub_os_area_addr, grub_os_area_size):
+	Moved from here...
+	* include/grub/i386/pc/init.h (grub_os_area_addr)
+	(rub_os_area_size): ... to here.
+	* include/grub/powerpc/ieee1275/ieee1275.h
+	(grub_ieee1275_entry_fn): Export symbol.
+	* include/grub/powerpc/ieee1275/init.h: New file.
+	* include/grub/powerpc/libgcc.h: Likewise.
+	* include/grub/cache.h: Likewise.
+	* kern/powerpc/cache.S: Likewise.  Written by Hollis Blanchard
+	<hollis@penguinppc.org>.
+	* kern/dl.c: Include <grub/cache.h>.
+	(grub_dl_flush_cache): New function.
+	(grub_dl_load_core): Call `grub_dl_flush_cache' to flush the cache
+	for this module.
+	* kern/powerpc/ieee1275/init.c (grub_ofdisk_init)
+	(grub_console_init): Removed prototypes.
+	(grub_machine_init): Don't initialize the modules anymore.
+	* kern/powerpc/ieee1275/openfw.c (grub_map): Make the function
+	static.
+	* include/grub/powerpc/types.h (GRUB_HOST_WORDS_LITTLEENDIAN):
+	Macro undef removed.
+	(GRUB_HOST_WORDS_BIGENDIAN): New macro.
+	* kern/powerpc/dl.c (grub_arch_dl_relocate_symbols): Add
+	relocation `R_PPC_REL32'.  Return an error when the relocation is
+	unknown.
+	* Makefile.in (DATA): Add `$(pkgdata_PROGRAMS)'.
+	* kern/i386/pc/init.c (grub_arch_sync_caches): New function.
+	* util/misc.c (grub_arch_sync_caches): Likewise.
+
+2004-12-19  Marco Gerards  <metgerards@student.han.nl>
+
+	* conf/powerpc-ieee1275.rmk (MOSTLYCLEANFILES): Remove
+	`symlist.c', add `grubof_symlist.c'.
+	(symlist.c): Variable removed.
+	(grubof_HEADERS): Variable added.
+	(grubof_symlist.c): New target.
+	(kernel_syms.lst): Use `grubof_HEADERS' instead of
+	`kernel_img_HEADERS'.
+	(grubof_SOURCES): Add `kern/powerpc/dl.c' and `grubof_symlist.c'.
+	* kern/powerpc/dl.c: New file.
+	* kern/powerpc/ieee1275/init.c (grub_arch_dl_check_header):
+	Function removed.
+	(grub_arch_dl_relocate_symbols): Likewise.
+	(grub_register_exported_symbols): Likewise.
+
+2004-12-13  Marco Gerards  <metgerards@student.han.nl>
+
+	* fs/ext2.c (grub_ext2_open): Don't use data after freeing it.
+	(grub_ext2_dir): Likewise.  Don't return in case of an error, jump
+	to fail instead.  Reported by Vincent Pelletier
+	<subdino2004@yahoo.fr>.
+
+	* fs/fshelp.c (grub_fshelp_find_file): Don't free `oldnode' when
+	it is not allocated.  Reported by Vincent Pelletier
+	<subdino2004@yahoo.fr>.
+
+	* normal/cmdline.c (grub_tab_complete): Add a blank line to the
+	output so the output looks better.
+	
+2004-12-04  Marco Gerards  <metgerards@student.han.nl>
+
+	Modulize the partition map support and add support for the amiga
+	partition map.
+	
+	* commands/ls.c: Include <grub/partition.h> instead of
+	<grub/machine/partition.h>.
+	* kern/disk.c: Likewise.
+	* kern/rescue.c: Likewise.
+	* loader/i386/pc/chainloader.c: Likewise.
+	* normal/cmdline.c: Likewise.
+	* kern/powerpc/ieee1275/init.c: Likewise.
+	(grub_machine_init): Call `grub_pc_partition_map_init',
+	`grub_amiga_partition_map_init' and
+	`grub_apple_partition_map_init'.
+	* conf/i386-pc.rmk (kernel_img_SOURCES): Remove
+	`disk/i386/pc/partition.c'.  Add `kern/partition.c'.
+	(kernel_img_HEADERS): Remove `machine/partition.h'.  Add
+	`partition.h' and `pc_partition.h'.
+	(grub_setup_SOURCES): Remove
+	`disk/i386/pc/partition.c'.  Add `kern/partition.c',
+	`partmap/amiga.c', `partmap/apple.c' and `partmap/pc.c'.
+	(grub_emu_SOURCES): Likewise.
+	(pkgdata_MODULES): Add `amiga.mod', `apple.mod' and `pc.mod'.
+	(amiga_mod_SOURCES, amiga_mod_CFLAGS, apple_mod_SOURCES)
+	(apple_mod_CFLAGS, pc_mod_SOURCES, pc_mod_CFLAGS): New variables.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Remove
+	`disk/powerpc/ieee1275/partition.c'.  Add `kern/partition.c',
+	`partmap/amiga.c', `partmap/apple.c' and `partmap/pc.c'.
+	(grubof_SOURCES): Likewise.
+	* disk/i386/pc/partition.c: File removed.
+	* disk/powerpc/ieee1275/partition.c: Likewise.
+	* include/grub/powerpc/ieee1275/partition.h: Likewise.
+	* include/grub/i386/pc/partition.h: Likewise.
+	* kern/partition.c: New file.
+	* partmap/amiga.c: Likewise.
+	* partmap/apple.c: Likewise.
+	* partmap/pc.c: Likewise.
+	* include/grub/partition.h: Likewise..
+	* include/grub/pc_partition.h: Likewise.
+	* util/grub-emu.c: Include <grub/partition.h> instead of
+	<grub/machine/partition.h>.
+	(main): Call `grub_pc_partition_map_init',
+	`grub_amiga_partition_map_init' and
+	`grub_apple_partition_map_init' and deinitialize afterwards.
+	* util/i386/pc/biosdisk.c: Include `#include
+	<grub/partition.h>' and `include <grub/pc_partition.h>' instead of
+	`<grub/machine/partition.h>'.
+	* util/i386/pc/grub-setup.c: Likewise.
+	* util/i386/pc/biosdisk.c: Likewise.
+	(grub_util_biosdisk_get_grub_dev): Only access the PC specific
+	partition information in case of a PC partition.
+	* util/i386/pc/grub-setup.c: Include `#include
+	<grub/partition.h>' and `include <grub/pc_partition.h>' instead of
+	`<grub/machine/partition.h>'.
+	(setup): Only access the PC specific partition information in case
+	of a PC partition.
+
+2004-11-17  Hollis Blanchard  <hollis@penguinppc.org>
+	
+	* kern/powerpc/ieee1275/init.c (grub_setjmp): Remove function.
+	(grub_longjmp): Likewise.
+	* include/grub/powerpc/setjmp.h (grub_jmp_buf): Set array size to
+	20.
+	* normal/powerpc/setjmp.S: New file.
+	* conf/powerpc-ieee1275.rmk (grubof_SOURCES): Add
+	`normal/powerpc/setjmp.S'.
+	(grubof_CFLAGS): Add `-DGRUBOF'.
+	* include/grub/setjmp.h [GRUB_UTIL]: Changed condition to
+	[GRUB_UTIL && !GRUBOF].
+	
+2004-11-16  Marco Gerards  <metgerards@student.han.nl>
+
+	* kern/powerpc/ieee1275/openfw.c (grub_devalias_iterate): Skip any
+	property named `name'.  Correctly handle the error returned by
+	`grub_ieee1275_finddevice' if a device can not be opened.
+
+2004-11-02  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* term/powerpc/ieee1275/ofconsole.c (grub_ofconsole_readkey): Test
+	`actual' for negativity.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Remove
+	kern/fshelp.c.
+
+2004-11-01  Marco Gerards  <metgerards@student.han.nl>
+
+	* term/i386/pc/vga.c (VGA_HEIGHT): Changed to 350.
+	(PAGE_OFFSET): New macro.
+	(CRTC_ADDR_PORT): Likewise.
+	(CRTC_DATA_PORT): Likewise.
+	(START_ADDR_HIGH_REGISTER): Likewise.
+	(START_ADDR_LOW_REGISTER): Likewise.
+	(GRAPHICS_ADDR_PORT): Likewise.
+	(GRAPHICS_DATA_PORT): Likewise.
+	(READ_MAP_REGISTER): Likewise.
+	(INPUT_STATUS1_REGISTER): Likewise.
+	(INPUT_STATUS1_VERTR_BIT): Likewise.
+	(page): New variable.
+	(wait_vretrace): New function.
+	(set_read_map): Likewise.
+	(set_start_address): Likewise.
+	(grub_vga_init): Use mode 0x10 instead of mode 0x12.  Switch to
+	the right page.
+	(check_vga_mem): Take the page into account.
+	(write_char): Likewise.
+	(write_cursor): Likewise.
+	(scroll_up): Likewise.  Copy the page to the page that is not
+	shown and switch between both pages.
+	(grub_vga_putchar): Fix off by one error.
+	(grub_vga_cls): Wait for the vertical retrace.  Take the page into
+	account.
+
+2004-11-01  Marco Gerards  <metgerards@student.han.nl>
+
+	Add support for iso9660 (including rockridge).
+	
+	* conf/i386-pc.rmk (grub_emu_SOURCES): Add fs/iso9660.c.
+	(iso9660_mod_SOURCES): New variable.
+	(iso9660_mod_CFLAGS): Likewise.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add fs/iso9660.c.
+	* include/grub/fs.h (grub_iso9660_init): New prototype.
+	* util/grub-emu.c (main): Call `grub_iso9660_init'.
+	* fs/iso9660.c: New file.
+
+	* include/grub/misc.h (grub_strncat): New prototype.
+	* kern/misc.c (grub_strncat): New function.
+	
+	* fs/hfs.c (grub_hfs_mount): Translate the error
+	`GRUB_ERR_OUT_OF_RANGE' to `GRUB_ERR_BAD_FS'.
+	* fs/jfs.c (grub_jfs_mount): Likewise.
+	* fs/ufs.c (grub_ufs_mount): Likewise.
+
+2004-10-28  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/cmain.c (cmain): Remove asm statements
+	which initialized BAT registers.
+	* boot/powerpc/ieee1275/ieee1275.c (IEEE1275_CALL_ENTRY_FN,
+	grub_ieee1275_common_hdr, INIT_IEEE1275_COMMON):
+	Move from here...
+	* include/grub/powerpc/ieee1275/ieee1275.h (IEEE1275_CALL_ENTRY_FN,
+	grub_ieee1275_common_hdr, INIT_IEEE1275_COMMON):
+	... to here.
+	* kern/powerpc/ieee1275/openfw.c (grub_map): New function.
+	(grub_mapclaim): Likewise.
+	* loader/powerpc/ieee1275/linux.c (grub_load_linux): Use
+	grub_mapclaim instead of grub_ieee1275_claim.  Assign linux_addr by
+	hand.
+
+2004-10-19  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* conf/powerpc-ieee1275.rmk (COMMON_ASFLAGS): Remove -fno-builtin.
+	(COMMON_CFLAGS): Remove -fno-builtin and -D__ASSEMBLY__. Add
+	-ffreestanding and -msoft-float.
+
+2004-10-15  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* disk/powerpc/ieee1275/ofdisk.c (grub_ofdisk_open): Do not
+	append ":0" to devpath if the GRUB_IEEE1275_NO_PARTITION_0 flag is
+	set in grub_ieee1275_flags.
+
+2004-10-14  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* include/grub/powerpc/ieee1275/ieee1275.h (abort): Add function
+	prototype.
+	* kern/powerpc/ieee1275/init.c (grub_machine_init): Call
+	grub_console_init first.
+	Change the memory range used for grub_ieee1275_claim and
+	grub_mm_init_region.
+	Print an error message if the claim fails.
+	Include <grub/misc.h>.
+
+2004-10-13  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* disk/powerpc/ieee1275/ofdisk.c (grub_ofdisk_iterate):
+	Call grub_children_iterate for device nodes of type `scsi',
+	`ide', or `ata'.
+	(grub_ofdisk_open): Remove manual device alias resolution.
+	Fix memory leak when device cannot be opened.
+	* include/grub/powerpc/ieee1275/ieee1275.h 
+	(grub_children_iterate): New prototype.
+	* kern/powerpc/ieee1275/openfw.c (grub_children_iterate):
+	New function.
+	* boot/powerpc/ieee1275/ieee1275.c (grub_ieee1275_get_property):
+	Return -1 if args.size was -1.
+
+2004-10-11  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/cmain.c (grub_ieee1275_flags): New global.
+	(cmain): Accept 3 parameters. Test for 0xdeadbeef, indicating Old
+	World Macintosh. If Old Wold, set flag in grub_ieee1275_flags; claim
+	Open Firmware's memory for it; claim memory from _start to _end.
+	* boot/powerpc/ieee1275/crt0.S (__bss_start): New extern.
+	(_end): New extern.
+	(_start): Zero BSS from __bss_start to _end.
+	* include/grub/powerpc/ieee1275/ieee1275.h (grub_ieee1275_flags):
+	New extern.
+	(GRUB_IEEE1275_NO_PARTITION_0): New #define.
+
+2004-10-11  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/ieee1275.c (grub_ieee1275_claim): Return
+	-1 if args.base was -1.
+
+2004-10-08  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* term/powerpc/ieee1275/ieee1275.c (grub_ofconsole_cls): Use an ANSI
+	escape sequence instead of a literal ^L. Also call
+	grub_ofconsole_gotoxy.
+
+2004-10-03  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* boot/powerpc/ieee1275/ieee1275.c (grub_ieee1275_claim): change
+	void *	arguments to grub_addr_t.  All callers updated.  Also make
+	the `result' argument optional.
+	(grub_ieee1275_release): change void * arguments to grub_addr_t.
+	All callers updated.
+
+2004-09-22  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* commands/ls.c (grub_ls_list_files): Use the string following the
+	initial ')', if present, as the filesystem path.
+	* kern/rescue.c (grub_rescue_cmd_ls): Likewise.
+
+	* conf/powerpc-ieee1275.rmk (grubof_SOURCES): List crt0.S first.
+
+2004-09-18  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	Make the source code of the menu interface more readable.
+	
+	* normal/menu.c: Include grub/mm.h.
+	(TERM_WIDTH): New macro.
+	(TERM_HEIGHT): Likewise.
+	(TERM_INFO_HEIGHT): Likewise.
+	(TERM_MARGIN): Likewise.
+	(TERM_SCROLL_WIDTH): Likewise.
+	(TERM_TOP_BORDER_Y): Likewise.
+	(TERM_LEFT_BORDER_X): Likewise.
+	(TERM_BORDER_WIDTH): Likewise.
+	(TERM_MESSAGE_HEIGHT): Likewise.
+	(TERM_BORDER_HEIGHT): Likewise.
+	(TERM_NUM_ENTRIES): Likewise.
+	(TERM_FIRST_ENTRY_Y): Likewise.
+	(TERM_ENTRY_WIDTH): Likewise.
+	(TERM_CURSOR_X): Likewise.
+	(draw_border): Use macros instead of magic numbers.
+	(print_entry): Likewise.
+	(print_entries): Likewise.
+	(run_menu): Likewise. Also, handle the key 'e'.
+	(run_menu_entry): Ignore empty command lines.
+	(print_message): Added a new argument EDIT. If EDIT is true,
+	print a different message.
+	(init_page): Likewise.
+	(edit_menu_entry): New function. Not implemented yet.
+
+2004-09-17  Marco Gerards  <metgerards@student.han.nl>
+
+	Add `linux.mod' and `multiboot.mod' so linux and multiboot kernels
+	can be loaded from normal mode.
+	
+	* conf/i386-pc.rmk (pkgdata_MODULES): Add `linux.mod' and
+	`multiboot.mod'.
+	(linux_mod_SOURCES, linux_mod_CFLAGS, multiboot_mod_SOURCES)
+	(multiboot_mod_CFLAGS): New variables.
+	* loader/i386/pc/linux_normal.c: New file.
+	* loader/i386/pc/multiboot_normal.c: Likewise.	
+	
+	* loader/i386/pc/linux.c (grub_rescue_cmd_initrd): Don't use the
+	attribute `unused'.
+	
+	* fs/ext2.c (grub_ext2_iterate_dir): Fix typos in inode type.  Use
+	`fdiro' to read the mode information from instead of `diro'.
+
+	* fs/fshelp.c (grub_fshelp_find_file): Set type to foundtype after
+	looking up a symlink.
+
+	* include/grub/normal.h (GRUB_COMMAND_FLAG_NO_ARG_PARSE): New
+	macro.
+	* normal/command.c (grub_command_execute): Don't parse the
+	arguments when `GRUB_COMMAND_FLAG_NO_ARG_PARSE' is set in the
+	flags of the command.
+
+	* normal/menu.c (grub_menu_run): Fix typo.
+
+2004-09-14  Hollis Blanchard  <hollis@penguinppc.org>
+
+	* kern/powerpc/ieee1275/init.c (abort): Trap into Open Firmware.
+
+	* term/powerpc/ieee1275/ofconsole.c (grub_ofconsole_gotoxy): Use
+	`y + 1' instead of `y - 1'.
+
+	* conf/powerpc-ieee1275.rmk (grubof_LDFLAGS): Add `-N' and `-S'.
+	
+2004-09-14  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Hollis Blanchard <hollis@penguinppc.org>:
+	* kern/misc.c (memmove): New alias for grub_memmove.
+	(memcmp): New alias for grub_memcmp.
+	(memset): New alias for grub_memset.
+	* boot/powerpc/ieee1275/ieee1275.c (grub_ieee1275_get_property): 
+	Change "int handle" to "grub_ieee1275_phandle_t handle".
+	* include/grub/powerpc/ieee1275/ieee1275.h 
+	(grub_ieee1275_get_property): Likewise.
+	
+2004-09-12  Tomas Ebenlendr  <ebik@ucw.cz>
+
+	Added normal mode command `chainloader' as module chain.mod, which
+	depends on normal.mod and _chain.mod.
+	
+	* conf/i386-pc.rmk (pkgdata_MODULES): Add `chain.mod'.
+	(chain_mod_SOURCES, chain_mod_CFLAGS): Variables added.
+	* include/grub/i386/pc/loader.h (grub_rescue_cmd_chainloader):
+	Deleted prototype.
+	* loader/i386/pc/chainloader.c (grub_rescue_cmd_chainloader): All
+	but arguments parsing moved to ...
+	(grub_chainloader_cmd): ... here.  New function.
+	* include/grub/i386/pc/chainloader.h: New file.
+	* loader/i386/pc/chainloader_normal.c: Likewise.
+
+2004-09-11  Marco Gerards  <metgerards@student.han.nl>
+
+	* conf/i386-pc.rmk (kernel_img_SOURCES): Added kern/fshelp.c.
+	(grub_mkimage_LDFLAGS): Likewise.
+	(grub_emu_SOURCES): Likewise.
+	(kernel_img_HEADERS): Added fshelp.h.
+	* fs/ext2.c: Include <grub/fshelp.h>.
+	(FILETYPE_REG): New macro.
+	(FILETYPE_INO_REG): Likewise.
+	(grub_ext_sblock): Renamed to `grub_ext2_sblock'.
+	Changed all users.
+	(ext2_block_group): Renamed to `grub_ext2_block_group'.  Changed
+	all users.
+	(grub_fshelp_node): New struct.
+	(grub_ext2_data): Added member `diropen'.  Changed member `inode'
+	to a pointer.
+	(grub_ext2_get_file_block): Removed function.
+	(grub_ext2_read_block): New function.
+	(grub_ext2_read_file): Replaced parameter `data' by `node'.
+	This function was written.
+	(grub_ext2_mount): Read the root inode.  Create a diropen struct.
+	(grub_ext2_find_file): Removed function.
+	(grub_ext2_read_symlink): New function.
+	(grub_ext2_iterate_dir): Likewise.
+	(grub_ext2_open): Rewritten.
+	(grub_ext2_dir): Rewritten.
+	* include/grub/fshelp.h: New file.
+	* fs/fshelp.c: Likewise.
+
+2004-09-10  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* normal/menu.c: Include grub/loader.h and grub/machine/time.h.
+	(print_message): Add a missing newline.
+	(run_menu): Added timeout support.
+	(run_menu_entry): New local function.
+	(grub_menu_run): Added support for booting.
+
+	* kern/loader.c (grub_loader_is_loaded): New function.
+
+	* include/grub/powerpc/ieee1275/time.h: Include grub/symbol.h.
+	(grub_get_rtc): Exported.
+
+	* include/grub/i386/pc/time.h: Include grub/symbol.h.
+	(grub_get_rtc): Exported.
+
+	* include/grub/normal.h (struct grub_command_list): Remove
+	constant from the member `command'.
+
+	* include/grub/loader.h (grub_loader_is_loaded): Declared.
+
+	* include/grub/err.h (GRUB_ERR_INVALID_COMMAND): New constant.
+
+	* conf/i386-pc.rmk (kernel_img_HEADERS): Added machine/time.h.
+
+2004-08-28  Marco Gerards  <metgerards@student.han.nl>
+
+	Add support for the JFS filesystem.
+
+	* fs/jfs.c: New file.
+	* include/grub/fs.h (grub_jfs_init): New prototype.
+	(grub_jfs_fini): New prototype.
+	* conf/i386-pc.rmk (grub_setup_SOURCES): Add fs/jfs.c.
+	(grub_emu_SOURCES): Likewise.
+	(pkgdata_MODULES): Add jfs.mod.
+	(jfs_mod_SOURCES): New variable.
+	(jfs_mod_CFLAGS): Likewise.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add fs.jfs.c.
+	(grubof_SOURCES): Likewise.
+	* util/grub-emu.c (main): Initialize and deinitialize JFS support.
+
+	* fs/fat.c (grub_fat_find_dir): Convert the filename little
+	endian to the host endian.
+	(grub_fat_utf16_to_utf8): Move function from there...
+	* kern/misc.c (grub_utf16_to_utf8): ...to here.  Do not convert
+	the endianess of the source string anymore.
+	* include/grub/misc.h (grub_utf16_to_utf8): New prototype.
+
+2004-08-24  Marco Gerards  <metgerards@student.han.nl>
+
+	* commands/boot.c (grub_boot_init) [GRUB_UTIL]: Make conditional.
+	(grub_boot_fini) [GRUB_UTIL]: Likewise.
+	(GRUB_MOD_INIT) [!GRUB_UTIL]: Likewise.
+	(GRUB_MOD_FINI) [!GRUB_UTIL]: Likewise.
+	
+	* fs/hfs.c (grub_hfs_find_node): Add a prototype for `node_found'.
+	(grub_hfs_iterate_dir): Make the function static.  Add prototypes
+	for `node_found' and `it_dir'.
+	(grub_hfs_dir): Add prototype for `dir_hook'.
+
+	* fs/minix.c (grub_minix_get_file_block): Add prototype for
+	`grub_get_indir'.  Rename `indir' in two blocks to `indir16'
+	and `indir32' to silence a gcc warning.
+
+	* include/grub/fs.h (grub_hfs_init): New prototype.
+	(grub_hfs_fini): Likewise.
+	
+	
+2004-08-21  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	Each disk device has its own id now. This is useful to make use
+	of multiple disk devices.
+	
+	* include/grub/disk.h (grub_disk_dev_id): New enum.
+	(GRUB_DISK_DEVICE_BIOSDISK_ID): New constant.
+	(GRUB_DISK_DEVICE_OFDISK_ID): Likewise.
+
+	* disk/i386/pc/biosdisk.c (grub_biosdisk_dev): Specify
+	GRUB_DISK_DEVICE_BIOSDISK_ID as an id.
+
+	* disk/powerpc/ieee1275/ofdisk.c (grub_ofdisk_dev): Specify
+	GRUB_DISK_DEVICE_OFDISK_ID as an id.
+
+	* util/i386/pc/biosdisk.c (grub_util_biosdisk_dev): Specify
+	GRUB_DISK_DEVICE_BIOSDISK_ID as an id.
+
+	* include/grub/disk.h (struct grub_disk_dev): Added a new member
+	"id" which is used by the cache manager.
+
+	* normal/main.c (grub_normal_init_page): Use "GNU GRUB" instead
+	of just "GRUB".
+
+2004-08-18  Marco Gerards  <metgerards@student.han.nl>
+
+	* fs/hfs.c: New file.
+	* conf/i386-pc.rmk (grub_setup_SOURCES): Add fs/hfs.c.
+	(grub_emu_SOURCES): Likewise.
+	(pkgdata_MODULES): Add hfs.mod.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add fs/hfs.c.
+	(grubof_SOURCES): Likewise.
+	* util/grub-emu.c (main): Initialize and deinitialize HFS support.
+
+	* include/grub/misc.h (grub_strncasecmp): Add prototype.
+	* kern/misc.c (grub_strncasecmp): Add function.
+
+2004-08-14  Marco Gerards  <metgerards@student.han.nl>
+
+	* include/grub/arg.h (GRUB_ARG_OPTION_OPTIONAL): Surround macro
+	with parentheses.
+
+	* fs/ext2.c (FILETYPE_UNKNOWN): New macro.
+	(grub_ext2_dir): In case the directory entry type is unknown, read
+	it from the inode.
+
+2004-08-02  Peter Bruin  <pjbruin@dds.nl>
+
+	* loader/powerpc/ieee1275/linux.c (grub_linux_init): Pass
+	grub_load_linux instead of grub_rescue_cmd_linux as second
+	argument of grub_rescue_register_command.
+
+	* Makefile.in (RMKFILES): Add conf/powerpc-ieee1275.rmk.
+
+2004-07-27  Marco Gerards  <metgerards@student.han.nl>
+
+	* boot/powerpc/ieee1275/ieee1275.c (grub_ieee1275_release): New
+	function.
+	* commands/boot.c: Remove the check for `GRUB_UTIL'.
+	* conf/powerpc-ieee1275.rmk (grubof_SOURCES): Add
+	`loader/powerpc/ieee1275/linux.c',
+	`loader/powerpc/ieee1275/linux_normal.c' and `commands/boot.c'.
+	* include/grub/powerpc/ieee1275/ieee1275.h
+	(grub_ieee1275_release): New prototype.
+	* include/grub/powerpc/ieee1275/loader.h: Rewritten.
+	* kern/powerpc/ieee1275/init.c (grub_machine_init): Initialize
+	normal, boot, linux and linux_normal.
+	* loader/powerpc/ieee1275/linux.c: New file.
+	* loader/powerpc/ieee1275/linux_normal.c: Likewise.
+
+2004-07-12  Marco Gerards  <metgerards@student.han.nl>
+
+	* normal/arg.c (grub_arg_parse): Correct error handling after
+	reallocating the argumentlist (check if `argl' is not null instead
+	of checking if `args' is not null).
+	* kern/mm.c (grub_realloc): Return the same pointer when using the
+	same region, instead of returning the header address.
+
+2004-07-11  Marco Gerards  <metgerards@student.han.nl>
+
+	* disk/powerpc/ieee1275/partition.c (grub_partition_iterate): Skip
+	one block instead of two when looking for the initial partition.
+	(grub_partition_probe): Initialize the local variable `p' with 0.
+	Use base 10 for the grub_strtoul call.
+	* kern/misc.c (grub_strncpy): Fix off by one bug.  Eliminated the
+	need for one local variable.
+	(grub_strtoul): Don't add the new value to `num', instead of that
+	just assign it.
+
+2004-07-11  Marco Gerards  <metgerards@student.han.nl>
+
+	* conf/i386-pc.rmk (pkgdata_IMAGE): Add pxeboot.img.
+	(pxeboot_img_SOURCES): New variable.
+	(pxeboot_img_ASFLAGS): Likewise.
+	(pxeboot_img_LDFLAGS): Likewise.
+	* boot/i386/pc/pxeboot.S: New file.  Based on pxeloader.S from
+	GRUB Legacy and boot.S.  Adopted for GRUB 2 by lode leroy
+	<lode_leroy@hotmail.com>.
+
+2004-06-27  Tomas Ebenlendr  <ebik@ucw.cz>
+
+	* kern/rescue.c (grub_enter_rescue_mode): Don't continue when
+	there was no input.
+
+2004-06-27  Tomas Ebenlendr  <ebik@ucw.cz>
+
+	* normal/cmdline.c (grub_set_history): Fix off by one bug.  Fixed
+	the history buffer logic.
+
+2004-06-27  Tomas Ebenlendr  <ebik@ucw.cz>
+
+	* fs/ext2.c (FILETYPE_INO_MASK, FILETYPE_INO_DIRECTORY)
+	(FILETYPE_INO_SYMLINK): New macros.
+	(grub_ext2_find_file): Check if the node is a directory using the
+	inode stat information instead of using the filetype in the
+	dirent.  Exclude the first character of an absolute symlink.
+	(grub_ext2_dir): Mask out the filetype part of the mode member of
+	the inode.
+
+2004-05-24  Marco Gerards  <metgerards@student.han.nl>
+
+	Add support for UFS version 1 and 2.  Add support for the minix
+	filesystem version 1 and 2, both the variants with 14 and 30 long
+	filenames.
+	
+	* conf/i386-pc.rmk (grub_setup_SOURCES): Add fs/ufs.c and
+	fs/minix.c.
+	(grub_emu_SOURCES): Likewise.
+	(pkgdata_MODULES): Add ufs.mod and minix.mod.
+	(ufs_mod_SOURCES): New variable.
+	(ufs_mod_CFLAGS): Likewise.
+	(minix_mod_SOURCES): Likewise.
+	(minix_mod_CFLAGS): Likewise.
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add fs/ufs.c and
+	fs/minix.c.
+	(grubof_SOURCES): Likewise.
+	* fs/ufs.c: New file.
+	* fs/minix.c: New file.
+	* include/grub/fs.h (grub_ufs_init): New prototype.
+	(grub_ufs_fini): Likewise.
+	(grub_minix_init): Likewise.
+	(grub_minix_fini): Likewise.
+	* util/grub-emu.c (main): Initialize and deinitialize UFS and
+	minix fs.
+
+2004-04-30  Jeroen Dekkers  <jeroen@dekkers.cx>
+
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Add normal/arg.c,
+	commands/ls.c, commands/terminal.c, commands/boot.c,
+	commands/cmp.c and commands/cat.c.
+	(grubof_LDFLAGS): Add -nostdlib -static-libgcc -lgcc.
+
+	* kern/powerpc/ieee1275/init.c: Include "grub/env.h" instead of
+	"env.h"
+
+2004-04-04  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	All symbols prefixed with PUPA_ and pupa_ are renamed to GRUB_
+	and grub_, respectively. Because the conversion is trivial and
+	mechanical, I omit the details here. Please refer to the CVS
+	if you need more information.
+
+2004-04-04  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* include/pupa: Renamed to ...
+	* include/grub: ... this.
+	* util/i386/pc/pupa-mkimage.c: Renamed to ...
+	* util/i386/pc/grub-mkimage.c: ... this.
+	* util/i386/pc/pupa-setup.c: Renamed to ...
+	* util/i386/pc/grub-setup.c: ... this.
+	* util/pupa-emu.c: Renamed to ...
+	* util/grub-emu.c: ... this.
+
+2004-03-29  Marco Gerards  <metgerards@student.han.nl>
+
+	Add support for the newworld apple macintosh (PPC).  This has been
+	tested on the powerbook 2000 only.  It only adds support for
+	generic ieee1275 functions, console and disk support.  This should
+	be easy to port to other architectures with support for Open
+	Firmware.
+	
+	* configure.ac: Accept the powerpc as host_cpu.  In the case of
+	the powerpc cpu set the host_vendor to ieee1275.  Make sure the i386
+	specific tests are only executed while building for the i386.
+	Inverse test for crosscompile.
+	* genmk.rb (Utility): Allow assembler files.
+	* normal/cmdline.c (pupa_tab_complete): Reset pupa_errno.
+	* conf/powerpc-ieee1275.rmk: New file.
+	* disk/powerpc/ieee1275/ofdisk.c: Likewise.
+	* disk/powerpc/ieee1275/partition.c: Likewise.
+	* include/pupa/powerpc/ieee1275/biosdisk.h: Likewise.
+	* include/pupa/powerpc/ieee1275/console.h: Likewise.
+	* include/pupa/powerpc/ieee1275/partition.h: Likewise.
+	* include/pupa/powerpc/ieee1275/time.h: Likewise.
+	* include/pupa/powerpc/ieee1275/util/biosdisk.h: Likewise.
+	* include/pupa/powerpc/ieee1275/multiboot.h: Likewise.
+	* include/pupa/powerpc/ieee1275/loader.h
+	* include/pupa/powerpc/setjmp.h: Likewise.
+	* include/pupa/powerpc/types.h: Likewise.
+	* kern/powerpc/ieee1275/init.c: Likewise.
+	* kern/powerpc/ieee1275/openfw.c: Likewise.
+	* term/powerpc/ieee1275/ofconsole.c: Likewise.
+
+	These files were written by Johan Rydberg
+	(jrydberg@night.trouble.net) and I only modified them slightly.
+		
+	* boot/powerpc/ieee1275/cmain.c: New file.
+	* boot/powerpc/ieee1275/crt0.S: Likewise.
+	* boot/powerpc/ieee1275/ieee1275.c: Likewise.
+	* include/pupa/powerpc/ieee1275/ieee1275.h: Likewise.
+
+2004-03-14  Jeroen Dekkers  <jeroen@dekkers.cx>
+
+	* Makefile.in: Update copyright.
+	* genmodsrc.sh: Likewise.
+	* gensymlist.sh: Likewise.
+	* term/i386/pc/vga.c: Indent correctly.
+
+	* util/i386/pc/pupa-mkimage.c (usage): Use PACKAGE_BUGREPORT as
+	bugreporting address.
+	* util/i386/pc/pupa-setup.c (usage): Likewise,
+	(main): Call pupa_ext2_init and pupa_ext2_fini.
+
+	* fs/fat.c (log2): Renamed to ... 
+	(fat_log2): ... this.
+	All callers changed.
+	* kern/misc.c (memcpy): Alias to pupa_memmove.
+	* loader/i386/pc/multiboot.c (pupa_rescue_cmd_multiboot): Fix
+	lvalue cast.
+	* util/console.c (pupa_ncurses_fini): Return 0.
+
+	* util/i386/pc/biosdisk.c (pupa_util_biosdisk_open)[__linux__]:
+	Move fail label here.
+	[__GNU__]: Don't warn when using stat.
+	(open_device)[!__linux__]: Check if FD < 0 instead of !FD.
+	(pupa_util_biosdisk_get_pupa_dev)[__GNU__]: Change type of N to
+	long int. Use strtol instead of strtoul.
+	
+2004-03-14  Marco Gerards  <metgerards@student.han.nl>
+
+	* commands/boot.c: New file.
+	* commands/cat.c: Likewise.
+	* commands/cmp.c: Likewise.
+	* commands/ls.c: Likewise.
+	* commands/terminal.c: Likewise.
+	* normal/command.c: Include <pupa/env.h> and <pupa/dl.h>.
+	(pupa_register_command): Changed interface to match the new
+	argument parser.
+	(pupa_command_execute): Changed (almost rewritten) so it uses
+	pupa_split_command.  Added support for setting variables using the
+	syntax `foo=bar'.
+	(rescue_command): Changed to work with the new argument parser.
+	(terminal_command): Moved from here to commands/terminal.c.
+	(set_command): New function.
+	(unset_command): New function.
+	(insmod_command): New function.
+	(rmmod_command): New function.
+	(lsmod_command): New function.
+	(pupa_command_init): Don't initialize the command terminal
+	anymore.  Initialize the commands set, unset, insmod, rmmod and
+	lsmod.
+	* conf/i386-pc.rmk (kernel_img_SOURCES): Add kern/env.c.
+	(kernel_img_HEADERS): Add arg.h and env.h.
+	(pupa_mkimage_LDFLAGS): Add kern/env.c.
+	(pupa_emu_SOURCES): Add kern/env.c, commands/ls.c,
+	commands/terminal.c commands/boot.c commands/cmp.c commands/cat.c,
+	normal/arg.c.
+	(pkgdata_MODULES): Add ls.mod, boot.mod, cmp.mod, cat.mod and
+	terminal.mod.
+	(normal_mod_SOURCES): Add normal/arg.c and normal/arg.c.
+	(boot_mod_SOURCES): New variable.
+	(terminal_mod_SOURCES): Likewise.
+	(ls_mod_SOURCES): Likewise.
+	(cmp_mod_SOURCES): Likewise.
+	(cat_mod_SOURCES): Likewise.
+
+	* normal/arg.c: New file.
+	* kern/env.c: Likewise.
+	* include/pupa/arg.h: Likewise.
+	* include/pupa/env.h: Likewise.
+	* font/manager.c (font_command): Changed to match argument parsing
+	interface changes.
+	(PUPA_MOD_INIT): Likewise.
+	* hello/hello.c (pupa_cmd_hello): Likewise.
+	(PUPA_MOD_INIT): Likewise.
+	* include/pupa/disk.h: Include <pupa/device.h>.
+	(pupa_print_partinfo): New prototype.
+	* include/pupa/dl.h (pupa_dl_set_prefix): Prototype removed.
+	(pupa_dl_get_prefix): Likewise.
+	* include/pupa/misc.h: Include <pupa/err.h>.
+	(pupa_isgraph): New prototype.
+	(pupa_isdigit): Likewise.
+	(pupa_split_cmdline): Likewise.
+	* include/pupa/normal.h: Include <pupa/arg.h>.
+	(pupa_command): Changed the prototype of the member `func' to
+	match the argument parsing interface.  Added member `options'.
+	(pupa_register_command): Updated to match function.
+	(pupa_arg_parse): New prototype.
+	(pupa_hello_init) [PUPA_UTIL]: New prototype.
+	(pupa_hello_fini) [PUPA_UTIL]: Likewise.
+	(pupa_ls_init) [PUPA_UTIL]: Likewise.
+	(pupa_ls_fini) [PUPA_UTIL]: Likewise.
+	(pupa_cat_init) [PUPA_UTIL]: Likewise.
+	(pupa_cat_fini) [PUPA_UTIL]: Likewise.
+	(pupa_boot_init) [PUPA_UTIL]: Likewise.
+	(pupa_boot_fini) [PUPA_UTIL]: Likewise.
+	(pupa_cmp_init) [PUPA_UTIL]: Likewise.
+	(pupa_cmp_fini) [PUPA_UTIL]: Likewise.
+	(pupa_terminal_init) [PUPA_UTIL]: Likewise.
+	(pupa_terminal_fini) [PUPA_UTIL]: Likewise.
+	* kern/disk.c: Include <pupa/file.h>.
+	(pupa_print_partinfo): New function.
+	* kern/dl.c: Include <pupa/env.h>.
+	(pupa_dl_dir): Variable removed.
+	(pupa_dl_load): Use the environment variable `prefix' instead of
+	the variable pupa_dl_dir.
+	(pupa_dl_set_prefix): Function removed.
+	(pupa_dl_get_prefix): Likewise.
+	* kern/i386/pc/init.c: Include <pupa/env.h>.
+	(pupa_machine_init): Use the environment variable `prefix' instead of
+	using pupa_dl_set_prefix to set the prefix.
+	* kern/main.c: Include <pupa/env.h>.
+	(pupa_set_root_dev): Use the environment variable `prefix' instead of
+	using pupa_dl_get_prefix to get the prefix.
+	* kern/misc.c: Include <pupa/env.h>.
+	(pupa_isdigit): New function.
+	(pupa_isgraph): Likewise.
+	(pupa_ftoa): Likewise.
+	(pupa_vsprintf): Added support for printing values of the type
+	`double'.  Make it possible to format variable output when using
+	formatting like `%1.2%f'.
+	(pupa_split_cmdline): New function.
+	* kern/rescue.c: Include <pupa/env.h>.
+	(next_word): Removed function.
+	(pupa_rescue_cmd_prefix): Likewise.
+	(pupa_rescue_cmd_set): New function.
+	(pupa_rescue_cmd_unset): New function.
+	(pupa_enter_rescue_mode): Use the `pupa_split_cmdline' function to
+	split the command line instead of splitting it here.  Added
+	support for setting variables using the syntax `foo=bar'.  Don't
+	initialize the prefix command anymore.  Initialized the set and
+	unset commands.
+	* normal/cmdline.c: Include <pupa/env.h>.
+	(pupa_tab_complete): Added prototypes for print_simple_completion,
+	print_partition_completion, add_completion, iterate_commands,
+	iterate_dev, iterate_part and iterate_dir. Moved code to print
+	partition information from here to kern/disk.c.
+	(pupa_cmdline_run): Don't check if the funtion exists anymore.
+	* normal/main.c: Include <pupa/env.h>.
+	(pupa_rescue_cmd_normal): Use the environment variable `prefix'
+	instead of using pupa_dl_get_prefix to get the prefix.
+	* term/i386/pc/vga.c: Include <pupa/arg.h>.
+	(check_vga_mem): Cast pointers to `void *' to silence a gcc
+	warning.
+	(pupa_vga_putchar) [! DEBUG_VGA]: Removed for this case.
+	(pupa_vga_setcolor): Declare unused variables with `__attribute__
+	((unused))' to silence a gcc warning.
+	(pupa_vga_setcolor): Likewise.
+	(debug_command): Changed to match argument parsing
+	interface changes.
+	* util/pupa-emu.c: Include <pupa/env.h>.
+	(options): Added 0's for unused fields to silence a gcc warning.
+	(argp): Likewise.
+	(main): Use the environment variable `prefix' instead of using
+	pupa_dl_set_prefix to set the prefix.  Initialize the commands ls,
+	boot, cmp, cat and terminal.  Finish the commands boot, cmp, cat
+	and terminal.
+
+	* util/i386/pc/getroot.c: Include <pupa/i386/pc/util/biosdisk.h>.
+	* util/misc.c: Include <malloc.h>.
+	(pupa_malloc): Rewritten so errors are correctly reported.
+	(pupa_realloc): Likewise.
+	(pupa_memalign): Likewise.
+	(pupa_mm_init_region): Declare unused variables with
+	`__attribute__ ((unused))' to silence a gcc warning.
+	* normal/i386/setjmp.S: Remove tab at the end of the file to
+	silence a gcc warning.
+	* loader/i386/pc/linux.c (pupa_rescue_cmd_initrd): Declare unused
+	variables with `__attribute__ ((unused))' to silence a gcc
+	warning.
+	* loader/i386/pc/multiboot.c (pupa_multiboot_unload): Make the
+	local variable i unsigned to silence a gcc warning.
+
+	* kern/term.c: Include <pupa/misc.h>.
+	(pupa_more_lines): New variable.
+	(pupa_more): Likewise.
+	(pupa_putcode): When the pager is active pause at the end of every
+	screen.
+	(pupa_set_more): New function.
+	* include/pupa/term.h (pupa_set_more): New prototype.
+
+
+2004-03-07  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	Now this project is GRUB 2 rather than PUPA. The location of
+	the CVS repository was moved to GRUB's.
+	
+	* configure.ac: Use bug-grub as the reporting address.
+	Use GRUB instead of PUPA.
+	Change the version number to 1.90.
+
+2004-02-24  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* genkernsyms.sh: Updated copyright information.
+	* genmk.rb: Likewise.
+	* genmodsrc.sh: Likewise.
+	* gensymlist.sh: Likewise.
+	* boot/i386/pc/boot.S: Likewise.
+	* boot/i386/pc/diskboot.S: Likewise.
+	* disk/i386/pc/biosdisk.c: Likewise.
+	* disk/i386/pc/partition.c: Likewise.
+	* font/manager.c: Likewise.
+	* fs/ext2.c: Likewise.
+	* fs/fat.c: Likewise.
+	* include/pupa/boot.h: Likewise.
+	* include/pupa/device.h: Likewise.
+	* include/pupa/disk.h: Likewise.
+	* include/pupa/dl.h: Likewise.
+	* include/pupa/elf.h: Likewise.
+	* include/pupa/err.h: Likewise.
+	* include/pupa/file.h: Likewise.
+	* include/pupa/font.h: Likewise.
+	* include/pupa/fs.h: Likewise.
+	* include/pupa/kernel.h: Likewise.
+	* include/pupa/loader.h: Likewise.
+	* include/pupa/misc.h: Likewise.
+	* include/pupa/mm.h: Likewise.
+	* include/pupa/net.h: Likewise.
+	* include/pupa/normal.h: Likewise.
+	* include/pupa/rescue.h: Likewise.
+	* include/pupa/setjmp.h: Likewise.
+	* include/pupa/symbol.h: Likewise.
+	* include/pupa/term.h: Likewise.
+	* include/pupa/types.h: Likewise.
+	* include/pupa/i386/setjmp.h: Likewise.
+	* include/pupa/i386/types.h: Likewise.
+	* include/pupa/i386/pc/biosdisk.h: Likewise.
+	* include/pupa/i386/pc/boot.h: Likewise.
+	* include/pupa/i386/pc/console.h: Likewise.
+	* include/pupa/i386/pc/init.h: Likewise.
+	* include/pupa/i386/pc/kernel.h: Likewise.
+	* include/pupa/i386/pc/linux.h: Likewise.
+	* include/pupa/i386/pc/loader.h: Likewise.
+	* include/pupa/i386/pc/memory.h: Likewise.
+	* include/pupa/i386/pc/multiboot.h: Likewise.
+	* include/pupa/i386/pc/partition.h: Likewise.
+	* include/pupa/i386/pc/time.h: Likewise.
+	* include/pupa/i386/pc/vga.h: Likewise.
+	* include/pupa/i386/pc/util/biosdisk.h: Likewise.
+	* include/pupa/util/getroot.h: Likewise.
+	* include/pupa/util/misc.h: Likewise.
+	* include/pupa/util/resolve.h: Likewise.
+	* kern/device.c: Likewise.
+	* kern/disk.c: Likewise.
+	* kern/dl.c: Likewise.
+	* kern/err.c: Likewise.
+	* kern/file.c: Likewise.
+	* kern/fs.c: Likewise.
+	* kern/loader.c: Likewise.
+	* kern/main.c: Likewise.
+	* kern/misc.c: Likewise.
+	* kern/mm.c: Likewise.
+	* kern/rescue.c: Likewise.
+	* kern/term.c: Likewise.
+	* kern/i386/dl.c: Likewise.
+	* kern/i386/pc/init.c: Likewise.
+	* kern/i386/pc/lzo1x.S: Likewise.
+	* kern/i386/pc/startup.S: Likewise.
+	* loader/i386/pc/chainloader.c: Likewise.
+	* loader/i386/pc/linux.c: Likewise.
+	* loader/i386/pc/multiboot.c: Likewise.
+	* normal/cmdline.c: Likewise.
+	* normal/command.c: Likewise.
+	* normal/main.c: Likewise.
+	* normal/menu.c: Likewise.
+	* normal/i386/setjmp.S: Likewise.
+	* term/i386/pc/console.c: Likewise.
+	* term/i386/pc/vga.c: Likewise.
+	* util/console.c: Likewise.
+	* util/genmoddep.c: Likewise.
+	* util/misc.c: Likewise.
+	* util/pupa-emu.c: Likewise.
+	* util/resolve.c: Likewise.
+	* util/unifont2pff.rb: Likewise.
+	* util/i386/pc/biosdisk.c: Likewise.
+	* util/i386/pc/getroot.c: Likewise.
+	* util/i386/pc/pupa-mkimage.c: Likewise.
+	* util/i386/pc/pupa-setup.c: Likewise.
+
+2004-02-15  Jeroen Dekkers  <jeroen@dekkers.cx>
+
+	* fs/ext2.c (pupa_ext2_read_file): Correct the value of BLOCKEND
+	when it is EXT2_BLOCK_SIZE (data).  New argument READ_HOOK, all
+	callers changed.  Set DATA->DISK->READ_HOOK to READ_HOOK before
+	reading and reset it after reading.
+	(pupa_ext2_close): Return PUPA_ERR_NONE.
+
+	* include/pupa/i386/pc/linux.h (PUPA_LINUX_INITRD_MAX_ADDRESS):
+	Correct value.
+	(struct linux_kernel_header): Add kernel_version and
+	initrd_addr_max.
+	* loader/i386/pc/linux.c (pupa_rescue_cmd_linux): Check whether
+	pupa_file_read succeeds.
+	(pupa_rescue_cmd_initrd): Implement.
+
+2003-12-03  Marco Gerards  <metgerards@student.han.nl>
+
+	* fs/ext2.c (pupa_ext2_label): New function.
+	(pupa_ext2_fs): Added label.
+	* fs/fat.c (pupa_fat_label): New function.
+	(pupa_fat_fs): Added label.
+	* include/pupa/fs.h (struct pupa_fs): Added prototype label.
+
+	* kern/misc.c (pupa_strndup): New function.
+	* include/pupa/misc.h (pupa_strndup): New prototype.
+
+	* include/pupa/normal.h: Include <pupa/err.h>.
+	(pupa_set_history): New prototype.
+	(pupa_iterate_commands): New prototype.
+	* normal/cmdline.c: Include <pupa/machine/partition.h>,
+	<pupa/disk.h>, <pupa/file.h>.
+	(hist_size): New variable.
+	(hist_lines): Likewise.
+	(hist_end): Likewise.
+	(hist_used): Likewise.
+	(pupa_set_history): New function.
+	(pupa_history_get): Likewise.
+	(pupa_history_add): Likewise.
+	(pupa_history_replace): Likewise.
+	(pupa_tab_complete): Likewise.
+	(pupa_cmdline_run): Added tab completion and history buffer.  Tab
+	completion shows partitionnames while completing partitions, this
+	feature was suggested by Jeff Bailey.
+	* normal/command.c (pupa_iterate_commands): New function.
+	* normal/main.c (PUPA_DEFAULT_HISTORY_SIZE): New macro.
+	(pupa_normal_init): Initialize history buffer.
+	(PUPA_MOD_INIT): Likewise.
+	(pupa_normal_fini): Free the history buffer.
+	(PUPA_MOD_FINI): Likewise.
+
+	* util/console.c (pupa_ncurses_getkey): Accept 127 as backspace
+	key.
+
+	* aclocal.m4 (pupa_I386_CHECK_REGPARM_BUG): New DEFUN.
+	* configure.ac [i386]: Check for regparam bug.
+	(NESTED_FUNC_ATTR) [! i386]: Defined.
+
+2003-11-17  Marco Gerards  <metgerards@student.han.nl>
+
+	* conf/i386-pc.rmk (sbin_UTILITIES): Added pupa-emu.
+	(pupa_setup_SOURCES): Added util/i386/pc/getroot.c.
+	(pupa_emu_SOURCES): New variable.
+	(pupa_emu_LDFLAGS): Likewise.
+	* include/pupa/fs.h (pupa_ext2_init) [PUPA_UTIL]: New prototype.
+	(pupa_ext2_fini) [PUPA_UTIL]: Likewise.
+	* include/pupa/normal.h (pupa_normal_init) [PUPA_UTIL]: Likewise.
+	(pupa_normal_fini) [PUPA_UTIL]: Likewise.
+	* include/pupa/setjmp.h [PUPA_UTIL]: Include <setjmp.h>.
+	(pupa_jmp_buf): New typedef.
+	(pupa_setjmp) [PUPA_UTIL]: New macro.
+	(pupa_longjmp) [PUPA_UTIL]: Likewise.
+	* include/pupa/term.h (struct pupa_term): New member `refresh'.
+	(pupa_refresh): New prototype.
+	* include/pupa/util/getroot.h: New file.
+	* kern/misc.c (pupa_vsprintf): Refresh the screen after updating
+	it.
+	* kern/rescue.c (pupa_rescue_get_command_line): Likewise.
+	(pupa_rescue_cmd_cat): Likewise.
+	(pupa_rescue_cmd_ls): Likewise.
+	(pupa_rescue_cmd_testload): Likewise.
+	(pupa_rescue_cmd_lsmod): Likewise.
+	* normal/cmdline.c (pupa_cmdline_get): Likewise.
+	* normal/menu.c (run_menu): Likewise.
+	* kern/term.c (pupa_cls): Likewise.
+	(pupa_refresh): New function.
+	* normal/normal.c (pupa_normal_init) [PUPA_UTIL]: New function.
+	(pupa_normal_fini) [PUPA_UTIL]: Likewise.
+	* util/console.c: New file.
+	
+	* util/i386/pc/getroot.c: New file.
+	* util/i386/pc/pupa-setup.c: Include <pupa/util/getroot.h>.
+	(pupa_putchar): New function.
+	(pupa_refresh): Likewise.
+	(xgetcwd): Function moved to ...
+	(strip_extra_slashes): Likewise.
+	(get_prefix): Likewise.
+	* util/i386/pc/getroot.c: ... here.	
+	(find_root_device): Function moved and renamed to...
+	* util/i386/pc/getroot.c (pupa_find_root_device): ... here.
+	Changed all callers.
+	* util/i386/pc/pupa-setup.c (guess_root_device): Function moved
+	and renamed to...
+	* util/i386/pc/getroot.c (pupa_guess_root_device): ... here.
+	Changed all callers.
+	* util/misc.c (pupa_memalign): New function.
+	(pupa_mm_init_region): Likewise.
+	(pupa_register_exported_symbols): Likewise.
+	(pupa_putchar): Function removed.
+	* util/pupa-emu.c: New file.
+
+2003-11-16  Jeroen Dekkers  <jeroen@dekkers.cx>
+
+	* conf/i386-pc.rmk (pkgdata_MODULES): Add _multiboot.mod.
+	(_multiboot_mod_SOURCES): New variable.
+	(_multiboot_mod_CFLAGS): Likewise.
+	* loader/i386/pc/multiboot.c: New file.
+	* include/pupa/i386/pc/multiboot.h: Likewise.
+	* kern/i386/pc/startup.S: Include pupa/machine/multiboot.h.
+	(pupa_multiboot_real_boot): New function.
+	* include/pupa/i386/pc/loader.h: Include pupa/machine/multiboot.h.
+	(pupa_multiboot_real_boot): New prototype.
+	(pupa_rescue_cmd_multiboot): Likewise
+	(pupa_rescue_cmd_module): Likewise.
+
+	* kern/loader.c (pupa_loader_set): Continue when
+	pupa_loader_unload_func() fails.
+	(pupa_loader_unset): New function.
+	* include/pupa/loader.h (pupa_loader_unset): New prototype.
+
+	* kern/misc.c (pupa_stpcpy): New function.
+	* include/pupa/misc.h (pupa_stpcpy): New prototype.
+
+2003-11-12  Marco Gerards  <metgerards@student.han.nl>
+
+	* disk/i386/pc/biosdisk.c (pupa_biosdisk_open): Correctly check
+	for available extensions.
+
+	* include/pupa/i386/pc/time.h: New file.
+	* kern/disk.c: Include <pupa/machine/time.h>.
+	(PUPA_CACHE_TIMEOUT): New macro.
+	(pupa_last_time): New variable.
+	(pupa_disk_open): Flush the cache when there was a timeout.
+	(pupa_disk_close): Reset the timer.
+	* kern/i386/pc/startup.S (pupa_get_rtc): Renamed from
+	pupa_currticks.
+	* util/misc.c: Include <sys/times.h>
+	(pupa_get_rtc): New function.
+
+2003-11-09  Jeroen Dekkers  <jeroen@dekkers.cx>
+
+	* fs/ext2.c (struct pupa_ext2_inode): Declare struct datablocks
+	as blocks.
+	(pupa_ext2_get_file_block): Use blocks member.
+
+	* fs/ext2.c (pupa_ext2_read_file): Only set skipfirst for the
+	first block. Return -1 instead of pupa_errno on error.
+
+2003-10-27  Marco Gerards  <metgerards@student.han.nl>
+
+	* README: In the pupa-mkimage example use _chain instead of chain
+	and ext2 instead of fat.
+	* TODO: Replace ext2fs with jfs as an example.  Add an item for
+	adding journal playback for ext2fs.
+	* conf/i386-pc.rmk (pupa_setup_SOURCES): Added fs/ext2.c.
+	(pkgdata_MODULES): Added ext2.mod.
+	(ext2_mod_SOURCES): New variable.
+	(ext2_mod_CFLAGS): Likewise.
+	* include/pupa/err.h (pupa_err_t): Added PUPA_ERR_SYMLINK_LOOP.
+	* include/pupa/misc.h (pupa_strncpy): New prototype.
+	(pupa_strcat): Likewise.
+	(pupa_strncmp): Likewise.
+	* kern/misc.c (pupa_strcat): Enable function.
+	(pupa_strncpy): New function.
+	(pupa_strncmp): Likewise.
+	* fs/ext2.c: New file.
+	
+	* kern/disk.c (pupa_disk_read): Set pupa_errno to PUPA_ERR_NONE
+	when the read failed before retrying.
+	* util/i386/pc/biosdisk.c (_LARGEFILE_SOURCE): Removed.
+	(_FILE_OFFSET_BITS): Likewise.
+	* configure.ac: Added AC_SYS_LARGEFILE.
+
+2003-09-25  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* genmk.rb (PModule#rule): Make sure to get only symbol names
+	from the output of nm.
+	Reported by Robert Millan <zeratul2@wanadoo.es>.
+
+2003-09-25  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	I forgot to check in these changes for a long time. This adds
+	incomplete support for VGA console, and this is still very
+	buggy. Also, a lot of consideration is required for I18N,
+	UNICODE, and VGA font issues. Therefore, assume that this is
+	such that "better than nothing".
+	
+	* font/manager.c: New file.
+	* include/pupa/font.h: Likewise.
+	* include/pupa/i386/pc/vga.h: Likewise.
+	* term/i386/pc/vga.c: Likewise.
+	* util/unifont2pff.rb: Likewise.
+
+	* conf/i386-pc.rmk (kernel_img_HEADERS): Added machine/vga.h.
+	(pkgdata_MODULES): Added vga.mod and font.mod.
+	(vga_mod_SOURCES): New variables.
+	(vga_mod_CFLAGS): Likewise.
+	(font_mod_SOURCES): Likewise.
+	(font_mod_CFLAGS): Likewise.
+
+	* include/pupa/err.h (PUPA_ERR_BAD_FONT): New constant.
+
+	* include/pupa/term.h: Include pupa/err.h.
+	(struct pupa_term): Added init and fini. 
+	Changed the argument of putchar to pupa_uint32_t.
+
+	* include/pupa/i386/pc/console.h: Include pupa/symbol.h.
+	(pupa_console_real_putchar): New prototype.
+	(pupa_console_putchar): Removed.
+	(pupa_console_checkkey): Exported.
+	(pupa_console_getkey): Likewise.
+
+	* kern/misc.c (pupa_vsprintf): Add support for UNICODE
+	characters.
+
+	* kern/term.c (pupa_term_set_current): Rewritten.
+	(pupa_putchar): Likewise.
+	(pupa_putcode): New function.
+
+	* kern/i386/pc/startup.S (pupa_console_putchar): Renamed to ...
+	(pupa_console_real_putchar): ... this.
+	(pupa_vga_set_mode): New function.
+	(pupa_vga_get_font): Likewise.
+
+	* normal/command.c: Include pupa/term.h.
+	(terminal_command): New function.
+	(pupa_command_init): Register the command "terminal".
+
+	* normal/menu.c (DISP_LEFT): Changed to a UNICODE value.
+	(DISP_UP): Likewise.
+	(DISP_RIGHT): Likewise.
+	(DISP_DOWN): Likewise.
+	(DISP_HLINE): Likewise.
+	(DISP_VLINE): Likewise.
+	(DISP_UL): Likewise.
+	(DISP_UR): Likewise.
+	(DISP_LL): Likewise.
+	(DISP_LR): Likewise.
+
+	* term/i386/pc/console.c (pupa_console_putchar): New function.
+	
+2003-02-08  NIIBE Yutaka  <gniibe@m17n.org>
+
+	* util/resolve.c (pupa_util_resolve_dependencies): BUG
+	FIX. Reverse the path_list.
+
+	* include/pupa/normal.h: Export pupa_register_command and
+	pupa_unregister_command.
+
+	* hello/hello.c (pupa_cmd_hello): New module.
+	* conf/i386-pc.rmk: Added hello.mod.
+
+2003-01-31  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* kern/i386/pc/lzo1x.S: New file.
+	
+	* util/i386/pc/pupa-mkimage.c: Include lzo1x.h.
+	(compress_kernel): New variable.
+	(generate_image): Heavily modified to support compressing a
+	large part of the core image.
+
+	* util/misc.c (pupa_util_read_image): Fix a file descriptor
+	leak.
+	(pupa_util_load_image): New function.
+
+	* kern/i386/pc/startup.S: Include pupa/machine/kernel.h.
+	(pupa_compressed_size): New variable.
+	(codestart): Enable Gate A20 here.
+	Decompress the compressed part of the core image.
+	Rearrange the code to put functions and variables which are
+	required for initialization in the non-compressed part.
+	Include lzo1x.S.
+
+	* kern/i386/pc/init.c (pupa_machine_init): Don't enable Gate A20
+	here.
+
+	* include/pupa/util/misc.h (pupa_util_write_image): Declared.
+
+	* include/pupa/i386/pc/kernel.h 
+	(PUPA_KERNEL_MACHINE_COMPRESSED_SIZE): New macro.
+	(PUPA_KERNEL_MACHINE_INSTALL_DOS_PART): Increased by 4.
+	(PUPA_KERNEL_MACHINE_INSTALL_BSD_PART): Likewise.
+	(PUPA_KERNEL_MACHINE_PREFIX): Likewise.
+	(PUPA_KERNEL_MACHINE_RAW_SIZE): New macro.
+
+	* conf/i386-pc.rmk (pupa_mkimage_LDFLAGS): New variable.
+
+	* genmk.rb (Image#rule): Put LDFLAGS at the end of a line.
+	(Utility#rule): Likewise.
+
+	* configure.ac: Check if LZO is available.
+
+2003-01-20  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* include/pupa/normal.h: New file.
+	* include/pupa/setjmp.h: Likewise.
+	* include/pupa/i386/setjmp.h: Likewise.
+	* normal/cmdline.c: Likewise.
+	* normal/command.c: Likewise.
+	* normal/main.c: Likewise.
+	* normal/menu.c: Likewise.
+	* normal/i386/setjmp.S: Likewise.
+	
+	* loader/i386/pc/linux.c (pupa_rescue_cmd_linux): Made global.
+	(pupa_rescue_cmd_initrd): Likewise.
+
+	* loader/i386/pc/chainloader.c (pupa_rescue_cmd_chainloader):
+	Likewise.
+
+	* kern/i386/pc/startup.S (translation_table): New variable.
+	(translate_keycode): New function.
+	(pupa_console_getkey): Call translate_keycode.
+
+	* kern/rescue.c (attempt_normal_mode): New function.
+	(pupa_enter_rescue_mode): Attempt to execute the normal mode. If
+	it failed, print a message.
+
+	* kern/mm.c (pupa_real_malloc): Print more information when a
+	free magic is broken.
+	(pupa_free): If the first free header is not free actually, set
+	it to P.
+
+	* kern/main.c (pupa_load_normal_mode): Just load the module
+	"normal".
+	(pupa_main): Don't print the message
+	"Entering into rescue mode..." here.
+
+	* include/pupa/i386/pc/loader.h (pupa_rescue_cmd_initrd):
+	Declared.
+	(pupa_rescue_cmd_initrd): Likewise.
+	(pupa_rescue_cmd_initrd): Likewise.
+
+	* include/pupa/symbol.h (FUNCTION): Specify the type.
+	(VARIABLE): Likewise.
+
+	* include/pupa/err.h (pupa_err_t): Added
+	PUPA_ERR_UNKNOWN_COMMAND.
+
+	* include/pupa/dl.h (pupa_dl_set_prefix): Exported.
+	(pupa_dl_get_prefix): Likewise.
+
+	* conf/i386-pc.rmk (pkgdata_MODULES): Added normal.mod.
+	Added _chain.mod and _linux.mod instead of chain.mod and
+	linux.mod.
+	(chain_mod_SOURCES): Renamed to ...
+	(_chain_mod_SOURCES): ... this.
+	(chain_mod_CFLAGS): Renamed to ...
+	(_chain_mod_CFLAGS): ... this.
+	(linux_mod_SOURCES): Renamed to ...
+	(_linux_mod_SOURCES): ... this.
+	(linux_mod_CFLAGS): Renamed to ...
+	(_linux_mod_CFLAGS): ... this.
+	(normal_mod_SOURCES): New variable.
+	(normal_mod_CFLAGS): Likewise.
+	(normal_mod_ASFLAGS): Likewise.
+
+2003-01-18  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* kern/rescue.c (pupa_rescue_cmd_rmmod): Call pupa_dl_unload, if
+	possible.
+
+	* kern/dl.c (pupa_dl_ref): Refer dependending modules
+	recursively.
+	(pupa_dl_unref): Unrefer depending modules recursively.
+	Don't call pupa_dl_unload implicitly, because PUPA can crash if
+	a module is unloaded before one depending on that module is
+	unloaded.
+	(pupa_dl_unload): Unload depending modules explicitly,
+	if possible.
+
+2003-01-17  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* include/pupa/i386/pc/linux.h: New file.
+	* loader/i386/pc/linux.c: Likewise.
+	
+	* loader/i386/pc/chainloader.c (pupa_chainloader_boot_sector):
+	Removed.
+	(pupa_chainloader_unload): Return PUPA_ERR_NONE.
+	(pupa_rescue_cmd_chainloader): Read the image to 0x7C00 instead
+	of PUPA_CHAINLOADER_BOOT_SECTOR.
+
+	* kern/i386/pc/startup.S: Include pupa/machine/linux.h.
+	(pupa_linux_prot_size): New variable.
+	(pupa_linux_tmp_addr): Likewise.
+	(pupa_linux_real_addr): Likewise.
+	(pupa_linux_boot_zimage): New function.
+	(pupa_linux_boot_bzimage): Likewise.
+
+	* kern/i386/pc/init.c (struct mem_region): New structure.
+	(MAX_REGIONS): New macro.
+	(mem_regions): New variable.
+	(num_regions): Likewise.
+	(pupa_os_area_addr): Likewise.
+	(pupa_os_area_size): Likewise.
+	(pupa_lower_mem): Likewise.
+	(pupa_upper_mem): Likewise.
+	(add_mem_region): New function.
+	(compact_mem_regions): Likewise.
+	(pupa_machine_init): Set PUPA_LOWER_MEM and PUPA_UPPER_MEM to
+	the size of the conventional memory and that of so-called upper
+	memory (before the first memory hole).
+	Instead of adding each found region to free memory, use
+	add_mem_region and add them after removing overlaps.
+	Also, add only 1/4 of the upper memory to free memory. The rest
+	is used for loading OS images. Maybe this is ad hoc, but this
+	makes it much easier to relocate OS images when booting.
+
+	* kern/rescue.c (pupa_rescue_cmd_module): Removed.
+	(pupa_enter_rescue_mode): Don't register initrd and module.
+
+	* kern/mm.c: Include pupa/dl.h.
+
+	* kern/main.c: Include pupa/file.h and pupa/device.h.
+
+	* kern/loader.c (pupa_loader_load_module_func): Removed.
+	(pupa_loader_load_module): Likewise.
+
+	* kern/dl.c (pupa_dl_load): Use the suffix ``.mod'' instead of
+	``.o''.
+
+	* include/pupa/i386/pc/loader.h (pupa_linux_prot_size): Declared.
+	(pupa_linux_tmp_addr): Likewise.
+	(pupa_linux_real_addr): Likewise.
+	(pupa_linux_boot_zimage): Likewise.
+	(pupa_linux_boot_bzimage): Likewise.
+
+	* include/pupa/i386/pc/init.h (pupa_lower_mem): Declared.
+	(pupa_upper_mem): Likewise.
+	(pupa_gate_a20): Don't export, because turning off Gate A20 in a
+	module is too dangerous.
+
+	* include/pupa/loader.h (pupa_os_area_addr): Declared.
+	(pupa_os_area_size): Likewise.
+	(pupa_loader_set): Remove the first argument. Loader doesn't
+	manage modules or initrd any longer.
+	(pupa_loader_load_module): Removed.
+
+	* conf/i386-pc.rmk (pkgdata_MODULES): Added linux.mod.
+	(linux_mod_SOURCES): New variable.
+	(linux_mod_CFLAGS): Likewise.
+
+2003-01-07  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* util/i386/pc/pupa-setup.c (setup): Convert the endianness of
+	the length of a blocklist correctly.
+
+	* util/i386/pc/biosdisk.c (pupa_util_biosdisk_open) [__linux__]:
+	Use ioctl only if the OS file is a block device.
+	(pupa_util_biosdisk_open): Don't use ST.ST_BLOCKS, because it is
+	not very useful for normal files.
+
+	* kern/main.c (pupa_set_root_dev): New function.
+	(pupa_load_normal_mode): Likewise.
+	(pupa_main): Call those above.
+
+	* include/pupa/types.h (pupa_swap_bytes16): Cast the result to
+	pupa_uint16_t.
+
+	* include/pupa/kernel.h (pupa_enter_normal_mode): Removed.
+
+2003-01-06  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* util/i386/pc/pupa-setup.c: Include pupa/machine/kernel.h.
+	(setup): Configure the installed partition information and the
+	dl prefix.
+
+	* loader/i386/pc/chainloader.c (my_mod): New variable.
+	(pupa_chainloader_unload): New function.
+	(pupa_rescue_cmd_chainloader): Refer itself.
+	(PUPA_MOD_INIT): Save its own module in MY_MOD.
+
+	* kern/i386/pc/startup.S (install_partition): Removed.
+	(version_string): Likewise.
+	(config_file): Likewise.
+	(pupa_install_dos_part): New variable.
+	(pupa_install_bsd_part): Likewise.
+	(pupa_prefix): Likewise.
+	(pupa_chainloader_real_boot): Call pupa_dl_unload_all.
+
+	* kern/i386/pc/init.c: Include pupa/machine/kernel.h, pupa/dl.h
+	and pupa/misc.h.
+	(make_install_device): New function.
+	(pupa_machine_init): Set the dl prefix.
+
+	* kern/rescue.c: Include pupa/rescue.h and pupa/dl.h.
+	(buf): Renamed to ...
+	(linebuf): ... this.
+	(pupa_rescue_cmd_prefix): New function.
+	(pupa_rescue_cmd_insmod): Likewise.
+	(pupa_rescue_cmd_rmmod): Likewise.
+	(pupa_rescue_cmd_lsmod): Likewise.
+	(pupa_enter_rescue_mode): Register new commands: prefix, insmod,
+	rmmod and lsmod.
+
+	* kern/mm.c (pupa_memalign): If failed even after invalidating
+	disk caches, unload unneeded modules and retry.
+
+	* kern/misc.c (pupa_memmove): New function.
+	(pupa_memcpy): Removed.
+	(pupa_strcpy): New function.
+	(pupa_itoa): Made static.
+
+	* kern/dl.c (pupa_dl_iterate): New function.
+	(pupa_dl_ref): Likewise.
+	(pupa_dl_unref): Likewise.
+	(pupa_dl_unload): Return if succeeded or not.
+	(pupa_dl_unload_unneeded): New function.
+	(pupa_dl_unload_all): Likewise.
+	(pupa_dl_init): Renamed to ...
+	(pupa_dl_set_prefix): ... this.
+	(pupa_dl_get_prefix): New function.
+
+	* include/pupa/i386/pc/kernel.h: Include pupa/types.h.
+	(PUPA_KERNEL_MACHINE_INSTALL_DOS_PART): New macro.
+	(PUPA_KERNEL_MACHINE_INSTALL_BSD_PART): Likewise.
+	(PUPA_KERNEL_MACHINE_PREFIX): Likewise.
+	(pupa_install_dos_part): Declared.
+	(pupa_install_bsd_part): Likewise.
+	(pupa_prefix): Likewise.
+	(pupa_boot_drive): Likewise.
+
+	* include/pupa/types.h: Fix a typo.
+
+	* include/pupa/misc.h (pupa_memcpy): New macro. Just an alias to
+	pupa_memmove.
+	(pupa_memmove): Declared.
+	(pupa_strcpy): Likewise.
+
+	* include/pupa/dl.h (PUPA_MOD_INIT): Change the prototype. Now
+	pupa_mod_init takes one argument, its own module.
+	(pupa_dl_unload_unneeded): Declared.
+	(pupa_dl_unload_all): Likewise.
+	(pupa_dl_ref): Likewise.
+	(pupa_dl_unref): Likewise.
+	(pupa_dl_iterate): Likewise.
+	(pupa_dl_init): Renamed to ...
+	(pupa_dl_set_prefix): ... this.
+	(pupa_dl_get_prefix): Declared.
+
+	* fs/fat.c [!PUPA_UTIL] (my_mod): New variable.
+	(pupa_fat_dir) [!PUPA_UTIL]: Prevent the fat module from being 
+	unloaded.
+	(pupa_fat_open) [!PUPA_UTIL]: Refer itself if succeeded.
+	(pupa_fat_close) [!PUPA_UTIL]: Unrefer itself.
+
+	* configure.ac (tmp_CFLAGS): Added -Wshadow, -Wpointer-arith,
+	-Wmissing-prototypes, -Wundef and -Wstrict-prototypes.
+
+2003-01-03  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* util/i386/pc/pupa-setup.c (setup): Define the internal
+	function find_first_partition_start at the top level, because GCC
+	3.0.x cannot compile internal functions in deeper scopes
+	correctly.
+	(find_root_device): Use lstat instead of stat.
+	Don't follow symbolic links.
+	Fix the path-constructing code.
+
+	* util/i386/pc/biosdisk.c [__linux__] (BLKFLSBUF): New macro.
+	(pupa_util_biosdisk_open) [__linux__]: Get the size of a device
+	by a BLKGETSIZE ioctl first, because block devices don't fill
+	the member st_mode of the structure stat on Linux.
+	[__linux__] (linux_find_partition): Use a temporary buffer
+	REAL_DEV for the working space. Copy it to DEV before returning.
+	(open_device) [__linux__]: Call ioctl with BLKFLSBUF to make the
+	buffer cache consistent.
+	(get_os_disk) [__linux__]: Use the length 5 instead of 4 for
+	strncmp. The previous value was merely wrong.
+	(pupa_util_biosdisk_get_pupa_dev): Use stat instead of lstat.
+
+	* fs/fat.c (pupa_fat_read_data): Shift 4 instead of 12 when the
+	FAT size is 12. The previous value was merely wrong.
+
+	* kern/main.c (pupa_main): Don't split the starting message from
+	newlines.
+
+	* kern/term.c (pupa_putchar): Put CR after LF instead of before
+	LF, because BIOS goes crazy about character attributes in this
+	case.
+
+2003-01-03  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* include/i386/pc/util/biosdisk.h: New file.
+	* util/i386/pc/biosdisk.c: Likewise.
+	* util/i386/pc/pupa-setup.c: Likewise.
+	
+	* Makefile.in (INCLUDE_DISTFILES): Added
+	include/pupa/i386/pc/util/biosdisk.h.
+	(UTIL_DISTFILES): Added biosdisk.c and pupa-setup.c under the
+	directory util/i386/pc.
+	(install-local): Added a rule for sbin_UTILITIES.
+	(uninstall): Likewise.
+
+	* util/i386/pc/pupa-mkimage.c (usage): Fix a typo in the doc.
+
+	* util/misc.c (xrealloc): New function.
+	(pupa_malloc): Likewise.
+	(pupa_free): Likewise.
+	(pupa_realloc): Likewise.
+	(pupa_stop): Likewise.
+	(pupa_putchar): Likewise.
+
+	* kern/disk.c (pupa_disk_read): Prevent L from underflowing.
+
+	* include/pupa/util/misc.h (xrealloc): Declared.
+
+	* include/pupa/i386/pc/boot.h (PUPA_BOOT_MACHINE_BPB_START): New
+	macro.
+	(PUPA_BOOT_MACHINE_BPBEND): Renamed to ...
+	(PUPA_BOOT_MACHINE_BPB_END): ... this.
+
+	* include/pupa/fs.h [PUPA_UTIL] (pupa_fat_init): Declared.
+	[PUPA_UTIL] (pupa_fat_fini): Likewise.
+
+	* fs/fat.c [PUPA_UTIL] (pupa_fat_init): Defined. Maybe a better
+	way should be implemented.
+	[PUPA_UTIL] (pupa_fat_fini): Likewise.
+
+	* disk/i386/pc/biosdisk.c (pupa_biosdisk_call_hook): Increase
+	the size of NAME for safety.
+	(pupa_biosdisk_iterate): Search hard disks to 0x90 instead of
+	0x88.
+
+	* conf/i386-pc.rmk (sbin_UTILITIES): New variable.
+	(pupa_setup_SOURCES): Likewise.
+
+	* genmk.rb (Utility#rule): Add $(BUILD_CFLAGS) into the rules.
+
+2002-12-28  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* kern/i386/pc/startup.S (push_get_mmap_entry): Revert to a
+	bunch of pushl's from pusha, because this destroys the return
+	value.
+
+2002-12-28  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	Use -mrtd and -mregparm=3 to reduce the generated code sizes.
+	This means that any missing prototypes could be fatal. Also, you
+	must take care when writing assembly code. See the comments at
+	the beginning of startup.S, for more details.
+	
+	* kern/i386/pc/startup.S (pupa_halt): Modified for the new
+	compilation mechanism.
+	(pupa_chainloader_real_boot): Likewise.
+	(pupa_biosdisk_rw_int13_extensions): Likewise.
+	(pupa_biosdisk_rw_standard): Likewise.
+	(pupa_biosdisk_check_int13_extensions): Likewise.
+	(pupa_biosdisk_get_diskinfo_int13_extensions): Likewise.
+	(pupa_biosdisk_get_diskinfo_standard): Likewise.
+	(pupa_get_memsize): Likewise.
+	(pupa_get_mmap_entry): Likewise.
+	(pupa_console_putchar): Likewise.
+	(pupa_console_setcursor): Likewise.
+	(pupa_getrtsecs): Use pushl instead of push.
+
+	* kern/i386/pc/init.c (pupa_machine_init): Use the scratch
+	memory instead of the stack for a mmap entry, because some
+	BIOSes may ignore the maximum size and overflow.
+
+	* conf/i386-pc.rmk (COMMON_CFLAGS): Added -mrtd and -mregparm=3.
+
+	* genmk.rb (PModule#rule): Compile automatically generated
+	sources with module-specific CFLAGS as well as other sources.
+
+2002-12-27  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* configure.ac: Check ld.
+	Replace CFLAGS and CPPFLAGS with BUILD_CFLAGS and BUILD_CPPFLAGS
+	respectively, before checking endianness and sizes.
+
+	* Makefile.in (LD): New variable.
+	
+2002-12-27  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* Makefile.in (BUILD_CC): CC -> BUILD_CC.
+
+2002-12-27  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* Changelog: New file.
+
