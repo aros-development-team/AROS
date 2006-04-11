@@ -1,60 +1,4 @@
 /*
-
-CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S,PORT/K,QUIET/S
-
-MAKEBIG
-MAKESMALL
-CYCLE
-CYCLESCREEN
-ZIPWINDOW
-RESCUEWIN
-INSERT text
-RUN command
-AREXX script
-
-popkey = ctrl alt f
-
-FKey: Tastenbefehl = <control alt f>
-Definierte Tasten
-Neue Taste    Taste löschen
-Befehl
-Befehlsargumente
-* Durch Fenster blättern
-Durch Schirme blättern
-Fenster vergrößern
-Fenster verkleinern
-Fenstergröße umschalten
-Text einfügen
-Programm starten
-ARexx-Skript starten
-Projekt
-Belegung speichern S
-Verbergen H
-Ikonifizieren I
-Beenden Q
-
-FKey: Hot Key = <control alt f>
-Defined Keys
-New Key   Delete Key
-Command
-Command Parameters
-* Cycle Windows
-Cycle Screens
-Enlarge Window
-Shrink Window
-Toggle Window Size
-Insert Text
-Run Program
-Run Arexx Script
-Project
-Save Defined Keys S
-Hide H
-Iconify I
-Quit Q
-
-*/
-
-/*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
@@ -97,9 +41,9 @@ Quit Q
 /*********************************************************************************************/
 
 #define VERSION 	1
-#define REVISION 	3
-#define DATESTR 	"04.03.2006"
-#define VERSIONSTR	"$VER: FKey 1.3 (" DATESTR ")"
+#define REVISION 	4
+#define DATESTR 	"11.04.2006"
+#define VERSIONSTR	"$VER: FKey 1.4 (" DATESTR ")"
 
 /*********************************************************************************************/
 
@@ -368,7 +312,7 @@ static void GetArguments(int argc, char **argv)
     	wbargs = ArgArrayInit(argc, (UBYTE **)argv);
 
 	cx_pri = ArgInt(wbargs, "CX_PRIORITY", 0);
-	cx_popkey = ArgString(wbargs, "CX_POPKEY", "ctrl alt f");
+	cx_popkey = ArgString(wbargs, "CX_POPKEY", cx_popkey);
 	
 	if (strnicmp(ArgString(wbargs, "CX_POPUP", "NO"), "Y", 1) == 0)
 	{
@@ -457,7 +401,7 @@ static void MakeGUI(void)
     };
     static TEXT wintitle[100];
     WORD i;
-    Object *menu, *newkey, *delkey;
+    Object *menu, *newkey, *delkey, *savekey;
     
     for(i = 0; cmdarray[i]; i++)
     {
@@ -516,6 +460,7 @@ static void MakeGUI(void)
 		    	Child, newkey = SimpleButton(MSG(MSG_FKEY_NEW_KEY)),
 			Child, delkey = SimpleButton(MSG(MSG_FKEY_DELETE_KEY)),
 			End,
+		    Child, savekey = SimpleButton(MSG(MSG_FKEY_SAVE_KEY)),
 		    End,
 		Child, VGroup,
 		    GroupFrameT(MSG(MSG_FKEY_COMMAND)),
@@ -598,6 +543,7 @@ static void MakeGUI(void)
     DoMethod(cmdcycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_CMDACK);
     DoMethod(newkey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_NEWKEY);
     DoMethod(delkey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_DELKEY);
+    DoMethod(savekey, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_SAVE);
     DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_LVACK);
     DoMethod(liststr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_STRINGACK);
     DoMethod(insertstr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_ReturnID, RETURNID_CMDACK);
