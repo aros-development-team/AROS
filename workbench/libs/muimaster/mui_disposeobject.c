@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,9 +20,12 @@
 	struct Library *, MUIMasterBase, 6, MUIMaster)
 
 /*  FUNCTION
-
+	Deletes MUI object and its child objects.
+	
     INPUTS
-
+	obj -- pointer to MUI object created with MUI_NewObject. Maybe NULL,
+	in which case this function has no effect.
+	
     RESULT
 
     NOTES
@@ -40,12 +43,15 @@
 	OCLASS(obj)->h_Data if cl_ID!=NULL && h_Data!=NULL.
 
     HISTORY
-
+	2006-04-11 NULL check added.
+	
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
+    if ( ! obj) return;
+    
     Class *cl = OCLASS(obj);
 
     DisposeObject(obj);
