@@ -1,5 +1,5 @@
 /* 
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -45,6 +45,7 @@ extern struct Library *MUIMasterBase;
 struct MUI_StringData {
     ULONG        msd_Flags;
     CONST_STRPTR msd_Accept; /* MUIA_String_Accept */
+    CONST_STRPTR msd_Reject; /* MUIA_String_Reject */
     LONG         msd_Align;
     struct Hook *msd_EditHook;
     Object      *msd_AttachedList;
@@ -405,6 +406,10 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->msd_Accept = (CONST_STRPTR)tag->ti_Data;
 		break;
 
+	    case  MUIA_String_Reject:
+		data->msd_Reject = (CONST_STRPTR)tag->ti_Data;
+		break;
+
             case MUIA_String_AdvanceOnCR:
 		_handle_bool_tag(data->msd_Flags, tag->ti_Data, MSDF_ADVANCEONCR);
 		break;
@@ -523,6 +528,10 @@ static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	    case MUIA_String_Accept:
 		data->msd_Accept = (CONST_STRPTR)tag->ti_Data;
+		break;
+
+	    case MUIA_String_Reject:
+		data->msd_Reject = (CONST_STRPTR)tag->ti_Data;
 		break;
 
             case MUIA_String_AttachedList:
@@ -1320,6 +1329,16 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
     	/* Check if character is accepted */
 	if (NULL == strchr(data->msd_Accept, code))
 	    return 0;
+    }
+
+    if (data->msd_Reject != NULL)
+    {
+    	/* Check if character is rejected */
+	if (NULL != strchr(data->msd_Reject, code))
+	{
+	    DisplayBeep(NULL);
+	    return 0;
+	}
     }
 
     if (doinput && isprint(code))
