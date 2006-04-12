@@ -194,7 +194,9 @@ static void sighandler(int sig, sigcontext_t * sc)
 
 	/* Save registers for this task (if there is one...) */
 	if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
+	{
 	    SAVEREGS(SysBase->ThisTask, sc);
+	}
 
 	/* Tell exec that we have actually switched tasks... */
 	Dispatch ();
