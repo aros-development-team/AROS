@@ -218,17 +218,19 @@ ADD2EXIT(name ## _Deinitialize, 100);                                 \
 
 /*************************************************************************/
 
+#define __ZUNE_CUSTOMCLASS_REMPARENS(...) __VA_ARGS__
+
 #define __ZUNE_CUSTOMCLASS_INLINEMETHOD(cname, mname, m_msg_type, m_code) \
 IPTR mname(Class *CLASS, Object *self, m_msg_type message);               \
 IPTR mname(Class *CLASS, Object *self, m_msg_type message)                \
 {                                                                         \
     struct cname ## _DATA *data __unused = INST_DATA(CLASS, self);        \
                                                                           \
-    (void)m_code;                                                         \
+    { __ZUNE_CUSTOMCLASS_REMPARENS m_code }                               \
 }
 
 #define __ZUNE_CUSTOMCLASS_INSTDATA(cname, inst_data) \
-    struct cname ## _DATA inst_data
+    struct cname ## _DATA { __ZUNE_CUSTOMCLASS_REMPARENS inst_data }
 
 #define ZUNE_CUSTOMCLASS_INLINE_1(name, base, parent_name, parent_class,           \
                                   inst_data,                                       \
