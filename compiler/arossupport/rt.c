@@ -889,17 +889,6 @@ RTDesc const * RT_Resources[RTT_MAX];
 	Utility functions
 **************************************/
 
-char * StrDup (const char * str)
-{
-    AROS_GET_SYSBASE_OK
-    char * copy;
-
-    if ((copy = AllocVec (strlen (str)+1, MEMF_ANY)))
-	strcpy (copy, str);
-
-    return copy;
-}
-
 BOOL CheckPtr (APTR ptr, ULONG flags)
 {
     if
