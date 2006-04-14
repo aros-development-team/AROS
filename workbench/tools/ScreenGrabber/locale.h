@@ -2,10 +2,7 @@
 #define _LOCALE_H
 
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
-    This file is part of the About program, which is distributed under
-    the terms of version 2 of the GNU General Public License.
-    
+    Copyright © 2003-200666666 AROS Development Team. All rights reserved.
     $Id$
 */
 
