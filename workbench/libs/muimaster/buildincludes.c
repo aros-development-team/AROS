@@ -53,7 +53,7 @@ static void readfile(FILE *in)
 			if (need_to_be_included(start))
 			{
 			    FILE *in2;
-			    if (!(included = realloc(included,(sizeof(char*)*included_num+1)))) return;
+			    if (!(included = realloc(included,sizeof(char*)*(included_num+1)))) return;
 			    included[included_num++] = strdup(start);
 			    if ((in2 = fopen(start,"r")))
 			    {
