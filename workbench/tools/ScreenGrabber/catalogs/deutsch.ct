@@ -1,44 +1,93 @@
-## version $VER: ScreenGrabber.catalog 1.0 (27.01.2005)
+## version $VER: ScreenGrabber.catalog 1.1 (14.04.2006)
 ## language deutsch
 ## codeset 0
+;
 ;
 MSG_WINDOW_TITLE
 Screen Abbild
 ; ScreenGrabber
+;
 MSG_REFRESH
 Aktualisieren
+; Refresh list
 ;
 MSG_SCREEN_INFO
 Screen Info
 ; Screen info
+;
 MSG_SIZE
 Größe
 ; Size
+;
 MSG_TITLE
 Titel
 ; Title
+;
 MSG_DEFAULT_TITLE
 Standard Titel
 ; Default title
+;
 MSG_GRABBING_OPTIONS
 Abbildungs-Optionen
 ; Grabbing options
+;
 MSG_DELAY
 Zeitverzögerung (s)
 ; Delay (s)
+;
 MSG_HIDE
 dieses Fenster verstecken
-;Hide the grabber window
+; Hide the grabber window
+;
 MSG_SAVE_OPTIONS
 Optionen Speichern
-;Save options
+; Save options
+;
 MSG_SAVE_FILE
 Datei Speichern
-;Save file
+; Save file
 ;
 MSG_SCREENSHOT
 Abbild
-;Screenshot
+; Screenshot
+;
 MSG_SCREEN_PARM
-%d x %d, tiefe=%d
-;%d x %d, depth=%d
+%d x %d, Tiefe=%d
+; %d x %d, depth=%d
+;
+MSG_OVERWRITE
+Datei '%s' existiert bereits.\nWollen Sie sie wirklich überschreiben?
+; File '%s' already exists.\nDo you really want to overwrite it?
+;
+MSG_ERROR_TITLE
+Screengrabber Fehler
+; Screengrabber Error
+;
+MSG_GAD_OK
+_OK
+; _OK
+;
+MSG_GAD_YESNO
+Ja|Nein
+; YES|NO
+;
+MSG_ERR_DATATYPE
+Kann Datatype Objekt nicht erzeugen!
+; Can't create datatype object!
+;
+MSG_NORAM
+Kann keinen Speicher anfordern!
+; Can't allocate RAM!
+;
+MSG_ERR_DATATYPEIO
+Schreiben von '%s' schlug fehl mit IO Fehler %ld!
+; Writing of '%s' failed with IO Error %ld!
+;
+MSG_ERR_OPENFILE
+Kann Datei '%s' nicht für Ausgabe öffnen!
+; Can't open file '%s' for output!
+;
+MSG_ERR_APP
+Kann Application Objekt nicht erzeugen!
+; Can't create application object!
+;

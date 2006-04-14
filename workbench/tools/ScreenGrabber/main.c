@@ -1,3 +1,8 @@
+/*
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #define DEBUG 1
 #define MUI_OBSOLETE
 
@@ -21,28 +26,20 @@
 #include "locale.h"
 
 #define APPNAME "ScreenGrabber"
-#define VERSION "ScreenGrabber 0.2 (19.11.2005)"
+#define VERSION "ScreenGrabber 0.3 (14.04.2006)"
 
-static const char version[] = "$VER: " VERSION "\n";
+static const char version[] = "$VER: " VERSION " ©2006 AROS Dev Team";
 
-Object *app, *MainWindow, *ScreenList, *FilenameString, *SaveButton, *RefreshButton, *GrabButton;
-Object *Size, *Title, *DefTitle, *Delay, *Hide, *Progress;
+static Object *app, *MainWindow, *ScreenList, *FilenameString, *SaveButton, *RefreshButton, *GrabButton;
+static Object *Size, *Title, *DefTitle, *Delay, *Hide, *Progress;
 
-Object *DTImage = NULL;
+static Object *DTImage = NULL;
 
-
-LONG xget(Object *obj, ULONG attr)
-{
-    LONG x=0;
-    get(obj, attr, &x);
-    return x;
-}
-
-struct Hook display_hook;
-struct Hook refresh_hook;
-struct Hook select_hook;
-struct Hook grab_hook;
-struct Hook save_hook;
+static struct Hook display_hook;
+static struct Hook refresh_hook;
+static struct Hook select_hook;
+static struct Hook grab_hook;
+static struct Hook save_hook;
 
 AROS_UFH3(void, display_function,
     AROS_UFHA(struct Hook *, h, A0),
@@ -62,7 +59,7 @@ AROS_UFH3(void, display_function,
     AROS_USERFUNC_EXIT
 }
 
-void RefreshScreens()
+static void RefreshScreens()
 {
     struct List *list;
     struct PubScreenNode *psn;
@@ -98,7 +95,7 @@ AROS_UFH3(void, select_function,
 {
     AROS_USERFUNC_INIT
 
-    ULONG active = xget(object, MUIA_List_Active);
+    ULONG active = XGET(object, MUIA_List_Active);
 
     if (active != MUIV_List_Active_Off)
     {
@@ -140,10 +137,10 @@ AROS_UFH3(void, grab_function,
     struct PubScreenNode *psn;
     struct Screen *screen;
 
-    delay = xget(Delay, MUIA_Slider_Level) * 10;
-    hide_win = xget(Hide, MUIA_Selected);
+    delay = XGET(Delay, MUIA_Slider_Level) * 10;
+    hide_win = XGET(Hide, MUIA_Selected);
    
-    active = xget(ScreenList, MUIA_List_Active);
+    active = XGET(ScreenList, MUIA_List_Active);
     DoMethod(ScreenList, MUIM_List_GetEntry, active, (IPTR)&psn);
     screen = LockPubScreen(psn->psn_Node.ln_Name);
 
@@ -152,32 +149,32 @@ AROS_UFH3(void, grab_function,
     if (screen)
     {
 	APTR dst;
-	
+
 	if (delay)
 	{
 	    set(Progress, MUIA_Gauge_Current, delay);
 	    set(Progress, MUIA_Gauge_Max, delay);
 	}
 	else if (hide_win) set(MainWindow, MUIA_Window_Open, FALSE);
-    
+
 	while(delay) {
 	    delay--;
 	    set(Progress, MUIA_Gauge_Current, delay);
 	    Delay(5);
 	    if ((delay < 5) && hide_win) set(MainWindow, MUIA_Window_Open, FALSE);
 	}
-   
-        dst = AllocVec(4*screen->Width, MEMF_ANY);
+
+	dst = AllocVec(4*screen->Width, MEMF_ANY);
 	if (dst)
 	{
 
 	    if (DTImage) DisposeDTObject(DTImage);
 
 	    DTImage = NewDTObject((APTR)NULL,
-		DTA_SourceType, DTST_RAM,
-		DTA_BaseName, (IPTR)"jpeg",
-		PDTA_DestMode, PMODE_V43,
-		TAG_DONE);
+		    DTA_SourceType, DTST_RAM,
+		    DTA_BaseName, (IPTR)"jpeg",
+		    PDTA_DestMode, PMODE_V43,
+		    TAG_DONE);
 
 	    if (DTImage)
 	    {
@@ -206,19 +203,28 @@ AROS_UFH3(void, grab_function,
 			ReadPixelArray(dst, 0, 0, 4*screen->Width, &screen->RastPort, 0, y, screen->Width, 1, RECTFMT_ARGB);
 			dtb.pbpa_Top = y;
 
-		        DoMethodA(DTImage, (Msg) &dtb);
+			DoMethodA(DTImage, (Msg) &dtb);
 		    }
-		    
+
 		    set(SaveButton, MUIA_Disabled, FALSE);
 		}
+	    }
+	    else
+	    {
+		MUI_Request(app, MainWindow, 0, _(MSG_ERROR_TITLE), _(MSG_GAD_OK), _(MSG_ERR_DATATYPE), NULL );
 	    }
 
 	    FreeVec(dst);
 	}
- 
+	else
+	{
+	    MUI_Request(app, MainWindow, 0, _(MSG_ERROR_TITLE), _(MSG_GAD_OK), _(MSG_NORAM), NULL);
+	}
+
+
 	if (hide_win)
 	    set(MainWindow, MUIA_Window_Open, TRUE);
-	
+
 	UnlockPubScreen(NULL, screen);
     }
     
@@ -234,21 +240,56 @@ AROS_UFH3(void, save_function,
 
     struct dtWrite dtw;
     UBYTE *filename;
+    UBYTE *infofilename;
     BPTR fh;
+    BPTR oldfile;
+    BPTR oldinfofile;
 
-    filename = (UBYTE*)xget(FilenameString, MUIA_String_Contents);
+    filename = (UBYTE*)XGET(FilenameString, MUIA_String_Contents);
 
+    // Does file or icon already exist?
+    infofilename = AllocVec(strlen(filename) + 6, MEMF_ANY);
+    if ( infofilename == NULL )
+    {
+	MUI_Request(app, MainWindow, 0, _(MSG_ERROR_TITLE), _(MSG_GAD_OK), _(MSG_NORAM), NULL);
+	return;
+    }
+    strcpy(infofilename, filename);
+    strcat(infofilename, ".info");
+
+    oldfile = Open(filename, MODE_OLDFILE);
+    oldinfofile = Open(infofilename, MODE_OLDFILE);
+    if (oldfile || oldinfofile)
+    {
+	if (oldfile) Close(oldfile);
+	if (oldinfofile) Close(oldinfofile);
+	if (MUI_Request(app, MainWindow, 0, _(MSG_ERROR_TITLE), _(MSG_GAD_YESNO), _(MSG_OVERWRITE), filename ) == 0)
+	{
+	    FreeVec(infofilename);
+	    return;
+	}
+    }
+    FreeVec(infofilename);
+    
     if ((fh = Open(filename, MODE_NEWFILE)))
     {
-        dtw.MethodID = DTM_WRITE;
-        dtw.dtw_GInfo = NULL;
-        dtw.dtw_FileHandle = fh;
-        dtw.dtw_Mode = DTWM_RAW;
-        dtw.dtw_AttrList = NULL;
+	dtw.MethodID = DTM_WRITE;
+	dtw.dtw_GInfo = NULL;
+	dtw.dtw_FileHandle = fh;
+	dtw.dtw_Mode = DTWM_RAW;
+	dtw.dtw_AttrList = NULL;
 
-        DoMethodA(DTImage, (Msg) &dtw);
+	DoMethodA(DTImage, (Msg) &dtw);
+	if (IoErr())
+	{
+	    MUI_Request(app, MainWindow, 0, _(MSG_ERROR_TITLE), _(MSG_GAD_OK), _(MSG_ERR_DATATYPEIO), filename, IoErr() );
+	}
 
-        Close(fh);
+	Close(fh);
+    }
+    else
+    {
+	MUI_Request(app, MainWindow, 0, _(MSG_ERROR_TITLE), _(MSG_GAD_OK), _(MSG_ERR_OPENFILE), filename);
     }
 
     AROS_USERFUNC_EXIT
@@ -265,11 +306,10 @@ BOOL GUIInit()
     app = ApplicationObject,
 	    MUIA_Application_Title, (IPTR)APPNAME,
 	    MUIA_Application_Version, (IPTR)VERSION,
-	    MUIA_Application_Copyright, (IPTR)"© 2004, The AROS Development Team",
+	    MUIA_Application_Copyright, (IPTR)"© 2004-2006, The AROS Development Team",
 	    MUIA_Application_Author, (IPTR)"Michal Schulz",
-	    MUIA_Application_Description, __(MSG_WINDOW_TITLE),
+	    MUIA_Application_Description, _(MSG_WINDOW_TITLE),
 	    MUIA_Application_Base, (IPTR)APPNAME,
-	    // MUIA_Application_Description, ...,
 
 	    SubWindow, MainWindow = WindowObject,
 		MUIA_Window_Title, _(MSG_WINDOW_TITLE),
@@ -341,15 +381,15 @@ BOOL GUIInit()
 				End,
 				Child, SaveButton = MUI_MakeObject(MUIO_Button, _(MSG_SAVE_FILE)),
 			    End,
-//			End,
-		    Child, Progress = GaugeObject,
-			GaugeFrame,
-			MUIA_Gauge_Horiz, TRUE,
-			MUIA_FixHeight, 8,
-			MUIA_Gauge_Current, 0,
-		    End, End,
+			    Child, Progress = GaugeObject,
+				GaugeFrame,
+				MUIA_Gauge_Horiz, TRUE,
+				MUIA_FixHeight, 8,
+				MUIA_Gauge_Current, 0,
+			    End,
+			End,
 		    
-		    Child, GrabButton = MUI_MakeObject(MUIO_Button, _(MSG_SCREENSHOT)),
+			Child, GrabButton = MUI_MakeObject(MUIO_Button, _(MSG_SCREENSHOT)),
 		    End,
 		End, // WindowContents
 	    End, // WindowObject
@@ -362,13 +402,13 @@ BOOL GUIInit()
 	set(GrabButton, MUIA_Disabled, TRUE);
 
 	DoMethod(RefreshButton, MUIM_Notify, MUIA_Pressed, FALSE,
-	    (IPTR)app, 3, MUIM_CallHook, (IPTR)&refresh_hook);
+	    (IPTR)app, 2, MUIM_CallHook, (IPTR)&refresh_hook);
 
 	DoMethod(GrabButton, MUIM_Notify, MUIA_Pressed, FALSE,
-	    (IPTR)app, 3, MUIM_CallHook, (IPTR)&grab_hook);
+	    (IPTR)app, 2, MUIM_CallHook, (IPTR)&grab_hook);
 
 	DoMethod(SaveButton, MUIM_Notify, MUIA_Pressed, FALSE,
-	    (IPTR)app, 3, MUIM_CallHook, (IPTR)&save_hook);
+	    (IPTR)app, 2, MUIM_CallHook, (IPTR)&save_hook);
 
 	DoMethod(ScreenList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
 	    (IPTR)ScreenList, 2, MUIM_CallHook, (IPTR)&select_hook);
@@ -382,19 +422,6 @@ BOOL GUIInit()
     return retval;
 }
 
-void loop(void)
-{
-    ULONG sigs=0;
-
-    while((LONG)DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) != MUIV_Application_ReturnID_Quit)
-    {
-	if (sigs)
-	{
-	    sigs = Wait(sigs);
-	}
-    }
-}
-
 int main()
 {
     display_hook.h_Entry = (APTR)display_function;
@@ -402,21 +429,24 @@ int main()
     select_hook.h_Entry = (APTR)select_function;
     grab_hook.h_Entry = (APTR)grab_function;
     save_hook.h_Entry = (APTR)save_function;
-    Locale_Initialize();
     if (GUIInit())
     {
 	set(MainWindow, MUIA_Window_Open, TRUE);
-	if (xget(MainWindow, MUIA_Window_Open))
+	if (XGET(MainWindow, MUIA_Window_Open))
 	{
 	    RefreshScreens();
-	    loop();
+	    DoMethod(app, MUIM_Application_Execute);
 	}
 	set(MainWindow, MUIA_Window_Open, FALSE);
-	DisposeObject(app);
+	MUI_DisposeObject(app);
 	if (DTImage) DisposeDTObject(DTImage);
 	DTImage = NULL;
     }
-    Locale_Deinitialize();
+    else
+    {
+	MUI_Request(NULL, NULL, 0, _(MSG_ERROR_TITLE), _(MSG_GAD_OK), _(MSG_ERR_APP), NULL);
+	return RETURN_FAIL;
+    }
 
-    return 0;
+    return RETURN_OK;
 }

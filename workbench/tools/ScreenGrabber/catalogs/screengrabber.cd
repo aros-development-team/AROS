@@ -38,3 +38,30 @@ Screenshot
 MSG_SCREEN_PARM (//)
 %d x %d, depth=%d
 ;
+MSG_OVERWRITE (//)
+File '%s' already exists.\nDo you really want to overwrite it?
+;
+MSG_ERROR_TITLE (//)
+Screengrabber Error
+;
+MSG_GAD_OK (//)
+_OK
+;
+MSG_GAD_YESNO (//)
+YES|NO
+;
+MSG_ERR_DATATYPE (//)
+Can't create datatype object!
+;
+MSG_NORAM (//)
+Can't allocate RAM!
+;
+MSG_ERR_DATATYPEIO (//)
+Writing of '%s' failed with IO Error %ld!
+;
+MSG_ERR_OPENFILE (//)
+Can't open file '%s' for output!
+;
+MSG_ERR_APP (//)
+Can't create application object!
+;
