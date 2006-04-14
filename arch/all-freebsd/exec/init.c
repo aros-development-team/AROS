@@ -8,6 +8,7 @@
 
 #include <exec/types.h>
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
 
@@ -111,12 +112,15 @@ static const struct Resident *romtagList[] =
 };
 
 /* So we can examine the memory */
-struct MemHeader mh;
+struct MemHeaderExt mhe;
+struct MemHeader *mh = &mhe.mhe_MemHeader;
 UBYTE *memory, *space;
 int memSize = 8;
 
 extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
+
+extern char _start, _end;
 
 /*
     This is where AROS is first called by whatever system loaded it,
@@ -215,22 +219,37 @@ int main(int argc, char **argv)
     }
 
     /* Prepare the first mem header */
-    mh.mh_Node.ln_Name = "chip memory";
-    mh.mh_Node.ln_Pri = -5;
-    mh.mh_Attributes = MEMF_CHIP | MEMF_PUBLIC;
-    mh.mh_First = (struct MemChunk *)
+    mh->mh_Node.ln_Name = "chip memory";
+    mh->mh_Node.ln_Pri = -5;
+    mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC;
+    mh->mh_First = (struct MemChunk *)
 	    (((IPTR)memory + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
-    mh.mh_First->mc_Next = NULL;
-    mh.mh_First->mc_Bytes = memSize << 20;
-    mh.mh_Lower = memory;
-    mh.mh_Upper = memory + MEMCHUNK_TOTAL + mh.mh_First->mc_Bytes;
-    mh.mh_Free = mh.mh_First->mc_Bytes;
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_First->mc_Bytes = memSize << 20;
+    mh->mh_Lower = memory;
+    mh->mh_Upper = memory + MEMCHUNK_TOTAL + mh->mh_First->mc_Bytes;
+    mh->mh_Free = mh->mh_First->mc_Bytes;
 
     /*
 	This will prepare enough of ExecBase to allow us to
 	call functions, it will also set up the memory list.
     */
-    SysBase = PrepareExecBase(&mh);
+    SysBase = PrepareExecBase(mh);
+
+    if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
+    {
+        /* These symbols are provided by the linker on most platforms */
+        mh->mh_Node.ln_Type = NT_MEMORY;
+        mh->mh_Node.ln_Name = "rom memory";
+        mh->mh_Node.ln_Pri = -128;
+        mh->mh_Attributes = MEMF_KICK;
+        mh->mh_First = NULL;
+        mh->mh_Lower = (APTR)&_start;
+        mh->mh_Upper = (APTR)&_end;
+        mh->mh_Free = 0;
+        Forbid();
+        Enqueue(&SysBase->MemList, &mh->mh_Node);
+    }
 
     /* Ok, lets start up the kernel, we are probably using the UNIX
        kernel, or a variant of that (see config/unix).
