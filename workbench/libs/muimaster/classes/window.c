@@ -218,11 +218,14 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     }
     else
     {
-     	if (!(mri->mri_Screen = LockPubScreen(data->wd_UserPublicScreen)))
-    	{
-    	    return FALSE;
+	if (!(mri->mri_Screen = LockPubScreen(data->wd_UserPublicScreen)))
+	{
+	    if (!(mri->mri_Screen = LockPubScreen(NULL)))
+	    {
+		return FALSE;
+	    }
 	}
-	
+
 	data->wd_Flags |= MUIWF_SCREENLOCKED;
     }
         
