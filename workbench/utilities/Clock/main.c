@@ -3,6 +3,9 @@
     $Id$
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <exec/types.h>
 #include <workbench/startup.h>
 
@@ -10,6 +13,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/icon.h>
+#include <proto/alib.h>
 
 #define MUIMASTER_YES_INLINE_STDARG
 #include <proto/muimaster.h>
@@ -28,22 +32,25 @@ char *versionString = VERSIONSTR;
 
 /*** Argument parsing *******************************************************/
 
-#define ARG_TEMPLATE    "LEFT/N,TOP/N,WIDTH/N,HEIGHT/N"
+#define ARG_TEMPLATE    "LEFT/N,TOP/N,WIDTH/N,HEIGHT/N,PUBSCREEN/K"
 
-#define ARG_LEFT    	 0
-#define ARG_TOP     	 1
-#define ARG_WIDTH     	 2
-#define ARG_HEIGHT  	 3
-
-#define NUM_ARGS         4
+enum {
+    ARG_LEFT = 0,
+    ARG_TOP,
+    ARG_WIDTH,
+    ARG_HEIGHT,
+    ARG_PUBSCREEN,
+    NUM_ARGS
+};
 
 /*** Variables **************************************************************/
 /* Options ******************************************************************/
 
-static IPTR optionLeft   = MUIV_Window_LeftEdge_Centered,
-            optionTop    = MUIV_Window_TopEdge_Centered,
-            optionWidth  = 150,
-            optionHeight = 150;
+static LONG optionLeft     = MUIV_Window_LeftEdge_Centered,
+            optionTop      = MUIV_Window_TopEdge_Centered,
+            optionWidth    = 150,
+            optionHeight   = 150;
+static STRPTR optionPubscr = NULL;
 
 /* User interface ***********************************************************/
 Object *application, *window;
@@ -74,6 +81,7 @@ void Cleanup(CONST_STRPTR message)
 	}
     }
     
+    FreeVec(optionPubscr);
     Locale_Deinitialize();
     
     if (message != NULL)
@@ -86,64 +94,40 @@ static void GetArguments(int argc, char **argv)
 {
     if (argc == 0) /* started from WB */
     {
-        struct WBStartup *wbmsg;
-        struct WBArg *wbarg;
-        struct DiskObject *dobj;
-        
-        if ( (wbmsg = (struct WBStartup *)argv) )
-        {
-            wbarg = wbmsg->sm_ArgList;
-            if ( wbarg && wbarg->wa_Name && (dobj = GetDiskObject(wbarg->wa_Name) ) )
-            {
-                const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
-                STRPTR s;
-                if ((s = FindToolType(toolarray, "LEFT")))
-                {
-                    optionLeft = atol(s);
-                }
-                if ((s = FindToolType(toolarray, "TOP")))
-                {
-                    optionTop = atol(s);
-                }
-                if ((s = FindToolType(toolarray, "WIDTH")))
-                {
-                    optionWidth = atol(s);
-                }
-                if ((s = FindToolType(toolarray, "HEIGHT")))
-                {
-                    optionHeight = atol(s);
-                }
-                FreeDiskObject(dobj);
-            }
-            else
-            {
-                ShowMessage("Clock", MSG(MSG_ERROR_DISKOBJECT), MSG(MSG_OK));
-            }
-        } 
+	UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
+	optionLeft = ArgInt(array, "LEFT", optionLeft);
+	optionTop  = ArgInt(array, "TOP", optionTop);
+	optionWidth = ArgInt(array, "WIDTH", optionWidth);
+	optionHeight = ArgInt(array, "HEIGHT", optionHeight);
+	optionPubscr = StrDup(ArgString(array, "PUBSCREEN", optionPubscr));
+	ArgArrayDone();
     }
     else
     {
 #       define TMPSIZE 256
-        TEXT           tmp[TMPSIZE];
-        struct RDArgs *rdargs = NULL;
-        IPTR           args[NUM_ARGS];
-    
-        memset(args, 0, sizeof(args));
-        rdargs = ReadArgs(ARG_TEMPLATE, args, NULL);
-        if (rdargs == NULL)
-        {
-            Fault(IoErr(), 0, tmp, TMPSIZE);
-            Cleanup(tmp);
-        }
+	TEXT           tmp[TMPSIZE];
+	struct RDArgs *rdargs = NULL;
+	IPTR           args[NUM_ARGS];
 
-        if (args[ARG_LEFT])   optionLeft   = *(IPTR *) args[ARG_LEFT];
-        if (args[ARG_TOP])    optionTop    = *(IPTR *) args[ARG_TOP];
-        if (args[ARG_WIDTH])  optionWidth  = *(IPTR *) args[ARG_WIDTH];
-        if (args[ARG_HEIGHT]) optionHeight = *(IPTR *) args[ARG_HEIGHT];
-        
-        FreeArgs(rdargs);
+	memset(args, 0, sizeof(args));
+	rdargs = ReadArgs(ARG_TEMPLATE, args, NULL);
+	if (rdargs == NULL)
+	{
+	    Fault(IoErr(), 0, tmp, TMPSIZE);
+	    Cleanup(tmp);
+	}
+
+	if (args[ARG_LEFT])   optionLeft   = *(LONG*)args[ARG_LEFT];
+	if (args[ARG_TOP])    optionTop    = *(LONG*)args[ARG_TOP];
+	if (args[ARG_WIDTH])  optionWidth  = *(LONG*)args[ARG_WIDTH];
+	if (args[ARG_HEIGHT]) optionHeight = *(LONG*)args[ARG_HEIGHT];
+	if (args[ARG_HEIGHT]) optionPubscr = StrDup((STRPTR)args[ARG_PUBSCREEN]);
+
+	FreeArgs(rdargs);
 #       undef TMPSIZE
     }
+    D(bug("Clock left %d top %d width %d height %d pubscr %s\n",
+		optionLeft, optionTop, optionWidth, optionHeight, optionPubscr));
 }
 
 int main(int argc, char **argv)
@@ -164,7 +148,7 @@ int main(int argc, char **argv)
             MUIA_Window_TopEdge,         optionTop,
             MUIA_Window_Width,           optionWidth,
             MUIA_Window_Height,          optionHeight,
-            
+            MUIA_Window_PublicScreen,    (IPTR) optionPubscr,
             WindowContents, (IPTR) ClockObject,
             End,
         End),
@@ -172,8 +156,6 @@ int main(int argc, char **argv)
 
     if (application)
     {
-        ULONG signals = 0;
-        
         DoMethod
         ( 
             window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
@@ -183,18 +165,7 @@ int main(int argc, char **argv)
         
         SetAttrs(window, MUIA_Window_Open, TRUE, TAG_DONE);
         
-        while
-        ( 
-               DoMethod(application, MUIM_Application_NewInput, (IPTR) &signals) 
-            != MUIV_Application_ReturnID_Quit
-        )
-        {
-            if(signals)
-            {
-                signals = Wait(signals | SIGBREAKF_CTRL_C);
-                if(signals & SIGBREAKF_CTRL_C) break;
-            }
-        }
+	DoMethod(application, MUIM_Application_Execute);
         
         SetAttrs(window, MUIA_Window_Open, FALSE, TAG_DONE);
         MUI_DisposeObject(application);
