@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/symbolsets.h>
 #include <workbench/startup.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
@@ -28,12 +29,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-#define CATCOMP_NUMBERS
-#define CATCOMP_STRINGS
 #define CATCOMP_ARRAY
-
 #include "strings.h"
+
+#define CATALOG_NAME     "System/Tools/Commodities.catalog"
+#define CATALOG_VERSION  0
+
 
 #define ACCELERATOR_THRESH      2
 #define ACCELERATOR_MULTI       2
@@ -50,7 +51,7 @@
 
 /************************************************************************************/
 
-UBYTE version[] = "$VER: Opaque 0.4 (20.02.2006)";
+UBYTE version[] = "$VER: Opaque 0.5 (15.04.2006)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
 
@@ -62,24 +63,6 @@ UBYTE version[] = "$VER: Opaque 0.4 (20.02.2006)";
 
 #define SYSGADTYPE(gad) ((gad)->GadgetType & GTYP_SYSTYPEMASK)
 
-/* Libraries to open */
-struct LibTable
-{
- APTR   lT_Library;
- STRPTR lT_Name;
- ULONG  lT_Version;
-}
-libTable[] =
-{
- { &IntuitionBase,      "intuition.library",    39L},
- { &LayersBase,         "layers.library",       39L},
- { &CxBase,             "commodities.library",  39L},
- { NULL }
-};
-
-struct IntuitionBase *IntuitionBase = NULL;
-struct Library *LayersBase = NULL;
-struct Library *CxBase = NULL;
 
 static struct NewBroker nb =
 {
@@ -94,7 +77,7 @@ static struct NewBroker nb =
    0 
 };
 
-static struct Catalog *catalogPtr;
+static struct Catalog *catalog;
 static struct MsgPort *cxport;
 static struct Window *actionwin;
 static struct Task *maintask;
@@ -142,6 +125,69 @@ struct FileIControlPrefs
     UBYTE   ic_ReqTrue;
     UBYTE   ic_ReqFalse;
 };
+/************************************************************************************/
+
+static CONST_STRPTR _(ULONG id)
+{
+    if (LocaleBase != NULL && catalog != NULL)
+    {
+	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+    } 
+    else 
+    {
+	return CatCompArray[id].cca_Str;
+    }
+}
+
+/************************************************************************************/
+
+static BOOL Locale_Initialize(VOID)
+{
+    if (LocaleBase != NULL)
+    {
+	catalog = OpenCatalog
+	    ( 
+	     NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
+	    );
+    }
+    else
+    {
+	catalog = NULL;
+    }
+
+    return TRUE;
+}
+
+/************************************************************************************/
+
+static VOID Locale_Deinitialize(VOID)
+{
+    if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
+}
+
+/************************************************************************************/
+
+static void showSimpleMessage(CONST_STRPTR msgString)
+{
+    struct EasyStruct easyStruct;
+
+    easyStruct.es_StructSize	= sizeof(easyStruct);
+    easyStruct.es_Flags		= 0;
+    easyStruct.es_Title		= _(MSG_OPAQUE_CXNAME);
+    easyStruct.es_TextFormat	= msgString;
+    easyStruct.es_GadgetFormat	= _(MSG_OK);		
+
+    if (IntuitionBase != NULL && !Cli() )
+    {
+	EasyRequestArgs(NULL, &easyStruct, NULL, NULL);
+    }
+    else
+    {
+	PutStr(msgString);
+    }
+}
+
+/************************************************************************************/
 
 #define MINWINDOWWIDTH (5)
 #define MINWINDOWHEIGHT (5)
@@ -156,53 +202,54 @@ void SetMouseBounds(struct Window *win)
     WORD minheight, minwidth, maxheight, maxwidth;
 
     if (win) {
-        if (actiontype == ACTIONTYPE_DRAGGING) {
-            if (offScreenLayersFlag) {
-                mouseLeft = 0; /* as left as you want */
-                mouseTop = winoffy; /* keep the titlebar visible */
-                mouseRight = win->WScreen->Width; /* as far right as you want */
-                mouseBottom = win->WScreen->Height - (gadgetHeight - (winoffy + 1));
-            }
-            else { /* bounds such that the window never goes offscreen */
-                mouseLeft = winoffx;
-                mouseTop = winoffy;
-                mouseRight = (win->WScreen->Width - winwidth) + winoffx;
-                mouseBottom = (win->WScreen->Height - winheight) + winoffy;
-            }
-        }
-        else {  /* actiontype == ACTIONTYPE_RESIZING) */
+	if (actiontype == ACTIONTYPE_DRAGGING) {
+	    if (offScreenLayersFlag) {
+		mouseLeft = 0; /* as left as you want */
+		mouseTop = winoffy; /* keep the titlebar visible */
+		mouseRight = win->WScreen->Width; /* as far right as you want */
+		mouseBottom = win->WScreen->Height - (gadgetHeight - (winoffy + 1));
+	    }
+	    else { /* bounds such that the window never goes offscreen */
+		mouseLeft = winoffx;
+		mouseTop = winoffy;
+		mouseRight = (win->WScreen->Width - winwidth) + winoffx;
+		mouseBottom = (win->WScreen->Height - winheight) + winoffy;
+	    }
+	}
+	else {  /* actiontype == ACTIONTYPE_RESIZING) */
 	    /* force legal min/max values */
-            minwidth = win->MinWidth;
-            maxwidth = win->MaxWidth; 
-            minheight = win->MinHeight;
-            maxheight = win->MaxHeight; 
+	    minwidth = win->MinWidth;
+	    maxwidth = win->MaxWidth; 
+	    minheight = win->MinHeight;
+	    maxheight = win->MaxHeight; 
 
 	    if (maxwidth <= 0) maxwidth = win->WScreen->Width;
 	    if (maxheight <= 0) maxheight = win->WScreen->Height;
 
 	    if ((minwidth < MINWINDOWWIDTH) || (minheight < MINWINDOWHEIGHT) || /* if any dimention too small, or */
-	     (minwidth > maxwidth) || (minheight > maxheight) || /* either min/max value pairs are inverted, or */
-	     (minwidth > win->Width) || (minheight > win->Height) || /* the window is already smaller than minwidth/height, or */
-	     (maxwidth < win->Width) || (maxheight < win->Height)) { /* the window is already bigger than maxwidth/height */
-	        minwidth = MINWINDOWWIDTH; /* then put sane values in */
-	        minheight = MINWINDOWHEIGHT;
-                maxwidth = win->WScreen->Width;
-                maxheight = win->WScreen->Height;
+		    (minwidth > maxwidth) || (minheight > maxheight) || /* either min/max value pairs are inverted, or */
+		    (minwidth > win->Width) || (minheight > win->Height) || /* the window is already smaller than minwidth/height, or */
+		    (maxwidth < win->Width) || (maxheight < win->Height)) { /* the window is already bigger than maxwidth/height */
+		minwidth = MINWINDOWWIDTH; /* then put sane values in */
+		minheight = MINWINDOWHEIGHT;
+		maxwidth = win->WScreen->Width;
+		maxheight = win->WScreen->Height;
 	    }
-            
+
 	    /* set new mouse bounds */
-            mouseLeft = win->LeftEdge + minwidth - (win->Width - winoffx);
-            mouseTop = win->TopEdge + minheight - (win->Height - winoffy);
-            mouseRight = (win->LeftEdge + maxwidth) - (win->Width - winoffx);
-            mouseBottom = (win->TopEdge + maxheight) - (win->Height - winoffy);
-            if ((win->WScreen->Width - (win->Width - winoffx)) < mouseRight)
-                mouseRight = (win->WScreen->Width - (win->Width - winoffx));
-            if ((win->WScreen->Height - (win->Height - winoffy)) < mouseBottom) 
-                mouseBottom = (win->WScreen->Height - (win->Height - winoffy));
-        }
+	    mouseLeft = win->LeftEdge + minwidth - (win->Width - winoffx);
+	    mouseTop = win->TopEdge + minheight - (win->Height - winoffy);
+	    mouseRight = (win->LeftEdge + maxwidth) - (win->Width - winoffx);
+	    mouseBottom = (win->TopEdge + maxheight) - (win->Height - winoffy);
+	    if ((win->WScreen->Width - (win->Width - winoffx)) < mouseRight)
+		mouseRight = (win->WScreen->Width - (win->Width - winoffx));
+	    if ((win->WScreen->Height - (win->Height - winoffy)) < mouseBottom) 
+		mouseBottom = (win->WScreen->Height - (win->Height - winoffy));
+	}
     }
-    
 }
+
+/************************************************************************************/
 
 BOOL GetOFFSCREENLAYERSPref()
 {
@@ -212,90 +259,56 @@ BOOL GetOFFSCREENLAYERSPref()
 
     if ((iff = AllocIFF()))
     {
-    	if ((iff->iff_Stream = (IPTR)Open(CONFIGNAME_ENV, MODE_OLDFILE)))
+	if ((iff->iff_Stream = (IPTR)Open(CONFIGNAME_ENV, MODE_OLDFILE)))
 	{
 	    InitIFFasDOS(iff);
-	    
+
 	    if (!OpenIFF(iff, IFFF_READ))
 	    {
-	    	if (!StopChunk(iff, ID_PREF, ID_ICTL))
+		if (!StopChunk(iff, ID_PREF, ID_ICTL))
 		{
 		    if (!ParseIFF(iff, IFFPARSE_SCAN))
 		    {
 			struct ContextNode *cn;
-			
+
 			cn = CurrentChunk(iff);
 
 			if (cn->cn_Size == sizeof(loadprefs))
 			{
-		    	    if (ReadChunkBytes(iff, &loadprefs, sizeof(loadprefs)) == sizeof(loadprefs))
+			    if (ReadChunkBytes(iff, &loadprefs, sizeof(loadprefs)) == sizeof(loadprefs))
 			    {
-				/*
-    	    	    	    	icontrolprefs.ic_Reserved[0] = ARRAY_TO_LONG(loadprefs.ic_Reserved0);
-    	    	    	    	icontrolprefs.ic_Reserved[1] = ARRAY_TO_LONG(loadprefs.ic_Reserved1);
-    	    	    	    	icontrolprefs.ic_Reserved[2] = ARRAY_TO_LONG(loadprefs.ic_Reserved2);
-    	    	    	    	icontrolprefs.ic_Reserved[3] = ARRAY_TO_LONG(loadprefs.ic_Reserved3);
-				icontrolprefs.ic_TimeOut = ARRAY_TO_WORD(loadprefs.ic_TimeOut);
-				icontrolprefs.ic_MetaDrag = ARRAY_TO_WORD(loadprefs.ic_MetaDrag);
-				return icontrolprefs.ic_Flags = ARRAY_TO_LONG(loadprefs.ic_Flags);
-				*/
 				if ( ! (ARRAY_TO_LONG(loadprefs.ic_Flags) & ICF_OFFSCREENLAYERS) ) retval = FALSE;
-				/*
-				icontrolprefs.ic_WBtoFront = loadprefs.ic_WBtoFront;
-				icontrolprefs.ic_FrontToBack = loadprefs.ic_FrontToBack;
-				icontrolprefs.ic_ReqTrue = loadprefs.ic_ReqTrue;
-				icontrolprefs.ic_ReqFalse = loadprefs.ic_ReqFalse;
-				*/
-				
-				/*
-				retval = TRUE;
-				*/
 			    }
 			}
-			
+
 		    } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
-		    
+
 		} /* if (!StopChunk(iff, ID_PREF, ID_INPT)) */
-		
-	    	CloseIFF(iff);
-				
+
+		CloseIFF(iff);
+
 	    } /* if (!OpenIFF(iff, IFFF_READ)) */
-	    
+
 	    Close((BPTR)iff->iff_Stream);
-	    
+
 	} /* if ((iff->iff_Stream = (IPTR)Open(CONFIGNAME_ENV, MODE_OLDFILE))) */
-	
+
 	FreeIFF(iff);
-	
+
     } /* if ((iff = AllocIFF())) */
-    
+
     return retval;
 }
 
 /************************************************************************************/
 
-STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
-{
-    STRPTR string;
-
-    if(catalogPtr)
-        string = (STRPTR)GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
-    else
-        string = CatCompArray[id].cca_Str;
-
-    return(string);
-}
-
-/************************************************************************************/
-
-static void Cleanup(char *msg)
+static void Cleanup(CONST_STRPTR msg)
 {
     struct Message *cxmsg;
-    struct LibTable *tmpLibTable = libTable;
-    
+
     if (msg)
     {
-	printf("%s", msg);
+	showSimpleMessage(msg);
     }
 
     if(CxBase)
@@ -314,32 +327,14 @@ static void Cleanup(char *msg)
 
     if (myargs) FreeArgs(myargs);
 
-    if(LocaleBase)
-    {
-	CloseCatalog(catalogPtr);
-	CloseLibrary((struct Library *)LocaleBase); /* Passing NULL is valid */
-	D(bug("Closed locale.library!\n"));
-    }
-    
-    while(tmpLibTable->lT_Name) /* Check for name rather than pointer */
-    {
-	if((*(struct Library **)tmpLibTable->lT_Library))
-	{
-	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
-	    D(bug("Closed %s!\n", tmpLibTable->lT_Name));
-	}
-
-	tmpLibTable++;
-    }
-
     if (actionsig) FreeSignal(actionsig);
     if (icontrolsig) FreeSignal(icontrolsig);
 
     if (IControlChangeNR != NULL) {
-    	EndNotify(IControlChangeNR);
+	EndNotify(IControlChangeNR);
 	FreeMem(IControlChangeNR, sizeof(struct NotifyRequest));
     }
-    
+
     exit(0);
 }
 
@@ -360,62 +355,30 @@ static void Init(void)
     maintask = FindTask(0);
     if((actionsig = AllocSignal(-1L)) != -1)
     {
-    actionmask = 1L << actionsig;
+	actionmask = 1L << actionsig;
 
-    /* create "IControl pref changes" signal */
-    if((icontrolsig = AllocSignal(-1L)) != -1)
-    {
-    icontrolmask = 1L << icontrolsig;
-    if ((IControlChangeNR = AllocMem(sizeof(struct NotifyRequest), MEMF_CLEAR)))
-        {
-        IControlChangeNR->nr_Name = CONFIGNAME_ENV;
-        IControlChangeNR->nr_Flags = NRF_SEND_SIGNAL;
-        IControlChangeNR->nr_stuff.nr_Signal.nr_Task = maintask;
-        IControlChangeNR->nr_stuff.nr_Signal.nr_SignalNum = icontrolsig;
-    
-        StartNotify(IControlChangeNR);
-    
-        /* set inital value for offscreenlayers */
-        offScreenLayersFlag = GetOFFSCREENLAYERSPref();
-        } else {
-            printf("Not enough memory for NotifyRequest.\n");
-        }
-      }
+	/* create "IControl pref changes" signal */
+	if((icontrolsig = AllocSignal(-1L)) != -1)
+	{
+	    icontrolmask = 1L << icontrolsig;
+	    if ((IControlChangeNR = AllocMem(sizeof(struct NotifyRequest), MEMF_CLEAR)))
+	    {
+		IControlChangeNR->nr_Name = CONFIGNAME_ENV;
+		IControlChangeNR->nr_Flags = NRF_SEND_SIGNAL;
+		IControlChangeNR->nr_stuff.nr_Signal.nr_Task = maintask;
+		IControlChangeNR->nr_stuff.nr_Signal.nr_SignalNum = icontrolsig;
+
+		StartNotify(IControlChangeNR);
+
+		/* set inital value for offscreenlayers */
+		offScreenLayersFlag = GetOFFSCREENLAYERSPref();
+	    } else {
+		showSimpleMessage(_(MSG_CANT_ALLOCATE_MEM));
+	    }
+	}
     }
 }
 
-/************************************************************************************/
-
-static void OpenLibs(void)
-{
-    struct LibTable *tmpLibTable = libTable;
-    UBYTE tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
-
-    if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
-    {
-	catalogPtr = OpenCatalog
-        (
-            NULL, "System/Tools/Commodities.catalog",
-            OC_BuiltInLanguage, (IPTR) "english",
-            TAG_DONE
-        );
-    }
-    else
-	D(bug("Warning: Can't open locale.library V40!\n"));
-
-    while(tmpLibTable->lT_Library)
-    {
-	if(!((*(struct Library **)tmpLibTable->lT_Library = OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version))))
-        {
-	    sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), tmpLibTable->lT_Name, tmpLibTable->lT_Version);
-	    Cleanup(tmpString);
-        }
-	else
-	    D(bug("Library %s opened!\n", tmpLibTable->lT_Name));
-
-	tmpLibTable++;
-    }
-}
 
 #define ABS(x) (((x)<0)?(-(x)):(x))
 inline WORD WITHACCEL(WORD raw) { if (ABS(raw) > ACCELERATOR_THRESH) return(raw << 2); else return(raw << 1);}
@@ -427,23 +390,9 @@ static void GetArguments(int argc, char **argv)
 {
     if (argc == 0)
     {
-	struct WBStartup *wbmsg;
-	struct WBArg *wbarg;
-	struct DiskObject *dobj;
-	if ( (wbmsg = (struct WBStartup *)argv) )
-        {
-	    wbarg = wbmsg->sm_ArgList;
-	    if ( wbarg && wbarg->wa_Name && (dobj = GetDiskObject(wbarg->wa_Name) ) )
-	    {
-		const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
-		STRPTR s;
-		if ((s = FindToolType(toolarray, "CX_PRIORITY")))
-		{
-		    nb.nb_Pri = atol(s);
-		}
-		FreeDiskObject(dobj);
-	    }
-	}    
+	UBYTE **array = ArgArrayInit(argc, (UBYTE**)argv);
+	nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
+	ArgArrayDone();
     }
     else
     {
@@ -451,7 +400,7 @@ static void GetArguments(int argc, char **argv)
 	{
 	    DosError();
 	}
-    
+
 	if (args[ARG_PRI]) nb.nb_Pri = *(LONG *)args[ARG_PRI];
     }
 }
@@ -467,26 +416,26 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-        switch(ie->ie_Code)
+	switch(ie->ie_Code)
 	{
 	    case SELECTDOWN:
-	    	if (IntuitionBase->ActiveWindow)
+		if (IntuitionBase->ActiveWindow)
 		{
 		    scr = IntuitionBase->ActiveWindow->WScreen;
 		} else {
 		    scr = IntuitionBase->ActiveScreen;
 		}
-		
-	        if (!opaque_active && scr)
+
+		if (!opaque_active && scr)
 		{
 		    struct Layer *lay = WhichLayer(&scr->LayerInfo, scr->MouseX, scr->MouseY);
 		    struct Window *win = NULL;
-		    
+
 		    if (lay) win = (struct Window *)lay->Window;
-		
+
 		    if (win && !(ie->ie_Qualifier & (IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND)))
 		    {
-		        struct Gadget *gad;
+			struct Gadget *gad;
 			struct Window *newwin = NULL;
 
 			for(gad = win->FirstGadget; gad; gad = gad->NextGadget)
@@ -494,7 +443,7 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 			    /* FIXME: does not handle app made dragging/resize gadgets in
 			       GZZ innerlayer or boopsi gadgets with special GM_HITTEST
 			       method correctly! */
-			       
+
 			    if (!(gad->Flags & GFLG_DISABLED))
 			    {
 				WORD x = gad->LeftEdge;
@@ -505,34 +454,34 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 				gadgetTop = gad->TopEdge;
 				gadgetWidth = gad->Width;
 				gadgetHeight = gad->Height;
-			    
-			        if (gad->Flags & GFLG_RELRIGHT)  x += win->Width  - 1;
+
+				if (gad->Flags & GFLG_RELRIGHT)  x += win->Width  - 1;
 				if (gad->Flags & GFLG_RELBOTTOM) y += win->Height - 1;
 				if (gad->Flags & GFLG_RELWIDTH)  w += win->Width;
 				if (gad->Flags & GFLG_RELHEIGHT) h += win->Height;
-				
+
 				if ((win->MouseX >= x) &&
-				    (win->MouseY >= y) &&
-				    (win->MouseX < x + w) &&
-				    (win->MouseY < y + h))
+					(win->MouseY >= y) &&
+					(win->MouseX < x + w) &&
+					(win->MouseY < y + h))
 				{
 				    if ((SYSGADTYPE(gad) == GTYP_WDRAGGING) || (SYSGADTYPE(gad) == GTYP_SIZING))
-    	    	    	    	    {
-				    	/* found dragging or resize gadget */
-				    	newwin = win;
-				    	actiontype = (SYSGADTYPE(gad) == GTYP_WDRAGGING) ? ACTIONTYPE_DRAGGING :
-				    	    	    	    	    	    	           ACTIONTYPE_RESIZING;
+				    {
+					/* found dragging or resize gadget */
+					newwin = win;
+					actiontype = (SYSGADTYPE(gad) == GTYP_WDRAGGING) ? ACTIONTYPE_DRAGGING :
+					    ACTIONTYPE_RESIZING;
 				    }
 				    break;
 				}
 			    }
-			    
+
 			} /* for(gad = win->FirstGadget; gad; gad = gad->NextGadget) */
-			
+
 			win = newwin;
-			
+
 		    } /* if (win && !(ie->ie_Qualifier & (IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND))) */
-		    
+
 		    if (win)
 		    {				   
 			opaque_active = TRUE;
@@ -542,49 +491,49 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 			winoffy   = win->WScreen->MouseY - win->TopEdge;
 			winwidth  = win->Width;
 			winheight = win->Height;
-		    #if !USE_CHANGEWINDOWBOX
+#if !USE_CHANGEWINDOWBOX
 			actionstart_winx = win->LeftEdge;
 			actionstart_winy = win->TopEdge;
-		    #endif
+#endif
 			DisposeCxMsg(msg);
 			/* reset mouse bounds */
-		        SetMouseBounds(actionwin);
+			SetMouseBounds(actionwin);
 			if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
-			
+
 			//Signal(maintask, icontrolmask);
 		    }
-		    
+
 		} /* if (!opaque_active && scr) */
 		break;
-		
+
 	    case SELECTUP:
-	        if (opaque_active)
+		if (opaque_active)
 		{
 		    opaque_active = FALSE;
-    	    	    if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, NULL, 0, NULL);
+		    if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, NULL, 0, NULL);
 		    DisposeCxMsg(msg);
 		}
 		break;
-		
+
 	    case IECODE_NOBUTTON:
-	        if (opaque_active)
+		if (opaque_active)
 		{ 
 		    if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
 
-		#if CALL_WINDOWFUNCS_IN_INPUTHANDLER
-	    	    HandleAction();
-		#else
+#if CALL_WINDOWFUNCS_IN_INPUTHANDLER
+		    HandleAction();
+#else
 		    Signal(maintask, actionmask);
-	    	#endif
+#endif
 		}	
 		break;
-		
+
 	} /* switch(ie->ie_Code) */
-	
+
     } /* if (ie->ie_Class == IECLASS_RAWMOUSE) */
     else if (ie->ie_Class == IECLASS_TIMER)
     {
-    	if (opaque_active && !offScreenLayersFlag)
+	if (opaque_active && !offScreenLayersFlag)
 	{
 	    SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
 	}
@@ -597,26 +546,26 @@ static void InitCX(void)
 {
     if (!(cxport = CreateMsgPort()))
     {
-        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
+	Cleanup(_(MSG_CANT_CREATE_MSGPORT));
     }
-    
+
     nb.nb_Port = cxport;
-    
+
     cxmask = 1L << cxport->mp_SigBit;
-    
+
     if (!(cxbroker = CxBroker(&nb, 0)))
     {
-        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_BROKER));
+	Cleanup(_(MSG_CANT_CREATE_BROKER));
     }
-    
+
     if (!(cxcust = CxCustom(OpaqueAction, 0)))
     {
-        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
+	Cleanup(_(MSG_CANT_CREATE_CUSTOM));
     }
-    
+
     AttachCxObj(cxbroker, cxcust);
     ActivateCxObj(cxbroker, 1);
-    
+
 }
 
 /************************************************************************************/
@@ -629,32 +578,34 @@ static void HandleIControl(void)
     //SetMouseBounds();
 }
 
+/************************************************************************************/
+
 /* Move window to absolute position newWindowX, newWindowY */
 static void HandleAction(void)
 {
     if (actiontype == ACTIONTYPE_DRAGGING)
     {
-    	WORD newx = actionwin->WScreen->MouseX - winoffx; 
-    	WORD newy = actionwin->WScreen->MouseY - winoffy;
+	WORD newx = actionwin->WScreen->MouseX - winoffx; 
+	WORD newy = actionwin->WScreen->MouseY - winoffy;
 
-    	/* MoveWindow(actionwin, newx - actionwin->LeftEdge, newy - actionwin->TopEdge); */
-    #if USE_CHANGEWINDOWBOX
-     	ChangeWindowBox(actionwin, newx, newy, actionwin->Width, actionwin->Height);
-    #else
-    	MoveWindow(actionwin, newx - actionstart_winx, newy - actionstart_winy);
+	/* MoveWindow(actionwin, newx - actionwin->LeftEdge, newy - actionwin->TopEdge); */
+#if USE_CHANGEWINDOWBOX
+	ChangeWindowBox(actionwin, newx, newy, actionwin->Width, actionwin->Height);
+#else
+	MoveWindow(actionwin, newx - actionstart_winx, newy - actionstart_winy);
 	actionstart_winx = newx;
 	actionstart_winy = newy;
-    #endif
+#endif
     }
     else
     {
-    	LONG neww = winwidth  + actionwin->WScreen->MouseX - actionwin->LeftEdge - winoffx;
-    	LONG newh = winheight + actionwin->WScreen->MouseY - actionwin->TopEdge  - winoffy;
- 	
+	LONG neww = winwidth  + actionwin->WScreen->MouseX - actionwin->LeftEdge - winoffx;
+	LONG newh = winheight + actionwin->WScreen->MouseY - actionwin->TopEdge  - winoffy;
+
 	if ((neww != actionwin->Width) || (newh != actionwin->Height))
 	{
 	    /* SizeWindow(actionwin, neww - actionwin->Width, newh - actionwin->Height); */
-    	    ChangeWindowBox(actionwin, actionwin->LeftEdge, actionwin->TopEdge, neww, newh);
+	    ChangeWindowBox(actionwin, actionwin->LeftEdge, actionwin->TopEdge, neww, newh);
 	}
     }
 }
@@ -666,53 +617,51 @@ static void HandleCx(void)
     CxMsg *msg;
     while((msg = (CxMsg *)GetMsg(cxport)))
     {
-       switch(CxMsgType(msg))
-       {
+	switch(CxMsgType(msg))
+	{
 	    case CXM_COMMAND:
-               switch(CxMsgID(msg))
-               {
-        	  case CXCMD_DISABLE:
-        	     ActivateCxObj(cxbroker,0L);
-		     disabled = TRUE;
-        	     break;
+		switch(CxMsgID(msg))
+		{
+		    case CXCMD_DISABLE:
+			ActivateCxObj(cxbroker,0L);
+			disabled = TRUE;
+			break;
 
-        	  case CXCMD_ENABLE:
-        	     ActivateCxObj(cxbroker,1L);
-		     disabled = FALSE;
-        	     break;
+		    case CXCMD_ENABLE:
+			ActivateCxObj(cxbroker,1L);
+			disabled = FALSE;
+			break;
 
-		  case CXCMD_UNIQUE:
-		  case CXCMD_KILL:
-        	     quitme = TRUE;
-        	     break;
+		    case CXCMD_UNIQUE:
+		    case CXCMD_KILL:
+			quitme = TRUE;
+			break;
 
-               } /* switch(CxMsgID(msg)) */
-               break;
+		} /* switch(CxMsgID(msg)) */
+		break;
 
-       } /* switch (CxMsgType(msg))*/
-       
-       ReplyMsg((struct Message *)msg);
-       
-   } /* while((msg = (CxMsg *)GetMsg(cxport))) */
+	} /* switch (CxMsgType(msg))*/
+
+	ReplyMsg((struct Message *)msg);
+
+    } /* while((msg = (CxMsg *)GetMsg(cxport))) */
 }
 
 /************************************************************************************/
 
-
 static void HandleAll(void)
 {
     ULONG sigs;
-    
+
     while(!quitme)
     {
-        sigs = Wait(cxmask | actionmask | icontrolmask | SIGBREAKF_CTRL_C);
+	sigs = Wait(cxmask | actionmask | icontrolmask | SIGBREAKF_CTRL_C);
 
 	if (sigs & cxmask) HandleCx();
 	if (sigs & actionmask) HandleAction(); /* "Action" == window moving or resizing */
 	if (sigs & icontrolmask) HandleIControl();
 	if (sigs & SIGBREAKF_CTRL_C) quitme = TRUE;
     } /* while(!quitme) */
-    
 }
 
 /************************************************************************************/
@@ -720,11 +669,10 @@ static void HandleAll(void)
 int main(int argc, char **argv)
 {
     Init();
-    OpenLibs();
 
-    nb.nb_Name = getCatalog(catalogPtr, MSG_OPAQUE_CXNAME);
-    nb.nb_Title = getCatalog(catalogPtr, MSG_OPAQUE_CXTITLE);
-    nb.nb_Descr = getCatalog(catalogPtr, MSG_OPAQUE_CXDESCR);
+    nb.nb_Name = _(MSG_OPAQUE_CXNAME);
+    nb.nb_Title = _(MSG_OPAQUE_CXTITLE);
+    nb.nb_Descr = _(MSG_OPAQUE_CXDESCR);
 
     GetArguments(argc, argv);
     InitCX();
@@ -733,5 +681,8 @@ int main(int argc, char **argv)
     return 0;
 }
 
-
 /************************************************************************************/
+
+ADD2INIT(Locale_Initialize,   90);
+ADD2EXIT(Locale_Deinitialize, 90);
+

@@ -2,6 +2,9 @@
 MSG_CANT_OPEN_LIB (//)
 Can't open %s V%ld!\n
 ;
+MSG_CANT_OPEN_INPUTDEVICE (//)
+Can't open 'input.device'
+;
 MSG_CANT_LOCK_SCR (//)
 Can't lock public screen!\n
 ;
