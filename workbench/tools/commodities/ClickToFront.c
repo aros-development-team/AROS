@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     ClickToFront commodity -- puts windows to front when clicked in.
@@ -46,7 +46,7 @@
 
 ******************************************************************************/
 
-
+#include <aros/symbolsets.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <libraries/commodities.h>
@@ -66,10 +66,16 @@
 #define  DEBUG 0
 #include <aros/debug.h>
 
+#define CATCOMP_ARRAY
+#include "strings.h"
+
+#define CATALOG_NAME     "System/Tools/Commodities.catalog"
+#define CATALOG_VERSION  0
+
 
 /***************************************************************************/
 
-UBYTE version[] = "$VER: ClickToFront 0.2 (13.10.2001)";
+UBYTE version[] = "$VER: ClickToFront 0.3 (15.04.2006)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,QUALIFIER/K,DOUBLE/S"
 
@@ -78,36 +84,8 @@ UBYTE version[] = "$VER: ClickToFront 0.2 (13.10.2001)";
 #define  ARG_DOUBLE     2
 #define  NUM_ARGS       3
 
-
-#define CATCOMP_NUMBERS
-#define CATCOMP_STRINGS
-#define CATCOMP_ARRAY
-
-#include "strings.h"
-
-/* Libraries to open */
-struct LibTable
-{
-    APTR   lT_Library;
-    STRPTR lT_Name;
-    ULONG  lT_Version;
-}
-libTable[] =
-{
-    { &IntuitionBase,	"intuition.library",	39L},
-    { &LayersBase,	"layers.library",	39L},
-    { &CxBase,		"commodities.library",	39L},
-    { NULL }
-};
-
-struct IntuitionBase  *IntuitionBase = NULL;
-struct Library        *LayersBase = NULL;
-struct Library        *CxBase = NULL;
-struct Library        *IconBase = NULL;
 struct Device         *InputBase = NULL;
-
-struct Catalog        *catalogPtr;
-
+struct Catalog        *catalog;
 struct IOStdReq       *inputIO;
 
 
@@ -156,70 +134,86 @@ static CF cfInfo =
     0
 };
 
+/************************************************************************************/
 
 static void freeResources(CFState *cs);
 static BOOL initiate(int argc, char **argv, CFState *cs);
 static void getQualifier(STRPTR qualString);
 static void clicktoFront(CxMsg *msg, CxObj *co);
-STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id);
+static CONST_STRPTR _(ULONG id);
+static BOOL Locale_Initialize(VOID);
+static VOID Locale_Deinitialize(VOID);
+static void showSimpleMessage(CONST_STRPTR msgString);
 
+/************************************************************************************/
 
-STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+static CONST_STRPTR _(ULONG id)
 {
-    STRPTR string;
-
-    if (catalogPtr)
+    if (LocaleBase != NULL && catalog != NULL)
     {
-        string = (STRPTR)GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+    } 
+    else 
+    {
+	return CatCompArray[id].cca_Str;
+    }
+}
+
+/************************************************************************************/
+
+static BOOL Locale_Initialize(VOID)
+{
+    if (LocaleBase != NULL)
+    {
+	catalog = OpenCatalog
+	    ( 
+	     NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
+	    );
     }
     else
     {
-        string = CatCompArray[id].cca_Str;
+	catalog = NULL;
     }
 
-    return string;
+    return TRUE;
 }
 
+/************************************************************************************/
+
+static VOID Locale_Deinitialize(VOID)
+{
+    if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
+}
+
+/************************************************************************************/
+
+static void showSimpleMessage(CONST_STRPTR msgString)
+{
+    struct EasyStruct easyStruct;
+
+    easyStruct.es_StructSize	= sizeof(easyStruct);
+    easyStruct.es_Flags		= 0;
+    easyStruct.es_Title		= _(MSG_CLICK2FNT_CXNAME);
+    easyStruct.es_TextFormat	= msgString;
+    easyStruct.es_GadgetFormat	= _(MSG_OK);		
+
+    if (IntuitionBase != NULL && !Cli() )
+    {
+	EasyRequestArgs(NULL, &easyStruct, NULL, NULL);
+    }
+    else
+    {
+	PutStr(msgString);
+    }
+}
+
+/************************************************************************************/
 
 static BOOL initiate(int argc, char **argv, CFState *cs)
 {
     CxObj *customObj;
-    struct LibTable *tmpLibTable = libTable;
 
     memset(cs, 0, sizeof(CFState));
-
-    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40);
-
-    if (LocaleBase != NULL)
-    {
-	catalogPtr = OpenCatalog(NULL, "System/Tools/Commodities.catalog", 
-				 OC_BuiltInLanguage, (IPTR)"english", TAG_DONE);
-	D(bug("Library locale.library opened!\n"));
-    }
-    else
-    {
-        D(bug("Warning: Can't open locale.library V40!\n"));
-    }
-
-    while (tmpLibTable->lT_Library != NULL)
-    {
-	*(struct Library **)(tmpLibTable->lT_Library) = 
-	    OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version);
-
-	if (*(struct Library **)(tmpLibTable->lT_Library) == NULL)
-	{
-	    printf("%s %s %i\n", getCatalog(catalogPtr, MSG_CANT_OPEN_LIB),
-		   tmpLibTable->lT_Name, (int)tmpLibTable->lT_Version);
-	    
-	    return FALSE;
-	}
-	else
-	{
-	    kprintf("Library %s opened!\n", tmpLibTable->lT_Name);
-	}
-
-	tmpLibTable++;
-    }
 
     if (Cli() != NULL)
     {
@@ -249,87 +243,75 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
     }
     else
     {
-	IconBase = OpenLibrary("icon.library", 39);
+	UBYTE  **array = ArgArrayInit(argc, (UBYTE **)argv);
 
-	if (IconBase != NULL)
-	{
-	    UBYTE  **array = ArgArrayInit(argc, (UBYTE **)argv);
+	nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
+	cfInfo.ci_doubleClick = ArgString(array, "DOUBLE", NULL) != NULL;
 
-	    nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
-	    cfInfo.ci_doubleClick = ArgString(array, "DOUBLE", NULL) != NULL;
-	   
-	    getQualifier(ArgString(array, "QUALIFIER", NULL));
+	getQualifier(ArgString(array, "QUALIFIER", NULL));
 
-	    ArgArrayDone();
-	}
-	else
-	{
-	    printf("%s %s %i", getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), 
-		   "icon.library", 39);
-	}
-	
-	CloseLibrary(IconBase);
+	ArgArrayDone();
     }
 
-    nb.nb_Name = getCatalog(catalogPtr, MSG_CLICK2FNT_CXNAME);
-    nb.nb_Title = getCatalog(catalogPtr, MSG_CLICK2FNT_CXTITLE);
-    nb.nb_Descr = getCatalog(catalogPtr, MSG_CLICK2FNT_CXDESCR);
+    nb.nb_Name = _(MSG_CLICK2FNT_CXNAME);
+    nb.nb_Title = _(MSG_CLICK2FNT_CXTITLE);
+    nb.nb_Descr = _(MSG_CLICK2FNT_CXDESCR);
 
     cs->cs_msgPort = CreateMsgPort();
 
     if (cs->cs_msgPort == NULL)
     {
-	printf(getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
+	showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
 
 	return FALSE;
     }
-    
+
     nb.nb_Port = cs->cs_msgPort;
-    
+
     cs->cs_broker = CxBroker(&nb, 0);
 
     if (cs->cs_broker == NULL)
     {
 	return FALSE;
     }
-    
+
     customObj = CxCustom(clicktoFront, 0);
 
     if (customObj == NULL)
     {
-	printf(getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
+	showSimpleMessage(_(MSG_CANT_CREATE_MSGPORT));
 
 	return FALSE;
     }
 
     AttachCxObj(cs->cs_broker, customObj);
     ActivateCxObj(cs->cs_broker, TRUE);
-    
+
     cfInfo.ci_thisWindow = IntuitionBase->ActiveWindow;
-    
+
     inputIO = (struct IOStdReq *)CreateIORequest(cs->cs_msgPort,
-						 sizeof(struct IOStdReq));
+	    sizeof(struct IOStdReq));
 
     if (inputIO == NULL)
     {
-	printf(getCatalog(catalogPtr, MSG_CANT_ALLOCATE_MEM));
+	showSimpleMessage(_(MSG_CANT_ALLOCATE_MEM));
 
 	return FALSE;
     }
 
     if ((OpenDevice("input.device", 0, (struct IORequest *)inputIO, 0)) != 0)
     {
-	printf("%s %s %i\n", getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), 
-	       "input.device", 0);
+	showSimpleMessage(_(MSG_CANT_OPEN_INPUTDEVICE));
 
 	return FALSE;
     }
-    
+
     InputBase = (struct Device *)inputIO->io_Device;
 
     return TRUE;
 }
 
+/************************************************************************************/
 
 static void getQualifier(STRPTR qualString)
 {
@@ -342,25 +324,25 @@ static void getQualifier(STRPTR qualString)
     {
 	cfInfo.ci_qualifiers = IEQUALIFIER_CONTROL;
     }
-    
+
     if (strcmp("LEFT_ALT", qualString) == 0)
     {
 	cfInfo.ci_qualifiers = IEQUALIFIER_LALT;
     }
-    
+
     if (strcmp("RIGHT_ALT", qualString) == 0)
     {
 	cfInfo.ci_qualifiers = IEQUALIFIER_RALT;
     }
-    
+
     /* Default is NONE */
 }
 
+/************************************************************************************/
 
 static void freeResources(CFState *cs)
 {
     struct Message *cxm;
-    struct LibTable *tmpLibTable = libTable;
 
     if (cs->cs_broker != NULL)
     {
@@ -369,12 +351,12 @@ static void freeResources(CFState *cs)
 
     if (cs->cs_msgPort != NULL)
     {
-        while ((cxm = GetMsg(cs->cs_msgPort)))
+	while ((cxm = GetMsg(cs->cs_msgPort)))
 	{
 	    ReplyMsg(cxm);
 	}
 
-        DeleteMsgPort(cs->cs_msgPort);
+	DeleteMsgPort(cs->cs_msgPort);
     }
 
     if (inputIO != NULL)
@@ -382,23 +364,9 @@ static void freeResources(CFState *cs)
 	CloseDevice((struct IORequest *)inputIO);
 	DeleteIORequest((struct IORequest *)inputIO);
     }
-
-    if (LocaleBase != NULL)
-    {
-	CloseCatalog(catalogPtr);
-	CloseLibrary((struct Library *)LocaleBase); /* Passing NULL is valid */
-	D(bug("Closed locale.library!\n"));
-    }
-
-    while (tmpLibTable->lT_Name) /* Check for name rather than pointer */
-    {
-	CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
-	D(bug("Closed %s!\n", tmpLibTable->lT_Name));
-	tmpLibTable++;
-    }
-    
 }
 
+/************************************************************************************/
 
 /* Currently we use single click, not double click... */
 static void clicktoFront(CxMsg *cxm, CxObj *co)
@@ -418,14 +386,14 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
 	    if ((PeekQualifier() & 0xff) != cfInfo.ci_qualifiers)
 	    {
 		D(bug("Qualifiers: %i, Wanted qualifiers: %i\n",
-		      (int)PeekQualifier(),
-		      (int)cfInfo.ci_qualifiers | IEQUALIFIER_LEFTBUTTON));
+			    (int)PeekQualifier(),
+			    (int)cfInfo.ci_qualifiers | IEQUALIFIER_LEFTBUTTON));
 
 		return;
 	    }
-	    
+
 	    cfInfo.ci_lastWindow = cfInfo.ci_thisWindow;
-	    
+
 	    if (IntuitionBase->ActiveWindow != NULL)
 	    {
 		screen = IntuitionBase->ActiveWindow->WScreen;
@@ -434,10 +402,10 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
 	    {
 		screen = IntuitionBase->ActiveScreen;
 	    }
-	    
+
 	    layer = WhichLayer(&screen->LayerInfo,
-			       screen->MouseX, screen->MouseY);
-	    
+		    screen->MouseX, screen->MouseY);
+
 	    if (layer == NULL)
 	    {
 		return;
@@ -445,7 +413,7 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
 
 	    cfInfo.ci_thisWindow = (layer != NULL) ?
 		(struct Window *)layer->Window : NULL;
-	    
+
 	    /* Error: IB->ActiveWindow is non-NULL even if there is no
 	       active window! */
 	    if (layer->front != NULL)
@@ -453,21 +421,21 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
 		if (cfInfo.ci_doubleClick)
 		{
 		    if (!DoubleClick(cfInfo.ci_lcSeconds, cfInfo.ci_lcMicros,
-				     ie->ie_TimeStamp.tv_secs,
-				     ie->ie_TimeStamp.tv_micro))
+				ie->ie_TimeStamp.tv_secs,
+				ie->ie_TimeStamp.tv_micro))
 		    {
 			cfInfo.ci_lcSeconds = ie->ie_TimeStamp.tv_secs;
 			cfInfo.ci_lcMicros  = ie->ie_TimeStamp.tv_micro;
 
 			return;
 		    }
-		    
+
 		    D(bug("Time %i %i, last time %i %i\n",
-			  ie->ie_TimeStamp.tv_secs,
-			  ie->ie_TimeStamp.tv_micro,
-			  cfInfo.ci_lcSeconds,
-			  cfInfo.ci_lcMicros));
-		    
+				ie->ie_TimeStamp.tv_secs,
+				ie->ie_TimeStamp.tv_micro,
+				cfInfo.ci_lcSeconds,
+				cfInfo.ci_lcMicros));
+
 		    cfInfo.ci_lcSeconds = ie->ie_TimeStamp.tv_secs;
 		    cfInfo.ci_lcMicros  = ie->ie_TimeStamp.tv_micro;
 
@@ -488,71 +456,73 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
 		//DisposeCxMsg(cxm);
 
 		D(bug("Put window %s to front.\n",
-		      cfInfo.ci_thisWindow->Title));
+			    cfInfo.ci_thisWindow->Title));
 	    }
 	    else
 	    {
 		D(bug("New: %p Old: %p\n", cfInfo.ci_thisWindow,
-		      IntuitionBase->ActiveWindow));
+			    IntuitionBase->ActiveWindow));
 	    }
 	}
     }
 }
 
+/************************************************************************************/
 
 static void handleCx(CFState *cs)
 {
     CxMsg *msg;
     BOOL   quit = FALSE;
     LONG   signals;
-        
+
     while (!quit)
     {
 	signals = Wait((1 << nb.nb_Port->mp_SigBit)  | SIGBREAKF_CTRL_C);
-	
+
 	if (signals & (1 << nb.nb_Port->mp_SigBit))
 	{
 	    while ((msg = (CxMsg *)GetMsg(cs->cs_msgPort)))
 	    {
 		switch (CxMsgType(msg))
 		{
-		case CXM_COMMAND:
-		    switch (CxMsgID(msg))
-		    {
-		    case CXCMD_DISABLE:
-			ActivateCxObj(cs->cs_broker, FALSE);
-			break;
-			
-		    case CXCMD_ENABLE:
-			ActivateCxObj(cs->cs_broker, TRUE);
-			break;
-			
-		    case CXCMD_UNIQUE:
-			/* Running the program twice is the same as shutting
-			   down the existing program... */
-			/* Fall through */
+		    case CXM_COMMAND:
+			switch (CxMsgID(msg))
+			{
+			    case CXCMD_DISABLE:
+				ActivateCxObj(cs->cs_broker, FALSE);
+				break;
 
-		    case CXCMD_KILL:
-			quit = TRUE;
+			    case CXCMD_ENABLE:
+				ActivateCxObj(cs->cs_broker, TRUE);
+				break;
+
+			    case CXCMD_UNIQUE:
+				/* Running the program twice is the same as shutting
+				   down the existing program... */
+				/* Fall through */
+
+			    case CXCMD_KILL:
+				quit = TRUE;
+				break;
+
+			} /* switch (CxMsgID(msg)) */
 			break;
-			
-		    } /* switch (CxMsgID(msg)) */
-		    break;
 		} /* switch (CxMsgType(msg))*/
-		
+
 		ReplyMsg((struct Message *)msg);
-		
+
 	    } /* while ((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
 	}	    
-	
+
 	if (signals & SIGBREAKF_CTRL_C)
 	{
 	    quit = TRUE;
 	}
-	
+
     } /* while(!quit) */
 }
 
+/************************************************************************************/
 
 int main(int argc, char **argv)
 {
@@ -567,8 +537,14 @@ int main(int argc, char **argv)
     {
 	error = RETURN_FAIL;
     }
-    
+
     freeResources(&cState);
 
     return error;
 }
+
+/************************************************************************************/
+
+ADD2INIT(Locale_Initialize,   90);
+ADD2EXIT(Locale_Deinitialize, 90);
+

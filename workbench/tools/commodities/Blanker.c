@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/symbolsets.h>
 #include <workbench/startup.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
@@ -33,9 +34,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define CATCOMP_ARRAY
+#include "strings.h"
+
+#define CATALOG_NAME     "System/Tools/Commodities.catalog"
+#define CATALOG_VERSION  0
+
+
 /************************************************************************************/
 
-UBYTE version[] = "$VER: Blanker 0.10 (20.02.2006)";
+UBYTE version[] = "$VER: Blanker 0.11 (15.04.2006)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,SECONDS=SEC/N/K,STARS=ST/N/K"
 
@@ -48,12 +56,6 @@ UBYTE version[] = "$VER: Blanker 0.10 (20.02.2006)";
 
 #define CMD_STARTBLANK	1
 #define CMD_STOPBLANK   2
-
-#define CATCOMP_NUMBERS
-#define CATCOMP_STRINGS
-#define CATCOMP_ARRAY
-
-#include "strings.h"
 
 #ifdef __MORPHOS__
 static void BlankerAction(void);
@@ -80,36 +82,13 @@ static struct NewBroker nb =
 };
 
 
-/* Libraries to open */
-struct LibTable
-{
-    APTR   lT_Library;
-    STRPTR lT_Name;
-    ULONG  lT_Version;
-}
-libTable[] =
-{
-    { &IntuitionBase, "intuition.library"   , 39L },
-    { &GfxBase	    , "graphics.library"    , 39L },
-    { &CxBase	    , "commodities.library" , 39L },
-    { &IconBase     , "icon.library"        , 39L },
-    { NULL  	    	    	    	    	  }
-};
-
-#ifndef __MORPHOS__
-struct LocaleBase   	*LocaleBase    = NULL;
-#endif
-struct Library      	*IconBase      = NULL;
-struct Library      	*CxBase        = NULL;
-struct IntuitionBase 	*IntuitionBase = NULL;
-
 static struct MsgPort 	*cxport;
 static struct Window 	*win;
 static struct RastPort  *rp;
 static struct ColorMap  *cm;
 static struct Task  	*maintask;
 
-static struct Catalog 	*catalogPtr;
+static struct Catalog 	*catalog;
 static struct RDArgs 	*myargs;
 static CxObj 	    	*cxbroker, *cxcust;
 static ULONG 	    	cxmask, actionmask;
@@ -126,15 +105,77 @@ static WORD 	    	star_x[MAX_STARS], star_y[MAX_STARS],
 
 /************************************************************************************/
 
+static CONST_STRPTR _(ULONG id)
+{
+    if (LocaleBase != NULL && catalog != NULL)
+    {
+	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+    } 
+    else 
+    {
+	return CatCompArray[id].cca_Str;
+    }
+}
+
+/************************************************************************************/
+
+static BOOL Locale_Initialize(VOID)
+{
+    if (LocaleBase != NULL)
+    {
+	catalog = OpenCatalog
+	    ( 
+	     NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
+	    );
+    }
+    else
+    {
+	catalog = NULL;
+    }
+
+    return TRUE;
+}
+
+/************************************************************************************/
+
+static VOID Locale_Deinitialize(VOID)
+{
+    if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
+}
+
+/************************************************************************************/
+
+static void showSimpleMessage(CONST_STRPTR msgString)
+{
+    struct EasyStruct easyStruct;
+
+    easyStruct.es_StructSize	= sizeof(easyStruct);
+    easyStruct.es_Flags		= 0;
+    easyStruct.es_Title		= _(MSG_BLANKER_CXNAME);
+    easyStruct.es_TextFormat	= msgString;
+    easyStruct.es_GadgetFormat	= _(MSG_OK);		
+
+    if (IntuitionBase != NULL && !Cli() )
+    {
+	EasyRequestArgs(NULL, &easyStruct, NULL, NULL);
+    }
+    else
+    {
+	PutStr(msgString);
+    }
+}
+
+/************************************************************************************/
+
 static void FreePens(void)
 {
     if (pens_allocated)
     {
-    	ReleasePen(cm, blackpen);
-    	ReleasePen(cm, star1pen);
-    	ReleasePen(cm, star2pen);
-    	ReleasePen(cm, star3pen);
-	
+	ReleasePen(cm, blackpen);
+	ReleasePen(cm, star1pen);
+	ReleasePen(cm, star2pen);
+	ReleasePen(cm, star3pen);
+
 	pens_allocated = FALSE;
     }
 }
@@ -144,8 +185,7 @@ static void FreePens(void)
 static void Cleanup(CONST_STRPTR msg)
 {
     struct Message  *cxmsg;
-    struct LibTable *tmpLibTable = libTable;
-    
+
     if(msg)
     {
 	puts(msg);
@@ -176,53 +216,21 @@ static void Cleanup(CONST_STRPTR msg)
 	    DeleteMsgPort(cxport);
 	}
     }
-    
+
     if(myargs)
 	FreeArgs(myargs);
 
-    if(LocaleBase)
-    {
-	CloseCatalog(catalogPtr);
-	CloseLibrary((struct Library *)LocaleBase); /* Passing NULL is valid */
-	kprintf("Closed locale.library!\n");
-    }
-
-    while(tmpLibTable->lT_Name) /* Check for name rather than pointer */
-    {
-	if((*(struct Library **)tmpLibTable->lT_Library))
-	{
-	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
-	    kprintf("Closed %s!\n", tmpLibTable->lT_Name);
-	}
-
-	tmpLibTable++;
-    }
-
     if(actionsig)
 	FreeSignal(actionsig);
-    
+
     exit(0);
-}
-
-/************************************************************************************/
-
-CONST_STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
-{
-    if(catalogPtr) 
-    {
-        return GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
-    }
-    else
-    {
-        return CatCompArray[id].cca_Str;
-    }
 }
 
 /************************************************************************************/
 
 static void DosError(void)
 {
-    Fault(IoErr(),0,s,255);
+    Fault(IoErr(), 0, s, sizeof (s));
     Cleanup(s);
 }
 
@@ -237,70 +245,15 @@ static void Init(void)
 
 /************************************************************************************/
 
-static void OpenLibs(void)
-{
-    struct LibTable *tmpLibTable = libTable;
-    UBYTE   	    tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
-
-    if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
-    {
-	catalogPtr = OpenCatalog
-        (
-            NULL, "System/Tools/Commodities.catalog", 
-            OC_BuiltInLanguage, (IPTR) "english",
-            TAG_DONE
-        );
-    }
-    else
-	kprintf("Warning: Can't open locale.library V40!\n");
-
-    while(tmpLibTable->lT_Library)
-    {
-	if(!((*(struct Library **)tmpLibTable->lT_Library = OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version))))
-	{
-	    sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), tmpLibTable->lT_Name, tmpLibTable->lT_Version);
-            //showSimpleMessage(ec, tmpString);
-            Cleanup(tmpString);
-        }
-        else
-	    kprintf("Library %s opened!\n", tmpLibTable->lT_Name);
-
-        tmpLibTable++;
-    }
-
-}
-
-/************************************************************************************/
-
 static void GetArguments(int argc, char **argv)
 {
     if (argc == 0)
     {
-	struct WBStartup *wbmsg;
-	struct WBArg *wbarg;
-	struct DiskObject *dobj;
-	if ( (wbmsg = (struct WBStartup *)argv) )
-        {
-	    wbarg = wbmsg->sm_ArgList;
-	    if ( wbarg && wbarg->wa_Name && (dobj = GetDiskObject(wbarg->wa_Name) ) )
-	    {
-		const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
-		STRPTR s;
-		if ((s = FindToolType(toolarray, "CX_PRIORITY")))
-		{
-		    nb.nb_Pri = atol(s);
-		}
-		if ((s = FindToolType(toolarray, "SECONDS")))
-		{
-		    blankwait = atol(s);
-		}
-		if ((s = FindToolType(toolarray, "STARS")))
-		{
-		    num_stars = atol(s);
-		}		
-		FreeDiskObject(dobj);
-	    }
-	}    
+	UBYTE **array = ArgArrayInit(argc, (UBYTE **)argv);
+	nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
+	blankwait = ArgInt(array, "SECONDS"    , blankwait);
+	num_stars = ArgInt(array, "STARS"      , num_stars);
+	ArgArrayDone();
     }
     else
     {
@@ -308,7 +261,7 @@ static void GetArguments(int argc, char **argv)
 	{
 	    DosError();
 	}
-    
+
 	if (args[ARG_PRI]) nb.nb_Pri = *(LONG *)args[ARG_PRI];
 
 	if (args[ARG_SEC]) blankwait = *(LONG *)args[ARG_SEC];
@@ -345,19 +298,19 @@ static void BlankerAction(CxMsg *msg,CxObj *obj)
     {
 	if (disabled)
 	{
-            timecounter = 0;
+	    timecounter = 0;
 	}
 	else if (!blanked)
 	{
-            timecounter++;
-	    
-            if(timecounter >= blankwait * 10)
-            {
-        	actioncmd = CMD_STARTBLANK;
-        	Signal(maintask, actionmask);
+	    timecounter++;
 
-        	blanked = TRUE;
-            }
+	    if(timecounter >= blankwait * 10)
+	    {
+		actioncmd = CMD_STARTBLANK;
+		Signal(maintask, actionmask);
+
+		blanked = TRUE;
+	    }
 	}
     }
     else if ((ie->ie_Class == IECLASS_RAWMOUSE) || (ie->ie_Class == IECLASS_RAWKEY))
@@ -365,17 +318,16 @@ static void BlankerAction(CxMsg *msg,CxObj *obj)
 	if (ie->ie_Class != IECLASS_TIMER)
 	{
 	    timecounter = 0;
-	    
+
 	    if (blanked)
 	    {
-        	actioncmd = CMD_STOPBLANK;
-        	Signal(maintask, actionmask);
+		actioncmd = CMD_STOPBLANK;
+		Signal(maintask, actionmask);
 
 		blanked = FALSE;
 	    }
 	}
     }
-
 }
 
 /************************************************************************************/
@@ -384,31 +336,32 @@ static void InitCX(void)
 {
     if (!(cxport = CreateMsgPort()))
     {
-        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
+	Cleanup(_(MSG_CANT_CREATE_MSGPORT));
     }
-    
+
     nb.nb_Port = cxport;
-    
+
     cxmask = 1L << cxport->mp_SigBit;
-    
+
     if (!(cxbroker = CxBroker(&nb, 0)))
     {
-        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_BROKER));
+	Cleanup(_(MSG_CANT_CREATE_BROKER));
     }
-    
+
 #ifdef __MORPHOS__
     if (!(cxcust = CxCustom(&BlankerActionEntry, 0)))
 #else
-    if (!(cxcust = CxCustom(BlankerAction, 0)))
+	if (!(cxcust = CxCustom(BlankerAction, 0)))
 #endif
-    {
-        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
-    }
-    
+	{
+	    Cleanup(_(MSG_CANT_CREATE_CUSTOM));
+	}
+
     AttachCxObj(cxbroker, cxcust);
     ActivateCxObj(cxbroker, 1);
-    
+
 }
+
 /************************************************************************************/
 
 #define MY_RAND_MAX 32767
@@ -416,7 +369,7 @@ static void InitCX(void)
 static LONG myrand(void)
 {
     static LONG a = 1;
-    
+
     return (a = a * 1103515245 + 12345) & MY_RAND_MAX;
 }
 
@@ -433,37 +386,37 @@ static void MakeWin(void)
     LONG    	    i;
 
     if(!(screenPtr = LockPubScreen(NULL)))
-     kprintf("Warning: LockPubScreen() failed!\n");
+	kprintf("Warning: LockPubScreen() failed!\n");
 
     win = OpenWindowTags(0, WA_Left, 0,
-			    WA_Top, 0,
-			    WA_Width, screenPtr->Width,
-			    WA_Height, screenPtr->Height,
-			    WA_AutoAdjust, TRUE,
-			    WA_BackFill, (IPTR)LAYERS_NOBACKFILL,
-			    WA_SimpleRefresh, TRUE,
-			    WA_Borderless, TRUE,
-			    TAG_DONE);
+	    WA_Top, 0,
+	    WA_Width, screenPtr->Width,
+	    WA_Height, screenPtr->Height,
+	    WA_AutoAdjust, TRUE,
+	    WA_BackFill, (IPTR)LAYERS_NOBACKFILL,
+	    WA_SimpleRefresh, TRUE,
+	    WA_Borderless, TRUE,
+	    TAG_DONE);
 
     if(screenPtr)
-    	UnlockPubScreen(NULL, screenPtr);
+	UnlockPubScreen(NULL, screenPtr);
 
     if(win)
     {
-        rp = win->RPort;
+	rp = win->RPort;
 
-        scrwidth  = win->Width;
+	scrwidth  = win->Width;
 	scrheight = win->Height;
-	
+
 	cm = win->WScreen->ViewPort.ColorMap;
-	
+
 	blackpen = ObtainBestPenA(cm, 0x00000000, 0x00000000, 0x00000000, NULL);
 	star1pen = ObtainBestPenA(cm, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, NULL);
 	star2pen = ObtainBestPenA(cm, 0xAAAAAAAA, 0xAAAAAAAA, 0xAAAAAAAA, NULL);
 	star3pen = ObtainBestPenA(cm, 0x88888888, 0x88888888, 0x88888888, NULL);
-	
+
 	pens_allocated = TRUE;
-	
+
 	for(i = 0;i < num_stars;i++)
 	{
 	    star_x[i] = myrand() * scrwidth / MY_RAND_MAX;
@@ -488,7 +441,7 @@ static void MakeWin(void)
 	{
 	    if (CheckSignal(actionmask))
 	    {
-	        if (actioncmd == CMD_STOPBLANK)
+		if (actioncmd == CMD_STOPBLANK)
 		{
 		    FreePens();
 		    CloseWindow(win);
@@ -496,15 +449,15 @@ static void MakeWin(void)
 		    break;
 		}
 	    }
-	    
-            for(y2 = y;y2 < scrheight - 1;y2 += stripheight)
-	    {
-        	ClipBlit(rp, 0, y2, rp, 0, y2 + 1, scrwidth, scrheight - y2 - 1, 192);
-		SetAPen(rp, blackpen);
-        	RectFill(rp, 0, y2, scrwidth - 1, y2);
 
-    	    #if 0
-        	if (y2 == y)
+	    for(y2 = y;y2 < scrheight - 1;y2 += stripheight)
+	    {
+		ClipBlit(rp, 0, y2, rp, 0, y2 + 1, scrwidth, scrheight - y2 - 1, 192);
+		SetAPen(rp, blackpen);
+		RectFill(rp, 0, y2, scrwidth - 1, y2);
+
+#if 0
+		if (y2 == y)
 		{
 		    for(i = 0; i < num_stars; i++)
 		    {
@@ -514,24 +467,24 @@ static void MakeWin(void)
 			    WritePixel(rp, star_x[i], y2);
 			}
 		    }
-		    
+
 		} /* if (y2 == y) */
-	    #endif
-	    
+#endif
+
 	    } /* for(y2 = y;y2 < scrheight - 1;y2 += stripheight) */
-	    
+
 	    visible_sky = y;
-	    
+
 	    HandleWin();
-	    
+
 	    WaitTOF();
-	    
+
 	} /* for(y = 0;y < scrheight - 1;y++, stripheight++) */
-	
+
     } /* if (win) */
     else
     {
-    	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_WIN));
+	showSimpleMessage(_(MSG_CANT_CREATE_WIN));
     }
 }
 
@@ -540,10 +493,10 @@ static void MakeWin(void)
 static void HandleWin(void)
 {
     LONG i;
-    
+
     for(i = 0; i < num_stars;i++)
     {
-    	if (star_y[i] <= visible_sky)
+	if (star_y[i] <= visible_sky)
 	{
 	    SetAPen(rp, blackpen);
 	    WritePixel(rp, star_x[i], star_y[i]);
@@ -555,7 +508,6 @@ static void HandleWin(void)
 	    WritePixel(rp, star_x[i], star_y[i]);
 	}
     }
-	
 }
 
 /************************************************************************************/
@@ -564,15 +516,15 @@ static void HandleAction(void)
 {
     switch(actioncmd)
     {
-        case CMD_STARTBLANK:
+	case CMD_STARTBLANK:
 	    if (!win) MakeWin();
 	    break;
-	    
+
 	case CMD_STOPBLANK:
 	    if (win)
 	    {
-	    	FreePens();
-	        CloseWindow(win);
+		FreePens();
+		CloseWindow(win);
 		win = 0;
 	    }
 	    break;		
@@ -584,38 +536,38 @@ static void HandleAction(void)
 static void HandleCx(void)
 {
     CxMsg *msg;
-    
+
     while((msg = (CxMsg *)GetMsg(cxport)))
     {
-       switch(CxMsgType(msg))
-       {
+	switch(CxMsgType(msg))
+	{
 	    case CXM_COMMAND:
-               switch(CxMsgID(msg))
-               {
-        	  case CXCMD_DISABLE:
-        	     ActivateCxObj(cxbroker,0L);
-		     disabled = TRUE;
-        	     break;
+		switch(CxMsgID(msg))
+		{
+		    case CXCMD_DISABLE:
+			ActivateCxObj(cxbroker,0L);
+			disabled = TRUE;
+			break;
 
-        	  case CXCMD_ENABLE:
-        	     ActivateCxObj(cxbroker,1L);
-		     disabled = FALSE;
-        	     break;
+		    case CXCMD_ENABLE:
+			ActivateCxObj(cxbroker,1L);
+			disabled = FALSE;
+			break;
 
-		  case CXCMD_UNIQUE:
-		  case CXCMD_KILL:
-        	     quitme = TRUE;
-        	     break;
+		    case CXCMD_UNIQUE:
+		    case CXCMD_KILL:
+			quitme = TRUE;
+			break;
 
-               } /* switch(CxMsgID(msg)) */
-               break;
+		} /* switch(CxMsgID(msg)) */
+		break;
 
-       } /* switch (CxMsgType(msg))*/
-       
-       ReplyMsg((struct Message *)msg);
-       
-   } /* while((msg = (CxMsg *)GetMsg(cxport))) */
-   
+	} /* switch (CxMsgType(msg))*/
+
+	ReplyMsg((struct Message *)msg);
+
+    } /* while((msg = (CxMsg *)GetMsg(cxport))) */
+
 }
 
 /************************************************************************************/
@@ -623,10 +575,10 @@ static void HandleCx(void)
 static void HandleAll(void)
 {
     ULONG sigs;
-    
+
     while(!quitme)
     {
-        if (win)
+	if (win)
 	{
 	    HandleWin();
 	    WaitTOF();
@@ -634,15 +586,15 @@ static void HandleAll(void)
 	}
 	else
 	{
-            sigs = Wait(cxmask | actionmask | SIGBREAKF_CTRL_C);
+	    sigs = Wait(cxmask | actionmask | SIGBREAKF_CTRL_C);
 	}
-	
+
 	if (sigs & cxmask) HandleCx();
 	if (sigs & actionmask) HandleAction();
 	if (sigs & SIGBREAKF_CTRL_C) quitme = TRUE;
-	
+
     } /* while(!quitme) */
-    
+
 }
 
 /************************************************************************************/
@@ -650,11 +602,10 @@ static void HandleAll(void)
 int main(int argc, char **argv)
 {
     Init();
-    OpenLibs();
 
-    nb.nb_Name = getCatalog(catalogPtr, MSG_BLANKER_CXNAME);
-    nb.nb_Title = getCatalog(catalogPtr, MSG_BLANKER_CXTITLE);
-    nb.nb_Descr = getCatalog(catalogPtr, MSG_BLANKER_CXDESCR);
+    nb.nb_Name = _(MSG_BLANKER_CXNAME);
+    nb.nb_Title = _(MSG_BLANKER_CXTITLE);
+    nb.nb_Descr = _(MSG_BLANKER_CXDESCR);
 
     GetArguments(argc, argv);
     InitCX();
@@ -663,5 +614,8 @@ int main(int argc, char **argv)
     return 0;
 }
 
-
 /************************************************************************************/
+
+ADD2INIT(Locale_Initialize,   90);
+ADD2EXIT(Locale_Deinitialize, 90);
+

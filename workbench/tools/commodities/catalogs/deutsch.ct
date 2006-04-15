@@ -1,4 +1,4 @@
-## version $VER: Commodities.catalog 1.1 (11.04.2006)
+## version $VER: Commodities.catalog 1.1 (15.04.2006)
 ## language deutsch
 ## codeset 0
 ;
@@ -6,6 +6,10 @@
 MSG_CANT_OPEN_LIB
 Kann %s V%ld nicht öffnen!\n
 ; Can't open %s V%ld!\n
+;
+MSG_CANT_OPEN_INPUTDEVICE
+Kann 'input.device' nicht öffnen
+; Can't open 'input.device'
 ;
 MSG_CANT_LOCK_SCR
 Kann public Screen nicht locken!\n
@@ -20,11 +24,11 @@ Kann Gadgets nicht erzeugen!\n
 ; Can't create gadgets!\n
 ;
 MSG_CANT_CREATE_MENUS
-Kann Menus nicht erzeugen!\n
+Kann Menüs nicht erzeugen!\n
 ; Can't create menus!\n
 ;
 MSG_CANT_LAYOUT_MENUS
-Kann Menus nicht layouten!\n
+Kann Menüs nicht layouten!\n
 ; Can't layout menus!\n
 ;
 MSG_CANT_CREATE_WIN
@@ -148,7 +152,7 @@ Autofokus
 ; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
-Aktiviert Fenstert unter Mauszeiger
+Aktiviert Fenster unter Mauszeiger
 ; Activates the window under the mouse
 ;
 MSG_STARTMENU_CXNAME
@@ -264,7 +268,7 @@ NoCapsLock
 ; NoCapsLock
 ;
 MSG_NOCAPSLOCK_CXTITLE
-Kein Caps Lock:
+Kein Caps Lock
 ; NoCapsLock:
 ;
 MSG_NOCAPSLOCK_CXDESCR
