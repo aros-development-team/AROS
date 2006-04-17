@@ -1270,9 +1270,14 @@ static ULONG dm_render(APTR dmr_data
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;;
     msg = &dmrd->msg;
-#warning Not sure about this one . Set it to 0 since we adjust msg->memptr to x1/y1 lower down
+#if 1
+    msg->offsetx = x1;
+    msg->offsety = y1;
+#else
+    #warning "Not sure about this one . Set it to 0 since we adjust msg->memptr to x1/y1 lower down"
     msg->offsetx = 0; // x1;
     msg->offsety = 0; // y1;
+#endif
     msg->xsize = width;
     msg->ysize = height;
     
@@ -1288,9 +1293,13 @@ static ULONG dm_render(APTR dmr_data
 	/* Colormodel allready set */
     
 	/* Compute the adress for the start pixel */
-	#warning We should maybe use something else than the BytesPerLine method since we may have alignment
+	#warning "We should maybe use something else than the BytesPerLine method since we may have alignment"
 	msg->bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
+#if 1
+	msg->memptr = addr;
+#else
 	msg->memptr = addr + (msg->bytesperrow * y1) + (bytesperpixel * x1);
+#endif
 	
 	HIDD_BM_ReleaseDirectAccess(dstbm_obj);
 	
@@ -1310,8 +1319,13 @@ static ULONG dm_render(APTR dmr_data
 	   it using a temporary buffer
 	*/
    	OOP_GetAttr(dmrd->pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
-	bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
-    
+	//bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
+	bytesperrow = width * bytesperpixel;
+
+
+kprintf("width %d bytesperrow %d bytesperpixel %d\n", width, bytesperrow, bytesperpixel);
+kprintf(" colormodel %d\n", msg->colormodel);
+
 	if (PIXELBUF_SIZE < bytesperrow) {
 	    D(bug("!!! NOT ENOUGH SPACE IN TEMP BUFFER FOR A SINGLE LINE IN DoCDrawMethodTagList() !!!\n"));
 	    return 0;
@@ -1320,6 +1334,10 @@ static ULONG dm_render(APTR dmr_data
     	/* Calculate number of lines we might copy */
     	max_tocopy_h = PIXELBUF_SIZE / bytesperrow;
     
+    #if 1
+    	msg->offsetx = 0;
+	msg->offsety = 0;
+    #endif
     	/* Get the maximum number of lines */
     	while (lines_todo != 0) {
 	
@@ -1337,6 +1355,13 @@ static ULONG dm_render(APTR dmr_data
 	    msg->bytesperpix = (UWORD)bytesperpixel;
 
 LOCK_PIXBUF
+	    HIDD_BM_GetImage(dstbm_obj
+		, (UBYTE *)PrivGBase(GfxBase)->pixel_buf
+		, bytesperrow
+		, x1, y1 + height - lines_todo, width, lines_todo
+		, dmrd->stdpf
+	    );
+    	    
 	    /* Use the hook to set some pixels */
 	    CallHookPkt(dmrd->hook, dmrd->rp, msg);
 	
@@ -1345,13 +1370,15 @@ LOCK_PIXBUF
 	    HIDD_BM_PutImage(dstbm_obj, dmrd->gc
 		, (UBYTE *)PrivGBase(GfxBase)->pixel_buf
 		, bytesperrow
-		, x1, y1, width, height
+		, x1, y1 + height - lines_todo, width, lines_todo
 		, dmrd->stdpf
 	    );
 	    gc_tags[0].ti_Data = (IPTR)old_drmd;
 	    OOP_SetAttrs(dmrd->gc, gc_tags);
 	
 ULOCK_PIXBUF
+
+    	    lines_todo -= tocopy_h;
 	}
 
     }
