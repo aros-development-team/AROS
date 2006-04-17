@@ -105,5 +105,6 @@ extern VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct
 extern VOID driver_UnLockBitMap(APTR handle, struct Library *CyberGfxBase);
 extern APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Library *CyberGfxBase);
 
+extern VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct TagItem *tags, struct Library *CyberGfxBase);
 
 #endif /* CYBERGRAPHICS_INTERN_H */

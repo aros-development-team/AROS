@@ -15,9 +15,9 @@
 	AROS_LH3(void, DoCDrawMethodTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Hook     *, , A0),
-	AROS_LHA(struct RastPort *, , A1),
-	AROS_LHA(struct TagItem  *, , A2),
+	AROS_LHA(struct Hook     *, hook, A0),
+	AROS_LHA(struct RastPort *, rp, A1),
+	AROS_LHA(struct TagItem  *, tags, A2),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 26, Cybergraphics)
@@ -48,7 +48,8 @@
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
     extern void aros_print_not_implemented (char *);
 
-    aros_print_not_implemented ("DoCDrawMethodTagList");
+    //aros_print_not_implemented ("DoCDrawMethodTagList");
+    driver_DoCDrawMethodTagList(hook, rp, tags, CyberGfxBase);    
 
     AROS_LIBFUNC_EXIT
 } /* DoCDrawMethodTagList */
