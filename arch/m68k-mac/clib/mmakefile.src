@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 24162 2006-03-14 15:49:21Z MastaTabs $
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS     := $(SHARED_CFLAGS) -I$(TOP)/compiler/clib -I..
+SPECIAL_AFLAGS  := -I..
+%build_archspecific \
+	mainmmake=linklibs-clib maindir=compiler/clib \
+	arch=m68k \
+	asmfiles="longjmp setjmp"
+
+%common

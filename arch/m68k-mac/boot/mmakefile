@@ -1,0 +1,68 @@
+include $(TOP)/config/make.cfg
+
+FILES   := libexec
+USELIBS := hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit gcc1
+#USELIBS := arossupport rom autoinit libinit gcc1
+LIBS    := $(addprefix -l,$(USELIBS))
+DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
+
+KLIBS   := exec aros #dos graphics utility intuition keymap \
+           #mathieeesingbas expansion oop layers workbench cybergraphics
+
+KDEVS   := #timer input keyboard console
+KHNDLRS := #con nil ram
+KHIDDS  := #hiddclass
+KRSRCS  := #battclock misc
+
+KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
+
+#MM kernel-link-mac-m68k : setup-mac-m68k
+kernel-link-mac-m68k : $(BINDIR)/aros-mac-m68k $(BINDIR)/aros.elf $(BINDIR)/aros_stripped.elf $(BINDIR)/aros_floppy.img
+
+$(BINDIR)/aros-mac-m68k : $(OBJS) $(DEPLIBS)
+	@$(ECHO) Linking $@...
+	$(CC) $(KOBJS) -ffreestanding -nostartfiles -nostdlib -o $@ -L$(LIBDIR) $(LIBS) -nostdlib
+
+$(BINDIR)/aros.elf : entrycode.o $(BINDIR)/aros-mac-m68k
+	@$(ECHO) Linking executable $@... 
+	m68k-linux-ld -e hardware_reset_init_1 -Ttext 0x1000 -Map $(BINDIR)/aros.map -o $@ $^
+
+$(BINDIR)/aros_stripped.elf : $(BINDIR)/aros.elf
+	@$(ECHO) Striping to $@...
+	$(TARGET_STRIP) -d -o $@ $^
+
+$(BINDIR)/aros_floppy.img : $(BINDIR)/aros_stripped.elf
+	@$(ECHO) Making floppy image
+	emile-install -f /lib/emile/first_floppy -s /lib/emile/m68k-second_floppy -k $^ $@
+#	@$(ECHO) "Generating $(BINDIR)/aros.rom..."
+#	@$(OBJCOPY) -O binary $@ $(BINDIR)/aros.rom -v -S --pad-to=0x100000
+
+#rom-pp-m68k: clean aros.rom
+
+entrycode.o : entrycode.s
+	@$(ECHO) Assembling $^...
+	@$(CC) -c $^
+
+#aros.rom : aros_rom
+#	@$(ECHO) "Generating $@..."
+#	@$(OBJCOPY) -O binary $^ $@ -v -S --pad-to=0x10d00000
+#	@$(MKDIR) $(HOME)/.xcopilot
+#	@$(RM) $(HOME)/.xcopilot/aros.rom
+#	@$(CP) $@ $(HOME)/.xcopilot/aros.rom
+
+#clean :
+#	$(RM) *.o aros.rom aros_rom *.s ~/.xcopilot/aros.rom
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(TOP)/config/make.tail
+
+BDID := $(BDTARGETID)

@@ -1,0 +1,47 @@
+#   $Id: mmakefile.src 17800 2003-05-30 00:10:56Z verhaegs $
+#
+#   Generate the libgcc1.a for m68k.
+#
+include $(TOP)/config/make.cfg
+
+FILES	:= \
+	_addsubdf3 \
+	_addsubsf3 \
+	_divdf3 \
+	_divmodsi3 \
+	_divsf3 \
+	_eqdf2 \
+	_eqsf2 \
+	_extend \
+	_extendsfdf2 \
+	_fixdfsi \
+	_fixsfsi \
+	_floatsidf \
+	_floatsisf \
+	_gedf2 \
+	_gesf2 \
+	_gtdf2 \
+	_gtsf2 \
+	_ledf2 \
+	_lesf2 \
+	_ltdf2 \
+	_ltsf2 \
+	_muldf3 \
+	_mulsf3 \
+	_mulsi3 \
+	_nedf2 \
+	_negdf2 \
+	_negsf2 \
+	_nesf2 \
+	_normdf \
+	_normsf \
+	_truncdfsf2 \
+	_udivmodsi3
+
+#MM linklibs-gcc1-m68000
+
+AFLAGS = -mc68040
+
+%build_linklib mmake=linklibs-gcc1-m68000 libname=gcc1 files= asmfiles=$(FILES)
+
+%common

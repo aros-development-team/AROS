@@ -1,0 +1,196 @@
+#   $Id: mmakefile.src 17800 2003-05-30 00:10:56Z verhaegs $
+#
+#   Generate the libgcc1.a for m68k.
+#
+include $(TOP)/config/make.cfg
+
+FILES	:= \
+	_addsubdf3 \
+	_addsubsf3 \
+	_divdf3 \
+	_divmodsi3 \
+	_divsf3 \
+	_eqdf2 \
+	_eqsf2 \
+	_extend \
+	_extendsfdf2 \
+	_fixdfsi \
+	_fixsfsi \
+	_floatsidf \
+	_floatsisf \
+	_gedf2 \
+	_gesf2 \
+	_gtdf2 \
+	_gtsf2 \
+	_ledf2 \
+	_lesf2 \
+	_ltdf2 \
+	_ltsf2 \
+	_muldf3 \
+	_mulsf3 \
+	_mulsi3 \
+	_nedf2 \
+	_negdf2 \
+	_negsf2 \
+	_nesf2 \
+	_normdf \
+	_normsf \
+	_truncdfsf2 \
+	_udivmodsi3
+
+#MM linklibs-gcc1-m68000
+
+AFLAGS = -mc68040
+
+
+BDID := $(BDID)_
+ifneq ($(filter $(TARGET),linklibs-gcc1-m68000 linklibs-gcc1-m68000-clean),)
+BDTARGETID := $(BDID)
+endif
+
+# assign and generate the local variables used in this macro
+BD_LIBNAME$(BDID)    := gcc1
+OBJDIR               ?= $(GENDIR)/$(CURDIR)
+BD_OBJDIR$(BDID)     := $(OBJDIR)
+BD_LIBDIR$(BDID)     := $(LIBDIR)
+
+BD_FILES$(BDID)      := 
+BD_ASMFILES$(BDID)   := $(FILES)
+BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
+BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)) $(BD_ASMFILES$(BDID)))))
+BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)))
+
+BD_CFLAGS$(BDID)     := $(CFLAGS)
+ifeq (,)
+BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
+else
+BD_DFLAGS$(BDID)     := 
+endif
+BD_AFLAGS$(BDID)     := $(AFLAGS)
+
+BD_LINKLIB$(BDID)    := $(BD_LIBDIR$(BDID))/lib$(BD_LIBNAME$(BDID)).a
+
+.PHONY : linklibs-gcc1-m68000 linklibs-gcc1-m68000-clean
+
+#MM
+linklibs-gcc1-m68000 : $(BD_LINKLIB$(BDID))
+
+#MM
+linklibs-gcc1-m68000-clean ::
+	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID))
+
+ifeq ($(TARGET),linklibs-gcc1-m68000)
+ifneq ($(dir $(BD_FILES$(BDID))),./)
+vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
+endif
+
+
+ifeq ($(BD_OBJDIR$(BDID)),)
+  TMP_TARGETBASE := %
+else
+  TMP_TARGETBASE := $(BD_OBJDIR$(BDID))/$(notdir %)
+endif
+
+ifeq ($(findstring target,host target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC)
+endif
+ifeq (target,host)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
+endif
+
+$(TMP_TARGETBASE).o : %.c
+	@$(ECHO) "Compiling $(notdir $<)"
+	@$(IF) $(TMP_CMD) $(BD_CFLAGS$(BDID)) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$<: $(TMP_CMD) $(BD_CFLAGS$(BDID)) -c $< -o $@" >> $(GENDIR)/errors ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: $(TMP_CMD) $(BD_CFLAGS$(BDID)) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+ifeq ($(BD_DFLAGS$(BDID)),)
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_CFLAGS$(BDID))
+else
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_DFLAGS$(BDID))
+endif
+$(TMP_TARGETBASE).d : %.c
+	@$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir $<)..."
+	@AROS_CC="$(TMP_CMD)" $(MKDEPEND) $(TMP_DFLAGS) $< -o $@
+
+ifeq ($(BD_OBJDIR$(BDID)),)
+%.o : %.s
+	@$(ECHO) "Assembling $(notdir $<)..."
+	@$(IF) $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir $<): $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+else
+$(BD_OBJDIR$(BDID))/$(notdir %).o : %.s
+	@$(ECHO) "Assembling $(notdir $<)..."
+	@$(IF) $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir $<): $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: $(AS) $(BD_AFLAGS$(BDID)) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+
+endif
+endif
+
+
+$(BD_LIBDIR$(BDID))/libgcc1.a : $(BD_OBJS$(BDID))
+	@$(ECHO) "Creating library $@..."
+	@$(AR) $@ $^
+	@$(RANLIB) $@
+
+ifneq ($(BD_DEPS$(BDID)),)
+  ifneq (linklibs-gcc1-m68000,)
+    ifneq ($(findstring $(TARGET),linklibs-gcc1-m68000),)
+      -include $(BD_DEPS$(BDID))
+    endif
+  else
+    ifeq (,$(filter clean% %clean %clean% setup% includes% %setup,$(TARGET)))
+      -include $(BD_DEPS$(BDID))
+    endif
+  endif
+endif
+
+$(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) : | $(BD_OBJDIR$(BDID))
+$(BD_LINKLIB$(BDID)) : | $(BD_LIBDIR$(BDID))
+GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_LIBDIR$(BDID))
+
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(TOP)/config/make.tail
+
+BDID := $(BDTARGETID)

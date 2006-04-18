@@ -1,0 +1,43 @@
+You need to download  or compile a m68k (elf) cross compiler for linux
+on i386.
+For bootfloppy image creation you also need the emile-tools for i386.
+You can download them at http://emile.sf.net/
+
+Compilation
+-----------
+Compile the kernel as follows starting in AROS/
+
+make clean
+autoconf
+./configure --target=mac-m68k
+make
+
+I had to manually adjust the configured m68k-elf-* tools in
+AROS/bin/linux-i386/tools/ to have it compile.
+The resulting binaries are placed into AROS/bin/m68k-mac/AROS
+When emile is installed a bootable floppy image should be in there too.
+You can write the image to floppy using dd on linux or a tool like
+rawrite on Windows.
+You can also use the generated .elf files with the Penguin bootloader
+on MacOS.
+
+Some Knowledge
+--------------
+
+My test machines are an LC 475 and an Quadra 700. I haven't tested on
+any other machine yet.
+The image doesn't work on machines without MMU, because the bootloader
+needs it. Because of that its also not working on any Mac68k emulator
+without MMU support.
+When using the floppy boot method, no MacOS is needed.
+
+The whole thing isn't doing a lot right now.
+Its locating the machines framebuffer address through informations
+passed to it from the bootloader, clearing the screen and drawing
+some colored bars on it and printing some hardware info.
+
+Its trying to initialize exec but its still failing.
+I guess its related to the JUMPVEC stuff in machine.h .
+
+------------------------------------------------------
+MacOS is a registered trademark of Apple Computer Inc.

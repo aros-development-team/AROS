@@ -1,0 +1,151 @@
+# $Id: mmakefile.src 24175 2006-03-17 01:10:31Z MastaTabs $
+include $(TOP)/config/make.cfg
+
+CFILES          := \
+        core cause disable enable detect_memory idletask offsets \
+	preparecontext rawputchar screen switch sys_dispatch traps init
+
+AFILES          := coldreboot ints superstate sys_trap1_handler \
+		detect_memory_handlers setsr supervisor userstate \
+		execstubs stackswap switchtouser
+
+#MM kernel-exec-mac-m68k : kernel-exec-includes
+
+#USER_CFLAGS    := -I../ -I$(TOP)/rom/exec -I$(GENINCDIR) -D__AROS__
+USER_CFLAGS     := -I../ -I$(TOP)/rom/exec -fomit-frame-pointer -O6
+USER_AFLAGS     := -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
+
+ifeq ($(CFILES) $(AFILES),)
+  $(error no files or asmfiles given)
+endif
+
+BDID := $(BDID)_
+ifneq ($(filter $(TARGET),kernel-exec-mac-m68k),)
+BDTARGETID := $(BDID)
+endif
+
+#MM- kernel-exec : kernel-exec-$(ARCH)-$(CPU) kernel-exec-$(ARCH) kernel-exec-$(CPU)
+#MM- kernel-exec-linklib : kernel-exec-$(ARCH)-$(CPU) kernel-exec-$(ARCH) kernel-exec-$(CPU)
+#MM- kernel-exec-kobj : kernel-exec-$(ARCH)-$(CPU) kernel-exec-$(ARCH) kernel-exec-$(CPU)
+
+#MM kernel-exec-mac-m68k : kernel-exec-includes
+
+ifeq (mac-m68k,)
+  $(error argument arch has to be non empty for the rule_compile_archspecific macro)
+endif
+
+BD_OBJDIR$(BDID)  := $(GENDIR)/rom/exec/arch
+BD_COBJS$(BDID)   := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(CFILES))))
+BD_ASMOBJS$(BDID) := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(AFILES))))
+BD_OBJS$(BDID)    := $(BD_COBJS$(BDID)) $(BD_ASMOBJS$(BDID))
+BD_DEPS$(BDID)    := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(CFILES))))
+
+ifeq ($(TARGET),kernel-exec-mac-m68k)
+vpath %.c $(filter-out ./,$(dir $(CFILES)))
+vpath %.s $(filter-out ./,$(dir $(AFILES)))
+vpath %.S $(filter-out ./,$(dir $(AFILES)))
+endif
+
+$(BD_OBJS$(BDID)) : | $(BD_OBJDIR$(BDID))
+GLOB_MKDIRS += $(BD_OBJDIR$(BDID))
+
+#MM
+kernel-exec-mac-m68k :: $(BD_OBJS$(BDID))
+
+ifeq ($(findstring target,host target),)
+  $(error unknown compiler target)
+endif
+ifeq (target,target)
+$(BD_COBJS$(BDID)) : TMP_CMD:=$(TARGET_CC)
+endif
+ifeq (target,host)
+$(BD_COBJS$(BDID)) : TMP_CMD:=$(HOST_CC)
+endif
+ifneq (exec,)
+$(BD_COBJS$(BDID)) : TMP_CFLAGS:=$(CFLAGS) -I$(GENDIR)/rom/exec \
+                     --include $(GENDIR)/rom/exec/exec_deflibdefs.h
+else
+$(BD_COBJS$(BDID)) : TMP_CFLAGS:=$(CFLAGS)
+endif
+ifeq ($(TARGET),kernel-exec-mac-m68k)
+$(BD_OBJDIR$(BDID))/%.o : %.c
+	@$(ECHO) "Compiling $(notdir $<)"
+	@$(IF) $(TMP_CMD) $(TMP_CFLAGS) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$<: $(TMP_CMD) $(TMP_CFLAGS) -c $< -o $@" >> $(GENDIR)/errors ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Compile failed: $(TMP_CMD) $(TMP_CFLAGS) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+endif
+
+ifeq (,)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=$(CFLAGS)
+else
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=
+endif
+ifeq ($(TARGET),kernel-exec-mac-m68k)
+$(BD_OBJDIR$(BDID))/%.d : %.c
+	@$(IF) $(TEST) ! -d $(dir $@) ; then $(MKDIR) $(dir $@) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$(notdir $<)..."
+	@AROS_CC="$(AROS_CC)" $(MKDEPEND) $(TMP_DFLAGS) $< -o $@
+endif
+
+$(BD_ASMOBJS$(BDID)) : AFLAGS:=$(AFLAGS)
+
+ifeq ($(TARGET),kernel-exec-mac-m68k)
+$(BD_OBJDIR$(BDID))/%.o : %.s
+	@$(ECHO) "Assembling $(notdir $<)..."
+	@$(IF) $(AS) $(AFLAGS) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir $<): $(AS) $(AFLAGS) -c $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: $(AS) $(AFLAGS) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+$(BD_OBJDIR$(BDID))/%.o : %.S
+	@$(ECHO) "Assembling $(notdir $<)..."
+	@$(IF) $(AS) $(AFLAGS) -c $< -o $@ > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir $<): $(AS) $(AFLAGS) -c $< -o $@" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: $(AS) $(AFLAGS) -c $< -o $@" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+endif
+
+ifneq ($(BD_DEPS$(BDID)),)
+  ifneq (kernel-exec-mac-m68k,)
+    ifneq ($(findstring $(TARGET),kernel-exec-mac-m68k),)
+      -include $(BD_DEPS$(BDID))
+    endif
+  else
+    ifeq (,$(filter clean% %clean %clean% setup% includes% %setup,$(TARGET)))
+      -include $(BD_DEPS$(BDID))
+    endif
+  endif
+endif
+
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(TOP)/config/make.tail
+
+BDID := $(BDTARGETID)
