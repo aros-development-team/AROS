@@ -1,0 +1,20 @@
+OUTPUT_FORMAT("elf32-m68k", "elf32-m68k", "elf32-m68k")
+OUTPUT_ARCH(m68k)
+ENTRY(_hardware_reset_init_1)
+MEMORY 
+{
+  rom (rx)  : org = 0x10c00000 , l = 1M
+}
+
+SECTIONS 
+{
+  . = 0x1000;
+
+  entrycodes 0x10c00000       : { *(entrycodes)        } >rom =0x0000
+  entrycodes_bigrom 0x10c03000: { *(entrycodes_bigrom) } >rom =0x0000
+  .text 0x10c03200            : { *(.text)             } >rom =0x0000
+  .bss                        : { *(.bss)              } >rom =0x0000
+  .data                       : { *(.data)             } >rom =0x0000
+  .rodata                     : { *(.rodata)           } >rom =0x0000
+  romdisk                    :  { *(romdisk)           } >rom =0x0000
+}

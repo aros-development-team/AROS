@@ -1,0 +1,124 @@
+# $Id: mmakefile.src 24175 2006-03-17 01:10:31Z MastaTabs $
+include $(TOP)/config/make.cfg
+
+OS_INCLUDES   := -I$(GENINCDIR)
+
+#MM- AROS-mac-m68k : general-setup-mac-m68k     \
+#MM	kernel-mac-m68k                        \
+#MM	kernel-link-mac-m68k
+
+#MM- general-setup-mac-m68k: setup-mac-m68k includes includes-mac-m68k compiler-nofpu
+
+#Instead of the target 'compiler' I need to make the target compiler-nofpu
+#MM- compiler-nofpu : setup includes \
+#MM	linklibs-amiga \
+#MM	linklibs-arosm-m68000 \
+#MM	linklibs-arosz \
+#MM	linklibs-arossupport \
+#MM	linklibs-autoinit \
+#MM	linklibs-arosc \
+#MM	linklibs-coolimages  \
+#MM	linklibs-gcc1-m68000
+
+
+#MM create-mf-inc-again
+create-mf-inc-again :
+	@$(MAKE) -f $(TOP)/config/mmakefile setup
+
+
+# Kernel
+#MM- kernel-mac-m68k :                      \
+#MM	kernel-exec-mac-m68k                \
+#MM	kernel-expansion-linklib           \
+#MM	kernel-expansion-mac-m68k           \
+#MM	kernel-utility-linklib             \
+#MM	kernel-aros-linklib                \
+#MM	kernel-oop-linklib                 \
+#MM	kernel-hidd-linklib                \
+#MM	kernel-mathieeesingbas-linklib     \
+#MM	kernel-timer-linklib               \
+#MM	kernel-misc-linklib kernel-misc-mac-m68k \
+#MM	kernel-battclock-mac-m68k           \
+#MM	kernel-boot-linklib-quick          \
+#MM	kernel-dos-mac-m68k                 \
+#MM	kernel-graphics-linklib            \
+##MM	graphics-gfxhidd                   \
+#MM	kernel-graphics-mac-m68k            \
+#MM	kernel-layers-linklib              \
+#MM	kernel-intuition-mac-m68k           \
+#MM	kernel-mathffp-linklib             \
+#MM	kernel-workbench-linklib           \
+#MM	kernel-keymap-linklib              \
+#MM	kernel-keyboard-linklib            \
+#MM	kernel-gameport-linklib            \
+#MM	kernel-input-linklib               \
+#MM	kernel-console-linklib             \
+#MM	kernel-fs-con                      \
+#MM     kernel-misc-kobj \
+#MM     workbench-fs-afs-kobj \
+#MM     workbench-hidd-graphics-kobj \
+#MM	kernel-mac-m68k-drivers
+
+# Setup
+#MM- setup-mac-m68k : setup-exec-$(ARCH)-$(CPU) \
+#MM	setup-mlib-$(ARCH)-$(CPU) \
+#MM	setup-clib-$(ARCH)-$(CPU) \
+#MM	setup-dos-$(ARCH)-$(CPU)
+
+
+# MM		setup-intuition-$(CPU) \
+# MM		setup-battclock-$(CPU) \
+# MM		setup-dos-$(CPU)
+
+# Setup includes
+#MM- includes-mac-m68k : includes-copy-$(ARCH)-$(CPU) includes-copy
+
+# Setup bootsector and kernel startup code
+#MM- boot-mac-m68k : boot-$(CPU)
+
+# Setup the CLIB metatargets...
+#MM- setup-clib-mac-m68k : setup-clib-mac-$(CPU)
+
+#MM- clib-mac-m68k : clib-$(CPU)
+
+#MM- alib-mac-m68k : alib-$(CPU)
+
+#MM- kernel-exec-mac-m68k : exec-$(ARCH)-$(CPU) kernel-exec-linklib
+
+
+#MM- kernel-intuition-mac-m68k : intuition-$(GFXSYSTEM) \
+#MM	intuition-$(CPU) kernel-intuition-linklib
+
+#MM- kernel-battclock-mac-m68k : battclock-$(CPU) kernel-battclock-linklib
+
+#MM- kernel-dos-mac-m68k : dos-mac-m68k kernel-dos-linklib
+
+#MM
+includes-mac-m68k : $(INCFILES)
+	@$(NOP)
+
+#MM
+binary-mac-m68k : build
+	@./build $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
+	    $(OSGENDIR)/boot/kernel >$(OSGENDIR)/boot/aros.bin
+
+#MM- contrib-mac-m68k : contrib-complete
+
+#MM- workbench-mac-m68k : workbench-complete workbench
+
+#MM
+clean ::
+	-$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS)
+
+build: build.c $(GENINCDIR)/aros/boot.h
+	@$(HOST_CC) $(CFLAGS) -D__BFD__ -o build $<
+
+# %include_deps
+# Delete generated makefiles
+#MM
+clean ::
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(TOP)/config/make.tail
+
+BDID := $(BDTARGETID)
