@@ -838,6 +838,50 @@ case "$target_os" in
 	esac
 	;;
 
+    mac*)
+	aros_target_arch="mac"
+	aros_shared_default="no"
+	case "$target_cpu" in
+	    *m68k*)
+		aros_target_cpu="m68k"
+		aros_object_format="m68kelf"
+		aros_flavour="mac68knative"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
+		aros_kernel_ldflags=""
+		aros_default_wbwidth=512
+                aros_default_wbheight=384
+		aros_default_wbdepth=8
+                aros_target_cc="m68k-elf-gcc -pipe"
+                aros_target_ld="$(which m68k-elf-ld)"
+		aros_target_as="m68k-elf-gcc -pipe"
+		aros_shared_ld="m68k-elf-gcc"
+		aros_kernel_ld="m68k-elf-gcc"
+		aros_target_ar="m68k-elf-ar"
+		aros_target_ar_flags="cru"
+		aros_target_ranlib="m68k-elf-ranlib"
+		aros_target_nm="m68k-elf-nm"
+		aros_target_objcopy="m68k-elf-objcopy"
+		aros_target_objdump="m68k-elf-objdump"
+		aros_compiler_libs="-lgcc1"
+		aros_shared_default=no
+		aros_shared_cflags="-fpic"
+		aros_shared_aflags=""
+		aros_shared_ldflags="-Wl,-rpath,./lib -shared"
+		aros_kernel_ldflags="-Wl,-rpath,./lib"
+		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000"
+		aros_debug_aflags=""
+		aros_debug_ldflags="$aros_symbols_debug"
+		aros_mungwall_debug="0"
+		aros_modules_debug="0"
+		gcc_target_cpu="mc68000"
+		ignore_undefined_symbols="-ius"
+		;;
+	   *)
+		AC_MSG_ERROR("Unknown CPU for Mac68k -- $target_cpu")
+		;;
+	esac
+	;;
+
     *)
 	AC_MSG_ERROR([Unsupported target architecture $target])
 	;;
@@ -1228,6 +1272,8 @@ linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB"
 		aros_flavour="linklib" ;;
 palmnative)     aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_EMULATION)"
 		aros_flavour="palmnative" ;;
+mac68knative)   aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_EMULATION)"
+		aros_flavour="mac68knative" ;;
 ppcnative)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="ppcnative" ;;
 esac
