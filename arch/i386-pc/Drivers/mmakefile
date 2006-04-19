@@ -2,7 +2,7 @@ $Id$
 
 #MM- kernel-pc-i386-drivers : \
 #MM    kernel-pc-i386-trackdisk-kobj \
-#MM    kernel-pc-i386-ide-kobj \
+##MM    kernel-pc-i386-ide-kobj \
 #MM    kernel-pc-i386-pci-kobj \
 #MM    kernel-pc-i386-irq-kobj \
 #MM    kernel-pc-i386-kbd-kobj \
