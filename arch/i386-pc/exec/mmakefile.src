@@ -2,10 +2,10 @@
 include $(TOP)/config/make.cfg
 
 CFILES		:= \
-	disable enable switch preparecontext rawputchar newaddtask cause \
-	dispatch debug supervisor reschedule permit wait remtask \
-	settaskpri signal setexcept superstate userstate core traps \
-	screen serialrawio exec_init execfunctions prepareexecbase
+	exec_init disable enable switch preparecontext rawputchar \
+	newaddtask cause dispatch debug supervisor reschedule permit \
+	wait remtask settaskpri signal setexcept superstate userstate \
+	core traps screen serialrawio execfunctions prepareexecbase
 
 AFILES		:= coldreboot corelow execstubs stackswap
 
