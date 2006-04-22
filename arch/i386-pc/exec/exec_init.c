@@ -201,6 +201,7 @@ asm(        ".globl aros_intern\n\t"
  * image
  */
 
+#if 0
 #define MB_MAGIC    0x1BADB002  /* Magic value */
 #define MB_FLAGS    0x00000003  /* Need 4KB alignment for modules */
 
@@ -215,6 +216,7 @@ const struct
     MB_FLAGS,
     -(MB_MAGIC+MB_FLAGS)
 };
+#endif
 
 /*
  * kernel_startup can be executed only from CPL0 without vmm. Interrupts should
@@ -444,7 +446,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
     /* MultiBoot
      * This messy bit here will store away useful information we receive from
-     * the boorloader. It will happen when we are loaded, and not on when we
+     * the bootloader. It will happen when we are loaded, and not on when we
      * are here from ColdReboot().
      * This is just the first stage of it. Later this information will be extracted
      * by bootloader.resource, but we do this here anyway. Both to keep the info

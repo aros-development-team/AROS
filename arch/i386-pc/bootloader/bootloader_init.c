@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Bootloader information initialisation.
@@ -22,6 +22,21 @@
 #include <aros/debug.h>
 
 #include <string.h>
+
+#define MB_MAGIC    0x1BADB002  /* Magic value */
+#define MB_FLAGS    0x00000003  /* Need 4KB alignment for modules */
+
+const struct
+{
+    ULONG   magic;
+    ULONG   flags;
+    ULONG   chksum;
+} multiboot_header __attribute__((section(".text"))) =
+{
+    MB_MAGIC,
+    MB_FLAGS,
+    -(MB_MAGIC+MB_FLAGS)
+};
 
 AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, BootLoaderBase)
 {

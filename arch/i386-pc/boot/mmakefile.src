@@ -6,24 +6,24 @@ USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libi
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
+KRSRCS  := bootloader battclock bootmenu misc
 KLIBS   := exec boot aros dos graphics utility intuition keymap \
       	   mathieeesingbas expansion oop layers workbench cybergraphics \
 	   partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil ram cdrom afs
 KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
-KRSRCS  := battclock bootloader bootmenu misc
 #Disabled RSRC cpu
 #Disabled HIDD vmwaregfx usbuhci
 
 .PHONY: $(OSGENDIR)/boot/aros.iso
 
-KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
-      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
-      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
-      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
-      	 $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
-	 $(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
+KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
+         $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
+         $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
+         $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
+         $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
+         $(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
 
 BOOT_FILES := \
     C/Shell \
