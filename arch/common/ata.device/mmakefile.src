@@ -3,5 +3,5 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-ata \
   modname=ata modtype=device \
-  files="ata_init lowlevel ata dma_generic ata lowlevel"
+  files="ata_init lowlevel ata dma_generic"
 
