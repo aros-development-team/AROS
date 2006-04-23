@@ -54,7 +54,7 @@ extern const struct Resident
     Workbench_ROMTag,
     Dos_ROMTag,
     LDDemon_resident,
-    emul_handler_resident,
+    emul_handler_ROMTag,
     UXSer_ROMTag,
     UXPar_ROMTag,
     boot_resident,
@@ -90,7 +90,7 @@ static const struct Resident *romtagList[] =
     &X11Cl_ROMTag,			    /* ColdStart,   9	 */
     &Cybergraphics_ROMTag,		    /* ColdStart,   8	 */
     &Console_ROMTag,			    /* ColdStart,   5	 */
-    &emul_handler_resident,		    /* ColdStart,   0	 */
+    &emul_handler_ROMTag,		    /* ColdStart,   0	 */
     &UXSer_ROMTag,	   	    	    /* ColdStart,   0    */
     &UXPar_ROMTag,	   	    	    /* ColdStart,   0    */
     &Workbench_ROMTag,			    /* ColdStart,  -120  */
