@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -152,10 +152,7 @@ struct x11_staticdata
     */
     struct MsgPort  	    *x11task_notify_port;
     struct MsgPort  	    *x11task_quit_port;
-    struct Library  	    *oopbase;
-    struct Library  	    *utilitybase;
     struct ExecBase 	    *sysbase;
-    struct Library  	    *dosbase;
     
     Display 	    	    *display;
     BOOL    	    	     local_display;
@@ -271,11 +268,6 @@ VOID  x11clipboard_handle_event(struct x11_staticdata *, XEvent *);
 
 #undef XSD
 #define XSD(cl)     	(&((struct x11clbase *)cl->UserData)->xsd)
-
-#define UtilityBase	((struct Library *)XSD(cl)->utilitybase)
-#define SysBase		(XSD(cl)->sysbase)
-#define DOSBase		(XSD(cl)->dosbase)
-
 
 /* This lock has two uses:
 - Making X calls threadsafe.

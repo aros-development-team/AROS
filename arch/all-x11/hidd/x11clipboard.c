@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd. Host clipboard support.
@@ -50,7 +50,6 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-#undef SysBase
 #undef XSD
 #define XSD(cl) xsd
 
