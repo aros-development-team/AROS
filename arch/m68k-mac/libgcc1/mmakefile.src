@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src 17800 2003-05-30 00:10:56Z verhaegs $
+#   $Id$
 #
 #   Generate the libgcc1.a for m68k.
 #

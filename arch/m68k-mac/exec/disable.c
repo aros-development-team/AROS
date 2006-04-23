@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: disable.c 15705 2002-11-11 03:38:29Z bergers $
+    $Id$
 
     Desc: Disable() - Stop interrupts from occurring.
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: init.c 14808 2002-06-15 08:01:12Z bergers $
+    $Id$
 */
 
 #define AROS_USE_OOP

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: supervisor.S 13176 2002-02-09 06:21:26Z bergers $
+    $Id$
 */
 
 /*****************************************************************************

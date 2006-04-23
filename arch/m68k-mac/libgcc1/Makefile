@@ -3,7 +3,7 @@
 # gcc sur 68000.
 #
 #
-# $Id: Makefile 12997 2002-01-13 00:27:32Z bergers $
+# $Id$
 # $Log$
 # Revision 1.1  2002/01/13 00:27:32  bergers
 # Renamed target to m68k-pp-native and did some cleanups.

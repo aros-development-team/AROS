@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: coldreboot.S 15574 2002-10-19 17:28:00Z bergers $
+    $Id$
 */
 
 /*****************************************************************************

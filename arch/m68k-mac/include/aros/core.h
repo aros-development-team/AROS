@@ -3,7 +3,7 @@
 
 /*
     (C) 2000 AROS - The Amiga Research OS
-    $Id: core.h 16602 2003-03-05 00:54:09Z bergers $
+    $Id$
 
     Desc: Interrupt core, part of kernel.resource
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: longjmp.s 14571 2002-05-13 00:25:58Z bergers $
+    $Id$
 
     Desc: longjmp
     Lang: english

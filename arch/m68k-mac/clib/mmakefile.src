@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 24162 2006-03-14 15:49:21Z MastaTabs $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS     := $(SHARED_CFLAGS) -I$(TOP)/compiler/clib -I..

@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 21951 2004-07-14 16:47:10Z chodorowski $
+# $Id$
 include $(TOP)/config/make.cfg
 
 _INCLUDES := $(foreach f,$(shell ls *.[hi]), $(f))      \

@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 24175 2006-03-17 01:10:31Z MastaTabs $
+# $Id$
 include $(TOP)/config/make.cfg
 
 CFILES          := \

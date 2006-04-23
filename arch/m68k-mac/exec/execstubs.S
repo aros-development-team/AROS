@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: execstubs.S 15801 2002-11-22 01:58:33Z bergers $
+    $Id$
 
     Desc: glue functions
     Lang: english

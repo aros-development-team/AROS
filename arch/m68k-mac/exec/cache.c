@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: cache.c 24162 2006-03-14 15:49:21Z MastaTabs $
+    $Id$
 
     Desc: Flush Caches
     Lang: english

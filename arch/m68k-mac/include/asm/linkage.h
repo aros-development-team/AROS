@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: linkage.h 14695 2002-06-03 00:25:44Z bergers $
+    $Id$
 */
 
 #ifndef ASM_LINKAGE_H

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: core.c 24175 2006-03-17 01:10:31Z MastaTabs $
+    $Id$
 
     Desc: Core of AROS.
     Lang: english

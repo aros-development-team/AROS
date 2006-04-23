@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: traps.c 16672 2003-03-08 19:33:25Z bergers $
+    $Id$
 */
 
 #include <asm/linkage.h>

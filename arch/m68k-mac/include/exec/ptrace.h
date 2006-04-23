@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: ptrace.h 15191 2002-08-13 00:57:15Z bergers $
+    $Id$
 */
 
 #ifndef ASM_PTRACE_H

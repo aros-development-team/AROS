@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: preparecontext.c 24163 2006-03-14 16:30:42Z MastaTabs $
+    $Id$
 */
 
 #include <exec/types.h>

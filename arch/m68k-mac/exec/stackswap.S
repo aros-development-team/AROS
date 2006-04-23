@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: stackswap.S 15192 2002-08-13 00:58:32Z bergers $
+    $Id$
 */
 
 /*****************************************************************************
