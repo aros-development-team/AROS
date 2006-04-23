@@ -2,12 +2,13 @@
 include $(TOP)/config/make.cfg
 
 #MM- includes-linux-i386 : includes-common-i386
-#MM- kernel-linux-i386 : kernel-linux kernel-i386 kernel-pci-pcilinux-kobj kernel-pci-kobj
+#MM- kernel-linux-i386 : kernel-linux kernel-i386 \
+#MM      kernel-pci-linux-i386-kobj kernel-pci-kobj
 #MM- kernel-link-linux-i386 : kernel-link-emul
 
 #MM- kernel-exec-includes-linux-i386 : kernel-exec-includes-unix
 
 #MM- workbench-linux-i386 : \
-#MM      workbench-linux \
-#MM      workbench-libs-pcilinux
+#MM      workbench-linux
+
 
