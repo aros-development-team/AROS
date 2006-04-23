@@ -1,7 +1,7 @@
 #ifndef __EMUL_HANDLER_INTERN_H
 #define __EMUL_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -15,9 +15,10 @@
 #include <hidd/hidd.h>
 
 /* POSIX includes */
+#define timeval sys_timeval
 #include <dirent.h>
 #include <sys/types.h>
-
+#undef timeval
 
 struct emulbase
 {
@@ -27,8 +28,6 @@ struct emulbase
     struct Unit       		* eb_stdout;
     struct Unit       		* eb_stderr;
     struct ExecBase  		* sysbase;
-    struct DosLibrary 		* dosbase;
-    struct Library   		* oopbase;
     struct SignalSemaphore 	  sem;
     struct SignalSemaphore	  memsem;
     char    	    	    	* current_volume;
@@ -36,19 +35,6 @@ struct emulbase
     HIDD			  unixio;
     BPTR 			  seglist;
 };
-
-#ifdef SysBase
-#   undef SysBase
-#endif
-#define SysBase emulbase->sysbase
-#ifdef DOSBase
-#   undef DOSBase
-#endif
-#define DOSBase emulbase->dosbase
-#ifdef OOPBase
-#   undef OOPBase
-#endif
-#define OOPBase emulbase->oopbase
 
 
 struct filehandle

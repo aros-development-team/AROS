@@ -6,10 +6,9 @@ USER_INCLUDES := -I$(GENINCDIR)
 #MM- kernel-fs-emul-linklib : includes linklibs
 #MM- kernel-fs-emul-kobj : includes linklibs
 
-%build_module_macro mmake=kernel-fs-emul \
-  modname=emul modtype=handler \
-  initfile=emul_handler \
+%build_module mmake=kernel-fs-emul \
+  modname=emul modtype=device modsuffix=handler \
+  files=emul_handler \
   compiler=host
-  
-%common
+
 
