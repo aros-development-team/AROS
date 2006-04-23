@@ -65,14 +65,13 @@ extern const struct Resident
     Workbench_ROMTag,
     Dos_ROMTag,
     LDDemon_resident,
-    emul_handler_resident,
+    emul_handler_ROMTag,
     UXSer_ROMTag,
     UXPar_ROMTag,
     boot_resident,
     Con_ROMTag,
     Nil_ROMTag,
     Ram_ROMTag,
-    Pci_Resident,
     PCI_ROMTag;
 
 
@@ -92,7 +91,6 @@ static const struct Resident *romtagList[] =
     &UXIO_ROMTag,			/* ColdStart,   91	 */
 #ifdef __i386__
     &PCI_ROMTag,                      /* ColdStart,   90       */
-    &Pci_Resident,                      /* ColdStart,   90       */
 #endif
     &Graphics_ROMTag, 			/* ColdStart,   65	 */
     &Layers_ROMTag,			/* ColdStart,   60       */
@@ -110,7 +108,7 @@ static const struct Resident *romtagList[] =
 #if ENABLE_DBUS == 1
     &Dbus_ROMTag,			/* ColdStart,   0	 */
 #endif
-    &emul_handler_resident,		/* ColdStart,   0	 */
+    &emul_handler_ROMTag,		/* ColdStart,   0	 */
     &UXSer_ROMTag,	   	    	/* ColdStart,   0    */
     &UXPar_ROMTag,	   	    	/* ColdStart,   0    */
     &Workbench_ROMTag,			/* ColdStart,  -120  */
