@@ -12,6 +12,6 @@ FILES := board
 %build_module mmake=workbench-libs-prometheus \
     modname=prometheus modtype=library \
     files="prometheus_init $(FILES)" \
-    uselibs="amiga hiddstubs"
+    uselibs="oop amiga hiddstubs"
 
 %common

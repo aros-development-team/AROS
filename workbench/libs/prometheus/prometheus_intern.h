@@ -34,8 +34,6 @@ struct LibBase
    struct LibHeader lib_header;
    APTR seg_list;
    struct ExecBase *sys_base;
-   struct UtilityBase *utility_base;
-   struct Library *oop_base;
    OOP_Object *pci_hidd;
    OOP_Object *irq_hidd;
    OOP_AttrBase pcidevice_attr_base;
@@ -50,11 +48,6 @@ struct PCIBoard
    OOP_Object *aros_board;
    HIDDT_IRQ_Handler *aros_irq;
 };
-
-
-#define SysBase (base->sys_base)
-#define OOPBase (base->oop_base)
-#define UtilityBase (base->utility_base)
 
 
 #endif
