@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO
@@ -421,8 +421,6 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
     } /* Forever */
 }
 
-#define UtilityBase	(((struct uio_data *)cl->UserData)->ud_UtilityBase)
-
 /* This is the dispatcher for the UnixIO HIDD class. */
 
 
@@ -657,8 +655,6 @@ IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct uioMs
 }
 
 /* This is the initialisation code for the HIDD class itself. */
-#undef UtilityBase
-
 
 AROS_SET_LIBFUNC(UXIO_Init, LIBBASETYPE, LIBBASE)
 {
@@ -669,21 +665,6 @@ AROS_SET_LIBFUNC(UXIO_Init, LIBBASETYPE, LIBBASE)
     struct newMemList nml;
     struct MemList  * ml;
     struct Interrupt * is;
-
-    /*
-	We map the memory into the shared memory space, because it is
-	to be accessed by many processes, eg searching for a HIDD etc.
-
-	Well, maybe once we've got MP this might help...:-)
-    */
-
-    LIBBASE->uio_csd.ud_UtilityBase = OpenLibrary("utility.library",0);
-    if(LIBBASE->uio_csd.ud_UtilityBase == NULL)
-    {
-	CloseLibrary(LIBBASE->uio_csd.ud_UtilityBase);
-	Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_UtilityLib);
-	return FALSE;
-    }
 
     LIBBASE->uio_csd.ud_Port = CreatePort (NULL, 0);
     if(LIBBASE->uio_csd.ud_Port == NULL)
