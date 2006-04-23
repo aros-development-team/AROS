@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: switch.c 18579 2003-07-11 06:42:29Z hkiel $
+    $Id$
 
     Desc: Native version of Switch().
     Lang: english

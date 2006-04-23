@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: offsets.c 12997 2002-01-13 00:27:32Z bergers $
+    $Id$
 */
 
 #include <exec/tasks.h>

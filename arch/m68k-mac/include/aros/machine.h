@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: machine.h 24175 2006-03-17 01:10:31Z MastaTabs $
+    $Id$
 
     NOTE: This file must compile *without* any other header !
 

@@ -1,5 +1,5 @@
 /*   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: sys_trap1_handler.S 13629 2002-03-15 17:27:41Z stegerg $
+    $Id$
 */
 
 	/*

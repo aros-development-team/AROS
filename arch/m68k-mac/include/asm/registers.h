@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: registers.h 16600 2003-03-05 00:52:32Z bergers $
+    $Id$
 */
 
 #ifndef REGISTERS_H

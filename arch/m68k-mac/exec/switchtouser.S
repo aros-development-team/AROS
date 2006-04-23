@@ -1,5 +1,5 @@
 /*   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: switchtouser.S 14734 2002-06-07 00:12:11Z bergers $
+    $Id$
 */
 
 	/*

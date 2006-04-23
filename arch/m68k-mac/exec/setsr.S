@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: setsr.S 14879 2002-07-01 03:55:14Z bergers $
+    $Id$
 */
 
 /*****************************************************************************

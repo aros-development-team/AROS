@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: cause.c 24162 2006-03-14 15:49:21Z MastaTabs $
+    $Id$
 
     Desc: Plam Version of Cause(); taken from i386native version of Cause().
     Lang: english

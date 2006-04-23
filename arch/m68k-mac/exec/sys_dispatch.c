@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: sys_dispatch.c 15764 2002-11-16 20:59:15Z bergers $
+    $Id$
 
     Desc: The task Dispatcher for m68k; taken from i386-native version
     Lang: english

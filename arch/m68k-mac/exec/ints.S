@@ -1,5 +1,5 @@
 /*  Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: ints.S 15214 2002-08-15 02:28:46Z bergers $
+    $Id$
 */
 
 	.text

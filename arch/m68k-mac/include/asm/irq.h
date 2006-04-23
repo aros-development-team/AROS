@@ -2,7 +2,7 @@
 #define ASM_IRQ_H
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: irq.h 15760 2002-11-16 20:51:51Z bergers $
+    $Id$
 
     Desc: Interrupt core, part of kernel.resource
     Lang: english
