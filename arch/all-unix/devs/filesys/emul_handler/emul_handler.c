@@ -1,5 +1,5 @@
-/*f
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+/*
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filesystem that accesses an underlying POSIX filesystem.
@@ -23,7 +23,7 @@
 
 #include <aros/system.h>
 #include <aros/options.h>
-#include <aros/libcall.h>
+#include <aros/symbolsets.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <exec/alerts.h>
@@ -33,10 +33,9 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <dos/bptr.h>
+#define __DOS_NOLIBBASE__
 #include <proto/dos.h>
 #include <proto/expansion.h>
-#include <aros/libcall.h>
-#include <aros/asmcall.h>
 #include <libraries/expansion.h>
 #include <libraries/configvars.h>
 #include <libraries/expansionbase.h>
@@ -86,97 +85,17 @@
 
 #include "/usr/include/signal.h"
 
+#include LC_LIBDEFS_FILE
+
 /*********************************************************************************************/
 
-//#undef DOSBase
+/* Init DOSBase ourselves because emul_handler is initialized before dos.library */
+static struct DosLibrary *DOSBase;
 
 #define NO_CASE_SENSITIVITY 1
 
 #define malloc you_must_change_malloc_to__emul_malloc
 #define free you_must_change_free_to__emul_free
-
-/*********************************************************************************************/
-
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-static const UBYTE datatable;
-
-/*********************************************************************************************/
-
-struct emulbase * AROS_SLIB_ENTRY(init,emul_handler) ();
-AROS_LD3(void, open,
- AROS_LDA(struct IOFileSys *, iofs, A1),
- AROS_LDA(ULONG,              unitnum, D0),
- AROS_LDA(ULONG,              flags, D1),
-	   struct emulbase *, emulbase, 1, emul_handler);
-AROS_LD1(BPTR, close,
- AROS_LDA(struct IOFileSys *, iofs, A1),
-	   struct emulbase *, emulbase, 2, emul_handler);
-AROS_LD0(BPTR, expunge, struct emulbase *, emulbase, 3, emul_handler);
-AROS_LD0I(int, null, struct emulbase *, emulbase, 4, emul_handler);
-AROS_LD1(void, beginio,
- AROS_LDA(struct IOFileSys *, iofs, A1),
-	   struct emulbase *, emulbase, 5, emul_handler);
-AROS_LD1(LONG, abortio,
- AROS_LDA(struct IOFileSys *, iofs, A1),
-	  struct emulbase *, emulbase, 6, emul_handler);
-
-/*********************************************************************************************/
-
-static const char end;
-
-/*********************************************************************************************/
-
-int emul_handler_entry(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-/*********************************************************************************************/
-
-const struct Resident emul_handler_resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&emul_handler_resident,
-    (APTR)&end,
-    RTF_AUTOINIT | RTF_COLDSTART,
-    41,
-    NT_DEVICE,
-    0,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[]="emul.handler";
-
-static const char version[]="$VER: emul_handler 41.8 (16.03.2003)\r\n";
-
-static const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct emulbase),
-    (APTR)functable,
-    (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init,emul_handler)
-};
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,emul_handler),
-    &AROS_SLIB_ENTRY(close,emul_handler),
-    &AROS_SLIB_ENTRY(expunge,emul_handler),
-    &AROS_SLIB_ENTRY(null,emul_handler),
-    &AROS_SLIB_ENTRY(beginio,emul_handler),
-    &AROS_SLIB_ENTRY(abortio,emul_handler),
-    (void *)-1
-};
-
-/*********************************************************************************************/
-
-static const UBYTE datatable=0;
 
 /*********************************** Support *******************************/
 
@@ -1558,52 +1477,42 @@ void parent_dir_post(struct emulbase *emulbase, char ** DirName)
 
 /************************ Library entry points ************************/
 
-AROS_UFH3(struct emulbase *, AROS_SLIB_ENTRY(init,emul_handler),
- AROS_UFHA(struct emulbase *, emulbase, D0),
- AROS_UFHA(BPTR,              segList,   A0),
- AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, emulbase)
 {
-    AROS_USERFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
     static const struct TagItem tags[] = {{ TAG_END, 0 }};
 
-    /* Store arguments */
-    emulbase->sysbase=sysBase;
-    emulbase->seglist=segList;
-    emulbase->device.dd_Library.lib_OpenCnt=1;
-    
+    D(bug("Initializing emul_handler\n"));
+
     InitSemaphore(&emulbase->sem);
     InitSemaphore(&emulbase->memsem);
     
     emulbase->mempool = CreatePool(MEMF_ANY, 4096, 2000);
-    if (!emulbase->mempool) return NULL;
+    if (!emulbase->mempool) return FALSE;
     
-    OOPBase = OpenLibrary ("oop.library",0);
-
-    if (!OOPBase)
-    {
-        DeletePool(emulbase->mempool);
-	return NULL;
-    }
     emulbase->unixio = OOP_NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
 
     if (!emulbase->unixio)
     {
-	CloseLibrary (OOPBase);
+	D(bug("Could not get UnixIO object\n"));
         DeletePool(emulbase->mempool);
-	return NULL;
+	return FALSE;
     }
 
     if(!startup(emulbase))
-	return emulbase;
+    {
+	D(bug("emul_handler initialized OK\n"));
+	return TRUE;
+    }
 
     OOP_DisposeObject (emulbase->unixio);
-    CloseLibrary (OOPBase);
     DeletePool(emulbase->mempool);
 
-    return NULL;
+    D(bug("emul_handler startup failed\n"));
+       
+    return FALSE;
     
-    AROS_USERFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /*********************************************************************************************/
@@ -1743,85 +1652,41 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 
 /*********************************************************************************************/
 
-AROS_LH3(void, open,
- AROS_LHA(struct IOFileSys *, iofs, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	   struct emulbase *, emulbase, 1, emul_handler)
+AROS_SET_OPENDEVFUNC
+(
+    GM_UNIQUENAME(Open),
+    LIBBASETYPE, emulbase,
+    struct IOFileSys, iofs,
+    unitnum,
+    flags
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 
     /* Keep compiler happy */
     unitnum=0;
     flags=0;
 
-    if(emulbase->dosbase == NULL)
+    if (DOSBase == NULL)
+	DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 41);
+	
+    if (DOSBase == NULL || !new_volume(iofs, emulbase))
     {
-	emulbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-	if( emulbase->dosbase == NULL )
-	{
-		iofs->IOFS.io_Error = -1;
-		return;
-	}
+	iofs->IOFS.io_Error = -1;
+	return FALSE;
     }
-
-   /* I have one more opener. */
-    emulbase->device.dd_Library.lib_OpenCnt++;
-    if (emulbase->device.dd_Library.lib_OpenCnt > 1)
-    {
-    	if (!new_volume(iofs, emulbase))
-	{
-		iofs->IOFS.io_Error = -1;
-    	    	emulbase->device.dd_Library.lib_OpenCnt--;
-		return;
-	}
-    }
-    emulbase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
 
     /* Set returncode */
     iofs->IOFS.io_Error=0;
-
-    /* Mark Message as recently used. */
-    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    AROS_LIBFUNC_EXIT
-}
-
-/*********************************************************************************************/
-
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct emulbase *, emulbase, 2, emul_handler)
-{
-    AROS_LIBFUNC_INIT
-
-    emulbase->device.dd_Library.lib_OpenCnt--;
+    return TRUE;
     
-    /* Let any following attemps to use the device crash hard. */
-    iofs->IOFS.io_Device=(struct Device *)-1;
-    return 0;
-    AROS_LIBFUNC_EXIT
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /*********************************************************************************************/
 
-AROS_LH0(BPTR, expunge, struct emulbase *, emulbase, 3, emul_handler)
-{
-    AROS_LIBFUNC_INIT
-
-    /* Do not expunge the device. Set the delayed expunge flag and return. */
-    emulbase->device.dd_Library.lib_Flags|=LIBF_DELEXP;
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
-
-/*********************************************************************************************/
-
-AROS_LH0I(int, null, struct emulbase *, emulbase, 4, emul_handler)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 
 /*********************************************************************************************/
 
@@ -2183,9 +2048,5 @@ AROS_LH1(LONG, abortio,
 
     AROS_LIBFUNC_EXIT
 }
-
-/*********************************************************************************************/
-
-static const char end = 0;
 
 /*********************************************************************************************/
