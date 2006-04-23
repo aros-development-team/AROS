@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux hidd handling mouse events.
@@ -128,12 +128,33 @@ VOID LinuxMouse__Hidd_LinuxMouse__HandleEvent(OOP_Class *cl, OOP_Object *o, stru
 
 /********************  init_mouseclass()  *********************************/
 
+static int mousefd = 0;
+
+#define MOUSE_DEVNAME "/dev/psaux"
+static BOOL file_opened = FALSE;
+
 AROS_SET_LIBFUNC(Init_LinuxMouseClass, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
 
-    return OOP_ObtainAttrBases(attrbases);
+    if (!OOP_ObtainAttrBases(attrbases))
+	return FALSE;
     
+    mousefd = open(MOUSE_DEVNAME, O_RDONLY);
+    if (-1 == mousefd) {
+	OOP_ReleaseAttrBases(attrbases);
+	
+	kprintf("!!! init_mous(): COULD NOT OPEND MOUSE DEVICE %s: %s\n"
+	    , MOUSE_DEVNAME, strerror(errno));
+	
+	return FALSE;
+    } else {
+	file_opened = TRUE;
+	LIBBASE->lsd.mousefd = mousefd;
+	
+	return TRUE;
+    }
+
     AROS_SET_LIBFUNC_EXIT
 }
 
@@ -145,6 +166,10 @@ AROS_SET_LIBFUNC(Expunge_LinuxMouseClass, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
 
+    if (file_opened) {
+	close(mousefd);	
+    }
+
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;
     
@@ -154,36 +179,6 @@ AROS_SET_LIBFUNC(Expunge_LinuxMouseClass, LIBBASETYPE, LIBBASE)
 ADD2INITLIB(Init_LinuxMouseClass, 0)
 ADD2EXPUNGELIB(Expunge_LinuxMouseClass, 0)
 
-
-#undef LSD
-#define LSD lsd
-
-static int mousefd = 0;
-
-#define MOUSE_DEVNAME "/dev/psaux"
-static BOOL file_opened = FALSE;
-
-BOOL init_linuxmouse(struct linux_staticdata *lsd)
-{
-    mousefd = open(MOUSE_DEVNAME, O_RDONLY);
-    if (-1 == mousefd) {
-	kprintf("!!! init_mous(): COULD NOT OPEND MOUSE DEVICE %s: %s\n"
-	    , MOUSE_DEVNAME, strerror(errno));
-    } else {
-	file_opened = TRUE;
-	lsd->mousefd = mousefd;
-	
-	return TRUE;
-    }
-    return FALSE;
-}
-VOID cleanup_linuxmouse(struct linux_staticdata *lsd)
-{
-    if (file_opened) {
-	close(mousefd);	
-    }
-    return;
-}
 
 VOID HIDD_LinuxMouse_HandleEvent(OOP_Object *o, struct pHidd_Mouse_Event *mouseEvent)
 {

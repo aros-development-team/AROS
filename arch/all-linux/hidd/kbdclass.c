@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux hidd handling keyboard
@@ -391,7 +391,16 @@ AROS_SET_LIBFUNC(Init_KbdClass, LIBBASETYPE, LIBBASE)
     LoadScanCode2RawKeyTable(&LIBBASE->lsd);
 #endif
 
-    return OOP_ObtainAttrBases(attrbases);
+    if (!OOP_ObtainAttrBases(attrbases))
+	return FALSE;
+    
+    if (!init_linuxkbd(&LIBBASE->lsd))
+    {
+	OOP_ReleaseAttrBases(attrbases);
+	return FALSE;
+    }
+    
+    return TRUE;
     
     AROS_SET_LIBFUNC_EXIT
 }
@@ -402,6 +411,7 @@ AROS_SET_LIBFUNC(Expunge_KbdClass, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
 
+    cleanup_linuxkbd(&LIBBASE->lsd);
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;
     
