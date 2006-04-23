@@ -47,25 +47,16 @@ AROS_SET_LIBFUNC(LibInit, LIBBASETYPE, base)
    struct Hook *hook;
    struct HookContext *hook_context;
 
-   /* Open extra libraries */
-
-   base->oop_base = OpenLibrary(oop_name, 0);
-   base->utility_base = OpenLibrary(utility_name, 0);
-   if(base->oop_base == NULL || base->utility_base == NULL)
-      success = FALSE;
-
    /* Open HIDDs */
 
    NewList((APTR)&base->boards);
-   if(success)
-   {
-      base->pci_hidd = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-      base->irq_hidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-      base->pcidevice_attr_base = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-      if(base->pci_hidd == NULL || base->irq_hidd == NULL
-         || base->pcidevice_attr_base == 0)
+
+    base->pci_hidd = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+    base->irq_hidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
+    base->pcidevice_attr_base = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+    if(base->pci_hidd == NULL || base->irq_hidd == NULL
+       || base->pcidevice_attr_base == 0)
          success = FALSE;
-   }
 
    /* Make a list of all boards in the system */
 
@@ -168,11 +159,6 @@ static VOID DeleteLibrary(LIBBASETYPE *base)
       OOP_DisposeObject(base->irq_hidd);
    if(base->pci_hidd != NULL)
       OOP_DisposeObject(base->pci_hidd);
-
-   /* Close libraries */
-
-   if(base->oop_base != NULL)
-      CloseLibrary(base->oop_base);
 
    return;
 }
