@@ -2,7 +2,7 @@
 #define LINUX_INTERN_H
 
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux hidd for AROS
@@ -112,9 +112,6 @@ struct mouse_data
 struct linux_staticdata {
     struct SignalSemaphore sema;
     
-    struct ExecBase *sysbase;
-    struct Library *utilitybase;
-    
     OOP_Class *gfxclass;
     OOP_Class *bmclass;
     OOP_Class *kbdclass;
@@ -170,7 +167,5 @@ VOID fbRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2);
 #endif
 
 #define LSD(cl) (&((struct linux_base *)cl->UserData)->lsd)
-
-#define UtilityBase	(LSD(cl)->utilitybase)
 
 #endif /* LINUX_INTERN_H */

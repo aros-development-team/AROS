@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux hidd initialization code.
@@ -48,12 +48,6 @@ static AROS_SET_LIBFUNC(Init_Hidd, LIBBASETYPE, LIBBASE)
     InitSemaphore(&LIBBASE->lsd.framebufferlock);
 #endif
 	
-    LIBBASE->lsd.utilitybase = OpenLibrary(UTILITYNAME, 37);
-    if (NULL == LIBBASE->lsd.utilitybase)
-	return FALSE;
-
-kprintf("GOT LIBS\n");
-
     if (!OOP_ObtainAttrBases(abd))
 	return FALSE;
 kprintf("OBTAINED ATTRBASES\n");	    
@@ -76,15 +70,6 @@ AROS_SET_LIBFUNC(Expunge_Hidd, LIBBASETYPE, LIBBASE)
 
     if (NULL != LIBBASE->lsd.input_task)
 	kill_linuxinput_task(&LIBBASE->lsd);
-	    
-    if (LIBBASE->lsd.mouse_inited)
-	cleanup_linuxmouse(&LIBBASE->lsd);
-
-    if (LIBBASE->lsd.kbd_inited)
-	cleanup_linuxkbd(&LIBBASE->lsd);
-		
-    if (NULL != LIBBASE->lsd.utilitybase)
-	CloseLibrary(LIBBASE->lsd.utilitybase);
 	    
     return TRUE;	
     
