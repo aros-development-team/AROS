@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd handling keypresses.
@@ -650,7 +650,15 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 {
     char *filename = "DEVS:Keymaps/X11/keycode2rawkey.table";
     BPTR  fh;
-
+    struct DosLibrary *DOSBase;
+    
+    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 37);
+    if (DOSBase == NULL)
+    {
+	bug("LoadKeyCode2RawKeyTable: Opening %s failed\n", DOSNAME);
+	return;
+    }
+	
     if ((fh = Open(filename, MODE_OLDFILE)))
     {
 	if ((256 == Read(fh, keycode2rawkey, 256)))
@@ -696,6 +704,8 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 	    "For other layouts you must activate the correct keymap just like in AmigaOS.\n", 
             filename);
     }
+    
+    CloseLibrary((struct Library *)DOSBase);
 }
 
 /****************************************************************************************/

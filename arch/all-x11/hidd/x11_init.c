@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd initialization code.
@@ -37,7 +37,6 @@
 /****************************************************************************************/
 
 #undef XSD
-#undef SysBase
 
 /****************************************************************************************/
 
@@ -124,80 +123,65 @@ AROS_SET_LIBFUNC(X11_Init, LIBBASETYPE, LIBBASE)
 
     D(bug("Entering X11_Init\n"));
     
-    xsd->sysbase = SysBase;
-	
     InitSemaphore( &xsd->sema );
     InitSemaphore( &xsd->x11sema );
 		
-    xsd->dosbase = OpenLibrary("dos.library", 0);
-    xsd->utilitybase = OpenLibrary("utility.library", 0);
+    /* Try to get the display */
+    if (!(displayname = (STRPTR)getenv("DISPLAY")))
+	displayname =":0.0";
 
-    if (   xsd->dosbase != NULL
-	&& xsd->utilitybase != NULL
-    )
+    if ((strncmp(displayname, ":", 1) == 0) ||
+	(strncmp(displayname, "unix:", 5) == 0))
     {
-	/* Try to get the display */
-	if (!(displayname = (STRPTR)getenv("DISPLAY")))
-	    displayname =":0.0";
+	xsd->local_display = TRUE;
+    }
+		    
+		    
+    /* Do not need to singlethead this
+     * since no other tasks are using X currently
+     */
 
-	if ((strncmp(displayname, ":", 1) == 0) ||
-	    (strncmp(displayname, "unix:", 5) == 0))
+    xsd->display = XOpenDisplay(displayname);
+    if (xsd->display)
+    {
+	struct x11task_params 	 xtp;
+	struct Task 	    	*x11task;
+
+	XSetErrorHandler (MyErrorHandler);
+	XSetIOErrorHandler (MySysErrorHandler);
+
+	if (getenv("AROS_X11_FULLSCREEN"))
 	{
-	    xsd->local_display = TRUE;
+	    xsd->fullscreen = x11_fullscreen_supported(xsd->display);
 	}
-		    
-		    
-	/* Do not need to singlethead this
-	 * since no other tasks are using X currently
-	 */
-
-	xsd->display = XOpenDisplay(displayname);
-	if (xsd->display)
-	{
-	    struct x11task_params 	 xtp;
-	    struct Task 	    	*x11task;
-
-	    XSetErrorHandler (MyErrorHandler);
-	    XSetIOErrorHandler (MySysErrorHandler);
-
-	    if (getenv("AROS_X11_FULLSCREEN"))
-	    {
-		xsd->fullscreen = x11_fullscreen_supported(xsd->display);
-	    }
-			
-	    xsd->delete_win_atom         = XInternAtom(xsd->display, "WM_DELETE_WINDOW", FALSE);
-	    xsd->clipboard_atom          = XInternAtom(xsd->display, "CLIPBOARD", FALSE);
-	    xsd->clipboard_property_atom = XInternAtom(xsd->display, "AROS_HOSTCLIP", FALSE);
-	    xsd->clipboard_incr_atom     = XInternAtom(xsd->display, "INCR", FALSE);
-	    xsd->clipboard_targets_atom  = XInternAtom(xsd->display, "TARGETS", FALSE);
 	
-	    xtp.parent = FindTask(NULL);
-	    xtp.ok_signal	= SIGBREAKF_CTRL_E;
-	    xtp.fail_signal	= SIGBREAKF_CTRL_F;
-	    xtp.kill_signal	= SIGBREAKF_CTRL_C;
-	    xtp.xsd		= xsd;
+	xsd->delete_win_atom         = XInternAtom(xsd->display, "WM_DELETE_WINDOW", FALSE);
+	xsd->clipboard_atom          = XInternAtom(xsd->display, "CLIPBOARD", FALSE);
+	xsd->clipboard_property_atom = XInternAtom(xsd->display, "AROS_HOSTCLIP", FALSE);
+	xsd->clipboard_incr_atom     = XInternAtom(xsd->display, "INCR", FALSE);
+	xsd->clipboard_targets_atom  = XInternAtom(xsd->display, "TARGETS", FALSE);
+	
+	xtp.parent = FindTask(NULL);
+	xtp.ok_signal	= SIGBREAKF_CTRL_E;
+	xtp.fail_signal	= SIGBREAKF_CTRL_F;
+	xtp.kill_signal	= SIGBREAKF_CTRL_C;
+	xtp.xsd		= xsd;
 
-	    if ((x11task = create_x11task(&xtp, SysBase)))
-	    {			
-		if (initclasses(xsd))
-		{
-		    D(bug("X11_Init succeeded\n"));
-		    return TRUE;
-		}
-		
-		Signal(x11task, xtp.kill_signal);
+	if ((x11task = create_x11task(&xtp, SysBase)))
+	{			
+	    if (initclasses(xsd))
+	    {
+		D(bug("X11_Init succeeded\n"));
+		return TRUE;
 	    }
-
-	    XCloseDisplay(xsd->display);
-
+	    
+	    Signal(x11task, xtp.kill_signal);
 	}
+
+	XCloseDisplay(xsd->display);
+
     }
     
-    if (xsd->dosbase != NULL)
-	CloseLibrary(xsd->dosbase);
-    if (xsd->utilitybase != NULL)
-	CloseLibrary(xsd->utilitybase);
-
     D(bug("X11_Init failed\n"));
     
     return FALSE;
@@ -207,4 +191,4 @@ AROS_SET_LIBFUNC(X11_Init, LIBBASETYPE, LIBBASE)
 
 /****************************************************************************************/
 
-ADD2INITLIB(X11_Init, 0);
+ADD2OPENLIB(X11_Init, 0);
