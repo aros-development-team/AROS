@@ -760,9 +760,24 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
             {
                 struct Image *image = (struct Image *)gadget->GadgetRender;
 
+    	    #if 0 /* CHECKME */
                 if (knob->Top + image->Height <= bbox.Top + bbox.Height &&
-                        knob->Left + image->Width <= bbox.Left + bbox.Width)
+                    knob->Left + image->Width <= bbox.Left + bbox.Width)
+	    #endif
                 {
+		#if 1
+                    image->LeftEdge = knob->Left - bbox.Left;
+                    image->TopEdge = knob->Top - bbox.Top;
+    	    	    // image->Width = knob->Width;
+		    // image->Height = knob->Height;
+		    
+                    DrawImageState(rp,
+                                   image,
+                                   bbox.Left,
+                                   bbox.Top,
+                                   IDS_NORMAL,
+                                   (struct DrawInfo *)dri);
+		#else
                     image->LeftEdge = 0;
                     image->TopEdge = 0;
 
@@ -772,6 +787,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                                    knob->Top,
                                    IDS_NORMAL,
                                    (struct DrawInfo *)dri);
+		#endif
                 }
             }
 
