@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
     $Id: driverclass.c 20878 2004-02-13 00:00:48Z dlecorfec $
 
     Desc: PCI direct driver for x86_64 linux.
@@ -15,6 +15,8 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
+
+#include <aros/symbolsets.h>
 
 #include "pci.h"
 
@@ -32,8 +34,6 @@
     ( 0x80000000 | ((bus)<<16) |    \
     ((dev)<<11) | ((func)<<8) | ((reg)&~3))
 
-#define SysBase (PSD(cl)->sysbase)
-
 typedef union _pcicfg
 {
     ULONG   ul;
@@ -45,7 +45,7 @@ typedef union _pcicfg
     We overload the New method in order to introduce the Hidd Name and
     HardwareName attributes.
 */
-static OOP_Object *pcidriver_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *PCILx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct pRoot_New mymsg;
     
@@ -90,7 +90,7 @@ static inline void outl(ULONG val, UWORD port)
     asm volatile ("outl %0,%w1"::"a"(val),"Nd"(port));
 }
 
-static ULONG pcidriver_RL(OOP_Class *cl, OOP_Object *o, 
+ULONG PCILx__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
     struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
     ULONG orig,temp;
@@ -105,7 +105,7 @@ static ULONG pcidriver_RL(OOP_Class *cl, OOP_Object *o,
     return temp;
 }
 
-static void pcidriver_WL(OOP_Class *cl, OOP_Object *o,
+void PCILx__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_WriteConfigLong *msg)
 {
     ULONG orig;
@@ -118,7 +118,7 @@ static void pcidriver_WL(OOP_Class *cl, OOP_Object *o,
     Enable();
 }
 
-static IPTR pcidriver_mm(OOP_Class *cl, OOP_Object *o,
+IPTR PCILx__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_MapPCI *msg)
 {
     ULONG offs = (IPTR)msg->PCIAddress >> 12;
@@ -127,7 +127,7 @@ static IPTR pcidriver_mm(OOP_Class *cl, OOP_Object *o,
 
     D(bug("[PCILinux] PCIDriver::MapPCI(%x, %x)\n", offs, size));
     asm volatile(
-	"push %%rbp; mov %%rax,%%rbp; mov %1,%%rax; int $0x80; pop %%rbp"
+       "push %%rbp; mov %%rax,%%rbp; mov %1,%%rax; int $0x80; pop %%rbp"
 	:"=a"(ret)
 	:"i"(192), "b"(0), "c"(size), "d"(0x03), "S"(0x01), "D"(PSD(cl)->fd), "0"(offs)
     );
@@ -137,10 +137,10 @@ static IPTR pcidriver_mm(OOP_Class *cl, OOP_Object *o,
     return ret;
 }
 
-static VOID pcidriver_um(OOP_Class *cl, OOP_Object *o,
+VOID PCILx__Hidd_PCIDriver__UnmapPCI(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_UnmapPCI *msg)
 {
-    ULONG offs = msg->CPUAddress;
+    ULONG offs = (ULONG)msg->CPUAddress;
     ULONG size = msg->Length;
 
     asm volatile(
@@ -151,115 +151,61 @@ static VOID pcidriver_um(OOP_Class *cl, OOP_Object *o,
 
 /* Class initialization and destruction */
 
-#undef OOPBase
-#undef SysBase
-#undef UtilityBase
+#define psd (&LIBBASE->psd)
 
-#define SysBase	    (psd->sysbase)
-#define OOPBase	    (psd->oopbase)
-#define UtilityBase (psd->utilitybase)
-
-void free_pcidriverclass(struct pci_staticdata *psd, OOP_Class *cl)
+AROS_SET_LIBFUNC(PCILx_ExpungeClass, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+
     D(bug("[PCILinux] deleting classes\n"));
     
-    if (psd)
-    {
-	OOP_RemoveClass(cl);
+    OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
+    OOP_ReleaseAttrBase(IID_Hidd);
 
-	if (cl)
-	    OOP_DisposeObject((OOP_Object *)cl);
-	
-	OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
-	OOP_ReleaseAttrBase(IID_Hidd);
-    }
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 	
-#define _NUM_ROOT_METHODS	1
-#define _NUM_PCIDRIVER_METHODS	4
-
-OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
+AROS_SET_LIBFUNC(PCILx_InitClass, LIBBASETYPE, LIBBASE)
 {
-    OOP_Class *cl = NULL;
+    AROS_SET_LIBFUNC_INIT
+
     OOP_Object *pci = NULL;
-
-    struct OOP_MethodDescr root_descr[_NUM_ROOT_METHODS + 1] = 
-    {
-	{ OOP_METHODDEF(pcidriver_new), moRoot_New },
-	{ NULL, 0UL }
-    };
-
-    struct OOP_MethodDescr pcidriver_descr[_NUM_PCIDRIVER_METHODS + 1] =
-    {
-	{ OOP_METHODDEF(pcidriver_RL),  moHidd_PCIDriver_ReadConfigLong },
-	{ OOP_METHODDEF(pcidriver_WL),  moHidd_PCIDriver_WriteConfigLong },
-	{ OOP_METHODDEF(pcidriver_mm),  moHidd_PCIDriver_MapPCI },
-	{ OOP_METHODDEF(pcidriver_um),  moHidd_PCIDriver_UnmapPCI },
-	{ NULL, 0UL }
-    };
-
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-	{ root_descr,	    IID_Root,		_NUM_ROOT_METHODS },
-	{ pcidriver_descr,  IID_Hidd_PCIDriver,	_NUM_PCIDRIVER_METHODS },
-	{ NULL, NULL, 0UL }
-    };
-
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-
-    struct TagItem tags[] =
-    {
-	{ aMeta_SuperID,	(IPTR)CLID_Hidd_PCIDriver },
-	{ aMeta_InterfaceDescr,	(IPTR)ifdescr },
-	{ aMeta_InstSize,	(IPTR)0 },
-	{ TAG_DONE, 0UL }
-    };
 
     D(bug("LinuxPCI: Driver initialization\n"));
 
-    if (MetaAttrBase)
+    psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
+    psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
+
+    if (psd->hiddPCIDriverAB)
     {
-	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-	if (cl)
-	{
-	    cl->UserData = (APTR)psd;
-	    psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
-	    psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
-
-	    if (psd->hiddPCIDriverAB)
-	    {
-		/*
-		    The class may be added to the system. Add the driver
-		    to PCI subsystem as well
-		*/
-		struct pHidd_PCI_AddHardwareDriver msg;
+	/*
+	 * The class may be added to the system. Add the driver
+	 * to PCI subsystem as well
+	 */
+	struct pHidd_PCI_AddHardwareDriver msg;
 		
-		OOP_AddClass(cl);
-		D(bug("LinuxPCI: Driver Class OK\n"));
-		
-		/*
-		    PCI is suppose to destroy the class on its Dispose
-		*/
-		msg.driverClass = cl;
-		msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
+	/*
+	 * PCI is suppose to destroy the class on its Dispose
+	 */
+	msg.driverClass = psd->driverClass;
+	msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
 
-		// Add it for God's sake! ;)
-		pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-		OOP_DoMethod(pci, (OOP_Msg)&msg);
-		OOP_DisposeObject(pci);
-		psd->driverClass = cl;
-	    }
-	    else
-	    {
-		free_pcidriverclass(psd, cl);
-		cl = NULL;
-	    }
-	}
-	OOP_ReleaseAttrBase(IID_Meta);
+	// Add it for God's sake! ;)
+	pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+	OOP_DoMethod(pci, (OOP_Msg)&msg);
+	OOP_DisposeObject(pci);
     }
+    else
+	return FALSE;
 
-    D(bug("LinuxPCI: Driver ClassPtr = %x\n", cl));
+    D(bug("LinuxPCI: Driver ClassPtr = %x\n", psd->driverClass));
 
-    return cl;
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
+ADD2INITLIB(PCILx_InitClass, 0)
+ADD2EXPUNGELIB(PCILx_ExpungeClass, 0)

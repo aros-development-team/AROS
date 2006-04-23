@@ -19,18 +19,7 @@
 
 #include LC_LIBDEFS_FILE
 
-extern UBYTE LIBEND;
-
-AROS_UFP3(struct pcibase *, Pci_init,
-    AROS_UFHA(struct pcibase *, pcilinuxBase, D0),
-    AROS_UFHA(BPTR, slist, A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6));
-
 struct pci_staticdata {
-    struct ExecBase	*sysbase;
-    struct Library	*oopbase;
-    struct Library	*utilitybase;
-
     BPTR		slist;
 
     OOP_AttrBase	hiddPCIDriverAB;
@@ -43,7 +32,7 @@ struct pci_staticdata {
 
 struct pcibase {
     struct Library	    LibNode;
-    struct pci_staticdata   *psd;
+    struct pci_staticdata   psd;
     struct ExecBase	    *sysBase;
 };
 
@@ -55,7 +44,7 @@ void free_pcidriverclass(struct pci_staticdata *, OOP_Class *cl);
 
 #define BASE(lib) ((struct pcibase*)(lib))
 
-#define PSD(cl) ((struct pci_staticdata*)cl->UserData)
+#define PSD(cl) (&((struct pcibase *)cl->UserData)->psd)
 
 #endif /* _PCI_H */
 

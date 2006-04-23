@@ -2,12 +2,12 @@
 include $(TOP)/config/make.cfg
 
 #MM- includes-linux-x86_64 : includes-common-x86_64
-#MM- kernel-linux-x86_64 : kernel-linux kernel-x86_64
+#MM- kernel-linux-x86_64 : kernel-linux kernel-x86_64 \
+#MM      kernel-pci-linux-x86_64
 #MM- kernel-link-linux-x86_64 : kernel-link-emul
 
 #MM- kernel-exec-includes-linux-x86_64 : kernel-exec-includes-unix
 
 #MM- workbench-linux-x86_64 : \
-#MM      workbench-linux \
-#MM      workbench-libs-pcilinux
+#MM      workbench-linux
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux init code for emulated (Unix) systems.
@@ -72,7 +72,8 @@ extern const struct Resident
     Con_ROMTag,
     Nil_ROMTag,
     Ram_ROMTag,
-    PCI_ROMTag;
+    PCI_ROMTag,
+    PCILx_ROMTag;
 
 
 /* This list MUST be in the correct order (priority). */
@@ -89,8 +90,9 @@ static const struct Resident *romtagList[] =
     &OOP_ROMTag,			/* ColdStart,   94	 */
     &HIDDCl_ROMTag,			/* ColdStart,   92	 */
     &UXIO_ROMTag,			/* ColdStart,   91	 */
-#ifdef __i386__
-    &PCI_ROMTag,                      /* ColdStart,   90       */
+#if defined(__i386__) || defined(__x86_64__)
+    &PCI_ROMTag,                        /* ColdStart,   90       */
+    &PCILx_ROMTag,                      /* ColdStart,   90       */ 
 #endif
     &Graphics_ROMTag, 			/* ColdStart,   65	 */
     &Layers_ROMTag,			/* ColdStart,   60       */

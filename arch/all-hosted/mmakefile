@@ -18,6 +18,9 @@ KHIDDS  += linux
     ifeq ("$(AROS_HOST_CPU)","i386")
 	KHIDDS	+= pci pcilinux
     endif
+    ifeq ("$(AROS_HOST_CPU)","x86_64")
+	KHIDDS	+= pci pcilinux
+    endif
 endif
 KRSRCS  := battclock
 ifeq ($(ENABLE_DBUS),1)
