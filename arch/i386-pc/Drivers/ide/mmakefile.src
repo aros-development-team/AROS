@@ -1,9 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-%build_module_macro mmake=kernel-pc-i386-ide \
-  modname=ide modtype=device \
-  files=ide-lowlevel initfile=ide \
-  conffile=lib.conf
-
-%common
