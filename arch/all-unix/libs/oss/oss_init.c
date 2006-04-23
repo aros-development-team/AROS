@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,9 +18,6 @@
 #include <aros/symbolsets.h>
 #include LC_LIBDEFS_FILE
 
-struct Library *OOPBase;
-struct ExecBase *SysBase;
-
 OOP_Object *unixio;
 int audio_fd;
 
@@ -28,11 +25,6 @@ AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
     
-    SysBase = GM_SYSBASE_FIELD(LIBBASE);
- 
-    if (!(OOPBase = OpenLibrary("oop.library", 0)))
-        return FALSE;
-
     unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
     if (!unixio) return FALSE;
     
@@ -57,8 +49,6 @@ AROS_SET_LIBFUNC(CleanUp, LIBBASETYPE, LIBBASE)
     AROS_SET_LIBFUNC_INIT
     
     if (unixio) OOP_DisposeObject(unixio);
-    
-    CloseLibrary(OOPBase);
     
     return TRUE;
     
