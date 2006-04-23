@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Parallel Unit hidd class implementation.
@@ -309,8 +309,6 @@ UWORD UXParUnit__Hidd_ParallelUnit__GetStatus(OOP_Class *cl, OOP_Object *o, stru
 /************* The software interrupt handler that gets data from PORT *****/
 
 
-#undef UtilityBase
-
 #define READBUFFER_SIZE 513
 
 AROS_UFH3(void, parallelunit_receive_data,
@@ -361,8 +359,6 @@ AROS_UFH3(void, parallelunit_write_more_data,
 
 
 /******* init_parallelunitclass ********************************/
-
-#define UtilityBase (csd->utilitybase)
 
 AROS_SET_LIBFUNC(UXParUnit_InitAttrBases, LIBBASETYPE, LIBBASE)
 {

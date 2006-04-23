@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006 The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -77,24 +77,11 @@ struct IntHIDDParallelBase
     struct Library            hdg_LibNode;
     BPTR                      hdg_SegList;
     struct ExecBase          *hdg_SysBase;
-    struct Library           *hdg_UtilityBase;
 
     struct class_static_data  hdg_csd;
 };
 
 
 #define CSD(cl) (&((struct IntHIDDParallelBase *)cl)->hdg_csd)
-
-#undef UtilityBase
-#define UtilityBase (CSD(cl)->utilitybase)
-
-/* pre declarations */
-
-OOP_Class *init_parallelhiddclass(struct class_static_data *csd);
-void   free_parallelhiddclass(struct class_static_data *csd);
-
-OOP_Class *init_parallelunitclass(struct class_static_data *csd);
-void   free_parallelunitclass(struct class_static_data *csd);
-
 
 #endif /* PARALLEL_HIDD_INTERN_H */
