@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-# FIWME: This file was converted to the %build_module_macro without testing
+# FIXME: This file was converted to the %build_module_macro without testing
 # on the build on a real PPC/prep system. Other directories in the arch/ppc
 # directory will also need to be converted before the build will work.
 
