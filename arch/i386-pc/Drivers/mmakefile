@@ -2,8 +2,6 @@ $Id$
 
 #MM- kernel-pc-i386-drivers : \
 #MM    kernel-pc-i386-trackdisk-kobj \
-##MM    kernel-pc-i386-ide-kobj \
-#MM    kernel-pc-i386-pci-kobj \
 #MM    kernel-pc-i386-irq-kobj \
 #MM    kernel-pc-i386-kbd-kobj \
 #MM    kernel-pc-i386-mouse-kobj \
@@ -18,5 +16,4 @@ $Id$
 #MM    hidd-radeon
 
 # Disabled kernel-pc-i386-driver
-##MM    kernel-pc-i386-usb-kobj \
-##MM    kernel-pc-i386-gfx-kobj
+##MM    kernel-pc-i386-usb-kobj
