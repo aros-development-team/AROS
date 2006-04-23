@@ -1,7 +1,7 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-FILES       := serial_init SerialClass SerialUnitClass #unix_funcs
+FILES       := SerialClass SerialUnitClass #unix_funcs
 
 USER_CFLAGS := -DAROS_USE_OOP -D__AROS__
 USER_INCLUDES := -I$(GENINCDIR)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -40,8 +40,6 @@ struct HIDDSerialData
 
 struct class_static_data
 {
-    struct Library       * utilitybase;
-
     OOP_Class		 *serialhiddclass;
     OOP_Class		 *serialunitclass;
     OOP_AttrBase          hiddSerialUnitAB;
@@ -89,16 +87,11 @@ struct IntHIDDSerialBase
     struct Library            hdg_LibNode;
     BPTR                      hdg_SegList;
     struct ExecBase          *hdg_SysBase;
-    struct Library           *hdg_UtilityBase;
 
     struct class_static_data  hdg_csd;
 };
 
 
 #define CSD(cl) (&((struct IntHIDDSerialBase *)cl->UserData)->hdg_csd)
-
-#undef UtilityBase
-#define UtilityBase (CSD(cl)->utilitybase)
-
 
 #endif /* SERIAL_HIDD_INTERN_H */

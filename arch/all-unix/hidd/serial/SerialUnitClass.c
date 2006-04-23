@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Serial Unit hidd class implementation.
@@ -564,8 +564,6 @@ UWORD UXSerUnit__Hidd_SerialUnit__GetStatus(OOP_Class *cl, OOP_Object *o, struct
 /************* The software interrupt handler that gets data from UART *****/
 
 
-#undef UtilityBase
-
 #define READBUFFER_SIZE 513
 
 AROS_UFH3(void, serialunit_receive_data,
@@ -633,7 +631,6 @@ AROS_UFH3(void, serialunit_write_more_data,
 
 /******* init_serialunitclass ********************************/
 
-#define UtilityBase (LIBBASE->hdg_csd.utilitybase)
 #undef __IHidd_SerialUnitAB
 #define __IHidd_SerialUnitAB (LIBBASE->hdg_csd.hiddSerialUnitAB)
 
