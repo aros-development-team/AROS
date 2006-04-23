@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Parallel hidd class implementation.
@@ -141,9 +141,6 @@ VOID UXPar__Hidd_Parallel__DisposeUnit(OOP_Class *cl, OOP_Object *obj,
 
 
 /*************************** Classes *****************************/
-
-#undef UtilityBase
-#define UtilityBase (csd->utilitybase)
 
 AROS_SET_LIBFUNC(UXPar_InitAttrBases, LIBBASETYPE, LIBBASE)
 {
