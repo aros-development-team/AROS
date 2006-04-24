@@ -92,7 +92,7 @@ static const struct Resident *romtagList[] =
     &UXIO_ROMTag,			/* ColdStart,   91	 */
 #if defined(__i386__) || defined(__x86_64__)
     &PCI_ROMTag,                        /* ColdStart,   90       */
-    &PCILx_ROMTag,                      /* ColdStart,   90       */ 
+//    &PCILx_ROMTag,                      /* ColdStart,   89       */
 #endif
     &Graphics_ROMTag, 			/* ColdStart,   65	 */
     &Layers_ROMTag,			/* ColdStart,   60       */
