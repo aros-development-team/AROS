@@ -154,7 +154,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	 * we will do that now. */
 	if (0 == strcmp(gfxname,"hidd.gfx.vga") && vga == FALSE)
 	{
-	    OpenLibrary("vga.hidd",0L);
+	    OpenLibrary("vgah.hidd",0L);
 	}
 
 	/* Set up the graphics HIDD system */
