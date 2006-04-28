@@ -44,6 +44,9 @@ Project
 MSG_MEN_PROJECT_QUIT (//)
 Q\0Quit
 ;
+; ===============================================
+; EXCHANGE
+;
 MSG_EXCHANGE_CXNAME (//)
 Exchange
 ;
@@ -54,7 +57,7 @@ MSG_EXCHANGE_CXDESCR (//)
 Controls system commodities
 ;
 MSG_EXCHANGE_WINTITLE (//)
-Exchange
+Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW (//)
 Available commodities
@@ -77,6 +80,9 @@ Active
 MSG_EXCHANGE_CYCLE_INACTIVE (//)
 Inactive
 ;
+; ===============================================
+; BLANKER
+;
 MSG_BLANKER_CXNAME (//)
 Blanker
 ;
@@ -85,6 +91,9 @@ System Screen Blanker
 ;
 MSG_BLANKER_CXDESCR (//)
 Blanks screen when system inactive
+;
+; ===============================================
+; CLICK2FNT
 ;
 MSG_CLICK2FNT_CXNAME (//)
 ClickToFront
@@ -95,6 +104,9 @@ Click To Front Utility
 MSG_CLICK2FNT_CXDESCR (//)
 Click windows to front
 ;
+; ===============================================
+; OPAQUE
+;
 MSG_OPAQUE_CXNAME (//)
 Opaque
 ;
@@ -103,6 +115,9 @@ Solid Windows
 ;
 MSG_OPAQUE_CXDESCR (//)
 Realtime moving of windows
+;
+; ===============================================
+; AUTOPOINT
 ;
 MSG_AUTOPOINT_CXNAME (//)
 AutoPoint
@@ -113,6 +128,9 @@ Autopointer
 MSG_AUTOPOINT_CXDESCR (//)
 Activates the window under the mouse
 ;
+; ===============================================
+; STARTMENU
+;
 MSG_STARTMENU_CXNAME (//)
 StartMenu
 ;
@@ -121,6 +139,9 @@ System Program Starter
 ;
 MSG_STARTMENU_CXDESCR (//)
 Program launch commodity
+;
+; ===============================================
+; FKEY
 ;
 MSG_FKEY_CXNAME (//)
 FKey
@@ -193,6 +214,9 @@ I\0Iconify
 ;
 MSG_FKEY_MEN_PROJECT_QUIT (//)
 Q\0Quit
+;
+; ===============================================
+; NOCAPSLOCK
 ;
 MSG_NOCAPSLOCK_CXNAME (//)
 NoCapsLock

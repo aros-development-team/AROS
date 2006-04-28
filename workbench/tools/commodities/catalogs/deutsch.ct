@@ -1,4 +1,4 @@
-## version $VER: Commodities.catalog 1.1 (15.04.2006)
+## version $VER: Commodities.catalog 1.2 (26.04.2006)
 ## language deutsch
 ## codeset 0
 ;
@@ -63,6 +63,9 @@ MSG_MEN_PROJECT_QUIT
 Q\0Beenden
 ; Q\0Quit
 ;
+; ===============================================
+; EXCHANGE
+;
 MSG_EXCHANGE_CXNAME
 Exchange
 ; Exchange
@@ -76,8 +79,8 @@ Kontrolliert System Commodities
 ; Controls system commodities
 ;
 MSG_EXCHANGE_WINTITLE
-Exchange
-; Exchange
+Exchange: Tastenbefehl = <%s>
+; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
 Verfügbare Commodities
@@ -107,6 +110,9 @@ MSG_EXCHANGE_CYCLE_INACTIVE
 inaktiv
 ; Inactive
 ;
+; ===============================================
+; BLANKER
+;
 MSG_BLANKER_CXNAME
 Blanker
 ; Blanker
@@ -118,6 +124,9 @@ System Bildschirmschoner
 MSG_BLANKER_CXDESCR
 Schwärzt Bildschirm wenn System inaktiv
 ; Blanks screen when system inactive
+;
+; ===============================================
+; CLICK2FNT
 ;
 MSG_CLICK2FNT_CXNAME
 ClickToFront
@@ -131,6 +140,9 @@ MSG_CLICK2FNT_CXDESCR
 Per Mausklick Fenster in den Vordergrund holen
 ; Click windows to front
 ;
+; ===============================================
+; OPAQUE
+;
 MSG_OPAQUE_CXNAME
 Opaque
 ; Opaque
@@ -142,6 +154,9 @@ Opaque Fenster
 MSG_OPAQUE_CXDESCR
 Echtzeit Verschieben von Fenstern
 ; Realtime moving of windows
+;
+; ===============================================
+; AUTOPOINT
 ;
 MSG_AUTOPOINT_CXNAME
 AutoPoint
@@ -155,6 +170,9 @@ MSG_AUTOPOINT_CXDESCR
 Aktiviert Fenster unter Mauszeiger
 ; Activates the window under the mouse
 ;
+; ===============================================
+; STARTMENU
+;
 MSG_STARTMENU_CXNAME
 StartMenu
 ; StartMenu
@@ -166,6 +184,9 @@ System Programm Starter
 MSG_STARTMENU_CXDESCR
 Startet Programme von Menü
 ; Program launch commodity
+;
+; ===============================================
+; FKEY
 ;
 MSG_FKEY_CXNAME
 FKey
@@ -262,6 +283,9 @@ I\0Ikonifizieren
 MSG_FKEY_MEN_PROJECT_QUIT
 Q\0Beenden
 ; Q\0Quit
+;
+; ===============================================
+; NOCAPSLOCK
 ;
 MSG_NOCAPSLOCK_CXNAME
 NoCapsLock

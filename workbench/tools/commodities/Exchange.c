@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Exchange -- controls commodities.
@@ -43,1161 +43,515 @@
 
 ******************************************************************************/
 
+#define MUIMASTER_YES_INLINE_STDARG
 
-#include <cxintern.h>   /* Exchange is the ONLY commodity that may use this */
-/* These are necessary as cxintern.h defines them for commodities.library
-   purposes. */
-#ifdef SysBase
-#undef SysBase
-#endif
-#ifdef KeyMapBase
-#undef KeyMapBase
-#endif
-#ifdef UtilityBase
-#undef UtilityBase
-#endif
-#ifdef TimerBase
-#undef TimerBase
-#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include <proto/dos.h>
+#include <cxintern.h>
+
+#define DEBUG 1
+#include <aros/debug.h>
+#include <aros/symbolsets.h>
+#include <libraries/mui.h>
+#include <proto/muimaster.h>
+#include <proto/locale.h>
+#include <proto/intuition.h>
 #include <proto/exec.h>
 #include <proto/gadtools.h>
-#include <proto/intuition.h>
-#include <proto/icon.h>
+#include <proto/dos.h>
 #include <proto/alib.h>
 #include <proto/commodities.h>
 #include <proto/utility.h>
-#include <proto/locale.h>
 
-#include <exec/types.h>
-#include <exec/lists.h>
-#include <exec/ports.h>
-#include <exec/libraries.h>
-
-#include <dos/dos.h>
-#include <dos/dosextens.h>
-#include <libraries/commodities.h>
-#include <libraries/gadtools.h>
-#include <libraries/locale.h>
-#include <intuition/intuition.h>
-#include <devices/rawkeycodes.h>
-
-#include <string.h>
-
-#include <stdio.h>
-
-#define DEBUG 0
-#include <aros/debug.h>
-
-#define CATCOMP_NUMBERS
-#define CATCOMP_STRINGS
 #define CATCOMP_ARRAY
-
 #include "strings.h"
 
-#define  P(x)   
+#define CATALOG_NAME     "System/Tools/Commodities.catalog"
+#define CATALOG_VERSION  0
 
-#define BORDERY      4
-#define SPACEY       4
-#define EXTRAHEIGHT  6
-#define LABELSPACEY  4
+TEXT version[] = "$VER: Exchange 0.4 (25.04.2006)";
 
-UBYTE version[] = "$VER: Exchange 0.3 (14.10.2001)";
+#define ARG_TEMPLATE "CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S"
+#define DEF_POPKEY "ctrl alt h"
 
-static struct Gadget *lvgad;
-static WORD lvtop, lvheight;
-
-struct ExchangeState
-{
-    CxObj          *ec_broker;
-    struct MsgPort *ec_msgPort;	     /* Message port for our broker */
-    struct Catalog *ec_catalog;	     /* Commodities locale catalog */
-    struct List     ec_brokerList;   /* Current list of brokers
-					(struct BrokerCopy nodes */
-
-    struct Screen  *ec_screen;
-    struct VisualInfo *ec_visualInfo; /* Visualinfo for the gadgets */
-    
-    struct Window  *ec_window;	     /* The Exchange window */
-
-    /* The gadgets */
-    struct Gadget  *ec_context;
-    struct Gadget  *ec_listView;
-    struct Gadget  *ec_showBut;
-    struct Gadget  *ec_hideBut;
-    struct Gadget  *ec_killBut;
-    struct Gadget  *ec_cycle;
-    struct Gadget  *ec_textGad;
-    struct Gadget  *ec_textGad2;
-
-    struct Menu    *ec_menus;
-    UBYTE   	    ec_lvitemname[CBD_NAMELEN + 1];
-
-    /* Values settable via tooltypes/command arguments */
-    BOOL       ec_cxPopup;
-    STRPTR     ec_cxPopKey;	/* Hotkey for Exchange */
-    LONG       ec_cxPri;	/* Priority of the Exchange broker */
+enum {
+    ARG_CXPRI,
+    ARG_CXPOPKEY,
+    ARG_CXPOPUP,
+    NUM_ARGS
 };
 
-/* Libraries to open */
-struct LibTable
+static Object *app, *wnd, *listgad, *textgad1, *textgad2, *showgad, *hidegad, *cyclegad, *killgad, *updategad;
+CONST_STRPTR cyclestrings[3];
+static struct Catalog *catalog;
+static UBYTE s[257];
+static struct List brokerList;
+
+static struct Hook broker_hook;
+static struct Hook list_disp_hook;
+static struct Hook list_select_hook;
+static struct Hook inform_broker_hook;
+static struct Hook update_hook;
+
+static LONG cx_pri;
+static char *cx_popkey;
+static BOOL cx_popup = FALSE;
+static CxObj *broker;
+static struct MsgPort *brokermp;
+static struct Task *maintask;
+
+static void Cleanup(CONST_STRPTR txt);
+static void GetArguments(int argc, char **argv);
+static void HandleAll(void);
+static void InitMenus(void);
+static VOID Locale_Deinitialize(VOID);
+static BOOL Locale_Initialize(VOID);
+static void MakeGUI(void);
+static void showSimpleMessage(CONST_STRPTR msgString);
+static CONST_STRPTR _(ULONG id);
+
+/*********************************************************************************************/
+
+static CONST_STRPTR _(ULONG id)
 {
-    APTR	lT_Library;
-    STRPTR	lT_Name;
-    ULONG	lT_Version;
-}
-libTable[] =
-{
-    { &IntuitionBase,	"intuition.library",	40L},
-    { &GadToolsBase,	"gadtools.library",	40L},
-    { &UtilityBase,	"utility.library",	40L},
-    { &CxBase,		"commodities.library",	40L},
-    { NULL }
-};
-
-/* Prototypes */
-struct BrokerCopy *getNth(struct List *list, LONG n);
-
-void    redrawList(struct ExchangeState *ec);
-void    appearExchange(struct ExchangeState *ec);
-void    setText(struct Gadget *gadget, STRPTR text, struct ExchangeState *ec);
-void    setGadgetState(struct Gadget *gadget, BOOL status,
-		       struct ExchangeState *ec);
-void    updateInfo(struct ExchangeState *ec);
-void    informBroker(LONG command, struct ExchangeState *ec);
-void    switchActive(struct ExchangeState *ec);
-void    realMain(struct ExchangeState *ec);
-void    freeResources(struct ExchangeState *ec);
-BOOL    initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight);
-BOOL    readShellArgs(struct ExchangeState *ec);
-BOOL    readWBArgs(int argc, char **argv, struct ExchangeState *ec);
-BOOL    getResources(struct ExchangeState *es);
-CONST_STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id);
-void    setupMenus(struct Catalog *catalogPtr);
-void    showSimpleMessage(struct ExchangeState *ec, CONST_STRPTR msgString);
-
-int main(int argc, char **argv)
-{
-    struct ExchangeState ec;
-    int    retval = RETURN_OK;
-
-    if (getResources(&ec))
+    if (LocaleBase != NULL && catalog != NULL)
     {
-	if (Cli() == NULL)
+	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+    } 
+    else 
+    {
+	return CatCompArray[id].cca_Str;
+    }
+}
+
+#define __(id) ((IPTR) _(id))   /* Get a message, as an IPTR */
+
+/*********************************************************************************************/
+
+static BOOL Locale_Initialize(VOID)
+{
+    if (LocaleBase != NULL)
+    {
+	catalog = OpenCatalog
+	    ( 
+	     NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
+	    );
+    }
+    else
+    {
+	catalog = NULL;
+    }
+
+    return TRUE;
+}
+
+/*********************************************************************************************/
+
+static VOID Locale_Deinitialize(VOID)
+{
+    if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
+}
+
+/*********************************************************************************************/
+
+static void GetArguments(int argc, char **argv)
+{
+    static struct RDArgs *myargs;
+    static IPTR args[NUM_ARGS];
+    static UBYTE **wbargs;
+    if (argc)
+    {
+	if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
 	{
-	    /* We were called from Workbench */
-	    if (readWBArgs(argc, argv, &ec))
-	    {
-		realMain(&ec);
-	    }
+	    Fault(IoErr(), 0, s, 256);
+	    Cleanup(s);
+	}
+	if (args[ARG_CXPRI]) cx_pri = *(LONG*)args[ARG_CXPRI];
+	if (args[ARG_CXPOPKEY])
+	{
+	    cx_popkey = StrDup((char *)args[ARG_CXPOPKEY]);
 	}
 	else
 	{
-	    /* We were called from a Shell */
-	    if (readShellArgs(&ec))
-	    {
-		realMain(&ec);
-	    }
-	    else
-	    {
-		PrintFault(IoErr(), "Exchange");
-		retval = RETURN_FAIL;
-	    }
+	    cx_popkey = StrDup(DEF_POPKEY);
 	}
-    }	
-    else
-    {
-	retval = RETURN_FAIL;
-    }
-    
-    freeResources(&ec);
-    
-    return retval;
-}
-
-
-struct LocaleBase *LocaleBase       = NULL;
-struct Library *GadToolsBase        = NULL;
-struct Library *CxBase              = NULL;
-struct Library *IconBase            = NULL;
-struct UtilityBase *UtilityBase     = NULL;
-struct IntuitionBase *IntuitionBase = NULL;
-
-
-/* Description of the Exchange broker */
-struct NewBroker exBroker =
-{
-    NB_VERSION,
-    NULL,			/* The next three fields are set by getCatalog() */
-    NULL,
-    NULL,
-    NBU_UNIQUE | NBU_NOTIFY,	/* One Exchange is enough */
-    COF_SHOW_HIDE,		/* nb_Flags */
-    0,				/* nb_Pri -- should be set by tooltypes */
-    NULL,	                /* ec->ec_msgPort */
-    0				/* nb_ReservedChannel */
-};
-
-
-BOOL readShellArgs(struct ExchangeState *ec)
-{	
-    IPTR          *args[] = { NULL, NULL, NULL };
-    struct RDArgs *rda;
-    
-    rda = ReadArgs("CX_PRIORITY/K/N,CX_POPUP/K/S,CX_POPKEY/K", (IPTR *)args,
-		   NULL);
-
-    if (rda == NULL)
-    {
-	return FALSE;
-    }
-
-    if (args[0] != NULL)
-    {
-	ec->ec_cxPri = (LONG)*args[0];
-    }
-
-    if (args[1] != NULL)
-    {
-	ec->ec_cxPopup = (BOOL)*args[1];
-    }
-
-    if (args[2] != NULL)
-    {
-	ec->ec_cxPopKey = (STRPTR)*args[2];
+	if (args[ARG_CXPOPUP]) cx_popup = TRUE;
+	FreeArgs(myargs);
     }
     else
     {
-	ec->ec_cxPopKey = "ctrl alt h";
+	wbargs = ArgArrayInit(argc, (UBYTE**)argv);
+	cx_pri = ArgInt(wbargs, "CX_PRIORITY", 0);
+	cx_popkey = StrDup(ArgString(wbargs, "CX_POPKEY", DEF_POPKEY));
+	if (strnicmp(ArgString(wbargs, "CX_POPUP", "NO"), "Y", 1) == 0)
+	{
+	    cx_popup = TRUE;
+	}
+	ArgArrayDone();
     }
-
-    FreeArgs(rda);
-
-    return TRUE;
+    D(bug("Exchange Arguments pri %d popkey %s popup %d\n", cx_pri, cx_popkey, cx_popup));
 }
 
-
-BOOL readWBArgs(int argc, char **argv, struct ExchangeState *ec)
-{
-    STRPTR    popUp;
-    UBYTE   **tt, tmpString[128];
-
-    IconBase = OpenLibrary("icon.library", 40);
-    
-    if (IconBase == NULL)
-    {
-	sprintf(tmpString, getCatalog(ec->ec_catalog, MSG_CANT_OPEN_LIB),
-		"icon.library", 40L);
-        showSimpleMessage(ec, tmpString);
-
-	return FALSE;
-    }
-    
-    tt = ArgArrayInit(argc, (UBYTE **)argv);
-    
-    ec->ec_cxPri    = ArgInt(tt, "CX_PRIORITY", 0);
-    ec->ec_cxPopKey = ArgString(tt, "CX_POPKEY", "ctrl alt h");
-    popUp = ArgString(tt, "CX_POPUP", "YES");
-
-    if (Stricmp(popUp, "YES") == 0)
-    {
-	ec->ec_cxPopup = TRUE;
-    }
-
-    ArgArrayDone();
-    CloseLibrary(IconBase);
-
-    return TRUE;
-}
-
+/*********************************************************************************************/
 
 static struct NewMenu nm[] =
 {
-    { NM_TITLE,	(STRPTR)MSG_MEN_PROJECT },
-    { NM_ITEM,	(STRPTR)MSG_MEN_PROJECT_QUIT },
-    { NM_END } /* petah: Should we use a trailing comma here? Look it up! */
+    {NM_TITLE, (STRPTR)MSG_FKEY_MEN_PROJECT         },
+     {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_HIDE    },
+     {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_ICONIFY },
+     {NM_ITEM, NM_BARLABEL  	    	    	    },
+     {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_QUIT    },
+    {NM_END 	    	    	    	    	    }
 };
 
+/*********************************************************************************************/
 
-BOOL getResources(struct ExchangeState *ec)
+static void InitMenus(void)
 {
-    struct DrawInfo  *drawInfo;
-    LONG              topOffset;
-    LONG    	      fontHeight;
-    LONG    	      winHeight;
-    struct LibTable  *tmpLibTable = libTable;
-    UBYTE	      tmpString[256];
+    struct NewMenu *actnm = nm;
 
-    memset(ec, 0, sizeof(struct ExchangeState));
-
-    /* First, open necessary libraries - start with locale (for localized error
-       messages thruout the program initialisation */
-
-    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40);
-
-    if (LocaleBase != NULL)
+    for(actnm = nm; actnm->nm_Type != NM_END; actnm++)
     {
-	/* TODO: OC_BuiltInLanguage should be NULL, but AROS locale doesn't support
-	   it yet */
-	ec->ec_catalog = OpenCatalog(NULL, "System/Tools/Commodities.catalog",
-				     OC_BuiltInLanguage, (Tag)"english", TAG_DONE);
-
-	if (ec->ec_catalog == NULL)
+	if (actnm->nm_Label != NM_BARLABEL)
 	{
-	    D(bug("OpenCatalog() failed!\n"));
-	}
-    }
-    else
-    {
-	D(bug("Warning: Can't open locale.library V40!\n"));
-    }
+	    ULONG  id = (ULONG)actnm->nm_Label;
+	    CONST_STRPTR str = _(id);
 
-    while (tmpLibTable->lT_Library)
-    {
-	*(struct Library **)tmpLibTable->lT_Library = 
-	    OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version);
-
-	if (tmpLibTable->lT_Library == NULL)
-	{
-	    sprintf(tmpString, getCatalog(ec->ec_catalog, MSG_CANT_OPEN_LIB),
-		    tmpLibTable->lT_Name, tmpLibTable->lT_Version);
-	    showSimpleMessage(ec, tmpString);
-
-	    return FALSE;
-	}
-	else
-	{
-	    D(bug("Library %s opened!\n", tmpLibTable->lT_Name));
-	}
-
-	tmpLibTable++;
-    }    
-
-    D(bug("Libraries opened!\n"));
- 
-    /* Then, allocate the rest of the resources */
-    
-    ec->ec_msgPort = CreateMsgPort();
-    
-    if (ec->ec_msgPort == NULL)
-    {
-	return FALSE;
-    }
-
-    // ec->ec_hoykeyPort = CreateMsgPort();
-    
-    // if(ec->ec_hotkeyPort == NULL)
-    //     return FALSE;
-
-    
-    NEWLIST(&ec->ec_brokerList);
-
-    exBroker.nb_Name = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CXNAME);
-    exBroker.nb_Title = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CXTITLE);
-    exBroker.nb_Descr = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CXDESCR);
-
-    exBroker.nb_Port = ec->ec_msgPort;
-    ec->ec_broker = CxBroker(&exBroker, NULL);
-
-    if (ec->ec_broker == NULL)
-    {
-	return FALSE;
-    }
-    
-    D(bug("Broker: %s Flags: %i\n", ec->ec_broker->co_Ext.co_BExt->bext_Name,
-	      ec->ec_broker->co_Flags));
-
-
-    // AttachCxObj(ec->ec_broker, Hotkey("ctrl alt help", ec->ec_hotkeyPort));
-
-    if (CxObjError(ec->ec_broker) != 0)
-    {
-	return FALSE;
-    }
-
-    /* Start our broker */
-    ActivateCxObj(ec->ec_broker, TRUE);
-
-    ec->ec_screen = LockPubScreen(NULL);
-
-    if (ec->ec_screen == NULL)
-    {
-	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_LOCK_SCR));
-
-	return FALSE;
-    }
-
-    ec->ec_visualInfo = GetVisualInfoA(ec->ec_screen, NULL);
-
-    if (ec->ec_visualInfo == NULL)
-    {
-	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_GET_VI));
-
-	return FALSE;
-    }
-
-    drawInfo = GetScreenDrawInfo(ec->ec_screen);
-    fontHeight = drawInfo->dri_Font->tf_YSize;
-    topOffset = fontHeight + ec->ec_screen->WBorTop;
-    FreeScreenDrawInfo(ec->ec_screen, drawInfo);
-
-    if (!initGadgets(ec, ec->ec_screen, fontHeight))
-    {
-	return FALSE;
-    }
-
-    setupMenus(ec->ec_catalog);
-
-    ec->ec_menus = CreateMenusA(nm, NULL);
-
-    if (ec->ec_menus == NULL)
-    {
-	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_CREATE_MENUS));
-
-	return FALSE;
-    }
-
-    if (!LayoutMenusA(ec->ec_menus, ec->ec_visualInfo, NULL))
-    {
-	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_LAYOUT_MENUS));
-
-	return FALSE;
-    }
-	
-    winHeight = BORDERY * 2 + fontHeight + LABELSPACEY +
-    	    	(fontHeight + EXTRAHEIGHT) * 4 + 
-		SPACEY * 3 +
-		ec->ec_screen->WBorTop + fontHeight + 1 +
-		ec->ec_screen->WBorBottom;
-    
-    ec->ec_window = OpenWindowTags(NULL,
-				   WA_PubScreen,    (Tag) NULL,
-				   WA_Gadgets,      (Tag) ec->ec_context,
-				   WA_Left,         0,
-				   WA_Top,          0,
-				   WA_Width,        500,
-				   WA_Height,       winHeight,
-				   WA_Title,        (Tag)getCatalog(ec->ec_catalog, MSG_EXCHANGE_WINTITLE),
- 				   WA_IDCMP,        BUTTONIDCMP | CYCLEIDCMP |
-				                    LISTVIEWIDCMP | 
-				                    IDCMP_CLOSEWINDOW |
-				                    IDCMP_GADGETUP |
-						    IDCMP_RAWKEY |
-				                    IDCMP_MENUPICK |
-						    IDCMP_VANILLAKEY,
-				   WA_DragBar,      TRUE,
-				   WA_CloseGadget,  TRUE,
-				   WA_DepthGadget,  TRUE,
-				   WA_SmartRefresh, TRUE,
-				   WA_Activate	  , TRUE,
-				   TAG_DONE);
-    
-    if (ec->ec_window == NULL)
-    {
-	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_CREATE_WIN));
-
-	return FALSE;
-    }
-
-    SetMenuStrip(ec->ec_window, ec->ec_menus);
-
-    UnlockPubScreen(NULL, ec->ec_screen);
-    ec->ec_screen = NULL;
-
-    return TRUE;
-}
-
-
-enum { ID_listView, ID_cycle, ID_showBut, ID_hideBut, ID_killBut,
-       ID_textGad, ID_textGad2 };
-
-
-struct NewGadget listView =
-{
-    10,
-    32,
-    180,
-    78,
-    NULL,
-    NULL,			/* TextAttr */
-    ID_listView,
-    PLACETEXT_ABOVE,
-    NULL,			/* Visual Info */
-    NULL			/* User data */
-};
-
-
-struct NewGadget cycleBut =
-{
-    200,
-    94,
-    140,
-    16,
-    NULL,			/* Text */
-    NULL,			/* TextAttr */
-    ID_cycle,
-    PLACETEXT_IN,
-    NULL,			/* Visual Info */
-    NULL			/* User data */
-};
-
-
-struct NewGadget killBut =
-{
-    344,
-    94,
-    140,
-    16,
-    NULL,                	/* Set by getCatalog()  */
-    NULL,			/* TextAttr */
-    ID_killBut,
-    PLACETEXT_IN,
-    NULL,			/* Visual Info */
-    NULL			/* User data */
-};
-
-
-struct NewGadget showBut =
-{
-    200,
-    76,
-    140,
-    16,
-    NULL,                	/* Set by getCatalog() */
-    NULL,			/* TextAttr */
-    ID_showBut,
-    PLACETEXT_IN,
-    NULL,			/* Visual Info */
-    NULL			/* User data */
-};
-
-
-struct NewGadget hideBut =
-{
-    344,
-    76,
-    140,
-    16,
-    NULL,                	/* Set by getCatalog() */
-    NULL,			/* TextAttr */
-    ID_hideBut,
-    PLACETEXT_IN,
-    NULL,			/* Visual Info */
-    NULL			/* User data */
-};
-
-
-struct NewGadget textGad =
-{
-    200,
-    32,
-    284,
-    18,
-    NULL,	             	/* Set by getCatalog() */
-    NULL,			/* TextAttr */
-    ID_textGad,
-    PLACETEXT_ABOVE,
-    NULL,			/* Visual Info */
-    NULL			/* User data */
-};
-
-
-struct NewGadget textGad2 =
-{
-    200,
-    32 + 20 + 2,
-    284,
-    18,
-    NULL,
-    NULL,			/* TextAttr */
-    ID_textGad2,
-    PLACETEXT_ABOVE,
-    NULL,			/* Visual Info */
-    NULL			/* User data */
-};
-
-
-/* Cycle gadget texts */
-//STRPTR  strings[] = { "Active", "Inactive", NULL };
-CONST_STRPTR strings[3];
-
-BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
-{
-    struct Gadget *gad;
-    LONG y, h;
-    
-    listView.ng_VisualInfo = ec->ec_visualInfo;
-    cycleBut.ng_VisualInfo = ec->ec_visualInfo;
-    textGad.ng_VisualInfo  = ec->ec_visualInfo;
-    textGad2.ng_VisualInfo = ec->ec_visualInfo;
-    showBut.ng_VisualInfo  = ec->ec_visualInfo;
-    hideBut.ng_VisualInfo  = ec->ec_visualInfo;
-    killBut.ng_VisualInfo  = ec->ec_visualInfo;
-
-    listView.ng_GadgetText = getCatalog(ec->ec_catalog, MSG_EXCHANGE_LISTVIEW);
-    showBut.ng_GadgetText = getCatalog(ec->ec_catalog, MSG_EXCHANGE_GAD_SHOW);
-    hideBut.ng_GadgetText = getCatalog(ec->ec_catalog, MSG_EXCHANGE_GAD_HIDE);
-    killBut.ng_GadgetText = getCatalog(ec->ec_catalog, MSG_EXCHANGE_GAD_REMOVE);
-
-    strings[0] = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CYCLE_ACTIVE);
-    strings[1] = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CYCLE_INACTIVE);
-    strings[2] = NULL;
-
-    gad = CreateContext(&ec->ec_context);
-
-    y = scr->WBorTop + fontHeight + 1 + BORDERY + fontHeight + LABELSPACEY;
-    h = fontHeight + EXTRAHEIGHT;
-
-    listView.ng_TopEdge = lvtop = y;
-    listView.ng_Height  = lvheight = h * 4 + SPACEY*3;
-    
-    showBut.ng_TopEdge = y + 2 * (h + SPACEY);
-    showBut.ng_Height  = h;
-    
-    hideBut.ng_TopEdge = y + 2 * (h + SPACEY);
-    hideBut.ng_Height  = h;
-    
-    killBut.ng_TopEdge = y + 3 * (h + SPACEY);
-    killBut.ng_Height  = h;
-    
-    cycleBut.ng_TopEdge = y + 3 * (h + SPACEY);
-    cycleBut.ng_Height  = h;
-    
-    textGad.ng_TopEdge = y;
-    textGad.ng_Height  = h;
-    
-    textGad2.ng_TopEdge = y + 1 * (h + SPACEY);
-    textGad2.ng_Height  = h;
-    
-    ec->ec_listView = gad = lvgad = CreateGadget(LISTVIEW_KIND, gad,
-					  &listView,
-					  GTLV_Labels, (IPTR) NULL,
-					  GTLV_ShowSelected, (IPTR) NULL,
-					  TAG_DONE);
-    
-    ec->ec_showBut = gad = CreateGadget(BUTTON_KIND, gad,
-					&showBut,
-					GA_Disabled, TRUE,
-					TAG_DONE);
-
-    ec->ec_hideBut = gad = CreateGadget(BUTTON_KIND, gad,
-					&hideBut,
-					GA_Disabled, TRUE,
-					TAG_DONE);
-
-    ec->ec_killBut = gad = CreateGadget(BUTTON_KIND, gad,
-					&killBut,
-					GA_Disabled, TRUE,
-					TAG_DONE);
-    
-    ec->ec_cycle = gad = CreateGadget(CYCLE_KIND, gad,
-				      &cycleBut,
-				      GA_Disabled, TRUE,
-				      GTCY_Labels, (Tag)strings,  /* Temporary */
-				      TAG_DONE);
-    
-    /* NOTE! GadTools bug: The disabled state for cycle gadgets is not
-       changed when doing a GT_SetGadgetAttrs() */
-
-    /* Information window */
-    ec->ec_textGad = gad = CreateGadget(TEXT_KIND, gad,
-					&textGad,
-					//GTTX_Text    , "Exchange",
-					//GTTX_CopyText, TRUE,
-					GTTX_Border  , TRUE,
-					TAG_DONE);
-    
-    ec->ec_textGad2 = gad = CreateGadget(TEXT_KIND, gad,
-					 &textGad2,
-					 //GTTX_Text    , "Test message",
-					 //GTTX_CopyText, TRUE,
-					 GTTX_Border  , TRUE,
-					 TAG_DONE);
-
-    return gad ? TRUE : FALSE;
-}
-
-
-
-void freeResources(struct ExchangeState *ec)
-{
-    struct LibTable *tmpLibTable = libTable;
-
-    if (IntuitionBase != NULL)
-    {
-	if (ec->ec_window != NULL)
-	{
-	    ClearMenuStrip(ec->ec_window);
-	    CloseWindow(ec->ec_window);
-	    
-	    D(bug("Closed window\n"));
-	}
-    }
-
-    if (GadToolsBase != NULL)
-    {
-        /* Passing NULL to these functions is safe! */
-	FreeMenus(ec->ec_menus);
-	FreeGadgets(ec->ec_context);
-	FreeVisualInfo(ec->ec_visualInfo);
-
-    	UnlockPubScreen(NULL, ec->ec_screen);
-	
-	D(bug("Freed visualinfo\n"));
-    }
-
-    if (CxBase != NULL)
-    {
-	FreeBrokerList(&ec->ec_brokerList);
-	DeleteCxObjAll(ec->ec_broker);
-    }
-
-    // DeleteMsgPort(ec->hotkeyPort);
-    DeleteMsgPort(ec->ec_msgPort);
-
-    if (LocaleBase != NULL)
-    {
-	CloseCatalog(ec->ec_catalog);
-
-	D(bug("Closed catalog\n"));
-
-	CloseLibrary((struct Library *)LocaleBase);
-    }
-
-    while (tmpLibTable->lT_Name)	/* Check for name rather than pointer */
-    {
-	if (tmpLibTable->lT_Library != NULL)
-	{
-	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
-	    D(bug("Closed %s!\n", tmpLibTable->lT_Name));
-	}
-
-    	tmpLibTable++;
-    }
-}
-
-void ScrollListview(struct ExchangeState *ec, struct Gadget *gad, WORD delta)
-{
-    IPTR top, visible, total;
-    LONG newtop;
-    
-    GT_GetGadgetAttrs(gad, ec->ec_window, NULL, GTLV_Top, (IPTR)&top,
-    	    	    	    	      GTLV_Visible, (IPTR)&visible,
-				      GTLV_Total, (IPTR)&total,
-				      TAG_DONE);
-				      
-    newtop = (LONG)top + delta * 3;
-
-    if (newtop + visible > total)
-    {
-    	newtop = total - visible;
-    }
-    
-    if (newtop < 0) newtop = 0;
-    
-    if (newtop != top)
-    {
-    	GT_SetGadgetAttrs(gad, ec->ec_window, NULL, GTLV_Top, newtop, TAG_DONE);
-    }
-    				      
-}
-
-void realMain(struct ExchangeState *ec)
-{
-    BOOL   quitNow = FALSE;
-    ULONG  signals;
-    ULONG  winSig = 1 << ec->ec_window->UserPort->mp_SigBit;
-    ULONG  cxSig  = 1 << ec->ec_msgPort->mp_SigBit;
-    
-    while (!quitNow)
-    {
-	signals = Wait(cxSig | winSig | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_E);
-
-	if (signals & winSig)
-	{
-	    struct IntuiMessage *msg;
-
-	    while ((msg = GT_GetIMsg(ec->ec_window->UserPort)) != NULL)
+	    if (actnm->nm_Type == NM_TITLE)
 	    {
-		D(bug("Got win signal %i\n", msg->Class));
-
-		switch (msg->Class)
-		{
-		case IDCMP_CLOSEWINDOW:
-		    quitNow = TRUE;
-		    break;
-
-    	    	case IDCMP_VANILLAKEY:
-		    if (msg->Code == 27) quitNow = TRUE;
-		    break;
-		    
-		case IDCMP_GADGETUP:
-		    {		
-			struct Gadget *gadget = (struct Gadget *)msg->IAddress;
-			
-			switch (gadget->GadgetID)
-			{
-			case ID_listView:
-			    updateInfo(ec);
-			    break;
-			    
-			case ID_cycle:
-			    switchActive(ec);
-			    break;
-			    
-			case ID_showBut:
-			    informBroker(CXCMD_APPEAR, ec);
-			    break;
-			    
-			case ID_hideBut:
-			    informBroker(CXCMD_DISAPPEAR, ec);
-			    break;
-
-			case ID_killBut:
-			    informBroker(CXCMD_KILL, ec);
-			    break;
-			}
-			
-		    } /* case IDCMP_GADGETUP: */
-		    break;
-
-		case IDCMP_MENUPICK:
-		    {
-			struct MenuItem *item;
-			UWORD menuNum = msg->Code;
-			
-			while (menuNum != MENUNULL)
-			{			
-			    item = ItemAddress(ec->ec_menus, menuNum);
-	
-			    if (item != NULL)
-			    {
-				menuNum = item->NextSelect;
-				
-				D(bug("Menu selection: %i",
-					  (int)GTMENUITEM_USERDATA(item)));
-
-				switch ((LONG)GTMENUITEM_USERDATA(item))
-				{
-				case MSG_MEN_PROJECT_QUIT:
-				    quitNow = TRUE;
-
-				    break;
-				}
-			    }
-			    else
-			    {
-				menuNum = MENUNULL;
-			    }
-			}
-		    }
-		    break;
-
-		case IDCMP_RAWKEY:
-		    {
-			WORD delta;
-			
-			switch(msg->Code)
-			{
-			case RAWKEY_NM_WHEEL_UP:
-				delta = -1;
-				break;
-				
-			case RAWKEY_NM_WHEEL_DOWN:
-				delta = 1;
-				break;
-				
-			default:
-				delta = 0;
-				break;
-			}
-			
-			if (delta)
-			{
-				if (lvgad)
-				{
-					ScrollListview(ec, lvgad, delta);
-				}
-			}
-		    }
-		    break;    
-		} /* switch(msg->Class) */
-		
-		GT_ReplyIMsg(msg);
-
-	    } /* while(GT_GetIMsg()) */
-	} /* if(signals & winSig) */
-	
-	if (signals & cxSig)
-	{
-	    CxMsg *cxm;
-	    
-	    while ((cxm = (CxMsg *)GetMsg(ec->ec_msgPort)) != NULL)
-	    {
-		D(bug("Got cx signal %i\n", CxMsgID(cxm)));
-
-		if (CxMsgType(cxm) == CXM_COMMAND)
-		{
-		    switch (CxMsgID(cxm))
-		    {
-		    case CXCMD_KILL:
-		    case CXCMD_DISAPPEAR:
-			quitNow = TRUE;
-			break;
-
-		    case CXCMD_UNIQUE:
-			/* If somebody tried to start Exchange, we put the
-			   already running program to front */
-		    case CXCMD_APPEAR:
-			appearExchange(ec);
-			break;
-
-		    case CXCMD_LIST_CHG:
-			redrawList(ec);
-			break;
-			
-		    case CXCMD_ENABLE:
-			ActivateCxObj(ec->ec_broker, TRUE);
-			break;
-
-		    case CXCMD_DISABLE:
-			ActivateCxObj(ec->ec_broker, FALSE);
-			break;
-		    }
-		}
-
-		ReplyMsg((struct Message *)cxm);
-	    } /* while(GetMsg(...) != NULL) */
-	}
-
-
-	/* Abandon ship? */
-	if (signals & SIGBREAKF_CTRL_C || signals & SIGBREAKF_CTRL_E)
-	{
-	    break;
-	}
-    }
-}
-
-
-void switchActive(struct ExchangeState *ec)
-{
-    IPTR  whichCycle;
-
-    GT_GetGadgetAttrs(ec->ec_cycle, ec->ec_window, NULL,
-		      GTCY_Active, (Tag)&whichCycle,
-		      TAG_DONE);
-    
-    if (whichCycle == 0)
-    {
-	/* Activate */
-	informBroker(CXCMD_ENABLE, ec);
-    }
-    else
-    {
-	/* Inactivate */
-	informBroker(CXCMD_DISABLE, ec);
-    }
-}
-
-
-void informBroker(LONG command, struct ExchangeState *ec)
-{
-    IPTR                whichGad;
-    struct BrokerCopy  *bc;
-
-    GT_GetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
-		      GTLV_Selected, (Tag)&whichGad,
-		      TAG_DONE);
-
-    bc = getNth(&ec->ec_brokerList, whichGad);
-
-    D(bug("Informing the broker <%s>. Reason %d\n", bc->bc_Node.ln_Name,
-	      (int)command));
-
-    /* We don't care about errors for now */
-    CxNotify(bc->bc_Node.ln_Name, command);
-}
-
-
-struct BrokerCopy *getNth(struct List *list, LONG n)
-{
-    struct Node *brok = GetHead(list);
-
-    while (n > 0)
-    {
-	brok = GetSucc(brok);
-	n--;
-    }
-
-    return (struct BrokerCopy *)brok;
-}
-
-
-void updateInfo(struct ExchangeState *ec)
-{
-    IPTR  whichGad;
-
-    GT_GetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
-		      GTLV_Selected, (Tag)&whichGad,
-		      TAG_DONE);
-		      
-    if (whichGad == ~0ul)
-    {
-	/* Disable the whole "right side". */
-	setGadgetState(ec->ec_showBut, TRUE, ec);
-	setGadgetState(ec->ec_hideBut, TRUE, ec);
-	setGadgetState(ec->ec_cycle  , TRUE, ec);
-	setGadgetState(ec->ec_killBut, TRUE, ec);
-	setText(ec->ec_textGad,  NULL, ec);
-	setText(ec->ec_textGad2, NULL, ec);
-    }
-    else
-    {
-	struct BrokerCopy *brokerCopy = getNth(&ec->ec_brokerList, whichGad);
-	BOOL   showHide = (brokerCopy->bc_Flags & COF_SHOW_HIDE) == 0;
-
-    	strncpy(ec->ec_lvitemname, brokerCopy->bc_Name, sizeof(ec->ec_lvitemname));
-	
-	D(bug("Broker: %s Flags: %i\n", brokerCopy->bc_Name,
-		  brokerCopy->bc_Flags));
-
-	setText(ec->ec_textGad,  (STRPTR)&brokerCopy->bc_Title, ec);
-	setText(ec->ec_textGad2, (STRPTR)&brokerCopy->bc_Descr,	ec);
-
-	D(bug("%s show/hide gadgets.\n", showHide ? "Disabling" : "Enabling"));
-	setGadgetState(ec->ec_hideBut, showHide, ec);
-	setGadgetState(ec->ec_showBut, showHide, ec);
-
-	GT_SetGadgetAttrs(ec->ec_cycle, ec->ec_window, NULL,
-			  GTCY_Active, (brokerCopy->bc_Flags & COF_ACTIVE) ? 0 : 1,
-			  GA_Disabled, FALSE,
-			  TAG_DONE);
-
-	setGadgetState(ec->ec_killBut, FALSE, ec);
-    }
-}
-
-
-void setText(struct Gadget *gadget, STRPTR text, struct ExchangeState *ec)
-{
-    GT_SetGadgetAttrs(gadget, ec->ec_window, NULL,
-		      GTTX_Text, (Tag)text,
-		      TAG_DONE);
-}
-
-
-void setGadgetState(struct Gadget *gadget, BOOL status,
-		    struct ExchangeState *ec)
-{
-    GT_SetGadgetAttrs(gadget, ec->ec_window, NULL,
-		      GA_Disabled, status,
-		      TAG_DONE);
-}
-
-
-void appearExchange(struct ExchangeState *ec)
-{
-    WindowToFront(ec->ec_window);
-    ActivateWindow(ec->ec_window);
-}
-
-
-void redrawList(struct ExchangeState *ec)
-{
-    struct BrokerCopy *node;
-    LONG n, i = 0;
-
-    n = GetBrokerList(&ec->ec_brokerList);
-
-    D(bug("Antal %i\n", n));
-
-    D(bug("First broker: %s\n", GetHead(&ec->ec_brokerList)->ln_Name));
-
-    D(bug("Calling GT_SetGadgetAttrs()\n"));
-    GT_SetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
-		      GTLV_Labels, (IPTR)&ec->ec_brokerList,
-		      TAG_DONE);
-
-    n = -1;
-    ForeachNode(&ec->ec_brokerList, node)
-    {
-    	if (strcmp(node->bc_Name, ec->ec_lvitemname) == 0)
-	{
-	    n = i;
-	    break;
-	}
-	i++;
-    }
-    
-    if (n == -1)
-    {
-    	ec->ec_lvitemname[0] = 0;
-    }
-    
-    GT_SetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
-		      GTLV_Selected, n, TAG_DONE);
-
-    /* Update the text gadgets */
-    updateInfo(ec);
-}
-
-
-CONST_STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
-{
-    if (catalogPtr != NULL)
-    {
-        return GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
-    }
-    else
-    {
-        return CatCompArray[id].cca_Str;
-    }
-}
-
-void setupMenus(struct Catalog *catalogPtr)
-{
-    struct NewMenu *newMenuPtr = nm;
-    ULONG id;
-
-    while(newMenuPtr->nm_Type != NM_END)
-    {
-
-	if(newMenuPtr->nm_Label != NM_BARLABEL)
-	{
-	    id = (ULONG)newMenuPtr->nm_Label;
-
-	    if(newMenuPtr->nm_Type == NM_TITLE)
-		newMenuPtr->nm_Label = getCatalog(catalogPtr, id);
-	    else
-	    {
-		newMenuPtr->nm_Label = getCatalog(catalogPtr, id) + 2; /* CAUTION: Menus will be crippled if the lack keyboard shortcuts! */
-		newMenuPtr->nm_CommKey = getCatalog(catalogPtr, id);
-		newMenuPtr->nm_UserData = (APTR)id; /* petah: OK? */
+		actnm->nm_Label = str;
+	    } else {
+		actnm->nm_Label = str + 2;
+		if (str[0] != ' ') actnm->nm_CommKey = str;
 	    }
-	}
-	newMenuPtr++;
-    }
+	    actnm->nm_UserData = (APTR)id;
+
+	} /* if (actnm->nm_Label != NM_BARLABEL) */
+
+    } /* for(actnm = nm; nm->nm_Type != NM_END; nm++) */
 }
 
+/*********************************************************************************************/
 
-void showSimpleMessage(struct ExchangeState *ec, CONST_STRPTR msgString)
+static void showSimpleMessage(CONST_STRPTR msgString)
 {
     struct EasyStruct easyStruct;
 
     easyStruct.es_StructSize	= sizeof(easyStruct);
     easyStruct.es_Flags		= 0;
-    easyStruct.es_Title		= getCatalog(ec->ec_catalog, MSG_EXCHANGE_CXNAME);
+    easyStruct.es_Title		= _(MSG_EXCHANGE_CXNAME);
     easyStruct.es_TextFormat	= msgString;
-    easyStruct.es_GadgetFormat	= getCatalog(ec->ec_catalog, MSG_OK);		
+    easyStruct.es_GadgetFormat	= _(MSG_OK);		
 
-    if (IntuitionBase != NULL && !Cli() && ec->ec_window)
+    if (IntuitionBase != NULL && !Cli() )
     {
-	EasyRequestArgs(ec->ec_window, &easyStruct, NULL, NULL);
+	EasyRequestArgs(NULL, &easyStruct, NULL, NULL);
     }
     else
     {
-	printf("%s", msgString);
+	PutStr(msgString);
     }
 }
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, update_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct BrokerCopy *node;
+    LONG n = GetBrokerList(&brokerList);
+    D(bug("Exchange: Number of Brokers %ld\n", n));
+    set(listgad, MUIA_List_Quiet, TRUE);
+    DoMethod(listgad, MUIM_List_Clear);
+    ForeachNode(&brokerList, node)
+    {
+	D(bug("Exchange: Brokernode %s\n", node->bc_Name));
+	DoMethod(listgad, MUIM_List_InsertSingle, node, MUIV_List_Insert_Bottom);
+    }
+    set(listgad, MUIA_List_Quiet, FALSE);
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, broker_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(CxMsg *      , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    D(bug("Exchange: Broker hook called"));
+    if (CxMsgType(msg) == CXM_COMMAND)
+    {
+	if (CxMsgID(msg) == CXCMD_APPEAR)
+	{
+	    //This opens window if application was started with cx_popup=no
+	    set(wnd, MUIA_Window_Open, TRUE);
+	}
+	else if (CxMsgID(msg) == CXCMD_LIST_CHG)
+	{
+	    //FIXME: message doesn't arrive
+	    D(bug("Listchange"));
+	}
+    }
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, list_display_func,
+    AROS_UFHA(struct Hook *      , h,     A0),
+    AROS_UFHA(char **            , array, A2),
+    AROS_UFHA(struct BrokerCopy *, node,  A1))
+{
+    AROS_USERFUNC_INIT
+
+    *array = node->bc_Name;
+  
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, list_select_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct BrokerCopy *bc;
+    DoMethod(listgad, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&bc);
+    if (bc)
+    {
+	BOOL showHide = (bc->bc_Flags & COF_SHOW_HIDE) == 0;
+	BOOL active = (bc->bc_Flags & COF_ACTIVE) != 0;
+	nnset(textgad1, MUIA_Text_Contents, bc->bc_Title);
+	nnset(textgad2, MUIA_Text_Contents, bc->bc_Descr);
+	nnset(hidegad, MUIA_Disabled, showHide);
+	nnset(showgad, MUIA_Disabled, showHide);
+	nnset(cyclegad, MUIA_Cycle_Active, active ? 0 : 1);
+    }
+  
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, inform_broker_func,
+    AROS_UFHA(struct Hook *, h,        A0),
+    AROS_UFHA(Object*      , object,   A2),
+    AROS_UFHA(LONG *       , command,  A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct BrokerCopy *bc;
+    DoMethod(listgad, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR) &bc);
+    if (bc)
+    {
+	D(bug("Exchange: Broker inform %s\n", bc->bc_Node.ln_Name));
+	if (*command == CXCMD_ENABLE)
+	{
+	    if (XGET(cyclegad, MUIA_Cycle_Active) == 1)
+		*command = CXCMD_DISABLE;
+	}
+	CxNotify(bc->bc_Node.ln_Name, *command);
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+static void MakeGUI(void)
+{
+    cyclestrings[0] = _(MSG_EXCHANGE_CYCLE_ACTIVE);
+    cyclestrings[1] = _(MSG_EXCHANGE_CYCLE_INACTIVE);
+    Object *menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
+
+    update_hook.h_Entry = (HOOKFUNC)update_func; 
+    broker_hook.h_Entry = (HOOKFUNC)broker_func;
+    list_disp_hook.h_Entry = (HOOKFUNC)list_display_func;
+    list_select_hook.h_Entry = (HOOKFUNC)list_select_func;
+    inform_broker_hook.h_Entry = (HOOKFUNC)inform_broker_func;
+    
+    static TEXT wintitle[100];
+    snprintf(wintitle, sizeof(wintitle), _(MSG_EXCHANGE_WINTITLE), cx_popkey);
+    
+    app = ApplicationObject,
+	MUIA_Application_Title, __(MSG_EXCHANGE_CXNAME),
+	MUIA_Application_Version, (IPTR)version,
+	MUIA_Application_Copyright, (IPTR)"Copyright  © 1995-2006, The AROS Development TEAM",
+	MUIA_Application_Author, (IPTR)"The AROS Development Team",
+	MUIA_Application_Description, __(MSG_EXCHANGE_CXDESCR),
+	MUIA_Application_BrokerPri, cx_pri,
+	MUIA_Application_BrokerHook, (IPTR)&broker_hook,
+	MUIA_Application_Base, (IPTR)"EXCHANGE",
+	MUIA_Application_SingleTask, TRUE,
+	MUIA_Application_Menustrip, (IPTR)menu,
+	SubWindow, (IPTR)(wnd = WindowObject,
+	    MUIA_Window_Title, (IPTR)wintitle,
+	    MUIA_Window_ID, MAKE_ID('E', 'X', 'C', 'H'),
+	    WindowContents, (IPTR)(HGroup,
+		Child, (IPTR)(VGroup,
+		    GroupFrameT(_(MSG_EXCHANGE_LISTVIEW)),
+		    Child, (IPTR)(updategad = SimpleButton("Update")),
+		    Child, (IPTR)(ListviewObject,
+			MUIA_Listview_List, (IPTR)(listgad = ListObject,
+			    InputListFrame,
+			    MUIA_List_DisplayHook, (IPTR)&list_disp_hook,
+			    MUIA_CycleChain, 1,
+			End),
+		    End),
+		End),
+		Child, (IPTR)(BalanceObject, MUIA_CycleChain, 1, End),
+		Child, (IPTR)(VGroup,
+		    MUIA_HorizWeight, 150,
+		    Child, (IPTR)(VGroup,
+			GroupFrameT(_(MSG_EXCHANGE_INFO)),
+			Child, (IPTR)(textgad1 = TextObject, StringFrame, End),
+			Child, (IPTR)(textgad2 = TextObject, StringFrame, End),
+		    End),
+		    Child, (IPTR)HVSpace,
+		    Child, (IPTR)(ColGroup(2),
+			MUIA_Group_SameSize, TRUE,
+			Child, (IPTR)(hidegad = SimpleButton(_(MSG_EXCHANGE_GAD_HIDE))),
+			Child, (IPTR)(showgad = SimpleButton(_(MSG_EXCHANGE_GAD_SHOW))),
+			Child, (IPTR)(cyclegad = MUI_MakeObject(MUIO_Cycle, NULL, cyclestrings)),
+			Child, (IPTR)(killgad = SimpleButton(_(MSG_EXCHANGE_GAD_REMOVE))),
+		    End),
+		End),
+	    End),
+	End),
+    End;
+    
+    if (! app)
+	Cleanup(NULL); // Propably double start
+
+    // enable hotkey
+    maintask = FindTask(NULL);
+    get(app, MUIA_Application_Broker, &broker);
+    get(app, MUIA_Application_BrokerPort, &brokermp);
+    if ( ! broker || ! brokermp)
+	Cleanup(_(MSG_CANT_CREATE_GADGET));
+
+    CxObj *popfilter = CxFilter(cx_popkey);
+    if (popfilter)
+    {
+	CxObj *popsig = CxSignal(maintask, SIGBREAKB_CTRL_F);
+	if (popsig)
+	{
+	    CxObj *trans;
+	    AttachCxObj(popfilter, popsig);
+	    trans = CxTranslate(NULL);
+	    if (trans) AttachCxObj(popsig, trans);
+	}
+	AttachCxObj(broker, popfilter);
+    }
+
+    // initial entry of brokers to listgadget
+    CallHookPkt(&update_hook, 0, 0);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+	app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+
+    DoMethod(app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE,
+	(IPTR)app, 3, MUIM_Set, MUIA_Window_Open, TRUE);
+
+    DoMethod(listgad, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+	    (IPTR)listgad, 2, MUIM_CallHook, (IPTR)&list_select_hook);
+
+    DoMethod(updategad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&update_hook);
+
+    DoMethod(cyclegad, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+	(IPTR)app, 3, MUIM_CallHook, (IPTR)&inform_broker_hook, CXCMD_ENABLE);
+
+    DoMethod(hidegad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 3, MUIM_CallHook, (IPTR)&inform_broker_hook, CXCMD_DISAPPEAR);
+
+    DoMethod(showgad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 3, MUIM_CallHook, (IPTR)&inform_broker_hook, CXCMD_APPEAR);
+
+    DoMethod(killgad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 3, MUIM_CallHook, (IPTR)&inform_broker_hook, CXCMD_KILL);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_QUIT,
+	(IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_HIDE,
+	(IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_ICONIFY,
+	(IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+     
+}
+
+/*********************************************************************************************/
+
+static void HandleAll(void)
+{
+    if (cx_popup)
+	set(wnd, MUIA_Window_Open, TRUE);
+    
+    ULONG sigs = 0;
+    while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
+	    != MUIV_Application_ReturnID_Quit)
+    {
+	if (sigs)
+	{
+	    sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
+	    if (sigs & SIGBREAKF_CTRL_C)
+	    {
+		break;
+	    }
+	    if (sigs & SIGBREAKF_CTRL_F)
+	    {
+		set(app, MUIA_Application_Iconified, FALSE);
+		set(wnd, MUIA_Window_Open, TRUE);
+		DoMethod(wnd, MUIM_Window_ToFront);
+	    }
+	}
+    }
+}
+
+/*********************************************************************************************/
+
+static void Cleanup(CONST_STRPTR txt)
+{
+    MUI_DisposeObject(app);
+    FreeVec(cx_popkey);
+    FreeBrokerList(&brokerList);
+    if (txt)
+    {
+	showSimpleMessage(txt);
+	exit(RETURN_ERROR);
+    }
+    exit(RETURN_OK);
+}
+
+/*********************************************************************************************/
+
+int main(int argc, char **argv)
+{
+    NewList(&brokerList);
+    GetArguments(argc, argv);
+    InitMenus();    
+    MakeGUI();
+    HandleAll();
+    Cleanup(NULL);
+    return RETURN_OK;
+}
+
+/*********************************************************************************************/
+
+ADD2INIT(Locale_Initialize,   90);
+ADD2EXIT(Locale_Deinitialize, 90);
+
