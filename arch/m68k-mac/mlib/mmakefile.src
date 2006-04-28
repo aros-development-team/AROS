@@ -1,23 +1,6 @@
-#   $Id$
-#
-#   Generate the libarosm for m68k. Not much content so far.
+# $Id$
 #
 include $(TOP)/config/make.cfg
 
-#MM linklibs-arosm-m68000
-#MM linklibs-arosm-m68328
-#MM linklibs-arosm-m68k
+#MM- linklibs-arosm-m68k : linklibs-arosm-nofpu
 
-##linklibs-arosm-m68328: arosm-setup-link linklibs-arosm-m68328
-##linklibs-arosm-m68000: arosm-setup-link linklibs-arosm-m68000
-##linklibs-arosm-m68k: arosm-setup-link linklibs-arosm-m68k
-
-%build_linklib mmake=linklibs-arosm-m68000 libname=arosm files=dummy
-%build_linklib mmake=linklibs-arosm-m68k libname=arosm files=dummy
-
-##MM
-##arosm-setup-link :
-##	@$(RM) $(AROSDIR)/lib/libm.a
-##	@ln -s libarosm.a $(AROSDIR)/lib/libm.a
-
-%common
