@@ -179,10 +179,14 @@ includes-copy : $(AROS_INCLUDES)/math.h
 #MM- linklibs : linklibs-mlib
 #MM- linklibs-mlib : linklibs-arosm-$(CPU)
 #MM linklibs-arosm-hasfpu : arosm-setup-link includes
+#MM linklibs-arosm-nofpu : arosm-setup-link includes
 
 # Define lint to get rid of the warnings about rcsid[]
-USER_CFLAGS	:= -D_IEEE_LIBM -Dlint
 
+USER_CFLAGS     := -D_IEEE_LIBM -Dlint -msoft-float
+%build_linklib mmake=linklibs-arosm-nofpu libname=arosm files=$(FILES)
+
+USER_CFLAGS     := -D_IEEE_LIBM -Dlint
 %build_linklib mmake=linklibs-arosm-hasfpu libname=arosm files=$(FILES)
 
 #MM
