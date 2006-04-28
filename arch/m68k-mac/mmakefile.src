@@ -12,7 +12,7 @@ OS_INCLUDES   := -I$(GENINCDIR)
 #Instead of the target 'compiler' I need to make the target compiler-nofpu
 #MM- compiler-nofpu : setup includes \
 #MM	linklibs-amiga \
-#MM	linklibs-arosm-m68000 \
+#MM	linklibs-arosm \
 #MM	linklibs-arosz \
 #MM	linklibs-arossupport \
 #MM	linklibs-autoinit \
@@ -102,7 +102,7 @@ binary-mac-m68k : build
 	@./build $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
 	    $(OSGENDIR)/boot/kernel >$(OSGENDIR)/boot/aros.bin
 
-#MM- contrib-mac-m68k : contrib-complete
+##MM- contrib-mac-m68k : contrib-complete
 
 #MM- workbench-mac-m68k : workbench-complete workbench
 
