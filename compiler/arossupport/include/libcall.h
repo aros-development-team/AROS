@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1390,6 +1390,14 @@ typedef unsigned long (*ULONG_FUNC)();
 #ifndef __AROS_MACHINE_H_DEFINES_LIBCALLS
 
 /* Declarations for library functions which need the libbase */
+#   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDAQUAD(a1), __AROS_LD_BASE(bt,bn))
+#   define AROS_LDQUAD2(t,n,a1,a2,bt,bn,o,s) \
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDAQUAD(a1), \
+	__AROS_LDAQUAD(a2),__AROS_LD_BASE(bt,bn))
+
 #   define AROS_LD0(t,n,bt,bn,o,s) \
 	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) (__AROS_LD_BASE(bt,bn))
 #   define AROS_LD1(t,n,a1,bt,bn,o,s) \
@@ -1706,6 +1714,7 @@ typedef unsigned long (*ULONG_FUNC)();
 #define AROS_LHAQUAD(type,name,reg1,reg2) type,name,reg1,reg2
 #define AROS_LPAQUAD(type,name,reg1,reg2) type,name,reg1,reg2
 #define AROS_LCAQUAD(type,name,reg1,reg2) type,name,reg1,reg2
+#define AROS_LDAQUAD(type,name,reg1,reg2) type,name,reg1,reg2
 
 #ifndef AROS_LIBFUNC_INIT
 #   define AROS_LIBFUNC_INIT {

@@ -1,7 +1,7 @@
 #ifndef AROS_MACHINE_H
 #define AROS_MACHINE_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -158,6 +158,7 @@ extern void _aros_not_implemented (char *);
 #define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
 #define __AROS_LPAQUAD(type,name,reg1,reg2)     type
 #define __AROS_LCAQUAD(type,name,reg1,reg2)     name
+#define __AROS_LDAQUAD(type,name,reg1,reg2)     type
 
 /* Prefix for library function in header, prototype and call */
 #define __AROS_LH_PREFIX    /* eps */
