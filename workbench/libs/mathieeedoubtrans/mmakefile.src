@@ -30,9 +30,7 @@ FUNCS := \
 
 USER_LDFLAGS:=--verbose
 
-%build_module_macro mmake=workbench-libs-mathieeedoubtrans \
- modname=mathieeedoubtrans modtype=library \
- files=$(FILES) funcs=$(FUNCS) \
- conffile=lib.conf uselibs=rom
-
-%common
+%build_module mmake=workbench-libs-mathieeedoubtrans \
+    modname=mathieeedoubtrans modtype=library \
+    files="$(FILES) $(FUNCS)" \
+    uselibs="mathieeedoubbas rom"
