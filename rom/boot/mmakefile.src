@@ -15,8 +15,8 @@ else
     USER_CFLAGS := -I$(SYS_INCLUDES) -I$(GENINCDIR)
 endif
 
-%build_module_macro mmake=kernel-boot \
+%build_module_simple mmake=kernel-boot \
   modname=boot modtype=library \
-  initfile=strap compiler=host
+  files=strap compiler=host
 
 %common
