@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Nonvolatile disk based storage library initialization code.
@@ -38,61 +38,56 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     
     BOOL error = TRUE;    // Notice the initialization to 'TRUE' here.
     char *temp = NULL;
-
+    BPTR locFile;
+    
     D(bug("Init nvdisk.library\n"));
 
-    nvdBase->nvd_DOSBase = OpenLibrary("dos.library", 41);
+    locFile = Open("SYS:prefs/env-archive/sys/nv_location", MODE_OLDFILE);
 
-    if(nvdBase->nvd_DOSBase != NULL)
+    D(bug("Getting location\n"));
+
+    if(locFile != NULL)
     {
-	BPTR locFile = Open("SYS:prefs/env-archive/sys/nv_location",
-			    MODE_OLDFILE);
-
-	D(bug("Getting location\n"));
-
-	if(locFile != NULL)
-	{
-	    D(bug("Location file exists!\n"));
-
-	    temp = AllocVec(512, MEMF_CLEAR);
+	D(bug("Location file exists!\n"));
+	
+	temp = AllocVec(512, MEMF_CLEAR);
 		
-	    if(temp != NULL)
+	if(temp != NULL)
+	{
+	    int i = 0;         // Loop variable
+
+	    Read(locFile, temp, 512);
+
+	    // End string if a carriage return is encountered
+	    while(temp[i] != 0)
 	    {
-		int i = 0;         // Loop variable
-
-		Read(locFile, temp, 512);
-
-		// End string if a carriage return is encountered
-		while(temp[i] != 0)
+		if(temp[i] == '\n')
 		{
-		    if(temp[i] == '\n')
-		    {
-			temp[i] = 0;
-			break;
-		    }
-
-		    i++;
+		    temp[i] = 0;
+		    break;
 		}
 
-		nvdBase->nvd_location = Lock(temp, SHARED_LOCK);
-		    
-		D(bug("NV location = %s\n", temp));
-
-		FreeVec(temp);
-		    
-		D(bug("Got lock = %p\n", nvdBase->nvd_location));
-
-		if(nvdBase->nvd_location != NULL)
-		{
-		    error = FALSE;
-		}
+		i++;
 	    }
-	    
-	    Close(locFile);
+
+	    nvdBase->nvd_location = Lock(temp, SHARED_LOCK);
+		    
+	    D(bug("NV location = %s\n", temp));
+
+	    FreeVec(temp);
+		    
+	    D(bug("Got lock = %p\n", nvdBase->nvd_location));
+
+	    if(nvdBase->nvd_location != NULL)
+	    {
+		error = FALSE;
+	    }
 	}
+	    
+	Close(locFile);
     }
 
-    return error;
+    return !error;
     
     AROS_SET_LIBFUNC_EXIT
 }
@@ -108,8 +103,6 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 
     UnLock(nvdBase->nvd_location);
     
-    CloseLibrary(nvdBase->nvd_DOSBase);
-
     return TRUE;
     
     AROS_SET_LIBFUNC_EXIT
