@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics library
@@ -83,14 +83,6 @@ AROS_SET_LIBFUNC(GfxInit, struct GfxBase, LIBBASE)
 	NEWLIST((struct List *)&PrivGBase(GfxBase)->driverdatalist[i]);
     }
     
-    OOPBase = OpenLibrary(AROSOOP_NAME, 0);
-    if (!OOPBase)
-	return FALSE;
-    
-    UtilityBase = OpenLibrary (UTILITYNAME,0L);
-    if (!UtilityBase)
-        return FALSE;
-
     if (!InitROMFont(LIBBASE)) return FALSE;
 
     Disable();
@@ -126,11 +118,6 @@ AROS_SET_LIBFUNC(GfxOpen, struct GfxBase, LIBBASE)
         LIBBASE->DefaultFont = def;
         sysTA.ta_YSize = def->tf_YSize;
     }
-
-    UtilityBase = OpenLibrary (UTILITYNAME,0L);
-
-    if (!UtilityBase)
-        return NULL;
 
     Disable();
     if (!driver_open (LIBBASE))

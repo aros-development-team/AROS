@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Driver for using gfxhidd for gfx output
@@ -994,8 +994,6 @@ void driver_Text (struct RastPort * rp, CONST_STRPTR string, LONG len,
 /* CYBERGFX CALLS                            ***/
 
 
-#include <proto/cybergraphics.h>
-
 struct wpa_render_data
 {
     UBYTE *array;
@@ -1386,7 +1384,6 @@ ULOCK_PIXBUF
     return width * height;
 }
 
-#include "cybergraphics_intern.h"
 
 
 LONG driver_WriteLUTPixelArray(APTR srcrect,
@@ -1395,7 +1392,7 @@ LONG driver_WriteLUTPixelArray(APTR srcrect,
 	UWORD destx, UWORD desty,
 	UWORD sizex, UWORD sizey,
 	UBYTE ctabformat,
-	struct Library *CyberGfxBase)
+	struct GfxBase *GfxBase)
 {
     ULONG depth;
     
@@ -1468,7 +1465,7 @@ LONG driver_WriteLUTPixelArray(APTR srcrect,
 
 LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 	, UWORD srcmod, struct RastPort *rp, UWORD destx, UWORD desty
-	, UWORD width, UWORD height, UBYTE srcformat, struct Library *CyberGfxBase)
+	, UWORD width, UWORD height, UBYTE srcformat, struct GfxBase *GfxBase)
 {
      
     OOP_Object *pf = 0;
@@ -1505,7 +1502,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 	return driver_WriteLUTPixelArray(src, srcx, srcy, srcmod,
 	    	    	    	    	 rp, greytab, destx, desty,
 					 width, height, CTABFMT_XRGB8,
-					 CyberGfxBase);
+					 GfxBase);
     }
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
@@ -1621,7 +1618,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 
 LONG driver_WritePixelArrayAlpha(APTR src, UWORD srcx, UWORD srcy
 	, UWORD srcmod, struct RastPort *rp, UWORD destx, UWORD desty
-	, UWORD width, UWORD height, ULONG globalalpha, struct Library *CyberGfxBase)
+	, UWORD width, UWORD height, ULONG globalalpha, struct GfxBase *GfxBase)
 {
     ULONG   	    	    start_offset;    
     LONG    	    	    pixwritten = 0;    
@@ -1659,7 +1656,7 @@ LONG driver_WritePixelArrayAlpha(APTR src, UWORD srcx, UWORD srcy
 
 LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
 	, UWORD dstmod, struct RastPort *rp, UWORD srcx, UWORD srcy
-	, UWORD width, UWORD height, UBYTE dstformat, struct Library *CyberGfxBase)
+	, UWORD width, UWORD height, UBYTE dstformat, struct GfxBase *GfxBase)
 {
      
     OOP_Object *pf = 0;    
@@ -1776,7 +1773,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
 
 LONG driver_InvertPixelArray(struct RastPort *rp
 	, UWORD destx, UWORD desty, UWORD width, UWORD height
-	, struct Library *CyberGfxBase)
+	, struct GfxBase *GfxBase)
 {
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
@@ -1797,7 +1794,7 @@ LONG driver_InvertPixelArray(struct RastPort *rp
 
 LONG driver_FillPixelArray(struct RastPort *rp
 	, UWORD destx, UWORD desty, UWORD width, UWORD height
-	, ULONG pixel, struct Library *CyberGfxBase) 
+	, ULONG pixel, struct GfxBase *GfxBase) 
 {
     HIDDT_Color col;
     HIDDT_Pixel pix;
@@ -1822,7 +1819,7 @@ LONG driver_FillPixelArray(struct RastPort *rp
 
 ULONG driver_MovePixelArray(UWORD srcx, UWORD srcy, struct RastPort *rp
 	, UWORD destx, UWORD desty, UWORD width, UWORD height
-	, struct Library *CyberGfxBase)
+	, struct GfxBase *GfxBase)
 {
     ClipBlit(rp
 		, srcx, srcy
@@ -1837,7 +1834,7 @@ ULONG driver_MovePixelArray(UWORD srcx, UWORD srcy, struct RastPort *rp
 
 
 LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
-	, ULONG pixel, struct Library *CyberGfxBase)
+	, ULONG pixel, struct GfxBase *GfxBase)
 {
     
     struct rgbpix_render_data  prd;
@@ -1872,7 +1869,7 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
 
 
 ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
-	, struct Library *CyberGfxBase)
+	, struct GfxBase *GfxBase)
 {
     struct rgbpix_render_data prd;
     
@@ -1911,7 +1908,7 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
 
 
 
-ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Library *CyberGfxBase)
+ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct GfxBase *GfxBase)
 {
     OOP_Object *bm_obj;
     OOP_Object *pf;
@@ -2006,7 +2003,7 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
 }
 
 
-VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct Library *CyberGfxBase)
+VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct GfxBase *GfxBase)
 {
     struct TagItem *tag, *tstate;
     ULONG dpmslevel = 0;
@@ -2089,7 +2086,7 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
 
 ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
 	, ULONG color, ULONG srcx, ULONG srcy, ULONG width, ULONG height
-	, struct Library *CyberGfxBase)
+	, struct GfxBase *GfxBase)
 {
     struct Rectangle rr;
     LONG pixread = 0;
@@ -2145,7 +2142,7 @@ ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
 }
 
 
-VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct TagItem *tags, struct Library *CyberGfxBase)
+VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct TagItem *tags, struct GfxBase *GfxBase)
 {
 
     struct dm_render_data dmrd;
@@ -2208,7 +2205,7 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     return;
 }
 
-APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Library *CyberGfxBase)
+APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct GfxBase *GfxBase)
 {
     struct TagItem *tag;
     UBYTE *baseaddress;
@@ -2280,12 +2277,12 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
     return HIDD_BM_OBJ(bm);
 }
 
-VOID driver_UnLockBitMap(APTR handle, struct Library *CyberGfxBase)
+VOID driver_UnLockBitMap(APTR handle, struct GfxBase *GfxBase)
 {
     if (handle) HIDD_BM_ReleaseDirectAccess((OOP_Object *)handle);
 }
 
-VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Library *CyberGfxBase)
+VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct GfxBase *GfxBase)
 {
     struct TagItem *tag;
     BOOL reallyunlock = TRUE;
@@ -2323,7 +2320,7 @@ VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Librar
 
 void driver_BltTemplateAlpha(UBYTE *src, LONG srcx, LONG srcmod
     	, struct RastPort *rp, LONG destx, LONG desty, LONG width, LONG height
-	, struct Library *CyberGfxBase)
+	, struct GfxBase *GfxBase)
 {
     struct bta_render_data  btard;
     struct Rectangle 	    rr;

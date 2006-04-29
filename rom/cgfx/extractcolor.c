@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -51,7 +51,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
     
-    return driver_ExtractColor(RastPort, SingleMap, Colour, sX, sY, Width, Height, CyberGfxBase);
+    return driver_ExtractColor(RastPort, SingleMap, Colour, sX, sY, Width, Height, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* ExtractColor */

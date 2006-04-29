@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -49,7 +49,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
     
-    driver_CVideoCtrlTagList(vp, tags, CyberGfxBase);
+    driver_CVideoCtrlTagList(vp, tags, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* CVideoCtrlTagList */

@@ -2,7 +2,7 @@
 #define GRAPHICS_INTERNAL_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GfxHIDD specific Internal Information Management
@@ -27,10 +27,6 @@ VOID cleanup_activescreen_stuff(struct GfxBase *GfxBase);
 #endif
 
 #define PRIV_GFXBASE(base) ((struct GfxBase_intern *)base)
-
-#ifndef OOPBase
-#define OOPBase (PRIV_GFXBASE(GfxBase)->oopbase)
-#endif
 
 #include "macros.h"
 #endif /* GRAPHICS_INTERNAL_H */

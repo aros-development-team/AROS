@@ -38,7 +38,7 @@ FUNCS := \
 
 %build_module mmake=kernel-cgfx \
   modname=cybergraphics modtype=library \
-  files="cybergraphics_init $(FUNCS)"
+  files=$(FUNCS)
 
 #MM includes-copy
 

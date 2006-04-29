@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -281,15 +281,6 @@ static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
 #endif /* SPECIAL_LOCKING */
 
 /******************************************************************************/
-
-#undef OOPBase
-#define OOPBase     	((struct Library *)CSD(cl)->oopbase)
-
-#undef UtilityBase
-#define UtilityBase 	((struct Library *)CSD(cl)->utilitybase)
-
-#undef SysBase
-#define SysBase     	((struct ExecBase *)CSD(cl)->sysbase)
 
 #undef GfxBase
 #define GfxBase     	(CSD(cl)->gfxbase)
@@ -1501,20 +1492,12 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
     return fakebm;
 }
 
-#undef OOPBase
-#undef SysBase
-#undef UtilityBase
 #undef GfxBase
-
-#define OOPBase PRIV_GFXBASE(GfxBase)->oopbase
 
 OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct class_static_data *csd, struct GfxBase *GfxBase)
 {
     OOP_Object *fgo = NULL;
        
-    csd->oopbase	= OOPBase;
-    csd->sysbase	= (struct ExecBase *)GfxBase->ExecBase;
-    csd->utilitybase	= (struct Library *)GfxBase->UtilBase;
     csd->gfxbase    	= GfxBase;
     
     csd->fakegfxclass	= init_fakegfxhiddclass(csd);

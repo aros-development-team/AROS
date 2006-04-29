@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+#include <proto/graphics.h>
+
 #include "cybergraphics_intern.h"
 
 /*****************************************************************************
