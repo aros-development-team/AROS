@@ -2,8 +2,6 @@
  * AmigaOS thread syncronization primitives.
  */
 
-#include "dbus_intern.h"
-
 #include <exec/memory.h>
 #include <exec/semaphores.h>
 
@@ -11,11 +9,12 @@
 #include <proto/dbus.h>
 #include <proto/exec.h>
 
+#include <aros/symbolsets.h>
+    
 #define DEBUG 1
 #include <aros/debug.h>
 
-extern struct ExecBase* DBUS_SysBase;
-#define SysBase DBUS_SysBase
+#include LC_LIBDEFS_FILE
 
 struct CondVar {
     struct MinList Waiters;
@@ -56,9 +55,16 @@ static const DBusThreadFunctions amiga_functions = {
   _condvar_wake_all,
 };
 
-void InitThreads(struct DBUSBase* DBUSBase) {
-  dbus_threads_init(&amiga_functions);
+AROS_SET_LIBFUNC(InitThreads, LIBBASETYPE, LIBBASE)
+{
+    AROS_SET_LIBFUNC_INIT
+
+    dbus_threads_init(&amiga_functions);
+    return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
+ADD2INITLIB(InitThreads, 0)
 
 static DBusMutex* _mutex_new(void) {
   struct SignalSemaphore* mutex = AllocVec(sizeof(struct SignalSemaphore),
