@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := ieeedpbas_fpu 
+FILES := mathieeedoubbas_init ieeedpbas_fpu 
 FUNCS := \
     ieeedpabs \
     ieeedpadd \
@@ -23,8 +23,6 @@ FUNCS := \
 
 USER_LDFLAGS:=--verbose
 
-%build_module_macro mmake=workbench-libs-mathieeedoubbas \
+%build_module mmake=workbench-libs-mathieeedoubbas \
   modname=mathieeedoubbas modtype=library uselibs=rom \
-  conffile=lib.conf files=$(FILES) funcs=$(FUNCS)
-
-%common
+  files="$(FILES) $(FUNCS)"
