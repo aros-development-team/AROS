@@ -41,19 +41,25 @@ Ok
 MSG_MEN_PROJECT (//)
 Project
 ;
+MSG_MEN_PROJECT_HIDE (//)
+H\0Hide
+;
+MSG_MEN_PROJECT_ICONIFY (//)
+I\0Iconify
+;
 MSG_MEN_PROJECT_QUIT (//)
 Q\0Quit
 ;
 ; ===============================================
 ; EXCHANGE
 ;
-MSG_EXCHANGE_CXNAME (//)
+MSG_EXCHANGE_CXNAME (//23)
 Exchange
 ;
-MSG_EXCHANGE_CXTITLE (//)
+MSG_EXCHANGE_CXTITLE (//39)
 Commodities Exchange
 ;
-MSG_EXCHANGE_CXDESCR (//)
+MSG_EXCHANGE_CXDESCR (//39)
 Controls system commodities
 ;
 MSG_EXCHANGE_WINTITLE (//)
@@ -83,74 +89,74 @@ Inactive
 ; ===============================================
 ; BLANKER
 ;
-MSG_BLANKER_CXNAME (//)
+MSG_BLANKER_CXNAME (//23)
 Blanker
 ;
-MSG_BLANKER_CXTITLE (//)
+MSG_BLANKER_CXTITLE (//39)
 System Screen Blanker
 ;
-MSG_BLANKER_CXDESCR (//)
+MSG_BLANKER_CXDESCR (//39)
 Blanks screen when system inactive
 ;
 ; ===============================================
 ; CLICK2FNT
 ;
-MSG_CLICK2FNT_CXNAME (//)
+MSG_CLICK2FNT_CXNAME (//23)
 ClickToFront
 ;
-MSG_CLICK2FNT_CXTITLE (//)
+MSG_CLICK2FNT_CXTITLE (//39)
 Click To Front Utility
 ;
-MSG_CLICK2FNT_CXDESCR (//)
+MSG_CLICK2FNT_CXDESCR (//39)
 Click windows to front
 ;
 ; ===============================================
 ; OPAQUE
 ;
-MSG_OPAQUE_CXNAME (//)
+MSG_OPAQUE_CXNAME (//23)
 Opaque
 ;
-MSG_OPAQUE_CXTITLE (//)
+MSG_OPAQUE_CXTITLE (//39)
 Solid Windows
 ;
-MSG_OPAQUE_CXDESCR (//)
+MSG_OPAQUE_CXDESCR (//39)
 Realtime moving of windows
 ;
 ; ===============================================
 ; AUTOPOINT
 ;
-MSG_AUTOPOINT_CXNAME (//)
+MSG_AUTOPOINT_CXNAME (//23)
 AutoPoint
 ;
-MSG_AUTOPOINT_CXTITLE (//)
+MSG_AUTOPOINT_CXTITLE (//39)
 Autopointer
 ;
-MSG_AUTOPOINT_CXDESCR (//)
+MSG_AUTOPOINT_CXDESCR (//39)
 Activates the window under the mouse
 ;
 ; ===============================================
 ; STARTMENU
 ;
-MSG_STARTMENU_CXNAME (//)
+MSG_STARTMENU_CXNAME (//23)
 StartMenu
 ;
-MSG_STARTMENU_CXTITLE (//)
+MSG_STARTMENU_CXTITLE (//39)
 System Program Starter
 ;
-MSG_STARTMENU_CXDESCR (//)
+MSG_STARTMENU_CXDESCR (//39)
 Program launch commodity
 ;
 ; ===============================================
 ; FKEY
 ;
-MSG_FKEY_CXNAME (//)
+MSG_FKEY_CXNAME (//23)
 FKey
 ;
-MSG_FKEY_CXTITLE (//)
+MSG_FKEY_CXTITLE (//39)
 Function To Keys:
 ;
-MSG_FKEY_CXDESCR (//)
-Attach Special Functions To Keys
+MSG_FKEY_CXDESCR (//39)
+Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE (//)
 FKey: Hot Key = <%s>
@@ -200,30 +206,18 @@ Run Program
 MSG_FKEY_CMD_RUN_AREXX (//)
 Run Arexx Script
 ;
-MSG_FKEY_MEN_PROJECT (//)
-Project
-;
-MSG_FKEY_MEN_PROJECT_SAVE (//)
+MSG_FKEY_MEN_PROJECT_SAVE (//) 
 S\0Save Defined Keys
-;
-MSG_FKEY_MEN_PROJECT_HIDE (//)
-H\0Hide
-;
-MSG_FKEY_MEN_PROJECT_ICONIFY (//)
-I\0Iconify
-;
-MSG_FKEY_MEN_PROJECT_QUIT (//)
-Q\0Quit
 ;
 ; ===============================================
 ; NOCAPSLOCK
 ;
-MSG_NOCAPSLOCK_CXNAME (//)
+MSG_NOCAPSLOCK_CXNAME (//23)
 NoCapsLock
 ;
-MSG_NOCAPSLOCK_CXTITLE (//)
+MSG_NOCAPSLOCK_CXTITLE (//39)
 NoCapsLock:
 ;
-MSG_NOCAPSLOCK_CXDESCR (//)
+MSG_NOCAPSLOCK_CXDESCR (//39)
 Renders the CAPS LOCK key ineffective
 ;

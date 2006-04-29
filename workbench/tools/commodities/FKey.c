@@ -237,13 +237,13 @@ static CONST_STRPTR MSG(ULONG id)
 
 static struct NewMenu nm[] =
 {
-    {NM_TITLE, (STRPTR)MSG_FKEY_MEN_PROJECT         },
+    {NM_TITLE, (STRPTR)MSG_MEN_PROJECT              },
      {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_SAVE    },
      {NM_ITEM, NM_BARLABEL  	    	    	    },
-     {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_HIDE    },
-     {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_ICONIFY },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_HIDE         },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_ICONIFY      },
      {NM_ITEM, NM_BARLABEL  	    	    	    },
-     {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_QUIT    },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_QUIT         },
     {NM_END 	    	    	    	    	    }
 };
 
@@ -534,9 +534,9 @@ static void MakeGUI(void)
     //DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_QUIT, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_HIDE, (IPTR) app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_ICONIFY, (IPTR) app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_HIDE, (IPTR) app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_ICONIFY, (IPTR) app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_SAVE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_SAVE);
     
     DoMethod(cmdcycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR)cmdpage, 3, MUIM_Set, MUIA_Group_ActivePage, MUIV_TriggerValue);
@@ -1305,7 +1305,7 @@ static void HandleAll(void)
 int main(int argc, char **argv)
 {
     GetArguments(argc, argv);
-    InitLocale("System/Tools/Commodities.catalog", 0);
+    InitLocale("System/Tools/Commodities.catalog", 2);
     InitCX();
     InitMenus();
     MakeGUI();

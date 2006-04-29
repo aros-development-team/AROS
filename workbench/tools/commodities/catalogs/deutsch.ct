@@ -1,4 +1,4 @@
-## version $VER: Commodities.catalog 1.2 (26.04.2006)
+## version $VER: Commodities.catalog 2.0 (29.04.2006)
 ## language deutsch
 ## codeset 0
 ;
@@ -58,6 +58,14 @@ OK
 MSG_MEN_PROJECT
 Projekt
 ; Project
+;
+MSG_MEN_PROJECT_HIDE
+H\0Verbergen
+; H\0Hide
+;
+MSG_MEN_PROJECT_ICONIFY
+I\0Ikonifizieren
+; I\0Iconify
 ;
 MSG_MEN_PROJECT_QUIT
 Q\0Beenden
@@ -137,7 +145,7 @@ ClickToFront
 ; Click To Front Utility
 ;
 MSG_CLICK2FNT_CXDESCR
-Per Mausklick Fenster in den Vordergrund holen
+Fenster in den Vordergrund holen
 ; Click windows to front
 ;
 ; ===============================================
@@ -198,7 +206,7 @@ Tastenfunktionen
 ;
 MSG_FKEY_CXDESCR
 Tasten spezielle Funktionen zuweisen
-; Attach Special Functions To Keys
+; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
 FKey: Tastenbefehl = <%s>
@@ -264,25 +272,9 @@ MSG_FKEY_CMD_RUN_AREXX
 ARexx-Skript starten
 ; Run Arexx Script
 ;
-MSG_FKEY_MEN_PROJECT
-Projekt
-; Project
-;
 MSG_FKEY_MEN_PROJECT_SAVE
 S\0Belegung speichern
 ; S\0Save Defined Keys
-;
-MSG_FKEY_MEN_PROJECT_HIDE
-H\0Verbergen
-; H\0Hide
-;
-MSG_FKEY_MEN_PROJECT_ICONIFY
-I\0Ikonifizieren
-; I\0Iconify
-;
-MSG_FKEY_MEN_PROJECT_QUIT
-Q\0Beenden
-; Q\0Quit
 ;
 ; ===============================================
 ; NOCAPSLOCK
