@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$	$Log
 
     Desc: Graphics function Text()
@@ -8,6 +8,7 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 #include <string.h>
+#define __CYBERGRAPHICS_NOLIBBASE__
 #include <proto/cybergraphics.h>
 #include <aros/macros.h>
 #include <aros/debug.h>
@@ -327,7 +328,17 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 
 /***************************************************************************/
 
-#define CyberGfxBase (PrivGBase(GfxBase)->cybergfxbase)
+static struct Library *CyberGfxBase = NULL;
+
+static AROS_SET_LIBFUNC(CGFX_Expunge, LIBBASETYPE, LIBBASE)
+{
+    if (CyberGfxBase != NULL)
+    {
+	CloseLibrary(CyberGfxBase);
+	CyberGfxBase = NULL;
+    }
+}
+
 
 /***************************************************************************/
 
@@ -509,10 +520,6 @@ void BltTemplateAlphaBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len
     Move(rp, rp->cp_x + te.te_Width, rp->cp_y);
     
 }
-
-/***************************************************************************/
-
-#undef CyberGfxBase
 
 /***************************************************************************/
 

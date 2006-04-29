@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -63,8 +63,8 @@
 	    , srcx, srcy
 	    , width, height
 	    , dstformat
-	    , CyberGfxBase
-	);
+	    , GfxBase
+        );
     }
     else return 0;
     

@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERN_H
 #define GRAPHICS_INTERN_H
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for graphics.library
@@ -107,10 +107,7 @@ typedef WORD PalExtra_AllocList_Type;
 
 struct class_static_data
 {
-    struct Library  *oopbase;
-    struct Library  *utilitybase;
     struct GfxBase  *gfxbase;
-    struct ExecBase *sysbase;
     
     OOP_AttrBase    hiddFakeFBAttrBase;
     
@@ -184,8 +181,6 @@ struct GfxBase_intern
     struct GfxBase 	 	gfxbase;
 
     BPTR                        seglist;
-    struct Library  	    	*oopbase;
-    struct Library  	    	*cybergfxbase;
     /* Driver data shared between all rastports (allocated once) */
     struct shared_driverdata	shared_driverdata;
 
@@ -212,8 +207,6 @@ struct GfxBase_intern
 /* Macros */
 
 #define PrivGBase(x)   	    	((struct GfxBase_intern *)x)
-
-#define OOPBase     	    	(PrivGBase(GfxBase)->oopbase)
 
 #define WIDTH_TO_BYTES(width) 	((( (width) + 15) & ~15) >> 3)
 #define WIDTH_TO_WORDS(width) 	((( (width) + 15) & ~15) >> 4)
@@ -253,18 +246,6 @@ struct GfxBase_intern
 
 /* Forward declaration */
 struct ViewPort;
-
-#ifdef SysBase
-#undef SysBase
-#endif
-#define SysBase 		(GfxBase->ExecBase)
-#ifdef UtilityBase
-#undef UtilityBase
-#endif
-#define UtilityBase 		(GfxBase->UtilBase)
-
-/* Needed for close() */
-#define expunge()		AROS_LC0(BPTR, expunge, struct GfxBase *, GfxBase, 3, Gfx)
 
 /* a function needed by GfxAssocate(), GfxLookUp(), GfxFree() */
 extern ULONG CalcHashIndex(ULONG n);
