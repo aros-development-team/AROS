@@ -132,8 +132,8 @@ static void writedecl(FILE *out, struct config *cfg)
         fprintf(out, "%s\n", linelistit->s);
     }
 
-    /* Write out the prototypes for the functions of the function table */
-    writefuncprotos(out, cfg, cfg->funclist);
+    /* Write out the defines for the functions of the function table */
+    writefuncdefs(out, cfg, cfg->funclist);
     fprintf(out, "\n");
     
     /* Write out the includes needed for the classes */

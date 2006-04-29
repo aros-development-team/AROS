@@ -50,7 +50,9 @@ struct stringlist *funcaddalias(struct functionhead *funchead, const char *alias
  * cfg may be NULL if the list only contains functions with STACK libcall
  */
 struct config;
+void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist);
 void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclist);
+void writefuncinlines(FILE *out, struct config *cfg, struct functionhead *funclist);
 
 /* getargtype remove the variable name from a variable definition and leave return
  * the type of the variable

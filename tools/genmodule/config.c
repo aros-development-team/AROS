@@ -1312,6 +1312,29 @@ static void readsectionfunctionlist(struct config *cfg)
 		    {
 			s += 2;
 			c = *s;
+			if (c == '/')
+			{
+			    if (regcount > 1)
+			    {
+				if (strchr(regs[0], '/') == NULL)
+				    exitfileerror(20, "Either all arguments has to in two registers or none\n");
+			    }
+					
+			    s++;
+			    if (s[0] == s[-3] && s[1] == s[-2] + 1)
+			    {
+				s += 2;
+				c = *s;
+			    }
+			    else
+				exitfileerror(20,
+					      "wrong register specification \"%s\" for argument %u\n",
+					      regs[regcount-1], regcount
+				);
+			    
+			    if (regcount > 2)
+				exitfileerror(20, "maximum two arguments passed in two registers allowed\n");
+			}
 			*s = '\0';
 		    }
 		    else
