@@ -53,8 +53,8 @@ void writeoopinit(FILE *out, struct classinfo *cl)
 	     cl->basename, cl->classdatatype
 	);
     
-    /* Write prototypes of methods */
-    writefuncprotos(out, NULL, cl->methlist);
+    /* Write defines of methods */
+    writefuncdefs(out, NULL, cl->methlist);
 
     fprintf
     (

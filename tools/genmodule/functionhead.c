@@ -70,7 +70,7 @@ struct stringlist *funcaddalias(struct functionhead *funchead, const char *alias
     return slist_append(&funchead->aliases, alias);
 }
 
-void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclist)
+void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 {
     struct functionhead *funclistit;
     struct functionarg *arglistit;
@@ -158,35 +158,171 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
 	    
 	case REGISTERMACRO:
 	    assert(cfg);
-	    fprintf(out,
-		    "AROS_LD%d(%s, %s,\n",
-		    funclistit->argcount, funclistit->type, funclistit->name
-	    );
-	    for (arglistit = funclistit->arguments;
-		 arglistit!=NULL;
-		 arglistit = arglistit->next
-	    )
+	    if (funclistit->arguments == NULL
+		|| strchr(funclistit->arguments->reg, '/') == NULL)
 	    {
-		type = getargtype(arglistit);
-		name = getargname(arglistit);
-		assert(type != NULL && name != NULL);
-		
 		fprintf(out,
-			"         AROS_LDA(%s, %s, %s),\n",
-			type, name, arglistit->reg
+			"AROS_LD%d(%s, %s,\n",
+			funclistit->argcount, funclistit->type, funclistit->name
 		);
-		free(type);
-		free(name);
+		for (arglistit = funclistit->arguments;
+		     arglistit!=NULL;
+		     arglistit = arglistit->next
+		)
+		{
+		    type = getargtype(arglistit);
+		    name = getargname(arglistit);
+		    assert(type != NULL && name != NULL);
+		
+		    fprintf(out,
+			    "         AROS_LDA(%s, %s, %s),\n",
+			    type, name, arglistit->reg
+		    );
+		    free(type);
+		    free(name);
+		}
+		fprintf(out,
+			"         LIBBASETYPEPTR, %s, %u, %s\n"
+			");\n",
+			cfg->libbase, funclistit->lvo, cfg->basename
+		);
 	    }
-	    fprintf(out,
-		    "         LIBBASETYPEPTR, %s, %u, %s\n"
-		    ");\n",
-		    cfg->libbase, funclistit->lvo, cfg->basename
-	    );
+	    else
+	    {
+		fprintf(out,
+			"AROS_LDQUAD%d(%s, %s,\n",
+			funclistit->argcount, funclistit->type, funclistit->name
+		);
+		for (arglistit = funclistit->arguments;
+		     arglistit != NULL;
+		     arglistit = arglistit->next
+		)
+		{
+		    if (strlen(arglistit->reg) != 5)
+		    {
+			fprintf(stderr, "Internal error: ../.. register format expected\n");
+			exit(20);
+		    }
+		    arglistit->reg[2] = 0;
+
+		    type = getargtype(arglistit);
+		    name = getargname(arglistit);
+		    assert(type != NULL && name != NULL);
+		
+		    fprintf(out,
+			    "         AROS_LDAQUAD(%s, %s, %s, %s),\n",
+			    type, name, arglistit->reg, arglistit->reg+3
+		    );
+		    arglistit->reg[2] = '/';
+		    free(type);
+		    free(name);
+		}
+		fprintf(out,
+			"         LIBBASETYPEPTR, %s, %u, %s\n"
+			");\n",
+			cfg->libbase, funclistit->lvo, cfg->basename
+		);
+	    }
 	    break;
 
 	default:
-	    fprintf(stderr, "Internal error: unhandled libcall in writefuncprotos\n");
+	    fprintf(stderr, "Internal error: unhandled libcall in writefuncdefs\n");
+	    exit(20);
+	    break;
+	}
+    }
+}
+    
+void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclist)
+{
+    struct functionhead *funclistit;
+    struct functionarg *arglistit;
+    char *type, *name;
+    int first;
+    
+    for(funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
+    {
+	switch (funclistit->libcall)
+	{
+	case STACK:
+	    continue;
+   
+	case REGISTER:
+	case REGISTERMACRO:
+	    assert(cfg);
+	    if (funclistit->priv || funclistit->lvo < cfg->firstlvo)
+		continue;
+	    
+	    if (funclistit->arguments == NULL
+		|| strchr(funclistit->arguments->reg, '/') == NULL
+	    )
+	    {
+		fprintf(out,
+			"AROS_LP%d(%s, %s,\n",
+			funclistit->argcount, funclistit->type, funclistit->name
+		);
+		for (arglistit = funclistit->arguments;
+		     arglistit!=NULL;
+		     arglistit = arglistit->next
+		)
+		{
+		    type = getargtype(arglistit);
+		    name = getargname(arglistit);
+		    assert(type != NULL && name != NULL);
+		
+		    fprintf(out,
+			    "         AROS_LPA(%s, %s, %s),\n",
+			    type, name, arglistit->reg
+		    );
+		    free(type);
+		    free(name);
+		}
+		fprintf(out,
+			"         LIBBASETYPEPTR, %s, %u, %s\n"
+			");\n",
+			cfg->libbase, funclistit->lvo, cfg->basename
+		);
+	    }
+	    else
+	    {
+		fprintf(out,
+			"AROS_LPQUAD%d(%s, %s,\n",
+			funclistit->argcount, funclistit->type, funclistit->name
+		);
+		for (arglistit = funclistit->arguments;
+		     arglistit != NULL;
+		     arglistit = arglistit->next
+		)
+		{
+		    if (strlen(arglistit->reg) != 5)
+		    {
+			fprintf(stderr, "Internal error: ../.. register format expected\n");
+			exit(20);
+		    }
+		    arglistit->reg[2] = 0;
+
+		    type = getargtype(arglistit);
+		    name = getargname(arglistit);
+		    assert(type != NULL && name != NULL);
+		
+		    fprintf(out,
+			    "         AROS_LPAQUAD(%s, %s, %s, %s),\n",
+			    type, name, arglistit->reg, arglistit->reg+3
+		    );
+		    arglistit->reg[2] = '/';
+		    free(type);
+		    free(name);
+		}
+		fprintf(out,
+			"         LIBBASETYPEPTR, %s, %u, %s\n"
+			");\n",
+			cfg->libbase, funclistit->lvo, cfg->basename
+		);
+	    }
+	    break;
+
+	default:
+	    fprintf(stderr, "Internal error: unhandled libcall in writefuncdefs\n");
 	    exit(20);
 	    break;
 	}

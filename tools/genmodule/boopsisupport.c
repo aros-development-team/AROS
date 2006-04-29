@@ -41,7 +41,7 @@ void writeboopsidispatcher(FILE *out, struct classinfo *cl)
             "/*** Prototypes *************************************************************/\n"
 	);
 
-	writefuncprotos(out, NULL, cl->methlist);
+	writefuncdefs(out, NULL, cl->methlist);
 
         fprintf
         (
