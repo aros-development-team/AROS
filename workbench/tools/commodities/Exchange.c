@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Exchange -- controls commodities.
@@ -69,9 +69,9 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Tools/Commodities.catalog"
-#define CATALOG_VERSION  0
+#define CATALOG_VERSION  2
 
-TEXT version[] = "$VER: Exchange 0.4 (25.04.2006)";
+TEXT version[] = "$VER: Exchange 0.5 (29.04.2006)";
 
 #define ARG_TEMPLATE "CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S"
 #define DEF_POPKEY "ctrl alt h"
@@ -83,8 +83,8 @@ enum {
     NUM_ARGS
 };
 
-static Object *app, *wnd, *listgad, *textgad1, *textgad2, *showgad, *hidegad, *cyclegad, *killgad, *updategad;
-CONST_STRPTR cyclestrings[3];
+static Object *app, *wnd, *listgad, *textgad1, *textgad2, *showgad, *hidegad, *cyclegad, *killgad;
+static CONST_STRPTR cyclestrings[3];
 static struct Catalog *catalog;
 static UBYTE s[257];
 static struct List brokerList;
@@ -93,7 +93,6 @@ static struct Hook broker_hook;
 static struct Hook list_disp_hook;
 static struct Hook list_select_hook;
 static struct Hook inform_broker_hook;
-static struct Hook update_hook;
 
 static LONG cx_pri;
 static char *cx_popkey;
@@ -110,6 +109,7 @@ static VOID Locale_Deinitialize(VOID);
 static BOOL Locale_Initialize(VOID);
 static void MakeGUI(void);
 static void showSimpleMessage(CONST_STRPTR msgString);
+static void update_list(void);
 static CONST_STRPTR _(ULONG id);
 
 /*********************************************************************************************/
@@ -198,12 +198,12 @@ static void GetArguments(int argc, char **argv)
 
 static struct NewMenu nm[] =
 {
-    {NM_TITLE, (STRPTR)MSG_FKEY_MEN_PROJECT         },
-     {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_HIDE    },
-     {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_ICONIFY },
-     {NM_ITEM, NM_BARLABEL  	    	    	    },
-     {NM_ITEM, (STRPTR)MSG_FKEY_MEN_PROJECT_QUIT    },
-    {NM_END 	    	    	    	    	    }
+    {NM_TITLE, (STRPTR)MSG_MEN_PROJECT         },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_HIDE    },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_ICONIFY },
+     {NM_ITEM, NM_BARLABEL    	               },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_QUIT    },
+    {NM_END                                    }
 };
 
 /*********************************************************************************************/
@@ -257,16 +257,15 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 
 /*********************************************************************************************/
 
-AROS_UFH3(void, update_func,
-    AROS_UFHA(struct Hook *, h,      A0),
-    AROS_UFHA(Object *     , object, A2),
-    AROS_UFHA(APTR         , msg,    A1))
+static void update_list(void)
 {
-    AROS_USERFUNC_INIT
-
     struct BrokerCopy *node;
     LONG n = GetBrokerList(&brokerList);
     D(bug("Exchange: Number of Brokers %ld\n", n));
+
+    nnset(textgad1, MUIA_Text_Contents, NULL);
+    nnset(textgad2, MUIA_Text_Contents, NULL);
+
     set(listgad, MUIA_List_Quiet, TRUE);
     DoMethod(listgad, MUIM_List_Clear);
     ForeachNode(&brokerList, node)
@@ -275,7 +274,6 @@ AROS_UFH3(void, update_func,
 	DoMethod(listgad, MUIM_List_InsertSingle, node, MUIV_List_Insert_Bottom);
     }
     set(listgad, MUIA_List_Quiet, FALSE);
-    AROS_USERFUNC_EXIT
 }
 
 /*********************************************************************************************/
@@ -287,7 +285,7 @@ AROS_UFH3(void, broker_func,
 {
     AROS_USERFUNC_INIT
 
-    D(bug("Exchange: Broker hook called"));
+	D(bug("Exchange: Broker hook called\n"));
     if (CxMsgType(msg) == CXM_COMMAND)
     {
 	if (CxMsgID(msg) == CXCMD_APPEAR)
@@ -297,8 +295,7 @@ AROS_UFH3(void, broker_func,
 	}
 	else if (CxMsgID(msg) == CXCMD_LIST_CHG)
 	{
-	    //FIXME: message doesn't arrive
-	    D(bug("Listchange"));
+	    update_list();
 	}
     }
     AROS_USERFUNC_EXIT
@@ -376,7 +373,6 @@ static void MakeGUI(void)
     cyclestrings[1] = _(MSG_EXCHANGE_CYCLE_INACTIVE);
     Object *menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
 
-    update_hook.h_Entry = (HOOKFUNC)update_func; 
     broker_hook.h_Entry = (HOOKFUNC)broker_func;
     list_disp_hook.h_Entry = (HOOKFUNC)list_display_func;
     list_select_hook.h_Entry = (HOOKFUNC)list_select_func;
@@ -402,7 +398,6 @@ static void MakeGUI(void)
 	    WindowContents, (IPTR)(HGroup,
 		Child, (IPTR)(VGroup,
 		    GroupFrameT(_(MSG_EXCHANGE_LISTVIEW)),
-		    Child, (IPTR)(updategad = SimpleButton("Update")),
 		    Child, (IPTR)(ListviewObject,
 			MUIA_Listview_List, (IPTR)(listgad = ListObject,
 			    InputListFrame,
@@ -457,7 +452,7 @@ static void MakeGUI(void)
     }
 
     // initial entry of brokers to listgadget
-    CallHookPkt(&update_hook, 0, 0);
+    update_list();
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
 	app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
@@ -467,9 +462,6 @@ static void MakeGUI(void)
 
     DoMethod(listgad, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
 	    (IPTR)listgad, 2, MUIM_CallHook, (IPTR)&list_select_hook);
-
-    DoMethod(updategad, MUIM_Notify, MUIA_Pressed, FALSE,
-	(IPTR)app, 2, MUIM_CallHook, (IPTR)&update_hook);
 
     DoMethod(cyclegad, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
 	(IPTR)app, 3, MUIM_CallHook, (IPTR)&inform_broker_hook, CXCMD_ENABLE);
@@ -483,13 +475,13 @@ static void MakeGUI(void)
     DoMethod(killgad, MUIM_Notify, MUIA_Pressed, FALSE,
 	(IPTR)app, 3, MUIM_CallHook, (IPTR)&inform_broker_hook, CXCMD_KILL);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_QUIT,
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT,
 	(IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_HIDE,
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_HIDE,
 	(IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_FKEY_MEN_PROJECT_ICONIFY,
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_ICONIFY,
 	(IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
      
 }
