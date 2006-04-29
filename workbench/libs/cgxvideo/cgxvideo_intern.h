@@ -1,5 +1,5 @@
-#ifndef CYBERGRAPHICS_INTERN_H
-#define CYBERGRAPHICS_INTERN_H
+#ifndef CGXVIDEO_INTERN_H
+#define CGXVIDEO_INTERN_H
 
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
@@ -34,9 +34,6 @@ struct IntCGXVBase
     struct Library libnode;
     struct ExecBase *sysbase;
     BPTR seglist;
-    struct Library *utilitybase;
-    struct Library *oopbase;
-    struct GfxBase *gfxbase;
 };
 
 
@@ -47,16 +44,6 @@ extern ULONG driver_GetCyberIDAttr(ULONG attr, ULONG id, struct GfxBase *GfxBase
 extern BOOL driver_IsCyberModeID(ULONG modeid, struct GfxBase *GfxBase);
 
 #define GetCGXVBase(base) ((struct IntCGXVBase *)base)
-
-
-#undef OOPBase
-#define OOPBase GetCGXVBase(CGXVideoBase)->oopbase
-
-#undef UtilityBase
-#define UtilityBase GetCGXVBase(CGXVideoBase)->utilitybase
-
-#undef GfxBase
-#define GfxBase GetCGXVBase(CGXVideoBase)->gfxbase
 
 
 extern VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct Library *CGXVideoBase);
@@ -106,4 +93,4 @@ extern VOID driver_UnLockBitMap(APTR handle, struct Library *CGXVideoBase);
 extern APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Library *CGXVideoBase);
 
 
-#endif /* CYBERGRAPHICS_INTERN_H */
+#endif /* CGXVIDEO_INTERN_H */

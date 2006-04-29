@@ -1,7 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
+#include <aros/debug.h>
 
 #include "cgxvideo_intern.h"
 
@@ -39,7 +40,6 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CGXVideoBase)
-    extern void aros_print_not_implemented (char *);
 
     aros_print_not_implemented ("SetVLayerAttrTags");
 
