@@ -54,7 +54,7 @@ AROS_SET_LIBFUNC(DosInit, LIBBASETYPE, LIBBASE)
     InitSemaphore(&LIBBASE->dl_DosListLock);
 
     /* Initialize for the fools that illegally used this field */
-    LIBBASE->dl_UtilityBase = UtilityBase;
+    LIBBASE->dl_UtilityBase = (struct Library*) UtilityBase;
 
     LIBBASE->dl_IntuitionBase = NULL;
 
