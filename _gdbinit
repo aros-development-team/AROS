@@ -87,7 +87,7 @@ define taskready
     end
 end
 document taskready
-List of tasks current ready to run
+List of tasks currently ready to run
 end
 
 define taskwait
@@ -151,7 +151,7 @@ end
 define findaddr
     set $cont = 1
 
-    #fist search in modules loaded from disk
+    #first search in modules loaded from disk
     printf "Searching in the loaded modules...\n"
     if debug_seglist
         set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
@@ -161,7 +161,7 @@ define findaddr
 
             while $nextseg && $cont
 	        if $arg0 >= $nextseg && $arg0 <= ($nextseg + *((ULONG *)$nextseg - 1) - sizeof(BPTR))
-                    printf "Address found in %s, which is loaded at 0x%08x.\nIf this is an executable, its .text section starts at 0x%08x\n", $segnode->name, $segnode->seglist, (ULONG)($segnode->seglist+4) + 5 + *(ULONG *)((char *)($segnode->seglist+4)+1)
+                    printf "Address found in %s, which is loaded at 0x%08x.\nIf this is an executable, its .text section starts at 0x%08x.\n", $segnode->name, $segnode->seglist, $segnode->start_address
 
                     set $cont = 0
                 end
@@ -199,10 +199,10 @@ end
 document findaddr
 -Shows the module that contains the given address
 -
--To use this to debug a problem in AROS, do this:
+-To debug a problem in AROS, do the following:
 -
 -1. Get a stacktrace with bt or similar.
--2. Use findaddr with such an address to find out in which shared
+-2. Use findaddr with such an address to find out in which
 -   module it is:
 -3. Use add-symbol-file to load that modules symbols.
 -4. Now you can run bt (or similar) again and you should see the
@@ -215,10 +215,11 @@ document findaddr
 -(gdb) findaddr 0x4058d45b
 -
 -Searching in the loaded modules...
--Address found in Workbench:contrib/Zune/Libs/muimaster.library, which is loaded at 0x405379a4
--(gdb) add-symbol-file contrib/Zune/Libs/muimaster.library 0x405379a4
+-Address found in Workbench:contrib/Zune/Libs/muimaster.library, which is loaded at 0x405379a4.
+-If this is an executable, its .text section starts at 0x405379b0.
+-(gdb) add-symbol-file contrib/Zune/Libs/muimaster.library 0x405379b0
 -add symbol table from file "contrib/Zune/Libs/muimaster.library" at
--        .text_addr = 0x405379a4
+-        .text_addr = 0x405379b0
 -(y or n) y
 -Reading symbols from contrib/Zune/Libs/muimaster.library...done.
 -(gdb) bt

@@ -216,6 +216,7 @@ struct debug_segnode
     struct MinNode node;
     UBYTE          name[200];
     BPTR           seglist;
+    IPTR	   start_address; // start address of loaded executable segment
 };
 
 struct InternalExAllControl
