@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DOS function LoadSeg()
@@ -96,6 +96,11 @@ struct MinList debug_seglist, free_debug_segnodes;
                 NameFromFH(file, segnode->name, sizeof(segnode->name));
 
                 segnode->seglist = segs;
+#if defined(__AROS_SET_START_ADDR)
+		__AROS_SET_START_ADDR(segnode);
+#else
+#warning "if you want gdb debugging of loaded executables implement __AROS_GET_START_ADDR in machine.h"
+#endif
 
 		Forbid();
                 ADDTAIL(&debug_seglist, segnode);
