@@ -13,7 +13,8 @@ FUNCS := deletenv \
 #MM     kernel-exec-includes \
 #MM     workbench-libs-nvdisk-includes \
 #MM     includes-copy
-#MM- workbench-libs-nonvolatile : linklibs
+#MM workbench-libs-nonvolatile : \
+#MM     workbench-libs-nvdisk-linklib linklibs
 
 %build_module mmake=workbench-libs-nonvolatile \
     modname=nonvolatile modtype=library \
