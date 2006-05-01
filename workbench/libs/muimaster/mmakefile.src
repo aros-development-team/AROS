@@ -51,6 +51,7 @@ MAKE_BUILTIN_CRAWLING	   := no
 MAKE_BUILTIN_LEVELMETER	   := no
 MAKE_BUILTIN_KNOB	   := no
 MAKE_BUILTIN_DTPIC	   := no
+MAKE_BUILTIN_PALETTE	   := no
 
 CLASSES := \
     application \
@@ -377,6 +378,14 @@ ifeq ($(MAKE_BUILTIN_DTPIC),yes)
 else
     EXTCLASSES  := $(EXTCLASSES) dtpic
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_DTPIC=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PALETTE),yes)
+    CLASSES     := $(CLASSES) palette
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_PALETTE=1
+else
+    EXTCLASSES  := $(EXTCLASSES) palette
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_PALETTE=0
 endif
 
 CLASSFILES    := $(foreach f, $(CLASSES), classes/$(f))
