@@ -206,6 +206,12 @@
 #   define ZUNE_DTPIC_DESC
 #endif
 
+#if ZUNE_BUILTIN_PALETTE
+#   define ZUNE_PALETTE_DESC (&_MUI_Palette_desc),
+#else
+#   define ZUNE_PALETTE_DESC
+#endif
+
 Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
 Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);

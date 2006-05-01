@@ -37,7 +37,9 @@ USER_LIBS   := amiga rom m mui
 #MM 	workbench-classes-zune-crawling \
 #MM	workbench-classes-zune-levelmeter \
 #MM	workbench-classes-zune-knob \
-#MM	workbench-classes-zune-dtpic
+#MM	workbench-classes-zune-dtpic \
+#MM	workbench-classes-zune-palette
+
 
 #MM- workbench-libs-muimaster-clean : \
 #MM     workbench-classes-zune-aboutmui-clean \
@@ -70,7 +72,8 @@ USER_LIBS   := amiga rom m mui
 #MM 	workbench-classes-zune-crawling-clean \
 #MM	workbench-classes-zune-levelmeter-clean \
 #MM	workbench-classes-zune-knob-clean \
-#MM	workbench-classes-zune-dtpic-clean
+#MM	workbench-classes-zune-dtpic-clean \
+#MM	workbench-classes-zune-palette-clean
 
 #MM workbench-classes-zune-aboutmui : includes
 %build_module \
@@ -319,6 +322,14 @@ USER_LIBS   := amiga rom m mui
     modname=Dtpic modtype=mui files=dtpic \
     conffile=dtpic.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_DTPIC=0" \
+    uselibs=$(USER_LIBS)
+
+#MM workbench-classes-zune-palette : includes
+%build_module \
+    mmake=workbench-classes-zune-palette \
+    modname=Palette modtype=mui files=palette \
+    conffile=palette.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_PALETTE=0" \
     uselibs=$(USER_LIBS)
 
 %common

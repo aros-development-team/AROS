@@ -89,6 +89,7 @@ static const struct __MUIBuiltinClass * const builtins[] =
     ZUNE_LEVELMETER_DESC
     ZUNE_KNOB_DESC
     ZUNE_DTPIC_DESC
+    ZUNE_PALETTE_DESC
 };
 
 Class *ZUNE_GetExternalClass(ClassID classname, struct Library *MUIMasterBase)

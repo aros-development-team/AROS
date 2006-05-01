@@ -552,6 +552,10 @@ struct MUI_RGBcolor
 #include "classes/dtpic.h"
 #endif
 
+#ifndef _MUI_CLASSES_PALETTE_H
+#include "classes/palette.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/
