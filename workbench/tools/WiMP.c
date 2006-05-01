@@ -1,12 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Window Manipulation Program
-    Lang: English
-*/
+    WiMP -- Window manipulation program.
+ */
 
-/*****************************************************************************
+/******************************************************************************
 
     NAME
 
@@ -14,11 +13,22 @@
 
     SYNOPSIS
 
+
     LOCATION
 
-	Workbench:Tools
+        Workbench:Tools
 
     FUNCTION
+
+        Manipulates screens and windows
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
 
     BUGS
 
@@ -26,34 +36,58 @@
 
     INTERNALS
 
-    HISTORY
-
-        11-Dec-2000     hkiel     Initial version
-        01-May-2001	petah     Added CTRL-C checking (WiMP 0.8)
-
 ******************************************************************************/
 
-static const char version[] = "$VER: WiMP 0.9 (10.08.2003)";
+#define MUIMASTER_YES_INLINE_STDARG
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <proto/alib.h>
+#include <libraries/mui.h>
+#include <libraries/gadtools.h>
+#include <proto/muimaster.h>
+#include <proto/intuition.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/graphics.h>
-#include <proto/intuition.h>
-#include <proto/gadtools.h>
+#include <proto/utility.h>
 
-struct Screen *Screen;
-struct Window *Window;
-struct Window *InfoWindow = NULL;
-struct RastPort *iw_rp;
-struct Menu *menus;
-ULONG IDCMP;
-ULONG lock;
-ULONG w_sigbit, iw_sigbit;
-APTR vi;
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+
+static Object *app, *wnd, *list_gad;
+
+static Object *close_gad, *front_gad, *back_gad, *origin_gad, *activate_gad, *zip_gad, *hide_gad, *show_gad;
+static Object *update_gad, *rescue_gad, *showall_gad, *rethink_gad, *about_gad;
+
+static Object *info_wnd, *page_gad;
+
+static Object *info_scr_addr_gad, *info_scr_leftedge_gad, *info_scr_topedge_gad, *info_scr_width_gad, *info_scr_height_gad,
+	      *info_scr_flags_gad, *info_scr_title_gad, *info_scr_deftitle_gad, *info_scr_firstwindow_gad;
+
+
+static Object *info_win_addr_gad, *info_win_nextwin_gad, *info_win_leftedge_gad, *info_win_topedge_gad, *info_win_width_gad,
+    *info_win_height_gad, *info_win_minwidth_gad, *info_win_minheight_gad, *info_win_maxwidth_gad, *info_win_maxheight_gad,
+    *info_win_flags_gad, *info_win_idcmp_gad, *info_win_title_gad, *info_win_req_gad, *info_win_screen_gad,
+    *info_win_borderleft_gad, *info_win_bordertop_gad, *info_win_borderright_gad, *info_win_borderbottom_gad,
+    *info_win_parentwin_gad, *info_win_firstchild_gad, *info_win_parent_gad, *info_win_descendant_gad;
+
+static ULONG lock;
+
+
+static struct Hook close_hook, front_hook, back_hook, origin_hook, activate_hook, zip_hook, hide_hook, show_hook;
+static struct Hook update_hook, rescue_hook, showall_hook, rethink_hook, about_hook;
+static struct Hook display_hook, construct_hook, destruct_hook;
+static struct Hook openinfo_hook, updateinfo_hook;
+
+
+static const STRPTR ABOUT_TXT		= "WiMP - The Window Manipulation Program\n\n"
+					  "Copyright © 2000-2006 by The AROS Development Team";
+static const STRPTR TITLE_TXT		= "WiMP - The Window Manipulation Program";
+static const STRPTR INFOTITLE_TXT	= "WiMP - InfoWindow";
+static const STRPTR CLOSESCREEN_TXT	= "Do you really want to Close the selected Screen?";
+static const STRPTR CLOSEWINDOW_TXT	= "Do you really want to Close the selected Window?";
+static const STRPTR YESNO_TXT		= "Yes.|No!";
+static const STRPTR CONTINUE_TXT	= "Continue";
+
 
 enum {
   None_type,
@@ -62,1291 +96,1041 @@ enum {
   Max_type
 };
 
-#define ClearIDCMP()		\
-{				\
-  IDCMP = Window->IDCMPFlags;	\
-  Window->IDCMPFlags = 0UL;	\
-}
-#define ResetIDCMP()		\
-{				\
-  Window->IDCMPFlags = IDCMP;	\
-}
 
-#define ID_SHOW 10
-struct NewGadget showgad =
+struct ListEntry
 {
-    520, 130, 50, 20,
-    "Show", NULL,
-    ID_SHOW, PLACETEXT_IN, NULL, NULL
+    LONG type;
+    APTR aptr;
+    TEXT address[20];
+    TEXT size[12];
+    TEXT pos[12];
+    TEXT title[40];
 };
 
-#define ID_HIDE 11
-struct NewGadget hidegad =
-{
-    470, 130, 50, 20,
-    "Hide", NULL,
-    ID_HIDE, PLACETEXT_IN, NULL, NULL
-};
+static const char version[] = "$VER: WiMP 0.10 (01.05.2006) © AROS Dev Team";
 
-#define ID_ZIP 12
-struct NewGadget zipgad =
-{
-    420, 130, 50, 20,
-    "Zip", NULL,
-    ID_ZIP, PLACETEXT_IN, NULL, NULL
-};
+/*********************************************************************************************/
 
-#define ID_ACTIVATE 13
-struct NewGadget activategad =
-{
-    340, 130, 80, 20,
-    "Activate", NULL,
-    ID_ACTIVATE, PLACETEXT_IN, NULL, NULL
-};
+static void Cleanup(CONST_STRPTR txt);
+static LONG get_selected(struct Screen **scr, struct Window **win);
+static void HandleAll(void);
+static void MakeGUI(void);
 
-#define ID_ORIGIN 14
-struct NewGadget origingad =
-{
-    210, 130, 130, 20,
-    "Move to Origin", NULL,
-    ID_ORIGIN, PLACETEXT_IN, NULL, NULL
-};
+/*********************************************************************************************/
 
-#define ID_BACK 15
-struct NewGadget backgad =
-{
-    140, 130, 70, 20,
-    "To Back", NULL,
-    ID_BACK, PLACETEXT_IN, NULL, NULL
-};
-
-#define ID_FRONT 16
-struct NewGadget frontgad =
-{
-    60, 130, 80, 20,
-    "To Front", NULL,
-    ID_FRONT, PLACETEXT_IN, NULL, NULL
-};
-
-#define ID_KILL 17
-struct NewGadget killgad =
-{
-    10, 130, 50, 20,
-    "Close", NULL,
-    ID_KILL, PLACETEXT_IN, NULL, NULL
-};
-
-#define ID_ABOUT 18
-struct NewGadget aboutgad =
-{
-    520, 150, 50, 20,
-    "About", NULL,
-    ID_ABOUT, PLACETEXT_IN, NULL, NULL
-};
-
-#define ID_RETHINK 19
-struct NewGadget rethinkgad =
-{
-    400, 150, 120, 20,
-    "RethinkDisplay", NULL,
-    ID_RETHINK, PLACETEXT_IN, NULL, NULL
-};
-
-#define ID_SHOWALL 20
-struct NewGadget showallgad =
-{
-    265, 150, 135, 20,
-    "Show all Windows", NULL,
-    ID_SHOWALL, PLACETEXT_IN, NULL, NULL
-};
-
-#define ID_RESCUE 21
-struct NewGadget rescuegad =
-{
-    110, 150, 155, 20,
-    "Rescue all Windows", NULL,
-    ID_RESCUE, PLACETEXT_IN, NULL, NULL
-};
-
-#define ID_UPDATE 22
-struct NewGadget updategad =
-{
-    10, 150, 100, 20,
-    "Update List", NULL,
-    ID_UPDATE, PLACETEXT_IN, NULL, NULL
-};
-
-#define ID_LISTVIEW 23
-struct NewGadget listviewgad =
-{
-    10, 5, 561, 125,
-    "Screen/Window List", NULL,
-    ID_LISTVIEW, PLACETEXT_ABOVE, NULL, NULL
-};
-
-
-struct List lv_list, lv_infolist;
-
-struct Gadget *glist = NULL;
-struct Gadget *igads = NULL;
-struct Gadget *screenlistg = NULL;
-struct Gadget *actiong = NULL;
-#define ACTIONGLENW 8
-#define ACTIONGLENS 4
-UWORD actionmenu[] =
-{
-	FULLMENUNUM(1,9,NOSUB),
-	FULLMENUNUM(1,8,NOSUB),
-	FULLMENUNUM(1,7,NOSUB),
-	FULLMENUNUM(1,6,NOSUB),
-	FULLMENUNUM(1,5,NOSUB),
-	FULLMENUNUM(1,4,NOSUB),
-	FULLMENUNUM(1,3,NOSUB),
-	FULLMENUNUM(1,2,NOSUB)
+enum {
+    MN_ABOUT=1,
+    MN_QUIT,
+    MN_UPDATE,
+    MN_KILL,
+    MN_FRONT,
+    MN_BACK,
+    MN_ORIGIN,
+    MN_ACTIVATE,
+    MN_ZIP,
+    MN_HIDE,
+    MN_SHOW,
+    MN_INFO,
+    MN_RESCUE,
+    MN_SHOWALL,
+    MN_RETHINK,
 };
 
 static struct NewMenu nm[] =
 {
   {NM_TITLE, "Project"},
-    {NM_ITEM, "About..."},
+    {NM_ITEM, "About...", NULL, 0, 0, (APTR)MN_ABOUT},
     {NM_ITEM, NM_BARLABEL},
-    {NM_ITEM, "Quit", "Q"},
+    {NM_ITEM, "Quit", "Q", 0, 0, (APTR)MN_QUIT},
   {NM_TITLE, "Window List"},
-    {NM_ITEM, "Update List"},
+    {NM_ITEM, "Update List", NULL, 0, 0, (APTR)MN_UPDATE},
     {NM_ITEM, NM_BARLABEL},
-    {NM_ITEM, "Kill"},
-    {NM_ITEM, "To Front"},
-    {NM_ITEM, "To Back"},
-    {NM_ITEM, "To Origin"},
-    {NM_ITEM, "Activate"},
-    {NM_ITEM, "Zip"},
-    {NM_ITEM, "Hide"},
-    {NM_ITEM, "Show"},
+    {NM_ITEM, "Kill", NULL, 0, 0, (APTR)MN_KILL},
+    {NM_ITEM, "To Front", NULL, 0, 0, (APTR)MN_FRONT},
+    {NM_ITEM, "To Back", NULL, 0, 0, (APTR)MN_BACK},
+    {NM_ITEM, "To Origin", NULL, 0, 0, (APTR)MN_ORIGIN},
+    {NM_ITEM, "Activate", NULL, 0, 0, (APTR)MN_ACTIVATE},
+    {NM_ITEM, "Zip", NULL, 0, 0, (APTR)MN_ZIP},
+    {NM_ITEM, "Hide", NULL, 0, 0, (APTR)MN_HIDE},
+    {NM_ITEM, "Show", NULL, 0, 0, (APTR)MN_SHOW},
     {NM_ITEM, NM_BARLABEL},
-    {NM_ITEM, "Info"},
+    {NM_ITEM, "Info", NULL, 0, 0, (APTR)MN_INFO},
   {NM_TITLE, "Generic"},
-    {NM_ITEM, "Rescue All"},
-    {NM_ITEM, "Show All"},
-    {NM_ITEM, "RethinkDisplay"},
+    {NM_ITEM, "Rescue All", NULL, 0, 0, (APTR)MN_RESCUE},
+    {NM_ITEM, "Show All", NULL, 0, 0, (APTR)MN_SHOWALL},
+    {NM_ITEM, "RethinkDisplay", NULL, 0, 0, (APTR)MN_RETHINK},
   {NM_END}
 };
 
-#define EASYTRUE 1
-const STRPTR TITLE_TXT		= "WiMP - The Window Manipulation Program";
-const STRPTR INFOTITLE_TXT	= "WiMP - InfoWindow";
-const STRPTR CLOSESCREEN_TXT	= "Do you really want to Close the selected Screen?";
-const STRPTR CLOSEWINDOW_TXT	= "Do you really want to Close the selected Window?";
-const STRPTR ABOUT_TXT		= "WiMP - The Window Manipulation Program\n\nCopyright 2000-2001 by Henning Kiel\nhkiel@aros.org\n\nThis program is part of AROS - The Amiga Research OS";
-const STRPTR YESNO_TXT		= "Yes.|No!";
-const STRPTR CONTINUE_TXT	= "Continue";
+/*********************************************************************************************/
 
-/* Internal Prototypes */
-VOID initlvnodes(struct List *list);
-VOID freelvnodes(struct List *list);
-VOID update_list();
-struct Gadget *gt_init();
-IPTR getsw(int *type);
-VOID update_actionglist();
-VOID makemenus();
-struct Gadget *makegadgets(struct Gadget *gad);
-VOID open_window();
-VOID close_window();
-VOID open_infowindow();
-VOID close_infowindow();
-VOID WindowInfo( struct Window *win );
-VOID ScreenInfo( struct Screen *scr );
-VOID rescue_all();
-VOID show_all();
-
-
-VOID initlvnodes(struct List *list)
+static LONG get_selected(struct Screen **scr, struct Window **win)
 {
-struct Screen *scr;
-struct Window *win;
-struct Node *node;
-char tmp[1024];
-char *string;
+    *scr = NULL;
+    *win = NULL;
 
-  /* Get Intuition's first Screen */
-  lock = LockIBase ( 0 );
-  scr = IntuitionBase->FirstScreen;
-  UnlockIBase ( lock );
+    struct ListEntry *le;
+    DoMethod(list_gad, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&le);
 
-  /* Traverse through all Screens */
-  while ( scr )
-  {
-    sprintf (	tmp,
-		"Screen:   %p %4dx%4d @%4d.%4d     \"%s\",\"%s\"",
-		scr,
-		scr->Width,
-		scr->Height,
-		scr->LeftEdge,
-		scr->TopEdge,
-		scr->Title,
-		scr->DefaultTitle
-	    );
-    string = StrDup ( tmp );
-    node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
-    AddTail ( list, node );
-    SetNodeName ( node, string );
-
-    /* Traverse through all Windows of current Screen */
-    win = scr->FirstWindow;
-    while ( win )
+    if (le)
     {
-      sprintf ( tmp,
-		"  Window: %p %4dx%4d @%4d,%4d %c%c%c \"%s\"%c(%p)",
-		win,
-		win->Width,
-		win->Height,
-		win->LeftEdge,
-		win->TopEdge,
-		(IsWindowVisible(win)?' ':'H'),
-		(IS_CHILD(win)?'C':' '),
-		(HAS_CHILDREN(win)?'P':' '),
-		win->Title,
-		(IS_CHILD(win)?' ':0),
-		win->parent
-	      );
-      string = StrDup ( tmp );
-      node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
-      AddTail ( list, node );
-      SetNodeName ( node, string );
-      win = win->NextWindow;
+	lock = LockIBase ( 0 );
+	*scr = IntuitionBase->FirstScreen;
+	UnlockIBase ( lock );
+	/* Traverse through all Screens */
+	while ( *scr )
+	{
+	    if ((le->type == Screen_type) && (le->aptr == *scr))
+	    {
+		return Screen_type;
+	    }
+
+	    /* Traverse through all Windows of current Screen */
+	    *win = (*scr)->FirstWindow;
+	    while ( *win )
+	    {
+		if ((le->type == Window_type) && (le->aptr == *win))
+		{
+		    return Window_type;
+		}
+
+		*win = (*win)->NextWindow;
+	    }
+	    *scr = (*scr)->NextScreen;
+	}
     }
-    scr = scr->NextScreen;
-  }
-
-return;
+    return None_type;
 }
 
-VOID freelvnodes(struct List *list)
+/*********************************************************************************************/
+
+AROS_UFH3(void, display_func,
+    AROS_UFHA(struct Hook *     , h,     A0),
+    AROS_UFHA(char **           , array, A2),
+    AROS_UFHA(struct ListEntry *, msg,   A1))
 {
-struct Node *popnode;
+    AROS_USERFUNC_INIT
 
-  while ( IsListEmpty ( list ) != TRUE )
-  {
-    popnode = RemTail ( list );
+	if (msg)
+	{
+	    if (msg->type == Window_type)
+	    {
+		array[0] = "  \033bWindow";
+	    }
+	    else
+	    {
+		array[0] = "\033b\033uScreen";
+	    }
+	    array[1] = msg->address;
+	    array[2] = msg->size;
+	    array[3] = msg->pos;
+	    array[4] = msg->title;
+	}
+	else
+	{
+	    array[0] = "Type";
+	    array[1] = "Address";
+	    array[2] = "Size";
+	    array[3] = "Position";
+	    array[4] = "Title";
+	}
 
-    FreeVec ( popnode->ln_Name );
-    FreeMem ( popnode, sizeof ( struct Node ) );
-  }
-
-return;
+    AROS_USERFUNC_EXIT
 }
 
-VOID update_list()
+/*********************************************************************************************/
+
+AROS_UFH3(APTR, construct_func,
+    AROS_UFHA(struct Hook *     , h,    A0),
+    AROS_UFHA(APTR              , pool, A2),
+    AROS_UFHA(struct ListEntry *, msg,  A1))
 {
-  /* Detach List from Gadget */
-  GT_SetGadgetAttrs ( screenlistg, Window, NULL,
-      GTLV_Labels, (IPTR)~0,
-      TAG_DONE );
+    AROS_USERFUNC_INIT
 
-  /* Recalculate List */
-  freelvnodes( &lv_list );
-  initlvnodes( &lv_list );
+    struct ListEntry *new = AllocPooled(pool, sizeof(*msg));
+    if (new)
+	*new = *msg;
 
-  /* Attach List to Gadget */
-  GT_SetGadgetAttrs ( screenlistg, Window, NULL,
-      GTLV_Labels,	(IPTR)&lv_list,
-      GTLV_Selected,	(IPTR)~0,
-      TAG_DONE );
-  update_actionglist();
-  GT_RefreshWindow ( Window, NULL );
+    return new;
 
-return;
+    AROS_USERFUNC_EXIT
 }
 
-struct Gadget *gt_init()
+/*********************************************************************************************/
+
+AROS_UFH3(void, destruct_func,
+    AROS_UFHA(struct Hook *     , h,    A0),
+    AROS_UFHA(APTR              , pool, A2),
+    AROS_UFHA(struct ListEntry *, msg,  A1))
 {
-    struct Gadget *gad = NULL;
-    
-    Screen = LockPubScreen ( NULL );
-    vi = GetVisualInfoA ( Screen, NULL );
-    if ( vi != NULL )
-	gad = CreateContext ( &glist );
-	
-    return gad;
+    AROS_USERFUNC_INIT
+
+    FreePooled(pool, msg, sizeof(*msg));
+
+    AROS_USERFUNC_EXIT
 }
 
-IPTR getsw(int *type)
+/*********************************************************************************************/
+
+AROS_UFH3(void, update_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
 {
-IPTR gadget;
-IPTR xptr = 0;
-struct Screen *scr;
-struct Window *win = NULL;
+    AROS_USERFUNC_INIT
 
-  GT_GetGadgetAttrs ( screenlistg, Window, NULL,
-      GTLV_Selected, (IPTR)&gadget,
-      TAG_DONE );
-  if ( gadget != -1 )
-  {
-  struct Node *xnode;
-  char *xnodename;
+    struct Screen *scr;
+    struct Window *win;
+    struct ListEntry entry;
 
-    xnode = (struct Node *) GetHead ( &lv_list );
-    for ( ; gadget > 0 ; gadget-- )
-    {
-      xnode = GetSucc ( xnode );
-    }
-    xnodename = GetNodeName ( xnode );
-    switch ( xnodename[2] )
-    {
-      case 'r' : /* "Screen:" */
-	  *type = Screen_type;
-	  xptr = (IPTR) strtol ( &(xnodename[12]), NULL, 16 );
-	  break;
-      case 'W' : /* "  Window:" */
-	  *type = Window_type;
-	  xptr = (IPTR) strtol ( &(xnodename[12]), NULL, 16 );
-	  break;
-      default:
-	  break;
-    }
+    set(list_gad, MUIA_List_Quiet, TRUE);
+    DoMethod(list_gad, MUIM_List_Clear);
+
+    /* Get Intuition's first Screen */
     lock = LockIBase ( 0 );
     scr = IntuitionBase->FirstScreen;
     UnlockIBase ( lock );
+
     /* Traverse through all Screens */
-    while ( scr && scr != (struct Screen *)xptr )
+    while ( scr )
     {
-      /* Traverse through all Windows of current Screen */
-      win = scr->FirstWindow;
-      while ( win && win != (struct Window *)xptr )
-      {
-	win = win->NextWindow;
-      }
-      scr = scr->NextScreen;
+	entry.type = Screen_type;
+	entry.aptr = scr;
+	sprintf(entry.address, "%p", scr);
+	sprintf(entry.size, "%d x %d", scr->Width, scr->Height);
+	sprintf(entry.pos, "%d x %d", scr->LeftEdge, scr->TopEdge);
+	snprintf(entry.title, sizeof(entry.title) - 1, "%s", scr->Title);
+	DoMethod(list_gad, MUIM_List_InsertSingle, &entry, MUIV_List_Insert_Bottom);
+
+	/* Traverse through all Windows of current Screen */
+	win = scr->FirstWindow;
+	while ( win )
+	{
+	    entry.type = Window_type;
+	    entry.aptr = win;
+	    sprintf(entry.address, "%p", win);
+	    sprintf(entry.size, "%d x %d", win->Width, win->Height);
+	    sprintf(entry.pos, "%d x %d", win->LeftEdge, win->TopEdge);
+	    snprintf(entry.title, sizeof(entry.title) - 1, "%s", win->Title);
+#if 0
+	    (IsWindowVisible(win)?' ':'H'),
+		(IS_CHILD(win)?'C':' '),
+		(HAS_CHILDREN(win)?'P':' '),
+		(IS_CHILD(win)?' ':0),
+		win->parent,
+#endif
+		DoMethod(list_gad, MUIM_List_InsertSingle, &entry, MUIV_List_Insert_Bottom);
+
+	    win = win->NextWindow;
+	}
+	scr = scr->NextScreen;
     }
-    if ( ( win == (struct Window *)xptr && *type == Window_type )
-      || ( scr == (struct Screen *)xptr && *type == Screen_type ) )
-    {
-      return xptr;
-    }
-    else
-    {
-      update_list();
-      *type = None_type;
-      return 0;
-    }
-  }
-  else
-  {
-    *type = None_type;
-    return 0;
-  }
+    set(list_gad, MUIA_List_Quiet, FALSE);
+
+    AROS_USERFUNC_EXIT
 }
 
-VOID update_actionglist()
+/*********************************************************************************************/
+
+AROS_UFH3(void, close_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
 {
-struct Gadget *gad;
-int i, type, max;
+    AROS_USERFUNC_INIT
 
-  getsw ( &type );
-  gad = actiong;
-
-  if ( type == Screen_type )
-  {
-    max = ACTIONGLENS;
-  }
-  else if ( type == None_type )
-  {
-    max = ACTIONGLENW;
-  }
-  else
-  {
-    max = 0;
-  }
-  for ( i = ACTIONGLENW ; i > 0 ; i-- )
-  {
-    if ( i > max )
+    struct Screen *scr;
+    struct Window *win;
+    switch (get_selected(&scr, &win))
     {
-      OnGadget ( gad, Window, NULL );
-      OnMenu ( Window, actionmenu[i-1] );
+	case Screen_type :
+	    if (MUI_Request(app, wnd, 0, TITLE_TXT,  YESNO_TXT, CLOSESCREEN_TXT))
+	    {
+		CloseScreen(scr);
+	    }
+	    break;
+	case Window_type :
+	    if (MUI_Request(app, wnd, 0, TITLE_TXT,  YESNO_TXT, CLOSEWINDOW_TXT))
+	    {
+		CloseWindow(win);
+	    }
+	    break;
     }
-    else
-    {
-      OffGadget ( gad, Window, NULL );
-      OffMenu ( Window, actionmenu[i-1] );
-    }
-    gad = gad->NextGadget;
-  }
-  if ( type == None_type )
-  {
-    OffMenu ( Window, FULLMENUNUM ( 1, 11, NOSUB ) );
-  }
-  else
-  {
-    OnMenu ( Window, FULLMENUNUM ( 1, 11, NOSUB ) );
-  }
 
-return;
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
 }
 
-VOID makemenus()
-{
-    menus = CreateMenusA ( nm, NULL );
-    LayoutMenusA ( menus, vi, NULL );
-    SetMenuStrip ( Window, menus );
+/*********************************************************************************************/
 
-return;
+AROS_UFH3(void, front_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+    struct Screen *scr;
+    struct Window *win;
+    switch (get_selected(&scr, &win))
+    {
+	case Screen_type:
+	    ScreenToFront(scr);
+	    break;
+	case Window_type:
+	    WindowToFront(win);
+	    break;
+    }
+
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
 }
 
-struct Gadget *makegadgets(struct Gadget *gad)
-{
-int i;
-int topborder, leftborder;
-struct TextAttr fixedfontattr;
-struct NewGadget *buttons[] =
-{
-  &updategad,
-  &rescuegad,
-  &showallgad,
-  &rethinkgad,
-  &aboutgad,
-  &killgad,
-  &frontgad,
-  &backgad,
-  &origingad,
-  &activategad,
-  &zipgad,
-  &hidegad,
-  &showgad
-};
-#define BUTTONALEN	6
-#define BUTTONBLEN	7
-#define BUTTONLEN	( BUTTONALEN + BUTTONBLEN )
+/*********************************************************************************************/
 
-  topborder = Window->WScreen->WBorTop + Window->WScreen->Font->ta_YSize + 1;
-  leftborder = Window->WScreen->WBorLeft;
-  AskFont ( Window->RPort, &fixedfontattr );
-  listviewgad.ng_TextAttr = &fixedfontattr;
-  listviewgad.ng_VisualInfo = vi;
-  listviewgad.ng_LeftEdge += leftborder;
-  listviewgad.ng_TopEdge += topborder + Window->WScreen->Font->ta_YSize + 1;
-  listviewgad.ng_Height -= Window->WScreen->Font->ta_YSize + 1;
-  for ( i = 0 ; i < BUTTONLEN ; i++ )
-  {
-    buttons[i]->ng_VisualInfo = vi;
-    buttons[i]->ng_LeftEdge += leftborder;
-    buttons[i]->ng_TopEdge += topborder;
-  }
+AROS_UFH3(void, back_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+    struct Screen *scr;
+    struct Window *win;
+    switch (get_selected(&scr, &win))
+    {
+	case Screen_type:
+	    ScreenToBack(scr);
+	    break;
+	case Window_type:
+	    WindowToBack(win);
+	    break;
+    }
+
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, origin_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
     
-  freelvnodes( &lv_list );
-  initlvnodes ( &lv_list );
-  gad = CreateGadget ( LISTVIEW_KIND, gad, &listviewgad,
-		GTLV_Labels,		(IPTR)&lv_list,
-		GTLV_ShowSelected,	(IPTR)NULL,
-		GTLV_ReadOnly,		FALSE,
-		TAG_DONE );
-  screenlistg = gad;
-
-  for ( i = 0 ; i < BUTTONALEN ; i++ )
-  {
-    gad = CreateGadget ( BUTTON_KIND, gad, buttons[i],
-		TAG_DONE );
-  }
-  actiong = gad;
-
-  for ( ; i < BUTTONLEN ; i++ )
-  {
-    gad = CreateGadget ( BUTTON_KIND, gad, buttons[i],
-		TAG_DONE );
-  }
-
-  if ( gad == NULL )
-  {
-    FreeGadgets ( glist );
-    printf ( "GTDemo: Error creating gadgets\n" );
-  }
-
-return gad;
-}
-
-VOID open_window()
-{
-  Window = OpenWindowTags ( NULL
-	, WA_Title,	    (Tag)TITLE_TXT
-	, WA_Left,	    0
-	, WA_Top,	    0
-	, WA_InnerWidth,    580
-	, WA_InnerHeight,   180
-	, WA_IDCMP,	    IDCMP_REFRESHWINDOW
-			    | IDCMP_MOUSEBUTTONS
-			    | IDCMP_GADGETUP
-			    | IDCMP_MENUPICK
-			    | IDCMP_CLOSEWINDOW
-			    | LISTVIEWIDCMP
-			    | BUTTONIDCMP
-	, WA_Flags,	    WFLG_DRAGBAR
-			    | WFLG_DEPTHGADGET
-			    | WFLG_CLOSEGADGET
-			    | WFLG_NOCAREREFRESH
-			    | WFLG_SMART_REFRESH
-			    | WFLG_ACTIVATE
-	, WA_SimpleRefresh, TRUE
-	, TAG_END
-    );
-    w_sigbit = 1 << Window->UserPort->mp_SigBit;
-
-return;
-}
-
-VOID close_window()
-{
-  ClearMenuStrip ( Window );
-  FreeMenus ( menus );
-  CloseWindow ( Window );
-  freelvnodes ( &lv_list );
-  FreeGadgets ( glist );
-  FreeVisualInfo ( vi );
-  UnlockPubScreen ( NULL, Screen );
-
-return;
-}
-
-VOID open_infowindow()
-{
-struct TextAttr fixedfontattr;
-struct Gadget *gad = NULL;
-int topborder, leftborder;
-#define ID_SWINFO 30
-struct NewGadget swinfogad =
-{
-    10, 5, 561, 220,
-    "Info", NULL,
-    ID_SWINFO, PLACETEXT_ABOVE, NULL, NULL
-};
-
-  InfoWindow = OpenWindowTags ( NULL
-	, WA_Title,		(Tag)INFOTITLE_TXT
-	, WA_Left,		0
-	, WA_Top,		0
-	, WA_InnerWidth,	580
-	, WA_InnerHeight,	250
-	, WA_IDCMP,		IDCMP_CLOSEWINDOW | LISTVIEWIDCMP
-	, WA_Flags,		WFLG_DRAGBAR
-				| WFLG_DEPTHGADGET
-				| WFLG_CLOSEGADGET
-				| WFLG_ACTIVATE
-	, TAG_END
-  );
-  iw_sigbit = 1 << InfoWindow->UserPort->mp_SigBit;
-  iw_rp = InfoWindow->RPort;
-
-  topborder = InfoWindow->WScreen->WBorTop + InfoWindow->WScreen->Font->ta_YSize + 1;
-  leftborder = InfoWindow->WScreen->WBorLeft;
-  AskFont ( InfoWindow->RPort, &fixedfontattr );
-  swinfogad.ng_TextAttr = &fixedfontattr;
-  swinfogad.ng_VisualInfo = vi;
-  swinfogad.ng_LeftEdge += leftborder;
-  swinfogad.ng_TopEdge += topborder + InfoWindow->WScreen->Font->ta_YSize + 1;
-  swinfogad.ng_Height -= InfoWindow->WScreen->Font->ta_YSize + 1;
-  
-  gad = CreateContext ( &igads );
-  gad = CreateGadget ( LISTVIEW_KIND, igads, &swinfogad,
-		GTLV_Labels,		(IPTR)&lv_infolist,
-		GTLV_ShowSelected,	(IPTR)NULL,
-		GTLV_ReadOnly,		FALSE,
-		TAG_DONE );
-
-  AddGList ( InfoWindow, igads, 0, -1, NULL );
-  RefreshGList ( igads, InfoWindow, NULL, -1 );
-
-return;
-}
-
-VOID close_infowindow()
-{
-  if ( InfoWindow != NULL)
-  {
-    freelvnodes ( &lv_infolist );
-    FreeGadgets ( igads );
-    CloseWindow ( InfoWindow );
-    InfoWindow = NULL;
-    iw_sigbit = 0L;
-  }
-
-return;
-}
-
-#define APPENDLIST()							\
-    string = StrDup ( tmp );						\
-    node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );\
-    AddTail ( &lv_infolist, node );					\
-    SetNodeName ( node, string );
-
-VOID WindowInfo( struct Window *win )
-{
-char tmp[1024];
-struct Node *node;
-char *string;
-
-  if ( InfoWindow != NULL )
-  {
-    /* Detach List from Gadget */
-    GT_SetGadgetAttrs ( igads, InfoWindow, NULL,
-	GTLV_Labels, (IPTR)~0,
-	TAG_DONE);
-  }
-
-  freelvnodes ( &lv_infolist );
-
-  sprintf ( tmp, "NextWindow    = %p", win->NextWindow );	APPENDLIST();
-  sprintf ( tmp, "LeftEdge      = %d", win->LeftEdge );		APPENDLIST();
-  sprintf ( tmp, "TopEdge       = %d", win->TopEdge );		APPENDLIST();
-  sprintf ( tmp, "Width         = %d", win->Width );		APPENDLIST();
-  sprintf ( tmp, "Height        = %d", win->Height );		APPENDLIST();
-  sprintf ( tmp, "MinWidth      = %d", win->MinWidth );		APPENDLIST();
-  sprintf ( tmp, "MinHeight     = %d", win->MinHeight );	APPENDLIST();
-  sprintf ( tmp, "MaxWidth      = %d", win->MaxWidth );		APPENDLIST();
-  sprintf ( tmp, "MaxHeight     = %d", win->MaxHeight );	APPENDLIST();
-  sprintf ( tmp, "Flags         = 0x%08lx", win->Flags );	APPENDLIST();
-  sprintf ( tmp, "IDCMPFlags    = 0x%08lx", win->IDCMPFlags );	APPENDLIST();
-  sprintf ( tmp, "Title         = \"%s\"", win->Title );	APPENDLIST();
-  sprintf ( tmp, "ReqCount      = %d", win->ReqCount );		APPENDLIST();
-  sprintf ( tmp, "WScreen       = %p \"%s\"", win->WScreen,
-				win->WScreen->Title );		APPENDLIST();
-  sprintf ( tmp, "BorderLeft    = %d", win->BorderLeft );	APPENDLIST();
-  sprintf ( tmp, "BorderTop     = %d", win->BorderTop );	APPENDLIST();
-  sprintf ( tmp, "BorderRight   = %d", win->BorderRight );	APPENDLIST();
-  sprintf ( tmp, "BorderBottom  = %d", win->BorderBottom );	APPENDLIST();
-  if ( IS_CHILD ( win ) )
-  {
-    sprintf ( tmp, "Parent Win  = %p", win->parent );		APPENDLIST();
-  }
-  if ( HAS_CHILDREN ( win ) )
-  {
-    sprintf ( tmp, "First Child = %p", win->firstchild );	APPENDLIST();
-  }
-  sprintf ( tmp, "Parent        = %p", win->Parent );		APPENDLIST();
-  sprintf ( tmp, "Descendant    = %p", win->Descendant );	APPENDLIST();
-
-  if ( InfoWindow == NULL )
-  {
-    open_infowindow();
-  }
-  else
-  {
-    /* Attach List to Gadget */
-    GT_SetGadgetAttrs ( igads, InfoWindow, NULL,
-	GTLV_Labels,	(IPTR)&lv_infolist,
-	GTLV_Selected,	(IPTR)~0,
-	TAG_DONE );
-
-    GT_RefreshWindow ( InfoWindow, NULL );
-  }
-
-return;
-}
-
-VOID ScreenInfo( struct Screen *scr )
-{
-char tmp[1024];
-struct Node *node;
-char *string;
-
-  if ( InfoWindow != NULL )
-  {
-    /* Detach List from Gadget */
-    GT_SetGadgetAttrs ( igads, InfoWindow, NULL,
-	GTLV_Labels, (IPTR)~0,
-	TAG_DONE );
-  }
-
-  freelvnodes ( &lv_infolist );
-
-  sprintf ( tmp, "Screen: %p \"%s\"", scr,scr->Title );		APPENDLIST();
-  sprintf ( tmp, "LeftEdge     = %d", scr->LeftEdge );		APPENDLIST();
-  sprintf ( tmp, "TopEdge      = %d", scr->TopEdge );		APPENDLIST();
-  sprintf ( tmp, "Width        = %d", scr->Width );		APPENDLIST();
-  sprintf ( tmp, "Height       = %d", scr->Height );		APPENDLIST();
-  sprintf ( tmp, "Flags        = 0x%08x", scr->Flags );		APPENDLIST();
-  sprintf ( tmp, "Title        = \"%s\"", scr->Title );		APPENDLIST();
-  sprintf ( tmp, "DefaultTitle = \"%s\"", scr->DefaultTitle );	APPENDLIST();
-  sprintf ( tmp, "FirstWindow  = %p", scr->FirstWindow );	APPENDLIST();
-
-  if ( InfoWindow == NULL )
-  {
-    open_infowindow();
-  }
-  else
-  {
-    /* Attach List to Gadget */
-    GT_SetGadgetAttrs ( igads, InfoWindow, NULL,
-	GTLV_Labels,	(IPTR)&lv_infolist,
-	GTLV_Selected,	(IPTR)~0,
-	TAG_DONE );
-
-    GT_RefreshWindow ( InfoWindow, NULL );
-  }
-
-return;
-}
-
-VOID rescue_all()
-{
-struct Screen *scr;
-struct Window *win;
-WORD width, height;
-
-  /* Get Intuition's first Screen */
-  lock = LockIBase ( 0 );
-  scr = IntuitionBase->FirstScreen;
-  UnlockIBase ( lock );
-
-  /* Traverse through all Screens */
-  while ( scr )
-  {
-    win = scr->FirstWindow;
-    /* Traverse through all Windows of current Screen */
-    while ( win )
+    struct Screen *scr;
+    struct Window *win;
+    switch (get_selected(&scr, &win))
     {
-      /* Move Window onto the Screen if outside */
-      if ( win->parent == NULL )
-      {
-	width = scr->Width;
-	height = scr->Height;
-      }
-      else
-      {
-	width = win->parent->Width;
-	height = win->parent->Height;
-      }
-      /* TODO:	calculate reasonable values:
-		eg. this way only the Close Gadget my be visible :-( */
-      if ( win->RelLeftEdge < 0
-	|| win->RelTopEdge  <= -(win->BorderTop)
-	|| win->RelLeftEdge > width
-	|| win->RelTopEdge  >= (height - win->BorderTop) )
-      {
-	MoveWindow ( win, - win->RelLeftEdge, - win->RelTopEdge );
-      }
-      win = win->NextWindow;
+	case Screen_type :
+	    MoveScreen ( scr, -scr->LeftEdge, -scr->TopEdge );
+	    break;
+	case Window_type :
+	    MoveWindow ( win, -win->RelLeftEdge, -win->RelTopEdge );
+	    break;
     }
-    scr = scr->NextScreen;
-  }
 
-return;
+    Delay(5);
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
 }
 
-VOID show_all()
+/*********************************************************************************************/
+
+AROS_UFH3(void, activate_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
 {
-struct Screen *scr;
-struct Window *win;
+    AROS_USERFUNC_INIT
 
-  /* Get Intuition's first Screen */
-  lock = LockIBase ( 0 );
-  scr = IntuitionBase->FirstScreen;
-  UnlockIBase ( lock );
-
-  /* Traverse through all Screens */
-  while ( scr )
-  {
-    win = scr->FirstWindow;
-    /* Traverse through all Windows of current Screen */
-    while ( win )
+    struct Screen *scr;
+    struct Window *win;
+    if (get_selected(&scr, &win) == Window_type )
     {
-      /* Show Window if hidden */
-      if ( IsWindowVisible ( win ) != TRUE )
-      {
+	ActivateWindow ( win );
+    }
+
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, hide_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+    
+    struct Screen *scr;
+    struct Window *win;
+    if (get_selected(&scr, &win) == Window_type)
+    {
+	if ((struct Window*)XGET(wnd, MUIA_Window_Window) != win) // You can't hide WiMP
+	{
+	    HideWindow ( win );
+	}
+    }
+
+    Delay(5);
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, show_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+    
+    struct Screen *scr;
+    struct Window *win;
+    if (get_selected(&scr, &win) == Window_type)
+    {
 	ShowWindow ( win );
-      }
-      win = win->NextWindow;
     }
-    scr = scr->NextScreen;
-  }
 
-return;
+    Delay(5);
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
 }
 
-int main()
+/*********************************************************************************************/
+
+AROS_UFH3(void, zip_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
 {
-struct Gadget *gad;
-struct IntuiMessage *msg = NULL;
-struct MenuItem *item;
-struct EasyStruct es;
-ULONG class;
-UWORD code;
-ULONG port;
-IPTR object;
-int type;
-int quit = 0;
-ULONG sec1, sec2, msec1, msec2, sel1, sel2;
-
-  open_window();
-
-  NewList ( &lv_list );
-  NewList ( &lv_infolist );
-
-  CurrentTime ( &sec1, &msec1 );
-  sel1 = -1;
-
-  gad = gt_init();
-  gad = makegadgets ( gad );
-  AddGList ( Window, glist, 0, -1, NULL );
-  RefreshGList ( glist, Window, NULL, -1 );
-
-  makemenus();
-  
-  update_actionglist();
-
-  es.es_StructSize = sizeof ( es );
-  es.es_Flags	= 0;
-  es.es_Title	= TITLE_TXT;
-
-  while ( quit == 0 )
-  {
-    port = Wait ( w_sigbit | iw_sigbit | SIGBREAKF_CTRL_C );
-
-    if ( (port & SIGBREAKF_CTRL_C) )
-     quit = 1;
-
-    if ( ( port & iw_sigbit ) != 0L )
+    AROS_USERFUNC_INIT
+    
+    struct Screen *scr;
+    struct Window *win;
+    if (get_selected(&scr, &win) == Window_type)
     {
-      BOOL close_iw = FALSE;
-      
-      while((msg = GT_GetIMsg ( InfoWindow->UserPort )))
-      {
-	class = msg->Class;
-	code = msg->Code;
-	if ( class == IDCMP_CLOSEWINDOW )
+	ZipWindow ( win );
+    }
+
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, showall_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct Screen *scr;
+    struct Window *win;
+
+    /* Get Intuition's first Screen */
+    lock = LockIBase ( 0 );
+    scr = IntuitionBase->FirstScreen;
+    UnlockIBase ( lock );
+
+    /* Traverse through all Screens */
+    while ( scr )
+    {
+	win = scr->FirstWindow;
+	/* Traverse through all Windows of current Screen */
+	while ( win )
 	{
-	  close_iw = TRUE;
+	    /* Show Window if hidden */
+	    if ( IsWindowVisible ( win ) != TRUE )
+	    {
+		ShowWindow ( win );
+	    }
+	    win = win->NextWindow;
 	}
-	GT_ReplyIMsg((struct Message *)msg);
-      }
-      
-      if (close_iw) close_infowindow();
+	scr = scr->NextScreen;
     }
     
-    if ( ( port & w_sigbit ) != 0L )
+    Delay(5);
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, rescue_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct Screen *scr;
+    struct Window *win;
+    WORD width, height;
+
+    /* Get Intuition's first Screen */
+    lock = LockIBase ( 0 );
+    scr = IntuitionBase->FirstScreen;
+    UnlockIBase ( lock );
+
+    /* Traverse through all Screens */
+    while ( scr )
     {
-      while((msg = GT_GetIMsg ( Window->UserPort )))
-      {
-	class = msg->Class;
-	code = msg->Code;
-	switch ( class )
+	win = scr->FirstWindow;
+	/* Traverse through all Windows of current Screen */
+	while ( win )
 	{
-	  case IDCMP_CLOSEWINDOW :
-		  quit = 1;
-		  break;
-
-	  case IDCMP_MENUPICK :
-		  while ( code != MENUNULL )
-		  {
-  //		  printf ( "Menu: %d %d %d\n", MENUNUM(code), ITEMNUM(code), SUBNUM(code) );
-		    switch ( MENUNUM ( code ) )
-		    {
-		      case 0: /* Project */
-			  switch ( ITEMNUM ( code ) )
-			  {
-			    case 0: /* About */
-				  es.es_TextFormat = ABOUT_TXT;
-				  es.es_GadgetFormat = CONTINUE_TXT;
-				  ClearIDCMP();
-				  EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-				  ResetIDCMP();
-				  break;
-			    case 2: /* Quit */
-				  quit = 1;
-				  break;
-			  }
-			  break;
-		      case 1: /* Window List */
-			  object = getsw ( &type );
-			  switch ( ITEMNUM ( code ) )
-			  {
-			    case 0: /* Update List */
-				  /* Update will be done after this switch() */
-				  break;
-			    case 2: /* Kill */
-				  if ( type == Screen_type || type == Window_type )
-				  {
-				  int killit;
-				    switch ( type )
-				    {
-				      case Screen_type :
-					  es.es_TextFormat = CLOSESCREEN_TXT;
-					  es.es_GadgetFormat = YESNO_TXT;
-					  ClearIDCMP();
-					  killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-					  ResetIDCMP();
-					  if ( killit == EASYTRUE )
-					  {
-					    CloseScreen ( (struct Screen *)object );
-					  }
-					  break;
-				      case Window_type :
-					  es.es_TextFormat = CLOSEWINDOW_TXT;
-					  es.es_GadgetFormat = YESNO_TXT;
-					  ClearIDCMP();
-					  killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-					  ResetIDCMP();
-					  if ( killit == EASYTRUE )
-					  {
-					    CloseWindow ( (struct Window *)object );
-					  }
-					  break;
-				      default:
-					  break;
-				    }
-				  }
-				  break;
-			    case 3: /* To Front */
-				  if ( type == Screen_type || type == Window_type )
-				  {
-				    switch ( type )
-				    {
-				      case Screen_type :
-					  ScreenToFront ( (struct Screen *)object );
-					  break;
-				      case Window_type :
-					  WindowToFront ( (struct Window *) object );
-					  break;
-				      default:
-					  break;
-				    }
-				  }
-				  break;
-			    case 4: /* To Back */
-				  if ( type == Screen_type || type == Window_type )
-				  {
-				    switch ( type )
-				    {
-				      case Screen_type :
-					  ScreenToBack ( (struct Screen *)object );
-					  break;
-				      case Window_type :
-					  WindowToBack ( (struct Window *) object );
-					  break;
-				      default:
-					  break;
-				    }
-				  }
-				  break;
-			    case 5: /* To Origin */
-				  if ( type == Screen_type || type == Window_type )
-				  {
-				    switch ( type )
-				    {
-				      case Screen_type :
-					  MoveScreen ( (struct Screen *)object,
-						  -((struct Screen *)object)->LeftEdge,
-						  -((struct Screen *)object)->TopEdge );
-					  break;
-				      case Window_type :
-					  MoveWindow ( (struct Window *)object,
-						  -((struct Window *)object)->RelLeftEdge,
-						  -((struct Window *)object)->RelTopEdge );
-					  break;
-				      default:
-					  break;
-				    }
-				    Delay ( 5 );
-				  }
-				  break;
-			    case 6: /* Activate */
-				  if ( type == Window_type )
-				  {
-				    ActivateWindow ( (struct Window *)object );
-				  }
-				  break;
-			    case 7: /* Zip */
-				  if ( type == Window_type )
-				  {
-				    ZipWindow ( (struct Window *)object );
-				  }
-				  break;
-			    case 8: /* Hide */
-				  if ( type == Window_type )
-				  {
-				    if ( (struct Window *)object == Window )
-				    {
-				      /* TODO: Iconify WiMP */
-				    }
-				    else
-				    {
-				      HideWindow ( (struct Window *)object );
-				    }
-				  }
-				  Delay ( 5 );
-				  break;
-			    case 9: /* Show */
-				  if ( type == Window_type )
-				  {
-				    ShowWindow ( (struct Window *)object );
-				  }
-				  Delay ( 5 );
-				  break;
-			    case 11: /* Info */
-				  if ( type == Window_type )
-				  {
-				    WindowInfo ( (struct Window *)object );
-				  }
-				  else if ( type == Screen_type )
-				  {
-				    ScreenInfo ( (struct Screen *)object );
-				  }
-				  break;
-			  }
-			  update_list();
-			  break;
-		      case 2: /* Generic */
-			  switch ( ITEMNUM ( code ) )
-			  {
-			    case 0: /* Rescue All */
-				  rescue_all();
-				  Delay ( 5 );
-				  update_list();
-				  break;
-
-			    case 1: /* Show All */
-				  show_all();
-				  Delay ( 5 );
-				  update_list();
-				  break;
-
-			    case 2: /* RethinkDisplay */
-				  RethinkDisplay();
-				  update_list();
-				  break;
-
-			    default:
-				  break;
-			  }
-			  break;
-		      default:
-			  break;
-		    }
-		    if ( (item = ItemAddress ( menus, code ) ) != NULL )
-		    {
-		      code = item->NextSelect;
-		    }
-		    else
-		    {
-		      code = MENUNULL;
-		    }
-		  }
-
-		  break;
-
-	  case IDCMP_GADGETUP :
-		  switch ( ((struct Gadget *)(msg->IAddress))->GadgetID )
-		  {
-		    case ID_UPDATE:
-			  update_list();
-			  break;
-
-		    case ID_ABOUT:
-			  es.es_TextFormat = ABOUT_TXT;
-			  es.es_GadgetFormat = CONTINUE_TXT;
-			  ClearIDCMP();
-			  EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-			  ResetIDCMP();
-			  break;
-
-		    case ID_RETHINK:
-			  RethinkDisplay();
-			  update_list();
-			  break;
-
-		    case ID_SHOW:
-			  object = getsw ( &type );
-			  if ( type == Window_type )
-			  {
-			    ShowWindow ( (struct Window *)object );
-			  }
-			  Delay ( 5 );
-			  update_list();
-			  break;
-
-		    case ID_HIDE:
-			  object = getsw ( &type );
-			  if ( type == Window_type )
-			  {
-			    if ( (struct Window *)object == Window )
-			    {
-			      /* TODO: Iconify WiMP */
-			    }
-			    else
-			    {
-			      HideWindow ( (struct Window *)object );
-			    }
-			  }
-			  Delay ( 5 );
-			  update_list();
-			  break;
-
-		    case ID_ZIP:
-			  object = getsw ( &type );
-			  if ( type == Window_type )
-			  {
-			    ZipWindow ( (struct Window *)object );
-			  }
-			  update_list();
-			  break;
-
-		    case ID_ACTIVATE:
-			  object = getsw ( &type );
-			  if ( type == Window_type )
-			  {
-			    ActivateWindow ( (struct Window *)object );
-			  }
-			  update_list();
-			  break;
-
-		    case ID_FRONT:
-			  object = getsw ( &type );
-			  if ( type == Screen_type || type == Window_type )
-			  {
-			    switch ( type )
-			    {
-			      case Screen_type :
-				  ScreenToFront ( (struct Screen *)object );
-				  break;
-			      case Window_type :
-				  WindowToFront ( (struct Window *)object );
-				  break;
-			      default:
-				  break;
-			    }
-			  }
-			  update_list();
-			  break;
-
-		    case ID_BACK:
-			  object = getsw ( &type );
-			  if ( type == Screen_type || type == Window_type )
-			  {
-			    switch ( type )
-			    {
-			      case Screen_type :
-				  ScreenToBack ( (struct Screen *)object );
-				  break;
-			      case Window_type :
-				  WindowToBack ( (struct Window *)object );
-				  break;
-			      default:
-				  break;
-			    }
-			  }
-			  update_list();
-			  break;
-
-		    case ID_ORIGIN:
-			  object = getsw ( &type );
-			  if ( type == Screen_type || type == Window_type )
-			  {
-			    switch ( type )
-			    {
-			      case Screen_type :
-				  MoveScreen ( (struct Screen *)object,
-					  -((struct Screen *)object)->LeftEdge,
-					  -((struct Screen *)object)->TopEdge );
-				  break;
-			      case Window_type :
-				  MoveWindow ( (struct Window *)object,
-					  -((struct Window *)object)->RelLeftEdge,
-					  -((struct Window *)object)->RelTopEdge );
-				  break;
-			      default:
-				  break;
-			    }
-			    Delay ( 5 );
-			  }
-			  update_list();
-			  break;
-
-		    case ID_KILL:
-			  object = getsw ( &type );
-			  if ( type == Screen_type || type == Window_type )
-			  {
-			  int killit;
-			    switch ( type )
-			    {
-			      case Screen_type :
-				  es.es_TextFormat = CLOSESCREEN_TXT;
-				  es.es_GadgetFormat = YESNO_TXT;
-				  ClearIDCMP();
-				  killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-				  ResetIDCMP();
-				  if ( killit == EASYTRUE )
-				  {
-				    CloseScreen ( (struct Screen *)object );
-				  }
-				  break;
-			      case Window_type :
-				  es.es_TextFormat = CLOSEWINDOW_TXT;
-				  es.es_GadgetFormat = YESNO_TXT;
-				  ClearIDCMP();
-				  killit = EasyRequest ( Window, &es, NULL, (IPTR) NULL, (IPTR) NULL );
-				  ResetIDCMP();
-				  if ( killit == EASYTRUE )
-				  {
-				    CloseWindow ( (struct Window *)object );
-				  }
-				  break;
-			      default:
-				  break;
-			    }
-			  }
-			  update_list();
-			  break;
-
-		    case ID_RESCUE:
-			  rescue_all();
-			  Delay(5);
-			  update_list();
-			  break;
-
-		    case ID_SHOWALL:
-			  show_all();
-			  Delay(5);
-			  update_list();
-			  break;
-
-		    case ID_LISTVIEW:
-			  CurrentTime( &sec2, &msec2 );
-			  GT_GetGadgetAttrs ( screenlistg,Window,NULL,
-      					  GTLV_Selected, (IPTR)&sel2,
-      					  TAG_DONE );
-			  if ( sel1 == sel2
-			       && DoubleClick ( sec1, msec1, sec2, msec2 )
-      			     )
-      			  {
-			    object = getsw ( &type );
-			    if ( type == Window_type )
-			    {
-			      WindowInfo ( (struct Window *)object );
-			    }
-			    else if ( type == Screen_type )
-			    {
-			      ScreenInfo ( (struct Screen *)object );
-			    }
-      			  }
-      			  sec1 = sec2;
-      			  msec1 = msec2;
-      			  sel1 = sel2;
-			  update_actionglist();
-			  break;
-
-		    default:
-			  break;
-		  }
-		  break;
-
-	  default :
-		  break;
+	    /* Move Window onto the Screen if outside */
+	    if ( win->parent == NULL )
+	    {
+		width = scr->Width;
+		height = scr->Height;
+	    }
+	    else
+	    {
+		width = win->parent->Width;
+		height = win->parent->Height;
+	    }
+	    /* TODO:	calculate reasonable values:
+	       eg. this way only the Close Gadget my be visible :-( */
+	    if ( win->RelLeftEdge < 0
+		    || win->RelTopEdge  <= -(win->BorderTop)
+		    || win->RelLeftEdge > width
+		    || win->RelTopEdge  >= (height - win->BorderTop) )
+	    {
+		MoveWindow ( win, - win->RelLeftEdge, - win->RelTopEdge );
+	    }
+	    win = win->NextWindow;
 	}
-      	GT_ReplyIMsg( (struct Message *)msg );
-	
-      } /* while((msg = GT_GetIMsg ( Window->UserPort ))) */
-      
-    } /* if ( ( port & w_sigbit ) != 0L ) */
-    
-  } /* while ( quit == 0 ) */
+	scr = scr->NextScreen;
+    }
 
-  close_infowindow();
-  close_window();
-  return ( 0 );
+    Delay(5);
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, rethink_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    RethinkDisplay();
+    CallHookPkt(&update_hook, 0, 0);
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, about_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    MUI_Request(app, wnd, 0, TITLE_TXT, CONTINUE_TXT, ABOUT_TXT);
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, update_info_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT;
+
+    static TEXT buffer[50];
+    struct ListEntry *le;
+    struct Window *win;
+    struct Screen *scr;
+
+    if (XGET(info_wnd, MUIA_Window_Open) == FALSE)
+	return;
+
+    set(info_scr_addr_gad, MUIA_Text_Contents, NULL);
+    set(info_scr_leftedge_gad, MUIA_Text_Contents, NULL);
+    set(info_scr_topedge_gad, MUIA_Text_Contents, NULL);
+    set(info_scr_width_gad, MUIA_Text_Contents, NULL);
+    set(info_scr_height_gad, MUIA_Text_Contents, NULL);
+    set(info_scr_flags_gad, MUIA_Text_Contents, NULL);
+    set(info_scr_title_gad, MUIA_Text_Contents, NULL);
+    set(info_scr_deftitle_gad, MUIA_Text_Contents, NULL);
+    set(info_scr_firstwindow_gad, MUIA_Text_Contents, NULL);
+    set(info_win_addr_gad, MUIA_Text_Contents, NULL);
+    set(info_win_nextwin_gad, MUIA_Text_Contents, NULL);
+    set(info_win_leftedge_gad, MUIA_Text_Contents, NULL);
+    set(info_win_topedge_gad, MUIA_Text_Contents, NULL);
+    set(info_win_height_gad, MUIA_Text_Contents, NULL);
+    set(info_win_width_gad, MUIA_Text_Contents, NULL);
+    set(info_win_minwidth_gad, MUIA_Text_Contents, NULL);
+    set(info_win_minheight_gad, MUIA_Text_Contents, NULL);
+    set(info_win_maxwidth_gad, MUIA_Text_Contents, NULL);
+    set(info_win_maxheight_gad, MUIA_Text_Contents, NULL);
+    set(info_win_flags_gad, MUIA_Text_Contents, NULL);
+    set(info_win_idcmp_gad, MUIA_Text_Contents, NULL);
+    set(info_win_title_gad, MUIA_Text_Contents, NULL);
+    set(info_win_req_gad, MUIA_Text_Contents, NULL);
+    set(info_win_screen_gad, MUIA_Text_Contents, NULL);
+    set(info_win_borderleft_gad, MUIA_Text_Contents, NULL);
+    set(info_win_bordertop_gad, MUIA_Text_Contents, NULL);
+    set(info_win_borderright_gad, MUIA_Text_Contents, NULL);
+    set(info_win_borderbottom_gad, MUIA_Text_Contents, NULL);
+    set(info_win_parentwin_gad, MUIA_Text_Contents, NULL);
+    set(info_win_firstchild_gad, MUIA_Text_Contents, NULL);
+    set(info_win_parent_gad, MUIA_Text_Contents, NULL);
+    set(info_win_descendant_gad, MUIA_Text_Contents, NULL);
+
+    DoMethod(list_gad, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&le);
+    if (le)
+    {
+	switch (get_selected(&scr, &win))
+	{
+	    case Screen_type:
+
+		scr = le->aptr;
+		set(page_gad, MUIA_Group_ActivePage, 0);
+
+		sprintf(buffer, "%p", scr);
+		set(info_scr_addr_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", scr->LeftEdge);
+		set(info_scr_leftedge_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", scr->TopEdge);
+		set(info_scr_topedge_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", scr->Width);
+		set(info_scr_width_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", scr->Height);
+		set(info_scr_height_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "0x%08x", scr->Flags);
+		set(info_scr_flags_gad, MUIA_Text_Contents, buffer);
+
+		set(info_scr_title_gad, MUIA_Text_Contents, scr->Title);
+		set(info_scr_deftitle_gad, MUIA_Text_Contents, scr->DefaultTitle);
+
+		sprintf(buffer, "%p", scr->FirstWindow);
+		set(info_scr_firstwindow_gad, MUIA_Text_Contents, buffer);
+
+		break;
+
+	    case Window_type:
+		win = le->aptr;
+		set(page_gad, MUIA_Group_ActivePage, 1);
+
+		sprintf(buffer, "%p", win);
+		set(info_win_addr_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%p", win->NextWindow);
+		set(info_win_nextwin_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->LeftEdge);
+		set(info_win_leftedge_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->TopEdge);
+		set(info_win_topedge_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->Height);
+		set(info_win_height_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->Width);
+		set(info_win_width_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->MinWidth);
+		set(info_win_minwidth_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->MinHeight);
+		set(info_win_minheight_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->MaxWidth);
+		set(info_win_maxwidth_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->MaxHeight);
+		set(info_win_maxheight_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "0x%08lx", win->Flags);
+		set(info_win_flags_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "0x%08lx", win->IDCMPFlags);
+		set(info_win_idcmp_gad, MUIA_Text_Contents, buffer);
+
+		set(info_win_title_gad, MUIA_Text_Contents, win->Title);
+
+		sprintf(buffer, "%d", win->ReqCount);
+		set(info_win_req_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%p", win->WScreen);
+		set(info_win_screen_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->BorderLeft);
+		set(info_win_borderleft_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->BorderTop);
+		set(info_win_bordertop_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->BorderRight);
+		set(info_win_borderright_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%d", win->BorderBottom);
+		set(info_win_borderbottom_gad, MUIA_Text_Contents, buffer);
+
+		if (IS_CHILD(win))
+		{
+		    sprintf(buffer, "%p", win->parent);
+		    set(info_win_parentwin_gad, MUIA_Text_Contents, buffer);
+		}
+
+		if (HAS_CHILDREN(win))
+		{
+		    sprintf(buffer, "%p", win->firstchild);
+		    set(info_win_firstchild_gad, MUIA_Text_Contents, buffer);
+		}
+
+		sprintf(buffer, "%p", win->Parent);
+		set(info_win_parent_gad, MUIA_Text_Contents, buffer);
+
+		sprintf(buffer, "%p", win->Descendant);
+		set(info_win_descendant_gad, MUIA_Text_Contents, buffer);
+
+		break;
+	    default:
+		// selected screen/window doesn't exist anymore
+		CallHookPkt(&update_hook, 0, 0);
+		break;
+	}
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+AROS_UFH3(void, openinfo_func,
+    AROS_UFHA(struct Hook *, h,      A0),
+    AROS_UFHA(Object *     , object, A2),
+    AROS_UFHA(APTR         , msg,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    set(info_wnd, MUIA_Window_Open, TRUE);
+    CallHookPkt(&updateinfo_hook, 0, 0);
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
+
+static void MakeGUI(void)
+{
+    Object *menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
+
+    display_hook.h_Entry = (HOOKFUNC)display_func;
+    construct_hook.h_Entry = (HOOKFUNC)construct_func;
+    destruct_hook.h_Entry = (HOOKFUNC)destruct_func;
+    
+    close_hook.h_Entry = (HOOKFUNC)close_func;
+    front_hook.h_Entry = (HOOKFUNC)front_func;
+    back_hook.h_Entry = (HOOKFUNC)back_func;
+    origin_hook.h_Entry = (HOOKFUNC)origin_func;
+    activate_hook.h_Entry = (HOOKFUNC)activate_func;
+    zip_hook.h_Entry = (HOOKFUNC)zip_func;
+    hide_hook.h_Entry = (HOOKFUNC)hide_func;
+    show_hook.h_Entry = (HOOKFUNC)show_func;
+
+    update_hook.h_Entry = (HOOKFUNC)update_func;
+    rescue_hook.h_Entry = (HOOKFUNC)rescue_func;
+    showall_hook.h_Entry = (HOOKFUNC)showall_func;
+    rethink_hook.h_Entry = (HOOKFUNC)rethink_func;
+    about_hook.h_Entry = (HOOKFUNC)about_func;
+
+    openinfo_hook.h_Entry = (HOOKFUNC)openinfo_func;
+    updateinfo_hook.h_Entry = (HOOKFUNC)update_info_func;
+    
+    app = ApplicationObject,
+	MUIA_Application_Title, (IPTR)"WiMP",
+	MUIA_Application_Version, (IPTR)version,
+	MUIA_Application_Copyright, (IPTR)"Copyright  © 1995-2006, The AROS Development Team",
+	MUIA_Application_Author, (IPTR)"The AROS Development Team",
+	MUIA_Application_Description, (IPTR)"Window Manipulator",
+	MUIA_Application_Base, (IPTR)"WIMP",
+	MUIA_Application_SingleTask, TRUE,
+	MUIA_Application_Menustrip, (IPTR)menu,
+	SubWindow, (IPTR)(wnd = WindowObject,
+	    MUIA_Window_Title, (IPTR)TITLE_TXT,
+	    MUIA_Window_ID, MAKE_ID('W', 'I', 'M', 'P'),
+	    WindowContents, (IPTR)(VGroup,
+		Child, (IPTR)(VGroup,
+		    GroupFrameT("Screen/Window List"),
+		    Child, (IPTR)(ListviewObject,
+			MUIA_Listview_List, (IPTR)(list_gad = ListObject,
+			    InputListFrame,
+			    MUIA_List_Format, (IPTR)"D=20 BAR,D=20 BAR,P=\033c D=20 BAR,P=\033c D=20 BAR,D=20 BAR",
+			    MUIA_List_ConstructHook, (IPTR)&construct_hook,
+			    MUIA_List_DestructHook, (IPTR)&destruct_hook,
+			    MUIA_List_DisplayHook, (IPTR)&display_hook,
+			    MUIA_List_Title, TRUE,
+			    MUIA_CycleChain, 1,
+			End),
+		    End),
+		    Child, (IPTR)(HGroup,
+			Child, (IPTR)(close_gad = SimpleButton("Close")),
+			Child, (IPTR)(front_gad = SimpleButton("To Front")),
+			Child, (IPTR)(back_gad = SimpleButton("To Back")),
+			Child, (IPTR)(origin_gad = SimpleButton("Move to Origin")),
+			Child, (IPTR)(activate_gad = SimpleButton("Activate")),
+			Child, (IPTR)(zip_gad = SimpleButton("Zip")),
+			Child, (IPTR)(hide_gad = SimpleButton("Hide")),
+			Child, (IPTR)(show_gad = SimpleButton("Show")),
+		    End),
+		    Child, (IPTR)(HGroup,
+			Child, (IPTR)(update_gad = SimpleButton("Update List")),
+			Child, (IPTR)(rescue_gad = SimpleButton("Rescue all Windows")),
+			Child, (IPTR)(showall_gad = SimpleButton("Show all Windows")),
+			Child, (IPTR)(rethink_gad = SimpleButton("Rethink Display")),
+			Child, (IPTR)(about_gad = SimpleButton("About")),
+		    End),
+		End),
+	    End),
+	End), // wnd
+	SubWindow, (IPTR)(info_wnd = WindowObject,
+	    MUIA_Window_Title, (IPTR)INFOTITLE_TXT,
+	    MUIA_Window_ID, MAKE_ID('W', 'I', 'N', 'F'),
+	    WindowContents, (IPTR)(page_gad = PageGroup,
+		Child, (IPTR)(ColGroup(2),
+		    Child, (IPTR)Label("\033bScreen"),
+		    Child, (IPTR)(info_scr_addr_gad = TextObject,
+			TextFrame,
+			MUIA_Text_Contents, (IPTR)"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+			MUIA_Text_SetMin, TRUE,
+		    End),
+		    Child, (IPTR)Label("LeftEdge"),
+		    Child, (IPTR)(info_scr_leftedge_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("TopEdge"),
+		    Child, (IPTR)(info_scr_topedge_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Width"),
+		    Child, (IPTR)(info_scr_width_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Height"),
+		    Child, (IPTR)(info_scr_height_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Flags"),
+		    Child, (IPTR)(info_scr_flags_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Title"),
+		    Child, (IPTR)(info_scr_title_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("DefaultTitle"),
+		    Child, (IPTR)(info_scr_deftitle_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("FirstWindow"),
+		    Child, (IPTR)(info_scr_firstwindow_gad = TextObject, TextFrame, End),
+		End),
+		Child, (IPTR)(ColGroup(2),
+		    Child, (IPTR)Label("\033bWindow"),
+		    Child, (IPTR)(info_win_addr_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("NextWindow"),
+		    Child, (IPTR)(info_win_nextwin_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("LeftEdge"),
+		    Child, (IPTR)(info_win_leftedge_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("TopEdge"),
+		    Child, (IPTR)(info_win_topedge_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Width"),
+		    Child, (IPTR)(info_win_width_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Height"),
+		    Child, (IPTR)(info_win_height_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("MinWidth"),
+		    Child, (IPTR)(info_win_minwidth_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("MinHeight"),
+		    Child, (IPTR)(info_win_minheight_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("MaxWidth"),
+		    Child, (IPTR)(info_win_maxwidth_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("MaxHeight"),
+		    Child, (IPTR)(info_win_maxheight_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Flags"),
+		    Child, (IPTR)(info_win_flags_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("IDCMPFlags"),
+		    Child, (IPTR)(info_win_idcmp_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Title"),
+		    Child, (IPTR)(info_win_title_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("ReqCount"),
+		    Child, (IPTR)(info_win_req_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("WScreen"),
+		    Child, (IPTR)(info_win_screen_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("BorderLeft"),
+		    Child, (IPTR)(info_win_borderleft_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("BorderTop"),
+		    Child, (IPTR)(info_win_bordertop_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("BorderRight"),
+		    Child, (IPTR)(info_win_borderright_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("BoderBottom"),
+		    Child, (IPTR)(info_win_borderbottom_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Parent Window"),
+		    Child, (IPTR)(info_win_parentwin_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("First Child"),
+		    Child, (IPTR)(info_win_firstchild_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Parent"),
+		    Child, (IPTR)(info_win_parent_gad = TextObject, TextFrame, End),
+		    Child, (IPTR)Label("Descendant"),
+		    Child, (IPTR)(info_win_descendant_gad = TextObject, TextFrame, End),
+		End),
+	    End),
+	End), // infownd
+    End; // app
+    
+    if (! app)
+	Cleanup(NULL); // Probably double start
+
+    set(wnd, MUIA_Window_Open, TRUE);
+    CallHookPkt(&update_hook, 0, 0);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+	app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
+    DoMethod(info_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+	info_wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+
+    DoMethod(list_gad, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+	    (IPTR)app, 2, MUIM_CallHook, (IPTR)&updateinfo_hook);
+
+    DoMethod(list_gad, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
+	    (IPTR)app, 2, MUIM_CallHook, (IPTR)&openinfo_hook);
+
+
+    // menu bar
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_QUIT,
+	(IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_ABOUT,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&about_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_UPDATE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&update_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_KILL,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&close_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_FRONT,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&front_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_BACK,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&back_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_ORIGIN,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&origin_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_ACTIVATE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&activate_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_ZIP,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&zip_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_HIDE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&hide_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_SHOW,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&show_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_INFO,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&openinfo_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_RESCUE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&rescue_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_SHOWALL,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&showall_hook);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_RETHINK,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&rethink_hook);
+
+
+    // buttons first row
+    DoMethod(close_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&close_hook);
+
+    DoMethod(front_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&front_hook);
+
+    DoMethod(back_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&back_hook);
+
+    DoMethod(origin_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&origin_hook);
+
+    DoMethod(activate_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&activate_hook);
+
+    DoMethod(zip_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&zip_hook);
+
+    DoMethod(hide_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&hide_hook);
+
+    DoMethod(show_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&show_hook);
+
+
+    // buttons second row
+    DoMethod(update_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&update_hook);
+
+    DoMethod(rescue_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&rescue_hook);
+
+    DoMethod(showall_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&showall_hook);
+
+    DoMethod(rethink_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&rethink_hook);
+
+    DoMethod(about_gad, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&about_hook);
+}
+
+/*********************************************************************************************/
+
+static void HandleAll(void)
+{
+    DoMethod(app, MUIM_Application_Execute);
+}
+
+/*********************************************************************************************/
+
+static void Cleanup(CONST_STRPTR txt)
+{
+    MUI_DisposeObject(app);
+    if (txt)
+    {
+	MUI_Request(app, wnd, 0, TITLE_TXT,  "OK", txt);
+	exit(RETURN_ERROR);
+    }
+    exit(RETURN_OK);
+}
+
+/*********************************************************************************************/
+
+int main(int argc, char **argv)
+{
+    MakeGUI();
+    HandleAll();
+    Cleanup(NULL);
+    return RETURN_OK;
 }
