@@ -13,7 +13,8 @@ char *tests[] =
      NULL
 };
 
-int main() {
+int main()
+{
     int total = 0, failed = 0;
     int i, rc;
     char buffer[128];
@@ -51,4 +52,6 @@ int main() {
     }
     
     system( "delete T:TestOutput ALL QUIET" );
+    
+    return 0;
 }

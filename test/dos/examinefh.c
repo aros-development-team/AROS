@@ -18,7 +18,7 @@ int main(void)
             }
             else
             {
-                printf("examinefh failed, ioerr = %d\n", IoErr());
+                printf("examinefh failed, ioerr = %ld\n", IoErr());
             }
             FreeDosObject(DOS_FIB, fib);
         }
