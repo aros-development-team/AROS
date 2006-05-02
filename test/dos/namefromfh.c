@@ -14,7 +14,7 @@ int main(void)
         }
         else
         {
-            printf("namefromlock failed. ioerr = %d\n", IoErr());
+            printf("namefromlock failed. ioerr = %ld\n", IoErr());
         }
         
         Close(fh);
