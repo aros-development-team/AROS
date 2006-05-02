@@ -1188,8 +1188,9 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 #MM %(mmake)-clean
 
 # All MetaMake targets defined by this macro
-BD_ALLTARGETS := %(mmake) %(mmake)-includes %(mmake)-clean %(mmake)-quick \
-    %(mmake)-kobj %(mmake)-funclist %(mmake)-linklib
+BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
+    %(mmake)-includes-quick %(mmake)-clean %(mmake)-kobj \
+    %(mmake)-funclist %(mmake)-linklib
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
