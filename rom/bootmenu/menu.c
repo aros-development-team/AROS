@@ -386,7 +386,7 @@ AROS_SET_LIBFUNC(CheckAndDisplay, LIBBASETYPE, LIBBASE)
     static struct BootConfig bootcfg =
     {
 	&bootcfg,
-	{"vga.hidd", "hidd.gfx.vga"},
+	{"vgah.hidd", "hidd.gfx.vga"},
 	{"kbd.hidd", "hidd.kbd.hw"},
 	{"mouse.hidd", "hidd.bus.mouse"},
 	NULL,
