@@ -104,16 +104,16 @@ struct ListEntry
     TEXT address[20];
     TEXT size[12];
     TEXT pos[12];
+    TEXT status[4];
     TEXT title[40];
 };
 
-static const char version[] = "$VER: WiMP 0.10 (01.05.2006) © AROS Dev Team";
+static const char version[] = "$VER: WiMP 0.11 (02.05.2006) © AROS Dev Team";
 
 /*********************************************************************************************/
 
 static void Cleanup(CONST_STRPTR txt);
 static LONG get_selected(struct Screen **scr, struct Window **win);
-static void HandleAll(void);
 static void MakeGUI(void);
 
 /*********************************************************************************************/
@@ -143,7 +143,7 @@ static struct NewMenu nm[] =
     {NM_ITEM, NM_BARLABEL},
     {NM_ITEM, "Quit", "Q", 0, 0, (APTR)MN_QUIT},
   {NM_TITLE, "Window List"},
-    {NM_ITEM, "Update List", NULL, 0, 0, (APTR)MN_UPDATE},
+    {NM_ITEM, "Update List", "U", 0, 0, (APTR)MN_UPDATE},
     {NM_ITEM, NM_BARLABEL},
     {NM_ITEM, "Kill", NULL, 0, 0, (APTR)MN_KILL},
     {NM_ITEM, "To Front", NULL, 0, 0, (APTR)MN_FRONT},
@@ -209,31 +209,33 @@ AROS_UFH3(void, display_func,
     AROS_UFHA(char **           , array, A2),
     AROS_UFHA(struct ListEntry *, msg,   A1))
 {
-    AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT;
 
-	if (msg)
+    if (msg)
+    {
+	if (msg->type == Window_type)
 	{
-	    if (msg->type == Window_type)
-	    {
-		array[0] = "  \033bWindow";
-	    }
-	    else
-	    {
-		array[0] = "\033b\033uScreen";
-	    }
-	    array[1] = msg->address;
-	    array[2] = msg->size;
-	    array[3] = msg->pos;
-	    array[4] = msg->title;
+	    array[0] = "  \033bWindow";
 	}
 	else
 	{
-	    array[0] = "Type";
-	    array[1] = "Address";
-	    array[2] = "Size";
-	    array[3] = "Position";
-	    array[4] = "Title";
+	    array[0] = "\033b\033uScreen";
 	}
+	array[1] = msg->address;
+	array[2] = msg->size;
+	array[3] = msg->pos;
+	array[4] = msg->status;
+	array[5] = msg->title;
+    }
+    else
+    {
+	array[0] = "Type";
+	array[1] = "Address";
+	array[2] = "Size";
+	array[3] = "Position";
+	array[4] = "Status";
+	array[5] = "Title";
+    }
 
     AROS_USERFUNC_EXIT
 }
@@ -277,7 +279,7 @@ AROS_UFH3(void, update_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT;
 
     struct Screen *scr;
     struct Window *win;
@@ -299,6 +301,7 @@ AROS_UFH3(void, update_func,
 	sprintf(entry.address, "%p", scr);
 	sprintf(entry.size, "%d x %d", scr->Width, scr->Height);
 	sprintf(entry.pos, "%d x %d", scr->LeftEdge, scr->TopEdge);
+	entry.status[0] = '\0';
 	snprintf(entry.title, sizeof(entry.title) - 1, "%s", scr->Title);
 	DoMethod(list_gad, MUIM_List_InsertSingle, &entry, MUIV_List_Insert_Bottom);
 
@@ -311,15 +314,12 @@ AROS_UFH3(void, update_func,
 	    sprintf(entry.address, "%p", win);
 	    sprintf(entry.size, "%d x %d", win->Width, win->Height);
 	    sprintf(entry.pos, "%d x %d", win->LeftEdge, win->TopEdge);
+	    sprintf(entry.status, "%c%c%c", 
+		    (IsWindowVisible(win) ? ' ' : 'H'),
+		    (IS_CHILD(win)        ? 'C' : ' '),
+		    (HAS_CHILDREN(win)    ? 'P' : ' '));
 	    snprintf(entry.title, sizeof(entry.title) - 1, "%s", win->Title);
-#if 0
-	    (IsWindowVisible(win)?' ':'H'),
-		(IS_CHILD(win)?'C':' '),
-		(HAS_CHILDREN(win)?'P':' '),
-		(IS_CHILD(win)?' ':0),
-		win->parent,
-#endif
-		DoMethod(list_gad, MUIM_List_InsertSingle, &entry, MUIV_List_Insert_Bottom);
+	    DoMethod(list_gad, MUIM_List_InsertSingle, &entry, MUIV_List_Insert_Bottom);
 
 	    win = win->NextWindow;
 	}
@@ -337,7 +337,7 @@ AROS_UFH3(void, close_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT;
 
     struct Screen *scr;
     struct Window *win;
@@ -369,7 +369,8 @@ AROS_UFH3(void, front_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT;
+
     struct Screen *scr;
     struct Window *win;
     switch (get_selected(&scr, &win))
@@ -394,7 +395,8 @@ AROS_UFH3(void, back_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT;
+
     struct Screen *scr;
     struct Window *win;
     switch (get_selected(&scr, &win))
@@ -419,8 +421,8 @@ AROS_UFH3(void, origin_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
-    
+    AROS_USERFUNC_INIT;
+
     struct Screen *scr;
     struct Window *win;
     switch (get_selected(&scr, &win))
@@ -446,7 +448,7 @@ AROS_UFH3(void, activate_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT;
 
     struct Screen *scr;
     struct Window *win;
@@ -467,8 +469,8 @@ AROS_UFH3(void, hide_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
-    
+    AROS_USERFUNC_INIT;
+
     struct Screen *scr;
     struct Window *win;
     if (get_selected(&scr, &win) == Window_type)
@@ -492,8 +494,8 @@ AROS_UFH3(void, show_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
-    
+    AROS_USERFUNC_INIT;
+
     struct Screen *scr;
     struct Window *win;
     if (get_selected(&scr, &win) == Window_type)
@@ -514,8 +516,8 @@ AROS_UFH3(void, zip_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
-    
+    AROS_USERFUNC_INIT;
+
     struct Screen *scr;
     struct Window *win;
     if (get_selected(&scr, &win) == Window_type)
@@ -535,7 +537,7 @@ AROS_UFH3(void, showall_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT;
 
     struct Screen *scr;
     struct Window *win;
@@ -561,7 +563,7 @@ AROS_UFH3(void, showall_func,
 	}
 	scr = scr->NextScreen;
     }
-    
+
     Delay(5);
     CallHookPkt(&update_hook, 0, 0);
 
@@ -575,7 +577,7 @@ AROS_UFH3(void, rescue_func,
     AROS_UFHA(Object *     , object, A2),
     AROS_UFHA(APTR         , msg,    A1))
 {
-    AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT;
 
     struct Screen *scr;
     struct Window *win;
@@ -667,44 +669,31 @@ AROS_UFH3(void, update_info_func,
     struct Window *win;
     struct Screen *scr;
 
-    if (XGET(info_wnd, MUIA_Window_Open) == FALSE)
-	return;
-
-    set(info_scr_addr_gad, MUIA_Text_Contents, NULL);
-    set(info_scr_leftedge_gad, MUIA_Text_Contents, NULL);
-    set(info_scr_topedge_gad, MUIA_Text_Contents, NULL);
-    set(info_scr_width_gad, MUIA_Text_Contents, NULL);
-    set(info_scr_height_gad, MUIA_Text_Contents, NULL);
-    set(info_scr_flags_gad, MUIA_Text_Contents, NULL);
-    set(info_scr_title_gad, MUIA_Text_Contents, NULL);
-    set(info_scr_deftitle_gad, MUIA_Text_Contents, NULL);
-    set(info_scr_firstwindow_gad, MUIA_Text_Contents, NULL);
-    set(info_win_addr_gad, MUIA_Text_Contents, NULL);
-    set(info_win_nextwin_gad, MUIA_Text_Contents, NULL);
-    set(info_win_leftedge_gad, MUIA_Text_Contents, NULL);
-    set(info_win_topedge_gad, MUIA_Text_Contents, NULL);
-    set(info_win_height_gad, MUIA_Text_Contents, NULL);
-    set(info_win_width_gad, MUIA_Text_Contents, NULL);
-    set(info_win_minwidth_gad, MUIA_Text_Contents, NULL);
-    set(info_win_minheight_gad, MUIA_Text_Contents, NULL);
-    set(info_win_maxwidth_gad, MUIA_Text_Contents, NULL);
-    set(info_win_maxheight_gad, MUIA_Text_Contents, NULL);
-    set(info_win_flags_gad, MUIA_Text_Contents, NULL);
-    set(info_win_idcmp_gad, MUIA_Text_Contents, NULL);
-    set(info_win_title_gad, MUIA_Text_Contents, NULL);
-    set(info_win_req_gad, MUIA_Text_Contents, NULL);
-    set(info_win_screen_gad, MUIA_Text_Contents, NULL);
-    set(info_win_borderleft_gad, MUIA_Text_Contents, NULL);
-    set(info_win_bordertop_gad, MUIA_Text_Contents, NULL);
-    set(info_win_borderright_gad, MUIA_Text_Contents, NULL);
-    set(info_win_borderbottom_gad, MUIA_Text_Contents, NULL);
-    set(info_win_parentwin_gad, MUIA_Text_Contents, NULL);
-    set(info_win_firstchild_gad, MUIA_Text_Contents, NULL);
-    set(info_win_parent_gad, MUIA_Text_Contents, NULL);
-    set(info_win_descendant_gad, MUIA_Text_Contents, NULL);
-
     DoMethod(list_gad, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&le);
     if (le)
+    {
+	set(close_gad, MUIA_Disabled, FALSE);
+	set(front_gad, MUIA_Disabled, FALSE);
+	set(back_gad, MUIA_Disabled, FALSE);
+	set(origin_gad, MUIA_Disabled, FALSE);
+	set(activate_gad, MUIA_Disabled, FALSE);
+	set(zip_gad, MUIA_Disabled, FALSE);
+	set(hide_gad, MUIA_Disabled, FALSE);
+	set(show_gad, MUIA_Disabled, FALSE);
+    }
+    else
+    {
+	set(close_gad, MUIA_Disabled, TRUE);
+	set(front_gad, MUIA_Disabled, TRUE);
+	set(back_gad, MUIA_Disabled, TRUE);
+	set(origin_gad, MUIA_Disabled, TRUE);
+	set(activate_gad, MUIA_Disabled, TRUE);
+	set(zip_gad, MUIA_Disabled, TRUE);
+	set(hide_gad, MUIA_Disabled, TRUE);
+	set(show_gad, MUIA_Disabled, TRUE);
+    }
+
+    if (XGET(wnd,  MUIA_Window_Open) && le)
     {
 	switch (get_selected(&scr, &win))
 	{
@@ -799,17 +788,11 @@ AROS_UFH3(void, update_info_func,
 		sprintf(buffer, "%d", win->BorderBottom);
 		set(info_win_borderbottom_gad, MUIA_Text_Contents, buffer);
 
-		if (IS_CHILD(win))
-		{
-		    sprintf(buffer, "%p", win->parent);
-		    set(info_win_parentwin_gad, MUIA_Text_Contents, buffer);
-		}
+		sprintf(buffer, "%p", win->parent);
+		set(info_win_parentwin_gad, MUIA_Text_Contents, buffer);
 
-		if (HAS_CHILDREN(win))
-		{
-		    sprintf(buffer, "%p", win->firstchild);
-		    set(info_win_firstchild_gad, MUIA_Text_Contents, buffer);
-		}
+		sprintf(buffer, "%p", win->firstchild);
+		set(info_win_firstchild_gad, MUIA_Text_Contents, buffer);
 
 		sprintf(buffer, "%p", win->Parent);
 		set(info_win_parent_gad, MUIA_Text_Contents, buffer);
@@ -823,6 +806,41 @@ AROS_UFH3(void, update_info_func,
 		CallHookPkt(&update_hook, 0, 0);
 		break;
 	}
+    }
+    else
+    {
+	set(info_scr_addr_gad, MUIA_Text_Contents, NULL);
+	set(info_scr_leftedge_gad, MUIA_Text_Contents, NULL);
+	set(info_scr_topedge_gad, MUIA_Text_Contents, NULL);
+	set(info_scr_width_gad, MUIA_Text_Contents, NULL);
+	set(info_scr_height_gad, MUIA_Text_Contents, NULL);
+	set(info_scr_flags_gad, MUIA_Text_Contents, NULL);
+	set(info_scr_title_gad, MUIA_Text_Contents, NULL);
+	set(info_scr_deftitle_gad, MUIA_Text_Contents, NULL);
+	set(info_scr_firstwindow_gad, MUIA_Text_Contents, NULL);
+	set(info_win_addr_gad, MUIA_Text_Contents, NULL);
+	set(info_win_nextwin_gad, MUIA_Text_Contents, NULL);
+	set(info_win_leftedge_gad, MUIA_Text_Contents, NULL);
+	set(info_win_topedge_gad, MUIA_Text_Contents, NULL);
+	set(info_win_height_gad, MUIA_Text_Contents, NULL);
+	set(info_win_width_gad, MUIA_Text_Contents, NULL);
+	set(info_win_minwidth_gad, MUIA_Text_Contents, NULL);
+	set(info_win_minheight_gad, MUIA_Text_Contents, NULL);
+	set(info_win_maxwidth_gad, MUIA_Text_Contents, NULL);
+	set(info_win_maxheight_gad, MUIA_Text_Contents, NULL);
+	set(info_win_flags_gad, MUIA_Text_Contents, NULL);
+	set(info_win_idcmp_gad, MUIA_Text_Contents, NULL);
+	set(info_win_title_gad, MUIA_Text_Contents, NULL);
+	set(info_win_req_gad, MUIA_Text_Contents, NULL);
+	set(info_win_screen_gad, MUIA_Text_Contents, NULL);
+	set(info_win_borderleft_gad, MUIA_Text_Contents, NULL);
+	set(info_win_bordertop_gad, MUIA_Text_Contents, NULL);
+	set(info_win_borderright_gad, MUIA_Text_Contents, NULL);
+	set(info_win_borderbottom_gad, MUIA_Text_Contents, NULL);
+	set(info_win_parentwin_gad, MUIA_Text_Contents, NULL);
+	set(info_win_firstchild_gad, MUIA_Text_Contents, NULL);
+	set(info_win_parent_gad, MUIA_Text_Contents, NULL);
+	set(info_win_descendant_gad, MUIA_Text_Contents, NULL);
     }
 
     AROS_USERFUNC_EXIT
@@ -888,7 +906,7 @@ static void MakeGUI(void)
 		    Child, (IPTR)(ListviewObject,
 			MUIA_Listview_List, (IPTR)(list_gad = ListObject,
 			    InputListFrame,
-			    MUIA_List_Format, (IPTR)"D=20 BAR,D=20 BAR,P=\033c D=20 BAR,P=\033c D=20 BAR,D=20 BAR",
+			    MUIA_List_Format, (IPTR)"BAR,BAR,P=\033c BAR,P=\033c BAR,BAR,BAR",
 			    MUIA_List_ConstructHook, (IPTR)&construct_hook,
 			    MUIA_List_DestructHook, (IPTR)&destruct_hook,
 			    MUIA_List_DisplayHook, (IPTR)&display_hook,
@@ -897,18 +915,18 @@ static void MakeGUI(void)
 			End),
 		    End),
 		    Child, (IPTR)(HGroup,
-			Child, (IPTR)(close_gad = SimpleButton("Close")),
-			Child, (IPTR)(front_gad = SimpleButton("To Front")),
-			Child, (IPTR)(back_gad = SimpleButton("To Back")),
-			Child, (IPTR)(origin_gad = SimpleButton("Move to Origin")),
-			Child, (IPTR)(activate_gad = SimpleButton("Activate")),
-			Child, (IPTR)(zip_gad = SimpleButton("Zip")),
-			Child, (IPTR)(hide_gad = SimpleButton("Hide")),
-			Child, (IPTR)(show_gad = SimpleButton("Show")),
+			Child, (IPTR)(close_gad = SimpleButton("\033iKill")),
+			Child, (IPTR)(front_gad = SimpleButton("To _Front")),
+			Child, (IPTR)(back_gad = SimpleButton("To _Back")),
+			Child, (IPTR)(origin_gad = SimpleButton("Move to _Origin")),
+			Child, (IPTR)(activate_gad = SimpleButton("_Activate")),
+			Child, (IPTR)(zip_gad = SimpleButton("_Zip")),
+			Child, (IPTR)(hide_gad = SimpleButton("_Hide")),
+			Child, (IPTR)(show_gad = SimpleButton("_Show")),
 		    End),
 		    Child, (IPTR)(HGroup,
-			Child, (IPTR)(update_gad = SimpleButton("Update List")),
-			Child, (IPTR)(rescue_gad = SimpleButton("Rescue all Windows")),
+			Child, (IPTR)(update_gad = SimpleButton("_Update List")),
+			Child, (IPTR)(rescue_gad = SimpleButton("_Rescue all Windows")),
 			Child, (IPTR)(showall_gad = SimpleButton("Show all Windows")),
 			Child, (IPTR)(rethink_gad = SimpleButton("Rethink Display")),
 			Child, (IPTR)(about_gad = SimpleButton("About")),
@@ -920,77 +938,84 @@ static void MakeGUI(void)
 	    MUIA_Window_Title, (IPTR)INFOTITLE_TXT,
 	    MUIA_Window_ID, MAKE_ID('W', 'I', 'N', 'F'),
 	    WindowContents, (IPTR)(page_gad = PageGroup,
-		Child, (IPTR)(ColGroup(2),
-		    Child, (IPTR)Label("\033bScreen"),
-		    Child, (IPTR)(info_scr_addr_gad = TextObject,
-			TextFrame,
-			MUIA_Text_Contents, (IPTR)"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-			MUIA_Text_SetMin, TRUE,
+		Child, (IPTR)(HGroup,
+		    Child, (IPTR)(ColGroup(2),
+		    GroupFrameT("Screen"),
+
+			Child, (IPTR)Label("Address"),
+			Child, (IPTR)(info_scr_addr_gad = TextObject,
+			    TextFrame,
+			    MUIA_Text_Contents, (IPTR)"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+			    MUIA_Text_SetMin, TRUE,
+			End),
+			Child, (IPTR)Label("LeftEdge"),
+			Child, (IPTR)(info_scr_leftedge_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("TopEdge"),
+			Child, (IPTR)(info_scr_topedge_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Width"),
+			Child, (IPTR)(info_scr_width_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Height"),
+			Child, (IPTR)(info_scr_height_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Flags"),
+			Child, (IPTR)(info_scr_flags_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Title"),
+			Child, (IPTR)(info_scr_title_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("DefaultTitle"),
+			Child, (IPTR)(info_scr_deftitle_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("FirstWindow"),
+			Child, (IPTR)(info_scr_firstwindow_gad = TextObject, TextFrame, End),
 		    End),
-		    Child, (IPTR)Label("LeftEdge"),
-		    Child, (IPTR)(info_scr_leftedge_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("TopEdge"),
-		    Child, (IPTR)(info_scr_topedge_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Width"),
-		    Child, (IPTR)(info_scr_width_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Height"),
-		    Child, (IPTR)(info_scr_height_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Flags"),
-		    Child, (IPTR)(info_scr_flags_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Title"),
-		    Child, (IPTR)(info_scr_title_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("DefaultTitle"),
-		    Child, (IPTR)(info_scr_deftitle_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("FirstWindow"),
-		    Child, (IPTR)(info_scr_firstwindow_gad = TextObject, TextFrame, End),
 		End),
-		Child, (IPTR)(ColGroup(2),
-		    Child, (IPTR)Label("\033bWindow"),
-		    Child, (IPTR)(info_win_addr_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("NextWindow"),
-		    Child, (IPTR)(info_win_nextwin_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("LeftEdge"),
-		    Child, (IPTR)(info_win_leftedge_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("TopEdge"),
-		    Child, (IPTR)(info_win_topedge_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Width"),
-		    Child, (IPTR)(info_win_width_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Height"),
-		    Child, (IPTR)(info_win_height_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("MinWidth"),
-		    Child, (IPTR)(info_win_minwidth_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("MinHeight"),
-		    Child, (IPTR)(info_win_minheight_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("MaxWidth"),
-		    Child, (IPTR)(info_win_maxwidth_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("MaxHeight"),
-		    Child, (IPTR)(info_win_maxheight_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Flags"),
-		    Child, (IPTR)(info_win_flags_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("IDCMPFlags"),
-		    Child, (IPTR)(info_win_idcmp_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Title"),
-		    Child, (IPTR)(info_win_title_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("ReqCount"),
-		    Child, (IPTR)(info_win_req_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("WScreen"),
-		    Child, (IPTR)(info_win_screen_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("BorderLeft"),
-		    Child, (IPTR)(info_win_borderleft_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("BorderTop"),
-		    Child, (IPTR)(info_win_bordertop_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("BorderRight"),
-		    Child, (IPTR)(info_win_borderright_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("BoderBottom"),
-		    Child, (IPTR)(info_win_borderbottom_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Parent Window"),
-		    Child, (IPTR)(info_win_parentwin_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("First Child"),
-		    Child, (IPTR)(info_win_firstchild_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Parent"),
-		    Child, (IPTR)(info_win_parent_gad = TextObject, TextFrame, End),
-		    Child, (IPTR)Label("Descendant"),
-		    Child, (IPTR)(info_win_descendant_gad = TextObject, TextFrame, End),
+		Child, (IPTR)(HGroup,
+		    Child, (IPTR)(ColGroup(2),
+			GroupFrameT("Window"),
+			Child, (IPTR)Label("Address"),
+			Child, (IPTR)(info_win_addr_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("NextWindow"),
+			Child, (IPTR)(info_win_nextwin_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("LeftEdge"),
+			Child, (IPTR)(info_win_leftedge_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("TopEdge"),
+			Child, (IPTR)(info_win_topedge_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Width"),
+			Child, (IPTR)(info_win_width_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Height"),
+			Child, (IPTR)(info_win_height_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("MinWidth"),
+			Child, (IPTR)(info_win_minwidth_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("MinHeight"),
+			Child, (IPTR)(info_win_minheight_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("MaxWidth"),
+			Child, (IPTR)(info_win_maxwidth_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("MaxHeight"),
+			Child, (IPTR)(info_win_maxheight_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Flags"),
+			Child, (IPTR)(info_win_flags_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("IDCMPFlags"),
+			Child, (IPTR)(info_win_idcmp_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Title"),
+			Child, (IPTR)(info_win_title_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("ReqCount"),
+			Child, (IPTR)(info_win_req_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("WScreen"),
+			Child, (IPTR)(info_win_screen_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("BorderLeft"),
+			Child, (IPTR)(info_win_borderleft_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("BorderTop"),
+			Child, (IPTR)(info_win_bordertop_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("BorderRight"),
+			Child, (IPTR)(info_win_borderright_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("BoderBottom"),
+			Child, (IPTR)(info_win_borderbottom_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Parent Window"),
+			Child, (IPTR)(info_win_parentwin_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("First Child"),
+			Child, (IPTR)(info_win_firstchild_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Parent"),
+			Child, (IPTR)(info_win_parent_gad = TextObject, TextFrame, End),
+			Child, (IPTR)Label("Descendant"),
+			Child, (IPTR)(info_win_descendant_gad = TextObject, TextFrame, End),
+		    End),
 		End),
 	    End),
 	End), // infownd
@@ -998,9 +1023,6 @@ static void MakeGUI(void)
     
     if (! app)
 	Cleanup(NULL); // Probably double start
-
-    set(wnd, MUIA_Window_Open, TRUE);
-    CallHookPkt(&update_hook, 0, 0);
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
 	app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -1016,49 +1038,49 @@ static void MakeGUI(void)
 
 
     // menu bar
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_QUIT,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_QUIT,
 	(IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_ABOUT,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_ABOUT,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&about_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_UPDATE,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_UPDATE,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&update_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_KILL,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_KILL,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&close_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_FRONT,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_FRONT,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&front_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_BACK,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_BACK,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&back_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_ORIGIN,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_ORIGIN,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&origin_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_ACTIVATE,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_ACTIVATE,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&activate_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_ZIP,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_ZIP,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&zip_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_HIDE,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_HIDE,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&hide_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_SHOW,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_SHOW,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&show_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_INFO,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_INFO,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&openinfo_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_RESCUE,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_RESCUE,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&rescue_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_SHOWALL,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_SHOWALL,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&showall_hook);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MN_RETHINK,
+    DoMethod(app, MUIM_Notify, MUIA_Application_MenuAction, MN_RETHINK,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&rethink_hook);
 
 
@@ -1103,12 +1125,10 @@ static void MakeGUI(void)
 
     DoMethod(about_gad, MUIM_Notify, MUIA_Pressed, FALSE,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&about_hook);
-}
 
-/*********************************************************************************************/
-
-static void HandleAll(void)
-{
+    set(wnd, MUIA_Window_Open, TRUE);
+    CallHookPkt(&update_hook, 0, 0);
+    CallHookPkt(&updateinfo_hook, 0, 0);
     DoMethod(app, MUIM_Application_Execute);
 }
 
@@ -1130,7 +1150,6 @@ static void Cleanup(CONST_STRPTR txt)
 int main(int argc, char **argv)
 {
     MakeGUI();
-    HandleAll();
     Cleanup(NULL);
     return RETURN_OK;
 }
