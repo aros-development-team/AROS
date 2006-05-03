@@ -19,6 +19,7 @@
 #include <proto/oop.h>
 
 #include <aros/symbolsets.h>
+#include <asm/io.h>
 
 #include "pci.h"
 
@@ -34,6 +35,8 @@
 #define CFGADD(bus,dev,func,reg)    \
     ( 0x80000000 | ((bus)<<16) |    \
     ((dev)<<11) | ((func)<<8) | ((reg)&~3))
+#define CFG2ADD(dev,reg)    \
+    (0xc000 | ((dev)<<8) | (reg))
 
 typedef union _pcicfg
 {
@@ -72,42 +75,65 @@ OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     return o;
 }
 
-static inline ULONG inl(UWORD port)
+ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
 {
-    ULONG val;
-
-    asm volatile ("inl %w1,%0":"=a"(val):"Nd"(port));
-
-    return val;
-}
-
-static inline void outl(ULONG val, UWORD port)
-{
-    asm volatile ("outl %0,%w1"::"a"(val),"Nd"(port));
-}
-
-ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
-					    struct pHidd_PCIDriver_ReadConfigLong *msg)
-{
-    ULONG orig,temp;
+    ULONG temp;
     
     Disable();
-    orig=inl(PCI_AddressPort);
-    outl(CFGADD(msg->bus, msg->dev, msg->sub, msg->reg),PCI_AddressPort);
+    outl(CFGADD(bus, dev, sub, reg),PCI_AddressPort);
     temp=inl(PCI_DataPort);
-    outl(orig, PCI_AddressPort);
     Enable();
 
     return temp;
 }
 
-UWORD PCPCI__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
-					    struct pHidd_PCIDriver_ReadConfigWord *msg)
+ULONG ReadConfig2Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+{
+    ULONG temp;
+
+    if (dev < 16) {
+	Disable();
+	outb(0xf0|(sub<<1),PCI_AddressPort);
+	outb(bus,PCI_ForwardPort);
+	temp=inl(CFG2ADD(dev, reg));
+	outb(0,PCI_AddressPort);
+	Enable();
+	return temp;
+    } else
+	return 0xffffffff;
+}
+
+
+ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+{
+    switch(psd->ConfType) {
+    case 1:
+	return ReadConfig1Long(bus, dev, sub, reg);
+    case 2:
+	return ReadConfig2Long(bus, dev, sub, reg);
+    }
+    return 0xffffffff;
+}
+
+ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
+					    struct pHidd_PCIDriver_ReadConfigLong *msg)
+{
+    return ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
+}
+
+UWORD ReadConfigWord(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
 {
     pcicfg temp;
 
-    temp.ul = PCPCI__Hidd_PCIDriver__ReadConfigLong(cl, o, (struct pHidd_PCIDriver_ReadConfigLong *)msg);
-    return temp.uw[(msg->reg&2)>>1];
+    temp.ul = ReadConfigLong(psd, bus, dev, sub, reg);
+    return temp.uw[(reg&2)>>1];
+}
+    
+
+UWORD PCPCI__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
+					    struct pHidd_PCIDriver_ReadConfigWord *msg)
+{
+    return ReadConfigWord(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
 }
 
 UBYTE PCPCI__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o, 
@@ -115,23 +141,55 @@ UBYTE PCPCI__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
 {
     pcicfg temp;
 
-    temp.ul = PCPCI__Hidd_PCIDriver__ReadConfigLong(cl, o, (struct pHidd_PCIDriver_ReadConfigLong *)msg); 
+    temp.ul = ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg); 
     return temp.ub[msg->reg & 3];
+}
+
+void WriteConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val)
+{
+    Disable();
+    outl(CFGADD(bus, dev, sub, reg),PCI_AddressPort);
+    outl(val,PCI_DataPort);
+    Enable();
+}    
+
+void WriteConfig2Long(UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val)
+{
+    if (dev < 16) {
+	Disable();
+	outb(0xf0|(sub<<1),PCI_AddressPort);
+	outb(bus,PCI_ForwardPort);
+	outl(val,CFG2ADD(dev, reg));
+	outb(0,PCI_AddressPort);
+	Enable();
+    }
 }
 
 void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 					    struct pHidd_PCIDriver_WriteConfigLong *msg)
 {
-    ULONG orig;
-    
-    Disable();
-    orig=inl(PCI_AddressPort);
-    outl(CFGADD(msg->bus, msg->dev, msg->sub, msg->reg),PCI_AddressPort);
-    outl(msg->val,PCI_DataPort);
-    outl(orig, PCI_AddressPort);
-    Enable();
+    switch(PSD(cl)->ConfType) {
+    case 1:
+	WriteConfig1Long(msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
+	break;
+    case 2:
+	WriteConfig2Long(msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
+    }
 }
 
+void SanityCheck(struct pci_staticdata *psd)
+{
+    UWORD temp;
+    
+    temp = ReadConfigWord(psd, 0, 0, 0, PCICS_SUBCLASS);
+    if ((temp == PCI_CLASS_BRIDGE_HOST) || (temp == PCI_CLASS_DISPLAY_VGA))
+	return;
+    temp = ReadConfigWord(psd, 0, 0, 0, PCICS_VENDOR);
+    if ((temp == PCI_VENDOR_INTEL) || (temp == PCI_VENDOR_COMPAQ))
+	return;
+    D(bug("Sanity check failed\n"));
+    psd->ConfType = 0;
+}
 /* Class initialization and destruction */
 
 AROS_SET_LIBFUNC(PCPCI_InitClass, LIBBASETYPE, LIBBASE)
@@ -139,6 +197,7 @@ AROS_SET_LIBFUNC(PCPCI_InitClass, LIBBASETYPE, LIBBASE)
     AROS_SET_LIBFUNC_INIT
     
     OOP_Object *pci;
+    ULONG temp;
     
     D(bug("PCPCI: Driver initialization\n"));
 
@@ -151,6 +210,28 @@ AROS_SET_LIBFUNC(PCPCI_InitClass, LIBBASETYPE, LIBBASE)
 	D(bug("PCPCI: ObtainAttrBases failed\n"));
 	return FALSE;
     }
+
+    LIBBASE->psd.ConfType = 0;
+    outb(0x01, PCI_TestPort);
+    temp = inl(PCI_AddressPort);
+    outl(0x80000000, PCI_AddressPort);
+    if (inl(PCI_AddressPort) == 0x80000000)
+	LIBBASE->psd.ConfType = 1;
+    outl(temp, PCI_AddressPort);
+    if (LIBBASE->psd.ConfType == 1) {
+	D(bug("PCPCI: Configuration mechanism 1 detected\n"));
+        SanityCheck(&LIBBASE->psd);
+    }
+    if (LIBBASE->psd.ConfType == 0) {
+	outb(0x00, PCI_TestPort);
+	outb(0x00, PCI_AddressPort);
+	outb(0x00, PCI_ForwardPort);
+	if ((inb(PCI_AddressPort) == 0x00) && (inb(PCI_ForwardPort) == 0x00)) {
+	    LIBBASE->psd.ConfType = 2;
+	    D(bug("PCPCI: configuration mechanism 2 detected\n"));
+	    SanityCheck(&LIBBASE->psd);
+	}
+    }	
     
     msg.driverClass = LIBBASE->psd.driverClass;
     msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
@@ -176,6 +257,8 @@ AROS_SET_LIBFUNC(PCPCI_ExpungeClass, LIBBASETYPE, LIBBASE)
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
     OOP_ReleaseAttrBase(IID_Hidd);
     
+    return TRUE;
+
     AROS_SET_LIBFUNC_EXIT
 }
 	

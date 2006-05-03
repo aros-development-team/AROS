@@ -21,6 +21,7 @@ struct pci_staticdata {
     OOP_AttrBase	hiddAB;
 
     OOP_Class		*driverClass;
+    UBYTE		ConfType;
 };
 
 struct pcibase {
@@ -31,7 +32,18 @@ struct pcibase {
 };
 
 #define PCI_AddressPort	0x0cf8
+#define PCI_ForwardPort 0x0cfa
+#define PCI_TestPort	0x0cfb
 #define PCI_DataPort	0x0cfc
+
+#define PCICS_VENDOR	0x00
+#define PCICS_SUBCLASS	0x0a
+
+#define PCI_CLASS_BRIDGE_HOST	0x0600
+#define PCI_CLASS_DISPLAY_VGA	0x0300
+
+#define PCI_VENDOR_INTEL	0x8086
+#define PCI_VENDOR_COMPAQ	0x0e11
 
 #define BASE(lib) ((struct pcibase*)(lib))
 
