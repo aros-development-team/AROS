@@ -185,7 +185,7 @@
 			_rp(obj), _left(obj) + x, _top(obj) + y, 
 			x + width  > _width(obj)  ? _width(obj)  - x : width,
 			y + height > _height(obj) ? _height(obj) - y : height,
-			0
+			0xffffffff
 		    );
                 }
             }
@@ -206,7 +206,8 @@
                 WritePixelArrayAlpha
                 (
                     buffer, 0, 0, 0, 
-                    _rp(obj), _left(obj), _top(obj), width, height, 0
+                    _rp(obj), _left(obj), _top(obj), width, height,
+		    0xffffffff
                 );
                 FreeVec(buffer);
             }   else
