@@ -108,7 +108,7 @@ struct ListEntry
     TEXT title[40];
 };
 
-static const char version[] = "$VER: WiMP 0.11 (02.05.2006) © AROS Dev Team";
+static const char version[] = "$VER: WiMP 0.12 (04.05.2006) © AROS Dev Team";
 
 /*********************************************************************************************/
 
@@ -693,154 +693,157 @@ AROS_UFH3(void, update_info_func,
 	set(show_gad, MUIA_Disabled, TRUE);
     }
 
-    if (XGET(wnd,  MUIA_Window_Open) && le)
+    if (XGET(info_wnd,  MUIA_Window_Open))
     {
-	switch (get_selected(&scr, &win))
+	if (le)
 	{
-	    case Screen_type:
+	    switch (get_selected(&scr, &win))
+	    {
+		case Screen_type:
 
-		scr = le->aptr;
-		set(page_gad, MUIA_Group_ActivePage, 0);
+		    scr = le->aptr;
+		    set(page_gad, MUIA_Group_ActivePage, 0);
 
-		sprintf(buffer, "%p", scr);
-		set(info_scr_addr_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%p", scr);
+		    set(info_scr_addr_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", scr->LeftEdge);
-		set(info_scr_leftedge_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", scr->LeftEdge);
+		    set(info_scr_leftedge_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", scr->TopEdge);
-		set(info_scr_topedge_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", scr->TopEdge);
+		    set(info_scr_topedge_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", scr->Width);
-		set(info_scr_width_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", scr->Width);
+		    set(info_scr_width_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", scr->Height);
-		set(info_scr_height_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", scr->Height);
+		    set(info_scr_height_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "0x%08x", scr->Flags);
-		set(info_scr_flags_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "0x%08x", scr->Flags);
+		    set(info_scr_flags_gad, MUIA_Text_Contents, buffer);
 
-		set(info_scr_title_gad, MUIA_Text_Contents, scr->Title);
-		set(info_scr_deftitle_gad, MUIA_Text_Contents, scr->DefaultTitle);
+		    set(info_scr_title_gad, MUIA_Text_Contents, scr->Title);
+		    set(info_scr_deftitle_gad, MUIA_Text_Contents, scr->DefaultTitle);
 
-		sprintf(buffer, "%p", scr->FirstWindow);
-		set(info_scr_firstwindow_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%p", scr->FirstWindow);
+		    set(info_scr_firstwindow_gad, MUIA_Text_Contents, buffer);
 
-		break;
+		    break;
 
-	    case Window_type:
-		win = le->aptr;
-		set(page_gad, MUIA_Group_ActivePage, 1);
+		case Window_type:
+		    win = le->aptr;
+		    set(page_gad, MUIA_Group_ActivePage, 1);
 
-		sprintf(buffer, "%p", win);
-		set(info_win_addr_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%p", win);
+		    set(info_win_addr_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%p", win->NextWindow);
-		set(info_win_nextwin_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%p", win->NextWindow);
+		    set(info_win_nextwin_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->LeftEdge);
-		set(info_win_leftedge_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->LeftEdge);
+		    set(info_win_leftedge_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->TopEdge);
-		set(info_win_topedge_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->TopEdge);
+		    set(info_win_topedge_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->Height);
-		set(info_win_height_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->Height);
+		    set(info_win_height_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->Width);
-		set(info_win_width_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->Width);
+		    set(info_win_width_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->MinWidth);
-		set(info_win_minwidth_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->MinWidth);
+		    set(info_win_minwidth_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->MinHeight);
-		set(info_win_minheight_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->MinHeight);
+		    set(info_win_minheight_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->MaxWidth);
-		set(info_win_maxwidth_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->MaxWidth);
+		    set(info_win_maxwidth_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->MaxHeight);
-		set(info_win_maxheight_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->MaxHeight);
+		    set(info_win_maxheight_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "0x%08lx", win->Flags);
-		set(info_win_flags_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "0x%08lx", win->Flags);
+		    set(info_win_flags_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "0x%08lx", win->IDCMPFlags);
-		set(info_win_idcmp_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "0x%08lx", win->IDCMPFlags);
+		    set(info_win_idcmp_gad, MUIA_Text_Contents, buffer);
 
-		set(info_win_title_gad, MUIA_Text_Contents, win->Title);
+		    set(info_win_title_gad, MUIA_Text_Contents, win->Title);
 
-		sprintf(buffer, "%d", win->ReqCount);
-		set(info_win_req_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->ReqCount);
+		    set(info_win_req_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%p", win->WScreen);
-		set(info_win_screen_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%p", win->WScreen);
+		    set(info_win_screen_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->BorderLeft);
-		set(info_win_borderleft_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->BorderLeft);
+		    set(info_win_borderleft_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->BorderTop);
-		set(info_win_bordertop_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->BorderTop);
+		    set(info_win_bordertop_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->BorderRight);
-		set(info_win_borderright_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->BorderRight);
+		    set(info_win_borderright_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%d", win->BorderBottom);
-		set(info_win_borderbottom_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%d", win->BorderBottom);
+		    set(info_win_borderbottom_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%p", win->parent);
-		set(info_win_parentwin_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%p", win->parent);
+		    set(info_win_parentwin_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%p", win->firstchild);
-		set(info_win_firstchild_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%p", win->firstchild);
+		    set(info_win_firstchild_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%p", win->Parent);
-		set(info_win_parent_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%p", win->Parent);
+		    set(info_win_parent_gad, MUIA_Text_Contents, buffer);
 
-		sprintf(buffer, "%p", win->Descendant);
-		set(info_win_descendant_gad, MUIA_Text_Contents, buffer);
+		    sprintf(buffer, "%p", win->Descendant);
+		    set(info_win_descendant_gad, MUIA_Text_Contents, buffer);
 
-		break;
-	    default:
-		// selected screen/window doesn't exist anymore
-		CallHookPkt(&update_hook, 0, 0);
-		break;
+		    break;
+		default:
+		    // selected screen/window doesn't exist anymore
+		    CallHookPkt(&update_hook, 0, 0);
+		    break;
+	    }
 	}
-    }
-    else
-    {
-	set(info_scr_addr_gad, MUIA_Text_Contents, NULL);
-	set(info_scr_leftedge_gad, MUIA_Text_Contents, NULL);
-	set(info_scr_topedge_gad, MUIA_Text_Contents, NULL);
-	set(info_scr_width_gad, MUIA_Text_Contents, NULL);
-	set(info_scr_height_gad, MUIA_Text_Contents, NULL);
-	set(info_scr_flags_gad, MUIA_Text_Contents, NULL);
-	set(info_scr_title_gad, MUIA_Text_Contents, NULL);
-	set(info_scr_deftitle_gad, MUIA_Text_Contents, NULL);
-	set(info_scr_firstwindow_gad, MUIA_Text_Contents, NULL);
-	set(info_win_addr_gad, MUIA_Text_Contents, NULL);
-	set(info_win_nextwin_gad, MUIA_Text_Contents, NULL);
-	set(info_win_leftedge_gad, MUIA_Text_Contents, NULL);
-	set(info_win_topedge_gad, MUIA_Text_Contents, NULL);
-	set(info_win_height_gad, MUIA_Text_Contents, NULL);
-	set(info_win_width_gad, MUIA_Text_Contents, NULL);
-	set(info_win_minwidth_gad, MUIA_Text_Contents, NULL);
-	set(info_win_minheight_gad, MUIA_Text_Contents, NULL);
-	set(info_win_maxwidth_gad, MUIA_Text_Contents, NULL);
-	set(info_win_maxheight_gad, MUIA_Text_Contents, NULL);
-	set(info_win_flags_gad, MUIA_Text_Contents, NULL);
-	set(info_win_idcmp_gad, MUIA_Text_Contents, NULL);
-	set(info_win_title_gad, MUIA_Text_Contents, NULL);
-	set(info_win_req_gad, MUIA_Text_Contents, NULL);
-	set(info_win_screen_gad, MUIA_Text_Contents, NULL);
-	set(info_win_borderleft_gad, MUIA_Text_Contents, NULL);
-	set(info_win_bordertop_gad, MUIA_Text_Contents, NULL);
-	set(info_win_borderright_gad, MUIA_Text_Contents, NULL);
-	set(info_win_borderbottom_gad, MUIA_Text_Contents, NULL);
-	set(info_win_parentwin_gad, MUIA_Text_Contents, NULL);
-	set(info_win_firstchild_gad, MUIA_Text_Contents, NULL);
-	set(info_win_parent_gad, MUIA_Text_Contents, NULL);
-	set(info_win_descendant_gad, MUIA_Text_Contents, NULL);
+	else  // window is open but no entry is selected
+	{
+	    set(info_scr_addr_gad, MUIA_Text_Contents, NULL);
+	    set(info_scr_leftedge_gad, MUIA_Text_Contents, NULL);
+	    set(info_scr_topedge_gad, MUIA_Text_Contents, NULL);
+	    set(info_scr_width_gad, MUIA_Text_Contents, NULL);
+	    set(info_scr_height_gad, MUIA_Text_Contents, NULL);
+	    set(info_scr_flags_gad, MUIA_Text_Contents, NULL);
+	    set(info_scr_title_gad, MUIA_Text_Contents, NULL);
+	    set(info_scr_deftitle_gad, MUIA_Text_Contents, NULL);
+	    set(info_scr_firstwindow_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_addr_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_nextwin_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_leftedge_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_topedge_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_height_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_width_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_minwidth_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_minheight_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_maxwidth_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_maxheight_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_flags_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_idcmp_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_title_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_req_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_screen_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_borderleft_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_bordertop_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_borderright_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_borderbottom_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_parentwin_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_firstchild_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_parent_gad, MUIA_Text_Contents, NULL);
+	    set(info_win_descendant_gad, MUIA_Text_Contents, NULL);
+	}
     }
 
     AROS_USERFUNC_EXIT
@@ -970,7 +973,11 @@ static void MakeGUI(void)
 		    Child, (IPTR)(ColGroup(2),
 			GroupFrameT("Window"),
 			Child, (IPTR)Label("Address"),
-			Child, (IPTR)(info_win_addr_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_addr_gad = TextObject,
+			    TextFrame,
+			    MUIA_Text_Contents, (IPTR)"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+			    MUIA_Text_SetMin, TRUE,
+			End),
 			Child, (IPTR)Label("NextWindow"),
 			Child, (IPTR)(info_win_nextwin_gad = TextObject, TextFrame, End),
 			Child, (IPTR)Label("LeftEdge"),
