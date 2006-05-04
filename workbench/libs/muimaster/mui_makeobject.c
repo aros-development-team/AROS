@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define MUIMASTER_YES_INLINE_STDARG
+
 #include <proto/intuition.h>
 #include <intuition/classusr.h>
 #include <libraries/gadtools.h>
@@ -50,62 +52,67 @@ STATIC int get_control_char(const char *label)
 STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Library *MUIMasterBase)
 {
     int i = 0;
+
     Object *menustrip = MenuitemObject,End;
-    Object *menu = NULL;
-    Object *menuitem = NULL;
+    Object *menu      = NULL;
+    Object *menuitem  = NULL;
 
     if (!menustrip) return NULL;
 
-    for (;newmenu[i].nm_Type != NM_END;i++)
+    for (; newmenu[i].nm_Type != NM_END; i++)
     {
     	if (newmenu[i].nm_Type == NM_TITLE)
     	{
-	    menu = MenuitemObject, MUIA_Menuitem_Title, newmenu[i].nm_Label, MUIA_UserData, newmenu[i].nm_UserData, End;
-	    if (menu) DoMethod(menustrip, MUIM_Family_AddTail, (IPTR)menu);
+	    menu = MenuitemObject, 
+	               MUIA_Menuitem_Title, (IPTR)newmenu[i].nm_Label, 
+		       MUIA_UserData,       (IPTR)newmenu[i].nm_UserData,
+		   End;
+	    if (menu)
+	        DoMethod(menustrip, MUIM_Family_AddTail, (IPTR)menu);
 	    menuitem = NULL;
-	} else
+	} 
+	else
 	{
 	    char *label = (char *)newmenu[i].nm_Label;
 	    char *commkey;
 
-	    if (flags & MUIO_MenustripNM_CommandKeyCheck)
-	    {
-	    	if ((label != (char*)NM_BARLABEL) && !label[1])
-	    	{
-	    	    label+=2;
-	    	    commkey = label;
-	    	}
-	    	else commkey = (char *)newmenu[i].nm_CommKey;
-	    } else commkey = (char *)newmenu[i].nm_CommKey;
-
-	    if (newmenu[i].nm_Type == NM_ITEM)
-    	    {
-	        menuitem = MenuitemObject,
-	            MUIA_Menuitem_Title, label,
-	            MUIA_Menuitem_Shortcut, commkey,
-	            MUIA_Menuitem_Checkit, !!(newmenu[i].nm_Flags & CHECKIT),
-		    MUIA_Menuitem_Checked, !!(newmenu[i].nm_Flags & CHECKED),
-	            MUIA_Menuitem_Exclude, newmenu[i].nm_MutualExclude,
-		    MUIA_Menuitem_CommandString, !!(newmenu[i].nm_Flags & NM_COMMANDSTRING),
-		    MUIA_Menuitem_Toggle, !!(newmenu[i].nm_Flags & MENUTOGGLE),
-		    MUIA_UserData, newmenu[i].nm_UserData,
-	            End;
-	        if (menuitem) DoMethod(menu, MUIM_Family_AddTail, (IPTR)menuitem);
-	    } else
-	    if (newmenu[i].nm_Type == NM_SUB)
-	    {
-		Object *subitem = MenuitemObject,
-	            MUIA_Menuitem_Title, label,
-	            MUIA_Menuitem_Shortcut, commkey,
-	            MUIA_Menuitem_Checkit, !!(newmenu[i].nm_Flags & CHECKIT),
-	            MUIA_Menuitem_Checked, !!(newmenu[i].nm_Flags & CHECKED),
-	            MUIA_Menuitem_Exclude, newmenu[i].nm_MutualExclude,
-		    MUIA_Menuitem_CommandString, !!(newmenu[i].nm_Flags & NM_COMMANDSTRING),
-		    MUIA_Menuitem_Toggle, !!(newmenu[i].nm_Flags & MENUTOGGLE),
-		    MUIA_UserData, newmenu[i].nm_UserData,
-	            End;
-		if (subitem) DoMethod(menuitem, MUIM_Family_AddTail, (IPTR)subitem);
+	    if
+	    (
+	           (flags & MUIO_MenustripNM_CommandKeyCheck)
+	        && label != (char*)NM_BARLABEL
+		&& label[1] == '\0'
+	    )
+	    { 
+     	        label   += 2;
+	    	commkey  = label;
 	    }
+	    else
+	       commkey = (char *)newmenu[i].nm_CommKey;
+
+            if (newmenu[i].nm_Type == NM_ITEM || (menuitem != NULL && newmenu[i].nm_Type == NM_SUB))
+    	    {
+	        Object *item = MenuitemObject,
+	            MUIA_Menuitem_Title,         (IPTR)label,
+	            MUIA_Menuitem_Shortcut,      (IPTR)commkey,
+		    MUIA_UserData,               (IPTR)newmenu[i].nm_UserData,
+	            MUIA_Menuitem_Exclude,       (IPTR)newmenu[i].nm_MutualExclude,
+	            MUIA_Menuitem_Checkit,       (newmenu[i].nm_Flags & CHECKIT)          != 0,
+		    MUIA_Menuitem_Checked,       (newmenu[i].nm_Flags & CHECKED)          != 0,
+		    MUIA_Menuitem_Toggle,        (newmenu[i].nm_Flags & MENUTOGGLE)       != 0,
+		    MUIA_Menuitem_CommandString, (newmenu[i].nm_Flags & NM_COMMANDSTRING) != 0,
+	        End;
+		
+		if (item != NULL)
+		{
+		    if (newmenu[i].nm_Type == NM_ITEM )
+		    {
+		        DoMethod(menu, MUIM_Family_AddTail, (IPTR)item);
+			menuitem = item;
+		    }
+		    else
+		        DoMethod(menuitem, MUIM_Family_AddTail, (IPTR)item);
+		}
+	    } 
 	}
     }
     return menustrip;
@@ -140,20 +147,20 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
             MUIA_ControlChar : 
             TAG_IGNORE,             (IPTR) controlChar,
             
-            Child, HVSpace,
-            Child, ImageObject,
+            Child, (IPTR)HVSpace,
+            Child, (IPTR)ImageObject,
                 MUIA_Image_Spec, (IPTR) imageSpec,
                 MUIA_Weight,            0,
             End,
-            Child, HSpace(4),
-            Child, TextObject,
+            Child, (IPTR)HSpace(4),
+            Child, (IPTR)TextObject,
                 MUIA_Font,                  MUIV_Font_Button,
                 MUIA_Text_HiCharIdx, (IPTR) '_',
                 MUIA_Text_Contents,  (IPTR) label,
                 MUIA_Text_PreParse,  (IPTR) "\33c",
                 MUIA_Weight,                0,
             End,
-            Child, HVSpace,
+            Child, (IPTR)HVSpace,
         End;    
         
     }
@@ -293,39 +300,39 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
 		    control_char?MUIA_ControlChar:TAG_IGNORE, control_char,
 		    MUIA_Group_HorizSpacing, 0,
 		    MUIA_Group_SameHeight, TRUE,
-		    Child, HSpace(2),
-		    Child, VGroup,
+		    Child, (IPTR)HSpace(2),
+		    Child, (IPTR)VGroup,
 		    	MUIA_Group_VertSpacing, 0,
-			Child, RectangleObject, End,
-			Child, ChunkyImageObject,
-			    MUIA_FixWidth, img->width,
-			    MUIA_FixHeight, img->height,
-			    MUIA_ChunkyImage_Pixels, (IPTR)img->data,
+			Child, (IPTR)RectangleObject, End,
+			Child, (IPTR)ChunkyImageObject,
+			    MUIA_FixWidth,              img->width,
+			    MUIA_FixHeight,             img->height,
+			    MUIA_ChunkyImage_Pixels,    (IPTR)img->data,
 			    MUIA_ChunkyImage_NumColors, img->numcolors,
-			    MUIA_ChunkyImage_Palette, (IPTR)img->pal,
-			    MUIA_Bitmap_Width, img->width,
-			    MUIA_Bitmap_Height, img->height,
-			    MUIA_Bitmap_UseFriend, TRUE,
-			    MUIA_Bitmap_Transparent, 0,
-			    End,
-			Child, RectangleObject, End,
+			    MUIA_ChunkyImage_Palette,   (IPTR)img->pal,
+			    MUIA_Bitmap_Width,          img->width,
+			    MUIA_Bitmap_Height,         img->height,
+			    MUIA_Bitmap_UseFriend,      TRUE,
+			    MUIA_Bitmap_Transparent,    0,
 			End,
-		    Child, HSpace(2),
-		    Child, RectangleObject, End,
-		    Child, VGroup,
+			Child, (IPTR)RectangleObject, End,
+		    End,
+		    Child, (IPTR)HSpace(2),
+		    Child, (IPTR)RectangleObject, End,
+		    Child, (IPTR)VGroup,
 		    	MUIA_Group_VertSpacing, 0,
-			Child, RectangleObject, End,
-			Child, TextObject,
+			Child, (IPTR)RectangleObject, End,
+			Child, (IPTR)TextObject,
 			    MUIA_Font, MUIV_Font_Button,
 			    MUIA_Text_HiCharIdx, '_',
 			    MUIA_Text_Contents, (IPTR)label,
 			    MUIA_Text_SetMax, TRUE,
-			    End,
-			Child, RectangleObject, End,
 			End,
-		    Child, RectangleObject, End,
-		    Child, HSpace(2),
-		    End;
+			Child, (IPTR)RectangleObject, End,
+		    End,
+		    Child, (IPTR)RectangleObject, End,
+		    Child, (IPTR)HSpace(2),
+		End;
 	    	
 	    } /* if (img) */
 	    
