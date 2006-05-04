@@ -260,8 +260,7 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 static void update_list(void)
 {
     struct BrokerCopy *node;
-    LONG n = GetBrokerList(&brokerList);
-    D(bug("Exchange: Number of Brokers %ld\n", n));
+    GetBrokerList(&brokerList);
 
     nnset(textgad1, MUIA_Text_Contents, NULL);
     nnset(textgad2, MUIA_Text_Contents, NULL);
@@ -285,7 +284,7 @@ AROS_UFH3(void, broker_func,
 {
     AROS_USERFUNC_INIT
 
-	D(bug("Exchange: Broker hook called\n"));
+    D(bug("Exchange: Broker hook called\n"));
     if (CxMsgType(msg) == CXM_COMMAND)
     {
 	if (CxMsgID(msg) == CXCMD_APPEAR)
