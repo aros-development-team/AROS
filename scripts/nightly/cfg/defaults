@@ -22,6 +22,11 @@ CFG_MAIL_CC=MUST_BE_SET
 # Allowed: yes, no
 CFG_UPLOAD_ENABLE=no
 
+# Whether to upload archives to backup server. Has no effect if
+# CFG_UPLOAD_ENABLE is disabled.
+# Allowed: yes, no
+CFG_BACKUP_ENABLE=yes
+
 # Whether to remove the archives after having uploaded them.
 # Allowed: yes, no
 CFG_UPLOAD_PRUNE=yes
