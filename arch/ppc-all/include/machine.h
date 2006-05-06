@@ -60,53 +60,43 @@ register unsigned char* AROS_GET_SP asm("%sp");
     address. There are also a couple of macros which you should use to
     access the vector table from C.
 */
-#if 0
 struct FullJumpVec
 {
-    unsigned long lwz;
-    unsigned long mlr;
-	 unsigned long jmp;
-    unsigned long vec;
+    unsigned long addis; // simplified: lis   11, a@h
+    unsigned long ori;   //           : li    11, a@l
+    unsigned long mtspr; //           : mtctr 11
+    unsigned long jmp;   // bcctr     : bctr  11
 };
-#define __AROS_SET_FULLJMP(v,a) \
-   ((struct FullJumoVec *)v->lwz = *(32<<26) |  (0<<21) | \
-   ((struct FullJumoVec *)v->mlr = \
-	((struct FullJumpVec *)v->jmp = ((19<<26) | (20<<21) | (0<<16) | (0<<11) | (16<<1) | 0), \
-	((struct FullJumpVec *)v->vec = (unsigned long)a)
+/* browse MPCFPE32B.pdf to understand opcode creation */
+#define __AROS_SET_FULLJMP(v,a)\
+{\
+    struct FullJumpVec *_v = (v);                                                \
+    _v->addis = (15 << 26) | (11 << 21) | ((ULONG)(a) >> 16);                    \
+    _v->ori   = (24 << 26) | (11 << 21) | (11 << 16) | ((ULONG)(a) & 0x0000FFFF);\
+    _v->mtspr = (31 << 26) | (11 << 21) | ( 9 << 16) | (467 << 1);               \
+    _v->jmp   = (19 << 26) | (20 << 21) | (528 << 1);                            \
+}
 
-struct JumpVec
-{
-    unsigned char vec[4];
-};
-/* Internal macros */
-#define __AROS_SET_VEC(v,a)             (*(ULONG*)(v)->vec=(ULONG)(a))
-#define __AROS_GET_VEC(v)               ((APTR)(*(ULONG*)(v)->vec))
-#else
-struct FullJumpVec
-{
-    unsigned long vec;
-};
 /*
-	 BIT
-	31..26: 18
-	25.. 2: address shifted to the left by 2
-	     1: 0 = EA=address+instruction
-		1 = EA=address
-	     0: 1 = LR=EA of following INSTR
+    Extracts and stores the start address from a loaded
+    executable segment. start_address may then be used by gdb.
 */
-#define __AROS_SET_FULLJMP(v,a) \
-	((struct FullJumpVec *)v)->vec =\
-	      (18 << 26)\
-	    | ((char *)(a) - (char *)&(((struct FullJumpVec *)v)->vec)) & 0x3FFFFFFC
+#define __AROS_SET_START_ADDR(debug_segnode)\
+{\
+    struct FullJumpVec *_v = (struct FullJumpVec *) ((debug_segnode)->seglist + 4);\
+    (debug_segnode)->start_address  = (IPTR) ((_v->addis & 0x0000FFFF) << 16);     \
+    (debug_segnode)->start_address |= (IPTR)  (_v->ori   & 0x0000FFFF);            \
+}
 
 struct JumpVec
 {
     unsigned char vec[4];
 };
+
 /* Internal macros */
 #define __AROS_SET_VEC(v,a)             (*(ULONG*)(v)->vec=(ULONG)(a))
 #define __AROS_GET_VEC(v)               ((APTR)(*(ULONG*)(v)->vec))
-#endif
+
 /* Use these to acces a vector table */
 #define LIB_VECTSIZE			(sizeof (struct JumpVec))
 #define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(n)])
