@@ -55,6 +55,20 @@ archive()
     cd      $oldpwd
 }
 
+ziparc()
+{
+    archdir=$(dirname $1)
+    archname=$(basename $1)
+    oldpwd=$(pwd)
+    
+    makedir $archdir
+    execute zip -r9 $1 $2 -x \*/.svn/\*
+    cd      $archdir
+    echo    ">>> md5sum $archname >$archname.md5"
+    md5sum  $archname >$archname.md5
+    cd      $oldpwd
+}
+
 resetl()
 {
     LOG_THIS=/dev/null

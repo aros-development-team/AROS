@@ -20,14 +20,14 @@ make    masonicons
 make    bootdisk
 
 PACKAGE=$BASENAME-i386-pc-boot-floppy
-ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.zip
 
 makedir $BUILD_BASE/$PACKAGE
 copy    $BUILD_BASE/AROS/bin/pc-i386-tiny/gen/rom/boot/aros.bin $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
-archive $ARCHIVE $PACKAGE
+ziparc  $ARCHIVE $PACKAGE
 delete  $PACKAGE
 
 cd      $ROOT
