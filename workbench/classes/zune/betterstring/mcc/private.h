@@ -30,8 +30,6 @@
 
 #ifndef __AROS__
 #include <muiextra.h>
-#else
-#define MUI_EHF_GUIMODE 0
 #endif
 #include <mcc_common.h>
 #include <mcc_debug.h>
