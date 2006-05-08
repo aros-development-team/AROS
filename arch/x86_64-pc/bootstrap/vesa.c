@@ -104,8 +104,8 @@ asm(
 "go16:          lgdt GDT_reg\n"
 "               movl %esp, stack32\n"
 "               movl (%esp), %eax\n"
-"               movl %eax, stack16+508\n"
-"               movl $stack16+508, %esp\n"
+"               movl %eax, stack16+2044\n"
+"               movl $stack16+2044, %esp\n"
 "               movl %esp, %ebp\n"
 "               movw $0x20, %ax\n"
 "               movw %ax, %ds\n"
@@ -145,6 +145,6 @@ const struct
 GDT_reg = {sizeof(GDT_Table)-1, GDT_Table};
 
 unsigned long stack32 __attribute__((section(".data")));
-char stack16[512] __attribute__((section(".data")));
+char stack16[2048] __attribute__((section(".data")));
 struct vbe_controller   controllerinfo __attribute__((section(".data")));
 struct vbe_mode         modeinfo __attribute__((section(".data")));
