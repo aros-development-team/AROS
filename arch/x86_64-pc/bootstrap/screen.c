@@ -56,7 +56,7 @@ void Putc(char chr)
     }
     else if (!dead)
     {
-    
+        asm volatile ("out %b0,%w1"::"a"(chr),"Nd"(0x3f8));
         if (chr)
         {
             if (chr == 10)

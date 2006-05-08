@@ -8,6 +8,35 @@
 
 #include "support.h"
 
+void *memset(void *ptr, int c, long len)
+{
+    void *p = ptr;
+    long c32 = c | (c << 8) | (c << 16) | (c << 24);
+        
+    while (len >= 4)
+    {
+        *(unsigned long *)ptr = c32;
+        len-=4;
+        ptr+=4;
+    }
+    if (len >= 2)
+    {
+        *(unsigned short *)ptr = c32;
+        ptr+=2;
+        len-=2;
+    }
+    if (len == 1)
+    {
+        *(unsigned char *)ptr = c32;
+    }    
+    return p;
+}
+
+void *bzero(void *ptr, long len)
+{
+    return memset(ptr, 0, len);
+}
+
 void memcpy(void *dest, const void *src, long len)
 {
     while (len >= 4)
@@ -56,3 +85,40 @@ const char *remove_path(const char *in)
     while (p > in && p[-1] != '/' && p[-1] != ':') p--;
     return p;
 }
+
+char *strstr (const char * str, const char * search)
+{
+    long done;
+    long len_s = strlen(search);
+    const char * t;
+
+    do
+    {
+        if (*search == *str)
+        {
+            done = len_s;
+
+            t = search + 1;
+            str++;
+   
+            while ((--done) && (*t == *str))
+            {
+                t++;
+                str++;
+            }
+
+            if (!done)
+            {
+                str -= len_s;
+                return ((char *)str);
+            }
+            else
+            {
+                str -= len_s - done;
+            }
+        }
+    } while (*str++);
+
+    return(0);
+}
+

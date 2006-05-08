@@ -85,5 +85,8 @@ struct relo {
 };
 
 void load_elf_file(void *);
+void *kernel_lowest();
+void *kernel_highest();
+void set_base_address(void *, void *);
 
 #endif /*ELFLOADER_H_*/
