@@ -239,8 +239,9 @@ struct MUI_EventHandlerNode
 #endif
 
 /* here are the flags for ehn_Flags */
-#define MUI_EHF_ALWAYSKEYS (1<<0)
-#define MUI_EHF_HANDLEINPUT (1<<1) /* ZUNEPRIV: Send MUIM_HandleInput instead of MUIM_HandleEvent */
+#define MUI_EHF_ALWAYSKEYS  (1<<0)
+#define MUI_EHF_GUIMODE     (1<<1)  /* handler will not be called if object is not visible or disabled */
+#define MUI_EHF_HANDLEINPUT (1<<15) /* ZUNEPRIV: Send MUIM_HandleInput instead of MUIM_HandleEvent */
 
 /* MUIM_HandleEvent must return a bitmask where following bit's can be set (all other must be 0) */
 #define MUI_EventHandlerRC_Eat (1<<0) /* do not invoke more handlers ers */
