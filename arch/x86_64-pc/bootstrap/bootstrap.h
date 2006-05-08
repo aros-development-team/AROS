@@ -6,6 +6,29 @@
     $Id:$
 */
 
+#define NULL ((void*)0)
+
+struct KernelMessage {
+    struct { void *low,*high; } GRUBData;
+    
+    struct { void *low,*high; } kernelBase;
+    struct { void *low,*high; } kernelLowest;
+    struct { void *low,*high; } kernelHighest;  
+    struct { void *low,*high; } kernelBSS;     
+    struct { void *low,*high; } GDT;
+    struct { void *low,*high; } IDT;
+    
+    struct { void *low,*high; } vbeModeInfo;
+    struct { void *low,*high; } vbeControllerInfo;
+    
+};
+
+#ifdef DEBUG
+#define D(x)    x
+#else
+#define D(x)    /* eps */
+#endif
+
 /*
  * The target base address of 64-bit kernel
  */
@@ -29,6 +52,8 @@ struct module {
 };
 
 void *_binary_aros_o_start;
+void *_binary_vesa_start;
+long _binary_vesa_size;
 
 #if defined(__i386__) || defined(__x86_64__)
     #define LONG2BE(v)  ({ unsigned int __v32; asm volatile("bswap %0":"=a"(__v32):"0"((v))); __v32; })

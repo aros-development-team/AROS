@@ -6,23 +6,28 @@ KOBJS 		:=
 FILES		:= bootstrap screen elfloader support
 
 #MM kernel-bootstrap-x86_64: kernel-x86_64-kobj
-kernel-bootstrap-x86_64: $(TARGETDIR)/aros.bin.o $(BINDIR)/boot/aros-x86_64
+kernel-bootstrap-x86_64: $(TARGETDIR)/aros.bin.o $(TARGETDIR)/vesa.bin.o $(BINDIR)/boot/aros-x86_64
 
-$(BINDIR)/boot/aros-x86_64: $(KOBJSDIR)/bootstrap.o
+$(BINDIR)/boot/aros-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o $(TARGETDIR)/aros.bin.o
 	$(HOST_LD) -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T ldscript.lds \
 	-o $@ $< $(KOBJS) 
-	@strip --strip-unneeded -R .note -R .comment $@
 
-$(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/aros.bin.o -o $@
+#	@strip --strip-unneeded -R .note -R .comment $@
 
-$(TARGETDIR)/aros.bin.o: $(TARGETDIR)/aros.o
+$(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/vesa.bin.o $(TARGETDIR)/aros.bin.o
+	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/vesa.bin.o $(TARGETDIR)/aros.bin.o -o $@
+
+$(TARGETDIR)/aros.bin.o: $(KOBJSDIR)/kernel.o $(foreach f, $(KOBJS), $(KOBJSDIR)/$(f).o)
+	$(LD) -melf_x86_64 -r \
+	-o $(TARGETDIR)/aros.o $(KOBJSDIR)/kernel.o $(foreach f, $(KOBJS), $(KOBJSDIR)/$(f).o)
 	cd $(TARGETDIR) && $(HOST_LD) -r --format binary --oformat elf32-i386 aros.o -o aros.bin.o
 	
-$(TARGETDIR)/aros.o: $(KOBJSDIR)/kernel.o $(foreach f, $(KOBJS), $(KOBJSDIR)/$(f).o)
-	$(HOST_LD) -melf_x86_64 -r \
-	-o $@ $(KOBJSDIR)/kernel.o $(foreach f, $(KOBJS), $(KOBJSDIR)/$(f).o)
-
+$(TARGETDIR)/vesa.bin.o: $(TARGETDIR)/vesa.o
+	$(HOST_LD) -melf_i386 -e 0xf000 -Ttext 0xf000 -N -d -nostdlib \
+	-o $(TARGETDIR)/vesa $(TARGETDIR)/vesa.o
+	$(OBJCOPY) -O binary $(TARGETDIR)/vesa
+	cd $(TARGETDIR) && $(HOST_LD) -r --format binary --oformat elf32-i386 vesa -o vesa.bin.o
+	
 #MM
 setup-pc-x86_64:
 	%mkdirs_q $(BINDIR)/boot
@@ -34,10 +39,10 @@ clean ::
 	-$(RM) $(TESTS)
 
 $(TARGETDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer"
+	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
 
 $(TARGETDIR)/%.o : %.S
-	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer"
+	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
 
 $(TARGETDIR)/%.d : %.c
 	%mkdepend_q

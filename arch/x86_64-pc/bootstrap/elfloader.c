@@ -6,6 +6,8 @@
     Lang: English
 */
 
+#define DEBUG
+
 #include "elfloader.h"
 #include "screen.h"
 #include "bootstrap.h"
@@ -19,6 +21,26 @@
  */
 char *ptr_ro = (char*)KERNEL_TARGET_ADDRESS;
 char *ptr_rw = (char*)KERNEL_TARGET_ADDRESS;
+struct _bss_tracker {
+    unsigned long long addr;
+    unsigned long long len;
+} *bss_tracker;
+
+void *kernel_lowest()
+{
+    return ptr_rw;
+}
+
+void *kernel_highest()
+{
+    return ptr_ro;
+}
+
+void set_base_address(void *ptr, void *tracker)
+{
+    ptr_ro = ptr_rw = ptr;    
+    bss_tracker = (struct _bss_tracker *)tracker;
+}
 
 /*
  * read_block function copies the range of memory within ELF file to any specified location.
@@ -76,25 +98,32 @@ static int load_hunk(void *file, struct sheader *sh)
     /* Allocate a chunk with write access - take aligned memory beneath the RO kernel */
     if (sh->flags & SHF_WRITE)
     {
-        kprintf("[ELF Loader] RW chunk (%d bytes, align=%d) @ ", (unsigned int)sh->size, (unsigned int)sh->addralign);
+        D(kprintf("[ELF Loader] RW chunk (%d bytes, align=%d) @ ", (unsigned int)sh->size, (unsigned int)sh->addralign));
         ptr = (void*)(((unsigned long)ptr_rw - (unsigned long)sh->size - (unsigned long)sh->addralign + 1) & ~((unsigned long)sh->addralign-1));
         ptr_rw = ptr;
     }
     else
     {
         /* Read-Only mode? Get the memory from the kernel space, align it accorting to the demand */
-        kprintf("[ELF Loader] RO chunk (%d bytes, align=%d) @ ", (unsigned int)sh->size, (unsigned int)sh->addralign);
+        D(kprintf("[ELF Loader] RO chunk (%d bytes, align=%d) @ ", (unsigned int)sh->size, (unsigned int)sh->addralign));
         ptr_ro = (char *)(((unsigned long)ptr_ro + (unsigned long)sh->addralign - 1) & ~((unsigned long)sh->addralign-1));
         ptr = ptr_ro;
         ptr_ro = ptr_ro + sh->size;
     }
-    kprintf("%p\n", (unsigned int)ptr);
+    D(kprintf("%p\n", (unsigned int)ptr));
     
     sh->addr = (long)ptr;
     
     /* copy block of memory from ELF file if it exists */
     if (sh->type != SHT_NOBITS)
         return read_block(file, sh->offset, (void *)((unsigned long)sh->addr), sh->size);
+    else
+    {
+        bzero(ptr, sh->size);
+        bss_tracker->addr = (unsigned long long)ptr;
+        bss_tracker->len = sh->size;
+        bss_tracker++;
+    }
     
     return 1;
 }
@@ -115,7 +144,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
 
     struct symbol *SysBase_sym = (void*)0;
 
-    kprintf("[ELF Loader] performing %d relocations\n", numrel);
+    D(kprintf("[ELF Loader] performing %d relocations\n", numrel));
 
     for (i=0; i<numrel; i++, rel++)
     {
@@ -126,17 +155,18 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
         switch (sym->shindex)
         {
             case SHN_UNDEF:
-                kprintf("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
+                D(kprintf("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
                       (char *)((unsigned long)sh[shsymtab->link].addr) + sym->name,
-                      (char *)((unsigned long)sh[eh->shstrndx].addr) + toreloc->name);
+                      (char *)((unsigned long)sh[eh->shstrndx].addr) + toreloc->name));
                 return 0;
 
             case SHN_COMMON:
-                kprintf("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
+                D(kprintf("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
                       (char *)((unsigned long)sh[shsymtab->link].addr) + sym->name,
-                      (char *)((unsigned long)sh[eh->shstrndx].addr) + toreloc->name);
+                      (char *)((unsigned long)sh[eh->shstrndx].addr) + toreloc->name));
 
                 return 0;
+
             case SHN_ABS:
                 if (SysBase_sym == (void*)0)
                 {

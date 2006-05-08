@@ -29,7 +29,7 @@
 #define _CR0_CD_B 30    /* RW: Cache disable */
 #define _CR0_PG_B 31    /* RW: Paging enable */
 
-#define _CR0_PE (1 << _CRO_PE_B)
+#define _CR0_PE (1 << _CR0_PE_B)
 #define _CR0_MP (1 << _CR0_MP_B)
 #define _CR0_EM (1 << _CR0_EM_B)
 #define _CR0_TS (1 << _CR0_TS_B)
@@ -156,13 +156,20 @@ struct PTE {
     do { asm volatile("ljmp $" #seg ", $" #addr); }while(0)
 #define ljmp(s, a) _ljmp(s, a)
 
+#define _ljmp_arg(seg, addr, arg) \
+    do { asm volatile("ljmp $" #seg ", $" #addr ::"D"(arg)); }while(0)
+#define ljmp_arg(s, a, p) _ljmp_arg(s, a, p)
+
 #define rdcr(reg) \
     ({ long val; asm volatile("mov %%" #reg ",%0":"=r"(val)); val; })
 
 #define wrcr(reg, val) \
     do { asm volatile("mov %0,%%" #reg::"r"(val)); } while(0)
 
-inline void rdmsr(unsigned int msr_no, unsigned int *ret_lo, unsigned int *ret_hi)
+#define cpuid(num, eax, ebx, ecx, edx) \
+    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
+
+inline void __attribute__((always_inline)) rdmsr(unsigned int msr_no, unsigned int *ret_lo, unsigned int *ret_hi)
 {
     unsigned int ret1,ret2;
     asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
@@ -170,19 +177,19 @@ inline void rdmsr(unsigned int msr_no, unsigned int *ret_lo, unsigned int *ret_h
     *ret_hi=ret2;
 }
 
-inline long long rdmsrq(unsigned int msr_no)
+inline long long __attribute__((always_inline)) rdmsrq(unsigned int msr_no)
 {
     unsigned int ret1,ret2;
     asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
     return ((long long)ret1 | ((long long)ret2 << 32));
 }
 
-inline void wrmsr(unsigned int msr_no, unsigned int val_lo, unsigned int val_hi)
+inline void __attribute__((always_inline)) wrmsr(unsigned int msr_no, unsigned int val_lo, unsigned int val_hi)
 {
     asm volatile("wrmsr"::"a"(val_lo),"d"(val_hi),"c"(msr_no));
 }
 
-inline void wrmsrq(unsigned int msr_no, unsigned long long val)
+inline void __attribute__((always_inline)) wrmsrq(unsigned int msr_no, unsigned long long val)
 {
     asm volatile("wrmsr"::"a"((unsigned int)(val & 0xffffffff)),"d"((unsigned int)(val >> 32)),"c"(msr_no));
 }

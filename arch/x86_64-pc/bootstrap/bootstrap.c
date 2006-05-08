@@ -6,12 +6,15 @@
     Lang: English
 */
 
+#define DEBUG
+
 #include "bootstrap.h"
 #include "multiboot.h"
 #include "cpu.h"
 #include "screen.h"
 #include "elfloader.h"
 #include "support.h"
+#include "vesa.h"
 
 /*
     The Multiboot-compliant header has to be within the first 4KB (1KB??) of ELF file, 
@@ -49,10 +52,13 @@ asm("	.text\n\t"
     tables may be re-used by the 64-bit kernel.
 */
 static unsigned char __stack[65536] __attribute__((used));
+static unsigned char __bss_track[32768] __attribute__((used));
+static unsigned char __vesa_buffer[4096];
+
 static struct int_gate_64bit IGATES[256] __attribute__((used,aligned(256),section(".bss.aros.tables")));
 static struct tss_64bit TSS __attribute__((used,aligned(128),section(".bss.aros.tables")));
 static struct {
-    struct segment_desc	seg0;       /* seg 0x00 */
+    struct segment_desc seg0;      /* seg 0x00 */
     struct segment_desc super_cs;  /* seg 0x08 */
     struct segment_desc super_ds;  /* seg 0x10 */
     struct segment_desc user_cs32; /* seg 0x18 */
@@ -69,10 +75,17 @@ static struct {
 */
 static struct PML4E PML4[512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
 static struct PDPE PDP[512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
-static struct PDE2M PDE_1[512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
-static struct PDE2M PDE_2[512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
-static struct PDE2M PDE_3[512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
-static struct PDE2M PDE_4[512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
+static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
+
+static struct vbe_mode VBEModeInfo;
+static struct vbe_controller VBEControllerInfo;
+
+struct KernelMessage km;
+
+static struct {
+    void *off;
+    unsigned short seg;
+} __attribute__((packed)) KernelTarget = { (void*)KERNEL_TARGET_ADDRESS, SEG_SUPER_CS };
 
 /*
     32-bit pseudo-registers used to load the Global and Interrupt Descriptor Tables. They are used only once.
@@ -93,33 +106,51 @@ IDT_sel = {sizeof(IGATES)-1, (unsigned int)IGATES};
 */
 static void setup_tables()
 {
-    kprintf("Setting descriptor tables up.\n");
+    kprintf("[BOOT] Setting up descriptor tables.\n");
 
     /* Supervisor segments */
-    GDT.super_cs.type=0x18;	/* code segment */
+    GDT.super_cs.type=0x1a;	/* code segment */
     GDT.super_cs.dpl=0;		/* supervisor level */
     GDT.super_cs.p=1;		/* present */
     GDT.super_cs.l=1;		/* long (64-bit) one */
     GDT.super_cs.d=0;		/* must be zero */
+    GDT.super_cs.limit_low=0xffff;
+    GDT.super_cs.limit_high=0xf;
+    GDT.super_cs.g=1;
     
-    GDT.super_ds.type=0x10;	/* data segment */
+    GDT.super_ds.type=0x12;	/* data segment */
     GDT.super_ds.p=1;		/* present */
-
+    GDT.super_ds.limit_low=0xffff;
+    GDT.super_ds.limit_high=0xf;
+    GDT.super_ds.g=1;
+    GDT.super_ds.d=1;
+    
     /* User mode segments */
-    GDT.user_cs.type=0x18;	/* code segment */
+    GDT.user_cs.type=0x1a;	/* code segment */
     GDT.user_cs.dpl=3;		/* User level */
     GDT.user_cs.p=1;		/* present */
     GDT.user_cs.l=1;		/* long mode */
     GDT.user_cs.d=0;		/* must be zero */
+    GDT.user_cs.limit_low=0xffff;
+    GDT.user_cs.limit_high=0xf;
+    GDT.user_cs.g=1;
 
-    GDT.user_cs32.type=0x18;	/* code segment for legacy 32-bit code. NOT USED YET! */
+    GDT.user_cs32.type=0x1a;	/* code segment for legacy 32-bit code. NOT USED YET! */
     GDT.user_cs32.dpl=3;	/* user elvel */
     GDT.user_cs32.p=1;		/* present */
     GDT.user_cs32.l=0;		/* 32-bit mode */
     GDT.user_cs32.d=1;		/* 32-bit code */
+    GDT.user_cs32.limit_low=0xffff;
+    GDT.user_cs32.limit_high=0xf;
+    GDT.user_cs32.g=1;
     
-    GDT.user_ds.type=0x10;	/* data segment */
+    GDT.user_ds.type=0x12;	/* data segment */
+    GDT.user_ds.dpl=3;    /* user elvel */
     GDT.user_ds.p=1;		/* present */
+    GDT.user_ds.limit_low=0xffff;
+    GDT.user_ds.limit_high=0xf;
+    GDT.user_ds.g=1;
+    GDT.user_ds.d=1;
     
     /* Task State Segment */
     GDT.tss_low.type=0x09;	/* 64-bit TSS */
@@ -144,9 +175,9 @@ static void setup_tables()
 static void setup_mmu()
 {
     int i;
-    struct PDE2M *pdes[] = { PDE_1, PDE_2, PDE_3, PDE_4 };
+    struct PDE2M *pdes[] = { &PDE[0], &PDE[1], &PDE[2], &PDE[3] };
     
-    kprintf("Mapping first 4G area with MMU\n");
+    kprintf("[BOOT] Mapping first 4G area with MMU\n");
 
     /* PML4 Entry - we need only the first out of 16 entries */
     PML4[0].p  = 1; /* present */
@@ -170,7 +201,6 @@ static void setup_mmu()
         int j;
 	
         /* Set the PDP entry up and point to the PDE table */
-	
         PDP[i].p  = 1;
         PDP[i].rw = 1;
         PDP[i].us = 1;
@@ -183,7 +213,7 @@ static void setup_mmu()
         PDP[i].nx = 0;
         PDP[i].avail = 0;
         PDP[i].base_high = 0;
-        
+
         for (j=0; j < 512; j++)
         {
             /* Set PDE entries - use 2MB memory pages, with full supervisor and user access */
@@ -191,9 +221,9 @@ static void setup_mmu()
             struct PDE2M *PDE = pdes[i];
             PDE[j].p  = 1;
             PDE[j].rw = 1;
-            PDE[j].us = 1;
-            PDE[j].pwt= 1;
-            PDE[j].pcd= 1;
+            PDE[j].us = 0;
+            PDE[j].pwt= 0;  // 1
+            PDE[j].pcd= 0;  // 1
             PDE[j].a  = 0;
             PDE[j].d  = 0;
             PDE[j].g  = 0;
@@ -214,24 +244,36 @@ static void setup_mmu()
  * 
  * After that it is perfectly safe to jump into the pure 64-bit kernel.
  */
-void leave_32bit_mode()
+int leave_32bit_mode()
 {
-    unsigned int v1, v2;
+    unsigned int v1, v2, v3, v4;
+    int retval = 0;
     asm volatile ("lgdt %0\n\tlidt %1"::"m"(GDT_sel),"m"(IDT_sel));
 
-    /* Enable PAE */
-    wrcr(cr4, rdcr(cr4) | _CR4_PAE);
+    cpuid(0x80000000, v1, v2, v3, v4);
+    if (v1 > 0x80000000)
+    { 
+        cpuid(0x80000001, v1, v2, v3, v4);
+        if (v4 & (1 << 29))
+        {
+            /* Enable PAE */
+            wrcr(cr4, _CR4_PAE | _CR4_PGE);
+            
+            /* enable pages */
+            wrcr(cr3, &PML4);
+        
+            /* enable long mode */
+            rdmsr(EFER, &v1, &v2);
+            v1 |= _EFER_LME;
+            wrmsr(EFER, v1, v2);
+        
+            /* enable paging and activate long mode */
+            wrcr(cr0, _CR0_PG | _CR0_PE);
+            retval = 1;
+        }
+    }
     
-    /* enable pages */
-    wrcr(cr3, PML4);
-
-    /* enable long mode */
-    rdmsr(EFER, &v1, &v2);
-    v1 |= _EFER_LME;
-    wrmsr(EFER, v1, v2);
-
-    /* enable paging and activate long mode */
-    wrcr(cr0, rdcr(cr0) | _CR0_PG);   
+    return retval;
 }
 
 /*
@@ -290,7 +332,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
     {
         int i;
         struct mb_module *mod = (struct mb_module *)mb->mods_addr;
-        kprintf("GRUB has loaded %d modules\n", mb->mods_count);
+        D(kprintf("[BOOT] GRUB has loaded %d files\n", mb->mods_count));
               
         /* Go through the list of modules loaded by GRUB */
         for (i=0; i < mb->mods_count; i++, mod++)
@@ -308,7 +350,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                 mo->name = s;
                 mo->address = (void*)mod->mod_start;
 
-                kprintf("** module %s, addr=%p (direct)\n", mo->name, mo->address);
+                D(kprintf("[BOOT] * module %s\n", mo->name));
             }
             else if (p[0] == 'P' && p[1] == 'K' && p[2] == 'G' && p[3] == 0x00)
             {
@@ -317,6 +359,8 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                  * stored here.
                  */
                 void *file = p + 4;
+
+                D(kprintf("[BOOT] * package %s:\n", remove_path((char *)mod->string)));
 
                 while (file < (void*)mod->mod_end)
                 {
@@ -330,7 +374,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                     
                     mo->name    = s;
                     mo->address = file;
-                    kprintf("** module %s, addr=%p (from package)\n", mo->name, mo->address);
+                    D(kprintf("[BOOT]   * module %s\n", mo->name));
                     
                     file += len;
                 }
@@ -340,6 +384,112 @@ static int find_modules(struct multiboot *mb, const struct module *m)
 
     /* Return the real amount of modules to load */
     return count;
+}
+
+void setupVesa(const char *str)
+{
+    char *vesa = strstr(str, "vesa=");
+    
+    if (vesa)
+    {
+        long x=0, y=0, d=0;
+        long mode;
+        unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
+        void *vesa_start = &_binary_vesa_start;
+        vesa+=5;
+     
+        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
+        {
+            x = x*10 + *vesa++ - '0';
+        }
+        vesa++;
+        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
+        {
+            y = y*10 + *vesa++ - '0';
+        }
+        vesa++;
+        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
+        {
+            d = d*10 + *vesa++ - '0';
+        }
+        
+        kprintf("[VESA] module (@ %p) size=%d\n", &_binary_vesa_start, &_binary_vesa_size);
+        memcpy(__vesa_buffer, (void *)0xf000, vesa_size);
+        memcpy((void *)0xf000, vesa_start, vesa_size);
+        kprintf("[VESA] Module installed\n");
+
+        kprintf("[VESA] BestModeMatch for %dx%dx%d = ",x,y,d);        
+        mode = findMode(x,y,d);
+
+        getModeInfo(mode, modeinfo);
+        memcpy(&VBEModeInfo, modeinfo, sizeof(struct vbe_mode));
+        getControllerInfo(controllerinfo);
+        memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
+
+        kprintf("%x\n",mode);
+        setVbeMode(mode);
+            
+        memcpy((void *)0xf000, __vesa_buffer, vesa_size);
+        kprintf("[VESA] Module uninstalled\n");
+    }
+}
+
+void change_kernel_address(const char *str)
+{
+    char *kern = strstr(str, "base_address=");
+    if (kern)
+    {
+        unsigned long addr=0;
+        unsigned char a;
+        kern+=13;
+
+        while (*kern && *kern != ' ' )
+        {
+            a = *kern++;
+            
+            if (a >= '0' && a <= '9')
+                a -= '0';
+            else if (a >= 'a' && a <= 'f')
+                a -= 'a' - 10;
+            else if (a >= 'A' && a <= 'F')
+                a -= 'A' - 10;
+            else break;
+            
+            addr = (addr << 4) + a;
+        }
+        
+        
+        if (addr >= 0x00200000)
+        {
+            kprintf("[BOOT] Kernel base address changed to %p\n", addr);
+
+            KernelTarget.off = (void*)addr;
+            set_base_address((void *)addr, __bss_track);
+        }
+        else
+        {
+            kprintf("[BOOT] Kernel base address to low (%p). Keeping default.\n", addr);
+        }
+    }
+}
+
+void prepare_message(struct multiboot *mb)
+{
+    km.GRUBData.low = mb;
+    
+    km.GDT.low = &GDT;
+    km.IDT.low = &IGATES;
+    
+    km.kernelBase.low = KernelTarget.off;
+    km.kernelLowest.low = (void*)((long)kernel_lowest() & ~4095);
+    km.kernelHighest.low = (void*)(((long)kernel_highest() + 4095) & ~4095);
+    km.kernelBSS.low = __bss_track;
+    
+    if (VBEModeInfo.mode_attributes)
+    {
+        km.vbeModeInfo.low = &VBEModeInfo;
+        km.vbeControllerInfo.low = &VBEControllerInfo;
+    }
 }
 
 /*
@@ -364,29 +514,20 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     struct module *mod = (struct module *)__stack;  /* The list of modules at the bottom of stack */
     
     clr();
-    kprintf("AROS Bootstrap.\n");
-    kprintf("GRUB data at %p\n", addr);
-    
-    /* Test playground - the code will be copied to safe area later */
-    if (mb->flags && MB_FLAGS_MMAP)
-    {
-        	int len = mb->mmap_length;
-        	struct mb_mmap *mmap = (struct mb_mmap *)(mb->mmap_addr);
-        	kprintf("GRUB provides the following memory map:\n");
-        	
-        	while(len >= sizeof(struct mb_mmap))
-        	{
-        	    kprintf("  %p%p - %p%p: %d\n", mmap->addr_high, mmap->addr_low, mmap->len_high, mmap->len_low, mmap->type);
-        	    len -= mmap->size+4;
-        	    mmap = (struct mb_mmap *)(mmap->size + (unsigned int)mmap+4);
-        }
-    }
-    
+    kprintf("[BOOT] AROS Bootstrap.\n");
+    kprintf("[BOOT] Command line '%s'\n", mb->cmdline);
+
+    set_base_address((void *)KERNEL_TARGET_ADDRESS, __bss_track);
+
+    setupVesa(mb->cmdline);
+    change_kernel_address(mb->cmdline);
+      
     /* Setup stage - prepare 64-bit environment */
     setup_tables();
     setup_mmu();
     
     /* Load the first ELF relocable object - the kernel itself */
+    kprintf("[BOOT] Loading kernel\n");
     load_elf_file(&_binary_aros_o_start);
     
     /* Search for external modules loaded by GRUB */
@@ -398,6 +539,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
         struct module *m;
         for (m = mod; module_count > 0; module_count--, m++)
         {
+            kprintf("[BOOT] Loading %s\n", m->name);
             load_elf_file(m->address);
         }
     }
@@ -405,11 +547,18 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     /*
      * Prepare machine to leave the 32-bit mode. Activate 64-bit mode.
      */
-    leave_32bit_mode(); 
+    prepare_message(mb);
+
     /*
      * And do a necessary long jump into the 64-bit kernel
      */
-    ljmp(SEG_SUPER_CS, KERNEL_TARGET_ADDRESS);
+    kprintf("[BOOT] Leaving 32-bit environment."
+        " LJMP $%x,$%p\n\n", SEG_SUPER_CS, KernelTarget.off);
+
+    if (leave_32bit_mode())
+        asm volatile("ljmp *%0"::"m"(KernelTarget),"D"(&km));
+    else
+    	kprintf("[BOOT] PANIC! Your CPU does not support Long Mode\n");
     
     /*
      * This code should not be reached at all.  
