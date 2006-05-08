@@ -28,7 +28,6 @@
 #ifndef ClassAct
 #include <libraries/mui.h>
 #ifdef __AROS__
-#define MUI_EHF_GUIMODE 0
 #define MUIA_Prop_Release             0x80429839
 #else
 #include "muiextra.h"
