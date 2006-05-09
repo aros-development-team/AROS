@@ -414,7 +414,7 @@ void setupVesa(const char *str)
         }
         
         kprintf("[VESA] module (@ %p) size=%d\n", &_binary_vesa_start, &_binary_vesa_size);
-        memcpy(__vesa_buffer, (void *)0xf000, vesa_size);
+        memcpy(__vesa_buffer, (void *)0xf000, sizeof(__vesa_buffer));
         memcpy((void *)0xf000, vesa_start, vesa_size);
         kprintf("[VESA] Module installed\n");
 
@@ -429,7 +429,7 @@ void setupVesa(const char *str)
         kprintf("%x\n",mode);
         setVbeMode(mode);
             
-        memcpy((void *)0xf000, __vesa_buffer, vesa_size);
+        memcpy((void *)0xf000, __vesa_buffer, sizeof(__vesa_buffer));
         kprintf("[VESA] Module uninstalled\n");
     }
 }
