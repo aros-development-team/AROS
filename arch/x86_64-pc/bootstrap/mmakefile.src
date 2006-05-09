@@ -11,8 +11,7 @@ kernel-bootstrap-x86_64: $(TARGETDIR)/aros.bin.o $(TARGETDIR)/vesa.bin.o $(BINDI
 $(BINDIR)/boot/aros-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o $(TARGETDIR)/aros.bin.o
 	$(HOST_LD) -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T ldscript.lds \
 	-o $@ $< $(KOBJS) 
-
-#	@strip --strip-unneeded -R .note -R .comment $@
+	@strip --strip-unneeded -R .note -R .comment $@
 
 $(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/vesa.bin.o $(TARGETDIR)/aros.bin.o
 	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/vesa.bin.o $(TARGETDIR)/aros.bin.o -o $@
