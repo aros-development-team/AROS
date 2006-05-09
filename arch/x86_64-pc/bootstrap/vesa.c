@@ -51,7 +51,9 @@ short findMode(int x, int y, int d)
     
     if (getControllerInfo(&controllerinfo) == 0x4f)
     {
-        unsigned short *modes = (unsigned short *)controllerinfo.video_mode;
+        unsigned short *modes = (unsigned short *)
+            (((controllerinfo.video_mode >> 16) << 4) + (controllerinfo.video_mode & 0xffff));
+
         int i;
                 
         for (i=0; modes[i] != 0xffff; ++i)
@@ -104,8 +106,10 @@ asm(
 "go16:          lgdt GDT_reg\n"
 "               movl %esp, stack32\n"
 "               movl (%esp), %eax\n"
-"               movl %eax, stack16+2044\n"
-"               movl $stack16+2044, %esp\n"
+"               movl %eax, 0xfff8\n"
+"               movl $0xfff8, %esp\n"
+//"               movl %eax, stack16+2044\n"
+//"               movl $stack16+2044, %esp\n"
 "               movl %esp, %ebp\n"
 "               movw $0x20, %ax\n"
 "               movw %ax, %ds\n"
@@ -145,6 +149,6 @@ const struct
 GDT_reg = {sizeof(GDT_Table)-1, GDT_Table};
 
 unsigned long stack32 __attribute__((section(".data")));
-char stack16[2048] __attribute__((section(".data")));
+//char stack16[2048] __attribute__((section(".data")));
 struct vbe_controller   controllerinfo __attribute__((section(".data")));
 struct vbe_mode         modeinfo __attribute__((section(".data")));
