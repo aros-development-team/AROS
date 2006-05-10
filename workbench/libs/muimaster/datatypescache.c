@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright  2002, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -22,6 +22,9 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/layers.h>
+#include <proto/cybergraphics.h>
+
+#include	<libraries/cybergraphics.h>
 
 /* #define MYDEBUG 1 */
 #include "debug.h"
@@ -42,6 +45,7 @@ struct dt_node
     struct Screen *scr;
     int count;
     struct BackFillInfo *bfi;
+    UBYTE mask;
 };
 
 /* A BltBitMaskPort() replacement which blits masks for interleaved bitmaps correctly */
@@ -152,7 +156,21 @@ static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
 
     if (o)
     {
+	struct BitMapHeader *bmhd;
+	
+	GetDTAttrs(o,PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
+	if (bmhd->bmh_Masking == mskHasAlpha)
+	{
+	    if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15)
+    	    {
+	    	SetAttrs(o, PDTA_FreeSourceBitMap, FALSE,
+		    	    PDTA_Remap, FALSE,
+			    TAG_DONE);
+	    }
+	}
+	
 	struct FrameInfo fri = {0};
+	
 	D(bug("DTM_FRAMEBOX\n", o));
 	DoMethod(o,DTM_FRAMEBOX,NULL,(IPTR)&fri,(IPTR)&fri,sizeof(struct FrameInfo),0);
 	
@@ -218,6 +236,7 @@ struct dt_node *dt_load_picture(CONST_STRPTR filename, struct Screen *scr)
 		{
 		    node->width = bmhd->bmh_Width;
 		    node->height = bmhd->bmh_Height;
+		    node->mask = bmhd->bmh_Masking;
 		    D(bug("picture %lx = %ldx%ld\n", node->o, node->width, node->height));
 		}
 		node->scr = scr;
@@ -261,39 +280,65 @@ int dt_height(struct dt_node *node)
     return node->height;
 }
 
+
 void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y)
 {
     struct BitMap *bitmap = NULL;
+    struct	pdtBlitPixelArray pa;
+    ULONG	depth = 0;
+    ULONG       *img;
     Object *o;
 
     o = node->o;
     if (NULL == o)
 	return;
 
-    GetDTAttrs(o, PDTA_DestBitMap, (IPTR)&bitmap, TAG_DONE);
-    if (NULL == bitmap)
-	GetDTAttrs(o, PDTA_BitMap, (IPTR)&bitmap, TAG_DONE);
-
-    if (bitmap)
+    depth = (ULONG) GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+    if ((depth >= 15) && (node->mask == mskHasAlpha))
     {
-	APTR mask = NULL;
-
-	GetDTAttrs(o, PDTA_MaskPlane, (IPTR)&mask, TAG_DONE);
-	if (mask)
+	img = (ULONG *) AllocVec(dt_width(node) * dt_height(node) * 4, MEMF_ANY);
+        if (img)
 	{
-	#ifndef __AROS__
-	    MyBltMaskBitMapRastPort(bitmap, 0, 0, rp, x, y,
-				    dt_width(node), dt_height(node), 0xe0,
-				    (PLANEPTR)mask);
-	#else
-	    BltMaskBitMapRastPort(bitmap, 0, 0, rp, x, y,
-				  dt_width(node), dt_height(node), 0xe0,
-				  (PLANEPTR)mask);	
-	#endif
+               pa.MethodID = PDTM_READPIXELARRAY;
+               pa.pbpa_PixelData = (UBYTE *) img;
+               pa.pbpa_PixelFormat = PBPAFMT_ARGB;
+               pa.pbpa_PixelArrayMod = dt_width(node) * 4;
+               pa.pbpa_Left = 0;
+               pa.pbpa_Top = 0;
+               pa.pbpa_Width = dt_width(node);
+               pa.pbpa_Height = dt_height(node);
+               DoMethodA(o, (Msg) &pa);
+	       WritePixelArrayAlpha(img, 0, 0, dt_width(node) * 4, rp, x, y, dt_width(node), dt_height(node), 0xffffffff);
+	       FreeVec((APTR) img);
 	}
-	else
-	    BltBitMapRastPort(bitmap, 0, 0, rp, x, y,
-			      dt_width(node), dt_height(node), 0xc0);
+    }
+    else
+    {
+	GetDTAttrs(o, PDTA_DestBitMap, (IPTR)&bitmap, TAG_DONE);
+	if (NULL == bitmap)
+	    GetDTAttrs(o, PDTA_BitMap, (IPTR)&bitmap, TAG_DONE);
+
+	if (bitmap)
+	{
+	    APTR mask = NULL;
+
+	    GetDTAttrs(o, PDTA_MaskPlane, (IPTR)&mask, TAG_DONE);
+	    if (mask)
+	    {
+	    #ifndef __AROS__
+		MyBltMaskBitMapRastPort(bitmap, 0, 0, rp, x, y,
+					dt_width(node), dt_height(node), 0xe0,
+					(PLANEPTR)mask);
+	    #else
+		BltMaskBitMapRastPort(bitmap, 0, 0, rp, x, y,
+				      dt_width(node), dt_height(node), 0xe0,
+				      (PLANEPTR)mask);	
+	    #endif
+	    }
+	    else
+		BltBitMapRastPort(bitmap, 0, 0, rp, x, y,
+				  dt_width(node), dt_height(node), 0xc0);
+	}
     }
 }
 
