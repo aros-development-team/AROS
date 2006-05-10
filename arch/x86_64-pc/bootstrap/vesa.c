@@ -1,5 +1,7 @@
 #define _IMPLEMENTATION_
 
+asm ("begin:");
+
 #include "vesa.h"
 #define ABS(x) (((x) >= 0) ? (x) : -(x))
 
@@ -106,10 +108,8 @@ asm(
 "go16:          lgdt GDT_reg\n"
 "               movl %esp, stack32\n"
 "               movl (%esp), %eax\n"
-"               movl %eax, 0xfff8\n"
-"               movl $0xfff8, %esp\n"
-//"               movl %eax, stack16+2044\n"
-//"               movl $stack16+2044, %esp\n"
+"               movl %eax, begin + 0xff8\n"
+"               movl $begin + 0xff8, %esp\n"
 "               movl %esp, %ebp\n"
 "               movw $0x20, %ax\n"
 "               movw %ax, %ds\n"
@@ -148,7 +148,6 @@ const struct
 }
 GDT_reg = {sizeof(GDT_Table)-1, GDT_Table};
 
-unsigned long stack32 __attribute__((section(".data")));
-//char stack16[2048] __attribute__((section(".data")));
-struct vbe_controller   controllerinfo __attribute__((section(".data")));
-struct vbe_mode         modeinfo __attribute__((section(".data")));
+unsigned long           stack32;
+struct vbe_controller   controllerinfo;
+struct vbe_mode         modeinfo;
