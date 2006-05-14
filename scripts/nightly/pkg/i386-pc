@@ -17,7 +17,7 @@ execute ./configure --target=pc-i386 --enable-build-type=nightly
 make
 
 PACKAGE=$BASENAME-i386-pc-boot-iso
-ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.zip
 
 CONTRIB_ARCHIVE=$ARCHIVE_ROOT/$VERSION/Binaries/AROS-$VERSION-i386-all-contrib.tar.bz2
 if [ -f $CONTRIB_ARCHIVE ]; then
@@ -37,7 +37,7 @@ copy    $BUILD_BASE/AROS/bin/pc-i386/gen/rom/boot/aros.iso $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
-archive $ARCHIVE $PACKAGE
+ziparc  $ARCHIVE $PACKAGE
 delete  $PACKAGE
 
 cd      $ROOT
