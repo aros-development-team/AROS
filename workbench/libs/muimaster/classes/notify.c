@@ -116,7 +116,11 @@ static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_
     nnode->nn_DestObj   = msg->DestObj;
     nnode->nn_NumParams = msg->FollowParams;
 
-    if ((nnode->nn_Params = (IPTR *)mui_alloc(msg->FollowParams * sizeof(IPTR))))
+    /* Allocate one more IPTR (FollowParams + 1) as some ext apps/classes
+       forget trailing NULLs in methods like MUIM_MultiSet and MUI seems
+       like it can live with that (without crashing) */
+    
+    if ((nnode->nn_Params = (IPTR *)mui_alloc((msg->FollowParams + 1) * sizeof(IPTR))))
     {
 	for (i = 0; i < msg->FollowParams; i++)
 	{
