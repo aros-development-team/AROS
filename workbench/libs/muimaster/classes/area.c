@@ -607,7 +607,7 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			    }
 			}
 
-		    	if (recalc)
+		    	if (recalc && muiRenderInfo(obj)) /* If renderinfo is NULL _win(obj) does not work (crash) */
 		    	{
 			    DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)_parent(obj));
 			}
