@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
@@ -59,8 +61,10 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write exec/CachePostDMA()
+#warning "TODO: Write exec/CachePostDMA()"
+#if defined(DEBUG) && (DEBUG > 0)
     aros_print_not_implemented("CachePostDMA");
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* CachePostDMA */

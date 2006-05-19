@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <aros/libcall.h>
@@ -65,8 +67,10 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write exec/CachePreDMA()
+#warning "TODO: Write exec/CachePreDMA()"
+#if defined(DEBUG) && (DEBUG > 0)
     aros_print_not_implemented("CachePreDMA");
+#endif
     return NULL;
 
     AROS_LIBFUNC_EXIT
