@@ -195,9 +195,6 @@ BOOPSI_DISPATCHER(IPTR, Dtpic_Dispatcher, cl, obj, msg)
 	case OM_NEW:
             return Dtpic__OM_NEW(cl, obj, (struct opSet *)msg);
 	
-       case OM_SET:
-            return Dtpic__OM_SET(cl, obj, (struct opSet *)msg);
-	
     	case MUIM_Setup:
 	    return Dtpic__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
 	    
