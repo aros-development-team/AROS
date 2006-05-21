@@ -1559,7 +1559,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 			{
 			    data->wd_HelpBubble = (APTR)DoMethod(underobj, MUIM_CreateBubble,
 			    	    	    	    		 imsg->MouseX, imsg->MouseY,
-			    	    	    	    		 (IPTR)muiAreaData(underobj)->mad_ShortHelp, 0);
+			    	    	    	    		 0, 0);
 			    if (data->wd_HelpBubble)
 			    {
 		    		data->wd_HelpObject = underobj;
