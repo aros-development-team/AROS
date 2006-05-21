@@ -439,7 +439,8 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_AreaData *data  = INST_DATA(cl, obj);
     struct TagItem             *tags  = msg->ops_AttrList;
     struct TagItem             *tag;
-
+    CONST_STRPTR  	    	old_backgroundspec;
+    
     int change_disable = 0; /* Has the disable state changed? */
 
     while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
@@ -447,6 +448,27 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Background:
+	    	    old_backgroundspec = data->mad_BackgroundSpec;
+		    data->mad_BackgroundSpec = zune_image_spec_duplicate(tag->ti_Data);
+		    if (!data->mad_BackgroundSpec)
+		    {
+		    	/* Out of memory */
+		    	data->mad_BackgroundSpec = old_backgroundspec;
+			break;
+		    }
+		    
+		    data->mad_Flags |= MADF_OWNBG;
+		    
+		    if (old_backgroundspec && (strcmp(data->mad_BackgroundSpec, old_backgroundspec) == 0))
+		    {
+		    	/* New background does not differ from old one */
+    	    	    	zune_image_spec_free(old_backgroundspec);
+			tag->ti_Tag = TAG_IGNORE;
+			break;
+		    }
+
+    	    	    zune_image_spec_free(old_backgroundspec);
+		    
 		    if (data->mad_Background)
 		    {
 			if (_flags(obj) & MADF_CANDRAW)
@@ -459,19 +481,7 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			    data->mad_Background = NULL;
 			}
 		    }
-
-		    zune_image_spec_free(data->mad_BackgroundSpec);
-		    if (tag->ti_Data)
-		    {
-			data->mad_BackgroundSpec = zune_image_spec_duplicate(tag->ti_Data);
-			data->mad_Flags |= MADF_OWNBG;
-		    }
-		    else
-		    {
-			data->mad_BackgroundSpec = NULL;
-			data->mad_Flags &= ~MADF_OWNBG;
-		    }
-
+		    
 		    if (_flags(obj) & MADF_SETUP)
 		    {
 			data->mad_Background =
