@@ -368,7 +368,7 @@ void EndClipSession (struct InstData *data)
 
   ENTER();
 
-  clipheader[1] = data->clipboard->io_Offset-8;
+  clipheader[1] = LONG2BE(data->clipboard->io_Offset-8);
   data->clipboard->io_Offset    = 0;
   data->clipboard->io_Data    = (STRPTR)clipheader;
   data->clipboard->io_Length    = sizeof(clipheader);
@@ -610,7 +610,7 @@ void ClipLine (struct line_node *line, struct InstData *data)
   data->clipboard->io_Length    = BE2LONG(styleheader[1]);
   DoIO((struct IORequest*)data->clipboard);
 
-  textheader[1] = line->line.Length;
+  textheader[1] = LONG2BE(line->line.Length);
   data->clipboard->io_Data    = (STRPTR)textheader;
   data->clipboard->io_Length    = sizeof(textheader);
   DoIO((struct IORequest*)data->clipboard);
@@ -701,9 +701,11 @@ LONG CutBlock2 (struct InstData *data, long Clipboard, long NoCut, struct markin
   stopx     = newblock->stopx;
   startline = newblock->startline;
   stopline  = newblock->stopline;
+
   if(startline != stopline)
   {
       struct  line_node *c_startline = startline->next;
+
     data->update = FALSE;
     if(Clipboard)
     {
