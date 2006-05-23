@@ -77,7 +77,7 @@ AROS_UFH3(ULONG,Popobject_Open_Function,
 
     if (data->window_hook)
     {
-	CallHookPkt(data->strobj_hook,data->object,data->wnd);
+	CallHookPkt(data->window_hook,data->object,data->wnd);
     }
 
     SetAttrs(data->wnd,
