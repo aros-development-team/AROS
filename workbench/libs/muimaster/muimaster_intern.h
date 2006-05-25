@@ -43,6 +43,9 @@
 #endif
 
 #include "mui.h"
+#include "textengine.h"
+#include "prefs.h"
+#include "penspec.h"
 
 /****************************************************************************************/
 
@@ -52,6 +55,8 @@ struct MUIMasterBase_intern
     struct ExecBase		*sysbase;
     BPTR			seglist;
 
+    /* On AROS autoopened libraries are used */
+#ifndef __AROS__
     struct DosLibrary  	    	*dosbase;
     struct UtilityBase		*utilitybase;
     struct Library  	    	*aslbase;
@@ -70,7 +75,8 @@ struct MUIMasterBase_intern
 #endif
     
 /*  struct Library  	    	*datatypesbase; */
-
+#endif /* __AROS__ */
+    
     struct SignalSemaphore ZuneSemaphore; /* Used when accessing global data */
 
     struct MinList BuiltinClasses;
@@ -81,6 +87,8 @@ struct MUIMasterBase_intern
 
 #undef MUIMB
 #define MUIMB(b)	((struct MUIMasterBase_intern *)b)
+
+#ifndef __AROS__
 
 #undef SysBase
 #define SysBase     	(MUIMB(MUIMasterBase)->sysbase)
@@ -126,5 +134,7 @@ struct MUIMasterBase_intern
 
 #undef CoolImagesBase
 #define CoolImagesBase	(MUIMB(MUIMasterBase)->coolimagesbase)
+
+#endif /* __AROS__ */
 
 #endif /* MUIMASTER_INTERN_H */
