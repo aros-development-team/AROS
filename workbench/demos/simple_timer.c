@@ -139,7 +139,10 @@ show_time(mytimeval.tv_secs);
 /* demonstrate the functions themselves.  (TimerBase must have a    */
 /* legal value before AddTime, SubTime or CmpTime are performed.    */
 tr = create_timer( UNIT_MICROHZ );
-TimerBase = (struct Library *)tr->tr_node.io_Device;
+if (tr)
+    TimerBase = (struct Library *)tr->tr_node.io_Device;
+else
+    printf("Could't create timer with UNIT_MICROHZ\n");
 
 /* and how to clean up afterwards */
 TimerBase = (struct Library *)(-1);
