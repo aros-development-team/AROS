@@ -395,9 +395,10 @@ FILES         := $(FILES) $(CLASSFILES)
 
 #MM- workbench-libs-muimaster : includes linklibs
 
-%build_module_macro mmake=workbench-libs-muimaster modname=muimaster \
-  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="mui amiga rom m" \
-  conffile=lib.conf
+%build_module mmake=workbench-libs-muimaster \
+    modname=muimaster modtype=library \
+    files="muimaster_init-aros $(FUNCS) $(FILES)" \
+    uselibs="coolimages mui amiga rom m"
 
 BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
 INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h

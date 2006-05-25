@@ -9,6 +9,7 @@
 #include <proto/exec.h>
 #include <proto/diskfont.h>
 #include <proto/dos.h>
+#include <proto/graphics.h>
 
 #include "muimaster_intern.h"
 #include "font.h"
