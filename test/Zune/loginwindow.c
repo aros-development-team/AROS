@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -32,15 +32,17 @@ Object *app=NULL;
 
 int main(void)
 {
-    IPTR                    argarray[TOTAL_ARGS] = { NULL };
+    IPTR                    argarray[TOTAL_ARGS] = { (IPTR)NULL };
     struct RDArgs           *args=NULL;
     Object                  *LoginWin=NULL;
     char                    *userName=NULL, *userPass=NULL, *loginMeth=NULL, *string=NULL;
     struct SecurityBase     *SecurityBase=NULL;
     int                     error = RETURN_ERROR;
 
-    if ((!(DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37)))||(!(SecurityBase = OpenLibrary("security.library", 0))))
+    if ((!(DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37)))
+	    ||(!(SecurityBase = (struct SecurityBase *)OpenLibrary("security.library", 0))))
     {
+	Printf("Opening of dos.library or security.library failed\n");
 	error = ERROR_INVALID_RESIDENT_LIBRARY;
 	goto LibError;
     }
