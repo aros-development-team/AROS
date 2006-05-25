@@ -191,6 +191,7 @@ ULONG val, sigs = 0;
     string = def;
 
     out = StrDup("test");
+    secret = NULL;
 
     wc = VGroup, GroupFrame,
 	    Child, TextObject,
