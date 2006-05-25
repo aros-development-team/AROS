@@ -16,6 +16,8 @@
 #include <intuition/intuitionbase.h>
 #include <exec/execbase.h>
 
+struct ExecBase      *SysBase;
+
 LONG ReturnError2(void)
 {
   return -1;

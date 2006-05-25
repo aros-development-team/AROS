@@ -8,39 +8,13 @@
 #include <exec/types.h>
 #include <exec/libraries.h>
 
-#ifdef __AROS__
-#include <aros/libcall.h>
-#endif
-
 #include <proto/exec.h>
 #include <clib/alib_protos.h>
 
 #include "muimaster_intern.h"
 #include "mui.h"
 
-#ifdef __AROS__
-#include LC_LIBDEFS_FILE
-#endif
-
 /****************************************************************************************/
-
-#undef SysBase
-
-/* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (MUIMB(lib)->sysbase)
-#define LC_SEGLIST_FIELD(lib)   (MUIMB(lib)->seglist)
-#define LC_LIBBASESIZE		sizeof(struct MUIMasterBase_intern)
-#define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)	(MUIMB(lib)->library)
-
-/* #define LC_NO_INITLIB    */
-/* #define LC_NO_OPENLIB    */
-/* #define LC_NO_CLOSELIB   */
-/* #define LC_NO_EXPUNGELIB */
-
-#ifdef __AROS__
-#include <libcore/libheader.c>
-#endif
 
 /* #define MYDEBUG 1 */
 #include "debug.h"
@@ -54,15 +28,11 @@
 #undef DOSBase
 #undef GfxBase
 
-struct ExecBase      *SysBase;
 struct Library       *MUIMasterBase;
 struct IntuitionBase *IntuitionBase;
 struct Library	     *DataTypesBase;
 
-struct ExecBase **SysBasePtr = &SysBase;
 struct Library  **MUIMasterBasePtr = &MUIMasterBase;
-
-#define SysBase			(LC_SYSBASE_FIELD(MUIMasterBase))
 
 /****************************************************************************************/
 
@@ -70,7 +40,6 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
 {
     D(bug("Inside Init func of muimaster.library\n"));
 
-    *SysBasePtr = SysBase;
     *MUIMasterBasePtr = MUIMasterBase;
 
     if (!MUIMB(MUIMasterBase)->dosbase)
