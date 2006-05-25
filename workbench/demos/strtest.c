@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2006 AROS - The Amiga Research OS
     $Id$
 
     Desc: Demo/test for AROS stringgadgets.
@@ -51,8 +51,9 @@ int main(int argc, char **argv)
     		WA_Height,	100,
     		WA_Title,	(IPTR)"Stringgadget Demo",
     		WA_Gadgets,	(IPTR)&strgad,
-    		WA_IDCMP,	IDCMP_GADGETUP|IDCMP_RAWKEY,
+    		WA_IDCMP,	IDCMP_GADGETUP|IDCMP_RAWKEY|IDCMP_CLOSEWINDOW,
 		WA_DragBar,     TRUE,
+		WA_CloseGadget, TRUE,
     		TAG_END);
     	if (window)
     	{
@@ -90,6 +91,10 @@ VOID HandleEvents(struct Window *win)
 	        if(imsg->Code == 0x10)
 		    terminated = TRUE;
 
+		break;
+
+	    case IDCMP_CLOSEWINDOW:
+		terminated = TRUE;
 		break;
 		    					
 	    } /* switch (imsg->Class) */
