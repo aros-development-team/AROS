@@ -24,7 +24,7 @@
 
 #include <libraries/mui.h>
 
-Object *app=NULL;
+Object *app;
 
 #define ARG_TEMPLATE	"LOCAL/S"
 #define ARG_LOCAL	0
@@ -39,10 +39,9 @@ int main(void)
     struct SecurityBase     *SecurityBase=NULL;
     int                     error = RETURN_ERROR;
 
-    if ((!(DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37)))
-	    ||(!(SecurityBase = (struct SecurityBase *)OpenLibrary("security.library", 0))))
+    if (!(SecurityBase = (struct SecurityBase *)OpenLibrary("security.library", 0)))
     {
-	Printf("Opening of dos.library or security.library failed\n");
+	PutStr("Opening of security.library failed\n");
 	error = ERROR_INVALID_RESIDENT_LIBRARY;
 	goto LibError;
     }
@@ -123,7 +122,7 @@ int main(void)
         }
         else
         {
-            Printf(" User canceled");
+            PutStr(" User canceled");
         }
 	MUI_DisposeObject(app);
     }
@@ -134,11 +133,9 @@ int main(void)
     if (args)    FreeArgs(args);
 
 LibError:
-    if (MUIMasterBase) CloseLibrary((struct Library *)MUIMasterBase);
 
-    if (SecurityBase) CloseLibrary((struct Library *)SecurityBase);
-    if (DOSBase) CloseLibrary((struct Library *)DOSBase);
+    CloseLibrary((struct Library *)SecurityBase);
 
-    return(error);
+    return error;
 }
 
