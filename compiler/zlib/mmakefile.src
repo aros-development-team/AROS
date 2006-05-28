@@ -21,13 +21,15 @@ FILES := \
 
 #MM- linklibs-core : linklibs-arosz
 #MM- linklibs : linklibs-arosz
-#MM linklibs-zlib : linklibs-arosz arosz-setup-link
+#MM- linklibs-zlib : linklibs-arosz arosz-setup-link
 #MM linklibs-arosz : includes
 #MM includes-copy
 
 %copy_includes path=. dir=
 
 %build_linklib mmake=linklibs-arosz libname=arosz files=$(FILES)
+
+$(AROS_LIB)/libz.a : arosz-setup-link
 
 #MM
 arosz-setup-link :
