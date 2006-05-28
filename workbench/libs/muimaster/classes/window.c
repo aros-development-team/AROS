@@ -149,6 +149,7 @@ struct MUI_WindowData
 #define MUIWF_BUBBLEMODE        (1<<13) /* Quick bubble mode. Bubbles appear quick when moving */
 #define MUIWF_OPENONUNHIDE      (1<<14) /* Open the window when unhiding */
 #define MUIWF_SCREENLOCKED  	(1<<15) /* A pub screen was locked in SetupRenderInfo. Unlock it in CleanupRenderInfo! */
+#define MUIWF_OBJECTGOACTIVESENT (1<<16) /* A MUIM_GoActive msg was sent to window's active object */
 
 #define BUBBLEHELP_TICKER_FIRST 10
 #define BUBBLEHELP_TICKER_LATER 3
@@ -1074,7 +1075,7 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
 {
     Object                *cstate;
     Object                *child;
-    struct MinList        *ChildList;
+    struct MinList        *ChildList = 0;
 
     if (!(x >= _left(obj) && x <= _right(obj) 
 	  && y >= _top(obj)  && y <= _bottom(obj))) 
@@ -1082,7 +1083,7 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
         return FALSE;
     }
 
-    if (get(obj, MUIA_Group_ChildList, (IPTR *)&(ChildList)))
+    if (get(obj, MUIA_Group_ChildList, (IPTR *)&(ChildList)) && (ChildList != 0))
     {
         cstate = (Object *)ChildList->mlh_Head;
         while ((child = NextObject(&cstate)))
@@ -2227,12 +2228,16 @@ static void SetActiveObject (struct MUI_WindowData *data, Object *obj, IPTR newv
 	if ((IPTR)data->wd_ActiveObject == newval)
 	    return;
 	old_activenode = FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject);
-	if (_flags(data->wd_ActiveObject) & MADF_CANDRAW)
+	//if (_flags(data->wd_ActiveObject) & MADF_CANDRAW)
+	if (data->wd_Flags & MUIWF_OBJECTGOACTIVESENT)
+	{
 	    DoMethod(data->wd_ActiveObject, MUIM_GoInactive);
+	}
     }
 
     data->wd_ActiveObject = NULL;
-
+    data->wd_Flags &= ~MUIWF_OBJECTGOACTIVESENT;
+    
     switch (newval)
     {
 	case MUIV_Window_ActiveObject_None:
@@ -2263,7 +2268,10 @@ static void SetActiveObject (struct MUI_WindowData *data, Object *obj, IPTR newv
 	&& DoMethod(data->wd_RootObject, MUIM_FindAreaObject,
 		    (IPTR)data->wd_ActiveObject)
 	&& (_flags(data->wd_ActiveObject) & MADF_CANDRAW))
+    {
 	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+	data->wd_Flags |= MUIWF_OBJECTGOACTIVESENT;
+    }
 }
 
 
