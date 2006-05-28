@@ -766,9 +766,11 @@ static ULONG Group_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     cstate = cstate_copy = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
+    #if 0 /* SHOWME affects only show/hide */
 	if (! (_flags(child) & MADF_SHOWME))
 	    continue;
-
+    #endif
+    
 	if (!DoSetupMethod(child, msg->RenderInfo))
 	{
 	    /* Send MUIM_Cleanup to all objects that received MUIM_Setup.
@@ -777,8 +779,10 @@ static ULONG Group_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	    cstate = cstate_copy;
 	    while ((child = NextObject(&cstate)) && (child != childFailed))
 	    {
+    	    #if 0 /* SHOWME affects only show/hide */
 		if (! (_flags(child) & MADF_SHOWME))
 		    continue;
+    	    #endif
 		DoMethod(child, MUIM_Cleanup);
 	    }
 	    return FALSE;
@@ -813,8 +817,10 @@ static IPTR Group_Cleanup(struct IClass *cl, Object *obj, Msg msg)
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
+    #if 0 /* SHOWME affects only show/hide */
 	if (! (_flags(child) & MADF_SHOWME))
 	    continue;
+    #endif
 	DoMethodA(child, (Msg)msg);
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -2524,18 +2530,12 @@ static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 	}
     } else
     {
-    	if (data->flags & GROUP_VIRTUAL)
-    	{
-	    while ((child = NextObject(&cstate)))
+	while ((child = NextObject(&cstate)))
+	{
+	    if (!(data->flags & GROUP_VIRTUAL) ||
+	    	IsObjectVisible(child,MUIMasterBase))
 	    {
-		if (IsObjectVisible(child,MUIMasterBase))
-		    DoShowMethod(child);
-	    }
-    	} else
-    	{
-	    while ((child = NextObject(&cstate)))
-	    {
-		if (_flags(child) & MADF_SHOWME)
+	    	if (_flags(child) & MADF_SHOWME)
 		    DoShowMethod(child);
 	    }
 	}
@@ -2570,20 +2570,10 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 	}
     } else
     {
-    	if (data->flags & GROUP_VIRTUAL)
-    	{
-	    while ((child = NextObject(&cstate)))
-	    {
-		if (IsObjectVisible(child,MUIMasterBase))
-		    DoHideMethod(child);
-	    }
-    	} else
-    	{
-	    while ((child = NextObject(&cstate)))
-	    {
-		if (_flags(child) & MADF_CANDRAW)
-		    DoHideMethod(child);
-	    }
+ 	while ((child = NextObject(&cstate)))
+	{
+	    if (_flags(child) & MADF_CANDRAW)
+		DoHideMethod(child);
 	}
     }
 
