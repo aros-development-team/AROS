@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := pngclass memory directaccess
 
 #MM- workbench-datatypes-complete: workbench-datatypes-png
-#MM workbench-datatypes-png : includes linklibs linklibs-png
+#MM workbench-datatypes-png : includes linklibs linklibs-zlib linklibs-png
 
 USER_CFLAGS   := -DMYDEBUG
 
