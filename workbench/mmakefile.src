@@ -1,0 +1,31 @@
+# $Id: mmakefile 19054 2003-08-03 13:21:05Z verhaegs $
+
+include $(TOP)/config/make.cfg
+
+# The workbench target points back to config/$(ARCH)/mmakefile:
+#MM- workbench : workbench-$(ARCH)-$(CPU)
+
+#MM- AROS : workbench-complete
+
+#MM- workbench-complete : \
+#MM	    workbench-hidds \
+#MM	    workbench-classes-complete \
+#MM	    workbench-devs-complete \
+#MM	    workbench-fs-complete \
+#MM	    workbench-libs-complete \
+#MM	    workbench-s	\
+#MM	    workbench-locale \
+#MM	    workbench-fonts \
+#MM	    workbench-system \
+#MM	    workbench-utilities \
+#MM	    workbench-tools \
+#MM     workbench-prefs \
+#MM     workbench-wbstartup
+
+WBSTARTUPDIR = $(AROSDIR)/WBStartup
+
+#MM
+workbench-wbstartup :
+    %mkdir_q dir="$(WBSTARTUPDIR)"
+
+#MM- clean : clean-workbench
