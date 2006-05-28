@@ -603,13 +603,17 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			    	DoHideMethod(obj);
 			    	recalc = 1;
 			    }
+			#if 0 /* SHOWME affects only show/hide */
 			    if (_flags(obj)&MADF_SETUP) DoMethod(obj,MUIM_Cleanup);
+			#endif
 			} else
 			{
 			    Object *parent = _parent(obj); /* Will be NULL if direct child of a window! */
 			    if (parent)
 			    {
+			    #if 0 /* SHOWME affects only show/hide */
 				if (_flags(parent) & MADF_SETUP) DoSetupMethod(obj,muiRenderInfo(parent));
+			    #endif
 				if (_flags(parent) & MADF_CANDRAW) DoShowMethod(obj);
 			    } else
 			    {
@@ -651,6 +655,10 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	        break;
 	    case MUIA_ContextMenu:
 		data->mad_ContextMenu = (Object*)tag->ti_Data;
+		break;
+		
+	    case MUIA_Font:
+	    	data->mad_FontPreset = tag->ti_Data;
 		break;
 	}
     }
