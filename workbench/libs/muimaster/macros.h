@@ -266,12 +266,11 @@
 #ifdef __GNUC__
 #define get(obj, attr, storage)                                         \
 ({                                                                      \
-    IPTR  __zune_get_storage;                                           \
+    IPTR  __zune_get_storage = (IPTR)(*(storage));                      \
     ULONG __zune_get_ret = GetAttr((attr), (obj), &__zune_get_storage); \
-    *storage = (typeof(*storage))__zune_get_storage;                    \
+    *(storage) = (typeof(*(storage)))__zune_get_storage;                \
     __zune_get_ret;                                                     \
 })
-
 #else  /* !__GNUC__ */
 #define get(obj,attr,store) GetAttr(attr,obj,(IPTR *)store)
 #endif /* !__GNUC__ */
