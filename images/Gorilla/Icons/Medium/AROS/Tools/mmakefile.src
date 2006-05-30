@@ -3,7 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS := Calculator HDToolBox PCITool InstallAROS Editor Commodities Debug WiMP
+ICONS := Calculator HDToolBox PCITool InstallAROS Editor Commodities Debug WiMP \
+         ScreenGrabber
 
 #MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-tools-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-tools
