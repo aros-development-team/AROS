@@ -1349,14 +1349,15 @@ static ULONG Application_OpenConfigWindow(struct IClass *cl, Object *obj,
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct TagItem tags[] =
     {
-	{ SYS_Asynch, TRUE },
-	{ SYS_Input,  0    },
-	{ SYS_Output, 0    },
-	{ TAG_DONE,   0    }
+	{ SYS_Asynch	, TRUE },
+	{ SYS_Input 	, 0    },
+	{ SYS_Output	, 0    },
+	{ NP_StackSize	, 20000},
+	{ TAG_DONE  	       }
     };
     char cmd[255];
 
-    snprintf(cmd, 255, "Zune %s", data->app_Base ? data->app_Base : (STRPTR)"");
+    snprintf(cmd, 255, "sys:prefs/Zune %s", data->app_Base ? data->app_Base : (STRPTR)"");
 
     if (SystemTagList(cmd, tags) == -1)
     {
