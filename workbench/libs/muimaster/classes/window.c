@@ -3626,8 +3626,6 @@ static IPTR Window_SetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Wind
     return 0;
 }
 
-#if 0 /* unused? */
-
 /**************************************************************************
  MUIM_Window_GetMenuState
 **************************************************************************/
@@ -3658,8 +3656,6 @@ static IPTR Window_SetMenuState(struct IClass *cl, Object *obj, struct MUIP_Wind
     set(item,MUIA_Menuitem_Enabled,msg->stat);
     return 0;
 }
-
-#endif /* unused? */
 
 /**************************************************************************
  MUIM_Window_DrawBackground
@@ -3823,8 +3819,8 @@ BOOPSI_DISPATCHER(IPTR, Window_Dispatcher, cl, obj, msg)
 	case MUIM_Window_FreeGadgetID: return Window_FreeGadgetID(cl, obj, (APTR)msg);
 	case MUIM_Window_GetMenuCheck: return Window_GetMenuCheck(cl, obj, (APTR)msg);
 	case MUIM_Window_SetMenuCheck: return Window_SetMenuCheck(cl, obj, (APTR)msg);
-	case MUIM_Window_GetMenuState: return Window_GetMenuCheck(cl, obj, (APTR)msg);
-	case MUIM_Window_SetMenuState: return Window_SetMenuCheck(cl, obj, (APTR)msg);
+	case MUIM_Window_GetMenuState: return Window_GetMenuState(cl, obj, (APTR)msg);
+	case MUIM_Window_SetMenuState: return Window_SetMenuState(cl, obj, (APTR)msg);
 	case MUIM_Window_DrawBackground: return Window_DrawBackground(cl, obj, (APTR)msg);
 	case MUIM_Window_ToFront: return Window_ToFront(cl, obj, (APTR)msg);
 	case MUIM_Window_ToBack: return Window_ToBack(cl, obj, (APTR)msg);
