@@ -2576,11 +2576,19 @@ static IPTR Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
 /*      D(bug("Window_Dispose(%p)\n", obj)); */
+
+#if 0 /* We no longer clear muiGlobalInfo() during disconnections, so
+         this can cause problems (remove object which is already removed).
+	 Furthermore AFAIK it is not legal to dispose a window object
+	 which is still ocnnected to the application object, anyway. */
+	 
     if (muiGlobalInfo(obj) && _app(obj))
     {
 /*  	D(bug(" Window_Dispose(%p) : calling app->OM_REMMEMBER\n", obj)); */
 	DoMethod(_app(obj), OM_REMMEMBER, (IPTR)obj);
     }
+#endif
+    
     if (data->wd_RootObject)
 	MUI_DisposeObject(data->wd_RootObject);
 
