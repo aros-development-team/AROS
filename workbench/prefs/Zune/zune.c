@@ -689,16 +689,29 @@ void loop(void)
 *****************************************************************/
 int main(void)
 {
-    Locale_Initialize();
     int  retval = RETURN_OK;
-    struct RDArgs *rda;
+    struct RDArgs *rda = NULL;
     IPTR args[] = { 0 };
     enum { ARG_APPNAME = 0 };
 
-    rda = ReadArgs("APPNAME", args, NULL);
-    if(rda != NULL)
+    Locale_Initialize();
+
+    if (Cli())
     {
-	appname = (STRPTR)args[ARG_APPNAME];
+    	rda = ReadArgs("APPNAME", args, NULL);
+    	if(rda == NULL)
+    	{
+	    PrintFault(IoErr(), "Zune");
+	    retval = RETURN_FAIL;
+	}
+	else
+	{
+	    appname = (STRPTR)args[ARG_APPNAME];
+	}
+    }
+    
+    if (retval == RETURN_OK)
+    {
 	if (!appname)
 	    appname = "global";
 
@@ -725,13 +738,8 @@ int main(void)
 	    close_libs();
 	}
     }
-    else
-    {
-	PrintFault(IoErr(), "Zune");
-	retval = RETURN_FAIL;
-    }
     
-    FreeArgs(rda);
+    if (rda) FreeArgs(rda);
 
     Locale_Deinitialize();
     return retval;
