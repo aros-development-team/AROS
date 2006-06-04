@@ -141,7 +141,7 @@ static void DeleteNNode (struct MUI_NotifyData *data, struct NotifyNode *nnode)
 }
 
 
-static ULONG Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg);
+static IPTR Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg);
 
 /*
  * OM_NEW
@@ -186,7 +186,7 @@ static IPTR Notify_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * OM_DISPOSE
  */
-static ULONG Notify_Dispose(struct IClass *cl, Object *obj, Msg msg)
+static IPTR Notify_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MinNode *node, *tmp;
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
@@ -228,7 +228,7 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
 	nnode->nn_TrigVal == MUIV_EveryTime
     )
     {
-	switch((ULONG)nnode->nn_DestObj)
+	switch((IPTR)nnode->nn_DestObj)
 	{
 	    case MUIV_Notify_Application:
 		destobj = _app(obj);
@@ -237,7 +237,14 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
 		destobj = obj;
 		break;
 	    case MUIV_Notify_Window:
-		destobj = _win(obj);
+	    	if (muiRenderInfo(obj)) /* otherwise _win(obj) does NULL access! */
+		{
+		    destobj = _win(obj);
+		}
+		else
+		{
+		    return;
+		}
 		break;
 	    default:
 		destobj = nnode->nn_DestObj;
@@ -264,7 +271,7 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
 		        break;
 	        }
 	    }
-
+    	    newparams[i] = 0;
 	    params = newparams;
 	}
 
@@ -280,7 +287,7 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
 /*
  * OM_SET
  */
-static ULONG Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
     struct TagItem        *tags = msg->ops_AttrList;
@@ -346,7 +353,7 @@ static ULONG Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * OM_GET
  */
-static ULONG Notify_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+static IPTR Notify_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 /* small macro to simplify return value storage */
 #define STORE *(msg->opg_Storage)
@@ -402,7 +409,7 @@ static ULONG Notify_Get(struct IClass *cl, Object *obj, struct opGet *msg)
  * MUIM_CallHook : Call a standard amiga callback hook, defined by a Hook
  * structure.
  */
-static ULONG Notify_CallHook(struct IClass *cl, Object *obj, struct MUIP_CallHook *msg)
+static IPTR Notify_CallHook(struct IClass *cl, Object *obj, struct MUIP_CallHook *msg)
 {
     if (msg->Hook->h_Entry)
 	return CallHookPkt(msg->Hook,obj, &msg->param1);
@@ -512,7 +519,7 @@ static ULONG Notify_KillNotifyObj(struct IClass *cl, Object *obj, struct MUIP_Ki
 static ULONG Notify_MultiSet(struct IClass *cl, Object *obj, struct MUIP_MultiSet *msg)
 {
     IPTR *destobj_p;
-    for (destobj_p = (IPTR*)&msg->obj; (*destobj_p) != NULL; destobj_p++)
+    for (destobj_p = (IPTR*)&msg->obj; (*destobj_p) != 0; destobj_p++)
     {
 	set((APTR)*destobj_p, msg->attr, msg->val);
     }
@@ -662,7 +669,9 @@ static ULONG Notify_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 {
     //struct MUI_NotifyData *data = INST_DATA(cl, obj);
 /*    data->mnd_ParentObject = NULL;*/
+#if 0 /* Some apps (YAM) seem to access this even after disconnection (Bernd Roesch) */
     muiGlobalInfo(obj) = NULL;
+#endif
     return 0;
 }
 
