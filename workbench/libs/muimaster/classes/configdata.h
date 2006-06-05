@@ -141,7 +141,7 @@
 #define MUICFG_String_MarkedBackground  0x401
 #define MUICFG_String_MarkedText        0x402
 #define MUICFG_Register_TruncateTitles  0x403
-
+#define MUICFG_Window_Refresh	    	0x404
 
 /*** Methods ****************************************************************/
 #define MUIM_Configdata_GetString      (MUIB_Configdata | 0x00000000) /* Zune 20030319 */

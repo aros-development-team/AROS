@@ -507,6 +507,9 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     else
 	backfill = TAG_IGNORE;
 
+    if (muiGlobalInfo(obj)->mgi_Prefs->window_refresh == WINDOW_REFRESH_SMART)
+    	flags &= ~WFLG_SIMPLE_REFRESH;
+	
     win = OpenWindowTags
     (
         NULL,
@@ -1348,7 +1351,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 		data->wd_Height = iWin->GZZHeight;
 		DoHideMethod(data->wd_RootObject);
 
-		if (data->wd_RenderInfo.mri_Window->Flags & WFLG_SIMPLE_REFRESH)
+		if (1) // why only simple refresh? was: if (data->wd_RenderInfo.mri_Window->Flags & WFLG_SIMPLE_REFRESH)
 		{
 		    data->wd_Flags |= MUIWF_RESIZING;
 		}
@@ -3366,7 +3369,11 @@ static IPTR Window_AddEventHandler(struct IClass *cl, Object *obj,
     //D(bug("muimaster.library/window.c: Add Eventhandler %p\n", msg->ehnode));
 
 #ifdef __AROS__
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     msg->ehnode->ehn_Node.ln_Pri = msg->ehnode->ehn_Priority;
+#else
+    msg->ehnode->ehn_Priority = msg->ehnode->ehn_Priority;
+#endif
 #endif
     EnqueueByPriAndAddress((struct List *)&data->wd_EHList, (struct Node *)msg->ehnode);
     ChangeEvents(data, GetDefaultEvents());
@@ -3439,7 +3446,11 @@ static IPTR Window_AddControlCharHandler(struct IClass *cl, Object *obj,
     if (msg->ccnode->ehn_Events)
     {
 #ifdef __AROS__
-	msg->ccnode->ehn_Node.ln_Pri = msg->ccnode->ehn_Priority;
+    #if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+        msg->ccnode->ehn_Node.ln_Pri = msg->ccnode->ehn_Priority;
+    #else
+        msg->ccnode->ehn_Priority = msg->ccnode->ehn_Priority;
+    #endif
 #endif
 	Enqueue((struct List *)&data->wd_CCList, (struct Node *)msg->ccnode);
     }
