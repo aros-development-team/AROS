@@ -146,7 +146,7 @@ static UWORD FindScrollerTop(UWORD total, UWORD visible, UWORD pot)
     else
         hidden = 0;
 
-    top = (((ULONG) hidden * pot) + (MAXPOT / 2)) >> 16;
+    top = (((ULONG) hidden * pot) + (MAXPOT / 2)) / MAXPOT;
 
     return (top);
 }
