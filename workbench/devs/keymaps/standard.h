@@ -21,7 +21,7 @@
 ** set in the keymap type.
 */
 
-CONST UBYTE f1_descr[] =
+STATIC CONST UBYTE f1_descr[] =
 {
     3,4,
     4,7,
@@ -30,7 +30,7 @@ CONST UBYTE f1_descr[] =
     0x9B,'1','0','~'
 };
 
-CONST UBYTE f2_descr[] =
+STATIC CONST UBYTE f2_descr[] =
 {
     3,4,
     4,7,
@@ -39,7 +39,7 @@ CONST UBYTE f2_descr[] =
     0x9B,'1','1','~'
 };
 
-CONST UBYTE f3_descr[] =
+STATIC CONST UBYTE f3_descr[] =
 {
     3,4,
     4,7,
@@ -48,7 +48,7 @@ CONST UBYTE f3_descr[] =
     0x9B,'1','2','~'
 };
 
-CONST UBYTE f4_descr[] =
+STATIC CONST UBYTE f4_descr[] =
 {
     3,4,
     4,7,
@@ -57,7 +57,7 @@ CONST UBYTE f4_descr[] =
     0x9B,'1','3','~'
 };
 
-CONST UBYTE f5_descr[] =
+STATIC CONST UBYTE f5_descr[] =
 {
     3,4,
     4,7,
@@ -66,7 +66,7 @@ CONST UBYTE f5_descr[] =
     0x9B,'1','4','~'
 };
 
-CONST UBYTE f6_descr[] =
+STATIC CONST UBYTE f6_descr[] =
 {
     3,4,
     4,7,
@@ -75,7 +75,7 @@ CONST UBYTE f6_descr[] =
     0x9B,'1','5','~'
 };
 
-CONST UBYTE f7_descr[] =
+STATIC CONST UBYTE f7_descr[] =
 {
     3,4,
     4,7,
@@ -84,7 +84,7 @@ CONST UBYTE f7_descr[] =
     0x9B,'1','6','~'
 };
 
-CONST UBYTE f8_descr[] =
+STATIC CONST UBYTE f8_descr[] =
 {
     3,4,
     4,7,
@@ -93,7 +93,7 @@ CONST UBYTE f8_descr[] =
     0x9B,'1','7','~'
 };
 
-CONST UBYTE f9_descr[] =
+STATIC CONST UBYTE f9_descr[] =
 {
     3,4,
     4,7,
@@ -102,7 +102,7 @@ CONST UBYTE f9_descr[] =
     0x9B,'1','8','~'
 };
 
-CONST UBYTE f10_descr[] =
+STATIC CONST UBYTE f10_descr[] =
 {
     3,4,
     4,7,
@@ -111,7 +111,7 @@ CONST UBYTE f10_descr[] =
     0x9B,'1','9','~'
 };
 
-CONST UBYTE f11_descr[] =
+STATIC CONST UBYTE f11_descr[] =
 {
     4,4,
     4,8,
@@ -120,7 +120,7 @@ CONST UBYTE f11_descr[] =
     0x9B,'3','0','~'
 };
 
-CONST UBYTE f12_descr[] =
+STATIC CONST UBYTE f12_descr[] =
 {
     4,4,
     4,8,
@@ -129,7 +129,7 @@ CONST UBYTE f12_descr[] =
     0x9B,'3','1','~'
 };
 
-CONST UBYTE insert_descr[] =
+STATIC CONST UBYTE insert_descr[] =
 {
     4,4,
     4,8,
@@ -138,7 +138,7 @@ CONST UBYTE insert_descr[] =
     0x9B,'5','0','~'
 };
 
-CONST UBYTE pageup_descr[] =
+STATIC CONST UBYTE pageup_descr[] =
 {
     4,4,
     4,8,
@@ -147,7 +147,7 @@ CONST UBYTE pageup_descr[] =
     0x9B,'5','1','~'
 };
 
-CONST UBYTE pagedown_descr[] =
+STATIC CONST UBYTE pagedown_descr[] =
 {
     4,4,
     4,8,
@@ -156,7 +156,7 @@ CONST UBYTE pagedown_descr[] =
     0x9B,'5','2','~'
 };
 
-CONST UBYTE pausebreak_descr[] =
+STATIC CONST UBYTE pausebreak_descr[] =
 {
     4,4,
     4,8,
@@ -165,7 +165,7 @@ CONST UBYTE pausebreak_descr[] =
     0x9B,'5','3','~'
 };
 
-CONST UBYTE home_descr[] =
+STATIC CONST UBYTE home_descr[] =
 {
     4,4,
     4,8,
@@ -174,7 +174,7 @@ CONST UBYTE home_descr[] =
     0x9B,'5','4','~'
 };
 
-CONST UBYTE end_descr[] =
+STATIC CONST UBYTE end_descr[] =
 {
     4,4,
     4,8,
@@ -183,7 +183,7 @@ CONST UBYTE end_descr[] =
     0x9B,'5','5','~'
 };
 
-CONST UBYTE up_descr[] =
+STATIC CONST UBYTE up_descr[] =
 {
     2,4,
     2,6,
@@ -192,7 +192,7 @@ CONST UBYTE up_descr[] =
     0x9B,'T'
 };
 
-CONST UBYTE down_descr[] =
+STATIC CONST UBYTE down_descr[] =
 {
     2,4,
     2,6,
@@ -201,7 +201,7 @@ CONST UBYTE down_descr[] =
     0x9B,'S'
 };
 
-CONST UBYTE left_descr[] =
+STATIC CONST UBYTE left_descr[] =
 {
     2,4,
     3,6,
@@ -210,7 +210,7 @@ CONST UBYTE left_descr[] =
     0x9B,' ','A'
 };
 
-CONST UBYTE right_descr[] =
+STATIC CONST UBYTE right_descr[] =
 {
     2,4,
     3,6,
@@ -219,7 +219,7 @@ CONST UBYTE right_descr[] =
     0x9B,' ','@'
 };
 
-CONST UBYTE tab_descr[] =
+STATIC CONST UBYTE tab_descr[] =
 {
     1,4,
     2,5,
@@ -228,7 +228,7 @@ CONST UBYTE tab_descr[] =
     0x9B,'Z'
 };
 
-CONST UBYTE help_descr[] =
+STATIC CONST UBYTE help_descr[] =
 {
     3,2,
     

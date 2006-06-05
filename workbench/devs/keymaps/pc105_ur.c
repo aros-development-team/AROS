@@ -1,40 +1,37 @@
 // Kbdur_Ucranian_pkf.txt
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
-    Desc: unknown PC105 Keymap
-    Lang: unknown
+    
+    Desc: Ucranian PC105 Keymap
+    Lang: English
 */
 
 #include <devices/keymap.h>
 
-#define KMNAME "pc105_xx"
+STATIC char  keymapname[] = "pc105_ur";
 
-#define CONST const
+STATIC CONST UBYTE lokeymaptypes[];
+STATIC CONST IPTR  lokeymap[];
+STATIC CONST UBYTE locapsable[];
+STATIC CONST UBYTE lorepeatable[];
 
-extern CONST char  keymapname[];
-
-extern CONST UBYTE lokeymaptypes[];
-extern CONST IPTR  lokeymap[];
-extern CONST UBYTE locapsable[];
-extern CONST UBYTE lorepeatable[];
-
-extern CONST UBYTE hikeymaptypes[];
-extern CONST IPTR  hikeymap[];
-extern CONST UBYTE hicapsable[];
-extern CONST UBYTE hirepeatable[];
+STATIC CONST UBYTE hikeymaptypes[];
+STATIC CONST IPTR  hikeymap[];
+STATIC CONST UBYTE hicapsable[];
+STATIC CONST UBYTE hirepeatable[];
 
 CONST struct KeyMapNode km =
 {
- #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     {
     	NULL, NULL, 0, 0, keymapname
     },
- #else
+#else
     {
     	NULL, NULL, keymapname, 0, 0
     },
- #endif
+#endif
     {
     	(UBYTE *)lokeymaptypes,
     	(IPTR  *)lokeymap,
@@ -47,8 +44,6 @@ CONST struct KeyMapNode km =
     }
 };
 
-CONST char keymapname[] = KMNAME;
-
 #undef N
 #undef S
 #undef A
@@ -58,18 +53,18 @@ CONST char keymapname[] = KMNAME;
 #undef ST
 #undef NOP
 
-#define N KC_NOQUAL
-#define S KCF_SHIFT
-#define A KCF_ALT
-#define C KCF_CONTROL
-#define D KCF_DEAD
-#define V KC_VANILLA
-#define ST KCF_STRING
+#define N   KC_NOQUAL
+#define S   KCF_SHIFT
+#define A   KCF_ALT
+#define C   KCF_CONTROL
+#define D   KCF_DEAD
+#define V   KC_VANILLA
+#define ST  KCF_STRING
 #define NOP KCF_NOP
 
 #define EUR 0xA4 /* ISO 8859-15: Euro = 164 = 0xA4) */
 
-CONST UBYTE lokeymaptypes[] =
+STATIC CONST UBYTE lokeymaptypes[] =
 {
     S, 		/* 00 */
     S, 		/* 01 */
@@ -135,10 +130,9 @@ CONST UBYTE lokeymaptypes[] =
     N, 		/* 3D */
     N, 		/* 3E */
     N, 		/* 3F */
-    
 };
 
-CONST UBYTE hikeymaptypes[] =
+STATIC CONST UBYTE hikeymaptypes[] =
 {
     N, 		/* 40 SPACE */
     N, 		/* 41 BACKSPACE */
@@ -204,7 +198,6 @@ CONST UBYTE hikeymaptypes[] =
     NOP, 	/* 7D */
     NOP, 	/* 7E */
     NOP 	/* 7F */
-    
 };
 
 #undef N
@@ -225,85 +218,81 @@ CONST UBYTE hikeymaptypes[] =
 #define BYTES(b0, b1, b2, b3) \
 	(((UBYTE)b0)<<24) | (((UBYTE)b1)<<16) | (((UBYTE)b2)<<8) | (((UBYTE)b3)<<0)
 
-
-
-
-
-CONST IPTR lokeymap[] ={
-/*---- 1st QWERTY row - 0x00 to 0x0F */
- BYTES(0xA8,0xA8,0xA8,0xB8),
- BYTES('!' ,'!' ,'!' ,'1' ),
- BYTES(0x22,0x22,0x22,'2' ),
- BYTES(0xB9,0xB9,0xB9,'3' ),
- BYTES(';' ,';' ,';' ,'4' ),
- BYTES('%' ,'%' ,'%' ,'5' ),
- BYTES(':' ,':' ,':' ,'6' ),
- BYTES('?' ,'?' ,'?' ,'7' ),
- BYTES('*' ,'*' ,'*' ,'8' ),
- BYTES('{' ,'[' ,'(' ,'9' ),
- BYTES('}' ,']' ,')' ,'0' ),
- BYTES('_' ,'-' ,'_' ,'-' ),
- BYTES('+' ,'=' ,'+' ,'=' ),
- BYTES(0xA8,0xA8,0xA8,0xB8),
-BYTES(0,   0,   0,   0  ),
-BYTES('0', '0', '0', '0'),
-/*---- 2nd QWERTY row - 0x10 to 0x1F */
- BYTES('Q' ,'q' ,0xC9,0xE9),
- BYTES('W' ,'w' ,0xD6,0xF6),
- BYTES('E' ,'e' ,0xD3,0xF3),
- BYTES('R' ,'r' ,0xCA,0xEA),
- BYTES('T' ,'t' ,0xC5,0xE5),
- BYTES('Y' ,'y' ,0xCD,0xED),
- BYTES(0xA5,0xB4,0xC3,0xE3),
- BYTES('I' ,'i' ,0xD8,0xF8),
- BYTES('O' ,'o' ,0xD9,0xF9),
- BYTES('P' ,'p' ,0xC7,0xE7),
- BYTES(0xD5,0xF5,0xD5,0xF5),
- BYTES(0xAF,0xBF,0xAF,0xBF),
-BYTES(0,   0,   0,   0  ),
-BYTES('1', '1', '1', '1'),
-BYTES('2', '2', '2', '2'),
-BYTES('3', '3', '3', '3'),
-/*---- 3rd QWERTY row - 0x20 to 0x2F */
- BYTES('A' ,'a' ,0xD4,0xF4),
- BYTES('S' ,'s' ,0xB2,0xB3),
- BYTES('D' ,'d' ,0xC2,0xE2),
- BYTES('F' ,'f' ,0xC0,0xE0),
- BYTES('G' ,'g' ,0xCF,0xEF),
- BYTES('H' ,'h' ,0xD0,0xF0),
- BYTES('J' ,'j' ,0xCE,0xEE),
- BYTES('K' ,'k' ,0xCB,0xEB),
- BYTES('L' ,'l' ,0xC4,0xE4),
- BYTES('U' ,'u' ,0xC6,0xE6),
- BYTES(0xAA,0xBA,0xAA,0xBA),
- BYTES(0x2F,0x5C,0x2F,0x5C),
-BYTES(0,   0,   0,   0  ),
-BYTES('4', '4', '4', '4'),
-BYTES('5', '5', '5', '5'),
-BYTES('6', '6', '6', '6'),
-/*---- 4th QWERTY row - 0x30 to 0x3F */
- BYTES(0xA5,0xB4,0xA5,0xB4),
- BYTES('Z' ,'z' ,0xDF,0xFF),
- BYTES('X' ,'x' ,0xD7,0xF7),
- BYTES('C' ,'c' ,0xD1,0xF1),
- BYTES('V' ,'v' ,0xCC,0xEC),
- BYTES('B' ,'b' ,0xC8,0xE8),
- BYTES('N' ,'n' ,0xD2,0xF2),
- BYTES('M' ,'m' ,0xDC,0xFC),
- BYTES(0xC1,0xE1,0xC1,0xE1),
- BYTES(0xDE,0xFE,0xDE,0xFE),
- BYTES(',' ,'.' ,',' ,'.' ),
-BYTES(0,   0,   0,   0  ),
-BYTES(',', '.', ',', '.'),
-BYTES('7', '7', '7', '7'),
-BYTES('8', '8', '8', '8'),
-BYTES('9', '9', '9', '9'),};
-
-
+STATIC CONST IPTR lokeymap[] =
+{
+    /*---- 1st QWERTY row - 0x00 to 0x0F */
+    BYTES(0xA8,0xA8,0xA8,0xB8),
+    BYTES('!' ,'!' ,'!' ,'1' ),
+    BYTES(0x22,0x22,0x22,'2' ),
+    BYTES(0xB9,0xB9,0xB9,'3' ),
+    BYTES(';' ,';' ,';' ,'4' ),
+    BYTES('%' ,'%' ,'%' ,'5' ),
+    BYTES(':' ,':' ,':' ,'6' ),
+    BYTES('?' ,'?' ,'?' ,'7' ),
+    BYTES('*' ,'*' ,'*' ,'8' ),
+    BYTES('{' ,'[' ,'(' ,'9' ),
+    BYTES('}' ,']' ,')' ,'0' ),
+    BYTES('_' ,'-' ,'_' ,'-' ),
+    BYTES('+' ,'=' ,'+' ,'=' ),
+    BYTES(0xA8,0xA8,0xA8,0xB8),
+    BYTES(0,   0,   0,   0  ),
+    BYTES('0', '0', '0', '0'),
+    /*---- 2nd QWERTY row - 0x10 to 0x1F */
+    BYTES('Q' ,'q' ,0xC9,0xE9),
+    BYTES('W' ,'w' ,0xD6,0xF6),
+    BYTES('E' ,'e' ,0xD3,0xF3),
+    BYTES('R' ,'r' ,0xCA,0xEA),
+    BYTES('T' ,'t' ,0xC5,0xE5),
+    BYTES('Y' ,'y' ,0xCD,0xED),
+    BYTES(0xA5,0xB4,0xC3,0xE3),
+    BYTES('I' ,'i' ,0xD8,0xF8),
+    BYTES('O' ,'o' ,0xD9,0xF9),
+    BYTES('P' ,'p' ,0xC7,0xE7),
+    BYTES(0xD5,0xF5,0xD5,0xF5),
+    BYTES(0xAF,0xBF,0xAF,0xBF),
+    BYTES(0,   0,   0,   0  ),
+    BYTES('1', '1', '1', '1'),
+    BYTES('2', '2', '2', '2'),
+    BYTES('3', '3', '3', '3'),
+    /*---- 3rd QWERTY row - 0x20 to 0x2F */
+    BYTES('A' ,'a' ,0xD4,0xF4),
+    BYTES('S' ,'s' ,0xB2,0xB3),
+    BYTES('D' ,'d' ,0xC2,0xE2),
+    BYTES('F' ,'f' ,0xC0,0xE0),
+    BYTES('G' ,'g' ,0xCF,0xEF),
+    BYTES('H' ,'h' ,0xD0,0xF0),
+    BYTES('J' ,'j' ,0xCE,0xEE),
+    BYTES('K' ,'k' ,0xCB,0xEB),
+    BYTES('L' ,'l' ,0xC4,0xE4),
+    BYTES('U' ,'u' ,0xC6,0xE6),
+    BYTES(0xAA,0xBA,0xAA,0xBA),
+    BYTES(0x2F,0x5C,0x2F,0x5C),
+    BYTES(0,   0,   0,   0  ),
+    BYTES('4', '4', '4', '4'),
+    BYTES('5', '5', '5', '5'),
+    BYTES('6', '6', '6', '6'),
+    /*---- 4th QWERTY row - 0x30 to 0x3F */
+    BYTES(0xA5,0xB4,0xA5,0xB4),
+    BYTES('Z' ,'z' ,0xDF,0xFF),
+    BYTES('X' ,'x' ,0xD7,0xF7),
+    BYTES('C' ,'c' ,0xD1,0xF1),
+    BYTES('V' ,'v' ,0xCC,0xEC),
+    BYTES('B' ,'b' ,0xC8,0xE8),
+    BYTES('N' ,'n' ,0xD2,0xF2),
+    BYTES('M' ,'m' ,0xDC,0xFC),
+    BYTES(0xC1,0xE1,0xC1,0xE1),
+    BYTES(0xDE,0xFE,0xDE,0xFE),
+    BYTES(',' ,'.' ,',' ,'.' ),
+    BYTES(0,   0,   0,   0  ),
+    BYTES(',', '.', ',', '.'),
+    BYTES('7', '7', '7', '7'),
+    BYTES('8', '8', '8', '8'),
+    BYTES('9', '9', '9', '9'),
+};
 
 #include "standard.h"
 
-CONST IPTR hikeymap[] =
+STATIC CONST IPTR hikeymap[] =
 {
     BYTES(' ', ' ', ' ', ' '),	/* 40 */
     BYTES(8, 8, 8, 8),		/* 41 BACKSPACE*/
@@ -376,7 +365,7 @@ CONST IPTR hikeymap[] =
 #define SETBITS(b0, b1, b2, b3, b4, b5, b6, b7) \
 	(b0<<0)|(b1<<1)|(b2<<2)|(b3<<3)|(b4<<4)|(b5<<5)|(b6<<6)|(b7<<7)
 	
-CONST UBYTE locapsable[] =
+STATIC CONST UBYTE locapsable[] =
 {
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 00 - 07 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 08 - 0F */
@@ -391,7 +380,7 @@ CONST UBYTE locapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 38 - 3F */
 };
 
-CONST UBYTE hicapsable[] =
+STATIC CONST UBYTE hicapsable[] =
 {
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 40 - 47 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 48 - 4F */
@@ -406,7 +395,7 @@ CONST UBYTE hicapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 78 - 7F */
 };
 
-CONST UBYTE lorepeatable[] =
+STATIC CONST UBYTE lorepeatable[] =
 {
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 00 - 07 */
     SETBITS(1, 1, 1, 1, 1, 1, 0, 1),	/* 08 - 0F */
@@ -421,7 +410,7 @@ CONST UBYTE lorepeatable[] =
     SETBITS(1, 1, 1, 0, 1, 1, 1, 1)	/* 38 - 3F */
 };
 
-CONST UBYTE hirepeatable[] =
+STATIC CONST UBYTE hirepeatable[] =
 {
     SETBITS(1, 1, 1, 0, 0, 0, 1, 0),	/* 40 - 47 */
     SETBITS(1, 1, 0, 0, 1, 1, 1, 1),	/* 48 - 4F */
@@ -435,4 +424,3 @@ CONST UBYTE hirepeatable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 70 - 77 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 78 - 7F */
 };
-

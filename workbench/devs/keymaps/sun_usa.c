@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: American Sun 5C Keymap
@@ -8,33 +8,29 @@
 
 #include <devices/keymap.h>
 
-#define KMNAME "sun_usa"
+STATIC char  keymapname[] = "sun_usa";
 
-#define CONST const
+STATIC CONST UBYTE lokeymaptypes[];
+STATIC CONST IPTR  lokeymap[];
+STATIC CONST UBYTE locapsable[];
+STATIC CONST UBYTE lorepeatable[];
 
-extern CONST char  keymapname[];
-
-extern CONST UBYTE lokeymaptypes[];
-extern CONST IPTR  lokeymap[];
-extern CONST UBYTE locapsable[];
-extern CONST UBYTE lorepeatable[];
-
-extern CONST UBYTE hikeymaptypes[];
-extern CONST IPTR  hikeymap[];
-extern CONST UBYTE hicapsable[];
-extern CONST UBYTE hirepeatable[];
+STATIC CONST UBYTE hikeymaptypes[];
+STATIC CONST IPTR  hikeymap[];
+STATIC CONST UBYTE hicapsable[];
+STATIC CONST UBYTE hirepeatable[];
 
 CONST struct KeyMapNode km =
 {
- #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     {
     	NULL, NULL, 0, 0, keymapname
     },
- #else
+#else
     {
     	NULL, NULL, keymapname, 0, 0
     },
- #endif
+#endif
     {
     	(UBYTE *)lokeymaptypes,
     	(IPTR  *)lokeymap,
@@ -47,8 +43,6 @@ CONST struct KeyMapNode km =
     }
 };
 
-CONST char keymapname[] = KMNAME;
-
 #undef N
 #undef S
 #undef A
@@ -58,16 +52,16 @@ CONST char keymapname[] = KMNAME;
 #undef ST
 #undef NOP
 
-#define N KC_NOQUAL
-#define S KCF_SHIFT
-#define A KCF_ALT
-#define C KCF_CONTROL
-#define D KCF_DEAD
-#define V KC_VANILLA
-#define ST KCF_STRING
+#define N   KC_NOQUAL
+#define S   KCF_SHIFT
+#define A   KCF_ALT
+#define C   KCF_CONTROL
+#define D   KCF_DEAD
+#define V   KC_VANILLA
+#define ST  KCF_STRING
 #define NOP KCF_NOP
 
-CONST UBYTE lokeymaptypes[] =
+STATIC CONST UBYTE lokeymaptypes[] =
 {
     S, 		/* 00 */
     S, 		/* 01 */
@@ -133,10 +127,9 @@ CONST UBYTE lokeymaptypes[] =
     N, 		/* 3D */
     N, 		/* 3E */
     N, 		/* 3F */
-    
 };
 
-CONST UBYTE hikeymaptypes[] =
+STATIC CONST UBYTE hikeymaptypes[] =
 {
     N, 		/* 40 SPACE */
     N, 		/* 41 BACKSPACE */
@@ -202,7 +195,6 @@ CONST UBYTE hikeymaptypes[] =
     NOP, 	/* 7D */
     NOP, 	/* 7E */
     NOP 	/* 7F */
-    
 };
 
 #undef N
@@ -223,7 +215,7 @@ CONST UBYTE hikeymaptypes[] =
 #define BYTES(b0, b1, b2, b3) \
 	(((UBYTE)b0)<<24) | (((UBYTE)b1)<<16) | (((UBYTE)b2)<<8) | (((UBYTE)b3)<<0)
 
-CONST IPTR lokeymap[] =
+STATIC CONST IPTR lokeymap[] =
 {
     BYTES('`', '~', '~', '`'), 		/* 00 Left of 1 Key */
     BYTES('!', '1', '!', '1'), 		/* 01 1 */
@@ -297,7 +289,7 @@ CONST IPTR lokeymap[] =
 
 #include "standard.h"
 
-CONST IPTR hikeymap[] =
+STATIC CONST IPTR hikeymap[] =
 {
     BYTES(' ', ' ', ' ', ' '),	/* 40 */
     BYTES(8, 8, 8, 8),		/* 41 BACKSPACE*/
@@ -370,7 +362,7 @@ CONST IPTR hikeymap[] =
 #define SETBITS(b0, b1, b2, b3, b4, b5, b6, b7) \
 	(b0<<0)|(b1<<1)|(b2<<2)|(b3<<3)|(b4<<4)|(b5<<5)|(b6<<6)|(b7<<7)
 	
-CONST UBYTE locapsable[] =
+STATIC CONST UBYTE locapsable[] =
 {
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 00 - 07 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 08 - 0F */
@@ -385,7 +377,7 @@ CONST UBYTE locapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 38 - 3F */
 };
 
-CONST UBYTE hicapsable[] =
+STATIC CONST UBYTE hicapsable[] =
 {
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 40 - 47 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 48 - 4F */
@@ -400,7 +392,7 @@ CONST UBYTE hicapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 78 - 7F */
 };
 
-CONST UBYTE lorepeatable[] =
+STATIC CONST UBYTE lorepeatable[] =
 {
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 00 - 07 */
     SETBITS(1, 1, 1, 1, 1, 1, 0, 1),	/* 08 - 0F */
@@ -415,7 +407,7 @@ CONST UBYTE lorepeatable[] =
     SETBITS(1, 1, 1, 0, 1, 1, 1, 1)	/* 38 - 3F */
 };
 
-CONST UBYTE hirepeatable[] =
+STATIC CONST UBYTE hirepeatable[] =
 {
     SETBITS(1, 1, 1, 0, 0, 0, 1, 0),	/* 40 - 47 */
     SETBITS(1, 1, 0, 0, 1, 1, 1, 1),	/* 48 - 4F */
@@ -429,4 +421,3 @@ CONST UBYTE hirepeatable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 70 - 77 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 78 - 7F */
 };
-

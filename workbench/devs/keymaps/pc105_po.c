@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Portuguese PC105 Keymap
@@ -8,33 +8,29 @@
 
 #include <devices/keymap.h>
 
-#define KMNAME "pc105_po"
+STATIC char  keymapname[] = "pc105_po";
 
-#define CONST const
+STATIC CONST UBYTE lokeymaptypes[];
+STATIC CONST IPTR  lokeymap[];
+STATIC CONST UBYTE locapsable[];
+STATIC CONST UBYTE lorepeatable[];
 
-extern CONST char  keymapname[];
-
-extern CONST UBYTE lokeymaptypes[];
-extern CONST IPTR  lokeymap[];
-extern CONST UBYTE locapsable[];
-extern CONST UBYTE lorepeatable[];
-
-extern CONST UBYTE hikeymaptypes[];
-extern CONST IPTR  hikeymap[];
-extern CONST UBYTE hicapsable[];
-extern CONST UBYTE hirepeatable[];
+STATIC CONST UBYTE hikeymaptypes[];
+STATIC CONST IPTR  hikeymap[];
+STATIC CONST UBYTE hicapsable[];
+STATIC CONST UBYTE hirepeatable[];
 
 CONST struct KeyMapNode km =
 {
- #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     {
     	NULL, NULL, 0, 0, keymapname
     },
- #else
+#else
     {
     	NULL, NULL, keymapname, 0, 0
     },
- #endif
+#endif
     {
     	(UBYTE *)lokeymaptypes,
     	(IPTR  *)lokeymap,
@@ -47,8 +43,6 @@ CONST struct KeyMapNode km =
     }
 };
 
-CONST char keymapname[] = KMNAME;
-
 #undef N
 #undef S
 #undef A
@@ -58,18 +52,18 @@ CONST char keymapname[] = KMNAME;
 #undef ST
 #undef NOP
 
-#define N KC_NOQUAL
-#define S KCF_SHIFT
-#define A KCF_ALT
-#define C KCF_CONTROL
-#define D KCF_DEAD
-#define V KC_VANILLA
-#define ST KCF_STRING
+#define N   KC_NOQUAL
+#define S   KCF_SHIFT
+#define A   KCF_ALT
+#define C   KCF_CONTROL
+#define D   KCF_DEAD
+#define V   KC_VANILLA
+#define ST  KCF_STRING
 #define NOP KCF_NOP
 
 #define EUR 0xA4 /* ISO 8859-15: Euro = 164 = 0xA4) */
 
-CONST UBYTE lokeymaptypes[] =
+STATIC CONST UBYTE lokeymaptypes[] =
 {
     S|A, 	/* 00 left of 1 */
     S|A,        /* 01 1 */
@@ -140,10 +134,9 @@ CONST UBYTE lokeymaptypes[] =
     N, 		/* 3D NUM 7 */
     N, 		/* 3E NUM 8 */
     N, 		/* 3F NUM 9 */
-    
 };
 
-CONST UBYTE hikeymaptypes[] =
+STATIC CONST UBYTE hikeymaptypes[] =
 {
     D|S,    	/* 40 SPACE */
     N, 		/* 41 BACKSPACE */
@@ -209,7 +202,6 @@ CONST UBYTE hikeymaptypes[] =
     NOP, 	/* 7D */
     NOP, 	/* 7E */
     NOP 	/* 7F */
-    
 };
 
 #undef N
@@ -241,7 +233,7 @@ CONST UBYTE hikeymaptypes[] =
   
 */
 
-CONST UBYTE a_descr[] =
+STATIC CONST UBYTE a_descr[] =
 {
     DPF_MOD, 0x10,
     DPF_MOD, 0x17,
@@ -257,7 +249,7 @@ CONST UBYTE a_descr[] =
     'A', 'Á' /*0xC1*/, 'À' /*0xC0*/, 'Â' /*0xC2*/, 'Ã' /*0xC3*/, 'Ä' /*0xC4*/, 'Å' /*0xC5*/
 };
 
-CONST UBYTE e_descr[] =
+STATIC CONST UBYTE e_descr[] =
 {
     DPF_MOD, 0x10,
     DPF_MOD, 0x17,
@@ -273,7 +265,7 @@ CONST UBYTE e_descr[] =
     'E', 'É' /*0xC9*/, 'È' /*0xC8*/, 'Ê' /*0xCA*/, 'E', 'Ë' /*0xCB*/, 'E'
 };
 
-CONST UBYTE u_descr[] =
+STATIC CONST UBYTE u_descr[] =
 {
     DPF_MOD, 0x10,
     DPF_MOD, 0x17,
@@ -289,7 +281,7 @@ CONST UBYTE u_descr[] =
     'U', 'Ú' /*0xDA*/, 'Ù' /*0xD9*/, 'Û' /*0xDB*/, 'U', 'Ü' /*0xDC*/, 'U'
 };
 
-CONST UBYTE i_descr[] =
+STATIC CONST UBYTE i_descr[] =
 {
     DPF_MOD, 0x10,
     DPF_MOD, 0x17,
@@ -305,7 +297,7 @@ CONST UBYTE i_descr[] =
     'I', 'Í' /*0xCD*/, 'Ì' /*0xCC*/, 'Î' /*0xCE*/, 'I', 'Ï' /*0xCF*/, 'I'
 };
 
-CONST UBYTE o_descr[] =
+STATIC CONST UBYTE o_descr[] =
 {
     DPF_MOD, 0x10,
     DPF_MOD, 0x17,
@@ -321,7 +313,7 @@ CONST UBYTE o_descr[] =
     'O', 'Ó' /*0xD3*/, 'Ò' /*0xD2*/, 'Ô' /*0xD4*/, 'Õ' /*0xD5*/, 'Ö' /*0xD6*/, 'O'
 };
  
-CONST UBYTE space_descr[] =
+STATIC CONST UBYTE space_descr[] =
 {
     DPF_MOD, 0x4,
     0, 0XA0,
@@ -329,7 +321,7 @@ CONST UBYTE space_descr[] =
     ' ', '´' /*0xB4*/, '`','^','~', '¨' /*0xA8*/, '°' /*0xB0*/
 };
 
-CONST UBYTE KEY1B_descr[] =
+STATIC CONST UBYTE KEY1B_descr[] =
 {
     DPF_DEAD, 1,
     DPF_DEAD, 2,
@@ -337,7 +329,7 @@ CONST UBYTE KEY1B_descr[] =
     DPF_DEAD, 2
 };
 
-CONST UBYTE KEY2B_descr[] =
+STATIC CONST UBYTE KEY2B_descr[] =
 {
     DPF_DEAD, 4, /* 0, '~', */
     DPF_DEAD, 3, /* 0, '^', */
@@ -345,7 +337,7 @@ CONST UBYTE KEY2B_descr[] =
     DPF_DEAD, 3
 };
 
-CONST IPTR lokeymap[] =
+STATIC CONST IPTR lokeymap[] =
 {
     BYTES('|','\\', '|','\\'), 		/* 00 Left of 1 Key */
     BYTES('¹', '¹', '!', '1'), 		/* 01 1 */
@@ -419,7 +411,7 @@ CONST IPTR lokeymap[] =
 
 #include "standard.h"
 
-CONST IPTR hikeymap[] =
+STATIC CONST IPTR hikeymap[] =
 {
     DEAD(space_descr),	    	/* 40 SPACE */
     BYTES(8, 8, 8, 8),		/* 41 BACKSPACE*/
@@ -492,7 +484,7 @@ CONST IPTR hikeymap[] =
 #define SETBITS(b0, b1, b2, b3, b4, b5, b6, b7) \
 	(b0<<0)|(b1<<1)|(b2<<2)|(b3<<3)|(b4<<4)|(b5<<5)|(b6<<6)|(b7<<7)
 	
-CONST UBYTE locapsable[] =
+STATIC CONST UBYTE locapsable[] =
 {
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 00 - 07 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 08 - 0F */
@@ -507,7 +499,7 @@ CONST UBYTE locapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 38 - 3F */
 };
 
-CONST UBYTE hicapsable[] =
+STATIC CONST UBYTE hicapsable[] =
 {
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 40 - 47 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 48 - 4F */
@@ -522,7 +514,7 @@ CONST UBYTE hicapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 78 - 7F */
 };
 
-CONST UBYTE lorepeatable[] =
+STATIC CONST UBYTE lorepeatable[] =
 {
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 00 - 07 */
     SETBITS(1, 1, 1, 1, 1, 1, 0, 1),	/* 08 - 0F */
@@ -537,7 +529,7 @@ CONST UBYTE lorepeatable[] =
     SETBITS(1, 1, 1, 0, 1, 1, 1, 1)	/* 38 - 3F */
 };
 
-CONST UBYTE hirepeatable[] =
+STATIC CONST UBYTE hirepeatable[] =
 {
     SETBITS(1, 1, 1, 0, 0, 0, 1, 0),	/* 40 - 47 */
     SETBITS(1, 1, 0, 0, 1, 1, 1, 1),	/* 48 - 4F */
@@ -551,4 +543,3 @@ CONST UBYTE hirepeatable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 70 - 77 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 78 - 7F */
 };
-
