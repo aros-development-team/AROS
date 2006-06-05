@@ -48,6 +48,11 @@ typedef enum WindowRedraw {
     WINDOW_REDRAW_WITH_CLEAR
 } WindowRedraw;
 
+typedef enum WindowRefresh {
+    WINDOW_REFRESH_SMART,
+    WINDOW_REFRESH_SIMPLE
+} WindowRefresh;
+
 typedef enum DNDLook {
     DND_LOOK_ALWAYS_SOLID,
     DND_LOOK_GHOSTED_ON_BOX,
@@ -117,6 +122,7 @@ struct ZunePrefsNew
     /* Windows */
     WindowPosition  window_position;
     WindowRedraw  window_redraw;
+    WindowRefresh window_refresh;
     WORD     window_inner_left;
     WORD     window_inner_right;
     WORD     window_inner_top;
