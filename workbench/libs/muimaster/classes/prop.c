@@ -22,12 +22,21 @@
 
 extern struct Library *MUIMasterBase;
 
+#define SCALE16_METHOD 2 /* 1 or 2 */
+
+#if SCALE16_METHOD != 1
+#define calcscale16(x)
+#endif
+
 struct Prop_DATA
 {
     ULONG entries;
     LONG first;
     ULONG visible;
     LONG deltafactor;
+#if SCALE16_METHOD == 1
+    ULONG scale16;
+#endif
     LONG gadgetid;
 
     int horiz;
@@ -36,6 +45,58 @@ struct Prop_DATA
     struct MUI_EventHandlerNode ehn;
 };
 
+#if SCALE16_METHOD == 1
+static void calcscale16(struct Prop_DATA *data)
+{
+    if (data->entries < 65535)
+    {
+    	data->scale16 = 0x10000;
+    }
+    else
+    {
+    	unsigned long long v = ((unsigned long long)data->entries) * 0x10000 / 65535;
+	
+	data->scale16 = (ULONG)v;
+    }
+}
+#endif
+
+static ULONG downscale(struct Prop_DATA *data, ULONG val)
+{
+#if SCALE16_METHOD == 1
+    if (data->scale16 != 0x10000)
+    {
+    	unsigned long long v = ((unsigned long long)val) * 0x10000 / data->scale16;
+    	val = (ULONG)v; 
+    }
+#else
+    if (data->entries >= 0x10000)
+    {
+    	unsigned long long v = ((unsigned long long)val) * 65535 / data->entries;
+ 	val = (ULONG)v;
+    }
+    
+#endif    
+    return val;
+}
+
+static ULONG upscale(struct Prop_DATA *data, ULONG val)
+{
+#if SCALE16_METHOD == 1
+    if (data->scale16 != 0x10000)
+    {
+    	unsigned long long v = ((unsigned long long)val) * data->scale16 / 0x10000; 	
+	val = (ULONG)v;  	
+    }
+#else
+    if (data->entries >= 0x10000)
+    {
+    	unsigned long long v = ((unsigned long long)val) * data->entries / 65535;
+	val = (ULONG)v;
+    }    
+#endif    
+    return val;
+}
 
 IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -48,8 +109,6 @@ IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-    data->deltafactor = 1;
-    
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
@@ -91,7 +150,9 @@ IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (data->usewinborder)
 	_flags(obj) |= MADF_BORDERGADGET;
 
-    return (ULONG)obj;
+    calcscale16(data);
+    
+    return (IPTR)obj;
 }
 
 IPTR Prop__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
@@ -144,12 +205,14 @@ IPTR Prop__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (data->prop_object && refresh && !only_trigger)
     {
+    	calcscale16(data);
+	
 	/* Rendering will happen here!! This could make problems with virtual groups, forward this to MUIM_Draw??? */
 	SetAttrs(data->prop_object, ICA_TARGET, NULL, TAG_DONE);
 	if (SetGadgetAttrs((struct Gadget*)data->prop_object,_window(obj),NULL,
-		PGA_Top,data->first,
-		PGA_Visible,data->visible,
-		PGA_Total,data->entries,
+		PGA_Top,downscale(data, data->first),
+		PGA_Visible,downscale(data, data->visible),
+		PGA_Total,downscale(data, data->entries),
 		TAG_DONE))
 	    RefreshGList((struct Gadget*)data->prop_object, _window(obj), NULL, 1);
 	SetAttrs(data->prop_object, ICA_TARGET, ICTARGET_IDCMP, TAG_DONE);
@@ -168,8 +231,10 @@ IPTR Prop__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 		{
 		    if (data->prop_object)
 		    {
+		    	IPTR v;
 			/* So we can get a more current value */
-		        GetAttr(PGA_Top,data->prop_object,&data->first);
+		        GetAttr(PGA_Top,data->prop_object,&v);
+			data->first = upscale(data, v);
 		    }
 		    STORE = data->first;
 		    return 1;
@@ -298,9 +363,9 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 			    GA_Height, _mheight(obj),
 			    GA_ID, data->gadgetid,
 			    PGA_Freedom, data->horiz?FREEHORIZ:FREEVERT,
-			    PGA_Total, data->entries,
-			    PGA_Visible, data->visible,
-			    PGA_Top, data->first,
+			    PGA_Total, downscale(data, data->entries),
+			    PGA_Visible, downscale(data, data->visible),
+			    PGA_Top, downscale(data, data->first),
     			    PGA_NewLook, isnewlook,
     			    PGA_Borderless, TRUE,
 		            ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
@@ -343,9 +408,9 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 
 	    SetAttrs(data->prop_object, ICA_TARGET, NULL, TAG_DONE);
 	    if (SetGadgetAttrs((struct Gadget*)data->prop_object,_window(obj),NULL,
-		PGA_Top,data->first,
-		PGA_Visible,data->visible,
-		PGA_Total,data->entries,
+		PGA_Top,downscale(data, data->first),
+		PGA_Visible,downscale(data, data->visible),
+		PGA_Total,downscale(data, data->entries),
 		TAG_DONE))
 	    {
 		RefreshGList((struct Gadget*)data->prop_object, _window(obj), NULL, 1);
@@ -398,7 +463,8 @@ IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
     	if (msg->imsg->Class == IDCMP_IDCMPUPDATE)
     	{
 	    struct TagItem *tag;
-
+    	    ULONG v;
+	    
 	    /* Check if we are meant */
 	    tag = FindTagItem(GA_ID,(struct TagItem*)msg->imsg->IAddress);
 	    if (!tag) return 0;
@@ -407,11 +473,15 @@ IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 	    /* Check if we PGA_Top has really changed */
 	    tag = FindTagItem(PGA_Top,(struct TagItem*)msg->imsg->IAddress);
 	    if (!tag) return 0;
-	    if ((tag->ti_Data == data->first) && (msg->imsg->Qualifier & IEQUALIFIER_REPEAT)) return 0;
-	    data->first = tag->ti_Data;
+	    v = upscale(data, tag->ti_Data);
+	    
+	    //kprintf("PROP_HandleEvent: PGA_Top %d upscaled %d entries %d\n", tag->ti_Data, v, data->entries);
+	    
+	    if ((v == data->first) && (msg->imsg->Qualifier & IEQUALIFIER_REPEAT)) return 0;
+	    data->first = v;
 	    if (data->first < 0)
 		data->first = 0;
-	    SetAttrs(obj, MUIA_Prop_First, tag->ti_Data, MUIA_Prop_OnlyTrigger, TRUE,
+	    SetAttrs(obj, MUIA_Prop_First, data->first, MUIA_Prop_OnlyTrigger, TRUE,
 			  MUIA_Prop_Release, ((msg->imsg->Qualifier & IEQUALIFIER_REPEAT) ? FALSE : TRUE),
 			  TAG_DONE);
 	}
