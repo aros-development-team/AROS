@@ -18,6 +18,9 @@ while [ $# != 0 ]; do
 	*.c)
 	    files="$files '$1'"
 	    ;;
+	*.cc)
+	    files="$files '$1'"
+	    ;;
 	*)
 	    args="$args '$1'"
 	    ;;
