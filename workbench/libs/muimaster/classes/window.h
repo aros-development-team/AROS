@@ -213,6 +213,7 @@ struct MUI_RenderInfo
  MUIM_Window_AddEventHandler/RemoveEventHandler
 **************************************************************************/
 #ifdef __AROS__
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 /* AROS Nodes are not necessarily binary compatible with AOS ones, so
  * the (MUI_EventHandlerNode *) -> (Node *) cast hack doesnt work.
  */
@@ -225,7 +226,11 @@ struct MUI_EventHandlerNode
     ULONG          ehn_Events;   /* the IDCMP flags the handler should be invoked. */
     BYTE           ehn_Priority; /* sorted by priority. */
 };
-#else
+#define MUI_EVENTHANDLERNODE_DEFINED
+#endif
+#endif
+
+#ifndef MUI_EVENTHANDLERNODE_DEFINED
 struct MUI_EventHandlerNode
 {
     struct MinNode ehn_Node;     /* embedded node structure, private! */
@@ -237,6 +242,8 @@ struct MUI_EventHandlerNode
     ULONG          ehn_Events;   /* the IDCMP flags the handler should be invoked. */
 };
 #endif
+
+#undef MUI_EVENTHANDLERNODE_DEFINED
 
 /* here are the flags for ehn_Flags */
 #define MUI_EHF_ALWAYSKEYS  (1<<0)
