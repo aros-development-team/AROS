@@ -302,7 +302,7 @@ AROS_UFH3(void, update_func,
 	sprintf(entry.size, "%d x %d", scr->Width, scr->Height);
 	sprintf(entry.pos, "%d x %d", scr->LeftEdge, scr->TopEdge);
 	entry.status[0] = '\0';
-	snprintf(entry.title, sizeof(entry.title) - 1, "%s", scr->Title);
+	snprintf(entry.title, sizeof(entry.title) - 1, "%s", scr->Title ? scr->Title : "");
 	DoMethod(list_gad, MUIM_List_InsertSingle, &entry, MUIV_List_Insert_Bottom);
 
 	/* Traverse through all Windows of current Screen */
@@ -318,7 +318,7 @@ AROS_UFH3(void, update_func,
 		    (IsWindowVisible(win) ? ' ' : 'H'),
 		    (IS_CHILD(win)        ? 'C' : ' '),
 		    (HAS_CHILDREN(win)    ? 'P' : ' '));
-	    snprintf(entry.title, sizeof(entry.title) - 1, "%s", win->Title);
+	    snprintf(entry.title, sizeof(entry.title) - 1, "%s", win->Title ? win->Title : "");
 	    DoMethod(list_gad, MUIM_List_InsertSingle, &entry, MUIV_List_Insert_Bottom);
 
 	    win = win->NextWindow;
