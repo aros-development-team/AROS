@@ -505,7 +505,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     }
     rkprintf("Done\n");
 
-#warning TODO: WE MUST PARSE THE BIOS MEMORY MAP HERE AND PROTECT NECESSARY STRUCTS (i.e ACPI stores its data in the last few meg of physical ram..)
+#warning "TODO: WE MUST PARSE THE BIOS MEMORY MAP HERE AND PROTECT NECESSARY STRUCTS (i.e ACPI stores its data in the last few meg of physical ram..)"
 
     rkprintf("Clearing system area...");
 
@@ -699,7 +699,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     ExecBase->MaxLocMem = (IPTR)locmem;
     ExecBase->MaxExtMem = (APTR)extmem;
 
-#warning TODO: Write first step of alert.hook here!!!
+#warning "TODO: Write first step of alert.hook here!!!"
 
     /*
      * Initialize exec lists. This is done through information table which consist
@@ -874,7 +874,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
         }
     }
 
-#warning TODO: Write CPU detailed detection scheme. Patch proper functions??
+#warning "TODO: Write CPU detailed detection scheme. Patch proper functions??"
 
     Init_Traps();
     irqSetup();
@@ -1059,7 +1059,7 @@ asm("\nexec_DefaultTrap:\n\t"
     "pushl  $0\n\t"
     "jmp    Exec_Alert");
 
-#warning TODO: We should use info from BIOS here.
+#warning "TODO: We should use info from BIOS here."
 int exec_RamCheck_dma()
 {
     ULONG   volatile *ptr,tmp;
@@ -1290,7 +1290,7 @@ ULONG **exec_RomTagScanner()
      * Now, we will have to analyze used-defined RomTags (via KickTagPtr and
      * KickMemPtr)
      */
-#warning TODO: Implement external modules!
+#warning "TODO: Implement external modules!"
 
     /*
      * Everything is done now. Allocate buffer for normal RomTag and convert
@@ -1379,7 +1379,7 @@ struct Library * PrepareAROSSupportBase(void)
     
     NEWLIST(&AROSSupportBase->AllocMemList);
     
-#warning FIXME Add code to read in the debug options
+#warning "FIXME Add code to read in the debug options"
 
     return (struct Library *)AROSSupportBase;
 }
