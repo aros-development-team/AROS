@@ -28,6 +28,8 @@ struct IconWindow_ActionMsg
 #define MUIA_IconWindow_IsBackdrop    (MUIB_IconWindow | 0x00000003) /* ISG */ /* is Backdrop window ? */
 #define MUIA_IconWindow_IconList      (MUIB_IconWindow | 0x00000004) /* --G */
 
+#define MUIA_IconWindow_Font          (MUIB_IconWindow | 0x00000010) /* ISG */
+
 /*** Public Methods *********************************************************/
 #define MUIM_IconWindow_Open          (MUIB_IconWindow | 0x00000000)
 #define MUIM_IconWindow_UnselectAll   (MUIB_IconWindow | 0x00000001)

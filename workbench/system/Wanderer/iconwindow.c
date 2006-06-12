@@ -4,25 +4,31 @@
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
+#define DEBUG 1
 
 #include <exec/types.h>
 #include <libraries/mui.h>
 #include <zune/customclasses.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
+#include <proto/graphics.h>
 #include <proto/muimaster.h>
 
 #include "wanderer.h"
 #include "wandererprefs.h"
 #include "iconwindow.h"
 
+
+#include <aros/debug.h>
+
 /*** Instance Data **********************************************************/
 struct IconWindow_DATA
 {
-    Object      *iwd_IconList;
-    BOOL         iwd_IsRoot;
-    BOOL         iwd_IsBackdrop;
-    struct Hook *iwd_ActionHook;
+    Object           *iwd_IconList;
+    BOOL              iwd_IsRoot;
+    BOOL              iwd_IsBackdrop;
+    struct Hook      *iwd_ActionHook;
+    struct TextFont  *iwd_WindowFont;
 };
 
 /*** Macros *****************************************************************/
@@ -31,28 +37,35 @@ struct IconWindow_DATA
 /*** Methods ****************************************************************/
 Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    Object      *iconList;
-    BOOL         isRoot,
-                 isBackdrop;
-    struct Hook *actionHook;
-    
+    Object           *iconList;
+    BOOL              isRoot,
+                      isBackdrop;
+    struct Hook      *actionHook;
+    struct TextFont  *WindowFont;
+
     /* More than one GetTagData is not really efficient but since this is called very unoften... */
     isBackdrop = GetTagData(MUIA_IconWindow_IsBackdrop, 0, message->ops_AttrList);
     isRoot = GetTagData(MUIA_IconWindow_IsRoot, 0, message->ops_AttrList);
     actionHook = (struct Hook *) GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
-    
+    WindowFont = (struct TextFont *) GetTagData(MUIA_IconWindow_Font, (IPTR) NULL, message->ops_AttrList);
+
     if (isRoot)
     {
-        iconList = IconVolumeListObject, End;
+        iconList = IconVolumeListObject,
+                     MUIA_Font, WindowFont,
+                   End;
     }
     else
     {
         STRPTR drawer = (STRPTR) GetTagData(MUIA_IconWindow_Drawer, (IPTR) NULL, message->ops_AttrList);
         iconList = IconDrawerListObject,
+            MUIA_Font, WindowFont,
             MUIA_IconDrawerList_Drawer, (IPTR) drawer, 
         End;
     }
-    
+
+D(bug("[iconwindow] Font @ %x\n", WindowFont));
+
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
@@ -60,8 +73,9 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_Window_Width,              300,
         MUIA_Window_Height,             300,
         MUIA_Window_AltWidth,           100,
-	MUIA_Window_AltHeight,           80,
-	MUIA_Window_ScreenTitle, (IPTR) "",
+        MUIA_Window_AltHeight,           80,
+        MUIA_Window_ScreenTitle, (IPTR) "",
+        MUIA_Font, WindowFont,
         
         WindowContents, (IPTR) VGroup,
             InnerSpacing(0, 0),
@@ -84,6 +98,8 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->iwd_ActionHook = actionHook;
         data->iwd_IsBackdrop = -1;
         SET(self, MUIA_IconWindow_IsBackdrop, isBackdrop);
+        
+        data->iwd_WindowFont = WindowFont;        
         
         /*
             If double clicked then we call our own private methods, that's 
@@ -120,6 +136,23 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     {
         switch (tag->ti_Tag)
         {
+            case MUIA_Window_Open:
+                {            
+                  IPTR retVal = DoSuperMethodA(CLASS, self, (Msg) message);
+                  if (data->iwd_WindowFont)
+                  {
+D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_WindowFont));
+                    SetFont(_rp(self), data->iwd_WindowFont);
+                  }
+                  return retVal;
+                  break;
+                }
+            case MUIA_IconWindow_Font:
+                data->iwd_WindowFont = (struct TextFont  *)tag->ti_Data;
+D(bug("[iconwindow] MUIA_IconWindow_Font: Setting Window Font [%x]\n", data->iwd_WindowFont));
+                SetFont(_rp(self), data->iwd_WindowFont);
+                // Cause the window to redraw here!
+                break;
             case MUIA_IconWindow_IsBackdrop:
                 if ((!!tag->ti_Data) != data->iwd_IsBackdrop)
                 {
