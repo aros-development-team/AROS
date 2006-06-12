@@ -4,7 +4,7 @@
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
-#define DEBUG 1
+#define DEBUG 0
 
 #include <exec/types.h>
 #include <libraries/mui.h>
