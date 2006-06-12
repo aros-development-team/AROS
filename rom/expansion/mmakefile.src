@@ -20,4 +20,4 @@ FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 %build_module mmake=kernel-expansion \
   modname=expansion modtype=library \
   files="expansion_init $(FUNCS)" \
-  uselibs=arosc
+  uselibs=rom
