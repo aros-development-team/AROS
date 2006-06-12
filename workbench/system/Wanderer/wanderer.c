@@ -27,12 +27,14 @@
 
 #include "iconwindow.h"
 #include "wandererprefs.h"
+#include "wandererprefsintern.h"
 #include "wanderer.h"
 
 #include "locale.h"
 
 #define VERSION "$VER: Wanderer 0.3 (19.03.2006) © AROS Dev Team"
 
+extern IPTR InitWandererPrefs(void);
 VOID DoAllMenuNotifies(Object *strip, char *path);
 Object *FindMenuitem(Object* strip, int id);
 void window_update(void);
@@ -794,7 +796,7 @@ struct Wanderer_DATA
     struct MsgPort              *wd_NotifyPort;
     struct MUI_InputHandlerNode  wd_NotifyIHN;
     struct NotifyRequest         pnr;
-    
+    IPTR                         wd_PrefsIntern;
 };
 
 /*** Macros *****************************************************************/
@@ -859,7 +861,7 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             self, MUIM_Application_AddInputHandler, (IPTR) &data->wd_TimerIHN
         );
-        
+
         /* Setup filesystem notification handler ---------------------------*/
         data->wd_NotifyIHN.ihn_Signals = 1UL << data->wd_NotifyPort->mp_SigBit;
         data->wd_NotifyIHN.ihn_Object  = self;
@@ -869,6 +871,8 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             self, MUIM_Application_AddInputHandler, (IPTR) &data->wd_NotifyIHN
         );
+
+// All the following should be moved to InitWandererPrefs
         
         /* Setup notification on prefs file --------------------------------*/
         data->pnr.nr_Name                 = "ENV:SYS/Wanderer.prefs";
@@ -884,7 +888,8 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             D(bug("Wanderer: prefs notification setup FAILED\n"));
         }
         
-        data->wd_Prefs = WandererPrefsObject, End; // FIXME: error handling    
+        data->wd_Prefs = WandererPrefsObject, End; // FIXME: error handling
+        data->wd_PrefsIntern = InitWandererPrefs();
     }
     
     return self;
@@ -1175,8 +1180,16 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     struct MUIP_Wanderer_CreateDrawerWindow *message
 )
 {
+    SETUP_INST_DATA;
     Object *menustrip, *window = NULL;
     BOOL    isWorkbenchWindow = message->drawer == NULL ? TRUE : FALSE;
+
+    IPTR    useFont = NULL;
+    if (data->wd_PrefsIntern)
+    {
+      useFont = ((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
+    }
+
     struct NewMenu nm[] =
     {
     {NM_TITLE,     _(MSG_MEN_WANDERER)},
@@ -1240,6 +1253,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     /* Create a new icon drawer window with the correct drawer being set */
     window = IconWindowObject,
         MUIA_UserData,                     1,
+        MUIA_IconWindow_Font,              useFont,
         MUIA_Window_ScreenTitle,    (IPTR) GetScreenTitle(),
         MUIA_Window_Menustrip,      (IPTR) (menustrip = MUI_MakeObject(MUIO_MenustripNM, (IPTR) nm, (IPTR) NULL)),
         MUIA_IconWindow_ActionHook, (IPTR) &hook_action,
