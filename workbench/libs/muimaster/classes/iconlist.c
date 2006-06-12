@@ -28,6 +28,9 @@
 #include <proto/layers.h>
 #include <proto/muimaster.h>
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #define MYDEBUG
 #include "debug.h"
 #include "mui.h"
@@ -80,6 +83,8 @@ struct MUI_IconData
     int view_width,view_height; /* dimensions of the view (_mwidth(obj) and _mheight(obj)) */
     int width,height; /* The whole width/height */
     int mouse_pressed;
+
+    struct TextFont  *IconFont;
 
     struct MUI_EventHandlerNode ehn;
 
@@ -142,18 +147,18 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
 
     /*    if (icon->entry.label)
 	  {
-	  SetFont(_rp(obj), _font(obj));
+	  SetFont(_rp(obj), data->IconFont);
 	  txwidth = TextLength(_rp(obj),icon->entry.label,strlen(icon->entry.label));
 	  tx = (icon->width - txwidth)/2;
 	  if (tx < rect->MinX) rect->MinX = tx;
 	  if (tx + txwidth - 1 > rect->MaxX) rect->MaxX = tx + txwidth - 1;
 	  }*/
 
-    rect->MaxY += _font(obj)->tf_YSize + 4;
+    rect->MaxY += data->IconFont->tf_YSize + 4;
 
     /*date/size sorting has the date/size appended under the icon label*/
     if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE) )
-	rect->MaxY += _font(obj)->tf_YSize + 2;
+	rect->MaxY += data->IconFont->tf_YSize + 2;
 }
 
 /**************************************************************************
@@ -229,7 +234,8 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 	ULONG nameLength = strlen(icon->entry.label);
 	ULONG n2 = nameLength;
 
-	SetFont(_rp(obj), _font(obj));
+	SetFont(_rp(obj), data->IconFont);
+
 	txwidth = TextLength(_rp(obj), icon->entry.label, nameLength);
 	while( txwidth > (data->max_x + 4) )
 	    txwidth = TextLength(_rp(obj), icon->entry.label, --nameLength);
@@ -247,7 +253,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 	}
 
 	tx = _mleft(obj) - data->view_x + icon->x + (icon->width - txwidth)/2;
-	ty = _mtop(obj)  - data->view_y + icon->y + (icon->height/2) + (data->max_y/2) + _font(obj)->tf_Baseline + 1;
+	ty = _mtop(obj)  - data->view_y + icon->y + (icon->height/2) + (data->max_y/2) + data->IconFont->tf_Baseline + 1;
 
 	// FIXME: this isn't a very optimal to make an outline...
 	SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
@@ -295,7 +301,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 	    nameLength = strlen(buf);
 
 	    tx = _mleft(obj) - data->view_x + icon->x + (icon->width/2) - (TextLength(_rp(obj), buf, nameLength)/2);
-	    ty = _mtop(obj)  - data->view_y + icon->y + (icon->height/2) + (data->max_y/2) + _font(obj)->tf_Baseline + _font(obj)->tf_YSize + 2;
+	    ty = _mtop(obj)  - data->view_y + icon->y + (icon->height/2) + (data->max_y/2) + data->IconFont->tf_Baseline + data->IconFont->tf_YSize + 2;
 
 	    // FIXME: this isn't a very optimal to make an outline...
 	    SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
@@ -454,7 +460,7 @@ static ULONG IconList_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_
 
     /*date/size sorting has the date/size appended under the icon label*/
     if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE) )
-	gridy += _font(obj)->tf_YSize + 2;
+	gridy += data->IconFont->tf_YSize + 2;
 
     icon = List_First(&data->icon_list);
     while (icon)
@@ -543,8 +549,11 @@ IconList_RethinkDimensions(obj, data, NULL);
  **************************************************************************/
 static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_IconData   *data;
+    struct MUI_IconData  *data;
     struct TagItem  	    *tag, *tags;
+    struct TextFont      *WindowFont = NULL;
+
+    WindowFont = (struct TextFont *) GetTagData(MUIA_Font, (IPTR) NULL, msg->ops_AttrList);
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 	    MUIA_Dropable, TRUE,
@@ -557,13 +566,10 @@ static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     set(obj,MUIA_FillArea,TRUE);
 
-    /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
-    {
-	switch (tag->ti_Tag)
-	{
-	}
-    }
+    if (WindowFont == NULL) data->IconFont = _font(obj);
+    else data->IconFont = WindowFont;
+
+D(bug("[iconlist] Used Font = %x\n", data->IconFont));
 
     data->pool =  CreatePool(0,4096,4096);
     if (!data->pool)
@@ -619,6 +625,10 @@ static IPTR IconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
+	    case    MUIA_Font:
+	       data->IconFont = tag->ti_Data;
+	       break;
+
 	    case    MUIA_IconList_Left:
 		if (data->view_x != tag->ti_Data)
 		{
@@ -729,7 +739,7 @@ static IPTR IconList_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 		TAG_DONE);
     }
 
-    SetFont(_rp(obj), _font(obj));
+    SetFont(_rp(obj), data->IconFont);
     return rc;
 }
 
@@ -2145,6 +2155,7 @@ static struct NewDosList *DosList_Create(void)
 
 		    if ((ndn = (struct NewDosNode*)AllocPooled(pool, sizeof(*ndn))))
 		    {
+D(bug("[Wanderer]: DosList_Create: adding node for '%s'\n", name));
 			ndn->name = name;
 			ndn->device = NULL;
 #ifndef __AROS__
@@ -2152,6 +2163,23 @@ static struct NewDosList *DosList_Create(void)
 #else
 			ndn->port = NULL;
 #endif
+
+         struct	IOStdReq			*vol_tmp_ioreq=NULL;
+			struct	MsgPort 			*vol_tmp_mp=NULL;
+
+/*			mp = CreateMsgPort();
+			if (mp)
+			{
+			  ioreq = (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq));
+			  if (ioreq)
+           {
+             ioreq->iotd_Req.io_Length = sizeof(struct Interrupt);
+             ioreq->iotd_Req.io_Data = (APTR)Wanderer_VolumeInterrupt;
+             ioreq->iotd_Req.io_Command = TD_ADDCHANGEINT;
+             SendIO((struct IORequest *)DiskIO);
+           }
+         } */
+
 			AddTail((struct List*)ndl,(struct Node*)ndn);
 		    }
 		}
