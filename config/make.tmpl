@@ -1181,16 +1181,18 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 #MM %(mmake)-kobj : %(mmake)-includes core-linklibs
 #MM %(mmake)-linklib : %(mmake)-includes
 #MM %(mmake)-quick : %(mmake)-includes-quick
-#MM %(mmake)-includes : %(mmake)-makefile includes-generate-deps
+#MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
+#MM     includes-generate-deps
 #MM %(mmake)-includes-quick
+#MM %(mmake)-includes-dirs
 #MM %(mmake)-makefile
 #MM %(mmake)-funclist
 #MM %(mmake)-clean
 
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
-    %(mmake)-includes-quick %(mmake)-clean %(mmake)-kobj \
-    %(mmake)-funclist %(mmake)-linklib
+    %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
+    %(mmake)-kobj %(mmake)-funclist %(mmake)-linklib
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
@@ -1263,14 +1265,15 @@ ifneq ($(%(modname)_INCLUDES),)
 		      targetdir=%(objdir)/dummyinc conffile=%(conffile)
 
 BD_INCDIRS := $(filter-out ./,$(sort $(dir $(%(modname)_INCLUDES))))
-$(addprefix %(objdir)/include/,$(%(modname)_INCLUDES)) : | %(objdir)/include $(addprefix %(objdir)/include/,$(BD_INCDIRS))
-$(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) : | $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS))
-$(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) : | $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS))
-$(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES)) : | %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
-GLOB_MKDIRS += %(objdir)/include $(addprefix %(objdir)/include/,$(BD_INCDIRS)) \
+
+TMP%(modname)_INCDIRS := \
+    %(objdir)/include $(addprefix %(objdir)/include/,$(BD_INCDIRS)) \
     $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS)) \
-    $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS)) \
-    %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
+    $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS))
+%rule_makedirs dirs=$(TMP%(modname)_INCDIRS) setuptarget=%(mmake)-includes-dirs
+
+$(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES)) : | %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
+GLOB_MKDIRS += %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
 
 endif
 
