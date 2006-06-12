@@ -1,3 +1,7 @@
+/*
+   Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+   $Id: wandererprefsinternal.c 24537 2006-06-12 20:29:02Z NicJA $
+*/
 
 #define DEBUG 0
 
