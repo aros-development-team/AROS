@@ -709,10 +709,10 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
         {
             if (flags[arg] & MULTIPLE)
             {
-                /* Shouldn't be necessary, but some buggy software relies on this
-                 * IBrowse's URL field isn`t set to zero.
+                /* Shouldn't be necessary, but some buggy software relies on this.
+                 * IBrowse's URL field isn't set to zero.
                  */
-                array[arg] = NULL;
+                array[arg] = (IPTR)NULL;
             }
         }
     }

@@ -57,7 +57,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    char *ptr;
+    const char *ptr;
 
     /* '/' at the begining of the string really is part of the path */
     while (*path == '/')
