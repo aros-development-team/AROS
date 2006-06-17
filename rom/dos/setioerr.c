@@ -55,8 +55,8 @@
 
     /* If this is not a Process, do nothing  */
     if (!__is_process(me))
-        return
-    
+        return 0;
+
     /* Nothing spectacular */
     old = me->pr_Result2;
     me->pr_Result2 = result;
