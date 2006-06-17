@@ -136,7 +136,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     {
         switch (tag->ti_Tag)
         {
-            case MUIA_Window_Open:
+/*            case MUIA_Window_Open:
                 {            
                   IPTR retVal = DoSuperMethodA(CLASS, self, (Msg) message);
                   if (data->iwd_WindowFont)
@@ -146,7 +146,7 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_Win
                   }
                   return retVal;
                   break;
-                }
+                }*/
             case MUIA_IconWindow_Font:
                 data->iwd_WindowFont = (struct TextFont  *)tag->ti_Data;
 D(bug("[iconwindow] MUIA_IconWindow_Font: Setting Window Font [%x]\n", data->iwd_WindowFont));
