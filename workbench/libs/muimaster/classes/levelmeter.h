@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_LEVELMETER_H
 
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,7 @@
 //#define MUIB_Levelmeter   	(MUIB_ZUNE | 0x????)  
 
 /*** Attributes *************************************************************/
-#define MUIA_Levelmeter_Label	(MUIB_MUI | 0x00420dd5 /* V11 isg STRPTR */
+#define MUIA_Levelmeter_Label	(MUIB_MUI | 0x00420dd5) /* V11 isg STRPTR */
 
 
 extern const struct __MUIBuiltinClass _MUI_Levelmeter_desc; /* PRIV */
