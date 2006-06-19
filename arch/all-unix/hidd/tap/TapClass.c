@@ -142,9 +142,6 @@ VOID UXTap__Hidd_Tap__DisposeUnit(OOP_Class *cl, OOP_Object *obj,
 
 /*************************** Classes *****************************/
 
-#undef UtilityBase
-#define UtilityBase (csd->utilitybase)
-
 AROS_SET_LIBFUNC(UXTap_InitAttrBases, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
