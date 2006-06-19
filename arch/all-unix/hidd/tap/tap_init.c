@@ -25,14 +25,7 @@ AROS_SET_LIBFUNC(UXTap_Init, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
 
-    LIBBASE->hdg_csd.utilitybase = OpenLibrary("utility.library", 37);
-    if (LIBBASE->hdg_csd.utilitybase)
-    {
-	D(bug("  Got UtilityBase\n"));
-	ReturnInt("TapHIDD_Init", ULONG, TRUE);
-    }
-
-    ReturnInt("TapHIDD_Init", ULONG, FALSE);
+    ReturnInt("TapHIDD_Init", ULONG, TRUE);
 
     AROS_SET_LIBFUNC_EXIT
 }
@@ -40,10 +33,6 @@ AROS_SET_LIBFUNC(UXTap_Init, LIBBASETYPE, LIBBASE)
 AROS_SET_LIBFUNC(UXTap_Expunge, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
-
-    EnterFunc(bug("TapHIDD_Expunge()\n"));
-
-    CloseLibrary(LIBBASE->hdg_csd.utilitybase);
 
     ReturnInt("TapHIDD_Expunge", ULONG, TRUE);
     

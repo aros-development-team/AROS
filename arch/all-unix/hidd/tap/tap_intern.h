@@ -40,8 +40,6 @@ struct HIDDTapData
 struct class_static_data
 {
     struct ExecBase      * sysbase;
-    struct Library       * utilitybase;
-    struct Library       * oopbase;
 
     OOP_Class		 *taphiddclass;
     OOP_Class		 *tapunitclass;
@@ -77,16 +75,12 @@ struct IntHIDDTapBase
     struct Library            hdg_LibNode;
     BPTR                      hdg_SegList;
     struct ExecBase          *hdg_SysBase;
-    struct Library           *hdg_UtilityBase;
 
     struct class_static_data  hdg_csd;
 };
 
 
 #define CSD(cl) (&((struct IntHIDDTapBase *)cl)->hdg_csd)
-
-#undef UtilityBase
-#define UtilityBase (CSD(cl)->utilitybase)
 
 /* pre declarations */
 

@@ -42,8 +42,6 @@
 #include <aros/symbolsets.h>
 #include <aros/macros.h>
 
-#include "tap_intern.h"
-#undef timeval
 
 #include LC_LIBDEFS_FILE
 
@@ -58,6 +56,10 @@ void tapunit_write_more_data();
 
 #define MAX(a,b) (((a) > (b))?(a):(b))
 #define MIN(a,b) (((a) > (b))?(b):(a))
+
+
+#include "tap_intern.h"
+#undef timeval
 
 static char * unitname[] =
 {
@@ -346,8 +348,6 @@ UWORD UXTapUnit__Hidd_TapUnit__GetStatus(OOP_Class *cl, OOP_Object *o, struct pH
 /************* The software interrupt handler that gets data from PORT *****/
 
 
-#undef UtilityBase
-
 #define READBUFFER_SIZE 2048
 
 AROS_UFH3(void, tapunit_receive_data,
@@ -411,8 +411,6 @@ AROS_UFH3(void, tapunit_write_more_data,
 
 
 /******* init_tapunitclass ********************************/
-
-#define UtilityBase (csd->utilitybase)
 
 AROS_SET_LIBFUNC(UXTapUnit_InitAttrBases, LIBBASETYPE, LIBBASE)
 {
