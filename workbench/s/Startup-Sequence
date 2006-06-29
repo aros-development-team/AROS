@@ -31,7 +31,7 @@ EndIf
 Touch PIPEFS:systempipe
 Assign PIPE:    PIPEFS:systempipe
 
-Path C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools QUIET
+Path C: SYS:System S: SYS:Prefs SYS:Tools SYS:Utilities QUIET
 
 If EXISTS SYS:Tools/Commodities
     Path SYS:Tools/Commodities QUIET ADD
