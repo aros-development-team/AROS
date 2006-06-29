@@ -4,7 +4,6 @@
 */
 
 #define DEBUG 1
-#define MUI_OBSOLETE
 
 #include <aros/debug.h>
 #include <datatypes/datatypes.h>
@@ -26,7 +25,7 @@
 #include "locale.h"
 
 #define APPNAME "ScreenGrabber"
-#define VERSION "ScreenGrabber 0.3 (14.04.2006)"
+#define VERSION "ScreenGrabber 0.4 (29.06.2006)"
 
 static const char version[] = "$VER: " VERSION " ©2006 AROS Dev Team";
 
@@ -137,7 +136,7 @@ AROS_UFH3(void, grab_function,
     struct PubScreenNode *psn;
     struct Screen *screen;
 
-    delay = XGET(Delay, MUIA_Slider_Level) * 10;
+    delay = XGET(Delay, MUIA_Numeric_Value) * 10;
     hide_win = XGET(Hide, MUIA_Selected);
    
     active = XGET(ScreenList, MUIA_List_Active);
@@ -362,9 +361,9 @@ BOOL GUIInit()
 				Child, ColGroup(2),
 				    Child, Label(_(MSG_DELAY)),
 				    Child, Delay = SliderObject,
-					MUIA_Slider_Min, 0,
-					MUIA_Slider_Max, 30,
-					MUIA_Slider_Level, 0,
+					MUIA_Numeric_Min, 0,
+					MUIA_Numeric_Max, 30,
+					MUIA_Numeric_Value, 0,
 				    End,
 				End,
 				Child, HGroup,
