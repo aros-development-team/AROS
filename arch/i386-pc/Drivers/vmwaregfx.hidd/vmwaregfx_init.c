@@ -50,6 +50,8 @@ AROS_UFH3(void, VMEnumerator,
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_SubClass, &SubClass);
+
+    bug("[VMWare] vmwareSVGA %04x device\n", ProductID);
     
     if (ProductID == DEVICE_VMWARE0710)
     {
@@ -115,7 +117,7 @@ AROS_SET_LIBFUNC(VMWareGfx_Init, LIBBASETYPE, LIBBASE)
 	goto failure;
 
     HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-    if (HiddPCIDeviceAttrBase = 0)
+    if (HiddPCIDeviceAttrBase == 0)
 	goto failure;
     
     if (!findCard(xsd))
