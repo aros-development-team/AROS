@@ -11,4 +11,4 @@ FILES	:=	\
 %build_module mmake=kernel-pc-i386-vmwaregfx \
   modname=vmwaregfx modtype=hidd \
   files=$(FILES) \
-  uselibs="hiddgraphicsstubs hiddstubs rom amiga"
+  uselibs="hiddgraphicsstubs hiddstubs rom amiga oop"

@@ -62,7 +62,7 @@ STATIC ULONG mask_to_shift(ULONG mask)
     return i;
 }
 
-OOP_Object *VMWareGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
+OOP_Object *VMWareGFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
 struct TagItem pftags[] =
 {
 	{aHidd_PixFmt_RedShift,     0}, /*  0 */
@@ -184,13 +184,13 @@ struct pRoot_New yourmsg;
 	ReturnPtr("VMWareGfx::New", OOP_Object *, NULL);
 }
 
-VOID VMWareGfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
+VOID VMWareGFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
 	if (XSD(cl)->mouse.shape != NULL)
 		FreeVec(XSD(cl)->mouse.shape);
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-VOID VMWareGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg) {
+VOID VMWareGFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg) {
 ULONG idx;
 BOOL found = FALSE;
 
@@ -208,7 +208,7 @@ BOOL found = FALSE;
 		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-OOP_Object *VMWareGfx__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg) {
+OOP_Object *VMWareGFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg) {
 BOOL displayable;
 BOOL framebuffer;
 OOP_Class *classptr = NULL;
@@ -261,7 +261,7 @@ struct pHidd_Gfx_NewBitMap yourmsg;
 	ReturnPtr("VMWareGfx::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
 }
 
-VOID VMWareGfx__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg) {
+VOID VMWareGFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg) {
 UBYTE *src = NULL;
 UBYTE *dst = NULL;
 HIDDT_DrawMode mode;
@@ -446,7 +446,7 @@ struct Box box;
 	ReturnVoid("VMWareGfx.BitMap::CopyBox");
 }
 
-BOOL VMWareGfx__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg) {
+BOOL VMWareGFX__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg) {
 struct VMWareGfx_staticdata *data = XSD(cl);
 
 	if (msg->shape == NULL)
@@ -540,7 +540,7 @@ struct VMWareGfx_staticdata *data = XSD(cl);
 	return FALSE;
 }
 
-BOOL VMWareGfx__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg) {
+BOOL VMWareGFX__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg) {
 struct Box box;
 
 	XSD(cl)->mouse.x = msg->x;
@@ -554,7 +554,7 @@ struct Box box;
 	return TRUE;
 }
 
-VOID VMWareGfx__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg) {
+VOID VMWareGFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg) {
 
 	XSD(cl)->mouse.visible = msg->visible;
 	displayCursorVMWareGfx(&XSD(cl)->data, msg->visible ? 1 : 0);
