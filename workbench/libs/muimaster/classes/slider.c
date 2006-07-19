@@ -1,6 +1,6 @@
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -79,7 +79,7 @@ static IPTR Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
     struct TagItem *tags, *tag;
     ULONG flags = SLIDER_HORIZ;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags));)
     {
 	switch (tag->ti_Tag)
 	{
@@ -129,7 +129,7 @@ static IPTR Slider_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_SliderData *data = INST_DATA(cl, obj);
     struct TagItem *tags, *tag;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags));)
     {
 	switch (tag->ti_Tag)
 	{
@@ -138,8 +138,8 @@ static IPTR Slider_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    {
 			/* reset the offset */
 			data->knob_offset = 0;
-			break;
 		    }
+		    break;
 	}
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);    
