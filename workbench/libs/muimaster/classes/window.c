@@ -1,6 +1,6 @@
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -2560,7 +2560,7 @@ static IPTR Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 		
 	    case MUIA_Window_PublicScreen:
-	    	data->wd_UserPublicScreen = (STRPTR)tag->ti_Data;
+	    	data->wd_UserPublicScreen = StrDup((STRPTR)tag->ti_Data);
 		break;
 	}
     }
@@ -2598,11 +2598,9 @@ static IPTR Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->wd_ChildMenustrip)
     	MUI_DisposeObject(data->wd_ChildMenustrip);
 	
-    if (data->wd_Title)
-	FreeVec(data->wd_Title);
-
-    if (data->wd_ScreenTitle)
-	FreeVec(data->wd_ScreenTitle);
+    FreeVec(data->wd_Title);
+    FreeVec(data->wd_ScreenTitle);
+    FreeVec(data->wd_UserPublicScreen);
 
     DeletePool(data->wd_MemoryPool);
 
@@ -2643,9 +2641,11 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /*  		D(bug("MUIA_Window_ActiveObject %ld (%p)\n", tag->ti_Data, tag->ti_Data)); */
 		SetActiveObject(data, obj, tag->ti_Data);
 		break;
+
 	    case MUIA_Window_DefaultObject:
 		data->wd_DefaultObject = (APTR)tag->ti_Data;
 		break;
+
 	    case MUIA_Window_ID:
 		data->wd_ID = tag->ti_Data;
 		break;
@@ -2712,14 +2712,14 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_Window_Title:
-		if (data->wd_Title) FreeVec(data->wd_Title);
+		FreeVec(data->wd_Title);
 		data->wd_Title = StrDup((STRPTR)tag->ti_Data);
 		if (data->wd_RenderInfo.mri_Window)
 		    SetWindowTitles(data->wd_RenderInfo.mri_Window,data->wd_Title, (CONST_STRPTR)~0);
 		break;
 
 	    case MUIA_Window_ScreenTitle:
-		if (data->wd_ScreenTitle) FreeVec(data->wd_ScreenTitle);
+		FreeVec(data->wd_ScreenTitle);
 		data->wd_ScreenTitle = StrDup((STRPTR)tag->ti_Data);
 		if (data->wd_RenderInfo.mri_Window)
 		    SetWindowTitles(data->wd_RenderInfo.mri_Window,
@@ -2797,7 +2797,7 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 		
 	    case MUIA_Window_PublicScreen:
-	    	data->wd_UserPublicScreen = (STRPTR)tag->ti_Data;
+	    	data->wd_UserPublicScreen = StrDup((STRPTR)tag->ti_Data);
 		break;
 	    
 
@@ -2834,7 +2834,7 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	
 	case MUIA_Window_PublicScreen:
 	    STORE = (IPTR)data->wd_UserPublicScreen;
-	    break;
+	    return TRUE;
 	        
 	case MUIA_Window_ActiveObject:
 	    if ((data->wd_ActiveObject != NULL)
