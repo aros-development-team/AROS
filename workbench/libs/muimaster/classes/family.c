@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -81,7 +81,7 @@ static const int __revision = 1;
 /*
  * OM_NEW
  */
-static ULONG Family_New(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR Family_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_FamilyData *data;
     struct TagItem        *tags;
@@ -119,14 +119,14 @@ static ULONG Family_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 
 /*
  * OM_DISPOSE
  */
-static ULONG Family_Dispose(struct IClass *cl, Object *obj, Msg msg)
+static IPTR Family_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
@@ -145,15 +145,15 @@ static ULONG Family_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /*
  * OM_GET
  */
-static ULONG Family_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+static IPTR Family_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
-    ULONG *store = msg->opg_Storage;
+    IPTR *store = msg->opg_Storage;
 
     switch(msg->opg_AttrID)
     {
 	case MUIA_Family_List:
-	    *store = (ULONG)&data->childs;
+	    *store = (IPTR)&data->childs;
 	    return TRUE;
 
 	case MUIA_Version:
@@ -172,7 +172,7 @@ static ULONG Family_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /*
  * MUIM_Family_AddHead : Add an object as first object to the family.
  */
-static ULONG Family_AddHead(struct IClass *cl, Object *obj, struct MUIP_Family_AddHead *msg)
+static IPTR Family_AddHead(struct IClass *cl, Object *obj, struct MUIP_Family_AddHead *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
 
@@ -189,7 +189,7 @@ static ULONG Family_AddHead(struct IClass *cl, Object *obj, struct MUIP_Family_A
 /*
  * MUIM_Family_AddTail : Add an object as last object to the family.
  */
-static ULONG Family_AddTail(struct IClass *cl, Object *obj, struct MUIP_Family_AddTail *msg)
+static IPTR Family_AddTail(struct IClass *cl, Object *obj, struct MUIP_Family_AddTail *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
 
@@ -207,7 +207,7 @@ static ULONG Family_AddTail(struct IClass *cl, Object *obj, struct MUIP_Family_A
 /*
  * MUIM_Family_Insert : Add an object after another object to the family.
  */
-static ULONG Family_Insert(struct IClass *cl, Object *obj, struct MUIP_Family_Insert *msg)
+static IPTR Family_Insert(struct IClass *cl, Object *obj, struct MUIP_Family_Insert *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
 
@@ -225,7 +225,7 @@ static ULONG Family_Insert(struct IClass *cl, Object *obj, struct MUIP_Family_In
 /*
  * MUIM_Family_Remove : Remove an object from a family.
  */
-static ULONG Family_Remove(struct IClass *cl, Object *obj,
+static IPTR Family_Remove(struct IClass *cl, Object *obj,
 			   struct MUIP_Family_Remove *msg)
 {
     /* struct MUI_FamilyData *data = INST_DATA(cl, obj);
@@ -245,7 +245,7 @@ static ULONG Family_Remove(struct IClass *cl, Object *obj,
 /*
  * MUIM_Family_Sort : Sort the children of a family.
  */
-static ULONG  Family_Sort(struct IClass *cl, Object *obj,
+static IPTR  Family_Sort(struct IClass *cl, Object *obj,
 			 struct MUIP_Family_Sort *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
@@ -264,7 +264,7 @@ static ULONG  Family_Sort(struct IClass *cl, Object *obj,
  * MUIM_Family_Transfer : All the children of the family are removed and
  * added to another family in the same order.
  */
-static ULONG Family_Transfer(struct IClass *cl, Object *obj, struct MUIP_Family_Transfer *msg)
+static IPTR Family_Transfer(struct IClass *cl, Object *obj, struct MUIP_Family_Transfer *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
@@ -283,19 +283,19 @@ static ULONG Family_Transfer(struct IClass *cl, Object *obj, struct MUIP_Family_
  MUIM_FindUData : tests if the MUIA_UserData of the object
  contains the given <udata> and returns the object pointer in this case.
 **************************************************************************/
-static ULONG Family_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+static IPTR Family_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
     Object                *child;
 
     if (muiNotifyData(obj)->mnd_UserData == msg->udata)
-	return (ULONG)obj;
+	return (IPTR)obj;
 
     while ((child = NextObject(&cstate)))
     {
     	Object *found = (Object*)DoMethodA(child, (Msg)msg);
-    	if (found) return (ULONG)found;
+    	if (found) return (IPTR)found;
     }
     return 0;
 }
@@ -306,7 +306,7 @@ static ULONG Family_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUD
  * contains the given <udata> and gets <attr> to <storage> for itself
  * in this case.
  */
-static ULONG Family_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
+static IPTR Family_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
@@ -329,7 +329,7 @@ static ULONG Family_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUDat
  * MUIM_SetUData : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG Family_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+static IPTR Family_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
@@ -349,7 +349,7 @@ static ULONG Family_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUDat
  * MUIM_SetUDataOnce : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG Family_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
+static IPTR Family_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     Object                *cstate = (Object *)data->childs.lh_Head;
