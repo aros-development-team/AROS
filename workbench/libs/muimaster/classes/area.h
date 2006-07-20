@@ -186,7 +186,7 @@ struct MUI_AreaData
 // offset 56
     LONG               mad_FontPreset;     /* MUIV_Font_xxx */
 // offset 76
-    CONST_STRPTR       mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
+    STRPTR             mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
 // Inner values at offset 88 in MUI:
     BYTE               mad_InnerLeft;      /* frame or hardcoded */
     BYTE               mad_InnerTop;
@@ -206,11 +206,11 @@ struct MUI_AreaData
 
     WORD               mad_HardHeight;     /* if harcoded dim (see flags)  */
     WORD               mad_HardWidth;      /* if harcoded dim (see flags)  */
-    CONST_STRPTR       mad_HardWidthTxt;
-    CONST_STRPTR       mad_HardHeightTxt;
+    STRPTR             mad_HardWidthTxt;
+    STRPTR             mad_HardHeightTxt;
 // TODO: move SelBack in RenderInfo as it's common for all objects
     struct MUI_ImageSpec_intern *mad_SelBack;     /* selected state background */
-    CONST_STRPTR       mad_ShortHelp;      /* bubble help */
+    STRPTR             mad_ShortHelp;      /* bubble help */
 // there's an event handler at 114
     struct MUI_EventHandlerNode mad_ehn;
     struct MUI_InputHandlerNode mad_Timer; /* MUIA_Timer */

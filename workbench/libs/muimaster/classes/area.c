@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -289,6 +289,7 @@ static IPTR Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_ControlChar:
 		data->mad_ControlChar = tag->ti_Data;
 		break;
+
 	    case MUIA_CycleChain:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
 		break;
@@ -304,87 +305,111 @@ static IPTR Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_FillArea:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_FILLAREA);
 		break;
+
 	    case MUIA_Draggable:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DRAGGABLE);
 		break;
+
 	    case MUIA_Dropable:
 	        _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DROPABLE);
 	        break;
+
 	    case MUIA_FixHeight:
 		data->mad_Flags |= MADF_FIXHEIGHT;
 		data->mad_HardHeight = tag->ti_Data;
 		break;
+
 	    case MUIA_FixHeightTxt:
-	    	data->mad_HardHeightTxt = (STRPTR)tag->ti_Data;
+	    	data->mad_HardHeightTxt = StrDup((STRPTR)tag->ti_Data);
 		break;
+
 	    case MUIA_FixWidth:
 		data->mad_Flags |= MADF_FIXWIDTH;
 		data->mad_HardWidth = tag->ti_Data;
 		break;
+
 	    case MUIA_FixWidthTxt:
-	    	data->mad_HardWidthTxt = (STRPTR)tag->ti_Data;
+	    	data->mad_HardWidthTxt = StrDup((STRPTR)tag->ti_Data);
 		break;
+
 	    case MUIA_Font:
 		data->mad_FontPreset = tag->ti_Data;
 		break;
+
 	    case MUIA_Frame:
 		data->mad_Frame = tag->ti_Data;
 		break;
+
 	    case MUIA_FramePhantomHoriz:
 		data->mad_Flags |= MADF_FRAMEPHANTOM;
 		break;
+
 	    case MUIA_FrameTitle:
-		/* strdup after tags parsing */
-		data->mad_FrameTitle = (STRPTR)tag->ti_Data;
+		data->mad_FrameTitle = StrDup((STRPTR)tag->ti_Data);
 		break;
+
 	    case MUIA_HorizWeight:
 		data->mad_HorizWeight = tag->ti_Data;
 		break;
+
 	    case MUIA_InnerBottom:
 		data->mad_Flags |= MADF_INNERBOTTOM;
 		data->mad_InnerBottom = CLAMP((IPTR)tag->ti_Data, 0, 32);
 		break;
+
 	    case MUIA_InnerLeft:
 		data->mad_Flags |= MADF_INNERLEFT;
 		data->mad_InnerLeft = CLAMP((IPTR)tag->ti_Data, 0, 32);
 		break;
+
 	    case MUIA_InnerRight:
 		data->mad_Flags |= MADF_INNERRIGHT;
 		data->mad_InnerRight = CLAMP((IPTR)tag->ti_Data, 0, 32);
 		break;
+
 	    case MUIA_InnerTop:
 		data->mad_Flags |= MADF_INNERTOP;
 		data->mad_InnerTop =  CLAMP((IPTR)tag->ti_Data, 0, 32);
 		break;
+
 	    case MUIA_InputMode:
 		data->mad_InputMode = tag->ti_Data;
 		break;
+
 	    case MUIA_MaxHeight:
 		data->mad_Flags |= MADF_MAXHEIGHT;
 		data->mad_HardHeight = tag->ti_Data;
 		break;
+
 	    case MUIA_MaxWidth:
 		data->mad_Flags |= MADF_MAXWIDTH;
 		data->mad_HardWidth = tag->ti_Data;
 		break;
+
 	    case MUIA_Selected:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_SELECTED);
 		break;
+
 	    case MUIA_ShortHelp:
-		data->mad_ShortHelp = (STRPTR)tag->ti_Data;
+		data->mad_ShortHelp = StrDup((STRPTR)tag->ti_Data);
 		break;
+
 	    case MUIA_ShowMe:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_SHOWME);
 		break;
+
 	    case MUIA_ShowSelState:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_SHOWSELSTATE);
 		break;
+
 	    case MUIA_VertWeight:
 		data->mad_VertWeight = tag->ti_Data;
 		break;
+
 	    case MUIA_Weight:
 		data->mad_HorizWeight = data->mad_VertWeight = tag->ti_Data;
 		break;
+
 	    case MUIA_ContextMenu:
 		data->mad_ContextMenu = (Object*)tag->ti_Data;
 		break;
@@ -426,6 +451,11 @@ static IPTR Area_Dispose(struct IClass *cl, Object *obj, Msg msg)
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
     zune_image_spec_free(data->mad_BackgroundSpec); /* Safe to call this with NULL */
+
+    FreeVec(data->mad_HardHeightTxt);
+    FreeVec(data->mad_HardWidthTxt);
+    FreeVec(data->mad_FrameTitle);
+    FreeVec(data->mad_ShortHelp);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -505,8 +535,8 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->mad_Frame = tag->ti_Data;
 		if (muiGlobalInfo(obj))
 		{
-		set_inner_sizes(obj, data);
-		set_title_sizes(obj, data);
+		    set_inner_sizes(obj, data);
+		    set_title_sizes(obj, data);
 	    	}
 		break;
 
@@ -581,7 +611,7 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_ShortHelp:
-		data->mad_ShortHelp = (STRPTR)tag->ti_Data;
+		data->mad_ShortHelp = StrDup((STRPTR)tag->ti_Data);
 		break;
 
 	    case MUIA_ShowMe:
@@ -650,13 +680,15 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Draggable:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DRAGGABLE);
 		break;
+
 	    case MUIA_Dropable:
 	        _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DROPABLE);
 	        break;
+
 	    case MUIA_ContextMenu:
 		data->mad_ContextMenu = (Object*)tag->ti_Data;
 		break;
-		
+
 	    case MUIA_Font:
 	    	data->mad_FontPreset = tag->ti_Data;
 		break;
@@ -685,88 +717,105 @@ static IPTR Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     {
 	case MUIA_BottomEdge:
 	    STORE = (IPTR)_bottom(obj);
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_ControlChar:
 	    STORE = data->mad_ControlChar;
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_CycleChain:
 	    STORE = ((data->mad_Flags & MADF_CYCLECHAIN) != 0);
-	    return(TRUE);
+	    return TRUE;
 
-	case    MUIA_Disabled:
+	case MUIA_Disabled:
 	case MUIA_NestedDisabled:
 	    STORE = !!data->mad_DisableCount; /* BOOLEAN */
-	    return(TRUE);
+	    return TRUE;
 
 	case MUIA_Font:
 	    STORE = (IPTR)data->mad_FontPreset;
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_Height:
 	    STORE = (IPTR)_height(obj);
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_HorizWeight:
 	    STORE = (IPTR)data->mad_HorizWeight;
-	    return(TRUE);
+	    return TRUE;
 
 	case MUIA_InnerBottom:
 	    STORE = (IPTR)data->mad_InnerBottom;
-	    return 1;
+	    return TRUE;
 
 	case MUIA_InnerLeft:
 	    STORE = (IPTR)data->mad_InnerLeft;
-	    return 1;
+	    return TRUE;
 
 	case MUIA_InnerRight:
 	    STORE = (IPTR)data->mad_InnerRight;
-	    return 1;
+	    return TRUE;
 
 	case MUIA_InnerTop:
 	    STORE = (IPTR)data->mad_InnerTop; 
+	    return TRUE;
 
 	case MUIA_LeftEdge:
 	    STORE = (IPTR)_left(obj);
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_Pressed:
 	    STORE = !!(data->mad_Flags & MADF_PRESSED);
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_RightEdge:
 	    STORE = (IPTR)_right(obj);
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_Selected:
 	    STORE = !!(data->mad_Flags & MADF_SELECTED);
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_ShortHelp:
 	    STORE = (IPTR)data->mad_ShortHelp;
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_ShowMe:
 	    STORE = (data->mad_Flags & MADF_SHOWME);
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_Timer:
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_TopEdge:
 	    STORE = (IPTR)_top(obj);
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_VertWeight:
 	    STORE = (IPTR)data->mad_VertWeight;
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_Width:
 	    STORE = (IPTR)_width(obj);
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_Window:
 	    if (muiAreaData(obj)->mad_RenderInfo)
 		STORE = (IPTR)_window(obj);
 	    else
 		STORE = 0L;
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_WindowObject:
 	    if (muiAreaData(obj)->mad_RenderInfo)
 		STORE = (IPTR)_win(obj);
 	    else
 		STORE = 0L;
-	    return(TRUE);
+	    return TRUE;
+
 	case MUIA_ContextMenu:
 	    STORE = (IPTR)data->mad_ContextMenu;
-	    return 1;
+	    return TRUE;
     }
 
     return(DoSuperMethodA(cl, obj, (Msg) msg));
