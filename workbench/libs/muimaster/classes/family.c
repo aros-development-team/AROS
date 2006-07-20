@@ -100,7 +100,7 @@ static ULONG Family_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /*
      * parse initial taglist
      */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	if (tag->ti_Tag == MUIA_Family_Child || tag->ti_Tag == MUIA_Group_Child)
 	{
@@ -152,15 +152,17 @@ static ULONG Family_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-    case MUIA_Family_List:
-	*store = (ULONG)&data->childs;
-	return(TRUE);
-    case MUIA_Version:
-	*store = __version;
-	return(TRUE);
-    case MUIA_Revision:
-	*store = __revision;
-	return(TRUE);
+	case MUIA_Family_List:
+	    *store = (ULONG)&data->childs;
+	    return TRUE;
+
+	case MUIA_Version:
+	    *store = __version;
+	    return TRUE;
+
+	case MUIA_Revision:
+	    *store = __revision;
+	    return TRUE;
     }
 
     return(DoSuperMethodA(cl, obj, (Msg) msg));
