@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -157,7 +155,7 @@ static IPTR Notify_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -166,7 +164,7 @@ static IPTR Notify_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	        break;
 
 	    case MUIA_HelpNode:
-	        data->mnd_HelpNode = (STRPTR)tag->ti_Data;
+	        data->mnd_HelpNode = StrDup((STRPTR)tag->ti_Data);
 	        break;
 
 	    case MUIA_ObjectID:
@@ -200,6 +198,8 @@ static IPTR Notify_Dispose(struct IClass *cl, Object *obj, Msg msg)
 	}
 	mui_free(data->mnd_NotifyList);
     }
+
+    FreeVec(data->mnd_HelpNode);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -299,7 +299,7 @@ static IPTR Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
     ** we do know. The best way should be using NextTagItem() and simply
     ** browsing through the list.
     */
-    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -308,7 +308,7 @@ static IPTR Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
 	        break;
 
 	    case MUIA_HelpNode:
-	        data->mnd_HelpNode = (STRPTR)tag->ti_Data;
+	        data->mnd_HelpNode = StrDup((STRPTR)tag->ti_Data);
 	        break;
 
 	    case MUIA_NoNotify:
@@ -333,7 +333,7 @@ static IPTR Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
 
     tags = msg->ops_AttrList;
-    while ((tag = NextTagItem(&tags)))
+    while ((tag = NextTagItem((const struct TagItem **)&tags)))
     {
 	for
 	(
@@ -366,39 +366,39 @@ static IPTR Notify_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_ApplicationObject:
 	if (data->mnd_GlobalInfo) STORE = (IPTR)data->mnd_GlobalInfo->mgi_ApplicationObject;
 	else  STORE = 0;
-	return 1;
+	return TRUE;
 
     case MUIA_AppMessage: /* struct AppMessage ? */
 	STORE = 0;
-	return 1;
+	return TRUE;
 
     case MUIA_HelpLine:
 	STORE = (IPTR)data->mnd_HelpLine;
-	return 1;
+	return TRUE;
 
     case MUIA_HelpNode:
 	STORE = (IPTR)data->mnd_HelpNode;
-	return 1;
+	return TRUE;
 
     case MUIA_ObjectID:
 	STORE = (IPTR)data->mnd_ObjectID;
-	return 1;
+	return TRUE;
 
     case MUIA_Parent:
 	STORE = (IPTR)data->mnd_ParentObject;
-	return 1;
+	return TRUE;
 
     case MUIA_Revision:
 	STORE = __revision;
-	return 1;
+	return TRUE;
 
     case MUIA_UserData:
 	STORE = data->mnd_UserData;
-	return 1;
+	return TRUE;
 
     case MUIA_Version:
 	STORE = __version;
-	return 1;
+	return TRUE;
     }
 
     return DoSuperMethodA(cl,obj,(Msg)msg);
