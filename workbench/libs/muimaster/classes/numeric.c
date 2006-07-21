@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,7 +53,7 @@ static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
 	return 0;
 
     data = INST_DATA(cl, obj);
-    data->format = "%ld";
+    data->format = StrDup("%ld");
     data->max    = 100;
     data->min    =   0;
     data->flags  =   0;
@@ -72,7 +70,7 @@ static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
 	  data->defvalue = tag->ti_Data;
 	  break;
 	case MUIA_Numeric_Format:
-	  data->format = (STRPTR)tag->ti_Data;
+	  data->format = StrDup((STRPTR)tag->ti_Data);
 	  break;
 	case MUIA_Numeric_Max:
 	  data->max = tag->ti_Data;
@@ -98,7 +96,7 @@ static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
 
     data->value = CLAMP(value_set ? data->value : data->defvalue, data->min, data->max);
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /**************************************************************************
@@ -130,7 +128,7 @@ static IPTR Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
 		data->defvalue = tag->ti_Data;
 		break;
 	    case MUIA_Numeric_Format:
-		data->format = (STRPTR)tag->ti_Data;
+		data->format = StrDup((STRPTR)tag->ti_Data);
 		break;
 	    case MUIA_Numeric_Max:
 		data->max = tag->ti_Data;
@@ -189,43 +187,61 @@ static IPTR Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
 static ULONG  Numeric_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
-    ULONG *store = msg->opg_Storage;
+    IPTR *store = msg->opg_Storage;
     ULONG    tag = msg->opg_AttrID;
 
     switch (tag)
     {
-    case MUIA_Numeric_CheckAllSizes:
-      *store = ((data->flags & NUMERIC_CHECKALLSIZES) != 0);
-      return TRUE;
-    case MUIA_Numeric_Default:
-      *store = data->defvalue;
-      return TRUE;
-    case MUIA_Numeric_Format:
-      *store = (ULONG)data->format;
-      return TRUE;
-    case MUIA_Numeric_Max:
-      *store = data->max;
-      return TRUE;
-    case MUIA_Numeric_Min:
-      *store = data->min;
-      return TRUE;
-    case MUIA_Numeric_Reverse:
-      *store = ((data->flags & NUMERIC_REVERSE) != 0);
-      return TRUE;
-    case MUIA_Numeric_RevLeftRight:
-      *store = ((data->flags & NUMERIC_REVLEFTRIGHT) != 0);
-      return TRUE;
-    case MUIA_Numeric_RevUpDown:
-      *store = ((data->flags & NUMERIC_REVUPDOWN) != 0);
-      return TRUE;
-    case MUIA_Numeric_Value:
-      *store = data->value;
-      return TRUE;
+	case MUIA_Numeric_CheckAllSizes:
+	    *store = ((data->flags & NUMERIC_CHECKALLSIZES) != 0);
+	    return TRUE;
+
+	case MUIA_Numeric_Default:
+	    *store = data->defvalue;
+	    return TRUE;
+
+	case MUIA_Numeric_Format:
+	    *store = (IPTR)data->format;
+	    return TRUE;
+
+	case MUIA_Numeric_Max:
+	    *store = data->max;
+	    return TRUE;
+
+	case MUIA_Numeric_Min:
+	    *store = data->min;
+	    return TRUE;
+
+	case MUIA_Numeric_Reverse:
+	    *store = ((data->flags & NUMERIC_REVERSE) != 0);
+	    return TRUE;
+
+	case MUIA_Numeric_RevLeftRight:
+	    *store = ((data->flags & NUMERIC_REVLEFTRIGHT) != 0);
+	    return TRUE;
+
+	case MUIA_Numeric_RevUpDown:
+	    *store = ((data->flags & NUMERIC_REVUPDOWN) != 0);
+	    return TRUE;
+
+	case MUIA_Numeric_Value:
+	    *store = data->value;
+	    return TRUE;
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static IPTR Numeric_Dispose(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_NumericData *data = INST_DATA(cl, obj);
+
+    FreeVec(data->format);
+    return DoSuperMethodA(cl, obj, msg);
+}
 
 /**************************************************************************
  MUIM_Setup
@@ -535,6 +551,7 @@ BOOPSI_DISPATCHER(IPTR, Numeric_Dispatcher, cl, obj, msg)
 	case OM_NEW: return Numeric_New(cl, obj, (APTR)msg);
 	case OM_SET: return Numeric_Set(cl, obj, (APTR)msg);
 	case OM_GET: return Numeric_Get(cl, obj, (APTR)msg);
+	case OM_DISPOSE: return Numeric_Dispose(cl, obj, (APTR)msg);
 	case MUIM_Setup: return Numeric_Setup(cl, obj, (APTR)msg);
 	case MUIM_Cleanup: return Numeric_Cleanup(cl, obj, (APTR)msg);
 	case MUIM_HandleEvent:  return Numeric_HandleEvent(cl, obj, (APTR)msg);
