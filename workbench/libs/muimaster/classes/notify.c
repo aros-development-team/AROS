@@ -308,7 +308,8 @@ static IPTR Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
 	        break;
 
 	    case MUIA_HelpNode:
-	        data->mnd_HelpNode = StrDup((STRPTR)tag->ti_Data);
+		FreeVec(data->mnd_HelpNode);
+		data->mnd_HelpNode = StrDup((STRPTR)tag->ti_Data);
 	        break;
 
 	    case MUIA_NoNotify:
