@@ -611,6 +611,7 @@ static IPTR Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_ShortHelp:
+		FreeVec(data->mad_ShortHelp);
 		data->mad_ShortHelp = StrDup((STRPTR)tag->ti_Data);
 		break;
 

@@ -2797,7 +2797,8 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 		
 	    case MUIA_Window_PublicScreen:
-	    	data->wd_UserPublicScreen = StrDup((STRPTR)tag->ti_Data);
+		FreeVec(data->wd_UserPublicScreen);
+		data->wd_UserPublicScreen = StrDup((STRPTR)tag->ti_Data);
 		break;
 	    
 

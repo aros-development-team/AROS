@@ -526,10 +526,12 @@ static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_String_Accept:
+		FreeVec(data->msd_Accept);
 		data->msd_Accept = StrDup((STRPTR)tag->ti_Data);
 		break;
 
 	    case MUIA_String_Reject:
+		FreeVec(data->msd_Reject);
 		data->msd_Reject = StrDup((STRPTR)tag->ti_Data);
 		break;
 

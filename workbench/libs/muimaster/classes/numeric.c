@@ -128,6 +128,7 @@ static IPTR Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
 		data->defvalue = tag->ti_Data;
 		break;
 	    case MUIA_Numeric_Format:
+		FreeVec(data->format);
 		data->format = StrDup((STRPTR)tag->ti_Data);
 		break;
 	    case MUIA_Numeric_Max:
