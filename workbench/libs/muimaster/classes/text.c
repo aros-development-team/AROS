@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -34,7 +34,6 @@ struct MUI_TextData {
     ULONG  mtd_Flags;
     STRPTR contents;
     CONST_STRPTR preparse;
-    CONST_STRPTR accept; /* MUIA_String_Accept */
     TEXT   hichar;
     ZText *ztext;
     LONG xpixel; /* needed for cursor up/down movements, can be -1 */
@@ -66,7 +65,7 @@ static void setup_text (struct MUI_TextData *data, Object *obj);
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_TextData *data;
     struct TagItem *tags,*tag;
@@ -80,12 +79,11 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Text_Contents:
-	    case    MUIA_String_Contents:
 		    if (tag->ti_Data) data->contents = StrDup((STRPTR)tag->ti_Data);
 		    break;
 
@@ -123,18 +121,6 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_Text_Multiline:
 		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_MULTILINE);
 		    break;
-
-            case    MUIA_String_AdvanceOnCR:
-		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_ADVANCEONCR);
-		    break;
-
-	    case    MUIA_String_Accept:
-		    data->accept = (CONST_STRPTR)tag->ti_Data;
-		    break;
-
-	    case    MUIA_String_Integer:
-		    set(obj,MUIA_String_Integer,tag->ti_Data);
-		    break;
 #endif
 	}
     }
@@ -145,7 +131,7 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!data->contents || !data->preparse)
     {
 	CoerceMethod(cl, obj, OM_DISPOSE);
-	return NULL;
+	return (IPTR)NULL;
     }
 
 /*      D(bug("Text_New(0x%lx)\n", obj)); */
@@ -158,18 +144,18 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->xpixel = -1;
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static ULONG Text_Dispose(struct IClass *cl, Object *obj, Msg msg)
+static IPTR Text_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
-    if (data->contents) FreeVec(data->contents);
-    if (data->preparse) FreeVec((APTR)data->preparse);
+    FreeVec(data->contents);
+    FreeVec((APTR)data->preparse);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -177,17 +163,16 @@ static ULONG Text_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
     struct TagItem      *tags = msg->ops_AttrList;
     struct TagItem      *tag;
 
-    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
-	    case    MUIA_String_Contents:
 	    case    MUIA_Text_Contents:
 		    {
 		    	char *new_contents = StrDup(((char*)tag->ti_Data)?(char*)tag->ti_Data:"");
@@ -198,23 +183,11 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 				zune_text_destroy(data->ztext);
 				data->ztext = NULL;
 			    }
-			    if (data->contents) FreeVec(data->contents);
+			    FreeVec(data->contents);
 			    data->contents = new_contents;
 			    if (_flags(obj) & MADF_SETUP) setup_text(data, obj);
 			    MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
 			}
-		    }
-		    break;
-
-	    case    MUIA_String_Accept:
-		    data->accept = (CONST_STRPTR)tag->ti_Data;
-		    break;
-
-	    case    MUIA_String_Integer:
-		    {
-			char buf[20];
-			sprintf(buf,"%ld",tag->ti_Data);
-			set(obj, MUIA_String_Contents, (IPTR) buf);
 		    }
 		    break;
 
@@ -228,7 +201,7 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 				zune_text_destroy(data->ztext);
 				data->ztext = NULL;
 			    }
-			    if (data->preparse) FreeVec((APTR)data->preparse);
+			    FreeVec((APTR)data->preparse);
 			    data->preparse = new_preparse;
 			    if (_flags(obj) & MADF_SETUP) setup_text(data, obj);
 			    MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
@@ -248,7 +221,7 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static ULONG Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+static IPTR Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
@@ -256,57 +229,20 @@ static ULONG Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     switch(msg->opg_AttrID)
     {
 	case	MUIA_Text_Contents:
-#if 0
-	case	MUIA_String_Contents:
-
-		if (data->mtd_Flags & MTDF_EDITABLE && data->ztext)
-		{
-		    /* Convert the ztext to plain chars */
-		    char *new_cont = zune_text_iso_string(data->ztext);
-		    if (new_cont)
-		    {
-		    	if (data->contents) FreeVec(data->contents);
-		    	data->contents = new_cont;
-		    }
-		}
-#endif
-		STORE = (ULONG)data->contents;
-		return 1;
-
-#if 0
-	case    MUIA_String_Integer:
-		{
-		    /* This actually is slower then necessary, a integer gadget should contain no
-                     * style infos and no newline, so zune_text_iso_string is not needed - but it's
-                     * simpler so */
-		    STRPTR buf = NULL;
-		    get(obj,MUIA_String_Contents, &buf);
-		    if (buf)
-		    {
-		    	LONG val;
-		    	StrToLong(buf,&val);
-		    	STORE = val;
-		    	return 1;
-		    }
-		}
-		return 0;
-
-	case	MUIA_String_Accept:
-		STORE = (ULONG)data->accept;
-		return 1;
-#endif
+		STORE = (IPTR)data->contents;
+		return TRUE;
 
 	case	MUIA_Text_PreParse:
-		STORE = (ULONG)data->preparse;
-		return 1;
+		STORE = (IPTR)data->preparse;
+		return TRUE;
 
 	case	MUIA_Version:
 		STORE = __version;
-		return 1;
+		return TRUE;
 
 	case	MUIA_Revision:
 		STORE = __revision;
-		return 1;
+		return TRUE;
     }
     return DoSuperMethodA(cl, obj, (Msg) msg);
 #undef STORE
@@ -337,7 +273,7 @@ static void setup_text (struct MUI_TextData *data, Object *obj)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static ULONG Text_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+static IPTR Text_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
@@ -353,7 +289,7 @@ static ULONG Text_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static ULONG Text_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+static IPTR Text_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
@@ -371,7 +307,7 @@ static ULONG Text_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 /**************************************************************************
  MUIM_Show
 **************************************************************************/
-static ULONG Text_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+static IPTR Text_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     //struct MUI_TextData *data = INST_DATA(cl, obj);
 
@@ -384,7 +320,7 @@ static ULONG Text_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 /**************************************************************************
  MUIM_Hide
 **************************************************************************/
-static ULONG Text_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+static IPTR Text_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     //struct MUI_TextData *data = INST_DATA(cl, obj);
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -393,7 +329,7 @@ static ULONG Text_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
-static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+static IPTR Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     int height;
     struct MUI_TextData *data = INST_DATA(cl, obj);
@@ -458,7 +394,7 @@ static ULONG Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
-static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+static IPTR Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
     Object *act;
@@ -483,47 +419,10 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
 
-#if 0
-    if (data->update == 2)
-    {
-    	/* Note, scrolling won't work, if there would be a background, different then a plain pen */
-        ScrollRaster(_rp(obj), -data->update_arg2, 0, data->update_arg1 + _mleft(obj), _mtop(obj), _mright(obj),_mtop(obj) + _font(obj)->tf_YSize);
-
-	zune_text_draw_single(data->ztext, obj,
-		   _mleft(obj), _mright(obj),
-		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2,
-		   data->xpos - 1,data->ypos, FALSE);
-    } else
-#endif
     {
         get(_win(obj),MUIA_Window_ActiveObject,&act);
-
-#if 0
-        if (act == obj && (data->mtd_Flags & MTDF_EDITABLE))
         {
             int y;
-            if (data->mtd_Flags & MTDF_MULTILINE)
-            {
-		y = 0;
-            } else
-            {
-		y = (_mheight(obj) - data->ztext->height) / 2;
-            }
-
-	    zune_text_draw_cursor(data->ztext, obj,
-		   _mleft(obj), _mright(obj),
-		   _mtop(obj) + y,
-		   data->xpos,data->ypos);
-        } else
-#endif
-        {
-            int y;
-#if 0
-            if (data->mtd_Flags & MTDF_MULTILINE)
-            {
-		y = 0;
-            } else
-#endif
             {
 		y = (_mheight(obj) - data->ztext->height) / 2;
             }
@@ -542,7 +441,7 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /**************************************************************************
  MUIM_Export : to export an objects "contents" to a dataspace object.
 **************************************************************************/
-static ULONG Text_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+static IPTR Text_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
     //struct MUI_TextData *data = INST_DATA(cl, obj);
     //STRPTR id;
@@ -561,7 +460,7 @@ static ULONG Text_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg
 /**************************************************************************
  MUIM_Import : to import an objects "contents" from a dataspace object.
 **************************************************************************/
-static ULONG Text_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+static IPTR Text_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
     //STRPTR id;
     //STRPTR s;
@@ -579,361 +478,6 @@ static ULONG Text_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg
     return 0;
 }
 
-#if 0
-/**************************************************************************
- MUIM_GoActive
-**************************************************************************/
-static ULONG Text_GoActive(struct IClass * cl, Object * o, Msg msg)
-{
-  struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, o);
-  if (!(data->mtd_Flags & MTDF_EDITABLE)) return DoSuperMethodA(cl,o,msg);
-
-  D(bug("Text_GoActive(%p)\n", o));
-
-  DoMethod(_win(o), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-  data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
-  DoMethod(_win(o), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-
-  data->update = 1;
-  MUI_Redraw(o, MADF_DRAWUPDATE);
-  return 0;
-}
-
-/**************************************************************************
- MUIM_GoInactive
-**************************************************************************/
-static ULONG Text_GoInactive(struct IClass * cl, Object * o, Msg msg)
-{
-  struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, o);
-  if (!(data->mtd_Flags & MTDF_EDITABLE)) return DoSuperMethodA(cl,o,msg);
-
-  D(bug("Text_GoInactive(%p)\n", o));
-
-  DoMethod(_win(o), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-  data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-  DoMethod(_win(o), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-
-  data->update = 1;
-  MUI_Redraw(o, MADF_DRAWUPDATE);
-  return 0;
-}
-#endif
-
-#if 0
-/**************************************************************************
- Returns wheater object needs redrawing
-**************************************************************************/
-int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
-{
-    struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, obj);
-    struct ZTextLine *line;
-    struct ZTextChunk *chunk;
-    int offx,len;
-    struct RastPort rp;
-
-    if (!code) return 0;
-
-    data->xpixel = -1;
-
-    if (code == '\r')
-    {
-	if (!(data->mtd_Flags & MTDF_MULTILINE))
-	{
-	    UBYTE *buf = NULL;
-	    get(obj,MUIA_String_Contents, &buf);
-	    if (data->mtd_Flags & MTDF_ADVANCEONCR) set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
-	    else set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_None);
-	    set(obj,MUIA_String_Acknowledge, (IPTR) buf);
-	    return 0;
-	} else
-	{
-	    ZText *new_text = zune_text_new(NULL, "\n", ZTEXT_ARG_NONE, 0);
-	    if (new_text)
-	    {
-		zune_text_merge(data->ztext, obj, data->xpos, data->ypos, new_text);
-	    }
-
-	    data->xpos = 0;
-	    data->ypos++;
-	    zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
-	}
-	return 1;
-    }
-
-    InitRastPort(&rp);
-    SetFont(&rp,_font(obj));
-
-    if (code == '\b')
-    {
-    	if (data->xpos && zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
-    	{
-	    if (len)
-	    {
-	    	chunk->cwidth -= TextLength(&rp,&chunk->str[len-1],1);
-		line->lwidth -= TextLength(&rp,&chunk->str[len-1],1);
-		strcpy(&chunk->str[len-1],&chunk->str[len]);
-	    	data->xpos--;
-	    } else
-	    {
-	    	/* delete char of previous node ... */
-	    }
-	    zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
-    	}
-	
-        DeinitRastPort(&rp);
-
-	return 1;
-    }
-
-    if (code == 127) /* del */
-    {
-    	if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
-    	{
-	    if (chunk->str && chunk->str[len])
-	    {
-	    	chunk->cwidth -= TextLength(&rp,&chunk->str[len],1);
-		line->lwidth -= TextLength(&rp,&chunk->str[len],1);
-		strcpy(&chunk->str[len],&chunk->str[len+1]);
-	    }
-    	}
-	
-        DeinitRastPort(&rp);
-	
-        return 1;
-    }
-
-    if (code == '\t')
-    {
-	if (!(data->mtd_Flags & MTDF_MULTILINE))
-	{
-	    UBYTE *buf = NULL;
-	    get(obj,MUIA_String_Contents, &buf);
-	    set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
-	    set(obj,MUIA_String_Acknowledge,(IPTR)buf);
-	    
-            DeinitRastPort(&rp);
-	    
-            return 0;
-	}
-    }
-
-    if (code == '\033')
-    {
-	Object *act;
-	get(_win(obj),MUIA_Window_ActiveObject,&act);
-
-	if (act == obj)
-	    set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
-	    
-            DeinitRastPort(&rp);
-	    
-            return 0;
-    }
-
-    if (data->accept)
-    {
-    	/* Check if character is accepted */
-	if (!strchr(data->accept,code))
-	{
-	    DeinitRastPort(&rp);
-	    return 0;
-	}
-    }
-
-    if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
-    {
-    	if (!chunk)
-    	{
-	    if ((chunk = mui_alloc_struct(struct ZTextChunk)))
-	    {
-		chunk->dripen = TEXTPEN;
-		AddTail((struct List*)&line->chunklist,(struct Node*)&chunk->node);
-	    }
-    	}
-
-    	if (chunk)
-    	{
-    	    int char_width;
-	    if (!chunk->str)
-	    {
-		if ((chunk->str = (char*)mui_alloc(2)))
-		{
-		    chunk->str[0] = code;
-		    chunk->str[1] = 0;
-		}
-	    }   else
-	    {
-	        char *newstr = (char*)mui_alloc(strlen(chunk->str)+2);
-	        if (newstr)
-	        {
-		    strncpy(newstr,chunk->str,len);
-		    newstr[len] = code;
-		    strcpy(&newstr[len+1],&chunk->str[len]);
-		    mui_free(chunk->str);
-		    chunk->str = newstr;
-	        }
-	    }
-	    data->xpos++;
-	    char_width = TextLength(_rp(obj),&code,1);
-	    chunk->cwidth += char_width;
-	    line->lwidth += char_width;
-
-	    if (!zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj)))
-	    {
-		if (!(data->mtd_Flags & MTDF_MULTILINE))
-		{
-		    data->update_arg1 = offx;
-		    data->update_arg2 = char_width;
-		    
-                    DeinitRastPort(&rp);
-		    
-                    return 2;
-		}
-	    }
-        }
-    }
-
-    DeinitRastPort(&rp);
-
-    return 1;
-}
-
-
-/**************************************************************************
- MUIM_HandleEvent
-**************************************************************************/
-static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_HandleEvent *msg)
-{
-    struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, obj);
-    ULONG retval = 0;
-    int update = 0;
-
-    if (!(data->mtd_Flags & MTDF_EDITABLE)) return 0;
-
-    if (msg->imsg)
-    {
-	UWORD code = msg->imsg->Code;
-	//UWORD qual = msg->imsg->Qualifier;
-	WORD x = msg->imsg->MouseX;
-	WORD y = msg->imsg->MouseY;
-
-	switch (msg->imsg->Class)
-	{
-	    case    IDCMP_MOUSEBUTTONS: /* set cursor and activate it */
-		    if (code == SELECTDOWN)
-		    {
-			Object *act;
-			get(_win(obj),MUIA_Window_ActiveObject,&act);
-
-			if (_isinobject(x, y))
-			{
-			    if (act != obj) set(_win(obj), MUIA_Window_ActiveObject, (IPTR) obj);
-			    retval = MUI_EventHandlerRC_Eat;
-			}   else
-			{
-			    if (act == obj)
-				set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
-			}
-		    }
-		    break;
-
-	    case    IDCMP_RAWKEY:
-		    {
-		    	switch (msg->imsg->Code)
-		    	{
-		    	    case    CURSORLEFT:
-				    if (data->xpos > zune_text_get_line_len(data->ztext,obj,data->ypos)) data->xpos = zune_text_get_line_len(data->ztext,obj,data->ypos);
-				    if (data->xpos)
-				    {
-					data->xpos--;
-					update = 1;
-					zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
-				    }
-				    data->xpixel = -1;
-				    retval = MUI_EventHandlerRC_Eat;
-				    break;
-
-		    	    case    CURSORRIGHT:
-				    if (data->xpos > zune_text_get_line_len(data->ztext,obj,data->ypos)) data->xpos = zune_text_get_line_len(data->ztext,obj,data->ypos);
-				    if (data->xpos < zune_text_get_line_len(data->ztext,obj,data->ypos))
-				    {
-					data->xpos++;
-					update = 1;
-					zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
-				    }
-				    data->xpixel = -1;
-				    retval = MUI_EventHandlerRC_Eat;
-				    break;
-
-			    case    CURSORUP:
-				    if (data->mtd_Flags & MTDF_MULTILINE)
-				    {
-				    	if (data->xpixel == -1)
-				    	{
-					    struct ZTextLine *line;
-					    int offx,len;
-					    zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, NULL, &offx, &len);
-					    data->xpixel = offx;
-					}
-
-					if (data->ypos)
-					{
-					    data->ypos--;
-					    data->xpos = zune_get_xpos_of_line(data->ztext, obj, data->ypos, data->xpixel);
-					}
-
-					zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
-					update = 1;
-					retval = MUI_EventHandlerRC_Eat;
-				    };
-				    break;
-
-			    case    CURSORDOWN:
-				    if (data->mtd_Flags & MTDF_MULTILINE)
-				    {
-				    	if (data->xpixel == -1)
-				    	{
-					    struct ZTextLine *line;
-					    int offx,len;
-					    zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, NULL, &offx, &len);
-					    data->xpixel = offx;
-					}
-
-				    	if (data->ypos + 1 < zune_text_get_lines(data->ztext))
-				    	{
-					    data->ypos++;
-					    data->xpos = zune_get_xpos_of_line(data->ztext, obj, data->ypos, data->xpixel);
-					}
-					zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
-					update = 1;
-					retval = MUI_EventHandlerRC_Eat;
-				    }
-				    break;
-
-			    default:
-				    {
-					unsigned char code = ConvertKey(msg->imsg);
-					if (code)
-					{
-					    update = Text_HandleVanillakey(cl,obj,code);
-				            retval = MUI_EventHandlerRC_Eat;
-				        }
-				    }
-				    break;
-		    	}
-		    }
-	    	    break;
-	}
-    }
-
-    if (update)
-    {
-    	data->update = update;
-    	MUI_Redraw(obj, MADF_DRAWUPDATE);
-    }
-    return retval;
-}
-#endif
 
 BOOPSI_DISPATCHER(IPTR, Text_Dispatcher, cl, obj, msg)
 {
@@ -951,11 +495,6 @@ BOOPSI_DISPATCHER(IPTR, Text_Dispatcher, cl, obj, msg)
 	case MUIM_Hide: return Text_Hide(cl, obj, (APTR)msg);
 	case MUIM_Export: return Text_Export(cl, obj, (APTR)msg);
 	case MUIM_Import: return Text_Import(cl, obj, (APTR)msg);
-#if 0
-	case MUIM_GoActive: return Text_GoActive(cl, obj, (APTR)msg);
-	case MUIM_GoInactive: return Text_GoInactive(cl,obj,(APTR)msg);
-	case MUIM_HandleEvent: return Text_HandleEvent(cl,obj,(APTR)msg);
-#endif
     }
 
     return DoSuperMethodA(cl, obj, msg);
