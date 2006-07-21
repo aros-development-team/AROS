@@ -44,8 +44,8 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_StringData {
     ULONG        msd_Flags;
-    CONST_STRPTR msd_Accept; /* MUIA_String_Accept */
-    CONST_STRPTR msd_Reject; /* MUIA_String_Reject */
+    STRPTR       msd_Accept; /* MUIA_String_Accept */
+    STRPTR       msd_Reject; /* MUIA_String_Reject */
     LONG         msd_Align;
     struct Hook *msd_EditHook;
     Object      *msd_AttachedList;
@@ -403,11 +403,11 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case  MUIA_String_Accept:
-		data->msd_Accept = (CONST_STRPTR)tag->ti_Data;
+		data->msd_Accept = StrDup((STRPTR)tag->ti_Data);
 		break;
 
 	    case  MUIA_String_Reject:
-		data->msd_Reject = (CONST_STRPTR)tag->ti_Data;
+		data->msd_Reject = StrDup((STRPTR)tag->ti_Data);
 		break;
 
             case MUIA_String_AdvanceOnCR:
@@ -495,11 +495,10 @@ static IPTR String_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
-    if (data->Buffer)
-	FreeVec(data->Buffer);
-
-    if (data->SecBuffer)
-	FreeVec(data->SecBuffer);
+    FreeVec(data->Buffer);
+    FreeVec(data->SecBuffer);
+    FreeVec(data->msd_Accept);
+    FreeVec(data->msd_Reject);
 
     D(bug("String_Dispose %p\n", obj));
 
@@ -527,11 +526,11 @@ static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_String_Accept:
-		data->msd_Accept = (CONST_STRPTR)tag->ti_Data;
+		data->msd_Accept = StrDup((STRPTR)tag->ti_Data);
 		break;
 
 	    case MUIA_String_Reject:
-		data->msd_Reject = (CONST_STRPTR)tag->ti_Data;
+		data->msd_Reject = StrDup((STRPTR)tag->ti_Data);
 		break;
 
             case MUIA_String_AttachedList:
@@ -598,19 +597,19 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_String_Contents:
             if (data->msd_useSecret) STORE = (IPTR) data->SecBuffer;
             else STORE = (IPTR) data->Buffer;
-	    return 1;
+	    return TRUE;
         
 	case MUIA_String_Secret:
 	    STORE = (IPTR) data->msd_useSecret;
-	    return 1;
+	    return TRUE;
         
         case MUIA_String_Accept:
 	    STORE = (IPTR) data->msd_Accept;
-	    return 1;
+	    return TRUE;
         
         case MUIA_String_AttachedList:
             STORE = (IPTR) data->msd_AttachedList;
-            return 1;
+            return TRUE;
 
 	case MUIA_String_Integer:
 	{
@@ -623,32 +622,32 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		StrToLong(buf, &val);
 		STORE = val;
 	    }
-	    return 1;
+	    return TRUE;
 	}
 	
 	case MUIA_String_MaxLen:
 	    STORE = (IPTR) data->BufferSize;
-	    return 1;
+	    return TRUE;
 
 	case MUIA_String_AdvanceOnCR:
 	    STORE = (data->msd_Flags & MSDF_ADVANCEONCR) ? TRUE : FALSE;
-	    return 1;
+	    return TRUE;
 
 	case MUIA_String_BufferPos:
 	    STORE = data->BufferPos;
-	    return 1;
+	    return TRUE;
 
 	case MUIA_String_DisplayPos:
 	    STORE = data->DispPos;
-	    return 1;
+	    return TRUE;
 	    
     	case MUIA_String_NoInput: /* BetterString */
 	    STORE = (data->msd_Flags & MSDF_NOINPUT) ? TRUE : FALSE;
-	    return 1;
+	    return TRUE;
 	    
 	case MUIA_String_StayActive: /* BetterString */
 	    STORE = (data->msd_Flags & MSDF_STAYACTIVE) ? TRUE : FALSE;
-	    return 1;
+	    return TRUE;
 	
 	case MUIA_String_SelectSize: /* BetterString */
 	    if (data->msd_Flags & MSDF_MARKING)
@@ -669,7 +668,7 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    }
 
 	    STORE = 0;
-	    return 1;
+	    return TRUE;
 
     }
     
