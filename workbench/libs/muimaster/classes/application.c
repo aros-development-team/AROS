@@ -1,6 +1,6 @@
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -64,7 +64,6 @@ struct MUI_ApplicationData
     STRPTR          	    app_HelpFile;
     STRPTR          	    app_Title;
     STRPTR          	    app_Version;
-    BOOL                    app_VersionAllocated;
     STRPTR                  app_Version_Number;
     STRPTR                  app_Version_Date;
     STRPTR                  app_Version_Extra;
@@ -270,7 +269,7 @@ static Object *find_application_by_base(struct IClass *cl, Object *obj, STRPTR b
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ApplicationData *data;
     struct TagItem        *tags,*tag;
@@ -342,7 +341,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
         ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
     	if ((other_app = find_application_by_base(cl, obj, data->app_Base)))
 	{
-	    #warning "Is calling MUIM_Application_PushMethod on an alien application object safe?"
+	    //FIXME "Is calling MUIM_Application_PushMethod on an alien application object safe?"
 	    DoMethod(other_app, MUIM_Application_PushMethod, (IPTR)other_app, 3,
 		     MUIM_Set, MUIA_Application_DoubleStart, TRUE);
 	    data->app_Base = NULL;
@@ -397,82 +396,94 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /* parse initial taglist */
 
     data->app_Active = 1;
-    data->app_Title = "Unnamed";
-    data->app_Version = "Unnamed 0.0";
-    data->app_Description = "?";
-    
+   
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
-	case MUIA_Application_Author:
-	    data->app_Author = (STRPTR)tag->ti_Data;
-	    break;
-	case MUIA_Application_Base:
-	    /* moved before config parsing */
-	    break;
-	case MUIA_Application_Copyright:
-	    data->app_Copyright = (STRPTR)tag->ti_Data;
-	    break;
-	case MUIA_Application_Description:
-	    data->app_Description = (STRPTR)tag->ti_Data;
-	    break;
-	case MUIA_Application_HelpFile:
-	    data->app_HelpFile = (STRPTR)tag->ti_Data;
-	    break;
-	case MUIA_Application_SingleTask:
-	    /* moved before config parsing */
-	    break;
-	case MUIA_Application_Title:
-	    data->app_Title = (STRPTR)tag->ti_Data;
-	    break;
-	case MUIA_Application_Version:
-	    data->app_Version = (STRPTR)tag->ti_Data;
-	    break;
-        case MUIA_Application_Version_Number:
-            data->app_Version_Number = (STRPTR) tag->ti_Data;
-            break;
-        case MUIA_Application_Version_Date:
-            data->app_Version_Date = (STRPTR) tag->ti_Data;
-            break;
-        case MUIA_Application_Version_Extra:
-            data->app_Version_Extra = (STRPTR) tag->ti_Data;
-            break;
-	case MUIA_Application_Window:
-	    if (tag->ti_Data) DoMethod(obj,OM_ADDMEMBER,tag->ti_Data);
-	    else bad_childs = TRUE;
-	    break;
-	case MUIA_Application_Menustrip:
-	    data->app_Menustrip = (Object*)tag->ti_Data;
-	    break;
-	    	    
-	case MUIA_Application_BrokerPri:
-	    data->app_BrokerPri = (BYTE)tag->ti_Data;
-	    break;
-	    
-	case MUIA_Application_BrokerHook:
-	    data->app_BrokerHook = (struct Hook *)tag->ti_Data;
-	    break;
-	    
-	case MUIA_Application_Active:
-	    data->app_Active = tag->ti_Data ? TRUE : FALSE;
-	    break;
-	    
-	case MUIA_Application_UsedClasses:
-	{
-	    STRPTR *list = (STRPTR *)tag->ti_Data;
-	    if (!list) break;
-	    while (*list)
-	    {
-		struct IClass *icl = MUI_GetClass(*list);
-		if (icl)
-		    MUI_FreeClass(icl);
-		++list;
-	    }
-	}
+	    case MUIA_Application_Author:
+		data->app_Author = StrDup((STRPTR)tag->ti_Data);
+		break;
+
+	    case MUIA_Application_Base:
+		/* moved before config parsing */
+		break;
+
+	    case MUIA_Application_Copyright:
+		data->app_Copyright = StrDup((STRPTR)tag->ti_Data);
+		break;
+
+	    case MUIA_Application_Description:
+		data->app_Description = StrDup((STRPTR)tag->ti_Data);
+		break;
+
+	    case MUIA_Application_HelpFile:
+		data->app_HelpFile = StrDup((STRPTR)tag->ti_Data);
+		break;
+
+	    case MUIA_Application_SingleTask:
+		/* moved before config parsing */
+		break;
+
+	    case MUIA_Application_Title:
+		data->app_Title = StrDup((STRPTR)tag->ti_Data);
+		break;
+
+	    case MUIA_Application_Version:
+		data->app_Version = StrDup((STRPTR)tag->ti_Data);
+		break;
+
+	    case MUIA_Application_Version_Number:
+		data->app_Version_Number = StrDup((STRPTR)tag->ti_Data);
+		break;
+
+	    case MUIA_Application_Version_Date:
+		data->app_Version_Date = StrDup((STRPTR)tag->ti_Data);
+		break;
+
+	    case MUIA_Application_Version_Extra:
+		data->app_Version_Extra = StrDup((STRPTR) tag->ti_Data);
+		break;
+
+	    case MUIA_Application_Window:
+		if (tag->ti_Data) DoMethod(obj,OM_ADDMEMBER,tag->ti_Data);
+		else bad_childs = TRUE;
+		break;
+
+	    case MUIA_Application_Menustrip:
+		data->app_Menustrip = (Object*)tag->ti_Data;
+		break;
+
+	    case MUIA_Application_BrokerPri:
+		data->app_BrokerPri = (BYTE)tag->ti_Data;
+		break;
+
+	    case MUIA_Application_BrokerHook:
+		data->app_BrokerHook = (struct Hook *)tag->ti_Data;
+		break;
+
+	    case MUIA_Application_Active:
+		data->app_Active = tag->ti_Data ? TRUE : FALSE;
+		break;
+
+	    case MUIA_Application_UsedClasses:
+		{
+		    STRPTR *list = (STRPTR *)tag->ti_Data;
+		    if (!list) break;
+		    while (*list)
+		    {
+			struct IClass *icl = MUI_GetClass(*list);
+			if (icl)
+			    MUI_FreeClass(icl);
+			++list;
+		    }
+		}
 	}
     }
 
+    if (data->app_Title == NULL) data->app_Title = StrDup("Unnamed");
+    if (data->app_Description == NULL) data->app_Description = StrDup("?");
+ 
     /* create MUIA_Application_Version if NULL */
     if
     (
@@ -527,10 +538,11 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
             }
             
             data->app_Version          = result;
-            data->app_VersionAllocated = TRUE;
         }
         
     }
+
+    if (data->app_Version == NULL) data->app_Version = StrDup("Unnamed 0.0");
 
     if (bad_childs)
     {
@@ -575,7 +587,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->app_is_TNode_in_list = TRUE;
     ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 
@@ -583,7 +595,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
+static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct RIDNode *rid;
@@ -626,10 +638,15 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_Menustrip)
 	MUI_DisposeObject(data->app_Menustrip);
 
-    if (data->app_VersionAllocated && data->app_Version != NULL)
-    {
-        FreeVec(data->app_Version);
-    }
+    FreeVec(data->app_Author);
+    FreeVec(data->app_Copyright);
+    FreeVec(data->app_Description);
+    FreeVec(data->app_HelpFile);
+    FreeVec(data->app_Title);
+    FreeVec(data->app_Version);
+    FreeVec(data->app_Version_Number);
+    FreeVec(data->app_Version_Date);
+    FreeVec(data->app_Version_Extra);
 
     /* free commodities stuff */
     
@@ -674,8 +691,7 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_GlobalInfo.mgi_WindowsPort)
     	DeleteMsgPort(data->app_GlobalInfo.mgi_WindowsPort);
 
-    if (data->app_Base)
-	FreeVec(data->app_Base);
+    FreeVec(data->app_Base);
 
     /* free returnid stuff */
     
@@ -691,7 +707,7 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ApplicationData *data  = INST_DATA(cl, obj);
     struct TagItem             *tags  = msg->ops_AttrList;
@@ -709,11 +725,10 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		DoMethod(obj, MUIM_Application_PushMethod, (IPTR)obj, 2,
 			 MUIM_Application_SetConfigdata, tag->ti_Data);
 		break;
-		
-	    break;
 
 	    case    MUIA_Application_HelpFile:
-		    data->app_HelpFile = (STRPTR)tag->ti_Data;
+		    FreeVec(data->app_HelpFile);
+		    data->app_HelpFile = StrDup((STRPTR)tag->ti_Data);
 		    break;
 
 	    case    MUIA_Application_Iconified:
@@ -724,7 +739,7 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		            data->app_Iconified = do_iconify;
                          
 			    nnset(obj, MUIA_ShowMe, !data->app_Iconified);
-		            #warning "In case the WB is up, an appicon needs to be placed on the desktop"
+		            //FIXME "In case the WB is up, an appicon needs to be placed on the desktop"
 		        }
 		    }
 		    break;
@@ -791,7 +806,7 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * OM_GET
  */
-static ULONG Application_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+static IPTR Application__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #define STORE *(msg->opg_Storage)
 
@@ -799,78 +814,100 @@ static ULONG Application_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-    case MUIA_Version:
-	STORE = __version;
-	return(TRUE);
-    case MUIA_Revision:
-	STORE = __revision;
-	return(TRUE);
-    case MUIA_Application_Author:
-	STORE = (IPTR)data->app_Author;
-	return(TRUE);
-    case MUIA_Application_Base:
-	STORE = (IPTR)data->app_Base;
-	return(TRUE);
-    case MUIA_Application_Copyright:
-	STORE = (IPTR)data->app_Copyright;
-	return(TRUE);
-    case MUIA_Application_Description:
-	STORE = (IPTR)data->app_Description;
-	return(TRUE);
-    case MUIA_Application_DoubleStart:
-	return(TRUE);
-    case MUIA_Application_ForceQuit:
-	STORE = (IPTR)data->app_ForceQuit;
-	return(TRUE);
-    case MUIA_Application_HelpFile:
-	STORE = (IPTR)data->app_HelpFile;
-	return(TRUE);
-    case MUIA_Application_Iconified:
-	STORE = (IPTR)data->app_Iconified;
-	return(TRUE);
-    case MUIA_Application_Title:
-	STORE = (IPTR)data->app_Title;
-	return(TRUE);
-    case MUIA_Application_Version:
-	STORE = (IPTR)data->app_Version;
-	return(TRUE);
-    case MUIA_Application_Version_Number:
-        STORE = (IPTR) data->app_Version_Number;
-        return TRUE;
-    case MUIA_Application_Version_Date:
-        STORE = (IPTR) data->app_Version_Date;
-        return TRUE;
-    case MUIA_Application_Version_Extra:
-        STORE = (IPTR) data->app_Version_Extra;
-        return TRUE;
-    case MUIA_Application_WindowList:
-	return GetAttr(MUIA_Family_List, data->app_WindowFamily, msg->opg_Storage);
-    case MUIA_Application_Menustrip:
-	STORE = (IPTR)data->app_Menustrip;
-	return 1;
-    case MUIA_Application_MenuAction:
-	STORE = (IPTR)data->app_MenuAction;
-	return 1;
-    case MUIA_Application_BrokerPort:
-    	STORE = (IPTR)data->app_BrokerPort;
-	return 1;
-    case MUIA_Application_BrokerPri:
-    	STORE = (IPTR)data->app_BrokerPri;
-	return 1;
-    case MUIA_Application_BrokerHook:
-    	STORE = (IPTR)data->app_BrokerHook;
-	return 1;
-    case MUIA_Application_Broker:
-    	STORE = (IPTR)data->app_Broker;
-	return 1;
-    case MUIA_Application_Active:
-    	STORE = data->app_Active;
-	return 1;
+	case MUIA_Version:
+	    STORE = __version;
+	    return TRUE;
+
+	case MUIA_Revision:
+	    STORE = __revision;
+	    return TRUE;
+
+	case MUIA_Application_Author:
+	    STORE = (IPTR)data->app_Author;
+	    return TRUE;
+
+	case MUIA_Application_Base:
+	    STORE = (IPTR)data->app_Base;
+	    return TRUE;
+
+	case MUIA_Application_Copyright:
+	    STORE = (IPTR)data->app_Copyright;
+	    return TRUE;
+
+	case MUIA_Application_Description:
+	    STORE = (IPTR)data->app_Description;
+	    return TRUE;
+
+	case MUIA_Application_DoubleStart:
+	    return TRUE;
+
+	case MUIA_Application_ForceQuit:
+	    STORE = (IPTR)data->app_ForceQuit;
+	    return TRUE;
+
+	case MUIA_Application_HelpFile:
+	    STORE = (IPTR)data->app_HelpFile;
+	    return TRUE;
+
+	case MUIA_Application_Iconified:
+	    STORE = (IPTR)data->app_Iconified;
+	    return TRUE;
+
+	case MUIA_Application_Title:
+	    STORE = (IPTR)data->app_Title;
+	    return TRUE;
+
+	case MUIA_Application_Version:
+	    STORE = (IPTR)data->app_Version;
+	    return TRUE;
+
+	case MUIA_Application_Version_Number:
+	    STORE = (IPTR) data->app_Version_Number;
+	    return TRUE;
+
+	case MUIA_Application_Version_Date:
+	    STORE = (IPTR) data->app_Version_Date;
+	    return TRUE;
+
+	case MUIA_Application_Version_Extra:
+	    STORE = (IPTR) data->app_Version_Extra;
+	    return TRUE;
+
+	case MUIA_Application_WindowList:
+	    return GetAttr(MUIA_Family_List, data->app_WindowFamily, msg->opg_Storage);
+
+	case MUIA_Application_Menustrip:
+	    STORE = (IPTR)data->app_Menustrip;
+	    return TRUE;
+
+	case MUIA_Application_MenuAction:
+	    STORE = (IPTR)data->app_MenuAction;
+	    return TRUE;
+
+	case MUIA_Application_BrokerPort:
+	    STORE = (IPTR)data->app_BrokerPort;
+	    return TRUE;
+
+	case MUIA_Application_BrokerPri:
+	    STORE = (IPTR)data->app_BrokerPri;
+	    return TRUE;
+
+	case MUIA_Application_BrokerHook:
+	    STORE = (IPTR)data->app_BrokerHook;
+	    return TRUE;
+
+	case MUIA_Application_Broker:
+	    STORE = (IPTR)data->app_Broker;
+	    return TRUE;
+
+	case MUIA_Application_Active:
+	    STORE = data->app_Active;
+	    return TRUE;
     }
 
     /* our handler didn't understand the attribute, we simply pass
-    ** it to our superclass now
-    */
+     ** it to our superclass now
+     */
     return(DoSuperMethodA(cl, obj, (Msg) msg));
 #undef STORE
 }
@@ -879,7 +916,7 @@ static ULONG Application_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  OM_ADDMEMBER
 **************************************************************************/
-static ULONG Application_AddMember(struct IClass *cl, Object *obj, struct opMember *msg)
+static IPTR Application__OM_ADDMEMBER(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -895,7 +932,7 @@ static ULONG Application_AddMember(struct IClass *cl, Object *obj, struct opMemb
 /**************************************************************************
  OM_REMMEMBER
 **************************************************************************/
-static ULONG Application_RemMember(struct IClass *cl, Object *obj, struct opMember *msg)
+static IPTR Application__OM_REMMEMBER(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -911,7 +948,7 @@ static ULONG Application_RemMember(struct IClass *cl, Object *obj, struct opMemb
 /**************************************************************************
  MUIM_Application_AddInputHandler
 **************************************************************************/
-static ULONG Application_AddInputHandler(struct IClass *cl, Object *obj,
+static IPTR Application__MUIM_AddInputHandler(struct IClass *cl, Object *obj,
 		 struct MUIP_Application_AddInputHandler *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -940,7 +977,7 @@ static ULONG Application_AddInputHandler(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Application_RemInputHandler
 **************************************************************************/
-static ULONG Application_RemInputHandler(struct IClass *cl, Object *obj, struct MUIP_Application_RemInputHandler *msg)
+static IPTR Application__MUIM_RemInputHandler(struct IClass *cl, Object *obj, struct MUIP_Application_RemInputHandler *msg)
 {
     //struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     if (msg->ihnode->ihn_Flags & MUIIHNF_TIMER)
@@ -960,7 +997,7 @@ void _zune_window_message(struct IntuiMessage *imsg); /* from window.c */
 /*
  * MUIM_Application_InputBuffered : process all pending events
  */
-static ULONG Application_InputBuffered(struct IClass *cl, Object *obj,
+static IPTR Application__MUIM_InputBuffered(struct IClass *cl, Object *obj,
                struct MUIP_Application_InputBuffered *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -982,7 +1019,7 @@ static ULONG Application_InputBuffered(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Application_NewInput : application main loop
 **************************************************************************/
-static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Application_NewInput *msg)
+static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj, struct MUIP_Application_NewInput *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct RIDNode *rid;
@@ -1128,7 +1165,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
  MUIM_Application_Input : application main loop
  This method shouldn't be used in new programm. As it polls all signals.
 **************************************************************************/
-static ULONG Application_Input(struct IClass *cl, Object *obj, struct MUIP_Application_Input *msg)
+static IPTR Application__MUIM_Input(struct IClass *cl, Object *obj, struct MUIP_Application_Input *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     ULONG signal = 0, handler_mask = 0;
@@ -1145,14 +1182,14 @@ static ULONG Application_Input(struct IClass *cl, Object *obj, struct MUIP_Appli
     signal = (1L << data->app_GlobalInfo.mgi_WindowsPort->mp_SigBit)
 	| (1L << data->app_TimerPort->mp_SigBit) | handler_mask;
     *msg->signal = signal;
-    return Application_NewInput(cl, obj, (APTR)msg);
+    return Application__MUIM_NewInput(cl, obj, (APTR)msg);
 }
 
 /**************************************************************************
  MUIM_Application_PushMethod: Add a method in the method FIFO. Will
  be executed in the next event loop.
 **************************************************************************/
-static ULONG Application_PushMethod(struct IClass *cl, Object *obj, struct MUIP_Application_PushMethod *msg)
+static IPTR Application__MUIM_PushMethod(struct IClass *cl, Object *obj, struct MUIP_Application_PushMethod *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct MQNode *mq;
@@ -1182,7 +1219,7 @@ static ULONG Application_PushMethod(struct IClass *cl, Object *obj, struct MUIP_
  * MUIM_Application_ReturnID : Tell MUI to return the given id with
  * the next call to MUIM_Application_NewInput. kinda obsolete :)
  */
-static ULONG Application_ReturnID(struct IClass *cl, Object *obj,
+static IPTR Application__MUIM_ReturnID(struct IClass *cl, Object *obj,
 	  struct MUIP_Application_ReturnID *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -1207,12 +1244,13 @@ static ULONG Application_ReturnID(struct IClass *cl, Object *obj,
  * MUIM_FindUData : tests if the MUIA_UserData of the object
  * contains the given <udata> and returns the object pointer in this case.
  */
-static ULONG Application_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+static IPTR Application__MUIM_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
     if (muiNotifyData(obj)->mnd_UserData == msg->udata)
-	return (ULONG)obj;
+	return (IPTR)obj;
+
     return DoMethodA(data->app_WindowFamily, (Msg)msg);
 }
 
@@ -1222,7 +1260,7 @@ static ULONG Application_FindUData(struct IClass *cl, Object *obj, struct MUIP_F
  * contains the given <udata> and gets <attr> to <storage> for itself
  * in this case.
  */
-static ULONG Application_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
+static IPTR Application__MUIM_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -1239,7 +1277,7 @@ static ULONG Application_GetUData(struct IClass *cl, Object *obj, struct MUIP_Ge
  * MUIM_SetUData : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG Application_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+static IPTR Application__MUIM_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -1255,7 +1293,7 @@ static ULONG Application_SetUData(struct IClass *cl, Object *obj, struct MUIP_Se
  * MUIM_SetUDataOnce : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG Application_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
+static IPTR Application__MUIM_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -1271,7 +1309,7 @@ static ULONG Application_SetUDataOnce(struct IClass *cl, Object *obj, struct MUI
 /**************************************************************************
  MUIM_Application_AboutMUI: brought up the about window, centered on refwindow
 **************************************************************************/
-static ULONG Application_AboutMUI(struct IClass *cl, Object *obj, struct MUIP_Application_AboutMUI *msg)
+static IPTR Application__MUIM_AboutMUI(struct IClass *cl, Object *obj, struct MUIP_Application_AboutMUI *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
 
@@ -1296,7 +1334,7 @@ static ULONG Application_AboutMUI(struct IClass *cl, Object *obj, struct MUIP_Ap
     return 0;
 }
 
-static ULONG Application_SetConfigdata(struct IClass *cl, Object *obj,
+static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
 				       struct MUIP_Application_SetConfigdata *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -1325,7 +1363,7 @@ static ULONG Application_SetConfigdata(struct IClass *cl, Object *obj,
 /* MUIM_Application_OpenWindows
  * Opens all windows of an application
  */
-static ULONG Application_OpenWindows(struct IClass *cl, Object *obj,
+static IPTR Application__MUIM_OpenWindows(struct IClass *cl, Object *obj,
 				       struct MUIP_Application_OpenWindows *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -1343,7 +1381,7 @@ static ULONG Application_OpenWindows(struct IClass *cl, Object *obj,
 }
 
 
-static ULONG Application_OpenConfigWindow(struct IClass *cl, Object *obj,
+static IPTR Application__MUIM_OpenConfigWindow(struct IClass *cl, Object *obj,
 				       struct MUIP_Application_OpenConfigWindow *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -1367,7 +1405,7 @@ static ULONG Application_OpenConfigWindow(struct IClass *cl, Object *obj,
     return 1;
 }
 
-IPTR Application_Execute(Class *CLASS, Object *self, Msg message)
+static IPTR Application__MUIM_Execute(Class *CLASS, Object *self, Msg message)
 {
     ULONG signals = 0L;
     
@@ -1395,50 +1433,28 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:
-	    return Application_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE:
-	    return Application_Dispose(cl, obj, msg);
-	case OM_SET:
-	    return Application_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET:
-	    return Application_Get(cl, obj, (struct opGet *)msg);
-	case OM_ADDMEMBER:
-	    return Application_AddMember(cl, obj, (APTR)msg);
-	case OM_REMMEMBER:
-	    return Application_RemMember(cl, obj, (APTR)msg);
-	case MUIM_Application_AddInputHandler:
-	    return Application_AddInputHandler(cl, obj, (APTR)msg);
-	case MUIM_Application_RemInputHandler:
-	    return Application_RemInputHandler(cl, obj, (APTR)msg);
-	case MUIM_Application_Input:
-	    return Application_Input(cl, obj, (APTR)msg);
-	case MUIM_Application_InputBuffered :
-	    return Application_InputBuffered(cl, obj, (APTR)msg);
-	case MUIM_Application_NewInput:
-	    return Application_NewInput(cl, obj, (APTR)msg);
-	case MUIM_Application_PushMethod:
-	    return Application_PushMethod(cl, obj, (APTR)msg);
-	case MUIM_Application_ReturnID :
-	    return Application_ReturnID(cl, obj, (APTR)msg);
-	case MUIM_FindUData :
-	    return Application_FindUData(cl, obj, (APTR)msg);
-	case MUIM_GetUData :
-	    return Application_GetUData(cl, obj, (APTR)msg);
-	case MUIM_SetUData :
-	    return Application_SetUData(cl, obj, (APTR)msg);
-	case MUIM_SetUDataOnce :
-	    return Application_SetUDataOnce(cl, obj, (APTR)msg);
-	case MUIM_Application_AboutMUI :
-	    return Application_AboutMUI(cl, obj, (APTR)msg);
-	case MUIM_Application_SetConfigdata :
-	    return Application_SetConfigdata(cl, obj, (APTR)msg);
-	case MUIM_Application_OpenWindows :
-	    return Application_OpenWindows(cl, obj, (APTR)msg);
-	case MUIM_Application_OpenConfigWindow:
-	    return Application_OpenConfigWindow(cl, obj, (APTR)msg);
-        case MUIM_Application_Execute:
-            return Application_Execute(cl, obj, msg);
+	case OM_NEW:                            return Application__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:                        return Application__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:                            return Application__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:                            return Application__OM_GET(cl, obj, (struct opGet *)msg);
+	case OM_ADDMEMBER:                      return Application__OM_ADDMEMBER(cl, obj, (APTR)msg);
+	case OM_REMMEMBER:                      return Application__OM_REMMEMBER(cl, obj, (APTR)msg);
+	case MUIM_Application_AddInputHandler:  return Application__MUIM_AddInputHandler(cl, obj, (APTR)msg);
+	case MUIM_Application_RemInputHandler:  return Application__MUIM_RemInputHandler(cl, obj, (APTR)msg);
+	case MUIM_Application_Input:            return Application__MUIM_Input(cl, obj, (APTR)msg);
+	case MUIM_Application_InputBuffered:    return Application__MUIM_InputBuffered(cl, obj, (APTR)msg);
+	case MUIM_Application_NewInput:         return Application__MUIM_NewInput(cl, obj, (APTR)msg);
+	case MUIM_Application_PushMethod:       return Application__MUIM_PushMethod(cl, obj, (APTR)msg);
+	case MUIM_Application_ReturnID:         return Application__MUIM_ReturnID(cl, obj, (APTR)msg);
+	case MUIM_FindUData:                    return Application__MUIM_FindUData(cl, obj, (APTR)msg);
+	case MUIM_GetUData:                     return Application__MUIM_GetUData(cl, obj, (APTR)msg);
+	case MUIM_SetUData:                     return Application__MUIM_SetUData(cl, obj, (APTR)msg);
+	case MUIM_SetUDataOnce:                 return Application__MUIM_SetUDataOnce(cl, obj, (APTR)msg);
+	case MUIM_Application_AboutMUI:         return Application__MUIM_AboutMUI(cl, obj, (APTR)msg);
+	case MUIM_Application_SetConfigdata:    return Application__MUIM_SetConfigdata(cl, obj, (APTR)msg);
+	case MUIM_Application_OpenWindows:      return Application__MUIM_OpenWindows(cl, obj, (APTR)msg);
+	case MUIM_Application_OpenConfigWindow: return Application__MUIM_OpenConfigWindow(cl, obj, (APTR)msg);
+        case MUIM_Application_Execute:          return Application__MUIM_Execute(cl, obj, msg);
     }
 
     return(DoSuperMethodA(cl, obj, msg));
