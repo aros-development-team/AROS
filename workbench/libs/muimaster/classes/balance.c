@@ -1,5 +1,5 @@
 /* 
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -63,7 +63,7 @@ IPTR Balance__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     D(bug("Balance_New(0x%lx)\n",obj));
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 IPTR Balance__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
