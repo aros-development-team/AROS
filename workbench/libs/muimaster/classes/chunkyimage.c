@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -98,7 +96,7 @@ static BOOL make_bitmap(struct IClass *cl, Object *obj)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR ChunkyImage_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR ChunkyImage__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ChunkyImageData    *data;
     struct TagItem  	    	*tag, *tags;
@@ -112,7 +110,7 @@ static IPTR ChunkyImage_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->modulo = 0xFFFF;
     
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -151,7 +149,7 @@ static IPTR ChunkyImage_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static IPTR ChunkyImage_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR ChunkyImage__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ChunkyImageData *data = INST_DATA(cl, obj);
 
@@ -167,13 +165,13 @@ static IPTR ChunkyImage_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static IPTR ChunkyImage_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR ChunkyImage__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ChunkyImageData    *data  = INST_DATA(cl, obj);
     struct TagItem          	*tags  = msg->ops_AttrList;
     struct TagItem          	*tag;
 
-    while ((tag = NextTagItem(&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem**)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -210,7 +208,7 @@ static IPTR ChunkyImage_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static IPTR ChunkyImage_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR ChunkyImage__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #define STORE *(msg->opg_Storage)
 
@@ -243,7 +241,7 @@ static IPTR ChunkyImage_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static IPTR ChunkyImage_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR ChunkyImage__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_ChunkyImageData *data = INST_DATA(cl, obj);
 
@@ -278,7 +276,7 @@ static IPTR ChunkyImage_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup 
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static IPTR ChunkyImage_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR ChunkyImage__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_ChunkyImageData *data = INST_DATA(cl, obj);
     IPTR    	    	      retval;
@@ -309,24 +307,12 @@ BOOPSI_DISPATCHER(IPTR, ChunkyImage_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:
-	    return ChunkyImage_New(cl, obj, (struct opSet *)msg);
-	    
-	case OM_DISPOSE:
-	    return ChunkyImage_Dispose(cl, obj, msg);
-	    
-	case OM_SET:
-	    return ChunkyImage_Set(cl, obj, (struct opSet *)msg);
-	    
-	case OM_GET:
-	    return ChunkyImage_Get(cl, obj, (struct opGet *)msg);
-
-	case MUIM_Setup:
-	    return ChunkyImage_Setup(cl, obj, (struct MUIP_Setup *)msg);
-	    
-	case MUIM_Cleanup:
-	    return ChunkyImage_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
-	    	       
+	case OM_NEW:       return ChunkyImage__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:   return ChunkyImage__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:       return ChunkyImage__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:       return ChunkyImage__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup:   return ChunkyImage__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+	case MUIM_Cleanup: return ChunkyImage__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);

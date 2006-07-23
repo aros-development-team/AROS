@@ -1,6 +1,6 @@
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -120,8 +120,8 @@ struct MUI_GroupData
 static const int __version = 1;
 static const int __revision = 1;
 
-static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg);
-static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg);
+IPTR Group__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg);
+IPTR Group__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg);
 
 /******************************************************************************/
 /******************************************************************************/
@@ -160,12 +160,12 @@ static void change_active_page (struct IClass *cl, Object *obj, LONG page)
 
     if (newpage != data->active_page)
     {
-	if (_flags(obj) & MADF_CANDRAW) Group_Hide(cl,obj,NULL);
+	if (_flags(obj) & MADF_CANDRAW) Group__MUIM_Hide(cl,obj,NULL);
 	data->active_page = newpage;
     	if (_flags(obj) & MADF_CANDRAW)
     	{
     	    DoMethod(obj,MUIM_Layout);
-	    Group_Show(cl,obj,NULL);
+	    Group__MUIM_Show(cl,obj,NULL);
 	    data->update = 1;
 	    MUI_Redraw(obj, MADF_DRAWUPDATE);
 	}
@@ -196,7 +196,7 @@ static int Group_GetNumVisibleChildren(struct MUI_GroupData *data, struct MinLis
 /**************************************************************************
  OM_NEW - Constructor
 **************************************************************************/
-static IPTR Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupData *data;
     struct TagItem *tags,*tag;
@@ -326,7 +326,7 @@ static IPTR Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static IPTR Group_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Group__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -342,14 +342,14 @@ static IPTR Group_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupData *data  = INST_DATA(cl, obj);
     struct TagItem       *tags  = msg->ops_AttrList;
     struct TagItem       *tag;
     BOOL forward = TRUE;
     BOOL need_recalc = FALSE;
-    ULONG retval;
+    IPTR retval;
     
     int virt_offx = data->virt_offx, virt_offy = data->virt_offy;
 
@@ -476,12 +476,12 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     
     if (virt_offx != data->virt_offx || virt_offy != data->virt_offy)
     {
-	if (_flags(obj) & MADF_CANDRAW) Group_Hide(cl,obj,NULL);
+	if (_flags(obj) & MADF_CANDRAW) Group__MUIM_Hide(cl,obj,NULL);
 	data->virt_offx = virt_offx;
 	data->virt_offy = virt_offy;
 	/* Relayout ourself, this will also relayout all the children */
 	DoMethod(obj,MUIM_Layout);
-	if (_flags(obj) & MADF_CANDRAW) Group_Show(cl,obj,NULL);
+	if (_flags(obj) & MADF_CANDRAW) Group__MUIM_Show(cl,obj,NULL);
 	data->update = 2;
 	MUI_Redraw(obj,MADF_DRAWUPDATE);
     }
@@ -493,7 +493,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static ULONG Group_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Group__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 /* small macro to simplify return value storage */
 #define STORE *(msg->opg_Storage)
@@ -542,7 +542,7 @@ static ULONG Group_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  OM_ADDMEMBER
 **************************************************************************/
-static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *msg)
+IPTR Group__OM_ADDMEMBER(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -578,7 +578,7 @@ static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *ms
 /**************************************************************************
  OM_REMMEMBER
 **************************************************************************/
-static ULONG Group_RemMember(struct IClass *cl, Object *obj, struct opMember *msg)
+IPTR Group__OM_REMMEMBER(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -604,7 +604,7 @@ static ULONG Group_RemMember(struct IClass *cl, Object *obj, struct opMember *ms
 /**************************************************************************
  MUIM_ConnectParent
 **************************************************************************/
-static ULONG Group_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+IPTR Group__MUIM_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -633,7 +633,7 @@ static ULONG Group_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Con
 /**************************************************************************
  MUIM_DisconnectParent
 **************************************************************************/
-static ULONG Group_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+IPTR Group__MUIM_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -655,8 +655,7 @@ static ULONG Group_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_
 /*
  * Put group in exchange state
  */
-static ULONG
-Group_InitChange(struct IClass *cl, Object *obj,
+IPTR Group__MUIM_InitChange(struct IClass *cl, Object *obj,
 		 struct MUIP_Group_InitChange *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -669,8 +668,7 @@ Group_InitChange(struct IClass *cl, Object *obj,
 /*
  * Will recalculate display after dynamic adding/removing
  */
-static ULONG
-Group_ExitChange(struct IClass *cl, Object *obj,
+IPTR Group__MUIM_ExitChange(struct IClass *cl, Object *obj,
 		 struct MUIP_Group_ExitChange *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -690,8 +688,7 @@ Group_ExitChange(struct IClass *cl, Object *obj,
 /*
  * Sort the family
  */
-static ULONG
-Group_Sort(struct IClass *cl, Object *obj, struct MUIP_Group_Sort *msg)
+IPTR Group__MUIM_Sort(struct IClass *cl, Object *obj, struct MUIP_Group_Sort *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -710,7 +707,7 @@ Group_Sort(struct IClass *cl, Object *obj, struct MUIP_Group_Sort *msg)
 
  Executes the given method but does not forward it to the children
 **************************************************************************/
-static IPTR Group_DoMethodNoForward(struct IClass *cl, Object *obj, struct MUIP_Group_DoMethodNoForward *msg)
+IPTR Group__MUIM_DoMethodNoForward(struct IClass *cl, Object *obj, struct MUIP_Group_DoMethodNoForward *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     IPTR rc;
@@ -723,8 +720,7 @@ static IPTR Group_DoMethodNoForward(struct IClass *cl, Object *obj, struct MUIP_
 /*
  * Propagate a method to group childs.
  */
-static ULONG
-Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
+static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -744,7 +740,7 @@ Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static ULONG Group_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Group__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -801,7 +797,7 @@ static ULONG Group_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static IPTR Group_Cleanup(struct IClass *cl, Object *obj, Msg msg)
+IPTR Group__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -831,7 +827,7 @@ static IPTR Group_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Draw - draw the group
 **************************************************************************/
-static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object                *cstate;
@@ -1495,7 +1491,7 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
  MUIM_AskMinMax : ask childs about min/max sizes, then
  either call a hook, or the builtin method, to calculate our minmax
 **************************************************************************/
-static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Group__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     struct MUI_LayoutMsg  lm;
@@ -2429,7 +2425,7 @@ static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinLis
  MUIM_Layout
  Either use a given layout hook, or the builtin method.
 **************************************************************************/
-static ULONG Group_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
+IPTR Group__MUIM_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     struct MUI_LayoutMsg lm;
@@ -2503,7 +2499,7 @@ static ULONG Group_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *ms
 /**************************************************************************
  MUIM_Show
 **************************************************************************/
-static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR Group__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -2546,7 +2542,7 @@ static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 /**************************************************************************
  MUIM_Hide
 **************************************************************************/
-static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+IPTR Group__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -2586,8 +2582,7 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
  * MUIM_FindUData : tests if the MUIA_UserData of the object
  * contains the given <udata> and returns the object pointer in this case.
  */
-static IPTR
-Group_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+IPTR Group__MUIM_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -2603,8 +2598,7 @@ Group_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
  * contains the given <udata> and gets <attr> to <storage> for itself
  * in this case.
  */
-static ULONG
-Group_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
+IPTR Group__MUIM_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -2622,8 +2616,7 @@ Group_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
  * MUIM_SetUData : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG 
-Group_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+IPTR Group__MUIM_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -2640,8 +2633,7 @@ Group_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  * Stop after the first udata found.
  */
-static IPTR
-Group_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+IPTR Group__MUIM_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -2656,7 +2648,7 @@ Group_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 /**************************************************************************
  MUIM_DragQueryExtented
 **************************************************************************/
-static IPTR Group_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_DragQueryExtended *msg)
+IPTR Group__MUIM_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_DragQueryExtended *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -2680,7 +2672,7 @@ static IPTR Group_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
-static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR Group__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -2768,7 +2760,7 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 /**************************************************************************
  MUIM_DrawBackground
 **************************************************************************/
-static ULONG Group_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_DrawBackground *msg)
+IPTR Group__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_DrawBackground *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
@@ -2789,7 +2781,7 @@ static ULONG Group_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dr
  MUIM_FindAreaObject
  Find the given object or return NULL
 **************************************************************************/
-static IPTR Group_FindAreaObject(struct IClass *cl, Object *obj,
+IPTR Group__MUIM_FindAreaObject(struct IClass *cl, Object *obj,
 				 struct MUIP_FindAreaObject *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -2865,67 +2857,67 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-    case OM_NEW: return Group_New(cl, obj, (struct opSet *) msg);
-    case OM_DISPOSE: return Group_Dispose(cl, obj, msg);
-    case OM_SET: return Group_Set(cl, obj, (struct opSet *)msg);
-    case OM_GET: return Group_Get(cl, obj, (struct opGet *)msg);
-    case OM_ADDMEMBER: return Group_AddMember(cl, obj, (APTR)msg);
-    case OM_REMMEMBER: return Group_RemMember(cl, obj, (APTR)msg);
-    case MUIM_AskMinMax: return Group_AskMinMax(cl, obj, (APTR)msg);
-    case MUIM_Group_ExitChange : return Group_ExitChange(cl, obj, (APTR)msg);
-    case MUIM_Group_InitChange : return Group_InitChange(cl, obj, (APTR)msg);
-    case MUIM_Group_Sort : return Group_Sort(cl, obj, (APTR)msg);
-    case MUIM_Group_DoMethodNoForward: return Group_DoMethodNoForward(cl, obj, (APTR)msg);
-    case MUIM_ConnectParent : return Group_ConnectParent(cl, obj, (APTR)msg);
-    case MUIM_DisconnectParent: return Group_DisconnectParent(cl, obj, (APTR)msg);
-    case MUIM_Layout: return Group_Layout(cl, obj, (APTR)msg);
-    case MUIM_Setup: return Group_Setup(cl, obj, (APTR)msg);
-    case MUIM_Cleanup: return Group_Cleanup(cl, obj, (APTR)msg);
-    case MUIM_Draw: return Group_Draw(cl, obj, (APTR)msg);
+	case OM_NEW:                return Group__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:            return Group__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:                return Group__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:                return Group__OM_GET(cl, obj, (struct opGet *)msg);
+	case OM_ADDMEMBER:          return Group__OM_ADDMEMBER(cl, obj, (APTR)msg);
+	case OM_REMMEMBER:          return Group__OM_REMMEMBER(cl, obj, (APTR)msg);
+	case MUIM_AskMinMax:        return Group__MUIM_AskMinMax(cl, obj, (APTR)msg);
+	case MUIM_Group_ExitChange: return Group__MUIM_ExitChange(cl, obj, (APTR)msg);
+	case MUIM_Group_InitChange: return Group__MUIM_InitChange(cl, obj, (APTR)msg);
+	case MUIM_Group_Sort:       return Group__MUIM_Sort(cl, obj, (APTR)msg);
+	case MUIM_Group_DoMethodNoForward: return Group__MUIM_DoMethodNoForward(cl, obj, (APTR)msg);
+	case MUIM_ConnectParent:    return Group__MUIM_ConnectParent(cl, obj, (APTR)msg);
+	case MUIM_DisconnectParent: return Group__MUIM_DisconnectParent(cl, obj, (APTR)msg);
+	case MUIM_Layout:           return Group__MUIM_Layout(cl, obj, (APTR)msg);
+	case MUIM_Setup:            return Group__MUIM_Setup(cl, obj, (APTR)msg);
+	case MUIM_Cleanup:          return Group__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_Draw:             return Group__MUIM_Draw(cl, obj, (APTR)msg);
 
-    case MUIM_FindUData : return Group_FindUData(cl, obj, (APTR)msg);
-    case MUIM_GetUData : return Group_GetUData(cl, obj, (APTR)msg);
-    case MUIM_SetUData : return Group_SetUData(cl, obj, (APTR)msg);
-    case MUIM_SetUDataOnce : return Group_SetUDataOnce(cl, obj, (APTR)msg);
-    case MUIM_Show: return Group_Show(cl, obj, (APTR)msg);
-    case MUIM_Hide: return Group_Hide(cl, obj, (APTR)msg);
-    case MUIM_HandleEvent: return Group_HandleEvent(cl,obj, (APTR)msg);
-    case MUIM_DrawBackground: return Group_DrawBackground(cl, obj, (APTR)msg);
-    case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
-    case MUIM_FindAreaObject: return Group_FindAreaObject(cl, obj, (APTR)msg);
+	case MUIM_FindUData:        return Group__MUIM_FindUData(cl, obj, (APTR)msg);
+	case MUIM_GetUData:         return Group__MUIM_GetUData(cl, obj, (APTR)msg);
+	case MUIM_SetUData:         return Group__MUIM_SetUData(cl, obj, (APTR)msg);
+	case MUIM_SetUDataOnce:     return Group__MUIM_SetUDataOnce(cl, obj, (APTR)msg);
+	case MUIM_Show:             return Group__MUIM_Show(cl, obj, (APTR)msg);
+	case MUIM_Hide:             return Group__MUIM_Hide(cl, obj, (APTR)msg);
+	case MUIM_HandleEvent:      return Group__MUIM_HandleEvent(cl,obj, (APTR)msg);
+	case MUIM_DrawBackground:   return Group__MUIM_DrawBackground(cl, obj, (APTR)msg);
+	case MUIM_DragQueryExtended:return Group__MUIM_DragQueryExtended(cl, obj, (APTR)msg);
+	case MUIM_FindAreaObject:   return Group__MUIM_FindAreaObject(cl, obj, (APTR)msg);
 
 #if 0
-    /* Disabled. See above */
-    case MUIM_Notify: return Group_Notify(cl, obj, (APTR)msg);
+				  /* Disabled. See above */
+	case MUIM_Notify: return Group_Notify(cl, obj, (APTR)msg);
 #endif
-    case MUIM_Set:
-    case MUIM_MultiSet:
-    case MUIM_CallHook:
-    case MUIM_DrawParentBackground:
-    case MUIM_DragBegin:
-    case MUIM_DragDrop: 
-    case MUIM_DragQuery:
-    case MUIM_DragFinish: 
-    case MUIM_DoDrag:
-    case MUIM_CreateDragImage:
-    case MUIM_DeleteDragImage:
-    case MUIM_GoActive:
-    case MUIM_GoInactive:
-    case MUIM_CreateBubble:
-    case MUIM_DeleteBubble:
-    case MUIM_CreateShortHelp:
-    case MUIM_DeleteShortHelp:
-    case OM_ADDTAIL:
-    case OM_REMOVE:    
-    	return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded? */
+	case MUIM_Set:
+	case MUIM_MultiSet:
+	case MUIM_CallHook:
+	case MUIM_DrawParentBackground:
+	case MUIM_DragBegin:
+	case MUIM_DragDrop: 
+	case MUIM_DragQuery:
+	case MUIM_DragFinish: 
+	case MUIM_DoDrag:
+	case MUIM_CreateDragImage:
+	case MUIM_DeleteDragImage:
+	case MUIM_GoActive:
+	case MUIM_GoInactive:
+	case MUIM_CreateBubble:
+	case MUIM_DeleteBubble:
+	case MUIM_CreateShortHelp:
+	case MUIM_DeleteShortHelp:
+	case OM_ADDTAIL:
+	case OM_REMOVE:    
+			  return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded? */
     }
-    
+
     /* sometimes you want to call a superclass method,
      * but not dispatching to child. 
      * But what to do with list methods in a listview ?
      */
     Group_DispatchMsg(cl, obj, (APTR)msg);
-    
+
     return DoSuperMethodA(cl, obj, msg);
 }
 BOOPSI_DISPATCHER_END

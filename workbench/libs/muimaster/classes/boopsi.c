@@ -22,7 +22,7 @@
 
 extern struct Library *MUIMasterBase;
 
-ULONG Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Boopsi_DATA *data;
     struct TagItem *tags,*tag;
@@ -39,7 +39,7 @@ ULONG Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->boopsi_maxwidth = data->boopsi_maxheight = MUI_MAXMAX;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -101,7 +101,7 @@ ULONG Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* Now fill in the initial remember tag datas in our remember tag list */
-    for (tags = data->remember; (tag = NextTagItem(&tags)); )
+    for (tags = data->remember; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	struct TagItem *set_tag = FindTagItem(tag->ti_Tag,msg->ops_AttrList);
 	if (set_tag) tag->ti_Data = set_tag->ti_Data;
@@ -113,10 +113,10 @@ ULONG Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
-ULONG Boopsi__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
+IPTR Boopsi__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
 
@@ -125,14 +125,14 @@ ULONG Boopsi__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl,obj,msg);
 }
 
-ULONG Boopsi__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Boopsi__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tags,*tag;
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     int only_trigger = 0;
     int no_notify = 0;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -183,7 +183,7 @@ ULONG Boopsi__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* Now fill in remember list tag datas in our remember tag list */
-    for (tags = data->remember; (tag = NextTagItem(&tags)); )
+    for (tags = data->remember; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	struct TagItem *set_tag = FindTagItem(tag->ti_Tag,msg->ops_AttrList);
 	if (set_tag) tag->ti_Data = set_tag->ti_Data;
@@ -206,7 +206,7 @@ ULONG Boopsi__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
 
 #define STORE *(msg->opg_Storage)
-ULONG Boopsi__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Boopsi__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
 
@@ -219,7 +219,7 @@ ULONG Boopsi__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 	    struct TagItem *tags,*tag;
 
     	    /* look in the rember list first */
-	    for (tags = data->remember; (tag = NextTagItem(&tags)); )
+	    for (tags = data->remember; (tag = NextTagItem((const struct TagItem**)&tags)); )
             {
             	if (tag->ti_Tag == msg->opg_AttrID)
             	{
@@ -257,7 +257,7 @@ ULONG Boopsi__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 #undef STORE
 
-ULONG Boopsi__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Boopsi__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
 
@@ -276,10 +276,10 @@ ULONG Boopsi__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
     return TRUE;
 }
 
-ULONG Boopsi__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Boopsi__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
-    ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
+    IPTR rc = DoSuperMethodA(cl, obj, (Msg)msg);
     if (!rc) return 0;
 
     DoMethod(_win(obj),MUIM_Window_AddEventHandler,(IPTR)&data->ehn);
@@ -287,17 +287,17 @@ ULONG Boopsi__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     return 1;
 }
 
-ULONG Boopsi__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Boopsi__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     DoMethod(_win(obj),MUIM_Window_RemEventHandler,(IPTR)&data->ehn);
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-ULONG Boopsi__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR Boopsi__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
-    ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
+    IPTR rc = DoSuperMethodA(cl, obj, (Msg)msg);
     struct TagItem *tag;
     BOOL completely_visible = TRUE;
 
@@ -337,9 +337,9 @@ _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj)));
 	if ((tag = FindTagItem(GA_Top,data->boopsi_taglist))) tag->ti_Data = _mtop(obj);
 	if ((tag = FindTagItem(GA_Width,data->boopsi_taglist))) tag->ti_Data = _mwidth(obj);
 	if ((tag = FindTagItem(GA_Height,data->boopsi_taglist))) tag->ti_Data = _mheight(obj);
-	if (data->boopsi_tagscreen && (tag = FindTagItem(data->boopsi_tagscreen,data->boopsi_taglist))) tag->ti_Data = (ULONG)_screen(obj);
-	if (data->boopsi_tagwindow && (tag = FindTagItem(data->boopsi_tagwindow,data->boopsi_taglist))) tag->ti_Data = (ULONG)_window(obj);
-	if (data->boopsi_tagdrawinfo && (tag = FindTagItem(data->boopsi_tagdrawinfo,data->boopsi_taglist))) tag->ti_Data = (ULONG)_dri(obj);
+	if (data->boopsi_tagscreen && (tag = FindTagItem(data->boopsi_tagscreen,data->boopsi_taglist))) tag->ti_Data = (IPTR)_screen(obj);
+	if (data->boopsi_tagwindow && (tag = FindTagItem(data->boopsi_tagwindow,data->boopsi_taglist))) tag->ti_Data = (IPTR)_window(obj);
+	if (data->boopsi_tagdrawinfo && (tag = FindTagItem(data->boopsi_tagdrawinfo,data->boopsi_taglist))) tag->ti_Data = (IPTR)_dri(obj);
 
 	if ((data->boopsi_object = NewObjectA(data->boopsi_class, data->boopsi_classid, data->boopsi_taglist)))
 	{
@@ -351,7 +351,7 @@ _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj)));
     return rc;
 }
 
-ULONG Boopsi__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Boopsi__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     DoSuperMethodA(cl, obj, (Msg)msg);
@@ -361,7 +361,7 @@ ULONG Boopsi__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     return 1;
 }
 
-ULONG Boopsi__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+IPTR Boopsi__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     if (data->boopsi_object)
@@ -369,7 +369,7 @@ ULONG Boopsi__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
         struct TagItem *tags,*tag;
 
         /* Now fill in the initial remember tag datas in our remember tag list */
-	for (tags = data->remember; (tag = NextTagItem(&tags)); )
+	for (tags = data->remember; (tag = NextTagItem((const struct TagItem**)&tags)); )
 	{
             GetAttr(tag->ti_Tag, data->boopsi_object, &tag->ti_Data);
 	}
@@ -382,7 +382,7 @@ ULONG Boopsi__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-ULONG Boopsi__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR Boopsi__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     //struct Boopsi_DATA *data = INST_DATA(cl, obj);
     

@@ -41,7 +41,7 @@ extern struct Library *MUIMasterBase;
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
+IPTR Numeric__OM_NEW(struct IClass *cl, Object * obj, struct opSet *msg)
 {
     struct MUI_NumericData *data;
     struct TagItem *tags, *tag;
@@ -102,7 +102,7 @@ static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static IPTR Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
+IPTR Numeric__OM_SET(struct IClass *cl, Object * obj, struct opSet *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     struct TagItem *tags, *tag;
@@ -185,7 +185,7 @@ static IPTR Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static ULONG  Numeric_Get(struct IClass *cl, Object * obj, struct opGet *msg)
+IPTR Numeric__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     IPTR *store = msg->opg_Storage;
@@ -236,7 +236,7 @@ static ULONG  Numeric_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static IPTR Numeric_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Numeric__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
 
@@ -247,7 +247,7 @@ static IPTR Numeric_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static ULONG Numeric_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Numeric__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
 
@@ -267,7 +267,7 @@ static ULONG Numeric_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *ms
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static ULONG Numeric_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Numeric__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
 
@@ -278,7 +278,7 @@ static ULONG Numeric_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
-static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR Numeric__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
 
@@ -375,7 +375,7 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 /**************************************************************************
  MUIM_Numeric_Decrease
 **************************************************************************/
-static ULONG  Numeric_Decrease(struct IClass *cl, Object * obj, struct MUIP_Numeric_Decrease *msg)
+IPTR Numeric__MUIM_Decrease(struct IClass *cl, Object * obj, struct MUIP_Numeric_Decrease *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     LONG newval = CLAMP(data->value - msg->amount, data->min, data->max);
@@ -386,7 +386,7 @@ static ULONG  Numeric_Decrease(struct IClass *cl, Object * obj, struct MUIP_Nume
 /**************************************************************************
  MUIM_Numeric_Increase
 **************************************************************************/
-static ULONG Numeric_Increase(struct IClass *cl, Object * obj, struct MUIP_Numeric_Increase *msg)
+IPTR Numeric__MUIM_Increase(struct IClass *cl, Object * obj, struct MUIP_Numeric_Increase *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     LONG newval = CLAMP(data->value + msg->amount, data->min, data->max);
@@ -399,7 +399,7 @@ static ULONG Numeric_Increase(struct IClass *cl, Object * obj, struct MUIP_Numer
 /**************************************************************************
  MUIM_Numeric_ScaleToValue
 **************************************************************************/
-static ULONG Numeric_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_Numeric_ScaleToValue *msg)
+IPTR Numeric__MUIM_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_Numeric_ScaleToValue *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     LONG min, max;
@@ -426,7 +426,7 @@ static ULONG Numeric_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_N
 /**************************************************************************
  MUIM_Numeric_SetDefault
 **************************************************************************/
-static IPTR Numeric_SetDefault(struct IClass *cl, Object * obj, Msg msg)
+IPTR Numeric__MUIM_SetDefault(struct IClass *cl, Object * obj, Msg msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
 
@@ -438,7 +438,7 @@ static IPTR Numeric_SetDefault(struct IClass *cl, Object * obj, Msg msg)
 /**************************************************************************
  MUIM_Numeric_Stringify
 **************************************************************************/
-static IPTR Numeric_Stringify(struct IClass *cl, Object * obj, struct MUIP_Numeric_Stringify *msg)
+IPTR Numeric__MUIM_Stringify(struct IClass *cl, Object * obj, struct MUIP_Numeric_Stringify *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
 
@@ -452,7 +452,7 @@ static IPTR Numeric_Stringify(struct IClass *cl, Object * obj, struct MUIP_Numer
 /**************************************************************************
  MUIM_Numeric_ValueToScale
 **************************************************************************/
-static LONG  Numeric_ValueToScale(struct IClass *cl, Object * obj, struct MUIP_Numeric_ValueToScale *msg)
+IPTR Numeric__MUIM_ValueToScale(struct IClass *cl, Object * obj, struct MUIP_Numeric_ValueToScale *msg)
 {
     LONG val;
     struct MUI_NumericData *data = INST_DATA(cl, obj);
@@ -478,7 +478,7 @@ static LONG  Numeric_ValueToScale(struct IClass *cl, Object * obj, struct MUIP_N
 /**************************************************************************
  MUIM_Numeric_ValueToScaleExt
 **************************************************************************/
-static LONG  Numeric_ValueToScaleExt(struct IClass *cl, Object * obj, struct MUIP_Numeric_ValueToScaleExt *msg)
+IPTR Numeric__MUIM_ValueToScaleExt(struct IClass *cl, Object * obj, struct MUIP_Numeric_ValueToScaleExt *msg)
 {
     LONG scale;
     LONG value;
@@ -506,7 +506,7 @@ static LONG  Numeric_ValueToScaleExt(struct IClass *cl, Object * obj, struct MUI
 /**************************************************************************
  MUIM_Export - to export an objects "contents" to a dataspace object.
 **************************************************************************/
-static ULONG Numeric_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+IPTR Numeric__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
 #if 0
     struct MUI_NumericData *data = INST_DATA(cl, obj);
@@ -524,7 +524,7 @@ static ULONG Numeric_Export(struct IClass *cl, Object *obj, struct MUIP_Export *
 /**************************************************************************
  MUIM_Import - to import an objects "contents" from a dataspace object.
 **************************************************************************/
-static ULONG Numeric_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+IPTR Numeric__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
 #if 0
     struct MUI_NumericData *data = INST_DATA(cl, obj);
@@ -549,22 +549,23 @@ BOOPSI_DISPATCHER(IPTR, Numeric_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Numeric_New(cl, obj, (APTR)msg);
-	case OM_SET: return Numeric_Set(cl, obj, (APTR)msg);
-	case OM_GET: return Numeric_Get(cl, obj, (APTR)msg);
-	case OM_DISPOSE: return Numeric_Dispose(cl, obj, (APTR)msg);
-	case MUIM_Setup: return Numeric_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup: return Numeric_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_HandleEvent:  return Numeric_HandleEvent(cl, obj, (APTR)msg);
-	case MUIM_Numeric_Decrease: return Numeric_Decrease(cl, obj, (APTR)msg);
-	case MUIM_Numeric_Increase: return Numeric_Increase(cl, obj, (APTR)msg);
-	case MUIM_Numeric_ScaleToValue: return Numeric_ScaleToValue(cl, obj, (APTR)msg);
-	case MUIM_Numeric_SetDefault: return Numeric_SetDefault(cl, obj, (APTR)msg);
-	case MUIM_Numeric_Stringify: return Numeric_Stringify(cl, obj, (APTR)msg);
-	case MUIM_Numeric_ValueToScale: return (IPTR)Numeric_ValueToScale(cl, obj, (APTR)msg);
-	case MUIM_Numeric_ValueToScaleExt: return (IPTR)Numeric_ValueToScaleExt(cl, obj, (APTR)msg);
-	case MUIM_Export: return Numeric_Export(cl, obj, (APTR)msg);
-	case MUIM_Import: return Numeric_Import(cl, obj, (APTR)msg);	
+	case OM_NEW:                       return Numeric__OM_NEW(cl, obj, (APTR)msg);
+	case OM_SET:                       return Numeric__OM_SET(cl, obj, (APTR)msg);
+	case OM_GET:                       return Numeric__OM_GET(cl, obj, (APTR)msg);
+	case OM_DISPOSE:                   return Numeric__OM_DISPOSE(cl, obj, (APTR)msg);
+
+	case MUIM_Setup:                   return Numeric__MUIM_Setup(cl, obj, (APTR)msg);
+	case MUIM_Cleanup:                 return Numeric__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_HandleEvent:             return Numeric__MUIM_HandleEvent(cl, obj, (APTR)msg);
+	case MUIM_Numeric_Decrease:        return Numeric__MUIM_Decrease(cl, obj, (APTR)msg);
+	case MUIM_Numeric_Increase:        return Numeric__MUIM_Increase(cl, obj, (APTR)msg);
+	case MUIM_Numeric_ScaleToValue:    return Numeric__MUIM_ScaleToValue(cl, obj, (APTR)msg);
+	case MUIM_Numeric_SetDefault:      return Numeric__MUIM_SetDefault(cl, obj, (APTR)msg);
+	case MUIM_Numeric_Stringify:       return Numeric__MUIM_Stringify(cl, obj, (APTR)msg);
+	case MUIM_Numeric_ValueToScale:    return Numeric__MUIM_ValueToScale(cl, obj, (APTR)msg);
+	case MUIM_Numeric_ValueToScaleExt: return Numeric__MUIM_ValueToScaleExt(cl, obj, (APTR)msg);
+	case MUIM_Export:                  return Numeric__MUIM_Export(cl, obj, (APTR)msg);
+	case MUIM_Import:                  return Numeric__MUIM_Import(cl, obj, (APTR)msg);	
     }
 
     return DoSuperMethodA(cl, obj, msg);

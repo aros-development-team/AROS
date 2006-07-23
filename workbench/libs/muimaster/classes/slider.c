@@ -73,7 +73,7 @@ Slider.mui/MUIA_Slider_Reverse      d
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
+IPTR Slider__OM_NEW(struct IClass *cl, Object * obj, struct opSet *msg)
 {
     struct MUI_SliderData *data;
     struct TagItem *tags, *tag;
@@ -124,7 +124,7 @@ static IPTR Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
 /**************************************************************************
  MUIM_Show
 **************************************************************************/
-static IPTR Slider_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Slider__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
     struct TagItem *tags, *tag;
@@ -148,7 +148,7 @@ static IPTR Slider_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static IPTR Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Slider__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *knob_frame;
@@ -211,7 +211,7 @@ static IPTR Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static IPTR Slider_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Slider__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
 
@@ -227,7 +227,7 @@ static IPTR Slider_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
-static IPTR Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Slider__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
     LONG min,max;
@@ -262,7 +262,7 @@ static IPTR Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 /**************************************************************************
  MUIM_Show
 **************************************************************************/
-static IPTR Slider_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR Slider__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
 
@@ -275,7 +275,7 @@ static IPTR Slider_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 /**************************************************************************
  MUIM_Hide
 **************************************************************************/
-static IPTR Slider_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
+IPTR Slider__MUIM_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
 
@@ -293,7 +293,7 @@ static IPTR Slider_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
-static IPTR Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *knob_frame;
@@ -367,7 +367,7 @@ static IPTR Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
-static IPTR Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
 
@@ -481,15 +481,15 @@ BOOPSI_DISPATCHER(IPTR, Slider_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Slider_New(cl, obj, (struct opSet *)msg);
-	case OM_SET: return Slider_Set(cl, obj, (struct opSet *)msg);
-	case MUIM_Setup: return Slider_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup: return Slider_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_Show: return Slider_Show(cl, obj, (APTR)msg);
-	case MUIM_Hide: return Slider_Hide(cl, obj, (APTR)msg);
-	case MUIM_AskMinMax: return Slider_AskMinMax(cl, obj, (APTR)msg);
-	case MUIM_Draw: return Slider_Draw(cl, obj, (APTR)msg);
-	case MUIM_HandleEvent: return Slider_HandleEvent(cl, obj, (APTR)msg);
+	case OM_NEW:           return Slider__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_SET:           return Slider__OM_SET(cl, obj, (struct opSet *)msg);
+	case MUIM_Setup:       return Slider__MUIM_Setup(cl, obj, (APTR)msg);
+	case MUIM_Cleanup:     return Slider__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_Show:        return Slider__MUIM_Show(cl, obj, (APTR)msg);
+	case MUIM_Hide:        return Slider__MUIM_Hide(cl, obj, (APTR)msg);
+	case MUIM_AskMinMax:   return Slider__MUIM_AskMinMax(cl, obj, (APTR)msg);
+	case MUIM_Draw:        return Slider__MUIM_Draw(cl, obj, (APTR)msg);
+	case MUIM_HandleEvent: return Slider__MUIM_HandleEvent(cl, obj, (APTR)msg);
     }
     return DoSuperMethodA(cl, obj, msg);
 }

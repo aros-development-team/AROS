@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -108,7 +106,7 @@ ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ListviewData   *data;
     struct TagItem *tag, *tags;
@@ -155,7 +153,7 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->hook.h_Data = data;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -190,7 +188,7 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static IPTR Listview_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Listview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
 
@@ -202,8 +200,8 @@ BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Listview_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Listview_Dispose(cl,obj,msg);
+	case OM_NEW:     return Listview__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Listview__OM_DISPOSE(cl,obj,msg);
 	case MUIM_List_Clear:
 	case MUIM_List_CreateImage:
 	case MUIM_List_DeleteImage:

@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,7 +40,7 @@ struct MUI_DataspaceData
     APTR current_pool;
 };
 
-static ULONG Dataspace_New (struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Dataspace__OM_NEW (struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_DataspaceData *data;
     struct TagItem *tags,*tag;
@@ -53,7 +51,7 @@ static ULONG Dataspace_New (struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -70,7 +68,7 @@ static ULONG Dataspace_New (struct IClass *cl, Object *obj, struct opSet *msg)
 	if (!(data->pool_allocated = CreatePool(0,4096,4096)))
 	{
 	    CoerceMethod(cl,obj,OM_DISPOSE);
-	    return NULL;
+	    return (IPTR)NULL;
 	}
 	data->current_pool = data->pool_allocated;
     }
@@ -79,11 +77,11 @@ static ULONG Dataspace_New (struct IClass *cl, Object *obj, struct opSet *msg)
 	data->current_pool = data->pool;
     }
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 
-static ULONG  Dataspace_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Dataspace__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
     if (data->pool_allocated) DeletePool(data->pool_allocated);
@@ -91,7 +89,7 @@ static ULONG  Dataspace_Dispose(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-static ULONG Dataspace_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Add *msg)
+IPTR Dataspace__MUIM_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Add *msg)
 {
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
     struct Dataspace_Node *replace;
@@ -126,7 +124,7 @@ static ULONG Dataspace_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace
     return 1;
 }
 
-static ULONG Dataspace_Clear(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Clear *msg)
+IPTR Dataspace__MUIM_Clear(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Clear *msg)
 {
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
     struct Dataspace_Node *node;
@@ -143,7 +141,7 @@ static ULONG Dataspace_Clear(struct IClass *cl, Object *obj, struct MUIP_Dataspa
     return 1;
 }
 
-static ULONG Dataspace_Find(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Find *msg)
+IPTR Dataspace__MUIM_Find(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Find *msg)
 {
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
     struct Dataspace_Node *find;
@@ -158,15 +156,15 @@ static ULONG Dataspace_Find(struct IClass *cl, Object *obj, struct MUIP_Dataspac
 	find = Node_Next(find);
     }
 	
-    return NULL;
+    return (IPTR)NULL;
 }
 
-static ULONG Dataspace_Merge(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Merge *msg)
+IPTR Dataspace__MUIM_Merge(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Merge *msg)
 {
     return 1;
 }
 
-static ULONG Dataspace_Remove(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Remove *msg)
+IPTR Dataspace__MUIM_Remove(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Remove *msg)
 {
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
     struct Dataspace_Node *node;
@@ -186,7 +184,7 @@ static ULONG Dataspace_Remove(struct IClass *cl, Object *obj, struct MUIP_Datasp
     return 0;
 }
 
-static LONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Dataspace_ReadIFF *msg)
+IPTR Dataspace__MUIM_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Dataspace_ReadIFF *msg)
 {
     struct ContextNode *cn;
     UBYTE *buffer, *p;
@@ -233,7 +231,7 @@ static LONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Datasp
     return 0;
 }
 
-static LONG Dataspace_WriteIFF(struct IClass *cl, Object *obj, struct MUIP_Dataspace_WriteIFF *msg)
+IPTR Dataspace__MUIM_WriteIFF(struct IClass *cl, Object *obj, struct MUIP_Dataspace_WriteIFF *msg)
 {
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
     struct Dataspace_Node *iter;
@@ -273,21 +271,21 @@ BOOPSI_DISPATCHER(IPTR, Dataspace_Dispatcher, cl, obj, msg)
 	/* Whenever an object shall be created using NewObject(), it will be
 	** sent a OM_NEW method.
 	*/
-	case OM_NEW: return Dataspace_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return Dataspace_Dispose(cl, obj, msg);
+	case OM_NEW: return Dataspace__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE: return Dataspace__OM_DISPOSE(cl, obj, msg);
 	case MUIM_Dataspace_Add:
 	    DoMethod(obj, MUIM_Semaphore_Obtain);
-	    res = Dataspace_Add(cl, obj, (APTR)msg);
+	    res = Dataspace__MUIM_Add(cl, obj, (APTR)msg);
 	    DoMethod(obj, MUIM_Semaphore_Release);
 	    return res;
 	case MUIM_Dataspace_Clear:
 	    DoMethod(obj, MUIM_Semaphore_Obtain);
-	    res = Dataspace_Clear(cl, obj, (APTR)msg);
+	    res = Dataspace__MUIM_Clear(cl, obj, (APTR)msg);
 	    DoMethod(obj, MUIM_Semaphore_Release);
 	    return res;
 	case MUIM_Dataspace_Find:
 	    DoMethod(obj, MUIM_Semaphore_ObtainShared);
-	    res = Dataspace_Find(cl, obj, (APTR)msg);
+	    res = Dataspace__MUIM_Find(cl, obj, (APTR)msg);
 	    DoMethod(obj, MUIM_Semaphore_Release);
 	    /* now that sem is released, imagine that the object gets freed ...
 	     * it really needs that the caller locks the object,
@@ -296,22 +294,22 @@ BOOPSI_DISPATCHER(IPTR, Dataspace_Dispatcher, cl, obj, msg)
 	    return res;
 	case MUIM_Dataspace_Merge:
 	    DoMethod(obj, MUIM_Semaphore_Obtain);
-	    res = Dataspace_Merge(cl, obj, (APTR)msg);
+	    res = Dataspace__MUIM_Merge(cl, obj, (APTR)msg);
 	    DoMethod(obj, MUIM_Semaphore_Release);
 	    return res;
 	case MUIM_Dataspace_Remove:
 	    DoMethod(obj, MUIM_Semaphore_Obtain);
-	    res = Dataspace_Remove(cl, obj, (APTR)msg);
+	    res = Dataspace__MUIM_Remove(cl, obj, (APTR)msg);
 	    DoMethod(obj, MUIM_Semaphore_Release);
 	    return res;
 	case MUIM_Dataspace_ReadIFF:
 	    DoMethod(obj, MUIM_Semaphore_Obtain);
-	    res = (IPTR)Dataspace_ReadIFF(cl, obj, (APTR)msg);
+	    res = (IPTR)Dataspace__MUIM_ReadIFF(cl, obj, (APTR)msg);
 	    DoMethod(obj, MUIM_Semaphore_Release);
 	    return res;
 	case MUIM_Dataspace_WriteIFF:
 	    DoMethod(obj, MUIM_Semaphore_Obtain);
-	    res = (IPTR)Dataspace_WriteIFF(cl, obj, (APTR)msg);
+	    res = (IPTR)Dataspace__MUIM_WriteIFF(cl, obj, (APTR)msg);
 	    DoMethod(obj, MUIM_Semaphore_Release);
 	    return res;
     }

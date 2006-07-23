@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,7 +35,7 @@ static IPTR ListDisplayFunc(struct Hook *hook, char **array, char *entry)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR Settings_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Settings__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_Settings *data;
     struct TagItem  	    *tag, *tags;
@@ -91,8 +89,7 @@ BOOPSI_DISPATCHER(IPTR, Settings_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:
-	    return Settings_New(cl, obj, (struct opSet *)msg);
+	case OM_NEW: return Settings__OM_NEW(cl, obj, (struct opSet *)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);

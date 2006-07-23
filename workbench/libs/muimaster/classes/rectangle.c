@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2003, The AROS Development Team.
+    Copyright © 2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -68,16 +68,12 @@ IPTR Rectangle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
 	case MUIA_Rectangle_BarTitle:
-	    if (tag->ti_Data)
-	    {
-		if ((data->BarTitle = (STRPTR)mui_alloc(strlen((char*)tag->ti_Data)+1)))
-		    strcpy(data->BarTitle,(char*)tag->ti_Data);
-	    }
+	    data->BarTitle = StrDup((STRPTR)tag->ti_Data);
 	    break;
 	case MUIA_Rectangle_HBar:
 	    data->Type = RECTANGLE_TYPE_HBAR;
@@ -90,7 +86,7 @@ IPTR Rectangle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     D(bug("muimaster.library/rectangle.c: New Rectangle Object at 0x%lx\n",obj));
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 IPTR Rectangle__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
@@ -116,20 +112,23 @@ IPTR Rectangle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     {
     case MUIA_Version:
 	STORE = __version;
-	return(TRUE);
+	return TRUE;
+
     case MUIA_Revision:
 	STORE = __revision;
-	return(TRUE);
+	return TRUE;
 
     case MUIA_Rectangle_BarTitle:
-	STORE = (ULONG)data->BarTitle;
-	return(TRUE);
+	STORE = (IPTR)data->BarTitle;
+	return TRUE;
+
     case MUIA_Rectangle_HBar:
 	STORE = (data->Type == RECTANGLE_TYPE_HBAR);
-	return(TRUE);
+	return TRUE;
+
     case MUIA_Rectangle_VBar:
 	STORE = (data->Type == RECTANGLE_TYPE_VBAR);
-	return(TRUE);
+	return TRUE;
     }
 
 /* our handler didn't understand the attribute, we simply pass

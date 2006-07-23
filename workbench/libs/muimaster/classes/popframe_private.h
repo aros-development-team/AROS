@@ -6,7 +6,7 @@ struct Popframe_DATA
 {
     Object *wnd;
     Object *frameadjust;
-    CONST_STRPTR wintitle;
+    STRPTR wintitle;
 };
 
 #endif /* _POPFRAME_PRIVATE_H_ */

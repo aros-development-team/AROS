@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -190,7 +188,7 @@ static BOOL make_bitmap(struct IClass *cl, Object *obj)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR Bodychunk_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Bodychunk__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_BodychunkData    *data;
     struct TagItem  	    	*tag, *tags;
@@ -202,7 +200,7 @@ static IPTR Bodychunk_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -239,7 +237,7 @@ static IPTR Bodychunk_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static IPTR Bodychunk_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Bodychunk__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_BodychunkData *data = INST_DATA(cl, obj);
 
@@ -255,13 +253,13 @@ static IPTR Bodychunk_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static IPTR Bodychunk_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Bodychunk__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_BodychunkData    *data  = INST_DATA(cl, obj);
     struct TagItem          	*tags  = msg->ops_AttrList;
     struct TagItem          	*tag;
 
-    while ((tag = NextTagItem(&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem**)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -298,7 +296,7 @@ static IPTR Bodychunk_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static IPTR Bodychunk_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Bodychunk__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #define STORE *(msg->opg_Storage)
 
@@ -331,7 +329,7 @@ static IPTR Bodychunk_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static IPTR Bodychunk_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Bodychunk__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_BodychunkData *data = INST_DATA(cl, obj);
 
@@ -355,7 +353,7 @@ static IPTR Bodychunk_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static IPTR Bodychunk_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Bodychunk__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_BodychunkData *data = INST_DATA(cl, obj);
     IPTR    	    	      retval;
@@ -379,24 +377,12 @@ BOOPSI_DISPATCHER(IPTR, Bodychunk_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:
-	    return Bodychunk_New(cl, obj, (struct opSet *)msg);
-	    
-	case OM_DISPOSE:
-	    return Bodychunk_Dispose(cl, obj, msg);
-	    
-	case OM_SET:
-	    return Bodychunk_Set(cl, obj, (struct opSet *)msg);
-	    
-	case OM_GET:
-	    return Bodychunk_Get(cl, obj, (struct opGet *)msg);
-
-	case MUIM_Setup:
-	    return Bodychunk_Setup(cl, obj, (struct MUIP_Setup *)msg);
-	    
-	case MUIM_Cleanup:
-	    return Bodychunk_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
-	    	       
+	case OM_NEW:       return Bodychunk__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:   return Bodychunk__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:       return Bodychunk__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:       return Bodychunk__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup:   return Bodychunk__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+	case MUIM_Cleanup: return Bodychunk__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);

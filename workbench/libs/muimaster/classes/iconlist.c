@@ -446,10 +446,10 @@ if (toplace_rect.MaxY - data->view_y > data->height)
 }
 */
 /**************************************************************************
-  Place icons with NO_ICON_POSITION coords somewhere
+  MUIM_PositionIcons - Place icons with NO_ICON_POSITION coords somewhere
  **************************************************************************/
 
-static ULONG IconList_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_IconList_PositionIcons *msg)
+IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_IconList_PositionIcons *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct IconEntry *icon;
@@ -547,10 +547,10 @@ IconList_RethinkDimensions(obj, data, NULL);
 /**************************************************************************
   OM_NEW
  **************************************************************************/
-static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconData  *data;
-    struct TagItem  	    *tag, *tags;
+    //struct TagItem  	    *tag, *tags;
     struct TextFont      *WindowFont = NULL;
 
     WindowFont = (struct TextFont *) GetTagData(MUIA_Font, (IPTR) NULL, msg->ops_AttrList);
@@ -592,7 +592,7 @@ D(bug("[iconlist] Used Font = %x\n", data->IconFont));
 /**************************************************************************
   OM_DISPOSE
  **************************************************************************/
-static IPTR IconList_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR IconList__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct IconEntry *node;
@@ -614,7 +614,7 @@ static IPTR IconList_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
   OM_SET
  **************************************************************************/
-static IPTR IconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR IconList__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct TagItem  	*tag, *tags;
@@ -626,7 +626,7 @@ static IPTR IconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Font:
-	       data->IconFont = tag->ti_Data;
+	       data->IconFont = (struct TextFont*)tag->ti_Data;
 	       break;
 
 	    case    MUIA_IconList_Left:
@@ -660,7 +660,7 @@ static IPTR IconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
   OM_GET
  **************************************************************************/
-static ULONG IconList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR IconList__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     /* small macro to simplify return value storage */
 #define STORE *(msg->opg_Storage)
@@ -684,7 +684,7 @@ static ULONG IconList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
   MUIM_Setup
  **************************************************************************/
-static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR IconList__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct IconEntry *node;
@@ -715,7 +715,7 @@ static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 /**************************************************************************
   MUIM_Show
  **************************************************************************/
-static IPTR IconList_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR IconList__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     WORD newleft, newtop;
@@ -747,7 +747,7 @@ static IPTR IconList_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 /**************************************************************************
   MUIM_Cleanup
  **************************************************************************/
-static ULONG IconList_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR IconList__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
 
@@ -772,7 +772,7 @@ static ULONG IconList_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanu
 /**************************************************************************
   MUIM_AskMinMax
  **************************************************************************/
-static ULONG IconList_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR IconList__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     ULONG rc = DoSuperMethodA(cl, obj, (Msg) msg);
 
@@ -791,7 +791,7 @@ static ULONG IconList_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
 /**************************************************************************
   MUIM_Layout
  **************************************************************************/
-static ULONG IconList_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
+IPTR IconList__MUIM_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl,obj,(Msg)msg);
@@ -803,7 +803,7 @@ static ULONG IconList_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *
 /**************************************************************************
   MUIM_Draw
  **************************************************************************/
-static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     APTR clip;
@@ -1011,7 +1011,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
   MUIM_IconList_Refresh
   Implemented by subclasses
  **************************************************************************/
-static ULONG IconList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
+IPTR IconList__MUIM_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
 {
     return 1;
 }
@@ -1019,7 +1019,7 @@ static ULONG IconList_Update(struct IClass *cl, Object *obj, struct MUIP_IconLis
 /**************************************************************************
   MUIM_IconList_Clear
  **************************************************************************/
-static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList_Clear *msg)
+IPTR IconList__MUIM_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList_Clear *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct IconEntry *node;
@@ -1052,7 +1052,7 @@ static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList
   MUIM_IconList_Add.
   Returns 0 on failure otherwise 1
  **************************************************************************/
-static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Add *msg)
+IPTR IconList__MUIM_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Add *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct IconEntry *entry;
@@ -1227,7 +1227,7 @@ static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheelx, LONG wheely
 /**************************************************************************
   MUIM_HandleEvent
  **************************************************************************/
-static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
 
@@ -1438,7 +1438,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 /**************************************************************************
   MUIM_IconList_NextSelected
  **************************************************************************/
-static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_IconList_NextSelected *msg)
+IPTR IconList__MUIM_NextSelected(struct IClass *cl, Object *obj, struct MUIP_IconList_NextSelected *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct IconEntry *node;
@@ -1482,7 +1482,7 @@ static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_I
 /**************************************************************************
   MUIM_CreateDragImage
  **************************************************************************/
-static ULONG IconList_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
+IPTR IconList__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct MUI_DragImage *img;
@@ -1523,7 +1523,7 @@ static ULONG IconList_CreateDragImage(struct IClass *cl, Object *obj, struct MUI
 /**************************************************************************
   MUIM_DeleteDragImage
  **************************************************************************/
-static ULONG IconList_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_DeleteDragImage *msg)
+IPTR IconList__MUIM_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_DeleteDragImage *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
 
@@ -1540,7 +1540,7 @@ static ULONG IconList_DeleteDragImage(struct IClass *cl, Object *obj, struct MUI
 /**************************************************************************
   MUIM_DragQuery
  **************************************************************************/
-static ULONG IconList_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
+IPTR IconList__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
 {
     if (msg->obj == obj) return MUIV_DragQuery_Accept;
     else
@@ -1566,7 +1566,7 @@ static ULONG IconList_DragQuery(struct IClass *cl, Object *obj, struct MUIP_Drag
 /**************************************************************************
   MUIM_DragDrop
  **************************************************************************/
-static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
+IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
 
@@ -1626,7 +1626,7 @@ static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
 /**************************************************************************
   MUIM_UnselectAll
  **************************************************************************/
-static ULONG IconList_UnselectAll(struct IClass *cl, Object *obj, Msg msg)
+IPTR IconList__MUIM_UnselectAll(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct IconEntry *node;
@@ -1802,9 +1802,9 @@ return 1;
 
 */
 /**************************************************************************
-  ric - sortsort
+  MUIM_Sort - sortsort
  **************************************************************************/
-ULONG IconList_Sort(struct IClass *cl, Object *obj, struct MUIP_IconList_Sort *msg)
+IPTR IconList__MUIM_Sort(struct IClass *cl, Object *obj, struct MUIP_IconList_Sort *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct IconEntry *entry,*icon1,*icon2;
@@ -1915,9 +1915,9 @@ ULONG IconList_Sort(struct IClass *cl, Object *obj, struct MUIP_IconList_Sort *m
 }
 
 /**************************************************************************
-  ric - set our sorting bits
+  MUIM_SetSortBits - set our sorting bits
  **************************************************************************/
-ULONG IconList_SetSortBits(struct IClass *cl, Object *obj, struct MUIP_IconList_SetSortBits *msg)
+IPTR IconList__MUIM_SetSortBits(struct IClass *cl, Object *obj, struct MUIP_IconList_SetSortBits *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     data->sort_bits = msg->sort_bits;
@@ -1925,9 +1925,9 @@ ULONG IconList_SetSortBits(struct IClass *cl, Object *obj, struct MUIP_IconList_
 }
 
 /**************************************************************************
-  ric - return our sorting bits
+  MUIM_GetSortBits - return our sorting bits
  **************************************************************************/
-ULONG IconList_GetSortBits(struct IClass *cl, Object *obj, struct MUIP_IconList_GetSortBits *msg)
+IPTR IconList__MUIM_GetSortBits(struct IClass *cl, Object *obj, struct MUIP_IconList_GetSortBits *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     return data->sort_bits;
@@ -1939,7 +1939,7 @@ ULONG IconList_GetSortBits(struct IClass *cl, Object *obj, struct MUIP_IconList_
   orginal drop object) we must do it here manually to be compatible with
   MUI. Maybe Zune should fix this bug somewhen.
  **************************************************************************/
-static ULONG IconList_DragReport(struct IClass *cl, Object *obj, struct MUIP_DragReport *msg)
+IPTR IconList__MUIM_DragReport(struct IClass *cl, Object *obj, struct MUIP_DragReport *msg)
 {
     struct Window *wnd = _window(obj);
     struct Layer *l;
@@ -1953,32 +1953,32 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return IconList_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return IconList_Dispose(cl,obj, msg);
-	case OM_SET: return IconList_Set(cl,obj,(struct opSet *)msg);
-	case OM_GET: return IconList_Get(cl,obj,(struct opGet *)msg);
-	case MUIM_Setup: return IconList_Setup(cl,obj,(struct MUIP_Setup *)msg);
-	case MUIM_Show: return IconList_Show(cl,obj,(struct MUIP_Show *)msg);
-	case MUIM_Cleanup: return IconList_Cleanup(cl,obj,(struct MUIP_Cleanup *)msg);
-	case MUIM_AskMinMax: return IconList_AskMinMax(cl,obj,(struct MUIP_AskMinMax *)msg);
-	case MUIM_Draw: return IconList_Draw(cl,obj,(struct MUIP_Draw *)msg);
-	case MUIM_Layout: return IconList_Layout(cl,obj,(struct MUIP_Layout *)msg);
-	case MUIM_HandleEvent: return IconList_HandleEvent(cl,obj,(struct MUIP_HandleEvent *)msg);
-	case MUIM_CreateDragImage: return IconList_CreateDragImage(cl,obj,(APTR)msg);
-	case MUIM_DeleteDragImage: return IconList_DeleteDragImage(cl,obj,(APTR)msg);
-	case MUIM_DragQuery: return IconList_DragQuery(cl,obj,(APTR)msg);
-	case MUIM_DragReport: return IconList_DragReport(cl,obj,(APTR)msg);
-	case MUIM_DragDrop: return IconList_DragDrop(cl,obj,(APTR)msg);
+	case OM_NEW:                      return IconList__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:                  return IconList__OM_DISPOSE(cl,obj, msg);
+	case OM_SET:                      return IconList__OM_SET(cl,obj,(struct opSet *)msg);
+	case OM_GET:                      return IconList__OM_GET(cl,obj,(struct opGet *)msg);
+	case MUIM_Setup:                  return IconList__MUIM_Setup(cl,obj,(struct MUIP_Setup *)msg);
+	case MUIM_Show:                   return IconList__MUIM_Show(cl,obj,(struct MUIP_Show *)msg);
+	case MUIM_Cleanup:                return IconList__MUIM_Cleanup(cl,obj,(struct MUIP_Cleanup *)msg);
+	case MUIM_AskMinMax:              return IconList__MUIM_AskMinMax(cl,obj,(struct MUIP_AskMinMax *)msg);
+	case MUIM_Draw:                   return IconList__MUIM_Draw(cl,obj,(struct MUIP_Draw *)msg);
+	case MUIM_Layout:                 return IconList__MUIM_Layout(cl,obj,(struct MUIP_Layout *)msg);
+	case MUIM_HandleEvent:            return IconList__MUIM_HandleEvent(cl,obj,(struct MUIP_HandleEvent *)msg);
+	case MUIM_CreateDragImage:        return IconList__MUIM_CreateDragImage(cl,obj,(APTR)msg);
+	case MUIM_DeleteDragImage:        return IconList__MUIM_DeleteDragImage(cl,obj,(APTR)msg);
+	case MUIM_DragQuery:              return IconList__MUIM_DragQuery(cl,obj,(APTR)msg);
+	case MUIM_DragReport:             return IconList__MUIM_DragReport(cl,obj,(APTR)msg);
+	case MUIM_DragDrop:               return IconList__MUIM_DragDrop(cl,obj,(APTR)msg);
 
-	case MUIM_IconList_Update: return IconList_Update(cl,obj,(APTR)msg);
-	case MUIM_IconList_Clear: return IconList_Clear(cl,obj,(APTR)msg);
-	case MUIM_IconList_Add: return IconList_Add(cl,obj,(APTR)msg);
-	case MUIM_IconList_NextSelected: return IconList_NextSelected(cl,obj,(APTR)msg);
-	case MUIM_IconList_UnselectAll: return IconList_UnselectAll(cl,obj,(APTR)msg);
-	case MUIM_IconList_Sort: return IconList_Sort(cl,obj,(APTR)msg);
-	case MUIM_IconList_GetSortBits: return IconList_GetSortBits(cl,obj,(APTR)msg);
-	case MUIM_IconList_SetSortBits: return IconList_SetSortBits(cl,obj,(APTR)msg);
-	case MUIM_IconList_PositionIcons: return IconList_PositionIcons(cl,obj,(APTR)msg);
+	case MUIM_IconList_Update:        return IconList__MUIM_Update(cl,obj,(APTR)msg);
+	case MUIM_IconList_Clear:         return IconList__MUIM_Clear(cl,obj,(APTR)msg);
+	case MUIM_IconList_Add:           return IconList__MUIM_Add(cl,obj,(APTR)msg);
+	case MUIM_IconList_NextSelected:  return IconList__MUIM_NextSelected(cl,obj,(APTR)msg);
+	case MUIM_IconList_UnselectAll:   return IconList__MUIM_UnselectAll(cl,obj,(APTR)msg);
+	case MUIM_IconList_Sort:          return IconList__MUIM_Sort(cl,obj,(APTR)msg);
+	case MUIM_IconList_GetSortBits:   return IconList__MUIM_GetSortBits(cl,obj,(APTR)msg);
+	case MUIM_IconList_SetSortBits:   return IconList__MUIM_SetSortBits(cl,obj,(APTR)msg);
+	case MUIM_IconList_PositionIcons: return IconList__MUIM_PositionIcons(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
@@ -1989,7 +1989,7 @@ BOOPSI_DISPATCHER_END
 /**************************************************************************
   OM_NEW
  **************************************************************************/
-static IPTR IconDrawerList_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR IconDrawerList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconDrawerData   *data;
     struct TagItem  	    *tag, *tags;
@@ -2017,7 +2017,7 @@ static IPTR IconDrawerList_New(struct IClass *cl, Object *obj, struct opSet *msg
 /**************************************************************************
   OM_DISPOSE
  **************************************************************************/
-static IPTR IconDrawerList_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR IconDrawerList__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
 
@@ -2028,7 +2028,7 @@ static IPTR IconDrawerList_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
   OM_SET
  **************************************************************************/
-static IPTR IconDrawerList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR IconDrawerList__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconDrawerData   *data = INST_DATA(cl, obj);
     struct TagItem  	    *tag, *tags;
@@ -2052,7 +2052,7 @@ static IPTR IconDrawerList_Set(struct IClass *cl, Object *obj, struct opSet *msg
 /**************************************************************************
   OM_GET
  **************************************************************************/
-static ULONG IconDrawerList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR IconDrawerList__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     /* small macro to simplify return value storage */
 #define STORE *(msg->opg_Storage)
@@ -2071,7 +2071,7 @@ static ULONG IconDrawerList_Get(struct IClass *cl, Object *obj, struct opGet *ms
 /**************************************************************************
   MUIM_IconList_Update
  **************************************************************************/
-ULONG IconDrawerList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
+IPTR IconDrawerList__MUIM_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
 {
     //struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
     //struct IconEntry *node;
@@ -2093,11 +2093,11 @@ BOOPSI_DISPATCHER(IPTR, IconDrawerList_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return IconDrawerList_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return IconDrawerList_Dispose(cl,obj,msg);
-	case OM_SET: return IconDrawerList_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return IconDrawerList_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_IconList_Update: return IconDrawerList_Update(cl,obj,(APTR)msg);
+	case OM_NEW: return IconDrawerList__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return IconDrawerList__OM_DISPOSE(cl,obj,msg);
+	case OM_SET: return IconDrawerList__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET: return IconDrawerList__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_IconList_Update: return IconDrawerList__MUIM_Update(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
@@ -2164,10 +2164,11 @@ D(bug("[Wanderer]: DosList_Create: adding node for '%s'\n", name));
 			ndn->port = NULL;
 #endif
 
-         struct	IOStdReq			*vol_tmp_ioreq=NULL;
+/*
+			struct	IOStdReq			*vol_tmp_ioreq=NULL;
 			struct	MsgPort 			*vol_tmp_mp=NULL;
 
-/*			mp = CreateMsgPort();
+			mp = CreateMsgPort();
 			if (mp)
 			{
 			  ioreq = (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq));
@@ -2241,7 +2242,7 @@ struct MUI_IconVolumneData
 /**************************************************************************
   OM_NEW
  **************************************************************************/
-static IPTR IconVolumeList_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR IconVolumeList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconDrawerData   *data;
     struct TagItem  	    *tag, *tags;
@@ -2266,7 +2267,7 @@ static IPTR IconVolumeList_New(struct IClass *cl, Object *obj, struct opSet *msg
 /**************************************************************************
   MUIM_IconList_Update
  **************************************************************************/
-ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
+IPTR IconVolumeList__MUIM_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
 {
     //struct MUI_IconVolumeData *data = INST_DATA(cl, obj);
     //struct IconEntry *node;
@@ -2311,8 +2312,8 @@ BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return IconVolumeList_New(cl, obj, (struct opSet *)msg);
-	case MUIM_IconList_Update: return IconVolumeList_Update(cl,obj,(APTR)msg);
+	case OM_NEW: return IconVolumeList__OM_NEW(cl, obj, (struct opSet *)msg);
+	case MUIM_IconList_Update: return IconVolumeList__MUIM_Update(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

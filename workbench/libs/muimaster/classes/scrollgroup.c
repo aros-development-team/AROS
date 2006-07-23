@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -306,7 +306,7 @@ IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     D(bug("Scrollgroup_New(%lx)\n", obj));
     D(bug(" vert = %lx, horiz = %lx, button = %lx\n", vert, horiz, button));
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 IPTR Scrollgroup__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)

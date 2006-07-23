@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -360,16 +360,16 @@ IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNewTags(cl, obj, NULL, MUIA_Group_PageMode, TRUE,
 					MUIA_Background, MUII_RegisterBack,
     	    	    	    	    	TAG_MORE, (IPTR) msg->ops_AttrList);
-    if (!obj) return NULL;
+    if (!obj) return (IPTR)NULL;
 
     data = INST_DATA(cl, obj);
     
-    data->labels = (char**)GetTagData(MUIA_Register_Titles, NULL, msg->ops_AttrList);
+    data->labels = (char**)GetTagData(MUIA_Register_Titles, 0, msg->ops_AttrList);
 
     if (!data->labels)
     {
 	CoerceMethod(cl, obj, OM_DISPOSE);
-	return NULL;
+	return (IPTR)NULL;
     }
 
     for(data->numitems = 0; data->labels[data->numitems]; data->numitems++)
@@ -378,7 +378,7 @@ IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (data->numitems <= 0)
     {
         CoerceMethod(cl, obj, OM_DISPOSE);
-	return NULL;
+	return (IPTR)NULL;
     }
 
     data->columns = (WORD)GetTagData(MUIA_Register_Columns, data->numitems, msg->ops_AttrList);
@@ -400,7 +400,7 @@ IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!data->items)
     {
 	CoerceMethod(cl, obj, OM_DISPOSE);
-	return NULL;
+	return (IPTR)NULL;
     }
     
     for(i = 0; i < data->numitems; i++)
@@ -414,7 +414,7 @@ IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
     
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 IPTR Register__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)

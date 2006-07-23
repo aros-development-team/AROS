@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team.
-    All rights reserved.
-
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -70,7 +68,7 @@ void PressedHookFunc(struct Hook *hook, Object *obj, APTR msg)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Cycle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_CycleData    *data;
     struct TagItem  	    *tag, *tags;
@@ -111,7 +109,7 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
     
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -129,7 +127,7 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	D(bug("Cycle_New: No Entries specified!\n"));
 	CoerceMethod(cl,obj,OM_DISPOSE);
-	return NULL;
+	return (IPTR)NULL;
     }
 
     /* Count the number of entries */
@@ -146,7 +144,7 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    D(bug("Cycle_New: Could not create page object specified!\n"));
 	    CoerceMethod(cl,obj,OM_DISPOSE);
-	    return NULL;
+	    return (IPTR)NULL;
 	}
 	
 	DoMethod(pageobj, OM_ADDMEMBER, (IPTR)page);
@@ -176,7 +174,7 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static IPTR Cycle_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_CycleData    *data;
     struct TagItem  	    *tag, *tags;
@@ -185,7 +183,7 @@ static IPTR Cycle_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
     
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -241,7 +239,7 @@ static IPTR Cycle_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static IPTR Cycle_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Cycle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_CycleData *data = INST_DATA(cl, obj);
 #define STORE *(msg->opg_Storage)
@@ -259,7 +257,7 @@ static IPTR Cycle_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-STATIC IPTR Cycle_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Cycle__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_CycleData   *data;
 
@@ -281,7 +279,7 @@ STATIC IPTR Cycle_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-STATIC IPTR Cycle_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Cycle__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_CycleData *data = INST_DATA(cl, obj);
 
@@ -567,9 +565,9 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
 }
 
 /**************************************************************************
- ...
+ MUIM_HandleEvent
 **************************************************************************/
-static IPTR Cycle_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR Cycle__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct MUI_CycleData *data = INST_DATA(cl, obj);
     BOOL    	    	  fallthroughtomousemove = FALSE;
@@ -778,9 +776,9 @@ static IPTR Cycle_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 }
 
 /**************************************************************************
- ...
+ MUIM_Hide
 **************************************************************************/
-static IPTR Cycle_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+IPTR Cycle__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct MUI_CycleData *data = INST_DATA(cl, obj);
 
@@ -796,13 +794,13 @@ BOOPSI_DISPATCHER(IPTR, Cycle_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Cycle_New(cl, obj, (struct opSet *)msg);
-	case OM_SET: return Cycle_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Cycle_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_Setup: return Cycle_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup: return Cycle_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_Hide: return Cycle_Hide(cl, obj, (APTR)msg);
-	case MUIM_HandleEvent: return Cycle_HandleEvent(cl,obj,(APTR)msg);
+	case OM_NEW:           return Cycle__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_SET:           return Cycle__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:           return Cycle__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup:       return Cycle__MUIM_Setup(cl, obj, (APTR)msg);
+	case MUIM_Cleanup:     return Cycle__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_Hide:        return Cycle__MUIM_Hide(cl, obj, (APTR)msg);
+	case MUIM_HandleEvent: return Cycle__MUIM_HandleEvent(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

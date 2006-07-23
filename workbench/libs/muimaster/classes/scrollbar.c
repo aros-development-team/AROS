@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -109,7 +107,7 @@ IPTR Scrollbar__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    DoMethod(obj, OM_ADDMEMBER, (IPTR)data->prop);
     }
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 

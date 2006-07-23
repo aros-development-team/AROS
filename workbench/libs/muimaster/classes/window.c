@@ -2370,7 +2370,7 @@ static void WindowSelectDimensions (struct MUI_WindowData *data)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data;
     struct TagItem *tags,*tag;
@@ -2574,7 +2574,7 @@ static IPTR Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static IPTR Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Window__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -2614,7 +2614,7 @@ static ULONG WindowClose(struct IClass *cl, Object *obj);
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct TagItem        *tags = msg->ops_AttrList;
@@ -2811,7 +2811,7 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Window__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #define STORE *(msg->opg_Storage)
 
@@ -2921,7 +2921,7 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
  * MUIM_FindUData : tests if the MUIA_UserData of the object
  * contains the given <udata> and returns the object pointer in this case.
  */
-static IPTR Window_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+IPTR Window__MUIM_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -2940,7 +2940,7 @@ static IPTR Window_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUDa
  * contains the given <udata> and gets <attr> to <storage> for itself
  * in this case.
  */
-static ULONG Window_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
+IPTR Window__MUIM_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -2961,7 +2961,7 @@ static ULONG Window_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUDat
  * MUIM_SetUData : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG Window_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+IPTR Window__MUIM_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -2979,7 +2979,7 @@ static ULONG Window_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUDat
  * MUIM_SetUDataOnce : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG Window_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
+IPTR Window__MUIM_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -2999,7 +2999,7 @@ static ULONG Window_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_Set
  Called by Application (parent) object whenever this object is added.
  init GlobalInfo
 **************************************************************************/
-static IPTR Window_ConnectParent(struct IClass *cl, Object *obj,
+IPTR Window__MUIM_ConnectParent(struct IClass *cl, Object *obj,
 		     struct MUIP_ConnectParent *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3019,7 +3019,7 @@ static IPTR Window_ConnectParent(struct IClass *cl, Object *obj,
 /**************************************************************************
  called by parent object
 **************************************************************************/
-static IPTR Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
+IPTR Window__MUIM_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -3275,7 +3275,7 @@ static ULONG WindowClose(struct IClass *cl, Object *obj)
  * see Group_Columns
  * see Group_Rows
  */
-static IPTR Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Window_RecalcDisplay *msg)
+IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Window_RecalcDisplay *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     LONG left,top,width,height;
@@ -3360,9 +3360,9 @@ static IPTR Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Win
 
 
 /**************************************************************************
- ...
+ MUIM_AddEventHandler
 **************************************************************************/
-static IPTR Window_AddEventHandler(struct IClass *cl, Object *obj,
+IPTR Window__MUIM_AddEventHandler(struct IClass *cl, Object *obj,
                  struct MUIP_Window_AddEventHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3382,9 +3382,9 @@ static IPTR Window_AddEventHandler(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
- ...
+ MUIM_RemEventHandler
 **************************************************************************/
-static IPTR Window_RemEventHandler(struct IClass *cl, Object *obj,
+IPTR Window__MUIM_RemEventHandler(struct IClass *cl, Object *obj,
                  struct MUIP_Window_RemEventHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3399,7 +3399,7 @@ static IPTR Window_RemEventHandler(struct IClass *cl, Object *obj,
 /**************************************************************************
  Note that this is MUIM_Window_Setup, not MUIM_Setup
 **************************************************************************/
-static IPTR Window_Setup(struct IClass *cl, Object *obj, Msg msg)
+IPTR Window__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -3415,9 +3415,9 @@ static IPTR Window_Setup(struct IClass *cl, Object *obj, Msg msg)
 }
 
 /**************************************************************************
-
+ MUIM_Cleanup
 **************************************************************************/
-static IPTR Window_Cleanup(struct IClass *cl, Object *obj, Msg msg)
+IPTR Window__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -3438,7 +3438,7 @@ static IPTR Window_Cleanup(struct IClass *cl, Object *obj, Msg msg)
  This adds the the control char handler and also do the MUIA_CycleChain
  stuff. Orginal MUI does this in an other way.
 **************************************************************************/
-static IPTR Window_AddControlCharHandler(struct IClass *cl, Object *obj,
+IPTR Window__MUIM_AddControlCharHandler(struct IClass *cl, Object *obj,
 					  struct MUIP_Window_AddControlCharHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3469,9 +3469,9 @@ static IPTR Window_AddControlCharHandler(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
-
+ MUIM_RemControlCharHandler
 **************************************************************************/
-static IPTR Window_RemControlCharHandler(struct IClass *cl, Object *obj,
+IPTR Window__MUIM_RemControlCharHandler(struct IClass *cl, Object *obj,
 					  struct MUIP_Window_RemControlCharHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3490,9 +3490,9 @@ static IPTR Window_RemControlCharHandler(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
-
+ MUIM_DragObject
 **************************************************************************/
-static IPTR Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window_DragObject *msg)
+IPTR Window__MUIM_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window_DragObject *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     if (msg->obj)
@@ -3547,9 +3547,9 @@ static IPTR Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window
 }
 
 /**************************************************************************
-
+ MUIM_AllocGadgetID
 **************************************************************************/
-static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_AllocGadgetID *msg)
+IPTR Window__MUIM_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_AllocGadgetID *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct IDNode *newnode;
@@ -3585,9 +3585,9 @@ static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Win
 }
 
 /**************************************************************************
-
+ MUIM_FreeGadgetID
 **************************************************************************/
-static IPTR Window_FreeGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_FreeGadgetID *msg)
+IPTR Window__MUIM_FreeGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_FreeGadgetID *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct MinNode *mn;
@@ -3610,7 +3610,7 @@ static IPTR Window_FreeGadgetID(struct IClass *cl, Object *obj, struct MUIP_Wind
 /**************************************************************************
  MUIM_Window_GetMenuCheck
 **************************************************************************/
-static IPTR Window_GetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Window_GetMenuCheck *msg)
+IPTR Window__MUIM_GetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Window_GetMenuCheck *msg)
 {
     IPTR stat;
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3626,7 +3626,7 @@ static IPTR Window_GetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Wind
 /**************************************************************************
  MUIM_Window_SetMenuCheck
 **************************************************************************/
-static IPTR Window_SetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Window_SetMenuCheck *msg)
+IPTR Window__MUIM_SetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Window_SetMenuCheck *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     Object *item;
@@ -3641,7 +3641,7 @@ static IPTR Window_SetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Wind
 /**************************************************************************
  MUIM_Window_GetMenuState
 **************************************************************************/
-static IPTR Window_GetMenuState(struct IClass *cl, Object *obj, struct MUIP_Window_GetMenuState *msg)
+IPTR Window__MUIM_GetMenuState(struct IClass *cl, Object *obj, struct MUIP_Window_GetMenuState *msg)
 {
     IPTR stat;
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3657,7 +3657,7 @@ static IPTR Window_GetMenuState(struct IClass *cl, Object *obj, struct MUIP_Wind
 /**************************************************************************
  MUIM_Window_SetMenuState
 **************************************************************************/
-static IPTR Window_SetMenuState(struct IClass *cl, Object *obj, struct MUIP_Window_SetMenuState *msg)
+IPTR Window__MUIM_SetMenuState(struct IClass *cl, Object *obj, struct MUIP_Window_SetMenuState *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     Object *item;
@@ -3672,7 +3672,7 @@ static IPTR Window_SetMenuState(struct IClass *cl, Object *obj, struct MUIP_Wind
 /**************************************************************************
  MUIM_Window_DrawBackground
 **************************************************************************/
-static IPTR Window_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Window_DrawBackground *msg)
+IPTR Window__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Window_DrawBackground *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     if (!(data->wd_RenderInfo.mri_Window)) /* not between show/hide */
@@ -3690,7 +3690,7 @@ static IPTR Window_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Wi
 /**************************************************************************
  MUIM_Window_ToFront
 **************************************************************************/
-static IPTR Window_ToFront(struct IClass *cl, Object *obj, Msg msg)
+IPTR Window__MUIM_ToFront(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     if (!(data->wd_RenderInfo.mri_Window)) /* not between show/hide */
@@ -3703,7 +3703,7 @@ static IPTR Window_ToFront(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Window_ToBack
 **************************************************************************/
-static IPTR Window_ToBack(struct IClass *cl, Object *obj, Msg msg)
+IPTR Window__MUIM_ToBack(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     if (!(data->wd_RenderInfo.mri_Window)) /* not between show/hide */
@@ -3716,7 +3716,7 @@ static IPTR Window_ToBack(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Window_ScreenToBack
 **************************************************************************/
-static IPTR Window_ScreenToBack(struct IClass *cl, Object *obj, Msg msg)
+IPTR Window__MUIM_ScreenToBack(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     if (!(data->wd_RenderInfo.mri_Window)) /* not between show/hide */
@@ -3729,7 +3729,7 @@ static IPTR Window_ScreenToBack(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Window_ScreenToFront
 **************************************************************************/
-static IPTR Window_ScreenToFront(struct IClass *cl, Object *obj, Msg msg)
+IPTR Window__MUIM_ScreenToFront(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     if (!(data->wd_RenderInfo.mri_Window)) /* not between show/hide */
@@ -3742,7 +3742,7 @@ static IPTR Window_ScreenToFront(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Window_ActionIconify
 **************************************************************************/
-static IPTR Window_ActionIconify(struct IClass *cl, Object *obj, Msg msg)
+IPTR Window__MUIM_ActionIconify(struct IClass *cl, Object *obj, Msg msg)
 {
     set(_app(obj), MUIA_Application_Iconified, TRUE);
     
@@ -3789,7 +3789,7 @@ static void ForgetWindowPosition(Object *winobj, ULONG id)
 /**************************************************************************
  MUIM_Window_Snapshot
 **************************************************************************/
-static IPTR Window_Snapshot(struct IClass *cl, Object *obj, struct MUIP_Window_Snapshot *msg)
+IPTR Window__MUIM_Snapshot(struct IClass *cl, Object *obj, struct MUIP_Window_Snapshot *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -3806,40 +3806,37 @@ BOOPSI_DISPATCHER(IPTR, Window_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	/* Whenever an object shall be created using NewObject(), it will be
-	** sent a OM_NEW method.
-	*/
-	case OM_NEW: return Window_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return Window_Dispose(cl, obj, msg);
-	case OM_SET: return Window_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Window_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_FindUData: return Window_FindUData(cl, obj, (struct MUIP_FindUData *)msg);
-	case MUIM_GetUData: return Window_GetUData(cl, obj, (struct MUIP_GetUData *)msg);
-	case MUIM_SetUData: return Window_SetUData(cl, obj, (struct MUIP_SetUData *)msg);
-	case MUIM_SetUDataOnce: return Window_SetUDataOnce(cl, obj, (struct MUIP_SetUDataOnce *)msg);	
-	case MUIM_Window_AddEventHandler: return Window_AddEventHandler(cl, obj, (APTR)msg);
-	case MUIM_Window_RemEventHandler: return Window_RemEventHandler(cl, obj, (APTR)msg);
-	case MUIM_ConnectParent: return Window_ConnectParent(cl, obj, (APTR)msg);
-	case MUIM_DisconnectParent: return Window_DisconnectParent(cl, obj, (APTR)msg);
-	case MUIM_Window_RecalcDisplay: return Window_RecalcDisplay(cl, obj, (APTR)msg);
-	case MUIM_Window_Setup: return Window_Setup(cl, obj, (APTR)msg);
-	case MUIM_Window_Cleanup: return Window_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_Window_AddControlCharHandler: return Window_AddControlCharHandler(cl, obj, (APTR)msg);
-	case MUIM_Window_RemControlCharHandler: return Window_RemControlCharHandler(cl, obj, (APTR)msg);
-	case MUIM_Window_DragObject: return Window_DragObject(cl, obj, (APTR)msg);
-	case MUIM_Window_AllocGadgetID: return Window_AllocGadgetID(cl, obj, (APTR)msg);
-	case MUIM_Window_FreeGadgetID: return Window_FreeGadgetID(cl, obj, (APTR)msg);
-	case MUIM_Window_GetMenuCheck: return Window_GetMenuCheck(cl, obj, (APTR)msg);
-	case MUIM_Window_SetMenuCheck: return Window_SetMenuCheck(cl, obj, (APTR)msg);
-	case MUIM_Window_GetMenuState: return Window_GetMenuState(cl, obj, (APTR)msg);
-	case MUIM_Window_SetMenuState: return Window_SetMenuState(cl, obj, (APTR)msg);
-	case MUIM_Window_DrawBackground: return Window_DrawBackground(cl, obj, (APTR)msg);
-	case MUIM_Window_ToFront: return Window_ToFront(cl, obj, (APTR)msg);
-	case MUIM_Window_ToBack: return Window_ToBack(cl, obj, (APTR)msg);
-	case MUIM_Window_ScreenToFront: return Window_ScreenToFront(cl, obj, (APTR)msg);
-	case MUIM_Window_ScreenToBack: return Window_ScreenToBack(cl, obj, (APTR)msg);
-	case MUIM_Window_ActionIconify: return Window_ActionIconify(cl, obj, (APTR)msg);
-	case MUIM_Window_Snapshot: return Window_Snapshot(cl, obj, (APTR)msg);
+	case OM_NEW:                            return Window__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:                        return Window__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:                            return Window__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:                            return Window__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_FindUData:                    return Window__MUIM_FindUData(cl, obj, (struct MUIP_FindUData *)msg);
+	case MUIM_GetUData:                     return Window__MUIM_GetUData(cl, obj, (struct MUIP_GetUData *)msg);
+	case MUIM_SetUData:                     return Window__MUIM_SetUData(cl, obj, (struct MUIP_SetUData *)msg);
+	case MUIM_SetUDataOnce:                 return Window__MUIM_SetUDataOnce(cl, obj, (struct MUIP_SetUDataOnce *)msg);	
+	case MUIM_Window_AddEventHandler:       return Window__MUIM_AddEventHandler(cl, obj, (APTR)msg);
+	case MUIM_Window_RemEventHandler:       return Window__MUIM_RemEventHandler(cl, obj, (APTR)msg);
+	case MUIM_ConnectParent:                return Window__MUIM_ConnectParent(cl, obj, (APTR)msg);
+	case MUIM_DisconnectParent:             return Window__MUIM_DisconnectParent(cl, obj, (APTR)msg);
+	case MUIM_Window_RecalcDisplay:         return Window__MUIM_RecalcDisplay(cl, obj, (APTR)msg);
+	case MUIM_Window_Setup:                 return Window__MUIM_Setup(cl, obj, (APTR)msg);
+	case MUIM_Window_Cleanup:               return Window__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_Window_AddControlCharHandler: return Window__MUIM_AddControlCharHandler(cl, obj, (APTR)msg);
+	case MUIM_Window_RemControlCharHandler: return Window__MUIM_RemControlCharHandler(cl, obj, (APTR)msg);
+	case MUIM_Window_DragObject:            return Window__MUIM_DragObject(cl, obj, (APTR)msg);
+	case MUIM_Window_AllocGadgetID:         return Window__MUIM_AllocGadgetID(cl, obj, (APTR)msg);
+	case MUIM_Window_FreeGadgetID:          return Window__MUIM_FreeGadgetID(cl, obj, (APTR)msg);
+	case MUIM_Window_GetMenuCheck:          return Window__MUIM_GetMenuCheck(cl, obj, (APTR)msg);
+	case MUIM_Window_SetMenuCheck:          return Window__MUIM_SetMenuCheck(cl, obj, (APTR)msg);
+	case MUIM_Window_GetMenuState:          return Window__MUIM_GetMenuState(cl, obj, (APTR)msg);
+	case MUIM_Window_SetMenuState:          return Window__MUIM_SetMenuState(cl, obj, (APTR)msg);
+	case MUIM_Window_DrawBackground:        return Window__MUIM_DrawBackground(cl, obj, (APTR)msg);
+	case MUIM_Window_ToFront:               return Window__MUIM_ToFront(cl, obj, (APTR)msg);
+	case MUIM_Window_ToBack:                return Window__MUIM_ToBack(cl, obj, (APTR)msg);
+	case MUIM_Window_ScreenToFront:         return Window__MUIM_ScreenToFront(cl, obj, (APTR)msg);
+	case MUIM_Window_ScreenToBack:          return Window__MUIM_ScreenToBack(cl, obj, (APTR)msg);
+	case MUIM_Window_ActionIconify:         return Window__MUIM_ActionIconify(cl, obj, (APTR)msg);
+	case MUIM_Window_Snapshot:              return Window__MUIM_Snapshot(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
