@@ -274,7 +274,7 @@ const static struct def_strval DefStrValues[] =
  Load global (and maybe application-specific) prefs files into the dataspace,
  then fill the prefs struct with dataspace or default values
 **************************************************************************/
-static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ConfigdataData *data;
     struct TagItem *tags,*tag;
@@ -282,13 +282,13 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     int i;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-    if (!obj) return NULL;
+    if (!obj) return (IPTR)NULL;
 
 /*      D(bug("Configdata_New(%p)\n", obj)); */
 
     data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -461,13 +461,13 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /*---------- Special ----------*/
     /* all taken care of in frames and images */
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static ULONG Configdata_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Configdata__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
 /*      struct MUI_ConfigdataData *data = INST_DATA(cl, obj); */
 /*      int i; */
@@ -478,16 +478,16 @@ static ULONG Configdata_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static ULONG  Configdata_Get(struct IClass *cl, Object * obj, struct opGet *msg)
+IPTR Configdata__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
-    ULONG *store = msg->opg_Storage;
+    IPTR *store = msg->opg_Storage;
     ULONG    tag = msg->opg_AttrID;
 
     switch (tag)
     {
 	case 	MUIA_Configdata_ZunePrefs:
-		*store = (ULONG)&data->prefs;
+		*store = (IPTR)&data->prefs;
 		return 1;
     }
 
@@ -500,7 +500,7 @@ static ULONG  Configdata_Get(struct IClass *cl, Object * obj, struct opGet *msg)
  Check if string is found in dataspace, then if not found, search each
  builtin array
 **************************************************************************/
-static IPTR Configdata_GetString(struct IClass *cl, Object * obj,
+IPTR Configdata__MUIM_GetString(struct IClass *cl, Object * obj,
 				 struct MUIP_Configdata_GetString *msg)
 {
     CONST_STRPTR s;
@@ -538,7 +538,7 @@ static IPTR Configdata_GetString(struct IClass *cl, Object * obj,
  search in builtin array first, to not not have in dataspace the default
  value (would be redundant)
 **************************************************************************/
-static IPTR Configdata_SetImspec(struct IClass *cl, Object * obj,
+IPTR Configdata__MUIM_SetImspec(struct IClass *cl, Object * obj,
 				 struct MUIP_Configdata_SetImspec *msg)
 {
     int i;
@@ -579,7 +579,7 @@ static IPTR Configdata_SetImspec(struct IClass *cl, Object * obj,
 /**************************************************************************
  MUIM_Configdata_SetFramespec
 **************************************************************************/
-static IPTR Configdata_SetFramespec(struct IClass *cl, Object * obj,
+IPTR Configdata__MUIM_SetFramespec(struct IClass *cl, Object * obj,
 				    struct MUIP_Configdata_SetFramespec *msg)
 {
     int i;
@@ -611,7 +611,7 @@ static IPTR Configdata_SetFramespec(struct IClass *cl, Object * obj,
 /**************************************************************************
  MUIM_Configdata_SetPenspec
 **************************************************************************/
-static IPTR Configdata_SetPenspec(struct IClass *cl, Object * obj,
+IPTR Configdata__MUIM_SetPenspec(struct IClass *cl, Object * obj,
 				  struct MUIP_Configdata_SetPenspec *msg)
 {
     int i;
@@ -637,7 +637,7 @@ static IPTR Configdata_SetPenspec(struct IClass *cl, Object * obj,
 /**************************************************************************
  MUIM_Configdata_SetFont
 **************************************************************************/
-static IPTR Configdata_SetFont(struct IClass *cl, Object * obj,
+IPTR Configdata__MUIM_SetFont(struct IClass *cl, Object * obj,
 				 struct MUIP_Configdata_SetFont *msg)
 {
     if (!msg->font || !*msg->font)
@@ -655,7 +655,7 @@ static IPTR Configdata_SetFont(struct IClass *cl, Object * obj,
 /**************************************************************************
  MUIM_Configdata_SetString
 **************************************************************************/
-static IPTR Configdata_SetString(struct IClass *cl, Object * obj,
+IPTR Configdata__MUIM_SetString(struct IClass *cl, Object * obj,
 				 struct MUIP_Configdata_SetString *msg)
 {
     int i;
@@ -677,7 +677,7 @@ static IPTR Configdata_SetString(struct IClass *cl, Object * obj,
 /**************************************************************************
  MUIM_Configdata_GetULong
 **************************************************************************/
-static ULONG Configdata_GetULong(struct IClass *cl, Object * obj,
+IPTR Configdata__MUIM_GetULong(struct IClass *cl, Object * obj,
 				 struct MUIP_Configdata_GetULong *msg)
 {
     ULONG *vp;
@@ -703,7 +703,7 @@ static ULONG Configdata_GetULong(struct IClass *cl, Object * obj,
 /**************************************************************************
  MUIM_Configdata_SetULong
 **************************************************************************/
-static ULONG Configdata_SetULong(struct IClass *cl, Object * obj,
+IPTR Configdata__MUIM_SetULong(struct IClass *cl, Object * obj,
 				 struct MUIP_Configdata_SetULong *msg)
 {
     ULONG v = msg->val;
@@ -751,7 +751,7 @@ static int SavePrefsHeader(struct IFFHandle *iff)
 /**************************************************************************
  MUIM_Configdata_Save
 **************************************************************************/
-static ULONG Configdata_Save(struct IClass *cl, Object * obj,
+IPTR Configdata__MUIM_Save(struct IClass *cl, Object * obj,
 			     struct MUIP_Configdata_Save *msg)
 {
     struct IFFHandle *iff;
@@ -807,11 +807,11 @@ static ULONG Configdata_Save(struct IClass *cl, Object * obj,
  MUIM_Configdata_Load
  Get the content of the file into the object.
 **************************************************************************/
-static ULONG Configdata_Load(struct IClass *cl, Object * obj,
+IPTR Configdata__MUIM_Load(struct IClass *cl, Object * obj,
 			     struct MUIP_Configdata_Load *msg)
 {
     struct IFFHandle *iff;
-    ULONG res = TRUE;
+    IPTR res = TRUE;
 
     if ((iff = AllocIFF()))
     {
@@ -861,22 +861,19 @@ BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	/* Whenever an object shall be created using NewObject(), it will be
-	** sent a OM_NEW method.
-	*/
-	case OM_NEW: return Configdata_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Configdata_Dispose(cl, obj, (APTR)msg);
-	case OM_GET: return Configdata_Get(cl, obj, (APTR)msg);
-	case MUIM_Configdata_GetString: return Configdata_GetString(cl, obj, (APTR)msg);
-	case MUIM_Configdata_GetULong: return Configdata_GetULong(cl, obj, (APTR)msg);
-	case MUIM_Configdata_SetULong: return Configdata_SetULong(cl, obj, (APTR)msg);
-	case MUIM_Configdata_SetImspec: return Configdata_SetImspec(cl, obj, (APTR)msg);
-	case MUIM_Configdata_SetFramespec: return Configdata_SetFramespec(cl, obj, (APTR)msg);
-	case MUIM_Configdata_SetPenspec: return Configdata_SetPenspec(cl, obj, (APTR)msg);
-	case MUIM_Configdata_SetFont: return Configdata_SetFont(cl, obj, (APTR)msg);
-	case MUIM_Configdata_SetString: return Configdata_SetString(cl, obj, (APTR)msg);
-	case MUIM_Configdata_Save: return Configdata_Save(cl, obj, (APTR)msg);
-	case MUIM_Configdata_Load: return Configdata_Load(cl, obj, (APTR)msg);
+	case OM_NEW:                       return Configdata__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:                   return Configdata__OM_DISPOSE(cl, obj, (APTR)msg);
+	case OM_GET:                       return Configdata__OM_GET(cl, obj, (APTR)msg);
+	case MUIM_Configdata_GetString:    return Configdata__MUIM_GetString(cl, obj, (APTR)msg);
+	case MUIM_Configdata_GetULong:     return Configdata__MUIM_GetULong(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetULong:     return Configdata__MUIM_SetULong(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetImspec:    return Configdata__MUIM_SetImspec(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetFramespec: return Configdata__MUIM_SetFramespec(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetPenspec:   return Configdata__MUIM_SetPenspec(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetFont:      return Configdata__MUIM_SetFont(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetString:    return Configdata__MUIM_SetString(cl, obj, (APTR)msg);
+	case MUIM_Configdata_Save:         return Configdata__MUIM_Save(cl, obj, (APTR)msg);
+	case MUIM_Configdata_Load:         return Configdata__MUIM_Load(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

@@ -65,7 +65,7 @@ static void setup_text (struct MUI_TextData *data, Object *obj);
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_TextData *data;
     struct TagItem *tags,*tag;
@@ -150,7 +150,7 @@ static IPTR Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static IPTR Text_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Text__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
@@ -163,7 +163,7 @@ static IPTR Text_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static IPTR Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Text__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
     struct TagItem      *tags = msg->ops_AttrList;
@@ -221,7 +221,7 @@ static IPTR Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static IPTR Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Text__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
@@ -273,7 +273,7 @@ static void setup_text (struct MUI_TextData *data, Object *obj)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static IPTR Text_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Text__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
@@ -289,7 +289,7 @@ static IPTR Text_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static IPTR Text_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Text__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
@@ -307,7 +307,7 @@ static IPTR Text_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
 /**************************************************************************
  MUIM_Show
 **************************************************************************/
-static IPTR Text_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR Text__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     //struct MUI_TextData *data = INST_DATA(cl, obj);
 
@@ -320,7 +320,7 @@ static IPTR Text_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 /**************************************************************************
  MUIM_Hide
 **************************************************************************/
-static IPTR Text_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+IPTR Text__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     //struct MUI_TextData *data = INST_DATA(cl, obj);
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -329,7 +329,7 @@ static IPTR Text_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
-static IPTR Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Text__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     int height;
     struct MUI_TextData *data = INST_DATA(cl, obj);
@@ -394,7 +394,7 @@ static IPTR Text_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
-static IPTR Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Text__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
     Object *act;
@@ -441,7 +441,7 @@ static IPTR Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /**************************************************************************
  MUIM_Export : to export an objects "contents" to a dataspace object.
 **************************************************************************/
-static IPTR Text_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+IPTR Text__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
     //struct MUI_TextData *data = INST_DATA(cl, obj);
     //STRPTR id;
@@ -460,7 +460,7 @@ static IPTR Text_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 /**************************************************************************
  MUIM_Import : to import an objects "contents" from a dataspace object.
 **************************************************************************/
-static IPTR Text_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+IPTR Text__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
     //STRPTR id;
     //STRPTR s;
@@ -483,18 +483,19 @@ BOOPSI_DISPATCHER(IPTR, Text_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Text_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return Text_Dispose(cl, obj, msg);
-	case OM_SET: return Text_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Text_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_AskMinMax: return Text_AskMinMax(cl, obj, (APTR)msg);
-	case MUIM_Draw: return Text_Draw(cl, obj, (APTR)msg);
-	case MUIM_Setup: return Text_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup: return Text_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_Show: return Text_Show(cl, obj, (APTR)msg);
-	case MUIM_Hide: return Text_Hide(cl, obj, (APTR)msg);
-	case MUIM_Export: return Text_Export(cl, obj, (APTR)msg);
-	case MUIM_Import: return Text_Import(cl, obj, (APTR)msg);
+	case OM_NEW:         return Text__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:     return Text__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:         return Text__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:         return Text__OM_GET(cl, obj, (struct opGet *)msg);
+
+	case MUIM_AskMinMax: return Text__MUIM_AskMinMax(cl, obj, (APTR)msg);
+	case MUIM_Draw:      return Text__MUIM_Draw(cl, obj, (APTR)msg);
+	case MUIM_Setup:     return Text__MUIM_Setup(cl, obj, (APTR)msg);
+	case MUIM_Cleanup:   return Text__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_Show:      return Text__MUIM_Show(cl, obj, (APTR)msg);
+	case MUIM_Hide:      return Text__MUIM_Hide(cl, obj, (APTR)msg);
+	case MUIM_Export:    return Text__MUIM_Export(cl, obj, (APTR)msg);
+	case MUIM_Import:    return Text__MUIM_Import(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

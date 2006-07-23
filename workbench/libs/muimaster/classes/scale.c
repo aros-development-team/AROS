@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -45,7 +45,7 @@ IPTR Scale__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -68,7 +68,7 @@ IPTR Scale__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -90,13 +90,13 @@ IPTR Scale__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 IPTR Scale__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct Scale_DATA *data = INST_DATA(cl, obj);
-    ULONG *store = msg->opg_Storage;
-    ULONG    tag = msg->opg_AttrID;
+    IPTR  *store = msg->opg_Storage;
+    IPTR     tag = msg->opg_AttrID;
 
     switch (tag)
     {
     case MUIA_Scale_Horiz:
-	*store = (ULONG)data->horiz;
+	*store = (IPTR)data->horiz;
 	return TRUE;
     }
 

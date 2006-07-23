@@ -119,7 +119,7 @@ static struct NewMenu *Menuitem_BuildNewMenu(struct MUI_MenuitemData *data, Obje
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static ULONG Menuitem_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Menuitem__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_MenuitemData *data;
     struct TagItem *tags,*tag;
@@ -159,23 +159,27 @@ static ULONG Menuitem_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		  break;
 
 	    case  MUIA_Menuitem_Shortcut:
-		  data->shortcut = (char*)tag->ti_Data;
+		  data->shortcut = StrDup((char*)tag->ti_Data);
 		  break;
 
 	    case  MUIA_Menu_Title:
 	    case  MUIA_Menuitem_Title:
-		  data->title = (char*)tag->ti_Data;
+		  /* Don't strdup magic value NM_BARLABEL */
+		  if (tag->ti_Data == (IPTR)NM_BARLABEL)
+		      data->title = (char*)tag->ti_Data;
+		  else
+		      data->title = StrDup((char*)tag->ti_Data);
 		  break;
 	}
     }
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /**************************************************************************
  OM_SET
 **************************************************************************/
-STATIC ULONG Menuitem_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Menuitem__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_MenuitemData *data;
     struct TagItem *tags,*tag;
@@ -247,12 +251,17 @@ STATIC ULONG Menuitem_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case  MUIA_Menuitem_Shortcut:
-		data->shortcut = (char*)tag->ti_Data;
+		FreeVec(data->shortcut);
+		data->shortcut = StrDup((char*)tag->ti_Data);
 		break;
 
 	    case  MUIA_Menu_Title:
 	    case  MUIA_Menuitem_Title:
-		data->title = (char*)tag->ti_Data;
+		if (data->title != (char*)NM_BARLABEL) FreeVec(data->title);
+		if (tag->ti_Data == (IPTR)NM_BARLABEL)
+		    data->title = (char*)tag->ti_Data;
+		else
+		    data->title = StrDup((char*)tag->ti_Data);
 		tag->ti_Tag = TAG_IGNORE;
 		break;
 
@@ -262,14 +271,14 @@ STATIC ULONG Menuitem_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-    return (ULONG)DoSuperMethodA(cl,obj,(Msg)msg);
+    return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
 /**************************************************************************
  OM_GET
 **************************************************************************/
 #define STORE *(msg->opg_Storage)
-STATIC ULONG Menuitem_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Menuitem__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_MenuitemData *data = INST_DATA(cl, obj);
 
@@ -301,21 +310,21 @@ STATIC ULONG Menuitem_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	     return 1;
 
 	case MUIA_Menuitem_Shortcut:
-	     STORE = (ULONG)data->shortcut;
+	     STORE = (IPTR)data->shortcut;
 	     return 1;
 
 	case MUIA_Menu_Title:
 	case MUIA_Menuitem_Title:
-	     STORE = (ULONG)data->title;
+	     STORE = (IPTR)data->title;
 	     return 1;
 
 	case MUIA_Menuitem_NewMenu:
 	     Menuitem_BuildNewMenu(data,obj);
-	     STORE = (ULONG)data->newmenu;
+	     STORE = (IPTR)data->newmenu;
 	     return 1;
 
 	case MUIA_Menuitem_Trigger:
-	     STORE = (ULONG)data->trigger;
+	     STORE = (IPTR)data->trigger;
 	     return 1;
     }
 
@@ -327,11 +336,13 @@ STATIC ULONG Menuitem_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static ULONG Menuitem_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Menuitem__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_MenuitemData *data = INST_DATA(cl, obj);
 
-    if (data->newmenu) FreeVec(data->newmenu);
+    FreeVec(data->shortcut);
+    if (data->title != (char*)NM_BARLABEL) FreeVec(data->title);
+    FreeVec(data->newmenu);
     
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -340,7 +351,7 @@ static ULONG Menuitem_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_ConnectParent
 **************************************************************************/
-static ULONG Menuitem_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+IPTR Menuitem__MUIM_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
     Object               *cstate;
     Object               *child;
@@ -364,7 +375,7 @@ static ULONG Menuitem_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_
 /**************************************************************************
  MUIM_DisconnectParent
 **************************************************************************/
-static ULONG Menuitem_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+IPTR Menuitem__MUIM_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
     Object               *cstate;
     Object               *child;
@@ -387,12 +398,12 @@ BOOPSI_DISPATCHER(IPTR, Menuitem_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Menuitem_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return Menuitem_Dispose(cl, obj, msg);
-	case OM_SET: return Menuitem_Set(cl, obj, (struct opSet *) msg);
-	case OM_GET: return Menuitem_Get(cl, obj, (struct opGet *) msg);
-	case MUIM_ConnectParent: return Menuitem_ConnectParent(cl, obj, (APTR)msg);
-	case MUIM_DisconnectParent: return Menuitem_DisconnectParent(cl, obj, (APTR)msg);
+	case OM_NEW:                return Menuitem__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:            return Menuitem__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:                return Menuitem__OM_SET(cl, obj, (struct opSet *) msg);
+	case OM_GET:                return Menuitem__OM_GET(cl, obj, (struct opGet *) msg);
+	case MUIM_ConnectParent:    return Menuitem__MUIM_ConnectParent(cl, obj, (APTR)msg);
+	case MUIM_DisconnectParent: return Menuitem__MUIM_DisconnectParent(cl, obj, (APTR)msg);
     }
     return DoSuperMethodA(cl, obj, msg);
 }

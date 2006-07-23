@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -128,7 +128,10 @@ IPTR Dirlist__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Dirlist_DATA *data = INST_DATA(cl, obj);
 
-    if (data->path) FreeVec(data->path);
+    FreeVec(data->path);
+    FreeVec(data->acceptpattern);
+    FreeVec(data->rejectpattern);
+    FreeVec(data->directory);
     
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -249,11 +252,13 @@ IPTR Dirlist__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    
     	    case MUIA_Dirlist_AcceptPattern:
-		data->acceptpattern = (STRPTR)tidata;
+		FreeVec(data->acceptpattern);
+		data->acceptpattern = StrDup((STRPTR)tidata);
 		break;
 
 	    case MUIA_Dirlist_Directory:
-		data->directory = (STRPTR)tidata;
+		FreeVec(data->directory);
+		data->directory = StrDup((STRPTR)tidata);
 		directory_changed = TRUE;
 		break;
 
@@ -282,7 +287,8 @@ IPTR Dirlist__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_Dirlist_RejectPattern:
-	    	data->rejectpattern = (STRPTR)tidata;
+		FreeVec(data->rejectpattern);
+	    	data->rejectpattern = StrDup((STRPTR)tidata);
 		break;
 
 	    case MUIA_Dirlist_SortDirs:

@@ -70,12 +70,21 @@ IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     {
     	data = INST_DATA(cl, obj);
 	
-	data->name = (STRPTR)GetTagData(MUIA_Dtpic_Name, 0, msg->ops_AttrList);
+	data->name = StrDup((STRPTR)GetTagData(MUIA_Dtpic_Name, 0, msg->ops_AttrList));
 	
 	set(obj, MUIA_FillArea, FALSE);
     }
     
     return (IPTR)obj;
+}
+
+IPTR Dtpic__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct Dtpic_DATA *data = INST_DATA(cl, obj);
+
+    FreeVec(data->name);
+
+    return DoSuperMethodA(cl, obj, msg);
 }
 
 IPTR Dtpic__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
@@ -192,23 +201,13 @@ BOOPSI_DISPATCHER(IPTR, Dtpic_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:
-            return Dtpic__OM_NEW(cl, obj, (struct opSet *)msg);
-	
-    	case MUIM_Setup:
-	    return Dtpic__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
-	    
-	case MUIM_Cleanup:
-	    return Dtpic__MUIM_Cleanup(cl, obj, (struct MUIP_Clean *)msg);
-	
-	case MUIM_AskMinMax:
-	    return Dtpic__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
-	    
-	case MUIM_Draw:
-	    return Dtpic__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
-        
-        default:
-            return DoSuperMethodA(cl, obj, msg);
+	case OM_NEW: return Dtpic__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Dtpic__OM_DISPOSE(cl, obj, msg);
+    	case MUIM_Setup: return Dtpic__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+	case MUIM_Cleanup: return Dtpic__MUIM_Cleanup(cl, obj, (struct MUIP_Clean *)msg);
+	case MUIM_AskMinMax: return Dtpic__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
+	case MUIM_Draw: return Dtpic__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
+        default: return DoSuperMethodA(cl, obj, msg);
     }   
 }
 BOOPSI_DISPATCHER_END

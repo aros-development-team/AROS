@@ -1,7 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -28,12 +26,12 @@ struct MUI_MccprefsData
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR Mccprefs_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Mccprefs__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_MccprefsData   *data;
     struct TagItem  	       *tag, *tags;
 
-    obj = (Object *)DoSuperMethodA(cl, obj, msg);
+    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
 
     if (!obj)
 	return FALSE;
@@ -41,7 +39,7 @@ static IPTR Mccprefs_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -56,7 +54,7 @@ BOOPSI_DISPATCHER(IPTR, Mccprefs_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Mccprefs_New(cl, obj, (struct opSet *)msg);
+	case OM_NEW: return Mccprefs__OM_NEW(cl, obj, (struct opSet *)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);

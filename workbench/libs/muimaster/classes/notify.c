@@ -139,12 +139,12 @@ static void DeleteNNode (struct MUI_NotifyData *data, struct NotifyNode *nnode)
 }
 
 
-static IPTR Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg);
+IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg);
 
 /*
  * OM_NEW
  */
-static IPTR Notify_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Notify__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NotifyData *data;
     struct TagItem        *tags = msg->ops_AttrList;
@@ -184,7 +184,7 @@ static IPTR Notify_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * OM_DISPOSE
  */
-static IPTR Notify_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Notify__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MinNode *node, *tmp;
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
@@ -287,7 +287,7 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
 /*
  * OM_SET
  */
-static IPTR Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
     struct TagItem        *tags = msg->ops_AttrList;
@@ -354,7 +354,7 @@ static IPTR Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * OM_GET
  */
-static IPTR Notify_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Notify__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 /* small macro to simplify return value storage */
 #define STORE *(msg->opg_Storage)
@@ -410,7 +410,7 @@ static IPTR Notify_Get(struct IClass *cl, Object *obj, struct opGet *msg)
  * MUIM_CallHook : Call a standard amiga callback hook, defined by a Hook
  * structure.
  */
-static IPTR Notify_CallHook(struct IClass *cl, Object *obj, struct MUIP_CallHook *msg)
+IPTR Notify__MUIM_CallHook(struct IClass *cl, Object *obj, struct MUIP_CallHook *msg)
 {
     if (msg->Hook->h_Entry)
 	return CallHookPkt(msg->Hook,obj, &msg->param1);
@@ -427,7 +427,7 @@ static IPTR Notify_CallHook(struct IClass *cl, Object *obj, struct MUIP_CallHook
  * MUIM_FindUData : tests if the MUIA_UserData of the object
  * contains the given <udata> and returns the object pointer in this case.
  */
-static IPTR Notify_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+IPTR Notify__MUIM_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
 
@@ -444,7 +444,7 @@ static IPTR Notify_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUDa
  * contains the given <udata> and gets <attr> to <storage> for itself
  * in this case.
  */
-static ULONG Notify_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
+IPTR Notify__MUIM_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
 
@@ -465,7 +465,7 @@ static ULONG Notify_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUDat
 /*
  * MUIM_KillNotify : kills previously given notifications on specific attributes.
  */
-static ULONG Notify_KillNotify(struct IClass *cl, Object *obj, struct MUIP_KillNotify *msg)
+IPTR Notify__MUIM_KillNotify(struct IClass *cl, Object *obj, struct MUIP_KillNotify *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
     struct MinNode        *node;
@@ -491,7 +491,7 @@ static ULONG Notify_KillNotify(struct IClass *cl, Object *obj, struct MUIP_KillN
  * MUIM_KillNotifyObj : originally undocumented !
  * Supposed to kill a notification with a given attr and a given dest.
  */
-static ULONG Notify_KillNotifyObj(struct IClass *cl, Object *obj, struct MUIP_KillNotifyObj *msg)
+IPTR Notify__MUIM_KillNotifyObj(struct IClass *cl, Object *obj, struct MUIP_KillNotifyObj *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
     struct MinNode        *node;
@@ -517,7 +517,7 @@ static ULONG Notify_KillNotifyObj(struct IClass *cl, Object *obj, struct MUIP_Ki
 /*
  * MUIM_MultiSet : Set an attribute for multiple objects.
  */
-static ULONG Notify_MultiSet(struct IClass *cl, Object *obj, struct MUIP_MultiSet *msg)
+IPTR Notify__MUIM_MultiSet(struct IClass *cl, Object *obj, struct MUIP_MultiSet *msg)
 {
     IPTR *destobj_p;
     for (destobj_p = (IPTR*)&msg->obj; (*destobj_p) != 0; destobj_p++)
@@ -531,7 +531,7 @@ static ULONG Notify_MultiSet(struct IClass *cl, Object *obj, struct MUIP_MultiSe
 /*
  * MUIM_NoNotifySet : Acts like MUIM_Set but doesn't trigger any notification.
  */
-static ULONG Notify_NoNotifySet(struct IClass *cl, Object *obj, struct MUIP_NoNotifySet *msg)
+IPTR Notify__MUIM_NoNotifySet(struct IClass *cl, Object *obj, struct MUIP_NoNotifySet *msg)
 {
     return SetAttrs(obj, MUIA_NoNotify, TRUE, msg->attr, msg->val, TAG_DONE);
 }
@@ -540,7 +540,7 @@ static ULONG Notify_NoNotifySet(struct IClass *cl, Object *obj, struct MUIP_NoNo
 /*
  * MUIM_Notify : Add a notification event handler to an object.
  */
-static ULONG Notify_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
+IPTR Notify__MUIM_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
     struct NotifyNode     *nnode;
@@ -567,7 +567,7 @@ static ULONG Notify_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *m
 /*
  * MUIM_Set : Set an attribute to a value, useful within a MUIM_Notify method.
  */
-static ULONG Notify_Set(struct IClass *cl, Object *obj, struct MUIP_Set *msg)
+IPTR Notify__MUIM_Set(struct IClass *cl, Object *obj, struct MUIP_Set *msg)
 {
     return set(obj, msg->attr, msg->val);
 }
@@ -575,7 +575,7 @@ static ULONG Notify_Set(struct IClass *cl, Object *obj, struct MUIP_Set *msg)
 /*
  * MUIM_SetAsString : Set a (text kind) attribute to a string.
  */
-static ULONG Notify_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetAsString *msg)
+IPTR Notify__MUIM_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetAsString *msg)
 {
     STRPTR txt;
     LONG txt_len;
@@ -616,7 +616,7 @@ static ULONG Notify_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetA
  * MUIM_SetUData : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-static ULONG Notify_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+IPTR Notify__MUIM_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
 
@@ -632,7 +632,7 @@ static ULONG Notify_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUDat
 /*
  * MUIM_WriteLong : This method simply writes a longword somewhere to memory.
  */
-static ULONG Notify_WriteLong(struct IClass *cl, Object *obj, struct MUIP_WriteLong *msg)
+IPTR Notify__MUIM_WriteLong(struct IClass *cl, Object *obj, struct MUIP_WriteLong *msg)
 {
     *(msg->memory) = msg->val;
     return TRUE;
@@ -642,7 +642,7 @@ static ULONG Notify_WriteLong(struct IClass *cl, Object *obj, struct MUIP_WriteL
 /*
  * MUIM_WriteString : This method simply copies a string somewhere to memory.
  */
-static ULONG Notify_WriteString(struct IClass *cl, Object *obj, struct MUIP_WriteString *msg)
+IPTR Notify__MUIM_WriteString(struct IClass *cl, Object *obj, struct MUIP_WriteString *msg)
 {
     strcpy(msg->memory, msg->str);
     return TRUE;
@@ -651,7 +651,7 @@ static ULONG Notify_WriteString(struct IClass *cl, Object *obj, struct MUIP_Writ
 /**************************************************************************
  MUIM_ConnectParent
 **************************************************************************/
-static ULONG Notify_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+IPTR Notify__MUIM_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
     //struct MUI_NotifyData *data = INST_DATA(cl, obj);
 
@@ -666,7 +666,7 @@ static ULONG Notify_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Co
 /**************************************************************************
  MUIM_DisconnectParent
 **************************************************************************/
-static ULONG Notify_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
+IPTR Notify__MUIM_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
 {
     //struct MUI_NotifyData *data = INST_DATA(cl, obj);
 /*    data->mnd_ParentObject = NULL;*/
@@ -679,7 +679,7 @@ static ULONG Notify_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 /**************************************************************************
  MUIM_GetConfigItem
 **************************************************************************/
-static ULONG Notify_GetConfigItem(struct IClass *cl, Object *obj, struct MUIP_GetConfigItem *msg)
+IPTR Notify__MUIM_GetConfigItem(struct IClass *cl, Object *obj, struct MUIP_GetConfigItem *msg)
 {
     IPTR found = DoMethod(muiGlobalInfo(obj)->mgi_Configdata,MUIM_Dataspace_Find,msg->id);
     
@@ -699,52 +699,30 @@ BOOPSI_DISPATCHER(IPTR, Notify_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:
-	    return Notify_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE:
-	    return Notify_Dispose(cl, obj, msg);
-	case OM_SET:
-	    return Notify_OMSET(cl, obj, (struct opSet *)msg);
-	case OM_GET:
-	    return Notify_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_CallHook :
-	    return Notify_CallHook(cl, obj, (APTR)msg);
-	case MUIM_Export :
-	    return TRUE;
-	case MUIM_FindUData :
-	    return Notify_FindUData(cl, obj, (APTR)msg);
-	case MUIM_GetUData :
-	    return Notify_GetUData(cl, obj, (APTR)msg);
-	case MUIM_Import :
-	    return TRUE;
-	case MUIM_KillNotify :
-	    return Notify_KillNotify(cl, obj, (APTR)msg);
-	case MUIM_KillNotifyObj :
-	    return Notify_KillNotifyObj(cl, obj, (APTR)msg);
-	case MUIM_MultiSet :
-	    return Notify_MultiSet(cl, obj, (APTR)msg);
-	case MUIM_NoNotifySet :
-	    return Notify_NoNotifySet(cl, obj, (APTR)msg);
-	case MUIM_Notify :
-	    return Notify_Notify(cl, obj, (APTR)msg);
-	case MUIM_Set :
-	    return Notify_Set(cl, obj, (APTR)msg);
-	case MUIM_SetAsString:
-	    return Notify_SetAsString(cl, obj, (APTR)msg);
-	case MUIM_SetUData :
-	    return Notify_SetUData(cl, obj, (APTR)msg);
-	case MUIM_SetUDataOnce : /* use Notify_SetUData */
-	    return Notify_SetUData(cl, obj, (APTR)msg);
-	case MUIM_WriteLong :
-	    return Notify_WriteLong(cl, obj, (APTR)msg);
-	case MUIM_WriteString :
-	    return Notify_WriteString(cl, obj, (APTR)msg);
-	case MUIM_ConnectParent:
-	    return Notify_ConnectParent(cl,obj,(APTR)msg);
-	case MUIM_DisconnectParent:
-	    return Notify_DisconnectParent(cl,obj,(APTR)msg);
-	case MUIM_GetConfigItem:
-	    return Notify_GetConfigItem(cl,obj,(APTR)msg);
+	case OM_NEW:                return Notify__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:            return Notify__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:                return Notify__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:                return Notify__OM_GET(cl, obj, (struct opGet *)msg);
+
+	case MUIM_CallHook:         return Notify__MUIM_CallHook(cl, obj, (APTR)msg);
+	case MUIM_Export:           return TRUE;
+	case MUIM_FindUData:        return Notify__MUIM_FindUData(cl, obj, (APTR)msg);
+	case MUIM_GetUData:         return Notify__MUIM_GetUData(cl, obj, (APTR)msg);
+	case MUIM_Import:           return TRUE;
+	case MUIM_KillNotify:       return Notify__MUIM_KillNotify(cl, obj, (APTR)msg);
+	case MUIM_KillNotifyObj:    return Notify__MUIM_KillNotifyObj(cl, obj, (APTR)msg);
+	case MUIM_MultiSet:         return Notify__MUIM_MultiSet(cl, obj, (APTR)msg);
+	case MUIM_NoNotifySet:      return Notify__MUIM_NoNotifySet(cl, obj, (APTR)msg);
+	case MUIM_Notify:           return Notify__MUIM_Notify(cl, obj, (APTR)msg);
+	case MUIM_Set:              return Notify__MUIM_Set(cl, obj, (APTR)msg);
+	case MUIM_SetAsString:      return Notify__MUIM_SetAsString(cl, obj, (APTR)msg);
+	case MUIM_SetUData:         return Notify__MUIM_SetUData(cl, obj, (APTR)msg);
+	case MUIM_SetUDataOnce:	    return Notify__MUIM_SetUData(cl, obj, (APTR)msg);  /* use Notify_SetUData */
+	case MUIM_WriteLong:        return Notify__MUIM_WriteLong(cl, obj, (APTR)msg);
+	case MUIM_WriteString:      return Notify__MUIM_WriteString(cl, obj, (APTR)msg);
+	case MUIM_ConnectParent:    return Notify__MUIM_ConnectParent(cl,obj,(APTR)msg);
+	case MUIM_DisconnectParent: return Notify__MUIM_DisconnectParent(cl,obj,(APTR)msg);
+	case MUIM_GetConfigItem:    return Notify__MUIM_GetConfigItem(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

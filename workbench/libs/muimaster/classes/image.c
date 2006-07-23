@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -49,7 +47,7 @@ struct MUI_ImageData
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ImageData   *data;
     struct TagItem  	    *tag, *tags;
@@ -137,7 +135,7 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static IPTR Image_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Image__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
@@ -150,12 +148,12 @@ static IPTR Image_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Image__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
     struct TagItem  	    *tag, *tags;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -211,13 +209,13 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static IPTR Image_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Image__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
     {
 	case    MUIA_Image_Spec:
-		*msg->opg_Storage = (ULONG)data->spec;
+		*msg->opg_Storage = (IPTR)data->spec;
 	        return TRUE;
     }
 
@@ -227,12 +225,12 @@ static IPTR Image_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static IPTR Image_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Image__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
     if (!DoSuperMethodA(cl, obj, (Msg)msg))
-	return NULL;
+	return (IPTR)NULL;
 
     if (data->spec)
     {
@@ -258,7 +256,7 @@ static IPTR Image_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static IPTR Image_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Image__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
@@ -273,7 +271,7 @@ static IPTR Image_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
-static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Image__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
@@ -354,7 +352,7 @@ static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 /**************************************************************************
  MUIM_Show
 **************************************************************************/
-static IPTR Image_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR Image__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
@@ -367,7 +365,7 @@ static IPTR Image_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 /**************************************************************************
  MUIM_Hide
 **************************************************************************/
-static IPTR Image_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
+IPTR Image__MUIM_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
@@ -379,7 +377,7 @@ static IPTR Image_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
-static IPTR Image_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
+IPTR Image__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
@@ -410,16 +408,16 @@ BOOPSI_DISPATCHER(IPTR, Image_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Image_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Image_Dispose(cl, obj, msg);
-	case OM_SET: return Image_Set(cl, obj, (APTR)msg);
-	case OM_GET: return Image_Get(cl, obj, (APTR)msg);
-	case MUIM_AskMinMax: return Image_AskMinMax(cl,obj,(APTR)msg);
-	case MUIM_Setup: return Image_Setup(cl,obj,(APTR)msg);
-	case MUIM_Cleanup: return Image_Cleanup(cl,obj,(APTR)msg);
-	case MUIM_Show: return Image_Show(cl,obj,(APTR)msg);
-	case MUIM_Hide: return Image_Hide(cl,obj,(APTR)msg);
-	case MUIM_Draw: return Image_Draw(cl,obj,(APTR)msg);
+	case OM_NEW:         return Image__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:     return Image__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:         return Image__OM_SET(cl, obj, (APTR)msg);
+	case OM_GET:         return Image__OM_GET(cl, obj, (APTR)msg);
+	case MUIM_AskMinMax: return Image__MUIM_AskMinMax(cl,obj,(APTR)msg);
+	case MUIM_Setup:     return Image__MUIM_Setup(cl,obj,(APTR)msg);
+	case MUIM_Cleanup:   return Image__MUIM_Cleanup(cl,obj,(APTR)msg);
+	case MUIM_Show:      return Image__MUIM_Show(cl,obj,(APTR)msg);
+	case MUIM_Hide:      return Image__MUIM_Hide(cl,obj,(APTR)msg);
+	case MUIM_Draw:      return Image__MUIM_Draw(cl,obj,(APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);

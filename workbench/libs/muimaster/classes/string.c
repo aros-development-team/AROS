@@ -376,7 +376,7 @@ static BOOL Buffer_KillMarked(struct MUI_StringData *data)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR String__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_StringData *data;
     struct TagItem *tags,*tag;
@@ -491,7 +491,7 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static IPTR String_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR String__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
@@ -508,7 +508,7 @@ static IPTR String_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR String__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
     struct TagItem      *tags = msg->ops_AttrList;
@@ -589,7 +589,7 @@ static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR String__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
@@ -681,7 +681,7 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static IPTR String_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR String__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
@@ -724,7 +724,7 @@ static IPTR String_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static IPTR String_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR String__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
@@ -743,7 +743,7 @@ static IPTR String_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
-static IPTR String_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR String__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
@@ -1053,7 +1053,7 @@ static VOID TextM(Object *obj, struct MUI_StringData *data,
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
-static IPTR String_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR String__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
     UWORD   text_left;
@@ -1153,7 +1153,7 @@ static IPTR String_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /**************************************************************************
  Returns wether object needs redrawing
 **************************************************************************/
-int String_HandleVanillakey(struct IClass *cl, Object * obj,
+static int String_HandleVanillakey(struct IClass *cl, Object * obj,
 			    unsigned char code, UWORD qual)
 {
     struct MUI_StringData *data = (struct MUI_StringData*)INST_DATA(cl, obj);
@@ -1360,7 +1360,7 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
-static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
+IPTR String__MUIM_HandleEvent(struct IClass *cl, Object * obj,
 			       struct MUIP_HandleEvent *msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
@@ -1830,7 +1830,7 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 /**************************************************************************
  MUIM_Export : to export an objects "contents" to a dataspace object.
 **************************************************************************/
-static IPTR String_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+IPTR String__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
     ULONG id;
@@ -1853,7 +1853,7 @@ static IPTR String_Export(struct IClass *cl, Object *obj, struct MUIP_Export *ms
 /**************************************************************************
  MUIM_Import : to import an objects "contents" from a dataspace object.
 **************************************************************************/
-static IPTR String_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+IPTR String__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
     ULONG id;
     STRPTR s;
@@ -1871,7 +1871,7 @@ static IPTR String_Import(struct IClass *cl, Object *obj, struct MUIP_Import *ms
 /**************************************************************************
  MUIM_GoActive
 **************************************************************************/
-static IPTR String_GoActive(struct IClass * cl, Object * obj, Msg msg)
+IPTR String__MUIM_GoActive(struct IClass * cl, Object * obj, Msg msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
 
@@ -1891,7 +1891,7 @@ static IPTR String_GoActive(struct IClass * cl, Object * obj, Msg msg)
 /**************************************************************************
  MUIM_GoInactive
 **************************************************************************/
-static IPTR String_GoInactive(struct IClass * cl, Object * obj, Msg msg)
+IPTR String__MUIM_GoInactive(struct IClass * cl, Object * obj, Msg msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
 
@@ -1913,7 +1913,7 @@ static IPTR String_GoInactive(struct IClass * cl, Object * obj, Msg msg)
 /**************************************************************************
  MUIM_String_ClearSelected (BetterString)
 **************************************************************************/
-static IPTR String_ClearSelected(struct IClass * cl, Object * obj, struct MUIP_String_ClearSelected *msg)
+IPTR String__MUIM_ClearSelected(struct IClass * cl, Object * obj, struct MUIP_String_ClearSelected *msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
 
@@ -1930,7 +1930,7 @@ static IPTR String_ClearSelected(struct IClass * cl, Object * obj, struct MUIP_S
 /**************************************************************************
  MUIM_String_Insert (BetterString)
 **************************************************************************/
-static IPTR String_Insert(struct IClass * cl, Object * obj, struct MUIP_String_Insert *msg)
+IPTR String__MUIM_Insert(struct IClass * cl, Object * obj, struct MUIP_String_Insert *msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
     LONG pos;
@@ -1988,7 +1988,7 @@ static IPTR String_Insert(struct IClass * cl, Object * obj, struct MUIP_String_I
 /**************************************************************************
  MUIM_String_FileNameStart (BetterString)
 **************************************************************************/
-static IPTR String_FileNameStart(struct IClass * cl, Object * obj, struct MUIP_String_FileNameStart *msg)
+IPTR String__MUIM_FileNameStart(struct IClass * cl, Object * obj, struct MUIP_String_FileNameStart *msg)
 {
     struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
     STRPTR buf;
@@ -2012,22 +2012,23 @@ BOOPSI_DISPATCHER(IPTR, String_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return String_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return String_Dispose(cl, obj, msg);
-	case OM_SET: return String_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return String_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_Setup: return String_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup: return String_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_AskMinMax: return String_AskMinMax(cl, obj, (APTR)msg);
-	case MUIM_Draw: return String_Draw(cl, obj, (APTR)msg);
-	case MUIM_Export: return String_Export(cl, obj, (APTR)msg);
-	case MUIM_Import: return String_Import(cl, obj, (APTR)msg);
-	case MUIM_GoActive: return String_GoActive(cl, obj, (APTR)msg);
-	case MUIM_GoInactive: return String_GoInactive(cl,obj,(APTR)msg);
-	case MUIM_HandleEvent: return String_HandleEvent(cl,obj,(APTR)msg);
-	case MUIM_String_ClearSelected: return String_ClearSelected(cl,obj,(APTR)msg); /* BetterString */
-	case MUIM_String_Insert: return String_Insert(cl,obj,(APTR)msg); /* BetterString */
-	case MUIM_String_FileNameStart: return String_FileNameStart(cl,obj,(APTR)msg); /* BetterString */
+	case OM_NEW:                    return String__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:                return String__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:                    return String__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:                    return String__OM_GET(cl, obj, (struct opGet *)msg);
+
+	case MUIM_Setup:                return String__MUIM_Setup(cl, obj, (APTR)msg);
+	case MUIM_Cleanup:              return String__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_AskMinMax:            return String__MUIM_AskMinMax(cl, obj, (APTR)msg);
+	case MUIM_Draw:                 return String__MUIM_Draw(cl, obj, (APTR)msg);
+	case MUIM_Export:               return String__MUIM_Export(cl, obj, (APTR)msg);
+	case MUIM_Import:               return String__MUIM_Import(cl, obj, (APTR)msg);
+	case MUIM_GoActive:             return String__MUIM_GoActive(cl, obj, (APTR)msg);
+	case MUIM_GoInactive:           return String__MUIM_GoInactive(cl,obj,(APTR)msg);
+	case MUIM_HandleEvent:          return String__MUIM_HandleEvent(cl,obj,(APTR)msg);
+	case MUIM_String_ClearSelected: return String__MUIM_ClearSelected(cl,obj,(APTR)msg); /* BetterString */
+	case MUIM_String_Insert:        return String__MUIM_Insert(cl,obj,(APTR)msg); /* BetterString */
+	case MUIM_String_FileNameStart: return String__MUIM_FileNameStart(cl,obj,(APTR)msg); /* BetterString */
     }
 
     return DoSuperMethodA(cl, obj, msg);

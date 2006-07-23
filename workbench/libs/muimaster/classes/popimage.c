@@ -46,12 +46,12 @@ IPTR Popimage__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->adjust_type = MUIV_Imageadjust_Type_All;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
 	    case MUIA_Window_Title:
-		data->wintitle = (CONST_STRPTR)tag->ti_Data;
+		data->wintitle = StrDup((STRPTR)tag->ti_Data);
 		break;
 
 	    case MUIA_Imageadjust_Type:
@@ -76,6 +76,7 @@ IPTR Popimage__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     	MUI_DisposeObject(data->wnd);
     	data->wnd = NULL;
     }
+    FreeVec(data->wintitle);
     return DoSuperMethodA(cl,obj,(Msg)msg);   
 }
 
@@ -217,7 +218,7 @@ IPTR Popimage__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
     struct Popimage_DATA *data = INST_DATA(cl, obj);
 
     if (data->wnd) DoMethod(obj, MUIM_Popimage_CloseWindow, FALSE);
-    return DoSuperMethodA(cl, obj, msg);
+    return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 #if ZUNE_BUILTIN_POPIMAGE

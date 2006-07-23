@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -244,7 +242,7 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR Bitmap_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Bitmap__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_BitmapData   *data;
     struct TagItem  	    *tag, *tags;
@@ -259,7 +257,7 @@ static IPTR Bitmap_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -304,7 +302,7 @@ static IPTR Bitmap_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-static IPTR Bitmap_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Bitmap__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_BitmapData *data = INST_DATA(cl, obj);
 
@@ -321,13 +319,13 @@ static IPTR Bitmap_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static IPTR Bitmap_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Bitmap__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_BitmapData   *data  = INST_DATA(cl, obj);
     struct TagItem          *tags  = msg->ops_AttrList;
     struct TagItem          *tag;
 
-    while ((tag = NextTagItem(&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem**)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -371,7 +369,7 @@ static IPTR Bitmap_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static IPTR Bitmap_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Bitmap__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #define STORE *(msg->opg_Storage)
 
@@ -419,7 +417,7 @@ static IPTR Bitmap_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static IPTR Bitmap_Setup(struct IClass *cl, Object *obj, Msg msg)
+IPTR Bitmap__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
     //struct MUI_BitmapData *data = INST_DATA(cl, obj);
 
@@ -434,7 +432,7 @@ static IPTR Bitmap_Setup(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static IPTR Bitmap_Cleanup(struct IClass *cl, Object *obj, Msg msg)
+IPTR Bitmap__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_BitmapData *data = INST_DATA(cl, obj);
 
@@ -474,7 +472,7 @@ static IPTR Bitmap_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
-static IPTR Bitmap_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Bitmap__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     DoSuperMethodA(cl, obj, (Msg)msg);
     
@@ -493,7 +491,7 @@ static IPTR Bitmap_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
-static IPTR Bitmap_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Bitmap__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_BitmapData *data = INST_DATA(cl, obj);
     struct BitMap   	  *bm;
@@ -532,30 +530,14 @@ BOOPSI_DISPATCHER(IPTR, Bitmap_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:
-	    return Bitmap_New(cl, obj, (struct opSet *)msg);
-	    
-	case OM_DISPOSE:
-	    return Bitmap_Dispose(cl, obj, msg);
-	    
-	case OM_SET:
-	    return Bitmap_Set(cl, obj, (struct opSet *)msg);
-	    
-	case OM_GET:
-	    return Bitmap_Get(cl, obj, (struct opGet *)msg);
-	    
-	case MUIM_Setup:
-	    return Bitmap_Setup(cl, obj, msg);
-	    
-	case MUIM_Cleanup:
-	    return Bitmap_Cleanup(cl, obj, msg);
-	    
-	case MUIM_AskMinMax:
-	    return Bitmap_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
-	    
-	case MUIM_Draw:
-	    return Bitmap_Draw(cl, obj, (struct MUIP_Draw *)msg);
-	    
+	case OM_NEW:         return Bitmap__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:     return Bitmap__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:         return Bitmap__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:         return Bitmap__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup:     return Bitmap__MUIM_Setup(cl, obj, msg);
+	case MUIM_Cleanup:   return Bitmap__MUIM_Cleanup(cl, obj, msg);
+	case MUIM_AskMinMax: return Bitmap__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
+	case MUIM_Draw:      return Bitmap__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);

@@ -1,7 +1,5 @@
 /*
-    Copyright  2002, The AROS Development Team.
-    All rights reserved.
-
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id: palette.c 21734 2006-04-09 23:22:13Z darius brewka $
 */
 
@@ -45,7 +43,7 @@ static LONG display_func(struct Hook *hook, char **array, struct MUI_Palette_Ent
     if (data->names) {  /* does any strings exist */
         *array++ = data->names[(int) array[-1]];  /*then display user names */
     } else {
-        sprintf(buf,"Color %ld",(array[-1]+1));   /* if nos show default color names */
+        sprintf(buf,"Color %ld",(long)(array[-1]+1));   /* if nos show default color names */
         *array++ = buf;
     }
     return 0;
@@ -95,7 +93,7 @@ static LONG setcolor_func(struct Hook *hook, APTR *obj, ULONG *notify)
             data->rgb[0] = r;
             data->rgb[1] = g;
             data->rgb[2] = b;
-            NotifyGun(obj, data, gun);
+            NotifyGun((Object*)obj, data, gun);
         }
     } else if (mode == 2) {
         data->entries[entrie].mpe_Red = XGET(data->coloradjust, MUIA_Coloradjust_Red);
@@ -111,7 +109,7 @@ static LONG setcolor_func(struct Hook *hook, APTR *obj, ULONG *notify)
 IPTR Palette__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_PaletteData      *data;
-    struct TagItem  	        *tag, *tags;
+    //struct TagItem  	        *tag, *tags;
     struct MUI_Palette_Entry    *e;
     Object *list, *coloradjust;
     int i;
@@ -128,7 +126,7 @@ IPTR Palette__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         End,
     TAG_MORE, (IPTR) msg->ops_AttrList);
 
-    if (obj == NULL) return NULL;
+    if (obj == NULL) return (IPTR)NULL;
     
     data = INST_DATA(cl, obj);
     
@@ -144,8 +142,8 @@ IPTR Palette__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     nnset(list, MUIA_List_DisplayHook, (IPTR)&data->display_hook);
 
-    data->entries = GetTagData(MUIA_Palette_Entries, 0, msg->ops_AttrList);
-    data->names = GetTagData(MUIA_Palette_Names, 0, msg->ops_AttrList);
+    data->entries = (struct MUI_Palette_Entry*)GetTagData(MUIA_Palette_Entries, 0, msg->ops_AttrList);
+    data->names = (const char**)GetTagData(MUIA_Palette_Names, 0, msg->ops_AttrList);
     data->group = GetTagData(MUIA_Palette_Groupable, 0, msg->ops_AttrList);
 
     data->numentries = 0;
@@ -186,24 +184,24 @@ IPTR Palette__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_PaletteData    *data;
     struct TagItem  	    *tag, *tags;
-    
+
     data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
-     case    MUIA_Palette_Entries:
-         data->entries = (struct MUI_Palette_Entry *) tag->ti_Data;
-         break;
-		    
-     case    MUIA_Palette_Names:
-         data->names = (char **) tag->ti_Data;
-         break;
-         
-     case    MUIA_Palette_Groupable:
-         data->group = (ULONG) tag->ti_Data;
-         break;
+	    case    MUIA_Palette_Entries:
+		data->entries = (struct MUI_Palette_Entry *) tag->ti_Data;
+		break;
+
+	    case    MUIA_Palette_Names:
+		data->names = (const char **) tag->ti_Data;
+		break;
+
+	    case    MUIA_Palette_Groupable:
+		data->group = (ULONG) tag->ti_Data;
+		break;
 	}
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
@@ -221,10 +219,10 @@ IPTR Palette__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     switch(msg->opg_AttrID)
     {
         case	MUIA_Palette_Entries:
-            *store =  &data->entries;
+            *store =  (IPTR)&data->entries;
             return TRUE;
         case	MUIA_Palette_Names:
-            *store =  &data->names;
+            *store =  (IPTR)&data->names;
             return TRUE;
             
         case MUIA_Coloradjust_Red:
@@ -264,11 +262,11 @@ BOOPSI_DISPATCHER(IPTR, Palette_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Palette__OM_NEW(cl, obj, (struct opSet *)msg);
-	case OM_SET: return Palette__OM_SET(cl, obj, (struct opSet *)msg);
-    case OM_GET: return Palette__OM_GET(cl, obj, (struct opGet *)msg);
-    case OM_DISPOSE: return Palette__OM_DISPOSE(cl, obj, (struct opGet *)msg);
-    default:     return DoSuperMethodA(cl, obj, msg);
+	case OM_NEW:     return Palette__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_SET:     return Palette__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:     return Palette__OM_GET(cl, obj, (struct opGet *)msg);
+	case OM_DISPOSE: return Palette__OM_DISPOSE(cl, obj, (struct opGet *)msg);
+	default:         return DoSuperMethodA(cl, obj, msg);
     }
 }
 BOOPSI_DISPATCHER_END
