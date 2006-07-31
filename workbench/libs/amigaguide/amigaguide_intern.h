@@ -33,7 +33,6 @@
 /**************
 **  Defines  **
 **************/
-#define SysBase GM_SYSBASE_FIELD(((LIBBASETYPEPTR)AmigaGuideBase))
 
 
 /*****************
