@@ -96,8 +96,6 @@ void writeinclibdefs(struct config *cfg)
 		"struct GM_LibHeader\n"
 		"{\n"
 		"    struct Library   lh_LibNode;\n"
-		"    BPTR             lh_SegList;\n"
-		"    struct ExecBase *lh_SysBase;\n"
 	);
 	if (cfg->options & OPTION_DUPBASE)
 	    fprintf(out, "    LIBBASETYPEPTR   lh_RootBase;\n");
@@ -118,11 +116,7 @@ void writeinclibdefs(struct config *cfg)
 		    classlistit->basename
 	    );
 	}
-	fprintf(out,
-		"};\n"
-		"#define GM_SYSBASE_FIELD(lh) ((lh)->lh_SysBase)\n"
-		"#define GM_SEGLIST_FIELD(lh) ((lh)->lh_SegList)\n"
-	);
+	fprintf(out, "};\n");
 	if (cfg->options & OPTION_DUPBASE)
 	    fprintf(out, "#define GM_ROOTBASE_FIELD(lh) ((lh)->lh_RootBase)\n");
 	for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
