@@ -132,6 +132,15 @@ static void writedecl(FILE *out, struct config *cfg)
         fprintf(out, "%s\n", linelistit->s);
     }
 
+    /* Is there a variable for storing the segList ? */
+    if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
+	fprintf(out,
+		"#ifndef GM_SEGLIST_FIELD\n"
+		"static BPTR GM_UNIQUENAME(seglist);\n"
+		"#define GM_SEGLIST_FIELD(lh) (GM_UNIQUENAME(seglist))\n"
+		"#endif\n"
+	);
+    
     /* Write out the defines for the functions of the function table */
     writefuncdefs(out, cfg, cfg->funclist);
     fprintf(out, "\n");
@@ -374,12 +383,15 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	fprintf(out,
 	    	"#ifdef GM_SYSBASE_FIELD\n"
 		"    GM_SYSBASE_FIELD(lh) = sysBase;\n"
-		"#endif\n");
+		"#endif\n"
+	);
     }
     else
     {
 	fprintf(out,
+	    	"#ifdef GM_SYSBASE_FIELD\n"
 		"    GM_SYSBASE_FIELD(lh) = sysBase;\n"
+		"#endif\n"
 		"    ((struct Library *)lh)->lib_Revision = REVISION_NUMBER;\n"
 	);
     }
