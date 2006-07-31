@@ -28,8 +28,6 @@ AROS_SET_LIBFUNC(Clock_Startup, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT
     
-    SysBase = LIBBASE->lh_SysBase;
-    
     TimerIO   = NULL;
     TimerBase = NULL;
     
