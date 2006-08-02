@@ -24,7 +24,6 @@
 
 extern struct Library *MUIMasterBase;
 
-#ifdef __AROS__
 AROS_UFH2S(void, cpy_func,
     AROS_UFHA(UBYTE, chr, D0),
     AROS_UFHA(STRPTR *, strPtrPtr, A3))
@@ -46,7 +45,6 @@ AROS_UFH2S(void, len_func,
     
     AROS_USERFUNC_EXIT
 }
-#endif
 
 
 /*
@@ -580,11 +578,6 @@ IPTR Notify__MUIM_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetAsS
     STRPTR txt;
     LONG txt_len;
 
-#ifndef __AROS__
-    static const ULONG len_func = 0x52934e75; /* addq.l  #1,(A3) ; rts */
-    static const ULONG cpy_func = 0x16c04e75; /* move.b d0,(a3)+ ; rts */
-#endif
-
     txt_len = 0;
     RawDoFmt(msg->format, (ULONG *)&msg->val,
 	     (VOID_FUNC)AROS_ASMSYMNAME(len_func), &txt_len);
@@ -594,16 +587,11 @@ IPTR Notify__MUIM_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetAsS
     if (NULL == txt)
 	return FALSE;
 
-#ifdef __AROS__
     {
     	STRPTR txtptr = txt;
 	RawDoFmt(msg->format, (ULONG *)&msg->val,
 		 (VOID_FUNC)AROS_ASMSYMNAME(cpy_func), &txtptr);
     }  
-#else
-    RawDoFmt(msg->format, (ULONG *)&msg->val,
-	     (VOID_FUNC)AROS_ASMSYMNAME(cpy_func), txt);
-#endif
 
     set(obj, msg->attr, (IPTR)txt);
     FreeVec(txt);
