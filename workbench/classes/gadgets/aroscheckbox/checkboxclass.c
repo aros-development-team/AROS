@@ -186,7 +186,7 @@ IPTR AROSCheckbox__OM_GET(Class * cl, Object * obj, struct opGet * msg)
 	return (IPTR)1UL;
     }
     else
-	return DoSuperMethodA(cl, obj, msg);
+	return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 /****************************************************************************************/
@@ -246,7 +246,7 @@ IPTR AROSCheckbox__OM_DISPOSE(Class *cl, Class *obj, struct opSet *msg)
 	DisposeObject(G(obj)->GadgetRender);
 	G(obj)->GadgetRender = NULL;
     }
-    return DoSuperMethodA(cl, obj, msg);
+    return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 /****************************************************************************************/
