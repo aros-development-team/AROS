@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -277,8 +277,6 @@ struct AslReqInfo
 struct AslBase_intern
 {
     struct Library              Lib;
-    struct ExecBase             *aslSysBase;
-    BPTR                        aslSegList;
     struct MinList		ReqList;
     struct SignalSemaphore	ReqListSem;
     struct AslReqInfo		ReqInfo[3];

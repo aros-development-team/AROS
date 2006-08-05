@@ -18,8 +18,6 @@
 struct NVDBase
 {
     struct Library    nvd_Lib;
-    struct ExecBase  *nvd_SysBase;
-    BPTR              nvd_SegList;
     
     BPTR              nvd_location;
 };

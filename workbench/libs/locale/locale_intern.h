@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for the locale.library.
@@ -57,8 +57,6 @@
 struct IntLocaleBase
 {
     struct LocaleBase        lb_LocaleBase;
-    struct ExecBase         *lb_SysBase;
-    BPTR                     lb_SegList;
 
     struct IntLocale	    *lb_DefaultLocale;
     struct IntLocale	    *lb_CurrentLocale;

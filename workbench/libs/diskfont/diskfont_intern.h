@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -202,8 +202,6 @@ ULONG CopyTagItems(struct TagItem *, const struct TagItem *, struct DiskfontBase
 struct DiskfontBase_intern
 {
     struct Library	   lib;
-    struct ExecBase	   *sysbase;
-    APTR                   seglist;
 
     /* dosstreamhandler hook neede for endian io funcs */
     struct Hook		   dsh;

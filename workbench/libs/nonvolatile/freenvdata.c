@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,6 @@
 
 #include <libraries/nonvolatile.h>
 #include <proto/exec.h>
-#include "nonvolatile_intern.h"
 
 AROS_LH1(VOID, FreeNVData,
 

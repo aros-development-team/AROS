@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2006, The AROS Development Team. All rights reserved.
    $Id$ 
  */
 
@@ -40,8 +40,6 @@ struct DesktopOperation
 struct DesktopBase
 {
     struct Library db_Library;
-    struct ExecBase *db_SysBase;
-    APTR db_SegList;
 
     struct Library *db_InputBase;
     struct IORequest *db_InputIO;

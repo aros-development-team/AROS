@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,8 +41,6 @@ struct RexxSupportBase_intern; /* prereference */
 struct RexxSupportBase_intern
 {
     struct Library lib;
-    struct ExecBase *sysbase;
-    APTR seglist;
     struct List openports;
 };
 

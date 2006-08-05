@@ -2,7 +2,7 @@
 #define CAMD_INTERN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -211,8 +211,6 @@ struct MyMidiNode{
 struct CamdBase_intern{
 #ifndef __amigaos4__
     struct Library library;
-    struct ExecBase *sysbase;
-    APTR seglist;
 #else
     struct LibHeader		lh;
 #endif

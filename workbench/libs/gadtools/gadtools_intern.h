@@ -2,7 +2,7 @@
 #define GADTOOLS_INTERN_H
 
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for gadtools.library.
@@ -251,8 +251,6 @@ BOOL is_menubarlabelclass_image(struct Image *im,
 struct GadToolsBase_intern
 {
     struct Library                lib;
-    struct ExecBase             * sysbase;
-    APTR                          seglist;
 
     Class 			* buttonclass;
     Class 			* textclass;

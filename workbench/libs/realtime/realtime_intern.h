@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -49,9 +49,6 @@ struct internal_RealTimeBase
     ULONG            rtb_TimeFrac;
     UWORD            rtb_Reserved1;
     WORD             rtb_TickErr;
-
-    BPTR             rtb_SegList;
-    struct ExecBase *rtb_SysBase;
 
     struct SignalSemaphore rtb_Locks[RT_MAXLOCK];
 
