@@ -2,7 +2,7 @@
 #define INTERN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -272,8 +272,6 @@ struct ifmetaobject
 struct IntOOPBase
 {
     struct Library		 ob_LibNode;
-    struct ExecBase	       * ob_SysBase;
-    BPTR			 ob_SegList;
 
     struct SignalSemaphore	 ob_ClassListLock;
     struct MinList		 ob_ClassList;

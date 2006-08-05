@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -260,8 +260,6 @@ VOID printstring(STRPTR string, ULONG len, struct ConsoleBase *ConsoleDevice);
 struct ConsoleBase
 {
     struct Device device;
-    struct ExecBase * sysBase;
-    BPTR seglist;
     
     struct MinList unitList;
     struct SignalSemaphore unitListLock;

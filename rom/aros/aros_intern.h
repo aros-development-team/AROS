@@ -25,10 +25,6 @@ LIBBASETYPE
     struct Library       aros_LibNode;
 
     /* The following information is private! */
-
-    struct ExecBase *    aros_sysBase;
-    BPTR                 aros_segList;
-
 };
 
 #endif /* _AROS_INTERN_H */

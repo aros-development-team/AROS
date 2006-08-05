@@ -27,9 +27,6 @@ LIBBASETYPE
 {
     struct Library   	    lb_LibNode;
 
-    BPTR	     	    lb_SegList;
-    
-    struct ExecBase 	    *lb_SysBase;
     struct SignalSemaphore  lb_MemLock;
     APTR    	    	    lb_ClipRectPool;
 };

@@ -45,9 +45,6 @@
 struct inputbase
 {
     struct Device   	device;
-    struct ExecBase 	*sysBase;
-   
-    BPTR    	    	seglist;
     
     /* The stuff below will never get deallocated, since
     ** input device is never removed, once it's initialized.

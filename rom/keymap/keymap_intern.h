@@ -1,7 +1,7 @@
 #ifndef KEYMAP_INTERN_H
 #define KEYMAP_INTERN_H
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Keymaps internal structure
@@ -72,14 +72,10 @@ WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km);
 struct KeymapBase
 {
     struct Library 		 LibNode;
-    struct ExecBase		*ExecBase;
-    BPTR                         SegList;
     struct KeyMap		*DefaultKeymap;
     struct KeyMapNode		*DefKeymapNode;
     struct KeyMapResource	 KeymapResource;
 };
 
-
-#define SysBase KMBase(KeymapBase)->ExecBase
 
 #endif /* KEYMAP_INTERN_H */

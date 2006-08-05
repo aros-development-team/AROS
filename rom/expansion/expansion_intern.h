@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal data structures for expansion.library
@@ -30,8 +30,6 @@ struct IntExpansionBase
     struct Library          eb_LibNode;
     UBYTE                   eb_Flags;
     UBYTE                   eb_pad;
-    struct ExecBase        *eb_SysBase;
-    ULONG                   eb_SegList;
     struct CurrentBinding   eb_CurrentBinding;
     struct List             eb_BoardList;
     struct List             eb_MountList;
@@ -43,6 +41,5 @@ struct IntExpansionBase
 };
 
 #define IntExpBase(eb)	((struct IntExpansionBase*)(eb))
-#define SysBase		(((struct IntExpansionBase *)ExpansionBase)->eb_SysBase)
 
 #endif /* _EXPANSION_INTERN_H */

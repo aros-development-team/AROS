@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information for utility.library.
@@ -78,16 +78,12 @@ struct IntUtilityBase
     struct UtilityBase UBase;
 
     /* This is where the private data starts. */
-    struct ExecBase     *ub_SysBase;
-    BPTR                 ub_SegList;
     ULONG                ub_LastID;
     struct NameSpace     ub_NameSpace;
 };
 
 #define GetIntUtilityBase(ub)   ((struct IntUtilityBase *)(ub))
 #define GetUtilityBase(ub)      (&GetIntUtilityBase(ub)->UBase)
-
-#define SysBase         (GetIntUtilityBase(UtilityBase)->ub_SysBase)
 
 /*
     Internal versions of the NamedObject structures.

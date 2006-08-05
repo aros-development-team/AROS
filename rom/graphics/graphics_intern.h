@@ -180,7 +180,6 @@ struct GfxBase_intern
 {
     struct GfxBase 	 	gfxbase;
 
-    BPTR                        seglist;
     /* Driver data shared between all rastports (allocated once) */
     struct shared_driverdata	shared_driverdata;
 

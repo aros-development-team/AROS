@@ -25,7 +25,6 @@
 struct BattClockBase
 {
     struct Node		 bb_Node;
-    struct ExecBase	*bb_SysBase;
 };
 
 #endif //BATTCLOCK_INTERN_H
