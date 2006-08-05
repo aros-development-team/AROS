@@ -36,7 +36,9 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
     
     if (MathBase)
 	CloseLibrary ((struct Library *)MathBase);
-    
+
+    return TRUE;
+
     AROS_SET_LIBFUNC_EXIT;
 }
 

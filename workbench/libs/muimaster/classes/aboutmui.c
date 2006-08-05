@@ -897,14 +897,12 @@ static void CloseAboutWindowFunc(const struct Hook *hook, Object *app, APTR msg)
 IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Aboutmui_DATA   *data;
-    struct TagItem  	    *tag, *tags;
+    const struct TagItem *tag, *tags;
     static const struct Hook closehook = { { NULL, NULL }, HookEntry,
 					   (APTR)CloseAboutWindowFunc, NULL };
     static const char about_text[] = "Zune, a MUI clone\n"
 	"\nCompiled on " __DATE__
 	"\nCopyright (C) 2002-2006, The AROS Development Team.";
-
-
     
     obj = (Object *) DoSuperNewTags
     (
@@ -928,7 +926,7 @@ IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)) != NULL; )
     {
         switch (tag->ti_Tag)
         {
