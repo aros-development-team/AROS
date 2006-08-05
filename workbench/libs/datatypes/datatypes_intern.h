@@ -2,7 +2,7 @@
 #define DATATYPES_INTERN_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal datatypes.library definitions.
@@ -138,8 +138,6 @@ struct DataTypesBase
 {
     /* Datatypes library structure */
     struct Library dtb_Library;
-    struct ExecBase *dtd_SysBase;
-    APTR dtd_SegList;
     
     /* Align to long word */
     UWORD dtb_Pad1;

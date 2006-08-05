@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     ASL initialization code.
@@ -177,8 +177,6 @@ AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
     
     D(bug("Inside InitBase of asl.library\n"));
 
-    D(bug("SysBase: %p aslSysBase %p\n", SysBase, LIBBASE->aslSysBase));
-    
     NEWLIST(&LIBBASE->ReqList);
 
     InitSemaphore(&LIBBASE->ReqListSem);

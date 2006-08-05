@@ -32,8 +32,6 @@
 struct IntCGXVBase
 {
     struct Library libnode;
-    struct ExecBase *sysbase;
-    BPTR seglist;
 };
 
 

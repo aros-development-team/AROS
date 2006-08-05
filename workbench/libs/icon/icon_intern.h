@@ -2,7 +2,7 @@
 #define ICON_INTERN_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -128,8 +128,6 @@ struct NativeIcon
 struct IconBase
 {
     struct Library          ib_Lib;
-    struct ExecBase        *ib_SysBase;
-    APTR                    ib_SegList;
 
     struct Library  	   *pngbase;
     struct Hook             dsh;

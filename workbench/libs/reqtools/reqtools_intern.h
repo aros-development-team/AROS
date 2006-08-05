@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -51,12 +51,6 @@ LONG PaletteRequestA (char *title, struct rtReqInfo *reqinfo, struct TagItem *ta
 #endif
 
 /****************************************************************************************/
-
-struct ReqToolsBase_intern {
-    struct ReqToolsBase ReqToolsBase;
-    
-    struct ExecBase *rt_SysBase;
-};
 
 #define GPB(x) 		((struct ReqToolsBase *)x)
 

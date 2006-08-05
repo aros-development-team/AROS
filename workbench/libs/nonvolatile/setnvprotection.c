@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,7 +15,6 @@
 #include <libraries/nonvolatile.h>
 #include <proto/exec.h>
 #include <proto/nvdisk.h>
-#include "nonvolatile_intern.h"
 
 #include <string.h>
 

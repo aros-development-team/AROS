@@ -2,7 +2,7 @@
 #define PARTITION_INTERN_H
 
 /*
-   (C) 2001 AROS - The Amiga Research OS
+    Copyright © 2001-2006, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Internal definitions for partition.library
@@ -24,16 +24,9 @@
 #include <aros/libcall.h>
 #include LC_LIBDEFS_FILE
 
-/* Predeclaration */
-LIBBASETYPE;
-
-#define SysBase GM_SYSBASE_FIELD(PartitionBase)
-
 LIBBASETYPE
 {
     struct PartitionBase partbase;
-    struct ExecBase *sysbase;
-    APTR seglist;
 };
 
 #endif

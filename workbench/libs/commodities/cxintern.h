@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -130,8 +130,6 @@ struct BrokerCopy
 struct CommoditiesBase
 {
     struct Library          cx_Lib;
-    struct ExecBase        *cx_SysBase;
-    APTR                    cx_SegList;
     
     struct Library         *cx_TimerBase;
     

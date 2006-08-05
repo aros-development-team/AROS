@@ -32,8 +32,6 @@ typedef struct PCIBoard PCIBoard;
 struct LibBase
 {
    struct LibHeader lib_header;
-   APTR seg_list;
-   struct ExecBase *sys_base;
    OOP_Object *pci_hidd;
    OOP_Object *irq_hidd;
    OOP_AttrBase pcidevice_attr_base;

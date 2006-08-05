@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -268,8 +268,6 @@ struct CIPtr
 struct IFFParseBase_intern
 {
     struct Library    lib;
-    struct ExecBase  *sysbase;
-    APTR              seglist;
 
     struct Hook       stophook;
     struct Hook       prophook;

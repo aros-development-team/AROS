@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Locale_RawDoFmt - locale.library's private replacement
@@ -130,7 +130,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 					       hook->h_SubEntry,
 					       data->PutChData,
 					       data->OldA4,
-					       IntLB(LocaleBase)->lb_SysBase);
+					       SysBase);
 	break;
     }
 #else
@@ -146,7 +146,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 	AROS_UFC3(void, hook->h_SubEntry,
     	    AROS_UFCA(char, fill, D0),
 	    AROS_UFCA(APTR, pdata, A3),
-	    AROS_UFCA(struct ExecBase *, IntLB(LocaleBase)->lb_SysBase, A6));
+	    AROS_UFCA(struct ExecBase *, SysBase, A6));
     }
     else
     {

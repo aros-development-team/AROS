@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <dos/dosextens.h>
@@ -12,7 +12,6 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <proto/nvdisk.h>
-#include "nonvolatile_intern.h"
 
 
 AROS_LH1(struct NVInfo *, GetNVInfo,
