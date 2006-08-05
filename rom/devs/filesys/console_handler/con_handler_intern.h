@@ -1,7 +1,7 @@
 #ifndef __CON_HANDLER_INTERN_H
 #define __CON_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -51,10 +51,7 @@ struct conTaskParams
 struct conbase
 {
     struct Device	device;
-    struct ExecBase   * sysbase;
     struct Device     * inputbase;
-
-    BPTR seglist;
 };
 
 struct filehandle

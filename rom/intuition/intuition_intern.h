@@ -400,8 +400,6 @@ struct IntIntuitionBase
 #endif
 
     /* Put local shit here, invisible for the user */
-    BPTR                         SegList;
-    struct ExecBase         	*ExecBase;
 #ifdef __MORPHOS__
     struct Library          	*CyberGfxBase;
     struct Library          	*MUIMasterBase;

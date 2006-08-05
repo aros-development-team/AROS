@@ -25,11 +25,8 @@
 struct KeyboardBase
 {
     struct Device      kb_device;
-    struct ExecBase   *kb_sysBase;
     struct Library    *kb_LowLevelBase;
 
-    APTR               kb_seglist;
-    
     struct MinList          kb_PendingQueue;  /* IOrequests (KBD_READEVENT) not done quick */
     struct SignalSemaphore  kb_QueueLock;
     struct MinList	    kb_ResetHandlerList;

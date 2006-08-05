@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,11 +30,8 @@
 struct GameportBase
 {
     struct Device      		gp_device;
-    struct ExecBase   		*gp_sysBase;
     struct Library    		*gp_LowLevelBase;
 
-    APTR               		gp_seglist;
-    
     struct MinList          	gp_PendingQueue; 	/* IOrequests (GPD_READEVENT)
 						    	   not done quick */
     struct SignalSemaphore  	gp_QueueLock;

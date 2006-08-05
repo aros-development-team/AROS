@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal data structures for misc.resource
@@ -27,17 +27,11 @@
 struct MiscBase
 {
     struct Node             mb_Node;
-    struct ExecBase	   *mb_SysBase;
 
     struct SignalSemaphore  mb_Lock;
 
     char                   *mb_owners[MR_MAXUNIT];
 };
-
-#ifdef  SysBase
-#undef  SysBase
-#endif
-#define SysBase		(GPB(MiscBase)->mb_SysBase)
 
 #define GPB(x)          ((struct MiscBase *)x)
 

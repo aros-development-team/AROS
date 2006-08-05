@@ -39,10 +39,7 @@
 struct WorkbenchBase
 {
     struct Library          LibNode;
-    BPTR                    wb_SegList;
 
-    struct ExecBase        *wb_SysBase;
-    
     struct MsgPort          wb_HandlerPort;            /* The handler's message port */
     struct MsgPort         *wb_WorkbenchPort;          /* The workbench application's message port */
     struct SignalSemaphore  wb_WorkbenchPortSemaphore; /* Arbitrates initializetion access to the port above */

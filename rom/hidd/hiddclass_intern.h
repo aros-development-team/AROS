@@ -37,7 +37,6 @@ struct HIDDData
 /* Static Data for the hiddclass. */
 struct class_static_data
 {
-    struct ExecBase             *sysBase;
     OOP_AttrBase                hiddAttrBase;  // keep lower case so it does not clash with define.
 
     OOP_Class                   *hiddclass;
@@ -52,7 +51,6 @@ struct class_static_data
 struct IntHIDDClassBase
 {
     struct Library            hd_LibNode;
-    BPTR                      hd_SegList;
 
     struct class_static_data  hd_csd;
 };

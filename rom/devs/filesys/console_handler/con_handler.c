@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filesystem that uses console device for input/output.
@@ -68,7 +68,7 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, conbase)
 
 #warning InputDevice open hack. Hope this is not a problem since it is only used for PeekQualifier
     Forbid();
-    conbase->inputbase = (struct Device *)FindName(&conbase->sysbase->DeviceList, "input.device");
+    conbase->inputbase = (struct Device *)FindName(&SysBase->DeviceList, "input.device");
     Permit();
 
     /* Install CON: and RAW: handlers into device list
