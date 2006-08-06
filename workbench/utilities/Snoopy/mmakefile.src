@@ -1,0 +1,16 @@
+# Copyright © 2006, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES   := gui main patches setup
+EXEDIR  := $(AROS_UTILITIES)
+
+#MM- workbench-tools : workbench-tools-snoopy
+#MM  workbench-tools-snoopy : includes linklibs
+
+%build_prog mmake=workbench-tools-snoopy \
+    progname=Snoopy targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="rom mui arossupport amiga"
+
+%common

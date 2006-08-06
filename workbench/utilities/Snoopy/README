@@ -1,0 +1,29 @@
+Snoopy
+======
+
+Simple system monitor. It patches nearly the same functions as the famous
+SnoopDos. It prints the parameters of several library functions with the
+kprintf function. You can see the output either in the Shell from which
+you have started AROS or in Sashimi.
+
+Usage
+=====
+
+Select the functions you want to monitor and press the 'Use' button.
+Press 'Undo' to revert to the state bevore you latest 'Use' click.
+You should normally not use the 'Cancel' button. It can lead to
+problems when another program patches the functions which have
+already been patched by Snoopy.
+
+TODO
+====
+
+NameFromLock crashes. Therefore the CurrentDir patch doesn't print
+the directory name and the option ShowFullPath doesn't work.
+
+Implement missing settings.
+
+Pretty print output ("%s10" doesn't work with kprintf)
+
+RunCommand patch doesn't print parameters.
+
