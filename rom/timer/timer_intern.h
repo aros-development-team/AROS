@@ -46,6 +46,9 @@ struct TimerBase
 {
     /* Required by the system */
     struct Device	 tb_Device;
+    struct ExecBase	*tb_SysBase;
+//    struct Library	*tb_BOOPSIBase;
+    BPTR		 tb_SegList;
 
     struct IClass	*tb_TimerHIDD;
     ULONG		 tb_MiscFlags;		/* miscellaneous flags */
