@@ -17,6 +17,6 @@ endif
 
 %build_module_simple mmake=kernel-boot \
   modname=boot modtype=library \
-  files=strap compiler=host
+  files=strap compiler=target
 
 %common

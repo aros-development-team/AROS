@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 
 END
 
-@TARGET_CC@ myctest.c -o myctest
+@aros_target_cc@ myctest.c -o myctest
 
 if [ `./myctest |cut -d' ' -f 1` != 4 ]
     then echo "#error sizeof(long)!=4"

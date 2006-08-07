@@ -18,4 +18,4 @@ do                                     \
     docommandvp(_command, argv);        \
 } while (0);
 
-#endif /* !_MISC_H */
+#endif /* !_DOCOMMAND_H */

@@ -11,14 +11,15 @@ FLAVOUR		:= @aros_flavour@
 SHARED_MOD	:= @aros_shared_default@
 SYS_INCLUDES	:= @aros_target_incl@
 
-TARGET_CC	:= @TARGET_CC@
-TARGET_AS	:= @TARGET_AS@
-TARGET_LD	:= @TARGET_LD@
-SHARED_LD	:= @SHARED_LD@
-KERNEL_LD	:= @KERNEL_LD@
+TARGET_CC	:= @aros_target_cc@
+KERNEL_CC	:= @aros_kernel_cc@
+TARGET_AS	:= @aros_target_as@
+TARGET_LD	:= @aros_target_ld@
+SHARED_LD	:= @aros_shared_ld@
+KERNEL_LD	:= @aros_kernel_ld@
 GENMAP		:= @aros_target_genmap@
 TARGET_OBJCOPY	:= @aros_target_objcopy@
-TARGET_STRIP	:= @aros_target_strip@
+TARGET_STRIP	:= @aros_target_strip@ @aros_target_strip_flags@
 TARGET_OBJDUMP	:= @aros_target_objdump@
 
 CONFIG_CFLAGS	:= @aros_config_cflags@
@@ -32,17 +33,17 @@ DEBUG_CFLAGS	:= @aros_debug_cflags@
 DEBUG_AFLAGS	:= @aros_debug_aflags@
 DEBUG_LDFLAGS	:= @aros_debug_ldflags@
 
-NOSTDINC_CFLAGS   := @NOSTDINC_CFLAGS@
-NOSTARTUP_LDFLAGS := @NOSTARTUP_LDFLAGS@
-NIX_LDFLAGS       := @NIX_LDFLAGS@
-DETACH_LDFLAGS    := @DETACH_LDFLAGS@
-NOSTDLIB_LDFLAGS  := @NOSTDLIB_LDFLAGS@
+NOSTDINC_CFLAGS   := @aros_target_nostdinc_cflags@
+NOSTARTUP_LDFLAGS := @aros_target_nostartup_ldflags@
+NIX_LDFLAGS       := @aros_target_nix_ldflags@
+DETACH_LDFLAGS    := @aros_target_detach_ldflags@
+NOSTDLIB_LDFLAGS  := @aros_target_nostdlib_ldflags@
 
 COMPILER_LIBS   := @aros_compiler_libs@
 
-AR		:= @AR@
-RANLIB		:= @RANLIB@
-NM		:= @NM@
-NM_PLAIN	:= @NM_PLAIN@
-OBJCOPY		:= @OBJCOPY@
-OBJDUMP		:= @OBJDUMP@
+AR		:= @aros_target_ar@
+RANLIB		:= @aros_target_ranlib@
+NM		:= @aros_target_nm@
+NM_PLAIN	:= @aros_kernel_nm@
+OBJCOPY		:= @aros_target_objcopy@
+OBJDUMP		:= @aros_target_objdump@

@@ -1,9 +1,9 @@
-############################################################################
+#############################################################################
 #############################################################################
 ##                                                                         ##
-## Here are the mmakefile macro's that are used as commands in the body    ##
+## Here are the mmakefile macros that are used as commands in the body     ##
 ## of a make rule.                                                         ##
-## They are used to help the portability of mmakefile to different         ##
+## They are used to help the portability of mmakefiles to different        ##
 ## platforms and also will handle the error handling in a standard way.    ##
 ##                                                                         ##
 #############################################################################
@@ -32,17 +32,17 @@
 
 #------------------------------------------------------------------------------
 # Assemble the file %(from) to %(to) with %(cmd) with the options in %(opt).
-%define assemble_q cmd=$(AS) opt=$(AFLAGS) from=$< to=$@
+%define assemble_q cmd=$(CC) opt=$(AFLAGS) from=$< to=$@
 	@$(ECHO) "Assembling $(notdir %(from))..."
-	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+	@$(IF) %(cmd) %(opt) %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-		$(ECHO) "$(notdir %(from)): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+		$(ECHO) "$(notdir %(from)): %(cmd) %(opt) %(from) -o %(to)" >> $(GENDIR)/errors ; \
 		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	    else \
 		$(NOP) ; \
 	    fi ; \
 	else \
-	    $(ECHO) "Assemble failed: %(cmd) %(opt) -c %(from) -o %(to)" 1>&2 ; \
+	    $(ECHO) "Assemble failed: %(cmd) %(opt) %(from) -o %(to)" 1>&2 ; \
 	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi
@@ -335,8 +335,9 @@ $(TMP_TARGETBASE).d : %(basename).c
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file. When targetdir is not
-#   empty, path names will stripped from the file names so that all files are in
-#   that dir and not in subdirectories.
+#   empty, path names will be stripped from the file names so that all files
+#   are in that dir and not in subdirectories.
+# - compiler (default target): compiler to use, either target or host
 %define rule_compile_multi basenames=/A cflags=$(CFLAGS) dflags= targetdir= \
     compiler=target
 
@@ -399,7 +400,7 @@ $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
 
 
 #------------------------------------------------------------------------------
-# Generate a rule to compile a C source file to an shared object file with a
+# Generate a rule to compile a C source file to a shared object file with a
 # .so suffix. Basename may contain a directory part, then the source
 # file has to be in that directory. The generated file will be put in the
 # object directory without the directory.
@@ -439,17 +440,17 @@ $(TMP_TARGETBASE).so : %(basename).c
 # options
 # - basename: the basename of the file to compile. Use % for a wildcard rule
 # - flags (default $(AFLAGS)): the asm flags to use for assembling
-# - targetdir: the directory to put the .o file. By default it is put in the
+# - targetdir: the directory to put the .o file in. By default it is put in the
 #   same directory as the .s file
-%define rule_assemble basename=/A flags=$(AFLAGS) targetdir=
+%define rule_assemble basename=/A aflags=$(AFLAGS) targetdir=
 
 ifeq (%(targetdir),)
 %(basename).o : %(basename).s
-	%assemble_q opt=%(flags)
+	%assemble_q opt=%(aflags)
 
 else
 %(targetdir)/$(notdir %(basename)).o : %(basename).s
-	%assemble_q opt=%(flags)
+	%assemble_q opt=%(aflags)
 
 endif
 %end
@@ -459,15 +460,15 @@ endif
 #------------------------------------------------------------------------------
 # Generate a rule to assemble multiple source files to an object file. The
 # generated file will be put in the object directory with the directory part
-# of the source file stripped of.
+# of the source file stripped off.
 # options
 # - basenames: the basenames of the files to compile. The names may include
 #   relative or absolute path names. No wildcard is allowed
-# - aflags (default $(AFLAGS)): the C flags to use for compilation
+# - aflags (default $(AFLAGS)): the flags to use for assembly
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file. When targetdir is not
-#   empty, path names will stripped from the file names so that all files are in
-#   that dir and not in subdirectories.
+#   empty, path names will be stripped from the file names so that all files
+#   are in that dir and not in subdirectories.
 %define rule_assemble_multi basenames=/A aflags=$(AFLAGS) targetdir= suffix=.s
 
 ifeq (%(targetdir),)
@@ -940,7 +941,7 @@ BDID := $(BDTARGETID)
 %define build_prog mmake=/A progname=/A files=$(BD_PROGNAME$(BDID)) asmfiles= \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
-    aflags=$(AFLAFS) uselibs= usehostlibs= usestartup=yes detach=no nix=no
+    aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no
 
 .PHONY : %(mmake)
 
@@ -969,8 +970,8 @@ BD_LDFLAGS$(BDID)   := %(ldflags)
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
     cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-%rule_assemble basename=% targetdir=$(BD_OBJDIR$(BDID)) \
-	       flags=$(BD_AFLAGS$(BDID))
+%rule_assemble_multi basenames=$(BD_ASMFILES$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) \
+    aflags=$(BD_AFLAGS$(BDID))
 
 %rule_link_prog prog=$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) \
     objs=$(BD_OBJS$(BDID)) ldflags=$(BD_LDFLAGS$(BDID)) \
@@ -1798,7 +1799,7 @@ endif
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 %rule_assemble basename=% targetdir=$(BD_OBJDIR$(BDID)) \
-	       flags=$(BD_AFLAGS$(BDID))
+	      aflags=$(BD_AFLAGS$(BDID))
 endif
 
 %rule_link_linklib libname=%(libname) objs=$(BD_OBJS$(BDID)) libdir=$(BD_LIBDIR$(BDID))
@@ -1895,13 +1896,13 @@ GLOB_MKDIRS += %(dir)
 #-----------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
-# Compile files for a arch specific replacement of code for a module
-# - files: the basename of the C files to compile.
-# - asmfiles: the basename of the asm file to assemble.
+# Compile files for an arch-specific replacement of code for a module
+# - files: the basenames of the C files to compile.
+# - asmfiles: the basenames of the asm files to assemble.
 # - mainmmake: the mmake of the module in the main directory to compile these
 #   arch specific files for.
 # - maindir: the object directory for the main module
-# - arch: the arch for which to compile these files. It can has to have the form
+# - arch: the arch for which to compile these files. It can have the form
 #   of ARCH, CPU or ARCH-CPU, e.g. linux, i386 or linux-i386
 # - cflags (default $(CFLAGS)): the C flags to use for compilation
 # - dflags: the flags used during creation of dependency file. If not specified
@@ -2182,7 +2183,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #------------------------------------------------------------------------------
 # Build an imported source tree which uses the configure script from the
 # autoconf package.  This rule will try to "integrate" the produced files as
-# much as possible in the AROS build, for exampley by putting libraries in the
+# much as possible in the AROS build, for example by putting libraries in the
 # standard library directory, includes in the standard include directory, and
 # so on. You can however override this behaviour.
 #
@@ -2200,8 +2201,8 @@ DEPS := $(DEPS) $(STUBS_DEP)
 # to the name which has to follow it.
 
 
-%define build_with_configure mmake=/A srcdir=$(TOP)/$(CURDIR) prefix= aros_prefix= \
-    extraoptions= nix_dir_layout= nix=no host=no \
+%define build_with_configure mmake=/A srcdir=$(TOP)/$(CURDIR) prefix= \
+    aros_prefix= extraoptions= nix_dir_layout= nix=no compiler=target \
     install_target=install postconfigure= postinstall=
 
 ifneq (%(prefix),)
@@ -2235,6 +2236,18 @@ endif
 %(mmake)-volfunc = $(%(mmake)-volpfx)$(notdir $1)$(%(mmake)-volsfx)
 
 %(mmake)-install_opts := prefix=$(%(mmake)-prefix) exec_prefix=$(%(mmake)-prefix)
+
+# Check if chosen compiler is valid
+ifeq ($(findstring %(compiler),host target kernel),)
+  $(error unknown compiler %(compiler))
+endif
+
+# Set legacy 'host' variable based on chosen compiler
+ifeq (%(compiler),host)
+    host := yes
+else
+    host := no
+endif
 
 ifeq ($(filter yes, $(%(mmake)-nix_dir_layout) %(host)),yes)
     %(mmake)-PROGDIR      := $(%(mmake)-aros_prefix)/bin
@@ -2298,7 +2311,7 @@ endif
 #MM
 %(mmake)-configure : $(GENDIR)/$(CURDIR)/.configured
 
-ifeq (%(host),yes)
+ifeq (%(compiler),host)
 $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@ 
 	%mkdirs_q $(GENDIR)/$(CURDIR)
@@ -2307,16 +2320,33 @@ $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 	CC="$(HOST_CC)" \
 	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) && \
 	    $(TOUCH) $@
-else
+endif
+ifeq (%(compiler),target)
 $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	CC="$(TARGET_CC) $(%(mmake)-nix) $(%(mmake)-s_flag)" CC_FOR_BUILD="$(HOST_CC)" \
-	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros \
-	    --target=$(AROS_TARGET_CPU)-aros --build=local --disable-nls --without-x \
-            --without-pic --disable-shared && \
+	CC="$(TARGET_CC) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" \
+	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) \
+	    --host=$(AROS_TARGET_CPU)-aros \
+	    --target=$(AROS_TARGET_CPU)-aros --build=local --disable-nls \
+	    --without-x --without-pic --disable-shared && \
+	    $(TOUCH) $@
+endif
+ifeq (%(compiler),kernel)
+$(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+	$(RM) $@
+	%mkdirs_q $(GENDIR)/$(CURDIR)
+	cd $(GENDIR)/$(CURDIR) && \
+	find . -name config.cache -exec $(RM) '{}' \; && \
+	CC="$(KERNEL_CC) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" \
+	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) \
+	    --host=$(AROS_TARGET_CPU)-aros \
+	    --target=$(AROS_TARGET_CPU)-aros --build=local --disable-nls \
+	    --without-x --without-pic --disable-shared && \
 	    $(TOUCH) $@
 endif
 	
@@ -2328,7 +2358,7 @@ endif
 #############################################################################
 #############################################################################
 ##                                                                         ##
-## Misciellanous macros. Everying that doesn't fin above should be put     ##
+## Miscellaneous macros. Everything that doesn't fit above should be put   ##
 ## here.                                                                   ##
 ##                                                                         ##
 #############################################################################

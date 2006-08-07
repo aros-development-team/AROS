@@ -9,8 +9,9 @@
 #include "backend.h"
 #include "ldscript.h"
 #include "gensets.h"
+#include "env.h"
 
-static char *ldscriptname, *tempoutput;
+static char *ldscriptname, *tempoutput, *ld_name, *strip_name;
 static FILE *ldscriptfile;
 
 static void exitfunc(void)
@@ -38,6 +39,8 @@ int main(int argc, char *argv[])
     setnode *setlist = NULL;
 
     program_name = argv[0];
+    ld_name = LD_NAME;
+    strip_name = STRIP_NAME;
 
     /* Do some stuff with the arguments */
     output = "a.out";
@@ -98,7 +101,7 @@ int main(int argc, char *argv[])
 
     ldargs = xmalloc(sizeof(char *) * (argc+2 + 2*(incremental != 1)));
 
-    ldargs[0] = "ld";
+    ldargs[0] = ld_name;
     ldargs[1] = "-r";
 
     for (cnt = 1; cnt < argc; cnt++)
@@ -124,7 +127,7 @@ int main(int argc, char *argv[])
 
     ldargs[cnt+1] = NULL;
               
-    docommandvp("ld", ldargs);
+    docommandvp(ld_name, ldargs);
 
     if (incremental == 1)
         return EXIT_SUCCESS;
@@ -144,7 +147,7 @@ int main(int argc, char *argv[])
     fclose(ldscriptfile);
     ldscriptfile = NULL;
 
-    docommandlp("ld", "ld", "-r", "-o", output, tempoutput, "-T", ldscriptname, do_verbose, NULL);
+    docommandlp(ld_name, ld_name, "-r", "-o", output, tempoutput, "-T", ldscriptname, do_verbose, NULL);
 
     if (incremental != 0)
         return EXIT_SUCCESS;
@@ -159,7 +162,7 @@ int main(int argc, char *argv[])
 
     if (strip_all)
     {
-        docommandlp("strip", "strip", "--strip-unneeded", output, NULL);
+        docommandlp(strip_name, strip_name, "--strip-unneeded", output, NULL);
     }
 
     return 0;

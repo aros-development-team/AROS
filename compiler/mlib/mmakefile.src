@@ -183,10 +183,12 @@ includes-copy : $(AROS_INCLUDES)/math.h
 
 # Define lint to get rid of the warnings about rcsid[]
 
-USER_CFLAGS     := -D_IEEE_LIBM -Dlint -msoft-float
+USER_CFLAGS := -D_IEEE_LIBM -Dlint -msoft-float \
+    -Wno-uninitialized -Wno-parentheses
 %build_linklib mmake=linklibs-arosm-nofpu libname=arosm files=$(FILES)
 
-USER_CFLAGS     := -D_IEEE_LIBM -Dlint
+USER_CFLAGS     := -D_IEEE_LIBM -Dlint \
+    -Wno-uninitialized -Wno-parentheses
 %build_linklib mmake=linklibs-arosm-hasfpu libname=arosm files=$(FILES)
 
 #MM

@@ -1,8 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-LANGUAGES = dansk deutsch español français italiano nederlands norsk \
-	    piglatin polski português suomi svenska magyar
+LANGUAGES := $(basename $(wildcard *.c))
 
 MODDIR  := $(AROS_LOCALE)/Languages
 OBJDIR  := $(GENDIR)/$(CURDIR)

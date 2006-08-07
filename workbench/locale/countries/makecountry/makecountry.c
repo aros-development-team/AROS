@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <aros/system.h>
+#include <iconv.h>
 
 #define EC(x)\
 {\
@@ -173,7 +174,6 @@ int doCountry(struct CountryPrefs *cp, STRPTR progname, STRPTR filename)
 	return(20);
     }
 
-
 #if (AROS_BIG_ENDIAN == 0)
     /* We have to convert the endianness of this data,
        thankfully there are only two fields which this applies
@@ -197,6 +197,11 @@ int doCountry(struct CountryPrefs *cp, STRPTR progname, STRPTR filename)
 int main(int argc, char **argv)
 {
     int i,j,res;
+    char buffer[1024];
+    const char *inpos;
+    char *outpos;
+    size_t inbytes, outbytes;
+    iconv_t cd;
 
     if(argc < 3)
     {
@@ -204,15 +209,27 @@ int main(int argc, char **argv)
 	return(20);
     }
 
+    cd = iconv_open("ISO-8859-1", "");
+    if(cd == (iconv_t)(-1))
+    {
+	printf("%s: Error converting character sets\n", argv[0]);
+	return(20);
+    }
+
     for(i=2; i < argc; i++)
     {
 	for(j=0; CountryArray[j].ca_Name != NULL; j++)
 	{
-	    res = strcmp(CountryArray[j].ca_Name, argv[i]);
+	    /* Convert country name to local character set */
+	    inpos = CountryArray[j].ca_Name;
+	    inbytes = 1024;
+	    outpos = buffer;
+	    outbytes = 1024;
+	    iconv(cd, &inpos, &inbytes, &outpos, &outbytes);
+
+	    res = strcmp(CountryArray[j].ca_Name, buffer);
 	    if(res == 0)
 	    {
-		UBYTE buffer[1024];
-
 		strcpy(buffer, argv[1]);
 		strcat(buffer, argv[i]);
 		strcat(buffer, ".country");

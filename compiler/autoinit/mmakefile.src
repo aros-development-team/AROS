@@ -9,7 +9,7 @@ LIBBASEFILES := \
 	asl \
 	commodities \
 	cybergraphics \
-        datatypes \
+	datatypes \
 	dos \
 	diskfont \
 	expansion \
@@ -18,10 +18,10 @@ LIBBASEFILES := \
 	icon \
 	iffparse \
 	intuition \
-        keymap \
+	keymap \
 	layers \
 	locale \
-        partition \
+	partition \
 	realtime \
 	utility \
 	workbench \

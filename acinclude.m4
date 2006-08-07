@@ -3,26 +3,20 @@ dnl
 dnl Search for a file, and place the result into the cache.
 
 dnl AROS_REQUIRED(name,var)
-dnl Checks if var is defined, and aborts otherwise
+dnl Checks if var is defined, and aborts otherwise. name is just for
+dnl presentation to the user.
+dnl
 AC_DEFUN(AROS_REQUIRED,
 [if test "$2" = ""; then
     AC_MSG_ERROR($1 is required to build AROS. Please install and run configure again.)
 fi])
 
 dnl AROS_PROG(var,prog,args)
-AC_DEFUN(AROS_PROG,
-[AC_CHECK_PROG([$1],[$2],[$2])
-ifelse($3, ,, $1="$$1 $3")
-AC_SUBST($1)])
-
-dnl AROS_TOOL(var,prog,args)
-dnl This will later on check the $target-$(tool) stuff, but at the
-dnl moment it only does the same as AROS_PROG
+dnl Checks if prog is on the path. If it is, sets var to "prog args".
+dnl args is optional.
 dnl
-AC_DEFUN(AROS_TOOL,
-[AC_PATH_PROG([$1],[$2],[$2])
-ifelse($3, ,, $1="$$1 $3")
-AC_SUBST($1)])
+AC_DEFUN(AROS_PROG,
+[AC_CHECK_PROG([$1],[$2],[$2 $3])])
 
 dnl AROS_TOOL_CCPATH(var,prog)
 dnl This will first look for the tool in the CC path and then in the
@@ -36,18 +30,18 @@ if test "$[$1]" = ""; then
     AC_PATH_PROG([$1],[$2])
 fi])
 
-dnl AROS_TOOL_CC(var,prog,args)
-dnl This is effectively the same as AROS_TOOL, but only does the 
-dnl test when we are cross compiling.
+dnl AROS_TOOL_TARGET(var,prog)
+dnl This is effectively the same as AROS_PROG, but adds the appropriate
+dnl arch prefix when cross compiling. 
 dnl
-AC_DEFUN(AROS_TOOL_CC,
-[if test "$cross_compile" = "yes" ; then
-    AC_PATH_PROG([$1],[$2],[$2])
+AC_DEFUN(AROS_TOOL_TARGET,
+[
+if test "$cross_compiling" = "yes" ; then
+    AC_PATH_PROG([$1],${target_tool_prefix}[$2])
 else
-    $1="$2"
+    AROS_TOOL_CCPATH($1, $2)
 fi
-ifelse($3, ,, $1="$$1 $3")
-AC_SUBST($1)])
+])
 
 dnl AROS_CACHE_CHECK(message, var, check)
 dnl This is similar to the AC_CACHE_CHECK macro, but it hides the

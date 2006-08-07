@@ -22,7 +22,7 @@ grub-copy-stages : $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2 $(ARO
 CFLAGS := -minline-all-stringops
 export CFLAGS
 
-%build_with_configure mmake=grub host=yes install_target=  \
+%build_with_configure mmake=grub compiler=kernel install_target= \
     extraoptions="$(GRUBOPTS)" 
     
 $(AROSDIR)/boot/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1

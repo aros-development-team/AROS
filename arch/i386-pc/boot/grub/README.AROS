@@ -3,6 +3,9 @@ This File Lists specific patches/changes made to support AROS.
 Changes
 -------
 
+18/07/2006 - Disabled building of host support software because it causes
+             problems when cross compiling and is unused by AROS.
+
 24/12/2005 - Merged SVN codebase with Grub 0.97 tree.  Replaced old setvbe patch with newer version.
              (vbeset/vbematch - setvbe patch no longer functioned).
 

@@ -19,8 +19,9 @@ HOST_DEBUG	:= @aros_host_debug@
 HOST_MKDEP	:= @aros_host_mkdep@
 MKARGS		:= @aros_host_mkargs@
 
-HOST_AR		:= @HOST_AR@
-HOST_RANLIB	:= @HOST_RANLIB@
+HOST_AR		:= @aros_host_ar@
+HOST_RANLIB	:= @aros_host_ranlib@
+HOST_STRIP	:= @aros_host_strip@
 HOST_EXE_SUFFIX	:= @aros_host_exe_suffix@
 HOST_LIB_SUFFIX := @aros_host_lib_suffix@
 

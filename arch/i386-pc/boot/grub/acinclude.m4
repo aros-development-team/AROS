@@ -355,7 +355,7 @@ main (void)
 }
 EOF
 
-if AC_TRY_COMMAND([${CC-cc} ${CFLAGS} conftest.c -o conftest]) && test -s conftest; then
+if AC_TRY_COMMAND([${CC_FOR_BUILD-cc} ${CFLAGS} conftest.c -o conftest]) && test -s conftest; then
   grub_tmp_value=`./conftest < "[$2]"`
 else
   AC_MSG_ERROR([${CC-cc} failed to produce an executable file])

@@ -2,7 +2,7 @@ const static char LDSCRIPT_PART1[] =
 "/*\n"
 "    Script for final linking of AROS executables.\n"
 "\n"
-"    NOTE: This file is the result of a rearragement of the built-in ld script.\n"
+"    NOTE: This file is the result of a rearrangement of the built-in ld script.\n"
 "          It's AROS-specific, in that it does constructors/destructors collecting\n"
 "          and doesn't care about some sections that are not used by AROS at the moment\n"
 "          or will never be.\n"

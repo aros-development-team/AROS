@@ -1,4 +1,4 @@
-dnl Copyright (C) 1997-2005 AROS - The Amiga Research OS
+dnl Copyright (C) 1997-2006 AROS - The Amiga Research OS
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -6,7 +6,6 @@ dnl Lang: english
 
 #TODO
 # method of getting shared/non-shared ld/ar tool for target.
-# ar, ranlib, strip, nm for target
 
 
 # ------------------------------------------------------------------------
@@ -19,6 +18,7 @@ AC_CONFIG_AUX_DIR(scripts/autoconf)
 
 # Check what host we are running on.
 # If a target is not suggested, we use this one.
+# Note that what we call a target, Autoconf calls a host.
 AC_CANONICAL_HOST
 
 # The AROS target is slightly different to the normal GNU style
@@ -64,7 +64,7 @@ dnl Host Configuration Section
 dnl --------------------------------------------------------------------
 dnl
 dnl The idea here is to find out all the information we need about the
-dnl host. This means things like tools for building directory structures
+dnl host. This means things like tools for building directory structures,
 dnl copying files around and the like.
 
 # The first step is to find the host binaries.
@@ -73,14 +73,8 @@ AC_PROG_CC
 AC_PROG_CC_STDC
 AC_PROG_CPP
 
-# We don't yet support cross-compiling, but we may later on.
-AC_CYGWIN
-AC_EXEEXT
-AC_OBJEXT
-
-# Check for gawk and mmake.
+# Check for a compatible awk
 AC_CHECK_PROGS(AWK,[gawk nawk])
-AC_SUBST(AWK)
 AROS_REQUIRED(gawk,$AWK)
 AROS_PROG(MMAKE,mmake)
 
@@ -105,7 +99,7 @@ AC_CHECK_PROGS(aros_host_autoconf,[autoconf autoconf259 autoconf253])
 AC_CHECK_PROGS(aros_host_autoheader,[autoheader autoheader259 autoheader253])
 AC_CHECK_PROGS(aros_host_automake,[automake automake19])
 
-case "$CC" in
+case "$aros_host_cc" in
     *gcc*)
 	aros_host_cc_pipe="-pipe"
 	;;
@@ -173,6 +167,26 @@ case "$host_os" in
 
 	;;
 
+    darwin*)
+	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+	aros_host_arch="darwin"
+	case "$host_cpu" in
+	    *i?86*)
+		aros_host_cpu="i386"
+		;;
+	    *powerpc*)
+	    	aros_host_cpu="ppc"
+		;;
+	    *)
+		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+		aros_host_cpu="$host_cpu"
+		;;
+	esac
+
+        aros_host_ldflags="$aros_host_ldflags -liconv"
+
+	;;
+
     netbsd*)
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
 	aros_host_make="gmake"
@@ -222,7 +236,6 @@ case "$host_os" in
         ;;
 
     morphos*)
-	aros_host_cc="$aros_host_cc"
 	aros_host_arch="morphos"
 	aros_host_cpu="ppc"
 	;;
@@ -266,9 +279,12 @@ case "$host_os" in
 	;;
 esac
 
-AROS_PROG(HOST_AR,[ar],[cr])
-AROS_REQUIRED(ar,$HOST_AR)
-AROS_PROG(HOST_RANLIB,ranlib)
+AROS_PROG(aros_host_ar,[ar],[cr])
+AROS_REQUIRED(ar,$aros_host_ar)
+AROS_PROG(aros_host_ranlib,ranlib)
+AROS_REQUIRED(ranlib,$aros_host_ranlib)
+AROS_PROG(aros_host_strip,strip)
+AROS_REQUIRED(strip,$aros_host_strip)
 
 AROS_PROG(RM,[rm],[-rf])
 AROS_REQUIRED(rm,$RM)
@@ -292,12 +308,12 @@ AROS_PROG(CAT,[cat])
 AROS_REQUIRED(cat,$CAT)
 AROS_PROG(BISON,[bison])
 AROS_REQUIRED(bison,$BISON)
+AROS_PROG(FLEX,[flex])
+AROS_REQUIRED(flex,$FLEX)
 AROS_PROG(PNGTOPNM,[pngtopnm])
 AROS_REQUIRED(pngtopnm,$PNGTOPNM)
 AROS_PROG(PPMTOILBM,[ppmtoilbm])
 AROS_REQUIRED(ppmtoilbm,$PPMTOILBM)
-AROS_PROG(STRIP,[strip])
-AROS_REQUIRED(strip,$STRIP)
 AROS_PROG(SED,[sed])
 AROS_REQUIRED(sed,$SED)
 AROS_PROG(CHMOD,[chmod])
@@ -305,14 +321,10 @@ AROS_REQUIRED(chmod,$CHMOD)
 
 AM_PATH_PYTHON(2.2.1)
 
-FOR=for
-IF=if
-TEST=test
-CMP=cmp
-AC_SUBST(FOR)
-AC_SUBST(IF)
-AC_SUBST(TEST)
-AC_SUBST(CMP)
+AC_SUBST(FOR, for)
+AC_SUBST(IF, if)
+AC_SUBST(TEST, test)
+AC_SUBST(CMP, cmp)
 
 dnl ---------------------------------------------------------------------------
 dnl Look for things about the host system, good for hosted targets.
@@ -362,47 +374,8 @@ dnl The target configuration section is responsible for setting up all
 dnl the paths for includes, and tools required to build AROS to some
 dnl particular target.
 
-# Find all the tools we need to compile. This could be cross-compiling
-# though! If that is the case we use the GNU form of the target and
-# simply add this to the front of the binary name. This is rather simple,
-# but it should work under most circumstances.
-#
-# The default tools are to use the same as the host, but only if the
-# host and target CPU are the same. With GCC this is normally enough.
-#
-
-aros_cc_pre=""
-aros_target_cc="$aros_host_cc"
-aros_target_as="$aros_host_cc"
-aros_shared_ld="$aros_host_ld"
-aros_kernel_ld="$aros_host_ld"
-aros_target_ld="$aros_host_ld"
-
-aros_target_mkdep="$aros_host_mkdep"
-aros_target_incl_def="$aros_host_incl"
-
-# The default tools executables to be linked at.
-AROS_TOOL_CCPATH(aros_target_ar_ln,ar)
-AROS_REQUIRED(ar,$aros_target_ar_ln)
-AROS_TOOL_CCPATH(aros_target_nm_ln,nm)
-AROS_REQUIRED(nm,$aros_target_nm_ln)
-AROS_TOOL_CCPATH(aros_target_objcopy_ln,objcopy)
-AROS_REQUIRED(objcopy,$aros_target_objcopy_ln)
-AROS_TOOL_CCPATH(aros_target_objdump_ln,objdump)
-AROS_REQUIRED(objdump,$aros_target_objdump_ln)
-AROS_TOOL_CCPATH(aros_target_ranlib_ln,ranlib)
-AROS_REQUIRED(ranlib,$aros_target_ranlib_ln)
-AROS_TOOL_CCPATH(aros_target_strip_ln,strip)
-AROS_REQUIRED(strip,$aros_target_strip_ln)
-
-if test "$GCC" = "yes"; then
-    aros_target_cc_path=`$CC -print-search-dirs | grep "programs: =" | cut -c 12-`
-fi
-
-# It is necessary to clear the include and link paths for target
-# commands. This should help clear up problems when cross compiling.
 aros_config_cflags="-Wall -Werror-implicit-function-declaration"
-aros_config_aflags="-Wall -x assembler-with-cpp"
+aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
 
 aros_shared_default=yes
@@ -411,6 +384,10 @@ aros_shared_cflags="-fPIC"
 aros_shared_aflags=""
 aros_shared_ldflags="-Wl,-rpath,./lib -shared"
 aros_kernel_ldflags="-Wl,-rpath,./lib"
+
+aros_target_ar_flags="cr"
+aros_target_nm_flags="-C -ul"
+aros_target_strip_flags="--strip-unneeded -R.comment"
 
 aros_compiler_libs=
 
@@ -675,7 +652,17 @@ case "$target_os" in
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
 	gcc_target_cpu="i386"
 
-	strip_args="-x"
+	aros_target_strip_flags="-x"
+	;;
+
+    darwin*)
+	aros_target_arch="darwin"
+	aros_target_cpu="i386"
+	aros_flavour="emulation"
+	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+	gcc_target_cpu="i386"
+
+	aros_target_strip_flags="-x"
 	;;
 
     netbsd*)
@@ -847,7 +834,6 @@ case "$target_os" in
 		aros_object_format="m68kelf"
 		aros_flavour="mac68knative"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
-		aros_kernel_ldflags=""
 		aros_default_wbwidth=512
                 aros_default_wbheight=384
 		aros_default_wbdepth=8
@@ -887,6 +873,63 @@ case "$target_os" in
 	;;
 esac
 
+
+# Find out if we are cross-compiling (ie. if we can't use the host compiler
+# for target code)
+cross_compiling=no
+if test "$aros_host_cpu" != "$aros_target_cpu" ; then
+    cross_compiling=yes
+fi
+if test "$aros_host_arch" == "darwin" ; then
+    cross_compiling=yes
+fi
+
+# Set prefix for target compiler etc. if we're cross-compiling
+# (should possibly be earlier but needs to be after AC_PROG_CC)
+if test "$cross_compiling" = "yes" ; then
+    target_tool_prefix=${target_cpu}-elf-
+    CC=${target_tool_prefix}gcc
+fi
+
+# Find all the tools we need to compile. This could be cross-compiling
+# though! If that is the case we use the GNU form of the target and
+# simply add this to the front of the binary name. This is rather simple,
+# but it should work under most circumstances.
+#
+# The default tools are to use the same as the host, but only if the
+# host and target CPU are the same. With GCC this is normally enough.
+#
+
+aros_cc_pre=""
+aros_shared_ld="$aros_host_ld"
+
+aros_target_mkdep="$aros_host_mkdep"
+aros_target_incl_def="$aros_host_incl"
+
+AC_PATH_PROG(aros_kernel_cc,$CC)
+
+# The default tools executables to be linked to.
+AROS_TOOL_TARGET(aros_target_as_ln,as)
+AROS_REQUIRED(as,$aros_target_as_ln)
+AROS_TOOL_TARGET(aros_kernel_ld,ld)
+AROS_REQUIRED(ld,$aros_kernel_ld)
+AROS_TOOL_TARGET(aros_target_ar_ln,ar)
+AROS_REQUIRED(ar,$aros_target_ar_ln)
+AROS_TOOL_TARGET(aros_target_nm_ln,nm)
+AROS_REQUIRED(nm,$aros_target_nm_ln)
+AROS_TOOL_TARGET(aros_target_objcopy_ln,objcopy)
+AROS_REQUIRED(objcopy,$aros_target_objcopy_ln)
+AROS_TOOL_TARGET(aros_target_objdump_ln,objdump)
+AROS_REQUIRED(objdump,$aros_target_objdump_ln)
+AROS_TOOL_TARGET(aros_target_ranlib_ln,ranlib)
+AROS_REQUIRED(ranlib,$aros_target_ranlib_ln)
+AROS_TOOL_TARGET(aros_target_strip_ln,strip)
+AROS_REQUIRED(strip,$aros_target_strip_ln)
+
+if test "$GCC" = "yes"; then
+    aros_target_cc_path=`$aros_kernel_cc -print-search-dirs | grep "programs: =" | cut -c 12-`
+fi
+
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
 aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
 aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/include/aros"
@@ -915,56 +958,23 @@ fi
 
 prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros"
 
-TARGET_CC="${prefix}-gcc"
-TARGET_AS="$TARGET_CC"
-TARGET_LD="${prefix}-ld"
+AC_SUBST(aros_target_nostdinc_cflags,-nostdinc)
+AC_SUBST(aros_target_nostartup_ldflags,-nostartfiles)
+AC_SUBST(aros_target_nix_ldflags,-nix)
+AC_SUBST(aros_target_detach_ldflags,-detach)
+AC_SUBST(aros_target_nostdlib_ldflags,-nostdlib)
+
+# Target tools
+aros_target_cc="${prefix}-gcc"
+aros_target_as="${prefix}-as"
 aros_target_ld="${prefix}-ld"
-
-NOSTDINC_CFLAGS=-nostdinc
-
-NOSTARTUP_LDFLAGS=-nostartfiles
-NIX_LDFLAGS=-nix
-DETACH_LDFLAGS=-detach
-NOSTDLIB_LDFLAGS=-nostdlib
-
-AROS_TOOL_CC(SHARED_LD,$aros_shared_ld)
-AROS_TOOL_CC(KERNEL_LD,$aros_kernel_ld)
-
-# The default tools
-aros_target_ar=${prefix}-ar
-aros_target_ar_flags="cr"
-aros_target_nm=${prefix}-nm
-aros_target_nm_flags="-C -ul"
+aros_target_ar="${prefix}-ar $aros_target_ar_flags"
 aros_target_objcopy=${prefix}-objcopy
 aros_target_objdump=${prefix}-objdump
-aros_target_ranlib=${prefix}-ranlib
-aros_target_strip="${prefix}-strip --strip-unneeded -R.comment"
-
-prefix="\$(TOOLDIR)/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros"
-AR="${prefix}-ar $aros_target_ar_flags"
-RANLIB="${prefix}-ranlib $aros_target_ranlib_flags"
-NM="${prefix}-nm $aros_target_nm_flags"
-NM_PLAIN="${prefix}-nm"
-STRIP="${prefix}-strip $aros_target_strip_flags"
-OBJDUMP="${prefix}-objdump"
-OBJCOPY="${prefix}-objcopy"
-
-AC_SUBST(TARGET_CC)
-AC_SUBST(TARGET_AS)
-AC_SUBST(TARGET_LD)
-AC_SUBST(NOSTDINC_CFLAGS)
-AC_SUBST(NOSTARTUP_LDFLAGS)
-AC_SUBST(NIX_LDFLAGS)
-AC_SUBST(DETACH_LDFLAGS)
-AC_SUBST(NOSTDLIB_LDFLAGS)
-AC_SUBST(aros_cc_pre)
-AC_SUBST(AR)
-AC_SUBST(RANLIB)
-AC_SUBST(NM)
-AC_SUBST(NM_PLAIN)
-AC_SUBST(STRIP)
-AC_SUBST(OBJDUMP)
-AC_SUBST(OBJCOPY)
+aros_target_ranlib="${prefix}-ranlib $aros_target_ranlib_flags"
+aros_target_nm="${prefix}-nm $aros_target_nm_flags"
+aros_kernel_nm="${prefix}-nm"
+aros_target_strip=${prefix}-strip
 
 #-----------------------------------------------------------------------------
 # See if we can compile SHM support
@@ -1019,7 +1029,7 @@ dnl find out about the target cc's include path
 AC_MSG_CHECKING([for the target compiler's include path])
 if test "$aros_target_cc_includes" = "" ; then
     #try to guess where the directory is
-    aros_target_cc_includes=`dirname \`${aros_target_cc} -print-libgcc-file-name\``/include
+    aros_target_cc_includes=`dirname \`${aros_kernel_cc} -print-libgcc-file-name\``/include
     if ! test -d $aros_target_cc_includes; then
         #the directory doesn't exist, we need to do some more work
         aros_target_cc_includes=${PWD}/${aros_gendir}/cc_include
@@ -1164,9 +1174,13 @@ AC_SUBST(aros_flavour_uc)
 AC_SUBST(TOPDIR)
 
 # Host related
+AC_SUBST(aros_cc_pre)
+AC_SUBST(aros_host_strip)
 AC_SUBST(aros_host_arch)
 AC_SUBST(aros_host_cpu)
 AC_SUBST(aros_host_cc)
+AC_SUBST(aros_host_ar)
+AC_SUBST(aros_host_ranlib)
 AC_SUBST(aros_host_ld)
 AC_SUBST(aros_host_make)
 AC_SUBST(aros_host_cflags)
@@ -1188,21 +1202,27 @@ AC_SUBST(aros_target_cpu)
 AC_SUBST(aros_target_variant)
 AC_SUBST(aros_target_suffix)
 AC_SUBST(aros_target_incl)
+AC_SUBST(aros_target_ar)
+AC_SUBST(aros_target_ranlib)
+AC_SUBST(aros_kernel_nm)
 AC_SUBST(aros_target_cc)
+AC_SUBST(aros_kernel_cc)
+AC_SUBST(aros_target_as)
+AC_SUBST(aros_target_ld)
+AC_SUBST(aros_kernel_ld)
 AC_SUBST(aros_target_cc_includes)
 AC_SUBST(aros_target_cc_path)
 AC_SUBST(aros_target_objdump)
 AC_SUBST(aros_target_objcopy)
 AC_SUBST(aros_target_strip)
-AC_SUBST(aros_target_as)
 AC_SUBST(aros_target_nm)
 AC_SUBST(aros_shared_default)
+AC_SUBST(aros_shared_ld)
 AC_SUBST(aros_object_format)
 AC_SUBST(aros_compiler_libs)
 
 AC_SUBST(aros_config_cflags)
 AC_SUBST(aros_config_aflags)
-AC_SUBST(aros_target_ld)
 AC_SUBST(aros_config_ldflags)
 
 AC_SUBST(aros_shared_cflags)
@@ -1213,6 +1233,7 @@ AC_SUBST(aros_debug_cflags)
 AC_SUBST(aros_debug_aflags)
 AC_SUBST(aros_debug_ldflags)
 AC_SUBST(aros_target_genmap)
+AC_SUBST(aros_target_strip_flags)
 
 # Graphics Related
 AC_SUBST(aros_gui_libdir)
@@ -1350,17 +1371,19 @@ AC_CONFIG_COMMANDS([compiler_executable],
 	echo ${prefix}
 	echo ${prefix2}
         chmod a+x ${prefix2}-gcc ${prefix2}-ld
-        
+
 	ln -sf ${prefix2}-gcc          ${prefix}-gcc
 	ln -sf ${prefix2}-ld           ${prefix}-ld
-        
+
+        ln -sf $aros_target_as_ln      ${prefix}-as
         ln -sf $aros_target_nm_ln      ${prefix}-nm
         ln -sf $aros_target_ar_ln      ${prefix}-ar
         ln -sf $aros_target_ranlib_ln  ${prefix}-ranlib
         ln -sf $aros_target_objcopy_ln ${prefix}-objcopy
         ln -sf $aros_target_objdump_ln ${prefix}-objdump
         ln -sf $aros_target_strip_ln   ${prefix}-strip
-    
+
+        ln -sf $aros_target_as_ln      ${prefix2}-as
         ln -sf $aros_target_nm_ln      ${prefix2}-nm
         ln -sf $aros_target_ar_ln      ${prefix2}-ar
         ln -sf $aros_target_ranlib_ln  ${prefix2}-ranlib
@@ -1374,6 +1397,7 @@ AC_CONFIG_COMMANDS([compiler_executable],
         aros_target_arch=${aros_target_arch}
         aros_target_suffix=${aros_target_suffix}
 	aros_target_nm_ln=${aros_target_nm_ln}
+	aros_target_as_ln=${aros_target_as_ln}
 	aros_target_ar_ln=${aros_target_ar_ln}
 	aros_target_ranlib_ln=${aros_target_ranlib_ln}
 	aros_target_objdump_ln=${aros_target_objdump_ln}
@@ -1408,11 +1432,12 @@ AC_CONFIG_FILES(
     ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
     tools/adflib/myconf.aros
+    tools/collect-aros/env.h
 )
 
 AC_OUTPUT
-	 
-dnl This is in order to not defined SHARED_CFLAGS sometimes
+
+dnl This is in order to not define SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags
 
 #XXX compatability...
