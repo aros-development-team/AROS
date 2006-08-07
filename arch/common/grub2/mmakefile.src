@@ -20,16 +20,16 @@ endif
 CFLAGS := -minline-all-stringops
 export CFLAGS
 
-%build_with_configure mmake=grub2 host=yes install_target=  \
-    extraoptions="$(GRUBOPTS)" 
+%build_with_configure mmake=grub2 compiler=kernel install_target= \
+    extraoptions="$(GRUBOPTS)"
 
-GRUB2FILES := $(foreach                                          \
+GRUB2FILES := $(foreach                                         \
                    f,                                           \
                    $(wildcard                                   \
                            $(GENDIR)/$(CURDIR)/*.mod            \
                            $(GENDIR)/$(CURDIR)/*.img            \
                    ),                                           \
-                   $(subst $(GENDIR)/$(CURDIR)/,$(AROSDIR)/boot/grub2/,$f)         \
+                   $(subst $(GENDIR)/$(CURDIR)/,$(AROSDIR)/boot/grub2/,$f) \
               )
 
 $(warning GRUB2FILES = $(GRUB2FILES))

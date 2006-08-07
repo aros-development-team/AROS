@@ -4,7 +4,7 @@
 */
 
 /*
-    Full low-level interrupt core. Provides AmigaOS - like preemptive
+    Full low-level interrupt core. Provides AmigaOS-like preemptive
     multitasking.
 */
 
@@ -127,7 +127,7 @@ exec_SS_IRET:
                     .text
                     .balign 32,0x90
                     .globl  Exec_SystemCall
-                    .type   Exec_systemCall,@function
+                    .type   Exec_SystemCall,@function
 
 Exec_SystemCall:    negl    %eax
                     pushl   %eax

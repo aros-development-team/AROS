@@ -73,11 +73,11 @@ typedef	union {
 
 typedef	struct __iso_16bit {
   u_int16_t l, b;
-} iso_16bit_t __attribute__ ((packed));
+} __attribute__ ((packed)) iso_16bit_t;
 
 typedef	struct __iso_32bit {
   u_int32_t l, b;
-} iso_32bit_t __attribute__ ((packed));
+} __attribute__ ((packed)) iso_32bit_t;
 
 typedef u_int8_t		iso_date_t[7];
 

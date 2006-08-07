@@ -1,2 +1,2 @@
 #!/bin/sh
-exec @aros_cc_pre@@aros_target_cc@ -specs=@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/gen/config/specs "$@" -static
+exec @aros_cc_pre@@aros_kernel_cc@ -specs=@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/gen/config/specs "$@" -static

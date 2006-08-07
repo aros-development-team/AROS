@@ -1,54 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-COUNTRIES := andorra		 \
-	     australia 		 \
-	     belgië 		 \
-	     belgique 		 \
-	     bosna_i_hercegovina \
-	     brasil 		 \
-	     bulgarija 		 \
-	     canada 		 \
-	     canada_français 	 \
-	     cesko		 \
-    	     danmark 		 \
-	     deutschland 	 \
-	     éire 		 \
-	     españa 		 \
-	     france 		 \
-	     great_britain 	 \
-	     hrvatska		 \
-	     iran 		 \
-	     ireland 		 \
-	     ísland 		 \
-	     italia 		 \
-	     jugoslavija	 \
-	     lëtzebuerg 	 \
-	     liechtenstein	 \
-	     lietuva 		 \
-	     magyarország 	 \
-	     monaco		 \
-	     nederland 		 \
-	     nihon		 \
-	     norge 		 \
-	     österreich 	 \
-	     polska 		 \
-	     portugal 		 \
-	     românia 		 \
-	     rossija 		 \
-	     san_marino		 \
-	     schweiz 		 \
-	     slovakia		 \
-	     slovenija		 \
-	     suisse 		 \
-	     suomi 		 \
-	     sverige 		 \
-	     svizzera 		 \
-	     türkiye		 \
-	     ukrajina 		 \
-	     united_kingdom 	 \
-	     united_states 	 \
-	     vaticano
+COUNTRIES    := $(basename $(wildcard *.c))
 
 COUNTRYDIR   := $(AROS_LOCALE)/Countries
 MAKECOUNTRY  := $(OBJDIR)/makecountry
@@ -76,7 +29,8 @@ $(MAKECOUNTRY) : $(OBJS)
 	@$(HOST_CC) $(HOST_LDFLAGS) $^ -o $@
 
 $(OBJS) $(DEPS) : | $(OBJDIR)
-%rule_compile_multi basenames="makecountry $(COUNTRIES)" targetdir=$(OBJDIR)
+%rule_compile_multi basenames="makecountry/makecountry $(COUNTRIES)" \
+       cflags="$(CFLAGS) -I$(AROS_INCLUDES)" targetdir=$(OBJDIR) compiler=host
 
 %rule_makedirs dirs="$(OBJDIR) $(COUNTRYDIR)"
 

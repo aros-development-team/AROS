@@ -185,7 +185,8 @@ target_alias = @target_alias@
 
 # Do not change this order if you don't know what you are doing.
 AUTOMAKE_OPTIONS = 1.7 gnu
-SUBDIRS = netboot stage2 stage1 lib grub util docs
+#SUBDIRS = netboot stage2 stage1 lib grub util docs
+SUBDIRS = netboot stage2 stage1 # This subset is enough for AROS. Some of the skipped dirs cause problems when cross compiling
 EXTRA_DIST = BUGS MAINTENANCE
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive

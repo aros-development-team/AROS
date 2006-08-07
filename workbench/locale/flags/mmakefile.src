@@ -1,0 +1,13 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FLAGS := $(notdir $(wildcard countries/*))
+
+#MM- workbench-locale : workbench-locale-flags-countries
+#MM workbench-locale-flags-countries: setup
+workbench-locale-flags-countries : files-copy
+
+%copy_files_q files=$(FLAGS) src=countries dst=$(AROS_LOCALE)/Flags/Countries
+
+%common
+

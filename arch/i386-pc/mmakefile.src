@@ -5,7 +5,7 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 
 #
 # Rule to create AROS for pc-i386
-#   
+#
 
 #MM- AROS-pc-i386 : general-setup-pc-i386 kernel-pc-i386 software-pc-i386 \
 #MM	    config-i386-native-boot-grub

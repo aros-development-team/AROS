@@ -18,7 +18,7 @@ all : $(FLEXCAT) $(SD_OUT) $(TOOLDIR)/gcccatcomp.sh
 $(FLEXCAT) : flexcat.c
 	@$(MECHO) "Compiling $(notdir $@)..."
 	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@
-	@$(STRIP) $@
+	@$(HOST_STRIP) $@
 
 $(TOOLDIR)/gcccatcomp.sh: gcccatcomp.sh
 	@$(CP) $< $@
