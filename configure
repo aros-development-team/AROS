@@ -7665,13 +7665,6 @@ esac
 
 # Find out if we are cross-compiling (ie. if we can't use the host compiler
 # for target code)
-#if test "$cross_compiling" = "yes" ; then
-#    if test "$host_cpu" = "$target_cpu" ; then
-#        if test "$host_arch" != "darwin" ; then
-#            $cross_compiling=no
-#        fi
-#    fi
-#fi
 cross_compiling=no
 if test "$aros_host_cpu" != "$aros_target_cpu" ; then
     cross_compiling=yes
@@ -8841,7 +8834,6 @@ aros_target_nix_ldflags=-nix
 aros_target_detach_ldflags=-detach
 
 aros_target_nostdlib_ldflags=-nostdlib
-
 
 
 # Target tools
