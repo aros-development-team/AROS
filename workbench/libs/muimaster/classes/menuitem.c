@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -159,16 +157,12 @@ IPTR Menuitem__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		  break;
 
 	    case  MUIA_Menuitem_Shortcut:
-		  data->shortcut = StrDup((char*)tag->ti_Data);
+		  data->shortcut = (char*)tag->ti_Data;
 		  break;
 
 	    case  MUIA_Menu_Title:
 	    case  MUIA_Menuitem_Title:
-		  /* Don't strdup magic value NM_BARLABEL */
-		  if (tag->ti_Data == (IPTR)NM_BARLABEL)
-		      data->title = (char*)tag->ti_Data;
-		  else
-		      data->title = StrDup((char*)tag->ti_Data);
+		  data->title = (char*)tag->ti_Data;
 		  break;
 	}
     }
@@ -251,17 +245,12 @@ IPTR Menuitem__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case  MUIA_Menuitem_Shortcut:
-		FreeVec(data->shortcut);
-		data->shortcut = StrDup((char*)tag->ti_Data);
+		data->shortcut = (char*)tag->ti_Data;
 		break;
 
 	    case  MUIA_Menu_Title:
 	    case  MUIA_Menuitem_Title:
-		if (data->title != (char*)NM_BARLABEL) FreeVec(data->title);
-		if (tag->ti_Data == (IPTR)NM_BARLABEL)
-		    data->title = (char*)tag->ti_Data;
-		else
-		    data->title = StrDup((char*)tag->ti_Data);
+		data->title = (char*)tag->ti_Data;
 		tag->ti_Tag = TAG_IGNORE;
 		break;
 
@@ -340,8 +329,6 @@ IPTR Menuitem__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_MenuitemData *data = INST_DATA(cl, obj);
 
-    FreeVec(data->shortcut);
-    if (data->title != (char*)NM_BARLABEL) FreeVec(data->title);
     FreeVec(data->newmenu);
     
     return DoSuperMethodA(cl, obj, msg);
