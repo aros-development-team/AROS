@@ -126,11 +126,13 @@ AROS_UFH2(BPTR, New_CreateDir,
     AROS_USERFUNC_INIT
 
     // result is exclusive lock or NULL
-    BPTR result = (BPTR)patches[PATCH_CreateDir].oldfunc(name, libbase);
+    BPTR result = AROS_UFC2(BPTR, patches[PATCH_CreateDir].oldfunc,
+        AROS_UFCA(CONST_STRPTR, name,    D1),
+	AROS_UFCA(APTR,         libbase, A6));
 
     if (patches[PATCH_CreateDir].enabled)
     {
-	main_output("CreateDir     ", name, 0, (LONG)result);
+	main_output("CreateDir", name, 0, (LONG)result);
     }
 
     return result;
@@ -149,7 +151,9 @@ AROS_UFH2(BPTR, New_CurrentDir,
     char *lockpath = ":-(";
 
     // returns lock to old directory, 0 means boot filesystem
-    BPTR result = (BPTR)patches[PATCH_CurrentDir].oldfunc(lock, libbase);
+    BPTR result = AROS_UFC2(BPTR, patches[PATCH_CurrentDir].oldfunc,
+	AROS_UFCA(BPTR, lock,    D1),
+	AROS_UFCA(APTR, libbase, A6));
 
     if (patches[PATCH_CurrentDir].enabled)
     {
@@ -158,7 +162,7 @@ AROS_UFH2(BPTR, New_CurrentDir,
 	//lockpath = MyNameFromLock(lock, NULL, lockbuf, MAX_LOCK_LEN);
 	//if (lock) NameFromLock(lock, lockbuf, MAX_LOCK_LEN);
 #endif
-	main_output("CurrentDir    ", lockpath, 0, TRUE);
+	main_output("CurrentDir", lockpath, 0, TRUE);
     }
 
     return result;
@@ -175,11 +179,13 @@ AROS_UFH2(BOOL, New_DeleteFile,
     AROS_USERFUNC_INIT
 
     // true means deleting was OK
-    BOOL result = patches[PATCH_DeleteFile].oldfunc(name, libbase);
+    BOOL result = AROS_UFC2(BOOL, patches[PATCH_DeleteFile].oldfunc,
+	AROS_UFCA(CONST_STRPTR, name,    D1),
+	AROS_UFCA(APTR,         libbase, A6));
 
     if (patches[PATCH_DeleteFile].enabled)
     {
-	main_output("Delete        ", name, 0, result);
+	main_output("Delete", name, 0, result);
     }
 
     return result;
@@ -197,7 +203,10 @@ AROS_UFH3(LONG, New_DeleteVar,
     AROS_USERFUNC_INIT
 
     // true means variable was deleted
-    LONG result = patches[PATCH_DeleteVar].oldfunc(name, flags, libbase);
+    LONG result = AROS_UFC3(LONG, patches[PATCH_DeleteVar].oldfunc,
+	AROS_UFCA(CONST_STRPTR, name,    D1),
+	AROS_UFCA(ULONG ,       flags,   D2),
+	AROS_UFCA(APTR,         libbase, A6));
 
     if (patches[PATCH_DeleteVar].enabled)
     {
@@ -207,7 +216,7 @@ AROS_UFH3(LONG, New_DeleteVar,
         else if ((flags & 7) == LV_ALIAS) opt = "Alias";
         else                              opt = "Unknown";
 
-	main_output("DeleteVar     ", name, opt, result);
+	main_output("DeleteVar", name, opt, result);
     }
 
     return result;
@@ -226,11 +235,15 @@ AROS_UFH4(LONG, New_Execute,
     AROS_USERFUNC_INIT
 
     // true means command could be started
-    LONG result = patches[PATCH_Execute].oldfunc(string, input, output, libbase);
+    LONG result = AROS_UFC4(LONG, patches[PATCH_Execute].oldfunc,
+	AROS_UFCA(STRPTR, string,  D1),
+	AROS_UFCA(BPTR,   input ,  D2),
+	AROS_UFCA(BPTR,   output,  D3),
+	AROS_UFCA(APTR,   libbase, A6));
 
     if (patches[PATCH_Execute].enabled)
     {
-	main_output("Execute       ", string ,0 , result);
+	main_output("Execute", string ,0 , result);
     }
 
     return result;
@@ -248,7 +261,10 @@ AROS_UFH3(struct LocalVar *, New_FindVar,
     AROS_USERFUNC_INIT
 
     // NULL means variable not found
-    struct LocalVar *result = (struct LocalVar*)patches[PATCH_FindVar].oldfunc(name, type, libbase);
+    struct LocalVar *result = AROS_UFC3(struct LocalVar *, patches[PATCH_FindVar].oldfunc,
+	AROS_UFCA(CONST_STRPTR, name,    D1),
+	AROS_UFCA(ULONG,        type,    D2),
+	AROS_UFCA(APTR,         libbase, A6));
 
     if (patches[PATCH_FindVar].enabled)
     {
@@ -257,7 +273,7 @@ AROS_UFH3(struct LocalVar *, New_FindVar,
 	else if ((type & 7) == LV_ALIAS) opt = "Alias";
 	else                             opt = "Unknown";
 
-	main_output("FindVar       ", name, opt, (LONG)result);
+	main_output("FindVar", name, opt, (LONG)result);
     }
 
     return result;
@@ -277,7 +293,12 @@ AROS_UFH5(LONG, New_GetVar,
     AROS_USERFUNC_INIT
 
     // -1 means variable not defined
-    LONG result = patches[PATCH_GetVar].oldfunc(name, buffer, size, flags, libbase);
+    LONG result = AROS_UFC5(LONG, patches[PATCH_GetVar].oldfunc,
+	AROS_UFCA(CONST_STRPTR, name,    D1),
+	AROS_UFCA(STRPTR,       buffer,  D2),
+	AROS_UFCA(LONG,         size,    D3),
+	AROS_UFCA(LONG,         flags,   D4),
+	AROS_UFCA(APTR,         libbase, A6));
 
     if (patches[PATCH_GetVar].enabled)
     {
@@ -287,7 +308,7 @@ AROS_UFH5(LONG, New_GetVar,
         else if (flags & GVF_LOCAL_ONLY)  opt = "Local";
         else                              opt = "Any";
 
-	main_output("GetVar        ", name, opt, result != -1);
+	main_output("GetVar", name, opt, result != -1);
     }
 
     return result;
@@ -304,11 +325,13 @@ AROS_UFH2(BPTR, New_LoadSeg,
     AROS_USERFUNC_INIT
 
     // 0 means load failed
-    BPTR result = (BPTR)patches[PATCH_LoadSeg].oldfunc(name, libbase);
+    BPTR result = AROS_UFC2(BPTR, patches[PATCH_LoadSeg].oldfunc,
+	AROS_UFCA(CONST_STRPTR, name,    D1),
+	AROS_UFCA(APTR,         libbase, A6));
 
     if (patches[PATCH_LoadSeg].enabled)
     {
-	main_output("LoadSeg       ", name, 0, (LONG)result);
+	main_output("LoadSeg", name, 0, (LONG)result);
     }
 
     return result;
@@ -326,7 +349,10 @@ AROS_UFH3(BPTR, New_Lock,
     AROS_USERFUNC_INIT
 
     // 0 means error
-    BPTR result = (BPTR)patches[PATCH_Lock].oldfunc(name, accessMode, libbase);
+    BPTR result = AROS_UFC3(BPTR, patches[PATCH_Lock].oldfunc,
+	AROS_UFCA(CONST_STRPTR, name,       D1),
+	AROS_UFCA(LONG,         accessMode, D2),
+	AROS_UFCA(APTR,         libbase,    A6));
 
     if (patches[PATCH_Lock].enabled)
     {
@@ -339,7 +365,7 @@ AROS_UFH3(BPTR, New_Lock,
 	if ( ! setup.showPaths &&  *curname == '\0')
 	    curname = "\"\"";
 
-	main_output("Lock          ", curname, opt, (LONG)result);
+	main_output("Lock", curname, opt, (LONG)result);
     }
 
     return result;
@@ -358,7 +384,11 @@ AROS_UFH4(LONG, New_MakeLink,
     AROS_USERFUNC_INIT
 
     // result is boolean
-    LONG result = patches[PATCH_MakeLink].oldfunc(name, dest, soft, libbase);
+    LONG result = AROS_UFC4(LONG, patches[PATCH_MakeLink].oldfunc,
+	AROS_UFCA(STRPTR, name,    D1),
+	AROS_UFCA(APTR,   dest,    D2),
+	AROS_UFCA(LONG,   soft,    D3),
+	AROS_UFCA(APTR,   libbase, A6));
 
     if (patches[PATCH_MakeLink].enabled)
     {
@@ -394,7 +424,7 @@ AROS_UFH4(LONG, New_MakeLink,
 	    }
 	}
 #endif
-	main_output("MakeLink      ", name /*namestr */, opt, result);
+	main_output("MakeLink", name /*namestr */, opt, result);
     }
 
     return result;
@@ -412,11 +442,14 @@ AROS_UFH3(BPTR, New_NewLoadSeg,
     AROS_USERFUNC_INIT
 
     // 0 means load failed
-    BPTR result = (BPTR)patches[PATCH_NewLoadSeg].oldfunc(file, tags, libbase);
+    BPTR result = AROS_UFC3(BPTR, patches[PATCH_NewLoadSeg].oldfunc,
+	AROS_UFCA(STRPTR,           file,    D1),
+	AROS_UFCA(struct TagItem *, tags,    D2),
+	AROS_UFCA(APTR,             libbase, A6));
 
     if (patches[PATCH_NewLoadSeg].enabled)
     {
-	main_output("NewLoadSeg    ", file, 0, (LONG)result);
+	main_output("NewLoadSeg", file, 0, (LONG)result);
     }
 
     return result;
@@ -434,8 +467,11 @@ AROS_UFH3 (BPTR, New_Open,
 {
     AROS_USERFUNC_INIT
 
-	// 0 means error
-	BPTR result = (BPTR)patches[PATCH_Open].oldfunc(name, accessMode, libbase);
+    // 0 means error
+    BPTR result = AROS_UFC3(BPTR, patches[PATCH_Open].oldfunc,
+	AROS_UFCA (CONST_STRPTR, name,       D1),
+	AROS_UFCA (LONG,         accessMode, D2),
+	AROS_UFCA (APTR,         libbase,    A6));
 
     if (patches[PATCH_Open].enabled)
     {
@@ -445,7 +481,7 @@ AROS_UFH3 (BPTR, New_Open,
 	else if (accessMode == MODE_READWRITE) opt = "Modify";
 	else                                   opt = "Unknown";
 
-	main_output("Open          ", name, opt, (LONG)result);
+	main_output("Open", name, opt, (LONG)result);
     }
 
     return result;
@@ -463,12 +499,15 @@ AROS_UFH3(LONG, New_Rename,
     AROS_USERFUNC_INIT
 
     // bool
-    LONG result = patches[PATCH_Rename].oldfunc(oldName, newName, libbase);
+    LONG result = AROS_UFC3(LONG, patches[PATCH_Rename].oldfunc,
+	AROS_UFCA(CONST_STRPTR, oldName, D1),
+	AROS_UFCA(CONST_STRPTR, newName, D2),
+	AROS_UFCA(APTR,         libbase, A6));
 
     if (patches[PATCH_Rename].enabled)
     {
-	main_output("Rename        ", oldName, 0, result);
-	main_output("to -->        ", newName, 0, result);
+	main_output("Rename", oldName, 0, result);
+	main_output("to -->", newName, 0, result);
     }
     
     return result;
@@ -487,12 +526,28 @@ AROS_UFH5(LONG, New_RunCommand,
 {
     AROS_USERFUNC_INIT
 
-    // bool
-    LONG result = patches[PATCH_RunCommand].oldfunc(segList, stacksize, argptr, argsize, libbase);
+    // -1 means error
+    LONG result = AROS_UFC5(LONG, patches[PATCH_RunCommand].oldfunc,
+	AROS_UFCA(BPTR,   segList,   D1),
+	AROS_UFCA(ULONG,  stacksize, D2),
+	AROS_UFCA(STRPTR, argptr,    D3),
+	AROS_UFCA(ULONG,  argsize,   D4),
+	AROS_UFCA(APTR,   libbase,   A6));
 
     if (patches[PATCH_RunCommand].enabled)
-    {			
-	main_output("RunCommand    ", 0, 0, result != -1);  // FIXME: print args
+    {
+	char argstr[MAX_STR_LEN + 1];
+	int pos;
+	for (pos = 0; pos < MAX_STR_LEN && argptr[pos] != 0 ; pos++)
+	{
+	    if (argptr[pos] == '\n')
+		argstr[pos] = ' ';
+	    else
+		argstr[pos] = argptr[pos];
+	}
+
+	argstr[pos] = 0;
+	main_output("RunCommand", argstr, 0, result != -1);
     }
     
     return result;
@@ -511,7 +566,12 @@ AROS_UFH5(BOOL, New_SetVar,
 {
     AROS_USERFUNC_INIT
 
-    BOOL result = (BOOL)patches[PATCH_SetVar].oldfunc(name, buffer, size, flags, libbase);
+    BOOL result = AROS_UFC5(BOOL, patches[PATCH_SetVar].oldfunc,
+	AROS_UFCA(CONST_STRPTR, name,    D1),
+	AROS_UFCA(CONST_STRPTR, buffer,  D2),
+	AROS_UFCA(LONG,         size,    D3),
+	AROS_UFCA(LONG,         flags,   D4),
+	AROS_UFCA(void*,        libbase, A6));
 
     if (patches[PATCH_SetVar].enabled)
     {
@@ -544,7 +604,7 @@ AROS_UFH5(BOOL, New_SetVar,
 	    strncat(varstr, buffer, vlen);
 	    varstr[MAX_STR_LEN] = 0;
 	}
-	main_output("SetVar        ", varstr, opt, result);
+	main_output("SetVar", varstr, opt, result);
     }
 
     return result;
@@ -562,13 +622,16 @@ AROS_UFH3(LONG, New_SystemTagList,
     AROS_USERFUNC_INIT
 
     // -1 means error
-    LONG result = patches[PATCH_SystemTagList].oldfunc(command, tags, libbase);
+    LONG result = AROS_UFC3(LONG, patches[PATCH_SystemTagList].oldfunc,
+	AROS_UFCA(CONST_STRPTR,     command, D1),
+	AROS_UFCA(struct TagItem *, tags,    D2),
+	AROS_UFCA(APTR,             libbase, A6));
 
     if (patches[PATCH_SystemTagList].enabled)
     {
-	char optstr[20];       /* Reserve additional space for return code! */
+	char optstr[20];
 	sprintf(optstr, "%ld", result);
-	main_output("SystemTagList ", command, optstr, result != -1);
+	main_output("SystemTagList", command, optstr, result != -1);
     }
 
     return result;
@@ -585,11 +648,13 @@ AROS_UFH2(struct MsgPort *, New_FindPort,
     AROS_USERFUNC_INIT
 
     // NULL means error
-    struct MsgPort *result = (struct MsgPort*)patches[PATCH_FindPort].oldfunc(name, libbase);
+    struct MsgPort *result = AROS_UFC2(struct MsgPort *, patches[PATCH_FindPort].oldfunc,
+	AROS_UFCA(STRPTR, name,    A1),
+	AROS_UFCA(APTR,   libbase, A6));
 
     if (patches[PATCH_FindPort].enabled)
     {
-	main_output("FindPort      ", name, 0, (LONG)result );
+	main_output("FindPort", name, 0, (LONG)result );
     }
     
     return result;
@@ -606,11 +671,13 @@ AROS_UFH2(struct Resident *, New_FindResident,
     AROS_USERFUNC_INIT
 
     // NULL means error
-    struct Resident *result = (struct Resident*)patches[PATCH_FindResident].oldfunc(name, libbase);
+    struct Resident *result = AROS_UFC2(struct Resident *, patches[PATCH_FindResident].oldfunc,
+	AROS_UFCA(const UBYTE *, name,    A1),
+	AROS_UFCA(APTR,          libbase, A6));
 
     if (patches[PATCH_FindResident].enabled)
     {
-	main_output("FindResident  ", name, 0, (LONG)result );
+	main_output("FindResident", name, 0, (LONG)result );
     }
     
     return result;
@@ -627,11 +694,13 @@ AROS_UFH2(struct SignalSemaphore *, New_FindSemaphore,
     AROS_USERFUNC_INIT
 
     // NULL means error
-    struct SignalSemaphore *result = (struct SignalSemaphore*)patches[PATCH_FindSemaphore].oldfunc(name, libbase);
+    struct SignalSemaphore *result = AROS_UFC2(struct SignalSemaphore *, patches[PATCH_FindSemaphore].oldfunc,
+	AROS_UFCA(STRPTR, name,    A1),
+	AROS_UFCA(APTR,   libbase, A6));
 
     if (patches[PATCH_FindSemaphore].enabled)
     {
-	main_output("FindSemaphore ", name, 0, (LONG)result );
+	main_output("FindSemaphore", name, 0, (LONG)result );
     }
     
     return result;
@@ -648,11 +717,13 @@ AROS_UFH2(struct Task *, New_FindTask,
     AROS_USERFUNC_INIT
 
     // NULL means error
-    struct Task *result = (struct Task*)patches[PATCH_FindTask].oldfunc(name, libbase);
+    struct Task *result = AROS_UFC2(struct Task *, patches[PATCH_FindTask].oldfunc,
+	AROS_UFCA(STRPTR, name,    A1),
+	AROS_UFCA(APTR,   libbase, A6));
 
     if (patches[PATCH_FindTask].enabled)
     {
-	main_output("FindTask      ", name, 0, (LONG)result );
+	main_output("FindTask", name, 0, (LONG)result );
     }
     
     return result;
@@ -672,13 +743,18 @@ AROS_UFH5(BYTE, New_OpenDevice,
     AROS_USERFUNC_INIT
 
     // 0 means OK
-    BYTE result = patches[PATCH_OpenDevice].oldfunc(devName, unitNumber, iORequest, flags, libbase);
+    BYTE result = AROS_UFC5(BYTE, patches[PATCH_OpenDevice].oldfunc,
+	AROS_UFCA(CONST_STRPTR,       devName,    A0),
+	AROS_UFCA(ULONG,              unitNumber, D0),
+	AROS_UFCA(struct IORequest *, iORequest,  A1),
+	AROS_UFCA(ULONG,              flags,      D1),
+	AROS_UFCA(APTR,               libbase,    A6));
 
     if (patches[PATCH_OpenDevice].enabled)
     {
 	char unitstr[20];
 	sprintf(unitstr, "Unit %ld", unitNumber);
-	main_output("OpenDevice    ", devName, unitstr, result );
+	main_output("OpenDevice", devName, unitstr, result );
     }
     
     return result;
@@ -696,13 +772,16 @@ AROS_UFH3(struct Library *, New_OpenLibrary,
     AROS_USERFUNC_INIT
 
     // 0 means error
-    struct Library *result = (struct Library*)patches[PATCH_OpenLibrary].oldfunc(libName, version, libbase);
+    struct Library *result = AROS_UFC3(struct Library *, patches[PATCH_OpenLibrary].oldfunc,
+	AROS_UFCA(CONST_STRPTR,  libName, A1),
+	AROS_UFCA(ULONG,         version, D0),
+	AROS_UFCA(APTR,          libbase, A6));
 
     if (patches[PATCH_OpenLibrary].enabled)
     {
 	char verstr[20];
 	sprintf(verstr, "Version %ld", version);
-	main_output("OpenLibrary   ", libName, verstr, (LONG)result );
+	main_output("OpenLibrary", libName, verstr, (LONG)result );
     }
     
     return result;
@@ -719,11 +798,13 @@ AROS_UFH2(APTR, New_OpenResource,
     AROS_USERFUNC_INIT
 
     // 0 means error
-    APTR result = (APTR)patches[PATCH_OpenResource].oldfunc(resName, libbase);
+    APTR result = AROS_UFC2(APTR, patches[PATCH_OpenResource].oldfunc,
+	AROS_UFCA(CONST_STRPTR, resName, A1),
+	AROS_UFCA(APTR,         libbase, A6));
 
     if (patches[PATCH_OpenResource].enabled)
     {
-	main_output("OpenLibrary   ", resName, 0, (LONG)result );
+	main_output("OpenLibrary", resName, 0, (LONG)result );
     }
     
     return result;
@@ -740,11 +821,13 @@ AROS_UFH2(struct Screen *, New_LockPubScreen,
     AROS_USERFUNC_INIT
 
     // 0 means error
-    struct Screen *result = (struct Screen*)patches[PATCH_LockPubScreen].oldfunc(name, libbase);
+    struct Screen *result = AROS_UFC2(struct Screen *, patches[PATCH_LockPubScreen].oldfunc,
+	AROS_UFCA(CONST_STRPTR, name,    A0),
+	AROS_UFCA(APTR,         libbase, A6));
 
     if (patches[PATCH_LockPubScreen].enabled)
     {
-	main_output("LockPubScreen ", name, 0, (LONG)result );
+	main_output("LockPubScreen", name, 0, (LONG)result );
     }
     
     return result;
@@ -761,7 +844,9 @@ AROS_UFH2(struct TextFont *, New_OpenFont,
     AROS_USERFUNC_INIT
 
     // 0 means error
-    struct TextFont *result = (struct TextFont*)patches[PATCH_OpenFont].oldfunc(textAttr, libbase);
+    struct TextFont *result = AROS_UFC2(struct TextFont *, patches[PATCH_OpenFont].oldfunc,
+	AROS_UFCA(struct TextAttr *, textAttr, A0),
+	AROS_UFCA(APTR,              libbase,  A6));
 
     if (patches[PATCH_OpenFont].enabled)
     {
@@ -775,7 +860,7 @@ AROS_UFH2(struct TextFont *, New_OpenFont,
 	    *sizestr = '\0';
 	    name = "\"\"";
 	}
-	main_output("OpenFont      ", name, sizestr, (LONG)result );
+	main_output("OpenFont", name, sizestr, (LONG)result );
     }
 
     return result;
@@ -793,11 +878,14 @@ AROS_UFH3(UBYTE *, New_FindToolType,
     AROS_USERFUNC_INIT
 
     // 0 means error
-    UBYTE *result = (UBYTE*)patches[PATCH_FindToolType].oldfunc(toolTypeArray, typeName, libbase);
+    UBYTE *result = AROS_UFC3(UBYTE *, patches[PATCH_FindToolType].oldfunc,
+	AROS_UFCA(CONST STRPTR *, toolTypeArray, A0),
+	AROS_UFCA(CONST STRPTR,   typeName,      A1),
+	AROS_UFCA(APTR,           libbase,       A6));
 
     if (patches[PATCH_FindToolType].enabled)
     {
-	main_output("FindToolType  ", typeName, 0, (LONG)result );
+	main_output("FindToolType", typeName, 0, (LONG)result );
     }
 
     return result;
@@ -814,7 +902,10 @@ AROS_UFH3(BOOL, New_MatchToolValue,
 {
     AROS_USERFUNC_INIT
 
-    BOOL result = patches[PATCH_MatchToolValue].oldfunc(typeString, value, libbase);
+    BOOL result = AROS_UFC3(BOOL, patches[PATCH_MatchToolValue].oldfunc,
+	AROS_UFCA(UBYTE *, typeString, A0),
+	AROS_UFCA(UBYTE *, value,      A1),
+	AROS_UFCA(APTR,    libbase,    A6));
 
     if (patches[PATCH_MatchToolValue].enabled)
     {

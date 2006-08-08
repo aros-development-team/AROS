@@ -118,7 +118,7 @@ void gui_init(void)
 
     app = ApplicationObject,
 	MUIA_Application_Title, (IPTR)"Snoopy",
-	MUIA_Application_Version, (IPTR)"$VER: Snoopy 0.1 (6.8.2006)",
+	MUIA_Application_Version, (IPTR)"$VER: Snoopy 0.2 (8.8.2006)",
 	MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, (IPTR)"Simple system monitor",
@@ -228,7 +228,6 @@ void gui_init(void)
     set(cliCM,    MUIA_Disabled, TRUE);
     set(pathCM,   MUIA_Disabled, TRUE);
     set(devCM,    MUIA_Disabled, TRUE);
-    set(ignoreCM, MUIA_Disabled, TRUE);
 
     gui_set();
     set(window, MUIA_Window_Open, TRUE);

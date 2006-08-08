@@ -6,10 +6,10 @@ include $(TOP)/config/make.cfg
 FILES   := gui main patches setup
 EXEDIR  := $(AROS_UTILITIES)
 
-#MM- workbench-tools : workbench-tools-snoopy
-#MM  workbench-tools-snoopy : includes linklibs
+#MM- workbench-utilities : workbench-utilities-snoopy
+#MM  workbench-utilities-snoopy : includes linklibs
 
-%build_prog mmake=workbench-tools-snoopy \
+%build_prog mmake=workbench-utilities-snoopy \
     progname=Snoopy targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="rom mui arossupport amiga"
 

@@ -13,6 +13,8 @@ void setup_init(void)
     setup.onlyShowFails       = FALSE;
     setup.useDevNames         = FALSE;
     setup.showPaths           = FALSE;
+    setup.showCliNr           = FALSE;
+    setup.ignoreWB            = FALSE;
 
     setup.enableChangeDir     = FALSE;
     setup.enableDelete        = FALSE;
@@ -38,6 +40,11 @@ void setup_init(void)
     setup.enableOpenLibrary   = TRUE;
     setup.enableOpenResource  = FALSE;
     setup.enableReadToolTypes = FALSE;
+
+    setup.nameLen = 15;
+    setup.actionLen = 15;
+    setup.targetLen = 40;
+    setup.optionLen = 15;
 
     oldsetup = setup;
 }

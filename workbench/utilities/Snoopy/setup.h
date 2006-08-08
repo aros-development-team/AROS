@@ -42,6 +42,12 @@ struct Setup
     BOOL enableOpenLibrary;
     BOOL enableOpenResource;
     BOOL enableReadToolTypes;
+
+    // min. field len for output
+    LONG nameLen;
+    LONG actionLen;
+    LONG targetLen;
+    LONG optionLen;
 }; 
 
 extern struct Setup setup;
