@@ -129,9 +129,6 @@ IPTR Dirlist__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     struct Dirlist_DATA *data = INST_DATA(cl, obj);
 
     FreeVec(data->path);
-    FreeVec(data->acceptpattern);
-    FreeVec(data->rejectpattern);
-    FreeVec(data->directory);
     
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -252,13 +249,11 @@ IPTR Dirlist__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    
     	    case MUIA_Dirlist_AcceptPattern:
-		FreeVec(data->acceptpattern);
-		data->acceptpattern = StrDup((STRPTR)tidata);
+		data->acceptpattern = (STRPTR)tidata;
 		break;
 
 	    case MUIA_Dirlist_Directory:
-		FreeVec(data->directory);
-		data->directory = StrDup((STRPTR)tidata);
+		data->directory = (STRPTR)tidata;
 		directory_changed = TRUE;
 		break;
 
@@ -287,8 +282,7 @@ IPTR Dirlist__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_Dirlist_RejectPattern:
-		FreeVec(data->rejectpattern);
-	    	data->rejectpattern = StrDup((STRPTR)tidata);
+	    	data->rejectpattern = (STRPTR)tidata;
 		break;
 
 	    case MUIA_Dirlist_SortDirs:
@@ -450,11 +444,11 @@ BOOPSI_DISPATCHER(IPTR, Dirlist_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Dirlist__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_NEW:     return Dirlist__OM_NEW(cl, obj, (struct opSet *)msg);
 	case OM_DISPOSE: return Dirlist__OM_DISPOSE(cl, obj, msg);
-	case OM_SET: return Dirlist__OM_SET(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Dirlist__OM_GET(cl, obj, (struct opGet *)msg);
-        default:     return DoSuperMethodA(cl, obj, msg);
+	case OM_SET:     return Dirlist__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:     return Dirlist__OM_GET(cl, obj, (struct opGet *)msg);
+        default:         return DoSuperMethodA(cl, obj, msg);
     }
 }
 BOOPSI_DISPATCHER_END

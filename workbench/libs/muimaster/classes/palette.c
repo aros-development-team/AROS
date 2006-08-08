@@ -1,6 +1,6 @@
 /*
     Copyright © 2002-2006, The AROS Development Team. All rights reserved.
-    $Id: palette.c 21734 2006-04-09 23:22:13Z darius brewka $
+    $Id$
 */
 
 #include <graphics/gfx.h>

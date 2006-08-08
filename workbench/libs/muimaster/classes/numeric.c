@@ -53,7 +53,7 @@ IPTR Numeric__OM_NEW(struct IClass *cl, Object * obj, struct opSet *msg)
 	return 0;
 
     data = INST_DATA(cl, obj);
-    data->format = StrDup("%ld");
+    data->format = "%ld";
     data->max    = 100;
     data->min    =   0;
     data->flags  =   0;
@@ -70,7 +70,7 @@ IPTR Numeric__OM_NEW(struct IClass *cl, Object * obj, struct opSet *msg)
 	  data->defvalue = tag->ti_Data;
 	  break;
 	case MUIA_Numeric_Format:
-	  data->format = StrDup((STRPTR)tag->ti_Data);
+	  data->format = (STRPTR)tag->ti_Data;
 	  break;
 	case MUIA_Numeric_Max:
 	  data->max = tag->ti_Data;
@@ -128,8 +128,7 @@ IPTR Numeric__OM_SET(struct IClass *cl, Object * obj, struct opSet *msg)
 		data->defvalue = tag->ti_Data;
 		break;
 	    case MUIA_Numeric_Format:
-		FreeVec(data->format);
-		data->format = StrDup((STRPTR)tag->ti_Data);
+		data->format = (STRPTR)tag->ti_Data;
 		break;
 	    case MUIA_Numeric_Max:
 		data->max = tag->ti_Data;
@@ -231,17 +230,6 @@ IPTR Numeric__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
-}
-
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-IPTR Numeric__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
-{
-    struct MUI_NumericData *data = INST_DATA(cl, obj);
-
-    FreeVec(data->format);
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 /**************************************************************************
@@ -552,7 +540,6 @@ BOOPSI_DISPATCHER(IPTR, Numeric_Dispatcher, cl, obj, msg)
 	case OM_NEW:                       return Numeric__OM_NEW(cl, obj, (APTR)msg);
 	case OM_SET:                       return Numeric__OM_SET(cl, obj, (APTR)msg);
 	case OM_GET:                       return Numeric__OM_GET(cl, obj, (APTR)msg);
-	case OM_DISPOSE:                   return Numeric__OM_DISPOSE(cl, obj, (APTR)msg);
 
 	case MUIM_Setup:                   return Numeric__MUIM_Setup(cl, obj, (APTR)msg);
 	case MUIM_Cleanup:                 return Numeric__MUIM_Cleanup(cl, obj, (APTR)msg);

@@ -162,7 +162,7 @@ IPTR Notify__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	        break;
 
 	    case MUIA_HelpNode:
-	        data->mnd_HelpNode = StrDup((STRPTR)tag->ti_Data);
+	        data->mnd_HelpNode = (STRPTR)tag->ti_Data;
 	        break;
 
 	    case MUIA_ObjectID:
@@ -196,8 +196,6 @@ IPTR Notify__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 	}
 	mui_free(data->mnd_NotifyList);
     }
-
-    FreeVec(data->mnd_HelpNode);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -306,8 +304,7 @@ IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 	        break;
 
 	    case MUIA_HelpNode:
-		FreeVec(data->mnd_HelpNode);
-		data->mnd_HelpNode = StrDup((STRPTR)tag->ti_Data);
+		data->mnd_HelpNode = (STRPTR)tag->ti_Data;
 	        break;
 
 	    case MUIA_NoNotify:

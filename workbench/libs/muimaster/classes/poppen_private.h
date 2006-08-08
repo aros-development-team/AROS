@@ -6,7 +6,7 @@ struct Poppen_DATA
 {
     Object *wnd;
     Object *penadjust;
-    STRPTR wintitle;
+    CONST_STRPTR wintitle;
 };
 
 #endif /* _POPPEN_PRIVATE_H_ */

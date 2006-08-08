@@ -64,6 +64,7 @@ struct MUI_ApplicationData
     STRPTR          	    app_HelpFile;
     STRPTR          	    app_Title;
     STRPTR          	    app_Version;
+    BOOL                    app_VersionAllocated;
     STRPTR                  app_Version_Number;
     STRPTR                  app_Version_Date;
     STRPTR                  app_Version_Extra;
@@ -396,13 +397,16 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
     /* parse initial taglist */
 
     data->app_Active = 1;
-   
+    data->app_Title = "Unnamed"; 
+    data->app_Version = "Unnamed 0.0"; 
+    data->app_Description = "?"; 
+    
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
 	    case MUIA_Application_Author:
-		data->app_Author = StrDup((STRPTR)tag->ti_Data);
+		data->app_Author = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_Application_Base:
@@ -410,15 +414,15 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
 		break;
 
 	    case MUIA_Application_Copyright:
-		data->app_Copyright = StrDup((STRPTR)tag->ti_Data);
+		data->app_Copyright = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_Application_Description:
-		data->app_Description = StrDup((STRPTR)tag->ti_Data);
+		data->app_Description = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_Application_HelpFile:
-		data->app_HelpFile = StrDup((STRPTR)tag->ti_Data);
+		data->app_HelpFile = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_Application_SingleTask:
@@ -426,23 +430,23 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
 		break;
 
 	    case MUIA_Application_Title:
-		data->app_Title = StrDup((STRPTR)tag->ti_Data);
+		data->app_Title = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_Application_Version:
-		data->app_Version = StrDup((STRPTR)tag->ti_Data);
+		data->app_Version = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_Application_Version_Number:
-		data->app_Version_Number = StrDup((STRPTR)tag->ti_Data);
+		data->app_Version_Number = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_Application_Version_Date:
-		data->app_Version_Date = StrDup((STRPTR)tag->ti_Data);
+		data->app_Version_Date = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_Application_Version_Extra:
-		data->app_Version_Extra = StrDup((STRPTR) tag->ti_Data);
+		data->app_Version_Extra = (STRPTR) tag->ti_Data;
 		break;
 
 	    case MUIA_Application_Window:
@@ -481,9 +485,6 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
 	}
     }
 
-    if (data->app_Title == NULL) data->app_Title = StrDup("Unnamed");
-    if (data->app_Description == NULL) data->app_Description = StrDup("?");
- 
     /* create MUIA_Application_Version if NULL */
     if
     (
@@ -538,11 +539,10 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
             }
             
             data->app_Version          = result;
+	    data->app_VersionAllocated = TRUE;
         }
         
     }
-
-    if (data->app_Version == NULL) data->app_Version = StrDup("Unnamed 0.0");
 
     if (bad_childs)
     {
@@ -638,15 +638,10 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_Menustrip)
 	MUI_DisposeObject(data->app_Menustrip);
 
-    FreeVec(data->app_Author);
-    FreeVec(data->app_Copyright);
-    FreeVec(data->app_Description);
-    FreeVec(data->app_HelpFile);
-    FreeVec(data->app_Title);
-    FreeVec(data->app_Version);
-    FreeVec(data->app_Version_Number);
-    FreeVec(data->app_Version_Date);
-    FreeVec(data->app_Version_Extra);
+    if (data->app_VersionAllocated && data->app_Version != NULL)
+    {
+	FreeVec(data->app_Version);
+    }
 
     /* free commodities stuff */
     
@@ -727,8 +722,7 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
 		break;
 
 	    case    MUIA_Application_HelpFile:
-		    FreeVec(data->app_HelpFile);
-		    data->app_HelpFile = StrDup((STRPTR)tag->ti_Data);
+		    data->app_HelpFile = (STRPTR)tag->ti_Data;
 		    break;
 
 	    case    MUIA_Application_Iconified:

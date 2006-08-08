@@ -7,7 +7,7 @@ struct Popimage_DATA
     Object *wnd;
     Object *imageadjust;
     ULONG adjust_type;
-    STRPTR wintitle;
+    CONST_STRPTR wintitle;
 };
 
 #endif /* _POPIMAGE_PRIVATE_H_ */

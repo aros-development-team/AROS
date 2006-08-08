@@ -2560,7 +2560,7 @@ IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 		
 	    case MUIA_Window_PublicScreen:
-	    	data->wd_UserPublicScreen = StrDup((STRPTR)tag->ti_Data);
+	    	data->wd_UserPublicScreen = (STRPTR)tag->ti_Data;
 		break;
 	}
     }
@@ -2600,7 +2600,6 @@ IPTR Window__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 	
     FreeVec(data->wd_Title);
     FreeVec(data->wd_ScreenTitle);
-    FreeVec(data->wd_UserPublicScreen);
 
     DeletePool(data->wd_MemoryPool);
 
@@ -2797,8 +2796,7 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 		
 	    case MUIA_Window_PublicScreen:
-		FreeVec(data->wd_UserPublicScreen);
-		data->wd_UserPublicScreen = StrDup((STRPTR)tag->ti_Data);
+		data->wd_UserPublicScreen = (STRPTR)tag->ti_Data;
 		break;
 	    
 
