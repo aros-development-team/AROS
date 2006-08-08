@@ -44,8 +44,8 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_StringData {
     ULONG        msd_Flags;
-    STRPTR       msd_Accept; /* MUIA_String_Accept */
-    STRPTR       msd_Reject; /* MUIA_String_Reject */
+    CONST_STRPTR msd_Accept; /* MUIA_String_Accept */
+    CONST_STRPTR msd_Reject; /* MUIA_String_Reject */
     LONG         msd_Align;
     struct Hook *msd_EditHook;
     Object      *msd_AttachedList;
@@ -403,11 +403,11 @@ IPTR String__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case  MUIA_String_Accept:
-		data->msd_Accept = StrDup((STRPTR)tag->ti_Data);
+		data->msd_Accept = (CONST_STRPTR)tag->ti_Data;
 		break;
 
 	    case  MUIA_String_Reject:
-		data->msd_Reject = StrDup((STRPTR)tag->ti_Data);
+		data->msd_Reject = (CONST_STRPTR)tag->ti_Data;
 		break;
 
             case MUIA_String_AdvanceOnCR:
@@ -497,8 +497,6 @@ IPTR String__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
     FreeVec(data->Buffer);
     FreeVec(data->SecBuffer);
-    FreeVec(data->msd_Accept);
-    FreeVec(data->msd_Reject);
 
     D(bug("String_Dispose %p\n", obj));
 
@@ -526,13 +524,11 @@ IPTR String__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_String_Accept:
-		FreeVec(data->msd_Accept);
-		data->msd_Accept = StrDup((STRPTR)tag->ti_Data);
+		data->msd_Accept = (CONST_STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_String_Reject:
-		FreeVec(data->msd_Reject);
-		data->msd_Reject = StrDup((STRPTR)tag->ti_Data);
+		data->msd_Reject = (CONST_STRPTR)tag->ti_Data;
 		break;
 
             case MUIA_String_AttachedList:
@@ -607,6 +603,10 @@ IPTR String__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         
         case MUIA_String_Accept:
 	    STORE = (IPTR) data->msd_Accept;
+	    return TRUE;
+
+	case MUIA_String_Reject:
+	    STORE = (IPTR) data->msd_Reject;
 	    return TRUE;
         
         case MUIA_String_AttachedList:

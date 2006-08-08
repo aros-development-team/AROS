@@ -51,7 +51,7 @@ IPTR Popframe__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case MUIA_Window_Title:
-		data->wintitle = StrDup((STRPTR)tag->ti_Data);
+		data->wintitle = (CONST_STRPTR)tag->ti_Data;
 		break;
 	}
     }
@@ -72,7 +72,6 @@ IPTR Popframe__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     	MUI_DisposeObject(data->wnd);
     	data->wnd = NULL;
     }
-    FreeVec(data->wintitle);
     return DoSuperMethodA(cl,obj,(Msg)msg);   
 }
 

@@ -320,7 +320,7 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_FixHeightTxt:
-	    	data->mad_HardHeightTxt = StrDup((STRPTR)tag->ti_Data);
+	    	data->mad_HardHeightTxt = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_FixWidth:
@@ -329,7 +329,7 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_FixWidthTxt:
-	    	data->mad_HardWidthTxt = StrDup((STRPTR)tag->ti_Data);
+	    	data->mad_HardWidthTxt = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_Font:
@@ -345,7 +345,7 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_FrameTitle:
-		data->mad_FrameTitle = StrDup((STRPTR)tag->ti_Data);
+		data->mad_FrameTitle = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_HorizWeight:
@@ -391,7 +391,7 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_ShortHelp:
-		data->mad_ShortHelp = StrDup((STRPTR)tag->ti_Data);
+		data->mad_ShortHelp = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_ShowMe:
@@ -451,11 +451,6 @@ static IPTR Area__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
     zune_image_spec_free(data->mad_BackgroundSpec); /* Safe to call this with NULL */
-
-    FreeVec(data->mad_HardHeightTxt);
-    FreeVec(data->mad_HardWidthTxt);
-    FreeVec(data->mad_FrameTitle);
-    FreeVec(data->mad_ShortHelp);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -611,8 +606,7 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_ShortHelp:
-		FreeVec(data->mad_ShortHelp);
-		data->mad_ShortHelp = StrDup((STRPTR)tag->ti_Data);
+		data->mad_ShortHelp = (STRPTR)tag->ti_Data;
 		break;
 
 	    case MUIA_ShowMe:
