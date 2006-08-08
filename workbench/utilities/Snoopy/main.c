@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include <proto/dos.h>
+#include <proto/arossupport.h>
 
 #include "main.h"
 #include "gui.h"
@@ -24,17 +25,41 @@ int main(void)
     return RETURN_OK;
 }
 
+static void prettyprint(CONST_STRPTR str, LONG minlen)
+{
+    if ( ! str) str = "";
+    LONG len = strlen(str);
+    RawPutChars("| ", 2);
+    RawPutChars(str, len);
+    LONG i;
+    for (i = len ; i < minlen ; i++)
+    {
+	RawPutChar(' ');
+    }
+}
+
+
 void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, LONG result)
 {
+    STRPTR name = SysBase->ThisTask->tc_Node.ln_Name;
+    
     if (setup.onlyShowFails && result) return;
-
-    if ( ! action) action = "          ";
-    if ( ! target) target = "          ";
-    if ( ! option) option = "     ";
-
-    //FIXME: pretty printing, 'bug' doesn't allow something like %10s
-    bug("SNOOP: %s | %s | %s | %s | %s\n", SysBase->ThisTask->tc_Node.ln_Name, action, target, option,
-	    result ? "OK" : "Fail");
+    if (setup.ignoreWB)
+    {
+	if ( ! stricmp(name, "wanderer:wanderer")) return;
+	if ( ! stricmp(name, "new shell")) return;
+	if ( ! stricmp(name, "newshell")) return;
+	if ( ! stricmp(name, "boot shell")) return;
+ 	if ( ! stricmp(name, "background cli")) return;
+    }
+    
+    RawPutChars("SNOOP ", 7);
+    prettyprint(name, setup.nameLen);
+    prettyprint(action, setup.actionLen);
+    prettyprint(target, setup.targetLen);
+    prettyprint(option, setup.optionLen);
+    prettyprint(result ? "OK" : "Fail", 0);
+    RawPutChar('\n');
 }
 
 void clean_exit(char *s)
@@ -44,6 +69,7 @@ void clean_exit(char *s)
     {
 	puts(s);
 	exit(RETURN_FAIL);
+
     }
     exit(RETURN_OK);
 }

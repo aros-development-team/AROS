@@ -23,7 +23,5 @@ the directory name and the option ShowFullPath doesn't work.
 
 Implement missing settings.
 
-Pretty print output ("%s10" doesn't work with kprintf)
-
 RunCommand patch doesn't print parameters.
 
