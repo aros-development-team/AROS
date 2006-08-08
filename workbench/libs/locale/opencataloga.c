@@ -242,6 +242,7 @@ struct header
 	    }
 	    if (iff->iff_Stream) break;
 
+#ifdef __MORPHOS__
     	    strcpy(filename, "MOSSYS:LOCALE/Catalogs");
 
 	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",filename));
@@ -258,7 +259,7 @@ struct header
  	    }
 
 	    if (iff->iff_Stream) break;
-
+#endif
     	    strcpy(filename, "LOCALE:Catalogs");
 
 	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: filename <%s>\n",filename));
