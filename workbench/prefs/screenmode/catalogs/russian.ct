@@ -1,0 +1,25 @@
+## version $VER: ScreenMode.catalog 1.0 (13.05.2006)
+## language russian
+## codeset 0
+;
+MSG_NAME
+Настройки видеорежима
+;
+MSG_WIDTH
+\33lШирина:
+;
+MSG_DEFAULT
+\33l_По умолчанию
+;
+MSG_HEIGHT
+\33lВысота:
+;
+MSG_DEPTH
+\33lГлубина:
+;
+MSG_AUTOSCROLL
+\33lАвтопрокрутка
+;
+MSG_SELECT
+Выберите разрешение
+;

@@ -1,0 +1,25 @@
+## version $VER: PrefsWindow.catalog 1.0 (11.05.2006)
+## codeset 0
+## language russian
+; Translated by Sergey Mineychev aka Keen
+;
+MSG_TEST
+Тест
+; Test
+;
+MSG_REVERT
+Отмена
+; Revert
+;
+MSG_SAVE
+Сохранить
+;
+; Save
+MSG_USE
+Применить
+; Use
+;
+MSG_CANCEL
+Отмена
+; Cancel
+;

@@ -1,0 +1,161 @@
+## version $VER: inputprefs.catalog 1.0 (9.08.2006)
+## language russian
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Невозможно открыть %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Невозможно занятие общего дисплея!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Информация DrawInfo недоступна!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+VisualInfo недоступна!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Не могу создать гр. элементы!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Не могу создать меню!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Не могу создать окно!
+; Can't create window!
+;
+MSG_WINTITLE
+Настройки ввода
+; Input Preferences
+;
+MSG_MEN_PROJECT
+Проект
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+О\0Открыть...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+С\0Сохранить как...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+В\0Выход
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Правка
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Сброс настроек
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+П\0Последний сохраненный
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+В\0Восстановить
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Настройки
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+И\0Создать Иконки?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Загрузка настроек ввода
+; Load Input Preferences
+;
+MSG_ASL_SAVE_TITLE
+Сохранение настроек ввода
+; Save Input Preferences
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_GAD_SAVE
+Сохранить
+; Save
+;
+MSG_GAD_USE
+Применить
+; Use
+;
+MSG_GAD_CANCEL
+Отмена
+; Cancel
+;
+MSG_GAD_TAB_MOUSE
+Мышь
+; Mouse
+;
+MSG_GAD_TAB_KEYBOARD
+Клавиатура
+; Keyboard
+;
+MSG_GAD_MOUSE_SPEED
+Скорость мыши
+; Mouse Speed
+;
+MSG_GAD_MOUSE_ACCELERATED
+Ускоренный
+; Accelerated
+;
+MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
+Двойной щелчок
+; Double-Click Delay
+;
+MSG_GAD_KEY_REPEAT_DELAY
+Задержка повтора клавиш
+; Key Repeat Delay
+;
+MSG_GAD_KEY_REPEAT_RATE
+Скорость повтора клавиш
+; Key Repeat Rate
+;
+MSG_GAD_KEY_TEST
+Тест
+; Test
+;
+MSG_GAD_KEY_TYPE
+Тип клавиатуры
+; Type
+;
+MSG_TIME_FORMAT
+%d.%02d s
+; %d.%02d s
+;
+MSG_GAD_MOUSE_BUTTON_MAPPING
+Назначение кнопок мыши
+; Button mapping
+;
+MSG_GAD_MOUSE_MAPPING_SELECT
+Выбрать
+; Select
+;
+MSG_GAD_MOUSE_MAPPING_MENU
+Меню
+; Menu
+;
+MSG_GAD_MOUSE_MAPPING_THIRD
+Третья
+; Third
+;
+MSG_GAD_MOUSE_DOUBLECLICK_DELAY
+Задержка двойного щелчка
+; Double-Click Delay
+;

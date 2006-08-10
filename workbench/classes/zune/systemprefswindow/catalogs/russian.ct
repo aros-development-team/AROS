@@ -1,0 +1,29 @@
+## version $VER: SystemPrefsWindow.catalog 1.0 (11.05.2006)
+## codeset 0
+## language russian
+; Translated by Sergey Mineychev aka Keen
+;
+MSG_MENU_PREFS
+Свойства
+;
+MSG_MENU_PREFS_IMPORT
+И\0Импорт...
+;
+MSG_MENU_PREFS_EXPORT
+Э\0Экспорт...
+;
+MSG_MENU_PREFS_TEST
+Т\0Тест
+;
+MSG_MENU_PREFS_REVERT
+В\0Вернуть
+;
+MSG_MENU_PREFS_SAVE
+C\0Сохранить
+;
+MSG_MENU_PREFS_USE
+П\0Применить
+;
+MSG_MENU_PREFS_CANCEL
+О\0Отменить
+;
