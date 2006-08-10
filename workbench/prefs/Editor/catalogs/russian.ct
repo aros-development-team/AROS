@@ -1,4 +1,4 @@
-##version $VER: JanoEditor.catalog 1.0 (1.10.2000).
+##version $VER: JanoEditor.catalog 1.0 (13.05.2006).
 ##codeset 0
 ##language russian
 ;
@@ -9,10 +9,10 @@
 ; Edit Menu
 ;
 MSG_RESETDEFAULT
-Default values
+Значения по умолчанию
 ;
 MSG_LASTSAVED
-Last saved values
+Последние сохраненные
 ;
 ; *******************
 ;  Preference window
@@ -25,7 +25,7 @@ MSG_TAB
 Табуляция:
 ;
 MSG_SEPARATORS
-Separators:
+Разделители:
 ;
 MSG_TXTFONT
 Шрифт для текста:
@@ -70,19 +70,19 @@ MSG_COLOR_BACK
 Background
 ;
 MSG_COLOR_TEXT
-Standard text
+Нормальный текст
 ;
 MSG_COLOR_FILLTXT
-Selected fill text
+Заливка выбранного
 ;
 MSG_COLOR_FILLSEL
-Selected text
+Выбранный текст
 ;
 MSG_COLOR_MARGINBACK
-Margin background
+Заливка границы
 ;
 MSG_COLOR_MARGINTXT
-Margin text
+Граничный текст
 ;
 MSG_COLOR_SHINE
 Panel shine
@@ -94,10 +94,10 @@ MSG_COLOR_PANELBACK
 Panel back
 ;
 MSG_COLOR_PANELTEXT
-Panel text
+Текст панелей
 ;
 MSG_COLOR_GLYPH
-Panel glyph
+Glyphs
 ;
 MSG_COLOR_MARKEDLINES
 Active panel
