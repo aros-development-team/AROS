@@ -1,0 +1,228 @@
+## version $VER: wanderer.catalog 1.1 (13.05.2006)
+## language russian
+## codeset 0
+;
+;
+MSG_TITLE
+Wanderer
+; Wanderer
+;
+MSG_DESCRIPTION
+Файловый менеджер
+; File Manager
+;
+MSG_SCREENTITLE
+Wanderer %s - Графическая память %s - прочая память
+; Wanderer %s graphics mem %s other mem
+;
+MSG_MEM_B
+байт
+; B
+;
+MSG_MEM_K
+Кб
+; K
+;
+MSG_MEM_M
+Мб
+; M
+;
+MSG_MEM_G
+Гб
+; G
+;
+MSG_MEN_WANDERER
+Wanderer
+; Wanderer
+;
+MSG_MEN_BACKDROP
+Развернуть
+; Backdrop
+;
+MSG_MEN_SC_BACKDROP
+B
+; B
+;
+MSG_MEN_EXECUTE
+Выполнить ...
+; Execute ...
+;
+MSG_MEN_SC_EXECUTE
+E
+; E
+;
+MSG_MEN_SHELL
+Оболочка CLI
+; Shell ...
+;
+MSG_MEN_SC_SHELL
+W
+; W
+;
+MSG_MEN_GUISET
+Настройки интерфейса ...
+; GUI Settings ...
+;
+MSG_MEN_ABOUT
+Про AROS
+; About ...
+;
+MSG_MEN_SC_ABOUT
+?
+; ?
+;
+MSG_MEN_QUIT
+Выход ...
+; Quit ...
+;
+MSG_MEN_SC_QUIT
+Q
+; Q
+;
+MSG_MEN_WINDOW
+Окна
+; Window
+;
+MSG_MEN_NEWDRAW
+Новая папка ...
+; New Drawer ...
+;
+MSG_MEN_SC_NEWDRAW
+N
+; N
+;
+MSG_MEN_OPENPAR
+Уровнем выше
+; Open Parent
+;
+MSG_MEN_CLOSE
+Закрыть
+; Close
+;
+MSG_MEN_SC_CLOSE
+K
+; K
+;
+MSG_MEN_UPDATE
+Обновить
+; Update
+;
+MSG_MEN_CONTENTS
+Выделить содержимое
+; Select Contents
+;
+MSG_MEN_SC_CONTENTS
+A
+; A
+;
+MSG_MEN_CLRSEL
+Снять выделение
+; Clear selection
+;
+MSG_MEN_SC_CLRSEL
+Z
+; Z
+;
+MSG_MEN_SNAPSHT
+Исправление
+; Snapshot
+;
+MSG_MEN_ALL
+Все
+; All
+;
+MSG_MEN_VIEW
+Вид
+; View
+;
+MSG_MEN_ICVIEW
+Иконки
+; Icon view
+;
+MSG_MEN_DCVIEW
+Детальный вид
+; Detail view
+;
+MSG_MEN_ALLFIL
+Все файлы
+; All files
+;
+MSG_MEN_SORTIC
+Сортировка
+; Sorted
+;
+MSG_MEN_CLNUP
+Подчистить
+; Clean Up
+;
+MSG_MEN_SC_CLNUP
+U
+; U
+;
+MSG_MEN_BYNAME
+по имени
+; By name
+;
+MSG_MEN_BYDATE
+по дате
+; By Date
+;
+MSG_MEN_BYSIZE
+по размеру
+; By size
+;
+MSG_MEN_REVERSE
+наоборот
+; Reverse
+;
+MSG_MEN_DRWFRST
+Папки первыми
+; Drawers first
+;
+MSG_MEN_ICON
+Иконка
+; Icon
+;
+MSG_MEN_OPEN
+Открыть
+; Open
+;
+MSG_MEN_SC_OPEN
+O
+; O
+;
+MSG_MEN_RENAME
+Переименовать ...
+;
+MSG_MEN_SC_RENAME
+R
+; R
+;
+MSG_MEN_INFO
+Сведения ...
+; Information ...
+;
+MSG_MEN_SC_INFO
+I
+; I
+;
+MSG_MEN_DELETE
+Удалить ...
+; Delete ...
+;
+MSG_MEN_TOOLS
+Инструменты
+; Tools
+;
+MSG_REALLYQUIT
+Выйти из Wanderer ?
+; Do you really want to quit Wanderer?
+;
+MSG_YESNO
+*Да|Нет
+; *Yes|No
+;
+MSG_DUMMY
+DUMMY
+; DUMMY
+; DUMMY :)

@@ -1,0 +1,408 @@
+## version $VER: asl.catalog 1.0 (11.05.2006)
+## codeset 0
+## language russian
+## charset CP 1251
+; Translated by Sergey Mineychev aka Keen
+;
+MSG_FILEREQ_TITLE
+Выберите файл
+; Select File
+;
+MSG_FILEREQ_POSITIVE_GAD
+Ok
+; Ok
+;
+MSG_FILEREQ_NEGATIVE_GAD
+Отмена
+; Cancel
+;
+MSG_FILEREQ_VOLUMES_GAD
+Тома
+; Volumes
+;
+MSG_FILEREQ_PARENT_GAD
+Выше
+; Parent
+;
+MSG_FILEREQ_PATTERN_LABEL
+Шаблон
+; Pattern
+;
+MSG_FILEREQ_DRAWER_LABEL
+Каталог
+; Drawer
+;
+MSG_FILEREQ_FILE_LABEL
+Файл
+; File
+;
+MSG_FILEREQ_LV_DRAWER
+Каталог
+; Drawer
+;
+MSG_FILEREQ_LV_ASSIGN
+Назначить
+; Assign
+;
+MSG_FILEREQ_DELETE_TITLE
+Удалить файл
+; Delete File
+;
+MSG_FILEREQ_DELETE_MSG
+Внимание: после удаления\n\
+информация будет утеряна\n\
+ТОЧНО удалять\n\
+%s?
+; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
+;
+MSG_FILEREQ_DELETE_OKCANCEL
+Удалить|Отменить
+; Delete|Cancel
+;
+MSG_FILEREQ_RENAME_TITLE
+Переименование
+; Rename
+;
+MSG_FILEREQ_RENAME_OK
+Переименовать
+; Rename
+;
+MSG_FILEREQ_RENAME_CANCEL
+Отмена
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_TITLE
+Создание каталога
+; Create Drawer
+;
+MSG_FILEREQ_CREATEDRAWER_OK
+Создать
+; Create
+;
+MSG_FILEREQ_CREATEDRAWER_CANCEL
+Отмена
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_DEFNAME
+Назови_Меня
+; Rename_Me
+;
+MSG_FILEREQ_SELECT_TITLE
+Выбор по шаблону
+; Select by pattern
+;
+MSG_FILEREQ_SELECT_OK
+Выбрать
+; Select
+;
+MSG_FILEREQ_SELECT_CANCEL
+Отменить
+; Cancel
+;
+MSG_FILEREQ_MEN_CONTROL
+Управление
+; Control
+;
+MSG_FILEREQ_MEN_CONTROL_LASTNAME
+П\0Предыдущий
+; L\0Last Name
+;
+MSG_FILEREQ_MEN_CONTROL_NEXTNAME
+С\0Следующий
+; N\0Next Name
+;
+MSG_FILEREQ_MEN_CONTROL_RESTORE
+R\0Вернуть
+; R\0Restore
+;
+MSG_FILEREQ_MEN_CONTROL_PARENT
+У\0Назад
+; P\0Parent
+;
+MSG_FILEREQ_MEN_CONTROL_VOLUMES
+Т\0Тома
+; V\0Volumes
+;
+MSG_FILEREQ_MEN_CONTROL_UPDATE
+A\0Обновить
+; U\0Update
+;
+MSG_FILEREQ_MEN_CONTROL_DELETE
+D\0Удалить
+; D\0Delete
+;
+MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
+T\0Создать каталог...
+; T\0Create new drawer...
+;
+MSG_FILEREQ_MEN_CONTROL_RENAME
+E\0Переименовать...
+; E\0Rename...
+;
+MSG_FILEREQ_MEN_CONTROL_SELECT
+#\0Выбрать...
+; #\0Select...
+;
+MSG_FILEREQ_MEN_CONTROL_OK
+O\0Ok
+; O\0Ok
+;
+MSG_FILEREQ_MEN_CONTROL_CANCEL
+C\0Отмена
+; C\0Cancel
+;
+MSG_FILEREQ_MEN_FILELIST
+Список файлов
+; File list
+;
+MSG_FILEREQ_MEN_FILELIST_SORTNAME
+1\0Сортировать по имени
+; 1\0Sort by name
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDATE
+2\0Сортировать по дате
+; 2\0Sort by date
+;
+MSG_FILEREQ_MEN_FILELIST_SORTSIZE
+3\0Сортировать по размеру
+; 3\0Sort by size
+;
+MSG_FILEREQ_MEN_FILELIST_SORTUP
++\0По возрастанию
+; +\0Ascending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDOWN
+-\0По убыванию
+; -\0Descending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
+4\0Показать каталоги первыми
+; 4\0Show drawers first
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
+5\0Показать каталоги с файлами
+; 5\0Show drawers with files
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
+6\0Показать каталоги последними
+; 6\0Show drawers last
+;
+MSG_MODEREQ_TITLE
+Выбор разрешения экрана
+;
+MSG_MODEREQ_POSITIVE_GAD
+Ok
+; Ok
+;
+MSG_MODEREQ_NEGATIVE_GAD
+Отмена
+; Cancel
+;
+MSG_MODEREQ_OVERSCAN_LABEL
+Overscan
+; Overscan
+;
+MSG_MODEREQ_OVERSCAN_TEXT
+Размер текста
+; Text Size
+;
+MSG_MODEREQ_OVERSCAN_GRAPHICS
+Размер графики
+; Graphics Size
+;
+MSG_MODEREQ_OVERSCAN_EXTREME
+Экстремальный размер
+; Extreme Size
+;
+MSG_MODEREQ_OVERSCAN_MAXIMUM
+Максимальный размер
+; Maximum Size
+;
+MSG_MODEREQ_WIDTH_LABEL
+Ширина
+; Width
+;
+MSG_MODEREQ_HEIGHT_LABEL
+Высота
+; Height
+;
+MSG_MODEREQ_COLORS_LABEL
+Цвета
+; Colors
+;
+MSG_MODEREQ_AUTOSCROLL_LABEL
+Автопромотка
+; AutoScroll
+;
+MSG_MODEREQ_AUTOSCROLL_OFF
+Выкл
+; OFF
+;
+MSG_MODEREQ_AUTOSCROLL_ON
+Вкл
+; ON
+;
+MSG_MODEREQ_PROPERTIES_TITLE
+Свойства режима
+; Mode Properties
+;
+MSG_MODEREQ_PROPERTIES_NOTWB
+Не поддерживает Workbench
+; Does not support Workbench
+;
+MSG_MODEREQ_PROPERTIES_NOTGENLOCK
+Не поддерживает Genlock
+; Does not support genlock
+;
+MSG_MODEREQ_PROPERTIES_NOTDRAG
+Неперемещаемое
+; Not draggable
+;
+MSG_MODEREQ_PROPERTIES_HAM
+Hold And Modify
+; Hold & Modify
+;
+MSG_MODEREQ_PROPERTIES_EHB
+Extra-Halfbright
+; Extra-HalfBright
+;
+MSG_MODEREQ_PROPERTIES_LACE
+Чересстрочная
+; Interlaced
+;
+MSG_MODEREQ_PROPERTIES_ECS
+Нужен ECS
+; Requires ECS
+;
+MSG_MODEREQ_PROPERTIES_WB
+Поддерживает Workbench
+; Supports Workbench
+;
+MSG_MODEREQ_PROPERTIES_GENLOCK
+Поддерживает Genlock
+; Supports genlock
+;
+MSG_MODEREQ_PROPERTIES_DRAG
+Перемещаемое
+; Draggable
+;
+MSG_MODEREQ_PROPERTIES_DPFPRI2
+Приоритет DualPlayfield = 2
+; DualPlayfield Priority 2
+;
+MSG_MODEREQ_PROPERTIES_REFRESHRATE
+%ldГц, %ld,%ldкГц
+; %ldHz, %ld,%ldkHz
+;
+MSG_MODEREQ_MEN_CONTROL
+Настройка
+; Control
+;
+MSG_MODEREQ_MEN_CONTROL_LASTMODE
+L\0Последний режим
+; L\0Last Mode
+;
+MSG_MODEREQ_MEN_CONTROL_NEXTMODE
+N\0Следующий режим
+; N\0Next Mode
+;
+MSG_MODEREQ_MEN_CONTROL_PROPERTIES
+?\0Список свойств...
+; ?\0Property List...
+;
+MSG_MODEREQ_MEN_CONTROL_RESTORE
+R\0Вернуть
+; R\0Restore
+;
+MSG_MODEREQ_MEN_CONTROL_OK
+O\0Ok
+; O\0Ok
+;
+MSG_MODEREQ_MEN_CONTROL_CANCEL
+C\0Отмена
+; C\0Cancel
+;
+MSG_FONTREQ_TITLE
+Выбрать шрифт
+; Select Font
+;
+MSG_FONTREQ_POSITIVE_GAD
+Ok
+; Ok
+;
+MSG_FONTREQ_NEGATIVE_GAD
+Отмена
+; Cancel
+;
+MSG_FONTREQ_MEN_CONTROL
+Управление
+; Control
+;
+MSG_FONTREQ_MEN_CONTROL_LASTFONT
+L\0Последний шрифт
+; L\0Last Font
+;
+MSG_FONTREQ_MEN_CONTROL_NEXTFONT
+N\0Следующий шрифт
+; N\0Next Font
+;
+MSG_FONTREQ_MEN_CONTROL_RESTORE
+R\0Вернуть
+; R\0Restore
+;
+MSG_FONTREQ_MEN_CONTROL_RESCAN
+D\0Пересмотреть диск
+; D\0Rescan Disk
+;
+MSG_FONTREQ_MEN_CONTROL_OK
+O\0Ok
+; O\0Ok
+;
+MSG_FONTREQ_MEN_CONTROL_CANCEL
+C\0Отмена
+; C\0Cancel
+;
+MSG_FONTREQ_MODE_LABEL
+Режим
+; Mode
+;
+MSG_FONTREQ_MODE_TEXT
+Текст
+; Text
+;
+MSG_FONTREQ_MODE_TEXTANDFIELD
+Текст+Поле
+; Text+Field
+;
+MSG_FONTREQ_MODE_COMPLEMENT
+Дополнение
+; Complement
+;
+MSG_FONTREQ_STYLE_LABEL
+Стиль
+; Style
+;
+MSG_FONTREQ_STYLE_BOLD
+B
+; B
+;
+MSG_FONTREQ_STYLE_ITALIC
+I
+; I
+;
+MSG_FONTREQ_STYLE_UNDERLINED
+U
+; U
+;
+MSG_FONTREQ_COLOR_LABEL_FG
+Цвет FG
+; Color
+;
+MSG_FONTREQ_COLOR_LABEL_BG
+Цвет BG
+; BG Color
+;
+MSG_FONTREQ_COLOR_LABEL_FGBG
+Цвета BG+FG
+; Colors
+;

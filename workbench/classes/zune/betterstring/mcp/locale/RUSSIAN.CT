@@ -1,0 +1,35 @@
+;
+; BetterString_mcp.cd - BetterString MUI custom prefs catalog description file
+; $Id: BetterString_mcp.cd,v 1.1 2005/04/21 20:52:04 damato Exp $
+;
+##version 2
+##language russian
+;
+;
+MSG_Label_Active (0//)
+Активное:
+;
+MSG_Label_Background (1//)
+Подложка
+;
+MSG_Label_Cursor (2//)
+Курсор:
+;
+MSG_Label_Fonts (3//)
+Шрифт:
+;
+MSG_Label_Frame (4//)
+Фрэйм:
+;
+MSG_Label_Inactive (5//)
+Неактивное:
+;
+MSG_Label_Marked (6//)
+Выделенное:
+;
+MSG_Label_Text (7//)
+Текст
+;
+MSG_String_TestString (8//)
+Почувствуйте мощь BetterString !
+;

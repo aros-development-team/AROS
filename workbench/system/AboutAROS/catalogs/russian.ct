@@ -1,0 +1,135 @@
+## version $VER: AboutAROS.catalog 1.1 (13.05.2006)
+## language russian
+## codeset 0
+;
+;
+MSG_TITLE
+Сведения о AROS
+; About AROS
+;
+MSG_PERSONAL_BUILD
+Личная сборка
+; Personal Build
+; FIXME: shall I translate this?
+;
+MSG_NIGHTLY_BUILD
+"Ночная" сборка
+; Nightly Build
+; FIXME: shall I translate this?
+;
+MSG_SNAPSHOT
+Снимок
+; Snapshot
+;
+MSG_MILESTONE
+Веха
+; Milestone
+;
+MSG_RELEASE
+Релиз
+; Release
+;
+MSG_COPYRIGHT
+Copyright © 1995-2006, The AROS Development Team. Все права защищены.
+; Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+;
+MSG_LICENSE_1
+Выпущено на условиях
+; Released under the terms of the
+;
+MSG_LICENSE_2
+AROS Public License
+; AROS Public License
+;
+MSG_LICENSE_3
+, Версия 1.1.
+; , version 1.1.
+;
+MSG_MORE_INFORMATION
+Посетите http://www.aros.org/, чтобы иметь полную информацию .
+; Please visit http://www.aros.org/ for more information.
+;
+MSG_PAGE_AUTHORS
+Авторы
+; Authors
+;
+MSG_PAGE_SPONSORS
+Спонсоры
+; Sponsors
+;
+MSG_PAGE_ACKNOWLEDGEMENTS
+Благодарности
+; Acknowledgements
+;
+MSG_SECTION_COORDINATION
+Координаторы
+; Coordination
+;
+MSG_SECTION_EVANGELISM
+Духовенство =)
+; Evangelism
+;
+MSG_SECTION_HIDD
+Подсистема HIDD
+; HIDD subsystem
+;
+MSG_SECTION_INTUITION
+Intuition
+; Intuition
+;
+MSG_SECTION_GRAPHICS
+Графика
+; Graphics
+;
+MSG_SECTION_SHELL_COMMANDS
+Команды оболочки
+; Shell Commands
+;
+MSG_SECTION_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_SECTION_TOOLS
+Инструменты
+; Tools
+;
+MSG_SECTION_PREFERENCES
+Настройки
+; Preferences
+;
+MSG_SECTION_BGUI
+BGUI
+; BGUI
+;
+MSG_SECTION_ZUNE
+Zune
+; Zune
+;
+MSG_SECTION_KERNEL
+Ядро
+; Kernel
+;
+MSG_SECTION_DOS
+DOS
+; DOS
+;
+MSG_SECTION_LIBC_POSIX
+Библиотеки C и POSIX Layer
+; C link library and POSIX layer
+;
+MSG_SECTION_DOCUMENTATION
+Документация
+; Documentation
+;
+MSG_SECTION_TRANSLATION
+Перевод и локализация
+; Translation
+;
+MSG_SECTION_ARTISTRY
+Художества
+; Artistry
+;
+MSG_SECTION_WEBSITE
+Веб-сайт
+; Website
+;
