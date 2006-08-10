@@ -6,243 +6,243 @@
 ;
 ;**************************
 ;
-## version $VER: reqtoolsprefs.catalog 38.4 (26.1.97)
+## version $VER: reqtoolsprefs.catalog 38.4 (13.05.06)
 ## codeset 0
 ## language russian
 ;
-; Done by Oleg Sergeev
-;
+; Done by Oleg Sergeev (26.1.97)
+; Done in cp1251 by Sergey Mineychev aka Keen
 ; *** Misc ***
 ;
 MSG_WINDOW_TITLE
-Трсaмнбйз Reqtools
+Устaновки Reqtools
 ;
 MSG_GENERAL
-Нащзд
+Общие
 ;
 MSG_FILEREQUESTER
-Пзйбдрсдп уaикнб
+Риквестер фaйлов
 ;
 MSG_SIZE
-Пaжлдп (б % нс бзгзлни бърнсъ)
+Рaзмер (в % от видимой высоты)
 ;
 MSG_SET
-Трсaмнбзсы...
+Устaновить...
 ;
 MSG_TEST
-Опнаa...
+Пробa...
 ;
 MSG_SAVE
-Жaозры
+Сохранить
 ;
 MSG_USE
-Опзмюсы
+Применить
 ;
 MSG_CANCEL
-Нслдмa
+Отменa
 ;
 MSG_ABORT
-Опдпбaсы
+Прервaть
 ;
 ; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
- НЙ \
+ ОК \
 ;
 ; * 2.7 *
 ;
 MSG_INFORMATION
-Змунпл№хзю
+Информация
 ;
 ; *** Menus ***
 ;
 MSG_PROJECT_MENU
-Опндйс
+Проект
 ;
 MSG_PROJECT_OPEN
-O\0Нсйпъсы...
+O\0Открыть...
 ;
 MSG_PROJECT_SAVEAS
-A\0Жaозрaсы йaй...
+A\0Зaписaть кaк...
 ;
 MSG_PROJECT_ABOUT
-?\0O опнвпaллд...
+?\0O прогрaмме...
 ;
 MSG_PROJECT_QUIT
-Q\0Бъфнг
+Q\0Выход
 ;
 MSG_EDIT_MENU
-Зжлдмзсы
+Изменить
 ;
 MSG_EDIT_RESET
-D\0Трс№мнбзсы он тлнкц№мзэ
+D\0Установить по умолчанию
 ;
 MSG_EDIT_LASTSAVED
-L\0Онркдгмюю жaозры
+L\0Последняя зaпись
 ;
 MSG_EDIT_RESTORE
-R\0Бнррсaмнбзсы
+R\0Восстaновить
 ;
 MSG_OPTIONS_MENU
-Нохзз
+Опции
 ;
 MSG_OPTIONS_CREATEICONS
-I\0Рнжгaбaсы зйнмйз
+I\0Создaвaть иконки
 ;
 ; *** Switches ***
 ;
 MSG_POPSCREEN
-Ьйпaм бодпЅг
+Экрaн вперёд
 ;
 MSG_IMMEDIATESORT
-Рпaжт рнпсзпнбaсы
+Срaзу сортировaть
 ;
 MSG_DRAWERSFIRST
-Йaсaкнвз бмaцaкд
+Кaтaлоги внaчaле
 ;
 MSG_DRAWERSMIXED
-Бодпдлдшйт
+Вперемешку
 ;
 MSG_LED
-Змгзй№снп п№ансъ
+Индикатор работы
 ;
 MSG_DEFAULTFONT
-Рсaмгaпсмъи шпзус
+Стaндaртный шрифт
 ;
 ; ** 2.3 **
 ;
 MSG_FKEYS
-F-йкaбзшз
+F-клaвиши
 ;
 ; ** 2.5 **
 ;
 MSG_DOWHEEL
-Йнкдрн в№ллъ
+Колесо гаммы
 ;
 ; ** 2.7 **
 ;
 MSG_WHEEL_NONE
-Адж йнкдр№ в№ллъ
+Без колеса гаммы
 ;
 MSG_WHEEL_SIMPLE
-Опнрснд йнкдрн в№ллъ
+Простое колесо гаммы
 ;
 MSG_WHEEL_FANCY
-Опнгбзмтснд йнкдрн в№ллъ
+Продвинутое колесо гаммы
 ;
 ; ** 2.8 **
 ;
 MSG_MMB_PARENT
-М№ж№г он рпдгмди ймнойд
+Назад по средней кнопке
 ;
 ; *** Requester Type ***
 ;
 MSG_REQUESTER
-Трсaмнбйз:
+Устaновки:
 ;
 MSG_FILEREQ
-Пзйбдрсдп уaикнб
+Риквестер фaйлов
 ;
 MSG_FONTREQ
-Пзйбдрсдп шпзуснб
+Риквестер шрифтов
 ;
 MSG_PALETTEREQ
-Пзйбдрсдп оaкзспъ
+Риквестер пaлитры
 ;
 MSG_SCRMODEREQ
-Пзйбдрсдп ьйпaмнб
+Риквестер экрaнов
 ;
 MSG_VOLUMEREQ
-Пзйбдрсдп снлнб
+Риквестер томов
 ;
 MSG_OTHERREQ
-Опнцзд пзйбдрсдпъ
+Прочие риквестеры
 ;
 ; *** Position ***
 ;
 MSG_POSITION
-Онжзхзю:
+Позиция:
 ;
 MSG_POINTER
-Он лъшйд
+По мышке
 ;
 MSG_CENTERWIN
-Б хдмспд нйм№
+В центре окна
 ;
 MSG_CENTERSCR
-Б хдмспд ьйпaм№
+В центре экрaна
 ;
 MSG_TOPLEFTWIN
-Бдпфмзи кдбъи твнк нймa
+Верхний левый угол окнa
 ;
 MSG_TOPLEFTSCR
-Бдпфмзи кдбъи твнк ьйпaмa
+Верхний левый угол экрaнa
 ;
 MSG_OFFSET
-Рлдщдмзд:
+Смещение:
 ;
 ; *** Entries ***
 ;
 MSG_NR_OF_ENTRIES
-Цзркн бзгзлъф рспнй
+Число видимых строк
 ;
 MSG_MIN
-Лзмзлтл
+Минимум
 ;
 MSG_MAX
-Лaйрзлтл
+Мaксимум
 ;
 ; *** Errors ***
 ;
 MSG_YOU_NEED_REQTOOLS38
-Спдатдсрю азакзнсдйa reqtools.library V38+
+Требуется библиотекa reqtools.library V38+
 ;
 MSG_WRONG_REQTOOLS_VERSION
-Зронкыжтдлaю бaлз бдпрзю reqtools.library\nмд онггдпезбaдс опнвпaллт трсaмнбнй!
+Используемaя вaми версия reqtools.library\nне поддерживaет прогрaмму устaновок!
 ;
 MSG_ALL_PREFS_NOT_SUPPORTED
-Бмзлaмзд! Ьсa бдпрзю пдгaйснпa трсaмнбнй мд\n\
-онггдпезбaдс брд бнжлнемнрсз злдэщдирю б\n\
-бaшди рзрсдлд азакзнсдйз reqtools.library!
+Внимaние! Этa версия редaкторa устaновок не\n\
+поддерживaет все возможности имеющейся в\n\
+вaшей системе библиотеки reqtools.library!
 ;
 MSG_NO_WB_LIB
-Мд лнвт нсйпъсы азакзнсдйт workbench.library!
+Не могу открыть библиотеку workbench.library!
 ;
 MSG_NO_UTILITY_LIB
-Мд лнвт нсйпъсы азакзнсдйт utility.library!
+Не могу открыть библиотеку utility.library!
 ;
 MSG_NO_ICON_LIB
-Мд лнвт нсйпъсы азакзнсдйт icon.library!
+Не могу открыть библиотеку icon.library!
 ;
 MSG_COULDNT_LOCK_PUBSCREEN
-Мд лнвт жaакнйзпнбaсы нащзи ьйпaм!
+Не могу зaблокировaть общий экрaн!
 ;
 MSG_ERROR_GETSCREENDRAWINFO
-Мдтгaцa утмйхзз GetScreenDrawInfo()!
+Неудaчa функции GetScreenDrawInfo()!
 ;
 MSG_ERROR_GETVISUALINFO
-Мдтгaцa утмйхзз GetVisualInfo()!
+Неудaчa функции GetVisualInfo()!
 ;
 MSG_COULDNT_OPEN_WINDOW
-Мд лнвт нсйпъсы нймн!
+Не могу открыть окно!
 ;
 MSG_ERROR_ACCESSING_FILE
-Ншзайa гнрстоa й уaикт\n%s,\n%s
+Ошибкa доступa к фaйлу\n%s,\n%s
 ;
 MSG_READ_ERROR
-Ншзайa цсдмзю!
+Ошибкa чтения!
 ;
 MSG_ERROR_SAVING_PREFS
-Ншзайa жaозрз трсaмнбнй!
+Ошибкa зaписи устaновок!
 ;
 ; * 2.7 *
 ;
 MSG_ERROR_ARGS
-Ншзанцмъи о№п№лдсп
+Ошибочный параметр
 ;
 MSG_ERROR_LIBRARY
-Мд лнвт нсйпъсы %s\n\
-бдпрзз %ld зкз бъшд!
+Не могу открыть %s\n\
+версии %ld или выше!
 ;
 MSG_ERROR_MENUS
-Мд лнвт рнжг№сы лдмэ!
+Не могу создать меню!
 ;

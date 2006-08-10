@@ -5,10 +5,10 @@
 ;   Russian
 ;
 ;******************
+; Done by Oleg Sergeev (26.1.97)
+; Done in cp1251 by Sergey Mineychev aka Keen
 ;
-; Done by Oleg Sergeev
-;
-## version $VER: reqtools.catalog 38.8 (26.1.97)
+## version $VER: reqtools.catalog 38.8 (13.05.06)
 ## codeset 0
 ## language russian
 ;
@@ -16,150 +16,149 @@
 ;
 ; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
- НЙ \
-
+ _Ok
 ;
 MSG_CANCEL
-Нслдмa
+Отмена
 ;
 ; *** EZRequester ***
 ;
 MSG_OK_BAR_CANCEL
- НЙ |Нслдмa
+ _Ok |Отмена
 ;
 MSG_LAST_BAR_CANCEL
-Онркдгмзи|Нслдмa
+Последний|Отмена
 ;
 MSG_REQUEST
-Жaопнр
+Запрос
 ;Begдran, Anhеllan, Efterfrеgan
 ;
 MSG_INFORMATION
-Змунплaхзю
+Информация
 ;
 ; *** GetLong Requester ***
 ;
 ; Note: there are two spaces around the next three strings!
 MSG_MIN_FMT
- Лзм.: %ld \
+ Мин.: %ld \
 ;
 MSG_MAX_FMT
- Maйр.: %ld \
+ Макс.: %ld \
 ;
 MSG_MIN_MAX_FMT
- Лзм. %ld, Лaйр.: %ld \
+ Мин. %ld, Макс.: %ld \
 ;
 MSG_TOO_SMALL
-Лaкн!
+Мало!
 ;
 MSG_TOO_BIG
-Лмнвн!
+Много!
 ;
 ; *** Palette Requester ***
 ;
 MSG_PALETTE_COLORS
-Хбдсa оaкзспъ:
+Цвета палитры:
 ;
 MSG_RED
-Йпaрмъи:
+Красный:
 ;
 MSG_GREEN
-ЖдкЅмъи:
+Зеленый:
 ;
 MSG_BLUE
-Рзмзи:
+Синий:
 ;
 MSG_COPY
-Йнозпнбaсы
+Копировать
 ;
 MSG_SWAP
-Налдмюсы
+Обменять
 ;
 MSG_SPREAD
-Пaропнрспaмзсы
+Распространить
 ;
 MSG_UNDO
-Бнжбпaс
+Отменить
 ;
 ; ** 2.5 **
 ;
 MSG_COPY_TITLE
-Рйнозпнбaсы б...
+Скопировать в...
 ; Copy to
 ;
 MSG_SWAP_TITLE
-Налдмюсы р...
+Обменять с...
 ; Swap with
 ;
 MSG_SPREAD_TITLE
-Пaропнрспaмзсы мa...
+Распространить на...
 ; Spread to
 ;
 ; *** File Requester ***
 ;
 MSG_CREATE_DRAWER
-Йaсaкнв "%s" мд ртщдрсбтдс.\nРнжгaсы двн?
+Каталог "%s" не существует.\nСоздать его?
 ;
 MSG_DIR_ERROR
-Ншзайa йaсaкнвa!
+Ошибка каталога!
 ;
 MSG_MATCH_WINTITLE
-Рнбоaгдмзд...
+Совпадение...
 ;
 MSG_DRAWER
-Йaсaкнв
+Каталог
 ;
 MSG_ASSIGN
-К. Злю
+Л. Имя
 ;
 MSG_ALL
-Брд
+Все
 ;
 MSG_MATCH
-Рнбоaгдмзд...
+Совпадение...
 ;
 MSG_CLEAR
-Нцзрсйa
+Очистка
 ;
 MSG_VOLUMES
-Снлa
+Тома
 ;
 MSG_PARENT
-Мaжaг
+Назад
 ;
 MSG_PATTERN
-Шaакнм:
+Шаблон:
 ;
 MSG_GET
-Рцзсaсы
+Считать
 ;
 MSG_DOT_INFO
-зйнмйз
+Иконки
 ;
 MSG_SELECTED
-Бъапaмн:
+Выбрано:
 ;
 MSG_FULL
-Жaмюсн %ld%%
+Занято %ld%%
 ;
 ; *** Font Requester ***
 ;
 MSG_COULDNT_OPEN_FONT
-Мд лнвт нсйпъсы шпзус!
+не могу открыть шрифт!
 ;
 MSG_BOLD
-Езпмъи
+Жирный
 ;
 MSG_ITALIC
-Мaйкнммъи
+Наклонный
 ;
 MSG_UNDERLINE
-ОнгцЅпймтсъи
+Подчёркнутый
 ;
 ; *** ScreenMode Requester ***
 ;
 MSG_DASH_INTERLACED
--Цдпдррспнцмъи
+-Чересстрочный
 ;
 MSG_DASH_HAM
 -HAM
@@ -168,36 +167,36 @@ MSG_DASH_EHB
 -EHB
 ;
 MSG_REGULAR_SIZE
-Наъцмъи пaжлдп
+Обычный размер
 ;
 MSG_TEXT_SIZE
-Сдйрснбъи пaжлдп
+Текстовый размер
 ;
 MSG_GFX_SIZE
-Впaузцдрйзи пaжлдп
+Графический размер
 ;
 MSG_MAX_SIZE
-Лaйрзлaкымъи пaжлдп
+Максимальный размер
 ;
 MSG_OVERSCAN
-Вaаaпзсъ:
+Габариты:
 ;
 MSG_WIDTH
-Шзпзмa:
+Ширина:
 ;
 MSG_HEIGHT
-Бърнсa:
+Высота:
 ;
 ;
 MSG_DEFAULT
-Он тлнкцaмзэ
+По умолчанию
 ;
 MSG_COLORS
-Хбдсa:
+Цвета:
 ;
 MSG_MAX
-Лaйр.:
+Макс.:
 ;
 MSG_AUTOSCROLL
-Aбснопнйптсйa:
+Автопрокрутка:
 ;

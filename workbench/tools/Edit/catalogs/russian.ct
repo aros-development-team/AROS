@@ -288,47 +288,47 @@ MSG_LINES
 ; *************************
 ;
 MSG_SEARCHWINDOW
-Search pattern
+Поиск 
 ;
 MSG_REPLACEWINDOW
-Search & Replace
+Поиск и замена
 ;
 MSG_SEARCHSTRING
-Locate:
+Где:
 ;
 MSG_REPLACESTRING
-Replace:
+Замена:
 ;
 MSG_OPTCASE
-Match case
+Учитывать регистр
 ;
 MSG_OPTWORDS
-Whole words
+Слово целиком
 ;
 MSG_BUTTONREPLACE
-Replace
+Заменить
 ;
 MSG_BUTTONREPALL
-Replace all
+Заменить все
 ;
 MSG_BUTTONSEARCH
-Search
+Поиск
 ;
 MSG_NEXTSEARCH
-Previous
+Предыдущий
 ;
 MSG_USESEARCH
-Use
+Применить
 ;
 MSG_CANCELSEARCH
-Cancel
+Отмена
 ;
 MSG_REPLACEALL
-%ld %s of `%s' replaced
+%ld %s of `%s' заменено
 ;
 MSG_OCCURENCY
-occurency
+совпадение
 ;
 MSG_OCCURENCIES
-occurencies
+совпадений
 ;
