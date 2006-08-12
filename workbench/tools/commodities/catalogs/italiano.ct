@@ -1,22 +1,32 @@
-## version $VER: Commodities.catalog 1.0 (14.10.2001)
+## version $VER: Commodities.catalog 1.0 (12.08.2006)
 ## language italiano
 ## codeset 0
 ;
+; FIXME: This file requires updating. When done, bump revision to 2
 ;
 MSG_CANT_OPEN_LIB
 Impossibile aprire %s V%ld !\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_OPEN_INPUTDEVICE
+
+; Can't open 'input.device'
 ;
 MSG_CANT_LOCK_SCR
 Impossibile accedere allo schermo pubblico!
+; Can't lock public screen!\n
 ;
 MSG_CANT_GET_VI
 Impossibile aprire la struttura VisualInfo!
+; Can't get VisualInfo!\n
 ;
 MSG_CANT_CREATE_GADGET
 Impossibile creare i gadget!
+; Can't create gadgets!\n
 ;
 MSG_CANT_CREATE_MENUS
 Impossibile creare i menu!
+; Can't create menus!\n
 ;
 MSG_CANT_LAYOUT_MENUS
 Impossibile disegnare i menu!\n
@@ -24,6 +34,7 @@ Impossibile disegnare i menu!\n
 ;
 MSG_CANT_CREATE_WIN
 Impossibile creare la finestra!\n
+; Can't create window!\n
 ;
 MSG_CANT_ALLOCATE_MEM
 Impossibile allocare la memoria!\n
@@ -49,9 +60,20 @@ MSG_MEN_PROJECT
 Progetto
 ; Project
 ;
+MSG_MEN_PROJECT_HIDE
+
+; H\0Hide
+;
+MSG_MEN_PROJECT_ICONIFY
+
+; I\0Iconify
+;
 MSG_MEN_PROJECT_QUIT
 Q\0Esci
 ; Q\0Quit
+;
+; ===============================================
+; EXCHANGE
 ;
 MSG_EXCHANGE_CXNAME
 Exchange
@@ -67,7 +89,7 @@ Controlla commodity di sistema
 ;
 MSG_EXCHANGE_WINTITLE
 Exchange
-; Exchange
+; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
 Commodity disponibili
@@ -97,6 +119,9 @@ MSG_EXCHANGE_CYCLE_INACTIVE
 Disattiva
 ; Inactive
 ;
+; ===============================================
+; BLANKER
+;
 MSG_BLANKER_CXNAME
 Blanker
 ; Blanker
@@ -108,6 +133,9 @@ Salvaschermo
 MSG_BLANKER_CXDESCR
 Salva lo schermo quando il sistema è a riposo
 ; Blanks screen when system inactive
+;
+; ===============================================
+; CLICK2FNT
 ;
 MSG_CLICK2FNT_CXNAME
 ClickToFront
@@ -121,17 +149,23 @@ MSG_CLICK2FNT_CXDESCR
 Porta in primo piano la finestra su cui si clicca
 ; Click windows to front
 ;
+; ===============================================
+; OPAQUE
+;
 MSG_OPAQUE_CXNAME
 Opaque
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
 Finestre complete
-; Opaque windows
+; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
 Sposta le finestre con tutto il contenuto
 ; Realtime moving of windows
+;
+; ===============================================
+; AUTOPOINT
 ;
 MSG_AUTOPOINT_CXNAME
 AutoPoint
@@ -139,11 +173,14 @@ AutoPoint
 ;
 MSG_AUTOPOINT_CXTITLE
 Auto-focus
-; Automatic window activator
+; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
 Attiva la finestra su cui si trova il puntatore
 ; Activates the window under the mouse
+;
+; ===============================================
+; STARTMENU
 ;
 MSG_STARTMENU_CXNAME
 StartMenu
@@ -157,6 +194,9 @@ MSG_STARTMENU_CXDESCR
 Lancia le applicazioni preferite 
 ; Program launch commodity
 ;
+; ===============================================
+; FKEY
+;
 MSG_FKEY_CXNAME
 FKey
 ; FKey
@@ -167,7 +207,7 @@ Tasti funzione:
 ;
 MSG_FKEY_CXDESCR
 Modifica le funzioni dei tasti
-; Attach Special Functions To Keys
+; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
 FKey: Hot Key = <%s>
@@ -184,6 +224,10 @@ _Nuovo tasto
 MSG_FKEY_DELETE_KEY
 _Elimina tasto
 ; _Delete Key
+;
+MSG_FKEY_SAVE_KEY
+
+; Save Defined Keys
 ;
 MSG_FKEY_COMMAND
 Comando
@@ -213,6 +257,10 @@ MSG_FKEY_CMD_TOGGLE_WIN_SIZE
 Modifica la dimensione della finestra
 ; Toggle Window Size
 ;
+MSG_FKEY_CMD_RESCUE_WIN
+
+; Rescue Window
+;
 MSG_FKEY_CMD_INSERT_TEXT
 Inserisci testo
 ; Insert Text
@@ -225,25 +273,12 @@ MSG_FKEY_CMD_RUN_AREXX
 Lancia script Arexx
 ; Run Arexx Script
 ;
-MSG_FKEY_MEN_PROJECT
-Progetto
-; Project
-;
 MSG_FKEY_MEN_PROJECT_SAVE
 S\0Salva i tasti definiti
 ; S\0Save Defined Keys
 ;
-MSG_FKEY_MEN_PROJECT_HIDE
-C\0Nascondi
-; H\0Hide
-;
-MSG_FKEY_MEN_PROJECT_ICONIFY
-I\0Riduci a icona
-; I\0Iconify
-;
-MSG_FKEY_MEN_PROJECT_QUIT
-Q\0Esci
-; Q\0Quit
+; ===============================================
+; NOCAPSLOCK
 ;
 MSG_NOCAPSLOCK_CXNAME
 NoCapsLock

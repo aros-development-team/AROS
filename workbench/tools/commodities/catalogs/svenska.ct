@@ -1,11 +1,18 @@
-## version $VER: Commodities.catalog 1.0 (14.10.2001)
+## version $VER: Commodities.catalog 1.0 (12.08.2006)
 ## language svenska
 ## codeset 0
 ;
+; FIXME: This file requires updating. When done, bump revision to 2
 ;
 MSG_CANT_OPEN_LIB
 Kan inte öppna %s V%ld!\n
 ; Can't open %s V%ld!\n
+;
+MSG_CANT_OPEN_INPUTDEVICE
+
+; Can't open 'input.device'
+;
+; ***NEW***
 ;
 MSG_CANT_LOCK_SCR
 Kan inte låsa allmän skärm!\n
@@ -55,9 +62,24 @@ MSG_MEN_PROJECT
 Redigera
 ; Project
 ;
+MSG_MEN_PROJECT_HIDE
+
+; H\0Hide
+;
+; ***NEW***
+;
+MSG_MEN_PROJECT_ICONIFY
+
+; I\0Iconify
+;
+; ***NEW***
+;
 MSG_MEN_PROJECT_QUIT
 Q\0Avsluta
 ; Q\0Quit
+;
+; ===============================================
+; EXCHANGE
 ;
 MSG_EXCHANGE_CXNAME
 Exchange
@@ -73,7 +95,7 @@ Kontrollerar systemets commodities
 ;
 MSG_EXCHANGE_WINTITLE
 Exchange
-; Exchange
+; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
 Tillgängliga commodities
@@ -103,6 +125,9 @@ MSG_EXCHANGE_CYCLE_INACTIVE
 Inaktiv
 ; Inactive
 ;
+; ===============================================
+; BLANKER
+;
 MSG_BLANKER_CXNAME
 Blanker
 ; Blanker
@@ -114,6 +139,9 @@ Systemets skärmsläckare
 MSG_BLANKER_CXDESCR
 Släcker skärmen vid inaktivitet
 ; Blanks screen when system inactive
+;
+; ===============================================
+; CLICK2FNT
 ;
 MSG_CLICK2FNT_CXNAME
 ClickToFront
@@ -127,17 +155,23 @@ MSG_CLICK2FNT_CXDESCR
 Lyfter fönster längst fram
 ; Click windows to front
 ;
+; ===============================================
+; OPAQUE
+;
 MSG_OPAQUE_CXNAME
 Opaque
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
 Solida fönster
-; Opaque windows
+; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
 Realtids fönsterförflyttning
 ; Realtime moving of windows
+;
+; ===============================================
+; AUTOPOINT
 ;
 MSG_AUTOPOINT_CXNAME
 AutoPoint
@@ -145,11 +179,14 @@ AutoPoint
 ;
 MSG_AUTOPOINT_CXTITLE
 Autopekare
-; Automatic window activator
+; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
 Aktiverar fönstret under muspilen
 ; Activates the window under the mouse
+;
+; ===============================================
+; STARTMENU
 ;
 MSG_STARTMENU_CXNAME
 StartMenu
@@ -163,6 +200,9 @@ MSG_STARTMENU_CXDESCR
 Startar program från meny
 ; Program launch commodity
 ;
+; ===============================================
+; FKEY
+;
 MSG_FKEY_CXNAME
 FKey
 ; FKey
@@ -173,7 +213,7 @@ Function To Keys:
 ;
 MSG_FKEY_CXDESCR
 Attach Special Functions To Keys
-; Attach Special Functions To Keys
+; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
 FKey: Hot Key = <%s>
@@ -190,6 +230,12 @@ _New Key
 MSG_FKEY_DELETE_KEY
 _Delete Key
 ; _Delete Key
+;
+MSG_FKEY_SAVE_KEY
+
+; Save Defined Keys
+;
+; ***NEW***
 ;
 MSG_FKEY_COMMAND
 Command
@@ -219,6 +265,12 @@ MSG_FKEY_CMD_TOGGLE_WIN_SIZE
 Toggle Window Size
 ; Toggle Window Size
 ;
+MSG_FKEY_CMD_RESCUE_WIN
+
+; Rescue Window
+;
+; ***NEW***
+;
 MSG_FKEY_CMD_INSERT_TEXT
 Insert Text
 ; Insert Text
@@ -231,25 +283,12 @@ MSG_FKEY_CMD_RUN_AREXX
 Run Arexx Script
 ; Run Arexx Script
 ;
-MSG_FKEY_MEN_PROJECT
-Project
-; Project
-;
 MSG_FKEY_MEN_PROJECT_SAVE
 S\0Save Defined Keys
 ; S\0Save Defined Keys
 ;
-MSG_FKEY_MEN_PROJECT_HIDE
-H\0Hide
-; H\0Hide
-;
-MSG_FKEY_MEN_PROJECT_ICONIFY
-I\0Iconify
-; I\0Iconify
-;
-MSG_FKEY_MEN_PROJECT_QUIT
-Q\0Quit
-; Q\0Quit
+; ===============================================
+; NOCAPSLOCK
 ;
 MSG_NOCAPSLOCK_CXNAME
 NoCapsLock

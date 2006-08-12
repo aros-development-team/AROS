@@ -1,11 +1,18 @@
-## version $VER: Commodities.catalog 1.0 (14.10.2001)
+## version $VER: Commodities.catalog 1.0 (12.08.2006)
 ## language suomi
 ## codeset 0
 ;
+; FIXME: This file requires updating. When done, bump revision to 2
 ;
 MSG_CANT_OPEN_LIB
 En voi avata %s v%ld!\n
 ; Can't open %s V%ld!\n
+;
+MSG_CANT_OPEN_INPUTDEVICE
+
+; Can't open 'input.device'
+;
+; ***NEW***
 ;
 MSG_CANT_LOCK_SCR
 En voi lukita näyttöä!\n
@@ -55,9 +62,24 @@ MSG_MEN_PROJECT
 Projekti
 ; Project
 ;
+MSG_MEN_PROJECT_HIDE
+
+; H\0Hide
+;
+; ***NEW***
+;
+MSG_MEN_PROJECT_ICONIFY
+
+; I\0Iconify
+;
+; ***NEW***
+;
 MSG_MEN_PROJECT_QUIT
 Q\0Lopeta
 ; Q\0Quit
+;
+; ===============================================
+; EXCHANGE
 ;
 MSG_EXCHANGE_CXNAME
 Exchange
@@ -73,7 +95,7 @@ Hallintajärjestelmän commodities
 ;
 MSG_EXCHANGE_WINTITLE
 Exchange
-; Exchange
+; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
 Saatavilla olevat commodities:it
@@ -103,6 +125,9 @@ MSG_EXCHANGE_CYCLE_INACTIVE
 Epäaktiivinen
 ; Inactive
 ;
+; ===============================================
+; BLANKER
+;
 MSG_BLANKER_CXNAME
 Blanker
 ; Blanker
@@ -114,6 +139,9 @@ Järjestelmän näytön tyhjennin
 MSG_BLANKER_CXDESCR
 Tyhjentää näytön kun järjestelmä ei ole aktiivinen
 ; Blanks screen when system inactive
+;
+; ===============================================
+; CLICK2FNT
 ;
 MSG_CLICK2FNT_CXNAME
 ClickToFront
@@ -127,17 +155,23 @@ MSG_CLICK2FNT_CXDESCR
 Klikkaa ikkunat eteen
 ; Click windows to front
 ;
+; ===============================================
+; OPAQUE
+;
 MSG_OPAQUE_CXNAME
 Läpinäkymätön
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
 Läpinäkymättömät ikkunat
-; Opaque windows
+; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
 Ikkunoiden reaaliaikainen näyttö
 ; Realtime moving of windows
+;
+; ===============================================
+; AUTOPOINT
 ;
 MSG_AUTOPOINT_CXNAME
 AutoPoint
@@ -145,11 +179,14 @@ AutoPoint
 ;
 MSG_AUTOPOINT_CXTITLE
 Automaattinen ikkunoiden aktivoija
-; Automatic window activator
+; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
 Aktivoi hiiren alla olevan ikkunan
 ; Activates the window under the mouse
+;
+; ===============================================
+; STARTMENU
 ;
 MSG_STARTMENU_CXNAME
 StartMenu
@@ -163,6 +200,9 @@ MSG_STARTMENU_CXDESCR
 Ohjelmien käynnistin
 ; Program launch commodity
 ;
+; ===============================================
+; FKEY
+;
 MSG_FKEY_CXNAME
 FKey
 ; FKey
@@ -173,7 +213,7 @@ Toiminto näppäimille:
 ;
 MSG_FKEY_CXDESCR
 Asettaa erityistoimintoja näppäimille
-; Attach Special Functions To Keys
+; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
 FKey: Hot Key = <%s>
@@ -190,6 +230,12 @@ _Uusi näppäin
 MSG_FKEY_DELETE_KEY
 _Poista näppäin
 ; _Delete Key
+;
+MSG_FKEY_SAVE_KEY
+
+; Save Defined Keys
+;
+; ***NEW***
 ;
 MSG_FKEY_COMMAND
 Komento
@@ -219,6 +265,12 @@ MSG_FKEY_CMD_TOGGLE_WIN_SIZE
 Vaihda ikkunan kokoa
 ; Toggle Window Size
 ;
+MSG_FKEY_CMD_RESCUE_WIN
+
+; Rescue Window
+;
+; ***NEW***
+;
 MSG_FKEY_CMD_INSERT_TEXT
 Lisää tekstiä
 ; Insert Text
@@ -231,25 +283,12 @@ MSG_FKEY_CMD_RUN_AREXX
 Aja Arexx -skripti
 ; Run Arexx Script
 ;
-MSG_FKEY_MEN_PROJECT
-Projekti
-; Project
-;
 MSG_FKEY_MEN_PROJECT_SAVE
 S\0Tallenna määritetyt näppäimet
 ; S\0Save Defined Keys
 ;
-MSG_FKEY_MEN_PROJECT_HIDE
-H\0Piilota
-; H\0Hide
-;
-MSG_FKEY_MEN_PROJECT_ICONIFY
-I\0Ikoniksi
-; I\0Iconify
-;
-MSG_FKEY_MEN_PROJECT_QUIT
-Q\0Lopeta
-; Q\0Quit
+; ===============================================
+; NOCAPSLOCK
 ;
 MSG_NOCAPSLOCK_CXNAME
 NoCapsLock
