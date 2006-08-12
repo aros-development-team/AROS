@@ -1,11 +1,18 @@
-## version $VER: Commodities.catalog 1.0 (17.08.2003)
+## version $VER: Commodities.catalog 1.0 (12.08.2006)
 ## language español
 ## codeset 0
 ;
+; FIXME: This file requires updating. When done, bump revision to 2
 ;
 MSG_CANT_OPEN_LIB
 ¡No puedo abrir %s V%ld!\n
 ; Can't open %s V%ld!\n
+;
+MSG_CANT_OPEN_INPUTDEVICE
+
+; Can't open 'input.device'
+;
+; ***NEW***
 ;
 MSG_CANT_LOCK_SCR
 ¡No puedo fijar la pantalla publica!\n
@@ -55,9 +62,24 @@ MSG_MEN_PROJECT
 Proyecto
 ; Project
 ;
+MSG_MEN_PROJECT_HIDE
+
+; H\0Hide
+;
+; ***NEW***
+;
+MSG_MEN_PROJECT_ICONIFY
+
+; I\0Iconify
+;
+; ***NEW***
+;
 MSG_MEN_PROJECT_QUIT
 Q\0Salir
 ; Q\0Quit
+;
+; ===============================================
+; EXCHANGE
 ;
 MSG_EXCHANGE_CXNAME
 Cambio
@@ -73,7 +95,7 @@ Controla system commodities
 ;
 MSG_EXCHANGE_WINTITLE
 Cambio
-; Exchange
+; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
 Commodities disponibles
@@ -103,6 +125,9 @@ MSG_EXCHANGE_CYCLE_INACTIVE
 inactivo
 ; Inactive
 ;
+; ===============================================
+; BLANKER
+;
 MSG_BLANKER_CXNAME
 Blanker
 ; Blanker
@@ -114,6 +139,9 @@ System Screen Blanker
 MSG_BLANKER_CXDESCR
 Ennegrece pantalla cuando el system esta inactivo
 ; Blanks screen when system inactive
+;
+; ===============================================
+; CLICK2FNT
 ;
 MSG_CLICK2FNT_CXNAME
 ClickToFront
@@ -127,17 +155,23 @@ MSG_CLICK2FNT_CXDESCR
 Poner la ventana al primer plano con un mouse click
 ; Click windows to front
 ;
+; ===============================================
+; OPAQUE
+;
 MSG_OPAQUE_CXNAME
 Opaque
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
 Opacar ventanas
-; Opaque windows
+; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
 Mover ventanas en tiempo real
 ; Realtime moving of windows
+;
+; ===============================================
+; AUTOPOINT
 ;
 MSG_AUTOPOINT_CXNAME
 AutoPoint
@@ -145,11 +179,14 @@ AutoPoint
 ;
 MSG_AUTOPOINT_CXTITLE
 Foco automatico
-; Automatic window activator
+; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
 Activa la ventana debajo de la mouse
 ; Activates the window under the mouse
+;
+; ===============================================
+; STARTMENU
 ;
 MSG_STARTMENU_CXNAME
 StartMenú
@@ -163,6 +200,9 @@ MSG_STARTMENU_CXDESCR
 Lanza programas del menú
 ; Program launch commodity
 ;
+; ===============================================
+; FKEY
+;
 MSG_FKEY_CXNAME
 FKey
 ; FKey
@@ -173,7 +213,7 @@ Asigna funciones a teclas
 ;
 MSG_FKEY_CXDESCR
 Asignar funciones a teclas
-; Attach Special Functions To Keys
+; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
 FKey: Hot Key = <%s>
@@ -190,6 +230,12 @@ _Nueva tecla
 MSG_FKEY_DELETE_KEY
 _Borrar tecla
 ; _Delete Key
+;
+MSG_FKEY_SAVE_KEY
+
+; Save Defined Keys
+;
+; ***NEW***
 ;
 MSG_FKEY_COMMAND
 Comando
@@ -219,6 +265,12 @@ MSG_FKEY_CMD_TOGGLE_WIN_SIZE
 Conmutar dimensión de la ventana
 ; Toggle Window Size
 ;
+MSG_FKEY_CMD_RESCUE_WIN
+
+; Rescue Window
+;
+; ***NEW***
+;
 MSG_FKEY_CMD_INSERT_TEXT
 Rellenar texto
 ; Insert Text
@@ -231,23 +283,28 @@ MSG_FKEY_CMD_RUN_AREXX
 Lanza ARexx-Script
 ; Run Arexx Script
 ;
-MSG_FKEY_MEN_PROJECT
-Proyecto
-; Project
-;
 MSG_FKEY_MEN_PROJECT_SAVE
 S\0Grabar teclas
 ; S\0Save Defined Keys
 ;
-MSG_FKEY_MEN_PROJECT_HIDE
-H\0Ocultar
-; H\0Hide
+; ===============================================
+; NOCAPSLOCK
 ;
-MSG_FKEY_MEN_PROJECT_ICONIFY
-I\0Iconify
-; I\0Iconify
+MSG_NOCAPSLOCK_CXNAME
+
+; NoCapsLock
 ;
-MSG_FKEY_MEN_PROJECT_QUIT
-Q\0Salir
-; Q\0Quit
+; ***NEW***
+;
+MSG_NOCAPSLOCK_CXTITLE
+
+; NoCapsLock:
+;
+; ***NEW***
+;
+MSG_NOCAPSLOCK_CXDESCR
+
+; Renders the CAPS LOCK key ineffective
+;
+; ***NEW***
 ;
