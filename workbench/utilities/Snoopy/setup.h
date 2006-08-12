@@ -8,7 +8,12 @@
 
 #include <exec/types.h>
 
+#define PREFFILE "envarc:snoopy.prefs"
+
 void setup_init(void);
+void setup_reset(void);
+BOOL setup_open(void);
+BOOL setup_save(void);
 
 struct Setup
 {
@@ -44,10 +49,10 @@ struct Setup
     BOOL enableReadToolTypes;
 
     // min. field len for output
-    LONG nameLen;
-    LONG actionLen;
-    LONG targetLen;
-    LONG optionLen;
+    WORD nameLen;
+    WORD actionLen;
+    WORD targetLen;
+    WORD optionLen;
 }; 
 
 extern struct Setup setup;

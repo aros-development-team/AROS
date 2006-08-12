@@ -9,6 +9,7 @@
 
 #include <proto/dos.h>
 #include <proto/arossupport.h>
+#include <proto/exec.h>
 
 #include "main.h"
 #include "gui.h"
@@ -41,8 +42,9 @@ static void prettyprint(CONST_STRPTR str, LONG minlen)
 
 void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, LONG result)
 {
-    STRPTR name = SysBase->ThisTask->tc_Node.ln_Name;
-    
+    struct Task *thistask = SysBase->ThisTask;
+    STRPTR name = thistask->tc_Node.ln_Name;
+
     if (setup.onlyShowFails && result) return;
     if (setup.ignoreWB)
     {
@@ -50,16 +52,33 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, 
 	if ( ! stricmp(name, "new shell")) return;
 	if ( ! stricmp(name, "newshell")) return;
 	if ( ! stricmp(name, "boot shell")) return;
- 	if ( ! stricmp(name, "background cli")) return;
+	if ( ! stricmp(name, "background cli")) return;
     }
-    
+
+    // FIXME: Can Forbid/Permit cause locks?
+    Forbid();
+
     RawPutChars("SNOOP ", 7);
+
     prettyprint(name, setup.nameLen);
+
+    if (setup.showCliNr)
+    {
+	int clinum = 0;
+	if (thistask->tc_Node.ln_Type == NT_PROCESS && ((struct Process *)thistask)->pr_CLI)
+	{
+	    clinum = ((struct Process *)thistask)->pr_TaskNum;
+	}
+
+	kprintf(" [%d]", clinum);
+    }
+
     prettyprint(action, setup.actionLen);
     prettyprint(target, setup.targetLen);
     prettyprint(option, setup.optionLen);
     prettyprint(result ? "OK" : "Fail", 0);
     RawPutChar('\n');
+    Permit();
 }
 
 void clean_exit(char *s)

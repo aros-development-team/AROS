@@ -754,7 +754,7 @@ AROS_UFH5(BYTE, New_OpenDevice,
     {
 	char unitstr[20];
 	sprintf(unitstr, "Unit %ld", unitNumber);
-	main_output("OpenDevice", devName, unitstr, result );
+	main_output("OpenDevice", devName, unitstr, !result );
     }
     
     return result;
