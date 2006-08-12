@@ -1,0 +1,29 @@
+## version $VER: wanderer.catalog 1.0 (12.08.2006)
+## language russian
+## codeset 0
+;
+;
+MSG_NAME
+Настройки Wanderer
+; Wanderer Preferences
+;
+MSG_BACKGROUNDS
+Фон
+; Backgrounds
+;
+MSG_BACKGROUND_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_BACKGROUND_DRAWERS
+Папки
+; Drawers
+;
+MSG_SELECT_WORKBENCH_BACKGROUND
+Выберите фон Workbench
+; Select Workbench Background
+;
+MSG_SELECT_DRAWER_BACKGROUND
+Выберите фон папки
+; Select Drawer Background
+;

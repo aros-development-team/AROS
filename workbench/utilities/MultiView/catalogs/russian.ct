@@ -1,0 +1,148 @@
+## version $VER: multiview.catalog 1.0 (13.08.2006)
+## codeset 0
+## language russian
+;
+MSG_CANT_OPEN_LIB
+Не могу открыть %s V%ld 
+;
+MSG_CANT_CREATE_IC
+Не могу создать объекты связи!
+;
+MSG_CANT_LOCK_SCR
+Не могу занять общий экран!
+;
+MSG_CANT_GET_DRI
+Не могу получить DrawInfo!
+;
+MSG_CANT_GET_VI
+Не могу получить VisualInfo!
+;
+MSG_CANT_CREATE_SYSIMAGE
+Не могу создать изображения SYSICLASS!
+;
+MSG_CANT_CREATE_GADGET
+Не могу создать гр. элементы!
+;
+MSG_CANT_CREATE_MENUS
+Не могу создать меню!
+;
+MSG_CANT_CREATE_WIN
+Не могу создать окно!
+;
+MSG_SAVE_FAILED
+Ошибка сохранения в файл!
+;
+MSG_MEN_PROJECT
+Проект
+;
+MSG_MEN_PROJECT_OPEN
+O\0Открыть ...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Сохранить как ...
+;
+MSG_MEN_PROJECT_SAVEAS_IFF
+I\0Сохранить как IFF...
+;
+MSG_MEN_PROJECT_PRINT
+P\0Печать
+;
+MSG_MEN_PROJECT_ABOUT
+?\0О программе ...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Выход
+;
+MSG_MEN_EDIT
+Правка
+;
+MSG_MEN_EDIT_MARK
+B\0Отметить
+;
+MSG_MEN_EDIT_COPY
+C\0Копировать
+;
+MSG_MEN_EDIT_SELECTALL
+L\0Отметить всё
+;
+MSG_MEN_EDIT_CLEARSELECTED
+H\0Очистить выделение
+;
+MSG_MEN_WINDOW
+Окно
+;
+MSG_MEN_WINDOW_SEPSCREEN
+ \0Разделить экран
+;
+MSG_MEN_WINDOW_MINIMIZE
+ \0Минимум
+;
+MSG_MEN_WINDOW_NORMAL
+ \0Норма
+;
+MSG_MEN_WINDOW_MAXIMIZE
+ \0Максимум
+;
+MSG_MEN_SETTINGS
+Настройки
+;
+MSG_MEN_SETTINGS_SAVEDEF
+D\0Сохранить по умолчанию
+;
+MSG_MEN_PICT
+Изображение
+;
+MSG_MEN_PICT_ZOOM_IN
+Z\0Увеличить
+;
+MSG_MEN_PICT_ZOOM_OUT
+ \0Уменьшить
+;
+MSG_MEN_PICT_RESET
+ \0Изначальный размер
+;
+MSG_MEN_PICT_FIT_WIN
+ \0По размеру окна
+;
+MSG_MEN_PICT_KEEP_ASPECT
+ \0Сохранять пропорции
+;
+MSG_MEN_PICT_FORCE_MAP
+ \0Force Palette mapping
+;
+MSG_MEN_PICT_DITHER
+ \0Dithering
+;
+MSG_MEN_TEXT
+Текст
+;
+MSG_MEN_TEXT_WORDWRAP
+ \0Перенос строк
+;
+MSG_MEN_TEXT_SEARCH
+ \0Поиск ...
+;
+MSG_MEN_TEXT_SEARCH_PREV
+ \0Искать ранее
+;
+MSG_MEN_TEXT_SEARCH_NEXT
+ \0Искать далее
+;
+MSG_ASL_OPEN_TITLE
+Выберите файл для открытия
+;
+MSG_ASL_SAVE_TITLE
+Выберите файл для сохранения
+;
+MSG_ABOUT
+MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+;
+MSG_ABOUT_TITLE
+MultiView - Универсальный просмотрщик
+;
+MSG_CONTINUE
+Далее
+;
+MSG_OK
+Ok
+;

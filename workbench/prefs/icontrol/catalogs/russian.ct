@@ -1,69 +1,73 @@
-## version $VER: icontrolprefs.catalog 1.0 (13.05.2006)
+## version $VER: icontrolprefs.catalog 1.1 (13.08.2006)
 ## codeset 0
 ## language russian
 ;
 MSG_CANT_OPEN_LIB
-Ошибка открытия %s V%ld!\n
+Ошибка открытия %s V%ld !\n
+;
 ;
 MSG_CANT_CREATE_APP
-Невозможно создание объекта приложения!
-; Can't create application object!
+Невозможно создание объекта приложения !
+;
+;
+MSG_CANT_CREATE_CUSTOM_CLASS
+Ошибка создания класса preferenceswindow
+;Can't create custom preferenceswindow class
 ;
 MSG_WINTITLE
 Настройки IControl
-; IControl Preferences
+;
 ;
 MSG_MEN_PROJECT
 Проект
-; Project
+;
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Открыть...
-; O\0Open...
+O\0Открыть..
+;
 ;
 MSG_MEN_PROJECT_SAVEAS
 A\0Сохранить как...
-; A\0Save As...
+;
 ;
 MSG_MEN_PROJECT_QUIT
 Q\0Выход
-; Q\0Quit
+;
 ;
 MSG_MEN_EDIT
-Редактировать
-; Edit
+Правка
+;
 ;
 MSG_MEN_EDIT_DEFAULT
 D\0Сброс на умолчания
-; D\0Reset to Defaults
+;
 ;
 MSG_MEN_EDIT_LASTSAVED
 L\0Последнее сохраненное
-; L\0Last Saved
+;
 ;
 MSG_MEN_EDIT_RESTORE
 R\0Восстановить
-; R\0Restore
+;
 ;
 MSG_MEN_SETTINGS
 Настройки
-; Settings
+;
 ;
 MSG_MEN_SETTINGS_CREATEICONS
 I\0Создавать иконки?
-; I\0Create Icons?
+;
 ;
 MSG_ASL_OPEN_TITLE
 Загрузить настройки IControl
-; Load IControl Preferences
+;
 ;
 MSG_ASL_SAVE_TITLE
 Сохранить настройки IControl
-; Save IControl Preferences
+;
 ;
 MSG_OK
 Ok
-; Ok
 ;
 ;
 MSG_MENUS_GROUP
@@ -93,4 +97,25 @@ MSG_MENUS_LOOK_CLASSIC
 MSG_MENUS_LOOK_3D
 3D
 ; 3D
+;
+MSG_WINDOWS
+Окна
+;
+MSG_OFFSCREEN_MOVE
+Перемещение за экран:
+;
+MSG_SCREENS
+Экраны
+;
+MSG_FRONTMOST_DEFAULT
+Frontmost set as DefaultPubScreen:
+;Frontmost set as DefaultPubScreen:
+;
+MSG_OFFSCREEN_DESC
+Допускать перемещение окон\nза пределы видимой части
+;Allow windows to be moved out of\nthe visible area
+;
+MSG_FRONTMOST_DEFAULT_DESC
+Самый верхний общий экран\nстановится общим экраном по умолчанию
+;Make the frontmost public screen\nthe default public screen
 ;

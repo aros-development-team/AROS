@@ -1,0 +1,111 @@
+## version $VER: serialprefs.catalog 1.0 (12.08.2006)
+## codeset 0
+## language russian
+;
+MSG_CANT_OPEN_LIB
+Не могу открыть %s V%ld !\n
+;
+MSG_CANT_LOCK_SCR
+Не могу занять общий дисплей!
+;
+MSG_CANT_GET_DRI
+Не могу получить DrawInfo!
+;
+MSG_CANT_GET_VI
+Не могу получить VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Не могу создать гр. элемент!
+;
+MSG_CANT_CREATE_MENUS
+Ошибка создания меню!
+;
+MSG_CANT_CREATE_WIN
+Не могу создать окно!
+;
+MSG_WINTITLE
+Настройки последовательного порта
+;
+MSG_MEN_PROJECT
+Проект
+;
+MSG_MEN_PROJECT_OPEN
+О\0Открыть...
+;
+MSG_MEN_PROJECT_SAVEAS
+С\0SСохранить как...
+;
+MSG_MEN_PROJECT_QUIT
+В\0Выход
+;
+MSG_MEN_EDIT
+Правка
+;
+MSG_MEN_EDIT_DEFAULT
+Н\0Сброс настроек
+;
+MSG_MEN_EDIT_LASTSAVED
+П\0Последние сохраненные
+;
+MSG_MEN_EDIT_RESTORE
+Т\0ВоссТановить
+;
+MSG_MEN_SETTINGS
+Настройки
+;
+MSG_MEN_SETTINGS_CREATEICONS
+И\0Создать Иконки?
+;
+MSG_ASL_OPEN_TITLE
+Загрузить настойки
+;
+MSG_ASL_SAVE_TITLE
+Сохранить настройки
+;
+MSG_OK
+Ok
+;
+MSG_GAD_SAVE
+Сохранить
+;
+MSG_GAD_USE
+Применить
+;
+MSG_GAD_CANCEL
+Отменить
+;
+;
+MSG_GAD_BAUDRATE
+Скорость порта
+;
+MSG_GAD_PARITY
+Контроль четности
+;
+MSG_GAD_STOPBITS
+Стоп-биты
+;
+MSG_GAD_DATABITS
+Биты данных
+;
+;
+MSG_GAD_INPUTBUFFERSIZE
+Размер приемного буфера
+;
+MSG_GAD_OUTPUTBUFFERSIZE
+Размер буфера передачи
+;
+MSG_PARITY_NONE
+Нет
+;
+MSG_PARITY_EVEN
+Чёт(Even)
+;
+MSG_PARITY_ODD
+Нечет(Odd)
+;
+MSG_PARITY_MARK
+Метка
+;
+MSG_PARITY_SPACE
+Пробел
+;

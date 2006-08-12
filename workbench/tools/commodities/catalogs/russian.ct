@@ -1,0 +1,293 @@
+## version $VER: Commodities.catalog 2.0 (13.08.2006)
+## language russian
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Не могу открыть |ffnen!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_OPEN_INPUTDEVICE
+Не могу открыть 'input.device' 
+; Can't open 'input.device'
+;
+MSG_CANT_LOCK_SCR
+Не могу занять общий экран!\n
+; Can't lock public screen!\n
+;
+MSG_CANT_GET_VI
+Не могу получить VisualInfo!\n
+; Can't get VisualInfo!\n
+;
+MSG_CANT_CREATE_GADGET
+Не могу создать гр. элементы!\n
+; Can't create gadgets!\n
+;
+MSG_CANT_CREATE_MENUS
+Не могу создать меню!\n
+; Can't create menus!\n
+;
+MSG_CANT_LAYOUT_MENUS
+Не могу заполнить меню!\n
+; Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN
+Ошибка создания окна!\n
+; Can't create window!\n
+;
+MSG_CANT_ALLOCATE_MEM
+Не могу выделить память под приложение!\n
+; Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT
+Ошибка передачи сообщения!\n
+; Can't create message port!\n
+;
+MSG_CANT_CREATE_BROKER
+Объект CxBroker не может быть создан!\n
+; Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM
+Объект CxCustom не может быть создан!\n
+; Can't create CxCustom object!\n
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MEN_PROJECT
+Проект
+; Project
+;
+MSG_MEN_PROJECT_HIDE
+C\0Спрятать
+; H\0Hide
+;
+MSG_MEN_PROJECT_ICONIFY
+И\0В Иконку
+; I\0Iconify
+;
+MSG_MEN_PROJECT_QUIT
+В\0Выход
+; Q\0Quit
+;
+; ===============================================
+; EXCHANGE
+;
+MSG_EXCHANGE_CXNAME
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_CXTITLE
+Commodities Exchange
+; Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR
+Управляет Удобствами системы
+; Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE
+Exchange: Hot Key = <%s>
+; Exchange: Hot Key = <%s>
+;
+MSG_EXCHANGE_LISTVIEW
+Доступные Удобства
+; Available commodities
+;
+MSG_EXCHANGE_INFO
+Информация
+; Information
+;
+MSG_EXCHANGE_GAD_SHOW
+Показать
+; Show
+;
+MSG_EXCHANGE_GAD_HIDE
+Спрятать
+; Hide
+;
+MSG_EXCHANGE_GAD_REMOVE
+Убрать
+; Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE
+включено
+; Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE
+выключено
+; Inactive
+;
+; ===============================================
+; BLANKER
+;
+MSG_BLANKER_CXNAME
+Blanker
+; Blanker
+;
+MSG_BLANKER_CXTITLE
+Хранитель экрана
+; System Screen Blanker
+;
+MSG_BLANKER_CXDESCR
+Очищает экран при неактивности системы
+; Blanks screen when system inactive
+;
+; ===============================================
+; CLICK2FNT
+;
+MSG_CLICK2FNT_CXNAME
+ClickToFront
+; ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE
+Click To Front Utility
+; Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR
+При двойном щелчке в пределах окна поднимает его на передний план 
+; Click windows to front
+;
+; ===============================================
+; OPAQUE
+;
+MSG_OPAQUE_CXNAME
+Opaque
+; Opaque
+;
+MSG_OPAQUE_CXTITLE
+НЕпрозрачные окна
+; Solid Windows
+;
+MSG_OPAQUE_CXDESCR
+Позволяет передвигать окна "как есть", но тратит ресурсы
+; Realtime moving of windows
+;
+; ===============================================
+; AUTOPOINT
+;
+MSG_AUTOPOINT_CXNAME
+AutoPoint
+; AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE
+Автофокус окон
+; Autopointer
+;
+MSG_AUTOPOINT_CXDESCR
+При наведении курсора мыши на окно делает его активным
+; Activates the window under the mouse
+;
+; ===============================================
+; STARTMENU
+;
+MSG_STARTMENU_CXNAME
+StartMenu
+; StartMenu
+;
+MSG_STARTMENU_CXTITLE
+Запуск программ
+; System Program Starter
+;
+MSG_STARTMENU_CXDESCR
+Удобство для простого запуска программ
+; Program launch commodity
+;
+; ===============================================
+; FKEY
+;
+MSG_FKEY_CXNAME
+FKey
+; FKey
+;
+MSG_FKEY_CXTITLE
+Назначение функций клавишам
+; Function To Keys:
+;
+MSG_FKEY_CXDESCR
+Назначает клавишам специальные функции (см. Показать)
+; Attach special functions to keys
+;
+MSG_FKEY_WINTITLE
+FKey: Hot Key = <%s>
+; FKey: Hot Key = <%s>
+;
+MSG_FKEY_DEFINED_KEYS
+Назначенные сочетания
+; Defined Keys
+;
+MSG_FKEY_NEW_KEY
+_Новое
+; _New Key
+;
+MSG_FKEY_DELETE_KEY
+Taste _l|schen
+; _Удалить
+;
+MSG_FKEY_SAVE_KEY
+Сохранить настройки
+; Save Defined Keys
+;
+MSG_FKEY_COMMAND
+Команда
+; Command
+;
+MSG_FKEY_COMMAND_PARAMS
+Параметры команды
+; Command Parameters
+;
+MSG_FKEY_CMD_CYCLE_WIN
+Переключение окон
+; Cycle Windows
+;
+MSG_FKEY_CMD_CYCLE_SCR
+Переключение экранов
+; Cycle Screens
+;
+MSG_FKEY_CMD_ENLARGE_WIN
+Развернуть окно
+; Enlarge Window
+;
+MSG_FKEY_CMD_SHRINK_WIN
+Свернуть окно
+; Shrink Window
+;
+MSG_FKEY_CMD_TOGGLE_WIN_SIZE
+Переключить размер окна
+; Toggle Window Size
+;
+MSG_FKEY_CMD_RESCUE_WIN
+Подложить окно
+; Rescue Window
+;
+MSG_FKEY_CMD_INSERT_TEXT
+Вставить текст
+; Insert Text
+;
+MSG_FKEY_CMD_RUN_PROG
+Запустить программу
+; Run Program
+;
+MSG_FKEY_CMD_RUN_AREXX
+Запустить скрипт ARexx
+; Run Arexx Script
+;
+MSG_FKEY_MEN_PROJECT_SAVE
+С\0Сохранить клавиши
+; S\0Save Defined Keys
+;
+; ===============================================
+; NOCAPSLOCK
+;
+MSG_NOCAPSLOCK_CXNAME
+NoCapsLock
+; NoCapsLock
+;
+MSG_NOCAPSLOCK_CXTITLE
+Отключение CapsLock
+; NoCapsLock:
+;
+MSG_NOCAPSLOCK_CXDESCR
+Отключает клавишу CAPS LOCK
+; Renders the CAPS LOCK key ineffective
+;

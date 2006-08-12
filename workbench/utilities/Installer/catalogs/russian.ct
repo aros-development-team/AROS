@@ -1,0 +1,22 @@
+## version $VER: Installer.catalog 1.0 (12.8.2006)
+## language russian
+## codeset 0
+;
+MSG_OK
+OK
+;
+MSG_CANCEL
+Отмена
+;
+MSG_MESSAGE
+Сообщение
+;
+MSG_PROMPT
+Вопрос
+;
+MSG_YES
+Да
+;
+MSG_NO
+Нет
+;

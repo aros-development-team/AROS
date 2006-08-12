@@ -1,0 +1,25 @@
+## version $VER: clock.catalog 1.1 (13.08.2006)
+## language russian
+## codeset 0
+;
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+Не могу создать объект приложения
+; Error: Can't create application object.
+;
+MSG_WINDOW_TITLE
+Часы
+; Clock
+;
+MSG_DESCRIPTION
+Часы Wanderer
+; Wanderer Clock
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_ERROR_DISKOBJECT
+Не могу создать дисковый объект
+; Error: Can't create diskobject
+;

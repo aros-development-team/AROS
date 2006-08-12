@@ -1,0 +1,93 @@
+## version $VER: ScreenGrabber.catalog 1.1 (13.08.2006)
+## language russian
+## codeset 0
+;
+;
+MSG_WINDOW_TITLE
+Снимок экрана
+; ScreenGrabber
+;
+MSG_REFRESH
+Обновить список
+; Refresh list
+;
+MSG_SCREEN_INFO
+Screen Info
+; Screen info
+;
+MSG_SIZE
+Размер
+; Size
+;
+MSG_TITLE
+Заголовок
+; Title
+;
+MSG_DEFAULT_TITLE
+Заголовок по умолчанию
+; Default title
+;
+MSG_GRABBING_OPTIONS
+Настройки снимков
+; Grabbing options
+;
+MSG_DELAY
+Задержка (с.) (s)
+; Delay (s)
+;
+MSG_HIDE
+Спрятать окно
+; Hide the grabber window
+;
+MSG_SAVE_OPTIONS
+Сохранить настройки
+; Save options
+;
+MSG_SAVE_FILE
+Сохранить снимок
+; Save file
+;
+MSG_SCREENSHOT
+Снимок
+; Screenshot
+;
+MSG_SCREEN_PARM
+%d x %d, Tiefe=%d
+; %d x %d, depth=%d
+;
+MSG_OVERWRITE
+Файл '%s' уже существует.\nПерезаписать его?
+; File '%s' already exists.\nDo you really want to overwrite it?
+;
+MSG_ERROR_TITLE
+Ошибка при съёмке
+; Screengrabber Error
+;
+MSG_GAD_OK
+_OK
+; _OK
+;
+MSG_GAD_YESNO
+Да|Нет
+; YES|NO
+;
+MSG_ERR_DATATYPE
+Не могу создать объект данных!
+; Can't create datatype object!
+;
+MSG_NORAM
+Не могу выделить память!
+; Can't allocate RAM!
+;
+MSG_ERR_DATATYPEIO
+Запись файла '%s' невозможна из-за ошибки ввода-вывода %ld!
+; Writing of '%s' failed with IO Error %ld!
+;
+MSG_ERR_OPENFILE
+Не могу открыть файл  '%s' для записи!
+; Can't open file '%s' for output!
+;
+MSG_ERR_APP
+Ошибка создания объекта приложения!
+; Can't create application object!
+;
