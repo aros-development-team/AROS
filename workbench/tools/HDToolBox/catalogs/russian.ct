@@ -1,0 +1,135 @@
+## version $VER: hdtoolbox.catalog 1.0 (13.08.2006)
+## codeset 0
+## language russian
+;
+WORD_Active
+Активный
+;
+WORD_AddEntry
+Добавить в список
+;
+WORD_All
+Все
+;
+WORD_Automount
+Automount
+;
+WORD_Bootable
+Загрузочный
+;
+WORD_BootPri
+Порядок загрузки
+;
+WORD_Cancel
+Отмена
+;
+WORD_Changed
+Изменен
+;
+WORD_Change_Type
+Изменить тип
+;
+WORD_Create_Table
+Создать таблицу
+;
+WORD_Devices
+Устройства
+;
+WORD_DosEnvec
+DosEnvec
+;
+WORD_Exit
+Выход
+;
+WORD_Geometry
+Геометрия
+;
+WORD_Name
+Имя
+;
+WORD_Switches
+Установки
+;
+WORD_Parent
+Выше
+;
+WORD_Ok
+Ok
+;
+WORD_Partitions
+Разделы
+;
+WORD_Partition_Table
+Таблица разделов
+;
+WORD_Partition_Table_Type
+Тип таблицы разделов
+;
+WORD_Partition_Type
+Тип раздела
+;
+WORD_RemoveEntry
+Удалить
+;
+WORD_Rename
+Переименовать
+;
+WORD_Resize_Move
+Размер/
+;
+WORD_Save_Changes
+Записать изменения
+;
+WORD_Size
+Размер/место
+;
+WORD_Unit
+Устройство
+;
+WORD_Units
+Устройств
+;
+WORD_Unknown
+Неизвестно
+;
+WORD_MENU_Project
+Проект
+;
+WORD_MENU_About
+О программе
+;
+WORD_MENU_Quit
+Выход
+;
+MSG_ASK_SAVE
+Все данные на измененных разделах будут уничтожены!\n Вы уверены, что надо записать изменения таблицы разделов '%s' ?
+;Alle Daten auf modifizierten Partitionen werden zerst|rt!\nBist du dir sicher die +nderungen der Partitionstabelle '%s' zu speichern?
+;
+MSG_NO_MEMORY
+Недостаточно памяти
+;Nicht genug Speicher vorhanden
+;
+MSG_PARTITION_TABLE_FULL
+Таблица разделов заполнена
+;Partitionstabelle voll
+;
+MSG_Select_Empty_Area
+Выберите свободное место
+;Wфhle eine freien Bereich
+;
+MSG_Select_Partition_Resize_Move
+Выберите раздел для изменения размера или перемещения
+;Wфhle eine Partition und фndere die Gr|яe bzw. bewege sie
+;
+MSG_Welcome
+Вас приветствует инструмент для управления разделами! 
+;Willkommen zum Partitionierungswerkzeug
+;
+MSG_WriteTableError
+Ошибка при записи таблицы разделов
+;Fehler beim Schreiben der Partitionstabelle
+;
+MSG_CreateTableError
+Ошибка при создании таблицы разделов
+;Fehler beim Erstellen der Partitionstabelle
+;

@@ -1,0 +1,49 @@
+## version $VER: timeprefs.catalog 1.0 (12.08.2006)
+## codeset 0
+## language russian
+;
+;
+MSG_CANT_OPEN_LIB
+Не могу открыть %s V%ld !\n
+;Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+Немогу создать объект приложения!
+;Can't create application object!
+;
+MSG_WINTITLE
+Настройка часов
+;Time Preferences
+;
+MSG_MEN_PROJECT
+Проект
+;Project
+;
+MSG_MEN_PROJECT_QUIT
+В\0Выход
+;Q\0Quit
+;
+MSG_MEN_EDIT
+Правка
+;Edit
+;
+MSG_MEN_EDIT_RESTORE
+В\0Восстановить
+;R\0Restore
+;
+MSG_OK
+Ok
+;Ok
+;
+MSG_GAD_SAVE
+Сохранить
+;Save
+;
+MSG_GAD_USE
+Применить
+;Use
+;
+MSG_GAD_CANCEL
+Отменить
+;Cancel
+;

@@ -20,15 +20,15 @@ MSG_MEM_B
 ; B
 ;
 MSG_MEM_K
-Кб
+КБ
 ; K
 ;
 MSG_MEM_M
-Мб
+МБ
 ; M
 ;
 MSG_MEM_G
-Гб
+ГБ
 ; G
 ;
 MSG_MEN_WANDERER
@@ -124,11 +124,11 @@ Z
 ; Z
 ;
 MSG_MEN_SNAPSHT
-Исправление
+Выстроить
 ; Snapshot
 ;
 MSG_MEN_ALL
-Все
+все
 ; All
 ;
 MSG_MEN_VIEW

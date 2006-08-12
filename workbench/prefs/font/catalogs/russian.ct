@@ -1,4 +1,4 @@
-## version $VER: fontprefs.catalog 1.0 (13.05.2006)
+## version $VER: fontprefs.catalog 1.1 (12.08.2006)
 ## language russian
 ## codeset 0
 ;
@@ -8,23 +8,23 @@ MSG_ERROR_CANT_CREATE_APPLICATION
 ; Can't create application object.
 ;
 MSG_CANT_CREATE_REQ
-Невозможно открытие созданного реквестера !
+Ошибка открытия файлового реквестера!
 ; Can't open create filerequester!
 ;
 MSG_CANT_CREATE_CONTEXT
-Ошибка создания контекста Gadtools !
-;Can't create context for Gadtools!
+Ошибка создания контекста Gadtools!
+; Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
-Невозможно открыть поток IFF !
+Невозможно открытие потока IFF!
 ; Can't open IFF stream!
 ;
 MSG_CANT_WRITE_PREFFILE
-Невозможно сохранить настройки !
+Невозможно сохранение настроек!
 ; Can't write preferences!
 ;
 MSG_CANT_READ_PREFFILE
-Невозможно прочитать настройки !
+Не могу прочитать настройки!
 ; Can't read preferences!
 ;
 MSG_CANT_ALLOCATE_IFFPTR
@@ -32,7 +32,7 @@ Can't allocate IFF handle!
 ; Can't allocate IFF handle!
 ;
 MSG_CANT_ALLOCATE_MEM
-Не могу выделить память приложения (%s) !
+Не могу выделить память приложению (%s) !
 ; Can't allocate application memory (%s)!
 ;
 MSG_NAME
@@ -52,7 +52,7 @@ E\0Экспорт...
 ; E\0Export...
 ;
 MSG_ASL_OPEN_TITLE
-Загрузить настройки шрифта
+Загрузить настройки шрифтов
 ; Load Font Preferences
 ;
 MSG_ASL_SAVE_TITLE
