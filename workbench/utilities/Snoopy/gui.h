@@ -10,6 +10,7 @@ void gui_init(void);
 void gui_handleevents(void);
 void gui_cleanup(void);
 void gui_set(void);
+void gui_get(void);
 
 #endif
 

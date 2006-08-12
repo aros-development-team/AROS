@@ -15,14 +15,64 @@
 #include "setup.h"
 #include "patches.h"
 
-static Object *app, *window, *useBtn, *undoBtn, *cancelBtn;
+static Object *app, *window, *saveBtn, *openBtn, *useBtn, *undoBtn, *resetBtn, *cancelBtn;
 static Object *failCM, *cliCM, *pathCM, *devCM, *ignoreCM;
+static Object *nameNum, *actionNum, *targetNum, *optionNum;
 static Object *changeDirCM, *deleteCM, *executeCM, *getVarCM, *loadSegCM, *lockCM, *makeDirCM, *makeLinkCM;
 static Object *openCM, *renameCM, *runCommandCM, *setVarCM, *systemCM, *findPortCM, *findResidentCM, *findSemaphoreCM;
 static Object *findTaskCM, *lockScreenCM, *openDeviceCM, *openFontCM, *openLibraryCM, *openResourceCM, *readToolTypesCM;
 
-static struct Hook use_hook, undo_hook, cancel_hook;
+static struct Hook save_hook, open_hook, use_hook, undo_hook, reset_hook, cancel_hook;
 
+AROS_UFH3S(void, save_function,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    oldsetup = setup;
+    gui_get();
+    patches_set();
+    if ( ! setup_save())
+    {
+	MUI_Request ( app, window, 0, "Snoopy", "OK", "An error happened when saving to " PREFFILE);
+    }
+    
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, open_function,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    if ( ! setup_open() )
+    {
+	MUI_Request ( app, window, 0, "Snoopy", "OK", "An error happened when loading from " PREFFILE);
+    }
+    gui_set();
+    patches_set();
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, reset_function,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    oldsetup = setup;
+    setup_reset();
+    gui_set();
+    patches_set();
+
+    AROS_USERFUNC_EXIT
+}
 
 AROS_UFH3S(void, use_function,
     AROS_UFHA(struct Hook *, h, A0),
@@ -32,38 +82,7 @@ AROS_UFH3S(void, use_function,
     AROS_USERFUNC_INIT
 
     oldsetup = setup;
-
-    setup.onlyShowFails       = XGET(failCM,          MUIA_Selected);
-    setup.showCliNr           = XGET(cliCM,           MUIA_Selected);
-    setup.showPaths           = XGET(pathCM,          MUIA_Selected);
-    setup.useDevNames         = XGET(devCM,           MUIA_Selected);
-    setup.ignoreWB            = XGET(ignoreCM,        MUIA_Selected);
-
-    setup.enableChangeDir     = XGET(changeDirCM,     MUIA_Selected);
-    setup.enableDelete        = XGET(deleteCM,        MUIA_Selected);
-    setup.enableExecute       = XGET(executeCM,       MUIA_Selected);
-    setup.enableGetVar        = XGET(getVarCM,        MUIA_Selected);
-    setup.enableLoadSeg       = XGET(loadSegCM,       MUIA_Selected);
-    setup.enableLock          = XGET(lockCM,          MUIA_Selected);
-    setup.enableMakeDir       = XGET(makeDirCM,       MUIA_Selected);
-    setup.enableMakeLink      = XGET(makeLinkCM,      MUIA_Selected);
-    setup.enableOpen          = XGET(openCM,          MUIA_Selected);
-    setup.enableRename        = XGET(renameCM,        MUIA_Selected);
-    setup.enableRunCommand    = XGET(runCommandCM,    MUIA_Selected);
-    setup.enableSetVar        = XGET(setVarCM,        MUIA_Selected);
-    setup.enableSystem        = XGET(systemCM,        MUIA_Selected);
-
-    setup.enableFindPort      = XGET(findPortCM,      MUIA_Selected);
-    setup.enableFindResident  = XGET(findResidentCM,  MUIA_Selected);
-    setup.enableFindSemaphore = XGET(findSemaphoreCM, MUIA_Selected);
-    setup.enableFindTask      = XGET(findTaskCM,      MUIA_Selected);
-    setup.enableLockScreen    = XGET(lockScreenCM,    MUIA_Selected);
-    setup.enableOpenDevice    = XGET(openDeviceCM,    MUIA_Selected);
-    setup.enableOpenFont      = XGET(openFontCM,      MUIA_Selected);
-    setup.enableOpenLibrary   = XGET(openLibraryCM,   MUIA_Selected);
-    setup.enableOpenResource  = XGET(openResourceCM,  MUIA_Selected);
-    setup.enableReadToolTypes = XGET(readToolTypesCM, MUIA_Selected);
-    
+    gui_get();
     patches_set();
 
     AROS_USERFUNC_EXIT
@@ -112,13 +131,16 @@ AROS_UFH3S(void, cancel_function,
 
 void gui_init(void)
 {
+    save_hook.h_Entry = (APTR)save_function;
+    open_hook.h_Entry = (APTR)open_function;
     use_hook.h_Entry = (APTR)use_function;
     undo_hook.h_Entry = (APTR)undo_function;
+    reset_hook.h_Entry = (APTR)reset_function;
     cancel_hook.h_Entry = (APTR)cancel_function;
 
     app = ApplicationObject,
 	MUIA_Application_Title, (IPTR)"Snoopy",
-	MUIA_Application_Version, (IPTR)"$VER: Snoopy 0.2 (8.8.2006)",
+	MUIA_Application_Version, (IPTR)"$VER: Snoopy 0.3 (11.8.2006)",
 	MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, (IPTR)"Simple system monitor",
@@ -143,8 +165,32 @@ void gui_init(void)
 			    Child, (IPTR)(devCM = MUI_MakeObject(MUIO_Checkmark, "")),
 			    Child, (IPTR)Label("Ignore Workbench/Shell"),
 			    Child, (IPTR)(ignoreCM = MUI_MakeObject(MUIO_Checkmark, "")),
+			    Child, (IPTR)HVSpace,
+			    Child, (IPTR)HVSpace,
 			End),
-			Child, (IPTR)HVSpace,
+			Child, (IPTR)(ColGroup(2),
+			    GroupFrameT("Output Field Width"),
+			    Child, (IPTR)Label("Name"),
+			    Child, (IPTR)(nameNum = SliderObject,
+				MUIA_Numeric_Min, 10,
+				MUIA_Numeric_Max, 50,
+			    End),
+			    Child, (IPTR)Label("Action"),
+			    Child, (IPTR)(actionNum = SliderObject,
+				MUIA_Numeric_Min, 10,
+				MUIA_Numeric_Max, 50,
+			    End),
+			    Child, (IPTR)Label("Target"),
+			    Child, (IPTR)(targetNum = SliderObject,
+				MUIA_Numeric_Min, 10,
+				MUIA_Numeric_Max, 50,
+			    End),
+			    Child, (IPTR)Label("Option"),
+			    Child, (IPTR)(optionNum = SliderObject,
+				MUIA_Numeric_Min, 10,
+				MUIA_Numeric_Max, 50,
+			    End),
+			End),
 		    End),
 		    Child, (IPTR)(VGroup,
 			Child, (IPTR)(ColGroup(2),
@@ -169,8 +215,9 @@ void gui_init(void)
 			    Child, (IPTR)(openResourceCM = MUI_MakeObject(MUIO_Checkmark, "")),
 			    Child, (IPTR)Label("ReadToolTypes"),
 			    Child, (IPTR)(readToolTypesCM = MUI_MakeObject(MUIO_Checkmark, "")),
+			    Child, (IPTR)HVSpace,
+			    Child, (IPTR)HVSpace,
 			End),
-			Child, (IPTR)HVSpace,
 		    End),
 		    Child, (IPTR)(VGroup,
 			Child, (IPTR)(ColGroup(2),
@@ -201,8 +248,9 @@ void gui_init(void)
 			    Child, (IPTR)(setVarCM = MUI_MakeObject(MUIO_Checkmark, "")),
 			    Child, (IPTR)Label("System"),
 			    Child, (IPTR)(systemCM = MUI_MakeObject(MUIO_Checkmark, "")),
+			    Child, (IPTR)HVSpace,
+			    Child, (IPTR)HVSpace,
 			End),
-			Child, (IPTR)HVSpace,
 		    End),
 		End),
 		Child, (IPTR) (RectangleObject, 
@@ -210,8 +258,13 @@ void gui_init(void)
 		    MUIA_FixHeight,      2,
 		End),
 		Child, (IPTR)(HGroup,
+		    Child, (IPTR)(saveBtn = SimpleButton("Save")),
+		    Child, (IPTR)(openBtn = SimpleButton("Open")),
+		    Child, (IPTR)HVSpace,
 		    Child, (IPTR)(useBtn = SimpleButton("Use")),
 		    Child, (IPTR)(undoBtn = SimpleButton("Undo")),
+		    Child, (IPTR)(resetBtn = SimpleButton("Reset")),
+		    Child, (IPTR)HVSpace,
 		    Child, (IPTR)(cancelBtn = SimpleButton("Cancel")),
 		End),
 	    End), // WindowContents
@@ -225,18 +278,26 @@ void gui_init(void)
     }
     
     // disable unavailable functions
-    set(cliCM,    MUIA_Disabled, TRUE);
     set(pathCM,   MUIA_Disabled, TRUE);
     set(devCM,    MUIA_Disabled, TRUE);
 
     gui_set();
     set(window, MUIA_Window_Open, TRUE);
 
+    DoMethod(saveBtn, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&save_hook);
+
+    DoMethod(openBtn, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&open_hook);
+
     DoMethod(useBtn, MUIM_Notify, MUIA_Pressed, FALSE,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&use_hook);
 
     DoMethod(undoBtn, MUIM_Notify, MUIA_Pressed, FALSE,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&undo_hook);
+
+    DoMethod(resetBtn, MUIM_Notify, MUIA_Pressed, FALSE,
+	(IPTR)app, 2, MUIM_CallHook, (IPTR)&reset_hook);
 
     DoMethod(cancelBtn, MUIM_Notify, MUIA_Pressed, FALSE,
 	(IPTR)app, 2, MUIM_CallHook, (IPTR)&cancel_hook);
@@ -284,5 +345,49 @@ void gui_set(void)
     set(openLibraryCM,   MUIA_Selected, setup.enableOpenLibrary);
     set(openResourceCM,  MUIA_Selected, setup.enableOpenResource);
     set(readToolTypesCM, MUIA_Selected, setup.enableReadToolTypes);
+
+    set(nameNum,         MUIA_Numeric_Value, setup.nameLen);
+    set(actionNum,       MUIA_Numeric_Value, setup.actionLen);
+    set(targetNum,       MUIA_Numeric_Value, setup.targetLen);
+    set(optionNum,       MUIA_Numeric_Value, setup.optionLen);
+}
+
+void gui_get(void)
+{
+    setup.onlyShowFails       = XGET(failCM,          MUIA_Selected);
+    setup.showCliNr           = XGET(cliCM,           MUIA_Selected);
+    setup.showPaths           = XGET(pathCM,          MUIA_Selected);
+    setup.useDevNames         = XGET(devCM,           MUIA_Selected);
+    setup.ignoreWB            = XGET(ignoreCM,        MUIA_Selected);
+
+    setup.enableChangeDir     = XGET(changeDirCM,     MUIA_Selected);
+    setup.enableDelete        = XGET(deleteCM,        MUIA_Selected);
+    setup.enableExecute       = XGET(executeCM,       MUIA_Selected);
+    setup.enableGetVar        = XGET(getVarCM,        MUIA_Selected);
+    setup.enableLoadSeg       = XGET(loadSegCM,       MUIA_Selected);
+    setup.enableLock          = XGET(lockCM,          MUIA_Selected);
+    setup.enableMakeDir       = XGET(makeDirCM,       MUIA_Selected);
+    setup.enableMakeLink      = XGET(makeLinkCM,      MUIA_Selected);
+    setup.enableOpen          = XGET(openCM,          MUIA_Selected);
+    setup.enableRename        = XGET(renameCM,        MUIA_Selected);
+    setup.enableRunCommand    = XGET(runCommandCM,    MUIA_Selected);
+    setup.enableSetVar        = XGET(setVarCM,        MUIA_Selected);
+    setup.enableSystem        = XGET(systemCM,        MUIA_Selected);
+
+    setup.enableFindPort      = XGET(findPortCM,      MUIA_Selected);
+    setup.enableFindResident  = XGET(findResidentCM,  MUIA_Selected);
+    setup.enableFindSemaphore = XGET(findSemaphoreCM, MUIA_Selected);
+    setup.enableFindTask      = XGET(findTaskCM,      MUIA_Selected);
+    setup.enableLockScreen    = XGET(lockScreenCM,    MUIA_Selected);
+    setup.enableOpenDevice    = XGET(openDeviceCM,    MUIA_Selected);
+    setup.enableOpenFont      = XGET(openFontCM,      MUIA_Selected);
+    setup.enableOpenLibrary   = XGET(openLibraryCM,   MUIA_Selected);
+    setup.enableOpenResource  = XGET(openResourceCM,  MUIA_Selected);
+    setup.enableReadToolTypes = XGET(readToolTypesCM, MUIA_Selected);
+
+    setup.nameLen             = XGET(nameNum,         MUIA_Numeric_Value);
+    setup.actionLen           = XGET(actionNum,       MUIA_Numeric_Value);
+    setup.targetLen           = XGET(targetNum,       MUIA_Numeric_Value);
+    setup.optionLen           = XGET(optionNum,       MUIA_Numeric_Value);
 }
 

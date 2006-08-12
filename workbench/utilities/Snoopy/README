@@ -9,8 +9,10 @@ you have started AROS or in Sashimi.
 Usage
 =====
 
-Select the functions you want to monitor and press the 'Use' button.
-Press 'Undo' to revert to the state bevore you latest 'Use' click.
+Select the functions you want to monitor and press the 'Save' or 'Use' button.
+Press 'Undo' to revert to the state before your latest 'Save' or 'Use' click.
+'Reset' resets to some default settings.
+'Save' stores the settings in envarc:snoopy.prefs.
 You should normally not use the 'Cancel' button. It can lead to
 problems when another program patches the functions which have
 already been patched by Snoopy.
@@ -22,6 +24,4 @@ NameFromLock crashes. Therefore the CurrentDir patch doesn't print
 the directory name and the option ShowFullPath doesn't work.
 
 Implement missing settings.
-
-RunCommand patch doesn't print parameters.
 
