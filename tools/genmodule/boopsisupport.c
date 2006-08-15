@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
     
     Support function for generating code for BOOPSI classes. Part of genmodule.
@@ -252,19 +252,18 @@ void writeclassinit(FILE *out, struct classinfo *cl)
         "{\n"
         "    AROS_SET_LIBFUNC_INIT\n"
         "    \n"
-        "    if (%s_CLASSPTR_FIELD(LIBBASE) != NULL)\n"
+        "    struct IClass *cl = %s_CLASSPTR_FIELD(LIBBASE);\n"
+        "    \n"
+        "    if (cl != NULL)\n"
         "    {\n",
         cl->basename, cl->basename
     );
     if (!(cl->options & COPTION_PRIVATE))
-	fprintf(out,
-		"        RemoveClass(%s_CLASSPTR_FIELD(LIBBASE));\n",
-		cl->basename
-	);
+	fprintf(out, "        RemoveClass(cl);\n");
     fprintf
     (
         out,
-        "        FreeClass(%s_CLASSPTR_FIELD(LIBBASE));\n"
+        "        FreeClass(cl);\n"
         "#if %s_STORE_CLASSPTR\n"
         "        %s_CLASSPTR_FIELD(LIBBASE) = NULL;\n"
         "#endif\n"
@@ -277,7 +276,6 @@ void writeclassinit(FILE *out, struct classinfo *cl)
         "\n"
         "ADD2INITCLASSES(BOOPSI_%s_Startup, %d);\n"
         "ADD2EXPUNGECLASSES(BOOPSI_%s_Shutdown, %d);\n",
-        cl->basename,
         cl->basename,
         cl->basename,
         cl->basename, -cl->initpri,
