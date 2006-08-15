@@ -857,6 +857,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    cfg->libbase = malloc(len);
 	    snprintf(cfg->libbase, len, "%sBase", cfg->basename);
 	}
+	if (cfg->libbasetype == NULL && libbasetypeextern != NULL)
+	    cfg->libbasetype = strdup(libbasetypeextern);
 	if (cfg->sysbase_field != NULL && cfg->libbasetype == NULL)
 	    exitfileerror(20, "sysbase_field specified when no libbasetype is given\n");
 	if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
