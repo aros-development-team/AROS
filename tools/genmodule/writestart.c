@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
     
     Print the library magic and init code in the file modname_start.c.
@@ -134,12 +134,89 @@ static void writedecl(FILE *out, struct config *cfg)
 
     /* Is there a variable for storing the segList ? */
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
+    {
 	fprintf(out,
 		"#ifndef GM_SEGLIST_FIELD\n"
 		"static BPTR GM_UNIQUENAME(seglist);\n"
 		"#define GM_SEGLIST_FIELD(lh) (GM_UNIQUENAME(seglist))\n"
 		"#endif\n"
 	);
+	if (cfg->options & OPTION_DUPBASE)
+	    fprintf(out,
+		"#ifndef GM_ROOTBASE_FIELD\n"
+		"static LIBBASETYPEPTR GM_UNIQUENAME(rootbase);\n"
+		"#define GM_ROOTBASE_FIELD(lh) (GM_UNIQUENAME(rootbase))\n"
+		"#endif\n"
+	    );
+	for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
+	{
+	    /* For the main class basename is the same a the module basename */
+	    if (strcmp(classlistit->basename, cfg->basename) == 0)
+	    {
+		if (classlistit->classptr_var == NULL)
+		{
+		    fprintf(out,
+			    "#if !defined(GM_CLASSPTR_FIELD) && !defined(%s_CLASSPTR_FIELD)\n"
+			    "static APTR GM_UNIQUENAME(%sClass);\n"
+			    "#define GM_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
+			    "#define %s_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
+			    "#define %s_STORE_CLASSPTR 1\n"
+			    "#elif defined(GM_CLASSPTR_FIELD) && !defined(%s_CLASSPTR_FIELD)\n"
+			    "#define %s_CLASSPTR_FIELD(lh) (GM_CLASSPTR_FIELD(lh))\n"
+			    "#elif !defined(GM_CLASSPTR_FIELD) && defined(%s_CLASSPTR_FIELD)\n"
+			    "#define GM_CLASSPTR_FIELD(lh) (%s_CLASSPTR_FIELD(lh))\n"
+			    "#endif\n",
+			    classlistit->basename,
+			    classlistit->basename,
+			    classlistit->basename,
+			    classlistit->basename, classlistit->basename,
+			    classlistit->basename,
+			    classlistit->basename,
+			    classlistit->basename,
+			    classlistit->basename,
+			    classlistit->basename
+		    );
+		}
+		else
+		{
+		    fprintf(out,
+			    "#define GM_CLASSPTR_FIELD(lh) (%s)\n"
+			    "#define %s_CLASSPTR_FIELD(lh) (%s)\n"
+			    "#define %s_STORE_CLASSPTR 1\n",
+			    classlistit->classptr_var,
+			    classlistit->basename, classlistit->classptr_var,
+			    classlistit->basename
+		    );
+		}
+	    }
+	    else
+	    {
+		if (classlistit->classptr_var == NULL)
+		{
+		    fprintf(out,
+			    "#if !defined(%s_CLASSPTR_FIELD)\n"
+			    "static APTR GM_UNIQUENAME(%sClass);\n"
+			    "#define %s_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
+			    "#define %s_STORE_CLASSPTR 1\n"
+			    "#endif\n",
+			    classlistit->basename,
+			    classlistit->basename,
+			    classlistit->basename, classlistit->basename,
+			    classlistit->basename
+		    );
+		}
+		else
+		{
+		    fprintf(out,
+			    "#define %s_CLASSPTR_FIELD(lh) (%s)\n"
+			    "#define %s_STORE_CLASSPTR 1\n",
+			    classlistit->basename, classlistit->classptr_var,
+			    classlistit->basename
+		    );
+		}
+	    }
+	}
+    }
     
     /* Write out the defines for the functions of the function table */
     writefuncdefs(out, cfg, cfg->funclist);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
     
     Code to parse the command line options and the module config file for
@@ -916,7 +916,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	}
     }
 
-    /* When class was given to fill in fill in some defaults when not specified */
+    /* When class was given too fill in some defaults when not specified */
     if (cl != NULL)
     {
 	if (cl->classtype == UNSPECIFIED)
@@ -930,13 +930,17 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		exitfileerror(20, "basename has to be specified in the config section inside of a class section\n");
 	}
 
+	/* MUI classes are always private */
+	if (cl->classtype == MUI || cl->classtype == MCC || cl->classtype == MCP)
+	    cl->options |= COPTION_PRIVATE;
+	    
 	if (cl->classid == NULL
 	    && (cl->classtype != MUI && cl->classtype != MCC && cl->classtype != MCP)
 	)
 	{
 	    if (cl->classtype == HIDD)
 	    {
-		cl->options &= COPTION_PRIVATE;
+		cl->options &= !COPTION_PRIVATE;
 	    }
 	    else if (cl->options & COPTION_PRIVATE)
 	    {
