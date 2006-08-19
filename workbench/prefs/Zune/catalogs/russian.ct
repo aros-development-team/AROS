@@ -436,7 +436,7 @@ MSG_COLOR_ACTIVE_OBJ
 ; Color of active object:
 ;
 MSG_NEWLOOK
-новая
+новый
 ; newlook
 ;
 MSG_CUSTOM
