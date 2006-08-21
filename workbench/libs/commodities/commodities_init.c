@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Commodities initialization code.
@@ -31,12 +31,10 @@
 #include LC_LIBDEFS_FILE
 
 BOOL InitCx(struct CommoditiesBase *CxBase);
-VOID ShutDownCx(struct CommoditiesBase *CxBase);
+BOOL ShutDownCx(struct CommoditiesBase *CxBase);
 
-AROS_SET_LIBFUNC(Init, struct CommoditiesBase, CxBase)
+static int Init(struct CommoditiesBase *CxBase)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     BOOL ok = TRUE;
     
     /*
@@ -70,7 +68,6 @@ AROS_SET_LIBFUNC(Init, struct CommoditiesBase, CxBase)
     if (!ok)
     {
         D(bug("Error: Failed to initialize commodities.library.\n"));
-	ShutDownCx((struct CommoditiesBase *)CxBase);
 
 	return FALSE;
     }
@@ -78,8 +75,6 @@ AROS_SET_LIBFUNC(Init, struct CommoditiesBase, CxBase)
     D(bug("commodities_open: Library correctly opened.\n"));
     
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
@@ -117,7 +112,7 @@ BOOL InitCx(struct CommoditiesBase *CxBase)
 }
 
 
-VOID ShutDownCx(struct CommoditiesBase *CxBase)
+BOOL ShutDownCx(struct CommoditiesBase *CxBase)
 {
     struct InputEvent *temp;
     CxMsg *msg;
@@ -143,19 +138,9 @@ VOID ShutDownCx(struct CommoditiesBase *CxBase)
     /* Remove the ZERO object, in case it exists. */
     DeleteCxObj((CxObj *)RemHead(&CxBase->cx_BrokerList));
 #endif
-}
-
-
-AROS_SET_LIBFUNC(Expunge, struct CommoditiesBase, CxBase)
-{
-    AROS_SET_LIBFUNC_INIT
-    
-    ShutDownCx(CxBase);
     
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(Init, 0);
-ADD2EXPUNGELIB(Expunge, 0);
+ADD2EXPUNGELIB(ShutDownCx, 0);

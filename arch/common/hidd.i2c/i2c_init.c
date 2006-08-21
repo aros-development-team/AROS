@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,14 +25,10 @@
 #include "i2c.h"
 #include LC_LIBDEFS_FILE
 
-AROS_SET_LIBFUNC(I2C_Init, LIBBASETYPE, LIBBASE)
+static int I2C_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     InitSemaphore(&LIBBASE->sd.driver_lock);
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(I2C_Init, 0)

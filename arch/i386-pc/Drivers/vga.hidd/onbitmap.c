@@ -226,29 +226,21 @@ VOID PCVGAOnBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /*** init_onbmclass *********************************************************/
 
-AROS_SET_LIBFUNC(PCVGAOnBM_Init, LIBBASETYPE, LIBBASE)
+static int PCVGAOnBM_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("PCVGAOnBM_Init\n"));
     
     ReturnInt("PCVGAOnBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /*** expunge_onbmclass *******************************************************/
 
-AROS_SET_LIBFUNC(PCVGAOnBM_Expunge, LIBBASETYPE, LIBBASE)
+static int PCVGAOnBM_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("PCVGAOnBM_Expunge\n"));
 
     OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("PCVGAOnBM_Expunge", ULONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("PCVGAOnBM_Expunge", int, TRUE);
 }
 
 /*****************************************************************************/

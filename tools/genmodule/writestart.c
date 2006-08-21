@@ -481,25 +481,25 @@ static void writeinitlib(FILE *out, struct config *cfg)
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "set_open_libraries() && ");
     if (cfg->classlist != NULL)
-	fprintf(out, "set_call_libfuncs(SETNAME(CLASSESINIT), 1, lh) && ");
+	fprintf(out, "set_call_libfuncs(SETNAME(CLASSESINIT), 1, 1, lh) && ");
     fprintf(out,
 	    "set_call_funcs(SETNAME(INIT), 1, 1) )\n"
 	    "    {\n"
 	    "        set_call_funcs(SETNAME(CTORS), -1, 0);\n"
 	    "\n"
-	    "        ok = set_call_libfuncs(SETNAME(INITLIB),1,lh);\n"
+	    "        ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, lh);\n"
 	    "    }\n"
 	    "    else\n"
 	    "        ok = 0;\n"
 	    "\n"
 	    "    if (!ok)\n"
 	    "    {\n"
-	    "        set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);\n"
+	    "        set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, lh);\n"
 	    "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 	    "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
     );
     if (cfg->classlist != NULL)
-	fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE),-1,lh);\n");
+	fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, lh);\n");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "        set_close_libraries();\n");
     if (cfg->modtype != RESOURCE)
@@ -562,8 +562,8 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		"{\n"
 		"    AROS_LIBFUNC_INIT\n"
 		"\n"
-		"    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, lh)\n"
-		"         && set_call_devfuncs(SETNAME(OPENDEV), 1, ioreq, unitnum, flags, lh)\n"
+		"    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, lh)\n"
+		"         && set_call_devfuncs(SETNAME(OPENDEV), 1, 1, lh, ioreq, unitnum, flags)\n"
 		"    )\n"
 		"    {\n"
 		"        ((struct Library *)lh)->lib_OpenCnt++;\n"
@@ -598,7 +598,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		"\n"
 	);
 	fprintf(out,
-		"    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, lh) )\n"
+		"    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, lh) )\n"
 		"    {\n"
 	);
 	if (!(cfg->options & OPTION_DUPBASE))
@@ -668,11 +668,16 @@ static void writecloselib(FILE *out, struct config *cfg)
 	    "    AROS_LIBFUNC_INIT\n"
 	    "\n"
     );
+    if (cfg->modtype == DEVICE)
+	fprintf(out,
+		"    if (!set_call_devfuncs(SETNAME(CLOSEDEV), -1, 1, lh, ioreq, 0, 0));\n"
+		"        return NULL;\n"
+	);
     if (!(cfg->options & OPTION_DUPBASE))
     {
 	fprintf(out,
 		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
-		"    set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
+		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
 	);
     }
     else
@@ -682,17 +687,13 @@ static void writecloselib(FILE *out, struct config *cfg)
 		"    {\n"
 		"        LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(lh);\n"
 		"        __freebase(lh);\n"
-		"        set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
+		"        set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
 		"        lh = rootbase;\n"
 		"    }\n"
 		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
 		"\n"
 	);
     }
-    if (cfg->modtype == DEVICE)
-	fprintf(out,
-		"    set_call_devfuncs(SETNAME(CLOSEDEV),-1,ioreq,0,0,lh);\n"
-	);
     if (!(cfg->options & OPTION_NOEXPUNGE))
 	fprintf(out,
 		"    if\n"
@@ -741,14 +742,19 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 		"    {\n"
 		"        BPTR seglist = GM_SEGLIST_FIELD(lh);\n"
 		"\n"
+		"        if(!set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 1, lh))\n"
+		"        {\n"
+		"            ((struct Library *)lh)->lib_Flags |= LIBF_DELEXP;\n"
+		"            return NULL;\n"
+		"        }\n"
+		"\n"
 		"        Remove((struct Node *)lh);\n"
 		"\n"
-		"        set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);\n"
 		"        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
-		"        set_call_funcs(SETNAME(EXIT),-1,0);\n"
+		"        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
 	);
 	if (cfg->classlist != NULL)
-	    fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE),-1,lh);\n");
+	    fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, lh);\n");
 	if (!(cfg->options & OPTION_NOAUTOLIB))
 	    fprintf(out, "        set_close_libraries();\n");
 	fprintf(out,

@@ -27,10 +27,8 @@
 
 static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs);
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, nilbase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR nilbase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     nilbase->dosbase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(nilbase->dosbase!=NULL)
     {
@@ -77,18 +75,16 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, nilbase)
     }
 
     return FALSE;
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, nilbase,
-		     struct IOFileSys, iofs,
-		     unitnum,
-		     flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR nilbase,
+    struct IOFileSys *iofs,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
 
@@ -98,8 +94,6 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     iofs->IOFS.io_Error=IOERR_OPENFAIL;
 
     return FALSE;
-
-    AROS_SET_DEVFUNC_EXIT
 }
 
 static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs)
@@ -122,12 +116,8 @@ static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs)
 }
 
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, nilbase,
-		      struct IOFileSys, iofs
-)
+static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs)
 {
-    AROS_SET_DEVFUNC_INIT
     ULONG *dev;
 
     dev=(ULONG *)iofs->IOFS.io_Unit;
@@ -142,7 +132,6 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
     iofs->io_DosError=0;
 
     return TRUE;
-    AROS_SET_DEVFUNC_EXIT
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init),0)

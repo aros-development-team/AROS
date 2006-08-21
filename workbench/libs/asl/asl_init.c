@@ -171,10 +171,8 @@ VOID InitReqInfo(struct AslBase_intern *);
 
 /*****************************************************************************************/
 
-AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
+static int InitBase(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
-    
     D(bug("Inside InitBase of asl.library\n"));
 
     NEWLIST(&LIBBASE->ReqList);
@@ -184,8 +182,6 @@ AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
     InitReqInfo(LIBBASE);
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT;
 }
 
 /*****************************************************************************************/

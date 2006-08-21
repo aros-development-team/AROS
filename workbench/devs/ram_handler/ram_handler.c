@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     RAM: handler.
@@ -202,10 +202,8 @@ struct filehandle
 
 static int OpenDev(LIBBASETYPEPTR rambase, struct IOFileSys *iofs);
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, rambase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR rambase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     /* This function is single-threaded by exec by calling Forbid. */
 
     struct MsgPort *port;
@@ -331,8 +329,6 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, rambase)
     }
 
     return FALSE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 #ifdef UtilityBase
@@ -407,21 +403,18 @@ static void Strfree(struct rambase *rambase, STRPTR string)
 }
 
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, rambase,
-		     struct IOFileSys, iofs,
-		     unitnum,
-		     flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR rambase,
+    struct IOFileSys *iofs,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 
     return OpenDev(rambase, iofs);
-
-    AROS_SET_DEVFUNC_EXIT
 }
 
 
@@ -506,10 +499,8 @@ static int OpenDev(LIBBASETYPEPTR rambase, struct IOFileSys *iofs)
     return FALSE;
 }
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, rambase)
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR rambase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
@@ -524,10 +515,8 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, rambase)
     FreeMem(rambase->port, sizeof(struct MsgPort));
     CloseLibrary((struct Library *)rambase->utilitybase);
     CloseLibrary((struct Library *)rambase->dosbase);
-
+    
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
@@ -1618,13 +1607,12 @@ static LONG delete_object(struct rambase *rambase,
 }
 
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, rambase,
-		      struct IOFileSys, iofs
+static int GM_UNIQUENAME(Close)
+(
+    LIBBASETYPEPTR rambase,
+    struct IOFileSys *iofs
 )
 {
-    AROS_SET_DEVFUNC_INIT
-	
     struct cnode  *dev;
     struct vnode  *vol;
     struct dnode  *dir;
@@ -1678,8 +1666,6 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
     iofs->io_DosError = 0;
 
     return TRUE;
-
-    AROS_SET_DEVFUNC_EXIT
 }
 
 

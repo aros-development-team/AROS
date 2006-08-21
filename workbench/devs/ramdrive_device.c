@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -86,10 +86,8 @@ static void FormatOFS(UBYTE *mem, ULONG number, struct unit *unit);
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, ramdrivebase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ramdrivebase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("ramdrive_device: in libinit func\n"));
 
     InitSemaphore(&ramdrivebase->sigsem);
@@ -101,8 +99,6 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, ramdrivebase)
     
     D(bug("ramdrive_device: in libinit func. Returning %x (success) :-)\n", ramdrivebase));
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
@@ -114,14 +110,14 @@ AROS_UFP3(LONG, unitentry,
  
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, ramdrivebase,
-		     struct IOExtTD, iotd,
-		     unitnum, flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR ramdrivebase,
+    struct IOExtTD *iotd,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     static const struct TagItem tags[] = 
     {
     	{ NP_Name	, (IPTR)"Ram Drive Unit Process"}, 
@@ -220,18 +216,16 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     ReleaseSemaphore(&ramdrivebase->sigsem);
 
     return FALSE;
-    
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, ramdrivebase,
-		      struct IOExtTD, iotd
+static int GM_UNIQUENAME(Close)
+(
+    LIBBASETYPEPTR ramdrivebase,
+    struct IOExtTD *iotd
 )
 {
-    AROS_SET_DEVFUNC_INIT
     struct unit *unit;
 
     ObtainSemaphore(&ramdrivebase->sigsem);
@@ -249,8 +243,6 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
     ReleaseSemaphore(&ramdrivebase->sigsem);
 
     return TRUE;
-
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/

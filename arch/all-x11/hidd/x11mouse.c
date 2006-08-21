@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd handling mouse events.
@@ -188,26 +188,17 @@ VOID X11Mouse__Hidd_X11Mouse__HandleEvent(OOP_Class *cl, OOP_Object *o, struct p
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(X11Mouse_Init, LIBBASETYPE, LIBBASE)
+static int X11Mouse_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     return OOP_ObtainAttrBases(attrbases);
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(X11Mouse_Expunge, LIBBASETYPE, LIBBASE)
+static int X11Mouse_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-
-    AROS_SET_LIBFUNC_INIT
-    
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

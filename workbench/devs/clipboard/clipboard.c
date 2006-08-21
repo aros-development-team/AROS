@@ -1,5 +1,5 @@
 /*
-    Copyright © 1998-2004, The AROS Development Team. All rights reserved. 
+    Copyright © 1998-2006, The AROS Development Team. All rights reserved. 
     $Id$
 
     Clipboard device.
@@ -67,17 +67,13 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, CBBase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CBBase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     InitSemaphore(&CBBase->cb_SignalSemaphore);
     NEWLIST(&CBBase->cb_UnitList);
     NEWLIST(&CBBase->cb_HookList);
 
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
@@ -112,15 +108,14 @@ static const UWORD putch[] = {0x16c0, 0x4e75};
 
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, CBBase,
-		     struct IORequest, ioreq,
-		     unitnum,
-		     flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR CBBase,
+    struct IORequest *ioreq,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     BPTR   tempLock = 0;
     BOOL   found = FALSE;	   /* Does the unit already exist? */
     struct Node *tempNode;	   /* Temporary variable used to see if a unit
@@ -310,19 +305,16 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
 
     return TRUE;
-    
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, CBBase,
-		      struct IORequest, ioreq
+static int GM_UNIQUENAME(Close)
+(
+    LIBBASETYPEPTR CBBase,
+    struct IORequest *ioreq
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     D(bug("clipboard.device/close:ioreq 0x%lx\n",ioreq));
 
     /* Let any following attemps to use the device crash hard. */
@@ -347,24 +339,18 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
     ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
 
     return TRUE;
-
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, CBBase)
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR CBBase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("clipboard.device/expunge:\n"));
 
     CloseLibrary(CBBase->cb_DosBase);
     CloseLibrary(CBBase->cb_UtilityBase);
-
+    
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

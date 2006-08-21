@@ -38,10 +38,8 @@ static struct OOP_ABDescr abd[] = {
 	{ NULL, NULL }
 };
 
-static AROS_SET_LIBFUNC(Init_Hidd, LIBBASETYPE, LIBBASE)
+static int Init_Hidd(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     InitSemaphore(&LIBBASE->lsd.sema);
 
 #if BUFFERED_VRAM
@@ -58,22 +56,16 @@ kprintf("OBTAINED ATTRBASES\n");
 kprintf("GOT INPUT TASK\n");
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(Expunge_Hidd, LIBBASETYPE, LIBBASE)
+static int Expunge_Hidd(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     OOP_ReleaseAttrBases(abd);
 
     if (NULL != LIBBASE->lsd.input_task)
 	kill_linuxinput_task(&LIBBASE->lsd);
-	    
-    return TRUE;	
     
-    AROS_SET_LIBFUNC_EXIT
+    return TRUE;
 }
 
 ADD2INITLIB(Init_Hidd, 1)

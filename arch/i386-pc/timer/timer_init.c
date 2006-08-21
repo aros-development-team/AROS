@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id: timer_init.c 22734 2005-01-23 11:49:48Z verhaegs $
 
     Desc: Timer startup and device commands
@@ -40,10 +40,8 @@ AROS_UFP4(ULONG, VBlankInt,
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, LIBBASE)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     /* Setup the timer.device data */
     LIBBASE->tb_CurrentTime.tv_secs = 0;
     LIBBASE->tb_CurrentTime.tv_micro = 0;
@@ -93,19 +91,18 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, LIBBASE)
     SendIO(&LIBBASE->tb_vblank_timerequest.tr_node);
     
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, LIBBASE,
-		     struct timerequest,  tr,
-		     unitNum, flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR LIBBASE,
+    struct timerequest *tr,
+    ULONG unitNum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
 
     /*
@@ -134,22 +131,15 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     }
 
     return TRUE;
-    
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, LIBBASE)
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     RemIntServer(INTB_VERTB, &LIBBASE->tb_VBlankInt);
-
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

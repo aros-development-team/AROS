@@ -229,10 +229,8 @@ VOID PCMouse__Hidd_Mouse__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 /********************  init_kbdclass()  *********************************/
 
-AROS_SET_LIBFUNC(PCMouse_InitAttrs, LIBBASETYPE, LIBBASE)
+static int PCMouse_InitAttrs(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
@@ -242,15 +240,11 @@ AROS_SET_LIBFUNC(PCMouse_InitAttrs, LIBBASETYPE, LIBBASE)
     EnterFunc(bug("PCMouse_InitAttrs\n"));
 
     ReturnInt("PCMouse_InitAttr", ULONG, OOP_ObtainAttrBases(attrbases));
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /*************** free_kbdclass()  **********************************/
-AROS_SET_LIBFUNC(PCMouse_ExpungeAttrs, LIBBASETYPE, LIBBASE)
+static int PCMouse_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
@@ -260,9 +254,8 @@ AROS_SET_LIBFUNC(PCMouse_ExpungeAttrs, LIBBASETYPE, LIBBASE)
     EnterFunc(bug("PCMouse_InitClass\n"));
 
     OOP_ReleaseAttrBases(attrbases);
+
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCMouse_InitAttrs, 0)

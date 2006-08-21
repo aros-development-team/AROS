@@ -149,27 +149,19 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /*** init_onbmclass *********************************************************/
 
-AROS_SET_LIBFUNC(PCVesaOnBM_Init, LIBBASETYPE, LIBBASE)
+static int PCVesaOnBM_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("PCVesaOnBM_Init\n"));
     
     ReturnPtr("PCVesaOnBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /*** free_bitmapclass *********************************************************/
 
-AROS_SET_LIBFUNC(PCVesaOnBM_Expunge, LIBBASETYPE, LIBBASE)
+static int PCVesaOnBM_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("PCVesaOnBM_Expunge", ULONG, TRUE);
-
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("PCVesaOnBM_Expunge", int, TRUE);
 }
 
 ADD2INITLIB(PCVesaOnBM_Init, 0)

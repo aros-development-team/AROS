@@ -36,10 +36,8 @@ static struct OOP_ABDescr abd[] = {
 	{ NULL, NULL }
 };
 
-AROS_SET_LIBFUNC(PCVesa_Init, LIBBASETYPE, LIBBASE)
+static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct VesaGfx_staticdata *xsd = &LIBBASE->vsd;
 
     if (!OOP_ObtainAttrBases(abd))
@@ -56,8 +54,6 @@ AROS_SET_LIBFUNC(PCVesa_Init, LIBBASETYPE, LIBBASE)
     }
 
     return FALSE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCVesa_Init, 0)

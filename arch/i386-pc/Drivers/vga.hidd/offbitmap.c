@@ -190,29 +190,21 @@ VOID PCVGAOffBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /*** init_bmclass *********************************************************/
 
-AROS_SET_LIBFUNC(PCVGAOffBM_Init, LIBBASETYPE, LIBBASE)
+static int PCVGAOffBM_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("PCVGAOffBM_Init\n"));
     
     ReturnInt("PCVGAOffBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /*** expunge_onbmclass *******************************************************/
 
-AROS_SET_LIBFUNC(PCVGAOffBM_Expunge, LIBBASETYPE, LIBBASE)
+static int PCVGAOffBM_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("PCVGAOffBM_Expunge\n"));
 
     OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("PCVGAOffBM_Expunge", ULONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("PCVGAOffBM_Expunge", int, TRUE);
 }
 
 /*****************************************************************************/

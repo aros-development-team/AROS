@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Onscreen bitmap class for linux fb device
@@ -793,27 +793,19 @@ VOID LinuxBM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o, stru
 
 /*** init_onbmclass *********************************************************/
 
-AROS_SET_LIBFUNC(Init_BMClass, LIBBASETYPE, LIBBASE)
+static int Init_BMClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     /* Get attrbase for the BitMap interface */
      return OOP_ObtainAttrBases(attrbases);
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
 /*** free_bitmapclass *********************************************************/
 
-AROS_SET_LIBFUNC(Expunge_BMClass, LIBBASETYPE, LIBBASE)
+static int Expunge_BMClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
-    OOP_ReleaseAttrBases(attrbases);	
+    OOP_ReleaseAttrBases(attrbases);
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(Init_BMClass, 0)

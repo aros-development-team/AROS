@@ -769,29 +769,21 @@ VOID PCVGA__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHid
 
 /********************  init_vgaclass()  *********************************/
 
-AROS_SET_LIBFUNC(PCVGA_InitAttrs, LIBBASETYPE, LIBBASE)
+static int PCVGA_InitAttrs(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("PCVGA_Init\n"));
 
     ReturnInt("PCVGA_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /*************** free_vgaclass()  **********************************/
-AROS_SET_LIBFUNC(PCVGA_ExpungeAttrs, LIBBASETYPE, LIBBASE)
+static int PCVGA_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("PCVGA_Expunge\n", xsd));
 
     OOP_ReleaseAttrBases(attrbases);
     
-    ReturnInt("PCVGA_Expunge", ULONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("PCVGA_Expunge", int, TRUE);
 }
 
 /*******************************************************************/

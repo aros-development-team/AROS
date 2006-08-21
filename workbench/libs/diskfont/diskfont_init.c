@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Diskfont initialization code.
@@ -32,10 +32,8 @@ AROS_UFP3(int, CleanMem,
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
+static int Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     /* This function is single-threaded by exec by calling Forbid. */
     D(bug("Inside initfunc\n"));
 
@@ -56,17 +54,13 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     D(bug("diskfont.library initialized succesfully\n"));
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
 
-AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
+static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
@@ -78,10 +72,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
     CleanUpFontsDirEntryList(LIBBASE);
     
     D(bug("diskfont.library expunged\n"));
-
-    return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT
+    return TRUE;
 }
 
 /****************************************************************************************/

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,10 +18,8 @@
 #include "datatypes_intern.h"
 #include LC_LIBDEFS_FILE
 
-AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
+static int Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     int i;
 
     for (i = 0; i < SEM_MAX; i++)
@@ -61,15 +59,11 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     D(bug("datatypes.library correctly initialized\n"));
 
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
-AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
+static int Open(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     D(bug("Inside open of datatypes.library\n"));
 
     /* Try opening the catalog again. */
@@ -90,28 +84,18 @@ AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
     D(bug("Return from open of datatypes.library\n"));
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
-AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
+static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
-#if 0
     /* stegerg: if later someone else re-opens datatypes.library, then
                 the datatypes.class would have to be re-added with
 		AddClass in libopen() (if FreeClass returned FALSE,
 		where the class was not freed, but still removed),
 		or re-make the class (when FreeClass returned TRUE) */
 		
-    TryRemoveClass((struct Library *)DataTypesBase);
-#endif
-
-    return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
+    return TryRemoveClass((struct Library *)DataTypesBase);
 }
 
 ADD2INITLIB(Init, 0);

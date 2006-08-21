@@ -24,9 +24,8 @@ extern QUAD MathIeeeDoubBas_FPU_IEEEDPFlt();
 extern QUAD MathIeeeDoubBas_FPU_IEEEDPMul(); 
 extern QUAD MathIeeeDoubBas_FPU_IEEEDPDiv();
 
-AROS_SET_LIBFUNC(IEEEDP_Init, LIBBASETYPE, lh)
+static int IEEEDP_Init(LIBBASETYPEPTR lh)
 {
-    AROS_SET_LIBFUNC_INIT
 /*
     SetFunc( 6, FPU_IEEEDPFlt);
 */
@@ -34,8 +33,6 @@ AROS_SET_LIBFUNC(IEEEDP_Init, LIBBASETYPE, lh)
     SetFunc(14, FPU_IEEEDPDiv);
      
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 } /* L_InitLib */
 
 ADD2INITLIB(IEEEDP_Init, 0)

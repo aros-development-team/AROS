@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Console.device
@@ -65,10 +65,8 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, ConsoleDevice)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ConsoleDevice)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     NEWLIST(&ConsoleDevice->unitList);
     InitSemaphore(&ConsoleDevice->unitListLock);
     InitSemaphore(&ConsoleDevice->consoleTaskLock);
@@ -152,19 +150,18 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, ConsoleDevice)
 
     Alert(AT_DeadEnd | AN_ConsoleDev | AG_NoMemory);
     return FALSE;
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, ConsoleDevice,
-		     struct IOStdReq, ioreq,
-		     unitnum, flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR ConsoleDevice,
+    struct IOStdReq *ioreq,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-    
     BOOL success = FALSE;
     
     /* Keep compiler happy */
@@ -252,19 +249,16 @@ open_fail:
     ioreq->io_Error = IOERR_OPENFAIL;    
 
     return FALSE;
-
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, ConsoleDevice,
-		      struct IORequest, ioreq
+static int GM_UNIQUENAME(Close)
+(
+    LIBBASETYPEPTR ConsoleDevice,
+    struct IORequest *ioreq
 )
 {
-    AROS_SET_DEVFUNC_INIT
-    
     if (ioreq->io_Unit)
     {
     	ULONG mid = OM_REMOVE;
@@ -277,8 +271,7 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
     	DisposeObject((Object *)ioreq->io_Unit);
     }
     
-    return 0;
-    AROS_SET_DEVFUNC_EXIT
+    return TRUE;
 }
 
 /****************************************************************************************/

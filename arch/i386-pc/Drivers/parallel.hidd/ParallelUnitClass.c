@@ -332,24 +332,16 @@ AROS_UFH3(void, parallelunit_write_more_data,
 
 /******* init_parallelunitclass ********************************/
 
-AROS_SET_LIBFUNC(PCParUnit_Init, LIBBASETYPE, LIBBASE)
+static int PCParUnit_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-	
     ReturnInt("PCParUnit_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
-AROS_SET_LIBFUNC(PCParUnit_Expunge, LIBBASETYPE, LIBBASE)
+static int PCParUnit_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-	
     OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("PCParUnit_Expunge", ULONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("PCParUnit_Expunge", int, TRUE);
 }
 
 ADD2INITLIB(PCParUnit_Init, 0)

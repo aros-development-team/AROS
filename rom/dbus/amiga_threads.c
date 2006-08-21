@@ -55,14 +55,10 @@ static const DBusThreadFunctions amiga_functions = {
   _condvar_wake_all,
 };
 
-AROS_SET_LIBFUNC(InitThreads, LIBBASETYPE, LIBBASE)
+static int InitThreads(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     dbus_threads_init(&amiga_functions);
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 ADD2INITLIB(InitThreads, 0)
 

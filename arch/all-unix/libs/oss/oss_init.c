@@ -18,41 +18,32 @@
 #include <aros/symbolsets.h>
 #include LC_LIBDEFS_FILE
 
-OOP_Object *unixio;
+OOP_Object *unixio = NULL;
 int audio_fd;
 
-AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
+static int InitData(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
     if (!unixio) return FALSE;
     
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(OpenLib, LIBBASETYPE, LIBBASE)
+static int OpenLib(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     /* Allow only one opener */
 
     return ((struct Library *)LIBBASE)->lib_OpenCnt ? FALSE : TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(CleanUp, LIBBASETYPE, LIBBASE)
+static int CleanUp(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
-    if (unixio) OOP_DisposeObject(unixio);
-    
+    if (unixio)
+    {
+	OOP_DisposeObject(unixio);
+	unixio = NULL;
+    }
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(InitData, 0);

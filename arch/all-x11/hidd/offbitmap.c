@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Offscreen bitmap class for X11 hidd.
@@ -297,25 +297,17 @@ VOID X11OffBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(X11OffBM_Init, LIBBASETYPE, LIBBASE)
+static int X11OffBM_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     return OOP_ObtainAttrBases(attrbases);
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(X11OffBM_Expunge, LIBBASETYPE, LIBBASE)
+static int X11OffBM_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

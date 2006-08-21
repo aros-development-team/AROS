@@ -719,30 +719,21 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(kbd_init, LIBBASETYPE, LIBBASE) 
+static int kbd_init(LIBBASETYPEPTR LIBBASE) 
 {
-    AROS_SET_LIBFUNC_INIT
-
 #if X11_LOAD_KEYMAPTABLE
     LoadKeyCode2RawKeyTable(&LIBBASE->xsd);
 #endif
 
     return OOP_ObtainAttrBases(attrbases);
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(kbd_expunge, LIBBASETYPE, LIBBASE)
+static int kbd_expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     OOP_ReleaseAttrBases(attrbases);
-
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

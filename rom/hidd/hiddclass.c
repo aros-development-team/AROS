@@ -327,9 +327,8 @@ VOID HIDDCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 #undef csd
 
-AROS_SET_LIBFUNC(init_hiddclass, LIBBASETYPE, lh)
+static int init_hiddclass(LIBBASETYPEPTR lh)
 {
-    AROS_SET_LIBFUNC_INIT
     struct  class_static_data *csd;
     ULONG   ok    = 0;
 
@@ -356,15 +355,11 @@ AROS_SET_LIBFUNC(init_hiddclass, LIBBASETYPE, lh)
     }
 
     ReturnInt("HIDD::Init", ULONG, ok);
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
-AROS_SET_LIBFUNC(free_hiddclass, LIBBASETYPE, lh)
+static int free_hiddclass(LIBBASETYPEPTR lh)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct class_static_data *csd = &lh->hd_csd;
 
     EnterFunc(bug("HIDD::Free()\n"));
@@ -376,8 +371,6 @@ AROS_SET_LIBFUNC(free_hiddclass, LIBBASETYPE, lh)
     }
 
     ReturnInt("HIDD::Free", ULONG, TRUE);
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(init_hiddclass, 0)

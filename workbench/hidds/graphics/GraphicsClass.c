@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics hidd class implementation.
@@ -1720,10 +1720,8 @@ OOP_Object *GFX__Hidd_Gfx__GetPixFmt(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GFX_ClassInit, LIBBASETYPE, LIBBASE)
+static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct class_static_data *csd = &LIBBASE->hdg_csd;
     
     __IHidd_PixFmt  	= OOP_ObtainAttrBase(IID_Hidd_PixFmt);
@@ -1766,16 +1764,12 @@ AROS_SET_LIBFUNC(GFX_ClassInit, LIBBASETYPE, LIBBASE)
     
 failexit:
     ReturnPtr("init_gfxhiddclass", ULONG, FALSE);
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GFX_ClassFree, LIBBASETYPE, LIBBASE)
+static int GFX_ClassFree(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct class_static_data *csd = &LIBBASE->hdg_csd;
     
     EnterFunc(bug("free_gfxhiddclass(csd=%p)\n", csd));
@@ -1794,9 +1788,7 @@ AROS_SET_LIBFUNC(GFX_ClassFree, LIBBASETYPE, LIBBASE)
 
     }
     
-    ReturnInt("free_gfxhiddclass", ULONG, TRUE);
-
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("free_gfxhiddclass", BOOL, TRUE);
 }
 
 /****************************************************************************************/

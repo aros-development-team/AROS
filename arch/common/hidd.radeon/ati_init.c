@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -203,10 +203,8 @@ AROS_UFH3(void, Enumerator,
     AROS_USERFUNC_EXIT
 }
 
-static
-AROS_SET_LIBFUNC(ATI_Init, LIBBASETYPE, LIBBASE)
+static int ATI_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
     struct ati_staticdata *sd = &LIBBASE->sd;
 
     struct OOP_ABDescr attrbases[] = 
@@ -280,15 +278,10 @@ AROS_SET_LIBFUNC(ATI_Init, LIBBASETYPE, LIBBASE)
     }
     
     return FALSE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-static
-AROS_SET_LIBFUNC(ATI_Expunge, LIBBASETYPE, LIBBASE)
+static int ATI_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     struct ati_staticdata *sd = &LIBBASE->sd;
     
     struct OOP_ABDescr attrbases[] = 
@@ -322,8 +315,6 @@ AROS_SET_LIBFUNC(ATI_Expunge, LIBBASETYPE, LIBBASE)
     DeletePool(sd->memPool);
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(ATI_Init, 0)

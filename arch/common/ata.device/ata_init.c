@@ -135,11 +135,8 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     Here shall we start. Make function static as it shouldn't be visible from
     outside.
 */
-static
-AROS_SET_LIBFUNC(ata_init, LIBBASETYPE, LIBBASE)
+static int ata_init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct BootLoaderBase *BootLoaderBase;
 
     /*
@@ -416,8 +413,6 @@ AROS_SET_LIBFUNC(ata_init, LIBBASETYPE, LIBBASE)
     DeletePool(LIBBASE->ata_MemPool);
 
     return FALSE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /*
@@ -431,17 +426,14 @@ AROS_SET_LIBFUNC(ata_init, LIBBASETYPE, LIBBASE)
     bus would be 0x0001. Similary, the master and slave on the second bus (0x170
     address) would be 0x0100 and 0x0101, respectively.
 */
-static AROS_SET_OPENDEVFUNC
+static int open
 (
-    open,
-    LIBBASETYPE, LIBBASE,
-    struct IORequest, iorq,
-    unitnum,
-    flags
+    LIBBASETYPEPTR LIBBASE,
+    struct IORequest *iorq,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     ULONG bus, dev;
     
     /* Assume it failed */
@@ -474,20 +466,17 @@ static AROS_SET_OPENDEVFUNC
 	    iorq->io_Error = 0;
 	}
     }
-
-    AROS_SET_DEVFUNC_EXIT
+    
+    return iorq->io_Error == 0;
 }
 
 /* Close given device */
-static AROS_SET_CLOSEDEVFUNC
+static int close
 (
-    close,
-    LIBBASETYPE, LIBBASE,
-    struct IORequest, iorq
+    LIBBASETYPEPTR LIBBASE,
+    struct IORequest *iorq
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     struct ata_Unit *unit = (struct ata_Unit *)iorq->io_Unit;
 
     /* First of all make the important fields of struct IORequest invalid! */
@@ -497,10 +486,9 @@ static AROS_SET_CLOSEDEVFUNC
     unit->au_Unit.unit_OpenCnt--;
 
     return TRUE;
-
-    AROS_SET_DEVFUNC_EXIT
 }
 
 ADD2INITLIB(ata_init, 0)
 ADD2OPENDEV(open, 0)
 ADD2CLOSEDEV(close, 0)
+ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)

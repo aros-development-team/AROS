@@ -38,10 +38,8 @@ AROS_UFP4(ULONG, VBlankInt,
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, LIBBASE)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     /* Setup the timer.device data */
     LIBBASE->tb_CurrentTime.tv_secs = 0;
     LIBBASE->tb_CurrentTime.tv_micro = 0;
@@ -73,20 +71,18 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, LIBBASE)
     AddIntServer(INTB_TIMERTICK, &LIBBASE->tb_VBlankInt);
 
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, LIBBASE,
-		     struct timerequest,  tr,
-		     unitNum, flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR LIBBASE,
+    struct timerequest *tr,
+    ULONG unitNum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     /*
         Normally, we should check the length of the message and other
         such things, however the RKM documents an example where the
@@ -113,21 +109,14 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     }
 
     return TRUE;
-    
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, LIBBASE)
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     RemIntServer(INTB_VERTB, &LIBBASE->tb_VBlankInt);
-
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

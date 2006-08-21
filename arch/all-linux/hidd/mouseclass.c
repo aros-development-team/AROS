@@ -133,10 +133,8 @@ static int mousefd = 0;
 #define MOUSE_DEVNAME "/dev/psaux"
 static BOOL file_opened = FALSE;
 
-AROS_SET_LIBFUNC(Init_LinuxMouseClass, LIBBASETYPE, LIBBASE)
+static int Init_LinuxMouseClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     if (!OOP_ObtainAttrBases(attrbases))
 	return FALSE;
     
@@ -154,26 +152,21 @@ AROS_SET_LIBFUNC(Init_LinuxMouseClass, LIBBASETYPE, LIBBASE)
 	
 	return TRUE;
     }
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
 
 
 /*************** free_mouseclass()  **********************************/
-AROS_SET_LIBFUNC(Expunge_LinuxMouseClass, LIBBASETYPE, LIBBASE)
+static int Expunge_LinuxMouseClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     if (file_opened) {
 	close(mousefd);	
     }
 
     OOP_ReleaseAttrBases(attrbases);
+
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(Init_LinuxMouseClass, 0)

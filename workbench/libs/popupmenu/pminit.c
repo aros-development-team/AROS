@@ -146,24 +146,16 @@ void __asm __saveds __UserLibCleanup(register __a6 struct PopupMenuBase *l)
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
 
-AROS_SET_LIBFUNC(AROS__UserLibInit, struct PopupMenuBase, PopupMenuBase)
+static int AROS__UserLibInit(struct PopupMenuBase *PopupMenuBase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     return (__UserLibInit(PopupMenuBase) == 0) ? TRUE : FALSE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(AROS__UserLibCleanup, struct PopupMenuBase, PopupMenuBase)
+static int AROS__UserLibCleanup(struct PopupMenuBase *PopupMenuBase)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     __UserLibCleanup(PopupMenuBase);
     
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(AROS__UserLibInit, 0);

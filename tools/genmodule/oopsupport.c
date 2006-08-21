@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2006, The AROS Development Team. All rights reserved.
     $Id$
     
     Desc: Support functions for oop.library classes. Part of genmodule.
@@ -62,10 +62,8 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         "\n"
         "\n"
         "/*** Library startup and shutdown *******************************************/\n"
-        "AROS_SET_LIBFUNC(OOP_%s_Startup, LIBBASETYPE, LIBBASE)\n"
+        "static int OOP_%s_Startup(LIBBASETYPEPTR LIBBASE)\n"
         "{\n"
-        "    AROS_SET_LIBFUNC_INIT\n"
-        "\n"
         "    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);\n"
         "    OOP_Class *cl = NULL;\n"
         "\n",
@@ -185,8 +183,6 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         "\n"
         "    OOP_ReleaseAttrBase(IID_Meta);\n"
         "    return cl != NULL;\n"
-        "\n"
-        "    AROS_SET_LIBFUNC_EXIT\n"
         "}\n",
         cl->basename,
         cl->basename,
@@ -197,19 +193,15 @@ void writeoopinit(FILE *out, struct classinfo *cl)
     fprintf
     (
         out,
-        "AROS_SET_LIBFUNC(OOP_%s_Shutdown, LIBBASETYPE, LIBBASE)\n"
+        "static void OOP_%s_Shutdown(LIBBASETYPEPTR LIBBASE)\n"
         "{\n"
-        "    AROS_SET_LIBFUNC_INIT\n"
-        "\n"
         "    if (%s_CLASSPTR_FIELD(LIBBASE) != NULL)\n"
         "    {\n"
         "        OOP_RemoveClass(%s_CLASSPTR_FIELD(LIBBASE));\n"
         "        OOP_DisposeObject((OOP_Object *)%s_CLASSPTR_FIELD(LIBBASE));\n"
         "    }\n"
         "\n"
-        "    return TRUE;\n"
-        "\n"
-        "    AROS_SET_LIBFUNC_EXIT\n"
+//        "    return TRUE;\n"
         "}\n",
         cl->basename,
         cl->basename,

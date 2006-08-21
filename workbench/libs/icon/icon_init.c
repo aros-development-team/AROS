@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -23,10 +23,8 @@ LIBBASETYPE *IconBase;
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
+static int Init(LIBBASETYPEPTR lh)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     LONG i;
 
     IconBase = lh;
@@ -60,21 +58,15 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
     LB(lh)->ib_ColorIconSupport     = TRUE;
     
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, lh)
+static int Expunge(LIBBASETYPEPTR lh)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     DeletePool(LB(lh)->ib_MemoryPool);
     
     if (PNGBase) CloseLibrary(PNGBase);
     
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 

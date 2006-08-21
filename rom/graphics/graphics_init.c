@@ -48,10 +48,8 @@ AROS_UFP4(ULONG, TOF_VBlank,
 static struct TextAttr sysTA;
 BOOL InitROMFont(struct GfxBase *);
 
-AROS_SET_LIBFUNC(GfxInit, struct GfxBase, LIBBASE)
+static int GfxInit(struct GfxBase *LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     WORD i;
     
     NEWLIST(&LIBBASE->TextFonts);
@@ -94,13 +92,10 @@ AROS_SET_LIBFUNC(GfxInit, struct GfxBase, LIBBASE)
     Enable();
     
     return TRUE;
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(GfxOpen, struct GfxBase, LIBBASE)
+static int GfxOpen(struct GfxBase *LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct TextFont * def;
 
     if (!LIBBASE->DefaultFont)
@@ -151,34 +146,17 @@ AROS_SET_LIBFUNC(GfxOpen, struct GfxBase, LIBBASE)
     }
 
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
-
-AROS_SET_LIBFUNC(GfxClose, struct GfxBase, LIBBASE)
+static int GfxExpunge(struct GfxBase *LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
-    driver_close (LIBBASE);
-
+    driver_expunge(LIBBASE);
     return TRUE;
-    AROS_SET_LIBFUNC_EXIT
-}
-
-AROS_SET_LIBFUNC(GfxExpunge, struct GfxBase, LIBBASE)
-{
-    AROS_SET_LIBFUNC_INIT
-
-    /* Allow the driver to release uneccessary memory */
-    driver_expunge (LIBBASE);
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(GfxInit, 0);
 ADD2OPENLIB(GfxOpen, 0);
-ADD2CLOSELIB(GfxClose, 0);
+ADD2CLOSELIB(driver_close, 0);
 ADD2EXPUNGELIB(GfxExpunge, 0);
 
 #undef SysBase

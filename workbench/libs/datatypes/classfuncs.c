@@ -38,13 +38,11 @@ BOOL InstallClass(struct Library *DataTypesBase)
 
 BOOL TryRemoveClass(struct Library *DataTypesBase)
 {
-   BOOL Success = FALSE;
-   
    if(GPB(DataTypesBase)->dtb_DataTypesClass != NULL)
    {
-       if((Success = FreeClass(GPB(DataTypesBase)->dtb_DataTypesClass)))
+       if(FreeClass(GPB(DataTypesBase)->dtb_DataTypesClass))
 	   GPB(DataTypesBase)->dtb_DataTypesClass = NULL;
    }
 
-   return Success;
+   return GPB(DataTypesBase)->dtb_DataTypesClass == NULL;
 }

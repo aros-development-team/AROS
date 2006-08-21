@@ -54,10 +54,8 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, InputDevice)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR InputDevice)
 {
-    AROS_SET_LIBFUNC_INIT
-
     NEWLIST( &(InputDevice->HandlerList) );
 
     /*
@@ -143,20 +141,18 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, InputDevice)
     Alert(AT_DeadEnd | AG_NoMemory | AO_Unknown | AN_Unknown);
     
     return FALSE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, InputDevice,
-		     struct IORequest, ioreq,
-		     unitnum, flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR InputDevice,
+    struct IORequest *ioreq,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     D(bug("id: open()\n"));
 
     if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
@@ -167,8 +163,6 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     }
 
     return TRUE;
-
-    AROS_SET_DEVFUNC_EXIT
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init),0)

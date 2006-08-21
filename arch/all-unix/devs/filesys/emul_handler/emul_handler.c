@@ -1477,9 +1477,8 @@ void parent_dir_post(struct emulbase *emulbase, char ** DirName)
 
 /************************ Library entry points ************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, emulbase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR emulbase)
 {
-    AROS_SET_LIBFUNC_INIT
     static const struct TagItem tags[] = {{ TAG_END, 0 }};
 
     D(bug("Initializing emul_handler\n"));
@@ -1511,8 +1510,6 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, emulbase)
     D(bug("emul_handler startup failed\n"));
        
     return FALSE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /*********************************************************************************************/
@@ -1652,17 +1649,14 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 
 /*********************************************************************************************/
 
-AROS_SET_OPENDEVFUNC
+static int GM_UNIQUENAME(Open)
 (
-    GM_UNIQUENAME(Open),
-    LIBBASETYPE, emulbase,
-    struct IOFileSys, iofs,
-    unitnum,
-    flags
+    LIBBASETYPEPTR emulbase,
+    struct IOFileSys *iofs,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     /* Keep compiler happy */
     unitnum=0;
     flags=0;
@@ -1679,8 +1673,6 @@ AROS_SET_OPENDEVFUNC
     /* Set returncode */
     iofs->IOFS.io_Error=0;
     return TRUE;
-    
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /*********************************************************************************************/

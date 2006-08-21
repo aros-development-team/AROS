@@ -23,10 +23,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-AROS_SET_LIBFUNC(PCMouse_Init, LIBBASETYPE, LIBBASE)
+static int PCMouse_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct mouse_staticdata *msd = &LIBBASE->msd;
 
     D(bug("_mouse: Initializing\n"));
@@ -34,8 +32,7 @@ AROS_SET_LIBFUNC(PCMouse_Init, LIBBASETYPE, LIBBASE)
     InitSemaphore(&msd->sema);
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCMouse_Init, 0)
+ADD2LIBS("irq.hidd", 0, struct Library *, __irqhidd)

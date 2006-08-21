@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2006, The AROS Development Team. All rights reserved.
    $Id$ 
  */
 
@@ -53,10 +53,8 @@
 
 struct DesktopBase *DesktopBase;
 
-AROS_SET_LIBFUNC(Init, LIBBASETYPE, desktopbase)
+static int Init(LIBBASETYPEPTR desktopbase)
 {
-    AROS_SET_LIBFUNC_INIT
-    
 /*
    This function is single-threaded by exec by calling Forbid. If you break
    the Forbid() another task may enter this function at the same time. Take
@@ -87,15 +85,11 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, desktopbase)
    You would return NULL here if the init failed. 
  */
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
-AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
+static int Open(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     struct DesktopOperation *dob;
     struct List    *subList;
 
@@ -394,19 +388,12 @@ AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
 
     ReleaseSemaphore(&DesktopBase->db_BaseMutex);
 
-/*
-   You would return NULL if the open failed. 
- */
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
-AROS_SET_LIBFUNC(Close, LIBBASETYPE, LIBBASE)
+static void Close(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     /*
        This function is single-threaded by exec by calling Forbid. If you
        break the Forbid() another task may enter this function at the same
@@ -417,16 +404,10 @@ AROS_SET_LIBFUNC(Close, LIBBASETYPE, LIBBASE)
     handlerSubUser();
 
     D(bug("*** Exiting DesktopBase::close...\n"));
-
-    return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
+static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     struct DesktopOperation *dob;
 
 /*
@@ -490,10 +471,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 
     if (DesktopBase->db_InputBase)
         CloseDevice(&DesktopBase->db_InputIO);
-
-    return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT
+    return TRUE;
 }
 
 ADD2INITLIB(Init, 0);

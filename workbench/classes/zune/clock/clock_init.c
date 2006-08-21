@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,10 +24,8 @@ struct Device      *TimerBase;
 struct timerequest *TimerIO;
 
 /*** Library startup and shutdown *******************************************/
-AROS_SET_LIBFUNC(Clock_Startup, LIBBASETYPE, LIBBASE)
+static int Clock_Startup(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     TimerIO   = NULL;
     TimerBase = NULL;
     
@@ -58,20 +56,13 @@ error:
     if (TimerIO != NULL) FreeMem(TimerIO, sizeof(struct timerequest));
     
     return FALSE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(Clock_Shutdown, LIBBASETYPE, LIBBASE)
+static int Clock_Shutdown(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     if (TimerBase != NULL) CloseDevice((struct IORequest *) TimerIO);
     if (TimerIO != NULL) FreeMem(TimerIO, sizeof( struct timerequest ));
-
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(Clock_Startup, 1);

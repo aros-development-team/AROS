@@ -656,10 +656,8 @@ IPTR UXIO__Hidd_UnixIO__IOControlFile(OOP_Class *cl, OOP_Object *o, struct uioMs
 
 /* This is the initialisation code for the HIDD class itself. */
 
-AROS_SET_LIBFUNC(UXIO_Init, LIBBASETYPE, LIBBASE)
+static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct Task     * newtask,
 		    * task2 = NULL; /* keep compiler happy */
     struct newMemList nml;
@@ -735,8 +733,6 @@ AROS_SET_LIBFUNC(UXIO_Init, LIBBASETYPE, LIBBASE)
     SetIntVector(INTB_DSKBLK,is);
 
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(UXIO_Init, 0)

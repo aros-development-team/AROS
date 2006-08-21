@@ -1,5 +1,5 @@
 /*
-   (C) 2001 AROS - The Amiga Research OS
+   Copyright © 2001-2006, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Partition initialization code
@@ -15,15 +15,10 @@
 #include "partition_support.h"
 #include LC_LIBDEFS_FILE
 
-AROS_SET_LIBFUNC(PartitionInit, LIBBASETYPE, LIBBASE)
+static int PartitionInit(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     ((struct PartitionBase *)LIBBASE)->tables = (struct PartitionTableInfo **)PartitionSupport;
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PartitionInit, 0);
-

@@ -634,17 +634,13 @@ AROS_UFH3(void, serialunit_write_more_data,
 #undef __IHidd_SerialUnitAB
 #define __IHidd_SerialUnitAB (LIBBASE->hdg_csd.hiddSerialUnitAB)
 
-AROS_SET_LIBFUNC(UXSerUnit_InitAttrBase, LIBBASETYPE, LIBBASE)
+static int UXSerUnit_InitAttrBase(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("    UXSerUnit_InitAttrBase(LIBBASE=%p)\n", LIBBASE));
 
     __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
 
     ReturnInt("UXSerUnit_InitAttrBase", ULONG, __IHidd_SerialUnitAB != 0);
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(UXSerUnit_InitAttrBase, 0)

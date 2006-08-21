@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -891,26 +891,17 @@ static VOID cleanupx11stuff(struct x11_staticdata *xsd)
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(x11gfx_init, LIBBASETYPE, LIBBASE) 
+static int x11gfx_init(LIBBASETYPEPTR LIBBASE) 
 {
-    AROS_SET_LIBFUNC_INIT
-
     return OOP_ObtainAttrBases(attrbases);
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(x11gfx_expunge, LIBBASETYPE, LIBBASE)
+static int x11gfx_expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     OOP_ReleaseAttrBases(attrbases);
-
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

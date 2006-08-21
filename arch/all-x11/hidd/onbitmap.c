@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for X11 hidd.
@@ -543,23 +543,17 @@ VOID X11OnBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(X11OnBM_Init, LIBBASETYPE, LIBBASE)
+static int X11OnBM_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
     return OOP_ObtainAttrBases(attrbases);
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(X11OnBM_Expunge, LIBBASETYPE, LIBBASE)
+static int X11OnBM_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

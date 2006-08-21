@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP Library
@@ -41,10 +41,8 @@ static void FreeAllClasses(struct Library *BOOPIBase)
 #endif
 */
 
-AROS_SET_LIBFUNC(OOPInit, LIBBASETYPE, LIBBASE)
+static int OOPInit(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("Enter OOPInit\n"));
     
     NEWLIST(&LIBBASE->ob_ClassList);
@@ -103,8 +101,6 @@ AROS_SET_LIBFUNC(OOPInit, LIBBASETYPE, LIBBASE)
     D(bug("OOPInit failed\n"));
 	
     return (FALSE);
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(OOPInit, 0);

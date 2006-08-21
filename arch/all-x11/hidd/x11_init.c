@@ -114,10 +114,8 @@ static int MySysErrorHandler (Display * display)
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(X11_Init, LIBBASETYPE, LIBBASE)
+static int X11_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct x11_staticdata *xsd = &LIBBASE->xsd;
     STRPTR displayname;
 
@@ -185,8 +183,6 @@ AROS_SET_LIBFUNC(X11_Init, LIBBASETYPE, LIBBASE)
     D(bug("X11_Init failed\n"));
     
     return FALSE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

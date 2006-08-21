@@ -292,7 +292,7 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 	/* ctors get called in inverse order than init funcs */
 	set_call_funcs(SETNAME(CTORS), -1, 0);
 
-	ok = set_call_libfuncs(SETNAME(INITLIB),1,lh);
+	ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, lh);
     }
 #endif
 
@@ -304,7 +304,7 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 	__L_ExpungeLib (lh);
 
 #ifdef AROS_LC_SETFUNCS
-	set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);
+	set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, lh);
 	set_call_funcs(SETNAME(DTORS), 1, 0);
 	set_call_funcs(SETNAME(EXIT), -1, 0);
 # ifndef AROS_LC_SET_NOLIBS
@@ -359,7 +359,7 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
     if
     (
 #ifdef AROS_LC_SETFUNCS
-        set_call_libfuncs(SETNAME(OPENLIB), 1, lh) &&
+        set_call_libfuncs(SETNAME(OPENLIB), 1, 1, lh) &&
 #endif
         __L_OpenLib (lh)
     )
@@ -406,7 +406,7 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
 #endif
 
 #ifdef AROS_LC_SETFUNCS
-    set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);
+    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);
 #endif
 
 #ifndef NOEXPUNGE
@@ -467,7 +467,7 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 	__L_ExpungeLib (lh);
 
 #ifdef AROS_LC_SETFUNCS
-	set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);
+	set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, lh);
 	set_call_funcs(SETNAME(DTORS), 1, 0);
 	set_call_funcs(SETNAME(EXIT), -1, 0);
 # ifndef AROS_LC_SET_NOLIBS

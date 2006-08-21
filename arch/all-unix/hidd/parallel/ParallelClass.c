@@ -142,23 +142,15 @@ VOID UXPar__Hidd_Parallel__DisposeUnit(OOP_Class *cl, OOP_Object *obj,
 
 /*************************** Classes *****************************/
 
-AROS_SET_LIBFUNC(UXPar_InitAttrBases, LIBBASETYPE, LIBBASE)
+static int UXPar_InitAttrBases(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     return OOP_ObtainAttrBases(attrbases);
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(UXPar_ExpungeAttrBases, LIBBASETYPE, LIBBASE)
+static int UXPar_ExpungeAttrBases(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(UXPar_InitAttrBases, 0)

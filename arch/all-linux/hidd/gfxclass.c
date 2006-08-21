@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux fbdev gfx HIDD for AROS.
@@ -400,27 +400,19 @@ VOID LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /********************  init_gfxclass()  *********************************/
 
-AROS_SET_LIBFUNC(Init_GfxClass, LIBBASETYPE, LIBBASE)
+static int Init_GfxClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     return OOP_ObtainAttrBases(attrbases);
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
 
 
 /*************** free_gfxclass()  **********************************/
-AROS_SET_LIBFUNC(Expunge_GfxClass, LIBBASETYPE, LIBBASE)
+static int Expunge_GfxClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(Init_GfxClass, 0)

@@ -307,10 +307,8 @@ VOID PCIDrv__Root__Get(OOP_Class *cl, OOP_Object *o,
 
 /* Class initialization and destruction */
 
-AROS_SET_LIBFUNC(PCIDrv_InitMIDs, LIBBASETYPE, LIBBASE)
+static int PCIDrv_InitMIDs(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("[PCIDriver] Dummy Driver initialization\n"));
     /*
      * We do have driver class. Now we can get some MethodID's,
@@ -326,8 +324,6 @@ AROS_SET_LIBFUNC(PCIDrv_InitMIDs, LIBBASETYPE, LIBBASE)
     LIBBASE->psd.mid_WL = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigLong);
 
     return TRUE;
-	
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCIDrv_InitMIDs, 0)

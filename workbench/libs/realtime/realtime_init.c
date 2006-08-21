@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Realtime.library initialization code.
@@ -36,10 +36,8 @@ void FreeTimer(struct internal_RealTimeBase *RealTimeBase);
 
 extern void Pulse();
 
-AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
+static int Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     /* This function is single-threaded by exec by calling Forbid. */
 
     WORD   i;			/* Loop variable */
@@ -80,15 +78,11 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     kprintf("Realtime pulse timer created\n");
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
-AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
+static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
@@ -99,10 +93,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
     /* Shut down the pulse message task -- must be done AFTER freeing the
        timer! */
     Signal(RealTimeBase->rtb_PulseTask, SIGBREAKF_CTRL_C);
-
-    return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT
+    return TRUE;
 }
 
 

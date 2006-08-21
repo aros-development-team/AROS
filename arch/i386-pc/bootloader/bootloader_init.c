@@ -38,10 +38,8 @@ const struct
     -(MB_MAGIC+MB_FLAGS)
 };
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, BootLoaderBase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct arosmb *mb = (struct arosmb *)0x1000;
     
     NEWLIST(&(BootLoaderBase->Args));
@@ -158,8 +156,6 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, BootLoaderBase)
 	}
     }
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)

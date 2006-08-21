@@ -103,10 +103,8 @@ STATIC BOOL findCard(struct VMWareGfx_staticdata *xsd) {
     return (xsd->card) ? TRUE : FALSE;
 }
 
-AROS_SET_LIBFUNC(VMWareGfx_Init, LIBBASETYPE, LIBBASE)
+static int VMWareGfx_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct VMWareGfx_staticdata *xsd = &LIBBASE->vsd;
 
     if (!OOP_ObtainAttrBases(abd))
@@ -143,8 +141,6 @@ failure:
     OOP_ReleaseAttrBases(abd);
     
     return FALSE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(VMWareGfx_Init, 0)

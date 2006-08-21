@@ -26,10 +26,8 @@
 
 #define __NR_iopl   (110)
 
-AROS_SET_LIBFUNC(PCPCI_Expunge, LIBBASETYPE, LIBBASE)
+static int PCPCI_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     int ok;
 	
     OOP_Object *pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
@@ -48,8 +46,7 @@ AROS_SET_LIBFUNC(PCPCI_Expunge, LIBBASETYPE, LIBBASE)
 	ok = FALSE;
 
     return ok;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2EXPUNGELIB(PCPCI_Expunge, 0)
+ADD2LIBS("pci.hidd", 0, static struct Library *, __pcihidd)

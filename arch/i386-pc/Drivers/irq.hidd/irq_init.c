@@ -26,10 +26,8 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-AROS_SET_LIBFUNC(PCIrq_Init, LIBBASETYPE, LIBBASE)
+static int PCIrq_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     int i;
     struct irq_staticdata *isd = &LIBBASE->isd;
     
@@ -47,8 +45,6 @@ AROS_SET_LIBFUNC(PCIrq_Init, LIBBASETYPE, LIBBASE)
 
     D(bug("     Init OK\n"));
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCIrq_Init, 0)

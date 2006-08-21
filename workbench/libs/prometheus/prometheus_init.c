@@ -30,7 +30,7 @@ struct HookContext
 
 AROS_UFP3(static VOID, EnumHook, AROS_UFPA(struct Hook *, hook, A0),
    AROS_UFPA(OOP_Object *, aros_board, A2), AROS_UFPA(APTR, message, A1));
-static VOID DeleteLibrary(LIBBASETYPE *base);
+static int DeleteLibrary(LIBBASETYPE *base);
 
 
 /* Constants */
@@ -39,10 +39,8 @@ static const TEXT oop_name[] = AROSOOP_NAME;
 static const TEXT utility_name[] = UTILITYNAME;
 
 
-AROS_SET_LIBFUNC(LibInit, LIBBASETYPE, base)
+static int LibInit(LIBBASETYPEPTR base)
 {
-   AROS_SET_LIBFUNC_INIT
-
    BOOL success = TRUE;
    struct Hook *hook;
    struct HookContext *hook_context;
@@ -87,8 +85,6 @@ AROS_SET_LIBFUNC(LibInit, LIBBASETYPE, base)
       DeleteLibrary(base);
 
    return success;
-
-   AROS_SET_LIBFUNC_EXIT
 }
 
 
@@ -129,20 +125,7 @@ AROS_UFH3(static VOID, EnumHook, AROS_UFHA(struct Hook *, hook, A0),
 
 
 
-AROS_SET_LIBFUNC(LibExpunge, LIBBASETYPE, LIBBASE)
-{
-   AROS_SET_LIBFUNC_INIT
-
-   DeleteLibrary(LIBBASE);
-
-   return TRUE;
-
-   AROS_SET_LIBFUNC_EXIT
-}
-
-
-
-static VOID DeleteLibrary(LIBBASETYPE *base)
+static int DeleteLibrary(LIBBASETYPE *base)
 {
    struct PCIBoard *board;
 
@@ -160,13 +143,11 @@ static VOID DeleteLibrary(LIBBASETYPE *base)
    if(base->pci_hidd != NULL)
       OOP_DisposeObject(base->pci_hidd);
 
-   return;
+   return TRUE;
 }
 
 
 
 ADD2INITLIB(LibInit, 0);
-ADD2EXPUNGELIB(LibExpunge, 0);
-
-
-
+ADD2EXPUNGELIB(DeleteLibrary, 0);
+ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd);

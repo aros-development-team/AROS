@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id: TapClass.c 23835 2005-12-20 14:43:30Z stegerg $
 
     Desc: Tap hidd class implementation.
@@ -142,23 +142,15 @@ VOID UXTap__Hidd_Tap__DisposeUnit(OOP_Class *cl, OOP_Object *obj,
 
 /*************************** Classes *****************************/
 
-AROS_SET_LIBFUNC(UXTap_InitAttrBases, LIBBASETYPE, LIBBASE)
+static int UXTap_InitAttrBases(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     return OOP_ObtainAttrBases(attrbases);
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(UXTap_ExpungeAttrBases, LIBBASETYPE, LIBBASE)
+static int UXTap_ExpungeAttrBases(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(UXTap_InitAttrBases, 0)

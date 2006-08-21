@@ -12,10 +12,8 @@
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
 
-AROS_SET_LIBFUNC(LayersInit, LIBBASETYPE, LIBBASE)
+static int LayersInit(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     InitSemaphore(&LIBBASE->lb_MemLock);
  
     LIBBASE->lb_ClipRectPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, sizeof(struct ClipRect) * 50, sizeof(struct ClipRect) * 50);
@@ -23,7 +21,6 @@ AROS_SET_LIBFUNC(LayersInit, LIBBASETYPE, LIBBASE)
 	return FALSE;
   
     return TRUE;    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(LayersInit, 0);
