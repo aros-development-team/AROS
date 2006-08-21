@@ -28,10 +28,8 @@
 void serial_int_13(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 void serial_int_24(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
-AROS_SET_LIBFUNC(PCSer_Init, LIBBASETYPE, LIBBASE)
+static int PCSer_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct class_static_data *csd = &LIBBASE->hdg_csd; /* SerialHidd static data */
 
     EnterFunc(bug("SerialHIDD_Init()\n"));
@@ -70,8 +68,7 @@ AROS_SET_LIBFUNC(PCSer_Init, LIBBASETYPE, LIBBASE)
     }
 
     ReturnInt("SerialHIDD_Init", ULONG, FALSE);
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCSer_Init, 0)
+ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)

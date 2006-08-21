@@ -127,31 +127,23 @@ VOID PCSer__Hidd_Serial__DisposeUnit(OOP_Class *cl, OOP_Object *obj, struct pHid
 
 #define csd (&(LIBBASE->hdg_csd))
 
-AROS_SET_LIBFUNC(PCSer_InitAttrs, LIBBASETYPE, LIBBASE)
+static int PCSer_InitAttrs(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("PCSer_InitAttrs\n"));
 
     __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
 
     ReturnInt("PCSer_InitAttrs", ULONG, __IHidd_SerialUnitAB != NULL);
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
-AROS_SET_LIBFUNC(PCSer_ExpungeAttrs, LIBBASETYPE, LIBBASE)
+static int PCSer_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("PCSer_ExpungeAttrs\n"));
 
     OOP_ReleaseAttrBase(__IHidd_SerialUnitAB);
 	
-    ReturnInt("PCSer_ExpungeAttrs", ULONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("PCSer_ExpungeAttrs", int, TRUE);
 }
 
 ADD2INITLIB(PCSer_InitAttrs, 0)

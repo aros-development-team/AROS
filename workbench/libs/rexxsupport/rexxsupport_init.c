@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RexxSupport initialization code.
@@ -20,15 +20,11 @@
 
 int errno;
 
-AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
+static int Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
-    
     NewList(&RSBI(LIBBASE)->openports);
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

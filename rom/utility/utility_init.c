@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Utility Resident and initialization.
@@ -20,10 +20,8 @@ extern ULONG AROS_SLIB_ENTRY(UDivMod32_020,Utility)();
 
 #define SetFunc(a,b) SetFunction((struct Library *)LIBBASETYPE, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility))
 
-AROS_SET_LIBFUNC(UtilityInit, LIBBASETYPE, LIBBASE)
+static int UtilityInit(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     GetIntUtilityBase(LIBBASE)->ub_LastID = 0;
 
     /*
@@ -62,7 +60,6 @@ AROS_SET_LIBFUNC(UtilityInit, LIBBASETYPE, LIBBASE)
 #endif
 
     return TRUE;
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(UtilityInit, 0);

@@ -332,10 +332,8 @@ VOID PCVesa__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *o, OOP_Msg m
 }
 
 
-AROS_SET_LIBFUNC(PCVesa_InitClass, LIBBASETYPE, LIBBASE)
+static int PCVesa_InitClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("PCVesa_InitClass\n"));
 
     LIBBASE->vsd.mouse.x=0;
@@ -343,20 +341,14 @@ AROS_SET_LIBFUNC(PCVesa_InitClass, LIBBASETYPE, LIBBASE)
     LIBBASE->vsd.mouse.shape = NULL;
 
     ReturnInt("PCVesa_InitClass", ULONG, OOP_ObtainAttrBases(attrbases));
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(PCVesa_ExpungeClass, LIBBASETYPE, LIBBASE)
+static int PCVesa_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("free_vesagfxclass(xsd=%p)\n", xsd));
 
     OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("PCVesa_ExpungeClass", ULONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("PCVesa_ExpungeClass", int, TRUE);
 }
 
 ADD2INITLIB(PCVesa_InitClass, 0)

@@ -151,9 +151,8 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     return (unit);
 }
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, TDBase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
 {
-    AROS_SET_LIBFUNC_INIT
     struct Library *OOPBase;
     struct BootLoaderBase *BootLoaderBase;
     ULONG i;
@@ -281,21 +280,16 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, TDBase)
     TD_InitTask(TDBase);
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_OPENDEVFUNC
+static int GM_UNIQUENAME(Open)
 (
-    GM_UNIQUENAME(Open),
-    LIBBASETYPE, TDBase,
-    struct IOExtTD, iotd,
-    unitnum,
-    flags
+    LIBBASETYPEPTR TDBase,
+    struct IOExtTD *iotd,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     D(bug("TD: Open\n"));
     iotd->iotd_Req.io_Error = IOERR_OPENFAIL;
 
@@ -314,26 +308,26 @@ AROS_SET_OPENDEVFUNC
 
         iotd->iotd_Req.io_Error = 0;
     }
-    AROS_SET_DEVFUNC_EXIT
+    
+    return iotd->iotd_Req.io_Error == 0;
+
 }
 
-AROS_SET_CLOSEDEVFUNC
+static int GM_UNIQUENAME(Close)
 (
-    GM_UNIQUENAME(Close),
-    LIBBASETYPE, TDBase,
-    struct IOExtTD, iotd
+    LIBBASETYPEPTR TDBase,
+    struct IOExtTD *iotd
 )
 {
-    AROS_SET_DEVFUNC_INIT
-	
     iotd->iotd_Req.io_Unit->unit_OpenCnt --;
-    
-    AROS_SET_DEVFUNC_EXIT
+
+    return TRUE;
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
 ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
+ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOExtTD *, iotd, A1),

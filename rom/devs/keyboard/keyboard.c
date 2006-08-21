@@ -116,10 +116,8 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase);
     
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, KBBase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR KBBase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     /* reset static data */
     HiddKbdAB = 0;
 
@@ -128,19 +126,18 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, KBBase)
     NEWLIST(&KBBase->kb_PendingQueue);
     
     return TRUE;
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		    LIBBASETYPE, KBBase,
-		    struct IORequest, ioreq,
-		    unitnum, flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR KBBase,
+    struct IORequest *ioreq,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
     {
         D(bug("keyport.device/open: IORequest structure passed to OpenDevice is too small!\n"));
@@ -223,23 +220,19 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
 #endif
 
     return TRUE;
-    
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, KBBase,
-		      struct IORequest, ioreq
+static int GM_UNIQUENAME(Close)
+(
+    LIBBASETYPEPTR KBBase,
+    struct IORequest *ioreq
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     FreeMem(ioreq->io_Unit, sizeof(KBUnit));
 
     return TRUE;
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/

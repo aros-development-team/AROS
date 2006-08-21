@@ -1537,10 +1537,8 @@ VOID NVBM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o,
 }
 
 
-AROS_SET_LIBFUNC(Init_BMMethodIDs, LIBBASETYPE, LIBBASE)
+static int Init_BMMethodIDs(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-	
     LIBBASE->sd.mid_CopyMemBox8		= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox8);
     LIBBASE->sd.mid_CopyMemBox16	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox16);
     LIBBASE->sd.mid_CopyMemBox32	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox32);
@@ -1559,7 +1557,7 @@ AROS_SET_LIBFUNC(Init_BMMethodIDs, LIBBASETYPE, LIBBASE)
     LIBBASE->sd.mid_CopyLUTMemBox32	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
     LIBBASE->sd.mid_GetImage = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetImage);
     
-    AROS_SET_LIBFUNC_EXIT
+    return TRUE;
 }
 
 ADD2INITLIB(Init_BMMethodIDs, 0)

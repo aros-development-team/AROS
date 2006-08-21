@@ -204,10 +204,8 @@ VOID PCKbd__Hidd_Kbd__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(PCKbd_InitAttrs, LIBBASETYPE, LIBBASE)
+static int PCKbd_InitAttrs(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct OOP_ABDescr attrbases[] =
     {
         {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
@@ -215,16 +213,12 @@ AROS_SET_LIBFUNC(PCKbd_InitAttrs, LIBBASETYPE, LIBBASE)
     };
     
     ReturnInt("PCKbd_InitAttrs", ULONG, OOP_ObtainAttrBases(attrbases));
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(PCKbd_ExpungeAttrs, LIBBASETYPE, LIBBASE)
+static int PCKbd_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct OOP_ABDescr attrbases[] =
     {
         {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
@@ -235,9 +229,7 @@ AROS_SET_LIBFUNC(PCKbd_ExpungeAttrs, LIBBASETYPE, LIBBASE)
 
     OOP_ReleaseAttrBases(attrbases);
     
-    ReturnInt("PCKbd_ExpungeAttrs", ULONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("PCKbd_ExpungeAttrs", int, TRUE);
 }
 
 /****************************************************************************************/

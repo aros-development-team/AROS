@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002-2006, The AROS Development Team. 
     All rights reserved.
     
     $Id: muimaster_init.c 19905 2003-10-04 05:24:00Z falemagn $
@@ -19,10 +19,8 @@ struct Library *MUIMasterBase;
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(MUIMasterInit, LIBBASETYPE, lh)
+static int MUIMasterInit(LIBBASETYPEPTR lh)
 {
-    AROS_SET_LIBFUNC_INIT
-
     MUIMasterBase = lh;
     
     InitSemaphore(&MUIMB(lh)->ZuneSemaphore);
@@ -30,8 +28,6 @@ AROS_SET_LIBFUNC(MUIMasterInit, LIBBASETYPE, lh)
     NewList((struct List *)&MUIMB(lh)->BuiltinClasses);
     NewList((struct List *)&MUIMB(lh)->Applications);
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(MUIMasterInit, 0);

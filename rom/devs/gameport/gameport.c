@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gameport device
@@ -128,10 +128,8 @@ AROS_UFH4(ULONG, gpVBlank,
     AROS_USERFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(init), LIBBASETYPE, GPBase)
+static int GM_UNIQUENAME(init)(LIBBASETYPEPTR GPBase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     int i;
 
     /* reset static data */
@@ -161,20 +159,18 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(init), LIBBASETYPE, GPBase)
     AddIntServer(INTB_VERTB, &GPBase->gp_VBlank);
     
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(open),
-		     LIBBASETYPE, GPBase,
-		     struct IORequest, ioreq,
-		     unitnum, flags
+static int GM_UNIQUENAME(open)
+(
+    LIBBASETYPEPTR GPBase,
+    struct IORequest *ioreq,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-	
     /* Erroneous unit? */
     if (unitnum > GP_MAXUNIT)
     {
@@ -233,23 +229,19 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(open),
 /******* nlorentz: End of stuff added by me ********/
 
     return TRUE;
-    
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(close),
-		      LIBBASETYPE, GPBase,
-		      struct IORequest, ioreq
+static int GM_UNIQUENAME(close)
+(
+    LIBBASETYPEPTR GPBase,
+    struct IORequest *ioreq
 )
 {
-    AROS_SET_DEVFUNC_INIT
-	
     FreeMem(ioreq->io_Unit, sizeof(GPUnit));
 
     return TRUE;
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/

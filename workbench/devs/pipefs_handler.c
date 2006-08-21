@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -83,10 +83,8 @@ static ULONG            SendRequest  (struct pipefsbase *pipefsbase, struct IOFi
 static STRPTR           StrDup       (struct pipefsbase *pipefsbase, STRPTR str);
 
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, pipefsbase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR pipefsbase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     DOSBase =  (struct DosLibrary *)OpenLibrary("dos.library",39);
 
     if(DOSBase)
@@ -108,17 +106,16 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, pipefsbase)
     }
 
     return FALSE;
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, pipefsbase,
-		     struct IOFileSys, iofs,
-		     unitnum,
-		     flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR pipefsbase,
+    struct IOFileSys *iofs,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
     struct usernode *un;
     struct dirnode  *dn;
 
@@ -156,16 +153,14 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     iofs->IOFS.io_Error=IOERR_OPENFAIL;
 
     return FALSE;
-    
-    AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, pipefsbase,
-		      struct IOFileSys, iofs
+static int GM_UNIQUENAME(Close)
+(
+    LIBBASETYPEPTR pipefsbase,
+    struct IOFileSys *iofs
 )
 {
-    AROS_SET_DEVFUNC_INIT
     struct usernode *un;
     struct dirnode  *dn;
 
@@ -184,13 +179,10 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
     iofs->io_DosError=0;
 
     return TRUE;
-    AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, pipefsbase)
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR pipefsbase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
@@ -200,9 +192,8 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, pipefsbase)
 
     /* Free all resources */
     CloseLibrary((struct Library *)pipefsbase->dosbase);
-
+    
     return TRUE;
-    AROS_SET_LIBFUNC_EXIT
 }
 
 AROS_LH1(void, beginio,

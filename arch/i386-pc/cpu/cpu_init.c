@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU Initialisation.
@@ -16,10 +16,8 @@ void i386_CheckCPU_Type( struct i386_compat_intern *CPU_intern );
 
 static struct CPU_Definition *BootCPU;                      /* Pointer used by the exec launched boot cpu probe */ 
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, CPUBase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CPUBase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct intel_mp_confblock       *mpcfb = NULL;
     struct CPU_Definition           *AvailCPUs = NULL;
     struct i386_compat_intern       *BootCPU_intern = NULL;
@@ -84,8 +82,6 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, CPUBase)
     if (mpcfb) get_smp_config( mpcfb, CPUBase );
 
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)

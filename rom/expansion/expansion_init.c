@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Expansion Resident and initialization.
@@ -20,10 +20,8 @@
 #include LC_LIBDEFS_FILE
 
 
-AROS_SET_LIBFUNC(ExpansionInit, LIBBASETYPE, LIBBASE)
+static int ExpansionInit(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     NEWLIST(&LIBBASE->eb_MountList);
 
     /* See what expansion hardware we can detect. */
@@ -32,8 +30,6 @@ AROS_SET_LIBFUNC(ExpansionInit, LIBBASETYPE, LIBBASE)
 #endif
 
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(ExpansionInit, 0);

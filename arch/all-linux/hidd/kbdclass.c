@@ -383,10 +383,8 @@ static void LoadScanCode2RawKeyTable(struct linux_staticdata *lsd)
 /********************  init_kbdclass()  *********************************/
 
 
-AROS_SET_LIBFUNC(Init_KbdClass, LIBBASETYPE, LIBBASE)
+static int Init_KbdClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
 #if 0
     LoadScanCode2RawKeyTable(&LIBBASE->lsd);
 #endif
@@ -401,21 +399,15 @@ AROS_SET_LIBFUNC(Init_KbdClass, LIBBASETYPE, LIBBASE)
     }
     
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
 /*************** free_kbdclass()  **********************************/
-AROS_SET_LIBFUNC(Expunge_KbdClass, LIBBASETYPE, LIBBASE)
+static int Expunge_KbdClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     cleanup_linuxkbd(&LIBBASE->lsd);
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(Init_KbdClass, 0)

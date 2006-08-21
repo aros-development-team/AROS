@@ -27,10 +27,8 @@
 
 extern void DOSBoot(struct ExecBase *, struct DosLibrary *);
 
-AROS_SET_LIBFUNC(DosInit, LIBBASETYPE, LIBBASE)
+static int DosInit(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("DosInit\n"));
     
     __AROS_SETVECADDR(LIBBASE, 15, __AROS_GETVECADDR(LIBBASE, 6));
@@ -136,8 +134,6 @@ AROS_SET_LIBFUNC(DosInit, LIBBASETYPE, LIBBASE)
     }
 
     return FALSE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(DosInit, 0);

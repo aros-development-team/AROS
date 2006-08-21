@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RexxSys initialization code.
@@ -16,10 +16,8 @@
 #include <aros/symbolsets.h>
 #include LC_LIBDEFS_FILE
 
-AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
+static int InitData(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
-    
    LIBBASE->rexxmsgid = "RexxMsgId";
    InitSemaphore(&LIBBASE->semaphore);
    NewList(&LIBBASE->library.rl_LibList);
@@ -28,8 +26,6 @@ AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
    LIBBASE->library.rl_NumClip = 0;
    
    return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(InitData, 0);

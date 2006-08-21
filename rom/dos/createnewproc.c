@@ -618,13 +618,11 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 #warning Q: Is there a better way to pass DOSBase to KillCurrentProcess ?
 static struct DosLibrary *DOSBase;
 
-AROS_SET_LIBFUNC(SetDosBase, LIBBASETYPE, __DOSBase)
+static int SetDosBase(LIBBASETYPEPTR __DOSBase)
 {
-    AROS_SET_LIBFUNC_INIT
     D(bug("SetDosBase\n"));
     DOSBase = __DOSBase;
     return TRUE;
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /* At pri -1 so it is executed before the DosInit in dos_init.c */

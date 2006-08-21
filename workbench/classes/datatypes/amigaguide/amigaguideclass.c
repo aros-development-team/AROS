@@ -89,11 +89,8 @@ BOOL UserClassBaseOpen(struct ClassBase *cb)
 
    return FALSE;
 }
-#ifdef __AROS__
-BOOL UserClassBaseClose(struct ClassBase *cb)
-#else
-void UserClassBaseClose(struct ClassBase *cb)
-#endif
+
+int UserClassBaseClose(struct ClassBase *cb)
 {
    if(cb->cb_Navigator != NULL)
       if(FreeNavigatorClass(cb, cb->cb_Navigator))
@@ -102,9 +99,7 @@ void UserClassBaseClose(struct ClassBase *cb)
       if(FreeNodeClass(cb, cb->cb_NodeClass))
          cb->cb_NodeClass = NULL;
     
-#ifdef __AROS__
     return TRUE;
-#endif
 }
 
 #ifdef __AROS__

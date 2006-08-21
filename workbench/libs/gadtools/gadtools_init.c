@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GadTools initialization code.
@@ -24,10 +24,8 @@
 /****************************************************************************************/
 
 
-AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
+static int Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
-    
     /* This function is single-threaded by exec by calling Forbid. */
 
     InitSemaphore(&LIBBASE->bevelsema);
@@ -35,8 +33,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     
     /* You would return NULL here if the init failed. */
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/
@@ -60,9 +56,8 @@ Object *makebevelobj(struct GadToolsBase_intern *GadToolsBase)
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
+static int Open(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -75,16 +70,12 @@ AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
 	return FALSE;
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
+static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
-    
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -94,10 +85,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
     if (LIBBASE->bevel)
 	DisposeObject(LIBBASE->bevel);
     LIBBASE->bevel = NULL;
-
-    return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT;
+    return TRUE;
 }
 
 /****************************************************************************************/

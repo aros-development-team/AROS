@@ -35,10 +35,8 @@ static struct OOP_ABDescr abd[] = {
 	{ NULL, NULL }
 };
 
-AROS_SET_LIBFUNC(PCVGA_Init, LIBBASETYPE, LIBBASE)
+static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct vga_staticdata *xsd = &LIBBASE->vsd;
     struct vgaModeEntry *entry;
     int i;
@@ -64,8 +62,6 @@ AROS_SET_LIBFUNC(PCVGA_Init, LIBBASETYPE, LIBBASE)
     }
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCVGA_Init, 0)

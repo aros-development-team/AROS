@@ -393,10 +393,8 @@ VOID PCI__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /* Class initialization and destruction */
 
-AROS_SET_LIBFUNC(PCI_ExpungeClass, LIBBASETYPE, LIBBASE)
+static int PCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("[PCI] Base Class destruction\n"));
     
     OOP_ReleaseAttrBase(IID_Hidd_PCI);
@@ -405,14 +403,10 @@ AROS_SET_LIBFUNC(PCI_ExpungeClass, LIBBASETYPE, LIBBASE)
     OOP_ReleaseAttrBase(IID_Hidd);
 
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 	
-AROS_SET_LIBFUNC(PCI_InitClass, LIBBASETYPE, LIBBASE)
+static int PCI_InitClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("[PCI] base class initialization\n"));
 
     LIBBASE->psd.hiddPCIAB = OOP_ObtainAttrBase(IID_Hidd_PCI);
@@ -427,8 +421,6 @@ AROS_SET_LIBFUNC(PCI_InitClass, LIBBASETYPE, LIBBASE)
     }
 
     return FALSE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCI_InitClass, 0)

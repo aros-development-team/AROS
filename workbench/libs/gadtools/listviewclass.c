@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools listview class.
@@ -1160,17 +1160,13 @@ IPTR GTListView__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 
 #undef GadToolsBase
 
-AROS_SET_LIBFUNC(LV_RenderHook_Init, LIBBASETYPE, LIBBASE)
+static int LV_RenderHook_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     LIBBASE->lv_RenderHook.h_Entry = (APTR) AROS_ASMSYMNAME(RenderHook);
     LIBBASE->lv_RenderHook.h_SubEntry = NULL;
     LIBBASE->lv_RenderHook.h_Data = (APTR)LIBBASE;
     
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(LV_RenderHook_Init, 0)

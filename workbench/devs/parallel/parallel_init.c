@@ -66,10 +66,8 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, ParallelDevice)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ParallelDevice)
 {
-  AROS_SET_LIBFUNC_INIT
-
   D(bug("parallel device: init\n"));
 
   pubParallelBase = ParallelDevice;
@@ -106,22 +104,19 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, ParallelDevice)
     
   NEWLIST(&ParallelDevice->UnitList);
   return TRUE;
-
-  AROS_SET_LIBFUNC_EXIT
 }
 
 
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, ParallelDevice,
-		     struct IORequest, ioreq,
-		     unitnum,
-		     flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR ParallelDevice,
+    struct IORequest *ioreq,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-  AROS_SET_DEVFUNC_INIT
-
   struct ParallelUnit * PU = NULL;
 
   D(bug("parallel device: Open unit %d\n",unitnum));
@@ -217,19 +212,17 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
   }
 
   return TRUE;
-     
-  AROS_SET_DEVFUNC_EXIT
 }
 
 
 /****************************************************************************************/
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, ParallelDevice,
-		      struct IORequest, ioreq
+static int GM_UNIQUENAME(Close)
+(
+    LIBBASETYPEPTR ParallelDevice,
+    struct IORequest *ioreq
 )
 {
-  AROS_SET_DEVFUNC_INIT
   struct ParallelUnit * PU = (struct ParallelUnit *)ioreq->io_Unit;
 
   /*
@@ -259,16 +252,12 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
   }
 
   return TRUE;
-
-  AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, ParallelDevice)
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR ParallelDevice)
 {
-    AROS_SET_LIBFUNC_INIT
-
     if (NULL != ParallelDevice->ParallelObject)
     {
       /*
@@ -282,8 +271,6 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, ParallelDevice)
     if (ParallelDevice->oopBase) CloseLibrary(ParallelDevice->oopBase);
     
     return TRUE;
-
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/

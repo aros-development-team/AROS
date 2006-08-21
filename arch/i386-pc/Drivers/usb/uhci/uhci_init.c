@@ -62,10 +62,8 @@ struct TagItem findpcitags[] =
 	return (xsd->card) ? TRUE : FALSE;
 }
 
-AROS_SET_LIBFUNC(PCUSB_Init, LIBBASETYPE, LIBBASE)
+static int PCUSB_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     struct USBUHCI_staticdata *xsd = &LIBBASE;
 
     xsd->pcihidd = OOP_NewObject(NULL, CLID_Hidd_PCIBus, NULL);
@@ -79,21 +77,13 @@ AROS_SET_LIBFUNC(PCUSB_Init, LIBBASETYPE, LIBBASE)
     }
     
     return FALSE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(PCUSB_Expunge, LIBBASETYPE, LIBBASE)
+static void PCUSB_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     struct USBUHCI_staticdata *xsd = &LIBBASE->usd;
 
     OOP_DisposeObject(xsd->pcihidd);
-
-    return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCUSB_Init, 0)

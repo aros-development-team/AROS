@@ -561,10 +561,8 @@ VOID VMWareGFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct 
 }
 
 
-AROS_SET_LIBFUNC(VMWareGfx_InitStatic, LIBBASETYPE, LIBBASE)
+static int VMWareGfx_InitStatic(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("VMWareGfx_InitStatic\n"));
 
     LIBBASE->vsd.mouse.x=0;
@@ -580,20 +578,14 @@ AROS_SET_LIBFUNC(VMWareGfx_InitStatic, LIBBASETYPE, LIBBASE)
     D(bug("VMWareGfx_InitStatic ok\n"));
 
     ReturnInt("VMWareGfx_InitStatic", UNLONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(VMWareGfx_ExpungeStatic, LIBBASETYPE, LIBBASE)
+static int VMWareGfx_ExpungeStatic(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("VMWareGfx_ExpungeStatic\n"));
 
     OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("VMWareGfx_ExpungeStatic", ULONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("VMWareGfx_ExpungeStatic", int, TRUE);
 }
 
 ADD2INITLIB(VMWareGfx_InitStatic, 0)

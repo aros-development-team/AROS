@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id: tap_init.c 23803 2005-12-11 11:58:09Z verhaegs $
 
     Desc: Serial hidd initialization code.
@@ -21,22 +21,14 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-AROS_SET_LIBFUNC(UXTap_Init, LIBBASETYPE, LIBBASE)
+static int UXTap_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     ReturnInt("TapHIDD_Init", ULONG, TRUE);
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(UXTap_Expunge, LIBBASETYPE, LIBBASE)
+static int UXTap_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
-    ReturnInt("TapHIDD_Expunge", ULONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("TapHIDD_Expunge", int, TRUE);
 }
 
 ADD2INITLIB(UXTap_Init, 0)

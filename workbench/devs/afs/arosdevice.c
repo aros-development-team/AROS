@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,10 +27,8 @@
 
 extern void AFS_work();
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, afsbase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR afsbase)
 {
-	AROS_SET_LIBFUNC_INIT
-
 	struct Task *task;
 	APTR stack;
 
@@ -99,19 +97,18 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, afsbase)
 		CloseLibrary((struct Library *)afsbase->dosbase);
 	}
 	return FALSE;
-	AROS_SET_LIBFUNC_EXIT
 }
 
 #include "baseredef.h"
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, afsbase,
-		     struct IOFileSys, iofs,
-		     unitnum,
-		     flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR afsbase,
+    struct IOFileSys *iofs,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-	AROS_SET_DEVFUNC_INIT
 #if 0
 	struct Volume *volume;
 #endif
@@ -152,13 +149,10 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
 #endif
 	iofs->IOFS.io_Error = IOERR_OPENFAIL;
 	return FALSE;
-	AROS_SET_DEVFUNC_EXIT	
 }
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, afsbase)
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR afsbase)
 {
-	AROS_SET_LIBFUNC_INIT
-
 	CloseDevice((struct IORequest *)afsbase->timer_request);
 	DeleteIORequest((struct IORequest *)afsbase->timer_request);
 	RemTask(afsbase->port.mp_SigTask);
@@ -167,16 +161,14 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, afsbase)
 	CloseLibrary((struct Library *)IntuitionBase);
 	CloseLibrary((struct Library *)DOSBase);
 	return TRUE;
-
-	AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, afsbase,
-		      struct IOFileSys, iofs
+static int GM_UNIQUENAME(Close)
+(
+    LIBBASETYPEPTR afsbase,
+    struct IOFileSys *iofs
 )
 {
-	AROS_SET_DEVFUNC_INIT
 	struct Volume *volume;
 
 	afsbase->rport.mp_SigTask = FindTask(NULL);
@@ -199,7 +191,6 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
 		iofs->IOFS.io_Error = ERROR_OBJECT_IN_USE;
 		return FALSE;
 	}
-	AROS_SET_DEVFUNC_EXIT
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init),0)

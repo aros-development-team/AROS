@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Initialisation for the locale.library.
@@ -26,10 +26,8 @@ struct LocaleBase *globallocalebase = NULL;
 /* Avoid using nasty #defines if we can :-) */
 AROS_MAKE_ALIAS(globallocalebase, LocaleBase);
 
-AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
+static int Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     struct IntLocale *def;
 
     /* A few internal functions need to access a global LocaleBase pointer,
@@ -62,8 +60,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     }
 
     return FALSE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 

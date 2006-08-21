@@ -68,8 +68,7 @@ const void * SETNAME(set)[] __attribute__((weak))={0,0};
     initlib/expungelib are only called when a library is loaded/unloaded from
     memory. openlib/closelib is called every time a library is opened/closed.
     The library base is passed to each of the functions present in the sets as
-    the first argument in the A6 register. To define a function for one of these
-    sets the AROS_SET_LIBFUNC macro can be used.
+    the first argument.
     
     The return argument is also an int, and just like with the init/exit sets, 
     a zero value indicates an (de)initialization failure, a one indicates succes.
@@ -81,26 +80,6 @@ const void * SETNAME(set)[] __attribute__((weak))={0,0};
     a library is loaded first the init set is called, then the ctors set and
     finally the initlib set.
 */
-
-#define AROS_SET_LIBFUNC(funcname, libbasetype, libbase) \
-    AROS_UFH1(int, funcname, \
-	      AROS_UFHA(libbasetype *, libbase, A6) \
-    )
-#define AROS_SET_LIBFUNC_INIT AROS_USERFUNC_INIT
-#define AROS_SET_LIBFUNC_EXIT AROS_USERFUNC_EXIT
-
-#define AROS_SET_DEVFUNC(funcname, libbasetype, libbase, ioreqtype, ioreq, unitnum, flags) \
-    AROS_UFH4(int, funcname, \
-	      AROS_UFHA(ioreqtype *, ioreq, A1), \
-	      AROS_UFHA(ULONG, unitnum, D0), \
-	      AROS_UFHA(ULONG, flags, D1), \
-	      AROS_UFHA(libbasetype *, libbase, A6) \
-    )
-#define AROS_SET_OPENDEVFUNC AROS_SET_DEVFUNC
-#define AROS_SET_CLOSEDEVFUNC(funcname,libbasetype,libbase,ioreqtype,ioreq) \
-    AROS_SET_DEVFUNC(funcname,libbasetype,libbase,ioreqtype,ioreq,__dummy_unitnum,__dummy_flags)
-#define AROS_SET_DEVFUNC_INIT AROS_USERFUNC_INIT
-#define AROS_SET_DEVFUNC_EXIT AROS_USERFUNC_EXIT
 
 #define ADD2INITLIB(symbol, pri)    ADD2SET(symbol, initlib, pri)
 #define ADD2EXPUNGELIB(symbol, pri) ADD2SET(symbol, expungelib, pri)
@@ -156,20 +135,16 @@ for                                                                          \
 
 /* Function prototypes from autoinit and libinit */
 extern int set_call_funcs(const void *set[], int direction, int test_fail);
-extern
-AROS_UFP3(int, set_call_libfuncs,
-	  AROS_UFPA(const void**, set, A0),
-	  AROS_UFPA(int, order, D0),
-	  AROS_UFPA(void*, libbase, A6)
-);
-extern
-AROS_UFP6(int, set_call_devfuncs,
-	  AROS_UFPA(const void**, set, A0),
-	  AROS_UFPA(int, order, D2),
-	  AROS_UFPA(void*, ioreq, A1),
-	  AROS_UFPA(ULONG, unitnum, D0),
-	  AROS_UFPA(ULONG, flags, D1),
-	  AROS_UFPA(void*, libbase, A6)
+extern int set_call_libfuncs(const void **set, int order, int test_fail, void *libbase);
+extern int set_call_devfuncs
+(
+    const void **set,
+    int order,
+    int test_fail,
+    void *libbase,
+    void *ioreq,
+    ULONG unitnum,
+    ULONG flags
 );
 
 DECLARESET(LIBS)

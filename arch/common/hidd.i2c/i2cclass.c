@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -472,10 +472,8 @@ OOP_Object *METHOD(I2C, Root, New)
 //#undef UtilityBase
 //#define UtilityBase (sd->utilitybase)
 
-AROS_SET_LIBFUNC(I2C_ExpungeClass, LIBBASETYPE, LIBBASE)
+static int I2C_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("[I2C] Base Class destruction\n"));
 
     OOP_ReleaseAttrBase((STRPTR)IID_Hidd_I2C);
@@ -483,14 +481,10 @@ AROS_SET_LIBFUNC(I2C_ExpungeClass, LIBBASETYPE, LIBBASE)
     OOP_ReleaseAttrBase((STRPTR)IID_Hidd);
 
     return TRUE;
-                                
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(I2C_InitClass, LIBBASETYPE, LIBBASE)
+static int I2C_InitClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     D(bug("[I2C] base class initialization\n"));
     
     LIBBASE->sd.hiddI2CAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2C);
@@ -504,8 +498,6 @@ AROS_SET_LIBFUNC(I2C_InitClass, LIBBASETYPE, LIBBASE)
     }
     
     return FALSE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(I2C_InitClass, 0)

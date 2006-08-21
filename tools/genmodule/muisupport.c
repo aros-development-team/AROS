@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
     
     Support functions for MUI classes. Part of genmodule.
@@ -49,10 +49,8 @@ void writemccinit(FILE *out, int inclass, struct classinfo *cl)
         "\n"
         "\n"
         "/*** Library startup and shutdown *******************************************/\n"
-        "AROS_SET_LIBFUNC(MCC_%s_Startup, LIBBASETYPE, LIBBASE)\n"
-        "{\n"
-        "    AROS_SET_LIBFUNC_INIT\n"
-        "    \n",
+        "static int MCC_%s_Startup(LIBBASETYPEPTR LIBBASE)\n"
+        "{\n",
         cl->basename
     );
     
@@ -149,14 +147,10 @@ void writemccinit(FILE *out, int inclass, struct classinfo *cl)
         out,
         "    \n"
         "    return %s_CLASSPTR_FIELD(LIBBASE) != NULL;\n"
-        "    \n"
-        "    AROS_SET_LIBFUNC_EXIT\n"
         "}\n"
         "\n"
-        "AROS_SET_LIBFUNC(MCC_%s_Shutdown, LIBBASETYPE, LIBBASE)\n"
-        "{\n"
-        "    AROS_SET_LIBFUNC_INIT\n"
-        "    \n",
+        "static void MCC_%s_Shutdown(LIBBASETYPEPTR LIBBASE)\n"
+        "{\n",
         cl->basename,
         cl->basename
     );
@@ -187,9 +181,7 @@ void writemccinit(FILE *out, int inclass, struct classinfo *cl)
     fprintf
     (
         out,
-        "    return TRUE;\n"
-        "    \n"
-        "    AROS_SET_LIBFUNC_EXIT\n"
+//        "    return TRUE;\n"
         "}\n"
         "\n"
         "ADD2INITCLASSES(MCC_%s_Startup, %d);\n"

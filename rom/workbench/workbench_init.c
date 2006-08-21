@@ -15,10 +15,8 @@
 #include "handler.h"
 #include "support.h"
 
-AROS_SET_LIBFUNC(WBInit, LIBBASETYPE, LIBBASE)
+static int WBInit(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     /* Make sure that the libraries are opened in L_OpenLib() --------------*/
     WorkbenchBase->wb_Initialized = FALSE;
 
@@ -43,13 +41,10 @@ AROS_SET_LIBFUNC(WBInit, LIBBASETYPE, LIBBASE)
     WorkbenchBase->wb_DefaultStackSize = 1024 * 32; /* 32kiB */ // FIXME: also read from preferences */
         
     return TRUE;
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(WBOpen, LIBBASETYPE, LIBBASE)
+static int WBOpen(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     ObtainSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
 
     if (!(WorkbenchBase->wb_Initialized))
@@ -95,7 +90,6 @@ AROS_SET_LIBFUNC(WBOpen, LIBBASETYPE, LIBBASE)
     ReleaseSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
 
     return TRUE;
-    AROS_SET_LIBFUNC_EXIT
 } /* L_OpenLib */
 
 ADD2INITLIB(WBInit, 0);

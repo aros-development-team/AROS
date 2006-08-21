@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Text.datatype initialization code.
@@ -16,13 +16,11 @@
 
 /***************************************************************************************************/
 
-AROS_SET_LIBFUNC(InitSem, struct ClassBase, lh)
+static int InitSem(struct ClassBase *lh)
 {
-    AROS_SET_LIBFUNC_INIT
-
     InitSemaphore(&lh->cb_LibLock);
-    
-    AROS_SET_LIBFUNC_EXIT
+
+    return TRUE;
 }
 
 ADD2INITLIB(InitSem, 0);

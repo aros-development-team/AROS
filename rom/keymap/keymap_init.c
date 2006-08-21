@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Library header for keymap
@@ -26,10 +26,8 @@ struct KeymapBase *DebugKeymapBase;
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(KeymapInit, LIBBASETYPE, LIBBASE)
+static int KeymapInit(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
 #if DEBUG
     DebugKeymapBase = LIBBASE;
 #endif
@@ -62,8 +60,6 @@ AROS_SET_LIBFUNC(KeymapInit, LIBBASETYPE, LIBBASE)
 
     /* You would return NULL if the init failed */
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/

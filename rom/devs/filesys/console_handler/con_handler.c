@@ -52,10 +52,8 @@
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, conbase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
 {
-    AROS_SET_LIBFUNC_INIT
- 
     static const char *devnames[2] = { "CON", "RAW" };
     struct DeviceNode *dn;
     int     	      i;
@@ -117,21 +115,18 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, conbase)
     }
 
     return FALSE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, conbase,
-		     struct IOFileSys, iofs,
-		     unitnum,
-		     flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR conbase,
+    struct IOFileSys *iofs,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
-
     /*
        Check whether the user mounted us as "RAW", in which case abuse of the
        io_Unit field in the iofs structure to tell the con task that it has
@@ -147,8 +142,6 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
     
     return TRUE;
-    
-    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/

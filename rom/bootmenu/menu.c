@@ -379,10 +379,8 @@ UBYTE matrix[16];
 #endif
 
 
-AROS_SET_LIBFUNC(CheckAndDisplay, LIBBASETYPE, LIBBASE)
+static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     static struct BootConfig bootcfg =
     {
 	&bootcfg,
@@ -407,8 +405,6 @@ AROS_SET_LIBFUNC(CheckAndDisplay, LIBBASETYPE, LIBBASE)
     }
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(CheckAndDisplay, 0)

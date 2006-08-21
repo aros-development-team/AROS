@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics hidd initialization code.
@@ -23,10 +23,8 @@
 
 #undef csd
 
-AROS_SET_LIBFUNC(GFX_Init, LIBBASETYPE, LIBBASE)
+static int GFX_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct class_static_data *csd = &LIBBASE->hdg_csd;
     
     EnterFunc(bug("GfxHIDD_Init()\n"));
@@ -41,24 +39,18 @@ AROS_SET_LIBFUNC(GFX_Init, LIBBASETYPE, LIBBASE)
     }
 
     ReturnInt("GfxHIDD_Init", ULONG, FALSE);
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 
-AROS_SET_LIBFUNC(GFX_Expunge, LIBBASETYPE, LIBBASE)
+static int GFX_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct class_static_data *csd = &LIBBASE->hdg_csd;
     
     EnterFunc(bug("GfxHIDD_Expunge()\n"));
 
     CloseLibrary(csd->utilitybase);
-
-    ReturnInt("GfxHIDD_Expunge", ULONG, TRUE);
-
-    AROS_SET_LIBFUNC_EXIT
+    
+    return TRUE;
 }
 
 ADD2INITLIB(GFX_Init, -1)

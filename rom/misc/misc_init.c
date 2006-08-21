@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -20,15 +20,11 @@
 
 #include LC_LIBDEFS_FILE
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, MiscBase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR MiscBase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     InitSemaphore(&MiscBase->mb_Lock);
 
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)

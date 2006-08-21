@@ -61,10 +61,8 @@ AROS_UFP3(ULONG, rootDispatcher,
 
 extern const ULONG coltab[];
 
-AROS_SET_LIBFUNC(IntuitionInit, LIBBASETYPE, LIBBASE)
+static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     DEBUG_INIT(dprintf("LIB_Init: base 0x%lx\n", (ULONG) LIBBASE));
 
 #warning "FIXME: This libInit is all broken if something should fail, but do we care?"
@@ -180,14 +178,10 @@ AROS_SET_LIBFUNC(IntuitionInit, LIBBASETYPE, LIBBASE)
     DEBUG_INIT(dprintf("LIB_Init: done\n"));
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(InitRootClass, LIBBASETYPE, LIBBASE)
+static int InitRootClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     InitSemaphore(&GetPrivIBase(LIBBASE)->ClassListLock);
     NEWLIST(&GetPrivIBase(LIBBASE)->ClassList);
 
@@ -200,16 +194,12 @@ AROS_SET_LIBFUNC(InitRootClass, LIBBASETYPE, LIBBASE)
     AddClass(&(GetPrivIBase(LIBBASE)->RootClass));
     
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(IntuitionOpen, LIBBASETYPE, LIBBASE)
+static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     DEBUG_OPEN(dprintf("LIB_Open: base 0x%lx\n", LIBBASE));
 
     /* Open the input device */
@@ -372,8 +362,6 @@ AROS_SET_LIBFUNC(IntuitionOpen, LIBBASETYPE, LIBBASE)
 #endif
 
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 DECLARESET(CLASSESINIT);

@@ -67,10 +67,8 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, SerialDevice)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR SerialDevice)
 {
-  AROS_SET_LIBFUNC_INIT
-
   D(bug("serial device: init\n"));
 
   pubSerialBase = SerialDevice;
@@ -106,21 +104,19 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, SerialDevice)
     
   NEWLIST(&SerialDevice->UnitList);
   return TRUE;
-  AROS_SET_LIBFUNC_EXIT
 }
 
 
 /****************************************************************************************/
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, SerialDevice,
-		     struct IORequest, ioreq,
-		     unitnum,
-		     flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR SerialDevice,
+    struct IORequest *ioreq,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-  AROS_SET_DEVFUNC_INIT
-
   struct SerialUnit * SU = NULL;
 
   D(bug("serial device: Open unit %d\n",unitnum));
@@ -228,18 +224,16 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
   }
   
   return ioreq->io_Error == 0;
-     
-  AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, SerialDevice,
-		      struct IORequest, ioreq
+static int GM_UNIQUENAME(Close)
+(
+    LIBBASETYPEPTR SerialDevice,
+    struct IORequest *ioreq
 )
 {
-  AROS_SET_DEVFUNC_INIT
   struct SerialUnit * SU = (struct SerialUnit *)ioreq->io_Unit;
 
   /*
@@ -273,19 +267,15 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
     */
     SU->su_OpenerCount--;
   }
-
-  return TRUE;
-
-    AROS_SET_DEVFUNC_EXIT
+    
+    return TRUE;
 }
 
 /****************************************************************************************/
 
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, SerialDevice)
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR SerialDevice)
 {
-    AROS_SET_LIBFUNC_INIT
-
     if (NULL != SerialDevice->SerialObject)
     {
       /*
@@ -298,10 +288,8 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, SerialDevice)
       SerialDevice->oopBase      = NULL;
       SerialDevice->SerialObject = NULL;
     }
-  
-    return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT
+    return TRUE;
 }
 
 /****************************************************************************************/

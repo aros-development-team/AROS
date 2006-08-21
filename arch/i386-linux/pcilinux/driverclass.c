@@ -153,24 +153,18 @@ VOID PCILx__Hidd_PCIDriver__UnmapPCI(OOP_Class *cl, OOP_Object *o,
 
 #define psd (&LIBBASE->psd)
 
-AROS_SET_LIBFUNC(PCILx_ExpungeClass, LIBBASETYPE, LIBBASE)
+static int PCILx_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("[PCILinux] deleting classes\n"));
     
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
     OOP_ReleaseAttrBase(IID_Hidd);
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 	
-AROS_SET_LIBFUNC(PCILx_InitClass, LIBBASETYPE, LIBBASE)
+static int PCILx_InitClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     OOP_Object *pci = NULL;
 
     D(bug("LinuxPCI: Driver initialization\n"));
@@ -203,8 +197,6 @@ AROS_SET_LIBFUNC(PCILx_InitClass, LIBBASETYPE, LIBBASE)
     D(bug("LinuxPCI: Driver ClassPtr = %x\n", psd->driverClass));
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCILx_InitClass, 0)

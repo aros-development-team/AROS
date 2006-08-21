@@ -20,18 +20,15 @@
 #define DEBUG 0 
 #include <aros/debug.h>
 
-AROS_SET_LIBFUNC(PCKbd_Init, LIBBASETYPE, LIBBASE)
+static int PCKbd_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     struct kbd_staticdata *xsd = &LIBBASE->ksd;
 	
     InitSemaphore( &xsd->sema );
 	
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(PCKbd_Init, 0)
-  
+ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)
+

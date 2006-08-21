@@ -26,10 +26,8 @@
 #include "pci.h"
 #include LC_LIBDEFS_FILE
 
-AROS_SET_LIBFUNC(PCI_Init, LIBBASETYPE, LIBBASE)
+static int PCI_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("[PCI] Initializing PCI system\n"));
     LIBBASE->MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
 
@@ -39,14 +37,10 @@ AROS_SET_LIBFUNC(PCI_Init, LIBBASETYPE, LIBBASE)
     NEWLIST(&LIBBASE->psd.drivers);
 
     return LIBBASE->psd.MemPool != NULL;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(PCI_Expunge, LIBBASETYPE, LIBBASE)
+static int PCI_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
 #if 0	// Removing of drivers already done by driver classes	
 	/*
 	    Ok. Class is not used ATM and therefore it is safe (well 
@@ -81,10 +75,8 @@ AROS_SET_LIBFUNC(PCI_Expunge, LIBBASETYPE, LIBBASE)
     DeletePool(LIBBASE->MemPool);
     
     D(bug("[PCI] Goodbye\n"));
-   
-    return TRUE;
 
-    AROS_SET_LIBFUNC_EXIT
+    return TRUE;
 }
 
 ADD2INITLIB(PCI_Init, 0)

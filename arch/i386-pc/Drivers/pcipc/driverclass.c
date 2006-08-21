@@ -192,10 +192,8 @@ void SanityCheck(struct pci_staticdata *psd)
 }
 /* Class initialization and destruction */
 
-AROS_SET_LIBFUNC(PCPCI_InitClass, LIBBASETYPE, LIBBASE)
+static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-    
     OOP_Object *pci;
     ULONG temp;
     
@@ -244,22 +242,16 @@ AROS_SET_LIBFUNC(PCPCI_InitClass, LIBBASETYPE, LIBBASE)
     D(bug("PCPCI: All OK\n"));
 
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(PCPCI_ExpungeClass, LIBBASETYPE, LIBBASE)
+static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("PCPCI: Class destruction\n"));
     
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
     OOP_ReleaseAttrBase(IID_Hidd);
     
     return TRUE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 	
 ADD2INITLIB(PCPCI_InitClass, 0)

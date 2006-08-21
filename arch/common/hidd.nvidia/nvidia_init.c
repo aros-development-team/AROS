@@ -741,10 +741,8 @@ static void Find_NV_Card(struct staticdata *sd)
     }
 }
 
-AROS_SET_LIBFUNC(NV_Init, LIBBASETYPE, LIBBASE)
+static int NV_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("[NVidia] Initialization\n"));
 
     /* Global memory pool and static data creation */
@@ -799,8 +797,6 @@ AROS_SET_LIBFUNC(NV_Init, LIBBASETYPE, LIBBASE)
     Disable(); for(;;) ;
     
     return FALSE;
-
-    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(NV_Init, 0)

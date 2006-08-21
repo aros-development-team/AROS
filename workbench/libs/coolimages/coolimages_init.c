@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002-2006, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -20,10 +20,8 @@
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
+static int Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
-    
     D(bug("Inside Init func of coolimages.library\n"));
 
     if (!cool_buttonclass)
@@ -43,24 +41,18 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     }
     
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/
 
-AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
+static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
-    
     D(bug("Inside Expunge func of coolimages.library\n"));
 
     CleanupCoolImageClass();
     CleanupCoolButtonClass();
     
     return TRUE;
-    
-    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

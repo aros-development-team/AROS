@@ -129,30 +129,22 @@ struct BitmapData *data = OOP_INST_DATA(cl, o);
 
 /*** init_bmclass *********************************************************/
 
-AROS_SET_LIBFUNC(VMWareOffBM_Init, LIBBASETYPE, LIBBASE)
+static int VMWareOffBM_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("VMWareOffBM_Init\n"));
 
     ReturnInt("VMWareOffBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
 /*** free_offbitmapclass *********************************************************/
 
-AROS_SET_LIBFUNC(VMWareOffBM_Expunge, LIBBASETYPE, LIBBASE)
+static int VMWareOffBM_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     EnterFunc(bug("VMWareOffBM_Expunge\n"));
 
     OOP_ReleaseAttrBases(attrbases);
 
-    ReturnInt("VMWareOffBM_Expunge", ULONG, TRUE);
-    
-    AROS_SET_LIBFUNC_EXIT
+    ReturnInt("VMWareOffBM_Expunge", int, TRUE);
 }
 
 ADD2INITLIB(VMWareOffBM_Init, 0)

@@ -36,10 +36,8 @@
 #define __NR_open   (5)
 #define __NR_close  (6)
 
-AROS_SET_LIBFUNC(PCILx_Init, LIBBASETYPE, LIBBASE)
+static int PCILx_Init(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     D(bug("LinuxPCI: Initializing\n"));
 
     {
@@ -68,14 +66,10 @@ AROS_SET_LIBFUNC(PCILx_Init, LIBBASETYPE, LIBBASE)
     }
 
     return FALSE;
-    
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_LIBFUNC(PCILx_Expunge, LIBBASETYPE, LIBBASE)
+static int PCILx_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT
-
     BOOL ret = TRUE;
     
     D(bug("[PCILinux] expunge\n"));
@@ -98,10 +92,8 @@ AROS_SET_LIBFUNC(PCILx_Expunge, LIBBASETYPE, LIBBASE)
 	}
 	OOP_DisposeObject(pci);
     }
-    
-    return ret;
 
-    AROS_SET_LIBFUNC_EXIT
+    return ret;
 }
 
 ADD2INITLIB(PCILx_Init, 0)

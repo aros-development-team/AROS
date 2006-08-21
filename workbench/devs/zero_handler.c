@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ZERO: handler
@@ -23,26 +23,23 @@
 
 #include <string.h>
 
-AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, zerobase)
+static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR zerobase)
 {
-    AROS_SET_LIBFUNC_INIT
-
     zerobase->dosbase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(zerobase->dosbase!=NULL)
 	return TRUE;
 
     return FALSE;
-    AROS_SET_LIBFUNC_EXIT
 }
 
-AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
-		     LIBBASETYPE, zerobase,
-		     struct IOFileSys, iofs,
-		     unitnum,
-		     flags
+static int GM_UNIQUENAME(Open)
+(
+    LIBBASETYPEPTR zerobase,
+    struct IOFileSys *iofs,
+    ULONG unitnum,
+    ULONG flags
 )
 {
-    AROS_SET_DEVFUNC_INIT
     ULONG *dev;
 
     /* Mark Message as recently used. */
@@ -64,16 +61,14 @@ AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
     iofs->IOFS.io_Error=IOERR_OPENFAIL;
 
     return FALSE;
-    
-    AROS_SET_DEVFUNC_EXIT
 }
 
-AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
-		      LIBBASETYPE, zerobase,
-		      struct IOFileSys, iofs
+static int GM_UNIQUENAME(Close)
+(
+    LIBBASETYPEPTR zerobase,
+    struct IOFileSys *iofs
 )
 {
-    AROS_SET_DEVFUNC_INIT
     ULONG *dev;
    
     dev=(ULONG *)iofs->IOFS.io_Unit;
@@ -88,8 +83,6 @@ AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
     iofs->io_DosError=0;
 
     return TRUE;
-
-    AROS_SET_DEVFUNC_EXIT
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
