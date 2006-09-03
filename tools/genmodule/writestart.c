@@ -589,23 +589,28 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		"AROS_LH1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
 		"    AROS_LHA (ULONG, version, D0),\n"
 		"    LIBBASETYPEPTR, lh, 1, %s\n"
-		")\n",
-		cfg->basename
-	);
-	fprintf(out,
+		")\n"
 		"{\n"
 		"    AROS_LIBFUNC_INIT\n"
-		"\n"
-	);
-	fprintf(out,
-		"    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, lh) )\n"
-		"    {\n"
+		"\n",
+		cfg->basename
 	);
 	if (!(cfg->options & OPTION_DUPBASE))
 	{
 	    fprintf(out,
+		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, lh) )\n"
+		    "    {\n"
 		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
 		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+		    "\n"
+		    "        return lh;\n"
+		    "    }\n"
+		    "\n"
+		    "    return NULL;\n"
+		    "\n"
+		    "    AROS_LIBFUNC_EXIT\n"
+		    "}\n"
+		    "\n"
 	    );
 	}
 	else
@@ -613,9 +618,6 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	    fprintf(out,
 		    "        struct Library *newlib;\n"
 		    "        UWORD possize = ((struct Library *)lh)->lib_PosSize;\n"
-		    "\n"
-		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
-		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
 		    "\n"
 		    "        newlib = MakeLibrary(GM_UNIQUENAME(InitTable).FuncTable,\n"
 		    "                             GM_UNIQUENAME(InitTable).DataTable,\n"
@@ -627,20 +629,25 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "            return 0;\n"
 		    "\n"
 		    "        CopyMem(lh, newlib, possize);\n"
-		    "        lh = (LIBBASETYPEPTR)newlib;\n"
+		    "\n"
+		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, lh) )\n"
+		    "    {\n"
+		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
+		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+		    "\n"
+		    "        return newlib;\n"
+		    "    }\n"
+		    "    else\n"
+		    "    {\n"
+		    "        __freebase(newlib);\n"
+		    "        return NULL;\n"
+		    "    }\n"
+		    "\n"
+		    "    AROS_LIBFUNC_EXIT\n"
+		    "}\n"
+		    "\n"
 	    );
 	}
-	fprintf(out,
-		"\n"
-		"        return lh;\n"
-		"    }\n"
-		"\n"
-		"    return NULL;\n"
-		"\n"
-		"    AROS_LIBFUNC_EXIT\n"
-		"}\n"
-		"\n"
-	);
     }
 }
 
