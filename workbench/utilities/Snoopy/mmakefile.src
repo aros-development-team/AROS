@@ -3,11 +3,13 @@
 
 include $(TOP)/config/make.cfg
 
-FILES   := gui main patches setup
+FILES   := gui main patches setup locale
 EXEDIR  := $(AROS_UTILITIES)
 
-#MM- workbench-utilities : workbench-utilities-snoopy
-#MM  workbench-utilities-snoopy : includes linklibs
+#MM- workbench-utilities : includes linklibs workbench-utilities-snoopy
+#MM  workbench-utilities-snoopy : \
+#MM  workbench-utilities-snoopy-catalogs \
+#MM  workbench-utilities-snoopy-icons
 
 %build_prog mmake=workbench-utilities-snoopy \
     progname=Snoopy targetdir=$(EXEDIR) \

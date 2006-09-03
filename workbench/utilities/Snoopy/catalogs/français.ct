@@ -1,0 +1,177 @@
+## version $VER: snoopy.catalog 1.0 (06.08.2006)
+## language français
+## codeset 0
+;
+;
+MSG_TITLE
+Snoopy
+; Snoopy
+;
+MSG_COPYRIGHT
+© 2006, The AROS Development Team
+; © 2006, The AROS Development Team
+;
+MSG_AUTHOR
+The AROS Development Team
+; The AROS Development Team
+;
+MSG_PORTNAME
+SNOOPY
+; SNOOPY
+;
+MSG_DESCRIPTION
+Simple moniteur système
+; Simple system monitor
+;
+MSG_SETTINGS
+Préférences
+; Settings
+;
+MSG_SHOW_FAILS
+Échecs seulement
+; Only show fails
+;
+MSG_CLI_NUMBER
+Numéro du CLI
+; Show CLI number
+;
+MSG_FULL_PATH
+Chemins complets
+; Show full paths
+;
+MSG_DEVICE
+Noms de volume
+; Use device names
+;
+MSG_IGNORE_WB
+Ignorer Workbench/Shell
+; Ignore Workbench/Shell
+;
+MSG_SYSTEM_FUNC
+Fonctions Système
+; System Functions
+;
+MSG_DOS_FUNC
+Fonctions DOS
+; AmigaDOS Functions
+;
+MSG_SAVE
+Sauver
+; Save
+;
+MSG_OPEN
+Ouvrir
+; Open
+;
+MSG_USE
+Utiliser
+; Use
+;
+MSG_UNDO
+Annuler
+; Undo
+;
+MSG_RESET
+R.à Z.
+; Reset
+;
+MSG_CANCEL
+Défaire
+; Cancel
+;
+MSG_OUTPUT_FIELD
+Affichage
+; Output Field Width
+;
+MSG_NAME
+Nom
+; Name
+;
+MSG_ACTION
+Action
+; Action
+;
+MSG_TARGET
+Cible
+; Target
+;
+MSG_OPTION
+Option
+; Option
+;
+MSG_OK
+OK
+; OK
+;
+MSG_FAIL
+Échec
+; Fail
+;
+MSG_ERROR_SAVE
+Une erreur est survenue lors de l'écriture dans %s
+; An error happened when saving to %s
+;
+MSG_ERROR_LOAD
+Une erreur est survenue lors du chargement de %s
+; An error happened when loading from %s
+;
+MSG_RESET_PATCHES
+R.à Z. des patches|Annuler
+; Reset Patches|Cancel
+;
+MSG_ASK_RESET
+Voulez-vous vraiment retourner à l'état d'origine ?
+; Do you really want to reset the patches to their original functions?
+;
+MSG_REMOVE_SNOOP
+Retirer|Conserver
+; Remove|Keep
+;
+MSG_ASK_REMOVE
+Voulez-vous vraiment retirer Snoopy du système ?\nCe peut être dangereux si une autre tâche a elle même modifié des fonctions surveillées par Snoopy.
+; Do you really want to remove the Snoopy process?\nThis can be quite dangerous when another task has patched Snoopy's patches.
+;
+MSG_GLOBAL
+Global
+; Global
+;
+MSG_LOCAL
+Local
+; Local
+;
+MSG_ALIAS
+Alias
+; Alias
+;
+MSG_UNKNOWN
+Inconnu
+; Unknown
+;
+MSG_ANY
+Quelconque
+; Any
+;
+MSG_READ
+Lire
+; Read
+;
+MSG_WRITE
+Écrire
+; Write
+;
+MSG_READ_ASK
+Lire ???
+; Read???
+;
+MSG_MODIFY
+Modifier
+; Modify
+;
+MSG_VERSION
+Version %ld
+; Version %ld
+;
+MSG_SIZE
+Taille %d
+; Size %d
+;
