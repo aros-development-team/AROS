@@ -17,6 +17,7 @@
 #include "main.h"
 #include "patches.h"
 #include "setup.h"
+#include "locale.h"
 
 /*
  *              Macro (courtesy of Doug Walker) used to allocate longword-aligned
@@ -211,10 +212,10 @@ AROS_UFH3(LONG, New_DeleteVar,
     if (patches[PATCH_DeleteVar].enabled)
     {
 	CONST_STRPTR opt;
-	if      (flags & GVF_GLOBAL_ONLY) opt = "Global";
-        else if ((flags & 7) == LV_VAR)   opt = "Local";
-        else if ((flags & 7) == LV_ALIAS) opt = "Alias";
-        else                              opt = "Unknown";
+	if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
+        else if ((flags & 7) == LV_VAR)   opt = MSG(MSG_LOCAL);
+        else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
+        else                              opt = MSG(MSG_UNKNOWN);
 
 	main_output("DeleteVar", name, opt, result);
     }
@@ -269,9 +270,9 @@ AROS_UFH3(struct LocalVar *, New_FindVar,
     if (patches[PATCH_FindVar].enabled)
     {
 	CONST_STRPTR opt;
-	if      ((type & 7) == LV_VAR)   opt = "Local";
-	else if ((type & 7) == LV_ALIAS) opt = "Alias";
-	else                             opt = "Unknown";
+	if      ((type & 7) == LV_VAR)   opt = MSG(MSG_LOCAL);
+	else if ((type & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
+	else                             opt = MSG(MSG_UNKNOWN);
 
 	main_output("FindVar", name, opt, (LONG)result);
     }
@@ -303,10 +304,10 @@ AROS_UFH5(LONG, New_GetVar,
     if (patches[PATCH_GetVar].enabled)
     {
 	CONST_STRPTR opt;
-	if      (flags & GVF_GLOBAL_ONLY) opt = "Global";
-        else if ((flags & 7) == LV_ALIAS) opt = "Alias";
-        else if (flags & GVF_LOCAL_ONLY)  opt = "Local";
-        else                              opt = "Any";
+	if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
+        else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
+        else if (flags & GVF_LOCAL_ONLY)  opt = MSG(MSG_LOCAL);
+        else                              opt = MSG(MSG_ANY);
 
 	main_output("GetVar", name, opt, result != -1);
     }
@@ -357,9 +358,9 @@ AROS_UFH3(BPTR, New_Lock,
     if (patches[PATCH_Lock].enabled)
     {
 	CONST_STRPTR opt;
-	if      (accessMode == ACCESS_READ)  opt = "Read";
-	else if (accessMode == ACCESS_WRITE) opt = "Write";
-	else                                 opt = "Read???";
+	if      (accessMode == ACCESS_READ)  opt = MSG(MSG_READ);
+	else if (accessMode == ACCESS_WRITE) opt = MSG(MSG_WRITE);
+	else                                 opt = MSG(MSG_READ_ASK);
 
 	CONST_STRPTR curname = name;
 	if ( ! setup.showPaths &&  *curname == '\0')
@@ -476,10 +477,10 @@ AROS_UFH3 (BPTR, New_Open,
     if (patches[PATCH_Open].enabled)
     {
 	CONST_STRPTR opt;
-	if      (accessMode == MODE_OLDFILE)   opt = "Read";
-	else if (accessMode == MODE_NEWFILE)   opt = "Write";
-	else if (accessMode == MODE_READWRITE) opt = "Modify";
-	else                                   opt = "Unknown";
+	if      (accessMode == MODE_OLDFILE)   opt = MSG(MSG_READ);
+	else if (accessMode == MODE_NEWFILE)   opt = MSG(MSG_WRITE);
+	else if (accessMode == MODE_READWRITE) opt = MSG(MSG_MODIFY);
+	else                                   opt = MSG(MSG_UNKNOWN);
 
 	main_output("Open", name, opt, (LONG)result);
     }
@@ -575,14 +576,14 @@ AROS_UFH5(BOOL, New_SetVar,
 
     if (patches[PATCH_SetVar].enabled)
     {
-	STRPTR opt;
+	CONST_STRPTR opt;
 	char varstr[MAX_STR_LEN + 1];
         int vlen;
 
-	if      (flags & GVF_GLOBAL_ONLY) opt = "Global";
-	else if ((flags & 7) == LV_VAR)   opt = "Local";
-	else if ((flags & 7) == LV_ALIAS) opt = "Alias";
-	else                              opt = "Unknown";
+	if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
+	else if ((flags & 7) == LV_VAR)   opt = MSG(MSG_LOCAL);
+	else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
+	else                              opt = MSG(MSG_UNKNOWN);
 
 	/*
 	 *              Now create a string that looks like "Variable=Value"
@@ -780,7 +781,7 @@ AROS_UFH3(struct Library *, New_OpenLibrary,
     if (patches[PATCH_OpenLibrary].enabled)
     {
 	char verstr[20];
-	sprintf(verstr, "Version %ld", version);
+	sprintf(verstr, MSG(MSG_VERSION), version);
 	main_output("OpenLibrary", libName, verstr, (LONG)result );
     }
     
@@ -854,7 +855,7 @@ AROS_UFH2(struct TextFont *, New_OpenFont,
 	char sizestr[20];
 
 	if (textAttr) {
-	    sprintf(sizestr, "Size %d", textAttr->ta_YSize);
+	    sprintf(sizestr, MSG(MSG_SIZE), textAttr->ta_YSize);
 	    name = textAttr->ta_Name;
 	} else {
 	    *sizestr = '\0';

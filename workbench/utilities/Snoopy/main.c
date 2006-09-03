@@ -15,14 +15,17 @@
 #include "gui.h"
 #include "patches.h"
 #include "setup.h"
+#include "locale.h"
 
 int main(void)
 {
+	Locale_Initialize();
     setup_init();
     gui_init();
     patches_init();
     gui_handleevents();
     clean_exit(NULL);
+	Locale_Deinitialize();
     return RETURN_OK;
 }
 
@@ -76,7 +79,7 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, 
     prettyprint(action, setup.actionLen);
     prettyprint(target, setup.targetLen);
     prettyprint(option, setup.optionLen);
-    prettyprint(result ? "OK" : "Fail", 0);
+    prettyprint(result ? MSG(MSG_OK) : MSG(MSG_FAIL), 0);
     RawPutChar('\n');
     Permit();
 }

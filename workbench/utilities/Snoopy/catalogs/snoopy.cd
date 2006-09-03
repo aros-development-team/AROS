@@ -1,0 +1,130 @@
+;
+MSG_TITLE (//)
+Snoopy
+;
+MSG_COPYRIGHT (//)
+© 2006, The AROS Development Team
+;
+MSG_AUTHOR (//)
+The AROS Development Team
+;
+MSG_PORTNAME (//)
+SNOOPY
+;
+MSG_DESCRIPTION (//)
+Simple system monitor
+;
+MSG_SETTINGS (//)
+Settings
+;
+MSG_SHOW_FAILS (//)
+Only show fails
+;
+MSG_CLI_NUMBER (//)
+Show CLI number
+;
+MSG_FULL_PATH (//)
+Show full paths
+;
+MSG_DEVICE (//)
+Use device names
+;
+MSG_IGNORE_WB (//)
+Ignore Workbench/Shell
+;
+MSG_SYSTEM_FUNC (//)
+System Functions
+;
+MSG_DOS_FUNC (//)
+AmigaDOS Functions
+;
+MSG_SAVE (//)
+Save
+;
+MSG_OPEN (//)
+Open
+;
+MSG_USE (//)
+Use
+;
+MSG_UNDO (//)
+Undo
+;
+MSG_RESET (//)
+Reset
+;
+MSG_CANCEL (//)
+Cancel
+;
+MSG_OUTPUT_FIELD (//)
+Output Field Width
+;
+MSG_NAME (//)
+Name
+;
+MSG_ACTION (//)
+Action
+;
+MSG_TARGET (//)
+Target
+;
+MSG_OPTION (//)
+Option
+;
+MSG_OK (//)
+OK
+;
+MSG_FAIL (//)
+Fail
+;
+MSG_ERROR_SAVE (//)
+An error happened when saving to %s
+;
+MSG_ERROR_LOAD (//)
+An error happened when loading from %s
+;
+MSG_RESET_PATCHES (//)
+Reset Patches|Cancel
+;
+MSG_ASK_RESET (//)
+Do you really want to reset the patches to their original functions?
+;
+MSG_REMOVE_SNOOP (//)
+Remove|Keep
+;
+MSG_ASK_REMOVE (//)
+Do you really want to remove the Snoopy process?\nThis can be quite dangerous when another task has patched Snoopy's patches.
+;
+MSG_GLOBAL (//)
+Global
+;
+MSG_LOCAL (//)
+Local
+;
+MSG_ALIAS (//)
+Alias
+;
+MSG_UNKNOWN (//)
+Unknown
+;
+MSG_ANY (//)
+Any
+;
+MSG_READ (//)
+Read
+;
+MSG_WRITE (//)
+Write
+;
+MSG_READ_ASK (//)
+Read???
+;
+MSG_MODIFY (//)
+Modify
+;
+MSG_VERSION (//)
+Version %ld
+;
+MSG_SIZE (//)
+Size %d
+;

@@ -1,0 +1,10 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+ICONS := Snoopy
+EXEDIR  := $(AROS_UTILITIES)
+
+%build_icons mmake=workbench-utilities-snoopy-icons \
+             icons=$(ICONS) dir=$(EXEDIR)

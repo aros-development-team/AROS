@@ -1,0 +1,177 @@
+## version $VER: snoopy.catalog 1.0 (03.09.2006)
+## language deutsch
+## codeset 0
+;
+;
+MSG_TITLE
+Snoopy
+; Snoopy
+;
+MSG_COPYRIGHT
+© 2006, The AROS Development Team
+; © 2006, The AROS Development Team
+;
+MSG_AUTHOR
+The AROS Development Team
+; The AROS Development Team
+;
+MSG_PORTNAME
+SNOOPY
+; SNOOPY
+;
+MSG_DESCRIPTION
+Einfacher Systemmonitor
+; Simple system monitor
+;
+MSG_SETTINGS
+Einstellungen
+; Settings
+;
+MSG_SHOW_FAILS
+Nur Fehler anzeigen
+; Only show fails
+;
+MSG_CLI_NUMBER
+CLI-Nummer anzeigen
+; Show CLI number
+;
+MSG_FULL_PATH
+Volle Pfade anzeigen
+; Show full paths
+;
+MSG_DEVICE
+Device-Namen verwenden
+; Use device names
+;
+MSG_IGNORE_WB
+Workbench/Shell ignorieren
+; Ignore Workbench/Shell
+;
+MSG_SYSTEM_FUNC
+Systemfunktionen
+; System Functions
+;
+MSG_DOS_FUNC
+AmigaDOS-Funktionen
+; AmigaDOS Functions
+;
+MSG_SAVE
+Speichern
+; Save
+;
+MSG_OPEN
+Öffnen
+; Open
+;
+MSG_USE
+Verwenden
+; Use
+;
+MSG_UNDO
+Rückgängig
+; Undo
+;
+MSG_RESET
+Zurücksetzen
+; Reset
+;
+MSG_CANCEL
+Abbrechen
+; Cancel
+;
+MSG_OUTPUT_FIELD
+Ausgabefeldbreite
+; Output Field Width
+;
+MSG_NAME
+Name
+; Name
+;
+MSG_ACTION
+Aktion
+; Action
+;
+MSG_TARGET
+Ziel
+; Target
+;
+MSG_OPTION
+Option
+; Option
+;
+MSG_OK
+OK
+; OK
+;
+MSG_FAIL
+Fehler
+; Fail
+;
+MSG_ERROR_SAVE
+Ein Fehler passierte beim Speichern in %s
+; An error happened when saving to %s
+;
+MSG_ERROR_LOAD
+Ein Fehler passierte beim Laden von %s
+; An error happened when loading from %s
+;
+MSG_RESET_PATCHES
+Patche zurücksetzen|Abbrechen
+; Reset Patches|Cancel
+;
+MSG_ASK_RESET
+Möchtest Du wirklich alle Patche auf ihre Originalfunktionen zurücksetzen?
+; Do you really want to reset the patches to their original functions?
+;
+MSG_REMOVE_SNOOP
+Entfernen|Beibehalten
+; Remove|Keep
+;
+MSG_ASK_REMOVE
+Möchtest Du den Snoopy-Prozess wirklich entfernen?\nThis kann ziemlich gefährlich sein, wenn ein anderer Task Snoopys Patche gepatcht hat.
+; Do you really want to remove the Snoopy process?\nThis can be quite dangerous when another task has patched Snoopy's patches.
+;
+MSG_GLOBAL
+Global
+; Global
+;
+MSG_LOCAL
+Lokal
+; Local
+;
+MSG_ALIAS
+Alias
+; Alias
+;
+MSG_UNKNOWN
+Unbekannt
+; Unknown
+;
+MSG_ANY
+Beliebig
+; Any
+;
+MSG_READ
+Lesen
+; Read
+;
+MSG_WRITE
+Schreiben
+; Write
+;
+MSG_READ_ASK
+Lesen???
+; Read???
+;
+MSG_MODIFY
+Ändern
+; Modify
+;
+MSG_VERSION
+Version %ld
+; Version %ld
+;
+MSG_SIZE
+Größe %d
+; Size %d
+;

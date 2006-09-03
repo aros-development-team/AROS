@@ -14,6 +14,9 @@
 #include "gui.h"
 #include "setup.h"
 #include "patches.h"
+#include "locale.h"
+
+#define VERSION "$VER: Snoopy 0.4 (3.9.2006) © 2006 The AROS Dev Team"
 
 static Object *app, *window, *saveBtn, *openBtn, *useBtn, *undoBtn, *resetBtn, *cancelBtn;
 static Object *failCM, *cliCM, *pathCM, *devCM, *ignoreCM;
@@ -36,7 +39,7 @@ AROS_UFH3S(void, save_function,
     patches_set();
     if ( ! setup_save())
     {
-	MUI_Request ( app, window, 0, "Snoopy", "OK", "An error happened when saving to " PREFFILE);
+	MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_OK), MSG(MSG_ERROR_SAVE), PREFFILE);
     }
     
     AROS_USERFUNC_EXIT
@@ -51,7 +54,7 @@ AROS_UFH3S(void, open_function,
 
     if ( ! setup_open() )
     {
-	MUI_Request ( app, window, 0, "Snoopy", "OK", "An error happened when loading from " PREFFILE);
+	MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_OK), MSG(MSG_ERROR_LOAD), PREFFILE);
     }
     gui_set();
     patches_set();
@@ -112,16 +115,16 @@ AROS_UFH3S(void, cancel_function,
     // FIXME: original SnoopDos has a separate task for the patches. When cancelling SnoopDos the GUI
     // is removed and the patchtask stays in RAM. We can't do that because we have no separate task.
     // The cancelling function of Snoopy is more for debugging.
-    if (MUI_Request ( app, window, 0, "Snoopy", "Reset Patches|Cancel",
-		"Do you really want to reset the patches to their original functions?"))
+    if (MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_RESET_PATCHES), MSG(MSG_ASK_RESET)))
     {
+	set(saveBtn, MUIA_Disabled, TRUE);
+	set(openBtn, MUIA_Disabled, TRUE);
 	set(useBtn, MUIA_Disabled, TRUE);
 	set(undoBtn, MUIA_Disabled, TRUE);
+	set(resetBtn, MUIA_Disabled, TRUE);
 	set(cancelBtn, MUIA_Disabled, TRUE);
 	patches_reset();
-	if (MUI_Request ( app, window, 0, "Snoopy", "Remove|Keep",
-		    "Do you really want to remove the Snoopy process?\n"
-		    "This can be quite dangerous when another task has patched Snoopy's patches."))
+	if (MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_REMOVE_SNOOP), MSG(MSG_ASK_REMOVE)))
 	{
 	    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	}
@@ -139,53 +142,53 @@ void gui_init(void)
     cancel_hook.h_Entry = (APTR)cancel_function;
 
     app = ApplicationObject,
-	MUIA_Application_Title, (IPTR)"Snoopy",
-	MUIA_Application_Version, (IPTR)"$VER: Snoopy 0.3 (11.8.2006)",
-	MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
-	MUIA_Application_Author, (IPTR)"The AROS Development Team",
-	MUIA_Application_Description, (IPTR)"Simple system monitor",
-	MUIA_Application_Base, (IPTR)"SNOOPY",
+	MUIA_Application_Title, (IPTR) MSG(MSG_TITLE),
+	MUIA_Application_Version, (IPTR) VERSION,
+	MUIA_Application_Copyright, (IPTR) MSG(MSG_COPYRIGHT),
+	MUIA_Application_Author, (IPTR) MSG(MSG_AUTHOR),
+	MUIA_Application_Description, (IPTR) MSG(MSG_DESCRIPTION),
+	MUIA_Application_Base, (IPTR) MSG(MSG_PORTNAME),
 	MUIA_Application_SingleTask, TRUE,
 
 	SubWindow, (IPTR)(window = WindowObject,
-	    MUIA_Window_Title, (IPTR)"Snoopy",
+	    MUIA_Window_Title, (IPTR)MSG(MSG_TITLE),
 	    MUIA_Window_CloseGadget, FALSE,
 	    WindowContents, (IPTR)(VGroup,
 		Child, (IPTR)(HGroup,
 		    Child, (IPTR)(VGroup,
 			Child, (IPTR)(ColGroup(2),
-			    GroupFrameT("Settings"),
-			    Child, (IPTR)Label("Only show fails"),
+			    GroupFrameT(MSG(MSG_SETTINGS)),
+			    Child, (IPTR)Label(MSG(MSG_SHOW_FAILS)),
 			    Child, (IPTR)(failCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("Show CLI number"),
+			    Child, (IPTR)Label(MSG(MSG_CLI_NUMBER)),
 			    Child, (IPTR)(cliCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("Show full paths"),
+			    Child, (IPTR)Label(MSG(MSG_FULL_PATH)),
 			    Child, (IPTR)(pathCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("Use device names"),
+			    Child, (IPTR)Label(MSG(MSG_DEVICE)),
 			    Child, (IPTR)(devCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("Ignore Workbench/Shell"),
+			    Child, (IPTR)Label(MSG(MSG_IGNORE_WB)),
 			    Child, (IPTR)(ignoreCM = MUI_MakeObject(MUIO_Checkmark, "")),
 			    Child, (IPTR)HVSpace,
 			    Child, (IPTR)HVSpace,
 			End),
 			Child, (IPTR)(ColGroup(2),
-			    GroupFrameT("Output Field Width"),
-			    Child, (IPTR)Label("Name"),
+			    GroupFrameT(MSG(MSG_OUTPUT_FIELD)),
+			    Child, (IPTR)Label(MSG(MSG_NAME)),
 			    Child, (IPTR)(nameNum = SliderObject,
 				MUIA_Numeric_Min, 10,
 				MUIA_Numeric_Max, 50,
 			    End),
-			    Child, (IPTR)Label("Action"),
+			    Child, (IPTR)Label(MSG(MSG_ACTION)),
 			    Child, (IPTR)(actionNum = SliderObject,
 				MUIA_Numeric_Min, 10,
 				MUIA_Numeric_Max, 50,
 			    End),
-			    Child, (IPTR)Label("Target"),
+			    Child, (IPTR)Label(MSG(MSG_TARGET)),
 			    Child, (IPTR)(targetNum = SliderObject,
 				MUIA_Numeric_Min, 10,
 				MUIA_Numeric_Max, 50,
 			    End),
-			    Child, (IPTR)Label("Option"),
+			    Child, (IPTR)Label(MSG(MSG_OPTION)),
 			    Child, (IPTR)(optionNum = SliderObject,
 				MUIA_Numeric_Min, 10,
 				MUIA_Numeric_Max, 50,
@@ -194,7 +197,7 @@ void gui_init(void)
 		    End),
 		    Child, (IPTR)(VGroup,
 			Child, (IPTR)(ColGroup(2),
-			    GroupFrameT("System Functions"),
+			    GroupFrameT(MSG(MSG_SYSTEM_FUNC)),
 			    Child, (IPTR)Label("FindPort"),
 			    Child, (IPTR)(findPortCM = MUI_MakeObject(MUIO_Checkmark, "")),
 			    Child, (IPTR)Label("FindResident"),
@@ -221,7 +224,7 @@ void gui_init(void)
 		    End),
 		    Child, (IPTR)(VGroup,
 			Child, (IPTR)(ColGroup(2),
-			    GroupFrameT("AmigaDOS Functions"),
+			    GroupFrameT(MSG(MSG_DOS_FUNC)),
 			    Child, (IPTR)Label("ChangeDir"),
 			    Child, (IPTR)(changeDirCM = MUI_MakeObject(MUIO_Checkmark, "")),
 			    Child, (IPTR)Label("Delete"),
@@ -258,14 +261,14 @@ void gui_init(void)
 		    MUIA_FixHeight,      2,
 		End),
 		Child, (IPTR)(HGroup,
-		    Child, (IPTR)(saveBtn = SimpleButton("Save")),
-		    Child, (IPTR)(openBtn = SimpleButton("Open")),
+		    Child, (IPTR)(saveBtn = SimpleButton(MSG(MSG_SAVE))),
+		    Child, (IPTR)(openBtn = SimpleButton(MSG(MSG_OPEN))),
 		    Child, (IPTR)HVSpace,
-		    Child, (IPTR)(useBtn = SimpleButton("Use")),
-		    Child, (IPTR)(undoBtn = SimpleButton("Undo")),
-		    Child, (IPTR)(resetBtn = SimpleButton("Reset")),
+		    Child, (IPTR)(useBtn = SimpleButton(MSG(MSG_USE))),
+		    Child, (IPTR)(undoBtn = SimpleButton(MSG(MSG_UNDO))),
+		    Child, (IPTR)(resetBtn = SimpleButton(MSG(MSG_RESET))),
 		    Child, (IPTR)HVSpace,
-		    Child, (IPTR)(cancelBtn = SimpleButton("Cancel")),
+		    Child, (IPTR)(cancelBtn = SimpleButton(MSG(MSG_CANCEL))),
 		End),
 	    End), // WindowContents
 	End), // WindowObject
