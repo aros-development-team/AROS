@@ -1,0 +1,31 @@
+Short:    Russian fonts in Amiga-1251 charset
+Author:   Michael_Malyshev@mail.ru (Michael Malyshev)
+Uploader: Michael_Malyshev@mail.ru (Michael Malyshev)
+Version:  50.1
+Type:     util/misc
+Requires: AmigaOS
+
+
+ This small collection of Amiga-1251 charset bitmap fonts was prepared
+ from the work done by me for AmigaOS 4.0 project.
+
+ If you need fonts with AmigaOS 4.0 features, please contact me.
+
+ Provided fonts can be used on any AmigaOS derived system.
+
+ All fonts have been taged and prepared according to below specs:
+
+ MIBenum: 2104
+
+ Published charset specifications:
+
+ 1) http://www.amiga.ultranet.ru/Amiga-1251.html
+
+ 2) Amiga OS 4.0 SDK
+
+ 3) http://ftp.uni-paderborn.de/aminet/aminet/dev/misc/Amiga1251.lha
+
+
+ Permission is granted to distribute this fonts together with any
+ AmigaOS, MorphOS, AROS, Amitlon, UAE software/package.
+
