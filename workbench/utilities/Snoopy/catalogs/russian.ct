@@ -1,0 +1,177 @@
+## version $VER: snoopy.catalog 1.0 (06.09.2006)
+## language deutsch
+## codeset 0
+;
+;
+MSG_TITLE
+Snoopy
+; Snoopy
+;
+MSG_COPYRIGHT
+й 2006, The AROS Development Team
+; К 2006, The AROS Development Team
+;
+MSG_AUTHOR
+The AROS Development Team
+; The AROS Development Team
+;
+MSG_PORTNAME
+SNOOPY
+; SNOOPY
+;
+MSG_DESCRIPTION
+Простой системный монитор
+; Simple system monitor
+;
+MSG_SETTINGS
+Настройки
+; Settings
+;
+MSG_SHOW_FAILS
+Показывать только сбои
+; Only show fails
+;
+MSG_CLI_NUMBER
+Показать номер CLI
+; Show CLI number
+;
+MSG_FULL_PATH
+Показывать пути полностью
+; Show full paths
+;
+MSG_DEVICE
+Использовать имена устройств
+; Use device names
+;
+MSG_IGNORE_WB
+Кроме Workbench/Shell
+; Ignore Workbench/Shell
+;
+MSG_SYSTEM_FUNC
+Системные функции
+; System Functions
+;
+MSG_DOS_FUNC
+Функц. AmigaDOS
+; AmigaDOS Functions
+;
+MSG_SAVE
+Сохранить
+; Save
+;
+MSG_OPEN
+Открыть
+; Open
+;
+MSG_USE
+Применить
+; Use
+;
+MSG_UNDO
+Отменить
+; Undo
+;
+MSG_RESET
+Как было
+; Reset
+;
+MSG_CANCEL
+Отмена
+; Cancel
+;
+MSG_OUTPUT_FIELD
+Ширина поля вывода
+; Output Field Width
+;
+MSG_NAME
+Имя
+; Name
+;
+MSG_ACTION
+Действие
+; Action
+;
+MSG_TARGET
+Цель
+; Target
+;
+MSG_OPTION
+Опция
+; Option
+;
+MSG_OK
+OK
+; OK
+;
+MSG_FAIL
+Сбой
+; Fail
+;
+MSG_ERROR_SAVE
+Ошибка при записи файла %s
+; An error happened when saving to %s
+;
+MSG_ERROR_LOAD
+Ошибка при чтении из файла %s
+; An error happened when loading from %s
+;
+MSG_RESET_PATCHES
+Вернуть|Отменить
+; Reset Patches|Cancel
+;
+MSG_ASK_RESET
+Вы действительно хотите вернуть все патчи к оригинальным функциям?
+; Do you really want to reset the patches to their original functions?
+;
+MSG_REMOVE_SNOOP
+Удалить|Оставить
+; Remove|Keep
+;
+MSG_ASK_REMOVE
+Вы действительно хотите остановить процесс Snoopy?\nЭто может быть опасно, если другая задача изменила наложенные им патчи.
+; Do you really want to remove the Snoopy process?\nThis can be quite dangerous when another task has patched Snoopy's patches.
+;
+MSG_GLOBAL
+Global
+; Global
+;
+MSG_LOCAL
+Local
+; Local
+;
+MSG_ALIAS
+Alias
+; Alias
+;
+MSG_UNKNOWN
+Неизвестно
+; Unknown
+;
+MSG_ANY
+Любой
+; Any
+;
+MSG_READ
+Чтение
+; Read
+;
+MSG_WRITE
+Запись
+; Write
+;
+MSG_READ_ASK
+Читать???
+; Read???
+;
+MSG_MODIFY
+Изменить
+; Modify
+;
+MSG_VERSION
+Версия %ld
+; Version %ld
+;
+MSG_SIZE
+Размер %d
+; Size %d
+;
