@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: CreatePrefsGroup.c,v 1.8 2005/08/03 12:48:53 gnikl Exp $
+ $Id$
 
 ***************************************************************************/
 

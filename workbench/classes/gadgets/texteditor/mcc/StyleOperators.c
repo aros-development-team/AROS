@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: StyleOperators.c,v 1.4 2005/06/24 14:38:44 gnikl Exp $
+ $Id$
 
 ***************************************************************************/
 

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: russian.c 23812 2005-12-20 14:22:28Z stegerg $
+    $Id$
 
     Desc: russian.language description file.
     Lang: russian

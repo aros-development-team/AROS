@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: ExportHook.c,v 1.9 2005/08/06 16:19:21 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

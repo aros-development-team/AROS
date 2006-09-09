@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: ExportText.c,v 1.6 2005/08/08 11:28:15 gnikl Exp $
+ $Id$
 
 ***************************************************************************/
 

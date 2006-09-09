@@ -16,7 +16,7 @@
 
  BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
 
- $Id: C_c.sd,v 1.1 2005/04/21 20:52:04 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

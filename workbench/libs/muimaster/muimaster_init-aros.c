@@ -2,7 +2,7 @@
     Copyright © 2002-2006, The AROS Development Team. 
     All rights reserved.
     
-    $Id: muimaster_init.c 19905 2003-10-04 05:24:00Z falemagn $
+    $Id$
 */
 
 #include <proto/exec.h>

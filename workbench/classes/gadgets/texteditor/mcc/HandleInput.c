@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: HandleInput.c,v 1.27 2005/12/06 23:41:22 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

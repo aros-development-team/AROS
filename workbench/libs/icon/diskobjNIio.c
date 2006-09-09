@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    $Id: diskobj35io.c 21620 2004-05-09 22:11:26Z stegerg $
+    $Id$
 */
 
 /****************************************************************************************/

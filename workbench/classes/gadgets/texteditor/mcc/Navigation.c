@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Navigation.c,v 1.10 2005/08/07 14:17:16 damato Exp $
+ $Id$
 
 ***************************************************************************/
 
