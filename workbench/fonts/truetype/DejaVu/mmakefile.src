@@ -1,0 +1,12 @@
+# Copyright © 2006, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-fonts : workbench-fonts-truetype
+#MM workbench-fonts-truetype : setup
+
+workbench-fonts-truetype : files-copy
+
+%copy_files_q files="$(wildcard *.ttf)" dst=$(AROSDIR)/Fonts/TrueType
+%copy_files_q files="$(wildcard *.font *.otag)" dst=$(AROSDIR)/Fonts
