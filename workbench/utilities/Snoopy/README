@@ -21,7 +21,7 @@ TODO
 ====
 
 NameFromLock crashes. Therefore the CurrentDir patch doesn't print
-the directory name and the option ShowFullPath doesn't work.
+the full path name of the directory and the option ShowFullPath doesn't work.
 
 Implement missing settings.
 

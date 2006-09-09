@@ -19,13 +19,6 @@
 #include "setup.h"
 #include "locale.h"
 
-/*
- *              Macro (courtesy of Doug Walker) used to allocate longword-aligned
- *              data on the stack. We can't use __aligned inside our patches
- *              because the caller may not have a longword-aligned stack.
- */
-#define D_S(name, type) char c_##name[sizeof(type)+3];\
-                                                type *name = (type *)((long)(c_##name+3) & ~3)
 
 #define MAX_LOCK_LEN  100             /* Max. length of a lock string */
 #define MAX_STR_LEN   200             /* Max. string length for misc stuff    */
@@ -149,7 +142,7 @@ AROS_UFH2(BPTR, New_CurrentDir,
 {
     AROS_USERFUNC_INIT
     //char lockbuf[MAX_LOCK_LEN+1];
-    char *lockpath = ":-(";
+    char *lockpath = "?";
 
     // returns lock to old directory, 0 means boot filesystem
     BPTR result = AROS_UFC2(BPTR, patches[PATCH_CurrentDir].oldfunc,
@@ -158,12 +151,23 @@ AROS_UFH2(BPTR, New_CurrentDir,
 
     if (patches[PATCH_CurrentDir].enabled)
     {
-	// FIXME: MyNameFromLock crashes
-#if 0
-	//lockpath = MyNameFromLock(lock, NULL, lockbuf, MAX_LOCK_LEN);
-	//if (lock) NameFromLock(lock, lockbuf, MAX_LOCK_LEN);
-#endif
+	LONG err = IoErr();
+	struct FileInfoBlock *fib = NULL;
+	if (lock)
+	{
+	    fib = AllocDosObject(DOS_FIB, NULL);
+	    if (fib)
+	    {
+		if (Examine(lock, fib))
+		{
+		    lockpath = fib->fib_FileName;
+		}
+	    }
+	}
 	main_output("CurrentDir", lockpath, 0, TRUE);
+
+	if (fib) FreeDosObject(DOS_FIB, fib);
+	SetIoErr(err);
     }
 
     return result;
@@ -1026,302 +1030,4 @@ void patches_reset(void)
 	}
     }
 }
-
-// ----------------------------------------------------------------------------------
-
-
-
-//FIXME: implement the following functions
-#if 0
-
-/*
- *              MyNameFromLock(lock, filename, buf, maxlen)
- *
- *              This is a custom version of the DOS function NameFromLock()
- *              which expands a disk lock into a full path.
- *
- *              Our version adds the following features. The device name will be
- *              given as either the physical device (like DH0:) if UseDevNames
- *              is true, or the volume name (like System3.0:) if UseDevNames is
- *              false.
- *
- *              If filename is non-NULL, then it will be appended to the lock
- *              path. If filename contains path info, then this will be taken
- *              into account when generating the lock, so that an absolute path
- *              in filename will not have any effect, and a relative filename
- *              (like //directory) will cause the original lock to be ParentDir()'d
- *              twice before being resolved.
- *
- *              This function can't fail. In the event of an error (string too
- *              long, or something like that), the buffer will be filled accordingly.
- *              It is assumed that the buffer will always be big enough to hold short
- *              error messages or a volume name.
- *
- *              Returns a pointer to the path (which will not necessarily be at
- *              the start of the buffer, but is guaranteed null-terminated.)
- *              Note that it's even possible that the pointer returned will be
- *              to the original filename if no path expansion was required.
- *
- *              New: We now preserve the IoErr() that was present on entry, since
- *              it may have been set by the calling function if OnlyShowFails is
- *              true. Otherwise, IoErr() will be screwed up by the operations we
- *              do here (e.g. SAS/C deleting a non-existent file when OnlyShowFails
- *              is true).
- *
- *              WARNING: This function must not be called from within a DOS
- *                               device handler due to potential deadlock errors!
- */
-static char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
-{
-    struct Process *myproc = (struct Process *)SysBase->ThisTask;
-    int pos = maxlen - 1;
-    D_S(fib, struct FileInfoBlock);
-    LONG savedioerr = IoErr();
-    BPTR curlock;
-    BPTR newlock;
-    void *savewinptr;
-    char *p;
-    int len;
-    int skipfirstslash = 0; /* If true, skip first slash when building name */
-    int err = 0;
-
-    /*
-     *              Check for special magic filehandle
-     */
-    if (filename && *filename) {
-	if (strcmp(filename, "*") == 0)
-	    return (filename);
-
-	/*
-	 *              First determine if we have any work to do.
-	 */
-	if (*filename == ':') {
-	    /*
-	     *              Got a reference relative to the root directory. Simply
-	     *              grab the volume (or device) name from the lock and go
-	     *              with that.
-	     */
-	    int len;
-
-	    GetVolName(lock, buf, maxlen);
-	    len = strlen(buf);
-	    strncat(buf+len, filename+1, maxlen-len);
-	    buf[maxlen-1] = '\0';
-	    SetIoErr(savedioerr);
-	    return (buf);
-	}
-	for (p = filename; *p; p++) {
-	    if ((*p == ':'))                  /* If absolute path name, leave it alone */
-		return (filename);
-	}
-    } else {
-	/*
-	 *              Filename is null, so indicate we want to skip the first
-	 *              slash when building the directory path
-	 */
-	skipfirstslash = 1;
-    }
-
-    savewinptr = myproc->pr_WindowPtr;
-    myproc->pr_WindowPtr = (APTR)-1;                /* Disable error requesters       */
-
-    newlock = DupLock(lock);
-    if (lock && !newlock) {
-	GetVolName(lock, buf, 20);
-	if (filename) {
-	    strcat(buf, ".../");
-	    strcat(buf, filename);
-	}
-	myproc->pr_WindowPtr = savewinptr;      /* Re-enable error requesters */
-	SetIoErr(savedioerr);
-	return (buf);
-    }
-    buf[pos] = '\0';
-    curlock = newlock;
-    if (filename) {
-	while (newlock && *filename == '/') {
-	    /*
-	     *              Handle leading /'s by moving back a directory level
-	     *              but nothing else
-	     */
-	    newlock = ParentDir(curlock);
-	    if (newlock) {
-		UnLock(curlock);
-		curlock = newlock;
-		filename++;
-	    }
-	}
-	len = strlen(filename);
-	if (len > (pos-2)) {
-	    memcpy(buf+2, filename+len-pos, pos-2);
-	    buf[0] = buf[1] = '.';
-	    pos = 0;
-	    UnLock(curlock);
-	} else {
-	    pos -= len;
-	    memcpy(buf+pos, filename, len);
-	}
-    }
-
-    /*
-     *              At this point, we have buf containing the filename (minus any
-     *              leading /'s), starting at the index given by pos. If filename
-     *              was NULL or empty, then pos indexes to a \0 terminator.
-     *
-     *              Next, we want to pre-pend directory names to the front of
-     *              the filename (assuming there _is_ a filename) until we get
-     *              to the device root.
-     */
-    newlock = curlock;
-    while (newlock) {
-
-	if (!Examine(curlock, fib)) {
-	    err++;
-	    break;
-	}
-	len = strlen(fib->fib_FileName);
-	if (len > (pos-3)) {
-	    /*
-	     *              Not enough room: prefix dots at start to indicate
-	     *              an overrun. We use pos-3 since we need one char
-	     *              for a possible slash and two more to accomodate a
-	     *              leading ".."
-	     */
-	    memcpy(buf+2, fib->fib_FileName+len-pos+3, pos-2);
-	    buf[0] = buf[1] = '.';
-	    buf[pos-1] = '/';
-	    pos = 0;
-	    break;
-	}
-	newlock = ParentDir(curlock);
-	if (newlock) {
-	    UnLock(curlock);
-	    curlock = newlock;
-	    pos -= len + 1;
-	    memcpy(buf + pos, fib->fib_FileName, len);
-	    if (skipfirstslash) {
-		skipfirstslash = 0;
-		buf[pos+len] = '\0';
-	    } else
-		buf[pos+len] = '/';
-	}
-    }
-    /*
-     *              Now we've built the path components; add the volume node
-     *              to the beginning if possible.
-     */
-    if (err) {
-	/*
-	 *              If an error occurred, the volume is probably not mounted,
-	 *              so we include a ".../" component in the path to show
-	 *              we couldn't get all the info
-	 */
-	pos -= 4;
-	memcpy(buf + pos, ".../", 4);
-    }
-    if (pos > 0) {
-	char volname[20];
-	int len;
-	char *p;
-
-	GetVolName(curlock, volname, 20);
-	len = strlen(volname);
-	if (len > pos) {
-	    p = volname + len - pos;
-	    len = pos;
-	} else {
-	    p = volname;
-	}
-	pos -= len;
-	memcpy(buf + pos, p, len);
-    }
-    if (curlock)
-	UnLock(curlock);
-
-    myproc->pr_WindowPtr = savewinptr;              /* Re-enable error requesters */
-    SetIoErr(savedioerr);
-    return (buf+pos);
-}
-/*
- *              GetVolName(lock, buf, maxlen)
- *
- *              Copies the volume name associated with lock into the buffer,
- *              with terminating ':'. If lock is NULL, the volume address is
- *              taken directly from volume.
- *
- *              If UseDevNames is true, the device list is searched looking
- *              for the device node associated with the volume node (i.e. two
- *              nodes sharing the same task address).
- *
- *              WARNING: This function must not be called from within a DOS
- *                               device handler due to potential deadlock errors!
- *
- */
-static void GetVolName(BPTR lock, char *buf, int maxlen)
-{
-    struct DeviceList *vol;
-    struct DosList *dl;
-    int gotdev = 0;
-
-    if (lock == NULL) {
-	NameFromLock(lock, buf, maxlen);
-	return;
-    }
-#ifdef __AROS__
-    vol = BTOC(lock);
-#else
-    vol = BTOC(((struct FileLock *)BTOC(lock))->fl_Volume);
-#endif
-
-#warning Add AROS specific code for DosList access
-    if (setup.useDevNames == 0 /* || vol->dl_Task == NULL */ ) {
-	/*
-	 *              Use volume name, especially if the volume isn't currently
-	 *              mounted!
-	 */
-	UBYTE *volname;
-	int len;
-#ifdef __AROS__
-	volname = vol->dl_DevName;
-	len = MIN(maxlen-2,strlen(volname));
-#else
-	volname = BTOC(vol->dl_Name);
-	len = MIN(maxlen-2, *volname);
-#endif
-	memcpy(buf, volname+1, len);
-	buf[len++] = ':';
-	buf[len] = '\0';
-	return;
-    }
-
-    /*
-     *              The user wants the device name. The only way to obtain this
-     *              is to search the device list looking for the device node with
-     *              the same task address as this volume.
-     */
-    dl = LockDosList(LDF_DEVICES | LDF_READ);
-    while ((dl = NextDosEntry(dl, LDF_DEVICES))) {
-#warning Add AROS specific code for DosList access
-#if 0
-	if (dl->dol_Task == vol->dl_Task) {
-	    /*
-	     *              Found our task, so now copy device name
-	     */
-	    UBYTE *devname = BTOC(dl->dol_Name);
-	    int len = MIN(maxlen-2, *devname);
-
-	    memcpy(buf, devname+1, len);
-	    buf[len++] = ':';
-	    buf[len] = '\0';
-	    gotdev = 1;
-	    break;
-	}
-#endif
-    }
-    UnLockDosList(LDF_DEVICES | LDF_READ);
-    if (!gotdev)
-	strcpy(buf, "???:");
-}
-
-#endif
 

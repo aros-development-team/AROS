@@ -16,7 +16,7 @@
 #include "patches.h"
 #include "locale.h"
 
-#define VERSION "$VER: Snoopy 0.4 (3.9.2006) © 2006 The AROS Dev Team"
+#define VERSION "$VER: Snoopy 0.5 (9.9.2006) © 2006 The AROS Dev Team"
 
 static Object *app, *window, *saveBtn, *openBtn, *useBtn, *undoBtn, *resetBtn, *cancelBtn;
 static Object *failCM, *cliCM, *pathCM, *devCM, *ignoreCM;
