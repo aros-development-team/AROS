@@ -13,20 +13,20 @@ FONTFILESRU := $(foreach f, $(FONTSRU), $(foreach s, $(filter-out $(f)/CVS, $(wi
 DIRS        := $(FONTSDIR) $(addprefix $(FONTSDIR)/,$(FONTS))
 DIRSRU      := $(FONTSDIRRU) $(addprefix $(FONTSDIRRU)/,$(FONTSRU))
 
-#MM workbench-fonts : workbench-fonts-setup
+#MM workbench-fonts : workbench-fonts-setup workbench-fontsRU
 workbench-fonts: $(FONTFILES)
 
 #MM
 workbench-fonts-quick: $(FONTFILES)
 
 $(FONTSDIR)/% : %
-	@$(CP) $< $@
+    @$(CP) $< $@
 
 #MM
 workbench-fonts-setup : $(DIRS)
 
 $(DIRS):
-	@$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
+    @$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
 
 #MM workbench-fontsRU : workbench-fonts-setupRU
 workbench-fontsRU: $(FONTFILESRU)
@@ -35,10 +35,10 @@ workbench-fontsRU: $(FONTFILESRU)
 workbench-fonts-quickRU: $(FONTFILESRU)
 
 $(FONTSDIRRU)/% : %
-	@$(CP) $< $@
+    @$(CP) $< $@
 
 #MM
 workbench-fonts-setupRU : $(DIRSRU)
 
 $(DIRSRU):
-	@$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
+    @$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
