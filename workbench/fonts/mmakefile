@@ -20,13 +20,13 @@ workbench-fonts: $(FONTFILES)
 workbench-fonts-quick: $(FONTFILES)
 
 $(FONTSDIR)/% : %
-    @$(CP) $< $@
+	@$(CP) $< $@
 
 #MM
 workbench-fonts-setup : $(DIRS)
 
 $(DIRS):
-    @$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
+	@$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
 
 #MM workbench-fontsRU : workbench-fonts-setupRU
 workbench-fontsRU: $(FONTFILESRU)
@@ -35,10 +35,10 @@ workbench-fontsRU: $(FONTFILESRU)
 workbench-fonts-quickRU: $(FONTFILESRU)
 
 $(FONTSDIRRU)/% : %
-    @$(CP) $< $@
+	@$(CP) $< $@
 
 #MM
 workbench-fonts-setupRU : $(DIRSRU)
 
 $(DIRSRU):
-    @$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
+	@$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
