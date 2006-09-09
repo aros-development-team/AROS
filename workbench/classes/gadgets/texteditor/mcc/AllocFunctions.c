@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: AllocFunctions.c,v 1.5 2005/08/08 15:02:31 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

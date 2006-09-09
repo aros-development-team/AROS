@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: ObjectCreator.c,v 1.6 2005/12/09 13:20:07 gnikl Exp $
+ $Id$
 
 ***************************************************************************/
 

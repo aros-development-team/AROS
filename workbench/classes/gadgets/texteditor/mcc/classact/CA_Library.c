@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: CA_Library.c,v 1.1 2005/03/28 11:29:49 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

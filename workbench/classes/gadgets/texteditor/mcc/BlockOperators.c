@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: BlockOperators.c,v 1.13 2005/08/06 20:07:48 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

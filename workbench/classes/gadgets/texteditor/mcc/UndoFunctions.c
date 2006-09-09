@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: UndoFunctions.c,v 1.6 2005/06/04 11:55:00 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

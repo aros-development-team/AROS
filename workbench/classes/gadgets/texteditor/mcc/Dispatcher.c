@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Dispatcher.c,v 1.19 2005/08/16 21:20:34 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

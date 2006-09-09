@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: debugdriver.c 12675 2001-11-10 23:23:05Z chodorowski $
+    $Id$
 
     Desc: 
     Lang: English

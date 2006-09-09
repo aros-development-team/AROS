@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: pc105_pl.c 18954 2006-02-02 17:21:31Z Camelek.AmigaRulez@wp.pl ( AROS Polska Team ) $
+    $Id$
 
     Desc: Polish PC105 Keymap
     Lang: English

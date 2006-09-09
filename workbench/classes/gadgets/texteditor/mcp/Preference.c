@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Preference.c,v 1.3 2005/04/07 23:47:47 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: AllocBitMap.c,v 1.5 2005/06/24 12:47:14 gnikl Exp $
+ $Id$
 
 ***************************************************************************/
 

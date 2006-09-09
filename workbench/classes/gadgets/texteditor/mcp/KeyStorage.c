@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: KeyStorage.c,v 1.5 2005/12/06 23:42:35 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

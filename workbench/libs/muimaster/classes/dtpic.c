@@ -1,6 +1,6 @@
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
-    $Id: imageadjust.c 23035 2005-02-27 02:00:13Z sebauer $
+    $Id$
 */
 
 /* Dtpic.mui. Source based on the one from MUIUndoc */

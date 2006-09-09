@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: CaseConversion.c,v 1.3 2005/05/14 00:27:14 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: clock.c 20066 2003-11-08 21:43:55Z stegerg $
+    $Id$
 */
 
 #define MUIMASTER_YES_INLINE_STDARG

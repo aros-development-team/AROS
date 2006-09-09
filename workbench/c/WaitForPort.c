@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2004, The AROS Development Team. All rights reserved.
-    $Id: WaitForPort.c 21259 2004-03-17 02:42:23Z NicJA $
+    $Id$
     
     Desc: Waits upto 10 seconds for a user specified Port to become available
     Lang: English

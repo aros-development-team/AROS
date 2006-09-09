@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: tap_stubs.c 12692 2001-11-14 21:02:01Z chodorowski $
+    $Id$
 
     Desc: Stubs for Tap and TapUnit class
     Lang: english

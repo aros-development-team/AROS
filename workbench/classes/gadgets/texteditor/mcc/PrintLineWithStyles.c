@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: PrintLineWithStyles.c,v 1.12 2005/08/07 14:17:17 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Keybindings.c,v 1.2 2005/06/04 11:57:46 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

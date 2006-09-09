@@ -16,7 +16,7 @@
 
  BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
 
- $Id: TextFunctions.c,v 1.3 2005/05/18 23:22:28 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

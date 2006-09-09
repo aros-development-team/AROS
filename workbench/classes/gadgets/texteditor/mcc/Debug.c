@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Debug.c,v 1.6 2005/08/16 21:21:01 damato Exp $
+ $Id$
 
 ***************************************************************************/
 
