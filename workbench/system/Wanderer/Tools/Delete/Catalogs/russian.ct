@@ -1,0 +1,42 @@
+## version $VER: delete.catalog 1.0 (12.09.2006)
+## language russian
+## codeset 0
+;
+;
+;
+MSG_TITLE
+Удалить
+;
+MSG_DELETE_REQUEST
+Удалить ?
+;
+MSG_DELETE_CHOICE
+_Удалить|О_тмена
+;
+MSG_REQUEST
+Вы уверены, что надо удалить '%s' ?
+;
+MSG_ERROR
+Ошибка
+;
+MSG_OK
+OK
+;
+MSG_COULDNT_DELETE
+Не могу удалить файл.
+;
+MSG_COULDNT_ALLOCATE
+Не могу выделить память.
+;
+MSG_COULDNT_LOCK
+Не могу занять файл для удаления.
+;
+MSG_INFO
+Информация
+;
+MSG_WRONG_ARGS
+Ошибка: Маловато аргументов
+;
+MSG_WB_ONLY
+Ошибка: Должно запускаться из Wanderer !\n
+;

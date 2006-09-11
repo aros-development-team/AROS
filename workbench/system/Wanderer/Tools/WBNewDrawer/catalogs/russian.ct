@@ -1,0 +1,64 @@
+## version $VER: wbnewdrawer.catalog 1.1 (12.9.2006)
+## language russian
+## codeset 0
+;
+;
+;
+MSG_TITLE
+WBНовДиректория
+;WBNewDrawer
+;
+MSG_DESCRIPTION
+Создаёт новую директорию
+;
+MSG_COPYRIGHT
+c2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Создать новую папку
+;
+MSG_LINE
+Введите имя будущей папки
+;
+MSG_NAME
+Имя новой папки :
+;
+MSG_ICON
+Иконка :
+;
+MSG_OK
+_ОK
+;
+MSG_CANCEL
+От_мена
+;
+MSG_BASENAME
+Назови_Меня
+;
+MSG_ERROR_TITLE
+WBNewDrawer: Ошибка
+;
+;
+MSG_ALREADY_EXIST
+'%s' уже существует !
+;
+MSG_CANT_CREATE
+Не могу создать '%s' !
+;
+MSG_INFO_ALREADY
+Иконка '%s'.info уже существует !
+;
+MSG_NEEDS_MORE_ARGS
+Требует 2 аргумента !
+;
+MSG_INVALID_LOCK
+Ошибка занятие директории !
+;
+MSG_WB_ONLY
+Не может быть запущено из shell !\n
+;
+MSG_FAILED_CREATE_APP
+Не могу создать Приложение !
+;
+MSG_WRONG_ICON_TYPE (//)
+Существующий файл иконки '%s'.info не имеет тип Drawer!

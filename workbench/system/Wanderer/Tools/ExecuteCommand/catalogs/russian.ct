@@ -1,0 +1,53 @@
+## version $VER: executecommand.catalog 1.2 (12.09.2006)
+## language russian
+## codeset 0
+;
+;
+MSG_TITLE
+Выполнить
+; Execute
+;
+MSG_DESCRIPTION
+Выполнить команду
+; Execute Command
+;
+MSG_LABEL_COMMANDLINE
+Команда и опции:
+; Command and arguments:
+;
+MSG_BUTTON_EXECUTE
+В_ыполнить
+; _Execute
+;
+MSG_BUTTON_CANCEL
+_Отмена
+; _Cancel
+;
+MSG_CONSOLE_TITLE
+Вывод команды
+; Command Output
+;
+MSG_ERROR_HEADER
+ОШИБКА
+; ERROR
+;
+MSG_ERROR_OK
+*OK
+; *OK
+;
+MSG_ERROR_LOCALE
+Не могу инициализировать локаль.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+Не могу инициализировать специальные (custom) классы.
+; Can't initialize custom classes.
+;
+MSG_ERROR_OPEN_CONSOLE
+Не могу открыть консоль.
+; Can't open console window.
+;
+MSG_ERROR_EXECUTE
+Не могу выполнить команду.
+; Can't execute command.
+;

@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 
 FONTSDIRRU  := $(BINDIR)/Fonts/Russian
 
-FONTSRU     := XEN XHelvetica topaz SWScrFont Scala ALTFont
+FONTSRU     := XEN XHelvetica topaz SWScrFont Scala
 FONTFILESRU := $(foreach f, $(FONTSRU), $(foreach s, $(filter-out $(f)/CVS, $(wildcard $(f)/*)), $(FONTSDIRRU)/$(s)))
 
 DIRSRU      := $(FONTSDIRRU) $(addprefix $(FONTSDIRRU)/,$(FONTSRU))
@@ -16,10 +16,10 @@ workbench-fontsRU: $(FONTFILESRU)
 workbench-fonts-quickRU: $(FONTFILESRU)
 
 $(FONTSDIRRU)/% : %
-	@$(CP) $< $@
+    @$(CP) $< $@
 
 #MM
 workbench-fonts-setupRU : $(DIRSRU)
 
 $(DIRSRU):
-	@$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
+    @$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi

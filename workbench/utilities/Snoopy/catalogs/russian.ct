@@ -124,7 +124,7 @@ MSG_ASK_RESET
 ; Do you really want to reset the patches to their original functions?
 ;
 MSG_REMOVE_SNOOP
-Удалить|Оставить
+Остановить|Назад
 ; Remove|Keep
 ;
 MSG_ASK_REMOVE
