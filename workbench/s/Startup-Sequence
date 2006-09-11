@@ -17,6 +17,7 @@ Assign KEYMAPS: DEVS:Keymaps
 Assign LOCALE:  SYS:Locale
 Assign LIBS:    SYS:Classes ADD
 Assign FONTS:   SYS:Fonts
+Assign >NIL: Fonts: SYS:Fonts/Russian ADD
 Assign HELP:    LOCALE:Help DEFER
 Assign THEMES:  SYS:System/Themes
 Assign THEME:   THEMES:Mason
