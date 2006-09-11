@@ -1,0 +1,138 @@
+## version $VER: info.catalog 1.1 (12.9.2006)
+## language russian
+## codeset 0
+;
+;
+MSG_TITLE
+Информация
+;
+MSG_DESCRIPTION
+Информация о иконках
+;
+MSG_COPYRIGHT
+Информация о иконках\ncAROS Dev Team
+;
+MSG_ICON
+Иконка
+;
+MSG_NAME
+Имя
+;
+MSG_COMMENT
+Комментарий
+;
+MSG_STACK
+Стэк
+;
+MSG_DEFTOOL
+Приложение
+;
+MSG_ICONTYPE
+Тип иконки
+;
+MSG_DISK
+Диск
+;
+MSG_DRAWER
+Директория
+;
+MSG_TOOL
+Приложение
+;
+MSG_PROJECT
+Проект
+;
+MSG_GARBAGE
+Корзина
+;
+MSG_DEVICE
+Устройство
+;
+MSG_KICK
+Kick
+;
+MSG_APPICON
+AppIcon
+;
+MSG_INFORMATION
+Информация
+;
+MSG_PROTECTION
+Защита
+;
+MSG_TOOLTYPES
+Tooltypes
+;
+MSG_ERROR_SHELLSTART
+Ошибка : не может быть запущено из shell
+;
+MSG_ABOUT
+О программе...
+;
+MSG_QUIT
+Выход
+;
+MSG_READ
+Чтение
+;
+MSG_WRITE
+Запись
+;
+MSG_EXECUTE
+Выполнение
+;
+MSG_DELETE
+Удаление
+;
+MSG_SCRIPT
+Скрипт
+;
+MSG_PURE
+Чистый
+;
+MSG_ARCHIVED
+Архивный
+;
+MSG_STICKY
+Прикрепленный
+;
+MSG_SIZE
+Размер
+;
+MSG_VERSION
+Версия
+;
+MSG_OWNERID
+ID владельца
+;
+MSG_GROUPID
+ID группы
+;
+MSG_OWNERNAME
+Имя владельца
+;
+MSG_GROUPNAME
+Имя группы
+;
+MSG_TYPE
+Тип
+;
+MSG_DATE
+Дата
+;
+MSG_NEW_KEY
+Новая клавиша
+;
+MSG_DELETE_KEY
+Удалить клавишу
+;
+MSG_SAVE
+_Сохранить
+;
+MSG_CANCEL
+_Отменить
+;
+MSG_OK
+Ok
+;
+

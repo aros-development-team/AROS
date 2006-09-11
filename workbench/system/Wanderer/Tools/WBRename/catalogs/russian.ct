@@ -1,0 +1,69 @@
+## version $VER: deutsch.catalog 0.1 (12.09.2006)
+## language russian
+## codeset 0
+;
+;
+MSG_TITLE
+WBRename
+; WBRename
+;
+MSG_DESCRIPTION
+Переименовывает файлы и директории
+; Renames files and drawers
+;
+MSG_COPYRIGHT
+c2006, AROS Dev Team
+; й2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Переименование
+; Rename
+;
+MSG_LINE
+Введите новое имя
+; Enter a new name
+;
+MSG_NAME
+Новое имя:
+; New name:
+;
+MSG_OK
+_OK
+; _OK
+;
+MSG_CANCEL
+О_тмена
+; Ca_ncel
+;
+MSG_ERROR_TITLE
+WBRename: Ошибка
+; WBRename: Error
+;
+MSG_ALREADY_EXIST
+'%s' уже существует!
+; '%s' already exists!
+;
+MSG_FAILED
+Переименование '%s' завершилось\nс ошибкой '%ld' !
+; Rename of '%s' failed with error '%ld'!
+;
+MSG_ILLEGAL_CHARS
+'%s' содержит недопустимые символы!
+; '%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS
+Нужно как минимум 2 аргумента!
+; Need 2 arguments!
+;
+MSG_INVALID_LOCK
+Ошибка занятия директории!
+; Invalid directory lock!
+;
+MSG_WB_ONLY
+Не может быть запущено из shell !\n
+; Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+Ошибка создания приложения!
+; Failed to create Application!
+;
