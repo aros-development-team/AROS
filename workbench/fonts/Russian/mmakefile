@@ -16,10 +16,10 @@ workbench-fontsRU: $(FONTFILESRU)
 workbench-fonts-quickRU: $(FONTFILESRU)
 
 $(FONTSDIRRU)/% : %
-    @$(CP) $< $@
+	@$(CP) $< $@
 
 #MM
 workbench-fonts-setupRU : $(DIRSRU)
 
 $(DIRSRU):
-    @$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
+	@$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi
