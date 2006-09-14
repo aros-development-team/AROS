@@ -5,7 +5,6 @@
 
     $Id$
 */
-
 #ifndef __ZUNE_PREFS_H__
 #define __ZUNE_PREFS_H__
 
@@ -40,6 +39,7 @@ typedef enum GroupTitleColor {
 
 typedef enum WindowPosition {
     WINDOW_POSITION_FORGET_ON_EXIT,
+    WINDOW_POSITION_REMEMBER_ON_EXIT,
     WINDOW_POSITION_SAVE_ON_EXIT,
 } WindowPosition;
 
@@ -176,6 +176,11 @@ struct ZunePrefsNew
     /* Scrollbars */
     ScrollbarType        scrollbar_type;
     ScrollbarArrangement scrollbar_arrangement;
+    ULONG    screenmode;
+    ULONG    screenmodeid;
+    UWORD    screen_width;
+    UWORD    screen_height;
+    ULONG    screenaddress;
 };
 
 #endif
