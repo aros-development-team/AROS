@@ -5,7 +5,6 @@
 
     $Id$
 */
-
 #include <exec/types.h>
 #include <exec/memory.h>
 
@@ -154,6 +153,9 @@ struct MUI_WindowData
 #define BUBBLEHELP_TICKER_FIRST 10
 #define BUBBLEHELP_TICKER_LATER 3
 
+ULONG screenmode;
+
+
 struct __dummyXFC3__
 {
 	struct MUI_NotifyData mnd;
@@ -212,6 +214,27 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     Object *temp_obj;
     ULONG val;
     int i;
+    screenmode=muiGlobalInfo(obj)->mgi_Prefs->screenmodeid;
+
+    if (screenmode != -1)
+    {
+	if (muiGlobalInfo(obj)->mgi_Prefs->screenaddress)
+	    data->wd_UserScreen=muiGlobalInfo(obj)->mgi_Prefs->screenaddress; 
+	else             
+	    data->wd_UserScreen = OpenScreenTags (
+		    0, 
+		    // SA_Width, 1280,
+		    // SA_Height, 1024,
+		    // SA_Depth, 24,
+		    SA_DisplayID,screenmode,
+		    SA_SharePens, TRUE,
+		    SA_FullPalette, TRUE,
+		    SA_LikeWorkbench,TRUE,
+		    TAG_DONE
+		    );
+	muiGlobalInfo(obj)->mgi_Prefs->screenaddress=data->wd_UserScreen; // so screen is open only once          
+    }
+
 
     if (data->wd_UserScreen)
     {
@@ -362,14 +385,14 @@ static void CleanupRenderInfo(struct MUI_WindowData *data, struct MUI_RenderInfo
     if (mri->mri_DownImage) {DisposeObject(mri->mri_DownImage);mri->mri_DownImage=NULL;};
     if (mri->mri_SizeImage) {DisposeObject(mri->mri_SizeImage);mri->mri_SizeImage=NULL;};
 
-/*      bug("CleanupRenderInfo\n"); */
+    /*      bug("CleanupRenderInfo\n"); */
     for (i = 0; i < -MUIV_Font_NegCount; i++)
     {
 	if (mri->mri_Fonts[i])
 	{
-/*  	    bug("CleanupRenderInfo: closing font %p (%s/%d)\n", */
-/*  		mri->mri_Fonts[i], mri->mri_Fonts[i]->tf_Message.mn_Node.ln_Name, */
-/*  		mri->mri_Fonts[i]->tf_YSize); */
+	    /*  	    bug("CleanupRenderInfo: closing font %p (%s/%d)\n", */
+	    /*  		mri->mri_Fonts[i], mri->mri_Fonts[i]->tf_Message.mn_Node.ln_Name, */
+	    /*  		mri->mri_Fonts[i]->tf_YSize); */
 	    CloseFont(mri->mri_Fonts[i]);
 	    mri->mri_Fonts[i] = NULL;
 	}
@@ -380,9 +403,15 @@ static void CleanupRenderInfo(struct MUI_WindowData *data, struct MUI_RenderInfo
     FreeScreenDrawInfo(mri->mri_Screen, mri->mri_DrawInfo);
     mri->mri_DrawInfo = NULL;
 
+    if (data->wd_UserScreen)
+    {
+	CloseScreen(mri->mri_Screen);
+    }    
+
+
     if (data->wd_Flags & MUIWF_SCREENLOCKED)
     {
-    	UnlockPubScreen(NULL, mri->mri_Screen);
+	UnlockPubScreen(NULL, mri->mri_Screen);
 	data->wd_Flags &= ~MUIWF_SCREENLOCKED;
     }
     mri->mri_Screen = NULL;
@@ -500,7 +529,8 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
      * the total size.
      */
     altdims.Width += data->wd_RenderInfo.mri_Screen->WBorLeft + data->wd_RenderInfo.mri_Screen->WBorRight;
-    altdims.Height += data->wd_RenderInfo.mri_Screen->WBorTop + data->wd_RenderInfo.mri_Screen->WBorBottom + data->wd_RenderInfo.mri_DrawInfo->dri_Font->tf_YSize + 1;
+    altdims.Height += data->wd_RenderInfo.mri_Screen->WBorTop + data->wd_RenderInfo.mri_Screen->WBorBottom + 
+	data->wd_RenderInfo.mri_DrawInfo->dri_Font->tf_YSize + 1;
     
     if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
 	backfill = WA_BackFill;
@@ -509,7 +539,24 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 
     if (muiGlobalInfo(obj)->mgi_Prefs->window_refresh == WINDOW_REFRESH_SMART)
     	flags &= ~WFLG_SIMPLE_REFRESH;
-	
+	    set(_app(obj),MUIA_Application_SearchWinId,data->wd_ID);
+    struct windowpos  *winp=0;
+    get(_app(obj),MUIA_Application_GetWinPos,&winp);
+    if (winp)
+    {
+	if (data->wd_RenderInfo.mri_ScreenWidth > (data->wd_X + data->wd_Width))     
+	{
+	    data->wd_X=winp->x1;
+	    data->wd_Width=winp->w1;
+	}
+	if (data->wd_RenderInfo.mri_ScreenHeight > (data->wd_Y + data->wd_Height))     
+	{ 
+	    data->wd_Y=winp->y1;
+	    data->wd_Height=winp->h1;
+	}  
+
+    }                                        
+
     win = OpenWindowTags
     (
         NULL,
@@ -564,6 +611,8 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         data->wd_RenderInfo.mri_Window = win;
         data->wd_RenderInfo.mri_VertProp = data->wd_VertProp;
         data->wd_RenderInfo.mri_HorizProp = data->wd_HorizProp;
+        SetDrMd(win->RPort,JAM1); //text is draw wrong in toolbarclass if not set
+
 	if (menu)
 	{
 	    data->wd_Menu = menu;
@@ -588,64 +637,65 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
+    DoMethod(obj,MUIM_Window_Snapshot,0);
 
     data->wd_RenderInfo.mri_Window = NULL;
     data->wd_RenderInfo.mri_VertProp = NULL;
     data->wd_RenderInfo.mri_HorizProp = NULL;
 
     data->wd_Flags &= ~MUIWF_ACTIVE;
-    
+
     if (win != NULL)
     {
-        /* store position and size */
-        data->wd_X      = win->LeftEdge;
-        data->wd_Y      = win->TopEdge;
-        data->wd_Width  = win->GZZWidth;
-        data->wd_Height = win->GZZHeight;
+	/* store position and size */
+	data->wd_X      = win->LeftEdge;
+	data->wd_Y      = win->TopEdge;
+	data->wd_Width  = win->GZZWidth;
+	data->wd_Height = win->GZZHeight;
 
-        ClearMenuStrip(win);
-        if (data->wd_Menu)
-        {
-            FreeMenus(data->wd_Menu);
+	ClearMenuStrip(win);
+	if (data->wd_Menu)
+	{
+	    FreeMenus(data->wd_Menu);
 	    data->wd_Menu = NULL;
-        }
+	}
 
-        if (win->UserPort)
-        {
-            struct IntuiMessage *msg, *succ;
+	if (win->UserPort)
+	{
+	    struct IntuiMessage *msg, *succ;
 
-            /* remove all messages pending for this window */
-            Forbid();
-            for
-            (
-                msg  = (struct IntuiMessage *)win->UserPort->mp_MsgList.lh_Head;
-                (succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ);
-                msg  = succ
-            )
-            {
-                if (msg->IDCMPWindow == win)
-                {
-                    Remove((struct Node *)msg);
-                    ReplyMsg((struct Message *)msg);
-                }
-            }
-            win->UserPort = NULL;
-            ModifyIDCMP(win, 0);
-            Permit();
-        }
+	    /* remove all messages pending for this window */
+	    Forbid();
+	    for
+		(
+		 msg  = (struct IntuiMessage *)win->UserPort->mp_MsgList.lh_Head;
+		 (succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ);
+		 msg  = succ
+		)
+		{
+		    if (msg->IDCMPWindow == win)
+		    {
+			Remove((struct Node *)msg);
+			ReplyMsg((struct Message *)msg);
+		    }
+		}
+	    win->UserPort = NULL;
+	    ModifyIDCMP(win, 0);
+	    Permit();
+	}
 
-/*  	D(bug("before CloseWindow\n")); */
-        CloseWindow(win);
-/*  	D(bug("after CloseWindow\n")); */
+	/*  	D(bug("before CloseWindow\n")); */
+	CloseWindow(win);
+	/*  	D(bug("after CloseWindow\n")); */
     }
 
 #define DISPOSEGADGET(x) \
-	if (x)\
-	{\
-	    DoMethod(obj, MUIM_Window_FreeGadgetID, ((struct Gadget*)x)->GadgetID);\
-	    DisposeObject(x);\
-	    x = NULL;\
-	}
+    if (x)\
+    {\
+	DoMethod(obj, MUIM_Window_FreeGadgetID, ((struct Gadget*)x)->GadgetID);\
+	DisposeObject(x);\
+	x = NULL;\
+    }
 
     DISPOSEGADGET(data->wd_VertProp);
     DISPOSEGADGET(data->wd_UpButton);
@@ -1088,6 +1138,7 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
 
     if (get(obj, MUIA_Group_ChildList, (IPTR *)&(ChildList)) && (ChildList != 0))
     {
+		      
         cstate = (Object *)ChildList->mlh_Head;
         while ((child = NextObject(&cstate)))
         {
@@ -1117,6 +1168,18 @@ static void ActivateObject (struct MUI_WindowData *data)
 //	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
 //    else
 //	data->wd_ActiveObject = NULL;
+	//activate better string gadgets.Fix from Georg S On ML List
+    if (FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject))
+	{
+	   if (!(data->wd_Flags & MUIWF_OBJECTGOACTIVESENT))
+	   {
+		data->wd_Flags |= MUIWF_OBJECTGOACTIVESENT;
+                                          DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+}
+}
+    else
+	data->wd_ActiveObject = NULL;
+
 }
 
 /**************/
@@ -1334,15 +1397,15 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 	    {
 		int hborders = iWin->BorderLeft + iWin->BorderRight;
 		int vborders = iWin->BorderTop  + iWin->BorderBottom;
-		
+
 		/* set window limits according to window contents */
 		WindowLimits (
-		    iWin,
-		    data->wd_MinMax.MinWidth  + hborders,
-		    data->wd_MinMax.MinHeight + vborders,
-		    data->wd_MinMax.MaxWidth  + hborders,
-		    data->wd_MinMax.MaxHeight + vborders
-		    );
+			iWin,
+			data->wd_MinMax.MinWidth  + hborders,
+			data->wd_MinMax.MinHeight + vborders,
+			data->wd_MinMax.MaxWidth  + hborders,
+			data->wd_MinMax.MaxHeight + vborders
+			);
 	    }
 
 	    if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
@@ -1367,15 +1430,15 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 			left = data->wd_RenderInfo.mri_Window->BorderLeft;
 			top = data->wd_RenderInfo.mri_Window->BorderTop,
 			    width = data->wd_RenderInfo.mri_Window->Width
-			    - data->wd_RenderInfo.mri_Window->BorderRight - left;
+				- data->wd_RenderInfo.mri_Window->BorderRight - left;
 			height = data->wd_RenderInfo.mri_Window->Height
 			    - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-//		    D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
-//			  __LINE__, data->wd_Background, left, top, width,
-//			  height, left, top));
+			//		    D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+			//			  __LINE__, data->wd_Background, left, top, width,
+			//			  height, left, top));
 			zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
-					 left, top, width, height, left, top, 0);
+				left, top, width, height, left, top, 0);
 		    }
 		    if (muiGlobalInfo(oWin)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
 			MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
@@ -1417,11 +1480,11 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 
 		    if(data->wd_Flags & MUIWF_ERASEAREA)
 		    {
-//			D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
-//			      __LINE__, data->wd_Background, left, top, width,
-//			      height, left, top));
+			//			D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+			//			      __LINE__, data->wd_Background, left, top, width,
+			//			      height, left, top));
 			zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
-					 left, top, width, height, left, top, 0);
+				left, top, width, height, left, top, 0);
 		    }
 		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 		}
@@ -1493,67 +1556,67 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 		    /* If there's a propclass object connected to the prop
 		       gadget, the prop gadget's userdata will point to
 		       that propclass object. See classes/prop.c */
-		       
+
 		    if (data->wd_VertProp)
 		    {
 			if (tag->ti_Data == GADGETID(data->wd_VertProp))
 			    ;
-			
+
 			if (tag->ti_Data == GADGETID(data->wd_UpButton))
 			{
 			    Object *prop = (Object *)((struct Gadget *)data->wd_VertProp)->UserData;
 			    is_handled = TRUE;
 			    if (prop) DoMethod(prop, MUIM_Prop_Decrease, 1);
 			}			
-			
+
 			if (tag->ti_Data == GADGETID(data->wd_DownButton))
 			{
 			    Object *prop = (Object *)((struct Gadget *)data->wd_VertProp)->UserData;
 			    is_handled = TRUE;
 			    if (prop) DoMethod(prop, MUIM_Prop_Increase, 1);
 			}
-			
+
 		    }
 
 		    if (data->wd_HorizProp)
 		    {
 			if (tag->ti_Data == GADGETID(data->wd_HorizProp))
 			    ;
-			
+
 			if (tag->ti_Data == GADGETID(data->wd_LeftButton))
 			{
 			    Object *prop = (Object *)((struct Gadget *)data->wd_HorizProp)->UserData;
 			    is_handled = TRUE;
 			    if (prop) DoMethod(prop, MUIM_Prop_Decrease, 1);
 			}
-			
+
 			if (tag->ti_Data == GADGETID(data->wd_RightButton))
 			{
 			    Object *prop = (Object *)((struct Gadget *)data->wd_HorizProp)->UserData;
 			    is_handled = TRUE;
 			    if (prop) DoMethod(prop, MUIM_Prop_Increase, 1);
 			}
-			
+
 		    }
 		}
 	    }
 	    break;
-	    
+
 	case IDCMP_INTUITICKS:
 	    if (data->wd_HelpTicker)
 	    {
-	    	data->wd_HelpTicker--;
-		
+		data->wd_HelpTicker--;
+
 		if (data->wd_HelpTicker == 0)
 		{
-	    	    Object *underobj = ObjectUnderPointer(data, data->wd_RootObject, imsg->MouseX, imsg->MouseY,
-		    	    	    	    		  ShortHelpUnderPointerCheck);
+		    Object *underobj = ObjectUnderPointer(data, data->wd_RootObject, imsg->MouseX, imsg->MouseY,
+			    ShortHelpUnderPointerCheck);
 
-	    	    if (underobj != data->wd_HelpObject)
+		    if (underobj != data->wd_HelpObject)
 		    {
 			if (data->wd_HelpObject)
 			{
-		    	    DoMethod(data->wd_HelpObject, MUIM_DeleteBubble, (IPTR)data->wd_HelpBubble);
+			    DoMethod(data->wd_HelpObject, MUIM_DeleteBubble, (IPTR)data->wd_HelpBubble);
 
 			    data->wd_HelpObject = NULL;
 			    data->wd_HelpBubble = NULL;
@@ -1562,43 +1625,44 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 			if (underobj)
 			{
 			    data->wd_HelpBubble = (APTR)DoMethod(underobj, MUIM_CreateBubble,
-			    	    	    	    		 imsg->MouseX, imsg->MouseY,
-			    	    	    	    		 0, 0);
+				    imsg->MouseX, imsg->MouseY,
+				    0, 0);
 			    if (data->wd_HelpBubble)
 			    {
-		    		data->wd_HelpObject = underobj;
+				data->wd_HelpObject = underobj;
 				data->wd_Flags |= MUIWF_BUBBLEMODE;
 			    }
 			}
 		    }
-		    
+
 		    if (data->wd_Flags & MUIWF_BUBBLEMODE)
 		    {
-		    	data->wd_HelpTicker = BUBBLEHELP_TICKER_LATER;
+			data->wd_HelpTicker = BUBBLEHELP_TICKER_LATER;
 		    }
 		    else
 		    {
-		    	data->wd_HelpTicker = BUBBLEHELP_TICKER_FIRST;
+			data->wd_HelpTicker = BUBBLEHELP_TICKER_FIRST;
 		    }
-		
+
 		} /* if (data->wd_HelpTicker == 0) */
-		
+
 	    } /* if (data->wd_HelpTicker) */
-	    
+
 	    is_handled = FALSE; /* forwardable to area event handlers */
 	    break;
 
-    	case IDCMP_MOUSEBUTTONS:
+	case IDCMP_MOUSEBUTTONS:
+	    DoMethod(oWin,MUIM_Window_Snapshot,0);
 	    KillHelpBubble(data, oWin, TRUE);
-    	    is_handled = FALSE;
-    	    break;
+	    is_handled = FALSE;
+	    break;
 
 
 	case IDCMP_MOUSEMOVE:
 	    KillHelpBubble(data, oWin, FALSE);
-    	    is_handled = FALSE;
-    	    break;
-	    
+	    is_handled = FALSE;
+	    break;
+
 	default:
 	    is_handled = FALSE;
 	    break;
@@ -2598,8 +2662,8 @@ IPTR Window__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     if (data->wd_ChildMenustrip)
     	MUI_DisposeObject(data->wd_ChildMenustrip);
 	
-    FreeVec(data->wd_Title);
-    FreeVec(data->wd_ScreenTitle);
+    if (data->wd_Title)      FreeVec(data->wd_Title);
+    if (data->wd_ScreenTitle)FreeVec(data->wd_ScreenTitle);
 
     DeletePool(data->wd_MemoryPool);
 
@@ -2711,14 +2775,14 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_Window_Title:
-		FreeVec(data->wd_Title);
+		if (data->wd_Title) FreeVec(data->wd_Title);
 		data->wd_Title = StrDup((STRPTR)tag->ti_Data);
 		if (data->wd_RenderInfo.mri_Window)
 		    SetWindowTitles(data->wd_RenderInfo.mri_Window,data->wd_Title, (CONST_STRPTR)~0);
 		break;
 
 	    case MUIA_Window_ScreenTitle:
-		FreeVec(data->wd_ScreenTitle);
+		if (data->wd_ScreenTitle) FreeVec(data->wd_ScreenTitle);
 		data->wd_ScreenTitle = StrDup((STRPTR)tag->ti_Data);
 		if (data->wd_RenderInfo.mri_Window)
 		    SetWindowTitles(data->wd_RenderInfo.mri_Window,
@@ -3790,6 +3854,18 @@ static void ForgetWindowPosition(Object *winobj, ULONG id)
 IPTR Window__MUIM_Snapshot(struct IClass *cl, Object *obj, struct MUIP_Window_Snapshot *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
+    struct windowpos  winp;
+    struct Window *w;
+    winp.id = data->wd_ID; 
+    w=data->wd_RenderInfo.mri_Window;
+    if (w)
+    {
+	winp.x1 = w->LeftEdge; winp.y1 = w->TopEdge;
+	winp.w1 = w->GZZWidth; winp.h1 = w->GZZHeight;
+	winp.x2 =0; winp.x2=0; winp.w2=0; winp.h2=0;         //to do save alt dims
+
+	set(_app(obj),MUIA_Application_SetWinPos,&winp);
+    }
 
     if (msg->flags)
 	RememberWindowPosition(obj, data->wd_ID);

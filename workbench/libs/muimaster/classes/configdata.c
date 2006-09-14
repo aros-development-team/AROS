@@ -4,7 +4,6 @@
     
     $Id$
 */
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -210,6 +209,10 @@ const static struct def_ulval DefULValues[] =
     { MUICFG_Drag_LeftButton,         TRUE },
     { MUICFG_Drag_MiddleButton,       FALSE },
     { MUICFG_Register_TruncateTitles, FALSE },
+    { MUICFG_Screen_Mode,          0 },
+    { MUICFG_Screen_Mode_ID,       -1 },
+    { MUICFG_Screen_Width,         0 },
+    { MUICFG_Screen_Height,        0 },
     { 0, 0 },
 };
 
@@ -350,6 +353,13 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.window_position = GetConfigULong(obj, MUICFG_Window_Positions);
     data->prefs.window_redraw = GetConfigULong(obj, MUICFG_Window_Redraw);
     data->prefs.window_refresh = GetConfigULong(obj, MUICFG_Window_Refresh);
+    data->prefs.screenmode = GetConfigULong(obj, MUICFG_Screen_Mode);
+    data->prefs.screenmodeid = GetConfigULong(obj, MUICFG_Screen_Mode_ID);
+    data->prefs.screen_width = GetConfigULong(obj, MUICFG_Screen_Width);
+    data->prefs.screen_height = GetConfigULong(obj, MUICFG_Screen_Height);
+    data->prefs.screenaddress = 0;
+    
+
     
     /*---------- group stuff ----------*/
 
@@ -488,11 +498,42 @@ IPTR Configdata__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
     {
 	case 	MUIA_Configdata_ZunePrefs:
 		*store = (IPTR)&data->prefs;
+		DoMethod(obj, MUIM_Configdata_GetWindowPos,0);  
 		return 1;
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
+
+static IPTR Configdata_GetWindowPos(struct IClass *cl, Object * obj,
+				 struct MUIP_Configdata_GetString *msg)
+{
+    struct MUI_ConfigdataData *data;  
+    IPTR s;
+    data = INST_DATA(cl, obj); 
+    //kprintf ("getwindowpos\n");
+    s = (IPTR)DoMethod(obj, MUIM_Dataspace_Find,MUICFG_WindowPos);    
+    if (s)set(data->app,MUIA_Application_CopyWinPosToApp,s);
+    return s;
+}
+    
+static IPTR Configdata_SetWindowPos(struct IClass *cl, Object * obj,
+				 struct MUIP_Configdata_GetString *msg)
+{
+struct MUI_ConfigdataData *data;
+  //kprintf ("setwindowpos\n");   
+    data = INST_DATA(cl, obj);      
+IPTR addr;
+IPTR appobj;
+LONG size;   
+      
+    get(data->app,MUIA_Application_GetWinPosAddr, &addr);
+    get(data->app,MUIA_Application_GetWinPosSize, &size);
+    DoMethod(obj, MUIM_Dataspace_Add,addr,size,MUICFG_WindowPos);
+   
+    
+}
+
 
 
 /**************************************************************************
@@ -786,6 +827,7 @@ IPTR Configdata__MUIM_Save(struct IClass *cl, Object * obj,
 	    {
 		if (!PushChunk(iff, MAKE_ID('P','R','E','F'), ID_FORM, IFFSIZE_UNKNOWN))
 		{
+			Configdata_SetWindowPos(cl, obj, (APTR)msg);                
 		    if (SavePrefsHeader(iff))
 		    {
 		    	DoMethod(obj,MUIM_Dataspace_WriteIFF, (IPTR)iff, 0, MAKE_ID('M','U','I','C'));
@@ -874,6 +916,9 @@ BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 	case MUIM_Configdata_SetString:    return Configdata__MUIM_SetString(cl, obj, (APTR)msg);
 	case MUIM_Configdata_Save:         return Configdata__MUIM_Save(cl, obj, (APTR)msg);
 	case MUIM_Configdata_Load:         return Configdata__MUIM_Load(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetWindowPos: return Configdata_SetWindowPos(cl, obj, (APTR)msg);
+	case MUIM_Configdata_GetWindowPos: return Configdata_GetWindowPos(cl, obj, (APTR)msg);
+
     }
 
     return DoSuperMethodA(cl, obj, msg);

@@ -142,6 +142,14 @@
 #define MUICFG_String_MarkedText        0x402
 #define MUICFG_Register_TruncateTitles  0x403
 #define MUICFG_Window_Refresh	    	0x404
+#define MUICFG_Screen_Mode              0x505
+#define MUICFG_Screen_Mode_ID           0x506
+#define MUICFG_Screen_Width             0x507
+#define MUICFG_Screen_Height            0x508
+#define MUICFG_WindowPos                0x509
+#define MUIM_Configdata_GetWindowPos    (MUIB_Configdata | 0x0000002A)
+#define MUIM_Configdata_SetWindowPos    (MUIB_Configdata | 0x0000002B)
+
 
 /*** Methods ****************************************************************/
 #define MUIM_Configdata_GetString      (MUIB_Configdata | 0x00000000) /* Zune 20030319 */

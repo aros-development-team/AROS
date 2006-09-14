@@ -24,6 +24,7 @@
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
+#include "prefs.h"
 
 #include "muimaster_intern.h"
 #include "mui.h"
@@ -78,6 +79,10 @@ struct MUI_ApplicationData
     BYTE    	    	    app_BrokerPri;
     struct TrackingNode     app_TrackingNode;
     BOOL                    app_is_TNode_in_list;
+    ULONG searchwinid;
+    LONG winposused;       //dont add other vars before windowpos all is save together
+    struct windowpos        winpos[MAXWINS];
+
 };
 
 struct timerequest_ext
@@ -600,6 +605,23 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct RIDNode *rid;
     
+    long positionmode;
+    if (data->app_Base)
+    {
+	char filename[255];
+	positionmode=data->app_GlobalInfo.mgi_Prefs->window_position;
+	if (positionmode >= 1)
+	{
+	    snprintf(filename, 255, "ENV:zune/%s.prefs", data->app_Base);
+	    DoMethod(data->app_GlobalInfo.mgi_Configdata, MUIM_Configdata_Save, (IPTR)filename);
+	}
+	if (positionmode == 2)
+	{
+	    snprintf(filename, 255, "ENVARC:zune/%s.prefs", data->app_Base);
+	    DoMethod(data->app_GlobalInfo.mgi_Configdata, MUIM_Configdata_Save, (IPTR)filename);
+	}
+    }
+
     if (data->app_is_TNode_in_list)
     {
 	ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -685,8 +707,8 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->app_GlobalInfo.mgi_WindowsPort)
     	DeleteMsgPort(data->app_GlobalInfo.mgi_WindowsPort);
+	FreeVec(data->app_Base);
 
-    FreeVec(data->app_Base);
 
     /* free returnid stuff */
     
@@ -709,87 +731,129 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
     struct TagItem             *tag;
 
     /* There are many ways to find out what tag items provided by set()
-    ** we do know. The best way should be using NextTagItem() and simply
-    ** browsing through the list.
-    */
+     ** we do know. The best way should be using NextTagItem() and simply
+     ** browsing through the list.
+     */
     while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
+	IPTR *addr;
 	switch (tag->ti_Tag)
 	{
+
+	    case    MUIA_Application_SearchWinId:
+		data->searchwinid=tag->ti_Data;
+		break;
+	    case    MUIA_Application_CopyWinPosToApp:
+		addr=tag->ti_Data;
+		CopyMem(tag->ti_Data,&data->winposused,*(addr));
+		break;
+	    case    MUIA_Application_SetWinPos:
+		{
+		    struct windowpos  *winp;
+		    winp = tag->ti_Data;
+		    //kprintf("SetWinPos %d %d %d %d %d\n",winp->id,winp->x1,winp->y1,winp->w1,winp->h1);
+		    int i;
+		    for (i = 0 ; i < MAXWINS -1 ; i++)
+		    {
+			if (data->winpos[i].w1)
+			{
+			    if (winp->id == data->winpos[i].id) //existing entry is overwritten
+			    {
+				data->winpos[i].x1 = winp->x1;data->winpos[i].y1 = winp->y1;
+				data->winpos[i].w1 = winp->w1;data->winpos[i].h1 = winp->h1;
+				data->winpos[i].x2 = winp->x2;data->winpos[i].y2 = winp->y2;
+				data->winpos[i].w2 = winp->w2;data->winpos[i].h2 = winp->h2;
+				break;
+			    }
+			}
+			else
+			{             // a new entry is add
+			    data->winpos[i].id = winp->id;
+			    data->winpos[i].x1 = winp->x1;data->winpos[i].y1 = winp->y1;
+			    data->winpos[i].w1 = winp->w1;data->winpos[i].h1 = winp->h1;
+			    data->winpos[i].x2 = winp->x2;data->winpos[i].y2 = winp->y2;
+			    data->winpos[i].w2 = winp->w2;data->winpos[i].h2 = winp->h2;
+			    break;
+			}
+		    }
+		}
+		break;
+
+
 	    case    MUIA_Application_Configdata:
 		DoMethod(obj, MUIM_Application_PushMethod, (IPTR)obj, 2,
-			 MUIM_Application_SetConfigdata, tag->ti_Data);
+			MUIM_Application_SetConfigdata, tag->ti_Data);
 		break;
 
 	    case    MUIA_Application_HelpFile:
-		    data->app_HelpFile = (STRPTR)tag->ti_Data;
-		    break;
+		data->app_HelpFile = (STRPTR)tag->ti_Data;
+		break;
 
 	    case    MUIA_Application_Iconified:
-	            {
-		        BOOL do_iconify = tag->ti_Data == 1;
-	                if (data->app_Iconified != do_iconify)
-		        {
-		            data->app_Iconified = do_iconify;
-                         
-			    nnset(obj, MUIA_ShowMe, !data->app_Iconified);
-		            //FIXME "In case the WB is up, an appicon needs to be placed on the desktop"
-		        }
-		    }
-		    break;
-		    
-	    case    MUIA_ShowMe:  
+		{
+		    BOOL do_iconify = tag->ti_Data == 1;
+		    if (data->app_Iconified != do_iconify)
 		    {
-	                /* Ok ok, you think this stinks? Well, think of it as
-		           an attribute belonging to an interface which MUIC_Application,
-		           together with MUIC_Area and a few others implement. It makes
-		           sense now, yes?  */
-                        struct List *wlist;
-                        APTR         wstate;
-                        Object      *curwin;
-    
-                        get(obj, MUIA_Application_WindowList, &wlist);
-                     
-			if (wlist)
+			data->app_Iconified = do_iconify;
+
+			nnset(obj, MUIA_ShowMe, !data->app_Iconified);
+			//FIXME "In case the WB is up, an appicon needs to be placed on the desktop"
+		    }
+		}
+		break;
+
+	    case    MUIA_ShowMe:  
+		{
+		    /* Ok ok, you think this stinks? Well, think of it as
+		       an attribute belonging to an interface which MUIC_Application,
+		       together with MUIC_Area and a few others implement. It makes
+		       sense now, yes?  */
+		    struct List *wlist;
+		    APTR         wstate;
+		    Object      *curwin;
+
+		    get(obj, MUIA_Application_WindowList, &wlist);
+
+		    if (wlist)
+		    {
+			wstate = wlist->lh_Head;
+			while ((curwin = NextObject(&wstate)))
 			{
-                            wstate = wlist->lh_Head;
-                            while ((curwin = NextObject(&wstate)))
-                            {
-                                set(curwin, MUIA_ShowMe, tag->ti_Data);
-                            }
+			    set(curwin, MUIA_ShowMe, tag->ti_Data);
 			}
 		    }
-		    break;
+		}
+		break;
 
 	    case    MUIA_Application_Sleep:
-		    if (tag->ti_Data) data->app_SleepCount++;
-		    else data->app_SleepCount--;
-		    if (data->app_SleepCount < 0)
-			data->app_SleepCount = 0;
-		    else
-		    {
-			/*
-			 * todo SC == 0 (wakeup), SC == 1 (sleep)
-			 */
-		    }
-		    break;
+		if (tag->ti_Data) data->app_SleepCount++;
+		else data->app_SleepCount--;
+		if (data->app_SleepCount < 0)
+		    data->app_SleepCount = 0;
+		else
+		{
+		    /*
+		     * todo SC == 0 (wakeup), SC == 1 (sleep)
+		     */
+		}
+		break;
 
 	    case    MUIA_Application_MenuAction:
-		    data->app_MenuAction = tag->ti_Data;
-		    break;
-		    
+		data->app_MenuAction = tag->ti_Data;
+		break;
+
 	    case    MUIA_Application_BrokerHook:
-	    	    data->app_BrokerHook = (struct Hook *)tag->ti_Data;
-		    break;
-		    
+		data->app_BrokerHook = (struct Hook *)tag->ti_Data;
+		break;
+
 	    case    MUIA_Application_Active:
-	    	    data->app_Active = tag->ti_Data ? TRUE : FALSE;
-		    if (data->app_Broker)
-		    {
-		    	ActivateCxObj(data->app_Broker, data->app_Active);
-		    }
-		    break;
-		    
+		data->app_Active = tag->ti_Data ? TRUE : FALSE;
+		if (data->app_Broker)
+		{
+		    ActivateCxObj(data->app_Broker, data->app_Active);
+		}
+		break;
+
 	}
     }
 
@@ -808,6 +872,52 @@ static IPTR Application__OM_GET(struct IClass *cl, Object *obj, struct opGet *ms
 
     switch(msg->opg_AttrID)
     {
+	case   MUIA_Application_GetWinPosAddr:
+	    STORE=&data->winposused;       
+	    return TRUE;
+
+	case  MUIA_Application_GetWinPosSize:
+	    {
+		int i;
+		for (i=0 ; i < MAXWINS -1 ; i++)
+		{
+		    if (!data->winpos[i].w1 )
+		    {
+			i *= sizeof (struct windowpos);
+			i += sizeof (long);
+			data->winposused=i;
+			STORE=i;
+			return(TRUE);
+		    }
+		}
+		STORE=0;
+		return TRUE;
+	    }
+	case   MUIA_Application_GetWinPos:
+	    {
+		struct windowpos  *winp;
+		int i;
+		if (data->searchwinid)
+		{
+		    for (i=0 ; i < MAXWINS -1 ; i++)
+		    {
+			if (data->winpos[i].w1 )
+			{
+			    if (data->searchwinid == data->winpos[i].id)
+			    {
+				STORE=&data->winpos[i].id;
+				return 1;
+			    }
+			}
+			else
+			    break;
+		    }
+		}
+		STORE=0;
+		return 1;
+	    }
+	    return TRUE;
+
 	case MUIA_Version:
 	    STORE = __version;
 	    return TRUE;
@@ -1381,19 +1491,26 @@ static IPTR Application__MUIM_OpenConfigWindow(struct IClass *cl, Object *obj,
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct TagItem tags[] =
     {
-	{ SYS_Asynch	, TRUE },
+	{ SYS_Asynch	, FALSE },
 	{ SYS_Input 	, 0    },
 	{ SYS_Output	, 0    },
-	{ NP_StackSize	, 20000},
+	{ NP_StackSize	, AROS_STACKSIZE},
 	{ TAG_DONE  	       }
     };
     char cmd[255];
 
-    snprintf(cmd, 255, "sys:prefs/Zune %s", data->app_Base ? data->app_Base : (STRPTR)"");
-
-    if (SystemTagList(cmd, tags) == -1)
+    snprintf(cmd, 255, "sys:prefs/Zune %s %d", data->app_Base ? data->app_Base : (STRPTR)"",obj);
+    
+	if (SystemTagList(cmd, tags) == -1)
     {
 	return 0;
+    }
+    Delay(50);
+ 
+    if (data->app_Base)
+    {
+    snprintf(cmd, 255, "ENV:zune/%s.prefs", data->app_Base);
+	DoMethod(data->app_GlobalInfo.mgi_Configdata, MUIM_Configdata_Load, (IPTR)cmd);
     }
 
     return 1;

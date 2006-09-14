@@ -94,6 +94,20 @@ struct MUIP_Application_OpenWindows		{ ULONG MethodID; };
 #define MUIA_Application_UseCommodities     	(MUIB_MUI|0x00425ee5) /* MUI: V10 i.. BOOL              */
 #define MUIA_Application_UsedClasses            (MUIB_MUI|0x0042e9a7) /* MUI undoc: V20 i.. STRPTR [] */
 #define MUIA_Application_UseRexx            	(MUIB_MUI|0x00422387) /* MUI: V10 i.. BOOL              */
+#define MUIA_Application_SetWinPos              (MUIB_MUI|0x00432387)
+#define MUIA_Application_GetWinPos              (MUIB_MUI|0x00432388)
+#define MUIA_Application_SearchWinId            (MUIB_MUI|0x00432389)
+#define MUIA_Application_GetWinPosAddr          (MUIB_MUI|0x00432390)
+#define MUIA_Application_GetWinPosSize          (MUIB_MUI|0x00432391)
+#define MUIA_Application_CopyWinPosToApp        (MUIB_MUI|0x00432392)
+#define MAXWINS 300
+
+struct windowpos
+{ 
+ULONG id;
+WORD x1,y1,w1,h1;
+WORD x2,y2,w2,h2;
+};
 
 /*+
     [I-G] CONST_STRPTR
