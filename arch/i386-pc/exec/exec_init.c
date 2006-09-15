@@ -614,8 +614,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
         /* Check whether we have some FAST memory,
          * If not, then use calculated ExecBase */
-        if ((extmem = exec_RamCheck_fast()))
+        if ((extmem = exec_RamCheck_fast(arosmb)))
         {
+	    rkprintf("%x Fastmem\n",extmem);
             /* We have found some FAST memory. Let's use it for ExecBase */
             ExecBase = (struct ExecBase *) 0x01000000;
             ExecBase += negsize;
@@ -626,7 +627,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
 /************* NICJA - Fix this code so that only unused meory is flushed, and protect certain ares - ie acpi */
         
-	    bzero((void *)0x01000000, extmem - 0x01000000 - 0x500000);
+	    /* Ogun - Disable cruddy attempt to save ACPI data for now */
+	    //bzero((void *)0x01000000, extmem - 0x01000000 - 0x500000);
+	    bzero((void *)0x01000000, extmem - 0x01000000);
         }
 
         /*
@@ -634,7 +637,8 @@ void exec_cinit(unsigned long magic, unsigned long addr)
          * determine how much CHIP memory do we have.
          */
 
-        locmem = exec_RamCheck_dma();
+        locmem = exec_RamCheck_dma(arosmb);
+	rkprintf("%x Chipmem\n",locmem);
 
         rkprintf("OK\nExecBase=%p\n", ExecBase);
 
@@ -1060,12 +1064,35 @@ asm("\nexec_DefaultTrap:\n\t"
     "jmp    Exec_Alert");
 
 #warning "TODO: We should use info from BIOS here."
-int exec_RamCheck_dma()
+int exec_RamCheck_dma(struct arosmb *arosmb)
 {
     ULONG   volatile *ptr,tmp;
 
     ptr = (ULONG *)(((int)&_end + 4095) &~4095);
 
+    if(arosmb->flags & MB_FLAGS_MEM)
+    {
+	/* If there is upper memory, assume that lower is 1MB. Dirty hack++ */
+	if(arosmb->mem_upper)
+	{
+	    if ((arosmb->mem_upper<<10) & 0xff000000)
+	    {
+		/* More than 16MB in total, return 16 */
+		return 16<<20;
+	    }
+	    /* Lower 16MB is marked as DMA memory */
+	    tmp = (arosmb->mem_upper*1024) & 0x00ffffff;
+	    tmp += 1048576;
+	    return tmp;
+	}
+	else
+	{
+	    /* No upper memory, return only lower mem.
+	     * Most likely fatal, can't see aros working with less than one MB of ram */
+	    return (arosmb->mem_lower*1024);
+	}
+    }
+    /* No memory info from bios, do a scan */
     do
     {
         tmp = *ptr;
@@ -1079,12 +1106,24 @@ int exec_RamCheck_dma()
     return (int)ptr;
 }
 
-int exec_RamCheck_fast()
+int exec_RamCheck_fast(struct arosmb *arosmb)
 {
     ULONG volatile *ptr, tmp;
 
     ptr = (ULONG *)0x01000000;
 
+    if(arosmb->flags & MB_FLAGS_MEM)
+    {
+	/* If less than 15MB upper, no fastmem here */
+	if (arosmb->mem_upper <= 15*1024)
+	{
+	    return 0;
+	}
+	/* Found memory, so we need to do some quick math */
+	tmp = (arosmb->mem_upper*1024)+1048576;
+	return tmp;
+    }
+    /* No memory info from bios, do a scan */
     do
     {
         tmp = *ptr;
