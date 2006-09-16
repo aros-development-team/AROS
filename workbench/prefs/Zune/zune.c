@@ -57,6 +57,8 @@ struct MUI_CustomClass *MCC_Query(ULONG d0);
 
 #define ZUNEVERSION "$VER: Zune 0.2 (22.02.2006) ©AROS Dev Team"
 
+APTR *appaddr;
+
 /************************************************************************/
 
 void load_prefs(CONST_STRPTR name);
@@ -70,6 +72,7 @@ void restore_prefs(CONST_STRPTR name);
 struct Library *ZuneMasterBase;
 struct ZuneMasterIFace *IZuneMaster;
 #endif
+
 
 /************************************************************************/
 
@@ -635,7 +638,8 @@ void save_prefs(CONST_STRPTR name, BOOL envarc)
     Object *configdata;
 
     configdata = MUI_NewObject(MUIC_Configdata,
-			       MUIA_Configdata_ApplicationBase, name,
+                    //MUIA_Configdata_ApplicationBase, name,
+			       MUIA_Configdata_Application,appaddr,
 			       TAG_DONE);
     if (configdata != NULL)
     {
@@ -689,28 +693,29 @@ void loop(void)
 /****************************************************************
  The main entry point
 *****************************************************************/
+
 int main(void)
 {
     int  retval = RETURN_OK;
     struct RDArgs *rda = NULL;
-    IPTR args[] = { 0 };
-    enum { ARG_APPNAME = 0 };
+    APTR *proc=0;
+    IPTR args[] = { 0,0 };
+    enum { ARG_APPNAME = 0,ARG_APPADDR=1 };
 
     Locale_Initialize();
 
     if (Cli())
     {
-    	rda = ReadArgs("APPNAME", args, NULL);
-    	if(rda == NULL)
-    	{
-	    PrintFault(IoErr(), "Zune");
-	    retval = RETURN_FAIL;
+    rda = ReadArgs("/A,/N", args, NULL);
+    appname=(STRPTR)args[ARG_APPNAME];
+    appaddr=(ULONG)args[ARG_APPADDR];
+    if (appaddr)appaddr=*(appaddr);
 	}
 	else
 	{
-	    appname = (STRPTR)args[ARG_APPNAME];
+	    appname = 0;
 	}
-    }
+
     
     if (retval == RETURN_OK)
     {
