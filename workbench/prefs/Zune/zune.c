@@ -456,7 +456,7 @@ int init_gui(void)
         MUIA_Application_Version, (IPTR) ZUNEVERSION,
         MUIA_Application_Copyright, (IPTR) "© 2006, The AROS Development Team",
         MUIA_Application_Description, wintitle,
-        MUIA_Application_BASE, "ZUNEPREF",
+        MUIA_Application_Base, "ZUNEPREF",
 	MUIA_Application_Menustrip, MenuitemObject,
 	    MUIA_Family_Child, MenuitemObject,
 	    	MUIA_Menuitem_Title, _(MSG_MEN_PROJECT),
