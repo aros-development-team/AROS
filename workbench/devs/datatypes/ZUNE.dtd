@@ -1,0 +1,10 @@
+# DataType Description for MUI PRefs
+Name=ZUNE
+Version=$VER: ZUNE 41.0 (15.09.2006)
+BaseName=zune
+Pattern=#?
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'P' 'R' 'E' 'F' 'P' 'R' 'H' 'D' ANY ANY ANY ANY ANY ANY ANY ANY ANY ANY 'M' 'U' 'I' 'C'
+GroupID=pict
+ID=ilbm
+Flags=DTF_IFF
+Priority=0
