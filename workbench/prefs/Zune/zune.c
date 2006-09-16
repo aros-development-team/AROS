@@ -456,6 +456,7 @@ int init_gui(void)
         MUIA_Application_Version, (IPTR) ZUNEVERSION,
         MUIA_Application_Copyright, (IPTR) "© 2006, The AROS Development Team",
         MUIA_Application_Description, wintitle,
+        MUIA_Application_BASE, "ZUNEPREF",
 	MUIA_Application_Menustrip, MenuitemObject,
 	    MUIA_Family_Child, MenuitemObject,
 	    	MUIA_Menuitem_Title, _(MSG_MEN_PROJECT),
@@ -480,6 +481,7 @@ int init_gui(void)
     	    MUIA_Window_Title, (IPTR)wintitle,
 	    MUIA_Window_Activate, TRUE,
 	    MUIA_Window_CloseGadget, FALSE,
+	    MUIA_Window_ID, MAKE_ID('Z','W','I','N'),
 
 	    WindowContents, VGroup,
 	        MUIA_Group_VertSpacing, 10,
