@@ -212,6 +212,7 @@ IPTR IPWindow__OM_NEW
         
         MUIA_Window_Title,    (IPTR)MSG(MSG_WINTITLE),
         MUIA_Window_Activate, TRUE,
+        MUIA_Window_ID, MAKE_ID('I','C','T','L'),
         
         menu ? MUIA_Window_Menustrip : TAG_IGNORE, (IPTR)menu,
  
@@ -635,7 +636,7 @@ void MakeGUI(void)
 	MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2006, The AROS Development Team",
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, (IPTR)MSG(MSG_WINTITLE),
-	MUIA_Application_Base, (IPTR)"Icontrol",
+	MUIA_Application_Base, (IPTR)"ICONTROL",
 	MUIA_Application_SingleTask, TRUE,
   	SubWindow, (IPTR) (wnd = NewObject(IPWindow_CLASS->mcc_Class, NULL, TAG_DONE)),
 	End;
