@@ -132,7 +132,7 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     *data = d;
 
     set(data->refresh_cycle, MUIA_Disabled, TRUE);
-    set(data->positions_cycle, MUIA_Disabled, TRUE);
+    //set(data->positions_cycle, MUIA_Disabled, TRUE);
 
     return (IPTR)obj;
 }
@@ -176,7 +176,9 @@ static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj,
     setcycle(data->redraw_cycle,
 	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
 		      MUICFG_Window_Redraw));
-
+	setcycle(data->positions_cycle,
+	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		      MUICFG_Window_Positions));
     return 1;    
 }
 
@@ -219,6 +221,9 @@ static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj,
 /* Cycles */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Redraw,
 	     XGET(data->redraw_cycle, MUIA_Cycle_Active));
+	DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Positions,
+	     XGET(data->positions_cycle, MUIA_Cycle_Active));
+
     return TRUE;
 }
 
