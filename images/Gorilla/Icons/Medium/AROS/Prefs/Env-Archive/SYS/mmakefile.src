@@ -8,7 +8,8 @@ ICONS := \
     def_Project def_Picture def_Text def_Document def_Tool def_Authors \
     def_CSS def_Font def_HTML def_Legal def_Movie def_Music def_PDF def_Patch \
     def_Postscript def_Presentation def_Printer def_ReadMe def_Spreadsheet \
-    def_XCF def_Sound def_Keymap def_DVD def_DataType def_RAD def_Installer def_AudioMode
+    def_XCF def_Sound def_Keymap def_DVD def_DataType def_RAD def_Installer \
+    def_AudioMode def_Zune
 
 #MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-prefs-envarc-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-prefs-envarc
