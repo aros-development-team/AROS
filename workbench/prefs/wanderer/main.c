@@ -33,6 +33,7 @@ int main(void)
 	MUIA_Application_Base, (IPTR)"WANDERERPREF",
         MUIA_Application_SingleTask, TRUE,
         SubWindow, (IPTR) (window = SystemPrefsWindowObject,
+        MUIA_Window_ID, MAKE_ID('W','W','I','N'),
             WindowContents, (IPTR) WPEditorObject,
             End,
         End),
