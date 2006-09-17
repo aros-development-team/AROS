@@ -1,0 +1,9 @@
+Name=Catalog
+Version=$VER: Catalog 41.0 (28-Apr-2005)
+BaseName=CTLG
+Pattern=#?
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'C' 'T' 'L' 'G'
+GroupID=bina
+ID=ctlg
+Flags=DTF_IFF
+Priority=0

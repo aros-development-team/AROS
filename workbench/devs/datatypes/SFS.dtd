@@ -1,0 +1,9 @@
+Name=SFS
+Version=$VER SFS 1.0 (03/12/2005)
+BaseName=binary
+Pattern=#?
+Mask=0x53 0x46 0x53
+GroupID=syst
+ID=SFS
+Flags=DTF_BINARY,DTF_CASE
+Priority=2

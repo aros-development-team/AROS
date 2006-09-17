@@ -1,0 +1,8 @@
+Name=TrueType
+Version=$VER: TrueType 41.0 (15.02.2006)
+BaseName=TrueType
+Pattern=#?
+Mask=0x00 0x01 0x00 0x00 0x00 ANY ANY ANY ANY ANY ANY ANY 0x44 0x53 0x49 0x47
+GroupID=bina
+Flags=DTF_BINARY
+Priority=1

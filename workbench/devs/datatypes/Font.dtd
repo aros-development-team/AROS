@@ -1,0 +1,9 @@
+Name=Font
+Version=$VER: Font 41.0 (15.02.2006)
+BaseName=Font
+Pattern=#?
+Mask=0x0f ANY 0x00
+GroupID=bina
+ID=font
+Flags=DTF_BINARY
+Priority=1
