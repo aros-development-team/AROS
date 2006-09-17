@@ -1,0 +1,8 @@
+# DataType Description for SFS Trashcan
+Name=Trashcan
+Version=$VER: Trashcan 41.0 (03-Dec-2005)
+BaseName=trashcan
+Pattern=".recycled"
+GroupID=syst
+Flags=DTF_BINARY,DTF_CASE
+Priority=1

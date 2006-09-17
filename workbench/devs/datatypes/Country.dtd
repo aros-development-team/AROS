@@ -1,0 +1,9 @@
+# DataType Description for Country
+Name=Country
+Version=$VER: Country 41.0 (15.02.2006))
+BaseName=country
+Pattern=#?
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'P' 'R' 'E' 'F' 'P' 'R' 'H' 'D' ANY ANY ANY ANY ANY ANY ANY ANY ANY ANY 'C' 'T' 'R' 'Y'
+GroupID=bina
+Flags=DTF_IFF,DTF_BINARY
+Priority=0
