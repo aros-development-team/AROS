@@ -16,7 +16,7 @@ FILES := Dispatcher \
 
 #MM includes-copy
 
-INCLUDE_FILES := $(TOP)/$(CURDIR)/HotkeyString_mcc.h
-%copy_includes path=MUI dir=$(TOP)/$(CURDIR)
+INCLUDE_FILES := HotkeyString_mcc.h
+%copy_includes path=MUI
 
 %common

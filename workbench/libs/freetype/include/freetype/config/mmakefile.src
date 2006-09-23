@@ -5,4 +5,4 @@ workbench-libs-freetype-includes : includes-copy
 
 INCLUDE_FILES := $(wildcard *.h)
 
-%copy_includes path=freetype/config dir=
+%copy_includes path=freetype/config

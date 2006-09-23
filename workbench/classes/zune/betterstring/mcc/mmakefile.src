@@ -23,7 +23,7 @@ FILES := AllocBitMap \
 
 #MM includes-copy
 
-INCLUDE_FILES := $(TOP)/$(CURDIR)/BetterString_mcc.h
-%copy_includes path=MUI dir=$(TOP)/$(CURDIR)
+INCLUDE_FILES := BetterString_mcc.h
+%copy_includes path=MUI
 
 %common

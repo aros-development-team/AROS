@@ -14,7 +14,7 @@ INCLUDE_FILES := prefswindow.h
     conffile=prefswindow.conf \
     uselibs="amiga rom"
     
-%copy_includes path=zune dir=
+%copy_includes path=zune
     
 %common
 %include_deps

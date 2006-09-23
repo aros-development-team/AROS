@@ -16,7 +16,7 @@ INCLUDE_FILES := $(wildcard include/*.h)
 %make_hidd_stubs hidd=parallel
 
 #MM includes-copy
-%copy_includes path=hidd
+%copy_includes path=hidd dir=include
 
 %include_deps
 %common

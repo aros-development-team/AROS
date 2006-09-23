@@ -411,7 +411,7 @@ includes-libraries-mui : includes-mui-setup $(INCLUDEFILES)
 
 includes-mui-setup : $(GENINCDIR)/libraries $(AROS_INCLUDES)/libraries
 
-%copy_includes includes=customclasses.h path=zune dir=
+%copy_includes includes=customclasses.h path=zune
 
 $(GENINCDIR)/libraries $(AROS_INCLUDES)/libraries :
 	%mkdir_q dir=$@

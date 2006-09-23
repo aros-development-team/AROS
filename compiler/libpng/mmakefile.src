@@ -11,7 +11,7 @@ include $(TOP)/config/make.cfg
 
 INCLUDE_FILES	:= png.h pngconf.h
 
-%copy_includes path=. dir=
+%copy_includes path=.
 
 FILES := \
     png \

@@ -12,7 +12,7 @@ INCLUDE_FILES := aboutwindow.h
     conffile=aboutwindow.conf \
     uselibs="amiga rom"
     
-%copy_includes path=zune dir=
+%copy_includes path=zune
     
 %common
 %include_deps

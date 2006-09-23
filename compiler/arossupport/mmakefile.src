@@ -45,7 +45,7 @@ USER_CFLAGS := -I$(TOP)/rom/exec
 %build_linklib mmake=linklibs-arossupport libname=arossupport files=$(FILES)
 
 INCLUDE_FILES	    := $(wildcard include/*.h)
-%copy_includes mmake=compiler-includes path=aros
+%copy_includes mmake=compiler-includes path=aros dir=include
 
 # Tests - these probably won't work at the moment.
 ifeq (1,0)
