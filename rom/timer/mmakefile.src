@@ -15,4 +15,4 @@ FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
 
 INCLUDE_FILES := include/timer.h
 
-%copy_includes path=hidd
+%copy_includes path=hidd dir=include

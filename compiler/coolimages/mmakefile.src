@@ -31,7 +31,7 @@ USER_CFLAGS := -Iinclude
 #MM linklibs-coolimagesstatic : includes
 #MM includes-copy
 
-%copy_includes path=linklibs
+%copy_includes path=linklibs dir=include
 
 %build_linklib mmake=linklibs-coolimagesstatic libname=coolimagesstatic \
     files=$(FILES)

@@ -25,7 +25,7 @@ FILES := \
 #MM linklibs-arosz : includes
 #MM includes-copy
 
-%copy_includes path=. dir=
+%copy_includes
 
 %build_linklib mmake=linklibs-arosz libname=arosz files=$(FILES)
 

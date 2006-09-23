@@ -13,4 +13,4 @@ USER_INCLUDES := -I$(TOP)/rom/devs
 #MM includes-copy
 
 INCLUDE_FILES := $(wildcard include/*.h)
-%copy_includes path=devices
+%copy_includes path=devices dir=include

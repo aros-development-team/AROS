@@ -20,8 +20,8 @@ FILES := locale \
 
 #MM includes-copy
 
-INCLUDE_FILES := $(TOP)/$(CURDIR)/BetterString_mcp.h
-%copy_includes path=MUI dir=$(TOP)/$(CURDIR)
+INCLUDE_FILES := BetterString_mcp.h
+%copy_includes path=MUI
 
 #MM workbench-classes-zune-betterstring-mcp-locale :
 workbench-classes-zune-betterstring-mcp-locale : locale.c locale.h

@@ -13,7 +13,7 @@ INCLUDE_FILES := Busy_mcc.h
     conffile=busy.conf \
     uselibs="amiga m rom"
     
-%copy_includes path=MUI dir=
+%copy_includes path=MUI
     
 %common
 %include_deps

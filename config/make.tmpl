@@ -1797,7 +1797,7 @@ $(GENDIR)/$(CURDIR):
 #   $(GENINCDIR) path must not contain any references to the C runtime
 #   library header files.
 #
-%define copy_includes mmake=includes-copy includes=$(INCLUDE_FILES) path=. dir=include
+%define copy_includes mmake=includes-copy includes=$(INCLUDE_FILES) path=. dir=
 
 ifneq (%(dir),)
 INCL_FILES_1 := $(subst %(dir),$(AROS_INCLUDES)/%(path),%(includes))

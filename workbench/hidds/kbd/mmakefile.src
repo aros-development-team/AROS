@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := $(wildcard include/*.h)
 
-%copy_includes path=hidd
+%copy_includes path=hidd dir=include
 
 #MM
 clean ::

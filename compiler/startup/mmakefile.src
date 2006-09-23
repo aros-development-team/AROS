@@ -27,7 +27,7 @@ USER_CFLAGS := -I $(TOP)/rom/exec
 #MM linklibs-startup-setup
 %rule_makedirs dirs=$(GENDIR)/$(CURDIR) setuptarget=linklibs-startup-setup
 
-%copy_includes includes=startup.h path=aros dir=
+%copy_includes includes=startup.h path=aros
 
 .PHONY: linklibs-startup linklibs-startup-setup
 

@@ -13,7 +13,7 @@ INCLUDE_FILES := clock.h
     conffile=clock.conf \
     uselibs="amiga m rom"
     
-%copy_includes path=zune dir=
+%copy_includes path=zune
     
 %common
 %include_deps

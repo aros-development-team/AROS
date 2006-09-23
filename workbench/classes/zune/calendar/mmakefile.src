@@ -14,7 +14,7 @@ INCLUDE_FILES := calendar.h
     conffile=calendar.conf \
     uselibs="amiga rom m"
     
-%copy_includes path=zune dir=
+%copy_includes path=zune
     
 %common
 %include_deps
