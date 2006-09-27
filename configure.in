@@ -144,10 +144,12 @@ case "$host_os" in
         ;;
 
     freebsd*)
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+	aros_host_cc="$aros_host_cc $aros_host_cc_pipe -I/usr/local/include"
 	aros_host_make="gmake"
 	aros_host_arch="freebsd"
 	aros_host_cpu="i386"
+
+        aros_host_ldflags="$aros_host_ldflags -L/usr/local/lib -liconv"
 
 	dnl Need to override this here, it's just too hard later.
         dnl This shouldn't be here at all...
