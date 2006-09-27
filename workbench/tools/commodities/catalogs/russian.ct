@@ -4,11 +4,11 @@
 ;
 ;
 MSG_CANT_OPEN_LIB
-Не могу открыть |ffnen!\n
+Не могу открыть %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_OPEN_INPUTDEVICE
-Не могу открыть 'input.device' 
+Не могу открыть 'input.device'
 ; Can't open 'input.device'
 ;
 MSG_CANT_LOCK_SCR
@@ -145,7 +145,7 @@ Click To Front Utility
 ; Click To Front Utility
 ;
 MSG_CLICK2FNT_CXDESCR
-При двойном щелчке в пределах окна поднимает его на передний план 
+Двойной щелчок, и окно на переднем плане
 ; Click windows to front
 ;
 ; ===============================================
@@ -160,7 +160,7 @@ MSG_OPAQUE_CXTITLE
 ; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
-Позволяет передвигать окна "как есть", но тратит ресурсы
+Двигайте окна "как есть"
 ; Realtime moving of windows
 ;
 ; ===============================================
