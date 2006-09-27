@@ -255,7 +255,7 @@ MSG_INPUT_LISTS
 ; Input \nLists:
 ;
 MSG_READONLY_LISTS
-Неизменяемые-\nсписки
+Неизменяемые\nсписки
 ; Readonly \nLists:
 ;
 MSG_CURSOR

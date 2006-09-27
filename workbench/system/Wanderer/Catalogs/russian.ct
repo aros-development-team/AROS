@@ -80,7 +80,7 @@ Q
 ; Q
 ;
 MSG_MEN_WINDOW
-Окна
+Одного окна
 ; Window
 ;
 MSG_MEN_NEWDRAW
@@ -124,11 +124,11 @@ Z
 ; Z
 ;
 MSG_MEN_SNAPSHT
-Выстроить
+Запомнить иконки
 ; Snapshot
 ;
 MSG_MEN_ALL
-все
+Все
 ; All
 ;
 MSG_MEN_VIEW
@@ -164,15 +164,15 @@ MSG_MEN_BYNAME
 ; By name
 ;
 MSG_MEN_BYDATE
-по дате
+...по дате
 ; By Date
 ;
 MSG_MEN_BYSIZE
-по размеру
+...по размеру
 ; By size
 ;
 MSG_MEN_REVERSE
-наоборот
+...наоборот
 ; Reverse
 ;
 MSG_MEN_DRWFRST

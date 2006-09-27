@@ -1,4 +1,4 @@
-## version $VER: JanoEditor.catalog 1.0 (1.10.2000).
+## version $VER: JanoEditor.catalog 1.0 (27.09.2006).
 ## codeset 0
 ## language russian
 ;
@@ -36,7 +36,7 @@ MSG_INFORMATION
 Информация
 ;
 MSG_CLOSE
-Close
+Закрыть
 ;
 MSG_QUIT
 Выход
@@ -44,7 +44,7 @@ MSG_QUIT
 ; Edit Menu
 ;
 MSG_EDITTITLE
-Редактироание
+Редактирование
 ;
 MSG_CUT
 Вырезать
@@ -86,7 +86,7 @@ MSG_TOGGLECASE
 Изменить регистр
 ;
 MSG_INSERTFILE
-Insert file...
+Вставить из файла...
 ;
 MSG_UNDO
 Отменить
@@ -127,7 +127,7 @@ MSG_GOTOLINE
 Перейти на строку...
 ;
 MSG_FINDBRACKET
-Matching bracket
+Закрывающая скобка
 ;
 MSG_LASTMODIF
 Last modification
@@ -141,19 +141,19 @@ MSG_ENDOFLINE
 ; Macro Menu
 ;
 MSG_MACROTITLE
-Macro
+Макро
 ;
 MSG_STARTRECORD
-Start recording
+Записать
 ;
 MSG_STOPRECORD
-Stop recording
+Остановить
 ;
 MSG_PLAYMACRO
-Play macro
+Воспроизвести
 ;
 MSG_REPEATMACRO
-Repeat macro...
+Повторить макро...
 ;
 ; Environment Menu
 ;
@@ -173,7 +173,7 @@ MSG_LOADPREFS
 Загрузить настройки...
 ;
 MSG_SAVEPREFS
-Save prefs
+Сохранить настройки...
 ;
 MSG_SAVEPREFSAS
 Сохранить настройки как...
@@ -188,7 +188,7 @@ ERR_BADOS
 Старая версия ОС. Установите версию 2.04 или выше!
 ;
 ERR_NOASLREQ
-Не могу разместить ASL-запросник!
+Не могу разместить ASL-реквестер!
 ;
 ERR_NOMEM
 Не хватает памяти!
@@ -218,43 +218,43 @@ ERR_READCLIP
 Операция чтения неполная всвязи с нехваткой памяти;
 ;
 ERR_NOBRACKET
-No parenthesis under cursor!
+Отсутствует скобка под курсором!
 ;
 ERR_NOT_FOUND
-Pattern `%s' not found
+Строка `%s' не найдена
 ;
 ERR_LOADFONT
 Не могу открыть выбранный шрифт!
 ;
 ERR_NOPREFEDITOR
-Can't find preference editor!
+Редактор настроек не найден!
 ;
 ERR_BADPREFSFILE
-Bad preference file format
+Неизвестный формат файла настроек
 ;
 ERR_FILEMODIFIED
 %s has been modified.\nAre you sure want to close it?
 ;
 ERR_SLC
-Save|Close|Cancel
+Сохранить|Закрыть|Отмена
 ;
 ERR_NOSEARCHTEXT
-No text to search for!
+Отсутствует строка для поиска!
 ;
 ERR_FILEEXISTS
-This file already exists. Overwrite it?
+Файл уже существует. Перезаписать его?
 ;
 ERR_OC
-Yes|No
+Да|Нет
 ;
 WARN_RECORD
-Reccording macro in progress
+Идёт запись макро
 ;
 WARN_RECORDED
-Macro recorded
+Макро записано
 ;
 WARN_REC
-[REC]
+[Зап]
 ;
 ;
 ; *************************************
@@ -265,7 +265,7 @@ MSG_ABOUT
 Информация
 ;
 MSG_FORMATINFO
-%s for %s\n Авторы: T.Pierron и C.Guillaume ? 2000\n\nРедактируемый файл:: %s\nДлина : %ld %s, %ld %s.\n
+%s для %s\n Авторы: T.Pierron и C.Guillaume ? 2000\n\nРедактируемый файл:: %s\nДлина : %ld %s, %ld %s.\n
 ;
 MSG_CONTINUE
 Продолжить
@@ -288,7 +288,7 @@ MSG_LINES
 ; *************************
 ;
 MSG_SEARCHWINDOW
-Поиск 
+Поиск
 ;
 MSG_REPLACEWINDOW
 Поиск и замена

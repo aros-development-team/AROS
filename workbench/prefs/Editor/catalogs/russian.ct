@@ -37,7 +37,7 @@ MSG_PUBSCREEN
 Общий экран:
 ;
 MSG_BACKDROP
-Бэкдроп
+Развернуть
 ;
 MSG_LEFTMARGIN
 Левая граница
@@ -67,7 +67,7 @@ MSG_CLONEPARENT
 Использовать предыдущие
 ;
 MSG_COLOR_BACK
-Background
+Фон
 ;
 MSG_COLOR_TEXT
 Нормальный текст
@@ -85,20 +85,20 @@ MSG_COLOR_MARGINTXT
 Граничный текст
 ;
 MSG_COLOR_SHINE
-Panel shine
+Окантовка закладок
 ;
 MSG_COLOR_SHADE
-Panel shade
+Тень закладок
 ;
 MSG_COLOR_PANELBACK
-Panel back
+Цвет закладок
 ;
 MSG_COLOR_PANELTEXT
-Текст панелей
+Текст закладок
 ;
 MSG_COLOR_GLYPH
-Glyphs
+Выемки
 ;
 MSG_COLOR_MARKEDLINES
-Active panel
+Выбранная закладка
 ;
