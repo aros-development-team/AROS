@@ -97,11 +97,12 @@ typedef struct NotifyNode {
     APTR        nn_DestObj;
     ULONG       nn_NumParams;
     IPTR       *nn_Params; /* FIXME: use nn_Params[1] and tweak stuff below */
+    IPTR       *nn_NewParams; /* For MUIV_EveryTime */
 } *NNode;
 
 static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_Notify *msg)
 {
-    ULONG i;
+    ULONG i, paramsize;
 
     struct NotifyNode *nnode = mui_alloc_struct(struct NotifyNode);
     if (!nnode) return NULL;
@@ -116,15 +117,31 @@ static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_
        forget trailing NULLs in methods like MUIM_MultiSet and MUI seems
        like it can live with that (without crashing) */
     
-    if ((nnode->nn_Params = (IPTR *)mui_alloc((msg->FollowParams + 1) * sizeof(IPTR))))
+    paramsize = (msg->FollowParams + 1);
+    if (msg->TrigVal == MUIV_EveryTime)
+    {
+    	paramsize *= 2;
+    }
+    
+    if ((nnode->nn_Params = (IPTR *)mui_alloc(paramsize * sizeof(IPTR))))
     {
 	for (i = 0; i < msg->FollowParams; i++)
 	{
 	    nnode->nn_Params[i] = *(&msg->FollowParams + i + 1);
 	}
+
+        if (msg->TrigVal == MUIV_EveryTime)
+        {
+    	    nnode->nn_NewParams = nnode->nn_Params + msg->FollowParams + 1;
+	    for (i = 0; i < msg->FollowParams; i++)
+	    {
+		nnode->nn_NewParams[i] = *(&msg->FollowParams + i + 1);
+	    }
+        }
+
 	return nnode;
     }
-
+    
     mui_free(nnode);
 
     return NULL;
@@ -202,8 +219,7 @@ IPTR Notify__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
 static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
 {
-    STACKULONG newparams[8];
-    STACKULONG *params;
+   IPTR       *params;
     APTR       destobj;
     int        i;
 
@@ -246,29 +262,24 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
 		destobj = nnode->nn_DestObj;
 	}
 
-
 	params = nnode->nn_Params;
 	if (nnode->nn_TrigVal == MUIV_EveryTime)
 	{
-	    newparams[0] = nnode->nn_Params[0];
+	    params = nnode->nn_NewParams;
 
   	    for (i = 1; i < nnode->nn_NumParams; i++)
 	    {
-	        newparams[i] = nnode->nn_Params[i];
-
-	        switch(newparams[i])
+	        switch(nnode->nn_Params[i])
 	        {
 		    case MUIV_TriggerValue:
-		        newparams[i] = tag->ti_Data;
+		        params[i] = tag->ti_Data;
 		        break;
 
 		    case MUIV_NotTriggerValue:
-		        newparams[i] = !tag->ti_Data;
+		        params[i] = !tag->ti_Data;
 		        break;
 	        }
 	    }
-    	    newparams[i] = 0;
-	    params = newparams;
 	}
 
 	nnode->nn_Active = TRUE;
