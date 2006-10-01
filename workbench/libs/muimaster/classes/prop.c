@@ -108,7 +108,8 @@ IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	return FALSE;
 
     data = INST_DATA(cl, obj);
-
+    data->deltafactor = 1;
+    
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
