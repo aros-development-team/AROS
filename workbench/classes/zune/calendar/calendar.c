@@ -389,7 +389,8 @@ IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     //kprintf("mwday = %d  mdays = %d\n", data->mwday, mdays);
     
     day = data->firstweekday - data->mwday + 1 - 7;
-    
+    if (day > -6) day -= 7;
+        
     SetFont(_rp(obj), _font(obj));
     SetDrMd(_rp(obj), JAM1);
     
@@ -510,9 +511,10 @@ static WORD DayUnderMouse(Object *obj, struct Calendar_DATA *data, struct IntuiM
     x /= data->cellwidth;
     y /= data->cellheight;
     
-    i = y * 7 + x;
+    i = data->firstweekday - data->mwday + 1;
+    if (i > 1) i -= 7;
     
-    i += data->firstweekday - data->mwday + 1;
+    i += y * 7 + x;
     
     if (i < 1)
     {
@@ -522,7 +524,7 @@ static WORD DayUnderMouse(Object *obj, struct Calendar_DATA *data, struct IntuiM
     {
     	i = NumMonthDays(&data->clockdata);
     }
-    
+
     return i;
 }
 
