@@ -580,7 +580,6 @@ case "$target_os" in
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
 		aros_default_wbdepth=8
-		aros_compiler_libs="-lgcc"
 		gcc_target_cpu="ppc"
 		;;
 	    *)
