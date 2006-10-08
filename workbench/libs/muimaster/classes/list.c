@@ -587,7 +587,10 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     	DoMethod(obj, MUIM_List_Insert, (IPTR)array, i, MUIV_List_Insert_Top);
     }
 
-    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
+    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS |
+    	    	    	     IDCMP_RAWKEY       |
+			     IDCMP_ACTIVEWINDOW |
+			     IDCMP_INACTIVEWINDOW;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
@@ -1330,6 +1333,18 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 				
 		    }
 	    	    break;
+		    
+	    case    IDCMP_ACTIVEWINDOW:
+	    case    IDCMP_INACTIVEWINDOW:
+	    	    if (data->ehn.ehn_Events & (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS))
+		    {
+    	    	    	DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+    	    	    	data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
+    	    	    	DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+			data->mouse_click = 0;			
+		    }
+		    break;
+		    
 		    
 		    
 	}
