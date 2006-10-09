@@ -1,59 +1,138 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: DOS utility function RunProcess
+    Desc: RunProcess() - Run a process from an entry point with args
     Lang: english
 */
-#include <aros/asmcall.h> /* LONG_FUNC */
-#ifndef TEST
-#   include <dos/dos.h>
-#   include <dos/dosextens.h>
-#   include <proto/exec.h>
-#else
-#   include <exec/types.h>
-#   include <exec/tasks.h>
 
-struct Process;
+#include <aros/asmcall.h>	/* LONG_FUNC */
 
-struct DosLibrary
+#include <dos/dosextens.h>
+#include <proto/exec.h>
+
+#define DEBUG 0
+#include <aros/debug.h>
+
+#include <ucontext.h>
+#include <stdarg.h>
+#include <boost/preprocessor/repetition/enum.hpp>
+
+#define ARGS(z, n, text) text[n] 
+#define MAXARGS 16
+
+static void SwapTaskStackLimits(APTR *lower, APTR *upper)
 {
-    struct ExecBase * dl_SysBase;
-};
+    struct Task* this = FindTask(NULL);
+    APTR tmp;
 
-extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
+    tmp              = this->tc_SPLower;
+    this->tc_SPLower = *lower;
+    *lower           = tmp;
+	
+    tmp              = this->tc_SPUpper;
+    this->tc_SPUpper = *upper;
+    *upper           = tmp;
+}
 
-#define StackSwap(s)            StackSwap (s, SysBase)
-#define AROS_SLIB_ENTRY(a,b)    a
+static void CallEntry(
+	ULONG*			Return_Value,
+	APTR		        pReturn_Addr,
+	struct StackSwapStruct* sss,
+	STRPTR			argptr,
+	ULONG			argsize,
+	LONG_FUNC		entry)
+{
+#ifndef AROS_UFC3R
+#error You need to write the AROS_UFC3R macro for your CPU
+#endif
 
-#endif /* TEST */
+    *Return_Value
+	= AROS_UFC3R(ULONG, entry,
+		AROS_UFCA(STRPTR, argptr, A0),
+		AROS_UFCA(ULONG, argsize, D0),
+		AROS_UFCA(struct ExecBase *, SysBase, A6),
+		pReturn_Addr, 0
+	      );
+}
 
-#define SysBase     (DOSBase->dl_SysBase)
-#include <stdio.h>
-/******************************************************************************
+static void trampoline(void (*func)(), IPTR args[])
+{
+    /* this was called from CallWithStack which also called Disable */
+    Enable();
+
+    /*
+    {
+	int test;
+    
+	D(bug("swapped context: test = 0x%x\n", &test));
+    }
+    */
+    
+    func(BOOST_PP_ENUM(MAXARGS, ARGS, args));
+
+    /* this was called from CallWithStack which will enable again */        
+    Disable();
+}
+
+BOOL CallWithStack
+(
+    void (*func)(), void* stack, size_t size, int argc, IPTR args[]
+)
+{
+    ucontext_t ucx, ucx_return;
+    
+    if (argc > MAXARGS || getcontext(&ucx) == -1)
+        return FALSE;
+    
+    ucx.uc_stack.ss_sp    = stack;
+    ucx.uc_stack.ss_size  = size;
+    ucx.uc_stack.ss_flags = SS_ONSTACK;
+    
+    ucx.uc_link = &ucx_return;
+    
+    makecontext(&ucx, (void (*)()) trampoline, 2, func, args);
+    
+    /*
+       we enable again in trampoline, after we have swapped
+       the new stack borders into the task structure
+    */
+    Disable();
+    APTR SPLower = stack, SPUpper = stack + size;
+    SwapTaskStackLimits(&SPLower, &SPUpper);
+
+    BOOL success = swapcontext(&ucx_return, &ucx) != -1;
+
+    SwapTaskStackLimits(&SPLower, &SPUpper);
+    Enable();
+
+    return success; 
+}
+
+/**************************************************************************
 
     NAME */
 	LONG AROS_SLIB_ENTRY(RunProcess,Dos) (
 
 /*  SYNOPSIS */
-	struct Process	       * proc,
-	struct StackSwapStruct * sss,
-	STRPTR			 argptr,
-	ULONG			 argsize,
-	LONG_FUNC		 entry,
-	struct DosLibrary      * DOSBase)
+	struct Process		* proc,
+	struct StackSwapStruct  * sss,
+	STRPTR			  argptr,
+	ULONG			  argsize,
+	LONG_FUNC		  entry,
+	struct DosLibrary 	* DOSBase)
 
-/*  FUNCTION
-	Sets the stack as specified and calls the given routine with the
-	given arguments.
+/* FUNCTION
+	Sets the stack as specified and calls the routine with the given
+	arguments.
 
     INPUTS
-	proc - Process context
-	sss - New stack
-	argptr - Pointer to argument string
-	argsize - Size of the arguments
-	entry - The entry point of the function
-	DOSBase - Pointer to dos.library
+	proc	- Process context
+	sss	- New Stack
+	argptr	- Pointer to argument string
+	argsize	- Size of the argument string
+	entry	- The entry point of the function
+	DOSBase	- Pointer to dos.library structure
 
     RESULT
 	The return value of (*entry)();
@@ -68,188 +147,43 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 
     INTERNALS
 
-    HISTORY
-
-******************************************************************************/
+**************************************************************************/
 {
-#if 0
-	/* Move upper bounds of the new stack into eax */
-	movl stk_Upper(%ebx),%eax
+    ULONG ret;
+    APTR  oldReturnAddr = proc->pr_ReturnAddr; /* might be changed by CallEntry */
+    IPTR  args[6]       =
+                        {
+			    (IPTR) &ret,
+			    (IPTR) &proc->pr_ReturnAddr,
+			    (IPTR) sss,
+			    (IPTR) argptr,
+			    argsize == -1 ? strlen(argptr) : argsize, /* Compute argsize automatically */
+			    (IPTR) entry
+			};
 
-	/*
-	    Push arguments for entry onto the stack of the new process.
-	    This new stack looks like this when the new process is called:
+    /*
+    {
+	int test;
+	D(bug("before callwithstack; org context: test = 0x%x\n", &test));
+    }
+    */
+    
+    /* Call the function with the new stack */
+    CallWithStack(
+	CallEntry,
+	(void *) sss->stk_Lower,
+	(size_t) sss->stk_Upper - (size_t) sss->stk_Lower,
+	6,
+	args);
+	
+    /*
+    {
+	int test;
+	D(bug("after  callwithstack; org context: test = 0x%x\n", &test));
+    }
+    */
 
-		sss
-		SysBase
-		argsize
-		argptr
-	*/
-	movl argptr(%esp),%edx
-	movl %edx,-16(%eax)
-	movl argsize(%esp),%edx
-	movl %edx,-12(%eax)
-
-	/* Push sss onto the new stack */
-	movl %ebx,-4(%eax)
-
-	/* Get SysBase */
-	movl DOSBase(%esp),%edx
-	movl dl_SysBase(%edx),%edx
-
-	/* Push SysBase on the new stack */
-	movl %edx,-8(%eax)
-#endif
-    APTR  * oldSP;
-    APTR  * sp;
-    ULONG * retptr;
-    ULONG   ret;
-
-    retptr = &ret;
-
-    sp = (APTR *)(sss->stk_Upper);
-
-    oldSP = (APTR *)&DOSBase;
-
-    fprintf(stderr, "CIAOAOAOAOAO\n");
-    /* Copy stack + locals + regs + everything */
-    while (oldSP != (APTR *)&ret)
-	*--sp = *oldSP --;
-
-#if 0
-	/* Store switch point in sss */
-	addl $-16,%eax
-	movl %eax,stk_Pointer(%ebx)
-#endif
-
-    sss->stk_Pointer = sp;
-
-#if 0
-	/* Push SysBase and sss on our stack */
-	pushl %edx /* SysBase */
-	pushl %ebx /* sss */
-
-	/* Switch stacks */
-	leal StackSwap(%edx),%edx
-	call *%edx
-
-	/* Clean new stack from call to StackSwap */
-	addl $8,%esp
-#endif
-printf("In runprocess! %lx , %lx\n", (IPTR)entry, (IPTR)*entry);
-    StackSwap (sss);
-
-    /* Call the function with the new stack. */
-/*    *retptr = (*entry)(argptr, argsize, DOSBase->dl_SysBase);
-*/
-#ifdef __mc68000__
-	*retptr = AROS_UFC3R(ULONG, entry,
-		    AROS_UFCA(STRPTR, argptr  ,A0),
-		    AROS_UFCA(ULONG,  argsize ,D0),
-		    AROS_UFCA(struct ExecBase *, SysBase, A6),
-		    &proc->pr_ReturnAddr
-		  );
-#else
-	*retptr = AROS_UFC3(ULONG, entry,
-		    AROS_UFCA(STRPTR, argptr  ,A0),
-		    AROS_UFCA(ULONG,  argsize ,D0),
-		    AROS_UFCA(struct ExecBase *, SysBase, A6)
-		  );
-#endif
-
-#if 0
-	/* Call the specified routine */
-	call *%edi
-
-	/* Clean (new) stack partially, leaving SysBase behind */
-	addl $8,%esp
-
-	/* Store the result of the routine in esi */
-	movl %eax,%esi
-
-	/* Swap the upper two values on the new stack */
-	popl %edx /* SysBase */
-	popl %ebx /* sss */
-	pushl %edx /* SysBase */
-	pushl %ebx /* sss */
-
-	/* Switch stacks back */
-	leal StackSwap(%edx),%edx
-	call *%edx
-
-	/* Clean old stack */
-	addl $8,%esp
-
-	/* Put the result in eax where our caller expects it */
-	movl %esi,%eax
-
-	/* Restore registers */
-	popl %ebp
-	popl %ebx
-	popl %esi
-	popl %edi
-
-	/* Done */
-	ret
-#endif
-
-    StackSwap (sss);
+    proc->pr_ReturnAddr = oldReturnAddr;
 
     return ret;
-} /* RunProcess */
-
-#ifdef TEST
-
-#undef SysBase
-
-#include <stdio.h>
-
-ULONG teststack[4096];
-
-int DemoProc (const char * argstr, int argsize, struct ExecBase * SysBase)
-{
-    printf ("arg=\"%s\" (len=%d)\n", argstr, argsize);
-
-    return argsize;
-} /* DemoProc */
-
-int main (int argc, char ** argv)
-{
-    int ret, len;
-    char * argstr;
-    struct StackSwapStruct sss;
-    struct DosLibrary	   DosBase;
-
-    sss.stk_Lower = teststack;
-    sss.stk_Pointer = &teststack[sizeof(teststack) / sizeof(teststack[0])];
-    sss.stk_Upper = (ULONG)sss.stk_Pointer;
-
-    DosBase.dl_SysBase = (struct ExecBase *)0x0bad0bad;
-
-    printf ("Stack=%p\n", &ret);
-
-    argstr = "Hello world.";
-
-    len = strlen (argstr);
-
-    ret = RunProcess (NULL
-	, &sss
-	, argstr
-	, len
-	, (LONG_FUNC)DemoProc
-	, &DosBase
-    );
-
-    printf ("Stack=%p\n", &ret);
-
-    printf ("RunProcess=%d\n", ret);
-
-    if (len == ret)
-	printf ("Test ok.\n");
-    else
-	printf ("Test failed.\n");
-
-    return 0;
-} /* main */
-
-#endif /* TEST */
+}
