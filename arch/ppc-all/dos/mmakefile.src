@@ -1,9 +1,0 @@
-# $Id: $
-include $(TOP)/config/make.cfg
-
-%build_archspecific \
-  mainmmake=kernel-dos maindir=rom/dos \
-  files="runprocess" \
-  arch=ppc
-
-%common
