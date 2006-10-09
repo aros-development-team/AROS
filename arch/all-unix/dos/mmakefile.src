@@ -6,7 +6,7 @@ USER_CFLAGS	:= -I$(TOP)/rom/dos -I..
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos \
   arch=unix \
-  files=boot \
+  files="boot runprocess" \
   compiler=host
 
 TESTS		:= runprocess
