@@ -1184,10 +1184,10 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     Object *menustrip, *window = NULL;
     BOOL    isWorkbenchWindow = message->drawer == NULL ? TRUE : FALSE;
 
-    IPTR    useFont = NULL;
+    IPTR    useFont = (IPTR)NULL;
     if (data->wd_PrefsIntern)
     {
-      useFont = ((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
+      useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
     }
 
     struct NewMenu nm[] =
