@@ -48,20 +48,20 @@ int main(int argc, char **argv)
 
     if (argc != 0)
     {
-	PutStr(_(MSG_WB_ONLY));
-	Cleanup(NULL);
+        PutStr(_(MSG_WB_ONLY));
+        Cleanup(NULL);
     }
     startup = (struct WBStartup *) argv;
 
     D(bug("[WBRename] Args %d\n", startup->sm_NumArgs));
 
     if (startup->sm_NumArgs != 2)
-	Cleanup(_(MSG_NEEDS_MORE_ARGS));
+	   Cleanup(_(MSG_NEEDS_MORE_ARGS));
 
     parentlock = startup->sm_ArgList[1].wa_Lock;
     oldname    = startup->sm_ArgList[1].wa_Name;
     if ((parentlock == NULL) || (oldname == NULL))
-	Cleanup(_(MSG_INVALID_LOCK));
+	   Cleanup(_(MSG_INVALID_LOCK));
 
     oldlock = CurrentDir(parentlock);
     
@@ -89,40 +89,41 @@ static void MakeGUI(void)
 	MUIA_Application_Base       , (IPTR) "WBRENAME",
 	MUIA_Application_UseCommodities, FALSE,
 	MUIA_Application_UseRexx, FALSE,
-	SubWindow, (IPTR)(window = WindowObject,
-	    MUIA_Window_Title, __(MSG_WINDOW_TITLE),
-	    MUIA_Window_NoMenus, TRUE,
-	    MUIA_Window_CloseGadget, FALSE,
-	    WindowContents, (IPTR) (VGroup,
-		MUIA_Frame, MUIV_Frame_Group,
-		Child, (IPTR) (HGroup,
-		    Child, (IPTR) HVSpace,
-		    Child, (IPTR) Label2(__(MSG_LINE)),
-		End),
-		Child, (IPTR) (HGroup,
-		    Child, (IPTR) Label2(__(MSG_NAME)),
-		    Child, (IPTR)(str_name = StringObject,
-			MUIA_CycleChain, 1,
-			MUIA_String_Contents, (IPTR) oldname,
-			MUIA_String_MaxLen, MAXFILENAMELENGTH,
-			MUIA_String_Reject, (IPTR) illegal_chars, // Doesn't work :-(
-			MUIA_String_Columns, -1,
-			MUIA_Frame, MUIV_Frame_String,
-		    End),
-		End),
-		Child, (IPTR) (RectangleObject, 
-		    MUIA_Rectangle_HBar, TRUE,
-		    MUIA_FixHeight,      2,
-		End),
-		Child, (IPTR) (HGroup,
-		    Child, (IPTR) (bt_ok = ImageButton(__(MSG_OK), "THEME:Images/Gadgets/Prefs/Save")),
-		    Child, (IPTR) (bt_cancel = ImageButton(__(MSG_CANCEL),"THEME:Images/Gadgets/Prefs/Cancel")),
-		End),
-	    End),
-	End),
+        SubWindow, (IPTR)(window = WindowObject,
+            MUIA_Window_Title, __(MSG_WINDOW_TITLE),
+            MUIA_Window_NoMenus, TRUE,
+            MUIA_Window_CloseGadget, FALSE,
+            WindowContents, (IPTR) (VGroup,
+            MUIA_Frame, MUIV_Frame_Group,
+            Child, (IPTR) (HGroup,
+                Child, (IPTR) HVSpace,
+                Child, (IPTR) Label2(__(MSG_LINE)),
+            End),
+            Child, (IPTR) (HGroup,
+                Child, (IPTR) Label2(__(MSG_NAME)),
+                Child, (IPTR)(str_name = StringObject,
+                MUIA_CycleChain, 1,
+                MUIA_String_Contents, (IPTR) oldname,
+                MUIA_String_MaxLen, MAXFILENAMELENGTH,
+                MUIA_String_Reject, (IPTR) illegal_chars, // Doesn't work :-(
+                MUIA_String_Columns, -1,
+                MUIA_Frame, MUIV_Frame_String,
+                End),
+            End),
+            Child, (IPTR) (RectangleObject, 
+                MUIA_Rectangle_HBar, TRUE,
+                MUIA_FixHeight,      2,
+            End),
+            Child, (IPTR) (HGroup,
+                Child, (IPTR) (bt_ok = ImageButton(__(MSG_OK), "THEME:Images/Gadgets/Prefs/Save")),
+                Child, (IPTR) (bt_cancel = ImageButton(__(MSG_CANCEL),"THEME:Images/Gadgets/Prefs/Cancel")),
+            End),
+            End),
+        End),
     End);
-    if (!app)
-	Cleanup(_(MSG_FAILED_CREATE_APP));
+    
+    if (!app) 
+        Cleanup(_(MSG_FAILED_CREATE_APP));
 
     DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
 	    app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -141,7 +142,7 @@ static void bt_ok_hook_function(void)
 
     if (doRename(oldname, newname))
     {
-	DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	   DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     }
 }
 
@@ -150,7 +151,7 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
 {
     BOOL retval = FALSE;
     if (( oldname == NULL) || (newname == NULL))
-	return retval;
+	   return retval;
 
     STRPTR oldinfoname = NULL;
     STRPTR newinfoname = NULL;
@@ -160,8 +161,8 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
     oldinfoname = AllocVec(strlen(oldname) + 6, MEMF_ANY);
     if (!oldinfoname)
     {
-	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_OUTOFMEMORY));
-	goto end;
+        MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_OUTOFMEMORY));
+        goto end;
     }	
     strcpy(oldinfoname, oldname);
     strcat(oldinfoname, ".info");
@@ -169,51 +170,51 @@ static BOOL doRename(const STRPTR oldname, const STRPTR newname)
     newinfoname = AllocVec(strlen(newname) + 6, MEMF_ANY);
     if (!newinfoname)
     {
-	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_OUTOFMEMORY));
-	goto end;
+        MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_OUTOFMEMORY));
+        goto end;
     }	
     strcpy(newinfoname, newname);
     strcat(newinfoname, ".info");
 
     if (strpbrk(newname, illegal_chars))
     {
-	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ILLEGAL_CHARS), newname);
-	goto end;
+        MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ILLEGAL_CHARS), newname);
+        goto end;
     }
 
     if ((test = Lock(newname, ACCESS_READ)))
     {
-	UnLock(test);
-	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), newname);
-	goto end;
+        UnLock(test);
+        MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), newname);
+        goto end;
     }
 
     if ((test = Lock(oldinfoname, ACCESS_READ)))
     {
-	UnLock(test);
-	infoexists = TRUE; // we have an .info file
-	test = Lock(newinfoname, ACCESS_READ);
-	if (test)
-	{
-	    UnLock(test);
-	    MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), newinfoname);
-	    goto end;
-	}
+        UnLock(test);
+        infoexists = TRUE; // we have an .info file
+        test = Lock(newinfoname, ACCESS_READ);
+        if (test)
+        {
+            UnLock(test);
+            MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_ALREADY_EXIST), newinfoname);
+            goto end;
+        }
     }
 
     if (Rename(oldname, newname) == DOSFALSE)
     {
-	MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_FAILED), oldname, GetDosErrorString(IoErr()));
-	goto end;
+        MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_FAILED), oldname, GetDosErrorString(IoErr()));
+        goto end;
     }
 
     if (infoexists)
     {
-	if ( Rename(oldinfoname, newinfoname) == DOSFALSE)
-	{
-	    MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_FAILED), oldinfoname, GetDosErrorString(IoErr()));
-	    goto end;
-	}
+        if ( Rename(oldinfoname, newinfoname) == DOSFALSE)
+        {
+            MUI_Request(app, window, 0, _(MSG_ERROR_TITLE), _(MSG_OK), _(MSG_FAILED), oldinfoname, GetDosErrorString(IoErr()));
+            goto end;
+        }
     }
 
     retval = TRUE;
@@ -233,44 +234,44 @@ static STRPTR AllocateNameFromLock(BPTR lock)
 
     while (!done)
     {
-	FreeVec(buffer);
-
-	buffer = AllocVec(length, MEMF_ANY);
-	if (buffer != NULL)
-	{
-	    if (NameFromLock(lock, buffer, length))
-	    {
-		done = TRUE;
-		break;
-	    }
-	    else
-	    {
-		if (IoErr() == ERROR_LINE_TOO_LONG)
-		{
-		    length += 512;
-		    continue;
-		}
-		else
-		{
-		    break;
-		}
-	    }
-	}
-	else
-	{
-	    SetIoErr(ERROR_NO_FREE_STORE);
-	    break;
-	}
+        FreeVec(buffer);
+    
+        buffer = AllocVec(length, MEMF_ANY);
+        if (buffer != NULL)
+        {
+            if (NameFromLock(lock, buffer, length))
+            {
+                done = TRUE;
+                break;
+            }
+            else
+            {
+                if (IoErr() == ERROR_LINE_TOO_LONG)
+                {
+                    length += 512;
+                    continue;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            break;
+        }
     }
 
     if (done)
     {
-	return buffer;
+        return buffer;
     }
     else
     {
-	FreeVec(buffer);
-	return NULL;
+        FreeVec(buffer);
+        return NULL;
     }
 }
 
@@ -280,25 +281,25 @@ static void Cleanup(STRPTR s)
     MUI_DisposeObject(app);
 
     if (oldlock != (BPTR)-1)
-	CurrentDir(oldlock);
+	   CurrentDir(oldlock);
 
     if (s)
     {
-	if (IntuitionBase)
-	{
-	    struct EasyStruct es;
-	    es.es_StructSize = sizeof(struct EasyStruct);
-	    es.es_Flags = 0;
-	    es.es_Title = _(MSG_ERROR_TITLE);
-	    es.es_TextFormat = s;
-	    es.es_GadgetFormat = _(MSG_OK);
-	    EasyRequest(NULL, &es, NULL, NULL);
-	}
-	else
-	{
-	    PutStr(s);
-	}
-	exit(RETURN_ERROR);
+        if (IntuitionBase)
+        {
+            struct EasyStruct es;
+            es.es_StructSize = sizeof(struct EasyStruct);
+            es.es_Flags = 0;
+            es.es_Title = _(MSG_ERROR_TITLE);
+            es.es_TextFormat = s;
+            es.es_GadgetFormat = _(MSG_OK);
+            EasyRequest(NULL, &es, NULL, NULL);
+        }
+        else
+        {
+            PutStr(s);
+        }
+        exit(RETURN_ERROR);
     }
     exit(RETURN_OK);
 }
