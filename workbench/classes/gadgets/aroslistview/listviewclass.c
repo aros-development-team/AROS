@@ -414,7 +414,7 @@ failure:
 /**********************
 **  Listview::Get()  **
 **********************/
-IPTR ARSOListview__OM_GET(Class *cl, Object *o, struct opGet *msg)
+IPTR AROSListview__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     IPTR retval = 1UL;
     struct LVData *data;
