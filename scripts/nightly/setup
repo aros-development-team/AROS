@@ -42,6 +42,9 @@ case $HOST_CPU in
     i?86)
         HOST_CPU=i386
         ;;
+    ppc)
+        HOST_CPU=ppc
+        ;;
 esac
 
 
