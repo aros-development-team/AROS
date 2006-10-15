@@ -28,7 +28,7 @@ $Id$
 #include <proto/layers.h>
 #include <proto/muimaster.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define MYDEBUG
@@ -38,7 +38,7 @@ $Id$
 #include "support.h"
 #include "imspec.h"
 
-#define ICONLIST_TEXTMARGIN 4
+#define ICONLIST_TEXTMARGIN 5
 
 extern struct Library *MUIMasterBase;
 
@@ -176,7 +176,7 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
 Draw the icon at its position
 **************************************************************************/
 static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon)
-{
+{   
     struct Rectangle iconrect;
     struct Rectangle objrect;
 
@@ -474,7 +474,7 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct IconEntry *icon;
     int gridx = data->max_x + 8;
-    int gridy = data->max_y + 8;
+    int gridy = data->max_y + data->IconFont->tf_Baseline;
     int cur_x = gridx / 2;
     int cur_y = gridy / 2;
 
@@ -820,10 +820,10 @@ IPTR IconList__MUIM_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *ms
 }
 
 /**************************************************************************
-MUIM_Draw
+MUIM_Draw - draw the IconList
 **************************************************************************/
 IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
-{
+{   
     struct MUI_IconData *data = INST_DATA(cl, obj);
     APTR clip;
     struct IconEntry *icon;
