@@ -227,19 +227,19 @@ void wanderer_backdrop(Object **pstrip)
 
 void window_new_drawer(char **cdptr)
 {
-    kprintf("NewDrawer %s\n", *cdptr);
+    D(bug("[wanderer] NewDrawer %s\n", *cdptr));
 
     Object *actwindow = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
     Object *wbwindow = (Object *) XGET(app, MUIA_Wanderer_WorkbenchWindow);
     if (actwindow == wbwindow)
     {
 	/* This check is necessary because WorkbenchWindow has path RAM: */
-	kprintf("Can't call WBNewDrawer for WorkbenchWindow\n");
+	D(bug("[wanderer] Can't call WBNewDrawer for WorkbenchWindow\n"));
 	return;
     }
     if ( XGET(actwindow, MUIA_Window_Open) == FALSE )
     {
-	kprintf("Can't call WBNewDrawer: the active window isn't open\n");
+	D(bug("[wanderer] Can't call WBNewDrawer: the active window isn't open\n"));
 	return;
     }
 
@@ -471,7 +471,7 @@ void icon_rename(void)
             BPTR parent = ParentDir(lock);
             UnLock(lock);
             
-            kprintf("*** selected: %s\n", entry->filename);
+            D(bug("[wanderer] *** selected: %s\n", entry->filename));
             
             OpenWorkbenchObject
             (
@@ -481,7 +481,7 @@ void icon_rename(void)
                 TAG_DONE
             );
             
-            kprintf("*** selected: %s\n", entry->filename);
+            D(bug("[wanderer] *** selected: %s\n", entry->filename));
             
             UnLock(parent);
         }
@@ -508,9 +508,9 @@ void icon_information()
             BPTR lock   = Lock(entry->filename, ACCESS_READ);
             BPTR parent = ParentDir(lock);
             
-            kprintf("*** selected: %s\n", entry->filename);
+            D(bug("[wanderer] selected: %s\n", entry->filename));
             
-            WBInfo(parent, FilePart(entry->filename), NULL);
+            WBInfo(lock, entry->filename, NULL);
             
             UnLock(parent);
             UnLock(lock);
@@ -538,7 +538,7 @@ void icon_delete(void)
             BPTR parent = ParentDir(lock);
             UnLock(lock);
             
-            kprintf("*** selected: %s\n", entry->filename);
+            D(bug("[wanderer] selected: %s\n", entry->filename));
             
             OpenWorkbenchObject
             (
@@ -548,7 +548,7 @@ void icon_delete(void)
                 TAG_DONE
             );
             
-            kprintf("*** selected: %s\n", entry->filename);
+            D(bug("[wanderer] selected: %s\n", entry->filename));
             
             UnLock(parent);
         }
@@ -561,7 +561,10 @@ void icon_delete(void)
 
 void wanderer_guisettings(void)
 {
-    DoMethod(app, MUIM_Application_OpenConfigWindow);
+    //DoMethod(app, MUIM_Application_OpenConfigWindow);
+    OpenWorkbenchObject("SYS:Prefs/Zune",
+                WBOPENA_ArgName, (IPTR) "WANDERER",
+                TAG_DONE);
 }
 
 void wanderer_about(void)
@@ -571,9 +574,12 @@ void wanderer_about(void)
 
 void wanderer_quit(void)
 {
-    if (MUI_RequestA(app, NULL, 0, "Wanderer", _(MSG_YESNO), _(MSG_REALLYQUIT), NULL))
-	DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    //if (MUI_RequestA(app, NULL, 0, "Wanderer", _(MSG_YESNO), _(MSG_REALLYQUIT), NULL))
+	//DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    OpenWorkbenchObject("WANDERER:Tools/Quit", TAG_DONE);
 }
+
+
 
 AROS_UFH3
 (
@@ -587,113 +593,143 @@ AROS_UFH3
     
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
-	static char buf[1024];
-	struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+       static char buf[1024];
+	   struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
 	
-	DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
-	if ((int)ent == MUIV_IconList_NextSelected_End) return;
+	   DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
+	   if ((int)ent == MUIV_IconList_NextSelected_End) return;
 
-	if (msg->isroot)
-	{
-	    strcpy(buf,ent->label);
-	    strcat(buf,":");
-	}
-        else
-	{
-	    strcpy(buf,ent->filename);
-	}
+	   if (msg->isroot)
+	   {
+	       strcpy(buf,ent->label);
+	       strcat(buf,":");
+	   }
+       else
+	   {
+	       strcpy(buf,ent->filename);
+       }
 
-	if (ent->type == ST_ROOT || ent->type == ST_USERDIR)
-	{
-	    Object *cstate = (Object*)(((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
-	    Object *child;
 
-	    while ((child = NextObject(&cstate)))
-	    {
-	    	if (XGET(child, MUIA_UserData))
-	    	{
-		    char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
-		    if (child_drawer && !Stricmp(buf,child_drawer))
-		    {
-		    	int is_open = XGET(child, MUIA_Window_Open);
-		    	if (!is_open)
-			    DoMethod(child, MUIM_IconWindow_Open);
-			else
-			{
-			    DoMethod(child, MUIM_Window_ToFront);
-			    set(child, MUIA_Window_Activate, TRUE);
-			}
-		    	return;
-		    }
-	    	}
-	    }
+    	if  ( (ent->type == ST_ROOT) || ent->type == ST_USERDIR) 
+    	{
+    	    Object *cstate = (Object*)(((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
+    	    Object *child;
+    
 
-	    {
-		/* Check if the window for this drawer is already opened */
-		DoMethod(app, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
-                // FIXME: error handling
-	    }
-	} 
+        	    while ((child = NextObject(&cstate)))
+        	    {
+        	    	if (XGET(child, MUIA_UserData))
+        	    	{
+            		    char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
+            		    if (child_drawer && !Stricmp(buf,child_drawer))
+            		    {
+            		    	int is_open = XGET(child, MUIA_Window_Open);
+            		    	
+            		    	if (!is_open)
+            		    	{
+            			       DoMethod(child, MUIM_IconWindow_Open);
+                            }
+                			else
+                			{
+                			    DoMethod(child, MUIM_Window_ToFront);
+                			    set(child, MUIA_Window_Activate, TRUE);
+                			}
+                			
+            		    	return;
+            		    }
+        	    	}
+        	    } 
+           
+        		/* Check if the window for this drawer is already opened */
+        		DoMethod(app, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
+                        // FIXME: error handling
+
+
+    	} 
         else if (ent->type == ST_FILE)
-	{
-	    BPTR newwd, oldwd, file;
-
-	    /* Set the CurrentDir to the path of the executable to be started */
-	    file = Lock(ent->filename, SHARED_LOCK);
-	    if(file)
 	    {
-		newwd = ParentDir(file);
-		oldwd = CurrentDir(newwd);
-		if (!OpenWorkbenchObject(ent->filename, TAG_DONE))
-		{
-		    execute_open_with_command(newwd, FilePart(ent->filename));
-		}
-		CurrentDir(oldwd);
-		UnLock(newwd);
-		UnLock(file);
-	    }
-	}
+            BPTR newwd, oldwd, file;
+    
+    	    /* Set the CurrentDir to the path of the executable to be started */
+    	    file = Lock(ent->filename, SHARED_LOCK);
+    	    if(file)
+    	    {
+        		newwd = ParentDir(file);
+        		oldwd = CurrentDir(newwd);
+        		
+        		if (!OpenWorkbenchObject(ent->filename, TAG_DONE))
+        		{
+        		    execute_open_with_command(newwd, FilePart(ent->filename));
+        		}
+        		
+        		CurrentDir(oldwd);
+        		UnLock(newwd);
+        		UnLock(file);
+	        }
+         }
+    } 
+    else     if (msg->type == ICONWINDOW_ACTION_DIRUP)
+    {               
+       char *actual_drawer = (char*)XGET(obj, MUIA_IconWindow_Drawer);
+       char *parent_drawer = strrchr(actual_drawer,'/');
+       char *root_drawer = strrchr(actual_drawer,':');
+      
+       /* check if dir is not drive root dir */
+       if ( strlen(root_drawer) > 1 )
+       {
+           /* check if second or third level directory*/
+           if (!parent_drawer)
+           {
+               (*(root_drawer+1)) = 0;
+               set(obj, MUIA_IconWindow_Drawer, actual_drawer);
+           }
+           else
+           {
+               (*parent_drawer) = 0;
+               set(obj, MUIA_IconWindow_Drawer, actual_drawer);
+           } 
+           
+           /* update the window */
+           window_update();
+       }
+    
     } 
     else if (msg->type == ICONWINDOW_ACTION_CLICK)
     {
-	if (!msg->click->shift)
-	{
-	    Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
-	    Object *child;
-
-	    while ((child = NextObject(&cstate)))
-	    {
-	    	if (XGET(child, MUIA_UserData))
-	    	{
-		    if (child != obj)
-		    {
-			DoMethod(child, MUIM_IconWindow_UnselectAll);
-		    }
-		}
-	    }
-	}
+    	if (!msg->click->shift)
+    	{
+    	    Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
+    	    Object *child;
+    
+    	    while ((child = NextObject(&cstate)))
+    	    {
+    	    	if (XGET(child, MUIA_UserData))
+    	    	{
+                     if (child != obj)  DoMethod(child, MUIM_IconWindow_UnselectAll);
+                }
+    	    }
+    	}
     } 
     else if (msg->type == ICONWINDOW_ACTION_ICONDROP)
     {
-	Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
-	Object *child;
-
-	while ((child = NextObject(&cstate)))
-	{
-	    if (XGET(child, MUIA_UserData))
-	    {
-		struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
-		Object *iconlist = (Object*)XGET(child, MUIA_IconWindow_IconList);
-
-		do
-		{
-		    DoMethod(iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
-		    if ((int)ent == MUIV_IconList_NextSelected_End) break;
-
-		    Printf("%s\n",ent->filename);
-		} while(1);
-	    }
-	}
+    	Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
+    	Object *child;
+    
+    	while ((child = NextObject(&cstate)))
+    	{
+    	    if (XGET(child, MUIA_UserData))
+    	    {
+        		struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+        		Object *iconlist = (Object*)XGET(child, MUIA_IconWindow_IconList);
+        
+        		do {
+        		    DoMethod(iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
+        		    if ((int)ent == MUIV_IconList_NextSelected_End) break;
+        
+        		    /* Printf("%s\n",ent->filename); */
+        		} while(1);
+    	    }
+    	}
     }
 
     AROS_USERFUNC_EXIT
@@ -810,10 +846,10 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         CLASS, self, NULL,
         
         MUIA_Application_Title,       (IPTR) "Wanderer",
-	MUIA_Application_Base,        (IPTR) "WANDERER",
-	MUIA_Application_Version,     (IPTR) VERSION,
-	MUIA_Application_Description, (IPTR) _(MSG_DESCRIPTION),
-	MUIA_Application_SingleTask,         TRUE,
+	    MUIA_Application_Base,        (IPTR) "WANDERER",
+	    MUIA_Application_Version,     (IPTR) VERSION,
+	    MUIA_Application_Description, (IPTR) _(MSG_DESCRIPTION),
+	    MUIA_Application_SingleTask,         TRUE,
     	
         TAG_MORE, (IPTR) message->ops_AttrList
     );
@@ -905,8 +941,8 @@ IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
             They only have been added if the creation of the msg port was
 	    successful
         */
-	DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->wd_TimerIHN);
-	DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->wd_CommandIHN);
+	    DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->wd_TimerIHN);
+	    DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->wd_CommandIHN);
         DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->wd_NotifyIHN);
 	
         UnregisterWorkbench(data->wd_CommandPort);

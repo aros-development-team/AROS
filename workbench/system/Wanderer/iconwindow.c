@@ -25,10 +25,13 @@
 struct IconWindow_DATA
 {
     Object           *iwd_IconList;
+    Object           *iwd_toolbarPanel;
     BOOL              iwd_IsRoot;
     BOOL              iwd_IsBackdrop;
     struct Hook      *iwd_ActionHook;
     struct TextFont  *iwd_WindowFont;
+    
+    char              directory_path[1024];
 };
 
 /*** Macros *****************************************************************/
@@ -37,7 +40,7 @@ struct IconWindow_DATA
 /*** Methods ****************************************************************/
 Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    Object           *iconList;
+    Object           *iconList, *toolbarPanel, *bt_dirup, *bt_search;
     BOOL              isRoot,
                       isBackdrop;
     struct Hook      *actionHook;
@@ -79,7 +82,14 @@ D(bug("[iconwindow] Font @ %x\n", WindowFont));
         
         WindowContents, (IPTR) VGroup,
             InnerSpacing(0, 0),
-            
+
+              /* window navigation bar */
+             Child, (IPTR) (toolbarPanel = HGroup,
+                  Child, (IPTR) (bt_dirup = (ImageButton("", "THEME:Images/Gadgets/Prefs/Revert"))),
+                  Child, (IPTR) (bt_search = (ImageButton("", "THEME:Images/Gadgets/Prefs/Test"))),
+             End),
+           
+            /* icon list */
             Child, (IPTR) IconListviewObject,
                 MUIA_IconListview_UseWinBorder,        TRUE,
                 MUIA_IconListview_IconList,     (IPTR) iconList,
@@ -94,13 +104,23 @@ D(bug("[iconwindow] Font @ %x\n", WindowFont));
         SETUP_INST_DATA;
         
         data->iwd_IconList   = iconList;
+        data->iwd_toolbarPanel = toolbarPanel;        
         data->iwd_IsRoot     = isRoot;
         data->iwd_ActionHook = actionHook;
         data->iwd_IsBackdrop = -1;
         SET(self, MUIA_IconWindow_IsBackdrop, isBackdrop);
         
         data->iwd_WindowFont = WindowFont;        
-        
+
+        /* bt_dirup button notification*/
+        DoMethod(bt_dirup, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IconWindow_DirectoryUp);
+
+        /* no tool bar when root */
+        if (isRoot)
+        {
+            SET(toolbarPanel, MUIA_ShowMe, FALSE);
+        }
+               
         /*
             If double clicked then we call our own private methods, that's 
             easier then using Hooks 
@@ -353,6 +373,26 @@ IPTR IconWindow__MUIM_IconWindow_Open
     return TRUE;
 }
 
+IPTR IconWindow__MUIM_IconWindow_DirectoryUp
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    
+    if (data->iwd_ActionHook)
+    {
+        struct IconWindow_ActionMsg msg;
+        msg.type     = ICONWINDOW_ACTION_DIRUP;
+        msg.iconlist = data->iwd_IconList;
+        msg.isroot   = data->iwd_IsRoot;
+        msg.click    = NULL;
+        CallHookPkt(data->iwd_ActionHook, self, &msg);
+    }
+    
+    return TRUE;
+}
+
 IPTR IconWindow__MUIM_IconWindow_UnselectAll
 (
     Class *CLASS, Object *self, Msg message
@@ -366,7 +406,7 @@ IPTR IconWindow__MUIM_IconWindow_UnselectAll
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_10
+ICONWINDOW_CUSTOMCLASS
 (
     IconWindow, NULL, MUIC_Window, NULL,
     OM_NEW,                        struct opSet *,
@@ -378,5 +418,6 @@ ZUNE_CUSTOMCLASS_10
     MUIM_IconWindow_UnselectAll,   Msg,
     MUIM_IconWindow_DoubleClicked, Msg,
     MUIM_IconWindow_IconsDropped,  Msg,
-    MUIM_IconWindow_Clicked,       Msg
+    MUIM_IconWindow_Clicked,       Msg,
+    MUIM_IconWindow_DirectoryUp,   Msg
 );
