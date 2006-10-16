@@ -86,8 +86,7 @@
 #define MSG_MEN_TOOLS 52
 #define MSG_REALLYQUIT 53
 #define MSG_YESNO 54
-#define MEN_WINDOW_NEW 55
-#define MSG_DUMMY 56
+#define MSG_DUMMY 55
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -151,7 +150,6 @@
 #define MSG_MEN_TOOLS_STR "Tools"
 #define MSG_REALLYQUIT_STR "Do you really want to quit Wanderer?"
 #define MSG_YESNO_STR "*Yes|No"
-#define MEN_WINDOW_NEW_STR "New..."
 #define MSG_DUMMY_STR "DUMMY"
 
 #endif /* CATCOMP_STRINGS */
@@ -225,7 +223,6 @@ static const struct CatCompArrayType CatCompArray[] =
   {MSG_MEN_TOOLS,(STRPTR)MSG_MEN_TOOLS_STR},
   {MSG_REALLYQUIT,(STRPTR)MSG_REALLYQUIT_STR},
   {MSG_YESNO,(STRPTR)MSG_YESNO_STR},
-  {MEN_WINDOW_NEW,(STRPTR)MEN_WINDOW_NEW_STR},
   {MSG_DUMMY,(STRPTR)MSG_DUMMY_STR},
   {0,NULL}
 };

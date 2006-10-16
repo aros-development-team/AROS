@@ -4,7 +4,7 @@
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
-#define DEBUG 0
+#define DEBUG 1
 
 #include <exec/types.h>
 #include <libraries/mui.h>
@@ -42,7 +42,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     Object           *iconList, *toolbarPanel, *bt_dirup, *bt_search;
     BOOL              isRoot,
-                      isBackdrop;
+                    isBackdrop;
     struct Hook      *actionHook;
     struct TextFont  *WindowFont;
 
@@ -54,15 +54,15 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     if (isRoot)
     {
-        iconList = IconVolumeListObject,
-                     MUIA_Font, WindowFont,
-                   End;
+        iconList = (IPTR) IconVolumeListObject,
+            MUIA_Font, (IPTR) WindowFont,
+        End;
     }
     else
     {
         STRPTR drawer = (STRPTR) GetTagData(MUIA_IconWindow_Drawer, (IPTR) NULL, message->ops_AttrList);
-        iconList = IconDrawerListObject,
-            MUIA_Font, WindowFont,
+        iconList = (IPTR) IconDrawerListObject,
+            MUIA_Font, (IPTR) WindowFont,
             MUIA_IconDrawerList_Drawer, (IPTR) drawer, 
         End;
     }
@@ -78,17 +78,19 @@ D(bug("[iconwindow] Font @ %x\n", WindowFont));
         MUIA_Window_AltWidth,           100,
         MUIA_Window_AltHeight,           80,
         MUIA_Window_ScreenTitle, (IPTR) "",
-        MUIA_Font, WindowFont,
+        MUIA_Font, (IPTR) WindowFont,
         
         WindowContents, (IPTR) VGroup,
-            InnerSpacing(0, 0),
+            /*MUIA_Group_Spacing, 0,*/
+            InnerSpacing(0,0),
 
-              /* window navigation bar */
-             Child, (IPTR) (toolbarPanel = HGroup,
-                  Child, (IPTR) (bt_dirup = (ImageButton("", "THEME:Images/Gadgets/Prefs/Revert"))),
-                  Child, (IPTR) (bt_search = (ImageButton("", "THEME:Images/Gadgets/Prefs/Test"))),
-             End),
-           
+            /* window navigation bar */
+            Child, (IPTR) (toolbarPanel = GroupObject,
+                MUIA_Group_Horiz, TRUE,
+                Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
+                Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
+            End ),
+        
             /* icon list */
             Child, (IPTR) IconListviewObject,
                 MUIA_IconListview_UseWinBorder,        TRUE,
@@ -120,7 +122,7 @@ D(bug("[iconwindow] Font @ %x\n", WindowFont));
         {
             SET(toolbarPanel, MUIA_ShowMe, FALSE);
         }
-               
+            
         /*
             If double clicked then we call our own private methods, that's 
             easier then using Hooks 
@@ -156,21 +158,24 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     {
         switch (tag->ti_Tag)
         {
-/*            case MUIA_Window_Open:
+            case MUIA_Window_Open:
+                /* Commented out for unknown reason - please elaborate here!
                 {            
-                  IPTR retVal = DoSuperMethodA(CLASS, self, (Msg) message);
-                  if (data->iwd_WindowFont)
-                  {
+                IPTR retVal = DoSuperMethodA(CLASS, self, (Msg) message);
+                if (data->iwd_WindowFont)
+                {
 D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_WindowFont));
                     SetFont(_rp(self), data->iwd_WindowFont);
-                  }
-                  return retVal;
-                  break;
-                }*/
+                }
+                return retVal;
+                break;
+                }
+                */
             case MUIA_IconWindow_Font:
+                D(bug("[iconwindow] MUIA_IconWindow_Font: Setting Window Font [%x]\n", data->iwd_WindowFont));
                 data->iwd_WindowFont = (struct TextFont  *)tag->ti_Data;
-D(bug("[iconwindow] MUIA_IconWindow_Font: Setting Window Font [%x]\n", data->iwd_WindowFont));
-                SetFont(_rp(self), data->iwd_WindowFont);
+                if ( data->iwd_WindowFont != 1 )
+                    SetFont(_rp(self), data->iwd_WindowFont);
                 // Cause the window to redraw here!
                 break;
             case MUIA_IconWindow_IsBackdrop:
@@ -219,8 +224,8 @@ D(bug("[iconwindow] MUIA_IconWindow_Font: Setting Window Font [%x]\n", data->iwd
                     }
                     data->iwd_IsBackdrop = !!tag->ti_Data;
                     if (isOpen) SET(self, MUIA_Window_Open, TRUE);
-                 }
-                 break;
+                }
+                break;
         }
     }
     
@@ -261,8 +266,8 @@ IPTR IconWindow__MUIM_Window_Setup
     SETUP_INST_DATA;
     Object *prefs;
     ULONG   attribute = data->iwd_IsRoot 
-                      ? MUIA_WandererPrefs_WorkbenchBackground
-                      : MUIA_WandererPrefs_DrawerBackground;
+                    ? MUIA_WandererPrefs_WorkbenchBackground
+                    : MUIA_WandererPrefs_DrawerBackground;
     
     if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
     
