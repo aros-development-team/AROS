@@ -393,6 +393,10 @@ IPTR IconWindow__MUIM_IconWindow_DirectoryUp
         msg.isroot   = data->iwd_IsRoot;
         msg.click    = NULL;
         CallHookPkt(data->iwd_ActionHook, self, &msg);
+        
+        /* Update window title */
+        STRPTR title = (STRPTR) XGET(data->iwd_IconList, MUIA_IconDrawerList_Drawer);   
+        set(self, MUIA_Window_Title, title);
     }
     
     return TRUE;
