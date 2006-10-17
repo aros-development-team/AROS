@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 #MM					    workbench-classes-zune-betterstring-class \
 #MM					    workbench-classes-zune-betterstring-mcp-locale
 
-USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros -I../mcc -I..
+USER_INCLUDES = -I$(TOP)/contrib/necessary/mui/classes/nlist/commonaros -I../mcc -I..
 
 FILES := locale \
 	 CreatePrefsGroup \

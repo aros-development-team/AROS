@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-classes-zune-hotkeystring-class : includes linklibs
 
-USER_INCLUDES = -I$(TOP)/contrib/mui/classes/nlist/commonaros
+USER_INCLUDES = -I$(TOP)/contrib/necessary/mui/classes/nlist/commonaros
 
 FILES := Dispatcher \
 	 HandleInput
