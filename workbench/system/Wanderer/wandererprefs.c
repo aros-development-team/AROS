@@ -13,11 +13,15 @@
 #include <proto/muimaster.h>
 #include <proto/dos.h>
 #include <proto/alib.h>
+#include <proto/iffparse.h>
 
 #include <string.h>
 
 #include "wandererprefs.h"
 #include "support.h"
+
+#include <prefs/prefhdr.h>
+#include <prefs/wanderer.h>
 
 /*** Instance Data **********************************************************/
 struct WandererPrefs_DATA
@@ -34,11 +38,7 @@ BOOL SetString(STRPTR *dst, STRPTR src)
 {
     if (src != NULL)
     {
-        if
-        (
-               *dst == NULL
-            || strcmp(src, *dst) != 0
-        )
+        if (  (*dst == NULL)  ||  (strcmp(src, *dst) != 0)  )
         {
             STRPTR tmp = StrDup(src);
             
@@ -88,28 +88,14 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
         switch (tag->ti_Tag)
         {
             case MUIA_WandererPrefs_WorkbenchBackground:
-                if
-                (
-                    !SetString
-                    (
-                        &data->wpd_WorkbenchBackground, 
-                        (STRPTR) tag->ti_Data
-                    )
-                )
+                if ( !SetString (&data->wpd_WorkbenchBackground, (STRPTR) tag->ti_Data) )
                 {
                     tag->ti_Tag = TAG_IGNORE;
                 }                
                 break;
                 
             case MUIA_WandererPrefs_DrawerBackground:
-                if
-                (
-                    !SetString
-                    (
-                        &data->wpd_DrawerBackground, 
-                        (STRPTR) tag->ti_Data
-                    )
-                )
+                if ( !SetString (&data->wpd_DrawerBackground, (STRPTR) tag->ti_Data)  )
                 {
                     tag->ti_Tag = TAG_IGNORE;
                 }                
@@ -142,37 +128,87 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     return rv;
 }
 
+
 IPTR WandererPrefs__MUIM_WandererPrefs_Reload
 (
     Class *CLASS, Object *self, Msg message
 )
 {
-    BPTR fh;
+    struct ContextNode     *context;    
+    struct IFFHandle       *handle;
+    struct WandererPrefs    wpd;  
+    BOOL                    success = TRUE;
+    LONG                    error;
     
-    if ((fh = Open("ENV:SYS/Wanderer.prefs", MODE_OLDFILE)) != NULL)
+                    
+    if (!(handle = AllocIFF()))
+        return FALSE;
+    
+    handle->iff_Stream = (IPTR)Open("ENV:SYS/Wanderer.prefs", MODE_OLDFILE); 
+
+    if (!handle->iff_Stream) return FALSE;
+    
+    InitIFFasDOS(handle);
+
+    if ((error = OpenIFF(handle, IFFF_READ)) == 0)
     {
-        STRPTR buffer = NULL;
-        LONG   size;
+	
+        BYTE i;
         
-        Seek(fh, 0, OFFSET_END);
-        size = Seek(fh, 0, OFFSET_BEGINNING) + 2;
-        
-        if ((buffer = AllocVec(size, MEMF_ANY)) != NULL)
+        // FIXME: We want some sanity checking here!
+        for (i = 0; i < 1; i++)
         {
-            if (!ReadLine(fh, buffer, size)) goto end;
-            SET(self, MUIA_WandererPrefs_WorkbenchBackground, (IPTR) buffer);
-            
-            if (!ReadLine(fh, buffer, size)) goto end;
-            SET(self, MUIA_WandererPrefs_DrawerBackground, (IPTR) buffer);
-            
-end:        FreeVec(buffer);
+            if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
+            {
+                if ((error = ParseIFF(handle, IFFPARSE_SCAN)) == 0)
+                {
+                    context = CurrentChunk(handle);
+                    
+                    error = ReadChunkBytes( handle, &wpd, sizeof(struct WandererPrefs) );
+                    
+                    if (error < 0)
+                    {
+                        Printf("Error: ReadChunkBytes() returned %ld!\n", error);
+                    }                    
+                }
+                else
+                {
+                    Printf("ParseIFF() failed, returncode %ld!\n", error);
+                    success = FALSE;
+                    break;
+                }
+            }
+            else
+            {
+                Printf("StopChunk() failed, returncode %ld!\n", error);
+                success = FALSE;
+            }
         }
+
+        CloseIFF(handle);
+    }
+    else
+    {
+        //ShowError(_(MSG_CANT_OPEN_STREAM));
+    }
+
+    Close((IPTR)handle->iff_Stream);
+    FreeIFF(handle);
+    
+    
+    if (success)
+    {
+        /* TODO: fix problems with endianess?? */
+        //SMPByteSwap(&wpd);
         
-        Close(fh);
+        SET(self, MUIA_WandererPrefs_WorkbenchBackground, (STRPTR)wpd.wpd_WorkbenchBackground);
+        SET(self, MUIA_WandererPrefs_DrawerBackground, (STRPTR)wpd.wpd_DrawerBackground);    
+        
+        return TRUE;       
     }
 
     
-    return TRUE;
+    return FALSE;
 }
 
 /*** Setup ******************************************************************/

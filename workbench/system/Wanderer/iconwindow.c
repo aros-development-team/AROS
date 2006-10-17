@@ -114,13 +114,22 @@ D(bug("[iconwindow] Font @ %x\n", WindowFont));
         
         data->iwd_WindowFont = WindowFont;        
 
-        /* bt_dirup button notification*/
-        DoMethod(bt_dirup, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IconWindow_DirectoryUp);
 
         /* no tool bar when root */
         if (isRoot)
         {
             SET(toolbarPanel, MUIA_ShowMe, FALSE);
+                   
+            /* remove tooblbar objects - DOESNT WORK.. WHY??? */
+            /*DoMethod ( toolbarPanel, MUIM_Group_InitChange );
+            DoMethod ( toolbarPanel, OM_REMMEMBER, (IPTR) bt_dirup );
+            DoMethod ( toolbarPanel, OM_REMMEMBER, (IPTR) bt_search );
+            DoMethod ( toolbarPanel, MUIM_Group_ExitChange );*/
+        }
+        else
+        {
+            /* bt_dirup button notification */
+            DoMethod(bt_dirup, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IconWindow_DirectoryUp);            
         }
             
         /*

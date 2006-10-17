@@ -19,6 +19,10 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 #include <proto/dos.h>
+#include <proto/iffparse.h>
+
+#include <prefs/prefhdr.h>
+#include <prefs/wanderer.h>
 
 #include <string.h>
 
@@ -36,30 +40,6 @@ struct WPEditor_DATA
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct WPEditor_DATA *data = INST_DATA(CLASS, self)
 
-/*** Utility Functions ******************************************************/
-BOOL ReadLine(BPTR fh, STRPTR buffer, ULONG size)
-{
-    if (FGets(fh, buffer, size) != NULL)
-    {
-        ULONG last = strlen(buffer) - 1;
-        if (buffer[last] == '\n') buffer[last] = '\0';
-        
-        return TRUE;
-    }
-    
-    return FALSE;
-}
-
-BOOL WriteLine(BPTR fh, CONST_STRPTR buffer)
-{
-    if (FPuts(fh, buffer) != 0) goto error;
-    if (FPuts(fh, "\n")   != 0) goto error;
-
-    return TRUE;
-    
-error:
-    return FALSE;
-}
 
 /*** Methods ****************************************************************/
 Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
@@ -117,38 +97,90 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     return self;
 }
 
+
 IPTR WPEditor__MUIM_PrefsEditor_ImportFH
 (
     Class *CLASS, Object *self, 
     struct MUIP_PrefsEditor_ImportFH *message
 )
 {
+
     SETUP_INST_DATA;
     
-    BOOL   success = FALSE;
-    STRPTR buffer  = NULL;
-    LONG   size;
+    struct ContextNode     *context;
+    struct IFFHandle       *handle;
+    struct WandererPrefs    wpd;    
+    BOOL                    success = TRUE;
+    LONG                    error;
+
+
+                 
+    if (!(handle = AllocIFF()))
+        return FALSE;
     
-    if (message->fh != NULL)
+    handle->iff_Stream = (IPTR) message->fh;
+    InitIFFasDOS(handle);
+
+    if ((error = OpenIFF(handle, IFFF_READ)) == 0)
     {
-        Seek(message->fh, 0, OFFSET_END);
-        size = Seek(message->fh, 0, OFFSET_BEGINNING) + 2;
+	
+        BYTE i;
         
-        if ((buffer = AllocVec(size, MEMF_ANY)) != NULL)
+        // FIXME: We want some sanity checking here!
+        for (i = 0; i < 1; i++)
         {
-            if (!ReadLine(message->fh, buffer, size)) goto end;
-            NNSET(data->wped_WorkbenchPI, MUIA_Imagedisplay_Spec, buffer);
-            
-            if (!ReadLine(message->fh, buffer, size)) goto end;
-            NNSET(data->wped_DrawersPI, MUIA_Imagedisplay_Spec, buffer);
-            
-            success = TRUE;
-end:        FreeVec(buffer);
+            if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
+            {
+                if ((error = ParseIFF(handle, IFFPARSE_SCAN)) == 0)
+                {
+                    context = CurrentChunk(handle);
+                    
+                    error = ReadChunkBytes
+                    (
+                        handle, &wpd, sizeof(struct WandererPrefs)
+                    );
+                    
+                    if (error < 0)
+                    {
+                        Printf("Error: ReadChunkBytes() returned %ld!\n", error);
+                    }                    
+                }
+                else
+                {
+                    Printf("ParseIFF() failed, returncode %ld!\n", error);
+                    success = FALSE;
+                    break;
+                }
+            }
+            else
+            {
+                Printf("StopChunk() failed, returncode %ld!\n", error);
+                success = FALSE;
+            }
         }
+
+        CloseIFF(handle);
+    }
+    else
+    {
+        //ShowError(_(MSG_CANT_OPEN_STREAM));
+    }
+
+    FreeIFF(handle);
+    
+    
+    if (success)
+    {
+        //SMPByteSwap(&wpd);
+
+	    NNSET(data->wped_WorkbenchPI, MUIA_Imagedisplay_Spec, (STRPTR)wpd.wpd_WorkbenchBackground);
+        NNSET(data->wped_DrawersPI, MUIA_Imagedisplay_Spec, (STRPTR)wpd.wpd_DrawerBackground);
+            
     }
     
     return success;
 }
+
 
 IPTR WPEditor__MUIM_PrefsEditor_ExportFH
 (
@@ -158,23 +190,87 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
 {
     SETUP_INST_DATA;
     
-    BOOL success = FALSE;
-    
-    if (message->fh != NULL)
-    {
-        STRPTR ws = (STRPTR) XGET(data->wped_WorkbenchPI, MUIA_Imagedisplay_Spec);
-        STRPTR ds = (STRPTR) XGET(data->wped_DrawersPI, MUIA_Imagedisplay_Spec);
+    struct PrefHeader header = { 0 }; 
+    struct IFFHandle *handle;
+    BOOL              success = TRUE;
+    LONG              error   = 0;
         
-        if (!WriteLine(message->fh, ws)) goto end;
-        if (!WriteLine(message->fh, ds)) goto end;
+    if ((handle = AllocIFF()))
+    {
+        handle->iff_Stream = (IPTR) message->fh;
+        
+        InitIFFasDOS(handle);
+        
+        if (!(error = OpenIFF(handle, IFFF_WRITE))) /* NULL = successful! */
+        {
+            struct WandererPrefs wpd;    
+     	    memset(&wpd, 0, sizeof(wpd));
                 
-        success = TRUE;
+    	    BYTE i;
+            
+            PushChunk(handle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
+            
+            header.ph_Version = PHV_CURRENT;
+            header.ph_Type    = 0;
+            
+            PushChunk(handle, ID_PREF, ID_PRHD, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
+            
+            WriteChunkBytes(handle, &header, sizeof(struct PrefHeader));
+            
+            PopChunk(handle);     
+            
+            for (i = 0; i < 1; i++)
+            {
+                error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefs));
+                
+                if (error != 0) // TODO: We need some error checking here!
+                {
+                    Printf("error: PushChunk() = %ld ", error);
+                }
+                
+                /* */
+                STRPTR ws = (STRPTR) XGET(data->wped_WorkbenchPI, MUIA_Imagedisplay_Spec);
+                STRPTR ds = (STRPTR) XGET(data->wped_DrawersPI, MUIA_Imagedisplay_Spec);    
+                strcpy(wpd.wpd_WorkbenchBackground, ws);   
+                strcpy(wpd.wpd_DrawerBackground, ds);                  
+                
+                /* TODO: fix problems with endianess?? */
+		        //SMPByteSwap(&wpd); 
+			
+                error = WriteChunkBytes(handle, &wpd, sizeof(struct WandererPrefs));
+                error = PopChunk(handle);
+                                
+                if (error != 0) // TODO: We need some error checking here!
+                {
+                    Printf("error: PopChunk() = %ld ", error);
+                }
+                
+            }        
+            
+            /* Terminate the FORM */
+            PopChunk(handle);   
+        }
+        else
+        {
+            //ShowError(_(MSG_CANT_OPEN_STREAM));
+            Printf("error: cant open stream!");
+            success = FALSE;
+        }
+        
+        CloseIFF(handle);
+	    FreeIFF(handle);
+    }
+    else // AllocIFF()
+    {
+        // Do something more here - if IFF allocation has failed, something isn't right
+        //ShowError(_(MSG_CANT_ALLOCATE_IFFPTR));
+        success = FALSE;
     }
 
-end:
     return success;
 }
-
+           
+            
 /*** Setup ******************************************************************/
 ZUNE_CUSTOMCLASS_3
 (
