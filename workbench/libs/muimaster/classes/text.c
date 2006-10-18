@@ -63,7 +63,7 @@ static const int __revision = 1;
 static void setup_text (struct MUI_TextData *data, Object *obj);
 
 /**************************************************************************
- OM_NEW
+OM_NEW
 **************************************************************************/
 IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -72,7 +72,7 @@ IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj)
-	return FALSE;
+    return FALSE;
 
     data = INST_DATA(cl, obj);
     data->mtd_Flags = MTDF_SETMIN | MTDF_SETVMAX;
@@ -81,48 +81,48 @@ IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
-	switch (tag->ti_Tag)
-	{
-	    case    MUIA_Text_Contents:
-		    if (tag->ti_Data) data->contents = StrDup((STRPTR)tag->ti_Data);
-		    break;
-
-	    case    MUIA_Text_HiChar:
-		    data->hichar = tag->ti_Data;
-		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_HICHAR);
-		    break;
-
-	    case    MUIA_Text_HiCharIdx:
-		    data->hichar = tag->ti_Data;
-		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_HICHARIDX);
-		    break;
-
-	    case    MUIA_Text_PreParse:
-		    data->preparse = StrDup((STRPTR)tag->ti_Data);
-		    break;
-
-	    case    MUIA_Text_SetMin:
-		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETMIN);
-		    break;
-
-	    case    MUIA_Text_SetMax:
-		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETMAX);
-		    break;
-
-	    case    MUIA_Text_SetVMax:
-		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETVMAX);
-		    break;
-
+        switch (tag->ti_Tag)
+        {
+            case    MUIA_Text_Contents:
+                if (tag->ti_Data) data->contents = StrDup((STRPTR)tag->ti_Data);
+                break;
+    
+            case    MUIA_Text_HiChar:
+                data->hichar = tag->ti_Data;
+                _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_HICHAR);
+                break;
+    
+            case    MUIA_Text_HiCharIdx:
+                data->hichar = tag->ti_Data;
+                _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_HICHARIDX);
+                break;
+    
+            case    MUIA_Text_PreParse:
+                data->preparse = StrDup((STRPTR)tag->ti_Data);
+                break;
+    
+            case    MUIA_Text_SetMin:
+                _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETMIN);
+                break;
+    
+            case    MUIA_Text_SetMax:
+                _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETMAX);
+                break;
+    
+            case    MUIA_Text_SetVMax:
+                _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETVMAX);
+                break;
+    
 #if 0
-	    case    MUIA_Text_Editable:
-		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_EDITABLE);
-		    break;
-
-	    case    MUIA_Text_Multiline:
-		    _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_MULTILINE);
-		    break;
+            case    MUIA_Text_Editable:
+                _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_EDITABLE);
+                break;
+    
+            case    MUIA_Text_Multiline:
+                _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_MULTILINE);
+                break;
 #endif
-	}
+        }
     }
 
     if (!data->preparse) data->preparse = StrDup("");
@@ -130,8 +130,8 @@ IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (!data->contents || !data->preparse)
     {
-	CoerceMethod(cl, obj, OM_DISPOSE);
-	return (IPTR)NULL;
+        CoerceMethod(cl, obj, OM_DISPOSE);
+        return (IPTR)NULL;
     }
 
 /*      D(bug("Text_New(0x%lx)\n", obj)); */
@@ -148,7 +148,7 @@ IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 /**************************************************************************
- OM_DISPOSE
+OM_DISPOSE
 **************************************************************************/
 IPTR Text__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
@@ -161,7 +161,7 @@ IPTR Text__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 }
 
 /**************************************************************************
- OM_SET
+OM_SET
 **************************************************************************/
 IPTR Text__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -171,47 +171,48 @@ IPTR Text__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
-	switch (tag->ti_Tag)
-	{
-	    case    MUIA_Text_Contents:
-		    {
-		    	char *new_contents = StrDup(((char*)tag->ti_Data)?(char*)tag->ti_Data:"");
-		    	if (new_contents)
-		    	{
-			    if (data->ztext)
-			    {
-				zune_text_destroy(data->ztext);
-				data->ztext = NULL;
-			    }
-			    FreeVec(data->contents);
-			    data->contents = new_contents;
-			    if (_flags(obj) & MADF_SETUP) setup_text(data, obj);
-			    MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
-			}
-		    }
-		    break;
-
-	    case    MUIA_Text_PreParse:
-		    {
-		    	char *new_preparse = StrDup(((char*)tag->ti_Data)?(char*)tag->ti_Data:"");
-		    	if (new_preparse)
-		    	{
-			    if (data->ztext)
-			    {
-				zune_text_destroy(data->ztext);
-				data->ztext = NULL;
-			    }
-			    FreeVec((APTR)data->preparse);
-			    data->preparse = new_preparse;
-			    if (_flags(obj) & MADF_SETUP) setup_text(data, obj);
-			    MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
-			}
-		    }
-		    break;
-	    case MUIA_Selected:
-		D(bug("Text_Set(%p) : MUIA_Selected val=%ld sss=%d\n", obj, tag->ti_Data, !!(_flags(obj) & MADF_SHOWSELSTATE)));
-		break;
-	}
+        switch (tag->ti_Tag)
+        {
+            case MUIA_Text_Contents:
+            {
+                char *new_contents = StrDup(((char*)tag->ti_Data)?(char*)tag->ti_Data:"");
+                if (new_contents)
+                {
+                    if (data->ztext)
+                    {
+                        zune_text_destroy(data->ztext);
+                        data->ztext = NULL;
+                    }
+                    FreeVec(data->contents);
+                    data->contents = new_contents;
+                    if (_flags(obj) & MADF_SETUP) setup_text(data, obj);
+                    MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
+                }
+            }
+            break;
+    
+            case MUIA_Text_PreParse:
+            {
+                char *new_preparse = StrDup(((char*)tag->ti_Data)?(char*)tag->ti_Data:"");
+                if (new_preparse)
+                {
+                    if (data->ztext)
+                    {
+                        zune_text_destroy(data->ztext);
+                        data->ztext = NULL;
+                    }
+                    FreeVec((APTR)data->preparse);
+                    data->preparse = new_preparse;
+                    if (_flags(obj) & MADF_SETUP) setup_text(data, obj);
+                    MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
+                }
+            }
+            break;
+            
+            case MUIA_Selected:
+                D(bug("Text_Set(%p) : MUIA_Selected val=%ld sss=%d\n", obj, tag->ti_Data, !!(_flags(obj) & MADF_SHOWSELSTATE)));
+                break;
+        }
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -219,7 +220,7 @@ IPTR Text__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
 
 /**************************************************************************
- OM_GET
+OM_GET
 **************************************************************************/
 IPTR Text__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
@@ -228,57 +229,60 @@ IPTR Text__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 #define STORE *(msg->opg_Storage)
     switch(msg->opg_AttrID)
     {
-	case	MUIA_Text_Contents:
-		STORE = (IPTR)data->contents;
-		return TRUE;
-
-	case	MUIA_Text_PreParse:
-		STORE = (IPTR)data->preparse;
-		return TRUE;
-
-	case	MUIA_Version:
-		STORE = __version;
-		return TRUE;
-
-	case	MUIA_Revision:
-		STORE = __revision;
-		return TRUE;
+        case MUIA_Text_Contents:
+            STORE = (IPTR)data->contents;
+            return TRUE;
+    
+        case MUIA_Text_PreParse:
+            STORE = (IPTR)data->preparse;
+            return TRUE;
+    
+        case MUIA_Version:
+            STORE = __version;
+            return TRUE;
+    
+        case MUIA_Revision:
+            STORE = __revision;
+            return TRUE;
     }
     return DoSuperMethodA(cl, obj, (Msg) msg);
 #undef STORE
 }
 
 /**************************************************************************
- ...
+...
 **************************************************************************/
 static void setup_text (struct MUI_TextData *data, Object *obj)
 {
     if (data->mtd_Flags & MTDF_HICHAR)
-	data->ztext = zune_text_new(data->preparse, data->contents,
-				    ZTEXT_ARG_HICHAR, data->hichar);
+    {
+        data->ztext = zune_text_new(data->preparse, data->contents,
+                    ZTEXT_ARG_HICHAR, data->hichar);
+    }
     else if (data->mtd_Flags & MTDF_HICHARIDX)
     {
-	data->ztext = zune_text_new(data->preparse, data->contents,
-				    ZTEXT_ARG_HICHARIDX, data->hichar);
+        data->ztext = zune_text_new(data->preparse, data->contents,
+                    ZTEXT_ARG_HICHARIDX, data->hichar);
     }
     else
-	data->ztext = zune_text_new(data->preparse, data->contents,
-				    ZTEXT_ARG_NONE, 0);
-
+    {
+        data->ztext = zune_text_new(data->preparse, data->contents,
+                    ZTEXT_ARG_NONE, 0);
+    }
     zune_text_get_bounds(data->ztext, obj);
 
 /*      D(bug("muimaster.library/text.c: ZText of 0x%lx at 0x%lx\n",obj,data->ztext)); */
 }
 
 /**************************************************************************
- MUIM_Setup
+MUIM_Setup
 **************************************************************************/
 IPTR Text__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
     if (!(DoSuperMethodA(cl, obj, (Msg) msg)))
-	return FALSE;
+        return FALSE;
 
     setup_text(data, obj);
 
@@ -287,7 +291,7 @@ IPTR Text__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 }
 
 /**************************************************************************
- MUIM_Cleanup
+MUIM_Cleanup
 **************************************************************************/
 IPTR Text__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
@@ -297,28 +301,28 @@ IPTR Text__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg
 
     if (data->ztext)
     {
-	zune_text_destroy(data->ztext);
-	data->ztext = NULL;
+        zune_text_destroy(data->ztext);
+        data->ztext = NULL;
     }
 
     return (DoSuperMethodA(cl, obj, (Msg) msg));
 }
 
 /**************************************************************************
- MUIM_Show
+MUIM_Show
 **************************************************************************/
 IPTR Text__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     //struct MUI_TextData *data = INST_DATA(cl, obj);
 
     if (!(DoSuperMethodA(cl, obj, (Msg) msg)))
-	return FALSE;
+        return FALSE;
 
     return TRUE;
 }
 
 /**************************************************************************
- MUIM_Hide
+MUIM_Hide
 **************************************************************************/
 IPTR Text__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
@@ -327,7 +331,7 @@ IPTR Text__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 }
 
 /**************************************************************************
- MUIM_AskMinMax
+MUIM_AskMinMax
 **************************************************************************/
 IPTR Text__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
@@ -344,16 +348,16 @@ IPTR Text__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax 
     if (!(data->mtd_Flags & MTDF_EDITABLE))
 #endif
     { 
-	msg->MinMaxInfo->MinWidth += data->ztext->width;
-	msg->MinMaxInfo->DefWidth += data->ztext->width;
-	msg->MinMaxInfo->MaxWidth += data->ztext->width;
+        msg->MinMaxInfo->MinWidth += data->ztext->width;
+        msg->MinMaxInfo->DefWidth += data->ztext->width;
+        msg->MinMaxInfo->MaxWidth += data->ztext->width;
     }
 #if 0
     else
     {
-	msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize*4;
-	msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize*12;
-	msg->MinMaxInfo->MaxWidth += MUI_MAXMAX;
+        msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize*4;
+        msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize*12;
+        msg->MinMaxInfo->MaxWidth += MUI_MAXMAX;
     }
 #endif
 
@@ -361,38 +365,38 @@ IPTR Text__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax 
     if (!(data->mtd_Flags & MTDF_MULTILINE))
 #endif
     {
-	msg->MinMaxInfo->MinHeight += height;
-	msg->MinMaxInfo->DefHeight += height;
-	if (!(data->mtd_Flags & MTDF_SETVMAX))
-	    msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
-	else
-	    msg->MinMaxInfo->MaxHeight += height;
+        msg->MinMaxInfo->MinHeight += height;
+        msg->MinMaxInfo->DefHeight += height;
+        if (!(data->mtd_Flags & MTDF_SETVMAX))
+            msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
+        else
+            msg->MinMaxInfo->MaxHeight += height;
     }
 #if 0
     else
     {
-	msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
-	msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize*10;
-	msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
+        msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
+        msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize*10;
+        msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
     }
 #endif
 
     if (!(data->mtd_Flags & MTDF_SETMAX))
-	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+        msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
 
     if (!(data->mtd_Flags & MTDF_SETMIN))
-	msg->MinMaxInfo->MinWidth = 0;
+        msg->MinMaxInfo->MinWidth = 0;
 
     D(bug("Text_AskMinMax 0x%lx (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj, data->contents,
-	msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight,
-	msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight,
-	msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight));
+    msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight,
+    msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight,
+    msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight));
 
     return TRUE;
 }
 
 /**************************************************************************
- MUIM_Draw
+MUIM_Draw
 **************************************************************************/
 IPTR Text__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
@@ -400,37 +404,33 @@ IPTR Text__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     Object *act;
     APTR clip;
 
- /*     D(bug("muimaster.library/text.c: Draw Text Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
+/*     D(bug("muimaster.library/text.c: Draw Text Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
     if ((msg->flags & MADF_DRAWUPDATE) && !data->update)
-	return 0;
+        return 0;
 
     if (!(msg->flags & MADF_DRAWUPDATE)) data->update = 0;
 
     if (msg->flags & MADF_DRAWUPDATE && data->update == 1)
     {
-	DoMethod(obj,MUIM_DrawBackground, _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj), _mleft(obj), _mtop(obj), 0);
+        DoMethod(obj,MUIM_DrawBackground, _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj), _mleft(obj), _mtop(obj), 0);
     }
 
     clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
-			   _mwidth(obj), _mheight(obj));
+            _mwidth(obj), _mheight(obj));
 
     SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
 
     {
         get(_win(obj),MUIA_Window_ActiveObject,&act);
         {
-            int y;
-            {
-		y = (_mheight(obj) - data->ztext->height) / 2;
-            }
-
-	    zune_text_draw(data->ztext, obj,
-		   _mleft(obj), _mright(obj),
-		   _mtop(obj) + y);
-	}
+            int y = (_mheight(obj) - data->ztext->height) / 2;
+            zune_text_draw(data->ztext, obj,
+            _mleft(obj), _mright(obj),
+            _mtop(obj) + y);
+        }
     }
 
     MUI_RemoveClipping(muiRenderInfo(obj), clip);
@@ -439,7 +439,7 @@ IPTR Text__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 /**************************************************************************
- MUIM_Export : to export an objects "contents" to a dataspace object.
+MUIM_Export : to export an objects "contents" to a dataspace object.
 **************************************************************************/
 IPTR Text__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
@@ -449,8 +449,8 @@ IPTR Text__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 #if 0
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-	DoMethod(msg->dataspace, MUIM_Dataspace_AddString,
-		 _U(id), _U("contents"), _U(data->contents));
+    DoMethod(msg->dataspace, MUIM_Dataspace_AddString,
+        _U(id), _U("contents"), _U(data->contents));
     }
 #endif
     return 0;
@@ -458,7 +458,7 @@ IPTR Text__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 
 
 /**************************************************************************
- MUIM_Import : to import an objects "contents" from a dataspace object.
+MUIM_Import : to import an objects "contents" from a dataspace object.
 **************************************************************************/
 IPTR Text__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
@@ -468,11 +468,11 @@ IPTR Text__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 #if 0
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-	if ((s = (STRPTR)DoMethod(msg->dataspace, MUIM_Dataspace_FindString,
-				  _U(id), _U("contents"))))
-	{
-	    set(obj, MUIA_Text_Contents, _U(s));
-	}
+    if ((s = (STRPTR)DoMethod(msg->dataspace, MUIM_Dataspace_FindString,
+                _U(id), _U("contents"))))
+    {
+        set(obj, MUIA_Text_Contents, _U(s));
+    }
     }
 #endif
     return 0;
@@ -483,19 +483,19 @@ BOOPSI_DISPATCHER(IPTR, Text_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:         return Text__OM_NEW(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE:     return Text__OM_DISPOSE(cl, obj, msg);
-	case OM_SET:         return Text__OM_SET(cl, obj, (struct opSet *)msg);
-	case OM_GET:         return Text__OM_GET(cl, obj, (struct opGet *)msg);
-
-	case MUIM_AskMinMax: return Text__MUIM_AskMinMax(cl, obj, (APTR)msg);
-	case MUIM_Draw:      return Text__MUIM_Draw(cl, obj, (APTR)msg);
-	case MUIM_Setup:     return Text__MUIM_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup:   return Text__MUIM_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_Show:      return Text__MUIM_Show(cl, obj, (APTR)msg);
-	case MUIM_Hide:      return Text__MUIM_Hide(cl, obj, (APTR)msg);
-	case MUIM_Export:    return Text__MUIM_Export(cl, obj, (APTR)msg);
-	case MUIM_Import:    return Text__MUIM_Import(cl, obj, (APTR)msg);
+        case OM_NEW:         return Text__OM_NEW(cl, obj, (struct opSet *) msg);
+        case OM_DISPOSE:     return Text__OM_DISPOSE(cl, obj, msg);
+        case OM_SET:         return Text__OM_SET(cl, obj, (struct opSet *)msg);
+        case OM_GET:         return Text__OM_GET(cl, obj, (struct opGet *)msg);
+    
+        case MUIM_AskMinMax: return Text__MUIM_AskMinMax(cl, obj, (APTR)msg);
+        case MUIM_Draw:      return Text__MUIM_Draw(cl, obj, (APTR)msg);
+        case MUIM_Setup:     return Text__MUIM_Setup(cl, obj, (APTR)msg);
+        case MUIM_Cleanup:   return Text__MUIM_Cleanup(cl, obj, (APTR)msg);
+        case MUIM_Show:      return Text__MUIM_Show(cl, obj, (APTR)msg);
+        case MUIM_Hide:      return Text__MUIM_Hide(cl, obj, (APTR)msg);
+        case MUIM_Export:    return Text__MUIM_Export(cl, obj, (APTR)msg);
+        case MUIM_Import:    return Text__MUIM_Import(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
@@ -505,8 +505,8 @@ BOOPSI_DISPATCHER_END
 
 
 /*
- * Class descriptor.
- */
+* Class descriptor.
+*/
 const struct __MUIBuiltinClass _MUI_Text_desc = { 
     MUIC_Text,
     MUIC_Area, 

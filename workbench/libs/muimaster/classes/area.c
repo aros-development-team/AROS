@@ -116,10 +116,10 @@ static void set_inner_sizes (Object *obj, struct MUI_AreaData *data);
 static void set_title_sizes (Object *obj, struct MUI_AreaData *data);
 
 static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
-			       const struct MUI_FrameSpec_intern *frame,
-			       const struct ZuneFrameGfx *zframe);
+                const struct MUI_FrameSpec_intern *frame,
+                const struct ZuneFrameGfx *zframe);
 static void setup_control_char (struct MUI_AreaData *data, Object *obj,
-				struct IClass *cl);
+                struct IClass *cl);
 static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
 
 //static void setup_cycle_chain (struct MUI_AreaData *data, Object *obj);
@@ -137,7 +137,7 @@ static void _zune_focus_new(Object *obj, int type)
     //bug("_zune_focus_new 1 %p\n", obj);
 
     if (NULL == obj || !(_flags(obj) & MADF_CANDRAW))
-	return;
+        return;
 
     parent = _parent(obj);
     rp = _rp(obj);
@@ -154,12 +154,12 @@ static void _zune_focus_new(Object *obj, int type)
 
     if (type == ZUNE_FOCUS_TYPE_ACTIVE_OBJ)
     {
-    	SetDrPt(rp, 0xCCCC);
-	x1--; y1--; x2++; y2++;
+        SetDrPt(rp, 0xCCCC);
+        x1--; y1--; x2++; y2++;
     }
     else
     {
-    	SetDrPt(rp,0xF0F0);
+        SetDrPt(rp,0xF0F0);
     }
 
     Move(rp, x1, y1);
@@ -177,7 +177,7 @@ static void _zune_focus_destroy(Object *obj, int type)
     //bug("_zune_focus_destroy 1 %p\n", obj);
 
     if (NULL == obj || !(_flags(obj) & MADF_CANDRAW))
-	return;
+    return;
 
     parent = _parent(obj);
     int x1 = _left(obj);
@@ -189,72 +189,72 @@ static void _zune_focus_destroy(Object *obj, int type)
 
     if (type == ZUNE_FOCUS_TYPE_ACTIVE_OBJ)
     {
-    	if (!parent || parent == _win(obj)) return;
+        if (!parent || parent == _win(obj)) return;
 
-    	x1--; y1--; x2++; y2++;
-	width = x2 - x1 + 1;
-    	height = y2 - y1 + 1;
+        x1--; y1--; x2++; y2++;
+        width = x2 - x1 + 1;
+        height = y2 - y1 + 1;
     
-	DoMethod(parent, MUIM_DrawBackground, x1, y1, width, 1, x1, y1, 0);
-	DoMethod(parent, MUIM_DrawBackground, x2, y1, 1, height, x2, y1, 0);
-	DoMethod(parent, MUIM_DrawBackground, x1, y2, width, 1, x1, y2, 0);
-	DoMethod(parent, MUIM_DrawBackground, x1, y1, 1, height, x1, y1, 0);
+        DoMethod(parent, MUIM_DrawBackground, x1, y1, width, 1, x1, y1, 0);
+        DoMethod(parent, MUIM_DrawBackground, x2, y1, 1, height, x2, y1, 0);
+        DoMethod(parent, MUIM_DrawBackground, x1, y2, width, 1, x1, y2, 0);
+        DoMethod(parent, MUIM_DrawBackground, x1, y1, 1, height, x1, y1, 0);
     }
     else
     {
-    	struct Region 	 *region;
-	struct Rectangle  rect;
-	APTR	    	  clip = NULL;
-	
-	region = NewRegion();
-	if (region)
-	{
-	    rect.MinX = _left(obj);
-	    rect.MinY = _top(obj);
-	    rect.MaxX = _right(obj);
-	    rect.MaxY = _top(obj);
-	    
-	    OrRectRegion(region, &rect);
-	    
-	    rect.MinX = _right(obj);
-	    rect.MinY = _top(obj);
-	    rect.MaxX = _right(obj);
-	    rect.MaxY = _bottom(obj);
-	    
-	    OrRectRegion(region, &rect);
-
-	    rect.MinX = _left(obj);
-	    rect.MinY = _bottom(obj);
-	    rect.MaxX = _right(obj);
-	    rect.MaxY = _bottom(obj);
-	    
-	    OrRectRegion(region, &rect);
-
-	    rect.MinX = _left(obj);
-	    rect.MinY = _top(obj);
-	    rect.MaxX = _left(obj);
-	    rect.MaxY = _bottom(obj);
-	    
-	    OrRectRegion(region, &rect);
-	 
-	    clip = MUI_AddClipRegion(muiRenderInfo(obj), region);  
-	     
-	} /* if (region) */
-	 
-    	MUI_Redraw(obj, MADF_DRAWOBJECT);
-	
-	if (region)
-	{
-	    MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-	}
-	
+        struct Region 	 *region;
+        struct Rectangle  rect;
+        APTR	    	  clip = NULL;
+        
+        region = NewRegion();
+        if (region)
+        {
+            rect.MinX = _left(obj);
+            rect.MinY = _top(obj);
+            rect.MaxX = _right(obj);
+            rect.MaxY = _top(obj);
+            
+            OrRectRegion(region, &rect);
+            
+            rect.MinX = _right(obj);
+            rect.MinY = _top(obj);
+            rect.MaxX = _right(obj);
+            rect.MaxY = _bottom(obj);
+            
+            OrRectRegion(region, &rect);
+    
+            rect.MinX = _left(obj);
+            rect.MinY = _bottom(obj);
+            rect.MaxX = _right(obj);
+            rect.MaxY = _bottom(obj);
+            
+            OrRectRegion(region, &rect);
+    
+            rect.MinX = _left(obj);
+            rect.MinY = _top(obj);
+            rect.MaxX = _left(obj);
+            rect.MaxY = _bottom(obj);
+            
+            OrRectRegion(region, &rect);
+        
+            clip = MUI_AddClipRegion(muiRenderInfo(obj), region);  
+            
+        } /* if (region) */
+    
+        MUI_Redraw(obj, MADF_DRAWOBJECT);
+    
+        if (region)
+        {
+            MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+        }
+    
     }
 
 }
 
 
 /**************************************************************************
- OM_NEW
+OM_NEW
 **************************************************************************/
 static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -275,145 +275,145 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
-	switch (tag->ti_Tag)
-	{
-	    case    MUIA_Background:
-		    data->mad_Flags |= MADF_OWNBG;
-		    if (data->mad_BackgroundSpec)
-		    {
-		    	zune_image_spec_free(data->mad_BackgroundSpec);
-		    }
-		    data->mad_BackgroundSpec = zune_image_spec_duplicate(tag->ti_Data);
-		    break;
-
-	    case MUIA_ControlChar:
-		data->mad_ControlChar = tag->ti_Data;
-		break;
-
-	    case MUIA_CycleChain:
-		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
-		break;
-
-	    case MUIA_Disabled:
-	    case MUIA_NestedDisabled:
-		if (tag->ti_Data)
-		{
-		    data->mad_DisableCount = 1;
-		}
-		break;
-
-	    case MUIA_FillArea:
-		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_FILLAREA);
-		break;
-
-	    case MUIA_Draggable:
-		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DRAGGABLE);
-		break;
-
-	    case MUIA_Dropable:
-	        _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DROPABLE);
-	        break;
-
-	    case MUIA_FixHeight:
-		data->mad_Flags |= MADF_FIXHEIGHT;
-		data->mad_HardHeight = tag->ti_Data;
-		break;
-
-	    case MUIA_FixHeightTxt:
-	    	data->mad_HardHeightTxt = (STRPTR)tag->ti_Data;
-		break;
-
-	    case MUIA_FixWidth:
-		data->mad_Flags |= MADF_FIXWIDTH;
-		data->mad_HardWidth = tag->ti_Data;
-		break;
-
-	    case MUIA_FixWidthTxt:
-	    	data->mad_HardWidthTxt = (STRPTR)tag->ti_Data;
-		break;
-
-	    case MUIA_Font:
-		data->mad_FontPreset = tag->ti_Data;
-		break;
-
-	    case MUIA_Frame:
-		data->mad_Frame = tag->ti_Data;
-		break;
-
-	    case MUIA_FramePhantomHoriz:
-		data->mad_Flags |= MADF_FRAMEPHANTOM;
-		break;
-
-	    case MUIA_FrameTitle:
-		data->mad_FrameTitle = (STRPTR)tag->ti_Data;
-		break;
-
-	    case MUIA_HorizWeight:
-		data->mad_HorizWeight = tag->ti_Data;
-		break;
-
-	    case MUIA_InnerBottom:
-		data->mad_Flags |= MADF_INNERBOTTOM;
-		data->mad_InnerBottom = CLAMP((IPTR)tag->ti_Data, 0, 32);
-		break;
-
-	    case MUIA_InnerLeft:
-		data->mad_Flags |= MADF_INNERLEFT;
-		data->mad_InnerLeft = CLAMP((IPTR)tag->ti_Data, 0, 32);
-		break;
-
-	    case MUIA_InnerRight:
-		data->mad_Flags |= MADF_INNERRIGHT;
-		data->mad_InnerRight = CLAMP((IPTR)tag->ti_Data, 0, 32);
-		break;
-
-	    case MUIA_InnerTop:
-		data->mad_Flags |= MADF_INNERTOP;
-		data->mad_InnerTop =  CLAMP((IPTR)tag->ti_Data, 0, 32);
-		break;
-
-	    case MUIA_InputMode:
-		data->mad_InputMode = tag->ti_Data;
-		break;
-
-	    case MUIA_MaxHeight:
-		data->mad_Flags |= MADF_MAXHEIGHT;
-		data->mad_HardHeight = tag->ti_Data;
-		break;
-
-	    case MUIA_MaxWidth:
-		data->mad_Flags |= MADF_MAXWIDTH;
-		data->mad_HardWidth = tag->ti_Data;
-		break;
-
-	    case MUIA_Selected:
-		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_SELECTED);
-		break;
-
-	    case MUIA_ShortHelp:
-		data->mad_ShortHelp = (STRPTR)tag->ti_Data;
-		break;
-
-	    case MUIA_ShowMe:
-		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_SHOWME);
-		break;
-
-	    case MUIA_ShowSelState:
-		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_SHOWSELSTATE);
-		break;
-
-	    case MUIA_VertWeight:
-		data->mad_VertWeight = tag->ti_Data;
-		break;
-
-	    case MUIA_Weight:
-		data->mad_HorizWeight = data->mad_VertWeight = tag->ti_Data;
-		break;
-
-	    case MUIA_ContextMenu:
-		data->mad_ContextMenu = (Object*)tag->ti_Data;
-		break;
-	}
+        switch (tag->ti_Tag)
+        {
+            case    MUIA_Background:
+                data->mad_Flags |= MADF_OWNBG;
+                if (data->mad_BackgroundSpec)
+                {
+                    zune_image_spec_free(data->mad_BackgroundSpec);
+                }
+                data->mad_BackgroundSpec = zune_image_spec_duplicate(tag->ti_Data);
+                break;
+    
+            case MUIA_ControlChar:
+                data->mad_ControlChar = tag->ti_Data;
+                break;
+    
+            case MUIA_CycleChain:
+                _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
+                break;
+    
+            case MUIA_Disabled:
+            case MUIA_NestedDisabled:
+                if (tag->ti_Data)
+                {
+                    data->mad_DisableCount = 1;
+                }
+                break;
+    
+            case MUIA_FillArea:
+                _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_FILLAREA);
+                break;
+    
+            case MUIA_Draggable:
+                _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DRAGGABLE);
+                break;
+    
+            case MUIA_Dropable:
+                _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DROPABLE);
+                break;
+    
+            case MUIA_FixHeight:
+                data->mad_Flags |= MADF_FIXHEIGHT;
+                data->mad_HardHeight = tag->ti_Data;
+                break;
+    
+            case MUIA_FixHeightTxt:
+                data->mad_HardHeightTxt = (STRPTR)tag->ti_Data;
+                break;
+    
+            case MUIA_FixWidth:
+                data->mad_Flags |= MADF_FIXWIDTH;
+                data->mad_HardWidth = tag->ti_Data;
+                break;
+    
+            case MUIA_FixWidthTxt:
+                data->mad_HardWidthTxt = (STRPTR)tag->ti_Data;
+                break;
+    
+            case MUIA_Font:
+                data->mad_FontPreset = tag->ti_Data;
+                break;
+    
+            case MUIA_Frame:
+                data->mad_Frame = tag->ti_Data;
+                break;
+    
+            case MUIA_FramePhantomHoriz:
+                data->mad_Flags |= MADF_FRAMEPHANTOM;
+                break;
+    
+            case MUIA_FrameTitle:
+                data->mad_FrameTitle = (STRPTR)tag->ti_Data;
+                break;
+    
+            case MUIA_HorizWeight:
+                data->mad_HorizWeight = tag->ti_Data;
+                break;
+    
+            case MUIA_InnerBottom:
+                data->mad_Flags |= MADF_INNERBOTTOM;
+                data->mad_InnerBottom = CLAMP((IPTR)tag->ti_Data, 0, 32);
+                break;
+        
+            case MUIA_InnerLeft:
+                data->mad_Flags |= MADF_INNERLEFT;
+                data->mad_InnerLeft = CLAMP((IPTR)tag->ti_Data, 0, 32);
+                break;
+    
+            case MUIA_InnerRight:
+                data->mad_Flags |= MADF_INNERRIGHT;
+                data->mad_InnerRight = CLAMP((IPTR)tag->ti_Data, 0, 32);
+                break;
+    
+            case MUIA_InnerTop:
+                data->mad_Flags |= MADF_INNERTOP;
+                data->mad_InnerTop =  CLAMP((IPTR)tag->ti_Data, 0, 32);
+                break;
+        
+            case MUIA_InputMode:
+                data->mad_InputMode = tag->ti_Data;
+                break;
+    
+            case MUIA_MaxHeight:
+                data->mad_Flags |= MADF_MAXHEIGHT;
+                data->mad_HardHeight = tag->ti_Data;
+                break;
+    
+            case MUIA_MaxWidth:
+                data->mad_Flags |= MADF_MAXWIDTH;
+                data->mad_HardWidth = tag->ti_Data;
+                break;
+    
+            case MUIA_Selected:
+                _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_SELECTED);
+                break;
+    
+            case MUIA_ShortHelp:
+                data->mad_ShortHelp = (STRPTR)tag->ti_Data;
+                break;
+    
+            case MUIA_ShowMe:
+                _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_SHOWME);
+                break;
+    
+            case MUIA_ShowSelState:
+                _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_SHOWSELSTATE);
+                break;
+    
+            case MUIA_VertWeight:
+                data->mad_VertWeight = tag->ti_Data;
+                break;
+    
+            case MUIA_Weight:
+                data->mad_HorizWeight = data->mad_VertWeight = tag->ti_Data;
+                break;
+    
+            case MUIA_ContextMenu:
+                data->mad_ContextMenu = (Object*)tag->ti_Data;
+                break;
+        }
     }
 
     /* In Soliton MUIA_Selected was setted to MUIV_InputMode_RelVerify (=1) for MUIA_Input_Mode
@@ -422,9 +422,9 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     */
     if (data->mad_InputMode == MUIV_InputMode_RelVerify)
     {
-    	if (data->mad_Flags & MADF_SELECTED)
-	    D(bug("MUIA_Selected was set in OM_NEW, although being in MUIV_InputMode_RelVerify\n"));
-    	data->mad_Flags &= ~MADF_SELECTED;
+        if (data->mad_Flags & MADF_SELECTED)
+        D(bug("MUIA_Selected was set in OM_NEW, although being in MUIV_InputMode_RelVerify\n"));
+        data->mad_Flags &= ~MADF_SELECTED;
     }
 
     data->mad_ehn.ehn_Events = 0; /* Will be filled on demand */
@@ -444,7 +444,7 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 /**************************************************************************
- OM_DISPOSE
+OM_DISPOSE
 **************************************************************************/
 static IPTR Area__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
@@ -457,7 +457,7 @@ static IPTR Area__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
 
 /**************************************************************************
- OM_SET
+OM_SET
 **************************************************************************/
 static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -470,229 +470,233 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
-	switch (tag->ti_Tag)
-	{
-	    case    MUIA_Background:
-	    	    old_backgroundspec = data->mad_BackgroundSpec;
-		    data->mad_BackgroundSpec = zune_image_spec_duplicate(tag->ti_Data);
-		    if (!data->mad_BackgroundSpec)
-		    {
-		    	/* Out of memory */
-		    	data->mad_BackgroundSpec = old_backgroundspec;
-			break;
-		    }
-		    
-		    data->mad_Flags |= MADF_OWNBG;
-		    
-		    if (old_backgroundspec && (strcmp(data->mad_BackgroundSpec, old_backgroundspec) == 0))
-		    {
-		    	/* New background does not differ from old one */
-    	    	    	zune_image_spec_free(old_backgroundspec);
-			tag->ti_Tag = TAG_IGNORE;
-			break;
-		    }
-
-    	    	    zune_image_spec_free(old_backgroundspec);
-		    
-		    if (data->mad_Background)
-		    {
-			if (_flags(obj) & MADF_CANDRAW)
-			{
-			    zune_imspec_hide(data->mad_Background);
-			}
-			if (_flags(obj) & MADF_SETUP)
-			{
-			    zune_imspec_cleanup(data->mad_Background);
-			    data->mad_Background = NULL;
-			}
-		    }
-		    
-		    if (_flags(obj) & MADF_SETUP)
-		    {
-			data->mad_Background =
-			    zune_imspec_setup((IPTR)data->mad_BackgroundSpec,
-					      muiRenderInfo(obj));
-		    }
-		    if (_flags(obj) & MADF_CANDRAW)
-		    {
-			zune_imspec_show(data->mad_Background, obj);
-		    }
-		    MUI_Redraw(obj, MADF_DRAWOBJECT);
-		    break;
-
-	    case    MUIA_FillArea:
-		    _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_FILLAREA);
-		    break;
-
-	    case MUIA_Frame:
-		/* this is not documented in MUI but it is possible,
-		   and needed to suppress frame for external images */
-		data->mad_Frame = tag->ti_Data;
-		if (muiGlobalInfo(obj))
-		{
-		    set_inner_sizes(obj, data);
-		    set_title_sizes(obj, data);
-	    	}
-		break;
-
-	    case MUIA_ControlChar:
-		if (_flags(obj) & MADF_SETUP)
-		    cleanup_control_char(data, obj);
-		data->mad_ControlChar = tag->ti_Data;
-		if (_flags(obj) & MADF_SETUP)
-		    setup_control_char(data, obj, cl);
-		break;
-
-	    case MUIA_CycleChain:
-//		if (data->mad_InputMode == MUIV_InputMode_None)
-//		    break;
-
-		if ((!(_flags(obj) & MADF_CYCLECHAIN) && tag->ti_Data)
-		    || ((_flags(obj) & MADF_CYCLECHAIN) && !tag->ti_Data))
-		{
-		    if (_flags(obj) & MADF_SETUP)
-		    {
-		    	cleanup_control_char(data,obj);
-			_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
-			setup_control_char(data,obj,cl);
-		    }   else _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
-		}
-		break;
-
-	    case    MUIA_Disabled:
-		    if (tag->ti_Data)
-		    {
-		    	if (!data->mad_DisableCount)
-			{
-			    data->mad_DisableCount = 1;
-			    change_disable = 1;
-			}
-		    }
-		    else 
-		    {
-		    	if (data->mad_DisableCount)
-		    	{
-			    data->mad_DisableCount = 0;
-			    change_disable = 1;
-			}
-		    }
-		    break;
-
-	    case    MUIA_NestedDisabled:
-		    if (tag->ti_Data)
-		    {
-		    	if (!data->mad_DisableCount) change_disable = 1;
-		    	data->mad_DisableCount++;
-		    }   else 
-		    {
-		    	if (data->mad_DisableCount)
-		    	{
-			    data->mad_DisableCount--;
-			    if (!data->mad_DisableCount) change_disable = 1;
-			}
-		    }
-		    break;
-
-
-	    case MUIA_HorizWeight:
-		data->mad_HorizWeight = tag->ti_Data;
-		break;
-
-	    case MUIA_Pressed:
-		if (tag->ti_Data)
-		    data->mad_Flags |= MADF_PRESSED;
-		else
-		    data->mad_Flags &= ~MADF_PRESSED;
-		break;
-
-	    case MUIA_ShortHelp:
-		data->mad_ShortHelp = (STRPTR)tag->ti_Data;
-		break;
-
-	    case MUIA_ShowMe:
-		{
-		    ULONG oldflags = data->mad_Flags;
-		    int recalc = 0;
-
-		    if (tag->ti_Data) data->mad_Flags |= MADF_SHOWME;
-		    else data->mad_Flags &= ~MADF_SHOWME;
-
-		    if (oldflags != data->mad_Flags)
-		    {
-			if (!tag->ti_Data)
-			{
-			    /* Should be made invisible, so send a MUIM_Hide and then a MUIM_Cleanup to the object if needed,
-			    ** as objects with MUIA_ShowMe to false neighter get MUIM_Setup nor MUIM_Show */
-			    if (_flags(obj)&MADF_CANDRAW)
-			    {
-			    	DoHideMethod(obj);
-			    	recalc = 1;
-			    }
-			#if 0 /* SHOWME affects only show/hide */
-			    if (_flags(obj)&MADF_SETUP) DoMethod(obj,MUIM_Cleanup);
-			#endif
-			} else
-			{
-			    Object *parent = _parent(obj); /* Will be NULL if direct child of a window! */
-			    if (parent)
-			    {
-			    #if 0 /* SHOWME affects only show/hide */
-				if (_flags(parent) & MADF_SETUP) DoSetupMethod(obj,muiRenderInfo(parent));
-			    #endif
-				if (_flags(parent) & MADF_CANDRAW) DoShowMethod(obj);
-			    } else
-			    {
-				/* Check if window is open... */
-			    }
-			}
-
-		    	if (recalc && muiRenderInfo(obj)) /* If renderinfo is NULL _win(obj) does not work (crash) */
-		    	{
-			    DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)_parent(obj));
-			}
-		    }
-		}
-		break;
-
-	    case    MUIA_Selected:
-		/*  D(bug(" Area_Set(%p) : MUIA_Selected val=%ld sss=%d\n", obj, tag->ti_Data, !!(data->mad_Flags & MADF_SHOWSELSTATE))); */
-		if (tag->ti_Data) data->mad_Flags |= MADF_SELECTED;
-		else data->mad_Flags &= ~MADF_SELECTED;
-/*  		if (data->mad_Flags & MADF_SHOWSELSTATE) */
-		    MUI_Redraw(obj, MADF_DRAWOBJECT);
-/*  		else */
-/*  		    MUI_Redraw(obj, MADF_DRAWUPDATE); */
-		break;
-
-	    case MUIA_Timer:
-		data->mad_Timeval = tag->ti_Data;
-		break;
-
-	    case MUIA_VertWeight:
-		data->mad_VertWeight = tag->ti_Data;
-		break;
-
-	    case MUIA_Draggable:
-		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DRAGGABLE);
-		break;
-
-	    case MUIA_Dropable:
-	        _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DROPABLE);
-	        break;
-
-	    case MUIA_ContextMenu:
-		data->mad_ContextMenu = (Object*)tag->ti_Data;
-		break;
-
-	    case MUIA_Font:
-	    	data->mad_FontPreset = tag->ti_Data;
-		break;
-	}
+        switch (tag->ti_Tag)
+        {
+            case    MUIA_Background:
+                    old_backgroundspec = data->mad_BackgroundSpec;
+                data->mad_BackgroundSpec = zune_image_spec_duplicate(tag->ti_Data);
+                if (!data->mad_BackgroundSpec)
+                {
+                    /* Out of memory */
+                    data->mad_BackgroundSpec = old_backgroundspec;
+                    break;
+                }
+                
+                data->mad_Flags |= MADF_OWNBG;
+                
+                if (old_backgroundspec && (strcmp(data->mad_BackgroundSpec, old_backgroundspec) == 0))
+                {
+                    /* New background does not differ from old one */
+                            zune_image_spec_free(old_backgroundspec);
+                    tag->ti_Tag = TAG_IGNORE;
+                    break;
+                }
+    
+                        zune_image_spec_free(old_backgroundspec);
+                
+                if (data->mad_Background)
+                {
+                    if (_flags(obj) & MADF_CANDRAW)
+                    {
+                        zune_imspec_hide(data->mad_Background);
+                    }
+                    if (_flags(obj) & MADF_SETUP)
+                    {
+                        zune_imspec_cleanup(data->mad_Background);
+                        data->mad_Background = NULL;
+                    }
+                }
+                
+                if (_flags(obj) & MADF_SETUP)
+                {
+                    data->mad_Background =
+                        zune_imspec_setup((IPTR)data->mad_BackgroundSpec,
+                        muiRenderInfo(obj));
+                }
+                if (_flags(obj) & MADF_CANDRAW)
+                {
+                    zune_imspec_show(data->mad_Background, obj);
+                }
+                MUI_Redraw(obj, MADF_DRAWOBJECT);
+                break;
+    
+            case MUIA_FillArea:
+                _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_FILLAREA);
+                break;
+    
+            case MUIA_Frame:
+                /* this is not documented in MUI but it is possible,
+                and needed to suppress frame for external images */
+                data->mad_Frame = tag->ti_Data;
+                if (muiGlobalInfo(obj))
+                {
+                    set_inner_sizes(obj, data);
+                    set_title_sizes(obj, data);
+                }
+                break;
+    
+            case MUIA_ControlChar:
+                if (_flags(obj) & MADF_SETUP)
+                    cleanup_control_char(data, obj);
+                data->mad_ControlChar = tag->ti_Data;
+                if (_flags(obj) & MADF_SETUP)
+                    setup_control_char(data, obj, cl);
+                break;
+    
+            case MUIA_CycleChain:
+    //		if (data->mad_InputMode == MUIV_InputMode_None)
+    //		    break;
+    
+                if ((!(_flags(obj) & MADF_CYCLECHAIN) && tag->ti_Data)
+                    || ((_flags(obj) & MADF_CYCLECHAIN) && !tag->ti_Data))
+                {
+                    if (_flags(obj) & MADF_SETUP)
+                    {
+                        cleanup_control_char(data,obj);
+                    _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
+                    setup_control_char(data,obj,cl);
+                    }   else _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
+                }
+                break;
+    
+            case    MUIA_Disabled:
+                if (tag->ti_Data)
+                {
+                    if (!data->mad_DisableCount)
+                    {
+                        data->mad_DisableCount = 1;
+                        change_disable = 1;
+                    }
+                }
+                else 
+                {
+                    if (data->mad_DisableCount)
+                    {
+                        data->mad_DisableCount = 0;
+                        change_disable = 1;
+                    }
+                }
+                break;
+    
+            case    MUIA_NestedDisabled:
+                if (tag->ti_Data)
+                {
+                    if (!data->mad_DisableCount) change_disable = 1;
+                    data->mad_DisableCount++;
+                }   
+                else 
+                {
+                    if (data->mad_DisableCount)
+                    {
+                        data->mad_DisableCount--;
+                        if (!data->mad_DisableCount) change_disable = 1;
+                    }
+                }
+                break;
+    
+    
+            case MUIA_HorizWeight:
+                data->mad_HorizWeight = tag->ti_Data;
+                break;
+    
+            case MUIA_Pressed:
+                if (tag->ti_Data)
+                    data->mad_Flags |= MADF_PRESSED;
+                else
+                    data->mad_Flags &= ~MADF_PRESSED;
+                break;
+    
+            case MUIA_ShortHelp:
+                data->mad_ShortHelp = (STRPTR)tag->ti_Data;
+                break;
+    
+            case MUIA_ShowMe:
+            {
+                ULONG oldflags = data->mad_Flags;
+                int recalc = 0;
+    
+                if (tag->ti_Data) data->mad_Flags |= MADF_SHOWME;
+                else data->mad_Flags &= ~MADF_SHOWME;
+    
+                if (oldflags != data->mad_Flags)
+                {
+                    if (!tag->ti_Data)
+                    {
+                        /* Should be made invisible, so send a MUIM_Hide and then a MUIM_Cleanup to the object if needed,
+                        ** as objects with MUIA_ShowMe to false neighter get MUIM_Setup nor MUIM_Show */
+                        if (_flags(obj)&MADF_CANDRAW)
+                        {
+                            DoHideMethod(obj);
+                            recalc = 1;
+                        }
+                    #if 0 /* SHOWME affects only show/hide */
+                        if (_flags(obj)&MADF_SETUP) DoMethod(obj,MUIM_Cleanup);
+                    #endif
+                    } 
+                    else
+                    {
+                        Object *parent = _parent(obj); /* Will be NULL if direct child of a window! */
+                        if (parent)
+                        {
+                        #if 0 /* SHOWME affects only show/hide */
+                        if (_flags(parent) & MADF_SETUP) DoSetupMethod(obj,muiRenderInfo(parent));
+                        #endif
+                        if (_flags(parent) & MADF_CANDRAW) DoShowMethod(obj);
+                        } else
+                        {
+                        /* Check if window is open... */
+                        }
+                    }
+    
+                    if (recalc && muiRenderInfo(obj)) /* If renderinfo is NULL _win(obj) does not work (crash) */
+                    {
+                        DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)_parent(obj));
+                    }
+                }
+            }
+            break;
+    
+            case    MUIA_Selected:
+                /*  D(bug(" Area_Set(%p) : 
+                    MUIA_Selected val=%ld sss=%d\n", obj, tag->ti_Data, !!(data->mad_Flags & MADF_SHOWSELSTATE))); 
+                */
+                if (tag->ti_Data) data->mad_Flags |= MADF_SELECTED;
+                else data->mad_Flags &= ~MADF_SELECTED;
+        /*  		if (data->mad_Flags & MADF_SHOWSELSTATE) */
+                    MUI_Redraw(obj, MADF_DRAWOBJECT);
+        /*  		else */
+        /*  		    MUI_Redraw(obj, MADF_DRAWUPDATE); */
+                break;
+    
+            case MUIA_Timer:
+                data->mad_Timeval = tag->ti_Data;
+                break;
+    
+            case MUIA_VertWeight:
+                data->mad_VertWeight = tag->ti_Data;
+                break;
+    
+            case MUIA_Draggable:
+                _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DRAGGABLE);
+                break;
+    
+            case MUIA_Dropable:
+                _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DROPABLE);
+                break;
+    
+            case MUIA_ContextMenu:
+                data->mad_ContextMenu = (Object*)tag->ti_Data;
+                break;
+    
+            case MUIA_Font:
+                data->mad_FontPreset = tag->ti_Data;
+                break;
+        }
     }
 
     if (change_disable)
     {
-	MUI_Redraw(obj, MADF_DRAWOBJECT);
+        MUI_Redraw(obj, MADF_DRAWOBJECT);
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -700,7 +704,7 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
 
 /**************************************************************************
- OM_GET
+OM_GET
 **************************************************************************/
 static IPTR Area__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
@@ -710,107 +714,107 @@ static IPTR Area__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-	case MUIA_BottomEdge:
-	    STORE = (IPTR)_bottom(obj);
-	    return TRUE;
-
-	case MUIA_ControlChar:
-	    STORE = data->mad_ControlChar;
-	    return TRUE;
-
-	case MUIA_CycleChain:
-	    STORE = ((data->mad_Flags & MADF_CYCLECHAIN) != 0);
-	    return TRUE;
-
-	case MUIA_Disabled:
-	case MUIA_NestedDisabled:
-	    STORE = !!data->mad_DisableCount; /* BOOLEAN */
-	    return TRUE;
-
-	case MUIA_Font:
-	    STORE = (IPTR)data->mad_FontPreset;
-	    return TRUE;
-
-	case MUIA_Height:
-	    STORE = (IPTR)_height(obj);
-	    return TRUE;
-
-	case MUIA_HorizWeight:
-	    STORE = (IPTR)data->mad_HorizWeight;
-	    return TRUE;
-
-	case MUIA_InnerBottom:
-	    STORE = (IPTR)data->mad_InnerBottom;
-	    return TRUE;
-
-	case MUIA_InnerLeft:
-	    STORE = (IPTR)data->mad_InnerLeft;
-	    return TRUE;
-
-	case MUIA_InnerRight:
-	    STORE = (IPTR)data->mad_InnerRight;
-	    return TRUE;
-
-	case MUIA_InnerTop:
-	    STORE = (IPTR)data->mad_InnerTop; 
-	    return TRUE;
-
-	case MUIA_LeftEdge:
-	    STORE = (IPTR)_left(obj);
-	    return TRUE;
-
-	case MUIA_Pressed:
-	    STORE = !!(data->mad_Flags & MADF_PRESSED);
-	    return TRUE;
-
-	case MUIA_RightEdge:
-	    STORE = (IPTR)_right(obj);
-	    return TRUE;
-
-	case MUIA_Selected:
-	    STORE = !!(data->mad_Flags & MADF_SELECTED);
-	    return TRUE;
-
-	case MUIA_ShortHelp:
-	    STORE = (IPTR)data->mad_ShortHelp;
-	    return TRUE;
-
-	case MUIA_ShowMe:
-	    STORE = (data->mad_Flags & MADF_SHOWME);
-	    return TRUE;
-
-	case MUIA_Timer:
-	    return TRUE;
-
-	case MUIA_TopEdge:
-	    STORE = (IPTR)_top(obj);
-	    return TRUE;
-
-	case MUIA_VertWeight:
-	    STORE = (IPTR)data->mad_VertWeight;
-	    return TRUE;
-
-	case MUIA_Width:
-	    STORE = (IPTR)_width(obj);
-	    return TRUE;
-
-	case MUIA_Window:
-	    if (muiAreaData(obj)->mad_RenderInfo)
-		STORE = (IPTR)_window(obj);
-	    else
-		STORE = 0L;
-	    return TRUE;
-
-	case MUIA_WindowObject:
-	    if (muiAreaData(obj)->mad_RenderInfo)
-		STORE = (IPTR)_win(obj);
-	    else
-		STORE = 0L;
-	    return TRUE;
-
-	case MUIA_ContextMenu:
-	    STORE = (IPTR)data->mad_ContextMenu;
-	    return TRUE;
+        case MUIA_BottomEdge:
+            STORE = (IPTR)_bottom(obj);
+            return TRUE;
+    
+        case MUIA_ControlChar:
+            STORE = data->mad_ControlChar;
+            return TRUE;
+    
+        case MUIA_CycleChain:
+            STORE = ((data->mad_Flags & MADF_CYCLECHAIN) != 0);
+            return TRUE;
+    
+        case MUIA_Disabled:
+        case MUIA_NestedDisabled:
+            STORE = !!data->mad_DisableCount; /* BOOLEAN */
+            return TRUE;
+    
+        case MUIA_Font:
+            STORE = (IPTR)data->mad_FontPreset;
+            return TRUE;
+    
+        case MUIA_Height:
+            STORE = (IPTR)_height(obj);
+            return TRUE;
+    
+        case MUIA_HorizWeight:
+            STORE = (IPTR)data->mad_HorizWeight;
+            return TRUE;
+    
+        case MUIA_InnerBottom:
+            STORE = (IPTR)data->mad_InnerBottom;
+            return TRUE;
+    
+        case MUIA_InnerLeft:
+            STORE = (IPTR)data->mad_InnerLeft;
+            return TRUE;
+    
+        case MUIA_InnerRight:
+            STORE = (IPTR)data->mad_InnerRight;
+            return TRUE;
+    
+        case MUIA_InnerTop:
+            STORE = (IPTR)data->mad_InnerTop; 
+            return TRUE;
+    
+        case MUIA_LeftEdge:
+            STORE = (IPTR)_left(obj);
+            return TRUE;
+    
+        case MUIA_Pressed:
+            STORE = !!(data->mad_Flags & MADF_PRESSED);
+            return TRUE;
+    
+        case MUIA_RightEdge:
+            STORE = (IPTR)_right(obj);
+            return TRUE;
+    
+        case MUIA_Selected:
+            STORE = !!(data->mad_Flags & MADF_SELECTED);
+            return TRUE;
+    
+        case MUIA_ShortHelp:
+            STORE = (IPTR)data->mad_ShortHelp;
+            return TRUE;
+    
+        case MUIA_ShowMe:
+            STORE = (data->mad_Flags & MADF_SHOWME);
+            return TRUE;
+    
+        case MUIA_Timer:
+            return TRUE;
+    
+        case MUIA_TopEdge:
+            STORE = (IPTR)_top(obj);
+            return TRUE;
+    
+        case MUIA_VertWeight:
+            STORE = (IPTR)data->mad_VertWeight;
+            return TRUE;
+    
+        case MUIA_Width:
+            STORE = (IPTR)_width(obj);
+            return TRUE;
+    
+        case MUIA_Window:
+            if (muiAreaData(obj)->mad_RenderInfo)
+                STORE = (IPTR)_window(obj);
+            else
+                STORE = 0L;
+            return TRUE;
+    
+        case MUIA_WindowObject:
+            if (muiAreaData(obj)->mad_RenderInfo)
+                STORE = (IPTR)_win(obj);
+            else
+                STORE = 0L;
+            return TRUE;
+    
+        case MUIA_ContextMenu:
+            STORE = (IPTR)data->mad_ContextMenu;
+            return TRUE;
     }
 
     return(DoSuperMethodA(cl, obj, (Msg) msg));
@@ -819,7 +823,7 @@ static IPTR Area__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
 
 /**************************************************************************
- MUIM_AskMinMax
+MUIM_AskMinMax
 **************************************************************************/
 static IPTR Area__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
@@ -840,7 +844,7 @@ static IPTR Area__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
     msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
     msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
 
-   /*   D(bug("Area_AskMinMax 0x%lx (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj, data->mad_FrameTitle, */
+/*   D(bug("Area_AskMinMax 0x%lx (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj, data->mad_FrameTitle, */
 /*  	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight, */
 /*  	  msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight, */
 /*  	  msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight)); */
@@ -849,80 +853,76 @@ static IPTR Area__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
 }
 
 /*
- * Called after MUIM_AskMinMax, to handle fixed and max sizes.
- */
+* Called after MUIM_AskMinMax, to handle fixed and max sizes.
+*/
 void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
 {
     struct MUI_AreaData *data = muiAreaData(obj);
     
     if ((_flags(obj) & MADF_FIXHEIGHT) && data->mad_HardHeight)
     {
-	int h;
-
-    	h = data->mad_HardHeight + data->mad_subheight;
-	
-	MinMaxInfo->MinHeight =
-	MinMaxInfo->DefHeight = 
-	MinMaxInfo->MaxHeight = CLAMP(h, MinMaxInfo->MinHeight, MinMaxInfo->MaxHeight);
+        int h = data->mad_HardHeight + data->mad_subheight;
+        
+        MinMaxInfo->MinHeight =
+        MinMaxInfo->DefHeight = 
+        MinMaxInfo->MaxHeight = CLAMP(h, MinMaxInfo->MinHeight, MinMaxInfo->MaxHeight);
     }
     else if (data->mad_HardHeightTxt)
     {
-    	ZText *text;
-	
-	if ((text = zune_text_new(NULL, data->mad_HardHeightTxt, ZTEXT_ARG_NONE, 0)))
-	{
-	    zune_text_get_bounds(text, obj);
-	    
-	    MinMaxInfo->MinHeight =
-	    MinMaxInfo->DefHeight =
-	    MinMaxInfo->MaxHeight = 
-	    	CLAMP(text->height + data->mad_subheight, MinMaxInfo->MinHeight, MinMaxInfo->MaxHeight);
-	    
-	    zune_text_destroy(text);
-	}
+        ZText *text;
+    
+        if ((text = zune_text_new(NULL, data->mad_HardHeightTxt, ZTEXT_ARG_NONE, 0)))
+        {
+            zune_text_get_bounds(text, obj);
+            
+            MinMaxInfo->MinHeight =
+            MinMaxInfo->DefHeight =
+            MinMaxInfo->MaxHeight = 
+                CLAMP(text->height + data->mad_subheight, MinMaxInfo->MinHeight, MinMaxInfo->MaxHeight);
+            
+            zune_text_destroy(text);
+        }
 
     }
     else if (_flags(obj) & MADF_MAXHEIGHT)
     {	
-	MinMaxInfo->MaxHeight =
-	    CLAMP(data->mad_HardHeight + data->mad_subheight,
-		  MinMaxInfo->MinHeight,
-		  MinMaxInfo->MaxHeight);
+        MinMaxInfo->MaxHeight =
+            CLAMP(data->mad_HardHeight + data->mad_subheight,
+            MinMaxInfo->MinHeight,
+            MinMaxInfo->MaxHeight);
     }
 
     if ((_flags(obj) & MADF_FIXWIDTH) && data->mad_HardWidth)
     {
-	int w;
-
-    	w = data->mad_HardWidth + data->mad_subwidth;
-	
-	MinMaxInfo->MinWidth =
-	MinMaxInfo->DefWidth = 
-	MinMaxInfo->MaxWidth = CLAMP(w, MinMaxInfo->MinWidth, MinMaxInfo->MaxWidth);
+        int w = data->mad_HardWidth + data->mad_subwidth;
+    
+        MinMaxInfo->MinWidth =
+            MinMaxInfo->DefWidth = 
+            MinMaxInfo->MaxWidth = CLAMP(w, MinMaxInfo->MinWidth, MinMaxInfo->MaxWidth);
     }
     else if (data->mad_HardWidthTxt)
     {
-    	ZText *text;
-	
-	if ((text = zune_text_new(NULL, data->mad_HardWidthTxt, ZTEXT_ARG_NONE, 0)))
-	{
-	    zune_text_get_bounds(text, obj);
-	    
-	    MinMaxInfo->MinWidth =
-	    MinMaxInfo->DefWidth =
-	    MinMaxInfo->MaxWidth = 
-	    	CLAMP(text->width + data->mad_subwidth, MinMaxInfo->MinWidth, MinMaxInfo->MaxWidth);
-	    
-	    zune_text_destroy(text);
-	}
+        ZText *text;
+    
+        if ((text = zune_text_new(NULL, data->mad_HardWidthTxt, ZTEXT_ARG_NONE, 0)))
+        {
+            zune_text_get_bounds(text, obj);
+            
+            MinMaxInfo->MinWidth =
+            MinMaxInfo->DefWidth =
+            MinMaxInfo->MaxWidth = 
+                CLAMP(text->width + data->mad_subwidth, MinMaxInfo->MinWidth, MinMaxInfo->MaxWidth);
+            
+            zune_text_destroy(text);
+        }
 
     }
     else if (_flags(obj) & MADF_MAXWIDTH)
     {
-	MinMaxInfo->MaxWidth =
-	    CLAMP(data->mad_HardWidth + data->mad_subwidth,
-		  MinMaxInfo->MinWidth,
-		  MinMaxInfo->MaxWidth);
+        MinMaxInfo->MaxWidth =
+            CLAMP(data->mad_HardWidth + data->mad_subwidth,
+            MinMaxInfo->MinWidth,
+            MinMaxInfo->MaxWidth);
     }
 
     /* Set minmax */
@@ -935,30 +935,30 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
 }
 
 /*                      <-- _top(obj) (frame title position depends of _top(obj))
- *  ====== Title =====  <-- frame_top (depends of title, if centered/above)
- * |                  | <-- bgtop (depends of frame, bg always begins under frame)
- * |                  |
- * |                  |
- *  ==================  <-- "bgbottom" and "frame_bottom" (frame overwrites bg (1))
- *
- * (1) : needed for phantom frame objects, where no frame overwrites bg, thus bg
- * must go as far as theorical bottom frame border.
- */
+*  ====== Title =====  <-- frame_top (depends of title, if centered/above)
+* |                  | <-- bgtop (depends of frame, bg always begins under frame)
+* |                  |
+* |                  |
+*  ==================  <-- "bgbottom" and "frame_bottom" (frame overwrites bg (1))
+*
+* (1) : needed for phantom frame objects, where no frame overwrites bg, thus bg
+* must go as far as theorical bottom frame border.
+*/
 
 /*
- * draw object background if MADF_FILLAREA.
- */
+* draw object background if MADF_FILLAREA.
+*/
 static void Area_Draw_handle_background(Object *obj, struct MUI_AreaData *data, ULONG flags,
-					 const struct ZuneFrameGfx *zframe)
+                    const struct ZuneFrameGfx *zframe)
 {
     struct MUI_ImageSpec_intern *background;
     struct Rectangle r, r2, rects[4];    
     int i, bgtop, bgleft, bgw, bgh, numrects;
 
     if (!(data->mad_Flags & MADF_SELECTED) || !(data->mad_Flags & MADF_SHOWSELSTATE))
-	background = data->mad_Background;
+        background = data->mad_Background;
     else
-	background = data->mad_SelBack;
+        background = data->mad_SelBack;
 
     bgleft = _left(obj);
     bgtop = _top(obj) + data->mad_TitleHeightAbove + zframe->itop;
@@ -972,77 +972,83 @@ static void Area_Draw_handle_background(Object *obj, struct MUI_AreaData *data, 
     
     if (data->mad_Flags & MADF_FILLAREA)
     {
-    	rects[0] = r;
-	numrects = 1;
+        rects[0] = r;
+        numrects = 1;
     }
     else
     {
-    	/* MADF_FILLAREA not set. Only draw frame outside of
-	   innerbox (_mleft, _mtop, _mright, _mbottom):
-	   
-	   .............
-	   .***********.
-	   .*#########*.
-	   .*#########*.
-	   .***********.
-	   .............
-	   
-	   # = innerbox
-	   * = frame outside of innerbox
-	   . = object frame
-    	*/
-	
-    	r2.MinX = _mleft(obj);
-    	r2.MinY = _mtop(obj);
-	r2.MaxX = _mright(obj);
-	r2.MaxY = _mbottom(obj);
-	
-	numrects = SubtractRectFromRect(&r, &r2, rects);
+        /* MADF_FILLAREA not set. Only draw frame outside of
+        innerbox (_mleft, _mtop, _mright, _mbottom):
+        
+        .............
+        .***********.
+        .*#########*.
+        .*#########*.
+        .***********.
+        .............
+        
+        # = innerbox
+        * = frame outside of innerbox
+        . = object frame
+            */
+    
+        r2.MinX = _mleft(obj);
+        r2.MinY = _mtop(obj);
+        r2.MaxX = _mright(obj);
+        r2.MaxY = _mbottom(obj);
+    
+        numrects = SubtractRectFromRect(&r, &r2, rects);
     }
     
     for(i = 0; i < numrects; i++)
     {
-	if (!background)
-	{
-	    /* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
-    	    /*  	D(bug(" Area_Draw(%p):%ld: MUIM_DrawBackground\n", obj, __LINE__)); */
-	    DoMethod(obj, MUIM_DrawBackground,
-	    	     rects[i].MinX, rects[i].MinY,
-		     rects[i].MaxX - rects[i].MinX + 1, rects[i].MaxY - rects[i].MinY + 1,
-		     rects[i].MinX, rects[i].MinY,
-		     data->mad_Flags);
-	}
-	else
-	{
-    	    /*  	D(bug(" Area_Draw(%p):%ld: zune_imspec_draw\n", obj, __LINE__)); */
-	    zune_imspec_draw(background, data->mad_RenderInfo,
-	    		     rects[i].MinX, rects[i].MinY,
-			     rects[i].MaxX - rects[i].MinX + 1, rects[i].MaxY - rects[i].MinY + 1,
-			     rects[i].MinX, rects[i].MinY,
-			     0);
-	}
+        if (!background)
+        {
+            /* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this    */
+            /*  	D(bug(" Area_Draw(%p):%ld: MUIM_DrawBackground\n", obj, __LINE__));        */
+            /* ATTENTION: This draws the clipped away regions of the area. Comment out and     */
+            /* check the result to see what I mean.                                            */
+            DoMethod(obj, MUIM_DrawBackground,
+                rects[i].MinX, rects[i].MinY,
+                rects[i].MaxX - rects[i].MinX + 1, rects[i].MaxY - rects[i].MinY + 1,
+                rects[i].MinX, rects[i].MinY,
+                data->mad_Flags
+            );
+        }
+        else
+        {
+            /*  	D(bug(" Area_Draw(%p):%ld: zune_imspec_draw\n", obj, __LINE__)); */
+            zune_imspec_draw(background, data->mad_RenderInfo,
+                rects[i].MinX, rects[i].MinY,
+                rects[i].MaxX - rects[i].MinX + 1, rects[i].MaxY - rects[i].MinY + 1,
+                rects[i].MinX, rects[i].MinY,
+                0
+            );
+        }
     }
     
     if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
     {
-	if (bgtop > _top(obj) && !(flags & MADF_DRAWALL))
-	{
-	    /* Fill in the gap produced by the title with the background
-	     * of the parent object but only if
-	     * the upper object hasn't drawn it already
-	     * (which is the case if MADF_DRAWALL is setted) */
-	    DoMethod(obj, MUIM_DrawParentBackground, bgleft, _top(obj), bgw, bgtop - _top(obj),
-		     bgleft, _top(obj), data->mad_Flags);
-	}
+        if (bgtop > _top(obj) && !(flags & MADF_DRAWALL))
+        {
+            /* Fill in the gap produced by the title with the background
+            * of the parent object but only if
+            * the upper object hasn't drawn it already
+            * (which is the case if MADF_DRAWALL is setted) */
+            DoMethod(
+                obj, MUIM_DrawParentBackground, bgleft, _top(obj), bgw, bgtop - _top(obj),
+                bgleft, _top(obj), data->mad_Flags
+            );
+        }
     }
 }
 
 
 /*
- * draw object frame + title if not MADF_FRAMEPHANTOM.
- */
+* draw object frame + title if not MADF_FRAMEPHANTOM.
+*/
 static void Area_Draw_handle_frame(Object *obj, struct MUI_AreaData *data,
-				    const struct ZuneFrameGfx *zframe)
+                    const struct ZuneFrameGfx *zframe)
 {
     APTR textdrawclip = (APTR)-1;
     struct Region *region;
@@ -1056,29 +1062,29 @@ static void Area_Draw_handle_frame(Object *obj, struct MUI_AreaData *data,
     /* no frametitle, just draw frame and return */
     if (!data->mad_FrameTitle)
     {
-	zframe->draw(muiRenderInfo(obj), _left(obj), _top(obj), _width(obj), _height(obj));
-	return;
+        zframe->draw(muiRenderInfo(obj), _left(obj), _top(obj), _width(obj), _height(obj));
+        return;
     }
-      
+    
     /* set clipping so that frame is not drawn behind title */
 
     switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_color)
     {
-	case GROUP_TITLE_COLOR_OUTLINE:
-	    addtw = 2;
-	    break;
-	case GROUP_TITLE_COLOR_3D:
-	    addtw = 1;
-	    break;
-	default:
-	    addtw = 0;
+        case GROUP_TITLE_COLOR_OUTLINE:
+            addtw = 2;
+            break;
+        case GROUP_TITLE_COLOR_3D:
+            addtw = 1;
+            break;
+        default:
+            addtw = 0;
     }
 
     maxtxtwidth = _width(obj) - zframe->ileft - zframe->iright - 2 * 5 - addtw;
 
     nchars = TextFit(_rp(obj), data->mad_FrameTitle,
-		     strlen(data->mad_FrameTitle),
-		     &te, NULL, 1, maxtxtwidth, _font(obj)->tf_YSize);
+            strlen(data->mad_FrameTitle),
+            &te, NULL, 1, maxtxtwidth, _font(obj)->tf_YSize);
 
     tw = te.te_Width + addtw;
     tx = _left(obj) + (_width(obj) - tw) / 2;
@@ -1088,29 +1094,29 @@ static void Area_Draw_handle_frame(Object *obj, struct MUI_AreaData *data,
 
     if ((region = NewRegion()))
     {
-	struct Rectangle rect;
-	int hspace = _font(obj)->tf_YSize / 8;
-
-	rect.MinX = tx - hspace;
-	rect.MinY = _top(obj);
-	rect.MaxX = tx + tw - 1 + hspace;
-	rect.MaxY = _top(obj) + _font(obj)->tf_YSize - 1; // frame is not thick enough anywhy
-	OrRectRegion(region,&rect);
-
-	rect.MinX = _left(obj);
-	rect.MinY = _top(obj);
-	rect.MaxX = _right(obj);
-	rect.MaxY = _bottom(obj);
-	XorRectRegion(region,&rect);
-
-	textdrawclip = MUI_AddClipRegion(muiRenderInfo(obj),region);
+        struct Rectangle rect;
+        int hspace = _font(obj)->tf_YSize / 8;
+    
+        rect.MinX = tx - hspace;
+        rect.MinY = _top(obj);
+        rect.MaxX = tx + tw - 1 + hspace;
+        rect.MaxY = _top(obj) + _font(obj)->tf_YSize - 1; // frame is not thick enough anywhy
+        OrRectRegion(region,&rect);
+    
+        rect.MinX = _left(obj);
+        rect.MinY = _top(obj);
+        rect.MaxX = _right(obj);
+        rect.MaxY = _bottom(obj);
+        XorRectRegion(region,&rect);
+    
+        textdrawclip = MUI_AddClipRegion(muiRenderInfo(obj),region);
     }
 
     zframe->draw(muiRenderInfo(obj), _left(obj), frame_top, _width(obj), frame_height);
 
     if (region && textdrawclip != (APTR)-1)
     {
-	MUI_RemoveClipRegion(muiRenderInfo(obj),textdrawclip);
+        MUI_RemoveClipRegion(muiRenderInfo(obj),textdrawclip);
 /*		DisposeRegion(region);*/ /* sba: DisposeRegion happens in MUI_RemoveClipRegion, this seems wrong to me */
     }
 
@@ -1119,43 +1125,43 @@ static void Area_Draw_handle_frame(Object *obj, struct MUI_AreaData *data,
     SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
     if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
     {
-	Move(_rp(obj), tx + 1, _top(obj) + _font(obj)->tf_Baseline + 1);
-	Text(_rp(obj), data->mad_FrameTitle, nchars);
-	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-	Move(_rp(obj), tx, _top(obj) + _font(obj)->tf_Baseline);
-	Text(_rp(obj), data->mad_FrameTitle, nchars);
+        Move(_rp(obj), tx + 1, _top(obj) + _font(obj)->tf_Baseline + 1);
+        Text(_rp(obj), data->mad_FrameTitle, nchars);
+        SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+        Move(_rp(obj), tx, _top(obj) + _font(obj)->tf_Baseline);
+        Text(_rp(obj), data->mad_FrameTitle, nchars);
     }
     else if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_OUTLINE)
     {
-	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-
-	tx += addtw / 2;
-	Move(_rp(obj), tx + 1, _top(obj) + _font(obj)->tf_Baseline);
-	Text(_rp(obj), data->mad_FrameTitle, nchars);
-	Move(_rp(obj), tx - 1, _top(obj) + _font(obj)->tf_Baseline);
-	Text(_rp(obj), data->mad_FrameTitle, nchars);
-	Move(_rp(obj), tx, _top(obj) + _font(obj)->tf_Baseline + 1);
-	Text(_rp(obj), data->mad_FrameTitle, nchars);
-	Move(_rp(obj), tx, _top(obj) + _font(obj)->tf_Baseline - 1);
-	Text(_rp(obj), data->mad_FrameTitle, nchars);
-
+        SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+    
+        tx += addtw / 2;
+        Move(_rp(obj), tx + 1, _top(obj) + _font(obj)->tf_Baseline);
+        Text(_rp(obj), data->mad_FrameTitle, nchars);
+        Move(_rp(obj), tx - 1, _top(obj) + _font(obj)->tf_Baseline);
+        Text(_rp(obj), data->mad_FrameTitle, nchars);
+        Move(_rp(obj), tx, _top(obj) + _font(obj)->tf_Baseline + 1);
+        Text(_rp(obj), data->mad_FrameTitle, nchars);
+        Move(_rp(obj), tx, _top(obj) + _font(obj)->tf_Baseline - 1);
+        Text(_rp(obj), data->mad_FrameTitle, nchars);
+    
         SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-	Move(_rp(obj), tx, _top(obj) + _font(obj)->tf_Baseline);
-	Text(_rp(obj), data->mad_FrameTitle, nchars);
+        Move(_rp(obj), tx, _top(obj) + _font(obj)->tf_Baseline);
+        Text(_rp(obj), data->mad_FrameTitle, nchars);
     }
     else
     {
-	if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_HILITE)
-	{
-	    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-	}
-	Move(_rp(obj), tx, _top(obj) + _font(obj)->tf_Baseline);
-	Text(_rp(obj), data->mad_FrameTitle, nchars);
+        if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_HILITE)
+        {
+            SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+        }
+        Move(_rp(obj), tx, _top(obj) + _font(obj)->tf_Baseline);
+        Text(_rp(obj), data->mad_FrameTitle, nchars);
     }
 }
 
 /**************************************************************************
- MUIM_Draw
+MUIM_Draw
 **************************************************************************/
 static IPTR Area__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
@@ -1170,36 +1176,36 @@ static IPTR Area__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *ms
 /*      D(bug(" Area_Draw(%p) msg=0x%08lx flags=0x%08lx\n",obj, msg->flags,_flags(obj))); */
 
     if (flags & MADF_DRAWALL)
-	flags |= MADF_DRAWOBJECT;
+    flags |= MADF_DRAWOBJECT;
 
     msg->flags = flags;
     data->mad_Flags &= ~MADF_DRAWFLAGS;
     
     if (!(flags & MADF_DRAWOBJECT))
     {
-	/* dont draw bg/frame, let subclass redraw content only
-	**/
-	return 0;
+    /* dont draw bg/frame, let subclass redraw content only
+    **/
+    return 0;
     }
 
     
 /* Background cant be drawn without knowing anything about frame, thus some
- * calculations are made before background and frame drawing.
- */
+* calculations are made before background and frame drawing.
+*/
     {
-	/* on selected state, will get the opposite frame */
-	const struct MUI_FrameSpec_intern *frame;
-	int state;
+    /* on selected state, will get the opposite frame */
+    const struct MUI_FrameSpec_intern *frame;
+    int state;
 
-	frame = get_intframe(obj, data);
-	state = frame->state;
-	if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
-	    state ^= 1;
+    frame = get_intframe(obj, data);
+    state = frame->state;
+    if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
+        state ^= 1;
 
-	zframe = zune_zframe_get_with_state(
-	    &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame], state);
-	/* update innersizes as there are frames which have different inner spacings in selected state */
-	area_update_msizes(obj, data, frame, zframe);
+    zframe = zune_zframe_get_with_state(
+        &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame], state);
+    /* update innersizes as there are frames which have different inner spacings in selected state */
+    area_update_msizes(obj, data, frame, zframe);
     }
 
     /* Background drawing */
@@ -1212,7 +1218,7 @@ static IPTR Area__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *ms
     /* Frame and frametitle drawing */
     if (!(data->mad_Flags & MADF_FRAMEPHANTOM))
     {
-	Area_Draw_handle_frame(obj, data, zframe);
+    Area_Draw_handle_frame(obj, data, zframe);
     }
 
     _font(obj) = obj_font;
@@ -1224,7 +1230,7 @@ static IPTR Area__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *ms
 }
 
 /**************************************************************************
- MUIM_DrawParentBackground
+MUIM_DrawParentBackground
 **************************************************************************/
 static IPTR Area__MUIM_DrawParentBackground(struct IClass *cl, Object *obj, struct MUIP_DrawParentBackground *msg)
 {
@@ -1232,25 +1238,25 @@ static IPTR Area__MUIM_DrawParentBackground(struct IClass *cl, Object *obj, stru
     Object *parent;
 
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
-	return FALSE;
+    return FALSE;
 
     get(obj, MUIA_Parent, &parent);
     if (parent)
     {
-    	DoMethod(parent, MUIM_DrawBackground, msg->left, msg->top,
-		 msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
+        DoMethod(parent, MUIM_DrawBackground, msg->left, msg->top,
+        msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
     }
     else
     {
-	D(bug("Area_DrawParentBackground(%p) : MUIM_Window_DrawBackground\n", obj));
-    	DoMethod(_win(obj), MUIM_Window_DrawBackground, msg->left, msg->top,
-		 msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
+    D(bug("Area_DrawParentBackground(%p) : MUIM_Window_DrawBackground\n", obj));
+        DoMethod(_win(obj), MUIM_Window_DrawBackground, msg->left, msg->top,
+        msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
     }
     return TRUE;
 }
 
 /**************************************************************************
- MUIM_DrawBackground
+MUIM_DrawBackground
 **************************************************************************/
 static IPTR Area__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_DrawBackground *msg)
 {
@@ -1259,63 +1265,63 @@ static IPTR Area__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUI
     LONG state;
 
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
-	return FALSE;
+    return FALSE;
 
     if ((msg->flags & MADF_SELECTED) && (msg->flags & MADF_SHOWSELSTATE) && data->mad_SelBack)
     { 
 /*  	D(bug("Area_DrawBackground(%p): selected bg\n", obj)); */
-    	bg = data->mad_SelBack;
-	state = IDS_SELECTED;
+        bg = data->mad_SelBack;
+    state = IDS_SELECTED;
     }
     else
     {
 /*  	D(bug("Area_DrawBackground(%p): normal bg\n", obj)); */
-	bg = data->mad_Background;
-	state = IDS_NORMAL;
+    bg = data->mad_Background;
+    state = IDS_NORMAL;
     }
 
     if (!bg)
     {
-	Object *parent;
-	get(obj, MUIA_Parent, &parent);
+    Object *parent;
+    get(obj, MUIA_Parent, &parent);
 
-	D(bug("Area_DrawBackground(%p) : MUIM_DrawParentBackground\n",
-	      obj));
-	return DoMethod(obj, MUIM_DrawParentBackground, msg->left, msg->top,
-		     msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
+    D(bug("Area_DrawBackground(%p) : MUIM_DrawParentBackground\n",
+        obj));
+    return DoMethod(obj, MUIM_DrawParentBackground, msg->left, msg->top,
+            msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
     }
 
 /*      D(bug("Area_DrawBackground(%p): draw bg\n", obj)); */
     zune_imspec_draw(bg, data->mad_RenderInfo,
-		     msg->left, msg->top, msg->width, msg->height,
-		     msg->xoffset, msg->yoffset, state);
+            msg->left, msg->top, msg->width, msg->height,
+            msg->xoffset, msg->yoffset, state);
 
     return TRUE;
 }
 
 /* Perverting the EventHandlerNode structure to specify a shortcut.
- */
+*/
 static void setup_control_char (struct MUI_AreaData *data, Object *obj, struct IClass *cl)
 {
     if (data->mad_ControlChar != 0 || data->mad_Flags & MADF_CYCLECHAIN)
     {
-	data->mad_ccn.ehn_Events = data->mad_ControlChar;
-	switch (data->mad_InputMode)
-	{
-	    case MUIV_InputMode_RelVerify:
-		data->mad_ccn.ehn_Flags = MUIKEY_PRESS;
-		break;
-	    case MUIV_InputMode_Toggle:
-		data->mad_ccn.ehn_Flags = MUIKEY_TOGGLE;
-		break;
-	    case MUIV_InputMode_Immediate:
-		data->mad_ccn.ehn_Flags = MUIKEY_PRESS;
-		break;
-	}
-	data->mad_ccn.ehn_Priority = 0;
-	data->mad_ccn.ehn_Object = obj;
-	data->mad_ccn.ehn_Class = cl;
-	DoMethod(_win(obj), MUIM_Window_AddControlCharHandler, (IPTR)&data->mad_ccn);
+    data->mad_ccn.ehn_Events = data->mad_ControlChar;
+    switch (data->mad_InputMode)
+    {
+        case MUIV_InputMode_RelVerify:
+        data->mad_ccn.ehn_Flags = MUIKEY_PRESS;
+        break;
+        case MUIV_InputMode_Toggle:
+        data->mad_ccn.ehn_Flags = MUIKEY_TOGGLE;
+        break;
+        case MUIV_InputMode_Immediate:
+        data->mad_ccn.ehn_Flags = MUIKEY_PRESS;
+        break;
+    }
+    data->mad_ccn.ehn_Priority = 0;
+    data->mad_ccn.ehn_Object = obj;
+    data->mad_ccn.ehn_Class = cl;
+    DoMethod(_win(obj), MUIM_Window_AddControlCharHandler, (IPTR)&data->mad_ccn);
     }
 }
 
@@ -1324,8 +1330,8 @@ static void cleanup_control_char (struct MUI_AreaData *data, Object *obj)
 {
     if (data->mad_ControlChar != 0 || data->mad_Flags & MADF_CYCLECHAIN)
     {
-	DoMethod(_win(obj),
-		 MUIM_Window_RemControlCharHandler, (IPTR)&data->mad_ccn);
+    DoMethod(_win(obj),
+        MUIM_Window_RemControlCharHandler, (IPTR)&data->mad_ccn);
     }
 }
 
@@ -1342,13 +1348,13 @@ static void set_inner_sizes (Object *obj, struct MUI_AreaData *data)
     frame = get_intframe(obj, data);
     // Use frame inner spacing when not hardcoded
     if (!(data->mad_Flags & MADF_INNERLEFT))
-	data->mad_InnerLeft = frame->innerLeft;
+    data->mad_InnerLeft = frame->innerLeft;
     if (!(data->mad_Flags & MADF_INNERTOP))
-	data->mad_InnerTop = frame->innerTop;
+    data->mad_InnerTop = frame->innerTop;
     if (!(data->mad_Flags & MADF_INNERRIGHT))
-	data->mad_InnerRight = frame->innerRight;
+    data->mad_InnerRight = frame->innerRight;
     if (!(data->mad_Flags & MADF_INNERBOTTOM))
-	data->mad_InnerBottom = frame->innerBottom;
+    data->mad_InnerBottom = frame->innerBottom;
 }
 
 
@@ -1356,34 +1362,34 @@ static void set_title_sizes (Object *obj, struct MUI_AreaData *data)
 {
     if (data->mad_FrameTitle)
     {
-	const struct ZuneFrameGfx *zframe;
-	const struct MUI_FrameSpec_intern *frame;
+    const struct ZuneFrameGfx *zframe;
+    const struct MUI_FrameSpec_intern *frame;
 
-	frame = get_intframe(obj, data);
-	zframe = zune_zframe_get(frame);
+    frame = get_intframe(obj, data);
+    zframe = zune_zframe_get(frame);
 
-	_font(obj) = zune_font_get(obj, MUIV_Font_Title);
+    _font(obj) = zune_font_get(obj, MUIV_Font_Title);
 
-	switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
-	{
-	    case GROUP_TITLE_POSITION_ABOVE:
-		data->mad_TitleHeightAbove = _font(obj)->tf_Baseline;
-		break;
-	    case GROUP_TITLE_POSITION_CENTERED:
-		data->mad_TitleHeightAbove = _font(obj)->tf_YSize / 2;
-		break;
-	}
+    switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
+    {
+        case GROUP_TITLE_POSITION_ABOVE:
+        data->mad_TitleHeightAbove = _font(obj)->tf_Baseline;
+        break;
+        case GROUP_TITLE_POSITION_CENTERED:
+        data->mad_TitleHeightAbove = _font(obj)->tf_YSize / 2;
+        break;
+    }
 
-	data->mad_TitleHeightAdd = _font(obj)->tf_YSize - data->mad_InnerTop - zframe->itop;
-	data->mad_TitleHeightBelow = data->mad_TitleHeightAdd - data->mad_TitleHeightAbove;
+    data->mad_TitleHeightAdd = _font(obj)->tf_YSize - data->mad_InnerTop - zframe->itop;
+    data->mad_TitleHeightBelow = data->mad_TitleHeightAdd - data->mad_TitleHeightAbove;
     }
 }
 
 
 /**************************************************************************
- First method to be called after an OM_NEW, it is the place
- for all initializations depending on the environment, but not
- on the gadget size/position. Matched by MUIM_Cleanup.
+First method to be called after an OM_NEW, it is the place
+for all initializations depending on the environment, but not
+on the gadget size/position. Matched by MUIM_Cleanup.
 **************************************************************************/
 static IPTR Area__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
@@ -1395,14 +1401,14 @@ static IPTR Area__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
 
     if (data->mad_Frame)
     {
-	/* no frame allowed for root object (see Area.doc) */
-	IPTR rootobj;
-	get(_win(obj), MUIA_Window_RootObject, &rootobj);
-	if ((Object*)rootobj == obj)
-	{
-	    data->mad_Frame = MUIV_Frame_None;
-	    data->mad_FrameTitle = NULL;
-	}
+    /* no frame allowed for root object (see Area.doc) */
+    IPTR rootobj;
+    get(_win(obj), MUIA_Window_RootObject, &rootobj);
+    if ((Object*)rootobj == obj)
+    {
+        data->mad_Frame = MUIV_Frame_None;
+        data->mad_FrameTitle = NULL;
+    }
     }
 
     set_inner_sizes(obj, data);
@@ -1415,43 +1421,43 @@ static IPTR Area__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
 
     if (data->mad_Flags & MADF_OWNBG)
     {
-	data->mad_Background = zune_imspec_setup((IPTR)data->mad_BackgroundSpec,
-						 muiRenderInfo(obj));
+    data->mad_Background = zune_imspec_setup((IPTR)data->mad_BackgroundSpec,
+                        muiRenderInfo(obj));
     }
 
     if ((data->mad_Flags & MADF_SHOWSELSTATE) &&
-	(data->mad_InputMode != MUIV_InputMode_None))
+    (data->mad_InputMode != MUIV_InputMode_None))
     {
-	data->mad_SelBack = zune_imspec_setup(MUII_SelectedBack, muiRenderInfo(obj));
+    data->mad_SelBack = zune_imspec_setup(MUII_SelectedBack, muiRenderInfo(obj));
     }
 
     if (data->mad_InputMode != MUIV_InputMode_None || data->mad_ContextMenu)
     {
-	data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-	DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
     }
 
     /* Those are filled by RequestIDCMP() */
     if (data->mad_hiehn.ehn_Events)
-	DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_hiehn);
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_hiehn);
 
     setup_control_char (data, obj, cl);
 //    setup_cycle_chain (data, obj);
 
     if (data->mad_FontPreset == MUIV_Font_Inherit)
     {
-	if (_parent(obj) != NULL && _parent(obj) != _win(obj))
-	    data->mad_Font = _font(_parent(obj));
-	else
-	{
-	    D(bug("Area_Setup %p: getting normal font\n", obj));
-	    data->mad_Font = zune_font_get(obj, MUIV_Font_Normal);
-	    D(bug("Area_Setup %p: got normal font %p\n", obj, data->mad_Font));
-	}
+    if (_parent(obj) != NULL && _parent(obj) != _win(obj))
+        data->mad_Font = _font(_parent(obj));
+    else
+    {
+        D(bug("Area_Setup %p: getting normal font\n", obj));
+        data->mad_Font = zune_font_get(obj, MUIV_Font_Normal);
+        D(bug("Area_Setup %p: got normal font %p\n", obj, data->mad_Font));
+    }
     }
     else
     {
-	data->mad_Font = zune_font_get(obj, data->mad_FontPreset);
+    data->mad_Font = zune_font_get(obj, data->mad_FontPreset);
     }
 
     _flags(obj) |= MADF_SETUP;
@@ -1465,7 +1471,7 @@ static IPTR Area__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
 
 
 /**************************************************************************
- Called to match a MUIM_Setup, when environment is no more available.
+Called to match a MUIM_Setup, when environment is no more available.
 **************************************************************************/
 static IPTR Area__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
@@ -1478,37 +1484,37 @@ static IPTR Area__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Clean
 
     if (data->mad_Timer.ihn_Millis)
     {
-	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
-	data->mad_Timer.ihn_Millis = 0;
+    DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
+    data->mad_Timer.ihn_Millis = 0;
     }
 
     /* Remove the handler if it is added */
     if (data->mad_hiehn.ehn_Events)
-	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_hiehn);
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_hiehn);
 
     /* Remove the event handler if it has been added */
     if (data->mad_ehn.ehn_Events)
-	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 
     D(bug("Area cleanup %p active=%p\n", obj,
-	  (Object *)XGET(_win(obj), MUIA_Window_ActiveObject)));
+    (Object *)XGET(_win(obj), MUIA_Window_ActiveObject)));
     if (obj == (Object *)XGET(_win(obj), MUIA_Window_ActiveObject))
     {
-	D(bug("we are active, unset us\n"));
-	set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+    D(bug("we are active, unset us\n"));
+    set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
     }
 
     /* It's save to call the following function with NULL */
     if ((data->mad_Flags & MADF_SHOWSELSTATE) &&
-	(data->mad_InputMode != MUIV_InputMode_None))
+    (data->mad_InputMode != MUIV_InputMode_None))
     {
-	zune_imspec_cleanup(data->mad_SelBack);
-	data->mad_SelBack = NULL;
+    zune_imspec_cleanup(data->mad_SelBack);
+    data->mad_SelBack = NULL;
     }
     if (data->mad_Flags & MADF_OWNBG)
     {
-	zune_imspec_cleanup(data->mad_Background);
-	data->mad_Background = NULL;
+    zune_imspec_cleanup(data->mad_Background);
+    data->mad_Background = NULL;
     }
 
     muiRenderInfo(obj) = NULL;
@@ -1518,9 +1524,9 @@ static IPTR Area__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Clean
 
 
 /**************************************************************************
- Called after the window is open and the area layouted, but before
- any drawing. Matched by one MUIM_Hide.
- Good place to init things depending on gadget size/position.
+Called after the window is open and the area layouted, but before
+any drawing. Matched by one MUIM_Hide.
+Good place to init things depending on gadget size/position.
 **************************************************************************/
 static IPTR Area__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
@@ -1529,16 +1535,16 @@ static IPTR Area__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *ms
     zune_imspec_show(data->mad_Background, obj);
 
     if (data->mad_Flags & MADF_SHOWSELSTATE
-	&& data->mad_InputMode != MUIV_InputMode_None)
+    && data->mad_InputMode != MUIV_InputMode_None)
     {
-	zune_imspec_show(data->mad_SelBack, obj);
+    zune_imspec_show(data->mad_SelBack, obj);
     }
 
     return TRUE;
 }
 
 /**************************************************************************
- Called when the window is about to be closed, to match MUIM_Show.
+Called when the window is about to be closed, to match MUIM_Show.
 **************************************************************************/
 static IPTR Area__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
@@ -1546,45 +1552,45 @@ static IPTR Area__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *ms
 
     zune_imspec_hide(data->mad_Background);
     if (data->mad_Flags & MADF_SHOWSELSTATE
-	&& data->mad_InputMode != MUIV_InputMode_None)
+    && data->mad_InputMode != MUIV_InputMode_None)
     {
-	zune_imspec_hide(data->mad_SelBack);
+    zune_imspec_hide(data->mad_SelBack);
     }
 
     if (data->mad_ContextZMenu)
     {
-	zune_close_menu(data->mad_ContextZMenu);
-	data->mad_ContextZMenu = NULL;
+    zune_close_menu(data->mad_ContextZMenu);
+    data->mad_ContextZMenu = NULL;
     }
 
     return TRUE;
 }
 
 /**************************************************************************
- Called when gadget activated
+Called when gadget activated
 **************************************************************************/
 static IPTR Area__MUIM_GoActive(struct IClass *cl, Object *obj, Msg msg)
 {
     //bug("Area_GoActive %p\n", obj);
     if (_flags(obj) & MADF_CANDRAW)
-	_zune_focus_new(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
+    _zune_focus_new(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
     return TRUE;
 }
 
 /**************************************************************************
- Called when gadget deactivated
+Called when gadget deactivated
 **************************************************************************/
 static IPTR Area__MUIM_GoInactive(struct IClass *cl, Object *obj, Msg msg)
 {
     //bug("Area_GoInactive %p\n", obj);
     if (_flags(obj) & MADF_CANDRAW)
-	_zune_focus_destroy(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
+    _zune_focus_destroy(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
     return TRUE;
 }
 
 /**************************************************************************
- This one or derived methods wont be called if short help is
- not set in area instdata. So set this to a dummy val if overriding
+This one or derived methods wont be called if short help is
+not set in area instdata. So set this to a dummy val if overriding
 **************************************************************************/
 static IPTR Area__MUIM_CreateShortHelp(struct IClass *cl, Object *obj, struct MUIP_CreateShortHelp *msg)
 {
@@ -1594,7 +1600,7 @@ static IPTR Area__MUIM_CreateShortHelp(struct IClass *cl, Object *obj, struct MU
 }
 
 /**************************************************************************
- ...
+...
 **************************************************************************/
 static IPTR Area__MUIM_DeleteShortHelp(struct IClass *cl, Object *obj, struct MUIP_DeleteShortHelp *msg)
 {
@@ -1602,7 +1608,7 @@ static IPTR Area__MUIM_DeleteShortHelp(struct IClass *cl, Object *obj, struct MU
 }
 
 /**************************************************************************
- ...
+...
 **************************************************************************/
 static IPTR Area__MUIM_CreateBubble(struct IClass *cl, Object *obj, struct MUIP_CreateBubble *msg)
 {
@@ -1610,7 +1616,7 @@ static IPTR Area__MUIM_CreateBubble(struct IClass *cl, Object *obj, struct MUIP_
 }
 
 /**************************************************************************
- ...
+...
 **************************************************************************/
 static IPTR Area__MUIM_DeleteBubble(struct IClass *cl, Object *obj, struct MUIP_DeleteBubble *msg)
 {
@@ -1626,37 +1632,37 @@ static void handle_press(struct IClass *cl, Object *obj)
 
     switch (data->mad_InputMode)
     {
-	case MUIV_InputMode_RelVerify:
-	    set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
-	    if (!data->mad_Timer.ihn_Millis)
-	    {
-	    	data->mad_Timer.ihn_Millis = 300;
-		DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR)&data->mad_Timer);
-	    }
-	    SetAttrs(obj, MUIA_Selected, TRUE, MUIA_Pressed, TRUE, TAG_DONE);
-	    break;
+    case MUIV_InputMode_RelVerify:
+        set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
+        if (!data->mad_Timer.ihn_Millis)
+        {
+            data->mad_Timer.ihn_Millis = 300;
+        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR)&data->mad_Timer);
+        }
+        SetAttrs(obj, MUIA_Selected, TRUE, MUIA_Pressed, TRUE, TAG_DONE);
+        break;
 
-	case MUIV_InputMode_Immediate:
-	{
-	    IPTR selected;
+    case MUIV_InputMode_Immediate:
+    {
+        IPTR selected;
 
-	    get(obj, MUIA_Selected, &selected);
-	    if (selected)
-	    {
+        get(obj, MUIA_Selected, &selected);
+        if (selected)
+        {
 /*  		D(bug("handle_press(%p) : nnset MUIA_Selected FALSE\n", obj)); */
-		nnset(obj, MUIA_Selected, FALSE);
-	    }
+        nnset(obj, MUIA_Selected, FALSE);
+        }
 /*  	    D(bug("handle_press(%p) : set MUIA_Selected TRUE\n", obj)); */
-	    set(obj, MUIA_Selected, TRUE);
+        set(obj, MUIA_Selected, TRUE);
 /*  	    D(bug("handle_press(%p) : done\n", obj)); */
-	    break;
-	}
-	case MUIV_InputMode_Toggle:
-	    // although undocumented, MUI sets MUIA_Pressed too
-	    SetAttrs(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED),
-		     MUIA_Pressed, !(data->mad_Flags & MADF_PRESSED),
-		     TAG_DONE);
-	    break;
+        break;
+    }
+    case MUIV_InputMode_Toggle:
+        // although undocumented, MUI sets MUIA_Pressed too
+        SetAttrs(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED),
+            MUIA_Pressed, !(data->mad_Flags & MADF_PRESSED),
+            TAG_DONE);
+        break;
     }
 }
 
@@ -1667,21 +1673,21 @@ static void handle_release(struct IClass *cl, Object *obj, int cancel)
 
     if (data->mad_InputMode == MUIV_InputMode_RelVerify)
     {
-	if (data->mad_Flags & MADF_SELECTED)
-	{
-	    if (cancel)
-		nnset(obj, MUIA_Pressed, FALSE);
-	    else
-		set(obj, MUIA_Pressed, FALSE);
-	    
-	    set(obj, MUIA_Selected, FALSE);
-	}
+    if (data->mad_Flags & MADF_SELECTED)
+    {
+        if (cancel)
+        nnset(obj, MUIA_Pressed, FALSE);
+        else
+        set(obj, MUIA_Pressed, FALSE);
+        
+        set(obj, MUIA_Selected, FALSE);
+    }
     }
 
     if (data->mad_Timer.ihn_Millis)
     {
-	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
-    	data->mad_Timer.ihn_Millis = 0;
+    DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
+        data->mad_Timer.ihn_Millis = 0;
     }
 
 }
@@ -1690,112 +1696,112 @@ static IPTR event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     BOOL in = _between(_left(obj), imsg->MouseX, _right(obj))
-           && _between(_top(obj),  imsg->MouseY, _bottom(obj));
+        && _between(_top(obj),  imsg->MouseY, _bottom(obj));
 
     switch (imsg->Code)
     {
-	case	SELECTDOWN:
-		if (data->mad_InputMode == MUIV_InputMode_None)
-		    break;
+    case	SELECTDOWN:
+        if (data->mad_InputMode == MUIV_InputMode_None)
+            break;
 
-		if (in)
-		{
+        if (in)
+        {
 //		    set(_win(obj), MUIA_Window_ActiveObject, obj);
-		    data->mad_ClickX = imsg->MouseX;
-		    data->mad_ClickY = imsg->MouseY;
+            data->mad_ClickX = imsg->MouseX;
+            data->mad_ClickY = imsg->MouseY;
 
-		    if ((data->mad_InputMode != MUIV_InputMode_Toggle) && (data->mad_Flags & MADF_SELECTED))
-			break;
-		    nnset(obj,MUIA_Timer,0);
-		    if (data->mad_InputMode == MUIV_InputMode_RelVerify)
-		    {
-			if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-			data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE | IDCMP_RAWKEY;
-	                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-	            }
-		    handle_press(cl, obj);
-		    return MUI_EventHandlerRC_Eat;
-		}
+            if ((data->mad_InputMode != MUIV_InputMode_Toggle) && (data->mad_Flags & MADF_SELECTED))
+            break;
+            nnset(obj,MUIA_Timer,0);
+            if (data->mad_InputMode == MUIV_InputMode_RelVerify)
+            {
+            if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+            data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE | IDCMP_RAWKEY;
+                    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+                }
+            handle_press(cl, obj);
+            return MUI_EventHandlerRC_Eat;
+        }
 
-	case	SELECTUP:
-		if (data->mad_InputMode == MUIV_InputMode_None)
-		    break;
+    case	SELECTUP:
+        if (data->mad_InputMode == MUIV_InputMode_None)
+            break;
 
-		if (data->mad_ehn.ehn_Events != IDCMP_MOUSEBUTTONS)
-		{
-		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-	            data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-		    if (!in) nnset(obj, MUIA_Pressed, FALSE);
-		    handle_release(cl, obj, FALSE /*cancel*/ );
-		    return MUI_EventHandlerRC_Eat;
-		}
-		break;
+        if (data->mad_ehn.ehn_Events != IDCMP_MOUSEBUTTONS)
+        {
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+                data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+            if (!in) nnset(obj, MUIA_Pressed, FALSE);
+            handle_release(cl, obj, FALSE /*cancel*/ );
+            return MUI_EventHandlerRC_Eat;
+        }
+        break;
 
-	case    MENUDOWN:
-		if (in && data->mad_ContextMenu)
-		{
-		    Object *menuobj = (Object*)DoMethod(obj, MUIM_ContextMenuBuild, imsg->MouseX, imsg->MouseY);
-		    if (menuobj)
-		    {
-			struct NewMenu *newmenu;
-			
-			/* stegerg: HACKME, CHECKME! The menu/menu item objs should automatically
-			            be connected (parentobject setup) without need for
-				    this, but they aren't. Because of how family class is and
-				    is used by other classes, I think!? */
-			DoMethod(menuobj, MUIM_ConnectParent, obj);
-			
-			get(menuobj,MUIA_Menuitem_NewMenu,&newmenu);
-			if (newmenu)
-			{
-			    if (data->mad_ContextZMenu) zune_close_menu(data->mad_ContextZMenu);
-			    data->mad_ContextZMenu = zune_open_menu(_window(obj),newmenu);
-			}
+    case    MENUDOWN:
+        if (in && data->mad_ContextMenu)
+        {
+            Object *menuobj = (Object*)DoMethod(obj, MUIM_ContextMenuBuild, imsg->MouseX, imsg->MouseY);
+            if (menuobj)
+            {
+            struct NewMenu *newmenu;
+            
+            /* stegerg: HACKME, CHECKME! The menu/menu item objs should automatically
+                        be connected (parentobject setup) without need for
+                    this, but they aren't. Because of how family class is and
+                    is used by other classes, I think!? */
+            DoMethod(menuobj, MUIM_ConnectParent, obj);
+            
+            get(menuobj,MUIA_Menuitem_NewMenu,&newmenu);
+            if (newmenu)
+            {
+                if (data->mad_ContextZMenu) zune_close_menu(data->mad_ContextZMenu);
+                data->mad_ContextZMenu = zune_open_menu(_window(obj),newmenu);
+            }
 
-			if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-			data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-	                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-		    }
-	            return MUI_EventHandlerRC_Eat;
-        	}
-	        break;
+            if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+            data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+                    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+            }
+                return MUI_EventHandlerRC_Eat;
+            }
+            break;
 
-	case    MENUUP:
-		if (data->mad_ContextZMenu)
-		{
-		    struct MenuItem *item = zune_leave_menu(data->mad_ContextZMenu);
+    case    MENUUP:
+        if (data->mad_ContextZMenu)
+        {
+            struct MenuItem *item = zune_leave_menu(data->mad_ContextZMenu);
 
-		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-	            data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-		    
-		    if (item)
-		    {
-		    	Object *itemobj = (Object*)GTMENUITEM_USERDATA(item);
-			
-			/* CHECKME: MUIA_MenuItem_Trigger should probably be set inside
-			            MUIM_ContextMenuChoice!? But there I only know about
-				    itemobj, not MenuItem itself! */		    	
-    			if (item->Flags & CHECKIT)
-			{
-    	    	    	    set(itemobj, MUIA_Menuitem_Checked, !!(item->Flags & CHECKED));
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+                data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+            
+            if (item)
+            {
+                Object *itemobj = (Object*)GTMENUITEM_USERDATA(item);
+            
+            /* CHECKME: MUIA_MenuItem_Trigger should probably be set inside
+                        MUIM_ContextMenuChoice!? But there I only know about
+                    itemobj, not MenuItem itself! */		    	
+                if (item->Flags & CHECKIT)
+            {
+                            set(itemobj, MUIA_Menuitem_Checked, !!(item->Flags & CHECKED));
 
-			} /* if (item->Flags & CHECKIT) */
-					    			
-			set(itemobj, MUIA_Menuitem_Trigger, item);
-			
-			DoMethod(obj, MUIM_ContextMenuChoice, itemobj);
-			
-		    } /* if (item) */
-		    
-		    zune_close_menu(data->mad_ContextZMenu);
-		    data->mad_ContextZMenu = NULL;
-		    
-	            return MUI_EventHandlerRC_Eat;
-		    
-		} /* if (data->mad_ContextZMenu) */
-		break;
+            } /* if (item->Flags & CHECKIT) */
+                                    
+            set(itemobj, MUIA_Menuitem_Trigger, item);
+            
+            DoMethod(obj, MUIM_ContextMenuChoice, itemobj);
+            
+            } /* if (item) */
+            
+            zune_close_menu(data->mad_ContextZMenu);
+            data->mad_ContextZMenu = NULL;
+            
+                return MUI_EventHandlerRC_Eat;
+            
+        } /* if (data->mad_ContextZMenu) */
+        break;
     }
 
     return 0;
@@ -1807,55 +1813,55 @@ static IPTR event_motion(Class *cl, Object *obj, struct IntuiMessage *imsg)
 
     if ((imsg->Qualifier & IEQUALIFIER_RBUTTON) && data->mad_ContextZMenu)
     {
-	zune_mouse_update(data->mad_ContextZMenu, 0);
-	return MUI_EventHandlerRC_Eat;
+    zune_mouse_update(data->mad_ContextZMenu, 0);
+    return MUI_EventHandlerRC_Eat;
     }
 
     if (imsg->Qualifier & IEQUALIFIER_LEFTBUTTON)
     {
-	BOOL in = _between(_left(obj), imsg->MouseX, _right(obj))
-	           && _between(_top(obj),  imsg->MouseY, _bottom(obj));
+    BOOL in = _between(_left(obj), imsg->MouseX, _right(obj))
+            && _between(_top(obj),  imsg->MouseY, _bottom(obj));
 
-	if (in)
-	{
-	    if ((data->mad_Flags & MADF_DRAGGABLE) && ((abs(data->mad_ClickX-imsg->MouseX) >= 3) || (abs(data->mad_ClickY-imsg->MouseY)>=3)))
-		/* should be user configurable */
-	    {
-		if (data->mad_InputMode == MUIV_InputMode_RelVerify)
-		    set(obj, MUIA_Selected, FALSE);
-		nnset(obj, MUIA_Pressed, FALSE);
+    if (in)
+    {
+        if ((data->mad_Flags & MADF_DRAGGABLE) && ((abs(data->mad_ClickX-imsg->MouseX) >= 3) || (abs(data->mad_ClickY-imsg->MouseY)>=3)))
+        /* should be user configurable */
+        {
+        if (data->mad_InputMode == MUIV_InputMode_RelVerify)
+            set(obj, MUIA_Selected, FALSE);
+        nnset(obj, MUIA_Pressed, FALSE);
 
-		if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-		data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-		DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-		if (data->mad_Timer.ihn_Millis)
-		{
-		   DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
-		   data->mad_Timer.ihn_Millis = 0;
-		}
+        if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+        data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+        DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+        if (data->mad_Timer.ihn_Millis)
+        {
+        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
+        data->mad_Timer.ihn_Millis = 0;
+        }
 
-	    	DoMethod(obj,MUIM_DoDrag, data->mad_ClickX - _left(obj), data->mad_ClickY - _top(obj), 0);
-		return MUI_EventHandlerRC_Eat;
-	    }
-	}
+            DoMethod(obj,MUIM_DoDrag, data->mad_ClickX - _left(obj), data->mad_ClickY - _top(obj), 0);
+        return MUI_EventHandlerRC_Eat;
+        }
+    }
 
-	if (data->mad_InputMode == MUIV_InputMode_RelVerify)
-	{
-	    if (!in && (data->mad_Flags & MADF_SELECTED)) /* going out */
-	    {
-		set(obj, MUIA_Selected, FALSE);
-	    }
-	    else if (in && !(data->mad_Flags & MADF_SELECTED)) /* going in */
-	    {
-	        set(obj, MUIA_Selected, TRUE);
-	    }
-	}
+    if (data->mad_InputMode == MUIV_InputMode_RelVerify)
+    {
+        if (!in && (data->mad_Flags & MADF_SELECTED)) /* going out */
+        {
+        set(obj, MUIA_Selected, FALSE);
+        }
+        else if (in && !(data->mad_Flags & MADF_SELECTED)) /* going in */
+        {
+            set(obj, MUIA_Selected, TRUE);
+        }
+    }
     }
     return MUI_EventHandlerRC_Eat;
 }
 
 /**************************************************************************
- ...
+...
 **************************************************************************/
 static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
@@ -1867,81 +1873,81 @@ static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_H
 
     if (msg->muikey != MUIKEY_NONE)
     {
-	switch (msg->muikey)
-	{
-	    case    MUIKEY_PRESS:
-		    if (data->mad_Flags & MADF_SELECTED)
-			break;
-		    if (data->mad_ehn.ehn_Events)
-			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-		    data->mad_ehn.ehn_Events |= IDCMP_RAWKEY;
-		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-		    handle_press(cl, obj);
-		    return MUI_EventHandlerRC_Eat;
+    switch (msg->muikey)
+    {
+        case    MUIKEY_PRESS:
+            if (data->mad_Flags & MADF_SELECTED)
+            break;
+            if (data->mad_ehn.ehn_Events)
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+            data->mad_ehn.ehn_Events |= IDCMP_RAWKEY;
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+            handle_press(cl, obj);
+            return MUI_EventHandlerRC_Eat;
 
-	    case    MUIKEY_TOGGLE:
-		    if (data->mad_InputMode == MUIV_InputMode_Toggle)
-			set(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED));
-		    return MUI_EventHandlerRC_Eat;
+        case    MUIKEY_TOGGLE:
+            if (data->mad_InputMode == MUIV_InputMode_Toggle)
+            set(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED));
+            return MUI_EventHandlerRC_Eat;
 
-	    case    MUIKEY_RELEASE:
-		    if (data->mad_ehn.ehn_Events)
-			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-		    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-		    handle_release(cl, obj, FALSE /* cancel */);
-		    return MUI_EventHandlerRC_Eat;
-	}
-	return 0;
+        case    MUIKEY_RELEASE:
+            if (data->mad_ehn.ehn_Events)
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+            data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+            handle_release(cl, obj, FALSE /* cancel */);
+            return MUI_EventHandlerRC_Eat;
+    }
+    return 0;
     }
 
     if (msg->imsg)
     {
-	switch (msg->imsg->Class)
-	{
-	    case IDCMP_MOUSEBUTTONS: return event_button(cl, obj, msg->imsg);
-	    case IDCMP_MOUSEMOVE: return event_motion(cl, obj, msg->imsg);
-	    case IDCMP_RAWKEY:
-	    {
-		unsigned char code;
-		UWORD msg_code;
-		/* Remove the up prefix as convert key does not convert a upkey event */
-		msg_code = msg->imsg->Code;
-		msg->imsg->Code &= ~IECODE_UP_PREFIX;
-		code = ConvertKey(msg->imsg);
-		msg->imsg->Code = msg_code;
+    switch (msg->imsg->Class)
+    {
+        case IDCMP_MOUSEBUTTONS: return event_button(cl, obj, msg->imsg);
+        case IDCMP_MOUSEMOVE: return event_motion(cl, obj, msg->imsg);
+        case IDCMP_RAWKEY:
+        {
+        unsigned char code;
+        UWORD msg_code;
+        /* Remove the up prefix as convert key does not convert a upkey event */
+        msg_code = msg->imsg->Code;
+        msg->imsg->Code &= ~IECODE_UP_PREFIX;
+        code = ConvertKey(msg->imsg);
+        msg->imsg->Code = msg_code;
 
-		if (code != 0 && code == data->mad_ControlChar)
-		{
-		    if (msg->imsg->Code & IECODE_UP_PREFIX)
-		    {
-			msg->muikey = MUIKEY_RELEASE;
-		    }
-		    else
-		    {
-			msg->muikey = MUIKEY_PRESS;
-		    }
-		    msg->imsg = NULL;
-		    return Area__MUIM_HandleEvent(cl, obj, msg);
-		}
+        if (code != 0 && code == data->mad_ControlChar)
+        {
+            if (msg->imsg->Code & IECODE_UP_PREFIX)
+            {
+            msg->muikey = MUIKEY_RELEASE;
+            }
+            else
+            {
+            msg->muikey = MUIKEY_PRESS;
+            }
+            msg->imsg = NULL;
+            return Area__MUIM_HandleEvent(cl, obj, msg);
+        }
 
-	        if (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
-	        {
-		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-		    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-		    handle_release(cl,obj, TRUE /*cancel */);
-		}
-		return MUI_EventHandlerRC_Eat;
-	    }
-	    break;
-	}
+            if (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+            {
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+            data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+            handle_release(cl,obj, TRUE /*cancel */);
+        }
+        return MUI_EventHandlerRC_Eat;
+        }
+        break;
+    }
     }
     return 0;
 }
 
 /**************************************************************************
- ...
+...
 **************************************************************************/
 static IPTR Area__MUIM_HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleInput *msg)
 {
@@ -1953,7 +1959,7 @@ static IPTR Area__MUIM_HandleInput(struct IClass *cl, Object *obj, struct MUIP_H
 }
 
 /**************************************************************************
- Trivial; custom classes may override this to get dynamic menus.
+Trivial; custom classes may override this to get dynamic menus.
 **************************************************************************/
 static IPTR Area__MUIM_ContextMenuBuild(struct IClass *cl, Object *obj, struct MUIP_ContextMenuBuild *msg)
 {
@@ -1970,7 +1976,7 @@ static IPTR Area__MUIM_ContextMenuChoice(struct IClass *cl, Object *obj, struct 
 
 
 /**************************************************************************
- MUIM_Export : to export an objects "contents" to a dataspace object.
+MUIM_Export : to export an objects "contents" to a dataspace object.
 **************************************************************************/
 static IPTR Area__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
@@ -1979,15 +1985,15 @@ static IPTR Area__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-    	char selected = (data->mad_Flags & MADF_SELECTED)?1:0;
-	DoMethod(msg->dataspace, MUIM_Dataspace_Add, (IPTR)&selected, sizeof(char),(IPTR)id);
+        char selected = (data->mad_Flags & MADF_SELECTED)?1:0;
+    DoMethod(msg->dataspace, MUIM_Dataspace_Add, (IPTR)&selected, sizeof(char),(IPTR)id);
     }
     return 0;
 }
 
 
 /**************************************************************************
- MUIM_Import : to import an objects "contents" from a dataspace object.
+MUIM_Import : to import an objects "contents" from a dataspace object.
 **************************************************************************/
 static IPTR Area__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
@@ -1997,35 +2003,35 @@ static IPTR Area__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-    	char *selected = (char*)DoMethod(msg->dataspace, MUIM_Dataspace_Find, (IPTR)id);
+        char *selected = (char*)DoMethod(msg->dataspace, MUIM_Dataspace_Find, (IPTR)id);
 
-	if (selected)
-	{
-	    if (*selected) data->mad_Flags |= MADF_SELECTED;
-	    else data->mad_Flags &= ~MADF_SELECTED;
-	}
+    if (selected)
+    {
+        if (*selected) data->mad_Flags |= MADF_SELECTED;
+        else data->mad_Flags &= ~MADF_SELECTED;
+    }
     }
     return 0;
 }
 
 /**************************************************************************
- MUIM_Timer
+MUIM_Timer
 **************************************************************************/
 static IPTR Area__MUIM_Timer(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     if (data->mad_Timer.ihn_Millis)
-	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
+    DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
     data->mad_Timer.ihn_Millis = 50;
     DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR)&data->mad_Timer);
 
     if (data->mad_Flags & MADF_SELECTED)
-	set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
+    set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
     return 0;
 }
 
 /**************************************************************************
- MUIM_DoDrag
+MUIM_DoDrag
 **************************************************************************/
 static IPTR Area__MUIM_DoDrag(struct IClass *cl, Object *obj, struct MUIP_DoDrag *msg)
 {
@@ -2035,76 +2041,76 @@ static IPTR Area__MUIM_DoDrag(struct IClass *cl, Object *obj, struct MUIP_DoDrag
 }
 
 /**************************************************************************
- MUIM_CreateDragImage
+MUIM_CreateDragImage
 **************************************************************************/
 static IPTR Area__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
 {
     struct MUI_DragImage *img = (struct MUI_DragImage *)AllocVec(sizeof(struct MUIP_CreateDragImage),MEMF_CLEAR);
     if (img)
     {
-    	const struct ZuneFrameGfx *zframe;
-	LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
+        const struct ZuneFrameGfx *zframe;
+    LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
 
-	zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Drag]);
+    zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Drag]);
 
-    	img->width = _width(obj) + zframe->ileft + zframe->iright;
-    	img->height = _height(obj) + zframe->itop + zframe->ibottom;
+        img->width = _width(obj) + zframe->ileft + zframe->iright;
+        img->height = _height(obj) + zframe->itop + zframe->ibottom;
 
-    	if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES,_screen(obj)->RastPort.BitMap)))
-    	{
-    	    /* Render the stuff now */
-    	    struct RastPort *rp_save = muiRenderInfo(obj)->mri_RastPort;
-    	    struct RastPort temprp;
-    	    InitRastPort(&temprp);
-    	    temprp.BitMap = img->bm;
-    	    ClipBlit(_rp(obj),_left(obj),_top(obj),&temprp,zframe->ileft,zframe->itop,_width(obj),_height(obj),0xc0);
+        if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES,_screen(obj)->RastPort.BitMap)))
+        {
+            /* Render the stuff now */
+            struct RastPort *rp_save = muiRenderInfo(obj)->mri_RastPort;
+            struct RastPort temprp;
+            InitRastPort(&temprp);
+            temprp.BitMap = img->bm;
+            ClipBlit(_rp(obj),_left(obj),_top(obj),&temprp,zframe->ileft,zframe->itop,_width(obj),_height(obj),0xc0);
 
-	    muiRenderInfo(obj)->mri_RastPort = &temprp;
-	    zframe->draw(muiRenderInfo(obj), 0, 0, img->width, img->height);
-	    muiRenderInfo(obj)->mri_RastPort = rp_save;
-	    
+        muiRenderInfo(obj)->mri_RastPort = &temprp;
+        zframe->draw(muiRenderInfo(obj), 0, 0, img->width, img->height);
+        muiRenderInfo(obj)->mri_RastPort = rp_save;
+        
             DeinitRastPort(&temprp);
-    	}
+        }
 
-    	img->touchx = msg->touchx;
-    	img->touchy = msg->touchy;
-    	img->flags = 0;
+        img->touchx = msg->touchx;
+        img->touchy = msg->touchy;
+        img->flags = 0;
     }
     return (IPTR)img;
 }
 
 /**************************************************************************
- MUIM_DeleteDragImage
+MUIM_DeleteDragImage
 **************************************************************************/
 static IPTR Area__MUIM_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_DeleteDragImage *msg)
 {
     if (msg->di)
     {
-	if (msg->di->bm) FreeBitMap(msg->di->bm);
-	FreeVec(msg->di);
+    if (msg->di->bm) FreeBitMap(msg->di->bm);
+    FreeVec(msg->di);
     }
     return 0;
 }
 
 /**************************************************************************
- MUIM_DragQueryExtended
+MUIM_DragQueryExtended
 **************************************************************************/
 static IPTR Area__MUIM_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_DragQueryExtended *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     if (data->mad_Flags & MADF_DROPABLE)
     {
-	if (_left(obj) <= msg->x && msg->x <= _right(obj) && _top(obj) <= msg->y && msg->y <= _bottom(obj))
-	{
-	    if (DoMethod(obj,MUIM_DragQuery,(IPTR)msg->obj) == MUIV_DragQuery_Accept)
-		return (IPTR)obj;
-	}
+    if (_left(obj) <= msg->x && msg->x <= _right(obj) && _top(obj) <= msg->y && msg->y <= _bottom(obj))
+    {
+        if (DoMethod(obj,MUIM_DragQuery,(IPTR)msg->obj) == MUIV_DragQuery_Accept)
+        return (IPTR)obj;
+    }
     }
     return 0;
 }
 
 /**************************************************************************
- MUIM_DragBegin
+MUIM_DragBegin
 **************************************************************************/
 static IPTR Area__MUIM_DragBegin(struct IClass *cl, Object *obj, struct MUIP_DragBegin *msg)
 {
@@ -2114,7 +2120,7 @@ static IPTR Area__MUIM_DragBegin(struct IClass *cl, Object *obj, struct MUIP_Dra
 }
 
 /**************************************************************************
- MUIM_DragFinish
+MUIM_DragFinish
 **************************************************************************/
 static IPTR Area__MUIM_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFinish *msg)
 {
@@ -2125,13 +2131,13 @@ static IPTR Area__MUIM_DragFinish(struct IClass *cl, Object *obj, struct MUIP_Dr
 
 
 /*
- * Calculates addleft, addtop, subwidth, subheight from current settings.
- * If frame phantom, ignore horizontal frame components.
- * Depends on inner sizes and frame
- */
+* Calculates addleft, addtop, subwidth, subheight from current settings.
+* If frame phantom, ignore horizontal frame components.
+* Depends on inner sizes and frame
+*/
 static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
-			       const struct MUI_FrameSpec_intern *frame,
-			       const struct ZuneFrameGfx *zframe)
+                const struct MUI_FrameSpec_intern *frame,
+                const struct ZuneFrameGfx *zframe)
 {
 
 /*      if (XGET(obj, MUIA_UserData) == 42) */
@@ -2146,8 +2152,8 @@ static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
 
     if (data->mad_Flags & MADF_FRAMEPHANTOM)
     {
-	data->mad_addleft = 0;
-	data->mad_subwidth = 0;
+    data->mad_addleft = 0;
+    data->mad_subwidth = 0;
     }
 
 // clamping ... maybe ?
@@ -2157,9 +2163,9 @@ static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
 }
 
 /**************************************************************************
- MUIM_UpdateInnerSizes - Updates the innersizes of an object. You actually
- should only call this method if the dimensions of an object would not be
- affected, otherwise the results are unexpected
+MUIM_UpdateInnerSizes - Updates the innersizes of an object. You actually
+should only call this method if the dimensions of an object would not be
+affected, otherwise the results are unexpected
 **************************************************************************/
 static IPTR Area__MUIM_UpdateInnerSizes(struct IClass *cl, Object *obj, struct MUIP_UpdateInnerSizes *msg)
 {
@@ -2169,64 +2175,64 @@ static IPTR Area__MUIM_UpdateInnerSizes(struct IClass *cl, Object *obj, struct M
 
     if (_flags(obj) & MADF_SETUP)
     {
-	frame = get_intframe(obj, data);
-	zframe = zune_zframe_get(frame);
+    frame = get_intframe(obj, data);
+    zframe = zune_zframe_get(frame);
         area_update_msizes(obj, data, frame, zframe);
     }
     return 1;
 }
 
 static IPTR Area__MUIM_FindAreaObject(struct IClass *cl, Object *obj,
-				struct MUIP_FindAreaObject *msg)
+                struct MUIP_FindAreaObject *msg)
 {
     if (msg->obj == obj)
-	return (IPTR)obj;
+    return (IPTR)obj;
     else
-	return (IPTR)NULL;
+    return (IPTR)NULL;
 }
 
 BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:                    return Area__OM_NEW(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE:                return Area__OM_DISPOSE(cl, obj, msg);
-	case OM_SET:                    return Area__OM_SET(cl, obj, (struct opSet *)msg);
-	case OM_GET:                    return Area__OM_GET(cl, obj, (struct opGet *)msg);
-	case MUIM_AskMinMax:            return Area__MUIM_AskMinMax(cl, obj, (APTR)msg);
-	case MUIM_Draw:                 return Area__MUIM_Draw(cl, obj, (APTR)msg);
-	case MUIM_DrawBackground:       return Area__MUIM_DrawBackground(cl, obj, (APTR)msg);
-	case MUIM_DrawParentBackground: return Area__MUIM_DrawParentBackground(cl, obj, (APTR)msg);
-	case MUIM_Setup:                return Area__MUIM_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup:              return Area__MUIM_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_Show:                 return Area__MUIM_Show(cl, obj, (APTR)msg);
-	case MUIM_Hide:                 return Area__MUIM_Hide(cl, obj, (APTR)msg);
-	case MUIM_GoActive:             return Area__MUIM_GoActive(cl, obj, (APTR)msg);
-	case MUIM_GoInactive:           return Area__MUIM_GoInactive(cl, obj, (APTR)msg);
-	case MUIM_Layout:               return 1;
-	case MUIM_CreateShortHelp:      return Area__MUIM_CreateShortHelp(cl, obj, (APTR)msg);
-	case MUIM_DeleteShortHelp:      return Area__MUIM_DeleteShortHelp(cl, obj, (APTR)msg);
-    	case MUIM_CreateBubble:         return Area__MUIM_CreateBubble(cl, obj, (APTR)msg);
-	case MUIM_DeleteBubble:         return Area__MUIM_DeleteBubble(cl, obj, (APTR)msg);
-	case MUIM_HandleEvent:          return Area__MUIM_HandleEvent(cl, obj, (APTR)msg);
-	case MUIM_ContextMenuBuild:     return Area__MUIM_ContextMenuBuild(cl, obj, (APTR)msg);
-	case MUIM_ContextMenuChoice:    return Area__MUIM_ContextMenuChoice(cl, obj, (APTR)msg);
-	case MUIM_Timer:                return Area__MUIM_Timer(cl,obj,msg);
-	case MUIM_UpdateInnerSizes:     return Area__MUIM_UpdateInnerSizes(cl,obj,(APTR)msg);
-	case MUIM_DragQuery:            return MUIV_DragQuery_Refuse;
-	case MUIM_DragBegin:            return Area__MUIM_DragBegin(cl,obj,(APTR)msg);
-	case MUIM_DragDrop:             return FALSE;
-	case MUIM_DragFinish:           return Area__MUIM_DragFinish(cl,obj,(APTR)msg);
-	case MUIM_DragReport:           return MUIV_DragReport_Continue; /* or MUIV_DragReport_Abort? */
-	case MUIM_DoDrag:               return Area__MUIM_DoDrag(cl, obj, (APTR)msg);
-	case MUIM_CreateDragImage:      return Area__MUIM_CreateDragImage(cl, obj, (APTR)msg);
-	case MUIM_DeleteDragImage:      return Area__MUIM_DeleteDragImage(cl, obj, (APTR)msg);
-	case MUIM_DragQueryExtended:    return Area__MUIM_DragQueryExtended(cl, obj, (APTR)msg);
-	case MUIM_HandleInput:          return Area__MUIM_HandleInput(cl, obj, (APTR)msg);
-	case MUIM_FindAreaObject:       return Area__MUIM_FindAreaObject(cl, obj, (APTR)msg);
+    case OM_NEW:                    return Area__OM_NEW(cl, obj, (struct opSet *) msg);
+    case OM_DISPOSE:                return Area__OM_DISPOSE(cl, obj, msg);
+    case OM_SET:                    return Area__OM_SET(cl, obj, (struct opSet *)msg);
+    case OM_GET:                    return Area__OM_GET(cl, obj, (struct opGet *)msg);
+    case MUIM_AskMinMax:            return Area__MUIM_AskMinMax(cl, obj, (APTR)msg);
+    case MUIM_Draw:                 return Area__MUIM_Draw(cl, obj, (APTR)msg);
+    case MUIM_DrawBackground:       return Area__MUIM_DrawBackground(cl, obj, (APTR)msg);
+    case MUIM_DrawParentBackground: return Area__MUIM_DrawParentBackground(cl, obj, (APTR)msg);
+    case MUIM_Setup:                return Area__MUIM_Setup(cl, obj, (APTR)msg);
+    case MUIM_Cleanup:              return Area__MUIM_Cleanup(cl, obj, (APTR)msg);
+    case MUIM_Show:                 return Area__MUIM_Show(cl, obj, (APTR)msg);
+    case MUIM_Hide:                 return Area__MUIM_Hide(cl, obj, (APTR)msg);
+    case MUIM_GoActive:             return Area__MUIM_GoActive(cl, obj, (APTR)msg);
+    case MUIM_GoInactive:           return Area__MUIM_GoInactive(cl, obj, (APTR)msg);
+    case MUIM_Layout:               return 1;
+    case MUIM_CreateShortHelp:      return Area__MUIM_CreateShortHelp(cl, obj, (APTR)msg);
+    case MUIM_DeleteShortHelp:      return Area__MUIM_DeleteShortHelp(cl, obj, (APTR)msg);
+        case MUIM_CreateBubble:         return Area__MUIM_CreateBubble(cl, obj, (APTR)msg);
+    case MUIM_DeleteBubble:         return Area__MUIM_DeleteBubble(cl, obj, (APTR)msg);
+    case MUIM_HandleEvent:          return Area__MUIM_HandleEvent(cl, obj, (APTR)msg);
+    case MUIM_ContextMenuBuild:     return Area__MUIM_ContextMenuBuild(cl, obj, (APTR)msg);
+    case MUIM_ContextMenuChoice:    return Area__MUIM_ContextMenuChoice(cl, obj, (APTR)msg);
+    case MUIM_Timer:                return Area__MUIM_Timer(cl,obj,msg);
+    case MUIM_UpdateInnerSizes:     return Area__MUIM_UpdateInnerSizes(cl,obj,(APTR)msg);
+    case MUIM_DragQuery:            return MUIV_DragQuery_Refuse;
+    case MUIM_DragBegin:            return Area__MUIM_DragBegin(cl,obj,(APTR)msg);
+    case MUIM_DragDrop:             return FALSE;
+    case MUIM_DragFinish:           return Area__MUIM_DragFinish(cl,obj,(APTR)msg);
+    case MUIM_DragReport:           return MUIV_DragReport_Continue; /* or MUIV_DragReport_Abort? */
+    case MUIM_DoDrag:               return Area__MUIM_DoDrag(cl, obj, (APTR)msg);
+    case MUIM_CreateDragImage:      return Area__MUIM_CreateDragImage(cl, obj, (APTR)msg);
+    case MUIM_DeleteDragImage:      return Area__MUIM_DeleteDragImage(cl, obj, (APTR)msg);
+    case MUIM_DragQueryExtended:    return Area__MUIM_DragQueryExtended(cl, obj, (APTR)msg);
+    case MUIM_HandleInput:          return Area__MUIM_HandleInput(cl, obj, (APTR)msg);
+    case MUIM_FindAreaObject:       return Area__MUIM_FindAreaObject(cl, obj, (APTR)msg);
 
-	case MUIM_Export:               return Area__MUIM_Export(cl, obj, (APTR)msg);
-	case MUIM_Import:               return Area__MUIM_Import(cl, obj, (APTR)msg);
+    case MUIM_Export:               return Area__MUIM_Export(cl, obj, (APTR)msg);
+    case MUIM_Import:               return Area__MUIM_Import(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
@@ -2235,8 +2241,8 @@ BOOPSI_DISPATCHER_END
 
 
 /*
- * Class descriptor.
- */
+* Class descriptor.
+*/
 const struct __MUIBuiltinClass _MUI_Area_desc = { 
     MUIC_Area, 
     MUIC_Notify, 
