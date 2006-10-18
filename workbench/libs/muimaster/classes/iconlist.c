@@ -1360,8 +1360,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                         node = List_First(&data->icon_list);
                         while (node)
                         {
-                            if (mx >= node->x - data->view_x && mx < node->x - data->view_x + node->width &&
-                                my >= node->y - data->view_y && my < node->y - data->view_y + node->height && !new_selected)
+                            if (mx >= node->x - data->view_x && mx < node->x - data->view_x + node->realWidth &&
+                                my >= node->y - data->view_y && my < node->y - data->view_y + node->realHeight && !new_selected)
                             {
                                 new_selected = node;
             
