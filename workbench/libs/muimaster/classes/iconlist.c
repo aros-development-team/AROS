@@ -38,8 +38,6 @@ $Id$
 #include "support.h"
 #include "imspec.h"
 
-#define ICONLIST_TEXTMARGIN 5
-
 extern struct Library *MUIMasterBase;
 
 #ifndef NO_ICON_POSITION
@@ -58,6 +56,8 @@ extern struct Library *MUIMasterBase;
 #define RIGHT_BUTTON		2
 #define MIDDLE_BUTTON		4
 
+#define ICONLIST_TEXTMARGIN 5
+
 struct IconEntry
 {
     struct MinNode node;
@@ -73,6 +73,7 @@ struct IconEntry
 
     int x,y;
     int width,height;
+    int realWidth,realHeight;       /* <- includes textwidth and everything */
     int selected;
 };
 
@@ -145,31 +146,44 @@ this by hand
 **************************************************************************/
 static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
 {
-    /*    int tx,txwidth; */
-
+    /*
+        Get basic width/height
+    */    
     GetIconRectangleA(NULL,icon->dob,NULL,rect,NULL);
+    icon->realWidth = rect->MaxX - rect->MinX;
+    icon->realHeight = rect->MaxY - rect->MinY;
 
-    /*    if (icon->entry.label)
+    /*
+        Get icon box width including text width
+    */
+    if (icon->entry.label)
     {
-    SetFont(_rp(obj), data->IconFont);
-    txwidth = TextLength(_rp(obj),icon->entry.label,strlen(icon->entry.label));
-    tx = (icon->width - txwidth)/2;
-    if (tx < rect->MinX) rect->MinX = tx;
-    if (tx + txwidth - 1 > rect->MaxX) rect->MaxX = tx + txwidth - 1;
-    }*/
-
-    rect->MaxY += data->IconFont->tf_Baseline + ICONLIST_TEXTMARGIN;
+        SetFont(_rp(obj), data->IconFont);
+        LONG txwidth = TextLength(_rp(obj), icon->entry.label, strlen(icon->entry.label));
+        if ( txwidth > icon->realWidth )
+            icon->realWidth = txwidth;
+        icon->realHeight += data->IconFont->tf_Baseline + ICONLIST_TEXTMARGIN;
+    }
 
     /*
         Date/size sorting has the date/size appended under the icon label
+        only list regular files like this (drawers have no size/date output)
     */
-    if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE) )
-        rect->MaxY += data->IconFont->tf_Baseline + ICONLIST_TEXTMARGIN;
+    if(
+        icon->entry.type != WBDRAWER && 
+        ((data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE))
+    )
+    {
+        icon->realHeight += data->IconFont->tf_Baseline + ( ICONLIST_TEXTMARGIN * 2 );
+    }
         
     /*
-        Extra space on bottom
+        Store
     */
-    rect->MaxY += ICONLIST_TEXTMARGIN;
+    icon->width = rect->MaxX - rect->MinX;
+    icon->height = rect->MaxY - rect->MinY;
+    rect->MaxX = rect->MinX + icon->realWidth;
+    rect->MaxY = rect->MinY + icon->realHeight;
 }
 
 /**************************************************************************
@@ -185,13 +199,16 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 
     char buf[256];
 
+    /* Get the dimensions and affected area of icon */
     IconList_GetIconRectangle(obj, data, icon, &iconrect);
 
+    /* Add the relative position offset of the icon */
     iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
     iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
     iconrect.MinY += _mtop(obj) - data->view_y + icon->y;
     iconrect.MaxY += _mtop(obj) - data->view_y + icon->y;
 
+    /* Add the relative position of the window */
     objrect.MinX = _mleft(obj);
     objrect.MinY = _mtop(obj);
     objrect.MaxX = _mright(obj);
@@ -202,7 +219,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     /* data->update_rect1 and data->update_rect2 may
     point to rectangles to indicate that only icons
     in any of this rectangles need to be drawn */
-
+    
     if (data->update_rect1 && data->update_rect2)
     {
         if (!RectAndRect(&iconrect, data->update_rect1) &&
@@ -219,12 +236,15 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 
     SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
 
+    // Center icon
+    ULONG iconX = iconrect.MinX + ((icon->realWidth - icon->width )/2);
+    ULONG iconY = iconrect.MinY;
+
 #ifndef __AROS__
     DrawIconState
     (
         _rp(obj), icon->dob, NULL,
-        _mleft(obj) - data->view_x + icon->x, 
-        _mtop(obj) - data->view_y + icon->y, 
+        iconX, iconY, 
         icon->selected ? IDS_SELECTED : IDS_NORMAL, 
         ICONDRAWA_EraseBackground, FALSE, 
         TAG_DONE
@@ -233,8 +253,8 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     DrawIconStateA
     (
         _rp(obj), icon->dob, NULL,
-        _mleft(obj) - data->view_x + icon->x, 
-        _mtop(obj) - data->view_y + icon->y, 
+        iconX, 
+        iconY, 
         icon->selected ? IDS_SELECTED : IDS_NORMAL, 
         TAG_DONE
     );
@@ -244,11 +264,16 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     {
         ULONG nameLength = strlen(icon->entry.label);
         ULONG n2 = nameLength;
+        ULONG ThisMinX = iconrect.MinX;
 
         SetFont(_rp(obj), data->IconFont);
 
         txwidth = TextLength(_rp(obj), icon->entry.label, nameLength);
-        while( txwidth > (data->max_x + 4) )
+        
+        // Constrain text to iconwidth
+        // This shouldn't happen if we allow text to overflow the 
+        // icon image width
+        while( txwidth > icon->realWidth )
             txwidth = TextLength(_rp(obj), icon->entry.label, --nameLength);
 
         memset( buf , 0 , sizeof( buf ) );
@@ -262,16 +287,16 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
         {
             strncpy( buf , icon->entry.label , nameLength );
         }
-
-        tx = _mleft(obj) - data->view_x + icon->x + (icon->width - txwidth)/2;
-        ty = _mtop(obj)  - data->view_y + icon->y + icon->height + ( ICONLIST_TEXTMARGIN * 2 );
-        
-        // Store the width and height of the text block
-        data->textWidth = txwidth;
+             
+        tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - txwidth)/2);
+        ty = iconY + icon->height + data->IconFont->tf_Baseline;
 
         // FIXME: this isn't a very optimal to make an outline...
         SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
         SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+        
+        /*
+        This isn't the same as the Zune group outlines.. and it's slower, so NIH!
         Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
         Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
         Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
@@ -280,6 +305,13 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
         Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
         Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
         Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);
+        */
+        
+        Move(_rp(obj), tx + 1, ty ); Text(_rp(obj), buf, nameLength);
+        Move(_rp(obj), tx - 1, ty ); Text(_rp(obj), buf, nameLength);
+        Move(_rp(obj), tx, ty + 1);  Text(_rp(obj), buf, nameLength);
+        Move(_rp(obj), tx, ty - 1);  Text(_rp(obj), buf, nameLength);
+        
     
         SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
         Move(_rp(obj), tx, ty);
@@ -317,15 +349,15 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             nameLength = strlen(buf);
 
             ULONG textwidth = TextLength(_rp(obj), buf, nameLength);
-            tx = _mleft(obj) - data->view_x + icon->x + (icon->width/2) - (textwidth/2);
-            ty = _mtop(obj)  - data->view_y + icon->y + icon->height + ICONLIST_TEXTMARGIN + data->IconFont->tf_Baseline + ( ICONLIST_TEXTMARGIN * 2 );
-            
-            // Store the width and height of the text block
-            if ( textwidth > data->textWidth ) data->textWidth = textwidth;
+            tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - textwidth)/2);
+            ty = iconY + icon->height + ( data->IconFont->tf_Baseline * 2 ) + ICONLIST_TEXTMARGIN;
     
             // FIXME: this isn't a very optimal to make an outline...
             SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
             SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+            
+            /*
+            This isn't the same as the Zune group outlines.. and it's slower, so NIH!
             Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
             Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
             Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
@@ -333,7 +365,12 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
             Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
             Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);
+            Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);*/
+
+            Move(_rp(obj), tx + 1, ty ); Text(_rp(obj), buf, nameLength);
+            Move(_rp(obj), tx - 1, ty ); Text(_rp(obj), buf, nameLength);
+            Move(_rp(obj), tx, ty + 1);  Text(_rp(obj), buf, nameLength);
+            Move(_rp(obj), tx, ty - 1);  Text(_rp(obj), buf, nameLength);
 
             SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
             Move(_rp(obj), tx, ty);
@@ -348,11 +385,12 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 static void IconList_RethinkDimensions(Object *obj, struct MUI_IconData *data, struct IconEntry *singleicon)
 {
     struct IconEntry *icon;
-    WORD    	      maxx = data->width - 1, maxy = data->height - 1;
+    WORD maxx = data->width - 1, maxy = data->height - 1;
 
     if (!(_flags(obj)&MADF_SETUP)) return;
 
     icon = singleicon ? singleicon : List_First(&data->icon_list);
+    
     while (icon)
     {
         if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
@@ -376,14 +414,13 @@ static void IconList_RethinkDimensions(Object *obj, struct MUI_IconData *data, s
         icon = Node_Next(icon);
     }
 
-    /* update our view */
-    if (maxx + 1 > data->width)
+    /* update our view when max x/y have changed */
+    if (maxx + 1 != data->width)
     {
         data->width = maxx + 1;
         set(obj, MUIA_IconList_Width, data->width);
     }
-
-    if (maxy + 1 > data->height)
+    if (maxy + 1 != data->height)
     {
         data->height = maxy + 1;
         set(obj, MUIA_IconList_Height, data->height);
@@ -473,47 +510,63 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct IconEntry *icon;
-    int gridx = data->max_x + 8;
-    int gridy = data->max_y + data->IconFont->tf_Baseline;
-    int cur_x = gridx / 2;
-    int cur_y = gridy / 2;
-
-    /* date/size sorting has the date/size appended under the icon label */
-    if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE) )
-        gridy += data->IconFont->tf_Baseline + ICONLIST_TEXTMARGIN;
-
+    
+    int spacing = 4;
+    int top = spacing;
+    int left = spacing;
+    int gridx = 32;
+    int gridy = 32;
+    int cur_x = spacing;
+    int cur_y = spacing;
+    int maxw = 0; //  There two are the max icon width recorded in a column
+    int maxh = 0; //  or the max icon height recorded in a row depending
+    
+    BOOL next = TRUE;
     icon = List_First(&data->icon_list);
     while (icon)
     {
         if (icon->dob)
         {
-            icon->x = cur_x - (icon->width)/2;
-            icon->y = cur_y - (icon->height)/2;
+            icon->x = cur_x;
+            icon->y = cur_y;
+    
+            if ( 1 )
+            {
+                // Update the realWidth/realHeight values every time we position an icon!
+                struct Rectangle iconrect;
+                IconList_GetIconRectangle(obj, data, icon, &iconrect);
+                gridx = icon->realWidth + spacing;
+                gridy = icon->realHeight + spacing;
+            }
     
             if( data->sort_bits & ICONLIST_DISP_VERTICAL )
             {
+                if ( maxw < gridx ) maxw = gridx;
                 cur_y += gridy;
     
-                if (cur_y > data->view_width - (gridy / 2) )
+                if (cur_y >= data->view_height )
                 {
-                    cur_x += gridx;
-                    cur_y = gridy / 2;
+                    next = FALSE;
+                    cur_x += maxw;
+                    cur_y =  top;
                 }
             }
             else
             {
+                if ( maxh < gridy ) maxh = gridy;
                 cur_x += gridx;
         
-                if (cur_x > data->view_width - (gridx / 2) )
+                if (cur_x >= data->view_width )
                 {
-                    cur_y += gridy;
-                    cur_x = gridx / 2;
+                    next = FALSE;
+                    cur_x =  left;
+                    cur_y += maxh;
                 }
             }
         }
-        icon = Node_Next(icon);
+        if ( next ) icon = Node_Next(icon);
+        next = TRUE;
     }
-
     IconList_RethinkDimensions(obj, data, NULL);
     return 0;
 }
@@ -795,9 +848,6 @@ IPTR IconList__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
 {
     ULONG rc = DoSuperMethodA(cl, obj, (Msg) msg);
 
-    //    msg->MinMaxInfo->MinWidth  += 0;
-    //    msg->MinMaxInfo->MinHeight += 0;
-
     msg->MinMaxInfo->DefWidth  += 200;
     msg->MinMaxInfo->DefHeight += 180;
 
@@ -849,7 +899,7 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             DoMethod(
                 obj, MUIM_DrawBackground, 
                 rect.MinX, rect.MinY,
-                rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
+                rect.MaxX - rect.MinX, rect.MaxY - rect.MinY,
                 data->view_x + (rect.MinX - _mleft(obj)), data->view_y + (rect.MinY - _mtop(obj)), 
                 0
             );
@@ -1167,21 +1217,23 @@ IPTR IconList__MUIM_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Add
     strcpy(entry->entry.filename,msg->filename);
     strcpy(entry->entry.label,msg->label);
 
-    GetIconRectangleA(NULL,dob,NULL,&rect,NULL);
-
     entry->dob = dob;
     entry->entry.udata = NULL;
-
     entry->x = dob->do_CurrentX;
     entry->y = dob->do_CurrentY;
-    entry->width = rect.MaxX - rect.MinX + 1;
-    entry->height = rect.MaxY - rect.MinY + 1;
+
+    //GetIconRectangleA(NULL,dob,NULL,&rect,NULL);
+    /* Use a geticonrectanble routine that gets textwidth! */
+    IconList_GetIconRectangle(obj, data, entry, &rect);
+
+    
+    entry->width = rect.MaxX - rect.MinX;
+    entry->height = rect.MaxY - rect.MinY;
 
     /*D(bug("add  %s %i\n" , entry->entry.label , (entry->entry.type & 255) ));*/
 
     /*hack, force grid to recognise largest icon!*/
     if( entry->width > data->max_x ) data->max_x = entry->width;
-
     if( entry->height > data->max_y ) data->max_y = entry->height;
 
     AddHead((struct List*)&data->icon_list,(struct Node*)entry);
@@ -1904,8 +1956,8 @@ IPTR IconList__MUIM_Sort(struct IClass *cl, Object *obj, struct MUIP_IconList_So
                     /*size*/
                     if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) && !(data->sort_bits & ICONLIST_SORT_BY_DATE) )
                     {
-                    i = entry->fib.fib_Size - icon1->fib.fib_Size;
-                    /*D(bug("     -  %i\n",i));*/
+                        i = entry->fib.fib_Size - icon1->fib.fib_Size;
+                        /*D(bug("     -  %i\n",i));*/
         
                     }
                     else
@@ -1943,7 +1995,6 @@ IPTR IconList__MUIM_Sort(struct IClass *cl, Object *obj, struct MUIP_IconList_So
     */
 
     DoMethod(obj,MUIM_IconList_PositionIcons);
-
     MUI_Redraw(obj,MADF_DRAWOBJECT);
 
     return 1;
