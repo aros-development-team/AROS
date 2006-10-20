@@ -35,7 +35,11 @@ struct WPEditor_DATA
 {
     Object *wped_WorkbenchPI,
            *wped_DrawersPI; 
+    Object *wped_c_NavigationMethod, *wped_cm_ToolbarEnabled, *wped_toolbarpreviev;
+           
 };
+
+static struct Hook  	       navichangehook;
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct WPEditor_DATA *data = INST_DATA(CLASS, self)
@@ -45,7 +49,19 @@ struct WPEditor_DATA
 Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     struct WPEditor_DATA *data;
-    Object               *workbenchPI, *drawersPI;
+    Object               *workbenchPI, *drawersPI, *c_navitype, *bt_dirup, *bt_search, 
+                         *cm_toolbarenabled, *cm_searchenabled, *toolbarpreviev;  
+ 
+ 
+   
+    //char *registerpages[] = {_(MSG_GENERAL),_(MSG_APPEARANCE),_(MSG_TOOLBAR),NULL};
+    char *registerpages[] = {"General","Appearance","Toolbar",NULL};
+    static STRPTR navigationtypelabels[3];
+    
+    //navigationtypelabels[WPD_NAVIGATION_CLASSIC] = MSG(MSG_CLASSIC);
+    //navigationtypelabels[WPD_NAVIGATION_ENHANCED] = MSG(MSG_ENHANCED);  
+    navigationtypelabels[WPD_NAVIGATION_CLASSIC] = "Classic";
+    navigationtypelabels[WPD_NAVIGATION_ENHANCED] = "Enhanced";
     
     self = (Object *) DoSuperNewTags
     (
@@ -54,23 +70,61 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_Name,        __(MSG_NAME),
         MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
         
-        Child, (IPTR) ColGroup(2),
-            GroupFrameT(_(MSG_BACKGROUNDS)),
-            MUIA_Group_SameSize, TRUE,
-            
-            Child, (IPTR) (workbenchPI = PopimageObject,
-                MUIA_Window_Title,     __(MSG_SELECT_WORKBENCH_BACKGROUND),
-                MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
-                MUIA_CycleChain,       1,
-            End),
-            Child, (IPTR) (drawersPI = PopimageObject,
-                MUIA_Window_Title,     __(MSG_SELECT_DRAWER_BACKGROUND),
-                MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
-                MUIA_CycleChain,       1,
-            End),
-            Child, (IPTR) CLabel(_(MSG_BACKGROUND_WORKBENCH)),
-            Child, (IPTR) CLabel(_(MSG_BACKGROUND_DRAWERS)),
-        End,
+        Child, (IPTR) (RegisterGroup(registerpages),
+            Child, (IPTR) ColGroup(2),                     /* general */
+                GroupFrameT(_(MSG_NAVIGATION)),
+                MUIA_Group_SameSize, TRUE,
+                
+                Child, Label1(_(MSG_METHOD)),
+                Child, c_navitype = MUI_MakeObject(MUIO_Cycle, NULL, navigationtypelabels),                 
+            End,        
+            Child, (IPTR) ColGroup(2),                     /* appearance */
+                GroupFrameT(_(MSG_BACKGROUNDS)),
+                MUIA_Group_SameSize, TRUE,
+                
+                Child, (IPTR) (workbenchPI = PopimageObject,
+                    MUIA_Window_Title,     __(MSG_SELECT_WORKBENCH_BACKGROUND),
+                    MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
+                    MUIA_CycleChain,       1,
+                End),
+                Child, (IPTR) (drawersPI = PopimageObject,
+                    MUIA_Window_Title,     __(MSG_SELECT_DRAWER_BACKGROUND),
+                    MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
+                    MUIA_CycleChain,       1,
+                End),
+                Child, (IPTR) CLabel(_(MSG_BACKGROUND_WORKBENCH)),
+                Child, (IPTR) CLabel(_(MSG_BACKGROUND_DRAWERS)),
+            End,
+            Child, (IPTR) ColGroup(2),                     /* toolbar */
+            MUIA_Group_Horiz, FALSE,
+
+                 
+                 Child, (IPTR) ColGroup(2),
+                        GroupFrameT(_(MSG_OBJECTS)),
+                        MUIA_Group_SameSize, TRUE,
+                
+                
+                        Child, Label1(MSG_TOOLBAR_ENABLED),
+                        Child, cm_toolbarenabled = MUI_MakeObject(MUIO_Checkmark,NULL),
+
+                        //Child, Label1("search"),
+                        //Child, cm_searchenabled = MUI_MakeObject(MUIO_Checkmark,NULL),                        
+                 End,
+                 
+                 Child, (IPTR) (toolbarpreviev = ColGroup(2),
+                        GroupFrameT(_(MSG_PREVIEW)),
+                        //GroupFrameT("Preview"),
+                        MUIA_Group_SameSize, TRUE,
+        
+                        Child, (IPTR) (GroupObject,
+                            MUIA_Group_Horiz, TRUE,
+                            Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
+                            Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
+                        End ),
+                End),
+
+            End,             
+        End),
         
         TAG_DONE
     );
@@ -80,6 +134,9 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data = INST_DATA(CLASS, self);
         data->wped_WorkbenchPI = workbenchPI;
         data->wped_DrawersPI   = drawersPI;
+        data->wped_c_NavigationMethod = c_navitype;
+        data->wped_cm_ToolbarEnabled = cm_toolbarenabled;
+        data->wped_toolbarpreviev = toolbarpreviev;
         
         /*-- Setup notifications -------------------------------------------*/
         DoMethod
@@ -92,6 +149,53 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             drawersPI, MUIM_Notify, MUIA_Imagedisplay_Spec, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
+        DoMethod
+        (
+             c_navitype, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,  
+             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        ); 
+        DoMethod
+        (
+             cm_toolbarenabled, MUIM_Notify, MUIA_Pressed, MUIV_EveryTime,  
+             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        ); 
+        
+                        
+        /* navigation type cycle button */
+        DoMethod
+        (
+             c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_ENHANCED,  
+             (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, TRUE
+        ); 
+        DoMethod
+        (
+             c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_CLASSIC,  
+             (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, FALSE
+        ); 
+        
+        /* toolbar enabled checkmark*/
+        DoMethod
+        (
+             cm_toolbarenabled, MUIM_Notify, MUIA_Selected, FALSE,  
+             (IPTR) toolbarpreviev, 3, MUIM_Set, MUIA_Disabled, TRUE
+        );    
+        DoMethod
+        (
+             cm_toolbarenabled, MUIM_Notify, MUIA_Selected, TRUE,  
+             (IPTR) toolbarpreviev, 3, MUIM_Set, MUIA_Disabled, FALSE
+        );     
+        
+        /* toolbar enabled checkmark*/
+ /*       DoMethod
+        (
+             cm_searchenabled, MUIM_Notify, MUIA_Selected, FALSE,  
+             (IPTR) bt_search, 3, MUIM_Set, MUIA_ShowMe, FALSE
+        );    
+        DoMethod
+        (
+             cm_searchenabled, MUIM_Notify, MUIA_Selected, TRUE,  
+             (IPTR) bt_search, 3, MUIM_Set, MUIA_ShowMe, TRUE
+        );  */                  
     }
     
     return self;
@@ -175,7 +279,19 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
 
 	    NNSET(data->wped_WorkbenchPI, MUIA_Imagedisplay_Spec, (STRPTR)wpd.wpd_WorkbenchBackground);
         NNSET(data->wped_DrawersPI, MUIA_Imagedisplay_Spec, (STRPTR)wpd.wpd_DrawerBackground);
-            
+        
+        /* check if toolbar set */
+        if (wpd.wpd_ToolbarEnabled == TRUE)
+        {
+            set(data->wped_cm_ToolbarEnabled, MUIA_Selected, TRUE);
+        }
+        else
+        {
+            set(data->wped_toolbarpreviev, MUIA_Disabled, TRUE);
+        }
+           
+        /* set navigation type */   
+        set(data->wped_c_NavigationMethod, MUIA_Cycle_Active, wpd.wpd_NavigationMethod);    
     }
     
     return success;
@@ -228,11 +344,17 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
                     Printf("error: PushChunk() = %ld ", error);
                 }
                 
-                /* */
+                /* save background paths */
                 STRPTR ws = (STRPTR) XGET(data->wped_WorkbenchPI, MUIA_Imagedisplay_Spec);
                 STRPTR ds = (STRPTR) XGET(data->wped_DrawersPI, MUIA_Imagedisplay_Spec);    
                 strcpy(wpd.wpd_WorkbenchBackground, ws);   
                 strcpy(wpd.wpd_DrawerBackground, ds);                  
+                
+                /* save toolbar state*/
+                get(data->wped_cm_ToolbarEnabled, MUIA_Selected, &wpd.wpd_ToolbarEnabled);
+                
+                /* save navigation bahaviour */
+                get(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &wpd.wpd_NavigationMethod);
                 
                 /* TODO: fix problems with endianess?? */
 		        //SMPByteSwap(&wpd); 
@@ -269,7 +391,9 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
 
     return success;
 }
-           
+  
+            
+       
             
 /*** Setup ******************************************************************/
 ZUNE_CUSTOMCLASS_3
