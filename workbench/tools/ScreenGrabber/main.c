@@ -308,10 +308,11 @@ BOOL GUIInit()
 	    MUIA_Application_Copyright, (IPTR)"© 2004-2006, The AROS Development Team",
 	    MUIA_Application_Author, (IPTR)"Michal Schulz",
 	    MUIA_Application_Description, _(MSG_WINDOW_TITLE),
-	    MUIA_Application_Base, (IPTR)APPNAME,
+	    MUIA_Application_Base, (IPTR)"SCREENGRABBER",
 
 	    SubWindow, MainWindow = WindowObject,
 		MUIA_Window_Title, _(MSG_WINDOW_TITLE),
+		MUIA_Window_ID, MAKE_ID('S','G','W','N'),
 		WindowContents, HGroup,
 		    MUIA_Group_SameWidth, FALSE,
 		    Child, VGroup,
