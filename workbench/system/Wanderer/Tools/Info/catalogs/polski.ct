@@ -1,0 +1,181 @@
+## version $VER: info.catalog (17.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## language polski
+## codeset 0
+;
+;
+MSG_TITLE
+Informacje
+; Informations
+;
+MSG_DESCRIPTION
+W³a¶ciwo¶ci ikony
+; Icon informations
+;
+MSG_COPYRIGHT
+W³a¶ciwo¶ci ikony\nAROS Dev Team
+; Icon informations\n©AROS Dev Team
+;
+MSG_ICON
+Ikona
+; Icon
+;
+MSG_NAME
+Nazwa
+; Name
+;
+MSG_COMMENT
+Komentarz
+; Comment
+;
+MSG_STACK
+Stos
+; Stack
+;
+MSG_DEFTOOL
+Narzêdzie
+; Tool
+;
+MSG_ICONTYPE
+Typ ikony
+; Icon type
+;
+MSG_DISK
+Dysk
+; Disk
+;
+MSG_DRAWER
+Katalog
+; Drawer
+;
+MSG_TOOL
+Narzêdzie
+; Tool
+;
+MSG_PROJECT
+Projekt
+; Project
+;
+MSG_GARBAGE
+¦mietnik
+; Garbage
+;
+MSG_DEVICE
+Urz±dzenie
+; Device
+;
+MSG_KICK
+Kick
+; Kick
+;
+MSG_APPICON
+AppIcon
+; AppIcon
+;
+MSG_INFORMATION
+Informacje
+; Information
+;
+MSG_PROTECTION
+Bity ochronne
+; Protection
+;
+MSG_TOOLTYPES
+Tooltypes
+; Tooltypes
+;
+MSG_ERROR_SHELLSTART
+B³±d: Nie mo¿na uruchamiaæ z konsoli
+; Error: Cannot be started from shell
+;
+MSG_ABOUT
+Informacje...
+; About...
+;
+MSG_QUIT
+Zakoñcz
+; Quit
+;
+MSG_READ
+Odczytywalny
+; Read
+;
+MSG_WRITE
+Zapisywalny
+; Write
+;
+MSG_EXECUTE
+Wykonywalny
+; Execute
+;
+MSG_DELETE
+Usuwalny
+; Delete
+;
+MSG_SCRIPT
+Skrypt
+; Script
+;
+MSG_PURE
+Rezydentny
+; Pure
+;
+MSG_ARCHIVED
+Archiwalny
+; Archived
+;
+MSG_STICKY
+Przyklejony
+; Sticky
+;
+MSG_SIZE
+Rozmiar
+; Size
+;
+MSG_VERSION
+Wersja
+; Version
+;
+MSG_OWNERID
+ID w³a¶ciciela
+; Owner ID
+;
+MSG_GROUPID
+ID grupy
+; Group ID
+;
+MSG_OWNERNAME
+W³a¶ciciel
+; Owner
+;
+MSG_GROUPNAME
+Grupa
+; Group
+;
+MSG_TYPE
+Typ
+; Type
+;
+MSG_DATE
+Data
+; Date
+;
+MSG_NEW_KEY
+Nowy klucz
+; New key
+;
+MSG_DELETE_KEY
+Usuñ klucz
+; Delete key
+;
+MSG_SAVE
+_Zapisz
+; _Save
+;
+MSG_CANCEL
+_Poniechaj
+; _Cancel
+;
+MSG_OK
+OK
+; Ok
+;
