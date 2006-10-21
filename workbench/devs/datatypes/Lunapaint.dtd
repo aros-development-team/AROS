@@ -1,0 +1,10 @@
+# DataType Description for Lunapaint projects
+Name=Lunapaint
+Version=$VER: Lunapaint 1.0 (21.09.2006)
+BaseName=lunapaint
+Pattern=#?
+Mask='L' 'u' 'n' 'a' 'p' 'a' 'i' 'n' 't'
+GroupID=pict
+ID=lunapaint
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
