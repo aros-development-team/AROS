@@ -222,13 +222,13 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_Application_Version, (IPTR)VERSION,
         MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
         MUIA_Application_Description, __(MSG_TITLE),
-
+        MUIA_Application_Base, (IPTR) "ABOUTAROS",
         SubWindow, (IPTR) (window = WindowObject,
             MUIA_Window_Title,    __(MSG_TITLE),
             MUIA_Window_Width,    MUIV_Window_Width_MinMax(0),
             MUIA_Window_NoMenus,  TRUE,
             MUIA_Window_Activate, TRUE,
-
+            MUIA_Window_ID, MAKE_ID('A','B','W','N'),
             WindowContents, (IPTR) VGroup,
                 InnerSpacing(0, 0),
                 GroupSpacing(2),
