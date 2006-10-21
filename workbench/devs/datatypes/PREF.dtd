@@ -1,0 +1,10 @@
+# DataType Description for PREF file
+Name=PREF
+Version=$VER: PREF 41.0 (08-10-2006)
+BaseName=pref
+Pattern=#?
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'P' 'R' 'E' 'F' 'P' 'R' 'H' 'D'
+GroupID=pict
+ID=pref
+Flags=DTF_IFF
+Priority=0

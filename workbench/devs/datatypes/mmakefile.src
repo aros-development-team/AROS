@@ -7,7 +7,7 @@ DTDIR 		:= $(AROS_DEVS)/DataTypes
 FILES 		:= FTXT PPM PPM_ASCII ILBM GIF BMP JPEG PNG ELF ELF_EXE \
 		   ELF_EXE_BE 8SVX HTML AmigaGuide AmigaGuideNode AmigaGuideMOS ZUNE \
 		   A68K ADF AudioMode Catalog Country DataType Font MP3 MP3ID3 \
-		   Otag SFS Trashcan TrueType
+		   Otag SFS Trashcan TrueType Lunapaint PREF
 
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 
