@@ -1465,6 +1465,7 @@ int i;
 		End,
 		SubWindow, mainwin = WindowObject,
 			MUIA_Window_Title, "HDToolBox",
+			MUIA_Window_ID, MAKE_ID('H','D','T','B'),
 			MUIA_Window_Activate, TRUE,
 			MUIA_Window_Height, MUIV_Window_Height_Visible(50),
 			MUIA_Window_Width, MUIV_Window_Width_Visible(60),
