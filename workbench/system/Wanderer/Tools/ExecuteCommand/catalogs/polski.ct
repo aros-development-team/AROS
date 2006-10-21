@@ -1,0 +1,53 @@
+## version $VER: executecommand.catalog (16.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## language polski
+## codeset 0
+;
+;
+MSG_TITLE
+Wykonaj
+; Execute
+;
+MSG_DESCRIPTION
+Wykonaj komende
+; Execute Command
+;
+MSG_LABEL_COMMANDLINE
+Komenda i argumenty:
+; Command and arguments:
+;
+MSG_BUTTON_EXECUTE
+_Wykonaj
+; _Execute
+;
+MSG_BUTTON_CANCEL
+_Poniechaj
+; _Cancel
+;
+MSG_CONSOLE_TITLE
+Wyj¶cie komendy
+; Command Output
+;
+MSG_ERROR_HEADER
+B£¡D
+; ERROR
+;
+MSG_ERROR_OK
+*OK
+; *OK
+;
+MSG_ERROR_LOCALE
+Nie mogê ziniciowaæ t³umaczeñ.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+Nie mogê ziniciowaæ indywidualnych klas.
+; Can't initialize custom classes.
+;
+MSG_ERROR_OPEN_CONSOLE
+Nie mogê otworzyæ konsoli.
+; Can't open console window.
+;
+MSG_ERROR_EXECUTE
+Nie mogê wykonaæ komendy.
+; Can't execute command.
+;
