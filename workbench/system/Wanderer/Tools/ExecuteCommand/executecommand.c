@@ -115,7 +115,7 @@ Object *ExecuteCommand__OM_NEW
             MUIA_Window_Activate,    TRUE,
             MUIA_Window_NoMenus,     TRUE,
             MUIA_Window_CloseGadget, FALSE,
-            
+            MUIA_Window_ID, MAKE_ID('E','C','W','N'),
             WindowContents, (IPTR) VGroup,
                 Child, (IPTR) VGroup,
                     Child, (IPTR) LLabel(_(MSG_LABEL_COMMANDLINE)),
