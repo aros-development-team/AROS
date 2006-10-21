@@ -1,0 +1,197 @@
+## version $VER: multiview.catalog (17.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## language polski
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Nie mogê otworzyæ %s V%ld!
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_IC
+Nie mogê utworzyæ wewn±trzpo³±czeniowych obiektów!
+; Can't create interconnection objects!
+;
+MSG_CANT_LOCK_SCR
+Nie mogê udostêpniæ ekranu!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Nie mogê pobraæ DrawInfo!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Nie mogê pobraæ VisualInfo!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_SYSIMAGE
+Nie mogê utowrzyæ obrazów SYSICLASS!
+; Can't create SYSICLASS images!
+;
+MSG_CANT_CREATE_GADGET
+Nie mogê utworzyæ gad¿etów!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Nie mogê utowrzyæ menu!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Nie mogê utworzyæ okna!
+; Can't create window!
+;
+MSG_SAVE_FAILED
+Zapis pliku zakoñczony b³êdem!
+; Saving to file failed!
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Otwórz...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Zapisz jako...
+; A\0Save as...
+;
+MSG_MEN_PROJECT_SAVEAS_IFF
+I\0Zapisz plik jako IFF...
+; I\0Save as IFF...
+;
+MSG_MEN_PROJECT_PRINT
+P\0Drukuj
+; P\0Print
+;
+MSG_MEN_PROJECT_ABOUT
+?\0Informacje...
+; ?\0About...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Zakoñcz
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Edycja
+; Edit
+;
+MSG_MEN_EDIT_MARK
+B\0Zaznaczenie
+; B\0Mark
+;
+MSG_MEN_EDIT_COPY
+C\0Kopiuj
+; C\0Copy
+;
+MSG_MEN_EDIT_SELECTALL
+[\0Zaznacz wszystko
+; [\0Select All
+;
+MSG_MEN_EDIT_CLEARSELECTED
+]\0Usuñ zaznaczenie
+; ]\0Clear Selected
+;
+MSG_MEN_WINDOW
+Okno
+; Window
+;
+MSG_MEN_WINDOW_SEPSCREEN
+ \0U¿yj osobnego ekranu
+;  \0Use Separate Screen
+;
+MSG_MEN_WINDOW_MINIMIZE
+ \0Minimalizuj
+;  \0Minimize
+;
+MSG_MEN_WINDOW_NORMAL
+ \0Normalny
+;  \0Normal
+;
+MSG_MEN_WINDOW_MAXIMIZE
+ \0Maksymalizuj
+;  \0Maximize
+;
+MSG_MEN_SETTINGS
+Ustawienia
+; Settings
+;
+MSG_MEN_SETTINGS_SAVEDEF
+D\0Zapisz jako domy¶lne
+; D\0Save As Defaults
+;
+MSG_MEN_PICT
+Obrazek
+; Picture
+;
+MSG_MEN_PICT_ZOOM_IN
+ \0Powiêksz
+;  \0Zoom in
+;
+MSG_MEN_PICT_ZOOM_OUT
+ \0Oddal
+;  \0Zoom out
+;
+MSG_MEN_PICT_RESET
+ \0Przywróæ rozmiar
+;  \0Reset Size
+;
+MSG_MEN_PICT_FIT_WIN
+ \0Dopasowanie do rozmiaru okna
+;  \0Fit to Window
+;
+MSG_MEN_PICT_KEEP_ASPECT
+ \0Skaluj
+;  \0Keep Aspect Ratio
+;
+MSG_MEN_PICT_FORCE_MAP
+ \0Wymuszone mapowanie palety
+;  \0Force Palette Mapping
+;
+MSG_MEN_PICT_DITHER
+ \0Rozproszenie
+;  \0Dithering
+;
+MSG_MEN_TEXT
+Tekst
+; Text
+;
+MSG_MEN_TEXT_WORDWRAP
+ \0Zwijanie s³ów
+;  \0Enable Word Wrap
+;
+MSG_MEN_TEXT_SEARCH
+ \0Szukaj...
+;  \0Search for...
+;
+MSG_MEN_TEXT_SEARCH_PREV
+ \0Szukaj wcze¶niej
+;  \0Search for previous
+;
+MSG_MEN_TEXT_SEARCH_NEXT
+ \0Szukaj dalej
+;  \0Search for next
+;
+MSG_ASL_OPEN_TITLE
+Wybierz plik do otwarcia
+; Select File to Open
+;
+MSG_ASL_SAVE_TITLE
+Zapisz plik jako
+; Select File to Save to
+;
+MSG_ABOUT
+MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+; MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+;
+MSG_ABOUT_TITLE
+MultiView
+; MultiView
+;
+MSG_CONTINUE
+Kontynuuj
+; Continue
+;
+MSG_OK
+OK
+; Ok
+;
