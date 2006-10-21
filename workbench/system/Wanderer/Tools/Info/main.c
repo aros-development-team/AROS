@@ -103,7 +103,7 @@ UBYTE **BuildToolTypes(UBYTE **src_ttypes)
     
     for(sp = contents, lines = 0; sp; lines++)
     {
-	dst_ttypes[lines] = sp;	
+	    dst_ttypes[lines] = sp;
     	sp = strchr(sp, '\n');
 	if (sp)
 	{
@@ -307,7 +307,7 @@ int main(int argc, char **argv)
     struct DateStamp *ds=NULL;
     struct DateTime dt;
     IPTR dte;
-    STRPTR name, type;
+    STRPTR name=NULL, type=NULL;
     BPTR cd, lock, icon_cd;
     LONG  returnid = 0;
     ULONG protection;
@@ -450,6 +450,7 @@ int main(int argc, char **argv)
         MUIA_Application_Title,  __(MSG_TITLE),
         MUIA_Application_Version, (IPTR) "$VER: Info 0.1 ("ADATE") © AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
+        MUIA_Application_Base, (IPTR) "INFO",
         MUIA_Application_Menustrip, (IPTR) MenuitemObject,
             MUIA_Family_Child, (IPTR) MenuitemObject,
                 MUIA_Menuitem_Title,  __(MSG_PROJECT),
