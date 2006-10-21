@@ -447,7 +447,7 @@ int init_gui(void)
 #endif
 
     if (!strcmp(appname, "global"))
-	wintitle = _(MSG_WINTITLE1);
+	wintitle = (STRPTR) _(MSG_WINTITLE1);
     else
     {
 	snprintf(titlebuf, 255, _(MSG_WINTITLE2), appname);
@@ -698,7 +698,7 @@ int main(void)
 {
     int  retval = RETURN_OK;
     struct RDArgs *rda = NULL;
-    APTR *proc=0;
+//    APTR *proc=0;
     IPTR args[] = { 0,0 };
     enum { ARG_APPNAME = 0,ARG_APPADDR=1 };
 
@@ -708,7 +708,7 @@ int main(void)
     {
     rda = ReadArgs("/A,/N", args, NULL);
     appname=(STRPTR)args[ARG_APPNAME];
-    appaddr=(ULONG)args[ARG_APPADDR];
+    appaddr=(APTR)args[ARG_APPADDR];
     if (appaddr)appaddr=*(appaddr);
 	}
 	else
