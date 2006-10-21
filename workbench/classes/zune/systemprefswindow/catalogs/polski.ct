@@ -1,0 +1,37 @@
+## version $VER: systemprefswindow.catalog (17.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## language polski
+## codeset 0
+;
+;
+MSG_MENU_PREFS
+Preferencje
+; Preferences
+;
+MSG_MENU_PREFS_IMPORT
+I\0Import...
+; I\0Import...
+;
+MSG_MENU_PREFS_EXPORT
+E\0Eksport...
+; E\0Export...
+;
+MSG_MENU_PREFS_TEST
+T\0Test
+; T\0Test
+;
+MSG_MENU_PREFS_REVERT
+R\0Cofnij
+; R\0Revert
+;
+MSG_MENU_PREFS_SAVE
+S\0Zapisz
+; S\0Save
+;
+MSG_MENU_PREFS_USE
+U\0U¿yj
+; U\0Use
+;
+MSG_MENU_PREFS_CANCEL
+C\0Poniechaj
+; C\0Cancel
+;
