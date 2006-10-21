@@ -12,7 +12,7 @@ EXEDIR      := $(AROS_WANDERER)/Tools
 #MM  workbench-system-wanderer-tools-info-catalogs \
 #MM  workbench-classes-zune-texteditor
 
-USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%y')\""
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_prog mmake=workbench-system-wanderer-tools-info \
     progname=Info targetdir=$(EXEDIR) \
