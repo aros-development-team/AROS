@@ -52,7 +52,8 @@ static void CallEntry(
 		AROS_UFCA(STRPTR, argptr, A0),
 		AROS_UFCA(ULONG, argsize, D0),
 		AROS_UFCA(struct ExecBase *, SysBase, A6),
-		pReturn_Addr, 0
+		pReturn_Addr,
+		(sss->stk_Upper - (ULONG)sss->stk_Lower) /* used by m68k-linux arch, needed?? */
 	      );
 }
 
@@ -93,12 +94,23 @@ BOOL CallWithStack
     
     makecontext(&ucx, (void (*)()) trampoline, 2, func, args);
     
+    APTR SPLower = stack, SPUpper = stack + size;
+    #if AROS_STACK_DEBUG
+    {
+	UBYTE* startfill     = SPLower;
+	const UBYTE* endfill = SPUpper;
+	    
+	while (startfill < endfill)
+	{
+	    *startfill++ = 0xE1;
+	}
+   }
+   #endif
     /*
        we enable again in trampoline, after we have swapped
        the new stack borders into the task structure
     */
     Disable();
-    APTR SPLower = stack, SPUpper = stack + size;
     SwapTaskStackLimits(&SPLower, &SPUpper);
 
     BOOL success = swapcontext(&ucx_return, &ucx) != -1;
@@ -151,7 +163,7 @@ BOOL CallWithStack
 {
     ULONG ret;
     APTR  oldReturnAddr = proc->pr_ReturnAddr; /* might be changed by CallEntry */
-    IPTR  args[6]       =
+    IPTR  args[]     	=
                         {
 			    (IPTR) &ret,
 			    (IPTR) &proc->pr_ReturnAddr,
