@@ -1,0 +1,137 @@
+## version $VER: locale.catalog (16.02.2006) by Camelek.AmigaRulez@wp.pl ( AROS Polska Team )
+## language polski
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Nie mogê otworzyæ %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Nie mogê udostêpniæ ekranu!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Nie mogê pobraæ DrawInfo!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Nie mogê pobraæ VisualInfo!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Nie mogê utworzyæ gad¿etów!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Nie mogê stworzyæ menu!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Nie mogê stworzyæ okna!
+; Can't create window!
+;
+MSG_WINTITLE
+Preferencje 
+; Locale Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Otwórz...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Zapisz jako...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Zakoñcz
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Edytuj
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Przywróæ domy¶lne
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Ostatnio zapisane
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Przywróæ
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Ustawienia
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Zapisaæ ikony?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Wczytaj preferencje
+; Load Locale Preferences
+;
+MSG_ASL_SAVE_TITLE
+Zapisz preferencje
+; Save Locale Preferences
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_GAD_AVAIL_LANGUAGES
+Dostêpne jêzyki
+; Available Languages
+;
+MSG_GAD_PREF_LANGUAGES
+Preferowane jêzyki
+; Preferred Languages
+;
+MSG_GAD_CLEAR_LANGUAGES
+Wyczy¶æ jêzyki
+; Clear Languages
+;
+MSG_GAD_SAVE
+Zapisz
+; Save
+;
+MSG_GAD_USE
+U¿yj
+; Use
+;
+MSG_GAD_CANCEL
+Poniechaj
+; Cancel
+;
+MSG_GAD_TAB_LANGUAGE
+Jêzyk
+; Language
+;
+MSG_GAD_TAB_COUNTRY
+Narodowo¶æ
+; Country
+;
+MSG_GAD_TAB_TIMEZONE
+Strefa czasowa
+; Time Zone
+;
+MSG_TIMEZONE_1HOUR
+Strefa czasowa : 1 godzina od GMT
+; Time Zone: 1 Hour from GMT
+;
+MSG_TIMEZONE_HOURS
+Strefa czasowa : %ld godzin od GMT
+; Time Zone: %ld Hours from GMT
+;
+MSG_TIMEZONE_HOURSMINS
+Strefa czasowa : %ld godzin, %ld minut od GMT
+; Time Zone: %ld Hours, %ld Minutes from GMT
+;
