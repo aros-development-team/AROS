@@ -48,15 +48,22 @@ extern struct Library *MUIMasterBase;
 #define dol_Name dol_OldName /* This doesn't work really */
 #endif
 
-#define UPDATE_SINGLEICON	1
-#define UPDATE_SCROLL		2
-#define UPDATE_SORT		3
+#define UPDATE_SINGLEICON           1
+#define UPDATE_SCROLL               2
+#define UPDATE_SORT                 3
 
-#define LEFT_BUTTON		1
-#define RIGHT_BUTTON		2
-#define MIDDLE_BUTTON		4
+#define LEFT_BUTTON	                1
+#define RIGHT_BUTTON                2
+#define MIDDLE_BUTTON               4
 
-#define ICONLIST_TEXTMARGIN 5
+#define ICONLIST_TEXTMARGIN         5
+
+#define ICON_LISTMODE_ROUGH         0
+#define ICON_LISTMODE_GRID          1
+
+#define ICON_TEXTMODE_OUTLINE       0
+#define ICON_TEXTMODE_PLAIN         1
+#define ICON_TEXTMODE_DROPSHADOW    2
 
 struct IconEntry
 {
@@ -202,6 +209,9 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     /* Get the dimensions and affected area of icon */
     IconList_GetIconRectangle(obj, data, icon, &iconrect);
 
+    /* Get options for icon text mode */
+    char iconTextMode = ICON_TEXTMODE_PLAIN;
+
     /* Add the relative position offset of the icon */
     iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
     iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
@@ -291,31 +301,43 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
         tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - txwidth)/2);
         ty = iconY + icon->height + data->IconFont->tf_Baseline;
 
-        // FIXME: this isn't a very optimal to make an outline...
-        SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
-        SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-        
-        /*
-        This isn't the same as the Zune group outlines.. and it's slower, so NIH!
-        Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);
-        */
-        
-        Move(_rp(obj), tx + 1, ty ); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx - 1, ty ); Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx, ty + 1);  Text(_rp(obj), buf, nameLength);
-        Move(_rp(obj), tx, ty - 1);  Text(_rp(obj), buf, nameLength);
-        
-    
-        SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-        Move(_rp(obj), tx, ty);
-        Text(_rp(obj), buf, nameLength);
+        switch ( iconTextMode )
+        {
+            case ICON_TEXTMODE_DROPSHADOW:
+            case ICON_TEXTMODE_PLAIN:
+                SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+                Move(_rp(obj), tx, ty); Text(_rp(obj), buf, nameLength);
+                break;
+                
+            default:
+                // Outline mode:
+                
+                SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
+                SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+                
+                /*
+                This isn't the same as the Zune group outlines.. and it's slower, so NIH!
+                Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);
+                */
+                
+                Move(_rp(obj), tx + 1, ty ); Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx - 1, ty ); Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx, ty + 1);  Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx, ty - 1);  Text(_rp(obj), buf, nameLength);
+                
+            
+                SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+                Move(_rp(obj), tx, ty);
+                Text(_rp(obj), buf, nameLength);
+                break;
+        }
 
         /*date/size sorting has the date/size appended under the icon label*/
 
@@ -352,29 +374,41 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - textwidth)/2);
             ty = iconY + icon->height + ( data->IconFont->tf_Baseline * 2 ) + ICONLIST_TEXTMARGIN;
     
-            // FIXME: this isn't a very optimal to make an outline...
-            SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
-            SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-            
-            /*
-            This isn't the same as the Zune group outlines.. and it's slower, so NIH!
-            Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);*/
-
-            Move(_rp(obj), tx + 1, ty ); Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx - 1, ty ); Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx, ty + 1);  Text(_rp(obj), buf, nameLength);
-            Move(_rp(obj), tx, ty - 1);  Text(_rp(obj), buf, nameLength);
-
-            SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-            Move(_rp(obj), tx, ty);
-            Text(_rp(obj), buf, nameLength);
+            switch ( iconTextMode )
+            {
+                case ICON_TEXTMODE_DROPSHADOW:
+                case ICON_TEXTMODE_PLAIN:
+                    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+                    Move(_rp(obj), tx, ty); Text(_rp(obj), buf, nameLength);
+                    break;
+                    
+                default:
+                    // Outline mode..
+                    
+                    SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
+                    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
+                    
+                    /*
+                    This isn't the same as the Zune group outlines.. and it's slower, so NIH!
+                    Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
+                    Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
+                    Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
+                    Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), buf, nameLength);
+                    Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
+                    Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
+                    Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
+                    Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);*/
+        
+                    Move(_rp(obj), tx + 1, ty ); Text(_rp(obj), buf, nameLength);
+                    Move(_rp(obj), tx - 1, ty ); Text(_rp(obj), buf, nameLength);
+                    Move(_rp(obj), tx, ty + 1);  Text(_rp(obj), buf, nameLength);
+                    Move(_rp(obj), tx, ty - 1);  Text(_rp(obj), buf, nameLength);
+        
+                    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
+                    Move(_rp(obj), tx, ty);
+                    Text(_rp(obj), buf, nameLength);
+                    break;
+            }
         }
     }
 }
@@ -520,8 +554,28 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
     int cur_y = spacing;
     int maxw = 0; //  There two are the max icon width recorded in a column
     int maxh = 0; //  or the max icon height recorded in a row depending
+    int listMode = ICON_LISTMODE_GRID;
     
     BOOL next = TRUE;
+    int maxWidth = 0, maxHeight = 0;
+    icon = List_First(&data->icon_list);
+    
+    // If going by grid, first traverse and find the highest w/h
+    if ( listMode == ICON_LISTMODE_GRID )
+    {
+        while ( icon )
+        {
+            struct Rectangle iconrect;
+            IconList_GetIconRectangle(obj, data, icon, &iconrect);
+            if ( icon->realWidth > maxWidth )
+                maxWidth = icon->realWidth;
+            if ( icon->realHeight > maxHeight )
+                maxHeight = icon->realHeight;
+            icon = Node_Next(icon);   
+        }
+    }
+    
+    // Now go to the actual positioning
     icon = List_First(&data->icon_list);
     while (icon)
     {
@@ -530,13 +584,21 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
             icon->x = cur_x;
             icon->y = cur_y;
     
-            if ( 1 )
+            if ( listMode == ICON_LISTMODE_ROUGH )
             {
                 // Update the realWidth/realHeight values every time we position an icon!
                 struct Rectangle iconrect;
                 IconList_GetIconRectangle(obj, data, icon, &iconrect);
                 gridx = icon->realWidth + spacing;
                 gridy = icon->realHeight + spacing;
+            }
+            else
+            {
+                gridx = maxWidth + spacing;
+                gridy = maxHeight + spacing;
+                // center icons on grid
+                icon->x += ( maxWidth - icon->realWidth ) / 2;
+                icon->y += ( maxHeight - icon->realHeight ) / 2;
             }
     
             if( data->sort_bits & ICONLIST_DISP_VERTICAL )
