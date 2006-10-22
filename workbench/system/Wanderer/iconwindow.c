@@ -188,8 +188,9 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_Win
                 // Cause the window to redraw here!
                 break;
             case MUIA_IconWindow_Drawer:
-                 strcpy(data->directory_path, tag->ti_Data);    
+                 strcpy(data->directory_path, (IPTR)tag->ti_Data);    
                  set(data->iwd_IconList, MUIA_IconDrawerList_Drawer, (IPTR) data->directory_path);
+                 set(self, MUIA_Window_Title, data->directory_path);
                 break;
             case MUIA_IconWindow_IsBackdrop:
                 if ((!!tag->ti_Data) != data->iwd_IsBackdrop)
@@ -407,9 +408,6 @@ IPTR IconWindow__MUIM_IconWindow_DirectoryUp
         msg.click    = NULL;
         CallHookPkt(data->iwd_ActionHook, self, &msg);
         
-        /* Update window title */
-        STRPTR title = (STRPTR) XGET(data->iwd_IconList, MUIA_IconDrawerList_Drawer);   
-        set(self, MUIA_Window_Title, title);
     }
     
     return TRUE;

@@ -825,7 +825,7 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
     
     if ((item = FindMenuitem(strip, MEN_WANDERER_BACKDROP)))
     {
-	DoMethod
+	    DoMethod
         (
             item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, 
             (IPTR) app, 7, MUIM_Application_PushMethod, 
@@ -969,10 +969,10 @@ IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
         data->wd_NotifyPort = NULL;
         
         DeleteMsgPort(data->wd_CommandPort);
-	data->wd_CommandPort = NULL;
+	    data->wd_CommandPort = NULL;
         
         DisposeObject(data->wd_Prefs);
-	data->wd_Prefs = NULL;
+	    data->wd_Prefs = NULL;
     }
     
     return DoSuperMethodA(CLASS, self, (Msg) message);
@@ -996,7 +996,7 @@ IPTR Wanderer__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 	        /* Wanderer itself cannot be iconified, 
 		   just hide, instead.  */
 	        tag->ti_Tag  = MUIA_ShowMe;
-		tag->ti_Data = !tag->ti_Data;
+		    tag->ti_Data = !tag->ti_Data;
 		break; 
         }
     }
