@@ -8,6 +8,8 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#define DEBUG 1
+
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <libraries/mui.h>
@@ -33,10 +35,9 @@
 /*** Instance Data **********************************************************/
 struct WPEditor_DATA
 {
-    Object *wped_WorkbenchPI,
-           *wped_DrawersPI; 
-    Object *wped_c_NavigationMethod, *wped_cm_ToolbarEnabled, *wped_toolbarpreviev;
-           
+    Object *wped_WorkbenchPI, *wped_DrawersPI; 
+    Object *wped_c_NavigationMethod, *wped_cm_ToolbarEnabled, *wped_toolbarpreview;
+        
 };
 
 static struct Hook  	       navichangehook;
@@ -49,15 +50,15 @@ static struct Hook  	       navichangehook;
 Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     struct WPEditor_DATA *data;
-    Object               *workbenchPI, *drawersPI, *c_navitype, *bt_dirup, *bt_search, 
-                         *cm_toolbarenabled, *cm_searchenabled, *toolbarpreviev;  
- 
- 
-   
+    Object *workbenchPI, *drawersPI, *c_navitype, *bt_dirup, *bt_search, 
+           *cm_toolbarenabled, *cm_searchenabled, *toolbarpreview;  
+
     //char *registerpages[] = {_(MSG_GENERAL),_(MSG_APPEARANCE),_(MSG_TOOLBAR),NULL};
-    char *registerpages[] = {"General","Appearance","Toolbar",NULL};
-    static STRPTR navigationtypelabels[3];
+    static char *registerpages[] = {"General","Appearance","Toolbar",NULL};
+    char *iconlistmodes[] = {(STRPTR)_(MSG_ICONLISTMODE_PLAIN), (STRPTR)_(MSG_ICONLISTMODE_GRID), NULL};
+    char *icontextmodes[] = {(STRPTR)_(MSG_ICONTEXTMODE_OUTLINE), (STRPTR)_(MSG_ICONTEXTMODE_PLAIN), NULL};
     
+    static STRPTR navigationtypelabels[3];
     //navigationtypelabels[WPD_NAVIGATION_CLASSIC] = MSG(MSG_CLASSIC);
     //navigationtypelabels[WPD_NAVIGATION_ENHANCED] = MSG(MSG_ENHANCED);  
     navigationtypelabels[WPD_NAVIGATION_CLASSIC] = "Classic";
@@ -66,66 +67,104 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
-        
-        MUIA_PrefsEditor_Name,        __(MSG_NAME),
-        MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
-        
-        Child, (IPTR) (RegisterGroup(registerpages),
-            Child, (IPTR) ColGroup(2),                     /* general */
-                GroupFrameT(_(MSG_NAVIGATION)),
-                MUIA_Group_SameSize, TRUE,
-                
-                Child, Label1(_(MSG_METHOD)),
-                Child, c_navitype = MUI_MakeObject(MUIO_Cycle, NULL, navigationtypelabels),                 
-            End,        
-            Child, (IPTR) ColGroup(2),                     /* appearance */
-                GroupFrameT(_(MSG_BACKGROUNDS)),
-                MUIA_Group_SameSize, TRUE,
-                
-                Child, (IPTR) (workbenchPI = PopimageObject,
-                    MUIA_Window_Title,     __(MSG_SELECT_WORKBENCH_BACKGROUND),
-                    MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
-                    MUIA_CycleChain,       1,
-                End),
-                Child, (IPTR) (drawersPI = PopimageObject,
-                    MUIA_Window_Title,     __(MSG_SELECT_DRAWER_BACKGROUND),
-                    MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
-                    MUIA_CycleChain,       1,
-                End),
-                Child, (IPTR) CLabel(_(MSG_BACKGROUND_WORKBENCH)),
-                Child, (IPTR) CLabel(_(MSG_BACKGROUND_DRAWERS)),
-            End,
-            Child, (IPTR) ColGroup(2),                     /* toolbar */
-            MUIA_Group_Horiz, FALSE,
-
-                 
-                 Child, (IPTR) ColGroup(2),
-                        GroupFrameT(_(MSG_OBJECTS)),
+            
+            MUIA_PrefsEditor_Name,        __(MSG_NAME),
+            MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
+            
+            Child, (IPTR) RegisterObject,
+                MUIA_Register_Titles, (IPTR)registerpages,
+                Child, (IPTR) GroupObject,                     // general 
+                    MUIA_FrameTitle,  _(MSG_NAVIGATION),
+                    MUIA_Group_SameSize, TRUE,
+                    MUIA_Frame, MUIV_Frame_Group,
+                    Child, HGroup,
+                        Child, TextObject,
+                            MUIA_Text_Contents, (IPTR)_(MSG_METHOD),
+                        End,
+                        Child, c_navitype = MUI_MakeObject(MUIO_Cycle, NULL, navigationtypelabels),
+                    End,
+                End,        
+                Child, (IPTR) GroupObject,                     // appearance 
+                    MUIA_Group_SameSize, TRUE,
+                    MUIA_Group_Horiz, TRUE,
+                    
+                    Child, GroupObject, 
+                        MUIA_FrameTitle, (IPTR)_(MSG_BACKGROUNDS),
+                        MUIA_Frame, MUIV_Frame_Group,
+                        
+                        Child, (IPTR)HGroup,
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_Contents, (IPTR)_(MSG_BACKGROUND_WORKBENCH),
+                                MUIA_Weight, 40,
+                            End,
+                            Child, (IPTR) (workbenchPI = PopimageObject,
+                                MUIA_Window_Title,     __(MSG_SELECT_WORKBENCH_BACKGROUND),
+                                MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
+                                MUIA_CycleChain,       1,
+                                MUIA_Weight, 60,
+                            End),
+                        End,
+                        Child, (IPTR)HGroup,
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_Contents, (IPTR)_(MSG_BACKGROUND_DRAWERS),
+                                MUIA_Weight, 40,
+                            End,
+                            Child, (IPTR) (drawersPI = PopimageObject,
+                                MUIA_Window_Title,     __(MSG_SELECT_DRAWER_BACKGROUND),
+                                MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
+                                MUIA_CycleChain,       1,
+                                MUIA_Weight, 60,
+                            End),
+                        End,
+                    End,
+                    Child, GroupObject,
+                        MUIA_FrameTitle, (IPTR)_(MSG_ICONSPREFS),
+                        MUIA_Frame, MUIV_Frame_Group,
+                        Child, HGroup,
+                            Child, (IPTR)TextObject, 
+                                MUIA_Text_Contents, (IPTR)_(MSG_ICONLISTMODE),
+                                MUIA_Weight, 40,
+                            End,
+                            Child, (IPTR)CycleObject,
+                                MUIA_Cycle_Entries, (IPTR)&iconlistmodes,
+                                MUIA_Weight, 60,
+                            End,
+                        End,
+                        Child, HGroup,
+                            Child, (IPTR)TextObject, 
+                                MUIA_Text_Contents, (IPTR)_(MSG_ICONTEXTMODE),
+                                MUIA_Weight, 40,
+                            End,
+                            Child, (IPTR)CycleObject,
+                                MUIA_Cycle_Entries, (IPTR)&icontextmodes,
+                                MUIA_Weight, 60,
+                            End,
+                        End,
+                    End,
+                End,
+                Child, (IPTR)GroupObject,                     // toolbar 
+                    Child, (IPTR) HGroup,
+                        MUIA_FrameTitle,  (IPTR)_(MSG_OBJECTS),
                         MUIA_Group_SameSize, TRUE,
-                
-                
-                        Child, Label1(MSG_TOOLBAR_ENABLED),
-                        Child, cm_toolbarenabled = MUI_MakeObject(MUIO_Checkmark,NULL),
-
+                        MUIA_Frame, MUIV_Frame_Group,
+                        Child, Label1(_(MSG_TOOLBAR_ENABLED)),
+                        Child, (IPTR)( cm_toolbarenabled = MUI_MakeObject(MUIO_Checkmark,NULL) ),
+                        
                         //Child, Label1("search"),
                         //Child, cm_searchenabled = MUI_MakeObject(MUIO_Checkmark,NULL),                        
-                 End,
-                 
-                 Child, (IPTR) (toolbarpreviev = ColGroup(2),
-                        GroupFrameT(_(MSG_PREVIEW)),
-                        //GroupFrameT("Preview"),
+                    End,
+                    Child, (IPTR) (toolbarpreview = GroupObject,
+                        MUIA_FrameTitle, ( IPTR )_(MSG_PREVIEW),
                         MUIA_Group_SameSize, TRUE,
+                        MUIA_Frame, MUIV_Frame_Group,
         
-                        Child, (IPTR) (GroupObject,
-                            MUIA_Group_Horiz, TRUE,
+                        Child, (IPTR)HGroup,
                             Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
                             Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
-                        End ),
-                End),
-
-            End,             
-        End),
-        
+                        End,
+                    End),
+                End,          
+            End,
         TAG_DONE
     );
     
@@ -136,9 +175,9 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->wped_DrawersPI   = drawersPI;
         data->wped_c_NavigationMethod = c_navitype;
         data->wped_cm_ToolbarEnabled = cm_toolbarenabled;
-        data->wped_toolbarpreviev = toolbarpreviev;
+        data->wped_toolbarpreview = toolbarpreview;
         
-        /*-- Setup notifications -------------------------------------------*/
+        //-- Setup notifications -------------------------------------------
         DoMethod
         (
             workbenchPI, MUIM_Notify, MUIA_Imagedisplay_Spec, MUIV_EveryTime,
@@ -151,53 +190,52 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         );
         DoMethod
         (
-             c_navitype, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,  
-             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+            c_navitype, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,  
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         ); 
         DoMethod
         (
-             cm_toolbarenabled, MUIM_Notify, MUIA_Pressed, MUIV_EveryTime,  
-             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+            cm_toolbarenabled, MUIM_Notify, MUIA_Pressed, MUIV_EveryTime,  
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         ); 
         
                         
-        /* navigation type cycle button */
+        // navigation type cycle button 
         DoMethod
         (
-             c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_ENHANCED,  
-             (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, TRUE
+            c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_ENHANCED,  
+            (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, TRUE
         ); 
         DoMethod
         (
-             c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_CLASSIC,  
-             (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, FALSE
+            c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_CLASSIC,  
+            (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, FALSE
         ); 
         
-        /* toolbar enabled checkmark*/
+        // toolbar enabled checkmark
         DoMethod
         (
-             cm_toolbarenabled, MUIM_Notify, MUIA_Selected, FALSE,  
-             (IPTR) toolbarpreviev, 3, MUIM_Set, MUIA_Disabled, TRUE
+            cm_toolbarenabled, MUIM_Notify, MUIA_Selected, FALSE,  
+            (IPTR) toolbarpreview, 3, MUIM_Set, MUIA_Disabled, TRUE
         );    
         DoMethod
         (
-             cm_toolbarenabled, MUIM_Notify, MUIA_Selected, TRUE,  
-             (IPTR) toolbarpreviev, 3, MUIM_Set, MUIA_Disabled, FALSE
+            cm_toolbarenabled, MUIM_Notify, MUIA_Selected, TRUE,  
+            (IPTR) toolbarpreview, 3, MUIM_Set, MUIA_Disabled, FALSE
         );     
         
-        /* toolbar enabled checkmark*/
- /*       DoMethod
-        (
-             cm_searchenabled, MUIM_Notify, MUIA_Selected, FALSE,  
-             (IPTR) bt_search, 3, MUIM_Set, MUIA_ShowMe, FALSE
-        );    
-        DoMethod
-        (
-             cm_searchenabled, MUIM_Notify, MUIA_Selected, TRUE,  
-             (IPTR) bt_search, 3, MUIM_Set, MUIA_ShowMe, TRUE
-        );  */                  
+        // toolbar enabled checkmark
+        //DoMethod
+        //(
+        //    cm_searchenabled, MUIM_Notify, MUIA_Selected, FALSE,  
+        //    (IPTR) bt_search, 3, MUIM_Set, MUIA_ShowMe, FALSE
+        //);    
+        //DoMethod
+        //(
+        //    cm_searchenabled, MUIM_Notify, MUIA_Selected, TRUE,  
+        //    (IPTR) bt_search, 3, MUIM_Set, MUIA_ShowMe, TRUE
+        //);             
     }
-    
     return self;
 }
 
@@ -208,7 +246,6 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
     struct MUIP_PrefsEditor_ImportFH *message
 )
 {
-
     SETUP_INST_DATA;
     
     struct ContextNode     *context;
@@ -218,7 +255,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
     LONG                    error;
 
 
-                 
+                
     if (!(handle = AllocIFF()))
         return FALSE;
     
@@ -227,11 +264,10 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
 
     if ((error = OpenIFF(handle, IFFF_READ)) == 0)
     {
-	
-        BYTE i;
+
         
         // FIXME: We want some sanity checking here!
-        for (i = 0; i < 1; i++)
+        BYTE i = 0; for (; i < 1; i++)
         {
             if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
             {
@@ -277,7 +313,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
     {
         //SMPByteSwap(&wpd);
 
-	    NNSET(data->wped_WorkbenchPI, MUIA_Imagedisplay_Spec, (STRPTR)wpd.wpd_WorkbenchBackground);
+        NNSET(data->wped_WorkbenchPI, MUIA_Imagedisplay_Spec, (STRPTR)wpd.wpd_WorkbenchBackground);
         NNSET(data->wped_DrawersPI, MUIA_Imagedisplay_Spec, (STRPTR)wpd.wpd_DrawerBackground);
         
         /* check if toolbar set */
@@ -287,9 +323,9 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
         }
         else
         {
-            set(data->wped_toolbarpreviev, MUIA_Disabled, TRUE);
+            set(data->wped_toolbarpreview, MUIA_Disabled, TRUE);
         }
-           
+        
         /* set navigation type */   
         set(data->wped_c_NavigationMethod, MUIA_Cycle_Active, wpd.wpd_NavigationMethod);    
     }
@@ -320,9 +356,9 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
         if (!(error = OpenIFF(handle, IFFF_WRITE))) /* NULL = successful! */
         {
             struct WandererPrefs wpd;    
-     	    memset(&wpd, 0, sizeof(wpd));
+            memset(&wpd, 0, sizeof(wpd));
                 
-    	    BYTE i;
+            BYTE i;
             
             PushChunk(handle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN); /* FIXME: IFFSIZE_UNKNOWN? */
             
@@ -357,8 +393,8 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
                 get(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &wpd.wpd_NavigationMethod);
                 
                 /* TODO: fix problems with endianess?? */
-		        //SMPByteSwap(&wpd); 
-			
+                //SMPByteSwap(&wpd); 
+            
                 error = WriteChunkBytes(handle, &wpd, sizeof(struct WandererPrefs));
                 error = PopChunk(handle);
                                 
@@ -380,7 +416,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
         }
         
         CloseIFF(handle);
-	    FreeIFF(handle);
+        FreeIFF(handle);
     }
     else // AllocIFF()
     {
@@ -391,9 +427,9 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
 
     return success;
 }
-  
+
             
-       
+    
             
 /*** Setup ******************************************************************/
 ZUNE_CUSTOMCLASS_3
