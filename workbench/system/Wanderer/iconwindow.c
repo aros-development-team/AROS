@@ -187,6 +187,10 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_Win
                     SetFont(_rp(self), data->iwd_WindowFont);
                 // Cause the window to redraw here!
                 break;
+            case MUIA_IconWindow_Drawer:
+                 strcpy(data->directory_path, tag->ti_Data);    
+                 set(data->iwd_IconList, MUIA_IconDrawerList_Drawer, (IPTR) data->directory_path);
+                break;
             case MUIA_IconWindow_IsBackdrop:
                 if ((!!tag->ti_Data) != data->iwd_IsBackdrop)
                 {

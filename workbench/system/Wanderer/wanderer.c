@@ -25,6 +25,8 @@
 
 #include <aros/detach.h>
 
+#include <prefs/wanderer.h>
+
 #include "iconwindow.h"
 #include "wandererprefs.h"
 #include "wandererprefsintern.h"
@@ -32,7 +34,7 @@
 
 #include "locale.h"
 
-#define VERSION "$VER: Wanderer 0.3 (19.03.2006) © AROS Dev Team"
+#define VERSION "$VER: Wanderer 0.4ß (22.10.2006) © AROS Dev Team"
 
 extern IPTR InitWandererPrefs(void);
 VOID DoAllMenuNotifies(Object *strip, char *path);
@@ -220,7 +222,7 @@ void wanderer_backdrop(Object **pstrip)
     if (item != NULL)
     {
     	SET(window, MUIA_Window_Open, FALSE);
-	SET(window, MUIA_IconWindow_IsBackdrop, XGET(item, MUIA_Menuitem_Checked));
+	    SET(window, MUIA_IconWindow_IsBackdrop, XGET(item, MUIA_Menuitem_Checked));
     	SET(window, MUIA_Window_Open, TRUE);
     }
 }
@@ -233,23 +235,23 @@ void window_new_drawer(char **cdptr)
     Object *wbwindow = (Object *) XGET(app, MUIA_Wanderer_WorkbenchWindow);
     if (actwindow == wbwindow)
     {
-	/* This check is necessary because WorkbenchWindow has path RAM: */
-	D(bug("[wanderer] Can't call WBNewDrawer for WorkbenchWindow\n"));
-	return;
+    	/* This check is necessary because WorkbenchWindow has path RAM: */
+    	D(bug("[wanderer] Can't call WBNewDrawer for WorkbenchWindow\n"));
+    	return;
     }
     if ( XGET(actwindow, MUIA_Window_Open) == FALSE )
     {
-	D(bug("[wanderer] Can't call WBNewDrawer: the active window isn't open\n"));
-	return;
+    	D(bug("[wanderer] Can't call WBNewDrawer: the active window isn't open\n"));
+    	return;
     }
 
     BPTR lock = Lock(*cdptr, ACCESS_READ);
     OpenWorkbenchObject
 	(
-	 "WANDERER:Tools/WBNewDrawer",
-	 WBOPENA_ArgLock, (IPTR) lock,
-	 WBOPENA_ArgName, 0,
-	 TAG_DONE
+        "WANDERER:Tools/WBNewDrawer",
+        WBOPENA_ArgLock, (IPTR) lock,
+        WBOPENA_ArgName, 0,
+        TAG_DONE
 	);
     UnLock(lock);
 }
@@ -609,13 +611,16 @@ AROS_UFH3
 	       strcpy(buf,ent->filename);
        }
 
-
-    	if  ( (ent->type == ST_ROOT) || ent->type == ST_USERDIR) 
+       
+    	if  ( (ent->type == ST_ROOT) || (ent->type == ST_USERDIR) )
     	{
     	    Object *cstate = (Object*)(((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
+    	    Object *prefs = (Object*) XGET(_app(obj), MUIA_Wanderer_Prefs);
     	    Object *child;
-    
 
+            /* open new window if root or classic navigation set */
+            if ( (msg->isroot)  || (XGET(prefs, MUIA_WandererPrefs_NavigationMethod) == WPD_NAVIGATION_CLASSIC)  )
+            {
         	    while ((child = NextObject(&cstate)))
         	    {
         	    	if (XGET(child, MUIA_UserData))
@@ -643,7 +648,16 @@ AROS_UFH3
         		/* Check if the window for this drawer is already opened */
         		DoMethod(app, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
                         // FIXME: error handling
-
+            }
+            else
+            {
+                /* open drawer in same window */
+                set(obj, MUIA_IconWindow_Drawer, buf);
+                
+                /* update the window */
+                //window_update();
+            }
+            
 
     	} 
         else if (ent->type == ST_FILE)
@@ -668,12 +682,13 @@ AROS_UFH3
 	        }
          }
     } 
-    else     if (msg->type == ICONWINDOW_ACTION_DIRUP)
-    {               
+    else  if (msg->type == ICONWINDOW_ACTION_DIRUP)
+    {     
+                     
        char *actual_drawer = (char*)XGET(obj, MUIA_IconWindow_Drawer);
        char *parent_drawer = strrchr(actual_drawer,'/');
        char *root_drawer = strrchr(actual_drawer,':');
-      
+                 
        /* check if dir is not drive root dir */
        if ( strlen(root_drawer) > 1 )
        {
@@ -682,6 +697,7 @@ AROS_UFH3
            {
                (*(root_drawer+1)) = 0;
                set(obj, MUIA_IconWindow_Drawer, actual_drawer);
+               
            }
            else
            {
@@ -690,7 +706,7 @@ AROS_UFH3
            } 
            
            /* update the window */
-           window_update();
+           //window_update();
        }
     
     } 
