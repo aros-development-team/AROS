@@ -28,6 +28,9 @@ struct WandererPrefs_DATA
 {
     STRPTR wpd_WorkbenchBackground,
            wpd_DrawerBackground;
+           
+    UBYTE  wpd_NavigationMethod;
+    UBYTE  wpd_ToolbarEnabled;             
 };
 
 /*** Macros *****************************************************************/
@@ -100,6 +103,14 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                     tag->ti_Tag = TAG_IGNORE;
                 }                
                 break;
+
+            case MUIA_WandererPrefs_NavigationMethod:
+                data->wpd_NavigationMethod = (UBYTE) tag->ti_Data;
+                
+            case MUIA_WandererPrefs_Toolbar_Enabled:
+                data->wpd_ToolbarEnabled = (UBYTE) tag->ti_Data;
+               
+                break;                
         }
     }
     
@@ -120,6 +131,15 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
             
         case MUIA_WandererPrefs_DrawerBackground:
             *store = (IPTR) data->wpd_DrawerBackground;
+            break;
+
+        case MUIA_WandererPrefs_NavigationMethod:
+            *store = (IPTR) data->wpd_NavigationMethod;
+            break;
+            
+        case MUIA_WandererPrefs_Toolbar_Enabled:
+            *store = (IPTR) data->wpd_ToolbarEnabled;
+            break;
             
         default:
             rv = DoSuperMethodA(CLASS, self, (Msg) message);
@@ -203,6 +223,9 @@ IPTR WandererPrefs__MUIM_WandererPrefs_Reload
         
         SET(self, MUIA_WandererPrefs_WorkbenchBackground, (STRPTR)wpd.wpd_WorkbenchBackground);
         SET(self, MUIA_WandererPrefs_DrawerBackground, (STRPTR)wpd.wpd_DrawerBackground);    
+        
+        SET(self, MUIA_WandererPrefs_NavigationMethod, wpd.wpd_NavigationMethod);  
+        SET(self, MUIA_WandererPrefs_Toolbar_Enabled, wpd.wpd_ToolbarEnabled);  
         
         return TRUE;       
     }
