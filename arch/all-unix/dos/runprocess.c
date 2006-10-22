@@ -92,8 +92,6 @@ BOOL CallWithStack
     
     ucx.uc_link = &ucx_return;
     
-    makecontext(&ucx, (void (*)()) trampoline, 2, func, args);
-    
     APTR SPLower = stack, SPUpper = stack + size;
     #if AROS_STACK_DEBUG
     {
@@ -104,8 +102,11 @@ BOOL CallWithStack
 	{
 	    *startfill++ = 0xE1;
 	}
-   }
-   #endif
+    }
+    #endif
+
+    makecontext(&ucx, (void (*)()) trampoline, 2, func, args);
+    
     /*
        we enable again in trampoline, after we have swapped
        the new stack borders into the task structure
