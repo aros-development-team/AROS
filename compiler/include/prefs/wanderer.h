@@ -27,6 +27,9 @@ struct WandererPrefs
     UBYTE wpd_NavigationMethod;  
     UBYTE wpd_ToolbarEnabled;   
     
+    UBYTE wpd_IconListMode;
+    UBYTE wpd_IconTextMode;
+    
 };
 
 #define WPD_NAVIGATION_CLASSIC 0
