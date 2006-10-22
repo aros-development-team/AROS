@@ -37,4 +37,18 @@ MSG_PREVIEW (//)
 Preview
 MSG_TOOLBAR_ENABLED (//)
 Toolbar Enabled
+MSG_ICONSPREFS (//)
+Icons look and feel
+MSG_ICONLISTMODE (//)
+Icon listmode
+MSG_ICONLISTMODE_PLAIN (//)
+List icons plainly
+MSG_ICONLISTMODE_GRID (//)
+List icons by grid
+MSG_ICONTEXTMODE (//)
+Icons text drawmode
+MSG_ICONTEXTMODE_OUTLINE (//)
+Outline
+MSG_ICONTEXTMODE_PLAIN (//)
+Plain
 ;

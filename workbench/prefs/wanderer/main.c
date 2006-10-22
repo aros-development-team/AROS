@@ -9,6 +9,8 @@
 #define MUIMASTER_YES_INLINE_STDARG
 
 #include <aros/debug.h>
+#define DEBUG 1
+
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
@@ -26,30 +28,30 @@ int main(void)
     Locale_Initialize();
     
     application = ApplicationObject,
-	MUIA_Application_Title, (IPTR)_(MSG_NAME),
-	MUIA_Application_Version, (IPTR)VERSIONSTR,
-	MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2006, The AROS Development Team",
-	MUIA_Application_Author, (IPTR)"The AROS Development Team",
-	MUIA_Application_Base, (IPTR)"WANDERERPREF",
+        MUIA_Application_Title, (IPTR)_(MSG_NAME),
+        MUIA_Application_Version, (IPTR)VERSIONSTR,
+        MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2006, The AROS Development Team",
+        MUIA_Application_Author, (IPTR)"The AROS Development Team",
+        MUIA_Application_Base, (IPTR)"WANDERERPREF",
         MUIA_Application_SingleTask, TRUE,
-        SubWindow, (IPTR) (window = SystemPrefsWindowObject,
-        MUIA_Window_ID, MAKE_ID('W','W','I','N'),
-            WindowContents, (IPTR) WPEditorObject,
-            End,
-        End),
+        SubWindow, (IPTR)(
+            window = SystemPrefsWindowObject,
+                MUIA_Window_ID, MAKE_ID('W','W','I','N'),
+                WindowContents, (IPTR)WPEditorObject,
+                End,
+            End),
     End;
-
+    
     if (application)
     {
         SET(window, MUIA_Window_Open, TRUE);
         DoMethod(application, MUIM_Application_Execute);
         SET(window, MUIA_Window_Open, FALSE);
-        
         MUI_DisposeObject(application);
     }
     else
     {
-	D(bug("wandererprefs: Can't create application"));
+	   D(bug("wandererprefs: Can't create application"));
     }
 
     Locale_Deinitialize();
