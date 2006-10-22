@@ -36,7 +36,11 @@
 struct WPEditor_DATA
 {
     Object *wped_WorkbenchPI, *wped_DrawersPI; 
-    Object *wped_c_NavigationMethod, *wped_cm_ToolbarEnabled, *wped_toolbarpreview;
+    Object *wped_c_NavigationMethod, 
+           *wped_cm_ToolbarEnabled, 
+           *wped_toolbarpreview;
+    Object *wped_icon_listmode;
+    Object *wped_icon_textmode;
         
 };
 
@@ -51,7 +55,8 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     struct WPEditor_DATA *data;
     Object *workbenchPI, *drawersPI, *c_navitype, *bt_dirup, *bt_search, 
-           *cm_toolbarenabled, *cm_searchenabled, *toolbarpreview;  
+           *cm_toolbarenabled, *cm_searchenabled, *toolbarpreview, *wped_icon_listmode,
+           *wped_icon_textmode;
 
     //char *registerpages[] = {_(MSG_GENERAL),_(MSG_APPEARANCE),_(MSG_TOOLBAR),NULL};
     static char *registerpages[] = {"General","Appearance","Toolbar",NULL};
@@ -125,20 +130,20 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_Text_Contents, (IPTR)_(MSG_ICONLISTMODE),
                                 MUIA_Weight, 40,
                             End,
-                            Child, (IPTR)CycleObject,
+                            Child, (IPTR)(wped_icon_listmode = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR)&iconlistmodes,
                                 MUIA_Weight, 60,
-                            End,
+                            End),
                         End,
                         Child, HGroup,
                             Child, (IPTR)TextObject, 
                                 MUIA_Text_Contents, (IPTR)_(MSG_ICONTEXTMODE),
                                 MUIA_Weight, 40,
                             End,
-                            Child, (IPTR)CycleObject,
+                            Child, (IPTR)(wped_icon_textmode = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR)&icontextmodes,
                                 MUIA_Weight, 60,
-                            End,
+                            End),
                         End,
                     End,
                 End,
@@ -176,6 +181,8 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->wped_c_NavigationMethod = c_navitype;
         data->wped_cm_ToolbarEnabled = cm_toolbarenabled;
         data->wped_toolbarpreview = toolbarpreview;
+        data->wped_icon_listmode = wped_icon_listmode;
+        data->wped_icon_textmode = wped_icon_textmode;
         
         //-- Setup notifications -------------------------------------------
         DoMethod
@@ -311,6 +318,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
     
     if (success)
     {
+        // Why is this commented out?
         //SMPByteSwap(&wpd);
 
         NNSET(data->wped_WorkbenchPI, MUIA_Imagedisplay_Spec, (STRPTR)wpd.wpd_WorkbenchBackground);
@@ -325,6 +333,12 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
         {
             set(data->wped_toolbarpreview, MUIA_Disabled, TRUE);
         }
+        
+        /* Icon listmode */
+        set ( data->wped_icon_listmode, MUIA_Cycle_Active, wpd.wpd_IconListMode );
+        
+        /* Icon textmode */
+        set ( data->wped_icon_textmode, MUIA_Cycle_Active, wpd.wpd_IconTextMode );
         
         /* set navigation type */   
         set(data->wped_c_NavigationMethod, MUIA_Cycle_Active, wpd.wpd_NavigationMethod);    
@@ -391,6 +405,12 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
                 
                 /* save navigation bahaviour */
                 get(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &wpd.wpd_NavigationMethod);
+                
+                /* save the icon listing method */
+                get(data->wped_icon_listmode, MUIA_Cycle_Active, &wpd.wpd_IconListMode);
+                
+                /* save the icon text mode */
+                get(data->wped_icon_textmode, MUIA_Cycle_Active, &wpd.wpd_IconTextMode);
                 
                 /* TODO: fix problems with endianess?? */
                 //SMPByteSwap(&wpd); 
