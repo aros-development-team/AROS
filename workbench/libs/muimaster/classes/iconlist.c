@@ -27,6 +27,10 @@ $Id$
 #include <proto/icon.h>
 #include <proto/layers.h>
 #include <proto/muimaster.h>
+#include <proto/dos.h>
+#include <proto/iffparse.h>
+#include <prefs/prefhdr.h>
+#include <prefs/wanderer.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -120,6 +124,10 @@ struct MUI_IconData
     ULONG sort_bits;
     ULONG max_x;
     ULONG max_y;
+    
+    /* How to show the iconlist */
+    UBYTE wpd_IconListMode;
+    UBYTE wpd_IconTextMode;
 
     /* Render stuff */
 
@@ -136,6 +144,88 @@ struct MUI_IconData
     
     ULONG textWidth; /*  Whole textwidth for icon in pixels */
 };
+
+
+/**************************************************************************
+Load the wanderer prefs
+**************************************************************************/
+int LoadWandererPrefs ( struct MUI_IconData *data )
+{
+    struct ContextNode     *context;
+    struct IFFHandle       *handle;
+    struct WandererPrefs    wpd;    
+    BOOL                    success = TRUE;
+    LONG                    error;
+
+
+                
+    if (!(handle = AllocIFF()))
+        return 0;
+    
+    if(!(handle->iff_Stream = (IPTR)Open("ENV:SYS/Wanderer.prefs",MODE_OLDFILE)))
+    {
+        FreeIFF(handle);
+        return 0;
+    }
+    
+    InitIFFasDOS(handle);
+
+    if ((error = OpenIFF(handle, IFFF_READ)) == 0)
+    {
+        // FIXME: We want some sanity checking here!
+        BYTE i = 0; for (; i < 1; i++)
+        {
+            if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
+            {
+                if ((error = ParseIFF(handle, IFFPARSE_SCAN)) == 0)
+                {
+                    context = CurrentChunk(handle);
+                    
+                    error = ReadChunkBytes(handle, &wpd, sizeof(struct WandererPrefs));
+                    
+                    if (error < 0)
+                        Printf("Error: ReadChunkBytes() returned %ld!\n", error);       
+                }
+                else
+                {
+                    Printf("ParseIFF() failed, returncode %ld!\n", error);
+                    success = FALSE;
+                    break;
+                }
+            }
+            else
+            {
+                Printf("StopChunk() failed, returncode %ld!\n", error);
+                success = FALSE;
+            }
+        }
+        CloseIFF(handle);
+    }
+    else
+    {
+        //ShowError(_(MSG_CANT_OPEN_STREAM));
+    }
+
+    Close((BPTR)handle->iff_Stream);
+    FreeIFF(handle);
+    
+    if (success)
+    {
+        /* Icon listmode */
+        data->wpd_IconListMode = wpd.wpd_IconListMode;
+        /* Icon textmode */
+        data->wpd_IconTextMode = wpd.wpd_IconTextMode;
+        return 1;
+    }
+    // On non success fall back to defaults
+    else
+    {
+        data->wpd_IconListMode = ICON_LISTMODE_GRID;
+        data->wpd_IconTextMode = ICON_TEXTMODE_OUTLINE;
+    }
+    return 0;
+}
+
 
 /**************************************************************************
 
@@ -209,9 +299,6 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     /* Get the dimensions and affected area of icon */
     IconList_GetIconRectangle(obj, data, icon, &iconrect);
 
-    /* Get options for icon text mode */
-    char iconTextMode = ICON_TEXTMODE_PLAIN;
-
     /* Add the relative position offset of the icon */
     iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
     iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
@@ -274,7 +361,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     {
         ULONG nameLength = strlen(icon->entry.label);
         ULONG n2 = nameLength;
-        ULONG ThisMinX = iconrect.MinX;
+        //ULONG ThisMinX = iconrect.MinX; <- gonna use soon for positioning
 
         SetFont(_rp(obj), data->IconFont);
 
@@ -301,7 +388,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
         tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - txwidth)/2);
         ty = iconY + icon->height + data->IconFont->tf_Baseline;
 
-        switch ( iconTextMode )
+        switch ( data->wpd_IconTextMode )
         {
             case ICON_TEXTMODE_DROPSHADOW:
             case ICON_TEXTMODE_PLAIN:
@@ -374,7 +461,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - textwidth)/2);
             ty = iconY + icon->height + ( data->IconFont->tf_Baseline * 2 ) + ICONLIST_TEXTMARGIN;
     
-            switch ( iconTextMode )
+            switch ( data->wpd_IconTextMode )
             {
                 case ICON_TEXTMODE_DROPSHADOW:
                 case ICON_TEXTMODE_PLAIN:
@@ -554,7 +641,7 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
     int cur_y = spacing;
     int maxw = 0; //  There two are the max icon width recorded in a column
     int maxh = 0; //  or the max icon height recorded in a row depending
-    int listMode = ICON_LISTMODE_GRID;
+    int listMode = (int)data->wpd_IconListMode;
     
     BOOL next = TRUE;
     int maxWidth = 0, maxHeight = 0;
@@ -697,6 +784,10 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
+    
+    // Set some options from wanderer prefs
+    LoadWandererPrefs(data);
+    
     NewList((struct List*)&data->icon_list);
 
     set(obj,MUIA_FillArea,TRUE);
