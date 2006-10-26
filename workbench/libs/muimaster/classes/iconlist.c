@@ -154,10 +154,12 @@ int LoadWandererPrefs ( struct MUI_IconData *data )
     struct ContextNode     *context;
     struct IFFHandle       *handle;
     struct WandererPrefs    wpd;    
-    BOOL                    success = TRUE;
+    BOOL                    success = FALSE;
     LONG                    error;
 
-
+     /* Default values */
+    data->wpd_IconListMode = ICON_LISTMODE_GRID;
+    data->wpd_IconTextMode = ICON_TEXTMODE_OUTLINE;
                 
     if (!(handle = AllocIFF()))
         return 0;
@@ -185,18 +187,18 @@ int LoadWandererPrefs ( struct MUI_IconData *data )
                     
                     if (error < 0)
                         Printf("Error: ReadChunkBytes() returned %ld!\n", error);       
+                    else
+                        success = TRUE;
                 }
                 else
                 {
                     Printf("ParseIFF() failed, returncode %ld!\n", error);
-                    success = FALSE;
                     break;
                 }
             }
             else
             {
                 Printf("StopChunk() failed, returncode %ld!\n", error);
-                success = FALSE;
             }
         }
         CloseIFF(handle);
@@ -211,17 +213,13 @@ int LoadWandererPrefs ( struct MUI_IconData *data )
     
     if (success)
     {
+        D(bug("Success!\n"));
         /* Icon listmode */
         data->wpd_IconListMode = wpd.wpd_IconListMode;
         /* Icon textmode */
         data->wpd_IconTextMode = wpd.wpd_IconTextMode;
+        
         return 1;
-    }
-    // On non success fall back to defaults
-    else
-    {
-        data->wpd_IconListMode = ICON_LISTMODE_GRID;
-        data->wpd_IconTextMode = ICON_TEXTMODE_OUTLINE;
     }
     return 0;
 }
@@ -671,21 +669,21 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
             icon->x = cur_x;
             icon->y = cur_y;
     
-            if ( listMode == ICON_LISTMODE_ROUGH )
-            {
-                // Update the realWidth/realHeight values every time we position an icon!
-                struct Rectangle iconrect;
-                IconList_GetIconRectangle(obj, data, icon, &iconrect);
-                gridx = icon->realWidth + spacing;
-                gridy = icon->realHeight + spacing;
-            }
-            else
+            if ( listMode == ICON_LISTMODE_GRID )
             {
                 gridx = maxWidth + spacing;
                 gridy = maxHeight + spacing;
                 // center icons on grid
                 icon->x += ( maxWidth - icon->realWidth ) / 2;
                 icon->y += ( maxHeight - icon->realHeight ) / 2;
+            }
+            else
+            {
+                // Update the realWidth/realHeight values every time we position an icon!
+                struct Rectangle iconrect;
+                IconList_GetIconRectangle(obj, data, icon, &iconrect);
+                gridx = icon->realWidth + spacing;
+                gridy = icon->realHeight + spacing;
             }
     
             if( data->sort_bits & ICONLIST_DISP_VERTICAL )
