@@ -28,23 +28,23 @@ MSG_SELECT_DRAWER_BACKGROUND
 ; Select Drawer Background
 ;
 MSG_GENERAL (//)
-General
+Общие
 MSG_APPEARANCE (//)
-Appearance
+Вид
 MSG_TOOLBAR (//)
-Toolbar
+Инструментарий
 MSG_CLASSIC (//)
-Classic
+Классический
 MSG_ENHANCED (//)
-Enhanced
+Улучшенный
 MSG_NAVIGATION (//)
-Navigation
+Навигация
 MSG_METHOD (//)
-Method
+Метод
 MSG_OBJECTS (//)
-Objects
+Объекты
 MSG_PREVIEW (//)
-Preview
+Просмотр
 MSG_TOOLBAR_ENABLED (//)
-Toolbar Enabled
+Включить Инструментарий
 ;
