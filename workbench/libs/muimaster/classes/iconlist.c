@@ -213,7 +213,6 @@ int LoadWandererPrefs ( struct MUI_IconData *data )
     
     if (success)
     {
-        D(bug("Success!\n"));
         /* Icon listmode */
         data->wpd_IconListMode = wpd.wpd_IconListMode;
         /* Icon textmode */
