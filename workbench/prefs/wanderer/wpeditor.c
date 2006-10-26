@@ -76,7 +76,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             MUIA_PrefsEditor_Name, __(MSG_NAME),
             MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
             
-            Child, (IPTR) RegisterObject,
+            Child, (IPTR) (RegisterObject,
                 MUIA_Register_Titles, (IPTR) registerpages,
                 Child, (IPTR) GroupObject,                     // general 
                     MUIA_FrameTitle, __(MSG_NAVIGATION),
@@ -89,11 +89,11 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         Child, (IPTR) (c_navitype = MUI_MakeObject(MUIO_Cycle, NULL, navigationtypelabels)),
                     End,
                 End,        
-                Child, (IPTR) GroupObject,                     // appearance 
+                Child, (IPTR) (GroupObject,                     // appearance 
                     MUIA_Group_SameSize, TRUE,
                     MUIA_Group_Horiz, TRUE,
                     
-                    Child, (IPTR) GroupObject, 
+                    Child, (IPTR) (GroupObject, 
                         MUIA_FrameTitle, __(MSG_BACKGROUNDS),
                         MUIA_Frame, MUIV_Frame_Group,
                         
@@ -121,8 +121,8 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_Weight, 60,
                             End),
                         End,
-                    End,
-                    Child, (IPTR) GroupObject,
+                    End),
+                    Child, (IPTR) (GroupObject,
                         MUIA_FrameTitle, __(MSG_ICONSPREFS),
                         MUIA_Frame, MUIV_Frame_Group,
                         Child, (IPTR) HGroup,
@@ -145,9 +145,9 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_Weight, 60,
                             End),
                         End,
-                    End,
-                End,
-                Child, (IPTR)GroupObject,                     // toolbar 
+                    End),
+                End),
+                Child, (IPTR) (GroupObject,                     // toolbar 
                     Child, (IPTR) HGroup,
                         MUIA_FrameTitle,  __(MSG_OBJECTS),
                         MUIA_Group_SameSize, TRUE,
@@ -168,8 +168,8 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
                         End,
                     End),
-                End,          
-            End,
+                End),          
+            End),
         TAG_DONE
     );
     
