@@ -4,8 +4,12 @@
 ;
 ;
 MSG_NAME
-Préférences de Wanderer
-; Wanderer Preferences
+Wanderer Prefs
+;
+MSG_DESCRIPTION
+Préférences du Wanderer
+;
+;Wanderer preferences
 ;
 MSG_BACKGROUNDS
 Fonds
@@ -26,4 +30,57 @@ Choisir un fond pour le Workbench
 MSG_SELECT_DRAWER_BACKGROUND
 Choisr un fond pour les répertoires
 ; Select Drawer Background
+;
+MSG_GENERAL
+Général
+;
+MSG_APPEARANCE
+Apparence
+;
+MSG_TOOLBAR
+Barre d'outils
+;
+MSG_CLASSIC
+Classique
+;
+MSG_ENHANCED
+Amélioré
+;
+MSG_NAVIGATION
+Navigation
+;
+MSG_METHOD
+Methode
+;Method
+;
+MSG_OBJECTS
+Objets
+;Objects
+;
+MSG_PREVIEW
+Ébauche
+;
+MSG_TOOLBAR_ENABLED
+Barre d'outils
+;
+MSG_ICONSPREFS
+Icônes
+;
+MSG_ICONLISTMODE
+Liste d'Icônes
+;
+MSG_ICONLISTMODE_PLAIN
+Liste complète
+;
+MSG_ICONLISTMODE_GRID
+Grille
+;
+MSG_ICONTEXTMODE
+Mode de texte
+;
+MSG_ICONTEXTMODE_OUTLINE
+Détourage
+;
+MSG_ICONTEXTMODE_PLAIN
+Plein
 ;

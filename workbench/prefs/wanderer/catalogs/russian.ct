@@ -27,24 +27,33 @@ MSG_SELECT_DRAWER_BACKGROUND
 Выберите фон папки
 ; Select Drawer Background
 ;
-MSG_GENERAL (//)
+MSG_GENERAL
 Общие
-MSG_APPEARANCE (//)
+;
+MSG_APPEARANCE
 Вид
-MSG_TOOLBAR (//)
+;
+MSG_TOOLBAR
 Инструментарий
-MSG_CLASSIC (//)
+;
+MSG_CLASSIC
 Классический
-MSG_ENHANCED (//)
+;
+MSG_ENHANCED
 Улучшенный
-MSG_NAVIGATION (//)
+;
+MSG_NAVIGATION
 Навигация
-MSG_METHOD (//)
+;
+MSG_METHOD
 Метод
-MSG_OBJECTS (//)
+;
+MSG_OBJECTS
 Объекты
-MSG_PREVIEW (//)
+;
+MSG_PREVIEW
 Просмотр
-MSG_TOOLBAR_ENABLED (//)
+;
+MSG_TOOLBAR_ENABLED
 Включить Инструментарий
 ;
