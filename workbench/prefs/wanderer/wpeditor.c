@@ -44,7 +44,7 @@ struct WPEditor_DATA
         
 };
 
-static struct Hook  	       navichangehook;
+static struct Hook navichangehook;
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct WPEditor_DATA *data = INST_DATA(CLASS, self)
@@ -55,11 +55,11 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     struct WPEditor_DATA *data;
     Object *workbenchPI, *drawersPI, *c_navitype, *bt_dirup, *bt_search, 
-           *cm_toolbarenabled, *cm_searchenabled, *toolbarpreview, *wped_icon_listmode,
+           *cm_toolbarenabled, *toolbarpreview, *wped_icon_listmode,
            *wped_icon_textmode;
-
-    //char *registerpages[] = {_(MSG_GENERAL),_(MSG_APPEARANCE),_(MSG_TOOLBAR),NULL};
-    static char *registerpages[] = {"General","Appearance","Toolbar",NULL};
+    //Object *cm_searchenabled;
+    char *registerpages[] = {(STRPTR)_(MSG_GENERAL),(STRPTR)_(MSG_APPEARANCE),(STRPTR)_(MSG_TOOLBAR),NULL};
+    //static char *registerpages[] = {"General","Appearance","Toolbar",NULL};
     char *iconlistmodes[] = {(STRPTR)_(MSG_ICONLISTMODE_PLAIN), (STRPTR)_(MSG_ICONLISTMODE_GRID), NULL};
     char *icontextmodes[] = {(STRPTR)_(MSG_ICONTEXTMODE_OUTLINE), (STRPTR)_(MSG_ICONTEXTMODE_PLAIN), NULL};
     
@@ -73,33 +73,33 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     (
         CLASS, self, NULL,
             
-            MUIA_PrefsEditor_Name,        __(MSG_NAME),
+            MUIA_PrefsEditor_Name, __(MSG_NAME),
             MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
             
             Child, (IPTR) RegisterObject,
-                MUIA_Register_Titles, (IPTR)registerpages,
+                MUIA_Register_Titles, (IPTR) registerpages,
                 Child, (IPTR) GroupObject,                     // general 
-                    MUIA_FrameTitle,  _(MSG_NAVIGATION),
+                    MUIA_FrameTitle, __(MSG_NAVIGATION),
                     MUIA_Group_SameSize, TRUE,
                     MUIA_Frame, MUIV_Frame_Group,
-                    Child, HGroup,
-                        Child, TextObject,
-                            MUIA_Text_Contents, (IPTR)_(MSG_METHOD),
+                    Child, (IPTR) HGroup,
+                        Child, (IPTR) TextObject,
+                            MUIA_Text_Contents, __(MSG_METHOD),
                         End,
-                        Child, c_navitype = MUI_MakeObject(MUIO_Cycle, NULL, navigationtypelabels),
+                        Child, (IPTR) (c_navitype = MUI_MakeObject(MUIO_Cycle, NULL, navigationtypelabels)),
                     End,
                 End,        
                 Child, (IPTR) GroupObject,                     // appearance 
                     MUIA_Group_SameSize, TRUE,
                     MUIA_Group_Horiz, TRUE,
                     
-                    Child, GroupObject, 
-                        MUIA_FrameTitle, (IPTR)_(MSG_BACKGROUNDS),
+                    Child, (IPTR) GroupObject, 
+                        MUIA_FrameTitle, __(MSG_BACKGROUNDS),
                         MUIA_Frame, MUIV_Frame_Group,
                         
-                        Child, (IPTR)HGroup,
+                        Child, (IPTR) HGroup,
                             Child, (IPTR) TextObject,
-                                MUIA_Text_Contents, (IPTR)_(MSG_BACKGROUND_WORKBENCH),
+                                MUIA_Text_Contents, __(MSG_BACKGROUND_WORKBENCH),
                                 MUIA_Weight, 40,
                             End,
                             Child, (IPTR) (workbenchPI = PopimageObject,
@@ -109,9 +109,9 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_Weight, 60,
                             End),
                         End,
-                        Child, (IPTR)HGroup,
+                        Child, (IPTR) HGroup,
                             Child, (IPTR) TextObject,
-                                MUIA_Text_Contents, (IPTR)_(MSG_BACKGROUND_DRAWERS),
+                                MUIA_Text_Contents, __(MSG_BACKGROUND_DRAWERS),
                                 MUIA_Weight, 40,
                             End,
                             Child, (IPTR) (drawersPI = PopimageObject,
@@ -122,12 +122,12 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             End),
                         End,
                     End,
-                    Child, GroupObject,
-                        MUIA_FrameTitle, (IPTR)_(MSG_ICONSPREFS),
+                    Child, (IPTR) GroupObject,
+                        MUIA_FrameTitle, __(MSG_ICONSPREFS),
                         MUIA_Frame, MUIV_Frame_Group,
-                        Child, HGroup,
+                        Child, (IPTR) HGroup,
                             Child, (IPTR)TextObject, 
-                                MUIA_Text_Contents, (IPTR)_(MSG_ICONLISTMODE),
+                                MUIA_Text_Contents, __(MSG_ICONLISTMODE),
                                 MUIA_Weight, 40,
                             End,
                             Child, (IPTR)(wped_icon_listmode = CycleObject,
@@ -135,9 +135,9 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_Weight, 60,
                             End),
                         End,
-                        Child, HGroup,
+                        Child, (IPTR) HGroup,
                             Child, (IPTR)TextObject, 
-                                MUIA_Text_Contents, (IPTR)_(MSG_ICONTEXTMODE),
+                                MUIA_Text_Contents, __(MSG_ICONTEXTMODE),
                                 MUIA_Weight, 40,
                             End,
                             Child, (IPTR)(wped_icon_textmode = CycleObject,
@@ -149,21 +149,21 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
                 Child, (IPTR)GroupObject,                     // toolbar 
                     Child, (IPTR) HGroup,
-                        MUIA_FrameTitle,  (IPTR)_(MSG_OBJECTS),
+                        MUIA_FrameTitle,  __(MSG_OBJECTS),
                         MUIA_Group_SameSize, TRUE,
                         MUIA_Frame, MUIV_Frame_Group,
-                        Child, Label1(_(MSG_TOOLBAR_ENABLED)),
-                        Child, (IPTR)( cm_toolbarenabled = MUI_MakeObject(MUIO_Checkmark,NULL) ),
+                        Child, (IPTR) Label1(_(MSG_TOOLBAR_ENABLED)),
+                        Child, (IPTR) (cm_toolbarenabled = MUI_MakeObject(MUIO_Checkmark,NULL)),
                         
                         //Child, Label1("search"),
                         //Child, cm_searchenabled = MUI_MakeObject(MUIO_Checkmark,NULL),                        
                     End,
                     Child, (IPTR) (toolbarpreview = GroupObject,
-                        MUIA_FrameTitle, ( IPTR )_(MSG_PREVIEW),
+                        MUIA_FrameTitle, __(MSG_PREVIEW),
                         MUIA_Group_SameSize, TRUE,
                         MUIA_Frame, MUIV_Frame_Group,
         
-                        Child, (IPTR)HGroup,
+                        Child, (IPTR) HGroup,
                             Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
                             Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
                         End,
@@ -289,19 +289,19 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
                     
                     if (error < 0)
                     {
-                        Printf("Error: ReadChunkBytes() returned %ld!\n", error);
+                        D(bug("[WPEDITOR] ReadChunkBytes() returned %ld!\n", error));
                     }                    
                 }
                 else
                 {
-                    Printf("ParseIFF() failed, returncode %ld!\n", error);
+                    D(bug("[WPEDITOR] ParseIFF() failed, returncode %ld!\n", error));
                     success = FALSE;
                     break;
                 }
             }
             else
             {
-                Printf("StopChunk() failed, returncode %ld!\n", error);
+                D(bug("[WPEDITOR] StopChunk() failed, returncode %ld!\n", error));
                 success = FALSE;
             }
         }
@@ -391,7 +391,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
                 
                 if (error != 0) // TODO: We need some error checking here!
                 {
-                    Printf("error: PushChunk() = %ld ", error);
+                    D(bug("[WPEDITOR] PushChunk() = %ld failed\n", error));
                 }
                 
                 /* save background paths */
@@ -420,7 +420,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
                                 
                 if (error != 0) // TODO: We need some error checking here!
                 {
-                    Printf("error: PopChunk() = %ld ", error);
+                    D(bug("[WPEDITOR] PopChunk() = %ld\n", error));
                 }
                 
             }        
@@ -431,7 +431,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
         else
         {
             //ShowError(_(MSG_CANT_OPEN_STREAM));
-            Printf("error: cant open stream!");
+            D(bug("[WPEDITOR] Can't open stream!\n"));
             success = FALSE;
         }
         
