@@ -44,13 +44,13 @@ MSG_CLASSIC
 Classique
 ;
 MSG_ENHANCED
-Amélioré
-;
+Améliorée
+; ("Méthode de Navigation Améliorée")
 MSG_NAVIGATION
 Navigation
 ;
 MSG_METHOD
-Methode
+Méthode
 ;Method
 ;
 MSG_OBJECTS
