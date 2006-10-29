@@ -195,6 +195,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             cm_toolbarenabled, MUIM_Notify, MUIA_Pressed, MUIV_EveryTime,  
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         ); 
+        
         DoMethod
         (
             wped_icon_listmode, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
@@ -204,8 +205,9 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             wped_icon_textmode, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
-        // toolbar enabled checkmark
+        );        
+                
+        /* toolbar enabled checkmark */
         DoMethod
         (
             cm_toolbarenabled, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
@@ -221,6 +223,19 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             cm_toolbarenabled, MUIM_Notify, MUIA_Selected, TRUE,  
             (IPTR) toolbarpreview, 3, MUIM_Set, MUIA_Disabled, FALSE
         );     
+        
+        /* navigation cycle linked to toolbar checkbox, enhanced nevigation sets toolbar */
+        DoMethod
+        (
+             c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_ENHANCED,  
+             (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, TRUE
+        ); 
+        DoMethod
+        (
+             c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_CLASSIC,  
+             (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, FALSE
+        ); 
+                
     }
     return self;
 }
