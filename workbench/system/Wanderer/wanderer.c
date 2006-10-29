@@ -849,6 +849,7 @@ struct Wanderer_DATA
     struct MUI_InputHandlerNode  wd_NotifyIHN;
     struct NotifyRequest         pnr;
     IPTR                         wd_PrefsIntern;
+    
 };
 
 /*** Macros *****************************************************************/
@@ -1221,8 +1222,24 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
         ReplyMsg(notifyMessage);
     }
     
+    /* reload prefs file */
     DoMethod(data->wd_Prefs, MUIM_WandererPrefs_Reload);
+
+    /* upadte prefs for all open windows */
+    Object *cstate = (Object*)(((struct List*)XGET(_app(self), MUIA_Application_WindowList))->lh_Head);
+    Object *prefs = (Object*) XGET(_app(self), MUIA_Wanderer_Prefs);
+    Object *child;
     
+    while ((child = NextObject(&cstate)))
+    { 
+    	if (XGET(child, MUIA_UserData))
+    	{
+            /* update the toolbar prefs for every open window*/
+            set(child, MUIA_IconWindow_Toolbar_Enabled, XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled) );
+            set(child, MUIA_Window_Activate, TRUE);
+    	}
+    } 
+
     return 0;
 }
 
@@ -1235,6 +1252,8 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     SETUP_INST_DATA;
     Object *menustrip, *window = NULL;
     BOOL    isWorkbenchWindow = message->drawer == NULL ? TRUE : FALSE;
+    BOOL    hasToolbar = XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled);
+    
 
     IPTR    useFont = (IPTR)NULL;
     if (data->wd_PrefsIntern)
@@ -1312,6 +1331,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         
         MUIA_IconWindow_IsRoot,            isWorkbenchWindow ? TRUE : FALSE,
         MUIA_IconWindow_IsBackdrop,        isWorkbenchWindow ? TRUE : FALSE,
+        MUIA_IconWindow_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
         isWorkbenchWindow ? 
             TAG_IGNORE    : 
             MUIA_IconWindow_Drawer, (IPTR) message->drawer,

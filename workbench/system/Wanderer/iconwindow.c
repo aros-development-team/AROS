@@ -28,6 +28,7 @@ struct IconWindow_DATA
     Object           *iwd_toolbarPanel;
     BOOL              iwd_IsRoot;
     BOOL              iwd_IsBackdrop;
+    BOOL              iwd_hasToolbar;
     struct Hook      *iwd_ActionHook;
     struct TextFont  *iwd_WindowFont;
     
@@ -42,13 +43,16 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     Object           *iconList, *toolbarPanel, *bt_dirup, *bt_search;
     BOOL              isRoot,
-                    isBackdrop;
+                      isBackdrop,
+                      hasToolbar;
     struct Hook      *actionHook;
     struct TextFont  *WindowFont;
 
     /* More than one GetTagData is not really efficient but since this is called very unoften... */
+    hasToolbar = GetTagData(MUIA_IconWindow_Toolbar_Enabled, 0, message->ops_AttrList);
     isBackdrop = GetTagData(MUIA_IconWindow_IsBackdrop, 0, message->ops_AttrList);
     isRoot = GetTagData(MUIA_IconWindow_IsRoot, 0, message->ops_AttrList);
+    
     actionHook = (struct Hook *) GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
     WindowFont = (struct TextFont *) GetTagData(MUIA_IconWindow_Font, (IPTR) NULL, message->ops_AttrList);
 
@@ -114,9 +118,8 @@ D(bug("[iconwindow] Font @ %x\n", WindowFont));
         
         data->iwd_WindowFont = WindowFont;        
 
-
         /* no tool bar when root */
-        if (isRoot)
+        if ( (isRoot) || (!hasToolbar) )
         {
             SET(toolbarPanel, MUIA_ShowMe, FALSE);
                    
@@ -192,6 +195,16 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_Win
                  set(data->iwd_IconList, MUIA_IconDrawerList_Drawer, (IPTR) data->directory_path);
                  set(self, MUIA_Window_Title, data->directory_path);
                 break;
+            case MUIA_IconWindow_Toolbar_Enabled:   
+                 if (!data->iwd_IsRoot)
+                 {               
+                     data->iwd_hasToolbar = (IPTR)tag->ti_Data;
+                     set(data->iwd_toolbarPanel, MUIA_ShowMe, (IPTR)tag->ti_Data);
+                     /* update the window contents; shall be reworked!! */
+                     set(self, MUIA_Window_Open, FALSE); 
+                     set(self, MUIA_Window_Open, TRUE);                                  
+                 }                 
+                 break;            
             case MUIA_IconWindow_IsBackdrop:
                 if ((!!tag->ti_Data) != data->iwd_IsBackdrop)
                 {
@@ -259,12 +272,17 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
             *store = !data->iwd_IsRoot
                 ? XGET(data->iwd_IconList, MUIA_IconDrawerList_Drawer)
                 : (IPTR) NULL;
-            break;
-        
+            break;      
         case MUIA_IconWindow_IconList:
             *store = (IPTR) data->iwd_IconList;
             break;;
-        
+        case MUIA_IconWindow_Toolbar_Enabled:
+            *store = XGET(data->iwd_toolbarPanel, MUIA_ShowMe);
+            break; 
+        case MUIA_IconWindow_IsRoot:
+            *store = data->iwd_IsRoot;
+            break;
+             
         default:
             rv = DoSuperMethodA(CLASS, self, (Msg) message);
     }
