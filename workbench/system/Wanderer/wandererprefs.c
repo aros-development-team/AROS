@@ -246,8 +246,8 @@ IPTR WandererPrefs__MUIM_WandererPrefs_Reload
                        MUIA_WandererPrefs_DrawerBackground, (STRPTR)wpd.wpd_DrawerBackground,
                        MUIA_WandererPrefs_NavigationMethod, wpd.wpd_NavigationMethod,
                        MUIA_WandererPrefs_Toolbar_Enabled, wpd.wpd_ToolbarEnabled,
-                       MUIA_WandererPrefs_Icon_ListMode,wpd.wpd_IconListMode,
-                       MUIA_WandererPrefs_Icon_TextMode,wpd.wpd_IconTextMode, TAG_DONE);
+                       MUIA_WandererPrefs_Icon_ListMode, wpd.wpd_IconListMode,
+                       MUIA_WandererPrefs_Icon_TextMode, wpd.wpd_IconTextMode, TAG_DONE);
 
         return TRUE;       
     }
