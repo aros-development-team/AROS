@@ -31,7 +31,7 @@
 
     INPUTS
 
-    cxm  -  the commodity message to delete (may NOT be NULL) 
+    cxm  -  the commodity message to delete (must NOT be NULL) 
 
     RESULT
 
