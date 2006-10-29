@@ -8,6 +8,7 @@
 #include <libraries/mui.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <proto/workbench.h>
 #include <dos/dos.h>
 
 #include "locale.h"
@@ -23,6 +24,7 @@ int main(void)
 {
     LONG retval = RETURN_ERROR;
     
+    ExecuteStartup();
     if ((app = WandererObject, End) != NULL)
     {
 	retval = DoMethod(app, MUIM_Application_Execute);        

@@ -80,7 +80,6 @@ If EXISTS S:User-Startup
 EndIf
 
 WANDERER:Wanderer
-WANDERER:Tools/ExecuteStartup
 
 If NOT ERROR
     EndCLI

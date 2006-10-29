@@ -9,6 +9,7 @@ FUNCS := \
     addappwindowdropzonea \
     changeworkbenchselectiona \
     closeworkbenchobjecta \
+    executestartup \
     makeworkbenchobjectvisiblea \
     openworkbenchobjecta \
     registerworkbench \
