@@ -6,46 +6,15 @@
     Lang: English
 */
 
-#define DEBUG 0
-
-#include <string.h>
-#include <stdlib.h>
-
-#include <aros/debug.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/icon.h>
-#include <proto/intuition.h>
-
-#include "workbench_intern.h"
-
-#define STARTUPDIR "sys:WBStartup/"
-
-struct InfoNode
-{
-    struct Node node;
-    ULONG waittime;
-    BOOL donotwait;
-};
-
-static TEXT fileNameBuffer[MAXFILENAMELENGTH + 1];
-
-BOOL __checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait, struct WorkbenchBase *WorkbenchBase);
-BOOL __searchInfo(struct List *infoList, struct WorkbenchBase *WorkbenchBase);
-VOID __executePrograms(struct List *infolist, struct WorkbenchBase *WorkbenchBase);
-
 /*****************************************************************************
 
-    NAME */
-    #include <proto/workbench.h>
+    NAME
+        ExecuteStartup
 
-        AROS_LH0(BOOL, ExecuteStartup,
-/*  SYNOPSIS */
+    LOCATION
+        Wanderer:Tools
 
-/*  LOCATION */
-        struct WorkbenchBase *, WorkbenchBase, 26, Workbench)
-
-/*  FUNCTION
+    FUNCTION
         Executes programs in sys:WBStartup.
         
         It checks the following tooltypes of the called programs:
@@ -57,89 +26,54 @@ VOID __executePrograms(struct List *infolist, struct WorkbenchBase *WorkbenchBas
                 
                 DONOTWAIT     don't wait till the program is finished.	
 
-    RESULT
-	Returns TRUE when all applications could be started
-
-    NOTES
-
     EXAMPLE
-
+    
     BUGS
         All programs are treated like DONOTWAIT is set. 
- 
+    
     SEE ALSO
 
-    INTERNALS
-
 ******************************************************************************/
+
+#define DEBUG 0
+
+#include <string.h>
+#include <stdlib.h>
+
+#include <aros/debug.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/icon.h>
+#include <proto/workbench.h>
+#include <proto/intuition.h>
+
+#define STARTUPDIR "sys:WBStartup/"
+
+struct InfoNode
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
+    struct Node node;
+    ULONG waittime;
+    BOOL donotwait;
+};
 
-    struct List infoList;
-    NEWLIST(&infoList);
-    BOOL retvalue = FALSE;
-    BPTR olddir = (BPTR)-1;
-    BPTR startupdir = 0;
+const TEXT version_string[] = "$VER: ExecuteStartup 0.2 (29.1.2006)";
 
-    struct FileInfoBlock *fib = AllocDosObjectTags(DOS_FIB, TAG_END);
-    if (fib == NULL)
-    {
-	struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-	    "Error", "ExecuteStartup\nOut of memory for FileInfoBlock", "OK"};
-	EasyRequest(0, &es, 0);
-	goto exit;
-    }
+static TEXT fileNameBuffer[MAXFILENAMELENGTH];
 
-    if ( (startupdir = Lock(STARTUPDIR, ACCESS_READ) ) == 0)
-    {
-	D(bug("ExecuteStartup: Couldn't lock " STARTUPDIR "\n"));
-	goto exit;
-    }        
+static BOOL checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait);
+static BOOL searchInfo(struct List *infoList);
+static void executePrograms(struct List *infolist);
+static BOOL executeWBStartup(void);
 
-    if ( ! Examine(startupdir, fib))
-    {
-	struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-	    "Error", "ExecuteStartup\nCouldn't examine " STARTUPDIR, "OK"};
-	EasyRequest(0, &es, 0);
-	goto exit;
-    }
+int
+main(void)
+{
+    executeWBStartup();
+    return RETURN_OK;
+}                                       
 
-    // check if startupdir is a directory
-    if (fib->fib_DirEntryType >= 0)
-    {
-	olddir = CurrentDir(startupdir);
-	if (__searchInfo(&infoList, WorkbenchBase))
-	{
-	    __executePrograms(&infoList, WorkbenchBase);
-	    retvalue = TRUE;
-	}
-    }        
-    else
-    {
-	D(bug("ExecuteStartup: " STARTUPDIR " isn't a directory\n"));
-    }
-
-exit:
-    // Cleanup
-    if (startupdir) UnLock(startupdir);
-    if (olddir != (BPTR)-1) CurrentDir(olddir);
-    if (fib) FreeDosObject(DOS_FIB, fib);
-
-    struct Node *node;
-    while ((node = GetHead(&infoList)))
-    {
-	FreeVec(node->ln_Name);
-	Remove(node);
-	FreeVec(node);
-    }
-
-    return retvalue;
-
-    AROS_LIBFUNC_EXIT
-}
-
-BOOL __checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait, struct WorkbenchBase *WorkbenchBase)
+static BOOL
+checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait)
 {
     *pri = 0;
     *time = 0;
@@ -179,7 +113,8 @@ BOOL __checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait, struct Work
     return FALSE;
 }
 
-BOOL __searchInfo(struct List *infoList, struct WorkbenchBase *WorkbenchBase)
+static BOOL
+searchInfo(struct List *infoList)
 {
     BOOL retvalue = TRUE;
     LONG error;
@@ -196,7 +131,7 @@ BOOL __searchInfo(struct List *infoList, struct WorkbenchBase *WorkbenchBase)
 	    LONG pri;
 	    ULONG time;
 	    BOOL notwait;
-	    if (__checkIcon(fileNameBuffer, &pri, &time, &notwait, WorkbenchBase))
+	    if (checkIcon(fileNameBuffer, &pri, &time, &notwait))
 	    {
 		struct InfoNode *newnode = AllocVec(sizeof (*newnode), MEMF_ANY | MEMF_CLEAR);
 		if (newnode == NULL)
@@ -247,7 +182,8 @@ exit:
     return retvalue;
 }
 
-VOID __executePrograms(struct List *infolist, struct WorkbenchBase *WorkbenchBase)
+static void
+executePrograms(struct List *infolist)
 {
     struct InfoNode *infonode;
     ForeachNode(infolist, infonode)
@@ -268,3 +204,66 @@ VOID __executePrograms(struct List *infolist, struct WorkbenchBase *WorkbenchBas
     }
 }
 
+static BOOL
+executeWBStartup(void)
+{
+    struct List infoList;
+    NEWLIST(&infoList);
+    BOOL retvalue = FALSE;
+    BPTR olddir = (BPTR)-1;
+    BPTR startupdir = 0;
+
+    struct FileInfoBlock *fib = AllocDosObjectTags(DOS_FIB, TAG_END);
+    if (fib == NULL)
+    {
+	struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+	    "Error", "ExecuteStartup\nOut of memory for FileInfoBlock", "OK"};
+	EasyRequest(0, &es, 0);
+	goto exit;
+    }
+
+    if ( (startupdir = Lock(STARTUPDIR, ACCESS_READ) ) == 0)
+    {
+	D(bug("ExecuteStartup: Couldn't lock " STARTUPDIR "\n"));
+	goto exit;
+    }        
+
+    if ( ! Examine(startupdir, fib))
+    {
+	struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+	    "Error", "ExecuteStartup\nCouldn't examine " STARTUPDIR, "OK"};
+	EasyRequest(0, &es, 0);
+	goto exit;
+    }
+
+    // check if startupdir is a directory
+    if (fib->fib_DirEntryType >= 0)
+    {
+	olddir = CurrentDir(startupdir);
+	if (searchInfo(&infoList))
+	{
+	    executePrograms(&infoList);
+	    retvalue = TRUE;
+	}
+    }        
+    else
+    {
+	D(bug("ExecuteStartup: " STARTUPDIR " isn't a directory\n"));
+    }
+
+exit:
+    // Cleanup
+    if (startupdir) UnLock(startupdir);
+    if (olddir != (BPTR)-1) CurrentDir(olddir);
+    if (fib) FreeDosObject(DOS_FIB, fib);
+
+    struct Node *node;
+    while ((node = GetHead(&infoList)))
+    {
+	FreeVec(node->ln_Name);
+	Remove(node);
+	FreeVec(node);
+    }
+
+    return retvalue;
+}

@@ -23,13 +23,18 @@ int __forceerrorrequester = 1;
 int main(void)
 {
     LONG retval = RETURN_ERROR;
-    
-    ExecuteStartup();
+
+    OpenWorkbenchObject
+	(
+	 "Wanderer:Tools/ExecuteStartup",
+	 0, 0
+	);
+
     if ((app = WandererObject, End) != NULL)
     {
 	retval = DoMethod(app, MUIM_Application_Execute);        
 	MUI_DisposeObject(app);
     }
-    
+
     return retval;
 }
