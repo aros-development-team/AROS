@@ -723,8 +723,8 @@ static ULONG ata_ReadSector32(struct ata_Unit *unit, ULONG block, ULONG count, A
     UBYTE status;
     ULONG cnt,i;
 
-    /* Work only if the highes requested sector is still within addressable space */
-    if ((block + count) < unit->au_Capacity)
+    /* Work only if the highest requested sector is still within addressable space */
+    if ((block + count) <= unit->au_Capacity)
     {
 	do
 	{
@@ -789,7 +789,7 @@ static ULONG ata_ReadMultiple32(struct ata_Unit *unit, ULONG block, ULONG count,
     ULONG cnt,i;
     ULONG multicount = unit->au_Drive->id_RWMultipleSize & 0xff;
 
-    if ((block + count) < unit->au_Capacity)
+    if ((block + count) <= unit->au_Capacity)
     {
 	do
 	{
@@ -852,11 +852,11 @@ static ULONG ata_ReadDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APTR
     if ((IPTR)buffer & 0x1)
     {
 	/* Redirect command to generic read sector (PIO mode). */
-	ata_ReadSector32(unit, block, count, buffer, act);
+	return ata_ReadSector32(unit, block, count, buffer, act);
     }
     else
     {
-	if ((block + count) < unit->au_Capacity)
+	if ((block + count) <= unit->au_Capacity)
 	{
 	    do
 	    {
@@ -938,7 +938,7 @@ static ULONG ata_ReadSector64(struct ata_Unit *unit, UQUAD block, ULONG count, A
     UBYTE status;
     ULONG cnt,i;
 
-    if ((block + (UQUAD)count) < unit->au_Capacity48)
+    if ((block + (UQUAD)count) <= unit->au_Capacity48)
     {
 	do
 	{
@@ -991,7 +991,7 @@ static ULONG ata_ReadMultiple64(struct ata_Unit *unit, UQUAD block, ULONG count,
     ULONG cnt,i;
     ULONG multicount = unit->au_Drive->id_RWMultipleSize & 0xff;
 
-    if ((block + (UQUAD)count) < unit->au_Capacity48)
+    if ((block + (UQUAD)count) <= unit->au_Capacity48)
     {
 	do
 	{
@@ -1049,11 +1049,11 @@ static ULONG ata_ReadDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR
     if ((IPTR)buffer & 0x1)
     {
 	/* Redirect command to generic read sector (PIO mode). */
-	ata_ReadSector32(unit, block, count, buffer, act);
+	return ata_ReadSector64(unit, block, count, buffer, act);
     }
     else
     {
-        if ((block + (UQUAD)count) < unit->au_Capacity48)
+        if ((block + (UQUAD)count) <= unit->au_Capacity48)
 	{
 	    do
 	    {
@@ -1130,7 +1130,7 @@ static ULONG ata_WriteSector32(struct ata_Unit *unit, ULONG block, ULONG count, 
 
 //    D(bug("SectorShift %d %d\n", unit->au_SectorShift, 1 << unit->au_SectorShift));
 
-    if ((block + count) < unit->au_Capacity)
+    if ((block + count) <= unit->au_Capacity)
     {
 	do
 	{
@@ -1175,7 +1175,7 @@ static ULONG ata_WriteSector32(struct ata_Unit *unit, ULONG block, ULONG count, 
 	} while(count);
 	return 0;
     }
-    return TDERR_NotSpecified;
+    return TDERR_TooFewSecs;
 }
 
 static ULONG ata_WriteSector64(struct ata_Unit *unit, UQUAD block, ULONG count, APTR buffer, ULONG *act)
@@ -1184,7 +1184,7 @@ static ULONG ata_WriteSector64(struct ata_Unit *unit, UQUAD block, ULONG count, 
     UBYTE status;
     ULONG cnt,i;
 
-    if ((block + (UQUAD)count) < unit->au_Capacity48)
+    if ((block + (UQUAD)count) <= unit->au_Capacity48)
     {
 	do
 	{
@@ -1252,11 +1252,11 @@ static ULONG ata_WriteDMA32(struct ata_Unit *unit, ULONG block, ULONG count, APT
     if ((IPTR)buffer & 0x1)
     {
 	/* Redirect command to generic read sector (PIO mode). */
-	ata_ReadSector32(unit, block, count, buffer, act);
+	return ata_WriteSector32(unit, block, count, buffer, act);
     }
     else
     {
-        if ((block + count) < unit->au_Capacity)
+        if ((block + count) <= unit->au_Capacity)
 	{
 	    do
 	    {
@@ -1335,11 +1335,11 @@ static ULONG ata_WriteDMA64(struct ata_Unit *unit, UQUAD block, ULONG count, APT
     if ((IPTR)buffer & 0x1)
     {
 	/* Redirect command to generic read sector (PIO mode). */
-	ata_ReadSector32(unit, block, count, buffer, act);
+	return ata_WriteSector64(unit, block, count, buffer, act);
     }
     else
     {
-	if ((block + (UQUAD)count) < unit->au_Capacity48)
+	if ((block + (UQUAD)count) <= unit->au_Capacity48)
 	{
 	    do
 	    {
