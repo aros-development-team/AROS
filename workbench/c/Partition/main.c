@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,11 +33,15 @@ int main(void)
     CONST_STRPTR            device;
     ULONG                   unit;
 
-	if (!ReadArguments()) return RETURN_FAIL;
+    if (!ReadArguments())
+    {
+        PrintFault(IoErr(), NULL);
+        return RETURN_FAIL;
+    }
 
     device = (CONST_STRPTR) ARG(DEVICE);
-    unit   = ARG(UNIT);
-	
+    unit   = *(LONG *)ARG(UNIT);
+
     D(bug("[C:Partition] Using %s, unit %d\n", device, unit));
     
 	if (ARG(QUIET) && !ARG(FORCE))
@@ -78,7 +82,7 @@ int main(void)
         
         GetPartitionAttrsTags(root, PT_GEOMETRY, (IPTR) &rootDG, TAG_DONE);
         rootSize = (rootDG.dg_TotalSectors / 1024) * rootDG.dg_SectorSize;
-        
+
         /* See if the partition is 5 GB or larger */
         if (rootSize >= TABLESIZE)
         {
@@ -95,7 +99,7 @@ int main(void)
                                     mbrhighcyl   = (TABLESIZE / cylSize) - 1,
                                     rdbp0highcyl = (DH0SIZE / cylSize) - 1,
                                     rdbp1lowcyl  = rdbp0highcyl + 1,
-                                    rdbp1highcyl = mbrhighcyl;
+                                    rdbp1highcyl;
             
             /* Create a partition in the MBR table */
             mbrp = CreateMBRPartition(root, 0, mbrhighcyl);
@@ -109,6 +113,7 @@ int main(void)
             
             /* Create a partition in the RDB table */
             rdbp0 = CreateRDBPartition(mbrp, 0, rdbp0highcyl, "DH0", TRUE); // FIXME: error check
+            rdbp1highcyl = mbrhighcyl - mbrp->de.de_LowCyl;
             rdbp1 = CreateRDBPartition(mbrp, rdbp1lowcyl, rdbp1highcyl, "DH1", FALSE); // FIXME: error check
             
             /* Save to disk and deallocate */
@@ -141,12 +146,12 @@ int main(void)
             WritePartitionTable(mbrp);
             ClosePartitionTable(mbrp);
         }
-    }
     
-    /* Save to disk and deallocate */
-    WritePartitionTable(root);
-    ClosePartitionTable(root);
-    CloseRootPartition(root);
+        /* Save to disk and deallocate */
+        WritePartitionTable(root);
+        ClosePartitionTable(root);
+        CloseRootPartition(root);
+    }
 
     if (!ARG(QUIET)) Printf("done\n");
         
@@ -208,7 +213,8 @@ struct PartitionHandle *CreateMBRPartition
             parent, PTT_RESERVED, (IPTR) &reserved, TAG_DONE
         );
         
-        lowcyl = reserved / (parentDG.dg_Heads * parentDG.dg_TrackSectors) + 1;
+        lowcyl = (reserved - 1) /
+            (parentDG.dg_Heads * parentDG.dg_TrackSectors) + 1;
     }
     
     if (highcyl == 0)
@@ -247,7 +253,7 @@ struct PartitionHandle *CreateRDBPartition
     struct DriveGeometry    parentDG    = {0};
     struct DosEnvec         parentDE    = {0},
                             partitionDE = {0};
-    struct PartitionType    type        = {"DOS\1", 4};
+    struct PartitionType    type        = {"DOS\3", 4};
     struct PartitionHandle *partition;
         
     GetPartitionAttrsTags
@@ -269,12 +275,13 @@ struct PartitionHandle *CreateRDBPartition
             parent, PTT_RESERVED, (IPTR) &reserved, TAG_DONE
         );
         
-        lowcyl = reserved / (parentDG.dg_Heads * parentDG.dg_TrackSectors) + 1;
+        lowcyl = (reserved - 1)
+            / (parentDG.dg_Heads * parentDG.dg_TrackSectors) + 1;
     }
     
     if (highcyl == 0)
     {
-        highcyl = parentDE.de_HighCyl;
+        highcyl = parentDE.de_HighCyl - parentDE.de_LowCyl;
     }
     
     CopyMem(&parentDE, &partitionDE, sizeof(struct DosEnvec));
