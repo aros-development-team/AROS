@@ -8,13 +8,13 @@ MUIX_L " " MUIX_B"\nWelcome to the Amiga Research OS\n"
 "the " MUIX_B "pre-alpha" MUIX_N " version of AROS\n"
 "onto your computer system.\n\n"
 "Since it is still in pre-alpha state, performance\n"
-"may be sluggish - and stabilty isnt guarenteed\n\n";
+"may be sluggish - and stabilty isn't guaranteed\n\n";
 
 static const char* KMsgPartitionDH0 =
 "You do not have a DH0: partition.\n"
-"Continue to have your master disk on\n"
+"Select Continue to have your master disk on\n"
 "the first IDE channel turned into an\n"
-"AROS disk. This step is NOT reversable!\n\n"
+"AROS disk. This step is NOT reversible!\n\n"
 "You are being " MUIX_B "warned" MUIX_N ", this is pre-alpha software.\n";
 
 static const char* KMsgInstallOptions =
@@ -33,19 +33,19 @@ static const char* KMsgWorkVolume =
 "[default:DH1]";
 
 static const char* KMsgBeginWithPartition =
-"OK We are ready to begin....\n\n"
-"Since youve selcted to format the partition,\n"
+"OK, we are ready to begin...\n\n"
+"Since you've selected to format the partition,\n"
 "you will no longer be able to undo changes\n"
 "after this point,\n\n"
 "You are being " MUIX_B "warned" MUIX_N ", this is pre-alpha software.\n"
-"\n Press Proceed to begin installation....";
+"\n Press Proceed to begin installation...";
 
 static const char* KMsgBeginWithoutPartition =
-"OK We are ready to begin....\n\n"
+"OK, we are ready to begin...\n\n"
 "We have collected enough information\n"
-"to begin installion on this computer.\n\n"
+"to begin installation on this computer.\n\n"
 "You are being " MUIX_B "warned" MUIX_N ", this is pre-alpha software.\n"
-"\n Press Proceed to begin installation....";
+"\n Press Proceed to begin installation...";
 
 static const char* KMsgLanguage =
 "The system prefs for your language settings\n"
@@ -54,13 +54,13 @@ static const char* KMsgLanguage =
 
 static const char* KMsgPartitionOptions =
 "We will now partition your drives\n\n"
-"please select how you would like to proceed..\n";
+"Please select how you would like to proceed...\n";
 
 static const char* KMsgGrubOptions =
 "AROS uses the GRUB Bootloader.\n\n"
 "The Installer will install it to the first\n"
 "drive on your system, and configure it\n"
-"to boot AROS..\n";
+"to boot AROS...\n";
 
 static const char* KMsgGrubDrive =
 "Drive GRUB Will Install on:";
@@ -75,23 +75,23 @@ static const char* KMsgGrubKernel =
 "Path to AROS Kernel:";
 
 static const char* KMsgPartitioning =
-"Partition your drives..\n\n";
+"Partition your drives...\n\n";
 
 static const char* KMsgPartitioningWipe =
 "Now erasing the contents of the master\n"
 "disk on the first IDE channel.\n\n";
 
 static const char* KMsgInstall =
-"Copying files to the harddisk.\n\n"
-"This will take quite some time...\n";
+"Copying files to the hard disk.\n\n"
+"This may take some time...\n";
 
 static const char* KMsgBootLoader =
 "Copying the GRUB bootloader to your\n"
-"hard drive, and installing ..\n";
+"hard drive, and installing...\n";
 
 static const char* KMsgDoneReboot =
 "DH0 is now prepared for use!\n"
-"to continue installation this pc\n"
+"To continue installation, AROS\n"
 "must be rebooted, and this installer\n"
 "application re-run\n\n"
 "Press Proceed To Finish\n";
@@ -106,20 +106,14 @@ static const char* KMsgNoDrives =
 "Installation of AROS can only be performed onto\n"
 "a hard disk just now. Sorry.\n\nPress Proceed To Exit\n";
 
-static const char* KMsgxxxx =
-"It appears you do not have a hard\n"
-"drive installed in your PC\n\n"
-"Installation of AROS can only be performed onto\n"
-"a hard disk just now. Sorry.\n\nPress Proceed To Exit\n";
-
 static const char* KMsgCancelOK =
 "Are you sure you wish to cancel\n"
-"this instalation?\n";
+"this installation?\n";
 
 static const char* KMsgCancelDanger =
-"Irreversable changes have been made\n"
+"Irreversible changes have been made\n"
 "to your system.\n\n"
-"Canceling now may leave your pc in an\n"
+"Cancelling now may leave your PC in an\n"
 "unbootable state\n\n"
 "Are you sure you wish to cancel\n"
 "this installation?\n";
@@ -250,7 +244,7 @@ enum EStage
 struct Install_Options
 {
     Object	*opt_license;
-		Object	*opt_lic_file;
+		Object	*opt_lic_box;
 		Object	*opt_lic_mgrp;
     Object	*opt_partition;
 		Object	*opt_partmethod;
