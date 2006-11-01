@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id:$
+    Copyright © 2006, The AROS Development Team. All rights reserved.
+    $Id$
 
-    Desc: IconX CLI Command
+    Desc: IconX WB script starter
     Lang: English
 */
 
@@ -31,7 +31,7 @@
 	    WINDOW	      -- Specification of the shell window
 	                         default: con:0/50//80/IconX/Auto
 	    STACK=n           -- default: 40960
-	    USERSHELL=YES|NO  -- default: no
+	    USERSHELL=YES|NO  -- default: YES
 	    WAIT=n            -- Wait n seconds before closing window (default 2)
 	    DELAY=n           -- Wait n/50 seconds before closing window
 
