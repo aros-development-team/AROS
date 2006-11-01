@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -376,9 +376,10 @@ struct Volume *getGrubStageVolume
 {
 struct Volume *volume;
 
-D(bug("[install-i386] getGrubStageVolume(%x)\n", volume));
-
 	volume = initVolume(device, unit, flags, de->de_SizeBlock);
+
+D(bug("[install-i386] getGrubStageVolume(): volume=%x\n", volume));
+
 	if (volume)
 	{
 		fillGeometry(volume, de);
@@ -927,7 +928,7 @@ D(bug("[install-i386] writeStage1: Copying MBR Partitions to %x\n", (char *)volu
 				// store the drive num stage2 is stored on
 				((char *)volume->blockbuffer)[GRUB_BOOT_DRIVE] = unit + BIOS_HDISK_FLAG;
 				// Store the stage 2 pointer ..
-				ULONG * stage2_sector_start = (char *)volume->blockbuffer + GRUB_STAGE2_SECTOR;
+				ULONG * stage2_sector_start = (ULONG *)((char *)volume->blockbuffer + GRUB_STAGE2_SECTOR);
 D(bug("[install-i386] writeStage1: writing stage2 pointer @ %x\n", stage2_sector_start));
 	  			stage2_sector_start[0] = block;
 D(bug("[install-i386] writeStage1: stage2 pointer = %x\n", stage2_sector_start[0]));	  			
@@ -971,6 +972,20 @@ D(bug("[install-i386] writeStage1: Install to FLOPPY\n"));
 	return retval;
 }
 
+/* Flushes the cache on the volume containing the specified path. */
+VOID flushFS(CONST TEXT *path)
+{
+char devname[256];
+UWORD i;
+
+	for (i = 0; path[i] != ':'; i++)
+		devname[i] = path[i];
+	devname[i++] = ':';
+	devname[i] = '\0';
+	if (Inhibit(devname, DOSTRUE))
+		Inhibit(devname, DOSFALSE);
+}
+
 BOOL installStageFiles
 	(
 		struct Volume *s2vol, /* stage2 volume */
@@ -985,6 +1000,10 @@ char stagename[256];
 ULONG block;
 
 D(bug("[install-i386] installStageFiles(%x)\n", s1vol));
+
+	/* Flush GRUB and kernel volumes' caches */
+	flushFS(stagepath);
+	flushFS(kernelpath);
 
 	AddPart(stagename, stagepath, 256);
 	AddPart(stagename, "stage2", 256);
@@ -1041,7 +1060,7 @@ D(bug("[install-i386] FORCELBA = %d\n",myargs[5]));
 					ULONG retval=0;
 						/*
 							getBBVolume() read block 0
-							if the partition directly contains an filesystem
+							if the partition directly contains a filesystem
 							(currently only DOS\x is supported) we have
 							to move block 0 to block 1 to make space for stage1
 						*/
