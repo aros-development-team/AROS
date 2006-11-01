@@ -22,6 +22,7 @@ FILES := \
     Dir \
     Eval \
     Filenote \
+    IconX \
     Info \
     Install \
     install-i386-pc \
