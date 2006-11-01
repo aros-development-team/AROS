@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -110,21 +110,21 @@ ULONG cylsecs;
                 ph->root = root;
                 ph->bd = root->bd;
                 ph->data = data;
+
                 /* initialize DosEnvec */
+
+                /* Check if partition starts and ends on a cylinder boundary */
                 CopyMem(&root->de, &ph->de, sizeof(struct DosEnvec));
                 if (
                         (AROS_LE2LONG(data->entry->first_sector) % cylsecs) ||
                         (AROS_LE2LONG(data->entry->count_sector) % cylsecs)
                     )
                 {
-                ULONG r = AROS_LE2LONG(data->entry->first_sector) % cylsecs;
-#warning "This has only effect on one partition!"
-#warning "Changing this partition causes setting it on cyl boundary (root->de)"
+                    /* It doesn't. We could find the highest common factor of
+                       first_sector and count_sector here, but currently we
+                       simply use one block per cylinder */
                     ph->de.de_Surfaces = 1;
-                    if (AROS_LE2LONG(data->entry->count_sector) % r)
-                        ph->de.de_BlocksPerTrack = 1;
-                    else
-                        ph->de.de_BlocksPerTrack = r;
+                    ph->de.de_BlocksPerTrack = 1;
                     cylsecs = ph->de.de_BlocksPerTrack*ph->de.de_Surfaces;
                 }
                 ph->de.de_LowCyl = AROS_LE2LONG(data->entry->first_sector)/cylsecs;
@@ -133,6 +133,7 @@ ULONG cylsecs;
                     (AROS_LE2LONG(data->entry->count_sector)/cylsecs)-1;
                 ph->de.de_TableSize = 10; // only until de_HighCyl
                 ph->ln.ln_Pri = MBR_MAX_PARTITIONS-1-position;
+
                 /* initialize DriveGeometry */
                 ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
                 ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
@@ -254,9 +255,12 @@ void PartitionMBRSetDosEnvec
         struct DosEnvec *de
     )
 {
-ULONG end;
+ULONG sector;
 ULONG track;
 ULONG cyl;
+
+    /* Store CHS-address of start block. The upper two bits of the cylinder
+       number are stored in the upper two bits of the sector field */
 
     entry->first_sector =
         AROS_LONG2LE(de->de_LowCyl*de->de_Surfaces*de->de_BlocksPerTrack);
@@ -272,10 +276,12 @@ ULONG cyl;
     {
         entry->start_head = track % root->de.de_Surfaces;
         entry->start_sector =
-            	(
-						(AROS_LE2LONG(entry->first_sector) % root->de.de_BlocksPerTrack)+1
-					)
-					| ((cyl & 0x300)>>2);
+            (
+                (AROS_LE2LONG(entry->first_sector)
+                    % root->de.de_BlocksPerTrack)+1
+                )
+                | ((cyl & 0x300)>>2
+            );
         entry->start_cylinder = (cyl & 0xFF);
     }
     else
@@ -284,13 +290,18 @@ ULONG cyl;
         entry->start_sector = 0xFF;
         entry->start_cylinder = 0xFF;
     }
-    end = AROS_LE2LONG(entry->first_sector)+AROS_LE2LONG(entry->count_sector);
-    track = end/root->de.de_BlocksPerTrack;
-    cyl = track/root->de.de_Surfaces-1;
+
+    /* Store CHS-address of last block */
+
+    sector = AROS_LE2LONG(entry->first_sector)
+        + AROS_LE2LONG(entry->count_sector) - 1;
+    track = sector/root->de.de_BlocksPerTrack;
+    cyl = track/root->de.de_Surfaces;
     if (cyl<1024)
     {
-        entry->end_head = (track-1) % root->de.de_Surfaces;
-        entry->end_sector = (end - ((track-1)*root->de.de_BlocksPerTrack)) | ((cyl & 0x300)>>2);
+        entry->end_head = track % root->de.de_Surfaces;
+        entry->end_sector = ((sector % root->de.de_BlocksPerTrack) + 1)
+            | ((cyl & 0x300)>>2);
         entry->end_cylinder = (cyl & 0xFF);
     }
     else
@@ -323,7 +334,6 @@ struct TagItem *tag;
         tag = findTagItem(PT_POSITION, taglist);
         if (tag)
         {
-
             pos = tag->ti_Data;
             entry = &((struct MBR *)root->table->data)->pcpt[pos];
             tag = findTagItem(PT_ACTIVE, taglist);

@@ -17,7 +17,7 @@
    AROS_LH2(struct PartitionHandle *, OpenRootPartition,
 
 /*  SYNOPSIS */
-   AROS_LHA(STRPTR, Device, A1),
+   AROS_LHA(CONST_STRPTR, Device, A1),
    AROS_LHA(LONG,     Unit, D1),
 
 /*  LOCATION */
