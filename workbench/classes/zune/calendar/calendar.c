@@ -379,8 +379,8 @@ IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
    
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
         
-    /* ~random 8 * 7 to make sure expression inside brackets is positive */
-    data->mwday = (8 * 7 + data->clockdata.wday - data->clockdata.mday + 1) % 7;
+    data->mwday =
+        (data->clockdata.wday - (data->clockdata.mday - 1) % 7 + 7) % 7;
     
     mdays = NumMonthDays(&data->clockdata);
 
