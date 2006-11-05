@@ -47,6 +47,7 @@
 #define RETURNID_TOOLACK    9
 #define RETURNID_STACKACK   10
 #define RETURNID_COMMENTACK 11
+#define RETURNID_VERSION    12
 
 //#define VERSION "$VER: Info 0.1 ("ADATE") © AROS Dev Team"
 
@@ -78,24 +79,24 @@ UBYTE **BuildToolTypes(UBYTE **src_ttypes)
 
     if (!contents || !contents[0])
     {
-    	DeletePool(pool);
-	return NULL;
+        DeletePool(pool);
+        return NULL;
     }
     
     sp = contents;
     
     while((sp = strchr(sp, '\n')))
     {
-    	sp++;
-	lines++;
+        sp++;
+        lines++;
     }
     
     dst_ttypes = AllocPooled(pool, (lines + 3) * sizeof(STRPTR));
     if (!dst_ttypes)
     {
-    	FreeVec(contents);
-	DeletePool(pool);
-	return NULL;
+        FreeVec(contents);
+        DeletePool(pool);
+        return NULL;
     }
     
     *dst_ttypes++ = (STRPTR)pool;
@@ -103,16 +104,16 @@ UBYTE **BuildToolTypes(UBYTE **src_ttypes)
     
     for(sp = contents, lines = 0; sp; lines++)
     {
-	    dst_ttypes[lines] = sp;
-    	sp = strchr(sp, '\n');
-	if (sp)
-	{
-	    *sp++ = '\0';
-	}
-	else
-	{
-	    dst_ttypes[lines] = 0;
-	}
+        dst_ttypes[lines] = sp;
+        sp = strchr(sp, '\n');
+        if (sp)
+        {
+            *sp++ = '\0';
+        }
+        else
+        {
+            dst_ttypes[lines] = 0;
+        }
     }
     dst_ttypes[lines] = 0;
      
@@ -191,11 +192,11 @@ void SaveIcon(struct DiskObject *icon, STRPTR name, BPTR cd)
 
     switch(icon->do_Type)
     {
-        case 4:
+        case WBPROJECT:
             get(filename_string, MUIA_String_Contents, &tool);
             icon->do_DefaultTool = tool;
             break;
-        case 3:
+        case WBTOOL:
             get(stackspace, MUIA_String_Contents, &stack);
             stcd_l(stack, &ls);
             icon->do_StackSize = ls;
@@ -216,6 +217,7 @@ void SaveIcon(struct DiskObject *icon, STRPTR name, BPTR cd)
     CurrentDir(restored_cd);
     icon_altered = FALSE;
 }
+
 void SaveFile(struct AnchorPath * ap, BPTR cd)
 {
     STRPTR text=NULL;
@@ -291,14 +293,127 @@ void DelKey(void)
 }
 #endif
 
+static char * GetVersion(STRPTR name, BPTR cd)
+{
+    D(bug("[WBINFO/Getversion] Name %s\n", name));
+    STRPTR commandline = NULL;
+    ULONG commandlineSize;
+    static TEXT result[100]; // must be static because we return its address
+    char *retval = result;
+    TEXT tmpfilename[40];
+    int nr = 0;
+    int i;
+    BPTR output = NULL;
+    BPTR restored_cd = (BPTR)-1;
+
+    if (name == NULL)
+    {
+        D(bug("[WBINFO/Getversion] Name is Null\n"));
+        goto exit;
+    }
+
+    result[0] = '?';
+
+    commandlineSize = strlen(name) + 20;
+    commandline = AllocVec(commandlineSize, MEMF_CLEAR);
+    if (commandline == NULL)
+    {
+        D(bug("[WBInfo/GetVersion] Can't allocate RAM for commandline\n"));
+        goto exit;
+    }
+
+    restored_cd = CurrentDir(cd);
+
+    //search for non-existing temp file name
+    do
+    {
+        nr++;
+        if (nr > 30)
+        {
+            D(bug("[WBINFO/Getversion] Can't find non-existing tmpfile"));
+            goto exit;
+        }
+        sprintf(tmpfilename, "t:tmp_version_%d", nr);
+        output = Open(tmpfilename, MODE_OLDFILE);
+        if (output)
+        {
+            Close(output);
+        }
+    } while (output != NULL);
+
+    D(bug("[WBInfo/Getversion] tmpfilename %s\n", tmpfilename));
+    output = Open(tmpfilename, MODE_NEWFILE);
+    if (output == NULL)
+    {
+        D(bug("[WBInfo/Getversion] Can't create tmpfile\n"));
+        goto exit;
+    }
+
+    // call c:version
+    sprintf(commandline, "c:version \"%s\" full", name);
+    D(bug("[WBInfo/GetVersion] Commandline %s\n", commandline));
+    if (SystemTags(commandline,
+                SYS_Asynch,          FALSE,
+                SYS_Output,   (IPTR) output,
+                //SYS_Error,    (IPTR) NULL,
+                NP_StackSize,        16000,
+                TAG_DONE) != 0)
+    {
+        D(bug("[WBInfo/Getversion] SystemTags failed\n"));
+        goto exit;
+    }
+
+    // Seek didn't work for me on RAM-Disk, so we reopen the file
+    Close(output);
+    output = Open(tmpfilename, MODE_OLDFILE);
+    if (output == NULL)
+    {
+        D(bug("[WBInfo/GetVersion] Can't open tmpfile\n"));
+        goto exit;
+    }
+    // read result
+    if (Read(output, result, commandlineSize - 1) == -1)
+    {
+        D(bug("[WBInfo/GetVersion] Can't read from tmpfile\n"));
+        goto exit;
+    }
+    D(bug("[WBInfo/GetVersion] Result %s\n", result));
+
+    // remove illegal chars (e.g. newline) from result
+    for (i = 0 ; result[i] != 0 ; i++)
+    {
+        if (result[i] < 32)
+            result[i] = ' ';
+    }
+
+    // set string pointer after program name
+    while (*retval != ' ')
+        retval++;
+
+exit:
+    FreeVec(commandline);
+    if (output)
+    {
+        Close(output);
+        DeleteFile(tmpfilename);
+    }
+    if (restored_cd != (BPTR)-1)
+        CurrentDir(restored_cd);
+
+    return retval;
+}
+
 int main(int argc, char **argv)
 {
     Object *application, *group, *toolspace=NULL, *toollabel=NULL;
+    Object *registergroup=NULL, *infomenu=NULL, *protectmenu=NULL, *toolmenu=NULL;
     Object *stacklabel=NULL, *drawerspace=NULL;
     Object *sizespace=NULL, *typespace=NULL, *quit=NULL, *aboutmenu=NULL;
     Object *datespace=NULL, *versionspace=NULL;
     Object *cancelbutton=NULL;
+#if !USE_TEXTEDITOR
     Object *newkey=NULL, *delkey=NULL;
+#endif
     Object *readobject=NULL, *writeobject=NULL, *executeobject=NULL, *deleteobject=NULL;
     Object *scriptobject=NULL, *pureobject=NULL, *archiveobject=NULL;
     struct WBStartup *startup;
@@ -324,7 +439,7 @@ int main(int argc, char **argv)
     char *pages[] = {_(MSG_INFORMATION),_(MSG_PROTECTION),_(MSG_TOOLTYPES),NULL};
     char * typeNames[] =
     {
-         NULL,      /* not used */
+        NULL,      /* not used */
         _(MSG_DISK),    /* 1 */
         _(MSG_DRAWER),  /* 2 */
         _(MSG_TOOL),    /* 3 */
@@ -379,10 +494,10 @@ int main(int argc, char **argv)
     {
         D(bug("[WBInfo] pass to diskinfo\n"));
         OpenWorkbenchObject(
-            "WANDERER:Tools/DiskInfo",
-            WBOPENA_ArgLock, (IPTR) startup->sm_ArgList[1].wa_Lock,
-            WBOPENA_ArgName, (IPTR) startup->sm_ArgList[1].wa_Name,
-            TAG_DONE);
+                "WANDERER:Tools/DiskInfo",
+                WBOPENA_ArgLock, (IPTR) startup->sm_ArgList[1].wa_Lock,
+                WBOPENA_ArgName, (IPTR) startup->sm_ArgList[1].wa_Name,
+                TAG_DONE);
         FreeVec(ap);
         return RETURN_OK;
     };
@@ -413,12 +528,12 @@ int main(int argc, char **argv)
         /* fill protection */
         protection = ap->ap_Info.fib_Protection;
 
-            /* Convert the protection bits to a boolean */
+        /* Convert the protection bits to a boolean */
         flags[0] = protection & FIBF_SCRIPT  ? 1 : 0; /* s */
         flags[1] = protection & FIBF_PURE    ? 1 : 0; /* p */
         flags[2] = protection & FIBF_ARCHIVE ? 1 : 0; /* a */
 
-            /* The following flags are high-active! */
+        /* The following flags are high-active! */
         flags[3] = protection & FIBF_READ    ? 0 : 1; /* r */
         flags[4] = protection & FIBF_WRITE   ? 0 : 1; /* w */
         flags[5] = protection & FIBF_EXECUTE ? 0 : 1; /* e */
@@ -447,167 +562,168 @@ int main(int argc, char **argv)
     }
 
     application = ApplicationObject,
-        MUIA_Application_Title,  __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: Info 0.1 ("ADATE") © AROS Dev Team",
-        MUIA_Application_Description,  __(MSG_DESCRIPTION),
-        MUIA_Application_Base, (IPTR) "INFO",
-        MUIA_Application_Menustrip, (IPTR) MenuitemObject,
-            MUIA_Family_Child, (IPTR) MenuitemObject,
+                MUIA_Application_Title,  __(MSG_TITLE),
+                MUIA_Application_Version, (IPTR) "$VER: Info 0.2 ("ADATE") © AROS Dev Team",
+                MUIA_Application_Description,  __(MSG_DESCRIPTION),
+                MUIA_Application_Base, (IPTR) "INFO",
+                MUIA_Application_Menustrip, (IPTR) MenuitemObject,
+                MUIA_Family_Child, (IPTR) MenuitemObject,
                 MUIA_Menuitem_Title,  __(MSG_PROJECT),
-                MUIA_Family_Child, (IPTR) MenuitemObject, MUIA_Menuitem_Title,
-                    __(MSG_INFORMATION), MUIA_Menuitem_Shortcut, (IPTR) "I", End,
-                MUIA_Family_Child, (IPTR) MenuitemObject, MUIA_Menuitem_Title,
-                    __(MSG_PROTECTION),MUIA_Menuitem_Shortcut, (IPTR) "P", End,
-                MUIA_Family_Child, (IPTR) MenuitemObject, MUIA_Menuitem_Title,
-                    __(MSG_TOOLTYPES),MUIA_Menuitem_Shortcut, (IPTR) "T", End,
+                MUIA_Family_Child, (IPTR)(infomenu = MenuitemObject, MUIA_Menuitem_Title,
+                        __(MSG_INFORMATION), MUIA_Menuitem_Shortcut, (IPTR) "I", End),
+                MUIA_Family_Child, (IPTR)(protectmenu = MenuitemObject, MUIA_Menuitem_Title,
+                        __(MSG_PROTECTION),MUIA_Menuitem_Shortcut, (IPTR) "P", End),
+                MUIA_Family_Child, (IPTR)(toolmenu = MenuitemObject, MUIA_Menuitem_Title,
+                        __(MSG_TOOLTYPES),MUIA_Menuitem_Shortcut, (IPTR) "T", End),
                 MUIA_Family_Child, (IPTR) MenuitemObject, MUIA_Menuitem_Title, ~0, End,
                 MUIA_Family_Child, (IPTR) (aboutmenu = MenuitemObject, MUIA_Menuitem_Title,
-                    __(MSG_ABOUT), (IPTR) MUIA_Menuitem_Shortcut, (IPTR) "?", End),
+                        __(MSG_ABOUT), (IPTR) MUIA_Menuitem_Shortcut, (IPTR) "?", End),
                 MUIA_Family_Child, (IPTR) MenuitemObject, MUIA_Menuitem_Title, ~0, End,
                 MUIA_Family_Child, (IPTR) (quit = MenuitemObject, MUIA_Menuitem_Title,
-                    __(MSG_QUIT), MUIA_Menuitem_Shortcut, (IPTR) "Q", End),
+                        __(MSG_QUIT), MUIA_Menuitem_Shortcut, (IPTR) "Q", End),
                 End,
-            End,
-        SubWindow, (IPTR) (window = WindowObject,
-            MUIA_Window_Title, (IPTR) __(MSG_ICON),
-            MUIA_Window_Activate, TRUE,
-            WindowContents, (IPTR) VGroup,
-                Child, (IPTR) HGroup,
-                    Child, (IPTR) VGroup,
-                        Child, (IPTR) IconImageObject,
-                            MUIA_InputMode, MUIV_InputMode_Toggle,
-                            MUIA_IconImage_File, (IPTR) name,
-                        End,
-                    End,
-                    Child, (IPTR) VGroup,
-                        Child, (IPTR) TextObject,
-                            TextFrame,
-                            MUIA_Background, MUII_TextBack,
-                            MUIA_Text_PreParse, (IPTR) "\33l",
-                            MUIA_Text_Contents, (IPTR) FilePart(name),
-                        End,
-                    End,
                 End,
-                Child, (IPTR) RegisterGroup(pages),
-                    MUIA_CycleChain, 1,
-                    Child, (IPTR) HGroup, /* hgroup information pannel */
+                SubWindow, (IPTR) (window = WindowObject,
+                        MUIA_Window_Title, (IPTR) __(MSG_ICON),
+                        MUIA_Window_Activate, TRUE,
+                        WindowContents, (IPTR) VGroup,
+                        Child, (IPTR) HGroup,
                         Child, (IPTR) VGroup,
+                        Child, (IPTR) IconImageObject,
+                        MUIA_InputMode, MUIV_InputMode_Toggle,
+                        MUIA_IconImage_File, (IPTR) name,
+                        End,
+                        End,
+                        Child, (IPTR) VGroup,
+                        Child, (IPTR) TextObject,
+                        TextFrame,
+                        MUIA_Background, MUII_TextBack,
+                        MUIA_Text_PreParse, (IPTR) "\33l",
+                        MUIA_Text_Contents, (IPTR) FilePart(name),
+                        End,
+                        End,
+                        End,
+                        Child, (IPTR)(registergroup = RegisterGroup(pages),
+                            MUIA_CycleChain, 1,
+                            Child, (IPTR) HGroup, /* hgroup information pannel */
+                            Child, (IPTR) VGroup,
                             Child, (IPTR) HGroup,
-                                Child, (IPTR) ColGroup(2),
-                                    Child, (IPTR) Label2(__(MSG_SIZE)),
-                                    Child, (IPTR) (sizespace = TextObject,
-                                        TextFrame,
-                                        MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) size,
+                            Child, (IPTR) ColGroup(2),
+                            Child, (IPTR) Label2(__(MSG_SIZE)),
+                            Child, (IPTR) (sizespace = TextObject,
+                                TextFrame,
+                                MUIA_Background, MUII_TextBack,
+                                MUIA_Text_PreParse, (IPTR) "\33r",
+                                MUIA_Text_Contents, (IPTR) size,
+                                End),
+                            Child, (IPTR) Label2(__(MSG_DATE)),
+                            Child, (IPTR) (datespace = TextObject,
+                                TextFrame,
+                                MUIA_Background, MUII_TextBack,
+                                MUIA_Text_PreParse, (IPTR) "\33r",
+                                MUIA_Text_Contents, (IPTR) datetime,
+                                End),
+                            Child, (IPTR) Label2(__(MSG_TYPE)),
+                            Child, (IPTR) (typespace = TextObject,
+                                TextFrame,
+                                MUIA_Background, MUII_TextBack,
+                                MUIA_Text_PreParse, (IPTR) "\33r",
+                                MUIA_Text_Contents, (IPTR) type,
+                                End),
+                            Child, (IPTR) Label2(__(MSG_VERSION)),
+                            Child, (IPTR) (versionspace = TextObject,
+                                    ButtonFrame,
+                                    MUIA_Background, MUII_TextBack,
+                                    MUIA_Text_PreParse, (IPTR) "\33r",
+                                    MUIA_Text_Contents, (IPTR) "?",
+                                    MUIA_InputMode, MUIV_InputMode_RelVerify,
                                     End),
-                                    Child, (IPTR) Label2(__(MSG_DATE)),
-                                    Child, (IPTR) (datespace = TextObject,
-                                        TextFrame,
-                                        MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) datetime,
-                                    End),
-                                    Child, (IPTR) Label2(__(MSG_TYPE)),
-                                    Child, (IPTR) (typespace = TextObject,
-                                        TextFrame,
-                                        MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) type,
-                                    End),
-                                    Child, (IPTR) Label2(__(MSG_VERSION)),
-                                    Child, (IPTR) (versionspace = TextObject,
-                                        TextFrame,
-                                        MUIA_Background, MUII_TextBack,
-                                        MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) NULL,
-                                    End),
-                                End,
+                            End,
                             End,
                             Child, (IPTR) HVSpace,
                             Child, (IPTR) (group = HGroup,
-                            End),
+                                    End),
                             Child, (IPTR) HGroup,
-                                Child, (IPTR) Label2(__(MSG_COMMENT)),
-                                Child, (IPTR) (commentspace = StringObject,
+                            Child, (IPTR) Label2(__(MSG_COMMENT)),
+                            Child, (IPTR) (commentspace = StringObject,
                                     StringFrame,
                                     MUIA_CycleChain, 1,
-                                End),
-                            End,
-                        End,
-                    End, /* end hgroup information pannel */
-                    Child, (IPTR) HGroup, /* hgroup protections pannel */
-                        Child, (IPTR) VGroup,
-                            Child, (IPTR) ColGroup(2),
-                                Child, (IPTR) HVSpace,
-                                Child, (IPTR) ColGroup(2),
-                                    Child, (IPTR) Label2(_(MSG_READ)),
-                                    Child, (IPTR) (readobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-                                    Child, (IPTR) Label2(_(MSG_WRITE)),
-                                    Child, (IPTR) (writeobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-                                    Child, (IPTR) Label2(_(MSG_EXECUTE)),
-                                    Child, (IPTR) (executeobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-                                    Child, (IPTR) Label2(_(MSG_DELETE)),
-                                    Child, (IPTR) (deleteobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-                                    Child, (IPTR) Label2(_(MSG_SCRIPT)),
-                                    Child, (IPTR) (scriptobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-                                    Child, (IPTR) Label2(_(MSG_PURE)),
-                                    Child, (IPTR) (pureobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-                                    Child, (IPTR) Label2(_(MSG_ARCHIVED)),
-                                    Child, (IPTR) (archiveobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-                                End,
-                            End,
-                        End,
-                    End, /* end hgroup protections pannel */
-                    Child, (IPTR) HGroup, /* hgroup tooltypes pannel */
-                        Child, (IPTR) VGroup,
-                            Child, (IPTR) HGroup,
-                                Child, (IPTR) VGroup,
-                                GroupSpacing(0),
-				#if !USE_TEXTEDITOR
-                                    Child, (IPTR) ListviewObject,
-                                        MUIA_Listview_List, (IPTR) (list = ListObject,
-                                        InputListFrame,
-                                            MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
-                                            MUIA_List_DestructHook, MUIV_List_DestructHook_String,
-                                            MUIA_List_AutoVisible, TRUE,
-                                        End),
-                                    End,
-                                    Child, (IPTR) (liststr = StringObject,
-                                        MUIA_Disabled, TRUE,
-                                        StringFrame,
                                     End),
-				#else
-				    Child, (IPTR) HGroup,
-				        GroupSpacing(0),
-				    	Child, (IPTR) (editor = MUI_NewObject(MUIC_TextEditor,
-				    	TAG_DONE)),
-					Child, (IPTR) (slider = ScrollbarObject,
-					End),
-				    End,
-				#endif
-                                End,
                             End,
-			#if !USE_TEXTEDITOR
+                            End,
+                            End, /* end hgroup information pannel */
+                            Child, (IPTR) HGroup, /* hgroup protections pannel */
+                            Child, (IPTR) VGroup,
+                            Child, (IPTR) ColGroup(2),
+                            Child, (IPTR) HVSpace,
+                            Child, (IPTR) ColGroup(2),
+                            Child, (IPTR) Label2(_(MSG_READ)),
+                            Child, (IPTR) (readobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                            Child, (IPTR) Label2(_(MSG_WRITE)),
+                            Child, (IPTR) (writeobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                            Child, (IPTR) Label2(_(MSG_EXECUTE)),
+                            Child, (IPTR) (executeobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                            Child, (IPTR) Label2(_(MSG_DELETE)),
+                            Child, (IPTR) (deleteobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                            Child, (IPTR) Label2(_(MSG_SCRIPT)),
+                            Child, (IPTR) (scriptobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                            Child, (IPTR) Label2(_(MSG_PURE)),
+                            Child, (IPTR) (pureobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                            Child, (IPTR) Label2(_(MSG_ARCHIVED)),
+                            Child, (IPTR) (archiveobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                            End,
+                            End,
+                            End,
+                            End, /* end hgroup protections pannel */
+                            Child, (IPTR) HGroup, /* hgroup tooltypes pannel */
+                            Child, (IPTR) VGroup,
                             Child, (IPTR) HGroup,
-                                MUIA_Group_SameSize, TRUE,
-                                Child, (IPTR) (newkey = SimpleButton(__(MSG_NEW_KEY))),
-                                Child, (IPTR) (delkey = SimpleButton(__(MSG_DELETE_KEY))),
+                            Child, (IPTR) VGroup,
+                            GroupSpacing(0),
+#if !USE_TEXTEDITOR
+                            Child, (IPTR) ListviewObject,
+                            MUIA_Listview_List, (IPTR) (list = ListObject,
+                                    InputListFrame,
+                                    MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+                                    MUIA_List_DestructHook, MUIV_List_DestructHook_String,
+                                    MUIA_List_AutoVisible, TRUE,
+                                    End),
                             End,
-			#endif
-                        End,
-                    End, /* end hgroup tooltypes pannel */
-                End,
-                Child, (IPTR) HGroup,
-                    MUIA_Group_SameSize, TRUE,
-                    Child, (IPTR) (savebutton = 
-                     ImageButton(_(MSG_SAVE),"THEME:Images/Gadgets/Prefs/Save")),
-                    Child, (IPTR) (cancelbutton = 
-                     ImageButton(_(MSG_CANCEL),"THEME:Images/Gadgets/Prefs/Cancel")),
-                End,
-            End,
-        End),
-    End;
+                            Child, (IPTR) (liststr = StringObject,
+                                    MUIA_Disabled, TRUE,
+                                    StringFrame,
+                                    End),
+#else
+                            Child, (IPTR) HGroup,
+                            GroupSpacing(0),
+                            Child, (IPTR) (editor = MUI_NewObject(MUIC_TextEditor,
+                                        TAG_DONE)),
+                            Child, (IPTR) (slider = ScrollbarObject,
+                                    End),
+                            End,
+#endif
+                            End,
+                            End,
+#if !USE_TEXTEDITOR
+                            Child, (IPTR) HGroup,
+                            MUIA_Group_SameSize, TRUE,
+                            Child, (IPTR) (newkey = SimpleButton(__(MSG_NEW_KEY))),
+                            Child, (IPTR) (delkey = SimpleButton(__(MSG_DELETE_KEY))),
+                            End,
+#endif
+                            End,
+                            End, /* end hgroup tooltypes pannel */
+                            End),
+                            Child, (IPTR) HGroup,
+                            MUIA_Group_SameSize, TRUE,
+                            Child, (IPTR) (savebutton = 
+                                    ImageButton(_(MSG_SAVE),"THEME:Images/Gadgets/Prefs/Save")),
+                            Child, (IPTR) (cancelbutton = 
+                                    ImageButton(_(MSG_CANCEL),"THEME:Images/Gadgets/Prefs/Cancel")),
+                            End,
+                            End,
+                            End),
+                            End;
 
     icon_cd = CurrentDir(cd);
 
@@ -615,79 +731,88 @@ int main(int argc, char **argv)
     {
         ULONG signals = 0;
 
-    #if !USE_TEXTEDITOR
+#if !USE_TEXTEDITOR
         set(liststr, MUIA_String_AttachedList, (IPTR)list);
-    #endif
-    
-        DoMethod(quit, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-            (IPTR) application, 2, MUIM_Application_ReturnID,
-            MUIV_Application_ReturnID_Quit);
-        DoMethod(cancelbutton, MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR) application, 2,
-            MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-        DoMethod(savebutton, MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR) application, 2,
-            MUIM_Application_ReturnID, RETURNID_SAVE);
-        DoMethod(aboutmenu, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-            (IPTR) application, 2,
-            MUIM_Application_ReturnID, RETURNID_ABOUT);
-        DoMethod(application, MUIM_Notify, MUIA_Application_Sleep, FALSE,
-            (IPTR) application, 2,
-            MUIM_Application_ReturnID, RETURNID_WAKE);
-        DoMethod(application, MUIM_Notify, MUIA_Application_Sleep, TRUE,
-            (IPTR) application, 2,
-            MUIM_Application_ReturnID, RETURNID_SLEEP);
-        DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-            (IPTR) application, 2, MUIM_Application_ReturnID,
-            MUIV_Application_ReturnID_Quit );
-    #if !USE_TEXTEDITOR
-        DoMethod(newkey, MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_NEWKEY);
-        DoMethod(delkey, MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_DELKEY);
-        DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-            (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_LVACK);
-        DoMethod(liststr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_STRINGACK);
-    #endif
-        DoMethod(commentspace, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_COMMENTACK);
+#endif
 
-    #if USE_TEXTEDITOR
-    	set(editor, MUIA_TextEditor_Slider, slider);
+        DoMethod(quit, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+                (IPTR) application, 2, MUIM_Application_ReturnID,
+                MUIV_Application_ReturnID_Quit);
+        DoMethod(aboutmenu, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+                (IPTR) application, 2,
+                MUIM_Application_ReturnID, RETURNID_ABOUT);
+        DoMethod(infomenu, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+                (IPTR) registergroup, 3, MUIM_Set, MUIA_Group_ActivePage, 0);
+        DoMethod(protectmenu, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+                (IPTR) registergroup, 3, MUIM_Set, MUIA_Group_ActivePage, 1);
+        DoMethod(toolmenu, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+                (IPTR) registergroup, 3, MUIM_Set, MUIA_Group_ActivePage, 2);
+
+        DoMethod(cancelbutton, MUIM_Notify, MUIA_Pressed, FALSE,
+                (IPTR) application, 2,
+                MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        DoMethod(savebutton, MUIM_Notify, MUIA_Pressed, FALSE,
+                (IPTR) application, 2,
+                MUIM_Application_ReturnID, RETURNID_SAVE);
+        DoMethod(versionspace, MUIM_Notify, MUIA_Pressed, FALSE,
+                (IPTR) application, 2,
+                MUIM_Application_ReturnID, RETURNID_VERSION);
+        DoMethod(application, MUIM_Notify, MUIA_Application_Sleep, FALSE,
+                (IPTR) application, 2,
+                MUIM_Application_ReturnID, RETURNID_WAKE);
+        DoMethod(application, MUIM_Notify, MUIA_Application_Sleep, TRUE,
+                (IPTR) application, 2,
+                MUIM_Application_ReturnID, RETURNID_SLEEP);
+        DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+                (IPTR) application, 2, MUIM_Application_ReturnID,
+                MUIV_Application_ReturnID_Quit );
+#if !USE_TEXTEDITOR
+        DoMethod(newkey, MUIM_Notify, MUIA_Pressed, FALSE,
+                (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_NEWKEY);
+        DoMethod(delkey, MUIM_Notify, MUIA_Pressed, FALSE,
+                (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_DELKEY);
+        DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+                (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_LVACK);
+        DoMethod(liststr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_STRINGACK);
+#endif
+        DoMethod(commentspace, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_COMMENTACK);
+
+#if USE_TEXTEDITOR
+        set(editor, MUIA_TextEditor_Slider, slider);
 
         if (icon->do_ToolTypes)
         {
             char *tt = NULL, *contents;
             int   i  = 0;
-	    int   first = 1;
-	    ULONG len = 0;
-	    
+            ULONG len = 0;
+
             while ((tt = icon->do_ToolTypes[i]) != NULL)
             {
-	    	len = len + strlen(icon->do_ToolTypes[i]) + 1;
-		i++;
-	    }
-	    
-	    contents = AllocVec(len + 1, MEMF_ANY);
-	    if (contents)
-	    {
-	    	contents[0] = 0;
-		i = 0;
+                len = len + strlen(icon->do_ToolTypes[i]) + 1;
+                i++;
+            }
 
-        	while ((tt = icon->do_ToolTypes[i]) != NULL)
-        	{
-		    strcat(contents, icon->do_ToolTypes[i]);
-		    strcat(contents, "\n");
-		    i++;
-		}
+            contents = AllocVec(len + 1, MEMF_ANY);
+            if (contents)
+            {
+                contents[0] = 0;
+                i = 0;
 
-    	    	set(editor, MUIA_TextEditor_Contents, contents);
-		FreeVec(contents);
+                while ((tt = icon->do_ToolTypes[i]) != NULL)
+                {
+                    strcat(contents, icon->do_ToolTypes[i]);
+                    strcat(contents, "\n");
+                    i++;
+                }
+
+                set(editor, MUIA_TextEditor_Contents, contents);
+                FreeVec(contents);
             }
         }
-    #else
-    	
+#else
+
         if (icon->do_ToolTypes)
         {
             char *tt = NULL;
@@ -698,15 +823,15 @@ int main(int argc, char **argv)
                 i++;
             }
         }
-    #endif
-    
+#endif
+
         switch(icon->do_Type)
         {
-            case 4:
+            case WBPROJECT:
                 toolspace = MUI_NewObject(MUIC_Popasl, ASLFR_DoSaveMode, TRUE,
-                    MUIA_Popstring_String, 
-                filename_string = MUI_MakeObject(MUIO_String, NULL, MAX_PATH_LEN),
-                    MUIA_Popstring_Button, PopButton(MUII_PopFile), TAG_DONE);
+                        MUIA_Popstring_String, 
+                        filename_string = MUI_MakeObject(MUIO_String, NULL, MAX_PATH_LEN),
+                        MUIA_Popstring_Button, PopButton(MUII_PopFile), TAG_DONE);
                 toollabel = MUI_MakeObject(MUIO_Label, _(MSG_DEFTOOL), NULL);
                 if ((toolspace != NULL)&&(toollabel != NULL)&&(filename_string != NULL))
                 {
@@ -718,11 +843,11 @@ int main(int argc, char **argv)
                     set(filename_string, MUIA_String_Contents, deftool);
                     set(toolspace, MUIA_CycleChain, 1);
                     DoMethod(filename_string, MUIM_Notify,
-                        MUIA_String_Acknowledge, MUIV_EveryTime,
-                        (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_TOOLACK);
+                            MUIA_String_Acknowledge, MUIV_EveryTime,
+                            (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_TOOLACK);
                 }
                 break;
-            case 3:
+            case WBTOOL:
                 stackspace = MUI_MakeObject(MUIO_String, NULL, 16);
                 stacklabel = MUI_MakeObject(MUIO_Label, _(MSG_STACK), NULL);
                 if ((stackspace != NULL)&&(stacklabel !=NULL))
@@ -732,14 +857,14 @@ int main(int argc, char **argv)
                     DoMethod(group, OM_ADDMEMBER, stackspace);
                     DoMethod(group, MUIM_Group_ExitChange);
                     SetAttrs(stackspace, MUIA_String_Contents, stack,
-                        MUIA_CycleChain, 1,
-                        MUIA_String_Accept, (IPTR)"0123456789",TAG_DONE);
+                            MUIA_CycleChain, 1,
+                            MUIA_String_Accept, (IPTR)"0123456789",TAG_DONE);
                     DoMethod(stackspace, MUIM_Notify,
-                        MUIA_String_Acknowledge, MUIV_EveryTime,
-                        (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_STACKACK);
+                            MUIA_String_Acknowledge, MUIV_EveryTime,
+                            (IPTR) application, 2, MUIM_Application_ReturnID, RETURNID_STACKACK);
                 }
                 break;
-            case 2:
+            case WBDRAWER:
                 drawerspace = MUI_NewObject(MUIC_Rectangle, TAG_DONE);
                 if ((drawerspace != NULL))
                 {
@@ -782,9 +907,9 @@ int main(int argc, char **argv)
                         break;
                     case RETURNID_ABOUT:
                         if (MUI_RequestA(application,NULL,0,
-                            _(MSG_ABOUT), _(MSG_OK), _(MSG_COPYRIGHT), NULL))
-                        break;
-		#if !USE_TEXTEDITOR
+                                    _(MSG_ABOUT), _(MSG_OK), _(MSG_COPYRIGHT), NULL))
+                            break;
+#if !USE_TEXTEDITOR
                     case RETURNID_NEWKEY:
                         NewKey();
                         break;
@@ -799,11 +924,11 @@ int main(int argc, char **argv)
                         StringToKey();
                         icon_altered = TRUE;
                         break;
-		#endif
+#endif
                     case RETURNID_SAVE:
-		    #if !USE_TEXTEDITOR
+#if !USE_TEXTEDITOR
                         if (icon_altered)
-		    #endif
+#endif
                             SaveIcon(icon, name, lock);
                         if (file_altered)
                             SaveFile(ap, lock);
@@ -821,6 +946,9 @@ int main(int argc, char **argv)
                         set(window, MUIA_Window_ActiveObject, (IPTR)savebutton);
                         file_altered = TRUE;
                         break;
+                    case RETURNID_VERSION:
+                        set(versionspace, MUIA_Text_Contents, GetVersion(name, lock));
+                        break;
                 }
 #ifdef DEBUG
             }
@@ -831,7 +959,7 @@ int main(int argc, char **argv)
                 if(signals & SIGBREAKF_CTRL_C) break;
             }
 
-        returnid = ((LONG) DoMethod(application, MUIM_Application_NewInput, (IPTR) &signals));
+            returnid = ((LONG) DoMethod(application, MUIM_Application_NewInput, (IPTR) &signals));
         }
         SetAttrs(window, MUIA_Window_Open, FALSE, TAG_DONE);
         MUI_DisposeObject(application);
