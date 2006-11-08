@@ -312,6 +312,7 @@ static char * GetVersion(STRPTR name, BPTR cd)
         goto exit;
     }
 
+    memset(result, 0, sizeof(result));
     result[0] = '?';
 
     commandlineSize = strlen(name) + 20;
@@ -372,7 +373,7 @@ static char * GetVersion(STRPTR name, BPTR cd)
         goto exit;
     }
     // read result
-    if (Read(output, result, commandlineSize - 1) == -1)
+    if (Read(output, result, sizeof(result) - 1) == -1)
     {
         D(bug("[WBInfo/GetVersion] Can't read from tmpfile\n"));
         goto exit;
