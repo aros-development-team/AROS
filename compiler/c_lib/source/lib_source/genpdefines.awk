@@ -37,7 +37,7 @@ BEGIN {
 	    else
 	    {
 		firstlvo = 4;
-		libexit = ".library";
+		libext = ".library";
 	    }
 	}
     }
