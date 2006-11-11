@@ -10,7 +10,7 @@ EXEDIR      := $(AROS_PREFS)
 #MM- workbench-prefs : workbench-prefs-font
 #MM workbench-prefs-font : workbench-prefs-font-catalogs 
 
-USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%y')\""
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_prog mmake=workbench-prefs-font \
     progname=Font targetdir=$(EXEDIR) \
