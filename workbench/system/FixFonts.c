@@ -27,7 +27,7 @@
 #define MAXFONTLEN 25L
 
 
-char version[] = "$VER: FixFonts 40.2 (16.9.99) (c) THOR";
+char version[] = "$VER: FixFonts 40.2 (16.9.1999) (c) THOR";
 
 int main()
 {

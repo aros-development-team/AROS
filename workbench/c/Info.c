@@ -126,7 +126,7 @@ ULONG ExtUDivMod32(ULONG a, ULONG b, ULONG *mod);
 void doInfo();
 
 
-STRPTR VersionStr = "$VER: Info 41.1 (16.11.00)";
+STRPTR VersionStr = "$VER: Info 41.1 (16.11.2000)";
 
 struct Catalog	*cat;
 struct Locale   *loc = NULL;

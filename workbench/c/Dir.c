@@ -102,12 +102,7 @@
  
 ******************************************************************************/
 
-#define	VERSION		50
-#define	REVISION	8
-#define	DATE	"27.11.04"
-#define	VERS	"Dir 50.8"
-#define	VSTRING	"Dir 50.8 (27.11.04) © AROS\r\n"
-#define	VERSTAG	"\0$VER: Dir 50.8 (27.11.04) © AROS"
+#define	VERSTAG	"\0$VER: Dir 50.8 (27.11.2004) © AROS"
 
 static const char version[] = VERSTAG;
 
