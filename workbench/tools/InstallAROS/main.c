@@ -6,7 +6,7 @@
 #define INTUITION_NO_INLINE_STDARG
 #define USE_FORMAT64
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -88,15 +88,13 @@
 
 struct	ExpansionBase		*ExpansionBase = NULL;
 
-char				*firstfound_path=NULL;
-
 char						*source_Path=NULL;		/* full path to source "tree" */
 char				*source_Name=NULL;
 
 char						*dest_Path=NULL;		/* VOLUME NAME of part used to store "aros" */
 char						*work_Path=NULL;		/* VOLUME NAME of part used to store "work" */
 
-char				*boot_Device=NULL;
+char				*boot_Device="ata.device";
 ULONG				boot_Unit = 0;
 
 Object* 			check_copytowork = NULL;
@@ -365,7 +363,7 @@ BOOL myCheckFloppy( struct DosEnvec *DriveEnv )
 	return FALSE;
 }
 
-/* returns the first "AROS" supported filesystems name */
+/* Returns the first AROS-supported filesystem's name */
 char	*FindPartition(struct PartitionHandle *root)
 {
 	struct PartitionHandle 		*partition = NULL;
@@ -465,11 +463,6 @@ IPTR Install__MUIM_FindDrives
 				}
 				CloseRootPartition(root);
 			}
-		}
-		if (result != NULL)
-		{
-			firstfound_path = result;
-			break;
 		}
 	}
 
