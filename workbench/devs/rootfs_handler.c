@@ -104,7 +104,7 @@ const struct Resident rootfs_handler_resident=
 
 static const char name[]="rootfs.handler";
 
-static const char version[]="$VER: rootfs-handler 41.1 (10.6.01)\r\n";
+static const char version[]="$VER: rootfs-handler 41.1 (10.6.2001)\r\n";
 
 static const APTR inittabl[4]=
 {
