@@ -8,7 +8,7 @@ MUIX_L " " MUIX_B"\nWelcome to the Amiga Research OS\n"
 "the " MUIX_B "pre-alpha" MUIX_N " version of AROS\n"
 "onto your computer system.\n\n"
 "Since it is still in pre-alpha state, performance\n"
-"may be sluggish - and stabilty isn't guaranteed\n\n";
+"may be sluggish - and stability isn't guaranteed\n\n";
 
 static const char* KMsgPartitionDH0 =
 "You do not have a DH0: partition.\n"
