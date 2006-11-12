@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Version CLI command
@@ -406,7 +406,7 @@ void Transform(register ULONG *buf,register ULONG *in)
 /*==[end md5.c]============================================================*/
 
 
-static const char version[] = "$VER: Version 42.0 (18.10.2005)\n";
+static const char version[] = "$VER: Version 42.1 (12.11.2006)\n";
 
 static const char ERROR_HEADER[] = "Version";
 
@@ -882,7 +882,9 @@ void printverstring(void)
 			Printf("%s%s%s%s%s%s%s\n",
 			       (LONG) parsedver.pv_name, (LONG) (*parsedver.pv_name ? " " : ""),
 			       (LONG) parsedver.pv_vername, (LONG) parsedver.pv_revname,
-			       (LONG) parsedver.pv_datestr, (LONG) parsedver.pv_extralf, (LONG) parsedver.pv_extrastr);
+			       (LONG) parsedver.pv_datestr,
+			       parsedver.pv_extralf ? (LONG) parsedver.pv_extralf : (LONG) "\n",
+			       parsedver.pv_extrastr ? (LONG) parsedver.pv_extrastr : (LONG) "");
 		}
 		else
 		{
