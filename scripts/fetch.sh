@@ -16,15 +16,9 @@ fetch_sf()
     local origin="$1" file="$2" destination="$3"
     local full_path
     
-    for mirror in $sf_mirrors; do
-        echo "Checking SourceForge mirror \`$mirror'..."
-        fetch "http://prdownloads.sourceforge.net/$origin" "${file}?use_mirror=${mirror}" "$destination" \
-            2>/dev/null && \
-            full_path=`awk '/<META[ \t\n]+HTTP-EQUIV.+/ { match($4, /=.+"/); print substr($4, RSTART+1, RLENGTH-2) }' "$destination/${file}?use_mirror=${mirror}"` && \
-            rm "$destination/${file}?use_mirror=${mirror}" && \
-            test "x$full_path" != "x" && \
-            fetch "`dirname $full_path`" "$file" "$destination" && \
-            break
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        echo "Downloading from SourceForge... Try n. $i."
+        fetch "http://downloads.sourceforge.net/$origin" "${file}" "$destination" && break;
     done
 }
 
