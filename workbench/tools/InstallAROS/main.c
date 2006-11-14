@@ -1027,7 +1027,7 @@ IPTR Install__MUIM_Partition
 			{
 				D(bug("[INSTALLER] Partitioning EVERYTHING! MUAHAHAHA...\n"));
 //				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d PART0=%s FORCE QUIET",boot_Device,boot_Unit,dest_Path);
-				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d FORCE QUIET",boot_Device,boot_Unit);
+				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d FORCE QUIET",boot_Device,0);
 			}
 		}
 		else
