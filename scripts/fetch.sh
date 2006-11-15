@@ -16,7 +16,7 @@ fetch_sf()
     local origin="$1" file="$2" destination="$3"
     local full_path
     
-    for i in 1 2 3 4 5 6 7 8 9 10; do
+    for i in 1; do
         echo "Downloading from SourceForge... Try n. $i."
         fetch "http://downloads.sourceforge.net/$origin" "${file}" "$destination" && break;
     done
@@ -38,7 +38,7 @@ fetch()
     
     case $protocol in
         http | ftp)    
-            if ! wget -c "$origin/$file" -O "$destination/$file".tmp; then
+            if ! wget -t 5 -T 5 -c "$origin/$file" -O "$destination/$file".tmp; then
                 ret=false
 	    else
 	        mv "$destination/$file".tmp "$destination/$file"
