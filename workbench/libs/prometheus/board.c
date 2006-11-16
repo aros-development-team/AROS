@@ -247,7 +247,7 @@ static const struct TagItem map_tag_list[] =
    struct pHidd_PCIDevice_ReadConfigByte message;
 
    message.mID =
-      OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
    message.reg = offset;
 
    return (UBYTE)OOP_DoMethod(board->aros_board, (OOP_Msg)&message);
@@ -284,7 +284,7 @@ static const struct TagItem map_tag_list[] =
    struct pHidd_PCIDevice_WriteConfigByte message;
 
    message.mID =
-      OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
    message.reg = offset;
    message.val = data;
 
@@ -321,7 +321,7 @@ static const struct TagItem map_tag_list[] =
    struct pHidd_PCIDevice_ReadConfigWord message;
 
    message.mID =
-      OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
+      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
    message.reg = offset & ~0x1;
 
    return (UWORD)OOP_DoMethod(board->aros_board, (OOP_Msg)&message);
@@ -358,7 +358,7 @@ static const struct TagItem map_tag_list[] =
    struct pHidd_PCIDevice_WriteConfigWord message;
 
    message.mID =
-      OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
+      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
    message.reg = offset & ~0x1;
    message.val = data;
 
@@ -395,7 +395,7 @@ static const struct TagItem map_tag_list[] =
    struct pHidd_PCIDevice_ReadConfigLong message;
 
    message.mID =
-      OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong);
+      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong);
    message.reg = offset & ~0x3;
 
    return (ULONG)OOP_DoMethod(board->aros_board, (OOP_Msg)&message);
@@ -432,7 +432,7 @@ static const struct TagItem map_tag_list[] =
    struct pHidd_PCIDevice_WriteConfigLong message;
 
    message.mID =
-      OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigLong);
+      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigLong);
    message.reg = offset & ~0x3;
    message.val = data;
 
