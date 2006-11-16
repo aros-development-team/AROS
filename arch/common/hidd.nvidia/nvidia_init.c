@@ -614,9 +614,9 @@ AROS_UFH3(void, Enumerator,
 	    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base1, (APTR)&buf);
 	    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size1, (APTR)&size);
 
-	    sd->mid_ReadLong = OOP_GetMethodID(CLID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigLong);
+	    sd->mid_ReadLong = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigLong);
 	    
-	    mappci.mID = OOP_GetMethodID(CLID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI);
+	    mappci.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI);
 	    mappci.PCIAddress = buf;
 	    mappci.Length = size;
 	    
@@ -677,7 +677,7 @@ AROS_UFH3(void, Enumerator,
 	
 		OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size1, (APTR)&size);
 
-		unmappci.mID = OOP_GetMethodID(CLID_Hidd_PCIDriver, moHidd_PCIDriver_UnmapPCI);
+		unmappci.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_UnmapPCI);
 		unmappci.CPUAddress = sd->Card.FrameBuffer;
 		unmappci.Length = size;
 
@@ -731,7 +731,7 @@ static void Find_NV_Card(struct staticdata *sd)
 	    };
 	
 	    struct pHidd_PCI_EnumDevices enummsg = {
-		mID:		OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
+		mID:		OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
 		callback:	&FindHook,
 		requirements:	(struct TagItem*)&Requirements,
 	    }, *msg = &enummsg;

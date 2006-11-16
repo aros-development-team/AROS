@@ -596,11 +596,11 @@ BOOL NV__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	ULONG		*curimg = (ULONG*)((IPTR)_sd->Card.CursorStart + (IPTR)_sd->Card.FrameBuffer);
 
 	struct pHidd_BitMap_GetPixel __gp = {
-	    mID:    OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetPixel)
+	    mID:    OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixel)
 	}, *getpixel = &__gp;
 
 	struct pHidd_ColorMap_GetColor __gc = {
-	    mID:	    OOP_GetMethodID(CLID_Hidd_ColorMap, moHidd_ColorMap_GetColor),
+	    mID:	    OOP_GetMethodID(IID_Hidd_ColorMap, moHidd_ColorMap_GetColor),
 	    colorReturn:    &color,
 	}, *getcolor = &__gc;
 
