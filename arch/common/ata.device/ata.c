@@ -891,7 +891,7 @@ static int CreateInterrupt(struct ata_Bus *bus)
 	if (o)
 	{
 	    struct pHidd_IRQ_AddHandler __msg__ = {
-		mID:		OOP_GetMethodID(CLID_Hidd_IRQ, moHidd_IRQ_AddHandler),
+		mID:		OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
 		handlerinfo:	bus->ab_IntHandler,
 		id:		bus->ab_Irq,
 	    }, *msg = &__msg__;

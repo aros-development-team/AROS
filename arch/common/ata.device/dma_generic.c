@@ -199,7 +199,7 @@ VOID dma_Init(struct ata_Bus *bus)
 	};
 
 	struct pHidd_PCI_EnumDevices enummsg = {
-	    mID:	    OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
+	    mID:	    OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
 	    callback:	    &FindHook,
 	    requirements:   (struct TagItem *)&Requirements,
 	}, *msg = &enummsg;
