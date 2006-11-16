@@ -175,7 +175,7 @@ OOP_Object *NVOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 		    pixFmtPtr:	&pf,
 		}, *getmodemsg = &__getmodemsg;
 
-		getmodemsg->mID = OOP_GetMethodID(CLID_Hidd_Gfx, moHidd_Gfx_GetMode);
+		getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
 		OOP_DoMethod(_sd->nvobject, (OOP_Msg)getmodemsg);
 
 		OOP_GetAttr(sync, aHidd_Sync_PixelClock, 	&pixel);
@@ -1539,23 +1539,23 @@ VOID NVBM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o,
 
 static int Init_BMMethodIDs(LIBBASETYPEPTR LIBBASE)
 {
-    LIBBASE->sd.mid_CopyMemBox8		= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox8);
-    LIBBASE->sd.mid_CopyMemBox16	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox16);
-    LIBBASE->sd.mid_CopyMemBox32	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox32);
-    LIBBASE->sd.mid_PutMem32Image8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMem32Image8);
-    LIBBASE->sd.mid_PutMem32Image16	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMem32Image16);
-    LIBBASE->sd.mid_GetMem32Image8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetMem32Image8);
-    LIBBASE->sd.mid_GetMem32Image16	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetMem32Image16);
-    LIBBASE->sd.mid_Clear		= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_Clear);
-    LIBBASE->sd.mid_PutMemTemplate8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate8);
-    LIBBASE->sd.mid_PutMemTemplate16	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate16);
-    LIBBASE->sd.mid_PutMemTemplate32	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate32);
-    LIBBASE->sd.mid_PutMemPattern8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern8);
-    LIBBASE->sd.mid_PutMemPattern16	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
-    LIBBASE->sd.mid_PutMemPattern32	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
-    LIBBASE->sd.mid_CopyLUTMemBox16	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox16);
-    LIBBASE->sd.mid_CopyLUTMemBox32	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
-    LIBBASE->sd.mid_GetImage = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetImage);
+    LIBBASE->sd.mid_CopyMemBox8		= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox8);
+    LIBBASE->sd.mid_CopyMemBox16	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox16);
+    LIBBASE->sd.mid_CopyMemBox32	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox32);
+    LIBBASE->sd.mid_PutMem32Image8	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image8);
+    LIBBASE->sd.mid_PutMem32Image16	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image16);
+    LIBBASE->sd.mid_GetMem32Image8	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image8);
+    LIBBASE->sd.mid_GetMem32Image16	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetMem32Image16);
+    LIBBASE->sd.mid_Clear		= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_Clear);
+    LIBBASE->sd.mid_PutMemTemplate8	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate8);
+    LIBBASE->sd.mid_PutMemTemplate16	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate16);
+    LIBBASE->sd.mid_PutMemTemplate32	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate32);
+    LIBBASE->sd.mid_PutMemPattern8	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern8);
+    LIBBASE->sd.mid_PutMemPattern16	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
+    LIBBASE->sd.mid_PutMemPattern32	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
+    LIBBASE->sd.mid_CopyLUTMemBox16	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox16);
+    LIBBASE->sd.mid_CopyLUTMemBox32	= OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
+    LIBBASE->sd.mid_GetImage = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetImage);
     
     return TRUE;
 }

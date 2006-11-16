@@ -792,7 +792,7 @@ BOOL NVPlanBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 	OOP_MethodID mID;
 	struct TagItem *tags;
     } __m = {
-	OOP_GetMethodID(CLID_Hidd_BitMap, num_Hidd_BitMap_Methods),
+	OOP_GetMethodID(IID_Hidd_BitMap, num_Hidd_BitMap_Methods),
 	bmtags
     }, *m = &__m;
 
