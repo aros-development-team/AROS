@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 	return(20);
     }
 
-    cd = iconv_open("ISO-8859-1", "");
+    cd = iconv_open("", "ISO-8859-1");
     if(cd == (iconv_t)(-1))
     {
 	printf("%s: Error converting character sets\n", argv[0]);
@@ -227,7 +227,7 @@ int main(int argc, char **argv)
 	    outbytes = 1024;
 	    iconv(cd, &inpos, &inbytes, &outpos, &outbytes);
 
-	    res = strcmp(CountryArray[j].ca_Name, buffer);
+	    res = strcmp(buffer, argv[i]);
 	    if(res == 0)
 	    {
 		strcpy(buffer, argv[1]);
@@ -243,6 +243,11 @@ int main(int argc, char **argv)
 		break;
 #endif
 
+	}
+	if(res != 0)
+	{
+	    printf("Unknown country %s\n", argv[i]);
+	    //return(20);
 	}
     }
     return 0;
