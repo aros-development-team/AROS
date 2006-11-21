@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -114,6 +114,28 @@ void my_read_fn(png_structp png_ptr, png_bytep data, png_size_t length)
     {
     	png_error(png_ptr, "Read error!");
     }  
+}
+
+void my_write_fn(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+    BPTR	file = png_get_io_ptr(png_ptr);
+    png_uint_32 count;
+    
+    count = Write(file, data, length);
+    if (count != length)
+    {
+    	png_error(png_ptr, "Write error!");
+    }  
+}
+
+void my_flush_fn(png_structp png_ptr)
+{
+    BPTR	file = png_get_io_ptr(png_ptr);
+
+    if (Flush(file))
+    {
+    	png_error(png_ptr, "Flush error!");
+    }
 }
 
 /**************************************************************************************************/
@@ -463,6 +485,11 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     return TRUE;
 }
 
+static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
+{
+    return FALSE;
+}
+
 /**************************************************************************************************/
 
 IPTR PNG__OM_NEW(struct IClass *cl, Object *o, Msg msg)
@@ -477,6 +504,23 @@ IPTR PNG__OM_NEW(struct IClass *cl, Object *o, Msg msg)
 	}
     }
     return retval;
+}
+
+/**************************************************************************************************/
+
+IPTR PNG__DTM_WRITE(Class *cl, Object *o, struct dtWrite *dtw)
+{
+    D(bug("png.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
+    if( (dtw -> dtw_Mode) == DTWM_RAW )
+    {
+        /* Local data format requested */
+        return SavePNG(cl, o, dtw );
+    }
+    else
+    {
+        /* Pass msg to superclass (which writes an IFF ILBM picture)... */
+        return DoSuperMethodA( cl, o, (Msg)dtw );
+    }
 }
 
 /**************************************************************************************************/
