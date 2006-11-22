@@ -1,0 +1,20 @@
+# Copyright © 2006, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES       := main support locale diskinfo
+EXEDIR      := $(AROS_WANDERER)/Tools
+
+#MM- workbench-system-wanderer : workbench-system-wanderer-tools-diskinfo
+#MM  workbench-system-wanderer-tools-diskinfo : \
+#MM  workbench-system-wanderer-tools-diskinfo-catalogs \
+#MM  workbench-system-wanderer-tools-diskinfo-icons
+
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+%build_prog mmake=workbench-system-wanderer-tools-diskinfo \
+    progname=DiskInfo targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+
+%common

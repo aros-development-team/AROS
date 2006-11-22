@@ -1,0 +1,34 @@
+## version $VER: diskinfo.catalog 1.0 (21.02.2004)
+## language français
+## codeset 0
+;
+MSG_TITLE
+Disk Info
+;
+MSG_ERROR_HEADER
+ERREUR
+;
+MSG_ERROR_OK
+_OK
+;
+MSG_ERROR_LOCALE
+Impossible d'initialiser\n la locale.
+;
+MSG_ERROR_CLASSES
+Impossible d'initialiser la Classe.
+;
+MSG_DESCRIPTION
+Informations des Disques
+;
+MSG_PERCENTFULL
+%ld %% Plein
+;
+MSG_FORMAT
+Formater
+;
+MSG_AUTHOR
+Olivier Adam
+;
+MSG_COPYRIGHT
+©2006 AROS Dev Team
+;
