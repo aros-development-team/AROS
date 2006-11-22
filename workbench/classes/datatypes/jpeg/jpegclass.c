@@ -46,7 +46,7 @@ ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
 
 /**************************************************************************************************/
 
-#define QUALITY 100	/* compress quality for saving */
+#define QUALITY 90	/* compress quality for saving */
 
 typedef	struct {
     struct IFFHandle	*filehandle;
