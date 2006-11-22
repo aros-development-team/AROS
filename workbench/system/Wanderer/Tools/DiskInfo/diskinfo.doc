@@ -1,0 +1,119 @@
+TABLE OF CONTENTS
+
+DiskInfo.mui/DiskInfo.mui
+
+    A DiskInfo object, for general using and particulary Wanderer use.
+
+    BACKGROUND
+    DiskInfo provides a sub-window for disk/volumes informations
+    like size, name, icon image, buffers, Format feature, etc.
+    User can set different aspects and skills levels.
+    DiskInfo requires one argument: The initial path to disk icon.
+
+    EXAMPLE
+    {
+    ...
+        if (DiskInfo_Initialize())
+        {
+        ...
+            application = DiskInfoObject,
+                MUIA_DiskInfo_Initial, (IPTR) initial,
+            End;
+
+            if (application != NULL)
+            {
+                DoMethod(application, MUIM_Application_Execute);
+                MUI_DisposeObject(application);
+            }
+        ...
+            DiskInfo_Deinitialize();
+        }
+    ...
+    }
+
+    FUNCTIONS
+    DiskInfo.mui/DiskInfo_Initialize()
+    DiskInfo.mui/DiskInfo_Deinitialize()
+
+    ATTRIBUTES
+    DiskInfo.mui/MUIA_DiskInfo_Initial   [I..]
+    DiskInfo.mui/MUIA_DiskInfo_Volname   [..G]
+    DiskInfo.mui/MUIA_DiskInfo_Percent   [..G]
+    DiskInfo.mui/MUIA_DiskInfo_Aspect    [ISG]
+    DiskInfo.mui/MUIA_DiskInfo_UserLevel [..G]
+
+    METHODS
+    DiskInfo.mui/MUIM_Application_Execute
+    DiskInfo.mui/OM_NEW
+    DiskInfo.mui/OM_GET
+    DiskInfo.mui/OM_SET
+    DiskInfo.mui/OM_DISPOSE
+
+DiskInfo.mui/DiskInfo_Initialize()
+
+    NAME
+    DiskInfo_Initialize()
+
+
+DiskInfo.mui/MUIA_DiskInfo_Initial
+
+    NAME
+    MUIA_DiskInfo_Initial -- [I..], STRPTR
+
+    FUNCTION
+    Provide at initialization time a path to the disk.
+
+    EXAMPLE
+    Wanderer Info passes a "Volume:Disk" string.
+    (because of its icon oriented nature, given that a volume
+    icon is located at volume root in "Disk.info").
+
+    SEE ALSO
+    DiskInfo.mui/MUIA_DiskInfo_Volname
+
+DiskInfo.mui/MUIA_DiskInfo_Volname
+
+    NAME
+    MUIA_DiskInfo_Volname -- [..G], STRPTR
+
+    FUNCTION
+    Compute the volume name from the path given through MUIA_DiskInfo_Initial.
+
+    SEE ALSO
+    DiskInfo.mui/MUIA_DiskInfo_Initial
+
+DiskInfo.mui/MUIA_DiskInfo_Percent
+
+    NAME
+    MUIA_DiskInfo_Percent -- [..G], ULONG
+
+    FUNCTION
+    Compute the percent of disk full.
+
+    SEE ALSO
+
+DiskInfo.mui/MUIA_DiskInfo_Aspect
+
+    NAME
+    MUIA_DiskInfo_Aspect -- [ISG], ULONG
+
+    FUNCTION
+    GUI Aspect, actually 2 aspects are available.
+    More in the future.
+
+    SEE ALSO
+
+DiskInfo.mui/MUIA_DiskInfo_UserLevel
+
+    NAME
+    MUIA_DiskInfo_UserLevel -- [..G], ULONG
+
+    FUNCTION
+    UserLevel follows the Installer® MINUSER level:
+        NOVICE              -> Hidden "Format" button
+        AVERAGE/ADVANCED    -> Ghosted "Format" button, &checkmark
+        EXPERT              -> Active "Format" button.
+    By default AVERAGE, but ideally read from SYS:Utilities/Installer.info icon
+    "MINUSER" tooltype.
+
+    SEE ALSO

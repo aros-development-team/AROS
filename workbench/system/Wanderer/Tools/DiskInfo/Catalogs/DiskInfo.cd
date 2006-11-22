@@ -1,0 +1,31 @@
+;
+MSG_TITLE (//)
+Disk Info
+;
+MSG_ERROR_HEADER (//)
+ERROR
+;
+MSG_ERROR_OK (//)
+_OK
+;
+MSG_ERROR_LOCALE (//)
+Can't initialize locale.
+;
+MSG_ERROR_CLASSES (//)
+Can't initialize custom classes.
+;
+MSG_DESCRIPTION (//)
+Disk Icon Informations
+;
+MSG_PERCENTFULL (//)
+%ld %% Full
+;
+MSG_FORMAT (//)
+Format
+;
+MSG_AUTHOR (//)
+Olivier Adam
+;
+MSG_COPYRIGHT (//)
+©2006 AROS Dev Team
+;
