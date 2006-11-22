@@ -171,7 +171,7 @@ AROS_UFH3(void, grab_function,
 
 	    DTImage = NewDTObject((APTR)NULL,
 		    DTA_SourceType, DTST_RAM,
-		    DTA_BaseName, (IPTR)"jpeg",
+		    DTA_BaseName, (IPTR)"png",
 		    PDTA_DestMode, PMODE_V43,
 		    TAG_DONE);
 
