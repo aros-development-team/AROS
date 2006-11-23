@@ -388,7 +388,7 @@ IPTR IconWindow__MUIM_IconWindow_IconsDropped
         msg.type     = ICONWINDOW_ACTION_ICONDROP;
         msg.iconlist = data->iwd_IconList;
         msg.isroot   = data->iwd_IsRoot;
-        msg.click    = (struct IconList_Click *) XGET(data->iwd_IconList, MUIA_IconList_Clicked);
+        msg.drop     = (struct IconList_Drop *) XGET(data->iwd_IconList, MUIA_IconList_IconsDropped);
         CallHookPkt(data->iwd_ActionHook, self, &msg);
     }
     

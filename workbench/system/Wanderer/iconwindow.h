@@ -15,6 +15,7 @@ struct IconWindow_ActionMsg
     Object *iconlist;
     int isroot;
     struct IconList_Click *click;
+    struct IconList_Drop *drop;
     /* to be continued...*/
 };
 

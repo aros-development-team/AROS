@@ -116,7 +116,7 @@ struct MUI_IconData
     struct IconEntry *last_selected;
 
     /* Notify stuff */
-    struct IconList_Entry *drop_entry; /* the icon where the icons have been dropped */
+    struct IconList_Drop drop_entry; /* the icon where the icons have been dropped */
     struct IconList_Click icon_click;
 
     /* Internal Sorting related stuff */
@@ -895,7 +895,7 @@ IPTR IconList__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         case MUIA_IconList_Top: STORE = data->view_y; return 1;
         case MUIA_IconList_Width: STORE = data->width; return 1;
         case MUIA_IconList_Height: STORE = data->height; return 1;
-        case MUIA_IconList_IconsDropped: STORE = (ULONG)data->drop_entry; return 1;
+        case MUIA_IconList_IconsDropped: STORE = (IPTR)&data->drop_entry; return 1;
         case MUIA_IconList_Clicked: STORE = (ULONG)&data->icon_click; return 1;
     }
 
@@ -1800,6 +1800,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
 
+    /* check if dropped on same iconlist object */
     if (msg->obj == obj)
     {
         struct IconEntry *icon = data->first_selected;
@@ -1809,7 +1810,11 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
             struct Rectangle old, new;
             struct Region    *region;
             APTR    	     clip = NULL;
-    
+   
+            /* icon moved, dropped in the same window */
+            set(obj, MUIA_IconList_IconsMoved, (IPTR) &(data->first_selected->entry)); /* Now notify */
+            D( bug("[ICONLIST] move entry: %s dropped in same window\n", data->first_selected->entry.filename); )
+                
             IconList_GetIconRectangle(obj, data, icon, &old);
     
             old.MinX += _mleft(obj) - data->view_x + icon->x;
@@ -1848,8 +1853,35 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
     } 
     else
     {
-        data->drop_entry = NULL;
-        set(obj, MUIA_IconList_IconsDropped, (IPTR)data->drop_entry); /* Now notify */
+
+        struct IconEntry *icon;
+        struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextSelected_Start;
+
+        /* get selected entries from SOURCE iconlist */
+        DoMethod(msg->obj, MUIM_IconList_NextSelected, (IPTR) &entry);
+    
+        /* check if dropped on an icon on the iconlist area */
+        if (entry)
+        {
+           IPTR directory_path;
+
+           /* get path of DESTINATION iconlist */
+           get(obj, MUIA_IconDrawerList_Drawer, &directory_path);
+           D( bug("[ICONLIST] drop entry: %s dropped in window %s\n", entry->filename, directory_path); )
+
+           /* copy relevant data to drop entry */
+           data->drop_entry.source_iconlistobj = (IPTR)msg->obj;
+           data->drop_entry.destination_iconlistobj = (IPTR)obj;
+           
+           /* return drop entry */
+           set(obj, MUIA_IconList_IconsDropped, (IPTR)&data->drop_entry); /* Now notify */
+        }
+        else
+        {
+           /* no drop entry */
+           set(obj, MUIA_IconList_IconsDropped, (IPTR)NULL); /* Now notify */
+        }
+        
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
