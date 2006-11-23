@@ -4,7 +4,7 @@
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
-#define DEBUG 0
+#define DEBUG 1
 
 #include <exec/types.h>
 #include <libraries/gadtools.h>
@@ -728,24 +728,61 @@ AROS_UFH3
     } 
     else if (msg->type == ICONWINDOW_ACTION_ICONDROP)
     {
-    	Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
-    	Object *child;
-    
-    	while ((child = NextObject(&cstate)))
-    	{
-    	    if (XGET(child, MUIA_UserData))
-    	    {
-        		struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
-        		Object *iconlist = (Object*)XGET(child, MUIA_IconWindow_IconList);
-        
-        		do {
-        		    DoMethod(iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
-        		    if ((int)ent == MUIV_IconList_NextSelected_End) break;
-        
-        		    /* Printf("%s\n",ent->filename); */
-        		} while(1);
-    	    }
-    	}
+        IPTR destination_path;
+
+        struct IconList_wDrop *drop = (struct IconList_wDrop *)msg->drop;
+
+        if (drop)
+        {
+             /* get path of DESTINATION iconlist*/
+             get( drop->destination_iconlistobj, MUIA_IconDrawerList_Drawer, &destination_path);
+
+             /* get SOURCE entries */
+             struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+      
+             /* process all selected entries */
+             do {
+                   DoMethod(drop->source_iconlistobj, MUIM_IconList_NextSelected, (IPTR) &ent);
+
+                   /* if not end of selection, process */
+                   if ( (int)ent != MUIV_IconList_NextSelected_End )
+                   {
+                         char argbuffer[1024];
+
+                         D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, (char *)destination_path);)
+ 
+                         /* create arg string */
+                         memset( argbuffer, '\0', sizeof(argbuffer) ); 
+                         strcat( argbuffer, "C:Copy \"" );
+                         strcat( argbuffer, ent->filename );
+                         strcat( argbuffer, "\" \"" );
+                         strcat( argbuffer, destination_path );
+                         strcat( argbuffer, "\"" );
+
+                         /* copy via execute */
+                         D(bug("[WANDERER] Executing %s", argbuffer );)
+                         Execute(argbuffer, NULL, NULL);
+                         
+                         /* create arg string for .info file and try to copy  */
+                         memset( argbuffer, '\0', sizeof(argbuffer) ); 
+                         strcat( argbuffer, "C:Copy \"" );
+                         strcat( argbuffer, ent->filename );
+                         strcat( argbuffer, ".info\" \"" );
+                         strcat( argbuffer, destination_path ); 
+                         strcat( argbuffer, "\"" );
+                         D(bug("[WANDERER] Executing %s", argbuffer );)                      
+                         Execute(argbuffer, NULL, NULL);
+                                                  
+                         /* update list contents */
+                         DoMethod(drop->destination_iconlistobj,MUIM_IconList_Update);
+                   }
+             } while ( (int)ent != MUIV_IconList_NextSelected_End );
+
+           /* update the window */
+           window_update();      
+        }
+    	
+    	
     }
 
     AROS_USERFUNC_EXIT

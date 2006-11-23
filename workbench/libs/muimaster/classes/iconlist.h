@@ -44,6 +44,7 @@ struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
 #define MUIA_IconList_Height            (MUIB_IconList | 0x00000004) /* Zune: V1 ..G LONG */
 #define MUIA_IconList_IconsDropped      (MUIB_IconList | 0x00000005) /* Zune: V1 ..G struct IconList_Entry * */
 #define MUIA_IconList_Clicked           (MUIB_IconList | 0x00000006) /* Zune: V1 ..G struct IconList_Click * */
+#define MUIA_IconList_IconsMoved        (MUIB_IconList | 0x00000007) /* Zune: V1 ..G struct IconList_Entry * */
 
 /* used by MUIM_IconList_NextSelected */
 struct IconList_Entry
@@ -60,7 +61,11 @@ struct IconList_Click
     struct IconList_Entry *entry; /* might be NULL */
 };
 
-
+struct IconList_Drop
+{
+    IPTR   *source_iconlistobj;          /* iconlist obj */
+    IPTR   *destination_iconlistobj;     /* iconlist obj */
+};
 
 /****************************************************************************/
 /* iconlist sort bits - a value of zero sets: sort by name + drawers at top */
