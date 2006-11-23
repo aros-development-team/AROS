@@ -568,11 +568,20 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
 
     /* Now the png_info structure. Depending on the BitMap depth (either LUT or Truecolor),
        the proper type must be set. */
-    if (numplanes > 8)
+    if (numplanes > 24)
     {
-        png.png_depth = 24;
+        png.png_depth = 32;
         png.png_format = PBPAFMT_ARGB;
         png.png_type = PNG_COLOR_TYPE_RGB_ALPHA;
+
+        png_set_IHDR(png.png_ptr, png.png_info_ptr, width, height, 8, png.png_type,
+                    PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+    }
+    else if (numplanes > 8)
+    {
+        png.png_depth = 24;
+        png.png_format = PBPAFMT_RGB;
+        png.png_type = PNG_COLOR_TYPE_RGB;
 
         png_set_IHDR(png.png_ptr, png.png_info_ptr, width, height, 8, png.png_type,
                     PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
@@ -601,7 +610,9 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
 
     /* Write info structure out */
     png_write_info(png.png_ptr, png.png_info_ptr);
-    png_set_swap_alpha(png.png_ptr);
+    
+    if (png.png_depth > 24)
+        png_set_swap_alpha(png.png_ptr);
 
     /* Read the picture data line by line and write PNG */
     if (!(linebuf = AllocVec(width * 4, MEMF_ANY)))
@@ -636,8 +647,9 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
 	    In case of AROS it seems to be the other way round (at least ReadPixelArray on
 	    images without alpha channel results in A=0...
 	*/
-	for (x=0; x < width; x++)
-	    linebuf[x << 2] = 0xff - linebuf[x << 2];
+	if (png.png_depth > 24)
+	    for (x=0; x < width; x++)
+		linebuf[x << 2] = 0xff - linebuf[x << 2];
 
         /* png_write_line */
         png_write_row(png.png_ptr, linebuf);
