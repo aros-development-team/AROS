@@ -8,6 +8,7 @@
 
 #define DEBUG
 
+#include "../include/aros/kernel.h"
 #include "elfloader.h"
 #include "screen.h"
 #include "bootstrap.h"
@@ -129,7 +130,7 @@ static int load_hunk(void *file, struct sheader *sh)
 }
 
 /* Perform relocations of given section */
-static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
+static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, unsigned long long virt)
 {
     struct sheader *shrel    = &sh[shrel_idx];
     struct sheader *shsymtab = &sh[shrel->link];
@@ -190,6 +191,8 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
             default:
                 s = (unsigned long long)sh[sym->shindex].addr + sym->value;
         }
+        
+        s+=virt;
 
         switch (ELF64_R_TYPE(rel->info))
         {
@@ -220,7 +223,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx)
     return 1;
 }
 
-void load_elf_file(void *file)
+void load_elf_file(void *file, unsigned long long virt)
 {
     struct elfheader eh;
     struct sheader *sh;
@@ -265,7 +268,7 @@ void load_elf_file(void *file)
         if (sh[i].type == SHT_RELA && sh[sh[i].info].addr)
         {
             sh[i].addr = (unsigned long)load_block(file, sh[i].offset, sh[i].size);
-            if (!sh[i].addr || !relocate(&eh, sh, i))
+            if (!sh[i].addr || !relocate(&eh, sh, i, virt))
             {
                 kprintf("[ELF Loader] Relocation error!\n");
             }
