@@ -17,6 +17,7 @@ struct KernelMessage {
     struct { void *low,*high; } kernelBSS;     
     struct { void *low,*high; } GDT;
     struct { void *low,*high; } IDT;
+    struct { void *low,*high; } PL4;  
     
     struct { void *low,*high; } vbeModeInfo;
     struct { void *low,*high; } vbeControllerInfo;
@@ -29,10 +30,6 @@ struct KernelMessage {
 #define D(x)    /* eps */
 #endif
 
-/*
- * The target base address of 64-bit kernel
- */
-#define KERNEL_TARGET_ADDRESS   0x01000000
 
 /*
  * Multiboot stuff

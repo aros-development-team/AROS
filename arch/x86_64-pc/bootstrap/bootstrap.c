@@ -8,6 +8,8 @@
 
 #define DEBUG
 
+#include "../include/aros/kernel.h"
+
 #include "bootstrap.h"
 #include "multiboot.h"
 #include "cpu.h"
@@ -77,10 +79,10 @@ static struct PML4E PML4[512] __attribute__((used,aligned(4096),section(".bss.ar
 static struct PDPE PDP[512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
 static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
 
-static struct vbe_mode VBEModeInfo;
-static struct vbe_controller VBEControllerInfo;
+static struct vbe_mode VBEModeInfo = {0, };
+static struct vbe_controller VBEControllerInfo = {0, };
 
-struct KernelMessage km;
+struct KernelMessage km = {0};
 
 static struct {
     void *off;
@@ -97,7 +99,6 @@ const struct
 } 
 GDT_sel = {sizeof(GDT)-1, (unsigned int)&GDT},
 IDT_sel = {sizeof(IGATES)-1, (unsigned int)IGATES};
-
 
 /*
     Setting descriptor tables up. It is perhaps not wise to embed it into the function. Most likely the more
@@ -192,6 +193,19 @@ static void setup_mmu()
     PML4[0].nx = 0;
     PML4[0].avail = 0;
     PML4[0].base_high = 0;
+
+    PML4[KERNEL_HIGH_OFFSET].p  = 1; /* present */
+    PML4[KERNEL_HIGH_OFFSET].rw = 1; /* read/write */
+    PML4[KERNEL_HIGH_OFFSET].us = 0; /* accessible for user */
+    PML4[KERNEL_HIGH_OFFSET].pwt= 0; /* write-through cache */
+    PML4[KERNEL_HIGH_OFFSET].pcd= 0; /* cache enabled */
+    PML4[KERNEL_HIGH_OFFSET].a  = 0; /* not yet accessed */
+    PML4[KERNEL_HIGH_OFFSET].mbz= 0; /* must be zero */
+    PML4[KERNEL_HIGH_OFFSET].base_low = (unsigned int)PDP >> 12;
+    PML4[KERNEL_HIGH_OFFSET].avl= 0;
+    PML4[KERNEL_HIGH_OFFSET].nx = 0;
+    PML4[KERNEL_HIGH_OFFSET].avail = 0;
+    PML4[KERNEL_HIGH_OFFSET].base_high = 0;
 
     /*
         PDP Entries. There are four of them used in order to define 2048 pages of 2MB each.
@@ -480,6 +494,8 @@ void prepare_message(struct multiboot *mb)
     km.GDT.low = &GDT;
     km.IDT.low = &IGATES;
     
+    km.PL4.low = &PML4;
+    
     km.kernelBase.low = KernelTarget.off;
     km.kernelLowest.low = (void*)((long)kernel_lowest() & ~4095);
     km.kernelHighest.low = (void*)(((long)kernel_highest() + 4095) & ~4095);
@@ -528,7 +544,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     
     /* Load the first ELF relocable object - the kernel itself */
     kprintf("[BOOT] Loading kernel\n");
-    load_elf_file(&_binary_aros_o_start);
+    load_elf_file(&_binary_aros_o_start, ((unsigned long long)KERNEL_HIGH_OFFSET) << 39);
     
     /* Search for external modules loaded by GRUB */
     module_count = find_modules(mb, mod);
@@ -540,7 +556,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
         for (m = mod; module_count > 0; module_count--, m++)
         {
             kprintf("[BOOT] Loading %s\n", m->name);
-            load_elf_file(m->address);
+            load_elf_file(m->address, 0);
         }
     }
     

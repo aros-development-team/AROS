@@ -84,7 +84,7 @@ struct relo {
     signed long long    addend;
 };
 
-void load_elf_file(void *);
+void load_elf_file(void *, unsigned long long);
 void *kernel_lowest();
 void *kernel_highest();
 void set_base_address(void *, void *);
