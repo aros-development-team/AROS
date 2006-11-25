@@ -196,9 +196,9 @@ int doCountry(struct CountryPrefs *cp, STRPTR progname, STRPTR filename)
 
 int main(int argc, char **argv)
 {
-    int i,j,res;
+    int i,j,res = 0;
     char buffer[1024];
-    const char *inpos;
+    char *inpos;
     char *outpos;
     size_t inbytes, outbytes;
     iconv_t cd;
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 	{
 	    /* Convert country name to local character set */
 	    inpos = CountryArray[j].ca_Name;
-	    inbytes = 1024;
+	    inbytes = strlen(inpos) + 1;
 	    outpos = buffer;
 	    outbytes = 1024;
 	    iconv(cd, &inpos, &inbytes, &outpos, &outbytes);
