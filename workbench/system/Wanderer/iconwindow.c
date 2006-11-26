@@ -90,6 +90,7 @@ D(bug("[iconwindow] Font @ %x\n", WindowFont));
 
             /* window navigation bar */
             Child, (IPTR) (toolbarPanel = GroupObject,
+                InnerSpacing(0,0),
                 MUIA_Group_Horiz, TRUE,
                 Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
                 Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
