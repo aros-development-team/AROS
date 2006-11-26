@@ -71,3 +71,6 @@ Outline
 MSG_ICONTEXTMODE_PLAIN (//)
 Plain
 ;
+MSG_ICONTEXTLENGTH (//)
+Max icon textlength
+;
