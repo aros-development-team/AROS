@@ -66,7 +66,7 @@ void PressedHookFunc(struct Hook *hook, Object *obj, APTR msg)
 }
 
 /**************************************************************************
- OM_NEW
+OM_NEW
 **************************************************************************/
 IPTR Cycle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -111,68 +111,68 @@ IPTR Cycle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
-	switch (tag->ti_Tag)
-	{
-	    case    MUIA_Cycle_Entries:
-		    data->entries = (const char**)tag->ti_Data;
-		    break;
-		    
-	    case    MUIA_Cycle_Active:
-	    	    data->entries_active = tag->ti_Data;
-		    break;
-	}
+    switch (tag->ti_Tag)
+    {
+        case    MUIA_Cycle_Entries:
+            data->entries = (const char**)tag->ti_Data;
+            break;
+            
+        case    MUIA_Cycle_Active:
+                data->entries_active = tag->ti_Data;
+            break;
+    }
     }
 
     if (!data->entries)
     {
-	D(bug("Cycle_New: No Entries specified!\n"));
-	CoerceMethod(cl,obj,OM_DISPOSE);
-	return (IPTR)NULL;
+    D(bug("Cycle_New: No Entries specified!\n"));
+    CoerceMethod(cl,obj,OM_DISPOSE);
+    return (IPTR)NULL;
     }
 
     /* Count the number of entries */
     for (i=0;data->entries[i];i++)
     {
-    	Object *page;
-	
-	page = TextObject,
-	    	    MUIA_Text_Contents, (IPTR)data->entries[i],
-		    MUIA_Text_PreParse, (IPTR)"\033c",
-		    End;
-		    
-    	if (!page)
-	{
-	    D(bug("Cycle_New: Could not create page object specified!\n"));
-	    CoerceMethod(cl,obj,OM_DISPOSE);
-	    return (IPTR)NULL;
-	}
-	
-	DoMethod(pageobj, OM_ADDMEMBER, (IPTR)page);
+        Object *page;
+    
+        page = TextObject,
+            MUIA_Text_Contents, (IPTR)data->entries[i],
+            MUIA_Text_PreParse, (IPTR)"\033c",
+            End;
+            
+        if (!page)
+        {
+            D(bug("Cycle_New: Could not create page object specified!\n"));
+            CoerceMethod(cl,obj,OM_DISPOSE);
+            return (IPTR)NULL;
+        }
+        
+        DoMethod(pageobj, OM_ADDMEMBER, (IPTR)page);
     }
     data->entries_num = i;
 
     if ((data->entries_active >= 0) && (data->entries_active < data->entries_num))
     {
-    	set(pageobj, MUIA_Group_ActivePage, data->entries_active);
+        set(pageobj, MUIA_Group_ActivePage, data->entries_active);
     }
     else
     {
-    	data->entries_active = 0;
+        data->entries_active = 0;
     }
     
 #if 1
     DoMethod(obj, MUIM_Notify, MUIA_Pressed, FALSE,
-    	     (IPTR)obj, 2, MUIM_CallHook, (IPTR)&data->pressedhook);
+            (IPTR)obj, 2, MUIM_CallHook, (IPTR)&data->pressedhook);
 #else
     DoMethod(imgobj, MUIM_Notify, MUIA_Pressed, FALSE,
-    	     (IPTR)obj, 3, MUIM_Set, MUIA_Cycle_Active, MUIV_Cycle_Active_Next);
+            (IPTR)obj, 3, MUIM_Set, MUIA_Cycle_Active, MUIV_Cycle_Active_Next);
 #endif
-         
+        
     return (IPTR)obj;
 }
 
 /**************************************************************************
- OM_SET
+OM_SET
 **************************************************************************/
 IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -185,59 +185,59 @@ IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
     {
-	switch (tag->ti_Tag)
-	{
-	    case    MUIA_Cycle_Active:
-	    	l = (LONG)tag->ti_Data;
+    switch (tag->ti_Tag)
+    {
+        case    MUIA_Cycle_Active:
+            l = (LONG)tag->ti_Data;
 
-	    	if (l == MUIV_Cycle_Active_Next)
-		{
-		    l = data->entries_active + 1;
-		    if (l >= data->entries_num) l = 0;
-		}
-		else if (l == MUIV_Cycle_Active_Prev)
-		{
-		    l = data->entries_active - 1;
-		    if (l < 0) l = data->entries_num - 1;
-		}
+            if (l == MUIV_Cycle_Active_Next)
+        {
+            l = data->entries_active + 1;
+            if (l >= data->entries_num) l = 0;
+        }
+        else if (l == MUIV_Cycle_Active_Prev)
+        {
+            l = data->entries_active - 1;
+            if (l < 0) l = data->entries_num - 1;
+        }
 
-		if (l >= 0 && l < data->entries_num)
-		{
-		    data->entries_active = l;
-		    set(data->pageobj, MUIA_Group_ActivePage, data->entries_active);
-		}
-		break;
-		    
-	    default:
-	    	noforward = FALSE;
-	    	break;
-	}
+        if (l >= 0 && l < data->entries_num)
+        {
+            data->entries_active = l;
+            set(data->pageobj, MUIA_Group_ActivePage, data->entries_active);
+        }
+        break;
+            
+        default:
+            noforward = FALSE;
+            break;
+    }
     }
     
     if (noforward)
     {
-    	struct opSet ops = *msg;
-	struct TagItem tags[] =
-	{
-	    {MUIA_Group_Forward , FALSE },
-	    {TAG_MORE	    	, 0       }	    
-	};
+        struct opSet ops = *msg;
+    struct TagItem tags[] =
+    {
+        {MUIA_Group_Forward , FALSE },
+        {TAG_MORE	    	, 0       }	    
+    };
 
-	/* Zune must also be compilable with SAS C on Amiga */
-	tags[1].ti_Data = (IPTR)msg->ops_AttrList;
-	
-	ops.ops_AttrList =  tags;
-	
-	return DoSuperMethodA(cl,obj,(Msg)&ops);
+    /* Zune must also be compilable with SAS C on Amiga */
+    tags[1].ti_Data = (IPTR)msg->ops_AttrList;
+    
+    ops.ops_AttrList =  tags;
+    
+    return DoSuperMethodA(cl,obj,(Msg)&ops);
     }
     else
     {
-    	return DoSuperMethodA(cl,obj,(Msg)msg);
+        return DoSuperMethodA(cl,obj,(Msg)msg);
     }
 }
 
 /**************************************************************************
- OM_GET
+OM_GET
 **************************************************************************/
 IPTR Cycle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
@@ -246,23 +246,23 @@ IPTR Cycle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-	case	MUIA_Cycle_Active:
-		STORE = data->entries_active;
-		return 1;
+    case	MUIA_Cycle_Active:
+        STORE = data->entries_active;
+        return 1;
     }
 
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
 /**************************************************************************
- MUIM_Setup
+MUIM_Setup
 **************************************************************************/
 IPTR Cycle__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_CycleData   *data;
 
     if (!(DoSuperMethodA(cl, obj, (Msg)msg)))
-	return 0;
+    return 0;
 
     data = INST_DATA(cl, obj);
 
@@ -277,7 +277,7 @@ IPTR Cycle__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 }
 
 /**************************************************************************
- MUIM_Cleanup
+MUIM_Cleanup
 **************************************************************************/
 IPTR Cycle__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
@@ -295,15 +295,15 @@ static void KillPopupWin(Object *obj, struct MUI_CycleData *data)
 
     if (data->popwin)
     {
-    	CloseWindow(data->popwin);
-    	data->popwin = NULL;
+        CloseWindow(data->popwin);
+        data->popwin = NULL;
     }
     
     if (data->popbg)
     {
-    	zune_imspec_hide(data->popbg);
-    	zune_imspec_cleanup(data->popbg);
-	data->popbg = NULL;
+        zune_imspec_hide(data->popbg);
+        zune_imspec_cleanup(data->popbg);
+    data->popbg = NULL;
     }
     
     get(data->pageobj, MUIA_Group_ChildList, &childlist);
@@ -311,21 +311,21 @@ static void KillPopupWin(Object *obj, struct MUI_CycleData *data)
     cstate = (Object *)childlist->mlh_Head;
     while((child = NextObject(&cstate)))
     {
-    	ZText *text;
-	
-	get(child, MUIA_UserData, &text);
-	if (!text) break;
-	
-	zune_text_destroy(text);
-	
-	set(child, MUIA_UserData, 0);
+        ZText *text;
+    
+    get(child, MUIA_UserData, &text);
+    if (!text) break;
+    
+    zune_text_destroy(text);
+    
+    set(child, MUIA_UserData, 0);
     }
     
     if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
     {
-    	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-	data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-	DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);    	
+        DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);    	
     }
     
 }
@@ -344,7 +344,7 @@ static void RenderPopupItem(Object *obj, struct MUI_CycleData *data, WORD which)
     while((child = NextObject(&cstate)) && i--)
     {
     }
-   
+
     if (!child) return;
     
     get(child, MUIA_UserData, &text);
@@ -360,36 +360,36 @@ static void RenderPopupItem(Object *obj, struct MUI_CycleData *data, WORD which)
     
     if (which == data->activepopitem)
     {
-    	WORD off = 0;
-	
-    	if(muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_recessed_entries)
-	{
+        WORD off = 0;
+    
+        if(muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_recessed_entries)
+    {
             SetAPen(data->popwin->RPort, _pens(obj)[MPEN_SHADOW]);
-	    RectFill(data->popwin->RPort, x1, y1, x1, y2);
-	    RectFill(data->popwin->RPort, x1 + 1, y1, x2 - 1, y1);
-    	    SetAPen(data->popwin->RPort, _pens(obj)[MPEN_SHINE]);
-	    RectFill(data->popwin->RPort, x2, y1, x2, y2);
-	    RectFill(data->popwin->RPort, x1 + 1, y2, x2 - 1, y2);
-	    
-	    off = 1;
-	}
-	
-    	SetAPen(data->popwin->RPort, _pens(obj)[MPEN_FILL]);
-	RectFill(data->popwin->RPort, x1 + off, y1 + off, x2 - off, y2 - off);
+        RectFill(data->popwin->RPort, x1, y1, x1, y2);
+        RectFill(data->popwin->RPort, x1 + 1, y1, x2 - 1, y1);
+            SetAPen(data->popwin->RPort, _pens(obj)[MPEN_SHINE]);
+        RectFill(data->popwin->RPort, x2, y1, x2, y2);
+        RectFill(data->popwin->RPort, x1 + 1, y2, x2 - 1, y2);
+        
+        off = 1;
+    }
+    
+        SetAPen(data->popwin->RPort, _pens(obj)[MPEN_FILL]);
+    RectFill(data->popwin->RPort, x1 + off, y1 + off, x2 - off, y2 - off);
     }
     else
     {
-    	if (data->popbg)
-	{
-	    zune_imspec_draw(data->popbg, muiRenderInfo(obj),
-	    	    	     x1, y1, x2 - x1 + 1, y2 - y1 + 1,
-			     x1, y1, 0);
-	}
-	else
-	{
-    	    SetAPen(data->popwin->RPort, 0);
-	    RectFill(data->popwin->RPort, x1, y1, x2, y2);
-	}
+        if (data->popbg)
+    {
+        zune_imspec_draw(data->popbg, muiRenderInfo(obj),
+                        x1, y1, x2 - x1 + 1, y2 - y1 + 1,
+                x1, y1, 0);
+    }
+    else
+    {
+            SetAPen(data->popwin->RPort, 0);
+        RectFill(data->popwin->RPort, x1, y1, x2, y2);
+    }
     }
     
     SetAPen(data->popwin->RPort, _pens(obj)[MPEN_TEXT]);
@@ -397,7 +397,7 @@ static void RenderPopupItem(Object *obj, struct MUI_CycleData *data, WORD which)
     y1 += POPITEM_EXTRAHEIGHT / 2;
     if(muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_recessed_entries)
     {
-    	y1++;
+        y1++;
     }
     
     zune_text_draw(text, obj, x1, x2, y1);
@@ -421,7 +421,7 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     cstate = (Object *)childlist->mlh_Head;
     while((child = NextObject(&cstate)))
     {
-	set(child, MUIA_UserData, 0);
+    set(child, MUIA_UserData, 0);
     }
     
     data->popitemwidth  = _width(data->pageobj);
@@ -432,80 +432,80 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
 
     if(muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_recessed_entries)
     {
-    	data->popitemwidth += 2;
-	data->popitemheight += 2;
+        data->popitemwidth += 2;
+    data->popitemheight += 2;
     }
     
     zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp]);
     
     data->popitemoffx = muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerLeft +
-    	    	    	zframe->ileft;
-			
+                        zframe->ileft;
+            
     data->popitemoffy = muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerTop +
-    	    	    	zframe->itop;
+                        zframe->itop;
     
     winw = data->popitemwidth + data->popitemoffx + 
-    	   muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerRight +
-	   zframe->iright;
-	   
+        muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerRight +
+    zframe->iright;
+    
     winh = data->popitemheight * data->entries_num + data->popitemoffy +
-    	   muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerBottom +
-	   zframe->ibottom;
+        muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerBottom +
+    zframe->ibottom;
     
     if ((winw > _screen(obj)->Width) || (winh > _screen(obj)->Height))
     {
-    	return FALSE;
+        return FALSE;
     }
 
     i = 0;
     cstate = (Object *)childlist->mlh_Head;
     while((child = NextObject(&cstate)))
     {
-    	ZText *text;
-	
-	text = zune_text_new("\33c", data->entries[i++], ZTEXT_ARG_NONE, 0);
-	if (!text) break;
-	
-	zune_text_get_bounds(text, obj);
-	set(child, MUIA_UserData, (IPTR)text);
+        ZText *text;
+    
+    text = zune_text_new("\33c", data->entries[i++], ZTEXT_ARG_NONE, 0);
+    if (!text) break;
+    
+    zune_text_get_bounds(text, obj);
+    set(child, MUIA_UserData, (IPTR)text);
     }
     
     if (i != data->entries_num)
     {
-    	KillPopupWin(obj, data);
-	return FALSE;
+        KillPopupWin(obj, data);
+    return FALSE;
     }
     
     data->popbg = zune_imspec_setup(MUII_PopupBack, muiRenderInfo(obj));
     if (data->popbg) zune_imspec_show(data->popbg, obj);
     
     winx = _window(obj)->LeftEdge + _mleft(data->pageobj) - 
-    	   data->popitemoffx - POPITEM_EXTRAWIDTH / 2;
+        data->popitemoffx - POPITEM_EXTRAWIDTH / 2;
 
     if(muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_position == CYCLE_MENU_POSITION_BELOW)
     {    
-    	winy = _window(obj)->TopEdge + _bottom(obj) + 1;
+        winy = _window(obj)->TopEdge + _bottom(obj) + 1;
     }
     else
     {
-    	winy = _window(obj)->TopEdge + _mtop(data->pageobj) - data->popitemoffy -
-	       POPITEM_EXTRAHEIGHT / 2 - data->entries_active * data->popitemheight;
+        winy = _window(obj)->TopEdge + _mtop(data->pageobj) - data->popitemoffy -
+        POPITEM_EXTRAHEIGHT / 2 - data->entries_active * data->popitemheight;
     }
     
     data->popwin = OpenWindowTags(NULL, WA_CustomScreen, (IPTR)_screen(obj),
-    	    	    	    	    	WA_Left, winx,
-					WA_Top, winy,
-					WA_Width, winw,
-					WA_Height, winh,
-					WA_AutoAdjust, TRUE,
-					WA_Borderless, TRUE,
-					WA_Activate, FALSE,
-					WA_BackFill, (IPTR)LAYERS_NOBACKFILL,
-					TAG_DONE);
-					
+                                        WA_Left, winx,
+                    WA_Top, winy,
+                    WA_Width, winw,
+                    WA_Height, winh,
+                    WA_AutoAdjust, TRUE,
+                    WA_Borderless, TRUE,
+                    WA_Activate, FALSE,
+                    WA_BackFill, (IPTR)LAYERS_NOBACKFILL,
+                    TAG_DONE);
+                    
     if (!data->popwin)
     {
-    	return FALSE;
+        return FALSE;
     }
     
     rp = data->popwin->RPort;
@@ -518,42 +518,42 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     
     if (data->popbg)
     {
-	zune_imspec_draw(data->popbg, muiRenderInfo(obj),
-		 zframe->ileft, zframe->itop,
-		 winw - zframe->ileft - zframe->iright,
-		 winh - zframe->itop - zframe->ibottom,
-		 zframe->ileft, zframe->itop, 0);
+    zune_imspec_draw(data->popbg, muiRenderInfo(obj),
+        zframe->ileft, zframe->itop,
+        winw - zframe->ileft - zframe->iright,
+        winh - zframe->itop - zframe->ibottom,
+        zframe->ileft, zframe->itop, 0);
     }
     else
     {
-	SetAPen(rp, 0);
-	RectFill(rp, zframe->ileft, zframe->itop,
-    	    	     winw - 1 - zframe->iright, winh - 1 - zframe->ibottom);
+    SetAPen(rp, 0);
+    RectFill(rp, zframe->ileft, zframe->itop,
+                    winw - 1 - zframe->iright, winh - 1 - zframe->ibottom);
     }
-     
+    
     x = data->popitemoffx;
     y = data->popitemoffy + POPITEM_EXTRAHEIGHT / 2;
     
     if(muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_recessed_entries)
     {
-	y++;
+    y++;
     }
     
     i = 0;
     cstate = (Object *)childlist->mlh_Head;
     while((child = NextObject(&cstate)))
     {
-    	ZText *text;
-	
-	get(child, MUIA_UserData, &text);
-	
-	SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
-	if (text) /* paranoia */
-	{
-	    zune_text_draw(text, obj, x, x + data->popitemwidth - 1, y);
-	}
-	
-	y += data->popitemheight;
+        ZText *text;
+    
+    get(child, MUIA_UserData, &text);
+    
+    SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
+    if (text) /* paranoia */
+    {
+        zune_text_draw(text, obj, x, x + data->popitemwidth - 1, y);
+    }
+    
+    y += data->popitemheight;
     }
 
     _rp(obj) = saverp;
@@ -561,11 +561,11 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     data->activepopitem = -1;
     
     return TRUE;				    
-    	    	    	    	    	
+                                        
 }
 
 /**************************************************************************
- MUIM_HandleEvent
+MUIM_HandleEvent
 **************************************************************************/
 IPTR Cycle__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
@@ -574,201 +574,201 @@ IPTR Cycle__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleE
     
     if (msg->muikey != MUIKEY_NONE)
     {
-    	int old_active = data->popwin ? data->activepopitem : data->entries_active;
-	int new_active = old_active;
-	BOOL eat = FALSE;
-	
-    	switch(msg->muikey)
-	{
-	    case MUIKEY_WINDOW_CLOSE:
-	    	if (data->popwin)
-		{
-		    KillPopupWin(obj, data);
-		    eat = TRUE;
-		}
-		break;
-		
-	    case MUIKEY_PRESS:
-	    	if (data->entries_num < muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_min_entries)
-		{
-		    /* fall through to MUIKEY_DOWN */
-		}
-		else if (!data->popwin)
-		{
-		    if (MakePopupWin(obj, data))
-		    {
-    			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-			eat = TRUE;
-			break;
-		    }
-		    else
-		    {
-		    	/* fall through to MUIKEY_DOWN */
-		    }
-		}
-		else if (data->popwin)
-		{
-		    KillPopupWin(obj, data);
-		    if (new_active != -1)
-		    {
-			set(obj, MUIA_Cycle_Active, new_active);
-		    }
-		    eat = TRUE;
-		    break;		    
-		}
-		/* no break here, because of fall-throughs above */
-		
-	    case MUIKEY_DOWN:
-	    	if (new_active < data->entries_num - 1)
-		{
-		    new_active++;
-		}
-		else if (!data->popwin)
-		{
-		    new_active = 0;
-		}
-		
-		eat = TRUE;
-		break;
-		
-	    case MUIKEY_UP:
-	    	if (new_active)
-		{
-		    new_active--;
-		}
-		else if (!data->popwin)
-		{
-		    new_active = data->entries_num - 1;
-		}
-		
-		eat = TRUE;
-		break;
-		
-	    case MUIKEY_PAGEUP:
-	    case MUIKEY_TOP:
-	    	new_active = 0;
-		eat = TRUE;
-		break;
-		
-	    case MUIKEY_PAGEDOWN:
-	    case MUIKEY_BOTTOM:
-	    	new_active = data->entries_num - 1;
-		eat = TRUE;
-		break;
-	}
-	
-	if (new_active != old_active)
-	{
-	    if (data->popwin)
-	    {
-		data->activepopitem = new_active;
-		    
-		if (old_active != -1) RenderPopupItem(obj, data, old_active);
-		if (new_active != -1) RenderPopupItem(obj, data, new_active);
-	    	
-	    }
-	    else
-	    {
-	    	set(obj, MUIA_Cycle_Active, new_active);
-	    }
-	    
-	}
-	
-	if (eat) return MUI_EventHandlerRC_Eat;
+        int old_active = data->popwin ? data->activepopitem : data->entries_active;
+    int new_active = old_active;
+    BOOL eat = FALSE;
+    
+        switch(msg->muikey)
+    {
+        case MUIKEY_WINDOW_CLOSE:
+            if (data->popwin)
+        {
+            KillPopupWin(obj, data);
+            eat = TRUE;
+        }
+        break;
+        
+        case MUIKEY_PRESS:
+            if (data->entries_num < muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_min_entries)
+        {
+            /* fall through to MUIKEY_DOWN */
+        }
+        else if (!data->popwin)
+        {
+            if (MakePopupWin(obj, data))
+            {
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+            data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+            eat = TRUE;
+            break;
+            }
+            else
+            {
+                /* fall through to MUIKEY_DOWN */
+            }
+        }
+        else if (data->popwin)
+        {
+            KillPopupWin(obj, data);
+            if (new_active != -1)
+            {
+            set(obj, MUIA_Cycle_Active, new_active);
+            }
+            eat = TRUE;
+            break;		    
+        }
+        /* no break here, because of fall-throughs above */
+        
+        case MUIKEY_DOWN:
+            if (new_active < data->entries_num - 1)
+        {
+            new_active++;
+        }
+        else if (!data->popwin)
+        {
+            new_active = 0;
+        }
+        
+        eat = TRUE;
+        break;
+        
+        case MUIKEY_UP:
+            if (new_active)
+        {
+            new_active--;
+        }
+        else if (!data->popwin)
+        {
+            new_active = data->entries_num - 1;
+        }
+        
+        eat = TRUE;
+        break;
+        
+        case MUIKEY_PAGEUP:
+        case MUIKEY_TOP:
+            new_active = 0;
+        eat = TRUE;
+        break;
+        
+        case MUIKEY_PAGEDOWN:
+        case MUIKEY_BOTTOM:
+            new_active = data->entries_num - 1;
+        eat = TRUE;
+        break;
+    }
+    
+    if (new_active != old_active)
+    {
+        if (data->popwin)
+        {
+        data->activepopitem = new_active;
+            
+        if (old_active != -1) RenderPopupItem(obj, data, old_active);
+        if (new_active != -1) RenderPopupItem(obj, data, new_active);
+            
+        }
+        else
+        {
+            set(obj, MUIA_Cycle_Active, new_active);
+        }
+        
+    }
+    
+    if (eat) return MUI_EventHandlerRC_Eat;
 
     }
     
     if (!msg->imsg ||
-         data->entries_num < muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_min_entries)
+        data->entries_num < muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_min_entries)
     {
-    	return 0;
+        return 0;
     }
     
     switch(msg->imsg->Class)
     {
-    	case IDCMP_MOUSEBUTTONS:
-	    switch(msg->imsg->Code)
-	    {
-	    	case SELECTDOWN:		
-		    if (_between(_right(data->imgobj) + 1, msg->imsg->MouseX, _right(obj)) &&
-	        	_between(_top(obj), msg->imsg->MouseY, _bottom(obj)) &&
-			(muiAreaData(obj)->mad_Flags & MADF_CANDRAW) &&
-			!data->popwin)
-		    {
-		     	if (MakePopupWin(obj, data))
-		     	{
-    			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);    	
-			    
-    		    	    fallthroughtomousemove = TRUE;    	    	    	    
-		     	}
-			break;
-		    }
-		    else if (data->popwin)
-		    {
-		    	/* fall through to SELECTUP/MENUUP/MIDDLEUP */
-		    }
-		    else
-		    {
-		    	break;
-		    }
-		    /* no break here! */
-		   
-		case SELECTUP:
-		case MENUUP:
-		case MIDDLEUP:
-		default:
-		    if (data->popwin)
-		    {
-		    	KillPopupWin(obj, data);
-			if ((data->activepopitem != -1) &&
-			    ((msg->imsg->Code == SELECTUP) || (msg->imsg->Code == SELECTDOWN)))
-			{
-			    set(obj, MUIA_Cycle_Active, data->activepopitem);
-			}
-		    	return MUI_EventHandlerRC_Eat;
-		    }
-		    break;
-		    
-		    
-	    } /* switch(msg->imsg->Code) */
-	    
-	    if (!fallthroughtomousemove)
-	    {
-	    	break;
-	    }
-	    
-	case IDCMP_MOUSEMOVE:
-	    if (data->popwin)
-	    {
-	    	WORD x = data->popwin->MouseX;
-		WORD y = data->popwin->MouseY - data->popitemoffy;
-		WORD newactive = -1;
-		
-		if ((x >= 0) && (y >= 0) &&
-		    (x < data->popwin->Width) && (y < data->popitemheight * data->entries_num))
-		{
-		    newactive = y / data->popitemheight;
-		} 
-		
-		if (newactive != data->activepopitem)
-		{
-    	    	    WORD oldactive = data->activepopitem;
-		    
-		    data->activepopitem = newactive;
-		    
-		    if (oldactive != -1) RenderPopupItem(obj, data, oldactive);
-		    if (newactive != -1) RenderPopupItem(obj, data, newactive);
-		    
-		}
-		
-	    	return MUI_EventHandlerRC_Eat;
-	    }
-	    break;
-	    
+        case IDCMP_MOUSEBUTTONS:
+        switch(msg->imsg->Code)
+        {
+            case SELECTDOWN:		
+            if (_between(_right(data->imgobj) + 1, msg->imsg->MouseX, _right(obj)) &&
+                _between(_top(obj), msg->imsg->MouseY, _bottom(obj)) &&
+            (muiAreaData(obj)->mad_Flags & MADF_CANDRAW) &&
+            !data->popwin)
+            {
+                if (MakePopupWin(obj, data))
+                {
+                    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+                data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);    	
+                
+                        fallthroughtomousemove = TRUE;    	    	    	    
+                }
+            break;
+            }
+            else if (data->popwin)
+            {
+                /* fall through to SELECTUP/MENUUP/MIDDLEUP */
+            }
+            else
+            {
+                break;
+            }
+            /* no break here! */
+        
+        case SELECTUP:
+        case MENUUP:
+        case MIDDLEUP:
+        default:
+            if (data->popwin)
+            {
+                KillPopupWin(obj, data);
+            if ((data->activepopitem != -1) &&
+                ((msg->imsg->Code == SELECTUP) || (msg->imsg->Code == SELECTDOWN)))
+            {
+                set(obj, MUIA_Cycle_Active, data->activepopitem);
+            }
+                return MUI_EventHandlerRC_Eat;
+            }
+            break;
+            
+            
+        } /* switch(msg->imsg->Code) */
+        
+        if (!fallthroughtomousemove)
+        {
+            break;
+        }
+        
+    case IDCMP_MOUSEMOVE:
+        if (data->popwin)
+        {
+            WORD x = data->popwin->MouseX;
+        WORD y = data->popwin->MouseY - data->popitemoffy;
+        WORD newactive = -1;
+        
+        if ((x >= 0) && (y >= 0) &&
+            (x < data->popwin->Width) && (y < data->popitemheight * data->entries_num))
+        {
+            newactive = y / data->popitemheight;
+        } 
+        
+        if (newactive != data->activepopitem)
+        {
+                    WORD oldactive = data->activepopitem;
+            
+            data->activepopitem = newactive;
+            
+            if (oldactive != -1) RenderPopupItem(obj, data, oldactive);
+            if (newactive != -1) RenderPopupItem(obj, data, newactive);
+            
+        }
+        
+            return MUI_EventHandlerRC_Eat;
+        }
+        break;
+        
     } /* switch(msg->imsg->Class) */
         
     return 0;
@@ -776,7 +776,7 @@ IPTR Cycle__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleE
 }
 
 /**************************************************************************
- MUIM_Hide
+MUIM_Hide
 **************************************************************************/
 IPTR Cycle__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
@@ -784,7 +784,7 @@ IPTR Cycle__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 
     if (data->popwin)
     {
-    	KillPopupWin(obj, data);
+        KillPopupWin(obj, data);
     }
         
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -794,13 +794,13 @@ BOOPSI_DISPATCHER(IPTR, Cycle_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:           return Cycle__OM_NEW(cl, obj, (struct opSet *)msg);
-	case OM_SET:           return Cycle__OM_SET(cl, obj, (struct opSet *)msg);
-	case OM_GET:           return Cycle__OM_GET(cl, obj, (struct opGet *)msg);
-	case MUIM_Setup:       return Cycle__MUIM_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup:     return Cycle__MUIM_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_Hide:        return Cycle__MUIM_Hide(cl, obj, (APTR)msg);
-	case MUIM_HandleEvent: return Cycle__MUIM_HandleEvent(cl,obj,(APTR)msg);
+    case OM_NEW:           return Cycle__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_SET:           return Cycle__OM_SET(cl, obj, (struct opSet *)msg);
+    case OM_GET:           return Cycle__OM_GET(cl, obj, (struct opGet *)msg);
+    case MUIM_Setup:       return Cycle__MUIM_Setup(cl, obj, (APTR)msg);
+    case MUIM_Cleanup:     return Cycle__MUIM_Cleanup(cl, obj, (APTR)msg);
+    case MUIM_Hide:        return Cycle__MUIM_Hide(cl, obj, (APTR)msg);
+    case MUIM_HandleEvent: return Cycle__MUIM_HandleEvent(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
@@ -808,8 +808,8 @@ BOOPSI_DISPATCHER(IPTR, Cycle_Dispatcher, cl, obj, msg)
 BOOPSI_DISPATCHER_END
 
 /*
- * Class descriptor.
- */
+* Class descriptor.
+*/
 const struct __MUIBuiltinClass _MUI_Cycle_desc = {
     MUIC_Cycle,
     MUIC_Group, 
