@@ -18,18 +18,20 @@
 
 /* The maximum length the path may have. */
 #define PATHLENGTHSIZE 256 
+#define ICON_TEXT_MAXLEN_DEFAULT    20
 
 struct WandererPrefs
 {
     UBYTE wpd_WorkbenchBackground[PATHLENGTHSIZE],
           wpd_DrawerBackground[PATHLENGTHSIZE];
          
-    UBYTE wpd_NavigationMethod;  
-    UBYTE wpd_ToolbarEnabled;   
+    UBYTE wpd_NavigationMethod;  // Are we using the toolbar or not for navigation
+    UBYTE wpd_ToolbarEnabled; // Is the toolbar enabled?
     
-    UBYTE wpd_IconListMode;
-    UBYTE wpd_IconTextMode;
+    UBYTE wpd_IconListMode; // How is it going to be listed
+    UBYTE wpd_IconTextMode; // How is the text rendered
     
+    ULONG wpd_IconTextMaxLen; // Max length of icon text
 };
 
 #define WPD_NAVIGATION_CLASSIC 0
