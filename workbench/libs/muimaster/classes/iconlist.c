@@ -128,6 +128,7 @@ struct MUI_IconData
     /* How to show the iconlist */
     UBYTE wpd_IconListMode;
     UBYTE wpd_IconTextMode;
+    ULONG wpd_IconTextMaxLen;
 
     /* Render stuff */
 
@@ -217,6 +218,8 @@ int LoadWandererPrefs ( struct MUI_IconData *data )
         data->wpd_IconListMode = wpd.wpd_IconListMode;
         /* Icon textmode */
         data->wpd_IconTextMode = wpd.wpd_IconTextMode;
+        /* Icon textmaxlength */
+        data->wpd_IconTextMaxLen = wpd.wpd_IconTextMaxLen;
         
         return 1;
     }
@@ -253,9 +256,14 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
     if (icon->entry.label)
     {
         SetFont(_rp(obj), data->IconFont);
-        LONG txwidth = TextLength(_rp(obj), icon->entry.label, strlen(icon->entry.label));
-        if ( txwidth > icon->realWidth )
-            icon->realWidth = txwidth;
+        
+        ULONG textlength = strlen(icon->entry.label);
+        if ( textlength > data->wpd_IconTextMaxLen ) textlength = data->wpd_IconTextMaxLen;
+        
+        LONG txwidth = TextLength(_rp(obj), icon->entry.label, textlength);
+        
+        if ( txwidth > icon->realWidth ) icon->realWidth = txwidth;
+        
         icon->realHeight += data->IconFont->tf_Baseline + ICONLIST_TEXTMARGIN;
     }
 
@@ -357,30 +365,33 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     if (icon->entry.label)
     {
         ULONG nameLength = strlen(icon->entry.label);
-        ULONG n2 = nameLength;
         //ULONG ThisMinX = iconrect.MinX; <- gonna use soon for positioning
 
         SetFont(_rp(obj), data->IconFont);
 
-        txwidth = TextLength(_rp(obj), icon->entry.label, nameLength);
+        if ( nameLength > data->wpd_IconTextMaxLen )
+            txwidth = TextLength(_rp(obj), icon->entry.label, data->wpd_IconTextMaxLen);
+        else txwidth = TextLength(_rp(obj), icon->entry.label, nameLength);
         
         // Constrain text to iconwidth
         // This shouldn't happen if we allow text to overflow the 
         // icon image width
-        while( txwidth > icon->realWidth )
-            txwidth = TextLength(_rp(obj), icon->entry.label, --nameLength);
+        /*while( txwidth > icon->realWidth )
+            txwidth = TextLength(_rp(obj), icon->entry.label, nameLength - 1);*/
 
-        memset( buf , 0 , sizeof( buf ) );
+        memset( buf, 0 , sizeof( buf ) );
 
-        if( nameLength < n2 )
+        ULONG len = data->wpd_IconTextMaxLen;
+        // Make sure the maxlen is at least the length of ".."
+        if ( len < 2 ) len = 2;
+        
+        if(nameLength > len)
         {
-            strncpy( buf , icon->entry.label , nameLength-2 );
-            strcat( buf , ".." );
+            strncpy(buf, icon->entry.label, len - 2);
+            strcat(buf , "..");
+            nameLength = len;
         }
-        else
-        {
-            strncpy( buf , icon->entry.label , nameLength );
-        }
+        else strncpy( buf, icon->entry.label, nameLength );
              
         tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - txwidth)/2);
         ty = iconY + icon->height + data->IconFont->tf_Baseline;
@@ -390,7 +401,8 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             case ICON_TEXTMODE_DROPSHADOW:
             case ICON_TEXTMODE_PLAIN:
                 SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-                Move(_rp(obj), tx, ty); Text(_rp(obj), buf, nameLength);
+                Move(_rp(obj), tx, ty); 
+                Text(_rp(obj), buf, nameLength);
                 break;
                 
             default:
@@ -2225,7 +2237,9 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, cl, obj, msg)
         case OM_DISPOSE:                  return IconList__OM_DISPOSE(cl,obj, msg);
         case OM_SET:                      return IconList__OM_SET(cl,obj,(struct opSet *)msg);
         case OM_GET:                      return IconList__OM_GET(cl,obj,(struct opGet *)msg);
+        
         case MUIM_Setup:                  return IconList__MUIM_Setup(cl,obj,(struct MUIP_Setup *)msg);
+        
         case MUIM_Show:                   return IconList__MUIM_Show(cl,obj,(struct MUIP_Show *)msg);
         case MUIM_Cleanup:                return IconList__MUIM_Cleanup(cl,obj,(struct MUIP_Cleanup *)msg);
         case MUIM_AskMinMax:              return IconList__MUIM_AskMinMax(cl,obj,(struct MUIP_AskMinMax *)msg);
