@@ -41,6 +41,7 @@ struct WPEditor_DATA
            *wped_toolbarpreview;
     Object *wped_icon_listmode;
     Object *wped_icon_textmode;
+    Object *wped_icon_textmaxlen;
         
 };
 
@@ -58,9 +59,12 @@ static STRPTR registerpages[4];
 Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     struct WPEditor_DATA *data = NULL;
-    Object *workbenchPI = NULL, *drawersPI = NULL, *c_navitype = NULL, *bt_dirup = NULL,
-           *bt_search = NULL, *cm_toolbarenabled = NULL, *toolbarpreview = NULL,
-           *wped_icon_listmode = NULL, *wped_icon_textmode = NULL;
+    
+    Object *workbenchPI = NULL, *drawersPI = NULL, *c_navitype = NULL, 
+           *bt_dirup = NULL, *bt_search = NULL, *cm_toolbarenabled = NULL, 
+           *toolbarpreview = NULL, *wped_icon_listmode = NULL, *wped_icon_textmode = NULL, 
+           *wped_icon_textmaxlen = NULL;
+
     //Object *cm_searchenabled;
 
     registerpages[WPD_GENERAL] = (STRPTR)_(MSG_GENERAL);
@@ -80,6 +84,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     wped_icon_listmode = MUI_MakeObject(MUIO_Cycle, NULL, iconlistmodes);
     wped_icon_textmode = MUI_MakeObject(MUIO_Cycle, NULL, icontextmodes);
     cm_toolbarenabled = MUI_MakeObject(MUIO_Checkmark,NULL);
+    wped_icon_textmaxlen = MUI_MakeObject(MUIO_String,NULL,4);
 
     self = (Object *) DoSuperNewTags
     (
@@ -127,14 +132,18 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR) (GroupObject,
                         MUIA_FrameTitle, __(MSG_ICONSPREFS),
                         MUIA_Frame, MUIV_Frame_Group,
-                        Child, (IPTR) (HGroup,
+                        Child, (IPTR) HGroup,
                             Child, (IPTR) Label1(_(MSG_ICONLISTMODE)),
                             Child, (IPTR) wped_icon_listmode,
-                        End),
-                        Child, (IPTR) (HGroup,
+                        End,
+                        Child, (IPTR) HGroup,
                             Child, (IPTR) Label1(_(MSG_ICONTEXTMODE)),
                             Child, (IPTR) wped_icon_textmode,
-                        End),
+                        End,
+                        Child, (IPTR) HGroup,
+                            Child, (IPTR) Label1(_(MSG_ICONTEXTLENGTH)),
+                            Child, (IPTR) wped_icon_textmaxlen,
+                        End,
                     End),
                 End),
                 Child, (IPTR) (GroupObject,                     // toolbar 
@@ -173,6 +182,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->wped_toolbarpreview = toolbarpreview;
         data->wped_icon_listmode = wped_icon_listmode;
         data->wped_icon_textmode = wped_icon_textmode;
+        data->wped_icon_textmaxlen = wped_icon_textmaxlen;
         
         //-- Setup notifications -------------------------------------------
         DoMethod
@@ -235,7 +245,15 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
              c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_CLASSIC,  
              (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, FALSE
         ); 
-                
+        // Icon textmode maxlength
+        set ( wped_icon_textmaxlen, MUIA_String_Integer, ICON_TEXT_MAXLEN_DEFAULT );
+        set ( wped_icon_textmaxlen, MUIA_String_MaxLen, 3 );
+        set ( wped_icon_textmaxlen, MUIA_String_Format, MUIV_String_Format_Right );
+        set ( wped_icon_textmaxlen, MUIA_String_Accept, ( IPTR )"0123456789" ); 
+        DoMethod ( 
+            wped_icon_textmaxlen, MUIM_Notify, MUIA_String_Integer, MUIV_EveryTime,  
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE 
+        );
     }
     return self;
 }
@@ -324,13 +342,16 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
             set(data->wped_toolbarpreview, MUIA_Disabled, TRUE);
         
         /* Icon listmode */
-        set ( data->wped_icon_listmode, MUIA_Cycle_Active, wpd.wpd_IconListMode );
+        set ( data->wped_icon_listmode, MUIA_Cycle_Active, (IPTR)wpd.wpd_IconListMode );
         
         /* Icon textmode */
-        set ( data->wped_icon_textmode, MUIA_Cycle_Active, wpd.wpd_IconTextMode );
+        set ( data->wped_icon_textmode, MUIA_Cycle_Active, (IPTR)wpd.wpd_IconTextMode );
+        
+        /* set max text length */
+        set(data->wped_icon_textmaxlen, MUIA_String_Integer, (IPTR)wpd.wpd_IconTextMaxLen);
         
         /* set navigation type */   
-        set(data->wped_c_NavigationMethod, MUIA_Cycle_Active, wpd.wpd_NavigationMethod);    
+        set(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)wpd.wpd_NavigationMethod);    
     }
     
     return success;
@@ -400,6 +421,9 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
                 
                 /* save the icon text mode */
                 get(data->wped_icon_textmode, MUIA_Cycle_Active, &wpd.wpd_IconTextMode);
+                
+                /* save the max length of icons */
+                get(data->wped_icon_textmaxlen, MUIA_String_Integer, &wpd.wpd_IconTextMaxLen);
                 
                 /* TODO: fix problems with endianess?? */
                 //SMPByteSwap(&wpd); 
