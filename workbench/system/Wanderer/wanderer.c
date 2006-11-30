@@ -31,6 +31,7 @@
 #include "wandererprefs.h"
 #include "wandererprefsintern.h"
 #include "wanderer.h"
+#include "filesystems.h"
 
 #include "locale.h"
 
@@ -747,31 +748,20 @@ AROS_UFH3
                    /* if not end of selection, process */
                    if ( (int)ent != MUIV_IconList_NextSelected_End )
                    {
-                         char argbuffer[1024];
+                         char iconfilenamebuffer[256];
 
                          D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, (char *)destination_path);)
  
-                         /* create arg string */
-                         memset( argbuffer, '\0', sizeof(argbuffer) ); 
-                         strcat( argbuffer, "C:Copy \"" );
-                         strcat( argbuffer, ent->filename );
-                         strcat( argbuffer, "\" \"" );
-                         strcat( argbuffer, destination_path );
-                         strcat( argbuffer, "\"" );
-
-                         /* copy via execute */
-                         D(bug("[WANDERER] Executing %s", argbuffer );)
-                         Execute(argbuffer, NULL, NULL);
+                         /* copy via filesystems.c */
+                         D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path );)
+                         CopyContent(ent->filename, destination_path, TRUE, ACTION_COPY, NULL, NULL, NULL);
                          
-                         /* create arg string for .info file and try to copy  */
-                         memset( argbuffer, '\0', sizeof(argbuffer) ); 
-                         strcat( argbuffer, "C:Copy \"" );
-                         strcat( argbuffer, ent->filename );
-                         strcat( argbuffer, ".info\" \"" );
-                         strcat( argbuffer, destination_path ); 
-                         strcat( argbuffer, "\"" );
-                         D(bug("[WANDERER] Executing %s", argbuffer );)                      
-                         Execute(argbuffer, NULL, NULL);
+                         /* try to copy .info aswell  */
+                         memset( iconfilenamebuffer, '\0', sizeof(iconfilenamebuffer) ); 
+                         strcat( iconfilenamebuffer, ent->filename );
+                         strcat( iconfilenamebuffer, ".info");
+                         D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", iconfilenamebuffer, destination_path );)                
+                         CopyContent(iconfilenamebuffer, destination_path, TRUE, ACTION_COPY, NULL, NULL, NULL);
                                                   
                          /* update list contents */
                          DoMethod(drop->destination_iconlistobj,MUIM_IconList_Update);

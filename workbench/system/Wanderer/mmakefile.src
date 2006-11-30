@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := main locale support wanderer wandererprefs iconwindow wandererprefsinternal
+FILES := main locale support filesystems wanderer wandererprefs iconwindow wandererprefsinternal
 
 #MM- workbench-system : workbench-system-wanderer
 #MM  workbench-system-wanderer : \
