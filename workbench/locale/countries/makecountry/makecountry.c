@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 	return(20);
     }
 
-    cd = iconv_open("", "ISO-8859-1");
+    cd = iconv_open("ISO-8859-1", "ISO-8859-1");
     if(cd == (iconv_t)(-1))
     {
 	printf("%s: Error converting character sets\n", argv[0]);
