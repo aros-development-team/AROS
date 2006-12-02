@@ -721,6 +721,7 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
 	}
 	else if (data->wd_X == MUIV_Window_LeftEdge_Moused)
 	{
+	    data->wd_X = data->wd_RenderInfo.mri_Screen->MouseX;
 	}
 
 	if (data->wd_Y == MUIV_Window_TopEdge_Centered)
@@ -729,6 +730,7 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
 	}
 	else if (data->wd_Y == MUIV_Window_TopEdge_Moused)
 	{
+	    data->wd_Y = data->wd_RenderInfo.mri_Screen->MouseY;
 	}
 	else if (data->wd_Y <= MUIV_Window_TopEdge_Delta(0))
 	{
