@@ -604,7 +604,7 @@ BPTR InternalLoadSeg_ELF
     for (i = 0; i < eh.shnum; i++)
     {
         /*
-           Load the symbol and string(if debug is on) table(s).
+           Load the symbol and string table(s).
 
            NOTICE: the ELF standard, at the moment (Nov 2002) explicitely states
                    that only one symbol table per file is allowed. However, it
@@ -691,18 +691,18 @@ error:
 
 end:
     
-#if defined(__ppc__) || defined(__powerpc__)
-    if (hunks)
+    /* Clear the caches to let the CPU see the new data and instructions */
     {
-	struct hunk *hunk = BPTR2HUNK(hunks);
-	CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
-	while (hunk->next)
-	{
-	    hunk = BPTR2HUNK(hunk->next);
-	    CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
-	}
+        BPTR curr = hunks;
+        while (curr)
+        {
+             struct hunk *hunk = BPTR2HUNK(curr);
+             
+	     CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
+             
+             curr = hunk->next;
+        }
     }
-#endif
     
     /* deallocate the symbol tables */
     for (i = 0; i < eh.shnum; i++)
