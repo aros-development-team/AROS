@@ -41,7 +41,7 @@
 BOOL HIDD_IRQ_AddHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler, HIDDT_IRQ_Id id)
 {
     STATIC_MID;
-    struct pHidd_IRQ_AddHandler p;
+    struct pHidd_IRQ_AddHandler p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler);
         
@@ -49,7 +49,7 @@ BOOL HIDD_IRQ_AddHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler, HIDDT_IRQ_
     p.handlerinfo   = handler;
     p.id            = id;
 
-    return((BOOL) OOP_DoMethod(obj, (OOP_Msg) &p));
+    return((BOOL) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 
 /***************************************************************/
@@ -57,14 +57,14 @@ BOOL HIDD_IRQ_AddHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler, HIDDT_IRQ_
 VOID HIDD_IRQ_RemHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler)
 {
     STATIC_MID;
-    struct pHidd_IRQ_RemHandler p;
+    struct pHidd_IRQ_RemHandler p, *msg = &p;
 
     if (!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_RemHandler);
 
     p.mID           = mid;
     p.handlerinfo   = handler;
 
-    OOP_DoMethod(obj, (OOP_Msg) &p);
+    OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 /*****************************************************************/
@@ -72,7 +72,7 @@ VOID HIDD_IRQ_RemHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler)
 VOID HIDD_IRQ_CauseIRQ(OOP_Object *obj, HIDDT_IRQ_Id id, HIDDT_IRQ_HwInfo *hwinfo)
 {
     STATIC_MID;
-    struct pHidd_IRQ_CauseIRQ p;
+    struct pHidd_IRQ_CauseIRQ p, *msg = &p;
 
     if (!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_CauseIRQ);
 
@@ -80,5 +80,5 @@ VOID HIDD_IRQ_CauseIRQ(OOP_Object *obj, HIDDT_IRQ_Id id, HIDDT_IRQ_HwInfo *hwinf
     p.id            = id;
     p.hardwareinfo  = hwinfo;
 
-    OOP_DoMethod(obj, (OOP_Msg) &p);
+    OOP_DoMethod(obj, (OOP_Msg) msg);
 }
