@@ -72,12 +72,12 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	/* Get attr values */
 	OOP_GetAttr(o, aHidd_BitMap_Width, &width);
 	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
-	OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+	OOP_GetAttr(o, aHidd_BitMap_PixFmt, &pf);
 	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 	OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &multi);
 	
 	/* Get the friend bitmap. This should be a displayable bitmap */
-	OOP_GetAttr(o, aHidd_BitMap_Friend, (IPTR *)&friend);
+	OOP_GetAttr(o, aHidd_BitMap_Friend, &friend);
 	
 	/* If you got a friend bitmap, copy its colormap */
 	if (friend)
