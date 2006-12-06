@@ -64,11 +64,11 @@
 
 *****************************************************************************/
 {
-    struct opSet ops;
+    struct opSet ops, *msg = &ops;
 
     ops.MethodID     = OM_SET;
     ops.ops_AttrList = &tag1;
     ops.ops_GInfo    = NULL;
 
-    return DoSuperMethodA(class, object, (Msg)&ops);
+    return DoSuperMethodA(class, object, (Msg)msg);
 } /* SetSuperAttrs */
