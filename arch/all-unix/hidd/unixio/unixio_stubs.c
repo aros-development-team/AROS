@@ -21,7 +21,7 @@
 IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbackdata, struct ExecBase * SysBase)
 {
      static OOP_MethodID mid;
-     struct uioMsg  	 p;
+     struct uioMsg  	 p, *msg = &p;
      
      if (!mid)
      	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_Wait);
@@ -32,13 +32,13 @@ IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbac
      p.um_CallBack  	= callback;
      p.um_CallBackData  = callbackdata;
          
-     return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
+     return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
 IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, ULONG fd_type, struct MsgPort * port, ULONG mode, struct ExecBase * SysBase)
 {
      static OOP_MethodID    mid;
-     struct uioMsgAsyncIO   p;
+     struct uioMsgAsyncIO   p, *msg = &p;
      
      if (!mid)
      	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AsyncIO);
@@ -49,14 +49,14 @@ IPTR Hidd_UnixIO_AsyncIO(HIDD *o, ULONG fd, ULONG fd_type, struct MsgPort * port
      p.um_ReplyPort     = port;
      p.um_Mode	        = mode;
      
-     return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
+     return OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
 
 VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd, struct ExecBase * SysBase)
 {
      static OOP_MethodID    	mid;
-     struct uioMsgAbortAsyncIO  p;
+     struct uioMsgAbortAsyncIO  p, *msg = &p;
      
      if (!mid)
      	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_AbortAsyncIO);
@@ -64,13 +64,13 @@ VOID Hidd_UnixIO_AbortAsyncIO(HIDD *o, ULONG fd, struct ExecBase * SysBase)
      p.um_MethodID = mid;
      p.um_Filedesc = fd;
      
-     OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
+     OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
 int Hidd_UnixIO_OpenFile(HIDD *o, const char *filename, int flags, int mode, int *errno_ptr)
 {
      static OOP_MethodID    mid;
-     struct uioMsgOpenFile  p;
+     struct uioMsgOpenFile  p, *msg = &p;
      
      if (!mid)
      	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_OpenFile);
@@ -81,13 +81,13 @@ int Hidd_UnixIO_OpenFile(HIDD *o, const char *filename, int flags, int mode, int
      p.um_Mode      = (STACKULONG)mode;
      p.um_ErrNoPtr  = errno_ptr;
      
-     return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
+     return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
 VOID Hidd_UnixIO_CloseFile(HIDD *o, int fd, int *errno_ptr)
 {
      static OOP_MethodID    mid;
-     struct uioMsgCloseFile p;
+     struct uioMsgCloseFile p, *msg = &p;
      
      if (!mid)
      	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_CloseFile);
@@ -96,13 +96,13 @@ VOID Hidd_UnixIO_CloseFile(HIDD *o, int fd, int *errno_ptr)
      p.um_FD 	    = (APTR)fd;
      p.um_ErrNoPtr  = errno_ptr;
      
-     OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
+     OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
 int Hidd_UnixIO_WriteFile(HIDD *o, int fd, const void *buffer, int count, int *errno_ptr)
 {
      static OOP_MethodID    mid;
-     struct uioMsgWriteFile p;
+     struct uioMsgWriteFile p, *msg = &p;
      
      if (!mid)
      	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_WriteFile);
@@ -113,13 +113,13 @@ int Hidd_UnixIO_WriteFile(HIDD *o, int fd, const void *buffer, int count, int *e
      p.um_Count     = (STACKULONG)count;
      p.um_ErrNoPtr  = errno_ptr;
      
-     return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
+     return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
 int Hidd_UnixIO_IOControlFile(HIDD *o, int fd, int request, void *param, int *errno_ptr)
 {
      static OOP_MethodID    	mid;
-     struct uioMsgIOControlFile p;
+     struct uioMsgIOControlFile p, *msg = &p;
      
      if (!mid)
      	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_IOControlFile);
@@ -130,7 +130,7 @@ int Hidd_UnixIO_IOControlFile(HIDD *o, int fd, int request, void *param, int *er
      p.um_Param     = (APTR)param;
      p.um_ErrNoPtr  = errno_ptr;
      
-     return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)&p);
+     return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
 /* The below function is just a hack to avoid
