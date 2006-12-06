@@ -513,25 +513,25 @@ static IPTR Configdata_GetWindowPos(struct IClass *cl, Object * obj,
     data = INST_DATA(cl, obj); 
     //kprintf ("getwindowpos\n");
     s = (IPTR)DoMethod(obj, MUIM_Dataspace_Find,MUICFG_WindowPos);    
-    if (s)set(data->app,MUIA_Application_CopyWinPosToApp,s);
+    if (s && data->app) set(data->app,MUIA_Application_CopyWinPosToApp,s);
     return s;
 }
     
 static IPTR Configdata_SetWindowPos(struct IClass *cl, Object * obj,
 				 struct MUIP_Configdata_GetString *msg)
 {
-struct MUI_ConfigdataData *data;
-  //kprintf ("setwindowpos\n");   
+    struct MUI_ConfigdataData *data;
+    //kprintf ("setwindowpos\n");   
     data = INST_DATA(cl, obj);      
-IPTR addr;
-IPTR appobj;
-LONG size;   
+    IPTR addr = 0;
+    LONG size = 0;   
       
-    get(data->app,MUIA_Application_GetWinPosAddr, &addr);
-    get(data->app,MUIA_Application_GetWinPosSize, &size);
-    DoMethod(obj, MUIM_Dataspace_Add,addr,size,MUICFG_WindowPos);
-   
-    
+    if (data->app)
+    {
+    	get(data->app,MUIA_Application_GetWinPosAddr, &addr);
+    	get(data->app,MUIA_Application_GetWinPosSize, &size);
+    	DoMethod(obj, MUIM_Dataspace_Add,addr,size,MUICFG_WindowPos);
+    }       
 }
 
 
