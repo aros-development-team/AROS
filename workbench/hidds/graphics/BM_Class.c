@@ -1648,6 +1648,7 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
+    APTR		    ppixarray = &pixarray;
     LONG    	    	    bpp;
     struct HIDDBitMapData   *data;
 
@@ -1739,7 +1740,7 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
 			    	    	      &srcPixels,
 					      (HIDDT_PixelFormat *)data->prot.pixfmt,
 					      0,
-			    	    	      (APTR *)&pixarray,
+			    	    	      (APTR *)ppixarray,
 					      (HIDDT_PixelFormat *)dstpf,
 			    	    	      msg->modulo,
 					      msg->width,
@@ -1764,6 +1765,7 @@ VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
+    APTR		    ppixarray = &pixarray;
     ULONG   	    	    old_fg;
     LONG    	    	    bpp;
     struct HIDDBitMapData   *data;
@@ -1852,7 +1854,7 @@ VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 		    for(y = 0; y < msg->height; y++)
 		    {
 		    	HIDD_BM_ConvertPixels(o,
-			    	    	      (APTR *)&pixarray,
+			    	    	      (APTR *)ppixarray,
 					      (HIDDT_PixelFormat *)srcpf,
 			    	    	      msg->modulo,
 					      &destPixels,
@@ -3583,7 +3585,7 @@ BOOL BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o,
 BOOL HIDD_BitMap_SetBitMapTags(OOP_Object *o, struct TagItem *bitMapTags)
 {
     STATIC_MID;
-    struct pHidd_BitMap_SetBitMapTags 	p;
+    struct pHidd_BitMap_SetBitMapTags 	p, *msg = &p;
 
     if (!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetBitMapTags);
 
@@ -3591,7 +3593,7 @@ BOOL HIDD_BitMap_SetBitMapTags(OOP_Object *o, struct TagItem *bitMapTags)
 
     p.bitMapTags = bitMapTags;
 
-    return (BOOL)OOP_DoMethod(o, (OOP_Msg)&p);
+    return (BOOL)OOP_DoMethod(o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/

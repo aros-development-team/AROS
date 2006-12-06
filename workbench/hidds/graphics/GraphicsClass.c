@@ -248,6 +248,7 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
     BOOL    	    	    displayable = FALSE; /* Default attr value */
     BOOL    	    	    framebuffer = FALSE;
     OOP_Object      	    *pf = NULL, *sync;
+    APTR		    ptr_pf = &pf;
     HIDDT_ModeID    	    modeid = 0;
     OOP_Object      	    *bm;
     struct HIDDGraphicsData *data;
@@ -382,7 +383,7 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 		/* Last alternative is that the user passed a friend bitmap */
 		if (GOT_BM_ATTR(Friend))
 		{
-		    OOP_GetAttr((OOP_Object *)attrs[BMAO(Friend)], aHidd_BitMap_PixFmt, (IPTR *)&pf);
+		    OOP_GetAttr((OOP_Object *)attrs[BMAO(Friend)], aHidd_BitMap_PixFmt, (IPTR *)ptr_pf);
 		}
 		else
 		{
@@ -1151,6 +1152,7 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
     IPTR    	    	    width, height;
     ULONG   	    	    i, numentries;
     OOP_Object      	    *src_colmap;
+    APTR		    psrc_colmap = &src_colmap;
     
     data = OOP_INST_DATA(cl, o);
     
@@ -1159,7 +1161,7 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
     OOP_GetAttr(dims_bm, aHidd_BitMap_Height,	&height);
     
     /* We have to copy the colormap into the framebuffer bitmap */
-    OOP_GetAttr(src_bm, aHidd_BitMap_ColorMap, (IPTR *)&src_colmap);
+    OOP_GetAttr(src_bm, aHidd_BitMap_ColorMap, (IPTR *)psrc_colmap);
     OOP_GetAttr(src_colmap, aHidd_ColorMap_NumEntries, &numentries);
 	
     for (i = 0; i < numentries; i ++)
@@ -2233,7 +2235,7 @@ static struct pfnode *find_pixfmt(struct MinList *pflist, HIDDT_PixelFormat *tof
 OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags)
 {
    STATIC_MID;  
-   struct pHidd_Gfx_RegisterPixFmt p;
+   struct pHidd_Gfx_RegisterPixFmt p, *msg = &p;
    
    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_RegisterPixFmt);
    
@@ -2241,7 +2243,7 @@ OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags)
    
    p.pixFmtTags = pixFmtTags;
    
-   return (OOP_Object *)OOP_DoMethod(o, (OOP_Msg)&p);
+   return (OOP_Object *)OOP_DoMethod(o, (OOP_Msg)msg);
    
 }
 
@@ -2250,7 +2252,7 @@ OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags)
 VOID HIDD_Gfx_ReleasePixFmt(OOP_Object *o, OOP_Object *pixFmt)
 {
    STATIC_MID;  
-   struct pHidd_Gfx_ReleasePixFmt p;
+   struct pHidd_Gfx_ReleasePixFmt p, *msg = &p;
    
    if (!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_ReleasePixFmt);
    
@@ -2258,7 +2260,7 @@ VOID HIDD_Gfx_ReleasePixFmt(OOP_Object *o, OOP_Object *pixFmt)
    
    p.pixFmt = pixFmt;
    
-   OOP_DoMethod(o, (OOP_Msg)&p);
+   OOP_DoMethod(o, (OOP_Msg)msg);
    
 }
 
