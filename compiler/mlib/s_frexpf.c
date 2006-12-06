@@ -34,7 +34,8 @@ two25 =  3.3554432000e+07; /* 0x4c000000 */
 	float x; int *eptr;
 #endif
 {
-	int32_t hx,ix;
+	int32_t hx,ix,*phx = &hx;
+	float *ret = (float *)phx;
 	GET_FLOAT_WORD(hx,x);
 	ix = 0x7fffffff&hx;
 	*eptr = 0;
@@ -47,6 +48,5 @@ two25 =  3.3554432000e+07; /* 0x4c000000 */
 	}
 	*eptr += (ix>>23)-126;
 	hx = (hx&0x807fffff)|0x3f000000;
-	*(int*)&x = hx;
-	return x;
+	return *ret;
 }
