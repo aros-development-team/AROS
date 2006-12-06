@@ -40,6 +40,7 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     
     BOOL    	    	    ok = TRUE;
     OOP_Object      	    *pf;
+    APTR		    p_pf = &pf;
     IPTR   	    	    bytesperpixel;
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -50,7 +51,7 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof (*data));
 
-    OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)p_pf);
     OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     /* Get some dimensions of the bitmap */

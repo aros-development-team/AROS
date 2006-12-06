@@ -57,6 +57,7 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     
     struct planarbm_data *data;
     OOP_Object      	 *pf;
+    APTR		 p_pf = &pf;
 
     o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
@@ -81,7 +82,7 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     /* Not late initalization. Get some info on the bitmap */	
     OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
-    OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)p_pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, (IPTR *)&depth);
     
     /* We cache some info */
