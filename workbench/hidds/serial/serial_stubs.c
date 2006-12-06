@@ -42,28 +42,28 @@
 OOP_Object * HIDD_Serial_NewUnit(OOP_Object *obj, ULONG unitnum)
 {
     STATIC_MID;
-    struct pHidd_Serial_NewUnit p;
+    struct pHidd_Serial_NewUnit p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Serial, moHidd_Serial_NewUnit);
         
     p.mID      = mid;
     p.unitnum  = unitnum;
 
-    return((OOP_Object *) OOP_DoMethod(obj, (OOP_Msg) &p));
+    return((OOP_Object *) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 /***************************************************************/
 
 VOID HIDD_Serial_DisposeUnit(OOP_Object *obj, OOP_Object *unit)
 {
     STATIC_MID;
-    struct pHidd_Serial_DisposeUnit p;
+    struct pHidd_Serial_DisposeUnit p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Serial, moHidd_Serial_DisposeUnit);
         
     p.mID    = mid;
     p.unit   = unit;
 
-    OOP_DoMethod(obj, (OOP_Msg) &p);
+    OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 
@@ -74,7 +74,7 @@ VOID HIDD_Serial_DisposeUnit(OOP_Object *obj, OOP_Object *unit)
 BOOL HIDD_SerialUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData)
 {
     STATIC_MID;
-    struct pHidd_SerialUnit_Init p;
+    struct pHidd_SerialUnit_Init p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Init);
         
@@ -84,14 +84,14 @@ BOOL HIDD_SerialUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataRecei
     p.WriteData    		= WriteData;
     p.WriteDataUserData 	= WriteDataUserData;
     
-    return((BOOL) OOP_DoMethod(obj, (OOP_Msg) &p));
+    return((BOOL) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 /***************************************************************/
 
 ULONG HIDD_SerialUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
 {
     STATIC_MID;
-    struct pHidd_SerialUnit_Write p;
+    struct pHidd_SerialUnit_Write p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Write);
         
@@ -99,7 +99,7 @@ ULONG HIDD_SerialUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
     p.Length	= length;
     p.Outbuffer	= data; 
 
-    return ((ULONG) OOP_DoMethod(obj, (OOP_Msg) &p));
+    return ((ULONG) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 
 /***************************************************************/
@@ -107,14 +107,14 @@ ULONG HIDD_SerialUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
 BOOL HIDD_SerialUnit_SetBaudrate(OOP_Object *obj, ULONG baudrate)
 {
     STATIC_MID;
-    struct pHidd_SerialUnit_SetBaudrate p;
+    struct pHidd_SerialUnit_SetBaudrate p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SetBaudrate);
         
     p.mID	= mid;
     p.baudrate  = baudrate;
 
-    return ((BOOL) OOP_DoMethod(obj, (OOP_Msg) &p));
+    return ((BOOL) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 
 /***************************************************************/
@@ -122,14 +122,14 @@ BOOL HIDD_SerialUnit_SetBaudrate(OOP_Object *obj, ULONG baudrate)
 BOOL HIDD_SerialUnit_SetParameters(OOP_Object *obj, struct TagItem * tags)
 {
     STATIC_MID;
-    struct pHidd_SerialUnit_SetParameters p;
+    struct pHidd_SerialUnit_SetParameters p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SetParameters);
         
     p.mID	= mid;
     p.tags      = tags;
 
-    return ((BOOL) OOP_DoMethod(obj, (OOP_Msg) &p));
+    return ((BOOL) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 
 /***************************************************************/
@@ -137,14 +137,14 @@ BOOL HIDD_SerialUnit_SetParameters(OOP_Object *obj, struct TagItem * tags)
 BYTE HIDD_SerialUnit_SendBreak(OOP_Object *obj, int duration)
 {
     STATIC_MID;
-    struct pHidd_SerialUnit_SendBreak p;
+    struct pHidd_SerialUnit_SendBreak p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SendBreak);
         
     p.mID	= mid;
     p.duration  = duration;
 
-    return ((BYTE)OOP_DoMethod(obj, (OOP_Msg) &p));
+    return ((BYTE)OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 
 /***************************************************************/
@@ -152,14 +152,14 @@ BYTE HIDD_SerialUnit_SendBreak(OOP_Object *obj, int duration)
 VOID HIDD_SerialUnit_GetCapabilities(OOP_Object *obj, struct TagItem * tags)
 {
     STATIC_MID;
-    struct pHidd_SerialUnit_GetCapabilities p;
+    struct pHidd_SerialUnit_GetCapabilities p, *msg = &p;
 
     if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_GetCapabilities);
 
     p.mID         = mid;
     p.taglist     = tags;
 
-    OOP_DoMethod(obj, (OOP_Msg) &p);
+    OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 /***************************************************************/
@@ -167,13 +167,13 @@ VOID HIDD_SerialUnit_GetCapabilities(OOP_Object *obj, struct TagItem * tags)
 VOID HIDD_SerialUnit_Start(OOP_Object *obj)
 {
     STATIC_MID;
-    struct pHidd_SerialUnit_Start p;
+    struct pHidd_SerialUnit_Start p, *msg = &p;
 
     if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Start);
 
     p.mID         = mid;
 
-    OOP_DoMethod(obj, (OOP_Msg) &p);
+    OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 
@@ -182,13 +182,13 @@ VOID HIDD_SerialUnit_Start(OOP_Object *obj)
 VOID HIDD_SerialUnit_Stop(OOP_Object *obj)
 {
     STATIC_MID;
-    struct pHidd_SerialUnit_Stop p;
+    struct pHidd_SerialUnit_Stop p, *msg = &p;
 
     if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Stop);
 
     p.mID         = mid;
 
-    OOP_DoMethod(obj, (OOP_Msg) &p);
+    OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 /***************************************************************/
@@ -196,11 +196,11 @@ VOID HIDD_SerialUnit_Stop(OOP_Object *obj)
 UWORD HIDD_SerialUnit_GetStatus(OOP_Object *obj)
 {
     STATIC_MID;
-    struct pHidd_SerialUnit_GetStatus p;
+    struct pHidd_SerialUnit_GetStatus p, *msg = &p;
 
     if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_GetStatus);
 
     p.mID         = mid;
 
-    return ((UWORD)OOP_DoMethod(obj, (OOP_Msg) &p));
+    return ((UWORD)OOP_DoMethod(obj, (OOP_Msg) msg));
 }
