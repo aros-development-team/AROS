@@ -327,7 +327,7 @@ IPTR AROSListview__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     STRPTR *dharray;
     ULONG colattrsz;
 
-    struct opSet ops;
+    struct opSet ops, *p_ops = &ops;
     struct TagItem tags[] =
     {
 	{GA_RelSpecial, TRUE},
@@ -340,7 +340,7 @@ IPTR AROSListview__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     tags[1].ti_Data = (IPTR)msg->ops_AttrList;
 
-    o = (Object *)DoSuperMethodA(cl, o, (Msg)&ops);
+    o = (Object *)DoSuperMethodA(cl, o, (Msg)p_ops);
     if(!o)
         return (IPTR) NULL;
 

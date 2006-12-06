@@ -93,7 +93,7 @@ void kprintf( STRPTR FormatStr, ... )
 STATIC VOID notify_all(Class *cl, Object *o, struct GadgetInfo *gi, BOOL interim, BOOL userinput)
 {
     struct ColorWheelData 	*data = INST_DATA(cl, o);
-    struct opUpdate		opu;
+    struct opUpdate		opu, *p_opu = &opu;
     struct TagItem		tags[] =
     {
         {GA_ID 			, EG(o)->GadgetID		}, 
@@ -114,7 +114,7 @@ STATIC VOID notify_all(Class *cl, Object *o, struct GadgetInfo *gi, BOOL interim
     opu.opu_GInfo    = gi; 
     opu.opu_Flags    = interim ? OPUF_INTERIM : 0;
     
-    DoMethodA(o, (Msg) &opu);
+    DoMethodA(o, (Msg) p_opu);
 }
 
 /***************************************************************************************************/

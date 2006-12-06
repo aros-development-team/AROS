@@ -204,7 +204,7 @@ IPTR AROSPalette__OM_SET(Class *cl, Object *o, struct opSet *msg)
 *********************/
 Object *AROSPalette__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
-    struct opSet ops;
+    struct opSet ops, *p_ops = &ops;
     struct TagItem tags[] =
     {
 	{GA_RelSpecial, TRUE},
@@ -219,7 +219,7 @@ Object *AROSPalette__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     ops.ops_GInfo	= NULL;
     ops.ops_AttrList	= &tags[0];
  
-    o = (Object *)DoSuperMethodA(cl, o, (Msg)&ops);
+    o = (Object *)DoSuperMethodA(cl, o, (Msg)p_ops);
     if (o)
     {
     	struct PaletteData *data = INST_DATA(cl, o);
