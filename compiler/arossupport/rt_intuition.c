@@ -140,6 +140,7 @@ static IPTR RT_CloseScreen (RTData * rtd, ScreenResource * rt)
     {
 	struct Window  * win;
 	WindowResource * rtwin;
+	APTR prtwin = &rtwin;
 
 	kprintf ("CloseScreen(): There are still windows open on this screen\n"
 		"    Screen=%p opened at %s:%d\n"
@@ -149,7 +150,7 @@ static IPTR RT_CloseScreen (RTData * rtd, ScreenResource * rt)
 
 	while ((win = rt->Screen->FirstWindow))
 	{
-	    if (RT_Search (rtd, RTT_WINDOW, (RTNode **)&rtwin, NULL) == RT_SEARCH_FOUND)
+	    if (RT_Search (rtd, RTT_WINDOW, (RTNode **)prtwin, NULL) == RT_SEARCH_FOUND)
 	    {
 		RT_FreeResource (rtd, RTT_WINDOW, (RTNode *)rtwin);
 	    }
@@ -228,8 +229,9 @@ static IPTR RT_CheckScreen (RTData * rtd, int rtt,
 			ULONG op, va_list args)
 {
     ScreenResource * rt;
+    APTR prt = &rt;
 
-    if (RT_Search (rtd, rtt, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+    if (RT_Search (rtd, rtt, (RTNode **)prt, args) != RT_SEARCH_FOUND)
 	rt = NULL;
 
     switch (op)
@@ -401,8 +403,9 @@ static IPTR RT_CheckWindow (RTData * rtd, int rtt,
 			ULONG op, va_list args)
 {
     WindowResource * rt;
+    APTR prt = &rt;
 
-    if (RT_Search (rtd, rtt, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+    if (RT_Search (rtd, rtt, (RTNode **)prt, args) != RT_SEARCH_FOUND)
 	rt = NULL;
 
     switch (op)
