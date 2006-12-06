@@ -208,7 +208,7 @@ VOID RenderEntries( Class                   *cl,
 		    BOOL		    erase
 )
 {
-    struct AROSP_List_GetEntry getentry_msg;
+    struct AROSP_List_GetEntry getentry_msg, *p_getentry_msg = &getentry_msg;
     APTR item;
     struct IBox container;
     struct TextFont *oldfont;
@@ -290,7 +290,7 @@ VOID RenderEntries( Class                   *cl,
 
 
 	getentry_msg.Position = pos;
-	DoMethodA(data->lvd_List, (Msg)&getentry_msg);
+	DoMethodA(data->lvd_List, (Msg)p_getentry_msg);
 	if (!item)
 	    break;
 
@@ -611,11 +611,11 @@ VOID NotifyAttrs(Class *cl, Object *o, struct opSet *msg, struct TagItem *tags)
 	{TAG_MORE,		(IPTR)tags}
     };
 
-    struct opUpdate nmsg =  {OM_NOTIFY, idtags, msg->ops_GInfo, 0};
+    struct opUpdate nmsg =  {OM_NOTIFY, idtags, msg->ops_GInfo, 0}, *p_nmsg = &nmsg;
     struct LVData *data = INST_DATA(cl, o);
 
     data->lvd_NotifyCount ++;
-    DoSuperMethodA(cl, o,  (Msg)&nmsg);
+    DoSuperMethodA(cl, o,  (Msg)p_nmsg);
     data->lvd_NotifyCount --;
     return;
 }

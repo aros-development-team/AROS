@@ -299,14 +299,14 @@ IPTR AROSCheckbox__GM_HANDLEINPUT(Class * cl, Object * obj, struct gpInput * msg
 	}
 	else if (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON)
 	{
-	    struct gpHitTest htmsg;
+	    struct gpHitTest htmsg, *p_htmsg = &htmsg;
 
 	    htmsg.MethodID = GM_HITTEST;
 	    htmsg.gpht_GInfo = msg->gpi_GInfo;
 	    htmsg.gpht_Mouse.X = msg->gpi_Mouse.X;
 	    htmsg.gpht_Mouse.Y = msg->gpi_Mouse.Y;
 	    
-	    if (DoMethodA(obj, (Msg) &htmsg) != GMR_GADGETHIT)
+	    if (DoMethodA(obj, (Msg) p_htmsg) != GMR_GADGETHIT)
 	    {
 		if (G(obj)->Flags & GFLG_SELECTED)
 		{

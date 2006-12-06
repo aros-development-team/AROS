@@ -411,7 +411,7 @@ STATIC VOID ClutWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
     	{    		
     	    struct AreaInfo	ai;
 	    struct TmpRas	tr;    		
-    	    ULONG 	    	pattern = 0xaaaa5555;
+    	    UWORD 	    	pattern[] = {0xaaaa, 0x5555};
     	    UWORD		black = FindColor( data->scr->ViewPort.ColorMap, 0,0,0, -1 ),
     			    	white = FindColor( data->scr->ViewPort.ColorMap, ~0,~0,~0, -1 ),
     			    	buf[10] = {};
@@ -474,7 +474,7 @@ STATIC VOID ClutWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
     	    Move( rp, cx + endx + ( TextLength( rp, abbrv, 1L ) / 2 ), cy + (endy + TxOffset) );
     	    Text( rp, abbrv++, 1L ); // Y
 
-	    SetAfPt( rp, (UWORD *)&pattern, 1L );
+	    SetAfPt( rp, pattern, 1L );
 
 	    AreaEllipse( rp, cx, cy, rx/2, ry/2 );
 	    AreaEnd( rp );
@@ -893,7 +893,7 @@ void DrawDisabledPattern(struct ColorWheelData *data, struct RastPort *rport,
 			 struct IBox *gadbox
 )
 {
-    ULONG pattern = 0x88882222;
+    UWORD pattern[] = {0x8888,0x2222};
 
     EnterFunc(bug("DrawDisabledPattern(rp=%p, gadbox=%p, pen=%d)\n",
     		rport, gadbox, pen));

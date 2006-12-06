@@ -253,8 +253,8 @@ IPTR AROSCycle__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
     if (rport)
     {
         struct gpRender rmsg =
-            { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE };
-        DoMethodA(o, (Msg)&rmsg);
+            { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE }, *p_rmsg = &rmsg;
+        DoMethodA(o, (Msg)p_rmsg);
         ReleaseGIRPort(rport);
         retval = GMR_MEACTIVE;
     } else
@@ -309,8 +309,8 @@ IPTR AROSCycle__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
             struct gpHitTest htmsg =
                 { GM_HITTEST, msg->gpi_GInfo,
                   { msg->gpi_Mouse.X, msg->gpi_Mouse.Y },
-                };
-            if (DoMethodA(o, (Msg)&htmsg) != GMR_GADGETHIT)
+                }, *p_htmsg = &htmsg;
+            if (DoMethodA(o, (Msg)p_htmsg) != GMR_GADGETHIT)
             {
                 if (EG(o)->Flags & GFLG_SELECTED)
                 {
@@ -319,8 +319,8 @@ IPTR AROSCycle__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
                     if (rport)
                     {
                         struct gpRender rmsg =
-                            { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE };
-                        DoMethodA(o, (Msg)&rmsg);
+                            { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE }, *p_rmsg = &rmsg;
+                        DoMethodA(o, (Msg)p_rmsg);
                         ReleaseGIRPort(rport);
                     }
                 }
@@ -333,8 +333,8 @@ IPTR AROSCycle__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
                     if (rport)
                     {
                         struct gpRender rmsg =
-                            { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE };
-                        DoMethodA(o, (Msg)&rmsg);
+                            { GM_RENDER, msg->gpi_GInfo, rport, GREDRAW_UPDATE }, *p_rmsg = &rmsg;
+                        DoMethodA(o, (Msg)p_rmsg);
                         ReleaseGIRPort(rport);
                     }
                 }
@@ -356,9 +356,9 @@ IPTR AROSCycle__GM_GOINACTIVE(Class *cl, Object *o, struct gpGoInactive *msg)
     rport = ObtainGIRPort(msg->gpgi_GInfo);
     if (rport)
     {
-        struct gpRender rmsg = { GM_RENDER, msg->gpgi_GInfo, rport, GREDRAW_UPDATE };
+        struct gpRender rmsg = { GM_RENDER, msg->gpgi_GInfo, rport, GREDRAW_UPDATE }, *p_rmsg = &rmsg;
 	
-        DoMethodA(o, (Msg)&rmsg);
+        DoMethodA(o, (Msg)p_rmsg);
         ReleaseGIRPort(rport);
     }
     

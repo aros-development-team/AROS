@@ -84,7 +84,7 @@ LONG myBltBitMap( struct BitMap *srcBitMap, long xSrc, long ySrc,
 STATIC VOID notify_curval(Class *cl, Object *o, struct GadgetInfo *gi, BOOL interim, BOOL userinput)
 {
     struct GradientSliderData 	*data = INST_DATA(cl, o);
-    struct opUpdate		opu;
+    struct opUpdate		opu, *p_opu = &opu;
     struct TagItem		tags[] =
     {
         {GA_ID			, EG(o)->GadgetID	},
@@ -98,7 +98,7 @@ STATIC VOID notify_curval(Class *cl, Object *o, struct GadgetInfo *gi, BOOL inte
     opu.opu_GInfo    = gi; 
     opu.opu_Flags    = interim ? OPUF_INTERIM : 0;
     
-    DoMethodA(o, (Msg)&opu);
+    DoMethodA(o, (Msg)p_opu);
 }
 
 /***************************************************************************************************/
