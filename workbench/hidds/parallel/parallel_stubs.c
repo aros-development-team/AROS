@@ -52,28 +52,28 @@ IPTR OOP_SetAttrsTags(OOP_Object *obj, IPTR tag1, ...)
 OOP_Object * HIDD_Parallel_NewUnit(OOP_Object *obj, ULONG unitnum)
 {
     STATIC_MID;
-    struct pHidd_Parallel_NewUnit p;
+    struct pHidd_Parallel_NewUnit p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Parallel, moHidd_Parallel_NewUnit);
         
     p.mID      = mid;
     p.unitnum  = unitnum;
 
-    return((OOP_Object *) OOP_DoMethod(obj, (OOP_Msg) &p));
+    return((OOP_Object *) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 /***************************************************************/
 
 VOID HIDD_Parallel_DisposeUnit(OOP_Object *obj, OOP_Object *unit)
 {
     STATIC_MID;
-    struct pHidd_Parallel_DisposeUnit p;
+    struct pHidd_Parallel_DisposeUnit p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Parallel, moHidd_Parallel_DisposeUnit);
         
     p.mID    = mid;
     p.unit   = unit;
 
-    OOP_DoMethod(obj, (OOP_Msg) &p);
+    OOP_DoMethod(obj, (OOP_Msg) msg);
 }
 
 
@@ -84,7 +84,7 @@ VOID HIDD_Parallel_DisposeUnit(OOP_Object *obj, OOP_Object *unit)
 BOOL HIDD_ParallelUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData)
 {
     STATIC_MID;
-    struct pHidd_ParallelUnit_Init p;
+    struct pHidd_ParallelUnit_Init p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Init);
         
@@ -94,14 +94,14 @@ BOOL HIDD_ParallelUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataRec
     p.WriteData    	   = WriteData;
     p.WriteDataUserData	   = WriteDataUserData;
 
-    return((BOOL) OOP_DoMethod(obj, (OOP_Msg) &p));
+    return((BOOL) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 /***************************************************************/
 
 ULONG HIDD_ParallelUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
 {
     STATIC_MID;
-    struct pHidd_ParallelUnit_Write p;
+    struct pHidd_ParallelUnit_Write p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Write);
         
@@ -109,7 +109,7 @@ ULONG HIDD_ParallelUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
     p.Length	= length;
     p.Outbuffer	= data; 
 
-    return ((ULONG) OOP_DoMethod(obj, (OOP_Msg) &p));
+    return ((ULONG) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 
 /***************************************************************/
@@ -117,13 +117,13 @@ ULONG HIDD_ParallelUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
 VOID HIDD_ParallelUnit_Start (OOP_Object *obj)
 {
     STATIC_MID;
-    struct pHidd_ParallelUnit_Start p;
+    struct pHidd_ParallelUnit_Start p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Start);
         
     p.mID	= mid;
 
-    ((VOID)OOP_DoMethod(obj, (OOP_Msg) &p));
+    ((VOID)OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 
 /***************************************************************/
@@ -131,13 +131,13 @@ VOID HIDD_ParallelUnit_Start (OOP_Object *obj)
 VOID HIDD_ParallelUnit_Stop (OOP_Object *obj)
 {
     STATIC_MID;
-    struct pHidd_ParallelUnit_Stop p;
+    struct pHidd_ParallelUnit_Stop p, *msg = &p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Stop);
         
     p.mID	= mid;
 
-    ((VOID) OOP_DoMethod(obj, (OOP_Msg) &p));
+    ((VOID) OOP_DoMethod(obj, (OOP_Msg) msg));
 }
 
 /***************************************************************/
@@ -145,11 +145,11 @@ VOID HIDD_ParallelUnit_Stop (OOP_Object *obj)
 UWORD HIDD_ParallelUnit_GetStatus(OOP_Object *obj)
 {
     STATIC_MID;
-    struct pHidd_ParallelUnit_GetStatus p;
+    struct pHidd_ParallelUnit_GetStatus p, *msg = &p;
 
     if (!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_GetStatus);
 
     p.mID         = mid;
 
-    return ((UWORD)OOP_DoMethod(obj, (OOP_Msg) &p));
+    return ((UWORD)OOP_DoMethod(obj, (OOP_Msg) msg));
 }
