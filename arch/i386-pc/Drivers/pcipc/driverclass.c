@@ -199,7 +199,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     
     D(bug("PCPCI: Driver initialization\n"));
 
-    struct pHidd_PCI_AddHardwareDriver msg;
+    struct pHidd_PCI_AddHardwareDriver msg,*pmsg=&msg;
     
     LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
     LIBBASE->psd.hiddAB = OOP_ObtainAttrBase(IID_Hidd);
@@ -236,7 +236,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     D(bug("PCPCI: Adding Driver to main the class OK\n"));
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-    OOP_DoMethod(pci, (OOP_Msg)&msg);
+    OOP_DoMethod(pci, (OOP_Msg)pmsg);
     OOP_DisposeObject(pci);
 
     D(bug("PCPCI: All OK\n"));

@@ -109,7 +109,7 @@ OOP_Object *PCVGAOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 		/* Get attr values */
 		OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
 		OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
-		OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
+		OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	&pf);
 		OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
 	
 		ASSERT (width != 0 && height != 0 && depth != 0);

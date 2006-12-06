@@ -196,7 +196,8 @@ OOP_Object *PCVesa__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 		if (friend != NULL)
 		{
 		    OOP_Object *gfxhidd;
-		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+		    
+		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (APTR)&gfxhidd);
 		    if (gfxhidd == o)
 		    {
 			classptr = XSD(cl)->offbmclass;
@@ -225,8 +226,8 @@ VOID PCVesa__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
 
     mode = GC_DRMD(msg->gc);
 
-    OOP_GetAttr(msg->src,  aHidd_VesaGfxBitMap_Drawable, (IPTR *)&src);
-    OOP_GetAttr(msg->dest, aHidd_VesaGfxBitMap_Drawable, (IPTR *)&dest);
+    OOP_GetAttr(msg->src,  aHidd_VesaGfxBitMap_Drawable, (APTR)&src);
+    OOP_GetAttr(msg->dest, aHidd_VesaGfxBitMap_Drawable, (APTR)&dest);
 
     if (!dest || !src ||
     	((mode != vHidd_GC_DrawMode_Copy)))

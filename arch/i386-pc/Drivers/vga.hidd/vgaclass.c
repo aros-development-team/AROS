@@ -333,7 +333,7 @@ OOP_Object *PCVGA__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 		    OOP_Object * gfxhidd;
 		    /* User supplied friend bitmap. Is the friend bitmap a
 		    VGA Gfx hidd bitmap ? */
-		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, &gfxhidd);
 		    if (gfxhidd == o) {
 			/* Friend was VGA hidd bitmap. Now we can supply our own class */
 			classptr = XSD(cl)->offbmclass;		    
@@ -376,8 +376,8 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     EnterFunc(bug("VGAGfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
     	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 	
-    OOP_GetAttr(msg->src,  aHidd_VGABitMap_Drawable, (IPTR *)&src);
-    OOP_GetAttr(msg->dest, aHidd_VGABitMap_Drawable, (IPTR *)&dest);
+    OOP_GetAttr(msg->src,  aHidd_VGABitMap_Drawable, &src);
+    OOP_GetAttr(msg->dest, aHidd_VGABitMap_Drawable, &dest);
 
     if (!dest || !src ||
     	((mode != vHidd_GC_DrawMode_Copy) &&
