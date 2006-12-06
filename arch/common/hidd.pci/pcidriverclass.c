@@ -235,11 +235,11 @@ APTR PCIDrv__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
 
     if (instance->DirectBus)
     {
-	struct pHidd_PCIDriver_PCItoCPU mmsg;
+	struct pHidd_PCIDriver_PCItoCPU mmsg, *pmmsg=&mmsg;
 	mmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_PCItoCPU);
 	mmsg.address = msg->PCIAddress;
 	
-	return ((APTR)OOP_DoMethod(o, (OOP_Msg)&mmsg));
+	return ((APTR)OOP_DoMethod(o, (OOP_Msg)pmmsg));
     } else return (APTR)0xffffffff;
 }
 
