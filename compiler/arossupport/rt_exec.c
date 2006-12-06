@@ -454,8 +454,9 @@ static IPTR RT_CheckPort (RTData * rtd, int rtt,
 			ULONG op, va_list args)
 {
     PortResource * rt;
+    APTR prt = &rt;
 
-    if (RT_Search (rtd, rtt, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+    if (RT_Search (rtd, rtt, (RTNode **)prt, args) != RT_SEARCH_FOUND)
 	rt = NULL;
 
     switch (op)
