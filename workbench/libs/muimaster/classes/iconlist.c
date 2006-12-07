@@ -1,3 +1,4 @@
+
 /*
 Copyright © 2002-2006, The AROS Development Team. All rights reserved.
 $Id$
@@ -62,12 +63,14 @@ extern struct Library *MUIMasterBase;
 
 #define ICONLIST_TEXTMARGIN         5
 
-#define ICON_LISTMODE_ROUGH         0
-#define ICON_LISTMODE_GRID          1
+#define ICON_LISTMODE_GRID          0
+#define ICON_LISTMODE_ROUGH         1
 
 #define ICON_TEXTMODE_OUTLINE       0
 #define ICON_TEXTMODE_PLAIN         1
 #define ICON_TEXTMODE_DROPSHADOW    2
+
+#define ICON_TEXTMAXLEN_DEFAULT     15
 
 struct IconEntry
 {
@@ -161,6 +164,7 @@ int LoadWandererPrefs ( struct MUI_IconData *data )
      /* Default values */
     data->wpd_IconListMode = ICON_LISTMODE_GRID;
     data->wpd_IconTextMode = ICON_TEXTMODE_OUTLINE;
+    data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
                 
     if (!(handle = AllocIFF()))
         return 0;
@@ -220,9 +224,14 @@ int LoadWandererPrefs ( struct MUI_IconData *data )
         data->wpd_IconTextMode = wpd.wpd_IconTextMode;
         /* Icon textmaxlength */
         data->wpd_IconTextMaxLen = wpd.wpd_IconTextMaxLen;
-        
+        /* Ensure sane value */
+        if ( data->wpd_IconTextMaxLen <= 2 )
+            data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
         return 1;
     }
+    /* Ensure sane value 2 =) */
+    if ( data->wpd_IconTextMaxLen <= 2 )
+        data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
     return 0;
 }
 
