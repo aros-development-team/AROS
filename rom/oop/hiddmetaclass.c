@@ -29,7 +29,7 @@
 #define IntCallMethod(cl, o, msg)					\
 {									\
     register struct IFMethod *ifm;					\
-    D(bug("mid=%ld\n", msg->MID)); ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[msg->MID];	\
+    D(bug("mid=%ld\n", *msg)); ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[*msg];	\
     D(bug("ifm: func %p, cl %p\n", ifm->MethodFunc, ifm->mClass)); return (ifm->MethodFunc(ifm->mClass, o, msg));			\
 }
 
@@ -593,7 +593,7 @@ static IPTR HIDD_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     register struct IFMethod *ifm;
     D(bug("HIDD_CoerceMethod()\n"));
-    D(bug("cl=%s, mid=%ld\n", cl->ClassNode.ln_Name, msg->MID)); ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[msg->MID];
+    D(bug("cl=%s, mid=%ld\n", cl->ClassNode.ln_Name, *msg)); ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[*msg];
     D(bug("ifm %p func %p, cl %p\n", ifm, ifm->MethodFunc, ifm->mClass)); return (ifm->MethodFunc(ifm->mClass, o, msg));
 }
 
