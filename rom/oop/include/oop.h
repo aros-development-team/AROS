@@ -49,10 +49,7 @@ enum {
     ooperr_ParseAttrs_TooManyAttrs = 1
 };
 
-typedef struct
-{
-    OOP_MethodID MID;
-} *OOP_Msg;
+typedef OOP_MethodID * OOP_Msg;
 
 
 struct OOP_ABDescr

@@ -29,7 +29,7 @@
 #   define IntCallMethod(cl, o, msg) 					\
     {				    					\
     	register struct IFBucket *b;					\
-    	register OOP_MethodID mid = msg->MID;				\
+    	register OOP_MethodID mid = *msg;				\
     	register ULONG ifid = mid & (~METHOD_MASK);			\
     	register struct IFMethod *method;				\
     									\

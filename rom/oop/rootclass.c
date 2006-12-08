@@ -342,7 +342,7 @@ static struct IFMethod *basemeta_iterateifs(
 
 static IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    ULONG method_offset = msg->MID & METHOD_MASK;
+    ULONG method_offset = *msg & METHOD_MASK;
     struct IFMethod *ifm;
     
     EnterFunc(bug("basemeta_dosupermethod(cl=%p, o=%p, msg=%p)\n",
@@ -350,11 +350,11 @@ static IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     if (MD(cl)->superclass == ROOTCLASSPTR)
     {
-    	ifm = &(OOPBase->ob_RootClassObject.inst.rootif[msg->MID]);
+    	ifm = &(OOPBase->ob_RootClassObject.inst.rootif[*msg]);
     }
     else /* superclass is the BaseMeta class */
     {
-    	switch (msg->MID >> NUM_METHOD_BITS)
+    	switch (*msg >> NUM_METHOD_BITS)
     	{
     
         case 0:
@@ -368,7 +368,7 @@ static IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	
 	default:
 	    D(bug("Error: basemeta_dosupermethod got method call to unknown interface %d\n",
-	    	msg->MID >> NUM_METHOD_BITS));
+	    	*msg >> NUM_METHOD_BITS));
 	    ifm = NULL;
 	    break;
     	}
@@ -384,14 +384,14 @@ static IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 *******************************/
 static IPTR basemeta_coercemethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    ULONG method_offset = msg->MID & METHOD_MASK;
+    ULONG method_offset = *msg & METHOD_MASK;
     struct IFMethod *ifm;
     
     EnterFunc(bug("basemeta_coercemethod(cl=%p, o=%p, msg=%p)\n",
     	cl, o, msg));
 	
     
-    switch (msg->MID >> NUM_METHOD_BITS)
+    switch (*msg >> NUM_METHOD_BITS)
     {
     
         case 0:
@@ -405,7 +405,7 @@ static IPTR basemeta_coercemethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	
 	default:
 	    D(bug("Error: basemeta_coercemethod got method call to unknown interface %d\n",
-	    	msg->MID >> NUM_METHOD_BITS));
+	    	*msg >> NUM_METHOD_BITS));
 	    ifm = NULL;
 	    break;
     }
