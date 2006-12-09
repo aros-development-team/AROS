@@ -67,7 +67,8 @@ struct Menu      *Menu = NULL;		/* Menu of interface */
 struct TextFont  *font;					/* Font used for gadgets */
 struct RastPort  RPT;					/* Font measurement */
 
-UBYTE *FSCycTxt[5],CB_state[CBS];
+STRPTR FSCycTxt[5];
+UBYTE  CB_state[CBS];
 
 /* Tag list for various gadget */
 struct TagItem IntTags[]      = { /*{GTIN_Number, 0},*/ {GTST_MaxChars,2}, {TAG_DONE}};
