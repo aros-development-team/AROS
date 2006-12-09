@@ -48,6 +48,6 @@ void free_asl(void);
 #endif
 
 #define ErrMsg(num)		Errors[ num-ERR_BADOS ]
-extern  UBYTE *Errors[];
+extern  STRPTR Errors[];
 
 #endif
