@@ -122,30 +122,19 @@
 /*************************************
  ***** Other interesting types	 *****
  *************************************/
- /* C++ doesn't like strings being treated nor as signed nor as unsigned char's arrays,
-    it wants them to be simply "char" arrays. This is because
-    the char type has undefined sign, unless explicitely specified.  */
-#ifdef __cplusplus
-#    define __AROS_CPP_BYTE char
-#else
-#    define __AROS_CPP_BYTE UBYTE
-#endif
-
 #ifndef __typedef_STRPTR
 #   define __typedef_STRPTR
-    typedef __AROS_CPP_BYTE * STRPTR;	/* Pointer to string (NULL terminated) */
+    typedef char * STRPTR;	/* Pointer to string (NULL terminated) */
 #endif
 
 #ifndef __typedef_CONST_STRPTR
 #   define __typedef_CONST_STRPTR
-    typedef const __AROS_CPP_BYTE * CONST_STRPTR;	/* Pointer to constant string (NULL terminated) */
+    typedef const char * CONST_STRPTR;	/* Pointer to constant string (NULL terminated) */
 #endif
-
-#undef __AROS_CPP_BYTE
 
 #ifndef __typedef_TEXT
 #   define __typedef_TEXT
-    typedef unsigned char TEXT;
+    typedef char TEXT;
 #endif
 
 #ifndef __typedef_BOOL
