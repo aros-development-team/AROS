@@ -6,6 +6,7 @@
 #ifndef _SIGCORE_H
 #define _SIGCORE_H
 
+#include <machine/psl.h>
 #include <sys/types.h>
 #include <sys/param.h>
 #include <ucontext.h>
@@ -64,6 +65,8 @@ struct AROS_cpu_context
             acc_f4;
     }
         acc_u;
+	
+	int eflags;
 };
 
 #define SIZEOF_ALL_REGISTERS	(sizeof(struct AROS_cpu_context))
@@ -221,6 +224,7 @@ struct AROS_cpu_context
             SAVE_FPU(cc,sc);                                        \
         SAVE_CPU(cc,sc);                                            \
         SAVE_ERRNO(cc);                                             \
+        cc->eflags = sc->sc_efl & PSL_USERCHANGE;                   \
     } while (0)
 
 #define RESTOREREGS(task,sc)                                        \
@@ -231,7 +235,8 @@ struct AROS_cpu_context
         if (HAS_FPU(sc))                                            \
             RESTORE_FPU(cc,sc);                                     \
 	SP(sc) = (SP_TYPE *)GetSP(task);                            \
-    } while (0)
+    sc->sc_efl = (sc->sc_efl & ~PSL_USERCHANGE) | cc->eflags;   \
+	} while (0)
 
 #define PRINT_SC(sc) \
 	printf ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
