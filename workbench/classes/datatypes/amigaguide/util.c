@@ -461,7 +461,7 @@ void ParseFontLine(Class *cl, Object *obj, STRPTR args, struct TextAttr *ta)
    STRPTR ptr  = args;
    STRPTR tmp;
    LONG size;
-   UBYTE *fontname = ta->ta_Name;
+   STRPTR fontname = ta->ta_Name;
    LONG fontlen;
 
    tmp = fontname;
