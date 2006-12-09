@@ -15,9 +15,11 @@
 
 #include <aros/debug.h>
 
-STRPTR version = "$VER: WaitForPort 0.0.1 (26.12.2005)";
-STRPTR WaitForPort_ArgTemplate = "P=PORT/A";
-char   *WaitForPort_Arguments[2];
+const char version[] = "$VER: WaitForPort 0.0.1 (26.12.2005)";
+
+const char WaitForPort_ArgTemplate[] = "P=PORT/A";
+IPTR       WaitForPort_Arguments[2];
+
 struct RDArgs *WFP_rda = NULL;
 
 struct Device              *TimerBase = NULL;
@@ -32,7 +34,7 @@ main(int argc, char *argv[])
    
    wait_time = 0;
    
-   if (WFP_rda = ReadArgs(WaitForPort_ArgTemplate, WaitForPort_Arguments, NULL))
+   if ((WFP_rda = ReadArgs(WaitForPort_ArgTemplate, WaitForPort_Arguments, NULL)))
    {
  
       if (WaitForPort_Arguments[0])
@@ -57,7 +59,7 @@ D(bug("[WaitForPort] Waiting for '%s' port\n",WaitForPort_Arguments[0]));
             	if ((timerIORequest->tr_node.io_Device)->dd_Library.lib_Version >= 36)
             	{
             	   /* initialize TimerBase from timerIORequest */
-                  TimerBase = (struct Library *)timerIORequest->tr_node.io_Device;
+                  TimerBase = timerIORequest->tr_node.io_Device;
 
             	   /* Initialize some fields of the IO request to common values */
             	   timerIORequest->tr_node.io_Command = TR_ADDREQUEST;
@@ -81,10 +83,10 @@ D(bug("[WaitForPort] In Wait Loop ..\n"));
                      if (mask & (1 << timerport->mp_SigBit))
                      {
 D(bug("[WaitForPort] Recieved timer signal? ..\n"));
-                        timerIORequest = (struct timerrequest *)GetMsg(timerport);
+                        timerIORequest = (struct timerequest *)GetMsg(timerport);
                         if (timerIORequest)
                         {
-                           AROSTCP_Port = FindPort(WaitForPort_Arguments[0]);
+                           AROSTCP_Port = FindPort((char *)WaitForPort_Arguments[0]);
                            wait_time += 1000000;
                            if (!(AROSTCP_Port))
                            {
