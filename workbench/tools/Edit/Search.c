@@ -52,7 +52,7 @@ UBYTE SearchStr[60], SLen=0;		/* Saved search and replace string */
 UBYTE ReplaceStr[60],RLen=0;
 UBYTE CharClass[256];
 
-char HilitePattern(Project, UBYTE *, BYTE, BYTE quiet);
+char HilitePattern(Project, STRPTR, BYTE, BYTE quiet);
 
 /** Values for `quiet' parameter **/
 #define	VERBOSE							0		/* Move cursor and show warnings */
@@ -550,9 +550,9 @@ void ReplaceAllPat( Project p )
 }
 
 /*** Hightlight next pattern ***/
-char HilitePattern(Project p, UBYTE *pattern, BYTE direction, BYTE quiet)
+char HilitePattern(Project p, STRPTR pattern, BYTE direction, BYTE quiet)
 {
-	LINE *ln;  register UBYTE *search,*pat;
+	LINE *ln;  register STRPTR search, pat;
 	WORD  len; register LONG   nb, nbl;
 
 	ln     = p->edited;
@@ -587,7 +587,7 @@ char HilitePattern(Project p, UBYTE *pattern, BYTE direction, BYTE quiet)
 						do {
 							pat++; search++;
 						} while( *pat && CharClass[*pat] == CharClass[*search] );
-						search -= pat-pattern;
+						search -= pat - pattern;
 						if(*pat == 0) break;
 						pat = pattern;
 					}
@@ -618,7 +618,7 @@ char HilitePattern(Project p, UBYTE *pattern, BYTE direction, BYTE quiet)
 	if(quiet < FULLY_QUIET)
 	{
 		/* A pattern has been found, move cursor at beginning */
-		p->nbrwc = x2pos(ln,search-ln->stream);
+		p->nbrwc = x2pos(ln,search - ln->stream);
 
 		/* Does the keyword remain on visible area? */
 		search = (UBYTE *)p->nbl; p->nbl = nbl;
@@ -646,7 +646,7 @@ char HilitePattern(Project p, UBYTE *pattern, BYTE direction, BYTE quiet)
 		}
 	} else {
 		p->edited = ln;
-		p->nbc    = search-ln->stream;
+		p->nbc    = search - ln->stream;
 		p->nbl    = nbl;
 	}
 	return (char)len;
@@ -681,7 +681,7 @@ void match_bracket( Project p )
 
 	if(i==0) ThrowError(Wnd, ErrMsg(ERR_NOBRACKET));
 	else {
-		LINE *ln;   register UBYTE *search, cch;
+		LINE *ln;   register STRPTR search, cch;
 		WORD  nest; register LONG   nb, nbl;
 
 		/* Can't use HilitePattern because of nested char */
@@ -712,7 +712,7 @@ void match_bracket( Project p )
 
 		jump_cursor:
 		/* A matching bracket has been found, move cursor to */
-		p->nbrwc = x2pos(ln,search-ln->stream);
+		p->nbrwc = x2pos(ln,search - ln->stream);
 
 		/* Does the bracket remain on visible area? */
 		search = (UBYTE *)p->nbl; p->nbl = nbl;
