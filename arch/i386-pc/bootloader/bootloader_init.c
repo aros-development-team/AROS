@@ -154,6 +154,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 	    }
 	    BootLoaderBase->Flags |= MB_FLAGS_DRIVES;
 	}
+
+	/* Ensure info is updated on next boot */
+	mb->magic = 0;
     }
     return TRUE;
 }
