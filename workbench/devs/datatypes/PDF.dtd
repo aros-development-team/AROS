@@ -1,0 +1,10 @@
+# DataType Description for PDF
+Name=PDF
+Version=$VER: PDF 1.0 (9.12.2006)
+BaseName=pdf
+Pattern=#?
+Mask='%' 'P' 'D' 'F' '-'
+GroupID=text
+ID=_pdf
+Flags=DTF_ASCII,DTF_CASE
+Priority=1

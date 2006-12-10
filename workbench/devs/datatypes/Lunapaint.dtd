@@ -5,6 +5,6 @@ BaseName=lunapaint
 Pattern=#?
 Mask='L' 'u' 'n' 'a' 'p' 'a' 'i' 'n' 't'
 GroupID=pict
-ID=lunapaint
+ID=luna
 Flags=DTF_BINARY,DTF_CASE
 Priority=0

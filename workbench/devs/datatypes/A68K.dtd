@@ -1,5 +1,5 @@
 Name=A68K
-Version=$VER Amiga68K 1.0 (15/05/2005)
+Version=$VER Amiga68K 1.0 (15.5.2005)
 BaseName=binary
 Pattern=#?
 Mask=0x00 0x00 0x03 0xf3

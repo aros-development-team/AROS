@@ -1,6 +1,6 @@
 # DataType Description for ILBM
 Name=ILBM
-Version=$VER: ILBM 41.0 (09-May-2002)
+Version=$VER: ILBM 41.0 (9.5.2002)
 BaseName=ilbm
 Pattern=#?
 Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'I' 'L' 'B' 'M'

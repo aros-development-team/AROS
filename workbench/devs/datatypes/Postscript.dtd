@@ -1,0 +1,9 @@
+# DataType Description for Postscript
+Name=Postscript
+Version=$VER: Postscript 1.0 (9.12.2006)
+BaseName=postscript
+Pattern=#?.(ps|eps)
+GroupID=text
+ID=post
+Flags=DTF_ASCII
+Priority=1

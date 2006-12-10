@@ -1,6 +1,6 @@
 # DataType Description for SFS Trashcan
 Name=Trashcan
-Version=$VER: Trashcan 41.0 (03-Dec-2005)
+Version=$VER: Trashcan 41.0 (3.12.2005)
 BaseName=trashcan
 Pattern=".recycled"
 GroupID=syst

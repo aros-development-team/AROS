@@ -1,9 +1,9 @@
 Name=MP3ID3
-Version=$VER: MP3ID3 41.0 (01-May-2005)
+Version=$VER: MP3ID3 41.0 (1.5.2005)
 BaseName=mp3id3
 Pattern=#?
 Mask='I' 'D' '3'
 GroupID=musi
-ID=mp3id3
+ID=mp3i
 Flags=DTF_BINARY,DTF_CASE
 Priority=1

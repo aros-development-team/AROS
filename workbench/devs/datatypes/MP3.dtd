@@ -1,5 +1,5 @@
 Name=MP3
-Version=$VER: MP3 41.0 (01-Mar-2005)
+Version=$VER: MP3 41.0 (1.5.2005)
 BaseName=mp3
 Pattern=#?
 Mask=0xff 0xfb

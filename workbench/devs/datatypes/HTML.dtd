@@ -1,6 +1,6 @@
 # DataType Description for HTML
 Name=HTML
-Version=$VER: HTML 41.0 (03-Dec-2004)
+Version=$VER: HTML 41.0 (3.12.2004)
 BaseName=html
 Pattern=#?.html
 GroupID=text

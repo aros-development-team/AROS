@@ -1,6 +1,6 @@
 # Descriptor for ELF files.
 Name=ELF
-Version=$VER: ELF 1.0 (27-Jul-2003)
+Version=$VER: ELF 1.0 (27.7.2003)
 BaseName=binary
 Pattern=#?
 Mask=0x7f 'E' 'L' 'F'

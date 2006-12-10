@@ -1,5 +1,5 @@
 Name=SFS
-Version=$VER SFS 1.0 (03/12/2005)
+Version=$VER SFS 1.0 (3.12.2005)
 BaseName=binary
 Pattern=#?
 Mask=0x53 0x46 0x53
