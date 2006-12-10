@@ -1,6 +1,6 @@
 # DataType Description for AudioMode
 Name=AudioMode
-Version=$VER: AudioMode 41.0 (15.02.2006))
+Version=$VER: AudioMode 41.0 (15.02.2006)
 BaseName=audiomode
 Pattern=#?
 Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'A' 'H' 'I' 'M'

@@ -1,6 +1,6 @@
 # DataType Description for PPM
 Name=PPM
-Version=$VER: PPM 41.0 (13-Nov-2000)
+Version=$VER: PPM 41.0 (13.11.2000)
 BaseName=ppm
 Pattern=#?
 Mask='P' '6'
@@ -8,4 +8,3 @@ GroupID=pict
 ID=_ppm
 Flags=DTF_BINARY,DTF_CASE
 Priority=0
-

@@ -1,6 +1,6 @@
 # DataType Description for GIF
 Name=GIF
-Version=$VER: GIF 41.0 (28-Nov-2002)
+Version=$VER: GIF 41.0 (28.11.2002)
 BaseName=gif
 Pattern=#?
 Mask='G' 'I' 'F' '8' ANY 'a'
@@ -8,4 +8,3 @@ GroupID=pict
 ID=_gif
 Flags=DTF_BINARY,DTF_CASE
 Priority=0
-

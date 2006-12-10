@@ -1,6 +1,6 @@
 # DataType Description for JFIF/JPEG
 Name=JPEG
-Version=$VER: JPEG 41.0 (31-Mar-2003)
+Version=$VER: JPEG 41.0 (31.3.2003)
 BaseName=jpeg
 Pattern=#?
 Mask=0xff 0xd8 0xff

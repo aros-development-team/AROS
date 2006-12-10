@@ -1,5 +1,5 @@
 Name=ADF
-Version=$VER ADF 1.0 (05/05/2005)
+Version=$VER ADF 1.0 (5.5.2005)
 BaseName=binary
 Pattern=#?
 Mask=0x44 0x4f 0x53

@@ -1,6 +1,6 @@
 # DataType Description for DataType
 Name=DataType
-Version=$VER: DataType 41.0 (15.02.2006))
+Version=$VER: DataType 41.0 (15.02.2006)
 BaseName=datatype
 Pattern=#?
 Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'D' 'T' 'Y' 'P'

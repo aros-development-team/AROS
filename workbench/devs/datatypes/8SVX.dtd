@@ -1,6 +1,6 @@
 # DataType Description for 8SVX
 Name=8SVX
-Version=$VER: 8SVX 41.0 (17-Jul-2004)
+Version=$VER: 8SVX 41.0 (17.6.2004)
 BaseName=8svx
 Pattern=#?
 Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY '8' 'S' 'V' 'X'

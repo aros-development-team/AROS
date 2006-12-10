@@ -1,6 +1,6 @@
 # Descriptor for executable ELF files, ie. relocatable ELF object files.
 Name=ELF_EXE
-Version=$VER: ELF_EXE 1.0 (27-Jul-2003)
+Version=$VER: ELF_EXE 1.0 (27.7.2003)
 BaseName=binary
 Pattern=#?
 

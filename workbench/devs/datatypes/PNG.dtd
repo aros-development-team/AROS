@@ -1,6 +1,6 @@
 # DataType Description for PNG
 Name=PNG
-Version=$VER: PNG 41.0 (12-Apr-2003)
+Version=$VER: PNG 41.0 (12.4.2003)
 BaseName=png
 Pattern=#?
 Mask=0x89 'P' 'N' 'G' 0xd 0xa 0x1a 0xa
@@ -8,4 +8,3 @@ GroupID=pict
 ID=png
 Flags=DTF_BINARY,DTF_CASE
 Priority=0
-
