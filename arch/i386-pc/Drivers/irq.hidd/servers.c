@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <oop/oop.h>
