@@ -133,6 +133,10 @@ struct MUI_IconData
     UBYTE wpd_IconTextMode;
     ULONG wpd_IconTextMaxLen;
 
+    /* lasso data */
+    BOOL lasso_active;
+    struct Rectangle lasso_rect;
+    
     /* Render stuff */
 
     /* values for update */
@@ -145,6 +149,7 @@ struct MUI_IconData
     struct IconEntry *update_icon;
     struct Rectangle *update_rect1;
     struct Rectangle *update_rect2;
+    struct Rectangle view_rect;
     
     ULONG textWidth; /*  Whole textwidth for icon in pixels */
 };
@@ -244,6 +249,38 @@ int RectAndRect(struct Rectangle *a, struct Rectangle *b)
     if ((a->MinX > b->MaxX) || (a->MinY > b->MaxY) || (a->MaxX < b->MinX) || (a->MaxY < b->MinY))
         return 0;
     return 1;
+}
+
+/**************************************************************************
+ get positive lasso coords
+**************************************************************************/
+static void GetAbsoluteLassoRect(struct MUI_IconData *data, struct Rectangle *lasso_rect)
+{
+    WORD minx = data->lasso_rect.MinX;
+    WORD miny = data->lasso_rect.MinY;
+    WORD maxx = data->lasso_rect.MaxX;
+    WORD maxy = data->lasso_rect.MaxY;
+    
+    if (minx > maxx)
+    {
+    	/* Swap minx, maxx */
+    	minx ^= maxx;
+      maxx ^= minx;
+      minx ^= maxx;
+    }
+    
+    if (miny > maxy)
+    {
+    	/* Swap miny, maxy */
+    	miny ^= maxy;
+      maxy ^= miny;
+      miny ^= maxy;
+    }
+    
+    lasso_rect->MinX = data->view_rect.MinX - data->view_x + minx;
+    lasso_rect->MinY = data->view_rect.MinY - data->view_y + miny;
+    lasso_rect->MaxX = data->view_rect.MinX - data->view_x + maxx;
+    lasso_rect->MaxY = data->view_rect.MinY - data->view_y + maxy;
 }
 
 /**************************************************************************
@@ -1521,6 +1558,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                 
                 if (msg->imsg->Code == SELECTDOWN)
                 {
+                    /* check if mouse pressed on iconlist area */
                     if (mx >= 0 && mx < _width(obj) && my >= 0 && my < _height(obj))
                     {
                         struct IconEntry *node;
@@ -1528,6 +1566,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
             
                         data->first_selected = NULL;
             
+                        /* check if clicked on icon */
                         node = List_First(&data->icon_list);
                         while (node)
                         {
@@ -1546,19 +1585,27 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                 
                                 data->first_selected = node;
                             } 
-                            else
-                            {
-                                if (node->selected)
-                                {
-                                    node->selected = 0;
-                                    data->update = UPDATE_SINGLEICON;
-                                    data->update_icon = node;
-                                    MUI_Redraw(obj,MADF_DRAWUPDATE);
-                                }
-                            }
+   
                             node = Node_Next(node);
                         }
-            
+
+
+                        /* if not cliked on icon set lasso as active */
+                        if (!new_selected)
+                        {
+                            data->lasso_active = TRUE;
+                            data->lasso_rect.MinX = mx - data->view_rect.MinX + data->view_x;  
+                            data->lasso_rect.MinY = my - data->view_rect.MinY + data->view_y;
+                            data->lasso_rect.MaxX = mx - data->view_rect.MinX + data->view_x;
+                            data->lasso_rect.MaxY = my - data->view_rect.MinY + data->view_y; 
+ 
+                             /* deselect old selection */
+                             DoMethod(obj,MUIM_IconList_UnselectAll);
+
+                        }
+                        else data->lasso_active = FALSE;
+                        
+                                        
                         data->icon_click.shift = !!(msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
                         data->icon_click.entry = new_selected?&new_selected->entry:NULL;
                         set(obj,MUIA_IconList_Clicked,(IPTR)&data->icon_click);
@@ -1615,6 +1662,54 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                 {
                     if (msg->imsg->Code == SELECTUP)
                     {
+
+                        /* check if mose released on iconlist aswell */
+                        if (mx >= 0 && mx < _width(obj) && my >= 0 && my < _height(obj) )
+                        {
+                            struct IconEntry *node;
+                            struct IconEntry *new_selected = NULL;
+  
+                            data->first_selected = NULL;
+            
+                            node = List_First(&data->icon_list);
+                            while (node)
+                            {
+     
+                                /* check if clicked on icon */
+                                if (mx >= node->x - data->view_x && mx < node->x - data->view_x + node->realWidth &&
+                                    my >= node->y - data->view_y && my < node->y - data->view_y + node->realHeight && 
+                                    !new_selected) 
+                                {
+                                    new_selected = node;
+            
+				                        /* check if icon was already selected before */
+                                    if (!node->selected)
+                                    {
+                                        node->selected = 1;
+                                        data->update = UPDATE_SINGLEICON;
+                                        data->update_icon = node;
+                                        MUI_Redraw(obj,MADF_DRAWUPDATE);
+                                    }
+
+                                    data->first_selected = node;
+                                } 
+                                /* unselect all other nodes if mouse released on icon and lasso was not selected during mouse press */
+                                else if (node->selected && data->lasso_active == FALSE) 
+                                {
+                                       node->selected = 0;
+                                       data->update = UPDATE_SINGLEICON;
+                                       data->update_icon = node;
+                                       MUI_Redraw(obj,MADF_DRAWUPDATE);
+                                }
+      
+                                node = Node_Next(node);
+                            }
+
+                        }                                           
+                    
+                        /* stop lasso selection/drawing now */
+                        if (data->lasso_active == TRUE) data->lasso_active = FALSE;
+                                            
                         data->mouse_pressed &= ~LEFT_BUTTON;
                     }
         
@@ -1639,7 +1734,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                     int move_x = mx;
                     int move_y = my;
         
-                    if (data->first_selected && (abs(move_x - data->click_x) >= 2 || abs(move_y - data->click_y) >= 2))
+                    /* check if clicked on icon, or update lasso coords if lasso activated */
+                    if (data->first_selected && data->lasso_active == FALSE && (abs(move_x - data->click_x) >= 2 || abs(move_y - data->click_y) >= 2))
                     {
                         DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
                         data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
@@ -1651,7 +1747,62 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                         data->touch_y = move_y + data->view_y - data->first_selected->y;
                         DoMethod(obj,MUIM_DoDrag, data->touch_x, data->touch_y, 0);
                     }
-        
+                    else if (data->lasso_active == TRUE) /* if no icon selected start lasso */
+                    {
+                        struct Rectangle 	 new_lasso;
+                        struct IconEntry *node;
+                        struct IconEntry *new_selected = NULL; 
+                        
+                        /* update lasso coordinates */
+                        data->lasso_rect.MaxX = mx - data->view_rect.MinX + data->view_x;
+                        data->lasso_rect.MaxY = my - data->view_rect.MinY + data->view_y;
+
+                        /* get absolute lasso coordinates */
+                        GetAbsoluteLassoRect(data, &new_lasso);
+
+                        data->first_selected = NULL;
+            
+                        node = List_First(&data->icon_list);
+                        while (node)
+                        {
+
+                             /* check if clicked on icon */
+                            if (new_lasso.MaxX >= node->x - data->view_x 
+                                 && new_lasso.MinX < node->x - data->view_x + node->realWidth &&
+                                 new_lasso.MaxY >= node->y - data->view_y 
+                                 && new_lasso.MinY < node->y - data->view_y + node->realHeight) 
+                            {
+                                 new_selected = node;
+         
+                                 /* check if icon was already selected before */
+                                 if (!node->selected)
+                                 {
+                                     node->selected = 1;
+                                     data->update = UPDATE_SINGLEICON;
+                                     data->update_icon = node;
+                                     MUI_Redraw(obj,MADF_DRAWUPDATE);
+                                 }
+                
+                                 data->first_selected = node;
+
+                                 } 
+                                 else
+                                 {
+                                     if (node->selected)  /* if not catched by lasso and selected before -> unselect */
+                                     {
+                                          node->selected = 0;
+                                          data->update = UPDATE_SINGLEICON;
+                                          data->update_icon = node;
+                                          MUI_Redraw(obj,MADF_DRAWUPDATE);
+                                     }
+                                 } 
+                            
+                            node = Node_Next(node);
+                        }
+                        
+                        
+                    }
+                            
                     return 0;
                 }
                 else if (data->mouse_pressed & MIDDLE_BUTTON)
