@@ -273,75 +273,30 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 }
 
 
-struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
-				     struct DTHookContext *dthc,
-				     UBYTE *CheckArray, UWORD CheckSize,
-				     UBYTE *Filename, ULONG Size)
+struct CompoundDatatype *FindDtInList(struct Library *DataTypesBase,
+				      struct DTHookContext *dthc,
+				      struct List *list,
+				      UBYTE *CheckArray,
+				      UWORD CheckSize,
+				      UBYTE *Filename)
 {
     struct CompoundDatatype *cdt = NULL;
-    
-    UWORD        type;
-    struct List *list  = NULL;
-    BOOL         found = FALSE;
-   
-    ULONG IFF_ID   = AROS_BE2LONG(*((ULONG*)CheckArray));
-    ULONG IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
-    
-    if(((!dthc->dthc_FileHandle) && (dthc->dthc_IFF)) ||
-       (((Size*3/4 < IFF_Size) && (Size*4/3 > IFF_Size)) &&
-	(IFF_ID==ID_FORM || IFF_ID==ID_CAT || IFF_ID==ID_LIST)) )
-    {
-	type = DTF_IFF;
-	list = &getDTLIST->dtl_IFFList;
-    }
-    else
-    {
-	UBYTE *ptr;
-	UWORD count;
-	UWORD ascii;
-	
-	dthc->dthc_IFF = NULL;
-	
-	for (ptr=CheckArray,count=CheckSize,ascii=0 ; count-- ; ptr++)
-	{
-	    if (ASCIITable[*ptr])
-		ascii++;
-	    else
-	    {
-		if (BinaryTable[*ptr])
-		{
-		    ascii=0;
-		    break;
-		}
-	    }
-	}
-	
-	if (ascii > CheckSize*3/4)
-	{
-	    type = DTF_ASCII;
-	    list = &getDTLIST->dtl_ASCIIList;
-	}
-	else
-	{
-	    type = DTF_BINARY;
-	    list = &getDTLIST->dtl_BinaryList;
-	}
-    }
-    
+    BOOL                   found = FALSE;
+
     if (list)
     {
 	struct CompoundDatatype *cur;
-	
+
 	for(cur = (struct CompoundDatatype *)list->lh_Head; 
-	    cur->DT.dtn_Node1.ln_Succ;
-	    cur = (struct CompoundDatatype *)cur->DT.dtn_Node1.ln_Succ)
+		cur->DT.dtn_Node1.ln_Succ;
+		cur = (struct CompoundDatatype *)cur->DT.dtn_Node1.ln_Succ)
 	{
 	    if(CheckSize >= cur->DTH.dth_MaskLen)
 	    {
 		WORD *msk = cur->DTH.dth_Mask;
 		UBYTE *cmp = CheckArray;
 		UWORD count;
-		
+
 		found=TRUE;
 
 		for(count = cur->DTH.dth_MaskLen; count--; msk++, cmp++)
@@ -359,8 +314,8 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 			else
 			{
 			    if(*msk != *cmp &&
-			       *msk != ToUpper((ULONG)*cmp) &&
-			       *msk != ToLower((ULONG)*cmp))
+				    *msk != ToUpper((ULONG)*cmp) &&
+				    *msk != ToLower((ULONG)*cmp))
 			    {
 				found=FALSE;
 				break;
@@ -368,18 +323,18 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 			}
 		    }
 		}
-		
+
 		if(found)
 		{
 		    if((!(cur->FlagLong & CFLGF_PATTERN_UNUSED)) &&
-		       cur->DTH.dth_Pattern)
+			    cur->DTH.dth_Pattern)
 		    {
 			if(cur->FlagLong & CFLGF_IS_WILD)
 			{
 			    if(cur->ParsePatMem)
 			    {
 				if(!MatchPatternNoCase(cur->ParsePatMem, 
-						       Filename))
+					    Filename))
 				{
 				    found = FALSE;
 				}
@@ -393,13 +348,13 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 			    }
 			}
 		    }
-		    
+
 		    if(found)
 		    {
 			if(cur->Function)
 			{
 			    found = (cur->Function)(dthc);
-			    
+
 			    if (dthc->dthc_IFF)
 			    {
 				CloseIFF(dthc->dthc_IFF);
@@ -408,42 +363,110 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
 			    else
 			    {
 				Seek(dthc->dthc_FileHandle, 0, 
-				     OFFSET_BEGINNING);
+					OFFSET_BEGINNING);
 			    }
 			}
 		    }
 		}
 	    }
-	    
 	    if(found)
 	    {
 		cdt = cur;
 		break;
 	    }
 	}
-	
-	if(!found)
+    }
+    return cdt;
+}
+
+
+struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
+				     struct DTHookContext *dthc,
+				     UBYTE *CheckArray, UWORD CheckSize,
+				     UBYTE *Filename, ULONG Size)
+{
+    struct CompoundDatatype *cdt = NULL;
+    struct CompoundDatatype *cdt_bin = NULL;
+    struct CompoundDatatype *cdt_asc = NULL;
+
+    UWORD        type;
+    struct List *list  = NULL;
+
+    ULONG IFF_ID   = AROS_BE2LONG(*((ULONG*)CheckArray));
+    ULONG IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
+
+    if(((!dthc->dthc_FileHandle) && (dthc->dthc_IFF)) ||
+	    (((Size*3/4 < IFF_Size) && (Size*4/3 > IFF_Size)) &&
+	     (IFF_ID==ID_FORM || IFF_ID==ID_CAT || IFF_ID==ID_LIST)) )
+    {
+	type = DTF_IFF;
+	cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_IFFList, CheckArray, CheckSize, Filename);
+    }
+    else
+    {
+	UBYTE *ptr;
+	UWORD count;
+	UWORD ascii;
+
+	dthc->dthc_IFF = NULL;
+
+	for (ptr=CheckArray,count=CheckSize,ascii=0 ; count-- ; ptr++)
 	{
-	    switch(type)
+	    if (ASCIITable[*ptr])
+		ascii++;
+	    else
 	    {
-	    case DTF_BINARY:
-		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
-								"binary");
-		break;
-		
-	    case DTF_ASCII:
-		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
-							       "ascii");
-		break;
-		
-	    case DTF_IFF:
-		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
-								"iff");
-		break;
+		if (BinaryTable[*ptr])
+		{
+		    ascii=0;
+		    break;
+		}
 	    }
+	}
+
+	if (ascii > CheckSize*3/4)
+	{
+	    type = DTF_ASCII;
+	    cdt_asc = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_ASCIIList, CheckArray, CheckSize, Filename);
+	    cdt = cdt_asc;
+	    /* if the found datatype is 'only' ascii we have to look additionally in the binary list */
+	    if (cdt_asc && !strcmp(cdt_asc->DTH.dth_Name, "ascii"))
+	    {
+		cdt_bin = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList, CheckArray, CheckSize, Filename);
+		/* if we find in the binary list something which is better than just 'binary' we use it */
+		if (cdt_bin && strcmp(cdt_bin->DTH.dth_Name, "binary"))
+		{
+		    cdt = cdt_bin;
+		}
+	    }
+	}
+	else
+	{
+	    type = DTF_BINARY;
+	    cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList, CheckArray, CheckSize, Filename);
 	}
     }
 
+    if(!cdt)
+    {
+	switch(type)
+	{
+	    case DTF_BINARY:
+		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
+			"binary");
+		break;
+
+	    case DTF_ASCII:
+		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
+			"ascii");
+		break;
+
+	    case DTF_IFF:
+		cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, list,
+			"iff");
+		break;
+	}
+    }
     return cdt;
 }
 
