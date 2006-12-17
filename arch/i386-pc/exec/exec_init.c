@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Kernel header and early bootup section
+    Desc: Early bootup section
     Lang: english
 */
 
@@ -193,32 +193,6 @@ asm(        ".globl aros_intern\n\t"
  * are off, CPU is working in Supervisor level (CPL0). This state can be emu-
  * lated by ColdReboot() routine as it may freely use Supervisor()
  *
- * What you see here is Multibot-compatible header. We don't need sophisticated
- * information package from multiboot loader
- *
- * AROS defines only first three fields as it is now in ELF executable format
- * with all other things like load address or entry point are already in kernel
- * image
- */
-
-#if 0
-#define MB_MAGIC    0x1BADB002  /* Magic value */
-#define MB_FLAGS    0x00000003  /* Need 4KB alignment for modules */
-
-const struct
-{
-    ULONG   magic;
-    ULONG   flags;
-    ULONG   chksum;
-} multiboot_header __text =
-{
-    MB_MAGIC,
-    MB_FLAGS,
-    -(MB_MAGIC+MB_FLAGS)
-};
-#endif
-
-/*
  * kernel_startup can be executed only from CPL0 without vmm. Interrupts should
  * be disabled.
  *
@@ -279,7 +253,7 @@ asm("\nexec_init:                \n\t"
 
             "cld                 \n\t"      /* At the startup it's very important   */
             "cli                 \n\t"      /* to lock all interrupts. Both on the  */
-            "movb    $-1,%al     \n\t"      /* CPU side and hardwre side. We don't  */
+            "movb    $-1,%al     \n\t"      /* CPU side and hardware side. We don't  */
             "outb    %al,$0x21   \n\t"      /* have proper structures in RAM yet.   */
             "outb    %al,$0xa1 \n\n\t"
 
@@ -453,55 +427,52 @@ void exec_cinit(unsigned long magic, unsigned long addr)
      * safe, and also since we will use some of it in here.
      */
     arosmb = (struct arosmb *)0x1000;
-    if (arosmb->magic != MBRAM_VALID)
+    if (magic == 0x2badb002)
     {
-	    if (magic == 0x2badb002)
-	    {
-	        rkprintf("Copying multiboot information into storage\n");
-	        arosmb->magic = MBRAM_VALID;
-	        arosmb->flags = 0L;
-	        mbinfo = (struct multiboot *)addr;
-	        if (mbinfo->flags & MB_FLAGS_MEM)
-	        {
-		        arosmb->flags |= MB_FLAGS_MEM;
-		        arosmb->mem_lower = mbinfo->mem_lower;
-		        arosmb->mem_upper = mbinfo->mem_upper;
-	        }
-	        if (mbinfo->flags & MB_FLAGS_LDRNAME)
-	        {
-		        arosmb->flags |= MB_FLAGS_LDRNAME;
-		        snprintf(arosmb->ldrname,29,"%s",mbinfo->loader_name);
-	        }
-	        if (mbinfo->flags & MB_FLAGS_CMDLINE)
-	        {
-		        arosmb->flags |= MB_FLAGS_CMDLINE;
-		        snprintf(arosmb->cmdline,199,"%s",mbinfo->cmdline);
-	        }
-	        if (mbinfo->flags & MB_FLAGS_MMAP)
-	        {
-		        arosmb->flags |= MB_FLAGS_MMAP;
-		        arosmb->mmap_addr = (struct mb_mmap *)((ULONG)(0x1000 + sizeof(struct arosmb)));
-		        arosmb->mmap_len = mbinfo->mmap_length;
-		        memcpy((void *)arosmb->mmap_addr,(void *)mbinfo->mmap_addr,mbinfo->mmap_length);
-	        }
-	        if (mbinfo->flags & MB_FLAGS_DRIVES)
-	        {
-		        if (mbinfo->drives_length > 0)
-		        {
-		            arosmb->flags |= MB_FLAGS_DRIVES;
-		            arosmb->drives_addr = ((ULONG)(arosmb->mmap_addr + arosmb->mmap_len));
-		            arosmb->drives_len = mbinfo->drives_length;
-		            memcpy((void *)arosmb->drives_addr,(void *)mbinfo->drives_addr,mbinfo->drives_length);
-		        }
-	        }
-	        if (mbinfo->flags & MB_FLAGS_GFX)
-	        {
-		        arosmb->flags |= MB_FLAGS_GFX;
-		        arosmb->vbe_mode = mbinfo->vbe_mode;
-		        memcpy((void *)&arosmb->vmi,(void *)mbinfo->vbe_mode_info,sizeof(struct vbe_mode));
-		        memcpy((void *)&arosmb->vci,(void *)mbinfo->vbe_control_info,sizeof(struct vbe_controller));
+        rkprintf("Copying multiboot information into storage\n");
+        arosmb->magic = MBRAM_VALID;
+        arosmb->flags = 0L;
+        mbinfo = (struct multiboot *)addr;
+        if (mbinfo->flags & MB_FLAGS_MEM)
+        {
+            arosmb->flags |= MB_FLAGS_MEM;
+            arosmb->mem_lower = mbinfo->mem_lower;
+            arosmb->mem_upper = mbinfo->mem_upper;
+        }
+        if (mbinfo->flags & MB_FLAGS_LDRNAME)
+        {
+            arosmb->flags |= MB_FLAGS_LDRNAME;
+            snprintf(arosmb->ldrname,29,"%s",mbinfo->loader_name);
+        }
+        if (mbinfo->flags & MB_FLAGS_CMDLINE)
+        {
+            arosmb->flags |= MB_FLAGS_CMDLINE;
+            snprintf(arosmb->cmdline,199,"%s",mbinfo->cmdline);
+        }
+        if (mbinfo->flags & MB_FLAGS_MMAP)
+        {
+            arosmb->flags |= MB_FLAGS_MMAP;
+            arosmb->mmap_addr = (struct mb_mmap *)((ULONG)(0x1000 + sizeof(struct arosmb)));
+            arosmb->mmap_len = mbinfo->mmap_length;
+            memcpy((void *)arosmb->mmap_addr,(void *)mbinfo->mmap_addr,mbinfo->mmap_length);
+        }
+        if (mbinfo->flags & MB_FLAGS_DRIVES)
+        {
+            if (mbinfo->drives_length > 0)
+            {
+                arosmb->flags |= MB_FLAGS_DRIVES;
+                arosmb->drives_addr = ((ULONG)(arosmb->mmap_addr + arosmb->mmap_len));
+                arosmb->drives_len = mbinfo->drives_length;
+                memcpy((void *)arosmb->drives_addr,(void *)mbinfo->drives_addr,mbinfo->drives_length);
             }
-	    }
+        }
+        if (mbinfo->flags & MB_FLAGS_GFX)
+        {
+            arosmb->flags |= MB_FLAGS_GFX;
+            arosmb->vbe_mode = mbinfo->vbe_mode;
+            memcpy((void *)&arosmb->vmi,(void *)mbinfo->vbe_mode_info,sizeof(struct vbe_mode));
+            memcpy((void *)&arosmb->vci,(void *)mbinfo->vbe_control_info,sizeof(struct vbe_controller));
+        }
     }
     rkprintf("Done\n");
 
@@ -513,8 +484,8 @@ void exec_cinit(unsigned long magic, unsigned long addr)
      * Well, if we all in clearing moode, then it's the best occasion to clear
      * some areas in AROS private 4KB ram area. Hmmm. If there would occur any
      * interrupt at this moment, AROS would be really dead as it is going to
-     * destroy it's private stuff (which is really needed to make CPU operate
-     * propertly)
+     * destroy its private stuff (which is really needed to make CPU operate
+     * properly)
      */
     bzero((void *)8, 4096-8);
 
