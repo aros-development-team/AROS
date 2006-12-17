@@ -395,6 +395,7 @@ int i;
 			partition = (struct HDTBPartition *)partitiontypegadgets.iln;
 			CopyMem(&partitiontypegadgets.type,  &partition->type, sizeof(struct PartitionType));
 			SetPartitionAttrsA(partition->ph, PT_TYPE, &partition->type, TAG_DONE);
+			GetPartitionAttrsA(partition->ph, PT_DOSENVEC, &partition->de, TAG_DONE);
 			partitiontypegadgets.iln->parent->flags |= LNF_ToSave;
 			setChanged(partitiontypegadgets.iln);
 		}
@@ -715,7 +716,7 @@ int i;
 				changed = TRUE;
 			}
 			get(dosenvecgadgets.maxtransfer, MUIA_String_Contents, &str);
-			value = strtoul(str, &end, NULL);
+			value = strtoul(str, &end, 0);
 			if (*end == 0)
 			{
 				if (value != partition->de.de_MaxTransfer)
@@ -1835,7 +1836,7 @@ int i;
 					Child, mountbootgadgets.bootpri=StringObject,
 						StringFrame,
 						MUIA_String_Integer, 0,
-						MUIA_String_Accept, "0123456789",
+						MUIA_String_Accept, "-0123456789",
 					End,
 				End,
 				Child, HGroup,

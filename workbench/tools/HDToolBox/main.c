@@ -89,7 +89,7 @@ ULONG error;
 char *device;
 
 	InitLocale("System/Tools/HDToolBox.catalog", 1);
-	device = argc > 1 ? argv[1] : 0;
+	device = argc > 1 ? argv[1] : NULL;
 	if ((error=initEnv(device))==ERR_NONE)
 	{
 		waitMessage();

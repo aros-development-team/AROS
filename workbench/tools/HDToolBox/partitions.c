@@ -278,6 +278,8 @@ struct TableTypeNode *ttn;
 				PT_GEOMETRY, &partition->dg,
 				TAG_DONE
 			);
+			/* Update DOS type in local DOSEnvec */
+			GetPartitionAttrsA(partition->ph, PT_DOSENVEC, &partition->de, TAG_DONE);
 			return partition;
 		}
 		freePartitionNode(partition);
