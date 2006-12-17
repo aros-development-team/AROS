@@ -23,6 +23,15 @@
 
 #include <string.h>
 
+/*
+ * What you see here is a Multiboot-compatible header. We don't need a
+ * sophisticated information package from the multiboot loader.
+ * 
+ * AROS defines only the first three fields as it is now in ELF executable
+ * format. All other things like load address or entry point are already
+ * in the kernel image.
+ */
+
 #define MB_MAGIC    0x1BADB002  /* Magic value */
 #define MB_FLAGS    0x00000003  /* Need 4KB alignment for modules */
 
@@ -45,7 +54,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     NEWLIST(&(BootLoaderBase->Args));
     NEWLIST(&(BootLoaderBase->DriveInfo));
 
-    /* Right. Now we extract the data currently placed in 0x1000 */
+    /* Right. Now we extract the data currently placed in 0x1000 by exec */
     if (mb->magic == MBRAM_VALID)
     {
 	/* Yay. There is data here */
@@ -154,9 +163,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 	    }
 	    BootLoaderBase->Flags |= MB_FLAGS_DRIVES;
 	}
-
-	/* Ensure info is updated on next boot */
-	mb->magic = 0;
     }
     return TRUE;
 }
