@@ -6,6 +6,14 @@
     Lang: English
 */
 
+/*
+ * CHANGELOG:
+ * DATE        NAME                ENTRY
+ * ----------  ------------------  -------------------------------------------------------------------
+ * 2006-12-20  T. Wiszkowski       Updated ATA Packet Interface to handle ATAPI/SCSI Commands
+ *
+ */
+
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -41,6 +49,9 @@ static ULONG ata_WriteMultiple64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *)
 static ULONG ata_WriteDMA32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static ULONG ata_WriteDMA64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
 static ULONG ata_Eject(struct ata_Unit *);
+
+static ULONG atapi_ErrCmd();
+static ULONG atapi_EndCmd(struct ata_Unit *unit);
 
 static ULONG atapi_Read(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static ULONG atapi_Write(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
@@ -146,6 +157,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 	    {
 		if (bus->ab_Units[u])
 		{
+		    D(bug("%s: bus %ld, unit %ld: checking unit\n", __PRETTY_FUNCTION__, b, u));
 		    unit = bus->ab_Units[u];
 		    unit->au_Base = LIBBASE;
 		    unit->au_Bus  = bus;
@@ -155,11 +167,13 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 
 		    if (LIBBASE->ata_32bit)
 		    {
+		        D(bug("%s: bus %ld, unit %ld: using 32bit io\n", __PRETTY_FUNCTION__, b, u));
 			unit->au_ins = insl;
 			unit->au_outs = outsl;
 		    }
 		    else
 		    {
+		        D(bug("%s: bus %ld, unit %ld: using 16bit io\n", __PRETTY_FUNCTION__, b, u));
 			unit->au_ins = insw;
 			unit->au_outs = outsw;
 		    }
@@ -174,6 +188,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 	
 		    if (bus->ab_Dev[u] > DEV_ATA)
 		    {
+		        D(bug("%s: bus %ld, unit %ld: device seems to be an atapi optical device (?)\n", __PRETTY_FUNCTION__, b, u));
 		        unit->au_SectorShift = 11;
 
 			unit->au_Read32 = atapi_Read;
@@ -187,6 +202,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 		    }
 		    else
 		    {
+		        D(bug("%s: bus %ld, unit %ld: device seems to be a direct access device (?)\n", __PRETTY_FUNCTION__, b, u));
 			unit->au_DevType = DG_DIRECT_ACCESS;
 		        unit->au_SectorShift = 9;
 
@@ -221,7 +237,9 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 		    {
 			UBYTE type = (unit->au_Drive->id_General >> 8) & 0x1f;
 			unit->au_DevType = type;
-			
+		        
+			D(bug("%s: bus %ld, unit %ld: device type: %ld\n", __PRETTY_FUNCTION__, b, u, type));
+		 	
 			switch (type)
 			{
 			    case DG_CDROM:
@@ -1427,6 +1445,90 @@ static ULONG ata_Eject(struct ata_Unit *unit)
 
 int ata_DirectScsi(struct SCSICmd *cmd, struct ata_Unit *unit)
 {
+    UBYTE command[12] = {0};
+    ULONG port = unit->au_Bus->ab_Port;
+    APTR buffer = cmd->scsi_Data;
+    ULONG length = cmd->scsi_Length;
+    ULONG size = 0;
+
+    for (cmd->scsi_CmdActual=0; cmd->scsi_CmdActual<12; cmd->scsi_CmdActual++)
+    {
+       command[cmd->scsi_CmdActual] = cmd->scsi_Command[cmd->scsi_CmdActual];
+    }
+
+    cmd->scsi_Actual = 0;
+
+    D(bug("Attempting to send packet!\n"));
+
+    if (atapi_SendPacket(unit, command, sizeof(command), FALSE)) /*cmd->scsi_CmdLength, FALSE))*/
+    {
+    	D(bug("Command apparently has been sent.. i guess\n"));
+	while(1)
+	{
+	    if ((ata_WaitBusySlow(unit)))
+            {
+                if (ata_in(atapi_Status, port) & ATAF_DATAREQ)
+                {
+                    UBYTE reason = ata_in(atapi_Reason, port);
+    		    
+		    D(bug("%s: Current status: %ld, SCSI flags: %ld\n", __PRETTY_FUNCTION__, reason, cmd->scsi_Flags));
+
+                    if (((cmd->scsi_Flags & SCSIF_READ) == SCSIF_READ) &&
+                        ((reason & ATAPIF_MASK) == ATAPIF_READ))
+                    {
+   		        size = ata_in(atapi_ByteCntH, port) << 8 |
+                               ata_in(atapi_ByteCntL, port);
+		        D(bug("%s: data available for read (%ld bytes, max: %ld bytes)\n", __PRETTY_FUNCTION__, size, length));
+			if (size > length)
+                        {
+			    D(bug("%s: CRITICAL! MORE DATA THAN STORAGE ALLOWS: %ld bytes vs %ld bytes left!\n", __PRETTY_FUNCTION__, size, length));
+                            /* damnit!! need to report some critical error here! */
+			    size = length;
+                        }
+		        unit->au_ins(buffer, port, size);
+			D(bug("%s: Data read.\n", __PRETTY_FUNCTION__));
+                    }   
+                    else if (((cmd->scsi_Flags & SCSIF_WRITE) == SCSIF_WRITE) &&
+                             ((reason & ATAPIF_MASK) == ATAPIF_WRITE))
+                    {
+		        size = ata_in(atapi_ByteCntH, port) << 8 |
+                               ata_in(atapi_ByteCntL, port);
+		        D(bug("%s: device available for write\n", __PRETTY_FUNCTION__));
+			if (size > length)
+                        {
+			    D(bug("%s: CRITICAL! MORE DATA THAN STORAGE ALLOWS: %ld bytes vs %ld bytes left!\n", __PRETTY_FUNCTION__, size, length));
+			    size = length;
+                            /* damnit!! need to report some critical error here! */
+			    size = length;
+                        }
+		        unit->au_outs(buffer, port, size);
+			D(bug("%s: Data written.\n", __PRETTY_FUNCTION__));
+                    }
+                    else
+                    {
+		        D(bug("%s: no further data transfer awaits\n", __PRETTY_FUNCTION__));
+                        return atapi_ErrCmd();
+                    }
+               
+                    buffer += size;
+                    cmd->scsi_Actual += size;
+                    length -= size;
+		    if (0 == length)
+		    {
+		       D(bug("%s: User transfer complete, %ld bytes transferred.\n", __PRETTY_FUNCTION__, cmd->scsi_Actual));
+		       return atapi_EndCmd(unit);
+		    }
+                } 
+                else
+                {
+                    return atapi_EndCmd(unit);
+                }
+            } else return atapi_ErrCmd();
+        }
+    }
+
+    return atapi_ErrCmd();
+/*
     ULONG port = unit->au_Bus->ab_Port;
     UBYTE command = cmd->scsi_Command[0];
 
@@ -1451,12 +1553,11 @@ int ata_DirectScsi(struct SCSICmd *cmd, struct ata_Unit *unit)
 	    }
 	}
     }
-    
+*/    
 //    ata_out(ATA_RECALIBRATE, ata_Command, port);
 //    ata_WaitBusyLong(unit);
     return HFERR_BadStatus;
 }
-
 
 
 
@@ -1751,4 +1852,6 @@ static ULONG atapi_WriteDMA(struct ata_Unit *unit, ULONG block, ULONG count, APT
     return err;
 }
 
-
+/* 
+ * vim: ts=8 noet 
+ */
