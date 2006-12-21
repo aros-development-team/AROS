@@ -3,13 +3,77 @@
     $Id$
 */
 
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <string.h>
+
 #include <libraries/mui.h>
 
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <proto/asl.h>
 
 #include "zunestuff.h"
- 
+
+
+/****************************************************************
+ aslfilerequest for load/save - buffer overflow safe
+*****************************************************************/
+long aslfilerequest(char *msg,char *dirpart,char *filepart,char *fullname, struct TagItem *tags)
+{
+
+/* msg=a name to show
+   tags=can be 0 or some additional tags
+   dirpart= a pointer to a buffer of 500 bytes that recieve the selected directory
+   filepart= a pointer to a buffer of 500 bytes that recieve the selected filename
+   fullname= a pointer to a buffer of 1000 bytes that recieve the selected full filename */
+     
+    struct FileRequester *fr;
+    struct Library *AslBase;
+    AslBase = OpenLibrary("asl.library", 37L);
+
+    if (AslBase)
+    {
+        struct TagItem frtags[] =
+        {
+    
+        { ASLFR_TitleText,          (IPTR)msg },
+        { ASLFR_InitialDrawer,      (IPTR)dirpart},
+        { ASLFR_InitialFile,        (IPTR)filepart},
+        { ASLFR_DoPatterns,         (IPTR)TRUE },
+        { ASLFR_InitialPattern,     (IPTR)"#?.prefs"},
+        { TAG_MORE,                 (IPTR)tags }
+        
+        }; 
+  
+    
+        if ( (int)(fr = (struct FileRequester *) AllocAslRequest(ASL_FileRequest, frtags) ) )
+        {
+            if (AslRequest(fr, NULL))
+            {
+                      
+                strncpy(dirpart,fr->rf_Dir,498);
+                strncpy(filepart,fr->rf_File,498);
+                strncpy(fullname,dirpart,498);
+                AddPart(fullname,filepart,998);
+                FreeAslRequest(fr);
+                CloseLibrary(AslBase);
+        
+                return 1;
+            } 
+
+            if (AslBase) CloseLibrary(AslBase);
+
+            return 0;
+        } 
+    
+
+    }
+
+    return 0;
+   
+}
+
 /****************************************************************
  Create a button (within the cycle chain)
 *****************************************************************/

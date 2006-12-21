@@ -20,6 +20,8 @@ Object *MakePoppen(void);
 Object *MakeString(void);
 Object *MakePopfont(BOOL fixed);
 
+long aslfilerequest(char *msg,char *dirpart,char *filepart,char *fullname, struct TagItem *tags);
+
 void SliderToConfig (Object *slider, Object *configdata, ULONG cfg);
 void CheckmarkToConfig (Object *checkmark, Object *configdata, ULONG cfg);
 void FrameToConfig (Object *popframe, Object *configdata, ULONG cfg);
