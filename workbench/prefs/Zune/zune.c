@@ -64,6 +64,8 @@ APTR *appaddr;
 void load_prefs(CONST_STRPTR name);
 void save_prefs(CONST_STRPTR name, BOOL envarc);
 void test_prefs(void);
+void main_open_menu(void);
+void main_saveas_menu(void);
 void restore_prefs(CONST_STRPTR name);
 
 /************************************************************************/
@@ -549,6 +551,12 @@ int init_gui(void)
 	DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
 		 MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
 		 (IPTR)&hook_standard, (IPTR)main_cancel_pressed);
+        DoMethod(open_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
+                 MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
+                 (IPTR)&hook_standard, (IPTR)main_open_menu);   
+        DoMethod(saveas_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
+                 MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
+                 (IPTR)&hook_standard, (IPTR)main_saveas_menu); 
 	DoMethod(aboutzune_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
 		 MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_AboutMUI,
 		 (IPTR)main_wnd);
@@ -630,6 +638,49 @@ void restore_prefs(CONST_STRPTR name)
     DoMethod(LastSavedConfigdata, MUIM_Configdata_Save, (IPTR)buf);
 }
 
+
+/****************************************************************
+ open given prefs file from menue
+*****************************************************************/
+
+void main_open_menu(void)
+{
+    static char dirpart[500]="ENVARC:Zune",filepart[500],filename[1000];
+
+    if (aslfilerequest ("Load a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename,0));
+    {   
+        Object *configdata;
+
+        configdata = MUI_NewObject(MUIC_Configdata,
+                     MUIA_Configdata_ApplicationBase,appname,
+                     TAG_DONE);
+
+        if (configdata != NULL)
+        {
+            int i;
+
+            /*      D(bug("zune::load_prefs: created configdata %p\n", configdata)); */
+            LastSavedConfigdata = configdata;
+            DoMethod(configdata, MUIM_Configdata_Load,filename);
+
+            /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */
+            
+            for (i=0;main_page_entries[i].name;i++)
+            {
+                struct page_entry *p = &main_page_entries[i];
+                
+                if (p->group) DoMethod(p->group, MUIM_Settingsgroup_ConfigToGadgets, (IPTR)configdata);
+            }
+
+            /* activate prefs in test mode */
+            test_prefs();
+
+            /*      D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
+        }                     
+                          
+    } 
+}
+
 /****************************************************************
  Saves the done prefs
 *****************************************************************/
@@ -668,6 +719,48 @@ void save_prefs(CONST_STRPTR name, BOOL envarc)
     	MUI_DisposeObject(configdata);
 /*  	D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
     }
+}
+
+
+/****************************************************************
+ SaveAS the done prefs from menue
+*****************************************************************/
+
+void main_saveas_menu(void)
+{
+    static char dirpart[500]="ENVARC:Zune",filepart[500],filename[1000];
+
+    if (aslfilerequest("Save a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename,0));
+    {   
+        Object *configdata;
+
+        configdata = MUI_NewObject(MUIC_Configdata,
+                     MUIA_Configdata_ApplicationBase, "dummyfile",
+                     TAG_DONE);
+
+        if (configdata != NULL)
+        {
+            int i;
+
+            /*      D(bug("zune::save_prefs: created configdata %p\n", configdata)); */
+
+            /* Call MUIM_Settingsgroup_GadgetsToConfig for every group */
+    
+            for (i=0;main_page_entries[i].name;i++)
+            {
+                struct page_entry *p = &main_page_entries[i];
+        
+                if (p->group) DoMethod(p->group, MUIM_Settingsgroup_GadgetsToConfig, (IPTR)configdata);
+            }
+
+            DoMethod(configdata, MUIM_Configdata_Save,filename);
+
+            MUI_DisposeObject(configdata);
+            /*      D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
+        }                     
+                                  
+    } 
+
 }
 
 
