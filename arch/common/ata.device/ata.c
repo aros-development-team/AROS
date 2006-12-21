@@ -395,11 +395,11 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     struct ata_Unit *unit = (struct ata_Unit *)io->io_Unit;
 
     IOStdReq(io)->io_Actual = sizeof(struct SCSICmd);
-    if (!(unit->au_Flags & AF_ATAPI))
+    if (unit->au_Flags & AF_ATAPI)
     {
 	io->io_Error = ata_DirectScsi((struct SCSICmd *)IOStdReq(io)->io_Data, unit);
     }
-    else io->io_Error = IOERR_BADADDRESS;
+    else io->io_Error = IOERR_BADADDRESS; 
 }
 
 //-----------------------------------------------------------------------------
