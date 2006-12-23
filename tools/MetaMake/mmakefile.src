@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-#MM- build-tools : build-tools-mmake
+##MM- build-tools : build-tools-mmake
 
 %build_prog mmake=build-tools-mmake \
     progname=mmake targetdir=$(AROSDIR)/Build/Tools \
