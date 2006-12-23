@@ -48,6 +48,8 @@ typedef unsigned short  UWORD;
 typedef short 	    	WORD;
 typedef short	    	BOOL;
 typedef unsigned char 	UBYTE;
+#else
+#include <exec/types.h>
 #endif
 
 /****************************************************************************************/

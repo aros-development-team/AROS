@@ -19,18 +19,18 @@ Currently the following 9 Keywords are defined:
 
 1)  Name        Name of the DataType. Used in the NAME-chunk and
 		as the dth_Name component in the struct DataTypeHeader
-		in the DTHD-chunk.
+		in the DTHD-chunk. The name is also used for default icons
+		(def_Name.info).
 
 2)  Version     A standard Amiga-version-string. Used in the FVER-chunk.
 		This Keyword is optional. When it is missing no FVER-chunk
-		is written.
+		is written. Hint: use 4 digit years to avoid wrong interpretation.
 
 3)  BaseName    BaseName of the DataType as it resides in
 		Sys:Classes/DataTypes . No ".datatype" must be appended.
 
 4)  Pattern     FileNamePattern, an standard Amiga-pattern.
-		This is AmigaOS, not a crippled OS-wannabe from Redmont.
-		So I suggest not to use FileNamePatterns to recognice
+		I suggest not to use FileNamePatterns to recognice
 		a filetype. Please use the fit-all-pattern "#?" .
 		createdtdesc does this too, if Pattern is ommited.
 
@@ -48,9 +48,22 @@ Currently the following 9 Keywords are defined:
 		createdtdesc doesn't check the validity. See <datatypes/datatypes.h>
 		for details.
 
+		syst : System file, such as; directory, executable, library, device, font, etc.
+		text : Formatted or unformatted text
+		docu : Formatted text with graphics or other DataTypes
+		soun : Sound
+		inst : Musical instruments used for musical scores
+		musi : Musical score
+		pict : Still picture
+		anim : Animated picture
+		movi : Animation with audio track
+
 7)  ID          ID The ID of this DataType. This ID must complain to the rules.
 		createdtdesc doesn't check the validity. See <datatypes/datatypes.h>
 		for details.
+
+		For IFF types it is the Form type, for other files it's the first
+		four characters of the name of the file type.
 
 8)  Flags       Flags as defined in <datatypes/datatypes.h> The following
 		flags are supported:
@@ -59,7 +72,7 @@ Currently the following 9 Keywords are defined:
 		DTF_ASCII
 		DTF_IFF
 		DTF_MISC
-		DTF_CASE
+		DTF_CASE         (AROS uses this for comparing the Mask)
 		DTF_SYSTEM1
 
 		Multiple flags must be separated by ',' without spaces between.
@@ -116,5 +129,4 @@ Flags=DTF_IFF,DTF_CASE
 # Used in DataTypeHeader->dth_Priority .
 Priority=0
 ---schnapp---
-
 
