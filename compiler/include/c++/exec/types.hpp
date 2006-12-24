@@ -191,7 +191,7 @@ typedef aros::SwappedType<APTR>  LEAPTR;
 
 typedef WORD  BEWORD;               
 typedef LONG  BELONG;
-typedef QUAD  BEQUAD  
+typedef QUAD  BEQUAD;  
 
 typedef UWORD BEUWORD;               
 typedef ULONG BEULONG;
