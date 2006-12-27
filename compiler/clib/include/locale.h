@@ -55,7 +55,7 @@ struct lconv
 
 __BEGIN_DECLS
 char *setlocale(int category, const char *locale);
-/* NOTIMPL struct lconv *localeconv(void); */
+struct lconv *localeconv(void);
 __END_DECLS
 
 #endif /* _LOCALE_H_ */
