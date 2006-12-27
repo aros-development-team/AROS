@@ -192,6 +192,7 @@ SHARED	:= \
 	lcong48 \
 	link \
 	localtime \
+	localeconv \
 	lrand48 \
 	lseek \
 	malloc \
