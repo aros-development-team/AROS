@@ -59,6 +59,12 @@ struct MUI_CustomClass *MCC_Query(ULONG d0);
 
 APTR *appaddr;
 
+struct TagItem prefstags[] =
+        {
+        { ASLFR_DoPatterns,         (IPTR)TRUE },
+        { ASLFR_InitialPattern,     (IPTR)"#?.prefs"},
+        };
+
 /************************************************************************/
 
 void load_prefs(CONST_STRPTR name);
@@ -647,7 +653,7 @@ void main_open_menu(void)
 {
     static char dirpart[500]="ENVARC:Zune",filepart[500],filename[1000];
 
-    if (aslfilerequest ("Load a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename,0));
+    if (aslfilerequest ("Load a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename, prefstags));
     {   
         Object *configdata;
 
@@ -660,11 +666,10 @@ void main_open_menu(void)
             int i;
 
             /*      D(bug("zune::load_prefs: created configdata %p\n", configdata)); */
-            LastSavedConfigdata = configdata;
+            //LastSavedConfigdata = configdata;
             DoMethod(configdata, MUIM_Configdata_Load,filename);
 
-            /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */
-            
+            /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */           
             for (i=0;main_page_entries[i].name;i++)
             {
                 struct page_entry *p = &main_page_entries[i];
@@ -730,7 +735,7 @@ void main_saveas_menu(void)
 {
     static char dirpart[500]="ENVARC:Zune",filepart[500],filename[1000];
 
-    if (aslfilerequest("Save a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename,0));
+    if (aslfilerequest("Save a Zune Prefs File", (char *)&dirpart, (char *)&filepart, (char *)&filename, prefstags));
     {   
         Object *configdata;
 
@@ -738,14 +743,16 @@ void main_saveas_menu(void)
                      MUIA_Configdata_ApplicationBase, "dummyfile",
                      TAG_DONE);
 
+        /* check for ".prefs" suffix in filename, add if not existing */
+        if ( !strstr( filename, ".prefs") ) strcat(filename, ".prefs");
+
         if (configdata != NULL)
         {
             int i;
 
             /*      D(bug("zune::save_prefs: created configdata %p\n", configdata)); */
 
-            /* Call MUIM_Settingsgroup_GadgetsToConfig for every group */
-    
+            /* Call MUIM_Settingsgroup_GadgetsToConfig for every group */    
             for (i=0;main_page_entries[i].name;i++)
             {
                 struct page_entry *p = &main_page_entries[i];
@@ -753,7 +760,7 @@ void main_saveas_menu(void)
                 if (p->group) DoMethod(p->group, MUIM_Settingsgroup_GadgetsToConfig, (IPTR)configdata);
             }
 
-            DoMethod(configdata, MUIM_Configdata_Save,filename);
+            DoMethod(configdata, MUIM_Configdata_Save, filename);
 
             MUI_DisposeObject(configdata);
             /*      D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
