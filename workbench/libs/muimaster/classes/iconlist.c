@@ -1855,6 +1855,13 @@ IPTR IconList__MUIM_NextSelected(struct IClass *cl, Object *obj, struct MUIP_Ico
         } 
         else
         {
+            /* get the first selected entry in list */
+            node = List_First(&data->icon_list);
+            while (!node->selected)
+            {
+                node = Node_Next(node);
+            }
+
             *msg->entry = &node->entry;
         }
         return 0;
