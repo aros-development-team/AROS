@@ -61,8 +61,9 @@ APTR *appaddr;
 
 struct TagItem prefstags[] =
         {
-        { ASLFR_DoPatterns,         (IPTR)TRUE },
-        { ASLFR_InitialPattern,     (IPTR)"#?.prefs"},
+        { ASLFR_DoPatterns,         (IPTR)TRUE       },
+        { ASLFR_InitialPattern,     (IPTR)"#?.prefs" },
+        { TAG_DONE,                 0                },
         };
 
 /************************************************************************/
