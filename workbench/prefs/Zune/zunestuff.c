@@ -40,8 +40,6 @@ long aslfilerequest(char *msg,char *dirpart,char *filepart,char *fullname, struc
         { ASLFR_TitleText,          (IPTR)msg },
         { ASLFR_InitialDrawer,      (IPTR)dirpart},
         { ASLFR_InitialFile,        (IPTR)filepart},
-        { ASLFR_DoPatterns,         (IPTR)TRUE },
-        { ASLFR_InitialPattern,     (IPTR)"#?.prefs"},
         { TAG_MORE,                 (IPTR)tags }
         
         }; 
