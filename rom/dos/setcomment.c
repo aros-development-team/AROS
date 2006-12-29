@@ -59,6 +59,8 @@
     /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_SET_COMMENT, DOSBase);
 
+    if(comment == NULL)
+        comment = "";
     iofs.io_Union.io_SET_COMMENT.io_Comment = comment;
 
     return !DoName(&iofs, name, DOSBase);
