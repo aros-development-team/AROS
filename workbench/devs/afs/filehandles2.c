@@ -123,6 +123,8 @@ ULONG block;
 struct BlockCache *blockbuffer;
 
 	D(bug("[afs] setComment(ah,%s,%s)\n", name, comment));
+	if (StrLen(comment) >= MAXCOMMENTLENGTH)
+		return ERROR_COMMENT_TOO_BIG;
 	blockbuffer = findBlock(afsbase, ah, name, &block);
 	if (blockbuffer == NULL)
 		return error;
