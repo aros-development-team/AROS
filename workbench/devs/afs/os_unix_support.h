@@ -53,6 +53,7 @@ struct Node {};
 #define ERROR_OBJECT_WRONG_TYPE   212
 #define ERROR_DIRECTORY_NOT_EMPTY 216
 #define ERROR_SEEK_ERROR          219
+#define ERROR_COMMENT_TOO_BIG     220
 #define ERROR_DISK_FULL           221
 #define ERROR_DELETE_PROTECTED    222
 #define ERROR_NOT_A_DOS_DISK      225
