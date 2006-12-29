@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Rexx stub for AllocMem system function
@@ -99,7 +99,7 @@ LONG rxsupp_showdir(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE 
     string = AllocMem(ssize, MEMF_ANY);
     string[0] = 0;
     exallctrl = AllocDosObject(DOS_EXALLCONTROL, NULL);
-    exallctrl->eac_LastKey = NULL;
+    exallctrl->eac_LastKey = 0;
     do {
 	done = ExAll(lock, buffer, 1024, ED_TYPE, exallctrl);
 	if (exallctrl->eac_Entries>0)
