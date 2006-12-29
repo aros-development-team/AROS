@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -187,7 +187,8 @@ UWORD i;
 			StrCpyToBstr
 				(
 					name,
-					(APTR)((char *)blockbuffer->buffer+(BLK_DISKNAME_START(volume)*4))
+					(APTR)((char *)blockbuffer->buffer+(BLK_DISKNAME_START(volume)*4)),
+					MAX_NAME_LENGTH
 				);
 			blockbuffer->buffer[volume->SizeBlock-12] = 0;
 			blockbuffer->buffer[volume->SizeBlock-11] = 0;
@@ -231,7 +232,8 @@ struct DateStamp ds;
 	StrCpyToBstr
 		(
 			name,
-			(APTR)((char *)blockbuffer->buffer+(BLK_DISKNAME_START(volume)*4))
+			(APTR)((char *)blockbuffer->buffer+(BLK_DISKNAME_START(volume)*4)),
+			MAX_NAME_LENGTH
 		);
 	DateStamp(&ds);
 	blockbuffer->buffer[BLK_ROOT_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);

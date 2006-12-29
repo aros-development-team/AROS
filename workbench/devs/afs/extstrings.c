@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,15 +15,14 @@ UBYTE capitalch(UBYTE ch, UBYTE flags) {
 }
 
 // str2 is a BCPL string
-LONG noCaseStrCmp(char *str1, char *str2,UBYTE flags) {
-UBYTE length;
+LONG noCaseStrCmp(char *str1, char *str2, UBYTE flags, int maxlen) {
+UBYTE length, i=0;
 
 	length=str2++[0];
 	do {
-		if ((*str1==0) && (length==0))
+		if (((*str1==0) || (length==maxlen)) && (i==length))
 			return 1;
-		length--;
-//		if ((*str1==0) && (*str2==0)) return 1;
+		i++;
 	} while (capitalch(*str1++,flags)==capitalch(*str2++,flags));
 	return 0;
 }
@@ -45,10 +44,10 @@ ULONG length=0;
 	return length;
 }
 
-void StrCpyToBstr(char *src, char *dst) {
+void StrCpyToBstr(char *src, char *dst, int maxlen) {
 UWORD len=0;
 
-	while (*src)
+	while (*src && (len<maxlen))
 	{
 		dst[len+1]=*src++;
 		len++;

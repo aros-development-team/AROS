@@ -2,13 +2,16 @@
 #define AFSBLOCKS_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #define T_SHORT	2
 #define T_DATA		8
 #define T_LIST		16
+
+#define MAX_NAME_LENGTH		31
+#define MAX_COMMENT_LENGTH	91
 
 #define BLOCK_SIZE(volume)						(volume->SizeBlock*4)
 
