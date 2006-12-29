@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -129,7 +129,8 @@ struct BlockCache *blockbuffer;
 	StrCpyToBstr
 		(
 			comment,
-			(APTR)((char *)blockbuffer->buffer+(BLK_COMMENT_START(ah->volume)*4))
+			(APTR)((char *)blockbuffer->buffer+(BLK_COMMENT_START(ah->volume)*4)),
+			MAX_COMMENT_LENGTH
 		);
 	return writeHeader(afsbase, ah->volume, blockbuffer);
 }
@@ -476,7 +477,8 @@ UBYTE newentryname[34];
 	StrCpyToBstr
 		(
 			newentryname,
-			(APTR)((char *)oldfile->buffer+(BLK_FILENAME_START(dirah->volume)*4))
+			(APTR)((char *)oldfile->buffer+(BLK_FILENAME_START(dirah->volume)*4)),
+			MAX_NAME_LENGTH
 		);
 	dirblock = linkNewBlock(afsbase, dirah->volume, dirblock, oldfile);
 	if (dirblock == NULL)
@@ -531,7 +533,7 @@ UBYTE newentryname[34];
                       containing a directory in which
                       name shall be created in
          protection - protection bit mask
- Output: 0 for error (global error set);
+ Output: NULL for error (global error set);
          pointer to struct BlockCache of the newly
          created object otherwise
 *********************************************/
@@ -591,7 +593,8 @@ ULONG i;
 	StrCpyToBstr
 		(
 			entryname,
-			(APTR)((char *)newblock->buffer+(BLK_FILENAME_START(volume)*4))
+			(APTR)((char *)newblock->buffer+(BLK_FILENAME_START(volume)*4)),
+			MAX_NAME_LENGTH
 		);
 	for (i=BLK_FILENAME_END(volume)+1; i<BLK_HASHCHAIN(volume); i++)
 		newblock->buffer[i] = 0;

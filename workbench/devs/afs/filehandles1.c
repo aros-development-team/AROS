@@ -26,7 +26,7 @@ extern ULONG error;
  Input : name        - object we are searching for
          blockbuffer - dirblock we are searching in
          block       - will be filled with the block number
-                       prior the entry we are using
+                       prior to the entry we are using
  Output: cache block of last object
  See   : locateObject, setDate, setComment, deleteObject
 ************************************************/
@@ -84,7 +84,8 @@ D
 								(ULONG)blockbuffer->buffer+
 								(BLK_DIRECTORYNAME_START(volume)*4)
 							),
-						volume->dosflags
+						volume->dosflags,
+						MAX_NAME_LENGTH
 					)
 			)
 	{
@@ -444,7 +445,7 @@ ULONG fileblocknum = -1;
 
 	D(bug
 		(
-			"[afs] openfile(%lu,%s,%lu,%lu)\n",
+			"[afs] openfile(%lu,%s,0x%lx,%lu)\n",
 			dirah->header_block,name,mode,protection)
 		);
 	error = 0;
@@ -476,7 +477,10 @@ ULONG fileblocknum = -1;
 					error = deleteObject(afsbase, dirah, name);
 				if ((error == 0) || (error == ERROR_OBJECT_NOT_FOUND))
 				{
-					if (mode & FMF_CREATE)
+					if (
+							(mode & FMF_CREATE) &&
+							((fileblock == NULL) || (mode & FMF_CLEAR))
+						)
 					{
 						dirblock = getBlock(afsbase, dirah->volume, dirblocknum);
 						if (dirblock != NULL)
@@ -495,7 +499,7 @@ ULONG fileblocknum = -1;
 					if (fileblock != NULL)
 					{
 						error = 0;
-						ah = getHandle(afsbase, dirah->volume,fileblock, mode);
+						ah = getHandle(afsbase, dirah->volume, fileblock, mode);
 					}
 				}
 			}
