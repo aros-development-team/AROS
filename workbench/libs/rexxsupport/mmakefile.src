@@ -2,7 +2,8 @@
 include $(TOP)/config/make.cfg
 
 FILES := allocmem freemem openport closeport waitpkt getarg getpkt \
-         portcleanup reply showdir showlist statef
+         portcleanup reply showdir showlist statef delay null next \
+	 offset baddr delete makedir rename typepkt forbid
 FUNCS := arexxdispatch closeportrsrc
 
 #MM workbench-libs-rexxsupport-includes : \

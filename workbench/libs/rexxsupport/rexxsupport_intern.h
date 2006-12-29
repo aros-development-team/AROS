@@ -46,4 +46,10 @@ struct RexxSupportBase_intern
 
 #define RSBI(base) ((struct RexxSupportBase_intern *)base)
 
+/***********************************/
+/* Definittion for ARexx functions */
+/***********************************/
+
+#define NEST_VAR "__RXSUPP__.__NESTING__"
+
 #endif /* REXXSUPPORT_INTERN_H */
