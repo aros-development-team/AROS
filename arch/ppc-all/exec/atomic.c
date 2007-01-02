@@ -1,5 +1,5 @@
 /*
-    Copyright © 1997-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1997-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Atomic access functions to be used by macros in atomic.h.
@@ -8,319 +8,272 @@
 
 #include <proto/exec.h>
 
-void atomic_inc_l(LONG *p)
+void atomic_inc_l(ULONG* p)
 {
-    LONG l;
+    __asm__ __volatile__ (
+    "lincl: lwarx  11,  0, %[p] \n\t" /* load from memory and reserve storage location      */
+    "       addi   11, 11,    1 \n\t" 
+    "       stwcx. 11,  0, %[p] \n\t" /* check that storage was not changed by other thread */
+    "       bne-   lincl        \n\t" /* in the meantime, then store, otherwise try again   */
+    :
+    : [p] "r"(p)
+    : "memory",
+      "cc",
+      "11");                          /* we use r11, don't let the compiler choose it       */
+}
+
+void atomic_dec_l(ULONG* p)
+{
+    __asm__ __volatile__ (
+    "ldecl: lwarx  11,  0, %[p] \n\t"
+    "       subi   11, 11, 1    \n\t"
+    "       stwcx. 11,  0, %[p] \n\t"
+    "       bne-   ldecl        \n\t"
+    :
+    : [p] "r"(p)
+    : "memory",
+      "cc",
+      "11");
+}
+
+void atomic_and_l(ULONG* p, ULONG mask)
+{
+    __asm__ __volatile__ (
+    "landl: lwarx  11,  0, %[p]    \n\t"
+    "       and    11, 11, %[mask] \n\t"
+    "       stwcx. 11,  0, %[p]    \n\t"
+    "       bne-   landl           \n\t"
+    :
+    : [mask] "r" (mask),
+      [p]    "r" (p)
+    : "memory",
+      "cc",
+      "11");
+}
+
+void atomic_or_l(ULONG* p, ULONG mask)
+{
+    __asm__ __volatile__ (
+    "lorl: lwarx  11,  0, %[p]    \n\t"
+    "      or     11, 11, %[mask] \n\t"
+    "      stwcx. 11,  0, %[p]    \n\t"
+    "      bne-   lorl            \n\t"
+    :
+    : [mask] "r" (mask),
+      [p]    "r" (p)
+    : "memory",
+      "cc",
+      "11");
+}
+
+void atomic_inc_b(UBYTE* p)
+{
+    const IPTR   rem   = ((IPTR) p) % 4; /* get pointer to 4 byte aligned base   */
+    const UBYTE* u     = p - rem;        /* address of byte                      */
+    const IPTR   shift = 24 - rem * 8;   /* shift right for operation            */
+          IPTR   bmask = 0xff << shift;  /* clear everything except bits of byte */
+
+    __asm__ __volatile__ (
+    "lincb: lwarx  11,        0,      %[u]     \n\t" /* get data                    */
+    "       and    12,       11,      %[bmask] \n\t" /* clear                       */
+    "       srw    12,       12,      %[shift] \n\t" /* shift right                 */
+    "       addi   12,       12,      1        \n\t" /* operation                   */
+    "       slw    12,       12,      %[shift] \n\t" /* shift left                  */
+    "       not    %[bmask], %[bmask]          \n\t" /* invert mask                 */
+    "       and    11,       11,      %[bmask] \n\t" /* clear byte in original data */
+    "       or     11,       11,      12       \n\t" /* insert modified byte        */
+    "       stwcx. 11,        0,      %[u]     \n\t"
+    "       bne-   lincb                       \n\t"
+    : [bmask] "+r"(bmask)
+    : [u]     "r" (u),
+      [shift] "r" (shift)
+    : "memory",
+      "cc",
+      "11", "12");
+}
+
+void atomic_dec_b(UBYTE* p)
+{
+    const IPTR   rem   = ((IPTR) p) % 4;
+    const UBYTE* u     = p - rem;
+    const IPTR   shift = 24 - rem * 8;
+          IPTR   bmask = 0xff << shift;
+
+    __asm__ __volatile__ (
+    "ldecb: lwarx  11,        0,      %[u]     \n\t"
+    "       and    12,       11,      %[bmask] \n\t"
+    "       srw    12,       12,      %[shift] \n\t"
+    "       subi   12,       12,      1        \n\t"
+    "       slw    12,       12,      %[shift] \n\t"
+    "       not    %[bmask], %[bmask]          \n\t"
+    "       and    11,       11,      %[bmask] \n\t"
+    "       or     11,       11,      12       \n\t"
+    "       stwcx. 11,        0,      %[u]     \n\t"
+    "       bne-   ldecb                       \n\t"
+    : [bmask] "+r"(bmask)
+    : [u]     "r" (u),
+      [shift] "r" (shift)
+    : "memory",
+      "cc",
+      "11", "12");
+}
+
+void atomic_and_b(UBYTE* p, UBYTE mask)
+{
+    const IPTR   rem   = ((IPTR) p) % 4;
+    const UBYTE* u     = p - rem;
+    const IPTR   shift = 24 - rem * 8;
+          IPTR   bmask = 0xff << shift;
+
+    __asm__ __volatile__ (
+    "landb: lwarx  11,        0,      %[u]     \n\t"
+    "       and    12,       11,      %4       \n\t"
+    "       srw    12,       12,      %[shift] \n\t"
+    "       and    12,       12,      %[mask]  \n\t"
+    "       slw    12,       12,      %[shift] \n\t"
+    "       not    %[bmask], %[bmask]          \n\t"
+    "       and    11,       11,      %[bmask] \n\t"
+    "       or     11,       11,      12       \n\t"
+    "       stwcx. 11,        0,      %[u]     \n\t"
+    "       bne-   landb                       \n\t"
+    : [bmask] "+r"(bmask)
+    : [mask]  "r" (mask),
+      [u]     "r" (u),
+      [shift] "r" (shift)
+    : "memory",
+      "cc",
+      "11", "12");
+}
+
+void atomic_or_b(UBYTE* p, UBYTE mask)
+{
+    const IPTR   rem   = ((IPTR) p) % 4;
+    const UBYTE* u     = p - rem;
+    const IPTR   shift = 24 - rem * 8;
+          IPTR   bmask = 0xff << shift;
 	
     __asm__ __volatile__ (
-    "lincl: lwarx  %1,%2,%0 \n\t"
-    "       addi   %1,%1,1  \n\t"
-    "       stwcx. %1,%2,%0 \n\t"
-    "       bne-   lincl    \n\t"
-    :
-    : "r"(p),
-      "r"(l),
-      "I"(0)
-    : "memory", "cc");
+    "lorb: lwarx  11,        0,      %[u]     \n\t"
+    "      and    12,       11,      %[bmask] \n\t"
+    "      srw    12,       12,      %[shift] \n\t"
+    "      or     12,       12,      %[mask]  \n\t"
+    "      slw    12,       12,      %[shift] \n\t"
+    "      not    %[bmask], %[bmask]          \n\t"
+    "      and    11,       11,      %[bmask] \n\t"
+    "      or     11,       11,      12       \n\n"
+    "      stwcx. 11,        0,      %[u]     \n\t"
+    "      bne-   lorb                        \n\t"
+    : [bmask] "+r"(bmask)
+    : [mask]  "r" (mask),
+      [u]     "r" (u),
+      [shift] "r" (shift)
+    : "memory",
+      "cc",
+      "11", "12");
 }
 
-void atomic_dec_l(LONG *p)
+void atomic_inc_w(UWORD* p)
 {
-    LONG l;
-	
+    const IPTR   rem   = (((IPTR) p) % 4) / 2; /* size of UWORD / 2 = size of UBYTE */
+    const UWORD* u     = p - rem;
+    const IPTR   shift = 16 - rem * 16;
+          IPTR   wmask = 0xffff << shift;
+
     __asm__ __volatile__ (
-    "ldecl: lwarx  %1,%2,%0 \n\t"
-    "       subi   %1,%1,1  \n\t"
-    "       stwcx. %1,%2,%0 \n\t"
-    "       bne-   ldecl    \n\t"
-    :
-    : "r"(p),
-      "r"(l),
-      "I"(0)
-    : "memory", "cc");
+    "lincw: lwarx  11,        0,      %[u]     \n\t"
+    "       and    12,       11,      %[wmask] \n\t"
+    "       srw    12,       12,      %[shift] \n\t"
+    "       addi   12,       12,      1        \n\t"
+    "       slw    12,       12,      %[shift] \n\t"
+    "       not    %[wmask], %[wmask]          \n\t"
+    "       and    11,       11,      %[wmask] \n\t"
+    "       or     11,       11,      12       \n\n"
+    "       stwcx. 11,        0,      %[u]     \n\t"
+    "       bne-   lincw                       \n\t"
+    : [wmask] "+r"(wmask)
+    : [u]     "r" (u),
+      [shift] "r" (shift)
+    : "memory",
+      "cc",
+      "11", "12");
 }
 
-void atomic_and_l(LONG *p, LONG mask)
+void atomic_dec_w(UWORD* p)
 {
-    LONG l;
+    const IPTR   rem   = (((IPTR) p) % 4) / 2;
+    const UWORD* u     = p - rem;
+    const IPTR   shift = 16 - rem * 16;
+          IPTR   wmask = 0xffff << shift;
 
     __asm__ __volatile__ (
-    "landl: lwarx  %2,%3,%1 \n\t"
-    "       and    %2,%2,%0 \n\t"
-    "       stwcx. %2,%3,%1 \n\t"
-    "       bne-   landl    \n\t"
-    :
-    : "r"(mask),
-      "r"(p),
-      "r"(l),
-      "I"(0)
-    : "memory", "cc");
+    "ldecw: lwarx  11,        0,      %[u]     \n\t"
+    "       and    12,       11,      %[wmask] \n\t"
+    "       srw    12,       12,      %[shift] \n\t"
+    "       subi   12,       12,      1        \n\t"
+    "       slw    12,       12,      %[shift] \n\t"
+    "       not    %[wmask], %[wmask]          \n\t"
+    "       and    11,       11,      %[wmask] \n\t"
+    "       or     11,       11,      12       \n\t"
+    "       stwcx. 11,        0,      %[u]     \n\t"
+    "       bne-   ldecw                       \n\t"
+    : [wmask] "+r"(wmask)
+    : [u]     "r" (u),
+      [shift] "r" (shift)
+    : "memory",
+      "cc",
+      "11", "12");
 }
 
-void atomic_or_l(LONG *p, LONG mask)
+void atomic_and_w(UWORD* p, UWORD mask)
 {
-    LONG l;
-	
+    const IPTR   rem   = (((IPTR) p) % 4) / 2;
+    const UWORD* u     = p - rem;
+    const IPTR   shift = 16 - rem * 16;
+          IPTR   wmask = 0xffff << shift;
+
     __asm__ __volatile__ (
-    "lorl: lwarx  %2,%3,%1 \n\t"
-    "      or     %2,%2,%0 \n\t"
-    "      stwcx. %2,%3,%1 \n\t"
-    "      bne-   lorl    \n\t"
-    :
-    : "r"(mask),
-      "r"(p),
-      "r"(l),
-      "I"(0)
-    : "memory", "cc");
+    "landw: lwarx  11,        0,      %[u]     \n\t"
+    "       and    12,       11,      %[wmask] \n\t"
+    "       srw    12,       12,      %[shift] \n\t"
+    "       and    12,       12,      %[mask]  \n\t"
+    "       slw    12,       12,      %[shift] \n\t"
+    "       not    %[wmask], %[wmask]          \n\t"
+    "       and    11,       11,      %[wmask] \n\t"
+    "       or     11,       11,      12       \n\t"
+    "       stwcx. 11,        0,      %[u]     \n\t"
+    "       bne-   landw                       \n\t"
+    : [wmask] "+r"(wmask)
+    : [mask]  "r" (mask),
+      [u]     "r" (u),
+      [shift] "r" (shift)
+    : "memory",
+      "cc",
+      "11", "12");
 }
 
-void atomic_inc_b(BYTE *p)
+void atomic_or_w(UWORD* p, UWORD mask)
 {
-    const IPTR rem      = ((IPTR) p) % 4;
-    const BYTE *u       = (BYTE *) p - rem;
-    const LONG shift    = 24 - rem * 8;
-    const LONG bmask    = 0xff << shift;
-    const LONG notbmask = ~bmask;
-	  BYTE b;
-	  LONG tmp;
+    const IPTR   rem   = (((IPTR) p) % 4) / 2;
+    const UWORD* u     = p - rem;
+    const IPTR   shift = 16 - rem * 16;
+          IPTR   wmask = 0xffff << shift;
 
     __asm__ __volatile__ (
-    "lincb: lwarx  %1,%2,%0 \n\t"
-    "       and    %5,%1,%3 \n\t"
-    "       srw    %5,%5,%4 \n\t"
-    "       addi   %5,%5,1 \n\t"
-    "       slw    %5,%5,%4 \n\t"
-    "       and    %1,%1,%6 \n\t"
-    "       or     %1,%1,%5 \n\n"
-    "       stwcx. %1,%2,%0 \n\t"
-    "       bne-   lincb    \n\t"
-    :
-    : "r"(u),
-      "r"(b),
-      "I"(0),
-      "r"(bmask),
-      "r"(shift),
-      "r"(tmp),
-      "r"(notbmask)
-    : "memory", "cc");
-}
-
-void atomic_dec_b(BYTE *p)
-{
-    const IPTR rem      = ((IPTR) p) % 4;
-    const BYTE *u       = (BYTE *) p - rem;
-    const LONG shift    = 24 - rem * 8;
-    const LONG bmask    = 0xff << shift;
-    const LONG notbmask = ~bmask;
-	  BYTE b;
-	  LONG tmp;
-
-    __asm__ __volatile__ (
-    "ldecb: lwarx  %1,%2,%0 \n\t"
-    "       and    %5,%1,%3 \n\t"
-    "       srw    %5,%5,%4 \n\t"
-    "       subi   %5,%5,1 \n\t"
-    "       slw    %5,%5,%4 \n\t"
-    "       and    %1,%1,%6 \n\t"
-    "       or     %1,%1,%5 \n\n"
-    "       stwcx. %1,%2,%0 \n\t"
-    "       bne-   ldecb    \n\t"
-    :
-    : "r"(u),
-      "r"(b),
-      "I"(0),
-      "r"(bmask),
-      "r"(shift),
-      "r"(tmp),
-      "r"(notbmask)
-    : "memory", "cc");
-}
-
-void atomic_and_b(BYTE *p, BYTE mask)
-{
-    const IPTR rem      = ((IPTR) p) % 4;
-    const BYTE *u       = (BYTE *) p - rem;
-    const LONG shift    = 24 - rem * 8;
-    const LONG bmask    = 0xff << shift;
-    const LONG notbmask = ~bmask;
-	  BYTE b;
-	  LONG tmp;
-
-    __asm__ __volatile__ (
-    "landb: lwarx  %2,%3,%1 \n\t"
-    "      and    %6,%2,%4 \n\t"
-    "      srw    %6,%6,%5 \n\t"
-    "      and    %6,%6,%0 \n\t"
-    "      slw    %6,%6,%5 \n\t"
-    "      and    %2,%2,%7 \n\t"
-    "      or     %2,%2,%6 \n\n"
-    "      stwcx. %2,%3,%1 \n\t"
-    "      bne-   landb    \n\t"
-    :
-    : "r"(mask),
-      "r"(u),
-      "r"(b),
-      "I"(0),
-      "r"(bmask),
-      "r"(shift),
-      "r"(tmp),
-      "r"(notbmask)
-    : "memory", "cc");
-}
-
-void atomic_or_b(BYTE *p, BYTE mask)
-{
-    const IPTR rem      = ((IPTR) p) % 4;
-    const BYTE *u       = (BYTE *) p - rem;
-    const LONG shift    = 24 - rem * 8;
-    const LONG bmask    = 0xff << shift;
-    const LONG notbmask = ~bmask;
-	  BYTE b;
-	  LONG tmp;
-    __asm__ __volatile__ (
-    "lorb: lwarx  %2,%3,%1 \n\t"
-    "      and    %6,%2,%4 \n\t"
-    "      srw    %6,%6,%5 \n\t"
-    "      or     %6,%6,%0 \n\t"
-    "      slw    %6,%6,%5 \n\t"
-    "      and    %2,%2,%7 \n\t"
-    "      or     %2,%2,%6 \n\n"
-    "      stwcx. %2,%3,%1 \n\t"
-    "      bne-   lorb     \n\t"
-    :
-    : "r"(mask),
-      "r"(u),
-      "r"(b),
-      "I"(0),
-      "r"(bmask),
-      "r"(shift),
-      "r"(tmp),
-      "r"(notbmask)
-    : "memory", "cc");
-}
-
-void atomic_inc_w(WORD *p)
-{
-    const IPTR rem      = ((IPTR) p) % 2;
-    const WORD *u       = (WORD *) p - rem;
-    const LONG shift    = rem * 16;
-    const LONG wmask    = 0xffff << shift;
-    const LONG notwmask = ~wmask;
-	  WORD w;
-	  LONG tmp;
-
-    __asm__ __volatile__ (
-    "lincw: lwarx  %1,%2,%0 \n\t"
-    "       and    %5,%1,%3 \n\t"
-    "       srw    %5,%5,%6 \n\t"
-    "       addi   %5,%5,1  \n\t"
-    "       slw    %5,%5,%4 \n\t"
-    "       and    %1,%1,%6 \n\t"
-    "       or     %1,%1,%5 \n\n"
-    "       stwcx. %1,%2,%0 \n\t"
-    "       bne-   lincw    \n\t"
-    :
-    : "r"(u),
-      "r"(w),
-      "I"(0),
-      "r"(wmask),
-      "r"(shift),
-      "r"(tmp),
-      "r"(notwmask)
-    : "memory", "cc");
-}
-
-void atomic_dec_w(WORD *p)
-{
-    const IPTR rem      = ((IPTR) p) % 2;
-    const WORD *u       = (WORD *) p - rem;
-    const LONG shift    = rem * 16;
-    const LONG wmask    = 0xffff << shift;
-    const LONG notwmask = ~wmask;
-	  WORD w;
-	  LONG tmp;
-
-    __asm__ __volatile__ (
-    "ldecw: lwarx  %1,%2,%0 \n\t"
-    "       and    %5,%1,%3 \n\t"
-    "       srw    %5,%5,%6 \n\t"
-    "       subi   %5,%5,1  \n\t"
-    "       slw    %5,%5,%4 \n\t"
-    "       and    %1,%1,%6 \n\t"
-    "       or     %1,%1,%5 \n\n"
-    "       stwcx. %1,%2,%0 \n\t"
-    "       bne-   ldecw    \n\t"
-    :
-    : "r"(u),
-      "r"(w),
-      "I"(0),
-      "r"(wmask),
-      "r"(shift),
-      "r"(tmp),
-      "r"(notwmask)
-    : "memory", "cc");
-}
-
-void atomic_and_w(WORD *p, WORD mask)
-{
-    const IPTR rem      = (((IPTR) p) % 4) / 2;
-    const WORD *u       = (WORD *) p - rem;
-    const LONG shift    = 16 - rem * 16;
-    const LONG wmask    = 0xffff << shift;
-    const LONG notwmask = ~wmask;
-	  WORD w;
-	  LONG tmp;
-
-    __asm__ __volatile__ (
-    "landw: lwarx  %2,%3,%1 \n\t"
-    "       and    %6,%2,%4 \n\t"
-    "       srw    %6,%6,%5 \n\t"
-    "       and    %6,%6,%0 \n\t"
-    "       slw    %6,%6,%5 \n\t"
-    "       and    %2,%2,%7 \n\t"
-    "       or     %2,%2,%6 \n\n"
-    "       stwcx. %2,%3,%1 \n\t"
-    "       bne-   landw    \n\t"
-    :
-    : "r"(mask),
-      "r"(u),
-      "r"(w),
-      "I"(0),
-      "r"(wmask),
-      "r"(shift),
-      "r"(tmp),
-      "r"(notwmask)
-    : "memory", "cc");
-}
-
-void atomic_or_w(WORD *p, WORD mask)
-{
-    const IPTR rem      = ((IPTR) p) % 2;
-    const WORD *u       = (WORD *) p - rem;
-    const LONG shift    = rem * 16;
-    const LONG wmask    = 0xffff << shift;
-    const LONG notwmask = ~wmask;
-	  WORD w;
-	  LONG tmp;
-
-    __asm__ __volatile__ (
-    "lorw: lwarx  %2,%3,%1 \n\t"
-    "      and    %6,%2,%4 \n\t"
-    "      srw    %6,%6,%5 \n\t"
-    "      or     %6,%6,%0 \n\t"
-    "      slw    %6,%6,%5 \n\t"
-    "      and    %2,%2,%7 \n\t"
-    "      or     %2,%2,%6 \n\n"
-    "      stwcx. %2,%3,%1 \n\t"
-    "      bne-   lorw    \n\t"
-    :
-    : "r"(mask),
-      "r"(u),
-      "r"(w),
-      "I"(0),
-      "r"(wmask),
-      "r"(shift),
-      "r"(tmp),
-      "r"(notwmask)
-    : "memory", "cc");
+    "lorw: lwarx  11,        0,      %[u]     \n\t"
+    "      and    12,       11,      %[wmask] \n\t"
+    "      srw    12,       12,      %[shift] \n\t"
+    "      or     12,       12,      %[mask]  \n\t"
+    "      slw    12,       12,      %[shift] \n\t"
+    "      not    %[wmask], %[wmask]          \n\t"
+    "      and    11,       11,      %[wmask] \n\t"
+    "      or     11,       11,      12       \n\n"
+    "      stwcx. 11,        0,      %[u]     \n\t"
+    "      bne-   lorw                        \n\t"
+    : [wmask] "+r"(wmask)
+    : [mask]  "r" (mask),
+      [u]     "r" (u),
+      [shift] "r" (shift)
+    : "memory",
+      "cc",
+      "11", "12");
 }
