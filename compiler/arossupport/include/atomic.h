@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -80,39 +80,39 @@ Atomic OR of an immediate value with a memory location.
   
 #elif defined(__powerpc__) || defined(__ppc__)
 
-void atomic_inc_b(BYTE *p);
-void atomic_dec_b(BYTE *p);
+void atomic_inc_b(UBYTE* p);
+void atomic_dec_b(UBYTE* p);
 
-void atomic_inc_w(WORD *p);
-void atomic_dec_w(WORD *p);
+void atomic_inc_w(UWORD* p);
+void atomic_dec_w(UWORD* p);
 
-void atomic_inc_l(LONG *p);
-void atomic_dec_l(LONG *p);
+void atomic_inc_l(ULONG* p);
+void atomic_dec_l(ULONG* p);
 
-void atomic_and_b(BYTE *p, BYTE mask);
-void atomic_and_w(WORD *p, WORD mask);
-void atomic_and_l(LONG *p, LONG mask);
+void atomic_and_b(UBYTE* p, UBYTE mask);
+void atomic_and_w(UWORD* p, UWORD mask);
+void atomic_and_l(ULONG* p, ULONG mask);
 
-void atomic_or_b(BYTE *p, BYTE mask);
-void atomic_or_w(WORD *p, WORD mask);
-void atomic_or_l(LONG *p, LONG mask);
+void atomic_or_b(UBYTE* p, UBYTE mask);
+void atomic_or_w(UWORD* p, UWORD mask);
+void atomic_or_l(ULONG* p, ULONG mask);
 
-#define __AROS_ATOMIC_INC_B(var) atomic_inc_b((BYTE *) &(var))
-#define __AROS_ATOMIC_DEC_B(var) atomic_dec_b((BYTE *) &(var))
+#define __AROS_ATOMIC_INC_B(var) atomic_inc_b((UBYTE *) &(var))
+#define __AROS_ATOMIC_DEC_B(var) atomic_dec_b((UBYTE *) &(var))
 
-#define __AROS_ATOMIC_INC_W(var) atomic_inc_w((WORD *) &(var))
-#define __AROS_ATOMIC_DEC_W(var) atomic_dec_w((WORD *) &(var))
+#define __AROS_ATOMIC_INC_W(var) atomic_inc_w((UWORD *) &(var))
+#define __AROS_ATOMIC_DEC_W(var) atomic_dec_w((UWORD *) &(var))
 
-#define __AROS_ATOMIC_INC_L(var) atomic_inc_w(&(var))
-#define __AROS_ATOMIC_DEC_L(var) atomic_dec_w(&(var))
+#define __AROS_ATOMIC_INC_L(var) atomic_inc_l((ULONG *) &(var))
+#define __AROS_ATOMIC_DEC_L(var) atomic_dec_l((ULONG *) &(var))
 
-#define __AROS_ATOMIC_AND_B(var, mask) atomic_and_b((BYTE *) &(var), (mask))
-#define __AROS_ATOMIC_AND_W(var, mask) atomic_and_w((WORD *) &(var), (mask))
-#define __AROS_ATOMIC_AND_L(var, mask) atomic_and_l(&(var), (mask))
+#define __AROS_ATOMIC_AND_B(var, mask) atomic_and_b((UBYTE *) &(var), (mask))
+#define __AROS_ATOMIC_AND_W(var, mask) atomic_and_w((UWORD *) &(var), (mask))
+#define __AROS_ATOMIC_AND_L(var, mask) atomic_and_l((ULONG *) &(var), (mask))
 
-#define __AROS_ATOMIC_OR_B(var, mask) atomic_or_b((BYTE *) &(var), (mask))
-#define __AROS_ATOMIC_OR_W(var, mask) atomic_or_w((WORD *)&(var), (mask))
-#define __AROS_ATOMIC_OR_L(var, mask) atomic_or_l(&(var), (mask))
+#define __AROS_ATOMIC_OR_B(var, mask) atomic_or_b((UBYTE *) &(var), (mask))
+#define __AROS_ATOMIC_OR_W(var, mask) atomic_or_w((UWORD *) &(var), (mask))
+#define __AROS_ATOMIC_OR_L(var, mask) atomic_or_l((ULONG *) &(var), (mask))
 
 #else
 /* Porting to other archs? Just define your asm atomics as above... else deadlock below will hit you! */
