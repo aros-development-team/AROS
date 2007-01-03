@@ -122,6 +122,7 @@ ULONG i,curblock;
 		blockbuffer = getBlock(afsbase, volume, curblock);
 		if (blockbuffer == NULL)
 			return;
+		blockbuffer->flags |= BCF_USED;
 		markBlock(afsbase, volume, curblock, 0);
 		for (i=0; i<volume->SizeBlock-1; i++)
 		{
@@ -130,6 +131,7 @@ ULONG i,curblock;
 			markBlock(afsbase, volume, OS_BE2LONG(blockbuffer->buffer[i]), 0);
 		}
 		curblock = OS_BE2LONG(blockbuffer->buffer[volume->SizeBlock-1]);
+		blockbuffer->flags &= ~BCF_USED;
 	}
 }
 
