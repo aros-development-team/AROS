@@ -200,7 +200,7 @@ ULONG i, blocks, maxinbitmap;
 				volume->bitmapblockpointers[i++] = 0;
 		}
 	}
-	/* check extension blocks if neccessary */
+	/* check extension blocks if necessary */
 	if (blocks != 0)
 	{
 		volume->bitmapextensionblock=bitmapblock->blocknum;
@@ -412,7 +412,7 @@ ULONG bitnr, longnr,null=0;
 				)
 			)
 		{
-				volume->lastaccess = block;
+			volume->lastaccess = block;
 		}
 	}
 	else
