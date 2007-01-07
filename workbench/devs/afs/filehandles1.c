@@ -186,6 +186,7 @@ UBYTE buffer[32];
 				D(bug("[afs]    object not found\n"));
 				return NULL;
 			}
+			D(bug("[afs]   findBlock: getting parent\n"));
 			blockbuffer = getBlock
 				(
 					afsbase,
