@@ -362,10 +362,10 @@ STRPTR end;
 UBYTE buffer[256];
 
 	end = PathPart(name);
-	CopyMem(name, buffer, end-name);
-	buffer[end-name] = 0;
 	if (end[0] == '/')
 		end++;
+	CopyMem(name, buffer, end-name);
+	buffer[end-name] = 0;
 	len = StrLen(name)+name-end;
 	CopyMem(end, entryname, len);	/* skip backslash or colon */
 	entryname[len] = 0;
