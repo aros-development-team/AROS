@@ -282,7 +282,7 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ConfigdataData *data;
     struct TagItem *tags,*tag;
     //APTR cdata;
-    int i;
+    int i,res = 0;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return (IPTR)NULL;
@@ -304,11 +304,6 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-    if (!DoMethod(obj, MUIM_Configdata_Load, (IPTR)"ENV:zune/global.prefs"))
-    {
-	DoMethod(obj, MUIM_Configdata_Load, (IPTR)"ENVARC:zune/global.prefs");
-    }
-
     if (data->app && !data->appbase)
     {
 	get(data->app, MUIA_Application_Base, &data->appbase);
@@ -318,13 +313,20 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	char filename[255];
 	snprintf(filename, 255, "ENV:zune/%s.prefs", data->appbase);
-	if (!DoMethod(obj, MUIM_Configdata_Load, (IPTR)filename))
+	res = DoMethod(obj, MUIM_Configdata_Load, (IPTR)filename);
+	if (!res)
 	{
 	    snprintf(filename, 255, "ENVARC:zune/%s.prefs", data->appbase);
-	    DoMethod(obj, MUIM_Configdata_Load, (IPTR)filename);
+	    res=DoMethod(obj, MUIM_Configdata_Load, (IPTR)filename);
 	}
     }
-
+	if (!res)  //load only global prefs if no local app pref is found  
+	{
+		if (!DoMethod(obj, MUIM_Configdata_Load, (IPTR)"ENV:zune/global.prefs"))
+		{
+		DoMethod(obj, MUIM_Configdata_Load, (IPTR)"ENVARC:zune/global.prefs");
+		}
+	{
     /*---------- fonts stuff ----------*/
 
     data->prefs.fonts[-MUIV_Font_Normal] = GetConfigString(obj, MUICFG_Font_Normal);
@@ -892,7 +894,7 @@ IPTR Configdata__MUIM_Load(struct IClass *cl, Object * obj,
     {
 	res = FALSE;
     }
-    return TRUE;
+    return res;
 }
 
 
