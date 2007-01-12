@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
+ 
 #include <exec/types.h>
 #include <prefs/prefhdr.h>
 #include <clib/alib_protos.h>
@@ -326,7 +326,7 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		{
 		DoMethod(obj, MUIM_Configdata_Load, (IPTR)"ENVARC:zune/global.prefs");
 		}
-	{
+    }
     /*---------- fonts stuff ----------*/
 
     data->prefs.fonts[-MUIV_Font_Normal] = GetConfigString(obj, MUICFG_Font_Normal);
