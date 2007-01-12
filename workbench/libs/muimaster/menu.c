@@ -1500,7 +1500,7 @@ struct MenuItem *zune_leave_menu(struct ZMenu *zmenu)
 {
     HandleMouseClick(&zmenu->mhd, 1);
 
-    return ItemAddress(zmenu->mhd.activemenu, zmenu->mhd.firstmenupick);
+    return ItemAddress(zmenu->mhd.menu, zmenu->mhd.firstmenupick);
 }
 
 /* returns the address of the selected menuitem entry */
