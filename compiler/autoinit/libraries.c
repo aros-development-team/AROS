@@ -44,7 +44,7 @@ int set_open_libraries_list(const void *list[])
 	    __showerror
 	    (
 	        "Could not open version %ld or higher of library \"%s\".",
-		version, set->name
+		(const IPTR []){version, set->name}
 	    );
 
 	    return 0;

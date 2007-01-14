@@ -15,11 +15,11 @@
 
 int __forceerrorrequester __attribute__((weak)) = 0;
 
-void __showerror(char *format, ...)
+void __showerror(char *format, const IPTR *args)
 {
     AROS_GET_SYSBASE_OK
     
-    va_list args;
+    struct IntuitionBase *IntuitionBase;
     struct DosLibrary *DOSBase = NULL;
     const char *name = FindTask(NULL)->tc_Node.ln_Name;
 
@@ -35,8 +35,12 @@ void __showerror(char *format, ...)
             PutStr(name);
             PutStr(": ");
 	}
-#warning This next line might break on bizarre architectures.
-        VPrintf(format, (IPTR *)(&format+1));
+
+        if (args)
+            VPrintf(format, args);
+        else
+            PutStr(format);
+            
         PutStr("\n");
     }
     else
@@ -51,7 +55,7 @@ void __showerror(char *format, ...)
 	    "Exit"
 	};
 
-	EasyRequestArgs(NULL, &es, NULL, (APTR)args);
+	EasyRequestArgs(NULL, &es, NULL, args);
 
 	CloseLibrary((struct Library *)IntuitionBase);
     }

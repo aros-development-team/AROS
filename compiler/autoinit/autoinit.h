@@ -19,7 +19,7 @@ __BEGIN_DECLS
    To make it always open a requester define a global variable like this:
 
        int __forceerrorrequester = 1;  */
-void __showerror __P((char *format, ...)) __stackparm;
+void __showerror __P((char *format, const IPTR *));
 
 __END_DECLS
 
