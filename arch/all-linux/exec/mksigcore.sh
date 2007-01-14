@@ -1,13 +1,11 @@
 #!/bin/sh
 
-if [ -f /usr/include/asm-${CPU}/sigcontext.h ]; then
-    type=`grep "^struct sigcontext" /usr/include/asm-${CPU}/sigcontext.h | sed 's/{//'`
-elif [ -f /usr/include/asm/sigcontext.h ]; then
-    type=`grep "^struct sigcontext" /usr/include/asm/sigcontext.h | sed 's/{//'`
-else
+if [ ! -f /usr/include/asm/sigcontext.h ] ; then
     echo "Could not find asm/sigcontext.h"
     exit 20
 fi
+
+type=`${CC} -E /usr/include/asm/sigcontext.h | grep "^struct sigcontext" | sed 's/{//'`
 
 handler=__sighandler_t
 if [ ${CPU} = "m68k" ]; then

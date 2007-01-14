@@ -6,7 +6,7 @@ kernel-linux-sigcore : $(GENINCDIR)/sigcore.h
 
 $(GENINCDIR)/sigcore.h : sigcore.h.src mksigcore.sh
 	%mkdirs_q $(GENINCDIR)
-	CPU=$(AROS_TARGET_CPU) $(SHELL) ./mksigcore.sh $(TOP)/$(CURDIR) $(GENINCDIR)/sigcore.h
+	CC="$(HOST_CC)" CPU=$(AROS_TARGET_CPU) $(SHELL) ./mksigcore.sh $(TOP)/$(CURDIR) $(GENINCDIR)/sigcore.h
 
 USER_INCLUDES := -I$(TOP)/rom/exec -I$(GENINCDIR)
 %build_archspecific \
