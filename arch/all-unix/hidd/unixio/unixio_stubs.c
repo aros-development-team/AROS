@@ -99,6 +99,23 @@ VOID Hidd_UnixIO_CloseFile(HIDD *o, int fd, int *errno_ptr)
      OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
 }
 
+int Hidd_UnixIO_ReadFile(HIDD *o, int fd, void *buffer, int count, int *errno_ptr)
+{
+     static OOP_MethodID    mid;
+     struct uioMsgReadFile p, *msg = &p;
+     
+     if (!mid)
+     	mid = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_ReadFile);
+	
+     p.um_MethodID  = mid;
+     p.um_FD 	    = (APTR)fd;
+     p.um_Buffer    = (APTR)buffer;
+     p.um_Count     = (STACKULONG)count;
+     p.um_ErrNoPtr  = errno_ptr;
+     
+     return (int)OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg);
+}
+
 int Hidd_UnixIO_WriteFile(HIDD *o, int fd, const void *buffer, int count, int *errno_ptr)
 {
      static OOP_MethodID    mid;

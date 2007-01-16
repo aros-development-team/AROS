@@ -612,6 +612,32 @@ VOID UXIO__Hidd_UnixIO__CloseFile(OOP_Class *cl, OOP_Object *o, struct uioMsgClo
 }
 
 /*****************************
+**  UnixIO::ReadFile()     **
+*****************************/
+IPTR UXIO__Hidd_UnixIO__ReadFile(OOP_Class *cl, OOP_Object *o, struct uioMsgReadFile *msg)
+{
+    IPTR retval = (IPTR)-1;
+    
+    if (msg->um_FD != (APTR)-1)
+    {
+    	do
+	{
+    	    retval = (IPTR)read((int)msg->um_FD, (void *)msg->um_Buffer, (size_t)msg->um_Count);
+    	    //kprintf(" UXIO__Hidd_UnixIO__ReadFile[%04ld]: retval %d errno %d  buff %x  count %d\n", count++, retval, errno, msg->um_Buffer, msg->um_Count);
+
+    	    if (msg->um_ErrNoPtr) break;
+	    	    
+	} while(((int)errno == EINTR) || ((int)errno == EAGAIN));
+    }
+
+    if (msg->um_ErrNoPtr) *msg->um_ErrNoPtr = errno;
+    
+    //if ((int)retval == -1) kprintf("UXIO__Hidd_UnixIO__ReadFile: errno %d  buff %x  count %d\n", errno, msg->um_Buffer, msg->um_Count);
+    
+    return retval;
+}
+
+/*****************************
 **  UnixIO::WriteFile()     **
 *****************************/
 IPTR UXIO__Hidd_UnixIO__WriteFile(OOP_Class *cl, OOP_Object *o, struct uioMsgWriteFile *msg)
