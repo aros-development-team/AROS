@@ -45,6 +45,7 @@ enum {
     moHidd_UnixIO_CloseFile,
     moHidd_UnixIO_WriteFile,
     moHidd_UnixIO_IOControlFile,    
+    moHidd_UnixIO_ReadFile,
     num_Hidd_UnixIO_Attrs
     
 };
@@ -108,6 +109,15 @@ struct uioMsgIOControlFile
     int        *um_ErrNoPtr;
 };
 
+struct uioMsgReadFile
+{
+    STACKULONG  um_MethodID;
+    APTR        um_FD;
+    APTR        um_Buffer;
+    STACKULONG  um_Count;
+    int        *um_ErrNoPtr;
+};
+
 /* UnixIO HIDD Values */
 #define vHidd_UnixIO_Read       0x1
 #define vHidd_UnixIO_Write      0x2
@@ -127,6 +137,7 @@ VOID Hidd_UnixIO_AbortAsyncIO(HIDD *h, ULONG fd, struct ExecBase *);
 
 int Hidd_UnixIO_OpenFile(HIDD *o, const char *filename, int flags, int mode, int *errno_ptr);
 VOID Hidd_UnixIO_CloseFile(HIDD *o, int fd, int *errno_ptr);
+int Hidd_UnixIO_ReadFile(HIDD *o, int fd, void *buffer, int count, int *errno_ptr);
 int Hidd_UnixIO_WriteFile(HIDD *o, int fd, const void *buffer, int count, int *errno_ptr);
 int Hidd_UnixIO_IOControlFile(HIDD *o, int fd, int request, void *param, int *errno_ptr);
 

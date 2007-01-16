@@ -88,6 +88,6 @@ USER_CFLAGS := -I$(TOP)/workbench/libs
 
 %build_progs mmake=test \
     files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="coolimagesstatic arossupport amiga arosc m"
+    uselibs="coolimagesstatic arossupport amiga arosc m hiddstubs"
 
 %common

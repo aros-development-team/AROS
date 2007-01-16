@@ -3,66 +3,138 @@
 #include <proto/dos.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
+#include <stdio.h>
 
-struct Library * OOPBase;
-struct DosLibrary * DOSBase;
+#define O_RDONLY    0
+#define O_WRONLY    1
+#define O_RDWR      2
 
-int main (int argc, char ** argv)
-{
-    APTR hidd;
-    LONG ret;
-    int fd;
-    IPTR vpa[1];
-    struct TagItem tags[ ]= {{TAG_DONE, 0UL}};
-    struct uioMsg uio_msg;
+struct Library *OOPBase = NULL;
 
-    OOPBase = OpenLibrary ("oop.library", 0);
+int main (int argc, char **argv) {
+    int failed = 1;
+    HIDD *unixio = NULL;
+    int fd = -1;
+    int nbytes, ioerr;
+    char buf[1024];
 
-    if (!OOPBase)
-    {
-	vpa[0] = (IPTR)"oop.library";
-	VPrintf("Can't open library \"%s\"\n", vpa);
-	return 10;
+    if ((OOPBase = OpenLibrary("oop.library", 0)) == NULL) {
+        fprintf(stderr, "can't open oop.library\n");
+        goto exit;
     }
 
-    DOSBase = (struct DosLibrary *) OpenLibrary (DOSNAME, 0);
-
-    if (!DOSBase)
-    {
-	CloseLibrary (OOPBase);
-
-	vpa[0] = (IPTR)DOSNAME;
-	VPrintf("Can't open library \"%s\"\n", vpa);
-	return 10;
+    if ((unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL)) == NULL) {
+        fprintf(stderr, "can't instantiate unixio hidd\n");
+        goto exit;
     }
 
 
-    hidd = OOP_NewObject (NULL, CLID_Hidd_UnixIO, tags);
+    printf("first, a trivial file read test\n\n");
 
-    if (!hidd)
-    {
-	CloseLibrary (OOPBase);
-	CloseLibrary ((struct Library *)DOSBase);
-
-	vpa[0] = (IPTR)CLID_Hidd_UnixIO;
-	VPrintf("Need \"%s\" class\n", vpa);
-	return 10;
+    printf("opening /dev/zero for read... ");
+    fd = Hidd_UnixIO_OpenFile(unixio, "/dev/zero", O_RDONLY, 0, &ioerr);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d)\n)", ioerr);
+        goto exit;
     }
+    printf("ok (fd is %d)\n", fd);
 
-    fd = 0;
-    uio_msg.um_MethodID = OOP_GetMethodID(IID_Hidd_UnixIO, moHidd_UnixIO_Wait);
-    uio_msg.um_Filedesc = fd;
-    uio_msg.um_Mode	= vHidd_UnixIO_Read;
-    ret = OOP_DoMethod(hidd, (OOP_Msg)&uio_msg);
+    printf("reading... ");
+    nbytes = Hidd_UnixIO_ReadFile(unixio, fd, buf, 1024, &ioerr);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d\n)", ioerr);
+        goto exit;
+    }
+    printf("ok (read %d bytes)\n", nbytes);
 
-    vpa[0] = ret;
-    VPrintf ("return code = %ld\n", vpa);
+    printf("closing file... ");
+    Hidd_UnixIO_CloseFile(unixio, fd, &ioerr);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d\n)", ioerr);
+        goto exit;
+    }
+    printf("ok\n\n\n");
 
-    OOP_DisposeObject (hidd);
 
-    CloseLibrary ((struct Library *)DOSBase);
-    CloseLibrary (OOPBase);
+    printf("next, an equally trivial file write test\n\n");
 
-    return 0;
+    printf("opening /dev/null for write... ");
+    fd = Hidd_UnixIO_OpenFile(unixio, "/dev/null", O_WRONLY, 0, &ioerr);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d)\n)", ioerr);
+        goto exit;
+    }
+    printf("ok (fd is %d)\n", fd);
+
+    printf("writing... ");
+    nbytes = Hidd_UnixIO_WriteFile(unixio, fd, buf, 1024, &ioerr);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d\n)", ioerr);
+        goto exit;
+    }
+    printf("ok (wrote %d bytes)\n", nbytes);
+
+    printf("closing file... ");
+    Hidd_UnixIO_CloseFile(unixio, fd, &ioerr);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d\n)", ioerr);
+        goto exit;
+    }
+    printf("ok\n\n\n");
+
+
+    printf("just for fun, lets read and print the contents of a file\n\n");
+
+    printf("opening /etc/motd for read... ");
+    fd = Hidd_UnixIO_OpenFile(unixio, "/etc/motd", O_RDONLY, 0, &ioerr);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d)\n)", ioerr);
+        goto exit;
+    }
+    printf("ok (fd is %d)\n", fd);
+
+    printf("reading... ");
+    nbytes = Hidd_UnixIO_ReadFile(unixio, fd, buf, 1024, &ioerr);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d\n)", ioerr);
+        goto exit;
+    }
+    printf("ok (read %d bytes)\n", nbytes);
+
+    printf("system motd:\n\n%.*s\n", nbytes, buf);
+
+    printf("closing file... ");
+    Hidd_UnixIO_CloseFile(unixio, fd, &ioerr);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d\n)", ioerr);
+        goto exit;
+    }
+    printf("ok\n\n\n");
+
+    fd = -1;
+
+
+    printf("now type something on the unix console that you\n"
+           "ran aros from, then press enter. I'll wait...\n");
+
+    Hidd_UnixIO_Wait(unixio, 0, vHidd_UnixIO_Read, NULL, NULL, SysBase);
+
+    printf("reading it... ");
+    nbytes = Hidd_UnixIO_ReadFile(unixio, 0, buf, 1024, &ioerr);
+    if (ioerr != 0) {
+        printf("failed (ioerr is %d\n)", ioerr);
+        goto exit;
+    }
+    printf("ok (read %d bytes)\n", nbytes);
+
+    printf("you typed: %.*s\n\n", nbytes, buf);
+
+
+exit:
+    if (fd >= 0) Hidd_UnixIO_CloseFile(unixio, fd, NULL);
+    if (unixio != NULL)  OOP_DisposeObject((OOP_Object) unixio);
+    if (OOPBase != NULL) CloseLibrary(OOPBase);
+
+    return failed ? 1 : 0;
 }
 
