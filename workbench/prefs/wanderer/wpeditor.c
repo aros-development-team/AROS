@@ -31,7 +31,6 @@
 #include "locale.h"
 #include "wpeditor.h"
 
-
 /*** Instance Data **********************************************************/
 struct WPEditor_DATA
 {
@@ -42,7 +41,8 @@ struct WPEditor_DATA
     Object *wped_icon_listmode;
     Object *wped_icon_textmode;
     Object *wped_icon_textmaxlen;
-        
+    Object *wped_toolbarGroup;
+    struct Hook wped_EnhancedNavHook;
 };
 
 //static struct Hook navichangehook;
@@ -54,6 +54,28 @@ static STRPTR registerpages[4];
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct WPEditor_DATA *data = INST_DATA(CLASS, self)
 
+/*** Hook functions *********************************************************/
+
+AROS_UFH3(
+    void, EnhancedNavFunc,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+    
+    Object *self = ( Object *)obj;
+    Class *CLASS = *( Class **)param;
+    SETUP_INST_DATA;
+    
+    set ( 
+        data->wped_cm_ToolbarEnabled, MUIA_Selected,
+        XGET( data->wped_c_NavigationMethod, MUIA_Cycle_Active )
+    );
+    
+    AROS_USERFUNC_EXIT
+}
 
 /*** Methods ****************************************************************/
 Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
@@ -63,7 +85,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object *workbenchPI = NULL, *drawersPI = NULL, *c_navitype = NULL, 
            *bt_dirup = NULL, *bt_search = NULL, *cm_toolbarenabled = NULL, 
            *toolbarpreview = NULL, *wped_icon_listmode = NULL, *wped_icon_textmode = NULL, 
-           *wped_icon_textmaxlen = NULL;
+           *wped_icon_textmaxlen = NULL, *toolbarGroup = NULL;
 
     //Object *cm_searchenabled;
 
@@ -146,7 +168,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         End,
                     End),
                 End),
-                Child, (IPTR) (GroupObject,                     // toolbar 
+                Child, (IPTR) (toolbarGroup = GroupObject,                     // toolbar 
                     Child, (IPTR) HGroup,
                         MUIA_FrameTitle,  __(MSG_OBJECTS),
                         MUIA_Group_SameSize, TRUE,
@@ -183,6 +205,8 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->wped_icon_listmode = wped_icon_listmode;
         data->wped_icon_textmode = wped_icon_textmode;
         data->wped_icon_textmaxlen = wped_icon_textmaxlen;
+        data->wped_toolbarGroup = toolbarGroup;
+        data->wped_EnhancedNavHook.h_Entry = ( HOOKFUNC )EnhancedNavFunc;
         
         //-- Setup notifications -------------------------------------------
         DoMethod
@@ -232,19 +256,13 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             cm_toolbarenabled, MUIM_Notify, MUIA_Selected, TRUE,  
             (IPTR) toolbarpreview, 3, MUIM_Set, MUIA_Disabled, FALSE
-        );     
+        );
         
         /* navigation cycle linked to toolbar checkbox, enhanced nevigation sets toolbar */
-        DoMethod
-        (
-             c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_ENHANCED,  
-             (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, TRUE
-        ); 
-        DoMethod
-        (
-             c_navitype, MUIM_Notify, MUIA_Cycle_Active, WPD_NAVIGATION_CLASSIC,  
-             (IPTR) cm_toolbarenabled, 3, MUIM_Set, MUIA_Selected, FALSE
-        ); 
+        DoMethod (
+            c_navitype, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_CallHook, &data->wped_EnhancedNavHook, (IPTR)CLASS
+        );
         // Icon textmode maxlength
         set ( wped_icon_textmaxlen, MUIA_String_Integer, ICON_TEXT_MAXLEN_DEFAULT );
         set ( wped_icon_textmaxlen, MUIA_String_MaxLen, 3 );
@@ -335,11 +353,25 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
 
         NNSET(data->wped_WorkbenchPI, MUIA_Imagedisplay_Spec, (STRPTR)wpd.wpd_WorkbenchBackground);
         NNSET(data->wped_DrawersPI, MUIA_Imagedisplay_Spec, (STRPTR)wpd.wpd_DrawerBackground);
-        NNSET(data->wped_cm_ToolbarEnabled, MUIA_Selected, wpd.wpd_ToolbarEnabled);
+
+         /* set navigation type */   
+        set(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)wpd.wpd_NavigationMethod);    
 
         /* check if toolbar set */
         if (wpd.wpd_ToolbarEnabled == FALSE)
+        {
             set(data->wped_toolbarpreview, MUIA_Disabled, TRUE);
+            set(data->wped_cm_ToolbarEnabled, MUIA_Selected, FALSE);
+            DoMethod ( data->wped_toolbarGroup, MUIM_Group_InitChange );
+            DoMethod ( data->wped_toolbarGroup, MUIM_Group_ExitChange );
+        }
+        else
+        {
+            set(data->wped_toolbarpreview, MUIA_Disabled, FALSE);
+            set(data->wped_cm_ToolbarEnabled, MUIA_Selected, TRUE);
+            DoMethod ( data->wped_toolbarGroup, MUIM_Group_InitChange );
+            DoMethod ( data->wped_toolbarGroup, MUIM_Group_ExitChange );
+        }
         
         /* Icon listmode */
         set ( data->wped_icon_listmode, MUIA_Cycle_Active, (IPTR)wpd.wpd_IconListMode );
@@ -349,9 +381,6 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
         
         /* set max text length */
         set(data->wped_icon_textmaxlen, MUIA_String_Integer, (IPTR)wpd.wpd_IconTextMaxLen);
-        
-        /* set navigation type */   
-        set(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)wpd.wpd_NavigationMethod);    
     }
     
     return success;
