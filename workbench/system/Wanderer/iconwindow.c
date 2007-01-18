@@ -3,8 +3,9 @@
     $Id$
 */
 
+#define DEBUG 1
+
 #define MUIMASTER_YES_INLINE_STDARG
-#define DEBUG 0
 
 #include <exec/types.h>
 #include <libraries/mui.h>
@@ -18,7 +19,6 @@
 #include "wandererprefs.h"
 #include "iconwindow.h"
 
-
 #include <aros/debug.h>
 
 /*** Instance Data **********************************************************/
@@ -26,6 +26,7 @@ struct IconWindow_DATA
 {
     Object           *iwd_IconList;
     Object           *iwd_toolbarPanel;
+    Object           *iwd_extGroupTop;
     BOOL              iwd_IsRoot;
     BOOL              iwd_IsBackdrop;
     BOOL              iwd_hasToolbar;
@@ -39,22 +40,51 @@ struct IconWindow_DATA
 #define SETUP_INST_DATA struct IconWindow_DATA *data = INST_DATA(CLASS, self)
 
 /*** Methods ****************************************************************/
+void IconWindow__SetupToolbar (Class *CLASS, Object *self)
+{
+    SETUP_INST_DATA;
+    
+    Object *bt_dirup = NULL, *bt_search = NULL;
+    Object *toolbarPanel = MUI_NewObject ( MUIC_Group,
+        InnerSpacing(0,0),
+        MUIA_Group_Horiz, TRUE,
+        Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
+        Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
+    TAG_DONE );
+    
+    if ( toolbarPanel != NULL )
+    {
+        DoMethod( data->iwd_extGroupTop, MUIM_Group_InitChange );
+        DoMethod( data->iwd_extGroupTop, OM_ADDMEMBER, (IPTR)toolbarPanel );
+        DoMethod( data->iwd_extGroupTop, MUIM_Group_ExitChange );
+        DoMethod( 
+            bt_dirup, MUIM_Notify, MUIA_Pressed, FALSE, 
+            (IPTR)self, 1, MUIM_IconWindow_DirectoryUp
+        );
+        data->iwd_toolbarPanel = toolbarPanel;
+    }
+    else
+    {
+        data->iwd_toolbarPanel = NULL;
+    }
+}
 Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    Object           *iconList, *toolbarPanel, *bt_dirup, *bt_search;
-    BOOL              isRoot,
-                      isBackdrop,
-                      hasToolbar;
-    struct Hook      *actionHook;
-    struct TextFont  *WindowFont;
-
+    Object              *iconList, 
+                        *extGroupTop;  // extension group top
+    BOOL                isRoot,
+                        isBackdrop,
+                        hasToolbar;
+    struct Hook         *actionHook;
+    struct TextFont     *WindowFont;
+        
     /* More than one GetTagData is not really efficient but since this is called very unoften... */
     hasToolbar = GetTagData(MUIA_IconWindow_Toolbar_Enabled, 0, message->ops_AttrList);
     isBackdrop = GetTagData(MUIA_IconWindow_IsBackdrop, 0, message->ops_AttrList);
     isRoot = GetTagData(MUIA_IconWindow_IsRoot, 0, message->ops_AttrList);
-    
     actionHook = (struct Hook *) GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
     WindowFont = (struct TextFont *) GetTagData(MUIA_IconWindow_Font, (IPTR) NULL, message->ops_AttrList);
+
 
     if (isRoot)
     {
@@ -71,7 +101,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         End;
     }
 
-D(bug("[iconwindow] Font @ %x\n", WindowFont));
+    D(bug("[iconwindow] Font @ %x\n", WindowFont));
 
     self = (Object *) DoSuperNewTags
     (
@@ -85,22 +115,36 @@ D(bug("[iconwindow] Font @ %x\n", WindowFont));
         MUIA_Font, (IPTR) WindowFont,
         
         WindowContents, (IPTR) VGroup,
-            /*MUIA_Group_Spacing, 0,*/
+            MUIA_Group_Spacing, 0,
             InnerSpacing(0,0),
-
-            /* window navigation bar */
-            Child, (IPTR) (toolbarPanel = GroupObject,
-                InnerSpacing(0,0),
-                MUIA_Group_Horiz, TRUE,
-                Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
-                Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
-            End ),
-        
+            
+            
+            Child, HGroup,
+            
+                Child, RectangleObject,
+                    InnerSpacing(0,0),
+                    MUIA_Frame, MUIV_Frame_None,
+                End,
+            
+                /* extension on top of the list */
+                Child, (IPTR) (extGroupTop = GroupObject,
+                    InnerSpacing(0,0),
+                    MUIA_Frame, MUIV_Frame_None,
+                    MUIA_Group_Spacing, 0,
+                End),
+                
+                Child, RectangleObject,
+                    InnerSpacing(0,0),
+                    MUIA_Frame, MUIV_Frame_None,
+                End,
+            End,
+            
             /* icon list */
             Child, (IPTR) IconListviewObject,
                 MUIA_IconListview_UseWinBorder,        TRUE,
                 MUIA_IconListview_IconList,     (IPTR) iconList,
             End,
+            
         End,
         
         TAG_MORE, (IPTR) message->ops_AttrList
@@ -110,31 +154,19 @@ D(bug("[iconwindow] Font @ %x\n", WindowFont));
     {
         SETUP_INST_DATA;
         
-        data->iwd_IconList   = iconList;
-        data->iwd_toolbarPanel = toolbarPanel;        
-        data->iwd_IsRoot     = isRoot;
-        data->iwd_ActionHook = actionHook;
-        data->iwd_IsBackdrop = -1;
+        data->iwd_IconList      = iconList;
+        data->iwd_extGroupTop   = extGroupTop;
+        data->iwd_toolbarPanel  = NULL;
+        data->iwd_IsRoot        = isRoot;
+        data->iwd_ActionHook    = actionHook;
+        data->iwd_IsBackdrop    = -1;
         SET(self, MUIA_IconWindow_IsBackdrop, isBackdrop);
         
         data->iwd_WindowFont = WindowFont;        
 
         /* no tool bar when root */
-        if ( (isRoot) || (!hasToolbar) )
-        {
-            SET(toolbarPanel, MUIA_ShowMe, FALSE);
-                   
-            /* remove tooblbar objects - DOESNT WORK.. WHY??? */
-            /*DoMethod ( toolbarPanel, MUIM_Group_InitChange );
-            DoMethod ( toolbarPanel, OM_REMMEMBER, (IPTR) bt_dirup );
-            DoMethod ( toolbarPanel, OM_REMMEMBER, (IPTR) bt_search );
-            DoMethod ( toolbarPanel, MUIM_Group_ExitChange );*/
-        }
-        else
-        {
-            /* bt_dirup button notification */
-            DoMethod(bt_dirup, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IconWindow_DirectoryUp);            
-        }
+        if (!isRoot && hasToolbar)
+            IconWindow__SetupToolbar(CLASS,self);
             
         /*
             If double clicked then we call our own private methods, that's 
@@ -158,7 +190,7 @@ D(bug("[iconwindow] Font @ %x\n", WindowFont));
             (IPTR) self, 1, MUIM_IconWindow_Clicked
         );
     }
-    
+        
     return self;
 }
 
@@ -177,7 +209,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 IPTR retVal = DoSuperMethodA(CLASS, self, (Msg) message);
                 if (data->iwd_WindowFont)
                 {
-D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_WindowFont));
+                    D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_WindowFont));
                     SetFont(_rp(self), data->iwd_WindowFont);
                 }
                 return retVal;
@@ -189,7 +221,7 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_Win
                 data->iwd_WindowFont = (struct TextFont  *)tag->ti_Data;
                 if ( data->iwd_WindowFont != 1 )
                     SetFont(_rp(self), data->iwd_WindowFont);
-                // Cause the window to redraw here!
+                    // Cause the window to redraw here!
                 break;
             case MUIA_IconWindow_Drawer:
                  strcpy(data->directory_path, (IPTR)tag->ti_Data);    
@@ -199,12 +231,25 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_Win
             case MUIA_IconWindow_Toolbar_Enabled:   
                  if (!data->iwd_IsRoot)
                  {               
+                     // remove toolbar
+                     if ( !( BOOL )tag->ti_Data )
+                     {
+                        if ( data->iwd_toolbarPanel != NULL )
+                        {
+                            DoMethod ( data->iwd_extGroupTop, MUIM_Group_InitChange );
+                            DoMethod ( data->iwd_extGroupTop, OM_REMMEMBER, ( IPTR )data->iwd_toolbarPanel );
+                            DoMethod ( data->iwd_extGroupTop, MUIM_Group_ExitChange );
+                            data->iwd_toolbarPanel = NULL;
+                        }
+                     }
+                     // setup toolbar
+                     else
+                     {
+                        if ( data->iwd_toolbarPanel == NULL )
+                            IconWindow__SetupToolbar ( CLASS, self );
+                     }
                      data->iwd_hasToolbar = (IPTR)tag->ti_Data;
-                     set(data->iwd_toolbarPanel, MUIA_ShowMe, (IPTR)tag->ti_Data);
-                     /* update the window contents; shall be reworked!! */
-                     set(self, MUIA_Window_Open, FALSE); 
-                     set(self, MUIA_Window_Open, TRUE);                                  
-                 }                 
+                 }
                  break;            
             case MUIA_IconWindow_IsBackdrop:
                 if ((!!tag->ti_Data) != data->iwd_IsBackdrop)
@@ -278,12 +323,11 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
             *store = (IPTR) data->iwd_IconList;
             break;;
         case MUIA_IconWindow_Toolbar_Enabled:
-            *store = XGET(data->iwd_toolbarPanel, MUIA_ShowMe);
+            *store = ( IPTR )data->iwd_hasToolbar;
             break; 
         case MUIA_IconWindow_IsRoot:
             *store = data->iwd_IsRoot;
             break;
-             
         default:
             rv = DoSuperMethodA(CLASS, self, (Msg) message);
     }
@@ -307,6 +351,7 @@ IPTR IconWindow__MUIM_Window_Setup
     prefs = (Object *) XGET(_app(self), MUIA_Wanderer_Prefs);
     
     SET(data->iwd_IconList, MUIA_Background, XGET(prefs, attribute));
+    
     DoMethod
     (
         prefs, MUIM_Notify, attribute, MUIV_EveryTime,
@@ -402,7 +447,6 @@ IPTR IconWindow__MUIM_IconWindow_Open
 )
 {
     SETUP_INST_DATA;
-    
     DoMethod(data->iwd_IconList, MUIM_IconList_Clear);
     SET(self, MUIA_Window_Open, TRUE);
     SET(self, MUIA_Window_Activate, TRUE);
