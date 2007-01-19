@@ -14,6 +14,9 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/muimaster.h>
+#include <stdio.h>
+#include <dos/dos.h>
+#include <proto/dos.h>
 
 #include "wanderer.h"
 #include "wandererprefs.h"
@@ -26,11 +29,14 @@ struct IconWindow_DATA
 {
     Object           *iwd_IconList;
     Object           *iwd_toolbarPanel;
+    Object           *iwd_pathStrObj;
     Object           *iwd_extGroupTop;
+    Object           *iwd_extGroupTC;
     BOOL              iwd_IsRoot;
     BOOL              iwd_IsBackdrop;
     BOOL              iwd_hasToolbar;
     struct Hook      *iwd_ActionHook;
+    struct Hook       iwd_pathStrHook;
     struct TextFont  *iwd_WindowFont;
     
     char              directory_path[1024];
@@ -39,21 +45,85 @@ struct IconWindow_DATA
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct IconWindow_DATA *data = INST_DATA(CLASS, self)
 
+/*** Hook functions *********************************************************/
+
+AROS_UFH3(
+    void, pathStrFunc,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+    
+    // Get data
+    Object *self = ( Object *)obj;
+    Class *CLASS = *( Class **)param;
+    SETUP_INST_DATA;
+    
+    // Only change dir if it is a valid directory/volume
+    STRPTR str = XGET( data->iwd_pathStrObj, MUIA_String_Contents );
+    BPTR fp = NULL;
+    struct FileInfoBlock fib;
+    //TODO: Signal that it is a wrong path
+    // so that the user understands (here where we abort with return)
+    if ( !( fp = Lock ( str, &fib ) ) )
+        return;
+    if ( !( Examine ( fp, &fib ) ) )
+    {
+        UnLock (fp );
+        return;
+    }
+    // Change directory!
+    if ( fib.fib_DirEntryType >= 0 )
+        set ( self, MUIA_IconWindow_Drawer, (IPTR)str );
+    UnLock ( fp );
+    
+    AROS_USERFUNC_EXIT
+}
+
 /*** Methods ****************************************************************/
 void IconWindow__SetupToolbar (Class *CLASS, Object *self)
 {
     SETUP_INST_DATA;
     
+    Object *strObj = NULL;
     Object *bt_dirup = NULL, *bt_search = NULL;
+    
+    // the toolbar panel
     Object *toolbarPanel = MUI_NewObject ( MUIC_Group,
         InnerSpacing(0,0),
         MUIA_Group_Horiz, TRUE,
-        Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
-        Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
+        MUIA_Weight, 100,
+        Child, HGroup,
+            InnerSpacing(0,0),
+            MUIA_Weight, 100,
+            Child, (IPTR)( strObj = StringObject,
+                MUIA_String_Contents, (IPTR)"",
+                MUIA_Frame, MUIV_Frame_String,
+                MUIA_Font, MUIV_Font_Normal,
+            End ),
+        End,
+        Child, HGroup,
+            InnerSpacing(0,0),
+            MUIA_Weight, 1,
+            Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
+            Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
+        End,
     TAG_DONE );
     
+    // Got a toolbarpanel? setup notifies and other values are 
+    // copied to the data of the object
     if ( toolbarPanel != NULL )
     {
+        set ( data->iwd_extGroupTC, MUIA_Frame, MUIV_Frame_Group );
+        set ( data->iwd_extGroupTC, MUIA_Group_HorizSpacing, 3 );
+        set ( data->iwd_extGroupTC, MUIA_Group_VertSpacing, 3 );
+    
+        set ( bt_dirup, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
+        set ( bt_dirup, MUIA_Frame, MUIV_Frame_None );
+        set ( bt_search, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
+        set ( bt_search, MUIA_Frame, MUIV_Frame_None );
         DoMethod( data->iwd_extGroupTop, MUIM_Group_InitChange );
         DoMethod( data->iwd_extGroupTop, OM_ADDMEMBER, (IPTR)toolbarPanel );
         DoMethod( data->iwd_extGroupTop, MUIM_Group_ExitChange );
@@ -62,6 +132,18 @@ void IconWindow__SetupToolbar (Class *CLASS, Object *self)
             (IPTR)self, 1, MUIM_IconWindow_DirectoryUp
         );
         data->iwd_toolbarPanel = toolbarPanel;
+        data->iwd_pathStrObj = strObj;
+        data->iwd_pathStrHook.h_Entry = ( HOOKFUNC )pathStrFunc;
+        set(
+            data->iwd_pathStrObj, MUIA_String_Contents, 
+            XGET(data->iwd_IconList, MUIA_IconDrawerList_Drawer)
+        );
+        
+        // Make changes to string contents change dir on enter
+        DoMethod ( 
+            strObj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, 
+            (IPTR)self, 3, MUIM_CallHook, &data->iwd_pathStrHook, (IPTR)CLASS
+        );
     }
     else
     {
@@ -71,7 +153,8 @@ void IconWindow__SetupToolbar (Class *CLASS, Object *self)
 Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     Object              *iconList, 
-                        *extGroupTop;  // extension group top
+                        *extGroupTop,  // extension group top
+                        *extGroupTopContainer; // around extension group
     BOOL                isRoot,
                         isBackdrop,
                         hasToolbar;
@@ -119,25 +202,22 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             InnerSpacing(0,0),
             
             
-            Child, HGroup,
-            
-                Child, RectangleObject,
-                    InnerSpacing(0,0),
-                    MUIA_Frame, MUIV_Frame_None,
-                End,
-            
+            Child, ( IPTR )( extGroupTopContainer = HGroup,
+                
                 /* extension on top of the list */
                 Child, (IPTR) (extGroupTop = GroupObject,
                     InnerSpacing(0,0),
                     MUIA_Frame, MUIV_Frame_None,
                     MUIA_Group_Spacing, 0,
+                    MUIA_Weight, 100,
                 End),
                 
                 Child, RectangleObject,
                     InnerSpacing(0,0),
                     MUIA_Frame, MUIV_Frame_None,
+                    MUIA_Weight, 1,
                 End,
-            End,
+            End ),
             
             /* icon list */
             Child, (IPTR) IconListviewObject,
@@ -156,6 +236,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         
         data->iwd_IconList      = iconList;
         data->iwd_extGroupTop   = extGroupTop;
+        data->iwd_extGroupTC    = extGroupTopContainer;
         data->iwd_toolbarPanel  = NULL;
         data->iwd_IsRoot        = isRoot;
         data->iwd_ActionHook    = actionHook;
@@ -227,6 +308,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                  strcpy(data->directory_path, (IPTR)tag->ti_Data);    
                  set(data->iwd_IconList, MUIA_IconDrawerList_Drawer, (IPTR) data->directory_path);
                  set(self, MUIA_Window_Title, data->directory_path);
+                 set(data->iwd_pathStrObj, MUIA_String_Contents, (IPTR)data->directory_path);
                 break;
             case MUIA_IconWindow_Toolbar_Enabled:   
                  if (!data->iwd_IsRoot)
@@ -236,6 +318,8 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                      {
                         if ( data->iwd_toolbarPanel != NULL )
                         {
+                            set ( data->iwd_extGroupTC, MUIA_Frame, MUIV_Frame_None );
+                            set ( data->iwd_extGroupTC, MUIA_Group_Spacing, 0 );
                             DoMethod ( data->iwd_extGroupTop, MUIM_Group_InitChange );
                             DoMethod ( data->iwd_extGroupTop, OM_REMMEMBER, ( IPTR )data->iwd_toolbarPanel );
                             DoMethod ( data->iwd_extGroupTop, MUIM_Group_ExitChange );
