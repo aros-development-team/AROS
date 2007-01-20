@@ -368,7 +368,7 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
 			    (msg->fd_type & vHidd_UnixIO_Terminal)) /* stegerg: CHECKME added vHidd_Unixio_terminal check */
 			{
                             terminals_write_counter--;
-                      if (terminals_write_counter) {
+                      if (terminals_write_counter == 0) {
                         if (!CheckIO(&timerio->tr_node)) 
                           AbortIO(&timerio->tr_node);
                         WaitIO(&timerio->tr_node);
