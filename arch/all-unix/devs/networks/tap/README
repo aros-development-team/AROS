@@ -77,6 +77,7 @@ TODO
  - Multicast support
  - FreeBSD support
  - Make it not require root
+ - Remove dependency on linux/* headers and host compiler
  - Better docs (someone want to write this?)
 
 
