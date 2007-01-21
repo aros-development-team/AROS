@@ -16,6 +16,7 @@ MM- check : check-exec-unix
 
 #MM- workbench-linux : \
 #MM      workbench-unix \
-#MM      workbench-libs-oss-unix
+#MM      workbench-libs-oss-unix \
+#MM      workbench-devs-tap-unix
 
 %common
