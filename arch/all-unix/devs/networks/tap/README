@@ -1,0 +1,91 @@
+README for tap.device
+---------------------
+
+tap.device is a SANA-II-compliant network driver that allows AROS running in
+hosted environments to access the network via the host operating system
+(currently Linux only).
+
+This driver is early alpha. Its unfinished in places, and there are probably
+several groovy bugs about. Its also painful to setup and use. This will all
+get better soon.
+
+
+REQUIREMENTS
+
+ - An AROS SVN checkout or nightly snapshot later >= 20060120
+ - The Linux TUN/TAP driver (Linux config item CONFIG_TUN)
+
+Under Linux, normal users cannot access the TUN/TAP mechanism, so you'll have
+to run AROS as root in order to use this driver. This will change once I
+figure out a way around this.
+
+
+INSTALLATION
+
+ - After building AROS, build the driver:
+
+   % make workbench-devs-tap-unix
+ 
+ - Start AROS as root
+
+   % su
+   # ./aros
+
+ - Edit SYS:Extras/Networking/Stacks/AROSTCP/db/interfaces and add the
+   following line:
+
+   eth0 DEV=DEVS:networks/tap.device UNIT=0 IP=192.168.0.188 UP
+ 
+ - Start AROSTCP
+
+   > execute SYS:Extras/Networking/Stacks/AROSTCP/S/startnet
+
+At this point you should see lots of [tap] debug lines on the console
+
+ - Bring the interface up on the Linux side:
+
+   # ifconfig tap0 192.168.0.1 up
+ 
+ - Ping AROS from Linux
+
+   % ping 192.168.0.188
+
+Thats it. AROS can now reach the Linux host, and vice-versa. If you want your
+AROS hosted to get onto your network, you'll need to look into Linux-side
+tools like ifconfig, route, iptables, brctl etc.
+
+
+The driver is extremely verbose. I'm leaving the debug output in place until I
+consider the code to be stable. If you want to disable it, edit
+arch/all-unix/devs/networks/tap/tap.h and redefine DEBUG to be 0, then
+recompile.
+
+
+BUG REPORTING
+
+You'll undoubtedly have problems; this is very new code. Please send reports,
+feedback and other comments to me at rob@cataclysm.cx, or talk to "fce2" in
+#aros
+
+If you are having a problem, I'm probably going to ask for debug output, and
+possibly steps to reproduce the problem.
+
+
+TODO
+
+ - Deal with remaining XXX items
+ - Multicast support
+ - FreeBSD support
+ - Make it not require root
+ - Better docs (someone want to write this?)
+
+
+COPYRIGHT & LICENSE
+
+Copyright (c) 2007 Robert Norris. All rights reserved.
+
+This program is free software; you can redistribute it and/or modify it under
+the same terms as AROS itself.
+
+
+
