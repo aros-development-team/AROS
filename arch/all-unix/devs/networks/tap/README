@@ -6,30 +6,27 @@ hosted environments to access the network via the host operating system
 (currently Linux only).
 
 This driver is early alpha. Its unfinished in places, and there are probably
-several groovy bugs about. Its also painful to setup and use. This will all
-get better soon.
+several groovy bugs about. 
 
 
 REQUIREMENTS
 
- - An AROS SVN checkout or nightly snapshot later >= 20060120
  - The Linux TUN/TAP driver (Linux config item CONFIG_TUN)
-
-Under Linux, normal users cannot access the TUN/TAP mechanism, so you'll have
-to run AROS as root in order to use this driver. This will change once I
-figure out a way around this.
-
+ - The "tunctl" program, which comes with the uml-utilities package available
+   at http://user-mode-linux.sourceforge.net/
 
 INSTALLATION
 
- - After building AROS, build the driver:
-
-   % make workbench-devs-tap-unix
+ - Build AROS as normal
  
- - Start AROS as root
+ - As root, create and configure a TAP network interface
+ 
+    # tunctl -b -u <your user name> -t aros0
+    # ifconfig aros0 192.168.0.1
 
-   % su
-   # ./aros
+ - As your normal user, start AROS
+
+    % ./aros
 
  - Edit SYS:Extras/Networking/Stacks/AROSTCP/db/interfaces and add the
    following line:
@@ -40,32 +37,54 @@ INSTALLATION
 
    > execute SYS:Extras/Networking/Stacks/AROSTCP/S/startnet
 
-At this point you should see lots of [tap] debug lines on the console
-
- - Bring the interface up on the Linux side:
-
-   # ifconfig tap0 192.168.0.1 up
- 
  - Ping AROS from Linux
 
    % ping 192.168.0.188
 
-Thats it. AROS can now reach the Linux host, and vice-versa. If you want your
-AROS hosted to get onto your network, you'll need to look into Linux-side
-tools like ifconfig, route, iptables, brctl etc.
+Thats it. AROS can now reach the Linux host, and vice-versa.
 
+
+NOTES
 
 The driver is extremely verbose. I'm leaving the debug output in place until I
 consider the code to be stable. If you want to disable it, edit
 arch/all-unix/devs/networks/tap/tap.h and redefine DEBUG to be 0, then
 recompile.
 
+The unit number and Linux interface name are linked such that opening unit #0
+on the Amiga side will result in attachment to interface aros0 on the Linux
+side, unit #1 -> aros1, etc. By default, the driver can handle up to four
+units (ie four seperate virtual networks); this can be increased by changing
+MAX_TAP_UNITS in tap.h.
+
+To get AROS hosted onto your network, you'll need to look into Linux-side
+tools like iptables, brctl, etc.
+
+To remove the TAP interface once AROS has exited, do this:
+
+    # tunctl -d aros0
+
+You'd do well to create a startup script that handles all the network setup
+for you; something like this might be a good place to start:
+
+--------------------
+#!/bin/sh
+
+unit=0
+ip=192.168.0.1
+
+iface=$(sudo tunctl -b -u `whoami` -t aros$unit)
+sudo ifconfig $iface $ip
+./aros
+sudo tunctl -d $iface
+--------------------
+
 
 BUG REPORTING
 
 You'll undoubtedly have problems; this is very new code. Please send reports,
 feedback and other comments to me at rob@cataclysm.cx, or talk to "fce2" in
-#aros
+#aros.
 
 If you are having a problem, I'm probably going to ask for debug output, and
 possibly steps to reproduce the problem.
@@ -76,7 +95,6 @@ TODO
  - Deal with remaining XXX items
  - Multicast support
  - FreeBSD support
- - Make it not require root
  - Remove dependency on linux/* headers and host compiler
  - Better docs (someone want to write this?)
 
@@ -87,6 +105,3 @@ Copyright (c) 2007 Robert Norris. All rights reserved.
 
 This program is free software; you can redistribute it and/or modify it under
 the same terms as AROS itself.
-
-
-
