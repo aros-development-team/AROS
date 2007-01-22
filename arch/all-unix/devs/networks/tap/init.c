@@ -125,20 +125,24 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
 
         /* and create the virtual network */
         if (error == 0) {
+            snprintf(unit->name, IFNAMSIZ, TAP_IFACE_FORMAT, unit->num);
+
             memset(&ifr, 0, sizeof(struct ifreq));
             ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-            strncpy(ifr.ifr_name, "tap%d", IFNAMSIZ);
+            strncpy(ifr.ifr_name, unit->name, IFNAMSIZ);
 
             if ((Hidd_UnixIO_IOControlFile(unixio, fd, TUNSETIFF, &ifr, &ioerr)) < 0) {
                 D(bug("[tap] couldn't perform TUNSETIFF on TAP device (%d)\n", ioerr));
                 error = IOERR_OPENFAIL;
             }
+
+            unit->fd = fd;
+
+            D(bug("[tap] [%d] opened on fd %d, interface %s\n", unit->num, unit->fd, unit->name));
         }
 
         /* its good, time to create our unit */
         if (error == 0) {
-            unit->fd = fd;
-            strncpy(unit->name, ifr.ifr_name, IFNAMSIZ);
 
             /* we're faking a 10Mbit ethernet card here */
             unit->info.SizeAvailable = unit->info.SizeSupplied = sizeof(struct Sana2DeviceQuery);
@@ -156,7 +160,6 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             unit->hwaddr[0] &= 0xfe;    /* clear multicast bit */
             unit->hwaddr[0] |= 0x02;    /* set local assignment bit (IEEE802) */
 
-            D(bug("[tap] [%d] opened on fd %d, interface %s\n", unit->num, unit->fd, unit->name));
             D(bug("[tap] [%d] hardware address: %02x:%02x:%02x:%02x:%02x:%02x\n", unit->num,
                 unit->hwaddr[0], unit->hwaddr[1], unit->hwaddr[2],
                 unit->hwaddr[3], unit->hwaddr[4], unit->hwaddr[5]));

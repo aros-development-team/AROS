@@ -63,6 +63,7 @@ extern int rand(void);
 
 #define TAP_DEV_NODE "/dev/net/tun"
 
+#define TAP_IFACE_FORMAT "aros%ld"
 #define TAP_TASK_FORMAT "TAP IO: unit %d"
 
 
