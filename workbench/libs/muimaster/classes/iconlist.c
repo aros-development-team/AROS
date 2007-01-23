@@ -32,6 +32,7 @@ $Id$
 #include <proto/iffparse.h>
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
+#include <proto/cybergraphics.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -282,6 +283,35 @@ static void GetAbsoluteLassoRect(struct MUI_IconData *data, struct Rectangle *la
     lasso_rect->MaxX = data->view_rect.MinX - data->view_x + maxx;
     lasso_rect->MaxY = data->view_rect.MinY - data->view_y + maxy;
 }
+
+/**************************************************************************
+ Simple lasso drawing by inverting area outlines
+**************************************************************************/
+void InvertLassoOutlines(Object *obj, struct Rectangle *rect)
+{
+    struct Rectangle lasso;
+
+    /* get abolute iconlist coords */
+    lasso.MinX = rect->MinX + _mleft(obj);
+    lasso.MaxX = rect->MaxX + _mleft(obj);
+    lasso.MinY = rect->MinY + _mtop(obj);
+    lasso.MaxY = rect->MaxY + _mtop(obj);
+  
+    /* check for vertical borders */
+    if ( lasso.MinX < _mleft(obj) )  lasso.MinX += _mleft(obj) - lasso.MinX;
+    if ( lasso.MaxX > _mright(obj) ) lasso.MaxX -= lasso.MaxX - _mright(obj) - 2;
+
+    /* horizontal lasso lines */
+    if ( lasso.MinY > _mtop(obj) )    InvertPixelArray( _rp(obj), lasso.MinX, lasso.MinY, lasso.MaxX-lasso.MinX, 2);
+       else lasso.MinY += _mtop(obj) - lasso.MinY;
+    if ( lasso.MaxY < _mbottom(obj) ) InvertPixelArray( _rp(obj), lasso.MinX, lasso.MaxY, lasso.MaxX-lasso.MinX, 2);
+       else lasso.MaxY -= lasso.MaxY - _mbottom(obj) - 2;
+
+    /* vertical lasso lines */
+    if ( lasso.MinX > _mleft(obj) )   InvertPixelArray( _rp(obj), lasso.MinX, lasso.MinY, 2, lasso.MaxY-lasso.MinY );
+    if ( lasso.MaxX < _mright(obj) )  InvertPixelArray( _rp(obj), lasso.MaxX, lasso.MinY, 2, lasso.MaxY-lasso.MinY );
+
+} 
 
 /**************************************************************************
 As we don't use the label drawing of icon.library we also have to do
@@ -1599,8 +1629,11 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                             data->lasso_rect.MaxX = mx - data->view_rect.MinX + data->view_x;
                             data->lasso_rect.MaxY = my - data->view_rect.MinY + data->view_y; 
  
-                             /* deselect old selection */
-                             DoMethod(obj,MUIM_IconList_UnselectAll);
+                            /* deselect old selection */
+                            DoMethod(obj,MUIM_IconList_UnselectAll);
+
+                            /* draw initial lasso */
+                            InvertLassoOutlines(obj, &data->lasso_rect);
 
                         }
                         else data->lasso_active = FALSE;
@@ -1664,7 +1697,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                     {
 
                         /* check if mose released on iconlist aswell */
-                        if (mx >= 0 && mx < _width(obj) && my >= 0 && my < _height(obj) )
+                        if (mx >= 0 && mx < _width(obj) && my >= 0 && my < _height(obj) && data->lasso_active == FALSE)
                         {
                             struct IconEntry *node;
                             struct IconEntry *new_selected = NULL;
@@ -1708,7 +1741,15 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                         }                                           
                     
                         /* stop lasso selection/drawing now */
-                        if (data->lasso_active == TRUE) data->lasso_active = FALSE;
+                        if (data->lasso_active == TRUE)
+                        {
+                            /* make lasso disappear again */
+                            struct Rectangle old_lasso;
+                            GetAbsoluteLassoRect(data, &old_lasso); 
+                            InvertLassoOutlines(obj, &old_lasso);
+
+                            data->lasso_active = FALSE;
+                        }
                                             
                         data->mouse_pressed &= ~LEFT_BUTTON;
                     }
@@ -1749,10 +1790,14 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                     }
                     else if (data->lasso_active == TRUE) /* if no icon selected start lasso */
                     {
-                        struct Rectangle 	 new_lasso;
+                        struct Rectangle new_lasso, old_lasso;
                         struct IconEntry *node;
                         struct IconEntry *new_selected = NULL; 
                         
+                        /* unmark old lasso area */
+                        GetAbsoluteLassoRect(data, &old_lasso);                          
+			InvertLassoOutlines(obj, &old_lasso);
+
                         /* update lasso coordinates */
                         data->lasso_rect.MaxX = mx - data->view_rect.MinX + data->view_x;
                         data->lasso_rect.MaxY = my - data->view_rect.MinY + data->view_y;
@@ -1799,7 +1844,9 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                             
                             node = Node_Next(node);
                         }
-                        
+
+                        /* set lasso borders */                         
+			InvertLassoOutlines(obj, &new_lasso);                        
                         
                     }
                             
