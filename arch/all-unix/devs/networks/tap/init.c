@@ -252,6 +252,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
 static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) {
     struct tap_unit *unit = (struct tap_unit *) req->ios2_Req.io_Unit;
     struct tap_opener *opener = (struct tap_opener *) req->ios2_BufferManagement;
+    struct tap_tracker *tracker, *tracker_next;
     ULONG unitnum = unit->num;
 
     D(bug("[tap] in close\n"));
@@ -273,8 +274,11 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
         /* done with this */
         DeleteMsgPort(unit->iosyncport);
 
-        /* XXX return outstanding requests */
-        /* XXX kill trackers */
+        /* XXX return outstanding requests? */
+
+        /* kill trackers */
+        ForeachNodeSafe(&(unit->trackers), tracker, tracker_next)
+            FreeVec(tracker);
 
         /* fastest way to kill it */
         memset(unit, 0, sizeof(struct tap_unit));
