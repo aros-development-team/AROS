@@ -396,7 +396,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
     /* wait for dev0 to come online. Limited delay up to 30µs */
     if (bus->ab_Dev[0] != DEV_NONE)
     {
-	cnt=400;    // 400ms delay for slowest devices to reply.
+	cnt=1000;    // 1000ms delay for slowest devices to reply.
 	while (cnt--)
 	{
 	    if ((ata_in(ata_Status, port) & ATAF_BUSY) == 0)
@@ -411,7 +411,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 	ata_out(0xb0, ata_DevHead, port);
 	ata_usleep(tr, 100);
 
-	cnt=400;
+	cnt=1000;
 	while (cnt--)
 	{
 	    if ((ata_in(ata_Status, port) & ATAF_BUSY) == 0)
