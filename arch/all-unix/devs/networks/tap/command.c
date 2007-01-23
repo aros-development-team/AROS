@@ -316,6 +316,6 @@ void tap_handle_request(struct IOSana2Req *req) {
             break;
     }
 
-    if (completed && (req->ios2_Req.io_Flags & IOF_QUICK))
+    if (completed && ! (req->ios2_Req.io_Flags & IOF_QUICK))
         ReplyMsg((APTR) req);
 }
