@@ -90,7 +90,8 @@ static const int __revision = 1;
 /*
  * Notification handler
  */
-typedef struct NotifyNode {
+typedef struct NotifyNode
+{
     struct MinNode nn_Node;
     BOOL        nn_Active;   /* When TRUE, it means that the notification is currently being handled */
                              /* It's used to prevent loops */
@@ -102,11 +103,34 @@ typedef struct NotifyNode {
     IPTR       *nn_NewParams; /* For MUIV_EveryTime */
 } *NNode;
 
+typedef struct NotifyNodeIX
+{
+    struct NotifyNode nn;
+    IX	    	      ix;
+} *NNodeIX;
+
 static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_Notify *msg)
 {
     ULONG i, paramsize;
 
-    struct NotifyNode *nnode = mui_alloc_struct(struct NotifyNode);
+    struct NotifyNode *nnode;
+    
+    if ((msg->TrigAttr == MUIA_Window_InputEvent) && (msg->TrigVal != MUIV_EveryTime))
+    {
+    	IX ix = {IX_VERSION};
+
+	if (ParseIX((CONST_STRPTR)msg->TrigVal, &ix) != 0) return NULL;
+
+	if ((nnode = (struct NotifyNode *)mui_alloc_struct(struct NotifyNodeIX)))
+	{
+	    ((struct NotifyNodeIX *)nnode)->ix = ix;
+	}
+    }
+    else
+    {    
+    	nnode = mui_alloc_struct(struct NotifyNode);
+    }
+    
     if (!nnode) return NULL;
 
     nnode->nn_Active    = FALSE;
@@ -221,10 +245,11 @@ IPTR Notify__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
 static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
 {
-   IPTR       *params;
+    IPTR       *params;
     APTR       destobj;
     int        i;
-
+    BOOL       donotify = FALSE;
+    
     /* is it the good attribute ? */
     if (tag->ti_Tag != nnode->nn_TrigAttr)
 	return;
@@ -236,51 +261,23 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
         return;
     }
 
-
-    if (tag->ti_Tag == MUIA_Window_InputEvent)
-    {   
-      struct InputXpression ix;
-      
-      ParseIX(nnode->nn_TrigVal,&ix); 
-      if (tag->ti_Data == (ix.ix_Code  | (ix.ix_Qualifier << 16)))
-      {
-            switch((ULONG)nnode->nn_DestObj)
-            {
-                case MUIV_Notify_Application:        
-                destobj = _app(obj);
-                break;
-                case MUIV_Notify_Self:
-                destobj = obj;
-                break;
-                case MUIV_Notify_Window:     
-                if (muiRenderInfo(obj))     
-                destobj = _win(obj);
-                else return;
-                break;
-                default:
-                destobj = nnode->nn_DestObj;
-            }     
-               for (i = 0; i < nnode->nn_NumParams; i++)
-               {
-                   if (nnode->nn_Params[i] == MUIM_CallHook)
-                   {   
-                   nnode->nn_Active = TRUE;   
-                  
-CallHookPkt(nnode->nn_Params[i+1],destobj,&nnode->nn_Params[i+2]);
-                   nnode->nn_Active = FALSE; 
-                   return ;
-               }          
-                   }    
-               
-      }                  
-
+    if (nnode->nn_TrigVal == MUIV_EveryTime)
+    {
+    	donotify = TRUE;
     }
-
-    if
-    (
-        nnode->nn_TrigVal == tag->ti_Data   ||
-	nnode->nn_TrigVal == MUIV_EveryTime
-    )
+    else if (nnode->nn_TrigAttr == MUIA_Window_InputEvent)
+    {    
+    	if (MatchIX((struct InputEvent *)tag->ti_Data, &((struct NotifyNodeIX *)nnode)->ix))
+	{
+	    donotify = TRUE;
+	}
+    }
+    else if (nnode->nn_TrigVal == tag->ti_Data)
+    {   
+    	donotify = TRUE;
+    }
+    
+    if (donotify)
     {
 	switch((IPTR)nnode->nn_DestObj)
 	{
