@@ -1746,6 +1746,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     struct MinNode              *mn;
     struct MUI_EventHandlerNode *ehn;
     struct IntuiMessage          imsg_copy;
+    struct InputEvent	    	 ie = {0};
     ULONG                        res;
     LONG                         muikey = MUIKEY_NONE;
     Object                      *active_object = NULL;
@@ -1755,6 +1756,17 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 
     KillHelpBubble(data, win, BUBBLEHELP_TICKER_FIRST);
 
+    ie.ie_NextEvent 	    	= NULL;
+    ie.ie_Class     	    	= IECLASS_RAWKEY;
+    ie.ie_SubClass  	    	= 0;
+    ie.ie_Code      	    	= event->Code;
+    ie.ie_Qualifier 	    	= event->Qualifier;
+    ie.ie_EventAddress      	= (APTR)*(ULONG *)event->IAddress;
+    ie.ie_TimeStamp.tv_secs     = event->Seconds;
+    ie.ie_TimeStamp.tv_micro    = event->Micros;
+    
+    set(win, MUIA_Window_InputEvent, (IPTR)&ie);
+        
     /* get the vanilla key for control char */
     {
 	UWORD msg_code;
@@ -2007,10 +2019,6 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     //bug("ctrlchar, key='%c' code=0x%08lx\n", key, event->Code);
     if (key)
     {
-        unsigned long attr;
-        attr=( (event->Qualifier & 0x7fff)<< 16) | event->Code;           
-        set(win,MUIA_Window_InputEvent,attr);
-
 	for (mn = data->wd_CCList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
 	{
 	    ehn = (struct MUI_EventHandlerNode *)mn;
