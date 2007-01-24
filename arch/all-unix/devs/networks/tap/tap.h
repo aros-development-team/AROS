@@ -113,7 +113,6 @@ struct tap_unit {
     LONG                        write_signal;
     LONG                        abort_signal;
 
-    struct MsgPort              read_queue;
     struct MsgPort              write_queue;
 };
 

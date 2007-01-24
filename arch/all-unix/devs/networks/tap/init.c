@@ -172,11 +172,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             /* and for the trackers */
             NEWLIST(&(unit->trackers));
 
-            /* prepare request queues */
-            NEWLIST(&(unit->read_queue.mp_MsgList));
-            unit->read_queue.mp_Node.ln_Type = NT_MSGPORT;
-            unit->read_queue.mp_Flags = PA_IGNORE;
-
+            /* prepare write queue */
             NEWLIST(&(unit->write_queue.mp_MsgList));
             unit->write_queue.mp_Node.ln_Type = NT_MSGPORT;
             unit->write_queue.mp_Flags = PA_IGNORE;
@@ -287,7 +283,10 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
         unit->num = unitnum;
     }
 
-    /* free the opener structure too */
+    /* cleanup the opener structure too */
+    Disable();
+    Remove((APTR) opener);
+    Enable();
     FreeVec(opener);
 
     req->ios2_Req.io_Unit = NULL;
