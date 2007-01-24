@@ -136,9 +136,11 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
                 error = IOERR_OPENFAIL;
             }
 
-            unit->fd = fd;
+            else {
+                unit->fd = fd;
 
-            D(bug("[tap] [%d] opened on fd %d, interface %s\n", unit->num, unit->fd, unit->name));
+                D(bug("[tap] [%d] opened on fd %d, interface %s\n", unit->num, unit->fd, unit->name));
+            }
         }
 
         /* its good, time to create our unit */
