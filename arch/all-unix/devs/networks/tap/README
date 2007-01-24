@@ -93,6 +93,7 @@ possibly steps to reproduce the problem.
 
 TODO
 
+ - Implement NSCMD_DEVICEQUERY
  - Deal with remaining XXX items
  - Multicast support
  - FreeBSD support
