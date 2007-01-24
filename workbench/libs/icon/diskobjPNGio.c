@@ -490,6 +490,13 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 
 	#undef DO
 	
+#warning "FIXME: Someone killed PNG Icon do_Type detection here which causes"
+#warning "       following lines to always free DrawerData even when it"
+#warning "       shouldn't be freed (only possible to know if do_Type is"
+#warning "       known). So for now following lines disabled and DrawerData"
+#warning "       is always kept (even when it shouldn't)."
+
+#if 0	
 	if (icon->dobj.do_DrawerData &&
 	    (icon->dobj.do_Type != WBDISK) &&
 	    (icon->dobj.do_Type != WBDRAWER) &&
@@ -498,6 +505,7 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 	    FreePooled(pool, icon->dobj.do_DrawerData, sizeof(struct DrawerData));
 	    icon->dobj.do_DrawerData = NULL;
 	}
+#endif
 	
     } /**/
     
