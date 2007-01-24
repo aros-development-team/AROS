@@ -231,6 +231,10 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
                 DeleteMsgPort(unit->iosyncport);
             }
 
+            /* close the nic */
+            if (unit->fd > 0)
+                Hidd_UnixIO_CloseFile(unixio, unit->fd, NULL);
+
             /* fastest way to kill it */
             memset(unit, 0, sizeof(struct tap_unit));
             unit->num = unitnum;
@@ -271,6 +275,10 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
 
         /* done with this */
         DeleteMsgPort(unit->iosyncport);
+
+        /* close the nic */
+        if (unit->fd > 0)
+            Hidd_UnixIO_CloseFile(unixio, unit->fd, NULL);
 
         /* XXX return outstanding requests? */
 
