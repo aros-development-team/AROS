@@ -1149,10 +1149,26 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj, struct MU
     }
 
     signalmask = (1L << data->app_GlobalInfo.mgi_WindowsPort->mp_SigBit)
-	| (1L << data->app_TimerPort->mp_SigBit) | handler_mask;
+	| (1L << data->app_TimerPort->mp_SigBit);
 
     if (data->app_Broker)
 	signalmask |= (1L << data->app_BrokerPort->mp_SigBit);
+    
+    if (signal == 0)
+    {
+    	/* Stupid app which (always) passes 0 in signals. It's impossible to
+	   know which signals were really set as the app will already have
+	   called Wait() which has cleared the task's tc_SigRecvd. So assume
+	   the window, timer, and broker signals all to be set (but none of
+	   the inputhandler signals) */ 
+	   
+    	signal = signalmask;
+    }
+    else
+    {
+    	/* Good app. Check also for set handlers' signals. */
+    	signalmask |= handler_mask;
+    }
     
     if (signal & signalmask)
     {
