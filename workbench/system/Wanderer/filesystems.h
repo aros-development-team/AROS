@@ -1,6 +1,11 @@
 #ifndef _WANDERER_FILESYSTEMS_H
 #define	_WANDERER_FILESYSTEMS_H
 
+/*
+    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
+    $Id: filesystems.c $
+*/
+
 #include    <exec/types.h>
 
 /* FILEINFO CONSTANTS */
