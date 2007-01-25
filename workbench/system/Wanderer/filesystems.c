@@ -1,3 +1,8 @@
+/*
+    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
+    $Id: filesystems.c $
+*/
+
 #include    <clib/alib_protos.h>
 
 
@@ -649,7 +654,7 @@
 
        struct	FileInfoBlock  *FIB;
        struct	dCopyStruct	   display;
-       char		   *destname, *dest, *path, *comment, *dpath, *infoname, *destinfo;
+       char		   *destname, *tdest, *dest, *path, *comment, *dpath, *infoname, *destinfo;
        LONG		   len, Success2, prot;
        BPTR		   nLock, nDir;
        BOOL		   created = FALSE;
@@ -701,7 +706,13 @@
                    FIB = (struct FileInfoBlock*) AllocDosObject(DOS_FIB,DummyTags);
                    if (FIB) {
                        len = strlen(d)+strlen(destname)+2;
-                       dest = AllocMem(len, MEMF_CLEAR);
+                       tdest = AllocMem(len, MEMF_CLEAR);
+                       if (tdest) {
+                           strncpy(tdest, d, strlen(d));
+                           AddPart(tdest, destname, len);
+                           dest = AllocMem(strlen(tdest), MEMF_CLEAR);
+                           FreeMem(tdest, len);
+                       }
                        if (dest) {
                            strncpy(dest, d, strlen(d));
                            AddPart(dest, destname, len);
