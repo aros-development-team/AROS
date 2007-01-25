@@ -590,7 +590,7 @@ IPTR Notify__MUIM_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
     struct NotifyNode     *nnode;
 
-    if ((msg->FollowParams < 1) || (msg->FollowParams > 8))
+    if (msg->FollowParams < 1)
 	return FALSE;
 
     if (data->mnd_NotifyList == NULL)
