@@ -318,6 +318,7 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
 
   if(emsg->Last)
   {
+    *buf->pointer = '\0';
     result = buf->buffer;
 
     if(data)
