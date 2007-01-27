@@ -829,7 +829,7 @@ long SplitLine(LONG x, struct line_node *line, BOOL move_crsr, struct UserAction
       {
         data->visual_y++;
         data->totallines += 1;
-        if(!(data->flags & FLG_Quiet))
+        if(data->shown && !(data->flags & FLG_Quiet))
         {
             struct  Hook  *oldhook;
 
