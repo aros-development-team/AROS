@@ -529,30 +529,29 @@ AROS_UFH3(VOID, conTaskEntry,
 
     	    	    case FSA_CONSOLE_MODE:
 			{
-			    UWORD newmode = iofs->io_Union.io_CONSOLE_MODE.io_ConsoleMode ? 1 : 0;
-			    UWORD oldmode = (fh->flags & FHFLG_RAW) ? 1 : 0;
+                            LONG wantmode = iofs->io_Union.io_CONSOLE_MODE.io_ConsoleMode;
 
-			    if (newmode != oldmode)
-			    {
-			    	if (newmode)
-				{
-				    /* Switching from CON: mode to RAW: mode */
+                            if (wantmode & FCM_RAW && ! (fh->flags & FHFLG_RAW))
+                            {
+				/* Switching from CON: mode to RAW: mode */
 
-				    fh->flags |= FHFLG_RAW;
+				fh->flags |= FHFLG_RAW;
 
-				    fh->inputstart = fh->inputsize;
-				    fh->inputpos   = fh->inputsize;
+				fh->inputstart = fh->inputsize;
+				fh->inputpos   = fh->inputsize;
 
-				    HandlePendingReads(conbase, fh);
-				}
-				else
-				{
-				    /* Switching from RAW: mode to CON: mode */
+				HandlePendingReads(conbase, fh);
+                            }
 
-				    fh->flags &= ~FHFLG_RAW;
- 				}
-
-			    } /*  if (newmode != oldmode) */
+                            else
+                            {
+                                /* otherwise just copy the flags */
+                                fh->flags &= ~(FHFLG_RAW | FHFLG_NOECHO);
+                                if (wantmode & FCM_RAW)
+                                    fh->flags |= FHFLG_RAW;
+                                if (wantmode & FCM_NOECHO)
+                                    fh->flags |= FHFLG_NOECHO;
+                            }
 
 			}
     	    	    	ReplyMsg(&iofs->IOFS.io_Message);
@@ -598,6 +597,10 @@ AROS_UFH3(VOID, conTaskEntry,
 	    {
 	    	/* Cooked mode */
 		
+                /* disable output if we're not suppoed to be echoing */
+                if (fh->flags & FHFLG_NOECHO)
+                    fh->flags |= FHFLG_NOWRITE;
+
 		while((inp = scan_input(conbase, fh, &c)) != INP_DONE)
 		{
 		    D(bug("Input Code: %d\n",inp));
@@ -642,7 +645,9 @@ AROS_UFH3(VOID, conTaskEntry,
 			case INP_CURSORDOWN:
 			case INP_SHIFT_CURSORUP:
 			case INP_SHIFT_CURSORDOWN:
-			    history_walk(conbase, fh, inp);
+                            /* no history if we're hidden */
+                            if (! (fh->flags & FHFLG_NOECHO))
+			        history_walk(conbase, fh, inp);
 		    	    break;
 
 			case INP_BACKSPACE:
@@ -789,7 +794,9 @@ AROS_UFH3(VOID, conTaskEntry,
 		        	    c = '\n';
 				    do_write(conbase, fh, &c, 1);
 
-				    add_to_history(conbase, fh);
+                                    /* don't put hidden things in the history */
+                                    if (! (fh->flags & FHFLG_NOECHO))
+				        add_to_history(conbase, fh);
 
 				    fh->inputbuffer[fh->inputsize++] = '\n';
 				}
@@ -826,7 +833,9 @@ AROS_UFH3(VOID, conTaskEntry,
 				c = '\n';
 				do_write(conbase, fh, &c, 1);
 
-				add_to_history(conbase, fh);
+                                /* don't put hidden things in the history */
+                                if (! (fh->flags & FHFLG_NOECHO))
+				    add_to_history(conbase, fh);
 
 				fh->inputbuffer[fh->inputsize++] = c;
 				fh->inputstart = fh->inputsize;
@@ -845,12 +854,17 @@ AROS_UFH3(VOID, conTaskEntry,
 		    	    break;
 
     	    	    	case INP_TAB:
-			    Completion(conbase, fh);
+                            /* don't complete hidden things */
+                            if (! (fh->flags & FHFLG_NOECHO))
+			        Completion(conbase, fh);
 			    break;
 			    
 		    } /* switch(inp) */
 
 		} /* while((inp = scan_input(conbase, fh, &c)) != INP_DONE) */
+
+                /* re-enable output */
+                fh->flags &= ~FHFLG_NOWRITE;
 
     	    } /* if (fh->flags & FHFLG_RAW) else ... */
 
