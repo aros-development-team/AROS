@@ -1333,6 +1333,10 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
 			);
 		data->wd_DropObject = NULL;
 	    }
+            else if (imsg->Code == SELECTUP)
+            {
+                DoMethod(data->wd_DragObject, MUIM_UnknownDropDestination, imsg);
+            }
 	    finish_drag = 1;
 	}
     }
