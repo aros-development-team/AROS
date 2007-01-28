@@ -344,11 +344,14 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh,
 
 void do_write(struct conbase *conbase, struct filehandle *fh, APTR data, ULONG length)
 {
-    fh->conwriteio.io_Command	= CMD_WRITE;
-    fh->conwriteio.io_Data	= data;
-    fh->conwriteio.io_Length	= length;
+    /* write stuff out, but only if write is enabled */
+    if (! (fh->flags & FHFLG_NOWRITE)) {
+        fh->conwriteio.io_Command	= CMD_WRITE;
+        fh->conwriteio.io_Data	        = data;
+        fh->conwriteio.io_Length	= length;
 
-    DoIO((struct IORequest *)&fh->conwriteio);
+        DoIO((struct IORequest *)&fh->conwriteio);
+    }
 }
 
 /******************************************************************************************/

@@ -77,7 +77,8 @@ FILES := \
     openlib \
     simplepng \
     truecolorpens \
-    windecor
+    windecor \
+    consolemodes
 
 EXEDIR := $(AROS_TESTS)
 

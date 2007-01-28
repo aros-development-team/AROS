@@ -398,7 +398,8 @@ struct IFS_CONSOLE_MODE
     LONG	io_ConsoleMode;
 };
 #define FCM_COOKED	0
-#define FCM_RAW		1
+#define FCM_RAW		(1<<0)
+#define FCM_NOECHO  (1<<1)
 
 
 #define FSA_RELABEL    44
