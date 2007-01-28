@@ -42,6 +42,7 @@
 #define MUIM_DoDrag		    (MUIB_MUI|0x004216bb) /* MUI: V18 */ /* For Custom Classes only */ /* Undoc */
 #define MUIM_DragBegin	            (MUIB_MUI|0x0042c03a) /* MUI: V11 */
 #define MUIM_DragDrop	            (MUIB_MUI|0x0042c555) /* MUI: V11 */
+#define MUIM_UnknownDropDestination (MUIB_MUI|0x00425550) /* ZUNE */
 #define MUIM_DragFinish	            (MUIB_MUI|0x004251f0) /* MUI: V11 */
 #define MUIM_DragQuery	            (MUIB_MUI|0x00420261) /* MUI: V11 */
 #define MUIM_DragReport	            (MUIB_MUI|0x0042edad) /* MUI: V11 */
@@ -66,6 +67,7 @@ struct MUIP_DeleteBubble	    {ULONG MethodID; APTR bubble;};
 struct MUIP_DeleteDragImage	    {ULONG MethodID; struct MUI_DragImage *di;};
 struct MUIP_DeleteShortHelp	    {ULONG MethodID; STRPTR help; };
 struct MUIP_DoDrag          	    {ULONG MethodID; LONG touchx; LONG touchy; ULONG flags;};
+struct MUIP_UnknownDropDestination  {ULONG MethodID; struct IntuiMessage *imsg; };
 struct MUIP_DragBegin               {ULONG MethodID; Object *obj;};
 struct MUIP_DragDrop                {ULONG MethodID; Object *obj; LONG x; LONG y;};
 struct MUIP_DragFinish              {ULONG MethodID; Object *obj;};

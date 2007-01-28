@@ -2163,6 +2163,14 @@ static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
 }
 
 /**************************************************************************
+ MUIM_Area_UnknownDropDestination
+**************************************************************************/
+IPTR Area__MUIM_UnknownDropDestination(struct IClass *cl, Object *obj, struct MUIP_UnknownDropDestination *msg)
+{
+    return 0;
+}
+
+/**************************************************************************
 MUIM_UpdateInnerSizes - Updates the innersizes of an object. You actually
 should only call this method if the dimensions of an object would not be
 affected, otherwise the results are unexpected
