@@ -4,7 +4,7 @@
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
-#define DEBUG 0
+#define DEBUG 1
 
 #include <exec/types.h>
 #include <libraries/gadtools.h>
@@ -40,6 +40,7 @@
 extern IPTR InitWandererPrefs(void);
 VOID DoAllMenuNotifies(Object *strip, char *path);
 Object *FindMenuitem(Object* strip, int id);
+Object * __CreateWandererIntuitionMenu__ ( );
 void window_update(void);
 
 extern Object *app;
@@ -193,21 +194,27 @@ void execute_open_with_command(BPTR cd, char *contents)
 **************************************************************************/
 VOID execute_open(char **cdptr)
 {
-    BPTR lock = NULL;
-    
-    if (cdptr != NULL) lock = Lock(*cdptr, SHARED_LOCK);
-    
-    execute_open_with_command(lock, NULL);
-    
-    if (lock) UnLock(lock);
+    //TODO: remove the char **cdptr from top
+    //TODO:remove this commented out stuff
+    //BPTR lock = NULL;
+    //if (cdptr != NULL) lock = Lock(*cdptr, SHARED_LOCK);
+    Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    STRPTR dr = XGET( win, MUIA_IconWindow_Drawer );
+    BPTR cd = Lock(dr,SHARED_LOCK);
+    execute_open_with_command(cd, NULL);
+    if (cd) UnLock(cd);
 }
 
 /*******************************/
 
 void shell_open(char **cd_ptr)
 {
-    BPTR cd = Lock(*cd_ptr,ACCESS_READ);
-
+    //TODO: remove the char **cdptr from top
+    //TODO:remove this commented out stuff
+    //BPTR cd = Lock(*cd_ptr,ACCESS_READ);
+    Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    STRPTR dr = XGET( win, MUIA_IconWindow_Drawer );
+    BPTR cd = Lock(dr,ACCESS_READ);
     if (SystemTags("NewShell", NP_CurrentDir, (IPTR)cd, TAG_DONE) == -1)
     {
     	UnLock(cd);
@@ -230,7 +237,11 @@ void wanderer_backdrop(Object **pstrip)
 
 void window_new_drawer(char **cdptr)
 {
-    D(bug("[wanderer] NewDrawer %s\n", *cdptr));
+    //TODO: remove the char **cdptr from top
+    
+    Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    STRPTR dr = XGET( win, MUIA_IconWindow_Drawer );
+    D(bug("[wanderer] NewDrawer %s\n", dr));
 
     Object *actwindow = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
     Object *wbwindow = (Object *) XGET(app, MUIA_Wanderer_WorkbenchWindow);
@@ -246,7 +257,7 @@ void window_new_drawer(char **cdptr)
     	return;
     }
 
-    BPTR lock = Lock(*cdptr, ACCESS_READ);
+    BPTR lock = Lock(dr, ACCESS_READ);
     OpenWorkbenchObject
 	(
         "WANDERER:Tools/WBNewDrawer",
@@ -259,21 +270,25 @@ void window_new_drawer(char **cdptr)
 
 void window_open_parent(char **cdptr)
 {
-	IPTR	path_len=0;
+    //TODO: Remove the **cdptr stuff from top
+    Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    STRPTR dr = XGET( win, MUIA_IconWindow_Drawer );
+    	
+    IPTR	path_len=0;
 	char	*last_letter=NULL;
-	last_letter = (char*)(*((char *)(*cdptr+strlen(*cdptr)-1)));
+  	last_letter = (char*)(*((char *)(dr+strlen(dr)-1)));
 	
-	STRPTR thispath = FilePart(*cdptr);
+	STRPTR thispath = FilePart(dr);
 	
 	if (last_letter==(char *)0x3a) return; /* Top Drawer has no parent to open */
 	
 	last_letter = (char*)(*((char *)(thispath-1)));
 	
-	if (last_letter==(char *)0x3a) path_len = (IPTR)(thispath-(IPTR)(*cdptr));
-	else path_len = (IPTR)((thispath-(IPTR)(*cdptr))-1);
+	if (last_letter==(char *)0x3a) path_len = (IPTR)(thispath-(IPTR)(dr));
+	else path_len = (IPTR)((thispath-(IPTR)(dr))-1);
 	
 	STRPTR buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);	
-	CopyMem(*cdptr, buf, path_len);
+	CopyMem(dr, buf, path_len);
 	
 	Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
 	Object *child;
@@ -620,7 +635,7 @@ AROS_UFH3
     	    Object *child;
 
             /* open new window if root or classic navigation set */
-            if ( (msg->isroot)  || (XGET(prefs, MUIA_WandererPrefs_NavigationMethod) == WPD_NAVIGATION_CLASSIC)  )
+            if ( (msg->isroot) || (XGET(prefs, MUIA_WandererPrefs_NavigationMethod) == WPD_NAVIGATION_CLASSIC) )
             {
         	    while ((child = NextObject(&cstate)))
         	    {
@@ -654,9 +669,6 @@ AROS_UFH3
             {
                 /* open drawer in same window */
                 set(obj, MUIA_IconWindow_Drawer, buf);
-                
-                /* update the window */
-                //window_update();
             }
             
 
@@ -1270,26 +1282,9 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
     return 0;
 }
 
-Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
-(
-    Class *CLASS, Object *self, 
-    struct MUIP_Wanderer_CreateDrawerWindow *message
-)
+Object * __CreateWandererIntuitionMenu__ ( )
 {
-    SETUP_INST_DATA;
-    Object *menustrip, *window = NULL;
-    BOOL    isWorkbenchWindow = message->drawer == NULL ? TRUE : FALSE;
-    BOOL    hasToolbar = XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled);
-    
-
-    IPTR    useFont = (IPTR)NULL;
-    if (data->wd_PrefsIntern)
-    {
-      useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
-    }
-
-    struct NewMenu nm[] =
-    {
+    struct NewMenu nm[] = {
     {NM_TITLE,     _(MSG_MEN_WANDERER)},
         {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WANDERER_BACKDROP},
         {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                         , 0, (APTR) MEN_WANDERER_EXECUTE},
@@ -1348,15 +1343,40 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
   //    {NM_ITEM,  "ResetWanderer" },
     {NM_END}
     };
+    Object *menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
+    return menustrip;
+}
+
+Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
+(
+    Class *CLASS, Object *self, 
+    struct MUIP_Wanderer_CreateDrawerWindow *message
+)
+{
+    SETUP_INST_DATA;
+    Object *window = NULL;
+    BOOL    isWorkbenchWindow = message->drawer == NULL ? TRUE : FALSE;
+    BOOL    hasToolbar = XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled);
+    
+
+    IPTR    useFont = (IPTR)NULL;
+    if (data->wd_PrefsIntern)
+    {
+      useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
+    }
+
+    Object *menustrip = __CreateWandererIntuitionMenu__ ( );
+    
     /* Create a new icon drawer window with the correct drawer being set */
     window = IconWindowObject,
         MUIA_UserData,                     1,
         MUIA_IconWindow_Font,              useFont,
         MUIA_Window_ScreenTitle,    (IPTR) GetScreenTitle(),
-        MUIA_Window_Menustrip,      (IPTR) (menustrip = MUI_MakeObject(MUIO_MenustripNM, (IPTR) nm, (IPTR) NULL)),
+        MUIA_Window_Menustrip,      (IPTR) menustrip,
         MUIA_IconWindow_ActionHook, (IPTR) &hook_action,
         
         MUIA_IconWindow_IsRoot,            isWorkbenchWindow ? TRUE : FALSE,
+        /*MUIA_IconWindow_IsSubWindow,       isWorkbenchWindow ? FALSE : TRUE,*/
         MUIA_IconWindow_IsBackdrop,        isWorkbenchWindow ? TRUE : FALSE,
         MUIA_IconWindow_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
         isWorkbenchWindow ? 
@@ -1386,7 +1406,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         );
         
         /* If "Execute Command" entry is clicked open the execute window */
-        DoAllMenuNotifies(menustrip, drw);
+        DoAllMenuNotifies(menustrip, drw);        
         
         /* Add the window to the application */
         DoMethod(_app(self), OM_ADDMEMBER, (IPTR) window);
