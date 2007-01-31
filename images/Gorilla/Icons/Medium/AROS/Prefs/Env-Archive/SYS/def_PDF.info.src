@@ -1,2 +1,2 @@
 TYPE = PROJECT
-DEFAULTTOOL = SYS:Utilities/MultiView
+DEFAULTTOOL = gs850:bin/gs
