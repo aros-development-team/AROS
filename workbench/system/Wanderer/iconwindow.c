@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define MUIMASTER_YES_INLINE_STDARG
 
