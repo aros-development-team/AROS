@@ -34,7 +34,7 @@ $Id$
 #include <prefs/wanderer.h>
 #include <proto/cybergraphics.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define MYDEBUG
@@ -2443,6 +2443,20 @@ IPTR IconList__MUIM_DragReport(struct IClass *cl, Object *obj, struct MUIP_DragR
     return MUIV_DragReport_Continue;
 }
 
+/**************************************************************************
+ MUIM_IconList_UnknownDropDestination
+**************************************************************************/
+
+IPTR IconList__MUIM_UnknownDropDestination(struct IClass *cl, Object *obj, struct MUIP_UnknownDropDestination *msg)
+{
+    D(bug("[ICONLIST] icons dropped on custom window \n");)
+    set(obj, MUIA_IconList_AppWindowDrop, (IPTR)msg); /* Now notify */
+
+    return 0;
+}
+
+/*************************************************************************/
+
 BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -2465,7 +2479,7 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, cl, obj, msg)
         case MUIM_DragQuery:              return IconList__MUIM_DragQuery(cl,obj,(APTR)msg);
         case MUIM_DragReport:             return IconList__MUIM_DragReport(cl,obj,(APTR)msg);
         case MUIM_DragDrop:               return IconList__MUIM_DragDrop(cl,obj,(APTR)msg);
-    
+        case MUIM_UnknownDropDestination: return IconList__MUIM_UnknownDropDestination(cl,obj,(APTR)msg);       
         case MUIM_IconList_Update:        return IconList__MUIM_Update(cl,obj,(APTR)msg);
         case MUIM_IconList_Clear:         return IconList__MUIM_Clear(cl,obj,(APTR)msg);
         case MUIM_IconList_Add:           return IconList__MUIM_Add(cl,obj,(APTR)msg);

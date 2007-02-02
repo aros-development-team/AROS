@@ -45,6 +45,7 @@ struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
 #define MUIA_IconList_IconsDropped      (MUIB_IconList | 0x00000005) /* Zune: V1 ..G struct IconList_Entry * */
 #define MUIA_IconList_Clicked           (MUIB_IconList | 0x00000006) /* Zune: V1 ..G struct IconList_Click * */
 #define MUIA_IconList_IconsMoved        (MUIB_IconList | 0x00000007) /* Zune: V1 ..G struct IconList_Entry * */
+#define MUIA_IconList_AppWindowDrop     (MUIB_IconList | 0x00000008) /* Zune: V1 ..G struct IconList_Entry * */
 
 /* used by MUIM_IconList_NextSelected */
 struct IconList_Entry
