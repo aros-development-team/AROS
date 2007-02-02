@@ -31,7 +31,6 @@ extern struct Library *MUIMasterBase;
 #include "textengine.h"
 #include "bubbleengine.h"
 
-#define DEBUG 1
 
 //#define MYDEBUG 1
 #include "debug.h"
