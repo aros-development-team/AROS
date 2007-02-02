@@ -259,12 +259,20 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR) self, 1, MUIM_IconWindow_DoubleClicked
         );
         
+        /* notify when icons dropped on another (wanderer) window */
         DoMethod
         (
             iconList, MUIM_Notify, MUIA_IconList_IconsDropped, MUIV_EveryTime,
             (IPTR) self, 1, MUIM_IconWindow_IconsDropped
         );
-        
+  
+        /* notify when icons dropped on custom application */
+        DoMethod
+        (
+            iconList, MUIM_Notify, MUIA_IconList_AppWindowDrop, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_IconWindow_AppWindowDrop
+        );
+      
         DoMethod
         (
             iconList, MUIM_Notify, MUIA_IconList_Clicked, MUIV_EveryTime,
@@ -525,6 +533,26 @@ IPTR IconWindow__MUIM_IconWindow_IconsDropped
     return TRUE;
 }
 
+IPTR IconWindow__MUIM_IconWindow_AppWindowDrop
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    
+    if (data->iwd_ActionHook)
+    {
+        struct IconWindow_ActionMsg msg;
+        msg.type     = ICONWINDOW_ACTION_APPWINDOWDROP;
+        msg.iconlist = data->iwd_IconList;
+        msg.isroot   = data->iwd_IsRoot;
+        msg.drop     = (struct IconList_Drop *) XGET(data->iwd_IconList, MUIA_IconList_IconsDropped);
+        CallHookPkt(data->iwd_ActionHook, self, &msg);
+    }
+    
+    return TRUE;
+}
+
 IPTR IconWindow__MUIM_IconWindow_Open
 (
     Class *CLASS, Object *self, Msg message
@@ -586,5 +614,6 @@ ICONWINDOW_CUSTOMCLASS
     MUIM_IconWindow_DoubleClicked, Msg,
     MUIM_IconWindow_IconsDropped,  Msg,
     MUIM_IconWindow_Clicked,       Msg,
-    MUIM_IconWindow_DirectoryUp,   Msg
+    MUIM_IconWindow_DirectoryUp,   Msg,
+    MUIM_IconWindow_AppWindowDrop, Msg
 );
