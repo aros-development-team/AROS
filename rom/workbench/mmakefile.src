@@ -16,6 +16,7 @@ FUNCS := \
     removeappmenuitem \
     removeappwindow \
     removeappwindowdropzone \
+    sendappwindowmessage \
     unregisterworkbench \
     updateworkbenchobjecta \
     wbinfo \

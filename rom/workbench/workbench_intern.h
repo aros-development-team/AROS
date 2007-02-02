@@ -2,7 +2,7 @@
 #define __WORKBENCH_INTERN_H__
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright  1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal header file for workbench.library.
@@ -62,6 +62,7 @@ struct WorkbenchBase
 #define LB(lb)          ((struct WorkbenchBase *) (lb))
 
 #define LockWorkbench()   ObtainSemaphore(&(WorkbenchBase->wb_BaseSemaphore))
+#define LockWorkbenchShared()   ObtainSemaphoreShared(&(WorkbenchBase->wb_BaseSemaphore))
 #define UnlockWorkbench() ReleaseSemaphore(&(WorkbenchBase->wb_BaseSemaphore))
 
 /*
@@ -112,7 +113,6 @@ struct AppWindow
 
     struct MsgPort *aw_MsgPort;
 };
-
 
 #define  AWDZFlag_fix        0	/* IBox value is actual coordinate */
 #define  AWDZFlag_relLeft    1
