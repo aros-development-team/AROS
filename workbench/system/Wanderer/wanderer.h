@@ -33,6 +33,11 @@ struct IconList_wDrop
     IPTR   *destination_iconlistobj;     /* iconlist obj */
 };
 
+struct AppW {
+  struct Node n;
+  char *name;
+};
+
 /*** Macros *****************************************************************/
 #define WandererObject BOOPSIOBJMACRO_START(Wanderer_CLASS->mcc_Class)
 

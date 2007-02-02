@@ -7,6 +7,7 @@
 #define DEBUG 0
 
 #include <exec/types.h>
+//#include <exec/lists.h>
 #include <libraries/gadtools.h>
 #include <libraries/mui.h>
 #include <zune/customclasses.h>
@@ -17,6 +18,8 @@
 #include <proto/muimaster.h>
 #include <proto/dos.h>
 #include <proto/workbench.h>
+#include <proto/layers.h>
+#include <proto/alib.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -783,8 +786,91 @@ AROS_UFH3
            /* update the window */
            window_update();      
         }
+    }
+    else if (msg->type == ICONWINDOW_ACTION_APPWINDOWDROP)
+    {
+        struct Screen *wscreen;
+        struct Layer *layer;
+
+        /* get wanderer´s screen struct and the layer located at cursor position afterwards */
+        get( obj, MUIA_Window_Screen, &wscreen);
+        layer = WhichLayer(&wscreen->LayerInfo,wscreen->MouseX,wscreen->MouseY);
+
+        if (layer)
+        {
+            struct Window *win = (struct Window *) layer->Window;
+            if (win)
+            {
+                struct List AppList;
+                ULONG files = 0;
+                BOOL  fail  = FALSE;
+                NewList(&AppList);
+
+                struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+                /* process all selected entries */
+                do {
+                    DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
+                    /*  if not end of selection, process */
+                    if ( (int)ent != MUIV_IconList_NextSelected_End )
+                    {
+                        struct AppW *a = AllocVec(sizeof(struct AppW), MEMF_CLEAR);
+                        if (a)
+                        {
+                            a->name = AllocVec(strlen(ent->filename)+1, MEMF_CLEAR);
+                            if (a->name)
+                            {
+                                files++;
+                                strcpy(a->name, ent->filename);
+                                AddTail(&AppList, (struct Node *) a);
+                            }
+                            else
+                            {
+                                FreeVec(a);
+                                fail = TRUE;
+                            }
+                        } else fail = TRUE;
+                    }
+                } while ( ((int)ent != MUIV_IconList_NextSelected_End ) && !fail);
+                if (!fail && (files > 0))
+                {
+                    char **filelist = AllocVec(sizeof(char *) * files, MEMF_CLEAR);
+                    if (filelist)
+                    {
+                        char **flist = filelist;
+                        if (!IsListEmpty(&AppList))
+                        {
+                            struct Node *succ;
+                            struct Node *s = AppList.lh_Head;
+                            while (((succ = ((struct Node*) s)->ln_Succ) != NULL) && !fail)
+                            {
+                                *flist ++ = ((struct AppW *) s)->name;
+                                s =  succ;
+                            }
+
+                            D(bug("[WANDERER] AppWindowMsg: win:%s files:%s mx:%d my:%d\n",win->Title, filelist, wscreen->MouseX, wscreen->MouseY);)
+                            /* send appwindow msg struct containing selected files to destination */
+                            SendAppWindowMessage(win, files, filelist, 0, wscreen->MouseX, wscreen->MouseY, 0, 0);
+
+                        }
+                        FreeVec(filelist);
+                    }
+                }
+                if (!IsListEmpty(&AppList))
+                {
+                    struct Node *succ;
+                    struct Node *s = AppList.lh_Head;
+                    while (((succ = ((struct Node*) s)->ln_Succ) != NULL))
+                    {
+                        FreeVec(((struct AppW *) s)->name);
+                        FreeVec(s);
+                        s =  succ;
+                    }
+                }
+
+            }
+        }    	
     	
-    	
+
     }
 
     AROS_USERFUNC_EXIT
