@@ -31,6 +31,8 @@ extern struct Library *MUIMasterBase;
 #include "textengine.h"
 #include "bubbleengine.h"
 
+#define DEBUG 1
+
 //#define MYDEBUG 1
 #include "debug.h"
 
@@ -2167,6 +2169,7 @@ static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
 **************************************************************************/
 IPTR Area__MUIM_UnknownDropDestination(struct IClass *cl, Object *obj, struct MUIP_UnknownDropDestination *msg)
 {
+
     return 0;
 }
 
@@ -2230,6 +2233,7 @@ BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
     case MUIM_DragQuery:            return MUIV_DragQuery_Refuse;
     case MUIM_DragBegin:            return Area__MUIM_DragBegin(cl,obj,(APTR)msg);
     case MUIM_DragDrop:             return FALSE;
+    case MUIM_UnknownDropDestination:   return Area__MUIM_UnknownDropDestination(cl,obj,(APTR)msg);
     case MUIM_DragFinish:           return Area__MUIM_DragFinish(cl,obj,(APTR)msg);
     case MUIM_DragReport:           return MUIV_DragReport_Continue; /* or MUIV_DragReport_Abort? */
     case MUIM_DoDrag:               return Area__MUIM_DoDrag(cl, obj, (APTR)msg);
