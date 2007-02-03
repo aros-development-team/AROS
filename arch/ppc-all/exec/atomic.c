@@ -8,7 +8,7 @@
 
 #include <proto/exec.h>
 
-void atomic_inc_l(ULONG* p)
+void atomic_inc_l(LONG* p)
 {
     __asm__ __volatile__ (
     "lincl: lwarx  11,  0, %[p] \n\t" /* load from memory and reserve storage location      */
@@ -22,7 +22,7 @@ void atomic_inc_l(ULONG* p)
       "11");                          /* we use r11, don't let the compiler choose it       */
 }
 
-void atomic_dec_l(ULONG* p)
+void atomic_dec_l(LONG* p)
 {
     __asm__ __volatile__ (
     "ldecl: lwarx  11,  0, %[p] \n\t"
@@ -36,7 +36,7 @@ void atomic_dec_l(ULONG* p)
       "11");
 }
 
-void atomic_and_l(ULONG* p, ULONG mask)
+void atomic_and_l(LONG* p, ULONG mask)
 {
     __asm__ __volatile__ (
     "landl: lwarx  11,  0, %[p]    \n\t"
@@ -51,7 +51,7 @@ void atomic_and_l(ULONG* p, ULONG mask)
       "11");
 }
 
-void atomic_or_l(ULONG* p, ULONG mask)
+void atomic_or_l(LONG* p, ULONG mask)
 {
     __asm__ __volatile__ (
     "lorl: lwarx  11,  0, %[p]    \n\t"
@@ -66,7 +66,7 @@ void atomic_or_l(ULONG* p, ULONG mask)
       "11");
 }
 
-void atomic_inc_b(UBYTE* p)
+void atomic_inc_b(BYTE* p)
 {
     const IPTR   rem   = ((IPTR) p) % 4; /* get pointer to 4 byte aligned base   */
     const UBYTE* u     = p - rem;        /* address of byte                      */
@@ -92,7 +92,7 @@ void atomic_inc_b(UBYTE* p)
       "11", "12");
 }
 
-void atomic_dec_b(UBYTE* p)
+void atomic_dec_b(BYTE* p)
 {
     const IPTR   rem   = ((IPTR) p) % 4;
     const UBYTE* u     = p - rem;
@@ -118,7 +118,7 @@ void atomic_dec_b(UBYTE* p)
       "11", "12");
 }
 
-void atomic_and_b(UBYTE* p, UBYTE mask)
+void atomic_and_b(BYTE* p, UBYTE mask)
 {
     const IPTR   rem   = ((IPTR) p) % 4;
     const UBYTE* u     = p - rem;
@@ -145,7 +145,7 @@ void atomic_and_b(UBYTE* p, UBYTE mask)
       "11", "12");
 }
 
-void atomic_or_b(UBYTE* p, UBYTE mask)
+void atomic_or_b(BYTE* p, UBYTE mask)
 {
     const IPTR   rem   = ((IPTR) p) % 4;
     const UBYTE* u     = p - rem;
@@ -172,7 +172,7 @@ void atomic_or_b(UBYTE* p, UBYTE mask)
       "11", "12");
 }
 
-void atomic_inc_w(UWORD* p)
+void atomic_inc_w(WORD* p)
 {
     const IPTR   rem   = (((IPTR) p) % 4) / 2; /* size of UWORD / 2 = size of UBYTE */
     const UWORD* u     = p - rem;
@@ -198,7 +198,7 @@ void atomic_inc_w(UWORD* p)
       "11", "12");
 }
 
-void atomic_dec_w(UWORD* p)
+void atomic_dec_w(WORD* p)
 {
     const IPTR   rem   = (((IPTR) p) % 4) / 2;
     const UWORD* u     = p - rem;
@@ -224,7 +224,7 @@ void atomic_dec_w(UWORD* p)
       "11", "12");
 }
 
-void atomic_and_w(UWORD* p, UWORD mask)
+void atomic_and_w(WORD* p, UWORD mask)
 {
     const IPTR   rem   = (((IPTR) p) % 4) / 2;
     const UWORD* u     = p - rem;
@@ -251,7 +251,7 @@ void atomic_and_w(UWORD* p, UWORD mask)
       "11", "12");
 }
 
-void atomic_or_w(UWORD* p, UWORD mask)
+void atomic_or_w(WORD* p, UWORD mask)
 {
     const IPTR   rem   = (((IPTR) p) % 4) / 2;
     const UWORD* u     = p - rem;
