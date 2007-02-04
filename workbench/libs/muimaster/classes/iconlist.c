@@ -250,6 +250,7 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
         SetFont(_rp(obj), data->IconFont);
         
         ULONG textlength = strlen(icon->entry.label);
+        if ( !data->wpd_IconTextMaxLen ) data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
         if ( textlength > data->wpd_IconTextMaxLen ) textlength = data->wpd_IconTextMaxLen;
         
         LONG txwidth = TextLength(_rp(obj), icon->entry.label, textlength);
@@ -766,6 +767,8 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->wpd_IconListMode = GetTagData(MUIA_IconList_ListMode, 0, msg->ops_AttrList);
     data->wpd_IconTextMode = GetTagData(MUIA_IconList_TextMode, 0, msg->ops_AttrList);
     data->wpd_IconTextMaxLen = GetTagData(MUIA_IconList_TextMaxLen, 0, msg->ops_AttrList);
+    if ( data->wpd_IconTextMaxLen <= 0 )
+        data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
     
     NewList((struct List*)&data->icon_list);
 
