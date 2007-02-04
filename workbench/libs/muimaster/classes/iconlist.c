@@ -256,7 +256,7 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
         
         if ( txwidth > icon->realWidth ) icon->realWidth = txwidth;
         
-        icon->realHeight += data->IconFont->tf_Baseline + ICONLIST_TEXTMARGIN;
+        icon->realHeight += data->IconFont->tf_YSize + ICONLIST_TEXTMARGIN;
     }
 
     /*
@@ -268,7 +268,7 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
         ((data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE))
     )
     {
-        icon->realHeight += data->IconFont->tf_Baseline + ( ICONLIST_TEXTMARGIN * 2 );
+        icon->realHeight += data->IconFont->tf_YSize + ( ICONLIST_TEXTMARGIN * 2 );
     }
         
     /*
@@ -291,7 +291,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     LONG tx,ty;
     LONG txwidth; // txheight;
 
-    char buf[256];
+    STRPTR buf = AllocVec ( 255, MEMF_CLEAR );
 
     /* Get the dimensions and affected area of icon */
     IconList_GetIconRectangle(obj, data, icon, &iconrect);
@@ -357,19 +357,12 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     if (icon->entry.label)
     {
         ULONG nameLength = strlen(icon->entry.label);
-        //ULONG ThisMinX = iconrect.MinX; <- gonna use soon for positioning
 
         SetFont(_rp(obj), data->IconFont);
 
         if ( nameLength > data->wpd_IconTextMaxLen )
             txwidth = TextLength(_rp(obj), icon->entry.label, data->wpd_IconTextMaxLen);
         else txwidth = TextLength(_rp(obj), icon->entry.label, nameLength);
-        
-        // Constrain text to iconwidth
-        // This shouldn't happen if we allow text to overflow the 
-        // icon image width
-        /*while( txwidth > icon->realWidth )
-            txwidth = TextLength(_rp(obj), icon->entry.label, nameLength - 1);*/
 
         memset( buf, 0 , sizeof( buf ) );
 
@@ -383,10 +376,13 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             strcat(buf , "..");
             nameLength = len;
         }
-        else strncpy( buf, icon->entry.label, nameLength );
+        else 
+        {
+            strncpy( buf, icon->entry.label, nameLength );
+        }
              
         tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - txwidth)/2);
-        ty = iconY + icon->height + data->IconFont->tf_Baseline;
+        ty = iconY + icon->height + data->IconFont->tf_YSize;
 
         switch ( data->wpd_IconTextMode )
         {
@@ -402,18 +398,6 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
                 
                 SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
                 SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-                
-                /*
-                This isn't the same as the Zune group outlines.. and it's slower, so NIH!
-                Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
-                Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
-                Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
-                Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), buf, nameLength);
-                Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
-                Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
-                Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
-                Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);
-                */
                 
                 Move(_rp(obj), tx + 1, ty ); Text(_rp(obj), buf, nameLength);
                 Move(_rp(obj), tx - 1, ty ); Text(_rp(obj), buf, nameLength);
@@ -460,7 +444,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 
             ULONG textwidth = TextLength(_rp(obj), buf, nameLength);
             tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - textwidth)/2);
-            ty = iconY + icon->height + ( data->IconFont->tf_Baseline * 2 ) + ICONLIST_TEXTMARGIN;
+            ty = iconY + icon->height + ( data->IconFont->tf_YSize * 2 ) + ICONLIST_TEXTMARGIN;
     
             switch ( data->wpd_IconTextMode )
             {
@@ -475,17 +459,6 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
                     
                     SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
                     SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-                    
-                    /*
-                    This isn't the same as the Zune group outlines.. and it's slower, so NIH!
-                    Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), buf, nameLength);
-                    Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), buf, nameLength);
-                    Move(_rp(obj), tx - 1, ty + 1); Text(_rp(obj), buf, nameLength);
-                    Move(_rp(obj), tx,     ty - 1); Text(_rp(obj), buf, nameLength);
-                    Move(_rp(obj), tx,     ty + 1); Text(_rp(obj), buf, nameLength);
-                    Move(_rp(obj), tx + 1, ty - 1); Text(_rp(obj), buf, nameLength);
-                    Move(_rp(obj), tx + 1, ty    ); Text(_rp(obj), buf, nameLength);
-                    Move(_rp(obj), tx + 1, ty + 1); Text(_rp(obj), buf, nameLength);*/
         
                     Move(_rp(obj), tx + 1, ty ); Text(_rp(obj), buf, nameLength);
                     Move(_rp(obj), tx - 1, ty ); Text(_rp(obj), buf, nameLength);
@@ -499,6 +472,8 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             }
         }
     }
+    // Free up icontext memory
+    FreeVec ( buf );
 }
 
 /**************************************************************************
@@ -1396,7 +1371,6 @@ IPTR IconList__MUIM_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Add
     entry->x = dob->do_CurrentX;
     entry->y = dob->do_CurrentY;
 
-    //GetIconRectangleA(NULL,dob,NULL,&rect,NULL);
     /* Use a geticonrectanble routine that gets textwidth! */
     IconList_GetIconRectangle(obj, data, entry, &rect);
 
@@ -1712,7 +1686,10 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                     int move_y = my;
         
                     /* check if clicked on icon, or update lasso coords if lasso activated */
-                    if (data->first_selected && data->lasso_active == FALSE && (abs(move_x - data->click_x) >= 2 || abs(move_y - data->click_y) >= 2))
+                    if (
+                        data->first_selected && data->lasso_active == FALSE && 
+                        (abs(move_x - data->click_x) >= 2 || abs(move_y - data->click_y) >= 2)
+                    )
                     {
                         DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
                         data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
@@ -1732,7 +1709,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                         
                         /* unmark old lasso area */
                         GetAbsoluteLassoRect(data, &old_lasso);                          
-			InvertLassoOutlines(obj, &old_lasso);
+			            InvertLassoOutlines(obj, &old_lasso);
 
                         /* update lasso coordinates */
                         data->lasso_rect.MaxX = mx - data->view_rect.MinX + data->view_x;
@@ -1782,7 +1759,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                         }
 
                         /* set lasso borders */                         
-			InvertLassoOutlines(obj, &new_lasso);                        
+			            InvertLassoOutlines(obj, &new_lasso);                        
                         
                     }
                             
@@ -1876,7 +1853,7 @@ MUIM_CreateDragImage
 IPTR IconList__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
-    struct MUI_DragImage *img;
+    struct MUI_DragImage *img = NULL;    
 
     if (!data->first_selected) DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -1887,10 +1864,12 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_
     
         node = data->first_selected;
     
-        img->width = node->width;
-        img->height = node->height;
+        struct Rectangle rect;
+        GetIconRectangleA(NULL,node->dob,NULL,&rect,NULL);
+        img->width = rect.MaxX - rect.MinX;
+        img->height = rect.MaxY - rect.MinY;
     
-        if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES | BMF_CLEAR,_screen(obj)->RastPort.BitMap)))
+        if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES|BMF_CLEAR,_screen(obj)->RastPort.BitMap)))
         {
             struct RastPort temprp;
             InitRastPort(&temprp);
