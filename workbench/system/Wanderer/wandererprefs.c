@@ -36,6 +36,7 @@ struct WandererPrefs_DATA
 
     UBYTE  wpd_IconListMode;
     UBYTE  wpd_IconTextMode;
+    UBYTE  wpd_IconTextMaxLen;
 
 };
 
@@ -122,7 +123,10 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
             case MUIA_WandererPrefs_Icon_TextMode:
                 data->wpd_IconTextMode = (UBYTE) tag->ti_Data;
-
+                break;
+                
+            case MUIA_WandererPrefs_Icon_TextMaxLen:
+                data->wpd_IconTextMaxLen = (UBYTE) tag->ti_Data;
                 break;
         }
     }
@@ -160,6 +164,10 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 
         case MUIA_WandererPrefs_Icon_TextMode:
             *store = (IPTR) data->wpd_IconTextMode;
+            break;
+            
+        case MUIA_WandererPrefs_Icon_TextMaxLen:
+            *store = (IPTR) data->wpd_IconTextMaxLen;
             break;
 
         default:
@@ -247,7 +255,9 @@ IPTR WandererPrefs__MUIM_WandererPrefs_Reload
                        MUIA_WandererPrefs_NavigationMethod, wpd.wpd_NavigationMethod,
                        MUIA_WandererPrefs_Toolbar_Enabled, wpd.wpd_ToolbarEnabled,
                        MUIA_WandererPrefs_Icon_ListMode, wpd.wpd_IconListMode,
-                       MUIA_WandererPrefs_Icon_TextMode, wpd.wpd_IconTextMode, TAG_DONE);
+                       MUIA_WandererPrefs_Icon_TextMode, wpd.wpd_IconTextMode, 
+                       MUIA_WandererPrefs_Icon_TextMaxLen, wpd.wpd_IconTextMaxLen,
+                       TAG_DONE);
 
         return TRUE;       
     }
