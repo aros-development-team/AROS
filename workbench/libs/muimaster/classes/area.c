@@ -2050,9 +2050,9 @@ static IPTR Area__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MU
     if (img)
     {
         const struct ZuneFrameGfx *zframe;
-    LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
+        LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
 
-    zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Drag]);
+        zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Drag]);
 
         img->width = _width(obj) + zframe->ileft + zframe->iright;
         img->height = _height(obj) + zframe->itop + zframe->ibottom;
@@ -2066,9 +2066,9 @@ static IPTR Area__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MU
             temprp.BitMap = img->bm;
             ClipBlit(_rp(obj),_left(obj),_top(obj),&temprp,zframe->ileft,zframe->itop,_width(obj),_height(obj),0xc0);
 
-        muiRenderInfo(obj)->mri_RastPort = &temprp;
-        zframe->draw(muiRenderInfo(obj), 0, 0, img->width, img->height);
-        muiRenderInfo(obj)->mri_RastPort = rp_save;
+            muiRenderInfo(obj)->mri_RastPort = &temprp;
+            zframe->draw(muiRenderInfo(obj), 0, 0, img->width, img->height);
+            muiRenderInfo(obj)->mri_RastPort = rp_save;
         
             DeinitRastPort(&temprp);
         }
