@@ -2,7 +2,7 @@
 #define INTUITION_INTUITION_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Important defines and structures for intuition.library
@@ -864,5 +864,43 @@ struct ColorSpec
 #define AUTORIGHTEDGE 3
 #define AUTOITEXTFONT NULL
 #define AUTONEXTTEXT  NULL
+
+struct ScreenNotifyMessage {
+    struct Message      snm_Message;
+    ULONG               snm_Class;           /* Notification Class ID same as SNA_Notify */
+    ULONG               snm_Code;            /* Code only supported for ScreenDepth() and will put the Flags in */
+    IPTR                snm_Object;	     /* Pointer to the Object that caused this message */
+    IPTR                snm_UserData;        /* will be filled with SNA_UserData */
+};
+
+#define SNA_PubName             (TAG_USER + 0x01) /* public screen name of NULL for all screens */
+#define SNA_Notify              (TAG_USER + 0x02) /* Flags to look for see below */
+#define SNA_UserData            (TAG_USER + 0x03) /* this tag will be passed to the screennotify message */
+#define SNA_SigTask             (TAG_USER + 0x04) /* if port == NULL, a sigbit will be set for this task */
+#define SNA_SigBit              (TAG_USER + 0x05) /* signal bit to set if port == NULL*/
+#define SNA_MsgPort             (TAG_USER + 0x06) /* if != NULL post mesage to this port */
+#define SNA_Priority            (TAG_USER + 0x07) /*  */
+#define SNA_Hook                (TAG_USER + 0x08) /* is not tested yet */
+
+/* SNA_Notify */
+#define SNOTIFY_AFTER_OPENSCREEN        (1<<0)  /* screen has been opened */
+#define SNOTIFY_BEFORE_CLOSESCREEN      (1<<1)  /* going to close screen */
+#define SNOTIFY_AFTER_OPENWB            (1<<2)  /* Workbench is open */
+#define SNOTIFY_BEFORE_CLOSEWB          (1<<3)  /* Workbench is going to be closed */
+#define SNOTIFY_AFTER_OPENWINDOW        (1<<4)  /* new window */
+#define SNOTIFY_BEFORE_CLOSEWINDOW      (1<<5)  /* window is going to be closed */
+#define SNOTIFY_PUBSCREENSTATE          (1<<6)  /* PubScreenState() */
+#define SNOTIFY_LOCKPUBSCREEN           (1<<7)  /* LockPubScreen() */
+#define SNOTIFY_SCREENDEPTH             (1<<8)  /* ScreenDepth() */
+#define SNOTIFY_AFTER_CLOSESCREEN       (1<<9)	/* notify after CloseScreen() */
+#define SNOTIFY_AFTER_CLOSEWINDOW       (1<<10)	/* dto. CloseWindow() */
+#define SNOTIFY_BEFORE_OPENSCREEN       (1<<11)	/* notify before OpenScreen() */
+#define SNOTIFY_BEFORE_OPENWINDOW       (1<<12)	/* dto. OpenWindow() */
+#define SNOTIFY_BEFORE_OPENWB           (1<<13)	/* like OPENSCREEN */
+#define SNOTIFY_AFTER_CLOSEWB           (1<<14)	/* like CLOSESCREEN */
+#define SNOTIFY_WAIT_REPLY              (1<<15) /* wait for reply before taking action */
+#define SNOTIFY_UNLOCKPUBSCREEN         (1<<16) /* UnlockPubScreen() */
+#define SNOTIFY_BEFORE_UPDATEINTUITION  (1<<17) /* Intuition is going to be updated */
+#define SNOTIFY_AFTER_UPDATEINTUITION   (1<<18) /* Intuition is updated */
 
 #endif /* INTUITION_INTUITION_H */

@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
     Change order of screens.
@@ -75,6 +75,8 @@ AROS_LH3(void, ScreenDepth,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct ScreenDepthActionMsg msg;
+
+    FireScreenNotifyMessageCode((IPTR) screen, flags, SNOTIFY_SCREENDEPTH, IntuitionBase);
 
     if (reserved != NULL) return;
     SANITY_CHECK(screen)

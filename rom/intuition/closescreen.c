@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
     Close a screen.
@@ -88,10 +88,8 @@ AROS_LH1(BOOL, CloseScreen,
         ReturnBool("CloseScreen",TRUE);
     }
 
-#ifdef INTUITION_NOTIFY_SUPPORT
-    /* Notify that the screen is going to close */
-    sn_DoNotify(SCREENNOTIFY_TYPE_CLOSESCREEN, screen, GetPrivIBase(IntuitionBase)->ScreenNotifyBase);
-#endif
+    if (screen != GetPrivIBase(IntuitionBase)->WorkBench)  FireScreenNotifyMessage((IPTR) screen, SNOTIFY_BEFORE_CLOSESCREEN, IntuitionBase);
+
 
     /* there's a second check below for public screens */
     if (screen->FirstWindow)
@@ -221,6 +219,8 @@ AROS_LH1(BOOL, CloseScreen,
 
     /* Free the memory */
     FreeMem(screen, sizeof (struct IntScreen));
+
+    if (screen != GetPrivIBase(IntuitionBase)->WorkBench) FireScreenNotifyMessage((IPTR) screen, SNOTIFY_AFTER_CLOSESCREEN, IntuitionBase);
 
     DEBUG_CLOSESCREEN(dprintf("CloseScreen: ok\n"));
 

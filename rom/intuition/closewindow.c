@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -100,6 +100,8 @@ AROS_LH1(void, CloseWindow,
     {
         ReturnVoid ("CloseWindow");
     }
+
+    FireScreenNotifyMessage((IPTR) window, SNOTIFY_BEFORE_CLOSEWINDOW, IntuitionBase);
 
     iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
@@ -208,6 +210,8 @@ AROS_LH1(void, CloseWindow,
         /* Delete message port */
         DeleteMsgPort (userport);
     }
+
+    FireScreenNotifyMessage((IPTR) window, SNOTIFY_AFTER_CLOSEWINDOW, IntuitionBase);
 
     DEBUG_CLOSEWINDOW(dprintf("CloseWindow: done\n"));
     ReturnVoid ("CloseWindow");

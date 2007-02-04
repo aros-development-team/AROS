@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -62,22 +62,6 @@ AROS_LH2(UWORD, PubScreenStatus,
 
     SANITY_CHECKR(Scr,FALSE)
 
-#ifdef INTUITION_NOTIFY_SUPPORT
-    if (StatusFlags & PSNF_PRIVATE)
-    {
-        LockPubScreenList();
-        if (GetPrivScreen(Scr)->pubScrNode != NULL)
-        {
-            UnlockPubScreenList();
-
-            /* pubscreen (possibly) going private... */
-            sn_DoNotify(SCREENNOTIFY_TYPE_PRIVATESCREEN, GetPrivScreen(Scr)->pubScrNode, GetPrivIBase(IntuitionBase)->ScreenNotifyBase);
-        }
-        else
-            UnlockPubScreenList();
-    }
-#endif
-
     LockPubScreenList();
 
     if (GetPrivScreen(Scr)->pubScrNode == NULL ||
@@ -93,13 +77,7 @@ AROS_LH2(UWORD, PubScreenStatus,
 
     UnlockPubScreenList();
 
-#ifdef INTUITION_NOTIFY_SUPPORT
-    if ((!(StatusFlags & PSNF_PRIVATE) && retval) ||  /* tried publicise, succeeded  OR */
-         ((StatusFlags & PSNF_PRIVATE) && !retval))   /* tried privatize, failed */
-    {
-        sn_DoNotify(SCREENNOTIFY_TYPE_PUBLICSCREEN, GetPrivScreen(Scr)->pubScrNode, GetPrivIBase(IntuitionBase)->ScreenNotifyBase);
-    }
-#endif
+    FireScreenNotifyMessage((IPTR) Scr, SNOTIFY_PUBSCREENSTATE, IntuitionBase);
 
     return retval;
 

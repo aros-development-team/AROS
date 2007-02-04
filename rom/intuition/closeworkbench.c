@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -57,10 +57,7 @@ AROS_LH0(LONG, CloseWorkBench,
     DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: <%s>\n",
                                  FindTask(NULL)->tc_Node.ln_Name));
 
-#ifdef INTUITION_NOTIFY_SUPPORT
-    /* Notify that the Workbench screen is going to close */
-    sn_DoNotify(SCREENNOTIFY_TYPE_WORKBENCH, (APTR) FALSE, GetPrivIBase(IntuitionBase)->ScreenNotifyBase);
-#endif
+    if (wbscreen) FireScreenNotifyMessage((IPTR) wbscreen, SNOTIFY_BEFORE_CLOSEWB, IntuitionBase);
 
     DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: LockPubScreenList\n"));
     LockPubScreenList();
@@ -76,11 +73,8 @@ AROS_LH0(LONG, CloseWorkBench,
         DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: no wbscreen, do nothing\n"));
         UnlockPubScreenList();
 
-#ifdef INTUITION_NOTIFY_SUPPORT
-        /* Workbench screen failed to close, notify that the screen is open again */
-        /* NOTE: Original screennotify.library notify in this case, too! */
-        sn_DoNotify(SCREENNOTIFY_TYPE_WORKBENCH, (APTR) TRUE, GetPrivIBase(IntuitionBase)->ScreenNotifyBase);
-#endif
+        FireScreenNotifyMessage((IPTR) wbscreen, SNOTIFY_AFTER_OPENWB, IntuitionBase);
+
         return(FALSE);
     }
     else
@@ -171,13 +165,15 @@ AROS_LH0(LONG, CloseWorkBench,
 
     DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: Return %d\n", retval));
 
-#ifdef INTUITION_NOTIFY_SUPPORT
     if (!retval)
     {
         /* Workbench screen failed to close, notify that the screen is open again */
-        sn_DoNotify(SCREENNOTIFY_TYPE_WORKBENCH, (APTR) TRUE, GetPrivIBase(IntuitionBase)->ScreenNotifyBase);
+        FireScreenNotifyMessage((IPTR) wbscreen, SNOTIFY_AFTER_OPENWB, IntuitionBase);
     }
-#endif
+    else
+    {
+        FireScreenNotifyMessage((IPTR) wbscreen, SNOTIFY_AFTER_CLOSEWB, IntuitionBase);
+    }
 
     return retval;
 

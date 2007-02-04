@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2004, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -137,6 +137,8 @@ AROS_LH1(struct Window *, OpenWindow,
           , newWindow->Width
           , newWindow->Height
          ));
+
+    FireScreenNotifyMessage((IPTR) newWindow, SNOTIFY_BEFORE_OPENWINDOW, IntuitionBase);
 
     nw = *newWindow;
 
@@ -1132,6 +1134,8 @@ failexit:
 exit:
 
     DEBUG_OPENWINDOW(dprintf("OpenWindow: Return 0x%lx\n", w));
+
+    FireScreenNotifyMessage((IPTR) w, SNOTIFY_AFTER_OPENWINDOW, IntuitionBase);
 
     ReturnPtr ("OpenWindow", struct Window *, w);
     AROS_LIBFUNC_EXIT
