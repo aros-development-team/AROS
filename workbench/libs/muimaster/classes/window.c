@@ -3577,51 +3577,51 @@ IPTR Window__MUIM_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window_
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     if (msg->obj)
     {
-	struct DragNDrop *dnd;
-	struct MUI_DragImage *di;
-	struct BitMapNode *bmn;
-
-	if (!(dnd = CreateDragNDropA(NULL))) return 0;
-	if (!(di = (struct MUI_DragImage*)DoMethod(msg->obj,MUIM_CreateDragImage,-msg->touchx,-msg->touchy,msg->flags)))
-	{
-	    DeleteDragNDrop(dnd);
-	    return 0;
-	}
-	if (!di->bm)
-	{
-	    DoMethod(msg->obj,MUIM_DeleteDragImage, (IPTR)di);
-	    DeleteDragNDrop(dnd);
-	    return 0;
-	}
-
-	if (!(bmn = CreateBitMapNode(NULL, /* dummy */
-		GUI_BitMap, di->bm,
-		GUI_LeftOffset, di->touchx,
-		GUI_TopOffset, di->touchy,
-		GUI_Width, di->width,
-		GUI_Height, di->height,
-		TAG_DONE)))
-	{
-	    DoMethod(msg->obj, MUIM_DeleteDragImage, (IPTR)di);
-	    DeleteDragNDrop(dnd);
-	    return 0;
-	}
-
-	AttachBitMapNode(dnd,bmn);
-
-	if (!PrepareDragNDrop(dnd, data->wd_RenderInfo.mri_Screen))
-	{
-	    DoMethod(msg->obj,MUIM_DeleteDragImage, (IPTR)di);
-	    DeleteDragNDrop(dnd);
-	    return 0;
-	}
-
-	muiAreaData(msg->obj)->mad_Flags |= MADF_DRAGGING;
-
-	data->wd_DragObject = msg->obj;
-	data->wd_dnd = dnd;
-	data->wd_DragImage = di;
-	return 1;
+	    struct DragNDrop *dnd;
+	    struct MUI_DragImage *di;
+	    struct BitMapNode *bmn;
+    
+	    if (!(dnd = CreateDragNDropA(NULL))) return 0;
+	    if (!(di = (struct MUI_DragImage*)DoMethod(msg->obj,MUIM_CreateDragImage,-msg->touchx,-msg->touchy,msg->flags)))
+	    {
+	        DeleteDragNDrop(dnd);
+	        return 0;
+	    }
+	    if (!di->bm)
+	    {
+	        DoMethod(msg->obj,MUIM_DeleteDragImage, (IPTR)di);
+	        DeleteDragNDrop(dnd);
+	        return 0;
+	    }
+    
+	    if (!(bmn = CreateBitMapNode(NULL, /* dummy */
+		    GUI_BitMap, di->bm,
+		    GUI_LeftOffset, di->touchx,
+		    GUI_TopOffset, di->touchy,
+		    GUI_Width, di->width,
+		    GUI_Height, di->height,
+		    TAG_DONE)))
+	    {
+	        DoMethod(msg->obj, MUIM_DeleteDragImage, (IPTR)di);
+	        DeleteDragNDrop(dnd);
+	        return 0;
+	    }
+    
+	    AttachBitMapNode(dnd,bmn);
+    
+	    if (!PrepareDragNDrop(dnd, data->wd_RenderInfo.mri_Screen))
+	    {
+	        DoMethod(msg->obj,MUIM_DeleteDragImage, (IPTR)di);
+	        DeleteDragNDrop(dnd);
+	        return 0;
+	    }
+    
+	    muiAreaData(msg->obj)->mad_Flags |= MADF_DRAGGING;
+    
+	    data->wd_DragObject = msg->obj;
+	    data->wd_dnd = dnd;
+	    data->wd_DragImage = di;
+	    return 1;
     }
     return 0;
 }
