@@ -35,6 +35,7 @@
 #include "wandererprefsintern.h"
 #include "wanderer.h"
 #include "filesystems.h"
+#include "../../libs/muimaster/classes/iconlist.h"
 
 #include "locale.h"
 
@@ -1362,6 +1363,15 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
             /* update the toolbar prefs for every open window*/
             set(child, MUIA_IconWindow_Toolbar_Enabled, XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled) );
             set(child, MUIA_Window_Activate, TRUE);
+            Object *iconList = XGET(child, MUIA_IconWindow_IconList);
+            if ( iconList != NULL )
+            {
+                set(iconList, MUIA_IconList_ListMode, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_ListMode));
+                set(iconList, MUIA_IconList_TextMode, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_TextMode));
+                set(iconList, MUIA_IconList_TextMaxLen, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_TextMaxLen));
+                DoMethod( iconList, MUIM_IconList_PositionIcons);
+                DoMethod( iconList, MUIM_Draw);
+            }
     	}
     } 
 
