@@ -1869,7 +1869,7 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_
         img->width = rect.MaxX - rect.MinX;
         img->height = rect.MaxY - rect.MinY;
     
-        if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES|BMF_CLEAR,_screen(obj)->RastPort.BitMap)))
+        if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES,_screen(obj)->RastPort.BitMap)))
         {
             struct RastPort temprp;
             InitRastPort(&temprp);
