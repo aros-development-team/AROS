@@ -34,7 +34,7 @@ $Id$
 #include <prefs/wanderer.h>
 #include <proto/cybergraphics.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define MYDEBUG
@@ -43,6 +43,9 @@ $Id$
 #include "muimaster_intern.h"
 #include "support.h"
 #include "imspec.h"
+#include "iconlist.h"
+#include "../../../system/Wanderer/wandererprefs.h"
+#include "../../../system/Wanderer/wanderer.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -154,93 +157,6 @@ struct MUI_IconData
     
     ULONG textWidth; /*  Whole textwidth for icon in pixels */
 };
-
-
-/**************************************************************************
-Load the wanderer prefs
-**************************************************************************/
-int LoadWandererPrefs ( struct MUI_IconData *data )
-{
-    struct ContextNode     *context;
-    struct IFFHandle       *handle;
-    struct WandererPrefs    wpd;    
-    BOOL                    success = FALSE;
-    LONG                    error;
-
-     /* Default values */
-    data->wpd_IconListMode = ICON_LISTMODE_GRID;
-    data->wpd_IconTextMode = ICON_TEXTMODE_OUTLINE;
-    data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
-                
-    if (!(handle = AllocIFF()))
-        return 0;
-    
-    if(!(handle->iff_Stream = (IPTR)Open("ENV:SYS/Wanderer.prefs",MODE_OLDFILE)))
-    {
-        FreeIFF(handle);
-        return 0;
-    }
-    
-    InitIFFasDOS(handle);
-
-    if ((error = OpenIFF(handle, IFFF_READ)) == 0)
-    {
-        // FIXME: We want some sanity checking here!
-        BYTE i = 0; for (; i < 1; i++)
-        {
-            if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
-            {
-                if ((error = ParseIFF(handle, IFFPARSE_SCAN)) == 0)
-                {
-                    context = CurrentChunk(handle);
-                    
-                    error = ReadChunkBytes(handle, &wpd, sizeof(struct WandererPrefs));
-                    
-                    if (error < 0)
-                        Printf("Error: ReadChunkBytes() returned %ld!\n", error);       
-                    else
-                        success = TRUE;
-                }
-                else
-                {
-                    Printf("ParseIFF() failed, returncode %ld!\n", error);
-                    break;
-                }
-            }
-            else
-            {
-                Printf("StopChunk() failed, returncode %ld!\n", error);
-            }
-        }
-        CloseIFF(handle);
-    }
-    else
-    {
-        //ShowError(_(MSG_CANT_OPEN_STREAM));
-    }
-
-    Close((BPTR)handle->iff_Stream);
-    FreeIFF(handle);
-    
-    if (success)
-    {
-        /* Icon listmode */
-        data->wpd_IconListMode = wpd.wpd_IconListMode;
-        /* Icon textmode */
-        data->wpd_IconTextMode = wpd.wpd_IconTextMode;
-        /* Icon textmaxlength */
-        data->wpd_IconTextMaxLen = wpd.wpd_IconTextMaxLen;
-        /* Ensure sane value */
-        if ( data->wpd_IconTextMaxLen <= 2 )
-            data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
-        return 1;
-    }
-    /* Ensure sane value 2 =) */
-    if ( data->wpd_IconTextMaxLen <= 2 )
-        data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
-    return 0;
-}
-
 
 /**************************************************************************
 
@@ -735,7 +651,7 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
     // If going by grid, first traverse and find the highest w/h
     if ( listMode == ICON_LISTMODE_GRID )
     {
-        while ( icon )
+        while ( icon != NULL )
         {
             struct Rectangle iconrect;
             IconList_GetIconRectangle(obj, data, icon, &iconrect);
@@ -749,7 +665,7 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
     
     // Now go to the actual positioning
     icon = List_First(&data->icon_list);
-    while (icon)
+    while (icon != NULL)
     {
         if (icon->dob)
         {
@@ -798,7 +714,8 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
                 }
             }
         }
-        if ( next ) icon = Node_Next(icon);
+        if ( next ) 
+            icon = Node_Next(icon);
         next = TRUE;
     }
     IconList_RethinkDimensions(obj, data, NULL);
@@ -870,8 +787,10 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     
-    // Set some options from wanderer prefs
-    LoadWandererPrefs(data);
+    // Get some initial values
+    data->wpd_IconListMode = GetTagData(MUIA_IconList_ListMode, 0, msg->ops_AttrList);
+    data->wpd_IconTextMode = GetTagData(MUIA_IconList_TextMode, 0, msg->ops_AttrList);
+    data->wpd_IconTextMaxLen = GetTagData(MUIA_IconList_TextMaxLen, 0, msg->ops_AttrList);
     
     NewList((struct List*)&data->icon_list);
 
@@ -880,7 +799,7 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (WindowFont == NULL) data->IconFont = _font(obj);
     else data->IconFont = WindowFont;
 
-D(bug("[iconlist] Used Font = %x\n", data->IconFont));
+    D(bug("[iconlist] Used Font = %x\n", data->IconFont));
 
     data->pool =  CreatePool(0,4096,4096);
     if (!data->pool)
@@ -930,38 +849,46 @@ IPTR IconList__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct TagItem  	*tag, *tags;
     WORD    	    	 oldleft = data->view_x, oldtop = data->view_y;
-
+    BOOL DoUpdate = FALSE;
+    
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
         switch (tag->ti_Tag)
         {
-            case    MUIA_Font:
+            case MUIA_Font:
                 data->IconFont = (struct TextFont*)tag->ti_Data;
                 break;
     
-            case    MUIA_IconList_Left:
+            case MUIA_IconList_Left:
                 if (data->view_x != tag->ti_Data)
-                {
                     data->view_x = tag->ti_Data;
-                }
                 break;
     
-            case    MUIA_IconList_Top:
+            case MUIA_IconList_ListMode:
+                data->wpd_IconListMode = tag->ti_Data;
+                break;
+            
+            case MUIA_IconList_TextMode:
+                data->wpd_IconTextMode = tag->ti_Data;
+                break;
+            
+            case MUIA_IconList_TextMaxLen:
+                data->wpd_IconTextMaxLen = tag->ti_Data;
+                break;
+    
+            case MUIA_IconList_Top:
                 if (data->view_y != tag->ti_Data)
-                {
                     data->view_y = tag->ti_Data;
-                }
                 break;
         }
     }
 
-    if ((oldleft != data->view_x) || (oldtop != data->view_y))
+    if ((oldleft != data->view_x) || (oldtop != data->view_y) || DoUpdate )
     {
         data->update = UPDATE_SCROLL;
         data->update_scrolldx = data->view_x - oldleft;
         data->update_scrolldy = data->view_y - oldtop;
-    
         MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
 
@@ -985,10 +912,14 @@ IPTR IconList__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         case MUIA_IconList_Height: STORE = data->height; return 1;
         case MUIA_IconList_IconsDropped: STORE = (IPTR)&data->drop_entry; return 1;
         case MUIA_IconList_Clicked: STORE = (ULONG)&data->icon_click; return 1;
+        case MUIA_IconList_ListMode: STORE = (ULONG)&data->wpd_IconListMode; return 1;
+        case MUIA_IconList_TextMode: STORE = (ULONG)&data->wpd_IconTextMode; return 1;
+        case MUIA_IconList_TextMaxLen: STORE = (ULONG)&data->wpd_IconTextMaxLen; return 1;
     }
 
-    if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
-        return 0;
+    if (DoSuperMethodA(cl, obj, (Msg) msg)) 
+        return 1;
+    return 0;
 #undef STORE
 }
 
@@ -1003,6 +934,11 @@ IPTR IconList__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     if (!DoSuperMethodA(cl, obj, (Msg) msg)) return 0;
 
     DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+
+    Object *prefs = (Object *) XGET(_app(obj), MUIA_Wanderer_Prefs);
+    data->wpd_IconListMode = XGET(prefs, MUIA_WandererPrefs_Icon_ListMode);
+    data->wpd_IconTextMode = XGET(prefs, MUIA_WandererPrefs_Icon_TextMode);
+    data->wpd_IconTextMaxLen = XGET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen);
 
     node = List_First(&data->icon_list);
     while (node)
