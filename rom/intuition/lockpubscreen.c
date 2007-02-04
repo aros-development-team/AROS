@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -29,7 +29,7 @@ AROS_LH1(struct Screen *, LockPubScreen,
     window is ready.
  
     If you try to lock the Workbench screen or the default public screen
-    and there isn't any, the Workbench screen will be automatically opened
+    and there isn'tany, the Workbench screen will be automatically opened
     and locked.
  
     INPUTS
@@ -182,6 +182,8 @@ AROS_LH1(struct Screen *, LockPubScreen,
 
         UnlockPubScreenList();
     }
+
+    FireScreenNotifyMessage((IPTR) screen, SNOTIFY_LOCKPUBSCREEN, IntuitionBase);
 
     DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: return %p\n", screen));
 

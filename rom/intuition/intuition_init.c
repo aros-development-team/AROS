@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2006, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -34,6 +34,7 @@
 #include "strgadgets.h" /* To get GlobalEditFunc prototype */
 #include "inputhandler.h"
 #include "menutask.h"
+#include "screennotifytask.h"
 
 #ifdef SKINS
     #include "transplayers.h"
@@ -91,6 +92,10 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     NEWLIST(&GetPrivIBase(LIBBASE)->PubScreenList);
     InitSemaphore(&GetPrivIBase(LIBBASE)->PubScrListLock);
 
+    InitSemaphore(&GetPrivIBase(LIBBASE)->ScreenNotificationListLock);
+    NEWLIST(&GetPrivIBase(LIBBASE)->ScreenNotificationList);
+
+
     InitSemaphore(&GetPrivIBase(LIBBASE)->GadgetLock);
     InitSemaphore(&GetPrivIBase(LIBBASE)->MenuLock);
     InitSemaphore(&GetPrivIBase(LIBBASE)->WindowLock);
@@ -144,6 +149,11 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     /* FIXME: no cleanup routines for MenuHandler task */
     if (!InitDefaultMenuHandler(IntuitionBase))
 	return FALSE;
+
+    /* FIXME: no cleanup routines for ScreennotifyHandler task */
+    if (!InitDefaultScreennotifyHandler(IntuitionBase))
+	return FALSE;
+
 
     DEBUG_INIT(dprintf("LIB_Init: load default preferences\n"));
     LoadDefaultPreferences(LIBBASE);
@@ -340,6 +350,13 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
     if (!GetPrivIBase(LIBBASE)->MenuHandlerPort)
     {
 	if (!InitDefaultMenuHandler(LIBBASE))
+	    return FALSE;
+    }
+
+    /* FIXME: no cleanup routines for ScreennotifyHandler task */
+    if (!GetPrivIBase(LIBBASE)->ScreenNotifyReplyPort)
+    {
+	if (!InitDefaultScreennotifyHandler(LIBBASE))
 	    return FALSE;
     }
 

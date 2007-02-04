@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2004, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -1028,5 +1028,84 @@ BOOL ResourceExisting(APTR resource, UWORD resourcetype, struct IntuitionBase *I
     UnlockIBase(ilock);
     
     return exists;
+}
+
+void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct IntuitionBase *IntuitionBase)
+{
+    ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
+
+    struct ScreenNotifyMessage *msg;
+    struct ReplyPort *reply;
+
+    struct IntScreenNotify *sn;
+    struct Node *node;
+
+    if (!IsListEmpty(&GetPrivIBase(IntuitionBase)->ScreenNotificationList))
+    {
+        node = GetPrivIBase(IntuitionBase)->ScreenNotificationList.lh_Head;
+	for (; node->ln_Succ; node = node->ln_Succ)
+        {
+            sn = (struct IntScreenNotify *) node;
+            BOOL leavescreen = FALSE;
+            if (flag & (SNOTIFY_AFTER_OPENSCREEN | SNOTIFY_BEFORE_OPENSCREEN | SNOTIFY_AFTER_CLOSESCREEN | SNOTIFY_BEFORE_CLOSESCREEN | SNOTIFY_LOCKPUBSCREEN | SNOTIFY_UNLOCKPUBSCREEN))
+            {
+            }
+            if ((sn->flags & flag) && !leavescreen) 
+            {
+                if (sn->port)
+                {
+                    msg = AllocMem(sizeof(struct ScreenNotifyMessage), MEMF_CLEAR);
+                    if (msg)
+                    {
+                        msg->snm_Object = data;                           
+                        msg->snm_Class = flag;
+                        msg->snm_UserData = sn->userdata;
+                        msg->snm_Message.mn_Length = sizeof(struct ScreenNotifyMessage);
+                        if (sn->flags & SNOTIFY_WAIT_REPLY)
+                        {
+                            reply = CreateMsgPort();
+                            if (reply)
+                            {
+                                msg->snm_Message.mn_ReplyPort = reply;
+
+                                PutMsg(sn->port, (struct Message *) msg);
+                                WaitPort(reply);
+                                GetMsg(reply);
+                                FreeMem((APTR) msg, sizeof(struct ScreenNotifyMessage));
+                                DeleteMsgPort(reply);
+                            } else FreeMem((APTR) msg, sizeof(struct ScreenNotifyMessage));
+                        }
+                        else
+                        {
+                            msg->snm_Message.mn_ReplyPort = GetPrivIBase(IntuitionBase)->ScreenNotifyReplyPort;
+
+                            PutMsg(sn->port, (struct Message *) msg);
+                        }
+                    }
+
+                }
+                else if (sn->sigtask)
+                {
+                    Signal(sn->sigtask, 1 << sn->sigbit);
+                }
+                else if (sn->hook)
+                {
+                    struct ScreenNotifyMessage msg;
+                    msg.snm_Object = data;
+                    msg.snm_Class = flag;
+                    msg.snm_UserData = sn->userdata;
+                    msg.snm_Message.mn_Length = sizeof(struct ScreenNotifyMessage);
+
+                    CallHook(sn->hook, NULL, (Msg) &msg);
+                }
+            }
+        }	
+    }
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
+}
+
+void FireScreenNotifyMessage(IPTR data, ULONG flag, struct IntuitionBase *IntuitionBase)
+{
+    FireScreenNotifyMessageCode(data, flag, 0, IntuitionBase);
 }
 /**********************************************************************************/

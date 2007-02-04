@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
     Open a new screen.
@@ -417,6 +417,8 @@ AROS_LH1(struct Screen *, OpenScreen,
         old_front_bm = IntuitionBase->FirstScreen->RastPort.BitMap;
 #endif
 
+    FireScreenNotifyMessage((IPTR) newScreen, SNOTIFY_BEFORE_OPENSCREEN, IntuitionBase);
+
     ns = *newScreen;
 
     if (newScreen->Type & NS_EXTENDED)
@@ -458,6 +460,7 @@ AROS_LH1(struct Screen *, OpenScreen,
 
     if (screen == NULL)
     {
+        FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
         SetError(OSERR_NOMEM);
         return NULL;
     }
@@ -590,6 +593,9 @@ AROS_LH1(struct Screen *, OpenScreen,
                         if (GetPrivIBase(IntuitionBase)->WorkBench)
                         {
                             UnlockPubScreenList();
+
+                            FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
+
                             return NULL;
                         }
                         workbench = TRUE;
@@ -603,6 +609,7 @@ AROS_LH1(struct Screen *, OpenScreen,
                             UnlockPubScreen(NULL, old);
                             SetError(OSERR_PUBNOTUNIQUE);
                             UnlockPubScreenList();
+                            FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
 
                             return NULL;
                         }
@@ -618,6 +625,7 @@ AROS_LH1(struct Screen *, OpenScreen,
                 if (screen->pubScrNode == NULL)
                 {
                     SetError(OSERR_NOMEM);
+                    FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
 
                     return NULL;
                 }
@@ -635,6 +643,7 @@ AROS_LH1(struct Screen *, OpenScreen,
                 {
                     SetError(OSERR_NOMEM);
                     FreeMem(screen->pubScrNode, sizeof(struct PubScreenNode));
+                    FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
 
                     return NULL;
                 }
@@ -649,8 +658,11 @@ AROS_LH1(struct Screen *, OpenScreen,
             case SA_PubSig:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_PubSig 0x%lx\n",tag->ti_Data));
                 if (screen->pubScrNode == NULL)
-                    return NULL;
+                {
+                    FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
 
+                    return NULL;
+                }
                 /* If no PubTask is set, we set the calling task as default */
                 if (screen->pubScrNode->psn_SigTask == NULL)
                     screen->pubScrNode->psn_SigTask = FindTask(NULL);
@@ -663,8 +675,10 @@ AROS_LH1(struct Screen *, OpenScreen,
             case SA_PubTask:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_PubTask 0x%lx\n",tag->ti_Data));
                 if (screen->pubScrNode == NULL)
+                {
+                    FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
                     return NULL;
-
+                }
                 screen->pubScrNode->psn_SigTask = (struct Task *)tag->ti_Data;
                 break;
 
@@ -892,6 +906,8 @@ AROS_LH1(struct Screen *, OpenScreen,
         if (INVALID_ID == modeid)
         {
             DEBUG_OPENSCREEN(dprintf("!!! OpenScreen(): Could not find valid modeid !!!\n");)
+            FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
+
             return NULL;
         }
     }
@@ -2090,6 +2106,8 @@ AROS_LH1(struct Screen *, OpenScreen,
     } /* if (!ok) */
 
     DEBUG_OPENSCREEN(dprintf("OpenScreen: return 0x%lx\n", screen));
+
+    FireScreenNotifyMessage((IPTR) screen, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
 
     ReturnPtr ("OpenScreen", struct Screen *, (struct Screen *)screen);
 

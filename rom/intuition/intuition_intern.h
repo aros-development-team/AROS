@@ -2,8 +2,8 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2006, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -381,6 +381,19 @@ struct HashNode
     APTR           resource;
 };
 
+/* Internal Screen Notification Data */
+struct IntScreenNotify
+{
+    struct Node     node;
+    struct MsgPort *port;
+    struct Task    *sigtask;
+    struct Hook    *hook;
+    ULONG           flags;
+    IPTR            userdata;
+    char           *pubname;
+    BYTE            sigbit;
+};
+
 /* IntuitionBase */
 struct IntIntuitionBase
 {
@@ -421,6 +434,11 @@ struct IntIntuitionBase
     struct MinList          	*IntuiActionQueue;
     struct IOStdReq         	*InputIO;
     struct MsgPort          	*InputMP;
+
+    /* Intuition Screennotify Replyport if SNOTIFY_WAIT_REPLY is specified */
+
+    struct MsgPort              *ScreenNotifyReplyPort;
+
     BOOL                    	 InputDeviceOpen;
     struct Interrupt        	*InputHandler;
 
@@ -435,6 +453,9 @@ struct IntIntuitionBase
     struct SignalSemaphore  	 PubScrListLock;
     struct MinList          	 PubScreenList;
     UWORD                   	 pubScrGlobalMode;
+
+    struct SignalSemaphore  	 ScreenNotificationListLock;
+    struct List                  ScreenNotificationList;
 
     struct SignalSemaphore  	 GadgetLock;
     struct SignalSemaphore  	 MenuLock;
@@ -921,6 +942,8 @@ extern LONG CalcResourceHash(APTR resource);
 extern void AddResourceToList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
 extern void RemoveResourceFromList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
 extern BOOL ResourceExisting(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
+void FireScreenNotifyMessage(IPTR data, ULONG flag, struct IntuitionBase *IntuitionBase);
+void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct IntuitionBase *IntuitionBase);
 
 /* misc.c */
 extern struct RastPort *MyCreateRastPort(struct IntuitionBase *);

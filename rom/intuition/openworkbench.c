@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2004, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -69,11 +69,8 @@ AROS_LH0(IPTR, OpenWorkBench,
 
         UnlockPubScreenList();
 
-#ifdef INTUITION_NOTIFY_SUPPORT
-        /* Notify that the Workbench screen is open */
-        /* NOTE: Original screennotify.library notify in this case, too! */
-        sn_DoNotify(SCREENNOTIFY_TYPE_WORKBENCH, (APTR) TRUE, GetPrivIBase(IntuitionBase)->ScreenNotifyBase);
-#endif
+        FireScreenNotifyMessage((IPTR) wbscreen, SNOTIFY_AFTER_OPENWB, IntuitionBase);
+
         return (IPTR)wbscreen;
     }
     else
@@ -137,6 +134,8 @@ AROS_LH0(IPTR, OpenWorkBench,
         
 	DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
 
+        FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_BEFORE_OPENWB, IntuitionBase);
+
         wbscreen = OpenScreenTagList(NULL, screenTags);
 
         if( !wbscreen )
@@ -187,10 +186,7 @@ AROS_LH0(IPTR, OpenWorkBench,
                           GetPrivScreen(wbscreen)->pubScrNode->psn_VisitorCount));
     UnlockPubScreenList();
 
-#ifdef INTUITION_NOTIFY_SUPPORT
-    /* Notify that the Workbench screen is open again */
-    sn_DoNotify(SCREENNOTIFY_TYPE_WORKBENCH, (APTR) TRUE, GetPrivIBase(IntuitionBase)->ScreenNotifyBase);
-#endif
+    FireScreenNotifyMessage((IPTR) wbscreen, SNOTIFY_AFTER_OPENWB, IntuitionBase);
 
     return (IPTR)wbscreen;
 

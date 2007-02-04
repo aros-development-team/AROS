@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -107,5 +107,8 @@ AROS_LH2(void, UnlockPubScreen,
     }
 
     UnlockPubScreenList();
+
+    FireScreenNotifyMessage((IPTR) name, SNOTIFY_UNLOCKPUBSCREEN, IntuitionBase);
+
     AROS_LIBFUNC_EXIT
 } /* UnlockPubScreen */

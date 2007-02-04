@@ -7,7 +7,7 @@ FILES := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
          intuition_misc inputhandler_support inputhandler_actions \
          menus barlabelclass fillrectclass groupgclass wbtasktalk \
          rootclass icclass modelclass itexticlass misc sysiclass menutask \
-	 windecorclass scrdecorclass
+	 windecorclass scrdecorclass screennotifytask
 
 FUNCS := \
 	activategadget \
@@ -46,6 +46,7 @@ FUNCS := \
 	easyrequestargs \
 	endrefresh \
 	endrequest \
+        endscreennotify \
 	eraseimage \
 	findclass \
 	freeclass \
@@ -134,6 +135,7 @@ FUNCS := \
 	showtitle \
 	showwindow \
 	sizewindow \
+        startscreennotifytaglist \
 	sysreqhandler_aros \
 	timeddisplayalert \
 	unlockibase \
