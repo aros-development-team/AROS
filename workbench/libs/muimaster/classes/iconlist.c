@@ -34,7 +34,7 @@ $Id$
 #include <prefs/wanderer.h>
 #include <proto/cybergraphics.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define MYDEBUG
@@ -2005,10 +2005,8 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
         /* check if dropped on an icon on the iconlist area */
         if (entry)
         {
-           IPTR directory_path;
-
            /* get path of DESTINATION iconlist */
-           get(obj, MUIA_IconDrawerList_Drawer, &directory_path);
+           STRPTR directory_path = XGET(obj, MUIA_IconDrawerList_Drawer);
            D( bug("[ICONLIST] drop entry: %s dropped in window %s\n", entry->filename, directory_path); )
 
            /* copy relevant data to drop entry */
