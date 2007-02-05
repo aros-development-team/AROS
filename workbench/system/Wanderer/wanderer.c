@@ -4,7 +4,7 @@
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
-#define DEBUG 0
+#define DEBUG 1
 
 #include <exec/types.h>
 //#include <exec/lists.h>
@@ -645,7 +645,7 @@ AROS_UFH3
         	    {
         	    	if (XGET(child, MUIA_UserData))
         	    	{
-            		    char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
+            		    STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Drawer);
             		    if (child_drawer && !Stricmp(buf,child_drawer))
             		    {
             		    	int is_open = XGET(child, MUIA_Window_Open);
@@ -702,9 +702,9 @@ AROS_UFH3
     else  if (msg->type == ICONWINDOW_ACTION_DIRUP)
     {     
                      
-       char *actual_drawer = (char*)XGET(obj, MUIA_IconWindow_Drawer);
-       char *parent_drawer = strrchr(actual_drawer,'/');
-       char *root_drawer = strrchr(actual_drawer,':');
+       STRPTR actual_drawer = (STRPTR)XGET(obj, MUIA_IconWindow_Drawer);
+       STRPTR parent_drawer = strrchr(actual_drawer,'/');
+       STRPTR root_drawer = strrchr(actual_drawer,':');
                  
        /* check if dir is not drive root dir */
        if ( strlen(root_drawer) > 1 )
@@ -752,8 +752,10 @@ AROS_UFH3
         if (drop)
         {
              /* get path of DESTINATION iconlist*/
-             get( drop->destination_iconlistobj, MUIA_IconDrawerList_Drawer, &destination_path);
+             destination_path = XGET(drop->destination_iconlistobj, MUIA_IconDrawerList_Drawer);
 
+             if ( !destination_path ) return;
+                 
              /* get SOURCE entries */
              struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
       
@@ -764,26 +766,28 @@ AROS_UFH3
                    /* if not end of selection, process */
                    if ( (int)ent != MUIV_IconList_NextSelected_End )
                    {
-                         char iconfilenamebuffer[256];
-
-                         D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, (char *)destination_path);)
- 
-                         /* copy via filesystems.c */
-                         D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path );)
-                         CopyContent(ent->filename, destination_path, TRUE, ACTION_COPY, NULL, NULL, NULL);
-                         
-                         /* try to copy .info aswell  */
-                         memset( iconfilenamebuffer, '\0', sizeof(iconfilenamebuffer) ); 
-                         strcat( iconfilenamebuffer, ent->filename );
-                         strcat( iconfilenamebuffer, ".info");
-                         D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", iconfilenamebuffer, destination_path );)                
-                         CopyContent(iconfilenamebuffer, destination_path, TRUE, ACTION_COPY, NULL, NULL, NULL);
-                                                  
-                         /* update list contents */
-                         DoMethod(drop->destination_iconlistobj,MUIM_IconList_Update);
+                        STRPTR iconfilenamebuffer = AllocVec ( 256, MEMF_CLEAR );
+                        if ( iconfilenamebuffer != NULL )
+                        {
+                            D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, destination_path);)
+    
+                            /* copy via filesystems.c */
+                            D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path );)
+                            CopyContent(ent->filename, destination_path, TRUE, ACTION_COPY, NULL, NULL, NULL);
+                            
+                            /* try to copy .info aswell  */
+                            strcat( iconfilenamebuffer, ent->filename );
+                            strcat( iconfilenamebuffer, ".info");
+                            D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", iconfilenamebuffer, destination_path );)                
+                            CopyContent(iconfilenamebuffer, destination_path, TRUE, ACTION_COPY, NULL, NULL, NULL);
+                            FreeVec ( iconfilenamebuffer );
+                        }
                    }
              } while ( (int)ent != MUIV_IconList_NextSelected_End );
 
+           /* update list contents */
+           DoMethod(drop->destination_iconlistobj,MUIM_IconList_Update);
+           
            /* update the window */
            window_update();      
         }
@@ -834,10 +838,10 @@ AROS_UFH3
                 } while ( ((int)ent != MUIV_IconList_NextSelected_End ) && !fail);
                 if (!fail && (files > 0))
                 {
-                    char **filelist = AllocVec(sizeof(char *) * files, MEMF_CLEAR);
-                    if (filelist)
+                    STRPTR *filelist = AllocVec(sizeof(STRPTR) * files, MEMF_CLEAR);
+                    if (filelist != NULL)
                     {
-                        char **flist = filelist;
+                        STRPTR *flist = filelist;
                         if (!IsListEmpty(&AppList))
                         {
                             struct Node *succ;
@@ -862,8 +866,10 @@ AROS_UFH3
                     struct Node *s = AppList.lh_Head;
                     while (((succ = ((struct Node*) s)->ln_Succ) != NULL))
                     {
-                        FreeVec(((struct AppW *) s)->name);
-                        FreeVec(s);
+                        if ( ((struct AppW *) s)->name != NULL ) 
+                            FreeVec(((struct AppW *) s)->name);
+                        if ( s != NULL ) 
+                            FreeVec(s);
                         s =  succ;
                     }
                 }
