@@ -70,51 +70,10 @@
 	        else
 	        {
 	            img = nativeicon->iconPNG.img1;
-	        }
-	        
-            /* New temporary replacement code! the old one is underneath */   
-            
-            ULONG *buf = AllocVec ( nativeicon->iconPNG.width * nativeicon->iconPNG.height * sizeof(ULONG), MEMF_CLEAR );
-         
-            ReadPixelArray( 
-                buf, 0, 0, nativeicon->iconPNG.width * sizeof(ULONG), 
-                rp, leftEdge, topEdge, nativeicon->iconPNG.width, nativeicon->iconPNG.height, 
-                RECTFMT_ARGB
-            );
-            
-            ULONG span = nativeicon->iconPNG.height * nativeicon->iconPNG.width;
-            ULONG *imb = ( ULONG* )img;
-            int i = 0; for ( ; i < span; i++ )
-            {
-                int sb = buf[ i ] >> 24;
-                int sg = ( buf[ i ] << 8 ) >> 24;
-                int sr = ( buf[ i ] << 16 ) >> 24;
-                int sa = ( buf[ i ] << 24 ) >> 24;
-                int db = imb[ i ] >> 24;
-                int dg = ( imb[ i ] << 8 ) >> 24;
-                int dr = ( imb[ i ] << 16 ) >> 24;
-                int da = ( imb[ i ] << 24 ) >> 24;
-                double alpha = ( double )da / 255;
-                sr -= ( sr - dr ) * alpha;
-                sg -= ( sg - dg ) * alpha;
-                sb -= ( sb - db ) * alpha;
-                sa = 255;
-                buf[ i ] = ( sb << 24 ) | ( sg << 16 ) | ( sr << 8 ) | sa;
-            }
-            
-            WritePixelArray(
-                buf, 0, 0,  nativeicon->iconPNG.width * sizeof(ULONG), 
-                rp, leftEdge, topEdge, nativeicon->iconPNG.width, nativeicon->iconPNG.height,
-                RECTFMT_ARGB
-            );
-            
-            FreeVec ( buf ); 
-            
-            /* Done with temporary replacement code */
-            
+	        }            
             
             // OLD MODE
-           /* WritePixelArrayAlpha(
+            WritePixelArrayAlpha(
                 img,
                 0,
                 0,
@@ -125,9 +84,7 @@
                 nativeicon->iconPNG.width,
                 nativeicon->iconPNG.height,
                 0
-            );*/
-            
-            
+            );
 	        return;
 	    }
         else if (nativeicon->icon35.img1.imagedata)
