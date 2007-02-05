@@ -642,9 +642,9 @@
                    CurrentDir(cDir);
                    UnLock(NewLock);
                }
-               FreeDosObject (DOS_FIB,(APTR) FIB);
+               FreeDosObject (DOS_FIB,(APTR) FIB2);
            }
-           FreeDosObject (DOS_FIB,(APTR) FIB2);
+           FreeDosObject (DOS_FIB,(APTR) FIB);
        }
 
        return quit;
