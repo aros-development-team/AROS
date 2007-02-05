@@ -239,8 +239,8 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
         Get basic width/height
     */    
     GetIconRectangleA(NULL,icon->dob,NULL,rect,NULL);
-    icon->realWidth = rect->MaxX - rect->MinX;
-    icon->realHeight = rect->MaxY - rect->MinY;
+    icon->realWidth = rect->MaxX - rect->MinX + 1;
+    icon->realHeight = rect->MaxY - rect->MinY + 1;
 
     /*
         Get icon box width including text width
@@ -275,10 +275,10 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
     /*
         Store
     */
-    icon->width = rect->MaxX - rect->MinX;
-    icon->height = rect->MaxY - rect->MinY;
-    rect->MaxX = rect->MinX + icon->realWidth;
-    rect->MaxY = rect->MinY + icon->realHeight;
+    icon->width = rect->MaxX - rect->MinX + 1;
+    icon->height = rect->MaxY - rect->MinY + 1;
+    rect->MaxX = rect->MinX + icon->realWidth - 1;
+    rect->MaxY = rect->MinY + icon->realHeight - 1;
 }
 
 /**************************************************************************
@@ -382,7 +382,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             strncpy( buf, icon->entry.label, nameLength );
         }
              
-        tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - txwidth)/2);
+        tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - txwidth)/2);
         ty = iconY + icon->height + data->IconFont->tf_YSize;
 
         switch ( data->wpd_IconTextMode )
@@ -444,7 +444,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             nameLength = strlen(buf);
 
             ULONG textwidth = TextLength(_rp(obj), buf, nameLength);
-            tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX - textwidth)/2);
+            tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - textwidth)/2);
             ty = iconY + icon->height + ( data->IconFont->tf_YSize * 2 ) + ICONLIST_TEXTMARGIN;
     
             switch ( data->wpd_IconTextMode )
@@ -1051,7 +1051,7 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             DoMethod(
                 obj, MUIM_DrawBackground, 
                 rect.MinX, rect.MinY,
-                rect.MaxX - rect.MinX, rect.MaxY - rect.MinY,
+                rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
                 data->view_x + (rect.MinX - _mleft(obj)), data->view_y + (rect.MinY - _mtop(obj)), 
                 0
             );
@@ -1378,8 +1378,8 @@ IPTR IconList__MUIM_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Add
     IconList_GetIconRectangle(obj, data, entry, &rect);
 
     
-    entry->width = rect.MaxX - rect.MinX;
-    entry->height = rect.MaxY - rect.MinY;
+    entry->width = rect.MaxX - rect.MinX + 1;
+    entry->height = rect.MaxY - rect.MinY + 1;
 
     /*D(bug("add  %s %i\n" , entry->entry.label , (entry->entry.type & 255) ));*/
 
@@ -1746,17 +1746,17 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                 
                                  data->first_selected = node;
 
-                                 } 
-                                 else
-                                 {
-                                     if (node->selected)  /* if not catched by lasso and selected before -> unselect */
-                                     {
-                                          node->selected = 0;
-                                          data->update = UPDATE_SINGLEICON;
-                                          data->update_icon = node;
-                                          MUI_Redraw(obj,MADF_DRAWUPDATE);
-                                     }
-                                 } 
+                            } 
+                            else
+                            {
+                                if (node->selected)  /* if not catched by lasso and selected before -> unselect */
+                                {
+                                    node->selected = 0;
+                                    data->update = UPDATE_SINGLEICON;
+                                    data->update_icon = node;
+                                    MUI_Redraw(obj,MADF_DRAWUPDATE);
+                                }
+                            } 
                             
                             node = Node_Next(node);
                         }
@@ -1867,12 +1867,10 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_
     
         node = data->first_selected;
     
-        struct Rectangle rect;
-        GetIconRectangleA(NULL,node->dob,NULL,&rect,NULL);
-        img->width = rect.MaxX - rect.MinX;
-        img->height = rect.MaxY - rect.MinY;
+        img->width = node->width;
+        img->height = node->height;
     
-        if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES,_screen(obj)->RastPort.BitMap)))
+        if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES|BMF_CLEAR,_screen(obj)->RastPort.BitMap)))
         {
             struct RastPort temprp;
             InitRastPort(&temprp);
