@@ -44,7 +44,7 @@
 extern IPTR InitWandererPrefs(void);
 VOID DoAllMenuNotifies(Object *strip, char *path);
 Object *FindMenuitem(Object* strip, int id);
-Object * __CreateWandererIntuitionMenu__ ( );
+Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot );
 void window_update(void);
 
 extern Object *app;
@@ -1353,7 +1353,6 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
 
     /* upadte prefs for all open windows */
     Object *cstate = (Object*)(((struct List*)XGET(_app(self), MUIA_Application_WindowList))->lh_Head);
-    Object *prefs = (Object*) XGET(_app(self), MUIA_Wanderer_Prefs);
     Object *child;
     
     while ((child = NextObject(&cstate)))
@@ -1378,68 +1377,133 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
     return 0;
 }
 
-Object * __CreateWandererIntuitionMenu__ ( )
+Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot )
 {
-    struct NewMenu nm[] = {
-    {NM_TITLE,     _(MSG_MEN_WANDERER)},
-        {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WANDERER_BACKDROP},
-        {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                         , 0, (APTR) MEN_WANDERER_EXECUTE},
-
-        {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                         , 0, (APTR) MEN_WANDERER_SHELL},
-        {NM_ITEM,  _(MSG_MEN_GUISET),  NULL                  , 0                         , 0, (APTR) MEN_WANDERER_GUISETTINGS},
-        {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
-        {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
-
-    {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, NM_MENUDISABLED},
-
-        {NM_ITEM,  _(MSG_MEN_NEWDRAW), _(MSG_MEN_SC_NEWDRAW) , 0                         , 0, (APTR) MEN_WINDOW_NEW_DRAWER},
-        {NM_ITEM,  _(MSG_MEN_OPENPAR),  NULL                 , 0                         , 0, (APTR) MEN_WINDOW_OPEN_PARENT},
-        {NM_ITEM,  _(MSG_MEN_CLOSE),   _(MSG_MEN_SC_CLOSE)   , 0                         , 0, (APTR) MEN_WINDOW_CLOSE},
-        {NM_ITEM,  _(MSG_MEN_UPDATE),  NULL                  , 0                         , 0, (APTR) MEN_WINDOW_UPDATE},
-        {NM_ITEM, NM_BARLABEL},
-        {NM_ITEM, _(MSG_MEN_CONTENTS), _(MSG_MEN_SC_CONTENTS), 0                         , 0, (APTR) MEN_WINDOW_SELECT},
-        {NM_ITEM,  _(MSG_MEN_CLRSEL),  _(MSG_MEN_SC_CLRSEL)  , 0                         , 0, (APTR) MEN_WINDOW_CLEAR},
-        {NM_ITEM, NM_BARLABEL},
-        {NM_ITEM,  _(MSG_MEN_SNAPSHT) },
-        {NM_SUB,   _(MSG_MEN_WINDOW),  NULL                  , 0                         , 0, (APTR) MEN_WINDOW_SNAP_WIN},
-        {NM_SUB,   _(MSG_MEN_ALL),     NULL                  , 0                         , 0, (APTR) MEN_WINDOW_SNAP_ALL},
-        {NM_ITEM, NM_BARLABEL},
-        {NM_ITEM,  _(MSG_MEN_VIEW)},
-        {NM_SUB,   _(MSG_MEN_ICVIEW),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_VIEW_ICON},
-        {NM_SUB,   _(MSG_MEN_DCVIEW),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_VIEW_DETAIL},
-        {NM_SUB, NM_BARLABEL},
-        {NM_SUB,   _(MSG_MEN_ALLFIL),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_VIEW_ALL},
-        {NM_ITEM,  _(MSG_MEN_SORTIC)},
-        {NM_SUB,   _(MSG_MEN_CLNUP),   _(MSG_MEN_SC_CLNUP)   , 0                         , 0, (APTR) MEN_WINDOW_SORT_NOW},
-        {NM_SUB, NM_BARLABEL},
-        {NM_SUB,   _(MSG_MEN_BYNAME),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
-        {NM_SUB,   _(MSG_MEN_BYDATE),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
-        {NM_SUB,   _(MSG_MEN_BYSIZE),  NULL                  , CHECKIT               ,4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
-      //{NM_SUB,   "..by Type",           NULL, CHECKIT,4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
-        {NM_SUB, NM_BARLABEL},
-        {NM_SUB,  _(MSG_MEN_REVERSE),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_SORT_REVERSE},
-        {NM_SUB,  _(MSG_MEN_DRWFRST),  NULL                  , CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
-      //{NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP},
-
-    {NM_TITLE,    _(MSG_MEN_ICON),     NULL, NM_MENUDISABLED},
-        {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), 0, 0, (APTR) MEN_ICON_OPEN},
-  //    {NM_ITEM,  "Close","C" },
-        {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), 0, 0, (APTR) MEN_ICON_RENAME},
-        {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), 0, 0, (APTR) MEN_ICON_INFORMATION},
-  //    {NM_ITEM,  "Snapshot", "S" },
-  //    {NM_ITEM,  "Unsnapshot", "U" },
-  //    {NM_ITEM,  "Leave Out", "L" },
-  //    {NM_ITEM,  "Put Away", "P" },
-        {NM_ITEM, NM_BARLABEL},
-        {NM_ITEM,  _(MSG_MEN_DELETE), NULL, 0, 0, (APTR) MEN_ICON_DELETE},
-  //    {NM_ITEM,  "Format Disk..." },
-  //    {NM_ITEM,  "Empty Trash..." },
-
-    {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, NM_MENUDISABLED},
-  //    {NM_ITEM,  "ResetWanderer" },
-    {NM_END}
-    };
-    Object *menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
+    Object *menustrip;
+    // Some differences here between volumes and subwindows
+    if ( isRoot )
+    {
+         struct NewMenu nm[] = {
+        {NM_TITLE,     _(MSG_MEN_WANDERER)},
+            {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WANDERER_BACKDROP},
+            {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                         , 0, (APTR) MEN_WANDERER_EXECUTE},
+    
+            {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                         , 0, (APTR) MEN_WANDERER_SHELL},
+            {NM_ITEM,  _(MSG_MEN_GUISET),  NULL                  , 0                         , 0, (APTR) MEN_WANDERER_GUISETTINGS},
+            {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
+            {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
+    
+        {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, NM_MENUDISABLED},
+    
+            {NM_ITEM,  _(MSG_MEN_UPDATE),  NULL                  , 0                         , 0, (APTR) MEN_WINDOW_UPDATE},
+            {NM_ITEM, NM_BARLABEL},
+            {NM_ITEM, _(MSG_MEN_CONTENTS), _(MSG_MEN_SC_CONTENTS), 0                         , 0, (APTR) MEN_WINDOW_SELECT},
+            {NM_ITEM,  _(MSG_MEN_CLRSEL),  _(MSG_MEN_SC_CLRSEL)  , 0                         , 0, (APTR) MEN_WINDOW_CLEAR},
+            {NM_ITEM, NM_BARLABEL},
+            {NM_ITEM,  _(MSG_MEN_SNAPSHT) },
+            {NM_SUB,   _(MSG_MEN_WINDOW),  NULL                  , 0                         , 0, (APTR) MEN_WINDOW_SNAP_WIN},
+            {NM_SUB,   _(MSG_MEN_ALL),     NULL                  , 0                         , 0, (APTR) MEN_WINDOW_SNAP_ALL},
+            {NM_ITEM, NM_BARLABEL},
+            {NM_ITEM,  _(MSG_MEN_VIEW)},
+            {NM_SUB,   _(MSG_MEN_ICVIEW),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_VIEW_ICON},
+            {NM_SUB,   _(MSG_MEN_DCVIEW),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_VIEW_DETAIL},
+            {NM_SUB, NM_BARLABEL},
+            {NM_SUB,   _(MSG_MEN_ALLFIL),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_VIEW_ALL},
+            {NM_ITEM,  _(MSG_MEN_SORTIC)},
+            {NM_SUB,   _(MSG_MEN_CLNUP),   _(MSG_MEN_SC_CLNUP)   , 0                         , 0, (APTR) MEN_WINDOW_SORT_NOW},
+            {NM_SUB, NM_BARLABEL},
+            {NM_SUB,   _(MSG_MEN_BYNAME),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
+            {NM_SUB,   _(MSG_MEN_BYDATE),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
+            {NM_SUB,   _(MSG_MEN_BYSIZE),  NULL                  , CHECKIT               ,4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
+        //{NM_SUB,   "..by Type",           NULL, CHECKIT,4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
+            {NM_SUB, NM_BARLABEL},
+            {NM_SUB,  _(MSG_MEN_REVERSE),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_SORT_REVERSE},
+            {NM_SUB,  _(MSG_MEN_DRWFRST),  NULL                  , CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
+        //{NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP},
+    
+        {NM_TITLE,    _(MSG_MEN_ICON),     NULL, NM_MENUDISABLED},
+            {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), 0, 0, (APTR) MEN_ICON_OPEN},
+    //    {NM_ITEM,  "Close","C" },
+            {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), 0, 0, (APTR) MEN_ICON_RENAME},
+            {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), 0, 0, (APTR) MEN_ICON_INFORMATION},
+    //    {NM_ITEM,  "Snapshot", "S" },
+    //    {NM_ITEM,  "Unsnapshot", "U" },
+    //    {NM_ITEM,  "Leave Out", "L" },
+    //    {NM_ITEM,  "Put Away", "P" },
+            {NM_ITEM, NM_BARLABEL},
+            {NM_ITEM,  _(MSG_MEN_DELETE), NULL, 0, 0, (APTR) MEN_ICON_DELETE},
+    //    {NM_ITEM,  "Format Disk..." },
+    //    {NM_ITEM,  "Empty Trash..." },
+    
+        {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, NM_MENUDISABLED},
+    //    {NM_ITEM,  "ResetWanderer" },
+        {NM_END}
+        };
+        menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
+    }
+    else
+    {
+        struct NewMenu nm[] = {
+        {NM_TITLE,     _(MSG_MEN_WANDERER)},
+            {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WANDERER_BACKDROP},
+            {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                         , 0, (APTR) MEN_WANDERER_EXECUTE},
+    
+            {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                         , 0, (APTR) MEN_WANDERER_SHELL},
+            {NM_ITEM,  _(MSG_MEN_GUISET),  NULL                  , 0                         , 0, (APTR) MEN_WANDERER_GUISETTINGS},
+            {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
+            {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
+    
+        {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, NM_MENUDISABLED},
+    
+            {NM_ITEM,  _(MSG_MEN_NEWDRAW), _(MSG_MEN_SC_NEWDRAW) , 0                         , 0, (APTR) MEN_WINDOW_NEW_DRAWER},
+            {NM_ITEM,  _(MSG_MEN_OPENPAR),  NULL                 , 0                         , 0, (APTR) MEN_WINDOW_OPEN_PARENT},
+            {NM_ITEM,  _(MSG_MEN_CLOSE),   _(MSG_MEN_SC_CLOSE)   , 0                         , 0, (APTR) MEN_WINDOW_CLOSE},
+            {NM_ITEM,  _(MSG_MEN_UPDATE),  NULL                  , 0                         , 0, (APTR) MEN_WINDOW_UPDATE},
+            {NM_ITEM, NM_BARLABEL},
+            {NM_ITEM, _(MSG_MEN_CONTENTS), _(MSG_MEN_SC_CONTENTS), 0                         , 0, (APTR) MEN_WINDOW_SELECT},
+            {NM_ITEM,  _(MSG_MEN_CLRSEL),  _(MSG_MEN_SC_CLRSEL)  , 0                         , 0, (APTR) MEN_WINDOW_CLEAR},
+            {NM_ITEM, NM_BARLABEL},
+            {NM_ITEM,  _(MSG_MEN_SNAPSHT) },
+            {NM_SUB,   _(MSG_MEN_WINDOW),  NULL                  , 0                         , 0, (APTR) MEN_WINDOW_SNAP_WIN},
+            {NM_SUB,   _(MSG_MEN_ALL),     NULL                  , 0                         , 0, (APTR) MEN_WINDOW_SNAP_ALL},
+            {NM_ITEM, NM_BARLABEL},
+            {NM_ITEM,  _(MSG_MEN_VIEW)},
+            {NM_SUB,   _(MSG_MEN_ICVIEW),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_VIEW_ICON},
+            {NM_SUB,   _(MSG_MEN_DCVIEW),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_VIEW_DETAIL},
+            {NM_SUB, NM_BARLABEL},
+            {NM_SUB,   _(MSG_MEN_ALLFIL),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_VIEW_ALL},
+            {NM_ITEM,  _(MSG_MEN_SORTIC)},
+            {NM_SUB,   _(MSG_MEN_CLNUP),   _(MSG_MEN_SC_CLNUP)   , 0                         , 0, (APTR) MEN_WINDOW_SORT_NOW},
+            {NM_SUB, NM_BARLABEL},
+            {NM_SUB,   _(MSG_MEN_BYNAME),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
+            {NM_SUB,   _(MSG_MEN_BYDATE),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
+            {NM_SUB,   _(MSG_MEN_BYSIZE),  NULL                  , CHECKIT               ,4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
+        //{NM_SUB,   "..by Type",           NULL, CHECKIT,4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
+            {NM_SUB, NM_BARLABEL},
+            {NM_SUB,  _(MSG_MEN_REVERSE),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_SORT_REVERSE},
+            {NM_SUB,  _(MSG_MEN_DRWFRST),  NULL                  , CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
+        //{NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP},
+    
+        {NM_TITLE,    _(MSG_MEN_ICON),     NULL, NM_MENUDISABLED},
+            {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), 0, 0, (APTR) MEN_ICON_OPEN},
+    //    {NM_ITEM,  "Close","C" },
+            {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), 0, 0, (APTR) MEN_ICON_RENAME},
+            {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), 0, 0, (APTR) MEN_ICON_INFORMATION},
+    //    {NM_ITEM,  "Snapshot", "S" },
+    //    {NM_ITEM,  "Unsnapshot", "U" },
+    //    {NM_ITEM,  "Leave Out", "L" },
+    //    {NM_ITEM,  "Put Away", "P" },
+            {NM_ITEM, NM_BARLABEL},
+            {NM_ITEM,  _(MSG_MEN_DELETE), NULL, 0, 0, (APTR) MEN_ICON_DELETE},
+    //    {NM_ITEM,  "Format Disk..." },
+    //    {NM_ITEM,  "Empty Trash..." },
+    
+        {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, NM_MENUDISABLED},
+    //    {NM_ITEM,  "ResetWanderer" },
+        {NM_END}
+        };
+        menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
+    }
     return menustrip;
 }
 
@@ -1461,7 +1525,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
       useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
     }
 
-    Object *menustrip = __CreateWandererIntuitionMenu__ ( );
+    Object *menustrip = __CreateWandererIntuitionMenu__ ( isWorkbenchWindow );
     
     /* Create a new icon drawer window with the correct drawer being set */
     window = IconWindowObject,
