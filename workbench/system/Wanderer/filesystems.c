@@ -56,7 +56,7 @@ char *allocPath(char *str)
     if (s1) 
     {
         for (l=0; s0 != s1; s0++,l++){};
-        s = AllocMem(l+1, MEMF_CLEAR);
+        s = AllocVec(l+1, MEMF_CLEAR);
         if (s) 
         {
             strncpy(s, str, l);
@@ -69,7 +69,7 @@ void  freeString(char *str)
 {
     if (str)
     {
-        FreeMem(str, strlen(str)+1);
+        FreeVec(str);
     }
 }
 
@@ -93,7 +93,7 @@ char *allocString(char *str)
 
     l = strlen(str);
 
-    b = (char*) AllocMem(l+1, MEMF_CLEAR);
+    b = (char*) AllocVec(l+1, MEMF_CLEAR);
     if (b && (l>0)) 
     {
         strncpy (b, str, l);
@@ -109,13 +109,13 @@ void InfoRename(char *from, char *to)
     if ((from == NULL) || (to == NULL)) 
         return;
 
-    frominfo = AllocMem(strlen(from)+6, MEMF_CLEAR);
+    frominfo = AllocVec(strlen(from)+6, MEMF_CLEAR);
 
     if (frominfo) 
     {
         strncpy (frominfo, from, strlen(from));
         strcat(frominfo,".info");
-        toinfo = AllocMem(strlen(to)+6, MEMF_CLEAR);
+        toinfo = AllocVec(strlen(to)+6, MEMF_CLEAR);
 
         if (toinfo) 
         {
@@ -133,14 +133,14 @@ char  *allocPathFromLock(BPTR lock)
     char *pathb, *path;
 
     path = NULL;
-    pathb = AllocMem(PATHBUFFERSIZE, MEMF_CLEAR);
+    pathb = AllocVec(PATHBUFFERSIZE, MEMF_CLEAR);
     if (pathb) 
     {
         if (NameFromLock(lock, pathb, PATHBUFFERSIZE)) 
         {
             path = allocString(pathb);
         }
-        FreeMem(pathb, PATHBUFFERSIZE);
+        FreeVec(pathb);
     }
     return path;
 }
@@ -362,12 +362,12 @@ BOOL  copyFile(char *file, char *destpath, struct FileInfoBlock *fileinfo)
     BPTR	 nLock;
 
     len = strlen(destpath)+strlen(FilePart(file))+2;
-    to = AllocMem(len, MEMF_CLEAR);
+    to = AllocVec(len, MEMF_CLEAR);
     if (to) 
     {
         strncpy(to, destpath, strlen(destpath));
         AddPart(to, FilePart(file), len);
-        buffer = AllocMem(COPYLEN, MEMF_CLEAR);
+        buffer = AllocVec(COPYLEN, MEMF_CLEAR);
         if (buffer) 
         {
             in = Open(file, MODE_OLDFILE);
@@ -413,9 +413,9 @@ BOOL  copyFile(char *file, char *destpath, struct FileInfoBlock *fileinfo)
                 }
                 Close(in);
             }
-            FreeMem(buffer, COPYLEN);
+            FreeVec(buffer);
         }
-        FreeMem(to, len);
+        FreeVec(to);
     }
     return quit;
 }
@@ -485,7 +485,7 @@ BOOL  actionDir(
                                 if (((flags & ACTION_COPY) != 0) && dest) 
                                 {
                                     len = strlen(dest)+strlen(FIB->fib_FileName)+2;
-                                    dname = AllocMem(len, MEMF_CLEAR);
+                                    dname = AllocVec(len, MEMF_CLEAR);
                                     if (dname) 
                                     {
                                         created = FALSE;
@@ -612,7 +612,7 @@ BOOL  actionDir(
                                         len = strlen(FIB->fib_FileName);
                                         if (len>0) 
                                         {
-                                            fe = AllocMem(sizeof(struct FileEntry) + len, MEMF_CLEAR);
+                                            fe = AllocVec(sizeof(struct FileEntry) + len, MEMF_CLEAR);
                                             if (fe) 
                                             {
                                                 strcpy(fe->name, FIB->fib_FileName);
@@ -632,7 +632,7 @@ BOOL  actionDir(
                                 }
 
                                 if (dname) 
-                                    FreeMem(dname, len);
+                                    FreeVec(dname);
                                     
                             } 
                             else 
@@ -652,7 +652,7 @@ BOOL  actionDir(
                                 if (((flags & ACTION_COPY) != 0) && dest)
                                 {
                                     len = strlen(dest)+strlen(FIB->fib_FileName)+2;
-                                    dpath = AllocMem(len, MEMF_CLEAR);
+                                    dpath = AllocVec(len, MEMF_CLEAR);
                                     if (dpath) 
                                     {
                                         strncpy(dpath, dest, strlen(dest));
@@ -797,7 +797,7 @@ BOOL  actionDir(
                                                     len = strlen(FIB->fib_FileName);
                                                     if (len>0) 
                                                     {
-                                                        fe = AllocMem(sizeof(struct FileEntry) + len, MEMF_CLEAR);
+                                                        fe = AllocVec(sizeof(struct FileEntry) + len, MEMF_CLEAR);
                                                         if (fe) 
                                                         {
                                                             strcpy(fe->name, FIB->fib_FileName);
@@ -838,7 +838,7 @@ BOOL  actionDir(
                         deleteFile(fef->name);
                     }
                     fe = fef->next;
-                    FreeMem(fef, sizeof(struct FileEntry) + len);
+                    FreeVec(fef);
                     fef = fe;
                 }
 
@@ -872,7 +872,7 @@ BOOL CopyContent(
     UWORD		   pmode = DELMODE_ASK;
     UWORD		   omode = DELMODE_ASK;
 
-    infoname = AllocMem(strlen(s)+6, MEMF_CLEAR);
+    infoname = AllocVec(strlen(s)+6, MEMF_CLEAR);
 
     display.userdata = userdata;
     
@@ -883,7 +883,7 @@ BOOL CopyContent(
     }
 
     if (d) 
-        destinfo = AllocMem(strlen(d)+6,MEMF_CLEAR); 
+        destinfo = AllocVec(strlen(d)+6,MEMF_CLEAR); 
     else 
         destinfo = NULL;
 
@@ -926,13 +926,13 @@ BOOL CopyContent(
                 if (FIB) 
                 {
                     len = strlen(d)+strlen(destname)+2;
-                    tdest = AllocMem(len, MEMF_CLEAR);
+                    tdest = AllocVec(len, MEMF_CLEAR);
                     if (tdest) 
                     {
                         strncpy(tdest, d, strlen(d));
                         AddPart(tdest, destname, len);
-                        dest = AllocMem(strlen(tdest), MEMF_CLEAR);
-                        FreeMem(tdest, len);
+                        dest = AllocVec(strlen(tdest), MEMF_CLEAR);
+                        FreeVec(tdest);
                     }
                     if (dest) 
                     {
@@ -1028,7 +1028,7 @@ BOOL CopyContent(
         if (delHook && !dir) 
         {
             len = strlen(d)+strlen(FilePart(s))+2;
-            dpath = AllocMem(len, MEMF_CLEAR);
+            dpath = AllocVec(len, MEMF_CLEAR);
             if (dpath) 
             {
                 strncpy(dpath, d, strlen(d));
