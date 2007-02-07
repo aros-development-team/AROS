@@ -78,7 +78,8 @@ FILES := \
     simplepng \
     truecolorpens \
     windecor \
-    consolemodes
+    consolemodes \
+    examine
 
 EXEDIR := $(AROS_TESTS)
 
