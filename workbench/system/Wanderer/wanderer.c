@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright  2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 
 #include <aros/debug.h>
 
@@ -39,7 +40,9 @@
 
 #include "locale.h"
 
-#define VERSION "$VER: Wanderer 0.4ß (22.10.2006) © AROS Dev Team"
+#define VERSION "$VER: Wanderer 0.4ï¿½(22.10.2006)  AROS Dev Team"
+
+#define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, End
 
 extern IPTR InitWandererPrefs(void);
 VOID DoAllMenuNotifies(Object *strip, char *path);
@@ -544,6 +547,179 @@ void icon_information()
     } while (TRUE);
 }
 
+    struct  MUIDisplayObjects {
+        Object		   *sourceObject;
+        Object		   *destObject;
+        Object		   *fileObject;
+        Object		   *stopObject;
+        Object		   *copyApp;
+        Object             *performanceObject;
+        Object             *win;
+        ULONG               stopflag;
+        ULONG               numfiles;
+        UWORD               action;
+
+        unsigned long long  bytes;
+        unsigned int        starttime;
+        char                Buffer[160];
+    };
+void DisposeCopyDisplay(struct MUIDisplayObjects *d) {
+    if (d->copyApp) {
+        set(d->win,MUIA_Window_Open,FALSE);
+        MUI_DisposeObject(d->copyApp);
+    }
+}
+
+    /* create the file copy window */
+     
+BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d) {
+
+    BOOL    back = FALSE;
+    
+    Object  *group, *fromObject, *toObject, *fileTextObject, *fileLengthObject;
+
+    d->stopflag = 0; /* will be set to 1 when clicking on stop, than the displayhook can tell actionDir() to stop copy */
+    d->bytes = 0;
+    d->numfiles = 0;
+    d->action = flags;
+
+    d->copyApp = ApplicationObject,
+        MUIA_Application_Title,     "CopyRequester",
+        MUIA_Application_Base,      "WANDERER",
+
+        SubWindow, d->win = WindowObject,
+            MUIA_Window_Title,			"Copy Filesystem",
+            MUIA_Window_Activate,		TRUE,
+            MUIA_Window_DepthGadget,	TRUE,
+            MUIA_Window_DragBar,		TRUE,
+            MUIA_Window_SizeGadget,	    TRUE,
+            MUIA_Window_AppWindow,      FALSE,
+            MUIA_Window_CloseGadget,    FALSE,
+            MUIA_Window_Borderless,	    FALSE,
+            MUIA_Window_TopEdge,        MUIV_Window_TopEdge_Centered,
+            MUIA_Window_LeftEdge,       MUIV_Window_LeftEdge_Centered,
+    
+            WindowContents,
+    
+            group = VGroup,
+                Child, fromObject = TextObject,
+                    InnerSpacing(8,2),
+                    MUIA_Text_PreParse, "\33c",
+                End,
+                Child, d->sourceObject = TextObject,
+                    TextFrame,
+                    InnerSpacing(8,2),
+                    MUIA_Background,	 MUII_TextBack,
+                    MUIA_Text_PreParse, "\33c",
+                    MUIA_Text_Contents, "--------------------------------------------------------------------------------------------",
+                End,
+                Child, toObject = TextObject,
+                    InnerSpacing(8,2),
+                    MUIA_Text_PreParse, "\33c",
+                End,
+                Child, d->destObject = TextObject,
+                    TextFrame,
+                    InnerSpacing(8,2),
+                    MUIA_Background,	 MUII_TextBack,
+                    MUIA_Text_PreParse, "\33c",
+                    MUIA_Text_Contents, "--------------------------------------------------------------------------------------------",
+                End,
+                Child, fileTextObject = TextObject,
+                    InnerSpacing(8,2),
+                    MUIA_Text_PreParse, "\33c",
+                End,
+                Child, d->fileObject = TextObject,
+                    TextFrame,
+                    InnerSpacing(8,2),
+                    MUIA_Background,	 MUII_TextBack,
+                    MUIA_Text_PreParse, "\33c",
+                    MUIA_Text_Contents, "--------------------------------------------------------------------------------------------",
+                End,
+                Child, fileLengthObject = TextObject,
+                    InnerSpacing(8,2),
+                    MUIA_Text_PreParse, "\33c",
+                End,
+                Child, d->performanceObject = TextObject,
+                    TextFrame,
+                    InnerSpacing(8,2),
+                    MUIA_Background,	 MUII_TextBack,
+                    MUIA_Text_PreParse, "\33c",
+                    MUIA_Text_Contents, "0 Bytes : 0 Bytes/sec",
+                End,
+
+                Child,	  d->stopObject = (Object *) KeyButton("Stop", 0),
+            End,
+        End,
+    End;
+
+
+    if (d->copyApp) {
+        if ((flags & (ACTION_COPY|ACTION_DELETE)) == (ACTION_COPY|ACTION_DELETE)) {
+            set(fromObject, MUIA_Text_Contents, "move from");
+            set(toObject, MUIA_Text_Contents, "move to");
+            set(fileTextObject, MUIA_Text_Contents, "file");
+            set(fileLengthObject, MUIA_Text_Contents, "traffic");
+        } else if ((flags & ACTION_COPY) == ACTION_COPY) {
+            set(fromObject, MUIA_Text_Contents, "copy from");
+            set(toObject, MUIA_Text_Contents, "copy to");
+            set(fileTextObject, MUIA_Text_Contents, "file");
+            set(fileLengthObject, MUIA_Text_Contents, "traffic");
+
+        } else if ((flags & ACTION_DELETE) == ACTION_DELETE) {
+            set(fromObject, MUIA_Text_Contents, "delete from");
+            DoMethod(group, OM_REMMEMBER, toObject);
+            DoMethod(group, OM_REMMEMBER, fileLengthObject);
+            DoMethod(group, OM_REMMEMBER, d->performanceObject);
+            DoMethod(group, OM_REMMEMBER, d->destObject);
+            set(fileTextObject, MUIA_Text_Contents, "file to delete");
+        }
+
+        DoMethod(d->stopObject,MUIM_Notify, MUIA_Pressed, FALSE, d->stopObject, 3, MUIM_WriteLong, 1 ,&d->stopflag);
+        back = TRUE;
+    }
+    return back;
+}
+
+AROS_UFH3
+(
+    BOOL, displayCopyFunc,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(struct dCopyStruct *, obj, A2),
+    AROS_UFHA(APTR, unused_param, A1)
+)
+{
+    AROS_USERFUNC_INIT
+    char    *c;
+    unsigned int difftime;
+    
+    struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
+
+    if (d->numfiles == 0) d->starttime = clock();
+    
+    set(d->fileObject, MUIA_Text_Contents, obj->file);
+    set(d->sourceObject, MUIA_Text_Contents, obj->spath);
+    d->numfiles++;
+    if (d->action != ACTION_DELETE) {
+        set(d->destObject, MUIA_Text_Contents, obj->dpath);
+        d->bytes += obj->filelen;
+    
+        difftime = clock() - d->starttime;
+        if (difftime < 0) difftime = 1;
+
+    
+        sprintf(d->Buffer, "# of files: %ld   Actual: %.2f kBytes   Total: %.2f kBytes   Speed: %.2f kBytes/s", d->numfiles, (double) obj->filelen / 1024.0, (double) d->bytes / 1024.0, (double) (((double) d->bytes) / (((double) difftime) / 50.0)) / 1024.0);
+        set(d->performanceObject, MUIA_Text_Contents, d->Buffer);
+    }
+    if (d->numfiles == 1) set(d->win,MUIA_Window_Open,TRUE);
+    DoMethod(d->copyApp, MUIM_Application_InputBuffered);
+
+    /* read the stopflag and return TRUE if the user wanted to stop actionDir() */
+
+    if (d->stopflag == 1) return TRUE; else return FALSE;
+
+    AROS_USERFUNC_EXIT
+}
+
 void icon_delete(void)
 {
     Object                *window   = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
@@ -556,23 +732,20 @@ void icon_delete(void)
         
         if ((int)entry != MUIV_IconList_NextSelected_End) 
         {
-            BPTR lock   = Lock(entry->filename, ACCESS_READ);
-            BPTR parent = ParentDir(lock);
-            UnLock(lock);
-            
-            D(bug("[wanderer] selected: %s\n", entry->filename));
-            
-            OpenWorkbenchObject
-            (
-                "WANDERER:Tools/Delete",
-                WBOPENA_ArgLock, (IPTR) parent,
-                WBOPENA_ArgName, (IPTR) FilePart(entry->filename),
-                TAG_DONE
-            );
-            
-            D(bug("[wanderer] selected: %s\n", entry->filename));
-            
-            UnLock(parent);
+
+
+            struct MUIDisplayObjects dobjects;
+            struct Hook displayCopyHook;
+
+            displayCopyHook.h_Entry = (HOOKFUNC) displayCopyFunc;
+
+            if (CreateCopyDisplay(ACTION_DELETE, &dobjects))
+            {
+                /* copy via filesystems.c */
+                D(bug("[WANDERER] Delete \"%s\"\n", entry->filename);)
+                CopyContent(entry->filename, NULL, TRUE, ACTION_DELETE, &displayCopyHook, NULL, (APTR) &dobjects);
+                DisposeCopyDisplay(&dobjects);
+            }
         }
         else
         {
@@ -601,8 +774,6 @@ void wanderer_quit(void)
     OpenWorkbenchObject("WANDERER:Tools/Quit", TAG_DONE);
 }
 
-
-
 AROS_UFH3
 (
     void, hook_func_action,
@@ -612,7 +783,7 @@ AROS_UFH3
 )
 {
     AROS_USERFUNC_INIT
-    
+
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
        static char buf[1024];
@@ -751,45 +922,44 @@ AROS_UFH3
 
         if (drop)
         {
-             /* get path of DESTINATION iconlist*/
-             destination_path = XGET(drop->destination_iconlistobj, MUIA_IconDrawerList_Drawer);
+            /* get path of DESTINATION iconlist*/
+            destination_path = XGET(drop->destination_iconlistobj, MUIA_IconDrawerList_Drawer);
 
-             if ( !destination_path ) return;
+            if ( !destination_path ) return;
                  
-             /* get SOURCE entries */
-             struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+            /* get SOURCE entries */
+
+            struct MUIDisplayObjects dobjects;
+            struct Hook displayCopyHook;
+
+            displayCopyHook.h_Entry = (HOOKFUNC) displayCopyFunc;
+
+            if (CreateCopyDisplay(ACTION_COPY, &dobjects))
+            {
+                struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
       
-             /* process all selected entries */
-             do {
-                   DoMethod(drop->source_iconlistobj, MUIM_IconList_NextSelected, (IPTR) &ent);
+                /* process all selected entries */
+                do
+                {
+                    DoMethod(drop->source_iconlistobj, MUIM_IconList_NextSelected, (IPTR) &ent);
 
-                   /* if not end of selection, process */
-                   if ( (int)ent != MUIV_IconList_NextSelected_End )
-                   {
-                        STRPTR iconfilenamebuffer = AllocVec ( 256, MEMF_CLEAR );
-                        if ( iconfilenamebuffer != NULL )
-                        {
-                            D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, destination_path);)
-    
-                            /* copy via filesystems.c */
-                            D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path );)
-                            CopyContent(ent->filename, destination_path, TRUE, ACTION_COPY, NULL, NULL, NULL);
-                            
-                            /* try to copy .info aswell  */
-                            strcat( iconfilenamebuffer, ent->filename );
-                            strcat( iconfilenamebuffer, ".info");
-                            D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", iconfilenamebuffer, destination_path );)                
-                            CopyContent(iconfilenamebuffer, destination_path, TRUE, ACTION_COPY, NULL, NULL, NULL);
-                            FreeVec ( iconfilenamebuffer );
-                        }
-                   }
-             } while ( (int)ent != MUIV_IconList_NextSelected_End );
+                    /* if not end of selection, process */
+                    if ( (int)ent != MUIV_IconList_NextSelected_End )
+                    {
+                        D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, destination_path);)
 
-           /* update list contents */
-           DoMethod(drop->destination_iconlistobj,MUIM_IconList_Update);
+                        /* copy via filesystems.c */
+                        D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path );)
+                        CopyContent(ent->filename, destination_path, TRUE, ACTION_COPY, &displayCopyHook, NULL, (APTR) &dobjects);
+                    }
+                } while ( (int)ent != MUIV_IconList_NextSelected_End );
+                DisposeCopyDisplay(&dobjects);
+            }
+            /* update list contents */
+            DoMethod(drop->destination_iconlistobj,MUIM_IconList_Update);
            
-           /* update the window */
-           window_update();      
+            /* update the window */
+            window_update();      
         }
     }
     else if (msg->type == ICONWINDOW_ACTION_APPWINDOWDROP)
@@ -797,7 +967,7 @@ AROS_UFH3
         struct Screen *wscreen;
         struct Layer *layer;
 
-        /* get wanderer´s screen struct and the layer located at cursor position afterwards */
+        /* get wanderers screen struct and the layer located at cursor position afterwards */
         get( obj, MUIA_Window_Screen, &wscreen);
         layer = WhichLayer(&wscreen->LayerInfo,wscreen->MouseX,wscreen->MouseY);
 
