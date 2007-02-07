@@ -42,6 +42,10 @@ If EXISTS SYS:Demos
     Path SYS:Demos ADD QUIET
 EndIf
 
+If EXISTS Sys:Rexxc
+    Path Sys:Rexxc ADD QUIET
+Endif
+
 Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
 
 Touch >NIL: FONTS:__TEST__

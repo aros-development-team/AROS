@@ -1,0 +1,13 @@
+include $(TOP)/config/make.cfg
+
+FILES := RX
+
+#MM- workbench : workbench-rexxc
+#MM- workbench-quick : workbench-rexxc-quick
+
+#MM- workbench-rexxc : workbench-libs-rexxsyslib
+#MM- workbench-rexxc-includes : workbench-libs-rexxsyslib-includes
+
+%build_progs mmake=workbench-rexxc \
+    files=$(FILES) targetdir=$(AROSDIR)/Rexxc \
+    uselibs=rexxsyslib
