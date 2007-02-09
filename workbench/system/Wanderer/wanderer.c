@@ -45,7 +45,7 @@
 #define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, End
 
 extern IPTR InitWandererPrefs(void);
-VOID DoAllMenuNotifies(Object *strip, char *path);
+VOID DoAllMenuNotifies(Object *strip, STRPTR path);
 Object *FindMenuitem(Object* strip, int id);
 Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot );
 void window_update(void);
@@ -54,7 +54,7 @@ extern Object *app;
 struct Hook hook_standard;
 struct Hook hook_action;
 
-static char strtochar(char *st)
+static unsigned char strtochar(STRPTR st)
 {
     return *st++;
 }
@@ -80,7 +80,7 @@ static void fmtlarge(UBYTE *buf, ULONG num)
         d = ((UQUAD)num * 10 + 536870912) / 1073741824;
         array.dec = d % 10;
         //ch = 'G';
-    ch = strtochar((char *)_(MSG_MEM_G));
+    ch = strtochar((STRPTR)_(MSG_MEM_G));
     }
     else if (num >= 1048576)
     {
@@ -88,7 +88,7 @@ static void fmtlarge(UBYTE *buf, ULONG num)
         d = ((UQUAD)num * 10 + 524288) / 1048576;
         array.dec = d % 10;
         //ch = 'M';
-        ch = strtochar((char *)_(MSG_MEM_M));
+        ch = strtochar((STRPTR)_(MSG_MEM_M));
     }
     else if (num >= 1024)
     {
@@ -96,7 +96,7 @@ static void fmtlarge(UBYTE *buf, ULONG num)
         d = (num * 10 + 512) / 1024;
         array.dec = d % 10;
         //ch = 'K';
-        ch = strtochar((char *)_(MSG_MEM_K));
+        ch = strtochar((STRPTR)_(MSG_MEM_K));
     }
     else
     {
@@ -104,7 +104,7 @@ static void fmtlarge(UBYTE *buf, ULONG num)
         array.dec = 0;
         d = 0;
         //ch = 'B';
-    ch = strtochar((char *)_(MSG_MEM_B));
+    ch = strtochar((STRPTR)_(MSG_MEM_B));
     }
 
     if (!array.dec && (d > array.val * 10))
@@ -176,7 +176,7 @@ enum
  Open the execute window. Similar to below but you can also set the
  command. Called when item is openend
 **************************************************************************/
-void execute_open_with_command(BPTR cd, char *contents)
+void execute_open_with_command(BPTR cd, STRPTR contents)
 {
     BPTR lock;
     
@@ -199,14 +199,14 @@ void execute_open_with_command(BPTR cd, char *contents)
 
  This function will always get the current drawer as argument
 **************************************************************************/
-VOID execute_open(char **cdptr)
+VOID execute_open(STRPTR *cdptr)
 {
-    //TODO: remove the char **cdptr from top
+    //TODO: remove the STRPTR *cdptr from top
     //TODO:remove this commented out stuff
     //BPTR lock = NULL;
     //if (cdptr != NULL) lock = Lock(*cdptr, SHARED_LOCK);
     Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
-    STRPTR dr = XGET( win, MUIA_IconWindow_Drawer );
+    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Drawer );
     BPTR cd = Lock(dr,SHARED_LOCK);
     execute_open_with_command(cd, NULL);
     if (cd) UnLock(cd);
@@ -214,13 +214,13 @@ VOID execute_open(char **cdptr)
 
 /*******************************/
 
-void shell_open(char **cd_ptr)
+void shell_open(STRPTR *cd_ptr)
 {
-    //TODO: remove the char **cdptr from top
+    //TODO: remove the STRPTR *cdptr from top
     //TODO:remove this commented out stuff
     //BPTR cd = Lock(*cd_ptr,ACCESS_READ);
     Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
-    STRPTR dr = XGET( win, MUIA_IconWindow_Drawer );
+    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Drawer );
     BPTR cd = Lock(dr,ACCESS_READ);
     if (SystemTags("NewShell", NP_CurrentDir, (IPTR)cd, TAG_DONE) == -1)
     {
@@ -242,12 +242,12 @@ void wanderer_backdrop(Object **pstrip)
     }
 }
 
-void window_new_drawer(char **cdptr)
+void window_new_drawer(STRPTR *cdptr)
 {
-    //TODO: remove the char **cdptr from top
+    //TODO: remove the STRPTR *cdptr from top
     
     Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
-    STRPTR dr = XGET( win, MUIA_IconWindow_Drawer );
+    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Drawer );
     D(bug("[wanderer] NewDrawer %s\n", dr));
 
     Object *actwindow = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
@@ -275,23 +275,23 @@ void window_new_drawer(char **cdptr)
     UnLock(lock);
 }
 
-void window_open_parent(char **cdptr)
+void window_open_parent(STRPTR *cdptr)
 {
     //TODO: Remove the **cdptr stuff from top
     Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
-    STRPTR dr = XGET( win, MUIA_IconWindow_Drawer );
+    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Drawer );
     	
     IPTR	path_len=0;
-	char	*last_letter=NULL;
-  	last_letter = (char*)(*((char *)(dr+strlen(dr)-1)));
+	STRPTR	last_letter=NULL;
+  	last_letter = &dr[ strlen(dr) - 1 ];
 	
 	STRPTR thispath = FilePart(dr);
 	
-	if (last_letter==(char *)0x3a) return; /* Top Drawer has no parent to open */
+	if (*last_letter==0x3a) return; /* Top Drawer has no parent to open */
 	
-	last_letter = (char*)(*((char *)(thispath-1)));
+	last_letter = &thispath[strlen(thispath)-1];
 	
-	if (last_letter==(char *)0x3a) path_len = (IPTR)(thispath-(IPTR)(dr));
+	if (last_letter==(STRPTR)0x3a) path_len = (IPTR)(thispath-(IPTR)(dr));
 	else path_len = (IPTR)((thispath-(IPTR)(dr))-1);
 	
 	STRPTR buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);	
@@ -304,7 +304,7 @@ void window_open_parent(char **cdptr)
 	{
 		if (XGET(child, MUIA_UserData))
 		{
-			char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
+			STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Drawer);
 			if (child_drawer && !Stricmp(buf,child_drawer))
 			{
 				int is_open = XGET(child, MUIA_Window_Open);
@@ -561,7 +561,7 @@ void icon_information()
 
         unsigned long long  bytes;
         unsigned int        starttime;
-        char                Buffer[160];
+        unsigned char                Buffer[160];
     };
 void DisposeCopyDisplay(struct MUIDisplayObjects *d) {
     if (d->copyApp) {
@@ -584,11 +584,11 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d) {
     d->action = flags;
 
     d->copyApp = ApplicationObject,
-        MUIA_Application_Title,     "CopyRequester",
-        MUIA_Application_Base,      "WANDERER",
+        MUIA_Application_Title,     ( IPTR )"CopyRequester",
+        MUIA_Application_Base,      ( IPTR )"WANDERER",
 
-        SubWindow, d->win = WindowObject,
-            MUIA_Window_Title,			"Copy Filesystem",
+        SubWindow, (IPTR)(d->win = WindowObject,
+            MUIA_Window_Title,			(IPTR)"Copy Filesystem",
             MUIA_Window_Activate,		TRUE,
             MUIA_Window_DepthGadget,	TRUE,
             MUIA_Window_DragBar,		TRUE,
@@ -601,77 +601,75 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d) {
     
             WindowContents,
     
-            group = VGroup,
-                Child, fromObject = TextObject,
+            group = (IPTR)VGroup,
+                Child, (IPTR)(fromObject = TextObject,
                     InnerSpacing(8,2),
-                    MUIA_Text_PreParse, "\33c",
-                End,
-                Child, d->sourceObject = TextObject,
+                    MUIA_Text_PreParse, (IPTR)"\33c",
+                End),
+                Child, (IPTR)(d->sourceObject = TextObject,
                     TextFrame,
                     InnerSpacing(8,2),
                     MUIA_Background,	 MUII_TextBack,
-                    MUIA_Text_PreParse, "\33c",
-                    MUIA_Text_Contents, "--------------------------------------------------------------------------------------------",
-                End,
-                Child, toObject = TextObject,
+                    MUIA_Text_PreParse, (IPTR)"\33c",
+                    MUIA_Text_Contents, (IPTR)"--------------------------------------------------------------------------------------------",
+                End),
+                Child, (IPTR)(toObject = TextObject,
                     InnerSpacing(8,2),
-                    MUIA_Text_PreParse, "\33c",
-                End,
-                Child, d->destObject = TextObject,
+                    MUIA_Text_PreParse, (IPTR)"\33c",
+                End),
+                Child, (IPTR)(d->destObject = TextObject,
                     TextFrame,
                     InnerSpacing(8,2),
                     MUIA_Background,	 MUII_TextBack,
-                    MUIA_Text_PreParse, "\33c",
-                    MUIA_Text_Contents, "--------------------------------------------------------------------------------------------",
-                End,
-                Child, fileTextObject = TextObject,
+                    MUIA_Text_PreParse, (IPTR)"\33c",
+                    MUIA_Text_Contents, (IPTR)"--------------------------------------------------------------------------------------------",
+                End),
+                Child, (IPTR)(fileTextObject = TextObject,
                     InnerSpacing(8,2),
-                    MUIA_Text_PreParse, "\33c",
-                End,
-                Child, d->fileObject = TextObject,
+                    MUIA_Text_PreParse, (IPTR)"\33c",
+                End),
+                Child, (IPTR)(d->fileObject = TextObject,
                     TextFrame,
                     InnerSpacing(8,2),
                     MUIA_Background,	 MUII_TextBack,
-                    MUIA_Text_PreParse, "\33c",
-                    MUIA_Text_Contents, "--------------------------------------------------------------------------------------------",
-                End,
-                Child, fileLengthObject = TextObject,
+                    MUIA_Text_PreParse, (IPTR)"\33c",
+                    MUIA_Text_Contents, (IPTR)"--------------------------------------------------------------------------------------------",
+                End),
+                Child, (IPTR)(fileLengthObject = TextObject,
                     InnerSpacing(8,2),
-                    MUIA_Text_PreParse, "\33c",
-                End,
-                Child, d->performanceObject = TextObject,
+                    MUIA_Text_PreParse, (IPTR)"\33c",
+                End),
+                Child, (IPTR)(d->performanceObject = TextObject,
                     TextFrame,
                     InnerSpacing(8,2),
                     MUIA_Background,	 MUII_TextBack,
-                    MUIA_Text_PreParse, "\33c",
-                    MUIA_Text_Contents, "0 Bytes : 0 Bytes/sec",
-                End,
-
-                Child,	  d->stopObject = (Object *) KeyButton("Stop", 0),
+                    MUIA_Text_PreParse, (IPTR)"\33c",
+                    MUIA_Text_Contents, (IPTR)"0 Bytes : 0 Bytes/sec",
+                End),
+                Child, (IPTR)(d->stopObject = (Object *)KeyButton((IPTR)"Stop", 0)),
             End,
-        End,
+        End),
     End;
-
 
     if (d->copyApp) {
         if ((flags & (ACTION_COPY|ACTION_DELETE)) == (ACTION_COPY|ACTION_DELETE)) {
-            set(fromObject, MUIA_Text_Contents, "move from");
-            set(toObject, MUIA_Text_Contents, "move to");
-            set(fileTextObject, MUIA_Text_Contents, "file");
-            set(fileLengthObject, MUIA_Text_Contents, "traffic");
+            set(fromObject, MUIA_Text_Contents, (IPTR)"move from");
+            set(toObject, MUIA_Text_Contents, (IPTR)"move to");
+            set(fileTextObject, MUIA_Text_Contents, (IPTR)"file");
+            set(fileLengthObject, MUIA_Text_Contents, (IPTR)"traffic");
         } else if ((flags & ACTION_COPY) == ACTION_COPY) {
-            set(fromObject, MUIA_Text_Contents, "copy from");
-            set(toObject, MUIA_Text_Contents, "copy to");
-            set(fileTextObject, MUIA_Text_Contents, "file");
-            set(fileLengthObject, MUIA_Text_Contents, "traffic");
+            set(fromObject, MUIA_Text_Contents, (IPTR)"copy from");
+            set(toObject, MUIA_Text_Contents, (IPTR)"copy to");
+            set(fileTextObject, MUIA_Text_Contents, (IPTR)"file");
+            set(fileLengthObject, MUIA_Text_Contents, (IPTR)"traffic");
 
         } else if ((flags & ACTION_DELETE) == ACTION_DELETE) {
-            set(fromObject, MUIA_Text_Contents, "delete from");
+            set(fromObject, MUIA_Text_Contents, (IPTR)"delete from");
             DoMethod(group, OM_REMMEMBER, toObject);
             DoMethod(group, OM_REMMEMBER, fileLengthObject);
             DoMethod(group, OM_REMMEMBER, d->performanceObject);
             DoMethod(group, OM_REMMEMBER, d->destObject);
-            set(fileTextObject, MUIA_Text_Contents, "file to delete");
+            set(fileTextObject, MUIA_Text_Contents, (IPTR)"file to delete");
         }
 
         DoMethod(d->stopObject,MUIM_Notify, MUIA_Pressed, FALSE, d->stopObject, 3, MUIM_WriteLong, 1 ,&d->stopflag);
@@ -689,7 +687,6 @@ AROS_UFH3
 )
 {
     AROS_USERFUNC_INIT
-    char    *c;
     unsigned int difftime;
     
     struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
@@ -743,7 +740,7 @@ void icon_delete(void)
             {
                 /* copy via filesystems.c */
                 D(bug("[WANDERER] Delete \"%s\"\n", entry->filename);)
-                CopyContent(entry->filename, NULL, TRUE, ACTION_DELETE, &displayCopyHook, NULL, (APTR) &dobjects);
+                CopyContent( NULL, entry->filename, NULL, TRUE, ACTION_DELETE, &displayCopyHook, NULL, (APTR) &dobjects);
                 DisposeCopyDisplay(&dobjects);
             }
         }
@@ -786,7 +783,7 @@ AROS_UFH3
 
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
-       static char buf[1024];
+       static unsigned char buf[1024];
 	   struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
 	
 	   DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
@@ -950,7 +947,7 @@ AROS_UFH3
 
                         /* copy via filesystems.c */
                         D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path );)
-                        CopyContent(ent->filename, destination_path, TRUE, ACTION_COPY, &displayCopyHook, NULL, (APTR) &dobjects);
+                        CopyContent(NULL, ent->filename, destination_path, TRUE, ACTION_COPY, &displayCopyHook, NULL, (APTR) &dobjects);
                     }
                 } while ( (int)ent != MUIV_IconList_NextSelected_End );
                 DisposeCopyDisplay(&dobjects);
@@ -1097,7 +1094,7 @@ VOID DoMenuNotify(Object* strip, int id, void *function, void *arg)
     }
 }
 
-VOID DoAllMenuNotifies(Object *strip, char *path)
+VOID DoAllMenuNotifies(Object *strip, STRPTR path)
 {
     Object *item;
 
@@ -1378,7 +1375,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer
 {
     Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
     Object *child;
-    char *scr_title = GetScreenTitle();
+    STRPTR *scr_title = GetScreenTitle();
 
     while ((child = NextObject(&cstate)))
 	set(child, MUIA_Window_ScreenTitle, (IPTR) scr_title);
@@ -1441,7 +1438,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
                         {
                             if (XGET(child, MUIA_UserData))
                             {
-                                char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
+                                STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Drawer);
                                 
                                 if
                                 (
@@ -1478,7 +1475,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
                     {
                         if (XGET(child, MUIA_UserData))
                         {
-                            char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
+                            STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Drawer);
                             if (child_drawer && !Stricmp(buf,child_drawer))
                             {
                                 int is_open = XGET(child, MUIA_Window_Open);
