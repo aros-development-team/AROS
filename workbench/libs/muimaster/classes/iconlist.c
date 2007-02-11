@@ -627,7 +627,7 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
     // If going by grid, first traverse and find the highest w/h
     if ( listMode == ICON_LISTMODE_GRID )
     {
-        while ( icon != NULL )
+        while (icon != NULL)
         {
             struct Rectangle iconrect;
             IconList_GetIconRectangle(obj, data, icon, &iconrect);
@@ -643,7 +643,7 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *cl, Object *obj, struct MUIP_Ic
     icon = List_First(&data->icon_list);
     while (icon != NULL)
     {
-        if (icon->dob)
+        if (icon->dob != NULL)
         {
             icon->x = cur_x;
             icon->y = cur_y;
@@ -925,15 +925,14 @@ IPTR IconList__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
         {
             node->dob = GetIconTags
             (
-            node->entry.filename, 
-            ICONGETA_FailIfUnavailable,        FALSE, 
-            ICONGETA_Label,             (IPTR) node->entry.label,
-            TAG_DONE
+                node->entry.filename, 
+                ICONGETA_FailIfUnavailable,        FALSE, 
+                ICONGETA_Label,             (IPTR) node->entry.label,
+                TAG_DONE
             );
         }
         node = Node_Next(node);
     }
-
     return 1;
 }
 
@@ -2093,11 +2092,11 @@ static int ReadIcons(struct IClass *cl, Object *obj)
         
                     if (Stricmp(filename,"Disk")) /* skip disk.info */
                     {
-                        char buf[512];
+                        STRPTR buf = AllocVec ( 512, MEMF_CLEAR );
                         strcpy(buf,data->drawer);
                         AddPart(buf,filename,sizeof(buf));
-            
                         DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)filename,(IPTR) fib);
+                        FreeVec ( buf );
                     }
                 }
             }
@@ -2523,7 +2522,6 @@ BOOPSI_DISPATCHER(IPTR, IconDrawerList_Dispatcher, cl, obj, msg)
         case OM_GET: return IconDrawerList__OM_GET(cl, obj, (struct opGet *)msg);
         case MUIM_IconList_Update: return IconDrawerList__MUIM_Update(cl,obj,(APTR)msg);
     }
-
     return DoSuperMethodA(cl, obj, msg);
 }
 BOOPSI_DISPATCHER_END
