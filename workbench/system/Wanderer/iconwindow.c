@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define MUIMASTER_YES_INLINE_STDARG
 
@@ -194,6 +194,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_Window_Height,             300,
         MUIA_Window_AltWidth,           100,
         MUIA_Window_AltHeight,           80,
+        MUIA_Window_IsSubWindow,       TRUE,
         MUIA_Window_ScreenTitle, (IPTR) "",
         MUIA_Font, (IPTR) WindowFont,
         
@@ -600,6 +601,22 @@ IPTR IconWindow__MUIM_IconWindow_UnselectAll
     return TRUE;
 }
 
+IPTR IconWindow__MUIM_IconWindow_Remove
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    
+    // Remove window
+    DoMethod ( _app(self), OM_REMMEMBER, _window(self) );
+    DoMethod ( _app(self), OM_REMMEMBER, self );
+    DoMethod ( _window(self), OM_DISPOSE );
+    
+    return TRUE;
+}
+
+
 /*** Setup ******************************************************************/
 ICONWINDOW_CUSTOMCLASS
 (
@@ -615,5 +632,6 @@ ICONWINDOW_CUSTOMCLASS
     MUIM_IconWindow_IconsDropped,  Msg,
     MUIM_IconWindow_Clicked,       Msg,
     MUIM_IconWindow_DirectoryUp,   Msg,
-    MUIM_IconWindow_AppWindowDrop, Msg
+    MUIM_IconWindow_AppWindowDrop, Msg,
+    MUIM_IconWindow_Remove,        Msg
 );

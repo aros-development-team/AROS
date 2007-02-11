@@ -42,6 +42,7 @@ struct IconWindow_ActionMsg
 #define MUIM_IconWindow_Clicked       (MUIB_IconWindow | 0x00000004)
 #define MUIM_IconWindow_DirectoryUp   (MUIB_IconWindow | 0x00000005)
 #define MUIM_IconWindow_AppWindowDrop (MUIB_IconWindow | 0x00000006)
+#define MUIM_IconWindow_Remove         (MUIB_IconWindow | 0x00000007)
 
 #define ICONWINDOW_ACTION_OPEN 1
 #define ICONWINDOW_ACTION_CLICK 2
@@ -70,7 +71,8 @@ and temporarily placed here */
                            m9, m9_msg_type,                          \
                            m10, m10_msg_type,                        \
                            m11, m11_msg_type,                        \
-                           m12, m12_msg_type)                        \
+                           m12, m12_msg_type,                        \
+                           m13, m13_msg_type)                        \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
@@ -84,6 +86,7 @@ and temporarily placed here */
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type); \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type); \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type); \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type); \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
 

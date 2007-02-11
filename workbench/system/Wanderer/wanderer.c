@@ -1695,7 +1695,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     IPTR    useFont = (IPTR)NULL;
     if (data->wd_PrefsIntern)
     {
-      useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
+        useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
     }
 
     Object *menustrip = __CreateWandererIntuitionMenu__ ( isWorkbenchWindow );
@@ -1709,7 +1709,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         MUIA_IconWindow_ActionHook, (IPTR) &hook_action,
         
         MUIA_IconWindow_IsRoot,            isWorkbenchWindow ? TRUE : FALSE,
-        /*MUIA_IconWindow_IsSubWindow,       isWorkbenchWindow ? FALSE : TRUE,*/
+        MUIA_Window_IsSubWindow,           isWorkbenchWindow ? FALSE : TRUE,
         MUIA_IconWindow_IsBackdrop,        isWorkbenchWindow ? TRUE : FALSE,
         MUIA_IconWindow_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
         isWorkbenchWindow ? 
@@ -1726,10 +1726,15 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         else                    drw = "RAM:";
         
         /* FIXME: should remove + dispose the window (memleak!) */
-        DoMethod
+        /*DoMethod
         (
             window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
             (IPTR) window, 3, MUIM_Set, MUIA_Window_Open, FALSE
+        );*/
+        DoMethod
+        (
+            window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+            (IPTR) window, 1, MUIM_IconWindow_Remove
         );
         
         DoMethod
