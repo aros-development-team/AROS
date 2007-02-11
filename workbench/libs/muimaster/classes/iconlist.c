@@ -2092,11 +2092,10 @@ static int ReadIcons(struct IClass *cl, Object *obj)
         
                     if (Stricmp(filename,"Disk")) /* skip disk.info */
                     {
-                        STRPTR buf = AllocVec ( 512, MEMF_CLEAR );
+                        char buf[ 512 ];
                         strcpy(buf,data->drawer);
                         AddPart(buf,filename,sizeof(buf));
                         DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)filename,(IPTR) fib);
-                        FreeVec ( buf );
                     }
                 }
             }
