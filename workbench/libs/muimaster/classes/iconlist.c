@@ -405,10 +405,10 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
                 Move(_rp(obj), tx, ty + 1);  Text(_rp(obj), buf, nameLength);
                 Move(_rp(obj), tx, ty - 1);  Text(_rp(obj), buf, nameLength);
                 
-            
                 SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
                 Move(_rp(obj), tx, ty);
                 Text(_rp(obj), buf, nameLength);
+                SetSoftStyle(_rp(obj), FS_NORMAL, AskSoftStyle(_rp(obj)));
                 break;
         }
 
@@ -457,7 +457,6 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
                     
                 default:
                     // Outline mode..
-                    
                     SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
                     SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
         
@@ -469,6 +468,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
                     SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
                     Move(_rp(obj), tx, ty);
                     Text(_rp(obj), buf, nameLength);
+                    SetSoftStyle(_rp(obj), FS_NORMAL, AskSoftStyle(_rp(obj)));
                     break;
             }
         }
