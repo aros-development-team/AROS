@@ -1,7 +1,26 @@
-#ifndef AMISTART_FILESYSTEMS_H
-#define	 AMISTART_FILESYSTEMS_H
+#ifndef WANDERER_FILESYSTEMS_H
+#define	WANDERER_FILESYSTEMS_H
 
-#include    <exec/types.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <math.h>
+#include <stdarg.h>
+#include <exec/types.h>
+#include <exec/memory.h>
+#include <dos/dos.h>
+#include <intuition/intuitionbase.h>
+#include <intuition/classusr.h>
+#include <clib/alib_protos.h>
+#include <utility/utility.h>
+#include <dos/dosextens.h>
+#include <libraries/mui.h>
+#include <clib/alib_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/muimaster.h>
+#include <proto/intuition.h>
 
 /* FILEINFO CONSTANTS */
 
@@ -35,24 +54,56 @@
 #define	 POOLSIZE           COPYLEN * 2
 
 
-   		    struct	 dCopyStruct {
-		    		    char  *spath;
-		    		    char  *dpath;
-		    		    char  *file;
-                        APTR  userdata;
-                        BPTR  slock;
-                        ULONG flags;
-                        unsigned long long filelen;
-				        UWORD type;
-		    };
+struct	 dCopyStruct 
+{
+		    char  *spath;
+		    char  *dpath;
+		    char  *file;
+            APTR  userdata;
+            BPTR  slock;
+            ULONG flags;
+            unsigned long long filelen;
+			UWORD type;
+};
 
-            struct  FileInfo {
-                ULONG   len;
-                ULONG   protection;
-                char    *comment;
-            };
+struct  MUIDisplayObjects 
+{
+    Object              *sourceObject;
+    Object              *destObject;
+    Object              *fileObject;
+    Object              *stopObject;
+    Object              *copyApp;
+    Object              *performanceObject;
+    Object              *win;
+    ULONG               stopflag;
+    ULONG               numfiles;
+    UWORD               action;
 
-            BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWORD delmode, UWORD protectmode, UWORD overwritemode, struct Hook *dHook, struct Hook *delHook, APTR userdata);
-            BOOL CopyContent(APTR pool, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct Hook *delHook, APTR userdata);
+    unsigned long long  bytes;
+    unsigned int        starttime;
+    char                Buffer[120];
+};
 
-#endif /* AMISTART_FILESYSTEMS_H */
+struct  FileInfo 
+{
+    ULONG   len;
+    ULONG   protection;
+    char    *comment;
+};
+
+struct FileEntry
+{
+    struct  FileEntry   *next;
+    char    name[1];
+};
+
+char  *CombineString(char *format, ...);
+void freeString(APTR pool, char *str);
+
+WORD AskChoiceNew(char *title, char *strg, char *gadgets, UWORD sel, BOOL centered);
+WORD AskChoice(char *title, char *strg, char *gadgets, UWORD sel);
+WORD AskChoiceCentered(char *title, char *strg, char *gadgets, UWORD sel);
+
+BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct Hook *delHook, APTR userdata);
+
+#endif /* WANDERER_FILESYSTEMS_H */

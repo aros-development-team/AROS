@@ -95,16 +95,16 @@ void IconWindow__SetupToolbar (Class *CLASS, Object *self)
         InnerSpacing(0,0),
         MUIA_Group_Horiz, TRUE,
         MUIA_Weight, 100,
-        Child, HGroup,
+        Child, (IPTR)GroupObject,
             InnerSpacing(0,0),
             MUIA_Weight, 100,
+            MUIA_Group_Horiz, TRUE,
             Child, (IPTR)( strObj = StringObject,
                 MUIA_String_Contents, (IPTR)"",
                 MUIA_Frame, MUIV_Frame_String,
-                MUIA_Font, MUIV_Font_Normal,
             End ),
         End,
-        Child, HGroup,
+        Child, (IPTR)HGroup,
             InnerSpacing(0,0),
             MUIA_Weight, 1,
             Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
@@ -314,10 +314,10 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                     // Cause the window to redraw here!
                 break;
             case MUIA_IconWindow_Drawer:
-                 strcpy(data->directory_path, (IPTR)tag->ti_Data);    
-                 set(data->iwd_IconList, MUIA_IconDrawerList_Drawer, (IPTR) data->directory_path);
-                 set(self, MUIA_Window_Title, data->directory_path);
-                 set(data->iwd_pathStrObj, MUIA_String_Contents, (IPTR)data->directory_path);
+                strcpy(data->directory_path, (IPTR)tag->ti_Data);    
+                set(data->iwd_IconList, MUIA_IconDrawerList_Drawer, (IPTR) data->directory_path);
+                set(self, MUIA_Window_Title, data->directory_path);
+                set(data->iwd_pathStrObj, MUIA_String_Contents, (IPTR)data->directory_path);
                 break;
             case MUIA_IconWindow_Toolbar_Enabled:   
                  if (!data->iwd_IsRoot)
