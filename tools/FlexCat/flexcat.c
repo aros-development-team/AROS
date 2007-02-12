@@ -432,7 +432,7 @@ size_t i;
        int b = tolower( (int)*str2 );
 
        if( !a || !b )
-           break;
+           return( 1 );
 
        if( a != b )
            return( 1 );
@@ -2766,7 +2766,7 @@ int main(int argc, char *argv [])
       newctfile = argv[i] + 10;
       }
     else
-    if(strnicmp (argv[i], "newctfile", 10) == 0)
+    if(strnicmp (argv[i], "newctfile", 9) == 0)
       {
       if (i+1 == argc)
         Usage();
