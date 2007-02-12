@@ -1117,7 +1117,7 @@ void icon_delete(void)
     } 
     while (TRUE);
     
-    window_update( );
+    DoMethod ( iconList, MUIM_IconList_Update );
 }
 
 void wanderer_guisettings(void)
@@ -1525,7 +1525,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
                                     
                                     if (iconlist != NULL)
                                     {
-                                        window_update ( );
+                                        DoMethod ( iconlist, MUIM_IconList_Update );
                                     }
                                     break;
                                 }
@@ -1613,7 +1613,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
                 set(iconList, MUIA_IconList_ListMode, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_ListMode));
                 set(iconList, MUIA_IconList_TextMode, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_TextMode));
                 set(iconList, MUIA_IconList_TextMaxLen, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_TextMaxLen));
-                window_update ( );
+                DoMethod(iconList, MUIM_IconList_Update );
             }
         }
     } 
