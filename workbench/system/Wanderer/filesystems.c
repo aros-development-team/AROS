@@ -1,41 +1,158 @@
-#include    <clib/alib_protos.h>
-#include    <proto/dos.h>
-#include    <proto/exec.h>
-#include    <dos/dos.h>
-#include    <dos/dosextens.h>
-#include    <exec/memory.h>
-#include	<exec/types.h>
-#include    <utility/utility.h>
-#include	<intuition/classusr.h>
-
-#include    <string.h>
-#include    <stdlib.h>
-#include	<stdio.h>
-
 #include	"filesystems.h"
-
-
-struct FileEntry
-{
-    struct  FileEntry   *next;
-    char    name[1];
-};
-
-extern struct Library *UtilityBase;
-extern struct ExecBase *SysBase;
-extern struct DosLibrary *DOSBase;
 
 struct TagItem DummyTags[] = { TAG_DONE, };
 
-/*
-** allocPath(char*)
-**
-** input	:  str		full pathname including a filename
-** return	:  char*    string without the last part of the passed pathname
-**
-** bugs:	it strips the last part of the passed data, but it won't recognize if it's
-**			really a file
-*/
+/* define some nonglobal data that can be used by the display hook */
+
+void  strcrem(char *s, char *d, char c) 
+{
+    while (*s) {
+        if (*s != c) *d++= *s;
+        *s++;
+    }
+    *d = 0;
+}
+
+WORD AskChoiceNew(char *title, char *strg, char *gadgets, UWORD sel, BOOL centered) 
+{
+
+    Object  *app, *win;
+    Object  *button, *bObject, *selObject;
+    LONG       back, old;
+    BOOL    running = TRUE;
+    ULONG   signals;
+    ULONG   id;
+    char    Buffer[64], Buffer1[64];
+
+    back = 0;
+
+    app = ApplicationObject,
+    
+        MUIA_Application_Title,     (IPTR)"Requester",
+        MUIA_Application_Base,      (IPTR)"WANDERER_REQ",
+    
+        SubWindow, (IPTR)(win = WindowObject,
+            MUIA_Window_Title,           title,
+            MUIA_Window_Activate,        TRUE,
+            MUIA_Window_DepthGadget,     TRUE,
+            MUIA_Window_SizeGadget,  FALSE,
+            MUIA_Window_AppWindow,      FALSE,
+            MUIA_Window_CloseGadget,    FALSE,
+            MUIA_Window_Borderless,  FALSE,
+            MUIA_Window_TopEdge,        MUIV_Window_TopEdge_Moused,
+            MUIA_Window_LeftEdge,       MUIV_Window_LeftEdge_Moused,
+        
+            WindowContents, (IPTR)VGroup,
+                Child, (IPTR)TextObject,
+                    TextFrame,
+                    InnerSpacing(12,12),
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_Text_PreParse, (IPTR)"\33c",
+                    MUIA_Text_Contents, (IPTR)strg,
+                End,
+                Child, (IPTR)(bObject = HGroup,End),
+            End,
+        End),
+    End;
+
+
+    if (app) 
+    {
+        old = 0;
+        back = 11;
+        selObject = NULL;
+
+        while (old != -1) 
+        {
+            old = SplitName(gadgets, '|', Buffer, old, sizeof(Buffer));
+            if (old == -1) back = 10;
+            strcrem(Buffer, Buffer1, '_');
+            button = SimpleButton(Buffer1);
+            if (button) 
+            {
+                if ((back-10) == sel) selObject = button;
+                set(button, MUIA_CycleChain, 1);
+                DoMethod(bObject, MUIM_Group_InitChange);
+                DoMethod(bObject, OM_ADDMEMBER, button);
+                DoMethod(bObject, MUIM_Group_ExitChange);
+                DoMethod(button,MUIM_Notify,MUIA_Pressed, FALSE, app,2,MUIM_Application_ReturnID,back);
+            }
+            back++;
+        }
+
+        back = -1;
+
+        if (centered) 
+        {
+            set (win, MUIA_Window_TopEdge,        MUIV_Window_TopEdge_Centered);
+            set (win, MUIA_Window_LeftEdge,       MUIV_Window_LeftEdge_Centered);
+        }
+        if (selObject) set(win, MUIA_Window_ActiveObject, selObject);
+        set(win,MUIA_Window_Open,TRUE);
+
+        while (running) 
+        {
+            id = DoMethod(app,MUIM_Application_Input,&signals);
+            switch (id) 
+            {
+
+                case MUIV_Application_ReturnID_Quit:
+                    running = FALSE;
+                    break;
+                case 10:
+                    running = FALSE;
+                    back = 0;
+                    break;
+                case 11:
+                    running = FALSE;
+                    back = 1;
+                    break;
+                case 12:
+                    running = FALSE;
+                    back = 2;
+                    break;
+                case 13:
+                    running = FALSE;
+                    back = 3;
+                    break;
+                case 14:
+                    running = FALSE;
+                    back = 4;
+                    break;
+                case 15:
+                    running = FALSE;
+                    back = 5;
+                    break;
+                case 16:
+                    running = FALSE;
+                    back = 6;
+                    break;
+                case 17:
+                    running = FALSE;
+                    back = 7;
+                    break;
+                case 18:
+                    running = FALSE;
+                    back = 8;
+                    break;
+            }
+            if (running && signals) Wait(signals);
+        }
+        set(win,MUIA_Window_Open,FALSE);
+        MUI_DisposeObject(app);
+    }
+    return back;
+}
+
+WORD AskChoice(char *title, char *strg, char *gadgets, UWORD sel) 
+{
+    return AskChoiceNew(title, strg, gadgets, sel, FALSE);
+}
+
+WORD AskChoiceCentered(char *title, char *strg, char *gadgets, UWORD sel) 
+{
+    return AskChoiceNew(title, strg, gadgets, sel, TRUE);
+}
 
 char *combinePath(APTR pool, char *path, char *file) 
 {
@@ -48,7 +165,7 @@ char *combinePath(APTR pool, char *path, char *file)
     l = strlen(path) + strlen(file) + 1;
     if (path[strlen(path)-1] != '/') l++;
 
-    if (pool == NULL) out = AllocMem(l, MEMF_CLEAR); 
+    if (pool == NULL) out = AllocVec(l, MEMF_CLEAR); 
     else out = AllocPooled(pool, l);
     
     if (out) 
@@ -62,7 +179,7 @@ char *combinePath(APTR pool, char *path, char *file)
 char *allocPath(APTR pool, char *str) 
 {
     char *s0, *s1, *s;
-    int	 l;
+    int  l;
 
     s = NULL;
     s0 = str;
@@ -82,30 +199,32 @@ void freeString(APTR pool, char *str)
 {
     if (str) 
     {
-        if (pool == NULL) FreeMem(str, strlen(str) + 1); 
-        else FreePooled(pool, str, strlen(str)+1);
+        if (pool == NULL) 
+            FreeVec(str); 
+        else 
+            FreePooled(pool, str, strlen(str)+1);
     }
 }
 
 /*
 ** allocates memory for a string and copies them to the new buffer
 **
-** inputs:	   str		source string
-** return:	   char		pointer to string or NULL
+** inputs:     str      source string
+** return:     char     pointer to string or NULL
 **
 */
 
 char *allocString(APTR pool, char *str) 
 {
     char  *b;
-    int	 l;
+    int  l;
 
     if (str == NULL) return NULL;
 
     l = strlen(str);
     
     if (pool == NULL) 
-        b = (char*) AllocMem(l+1, MEMF_CLEAR); 
+        b = (char*) AllocVec(l+1, MEMF_CLEAR); 
     else b = (char*) AllocPooled(pool, l+1);
     
     if (b && (l>0)) strncpy (b, str, l);
@@ -152,6 +271,57 @@ char  *allocPathFromLock(APTR pool, BPTR lock)
         FreePooled(pool, pathb, PATHBUFFERSIZE);
     }
     return path;
+}
+
+
+char  *CombineString(char *format, ...) {
+
+    int   cnt = 0, cnt1;
+    int   len;
+    char  *s, *s1, *str, *p;
+    char  *back = NULL;
+
+    va_list  ap;
+    s = format;
+    while ((s = strstr(s,"%s")) != NULL) {cnt++; s++; }
+
+    if (cnt >0) 
+    {
+        len = strlen(format) - 2*cnt;
+        va_start(ap, format);
+        cnt1 = cnt;
+
+        while (cnt1--) 
+        {
+            p = va_arg(ap, char *);
+            len += strlen(p);
+        };
+        va_end(ap);
+        len++;
+        if (len>0) 
+        {
+            back = AllocVec(len, MEMF_CLEAR);
+            if (back) 
+            {
+                str = back;
+                s = format;
+                va_start(ap, format);
+                while ((s1 = strstr(s, "%s")) != NULL) 
+                {
+                    p = va_arg(ap, char *);
+                    len = s1-s;
+                    strncpy(str, s, len);
+                    s = s1+2;
+                    str += len;
+                    strncpy(str, p, strlen(p));
+                    str += strlen(p);
+                };
+                if (s) strncpy(str, s, strlen(s));
+                va_end(ap);
+            }
+        }
+    }
+    return back;
 }
 
 ULONG isPathRecursive(APTR pool, char *source, char *destination) 
@@ -1042,6 +1212,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
             if (infoname) deleteFile(infoname);
         }
     }
+    
     freeString(pool, infoname);
     freeString(pool, destinfo);
     freeString(pool, dest);
