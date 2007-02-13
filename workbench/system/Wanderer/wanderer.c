@@ -109,6 +109,72 @@ AROS_UFH3
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3
+(
+    ULONG, askDeleteFunc,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(struct dCopyStruct *, obj, A2),
+    AROS_UFHA(APTR, unused_param, A1)
+)
+{
+    AROS_USERFUNC_INIT
+    
+    ULONG back = DELMODE_NONE;
+
+    UWORD ret;
+    char     *string = NULL;
+    ret = 0;
+    
+    if (obj->file) 
+    {
+        if (obj->type == 0) 
+        {
+            string = CombineString("Really delete file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
+                obj->file, obj->spath);
+        }
+        else if (obj->type == 1) 
+        {
+            string = CombineString("Do you wish to unprotect file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
+                obj->file, obj->spath);
+        }
+        else if (obj->type == 2) 
+        {
+            string = CombineString("Really overwrite file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
+                obj->file, obj->spath);
+        }
+        else 
+        {
+            string = CombineString("Can't access file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
+                obj->file, obj->spath);
+        }
+    } 
+    else 
+    {
+        if (obj->type == 0) string = CombineString("Really delete drawer\n\033b%s\033n ?", obj->spath);
+        else if (obj->type == 1) string = CombineString("Do you wish to unprotect drawer\n\033b%s\033n ?", obj->spath);
+        else if (obj->type == 3) string = CombineString("Can't access drawer\n\033b%s", obj->spath);
+    }
+
+    if (string) 
+    {
+        if (obj->type == 0) ret = AskChoiceCentered("Delete Requester:", string, "_Yes|Yes to _All|_No|No _to ALL", 0);
+        else if (obj->type == 1) ret = AskChoiceCentered("Protection Requester:", string, "_Unprotect|Unprotect _All|_No|No _to ALL", 0);
+        else if (obj->type == 2) ret = AskChoiceCentered("Overwrite Requester:", string, "_Overwrite|Overwrite _All|_No|No _to ALL", 0);
+        else ret = AskChoiceCentered("Overwrite Requester:", string, "_Skip|_Abort", 0);
+        freeString(NULL, string);
+    }
+
+    if (ret == 0) back = DELMODE_NONE;
+    else if (ret == 1) back = DELMODE_DELETE;
+    else if (ret == 2) back = DELMODE_ALL;
+    else if (ret == 3) back = DELMODE_NO;
+
+    return back;
+    
+    AROS_USERFUNC_EXIT
+}
+
+
 
 AROS_UFH3
 (
@@ -266,8 +332,11 @@ AROS_UFH3
 
             struct MUIDisplayObjects dobjects;
             struct Hook displayCopyHook;
+            struct Hook displayDelHook;
 
             displayCopyHook.h_Entry = (HOOKFUNC) displayCopyFunc;
+            displayDelHook.h_Entry = (HOOKFUNC) askDeleteFunc;
+            
 
             if (CreateCopyDisplay(ACTION_COPY, &dobjects))
             {
@@ -285,7 +354,7 @@ AROS_UFH3
 
                         /* copy via filesystems.c */
                         D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path );)
-                        CopyContent(NULL, ent->filename, destination_path, TRUE, ACTION_COPY, &displayCopyHook, NULL, (APTR) &dobjects);
+                        CopyContent(NULL, ent->filename, destination_path, TRUE, ACTION_COPY, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
                     }
                 } 
                 while ( (int)ent != MUIV_IconList_NextSelected_End );
@@ -407,70 +476,6 @@ AROS_UFH3
 }
 
 
-AROS_UFH3
-(
-    ULONG, askDeleteFunc,
-    AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(struct dCopyStruct *, obj, A2),
-    AROS_UFHA(APTR, unused_param, A1)
-)
-{
-    AROS_USERFUNC_INIT
-    
-    ULONG back = DELMODE_NONE;
-
-    UWORD ret;
-    char     *string = NULL;
-    ret = 0;
-    
-    if (obj->file) 
-    {
-        if (obj->type == 0) 
-        {
-            string = CombineString("Really delete file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
-                obj->file, obj->spath);
-        }
-        else if (obj->type == 1) 
-        {
-            string = CombineString("Do you wish to unprotect file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
-                obj->file, obj->spath);
-        }
-        else if (obj->type == 2) 
-        {
-            string = CombineString("Really overwrite file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
-                obj->file, obj->spath);
-        }
-        else 
-        {
-            string = CombineString("Can't access file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
-                obj->file, obj->spath);
-        }
-    } 
-    else 
-    {
-        if (obj->type == 0) string = CombineString("Really delete drawer\n\033b%s\033n ?", obj->spath);
-        else if (obj->type == 1) string = CombineString("Do you wish to unprotect drawer\n\033b%s\033n ?", obj->spath);
-        else if (obj->type == 3) string = CombineString("Can't access drawer\n\033b%s", obj->spath);
-    }
-
-    if (string) 
-    {
-        if (obj->type == 0) ret = AskChoiceCentered("Delete Requester:", string, "_Yes|Yes to _All|_No|No _to ALL", 0);
-        else if (obj->type == 1) ret = AskChoiceCentered("Protection Requester:", string, "_Unprotect|Unprotect _All|_No|No _to ALL", 0);
-        else if (obj->type == 2) ret = AskChoiceCentered("Overwrite Requester:", string, "_Overwrite|Overwrite _All|_No|No _to ALL", 0);
-        else ret = AskChoiceCentered("Overwrite Requester:", string, "_Skip|_Abort", 0);
-        freeString(NULL, string);
-    }
-
-    if (ret == 0) back = DELMODE_NONE;
-    else if (ret == 1) back = DELMODE_DELETE;
-    else if (ret == 2) back = DELMODE_ALL;
-    else if (ret == 3) back = DELMODE_NO;
-
-    return back;
-    
-    AROS_USERFUNC_EXIT
-}
 
 
 /******** code from workbench/c/Info.c *******************/
@@ -1088,21 +1093,22 @@ void icon_delete(void)
 {
     Object                *window   = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextSelected_Start;
+    struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextSelected_Start;
+    DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
     
+    struct MUIDisplayObjects dobjects;
+    struct Hook displayCopyHook;
+    struct Hook displayDelHook;
+    displayCopyHook.h_Entry = (HOOKFUNC) displayCopyFunc;
+    displayDelHook.h_Entry = (HOOKFUNC) askDeleteFunc;
+    
+    ULONG updatedIcons = 0;
+    
+    /* Process all selected entries */
     do
-    {
-        DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
-        
+    {   
         if ((int)entry != MUIV_IconList_NextSelected_End) 
         {
-
-
-            struct MUIDisplayObjects dobjects;
-            struct Hook displayCopyHook;
-            struct Hook displayDelHook;
-            displayCopyHook.h_Entry = (HOOKFUNC) displayCopyFunc;
-            displayDelHook.h_Entry = (HOOKFUNC) askDeleteFunc;
 
             if (CreateCopyDisplay(ACTION_DELETE, &dobjects))
             {
@@ -1110,14 +1116,16 @@ void icon_delete(void)
                 D(bug("[WANDERER] Delete \"%s\"\n", entry->filename);)
                 CopyContent( NULL, entry->filename, NULL, TRUE, ACTION_DELETE, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
                 DisposeCopyDisplay(&dobjects);
+                updatedIcons++;
             }
         }
-        else
-            break;
+        DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
     } 
-    while (TRUE);
+    while ( (int)entry != MUIV_IconList_NextSelected_End );
     
-    DoMethod ( iconList, MUIM_IconList_Update );
+    // Only update list if anything happened to the icons!
+    if ( updatedIcons > 0 )
+        DoMethod ( iconList, MUIM_IconList_Update );
 }
 
 void wanderer_guisettings(void)
