@@ -34,7 +34,7 @@ $Id$
 #include <prefs/wanderer.h>
 #include <proto/cybergraphics.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define MYDEBUG
