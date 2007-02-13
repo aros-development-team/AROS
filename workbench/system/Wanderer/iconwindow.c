@@ -213,7 +213,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_Weight, 100,
                 End),
                 
-                Child, RectangleObject,
+                Child, (IPTR) RectangleObject,
                     InnerSpacing(0,0),
                     MUIA_Frame, MUIV_Frame_None,
                     MUIA_Weight, 1,
@@ -288,6 +288,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
     SETUP_INST_DATA;
     struct TagItem *tstate = message->ops_AttrList, *tag;
+    BOOL UpdateIconlist = FALSE;
 
     while ((tag = NextTagItem((const struct TagItem**)&tstate)) != NULL)
     {
@@ -310,8 +311,10 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 D(bug("[iconwindow] MUIA_IconWindow_Font: Setting Window Font [%x]\n", data->iwd_WindowFont));
                 data->iwd_WindowFont = (struct TextFont  *)tag->ti_Data;
                 if ( data->iwd_WindowFont != 1 )
+                {
                     SetFont(_rp(self), data->iwd_WindowFont);
-                    // Cause the window to redraw here!
+                    UpdateIconlist = TRUE;
+                }
                 break;
             case MUIA_IconWindow_Drawer:
                 strcpy(data->directory_path, (IPTR)tag->ti_Data);    
@@ -394,7 +397,8 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 break;
         }
     }
-    
+    if ( UpdateIconlist )
+        DoMethod(data->iwd_IconList, MUIM_IconList_Update);
     return DoSuperMethodA(CLASS, self, (Msg) message);
 }
 
@@ -410,16 +414,16 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
         case MUIA_IconWindow_Drawer:
             *store = !data->iwd_IsRoot
                 ? XGET(data->iwd_IconList, MUIA_IconDrawerList_Drawer)
-                : (IPTR) NULL;
+                : (IPTR)NULL;
             break;      
         case MUIA_IconWindow_IconList:
             *store = (IPTR) data->iwd_IconList;
             break;;
         case MUIA_IconWindow_Toolbar_Enabled:
-            *store = ( IPTR )data->iwd_hasToolbar;
+            *store = (IPTR)data->iwd_hasToolbar;
             break; 
         case MUIA_IconWindow_IsRoot:
-            *store = data->iwd_IsRoot;
+            *store = (IPTR)data->iwd_IsRoot;
             break;
         default:
             rv = DoSuperMethodA(CLASS, self, (Msg) message);
