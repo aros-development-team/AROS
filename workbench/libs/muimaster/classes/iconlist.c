@@ -34,7 +34,7 @@ $Id$
 #include <prefs/wanderer.h>
 #include <proto/cybergraphics.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define MYDEBUG
@@ -1740,6 +1740,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                                      node->selected = 1;
                                      data->update = UPDATE_SINGLEICON;
                                      data->update_icon = node;
+                                     data->last_selected = node; // <- I'm the latest addition to your flock! =)
                                      MUI_Redraw(obj,MADF_DRAWUPDATE);
                                  }
                 
@@ -1813,6 +1814,7 @@ IPTR IconList__MUIM_NextSelected(struct IClass *cl, Object *obj, struct MUIP_Ico
     {
         if (!(node = data->last_selected))
         {
+            D(bug("[IconList] No selected entries!!!\n"));
             *msg->entry = (struct IconList_Entry*)MUIV_IconList_NextSelected_End;
         } 
         else
