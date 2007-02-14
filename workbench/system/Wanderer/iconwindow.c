@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define MUIMASTER_YES_INLINE_STDARG
 
@@ -311,10 +311,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 D(bug("[iconwindow] MUIA_IconWindow_Font: Setting Window Font [%x]\n", data->iwd_WindowFont));
                 data->iwd_WindowFont = (struct TextFont  *)tag->ti_Data;
                 if ( data->iwd_WindowFont != 1 )
-                {
                     SetFont(_rp(self), data->iwd_WindowFont);
-                    UpdateIconlist = TRUE;
-                }
                 break;
             case MUIA_IconWindow_Drawer:
                 strcpy(data->directory_path, (IPTR)tag->ti_Data);    
@@ -564,8 +561,11 @@ IPTR IconWindow__MUIM_IconWindow_Open
 )
 {
     SETUP_INST_DATA;
-    DoMethod(data->iwd_IconList, MUIM_IconList_Clear);
-    SET(self, MUIA_Window_Open, TRUE);
+    if (!XGET(self, MUIA_Window_Open))
+    {
+        DoMethod(data->iwd_IconList, MUIM_IconList_Clear);
+        SET(self, MUIA_Window_Open, TRUE);
+    }
     SET(self, MUIA_Window_Activate, TRUE);
     DoMethod(data->iwd_IconList, MUIM_IconList_Update);
     
@@ -613,6 +613,7 @@ IPTR IconWindow__MUIM_IconWindow_Remove
     SETUP_INST_DATA;
     
     // Remove window
+    set ( _window(self), MUIA_Window_Open, FALSE );
     DoMethod ( _app(self), OM_REMMEMBER, _window(self) );
     DoMethod ( _app(self), OM_REMMEMBER, self );
     DoMethod ( _window(self), OM_DISPOSE );
