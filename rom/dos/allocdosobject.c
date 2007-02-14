@@ -85,19 +85,12 @@
 	return mem;
 
     case DOS_STDPKT:
-        {
-            struct StandardPacket *sp = AllocMem(sizeof(struct StandardPacket), MEMF_CLEAR);
-
-            if (sp == NULL) {
-                SetIoErr(ERROR_NO_FREE_STORE);
-                return NULL;
-            }
-
-            sp->sp_Pkt.dp_Link = &(sp->sp_Msg);
-            sp->sp_Msg.mn_Node.ln_Name = (char *) &(sp->sp_Pkt);
-
-            return (APTR) &(sp->sp_Pkt);
-        }
+        mem = AllocMem(sizeof(struct StandardPacket), MEMF_CLEAR);
+        
+        if (mem == NULL)
+            SetIoErr(ERROR_NO_FREE_STORE);
+        
+        return &((struct StandardPacket *)mem)->sp_Pkt;
 
     case DOS_EXALLCONTROL:
 	mem = AllocMem(sizeof(struct InternalExAllControl), MEMF_CLEAR);
