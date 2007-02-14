@@ -274,29 +274,27 @@ AROS_UFH3
     else  if (msg->type == ICONWINDOW_ACTION_DIRUP)
     {     
                     
-    STRPTR actual_drawer = (STRPTR)XGET(obj, MUIA_IconWindow_Drawer);
-    STRPTR parent_drawer = strrchr(actual_drawer,'/');
-    STRPTR root_drawer = strrchr(actual_drawer,':');
-                
-    /* check if dir is not drive root dir */
-    if ( strlen(root_drawer) > 1 )
-    {
-        /* check if second or third level directory*/
-        if (!parent_drawer)
+        STRPTR actual_drawer = (STRPTR)XGET(obj, MUIA_IconWindow_Drawer);
+        STRPTR parent_drawer = strrchr(actual_drawer,'/');
+        STRPTR root_drawer = strrchr(actual_drawer,':');
+        
+        /* check if dir is not drive root dir */
+        if ( strlen(root_drawer) > 1 )
         {
-            (*(root_drawer+1)) = 0;
-            set(obj, MUIA_IconWindow_Drawer, actual_drawer);
+            /* check if second or third level directory*/
+            if (!parent_drawer)
+            {
+                (*(root_drawer+1)) = 0;
+                set(obj, MUIA_IconWindow_Drawer, actual_drawer);
+                
+            }
+            else
+            {
+                (*parent_drawer) = 0;
+                set(obj, MUIA_IconWindow_Drawer, actual_drawer);
+            } 
             
         }
-        else
-        {
-            (*parent_drawer) = 0;
-            set(obj, MUIA_IconWindow_Drawer, actual_drawer);
-        } 
-        
-        /* update the window */
-        window_update();
-    }
     
     } 
     else if (msg->type == ICONWINDOW_ACTION_CLICK)
@@ -710,8 +708,10 @@ void window_open_parent(STRPTR *cdptr)
 	
 	last_letter = &thispath[strlen(thispath)-1];
 	
-	if (last_letter==(STRPTR)0x3a) path_len = (IPTR)(thispath-(IPTR)(dr));
-	else path_len = (IPTR)((thispath-(IPTR)(dr))-1);
+	if (*last_letter==0x3a) 
+       path_len = (IPTR)(thispath-(IPTR)(dr));
+	else 
+       path_len = (IPTR)((thispath-(IPTR)(dr))-1);
 	
 	STRPTR buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);	
 	CopyMem(dr, buf, path_len);
@@ -719,6 +719,22 @@ void window_open_parent(STRPTR *cdptr)
 	Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
 	Object *child;
 	
+    // Make sure we have a correct path   
+    BOOL foundSlash = FALSE, foundColon = FALSE;
+    int i = 0; for ( ; i < path_len; i++ )
+    {
+        if ( buf[ i ] == '/' ) foundSlash = TRUE;
+        if ( buf[ i ] == ':' ) foundColon = TRUE;
+    }
+    if ( !foundColon && !foundSlash )
+    {
+        STRPTR newbuf = AllocVec ((path_len + 2), MEMF_PUBLIC|MEMF_CLEAR);
+        sprintf(newbuf,"%s:",buf);
+        FreeVec (buf);
+        buf = newbuf;
+    }
+    // Done with path correction check
+    
 	while ((child = NextObject(&cstate)))
 	{
 		if (XGET(child, MUIA_UserData))
@@ -739,7 +755,7 @@ void window_open_parent(STRPTR *cdptr)
 			}
 		}
 	}
-	
+	   
 	DoMethod(app, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
 	FreeVec(buf);
 }
@@ -1438,7 +1454,7 @@ IPTR Wanderer__MUIM_Application_Execute
 
         Detach();
         
-	DoSuperMethodA(CLASS, self, message);
+	    DoSuperMethodA(CLASS, self, message);
         
         return RETURN_OK;
     }
