@@ -777,6 +777,28 @@ void window_update()
     }
 }
 
+void window_clear_selection()
+{
+    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+    if (iconList != NULL)
+    {
+        DoMethod(iconList, MUIM_IconList_UnselectAll);
+    }
+}
+
+void window_select_contents()
+{
+    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+    if (iconList != NULL)
+    {
+        DoMethod(iconList, MUIM_IconList_SelectAll);
+    }
+}
+
 void window_sort_name(Object **pstrip)
 {
     Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
@@ -1206,6 +1228,8 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
     DoMenuNotify(strip, MEN_WINDOW_OPEN_PARENT,     window_open_parent,     path);
     DoMenuNotify(strip, MEN_WINDOW_CLOSE,           window_close,           NULL);
     DoMenuNotify(strip, MEN_WINDOW_UPDATE,          window_update,          NULL);
+    DoMenuNotify(strip, MEN_WINDOW_CLEAR,           window_clear_selection, NULL);
+    DoMenuNotify(strip, MEN_WINDOW_SELECT,          window_select_contents, NULL);
     DoMenuNotify(strip, MEN_WINDOW_SORT_NAME,       window_sort_name,       strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_TYPE,       window_sort_type,       strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_DATE,       window_sort_date,       strip);
