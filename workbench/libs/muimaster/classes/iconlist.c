@@ -1620,31 +1620,16 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                             while (node)
                             {
      
-                                /* check if clicked on icon */
-                                if (mx >= node->x - data->view_x && mx < node->x - data->view_x + node->realWidth &&
-                                    my >= node->y - data->view_y && my < node->y - data->view_y + node->realHeight && 
-                                    !new_selected) 
-                                {
-                                    new_selected = node;
-            
-				                        /* check if icon was already selected before */
-                                    if (!node->selected)
-                                    {
-                                        node->selected = 1;
-                                        data->update = UPDATE_SINGLEICON;
-                                        data->update_icon = node;
-                                        MUI_Redraw(obj,MADF_DRAWUPDATE);
-                                    }
-
-                                    data->first_selected = node;
-                                } 
                                 /* unselect all other nodes if mouse released on icon and lasso was not selected during mouse press */
-                                else if (node->selected && data->lasso_active == FALSE) 
+                                if ( ( node->selected && data->lasso_active == FALSE) &&
+                                     ( mx < node->x - data->view_x || mx > node->x - data->view_x + node->realWidth ||
+                                       my < node->y - data->view_y || my > node->y - data->view_y + node->realHeight ) )
+                                       
                                 {
-                                       node->selected = 0;
-                                       data->update = UPDATE_SINGLEICON;
-                                       data->update_icon = node;
-                                       MUI_Redraw(obj,MADF_DRAWUPDATE);
+                                      node->selected = 0;
+                                      data->update = UPDATE_SINGLEICON;
+                                      data->update_icon = node;
+                                      MUI_Redraw(obj,MADF_DRAWUPDATE);
                                 }
       
                                 node = Node_Next(node);
@@ -1711,7 +1696,31 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                         
                         /* unmark old lasso area */
                         GetAbsoluteLassoRect(data, &old_lasso);                          
-			            InvertLassoOutlines(obj, &old_lasso);
+			InvertLassoOutlines(obj, &old_lasso);
+
+                        /* if mouse leaves iconlist area during lasso mode, scroll view */
+                        if (mx < 0 || mx > _width(obj) || my < 0 || my > _height(obj))
+                        {
+                            WORD newleft = data->view_x;
+                            WORD newtop = data->view_y;
+
+                            if (data->click_x < mx) newleft += 5;
+                               else newleft -= 5;
+                            if (data->click_y < my) newtop +=  5;
+                               else newtop -= 5;
+
+                            if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
+                            if (newleft < 0) newleft = 0;
+
+                            if (newtop + _mheight(obj) > data->height) newtop = data->height - _mheight(obj);
+                            if (newtop < 0) newtop = 0;
+
+                            if ((newleft != data->view_x) || (newtop != data->view_y))
+                            {
+                                SetAttrs(obj, MUIA_IconList_Left, newleft, MUIA_IconList_Top, newtop, TAG_DONE);
+                            }
+
+                        } 
 
                         /* update lasso coordinates */
                         data->lasso_rect.MaxX = mx - data->view_rect.MinX + data->view_x;
