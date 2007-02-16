@@ -2061,6 +2061,32 @@ IPTR IconList__MUIM_UnselectAll(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
+/**************************************************************************
+MUIM_SelectAll
+**************************************************************************/
+IPTR IconList__MUIM_SelectAll(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_IconData *data = INST_DATA(cl, obj);
+    struct IconEntry *node;
+
+    node = List_First(&data->icon_list);
+    data->first_selected = node;
+    while (node)
+    {
+        if (!node->selected)
+        {
+            node->selected = 1;
+            data->update = UPDATE_SINGLEICON;
+            data->update_icon = node;
+            data->last_selected = node;
+            MUI_Redraw(obj,MADF_DRAWUPDATE);
+        }
+        node = Node_Next(node);
+    }
+    
+    return 1;
+}
+
 struct MUI_IconDrawerData
 {
     char *drawer;
@@ -2412,6 +2438,7 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, cl, obj, msg)
         case MUIM_IconList_GetSortBits:   return IconList__MUIM_GetSortBits(cl,obj,(APTR)msg);
         case MUIM_IconList_SetSortBits:   return IconList__MUIM_SetSortBits(cl,obj,(APTR)msg);
         case MUIM_IconList_PositionIcons: return IconList__MUIM_PositionIcons(cl,obj,(APTR)msg);
+        case MUIM_IconList_SelectAll:     return IconList__MUIM_SelectAll(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

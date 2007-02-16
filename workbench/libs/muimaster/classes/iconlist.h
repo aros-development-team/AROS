@@ -23,6 +23,7 @@
 #define MUIM_IconList_GetSortBits       (MUIB_IconList | 0x00000006) /* Zune: V1 */
 #define MUIM_IconList_SetSortBits       (MUIB_IconList | 0x00000007) /* Zune: V1 */
 #define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000008) /* Zune: V1 */
+#define MUIM_IconList_SelectAll         (MUIB_IconList | 0x00000009) /* Zune: V1 */
 
 struct MUIP_IconList_Clear              {ULONG MethodID;};
 struct MUIP_IconList_Update             {ULONG MethodID;};
