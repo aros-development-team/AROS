@@ -37,12 +37,12 @@
 #define	 FILEINFO_PROTECTED	  2
 #define	 FILEINFO_WRITE		  4
 
-#define	 ACTION_COPY		  	 1
-#define	 ACTION_DELETE		  	 2
-#define	 ACTION_DIRTOABS		 4
-#define	 ACTION_MAKEDIRS		 8
+#define	 ACTION_COPY             1
+#define	 ACTION_DELETE           2
+#define	 ACTION_DIRTOABS         4
+#define	 ACTION_MAKEDIRS         8
 #define  ACTION_GETINFO          16
-
+#define  ACTION_UPDATE           (1 << 31)
 
 #define	 PATH_NOINFO			 0
 #define	 PATH_RECURSIVE			 1
@@ -59,11 +59,14 @@ struct	 dCopyStruct
 		    char  *spath;
 		    char  *dpath;
 		    char  *file;
-            APTR  userdata;
-            BPTR  slock;
-            ULONG flags;
-            unsigned long long filelen;
-			UWORD type;
+            APTR            userdata;
+            ULONG           flags;
+            ULONG           filelen;
+            ULONG           actlen;
+            ULONG           totallen;
+            UWORD           type;
+            unsigned int    difftime;
+
 };
 
 struct  MUIDisplayObjects 
@@ -75,13 +78,16 @@ struct  MUIDisplayObjects
     Object              *copyApp;
     Object              *performanceObject;
     Object              *win;
+    Object              *gauge;
     ULONG               stopflag;
     ULONG               numfiles;
+    ULONG               smallobjects;
     UWORD               action;
+    BOOL                updateme;
 
     unsigned long long  bytes;
-    unsigned int        starttime;
-    char                Buffer[120];
+    char                Buffer[128];
+    char                SpeedBuffer[32];
 };
 
 struct  FileInfo 

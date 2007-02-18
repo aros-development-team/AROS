@@ -1,6 +1,6 @@
 
 /*
-Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+Copyright  2002-2006, The AROS Development Team. All rights reserved.
 $Id$
 */
 
@@ -156,6 +156,8 @@ struct MUI_IconData
     struct Rectangle view_rect;
     
     ULONG textWidth; /*  Whole textwidth for icon in pixels */
+
+    BOOL  buffered;
 };
 
 /**************************************************************************
@@ -253,7 +255,7 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
         if ( !data->wpd_IconTextMaxLen ) data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
         if ( textlength > data->wpd_IconTextMaxLen ) textlength = data->wpd_IconTextMaxLen;
         
-        LONG txwidth = TextLength(_rp(obj), icon->entry.label, textlength);
+        LONG txwidth = TextLength(_rp(obj), icon->entry.label, textlength) + 3;
         
         if ( txwidth > icon->realWidth ) icon->realWidth = txwidth;
         
@@ -383,7 +385,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
         }
              
         tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - txwidth)/2);
-        ty = iconY + icon->height + data->IconFont->tf_YSize;
+        ty = iconY + icon->height + data->IconFont->tf_Baseline;
 
         switch ( data->wpd_IconTextMode )
         {
@@ -445,7 +447,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 
             ULONG textwidth = TextLength(_rp(obj), buf, nameLength);
             tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - textwidth)/2);
-            ty = iconY + icon->height + ( data->IconFont->tf_YSize * 2 ) + ICONLIST_TEXTMARGIN;
+            ty = iconY + icon->height + data->IconFont->tf_YSize + ICONLIST_TEXTMARGIN + data->IconFont->tf_Baseline;
     
             switch ( data->wpd_IconTextMode )
             {
@@ -469,6 +471,162 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
                     Move(_rp(obj), tx, ty);
                     Text(_rp(obj), buf, nameLength);
                     SetSoftStyle(_rp(obj), FS_NORMAL, AskSoftStyle(_rp(obj)));
+                    break;
+            }
+        }
+    }
+    // Free up icontext memory
+    FreeVec ( buf );
+}
+
+static void IconList_DrawIconFast(Object *obj, struct RastPort *rp, struct MUI_IconData *data, struct IconEntry *icon)
+{   
+    struct Rectangle iconrect;
+    struct Rectangle objrect;
+
+    LONG tx,ty;
+    LONG txwidth; // txheight;
+
+    STRPTR buf = AllocVec ( 255, MEMF_CLEAR );
+
+    /* Get the dimensions and affected area of icon */
+    IconList_GetIconRectangle(obj, data, icon, &iconrect);
+
+    /* Add the relative position offset of the icon */
+/*
+    iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
+    iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
+    iconrect.MinY += _mtop(obj) - data->view_y + icon->y;
+    iconrect.MaxY += _mtop(obj) - data->view_y + icon->y;
+*/
+    SetABPenDrMd(rp, _pens(obj)[MPEN_TEXT],0,JAM1);
+
+    // Center icon
+    ULONG iconX = iconrect.MinX + ((icon->realWidth - icon->width )/2);
+    ULONG iconY = iconrect.MinY;
+
+    DrawIconStateA
+    (
+        rp, icon->dob, NULL,
+        iconX, 
+        iconY, 
+        icon->selected ? IDS_SELECTED : IDS_NORMAL, 
+        TAG_DONE
+    );
+    if (icon->entry.label)
+    {
+        ULONG nameLength = strlen(icon->entry.label);
+
+        SetFont(rp, data->IconFont);
+
+        if ( nameLength > data->wpd_IconTextMaxLen )
+            txwidth = TextLength(rp, icon->entry.label, data->wpd_IconTextMaxLen);
+        else txwidth = TextLength(rp, icon->entry.label, nameLength);
+
+        memset( buf, 0 , sizeof( buf ) );
+
+        ULONG len = data->wpd_IconTextMaxLen;
+        // Make sure the maxlen is at least the length of ".."
+        if ( len < 2 ) len = 2;
+        
+        if(nameLength > len)
+        {
+            strncpy(buf, icon->entry.label, len - 2);
+            strcat(buf , "..");
+            nameLength = len;
+        }
+        else 
+        {
+            strncpy( buf, icon->entry.label, nameLength );
+        }
+             
+        tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - txwidth)/2);
+        ty = iconY + icon->height + data->IconFont->tf_Baseline;
+
+        switch ( data->wpd_IconTextMode )
+        {
+            case ICON_TEXTMODE_DROPSHADOW:
+            case ICON_TEXTMODE_PLAIN:
+                SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
+                Move(rp, tx, ty); 
+                Text(rp, buf, nameLength);
+                break;
+                
+            default:
+                // Outline mode:
+                
+                SetSoftStyle(rp, FSF_BOLD, FSF_BOLD);
+                SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
+                
+                Move(rp, tx + 1, ty ); Text(_rp(obj), buf, nameLength);
+                Move(rp, tx - 1, ty ); Text(_rp(obj), buf, nameLength);
+                Move(rp, tx, ty + 1);  Text(_rp(obj), buf, nameLength);
+                Move(rp, tx, ty - 1);  Text(_rp(obj), buf, nameLength);
+                
+            
+                SetAPen(rp, _pens(obj)[MPEN_SHINE]);
+                Move(rp, tx, ty);
+                Text(rp, buf, nameLength);
+                break;
+        }
+
+        /*date/size sorting has the date/size appended under the icon label*/
+
+        if( icon->entry.type != WBDRAWER && ((data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE)) )
+        {
+            if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) && !(data->sort_bits & ICONLIST_SORT_BY_DATE) )
+            {
+                int i = icon->fib.fib_Size;
+        
+                /*show byte size for small files*/
+                if( i > 9999 )
+                    sprintf( buf , "%ld KB" , (LONG)(i/1024) );
+                else
+                    sprintf( buf , "%ld B" , (LONG)i );
+            }
+            else
+            {
+                if( !(data->sort_bits & ICONLIST_SORT_BY_SIZE) && (data->sort_bits & ICONLIST_SORT_BY_DATE) )
+                {
+                    struct DateStamp now;
+                    DateStamp(&now);
+        
+                    /*if modified today show time, otherwise just show date*/
+                    if( now.ds_Days == icon->fib.fib_Date.ds_Days )
+                    sprintf( buf , "%s" ,icon->timebuf );
+                    else
+                    sprintf( buf , "%s" ,icon->datebuf );
+                }
+            }
+
+            nameLength = strlen(buf);
+
+            ULONG textwidth = TextLength(rp, buf, nameLength);
+            tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - textwidth)/2);
+            ty = iconY + icon->height + data->IconFont->tf_YSize + ICONLIST_TEXTMARGIN + data->IconFont->tf_Baseline;
+    
+            switch ( data->wpd_IconTextMode )
+            {
+                case ICON_TEXTMODE_DROPSHADOW:
+                case ICON_TEXTMODE_PLAIN:
+                    SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
+                    Move(rp, tx, ty); Text(_rp(obj), buf, nameLength);
+                    break;
+                    
+                default:
+                    // Outline mode..
+                    
+                    SetSoftStyle(rp, FSF_BOLD, FSF_BOLD);
+                    SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
+        
+                    Move(rp, tx + 1, ty ); Text(_rp(obj), buf, nameLength);
+                    Move(rp, tx - 1, ty ); Text(_rp(obj), buf, nameLength);
+                    Move(rp, tx, ty + 1);  Text(_rp(obj), buf, nameLength);
+                    Move(rp, tx, ty - 1);  Text(_rp(obj), buf, nameLength);
+        
+                    SetAPen(rp, _pens(obj)[MPEN_SHINE]);
+                    Move(rp, tx, ty);
+                    Text(rp, buf, nameLength);
                     break;
             }
         }
@@ -770,9 +928,11 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if ( data->wpd_IconTextMaxLen <= 0 )
         data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
     
+    data->buffered = (BOOL) GetTagData(MUIA_IconList_DoubleBuffered, 0, msg->ops_AttrList);
+
     NewList((struct List*)&data->icon_list);
 
-    set(obj,MUIA_FillArea,TRUE);
+    set(obj,MUIA_FillArea,FALSE);
 
     if (WindowFont == NULL) data->IconFont = _font(obj);
     else data->IconFont = WindowFont;
@@ -999,6 +1159,9 @@ IPTR IconList__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
 {
     ULONG rc = DoSuperMethodA(cl, obj, (Msg) msg);
 
+    msg->MinMaxInfo->MinWidth  += 96;
+    msg->MinMaxInfo->MinHeight += 64;
+
     msg->MinMaxInfo->DefWidth  += 200;
     msg->MinMaxInfo->DefHeight += 180;
 
@@ -1028,7 +1191,8 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MUI_IconData *data = INST_DATA(cl, obj);
     APTR clip;
     struct IconEntry *icon;
-
+    BOOL buffereddraw = FALSE;
+    BOOL updateall = FALSE;
     DoSuperMethodA(cl, obj, (Msg) msg);
 
     if (msg->flags & MADF_DRAWUPDATE)
@@ -1093,10 +1257,15 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             struct Region   	*region;
             struct Rectangle 	 xrect, yrect;
             BOOL    	    	 scroll_caused_damage;
-    
+            
+            updateall = TRUE;
+
             scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
     
             data->update = 0;
+
+            if (!updateall)
+            {
 
             if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
                 (abs(data->update_scrolldy) >= _mheight(obj)))
@@ -1157,7 +1326,8 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
         
                 data->update_rect2 = &yrect;
             }
-
+            updateall = TRUE;
+/*
             ScrollRasterBF(_rp(obj),
                 data->update_scrolldx,
                 data->update_scrolldy,
@@ -1165,7 +1335,7 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                 _mtop(obj),
                 _mright(obj),
                 _mbottom(obj));
-
+*/
             scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
 
             clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
@@ -1197,15 +1367,69 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             }
 
             return 0;
+            }
         }
 
     }
-    else
+    else updateall = TRUE;
+
+    if (updateall)
     {
+        struct Region *reg = NULL;
+
+        if (data->buffered) reg = NewRegion();
+
+        if (reg)
+        {
+            struct Rectangle rect = {_mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj)};
+            if (OrRectRegion(reg, &rect))
+            {
+                BOOL ok = TRUE;
+                icon = List_First(&data->icon_list);
+                while (icon && ok)
+                {
+                    if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
+                    {
+                        struct Rectangle iconrect;
+
+                        /* Get the dimensions and affected area of icon */
+                        IconList_GetIconRectangle(obj, data, icon, &iconrect);
+
+                        /* Add the relative position offset of the icon */
+                        iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
+                        iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
+                        iconrect.MinY += _mtop(obj) - data->view_y + icon->y;
+                        iconrect.MaxY += _mtop(obj) - data->view_y + icon->y;
+
+                        if(ClearRectRegion(reg, &iconrect)==0) ok = FALSE;
+                    }
+                    icon = Node_Next(icon);
+                }
+                if (!ok)
+                {
+                    DisposeRegion(reg);
+                    reg = NULL;
+                }
+            }
+            else
+            {
+                DisposeRegion(reg);
+                reg = NULL;
+            }
+        }
+
+        if (reg)
+        {
+            buffereddraw = TRUE;
+            clip = MUI_AddClipRegion(muiRenderInfo(obj), reg);
+        }
+
         DoMethod(
             obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
             data->view_x, data->view_y, 0
         );
+
+        if (reg) MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
     }
 
 
@@ -1221,7 +1445,61 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     {
         if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
         {
-            IconList_DrawIcon(obj, data, icon);
+            if (buffereddraw)
+            {
+                struct Rectangle ir;
+
+                /* Get the dimensions and affected area of icon */
+                IconList_GetIconRectangle(obj, data, icon, &ir);
+
+                /* Add the relative position offset of the icon */
+
+                ir.MinX += _mleft(obj) - data->view_x + icon->x;
+                ir.MaxX += _mleft(obj) - data->view_x + icon->x;
+                ir.MinY += _mtop(obj) - data->view_y + icon->y;
+                ir.MaxY += _mtop(obj) - data->view_y + icon->y;
+
+                struct RastPort *mrp = CreateRastPort();
+                if (mrp)
+                {
+                    mrp->BitMap = AllocBitMap(ir.MaxX-ir.MinX+1, ir.MaxY-ir.MinY+1, 1, BMF_INTERLEAVED|BMF_MINPLANES, _rp(obj)->BitMap);
+                    if (mrp->BitMap)
+                    {
+                        DoMethod(
+                            obj, MUIM_DrawBackgroundBuffered, mrp,
+                            ir.MinX, ir.MinY,
+                            ir.MaxX - ir.MinX + 1, ir.MaxY - ir.MinY + 1,
+                            data->view_x + (ir.MinX - _mleft(obj)), data->view_y + (ir.MinY - _mtop(obj)), 
+                            0
+                        );
+                    }
+                    else
+                    {
+                        FreeRastPort(mrp);
+                        mrp = NULL;
+                    }
+                }
+                if (mrp)
+                {
+                    IconList_DrawIconFast(obj, mrp, data, icon);
+                    BltBitMapRastPort(mrp->BitMap, 0, 0, _rp(obj), ir.MinX, ir.MinY, ir.MaxX-ir.MinX+1, ir.MaxY-ir.MinY+1, 0xc0);
+                    FreeBitMap(mrp->BitMap);
+                    FreeRastPort(mrp);
+
+                }
+                else
+                {
+                    DoMethod(
+                        obj, MUIM_DrawBackground, 
+                        ir.MinX, ir.MinY,
+                        ir.MaxX - ir.MinX + 1, ir.MaxY - ir.MinY + 1,
+                        data->view_x + (ir.MinX - _mleft(obj)), data->view_y + (ir.MinY - _mtop(obj)), 
+                        0
+                    );
+                    IconList_DrawIcon(obj, data, icon);
+                }
+            } else IconList_DrawIcon(obj, data, icon);
+
         }
         icon = Node_Next(icon);
     }

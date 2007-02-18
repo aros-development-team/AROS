@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. 
+    Copyright  2003, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -241,10 +241,10 @@ BOOL zune_penspec_cleanup(struct MUI_PenSpec_intern *psi)
     return TRUE;
 }
 
-void zune_penspec_draw(struct MUI_PenSpec_intern *psi, struct MUI_RenderInfo *mri,
+void zune_penspec_drawdirect(struct MUI_PenSpec_intern *psi, struct RastPort *rp, struct MUI_RenderInfo *mri,
 		       LONG left, LONG top, LONG right, LONG bottom)
 {
-    if (!psi || !mri)
+    if (!psi || !mri || !rp)
 	return;
 
     if ( psi->p_type == PST_RGB)
@@ -252,6 +252,12 @@ void zune_penspec_draw(struct MUI_PenSpec_intern *psi, struct MUI_RenderInfo *mr
 	D(bug("drawing with %lx, pen=%ld, at %ld, %ld => %ld, %ld\n",
 	      psi, psi->p_pen, left, top, right, bottom));
     }
-    SetAPen(mri->mri_RastPort, psi->p_pen);
-    RectFill(mri->mri_RastPort, left, top, right, bottom);
+    SetAPen(rp, psi->p_pen);
+    RectFill(rp, left, top, right, bottom);
+}
+
+void zune_penspec_draw(struct MUI_PenSpec_intern *psi, struct MUI_RenderInfo *mri,
+		       LONG left, LONG top, LONG right, LONG bottom)
+{
+ zune_penspec_drawdirect(psi, mri->mri_RastPort, mri, left, top, right, bottom);
 }

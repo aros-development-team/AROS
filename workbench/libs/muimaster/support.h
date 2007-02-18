@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. 
+    Copyright  2002-2003, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -49,7 +49,7 @@ ULONG ConvertKey(struct IntuiMessage *imsg);
 
 /* add mask in flags if tag is true, else sub mask */
 #define _handle_bool_tag(flags, tag, mask) \
-((tag) ? ((flags) |= (mask)) : ((flags) &= ~(mask)))
+((tag != 0) ? ((flags) |= (mask)) : ((flags) &= ~(mask)))
 
 #define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 

@@ -1,6 +1,6 @@
 /* 
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright  1999, David Le Corfec.
+    Copyright  2002, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -75,6 +75,7 @@ struct MUIP_DragQuery               {ULONG MethodID; Object *obj;};
 struct MUIP_DragReport              {ULONG MethodID; Object *obj; LONG x; LONG y; LONG update;};
 struct MUIP_Draw                    {ULONG MethodID; ULONG flags;};
 struct MUIP_DrawBackground          {ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
+struct MUIP_DrawBackgroundBuffered  {ULONG MethodID; struct RastPort *rp; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
 struct MUIP_GoActive                {ULONG MethodID;};
 struct MUIP_GoInacrive              {ULONG MethodID;};
 struct MUIP_HandleEvent             {ULONG MethodID; struct IntuiMessage *imsg; LONG muikey;};
@@ -89,6 +90,7 @@ struct MUIP_Show                    {ULONG MethodID;};
 #define MUIM_Timer                  (MUIB_Area | 0x00000003) /* PRIV */
 #define MUIM_UpdateInnerSizes       (MUIB_Area | 0x00000004) /* PRIV for now */
 #define MUIM_FindAreaObject         (MUIB_Area | 0x00000005) /* PRIV */
+#define MUIM_DrawBackgroundBuffered (MUIB_Area | 0x00000006) /* PRIV */
 struct  MUIP_Layout                 {ULONG MethodID;};
 struct  MUIP_DrawParentBackground   {ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
 struct  MUIP_DragQueryExtended      {ULONG MethodID; Object *obj; LONG x; LONG y;}; /* PRIV */
