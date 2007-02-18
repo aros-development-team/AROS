@@ -317,12 +317,12 @@ AROS_UFH3
     {
         IPTR destination_path;
 
-        struct IconList_wDrop *drop = (struct IconList_wDrop *)msg->drop;
+        struct IconList_Drop *drop = (struct IconList_Drop *)msg->drop;
 
         if (drop)
         {
             /* get path of DESTINATION iconlist*/
-            destination_path = XGET(drop->destination_iconlistobj, MUIA_IconDrawerList_Drawer);
+            destination_path = drop->destination_string;
 
             if ( !destination_path ) return;
                 
