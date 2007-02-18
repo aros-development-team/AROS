@@ -2,7 +2,7 @@
 #define PREFS_WANDERER_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2001, The AROS Development Team. All rights reserved.
     $Id: workbench.h 23386 2005-06-23 08:17:21Z neil $
 
     Desc: wanderer prefs definitions
@@ -25,13 +25,14 @@ struct WandererPrefs
     UBYTE wpd_WorkbenchBackground[PATHLENGTHSIZE],
           wpd_DrawerBackground[PATHLENGTHSIZE];
          
-    UBYTE wpd_NavigationMethod;  // Are we using the toolbar or not for navigation
-    UBYTE wpd_ToolbarEnabled; // Is the toolbar enabled?
+    ULONG wpd_NavigationMethod;  // Are we using the toolbar or not for navigation
+    ULONG wpd_ToolbarEnabled; // Is the toolbar enabled?
     
-    UBYTE wpd_IconListMode; // How is it going to be listed
-    UBYTE wpd_IconTextMode; // How is the text rendered
+    ULONG wpd_IconListMode; // How is it going to be listed
+    ULONG wpd_IconTextMode; // How is the text rendered
     
     ULONG wpd_IconTextMaxLen; // Max length of icon text
+    ULONG wpd_DoubleBuffered;
 };
 
 #define WPD_NAVIGATION_CLASSIC 0
