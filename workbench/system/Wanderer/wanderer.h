@@ -27,12 +27,6 @@ struct  MUIP_Wanderer_CreateDrawerWindow  {ULONG MethodID; CONST_STRPTR drawer;}
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *Wanderer_CLASS;
 
-struct IconList_wDrop
-{
-    IPTR   *source_iconlistobj;          /* iconlist obj */
-    IPTR   *destination_iconlistobj;     /* iconlist obj */
-};
-
 struct AppW {
   struct Node n;
   char *name;
