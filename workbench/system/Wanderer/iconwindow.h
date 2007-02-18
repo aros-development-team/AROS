@@ -2,7 +2,7 @@
 #define _ICONWINDOW_H_
 
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright  2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -29,6 +29,7 @@ struct IconWindow_ActionMsg
 #define MUIA_IconWindow_IsBackdrop    (MUIB_IconWindow | 0x00000003) /* ISG */ /* is Backdrop window ? */
 #define MUIA_IconWindow_IconList      (MUIB_IconWindow | 0x00000004) /* --G */
 #define MUIA_IconWindow_Toolbar_Enabled      (MUIB_IconWindow | 0x00000005) /* --G */
+#define MUIA_IconWindow_DoubleBuffered       (MUIB_IconWindow | 0x00000006) /* I-- */
 
 #define MUIA_IconWindow_Font          (MUIB_IconWindow | 0x00000010) /* ISG */
 

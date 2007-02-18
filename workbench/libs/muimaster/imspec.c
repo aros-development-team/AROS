@@ -1,6 +1,6 @@
 /*
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright  1999, David Le Corfec.
+    Copyright  2002, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -731,13 +731,12 @@ void zune_imspec_hide(struct MUI_ImageSpec_intern *spec)
 }
 
 
-void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo *mri,
+void zune_imspec_drawbuffered (struct MUI_ImageSpec_intern *spec, struct RastPort *rp, struct MUI_RenderInfo *mri,
 		 LONG left, LONG top, LONG width, LONG height,
-		 LONG xoffset, LONG yoffset, LONG state)
+		 LONG xoffset, LONG yoffset, LONG state, LONG dx, LONG dy, WORD mode, LONG abs_l, LONG abs_t, LONG abs_r, LONG abs_b)
 {
     LONG right = left + width - 1;
     LONG bottom = top + height - 1;
-    struct RastPort *rp = mri->mri_RastPort;
     struct MUI_ImageSpec_intern def;
 
     if (!spec)
@@ -764,7 +763,7 @@ void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo 
 	    SetAPen(rp, fg);
 	    SetBPen(rp, bg);
 	    SetAfPt(rp, patternPens[spec->u.pattern].pattern, 1);
-	    RectFill(rp, left, top, right, bottom);
+	    RectFill(rp, left-dx, top-dy, right-dx, bottom-dy);
 	    SetAfPt(rp, NULL, 0);
 	}
 	break;
@@ -772,12 +771,12 @@ void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo 
 	case IST_VECTOR:
 	    if (spec->u.vect.draw)
 	    {
-		spec->u.vect.draw(mri, left, top, width, height, state);
+		spec->u.vect.draw(mri, left-dx, top-dy, width, height, state);
 	    }
 	    break;
 
 	case IST_COLOR:
-	    zune_penspec_draw(&spec->u.penspec, mri, left, top, right, bottom);
+	    zune_penspec_drawdirect(&spec->u.penspec, rp, mri, left-dx, top-dy, right-dx, bottom-dy);
 	    break;
 
 	case IST_BOOPSI:
@@ -789,7 +788,7 @@ void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo 
 	    if (spec->u.brush.dt[state])
 	    {
 		dt_put_on_rastport(spec->u.brush.dt[state], mri->mri_RastPort,
-					 left, top);
+					 left-dy, top-dy);
 /*  		dt_put_on_rastport_tiled(spec->u.brush.dt[state], mri->mri_RastPort, */
 /*  					 left, top, right, bottom, */
 /*  					 xoffset - left, yoffset - top); */
@@ -799,8 +798,8 @@ void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo 
 	case IST_BITMAP:
 	    if (spec->u.bitmap.dt)
 	    {
-		dt_put_on_rastport_tiled(spec->u.bitmap.dt, mri->mri_RastPort,
-					 left, top, right, bottom,
+		dt_put_on_rastport_tiled(spec->u.bitmap.dt, rp,
+					 left-dx, top-dy, right-dx, bottom-dy,
 					 xoffset - left, yoffset - top);
 	    }
 	    break;
@@ -810,13 +809,22 @@ void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo 
 	    break;
 
         case IST_SCALED_GRADIENT:
-            zune_gradient_draw(spec, mri, left, top, right, bottom, 0, 0);
+            if (mode == 0) zune_gradient_draw(spec, mri, left, top, right, bottom, 0, 0);
+            else zune_gradient_drawfast(spec, rp, mri, 1, abs_l, abs_t, abs_r, abs_b, left, top, right, bottom, xoffset, yoffset);
             break;
 
         case IST_TILED_GRADIENT:
-            zune_gradient_draw(spec, mri, left, top, right, bottom, xoffset, yoffset);
+            if (mode == 0) zune_gradient_draw(spec, mri, left, top, right, bottom, xoffset, yoffset);
+            else zune_gradient_drawfast(spec, rp, mri, 1, abs_l, abs_t, abs_r, abs_b, left, top, right, bottom, xoffset, yoffset);
             break;
     }
+}
+
+void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo *mri,
+		 LONG left, LONG top, LONG width, LONG height,
+		 LONG xoffset, LONG yoffset, LONG state)
+{
+    zune_imspec_drawbuffered(spec, mri->mri_RastPort, mri, left, top, width, height, xoffset, yoffset, state, 0, 0, 0, left, top, left+width, top+height);
 }
 
 /**************************************************************************

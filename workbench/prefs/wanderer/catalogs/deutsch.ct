@@ -6,7 +6,7 @@ MSG_NAME
 Wanderer Einstellungen
 ;
 MSG_BACKGROUNDS
-Hintergründe
+Hintergrnde
 ;
 MSG_BACKGROUND_WORKBENCH
 Workbench
@@ -15,8 +15,14 @@ MSG_BACKGROUND_DRAWERS
 Verzeichnisse
 ;
 MSG_SELECT_WORKBENCH_BACKGROUND
-Wähle Workbench Hintergrund
+Wï¿½le Workbench Hintergrund
 ;
 MSG_SELECT_DRAWER_BACKGROUND
-Wähle Verzeichnis Hintergrund
+Wï¿½le Verzeichnis Hintergrund
+;
+MSG_DOUBLEBUFFERED
+Gepufferte Anzeige
+;
+MSG_MISC
+Verschiedenes
 ;

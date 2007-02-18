@@ -1,6 +1,6 @@
 /* 
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright  1999, David Le Corfec.
+    Copyright  2002, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -42,6 +42,10 @@ void zune_imspec_hide(struct MUI_ImageSpec_intern *spec);
 void zune_imspec_draw (struct MUI_ImageSpec_intern *img, struct MUI_RenderInfo *mri,
 		 LONG left, LONG top, LONG width, LONG height,
 		 LONG xoffset, LONG yoffset, LONG state);
+void zune_imspec_drawbuffered (struct MUI_ImageSpec_intern *spec, struct RastPort *rp, struct MUI_RenderInfo *mri,
+		 LONG left, LONG top, LONG width, LONG height,
+		 LONG xoffset, LONG yoffset, LONG state, LONG dx, LONG dy, WORD mode, LONG abs_l, LONG abs_t, LONG abs_r, LONG abs_b);
+
 /*  const char *zune_imspec_to_string(struct MUI_ImageSpec_intern *spec); */
 STRPTR zune_image_spec_duplicate(IPTR in);
 void zune_image_spec_free(CONST_STRPTR spec);

@@ -553,4 +553,3 @@ void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp, int x1,
     }
     ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 }
-

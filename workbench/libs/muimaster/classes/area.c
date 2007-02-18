@@ -1,6 +1,6 @@
 /* 
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2006, The AROS Development Team.
+    Copyright  1999, David Le Corfec.
+    Copyright  2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -1300,6 +1300,26 @@ static IPTR Area__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUI
     return TRUE;
 }
 
+static IPTR Area__MUIM_DrawBackgroundBuffered(struct IClass *cl, Object *obj, struct MUIP_DrawBackgroundBuffered *msg)
+{
+    struct MUI_AreaData *data = INST_DATA(cl, obj);
+    struct MUI_ImageSpec_intern *bg;
+    LONG state;
+
+    if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
+    return FALSE;
+
+    bg = data->mad_Background;
+
+/*      D(bug("Area_DrawBackground(%p): draw bg\n", obj)); */
+    zune_imspec_drawbuffered(bg, msg->rp, data->mad_RenderInfo,
+            msg->left, msg->top, msg->width, msg->height,
+            msg->xoffset+msg->left, msg->yoffset+msg->top, state, msg->left, msg->top,  1,
+            _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
+
+    return TRUE;
+}
+
 /* Perverting the EventHandlerNode structure to specify a shortcut.
 */
 static void setup_control_char (struct MUI_AreaData *data, Object *obj, struct IClass *cl)
@@ -2212,6 +2232,7 @@ BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
     case MUIM_AskMinMax:            return Area__MUIM_AskMinMax(cl, obj, (APTR)msg);
     case MUIM_Draw:                 return Area__MUIM_Draw(cl, obj, (APTR)msg);
     case MUIM_DrawBackground:       return Area__MUIM_DrawBackground(cl, obj, (APTR)msg);
+    case MUIM_DrawBackgroundBuffered:       return Area__MUIM_DrawBackgroundBuffered(cl, obj, (APTR)msg);
     case MUIM_DrawParentBackground: return Area__MUIM_DrawParentBackground(cl, obj, (APTR)msg);
     case MUIM_Setup:                return Area__MUIM_Setup(cl, obj, (APTR)msg);
     case MUIM_Cleanup:              return Area__MUIM_Cleanup(cl, obj, (APTR)msg);

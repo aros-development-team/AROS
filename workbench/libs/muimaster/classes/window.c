@@ -1,6 +1,6 @@
 /*
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2006, The AROS Development Team.
+    Copyright  1999, David Le Corfec.
+    Copyright  2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -1459,7 +1459,6 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 	case IDCMP_REFRESHWINDOW:
 	    ReplyMsg((struct Message*)imsg);
 	    replied = TRUE;
-
 	    if (data->wd_Flags & MUIWF_RESIZING)
 	    {
 		//LONG left,top,right,bottom;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright  2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -157,7 +157,8 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         *extGroupTopContainer; // around extension group
     BOOL                isRoot,
                         isBackdrop,
-                        hasToolbar;
+                        hasToolbar,
+                        doublebuffered;
     struct Hook         *actionHook;
     struct TextFont     *WindowFont;
         
@@ -165,6 +166,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     hasToolbar = GetTagData(MUIA_IconWindow_Toolbar_Enabled, 0, message->ops_AttrList);
     isBackdrop = GetTagData(MUIA_IconWindow_IsBackdrop, 0, message->ops_AttrList);
     isRoot = GetTagData(MUIA_IconWindow_IsRoot, 0, message->ops_AttrList);
+    doublebuffered = GetTagData(MUIA_IconWindow_DoubleBuffered, 0, message->ops_AttrList);
     actionHook = (struct Hook *) GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
     WindowFont = (struct TextFont *) GetTagData(MUIA_IconWindow_Font, (IPTR) NULL, message->ops_AttrList);
 
@@ -173,6 +175,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         iconList = (IPTR) IconVolumeListObject,
             MUIA_Font, (IPTR) WindowFont,
+            MUIA_IconList_DoubleBuffered, doublebuffered,
         End;
     }
     else
@@ -180,7 +183,8 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         STRPTR drawer = (STRPTR) GetTagData(MUIA_IconWindow_Drawer, (IPTR) NULL, message->ops_AttrList);
         iconList = (IPTR) IconDrawerListObject,
             MUIA_Font, (IPTR) WindowFont,
-            MUIA_IconDrawerList_Drawer, (IPTR) drawer, 
+            MUIA_IconDrawerList_Drawer, (IPTR) drawer,
+            MUIA_IconList_DoubleBuffered, doublebuffered,
         End;
     }
 

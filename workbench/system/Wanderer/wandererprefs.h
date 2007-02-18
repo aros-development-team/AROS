@@ -2,7 +2,7 @@
 #define _WANDERERPREFS_H_
 
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright  2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,6 +20,7 @@
 #define MUIA_WandererPrefs_Icon_ListMode        (MUIB_WandererPrefs | 0x00000004) /* -SG */
 #define MUIA_WandererPrefs_Icon_TextMode        (MUIB_WandererPrefs | 0x00000005) /* -SG */
 #define MUIA_WandererPrefs_Icon_TextMaxLen      (MUIB_WandererPrefs | 0x00000006) /* -SG */
+#define MUIA_WandererPrefs_DoubleBuffered       (MUIB_WandererPrefs | 0x00000007) /* -SG */
 
 /*** Public Methods *********************************************************/
 #define MUIM_WandererPrefs_Reload               (MUIB_WandererPrefs | 0x00000000)

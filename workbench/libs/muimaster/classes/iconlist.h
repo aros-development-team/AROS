@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_ICONLIST_H
 
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -50,6 +50,7 @@ struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
 #define MUIA_IconList_ListMode          (MUIB_IconList | 0x00000009) /* Zune: V1 ..G struct IconList_Entry * */
 #define MUIA_IconList_TextMode          (MUIB_IconList | 0x0000000A) /* Zune: V1 ..G struct IconList_Entry * */
 #define MUIA_IconList_TextMaxLen        (MUIB_IconList | 0x0000000B) /* Zune: V1 ..G struct IconList_Entry * */
+#define MUIA_IconList_DoubleBuffered    (MUIB_IconList | 0x0000000C) /* Zune: V1 I.. BOOL */
 
 /* used by MUIM_IconList_NextSelected */
 struct IconList_Entry

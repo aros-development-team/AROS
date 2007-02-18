@@ -75,29 +75,61 @@ AROS_UFH3
     
     char    *c;
     unsigned int difftime;
-    
+
     struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
 
-    if (d->numfiles == 0) d->starttime = clock();
     
-    set(d->fileObject, MUIA_Text_Contents, obj->file);
-    set(d->sourceObject, MUIA_Text_Contents, obj->spath);
+    if ((obj->flags & ACTION_UPDATE) == 0)
+    {
+        d->updateme = TRUE;
+
+        if (obj->filelen < 8192)
+        {
+            d->smallobjects++;
+            if (d->smallobjects >= 20) d->smallobjects = 0;
+        }
+        else
+        {
+            d->smallobjects = 0;
+        }
+        if (d->smallobjects > 0) d->updateme = FALSE;
+        if (d->updateme)
+        {
+            set(d->fileObject, MUIA_Text_Contents, obj->file);
+            set(d->sourceObject, MUIA_Text_Contents, obj->spath);
+        }
+    }
     if (d->action != ACTION_DELETE) 
     {
-        set(d->destObject, MUIA_Text_Contents, obj->dpath);
-        d->bytes += obj->filelen;
-        d->numfiles++;
-    
-        difftime = clock() - d->starttime;
-        if (difftime < 0) difftime = 1;
 
-    
-        sprintf(
-            d->Buffer, "# of files: %ld   Actual: %.2f kBytes   Total: %.2f kBytes   Speed: %.2f kBytes/s", 
-            d->numfiles, (double) obj->filelen / 1024.0, (double) d->bytes / 1024.0, 
-            (double) (((double) d->bytes) / (((double) difftime) / 50.0)) / 1024.0
-        );
-        set(d->performanceObject, MUIA_Text_Contents, d->Buffer);
+        d->bytes += obj->actlen;
+        if ((obj->flags & ACTION_UPDATE) == 0)
+        {
+            if (d->updateme)
+            {
+                set(d->gauge, MUIA_Gauge_Current, 0);
+                set(d->destObject, MUIA_Text_Contents, obj->dpath);
+            }
+            d->numfiles++;
+        }
+        else
+        {
+            if (d->updateme &&(obj->totallen <= obj->filelen))
+            {
+                sprintf(d->SpeedBuffer, "Speed: %.2f kBytes/s",  (double) (((double) obj->totallen) / (((double) obj->difftime) / ((double) CLOCKS_PER_SEC))) / 1024.0);
+                SetAttrs(d->gauge, MUIA_Gauge_Current, (ULONG) (32768.0 * (double) obj->totallen / (double) obj->filelen),  MUIA_Gauge_InfoText, d->SpeedBuffer, TAG_DONE);
+            }
+        }
+
+
+        if (d->updateme)
+        {
+            sprintf(
+                d->Buffer, "# of files: %ld   Actual: %.2f kBytes   Total: %.2f kBytes", 
+                d->numfiles, (double) obj->filelen / 1024.0, (double) d->bytes / 1024.0
+            );
+            set(d->performanceObject, MUIA_Text_Contents, d->Buffer);
+        }
     }
     
     DoMethod(d->copyApp, MUIM_Application_InputBuffered);
@@ -1018,13 +1050,13 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
 {
     BOOL    back = FALSE;
     
-    Object  *group, *fromObject, *toObject, *fileTextObject, *fileLengthObject;
+    Object  *group, *fromObject, *toObject, *fileTextObject, *fileLengthObject, *gaugeGroup;
 
     d->stopflag = 0; // will be set to 1 when clicking on stop, than the displayhook can tell actionDir() to stop copy 
     d->bytes = 0;
     d->numfiles = 0;
     d->action = flags;
-
+    d->smallobjects = 0;
     d->copyApp = ApplicationObject,
         MUIA_Application_Title,     (IPTR)"CopyRequester",
         MUIA_Application_Base,      (IPTR)"WANDERER_COPY",
@@ -1077,12 +1109,23 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
                     InnerSpacing(8,2),
                     MUIA_Text_PreParse, (IPTR)"\33c",
                 End),
+                Child, (IPTR)(gaugeGroup = VGroup,
+                    TextFrame,
+                    Child, d->gauge = GaugeObject,
+                        MUIA_Gauge_Horiz, TRUE,
+                        MUIA_Gauge_Max, 32768,
+                        MUIA_Gauge_InfoText, "...........Processing...........",
+                    End,
+                    Child, ScaleObject,
+                        MUIA_Scale_Horiz, TRUE,
+                    End,
+                End),
                 Child, (IPTR)( d->performanceObject = TextObject,
                     TextFrame,
                     InnerSpacing(8,2),
                     MUIA_Background,     MUII_TextBack,
                     MUIA_Text_PreParse, (IPTR)"\33c",
-                    MUIA_Text_Contents, (IPTR)"0 Bytes : 0 Bytes/sec",
+                    MUIA_Text_Contents, (IPTR)"...........0 Bytes...........",
                 End),
 
                 Child, (IPTR)( d->stopObject = SimpleButton("Stop") ),
@@ -1116,6 +1159,7 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
             DoMethod(group, OM_REMMEMBER, fileLengthObject);
             DoMethod(group, OM_REMMEMBER, d->performanceObject);
             DoMethod(group, OM_REMMEMBER, d->destObject);
+            DoMethod(group, OM_REMMEMBER, gaugeGroup);
             DoMethod(group, MUIM_Group_ExitChange);
             set(fileTextObject, MUIA_Text_Contents, "file to delete");
         }
@@ -1809,6 +1853,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     Object *window = NULL;
     BOOL    isWorkbenchWindow = message->drawer == NULL ? TRUE : FALSE;
     BOOL    hasToolbar = XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled);
+    BOOL    doublebuffered = XGET(data->wd_Prefs, MUIA_WandererPrefs_DoubleBuffered);
     
 
     IPTR    useFont = (IPTR)NULL;
@@ -1826,11 +1871,11 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         MUIA_Window_ScreenTitle,    (IPTR) GetScreenTitle(),
         MUIA_Window_Menustrip,      (IPTR) menustrip,
         MUIA_IconWindow_ActionHook, (IPTR) &hook_action,
-        
         MUIA_IconWindow_IsRoot,            isWorkbenchWindow ? TRUE : FALSE,
         MUIA_Window_IsSubWindow,           isWorkbenchWindow ? FALSE : TRUE,
         MUIA_IconWindow_IsBackdrop,        isWorkbenchWindow ? TRUE : FALSE,
         MUIA_IconWindow_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
+        MUIA_IconWindow_DoubleBuffered, doublebuffered ? TRUE : FALSE,
         isWorkbenchWindow ? 
             TAG_IGNORE    : 
             MUIA_IconWindow_Drawer, (IPTR) message->drawer,

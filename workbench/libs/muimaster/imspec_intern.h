@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team.
+    Copyright  2003, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -110,6 +110,16 @@ VOID zune_gradient_draw
 (
     struct MUI_ImageSpec_intern *spec,
     struct MUI_RenderInfo *mri,
+    WORD x1, WORD y1, WORD x2, WORD y2,
+    WORD xoff, WORD yoff
+);
+
+VOID zune_gradient_drawfast
+(
+    struct MUI_ImageSpec_intern *spec,
+    struct RastPort *rp,
+    struct MUI_RenderInfo *mri,
+    WORD mode, WORD abs_l, WORD abs_t, WORD abs_r, WORD abs_b,
     WORD x1, WORD y1, WORD x2, WORD y2,
     WORD xoff, WORD yoff
 );

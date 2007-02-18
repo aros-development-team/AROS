@@ -74,3 +74,9 @@ Plain
 MSG_ICONTEXTLENGTH (//)
 Max icon textlength
 ;
+MSG_DOUBLEBUFFERED (//)
+double buffering
+;
+MSG_MISC (//)
+misc
+;
