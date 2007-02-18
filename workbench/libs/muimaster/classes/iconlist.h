@@ -68,8 +68,9 @@ struct IconList_Click
 
 struct IconList_Drop
 {
-    IPTR   *source_iconlistobj;          /* iconlist obj */
-    IPTR   *destination_iconlistobj;     /* iconlist obj */
+    IPTR   *source_iconlistobj;              /* iconlist obj */
+    IPTR   *destination_iconlistobj;         /* iconlist obj */
+    unsigned char destination_string[1024];  /* destination path */
 };
 
 /****************************************************************************/
