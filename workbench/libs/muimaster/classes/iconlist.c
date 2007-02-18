@@ -2015,9 +2015,61 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
         /* check if dropped on an icon on the iconlist area */
         if (entry)
         {
-           /* get path of DESTINATION iconlist */
+
+           /* check if dropped on a drawer */
+           struct IconEntry *node;
+           struct IconEntry *new_selected = NULL;
+
+           /* go through list and check if dropped on icon */
+           node = List_First(&data->icon_list);
+           while (node)
+           {
+               if (msg->x >= node->x - data->view_x && 
+                   msg->x < node->x - data->view_x + node->realWidth  &&
+                   msg->y >= node->y - data->view_y + _mtop(obj)  && 
+                   msg->y < node->y - data->view_y + node->realHeight + _mtop(obj) && !new_selected)
+               {
+                   new_selected = node;
+               } 
+   
+               node = Node_Next(node);
+           }
+
+
+           /* get path to destination directory */
            STRPTR directory_path = XGET(obj, MUIA_IconDrawerList_Drawer);
-           D( bug("[ICONLIST] drop entry: %s dropped in window %s\n", entry->filename, directory_path); )
+
+           /* check if dropped on a root drive - 
+              last condition is a hack, based upon another hack (adding ":Disk" to rootdrive name) 
+              since ST_ROOT seems not to be set properly right now (?) */
+           if (new_selected && ( new_selected->entry.type == ST_ROOT  
+                            || ( !strcmp(new_selected->entry.filename+strlen(new_selected->entry.filename)-5,":Disk")  )      )  )
+           {
+               int tmplen = 0;
+
+               /* avoid copying "Disk" (hack anyway?!) from root drive name, eg. "Ram Disk:Disk"*/
+               tmplen = strlen(new_selected->entry.filename) - 4;
+
+               /* copy path of dir icon dropped on */
+               strncpy(data->drop_entry.destination_string, new_selected->entry.filename, tmplen);
+
+               D( bug("[ICONLIST] drop entry: %s dropped on disk icon %s\n", entry->filename, new_selected->entry.filename); )
+           }
+           /* check if dropped on a drawer icon in iconlist */
+           else if (new_selected && new_selected->entry.type == ST_USERDIR )
+           {
+               /* copy path of dir icon dropped on */
+               strcpy(data->drop_entry.destination_string, new_selected->entry.filename);
+
+               D( bug("[ICONLIST] drop entry: %s dropped on dir %s icon in window %s\n", entry->filename, new_selected->entry.filename,  directory_path); )
+           }
+           else
+           {
+               /* not dropped on icon -> get path of DESTINATION iconlist */
+               D( bug("[ICONLIST] drop entry: %s dropped in window %s\n", entry->filename, directory_path); )
+               /* copy path */
+               strcpy(data->drop_entry.destination_string, directory_path);
+           }
 
            /* copy relevant data to drop entry */
            data->drop_entry.source_iconlistobj = (IPTR)msg->obj;
