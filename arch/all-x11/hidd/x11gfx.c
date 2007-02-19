@@ -45,6 +45,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define XFLUSH(x) XFlush(x)
+//#define XFLUSH(x)
 
 /****************************************************************************************/
 
@@ -654,7 +656,7 @@ VOID X11Cl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 	, msg->destY
     );
 	
-    XFlush(data->display);
+    XFLUSH(data->display);
     
     UNLOCK_X11
     
