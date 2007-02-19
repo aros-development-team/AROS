@@ -30,7 +30,7 @@ IPTR PropPurgeFunc
     sp = (struct StoredProperty*)LocalItemData(lci);
 
     /* Free the chunk buffer */
-    FreeMem(sp->sp_Data, sp->sp_Size);
+    if (sp->sp_Data) FreeMem(sp->sp_Data, sp->sp_Size);
 
     /* Free the local item itself */
     FreeLocalItem(lci);
@@ -122,18 +122,18 @@ LONG PropFunc
 
 
     /* Allocate buffer to read chunk into */
-    size = cn->cn_Size;
-
-
-    buf = AllocMem(size, MEMF_ANY);
-    if (!buf)
+    if ((size = cn->cn_Size))
     {
-	DEBUG_PROPHOOKS(dprintf("PropFunc: return IFFERR_NOMEM #2\n"));
+	buf = AllocMem(size, MEMF_ANY);
+	if (!buf)
+	{
+	    DEBUG_PROPHOOKS(dprintf("PropFunc: return IFFERR_NOMEM #2\n"));
 
-	PF_FreeResources(&resinfo, IFFParseBase);
+	    PF_FreeResources(&resinfo, IFFParseBase);
 
-	return (IFFERR_NOMEM);
-    }
+	    return (IFFERR_NOMEM);
+	}
+    } else buf = NULL;
 
     resinfo.Buffer = buf;
     resinfo.BufferSize = size;
@@ -141,26 +141,28 @@ LONG PropFunc
     sp->sp_Data = buf;
     sp->sp_Size = size;
 
-    /* Read chunk into the buffer */
-
     DEBUG_PROPHOOKS(dprintf("PropFunc: ReadChunkBytes(iff %p, buf %p, size %ld)\n", iff, buf, size));
 
-    bytesread = ReadChunkBytes(iff, buf, size);
-
-    DEBUG_PROPHOOKS(dprintf("PropFunc: ReadChunkBytes returned %lu\n", bytesread));
-
-    /* Success ? */
-    if (bytesread != size)
+    if (buf)
     {
-	DEBUG_PROPHOOKS(dprintf("PropFunc: incomplete read! (%ld != %ld)\n", bytesread, size));
-	PF_FreeResources(&resinfo, IFFParseBase);
+    	/* Read chunk into the buffer */
+	bytesread = ReadChunkBytes(iff, buf, size);
 
-	/* IFFERR_.. ? */
-	if (bytesread >= 0)
+	DEBUG_PROPHOOKS(dprintf("PropFunc: ReadChunkBytes returned %lu\n", bytesread));
+
+	/* Success ? */
+	if (bytesread != size)
 	{
-	    DEBUG_PROPHOOKS(dprintf("PropFunc: err = IFFERR_MANGLED\n"));
-	    err = IFFERR_MANGLED;
-#warning FIXME: should return err here?
+	    DEBUG_PROPHOOKS(dprintf("PropFunc: incomplete read! (%ld != %ld)\n", bytesread, size));
+	    PF_FreeResources(&resinfo, IFFParseBase);
+
+	    /* IFFERR_.. ? */
+	    if (bytesread >= 0)
+	    {
+		DEBUG_PROPHOOKS(dprintf("PropFunc: err = IFFERR_MANGLED\n"));
+		err = IFFERR_MANGLED;
+    #warning FIXME: should return err here?
+	    }
 	}
     }
 

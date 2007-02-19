@@ -7,6 +7,9 @@
 #include <aros/debug.h>
 #include "iffparse_intern.h"
 
+/* NOTE: Original iffparse.library doesn't have this check here. - Piru */
+#define USE_IFFVALIDITYCHECK	1
+
 /*****************************************************************************
 
     NAME */
@@ -53,7 +56,6 @@
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
     LONG  err;
     struct IFFStreamCmd cmd;
-    struct ContextNode *cn;
 
     if (iff == NULL)
     {
@@ -75,9 +77,12 @@
 
     if (!err)
     {
+#if USE_IFFVALIDITYCHECK
 	/* If we are opend in read mode we should test if we have a valid IFF-File */
-	if (rwMode == IFFF_READ)
+	if (rwMode == IFFF_READ && iff->iff_Stream)
 	{
+	    struct ContextNode *cn;
+	    
 	    D(bug("testing if it's a valid IFF file\n"));
 	    /* Get header of iff-stream */
 	    err = GetChunkHeader(iff, IPB(IFFParseBase));
@@ -98,7 +103,7 @@
 		    /* Everything went OK */
 		    /* Set the acess mode, and mark the stream as opened */
 		    iff->iff_Flags &= ~IFFF_RWBITS;
-		    iff->iff_Flags |= (rwMode | IFFF_OPEN);
+		    iff->iff_Flags |= (rwMode | IFFF_OPEN | IFFF_NEWFILE);
 
 		    err = 0L;
 		}
@@ -130,9 +135,10 @@
 	    }
 	} /* IFFF_READ */
 	else
+#endif /* USE_IFFVALIDITYCHECK */
 	{
 	    iff->iff_Flags &= ~IFFF_RWBITS;
-	    iff->iff_Flags |= (rwMode | IFFF_OPEN);	
+	    iff->iff_Flags |= (rwMode | IFFF_OPEN | IFFF_NEWFILE);	
 	    err = 0L;
 	}
 	

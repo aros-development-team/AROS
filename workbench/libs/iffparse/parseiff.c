@@ -7,6 +7,8 @@
 #include <aros/debug.h>
 #include "iffparse_intern.h"
 
+#define SWAP_SCANEXIT 1
+
 /*****************************************************************************
 
     NAME */
@@ -82,14 +84,24 @@
     if (!(iff->iff_Flags & IFFF_OPEN))
     {
 	D(bug("ParseIFF: syntax error (open)\n"));
-	ReturnInt ("ParseIFF",LONG,IFFERR_SYNTAX);
+	ReturnInt ("ParseIFF",LONG,IFFERR_NOTIFF);
     }
 
     /* Cannot parse iff file, when it is opened in write-mode */
     if (iff->iff_Flags & IFFF_WRITE)
     {
+	/* Some applications accidently pass IFFF_WRITE to OpenIFF()
+	 * when IFFF_READ should be used. While this is certainly
+	 * wrong, these apps still work with 68k iffparse.library.
+	 *
+	 * So just warn, don't fail. - Piru
+	 */
+#if 1
+	D(bug("ParseIFF: warning, IFFF_WRITE iffhandle parsed\n"));
+#else
 	D(bug("ParseIFF: syntax error (write)\n"));
 	ReturnInt ("ParseIFF",LONG,IFFERR_SYNTAX);
+#endif
     }
 
     /* Main loop for reading the iff file
@@ -175,6 +187,10 @@
 
 	    GetIntIH(iff)->iff_CurrentState = IFFSTATE_EXIT;
 
+#if SWAP_SCANEXIT
+    	  if (mode == IFFPARSE_SCAN)
+	  {
+#endif
 	    cn = TopChunk(iff);
 
 	    toseek = cn->cn_Size - cn->cn_Scan;
@@ -187,9 +203,17 @@
 	    {
 		err = SeekStream(iff, toseek, IPB(IFFParseBase));
 		if (err)
+		{
 		    done = TRUE;
+		}
+		else
+		{
+		    cn->cn_Scan += toseek;
+		}
 	    }
-
+#if SWAP_SCANEXIT
+    	  }
+#endif
 	    break;
 
 	case IFFSTATE_EXIT:
@@ -217,6 +241,21 @@
 	    /* Align the size */
 	    if (size % 2)
 		size +=1;
+
+#if SWAP_SCANEXIT
+	    if (!(GetIntCN(cn)->cn_Composite) && (toseek = size - cn->cn_Scan))
+	    {
+		err = SeekStream(iff, toseek, IPB(IFFParseBase));
+		if (err)
+		{
+		    done = TRUE;
+		    break;
+		} else {
+		    cn->cn_Scan = size;
+		}
+	    }
+#endif
+
 
 	    /* Add size of chunk header */
 	    if ( GetIntCN(cn)->cn_Composite )

@@ -37,7 +37,7 @@ ULONG CollectionPurgeFunc
     while (node)
     {
 	nextnode = node->ci_Next;
-	FreeMem(node->ci_Data, node->ci_Size);
+	if (node->ci_Data) FreeMem(node->ci_Data, node->ci_Size);
 
 	FreeMem(node,sizeof (struct CollectionItem));
 
@@ -173,43 +173,47 @@ LONG CollectionFunc
 
 
     /* Allocate buffer to read chunk into */
-    size = cn->cn_Size;
-
-    buf = AllocMem
-    (
-	size,
-	MEMF_ANY
-    );
-
-    if (!buf)
+    if ((size = cn->cn_Size))
     {
-	CF_FreeResources(&resinfo, IFFParseBase);
-	return (IFFERR_NOMEM);
+	buf = AllocMem
+	(
+	    size,
+	    MEMF_ANY
+	);
+    
+	if (!buf)
+	{
+	    CF_FreeResources(&resinfo, IFFParseBase);
+	    return (IFFERR_NOMEM);
+	}
     }
+    else buf = NULL;
 
     resinfo.Buffer = buf;
     resinfo.BufferSize = size;
 
-
-    /* Read chunk into the buffer */
-
-    bytesread = ReadChunkBytes
-    (
-	iff,
-	buf,
-	size
-    );
-
-    /* Sucess ? */
-    if (bytesread != size)
+    if (buf)
     {
-	CF_FreeResources(&resinfo, IFFParseBase);
+	/* Read chunk into the buffer */
 
-	/* IFFERR_.. ? */
-	if (bytesread >= 0)
-	    err = IFFERR_MANGLED;
+	bytesread = ReadChunkBytes
+	(
+	    iff,
+	    buf,
+	    size
+	);
+
+	/* Sucess ? */
+	if (bytesread != size)
+	{
+	    CF_FreeResources(&resinfo, IFFParseBase);
+
+	    /* IFFERR_.. ? */
+	    if (bytesread >= 0)
+		err = IFFERR_MANGLED;
+	}
+	
     }
-
 
     /* Get pointer to first ContextItem from LCIs userdata */
     ciptr = (struct CIPtr*)LocalItemData(lci);

@@ -471,7 +471,7 @@ LONG SeekStream(struct IFFHandle *iff,LONG offset,
     {
 	/* We should use consecutive ReadStream()s to simulate a Seek */
 
-	/* Allocote a buffer to use with the read */
+	/* Allocate a buffer to use with the read */
 	seekbuf = AllocMem(SEEKBUFSIZE, MEMF_ANY);
 
 	if (!seekbuf)

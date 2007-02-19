@@ -106,6 +106,7 @@ LONG SwitchIfLittleEndian(LONG);
 
 /* Private flags */
 
+#define IFFF_NEWFILE	    (1L << 16)
 #define IFFF_OPEN	    (1L << 19)
 
 /*
