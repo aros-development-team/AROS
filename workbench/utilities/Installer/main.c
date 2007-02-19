@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     if (inputfile == NULL)
     {
 #ifdef DEBUG
-	fprintf(stderr, "Error opening scipt <%s>\n",filename);
+	fprintf(stderr, "Error opening script <%s>\n",filename);
 	PrintFault(IoErr(), INSTALLER_NAME);
 #endif /* DEBUG */
 	exit(-1);

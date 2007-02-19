@@ -13,6 +13,12 @@
 #include "procedure.h"
 #include "cleanup.h"
 #include "variables.h"
+#ifndef __AROS__
+#define VOID_FUNC APTR
+#define MAXFILENAMELENGTH 108
+#define dol_DevName dol_Name
+#define DosGetString
+#endif
 
 #include <sys/stat.h>
 
