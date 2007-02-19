@@ -18,7 +18,9 @@
 //#undef DEBUG
 
 #ifdef DEBUG
+#   ifdef __AROS__
 #   include <proto/arossupport.h>
+#   endif
 #   define DMSG(x...) kprintf(x)
 #else
 #   define DMSG(x...) /* */
@@ -37,10 +39,12 @@
 #include <proto/exec.h>
 #include <proto/alib.h>
 #include <proto/icon.h>
+#ifdef __AROS__
 #include <proto/workbench.h>
+#include <dos/bptr.h>
+#endif
 #include <workbench/workbench.h>
 #include <workbench/startup.h>
-#include <dos/bptr.h>
 
 extern struct ExecBase *SysBase;
 

@@ -30,7 +30,12 @@ extern int doing_abort;
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
+#ifdef __AROS__
 #include <libraries/coolimages.h>
+#else
+#define HBar(x) MUI_MakeObject(MUIO_HBar,x)
+#define CoolImageIDButton(label,imageid) SimpleButton(label)
+#endif
 
 Object *app;
 Object *wnd;
@@ -292,8 +297,9 @@ struct Screen *scr;
     {
 	/* failed to initialize GUI */
 #if DEBUG
-kprintf("Failed to intialize Zune GUI\n");
+printf("Failed to intialize Zune GUI\n");
 #endif
+	exit(-1);
     }
     set(btproceed,MUIA_CycleChain,1);
     set(btabort,MUIA_CycleChain,1);
