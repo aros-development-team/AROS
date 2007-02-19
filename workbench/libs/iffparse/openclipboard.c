@@ -57,7 +57,7 @@
 	sizeof (struct ClipboardHandle),
 	MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC
     );
-    if (ch);
+    if (ch)
     {
 	/* Get a ponter to the ioClipReq, so we
 	  don't need all that type casting.

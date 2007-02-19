@@ -92,6 +92,89 @@
 
     if (iff->iff_Flags & IFFF_WRITE)
     {
+      struct ContextNode *pcn;
+      LONG   ptype=0;
+      BOOL   newfile=FALSE;
+
+      if((pcn = (struct ContextNode *)CurrentChunk(iff)) != NULL)
+      {
+        ptype = pcn->cn_Type;
+      }
+      else
+      {
+        if(iff->iff_Flags & IFFF_NEWFILE)
+        {
+          newfile = TRUE;
+          iff->iff_Flags &= ~IFFF_NEWFILE;
+        }
+        else
+        {
+          return(IFFERR_EOF);
+        }
+      }
+      
+      /* do some syntax checks (cyfm: added 2003/03/01 to "fix"/handle some broken apps) */
+
+      if(!GoodID(id))
+      {
+        DEBUG_PUSHCHUNK(dprintf("PushChunk: invalid id -> IFFERR_SYNTAX\n"
+			         ));
+
+        return(IFFERR_SYNTAX);
+
+      }
+      else if(newfile == TRUE)
+      {
+        /* check if first chunk is either FORM, LIST or CAT */
+
+	if( id != ID_FORM && id != ID_LIST && id != ID_CAT)
+        {
+         DEBUG_PUSHCHUNK(dprintf("PushChunk: invalid first chunk (neither FORM, nor LIST, nor CAT -> IFFERR_NOTIFF\n"
+			         ));
+
+          return(IFFERR_NOTIFF);
+        }
+      }
+      else if(id == ID_PROP)
+      {
+        /* make sure PROP containing context is a LIST */
+
+        if(pcn->cn_ID != ID_LIST)
+        {
+          DEBUG_PUSHCHUNK(dprintf("PushChunk: invalid ID in PROP context -> IFFERR_SYNTAX\n"
+			         ));
+
+          return(IFFERR_SYNTAX);
+        }
+      }
+      else if(id == ID_FORM || id == ID_LIST || id == ID_CAT || id == ID_PROP )
+      {
+        /* check for valid subtype if we found a generic id */
+
+        if(!GoodType(type))
+        {
+          DEBUG_PUSHCHUNK(dprintf("PushChunk: invalid type for generic id -> IFFERR_NOTIFF\n"
+			         ));
+
+          return(IFFERR_NOTIFF);
+        }
+      }
+      else
+      {
+        /* if we found a non generic id, make sure the containing context is at 
+           least PROP or FORM */
+
+        if((pcn->cn_ID != ID_FORM) && (pcn->cn_ID != ID_PROP))
+        {
+          DEBUG_PUSHCHUNK(dprintf("PushChunk: containing context id 0x%08lx (%c%c%c%c) for generic id is neither PROP nor FORM -> IFFERR_SYNTAX\n"
+ 			         ,pcn->cn_ID,dmkid(pcn->cn_ID)));
+
+          return(IFFERR_SYNTAX);
+        }
+      }
+      
+      /* we passed the syntax test ! */
+      
       /* Do we have a problem - situation ? */
 	if ( (size == IFFSIZE_UNKNOWN)
 	    && (!(iff->iff_Flags & IFFF_RSEEK))
