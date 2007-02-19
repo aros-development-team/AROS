@@ -42,6 +42,9 @@
 #define SWAP32(x) AROS_LONG2BE(x)
 #endif
 
+#define XFLUSH(x) XFlush(x)
+//#define XFLUSH(x)
+
 /****************************************************************************************/
 
 static void SwapImageEndianess(XImage *image)
@@ -165,7 +168,7 @@ VOID MNAME(Hidd_BitMap__PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
      
     XSetForeground(data->display, data->gc, msg->pixel);
     XDrawPoint(data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
-    XFlush(data->display);
+    XFLUSH(data->display);
 
     UNLOCK_X11
 }
@@ -211,7 +214,7 @@ ULONG MNAME(Hidd_BitMap__DrawPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     LOCK_X11
     XChangeGC(data->display, data->gc, GCFunction | GCForeground | GCBackground, &gcval);    
     XDrawPoint(data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
-    XFlush(data->display); /* stegerg: uncommented */
+    XFLUSH(data->display); /* stegerg: uncommented */
     UNLOCK_X11    
     
     return 0;    
@@ -240,7 +243,7 @@ VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	    	   msg->minX, msg->minY,
 		   msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
 
-    XFlush(data->display);
+    XFLUSH(data->display);
     UNLOCK_X11    
     
     ReturnVoid("X11Gfx.BitMap::FillRect");    
@@ -1028,7 +1031,7 @@ static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     ReleaseSemaphore(&XSD(cl)->shm_sema);
 
     LOCK_X11
-    XFlush(data->display); /* stegerg: added */
+    XFLUSH(data->display); /* stegerg: added */
     destroy_xshm_ximage(image);    
     UNLOCK_X11    
 
@@ -1108,7 +1111,7 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     XSetFunction(data->display, data->gc, GC_DRMD(gc));
     XPutImage(data->display, DRAWABLE(data), data->gc, image,
     	      0, 0, x, y, width, height);
-    XFlush(data->display);
+    XFLUSH(data->display);
     UNLOCK_X11 
     
 #if NO_MALLOC
@@ -1304,7 +1307,7 @@ VOID MNAME(Hidd_BitMap__BlitColorExpansion)(OOP_Class *cl, OOP_Object *o,
     }
 
     LOCK_X11
-    XFlush(data->display);
+    XFLUSH(data->display);
     UNLOCK_X11 
     
     ReturnVoid("X11Gfx.BitMap::BlitColorExpansion");
@@ -1387,7 +1390,7 @@ VOID MNAME(Hidd_BitMap__DrawLine)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	XSetClipMask(data->display, data->gc, None);
     }	
     
-    XFlush(data->display);
+    XFLUSH(data->display);
     
     UNLOCK_X11
 }
@@ -1435,7 +1438,7 @@ VOID MNAME(Hidd_BitMap__DrawEllipse)(OOP_Class *cl, OOP_Object *o, struct pHidd_
     	XSetClipMask(data->display, data->gc, None);
     }	
     
-    XFlush(data->display);
+    XFLUSH(data->display);
     
     UNLOCK_X11
 }
