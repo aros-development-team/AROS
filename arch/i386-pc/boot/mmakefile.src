@@ -68,8 +68,8 @@ BOOT_TAR_FILES := \
     Prefs.info \
     Prefs/Env-Archive Prefs/Presets/Patterns/Stripes Prefs/Presets/Patterns.info \
     S/Shell-Startup S/Startup-Sequence \
-    System/About System/FixFonts System/FixFonts.info System/Themes \
-    System/Wanderer System.info \
+    System/About System/FixFonts System/FixFonts.info System/Themes/Mason \
+    System/Themes/os3.1 System/Wanderer System.info \
     Tools/Editor Tools/HDToolBox Tools/HDToolBox.info Tools.info \
     Tools/Commodities/Opaque Tools/Commodities/Opaque.info Tools/Debug \
     Utilities.info 
