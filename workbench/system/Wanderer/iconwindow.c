@@ -175,7 +175,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         iconList = (IPTR) IconVolumeListObject,
             MUIA_Font, (IPTR) WindowFont,
-            MUIA_IconList_DoubleBuffered, doublebuffered,
+            MUIA_IconList_DoubleBuffered, (IPTR) doublebuffered,
         End;
     }
     else
@@ -184,7 +184,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         iconList = (IPTR) IconDrawerListObject,
             MUIA_Font, (IPTR) WindowFont,
             MUIA_IconDrawerList_Drawer, (IPTR) drawer,
-            MUIA_IconList_DoubleBuffered, doublebuffered,
+            MUIA_IconList_DoubleBuffered, (IPTR) doublebuffered,
         End;
     }
 
