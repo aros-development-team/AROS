@@ -75,6 +75,8 @@ extern struct Library *MUIMasterBase;
 #define ICON_TEXTMODE_DROPSHADOW    2
 
 #define ICON_TEXTMAXLEN_DEFAULT     15
+#define ICONLIST_DRAWMODE_NORMAL    1
+#define ICONLIST_DRAWMODE_FAST      2
 
 struct IconEntry
 {
@@ -286,7 +288,7 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
 /**************************************************************************
 Draw the icon at its position
 **************************************************************************/
-static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon)
+static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct RastPort *rp)
 {   
     struct Rectangle iconrect;
     struct Rectangle objrect;
@@ -300,10 +302,14 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     IconList_GetIconRectangle(obj, data, icon, &iconrect);
 
     /* Add the relative position offset of the icon */
-    iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
-    iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
-    iconrect.MinY += _mtop(obj) - data->view_y + icon->y;
-    iconrect.MaxY += _mtop(obj) - data->view_y + icon->y;
+    if (!rp)
+    {
+        iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
+        iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
+        iconrect.MinY += _mtop(obj) - data->view_y + icon->y;
+        iconrect.MaxY += _mtop(obj) - data->view_y + icon->y;
+        rp = _rp(obj);
+    }
 
     /* Add the relative position of the window */
     objrect.MinX = _mleft(obj);
@@ -331,7 +337,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
         if (!RectAndRect(&iconrect, data->update_rect2)) return;
     }
 
-    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
+    SetABPenDrMd(rp,_pens(obj)[MPEN_TEXT],0,JAM1);
 
     // Center icon
     ULONG iconX = iconrect.MinX + ((icon->realWidth - icon->width )/2);
@@ -340,7 +346,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 #ifndef __AROS__
     DrawIconState
     (
-        _rp(obj), icon->dob, NULL,
+        rp ? rp : rp, icon->dob, NULL,
         iconX, iconY, 
         icon->selected ? IDS_SELECTED : IDS_NORMAL, 
         ICONDRAWA_EraseBackground, FALSE, 
@@ -349,7 +355,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 #else
     DrawIconStateA
     (
-        _rp(obj), icon->dob, NULL,
+        rp ? rp : rp, icon->dob, NULL,
         iconX, 
         iconY, 
         icon->selected ? IDS_SELECTED : IDS_NORMAL, 
@@ -357,162 +363,6 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     );
 #endif
 
-    if (icon->entry.label)
-    {
-        ULONG nameLength = strlen(icon->entry.label);
-
-        SetFont(_rp(obj), data->IconFont);
-
-        if ( nameLength > data->wpd_IconTextMaxLen )
-            txwidth = TextLength(_rp(obj), icon->entry.label, data->wpd_IconTextMaxLen);
-        else txwidth = TextLength(_rp(obj), icon->entry.label, nameLength);
-
-        memset( buf, 0 , sizeof( buf ) );
-
-        ULONG len = data->wpd_IconTextMaxLen;
-        // Make sure the maxlen is at least the length of ".."
-        if ( len < 2 ) len = 2;
-        
-        if(nameLength > len)
-        {
-            strncpy(buf, icon->entry.label, len - 2);
-            strcat(buf , "..");
-            nameLength = len;
-        }
-        else 
-        {
-            strncpy( buf, icon->entry.label, nameLength );
-        }
-             
-        tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - txwidth)/2);
-        ty = iconY + icon->height + data->IconFont->tf_Baseline;
-
-        switch ( data->wpd_IconTextMode )
-        {
-            case ICON_TEXTMODE_DROPSHADOW:
-            case ICON_TEXTMODE_PLAIN:
-                SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-                Move(_rp(obj), tx, ty); 
-                Text(_rp(obj), buf, nameLength);
-                break;
-                
-            default:
-                // Outline mode:
-                
-                SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
-                SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-                
-                Move(_rp(obj), tx + 1, ty ); Text(_rp(obj), buf, nameLength);
-                Move(_rp(obj), tx - 1, ty ); Text(_rp(obj), buf, nameLength);
-                Move(_rp(obj), tx, ty + 1);  Text(_rp(obj), buf, nameLength);
-                Move(_rp(obj), tx, ty - 1);  Text(_rp(obj), buf, nameLength);
-                
-                SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-                Move(_rp(obj), tx, ty);
-                Text(_rp(obj), buf, nameLength);
-                SetSoftStyle(_rp(obj), FS_NORMAL, AskSoftStyle(_rp(obj)));
-                break;
-        }
-
-        /*date/size sorting has the date/size appended under the icon label*/
-
-        if( icon->entry.type != WBDRAWER && ((data->sort_bits & ICONLIST_SORT_BY_SIZE) || (data->sort_bits & ICONLIST_SORT_BY_DATE)) )
-        {
-            if( (data->sort_bits & ICONLIST_SORT_BY_SIZE) && !(data->sort_bits & ICONLIST_SORT_BY_DATE) )
-            {
-                int i = icon->fib.fib_Size;
-        
-                /*show byte size for small files*/
-                if( i > 9999 )
-                    sprintf( buf , "%ld KB" , (LONG)(i/1024) );
-                else
-                    sprintf( buf , "%ld B" , (LONG)i );
-            }
-            else
-            {
-                if( !(data->sort_bits & ICONLIST_SORT_BY_SIZE) && (data->sort_bits & ICONLIST_SORT_BY_DATE) )
-                {
-                    struct DateStamp now;
-                    DateStamp(&now);
-        
-                    /*if modified today show time, otherwise just show date*/
-                    if( now.ds_Days == icon->fib.fib_Date.ds_Days )
-                    sprintf( buf , "%s" ,icon->timebuf );
-                    else
-                    sprintf( buf , "%s" ,icon->datebuf );
-                }
-            }
-
-            nameLength = strlen(buf);
-
-            ULONG textwidth = TextLength(_rp(obj), buf, nameLength);
-            tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - textwidth)/2);
-            ty = iconY + icon->height + data->IconFont->tf_YSize + ICONLIST_TEXTMARGIN + data->IconFont->tf_Baseline;
-    
-            switch ( data->wpd_IconTextMode )
-            {
-                case ICON_TEXTMODE_DROPSHADOW:
-                case ICON_TEXTMODE_PLAIN:
-                    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-                    Move(_rp(obj), tx, ty); Text(_rp(obj), buf, nameLength);
-                    break;
-                    
-                default:
-                    // Outline mode..
-                    SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
-                    SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
-        
-                    Move(_rp(obj), tx + 1, ty ); Text(_rp(obj), buf, nameLength);
-                    Move(_rp(obj), tx - 1, ty ); Text(_rp(obj), buf, nameLength);
-                    Move(_rp(obj), tx, ty + 1);  Text(_rp(obj), buf, nameLength);
-                    Move(_rp(obj), tx, ty - 1);  Text(_rp(obj), buf, nameLength);
-        
-                    SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
-                    Move(_rp(obj), tx, ty);
-                    Text(_rp(obj), buf, nameLength);
-                    SetSoftStyle(_rp(obj), FS_NORMAL, AskSoftStyle(_rp(obj)));
-                    break;
-            }
-        }
-    }
-    // Free up icontext memory
-    FreeVec ( buf );
-}
-
-static void IconList_DrawIconFast(Object *obj, struct RastPort *rp, struct MUI_IconData *data, struct IconEntry *icon)
-{   
-    struct Rectangle iconrect;
-    struct Rectangle objrect;
-
-    LONG tx,ty;
-    LONG txwidth; // txheight;
-
-    STRPTR buf = AllocVec ( 255, MEMF_CLEAR );
-
-    /* Get the dimensions and affected area of icon */
-    IconList_GetIconRectangle(obj, data, icon, &iconrect);
-
-    /* Add the relative position offset of the icon */
-/*
-    iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
-    iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
-    iconrect.MinY += _mtop(obj) - data->view_y + icon->y;
-    iconrect.MaxY += _mtop(obj) - data->view_y + icon->y;
-*/
-    SetABPenDrMd(rp, _pens(obj)[MPEN_TEXT],0,JAM1);
-
-    // Center icon
-    ULONG iconX = iconrect.MinX + ((icon->realWidth - icon->width )/2);
-    ULONG iconY = iconrect.MinY;
-
-    DrawIconStateA
-    (
-        rp, icon->dob, NULL,
-        iconX, 
-        iconY, 
-        icon->selected ? IDS_SELECTED : IDS_NORMAL, 
-        TAG_DONE
-    );
     if (icon->entry.label)
     {
         ULONG nameLength = strlen(icon->entry.label);
@@ -558,15 +408,15 @@ static void IconList_DrawIconFast(Object *obj, struct RastPort *rp, struct MUI_I
                 SetSoftStyle(rp, FSF_BOLD, FSF_BOLD);
                 SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
                 
-                Move(rp, tx + 1, ty ); Text(_rp(obj), buf, nameLength);
-                Move(rp, tx - 1, ty ); Text(_rp(obj), buf, nameLength);
-                Move(rp, tx, ty + 1);  Text(_rp(obj), buf, nameLength);
-                Move(rp, tx, ty - 1);  Text(_rp(obj), buf, nameLength);
+                Move(rp, tx + 1, ty ); Text(rp, buf, nameLength);
+                Move(rp, tx - 1, ty ); Text(rp, buf, nameLength);
+                Move(rp, tx, ty + 1);  Text(rp, buf, nameLength);
+                Move(rp, tx, ty - 1);  Text(rp, buf, nameLength);
                 
-            
                 SetAPen(rp, _pens(obj)[MPEN_SHINE]);
                 Move(rp, tx, ty);
                 Text(rp, buf, nameLength);
+                SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
                 break;
         }
 
@@ -610,23 +460,23 @@ static void IconList_DrawIconFast(Object *obj, struct RastPort *rp, struct MUI_I
                 case ICON_TEXTMODE_DROPSHADOW:
                 case ICON_TEXTMODE_PLAIN:
                     SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
-                    Move(rp, tx, ty); Text(_rp(obj), buf, nameLength);
+                    Move(rp, tx, ty); Text(rp, buf, nameLength);
                     break;
                     
                 default:
                     // Outline mode..
-                    
                     SetSoftStyle(rp, FSF_BOLD, FSF_BOLD);
                     SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
         
-                    Move(rp, tx + 1, ty ); Text(_rp(obj), buf, nameLength);
-                    Move(rp, tx - 1, ty ); Text(_rp(obj), buf, nameLength);
-                    Move(rp, tx, ty + 1);  Text(_rp(obj), buf, nameLength);
-                    Move(rp, tx, ty - 1);  Text(_rp(obj), buf, nameLength);
+                    Move(rp, tx + 1, ty ); Text(rp, buf, nameLength);
+                    Move(rp, tx - 1, ty ); Text(rp, buf, nameLength);
+                    Move(rp, tx, ty + 1);  Text(rp, buf, nameLength);
+                    Move(rp, tx, ty - 1);  Text(rp, buf, nameLength);
         
                     SetAPen(rp, _pens(obj)[MPEN_SHINE]);
                     Move(rp, tx, ty);
                     Text(rp, buf, nameLength);
+                    SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
                     break;
             }
         }
@@ -1241,13 +1091,13 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                     if (RectAndRect(&rect,&rect2))
                     {  
                         // Update icon here
-                        IconList_DrawIcon(obj, data, icon);
+                        IconList_DrawIcon(obj, data, icon, NULL);
                     }
                 }
                 icon = Node_Next(icon);
             }
 
-            IconList_DrawIcon(obj, data, data->update_icon);
+            IconList_DrawIcon(obj, data, data->update_icon, NULL);
             data->update = 0;
             MUI_RemoveClipping(muiRenderInfo(obj),clip);
             return 0;
@@ -1481,7 +1331,7 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                 }
                 if (mrp)
                 {
-                    IconList_DrawIconFast(obj, mrp, data, icon);
+                    IconList_DrawIcon(obj, data, icon, mrp);
                     BltBitMapRastPort(mrp->BitMap, 0, 0, _rp(obj), ir.MinX, ir.MinY, ir.MaxX-ir.MinX+1, ir.MaxY-ir.MinY+1, 0xc0);
                     FreeBitMap(mrp->BitMap);
                     FreeRastPort(mrp);
@@ -1496,9 +1346,9 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                         data->view_x + (ir.MinX - _mleft(obj)), data->view_y + (ir.MinY - _mtop(obj)), 
                         0
                     );
-                    IconList_DrawIcon(obj, data, icon);
+                    IconList_DrawIcon(obj, data, icon, NULL);
                 }
-            } else IconList_DrawIcon(obj, data, icon);
+            } else IconList_DrawIcon(obj, data, icon, NULL);
 
         }
         icon = Node_Next(icon);
