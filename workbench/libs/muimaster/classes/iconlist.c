@@ -34,7 +34,7 @@ $Id$
 #include <prefs/wanderer.h>
 #include <proto/cybergraphics.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define MYDEBUG
@@ -837,7 +837,6 @@ IPTR IconList__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct TagItem  	*tag, *tags;
     WORD    	    	 oldleft = data->view_x, oldtop = data->view_y;
-    BOOL DoUpdate = FALSE;
     
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
@@ -872,7 +871,7 @@ IPTR IconList__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         }
     }
 
-    if ((oldleft != data->view_x) || (oldtop != data->view_y) || DoUpdate )
+    if ((oldleft != data->view_x) || (oldtop != data->view_y))
     {
         data->update = UPDATE_SCROLL;
         data->update_scrolldx = data->view_x - oldleft;
@@ -1108,7 +1107,8 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             struct Rectangle 	 xrect, yrect;
             BOOL    	    	 scroll_caused_damage;
             
-            updateall = TRUE;
+            if (data->buffered)
+                updateall = TRUE;
 
             scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
     
@@ -1116,107 +1116,104 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
             if (!updateall)
             {
-
-            if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
-                (abs(data->update_scrolldy) >= _mheight(obj)))
-            {
-                MUI_Redraw(obj, MADF_DRAWOBJECT);
-                return 0;
-            }
-
-            region = NewRegion();
-            if (!region)
-            {
-                MUI_Redraw(obj, MADF_DRAWOBJECT);
-                return 0;
-            }
-
-            if (data->update_scrolldx > 0)
-            {
-                xrect.MinX = _mright(obj) - data->update_scrolldx;
-                xrect.MinY = _mtop(obj);
-                xrect.MaxX = _mright(obj);
-                xrect.MaxY = _mbottom(obj);
-        
-                OrRectRegion(region, &xrect);
-        
-                data->update_rect1 = &xrect;
-            }
-            else if (data->update_scrolldx < 0)
-            {
-                xrect.MinX = _mleft(obj);
-                xrect.MinY = _mtop(obj);
-                xrect.MaxX = _mleft(obj) - data->update_scrolldx;
-                xrect.MaxY = _mbottom(obj);
-
-                OrRectRegion(region, &xrect);
-
-                data->update_rect1 = &xrect;
-            }
-
-            if (data->update_scrolldy > 0)
-            {
-                yrect.MinX = _mleft(obj);
-                yrect.MinY = _mbottom(obj) - data->update_scrolldy;
-                yrect.MaxX = _mright(obj);
-                yrect.MaxY = _mbottom(obj);
-        
-                OrRectRegion(region, &yrect);
-        
-                data->update_rect2 = &yrect;
-            }
-            else if (data->update_scrolldy < 0)
-            {
-                yrect.MinX = _mleft(obj);
-                yrect.MinY = _mtop(obj);
-                yrect.MaxX = _mright(obj);
-                yrect.MaxY = _mtop(obj) - data->update_scrolldy;
-        
-                OrRectRegion(region, &yrect);
-        
-                data->update_rect2 = &yrect;
-            }
-            updateall = TRUE;
-/*
-            ScrollRasterBF(_rp(obj),
-                data->update_scrolldx,
-                data->update_scrolldy,
-                _mleft(obj),
-                _mtop(obj),
-                _mright(obj),
-                _mbottom(obj));
-*/
-            scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
-
-            clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
-
-            MUI_Redraw(obj, MADF_DRAWOBJECT);
-
-            data->update_rect1 = data->update_rect2 = NULL;
-
-            MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-
-            //	    DisposeRegion(region);
     
-            if (scroll_caused_damage)
-            {
-                if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
+                if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
+                    (abs(data->update_scrolldy) >= _mheight(obj)))
                 {
-                    /* Theoretically it might happen that more damage is caused
-                    after ScrollRaster. By something else, like window movement
-                    in front of our window. Therefore refresh root object of
-                    window, not just this object */
-        
-                    Object *o = NULL;
-        
-                    get(_win(obj),MUIA_Window_RootObject, &o);
-                    MUI_Redraw(o, MADF_DRAWOBJECT);
-        
-                    MUI_EndRefresh(muiRenderInfo(obj), 0);
+                    MUI_Redraw(obj, MADF_DRAWOBJECT);
+                    return 0;
                 }
-            }
+    
+                region = NewRegion();
+                if (!region)
+                {
+                    MUI_Redraw(obj, MADF_DRAWOBJECT);
+                    return 0;
+                }
+    
+                if (data->update_scrolldx > 0)
+                {
+                    xrect.MinX = _mright(obj) - data->update_scrolldx;
+                    xrect.MinY = _mtop(obj);
+                    xrect.MaxX = _mright(obj);
+                    xrect.MaxY = _mbottom(obj);
+            
+                    OrRectRegion(region, &xrect);
+            
+                    data->update_rect1 = &xrect;
+                }
+                else if (data->update_scrolldx < 0)
+                {
+                    xrect.MinX = _mleft(obj);
+                    xrect.MinY = _mtop(obj);
+                    xrect.MaxX = _mleft(obj) - data->update_scrolldx;
+                    xrect.MaxY = _mbottom(obj);
+    
+                    OrRectRegion(region, &xrect);
+    
+                    data->update_rect1 = &xrect;
+                }
+    
+                if (data->update_scrolldy > 0)
+                {
+                    yrect.MinX = _mleft(obj);
+                    yrect.MinY = _mbottom(obj) - data->update_scrolldy;
+                    yrect.MaxX = _mright(obj);
+                    yrect.MaxY = _mbottom(obj);
+            
+                    OrRectRegion(region, &yrect);
+            
+                    data->update_rect2 = &yrect;
+                }
+                else if (data->update_scrolldy < 0)
+                {
+                    yrect.MinX = _mleft(obj);
+                    yrect.MinY = _mtop(obj);
+                    yrect.MaxX = _mright(obj);
+                    yrect.MaxY = _mtop(obj) - data->update_scrolldy;
+            
+                    OrRectRegion(region, &yrect);
+            
+                    data->update_rect2 = &yrect;
+                }
 
-            return 0;
+                ScrollRasterBF(_rp(obj),
+                    data->update_scrolldx,
+                    data->update_scrolldy,
+                    _mleft(obj),
+                    _mtop(obj),
+                    _mright(obj),
+                    _mbottom(obj));
+    
+                scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+    
+                clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+    
+                MUI_Redraw(obj, MADF_DRAWOBJECT);
+    
+                data->update_rect1 = data->update_rect2 = NULL;
+    
+                MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+        
+                if (scroll_caused_damage)
+                {
+                    if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
+                    {
+                        /* Theoretically it might happen that more damage is caused
+                        after ScrollRaster. By something else, like window movement
+                        in front of our window. Therefore refresh root object of
+                        window, not just this object */
+            
+                        Object *o = NULL;
+            
+                        get(_win(obj),MUIA_Window_RootObject, &o);
+                        MUI_Redraw(o, MADF_DRAWOBJECT);
+            
+                        MUI_EndRefresh(muiRenderInfo(obj), 0);
+                    }
+                }
+    
+                return 0;
             }
         }
 
