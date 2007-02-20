@@ -1709,13 +1709,18 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                     {
                         struct IconEntry *node;
                         struct IconEntry *new_selected = NULL;
-            
+  
+                        int selections = 0;
+          
                         data->first_selected = NULL;
             
                         /* check if clicked on icon */
                         node = List_First(&data->icon_list);
                         while (node)
                         {
+                            /* count all OLD selections */
+                            if (node->selected) selections++;
+
                             if (mx >= node->x - data->view_x && mx < node->x - data->view_x + node->realWidth &&
                                 my >= node->y - data->view_y && my < node->y - data->view_y + node->realHeight && !new_selected)
                             {
@@ -1757,7 +1762,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                             data->lasso_active = FALSE;
 
                             /* remove last single selection if clicked on different file*/
-                            if (data->last_selected && data->last_selected->selected && new_selected != data->last_selected) 
+                            if (data->last_selected && new_selected != data->last_selected && selections < 2)
                             {
                                 data->last_selected->selected = 0;
                                 data->update = UPDATE_SINGLEICON;
