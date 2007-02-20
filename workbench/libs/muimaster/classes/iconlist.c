@@ -60,6 +60,7 @@ extern struct Library *MUIMasterBase;
 #define UPDATE_SINGLEICON           1
 #define UPDATE_SCROLL               2
 #define UPDATE_SORT                 3
+#define UPDATE_RESCALE              4
 
 #define LEFT_BUTTON	                1
 #define RIGHT_BUTTON                2
@@ -148,10 +149,14 @@ struct MUI_IconData
     /* values for update */
     /* UPDATE_SINGLEICON = draw the given single icon only */
     /* UPDATE_SCROLL = scroll the view by update_scrolldx/update_scrolldy */
+    /* UPDATE_RESCALE = rescaling window and update only new parts */
     
     ULONG update;
     WORD update_scrolldx;
     WORD update_scrolldy;
+    WORD update_oldwidth;
+    WORD update_oldheight;
+    
     struct IconEntry *update_icon;
     struct Rectangle *update_rect1;
     struct Rectangle *update_rect2;
@@ -302,7 +307,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     IconList_GetIconRectangle(obj, data, icon, &iconrect);
 
     /* Add the relative position offset of the icon */
-    if (!rp)
+    if (rp == NULL)
     {
         iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
         iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
@@ -317,7 +322,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     objrect.MaxX = _mright(obj);
     objrect.MaxY = _mbottom(obj);
 
-    if (!RectAndRect(&iconrect, &objrect)) return;
+    if (!RectAndRect(&iconrect, &objrect)) goto endDraw;
 
     /* data->update_rect1 and data->update_rect2 may
     point to rectangles to indicate that only icons
@@ -326,15 +331,15 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     if (data->update_rect1 && data->update_rect2)
     {
         if (!RectAndRect(&iconrect, data->update_rect1) &&
-        !RectAndRect(&iconrect, data->update_rect2)) return;
+        !RectAndRect(&iconrect, data->update_rect2)) goto endDraw;
     }
     else if (data->update_rect1)
     {
-        if (!RectAndRect(&iconrect, data->update_rect1)) return;
+        if (!RectAndRect(&iconrect, data->update_rect1)) goto endDraw;
     }
     else if (data->update_rect2)
     {
-        if (!RectAndRect(&iconrect, data->update_rect2)) return;
+        if (!RectAndRect(&iconrect, data->update_rect2)) goto endDraw;
     }
 
     SetABPenDrMd(rp,_pens(obj)[MPEN_TEXT],0,JAM1);
@@ -443,9 +448,9 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
         
                     /*if modified today show time, otherwise just show date*/
                     if( now.ds_Days == icon->fib.fib_Date.ds_Days )
-                    sprintf( buf , "%s" ,icon->timebuf );
+                        sprintf( buf , "%s" ,icon->timebuf );
                     else
-                    sprintf( buf , "%s" ,icon->datebuf );
+                        sprintf( buf , "%s" ,icon->datebuf );
                 }
             }
 
@@ -482,6 +487,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
         }
     }
     // Free up icontext memory
+    endDraw:
     FreeVec ( buf );
 }
 
@@ -760,7 +766,6 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_IconData  *data;
     //struct TagItem  	    *tag, *tags;
     struct TextFont      *WindowFont = NULL;
-    data->last_selected = NULL;
 
     WindowFont = (struct TextFont *) GetTagData(MUIA_Font, (IPTR) NULL, msg->ops_AttrList);
 
@@ -771,6 +776,7 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
+    data->last_selected = NULL;
     
     // Get some initial values
     data->wpd_IconListMode = GetTagData(MUIA_IconList_ListMode, 0, msg->ops_AttrList);
@@ -838,6 +844,7 @@ IPTR IconList__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_IconData *data = INST_DATA(cl, obj);
     struct TagItem  	*tag, *tags;
     WORD    	    	 oldleft = data->view_x, oldtop = data->view_y;
+    WORD                 oldwidth = data->view_width, oldheight = data->view_height;
     
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
@@ -1043,9 +1050,25 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct IconEntry *icon;
     BOOL buffereddraw = FALSE;
     BOOL updateall = FALSE;
+    ULONG update_oldwidth = 0, update_oldheight = 0;
     DoSuperMethodA(cl, obj, (Msg) msg);
 
-    if (msg->flags & MADF_DRAWUPDATE)
+    // If window size changes, only update needed areas
+    if (data->update_oldwidth == 0) data->update_oldwidth = data->view_width;
+    if (data->update_oldheight == 0) data->update_oldheight = data->view_height;
+    if (data->update_oldwidth != data->view_width || data->update_oldheight != data->view_height)
+    {
+        if ( data->update != UPDATE_SCROLL )
+        { 
+            data->update = UPDATE_RESCALE;
+            update_oldwidth = data->update_oldwidth;
+            update_oldheight = data->update_oldheight;
+            data->update_oldwidth = data->view_width;
+            data->update_oldheight = data->view_height;
+        }
+    }
+
+    if (msg->flags & MADF_DRAWUPDATE || data->update == UPDATE_RESCALE)
     {
         if (data->update == UPDATE_SINGLEICON) /* draw only a single icon at update_icon */
         {
@@ -1214,6 +1237,61 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                     }
                 }
     
+                return 0;
+            }
+        }
+        else if (data->update == UPDATE_RESCALE)
+        {
+            struct Region       *region;
+            struct Rectangle     wrect, hrect;
+            ULONG                diffw = 0, diffh = 0;
+            
+            if (data->buffered)
+                updateall = TRUE;
+    
+            data->update = 0;
+
+            if (!updateall)
+            {
+                if (!(region = NewRegion()))
+                {
+                    MUI_Redraw(obj, MADF_DRAWOBJECT);
+                    return 0;
+                }
+                
+                if ( data->view_width > update_oldwidth )
+                    diffw = data->view_width - update_oldwidth;
+                if ( data->view_height > update_oldheight )
+                    diffh = data->view_height - update_oldheight;            
+    
+                if (diffw)
+                {
+                    wrect.MinX = _mright(obj) - diffw;
+                    wrect.MinY = _mtop(obj);
+                    wrect.MaxX = _mright(obj);
+                    wrect.MaxY = _mbottom(obj);
+                    OrRectRegion(region, &wrect);
+                    data->update_rect1 = &wrect;
+                }
+    
+                if (diffh)
+                {
+                    hrect.MinX = _mleft(obj);
+                    hrect.MinY = _mbottom(obj) - diffh;
+                    hrect.MaxX = _mright(obj);
+                    hrect.MaxY = _mbottom(obj);
+                    OrRectRegion(region, &hrect);
+                    data->update_rect2 = &hrect;
+                }
+                
+                if (diffh||diffw)
+                {
+                    clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+                    MUI_Redraw(obj, MADF_DRAWOBJECT);
+                    data->update_rect1 = data->update_rect2 = NULL;
+                    MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+                } else DisposeRegion(region);
+                
                 return 0;
             }
         }
