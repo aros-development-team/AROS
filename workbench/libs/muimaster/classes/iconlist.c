@@ -34,7 +34,7 @@ $Id$
 #include <prefs/wanderer.h>
 #include <proto/cybergraphics.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define MYDEBUG
@@ -760,6 +760,7 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_IconData  *data;
     //struct TagItem  	    *tag, *tags;
     struct TextFont      *WindowFont = NULL;
+    data->last_selected = NULL;
 
     WindowFont = (struct TextFont *) GetTagData(MUIA_Font, (IPTR) NULL, msg->ops_AttrList);
 
@@ -1673,8 +1674,19 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                             InvertLassoOutlines(obj, &data->lasso_rect);
 
                         }
-                        else data->lasso_active = FALSE;
-                        
+                        else
+                        {
+                            data->lasso_active = FALSE;
+
+                            /* remove last single selection if clicked on different file*/
+                            if (data->last_selected && data->last_selected->selected && new_selected != data->last_selected) 
+                            {
+                                data->last_selected->selected = 0;
+                                data->update = UPDATE_SINGLEICON;
+                                data->update_icon = data->last_selected;
+                                MUI_Redraw(obj,MADF_DRAWUPDATE);
+                            }
+                        }                       
                                         
                         data->icon_click.shift = !!(msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
                         data->icon_click.entry = new_selected?&new_selected->entry:NULL;
@@ -1683,6 +1695,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                         if (DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros) && data->last_selected == new_selected)
                         {
                             set(obj,MUIA_IconList_DoubleClick, TRUE);
+                            data->last_selected = NULL;
                         }
                         else if (!data->mouse_pressed)
                         {
@@ -2143,7 +2156,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
 
            /* check if dropped on a drawer */
            struct IconEntry *node;
-           struct IconEntry *new_selected = NULL;
+           struct IconEntry *drop_target_node = NULL;
 
            /* go through list and check if dropped on icon */
            node = List_First(&data->icon_list);
@@ -2152,9 +2165,9 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
                if (msg->x >= node->x - data->view_x && 
                    msg->x < node->x - data->view_x + node->realWidth  &&
                    msg->y >= node->y - data->view_y + _mtop(obj)  && 
-                   msg->y < node->y - data->view_y + node->realHeight + _mtop(obj) && !new_selected)
+                   msg->y < node->y - data->view_y + node->realHeight + _mtop(obj) && !drop_target_node)
                {
-                   new_selected = node;
+                   drop_target_node = node;
                } 
    
                node = Node_Next(node);
@@ -2167,26 +2180,38 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
            /* check if dropped on a root drive - 
               last condition is a hack, based upon another hack (adding ":Disk" to rootdrive name) 
               since ST_ROOT seems not to be set properly right now (?) */
-           if (new_selected && ( new_selected->entry.type == ST_ROOT  
-                            || ( !strcmp(new_selected->entry.filename+strlen(new_selected->entry.filename)-5,":Disk")  )      )  )
+           if (drop_target_node && ( drop_target_node->entry.type == ST_ROOT  
+                                || ( !strcmp(drop_target_node->entry.filename+strlen(drop_target_node->entry.filename)-5,":Disk")  )      )  )
            {
                int tmplen = 0;
 
                /* avoid copying "Disk" (hack anyway?!) from root drive name, eg. "Ram Disk:Disk"*/
-               tmplen = strlen(new_selected->entry.filename) - 4;
+               tmplen = strlen(drop_target_node->entry.filename) - 4;
 
                /* copy path of dir icon dropped on */
-               strncpy(data->drop_entry.destination_string, new_selected->entry.filename, tmplen);
+               strncpy(data->drop_entry.destination_string, drop_target_node->entry.filename, tmplen);
 
-               D( bug("[ICONLIST] drop entry: %s dropped on disk icon %s\n", entry->filename, new_selected->entry.filename); )
+               /* mark the drive the icon was dropped on*/
+               drop_target_node->selected = 1;
+               data->update = UPDATE_SINGLEICON;
+               data->update_icon = drop_target_node;
+               MUI_Redraw(obj,MADF_DRAWUPDATE);
+
+               D( bug("[ICONLIST] drop entry: %s dropped on disk icon %s\n", entry->filename, drop_target_node->entry.filename); )
            }
            /* check if dropped on a drawer icon in iconlist */
-           else if (new_selected && new_selected->entry.type == ST_USERDIR )
+           else if (drop_target_node && drop_target_node->entry.type == ST_USERDIR )
            {
                /* copy path of dir icon dropped on */
-               strcpy(data->drop_entry.destination_string, new_selected->entry.filename);
+               strcpy(data->drop_entry.destination_string, drop_target_node->entry.filename);
 
-               D( bug("[ICONLIST] drop entry: %s dropped on dir %s icon in window %s\n", entry->filename, new_selected->entry.filename,  directory_path); )
+               /* mark the directory the icon was dropped on*/
+               drop_target_node->selected = 1;
+               data->update = UPDATE_SINGLEICON;
+               data->update_icon = drop_target_node;
+               MUI_Redraw(obj,MADF_DRAWUPDATE);
+
+               D( bug("[ICONLIST] drop entry: %s dropped on dir %s icon in window %s\n", entry->filename, drop_target_node->entry.filename,  directory_path); )
            }
            else
            {
