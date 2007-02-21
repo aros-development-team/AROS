@@ -29,6 +29,7 @@ static int GFX_Init(LIBBASETYPEPTR LIBBASE)
     
     EnterFunc(bug("GfxHIDD_Init()\n"));
 
+    InitSemaphore(&csd->rgbconvertfuncs_sem);
     csd->utilitybase = OpenLibrary("utility.library", 37);
     
     if (csd->utilitybase)

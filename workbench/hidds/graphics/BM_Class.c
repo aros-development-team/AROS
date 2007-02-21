@@ -3524,6 +3524,29 @@ VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
     }
 }
 
+HIDDT_RGBConversionFunction BM__Hidd_BitMap__SetRGBConversionFunction(OOP_Class * cl, OOP_Object *o,
+				    	            	    	      struct pHidd_BitMap_SetRGBConversionFunction * msg)
+{
+    HIDDT_RGBConversionFunction old;
+    
+    if ((msg->srcPixFmt < FIRST_RGB_STDPIXFMT) ||
+    	(msg->dstPixFmt < FIRST_RGB_STDPIXFMT) ||
+	(msg->srcPixFmt > LAST_RGB_STDPIXFMT) ||
+	(msg->dstPixFmt > LAST_RGB_STDPIXFMT))
+    {
+    	return (HIDDT_RGBConversionFunction)-1;
+    }
+    else
+    {
+    	ObtainSemaphore(&CSD(cl)->rgbconvertfuncs_sem);
+    	old = CSD(cl)->rgbconvertfuncs[msg->srcPixFmt - FIRST_RGB_STDPIXFMT][msg->dstPixFmt - FIRST_RGB_STDPIXFMT];
+	CSD(cl)->rgbconvertfuncs[msg->srcPixFmt - FIRST_RGB_STDPIXFMT][msg->dstPixFmt - FIRST_RGB_STDPIXFMT] = msg->function;
+    	ReleaseSemaphore(&CSD(cl)->rgbconvertfuncs_sem);
+	
+	return old;
+    }
+}
+
 /****************************************************************************************/
 
 /* private ! */

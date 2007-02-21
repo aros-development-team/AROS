@@ -381,6 +381,9 @@ enum
 
     num_Hidd_AllPf
 };
+#define FIRST_RGB_STDPIXFMT 	    	vHidd_StdPixFmt_RGB24
+#define LAST_RGB_STDPIXFMT  	    	vHidd_StdPixFmt_0BGR32
+#define NUM_RGB_STDPIXFMT   	    	(vHidd_StdPixFmt_0BGR32 - vHidd_StdPixFmt_RGB24 + 1)
 
 #define num_Hidd_StdPixFmt  	    	(num_Hidd_AllPf - num_Hidd_PseudoStdPixFmt)
 
@@ -520,6 +523,7 @@ enum
     moHidd_BitMap_BitMapScale, 
     
     moHidd_BitMap_PrivateSet,
+    moHidd_BitMap_SetRGBConversionFunction,
     
     num_Hidd_BitMap_Methods
 };
@@ -1270,6 +1274,18 @@ struct pHidd_BitMap_BitMapScale
     OOP_Object	    	*gc;
 };
 
+typedef ULONG (*HIDDT_RGBConversionFunction)(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt, 
+    	    	    	    	    	     APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt,
+					     ULONG width, ULONG height);
+
+struct pHidd_BitMap_SetRGBConversionFunction
+{
+    OOP_MethodID    	    	    	mID;
+    HIDDT_StdPixFmt 	    	    	srcPixFmt;
+    HIDDT_StdPixFmt 	    	    	dstPixFmt;
+    HIDDT_RGBConversionFunction	    	function;
+};
+
 /**** Graphics context definitions ********************************************/
     /* Methods for a graphics context */
     
@@ -1756,7 +1772,11 @@ BOOL HIDD_BM_ObtainDirectAccess(OOP_Object *o,
 
 VOID HIDD_BM_ReleaseDirectAccess(OOP_Object *obj);
 
-
+HIDDT_RGBConversionFunction HIDD_BM_SetRGBConversionFunction(OOP_Object *o,
+    	    	    	    	HIDDT_StdPixFmt srcPixFmt,
+				HIDDT_StdPixFmt dstPixFmt,
+				HIDDT_RGBConversionFunction function);
+				
 /*******************************************************/
 /**  PROTECTED DATA 
 	!! These structures are at the top of the gfx hidd baseclasses.

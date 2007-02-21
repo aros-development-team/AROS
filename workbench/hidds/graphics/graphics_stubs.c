@@ -1820,7 +1820,6 @@ VOID HIDD_BM_ReleaseDirectAccess(OOP_Object *obj)
     return;
 }
 
-/***************************************************************/
 VOID HIDD_BM_BitMapScale(OOP_Object *obj, OOP_Object *src, OOP_Object *dest, struct BitScaleArgs * bsa, OOP_Object *gc)
 {
     STATIC_MID;
@@ -1835,6 +1834,22 @@ VOID HIDD_BM_BitMapScale(OOP_Object *obj, OOP_Object *src, OOP_Object *dest, str
     p.gc     = gc;
 
     OOP_DoMethod(obj, (OOP_Msg) msg);
+}
+
+HIDDT_RGBConversionFunction HIDD_BM_SetRGBConversionFunction(OOP_Object *obj, HIDDT_StdPixFmt srcPixFmt, HIDDT_StdPixFmt dstPixFmt,
+				    	    	    	     HIDDT_RGBConversionFunction function)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_SetRGBConversionFunction p, *msg = &p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetRGBConversionFunction);
+    
+    p.mID = mid;
+    p.srcPixFmt = srcPixFmt;
+    p.dstPixFmt = dstPixFmt;
+    p.function = function;
+    
+    return (HIDDT_RGBConversionFunction) OOP_DoMethod(obj, (OOP_Msg) msg);    
 }
 
 /********* GC *****************************************/
