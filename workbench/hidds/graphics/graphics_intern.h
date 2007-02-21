@@ -328,7 +328,8 @@ struct class_static_data
 #if USE_FAST_DRAWPIXEL
     OOP_MethodID	 drawpixel_mid;
 #endif
-    
+    HIDDT_RGBConversionFunction rgbconvertfuncs[NUM_RGB_STDPIXFMT][NUM_RGB_STDPIXFMT];
+    struct SignalSemaphore rgbconvertfuncs_sem;
 };
 
 #define __IHidd_PixFmt      (csd->hiddPixFmtAttrBase)

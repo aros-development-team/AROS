@@ -13,7 +13,7 @@
 
 /****************************************************************************************/
 
-#warning "Doe not yet handle SwapPixelBytes flag of HIDDT_PixelFormat structure!"
+#warning "Does not yet handle SwapPixelBytes flag of HIDDT_PixelFormat structure!"
 
 /****************************************************************************************/
 
@@ -441,14 +441,45 @@ VOID BM__Hidd_BitMap__ConvertPixels(OOP_Class *cl, OOP_Object *o,
 	    switch (HIDD_PF_COLMODEL(dstfmt))
 	    {
 	    	case vHidd_ColorModel_TrueColor:
-		     true_to_true(cl, o, msg);
-		     break;
+    	    	    if ((srcfmt->stdpixfmt >= FIRST_RGB_STDPIXFMT) &&
+		     	(dstfmt->stdpixfmt >= FIRST_RGB_STDPIXFMT) &&
+			(srcfmt->stdpixfmt <= LAST_RGB_STDPIXFMT) &&
+			(dstfmt->stdpixfmt <= LAST_RGB_STDPIXFMT))
+	    	    {
+		      	HIDDT_RGBConversionFunction f;
+
+		        ObtainSemaphoreShared(&CSD(cl)->rgbconvertfuncs_sem);
+
+		        f = CSD(cl)->rgbconvertfuncs[srcfmt->stdpixfmt - FIRST_RGB_STDPIXFMT]
+			    	    	    	    [dstfmt->stdpixfmt - FIRST_RGB_STDPIXFMT];
+						    
+			if (f)
+			{
+			    if ((*f)(*msg->srcPixels, msg->srcMod, srcfmt->stdpixfmt, 
+			    	     *msg->dstBuf, msg->dstMod, dstfmt->stdpixfmt,
+				     msg->width, msg->height))
+			    {
+			    	*msg->srcPixels += (msg->srcMod * msg->height);
+				*msg->dstBuf += (msg->dstMod * msg->height);
+
+			    	ReleaseSemaphore(&CSD(cl)->rgbconvertfuncs_sem);
+				break;
+			    }
+				     
+			}
+			
+ 		        ReleaseSemaphore(&CSD(cl)->rgbconvertfuncs_sem);
+
+		    }
+
+		    true_to_true(cl, o, msg);
+		    break;
 		     
 		
 		case vHidd_ColorModel_Palette:
 		case vHidd_ColorModel_StaticPalette:
-		     true_to_pal(cl, o, msg);
-		     break;
+		    true_to_pal(cl, o, msg);
+		    break;
 		
 	    }
 	    break;
