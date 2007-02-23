@@ -131,7 +131,10 @@ Object *DiskInfo__OM_NEW
             disktype = id.id_DiskType;
             ULONG i;
             for( i = 0; disktype != dt[i]; i++);
-            dtr = disktypelist[i];
+            if (i < sizeof(dt))
+                dtr = disktypelist[i];
+            else
+                dtr = __(MSG_UNKNOWN);
             D(bug("[DiskInfo] Disk Type: %s\n", dtr));
         }
     }
