@@ -23,6 +23,9 @@ MSG_PERCENTFULL (//)
 MSG_FORMAT (//)
 Format
 ;
+MSG_UNKNOWN (//)
+Unknown
+;
 MSG_AUTHOR (//)
 Olivier Adam
 ;
