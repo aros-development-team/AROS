@@ -48,6 +48,8 @@
 
 #define GETPIX16(s, pix) \
     do { pix = *(UWORD *)s; s = (UBYTE *)s + 2; } while (0)
+#define GETPIX16OE(s, pix) \
+    do { pix = AROS_SWAP_BYTES_WORD(*(UWORD *)s); s = (UBYTE *)s + 2; } while (0)
 
 
 #define GETPIX8(s, pix)	\
@@ -57,7 +59,11 @@
 	switch ((pf)->bytes_per_pixel) {	        \
 		case 4: GETPIX32(s, pix); break;	\
 		case 3: GETPIX24(s, pix); break;	\
-		case 2: GETPIX16(s, pix); break;	\
+		case 2: if ((pf)->flags & vHidd_PixFmt_SwapPixelBytes_Flag) \
+		    	    GETPIX16OE(s, pix);	    	\
+			else 	    	    	    	\
+			    GETPIX16(s, pix);     	\
+			break;	    	    	    	\
 		default: D(bug("RUBBISH BYTES PER PIXEL IN GET_TRUE_PIX()\n")); break;	\
 	}	
 
@@ -99,11 +105,18 @@
 #define PUTPIX16(d, pix)	\
     do { *(UWORD *)d = pix; d = (UBYTE *)d + 2; } while (0)
 
+#define PUTPIX16OE(d, pix)	\
+    do { *(UWORD *)d = AROS_SWAP_BYTES_WORD(pix); d = (UBYTE *)d + 2; } while (0)
+
 #define PUT_TRUE_PIX(d, pix, pf)			\
 	switch (pf->bytes_per_pixel) {			\
 		case 4: PUTPIX32(d, pix); break;	\
 		case 3: PUTPIX24(d, pix); break;	\
-		case 2: PUTPIX16(d, pix); break;	\
+		case 2: if ((pf)->flags & vHidd_PixFmt_SwapPixelBytes_Flag) \
+		    	    PUTPIX16OE(d, pix);	    	\
+			else 	    	    	    	\
+			    PUTPIX16(d, pix);     	\
+			break;	    	    	    	\
 		default: D(bug("RUBBISH BYTES PER PIXEL IN PUT_TRUE_PIX()\n")); break;	\
 	}	
 
