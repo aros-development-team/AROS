@@ -17,7 +17,7 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR LIBBASE) {
 
     unixio = (HIDD *) OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
     if (unixio == NULL) {
-        D(bug("[tap] couldn't create read unixio object\n"));
+        kprintf("[tap] couldn't create unixio object\n");
         return FALSE;
     }
 
@@ -76,7 +76,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
 
     /* make sure the requested unit number is in range */
     if (error == 0 && (unitnum < 0 || unitnum >= MAX_TAP_UNITS)) {
-        D(bug("[tap] request for unit %d, which is out of range\n", unitnum));
+        kprintf("[tap] request for unit %d, which is out of range (0..%d)\n", unitnum, MAX_TAP_UNITS-1);
         error = IOERR_OPENFAIL;
     }
     unit = &(LIBBASE->unit[unitnum]);
@@ -87,7 +87,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
         req->ios2_BufferManagement = (APTR) opener;
 
         if (opener == NULL) {
-            D(bug("[tap] [%d] couldn't allocate opener struct\n", unit->num));
+            kprintf("[tap] [%d] couldn't allocate opener struct\n", unit->num);
             error = IOERR_OPENFAIL;
         }
     }
@@ -119,7 +119,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
         /* open the tun/tap device */
         fd = Hidd_UnixIO_OpenFile(unixio, TAP_DEV_NODE, O_RDWR, 0, &ioerr);
         if (fd < 0) {
-            D(bug("[tap] couldn't open '" TAP_DEV_NODE "' (%d)\n", ioerr));
+            kprintf("[tap] couldn't open '" TAP_DEV_NODE "' (%d)\n", ioerr);
             error = IOERR_OPENFAIL;
         }
 
@@ -132,14 +132,14 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             strncpy(ifr.ifr_name, unit->name, IFNAMSIZ);
 
             if ((Hidd_UnixIO_IOControlFile(unixio, fd, TUNSETIFF, &ifr, &ioerr)) < 0) {
-                D(bug("[tap] couldn't perform TUNSETIFF on TAP device (%d)\n", ioerr));
+                kprintf("[tap] couldn't perform TUNSETIFF on TAP device (%d)\n", ioerr);
                 error = IOERR_OPENFAIL;
             }
 
             else {
                 unit->fd = fd;
 
-                D(bug("[tap] [%d] opened on fd %d, interface %s\n", unit->num, unit->fd, unit->name));
+                kprintf("[tap] unit %d attached to %s\n", unit->num, unit->name);
             }
         }
 
@@ -162,9 +162,9 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             unit->hwaddr[0] &= 0xfe;    /* clear multicast bit */
             unit->hwaddr[0] |= 0x02;    /* set local assignment bit (IEEE802) */
 
-            D(bug("[tap] [%d] hardware address: %02x:%02x:%02x:%02x:%02x:%02x\n", unit->num,
+            kprintf("[tap] [%d] hardware address: %02x:%02x:%02x:%02x:%02x:%02x\n", unit->num,
                 unit->hwaddr[0], unit->hwaddr[1], unit->hwaddr[2],
-                unit->hwaddr[3], unit->hwaddr[4], unit->hwaddr[5]));
+                unit->hwaddr[3], unit->hwaddr[4], unit->hwaddr[5]);
 
             /* container for the openers */
             NEWLIST(&(unit->openers));
@@ -318,10 +318,10 @@ AROS_LH1(void, begin_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(long, abort_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR, LIBBASE, 5, tap_device) {
+AROS_LH1(long, abort_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR, LIBBASE, 6, tap_device) {
     AROS_LIBFUNC_INIT
 
-    /* XXX what is this */
+    /* XXX anything to do here? */
 
     return 1;
 
@@ -332,6 +332,8 @@ AROS_LH1(long, abort_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR,
 
 
 /* hexdumpery stoled from Dan Gudmundsson, stoled from Gordon Beaton, via Google Code Search */
+
+#ifdef DEBUG
 
 #define CHUNK 16
 
@@ -371,3 +373,5 @@ void tap_hexdump(unsigned char *buf, int bufsz)
     bug("\n\r");
   }
 }
+
+#endif

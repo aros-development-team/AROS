@@ -9,4 +9,4 @@ USER_INCLUDES = -I$(GENINCDIR)
     uselibs="oop amiga rom m hiddstubs" \
     compiler=host
 
-
+%common
