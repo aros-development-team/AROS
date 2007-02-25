@@ -303,7 +303,7 @@ AROS_UFH3(void, tap_iotask,
     D(bug("[tap] [io:%d] iotask entering loop\n", unit->num));
 
     while (1) {
-        D(bug("[tap] [0] waiting for an event\n", unit->num));
+        D(bug("[tap] [io:%d] waiting for an event\n", unit->num));
 
         if (IsListEmpty(&(ioport->mp_MsgList))) {
             signaled = Wait(signal_mask);

@@ -9,7 +9,7 @@
 #ifndef _TAP_DEVICE_H
 #define _TAP_DEVICE_H 1
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 
