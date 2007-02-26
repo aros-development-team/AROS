@@ -297,3 +297,88 @@ CONVERTFUNC(BGR24,BGR15OE) /* Untested */
     
     CONVERTFUNC_EXIT
 }
+
+CONVERTFUNC(BGR24,XBGR32) /* Untested */
+{
+    CONVERTFUNC_INIT
+
+    UBYTE *src = (UBYTE *)srcPixels;
+    ULONG *dst = (ULONG *)dstPixels;
+    ULONG x, y;
+
+    for(y = 0; y < height; y++)
+    {
+    	for(x = 0; x < width; x++)
+	{
+	    ULONG s = GET24;
+
+    	    dst[x] = s;
+	}
+    	src = (UBYTE *)(((UBYTE *)src) + srcMod);
+	dst = (ULONG *)(((UBYTE *)dst) + dstMod);
+    }
+    
+    return 1;
+   
+    CONVERTFUNC_EXIT
+}
+
+CONVERTFUNC(BGR24,RGBX32) /* Untested */
+{
+    CONVERTFUNC_INIT
+
+    UBYTE *src = (UBYTE *)srcPixels;
+    ULONG *dst = (ULONG *)dstPixels;
+    ULONG x, y;
+
+    for(y = 0; y < height; y++)
+    {
+    	for(x = 0; x < width; x++)
+	{
+	    ULONG s = GET24;
+
+    	    dst[x] = SHUFFLE24(s, BGR24, RGBA32);
+	}
+    	src = (UBYTE *)(((UBYTE *)src) + srcMod);
+	dst = (ULONG *)(((UBYTE *)dst) + dstMod);
+    }
+    
+    return 1;
+   
+    CONVERTFUNC_EXIT
+}
+
+CONVERTFUNC(BGR24,BGRX32) /* Untested */
+{
+    CONVERTFUNC_INIT
+
+    UBYTE *src = (UBYTE *)srcPixels;
+    ULONG *dst = (ULONG *)dstPixels;
+    ULONG x, y;
+
+    for(y = 0; y < height; y++)
+    {
+    	for(x = 0; x < width; x++)
+	{
+	    ULONG s = GET24;
+
+    	    dst[x] = s << 8;
+	}
+    	src = (UBYTE *)(((UBYTE *)src) + srcMod);
+	dst = (ULONG *)(((UBYTE *)dst) + dstMod);
+    }
+    
+    return 1;
+    
+    CONVERTFUNC_EXIT
+}
+
+
+CONVERTFUNC(BGR24,XRGB32) /* Untested */
+{
+    CONVERTFUNC_INIT
+
+    SWAP2432CODE
+    
+    CONVERTFUNC_EXIT
+}

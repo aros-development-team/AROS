@@ -1,3 +1,27 @@
+static const char *pf_to_string[num_Hidd_AllPf + 1] =
+{
+    [vHidd_StdPixFmt_RGB24]    = "vHidd_StdPixFmt_RGB24",
+    [vHidd_StdPixFmt_BGR24]    = "vHidd_StdPixFmt_BGR24",
+    [vHidd_StdPixFmt_RGB16]    = "vHidd_StdPixFmt_RGB16",
+    [vHidd_StdPixFmt_RGB16_LE] = "vHidd_StdPixFmt_RGB16_LE",
+    [vHidd_StdPixFmt_BGR16]    = "vHidd_StdPixFmt_BGR16",
+    [vHidd_StdPixFmt_BGR16_LE] = "vHidd_StdPixFmt_BGR16_LE",
+    [vHidd_StdPixFmt_RGB15]    = "vHidd_StdPixFmt_RGB15",
+    [vHidd_StdPixFmt_RGB15_LE] = "vHidd_StdPixFmt_RGB15_LE",
+    [vHidd_StdPixFmt_BGR15]    = "vHidd_StdPixFmt_BGR15",
+    [vHidd_StdPixFmt_BGR15_LE] = "vHidd_StdPixFmt_BGR15_LE",
+    [vHidd_StdPixFmt_ARGB32]   = "vHidd_StdPixFmt_ARGB32",
+    [vHidd_StdPixFmt_BGRA32]   = "vHidd_StdPixFmt_BGRA32",
+    [vHidd_StdPixFmt_RGBA32]   = "vHidd_StdPixFmt_RGBA32",
+    [vHidd_StdPixFmt_ABGR32]   = "vHidd_StdPixFmt_ABGR32",
+    [vHidd_StdPixFmt_0RGB32]   = "vHidd_StdPixFmt_0RGB32",
+    [vHidd_StdPixFmt_BGR032]   = "vHidd_StdPixFmt_BGR032",
+    [vHidd_StdPixFmt_RGB032]   = "vHidd_StdPixFmt_RGB032",
+    [vHidd_StdPixFmt_0BGR32]   = "vHidd_StdPixFmt_0BGR32"
+ 
+};
+
+
 /* Pixel formats in AROS have their ID based on the pixel
    component layout in memory. So vHidd_StdPixFmt_ARGB32
    means 0xAA 0xRR 0xGG 0xBB in memory. When doing pixel
@@ -29,10 +53,10 @@
 #define FMT_BGRA32  vHidd_StdPixFmt_BGRA32
 #define FMT_RGBA32  vHidd_StdPixFmt_RGBA32
 #define FMT_ABGR32  vHidd_StdPixFmt_ABGR32
-#define FMT_0RGB32  vHidd_StdPixFmt_0RGB32
-#define FMT_BGR032  vHidd_StdPixFmt_BGR032
-#define FMT_RGB032  vHidd_StdPixFmt_RGB032
-#define FMT_0BGR32  vHidd_StdPixFmt_0BGR32
+#define FMT_XRGB32  vHidd_StdPixFmt_0RGB32
+#define FMT_BGRX32  vHidd_StdPixFmt_BGR032
+#define FMT_RGBX32  vHidd_StdPixFmt_RGB032
+#define FMT_XBGR32  vHidd_StdPixFmt_0BGR32
 #else
 #define FMT_RGB24   vHidd_StdPixFmt_BGR24
 #define FMT_BGR24   vHidd_StdPixFmt_RGB24
@@ -48,10 +72,10 @@
 #define FMT_BGRA32  vHidd_StdPixFmt_ARGB32
 #define FMT_RGBA32  vHidd_StdPixFmt_ABGR32
 #define FMT_ABGR32  vHidd_StdPixFmt_RGBA32
-#define FMT_0RGB32  vHidd_StdPixFmt_BGR032
-#define FMT_BGR032  vHidd_StdPixFmt_0RGB32
-#define FMT_RGB032  vHidd_StdPixFmt_0BGR32
-#define FMT_0BGR32  vHidd_StdPixFmt_RGB032
+#define FMT_XRGB32  vHidd_StdPixFmt_BGR032
+#define FMT_BGRX32  vHidd_StdPixFmt_0RGB32
+#define FMT_RGBX32  vHidd_StdPixFmt_0BGR32
+#define FMT_XBGR32  vHidd_StdPixFmt_RGB032
 #endif
 
 /* Component masks and shifts. Shifts are to left (!) not right, so
@@ -149,6 +173,10 @@
 #define BGR15OE_BITS 15
 #define RGB16OE_BITS 16
 #define BGR16OE_BITS 16
+#define XRGB32_BITS 32
+#define BGRX32_BITS 32
+#define RGBX32_BITS 32
+#define XBGR32_BITS 32
 
 #define DOSHIFT(val,shift) (((shift) < 0) ? ((val) << (-(shift))) : ((val) >> (shift)))
 
@@ -196,7 +224,7 @@
     APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt, \
     ULONG width, ULONG height) \
 { \
-    if (noisy) bug("== PixelConversion " #a " to " #b "\n");
+    if (noisy) bug("== PixelConversion " #a " to " #b " (%s to %s)\n", pf_to_string[srcPixFmt], pf_to_string[dstPixFmt]);
         
 #define CONVERTFUNC_INIT
 
