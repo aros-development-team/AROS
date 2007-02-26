@@ -249,3 +249,103 @@ CONVERTFUNC(BGR15OE,RGB15OE) /* Untested */
     CONVERTFUNC_EXIT
 }
 
+CONVERTFUNC(BGR15OE,XRGB32) /* Untested */
+{
+    CONVERTFUNC_INIT
+
+    UWORD *src = (UWORD *)srcPixels;
+    ULONG *dst = (ULONG *)dstPixels;
+    ULONG x, y;
+
+    for(y = 0; y < height; y++)
+    {
+    	for(x = 0; x < width; x++)
+	{
+	    ULONG s = INV16(src[x]);
+
+    	    dst[x] = UPSHIFT16(s, BGR15, ARGB32);
+	}
+    	src = (UWORD *)(((UBYTE *)src) + srcMod);
+	dst = (ULONG *)(((UBYTE *)dst) + dstMod);
+    }
+    
+    return 1;
+   
+    CONVERTFUNC_EXIT
+}
+
+CONVERTFUNC(BGR15OE,BGRX32) /* Untested */
+{
+    CONVERTFUNC_INIT
+
+    UWORD *src = (UWORD *)srcPixels;
+    ULONG *dst = (ULONG *)dstPixels;
+    ULONG x, y;
+
+    for(y = 0; y < height; y++)
+    {
+    	for(x = 0; x < width; x++)
+	{
+	    ULONG s = INV16(src[x]);
+
+    	    dst[x] = UPSHIFT16(s, BGR15, BGRA32);
+	}
+    	src = (UWORD *)(((UBYTE *)src) + srcMod);
+	dst = (ULONG *)(((UBYTE *)dst) + dstMod);
+    }
+    
+    return 1;
+   
+    CONVERTFUNC_EXIT
+}
+
+CONVERTFUNC(BGR15OE,RGBX32) /* Untested */
+{
+    CONVERTFUNC_INIT
+
+    UWORD *src = (UWORD *)srcPixels;
+    ULONG *dst = (ULONG *)dstPixels;
+    ULONG x, y;
+
+    for(y = 0; y < height; y++)
+    {
+    	for(x = 0; x < width; x++)
+	{
+	    ULONG s = INV16(src[x]);
+
+    	    dst[x] = UPSHIFT16(s, BGR15, RGBA32);
+	}
+    	src = (UWORD *)(((UBYTE *)src) + srcMod);
+	dst = (ULONG *)(((UBYTE *)dst) + dstMod);
+    }
+    
+    return 1;
+    
+    CONVERTFUNC_EXIT
+}
+
+
+CONVERTFUNC(BGR15OE,XBGR32) /* Untested */
+{
+    CONVERTFUNC_INIT
+
+    UWORD *src = (UWORD *)srcPixels;
+    ULONG *dst = (ULONG *)dstPixels;
+    ULONG x, y;
+
+    for(y = 0; y < height; y++)
+    {
+    	for(x = 0; x < width; x++)
+	{
+	    ULONG s = INV16(src[x]);
+
+    	    dst[x] = UPSHIFT16(s, BGR15, ABGR32);
+	}
+    	src = (UWORD *)(((UBYTE *)src) + srcMod);
+	dst = (ULONG *)(((UBYTE *)dst) + dstMod);
+    }
+    
+    return 1;
+    
+    CONVERTFUNC_EXIT
+}
