@@ -49,7 +49,7 @@
     /* If there's nothing to free do nothing. */
     if (memoryBlock != NULL)
     {
-	*(UBYTE **)&memoryBlock -= AROS_ALIGN(sizeof(ULONG));
+	memoryBlock -= AROS_ALIGN(sizeof(ULONG));
 	FreeMem (memoryBlock, *((ULONG *)memoryBlock));
     }
     AROS_LIBFUNC_EXIT
