@@ -12,6 +12,12 @@ asm (".long setVbeMode");
 asm (".long controllerinfo");
 asm (".long modeinfo");
 
+static void memcpy(char *from, char *to, int size)
+{
+    while (size--)
+        *to++ = *from++;
+}
+
 short getControllerInfo(struct vbe_controller *info)
 {
     short retval;
@@ -19,7 +25,8 @@ short getControllerInfo(struct vbe_controller *info)
                 "movw $0x4f00, %%ax\n\t"
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
-                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"D"(info):"eax","ecx","cc");
+                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"D"(&controllerinfo):"eax","ecx","cc");
+    memcpy(&controllerinfo, info, sizeof(struct vbe_controller));
     return retval;
 }
 
@@ -30,7 +37,8 @@ short getModeInfo(long mode, struct vbe_mode *info)
                 "movw $0x4f01, %%ax\n\t"
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
-                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"c"(mode),"D"(info):"eax","cc");
+                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"c"(mode),"D"(&modeinfo):"eax","cc");
+    memcpy(&modeinfo, info, sizeof(struct vbe_mode));
     return retval;
 }
 
@@ -47,17 +55,17 @@ short setVbeMode(long mode)
 
 short findMode(int x, int y, int d)
 {
-    long match, bestmatch = ABS(640*480 - x*y);
-    long matchd, bestmatchd = 15 >= d ? 15 - d : (d - 15) * 2;
-    short bestmode = 0x110;
-    
+    unsigned long match, bestmatch = ABS(640*480 - x*y);
+    unsigned long matchd, bestmatchd = 15 >= d ? 15 - d : (d - 15) * 2;
+    unsigned short bestmode = 0x110;
+
     if (getControllerInfo(&controllerinfo) == 0x4f)
     {
         unsigned short *modes = (unsigned short *)
-            (((controllerinfo.video_mode >> 16) << 4) + (controllerinfo.video_mode & 0xffff));
+            (((controllerinfo.video_mode & 0xffff0000) >> 12) + (controllerinfo.video_mode & 0xffff));
 
         int i;
-                
+
         for (i=0; modes[i] != 0xffff; ++i)
         {
             if (getModeInfo(modes[i], &modeinfo)!= 0x4f) continue;
@@ -68,7 +76,7 @@ short findMode(int x, int y, int d)
                 modeinfo.y_resolution == y &&
                 modeinfo.bits_per_pixel == d)
                 return modes[i];
-            
+
             match = ABS(modeinfo.x_resolution*modeinfo.y_resolution - x*y);
             matchd = modeinfo.bits_per_pixel >= d ? modeinfo.bits_per_pixel-d: (d-modeinfo.bits_per_pixel)*2;
             if (match < bestmatch || (match == bestmatch && matchd < bestmatchd))
