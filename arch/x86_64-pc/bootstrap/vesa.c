@@ -79,7 +79,7 @@ short findMode(int x, int y, int d)
             }
         }
     }
-    return bestmatchd;
+    return bestmode;
 }
 
 asm(
