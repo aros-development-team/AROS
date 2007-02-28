@@ -71,7 +71,8 @@
     BOOL    	    	ok = FALSE;
     ULONG   	    	showflags = 0;
 
-    if (bitmap && (BMF_DISPLAYABLE != (bitmap->Flags & BMF_DISPLAYABLE)))
+    //if (bitmap && (BMF_DISPLAYABLE != (bitmap->Flags & BMF_DISPLAYABLE)))
+    if (bitmap && (!(bitmap->Flags & BMF_AROS_HIDD) || !(HIDD_BM_FLAGS(bitmap) & HIDD_BMF_SCREEN_BITMAP)))
     {
     	D(bug("!!! SetFrontBitMap: TRYING TO SET NON-DISPLAYABLE BITMAP !!!\n"));
 	return FALSE;

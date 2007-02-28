@@ -77,7 +77,7 @@
 	    /* Hack: a negative depth indicates to AllocBitMap, that
 	       the friend bitmap param actually is the hiddmode */
 	       
-	    nbm = AllocBitMap(width, height, -((LONG)depth), BMF_DISPLAYABLE, (struct BitMap *)hiddmode);    
+	    nbm = AllocBitMap(width, height, -((LONG)depth), HIDD_BMF_SCREEN_BITMAP | BMF_DISPLAYABLE, (struct BitMap *)hiddmode);
 	}
     }
     
