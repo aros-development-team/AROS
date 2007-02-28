@@ -58,6 +58,7 @@ do                                                                             \
 /* HIDD BM Flags */
 
 #define HIDD_BMF_SHARED_PIXTAB    	1
+#define HIDD_BMF_SCREEN_BITMAP	    	512 /* Must not conflict with BMF_ flags! */
 
 /* Minterms and GC drawmodes are in opposite order */
 #define MINTERM_TO_GCDRMD(minterm) 	\

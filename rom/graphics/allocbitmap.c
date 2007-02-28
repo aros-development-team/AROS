@@ -143,20 +143,20 @@
 	hiddmode      	   = (HIDDT_ModeID)friend_bitmap;
 	friend_bitmap 	   = NULL;
     }
-    else if (flags & BMF_DISPLAYABLE) 
+    else if (flags & HIDD_BMF_SCREEN_BITMAP) // (flags & BMF_DISPLAYABLE) 
     {
     	/* Make real BMF_DISPLAYABLE bitmap only, if a friend bitmap was
 	   specified which is displayable (ie. a screen bitmap). Because
 	   as the gfxhidd stuff is now, displayable bitmap needs to have
 	   a Display ModeID "known" to them. */
 	   
-    	if (friend_bitmap && IS_HIDD_BM(friend_bitmap) && (friend_bitmap->Flags & BMF_DISPLAYABLE))
+    	if (friend_bitmap && IS_HIDD_BM(friend_bitmap) && (HIDD_BM_FLAGS(friend_bitmap) & HIDD_BMF_SCREEN_BITMAP)) // (friend_bitmap->Flags & BMF_DISPLAYABLE))
 	{
     	    hiddmode = HIDD_BM_HIDDMODE(friend_bitmap);
 	}
 	else
 	{
-    	    flags &= ~BMF_DISPLAYABLE;
+	    flags &= ~HIDD_BMF_SCREEN_BITMAP; //flags &= ~BMF_DISPLAYABLE;
 	}
     }
 
@@ -164,7 +164,7 @@
     
     if (
 	depth > 8
-	|| (flags & BMF_DISPLAYABLE)
+	|| (flags & HIDD_BMF_SCREEN_BITMAP) // (flags & BMF_DISPLAYABLE)
 /*	|| (friend_bitmap && friend_bitmap->pad != 0) */
 	|| (friend_bitmap && friend_bitmap->Flags & BMF_AROS_HIDD)
     	#warning Should	we also check for BMF_MINPLANES ?
@@ -183,7 +183,7 @@
 	SET_BM_TAG( bm_tags, 0, Width,  sizex	);
 	SET_BM_TAG( bm_tags, 1, Height, sizey	);
 
-	if (flags & BMF_DISPLAYABLE)
+	if (flags & HIDD_BMF_SCREEN_BITMAP) // (flags & BMF_DISPLAYABLE)
 	{
 	    /* Use the hiddmode instead of depth/friend_bitmap */
 	    if  (vHidd_ModeID_Invalid == hiddmode)
@@ -281,8 +281,10 @@
 
     		    /* If this is a displayable bitmap, create a color table for it */
 
-    		    if (flags & BMF_DISPLAYABLE)
+    		    if (flags & HIDD_BMF_SCREEN_BITMAP) // (flags & BMF_DISPLAYABLE)
 		    {
+		    	HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SCREEN_BITMAP;
+			 
 		    	if (friend_bitmap)
 			{
 			    OOP_Object *oldcolmap;
@@ -337,7 +339,7 @@
 			
 			}
 			
-    		    } /* if (flags & BMF_DISPLAYABLE) */
+    		    } /* if (flags & HIDD_BMF_SCREEN_BITMAP) ... (flags & BMF_DISPLAYABLE) */
     		    else
     		    {
     			if (friend_bitmap)

@@ -66,7 +66,7 @@
 	       
 	    HIDD_BM_SetColorMap(HIDD_BM_OBJ(bm), NULL);
 	}
-	else if (bm->Flags & BMF_DISPLAYABLE)
+	else if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SCREEN_BITMAP) // (bm->Flags & BMF_DISPLAYABLE)
 	{
     	    FreeVec(HIDD_BM_PIXTAB(bm));
 	}
