@@ -1,0 +1,9 @@
+# DataType Description for Lua scripts
+Name=Lua
+Version=$VER: Lua 1.0 (01.03.2007)
+BaseName=lua
+Pattern=#?.lua
+GroupID=text
+ID=lua_
+Flags=DTF_ASCII
+Priority=1
