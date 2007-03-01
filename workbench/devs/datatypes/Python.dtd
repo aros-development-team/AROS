@@ -1,0 +1,9 @@
+# DataType Description for Python scripts
+Name=Python
+Version=$VER: Python 1.0 (01.03.2007)
+BaseName=python
+Pattern=#?.py
+GroupID=text
+ID=pyth
+Flags=DTF_ASCII
+Priority=1
