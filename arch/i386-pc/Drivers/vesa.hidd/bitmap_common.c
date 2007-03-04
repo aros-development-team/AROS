@@ -345,7 +345,22 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
 	    break;
 	    
 	default:
+	#if 1
+	    {
+	    	APTR 	    pixels = msg->pixels;
+    	    	APTR 	    dstBuf = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpix;
+		OOP_Object *srcpf;
+		
+		srcpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+		
+		HIDD_BM_ConvertPixels(o, &pixels, (HIDDT_PixelFormat *)srcpf, msg->modulo,
+		    	    	      &dstBuf, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
+				      msg->width, msg->height, NULL);    	    	
+	    }
+		
+	#else
 	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	#endif
 	    break;
 	    
     } /* switch(msg->pixFmt) */
@@ -485,7 +500,21 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
 	    break;
 	    
 	default:
+	#if 1
+	    {
+	    	APTR 	    pixels = msg->pixels;
+    	    	APTR 	    srcPixels = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpix;
+		OOP_Object *dstpf;
+		
+		dstpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+		
+		HIDD_BM_ConvertPixels(o, &srcPixels, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
+		    	    	      &pixels, (HIDDT_PixelFormat *)dstpf, msg->modulo,
+				      msg->width, msg->height, NULL);    	    	
+	    }		
+	#else		
 	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    	#endif
 	    break;
 	    
     } /* switch(msg->pixFmt) */
@@ -545,6 +574,7 @@ VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
 	    
 	default:
 	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
 
     } /* switch(data->bytesperpix) */
 

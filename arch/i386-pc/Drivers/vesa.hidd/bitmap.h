@@ -61,6 +61,8 @@ struct BitmapData
     BYTE    	    	bpp;         	/* 8 -> chunky; planar otherwise */
     BYTE    	    	disp;        	/* !=0 - displayable */
     struct MouseData 	*mouse;
+    OOP_Object	    	*pixfmtobj;
+    OOP_Object	    	*gfxhidd;
 };
 
 struct Box
