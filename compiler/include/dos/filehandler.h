@@ -113,17 +113,14 @@ struct DeviceNode
       /* Type of this node. Has to be DLT_DEVICE. */
     ULONG dn_Type;
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    /* The next two fields are not used by AROS. Their original name was:
-       dn_Task and dn_Lock */
-    struct MsgPort * dn_NoAROS1;
-#endif
+    struct MsgPort * dn_Task;   /* dol_Task field */
     BPTR             dn_Lock;	/* dol_Lock field */
 
-    BSTR dn_Handler;    /* Null-terminated device name for handler. */
-    LONG dn_NoAROS2[2]; /* PRIVATE */
-    BPTR dn_Startup;    /* (struct FileSysStartupMsg *) see above */
-    BPTR dn_NoAROS3[2]; /* PRIVATE */
+    BSTR  dn_Handler;    /* Null-terminated device name for handler. */
+    ULONG dn_StackSize;  /* Initial stacksize for packet-handler task */
+    LONG  dn_Priority;   /* Initial priority for packet-handler task */
+    BPTR  dn_Startup;    /* (struct FileSysStartupMsg *) see above */
+    BPTR  dn_NoAROS3[2]; /* PRIVATE */
 
     /* For the following two fields, see comments in <dos/dosextens.h>.
        Both fields specify the name of the handler. */
@@ -133,6 +130,6 @@ struct DeviceNode
     struct Device *dn_Device;
     struct Unit   *dn_Unit;
 };
-/* #define dn_Name dn_OldName */
+#define dn_Name dn_OldName
 
 #endif /* DOS_FILEHANDLER_H */

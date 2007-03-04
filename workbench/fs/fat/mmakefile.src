@@ -1,0 +1,9 @@
+include $(TOP)/config/make.cfg
+
+FILES := startup direntry disk fat file lock main names packet support
+
+%build_prog mmake=workbench-fs-fat \
+    progname=fat.handler targetdir=$(AROS_DEVS) \
+    files="$(FILES)" usestartup=no uselibs="rom"
+
+%common

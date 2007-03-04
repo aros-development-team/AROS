@@ -199,13 +199,14 @@ static const UBYTE options[]=
 "HANDLER=FILESYSTEM/A/K,DEVICE/K,UNIT/K/N,BLOCKSIZE/K/N,SURFACES/K/N,SECTORPERBLOCK/K/N,"
 "BLOCKSPERTRACK/K/N,RESERVED/K/N,INTERLEAVE/K/N,LOWCYL/K/N,HIGHCYL/K/N,"
 "BUFFERS/K/N,BUFMEMTYPE/K/N,MAXTRANSFER/K/N,MASK/K/N,BOOTPRI/K/N,"
-"DOSTYPE/K/N,BAUD/K/N,CONTROL/K";
+"DOSTYPE/K/N,BAUD/K/N,CONTROL/K,"
+"TYPE/K,STACKSIZE/K,PRIORITY/K";
 
 LONG mount (STRPTR name, struct RDArgs *rda)
 {
-    IPTR *args[19]=
+    IPTR *args[22]=
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+      NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 
     IPTR *params;	     /* MakeDosNode() paramPacket */
     struct DosEnvec *vec;
@@ -268,6 +269,15 @@ LONG mount (STRPTR name, struct RDArgs *rda)
 	    if (dn->dn_OldName != NULL)
 	    {
 		dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
+
+                /* dn_StackSize doubles as a flag to indicate to DOS what type
+                 * of handler we're using */
+                if (args[19] != NULL && Stricmp((STRPTR) args[19], "packet") == 0) {
+                    dn->dn_StackSize = args[20] ? (IPTR) *args[20] : AROS_STACKSIZE;
+                    dn->dn_Priority  = args[21] ? (IPTR) *args[21] : 50;
+                }
+                else 
+                    dn->dn_StackSize = dn->dn_Priority = 0;
 
 		if (AddDosNode(vec->de_BootPri, ADNF_STARTPROC, dn))
 		{

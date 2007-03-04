@@ -327,13 +327,10 @@ struct DevProc
    this structure nevertheless, use AllocDosObject(). */
 struct FileHandle
 {
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    /* The following three fields are not used by AROS and are just there for
-       compatibility reasons. So keep your hands away. The original names
-       were: fh_Link, fh_Port and fh_Type */
-    struct Message * fh_NoAROS1;
-    struct MsgPort * fh_NoAROS2[2];
-#endif
+    /* The next three are used with packet-based filesystems */
+    struct Message * fh_Link;   /* exec message containing packet */
+    struct MsgPort * fh_Port;   /* packet reply port */
+    struct MsgPort * fh_Type;   /* port to send packets to */
 
     UBYTE * fh_Buf;
     UBYTE * fh_Pos;
@@ -370,9 +367,9 @@ struct FileHandle
 #define FHF_LINEBUF 4
 #define FHF_NOBUF   8
 
-/* Structure of a lock, as returned by Lock() and similar functions. This
-   structure is not used by AROS. Lock() also returns a struct FileHandle! */
-#if 0
+/* Structure of a lock. This is provided as it may be required internally by
+ * packet-based filesystems, but it is not used by dos.library and the rest of
+ * AROS. Lock() returns a struct FileHandle! */
 struct FileLock
 {
     BPTR             fl_Link;   /* (struct FileLock *) Pointer to next lock. */
@@ -381,7 +378,6 @@ struct FileLock
     struct MsgPort * fl_Task;
     BPTR             fl_Volume; /* (struct DeviceList * - see below) */
 };
-#endif
 
 
 /* Constants, defining of what kind a file is. These constants are used in
@@ -408,12 +404,8 @@ struct DosList
     struct DosList * dol_Next;
       /* Type of the current node (see below). */
     LONG             dol_Type;
-
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-      /* The next field is not used by AROS. Its original name was:
-         dol_Task */
-    APTR             dol_NoAROS1;
-#endif
+      /* Filesystem task handling this entry (for old-style filesystems) */
+    struct MsgPort * dol_Task;
       /* The lock passed to AssignLock(). Only set if the type is
          DLT_DIRECTORY. */
     BPTR             dol_Lock;
@@ -423,7 +415,8 @@ struct DosList
           /* See struct DevInfo below. */
         struct {
             BSTR    dol_Handler;
-            LONG    dol_NoAROS2[2];
+            LONG    dol_StackSize;
+            LONG    dol_Priority;
             BPTR    dol_Startup;
             BPTR    dol_NoAROS3[2];
         } dol_handler;
@@ -458,7 +451,7 @@ struct DosList
     struct Device * dol_Device;
     struct Unit   * dol_Unit;
 };
-/* #define dol_Name dol_OldName */
+#define dol_Name dol_OldName
 
 /* dol_Type/dl_Type/dvi_Type. Given to MakeDosEntry(). */
 #define DLT_DEVICE     0 /* A real filesystem (or similar) */
@@ -484,10 +477,7 @@ struct DeviceList
     struct DeviceList * dl_Next;
     LONG                dl_Type; /* see above, always = DLT_VOLUME */
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    /* This field was dl_Task */
-    struct MsgPort * dl_NoAROS1;
-#endif
+    struct MsgPort * dl_Task;
     BPTR             dl_Lock;
 
       /* Embedded DateStamp structured as defined in <dos/dos.h>. At this
@@ -505,7 +495,7 @@ struct DeviceList
     struct Device * dl_Device;
     struct Unit   * dl_Unit;
 };
-/* #define dl_Name dl_OldName */
+#define dl_Name dl_OldName
 
 
 /* Structure that describes a device. This is essentially the same structure
@@ -515,13 +505,12 @@ struct DevInfo
     struct DevInfo * dvi_Next;
     LONG             dvi_Type; /* see above, always = DLT_DEVICE */
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    struct MsgPort * dvi_NoAROS1;
-#endif
+    struct MsgPort * dvi_Task;
     BPTR             dvi_Lock;
 
     BSTR dvi_Handler;    /* Device name for handler. */
-    LONG dvi_NoAROS3[2]; /* PRIVATE */
+    LONG dvi_StackSize;  /* Packet-handler initial stack size */
+    LONG dvi_Priority;   /* Packet-handler initial priority */
     BPTR dvi_Startup;    /* (struct FileSysStartupMsg * - defined in
                             <dos/filehandler.h>) */
     BPTR dvi_NoAROS4[2]; /* PRIVATE */
@@ -532,7 +521,7 @@ struct DevInfo
     struct Device * dvi_Device;
     struct Unit   * dvi_Unit;
 };
-/* #define dvi_Name dvi_OldName */
+#define dvi_Name dvi_OldName
 
 
 /* Dos list scanning and locking modes as used in LockDosList() */

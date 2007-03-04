@@ -20,7 +20,8 @@ include $(TOP)/config/make.cfg
 #MM	    workbench-utilities \
 #MM	    workbench-tools \
 #MM     workbench-prefs \
-#MM     workbench-wbstartup
+#MM     workbench-wbstartup \
+#MM     workbench-fs-fat
 
 WBSTARTUPDIR = $(AROSDIR)/WBStartup
 
