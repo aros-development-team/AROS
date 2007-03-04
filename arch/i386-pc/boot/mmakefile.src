@@ -53,26 +53,26 @@ BOOT_TAR_FILES := \
     Classes/Zune/PrefsEditor.mcc Classes/Zune/SystemPrefsWindow.mcc \
     Classes/Zune/Clock.mcc \
     Devs.info \
-    Devs/DataTypes/ELF Devs/DataTypes/ELF_EXE Devs/DataTypes/ILBM Devs/DataTypes/FTXT \
+    Devs/DataTypes/ELF Devs/DataTypes/ELF_EXE Devs/DataTypes/ILBM \
+    Devs/DataTypes/FTXT \
     Devs/Keymaps Devs/clipboard.device Devs/serial.device Devs/Mountlist \
     Devs/pipefs.handler \
     Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/14 Fonts.info \
-    Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
-    Libs/diskfont.library Libs/gadtools.library Libs/icon.library Libs/iffparse.library \
-    Libs/locale.library \
+    Libs/arosc.library Libs/asl.library Libs/commodities.library \
+    Libs/datatypes.library Libs/diskfont.library Libs/gadtools.library \
+    Libs/icon.library Libs/iffparse.library Libs/locale.library \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Locale.info \
     Locale/Countries Locale/Help \
     Prefs/Font Prefs/Font.info \
     Prefs/Input.info Prefs/Time Prefs/Time.info \
-    Prefs.info \
-    Prefs/Env-Archive Prefs/Presets/Patterns/Stripes Prefs/Presets/Patterns.info \
+    Prefs.info Prefs/Env-Archive Prefs/Presets/Patterns/Stripes \
+    Prefs/Presets/Patterns.info \
     S/Shell-Startup S/Startup-Sequence \
     System/About System/FixFonts System/FixFonts.info System/Themes/Mason \
     System/Themes/os3.1 System/Wanderer System.info \
     Tools/Editor Tools/HDToolBox Tools/HDToolBox.info Tools.info \
-    Tools/Commodities/Opaque Tools/Commodities/Opaque.info Tools/Debug \
-    Utilities.info 
+    Tools/Debug Utilities.info
 
 
 BOOT_SRC_DIR    := $(AROSDIR)
