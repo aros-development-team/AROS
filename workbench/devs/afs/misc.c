@@ -1,10 +1,10 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
 #include "os.h"
@@ -15,6 +15,8 @@
 #include "checksums.h"
 #include "extstrings.h"
 #include "baseredef.h"
+
+extern ULONG error;
 
 /**********************************************
  Name  : writeHeader
@@ -69,7 +71,7 @@ LONG getDiskInfo(struct Volume *volume, struct InfoData *id) {
 
 	id->id_NumSoftErrors = 0;
 	id->id_UnitNumber = volume->unit;
-	id->id_DiskState = volume->usedblockscount ? ID_VALIDATED : ID_VALIDATING;
+	id->id_DiskState = volume->state;
 	id->id_NumBlocks = volume->countblocks-volume->bootblocks;
 	id->id_NumBlocksUsed = volume->usedblockscount;
 	id->id_BytesPerBlock = volume->dosflags==0 ? BLOCK_SIZE(volume)-24 : BLOCK_SIZE(volume);
@@ -227,6 +229,11 @@ LONG relabel(struct AFSBase *afsbase, struct Volume *volume, STRPTR name) {
 struct BlockCache *blockbuffer;
 struct DateStamp ds;
 
+	if (volume->state != ID_VALIDATED)
+	{
+		error = ERROR_DISK_WRITE_PROTECTED;
+		return DOSFALSE;
+	}
 	osMediumFree(afsbase, volume, FALSE);
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
 	if (blockbuffer == NULL)

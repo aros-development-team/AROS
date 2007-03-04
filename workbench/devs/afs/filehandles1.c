@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -356,27 +356,22 @@ struct AfsHandle *ah;
 			"[afs]    getHandle: trying to get handle for block %lu\n",
 			fileblock->blocknum)
 		);
+
+	error = 0;
+	if (mode & FMF_WRITE && volume->state != ID_VALIDATED)
+		error = ERROR_DISK_WRITE_PROTECTED;
+
 	ah = findHandle(volume, fileblock->blocknum);
 	if (ah != NULL)
 	{
 		if (ah->mode & FMF_LOCK)
 		{
 			error = ERROR_OBJECT_IN_USE;
-			ah = 0;
-		}
-		else
-		{
-			ah = allocHandle
-				(
-					afsbase,
-					volume,
-					fileblock,
-					mode,
-					(ULONG *)((char *)fileblock->buffer+(BLK_TABLE_START*4))
-				);
+			ah = NULL;
 		}
 	}
-	else
+
+	if (error == 0)
 	{
 		ah = allocHandle
 			(
@@ -387,6 +382,7 @@ struct AfsHandle *ah;
 				(ULONG *)((char *)fileblock->buffer+(BLK_TABLE_START*4))
 			);
 	}
+
 	return ah;
 }
 
@@ -450,9 +446,12 @@ ULONG fileblocknum = -1;
 			dirah->header_block,name,mode,protection)
 		);
 	error = 0;
+	if (mode & FMF_CLEAR && dirah->volume->state != ID_VALIDATED)
+		error = ERROR_DISK_WRITE_PROTECTED;
+
 	/* get the directory the last component of "name" is in */
 	dirblock = getDirBlockBuffer(afsbase, dirah, name, filename);
-	if (dirblock != NULL)
+	if (error == 0 && dirblock != NULL)
 	{
 		if (
 				(OS_BE2LONG(dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)]) == ST_USERDIR) ||
@@ -934,6 +933,11 @@ LONG writtenbytes;
 struct DateStamp ds;
 
 	D(bug("[afs] write(ah,buffer,%ld)\n", length));
+	if (ah->volume->state != ID_VALIDATED)
+	{
+		error = ERROR_DISK_WRITE_PROTECTED;
+		return 0;
+	}
 	invalidBitmap(afsbase, ah->volume);
 	writtenbytes = writeData(afsbase, ah, buffer, length);
 	if (writtenbytes != ENDSTREAMCH)

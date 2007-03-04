@@ -2,7 +2,7 @@
 #define VOLUMES_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,6 +23,7 @@ struct Volume {
 	struct IOHandle ioh;
 	struct BlockCache *blockcache;
 	ULONG cachecounter;           /* Keeps track of cache usage */
+	ULONG state;                 /* Read-only, read/write or validating */
 
 	ULONG usedblockscount;       /* nr of used blocks */
 	ULONG countblocks;           /* nr of blocks in filesystem */

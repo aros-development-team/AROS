@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -75,6 +75,8 @@ ULONG block;
 struct BlockCache *blockbuffer;
 
 	D(bug("[afs] setData()\n"));
+	if (ah->volume->state != ID_VALIDATED)
+		return ERROR_DISK_WRITE_PROTECTED;
 	blockbuffer = findBlock(afsbase, ah, name, &block);
 	if (blockbuffer == NULL)
 		return error;
@@ -101,6 +103,8 @@ ULONG block;
 struct BlockCache *blockbuffer;
 
 	D(bug("[afs] setProtect(ah,%s,%ld)\n", name, mask));
+	if (ah->volume->state != ID_VALIDATED)
+		return ERROR_DISK_WRITE_PROTECTED;
 	blockbuffer = findBlock(afsbase, ah, name, &block);
 	if (blockbuffer == NULL)
 		return error;
@@ -123,6 +127,8 @@ ULONG block;
 struct BlockCache *blockbuffer;
 
 	D(bug("[afs] setComment(ah,%s,%s)\n", name, comment));
+	if (ah->volume->state != ID_VALIDATED)
+		return ERROR_DISK_WRITE_PROTECTED;
 	if (StrLen(comment) >= MAXCOMMENTLENGTH)
 		return ERROR_COMMENT_TOO_BIG;
 	blockbuffer = findBlock(afsbase, ah, name, &block);
@@ -192,6 +198,8 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	blockbuffer = findBlock(afsbase, ah, name, &lastblock);
 	if (blockbuffer == NULL)
 		return error;
+	if (ah->volume->state != ID_VALIDATED)
+		return ERROR_DISK_WRITE_PROTECTED;
 	if (findHandle(ah->volume, blockbuffer->blocknum) != NULL)
 		return ERROR_OBJECT_IN_USE;
 	if (OS_BE2LONG(blockbuffer->buffer[BLK_PROTECT(ah->volume)]) & FIBF_DELETE)
@@ -393,6 +401,8 @@ ULONG block,dirblocknum,lastblock;
 UBYTE newentryname[34];
 
 	D(bug("[afs] rename(%ld,%s,%s)\n", dirah->header_block, oname, newname));
+	if (dirah->volume->state != ID_VALIDATED)
+		return ERROR_DISK_WRITE_PROTECTED;
 	dirblock = getDirBlockBuffer(afsbase, dirah, newname, newentryname);
 	if (dirblock == NULL)
 		return error;
@@ -634,7 +644,7 @@ ULONG i;
          filename   - path to the new directory
          protection - protection bit mask
  Output: pointer to struct AfsHandle;
-         0 otherwise (global error set)
+         NULL otherwise (global error set)
 *********************************************/
 struct AfsHandle *createDir
 	(
@@ -649,6 +659,11 @@ struct BlockCache *dirblock;
 char dirname[34];
 
 	D(bug("[afs] createDir(ah,%s,%ld)\n", filename, protection));
+	if (dirah->volume->state != ID_VALIDATED)
+	{
+		error = ERROR_DISK_WRITE_PROTECTED;
+		return NULL;
+	}
 	dirblock = getDirBlockBuffer(afsbase, dirah, filename, dirname);
 	if (dirblock != NULL)
 	{

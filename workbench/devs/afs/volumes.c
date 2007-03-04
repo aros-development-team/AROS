@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -59,12 +59,14 @@ LONG error;
 	if (!blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
 	{
 		volume->usedblockscount=0;
+		volume->state = ID_VALIDATING;
 		showError(afsbase, ERR_DISKNOTVALID);
 	}
 	else
 	{
 		blockbuffer->flags |= BCF_USED;	// won't be cleared until volume is ejected
 		volume->usedblockscount=countUsedBlocks(afsbase, volume);
+		volume->state = ID_VALIDATED;
 	}
 	error = osMediumInit(afsbase, volume, blockbuffer);
 	if (error != 0)
