@@ -461,13 +461,19 @@ struct IOFileSys
     union
     {
         struct {
-            STRPTR io_DeviceName; /* Name of the device to open. */
-            ULONG  io_Unit;       /* Number of unit to open. */
-            IPTR * io_Environ;    /* Pointer to environment array. (see
-                                     <dos/filehandler.h> */
-            STRPTR io_DosName;    /* The name with wich the filesystem
-	                             is being mounted (the mount point,
-				     one might say) */
+            STRPTR             io_DeviceName; /* Name of the device to open. */
+            ULONG              io_Unit;       /* Number of unit to open. */
+            IPTR *             io_Environ;    /* Pointer to environment array.
+                                                 (see <dos/filehandler.h> */
+            STRPTR             io_DosName;    /* The name with wich the
+                                                 filesystem is being mounted
+                                                 (the mount point, one might
+                                                 say) */
+            struct DeviceNode *io_DeviceNode; /* The DOS entry for this
+                                                 filesystem. Packet-based
+                                                 filesystems expect to receive
+                                                 this along with the the
+                                                 startup message */
         } io_OpenDevice;
 
 	struct {

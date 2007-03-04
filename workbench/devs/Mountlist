@@ -112,17 +112,24 @@ HOME:
 
 	FileSystem = emul.handler
 	Device     = Home:~
+#
 
 /* Entry for host's unix usr directory */
-
-#
 
 USR:
 	FileSystem = emul.handler
 	Device     = USR:/usr
+#
 
 /* Additional unix directories can be mounted the same way, ie. with */
 /* Filesytem set to "emul.handler" and Device encoding volume name   */
 /* and unix path like this: <volumename>:<pathname>                  */
 
+/* Entry for packet-based handler */
 
+FAT:
+        FileSystem = fat.handler
+        Type       = packet
+        Device     = fdsk.device
+        Unit       = 0
+#

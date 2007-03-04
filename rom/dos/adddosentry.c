@@ -55,11 +55,38 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     LONG            success = 1;
-    struct DosList *dl;
+    struct DosList *dl, *scan;
 
     if (dlist == NULL) return success;
 
     dl = LockDosList(LDF_ALL | LDF_WRITE);
+
+    /* If the passed entry has dol_Task defined, then its a packet-based
+     * handler, and probably doesn't have valid dol_DevName, dol_Device and
+     * dol_Unit fields, which will be needed. So we search through the DOS
+     * list looking for the packet.handler entry for the same process, and
+     * fill in the values from there.
+     *
+     * This all falls down if the handler does somehow know these fields and
+     * adds different values. We can't just test for NULL, as the handler may
+     * not have cleared it. I can't think of a single good reason why a
+     * handler would do this, so I'm not worrying about it for now.
+     *
+     * It will also break if the handler has set dol_Task to something other
+     * than its original packet.handler task. In that case we won't be able to
+     * match it correctly in the DOS list, and so the three fields will remain
+     * bogus, probably causing crashes shortly after. Again, I'll worry about
+     * it if and when it happens.
+     */
+    if (dlist->dol_Task != NULL) {
+        for (scan = dl; scan != NULL; scan = scan->dol_Next)
+            if (scan->dol_Task == dlist->dol_Task && scan->dol_Type == DLT_DEVICE) {
+                dlist->dol_DevName = AROS_BSTR_ADDR(dlist->dol_OldName);
+                dlist->dol_Device = scan->dol_Device;
+                dlist->dol_Unit = scan->dol_Unit;
+                break;
+            }
+    }
 
     if(dlist->dol_Type != DLT_VOLUME)
     {
