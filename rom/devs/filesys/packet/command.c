@@ -557,13 +557,37 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             D(bug("[packet] MORE_CACHE: buffers '0x%x'\n", iofs->io_Union.io_MORE_CACHE.io_NumBuffers));
 
             dp->dp_Type = ACTION_MORE_CACHE;
-            dp->dp_Arg1 = iofs->io_Union.io_MORE_CACHE.io_NumBuffers;
+            dp->dp_Arg1 = (IPTR) iofs->io_Union.io_MORE_CACHE.io_NumBuffers;
+            break;
+
+        case FSA_FORMAT: /* XXX untested */
+            D(bug("[packet] FSA_FORMAT: name '%s' type 0x%x\n",
+                  iofs->io_Union.io_FORMAT.io_VolumeName,
+                  iofs->io_Union.io_FORMAT.io_DosType));
+
+            dp->dp_Type = ACTION_FORMAT;
+            dp->dp_Arg1 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_FORMAT.io_VolumeName);
+            dp->dp_Arg2 = (IPTR) iofs->io_Union.io_FORMAT.io_DosType;
+            break;
+
+        case FSA_INHIBIT: /* XXX untested */
+            D(bug("[packet] FSA_INHIBIT: %sinhibit\n", iofs->io_Union.io_INHIBIT.io_Inhibit == 0 ? "un" : ""));
+
+            dp->dp_Type = ACTION_INHIBIT;
+            dp->dp_Arg1 = (IPTR) iofs->io_Union.io_INHIBIT.io_Inhibit;
+            break;
+
+        case FSA_RELABEL: /* XXX untested */
+            D(bug("[packet] FSA_RELABEL: name '%s'\n", iofs->io_Union.io_RELABEL.io_NewName));
+
+            dp->dp_Type = ACTION_RENAME_DISK;
+            dp->dp_Arg1 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_RELABEL.io_NewName);
             break;
 
         /* XXX implement */
-        case FSA_FORMAT:
+        case FSA_EXAMINE_ALL:
+        case FSA_EXAMINE_ALL_END:
         case FSA_MOUNT_MODE:
-        case FSA_INHIBIT:
         case FSA_ADD_NOTIFY:
         case FSA_REMOVE_NOTIFY:
         case FSA_CHANGE_SIGNAL:
@@ -572,9 +596,6 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
         case FSA_PARENT_DIR:
         case FSA_PARENT_DIR_POST:
         case FSA_CONSOLE_MODE:
-        case FSA_RELABEL:
-        case FSA_EXAMINE_ALL:
-        case FSA_EXAMINE_ALL_END:
             D(bug("[packet] command not implemented\n"));
             iofs->io_DosError = ERROR_NOT_IMPLEMENTED;
             goto reply;
