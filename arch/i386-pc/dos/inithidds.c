@@ -31,7 +31,7 @@
 
 #include <aros/asmcall.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #warning This is just a temporary and hackish way to get the HIDDs up and working
@@ -71,6 +71,8 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 
     struct initbase stack_b, *base = &stack_b;
     BOOL success = TRUE, vga = FALSE;
+    STRPTR defvhidd = "hidd.gfx.vga";
+    STRPTR defvlib = "vgah.hidd";
     UBYTE gfxname[BUFSIZE];
     struct BootLoaderBase *BootLoaderBase;
 
@@ -105,12 +107,26 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	}
 
 	/* Prepare the VGA hidd as a fallback */
-	strncpy(gfxname,"hidd.gfx.vga",BUFSIZE-1);
+	strncpy(gfxname,defvhidd,BUFSIZE-1);
 	if ((BootLoaderBase = OpenResource("bootloader.resource")))
 	{
 	    struct List *list;
 	    struct Node *node;
+	    struct VesaInfo *vi;
 
+	    /* See if VESA mode specified. If so, we will use vesagfx.hidd instead
+	     * of vgah.hid by default */
+	    if ((vi = GetBootInfo(BL_Video)))
+	    {
+		if (vi->ModeNumber != 3)
+		{
+		    /* Bootloader set vesa mode */
+		    defvhidd = "hidd.gfx.vesa";
+		    defvlib = "vesagfx.hidd";
+		    strcpy(gfxname,defvhidd);
+		    bug("[DOS] InitHidds: VESA graphics requested\n");
+		}
+	    }
 	    list = (struct List *)GetBootInfo(BL_Args);
 	    if (list)
 	    {
@@ -126,35 +142,18 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 			bug("[DOS] InitHidds: Opening library %s\n",&node->ln_Name[4]);
 			if (!(OpenLibrary(&node->ln_Name[4],0L)))
 			    bug("[DOS] InitHidds: Failed to open %s\n",&node->ln_Name[4]);
-			if (0 == strcmp(&node->ln_Name[4],"hidd.gfx.vga"))
+			if (0 == strcmp(&node->ln_Name[4],defvlib))
 			    vga = TRUE;
 		    }
 		}
 	    }
 	}
 
-	/* See if vesa.hidd loaded. If so, verify that we actually got a vesa mode from
-	 * the bootloader */
-	if (0 == strcmp(gfxname,"hidd.gfx.vesa"))
-	{
-	    struct VesaInfo *vi;
-
-	    if ((vi = GetBootInfo(BL_Video)))
-	    {
-		if (vi->ModeNumber == 3)
-		{
-		    /* Nope, bootloader failed to set vesa mode */
-		    strcpy(gfxname,"hidd.gfx.vga");
-		    bug("[DOS] InitHidds: VESA graphics requested, but not found. Falling back to VGA\n");
-		}
-	    }
-	}
-
-	/* If we got no gfx hidd on the commandline, and did not load vga.hidd,
+	/* If we got no gfx hidd on the commandline, and did not load default hidd,
 	 * we will do that now. */
-	if (0 == strcmp(gfxname,"hidd.gfx.vga") && vga == FALSE)
-	{
-	    OpenLibrary("vgah.hidd",0L);
+	if (0 == strcmp(gfxname,defvhidd) && vga == FALSE)
+	{	
+	    OpenLibrary(defvlib,0L);
 	}
 
 	/* Set up the graphics HIDD system */

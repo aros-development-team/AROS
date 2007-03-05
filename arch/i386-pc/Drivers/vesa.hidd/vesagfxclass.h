@@ -30,7 +30,6 @@ struct VesaGfx_staticdata
     OOP_Class 	    	    *onbmclass;
     OOP_Class 	    	    *offbmclass;
     OOP_Object      	    *vesagfxhidd;
-    OOP_Object      	    *pcihidd;
     struct BitmapData       *visible;
     VOID	    	    (*activecallback)(APTR, OOP_Object *, BOOL);
     APTR	    	    callbackdata;

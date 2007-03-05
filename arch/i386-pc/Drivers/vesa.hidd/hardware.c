@@ -8,10 +8,16 @@
 
 
 #define DEBUG 1 /* no SysBase */
+#include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
 #include <aros/bootloader.h>
 #include <proto/bootloader.h>
+#include <proto/oop.h>
+#include <utility/hooks.h>
+#include <utility/tagitem.h>
+#include <oop/oop.h>
+#include <hidd/pci.h>
 
 #include "bitmap.h"
 #include "vesagfxclass.h"
@@ -21,6 +27,8 @@
 
 #undef SysBase
 extern struct ExecBase *SysBase;
+OOP_AttrBase HiddPCIDeviceAttrBase;
+static void Find_PCI_Card(struct HWData *sd);
 
 BOOL initVesaGfxHW(struct HWData *data)
 {
@@ -48,6 +56,13 @@ BOOL initVesaGfxHW(struct HWData *data)
 	    data->greenshift = vi->Shifts[VI_Green];
 	    data->blueshift = vi->Shifts[VI_Blue];
 	    data->framebuffer = vi->FrameBuffer;
+
+	    if (!data->framebuffer)
+		Find_PCI_Card(data);
+	    if (!data->framebuffer) {
+		D(bug("[Vesa] HwInit: Framebuffer not found, your card is not PCI\n"));
+		return FALSE;
+	    }
 	    
 	    if (data->depth > 24)
 	    {
@@ -119,3 +134,71 @@ void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2
     
 }
 #endif
+
+AROS_UFH3(void, Enumerator,
+    AROS_UFHA(struct Hook *,	hook,	    A0),
+    AROS_UFHA(OOP_Object *,	pciDevice,  A2),
+    AROS_UFHA(APTR,		message,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    APTR buf;
+    ULONG size;
+    OOP_Object *driver;
+    struct pHidd_PCIDriver_MapPCI mappci,*msg = &mappci;
+    struct HWData *sd = hook->h_Data;
+
+    D(bug("[VESA] Enumerator: Found deivce\n"));
+
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&driver);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, (APTR)&buf);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, (APTR)&size);
+
+    mappci.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI);
+    mappci.PCIAddress = buf;
+    mappci.Length = size;
+    sd->framebuffer = (APTR)OOP_DoMethod(driver, (OOP_Msg)msg);
+
+    D(bug("[VESA] Got framebuffer @ %x (size=%x)\n", sd->framebuffer, size));
+
+    AROS_USERFUNC_EXIT
+}
+
+#undef sd
+static void Find_PCI_Card(struct HWData *sd)
+{
+    OOP_Object *pci;
+
+    D(bug("[VESA] Find_PCI_Card\n"));
+
+    if (HiddPCIDeviceAttrBase)
+    {
+	pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+	
+	D(bug("[VESA] Creating PCI object\n"));
+
+	if (pci)
+	{
+	    struct Hook FindHook = {
+		h_Entry:    (IPTR (*)())Enumerator,
+		h_Data:	    sd,
+	    };
+
+	    struct TagItem Requirements[] = {
+		{ tHidd_PCI_Interface,	0x00 },
+		{ tHidd_PCI_Class,	0x03 },
+		{ tHidd_PCI_SubClass,	0x00 },
+		{ TAG_DONE, 0UL }
+	    };
+	
+	    struct pHidd_PCI_EnumDevices enummsg = {
+		mID:		OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+		callback:	&FindHook,
+		requirements:	(struct TagItem*)&Requirements,
+	    }, *msg = &enummsg;
+	    D(bug("[VESA] Calling search Hook\n"));
+	    OOP_DoMethod(pci, (OOP_Msg)msg);
+	    OOP_DisposeObject(pci);
+	}
+    }
+}

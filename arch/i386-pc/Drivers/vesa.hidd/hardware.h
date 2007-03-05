@@ -21,6 +21,8 @@ struct HWData
     ULONG	bytesperline;
 };
 
+extern OOP_AttrBase HiddPCIDeviceAttrBase;
+
 BOOL initVesaGfxHW(struct HWData *);
 
 #if BUFFERED_VRAM
