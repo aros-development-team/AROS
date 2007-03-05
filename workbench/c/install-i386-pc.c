@@ -54,6 +54,7 @@ struct BlockNode {
 	UWORD seg_adr;
 };
 
+#warning "TODO: Rename FORCELBA to USELBA and add a FORCE switch that causes isntall to not check for existing bootloader"
 char *template =
 	"DEVICE/A,"
 	"UNIT/N/K/A,"
@@ -704,13 +705,13 @@ BOOL setupMenu(BPTR fh)
     UBYTE  *start    = NULL;
     UBYTE  *stop     = NULL;
     UBYTE  *position = NULL;
-    STRPTR  line     = 
-        "timeout 0\n"
+    STRPTR  line = AllocVec(2048,MEMF_CLEAR|MEMF_PUBLIC);
+	sprintf(line, "timeout 0\n"
         "default 0\n"
         "\n"
         "title AROS HD\n"
-        "root (hd0,0)\n"
-        "configfile /dh0/boot/grub/menu.lst\n";
+        "root (hd%d,%d)\n"
+        "configfile /dh0/boot/grub/menu.lst\n", *((LONG *)myargs[1]), *((LONG *)myargs[2]));
     
 D(bug("[install-i386] setupMenu(%x)\n", fh));
     
