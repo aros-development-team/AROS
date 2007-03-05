@@ -625,6 +625,45 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg1 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_RELABEL.io_NewName);
             break;
 
+        case FSA_LOCK_RECORD: /* XXX untested */
+#ifdef DEBUG
+        {
+            ULONG mode = iofs->io_Union.io_RECORD.io_RecordMode;
+
+            bug("[packet] FSA_LOCK_RECORD: handle 0x%08x offset %ld size %ld mode %d (%s) timeout %d\n",
+                handle->actual,
+                (LONG) iofs->io_Union.io_RECORD.io_Offset,
+                iofs->io_Union.io_RECORD.io_Size,
+                mode,
+                mode == REC_EXCLUSIVE       ? "REC_EXCLUSIVE"       :
+                mode == REC_EXCLUSIVE_IMMED ? "REC_EXCLUSIVE_IMMED" :
+                mode == REC_SHARED          ? "REC_SHARED"          :
+                mode == REC_SHARED_IMMED    ? "REC_SHARED_IMMED"    :
+                                              "[unknown]",
+                iofs->io_Union.io_RECORD.io_Timeout);
+        }
+#endif
+
+            dp->dp_Type = ACTION_LOCK_RECORD;
+            dp->dp_Arg1 = (IPTR) handle->actual;
+            dp->dp_Arg2 = (IPTR) iofs->io_Union.io_RECORD.io_Offset;
+            dp->dp_Arg3 = (IPTR) iofs->io_Union.io_RECORD.io_Size;
+            dp->dp_Arg4 = (IPTR) iofs->io_Union.io_RECORD.io_RecordMode;
+            dp->dp_Arg5 = (IPTR) iofs->io_Union.io_RECORD.io_Timeout;
+            break;
+
+        case FSA_UNLOCK_RECORD: /* XXX untested */
+            D(bug("[packet] FSA_UNLOCK_RECORD: handle 0x%08x offset %ld size %ld\n",
+                  handle->actual,
+                  (LONG) iofs->io_Union.io_RECORD.io_Offset,
+                  iofs->io_Union.io_RECORD.io_Size));
+
+            dp->dp_Type = ACTION_FREE_RECORD;
+            dp->dp_Arg1 = (IPTR) handle->actual;
+            dp->dp_Arg2 = (IPTR) iofs->io_Union.io_RECORD.io_Offset;
+            dp->dp_Arg3 = (IPTR) iofs->io_Union.io_RECORD.io_Size;
+            break;
+
         /* XXX implement */
         case FSA_EXAMINE_ALL:
         case FSA_EXAMINE_ALL_END:
@@ -632,8 +671,6 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
         case FSA_ADD_NOTIFY:
         case FSA_REMOVE_NOTIFY:
         case FSA_CHANGE_SIGNAL:
-        case FSA_LOCK_RECORD:
-        case FSA_UNLOCK_RECORD:
         case FSA_PARENT_DIR:
         case FSA_PARENT_DIR_POST:
         case FSA_CONSOLE_MODE:
