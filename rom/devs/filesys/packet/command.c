@@ -271,6 +271,14 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                 handle->actual,
                 handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle")));
 
+            /* if this is the root handle, then we previously intercepted a
+             * call and returned it (eg FSA_OPEN/ACTION_PARENT), so we don't
+             * want the handler to do anything */
+            if (handle == &(handle->mount->root_handle)) {
+                iofs->IOFS.io_Unit = NULL;
+                goto reply;
+            }
+
             dp->dp_Type = (handle->is_lock) ? ACTION_FREE_LOCK : ACTION_END;
             dp->dp_Arg1 = (IPTR) handle->actual;
             break;
@@ -695,6 +703,12 @@ AROS_UFH3(void, packet_reply,
                 /* DOSFALSE & no error means the locks are different */
                 if (iofs->io_DosError == 0)
                     iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
+                break;
+
+            case ACTION_PARENT:
+                /* no error means we're returning a handle on the root */
+                if (iofs->io_DosError == 0)
+                    iofs->IOFS.io_Unit = (struct Unit *) &(mount->root_handle);
                 break;
         }
 
