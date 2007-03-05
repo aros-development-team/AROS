@@ -210,7 +210,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
              * take an lock parameter - it always returns a shared lock. Thats
              * sufficient for this case but is technically incorrect. The
              * real solution is for something other than FSA_OPEN to be used
-             * here.
+             * to do this.
              */ 
             if (iofs->io_Union.io_OPEN.io_Filename[0] == '/' &&
                 iofs->io_Union.io_OPEN.io_Filename[1] == '\0') {
@@ -587,7 +587,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
         }
 #endif
 
-            dp->dp_Type = ACTION_SET_PROTECT;
+            dp->dp_Type = ACTION_SET_DATE;
             dp->dp_Arg1 = 0;
             dp->dp_Arg2 = (IPTR) handle->actual;
             dp->dp_Arg3 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_SET_PROTECT.io_Filename);
