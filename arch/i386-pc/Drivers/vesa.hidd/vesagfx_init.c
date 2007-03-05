@@ -13,6 +13,7 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <hidd/graphics.h>
+#include <hidd/pci.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
@@ -26,12 +27,13 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
 
 static struct OOP_ABDescr abd[] = {
+	{ IID_Hidd_PCIDevice,	&HiddPCIDeviceAttrBase	},
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
 	{ NULL, NULL }
 };

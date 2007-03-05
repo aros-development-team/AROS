@@ -83,6 +83,7 @@
 #include "etask.h"
 #include "exec_util.h"
 #include "traps.h"
+#include "vesa.h"
 
 #define SMP_SUPPORT 0
 
@@ -116,6 +117,7 @@ void    exec_DefaultTaskExit();
 //void    exec_CheckCPU();
 int 	exec_RamCheck_fast();
 int 	exec_RamCheck_dma();
+void setupVesa(struct multiboot *mbinfo);
 
 
 asmlinkage void Exec_SystemCall(struct pt_regs);
@@ -429,10 +431,12 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     arosmb = (struct arosmb *)0x1000;
     if (magic == 0x2badb002)
     {
+        mbinfo = (struct multiboot *)addr;
+	if (mbinfo->flags & MB_FLAGS_CMDLINE)
+	    setupVesa(mbinfo);
         rkprintf("Copying multiboot information into storage\n");
         arosmb->magic = MBRAM_VALID;
         arosmb->flags = 0L;
-        mbinfo = (struct multiboot *)addr;
         if (mbinfo->flags & MB_FLAGS_MEM)
         {
             arosmb->flags |= MB_FLAGS_MEM;
@@ -1334,6 +1338,62 @@ ULONG **exec_RomTagScanner()
     return RomTag;
 }
 
+struct vbe_controller my_vbe_control;
+struct vbe_mode my_vbe_mode;
+
+void setupVesa(struct multiboot *mbinfo)
+{
+    char *str = mbinfo->cmdline;
+    char *vesa = strstr(str, "vesa=");
+    short r;
+
+    if (vesa)
+    {
+        long x=0, y=0, d=0;
+        long mode;
+        unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
+        void *vesa_start = &_binary_vesa_start;
+        vesa+=5;
+
+        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
+        {
+            x = x*10 + *vesa++ - '0';
+        }
+        vesa++;
+        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
+        {
+            y = y*10 + *vesa++ - '0';
+        }
+        vesa++;
+        while (*vesa && *vesa != ',' && *vesa != 'x' && *vesa != ' ')
+        {
+            d = d*10 + *vesa++ - '0';
+        }
+        
+        rkprintf("[VESA] module (@ %p) size=%d\n", &_binary_vesa_start, &_binary_vesa_size);
+        memcpy((void *)0x1000, vesa_start, vesa_size);
+        rkprintf("[VESA] Module installed\n");
+
+        rkprintf("[VESA] BestModeMatch for %dx%dx%d = ",x,y,d);        
+        mode = findMode(x,y,d);
+
+        getModeInfo(mode);
+
+	rkprintf("%x\n",mode);
+	r = setVbeMode(mode);
+        if (r == 0x004f) {
+	    rkprintf("\x03");
+	    memcpy(&my_vbe_mode, modeinfo, sizeof(struct vbe_mode));
+	    memcpy(&my_vbe_control, controllerinfo, sizeof(struct vbe_controller));
+	    mbinfo->vbe_mode_info = (ULONG)&my_vbe_mode;
+    	    mbinfo->vbe_control_info = (ULONG)&my_vbe_control;
+	    mbinfo->flags |= MB_FLAGS_GFX;
+	    mbinfo->vbe_mode = mode;
+	} else
+	    rkprintf("[VESA] mode setting error: 0x%04X\n", r);
+    }
+}
+
 AROS_LH1(struct ExecBase *, open,
     AROS_LHA(ULONG, version, D0),
         struct ExecBase *, SysBase, 1, Exec)
@@ -1428,3 +1488,4 @@ AROS_UFH5S(void, IntServer,
 
     AROS_USERFUNC_EXIT
 }
+

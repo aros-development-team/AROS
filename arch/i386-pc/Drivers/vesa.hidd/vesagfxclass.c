@@ -108,7 +108,7 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     pftags[5].ti_Data = XSD(cl)->data.greenmask;
     pftags[6].ti_Data = XSD(cl)->data.bluemask;
     pftags[7].ti_Data = 0;
-    pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
+    pftags[8].ti_Data = (XSD(cl)->data.depth > 8) ? vHidd_ColorModel_TrueColor : vHidd_ColorModel_StaticPalette;
     pftags[9].ti_Data = (XSD(cl)->data.depth > 24) ? 24 : XSD(cl)->data.depth;
     pftags[10].ti_Data = XSD(cl)->data.bytesperpixel;
     pftags[11].ti_Data = (XSD(cl)->data.bitsperpixel > 24) ? 24 : XSD(cl)->data.bitsperpixel;
