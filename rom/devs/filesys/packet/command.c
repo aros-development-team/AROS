@@ -214,15 +214,24 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
              */ 
             if (iofs->io_Union.io_OPEN.io_Filename[0] == '/' &&
                 iofs->io_Union.io_OPEN.io_Filename[1] == '\0') {
+
+                /* if they asked for the parent of the root, give it to them */
+                if (handle == &(handle->mount->root_handle)) {
+                    iofs->IOFS.io_Unit = (struct Unit *) &(handle->mount->root_handle);
+                    goto reply;
+                }
+
                 dp->dp_Type = ACTION_PARENT;
                 dp->dp_Arg1 = (IPTR) (handle->is_lock ? handle->actual : NULL);
             }
+
             else {
                 dp->dp_Type = ACTION_LOCATE_OBJECT;
                 dp->dp_Arg1 = (IPTR) (handle->is_lock ? handle->actual : NULL);
                 dp->dp_Arg2 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_OPEN.io_Filename);
                 dp->dp_Arg3 = (iofs->io_Union.io_OPEN.io_FileMode & FMF_LOCK) ? EXCLUSIVE_LOCK : SHARED_LOCK;
             }
+
             break;
 
         case FSA_OPEN_FILE: {
