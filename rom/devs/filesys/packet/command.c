@@ -195,10 +195,34 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                 iofs->io_Union.io_OPEN.io_Filename,
                 (iofs->io_Union.io_OPEN.io_FileMode & FMF_LOCK) ? "EXCLUSIVE" : "SHARED"));
 
-            dp->dp_Type = ACTION_LOCATE_OBJECT;
-            dp->dp_Arg1 = (IPTR) (handle->is_lock ? handle->actual : NULL);
-            dp->dp_Arg2 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_OPEN.io_Filename);
-            dp->dp_Arg3 = (iofs->io_Union.io_OPEN.io_FileMode & FMF_LOCK) ? EXCLUSIVE_LOCK : SHARED_LOCK;
+            /* 
+             * NameFromLock() can call FSA_OPEN with a handle to a file rather
+             * than a directory. That seems like a bug, but it doesn't affect
+             * existing handlers because they naively concat the lock name and
+             * the file name, then look backwards through the full name
+             * looking for '/' and going up the tree based on that.
+             * FATFileSystem instead checks a flag inside the lock structure
+             * to see if the lock is a directory, and fails outright if its
+             * not.
+             *
+             * Here we intercept this special case and explicitly request the
+             * current/parent directory. Unfortunately ACTION_PARENT can't
+             * take an lock parameter - it always returns a shared lock. Thats
+             * sufficient for this case but is technically incorrect. The
+             * real solution is for something other than FSA_OPEN to be used
+             * here.
+             */ 
+            if (iofs->io_Union.io_OPEN.io_Filename[0] == '/' &&
+                iofs->io_Union.io_OPEN.io_Filename[1] == '\0') {
+                dp->dp_Type = ACTION_PARENT;
+                dp->dp_Arg1 = (IPTR) (handle->is_lock ? handle->actual : NULL);
+            }
+            else {
+                dp->dp_Type = ACTION_LOCATE_OBJECT;
+                dp->dp_Arg1 = (IPTR) (handle->is_lock ? handle->actual : NULL);
+                dp->dp_Arg2 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_OPEN.io_Filename);
+                dp->dp_Arg3 = (iofs->io_Union.io_OPEN.io_FileMode & FMF_LOCK) ? EXCLUSIVE_LOCK : SHARED_LOCK;
+            }
             break;
 
         case FSA_OPEN_FILE: {
@@ -693,6 +717,7 @@ AROS_UFH3(void, packet_reply,
     switch (dp->dp_Type) {
 
         case ACTION_LOCATE_OBJECT:
+        case ACTION_PARENT:
             handle = (struct ph_handle *) AllocMem(sizeof(struct ph_handle), MEMF_PUBLIC | MEMF_CLEAR);
             if (handle == NULL) {
                 iofs->io_DosError = ERROR_NO_FREE_STORE;
