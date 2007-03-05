@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,9 +39,10 @@ struct Volume {
    ULONG writecmd;
    ULONG startblock;
    ULONG countblock;
+   ULONG unitnum;
    UWORD SizeBlock;
    UBYTE flags;
-	BYTE partnum;
+   BYTE partnum;
    ULONG *blockbuffer;
 };
 
@@ -54,7 +55,7 @@ struct BlockNode {
 	UWORD seg_adr;
 };
 
-#warning "TODO: Rename FORCELBA to USELBA and add a FORCE switch that causes isntall to not check for existing bootloader"
+#warning "TODO: Rename FORCELBA to USELBA and add a FORCE switch that causes install to not check for existing bootloader"
 char *template =
 	"DEVICE/A,"
 	"UNIT/N/K/A,"
@@ -98,6 +99,17 @@ D(bug("[install-i386] getDiskFSSM('%s')\n", path));
 	else
 		printf("'%s' doesn't contain a device name\n",path);
 	return 0;
+}
+
+void fillGeometry(struct Volume *volume, struct DosEnvec *de) {
+ULONG spc;
+
+D(bug("[install-i386] fillGeometry(%x)\n", volume));
+
+	spc = de->de_Surfaces*de->de_BlocksPerTrack;
+	volume->SizeBlock = de->de_SizeBlock;
+	volume->startblock = de->de_LowCyl*spc;
+	volume->countblock =((de->de_HighCyl-de->de_LowCyl+1)*spc)-1+de->de_Reserved;
 }
 
 void nsdCheck(struct Volume *volume) {
@@ -153,7 +165,7 @@ D(bug("[install-i386] nsdCheck(%x)\n", volume));
 }
 
 
-struct Volume *initVolume(STRPTR device, ULONG unit, ULONG flags, ULONG size) {
+struct Volume *initVolume(STRPTR device, ULONG unit, ULONG flags, struct DosEnvec *de) {
 struct Volume *volume;
 LONG error=0;
 
@@ -168,7 +180,7 @@ D(bug("[install-i386] initVolume(%s:%d)\n", device, unit));
 			volume->iotd = (struct IOExtTD *)CreateIORequest(volume->mp, sizeof(struct IOExtTD));
 			if (volume->iotd)
 			{
-				volume->blockbuffer = AllocVec(size<<2, MEMF_PUBLIC | MEMF_CLEAR);
+				volume->blockbuffer = AllocVec(de->de_SizeBlock<<2, MEMF_PUBLIC | MEMF_CLEAR);
 				if (volume->blockbuffer)
 				{
 					if (
@@ -187,6 +199,8 @@ D(bug("[install-i386] initVolume(%s:%d)\n", device, unit));
 							volume->flags |= VF_IS_RDB; /* just assume we have RDB */
 						volume->readcmd = CMD_READ;
 						volume->writecmd = CMD_WRITE;
+						volume->unitnum = unit;
+						fillGeometry(volume, de);
 						nsdCheck(volume);
 						return volume;
 					}
@@ -356,17 +370,6 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 	return retval;
 }
 
-void fillGeometry(struct Volume *volume, struct DosEnvec *de) {
-ULONG spc;
-
-D(bug("[install-i386] fillGeometry(%x)\n", volume));
-
-	spc = de->de_Surfaces*de->de_BlocksPerTrack;
-	volume->SizeBlock = de->de_SizeBlock;
-	volume->startblock = de->de_LowCyl*spc;
-	volume->countblock =((de->de_HighCyl-de->de_LowCyl+1)*spc)-1+de->de_Reserved;
-}
-
 struct Volume *getGrubStageVolume
 	(
 		STRPTR device,
@@ -377,13 +380,12 @@ struct Volume *getGrubStageVolume
 {
 struct Volume *volume;
 
-	volume = initVolume(device, unit, flags, de->de_SizeBlock);
+	volume = initVolume(device, unit, flags, de);
 
 D(bug("[install-i386] getGrubStageVolume(): volume=%x\n", volume));
 
 	if (volume)
 	{
-		fillGeometry(volume, de);
 		if (isvalidFileSystem(volume, device, unit))
 			return volume;
 		else
@@ -517,9 +519,8 @@ D(bug("[install-i386] getBBVolume(%s:%d, %d)\n", device, unit, partnum));
 
 	if (isvalidPartition(device, unit, partnum, &de))
 	{
-		volume = initVolume(device, unit, 0, de.de_SizeBlock);
+		volume = initVolume(device, unit, 0, &de);
 		volume->partnum = partnum ? *partnum : -1;
-		fillGeometry(volume, &de);
 		readwriteBlock(volume, 0, volume->blockbuffer, 512, volume->readcmd);
 		if (AROS_BE2LONG(volume->blockbuffer[0]) != IDNAME_RIGIDDISK)
 		{
@@ -529,7 +530,7 @@ D(bug("[install-i386] getBBVolume(%s:%d, %d)\n", device, unit, partnum));
 		else
 			printf("no space for bootblock (RDB is on block 0)\n");
 	}
-	return 0;
+	return NULL;
 }
 
 ULONG collectBlockList
@@ -697,23 +698,24 @@ LONG left;
 	return 0;
 }
 
-BOOL setupMenu(BPTR fh)
+BOOL setUpMenu(BPTR fh, struct Volume *volume)
 {
     LONG    length   = 0;
+    LONG    config_length = 0;
     LONG    read     = 0;
     UBYTE  *buffer   = NULL;
     UBYTE  *start    = NULL;
     UBYTE  *stop     = NULL;
     UBYTE  *position = NULL;
-    STRPTR  line = AllocVec(2048,MEMF_CLEAR|MEMF_PUBLIC);
-	sprintf(line, "timeout 0\n"
+    STRPTR  line     = 
+        "timeout 0\n"
         "default 0\n"
         "\n"
         "title AROS HD\n"
-        "root (hd%d,%d)\n"
-        "configfile /dh0/boot/grub/menu.lst\n", *((LONG *)myargs[1]), *((LONG *)myargs[2]));
+        "root (hd%ld,%ld)\n"
+        "configfile /dh0/boot/grub/menu.lst\n";
     
-D(bug("[install-i386] setupMenu(%x)\n", fh));
+D(bug("[install-i386] setUpMenu(%x, %x)\n", fh, volume));
     
     /* Get the filesize and reset the position */
     Seek(fh, 0, OFFSET_END);
@@ -748,18 +750,19 @@ D(bug("[install-i386] setupMenu(%x)\n", fh));
         goto error;
     }
     
-    /* Check if there is enough space */
-    if ((stop - start) < strlen(line))
+    /* Write the new menu config */
+    config_length = snprintf(start, stop - start - 1, line,
+        volume->unitnum, volume->partnum);
+    
+    /* Check if there was enough space */
+    if ((stop - start) <= config_length)
     {
-        printf("ERROR: Not enough space to setup menu.\n");
+        printf("ERROR: Not enough space to set up menu.\n");
         goto error;
     }
     
-    /* Write the new menu config */
-    strlcpy(start, line, stop - start - 1);
-    
     /* Blank the rest */
-    for (position = start + strlen(line); position < stop; position++)
+    for (position = start + config_length; position < stop; position++)
     {
         *position = '\n';
     }
@@ -815,7 +818,7 @@ D(bug("[install-i386] writeStage2(%x)\n", volume));
 				{
 					if (Write(fh, buffer, 512) == 512)
 					{
-						setupMenu(fh);
+						setUpMenu(fh, volume);
 						retval = TRUE;
 					}
 					else
