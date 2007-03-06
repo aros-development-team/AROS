@@ -39,7 +39,7 @@ BOOT_TAR_FILES := \
     C/Get C/Getenv C/IPrefs C/If C/Info C/Join C/Lab C/List C/Lock \
     C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt C/Protect C/Quit \
     C/Reboot C/Relabel C/Rename C/Resident C/Run C/Search C/Set C/SetClock \
-    C/SetDate C/Setenv C/Skip C/Sort C/Stack C/Status C/Touch C/Type C/Unalias \
+    C/SetDate C/Setenv C/Skip C/Stack C/Status C/Touch C/Type C/Unalias \
     C/Unset C/Unsetenv C/Version C/Wait C/Which C/Why C/install-i386-pc \
     C/Partition \
     Classes/Datatypes/ascii.datatype \
@@ -72,7 +72,7 @@ BOOT_TAR_FILES := \
     System/About System/FixFonts System/FixFonts.info System/Themes/Mason \
     System/Themes/os3.1 System/Wanderer System.info \
     Tools/Editor Tools/HDToolBox Tools/HDToolBox.info Tools.info \
-    Tools/Debug Utilities.info
+    Tools/Debug
 
 
 BOOT_SRC_DIR    := $(AROSDIR)
