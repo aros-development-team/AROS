@@ -99,12 +99,6 @@
 		{
 		    handler = "ffs.handler";
 		}
-                else if (deviceNode->dn_StackSize != 0)
-                {
-                    /* dn_StackSize doubles as a flag that indicates the named
-                     * handler is packet-based */
-                    handler = "packet.handler";
-                }
 		else
 		{
 		    handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
@@ -117,7 +111,8 @@
 		iofs->io_Union.io_OpenDevice.io_DosName    = deviceNode->dn_NewName;
                 iofs->io_Union.io_OpenDevice.io_DeviceNode = deviceNode;
 
-		if (!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags))
+		if (!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags) ||
+                    !OpenDevice("packet.handler", 0, &iofs->IOFS, fssm->fssm_Flags))
 		{
 		    /*
 		      Ok, this means that the handler was able to open,
