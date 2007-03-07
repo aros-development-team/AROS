@@ -125,11 +125,10 @@ USR:
 /* Filesytem set to "emul.handler" and Device encoding volume name   */
 /* and unix path like this: <volumename>:<pathname>                  */
 
-/* Entry for packet-based handler */
+/* Entry for FAT12/16/32 image (ie MSDOS/Win95/98 filesystem) */
 
 FAT:
         FileSystem = fat.handler
-        Type       = packet
         Device     = fdsk.device
         Unit       = 0
 #
