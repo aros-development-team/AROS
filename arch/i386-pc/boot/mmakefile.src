@@ -40,7 +40,7 @@ BOOT_TAR_FILES := \
     C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt C/Protect C/Quit \
     C/Reboot C/Relabel C/Rename C/Resident C/Run C/Search C/Set C/SetClock \
     C/SetDate C/Setenv C/Skip C/Stack C/Status C/Touch C/Type C/Unalias \
-    C/Unset C/Unsetenv C/Version C/Wait C/Which C/Why C/install-i386-pc \
+    C/Unset C/Unsetenv C/Version C/Which C/Why C/install-i386-pc \
     C/Partition \
     Classes/Datatypes/ascii.datatype \
     Classes/Datatypes/binary.datatype \
@@ -66,8 +66,7 @@ BOOT_TAR_FILES := \
     Locale/Countries Locale/Help \
     Prefs/Font Prefs/Font.info \
     Prefs/Input.info Prefs/Time Prefs/Time.info \
-    Prefs.info Prefs/Env-Archive Prefs/Presets/Patterns/Stripes \
-    Prefs/Presets/Patterns.info \
+    Prefs.info Prefs/Env-Archive \
     S/Shell-Startup S/Startup-Sequence \
     System/About System/FixFonts System/FixFonts.info System/Themes/Mason \
     System/Themes/os3.1 System/Wanderer System.info \
