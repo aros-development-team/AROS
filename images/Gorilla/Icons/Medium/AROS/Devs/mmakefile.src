@@ -3,9 +3,14 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS := Drivers Midi Keymaps DataTypes DOSDrivers
+STORAGEICONS := DataTypes DOSDrivers Drivers Keymaps
+DEVSICONS := $(STORAGEICONS) Midi
 
-#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-devs-clean
-#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-devs
-%build_icons mmake=themes-gorilla-icons-aros-devs icons=$(ICONS) \
+#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-devs-clean themes-gorilla-icons-aros-storage-clean
+#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-devs themes-gorilla-icons-aros-storage
+
+%build_icons mmake=themes-gorilla-icons-aros-devs icons=$(DEVSICONS) \
              dir=$(AROS_DEVS)
+
+%build_icons mmake=themes-gorilla-icons-aros-storage icons=$(STORAGEICONS) \
+             dir=$(AROSDIR)/Storage
