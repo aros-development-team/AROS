@@ -20,13 +20,15 @@ include $(TOP)/config/make.cfg
 #MM	    workbench-utilities \
 #MM	    workbench-tools \
 #MM     workbench-prefs \
-#MM     workbench-wbstartup \
+#MM     workbench-directories \
 #MM     workbench-fs-fat
 
-WBSTARTUPDIR = $(AROSDIR)/WBStartup
+WBSTARTUPDIR := $(AROSDIR)/WBStartup
+WBSTORAGEDIR := $(AROSDIR)/Storage
+WBDOSDRIVERDIRS := $(AROSDIR)/Devs/DOSDrivers $(AROSDIR)/Storage/DOSDrivers
 
 #MM
-workbench-wbstartup :
-    %mkdir_q dir="$(WBSTARTUPDIR)"
+workbench-directories ::
+    %mkdirs_q $(WBSTARTUPDIR) $(WBSTORAGEDIR) $(WBDOSDRIVERDIRS)
 
 #MM- clean : clean-workbench
