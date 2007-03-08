@@ -5,8 +5,9 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-complete : themes-gorilla-icons-aros
 
-ICONS := Devs Storage Locale Tools Utilities Development Libs Extras System \
-         Fonts Prefs C S T Demos Tests
+ICONS := C Demos Development Devs Extras Fonts \
+         Libs Locale Prefs S Storage System \
+         T Tests Tools Utilities WBStartup
 
 #MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
 #MM- themes-gorilla-icons : themes-gorilla-icons-aros
