@@ -132,16 +132,8 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-	    int i;
-
-	    for (i = 1; i < argc; i++)
-		msg->rm_Args[i-1] = (IPTR)argv[i];
-	    if(!FillRexxMsg(msg, argc, 0))
-	    {
-		FPuts(out, "Not enough memory\n");
-		return RC_ERROR;
-	    }
-	    msg->rm_Action |= argc;
+            msg->rm_Args[0] = (IPTR)CreateArgstring(s, strlen(s));
+	    msg->rm_Action |= 1;
 	}
 
 	PutMsg(rexxport, (struct Message *)msg);
@@ -151,9 +143,9 @@ int main(int argc, char **argv)
 
 	ret = msg->rm_Result1;
 	if (msg->rm_Result1 == RC_OK)
-	    FPrintf(out, "Command returned: %ld\n", msg->rm_Result2);
+	    FPrintf(out, "Script executed and returned: %ld\n", msg->rm_Result2);
 	else
-	    FPrintf(out, "Error executing command %ld/%ld\n",
+	    FPrintf(out, "Error executing script %ld/%ld\n",
 		    msg->rm_Result1, msg->rm_Result2
 	    );
     }
