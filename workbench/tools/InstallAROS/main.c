@@ -1337,9 +1337,11 @@ localecopydone:
 			"Locale",		"Locale",
 			"Prefs",		"Prefs",
 			"S",			"S",
+			"Storage",		"Storage",
 			"System",		"System",
 			"Tools",		"Tools",
 			"Utilities",		"Utilities",
+			"WBStartup",		"WBStartup",
 			NULL
 		};
 
