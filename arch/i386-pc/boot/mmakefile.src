@@ -184,8 +184,8 @@ $(OSGENDIR)/boot/aros.iso: $(BINDIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/grub/me
                 -boot-info-table \
 		-allow-leading-dots \
                 -V "AROS Live CD" \
-		-p "AROS Development Team" -P "AROS Development Team" -R -J \
-		-L -l -r \
+		-publisher "AROS Development Team" -R -J -sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+		-l -r \
 		$(AROSDIR)
 
 #MM
