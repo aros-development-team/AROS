@@ -22,6 +22,11 @@
 #define MUIA_WandererPrefs_Icon_TextMaxLen      (MUIB_WandererPrefs | 0x00000006) /* -SG */
 #define MUIA_WandererPrefs_DoubleBuffered       (MUIB_WandererPrefs | 0x00000007) /* -SG */
 
+#define MUIA_WandererPrefs_BackgroundRenderMode       (MUIB_WandererPrefs | 0x000000F1) /* -SG */
+
+#define WandererPrefs_BackgroundRenderMode_Tiled        0 // Default
+#define WandererPrefs_BackgroundRenderMode_Scale       1 // Scaled to screen
+
 /*** Public Methods *********************************************************/
 #define MUIM_WandererPrefs_Reload               (MUIB_WandererPrefs | 0x00000000)
 

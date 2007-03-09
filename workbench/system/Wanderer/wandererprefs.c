@@ -38,6 +38,8 @@ struct WandererPrefs_DATA
     ULONG  wpd_IconTextMode;
     ULONG  wpd_IconTextMaxLen;
     ULONG  wpd_DoubleBuffered;
+	
+	ULONG wpd_BackgroundRenderMode;
 };
 
 /*** Macros *****************************************************************/
@@ -112,22 +114,30 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 }                
                 break;
 
+			case MUIA_WandererPrefs_BackgroundRenderMode:
+                data->wpd_BackgroundRenderMode = (LONG) tag->ti_Data;
+                break;
+
             case MUIA_WandererPrefs_NavigationMethod:
                 data->wpd_NavigationMethod = (LONG) tag->ti_Data;
-                
+                break;
+
             case MUIA_WandererPrefs_Toolbar_Enabled:
                 data->wpd_ToolbarEnabled = (LONG) tag->ti_Data;
+			    break;
 
             case MUIA_WandererPrefs_DoubleBuffered:
                 data->wpd_DoubleBuffered = (LONG) tag->ti_Data;
+                break;
 
             case MUIA_WandererPrefs_Icon_ListMode:
                 data->wpd_IconListMode = (LONG) tag->ti_Data;
+                break;
 
             case MUIA_WandererPrefs_Icon_TextMode:
                 data->wpd_IconTextMode = (ULONG) tag->ti_Data;
                 break;
-                
+
             case MUIA_WandererPrefs_Icon_TextMaxLen:
                 data->wpd_IconTextMaxLen = (ULONG) tag->ti_Data;
                 break;
@@ -153,6 +163,10 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
             *store = (IPTR) data->wpd_DrawerBackground;
             break;
 
+		case MUIA_WandererPrefs_BackgroundRenderMode:
+            *store = (IPTR) data->wpd_BackgroundRenderMode;
+            break;
+		
         case MUIA_WandererPrefs_NavigationMethod:
             *store = (IPTR) data->wpd_NavigationMethod;
             break;
