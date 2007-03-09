@@ -27,6 +27,7 @@
 /*** Instance Data **********************************************************/
 struct IconWindow_DATA
 {
+	IPTR               iwd_BackGround_Attrib;
     Object           *iwd_IconList;
     Object           *iwd_toolbarPanel;
     Object           *iwd_pathStrObj;
@@ -433,14 +434,32 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     return rv;
 }
 
+
+IPTR IconWindow__MUIM_Window_ProcessBackground
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    Object *prefs = NULL;
+	IPTR BackGround_Base = NULL;
+
+D(bug("[IconWindow] MUIM_Window_ProcessBackground()"));
+    prefs = (Object *) XGET(_app(self), MUIA_Wanderer_Prefs);
+	BackGround_Base = XGET(prefs, data->iwd_BackGround_Attrib);
+D(bug("[IconWindow] MUIM_Window_ProcessBackground: Background '%s'", BackGround_Base));
+
+    return TRUE;
+}
+
 IPTR IconWindow__MUIM_Window_Setup
 (
     Class *CLASS, Object *self, Msg message
 )
 {
     SETUP_INST_DATA;
-    Object *prefs;
-    ULONG   attribute = data->iwd_IsRoot 
+    Object *prefs = NULL;
+    data->iwd_BackGround_Attrib = data->iwd_IsRoot 
                     ? MUIA_WandererPrefs_WorkbenchBackground
                     : MUIA_WandererPrefs_DrawerBackground;
     
@@ -448,15 +467,35 @@ IPTR IconWindow__MUIM_Window_Setup
     
     prefs = (Object *) XGET(_app(self), MUIA_Wanderer_Prefs);
     
-    SET(data->iwd_IconList, MUIA_Background, XGET(prefs, attribute));
+	switch((IPTR)XGET(prefs, MUIA_WandererPrefs_BackgroundRenderMode))
+	{
+		case WandererPrefs_BackgroundRenderMode_Scale:
+		{
+			IconWindow__MUIM_Window_ProcessBackground(CLASS, self, message);
+			
+			//Set up a hook to call ProcessBackground on prefs notification
+			/*			DoMethod
+			(
+				prefs, MUIM_Notify, data->iwd_BackGround_Attrib, MUIV_EveryTime,
+				(IPTR) data->iwd_IconList, 3, 
+				MUIM_Set, MUIA_Background, MUIV_TriggerValue
+			);*/
+		}
+		default:
+		{
+			//WandererPrefs_BackgroundRenderMode_Tiled
+			SET(data->iwd_IconList, MUIA_Background, XGET(prefs, data->iwd_BackGround_Attrib));
     
-    DoMethod
-    (
-        prefs, MUIM_Notify, attribute, MUIV_EveryTime,
-        (IPTR) data->iwd_IconList, 3, 
-        MUIM_Set, MUIA_Background, MUIV_TriggerValue
-    );
-    
+			DoMethod
+			(
+				prefs, MUIM_Notify, data->iwd_BackGround_Attrib, MUIV_EveryTime,
+				(IPTR) data->iwd_IconList, 3, 
+				MUIM_Set, MUIA_Background, MUIV_TriggerValue
+			);
+			break;
+		}
+	}
+
     return TRUE;
 }
 
