@@ -20,7 +20,7 @@
         PAT=PATTERN/K, DIRECT/S,SILENT/S, ERRWARN/S, MAKEDIR/S, MOVE/S,
         DELETE/S, HARD=HARDLINK/S, SOFT=SOFTLINK/S, FOLNK=FORCELINK/S,
         FODEL=FORCEDELETE/S, FOOVR=FORCEOVERWRITE/S, DONTOVR=DONTOVERWRITE/S,
-        FORCE/S
+        FORCE/S,NEWER/S
 
     LOCATION
 
@@ -41,7 +41,7 @@
         CLONE     --  copy comment, protection bits and date as well
         DATES     --  copy dates
         NOPRO     --  do not copy protection bits
-        COMMENT   --  copy filecomment
+		COMMENT   --  copy file comment
         NOREQ     --  suppress requesters
 
         PATTERN   --  a pattern the filenames must match
@@ -58,6 +58,7 @@
         FOOVR     --  also overwrite protected files
         DONTOVR   --  do never overwrite destination
         FORCE     --  DO NOT USE. Call compatibility only.
+		NEWER     --  compare version strings and only overwrites older files.
 
 
     More detailed descriptions:
@@ -175,6 +176,9 @@
     DONTOVR=DONTOVERWRITE:
     This option prevents overwriting of destination files.
 
+	NEWER:
+	This option scans the version strings of the source and destination files and
+	only overwrites if the source file is newer than the destination file.
 
     RESULT
 
@@ -287,10 +291,14 @@
         7.11.2002 --  Fixed even silier bug where it would put out a bogus
                       errormessage when the copy destination was a volume
                       root. bumped to 50.2 - Piru
+		6.3.2007  --  Fixed small signed bug. bumped to 50.15 - Geit
+		7.3.2006  --  Implemented new copy mode named "NEWER" which scans for
+					  version information and only copies over a file if it is
+					  newer than an existing target. bumped to 50.16 - Geit
 
 ******************************************************************************/
 
-static const char version[] = "\0$VER: Copy 50.14 (27.11.2004) © AROS";
+static const char version[] = "\0$VER: Copy 50.16 (07.03.2007) © AROS";
 
 #define CTRL_C          (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
 
@@ -305,6 +313,8 @@ static const char version[] = "\0$VER: Copy 50.14 (27.11.2004) © AROS";
 
 #define USE_ALWAYSVERBOSE               1
 #define USE_BOGUSEOFWORKAROUND          0
+
+
 
 #include <exec/devices.h>
 #include <exec/io.h>
@@ -325,7 +335,6 @@ typedef ULONG IPTR;
 #include <string.h>
 #include <stdio.h>
 
-
 static const UBYTE *PARAM =
 "FROM/M,TO,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"
 "DIRECT/S,CLONE/S,DATES/S,NOPRO/S,COM=COMMENT/S,"
@@ -337,7 +346,7 @@ static const UBYTE *PARAM =
 "MOVE/S,DELETE/S,HARD=HARDLINK/S,SOFT=SOFTLINK/S,"
 "FOLNK=FORCELINK/S,FODEL=FORCEDELETE/S,"
 "FOOVR=FORCEOVERWRITE/S,DONTOVR=DONTOVERWRITE/S,"
-"FORCE/S";
+"FORCE/S,NEWER/S";
 
 #define COPYFLAG_ALL            (1<<0)
 #define COPYFLAG_DATES          (1<<1)
@@ -351,6 +360,7 @@ static const UBYTE *PARAM =
 #define COPYFLAG_VERBOSE        (1<<9)
 #define COPYFLAG_ERRWARN        (1<<10)
 #define COPYFLAG_PROTECTION     (1<<11)
+#define COPYFLAG_NEWER          (1<<12)
 
 #define COPYFLAG_SOFTLINK       (1<<20) /* produce softlinks */
 #define COPYFLAG_DEST_FILE      (1<<21) /* one file mode */
@@ -406,6 +416,7 @@ struct IptrArgs
     IPTR  forceoverwrite;
     IPTR  dontoverwrite;
     IPTR  force;
+	IPTR  newer;
 };
 
 
@@ -435,6 +446,7 @@ struct Args
     LONG    forceoverwrite;
     LONG    dontoverwrite;
     LONG    force;
+	LONG    newer;
 };
 
 
@@ -460,6 +472,30 @@ struct CopyData
     STRPTR      CopyBuf;
     ULONG       CopyBufLen;
 };
+
+/*
+** This data keeps the extracted data from a version string
+*/
+
+#define VDNAMESIZE 96
+
+struct VersionData {
+	UBYTE  vd_Name[VDNAMESIZE];
+	LONG   vd_Version;
+	LONG   vd_Revision;
+
+	LONG   vd_Day;
+	LONG   vd_Month;
+	LONG   vd_Year;
+};
+
+#ifndef MIN
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
+
+#define CHECKVER_DESTOLDER -1
+#define CHECKVER_DESTNEWER  1
+#define CHECKVER_EQUAL    0
 
 #define TEXT_READ               texts[0]
 #define TEXT_COPIED             texts[1]
@@ -522,6 +558,11 @@ ULONG TestFileSys(STRPTR, struct CopyData *); /* returns value, when is a filesy
 void  SetData(STRPTR, struct CopyData *);
 LONG  TestDest(STRPTR, ULONG, struct CopyData *);
 ULONG TestLoop(BPTR, BPTR, struct CopyData *);
+static LONG CheckVersion( struct CopyData *cd );
+static void	makeversionfromstring( STRPTR buffer, struct VersionData *vd, struct CopyData *cd);
+static STRPTR skipspaces( STRPTR buffer);
+static STRPTR skipnonspaces( STRPTR buffer);
+static BOOL	VersionFind( CONST_STRPTR path, struct VersionData *vds, struct CopyData *cd);
 
 int main(void)
 {
@@ -600,7 +641,8 @@ int main(void)
                 "FODEL    delete protected files also\n"
                 "FOOVR    also overwrite protected files\n"
                 "DONTOVR  do never overwrite destination\n"
-                "FORCE    DO NOT USE. Call compatibility only.\n";
+				"FORCE    DO NOT USE. Call compatibility only.\n"
+				"NEWER    will compare version strings and only overwrites older files\n";
 
             if (ReadArgs(PARAM, (IPTR *)&iArgs, rda))
             {
@@ -636,6 +678,7 @@ int main(void)
                 args.forceoverwrite = (LONG)iArgs.forceoverwrite;
                 args.dontoverwrite = (LONG)iArgs.dontoverwrite;
                 args.force = (LONG)iArgs.force;
+				args.newer = (LONG)iArgs.newer;
 
                 if (args.quiet) /* when QUIET, SILENT and NOREQ are also
                                    true! */
@@ -706,6 +749,11 @@ int main(void)
                 if (args.dontoverwrite)
                 {
                     cd->Flags |= COPYFLAG_DONTOVERWRITE;
+                }
+
+				if (args.newer)
+                {
+					cd->Flags |= COPYFLAG_NEWER|COPYFLAG_DONTOVERWRITE;
                 }
 
                 if (args.errwarn)
@@ -1837,7 +1885,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
     }
     else if (cd->Fib.fib_DirEntryType > 0)
     {
-        ULONG a;
+		LONG a;
 
         if ((cd->Flags & COPYFLAG_ALL || cd->Mode == COPYMODE_LINK ||
              cd->Mode == COPYMODE_MOVE) && TestLoop(lock, cd->CurDest, cd))
@@ -2306,9 +2354,26 @@ LONG TestDest(STRPTR name, ULONG type, struct CopyData *cd)
                     }
                 }
                 else if (cd->Flags & COPYFLAG_DONTOVERWRITE)
-                {
-                    ret = TESTDEST_CANTDELETE;
-                }
+				{
+					if (cd->Flags & COPYFLAG_NEWER)
+					{
+						if(	CheckVersion( cd ) == CHECKVER_DESTOLDER )
+						{
+							if (KillFile(name, cd->Flags & COPYFLAG_FORCEOVERWRITE, cd))
+							{
+								ret = TESTDEST_DELETED;
+							}
+						}
+						else
+						{
+							ret = TESTDEST_CANTDELETE;
+						}
+					}
+					else /* normal "dont overwrite mode" */
+					{
+						ret = TESTDEST_CANTDELETE;
+					}
+				}
                 else if (KillFile(name, cd->Flags & COPYFLAG_FORCEOVERWRITE, cd))
                 {
                     ret = TESTDEST_DELETED;
@@ -2335,4 +2400,263 @@ LONG TestDest(STRPTR name, ULONG type, struct CopyData *cd)
 
     return ret;
 }
+
+/*
+** We compare current file versions and return the result
+** see CHECKVER_#? values
+*/
+
+static LONG CheckVersion( struct CopyData *cd )
+{
+struct VersionData vds;
+struct VersionData vdd;
+LONG resversion = CHECKVER_EQUAL;
+LONG resdate = CHECKVER_EQUAL;
+
+	if( VersionFind( cd->FileName, &vds, cd ) )
+	{
+		if( VersionFind( cd->DestName, &vdd, cd ) )
+		{
+/* version and revision must be available to ensure a proper operation */
+			if( ((vdd.vd_Version != -1) && (vds.vd_Version != -1) && (vdd.vd_Revision != -1) && (vds.vd_Revision != -1)) )
+			{
+/* first we make the stuff comparable. If one component is missing we reset both */
+				if( vdd.vd_Year == -1 || vds.vd_Year == -1 )
+				{
+					vdd.vd_Year = 0;
+					vds.vd_Year = 0;
+				}
+				if( vdd.vd_Month == -1 || vds.vd_Month == -1 )
+				{
+					vdd.vd_Month = 0;
+					vds.vd_Month = 0;
+				}
+				if( vdd.vd_Day == -1 || vds.vd_Day == -1 )
+				{
+					vdd.vd_Day = 0;
+					vds.vd_Day = 0;
+				}
+
+/* check version */
+				resversion = CHECKVER_DESTOLDER;
+				if( ((vdd.vd_Version == vds.vd_Version) && vdd.vd_Revision == vds.vd_Revision ) )
+				{
+					resversion = CHECKVER_EQUAL;
+				}
+				else if(  (vdd.vd_Version  > vds.vd_Version) ||
+						((vdd.vd_Version == vds.vd_Version) && vdd.vd_Revision > vds.vd_Revision ) )
+				{
+					resversion = CHECKVER_DESTNEWER;
+				}
+/* check date */
+
+				resdate = CHECKVER_DESTOLDER;
+				if( ((vdd.vd_Year == vds.vd_Year) && (vdd.vd_Month == vds.vd_Month) && (vdd.vd_Day == vds.vd_Day) ) )
+				{
+					resdate = CHECKVER_EQUAL;
+				}
+				else
+				{
+					if( ( (vdd.vd_Year  > vds.vd_Year ) ||
+						( (vdd.vd_Year == vds.vd_Year) && (vdd.vd_Month  > vds.vd_Month ) ) ||
+						( (vdd.vd_Year == vds.vd_Year) && (vdd.vd_Month == vds.vd_Month ) && (vdd.vd_Day  > vds.vd_Day ) ) ))
+					{
+						resdate = CHECKVER_DESTNEWER;
+					}
+				}
+
+/* plausible check */
+				if( ((resversion == CHECKVER_DESTNEWER) && (resdate == CHECKVER_DESTOLDER)) || /* newer version with older date */
+					((resversion == CHECKVER_DESTOLDER) && (resdate == CHECKVER_DESTNEWER)) )  /* older version with newer date */
+				{
+					/* we maybe should inform the user about this */
+					return( CHECKVER_EQUAL );
+				}
+			}
+		}
+	}
+/* compose result */
+
+	if( (resversion == resdate) || (resversion == CHECKVER_EQUAL) )
+	{
+		return( resdate );
+	}
+	else
+	{
+		return( resversion );
+	}
+}
+
+
+
+/*
+** Searches the given file for a version string and fills version data struct with the result.
+** Returns false if no version was found. Returns true if the version got parsed and version data
+** is valid.
+*/
+
+#define VERSBUFFERSIZE 4096 /* must be as big as the biggest version string we want to handle. */
+
+static BOOL	VersionFind( CONST_STRPTR path, struct VersionData *vds, struct CopyData *cd)
+{
+	BPTR handle;
+	STRPTR buf;
+	ULONG i, rc;
+
+	rc = FALSE;
+
+	if ( (buf = AllocVec(VERSBUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR)) )
+	{
+		if ( (handle = Open(path, MODE_OLDFILE)) )
+		{
+			long index = 0;
+
+			while( ( (index += Read(handle, &buf[index], VERSBUFFERSIZE-index)) > 5) && !rc )
+			{
+				for (i = 0; i < index-5; i++) {
+					if( buf[i] == '$' && buf[i+1] == 'V' && buf[i+2] == 'E' && buf[i+3] == 'R' && buf[i+4] == ':' ) {
+						CopyMem( &buf[i], buf, index-i );
+						index -= i;
+						(index += Read(handle, &buf[index], VERSBUFFERSIZE-index));
+						/* now the version string is aligned and complete in buffer */
+						makeversionfromstring( buf, vds, cd );
+						rc = TRUE;
+						break;
+					}
+				}
+				CopyMem( &buf[index-5], &buf[0], 5 );
+				index = 5;
+			}
+			Close(handle);
+		}
+		FreeVec(buf);
+	}
+	return (rc);
+}
+
+
+/*
+** This function extracts the version information from a given version string.
+** the result will be store in the given version data structure.
+**
+** NOTE: There is no need to preset the version data struct. All fields will
+** be reset to defaults, so in case of a faulty version string the result data
+** will be checkable.
+*/
+
+static
+void makeversionfromstring( STRPTR buffer, struct VersionData *vd, struct CopyData *cd)
+{
+	LONG  pos;
+	ULONG tmp;
+	STRPTR name;
+
+/* reset data field */
+
+	vd->vd_Name[0]  = '\0';
+	vd->vd_Version  = -1;
+	vd->vd_Revision = -1;
+	vd->vd_Day      = -1;
+	vd->vd_Month    = -1;
+	vd->vd_Year     = -1;
+
+	buffer = skipspaces( buffer ); /* skip before $VER: */
+	buffer = skipnonspaces( buffer ); /* skip $VER: */
+	buffer = skipspaces( buffer ); /* skip spaces before tool name */
+	name = buffer;
+	buffer = skipnonspaces( buffer ); /* skip name of tool */
+
+	if( (tmp = ((int) buffer - (int) name) ) && *buffer )
+	{
+		CopyMem( name, vd->vd_Name, MIN( tmp, VDNAMESIZE-1) );
+		vd->vd_Name[MIN( tmp, VDNAMESIZE-1)] = '\0'; /* terminate name string inside target buffer */
+
+		buffer = skipspaces( buffer ); /* skip spaces before version */
+		if( *buffer ) {
+
+		/* Do version */
+
+			if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
+			{
+				vd->vd_Version = tmp;
+
+				/* Do revision */
+
+				buffer += pos;
+				buffer = skipspaces(buffer);
+				if (*buffer++ == '.')
+				{
+					if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
+					{
+						vd->vd_Revision = tmp;
+						buffer += pos;
+						buffer = skipspaces(buffer);
+						if (*buffer++ == '(')
+						{
+							if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
+							{
+								vd->vd_Day = tmp;
+								buffer += pos;
+								if (*buffer++ == '.')
+								{
+									if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
+									{
+										vd->vd_Month = tmp;
+										buffer += pos;
+										if (*buffer++ == '.')
+										{
+											if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
+											{
+												if( (tmp >= 70) && (tmp <= 99) )
+												{
+													tmp += 1900;
+												}
+												if( (tmp < 70) )
+												{
+													tmp += 2000;
+												}
+												vd->vd_Year = tmp;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/* Return a pointer to a string, stripped by all leading space characters
+ * (SPACE).
+ */
+static
+STRPTR skipspaces( STRPTR buffer)
+{
+	for (;; buffer++)
+	{
+		if (buffer[0] == '\0' || buffer[0] != ' ')
+		{
+			return( buffer );
+		}
+	}
+}
+
+/* Return a pointer to a string, stripped by all non space characters
+ * (SPACE).
+ */
+static
+STRPTR skipnonspaces( STRPTR buffer)
+{
+	for (;; buffer++)
+	{
+		if (buffer[0] == '\0' || buffer[0] == ' ')
+		{
+			return( buffer );
+		}
+	}
+}
+
 
