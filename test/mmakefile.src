@@ -79,7 +79,8 @@ FILES := \
     truecolorpens \
     windecor \
     consolemodes \
-    examine
+    examine \
+    rwverify
 
 EXEDIR := $(AROS_TESTS)
 
