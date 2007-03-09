@@ -49,8 +49,8 @@ struct reqdims
 
 /**********************************************************************************************/
 
-static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,STRPTR labeltext,struct IntuitionBase *IntuitionBase);
-static STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args,struct IntuitionBase *IntuitionBase);
+static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,STRPTR labeltext, APTR args, struct IntuitionBase *IntuitionBase);
+static STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args, APTR *nextargptr, struct IntuitionBase *IntuitionBase);
 static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
                                        struct Screen *scr,
                                        STRPTR formattedtext,
@@ -132,7 +132,8 @@ AROS_LH4(struct Window *, BuildEasyRequestArgs,
     STRPTR                  	*gadgetlabels;
     struct                  	 reqdims dims;
     struct IntRequestUserData	*requserdata;
-
+    APTR    	    	    	 nextarg;
+    
     DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: window 0x%lx easystruct 0x%lx IDCMPFlags 0x%lx args 0x%lx\n",
                                    (ULONG) RefWindow,
                                    (ULONG) easyStruct,
@@ -168,16 +169,19 @@ AROS_LH4(struct Window *, BuildEasyRequestArgs,
     }
 
     /* create everything */
-    gadgetlabels = buildeasyreq_makelabels(&dims,
-                                           easyStruct->es_GadgetFormat,
-                                           IntuitionBase);
-    if (gadgetlabels)
+    formattedtext = buildeasyreq_formattext(easyStruct->es_TextFormat,
+                                            Args,
+					    &nextarg,
+                                            IntuitionBase);
+    if (formattedtext)
     {
-        formattedtext = buildeasyreq_formattext(easyStruct->es_TextFormat,
-                                                Args,
-                                                IntuitionBase);
-        if (formattedtext)
-        {
+	gadgetlabels = buildeasyreq_makelabels(&dims,
+                                               easyStruct->es_GadgetFormat,
+					       nextarg,
+                                               IntuitionBase);
+
+    	if(gadgetlabels)
+	{
             if (buildeasyreq_calculatedims(&dims, scr,
                                            formattedtext, gadgetlabels, IntuitionBase))
             {
@@ -236,12 +240,14 @@ AROS_LH4(struct Window *, BuildEasyRequestArgs,
                 } /* if (gadgets) */
 		
             } /* if (if (buildeasyreq_calculatedims... */
-            FreeVec(formattedtext);
+
+            intrequest_freelabels(gadgetlabels, IntuitionBase);
 	    
-        } /* if (formattedtext) */
-        intrequest_freelabels(gadgetlabels, IntuitionBase);
+        } /* if (gadgetlabels) */
+
+        FreeVec(formattedtext);
 	
-    } /* if (gadgetlabels) */
+    } /* if (formattedtext) */
     
     if (lockedscr) UnlockPubScreen(NULL, lockedscr);
 
@@ -342,57 +348,6 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 
 /**********************************************************************************************/
 
-/* create an array of gadgetlabels */
-static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
-                                       STRPTR labeltext,
-                                       struct IntuitionBase *IntuitionBase)
-{
-    STRPTR  *gadgetlabels;
-    STRPTR   label;
-    int      currentgadget;
-    int      len;
-
-    /* make room for pointer-array */
-    dims->gadgets = charsinstring(labeltext, '|') + 1;
-    
-    gadgetlabels = AllocVec((dims->gadgets + 1) * sizeof(STRPTR), MEMF_ANY);
-    if (!gadgetlabels)
-        return NULL;
-	
-    gadgetlabels[dims->gadgets] = NULL;
-
-    /* copy label-string */
-    len = strlen(labeltext) + 1;
-    
-    label = AllocVec(len, MEMF_ANY);
-    if (!label)
-    {
-        FreeVec(gadgetlabels);
-        return NULL;
-    }
-    
-    CopyMem(labeltext, label, len);
-
-    /* set up the pointers and insert null-bytes */
-    for (currentgadget = 0; currentgadget < dims->gadgets; currentgadget++)
-    {
-        gadgetlabels[currentgadget] = label;
-	
-        if (currentgadget != (dims->gadgets - 1))
-        {
-            while (label[0] != '|')
-                label++;
-		
-            label[0] = '\0';
-            label++;
-        }
-    }
-
-    return gadgetlabels;
-}
-
-/**********************************************************************************************/
-
 AROS_UFH2 (void, EasyReqPutChar,
            AROS_UFHA(UBYTE, chr, D0),
            AROS_UFHA(UBYTE **,buffer,A3)
@@ -422,11 +377,66 @@ AROS_UFH2 (void, EasyReqCountChar,
     AROS_USERFUNC_EXIT
 }
 
+/* create an array of gadgetlabels */
+static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
+                                       STRPTR labeltext,
+				       APTR args,
+                                       struct IntuitionBase *IntuitionBase)
+{
+    STRPTR  *gadgetlabels;
+    STRPTR   label, lab;
+    int      currentgadget;
+    ULONG    len = 0;
+
+
+    /* make room for pointer-array */
+    dims->gadgets = charsinstring(labeltext, '|') + 1;
+    
+    gadgetlabels = AllocVec((dims->gadgets + 1) * sizeof(STRPTR), MEMF_ANY);
+    if (!gadgetlabels)
+        return NULL;
+	
+    gadgetlabels[dims->gadgets] = NULL;
+
+    /* copy label-string */
+    RawDoFmt(labeltext, args, (VOID_FUNC)AROS_ASMSYMNAME(EasyReqCountChar), &len);
+    
+    label = AllocVec(len + 1, MEMF_ANY);
+    if (!label)
+    {
+        FreeVec(gadgetlabels);
+        return NULL;
+    }
+    
+    lab = label;
+    RawDoFmt(labeltext, args, (VOID_FUNC)AROS_ASMSYMNAME(EasyReqPutChar), &lab);
+
+    /* set up the pointers and insert null-bytes */
+    for (currentgadget = 0; currentgadget < dims->gadgets; currentgadget++)
+    {
+        gadgetlabels[currentgadget] = label;
+	
+        if (currentgadget != (dims->gadgets - 1))
+        {
+            while (label[0] != '|')
+                label++;
+		
+            label[0] = '\0';
+            label++;
+        }
+    }
+
+    return gadgetlabels;
+}
+
+/**********************************************************************************************/
+
 /**********************************************************************************************/
 
 /* format the supplied text string by using the supplied args */
 static STRPTR buildeasyreq_formattext(STRPTR textformat,
                                       APTR args,
+				      APTR *nextargptr,
                                       struct IntuitionBase *IntuitionBase)
 {
 #if 1
@@ -440,8 +450,8 @@ static STRPTR buildeasyreq_formattext(STRPTR textformat,
     if (!buffer) return NULL;
 
     buf = buffer;
-    RawDoFmt(textformat, args, (VOID_FUNC)AROS_ASMSYMNAME(EasyReqPutChar), &buf);
-
+    *nextargptr = RawDoFmt(textformat, args, (VOID_FUNC)AROS_ASMSYMNAME(EasyReqPutChar), &buf);
+    
     return buffer;
 
 #else
