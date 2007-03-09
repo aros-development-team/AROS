@@ -70,7 +70,7 @@ struct MUI_ApplicationData
     STRPTR                  app_Version_Date;
     STRPTR                  app_Version_Extra;
     ULONG           	    app_SleepCount;
-    ULONG	    	    app_TimerOutstanding;
+    ULONG	    	     app_TimerOutstanding;
     ULONG           	    app_MenuAction; /* Remember last action */
     BOOL            	    app_ForceQuit;
     BOOL            	    app_Iconified;
@@ -82,6 +82,7 @@ struct MUI_ApplicationData
     ULONG searchwinid;
     LONG winposused;       //dont add other vars before windowpos all is save together
     struct windowpos        winpos[MAXWINS];
+    struct MsgPort          *app_RexxPort;
 
 };
 
@@ -131,7 +132,7 @@ MUIA_Application_SingleTask [I..]         done
 MUIA_Application_Sleep [.S.]              todo
 MUIA_Application_Title [I.G]              done
 MUIA_Application_UseCommodities [I..]     done
-MUIA_Application_UseRexx [I..]            needs Arexx
+MUIA_Application_UseRexx [I..]            done ? needs Arexx 
 MUIA_Application_Version [I.G]            done
 MUIA_Application_Window [I..]             done
 MUIA_Application_WindowList [..G]         done
@@ -279,7 +280,7 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
 {
     struct MUI_ApplicationData *data;
     struct TagItem        *tags,*tag;
-    BOOL   bad_childs = FALSE;
+    BOOL   bad_childs = FALSE , needrexx = TRUE;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj)
@@ -487,6 +488,9 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
 			++list;
 		    }
 		}
+                break;
+	    case MUIA_Application_UseRexx:
+                needrexx = tag->ti_Data ? TRUE : FALSE;   
 	}
     }
 
@@ -583,7 +587,18 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
 	    }
 	}
     }
-
+    if (needrexx)
+    {
+        data->app_RexxPort = CreateMsgPort();
+        if (data->app_RexxPort)
+        {
+        data->app_RexxPort->mp_Node.ln_Name = strdup(data->app_Base);
+        char *i;
+        for (i = data->app_RexxPort->mp_Node.ln_Name; *i != '\0'; i++) {
+        *i = toupper(*i);
+        }
+        AddPort(data->app_RexxPort);
+    }     
     if (data->app_Menustrip) DoMethod(data->app_Menustrip, MUIM_ConnectParent, (IPTR)obj);
 
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -702,6 +717,11 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_TimerPort)
 	DeleteMsgPort(data->app_TimerPort);
 
+    if (data->app_RexxPort){
+        RemPort(data->app_RexxPort);
+        FreeVec(data->app_RexxPort->mp_Node.ln_Name);
+        DeleteMsgPort(data->app_RexxPort);
+        }
     if (data->app_GlobalInfo.mgi_Configdata)
         MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
 
