@@ -277,7 +277,7 @@ AROS_UFH3
             else
             {
                 /* open drawer in same window */
-                set(obj, MUIA_IconWindow_Drawer, buf);
+                set(obj, MUIA_IconWindow_Drawer, (IPTR) buf);
             }
 
         } 
@@ -1207,7 +1207,10 @@ void icon_delete(void)
     
     // Only update list if anything happened to the icons!
     if ( updatedIcons > 0 )
+    {
+        DoMethod(window, MUIM_IconWindow_UnselectAll);
         DoMethod ( iconList, MUIM_IconList_Update );
+    }
 }
 
 void wanderer_guisettings(void)
