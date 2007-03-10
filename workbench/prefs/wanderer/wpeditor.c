@@ -445,16 +445,16 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
             set(data->wped_cm_ToolbarEnabled, MUIA_Selected, TRUE);
             DoMethod ( data->wped_toolbarGroup, MUIM_Group_InitChange );
             DoMethod ( data->wped_toolbarGroup, MUIM_Group_ExitChange );
-        }
-                /* check if toolbar set */
-
-        if (wpd.wpd_DoubleBuffered == FALSE)
+        }        
+        
+        /* check if toolbar set */
+        if (wpd.wpd_DoubleBuffered)
         {
-            set(data->wped_cm_doublebuffered, MUIA_Selected, FALSE);
+            set(data->wped_cm_doublebuffered, MUIA_Selected, TRUE);
         }
         else
         {
-            set(data->wped_cm_doublebuffered, MUIA_Selected, TRUE);
+            set(data->wped_cm_doublebuffered, MUIA_Selected, FALSE);
         }
 
         /* Icon listmode */
@@ -525,8 +525,8 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
                 
                 /* save doublebuffered state*/
                 get(data->wped_cm_doublebuffered, MUIA_Selected, &wpd.wpd_DoubleBuffered);
+                
                 /* save toolbar state*/
-
                 get(data->wped_cm_ToolbarEnabled, MUIA_Selected, &wpd.wpd_ToolbarEnabled);
                 
                 /* save navigation bahaviour */
