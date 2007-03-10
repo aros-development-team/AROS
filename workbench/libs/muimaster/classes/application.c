@@ -11,8 +11,10 @@
 #include <dos/dostags.h>
 #include <dos/datetime.h>
 #include <utility/date.h>
-#include <stdio.h>
+
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <clib/alib_protos.h>
 #include <libraries/commodities.h>
@@ -726,7 +728,7 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_RexxPort)
     {
         RemPort(data->app_RexxPort);
-        FreeVec(data->app_RexxPort->mp_Node.ln_Name);
+        free(data->app_RexxPort->mp_Node.ln_Name);
         DeleteMsgPort(data->app_RexxPort);
     }
 
