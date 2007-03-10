@@ -589,6 +589,7 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
 	    }
 	}
     }
+
     if (needrexx)
     {
         data->app_RexxPort = CreateMsgPort();
@@ -600,9 +601,10 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
             {
                 *i = toupper(*i);
             }
+            AddPort(data->app_RexxPort);
         }
-        AddPort(data->app_RexxPort);
     }
+
     if (data->app_Menustrip) DoMethod(data->app_Menustrip, MUIM_ConnectParent, (IPTR)obj);
 
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
