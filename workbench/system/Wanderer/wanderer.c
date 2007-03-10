@@ -1187,24 +1187,22 @@ void icon_delete(void)
     ULONG updatedIcons = 0;
     
     /* Process all selected entries */
-    do
-    {   
-        if ((int)entry != MUIV_IconList_NextSelected_End) 
-        {
-
-            if (CreateCopyDisplay(ACTION_DELETE, &dobjects))
-            {
+    if (CreateCopyDisplay(ACTION_DELETE, &dobjects))
+    {
+        do
+        {   
+            if ((int)entry != MUIV_IconList_NextSelected_End) 
+            {  
                 /* copy via filesystems.c */
                 D(bug("[WANDERER] Delete \"%s\"\n", entry->filename);)
                 CopyContent( NULL, entry->filename, NULL, TRUE, ACTION_DELETE, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
-                DisposeCopyDisplay(&dobjects);
                 updatedIcons++;
             }
-        }
-        DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
-    } 
-    while ( (int)entry != MUIV_IconList_NextSelected_End );
-    
+            DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
+        } 
+        while ( (int)entry != MUIV_IconList_NextSelected_End );
+        DisposeCopyDisplay(&dobjects);
+    }
     // Only update list if anything happened to the icons!
     if ( updatedIcons > 0 )
     {
@@ -1887,10 +1885,16 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     if (window != NULL)
     {
         /* Get the drawer path back so we can use it also outside this function */
-        STRPTR drw;
+        STRPTR drw = NULL;
+        BOOL freeDrwStr = FALSE;
         
         if (!isWorkbenchWindow) drw = (STRPTR) XGET(window, MUIA_IconWindow_Drawer);
-        else                    drw = "RAM:";
+        else
+        {
+            drw = AllocVec ( 5, MEMF_CLEAR );
+            sprintf ( drw, "RAM:" );
+            freeDrwStr = TRUE;
+        }
         
         DoMethod
         (
@@ -1912,6 +1916,9 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         
         /* And now open it */
         DoMethod(window, MUIM_IconWindow_Open);
+        
+        /* Clean up ram string */
+        if ( freeDrwStr && drw ) FreeVec ( drw );
     }
     
     return window;
