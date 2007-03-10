@@ -87,7 +87,7 @@ int main(int argc, char **argv)
     if (argc == 0)
     {
 	/* TODO: start from workbench */
-	FPuts(out, "RX started from workbenc not implemented\n");
+	FPuts(out, "RX started from workbench not implemented\n");
 	cleanup();
 	return RC_ERROR;
     }
@@ -124,7 +124,11 @@ int main(int argc, char **argv)
 	else if (*s == '\'')
 	{
 	    s++;
-	    while((s[length] != '\'') && (s[length] != '\0')) length++;
+	    while((s[length] != '\'')
+                  && (s[length] != '\0')
+                  && (s[length] != '\n')
+            )
+                length++;
 	    
 	    msg->rm_Args[0] = (IPTR)CreateArgstring(s, length);
 	    /* It is a literal command with 1 argument */
@@ -132,6 +136,9 @@ int main(int argc, char **argv)
 	}
 	else
 	{
+            if (s[strlen(s)-1] == '\n')
+                s[strlen(s)-1] = '\0';
+            
             msg->rm_Args[0] = (IPTR)CreateArgstring(s, strlen(s));
 	    msg->rm_Action |= 1;
 	}
