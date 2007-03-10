@@ -100,13 +100,24 @@ ULONG do_render_func(struct RastPort *rp
     
     if (NULL == L)
     {
+    	struct Rectangle torender = *rr;
+	
         /* No layer, probably a screen, but may be a user inited bitmap */
 	OOP_Object *bm_obj;
+
+	have_rp_cliprectangle = GetRPClipRectangleForBitMap(rp, bm, &rp_clip_rectangle, GfxBase);
+    	if (have_rp_cliprectangle && !(_AndRectRect(rr, &rp_clip_rectangle, &torender)))
+	{
+	    return 0;
+	}
 	
 	bm_obj = OBTAIN_HIDD_BM(bm);
 	if (NULL == bm_obj)
 	    return 0;
 	    
+	srcx += (torender.MinX - rr->MinX);
+	srcy += (torender.MinY - rr->MinY);
+	
 	if (get_special_info)
 	{
 	    RSI(funcdata)->curbm    = rp->BitMap;
@@ -118,8 +129,8 @@ ULONG do_render_func(struct RastPort *rp
 	pixwritten = render_func(funcdata
 		, srcx, srcy
 		, bm_obj, gc
-		, rr->MinX, rr->MinY
-		, rr->MaxX, rr->MaxY
+		, torender.MinX, torender.MinY
+		, torender.MaxX, torender.MaxY
 		, GfxBase
 	);
 
