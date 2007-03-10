@@ -12,6 +12,7 @@
 #include <dos/datetime.h>
 #include <utility/date.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include <clib/alib_protos.h>
 #include <libraries/commodities.h>
@@ -489,8 +490,9 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
 		    }
 		}
                 break;
-	    case MUIA_Application_UseRexx:
-                needrexx = tag->ti_Data ? TRUE : FALSE;   
+            case MUIA_Application_UseRexx:
+                needrexx = tag->ti_Data ? TRUE : FALSE;
+                break;
 	}
     }
 
@@ -592,13 +594,15 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
         data->app_RexxPort = CreateMsgPort();
         if (data->app_RexxPort)
         {
-        data->app_RexxPort->mp_Node.ln_Name = strdup(data->app_Base);
-        char *i;
-        for (i = data->app_RexxPort->mp_Node.ln_Name; *i != '\0'; i++) {
-        *i = toupper(*i);
+            data->app_RexxPort->mp_Node.ln_Name = strdup(data->app_Base);
+            char *i;
+            for (i = data->app_RexxPort->mp_Node.ln_Name; *i != '\0'; i++)
+            {
+                *i = toupper(*i);
+            }
         }
         AddPort(data->app_RexxPort);
-    }     
+    }
     if (data->app_Menustrip) DoMethod(data->app_Menustrip, MUIM_ConnectParent, (IPTR)obj);
 
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -717,21 +721,23 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_TimerPort)
 	DeleteMsgPort(data->app_TimerPort);
 
-    if (data->app_RexxPort){
+    if (data->app_RexxPort)
+    {
         RemPort(data->app_RexxPort);
         FreeVec(data->app_RexxPort->mp_Node.ln_Name);
         DeleteMsgPort(data->app_RexxPort);
-        }
+    }
+
     if (data->app_GlobalInfo.mgi_Configdata)
         MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
 
     if (data->app_GlobalInfo.mgi_WindowsPort)
     	DeleteMsgPort(data->app_GlobalInfo.mgi_WindowsPort);
-	FreeVec(data->app_Base);
-
+    
+    FreeVec(data->app_Base);
 
     /* free returnid stuff */
-    
+
     while ((rid = (struct RIDNode *)RemHead((struct List *)&data->app_ReturnIDQueue)))
     {
 	DeleteRIDNode(data, rid);
@@ -761,16 +767,18 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
 	{
 
 	    case    MUIA_Application_SearchWinId:
-		data->searchwinid=tag->ti_Data;
+		data->searchwinid = tag->ti_Data;
 		break;
+            
 	    case    MUIA_Application_CopyWinPosToApp:
-		addr=tag->ti_Data;
-		CopyMem(tag->ti_Data,&data->winposused,*(addr));
+                addr = (IPTR *) tag->ti_Data;
+		CopyMem((CONST_APTR) tag->ti_Data, &data->winposused, *(addr));
 		break;
+            
 	    case    MUIA_Application_SetWinPos:
 		{
-		    struct windowpos  *winp;
-		    winp = tag->ti_Data;
+		    struct windowpos *winp;
+		    winp = (struct windowpos *) tag->ti_Data;
 		    //kprintf("SetWinPos %d %d %d %d %d\n",winp->id,winp->x1,winp->y1,winp->w1,winp->h1);
 		    int i;
 		    for (i = 0 ; i < MAXWINS -1 ; i++)
@@ -798,7 +806,6 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
 		    }
 		}
 		break;
-
 
 	    case    MUIA_Application_Configdata:
 		DoMethod(obj, MUIM_Application_PushMethod, (IPTR)obj, 2,
@@ -893,7 +900,7 @@ static IPTR Application__OM_GET(struct IClass *cl, Object *obj, struct opGet *ms
     switch(msg->opg_AttrID)
     {
 	case   MUIA_Application_GetWinPosAddr:
-	    STORE=&data->winposused;       
+	    STORE = (IPTR) &data->winposused;
 	    return TRUE;
 
 	case  MUIA_Application_GetWinPosSize:
@@ -913,9 +920,9 @@ static IPTR Application__OM_GET(struct IClass *cl, Object *obj, struct opGet *ms
 		STORE=0;
 		return TRUE;
 	    }
+
 	case   MUIA_Application_GetWinPos:
 	    {
-		struct windowpos  *winp;
 		int i;
 		if (data->searchwinid)
 		{
@@ -925,7 +932,7 @@ static IPTR Application__OM_GET(struct IClass *cl, Object *obj, struct opGet *ms
 			{
 			    if (data->searchwinid == data->winpos[i].id)
 			    {
-				STORE=&data->winpos[i].id;
+				STORE = (IPTR) &data->winpos[i].id;
 				return 1;
 			    }
 			}
@@ -1530,7 +1537,7 @@ static IPTR Application__MUIM_OpenConfigWindow(struct IClass *cl, Object *obj,
     };
     char cmd[255];
 
-    snprintf(cmd, 255, "sys:prefs/Zune %s %d", data->app_Base ? data->app_Base : (STRPTR)"",obj);
+    snprintf(cmd, 255, "sys:prefs/Zune %s %d", data->app_Base ? data->app_Base : (STRPTR) "", (int) obj);
     
 	if (SystemTagList(cmd, tags) == -1)
     {
