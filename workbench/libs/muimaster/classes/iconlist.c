@@ -16,6 +16,7 @@ $Id$
 #include <exec/memory.h>
 #include <graphics/gfx.h>
 #include <graphics/view.h>
+#include <graphics/rpattr.h>
 #include <workbench/icon.h>
 #include <workbench/workbench.h>
 #include <devices/rawkeycodes.h>
@@ -209,13 +210,34 @@ static void GetAbsoluteLassoRect(struct MUI_IconData *data, struct Rectangle *la
     lasso_rect->MaxY = data->view_rect.MinY - data->view_y + maxy;
 }
 
+static void InvertPixelRect(struct RastPort *rp, WORD minx, WORD miny, WORD maxx, WORD maxy)
+{
+    if (maxx < minx)
+    {
+    	/* Swap minx, maxx */
+    	minx ^= maxx;
+	maxx ^= minx;
+	minx ^= maxx;
+    }
+    
+    if (maxy < miny)
+    {
+    	/* Swap miny, maxy */
+    	miny ^= maxy;
+	maxy ^= miny;
+	miny ^= maxy;
+    }
+    
+    InvertPixelArray(rp, minx, miny, maxx - minx + 1, maxy - miny + 1);
+}
+
 /**************************************************************************
  Simple lasso drawing by inverting area outlines
 **************************************************************************/
 void InvertLassoOutlines(Object *obj, struct Rectangle *rect)
 {
     struct Rectangle lasso;
-
+    
     /* get abolute iconlist coords */
     lasso.MinX = rect->MinX + _mleft(obj);
     lasso.MaxX = rect->MaxX + _mleft(obj);
@@ -227,14 +249,14 @@ void InvertLassoOutlines(Object *obj, struct Rectangle *rect)
     if ( lasso.MaxX > _mright(obj) ) lasso.MaxX -= lasso.MaxX - _mright(obj) - 2;
 
     /* horizontal lasso lines */
-    if ( lasso.MinY > _mtop(obj) )    InvertPixelArray( _rp(obj), lasso.MinX, lasso.MinY, lasso.MaxX-lasso.MinX, 2);
+    if ( lasso.MinY > _mtop(obj) )    InvertPixelRect( _rp(obj), lasso.MinX, lasso.MinY, lasso.MaxX-1, lasso.MinY + 1);
        else lasso.MinY += _mtop(obj) - lasso.MinY;
-    if ( lasso.MaxY < _mbottom(obj) ) InvertPixelArray( _rp(obj), lasso.MinX, lasso.MaxY, lasso.MaxX-lasso.MinX, 2);
+    if ( lasso.MaxY < _mbottom(obj) ) InvertPixelRect( _rp(obj), lasso.MinX, lasso.MaxY, lasso.MaxX-1, lasso.MaxY + 1);
        else lasso.MaxY -= lasso.MaxY - _mbottom(obj) - 2;
 
     /* vertical lasso lines */
-    if ( lasso.MinX > _mleft(obj) )   InvertPixelArray( _rp(obj), lasso.MinX, lasso.MinY, 2, lasso.MaxY-lasso.MinY );
-    if ( lasso.MaxX < _mright(obj) )  InvertPixelArray( _rp(obj), lasso.MaxX, lasso.MinY, 2, lasso.MaxY-lasso.MinY );
+    if ( lasso.MinX > _mleft(obj) )   InvertPixelRect( _rp(obj), lasso.MinX, lasso.MinY, lasso.MinX + 1, lasso.MaxY-1 );
+    if ( lasso.MaxX < _mright(obj) )  InvertPixelRect( _rp(obj), lasso.MaxX, lasso.MinY, lasso.MaxX + 1, lasso.MaxY-1 );
 
 } 
 
@@ -263,7 +285,7 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
         if ( textlength > data->wpd_IconTextMaxLen ) textlength = data->wpd_IconTextMaxLen;
         
         LONG txwidth = TextLength(_rp(obj), icon->entry.label, textlength) + 3;
-        
+	
         if ( txwidth > icon->realWidth ) icon->realWidth = txwidth;
         
         icon->realHeight += data->IconFont->tf_YSize + ICONLIST_TEXTMARGIN;
@@ -293,28 +315,32 @@ static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, st
 /**************************************************************************
 Draw the icon at its position
 **************************************************************************/
-static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct RastPort *rp)
+
+#define DRAWICON_TESTDRAW TRUE
+#define DRAWICON_DODRAW   FALSE
+
+static BOOL IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon,
+    	    	    	      struct RastPort *rp, BOOL onlytest)
 {   
     struct Rectangle iconrect;
     struct Rectangle objrect;
 
-    LONG tx,ty;
+    LONG tx,ty,offsetx,offsety;
     LONG txwidth; // txheight;
 
-    STRPTR buf = AllocVec ( 255, MEMF_CLEAR );
-
+    STRPTR buf = NULL;
+    
     /* Get the dimensions and affected area of icon */
     IconList_GetIconRectangle(obj, data, icon, &iconrect);
 
     /* Add the relative position offset of the icon */
-    if (rp == NULL)
-    {
-        iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
-        iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
-        iconrect.MinY += _mtop(obj) - data->view_y + icon->y;
-        iconrect.MaxY += _mtop(obj) - data->view_y + icon->y;
-        rp = _rp(obj);
-    }
+    offsetx = _mleft(obj) - data->view_x + icon->x;
+    offsety = _mtop(obj) - data->view_y + icon->y;
+
+    iconrect.MinX += offsetx;
+    iconrect.MinY += offsety;
+    iconrect.MaxX += offsetx;
+    iconrect.MaxY += offsety;
 
     /* Add the relative position of the window */
     objrect.MinX = _mleft(obj);
@@ -322,7 +348,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     objrect.MaxX = _mright(obj);
     objrect.MaxY = _mbottom(obj);
 
-    if (!RectAndRect(&iconrect, &objrect)) goto endDraw;
+    if (!RectAndRect(&iconrect, &objrect)) return FALSE;
 
     /* data->update_rect1 and data->update_rect2 may
     point to rectangles to indicate that only icons
@@ -331,17 +357,31 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     if (data->update_rect1 && data->update_rect2)
     {
         if (!RectAndRect(&iconrect, data->update_rect1) &&
-        !RectAndRect(&iconrect, data->update_rect2)) goto endDraw;
+        !RectAndRect(&iconrect, data->update_rect2)) return FALSE;
     }
     else if (data->update_rect1)
     {
-        if (!RectAndRect(&iconrect, data->update_rect1)) goto endDraw;
+        if (!RectAndRect(&iconrect, data->update_rect1)) return FALSE;
     }
     else if (data->update_rect2)
     {
-        if (!RectAndRect(&iconrect, data->update_rect2)) goto endDraw;
+        if (!RectAndRect(&iconrect, data->update_rect2)) return FALSE;
     }
-
+   
+    if (onlytest) return TRUE;
+    
+    if (rp == NULL)
+    {
+    	rp = _rp(obj);
+    }
+    else
+    {
+	iconrect.MinX -= offsetx;
+	iconrect.MinY -= offsety;
+    	iconrect.MaxX -= offsetx;
+	iconrect.MaxY -= offsety;
+    }
+    
     SetABPenDrMd(rp,_pens(obj)[MPEN_TEXT],0,JAM1);
 
     // Center icon
@@ -368,7 +408,9 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     );
 #endif
 
-    if (icon->entry.label)
+    if (icon->entry.label) buf = AllocVec ( 255, MEMF_CLEAR );
+
+    if (icon->entry.label && buf)
     {
         ULONG nameLength = strlen(icon->entry.label);
 
@@ -487,8 +529,10 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
         }
     }
     // Free up icontext memory
-    endDraw:
+
     FreeVec ( buf );
+    
+    return TRUE;
 }
 
 /**************************************************************************
@@ -1114,13 +1158,13 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                     if (RectAndRect(&rect,&rect2))
                     {  
                         // Update icon here
-                        IconList_DrawIcon(obj, data, icon, NULL);
+                        IconList_DrawIcon(obj, data, icon, NULL, DRAWICON_DODRAW);
                     }
                 }
                 icon = Node_Next(icon);
             }
 
-            IconList_DrawIcon(obj, data, data->update_icon, NULL);
+            IconList_DrawIcon(obj, data, data->update_icon, NULL, DRAWICON_DODRAW);
             data->update = 0;
             MUI_RemoveClipping(muiRenderInfo(obj),clip);
             return 0;
@@ -1131,8 +1175,8 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             struct Rectangle 	 xrect, yrect;
             BOOL    	    	 scroll_caused_damage;
             
-            if (data->buffered)
-                updateall = TRUE;
+            //if (data->buffered)
+            //    updateall = TRUE;
 
             scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
     
@@ -1371,7 +1415,7 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     {
         if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
         {
-            if (buffereddraw)
+            if (buffereddraw && IconList_DrawIcon(obj, data, icon, NULL, DRAWICON_TESTDRAW))
             {
                 struct Rectangle ir;
 
@@ -1407,7 +1451,16 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                 }
                 if (mrp)
                 {
-                    IconList_DrawIcon(obj, data, icon, mrp);
+		    struct Rectangle clip;
+		    
+		    clip.MinX = 0;
+		    clip.MinY = 0;
+		    clip.MaxX = ir.MaxX-ir.MinX;
+		    clip.MaxY = ir.MaxY-ir.MinY;
+		    
+    	    	    SetRPAttrs(mrp, RPTAG_ClipRectangle, (IPTR)&clip, RPTAG_ClipRectangleFlags, 0, TAG_DONE);		    
+
+                    IconList_DrawIcon(obj, data, icon, mrp, DRAWICON_DODRAW);
                     BltBitMapRastPort(mrp->BitMap, 0, 0, _rp(obj), ir.MinX, ir.MinY, ir.MaxX-ir.MinX+1, ir.MaxY-ir.MinY+1, 0xc0);
                     FreeBitMap(mrp->BitMap);
                     FreeRastPort(mrp);
@@ -1422,9 +1475,9 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                         data->view_x + (ir.MinX - _mleft(obj)), data->view_y + (ir.MinY - _mtop(obj)), 
                         0
                     );
-                    IconList_DrawIcon(obj, data, icon, NULL);
+                    IconList_DrawIcon(obj, data, icon, NULL, DRAWICON_DODRAW);
                 }
-            } else IconList_DrawIcon(obj, data, icon, NULL);
+            } else IconList_DrawIcon(obj, data, icon, NULL, DRAWICON_DODRAW);
 
         }
         icon = Node_Next(icon);
