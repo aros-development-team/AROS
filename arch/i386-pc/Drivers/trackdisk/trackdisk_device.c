@@ -206,7 +206,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
     outb(0,FDC_DOR);
     outb(DORF_RESET,FDC_DOR);
 
-    /* New lets send a version command to it */
+    /* Now let's send a version command to it */
     if (td_sendbyte(0x10,(struct TrackDiskBase *)NULL) == TDERR_DriveInUse)
     {
 	/* No controller here */

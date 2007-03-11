@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 19163 2003-08-09 20:12:29Z verhaegs $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.. -I$(TOP)/rom/timer

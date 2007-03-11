@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src 23870 2005-12-23 13:57:24Z verhaegs $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.

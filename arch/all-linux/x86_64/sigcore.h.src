@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: sigcore.h.src,v 1.0 2004/03/04 02:06:58 apolkosnik Exp $
+    $Id$
 
     Desc: Macros to handle unix signals
     Lang: english
