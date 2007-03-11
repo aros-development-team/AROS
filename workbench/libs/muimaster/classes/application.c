@@ -727,6 +727,11 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->app_RexxPort)
     {
+		struct Message *msg;                     
+        while((msg = GetMsg(data->app_RexxPort)))
+	    {
+	    ReplyMsg(msg);
+	    }     
         RemPort(data->app_RexxPort);
         free(data->app_RexxPort->mp_Node.ln_Name);
         DeleteMsgPort(data->app_RexxPort);
