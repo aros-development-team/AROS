@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -165,7 +165,8 @@ struct PartitionHandle *CreateRootTable(CONST_STRPTR device, LONG unit)
     if ((root = OpenRootPartition(device, unit)) != NULL)
     {
         /* Destroy the existing partitiontable, if any exists */
-        DestroyPartitionTable(root);
+        if (OpenPartitionTable(root) == 0)
+            DestroyPartitionTable(root);
         
         /* Create a root MBR partition table */
         if (CreatePartitionTable(root, PHPTT_MBR) != 0)       
