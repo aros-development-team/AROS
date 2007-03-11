@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src 22082 2004-08-23 06:42:38Z NicJA $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 #MM- workbench-classes-zune : workbench-classes-zune-betterstring
