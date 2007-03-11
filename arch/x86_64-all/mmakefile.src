@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 22639 2005-01-01 17:05:35Z verhaegs $
+# $Id$
 include $(TOP)/config/make.cfg
 
 GENINC		:= $(TOOLDIR)/geninc-x86_64$(HOST_EXE_SUFFIX)

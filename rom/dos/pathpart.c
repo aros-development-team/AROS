@@ -59,7 +59,7 @@
 
     const char *ptr;
 
-    /* '/' at the begining of the string really is part of the path */
+    /* '/' at the beginning of the string really is part of the path */
     while (*path == '/')
     {
 	++path;

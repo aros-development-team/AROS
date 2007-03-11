@@ -1,4 +1,4 @@
-#$Id: mmakefile.src 20797 2004-02-05 00:00:47Z schulz $
+#$Id$
 include $(TOP)/config/make.cfg
 
 MODNAME	:=  i2c
