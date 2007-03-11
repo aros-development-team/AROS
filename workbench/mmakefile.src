@@ -1,4 +1,4 @@
-# $Id: mmakefile 19054 2003-08-03 13:21:05Z verhaegs $
+# $Id$
 
 include $(TOP)/config/make.cfg
 

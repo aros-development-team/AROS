@@ -41,11 +41,11 @@ extern void InitLocale(
 	This function will open for use a named locale. A locale is a
 	data structure that contains many different parameters that
 	an application needs in order to localise itself. Using this
-	information an application can dynamically adapt to the user's
+	information, an application can dynamically adapt to the user's
 	environment.
 
 	Locales are created using the Locale Preferences Editor. If
-	you pass a NULL instead of a name, then you will receive the
+	you pass NULL instead of a name, then you will receive the
 	current default Locale. This is the normal procedure.
 
     INPUTS

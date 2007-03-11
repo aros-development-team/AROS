@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src 21653 2004-05-22 10:47:19Z verhaegs $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS :=-D__UTILITY_STDLIBBASE__

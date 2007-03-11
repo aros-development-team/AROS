@@ -1,4 +1,4 @@
-#$Id: mmakefile.src 11526 2001-07-25 10:15:56Z iaint $
+#$Id$
 include $(TOP)/config/make.cfg
 
 MODNAME	:=  tap

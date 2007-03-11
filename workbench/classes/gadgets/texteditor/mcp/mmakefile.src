@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src,v 1.2 2004/08/23 06:42:07 NicJA Exp $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 #MM workbench-classes-zune-texteditor-mcp : includes \
