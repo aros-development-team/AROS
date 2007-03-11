@@ -22,7 +22,7 @@
 
     FUNCTION
 	BREAK sends one or more signals to a CLI process.
-	The argument |PROCESS| specifies the numeric ID of the CLI process that
+	The argument PROCESS specifies the numeric ID of the CLI process that
 	you wish to send the signal to. The STATUS command will list all currently
         running CLI processes along with ther ID.
 	You can also specify a public port name and send signal's to the

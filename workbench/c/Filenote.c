@@ -18,7 +18,7 @@
 
     LOCATION
 
-        Workbench:c
+        Workbench:C
 
     FUNCTION
 
@@ -33,8 +33,9 @@
         FILE    - Always has to be specified. Can be either a filename with
                   a full path or a file pattern that is to be matched.
 
-        COMMENT - The ASCII string that is to be added as a comment to the
-                  file(s)/dir(s) specified.
+        COMMENT - The string that is to be added as a comment to the
+                  file(s)/dir(s) specified. If no comment is specified, any
+                  existing comment is deleted.
 
                   To provide a comment that has embedded quotation marks,
                   precede each quote with an asterisk.
