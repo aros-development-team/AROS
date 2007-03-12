@@ -116,7 +116,9 @@
 #define ID_P2A0_DISK       (0x50324130L)
 #define ID_AFS0_DISK       (0x41465300L) /* AFS\0 */
 #define ID_muFS_DISK       (0x6d754653L) /* muFS - Mulituserfsys */
-#define ID_FAT_DISK        (0x46415400L) /* FAT12/16/32 */
+#define ID_FAT12_DISK      (0x46415400L) /* FAT12 */
+#define ID_FAT16_DISK      (0x46415401L) /* FAT16 */
+#define ID_FAT32_DISK      (0x46415402L) /* FAT32 */
 
 
 /* Prototypes */
@@ -197,7 +199,9 @@ struct DiskTypeList dtl[] =
     { ID_ZXS2_DISK,        "SamDos" },
     { ID_ZXS4_DISK,        "Opus" },
     { ID_P2A0_DISK,        "NETWORK" },
-    { ID_FAT_DISK,         "FAT" },
+    { ID_FAT12_DISK,       "FAT12" },
+    { ID_FAT16_DISK,       "FAT16" },
+    { ID_FAT32_DISK,       "FAT32" },
     { 0L, 0L }
 };
 

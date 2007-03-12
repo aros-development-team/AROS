@@ -38,10 +38,17 @@
 #define ID_SFS_DISK AROS_MAKE_ID('S','F','S',0)
 #endif
 
-static LONG dt[12]={ID_NO_DISK_PRESENT, ID_UNREADABLE_DISK,
+#ifndef ID_FAT12_DISK
+#define ID_FAT12_DISK      (0x46415400L)
+#define ID_FAT16_DISK      (0x46415401L)
+#define ID_FAT32_DISK      (0x46415402L)
+#endif
+
+static LONG dt[15]={ID_NO_DISK_PRESENT, ID_UNREADABLE_DISK,
     ID_DOS_DISK, ID_FFS_DISK, ID_INTER_DOS_DISK, ID_INTER_FFS_DISK,
     ID_FASTDIR_DOS_DISK, ID_FASTDIR_FFS_DISK, ID_NOT_REALLY_DOS,
-    ID_KICKSTART_DISK, ID_MSDOS_DISK, ID_SFS_DISK};
+    ID_KICKSTART_DISK, ID_MSDOS_DISK, ID_SFS_DISK,
+    ID_FAT12_DISK, ID_FAT16_DISK, ID_FAT32_DISK };
 
 /*** Instance data **********************************************************/
 struct DiskInfo_DATA
@@ -72,10 +79,11 @@ Object *DiskInfo__OM_NEW
                                 s1             = NULL,
                                 volname        = NULL;
 
-    static STRPTR disktypelist[12] = {"No Disk", "Unreadable",
+    static STRPTR disktypelist[15] = {"No Disk", "Unreadable",
     "OFS", "FFS", "OFS-Intl", "FFS-Intl",
     "OFS-DC", "FFS-DC", "Not DOS",
-    "KickStart", "MSDOS", "SFS"};
+    "KickStart", "MSDOS", "SFS",
+    "FAT12", "FAT16", "FAT32" };
 
     /* Parse initial taglist -----------------------------------------------*/
     D(bug("[DiskInfo] OM_NEW\n"));

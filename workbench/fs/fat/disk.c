@@ -50,7 +50,12 @@ void FillDiskInfo (struct InfoData *id)
 		id->id_NumBlocks = glob->sb->total_sectors;
 		id->id_NumBlocksUsed = glob->sb->total_sectors;
 		id->id_BytesPerBlock = glob->sb->sectorsize;
-		id->id_DiskType = ID_FAT_DISK;
+
+		id->id_DiskType = (glob->sb->type == 12) ? ID_FAT12_DISK :
+                                  (glob->sb->type == 16) ? ID_FAT16_DISK :
+                                  (glob->sb->type == 32) ? ID_FAT32_DISK :
+                                                           ID_FAT12_DISK;
+
 		id->id_VolumeNode = MKBADDR(glob->sb->doslist);
 		id->id_InUse = glob->sb->doslist->dol_misc.dol_volume.dol_LockList ? DOSTRUE : DOSFALSE;
 	}
@@ -144,7 +149,12 @@ void DoDiskInsert(void)
 
 					DateStamp(& newvol->dol_misc.dol_volume.dol_VolumeDate);
 					newvol->dol_misc.dol_volume.dol_LockList = NULL;
-					newvol->dol_misc.dol_volume.dol_DiskType = ID_FAT_DISK;
+
+					newvol->dol_misc.dol_volume.dol_DiskType =
+                                            (sb->type == 12) ? ID_FAT12_DISK :
+                                            (sb->type == 16) ? ID_FAT16_DISK :
+                                            (sb->type == 32) ? ID_FAT32_DISK :
+                                                               ID_FAT12_DISK;
 
 #ifdef AROS_FAST_BPTR
                                         /* ReadFATSuper() sets a null byte
