@@ -27,7 +27,7 @@
 static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n)
 {
 	ULONG offset = n + n/2;
-	UWORD val = LE16(*((UWORD*)(sb->fat + offset)));
+	UWORD val = AROS_LE2WORD(*((UWORD*)(sb->fat + offset)));
 
 	if (n & 1)
 		val >>= 4;
@@ -40,7 +40,7 @@ static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n)
 static ULONG GetFat16Entry(struct FSSuper *sb, ULONG n)
 {
 	ULONG offset = n << 1;
-	return LE16(*((UWORD*)(sb->fat + offset)));
+	return AROS_LE2WORD(*((UWORD*)(sb->fat + offset)));
 }
 
 static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n)
@@ -54,7 +54,7 @@ static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n)
 		sb->fat32_cache_block = entry_cache_block;
 		FS_GetBlocks(sb->first_fat_sector + (entry_cache_block << (sb->fat32_cachesize_bits - sb->sectorsize_bits)), sb->fat, sb->fat32_cachesize >> sb->sectorsize_bits);
 	}
-	return LE32(*((ULONG*)(sb->fat + entry_cache_offset)));
+	return AROS_LE2LONG(*((ULONG*)(sb->fat + entry_cache_offset)));
 }
  
 
@@ -81,7 +81,7 @@ LONG ReadFATSuper (struct FSSuper *sb )
 
 	kprintf("\tBoot sector:\n");
 
-	sb->sectorsize = LE16(boot->bpb_bytes_per_sect);
+	sb->sectorsize = AROS_LE2WORD(boot->bpb_bytes_per_sect);
 	sb->sectorsize_bits = log2(sb->sectorsize);
 	kprintf("\tSectorSize = %ld\n", sb->sectorsize);
 	kprintf("\tSectorSize Bits = %ld\n", sb->sectorsize_bits);
@@ -95,22 +95,22 @@ LONG ReadFATSuper (struct FSSuper *sb )
 	kprintf("\tClusterSize Bits = %ld\n", sb->clustersize_bits);
 	kprintf("\tCluster Sectors Bits = %ld\n", sb->cluster_sectors_bits);
 
-	sb->first_fat_sector = LE16(boot->bpb_rsvd_sect_count);
+	sb->first_fat_sector = AROS_LE2WORD(boot->bpb_rsvd_sect_count);
 	kprintf("\tFirst FAT Sector = %ld\n", sb->first_fat_sector);
 
 	if (boot->bpb_fat_size_16 != 0)
-		sb->fat_size = LE16(boot->bpb_fat_size_16);
+		sb->fat_size = AROS_LE2WORD(boot->bpb_fat_size_16);
 	else
-		sb->fat_size = LE32(boot->type.fat32.bpb_fat_size_32);
+		sb->fat_size = AROS_LE2LONG(boot->type.fat32.bpb_fat_size_32);
 	kprintf("\tFAT Size = %ld\n", sb->fat_size);
 
 	if (boot->bpb_total_sectors_16 != 0)
-		sb->total_sectors = LE16(boot->bpb_total_sectors_16);
+		sb->total_sectors = AROS_LE2WORD(boot->bpb_total_sectors_16);
 	else
-		sb->total_sectors = LE32(boot->bpb_total_sectors_32);
+		sb->total_sectors = AROS_LE2LONG(boot->bpb_total_sectors_32);
 	kprintf("\tTotal Sectors = %ld\n", sb->total_sectors);
 
-	sb->rootdir_sectors = ((LE16(boot->bpb_root_entries_count) * sizeof(struct DirEntry)) + (sb->sectorsize - 1)) >> sb->sectorsize_bits;
+	sb->rootdir_sectors = ((AROS_LE2WORD(boot->bpb_root_entries_count) * sizeof(struct DirEntry)) + (sb->sectorsize - 1)) >> sb->sectorsize_bits;
 	kprintf("\tRootDir Sectors = %ld\n", sb->rootdir_sectors);
 
 	sb->data_sectors = sb->total_sectors - (sb->first_fat_sector + (boot->bpb_num_fats * sb->fat_size) + sb->rootdir_sectors);
@@ -188,7 +188,7 @@ LONG ReadFATSuper (struct FSSuper *sb )
 	if (sb->type != 32) /* FAT 12/16 */
 	{
 		/* setup volume id */
-		sb->volume_id = LE32(boot->type.fat16.bs_volid);
+		sb->volume_id = AROS_LE2LONG(boot->type.fat16.bs_volid);
 
 		/* setup FAT */
 		sb->fat = FS_AllocMem(sb->fat_size * sb->sectorsize);
@@ -205,7 +205,7 @@ LONG ReadFATSuper (struct FSSuper *sb )
 	else
 	{
 		/* setup volume id */
-		sb->volume_id = LE32(boot->type.fat32.bs_volid);
+		sb->volume_id = AROS_LE2LONG(boot->type.fat32.bs_volid);
  
 		/* setup FAT */
 		sb->fat32_cachesize = 4096;
@@ -217,7 +217,7 @@ LONG ReadFATSuper (struct FSSuper *sb )
 		/* setup rootdir extent */
 		{
 			struct Extent *ext = sb->first_rootdir_extent;
-			ULONG block = LE32(boot->type.fat32.bpb_root_cluster);
+			ULONG block = AROS_LE2LONG(boot->type.fat32.bpb_root_cluster);
 			ULONG prev, count=0;
 
 			ext->start_cluster = block;

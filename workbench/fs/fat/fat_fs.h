@@ -10,36 +10,13 @@
  * $Id$
  */
 
-#ifndef __EXT2_HANDLER_H
-#define __EXT2_HANDLER_H
+#ifndef FAT_HANDLER_H
+#define FAT_HANDLER_H
 
 #define __DEBUG__ 1
 
-#define USE_INLINE_STDARG
-
-#ifdef API_LIBDEVIO
-#ifdef __MORPHOS__
-#include "include/deviceio.h"
-#include "include/deviceio_protos.h"
-#else
-#include "m68k/include/deviceio.h"
-#include "m68k/include/deviceio_protos.h"
-#endif
-#endif
-
-#ifdef API_FSDEV
-#include <proto/fsdevice.h>
-#endif
-
-#if !(defined(__MORPHOS__) || defined(__AROS__))
-#include <pools_protos.h>
-#define UQUAD unsigned long long
-#endif
-
-#ifdef __AROS__
 #include <aros/libcall.h>
 #include <devices/trackdisk.h>
-#endif
 
 #include "fat_struct.h"
 
@@ -176,11 +153,7 @@ struct Globals {
 	struct IOExtTD *diskioreq;
 	struct IOExtTD *diskchgreq;
 	struct MsgPort *diskport;
-#ifdef API_LIBDEVIO
-	struct DeviceIO *dio;
-#else
         LONG blocksize;
-#endif
 
 	/* volumes */
 	struct FSSuper *sb;    /* current sb */

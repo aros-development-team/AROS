@@ -73,26 +73,8 @@ void FillDiskInfo (struct InfoData *id)
 
 LONG InitDevice(struct FileSysStartupMsg *fssm, LONG blocksize)
 {
-#ifndef API_LIBDEVIO
     glob->blocksize = blocksize;
     return 0;
-#else
-	LONG err=0;
-	struct DosEnvec *de = BADDR(fssm->fssm_Environ);
-
-	glob->dio = InitDeviceIO(NULL, IDIO_FSSM, (LONG) fssm, IDIO_ForceBlockSize, blocksize, IDIO_IOC_Lines, de->de_NumBuffers, IDIO_IOC_ReadAheadSize, DEF_READ_AHEAD, IDIO_PoolSize, DEF_POOL_SIZE, IDIO_PoolTreshold, DEF_POOL_TRESHOLD, TAG_DONE);
-	if ((err = IoErr()) == 0)
-	{
-		kprintf("\tlibDeviceIO successully initialised.\n");
-	}
-	else
-	{
-		ErrorReq("Init DeviceIO failed for specified device!\nError code: %ld\n", &err);
-		kprintf("Device open failed!\n");
-		CleanupDeviceIO(glob->dio);
-	}
-	return err;
-#endif
 }
 
 void SendVolumePacket(struct DosList *vol, ULONG action)
@@ -183,13 +165,6 @@ void DoDiskInsert(void)
 			kprintf("\tDisk successfully initialised\n");
 			return;
 		}
-#ifdef API_LIBDEVIO
-		else if (glob->dio)
-		{
-			CleanupDeviceIO(glob->dio);
-			glob->dio = NULL;
-		}
-#endif
 		FS_FreeMem(sb);
 	}
 	SendEvent(IECLASS_DISKINSERTED);   	
@@ -198,15 +173,6 @@ void DoDiskInsert(void)
 
 void DoDiskRemove(void)
 {
-#ifdef API_LIBDEVIO
-	if (glob->dio)
-	{
-		CleanupDeviceIO(glob->dio);
-		kprintf("\tlibDeviceIO cleaned its resources.\n");
-		glob->dio = NULL;
-	}
-#endif
-
 	if (glob->sb)
 	{
 		struct FSSuper *sb = glob->sb;

@@ -85,14 +85,13 @@ static inline ULONG GetFatEntry(ULONG n)
 
 static inline ULONG GetFirstCluster(struct DirEntry *de)
 {
-	return LE16(de->first_cluster_lo) | (((ULONG)LE16(de->first_cluster_hi)) << 16);
+	return AROS_LE2WORD(de->first_cluster_lo) | (((ULONG)AROS_LE2WORD(de->first_cluster_hi)) << 16);
 }
 
 /* IO layer */
 
 static inline LONG FS_GetBlock (ULONG n, UBYTE *dst)
 {
-#ifndef API_LIBDEVIO
     glob->diskioreq->iotd_Req.io_Command = CMD_READ;
     glob->diskioreq->iotd_Req.io_Data = dst;
     glob->diskioreq->iotd_Req.io_Offset = n * glob->blocksize;
@@ -102,20 +101,10 @@ static inline LONG FS_GetBlock (ULONG n, UBYTE *dst)
     DoIO((struct IORequest *) glob->diskioreq);
 
     return glob->diskioreq->iotd_Req.io_Error;
-#else
-	LONG err = ReadBlocks(glob->dio, n, dst, 1);
-#ifdef __DEBUG_IO__
-	kprintf("\t\tReadBlock: %ld\n", n);
-	if (err)
-		kprintf("\tReadBlock failed: %ld err %ld\n", err, IoErr());
-#endif
-	return err;
-#endif
 }
 
 static inline LONG FS_GetBlocks (ULONG n, UBYTE *dst, ULONG count)
 {
-#ifndef API_LIBDEVIO
     glob->diskioreq->iotd_Req.io_Command = CMD_READ;
     glob->diskioreq->iotd_Req.io_Data = dst;
     glob->diskioreq->iotd_Req.io_Offset = n * glob->blocksize;
@@ -125,20 +114,10 @@ static inline LONG FS_GetBlocks (ULONG n, UBYTE *dst, ULONG count)
     DoIO((struct IORequest *) glob->diskioreq);
 
     return glob->diskioreq->iotd_Req.io_Error;
-#else
-	LONG err = ReadBlocks(glob->dio, n, dst, count);
-#ifdef __DEBUG_IO__
-	kprintf("\t\tReadBlocks: %ld count %ld\n", n, count);
-	if (err)
-		kprintf("\tReadBlock failed: %ld err %ld\n", err, IoErr());
-#endif
-	return err;
-#endif
 }
 
 static inline LONG FS_PutBlock (ULONG n, UBYTE *dst)
 {
-#ifndef API_LIBDEVIO
     glob->diskioreq->iotd_Req.io_Command = CMD_WRITE;
     glob->diskioreq->iotd_Req.io_Data = dst;
     glob->diskioreq->iotd_Req.io_Offset = n * glob->blocksize;
@@ -148,15 +127,6 @@ static inline LONG FS_PutBlock (ULONG n, UBYTE *dst)
     DoIO((struct IORequest *) glob->diskioreq);
 
     return glob->diskioreq->iotd_Req.io_Error;
-#else
-	LONG err = WriteBlocks(glob->dio, n, dst, 1);
-#ifdef __DEBUG_IO__
-	kprintf("\tWriteBlock: %ld\n", n);
-	if (err)
-		kprintf("\tWriteBlock failed: %ld err %ld\n", err, IoErr());
-#endif
-	return err;
-#endif
 }
 
 

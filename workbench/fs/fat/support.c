@@ -10,8 +10,6 @@
  * $Id$
  */
 
-#include <string.h>
-
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <dos/dosextens.h>
@@ -23,6 +21,8 @@
 
 #include <proto/intuition.h>
 #include <proto/exec.h>
+
+#include <string.h>
 
 #include "fat_fs.h"
 
@@ -99,11 +99,7 @@ int ErrorReq (STRPTR text, ULONG args[])
 
 /*-------------------------------------------------------------------------*/  
 
-#ifdef __AROS__
 int ilog2(ULONG data)
-#else
-int log2(ULONG data)
-#endif
 {
 	int bitoffset = 31;
   ULONG bitmask=1<<(bitoffset);
