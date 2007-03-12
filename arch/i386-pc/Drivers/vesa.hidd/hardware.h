@@ -19,11 +19,14 @@ struct HWData
     ULONG	greenshift;
     ULONG	blueshift;
     ULONG	bytesperline;
+    UBYTE	palettewidth;
+    UBYTE	DAC[768];
 };
 
 extern OOP_AttrBase HiddPCIDeviceAttrBase;
 
 BOOL initVesaGfxHW(struct HWData *);
+void DACLoad(struct HWData *, unsigned char, int);
 
 #if BUFFERED_VRAM
 

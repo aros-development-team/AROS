@@ -48,6 +48,7 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
 #if BUFFERED_VRAM
     InitSemaphore(&xsd->framebufferlock);
 #endif
+    InitSemaphore(&xsd->HW_acc);
     
     if (initVesaGfxHW(&xsd->data))
     {

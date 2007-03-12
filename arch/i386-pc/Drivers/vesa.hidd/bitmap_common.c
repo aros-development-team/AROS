@@ -14,7 +14,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-
 /*********  BitMap::PutPixel()  ***************************/
 
 VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
@@ -886,3 +885,70 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 }
 
+/*** BitMap::SetColors() *************************************/
+
+BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+    struct HWData *hwdata = &XSD(cl)->data;
+    HIDDT_PixelFormat *pf;
+    
+    ULONG xc_i, col_i;
+    UBYTE p_shift;
+    
+    HIDDT_Pixel	red, green, blue;
+    
+    D(bug("[VESA] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
+    pf = BM_PIXFMT(o);
+
+    if (    vHidd_ColorModel_StaticPalette == HIDD_PF_COLMODEL(pf)
+    	 || vHidd_ColorModel_TrueColor	   == HIDD_PF_COLMODEL(pf) ) {
+        D(bug("[VESA] SetColors: not a palette bitmap\n"));
+	 
+	 /* Superclass takes care of this case */
+	 
+	 return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+
+    /* We have a vHidd_GT_Palette bitmap */    
+    
+    if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) {
+	D(bug("[VESA] DoSuperMethod() failed\n"));
+	return FALSE;
+    }
+    
+    if ((msg->firstColor + msg->numColors) > (1 << data->bpp))
+	return FALSE;
+    
+    for ( xc_i = msg->firstColor, col_i = 0;
+    		col_i < msg->numColors; 
+		xc_i ++, col_i ++ )
+    {
+	red   = msg->colors[col_i].red   >> 8;
+	green = msg->colors[col_i].green >> 8;
+	blue  = msg->colors[col_i].blue  >> 8;
+
+	/* Set given color as allocated */
+	data->cmap[xc_i] = 0x01000000 | red | (green << 8) | (blue << 16);
+
+	/* Update DAC registers */
+	p_shift = 8 - hwdata->palettewidth;
+	hwdata->DAC[xc_i*3] = red >> p_shift;
+	hwdata->DAC[xc_i*3+1] = green >> p_shift;
+	hwdata->DAC[xc_i*3+2] = blue >> p_shift;
+	
+	msg->colors[col_i].pixval = xc_i;
+    }
+
+    /* Upload palette to the DAC if OnBitmap */
+#ifdef OnBitmap
+    ObtainSemaphore(&XSD(cl)->HW_acc);
+/*  DACLoad(hwdata, msg->firstColor, msg->numColors);
+    FIXME: this does not work, however should, what's the problem? 
+    The same thing with VGA driver */
+    DACLoad(hwdata, 0, 256);
+    ReleaseSemaphore(&XSD(cl)->HW_acc);
+#endif /* OnBitmap */
+
+    return TRUE;
+}

@@ -122,9 +122,11 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 	    BootLoaderBase->Vesa.Shifts[VI_Blue] = 32 - mb->vmi.blue_field_position - mb->vmi.blue_mask_size;
 	    BootLoaderBase->Vesa.Shifts[VI_Green] = 32 - mb->vmi.green_field_position - mb->vmi.green_mask_size;
 	    BootLoaderBase->Vesa.Shifts[VI_Alpha] = 32 - mb->vmi.reserved_field_position - mb->vmi.reserved_mask_size;
+	    BootLoaderBase->Vesa.PaletteWidth = mb->vbe_palette_width;
 	    BootLoaderBase->Flags |= MB_FLAGS_GFX;
 	    if (BootLoaderBase->Vesa.ModeNumber != 3)
 	    {
+		D(bug("[BootLdr] Init: Vesa card capability flags: 0x%08lx\n", mb->vci.capabilities));
 	    	D(bug("[BootLdr] Init: Vesa mode %x type (%dx%dx%d)\n",
 				BootLoaderBase->Vesa.ModeNumber,
 				BootLoaderBase->Vesa.XSize,BootLoaderBase->Vesa.YSize,
@@ -132,6 +134,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 		D(bug("[BootLdr] Init: Vesa FB at 0x%08x size %d kB\n",
 			    	BootLoaderBase->Vesa.FrameBuffer,
 				BootLoaderBase->Vesa.FrameBufferSize));
+		D(bug("[BootLdr] Init: Vesa mode palette width: %d\n", BootLoaderBase->Vesa.PaletteWidth));
+		D(bug("[BootLdr] Init: Vesa mode direct color flags %02x\n", mb->vmi.direct_color_mode_info));
 	    }
 	    else
 	    {

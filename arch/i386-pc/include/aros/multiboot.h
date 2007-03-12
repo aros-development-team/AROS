@@ -156,6 +156,7 @@ struct arosmb {
     char    ldrname[30];	    /* String of loadername */
     char    cmdline[200];	    /* Commandline */
     UWORD   vbe_mode;		    /* VBE mode */
+    UBYTE   vbe_palette_width;	    /* VBE palette width */
     struct vbe_mode vmi;            /* VBE mode information */
     struct vbe_controller vci;      /* VBE controller information */
 };

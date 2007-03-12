@@ -41,23 +41,17 @@ enum
    onbitmap and offbitmap classes.
 */
 
-struct HWRegs
-{
-    UBYTE clt[768];
-};
-
 struct HWData;
 
 struct BitmapData
 {
-    struct HWRegs   	regs;
     struct HWData	*data;
     UBYTE   	    	*VideoData;	/* Pointing to video data */
     ULONG   	    	width;      	/* Width of bitmap */
     ULONG   	    	height;		/* Height of bitmap */
     UBYTE   	    	bytesperpix;
     ULONG   	    	bytesperline;
-    ULONG   	    	cmap[16];   	/* ColorMap */
+    ULONG   	    	cmap[256];   	/* ColorMap */
     BYTE    	    	bpp;         	/* 8 -> chunky; planar otherwise */
     BYTE    	    	disp;        	/* !=0 - displayable */
     struct MouseData 	*mouse;
