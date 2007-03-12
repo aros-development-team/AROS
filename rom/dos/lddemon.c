@@ -93,7 +93,7 @@ const struct Resident LDDemon_resident =
 };
 
 static const char name[] = "LDDemon";
-static const char version[] = "$VER: LDDemon 41.2 (17.3.2001)\r\n";
+static const char version[] = "$VER: LDDemon 41.3 (11.3.2007)\r\n";
 static const char ldDemonName[] = "Lib & Dev Loader Daemon";
 
 /*
@@ -112,8 +112,10 @@ LDLoad(
 {
     struct ExecBase *SysBase = DOSBase->dl_SysBase;
     struct Process *me = (struct Process *)FindTask(NULL);
-    struct DevProc *dp = NULL;
     BPTR seglist = NULL;
+    STRPTR path;
+    ULONG pathLen;
+    int delimPos;
 
     /*
 	If the caller was a process, we have more scope for loading
@@ -126,40 +128,49 @@ LDLoad(
 	caller, caller->pr_Task.tc_Node.ln_Name, name, basedir
     ));
 
-    if (__is_process(caller))
-    {
-    	/* Try the current directory of the caller */
+    if (!strstr(name, ":")) {
+        delimPos = strlen(basedir);
+	pathLen = delimPos + strlen(name) + 2;
+        path = AllocMem(pathLen, MEMF_ANY);
+	if (path) {
+	    strcpy(path, basedir);
+	    path[delimPos] = '/';
+	    strcpy(&path[delimPos + 1], name);
+	}
+	if (__is_process(caller))
+	{
+    	    /* Try the current directory of the caller */
 
-	D(bug("[LDLoad] Process\n"));
-	me->pr_CurrentDir = caller->pr_CurrentDir;
-	D(bug("[LDLoad] Trying currentdir\n"));
-	seglist = LoadSeg(name);
-	if( seglist )
-	    return seglist;
+    	    D(bug("[LDLoad] Process\n"));
+	    me->pr_CurrentDir = caller->pr_CurrentDir;
+	    D(bug("[LDLoad] Trying currentdir\n"));
+	    seglist = LoadSeg(name);
+	    if ((!seglist) && path)
+		seglist = LoadSeg(path);
 
 	/* The the program directory of the caller */
-	if( caller->pr_HomeDir != NULL )
-	{
-	    D(bug("[LDLoad] Trying homedir\n"));
-	    me->pr_CurrentDir = caller->pr_HomeDir;
-	    seglist = LoadSeg(name);
-	    if( seglist )
-		return seglist;
+	    if((!seglist) && (caller->pr_HomeDir != NULL))
+	    {
+		D(bug("[LDLoad] Trying homedir\n"));
+		me->pr_CurrentDir = caller->pr_HomeDir;
+		seglist = LoadSeg(name);
+		if ((!seglist) && path)
+		    seglist = LoadSeg(path);
+	    }
 	}
-    }
 
-    /* Nup, lets try the default directory as supplied. */
-    while(    seglist == NULL
-	   && (dp = GetDeviceProc( basedir, dp )) != NULL
-    )
-    {
-    	D(bug("[LDLoad] Trying default dir, dp=%p\n", dp));
-	/* XXX: There is something bad here if dvp_Lock == NULL */
-	me->pr_CurrentDir = dp->dvp_Lock;
-	seglist = LoadSeg(name);
-    }
+	if (path) {
+	    if (!seglist) {
+		/* Nup, lets try the default directory as supplied. */
+		D(bug("[LDLoad] Trying defaultir\n"));
+		path[delimPos] = ':';
+		seglist = LoadSeg(path);
+	    }
+	    FreeMem(path, pathLen);
+	}
+    } else
+	seglist =LoadSeg(name);
 
-    FreeDeviceProc(dp);
     return seglist;
 }
 
@@ -396,7 +407,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 
 	ldd.ldd_Name = libname;
 	ldd.ldd_Version = version;
-	ldd.ldd_BaseDir = "libs:";
+	ldd.ldd_BaseDir = "libs";
 
     	SetSignal(0, SIGF_SINGLE);
 	D(bug("[LDCaller] Sending request for %s v%ld\n", libname, version));
@@ -568,7 +579,7 @@ AROS_LH4(BYTE, OpenDevice,
 	ldd.ldd_Msg.mn_ReplyPort = &ldd.ldd_ReplyPort;
 
 	ldd.ldd_Name = devname;
-	ldd.ldd_BaseDir = "devs:";
+	ldd.ldd_BaseDir = "devs";
 
 	SetSignal(0, SIGF_SINGLE);
 	D(bug("[LDCaller] Sending request for %s\n", devname));
