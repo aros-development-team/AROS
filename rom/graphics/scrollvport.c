@@ -46,7 +46,9 @@
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
 #warning TODO: Write graphics/ScrollVPort()
-    aros_print_not_implemented ("ScrollVPort");
+    /* aros_print_not_implemented ("ScrollVPort");
+       Commented out because causes slowdown of Directory Opus
+       which calls this function on every mouse move (why???) */
 
     AROS_LIBFUNC_EXIT
 } /* ScrollVPort */
