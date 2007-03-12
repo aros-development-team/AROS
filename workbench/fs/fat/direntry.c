@@ -161,8 +161,8 @@ LONG ReadNextDirEntry(struct ExtFileLock *fl, struct FileInfoBlock *fib)
 		else
 			fib->fib_DirEntryType = ST_FILE;
 
-		fib->fib_Size = LE32(de->file_size);
-		fib->fib_NumBlocks = ((LE32(de->file_size) + (sb->clustersize - 1)) >> sb->clustersize_bits) << sb->cluster_sectors_bits;
+		fib->fib_Size = AROS_LE2LONG(de->file_size);
+		fib->fib_NumBlocks = ((AROS_LE2LONG(de->file_size) + (sb->clustersize - 1)) >> sb->clustersize_bits) << sb->cluster_sectors_bits;
 		fib->fib_EntryType = fib->fib_DirEntryType;
 		fib->fib_DiskKey = entry;
 

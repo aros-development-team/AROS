@@ -78,7 +78,7 @@ LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res)
 		fl->cluster = cluster;
 		fl->attr = de->attr | ATTR_REALENTRY;
 		fl->first_cluster = GetFirstCluster(de);
-		fl->size = LE32(de->file_size);
+		fl->size = AROS_LE2LONG(de->file_size);
 
 		GetShortName(de, &fl->name[1], &fl->name[0]);
 		GetLongName(sb, &dc, de, entry, &fl->name[1], &fl->name[0]); /* replaces short name only if long name has been found */

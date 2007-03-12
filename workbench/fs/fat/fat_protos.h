@@ -10,8 +10,8 @@
  * $Id$
  */
 
-#ifndef __EXT2_HANDLER_PROTO_H
-#define __EXT2_HANDLER_PROTO_H
+#ifndef FAT_HANDLER_PROTO_H
+#define FAT_HANDLER_PROTO_H
 
 /* direntry */
 LONG GetDirCacheEntry(struct FSSuper *sb, struct DirCache *dc, LONG entry, struct DirEntry **de);
@@ -48,9 +48,6 @@ void SendVolumePacket(struct DosList *vol, ULONG action);
 
 /* diskio */
 LONG InitDevice(struct FileSysStartupMsg *fssm, LONG blocksize);
-#ifdef API_LIBDEVIO
-ULONG DIO_Get_TotalBlocks (struct DeviceIO *dio);
-#endif
 LONG DoRawRead (ULONG n, void *buff);
 LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *ressigbit);
 void CleanupDiskHandler(ULONG diskchgsig_bit);

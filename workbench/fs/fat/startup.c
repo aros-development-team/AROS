@@ -10,21 +10,8 @@
  * $Id$
  */
 
-#ifdef __AROS__
-#define DEBUG 1
-#include <aros/debug.h>
-#else
-#define kprintf(x,...)
-#endif
+extern void handler(void);
 
-int __abox__ = 1;
-
-void handler(void);
-
-void startup(void)
-{ 
-    kprintf("[fat] starting up\n");
-
-	handler();
-	return;
+void startup (void) {
+    handler();
 }
