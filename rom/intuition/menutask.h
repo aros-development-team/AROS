@@ -114,11 +114,6 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams);
 void AddToSelection(struct MenuHandlerData *mhd, struct SmallMenuEntry *entry,struct IntuitionBase *IntuitionBase);
 BOOL HandleCheckItem(struct MenuHandlerData *mhd, struct SmallMenuEntry *entry,
                      struct IntuitionBase *IntuitionBase);
-#else
-static void AddToSelection(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
-static void HandleCheckItem(struct Window *win, struct MenuItem *item,
-                     struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
-
 #endif
 
 #endif /* MENUTASK_H */
