@@ -38,6 +38,7 @@ struct VesaGfx_staticdata
 #if BUFFERED_VRAM
     struct SignalSemaphore  framebufferlock;
 #endif
+    struct SignalSemaphore  HW_acc;
 };
 
 struct VesaGfxBase

@@ -69,7 +69,7 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	{aHidd_PixFmt_BitsPerPixel, 0}, /* 11 */
 	{aHidd_PixFmt_StdPixFmt,    0}, /* 12 */
 	{aHidd_PixFmt_CLUTShift,    0}, /* 13 */
-	{aHidd_PixFmt_CLUTMask,     0}, /* 14 */
+	{aHidd_PixFmt_CLUTMask,  0xFF}, /* 14 */
 	{aHidd_PixFmt_BitMapType,   0}, /* 15 */
 	{TAG_DONE, 0UL }
     };
@@ -108,7 +108,7 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     pftags[5].ti_Data = XSD(cl)->data.greenmask;
     pftags[6].ti_Data = XSD(cl)->data.bluemask;
     pftags[7].ti_Data = 0;
-    pftags[8].ti_Data = (XSD(cl)->data.depth > 8) ? vHidd_ColorModel_TrueColor : vHidd_ColorModel_StaticPalette;
+    pftags[8].ti_Data = (XSD(cl)->data.depth > 8) ? vHidd_ColorModel_TrueColor : vHidd_ColorModel_Palette;
     pftags[9].ti_Data = (XSD(cl)->data.depth > 24) ? 24 : XSD(cl)->data.depth;
     pftags[10].ti_Data = XSD(cl)->data.bytesperpixel;
     pftags[11].ti_Data = (XSD(cl)->data.bitsperpixel > 24) ? 24 : XSD(cl)->data.bitsperpixel;
@@ -192,7 +192,7 @@ OOP_Object *PCVesa__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHi
 	    if (stdpf == vHidd_StdPixFmt_Unknown)
 	    {
 		OOP_Object *friend;
-		friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, NULL, msg->attrList);
+		friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
 		if (friend != NULL)
 		{
 		    OOP_Object *gfxhidd;

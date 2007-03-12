@@ -12,6 +12,7 @@
 #include <aros/debug.h>
 #include <aros/macros.h>
 #include <aros/bootloader.h>
+#include <asm/io.h>
 #include <proto/bootloader.h>
 #include <proto/oop.h>
 #include <utility/hooks.h>
@@ -56,11 +57,12 @@ BOOL initVesaGfxHW(struct HWData *data)
 	    data->greenshift = vi->Shifts[VI_Green];
 	    data->blueshift = vi->Shifts[VI_Blue];
 	    data->framebuffer = vi->FrameBuffer;
+	    data->palettewidth = vi->PaletteWidth;
 
 	    if (!data->framebuffer)
 		Find_PCI_Card(data);
 	    if (!data->framebuffer) {
-		D(bug("[Vesa] HwInit: Framebuffer not found, your card is not PCI\n"));
+		D(bug("[Vesa] HwInit: Framebuffer not found\n"));
 		return FALSE;
 	    }
 	    
@@ -89,6 +91,7 @@ BOOL initVesaGfxHW(struct HWData *data)
 			data->redmask, data->redshift,
 			data->greenmask, data->greenshift,
 			data->bluemask, data->blueshift));
+	    D(bug("[Vesa] HwInit: PaletteWidth %d\n", data->palettewidth));
 	    D(bug("[vesa] HwInit: BytesPerPixel %d\n", data->bytesperpixel));
 	    return TRUE;
 	}
@@ -200,5 +203,20 @@ static void Find_PCI_Card(struct HWData *sd)
 	    OOP_DoMethod(pci, (OOP_Msg)msg);
 	    OOP_DisposeObject(pci);
 	}
+    }
+}
+
+/*
+** DACLoad --
+**      load a palette
+*/
+void DACLoad(struct HWData *restore, unsigned char first, int num)
+{
+    int i;
+
+    outb(first, 0x3C8);
+    for (i=0; i<num*3; i++)
+    {
+	outb(restore->DAC[i], 0x3C9);
     }
 }

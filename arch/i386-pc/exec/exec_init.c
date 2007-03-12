@@ -117,7 +117,7 @@ void    exec_DefaultTaskExit();
 //void    exec_CheckCPU();
 int 	exec_RamCheck_fast();
 int 	exec_RamCheck_dma();
-void setupVesa(struct multiboot *mbinfo);
+unsigned char setupVesa(struct multiboot *mbinfo);
 
 
 asmlinkage void Exec_SystemCall(struct pt_regs);
@@ -433,7 +433,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     {
         mbinfo = (struct multiboot *)addr;
 	if (mbinfo->flags & MB_FLAGS_CMDLINE)
-	    setupVesa(mbinfo);
+	    arosmb->vbe_palette_width = setupVesa(mbinfo);
         rkprintf("Copying multiboot information into storage\n");
         arosmb->magic = MBRAM_VALID;
         arosmb->flags = 0L;
@@ -1341,11 +1341,12 @@ ULONG **exec_RomTagScanner()
 struct vbe_controller my_vbe_control;
 struct vbe_mode my_vbe_mode;
 
-void setupVesa(struct multiboot *mbinfo)
+unsigned char setupVesa(struct multiboot *mbinfo)
 {
     char *str = mbinfo->cmdline;
     char *vesa = strstr(str, "vesa=");
     short r;
+    unsigned char palwidth = 0;
 
     if (vesa)
     {
@@ -1383,6 +1384,11 @@ void setupVesa(struct multiboot *mbinfo)
 	r = setVbeMode(mode);
         if (r == 0x004f) {
 	    rkprintf("\x03");
+	    if (controllerinfo->capabilities & 0x01)
+		paletteWidth(0x0800, &palwidth);
+	    else
+		palwidth = 6;
+	    paletteSetup(palwidth);
 	    memcpy(&my_vbe_mode, modeinfo, sizeof(struct vbe_mode));
 	    memcpy(&my_vbe_control, controllerinfo, sizeof(struct vbe_controller));
 	    mbinfo->vbe_mode_info = (ULONG)&my_vbe_mode;
@@ -1392,6 +1398,7 @@ void setupVesa(struct multiboot *mbinfo)
 	} else
 	    rkprintf("[VESA] mode setting error: 0x%04X\n", r);
     }
+    return palwidth;
 }
 
 AROS_LH1(struct ExecBase *, open,

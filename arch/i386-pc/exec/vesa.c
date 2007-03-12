@@ -9,6 +9,8 @@ asm (".long getControllerInfo");
 asm (".long getModeInfo");
 asm (".long findMode");
 asm (".long setVbeMode");
+asm (".long paletteWidth");
+asm (".long paletteSetup");
 asm (".long controllerinfo");
 asm (".long modeinfo");
 
@@ -42,6 +44,68 @@ short setVbeMode(long mode)
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
                 "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"0"(mode & 0xf7ff):"eax","ecx","cc");
+    return retval;
+}
+
+short paletteWidth(long req, unsigned char* width)
+{
+    short retval;
+    unsigned char reswidth;
+    
+    asm volatile("call go16\n\t.code16\n\t"
+		"movw $0x4f08, %%ax\n\t"
+		"int $0x10\n\t"
+		"movb %%bh, %1\n\t"
+		"movw %%ax, %0\n\t"
+		"DATA32 call go32\n\t.code32\n\t":"=b"(retval),"=c"(reswidth):"0"(req):"eax","cc");
+    *width = reswidth;
+    return retval;
+}
+
+const unsigned char clut8[] = {
+	0x00,
+	0x03,	  
+	0x07,
+	0x0F,
+	0x1F,
+	0x3F,
+	0x7F,
+	0xFF
+};
+
+const unsigned char clut4[] = {
+	0x00,
+	0x07,
+	0x3F,
+	0xFF
+};
+
+struct palette_data	palette[256];
+
+short paletteSetup(unsigned char bits)
+{
+    unsigned char r, g, b;
+    int i = 0;
+    short retval;
+    
+    bits = 8 - bits;
+    for (r = 0; r < 8; r++) {
+	for (g= 0; g < 8; g++) {
+	    for (b = 0; b < 4; b++) {
+		palette[i].R = clut8[r] >> bits;
+		palette[i].G = clut8[g] >> bits;
+		palette[i++].B = clut4[b] >> bits;
+	    }
+	}
+    }
+    asm volatile("call go16 \n\t.code16 \n\t"
+                "movw $0x4f09, %%ax\n\t"
+		"movb $0x80, %%bl\n\t"
+		"movw $0x0100, %%cx\n\t"
+		"movw $0x0000, %%dx\n\t"
+                "int $0x10\n\t"
+                "movw %%ax, %0\n\t"
+                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"D"(palette):"eax","ecx","edx","cc");
     return retval;
 }
 

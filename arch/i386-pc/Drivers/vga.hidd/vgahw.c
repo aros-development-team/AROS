@@ -176,6 +176,22 @@ int vgaBlankScreen(int on)
 /****************************************************************************************/
 
 /*
+** vgaDACLoad --
+**      load the DAC
+*/
+void vgaDACLoad(struct vgaHWRec *restore, unsigned char start, int num)
+{
+    int i;
+
+    outb(0x3C8,start);
+    for (i=0; i<num*3; i++)
+    {
+	outb(0x3C9, restore->DAC[i]);
+	DACDelay;
+    }
+}
+
+/*
 ** vgaRestore --
 **      restore a video mode
 */
@@ -207,14 +223,9 @@ void vgaRestore(struct vgaHWRec *restore, BOOL onlyDac)
     }
 
     outb(0x3C6,0xFF);
-    outb(0x3C8,0x00);
     }
 
-    for (i=0; i<768; i++)
-    {
-	outb(0x3C9, restore->DAC[i]);
-	DACDelay;
-    }
+    vgaDACLoad(restore, 0, 256);
 
     if (!onlyDac)
     {

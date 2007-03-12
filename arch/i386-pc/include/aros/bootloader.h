@@ -68,6 +68,7 @@ struct VesaInfo {
     UWORD	ModeNumber;
     ULONG	Masks[4];
     ULONG	Shifts[4];
+    UBYTE	PaletteWidth;
 };
 
 #define	VI_Red		0
