@@ -1783,7 +1783,7 @@ AROS_LH1(struct Screen *, OpenScreen,
 
         screen->DInfo.dri.dri_CheckMark = NewObjectA(NULL, "sysiclass", sysi_tags);
         DEBUG_OPENSCREEN(dprintf("OpenScreen: CheckMark 0x%lx\n",
-                                 screen->DInfo.dri_CheckMark));
+                                 screen->DInfo.dri.dri_CheckMark));
 
         sysi_tags[0].ti_Data = AMIGAKEY;
 
