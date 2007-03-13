@@ -125,6 +125,8 @@ LONG ReadFATSuper (struct FSSuper *sb )
 	sb->first_data_sector = sb->first_fat_sector + (boot->bpb_num_fats * sb->fat_size) + sb->rootdir_sectors;
 	kprintf("\tFirst Data Sector = %ld\n", sb->first_data_sector);
 
+        sb->free_clusters = 0xffffffff;
+
 	/* check if disk is in fact FAT filesystem */      	
 
 	/* valid sector size: 512, 1024, 2048, 4096 */
@@ -397,4 +399,26 @@ LONG SeekExtent(struct FSSuper *sb, struct Extent *ext, ULONG dst_sector)
 		err = NextExtent(sb, ext);
 
 	return err;
+}
+
+/* see how many unused clusters are available */
+void CountFreeClusters(struct FSSuper *sb) {
+    ULONG cluster = 0;
+    ULONG free = 0;
+
+    /* don't calculate this if we already have it */
+    if (sb->free_clusters != 0xffffffff)
+        return;
+
+    /* loop over all the data clusters */
+    for (cluster = 2; cluster < sb->clusters_count + 2; cluster++)
+
+        /* record the free ones */
+        if (GetFatEntry(cluster) == 0)
+            free++;
+
+    /* put the value away for later */
+    sb->free_clusters = free;
+
+    kprintf("\tfree clusters: %ld\n", free);
 }

@@ -37,43 +37,43 @@
 #endif
 
 
-void FillDiskInfo (struct InfoData *id)
-{
-	struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
+void FillDiskInfo (struct InfoData *id) {
+    struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
 
-	id->id_NumSoftErrors = 0;
-	id->id_UnitNumber = glob->fssm->fssm_Unit;
-	id->id_DiskState = ID_WRITE_PROTECTED;
+    id->id_NumSoftErrors = 0;
+    id->id_UnitNumber = glob->fssm->fssm_Unit;
+    id->id_DiskState = ID_WRITE_PROTECTED;
 
-    if (glob->sb)
-	{
-		id->id_NumBlocks = glob->sb->total_sectors;
-		id->id_NumBlocksUsed = glob->sb->total_sectors;
-		id->id_BytesPerBlock = glob->sb->sectorsize;
+    if (glob->sb) {
+        CountFreeClusters(glob->sb);
 
-		id->id_DiskType = (glob->sb->type == 12) ? ID_FAT12_DISK :
-                                  (glob->sb->type == 16) ? ID_FAT16_DISK :
-                                  (glob->sb->type == 32) ? ID_FAT32_DISK :
-                                                           ID_FAT12_DISK;
+        id->id_NumBlocks = glob->sb->total_sectors;
+        id->id_NumBlocksUsed = glob->sb->total_sectors - ((glob->sb->free_clusters * glob->sb->clustersize) >> glob->sb->sectorsize_bits);
+        id->id_BytesPerBlock = glob->sb->sectorsize;
 
-		id->id_VolumeNode = MKBADDR(glob->sb->doslist);
-		id->id_InUse = glob->sb->doslist->dol_misc.dol_volume.dol_LockList ? DOSTRUE : DOSFALSE;
-	}
-	else
-	{
-		id->id_NumBlocks = de->de_Surfaces * de->de_BlocksPerTrack * (de->de_HighCyl+1 - de->de_LowCyl) / de->de_SectorPerBlock;
-		id->id_NumBlocksUsed = id->id_NumBlocks;
-		id->id_BytesPerBlock = de->de_SizeBlock << 2;
-		id->id_DiskState = ID_WRITE_PROTECTED;
-		if (glob->disk_inhibited)
-			id->id_DiskType = ID_BUSY;
-		else if (glob->disk_inserted)
-			id->id_DiskType = ID_NOT_REALLY_DOS; //ID_UNREADABLE_DISK;
-		else
-			id->id_DiskType = ID_NO_DISK_PRESENT;
-		id->id_VolumeNode = NULL;
-		id->id_InUse = DOSFALSE;
-	}
+        id->id_DiskType = (glob->sb->type == 12) ? ID_FAT12_DISK :
+                          (glob->sb->type == 16) ? ID_FAT16_DISK :
+                          (glob->sb->type == 32) ? ID_FAT32_DISK :
+                                                   ID_FAT12_DISK;
+
+        id->id_VolumeNode = MKBADDR(glob->sb->doslist);
+        id->id_InUse = glob->sb->doslist->dol_misc.dol_volume.dol_LockList ? DOSTRUE : DOSFALSE;
+    }
+
+    else {
+        id->id_NumBlocks = de->de_Surfaces * de->de_BlocksPerTrack * (de->de_HighCyl+1 - de->de_LowCyl) / de->de_SectorPerBlock;
+        id->id_NumBlocksUsed = id->id_NumBlocks;
+        id->id_BytesPerBlock = de->de_SizeBlock << 2;
+        id->id_DiskState = ID_WRITE_PROTECTED;
+        if (glob->disk_inhibited)
+                id->id_DiskType = ID_BUSY;
+        else if (glob->disk_inserted)
+                id->id_DiskType = ID_NOT_REALLY_DOS; //ID_UNREADABLE_DISK;
+        else
+                id->id_DiskType = ID_NO_DISK_PRESENT;
+        id->id_VolumeNode = NULL;
+        id->id_InUse = DOSFALSE;
+    }
 }
 
 LONG InitDevice(struct FileSysStartupMsg *fssm, LONG blocksize)
