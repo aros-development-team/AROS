@@ -122,6 +122,8 @@ struct FSSuper {
 	ULONG clusters_count;
 	ULONG fat_size;
 
+        ULONG free_clusters;
+
 	ULONG volume_id;
 	ULONG type;
 	ULONG eoc_mark;

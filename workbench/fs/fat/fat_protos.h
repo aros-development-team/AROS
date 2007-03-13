@@ -33,6 +33,8 @@ LONG InitExtent(struct FSSuper *sb, struct Extent *ext, ULONG start_cluster);
 LONG NextExtent(struct FSSuper *sb, struct Extent *ext);
 LONG SeekExtent(struct FSSuper *sb, struct Extent *ext, ULONG dst_sector);
 
+void CountFreeClusters(struct FSSuper *sb);
+
 /* file */
 LONG File_Read(struct ExtFileLock *fl, ULONG togo, void *buffer, LONG *result);
 
