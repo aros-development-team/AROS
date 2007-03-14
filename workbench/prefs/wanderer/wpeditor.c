@@ -42,7 +42,6 @@ struct WPEditor_DATA
     Object *wped_icon_textmode;
     Object *wped_icon_textmaxlen;
     Object *wped_toolbarGroup;
-    Object *wped_cm_doublebuffered;
     struct Hook wped_EnhancedNavHook;
 };
 
@@ -87,7 +86,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
            *bt_dirup = NULL, *bt_search = NULL, *cm_toolbarenabled = NULL, 
            *toolbarpreview = NULL, *wped_icon_listmode = NULL, *wped_icon_textmode = NULL, 
            *wped_icon_textmaxlen = NULL, *toolbarGroup = NULL,
-           *cm_doublebuffered = NULL, *prefs_pages = NULL;
+           *prefs_pages = NULL;
 
     //Object *cm_searchenabled;
 
@@ -108,7 +107,6 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     wped_icon_listmode = MUI_MakeObject(MUIO_Cycle, NULL, iconlistmodes);
     wped_icon_textmode = MUI_MakeObject(MUIO_Cycle, NULL, icontextmodes);
     cm_toolbarenabled = MUI_MakeObject(MUIO_Checkmark,NULL);
-    cm_doublebuffered = MUI_MakeObject(MUIO_Checkmark,NULL);
     wped_icon_textmaxlen = MUI_MakeObject(MUIO_String,NULL,4);
 
     self = (Object *) DoSuperNewTags
@@ -131,28 +129,6 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 							MUIA_Group_SameSize, FALSE,
                             Child, (IPTR) Label1(_(MSG_METHOD)),
                             Child, (IPTR) c_navitype,
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-						End,
-						Child, (IPTR) HGroup,
-							MUIA_Group_Columns, 2,
-							MUIA_Group_SameSize, FALSE,
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-						End,
-                    End,
-                    Child, (IPTR) HGroup,
-                        MUIA_FrameTitle,  __(MSG_MISC),
-                        MUIA_Group_SameSize, TRUE,
-                        MUIA_Frame, MUIV_Frame_Group,
-						MUIA_Group_Columns, 2,
-						Child, (IPTR) HGroup,
-							MUIA_Group_Columns, 2,
-							MUIA_Group_SameSize, FALSE,
-                        Child, (IPTR) Label1(_(MSG_DOUBLEBUFFERED)),
-                        Child, (IPTR) cm_doublebuffered,
 							Child, (IPTR) HVSpace,
 							Child, (IPTR) HVSpace,
 						End,
@@ -267,7 +243,6 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->wped_DrawersPI   = drawersPI;
         data->wped_c_NavigationMethod = c_navitype;
         data->wped_cm_ToolbarEnabled = cm_toolbarenabled;
-        data->wped_cm_doublebuffered = cm_doublebuffered;
         data->wped_toolbarpreview = toolbarpreview;
         data->wped_icon_listmode = wped_icon_listmode;
         data->wped_icon_textmode = wped_icon_textmode;
@@ -294,11 +269,6 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         DoMethod
         (
             cm_toolbarenabled, MUIM_Notify, MUIA_Pressed, MUIV_EveryTime,  
-            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        ); 
-        DoMethod
-        (
-            cm_doublebuffered, MUIM_Notify, MUIA_Pressed, MUIV_EveryTime,  
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         ); 
         
@@ -446,17 +416,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
             DoMethod ( data->wped_toolbarGroup, MUIM_Group_InitChange );
             DoMethod ( data->wped_toolbarGroup, MUIM_Group_ExitChange );
         }        
-        
-        /* check if toolbar set */
-        if (wpd.wpd_DoubleBuffered)
-        {
-            set(data->wped_cm_doublebuffered, MUIA_Selected, TRUE);
-        }
-        else
-        {
-            set(data->wped_cm_doublebuffered, MUIA_Selected, FALSE);
-        }
-
+ 
         /* Icon listmode */
         set ( data->wped_icon_listmode, MUIA_Cycle_Active, (IPTR)wpd.wpd_IconListMode );
         
@@ -522,9 +482,6 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
                 STRPTR ds = (STRPTR) XGET(data->wped_DrawersPI, MUIA_Imagedisplay_Spec);    
                 strcpy(wpd.wpd_WorkbenchBackground, ws);   
                 strcpy(wpd.wpd_DrawerBackground, ds);                  
-                
-                /* save doublebuffered state*/
-                get(data->wped_cm_doublebuffered, MUIA_Selected, &wpd.wpd_DoubleBuffered);
                 
                 /* save toolbar state*/
                 get(data->wped_cm_ToolbarEnabled, MUIA_Selected, &wpd.wpd_ToolbarEnabled);
