@@ -391,6 +391,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             /* XXX is there some other way to query this? how does (eg) aos
              * console handler do it? */
             iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = FALSE;
+            iofs->io_DosError = 0;
             goto reply;
 
         case FSA_SAME_LOCK: { /* XXX untested */
