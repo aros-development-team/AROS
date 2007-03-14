@@ -214,16 +214,16 @@ static void InvertPixelRect(struct RastPort *rp, WORD minx, WORD miny, WORD maxx
     {
     	/* Swap minx, maxx */
     	minx ^= maxx;
-	maxx ^= minx;
-	minx ^= maxx;
+	    maxx ^= minx;
+	    minx ^= maxx;
     }
     
     if (maxy < miny)
     {
     	/* Swap miny, maxy */
     	miny ^= maxy;
-	maxy ^= miny;
-	miny ^= maxy;
+	    maxy ^= miny;
+	    miny ^= maxy;
     }
     
     InvertPixelArray(rp, minx, miny, maxx - minx + 1, maxy - miny + 1);
@@ -374,10 +374,10 @@ static BOOL IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     }
     else
     {
-	iconrect.MinX -= offsetx;
-	iconrect.MinY -= offsety;
+	    iconrect.MinX -= offsetx;
+	    iconrect.MinY -= offsety;
     	iconrect.MaxX -= offsetx;
-	iconrect.MaxY -= offsety;
+	    iconrect.MaxY -= offsety;
     }
     
     SetABPenDrMd(rp,_pens(obj)[MPEN_TEXT],0,JAM1);
@@ -1181,8 +1181,7 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                 return 0;
             }
 
-            region = NewRegion();
-            if (!region)
+            if (!(region = NewRegion()))
             {
                 MUI_Redraw(obj, MADF_DRAWOBJECT);
                 return 0;
@@ -1322,15 +1321,12 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             
             return 0;
         }
-
     }
    
     DoMethod(
         obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
         data->view_x, data->view_y, 0
     );
-
-
 
     /* At we see if there any Icons without proper position, this is the wrong place here,
     * it should be done after all icons have been loaded */
