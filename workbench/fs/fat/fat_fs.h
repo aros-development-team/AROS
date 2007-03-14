@@ -100,6 +100,10 @@ struct ExtFileLock
 	struct DirCache dircache[1];
 };
 
+struct VolumeInfo {
+    UBYTE               name[32];     /* BCPL string */
+    struct DateStamp    create_time;
+};
 
 struct FSSuper {
 	struct FSSuper *next;
@@ -135,7 +139,7 @@ struct FSSuper {
 
 	struct Extent first_rootdir_extent[1];
 
-	UBYTE name[32];	/* BCPL string */
+        struct VolumeInfo volume;
 
 	/* function table */
 	ULONG (*func_get_fat_entry)(struct FSSuper *sb, ULONG n);

@@ -159,9 +159,8 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib)
             GetDirCacheEntry(sb, fl->dircache, fl->entry, &de);
             ConvertDate(de->write_date, de->write_time, &fib->fib_Date);
         }
-        else {
-            memset(&fib->fib_Date, 0, sizeof(struct DateStamp));
-        }
+        else
+            CopyMem(&sb->volume.create_time, &fib->fib_Date, sizeof(struct DateStamp));
 
 	memcpy(fib->fib_FileName, fl->name, 108);
 

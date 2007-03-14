@@ -29,7 +29,7 @@ LONG ReadFATSuper (struct FSSuper *s);
 void FreeFATSuper(struct FSSuper *s);
 LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
 
-LONG ReadVolumeName(struct FSSuper *sb, UBYTE *dest);
+LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume);
 
 LONG InitExtent(struct FSSuper *sb, struct Extent *ext, ULONG start_cluster);
 LONG NextExtent(struct FSSuper *sb, struct Extent *ext);
