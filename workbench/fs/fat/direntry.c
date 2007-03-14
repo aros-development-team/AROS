@@ -78,10 +78,58 @@ LONG FreeDirCache(struct FSSuper *sb, struct DirCache *dc)
 	return 0;
 }
 						
+static const UWORD mdays[] = { 0, 31, 59, 90, 120, 151, 181, 212, 143, 273, 304, 334 };
+
+void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds) {
+    UBYTE year, month, day, hours, mins, secs;
+    UBYTE nleap;
+
+    /* date bits: yyyy yyym mmmd dddd */
+    year = (date & 0xfe00) >> 9;    /* bits 15-9 */
+    month = (date & 0x01e0) >> 5;   /* bits 8-5 */
+    day = date & 0x001f;            /* bits 4-0 */
+
+    /* time bits: hhhh hmmm mmms ssss */
+    hours = (time & 0xf800) >> 11;  /* bits 15-11 */
+    mins = (time & 0x07e0) >> 5;    /* bits 8-5 */
+    secs = time & 0x001f;           /* bits 4-0 */
+
+    D(bug("[fat] convert date: year %d month %d day %d hours %d mins %d secs %d\n", year, month, day, hours, mins, secs));
+
+    /* number of leap years in before this year. note this is only dividing by
+     * four, which is fine because FAT dates range 1980-2107. The only year in
+     * that range that is divisible by four but not a leap year is 2100. If
+     * this code is still being used then, feel free to fix it :) */
+    nleap = year >> 2;
+    
+    /* if this year is a leap year and its March or later, adjust for this
+     * year too */
+    if (year & 0x03 && month >= 3)
+        nleap++;
+
+    /* calculate days since 1978-01-01 (DOS epoch):
+     *   730 days in 1978+1979, getting us to the FAT epoch 1980-01-01
+     *   years * 365 days
+     *   leap days
+     *   days in all the months before this one
+     *   day of this month */
+    ds->ds_Days = 730 + year * 365 + nleap + mdays[month-1] + day-1;
+
+    /* minutes since midnight */
+    ds->ds_Minute = hours * 60 + mins;
+
+    /* 1/50 sec ticks. FAT dates are 0-29, so we have to multiply them by two
+     * as well */
+    ds->ds_Tick = (secs << 1) * 50;
+
+    D(bug("[fat] convert date: days %ld minutes %ld ticks %ld\n", ds->ds_Days, ds->ds_Minute, ds->ds_Tick));
+}
+
 #define sb glob->sb
 
 LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib)
 {
+        struct DirEntry *de;
 	LONG result = 0;
 
 	kprintf("\tFilling FIB data.\n");
@@ -107,8 +155,13 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib)
 	fib->fib_EntryType = fib->fib_DirEntryType;
 	fib->fib_DiskKey = 0xfffffffflu; //fl->entry;
 
-	memset(&fib->fib_Date, '\0', sizeof(struct DateStamp));
-//	  Date2DateStamp(inode->di_mtime.t_sec,&fib->fib_Date);
+        if (fib->fib_DirEntryType == ST_FILE) {
+            GetDirCacheEntry(sb, fl->dircache, fl->entry, &de);
+            ConvertDate(de->write_date, de->write_time, &fib->fib_Date);
+        }
+        else {
+            memset(&fib->fib_Date, 0, sizeof(struct DateStamp));
+        }
 
 	memcpy(fib->fib_FileName, fl->name, 108);
 
@@ -166,8 +219,7 @@ LONG ReadNextDirEntry(struct ExtFileLock *fl, struct FileInfoBlock *fib)
 		fib->fib_EntryType = fib->fib_DirEntryType;
 		fib->fib_DiskKey = entry;
 
-		memset(&fib->fib_Date, '\0', sizeof(struct DateStamp));
-//	  Date2DateStamp(inode->di_mtime.t_sec,&fib->fib_Date);
+                ConvertDate(de->write_date, de->write_time, &fib->fib_Date);
 
 		GetShortName(de, &fib->fib_FileName[1], &fib->fib_FileName[0]);
 		GetLongName(sb, fl->dircache, de, entry, &fib->fib_FileName[1], &fib->fib_FileName[0]); /* replaces short name only if long name has been found */

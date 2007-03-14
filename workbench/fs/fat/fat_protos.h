@@ -18,6 +18,8 @@ LONG GetDirCacheEntry(struct FSSuper *sb, struct DirCache *dc, LONG entry, struc
 LONG SetupDirCache(struct FSSuper *sb, struct DirCache *dc, struct Extent *ext, ULONG cluster);
 LONG FreeDirCache(struct FSSuper *sb, struct DirCache *dc);
 
+void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds);
+
 LONG ReadNextDirEntry(struct ExtFileLock *fl, struct FileInfoBlock *fib);
 LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib);
 LONG FindEntryByPath(ULONG start_cluster, UBYTE *path, LONG pathlen, ULONG *dst_cluster, ULONG *dst_entry);
