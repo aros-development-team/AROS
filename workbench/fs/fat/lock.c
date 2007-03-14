@@ -113,7 +113,7 @@ LONG LockRoot(LONG axs, BPTR *res)
 		fl->first_cluster = 0;
 		fl->size = 0;
 
-		memcpy(fl->name, sb->name, 32);
+		memcpy(fl->name, sb->volume.name, 32);
 
 		fl->dircache_active = FALSE;
 

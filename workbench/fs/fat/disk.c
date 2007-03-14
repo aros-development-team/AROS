@@ -123,7 +123,7 @@ void DoDiskInsert(void)
 
 					sb->doslist = ptr->doslist;
 					ptr->doslist = NULL;
-					sb->doslist->dol_Name = (BSTR)MKBADDR(&sb->name);
+					sb->doslist->dol_Name = (BSTR)MKBADDR(&sb->volume.name);
 
 					if (prev)
 						prev->next = ptr->next;
@@ -147,7 +147,8 @@ void DoDiskInsert(void)
 					newvol->dol_Task = glob->ourport;
 					newvol->dol_Lock = NULL;
 
-					DateStamp(& newvol->dol_misc.dol_volume.dol_VolumeDate);
+                                        CopyMem(&sb->volume.create_time, &newvol->dol_misc.dol_volume.dol_VolumeDate, sizeof(struct DateStamp));
+
 					newvol->dol_misc.dol_volume.dol_LockList = NULL;
 
 					newvol->dol_misc.dol_volume.dol_DiskType =
@@ -160,9 +161,9 @@ void DoDiskInsert(void)
                                         /* ReadFATSuper() sets a null byte
                                          * after the string, so this should be
                                          * fine */
-                                        newvol->dol_Name = (BSTR)MKBADDR(&(sb->name[1]));
+                                        newvol->dol_Name = (BSTR)MKBADDR(&(sb->volume.name[1]));
 #else
-					newvol->dol_Name = (BSTR)MKBADDR(&sb->name);
+					newvol->dol_Name = (BSTR)MKBADDR(&sb->volume.name);
 #endif
 					sb->doslist = newvol;
 

@@ -242,8 +242,7 @@ LONG ReadFATSuper (struct FSSuper *sb )
 	kprintf("\t\tcur cluster = 0x%08lx\n", sb->first_rootdir_extent->cur_cluster);
 	kprintf("\t\tnext cluster = 0x%08lx\n", sb->first_rootdir_extent->next_cluster);
 
-	if (ReadVolumeName(sb, &sb->name[1]) != 0) /* generate volume name */
-    {
+        if (GetVolumeInfo(sb, &(sb->volume)) != 0) {
 		LONG i;
 		UBYTE *uu = (void *)&sb->volume_id;
 
@@ -251,17 +250,16 @@ LONG ReadFATSuper (struct FSSuper *sb )
 		{
 			int d;
 			if (i==5)
-				sb->name[i++]='-';
+				sb->volume.name[i++]='-';
 			d = (*uu) & 0x0f;
-			sb->name[i++] = (d < 10) ? '0' + d : 'A' - 10 + d;
+			sb->volume.name[i++] = (d < 10) ? '0' + d : 'A' - 10 + d;
 			d = ((*uu) & 0xf0)>>4;
-			sb->name[i++] = (d < 10) ? '0' + d : 'A' - 10 + d;
+			sb->volume.name[i++] = (d < 10) ? '0' + d : 'A' - 10 + d;
 			uu++;
 		}
-		sb->name[i] = '\0';
+		sb->volume.name[i] = '\0';
+                sb->volume.name[0] = 9;
 	}
-
-	sb->name[0] = strlen(&(sb->name[1]));
 
 	FS_FreeMem(bh);
 
@@ -269,58 +267,62 @@ LONG ReadFATSuper (struct FSSuper *sb )
 	return 0;
 }
 
-LONG ReadVolumeName(struct FSSuper *sb, UBYTE *dest)
-{
-	struct Extent ext;
-	struct DirCache dc;
-	struct DirEntry *de;
-	ULONG entry = 0;
-	LONG err;
+LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume) {
+    struct Extent ext;
+    struct DirCache dc;
+    struct DirEntry *de;
+    ULONG entry = 0;
+    LONG err;
 
-	kprintf("\tReading volume name\n");
+    D(bug("[fat] reading volume data\n"));
 
-	err = SetupDirCache(sb, &dc, &ext, 0);
+    err = SetupDirCache(sb, &dc, &ext, 0);
 
-	while (err == 0 && entry < 65536)
-    {
-		if ((err = GetDirCacheEntry(sb, &dc, entry, &de)) != 0)
-		{
-			kprintf("\tGetDirCacheEntry error\n");
-			break;
-		}
-
-		kprintf("\t\tEntry %ld, attr %2lx\n", entry, (LONG)de->attr);
-
-		if ((de->attr & (ATTR_DIRECTORY | ATTR_VOLUME_ID | ATTR_SYSTEM | ATTR_READ_ONLY | ATTR_HIDDEN)) == ATTR_VOLUME_ID)
-		{
-			int i;
-			kprintf("\t\tFound entry %ld\n", entry);
-
-			dest[0] = de->name[0];
-			dest[11] = '\0';
-
-			for (i=1; i<11; i++)
-				dest[i] = tolower(de->name[i]);
-
-			for (i=10; i>1; i--)
-				if (dest[i] == ' ')
-					dest[i] = '\0';
-
-			kprintf("\t\tVolume name: %s\n", (LONG)dest);
+    while (err == 0 && entry < 65536) {
+        if ((err = GetDirCacheEntry(sb, &dc, entry, &de)) != 0) {
+            D(bug("[fat] couldn't get root dir entry (%ld)\n", err));
             break;
-		}
-		if (de->name[0] == 0)
-		{
-			kprintf("\tDirEntry %ld - EOD Marker found\n", entry);
-			err = ERROR_OBJECT_NOT_FOUND;
-			break;
-		}
-		entry++;
-	}
-	FreeDirCache(sb, &dc);
-	return err;
-}
+        }
 
+        D(bug("[fat] got root dir entry %ld, attr 0x%02x\n", entry, de->attr));
+
+        if ((de->attr & (ATTR_DIRECTORY | ATTR_VOLUME_ID | ATTR_SYSTEM | ATTR_READ_ONLY | ATTR_HIDDEN)) == ATTR_VOLUME_ID) {
+            int i;
+
+            D(bug("[fat] found the volume name entry\n"));
+
+            volume->name[1] = de->name[0];
+            volume->name[12] = '\0';
+
+            for (i=1; i<11; i++)
+                volume->name[i+1] = tolower(de->name[i]);
+
+            for (i=10; i>1; i--)
+                if (volume->name[i+1] == ' ')
+                    volume->name[i+1] = '\0';
+
+            volume->name[0] = strlen(&(volume->name[1]));
+
+            D(bug("[fat] volume name is '%s'\n", &(volume->name[1])));
+
+            ConvertDate(de->create_date, de->create_time, &volume->create_time);
+
+            break;
+        }
+
+        if (de->name[0] == 0) {
+            D(bug("[fat] found end-of-directory marker, volume name entry not found\n"));
+            err = ERROR_OBJECT_NOT_FOUND;
+            break;
+        }
+
+        entry++;
+    }
+
+    FreeDirCache(sb, &dc);
+
+    return err;
+}
 
 void FreeFATSuper(struct FSSuper *sb)
 {
@@ -333,7 +335,7 @@ LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2)
 {
 	LONG res;
 
-	if ((res = memcmp(s1->name, s2->name, s1->name[0])) != 0)
+	if ((res = memcmp(s1->volume.name, s2->volume.name, s1->volume.name[0])) != 0)
 		return res;
 
 	return s1->volume_id - s2->volume_id;
