@@ -156,6 +156,10 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib)
 	fib->fib_DiskKey = 0xfffffffflu; //fl->entry;
 
         if (fib->fib_DirEntryType == ST_FILE) {
+            if (! fl->dircache_active) {
+                SetupDirCache(sb, fl->dircache, fl->data_ext, fl->first_cluster);
+                fl->dircache_active = TRUE;
+            }
             GetDirCacheEntry(sb, fl->dircache, fl->entry, &de);
             ConvertDate(de->write_date, de->write_time, &fib->fib_Date);
         }
