@@ -1854,7 +1854,6 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     Object *window = NULL;
     BOOL    isWorkbenchWindow = message->drawer == NULL ? TRUE : FALSE;
     BOOL    hasToolbar = XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled);
-    BOOL    doublebuffered = XGET(data->wd_Prefs, MUIA_WandererPrefs_DoubleBuffered);
     
 
     IPTR    useFont = (IPTR)NULL;
@@ -1876,7 +1875,6 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         MUIA_Window_IsSubWindow,           isWorkbenchWindow ? FALSE : TRUE,
         MUIA_IconWindow_IsBackdrop,        isWorkbenchWindow ? TRUE : FALSE,
         MUIA_IconWindow_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
-        MUIA_IconWindow_DoubleBuffered, doublebuffered ? TRUE : FALSE,
         isWorkbenchWindow ? 
             TAG_IGNORE    : 
             MUIA_IconWindow_Drawer, (IPTR) message->drawer,
@@ -1893,7 +1891,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         {
             drw = AllocVec ( 5, MEMF_CLEAR );
             sprintf ( drw, "RAM:" );
-            freeDrwStr = TRUE;
+            freeDrwStr = TRUE;    
         }
         
         DoMethod
