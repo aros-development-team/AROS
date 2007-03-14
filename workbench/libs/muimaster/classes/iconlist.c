@@ -1088,7 +1088,6 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MUI_IconData *data = INST_DATA(cl, obj);
     APTR clip;
     struct IconEntry *icon;
-    BOOL buffereddraw = FALSE;
     ULONG update_oldwidth = 0, update_oldheight = 0;
     DoSuperMethodA(cl, obj, (Msg) msg);
 
@@ -1345,70 +1344,7 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     {
         if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
         {
-            if (buffereddraw && IconList_DrawIcon(obj, data, icon, NULL, DRAWICON_TESTDRAW))
-            {
-                struct Rectangle ir;
-
-                /* Get the dimensions and affected area of icon */
-                IconList_GetIconRectangle(obj, data, icon, &ir);
-
-                /* Add the relative position offset of the icon */
-
-                ir.MinX += _mleft(obj) - data->view_x + icon->x;
-                ir.MaxX += _mleft(obj) - data->view_x + icon->x;
-                ir.MinY += _mtop(obj) - data->view_y + icon->y;
-                ir.MaxY += _mtop(obj) - data->view_y + icon->y;
-
-                struct RastPort *mrp = CreateRastPort();
-                if (mrp)
-                {
-                    mrp->BitMap = AllocBitMap(ir.MaxX-ir.MinX+1, ir.MaxY-ir.MinY+1, 1, BMF_INTERLEAVED|BMF_MINPLANES, _rp(obj)->BitMap);
-                    if (mrp->BitMap)
-                    {
-                        DoMethod(
-                            obj, MUIM_DrawBackgroundBuffered, mrp,
-                            ir.MinX, ir.MinY,
-                            ir.MaxX - ir.MinX + 1, ir.MaxY - ir.MinY + 1,
-                            data->view_x + (ir.MinX - _mleft(obj)), data->view_y + (ir.MinY - _mtop(obj)), 
-                            0
-                        );
-                    }
-                    else
-                    {
-                        FreeRastPort(mrp);
-                        mrp = NULL;
-                    }
-                }
-                if (mrp)
-                {
-		            struct Rectangle clip;
-		            
-		            clip.MinX = 0;
-		            clip.MinY = 0;
-		            clip.MaxX = ir.MaxX-ir.MinX;
-		            clip.MaxY = ir.MaxY-ir.MinY;
-		    
-    	    	    SetRPAttrs(mrp, RPTAG_ClipRectangle, (IPTR)&clip, RPTAG_ClipRectangleFlags, 0, TAG_DONE);		    
-
-                    IconList_DrawIcon(obj, data, icon, mrp, DRAWICON_DODRAW);
-                    BltBitMapRastPort(mrp->BitMap, 0, 0, _rp(obj), ir.MinX, ir.MinY, ir.MaxX-ir.MinX+1, ir.MaxY-ir.MinY+1, 0xc0);
-                    FreeBitMap(mrp->BitMap);
-                    FreeRastPort(mrp);
-
-                }
-                else
-                {
-                    DoMethod(
-                        obj, MUIM_DrawBackground, 
-                        ir.MinX, ir.MinY,
-                        ir.MaxX - ir.MinX + 1, ir.MaxY - ir.MinY + 1,
-                        data->view_x + (ir.MinX - _mleft(obj)), data->view_y + (ir.MinY - _mtop(obj)), 
-                        0
-                    );
-                    IconList_DrawIcon(obj, data, icon, NULL, DRAWICON_DODRAW);
-                }
-            } else IconList_DrawIcon(obj, data, icon, NULL, DRAWICON_DODRAW);
-
+            IconList_DrawIcon(obj, data, icon, NULL, DRAWICON_DODRAW);
         }
         icon = Node_Next(icon);
     }
