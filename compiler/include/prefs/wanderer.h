@@ -32,7 +32,6 @@ struct WandererPrefs
     ULONG wpd_IconTextMode; // How is the text rendered
     
     ULONG wpd_IconTextMaxLen; // Max length of icon text
-    ULONG wpd_DoubleBuffered;
 };
 
 #define WPD_NAVIGATION_CLASSIC 0
