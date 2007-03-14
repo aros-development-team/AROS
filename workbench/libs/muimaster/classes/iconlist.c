@@ -164,8 +164,6 @@ struct MUI_IconData
     struct Rectangle view_rect;
     
     ULONG textWidth; /*  Whole textwidth for icon in pixels */
-
-    BOOL  buffered;
 };
 
 /**************************************************************************
@@ -420,7 +418,7 @@ static BOOL IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             txwidth = TextLength(rp, icon->entry.label, data->wpd_IconTextMaxLen);
         else txwidth = TextLength(rp, icon->entry.label, nameLength);
 
-        memset( buf, 0 , sizeof( buf ) );
+
 
         ULONG len = data->wpd_IconTextMaxLen;
         // Make sure the maxlen is at least the length of ".."
@@ -452,7 +450,7 @@ static BOOL IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
             default:
                 // Outline mode:
                 
-                SetSoftStyle(rp, FSF_BOLD, FSF_BOLD);
+                SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
                 SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
                 
                 Move(rp, tx + 1, ty ); Text(rp, buf, nameLength);
@@ -512,7 +510,7 @@ static BOOL IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
                     
                 default:
                     // Outline mode..
-                    SetSoftStyle(rp, FSF_BOLD, FSF_BOLD);
+                    SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
                     SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
         
                     Move(rp, tx + 1, ty ); Text(rp, buf, nameLength);
@@ -828,8 +826,6 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->wpd_IconTextMaxLen = GetTagData(MUIA_IconList_TextMaxLen, 0, msg->ops_AttrList);
     if ( data->wpd_IconTextMaxLen <= 0 )
         data->wpd_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
-    
-    data->buffered = (BOOL) GetTagData(MUIA_IconList_DoubleBuffered, 0, msg->ops_AttrList);
 
     NewList((struct List*)&data->icon_list);
 
@@ -1093,7 +1089,6 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     APTR clip;
     struct IconEntry *icon;
     BOOL buffereddraw = FALSE;
-    BOOL updateall = FALSE;
     ULONG update_oldwidth = 0, update_oldheight = 0;
     DoSuperMethodA(cl, obj, (Msg) msg);
 
@@ -1175,114 +1170,108 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             struct Rectangle 	 xrect, yrect;
             BOOL    	    	 scroll_caused_damage;
             
-            //if (data->buffered)
-            //    updateall = TRUE;
-
             scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
     
             data->update = 0;
 
-            if (!updateall)
+            
+            if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
+                (abs(data->update_scrolldy) >= _mheight(obj)))
             {
-    
-                if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
-                    (abs(data->update_scrolldy) >= _mheight(obj)))
-                {
-                    MUI_Redraw(obj, MADF_DRAWOBJECT);
-                    return 0;
-                }
-    
-                region = NewRegion();
-                if (!region)
-                {
-                    MUI_Redraw(obj, MADF_DRAWOBJECT);
-                    return 0;
-                }
-    
-                if (data->update_scrolldx > 0)
-                {
-                    xrect.MinX = _mright(obj) - data->update_scrolldx;
-                    xrect.MinY = _mtop(obj);
-                    xrect.MaxX = _mright(obj);
-                    xrect.MaxY = _mbottom(obj);
-            
-                    OrRectRegion(region, &xrect);
-            
-                    data->update_rect1 = &xrect;
-                }
-                else if (data->update_scrolldx < 0)
-                {
-                    xrect.MinX = _mleft(obj);
-                    xrect.MinY = _mtop(obj);
-                    xrect.MaxX = _mleft(obj) - data->update_scrolldx;
-                    xrect.MaxY = _mbottom(obj);
-    
-                    OrRectRegion(region, &xrect);
-    
-                    data->update_rect1 = &xrect;
-                }
-    
-                if (data->update_scrolldy > 0)
-                {
-                    yrect.MinX = _mleft(obj);
-                    yrect.MinY = _mbottom(obj) - data->update_scrolldy;
-                    yrect.MaxX = _mright(obj);
-                    yrect.MaxY = _mbottom(obj);
-            
-                    OrRectRegion(region, &yrect);
-            
-                    data->update_rect2 = &yrect;
-                }
-                else if (data->update_scrolldy < 0)
-                {
-                    yrect.MinX = _mleft(obj);
-                    yrect.MinY = _mtop(obj);
-                    yrect.MaxX = _mright(obj);
-                    yrect.MaxY = _mtop(obj) - data->update_scrolldy;
-            
-                    OrRectRegion(region, &yrect);
-            
-                    data->update_rect2 = &yrect;
-                }
-
-                ScrollRasterBF(_rp(obj),
-                    data->update_scrolldx,
-                    data->update_scrolldy,
-                    _mleft(obj),
-                    _mtop(obj),
-                    _mright(obj),
-                    _mbottom(obj));
-    
-                scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
-    
-                clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
-    
                 MUI_Redraw(obj, MADF_DRAWOBJECT);
-    
-                data->update_rect1 = data->update_rect2 = NULL;
-    
-                MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-        
-                if (scroll_caused_damage)
-                {
-                    if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
-                    {
-                        /* Theoretically it might happen that more damage is caused
-                        after ScrollRaster. By something else, like window movement
-                        in front of our window. Therefore refresh root object of
-                        window, not just this object */
-            
-                        Object *o = NULL;
-            
-                        get(_win(obj),MUIA_Window_RootObject, &o);
-                        MUI_Redraw(o, MADF_DRAWOBJECT);
-            
-                        MUI_EndRefresh(muiRenderInfo(obj), 0);
-                    }
-                }
-    
                 return 0;
             }
+
+            region = NewRegion();
+            if (!region)
+            {
+                MUI_Redraw(obj, MADF_DRAWOBJECT);
+                return 0;
+            }
+
+            if (data->update_scrolldx > 0)
+            {
+                xrect.MinX = _mright(obj) - data->update_scrolldx;
+                xrect.MinY = _mtop(obj);
+                xrect.MaxX = _mright(obj);
+                xrect.MaxY = _mbottom(obj);
+        
+                OrRectRegion(region, &xrect);
+        
+                data->update_rect1 = &xrect;
+            }
+            else if (data->update_scrolldx < 0)
+            {
+                xrect.MinX = _mleft(obj);
+                xrect.MinY = _mtop(obj);
+                xrect.MaxX = _mleft(obj) - data->update_scrolldx;
+                xrect.MaxY = _mbottom(obj);
+
+                OrRectRegion(region, &xrect);
+
+                data->update_rect1 = &xrect;
+            }
+
+            if (data->update_scrolldy > 0)
+            {
+                yrect.MinX = _mleft(obj);
+                yrect.MinY = _mbottom(obj) - data->update_scrolldy;
+                yrect.MaxX = _mright(obj);
+                yrect.MaxY = _mbottom(obj);
+        
+                OrRectRegion(region, &yrect);
+        
+                data->update_rect2 = &yrect;
+            }
+            else if (data->update_scrolldy < 0)
+            {
+                yrect.MinX = _mleft(obj);
+                yrect.MinY = _mtop(obj);
+                yrect.MaxX = _mright(obj);
+                yrect.MaxY = _mtop(obj) - data->update_scrolldy;
+        
+                OrRectRegion(region, &yrect);
+        
+                data->update_rect2 = &yrect;
+            }
+
+            ScrollRasterBF(_rp(obj),
+                data->update_scrolldx,
+                data->update_scrolldy,
+                _mleft(obj),
+                _mtop(obj),
+                _mright(obj),
+                _mbottom(obj));
+
+            scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+
+            clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+
+            MUI_Redraw(obj, MADF_DRAWOBJECT);
+
+            data->update_rect1 = data->update_rect2 = NULL;
+
+            MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+    
+            if (scroll_caused_damage)
+            {
+                if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
+                {
+                    /* Theoretically it might happen that more damage is caused
+                    after ScrollRaster. By something else, like window movement
+                    in front of our window. Therefore refresh root object of
+                    window, not just this object */
+        
+                    Object *o = NULL;
+        
+                    get(_win(obj),MUIA_Window_RootObject, &o);
+                    MUI_Redraw(o, MADF_DRAWOBJECT);
+        
+                    MUI_EndRefresh(muiRenderInfo(obj), 0);
+                }
+            }
+
+            return 0;
         }
         else if (data->update == UPDATE_RESCALE)
         {
@@ -1290,117 +1279,58 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             struct Rectangle     wrect, hrect;
             ULONG                diffw = 0, diffh = 0;
             
-            if (data->buffered)
-                updateall = TRUE;
-    
             data->update = 0;
 
-            if (!updateall)
+            
+            if (!(region = NewRegion()))
             {
-                if (!(region = NewRegion()))
-                {
-                    MUI_Redraw(obj, MADF_DRAWOBJECT);
-                    return 0;
-                }
-                
-                if ( data->view_width > update_oldwidth )
-                    diffw = data->view_width - update_oldwidth;
-                if ( data->view_height > update_oldheight )
-                    diffh = data->view_height - update_oldheight;            
-    
-                if (diffw)
-                {
-                    wrect.MinX = _mright(obj) - diffw;
-                    wrect.MinY = _mtop(obj);
-                    wrect.MaxX = _mright(obj);
-                    wrect.MaxY = _mbottom(obj);
-                    OrRectRegion(region, &wrect);
-                    data->update_rect1 = &wrect;
-                }
-    
-                if (diffh)
-                {
-                    hrect.MinX = _mleft(obj);
-                    hrect.MinY = _mbottom(obj) - diffh;
-                    hrect.MaxX = _mright(obj);
-                    hrect.MaxY = _mbottom(obj);
-                    OrRectRegion(region, &hrect);
-                    data->update_rect2 = &hrect;
-                }
-                
-                if (diffh||diffw)
-                {
-                    clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
-                    MUI_Redraw(obj, MADF_DRAWOBJECT);
-                    data->update_rect1 = data->update_rect2 = NULL;
-                    MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-                } else DisposeRegion(region);
-                
+                MUI_Redraw(obj, MADF_DRAWOBJECT);
                 return 0;
             }
+            
+            if ( data->view_width > update_oldwidth )
+                diffw = data->view_width - update_oldwidth;
+            if ( data->view_height > update_oldheight )
+                diffh = data->view_height - update_oldheight;            
+
+            if (diffw)
+            {
+                wrect.MinX = _mright(obj) - diffw;
+                wrect.MinY = _mtop(obj);
+                wrect.MaxX = _mright(obj);
+                wrect.MaxY = _mbottom(obj);
+                OrRectRegion(region, &wrect);
+                data->update_rect1 = &wrect;
+            }
+
+            if (diffh)
+            {
+                hrect.MinX = _mleft(obj);
+                hrect.MinY = _mbottom(obj) - diffh;
+                hrect.MaxX = _mright(obj);
+                hrect.MaxY = _mbottom(obj);
+                OrRectRegion(region, &hrect);
+                data->update_rect2 = &hrect;
+            }
+            
+            if (diffh||diffw)
+            {
+                clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+                MUI_Redraw(obj, MADF_DRAWOBJECT);
+                data->update_rect1 = data->update_rect2 = NULL;
+                MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+            } else DisposeRegion(region);
+            
+            return 0;
         }
 
     }
-    else updateall = TRUE;
+   
+    DoMethod(
+        obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
+        data->view_x, data->view_y, 0
+    );
 
-    if (updateall)
-    {
-        struct Region *reg = NULL;
-
-        if (data->buffered) reg = NewRegion();
-
-        if (reg)
-        {
-            struct Rectangle rect = {_mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj)};
-            if (OrRectRegion(reg, &rect))
-            {
-                BOOL ok = TRUE;
-                icon = List_First(&data->icon_list);
-                while (icon && ok)
-                {
-                    if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
-                    {
-                        struct Rectangle iconrect;
-
-                        /* Get the dimensions and affected area of icon */
-                        IconList_GetIconRectangle(obj, data, icon, &iconrect);
-
-                        /* Add the relative position offset of the icon */
-                        iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
-                        iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
-                        iconrect.MinY += _mtop(obj) - data->view_y + icon->y;
-                        iconrect.MaxY += _mtop(obj) - data->view_y + icon->y;
-
-                        if(ClearRectRegion(reg, &iconrect)==0) ok = FALSE;
-                    }
-                    icon = Node_Next(icon);
-                }
-                if (!ok)
-                {
-                    DisposeRegion(reg);
-                    reg = NULL;
-                }
-            }
-            else
-            {
-                DisposeRegion(reg);
-                reg = NULL;
-            }
-        }
-
-        if (reg)
-        {
-            buffereddraw = TRUE;
-            clip = MUI_AddClipRegion(muiRenderInfo(obj), reg);
-        }
-
-        DoMethod(
-            obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
-            data->view_x, data->view_y, 0
-        );
-
-        if (reg) MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-    }
 
 
     /* At we see if there any Icons without proper position, this is the wrong place here,
@@ -1451,12 +1381,12 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
                 }
                 if (mrp)
                 {
-		    struct Rectangle clip;
-		    
-		    clip.MinX = 0;
-		    clip.MinY = 0;
-		    clip.MaxX = ir.MaxX-ir.MinX;
-		    clip.MaxY = ir.MaxY-ir.MinY;
+		            struct Rectangle clip;
+		            
+		            clip.MinX = 0;
+		            clip.MinY = 0;
+		            clip.MaxX = ir.MaxX-ir.MinX;
+		            clip.MaxY = ir.MaxY-ir.MinY;
 		    
     	    	    SetRPAttrs(mrp, RPTAG_ClipRectangle, (IPTR)&clip, RPTAG_ClipRectangleFlags, 0, TAG_DONE);		    
 
@@ -1970,7 +1900,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
                         
                         /* unmark old lasso area */
                         GetAbsoluteLassoRect(data, &old_lasso);                          
-			InvertLassoOutlines(obj, &old_lasso);
+                        InvertLassoOutlines(obj, &old_lasso);
 
                         /* if mouse leaves iconlist area during lasso mode, scroll view */
                         if (mx < 0 || mx > _width(obj) || my < 0 || my > _height(obj))
