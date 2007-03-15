@@ -231,6 +231,9 @@ LONG ReadNextDirEntry(struct ExtFileLock *fl, struct FileInfoBlock *fib)
 		GetLongName(sb, fl->dircache, de, entry, &fib->fib_FileName[1], &fib->fib_FileName[0]); /* replaces short name only if long name has been found */
 
 		fib->fib_Protection = 0;
+                if (de->attr & ATTR_READ_ONLY) fib->fib_Protection |= (FIBF_DELETE | FIBF_WRITE);
+                if (de->attr & ATTR_ARCHIVE)   fib->fib_Protection |= FIBF_ARCHIVE;
+
 		fib->fib_Comment[0] = '\0';
 		break;
 	}
