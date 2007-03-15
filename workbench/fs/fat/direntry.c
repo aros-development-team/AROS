@@ -170,6 +170,9 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib)
 
 	kprintf("\t\tname (len %ld) ", fib->fib_FileName[0]); knprints(&fib->fib_FileName[1], fib->fib_FileName[0]);
 	fib->fib_Protection = 0;
+        if (fl->attr & ATTR_READ_ONLY) fib->fib_Protection |= (FIBF_DELETE | FIBF_WRITE);
+        if (fl->attr & ATTR_ARCHIVE)   fib->fib_Protection |= FIBF_ARCHIVE;
+
 	fib->fib_Comment[0] = '\0';
 
 	return result;
