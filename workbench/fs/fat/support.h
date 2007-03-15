@@ -36,6 +36,5 @@ void knprints(UBYTE *name, LONG namelen);
 #define knprints( path, len )
 #endif
 
-
 #endif
 
