@@ -120,6 +120,11 @@ struct MUI_WindowData
     
     struct Screen *wd_UserScreen;
     STRPTR  	   wd_UserPublicScreen;
+    LONG    wd_XStore;     /*store MUIV_Window_LeftEdge_Centered Tags etc 
+                             because wd_X is overwritten by a value in CalcDimension
+                             Popup windows work ok on AmiGG when main window is move
+                           */
+    LONG    wd_YStore;
 };
 
 #ifndef WFLG_SIZEGADGET
@@ -637,7 +642,10 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
+    if ((data->wd_XStore >= 0) && (data->wd_YStore >= 0))
+    { 
     DoMethod(obj,MUIM_Window_Snapshot,0);
+    }
 
     data->wd_RenderInfo.mri_Window = NULL;
     data->wd_RenderInfo.mri_VertProp = NULL;
@@ -648,8 +656,14 @@ static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
     if (win != NULL)
     {
 	/* store position and size */
+        if (data->wd_XStore >=0)
 	data->wd_X      = win->LeftEdge;
+        else
+        data->wd_X      = data->wd_XStore;
+        if (data->wd_YStore >=0)
 	data->wd_Y      = win->TopEdge;
+        else
+        data->wd_Y      = data->wd_YStore;
 	data->wd_Width  = win->GZZWidth;
 	data->wd_Height = win->GZZHeight;
 
@@ -711,6 +725,8 @@ static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 /* FIXME 20030817: needs some fixing, seems not fully implemented */
 static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
 {
+    data->wd_XStore = data->wd_X;
+    data->wd_YStore = data->wd_Y;
     if (NULL == data->wd_RefWindow)
     {
 	/* The following calculations are not very correct, the size and dragbar
