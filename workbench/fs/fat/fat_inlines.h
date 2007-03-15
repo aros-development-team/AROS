@@ -13,85 +13,69 @@
 #ifndef __FAT_HANDLER_INLINES_H
 #define __FAT_HANDLER_INLINES_H
 
-static inline LONG TestLock(struct ExtFileLock *fl)
-{
-	if (fl == 0 && glob->sb == NULL)
-	{
-		if (glob->disk_inserted == FALSE)
-			return ERROR_NO_DISK;
-		else
-			return ERROR_NOT_A_DOS_DISK;
-	}
+static inline LONG TestLock(struct ExtFileLock *fl) {
+    if (fl == 0 && glob->sb == NULL) {
+        if (glob->disk_inserted == FALSE)
+            return ERROR_NO_DISK;
+        else
+            return ERROR_NOT_A_DOS_DISK;
+    }
  
-	if (glob->sb == NULL || glob->disk_inhibited || (fl && fl->fl_Volume != MKBADDR(glob->sb->doslist)))
-		return ERROR_DEVICE_NOT_MOUNTED;
+    if (glob->sb == NULL || glob->disk_inhibited || (fl && fl->fl_Volume != MKBADDR(glob->sb->doslist)))
+        return ERROR_DEVICE_NOT_MOUNTED;
 
-	if (fl && fl->magic != ID_FAT_DISK)
-		return ERROR_OBJECT_WRONG_TYPE;
+    if (fl && fl->magic != ID_FAT_DISK)
+        return ERROR_OBJECT_WRONG_TYPE;
 
-	return 0;
+    return 0;
 }
 
-#define SkipColon(name, namelen) {		 \
-	int i;                      		 \
-	for (i=0; i<namelen; i++)   		 \
-		if (name[i] == ':')     		 \
-		{                       		 \
-			namelen = namelen - (i+1);   \
-			name = &name[i+1];  		 \
-			break;              		 \
-		}                       		 \
+#define SkipColon(name, namelen) {     \
+    int i;                             \
+    for (i=0; i < namelen; i++)        \
+        if (name[i] == ':') {          \
+            namelen = namelen - (i+1); \
+            name = &name[i+1];         \
+            break;                     \
+        }                              \
 }
 
 /* Mem... */
 
-static inline void *FS_AllocMem(ULONG bytes)
-{
-	return AllocVecPooled(glob->mempool, bytes);
+static inline void *FS_AllocMem(ULONG bytes) {
+    return AllocVecPooled(glob->mempool, bytes);
 }
 
-static inline void FS_FreeMem(void *mem)
-{
-	FreeVecPooled(glob->mempool, mem);
+static inline void FS_FreeMem(void *mem) {
+    FreeVecPooled(glob->mempool, mem);
 }
 
-
-static inline UBYTE *FS_AllocBlock()
-{
-#ifdef __DEBUG_IO__
-	kprintf("\tAllocating block buffer\n");
-#endif
-	 return FS_AllocMem(glob->sb->sectorsize);
+static inline UBYTE *FS_AllocBlock() {
+    kprintf("\tAllocating block buffer\n");
+    return FS_AllocMem(glob->sb->sectorsize);
 }
 
-static inline void FS_FreeBlock(UBYTE *block)
-{
-#ifdef __DEBUG_IO__
-	kprintf("\tFreeing block buffer\n");
-#endif
-	FS_FreeMem(block);
+static inline void FS_FreeBlock(UBYTE *block) {
+    kprintf("\tFreeing block buffer\n");
+    FS_FreeMem(block);
 }
  
 
-static inline ULONG Cluster2Sector(struct FSSuper *sb, ULONG n)
-{
-	return ((n-2) << sb->cluster_sectors_bits) + sb->first_data_sector;
+static inline ULONG Cluster2Sector(struct FSSuper *sb, ULONG n) {
+    return ((n-2) << sb->cluster_sectors_bits) + sb->first_data_sector;
 }
 
-static inline ULONG GetFatEntry(ULONG n)
-{
-	return glob->sb->func_get_fat_entry(glob->sb, n);
+static inline ULONG GetFatEntry(ULONG n) {
+    return glob->sb->func_get_fat_entry(glob->sb, n);
 }
 
-static inline ULONG GetFirstCluster(struct DirEntry *de)
-{
-	return AROS_LE2WORD(de->first_cluster_lo) | (((ULONG)AROS_LE2WORD(de->first_cluster_hi)) << 16);
+static inline ULONG GetFirstCluster(struct DirEntry *de) {
+    return AROS_LE2WORD(de->first_cluster_lo) | (((ULONG)AROS_LE2WORD(de->first_cluster_hi)) << 16);
 }
 
 /* IO layer */
 
-static inline LONG FS_GetBlock (ULONG n, UBYTE *dst)
-{
+static inline LONG FS_GetBlock (ULONG n, UBYTE *dst) {
     glob->diskioreq->iotd_Req.io_Command = CMD_READ;
     glob->diskioreq->iotd_Req.io_Data = dst;
     glob->diskioreq->iotd_Req.io_Offset = n * glob->blocksize;
@@ -103,8 +87,7 @@ static inline LONG FS_GetBlock (ULONG n, UBYTE *dst)
     return glob->diskioreq->iotd_Req.io_Error;
 }
 
-static inline LONG FS_GetBlocks (ULONG n, UBYTE *dst, ULONG count)
-{
+static inline LONG FS_GetBlocks (ULONG n, UBYTE *dst, ULONG count) {
     glob->diskioreq->iotd_Req.io_Command = CMD_READ;
     glob->diskioreq->iotd_Req.io_Data = dst;
     glob->diskioreq->iotd_Req.io_Offset = n * glob->blocksize;
@@ -116,8 +99,7 @@ static inline LONG FS_GetBlocks (ULONG n, UBYTE *dst, ULONG count)
     return glob->diskioreq->iotd_Req.io_Error;
 }
 
-static inline LONG FS_PutBlock (ULONG n, UBYTE *dst)
-{
+static inline LONG FS_PutBlock (ULONG n, UBYTE *dst) {
     glob->diskioreq->iotd_Req.io_Command = CMD_WRITE;
     glob->diskioreq->iotd_Req.io_Data = dst;
     glob->diskioreq->iotd_Req.io_Offset = n * glob->blocksize;
@@ -128,7 +110,6 @@ static inline LONG FS_PutBlock (ULONG n, UBYTE *dst)
 
     return glob->diskioreq->iotd_Req.io_Error;
 }
-
 
 #endif
 

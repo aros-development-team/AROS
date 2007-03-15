@@ -39,65 +39,63 @@ extern struct Globals *glob;
 #define DEF_READ_AHEAD 16*1024
 /*
 struct CacheBuffer {
-	struct CacheBuffer *next;
-	ULONG count;
-	ULONG block;
-	void *data;
-	ULONG magic;
+    struct CacheBuffer *next;
+    ULONG count;
+    ULONG block;
+    void *data;
+    ULONG magic;
 };
 */
-struct Extent
-{
-	ULONG sector;
-	ULONG count;
-	ULONG offset;
-	ULONG cur_cluster;
-	ULONG next_cluster;
-	ULONG start_cluster;
-	ULONG last_cluster;
+
+struct Extent {
+    ULONG sector;
+    ULONG count;
+    ULONG offset;
+    ULONG cur_cluster;
+    ULONG next_cluster;
+    ULONG start_cluster;
+    ULONG last_cluster;
 };
 
-struct DirCache
-{
-	struct Extent *e;
-	void *buffer;
-	ULONG cur_sector;
+struct DirCache {
+    struct Extent *e;
+    void *buffer;
+    ULONG cur_sector;
 };
  
 #define fl_Key entry
 
-#define FAT_ROOTDIR_MARK	0xFFFFFFFFlu
+#define FAT_ROOTDIR_MARK    0xFFFFFFFFlu
 
-struct ExtFileLock
-{
-	/* struct FileLock */
-	BPTR            fl_Link;
-	ULONG  			entry;
-	LONG            fl_Access;
-	struct MsgPort *fl_Task;
-	BPTR            fl_Volume;
+struct ExtFileLock {
+    /* struct FileLock */
+    BPTR            fl_Link;
+    ULONG           entry;
+    LONG            fl_Access;
+    struct MsgPort *fl_Task;
+    BPTR            fl_Volume;
 
-	/* coinsistency check */
-	ULONG 			magic;   
+    /* coinsistency check */
+    ULONG           magic;   
 
-	/* my directory start cluster */
-	ULONG 		    cluster;
+    /* my directory start cluster */
+    ULONG           cluster;
 
-	ULONG 			attr;
-	ULONG 			size;
-	ULONG 			first_cluster;
+    ULONG           attr;
+    ULONG           size;
+    ULONG           first_cluster;
 
-	struct Extent	data_ext[1];
+    struct Extent   data_ext[1];
 
-	/* dir entry cache for easy and quick management of long files */
+    /* dir entry cache for easy and quick management of long files */
 
-	/* used in directory scanning and file reading */
-	ULONG 			pos;
+    /* used in directory scanning and file reading */
+    ULONG           pos;
 
-	UBYTE 			name[108];
+    UBYTE           name[108];
 
-	BOOL 			dircache_active;
-	struct DirCache dircache[1];
+    BOOL            dircache_active;
+    struct DirCache dircache[1];
 };
 
 struct VolumeInfo {
@@ -106,72 +104,71 @@ struct VolumeInfo {
 };
 
 struct FSSuper {
-	struct FSSuper *next;
-	struct DosList *doslist;
+    struct FSSuper *next;
+    struct DosList *doslist;
 
-	ULONG sectorsize;
-	ULONG sectorsize_bits;
+    ULONG sectorsize;
+    ULONG sectorsize_bits;
 
-	ULONG clustersize;
-	ULONG clustersize_bits;
-	ULONG cluster_sectors_bits;
+    ULONG clustersize;
+    ULONG clustersize_bits;
+    ULONG cluster_sectors_bits;
 
-	ULONG first_fat_sector;
-	ULONG first_data_sector;
-	ULONG first_rootdir_sector;
+    ULONG first_fat_sector;
+    ULONG first_data_sector;
+    ULONG first_rootdir_sector;
 
-	ULONG rootdir_sectors;
-	ULONG total_sectors;
-	ULONG data_sectors;
-	ULONG clusters_count;
-	ULONG fat_size;
+    ULONG rootdir_sectors;
+    ULONG total_sectors;
+    ULONG data_sectors;
+    ULONG clusters_count;
+    ULONG fat_size;
 
-        ULONG free_clusters;
+    ULONG free_clusters;
 
-	ULONG volume_id;
-	ULONG type;
-	ULONG eoc_mark;
+    ULONG volume_id;
+    ULONG type;
+    ULONG eoc_mark;
 
-	UBYTE *fat;
-	ULONG fat32_cachesize;
-	ULONG fat32_cachesize_bits;
-	ULONG fat32_cache_block;
+    UBYTE *fat;
+    ULONG fat32_cachesize;
+    ULONG fat32_cachesize_bits;
+    ULONG fat32_cache_block;
 
-	struct Extent first_rootdir_extent[1];
+    struct Extent first_rootdir_extent[1];
 
-        struct VolumeInfo volume;
+    struct VolumeInfo volume;
 
-	/* function table */
-	ULONG (*func_get_fat_entry)(struct FSSuper *sb, ULONG n);
-	/* ... */
+    /* function table */
+    ULONG (*func_get_fat_entry)(struct FSSuper *sb, ULONG n);
+    /* ... */
 };
 
-
 struct Globals {
-	/* mem/task */
+    /* mem/task */
     struct Task *ourtask;
     struct MsgPort *ourport;
-	APTR mempool;
+    APTR mempool;
 
-	/* fs */
-	struct DosList *devnode;
-	struct FileSysStartupMsg *fssm;
-	LONG quit;
-	BOOL autodetect;
+    /* fs */
+    struct DosList *devnode;
+    struct FileSysStartupMsg *fssm;
+    LONG quit;
+    BOOL autodetect;
 
-	/* io */
-	struct IOExtTD *diskioreq;
-	struct IOExtTD *diskchgreq;
-	struct MsgPort *diskport;
+    /* io */
+    struct IOExtTD *diskioreq;
+    struct IOExtTD *diskchgreq;
+    struct MsgPort *diskport;
         LONG blocksize;
 
-	/* volumes */
-	struct FSSuper *sb;    /* current sb */
-	struct FSSuper *sblist;   /* list of sbs with outstanding locks */
+    /* volumes */
+    struct FSSuper *sb;    /* current sb */
+    struct FSSuper *sblist;   /* list of sbs with outstanding locks */
 
-	/* disk status */
+    /* disk status */
     LONG disk_inserted;
-	LONG disk_inhibited;
+    LONG disk_inhibited;
 };
 
 #include "support.h"
