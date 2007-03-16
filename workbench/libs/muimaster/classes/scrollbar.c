@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright  2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,12 +12,15 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
+#include "../datatypescache.h"
+#include "../imspec_intern.h"
+
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
 #include "prefs.h"
 
-//#define MYDEBUG 1
+#define MYDEBUG 1
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
@@ -44,7 +47,8 @@ IPTR Scrollbar__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 			       MUIA_Group_Spacing, 0,
-			       MUIA_Background, MUII_BACKGROUND,
+			       MUIA_Background, MUII_GroupBack,
+                    
 			       TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj)
 	return FALSE;
@@ -61,6 +65,7 @@ IPTR Scrollbar__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    ImageButtonFrame,
 	    MUIA_InputMode, MUIV_InputMode_RelVerify,
 	    MUIA_Image_Spec, horiz ? MUII_ArrowLeft : MUII_ArrowUp,
+	    MUIA_Image_Prop, prop,
 	    End;
 	if (data->up_arrow)
 	{
@@ -74,6 +79,7 @@ IPTR Scrollbar__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    ImageButtonFrame,
 	    MUIA_InputMode, MUIV_InputMode_RelVerify,
 	    MUIA_Image_Spec, horiz ? MUII_ArrowRight : MUII_ArrowDown,
+            MUIA_Image_Prop, prop,
 	    End;
 	if (data->down_arrow)
 	{

@@ -1,6 +1,6 @@
 /*
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2006, The AROS Development Team.
+    Copyright  1999, David Le Corfec.
+    Copyright  2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -25,7 +25,7 @@
 #include <proto/commodities.h>
 #include <proto/muimaster.h>
 
-/*  #define MYDEBUG 1 */
+//#define MYDEBUG 1 */
 #include "debug.h"
 #include "prefs.h"
 
@@ -597,13 +597,21 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
         data->app_RexxPort = CreateMsgPort();
         if (data->app_RexxPort)
         {
-            data->app_RexxPort->mp_Node.ln_Name = strdup(data->app_Base);
-            char *i;
-            for (i = data->app_RexxPort->mp_Node.ln_Name; *i != '\0'; i++)
+            data->app_RexxPort->mp_Node.ln_Name = StrDup(data->app_Base);
+            if (data->app_RexxPort->mp_Node.ln_Name != NULL)
             {
-                *i = toupper(*i);
+                char *i;
+                for (i = data->app_RexxPort->mp_Node.ln_Name; *i != '\0'; i++)
+                {
+                    *i = toupper(*i);
+                }
+                AddPort(data->app_RexxPort);
             }
-            AddPort(data->app_RexxPort);
+            else
+            {
+                DeleteMsgPort(data->app_RexxPort);
+                data->app_RexxPort = NULL;
+            }
         }
     }
 
@@ -671,6 +679,7 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 		DoMethod(obj, OM_REMMEMBER, (IPTR)child);
 		D(bug("Application_Dispose(%p) : MUI_DisposeObject(%p)\n", obj, child));
 		MUI_DisposeObject(child);
+
 	    }
 	    else
 	    {
@@ -733,7 +742,9 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 	    ReplyMsg(msg);
 	    }     
         RemPort(data->app_RexxPort);
-        free(data->app_RexxPort->mp_Node.ln_Name);
+
+        if (data->app_RexxPort->mp_Node.ln_Name != NULL) FreeVec(data->app_RexxPort->mp_Node.ln_Name);
+
         DeleteMsgPort(data->app_RexxPort);
     }
 
@@ -1480,6 +1491,7 @@ static IPTR Application__MUIM_AboutMUI(struct IClass *cl, Object *obj, struct MU
 
     if (data->app_AboutWin)
     {
+
 	set(data->app_AboutWin, MUIA_Window_Open, TRUE);
     }
     return 0;
@@ -1498,7 +1510,9 @@ static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
     if ((child = NextObject(&cstate)))
     {
 	D(bug("closing window %p\n", child));
+
 	set(child, MUIA_Window_Open, FALSE);
+
     }
     if (data->app_GlobalInfo.mgi_Configdata)
 	MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
