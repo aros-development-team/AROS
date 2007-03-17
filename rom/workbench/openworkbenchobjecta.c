@@ -198,26 +198,34 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                     && strlen(icon->do_DefaultTool) > 0
                 )
                 {
-                    BPTR lock = Lock(name, ACCESS_READ);
+                    BPTR lock = (BPTR)NULL, lock2 = (BPTR)NULL,
+                        parent = (BPTR)NULL, parent2 = (BPTR)NULL;
+                    
+                    lock = Lock(name, ACCESS_READ);
+                    if (lock != (BPTR)NULL)
+                        parent = ParentDir(lock);
+                    if (parent != (BPTR)NULL)
+                        lock2 = Lock(icon->do_DefaultTool, ACCESS_READ);
+                    if (lock2 != (BPTR)NULL)
+                        parent2 = ParentDir(lock2);
 
-
-                    if (lock != NULL)
+                    if (parent2 != NULL)
                     {
-                        BPTR parent = ParentDir(lock);
-
-                        if (parent != NULL)
+                        struct TagItem tags[] =
                         {
-                            success = OpenWorkbenchObject
-                            (
-                                icon->do_DefaultTool,
-                                WBOPENA_ArgLock, (IPTR) parent,
-                                WBOPENA_ArgName, (IPTR) FilePart(name),
-                                TAG_DONE
-                            );
+                            {WBOPENA_ArgLock, (IPTR) parent},
+                            {WBOPENA_ArgName, (IPTR) FilePart(name)},
+                            {TAG_DONE, (IPTR)NULL}
+                        };
 
-                            UnLock(parent);
-                        }
+                        success = WB_LaunchProgram
+                        (
+                            parent2, FilePart(icon->do_DefaultTool), tags
+                        );
 
+                        UnLock(parent2);
+                        UnLock(lock2);
+                        UnLock(parent);
                         UnLock(lock);
                     }
                 }
