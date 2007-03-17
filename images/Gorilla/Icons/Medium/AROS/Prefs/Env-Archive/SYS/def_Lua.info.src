@@ -1,1 +1,2 @@
 DEFAULTTOOL = lua:lua
+TOOLTYPE = CLI

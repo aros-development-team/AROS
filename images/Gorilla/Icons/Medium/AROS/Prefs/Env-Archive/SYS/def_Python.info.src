@@ -1,1 +1,2 @@
+TOOLTYPE = CLI
 DEFAULTTOOL = c:python
