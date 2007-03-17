@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,15 +14,10 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-#include <proto/cybergraphics.h>
 
 #include <string.h>
 
 /*  #define MYDEBUG 1 */
-
-#include "../datatypescache.h"
-#include "../imspec_intern.h"
-
 #include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -44,11 +39,8 @@ struct MUI_ImageData
     char *spec;
     ULONG flags;
     struct MUI_ImageSpec_intern *img;
-    struct  NewImage *propimage;
     struct Image *old_image;
-    Object *prop; /* private hack to use prop images */
     LONG   state; /* see IDS_* in intuition/imageclass.h */
-    ULONG  specnr;
 };
 
 
@@ -59,16 +51,12 @@ IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ImageData   *data;
     struct TagItem  	    *tag, *tags;
-    Object *prop;
-
+    
 /*      D(bug("Image_New starts\n")); */
-
-    prop = GetTagData(MUIA_Image_Prop, 0, msg->ops_AttrList);
-
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return FALSE;
-
+    
     data = INST_DATA(cl, obj);
     data->state = IDS_NORMAL;
 
@@ -103,8 +91,6 @@ IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		char *spec;
 		char spec_buf[20];
 
-                data->specnr = tag->ti_Data;
-
 		if (tag->ti_Data >= MUII_WindowBack && tag->ti_Data < MUII_BACKGROUND)
 		{
 		    sprintf(spec_buf,"6:%ld",tag->ti_Data);
@@ -122,7 +108,6 @@ IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->spec = StrDup(spec);
 	    }
 	    break;
-
 	    case MUIA_Image_OldImage:
 		data->old_image = (struct Image *)tag->ti_Data;
 		break;
@@ -131,8 +116,6 @@ IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
     	}
     }
-
-    data->prop = prop;
 
 /*      if (!data->spec && !data->old_image) */
 /*      { */
@@ -189,7 +172,6 @@ IPTR Image__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		}
 		break;
 	    case MUIA_Image_Spec:
-                data->specnr = tag->ti_Data;
 		if (data->spec)
 		    zune_image_spec_free(data->spec);
 		data->spec = zune_image_spec_duplicate(tag->ti_Data);
@@ -240,52 +222,16 @@ IPTR Image__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-struct NewImage *GetPropImage(struct MUI_ImageData *data, Object *prop)
-{
-        struct MUI_AreaData *adata = muiAreaData(prop);
-        struct MUI_ImageSpec_intern *spec = adata->mad_Background;
-
-        if (spec)
-        {
-            if (spec->type == IST_BITMAP)
-            {
-                struct dt_node *node = spec->u.bitmap.dt;
-                if (node)
-                {
-                    if (node->mode == MODE_PROP)
-                    {
-                        if (data->specnr == MUII_ArrowDown) return node->img_down;
-                        if (data->specnr == MUII_ArrowUp) return node->img_up;
-                        if (data->specnr == MUII_ArrowLeft) return node->img_left;
-                        if (data->specnr == MUII_ArrowRight) return node->img_right;
-                    }
-                }
-            }
-        }
-    return NULL;
-}
-
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
 IPTR Image__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
+
     if (!DoSuperMethodA(cl, obj, (Msg)msg))
 	return (IPTR)NULL;
-    data->propimage = NULL;
 
-    if (data->prop)
-    {
-        struct NewImage *ni = GetPropImage(data, data->prop);
-        if (ni)
-        {
-            set(obj, MUIA_Frame, MUIV_Frame_None);
-            return(1);
-        }
-
-    }
-    
     if (data->spec)
     {
 	data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
@@ -322,7 +268,6 @@ IPTR Image__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
@@ -331,24 +276,6 @@ IPTR Image__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
     DoSuperMethodA(cl, obj, (Msg)msg);
-
-
-    if (data->prop != NULL)
-    {
-        struct NewImage *ni = GetPropImage(data, data->prop);
-        if (ni)
-        {
-            msg->MinMaxInfo->MinWidth = ni->w >> 2;
-            msg->MinMaxInfo->MaxWidth = ni->w >> 2;
-            msg->MinMaxInfo->DefWidth = ni->w >> 2;
-
-            msg->MinMaxInfo->MinHeight = ni->h;
-            msg->MinMaxInfo->MaxHeight = ni->h;
-            msg->MinMaxInfo->DefHeight = ni->h;
-            data->propimage = ni;
-            return(1);
-        }
-    }
 
     if (data->img)
     {
@@ -450,45 +377,6 @@ IPTR Image__MUIM_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
-
-void DrawAlphaStateImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG state, UWORD xp, UWORD yp) {
-
-/* Function:   draw an Image to a specific RastPort using AlphaValues
- * Input:      RastPortd rp:
-    *                          RastPort to draw to
- *             NewImage ni:
-    *                          Image to draw
- *             UWORD xp, yp:
-    *                          location where to draw the Image
-    * Bugs:	   Not known, throught the lack of AlphaHandling in cgfx/p96 there
-    *             must all be done by hand so it's recommended to use this for small Images.
-    * NOTES:      a temporary Buffer must be allocated to store the Background
-*/
-
-    UWORD 	ix, iy;
-    UBYTE   *d;
-    
-    
-    if (ni) {
-        d = (UBYTE *) ni->data;
-       ix=ni->w;
-       iy=ni->h;
-       switch(state) {
-           case IDS_NORMAL:
-               break;
-           case IDS_SELECTED:
-               d += (ix >> 2) * 4;
-               break;
-           case IDS_INACTIVENORMAL:
-               d += (ix >> 2) * 8;
-               break;
-       }
-
-       WritePixelArrayAlpha(d, 0 , 0, ix*4, rp, xp, yp, ix >> 2, iy, 0xffffffff);
-    }
-}
-
-
 IPTR Image__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
@@ -497,28 +385,13 @@ IPTR Image__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
        obj, ((struct MUIP_Draw *)msg)->flags, data->state,
 	  !!(_flags(obj) & MADF_SHOWSELSTATE)));
 
-    if (data->propimage == NULL) 
-    {
-        DoSuperMethodA(cl,obj,(Msg)msg);
+    DoSuperMethodA(cl,obj,(Msg)msg);
 
-        if (!(msg->flags & (MADF_DRAWOBJECT|MADF_DRAWUPDATE)))
+    if (!(msg->flags & (MADF_DRAWOBJECT|MADF_DRAWUPDATE)))
                 return 0;
-    }
 
-    if (data->propimage)
+    if (data->img)
     {
-        //Object *p = NULL;
-        //get(obj, MUIA_Parent, &p);
-        //if (p) DoMethod(p, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
-        //else 
-        DoMethod(obj, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
-
-        DrawAlphaStateImageToRP(_rp(obj), data->propimage, data->state, _left(obj), _top(obj));
-    }
-    else if (data->img)
-    {
-        DoMethod(obj, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
-
 	zune_imspec_draw(data->img, muiRenderInfo(obj),
 			_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
 			0, 0, data->state);

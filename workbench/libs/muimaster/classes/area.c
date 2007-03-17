@@ -285,7 +285,6 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                     zune_image_spec_free(data->mad_BackgroundSpec);
                 }
                 data->mad_BackgroundSpec = zune_image_spec_duplicate(tag->ti_Data);
-
                 break;
     
             case MUIA_ControlChar:

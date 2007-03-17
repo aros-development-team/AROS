@@ -383,7 +383,7 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 static void CleanupRenderInfo(struct MUI_WindowData *data, struct MUI_RenderInfo *mri)
 {
     int i;
-    
+
     if (mri->mri_LeftImage) {DisposeObject(mri->mri_LeftImage);mri->mri_LeftImage=NULL;};
     if (mri->mri_RightImage){DisposeObject(mri->mri_RightImage);mri->mri_RightImage=NULL;};
     if (mri->mri_UpImage) {DisposeObject(mri->mri_UpImage);mri->mri_UpImage=NULL;};
@@ -410,14 +410,7 @@ static void CleanupRenderInfo(struct MUI_WindowData *data, struct MUI_RenderInfo
 
     if (data->wd_UserScreen)
     {
-        BOOL screenclose = FALSE;
-/*
-        Forbid();
-            if (mri->mri_Screen->FirstWindow) if (mri->mri_Screen->FirstWindow->NextWindow == NULL) screenclose = TRUE; 
-        Permit();
-*/
-    screenclose = TRUE;
-	    if (screenclose) CloseScreen(mri->mri_Screen);
+	CloseScreen(mri->mri_Screen);
     }    
 
 
@@ -1480,7 +1473,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 	    break;
 
 	case IDCMP_REFRESHWINDOW:
-        ReplyMsg((struct Message*)imsg);
+	    ReplyMsg((struct Message*)imsg);
 	    replied = TRUE;
 	    if (data->wd_Flags & MUIWF_RESIZING)
 	    {
@@ -2533,10 +2526,6 @@ IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Window_EraseArea:
 		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ERASEAREA);
 		break;
-
-        case MUIA_Window_ToolBox:
-        _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_TOOLBOX);
-        break;
 
 	    case MUIA_Window_CloseGadget:
 		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_CLOSEGADGET);
