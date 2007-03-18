@@ -6,7 +6,7 @@
 #define INTUITION_NO_INLINE_STDARG
 #define USE_FORMAT64
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -1336,6 +1336,7 @@ localecopydone:
 			"Libs",		"Libs",
 			"Locale",		"Locale",
 			"Prefs",		"Prefs",
+			"Rexxc",			"Rexxc",
 			"S",			"S",
 			"Storage",		"Storage",
 			"System",		"System",
