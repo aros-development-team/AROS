@@ -89,8 +89,20 @@
 
     <sys/param.h> unconditionally defines MIN(), MAX().
 */
-#define MIN(a,b)    (((a)<(b))?(a):(b))
-#define MAX(a,b)    (((a)>(b))?(a):(b))
+
+/* Macros for counting and rounding. */
+#ifndef howmany
+#define	howmany(x, y)	(((x)+((y)-1))/(y))
+#endif
+#define	roundup(x, y)	((((x)+((y)-1))/(y))*(y))
+#define powerof2(x)	((((x)-1)&(x))==0)
+
+#ifndef min
+#define min(x,y) ((x) < (y) ? (x) : (y))
+#endif
+#ifndef max
+#define max(x,y) ((x) > (y) ? (x) : (y))
+#endif
 
 /* Others:
     MINBUCKET, MAXALLOCSAVE, FSHIFT, FSCALE, dbtoc(), ctodb()

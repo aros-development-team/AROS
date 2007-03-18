@@ -10,7 +10,7 @@
 struct iovec
 {
     void        *iov_base;
-    __size_t     iov_len;
+    __ssize_t   iov_len;
 };
 
 #endif /* _SYS__IOVEC_H_ */
