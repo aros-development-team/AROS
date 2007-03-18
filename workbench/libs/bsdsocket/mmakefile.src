@@ -49,7 +49,9 @@ FUNCS := \
     vsyslog \
     waitselect
 
-#MM workbench-libs-bsdsocket-includes : includes-copy
+##MM workbench-libs-bsdsocket-includes : includes-copy
+
+##MM workbench-libs-bsdsocket
 
 %build_module mmake=workbench-libs-bsdsocket \
     modname=bsdsocket modtype=library \
