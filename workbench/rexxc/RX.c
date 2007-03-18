@@ -9,6 +9,7 @@
 #include <dos/dosextens.h>
 #include <rexx/storage.h>
 #include <rexx/errors.h>
+#include <workbench/startup.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -21,6 +22,7 @@
 static struct RexxMsg *msg = NULL;
 static struct MsgPort *rexxport = NULL, *replyport = NULL;
 static BPTR out;
+static BOOL closestdout = FALSE;
 
 static BOOL init(void)
 {
@@ -33,7 +35,15 @@ static BOOL init(void)
     rexxport = FindPort("REXX");
     if (rexxport == NULL)
     {
-	FPuts(out, "starting rexxmast not implemented\n");
+        if (SystemTags("RexxMast", SYS_Asynch, TRUE, TAG_DONE) >= 0)
+        {
+            SystemTags("WaitForPort REXX", TAG_DONE);
+        }
+    }
+    rexxport = FindPort("REXX");
+    if (rexxport == NULL)
+    {
+	FPuts(out, "Could not start RexxMast\n");
 	return FALSE;
     }
     
@@ -59,6 +69,8 @@ static BOOL init(void)
 
 void cleanup(void)
 {
+    if (closestdout)
+        Close(msg->rm_Stdout);
     if (msg)
 	DeleteRexxMsg(msg);
     if (replyport)
@@ -86,10 +98,20 @@ int main(int argc, char **argv)
 
     if (argc == 0)
     {
-	/* TODO: start from workbench */
-	FPuts(out, "RX started from workbench not implemented\n");
-	cleanup();
-	return RC_ERROR;
+	struct WBStartup *startup = (struct WBStartup *) argv;
+        char *s = startup->sm_ArgList[1].wa_Name;
+        
+        if (startup->sm_NumArgs < 2)
+        {
+            cleanup();
+            return RC_ERROR;
+        }
+        
+	out = msg->rm_Stdout = Open("CON:////RX Output/CLOSE/WAIT/AUTO", MODE_READWRITE);
+        closestdout = TRUE;
+        
+        msg->rm_Args[0] = (IPTR)CreateArgstring(s, strlen(s));
+        msg->rm_Action |= 1;
     }
     else
     {
@@ -142,20 +164,21 @@ int main(int argc, char **argv)
             msg->rm_Args[0] = (IPTR)CreateArgstring(s, strlen(s));
 	    msg->rm_Action |= 1;
 	}
-
-	PutMsg(rexxport, (struct Message *)msg);
-	do {
-	    reply = (struct RexxMsg *)WaitPort(replyport);
-	} while (reply != msg);
-
-	ret = msg->rm_Result1;
-	if (msg->rm_Result1 == RC_OK)
-	    FPrintf(out, "Script executed and returned: %ld\n", msg->rm_Result2);
-	else
-	    FPrintf(out, "Error executing script %ld/%ld\n",
-		    msg->rm_Result1, msg->rm_Result2
-	    );
     }
+
+
+    PutMsg(rexxport, (struct Message *)msg);
+    do {
+        reply = (struct RexxMsg *)WaitPort(replyport);
+    } while (reply != msg);
+
+    ret = msg->rm_Result1;
+    if (msg->rm_Result1 == RC_OK)
+        FPrintf(out, "Script executed and returned: %ld\n", msg->rm_Result2);
+    else
+        FPrintf(out, "Error executing script %ld/%ld\n",
+                msg->rm_Result1, msg->rm_Result2
+        );
 
     ClearRexxMsg(msg, msg->rm_Action & RXARGMASK);
     cleanup();
