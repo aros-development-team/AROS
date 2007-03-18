@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-FILES := RX
+FILES := RX RXLIB
 
 #MM- workbench : workbench-rexxc
 #MM- workbench-quick : workbench-rexxc-quick
