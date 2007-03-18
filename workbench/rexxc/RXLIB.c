@@ -90,6 +90,11 @@ int main(int argc, char **argv)
         cleanup();
         return RC_OK;
 
+    case 2:
+        msg->rm_Action = RXREMLIB | 1;
+        msg->rm_Args[0] = (IPTR)argv[1];
+        break;
+        
     case 3:
         msg->rm_Action = RXADDFH | 2;
         msg->rm_Args[0] = (IPTR)argv[1];
