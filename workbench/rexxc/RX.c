@@ -17,6 +17,7 @@
 #include <proto/alib.h>
 
 #include <stdio.h>
+#include <string.h>
 #include <ctype.h>
 
 static struct RexxMsg *msg = NULL;
@@ -77,7 +78,6 @@ void cleanup(void)
 	DeletePort(replyport);
 }
 
-#include <aros/debug.h>
 int main(int argc, char **argv)
 {
     struct RexxMsg *reply;
