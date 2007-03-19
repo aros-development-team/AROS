@@ -4,7 +4,7 @@
 */
 
 #define INTUITION_NO_INLINE_STDARG
-#define USE_FORMAT64
+//#define USE_FORMAT64
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -1360,7 +1360,7 @@ localecopydone:
 	get(data->instc_options_main->opt_copyextra, MUIA_Selected, &option);
 	if (option && data->inst_success == MUIV_Inst_InProgress)
 	{
-		TEXT     *extras_dirs[((2+1)*2)] = 
+		TEXT     *extras_dirs[] = 
 		{
 			"Demos",		"Demos",
 			"Extras",		"Extras",
@@ -1716,11 +1716,7 @@ retrycdadir:
 			}
 		}
 
-		if ((noOfFiles = DoMethod(self, MUIM_IC_MakeDirs, srcDirs, dstDirs))==0)
-		{
-			data->inst_success = MUIV_Inst_Failed;
-			D(bug("[INSTALLER.CDA] Failed to create %s\n",dstDirs));
-		}
+		noOfFiles = DoMethod(self, MUIM_IC_MakeDirs, srcDirs, dstDirs);
 
 		/* OK Now copy the contents */
 		noOfFiles += DoMethod(self, MUIM_IC_CopyFiles, srcDirs, dstDirs, noOfFiles, 0);
@@ -1766,11 +1762,8 @@ IPTR Install__MUIM_Format
 	BOOL			success = FALSE;
 	IPTR 			option = FALSE;
 	BPTR			lock = NULL;
-
-#if	defined(USE_FORMAT64)
 	char tmp[100];
-#endif
-	
+
 	sprintf(fmt_nametmp,"Formatting '%s'...",dest_Path);
 	D(bug("[INSTALLER] %s\n",fmt_nametmp));
 	set(data->label, MUIA_Text_Contents, fmt_nametmp);
