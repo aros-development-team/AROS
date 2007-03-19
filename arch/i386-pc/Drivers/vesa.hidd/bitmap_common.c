@@ -942,11 +942,12 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 
     /* Upload palette to the DAC if OnBitmap */
 #ifdef OnBitmap
+#ifdef TRACK_POINTER_PALETTE
+    if ((msg->firstColor <= 20) && (msg->firstColor + msg->numColors - 1 >= 17))
+	bug("%d colors from %d changed\n", msg->firstColor, msg->numColors);
+#endif
     ObtainSemaphore(&XSD(cl)->HW_acc);
-/*  DACLoad(hwdata, msg->firstColor, msg->numColors);
-    FIXME: this does not work, however should, what's the problem? 
-    The same thing with VGA driver */
-    DACLoad(hwdata, 0, 256);
+    DACLoad(hwdata, msg->firstColor, msg->numColors);
     ReleaseSemaphore(&XSD(cl)->HW_acc);
 #endif /* OnBitmap */
 

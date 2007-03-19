@@ -31,10 +31,18 @@ extern struct ExecBase *SysBase;
 OOP_AttrBase HiddPCIDeviceAttrBase;
 static void Find_PCI_Card(struct HWData *sd);
 
+unsigned char cursorPalette[] =
+{
+    224, 64,   64,
+      0,  0,    0,
+    224, 224, 192
+};
+
 BOOL initVesaGfxHW(struct HWData *data)
 {
     struct BootLoaderBase *BootLoaderBase;
     struct VesaInfo *vi;
+    int i, col;
 
     if ((BootLoaderBase = OpenResource("bootloader.resource")))
     {
@@ -81,8 +89,14 @@ BOOL initVesaGfxHW(struct HWData *data)
 	    else
 	    {
 	    	data->bytesperpixel = 1;
+		if (data->depth > 4)
+		    col = 17;
+		else
+		    col = (1 << data->depth) - 3;
+		for (i = 0; i < 9; i++)
+		    data->DAC[col*3+i] = cursorPalette[i];
+		DACLoad(data, col, 3);
 	    }
-	    
 	    D(bug("[Vesa] HwInit: Clearing framebuffer at 0x%08x size %d KB\n",data->framebuffer, vi->FrameBufferSize));
 	    memset(data->framebuffer, 0, vi->FrameBufferSize * 1024);
 	    D(bug("[Vesa] HwInit: Linear framebuffer at 0x%08x\n",data->framebuffer));
@@ -212,11 +226,12 @@ static void Find_PCI_Card(struct HWData *sd)
 */
 void DACLoad(struct HWData *restore, unsigned char first, int num)
 {
-    int i;
+    int i, n;
 
+    n = first * 3;
     outb(first, 0x3C8);
     for (i=0; i<num*3; i++)
     {
-	outb(restore->DAC[i], 0x3C9);
+	outb(restore->DAC[n++], 0x3C9);
     }
 }

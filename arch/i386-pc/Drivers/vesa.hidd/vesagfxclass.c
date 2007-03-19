@@ -69,7 +69,7 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	{aHidd_PixFmt_BitsPerPixel, 0}, /* 11 */
 	{aHidd_PixFmt_StdPixFmt,    0}, /* 12 */
 	{aHidd_PixFmt_CLUTShift,    0}, /* 13 */
-	{aHidd_PixFmt_CLUTMask,  0xFF}, /* 14 */
+	{aHidd_PixFmt_CLUTMask,     0}, /* 14 */
 	{aHidd_PixFmt_BitMapType,   0}, /* 15 */
 	{TAG_DONE, 0UL }
     };
@@ -113,6 +113,7 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     pftags[10].ti_Data = XSD(cl)->data.bytesperpixel;
     pftags[11].ti_Data = (XSD(cl)->data.bitsperpixel > 24) ? 24 : XSD(cl)->data.bitsperpixel;
     pftags[12].ti_Data = vHidd_StdPixFmt_Native;
+    pftags[14].ti_Data = (1 << XSD(cl)->data.depth) - 1;
     pftags[15].ti_Data = vHidd_BitMapType_Chunky;
 
     sync_mode[1].ti_Data = XSD(cl)->data.width;

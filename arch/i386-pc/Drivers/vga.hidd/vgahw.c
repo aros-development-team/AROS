@@ -37,7 +37,13 @@ unsigned char vgaANSIPalette[]=
      0,  0,  0,    0,  0, 42,    0, 42,  0,    0, 42, 42,
     42,  0,  0,   42,  0, 42,   42, 21,  0,   42, 42, 42,
     21, 21, 21,   21, 21, 63,   21, 63, 21,   21, 63, 63,
-    63, 21, 21,   63, 21, 63,   63, 63, 21,   63, 63, 63,
+/*  63, 21, 21,   63, 21, 63,   63, 63, 21,   63, 63, 63,
+    A temporary measure which prevents annoying effect of
+    a pointer appearing in strange colors before the first
+    screen opens.
+    In fact the pointer should appear only upon opening of
+    the first screen. */
+    63, 21, 21,  224, 64, 64,    0,  0,  0,  224,224,192, 
      0,  0,  0,    5,  5,  5,    8,  8,  8,   11, 11, 11,
     14, 14, 14,   17, 17, 17,   20, 20, 20,   24, 24, 24,
     28, 28, 28,   32, 32, 32,   36, 36, 36,   40, 40, 40,
@@ -181,13 +187,16 @@ int vgaBlankScreen(int on)
 */
 void vgaDACLoad(struct vgaHWRec *restore, unsigned char start, int num)
 {
-    int i;
+    int i, n;
 
+    n = start * 3;
     outb(0x3C8,start);
     for (i=0; i<num*3; i++)
     {
-	outb(0x3C9, restore->DAC[i]);
-	DACDelay;
+	outb(0x3C9, restore->DAC[n++]);
+/*	DACDelay;
+	I beleive incrementing variables and checking cycle counter
+	provides enough delay. Uncomment this in case of problems */
     }
 }
 
