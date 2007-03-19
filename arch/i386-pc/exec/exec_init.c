@@ -1388,7 +1388,6 @@ unsigned char setupVesa(struct multiboot *mbinfo)
 		paletteWidth(0x0800, &palwidth);
 	    else
 		palwidth = 6;
-	    paletteSetup(palwidth);
 	    memcpy(&my_vbe_mode, modeinfo, sizeof(struct vbe_mode));
 	    memcpy(&my_vbe_control, controllerinfo, sizeof(struct vbe_controller));
 	    mbinfo->vbe_mode_info = (ULONG)&my_vbe_mode;

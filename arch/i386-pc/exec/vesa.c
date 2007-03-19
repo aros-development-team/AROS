@@ -10,7 +10,6 @@ asm (".long getModeInfo");
 asm (".long findMode");
 asm (".long setVbeMode");
 asm (".long paletteWidth");
-asm (".long paletteSetup");
 asm (".long controllerinfo");
 asm (".long modeinfo");
 
@@ -25,14 +24,38 @@ short getControllerInfo(void)
     return retval;
 }
 
+/* In VBE 1.1 information about standard modes was optional,
+   so we use a hardcoded table here (we rely on this information) */
+struct vesa11Info vesa11Modes[] = {
+    {640,  400,  8, 4},
+    {640,  480,  8, 4},
+    {800,  600,  4, 3},
+    {800,  600,  8, 4},
+    {1024, 768,  4, 3},
+    {1024, 768,  8, 4},
+    {1280, 1024, 4, 3},
+    {1280, 1024, 8, 4}
+};
+
 short getModeInfo(long mode)
 {
     short retval;
+    long i;
+    char *ptr = (char *)&modeinfo;
+    for (i = 0; i < sizeof(modeinfo); i++)
+	*ptr++ = 0;
     asm volatile("call go16 \n\t.code16 \n\t"
                 "movw $0x4f01, %%ax\n\t"
                 "int $0x10\n\t"
                 "movw %%ax, %0\n\t"
                 "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"c"(mode),"D"(&modeinfo):"eax","cc");
+    if ((controllerinfo.version < 0x0102) && (mode > 0x0FF) && (mode < 0x108)) {
+	i = mode - 0x100;
+	modeinfo.x_resolution = vesa11Modes[i].x_resolution;
+	modeinfo.y_resolution = vesa11Modes[i].y_resolution;
+	modeinfo.bits_per_pixel = vesa11Modes[i].bits_per_pixel;
+	modeinfo.memory_model = vesa11Modes[i].memory_model;
+    }
     return retval;
 }
 
@@ -62,53 +85,6 @@ short paletteWidth(long req, unsigned char* width)
     return retval;
 }
 
-const unsigned char clut8[] = {
-	0x00,
-	0x03,	  
-	0x07,
-	0x0F,
-	0x1F,
-	0x3F,
-	0x7F,
-	0xFF
-};
-
-const unsigned char clut4[] = {
-	0x00,
-	0x07,
-	0x3F,
-	0xFF
-};
-
-struct palette_data	palette[256];
-
-short paletteSetup(unsigned char bits)
-{
-    unsigned char r, g, b;
-    int i = 0;
-    short retval;
-    
-    bits = 8 - bits;
-    for (r = 0; r < 8; r++) {
-	for (g= 0; g < 8; g++) {
-	    for (b = 0; b < 4; b++) {
-		palette[i].R = clut8[r] >> bits;
-		palette[i].G = clut8[g] >> bits;
-		palette[i++].B = clut4[b] >> bits;
-	    }
-	}
-    }
-    asm volatile("call go16 \n\t.code16 \n\t"
-                "movw $0x4f09, %%ax\n\t"
-		"movb $0x80, %%bl\n\t"
-		"movw $0x0100, %%cx\n\t"
-		"movw $0x0000, %%dx\n\t"
-                "int $0x10\n\t"
-                "movw %%ax, %0\n\t"
-                "DATA32 call go32\n\t.code32\n\t":"=b"(retval):"D"(palette):"eax","ecx","edx","cc");
-    return retval;
-}
-
 short findMode(int x, int y, int d)
 {
     unsigned long match, bestmatch = ABS(640*480 - x*y);
@@ -124,19 +100,17 @@ short findMode(int x, int y, int d)
         int i;
 	
 	if (controllerinfo.version < 0x0200)
-	    mode_attrs = 0x10;
+	    mode_attrs = 0x11;
 	else
-	    mode_attrs = 0x90;
+	    mode_attrs = 0x91;
 
         for (i=0; modes[i] != 0xffff; ++i)
         {
             if (getModeInfo(modes[i])!= 0x4f) continue;
             if ((modeinfo.mode_attributes & mode_attrs) != mode_attrs) continue;
-	    /* We check value 0 in memory_model because VESA BIOS earlier than
-	       1.2 will not initialize it. With later VESA we will never get 0
-	       here because we filter out text modes by checking mode_attrs */ 
-            if ((modeinfo.memory_model != 6) && (modeinfo.memory_model != 4) &&
-		(modeinfo.memory_model != 0))
+            if ((modeinfo.memory_model != 6) && (modeinfo.memory_model != 4))
+		continue;
+	    if ((modeinfo.memory_model == 4) && (modeinfo.mode_attributes & 0x20))
 		continue;
 
             if (modeinfo.x_resolution == x &&
@@ -223,4 +197,4 @@ GDT_reg = {sizeof(GDT_Table)-1, GDT_Table};
 
 unsigned long           stack32;
 struct vbe_controller   controllerinfo;
-struct vbe_mode         modeinfo = {0};
+struct vbe_mode         modeinfo;
