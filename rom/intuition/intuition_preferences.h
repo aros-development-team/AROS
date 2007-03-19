@@ -50,9 +50,9 @@ struct Preferences IntuitionDefaultPreferences =
     ,   // PointerMatrix (36 entries)
     0,      // XOffset
     0,      // YOffset
-    0x0b00, // color17
-    0x0d00, // color18
-    0x0f00, // color19
+    0x0e44, // color17
+    0x0000, // color18
+    0x0eec, // color19
     1,      // PointerTicks
 
     0x0999, // color0-4

@@ -523,22 +523,22 @@ static OOP_Object *create_framebuffer(struct GfxBase *GfxBase)
 }
 const UBYTE def_pointer_shape[] =
 {
-    06,02,00,00,00,00,00,00,00,00,00,
-    01,06,02,02,00,00,00,00,00,00,00,
-    00,01,06,06,02,02,00,00,00,00,00,
-    00,01,06,06,06,06,02,02,00,00,00,
-    00,00,01,06,06,06,06,06,02,02,00,
-    00,00,01,06,06,06,06,06,06,06,00,
-    00,00,00,01,06,06,06,02,00,00,00,
-    00,00,00,01,06,06,01,06,02,00,00,
-    00,00,00,00,01,06,00,01,06,02,00,
-    00,00,00,00,01,06,00,00,01,06,02,
-    00,00,00,00,00,00,00,00,00,01,06
+    01,03,00,00,00,00,00,00,00,00,00,
+    02,01,03,03,00,00,00,00,00,00,00,
+    00,02,01,01,03,03,00,00,00,00,00,
+    00,02,01,01,01,01,03,03,00,00,00,
+    00,00,02,01,01,01,01,01,03,03,00,
+    00,00,02,01,01,01,01,01,01,01,00,
+    00,00,00,02,01,01,01,03,00,00,00,
+    00,00,00,02,01,01,03,01,03,00,00,
+    00,00,00,00,02,01,00,02,01,03,00,
+    00,00,00,00,02,01,00,00,02,01,03,
+    00,00,00,00,00,00,00,00,00,01,01
 };
 
 #define DEF_POINTER_WIDTH	11
 #define DEF_POINTER_HEIGHT	11
-#define DEF_POINTER_DEPTH	7
+#define DEF_POINTER_DEPTH	4
 
 
 static BOOL init_cursor(struct GfxBase *GfxBase)
@@ -563,37 +563,24 @@ static BOOL init_cursor(struct GfxBase *GfxBase)
 		{ TAG_DONE, 0UL }
 	    };
 	    
-	    HIDDT_Color col[DEF_POINTER_DEPTH];
+	    HIDDT_Color col[DEF_POINTER_DEPTH] = {0};
 	    
 	    col[0].red		= 0x0000;
 	    col[0].green	= 0x0000;
 	    col[0].blue		= 0x0000;
 	    col[0].alpha	= 0x0000;
-	    col[1].red		= 0x0000;
-	    col[1].green	= 0x0000;
-	    col[1].blue		= 0x1200;
+	    col[1].red		= 0xE0E0;
+	    col[1].green	= 0x4040;
+	    col[1].blue		= 0x4040;
 	    col[1].alpha	= 0x0000;
-	    col[2].red		= 0xE0E0;
-	    col[2].green	= 0xE0E0;
-	    col[2].blue		= 0xC0C0;
+	    col[2].red		= 0x0000;
+	    col[2].green	= 0x0000;
+	    col[2].blue		= 0x0000;
 	    col[2].alpha	= 0x0000;
-	    col[6].red		= 0xE0E0;
-	    col[6].green	= 0x4040;
-	    col[6].blue		= 0x4040;
-	    col[6].alpha	= 0x0000;
-
-	    for (i = 3; i < 6; i ++) {
-	    	col[i].red	= 0x0000;
-		col[i].green	= 0x0000;
-	    	col[i].blue	= 0x0000;
-	    	col[i].alpha	= 0x0000;
-	    }
-	    for (i = 7; i < DEF_POINTER_DEPTH; i ++) {
-	    	col[i].red	= 0x0000;
-		col[i].green	= 0x0000;
-	    	col[i].blue	= 0x0000;
-	    	col[i].alpha	= 0x0000;
-	    }
+	    col[3].red		= 0xE0E0;
+	    col[3].green	= 0xE0E0;
+	    col[3].blue		= 0xC0C0;
+	    col[3].alpha	= 0x0000;
 	    
 	    HIDD_BM_SetColors(SDD(GfxBase)->pointerbm, col, 0, DEF_POINTER_DEPTH);
 
@@ -620,7 +607,7 @@ static BOOL init_cursor(struct GfxBase *GfxBase)
 	    release_cache_object(SDD(GfxBase)->gc_cache, gc, GfxBase);
 	    
 	    if (HIDD_Gfx_SetCursorShape(SDD(GfxBase)->gfxhidd, SDD(GfxBase)->pointerbm)) {
-D(bug("CURSOR SHAPE SET\n"));
+		D(bug("CURSOR SHAPE SET\n"));
 		/* Make it visible */
 		HIDD_Gfx_SetCursorVisible(SDD(GfxBase)->gfxhidd, TRUE);
 		
@@ -1787,7 +1774,7 @@ LONG driver_InvertPixelArray(struct RastPort *rp
    	 , destx, desty
 	 , destx + width  - 1
 	 , desty + height - 1
-	 , 0	/* Source pen does not matter */
+	 , 0xFF
 	 , vHidd_GC_DrawMode_Invert
 	 , GfxBase);
 }

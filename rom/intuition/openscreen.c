@@ -1276,7 +1276,7 @@ AROS_LH1(struct Screen *, OpenScreen,
     if (ok)
     {
         // struct Color32 *p;
-        int 	    	k;
+        int 	    	k, c;
         UWORD 	       *q;
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Load Colors\n"));
@@ -1328,14 +1328,30 @@ AROS_LH1(struct Screen *, OpenScreen,
 
         /* Allocate pens for the mouse pointer */
         q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
+	if (numcolors < 20)
+	    c = numcolors - 3;
+	else
+	    c = 17;
         for (k = 0; k < 3; ++k, ++q)
         {
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: ColorMap 0x%lx Pen %ld R 0x%lx G 0x%lx B 0x%lx\n",
+    	    DEBUG_OPENSCREEN(dprintf("OpenScreen: ColorMap 0x%lx Pen %ld R 0x%lx G 0x%lx B 0x%lx\n",
                                      screen->Screen.ViewPort.ColorMap,
-                                     k + 17,
+                                     k + c,
                                      (*q >> 8) * 0x11111111,
                                      ((*q >> 4) & 0xf) * 0x11111111,
                                      (*q & 0xf) * 0x11111111));
+            ObtainPen(screen->Screen.ViewPort.ColorMap,
+                          k + c,
+                          (*q >> 8) * 0x11111111,
+                          ((*q >> 4) & 0xf) * 0x11111111,
+                          (*q & 0xf) * 0x11111111,
+                          PEN_EXCLUSIVE);
+/* The following piece is left for reference only. It came from
+   classic Amiga where mouse pointer was implemented as a hardware
+   sprite. It always uses DAC registers 17 - 19, even for screens
+   with small depth.
+   In future we probably need some other mechanism for setting
+   pointer palette, probably separate HIDD methods.
             if (k + 17 < numcolors)
             {
                 ObtainPen(screen->Screen.ViewPort.ColorMap,
@@ -1347,13 +1363,13 @@ AROS_LH1(struct Screen *, OpenScreen,
             }
             else
             {
-                /* Can't be allocated, but can still be set. */
+                ** Can't be allocated, but can still be set. **
                 SetRGB32(&screen->Screen.ViewPort,
                          k + 17,
                          (*q >> 8) * 0x11111111,
                          ((*q >> 4) & 0xf) * 0x11111111,
                          (*q & 0xf) * 0x11111111);
-            }
+            }*/
         }
 
         if (colors)  /* if SA_Colors tag exists */
