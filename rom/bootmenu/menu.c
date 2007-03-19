@@ -1,3 +1,4 @@
+#include <proto/bootloader.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
@@ -7,6 +8,7 @@
 #include <exec/memory.h>
 #include <graphics/gfxbase.h>
 #include <libraries/bootmenu.h>
+#include <aros/bootloader.h>
 #include <aros/symbolsets.h>
 #include <string.h>
 #include "devs_private.h"
@@ -50,6 +52,14 @@ static const ULONG coltab[] = {
     0L          /* Termination */
 };
 
+static ULONG pointercoltab[] = {
+    0,
+    0xE0E0E0E0, 0x40404040, 0x40404040,
+    0x00000000, 0x00000000, 0x00000000,
+    0xE0E0E0E0, 0xE0E0E0E0, 0xC0C0C0C0,
+    0L
+};
+
 BOOL initScreen(STRPTR gfxhiddname, struct BootMenuBase *bootmenubase) {
 struct TagItem modetags[] =
 {
@@ -58,7 +68,7 @@ struct TagItem modetags[] =
 	{BIDTAG_DesiredHeight, 200},
 	{TAG_DONE, 0UL}
 };
-ULONG modeid;
+ULONG modeid, depth;
 
 	GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
 	if (GfxBase)
@@ -82,6 +92,12 @@ ULONG modeid;
 						if (AttachPalExtra(vp.ColorMap, &vp) == 0)
 						{
 							LoadRGB32(&vp, (ULONG *)coltab);
+							depth = GetBitMapAttr(rp.BitMap, BMA_DEPTH);
+							if (depth > 4)
+							    pointercoltab[0] = (3L << 16) + 17;
+							else
+							    pointercoltab[0] = (3L << 16) + (1 << depth) - 3;
+							LoadRGB32(&vp, pointercoltab);
 							rp.BitMap->Flags |= BMF_AROS_HIDD;
 							SetFont(&rp, GfxBase->DefaultFont);
 							SetFrontBitMap(rp.BitMap, TRUE);
@@ -381,6 +397,8 @@ UBYTE matrix[16];
 
 static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
 {
+    struct BootLoaderBase *BootLoaderBase;
+    struct VesaInfo *vi;
     static struct BootConfig bootcfg =
     {
 	&bootcfg,
@@ -396,6 +414,16 @@ static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
     /* init keyboard + check */
     if (buttonsPressed(LIBBASE, &LIBBASE->bcfg.defaultkbd))
     {
+	BootLoaderBase = OpenResource("bootloader.resource");
+	if (BootLoaderBase) {
+	    vi = (struct VesaInfo *)GetBootInfo(BL_Video);
+	    if (vi) {
+		if (vi->ModeNumber != 3) {
+		    strcpy(LIBBASE->bcfg.defaultgfx.libname, "vesagfx.hidd");
+		    strcpy(LIBBASE->bcfg.defaultgfx.hiddname, "hidd.gfx.vesa");
+		}
+	    }
+	}
 	kprintf("Entering Boot Menu ...\n");
 	/* init mouse + gfx */
 	if (initHidds(&LIBBASE->bcfg, LIBBASE))
