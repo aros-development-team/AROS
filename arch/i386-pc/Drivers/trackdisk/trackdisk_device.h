@@ -28,8 +28,6 @@
 struct TaskData
 {
     struct MsgPort      td_Port;                // MessagePort
-    BYTE                td_Flags;               // Flags, see unit flags
-    BYTE                td_pad[3];
     struct Task         td_Task;                // Task Structure
     BYTE                td_Stack[STACK_SIZE];   // Keep stack here
 };
@@ -45,15 +43,16 @@ struct TDU
     struct	TDU_PublicUnit pub;
     struct List	tdu_Listeners;
     APTR	td_DMABuffer;		/* Buffer for DMA accesses */
-    ULONG	tdu_ChangeNum;		/* Number of changes occured */
     BOOL	tdu_Busy;		/* Unit working? */
     UBYTE	tdu_UnitNum;		/* Unit number */
     UBYTE	tdu_DiskIn;		/* Disk in drive? */
-    UBYTE	tdu_pcn;		/* Current track */
+    UBYTE	tdu_MotorOn;		/* Motor on? */
     UBYTE	tdu_ProtStatus;
     UBYTE	tdu_lastcyl;
     UBYTE	tdu_lasthd;
     UBYTE	tdu_flags;
+    UBYTE	tdu_stepdir;		/* Last step direction for disk insertion detection */
+    UBYTE	tdu_Present;		/* Drive is present? */
 };
 
 struct TrackDiskBase
@@ -66,7 +65,6 @@ struct TrackDiskBase
     struct MsgPort      	*td_TimerMP;
     ULONG			td_IntBit;		/* Sigbit for floppyints */
     ULONG			td_TmoBit;		/* Used for timeout signaling */
-    BOOL			td_click;		/* Check for diskchanges? */
     UBYTE			td_comsize;        	/* RAW command size */
     UBYTE			td_rawcom[9];      	/* RAW command to send */
     UBYTE			td_result[7];      	/* Last set of bytes */
