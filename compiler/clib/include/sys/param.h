@@ -97,11 +97,11 @@
 #define	roundup(x, y)	((((x)+((y)-1))/(y))*(y))
 #define powerof2(x)	((((x)-1)&(x))==0)
 
-#ifndef min
-#define min(x,y) ((x) < (y) ? (x) : (y))
+#ifndef MIN
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
 #endif
-#ifndef max
-#define max(x,y) ((x) > (y) ? (x) : (y))
+#ifndef MAX
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
 #endif
 
 /* Others:
