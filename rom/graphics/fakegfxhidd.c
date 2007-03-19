@@ -17,7 +17,7 @@
 #include "graphics_internal.h"
 #include "fakegfxhidd.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 /******************************************************************************/
@@ -1334,6 +1334,7 @@ static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
     OOP_Object *pf, *colmap;
     IPTR    	depth, fbdepth, i;
 
+    D(bug("rethink_cursor()\n"));
     OOP_GetAttr(data->curs_backup, aHidd_BitMap_PixFmt, (IPTR *)&pf);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &fbdepth);
     
@@ -1354,7 +1355,11 @@ static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 	}
 	else
 	{
-	    data->curs_pixels[i] = i;
+	    /* FIXME: this assumes fbdepth > 2 */
+	    if (fbdepth > 4)
+		data->curs_pixels[i] = i + 16;
+	    else
+		data->curs_pixels[i] = i + (1 << fbdepth) - 4;
 	}
     }
     
