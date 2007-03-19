@@ -6,6 +6,7 @@
 /*********************************************************************************************/
 
 #include "global.h"
+#include "trackdiskprefs.h"
 
 #include <dos/dostags.h>
 
@@ -315,6 +316,7 @@ STRPTR __detached_name = IPREFS_SEM_NAME;
 int main(void)
 {
     OpenLibs();
+    ReadTDPrefs();
     GetENVName();
     StartNotifications();
     PreparePatches();

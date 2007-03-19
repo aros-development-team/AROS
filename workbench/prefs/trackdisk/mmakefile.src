@@ -1,0 +1,17 @@
+# Copyright © 2007, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 20943 2007-03-18 13:10:52Z sonic $
+
+include $(TOP)/config/make.cfg
+
+FILES 	     := trackdisk_prefs
+EXEDIR       := $(AROS_PREFS)
+USER_LDFLAGS := -nostartfiles
+
+#MM- workbench-prefs : workbench-prefs-trackdisk
+#MM workbench-prefs-trackdisk : includes linklibs
+
+%build_prog mmake=workbench-prefs-trackdisk \
+    progname=Trackdisk targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc"
+
+%common

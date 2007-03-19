@@ -64,11 +64,11 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     if (unit)
     {
 	unit->tdu_DiskIn = TDU_NODISK;	/* Assume there is no floppy in there */
-	unit->pub.tdu_StepDelay=4;	/* Standard values here */
-	unit->pub.tdu_SettleDelay=16;
-	unit->pub.tdu_RetryCount=3;
+	unit->pub.tdu_StepDelay = 4;	/* Standard values here */
+	unit->pub.tdu_SettleDelay = 16;
+	unit->pub.tdu_RetryCnt = 3;
+	unit->pub.tdu_CalibrateDelay = 4;
 	unit->tdu_UnitNum=num;
-	unit->tdu_flags = 0;
 	unit->tdu_lastcyl = -1;
 	unit->tdu_lasthd = -1;
 	NEWLIST(&unit->tdu_Listeners);
@@ -160,8 +160,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
 
     D(bug("TD: Init\n"));
     
-    TDBase->td_click = TRUE;
-    
     /* First thing, are we disabled from the bootloader? */
     if ((BootLoaderBase = OpenResource("bootloader.resource")))
     {
@@ -177,11 +175,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
 		{
 		    bug("[Floppy] Disabled with bootloader argument\n");
 		    return FALSE;
-		}
-		if (0 == strncmp(node->ln_Name,"noclick",7))
-		{
-		    bug("[Floppy] Diskchange detection disabled\n");
-		    TDBase->td_click = FALSE;
 		}
 	    }
 	}
@@ -199,24 +192,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
     	D(bug("TD: No drives defined in BIOS\n"));
     	return FALSE;
     }
-    /* This bit causes some problems, apparently */
-#if 0
-    /* Now lets verify that there really is a controller present */
-    outb(0,FDC_DOR);
-    outb(0,FDC_DOR);
-    outb(DORF_RESET,FDC_DOR);
 
-    /* Now let's send a version command to it */
-    if (td_sendbyte(0x10,(struct TrackDiskBase *)NULL) == TDERR_DriveInUse)
-    {
-	/* No controller here */
-	bug("TD: No floppy controller found.\n");
-	ReturnPtr("TrackDisk",struct TrackDiskBase *,NULL);
-    }
-    td_getbyte(&temp,(struct TrackDiskBase *)NULL);
+    for (i=0; i<TD_NUMUNITS; i++)
+	TDBase->td_Units[i] = NULL;
 
-    D(bug("TD: Floppy controller version %x\n",temp));
-#endif
     /* Set up the IRQ system */
     OOPBase = OpenLibrary(AROSOOP_NAME, 0);
 
@@ -302,11 +281,11 @@ static int GM_UNIQUENAME(Open)
 
         /* Get TDU structure */
         unit = TDBase->td_Units[unitnum];
-        iotd->iotd_Req.io_Unit = (struct Unit *)unit;
-
-        ((struct Unit *)    unit)->unit_OpenCnt++;
-
-        iotd->iotd_Req.io_Error = 0;
+	if (unit && (unit->tdu_Present)) {
+    	    iotd->iotd_Req.io_Unit = (struct Unit *)unit;
+    	    ((struct Unit *)unit)->unit_OpenCnt++;
+    	    iotd->iotd_Req.io_Error = 0;
+	}
     }
     
     return iotd->iotd_Req.io_Error == 0;
@@ -334,32 +313,32 @@ AROS_LH1(void, beginio,
  struct TrackDiskBase *, TDBase, 5, TrackDisk)
 {
     AROS_LIBFUNC_INIT
+    struct TDU *tdu;
 
     if (iotd->iotd_Req.io_Flags & IOF_QUICK)
     {
 	switch(iotd->iotd_Req.io_Command)
 	{
-	    case TD_ADDCHANGEINT:
-	    case TD_CHANGENUM:
 	    case TD_CHANGESTATE:
-	    case TD_PROTSTATUS:
-	    case TD_REMCHANGEINT:
-	    case TD_GETGEOMETRY:
-		TD_PerformIO(iotd,TDBase);
-		return;
-	    case CMD_CLEAR:
+		tdu = (struct TDU *)iotd->iotd_Req.io_Unit;
+		if ((!(tdu->pub.tdu_PubFlags & TDPF_NOCLICK)) || (tdu->tdu_DiskIn == TDU_DISK))
+		    break;
 	    case CMD_READ:
 	    case CMD_UPDATE:
 	    case CMD_WRITE:
 	    case TD_FORMAT:
 	    case TD_MOTOR:
+	    case ETD_READ:
+	    case ETD_UPDATE:
+	    case ETD_WRITE:
+	    case ETD_FORMAT:
+	    case ETD_MOTOR:
 		PutMsg(&TDBase->td_TaskData->td_Port, &iotd->iotd_Req.io_Message);
 		iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
 		return;
-	    default:
-		iotd->iotd_Req.io_Error = IOERR_NOCMD;
-		return;
 	}
+	TD_PerformIO(iotd,TDBase);
+	return;
     }
     else
     {
@@ -382,6 +361,30 @@ AROS_LH1(LONG, abortio,
     AROS_LIBFUNC_EXIT
 }
 
+void TestInsert(struct TrackDiskBase *tdb, struct TDU *tdu)
+{
+    UBYTE dir;
+    struct IOExtTD *iotd;
+
+    td_rseek(tdu->tdu_UnitNum,tdu->tdu_stepdir,1,tdb);
+    tdu->tdu_stepdir = !tdu->tdu_stepdir;
+    dir = (inb(FDC_DIR)>>7);
+    if (dir == 0)
+    {
+        D(bug("[Floppy] Insertion detected\n"));
+        td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
+        tdu->tdu_DiskIn = TDU_DISK;
+        tdu->pub.tdu_Counter++;
+        tdu->tdu_ProtStatus = td_getprotstatus(tdu->tdu_UnitNum,tdb);
+        Forbid();
+        ForeachNode(&tdu->tdu_Listeners,iotd)
+        {
+	    Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
+	}
+	Permit();
+    }
+}
+
 BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 {
     struct TDU *tdu;
@@ -393,20 +396,42 @@ BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
     tdu = (struct TDU *)iotd->iotd_Req.io_Unit;
     switch(iotd->iotd_Req.io_Command)
     {
+	case ETD_CLEAR:
+	    if (iotd->iotd_Count > tdu->pub.tdu_Counter) {
+		iotd->iotd_Req.io_Error = TDERR_DiskChanged;
+		break;
+	    }
 	case CMD_CLEAR:
-	    D(bug("CMD_CLEAR not done yet!\n"));
-	    iotd->iotd_Req.io_Error = IOERR_NOCMD;
+	    tdu->tdu_flags = 0;
+	    tdu->tdu_lastcyl = -1;
+	    tdu->tdu_lasthd = -1;
+	    iotd->iotd_Req.io_Error = 0;
 	    break;
+	case ETD_READ:
+	    if (iotd->iotd_Count > tdu->pub.tdu_Counter) {
+		iotd->iotd_Req.io_Error = TDERR_DiskChanged;
+		break;
+	    }
 	case CMD_READ:
 	    tdu->tdu_Busy = TRUE;
 	    iotd->iotd_Req.io_Error = td_read(iotd, tdb);
 	    tdu->tdu_Busy = FALSE;
 	    break;
+	case ETD_UPDATE:
+	    if (iotd->iotd_Count > tdu->pub.tdu_Counter) {
+		iotd->iotd_Req.io_Error = TDERR_DiskChanged;
+		break;
+	    }
 	case CMD_UPDATE:
 	    tdu->tdu_Busy = TRUE;
 	    iotd->iotd_Req.io_Error = td_update(tdu, tdb);
 	    tdu->tdu_Busy = FALSE;
 	    break;
+	case ETD_WRITE:
+	    if (iotd->iotd_Count > tdu->pub.tdu_Counter) {
+		iotd->iotd_Req.io_Error = TDERR_DiskChanged;
+		break;
+	    }
 	case CMD_WRITE:
 	    tdu->tdu_Busy = TRUE;
 	    iotd->iotd_Req.io_Error = td_write(iotd, tdb);
@@ -419,9 +444,14 @@ BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    reply = FALSE;
 	    break;
 	case TD_CHANGENUM:
-	    iotd->iotd_Req.io_Actual = tdu->tdu_ChangeNum;
+	    iotd->iotd_Req.io_Actual = tdu->pub.tdu_Counter;
 	    break;
 	case TD_CHANGESTATE:
+	    if ((tdu->pub.tdu_PubFlags & TDPF_NOCLICK) && (tdu->tdu_DiskIn == TDU_NODISK)) {
+		TestInsert(tdb, tdu);
+		if (!tdu->tdu_MotorOn)
+		    td_motoroff(tdu->tdu_UnitNum, tdb);
+	    }
 	    if (tdu->tdu_DiskIn == TDU_DISK)
 	    {
 		/* test if disk is still in there */
@@ -436,19 +466,31 @@ BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    }
 	    iotd->iotd_Req.io_Error=0;
 	    break;
+	case ETD_FORMAT:
+	    if (iotd->iotd_Count > tdu->pub.tdu_Counter) {
+		iotd->iotd_Req.io_Error = TDERR_DiskChanged;
+		break;
+	    }
 	case TD_FORMAT:
 	    tdu->tdu_Busy = TRUE;
 	    iotd->iotd_Req.io_Error = td_format(iotd,tdb);
 	    tdu->tdu_Busy = FALSE;
 	    break;
+	case ETD_MOTOR:
+	    if (iotd->iotd_Count > tdu->pub.tdu_Counter) {
+		iotd->iotd_Req.io_Error = TDERR_DiskChanged;
+		break;
+	    }
 	case TD_MOTOR:
 	    iotd->iotd_Req.io_Error=0;
 	    switch (iotd->iotd_Req.io_Length)
 	    {
 		case 0:
+		    tdu->tdu_MotorOn = 0;
 		    td_motoroff(tdu->tdu_UnitNum,tdb);
 		    break;
 		case 1:
+		    tdu->tdu_MotorOn = 1;
 		    td_motoron(tdu->tdu_UnitNum,tdb,TRUE);
 		    break;
 		default:
@@ -475,6 +517,12 @@ BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    geo->dg_BufMemType = MEMF_PUBLIC;
 	    geo->dg_DeviceType = DG_DIRECT_ACCESS;
 	    geo->dg_Flags = DGF_REMOVABLE;
+	    break;
+	case TD_GETDRIVETYPE:
+	    iotd->iotd_Req.io_Actual = DRIVE3_5;
+	    break;
+	case TD_GETNUMTRACKS:
+	    iotd->iotd_Req.io_Actual = DP_TRACKS*2;
 	    break;
 	default:
 	    /* Not supported */
@@ -555,7 +603,7 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 {
     struct TaskData		*td;
     struct ExecBase		*sysBase;
-    struct IOExtTD		*temp,*iotd;
+    struct IOExtTD		*iotd;
     struct TDU			*tdu;
     ULONG			tasig,tisig,sigs,i;
     UBYTE			dir;
@@ -568,7 +616,6 @@ void TD_DevTask(struct TrackDiskBase *tdb)
     tdb->td_TimerMP = CreateMsgPort();
     tdb->td_TimerIO = (struct timerequest *) CreateIORequest(tdb->td_TimerMP, sizeof(struct timerequest));
     OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tdb->td_TimerIO, 0);
-    temp = (struct IOExtTD *)CreateExtIO(CreateMsgPort(),sizeof(struct IOExtTD));
 
     /* Initialize FDC */
     td_dinit(tdb);
@@ -578,10 +625,17 @@ void TD_DevTask(struct TrackDiskBase *tdb)
     {
 	if(tdb->td_Units[i])
 	{
-	    td_recalibrate(tdb->td_Units[i]->tdu_UnitNum,1,0,tdb);
+	    td_rseek(i, 0, 1, tdb);
+	    tdb->td_Units[i]->tdu_Present = !td_recalibrate(tdb->td_Units[i]->tdu_UnitNum,1,0,tdb);
+	    tdb->td_Units[i]->pub.tdu_CurrTrk = 0;
 	    tdb->td_Units[i]->tdu_DiskIn = (td_getDiskChange() ^ 1);
 	    tdb->td_Units[i]->tdu_ProtStatus = td_getprotstatus(i,tdb);
 	    tdb->td_Units[i]->tdu_Busy = FALSE;
+	    tdb->td_Units[i]->tdu_stepdir = 0;
+	    if (((tdb->td_Units[i]->pub.tdu_PubFlags & TDPF_NOCLICK) && (tdb->td_Units[i]->tdu_DiskIn == TDU_NODISK))
+	        || (!tdb->td_Units[i]->tdu_Present))
+		td_motoroff(i, tdb);
+	    D(bug("Drive %d presence: %ld\n", i, tdb->td_Units[i]->tdu_Present));
 	}
     }
 
@@ -618,63 +672,64 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 	if (sigs & tisig)
 	{
 	    /* We were woken up by the timer. */
+	    WaitIO((struct IORequest *)tdb->td_TimerIO);
 	    for(i=0;i<TD_NUMUNITS;i++)
 	    {
-		/* Shall we scan for diskchanges? */
-		if (tdb->td_click)
+		/* If there is no floppy in drive, scan for changes */
+		if (tdb->td_Units[i])
 		{
-		    /* If there is no floppy in drive, scan for changes */
-		    if (tdb->td_Units[i])
+		    tdu = tdb->td_Units[i];
+		    switch (tdu->tdu_DiskIn)
 		    {
-			tdu = tdb->td_Units[i];
-			switch (tdu->tdu_DiskIn)
-			{
-			    case TDU_NODISK:
-				/* We need to double step, to avoid seek errors. */
-				/* Drives should ignore seeks to track -1, but it */
-				/* does not seem to work always */
-				td_rseek(tdu->tdu_UnitNum,0,1,tdb);
-				td_rseek(tdu->tdu_UnitNum,1,1,tdb);
+			case TDU_NODISK:
+			    /*
+			       Unfortunately "NoClick" technology which works on Amiga will not
+			       work on PC because i82077 does not send step pulse when told to
+			       seek to "-1" track and the drive can't recognize disk insertion.
+			       Many thanks to Intel! :-(((
+			       
+			       Here we use another technique: in NoClick mode we just do nothing
+			       if the disk is not in drive. We can perform this test only once
+			       inside TD_CHANGESTATE command which is invoked by DISKCHANGE
+			       CLI command. This means that we'll have to issue DISKCHANGE command
+			       manually after wi insert the disk, but this is probably better
+			       than those clicks.
+			    */
+			    if (tdu->pub.tdu_PubFlags & TDPF_NOCLICK) {
+				if (!tdu->tdu_MotorOn)
+				    td_motoroff(tdu->tdu_UnitNum, tdb);
+			    } else
+				TestInsert(tdb, tdu);
+			    break;
+			case TDU_DISK:
+			    /*
+			       Fortunately this part is completely silent so we don't have to
+			       do any extra mess here
+			    */
+			    if (!tdu->tdu_Busy)
+			    {
+				if (!tdu->tdu_MotorOn)
+				    td_motoron(tdu->tdu_UnitNum,tdb,FALSE);
 				dir = (inb(FDC_DIR)>>7);
-				if (dir == 0)
+				if (!tdu->tdu_MotorOn)
+				    td_motoroff(tdu->tdu_UnitNum,tdb);
+				if (dir == 1)
 				{
-				    D(bug("[Floppy] Insertion detected\n"));
+				    D(bug("[Floppy] Removal detected\n"));
+				    /* Go to cylinder 0 */
 				    td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
-				    tdu->tdu_DiskIn = TDU_DISK;
-				    tdu->tdu_ChangeNum++;
-				    tdu->tdu_ProtStatus = td_getprotstatus(tdu->tdu_UnitNum,tdb);
+				    tdu->tdu_DiskIn = TDU_NODISK;
+				    tdu->pub.tdu_Counter++;
 				    Forbid();
 				    ForeachNode(&tdu->tdu_Listeners,iotd)
 				    {
 					Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
 				    }
 				    Permit();
+				    tdu->tdu_stepdir = 0;
 				}
-				break;
-			    case TDU_DISK:
-				if (!tdu->tdu_Busy)
-				{
-				    /* We really should not do this here. */
-				    td_motoron(tdu->tdu_UnitNum,tdb,FALSE);
-				    dir = (inb(FDC_DIR)>>7);
-				    td_motoroff(tdu->tdu_UnitNum,tdb);
-				    if (dir == 1)
-				    {
-					D(bug("[Floppy] Removal detected\n"));
-					/* Go to cylinder 0 */
-					td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
-					tdu->tdu_DiskIn = TDU_NODISK;
-					tdu->tdu_ChangeNum++;
-					Forbid();
-					ForeachNode(&tdu->tdu_Listeners,iotd)
-					{
-					    Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
-					}
-					Permit();
-				    }
-				}
-				break;
-			}
+			    }
+			    break;
 		    }
 		}
 	    }
@@ -709,5 +764,3 @@ void td_floppyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     Signal(&TDBase->td_TaskData->td_Task,(1L << TDBase->td_IntBit));
 }
-
-static const char end = 0;
