@@ -110,7 +110,7 @@ struct TDU_PublicUnit
     UWORD tdu_Comp11Track;
     ULONG tdu_StepDelay;
     ULONG tdu_SettleDelay;
-    UBYTE tdu_RetryCount;
+    UBYTE tdu_RetryCnt;
     UBYTE tdu_PubFlags;       /* see below */
     UWORD tdu_CurrTrk;
     ULONG tdu_CalibrateDelay;
