@@ -41,7 +41,7 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
     return;
 }
 
-void vgaRestore(struct vgaHWRec *, BOOL onlyDAC);
+void vgaDACLoad(struct vgaHWRec *, unsigned char, int);
 
 BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
@@ -91,7 +91,7 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
     /* Restore palette if OnBitmap */
 #ifdef OnBitmap
     ObtainSemaphore(&XSD(cl)->HW_acc);
-    vgaRestore(data->Regs, TRUE);
+    vgaDACLoad(data->Regs, msg->firstColor, msg->numColors);
     ReleaseSemaphore(&XSD(cl)->HW_acc);
 #endif /* OnBitmap */
 
