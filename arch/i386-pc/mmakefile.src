@@ -26,9 +26,9 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #
 
 #MM- kernel-pc-i386 : \
-#MM	kernel-bootmenu-kobj \
 #MM	kernel-misc-kobj \
 #MM	kernel-bootloader-pc-i386-kobj \
+#MM	kernel-bootmenu-kobj \
 #MM     workbench-libs-partition-kobj \
 #MM     workbench-fs-afs-kobj \
 #MM     workbench-hidd-graphics-kobj \
