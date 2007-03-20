@@ -1,6 +1,4 @@
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 #include <proto/bootloader.h>
-#endif
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
@@ -399,7 +397,6 @@ UBYTE matrix[16];
 
 static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
 {
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     struct BootLoaderBase *BootLoaderBase;
     struct VesaInfo *vi;
     static struct BootConfig bootcfg =
@@ -411,24 +408,12 @@ static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
 	NULL,
 	TRUE
     };
-#else
-	static struct BootConfig bootcfg =
-    {
-	&bootcfg,
-	{"x11gfx.hidd", "hidd.gfx.x11"},
-	{"x11gfx.hidd", "hidd.kbd.x11"},
-	{"x11gfx.hidd", "hidd.mouse.x11"},
-	NULL,
-	TRUE
-    };
-#endif
 
     LIBBASE->bcfg = bootcfg;
 
     /* init keyboard + check */
     if (buttonsPressed(LIBBASE, &LIBBASE->bcfg.defaultkbd))
     {
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 	BootLoaderBase = OpenResource("bootloader.resource");
 	if (BootLoaderBase) {
 	    vi = (struct VesaInfo *)GetBootInfo(BL_Video);
@@ -439,7 +424,6 @@ static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
 		}
 	    }
 	}
-#endif
 	kprintf("Entering Boot Menu ...\n");
 	/* init mouse + gfx */
 	if (initHidds(&LIBBASE->bcfg, LIBBASE))
@@ -447,7 +431,6 @@ static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
 	    initScreen(LIBBASE, &LIBBASE->bcfg);
 	}
     }
-#endif
     return TRUE;
 }
 
