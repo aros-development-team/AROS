@@ -1,4 +1,6 @@
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 #include <proto/bootloader.h>
+#endif
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
@@ -397,6 +399,7 @@ UBYTE matrix[16];
 
 static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
 {
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
     struct BootLoaderBase *BootLoaderBase;
     struct VesaInfo *vi;
     static struct BootConfig bootcfg =
@@ -431,7 +434,7 @@ static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
 	    initScreen(LIBBASE, &LIBBASE->bcfg);
 	}
     }
-
+#endif
     return TRUE;
 }
 
