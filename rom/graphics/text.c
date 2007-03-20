@@ -41,8 +41,13 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 	struct GfxBase *, GfxBase, 10, Graphics)
 
 /*  FUNCTION
+	Write text to the rastport at the current position.
+	The current position is updated to a position after the text.
 
     INPUTS
+	rp     - RastPort
+	string - string to print
+	count  - number of characters to print
 
     RESULT
 

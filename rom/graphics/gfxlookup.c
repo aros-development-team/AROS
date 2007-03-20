@@ -31,7 +31,7 @@
 
 /*  FUNCTION
       Finds a special graphics extended data structure (if an) associated
-      with the pointer to a data structure (eg: ViewExtra associated with
+      with the pointer to a data structure (e.g.: ViewExtra associated with
       a View structure).
 
     INPUTS

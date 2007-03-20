@@ -25,7 +25,7 @@
 	struct GfxBase *, GfxBase, 100, Graphics)
 
 /*  FUNCTION
-	DeAllocate all buffers for a whole AnimOb. In particular this
+	Deallocate all buffers for a whole AnimOb. In particular this
 	means getting buffers for
 	- BorderLine
 	- SaveBuffer

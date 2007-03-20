@@ -35,7 +35,7 @@
 	rectangle - pointer to Rectangle structure
 
     RESULT
-	TRUE if the operation was succesful, else FALSE
+	TRUE if the operation was successful, else FALSE
 	(out of memory)
 
     NOTES

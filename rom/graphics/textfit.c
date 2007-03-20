@@ -34,7 +34,7 @@
 	font in rp as possible and returns that number.
 
     INPUTS
-	rp - Use the settings in this RastPort (eg. Font)
+	rp - Use the settings in this RastPort (e.g. Font)
 	string - Use this string
 	strLen - The length of the string
 	textExtent - The size actually occupied will be returned here

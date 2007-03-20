@@ -30,13 +30,13 @@
 /*  FUNCTION
 	Makes the two VSprites head and tail of the gel list that is connected
 	to the GelsInfo structure. The two VSprites are linked together and
-	their x and y coordinates are initilized such that the serve as the
+	their x and y coordinates are initialized such that the serve as the
 	keystones of the list.
 
     INPUTS
 	head  - pointer to the VSprite structure to be used as head of the gel list
 	tail  - pointer to the VSprite structure to be used as tail of the gel list
-	GInfo - pointer to the GelsInfo structure to be initilized
+	GInfo - pointer to the GelsInfo structure to be initialized
 
     RESULT
 

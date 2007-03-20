@@ -29,10 +29,24 @@
 	struct GfxBase *, GfxBase, 131, Graphics)
 
 /*  FUNCTION
+	Write an array of pens into a rectangular area.
 
     INPUTS
+	rp            - destination RastPort
+	xstart,ystart - starting point
+	xstop,ystop   - stopping point
+	array         - array of pen values. Size must be at least
+	                (((width+15)>>4)<<4)*(ystop-ystart+1) bytes.
+	temprp        - temporary rastport
+	                (copy of rp with Layer set to NULL,
+	                temporary memory allocated for
+	                temprp->BitMap with Rows set to 1,
+	                temprp->BitMap with BytesPerRow set to ((width+15)>>4)<<1,
+	                and temporary memory allocated for
+	                temprp->BitMap->Planes[])
 
     RESULT
+	Number of plotted pixels.
 
     NOTES
 

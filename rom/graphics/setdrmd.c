@@ -25,8 +25,11 @@
 	struct GfxBase *, GfxBase, 59, Graphics)
 
 /*  FUNCTION
+	Set the drawing mode for lines, fills and text.
 
     INPUTS
+	rp       - RastPort
+	drawMode - see graphics/rastport.h for possible flags.
 
     RESULT
 

@@ -79,7 +79,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	tempA - If the copy overlaps exactly to the left or right (i.e. the
 		scan line addresses overlap), and tempA is non-zero, it
 		points to enough chip accessible memory to hold a line of a
-		source for the blit (ie. CHIP RAM). BltBitMap will allocate
+		source for the blit (i.e. CHIP RAM). BltBitMap will allocate
 		(and free) the needed TempA if none is provided and one is
 		needed.  Blit overlap is determined from the relation of
 		the first non-masked planes in the source and destination

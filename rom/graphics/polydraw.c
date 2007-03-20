@@ -23,8 +23,13 @@
 	struct GfxBase *, GfxBase, 56, Graphics)
 
 /*  FUNCTION
+	Draw connected lines from an array. The first line is drawn
+	from the current pen position to the first entry in the array.
 
     INPUTS
+	rp        - RastPort
+	count     - number of x,y pairs
+	polyTable - array of x,y pairs
 
     RESULT
 

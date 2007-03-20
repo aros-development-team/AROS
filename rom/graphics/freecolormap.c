@@ -25,11 +25,11 @@
 	struct GfxBase *, GfxBase, 96, Graphics)
 
 /*  FUNCTION
-	Corretly frees a ColorMap structure and associated structures
+	Correctly frees a ColorMap structure and associated structures
         that have previously been allocated via GetColorMap().
 
     INPUTS
-	colormap - pointer to the ColorMap strcuture previously
+	colormap - pointer to the ColorMap structure previously
 		   allocated via GetColorMap().
 
     RESULT

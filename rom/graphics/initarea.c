@@ -25,17 +25,17 @@
 	struct GfxBase *, GfxBase, 47, Graphics)
 
 /*  FUNCTION
-	This function initilizes an areainfo structure. The size of the
+	This function initializes an areainfo structure. The size of the
 	passed pointer to the buffer should be 5 times as large as
 	maxvectors (in bytes).
 
     INPUTS
-	areainfo   - pointer to AreaInfo strcuture to be initilized
+	areainfo   - pointer to AreaInfo structure to be initialized
 	buffer     - pointer to free memory to collect vectors
 	maxvectors - maximum number of vectors the buffer can hold.
 
     RESULT
-	Areainfo structure initilized such that it will hold the vectors
+	Areainfo structure initialized such that it will hold the vectors
 	created by AreaMove, AreaDraw and AreaEllipse (AreaCircle).
 
     NOTES

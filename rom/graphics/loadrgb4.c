@@ -24,9 +24,17 @@
 	struct GfxBase *, GfxBase, 32, Graphics)
 
 /*  FUNCTION
+	Load RGB color values from table.
 
     INPUTS
-
+	vp     - ViewPort
+	colors - pointer to table of RGB values (0...15)
+		 	background--  0x0RGB
+			color1	  --  0x0RGB
+			color2    --  0x0RGB
+			...
+	count	- number of UWORDs in the table
+	
     RESULT
 
     NOTES
@@ -36,6 +44,7 @@
     BUGS
 
     SEE ALSO
+	LoadRGB32()
 
     INTERNALS
 

@@ -42,8 +42,8 @@
 		RPTAG_DrMd		Drawing mode (graphics/rastport.h)
 		RPTAG_OutlinePen	Area Outline pen
 		RPTAG_WriteMask		Bit Mask for writing
-		RPTAG_MaxPen		Maximum oen to render (see SetMaxPen())
-		RPTAG_DrawBounds	Determine the area that will be redered
+		RPTAG_MaxPen		Maximum pen to render (see SetMaxPen())
+		RPTAG_DrawBounds	Determine the area that will be rendered
 					into by rendering commands. Can be used
 					to optimize window refresh. Pass a pointer
 					to a rectangle in the ti_Data field. On

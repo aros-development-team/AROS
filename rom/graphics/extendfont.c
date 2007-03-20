@@ -36,8 +36,8 @@
 
     INPUTS
     	font		- font to check for an extension.
-	fontTags	- tags to buil the TextFontExtesion from if it doesn't exist.
-			  If a NULL pointer is given, ExtendFont will alocate default tags.
+	fontTags	- tags to build the TextFontExtension from if it doesn't exist.
+			  If a NULL pointer is given, ExtendFont will allocate default tags.
     RESULT
     	success		- FALSE if the font has no TextFontExtension and an extension
     			  can't be built. TRUE otherwise.

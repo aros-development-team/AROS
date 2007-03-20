@@ -24,7 +24,7 @@
         struct GfxBase *, GfxBase, 46, Graphics)
 
 /*  FUNCTION
-        Queus a request for a blit. This request is queued at the end
+        Queues a request for a blit. This request is queued at the end
         of the list.
 
     INPUTS

@@ -87,9 +87,9 @@
     NOTES
 	When allocating using a friend_bitmap bitmap, it is not safe to assume
 	anything about the structure of the bitmap data if that friend_bitmap
-	BitMap might not be a standard amiga bitmap (for instance, if the
-	workbench is running on a non-amiga display device, its
-	Screen->RastPort->BitMap won't be in standard amiga format. The
+	BitMap might not be a standard Amiga bitmap (for instance, if the
+	workbench is running on a non-Amiga display device, its
+	Screen->RastPort->BitMap won't be in standard Amiga format. The
 	only safe operations to perform on a non-standard BitMap are:
 
 	    blitting it to another bitmap, which must be either a

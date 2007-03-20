@@ -28,8 +28,28 @@
 	struct GfxBase *, GfxBase, 173, Graphics)
 
 /*  FUNCTION
+	Modify rastport with values from a taglist.
 
     INPUTS
+	rp   - RastPort
+	tags - tagarray
+	       - RPTAG_Font:       text font
+	       - RPTAG_APen:       primary pen
+	       - RPTAG_BPen:       secondary pen
+	       - RPTAG_DrMd:       draw mode
+	       - RPTAG_OutlinePen: outline pen
+	       - RPTAG_WriteMask:  bit mask
+	       - RPTAG_MaxPen:     see SetMaxPen()
+	       
+	       AROS extensions
+	       - RPTAG_DrawBounds: 
+	       - RPTAG_FgColor:
+	       - RPTAG_BgColor:
+	       - RPTAG_PatternOriginX:
+	       - RPTAG_PatternOriginY:
+	       - RPTAG_ClipRectangle:       (struct Rectangle *)
+	       - RPTAG_ClipRectangleFlags:  RPCRF_RELRIGHT | RPCRF_RELBOTTOM
+	       - RPTAG_RemapColorFonts:     (BOOL)
 
     RESULT
 

@@ -29,13 +29,14 @@
 
     INPUTS
 	region1 - pointer to a region structure
-	x       - The point's 'x' coord
-        y       - The point's 'y' coord
+	x       - The point's 'x' coordinate
+        y       - The point's 'y' coordinate
 
     RESULT
 	TRUE if the point is contained, FALSE otherwise
 
     NOTES
+	This function isn't available in AmigaOS.
 
     EXAMPLE
 

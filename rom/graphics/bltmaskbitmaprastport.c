@@ -52,10 +52,19 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 	struct GfxBase *, GfxBase, 106, Graphics)
 
 /*  FUNCTION
+	Copies a part of a bitmap to another bitmap with using a mask.
 
     INPUTS
+	srcBitMap - Copy from this bitmap.
+	xSrc, ySrc - This is the upper left corner of the area to copy.
+	destRP - Destination RastPort.
+	xDest, yDest - Upper left corner where to place the copy
+	xSize, ySize - The size of the area to copy
+	minterm - How to copy. See BltBitMap() for an explanation.
+	bltMask - The mask bitplane must be of the same size as the source bitmap.
 
     RESULT
+	TRUE.
 
     NOTES
 
@@ -64,6 +73,13 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     BUGS
 
     SEE ALSO
+	ClipBlit()
+
+    INPUTS
+
+    RESULT
+
+    NOTES
 
     INTERNALS
 

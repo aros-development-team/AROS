@@ -24,14 +24,14 @@
 
 /*  FUNCTION
         Process the filled vector buffer. 
-        After the operation the buffer is reinitilized for
+        After the operation the buffer is reinitialized for
         processing of further Area functions.
         Makes use of the raster given by the TmpRas structure that
         is linked to the rastport.
 
     INPUTS
 	rp - pointer to a valid RastPort structure with a pointer to
-	     the previously initilized AreaInfo structure.
+	     the previously initialized AreaInfo structure.
 
 
     RESULT
@@ -47,7 +47,7 @@
         pixels are missing. This could be due to the way lines are 
         drawn. All lines should be drawn from lower
         y coordinates to higher y coordinates since this is the
-        way the alogrithm calculates lines here. For example, it
+        way the algorithm calculates lines here. For example, it
         might make a difference whether a line is drawn from lower
         to higher y coordinates. Examples for two same lines with
         different layout:

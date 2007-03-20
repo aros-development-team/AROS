@@ -35,7 +35,7 @@
       structure to be allocated is passed in the node_type identifier.
 
     INPUTS
-      node_type = the type of garphics extended data structure to allocate.
+      node_type = the type of graphics extended data structure to allocate.
                   (see gfxnodes.h for identifier definitions.)
 
     RESULT

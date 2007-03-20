@@ -45,18 +45,34 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
 	struct GfxBase *, GfxBase, 101, Graphics)
 	    
 /*  FUNCTION
+	Moves a part of a bitmap around or into another bitmaps.
 
     INPUTS
+	srcBitMap - Copy from this bitmap.
+	xSrc, ySrc - This is the upper left corner of the area to copy.
+	destRP - Destination RastPort.
+	xDest, yDest - Upper left corner where to place the copy
+	xSize, ySize - The size of the area to copy
+	minterm - How to copy. See BltBitMap() for an explanation.
 
     RESULT
+	TRUE.
 
     NOTES
+	If a special hardware is available, this function will use it.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	ClipBlit()
+
+    INPUTS
+
+    RESULT
+
+    NOTES
 
     INTERNALS
 

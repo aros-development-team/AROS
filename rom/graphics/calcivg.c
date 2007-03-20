@@ -23,6 +23,7 @@
         struct GfxBase *, GfxBase, 138, Graphics)
 
 /*  FUNCTION
+	Calculate the number of blank lines above a ViewPort.
 
     INPUTS
         View     - pointer to the View

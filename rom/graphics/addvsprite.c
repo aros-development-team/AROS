@@ -31,7 +31,7 @@
 
     INPUTS
 	vs = pointer to VSprite to be linked into gel list
-	rp = pointer to RastPort that has an initilized GelsInfo linked
+	rp = pointer to RastPort that has an initialized GelsInfo linked
              to it (see InitGels()).
 
     RESULT

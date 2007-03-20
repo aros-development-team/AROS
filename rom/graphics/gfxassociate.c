@@ -34,13 +34,13 @@
 /*  FUNCTION
       Associate a special graphics extended data structure with another
       structure via the other structure's pointer. Later, when you call
-      GfxLookUp() with the other structure's pointer you may recieve
-      the pointer to this special graphics extended data strcuture, if it
+      GfxLookUp() with the other structure's pointer you may receive
+      the pointer to this special graphics extended data structure, if it
       is available
 
     INPUTS
       pointer = a pointer to a data structure
-      node = an ExtendedNode strcuture to associate with the pointer
+      node = an ExtendedNode structure to associate with the pointer
 
     RESULT
       an association is created between the pointer and the node such

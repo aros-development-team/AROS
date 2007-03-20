@@ -26,8 +26,11 @@
 	struct GfxBase *, GfxBase, 40, Graphics)
 
 /*  FUNCTION
+	Move the drawing pen to (x,y).
 
     INPUTS
+	rp  - RastPort
+	x,y - target coordinate
 
     RESULT
 

@@ -24,6 +24,7 @@
         struct GfxBase *, GfxBase, 156, Graphics)
 
 /*  FUNCTION
+	Determine the best mode in the MonitorID to coerce RealViewPort to.
 
     INPUTS
         RealViewPort - ViewPort to coerce

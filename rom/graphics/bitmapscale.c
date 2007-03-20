@@ -33,7 +33,7 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
 	the source bit map.
 
     INPUTS
-	Pass a BitScaleArgs structure filled with the following args
+	Pass a BitScaleArgs structure filled with the following arguments
 	to this function:
 	  bsa_SrcX, bsa_SrcY - upper left coordinate in source bitmap
 	  bsa_SrcWidth, bsa_SrcHeight - Width and Height or source bitmap

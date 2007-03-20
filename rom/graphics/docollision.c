@@ -22,6 +22,9 @@
         struct GfxBase *, GfxBase, 18, Graphics)
 
 /*  FUNCTION
+	Tests each gel in gel list for boundary and gel-to-gel collisions.
+	If a collision happens the collision handling routine is called.
+	The gel list must be sorted by y,x order.
 
     INPUTS
         rp - pointer to RastPort

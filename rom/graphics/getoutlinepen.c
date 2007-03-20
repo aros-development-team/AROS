@@ -22,8 +22,10 @@
 	struct GfxBase *, GfxBase, 146, Graphics)
 
 /*  FUNCTION
+	Get the outline pen value for a RastPort.
 
     INPUTS
+	rp - RastPort.
 
     RESULT
 

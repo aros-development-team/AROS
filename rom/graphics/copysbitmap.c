@@ -33,7 +33,7 @@
 
     RESULT
         The layer will show the true contents of the superbitmap that is
-        attatched to it
+        attached to it
 
     NOTES
 

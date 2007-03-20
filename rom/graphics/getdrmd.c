@@ -22,8 +22,10 @@
 	struct GfxBase *, GfxBase, 145, Graphics)
 
 /*  FUNCTION
+	Get drawmode value of RastPort.
 
     INPUTS
+	rp - RastPort
 
     RESULT
 

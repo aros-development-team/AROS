@@ -26,6 +26,7 @@
         struct GfxBase *, GfxBase, 121, Graphics)
 
 /*  FUNCTION
+	Search for a DisplayInfo which matches the ID key.
 
     INPUTS
         ID - identifier

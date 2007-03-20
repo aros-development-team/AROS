@@ -25,8 +25,8 @@
         struct GfxBase *, GfxBase, 76, Graphics)
 
 /*  FUNCTION
-        The blitter is allocated for excludive use by the calling task.
-        This function returns immediatedly if no other task is using
+        The blitter is allocated for exclusive use by the calling task.
+        This function returns immediately if no other task is using
         the blitter right now or if no blits are in the queues (QBlit(),
         QBSBlit()). Otherwise the function will block until the blitter
         can be accessed.

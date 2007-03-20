@@ -33,7 +33,7 @@
 
     INPUTS
 	rp - pointer to a valid RastPort structure with a pointer to
-	     the previously initilized AreaInfo structure.
+	     the previously initialized AreaInfo structure.
 	x  - x-coordinate of the starting-point in the raster
 	y  - y-coordinate of the starting-point in the raster
 

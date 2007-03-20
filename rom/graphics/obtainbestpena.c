@@ -28,12 +28,25 @@
 	struct GfxBase *, GfxBase, 140, Graphics)
 
 /*  FUNCTION
+	Try to find a pen which matches the given parameters.
 
     INPUTS
+	cm   - colormap
+	r    - red value (32 bit left justified fraction)
+	g    - green value (32 bit left justified fraction)
+	b    - blue value (32 bit left justified fraction)
+	tags - tagarray
+	       OBP_Precision - PRECISION_GUI, PRECISION_ICON, PRECISION_IMAGE or PRECISION_EXACT.
+	                       Defaults to PRECISION_IMAGE.
+
+	       OBP_FailIfBad - if TRUE ObtainBestPen returns an error when there
+	                       is no color in the given tolerance.
 
     RESULT
+	A pen value or -1 if no pen could be found.
 
     NOTES
+	You must call ReleasePen() when you're done with the pen.
 
     EXAMPLE
 

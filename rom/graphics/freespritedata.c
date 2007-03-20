@@ -22,6 +22,7 @@
         struct GfxBase *, GfxBase, 172, Graphics)
 
 /*  FUNCTION
+	Free sprite data allocated by AllocSpriteData().
 
     INPUTS
         extsp - The extended sprite structure to be freed.

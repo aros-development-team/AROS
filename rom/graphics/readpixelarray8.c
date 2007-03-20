@@ -41,12 +41,26 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
 	struct GfxBase *, GfxBase, 130, Graphics)
 
 /*  FUNCTION
+	Read the pen numbers of a rectangular area into an array.
 
     INPUTS
+	rp            - RastPort
+	xstart,ystart - starting point
+	xstop,ystop   - stopping point
+	array         - array where pens are stored. Allocate at least
+	                (((width+15)>>4)<<4)*(ystop-ystart+1) bytes.
+	temprp        - temporary RastPort; copy of rp with
+	                - Layers == NULL
+	                - temprp->BitMap with Rows set to 1,
+	                - temprp->BytesPerRow set to (((width+15)>>4)<<1),
+	                  and temporary memory allocated for 
+	                  temprp->BitMap->Planes[])
 
     RESULT
+	The number of pixels read.
 
     NOTES
+	This function doesn't make sense on true-/hicolor rastports.
 
     EXAMPLE
 

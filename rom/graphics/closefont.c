@@ -24,8 +24,10 @@
 	struct GfxBase *, GfxBase, 13, Graphics)
 
 /*  FUNCTION
+	Close a font.
 
     INPUTS
+	font - font pointer from OpenFont() or OpenDiskFont()
 
     RESULT
 

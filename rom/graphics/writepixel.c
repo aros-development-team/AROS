@@ -36,10 +36,16 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
 	struct GfxBase *, GfxBase, 54, Graphics)
 
 /*  FUNCTION
+	Change pen number of a pixel at given coordinate.
+	The pixel is drawn with the primary (A) pen.
 
     INPUTS
+	rp  - destination RastPort
+	x,y - coordinate
 
     RESULT
+	 0: pixel could be written
+	-1: coordinate was outside rastport
 
     NOTES
 
@@ -55,7 +61,6 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
         clipped rectangle (cliprect) in a layer structure.
         There is no support of anything else than bitplanes now.
         (No chunky pixels)
-        This function resembles very much the function WritePixel()!!
 
     HISTORY
 	29-10-95    digulla automatically created from

@@ -30,7 +30,7 @@
 	routine to be called by DoCollision().
 
     INPUTS
-	num	= number of collsion vector
+	num	= number of collision vector
 	routine = pointer to user's collision routine
 	GInfo	= pointer to a GelsInfo structure
 

@@ -27,18 +27,25 @@
 	struct GfxBase *, GfxBase, 9, Graphics)
 
 /*  FUNCTION
-
+	Determines the length of a string in pixels.
+	
     INPUTS
+	rp     - RastPort
+	string - address of string
+	count  - number of characters of string
 
     RESULT
+	Length of string in pixels.
 
     NOTES
+	Use the newer TextExtent() to get more information.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	Text() TextExtend()
 
     INTERNALS
 

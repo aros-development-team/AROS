@@ -33,9 +33,9 @@
 
     INPUTS
 	rp - pointer to a valid RastPort structure with a pointer to
-	     the previously initilized AreaInfo structure.
-	cx - x coordinate of the centerpoint relative to rastport
-	cy - y coordinate of the centerpoint relative to rastport
+	     the previously initialized AreaInfo structure.
+	cx - x coordinate of the center point relative to rastport
+	cy - y coordinate of the center point relative to rastport
 	a  - horizontal radius of the ellipse (> 0)
 	b  - vertical radius of the ellipse (> 0)
 

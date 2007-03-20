@@ -51,8 +51,14 @@ struct bp_render_data
 	struct GfxBase *, GfxBase, 52, Graphics)
 
 /*  FUNCTION
+	Blit using drawmode, areafill pattern and mask.
 
     INPUTS
+	rp - destination RastPort for blit.
+	mask - Mask bitplane. Set this to NULL for a rectangle.
+	xMin, yMin - upper left corner.
+	xMax, yMax - lower right corner.
+	byteCnt - BytesPerRow for mask.
 
     RESULT
 
