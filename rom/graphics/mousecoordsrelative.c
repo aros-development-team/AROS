@@ -27,7 +27,7 @@
 
 /*  FUNCTION
 	Tells whether mouse coordinates gotten from the below system are
-	relative or absolut.
+	relative or absolute.
 
     INPUTS
 
@@ -41,7 +41,7 @@
 
     BUGS
 	There should not be need for such a function.
-	All coords gotten shoul be relative.
+	All coordinates gotten should be relative.
 	This is however difficult to do
 	with HIDDs base on window systems and
 	we use one window per screen.

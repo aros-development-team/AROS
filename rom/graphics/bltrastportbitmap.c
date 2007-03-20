@@ -33,14 +33,21 @@
 	struct GfxBase *, GfxBase, 196, Graphics)
 
 /*  FUNCTION
-
         Copies the content of the rast port into the bitmap.
         Takes cliprects into consideration.
+
     INPUTS
+	srcRastPort - Copy from this RastPort.
+	xSrc, ySrc - This is the upper left corner of the area to copy.
+	destBitMap - Destination BitMap.
+	xDest, yDest - Upper left corner where to place the copy
+	xSize, ySize - The size of the area to copy
+	minterm - How to copy. See BltBitMap() for an explanation.
 
     RESULT
 
     NOTES
+	This functions isn't part of AmigaOS3.1
 
     EXAMPLE
 

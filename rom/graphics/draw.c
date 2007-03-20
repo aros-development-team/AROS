@@ -31,8 +31,11 @@
 	struct GfxBase *, GfxBase, 41, Graphics)
 
 /*  FUNCTION
+	Draw a line from the current pen position to the given coordinate.
 
     INPUTS
+    	rp  - destination RastPort.
+	x,y - line end coordinate.
 
     RESULT
 

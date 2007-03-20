@@ -37,7 +37,7 @@
 	
     RESULT
 	Store the (r,g,b) triplet at index n in the ColorMap structure.
-	The chnages will not be immediately displayed. Use this function
+	The changes will not be immediately displayed. Use this function
 	before linking the ColorMap to a ViewPort.
 
     NOTES

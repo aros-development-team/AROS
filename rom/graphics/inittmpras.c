@@ -25,7 +25,7 @@
 	struct GfxBase *, GfxBase, 78, Graphics)
 
 /*  FUNCTION
-	Initializes a TmpRas structure. The user has to conect the
+	Initializes a TmpRas structure. The user has to connect the
 	TmpRas structure to the rastport.
 	Some routines need extra memory in order to be able to operate
 	properly.
@@ -36,7 +36,7 @@
 	size   - size in bytes of buffer.
 
     RESULT
-        Properly initilized TmpRas struture to link to RastPort structure
+        Properly initialized TmpRas structure to link to RastPort structure
         for use with functions like Flood(), Text() and AreaEnd().
 
     NOTES

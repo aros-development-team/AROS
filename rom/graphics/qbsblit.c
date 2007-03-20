@@ -24,7 +24,7 @@
         struct GfxBase *, GfxBase, 49, Graphics)
 
 /*  FUNCTION
-        Queus a request for a beam-synchronized  blit.
+        Queues a request for a beam-synchronized  blit.
 
     INPUTS
         bn - pointer to blitnode structure

@@ -55,8 +55,14 @@ static ULONG eraserect_render(APTR err_data, LONG srcx, LONG srcy,
 	struct GfxBase *, GfxBase, 135, Graphics)
 
 /*  FUNCTION
+	Fill a rectangular area with the current BackFill hook.
+	If layered the BackFill hook is used.
+	If non-layered the region is cleared.
 
     INPUTS
+	rp        - destination RastPort
+	xMin,yMin - upper left corner
+	xMax,YMax - lower right corner
 
     RESULT
 

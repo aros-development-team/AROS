@@ -24,8 +24,13 @@
 	struct GfxBase *, GfxBase, 22, Graphics)
 
 /*  FUNCTION
+	Remove a Bob immediately from RastPort and gel list.
+
 
     INPUTS
+	bob - Bob
+	rp  - RastPort
+	vp  - ViewPort
 
     RESULT
 

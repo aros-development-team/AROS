@@ -39,8 +39,11 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
 	struct GfxBase *, GfxBase, 53, Graphics)
 
 /*  FUNCTION
+	Read the pen number of the given x,y coordinate.
 
     INPUTS
+	rp  - RastPort
+	x,y - Coordinate
 
     RESULT
 

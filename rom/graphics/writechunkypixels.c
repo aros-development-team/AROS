@@ -29,8 +29,16 @@
 	struct GfxBase *, GfxBase, 176, Graphics)
 
 /*  FUNCTION
+	Write a rectangular region of pen values into a rastport.
 
     INPUTS
+	rp            - destination RastPort
+	xstart,ystart - starting point
+	xstop,ystop   - stopping point
+	array         - array with pen values
+	bytesperrow   - The number of bytes per row in the source array.
+		        This should be at least as large as the number of pixels
+		        being written per line.
 
     RESULT
 

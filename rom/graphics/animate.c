@@ -34,7 +34,7 @@
 	    sequence to whatever these routines cause
 
     INPUT
-	anKey = address of a pointer to the firts AnimOb in the list
+	anKey = address of a pointer to the first AnimOb in the list
                 (same address that was passed to AddAnimOb!)
 	rp    = pointer to a valid RastPort structure
 

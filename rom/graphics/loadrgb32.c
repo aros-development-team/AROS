@@ -28,14 +28,22 @@ static const char THIS_FILE[] = __FILE__;
 	struct GfxBase *, GfxBase, 147, Graphics)
 
 /*  FUNCTION
+	Load RGB color values from table.
 
     INPUTS
-
+	vp    - ViewPort
+	table - pointer to table of records
+	        1 Word with the number of colors to load
+	        1 Word with the first color to be loaded.
+	        3 Longwords representing a left justified 32 bit RGB triplet.
+	        The list is terminated by a count value of 0.
     RESULT
 
     NOTES
 
     EXAMPLE
+	ULONG table[] = { 1l << 16 + 0 , 0xffffffff , 0 , 0 , 0}
+	ULONG table[] = { 256l << 16 + 0 , r1 , g1 , b1 , r2 , g2 , b2 , ..... 0}
 
     BUGS
 

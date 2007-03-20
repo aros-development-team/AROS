@@ -25,8 +25,11 @@
 	struct GfxBase *, GfxBase, 58, Graphics)
 
 /*  FUNCTION
+	Set secondary pen for rastport.
 
     INPUTS
+	rp  - RastPort
+	pen - pen number (0...255)
 
     RESULT
 

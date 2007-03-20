@@ -32,7 +32,7 @@
 	region2 - pointer to a region structure
 
     RESULT
-	TRUE if the operation was succesful,
+	TRUE if the operation was successful,
         FALSE otherwise (out of memory)
 
     NOTES

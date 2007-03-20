@@ -22,8 +22,10 @@
 	struct GfxBase *, GfxBase, 143, Graphics)
 
 /*  FUNCTION
+	Return the current value of the A pen for the rastport.
 
     INPUTS
+	rp - RastPort.
 
     RESULT
 

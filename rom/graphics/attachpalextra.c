@@ -27,7 +27,7 @@
 /*  FUNCTION
         Allocates a PalExtra structure and attaches it to the
         given ColorMap. This function must be called prior to palette
-        sharing. The PalExtra structure will be freed bt FreeColorMap().
+        sharing. The PalExtra structure will be freed by FreeColorMap().
 
     INPUTS
         cm  - Pointer to a color map structure

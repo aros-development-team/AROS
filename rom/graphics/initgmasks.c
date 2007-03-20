@@ -23,7 +23,7 @@
 	struct GfxBase *, GfxBase, 29, Graphics)
 
 /*  FUNCTION
-	For every component's sequence initilize the Masks by calling
+	For every component's sequence initialize the Masks by calling
 	InitMasks()
 
     INPUTS

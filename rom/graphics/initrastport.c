@@ -66,7 +66,7 @@ static const struct RastPort defaultRastPort =
 	rp - The RastPort to initialize.
 
     RESULT
-	TRUE if the RastPort was successfuly initialized and FALSE
+	TRUE if the RastPort was successfully initialized and FALSE
 	otherwise.
 
     NOTES

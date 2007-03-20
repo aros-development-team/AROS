@@ -28,8 +28,14 @@
 	struct GfxBase *, GfxBase, 51, Graphics)
 
 /*  FUNCTION
+	Fills a rectangular area with the current pens, drawing mode
+	and areafill pattern. If no areafill pattern is defined fill
+	with foreground pen.
 
     INPUTS
+	rp - RastPort
+	xMin,yMin - upper left corner
+	xMax,yMax - lower right corner
 
     RESULT
 

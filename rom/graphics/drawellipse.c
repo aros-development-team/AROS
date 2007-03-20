@@ -31,8 +31,13 @@
 	struct GfxBase *, GfxBase, 30, Graphics)
 
 /*  FUNCTION
+	Draw an ellipse
 
     INPUTS
+	rp              - destination RastPort
+	xCenter,yCenter - coordinate of centerpoint
+	a               - radius in x direction
+	b               - radius in y direction
 
     RESULT
 

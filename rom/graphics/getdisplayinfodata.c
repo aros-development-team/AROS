@@ -61,12 +61,17 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
         struct GfxBase *, GfxBase, 126, Graphics)
 
 /*  FUNCTION
+	Fills buffer with information about displayinfo handle.
 
     INPUTS
         handle - displayinfo handle
         buf    - pointer to destination buffer
         size   - buffer size in bytes
         tagID  - data chunk type
+                 DTAG_DISP (DisplayInfo)
+                 DTAG_DIMS (DimensionInfo)
+                 DTAG_MNTR (MonitorInfo)
+                 DTAG_NAME (NameInfo)
         ID     - displayinfo identifier, optionally used if handle is NULL
 
     RESULT

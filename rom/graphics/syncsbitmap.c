@@ -33,7 +33,7 @@
 
     RESULT
         The superbitmap will be synchronized with the visible part. The
-        superbitmap attatched to the layer will be up-to-date with what's
+        superbitmap attached to the layer will be up-to-date with what's
         really in the layer.
 
     NOTES

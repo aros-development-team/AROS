@@ -44,7 +44,7 @@
 	     no further sprites are available (pick was -1). -1 will
 	     also be found in the SimpleSprite structure.
 	0-7: The sprite number of your allocated sprite. The number will
-	     also be foung in the SimpleSprite structure.
+	     also be found in the SimpleSprite structure.
 
     NOTES
 

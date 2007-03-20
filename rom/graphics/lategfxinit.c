@@ -26,10 +26,10 @@
 	struct GfxBase *, GfxBase, 181, Graphics)
 
 /*  FUNCTION
-	This function permits late initalization
-	of gfx (After dos but *before* graphics is used, ie.
+	This function permits late initialization
+	of Graphics (After DOS but *before* Graphics is used, i.e.
 	before the first view/screen has been set up).
-	Can be used to load gfx hidds from disk and initializing it.
+	Can be used to load Graphics HIDDs from disk and initializing it.
 	The function only passes the data through to the
 	driver.
 

@@ -25,7 +25,7 @@
 	struct GfxBase *, GfxBase, 95, Graphics)
 
 /*  FUNCTION
-	Allocates, initilizes a ColorMap structure and passes back the
+	Allocates, initializes a ColorMap structure and passes back the
 	pointer. This enables you to do calls to SetRGB4() and LoadRGB4()
 	to load colors for a view port.
 	The ColorTable pointer in the ColorMap structure points to a hardware
@@ -37,7 +37,7 @@
     RESULT
 	NULL  - not enough memory could be allocated for the necessary
 	        data structures
-	other - pointer to a initilized ColorMap structure that may be
+	other - pointer to a initialized ColorMap structure that may be
 	        stored into the ViewPort.ColorMap pointer.
 
     NOTES

@@ -26,10 +26,13 @@
 	struct GfxBase *, GfxBase, 12, Graphics)
 
 /*  FUNCTION
+	Searches for a text font which best matches the specified attributes.
 
     INPUTS
+	textAttr - pointer to a TextAttr or TTextAttr font description.
 
     RESULT
+	Returns NULL if the font can't be found.
 
     NOTES
 
@@ -38,6 +41,7 @@
     BUGS
 
     SEE ALSO
+	CloseFont() SetFont() diskfont.library/OpenDiskFont()
 
     INTERNALS
 

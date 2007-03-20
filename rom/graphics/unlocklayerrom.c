@@ -22,7 +22,7 @@
 	struct GfxBase *, GfxBase, 73, Graphics)
 
 /*  FUNCTION
-        Unlocks a prevously locked layer for access by other applications
+        Unlocks a previously locked layer for access by other applications
         or intuition itself.
         If a task has locked a layer multiple times it must unlock it
         as many times as well as locks nest.

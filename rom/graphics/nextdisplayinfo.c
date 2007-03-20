@@ -24,6 +24,7 @@
         struct GfxBase *, GfxBase, 122, Graphics)
 
 /*  FUNCTION
+	Go to next entry in the DisplayInfo database.
 
     INPUTS
         last_ID - previous displayinfo identifier

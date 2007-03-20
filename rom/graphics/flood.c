@@ -61,12 +61,19 @@ static int pix_written;
 	struct GfxBase *, GfxBase, 55, Graphics)
 
 /*  FUNCTION
+	Flood fill a RastPort.
 
     INPUTS
+	rp   - destination RastPort
+	mode - 0: fill adjacent pixels which don't have color of OPen.
+	       1: fill adjacent pixels which have the same pen as of coordinate x,y.
+	x,y  - coordinate to start filling.
 
     RESULT
 
     NOTES
+	The RastPort must have a TmpRas raster whose size is as large as of
+	that of the RastPort.
 
     EXAMPLE
 

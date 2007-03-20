@@ -30,7 +30,7 @@
 	struct GfxBase *, GfxBase, 184, Graphics)
 
 /*  FUNCTION
-	Sets the supplied screen as the frontmost, eg. shows it in the display.
+	Sets the supplied screen as the frontmost, e.g. shows it in the display.
 
     INPUTS
 	bitmap - The bitmap to put in front. Must be a displayable bitmap.
@@ -40,7 +40,7 @@
 		   the previously shown bitmap has not been disposed
 
     RESULT
-    	success - TRUE if successfull, FALSE otherwize.
+    	success - TRUE if successful, FALSE otherwise.
 
     NOTES
 	This function is private and AROS specific.

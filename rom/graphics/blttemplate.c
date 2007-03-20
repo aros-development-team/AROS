@@ -46,8 +46,16 @@ struct bt_render_data
 	struct GfxBase *, GfxBase, 6, Graphics)
 	
 /*  FUNCTION
+	Draws the image in the template into the
+	RastPort in the current color and drawing mode.
 
     INPUTS
+	source - template bitplane. Should be Word aligned.
+	xSrc - x offset in source plane (0...15).
+	srcMod - BytesPerRow in template mask.
+	destRP - destination RastPort.
+	xDest,yDest - upper left corner of destination.
+	xSize,ySize - size of destination.
 
     RESULT
 

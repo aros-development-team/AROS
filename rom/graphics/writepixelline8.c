@@ -26,10 +26,24 @@
 	struct GfxBase *, GfxBase, 129, Graphics)
 
 /*  FUNCTION
+	Draw a horizontal line from an array of pens.
 
     INPUTS
+	rp            - destination RastPort
+	xstart,ystart - start coordinate of line
+	width         - count of pixels to write (must be positive)
+	array         - array of pen values. Allocate at least
+	                ((width+15)>>4)<<4 bytes.
+	tempRP        - temporary rastport
+	                (copy of rp with Layer set to NULL,
+	                temporary memory allocated for
+	                temprp->BitMap with Rows set to 1,
+	                temprp->BitMap BytesPerRow == ((width+15)>>4)<<1,
+	                and temporary memory allocated for
+	                temprp->BitMap->Planes[])
 
     RESULT
+	Number of plotted pixels.
 
     NOTES
 

@@ -41,15 +41,15 @@
         flags - PEN_EXCLUSIVE - for exclusive access to a color register;
                               default is shared access
                               
-                PEN_NO_SETCOLOR - will not change the rgb values
+                PEN_NO_SETCOLOR - will not change the RGB values
                                   for the selected pen.
 
     RESULT
-        n  = allocted pen number, -1 for failure
+        n  = allocated pen number, -1 for failure
 
     NOTES
         Shared palette entries should not be changed (via SetRGB??())
-        since other aapplications might use the same color.
+        since other applications might use the same color.
         A PaletteExtra structure must have been attached to the 
         ColorMap prior to calling this function (AttachPalExtra()). 
 

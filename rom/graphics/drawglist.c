@@ -25,8 +25,11 @@
 	struct GfxBase *, GfxBase, 19, Graphics)
 
 /*  FUNCTION
+	Process the gel list, draw VSprites and Bobs.
 
     INPUTS
+	rp - RastPort where Bobs will be drawn
+	vp - ViewPort for VSprites
 
     RESULT
 

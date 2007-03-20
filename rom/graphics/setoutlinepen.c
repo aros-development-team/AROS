@@ -24,10 +24,14 @@
 	struct GfxBase *, GfxBase, 163, Graphics)
 
 /*  FUNCTION
+	Set the outline pen and turn on area outline mode.
 
     INPUTS
+	rp  - RastPort
+	pen - pen
 
     RESULT
+	Previous outline pen.
 
     NOTES
 

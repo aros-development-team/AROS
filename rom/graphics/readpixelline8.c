@@ -26,12 +26,21 @@
 	struct GfxBase *, GfxBase, 128, Graphics)
 
 /*  FUNCTION
+	Read the pen numbers of a horizontal line into an array.
 
     INPUTS
+	rp            - RastPort
+	xstart,ystart - coordinate
+	width         - count of pixels to read (must be positive).
+	array         - array for storing of the pen numbers. Size must be
+	                at least ((width+15)>>4)<<4 bytes.
+	tempRP        - see ReadPixelArray8().
 
     RESULT
+	Number of pixels read.
 
     NOTES
+	This function doesn't make sense on true-/hicolor rastports.
 
     EXAMPLE
 
