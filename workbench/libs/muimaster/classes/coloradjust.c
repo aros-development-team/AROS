@@ -447,7 +447,7 @@ IPTR Coloradjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 	    {
    	    	hsb.cw_Brightness = 0xFFFFFFFF;
     	    	ConvertHSBToRGB(&hsb, &cw);
-	
+
 	    	SetRGB32(&_screen(obj)->ViewPort, data->gradpen, cw.cw_Red, cw.cw_Green, cw.cw_Blue);
 	    	if (data->truecolor)
 		{
@@ -526,7 +526,11 @@ IPTR Coloradjust__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
 
 	hsb.cw_Brightness = 0xFFFFFFFF;
 	ConvertHSBToRGB(&hsb, &rgb);
-	SetRGB32(&_screen(obj)->ViewPort, data->gradpen, rgb.cw_Red, rgb.cw_Green, rgb.cw_Blue);
+	
+	if (data->gradpen != -1)
+	{
+	    SetRGB32(&_screen(obj)->ViewPort, data->gradpen, rgb.cw_Red, rgb.cw_Green, rgb.cw_Blue);
+	}
 
 	data->truecolor = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH) >= 15;
     }

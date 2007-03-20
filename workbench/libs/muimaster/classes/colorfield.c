@@ -134,7 +134,7 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
     
-    if (newcol && (_flags(obj) & MADF_SETUP))
+    if (newcol && (_flags(obj) & MADF_SETUP) && !(data->flags & FLAG_NO_PEN))
     {
     	SetRGB32(&_screen(obj)->ViewPort, data->pen, data->rgb[0], data->rgb[1], data->rgb[2]);
 	
