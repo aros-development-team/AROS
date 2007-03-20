@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.0 (08.02.2006)
+## version $VER: wanderer.catalog 1.0 (03.20.2007)
 ## language italiano
 ## codeset 0
 ;
@@ -143,6 +143,12 @@ Apri
 MSG_MEN_SC_OPEN
 A
 ;
+MSG_MEN_RENAME (//)
+Rinomina...
+;
+MSG_MEN_SC_RENAME (//)
+R
+;
 MSG_MEN_INFO
 Informazioni
 ;
@@ -154,6 +160,12 @@ Elimina
 ;
 MSG_MEN_TOOLS
 Strumenti
+;
+MSG_REALLYQUIT (//)
+Vuoi davvero chiudere Wanderer?
+;
+MSG_YESNO (//)
+*Sì|No
 ;
 MSG_DUMMY
 DUMMY
