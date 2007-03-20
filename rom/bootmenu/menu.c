@@ -411,12 +411,24 @@ static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
 	NULL,
 	TRUE
     };
+#else
+	static struct BootConfig bootcfg =
+    {
+	&bootcfg,
+	{"x11gfx.hidd", "hidd.gfx.x11"},
+	{"x11gfx.hidd", "hidd.kbd.x11"},
+	{"x11gfx.hidd", "hidd.mouse.x11"},
+	NULL,
+	TRUE
+    };
+#endif
 
     LIBBASE->bcfg = bootcfg;
 
     /* init keyboard + check */
     if (buttonsPressed(LIBBASE, &LIBBASE->bcfg.defaultkbd))
     {
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 	BootLoaderBase = OpenResource("bootloader.resource");
 	if (BootLoaderBase) {
 	    vi = (struct VesaInfo *)GetBootInfo(BL_Video);
@@ -427,6 +439,7 @@ static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
 		}
 	    }
 	}
+#endif
 	kprintf("Entering Boot Menu ...\n");
 	/* init mouse + gfx */
 	if (initHidds(&LIBBASE->bcfg, LIBBASE))
