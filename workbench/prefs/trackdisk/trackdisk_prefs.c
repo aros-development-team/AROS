@@ -1,7 +1,3 @@
-#ifdef __AROS__
-#include <aros/asmcall.h>
-#endif
-#include <prefs/trackdisk.h>
 #include <clib/alib_protos.h>
 #include <devices/trackdisk.h>
 #include <dos/dosextens.h>
@@ -18,7 +14,10 @@
 
 #include <stdio.h>
 
-#ifndef __AROS__
+#ifdef __AROS__
+#include <aros/asmcall.h>
+#include <prefs/trackdisk.h>
+#else
 #include "prefs_common.h"
 #endif
 #include "trackdisk_prefs.h"
@@ -196,11 +195,8 @@ Object *CreateDriveControls(struct DriveControls *dc, int ndrive)
 			MUIA_InputMode, MUIV_InputMode_Toggle,
 			MUIA_Selected, TDPrefs.UnitPrefs[ndrive].PubFlags & TDPF_NOCLICK,
 			MUIA_CycleChain, TRUE,
-/* FIXME: in original MUI checkmarks are frameless. They include a frame themselves if they need to */
-#ifdef __AROS__
 			MUIA_Frame, MUIV_Frame_ImageButton,
 			MUIA_ShowSelState, FALSE,
-#endif
 		TAG_DONE),
 		MUIA_Group_Child, MUI_MakeObject(MUIO_Label, "Retries:", 0),
 		MUIA_Group_Child,
