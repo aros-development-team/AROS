@@ -60,7 +60,20 @@ AROS_UFP3(ULONG, rootDispatcher,
 
 /****************************************************************************************/
 
-extern const ULONG coltab[];
+/* Default colors for the new screen, the same as in AmigaOS 3.1 */
+
+const ULONG coltab[] =
+{
+    0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70     */
+    0x00000000, 0x00000000, 0x00000000, /* Black      */
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White      */
+    0x66666666, 0x88888888, 0xBBBBBBBB, /* AMIGA Blue */
+
+    0xEEEEEEEE, 0x44444444, 0x44444444, /* Red        */
+    0x55555555, 0xDDDDDDDD, 0x55555555, /* Green      */
+    0x00000000, 0x44444444, 0xDDDDDDDD, /* Dark Blue  */
+    0xEEEEEEEE, 0x99999999, 0x00000000, /* Yellow     */
+};
 
 static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 {
@@ -119,7 +132,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     memset(GetPrivIBase(LIBBASE)->Pad, 0xee, sizeof(GetPrivIBase(LIBBASE)->Pad));
     GetPrivIBase(LIBBASE)->SystemRequestTitle = "System Request";
     GetPrivIBase(LIBBASE)->WorkbenchTitle = "Ambient Screen";
-
+#endif
     /*
      * Setup the default pens to the default
      * colors so that screens have proper color
@@ -131,15 +144,13 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
 	p = GetPrivIBase(LIBBASE)->Colors;
 
-	for (i = 0; i < 16; i++)
+	for (i = 0; i < COLORTABLEENTRIES; i++)
 	{
-	    p[i].red = coltab[i + 1];
-	    p[i].green = coltab[i + 2];
-	    p[i].blue = coltab[i + 3];
+	    p[i].red = coltab[i*3];
+	    p[i].green = coltab[i*3+1];
+	    p[i].blue = coltab[i*3+2];
 	}
     }
-
-#endif
 
 #ifdef __MORPHOS__
     GetPrivIBase(LIBBASE)->mosmenuclass = InitMuiMenuClass(LIBBASE);
@@ -385,3 +396,4 @@ DECLARESET(CLASSESINIT);
 ADD2SET(InitRootClass, classesinit, -20);
 ADD2INITLIB(IntuitionInit, 0);
 ADD2OPENLIB(IntuitionOpen, 0);
+

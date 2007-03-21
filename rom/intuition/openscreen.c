@@ -68,262 +68,6 @@ extern const ULONG defaultdricolors[NUMDRIPENS];
 static const char THIS_FILE[] = __FILE__;
 #endif
 
-
-#if 0
-#define DEBUG_OBTAINPEN(x)      x;
-
-/******* graphics.library/ObtainPen **********************************************
-*
-*   NAME
-*   ObtainPen -- Obtain a free palette entry for use by your program. (V39)
-*
-*
-*   SYNOPSIS
-*   n = ObtainPen( cm, n, r, g, b, flags)
-*   d0         a0 d0  d1 d2 d3  d4
-*
-*   LONG ObtainPen(struct ColorMap *,ULONG,ULONG,ULONG,ULONG,ULONG);
-*
-*   FUNCTION
-*   Attempt to allocate an entry in the colormap for use by the application.
-*   If successful, you should ReleasePen() this entry after you have finished
-*   with it.
-*
-*   Applications needing exclusive use of a color register (say for color
-*   cycling) will typically call this function with n=-1. Applications needing
-*   only the shared use of a color will typically use ObtainBestPenA() instead.
-*   Other uses of this function are rare.
-*
-*   INPUTS
-*   cm  =  A pointer to a color map created by GetColorMap().
-*   n   =  The index of the desired entry, or -1 if any one is acceptable
-*   rgb =  The RGB values (32 bit left justified fractions) to set the new
-*          palette entry to.
-*   flags= PEN_EXCLUSIVE - tells the system that you want exclusive
-*          (non-shared) use of this pen value. Default is shared access.
-*
-*          PEN_NO_SETCOLOR - tells the system to not change the rgb values
-*          for the selected pen. Really only makes sense for exclusive pens.
-*
-*
-*   RESULTS
-*
-*   n   =  The allocated pen. -1 will be returned if there is no pen available
-*          for you.
-*
-*   BUGS
-*
-*   NOTES
-*   When you allocate a palette entry in non-exclusive mode, you
-*   should not change it (via SetRGB32), because other programs on the
-*   same screen may be using it. With PEN_EXCLUSIVE mode, you can
-*   change the returned entry at will.
-*
-*   To avoid visual artifacts, you should not free up a palette
-*   entry until you are sure that your application is not displaying
-*   any pixels in that color at the time you free it. Otherwise, another
-*   task could allocate and set that color index, thus changing the colors
-*   of your pixels.
-*
-*   Generally, for shared access, you should use ObtainBestPenA()
-*   instead, since it will not allocate a new color if there is one
-*   "close enough" to the one you want already.
-*   If there is no Palextra attached to the colormap, then this
-*   routine will always fail.
-*
-*   SEE ALSO
-*   GetColorMap() ReleasePen() AttachPalExtra() ObtainBestPenA()
-*
-*********************************************************************************/
-
-LONG MyObtainPen(struct ColorMap *cm,
-                 ULONG  n,
-                 ULONG  r,
-                 ULONG  g,
-                 ULONG  b,
-                 ULONG  flags,
-                 struct IntuitionBase *IntuitionBase)
-{
-    // struct Library *SysBase = (struct Library *)GfxBase->ExecBase;
-    struct PaletteExtra *pe=cm->PalExtra;
-    long   retvalue=-1;
-
-    DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen(cm 0x%lx n %ld r 0x%08lx g 0x%08lx b 0x%08lx flags %ld)\n",cm,n,r,g,b,flags);)
-
-    DEBUG_OBTAINPEN(dprintf("LIB_ObtainSemaphore: NestCount 0x%lx,QueueCount 0x%lx,Owner %s\n",
-                            pe->pe_Semaphore.ss_NestCount,
-                            pe->pe_Semaphore.ss_QueueCount,
-                            ((ULONG) pe->pe_Semaphore.ss_Owner > 1) ? pe->pe_Semaphore.ss_Owner->tc_Node.ln_Name : "Shared\n"));
-
-    ObtainSemaphore(&pe->pe_Semaphore);
-
-    DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: obtained the semaphore\n"));
-
-    DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: pe_NFree 0x%lx\n",
-                            pe->pe_NFree));
-
-    if (pe->pe_NFree != 0)
-    {
-        UWORD   *refcnt;
-        UBYTE   *alloclist;
-        long    alloc;
-
-        refcnt = (UWORD *)pe->pe_RefCnt;
-        alloclist = (char *)pe->pe_AllocList;
-
-        DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: pe_RefCnt 0x%lx\n",
-                                pe->pe_RefCnt));
-
-        DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: pe_AllocList 0x%lx\n",
-                                pe->pe_AllocList));
-        if (n != -1L)
-        {
-            // if not allocatable, fail
-            DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: pe_SharableColors 0x%lx\n",
-                                    pe->pe_SharableColors));
-            if (pe->pe_SharableColors >= n)
-            {
-                if (refcnt[n] == 0)
-                {
-                    refcnt[n]++;
-                    retvalue = n;
-
-                    // decrement avail count
-                    pe->pe_NFree--;
-                    DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: pe_NFree 0x%lx\n",
-                                            pe->pe_NFree));
-
-                    if (pe->pe_NFree != 0)
-                    {
-                        UWORD j;
-
-
-                        j = pe->pe_FirstFree;
-
-                        DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: pe_FirstFree 0x%lx\n",
-                                                pe->pe_FirstFree));
-
-                        if (j == n)
-                        {
-                            // we don't need to walk through the list
-                            // first = n -> next
-                            pe->pe_FirstFree = alloclist[n];
-
-                            DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: pe_FirstFree = alloclist[%ld] 0x%lx\n",
-                                                    n,
-                                                    alloclist[n]));
-
-                        }
-                        else
-                        {
-                            while(alloclist[j] != n)
-                            {
-                                DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: alloclist[%ld] %ld != %ld\n",
-                                                        j,alloclist[j],n));
-                                j = alloclist[j];
-                            }
-                            // j -> next = n -> next
-                            alloclist[j] = alloclist[n];
-                        }
-                    }
-
-                    // check exclusive
-
-                    if ((flags & PENF_EXCLUSIVE) == 0)
-                    {
-                        // not exclusive, so add it to shared list
-                        pe->pe_NShared++;
-                        alloclist[n]=pe->pe_FirstShared;
-                        pe->pe_FirstShared=n;
-                    }
-                }
-                else
-                {
-                    DEBUG_OBTAINPEN(dprintf("(index already allocated)");)
-                }
-            }
-            else
-            {
-                DEBUG_OBTAINPEN(dprintf("(not allocatable,sharable=%ld)",pe->pe_SharableColors);)
-            }
-        }
-        else
-        {
-            // decrement avail count
-            DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: decrement avail cnt\n"));
-            pe->pe_NFree--;
-            alloc = pe->pe_FirstFree;
-            refcnt[alloc]++;
-            // FirstFree = alloc->next
-            pe->pe_FirstFree = alloclist[alloc];
-            retvalue = alloc;
-
-            // check exclusive
-
-            if ((flags & PENF_EXCLUSIVE) == 0)
-            {
-                DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: add shared list\n"));
-                // not exclusive, so add it to shared list
-                pe->pe_NShared++;
-                alloclist[alloc]=pe->pe_FirstShared;
-                pe->pe_FirstShared=alloc;
-            }
-        }
-
-        if (retvalue != -1L)
-        {
-            long    i = retvalue;
-
-            if ((flags & PENF_NO_SETCOLOR) == 0)
-            {
-                DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: set color\n"));
-                SetRGB32(pe->pe_ViewPort,i,r,g,b);
-            }
-        }
-    }
-
-    DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen: release it\n"));
-    ReleaseSemaphore(&pe->pe_Semaphore);
-
-    DEBUG_OBTAINPEN(dprintf("LIB_ObtainPen(cm 0x%lx n %ld r 0x%08lx g 0x%08lx b 0x%08lx flags %ld) -> retvalue %lx\n",cm,n,r,g,b,flags,retvalue);)
-
-    return(retvalue);
-}
-
-#undef ObtainPen
-
-#define ObtainPen(cm,n,r,g,b,flags) MyObtainPen(cm,n,r,g,b,flags,IntuitionBase)
-#endif
-
-/* Default colors for the new screen */
-
-const ULONG coltab[] =
-{
-    (16L << 16) + 0,    /* 16 colors, loaded at index 0 */
-
-    /* X11 color names  */
-    0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70   */
-    0x00000000, 0x00000000, 0x00000000, /* Black    */
-    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White    */
-    0x66666666, 0x88888888, 0xBBBBBBBB, /* AMIGA Blue   */
-
-    0x00000000, 0x00000000, 0xFFFFFFFF, /* Blue     */
-    0x00000000, 0xFFFFFFFF, 0x00000000, /* Green    */
-    0xFFFFFFFF, 0x00000000, 0x00000000, /* Red      */
-    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, /* Cyan     */
-
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, /* Magenta  */
-    0xEEEEEEEE, 0x82828282, 0xEEEEEEEE, /* Violet   */
-    0xA5A5A5A5, 0x2A2A2A2A, 0x2A2A2A2A, /* Brown    */
-    0xFFFFFFFF, 0xE4E4E4E4, 0xC4C4C4C4, /* Bisque   */
-
-    0xE6E6E6E6, 0xE6E6E6E6, 0xFAFAFAFA, /* Lavender */
-    0x00000000, 0x00000000, 0x80808080, /* Navy     */
-    0xF0F0F0F0, 0xE6E6E6E6, 0x8C8C8C8C, /* Khaki    */
-    0xA0A0A0A0, 0x52525252, 0x2D2D2D2D, /* Sienna   */
-    0L      /* Termination */
-};
-
 /*****************************************************************************
  
     NAME */
@@ -1275,21 +1019,12 @@ AROS_LH1(struct Screen *, OpenScreen,
 
     if (ok)
     {
-        // struct Color32 *p;
+        struct Color32 *p;
         int 	    	k, c;
         UWORD 	       *q;
 
-        DEBUG_OPENSCREEN(dprintf("OpenScreen: Load Colors\n"));
-
-        D(bug("Loading colors\n"));
-
-        /* First load default colors for the screen */
-        LoadRGB32(&screen->Screen.ViewPort, (ULONG *)coltab);
-
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Set first 4 colors\n"));
 
-#warning "FIXME: backport: #if'ed out"
-#if 0
         p = GetPrivIBase(IntuitionBase)->Colors;
         for (k = 0; k < 4 && k < numcolors; ++k)
         {
@@ -1310,26 +1045,22 @@ AROS_LH1(struct Screen *, OpenScreen,
                                          screen->Screen.ViewPort,
                                          numcolors - k - 1, p[k+4].red, p[k+4].green, p[k+4].blue));
 
-    	    #if 1
                 ObtainPen(screen->Screen.ViewPort.ColorMap,
                           numcolors - 4 + k,
                           p[k+4].red,
                           p[k+4].green,
                           p[k+4].blue,
-                          PEN_EXCLUSIVE);
-    	    #else
-                SetRGB32(&screen->Screen.ViewPort, numcolors - k - 1, p[k+4].red, p[k+4].green, p[k+4].blue);
-    	    #endif
+                          0);
             }
         }
-#endif
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Obtain Mousepointer colors\n"));
 
         /* Allocate pens for the mouse pointer */
         q = &GetPrivIBase(IntuitionBase)->ActivePreferences->color17;
 	if (numcolors < 20)
-	    c = numcolors - 3;
+	    /* FIXME: this assumes that we have at least 16 colors */
+	    c = numcolors - 7;
 	else
 	    c = 17;
         for (k = 0; k < 3; ++k, ++q)
@@ -1345,7 +1076,7 @@ AROS_LH1(struct Screen *, OpenScreen,
                           (*q >> 8) * 0x11111111,
                           ((*q >> 4) & 0xf) * 0x11111111,
                           (*q & 0xf) * 0x11111111,
-                          PEN_EXCLUSIVE);
+                          0);
 /* The following piece is left for reference only. It came from
    classic Amiga where mouse pointer was implemented as a hardware
    sprite. It always uses DAC registers 17 - 19, even for screens
@@ -2188,5 +1919,3 @@ static VOID int_openscreen(struct OpenScreenActionMsg *msg,
     AddResourceToList(screen, RESOURCE_SCREEN, IntuitionBase);
 
 }
-
-
