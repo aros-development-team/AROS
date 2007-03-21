@@ -1351,7 +1351,7 @@ unsigned char setupVesa(struct multiboot *mbinfo)
     if (vesa)
     {
         long x=0, y=0, d=0;
-        long mode;
+        long mode, setmode;
         unsigned long vesa_size = (unsigned long)&_binary_vesa_size;
         void *vesa_start = &_binary_vesa_start;
         vesa+=5;
@@ -1381,7 +1381,11 @@ unsigned char setupVesa(struct multiboot *mbinfo)
         getModeInfo(mode);
 
 	rkprintf("%x\n",mode);
-	r = setVbeMode(mode);
+	if (modeinfo->mode_attributes & 0x80)
+	    setmode = mode | 0x4000;
+	else
+	    setmode = mode;
+	r = setVbeMode(setmode);
         if (r == 0x004f) {
 	    rkprintf("\x03");
 	    if (controllerinfo->capabilities & 0x01)
