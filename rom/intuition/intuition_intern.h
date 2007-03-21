@@ -365,7 +365,7 @@ struct Color32
     ULONG blue;
 };
 
-#define COLORTABLEENTRIES   	32  //8
+#define COLORTABLEENTRIES   	8
 
 struct IntScreen;
 

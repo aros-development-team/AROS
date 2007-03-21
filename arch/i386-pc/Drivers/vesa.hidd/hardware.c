@@ -92,7 +92,7 @@ BOOL initVesaGfxHW(struct HWData *data)
 		if (data->depth > 4)
 		    col = 17;
 		else
-		    col = (1 << data->depth) - 3;
+		    col = (1 << data->depth) - 7;
 		for (i = 0; i < 9; i++)
 		    data->DAC[col*3+i] = cursorPalette[i];
 		DACLoad(data, col, 3);

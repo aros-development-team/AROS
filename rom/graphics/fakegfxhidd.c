@@ -1355,11 +1355,11 @@ static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd)
 	}
 	else
 	{
-	    /* FIXME: this assumes fbdepth > 2 */
+	    /* FIXME: this assumes fbdepth > 3 */
 	    if (fbdepth > 4)
 		data->curs_pixels[i] = i + 16;
 	    else
-		data->curs_pixels[i] = i + (1 << fbdepth) - 4;
+		data->curs_pixels[i] = i + (1 << fbdepth) - 8;
 	}
     }
     
