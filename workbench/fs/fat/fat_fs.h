@@ -47,20 +47,24 @@ struct CacheBuffer {
 };
 */
 
+/* extent is a reference to a chunk of a single file/dir that is held in one
+ * or more consecutive clusters */
 struct Extent {
-    ULONG sector;
-    ULONG count;
-    ULONG offset;
-    ULONG cur_cluster;
-    ULONG next_cluster;
-    ULONG start_cluster;
-    ULONG last_cluster;
+    ULONG sector;           /* first sector of cur_cluster */
+    ULONG count;            /* number of sectors in the extent */
+    ULONG offset;           /* distance (sectors) into the file of the current extent */
+    ULONG cur_cluster;      /* first cluster in the extent */
+    ULONG next_cluster;     /* cluster at beginning of next extent */
+    ULONG start_cluster;    /* first cluster in the file (or at least where we
+                               started searching from) */
+    ULONG last_cluster;     /* last cluster in the extent */
 };
 
+/* directory cache. this is a reference to an entire directory */
 struct DirCache {
-    struct Extent *e;
-    void *buffer;
-    ULONG cur_sector;
+    struct Extent *e;       /* extent for this directory */
+    void *buffer;           /* current sector data */
+    ULONG cur_sector;       /* current sector number (from start of dir) */
 };
  
 #define fl_Key entry

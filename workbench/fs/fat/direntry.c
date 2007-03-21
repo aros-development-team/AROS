@@ -23,10 +23,14 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
+/* create a new directory cache. dc and ext are created by the caller, and get
+ * initialised here. cluster is the first cluster of the directory list (ie
+ * the root directory cluster or the cluster number referenced in the parent
+ * directory */
 LONG SetupDirCache(struct FSSuper *sb, struct DirCache *dc, struct Extent *ext, ULONG cluster) {
     kprintf("\tSetupDirCache: cluster %ld\n", cluster);
 
-    /* XXX bug? can be NULL at this point:
+    /* XXX bug? glob can be NULL at this point:
      *   handler
      *   ProcessDiskChange
      *   DoDiskInsert
@@ -34,37 +38,54 @@ LONG SetupDirCache(struct FSSuper *sb, struct DirCache *dc, struct Extent *ext, 
      *   ReadVolumeName
      *   SetupDirCache
     if ((dc->buffer = FS_AllocBlock()) == NULL) */
+
+    /* allocate room for the sector buffer */
     if ((dc->buffer = FS_AllocMem(sb->sectorsize)) == NULL)
         return ERROR_NO_FREE_STORE;
 
     dc->e = ext;
 
+    /* initialise the extent. if its on disk somewhere, then set it up
+     * normally */
     if (cluster)
         InitExtent(sb, dc->e, cluster);
+
+    /* we already know where the root directory is, so just use that */
     else
         memcpy(dc->e, sb->first_rootdir_extent, sizeof(struct Extent));
 
     dc->cur_sector = 0;
 
+    /* load the first sector */
     return FS_GetBlock(dc->e->sector, dc->buffer);
 }
 
+/* get a single entry from a directory. entry is the item to return */
 LONG GetDirCacheEntry(struct FSSuper *sb, struct DirCache *dc, LONG entry, struct DirEntry **de) {
     LONG err = 0;
 
+    /* number of sectors into the directory to find this entry */
     ULONG entry_sector = (entry * sizeof(struct DirEntry)) >> sb->sectorsize_bits;
+
+    /* and number of bytes into that sector to find the entry */
     ULONG entry_offset = (entry * sizeof(struct DirEntry)) & (sb->sectorsize - 1);
 
     kprintf("\tGetDirCacheEntry: entry %ld sector %ld offset %ld\n", entry, entry_sector, entry_offset);
 
+    /* XXX OPT check if we have the correct buffer before doing anything */
+
+    /* get to the extent containing this sector */
     if (entry_sector < dc->e->offset || entry_sector >= dc->e->offset + dc->e->count)
         err = SeekExtent(sb, dc->e, entry_sector);
 
+    /* load the correct sector if we don't have it already */
     if (err == 0 && dc->cur_sector != entry_sector) {
         kprintf("\t\tchanging sector in directory cache from %ld to %ld\n", dc->cur_sector, entry_sector);
         err = FS_GetBlock(dc->e->sector + (entry_sector - dc->e->offset), dc->buffer);
         dc->cur_sector = entry_sector;
     }
+
+    /* get a pointer to the entry within the sector */
     if (err == 0)
         *de = dc->buffer + entry_offset;
 

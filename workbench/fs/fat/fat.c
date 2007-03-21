@@ -345,27 +345,39 @@ LONG InitExtent(struct FSSuper *sb, struct Extent *ext, ULONG start_cluster) {
 }
  
 LONG NextExtent(struct FSSuper *sb, struct Extent *ext) {
-    ULONG block = ext->next_cluster;
-    ULONG count = 0;
+    ULONG next;
+    ULONG count;
     ULONG prev;
 
-    if (block >= sb->eoc_mark)
+    /* next cluster in the file */
+    next = ext->next_cluster;
+
+    /* return if we've reached the end */
+    if (next >= sb->eoc_mark)
         return ERROR_OBJECT_NOT_FOUND;
 
+    /* we run through the fat, checking cluster numbers. we keep going until
+     * we notice that we've run off the end of a consecutive set of clusters */
+    count = 0;
     do {
-        prev = block;
-        block = GetFatEntry(block);
+        prev = next;
+        next = GetFatEntry(next);
         count++;
-    } while (block == prev+1);
+    } while (next == prev+1);
+
+    /* at this point:
+     *   prev:  last cluster in this extent
+     *   next:  first cluster in next extent
+     *   count: number of clusters in this extent */
 
     ext->cur_cluster = ext->next_cluster;
-    ext->next_cluster = block;
+    ext->next_cluster = next;
     ext->last_cluster = prev;
     ext->sector = Cluster2Sector(sb, ext->cur_cluster);
     ext->offset += ext->count;
     ext->count = count << sb->cluster_sectors_bits;
 
-    kprintf("\tNextExtent result: cluster %ld, count %ld, next %ld (%08lx), sector %ld, offset %ld\n", ext->cur_cluster, ext->count, block, block, ext->sector, ext->offset);
+    kprintf("\tNextExtent result: cluster %ld, count %ld, next %ld (%08lx), sector %ld, offset %ld\n", ext->cur_cluster, ext->count, next, next, ext->sector, ext->offset);
 
     return 0;
 }
