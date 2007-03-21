@@ -786,7 +786,8 @@ BOOL extensionModified = FALSE;
 			/* Only get the block's old contents if some of it won't be overwritten
 			   (except for OFS or a final, partially-used block) */
 			block = OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey]);
-			if ((length >= BLOCK_SIZE(ah->volume)) && (ah->volume->dosflags != 0))
+			if ((ah->current.byte == 0) && (length >= BLOCK_SIZE(ah->volume))
+				&& (ah->volume->dosflags != 0))
 				databuffer = getFreeCacheBlock(afsbase, ah->volume, block);
 			else
 				databuffer = getBlock(afsbase, ah->volume, block);
