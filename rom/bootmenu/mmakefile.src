@@ -5,6 +5,7 @@ FILES := \
 	menu \
 	gadgets
 
+#MM- kernel-bootmenu-includes : kernel-bootloader-pc-i386-includes
 #MM- kernel-bootmenu : includes linklibs
 
 USER_INCLUDES := -I$(TOP)/rom/devs
