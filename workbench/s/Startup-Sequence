@@ -24,6 +24,7 @@ Assign THEME:   THEMES:Mason
 Assign IMAGES:  SYS:System/Images DEFER
 ;Assign PRINTERS: DEVS:Printers
 Assign WANDERER: SYS:System/Wanderer DEFER
+Assign USBCLASSES: SYS:Classes/USB
 
 If EXISTS SYS:DiskImages
     Assign FDSK: SYS:DiskImages
