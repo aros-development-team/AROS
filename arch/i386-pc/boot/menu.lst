@@ -3,37 +3,41 @@
 timeout 5 
 default 2
 
+title AROS VBE  640x480  8bpp
+kernel /boot/aros-pc-i386.gz vesa=640x480x8 ATA=32bit,forcedma
+
+title AROS VBE  800x600  8bpp
+kernel /boot/aros-pc-i386.gz vesa=800x600x8 ATA=32bit,forcedma
+
+title AROS VBE 1024x768  8bpp
+kernel /boot/aros-pc-i386.gz vesa=1024x768x8 ATA=32bit,forcedma
+
+title AROS VBE 1280x1024 8bpp
+kernel /boot/aros-pc-i386.gz vesa=1280x1024x8 ATA=32bit,forcedma
+
 title AROS VBE  640x480  16bpp
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd ATA=32bit,forcedma
-vbematch 640 480 16
+kernel /boot/aros-pc-i386.gz vesa=640x480x16 ATA=32bit,forcedma
 
 title AROS VBE  800x600  16bpp
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd ATA=32bit,forcedma
-vbematch 800 600 16
+kernel /boot/aros-pc-i386.gz vesa=800x600x16 ATA=32bit,forcedma
 
 title AROS VBE 1024x768  16bpp
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd ATA=32bit,forcedma
-vbematch 1024 768 16
+kernel /boot/aros-pc-i386.gz vesa=1024x768x16 ATA=32bit,forcedma
 
 title AROS VBE 1280x1024 16bpp
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd ATA=32bit,forcedma
-vbematch 1280 1024 16
+kernel /boot/aros-pc-i386.gz vesa=1280x1024x16 ATA=32bit,forcedma
 
 title AROS VBE  640x480  32bpp
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd ATA=32bit,forcedma
-vbematch 640 480 32
+kernel /boot/aros-pc-i386.gz vesa=640x480x32 ATA=32bit,forcedma
 
 title AROS VBE  800x600  32bpp
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd ATA=32bit,forcedma
-vbematch 800 600 32
+kernel /boot/aros-pc-i386.gz vesa=800x600x32 ATA=32bit,forcedma
 
 title AROS VBE 1024x768  32bpp
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd ATA=32bit,forcedma
-vbematch 1024 768 32
+kernel /boot/aros-pc-i386.gz vesa=1024x768x32 ATA=32bit,forcedma
 
 title AROS VBE 1280x1024 32bpp
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd ATA=32bit,forcedma
-vbematch 1280 1024 32
+kernel /boot/aros-pc-i386.gz vesa=1280x1024x32 ATA=32bit,forcedma
 
 title AROS VGA  640x480   4bpp
 kernel /boot/aros-pc-i386.gz ATA=32bit,forcedma
