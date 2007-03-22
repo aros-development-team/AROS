@@ -159,7 +159,7 @@ AROS_UFH3(void, Enumerator,
 {
     AROS_USERFUNC_INIT
 
-    APTR buf;
+    ULONG buf;
     ULONG size;
     ULONG Vendor;
     OOP_Object *driver;
@@ -177,10 +177,10 @@ AROS_UFH3(void, Enumerator,
        Here we do this manually.
        This thing was looked up in x.org S3 driver source code. Applicable to all S3 cards. */
     if (Vendor == PCI_VENDOR_S3) {
-	outb(0x59, vgaIOBase + 4);
-	outb(buf >> 24, vgaIOBase + 5);  
-	outb(0x5A, vgaIOBase + 4);
-	outb(buf >> 16, vgaIOBase + 5);
+		outb(0x59, vgaIOBase + 4);
+		outb(buf >> 24, vgaIOBase + 5);  
+		outb(0x5A, vgaIOBase + 4);
+		outb(buf >> 16, vgaIOBase + 5);
     }
 
     mappci.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI);
