@@ -3,6 +3,10 @@
 
 #include <exec/types.h>
 
+#define PCI_VENDOR_S3 0x5333
+
+#define vgaIOBase 0x3d0
+
 struct HWData
 {
     APTR	framebuffer;
