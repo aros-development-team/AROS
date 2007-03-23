@@ -22,4 +22,6 @@
 #define IND_SETMTYPE	(CMD_NONSTD + 6)
 #define IND_SETMTRIG	(CMD_NONSTD + 7)
 
+#define IND_ADDEVENT	(CMD_NONSTD + 15) /* V50! */
+
 #endif /* DEVICES_INPUT_H */
