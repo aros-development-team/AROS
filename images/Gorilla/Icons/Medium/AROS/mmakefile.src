@@ -7,7 +7,8 @@ include $(TOP)/config/make.cfg
 
 ICONS := C Demos Development Devs Extras Fonts \
          Libs Locale Prefs S Storage System \
-         T Tests Tools Utilities WBStartup
+         T Tests Tools Utilities WBStartup \
+         boot Rexxc
 
 #MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
 #MM- themes-gorilla-icons : themes-gorilla-icons-aros
