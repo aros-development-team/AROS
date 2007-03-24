@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IconX WB script starter
@@ -58,6 +58,9 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/icon.h>
+
+#include <workbench/startup.h>
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -67,7 +70,7 @@
 #define DEFWAIT   (2 * 50) // two seconds
 #define DEFUSHELL (TRUE)
 
-static const char version[] = "\0$VER: IconX 1.0 (1.11.2006) © by The AROS Development Team";
+static const char version[] = "\0$VER: IconX 1.1 (24.03..2007) © by The AROS Development Team";
 int __forceerrorrequester = 1;
 static TEXT errbuffer[255];
 
@@ -88,11 +91,8 @@ int main(int argc, char **argv)
 {
     LONG rc = RETURN_FAIL;
     STRPTR filename;
-    STRPTR path = NULL;
-    LONG pathlen;
     BPTR oldlock = (BPTR)-1;
     BPTR dirlock = (BPTR)-1;
-    STRPTR pathPartEnd;
     struct DiskObject *dobj = NULL;
 
     STRPTR ixWindow = DEFWINDOW;
@@ -105,39 +105,25 @@ int main(int argc, char **argv)
 
     D(bug("IconX argc %d\n", argc));
 
-    if (argc != 2)
+    if (argc != 0)
     {
 	displayMsg(ERROR_REQUIRED_ARG_MISSING);
 	goto exit;
     }
 
-    D(bug("IconX argv[1] %s\n", argv[1]));
-
-    /* get path part and cd into it */
-    pathPartEnd = PathPart(argv[1]);
-    pathlen = pathPartEnd - (STRPTR)argv[1];
-    path = AllocVec( pathlen + 1, MEMF_ANY|MEMF_CLEAR);
-    if (path == NULL)
+    struct WBStartup *startup = (struct WBStartup *) argv;
+    if (startup->sm_NumArgs != 2)
     {
-	displayMsg(ERROR_NO_FREE_STORE);
+	displayMsg(ERROR_REQUIRED_ARG_MISSING);
 	goto exit;
     }
 
-    strncpy(path, argv[1], pathlen);
-    dirlock = Lock(path, SHARED_LOCK);
-    if (dirlock == NULL)
-    {
-	displayMsg(ERROR_INVALID_LOCK);
-	goto exit;
-    }
+    dirlock  = startup->sm_ArgList[1].wa_Lock;
+    filename = startup->sm_ArgList[1].wa_Name;
 
     oldlock = CurrentDir(dirlock);
 
-    filename = FilePart(argv[1]);
-
-    D(bug("Path %s File %s\n", path, filename));
-
-    /* queary diskobject for tooltypes */
+    /* query diskobject for tooltypes */
     dobj = GetDiskObject(filename);
     if (dobj == NULL)
     {
@@ -237,13 +223,9 @@ int main(int argc, char **argv)
 exit:
     Close(window);
     FreeDiskObject(dobj);
-    FreeVec(path);
 
     if (oldlock != (BPTR)-1)
 	CurrentDir(oldlock);
-
-    if (dirlock != (BPTR)-1)
-	UnLock(dirlock);
 
     return rc;
 }
