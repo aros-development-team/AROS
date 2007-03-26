@@ -1,3 +1,5 @@
+/* this file should be removed, or reworked later */
+
 #include <dos/dos.h>
 #include <intuition/classusr.h>
 #include <intuition/windecorclass.h>
