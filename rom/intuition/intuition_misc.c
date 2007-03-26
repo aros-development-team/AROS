@@ -545,11 +545,11 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 		    msg.wdp_Window  = w;
 		    msg.wdp_Gadgets = (struct Gadget *)SYSGAD(w, i);
 		    msg.wdp_Flags   = WDF_LBG_SYSTEMGADGET | WDF_LBG_INITIAL;
+		    msg.wdp_TrueColor = (((struct IntScreen *)w->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+		    msg.wdp_Dri = dri;
 
-		    LOCKSHARED_WINDECOR(dri);
-		    DoMethodA(((struct IntDrawInfo *)dri)->dri_WinDecorObj, (Msg)&msg);	
-		    UNLOCK_WINDECOR(dri);
-	  		
+		    DoMethodA(((struct IntScreen *)(w->WScreen))->WinDecorObj, (Msg)&msg);	
+
                     AddGadget(w, (struct Gadget *)SYSGAD(w, i), 0);
 		}
             }
@@ -686,33 +686,20 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 
         if (refresh) BeginUpdate(scr->BarLayer);
 
-    	LOCKSHARED_SCRDECOR(dri);
-
-    	{
+        {
     	    struct sdpDrawScreenBar  msg;
 
-	    msg.MethodID    = SDM_DRAW_SCREENBAR;
-	    msg.sdp_Layer   = scr->BarLayer;
-	    msg.sdp_RPort   = rp;
-    	    msg.sdp_Flags   = 0;
+	    msg.MethodID	= SDM_DRAW_SCREENBAR;
+	    msg.sdp_Layer	= scr->BarLayer;
+	    msg.sdp_RPort	= rp;
+    	    msg.sdp_Flags	= 0;
+	    msg.sdp_Screen	= scr;
+	    msg.sdp_Dri		= dri;
+	    msg.sdp_UserBuffer	= ((struct IntScreen *)(scr))->DecorUserBuffer;
+    	    msg.sdp_TrueColor   = (((struct IntScreen *)scr)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
 
-	    DoMethodA(((struct IntDrawInfo *)(dri))->dri_ScrDecorObj, (Msg)&msg);	
-    	}
-
-        /* Render the titlebar */
-        if (NULL != scr->Title)
-        {
-    	    struct sdpDrawScreenTitle  msg;
-
-	    msg.MethodID    = SDM_DRAW_SCREENTITLE;
-	    msg.sdp_Layer   = scr->BarLayer;
-	    msg.sdp_RPort   = rp;
-	    msg.sdp_Flags   = 0;
-
-	    DoMethodA(((struct IntDrawInfo *)(dri))->dri_ScrDecorObj, (Msg)&msg);	
-    	}
-
-	UNLOCK_SCRDECOR(dri);
+	    DoMethodA(((struct IntScreen *)(scr))->ScrDecorObj, (Msg)&msg);	
+        }
 
         if (scr->FirstGadget)
         {
@@ -1057,6 +1044,8 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
                     msg = AllocMem(sizeof(struct ScreenNotifyMessage), MEMF_CLEAR);
                     if (msg)
                     {
+                        msg->snm_Message.mn_Magic = MAGIC_SCREENNOTIFY;
+                        msg->snm_Message.mn_Version = SCREENNOTIFY_VERSION;
                         msg->snm_Object = data;                           
                         msg->snm_Class = flag;
                         msg->snm_UserData = sn->userdata;
@@ -1091,6 +1080,8 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
                 else if (sn->hook)
                 {
                     struct ScreenNotifyMessage msg;
+                    msg.snm_Message.mn_Magic = MAGIC_SCREENNOTIFY;
+                    msg.snm_Message.mn_Version = SCREENNOTIFY_VERSION;
                     msg.snm_Object = data;
                     msg.snm_Class = flag;
                     msg.snm_UserData = sn->userdata;

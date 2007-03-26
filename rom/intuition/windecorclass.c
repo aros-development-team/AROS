@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id: imageclass.c 20651 2004-01-17 20:57:12Z chodorowski $
 */
 
@@ -146,7 +146,6 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
 static UWORD getbgpen(ULONG state, UWORD *pens)
 {
     UWORD bg;
-
     switch (state)
     {
 	case IDS_NORMAL:
@@ -178,19 +177,7 @@ IPTR WinDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     if (obj)
     {
     	data = INST_DATA(cl, obj);
-	
-	data->dri = (struct IntDrawInfo *)GetTagData(WDA_DrawInfo, 0, msg->ops_AttrList);
-	data->scr = (struct Screen *)GetTagData(WDA_Screen, 0, msg->ops_AttrList);
-	
-	if (!data->dri || !data->scr)
-	{
-    	    STACKULONG method = OM_DISPOSE;
-	    
-    	    CoerceMethodA(cl, obj, (Msg)&method);
-	    
-	    return 0;
-	}	
-	
+	data->userbuffersize = (ULONG) GetTagData(WDA_UserBuffer, 0, msg->ops_AttrList);
     }
     
     return (IPTR)obj;
@@ -204,14 +191,9 @@ IPTR WinDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-    	case WDA_DrawInfo:
-	    *msg->opg_Storage = (IPTR)data->dri;
+    	case WDA_UserBuffer:
+	    *msg->opg_Storage = (IPTR) data->userbuffersize;
 	    break;
-	    
-    	case WDA_Screen:
-	    *msg->opg_Storage = (IPTR)data->scr;
-	    break;
-	    
 	case WDA_TrueColorOnly:
 	    *msg->opg_Storage = FALSE;
 	    break;
@@ -376,7 +358,7 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
 {
     struct windecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->wdp_RPort;
-    UWORD   	    	 *pens = DRI(data->dri)->dri_Pens;
+    UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
     LONG    	    	  state = msg->wdp_State;
     LONG    	     	  left = msg->wdp_X;
     LONG    	     	  top = msg->wdp_Y;
@@ -920,12 +902,60 @@ static void findtitlearea(struct Window *win, LONG *left, LONG *right)
 
 /**************************************************************************************************/
 
+IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder *msg)
+{
+    struct windecor_data *data = INST_DATA(cl, obj);
+    struct RastPort 	 *rp = msg->wdp_RPort;
+    struct Window   	 *window = msg->wdp_Window;
+    UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
+    LONG    	    	  right, left;
+
+    findtitlearea(window, &left, &right);
+
+    SetDrMd(rp, JAM1);
+    SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
+    CheckRectFill(rp, left + 1, 1, right - 1, window->BorderTop - 2, IntuitionBase);
+        
+    if (right - left > 6)
+    {
+        ULONG   	    	textlen, titlelen, textpixellen;
+        struct TextExtent 	te;
+
+        SetFont(rp, DRI(msg->wdp_Dri)->dri_Font);
+
+        titlelen = strlen(window->Title);
+        textlen = TextFit(rp
+                          , window->Title
+                          , titlelen
+                          , &te
+                          , NULL
+                          , 1
+                          , right - left - 6
+                          , window->BorderTop - 2);
+    	if (textlen)
+	{
+	    textpixellen = te.te_Extent.MaxX - te.te_Extent.MinX + 1;
+
+	    left = left + 3;
+	    
+            SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN]);
+
+	    Move(rp, left, DRI(msg->wdp_Dri)->dri_Font->tf_Baseline + 2);
+            Text(rp, window->Title, textlen);
+	}
+    }
+    
+    return TRUE;
+}
+
+/**************************************************************************************************/
+
 IPTR WinDecorClass__WDM_DRAW_WINBORDER(Class *cl, Object *obj, struct wdpDrawWinBorder *msg)
 {
     struct windecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->wdp_RPort;
     struct Window   	 *window = msg->wdp_Window;
-    UWORD   	    	 *pens = DRI(data->dri)->dri_Pens;
+    UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
     LONG    	    	  left, right;
     
     SetDrMd(rp, JAM1);
@@ -1063,84 +1093,9 @@ IPTR WinDecorClass__WDM_DRAW_WINBORDER(Class *cl, Object *obj, struct wdpDrawWin
     	Move(rp, right, 1);
 	Draw(rp, right, window->BorderTop - 2);
     }
-    
-    return TRUE;
-}
 
-/**************************************************************************************************/
+    if (window->Title) INTERNAL_WDM_DRAW_WINTITLE(cl, obj, msg);
 
-IPTR WinDecorClass__WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinTitle *msg)
-{
-    struct windecor_data *data = INST_DATA(cl, obj);
-    struct RastPort 	 *rp = msg->wdp_RPort;
-    struct Window   	 *window = msg->wdp_Window;
-    UWORD   	    	 *pens = DRI(data->dri)->dri_Pens;
-    LONG    	    	  right, left;
-
-    findtitlearea(window, &left, &right);
-
-    SetDrMd(rp, JAM1);
-    SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
-    CheckRectFill(rp, left + 1, 1, right - 1, window->BorderTop - 2, IntuitionBase);
-        
-    if (right - left > 6)
-    {
-        ULONG   	    	textlen, titlelen, textpixellen;
-        struct TextExtent 	te;
-
-        SetFont(rp, DRI(data->dri)->dri_Font);
-
-        titlelen = strlen(window->Title);
-        textlen = TextFit(rp
-                          , window->Title
-                          , titlelen
-                          , &te
-                          , NULL
-                          , 1
-                          , right - left - 6
-                          , window->BorderTop - 2);
-    	if (textlen)
-	{
-	    textpixellen = te.te_Extent.MaxX - te.te_Extent.MinX + 1;
-	    
-	    switch(msg->wdp_TitleAlign)
-	    {		    
-		case WD_DWTA_CENTER:
-		    if (textlen == titlelen)
-		    {
-		    	left = (left + right + 1 - textpixellen) / 2;
-		    }
-		    else
-		    {
-		    	left = left + 3;
-		    }
-		    break;
-		    
-		case WD_DWTA_RIGHT:
-		    if (textlen == titlelen)
-		    {
-		    	left = right - textpixellen;
-		    }
-		    else
-		    {
-		    	left = left + 3;
-		    }
-		    break;
-
-    	    	default:
-	    	case WD_DWTA_LEFT:
-		    left = left + 3;
-		    break;
-
-	    }
-	    
-            SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN]);
-
-	    Move(rp, left, DRI(data->dri)->dri_Font->tf_Baseline + 2);
-            Text(rp, window->Title, textlen);
-	}
-    }
-    
     return TRUE;
 }
 
@@ -1207,7 +1162,7 @@ IPTR WinDecorClass__WDM_DRAW_BORDERPROPBACK(Class *cl, Object *obj, struct wdpDr
     struct Gadget   	 *gadget = msg->wdp_Gadget;
     struct Rectangle	 *r = msg->wdp_RenderRect;
     struct PropInfo 	 *pi = ((struct PropInfo *)gadget->SpecialInfo);
-    UWORD   	    	 *pens = DRI(data->dri)->dri_Pens;
+   UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
 
     SetDrMd(rp, JAM2);
     
@@ -1240,7 +1195,7 @@ IPTR WinDecorClass__WDM_DRAW_BORDERPROPKNOB(Class *cl, Object *obj, struct wdpDr
     struct Gadget   	 *gadget = msg->wdp_Gadget;
     struct Rectangle	 *r = msg->wdp_RenderRect;
     struct PropInfo 	 *pi = ((struct PropInfo *)gadget->SpecialInfo);
-    UWORD   	    	 *pens = DRI(data->dri)->dri_Pens;
+   UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
 
     SetDrMd(rp, JAM2);
     
@@ -1309,3 +1264,22 @@ IPTR WinDecorClass__WDM_DRAW_BORDERPROPKNOB(Class *cl, Object *obj, struct wdpDr
 
 
 /**************************************************************************************************/
+
+IPTR WinDecorClass__WDM_INITWINDOW(Class *cl, Object *obj, struct wdpInitWindow *msg)
+{
+    return TRUE;
+}
+
+/**************************************************************************************************/
+
+IPTR WinDecorClass__WDM_EXITWINDOW(Class *cl, Object *obj, struct wdpExitWindow *msg)
+{
+    return TRUE;
+}
+
+/**************************************************************************************************/
+
+IPTR WinDecorClass__WDM_WINDOWSHAPE(Class *cl, Object *obj, struct wdpWindowShape *msg)
+{
+    return NULL;
+}

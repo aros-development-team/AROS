@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
     Common routines for Gadgets.
@@ -507,7 +507,7 @@ void EraseRelGadgetArea(struct Window *win, struct Rectangle *clipto,
         {
             BOOL checkgad = FALSE;
 
-            DEBUG_ERASERELGADGETAREA(dprintf("EraseRelGadgetArea: Gadget 0x%lx Flags 0x%lx Type 0x%lx Activation 0x%lx %d,%d %d×%d\n",
+            DEBUG_ERASERELGADGETAREA(dprintf("EraseRelGadgetArea: Gadget 0x%lx Flags 0x%lx Type 0x%lx Activation 0x%lx %d,%d %dï¿½d\n",
                                              gad, gad->Flags, gad->GadgetType, gad->Activation,
                                              gad->LeftEdge, gad->TopEdge, gad->Width, gad->Height));
 
@@ -619,7 +619,7 @@ ULONG GetGadgetState(struct Window *window, struct Gadget *gadget)
 {
     ULONG state = IDS_NORMAL;
 
-    if (IS_BORDER_GADGET(gadget) && !(window->Flags & WFLG_WINDOWACTIVE))
+    if (IS_BORDER_GADGET(gadget) && !(window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)))
     {
         if (gadget->Flags & GFLG_DISABLED)
         {

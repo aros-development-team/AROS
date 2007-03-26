@@ -538,6 +538,20 @@ struct IntIntuitionBase
     struct RastPort         	 DoGadgetMethodRP;
     struct GadgetInfo       	 DoGadgetMethodGI;
 
+    struct SignalSemaphore   	 WinDecorSem;
+    Object  	    	    	*WinDecorObj;
+    struct SignalSemaphore   	 ScrDecorSem;
+    Object  	    	    	*ScrDecorObj;
+    struct SignalSemaphore   	 MenuDecorSem;
+    Object  	    	    	*MenuDecorObj;
+
+    Object                      *DefWinDecorObj;
+    Object                      *DefScrDecorObj;
+    Object                      *DefMenuDecorObj;
+
+    struct List                 Decorations;
+    struct NewDecorator         *Decorator;
+
 #ifdef USEGETIPREFS
     BOOL                    	 IPrefsLoaded;
 #endif
@@ -579,13 +593,17 @@ struct IntDrawInfo
     Object  	    	    *dri_ScrDecorObj;    
 };
 
-#define LOCK_WINDECOR(dri)   	 ObtainSemaphore(&((struct IntDrawInfo *)(dri))->dri_WinDecorSem);
-#define LOCKSHARED_WINDECOR(dri) ObtainSemaphoreShared(&((struct IntDrawInfo *)(dri))->dri_WinDecorSem);
-#define UNLOCK_WINDECOR(dri) 	 ReleaseSemaphore(&((struct IntDrawInfo *)(dri))->dri_WinDecorSem);
+#define LOCK_WINDECOR(IntuitionBase)   	 ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->WinDecorSem);
+#define LOCKSHARED_WINDECOR(IntuitionBase) ObtainSemaphoreShared(&((struct IntIntuitionBase *)(IntuitionBase))->WinDecorSem);
+#define UNLOCK_WINDECOR(IntuitionBase) 	 ReleaseSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->WinDecorSem);
 
-#define LOCK_SCRDECOR(dri)   	 ObtainSemaphore(&((struct IntDrawInfo *)(dri))->dri_ScrDecorSem);
-#define LOCKSHARED_SCRDECOR(dri) ObtainSemaphoreShared(&((struct IntDrawInfo *)(dri))->dri_ScrDecorSem);
-#define UNLOCK_SCRDECOR(dri) 	 ReleaseSemaphore(&((struct IntDrawInfo *)(dri))->dri_ScrDecorSem);
+#define LOCK_SCRDECOR(IntuitionBase)   	 ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
+#define LOCKSHARED_SCRDECOR(IntuitionBase) ObtainSemaphoreShared(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
+#define UNLOCK_SCRDECOR(IntuitionBase) 	 ReleaseSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
+
+#define LOCK_MENUDECOR(IntuitionBase)   	 ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorSem);
+#define LOCKSHARED_MENUDECOR(IntuitionBase) ObtainSemaphoreShared(&((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorSem);
+#define UNLOCK_MENUDECOR(IntuitionBase) 	 ReleaseSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorSem);
 
 struct IntScreen
 {
@@ -611,8 +629,16 @@ struct IntScreen
     int                      MenuVerifyMsgCount;
     ULONG                    MenuVerifySeconds;
     ULONG                    MenuVerifyMicros;
+    ULONG                    DecorUserBufferSize;
+    IPTR                     DecorUserBuffer;
+    Object                  *WinDecorObj;
+    Object                  *ScrDecorObj;
+    Object                  *MenuDecorObj;
+    struct NewDecorator     *Decorator;
+
     struct BitMap           *AllocatedBitmap;
 
+    STRPTR                   ID;
 #ifdef SKINS
     WORD                     LastClockPos;
     WORD                     LastClockWidth;
@@ -774,6 +800,7 @@ struct IntWindow
     Object                 *sysgads[NUM_SYSGADS];
     struct Image           *AmigaKey;
     struct Image           *Checkmark;
+    struct Image           *SubMenuImage;
     struct Window          *menulendwindow;
     
     struct HashNode         hashnode;
@@ -854,6 +881,10 @@ struct IntWindow
     struct Hook             custombackfill;
     struct HookData         hd;
 #endif
+    BOOL                    CustomShape;
+    struct Region          *OutlineShape;
+    ULONG                   DecorUserBufferSize;
+    IPTR                    DecorUserBuffer;
 };
 
 #define SPFLAG_ICONIFIED    	1
@@ -1183,6 +1214,7 @@ struct PropGData
 
     UWORD            flags;
     struct BBox     *old_knobbox;
+    struct Hook     *DisplayHook;
 };
 
 /* StrGClass */
@@ -1311,15 +1343,19 @@ struct PointerData
 /* WinDecorClass */
 struct windecor_data
 {
-    struct IntDrawInfo  *dri;
-    struct Screen   	*scr;
+	ULONG	userbuffersize;
 };
 
 /* ScrDecorClass */
 struct scrdecor_data
 {
-    struct IntDrawInfo  *dri;
-    struct Screen   	*scr;
+	ULONG	userbuffersize;
+};
+
+/* MenuDecorClass */
+struct menudecor_data
+{
+	ULONG	userbuffersize;
 };
 
 #endif /* INTUITION_INTERN_H */

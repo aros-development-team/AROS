@@ -53,7 +53,7 @@ AROS_LH1(IPTR, StartScreenNotifyTagList,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct IntScreenNotify *notify;
 
-    notify = (struct IntScreenNotify *) AllocMem(sizeof(struct IntScreenNotify), MEMF_CLEAR);
+    notify = (struct IntScreenNotify *) AllocVec(sizeof(struct IntScreenNotify), MEMF_CLEAR);
 
     if (notify)
     {
@@ -64,10 +64,28 @@ AROS_LH1(IPTR, StartScreenNotifyTagList,
  	notify->userdata = (IPTR) GetTagData(SNA_UserData, 0, tags);
  	notify->hook = (struct Hook *) GetTagData(SNA_Hook, 0, tags);
  	notify->node.ln_Pri = (BYTE) GetTagData(SNA_Priority, 0, tags);
-        notify->pubname = (struct MsgPort *) GetTagData(SNA_PubName, 0, tags);
-    	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
-        Enqueue(&GetPrivIBase(IntuitionBase)->ScreenNotificationList, (struct Node *) notify);
-    	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
+        notify->pubname = NULL;
+
+        char *pubname = (char *) GetTagData(SNA_PubName, 0, tags);
+        if (pubname)
+        {
+            notify->pubname = AllocVec(strlen(pubname) + 1, MEMF_CLEAR);
+            if (notify->pubname)
+            {
+                strcpy(notify->pubname, pubname);
+            }
+            else
+            {
+                FreeVec(notify);
+                notify = NULL;
+            }
+        }
+        if (notify)
+        {
+    	    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
+            Enqueue(&GetPrivIBase(IntuitionBase)->ScreenNotificationList, (struct Node *) notify);
+    	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
+        }
     }
 
     ReturnPtr ("StartScreenNotifyTagList", APTR, notify);

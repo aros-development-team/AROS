@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -447,6 +447,7 @@ IPTR GadgetClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	 */
 	eg->Flags         = GFLG_EXTENDED;
 	eg->GadgetType    = GTYP_CUSTOMGADGET;
+    eg->MoreFlags     = GMORE_BOOPSIGADGET;
 	eg->MutualExclude = (LONG)&((Class *)o)->cl_Dispatcher;
 
 	/* Handle our special tags - overrides defaults */

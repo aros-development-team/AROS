@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -19,7 +19,7 @@
 #include "inputhandler_actions.h"
 #include "intuition_intern.h"
 
-//#define GADGETCLIPPING
+// #define GADGETCLIPPING
 
 #ifdef GADGETCLIPPING
 void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBase *IntuitionBase);
@@ -133,35 +133,19 @@ VOID int_RefreshWindowFrame(struct Window *window,
     	    old_clipregion = InstallClipRegion(rp->Layer, NULL);
     	#endif
 
-    	    LOCKSHARED_WINDECOR(dri);
-	    
     	    {
     		struct wdpDrawWinBorder  msg;
 
 		msg.MethodID 	    	= WDM_DRAW_WINBORDER;
+		msg.wdp_TrueColor       = (((struct IntScreen *)window->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
 		msg.wdp_Window 	    	= window;
 		msg.wdp_RPort     	= rp;
     	    	msg.wdp_Flags	    	= (mustbe == REFRESHGAD_TOPBORDER) ? WDF_DWB_TOP_ONLY : 0;
-		
-		DoMethodA(((struct IntDrawInfo *)(dri))->dri_WinDecorObj, (Msg)&msg);	
-    	    }
-	    
-            /* Render the titlebar */
-            if (NULL != window->Title)
-            {
-    		struct wdpDrawWinTitle  msg;
-
-		msg.MethodID 	    	= WDM_DRAW_WINTITLE;
-		msg.wdp_Window 	    	= window;
-		msg.wdp_RPort     	= rp;
-    	    	msg.wdp_TitleAlign  	= WD_DWTA_LEFT;
-		msg.wdp_Flags	    	= 0;
-		
-		DoMethodA(((struct IntDrawInfo *)(dri))->dri_WinDecorObj, (Msg)&msg);	
+		msg.wdp_Dri             = dri;
+		msg.wdp_UserBuffer      = ((struct IntWindow *)window)->DecorUserBuffer;
+		DoMethodA(((struct IntScreen *)(window->WScreen))->WinDecorObj, (Msg)&msg);		
     	    }
 
-	    UNLOCK_WINDECOR(dri);
-	    
     	#ifdef GADGETCLIPPING
             InstallClipRegion(rp->Layer,NULL);
     	#endif
@@ -228,7 +212,7 @@ void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBa
         WORD left,top,right,bottom;
 
         top = gad->TopEdge;
-    2   left = gad->LeftEdge;
+        left = gad->LeftEdge;
 
         if (gad->Flags & GFLG_RELBOTTOM) top = w->Height - 1 + gad->TopEdge;
         if (gad->Flags & GFLG_RELRIGHT) left = w->Width - 1 + gad->LeftEdge;

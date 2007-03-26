@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
     Support functions for InputHandler.
@@ -536,12 +536,14 @@ void SetGPIMouseCoords(struct gpInput *gpi, struct Gadget *gad)
     }
     else
     {
+
         mousex = gi->gi_Window->MouseX;
         mousey = gi->gi_Window->MouseY;
     }
 
     gpi->gpi_Mouse.X = mousex - gi->gi_Domain.Left - GetGadgetLeft(gad, gi->gi_Screen, gi->gi_Window, gi->gi_Requester);
     gpi->gpi_Mouse.Y = mousey - gi->gi_Domain.Top  - GetGadgetTop(gad, gi->gi_Screen, gi->gi_Window, gi->gi_Requester);
+
 }
 
 /****************************************************************************************/
@@ -753,7 +755,6 @@ struct Gadget *DoGPInput(struct GadgetInfo *gi, struct Gadget *gadget,
     struct gpInput   gpi;
     IPTR             retval;
     ULONG            termination;
-
     ie->ie_Qualifier = iihdata->ActQualifier;
 
     gpi.MethodID    	= methodid;
@@ -1191,7 +1192,7 @@ void WindowNeedsRefresh(struct Window * w,
 
     /* Refresh the window's gadgetry ...
        ... stegerg: and in the actual implementation
-       call RefershWindowFrame first, as the border gadgets don´t
+       call RefershWindowFrame first, as the border gadgets dont
        cover the whole border area.*/
 
     /*
