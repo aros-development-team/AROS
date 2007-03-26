@@ -2,8 +2,8 @@
 #define INPUTHANDLER_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -39,6 +39,7 @@ struct IIHData
     struct Gadget           *MasterDragGadget;
     struct Gadget           *MasterSizeGadget;
     struct GadgetInfo        GadgetInfo;
+    struct GadgetInfo        BoxGadgetInfo;
     struct RastPort          GadgetInfoRastPort;
     struct InputEvent       *FreeInputEvents;
     struct InputEvent       *ReturnInputEvent;

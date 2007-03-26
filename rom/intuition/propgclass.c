@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -454,6 +454,7 @@ IPTR PropGClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         data->propinfo.VertBody = MAXBODY;
         data->propinfo.HorizPot = 0;
         data->propinfo.HorizBody = MAXBODY;
+        data->DisplayHook = GetTagData(PGA_DisplayHook, 0, msg->ops_AttrList);
         data->top     = 0;
         data->visible = 1;
         data->total   = 1;
@@ -469,6 +470,8 @@ IPTR PropGClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         {
             data->flags |= PRIVFLAG_NICERENDER;
         }
+
+        SetGadgetType(g, GTYP_CUSTOMGADGET);
 
         /* Handle our special tags - overrides defaults */
         PropGClass__OM_SET(cl, g, msg);
@@ -495,6 +498,10 @@ IPTR PropGClass__OM_GET(Class *cl, struct Gadget *g,struct opGet *msg)
 
     case PGA_Total:
         *(msg->opg_Storage) = data->total;
+        break;
+
+   case PGA_DisplayHook:
+        *(msg->opg_Storage) = data->DisplayHook;
         break;
 
     case PGA_Visible:

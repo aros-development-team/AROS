@@ -319,6 +319,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 MODIFY_FLAG(WFLG_NEWLOOKMENUS);
                 break;
 
+            case WA_ToolBox:
+                MODIFY_FLAG(WFLG_TOOLBOX);
+                break;
+
             case WA_Zoom:
                 zoombox = (struct IBox *)tag->ti_Data;
                 DEBUG_OPENWINDOW(dprintf("OpenWindow: zoom %d %d %d %d\n",
@@ -632,6 +636,27 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     DEBUG_OPENWINDOW(dprintf("OpenWindow: Flags 0x%lx MoreFlags 0x%lx IDCMP 0x%lx\n",
                 nw.Flags, moreFlags, nw.IDCMPFlags));
+    IPTR	userbuffersize;
+
+    GetAttr(WDA_UserBuffer, ((struct IntScreen *)(nw.Screen))->WinDecorObj, &userbuffersize);
+	
+    if (userbuffersize)
+    {
+	((struct IntWindow *)w)->DecorUserBufferSize = userbuffersize;
+	((struct IntWindow *)w)->DecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
+	if (NULL == ((struct IntWindow *)w)->DecorUserBuffer)
+		goto failexit;
+    }
+	
+    struct wdpInitWindow       initmsg;
+    BOOL                       ok;
+
+    initmsg.MethodID           = WDM_INITWINDOW;
+    initmsg.wdp_TrueColor      = (((struct IntScreen *) nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+
+    ok = DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&initmsg);	
+
+    if (!ok) goto failexit;
 
     w->WScreen = nw.Screen;
 
@@ -917,6 +942,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     IW(w)->AmigaKey  = AmigaKey  ? AmigaKey  :
                     	    	   ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_AmigaKey;
+    IW(w)->SubMenuImage = ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_SubMenuImage;
 
 #ifndef __MORPHOS__
     /* child support */
@@ -1059,13 +1085,13 @@ moreFlags |= (name); else moreFlags &= ~(name)
     	struct wdpLayoutBorderGadgets  msg;
 
 	msg.MethodID 	    	= WDM_LAYOUT_BORDERGADGETS;
+        msg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
 	msg.wdp_Window 	    	= w;
 	msg.wdp_Gadgets     	= nw.FirstGadget;
 	msg.wdp_Flags   	= WDF_LBG_INITIAL | WDF_LBG_MULTIPLE;
+	msg.wdp_Dri             = dri;
 
-	LOCKSHARED_WINDECOR(dri);
-	DoMethodA(dri->dri_WinDecorObj, (Msg)&msg);	
-	UNLOCK_WINDECOR(dri);
+	DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&msg);	
 
         AddGList(w, nw.FirstGadget, -1, -1, NULL);
     }
@@ -1099,6 +1125,24 @@ moreFlags |= (name); else moreFlags &= ~(name)
         SetWindowPointerA(w, tagList);
     }
 
+    ((struct IntWindow *)w)->OutlineShape = NULL;
+
+    if ((shape != NULL) || (shapehook != NULL)) ((struct IntWindow *)w)->CustomShape = TRUE;
+    if ((!((struct IntWindow *)w)->CustomShape) && (!(w->Flags & WFLG_BORDERLESS)) && !IS_GZZWINDOW(w))
+    {
+        struct wdpWindowShape       shapemsg;
+
+        shapemsg.MethodID           = WDM_WINDOWSHAPE;
+        shapemsg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+        shapemsg.wdp_Width 	    = w->Width;
+        shapemsg.wdp_Height 	    = w->Height;
+        shapemsg.wdp_UserBuffer      = ((struct IntWindow *)w)->DecorUserBuffer;
+
+        shape = DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&shapemsg);	
+        ((struct IntWindow *)w)->OutlineShape = shape;
+        ChangeWindowShape(w, shape, NULL);
+        ((struct IntWindow *)w)->CustomShape = FALSE;
+    }
     goto exit;
 
 failexit:
@@ -1120,6 +1164,11 @@ failexit:
             intui_CloseWindow(w, IntuitionBase);
 
         if (w->IFont) CloseFont(w->IFont);
+
+        if (((struct IntWindow *)w)->DecorUserBuffer)
+        {
+            FreeMem((IPTR) ((struct IntWindow *)w)->DecorUserBuffer, ((struct IntWindow *)w)->DecorUserBufferSize);
+        }
 
         FreeMem (w, sizeof(struct IntWindow));
 

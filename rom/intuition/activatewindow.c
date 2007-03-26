@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -106,6 +106,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
     struct InputEvent 	*ie;
 
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+//    if (window->Flags & WFLG_TOOLBOX) return;
 
     if ((!iihdata->ActiveGadget) ||
     	(iihdata->ActiveGadget && ((iihdata->ActiveGadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SDEPTH)))
@@ -113,8 +114,8 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 
         lock = LockIBase(0UL);
 
-        oldactive = IntuitionBase->ActiveWindow;
-        IntuitionBase->ActiveWindow = window;
+        if (window->Flags & WFLG_TOOLBOX) oldactive = NULL; else oldactive = IntuitionBase->ActiveWindow;
+        if ((window->Flags & WFLG_TOOLBOX) == 0) IntuitionBase->ActiveWindow = window;
 
         DEBUG_ACTIVATEWINDOW(dprintf("IntActivateWindow: Window 0x%lx OldActive 0x%lx\n",
                          window, oldactive));
@@ -251,7 +252,8 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 
         if (window)
         {
-            ih_fire_intuimessage(window,
+            if ((window->Flags & WFLG_TOOLBOX) == 0)
+                ih_fire_intuimessage(window,
                          IDCMP_ACTIVEWINDOW,
                          0,
                          window,

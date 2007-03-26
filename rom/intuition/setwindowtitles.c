@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -128,7 +128,7 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
 
         window->ScreenTitle = screenTitle;
         
-        if (window->Flags & WFLG_WINDOWACTIVE)
+        if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
         {
             if (screenTitle)
                 window->WScreen->Title = screenTitle;

@@ -14,6 +14,7 @@
 #include <intuition/windecorclass.h>
 #include <intuition/scrdecorclass.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/extensions.h>
 #include <graphics/modeid.h>
 #include <graphics/videocontrol.h>
 #include <graphics/displayinfo.h>
@@ -23,6 +24,7 @@
 #include <proto/layers.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
+#include <proto/dos.h>
 #include <string.h>
 #ifdef __MORPHOS__
 #include <proto/cybergraphics.h>
@@ -282,6 +284,11 @@ AROS_LH1(struct Screen *, OpenScreen,
             case SA_Title:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Title <%s>\n",tag->ti_Data));
                 ns.DefaultTitle = (UBYTE *)tag->ti_Data;
+                break;
+
+            case SA_ID:
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_ID <%s>\n",tag->ti_Data));
+                screen->ID = (STRPTR) StrDup(tag->ti_Data);
                 break;
 
             case SA_Font:
@@ -1171,6 +1178,7 @@ AROS_LH1(struct Screen *, OpenScreen,
 
         screen->Screen.Title = ns.DefaultTitle;
 
+        if (screen->ID == NULL) if (screen->Screen.Title) screen->ID = StrDup(screen->Screen.Title);
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: init layers\n"));
         InitLayers(&screen->Screen.LayerInfo);
@@ -1219,10 +1227,10 @@ AROS_LH1(struct Screen *, OpenScreen,
 #warning These are probably monitor dependent
         screen->DInfo.dri.dri_Resolution.X = 44;
         screen->DInfo.dri.dri_Resolution.Y = 44;
-        screen->DInfo.dri.dri_Flags = 0;
-    	screen->DInfo.dri_Screen = &screen->Screen;
-	InitSemaphore(&screen->DInfo.dri_WinDecorSem);
-	InitSemaphore(&screen->DInfo.dri_ScrDecorSem);
+
+        if (ns.Depth > 8) screen->DInfo.dri.dri_Flags = DRIF_DIRECTCOLOR;
+
+        screen->DInfo.dri_Screen = &screen->Screen;
 
         /* SA_SysFont overrides SA_Font! */
 
@@ -1487,37 +1495,6 @@ AROS_LH1(struct Screen *, OpenScreen,
 
 #endif
 
-    if (ok)
-    {
-        struct TagItem windecor_tags[] =
-        {
-            {WDA_DrawInfo   , (IPTR)&screen->DInfo  },
-	    {WDA_Screen     , (IPTR)screen  	    },
-            {TAG_DONE                       	    }
-        };
-    	
-	screen->DInfo.dri_WinDecorObj = NewObjectA(NULL, WINDECORCLASS, windecor_tags);
-	if (!screen->DInfo.dri_WinDecorObj)
-	{
-	    ok = FALSE;
-	}
-    }
-
-    if (ok)
-    {
-        struct TagItem scrdecor_tags[] =
-        {
-            {SDA_DrawInfo   , (IPTR)&screen->DInfo  },
-	    {SDA_Screen     , (IPTR)screen  	    },
-            {TAG_DONE                       	    }
-        };
-    	
-	screen->DInfo.dri_ScrDecorObj = NewObjectA(NULL, SCRDECORCLASS, scrdecor_tags);
-	if (!screen->DInfo.dri_ScrDecorObj)
-	{
-	    ok = FALSE;
-	}
-    }
     
     if (ok)
     {
@@ -1537,6 +1514,13 @@ AROS_LH1(struct Screen *, OpenScreen,
         screen->DInfo.dri.dri_AmigaKey  = NewObjectA(NULL, "sysiclass", sysi_tags);
         DEBUG_OPENSCREEN(dprintf("OpenScreen: AmigaKey 0x%lx\n",
                                  screen->DInfo.dri.dri_AmigaKey));
+
+        sysi_tags[0].ti_Data = SUBMENUIMAGE;
+
+        screen->DInfo.dri.dri_SubMenuImage  = NewObjectA(NULL, "sysiclass", sysi_tags);
+        DEBUG_OPENSCREEN(dprintf("OpenScreen: SubMenuImage 0x%lx\n",
+                                 screen->DInfo.dri.dri_SubMenuImage));
+
 #ifdef SKINS
         sysi_tags[0].ti_Data = SUBMENUIMAGE;
         screen->DInfo.dri_Customize->submenu  = NewObjectA(NULL, "sysiclass", sysi_tags);
@@ -1546,7 +1530,66 @@ AROS_LH1(struct Screen *, OpenScreen,
             !screen->DInfo.dri_Customize->menutoggle) ok = FALSE;
 #endif
 
-        if (!screen->DInfo.dri.dri_CheckMark || !screen->DInfo.dri.dri_AmigaKey) ok = FALSE;
+        if (!screen->DInfo.dri.dri_CheckMark || !screen->DInfo.dri.dri_AmigaKey || !screen->DInfo.dri.dri_SubMenuImage) ok = FALSE;
+    }
+
+    if (ok)
+    {
+        IPTR	userbuffersize;
+
+        struct NewDecorator *nd;
+
+        nd = ((struct IntIntuitionBase *)(IntuitionBase))->Decorator;
+
+        ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
+
+        struct DosLibrary    *DOSBase;
+
+        DOSBase = OpenLibrary("dos.library", 40);
+        if (DOSBase)
+        {
+            struct Node *node;
+            if (!IsListEmpty(&GetPrivIBase(IntuitionBase)->Decorations))
+            {
+                node = GetPrivIBase(IntuitionBase)->Decorations.lh_Head;
+                for (; node->ln_Succ; node = node->ln_Succ)
+                {
+                    struct NewDecorator *d = (struct NewDecorator *) node;
+                    if ((d->nd_IntPattern != NULL) && (screen->ID != NULL)) if (MatchPattern(d->nd_IntPattern, screen->ID)) nd = d;
+                }
+            }
+
+            CloseLibrary((struct Library *) DOSBase);
+        }
+
+  //      if (MatchPattern(tl->parsename, task->tc_Node.ln_Name)) b = tl;
+
+        if (nd != NULL)
+        {
+            screen->ScrDecorObj = nd->nd_Screen;
+            screen->WinDecorObj = nd->nd_Window;
+            screen->MenuDecorObj = nd->nd_Menu;
+        }
+        else
+        {
+            screen->ScrDecorObj = ((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorObj;
+            screen->WinDecorObj = ((struct IntIntuitionBase *)(IntuitionBase))->WinDecorObj;
+            screen->MenuDecorObj = ((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorObj;
+        }
+        screen->Decorator = nd;
+
+        if (screen->Decorator) screen->Decorator->nd_cnt++;
+
+        ReleaseSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
+
+        GetAttr(SDA_UserBuffer, screen->ScrDecorObj, &userbuffersize);
+
+        if (userbuffersize)
+        {
+            screen->DecorUserBufferSize = userbuffersize;
+            screen->DecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
+            if (!screen->DecorUserBuffer) ok = FALSE;
+        }
     }
 
     if (ok)
@@ -1571,13 +1614,48 @@ AROS_LH1(struct Screen *, OpenScreen,
         screen->Screen.MenuVBorder = 2; /* on the Amiga it is (usually?) 2 */
         screen->Screen.MenuHBorder = 4;
 #endif
+
+        struct IntDrawInfo        *dri = &screen->DInfo;
+        struct sdpInitScreen       msg;
+
+        msg.MethodID 	           = SDM_INITSCREEN;
+        msg.sdp_TrueColor          = screen->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR;
+        msg.sdp_FontHeight         = screen->DInfo.dri.dri_Font->tf_YSize;
+        msg.sdp_BarVBorder         = screen->Screen.BarVBorder;
+        msg.sdp_BarHBorder         = screen->Screen.BarHBorder;
+        msg.sdp_MenuVBorder        = screen->Screen.MenuVBorder;
+        msg.spd_MenuHBorder        = screen->Screen.MenuHBorder;
+        msg.sdp_WBorTop            = screen->Screen.WBorTop;
+        msg.sdp_WBorLeft           = screen->Screen.WBorLeft;
+        msg.sdp_WBorRight          = screen->Screen.WBorRight;
+        msg.sdp_WBorBottom         = screen->Screen.WBorBottom;
+
 #ifdef TITLEHACK
-        screen->Screen.BarHeight   = screen->DInfo.dri.dri_Font->tf_YSize + screen->Screen.WBorTop-2 +
-                                     screen->Screen.BarVBorder * 2; /* real layer will be 1 pixel higher! */
+        msg.sdp_TitleHack          = screen->Screen.WBorTop-2;
 #else
-        screen->Screen.BarHeight   = screen->DInfo.dri.dri_Font->tf_YSize +
-                                     screen->Screen.BarVBorder * 2; /* real layer will be 1 pixel higher! */
+	msg.sdp_TitleHack          = 0;
 #endif
+
+        msg.sdp_BarHeight      = msg.sdp_FontHeight + msg.sdp_BarVBorder * 2 + msg.sdp_TitleHack;
+
+        if (!DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, (Msg)&msg)) ok = FALSE;	
+        if (ok)
+        {
+            screen->Screen.BarHeight     = msg.sdp_BarHeight;
+            screen->Screen.BarVBorder    = msg.sdp_BarVBorder;
+            screen->Screen.BarHBorder    = msg.sdp_BarHBorder;
+            screen->Screen.MenuVBorder   = msg.sdp_MenuVBorder;
+            screen->Screen.MenuHBorder   = msg.spd_MenuHBorder;
+            screen->Screen.WBorTop       = msg.sdp_WBorTop;
+            screen->Screen.WBorLeft      = msg.sdp_WBorLeft;
+            screen->Screen.WBorRight     = msg.sdp_WBorRight;
+            screen->Screen.WBorBottom    = msg.sdp_WBorBottom;
+        }
+    }
+
+
+     if (ok)
+     {
 
         {
     	    #define SDEPTH_HEIGHT (screen->Screen.BarHeight + 1)
@@ -1624,14 +1702,14 @@ AROS_LH1(struct Screen *, OpenScreen,
                 screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
 
 		msg.MethodID 	    	= SDM_LAYOUT_SCREENGADGETS;
+	        msg.sdp_TrueColor       = screen->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR;
 		msg.sdp_Layer 	    	= screen->Screen.BarLayer;
 		msg.sdp_Gadgets     	= screen->Screen.FirstGadget;
 		msg.sdp_Flags   	= SDF_LSG_INITIAL | SDF_LSG_MULTIPLE;
+	    	msg.sdp_UserBuffer      = ((struct IntScreen *)screen)->DecorUserBuffer;
 
-		LOCKSHARED_SCRDECOR(dri);
-		DoMethodA(dri->dri_ScrDecorObj, (Msg)&msg);	
-		UNLOCK_SCRDECOR(dri);
-	    
+		DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, (Msg)&msg);	
+
 	    #if 0
                 struct TagItem gadtags[] =
                 {
@@ -1653,7 +1731,6 @@ AROS_LH1(struct Screen *, OpenScreen,
             }
 
         }
-
 
 #if 1
         {
@@ -1677,6 +1754,7 @@ AROS_LH1(struct Screen *, OpenScreen,
         int_CalcSkinInfo(&screen->Screen,IntuitionBase);
         int_InitTitlebarBuffer(screen,IntuitionBase);
 #endif
+
         D(bug("callling SetRast()\n"));
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Set background color Pen %ld\n",screen->Pens[BACKGROUNDPEN]));
@@ -1793,17 +1871,6 @@ AROS_LH1(struct Screen *, OpenScreen,
             KillScreenBar(&screen->Screen, IntuitionBase);
         }
 
-    	if (screen->DInfo.dri_ScrDecorObj)
-	{
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose ScrDecor Object\n"));
-            DisposeObject(screen->DInfo.dri_ScrDecorObj);	    
-	}
-
-    	if (screen->DInfo.dri_WinDecorObj)
-	{
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose WinDecor Object\n"));
-            DisposeObject(screen->DInfo.dri_WinDecorObj);	    
-	}
 #ifdef SKINS
         DisposeObject(screen->DInfo.dri_Customize->submenu);
         DisposeObject(screen->DInfo.dri_Customize->menutoggle);
@@ -1819,6 +1886,12 @@ AROS_LH1(struct Screen *, OpenScreen,
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose CheckMark Object\n"));
             DisposeObject(screen->DInfo.dri.dri_CheckMark);
+        }
+
+        if (screen->DInfo.dri.dri_SubMenuImage)
+        {
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose SubMenuImage Object\n"));
+            DisposeObject(screen->DInfo.dri.dri_SubMenuImage);
         }
 
         if (screen->DInfo.dri.dri_Font)
@@ -1844,6 +1917,15 @@ AROS_LH1(struct Screen *, OpenScreen,
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Trash Rastport\n"));
             DeinitRastPort(&screen->Screen.RastPort);
         }
+
+        if (screen->DecorUserBuffer)
+        {
+            FreeMem((IPTR) screen->DecorUserBuffer, screen->DecorUserBufferSize);
+        }
+
+        if (screen->Decorator) screen->Decorator->nd_cnt--;
+
+        if (screen->ID) FreeVec(screen->ID);
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Free Screen\n"));
         FreeMem (screen, sizeof (struct IntScreen));

@@ -190,9 +190,6 @@ AROS_LH1(BOOL, CloseScreen,
     /* Free the RastPort's contents */
     DeinitRastPort(&screen->RastPort);
 
-    DisposeObject(((struct IntScreen *)screen)->DInfo.dri_ScrDecorObj);
-    DisposeObject(((struct IntScreen *)screen)->DInfo.dri_WinDecorObj);
-    
 #ifdef SKINS
     if (((struct IntScreen *)screen)->DInfo.dri_Customize)
     {
@@ -216,6 +213,58 @@ AROS_LH1(BOOL, CloseScreen,
 
     /* Free the sprite */
     ReleaseSharedPointer(((struct IntScreen *)screen)->Pointer, IntuitionBase);
+
+    /* Push ExitScreen Message to the Screensdecoration Class */
+    struct sdpExitScreen       semsg;
+
+    semsg.MethodID 	           = SDM_EXITSCREEN;
+    semsg.sdp_UserBuffer       = ((struct IntScreen *)screen)->DecorUserBuffer;
+    semsg.sdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    DoMethodA(((struct IntScreen *)screen)->ScrDecorObj, (Msg)&semsg);	
+
+    /* Free the memory */
+    if (((struct IntScreen *)screen)->DecorUserBuffer)
+    {
+        FreeMem((IPTR) ((struct IntScreen *)screen)->DecorUserBuffer, ((struct IntScreen *)screen)->DecorUserBufferSize);
+    }
+
+    {
+        ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
+        ULONG lock = LockIBase(0);
+
+        struct NewDecorator *nd = ((struct IntScreen *)screen)->Decorator;
+
+        if ((nd != ((struct IntIntuitionBase *)(IntuitionBase))->Decorator) && (nd != NULL))
+        {
+            nd->nd_cnt--;
+
+            if ((nd->nd_cnt == 0) && (nd->nd_Port != NULL) && (nd->nd_IntPattern == NULL))
+            {
+                struct DecoratorMessage msg;
+                struct MsgPort *port = CreateMsgPort();
+                if (port)
+                {
+                    Remove(nd);
+
+                    if (nd->nd_IntPattern) FreeVec(nd->nd_IntPattern);
+
+                    msg.dm_Message.mn_ReplyPort = port;
+                    msg.dm_Message.mn_Magic = MAGIC_DECORATOR;
+                    msg.dm_Message.mn_Version = DECORATOR_VERSION;
+                    msg.dm_Class = DM_CLASS_DESTROYDECORATOR;
+                    msg.dm_Code = 0;
+                    msg.dm_Flags = 0;
+                    msg.dm_Object = (IPTR) nd;
+                    PutMsg(nd->nd_Port, (struct Message *) &msg);
+                    WaitPort(port);
+                    GetMsg(port);
+                    DeleteMsgPort(port);
+                }
+            }
+        }
+        UnlockIBase(lock);
+        ReleaseSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
+    }
 
     /* Free the memory */
     FreeMem(screen, sizeof (struct IntScreen));

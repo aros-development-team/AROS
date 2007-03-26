@@ -1,7 +1,7 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
-    $Id: sendintuimessage.c 23476 2005-07-31 17:07:04Z stegerg $
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    $Id: changedecorationa.c 23476 2005-07-31 17:07:04Z stegerg, dariusb $
 */
 
 #include <proto/utility.h>
@@ -9,45 +9,45 @@
 #include <intuition/scrdecorclass.h>
 #include <intuition/screens.h>
 
+#include <proto/dos.h>
+
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
-
-struct ChangeDecorationActionMsg
-{
-    struct IntuiActionMsg    msg;
-    ULONG   	    	     which;
-    Object  	    	    **decorobjptr;
-    struct SignalSemaphore  *decorsem;
-    struct DrawInfo  	    *dri;
-};
-
-static VOID int_changedecoration(struct ChangeDecorationActionMsg *msg,
-                                 struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
  
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH4(Object *, ChangeDecorationA,
+struct RemoveDecoratorMsg {
+    struct IntuiActionMsg    msg;
+    struct NewDecorator     *nd;
+};
+
+static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBase *IntuitionBase);
+
+AROS_LH2(void, ChangeDecoration,
 
          /*  SYNOPSIS */
-	 AROS_LHA(ULONG, which, D0),
-	 AROS_LHA(CONST_STRPTR, classID, A1),
-         AROS_LHA(struct DrawInfo *, dri, A0),
-         AROS_LHA(struct TagItem *, tagList, A2),
+	 AROS_LHA(ULONG, ID, D0),
+	 AROS_LHA(struct NewDecorator *, nd, A0),
 
          /*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 153, Intuition)
 
 /*  FUNCTION
- 
+    setup a new decorator for intuition windows, screens or menus
+
     INPUTS
- 
+    ID - identifier for decorations, see screens.h
+    nd -  an ID dependent NewDecorator structure
     RESULT
- 
+    void - this Function cannot fail, 
+
     NOTES
- 
+    the function fails if screens are open, use ChangeIntuition() to notify applications that
+    the UI will be changed
+
     EXAMPLE
  
     BUGS
@@ -61,96 +61,84 @@ AROS_LH4(Object *, ChangeDecorationA,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    Object  	    *old = 0, *new;
-    struct TagItem  decor_tags[] =
-    {
-    	{TAG_IGNORE , (IPTR)dri 	    	    	    	    },
-	{TAG_IGNORE , (IPTR)((struct IntDrawInfo *)dri)->dri_Screen },
-	{TAG_DONE   	    	    	    	    	    	    }
-    };
-    struct ChangeDecorationActionMsg msg;
-    
-    ASSERT_VALID_PTR(dri);
+        ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
+        if (ID == DECORATION_SET)
+        {
 
-    switch(which)
-    {
-    	case DECORATION_WINDOW:
-	    decor_tags[0].ti_Tag = WDA_DrawInfo;
-	    decor_tags[1].ti_Tag = WDA_Screen;
-	    msg.decorobjptr = &((struct IntDrawInfo *)dri)->dri_WinDecorObj;
-	    msg.decorsem = &((struct IntDrawInfo *)dri)->dri_WinDecorSem;
-	    break;
+            {
+                /* if the current decorator isnÂ´t used remove it */
 
-    	case DECORATION_SCREEN:
-	    decor_tags[0].ti_Tag = SDA_DrawInfo;
-	    decor_tags[1].ti_Tag = SDA_Screen;
-	    msg.decorobjptr = &((struct IntDrawInfo *)dri)->dri_ScrDecorObj;
-	    msg.decorsem = &((struct IntDrawInfo *)dri)->dri_ScrDecorSem;
-	    break;
-	    
-	default:
-	    return 0;
-    }
-    
-    new = NewObjectA(NULL, (UBYTE *)classID, decor_tags);
-    if (new)
-    {
-    	ObtainSemaphore(msg.decorsem);
-        old = *msg.decorobjptr;
-    	*msg.decorobjptr = new;
-    	ReleaseSemaphore(msg.decorsem);
-    }
+                struct NewDecorator * tnd;
+                tnd = ((struct IntIntuitionBase *)(IntuitionBase))->Decorator;
+                if ((tnd != NULL) && (tnd != nd))
+                {
+                    if ((tnd->nd_cnt == 0) && (tnd->nd_Port != NULL))
+                    {
+                        struct RemoveDecoratorMsg msg;
+                        msg.nd = tnd;
+                        DoASyncAction((APTR)int_removedecorator, &msg.msg, sizeof(msg), IntuitionBase);
+                    }
+                }
+            }
 
-    msg.dri = dri;
-    msg.which = which;
-    DoASyncAction((APTR)int_changedecoration, &msg.msg, sizeof(msg), IntuitionBase);
-    
-    return old;
-    
+            nd->nd_cnt = 0;
+
+            BOOL global = TRUE;
+
+            if (nd->nd_Pattern != NULL)
+            {
+                nd->nd_IntPattern = AllocVec(strlen(nd->nd_Pattern) * 2 + 1, MEMF_CLEAR);
+                if (nd->nd_IntPattern) {
+                    struct DosLibrary    *DOSBase;
+                    DOSBase = OpenLibrary("dos.library", 40);
+                    if (DOSBase)
+                    {
+                        if (ParsePattern(nd->nd_Pattern, nd->nd_IntPattern, strlen(nd->nd_Pattern) * 2 + 1) == -1) {
+                            FreeVec(nd->nd_IntPattern);
+                            nd->nd_IntPattern = NULL;
+                        }
+                        else global = FALSE;
+                        CloseLibrary((struct Library *) DOSBase);
+                    }
+                }
+            }
+
+            Enqueue(&((struct IntIntuitionBase *)(IntuitionBase))->Decorations, nd);
+
+            if (global)
+            {
+                ((struct IntIntuitionBase *)(IntuitionBase))->Decorator = nd;
+                ((struct IntIntuitionBase *)(IntuitionBase))->WinDecorObj = nd->nd_Window;
+                ((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorObj = nd->nd_Menu;
+                ((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorObj = nd->nd_Screen;
+            }
+        }
+        ReleaseSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
+
     AROS_LIBFUNC_EXIT
 }
 
-static VOID int_changedecoration(struct ChangeDecorationActionMsg *msg,
-                                 struct IntuitionBase *IntuitionBase)
+/* This is called on the input.device's context */
+
+static VOID int_removedecorator(struct RemoveDecoratorMsg *m,
+                               struct IntuitionBase *IntuitionBase)
 {
-    struct Screen *scr = ((struct IntDrawInfo *)msg->dri)->dri_Screen;
-    struct Window *win;
-
-    if (!ResourceExisting(scr, RESOURCE_SCREEN, IntuitionBase)) return;
-        
-    switch(msg->which)
+    struct DecoratorMessage msg;
+    struct MsgPort *port = CreateMsgPort();
+    if (port)
     {
-    	case DECORATION_WINDOW:	
-	    for(win = scr->FirstWindow; win; win = win->NextWindow)
-	    {
-    		LOCKGADGET
-
-    		if (win->FirstGadget)
-		{
-    		    struct wdpLayoutBorderGadgets layoutmsg;
-
-		    layoutmsg.MethodID    = WDM_LAYOUT_BORDERGADGETS;
-		    layoutmsg.wdp_Window  = win;
-		    layoutmsg.wdp_Gadgets = win->FirstGadget;
-		    layoutmsg.wdp_Flags   = WDF_LBG_MULTIPLE |
-	    	    	      		    WDF_LBG_INGADLIST;
-
-		    LOCKSHARED_WINDECOR(msg->dri);
-		    DoMethodA(((struct IntDrawInfo *)msg->dri)->dri_WinDecorObj, (Msg)&layoutmsg);	
-		    UNLOCK_WINDECOR(msg->dri);
-		}
-
-		UNLOCKGADGET
-
-    		RefreshWindowFrame(win);
-		
-	    } /* for(win = scr->FirstWindow; win; win = win->NextWindow) */
-	    break;
-	    
-	case DECORATION_SCREEN:
-    	    RenderScreenBar(scr, FALSE, IntuitionBase);
-	    break;
-	    
-    } /* switch(msg->which) */
+        Remove(m->nd);
+        if (m->nd->nd_IntPattern) FreeVec(m->nd->nd_IntPattern);
+        msg.dm_Message.mn_ReplyPort = port;
+        msg.dm_Message.mn_Magic = MAGIC_DECORATOR;
+        msg.dm_Message.mn_Version = DECORATOR_VERSION;
+        msg.dm_Class = DM_CLASS_DESTROYDECORATOR;
+        msg.dm_Code = 0;
+        msg.dm_Flags = 0;
+        msg.dm_Object = (IPTR) m->nd;
+        PutMsg(m->nd->nd_Port, (struct Message *) &msg);
+        WaitPort(port);
+        GetMsg(port);
+        DeleteMsgPort(port);
+    }
 }
-

@@ -94,6 +94,10 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     InitSemaphore(GetPrivIBase(LIBBASE)->IBaseLock);
 
+    InitSemaphore(&GetPrivIBase(LIBBASE)->WinDecorSem);
+    InitSemaphore(&GetPrivIBase(LIBBASE)->ScrDecorSem);
+    InitSemaphore(&GetPrivIBase(LIBBASE)->MenuDecorSem);
+
     /* Initialize global stringgadget edit hook */
     GetPrivIBase(LIBBASE)->DefaultEditHook.h_Entry  = (APTR)AROS_ASMSYMNAME(GlobalEditFunc);
     GetPrivIBase(LIBBASE)->DefaultEditHook.h_SubEntry   = NULL;
@@ -107,6 +111,8 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     InitSemaphore(&GetPrivIBase(LIBBASE)->ScreenNotificationListLock);
     NEWLIST(&GetPrivIBase(LIBBASE)->ScreenNotificationList);
+
+    NEWLIST(&GetPrivIBase(LIBBASE)->Decorations);
 
 
     InitSemaphore(&GetPrivIBase(LIBBASE)->GadgetLock);
@@ -195,6 +201,14 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 	    NewList((struct List *)&GetPrivIBase(LIBBASE)->ResourceList[i]);
 	}
     }
+
+    if (!(GetPrivIBase(LIBBASE)->WinDecorObj = NewObjectA(NULL, WINDECORCLASS, NULL))) return FALSE;
+    if (!(GetPrivIBase(LIBBASE)->ScrDecorObj = NewObjectA(NULL, SCRDECORCLASS, NULL))) return FALSE;
+    if (!(GetPrivIBase(LIBBASE)->MenuDecorObj = NewObjectA(NULL, MENUDECORCLASS, NULL))) return FALSE;
+
+    GetPrivIBase(LIBBASE)->DefWinDecorObj = GetPrivIBase(LIBBASE)->WinDecorObj;
+    GetPrivIBase(LIBBASE)->DefScrDecorObj = GetPrivIBase(LIBBASE)->ScrDecorObj;
+    GetPrivIBase(LIBBASE)->DefMenuDecorObj = GetPrivIBase(LIBBASE)->MenuDecorObj;
 
     DEBUG_INIT(dprintf("LIB_Init: done\n"));
 

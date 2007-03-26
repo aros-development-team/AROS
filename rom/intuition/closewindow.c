@@ -433,6 +433,23 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
        memory corruption */
     window->WScreen = (struct Screen *)0xC0DEBAD0;
 
+    /* Remove the Window Outline Shape */
+    if (((struct IntWindow *)window)->OutlineShape) DisposeRegion(((struct IntWindow *)window)->OutlineShape);
+    /* Push ExitScreen Message to the Screensdecoration Class */
+    struct wdpExitWindow       wemsg;
+
+    wemsg.MethodID 	       = WDM_EXITWINDOW;
+    wemsg.wdp_UserBuffer       = ((struct IntWindow *)window)->DecorUserBuffer;
+    wemsg.wdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+
+    DoMethodA(((struct IntScreen *)(screen))->WinDecorObj, (Msg)&wemsg);	
+
+    if (((struct IntWindow *)window)->DecorUserBuffer)
+    {
+        FreeMem((IPTR) ((struct IntWindow *)window)->DecorUserBuffer, ((struct IntWindow *)window)->DecorUserBufferSize);
+    }
+
+
     /* Free memory for the window */
     FreeMem (window, sizeof(struct IntWindow));
 

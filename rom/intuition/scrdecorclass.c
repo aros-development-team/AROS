@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id: imageclass.c 20651 2004-01-17 20:57:12Z chodorowski $
 */
 
@@ -141,18 +141,8 @@ IPTR ScrDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     if (obj)
     {
     	data = INST_DATA(cl, obj);
-	
-	data->dri = (struct IntDrawInfo *)GetTagData(SDA_DrawInfo, 0, msg->ops_AttrList);
-	data->scr = (struct Screen *)GetTagData(SDA_Screen, 0, msg->ops_AttrList);
-	
-	if (!data->dri || !data->scr)
-	{
-    	    STACKULONG method = OM_DISPOSE;
-	    
-    	    CoerceMethodA(cl, obj, (Msg)&method);
-	    
-	    return 0;
-	}	
+
+	data->userbuffersize = (ULONG) GetTagData(SDA_UserBuffer, 0, msg->ops_AttrList);
 	
     }
     
@@ -167,14 +157,10 @@ IPTR ScrDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-    	case SDA_DrawInfo:
-	    *msg->opg_Storage = (IPTR)data->dri;
+    	case SDA_UserBuffer:
+	    *msg->opg_Storage = (IPTR) data->userbuffersize;
 	    break;
-	    
-    	case SDA_Screen:
-	    *msg->opg_Storage = (IPTR)data->scr;
-	    break;
-	    
+
 	case SDA_TrueColorOnly:
 	    *msg->opg_Storage = FALSE;
 	    break;
@@ -240,7 +226,7 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->sdp_RPort;
-    UWORD   	    	 *pens = DRI(data->dri)->dri_Pens;
+    UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
     LONG    	    	  state = msg->sdp_State;
     LONG    	     	  left = msg->sdp_X;
     LONG    	     	  top = msg->sdp_Y;
@@ -347,66 +333,67 @@ static void findtitlearea(struct Screen *scr, LONG *left, LONG *right)
 }
 
 /**************************************************************************************************/
-
+/*
 IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->sdp_RPort;
-    UWORD   	    	 *pens = DRI(data->dri)->dri_Pens;
+    UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
     LONG    	    	  left, right;
     BOOL    	    	  beeping = FALSE;
     
 #if 0
 #if USE_NEWDISPLAYBEEP
-        beeping = (scr->Flags & BEEPING) && GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8;
+        beeping = (msg->sdp_Screen->Flags & BEEPING) && GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8;
 #endif
 #endif
 
     SetDrMd(rp, JAM1);
     
     SetAPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
-    RectFill(rp, 0, 0, data->scr->Width - 1, data->scr->BarHeight - 1);
+    RectFill(rp, 0, 0, msg->sdp_Screen->Width - 1, msg->sdp_Screen->BarHeight - 1);
 
     SetAPen(rp, pens[beeping ? BARDETAILPEN : BARTRIMPEN]);
-    RectFill(rp, 0, data->scr->BarHeight, data->scr->Width - 1, data->scr->BarHeight);
+    RectFill(rp, 0, msg->sdp_Screen->BarHeight, msg->sdp_Screen->Width - 1, msg->sdp_Screen->BarHeight);
 
-    findtitlearea(data->scr, &left, &right);
+    findtitlearea(msg->sdp_Screen, &left, &right);
 
     SetAPen(rp, pens[SHADOWPEN]);
-    RectFill(rp, right, 1, right, data->scr->BarHeight - 1);
+    RectFill(rp, right, 1, right, msg->sdp_Screen->BarHeight - 1);
         
     return TRUE;
 }
+*/
 
 /**************************************************************************************************/
 
-IPTR ScrDecorClass__SDM_DRAW_SCREENTITLE(Class *cl, Object *obj, struct sdpDrawScreenTitle *msg)
+IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
     struct RastPort 	 *rp = msg->sdp_RPort;
-    UWORD   	    	 *pens = DRI(data->dri)->dri_Pens;
+    UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
     LONG    	    	  right, left;
     BOOL    	    	  beeping = FALSE;
     
 #if 0
 #if USE_NEWDISPLAYBEEP
-        beeping = (scr->Flags & BEEPING) && GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8;
+        beeping = (msg->sdp_Screen->Flags & BEEPING) && GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8;
 #endif
 #endif
 
-    findtitlearea(data->scr, &left, &right);
+    findtitlearea(msg->sdp_Screen, &left, &right);
 
     SetDrMd(rp, JAM1);
 
     SetAPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
-    RectFill(rp, left + 1, 0, right - 1, data->scr->BarHeight - 1);
+    RectFill(rp, left + 1, 0, right - 1, msg->sdp_Screen->BarHeight - 1);
 
     SetAPen(rp, pens[beeping ? BARBLOCKPEN: BARDETAILPEN]);
     SetBPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
 
-    Move(rp, data->scr->BarHBorder, data->scr->BarVBorder + rp->TxBaseline);
+    Move(rp, msg->sdp_Screen->BarHBorder, msg->sdp_Screen->BarVBorder + rp->TxBaseline);
 
-    Text(rp, data->scr->Title, strlen(data->scr->Title));
+    Text(rp, msg->sdp_Screen->Title, strlen(msg->sdp_Screen->Title));
     
     return TRUE;
 }
@@ -440,6 +427,16 @@ IPTR ScrDecorClass__SDM_LAYOUT_SCREENGADGETS(Class *cl, Object *obj, struct sdpL
 	}
     }
     
+    return TRUE;
+}
+
+IPTR ScrDecorClass__SDM_INITSCREEN(Class *cl, Object *obj, struct sdpInitScreen *msg)
+{
+    return TRUE;
+}
+
+IPTR ScrDecorClass__SDM_EXITSCREEN(Class *cl, Object *obj, struct sdpExitScreen *msg)
+{
     return TRUE;
 }
 

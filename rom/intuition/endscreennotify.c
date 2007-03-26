@@ -54,11 +54,13 @@ AROS_LH1(BOOL, EndScreenNotify,
 
     BOOL back;
 
+    if (notify == NULL) return TRUE;
+
     if (back = AttemptSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock))
     {
-    
+        if (((struct IntScreenNotify*) notify)->pubname) FreeVec(((struct IntScreenNotify*) notify)->pubname);
         Remove((struct Node *) notify);
-        FreeMem(notify, sizeof(struct IntScreenNotify));
+        FreeVec(notify);
     	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);
     }
 

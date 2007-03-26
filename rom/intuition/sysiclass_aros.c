@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -154,6 +154,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
         	    case MUIIMAGE:
         	    case POPUPIMAGE:
         	    case SNAPSHOTIMAGE:
+		    case SUBMENUIMAGE:
                 	break;
 
         	    default:
@@ -196,29 +197,66 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
         return FALSE;
 
     {
-    	struct wdpGetDefSizeSysImage  msg;
-	ULONG       	    	      width = DEFSIZE_WIDTH, height = DEFSIZE_HEIGHT;
-	
-	msg.MethodID 	    	= (data->type == SDEPTHIMAGE) ? SDM_GETDEFSIZE_SYSIMAGE :
-	    	    	    	    	    	    	    	WDM_GETDEFSIZE_SYSIMAGE;
-	msg.wdp_Which 	    	= data->type;
-	msg.wdp_SysiSize     	= size;
-	msg.wdp_ReferenceFont 	= reffont;
-	msg.wdp_Width 	    	= &width;
-	msg.wdp_Height	    	= &height;
-	msg.wdp_Flags	    	= 0;
-	
+    	struct wdpGetDefSizeSysImage  wmsg;
+    	struct sdpGetDefSizeSysImage  smsg;
+    	struct mdpGetDefSizeSysImage  mmsg;
+
+	ULONG	width = DEFSIZE_WIDTH, height = DEFSIZE_HEIGHT;
+
+        BOOL	 tc = (data->dri->dri_Flags & DRIF_DIRECTCOLOR);
+
 	if (data->type == SDEPTHIMAGE)
 	{
-	    LOCKSHARED_SCRDECOR(data->dri);
-	    DoMethodA(INTDRI(data->dri)->dri_ScrDecorObj, (Msg)&msg);	
-	    UNLOCK_SCRDECOR(data->dri);
+	
+		smsg.MethodID 	    	= SDM_GETDEFSIZE_SYSIMAGE;
+                smsg.sdp_TrueColor      = tc;
+		smsg.sdp_Which 	    	= data->type;
+		smsg.sdp_SysiSize     	= size;
+		smsg.sdp_ReferenceFont 	= reffont;
+		smsg.sdp_Width 	    	= &width;
+		smsg.sdp_Height	    	= &height;
+		smsg.sdp_Flags	    	= 0;
+		smsg.sdp_Dri            = data->dri;
+		smsg.sdp_UserBuffer 	= NULL;
+	}
+	else if ((data->type == AMIGAKEY) || (data->type == MENUCHECK) || (data->type == SUBMENUIMAGE))
+	{
+	
+		mmsg.MethodID 	    	= MDM_GETDEFSIZE_SYSIMAGE;
+                mmsg.mdp_TrueColor      = tc;
+		mmsg.mdp_Which 	    	= data->type;
+		mmsg.mdp_SysiSize     	= size;
+		mmsg.mdp_ReferenceFont 	= reffont;
+		mmsg.mdp_Width 	    	= &width;
+		mmsg.mdp_Height	    	= &height;
+		mmsg.mdp_Flags	    	= 0;
+		mmsg.mdp_Dri            = data->dri;
 	}
 	else
 	{
-	    LOCKSHARED_WINDECOR(data->dri);
-	    DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&msg);	
-	    UNLOCK_WINDECOR(data->dri);
+		wmsg.MethodID 	    	= WDM_GETDEFSIZE_SYSIMAGE;
+                wmsg.wdp_TrueColor      = tc;
+		wmsg.wdp_Which 	    	= data->type;
+		wmsg.wdp_SysiSize     	= size;
+		wmsg.wdp_ReferenceFont 	= reffont;
+		wmsg.wdp_Width 	    	= &width;
+		wmsg.wdp_Height	    	= &height;
+		wmsg.wdp_Flags	    	= 0;
+		wmsg.wdp_Dri            = data->dri;
+		wmsg.wdp_UserBuffer	= NULL;
+	}
+
+	if (data->type == SDEPTHIMAGE)
+	{
+	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->ScrDecorObj, (Msg)&smsg);	
+	}
+	else if ((data->type == AMIGAKEY) || (data->type == MENUCHECK) || (data->type == SUBMENUIMAGE))
+	{
+	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->MenuDecorObj, (Msg)&mmsg);	
+	}
+	else
+	{
+	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wmsg);	
 	}
 	
     	if (!set_width) IM(obj)->Width = width;
@@ -295,7 +333,7 @@ Object *SysIClass__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 
 	case MENUCHECK:
 	case AMIGAKEY:
-
+	case SUBMENUIMAGE:
 	case ICONIFYIMAGE:
 	case LOCKIMAGE:
 	case MUIIMAGE:
@@ -335,24 +373,58 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 {
     struct SysIData 	    *data = INST_DATA(cl, obj);
     struct RastPort 	    *rport = msg->imp_RPort;
+    struct Window           *win = NULL;
     WORD    	    	     left = IM(obj)->LeftEdge + msg->imp_Offset.X;
     WORD    	    	     top = IM(obj)->TopEdge + msg->imp_Offset.Y;
     UWORD   	    	     width = IM(obj)->Width;
     UWORD   	    	     height = IM(obj)->Height;
     WORD    	    	     right = left + width - 1;
     WORD    	    	     bottom = top + height - 1;
-    struct wdpDrawSysImage   decormsg;
+    struct wdpDrawSysImage   wdecormsg;
+    struct sdpDrawSysImage   sdecormsg;
+    struct mdpDrawSysImage   mdecormsg;
 
-    decormsg.MethodID  = WDM_DRAW_SYSIMAGE;
-    decormsg.wdp_RPort = rport;
-    decormsg.wdp_X = left;
-    decormsg.wdp_Y = top;
-    decormsg.wdp_Width = width;
-    decormsg.wdp_Height = height;
-    decormsg.wdp_Which = data->type;
-    decormsg.wdp_State = msg->imp_State;
-    decormsg.wdp_Flags = 0;
-    
+    BOOL	 tc = (data->dri->dri_Flags & DRIF_DIRECTCOLOR);
+
+    if (rport) if (rport->Layer) win = (struct Window *) rport->Layer->Window;
+
+    wdecormsg.MethodID  = WDM_DRAW_SYSIMAGE;
+    wdecormsg.wdp_TrueColor      = tc;
+    wdecormsg.wdp_RPort = rport;
+    wdecormsg.wdp_X = left;
+    wdecormsg.wdp_Y = top;
+    wdecormsg.wdp_Width = width;
+    wdecormsg.wdp_Height = height;
+    wdecormsg.wdp_Which = data->type;
+    wdecormsg.wdp_State = msg->imp_State;
+    wdecormsg.wdp_Flags = 0;
+    wdecormsg.wdp_Dri = data->dri;
+    wdecormsg.wdp_UserBuffer = (win == NULL) ? NULL : ((struct IntWindow *)win)->DecorUserBuffer;
+
+    sdecormsg.MethodID  = SDM_DRAW_SYSIMAGE;
+    sdecormsg.sdp_TrueColor      = tc;
+    sdecormsg.sdp_RPort = rport;
+    sdecormsg.sdp_X = left;
+    sdecormsg.sdp_Y = top;
+    sdecormsg.sdp_Width = width;
+    sdecormsg.sdp_Height = height;
+    sdecormsg.sdp_Which = data->type;
+    sdecormsg.sdp_State = msg->imp_State;
+    sdecormsg.sdp_Flags = 0;
+    sdecormsg.sdp_Dri = data->dri;
+
+    mdecormsg.MethodID  = MDM_DRAW_SYSIMAGE;
+    mdecormsg.mdp_TrueColor      = tc;
+    mdecormsg.mdp_RPort = rport;
+    mdecormsg.mdp_X = left;
+    mdecormsg.mdp_Y = top;
+    mdecormsg.mdp_Width = width;
+    mdecormsg.mdp_Height = height;
+    mdecormsg.mdp_Which = data->type;
+    mdecormsg.mdp_State = msg->imp_State;
+    mdecormsg.mdp_Flags = 0;
+    mdecormsg.mdp_Dri = data->dri;
+
     SetDrMd(rport, JAM1);
 
     switch(data->type)
@@ -492,9 +564,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
             if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
 	    {
-		LOCKSHARED_WINDECOR(data->dri)
-    		DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&decormsg);	
-		UNLOCK_WINDECOR(data->dri)
+    		DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);	
 	    	break;
 	    }
 	    
@@ -598,9 +668,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
             if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
 	    {
-		LOCKSHARED_WINDECOR(data->dri)
-    		DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&decormsg);	
-		UNLOCK_WINDECOR(data->dri)
+    		DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);	
 	    	break;
 	    }
 
@@ -705,9 +773,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
             if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
 	    {
-		LOCKSHARED_WINDECOR(data->dri)
-    		DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&decormsg);	
-		UNLOCK_WINDECOR(data->dri)
+    		DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);	
 	    	break;
 	    }
 
@@ -813,9 +879,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
  
             if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
 	    {
-		LOCKSHARED_WINDECOR(data->dri)
-    		DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&decormsg);	
-		UNLOCK_WINDECOR(data->dri)
+    		DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);	
 	    	break;
 	    }
 
@@ -918,122 +982,31 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 	case DEPTHIMAGE:
 	case SIZEIMAGE:
         {
-	    LOCKSHARED_WINDECOR(data->dri)
-    	    DoMethodA(INTDRI(data->dri)->dri_WinDecorObj, (Msg)&decormsg);	
-	    UNLOCK_WINDECOR(data->dri)
+    	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);	
             break;
         }
 
     	case SDEPTHIMAGE:
 	{
-	    decormsg.MethodID  = SDM_DRAW_SYSIMAGE;
-
-	    LOCKSHARED_SCRDECOR(data->dri)
-    	    DoMethodA(INTDRI(data->dri)->dri_ScrDecorObj, (Msg)&decormsg);	
-	    UNLOCK_SCRDECOR(data->dri)
+    	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->ScrDecorObj, (Msg)&sdecormsg);	
 	    break;
 	}
 	
     	case MENUCHECK:
         {
-            UWORD *pens = data->dri->dri_Pens;
-
-            if (MENUS_AMIGALOOK)
-            {
-                SetAPen(rport, pens[BARBLOCKPEN]);
-            }
-            else
-            {
-                SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
-            }
-
-            RectFill(rport, left, top, right, bottom);
-
-            SetAPen(rport, pens[BARDETAILPEN]);
-            draw_thick_line(cl, rport, left + 1, top + height / 3 , left + 1, bottom, 0);
-            draw_thick_line(cl, rport, left + 2, bottom, right - 2, top, 0);
-
+    	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->MenuDecorObj, (Msg)&mdecormsg);	
             break;
         }
 
     	case AMIGAKEY:
         {
-            UWORD   	    *pens = data->dri->dri_Pens;
-            struct TextFont *oldfont;
-            UBYTE   	     oldstyle;
-            
-            if (MENUS_AMIGALOOK)
-            {
-                SetAPen(rport, pens[BARDETAILPEN]);
-            }
-            else
-            {
-                SetAPen(rport, pens[SHINEPEN]);
-            }
+    	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->MenuDecorObj, (Msg)&mdecormsg);	
+            break;
+        }
 
-            RectFill(rport, left, top, right, bottom);
-
-            if (MENUS_AMIGALOOK)
-            {
-                SetAPen(rport, pens[BARBLOCKPEN]);
-    
-                oldfont = rport->Font;
-                oldstyle = rport->AlgoStyle;
-    
-                SetFont(rport, GfxBase->DefaultFont);
-                SetSoftStyle(rport, FSF_ITALIC, AskSoftStyle(rport));
-    
-                Move(rport, left + (width - rport->TxWidth) / 2,
-                     top  + (height - rport->TxHeight) / 2 + rport->TxBaseline);
-                Text(rport, "A", 1);
-    
-                SetSoftStyle(rport, oldstyle, AskSoftStyle(rport));
-                SetFont(rport, oldfont);
-    
-                SetAPen(rport, pens[BARBLOCKPEN]);
-            }
-            else
-            {
-                SetAPen(rport, pens[SHADOWPEN]);
-    
-                RectFill(rport, left + 1, top, right - 1, top);
-                RectFill(rport, right, top + 1, right, bottom - 1);
-                RectFill(rport, left + 1, bottom, right - 1, bottom);
-                RectFill(rport, left, top + 1, left, bottom - 1);
-    
-                SetAPen(rport, pens[BACKGROUNDPEN]);
-                RectFill(rport, left + 1, bottom - 1, right - 1, bottom - 1);
-                RectFill(rport, right - 1, top + 1, right - 1, bottom - 2);
-    
-                RectFill(rport, left + 2, top + 2, left + 4, top + 2);
-                RectFill(rport, left + 2, top + 3, left + 2, top + 4);
-    
-                SetAPen(rport, pens[SHADOWPEN]);
-                RectFill(rport, left + 2, bottom - 2, right - 2, bottom - 2);
-                RectFill(rport, right - 2, top + 2, right - 2, bottom - 4);
-    
-                {
-                    WORD a_size   = height - 7;
-                    WORD a_left   = left + 5;
-                    WORD a_top    = top + 2;
-                    WORD a_right  = a_left + a_size;
-                    WORD a_bottom = a_top + a_size;
-    
-                    Move(rport, a_left, a_bottom);
-                    Draw(rport, a_right, a_top);
-                    Draw(rport, a_right, a_bottom);
-                    Move(rport, a_right - 1, a_top + 1);
-                    Draw(rport, a_right - 1, a_bottom);
-                }
-    
-                SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
-            }
-            
-            WritePixel(rport, left, top);
-            WritePixel(rport, right, top);
-            WritePixel(rport, right, bottom);
-            WritePixel(rport, left, bottom);
-
+    	case SUBMENUIMAGE:
+        {
+    	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->MenuDecorObj, (Msg)&mdecormsg);	
             break;
         }
 

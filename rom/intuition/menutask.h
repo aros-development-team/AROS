@@ -2,12 +2,12 @@
 #define MENUTASK_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
-#define MENUTASK_NAME 	    	"« Menu Handler »"
+#define MENUTASK_NAME 	    	" Menu Handler "
 #define MENUTASK_STACKSIZE  	AROS_STACKSIZE
 #ifdef __MORPHOS__
 #define MENUTASK_PRIORITY   	19
@@ -66,6 +66,8 @@ struct MenuHandlerData
 #ifdef USEWINDOWLOCK
     BOOL                       windowlock;
 #endif /* USEWINDOWLOCK */
+
+
 };
 #else 
 
@@ -84,6 +86,11 @@ struct MenuHandlerData
     struct Rectangle     submenubox;
     struct Image    	*checkmark;
     struct Image    	*amigakey;
+    struct Image    	*submenuimage;
+    ULONG                DecorUserBufferSize;
+    IPTR                 DecorUserBuffer;
+    IPTR                 SubDecorUserBuffer;
+    IPTR		 BarDecorUserBuffer;
     WORD            	 menubarwidth;
     WORD            	 menubarheight;
     WORD            	 menubaritemwidth;
@@ -96,10 +103,23 @@ struct MenuHandlerData
     WORD            	 maxcommkeywidth_submenu;
     WORD            	 scrmousex;
     WORD            	 scrmousey;
+    WORD		 innerleft;
+    WORD		 innertop;
+    WORD		 innerright;
+    WORD		 innerbottom;
+    WORD		 menuinnerleft;
+    WORD		 menuinnertop;
+    WORD		 menuinnerright;
+    WORD		 menuinnerbottom;
+    WORD		 iteminnerleft;
+    WORD		 iteminnertop;
+    WORD		 iteminnerright;
+    WORD		 iteminnerbottom;
     UWORD           	 firstmenupick;
     UWORD           	 lastmenupick;
     BOOL            	 active;
     BOOL            	 keepmenuup;
+    BOOL                 TrueColor;
     ULONG           	 openseconds;
     ULONG           	 openmicros;
 };

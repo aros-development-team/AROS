@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
     Responsible for executing deferred Intuition actions like MoveWindow, 
@@ -540,8 +540,25 @@ void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTop
     CheckLayers(targetwindow->WScreen, IntuitionBase);
 
     UNLOCK_REFRESH(targetwindow->WScreen);
+    if (size_dx || size_dy)
+    {
+        if (!(((struct IntWindow *)targetwindow)->CustomShape))
+        {
+            struct wdpWindowShape       shapemsg;
+            struct Region               *shape;
+            shapemsg.MethodID           = WDM_WINDOWSHAPE;
+            shapemsg.wdp_Width      = targetwindow->Width;
+            shapemsg.wdp_Height     = targetwindow->Height;
+            shapemsg.wdp_TrueColor      = (((struct IntScreen *)targetwindow->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+            shapemsg.wdp_UserBuffer     = ((struct IntWindow *)targetwindow)->DecorUserBuffer;
+            shape = DoMethodA(((struct IntScreen *)(targetwindow->WScreen))->WinDecorObj, (Msg)&shapemsg);	
 
-
+            if (((struct IntWindow *)targetwindow)->OutlineShape) DisposeRegion(((struct IntWindow *)targetwindow)->OutlineShape);
+            ((struct IntWindow *)targetwindow)->OutlineShape = shape;
+            ChangeWindowShape(targetwindow, shape, NULL);
+            ((struct IntWindow *)targetwindow)->CustomShape = FALSE;
+        }
+    }
 }
 
 /*******************************************************************************************************/

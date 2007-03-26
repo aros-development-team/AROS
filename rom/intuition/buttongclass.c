@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
     AROS buttongclass implementation.
@@ -188,7 +188,7 @@ IPTR ButtonGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
                          GACT_BOTTOMBORDER |
                          GACT_BORDERSNIFF))
             {
-                if (msg->gpr_GInfo->gi_Window->Flags & WFLG_WINDOWACTIVE)
+                if (msg->gpr_GInfo->gi_Window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
                 {
                     state = IDS_NORMAL;
                 }
