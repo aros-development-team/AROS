@@ -2,7 +2,7 @@
 #define INTUITION_CLASSUSR_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -51,6 +51,7 @@
 #define MENUBARLABELCLASS "menubarlabelclass"
 #define WINDECORCLASS	  "windecorclass"
 #define SCRDECORCLASS	  "scrdecorclass"
+#define MENUDECORCLASS    "menudecorclass"
 
 #define OM_Dummy     0x0100
 #define OM_NEW       (OM_Dummy + 1)
