@@ -45,6 +45,9 @@
 #ifndef INTUITION_SCREENS_H
 #   include <intuition/screens.h>
 #endif
+#ifndef INTUITION_CLASSUSR_H
+#   include <intuition/classusr.h>
+#endif
 
 #define INTUITIONNAME "intuition.library"
 
@@ -345,6 +348,7 @@ struct ExtGadget
 #define GMORE_BOUNDS	   (1L<<0)
 #define GMORE_GADGETHELP   (1L<<1)
 #define GMORE_SCROLLRASTER (1L<<2)
+#define GMORE_BOOPSIGADGET (1L<<3) /* some internal boopsi classes changes the gadget type during execution (ie propgclass), so GTYP_CUSTOMGADGET doesn´t work (dariusb) */
 
 /***** Bool Gadget *****/
 struct BoolInfo
@@ -674,6 +678,7 @@ struct ExtNewWindow
 #define WA_TabletMessages    (WA_Dummy + 55)
 #define WA_HelpGroup	     (WA_Dummy + 56)
 #define WA_HelpGroupWindow   (WA_Dummy + 57)
+#define WA_ToolBox           (WA_Dummy + 58)
 
 /* AROS specific tags */
 
@@ -723,6 +728,7 @@ struct ExtNewWindow
 #define WFLG_VISITOR	    (1L<<27)
 #define WFLG_ZOOMED	    (1L<<28)
 #define WFLG_HASZOOM	    (1L<<29)
+#define WFLG_TOOLBOX        (1L<<30)
 
 #define DEFAULTMOUSEQUEUE 5
 
@@ -865,13 +871,52 @@ struct ColorSpec
 #define AUTOITEXTFONT NULL
 #define AUTONEXTTEXT  NULL
 
-struct ScreenNotifyMessage {
-    struct Message      snm_Message;
+/* NewDecorator structure used by ChangeDecoration
+   the three Objects (nd_Window, nd_Screen and nd_Menu
+   must be installed and point to decorator objects
+   the port is used for different issues and will be filled
+   up with DecoratorMessages */
+
+struct NewDecorator
+{   struct  Node     nd_Node;
+    struct  MsgPort *nd_Port;
+            UWORD    nd_cnt;
+            STRPTR   nd_Pattern;
+            STRPTR   nd_IntPattern; /* Private, transformated Pattern be dos/ParsePattern() */
+            Object  *nd_Window;
+            Object  *nd_Screen;
+            Object  *nd_Menu;
+};
+
+struct DecoratorMessage
+{
+    struct MagicMessage dm_Message;
+    ULONG               dm_Class;
+    ULONG               dm_Code;
+    ULONG               dm_Flags;
+    IPTR                dm_Object;
+};
+
+#define     DECORATOR_VERSION  0
+
+/* there is only one Message in the initial decoration system
+   it will be sent to the decorator port to signal that it´ll not be used any longer
+   and may be destroyed, in that case the dm_Object contains the NewDecorator struct
+   Intuition does not touch anything, the decorator have to destroy all objects as well as the
+   NewDecorator struct. */
+
+#define DM_CLASS_DESTROYDECORATOR       0x8001
+
+struct ScreenNotifyMessage
+{
+    struct MagicMessage snm_Message;
     ULONG               snm_Class;           /* Notification Class ID same as SNA_Notify */
     ULONG               snm_Code;            /* Code only supported for ScreenDepth() and will put the Flags in */
     IPTR                snm_Object;	     /* Pointer to the Object that caused this message */
     IPTR                snm_UserData;        /* will be filled with SNA_UserData */
 };
+
+#define SCREENNOTIFY_VERSION 0
 
 #define SNA_PubName             (TAG_USER + 0x01) /* public screen name of NULL for all screens */
 #define SNA_Notify              (TAG_USER + 0x02) /* Flags to look for see below */
@@ -880,9 +925,9 @@ struct ScreenNotifyMessage {
 #define SNA_SigBit              (TAG_USER + 0x05) /* signal bit to set if port == NULL*/
 #define SNA_MsgPort             (TAG_USER + 0x06) /* if != NULL post mesage to this port */
 #define SNA_Priority            (TAG_USER + 0x07) /*  */
-#define SNA_Hook                (TAG_USER + 0x08) /* is not tested yet */
+#define SNA_Hook                (TAG_USER + 0x08)
 
-/* SNA_Notify */
+/* SNA_Notify (all unassigned bits are reserved for system use) */
 #define SNOTIFY_AFTER_OPENSCREEN        (1<<0)  /* screen has been opened */
 #define SNOTIFY_BEFORE_CLOSESCREEN      (1<<1)  /* going to close screen */
 #define SNOTIFY_AFTER_OPENWB            (1<<2)  /* Workbench is open */
@@ -902,5 +947,4 @@ struct ScreenNotifyMessage {
 #define SNOTIFY_UNLOCKPUBSCREEN         (1<<16) /* UnlockPubScreen() */
 #define SNOTIFY_BEFORE_UPDATEINTUITION  (1<<17) /* Intuition is going to be updated */
 #define SNOTIFY_AFTER_UPDATEINTUITION   (1<<18) /* Intuition is updated */
-
 #endif /* INTUITION_INTUITION_H */

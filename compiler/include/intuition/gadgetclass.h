@@ -2,7 +2,7 @@
 #define INTUITION_GADGETCLASS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Headerfile for Intuitions' gadget classes.
@@ -435,6 +435,10 @@ struct gpDomain
      rendering. */
 #define PGA_NewLook    (PGA_Dummy + 10)
 
+  /* (I.G) (struct Hook) Use this Hook to render the Gadget visuals
+     */
+
+#define PGA_DisplayHook (PGA_Dummy + 11)
 /* AROS extensions */
 
  /* [I] (UWORD) If set to PG_BEHAVIOUR_NICE OM_NOTIFY messages are sent

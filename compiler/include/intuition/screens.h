@@ -2,7 +2,7 @@
 #define INTUITION_SCREENS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Screen handling structures
@@ -182,6 +182,7 @@ struct ExtNewScreen
 #define SA_BackChild       (SA_Dummy + 38)
 #define SA_LikeWorkbench   (SA_Dummy + 39)
 #define SA_MinimizeISG     (SA_Dummy + 41)
+#define SA_ID              (SA_Dummy + 42)
 
 /* SA_Overscan */
 #define OSCAN_TEXT     1
@@ -256,6 +257,7 @@ struct DrawInfo
 
     struct Image * dri_CheckMark;
     struct Image * dri_AmigaKey;
+    struct Image * dri_SubMenuImage;
 
     ULONG dri_Reserved[5];
 };
@@ -265,6 +267,7 @@ struct DrawInfo
 
 /* dri_Flags */
 #define DRIF_NEWLOOK (1L<<0)
+#define DRIF_DIRECTCOLOR (1L << 1)
 
 /* dri_Pens */
 #define DETAILPEN        0
@@ -286,9 +289,10 @@ struct DrawInfo
 #define PEN_C2 0xFEFD
 #define PEN_C3 0xFEFC
 
-/* Values for ChangeDecorationA which param */
-#define DECORATION_WINDOW 0
-#define DECORATION_SCREEN 1
+/* values for ChangeDecoration ID param */
+
+#define DECORATION_SET     0x8001
+#define DECORATION_DEFAULT 0x8000
 
 /* Errors */
 #define OSERR_NOMONITOR    1
