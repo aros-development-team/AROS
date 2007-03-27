@@ -44,6 +44,7 @@ static const UWORD SupportedCommands[] =
     IND_ADDHANDLER,
     IND_REMHANDLER,
     IND_WRITEEVENT,
+    IND_ADDEVENT,
     IND_SETTHRESH,
     IND_SETPERIOD,
     NSCMD_DEVICEQUERY,
@@ -213,6 +214,7 @@ AROS_LH1(void, beginio,
 	case IND_ADDHANDLER:
 	case IND_REMHANDLER:
 	case IND_WRITEEVENT:
+        case IND_ADDEVENT:
 	case IND_SETTHRESH:
 	case IND_SETPERIOD:
             done_quick = FALSE;
