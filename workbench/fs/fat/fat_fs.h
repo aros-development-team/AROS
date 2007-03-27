@@ -20,6 +20,8 @@
 
 #include "fat_struct.h"
 
+#include "cache.h"
+
 /* filesystem structures */
 
 #define ID_FAT_DISK 0x46415400UL
@@ -153,6 +155,8 @@ struct Globals {
     struct Task *ourtask;
     struct MsgPort *ourport;
     APTR mempool;
+
+    struct cache *cache;
 
     /* fs */
     struct DosList *devnode;

@@ -75,7 +75,22 @@ static inline ULONG GetFirstCluster(struct DirEntry *de) {
 
 /* IO layer */
 
+#include "cache.h"
+
 static inline LONG FS_GetBlock (ULONG n, UBYTE *dst) {
+    struct cache_block *b;
+    ULONG err;
+
+    if ((err = cache_get_block(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, n, 0, &b)) != 0)
+        return err;
+
+    CopyMem(b->data, dst, glob->blocksize);
+
+    cache_put_block(glob->cache, b, 0);
+
+    return 0;
+
+    /*
     glob->diskioreq->iotd_Req.io_Command = CMD_READ;
     glob->diskioreq->iotd_Req.io_Data = dst;
     glob->diskioreq->iotd_Req.io_Offset = n * glob->blocksize;
@@ -85,9 +100,25 @@ static inline LONG FS_GetBlock (ULONG n, UBYTE *dst) {
     DoIO((struct IORequest *) glob->diskioreq);
 
     return glob->diskioreq->iotd_Req.io_Error;
+    */
 }
 
 static inline LONG FS_GetBlocks (ULONG n, UBYTE *dst, ULONG count) {
+    struct cache_block *b;
+    ULONG err, i;
+
+    for (i = 0; i < count; i++) {
+        if ((err = cache_get_block(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, n+i, 0, &b)) != 0)
+            return err;
+
+        CopyMem(b->data, (APTR) ((UBYTE *) dst + i * glob->blocksize), glob->blocksize);
+
+        cache_put_block(glob->cache, b, 0);
+    }
+
+    return 0;
+
+    /*
     glob->diskioreq->iotd_Req.io_Command = CMD_READ;
     glob->diskioreq->iotd_Req.io_Data = dst;
     glob->diskioreq->iotd_Req.io_Offset = n * glob->blocksize;
@@ -97,6 +128,7 @@ static inline LONG FS_GetBlocks (ULONG n, UBYTE *dst, ULONG count) {
     DoIO((struct IORequest *) glob->diskioreq);
 
     return glob->diskioreq->iotd_Req.io_Error;
+    */
 }
 
 static inline LONG FS_PutBlock (ULONG n, UBYTE *dst) {
