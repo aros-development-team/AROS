@@ -1,0 +1,17 @@
+#   $Id: mmakefile.src 25468 2007-03-21 13:51:24Z dariusb $
+#
+#   Makefile to make Decoration.
+
+include $(TOP)/config/make.cfg
+
+FILES := decoration
+EXEDIR := $(AROS_C)
+
+#MM workbench-c-decoration : includes linklibs
+#MM- workbench-c : workbench-c-decoration
+
+%build_prog mmake=workbench-c-decoration \
+    progname=Decoration targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc m" \
+    detach=yes
+%common
