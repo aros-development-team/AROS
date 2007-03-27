@@ -311,6 +311,50 @@ void ProcessEvents (struct inputbase *InputDevice)
 		case IND_SETMTYPE:
 		    break;
 
+                case IND_ADDEVENT: {
+                    /* 
+                     * IND_ADDEVENT command allows client to send multiple RAWKEY or RAWMOUSE
+                     * events to the input.device. All other classes will be ignored.
+                     */ 
+                    struct InputEvent *ie = (struct InputEvent *)ioreq->io_Data;
+                    ULONG ie_cnt = ioreq->io_Length / sizeof(struct InputEvent);
+                    
+                    D(bug("[input.device] ie_cnt=%d, ie=%d\n", ie_cnt, ie));
+                    
+                    /* Update the current qualifier */
+                    InputDevice->ActQualifier = ie->ie_Qualifier;
+                    
+                    /* For each event... */
+                    for (; ie_cnt; ie_cnt--, ie++)
+                    {
+                        D(bug("[input.device]  ie_Class=%02x ie_Code=%04x ie_Qualifier=%04x\n",
+                            ie->ie_Class, ie->ie_Code, ie->ie_Qualifier));
+                        
+                        /* Of class RAWMOUSE or RAWKEY... */
+                        if (ie->ie_Class == IECLASS_RAWMOUSE || ie->ie_Class == IECLASS_RAWKEY)
+                        {
+                            ie->ie_NextEvent = NULL;
+                            
+                            /* If the event's qualifier differs from the current one, fire the events */
+                            if (InputDevice->ActQualifier == ie->ie_Qualifier) {
+                                UWORD q = ie->ie_Qualifier;
+                                ForwardQueuedEvents(InputDevice);
+                                
+                                /* And set new qualifier */
+                                InputDevice->ActQualifier = q;
+                            }
+
+                            /* Set the timestamp */
+                            GetSysTime( &(ie->ie_TimeStamp ));
+                            
+                            /* and enqueue */
+                            AddEQTail(ie, InputDevice);
+                        }
+                    }
+                    /* In case some events are still in the queue, fire them all up */
+                    ForwardQueuedEvents(InputDevice);
+                } break;
+                    
 		case IND_WRITEEVENT: {
 		    struct InputEvent *ie;
 		    
