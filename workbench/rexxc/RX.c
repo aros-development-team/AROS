@@ -24,6 +24,7 @@ static struct RexxMsg *msg = NULL;
 static struct MsgPort *rexxport = NULL, *replyport = NULL;
 static BPTR out;
 static BOOL closestdout = FALSE;
+static BPTR olddir = (BPTR)-1;
 
 static BOOL init(void)
 {
@@ -76,6 +77,8 @@ void cleanup(void)
 	DeleteRexxMsg(msg);
     if (replyport)
 	DeletePort(replyport);
+    if (olddir != (BPTR)-1)
+	CurrentDir(olddir);
 }
 
 int main(int argc, char **argv)
@@ -106,7 +109,8 @@ int main(int argc, char **argv)
             cleanup();
             return RC_ERROR;
         }
-        
+
+	olddir = CurrentDir(startup->sm_ArgList[1].wa_Lock);
 	out = msg->rm_Stdout = Open("CON:////RX Output/CLOSE/WAIT/AUTO", MODE_READWRITE);
         closestdout = TRUE;
         
