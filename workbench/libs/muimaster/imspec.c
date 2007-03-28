@@ -648,6 +648,23 @@ BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax 
 	case IST_BRUSH:
 	    if (spec->u.brush.dt[0])
 	    {
+        char *straddr;
+        long len;
+        straddr = *(spec->u.brush.filename);
+        len = strlen(straddr);                        
+        if (len > 4)
+        {         
+           if (strcmp(&straddr[len-4],".mim")==0)
+           {
+           minmax->MinWidth = dt_width(spec->u.brush.dt[0]) >> 1;
+		   minmax->MinHeight = dt_height(spec->u.brush.dt[0]);
+		   minmax->DefWidth = minmax->MinWidth;
+		   minmax->DefHeight = minmax->MinHeight;
+		   minmax->MaxWidth = minmax->MinWidth;
+		   minmax->MaxHeight = minmax->MinHeight;
+           break;                                              
+           }   
+        }                                
 		minmax->MinWidth = dt_width(spec->u.brush.dt[0]);
 		minmax->MinHeight = dt_height(spec->u.brush.dt[0]);
 		minmax->DefWidth = minmax->MinWidth;
@@ -787,8 +804,21 @@ void zune_imspec_drawbuffered (struct MUI_ImageSpec_intern *spec, struct RastPor
 		state = 0;
 	    if (spec->u.brush.dt[state])
 	    {
+            char *straddr;
+        long len;
+        straddr = *(spec->u.brush.filename);
+        len = strlen(straddr);                        
+        if (len > 4)
+        {                      
+           if (strcmp(&straddr[len-4],".mim")==0)
+           {                                  
+            dt_put_imi_on_rastport(spec->u.brush.dt[0], mri->mri_RastPort,
+					 left-dx, top-dy, state);
+           break;                                              
+           }   
+        }          
 		dt_put_on_rastport(spec->u.brush.dt[state], mri->mri_RastPort,
-					 left-dy, top-dy);
+					 left-dx, top-dy);
 /*  		dt_put_on_rastport_tiled(spec->u.brush.dt[state], mri->mri_RastPort, */
 /*  					 left, top, right, bottom, */
 /*  					 xoffset - left, yoffset - top); */
