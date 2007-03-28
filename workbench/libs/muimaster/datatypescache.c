@@ -342,6 +342,74 @@ void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y)
     }
 }
 
+void dt_put_imi_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y,int state)
+{
+    struct BitMap *bitmap = NULL;
+    struct	pdtBlitPixelArray pa;
+    ULONG	depth = 0;
+    ULONG       *img;
+
+    Object *o;
+
+    o = node->o;
+    if (NULL == o)
+	return;
+
+     depth = (ULONG) GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+     if ((depth >= 15) && (node->mask == mskHasAlpha))
+    {
+   	img = (ULONG *) AllocVec(dt_width(node) * dt_height(node) * 4, MEMF_ANY);
+        if (img)
+	{
+               int width  = dt_width(node) >> 1;
+               int height = dt_height(node);
+               pa.MethodID = PDTM_READPIXELARRAY;
+               pa.pbpa_PixelData = (UBYTE *) img;
+               pa.pbpa_PixelFormat = PBPAFMT_ARGB;
+               pa.pbpa_PixelArrayMod = width * 4;
+               pa.pbpa_Left = state * width;
+               pa.pbpa_Top = 0;
+               pa.pbpa_Width = width;
+               pa.pbpa_Height = height;
+               DoMethodA(o, (Msg) &pa);
+	       WritePixelArrayAlpha(img, 0, 0, width * 4, rp, x, y, width , height , 0xffffffff);
+	       FreeVec((APTR) img);
+	}
+    }
+    else
+    {
+	GetDTAttrs(o, PDTA_DestBitMap, (IPTR)&bitmap, TAG_DONE);
+	if (NULL == bitmap)
+	    GetDTAttrs(o, PDTA_BitMap, (IPTR)&bitmap, TAG_DONE);
+
+
+	if (bitmap)
+	{
+		    APTR mask = NULL;
+       
+	    GetDTAttrs(o, PDTA_MaskPlane, (IPTR)&mask, TAG_DONE);
+	    if (mask)
+	    {
+	    #ifndef __AROS__
+		MyBltMaskBitMapRastPort(bitmap, 0, 0, rp, x, y,
+					dt_width(node), dt_height(node), 0xe0,
+					(PLANEPTR)mask);
+	    #else
+		BltMaskBitMapRastPort(bitmap, 0, 0, rp, x, y,
+				      dt_width(node), dt_height(node), 0xe0,
+				      (PLANEPTR)mask);	
+	    #endif
+	    }
+	    else
+		BltBitMapRastPort(bitmap, 0, 0, rp, x, y,
+				  dt_width(node), dt_height(node), 0xc0);
+
+	}
+
+    }
+}
+
+
 #define RECTSIZEX(r) ((r)->MaxX-(r)->MinX+1)
 #define RECTSIZEY(r) ((r)->MaxY-(r)->MinY+1)
 
