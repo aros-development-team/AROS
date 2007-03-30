@@ -812,7 +812,7 @@ void zune_imspec_drawbuffered (struct MUI_ImageSpec_intern *spec, struct RastPor
         {                      
            if (strcmp(&straddr[len-4],".mim")==0)
            {                                  
-            dt_put_imi_on_rastport(spec->u.brush.dt[0], mri->mri_RastPort,
+            dt_put_mim_on_rastport(spec->u.brush.dt[0], mri->mri_RastPort,
 					 left-dx, top-dy, state);
            break;                                              
            }   
