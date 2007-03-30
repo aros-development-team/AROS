@@ -342,7 +342,7 @@ void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y)
     }
 }
 
-void dt_put_imi_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y,int state)
+void dt_put_mim_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y,int state)
 {
     struct BitMap *bitmap = NULL;
     struct	pdtBlitPixelArray pa;
@@ -354,14 +354,14 @@ void dt_put_imi_on_rastport(struct dt_node *node, struct RastPort *rp, int x, in
     o = node->o;
     if (NULL == o)
 	return;
-
-     depth = (ULONG) GetBitMapAttr(rp->BitMap, BMA_DEPTH);
-     if ((depth >= 15) && (node->mask == mskHasAlpha))
+    int width  = dt_width(node) >> 1;
+    depth = (ULONG) GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+    if ((depth >= 15) && (node->mask == mskHasAlpha))
     {
-   	img = (ULONG *) AllocVec(dt_width(node) * dt_height(node) * 4, MEMF_ANY);
-        if (img)
-	{
-               int width  = dt_width(node) >> 1;
+   		img = (ULONG *) AllocVec(dt_width(node) * dt_height(node) * 4, MEMF_ANY);
+			if (img)
+		{
+              
                int height = dt_height(node);
                pa.MethodID = PDTM_READPIXELARRAY;
                pa.pbpa_PixelData = (UBYTE *) img;
@@ -374,7 +374,7 @@ void dt_put_imi_on_rastport(struct dt_node *node, struct RastPort *rp, int x, in
                DoMethodA(o, (Msg) &pa);
 	       WritePixelArrayAlpha(img, 0, 0, width * 4, rp, x, y, width , height , 0xffffffff);
 	       FreeVec((APTR) img);
-	}
+	   }
     }
     else
     {
@@ -391,18 +391,18 @@ void dt_put_imi_on_rastport(struct dt_node *node, struct RastPort *rp, int x, in
 	    if (mask)
 	    {
 	    #ifndef __AROS__
-		MyBltMaskBitMapRastPort(bitmap, 0, 0, rp, x, y,
-					dt_width(node), dt_height(node), 0xe0,
-					(PLANEPTR)mask);
+		MyBltMaskBitMapRastPort(bitmap, width*state, 0, rp, x, y,
+					            width, dt_height(node), 0xe0,
+					           (PLANEPTR)mask);
 	    #else
-		BltMaskBitMapRastPort(bitmap, 0, 0, rp, x, y,
-				      dt_width(node), dt_height(node), 0xe0,
-				      (PLANEPTR)mask);	
+		BltMaskBitMapRastPort(bitmap, width*state, 0, rp, x, y,
+				              width, dt_height(node), 0xe0,
+				             (PLANEPTR)mask);	
 	    #endif
 	    }
 	    else
-		BltBitMapRastPort(bitmap, 0, 0, rp, x, y,
-				  dt_width(node), dt_height(node), 0xc0);
+		BltBitMapRastPort(bitmap, width*state, 0, rp, x, y,
+				  width, dt_height(node), 0xc0);
 
 	}
 

@@ -18,7 +18,7 @@ void dt_dispose_picture(struct dt_node *node);
 int dt_width(struct dt_node *node);
 int dt_height(struct dt_node *node);
 void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y);
-void dt_put_imi_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y, int state);
+void dt_put_mim_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y, int state);
 
 void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp, int x1, int y1, int x2, int y2, int xoffset, int yoffset);
 void dt_put_on_rastport_quicktiled(struct RastPort *rp, struct dt_node *node, UWORD x, UWORD y, UWORD w, UWORD h);
