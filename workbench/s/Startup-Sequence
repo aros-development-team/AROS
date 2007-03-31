@@ -20,7 +20,7 @@ Assign FONTS:   SYS:Fonts
 Assign >NIL: Fonts: SYS:Fonts/Russian ADD
 Assign HELP:    LOCALE:Help DEFER
 Assign THEMES:  SYS:System/Themes
-Assign THEME:   THEMES:Mason
+Assign THEME:   THEMES:ice
 Assign IMAGES:  SYS:System/Images DEFER
 ;Assign PRINTERS: DEVS:Printers
 Assign WANDERER: SYS:System/Wanderer DEFER
@@ -75,6 +75,8 @@ If EXISTS C:RexxMast
     Assign REXX: S:
     Run <NIL: >NIL: C:RexxMast
 EndIf
+
+C:Decoration <NIL: >NIL: 
 
 If EXISTS ENV:SYS/Packages
     List ENV:SYS/Packages NOHEAD FILES TO T:P LFORMAT="If EXISTS $SYS/Packages/%s*NCD $SYS/Packages/%s*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*N"
