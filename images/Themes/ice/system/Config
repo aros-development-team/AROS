@@ -1,70 +1,55 @@
 /* ===================== dAmir - Glasstic theme =============================== */
+CloseRight = No    /* Yes -> put the Close image to the right */
 
-SBarGadgetAutoSize  = Yes  /* Bitmap determines gadget size? */
-WBarGadgetAutoSize  = Yes
-ArrowGadgetAutoSize = Yes
-SizeGadgetAutoSize  = Yes
+BaseColors = 0x00eeeeee 0x00dddddd  /* base color fore activated and deactivated borderlines ARGB format */
 
-BaseColors = 0x00eeeeee 0x00dddddd
+RightBorderGads = 21  /* width of the right border when gadgets are used */
+BottomBorderGads = 21 /* height of the bottom border when gadgets are used */
 
-RightBorderGads = 21
-BottomBorderGads = 21
+/* the following configuration values are double ints, the first is an offset, the 2nd a width/hight */
 
-ContainerTop = 0 3
-ContainerVertTile = 4 100
-ContainerBottom = 193 3
+ContainerTop = 0 3           /* top part of the propotional container */
+ContainerVertTile = 4 100    /* the tileable part of the container */
+ContainerBottom = 193 3      /* the bottom part of the container */
 
-ContainerLeft = 0 3
+ContainerLeft = 0 3          /* as above but for the vertical bars */
 ContainerHorTile = 4 100
 ContainerRight = 193 3
 
+/* knobs consist of a top/left, a upper/left tileable part, a gripper, a bottom/right tileable part and a bottom/right part */
+KnobTop = 0 3                /* upper part of the knob */
+KnobTileTop = 10 40          /* the upper tileable part */
+KnobVertGripper = 62 12      /* the gripper */
+KnobTileBottom = 80 40       /* the bottom tileable part */
+KnobBottom = 137 3           /* the bottom part */
 
-KnobTop = 0 3
-KnobTileTop = 10 40
-KnobVertGripper = 62 12
-KnobTileBottom = 80 40
-KnobBottom = 137 3 
-
-KnobLeft = 0 3
+KnobLeft = 0 3               /* as above but for horizontal knob */
 KnobTileLeft = 10 40
 KnobHorGripper = 66 12
 KnobTileRight = 80 40
 KnobRight = 137 3 
 
-
-AddUpDown = 0 2 	/* up and down images */
-AddLeftRight = 2 0
-
 /* =================================================================== */
 
-UseGradients = Yes
-ActivatedGradient = 0xf3f3f3 0xf1f1f1 0
-DeactivatedGradient = 0xf2f2f2 0xf2f2f2 0
+UseGradients = Yes           /* when Yes, than use gradients instead of the default image in Borders */
+ActivatedGradient = 0xf3f3f3 0xf1f1f1 0     /* top bottom and arc for the Activated Gradient (ARGB Format) maybe arc does not work */
+DeactivatedGradient = 0xf2f2f2 0xf2f2f2 0   /* same but for deactivated windows */
 
 NoInactiveSelected = No   /* Window border gadgets have only 3 states? */
-OverrideTextures   = No  /* Textures in bitmap set override gui.prefs? */
-ForceBorderless    = No  /* Fully borderless system gadgets? */
-
-SBarGadgetFullExtent  = Yes  /* Render all pixels in the gadget box? */
-WBarGadgetFullExtent  = Yes
-ArrowGadgetFullExtent = Yes
-SizeGadgetFullExtent  = No
 
 /* =================================================================== */
 
-SBarHeight = 18         
-LogoOffset = 0
-TitleOffset = 20
+SBarHeight = 18           /* height of the Screentitlebar */
+LogoOffset = 0            /* put the Screenlogo at this offset (horizontal position) */
+TitleOffset = 20          /* offset for the Title of a Screen */
 
 /* =================================================================== */
 
-BarHeight    = 25        /* Height of titlebar */
+BarHeight    = 25        /* Height of window titlebar */
 
-BarLayout    = Vertical  /* Horizontal (default) or Vertical */
-BarEdges     = No        /* Draw bright/dark/flat edges around titlebar? */
-BarRounded   = No       /* Titlebar corners should be rounded? */
+BarLayout    = Vertical  /* Horizontal (default) or Vertical, should be Vertical */
+BarRounded   = No        /* Titlebar top corners should be rounded? (BETA maybe it will not work 100%) */
 BarMasking   = No        /* Picture mask defines titlebar shape? */
-BarNarrow = No 
 
 /* =================================================================== */
 
@@ -84,9 +69,8 @@ BarPost        =  295  5  /* Right end of titlebar if no gadgets precede */
 
 /* =================================================================== */
 
-BarSideJoinLeft   = 0  /* Width of join below left side of titlebar */
-BarSideJoinRight  = 0  /* Width of join below right side of titlebar */
-BarSideJoinHeight = 0  /* Height of joins below titlebar sides */
+
+/* sizes of borders when no gadgets are alive */
 
 LeftBorder = 10
 RightBorder = 10
