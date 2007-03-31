@@ -21,6 +21,7 @@
 #include "wanderer.h"
 #include "wandererprefs.h"
 #include "iconwindow.h"
+#include "iconwindowcontents.h"
 
 #include <aros/debug.h>
 
@@ -153,7 +154,7 @@ void IconWindow__SetupToolbar (Class *CLASS, Object *self)
 }
 Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    Object              *iconList, 
+    Object              *iconList,  *windowContent,
                         *extGroupTop,  // extension group top
                         *extGroupTopContainer; // around extension group
     BOOL                isRoot,
@@ -175,6 +176,10 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         iconList = (IPTR) IconVolumeListObject,
             MUIA_Font, (IPTR) WindowFont,
         End;
+
+		 windowContent = (IPTR) IconWindowContentsObject,
+                MUIA_IconListview_IconList,     (IPTR) iconList,
+            End;
     }
     else
     {
@@ -183,6 +188,11 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             MUIA_Font, (IPTR) WindowFont,
             MUIA_IconDrawerList_Drawer, (IPTR) drawer,
         End;
+		
+		 windowContent = (IPTR) IconListviewObject,
+                MUIA_IconListview_UseWinBorder,        TRUE,
+                MUIA_IconListview_IconList,     (IPTR) iconList,
+            End;
     }
 
     D(bug("[iconwindow] Font @ %x\n", WindowFont));
@@ -203,7 +213,6 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             MUIA_Group_Spacing, 0,
             InnerSpacing(0,0),
             
-            
             Child, ( IPTR )( extGroupTopContainer = HGroup,
                 
                 /* extension on top of the list */
@@ -222,10 +231,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             End ),
             
             /* icon list */
-            Child, (IPTR) IconListviewObject,
-                MUIA_IconListview_UseWinBorder,        TRUE,
-                MUIA_IconListview_IconList,     (IPTR) iconList,
-            End,
+            Child, (IPTR) windowContent,
             
         End,
         
