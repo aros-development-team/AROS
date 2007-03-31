@@ -39,7 +39,8 @@
 
 struct IconWindowContents_DATA
 {
-	struct  MUI_EventHandlerNode iwd_EventHandlerNode;
+	struct  MUI_EventHandlerNode iwcd_EventHandlerNode;
+	Object 									    *iwcd_IconList;
 };
 
 /*** Macros *****************************************************************/
@@ -74,6 +75,7 @@ D(bug("[iconwindowcontents] IconWindowContents__OM_NEW:  IconList @ %x\n", iconL
     if (self != NULL)
     {
         SETUP_INST_DATA;
+		data->iwcd_IconList = iconList;
     }
         
     return self;
@@ -118,13 +120,13 @@ IPTR IconWindowContents__MUIM_Setup
 		{
 D(bug("[iconwindowcontents] IconWindowContents__MUIM_Window_Setup: Setting up EventHandler for (IDCMP_DISKINSERTED | IDCMP_DISKREMOVED)\n"));
 		
-			data->iwd_EventHandlerNode.ehn_Priority = 1;
-			data->iwd_EventHandlerNode.ehn_Flags    = MUI_EHF_GUIMODE;
-			data->iwd_EventHandlerNode.ehn_Object   = self;
-			data->iwd_EventHandlerNode.ehn_Class    = CLASS;
-			data->iwd_EventHandlerNode.ehn_Events   = IDCMP_DISKINSERTED | IDCMP_DISKREMOVED;
+			data->iwcd_EventHandlerNode.ehn_Priority = 1;
+			data->iwcd_EventHandlerNode.ehn_Flags    = MUI_EHF_GUIMODE;
+			data->iwcd_EventHandlerNode.ehn_Object   = self;
+			data->iwcd_EventHandlerNode.ehn_Class    = CLASS;
+			data->iwcd_EventHandlerNode.ehn_Events   = IDCMP_DISKINSERTED | IDCMP_DISKREMOVED;
 
-			DoMethod(_win(self), MUIM_Window_AddEventHandler, &data->iwd_EventHandlerNode);
+			DoMethod(_win(self), MUIM_Window_AddEventHandler, &data->iwcd_EventHandlerNode);
 		}
 		else
 		{
@@ -146,7 +148,7 @@ IPTR IconWindowContents__MUIM_Cleanup
 
 	if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
 	{
-	  DoMethod(_win(self), MUIM_Window_RemEventHandler, &data->iwd_EventHandlerNode);
+	  DoMethod(_win(self), MUIM_Window_RemEventHandler, &data->iwcd_EventHandlerNode);
 	}
 
     return DoSuperMethodA(CLASS, self, message);
@@ -165,12 +167,14 @@ D(bug("[IconWindowContents] IconWindowContents__MUIM_HandleEvent()\n"));
     if(imsg->Class == IDCMP_DISKINSERTED) 
 	{
 D(bug("[IconWindowContents] IconWindowContents__MUIM_HandleEvent: IDCMP_DISKINSERTED\n"));
-      return(MUI_EventHandlerRC_Eat);
+		DoMethod(data->iwcd_IconList, MUIM_IconList_Update);
+		return(MUI_EventHandlerRC_Eat);
 	}
 	else if (imsg->Class == IDCMP_DISKREMOVED) 
 	{
 D(bug("[IconWindowContents] IconWindowContents__MUIM_HandleEvent: IDCMP_DISKREMOVED\n"));
-      return(MUI_EventHandlerRC_Eat);
+		DoMethod(data->iwcd_IconList, MUIM_IconList_Update);
+		return(MUI_EventHandlerRC_Eat);
 	}
     return 0;
 }
