@@ -3,8 +3,12 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-complete : workbench-images
+#MM- workbench-complete : workbench-images workbench-images-themes
 #MM workbench-images : setup
 
 workbench-images : files-copy
 %copy_files_q files="$(wildcard *.png) $(wildcard *.jpg)" dst=$(AROS_IMAGES)
+
+%copy_dir_recursive mmake=workbench-images-themes src=Themes dst=$(AROSDIR)/System/Themes
+
+

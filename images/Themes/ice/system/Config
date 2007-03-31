@@ -1,0 +1,93 @@
+/* ===================== dAmir - Glasstic theme =============================== */
+
+SBarGadgetAutoSize  = Yes  /* Bitmap determines gadget size? */
+WBarGadgetAutoSize  = Yes
+ArrowGadgetAutoSize = Yes
+SizeGadgetAutoSize  = Yes
+
+BaseColors = 0x00eeeeee 0x00dddddd
+
+RightBorderGads = 21
+BottomBorderGads = 21
+
+ContainerTop = 0 3
+ContainerVertTile = 4 100
+ContainerBottom = 193 3
+
+ContainerLeft = 0 3
+ContainerHorTile = 4 100
+ContainerRight = 193 3
+
+
+KnobTop = 0 3
+KnobTileTop = 10 40
+KnobVertGripper = 62 12
+KnobTileBottom = 80 40
+KnobBottom = 137 3 
+
+KnobLeft = 0 3
+KnobTileLeft = 10 40
+KnobHorGripper = 66 12
+KnobTileRight = 80 40
+KnobRight = 137 3 
+
+
+AddUpDown = 0 2 	/* up and down images */
+AddLeftRight = 2 0
+
+/* =================================================================== */
+
+UseGradients = Yes
+ActivatedGradient = 0xf3f3f3 0xf1f1f1 0
+DeactivatedGradient = 0xf2f2f2 0xf2f2f2 0
+
+NoInactiveSelected = No   /* Window border gadgets have only 3 states? */
+OverrideTextures   = No  /* Textures in bitmap set override gui.prefs? */
+ForceBorderless    = No  /* Fully borderless system gadgets? */
+
+SBarGadgetFullExtent  = Yes  /* Render all pixels in the gadget box? */
+WBarGadgetFullExtent  = Yes
+ArrowGadgetFullExtent = Yes
+SizeGadgetFullExtent  = No
+
+/* =================================================================== */
+
+SBarHeight = 18         
+LogoOffset = 0
+TitleOffset = 20
+
+/* =================================================================== */
+
+BarHeight    = 25        /* Height of titlebar */
+
+BarLayout    = Vertical  /* Horizontal (default) or Vertical */
+BarEdges     = No        /* Draw bright/dark/flat edges around titlebar? */
+BarRounded   = No       /* Titlebar corners should be rounded? */
+BarMasking   = No        /* Picture mask defines titlebar shape? */
+BarNarrow = No 
+
+/* =================================================================== */
+
+BarPre         =   0  5  /*   Left end of titlebar if no gadgets follow */
+BarPreGadget   =   0  5  /* Left end of titlebar if some gadgets follow */
+BarLGadgetFill =   10 10 /*  Tileable background for left-side gadgets */
+BarJoinGB      =   100 5 /* Join between gadgets and left part of dragbar */
+BarLFill       =   10  5 /*  Tileable background for left part of dragbar */
+BarJoinBT      =   70 10  /* Join between left part of dragbar and title */
+BarTitleFill   =   10 1 /* Tileable background for title */
+BarJoinTB      =   70 10  /*  Join between title and right part of dragbar */
+BarRFill       =  100 1  /* Tileable background for right part of dragbar */
+BarJoinBG      =  210 10  /* Join between right part of dragbar and gadgets */
+BarRGadgetFill =  10 1 /* Tileable background for right-side gadgets */
+BarPostGadget  =  295  5  /* Right end of titlebar if some gadgets precede */
+BarPost        =  295  5  /* Right end of titlebar if no gadgets precede */
+
+/* =================================================================== */
+
+BarSideJoinLeft   = 0  /* Width of join below left side of titlebar */
+BarSideJoinRight  = 0  /* Width of join below right side of titlebar */
+BarSideJoinHeight = 0  /* Height of joins below titlebar sides */
+
+LeftBorder = 10
+RightBorder = 10
+BottomBorder = 10
