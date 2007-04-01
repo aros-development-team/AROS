@@ -1,5 +1,5 @@
 /* ===================== dAmir - Glasstic theme =============================== */
-CloseRight = No    /* Yes -> put the Close image to the right */
+CloseRight = No    /* put the Close image to the left */
 
 BaseColors = 0x00eeeeee 0x00dddddd  /* base color fore activated and deactivated borderlines ARGB format */
 
@@ -31,7 +31,7 @@ KnobRight = 137 3
 
 /* =================================================================== */
 
-UseGradients = Yes           /* when Yes, than use gradients instead of the default image in Borders */
+UseGradients = Yes           /* use gradients instead of the default image in Borders */
 ActivatedGradient = 0xf3f3f3 0xf1f1f1 0     /* top bottom and arc for the Activated Gradient (ARGB Format) maybe arc does not work */
 DeactivatedGradient = 0xf2f2f2 0xf2f2f2 0   /* same but for deactivated windows */
 
