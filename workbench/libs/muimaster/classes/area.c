@@ -715,6 +715,10 @@ static IPTR Area__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
+    	case MUIA_Background:
+	    STORE = (IPTR)data->mad_Background;
+	    return TRUE;
+	    
         case MUIA_BottomEdge:
             STORE = (IPTR)_bottom(obj);
             return TRUE;
