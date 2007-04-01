@@ -1,5 +1,5 @@
 /* ===================== dAmir - Glasstic theme =============================== */
-CloseRight = No    /* put the Close image to the left */
+CloseRight = No    /* put the Close image to the right */
 
 BaseColors = 0x00eeeeee 0x00dddddd  /* base color fore activated and deactivated borderlines ARGB format */
 
@@ -55,15 +55,15 @@ BarMasking   = No        /* Picture mask defines titlebar shape? */
 
 BarPre         =   0  5  /*   Left end of titlebar if no gadgets follow */
 BarPreGadget   =   0  5  /* Left end of titlebar if some gadgets follow */
-BarLGadgetFill =   10 10 /*  Tileable background for left-side gadgets */
+BarLGadgetFill =   10 60 /*  Tileable background for left-side gadgets */
 BarJoinGB      =   100 5 /* Join between gadgets and left part of dragbar */
-BarLFill       =   10  5 /*  Tileable background for left part of dragbar */
+BarLFill       =   10  60 /*  Tileable background for left part of dragbar */
 BarJoinBT      =   70 10  /* Join between left part of dragbar and title */
-BarTitleFill   =   10 1 /* Tileable background for title */
+BarTitleFill   =   10 60 /* Tileable background for title */
 BarJoinTB      =   70 10  /*  Join between title and right part of dragbar */
-BarRFill       =  100 1  /* Tileable background for right part of dragbar */
+BarRFill       =  100 100  /* Tileable background for right part of dragbar */
 BarJoinBG      =  210 10  /* Join between right part of dragbar and gadgets */
-BarRGadgetFill =  10 1 /* Tileable background for right-side gadgets */
+BarRGadgetFill =  10 60 /* Tileable background for right-side gadgets */
 BarPostGadget  =  295  5  /* Right end of titlebar if some gadgets precede */
 BarPost        =  295  5  /* Right end of titlebar if no gadgets precede */
 
