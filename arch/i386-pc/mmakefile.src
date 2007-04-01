@@ -31,6 +31,7 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-bootmenu-kobj \
 #MM     workbench-libs-partition-kobj \
 #MM     workbench-fs-afs-kobj \
+#MM	contrib-sfs-kobj \
 #MM     workbench-hidd-graphics-kobj \
 #MM     aminet-disk-cdrom-amicdrom-kobj \
 #MM     kernel-cpu-pc-i386-kobj \
