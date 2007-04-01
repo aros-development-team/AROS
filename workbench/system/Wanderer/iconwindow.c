@@ -95,22 +95,44 @@ void IconWindow__SetupToolbar (Class *CLASS, Object *self)
     // the toolbar panel
     Object *toolbarPanel = MUI_NewObject ( MUIC_Group,
         InnerSpacing(0,0),
-        MUIA_Group_Horiz, TRUE,
-        MUIA_Weight, 100,
-        Child, (IPTR)GroupObject,
-            InnerSpacing(0,0),
-            MUIA_Weight, 100,
+        MUIA_Group_Horiz, FALSE,
+        MUIA_Frame, MUIV_Frame_None,
+        Child, (IPTR)HGroup,
+            InnerSpacing(4,4),
             MUIA_Group_Horiz, TRUE,
-            Child, (IPTR)( strObj = StringObject,
-                MUIA_String_Contents, (IPTR)"",
-                MUIA_Frame, MUIV_Frame_String,
-            End ),
+            MUIA_Frame, MUIV_Frame_None,
+            MUIA_Weight, 100,
+            Child, (IPTR)GroupObject,
+                InnerSpacing(0,0),
+                MUIA_Weight, 100,
+                MUIA_Group_Horiz, TRUE,
+                Child, (IPTR)( strObj = StringObject,
+                    MUIA_String_Contents, (IPTR)"",
+                    MUIA_Frame, MUIV_Frame_String,
+                End ),
+            End,
+            Child, (IPTR)HGroup,
+                InnerSpacing(0,0),
+                MUIA_Group_Spacing, 0,
+                MUIA_Weight, 0,
+                Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
+                /*Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),*/
+            End,
         End,
         Child, (IPTR)HGroup,
             InnerSpacing(0,0),
-            MUIA_Weight, 1,
-            Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
-            Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
+            MUIA_Group_Spacing, 0,
+            MUIA_FixHeight, 1,
+            MUIA_Frame, MUIV_Frame_None,
+            MUIA_Background, MUII_SHADOW,
+            Child, ( IPTR )RectangleObject,
+                MUIA_FixHeight, 1,
+                MUIA_Frame, MUIV_Frame_None,
+            End,
+            Child, ( IPTR )RectangleObject,
+                MUIA_FixHeight, 1,
+                MUIA_Frame, MUIV_Frame_None,
+            End,
         End,
     TAG_DONE );
     
@@ -118,14 +140,14 @@ void IconWindow__SetupToolbar (Class *CLASS, Object *self)
     // copied to the data of the object
     if ( toolbarPanel != NULL )
     {
-        set ( data->iwd_extGroupTC, MUIA_Frame, MUIV_Frame_Group );
-        set ( data->iwd_extGroupTC, MUIA_Group_HorizSpacing, 3 );
-        set ( data->iwd_extGroupTC, MUIA_Group_VertSpacing, 3 );
+        set ( data->iwd_extGroupTC, MUIA_Frame, MUIV_Frame_None );
+        set ( data->iwd_extGroupTC, MUIA_Group_Spacing, 3 );
     
         set ( bt_dirup, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
         set ( bt_dirup, MUIA_Frame, MUIV_Frame_None );
-        set ( bt_search, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
-        set ( bt_search, MUIA_Frame, MUIV_Frame_None );
+        //set ( bt_search, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
+        //set ( bt_search, MUIA_Frame, MUIV_Frame_None );
+        
         DoMethod( data->iwd_extGroupTop, MUIM_Group_InitChange );
         DoMethod( data->iwd_extGroupTop, OM_ADDMEMBER, (IPTR)toolbarPanel );
         DoMethod( data->iwd_extGroupTop, MUIM_Group_ExitChange );
@@ -215,6 +237,8 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             
             Child, ( IPTR )( extGroupTopContainer = HGroup,
                 
+                InnerSpacing(0,0),
+                MUIA_Group_Spacing, 0,
                 /* extension on top of the list */
                 Child, (IPTR) (extGroupTop = GroupObject,
                     InnerSpacing(0,0),
@@ -223,11 +247,6 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_Weight, 100,
                 End),
                 
-                Child, (IPTR) RectangleObject,
-                    InnerSpacing(0,0),
-                    MUIA_Frame, MUIV_Frame_None,
-                    MUIA_Weight, 1,
-                End,
             End ),
             
             /* icon list */
@@ -256,6 +275,17 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         /* no tool bar when root */
         if (!isRoot && hasToolbar)
             IconWindow__SetupToolbar(CLASS,self);
+        else
+        {
+            Object *VoidRect = (IPTR)RectangleObject, 
+                InnerSpacing (0,0), 
+                MUIA_Weight, 1,
+                MUIA_Frame, MUIV_Frame_None, 
+            End;
+            DoMethod ( data->iwd_extGroupTC, MUIM_Group_InitChange );
+            DoMethod ( data->iwd_extGroupTC, OM_ADDMEMBER, (IPTR)VoidRect );
+            DoMethod ( data->iwd_extGroupTC, MUIM_Group_ExitChange );
+        }
             
         /*
             If double clicked then we call our own private methods, that's 
