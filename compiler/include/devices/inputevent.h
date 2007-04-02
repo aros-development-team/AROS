@@ -138,7 +138,7 @@ struct InputEvent
 #define IEQUALIFIER_LCOMMAND        (1<<6)
 #define IEQUALIFIERB_RCOMMAND           7
 #define IEQUALIFIER_RCOMMAND        (1<<7)
-#define IEQUALIFIERB_NUMERICPATH        8
+#define IEQUALIFIERB_NUMERICPAD         8
 #define IEQUALIFIER_NUMERICPAD      (1<<8)
 #define IEQUALIFIERB_REPEAT             9
 #define IEQUALIFIER_REPEAT          (1<<9)
