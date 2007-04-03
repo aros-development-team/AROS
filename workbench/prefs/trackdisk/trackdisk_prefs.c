@@ -39,6 +39,8 @@ struct WindowGroup MainGrp;
 struct TrackdiskPrefs TDPrefs;
 struct IORequest TDIO;
 
+const char __version__[] = "\0$VER: Trackdisk prefs 41.2 (2007-31-03)";
+
 #ifdef __AROS__
 AROS_UFH3(ULONG, Start,
 	  AROS_UFHA(char *, argstr, A0),
@@ -141,6 +143,7 @@ ULONG Main(void)
 				DoMethod(SaveButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, 1);
 				DoMethod(UseButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, 2);
 				DoMethod(CancelButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+				DoMethod(MainWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 				SetAttrs(MainWin, MUIA_Window_Open, TRUE);
 				while (retval != MUIV_Application_ReturnID_Quit) {
 					retval = DoMethod(App, MUIM_Application_NewInput, &signals);
@@ -261,3 +264,4 @@ void UsePrefs(void)
 		}
 	}
 }
+
