@@ -105,7 +105,7 @@ void ProcessPackets(void) {
                 if (fl && fl->fl_Key != FAT_ROOTDIR_MARK)
                     err = LockParent(fl, SHARED_LOCK, &res);
                 else
-                    err = 0;
+                    err = ERROR_OBJECT_NOT_FOUND;
 
                 break;
             }
@@ -143,6 +143,9 @@ void ProcessPackets(void) {
             case ACTION_EXAMINE_NEXT: {
                 struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
                 struct FileInfoBlock *fib = BADDR(packet->dp_Arg2);
+                struct DirHandle dh;
+                struct DirEntry de;
+                BPTR b; struct ExtFileLock *temp_lock;
 
                 kprintf("\nGot ACTION_EXAMINE_NEXT\n");
                 kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, fl->fl_Key);
@@ -150,8 +153,37 @@ void ProcessPackets(void) {
                 if ((err = TestLock(fl)))
                     break;
 
-                if ((err = ReadNextDirEntry(fl, fib)) == 0)
-                    res = DOSTRUE;
+                if ((err = InitDirHandle(glob->sb, fl->first_cluster, &dh)))
+                    break;
+
+                dh.cur_index = fib->fib_DiskKey;
+
+                if ((err = GetNextDirEntry(&dh, &de))) {
+                    if (err == ERROR_OBJECT_NOT_FOUND)
+                        err = ERROR_NO_MORE_ENTRIES;
+                    ReleaseDirHandle(&dh);
+                    break;
+                }
+
+                if ((err = LockFile(dh.cur_index, fl->first_cluster, SHARED_LOCK, &b))) {
+                    ReleaseDirHandle(&dh);
+                    break;
+                }
+                temp_lock = BADDR(b);
+
+                if ((err = FillFIB(temp_lock, fib))) {
+                    FreeLock(temp_lock);
+                    ReleaseDirHandle(&dh);
+                    break;
+                }
+
+                fib->fib_DiskKey = dh.cur_index;
+
+                FreeLock(temp_lock);
+
+                ReleaseDirHandle(&dh);
+
+                res = DOSTRUE;
 
                 break;
             }

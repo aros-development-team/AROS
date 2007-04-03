@@ -13,6 +13,9 @@
 #ifndef FAT_HANDLER_SUPPORT_H
 #define FAT_HANDLER_SUPPORT_H
 
+#include <exec/types.h>
+#include <dos/dosextens.h>
+
 void ReturnPacket(struct DosPacket *packet, LONG res1, LONG res2);
 struct DosPacket *GetPacket(struct MsgPort *port);
 void SendEvent(LONG event);

@@ -62,21 +62,51 @@ struct Extent {
     ULONG last_cluster;     /* last cluster in the extent */
 };
 
-/* directory cache. this is a reference to an entire directory */
-struct DirCache {
-    struct Extent *e;       /* extent for this directory */
-    void *buffer;           /* current sector data */
-    ULONG cur_sector;       /* current sector number (from start of dir) */
+
+/* a handle on a directory */
+struct DirHandle {
+    struct FSSuper      *sb;            /* filesystem data */
+
+    ULONG               first_cluster;  /* first cluster of this directory */
+    ULONG               cur_cluster;    /* cluster that the current sector is within */
+
+    ULONG               cluster_offset; /* cluster number of this cluster within the current dir */
+
+    ULONG               first_sector;   /* first sector in the first cluster, for fat12/16 root dir */
+    ULONG               cur_sector;     /* sector number the current entry is within */
+
+    ULONG               sector_offset;  /* current sector as an offset in the current cluster
+                                           ie cur = sector(cur_cluster) + offset */
+
+    ULONG               cur_index;      /* last entry returned, for GetNextDirEntry */
+
+    struct cache_block  *block;         /* current block from the cache */
 };
- 
-#define fl_Key entry
+
+/* single directory entry */
+struct DirEntry {
+    struct FSSuper      *sb;            /* filesystem data */
+
+    ULONG               cluster;        /* cluster the containing directory starts at */
+    ULONG               index;          /* index of this entry */
+    
+    ULONG               sector;         /* absolute sector number this entry came from */
+    ULONG               offset;         /* byte offset within that sector */
+
+    union {
+        struct FATDirEntry      entry;
+        struct FATLongDirEntry  long_entry;
+    } e;
+};
+
+#define fl_Key dir_entry
 
 #define FAT_ROOTDIR_MARK    0xFFFFFFFFlu
 
 struct ExtFileLock {
     /* struct FileLock */
     BPTR            fl_Link;
-    ULONG           entry;
+    ULONG           dir_entry;  /* was fl_Key. this is our dir entry within dir_cluster */
     LONG            fl_Access;
     struct MsgPort *fl_Task;
     BPTR            fl_Volume;
@@ -84,8 +114,7 @@ struct ExtFileLock {
     /* coinsistency check */
     ULONG           magic;   
 
-    /* my directory start cluster */
-    ULONG           cluster;
+    ULONG           dir_cluster;    /* first cluster of directory we're in */
 
     ULONG           attr;
     ULONG           size;
@@ -93,15 +122,12 @@ struct ExtFileLock {
 
     struct Extent   data_ext[1];
 
-    /* dir entry cache for easy and quick management of long files */
-
     /* used in directory scanning and file reading */
     ULONG           pos;
 
     UBYTE           name[108];
 
-    BOOL            dircache_active;
-    struct DirCache dircache[1];
+    struct DirHandle *dirhandle;
 };
 
 struct VolumeInfo {
@@ -116,6 +142,7 @@ struct FSSuper {
     ULONG sectorsize;
     ULONG sectorsize_bits;
 
+    ULONG cluster_sectors;
     ULONG clustersize;
     ULONG clustersize_bits;
     ULONG cluster_sectors_bits;
@@ -141,7 +168,8 @@ struct FSSuper {
     ULONG fat32_cachesize_bits;
     ULONG fat32_cache_block;
 
-    struct Extent first_rootdir_extent[1];
+    ULONG rootdir_cluster;
+    ULONG rootdir_sector;
 
     struct VolumeInfo volume;
 
@@ -180,5 +208,14 @@ struct Globals {
 };
 
 #include "support.h"
+
+/* new definitions as we refactor the code */
+
+/* get the first sector of a cluster */
+#define SECTOR_FROM_CLUSTER(sb,cl) ((ULONG) (((cl-2) << sb->cluster_sectors_bits) + sb->first_data_sector))
+
+#define FIRST_FILE_CLUSTER(de)                                       \
+    (AROS_LE2WORD((de)->e.entry.first_cluster_lo) |                  \
+     (((ULONG) AROS_LE2WORD((de)->e.entry.first_cluster_hi)) << 16))
 
 #endif
