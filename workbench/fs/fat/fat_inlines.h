@@ -69,7 +69,7 @@ static inline ULONG GetFatEntry(ULONG n) {
     return glob->sb->func_get_fat_entry(glob->sb, n);
 }
 
-static inline ULONG GetFirstCluster(struct DirEntry *de) {
+static inline ULONG GetFirstCluster(struct FATDirEntry *de) {
     return AROS_LE2WORD(de->first_cluster_lo) | (((ULONG)AROS_LE2WORD(de->first_cluster_hi)) << 16);
 }
 

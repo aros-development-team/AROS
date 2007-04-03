@@ -13,17 +13,6 @@
 #ifndef FAT_HANDLER_PROTO_H
 #define FAT_HANDLER_PROTO_H
 
-/* direntry */
-LONG GetDirCacheEntry(struct FSSuper *sb, struct DirCache *dc, LONG entry, struct DirEntry **de);
-LONG SetupDirCache(struct FSSuper *sb, struct DirCache *dc, struct Extent *ext, ULONG cluster);
-LONG FreeDirCache(struct FSSuper *sb, struct DirCache *dc);
-
-void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds);
-
-LONG ReadNextDirEntry(struct ExtFileLock *fl, struct FileInfoBlock *fib);
-LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib);
-LONG FindEntryByPath(ULONG start_cluster, UBYTE *path, LONG pathlen, ULONG *dst_cluster, ULONG *dst_entry);
-
 /* fat */
 LONG ReadFATSuper (struct FSSuper *s);
 void FreeFATSuper(struct FSSuper *s);
@@ -41,8 +30,10 @@ void CountFreeClusters(struct FSSuper *sb);
 LONG File_Read(struct ExtFileLock *fl, ULONG togo, void *buffer, LONG *result);
 
 /* names.c */
-LONG GetLongName(struct FSSuper *sb, struct DirCache *dc, struct DirEntry *de, ULONG entry, STRPTR dest, UBYTE *dlen);
-LONG GetShortName(struct DirEntry *de, STRPTR dest, UBYTE *dlen);
+/*
+LONG GetLongName(struct FSSuper *sb, struct DirCache *dc, struct FATDirEntry *de, ULONG entry, STRPTR dest, UBYTE *dlen);
+LONG GetShortName(struct FATDirEntry *de, STRPTR dest, UBYTE *dlen);
+*/
 
 /* diskchange */
 void ProcessDiskChange (void);
@@ -72,6 +63,27 @@ LONG CopyLock(struct ExtFileLock *src_fl, BPTR *res);
 void ProcessPackets(void);
 
 #include "fat_inlines.h"
+
+/* new definitions as we refactor the code */
+
+/* direntry.c */
+LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh);
+LONG ReleaseDirHandle(struct DirHandle *dh);
+
+LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de);
+LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de);
+
+LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct DirEntry *de);
+LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct DirEntry *de);
+
+LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de);
+
+LONG GetDirShortName(struct DirEntry *de, STRPTR name, ULONG *len);
+LONG GetDirLongName(struct DirEntry *de, STRPTR name, ULONG *len);
+
+/* fat.c */
+void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds);
+LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib);
 
 #endif
 

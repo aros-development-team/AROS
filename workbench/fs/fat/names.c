@@ -12,108 +12,164 @@
 
 #include <exec/types.h>
 #include <dos/dos.h>
-#include <dos/dosextens.h>
-#include <dos/filehandler.h>
-
-#include <proto/exec.h>
-#include <proto/dos.h>
 
 #include <string.h>    
-#include <ctype.h>
 
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-LONG GetShortName(struct DirEntry *de, STRPTR dest, UBYTE *dlen) {
-    int i,j;
+LONG GetDirShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
+    int i;
+    UBYTE *raw, *c;
 
-    for (i=0, j=0; i < 8; i++, j++) {
-        dest[j] = tolower(de->name[i]);
-        if (de->name[i] == ' ')
-            break;
+    /* make sure the entry is good */
+    raw = de->e.entry.name;
+    if (raw[0] == 0x00 || raw[0] == 0xe5 || raw[0] == 0x20) {
+        D(bug("[fat] entry name has first byte 0x%02x, returning empty short name\n", raw[0]));
+        *name = '\0';
+        len = 0;
+        return 0;
     }
 
-    if (de->name[8] != ' ')
-        dest[j++] = '.';
+    D(bug("[fat] original name is '%10s'\n", raw));
 
-    for (i = 8;i < 11; i++, j++) {
-        dest[j] = tolower(de->name[i]);
-        if (de->name[i] == ' ')
-            break;
+    /* copy the chars into the return string */
+    c = name;
+    for (i = 0; i < 11; i++) {
+        *c = raw[i];
+
+        /*
+         * fat names are weird. the name FOO.BAR is stored as "FOO     BAR".
+         * in that case we've already copied in all the spaces, and we have to
+         * backup and insert the dot.
+         *
+         * note that spaces (0x20) is allowed in the filename, just not as the
+         * first char. see FATdoc 1.03 p24 for the details. most people don't
+         * know that about fat names. the point of this is to say that we
+         * can't just flick forward in our copying at the first sight of a
+         * space, its technically incorrect.
+         *
+         * XXX it occurs to me just now that AROS may not like spaces in its
+         * names. in that case spaces should probably be converted to
+         * underscores. that or our dos should be changed so it does allow
+         * spaces. either way, thats a project for another time.
+         */
+        if (i == 7) {
+            /* backtrack to first non-space. this is safe because the first
+             * char won't be space, we checked above */
+            while (*c == 0x20) c--;
+            
+            /* forward one and drop in the dot */
+            c++;
+            *c = '.';
+        }
+
+        /* move along */
+        c++;
     }
-    dest[j]='\0';
 
-    kprintf("\tShort filename: %s len %ld\n", (LONG)dest, j);
+    /* remove any trailing spaces, and perhaps a trailing . */
+    while (c[-1] == 0x20) c--;
+    if (c[-1] == '.') c--;
+    
+    /* all done */
+    *c = '\0';
+    *len = strlen(name);
 
-    *dlen = j;
+    D(bug("[fat] extracted short name '%.*s'\n", *len, name));
+
     return 0;
 }
 
-static inline UBYTE GetShortNameChecksum(struct DirEntry *de) {
-    UWORD len;
-    UBYTE sum;
-    UBYTE *name = de->name;
+LONG GetDirLongName(struct DirEntry *short_de, UBYTE *name, ULONG *len) {
+    UBYTE buf[256];
+    int i;
+    UBYTE *raw, *c;
+    UBYTE checksum;
+    struct DirHandle dh;
+    struct DirEntry de;
+    ULONG index;
+    UBYTE order;
+    LONG err;
 
-    sum=0;
-    for (len = 11; len != 0; len--)
-        sum = ((sum & 1) ? 0x80 : 0) + (sum >> 1) + *name++;
-    return sum;
-}
-
-LONG GetLongName(struct FSSuper *sb, struct DirCache *dc, struct DirEntry *de, ULONG entry, STRPTR dest, UBYTE *dlen) {
-    static UBYTE buff[FAT_MAX_LONG_FILENAME];
-    UBYTE *p = buff;
-    LONG err = ERROR_OBJECT_NOT_FOUND;
-    ULONG order=1;
-    UBYTE checksum = GetShortNameChecksum(de);
-
-    memset(buff, '\0', sizeof(buff));
-
-    if (entry > 0) {
-        ULONG i = entry - 1;
-
-        while (i >= 0) {
-            struct LongDirEntry *lde;
-
-            if ((err = GetDirCacheEntry(sb, dc, i, &de)) == 0) {
-                ULONG j;
-
-                lde = (struct LongDirEntry *)de;
-                if ((lde->attr & ATTR_LONG_NAME_MASK) != ATTR_LONG_NAME ||
-                    lde->checksum != checksum ||
-                    (lde->order & (0x40 - 1)) != order) {
-
-                    err = ERROR_OBJECT_NOT_FOUND;
-                    break;
-                }
-
-                for (j=0; j < sizeof(lde->name1); j+=2)
-                    *p++ = lde->name1[j];
-                for (j=0; j < sizeof(lde->name2); j+=2)
-                    *p++ = lde->name2[j];
-                for (j=0; j < sizeof(lde->name3); j+=2)
-                    *p++ = lde->name3[j];
-
-                if (lde->order & 0x40) {
-                    err = 0;
-
-                    memcpy(dest, buff, 106);
-                    dest[106] = '\0';
-
-                    *dlen = strlen(dest);
-
-                    kprintf("\tLong file name found: %s len %ld\n", (LONG)buff, *dlen);
-
-                    break;
-                }
-
-                i--;
-                order++;
-            }
-            else
-                break;
-        }
+    /* make sure the entry is good */
+    raw = short_de->e.entry.name;
+    if (raw[0] == 0x00 || raw[0] == 0xe5 || raw[0] == 0x20) {
+        D(bug("[fat] entry name has first byte 0x%02x, returning empty long name\n", raw[0]));
+        *name = '\0';
+        len = 0;
+        return 0;
     }
 
-    return err;
+    D(bug("[fat] looking for long name for name '%10s' (index %ld)\n", raw, short_de->index));
+
+    /* compute the short name checksum. this value is held in every associated
+     * long name entry to help us identify it. see FATdoc 1.03 p28 */
+    checksum = 0;
+    for (i = 0; i < 11; i++)
+        checksum = ((checksum & 1) ? 0x80 : 0) + (checksum >> 1) + raw[i];
+
+    D(bug("[fat] long name checksum is 0x%02x\n", checksum));
+
+    /* get a handle on the directory */
+    InitDirHandle(short_de->sb, short_de->cluster, &dh);
+
+    /* loop over the long name entries */
+    c = buf;
+    order = 1;
+    index = short_de->index - 1;
+    while (index >= 0) {
+        D(bug("[fat] looking for long name order 0x%02x in entry %ld\n", order, index));
+
+        if ((err = GetDirEntry(&dh, index, &de)) != 0)
+            break;
+
+        /* make sure its valid */
+        if (!((de.e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_LONG_NAME) ||
+            (de.e.long_entry.order & ~0x40) != order ||
+            de.e.long_entry.checksum != checksum) {
+
+            D(bug("[fat] bad long name entry %ld (attr 0x%02x order 0x%02x checksum 0x%02x)\n",
+                  index, de.e.entry.attr, de.e.long_entry.order, de.e.long_entry.checksum));
+
+            err = ERROR_OBJECT_NOT_FOUND;
+            break;
+        }
+
+        /* copy the characters into the name buffer. note that filename
+         * entries can have null-termination, but don't have to. we take the
+         * easy way out - copy everything, and bolt on an additional null just
+         * in case. */
+
+        /* XXX these are in UTF-16, but we're just taking the bottom byte.
+         * that works well enough but is still a hack. if our dos ever
+         * supports unicode this should be revisited */
+        for (i = 0; i < 5; i++) {
+            *c = de.e.long_entry.name1[i << 1];
+            c++;
+        }
+        for (i = 0; i < 6; i++) {
+            *c = de.e.long_entry.name2[i << 1];
+            c++;
+        }
+        for (i = 0; i < 2; i++) {
+            *c = de.e.long_entry.name3[i << 1];
+            c++;
+        }
+
+        /* if this is the last entry, clean up and get us out of here */
+        if (de.e.long_entry.order & 0x40) {
+            *c = 0;
+            *len = strlen((char *) buf);
+            CopyMem(buf, name, *len);
+            return 0;
+        }
+
+        index--;
+        order++;
+    }
+
+    D(bug("[fat] long name construction failed\n"));
+
+    return ERROR_OBJECT_NOT_FOUND;
 }

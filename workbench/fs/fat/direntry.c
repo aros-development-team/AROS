@@ -12,145 +12,355 @@
 
 #include <exec/types.h>
 #include <dos/dos.h>
-#include <dos/dosextens.h>
-#include <dos/filehandler.h>
-
 #include <proto/exec.h>
-#include <proto/dos.h>
 
-#include <string.h>   
+#include "cache.h"
 
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-/* create a new directory cache. dc and ext are created by the caller, and get
- * initialised here. cluster is the first cluster of the directory list (ie
- * the root directory cluster or the cluster number referenced in the parent
- * directory */
-LONG SetupDirCache(struct FSSuper *sb, struct DirCache *dc, struct Extent *ext, ULONG cluster) {
-    kprintf("\tSetupDirCache: cluster %ld\n", cluster);
+#define RESET_HANDLE(dh)                                     \
+    do {                                                     \
+        dh->cluster_offset = dh->sector_offset = 0xffffffff; \
+        dh->cur_index = 0xffffffff;                          \
+        if (dh->block != NULL) {                             \
+            cache_put_block(glob->cache, dh->block, 0);      \
+            dh->block = NULL;                                \
+        }                                                    \
+    } while (0);
 
-    /* XXX bug? glob can be NULL at this point:
-     *   handler
-     *   ProcessDiskChange
-     *   DoDiskInsert
-     *   ReadFATSuper
-     *   ReadVolumeName
-     *   SetupDirCache
-    if ((dc->buffer = FS_AllocBlock()) == NULL) */
+LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh) {
+    dh->sb = sb;
 
-    /* allocate room for the sector buffer */
-    if ((dc->buffer = FS_AllocMem(sb->sectorsize)) == NULL)
-        return ERROR_NO_FREE_STORE;
-
-    dc->e = ext;
-
-    /* initialise the extent. if its on disk somewhere, then set it up
-     * normally */
-    if (cluster)
-        InitExtent(sb, dc->e, cluster);
-
-    /* we already know where the root directory is, so just use that */
-    else
-        memcpy(dc->e, sb->first_rootdir_extent, sizeof(struct Extent));
-
-    dc->cur_sector = 0;
-
-    /* load the first sector */
-    return FS_GetBlock(dc->e->sector, dc->buffer);
-}
-
-/* get a single entry from a directory. entry is the item to return */
-LONG GetDirCacheEntry(struct FSSuper *sb, struct DirCache *dc, LONG entry, struct DirEntry **de) {
-    LONG err = 0;
-
-    /* number of sectors into the directory to find this entry */
-    ULONG entry_sector = (entry * sizeof(struct DirEntry)) >> sb->sectorsize_bits;
-
-    /* and number of bytes into that sector to find the entry */
-    ULONG entry_offset = (entry * sizeof(struct DirEntry)) & (sb->sectorsize - 1);
-
-    kprintf("\tGetDirCacheEntry: entry %ld sector %ld offset %ld\n", entry, entry_sector, entry_offset);
-
-    /* XXX OPT check if we have the correct buffer before doing anything */
-
-    /* get to the extent containing this sector */
-    if (entry_sector < dc->e->offset || entry_sector >= dc->e->offset + dc->e->count)
-        err = SeekExtent(sb, dc->e, entry_sector);
-
-    /* load the correct sector if we don't have it already */
-    if (err == 0 && dc->cur_sector != entry_sector) {
-        kprintf("\t\tchanging sector in directory cache from %ld to %ld\n", dc->cur_sector, entry_sector);
-        err = FS_GetBlock(dc->e->sector + (entry_sector - dc->e->offset), dc->buffer);
-        dc->cur_sector = entry_sector;
+    if (cluster == 0) {
+        dh->first_cluster = sb->rootdir_cluster;
+        dh->first_sector = sb->rootdir_sector;
+    }
+    else {
+        dh->first_cluster = cluster;
+        dh->first_sector = 0;
     }
 
-    /* get a pointer to the entry within the sector */
-    if (err == 0)
-        *de = dc->buffer + entry_offset;
+    dh->block = NULL;
+
+    RESET_HANDLE(dh);
+
+    D(bug("[fat] initialised dir handle, first cluster is %ld, first sector is %ld\n", dh->first_cluster, dh->first_sector));
+
+    return 0;
+}
+
+LONG ReleaseDirHandle(struct DirHandle *dh) {
+    RESET_HANDLE(dh);
+    return 0;
+}
+
+LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de) {
+    LONG err = 0;
+    ULONG offset;
+    struct cache_block *b;
+
+    D(bug("[fat] looking for dir entry %ld in dir starting at cluster %ld\n", index, dh->first_cluster));
+
+    /* fat dirs are limited to 2^16 entries */
+    if (index >= 0x10000) {
+        D(bug("[fat] request for out-of-range index, returning not found\n"));
+        return ERROR_OBJECT_NOT_FOUND;
+    }
+    
+    /* figure out how many sectors into the directory this entry is */
+    offset = (index * sizeof(struct FATDirEntry)) >> dh->sb->sectorsize_bits;
+
+    D(bug("[fat] entry is %ld sectors into the dir\n", offset));
+
+    /* if we're not at the right sector, we need to move */
+    if (!((dh->cluster_offset == offset >> dh->sb->cluster_sectors_bits) &&
+          (dh->sector_offset == (offset & (dh->sb->cluster_sectors_bits-1))))) {
+
+        ULONG i;
+
+        /* if the first cluster is 0 then this is a fat12/16 rootdir then we
+         * have the absolute first rootdir sector available so we can just
+         * bounce off that */
+        if (dh->first_cluster == 0) {
+            /* XXX use BPB_RootEntCnt to detect us going out of bounds and
+             * return not found */
+            dh->cluster_offset = offset >> dh->sb->cluster_sectors_bits;
+            dh->cur_cluster = 0;
+            dh->sector_offset = offset - dh->first_sector;
+            dh->cur_sector = dh->first_sector + offset;
+        }
+
+        /* otherwise we've gotta try a bit harder */
+        else {
+            /* back to the start */
+            dh->cur_cluster = dh->first_cluster;
+
+            /* work out how many clusters in we should be looking */
+            dh->cluster_offset = offset >> dh->sb->cluster_sectors_bits;
+
+            D(bug("[fat] entry is %ld clusters in, finding it\n", dh->cluster_offset));
+
+            /* find it */
+            for (i = 0; i < dh->cluster_offset; i++) {
+                /* get the next one */
+                dh->cur_cluster = GetFatEntry(dh->cur_cluster);
+
+                /* if it was free (shouldn't happen) or we hit the end of the
+                 * chain, then the requested entry doesn't exist */
+                if (dh->cur_cluster == 0 || dh->cur_cluster > dh->sb->eoc_mark) {
+                    D(bug("[fat] hit empty or eoc cluster %ld, entry not found\n", dh->cur_cluster));
+
+                    RESET_HANDLE(dh);
+
+                    return ERROR_OBJECT_NOT_FOUND;
+                }
+            }
+
+            D(bug("[fat] moved to cluster %ld\n", dh->cur_cluster));
+
+            /* work out how many sectors in we should be looking */
+            dh->sector_offset = offset & (dh->sb->cluster_sectors-1);
+
+            /* simple math to find the absolute sector number */
+            dh->cur_sector = SECTOR_FROM_CLUSTER(dh->sb, dh->cur_cluster) + dh->sector_offset;
+
+            D(bug("[fat] entry is %ld sectors into the cluster, which is sector %ld\n", dh->sector_offset, dh->cur_sector));
+        }
+    }
+
+    /* if we don't have the wanted block kicking around, we need to bring it
+     * in from the cache */
+    if (dh->block == NULL || dh->cur_sector != dh->block->num) {
+        if (dh->block != NULL) {
+            cache_put_block(glob->cache, dh->block, 0);
+            dh->block = NULL;
+        }
+
+        D(bug("[fat] loading dir sector %ld\n", dh->cur_sector));
+
+        err = cache_get_block(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, dh->cur_sector, 0, &b);
+        if (err > 0) {
+            RESET_HANDLE(dh);
+
+            D(bug("[fat] couldn't load sector, return error %ld\n", err));
+
+            return err;
+        }
+
+        dh->block = b;
+    }
+
+    else
+        D(bug("[fat] using cached sector %ld\n", dh->cur_sector));
+
+
+    /* setup the return object */
+    de->sb = dh->sb;
+    de->cluster = dh->first_cluster;
+    de->index = index;
+    de->sector = dh->cur_sector;
+    de->offset = (index * sizeof(struct FATDirEntry)) & (dh->sb->sectorsize-1);
+
+    /* copy the data in */
+    CopyMem(&(dh->block->data[de->offset]), &(de->e.entry), sizeof(struct FATDirEntry));
+
+    dh->cur_index = index;
+
+    /* done! */
+    return 0;
+}
+
+LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de) {
+    LONG err;
+
+    D(bug("[fat] looking for next entry after index %ld\n", dh->cur_index));
+
+    /* cur_index defaults to -1, so this will do the right thing even on a
+     * fresh dirhandle */
+    while ((err = GetDirEntry(dh, dh->cur_index + 1, de)) == 0) {
+        /* skip unused entries */
+        if (de->e.entry.name[0] == 0xe5) {
+            D(bug("[fat] entry %ld is empty, skipping it\n", dh->cur_index));
+            continue;
+        }
+
+        /* this flag will be set for both volume name entries and long
+         * filename entries. either way we want to skip them */
+        if (de->e.entry.attr & ATTR_VOLUME_ID) {
+            D(bug("[fat] entry %ld is a volume name or long filename, skipping it\n", dh->cur_index));
+            continue;
+        }
+
+        /* end of directory, there is no next entry */
+        if (de->e.entry.name[0] == 0x00) {
+            D(bug("[fat] entry %ld is end-of-directory marker, we're done\n", dh->cur_index));
+            RESET_HANDLE(dh);
+            return ERROR_OBJECT_NOT_FOUND;
+        }
+
+        D(bug("[fat] returning entry %ld\n", dh->cur_index));
+
+        return 0;
+    }
 
     return err;
 }
 
-LONG FreeDirCache(struct FSSuper *sb, struct DirCache *dc) {
-    kprintf("\tFreeDirCache\n");
+LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
+    D(bug("[fat] getting parent for directory at cluster %ld\n", dh->first_cluster));
 
-    FS_FreeBlock(dc->buffer);
+    /* if we're already at the root, then we can't go any further */
+    if (dh->first_cluster == dh->sb->rootdir_cluster) {
+        D(bug("[fat] trying go up past the root, so entry not found\n"));
+        return ERROR_OBJECT_NOT_FOUND;
+    }
+
+    /* otherwise, the next cluster is held in the '..' entry, which is
+     * entry #1 */
+    GetDirEntry(dh, 1, de);
+
+    /* make sure its actually the parent dir entry */
+    if (!((de->e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_DIRECTORY) ||
+        strncmp((char *) de->e.entry.name, "..         ", 11) != 0) {
+        D(bug("[fat] entry index 1 does not have name '..', can't go up\n"));
+        return ERROR_OBJECT_NOT_FOUND;
+    }
+
+    /* take us up */
+    InitDirHandle(dh->sb, FIRST_FILE_CLUSTER(de), dh);
 
     return 0;
 }
-                        
-static const UWORD mdays[] = { 0, 31, 59, 90, 120, 151, 181, 212, 143, 273, 304, 334 };
 
-void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds) {
-    UBYTE year, month, day, hours, mins, secs;
-    UBYTE nleap;
+LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct DirEntry *de) {
+    UBYTE buf[256];
+    ULONG buflen;
+    LONG err;
 
-    /* date bits: yyyy yyym mmmd dddd */
-    year = (date & 0xfe00) >> 9;    /* bits 15-9 */
-    month = (date & 0x01e0) >> 5;   /* bits 8-5 */
-    day = date & 0x001f;            /* bits 4-0 */
+    D(bug("[fat] looking for dir entry with name '%.*s'\n", namelen, name));
 
-    /* time bits: hhhh hmmm mmms ssss */
-    hours = (time & 0xf800) >> 11;  /* bits 15-11 */
-    mins = (time & 0x07e0) >> 5;    /* bits 8-5 */
-    secs = time & 0x001f;           /* bits 4-0 */
+    /* start at the start */
+    RESET_HANDLE(dh);
 
-    D(bug("[fat] convert date: year %d month %d day %d hours %d mins %d secs %d\n", year, month, day, hours, mins, secs));
+    /* loop through the entries until we find a match */
+    while ((err = GetNextDirEntry(dh, de)) == 0) {
+        /* compare with the short name first, since we already have it */
+        GetDirShortName(de, buf, &buflen);
+        if (namelen == buflen && strnicmp((char *) name, (char *) buf, buflen) == 0) {
+            D(bug("[fat] matched short name '%.*s' at entry %ld, returning\n", buflen, buf, dh->cur_index));
+            return 0;
+        }
 
-    /* number of leap years in before this year. note this is only dividing by
-     * four, which is fine because FAT dates range 1980-2107. The only year in
-     * that range that is divisible by four but not a leap year is 2100. If
-     * this code is still being used then, feel free to fix it :) */
-    nleap = year >> 2;
-    
-    /* if this year is a leap year and its March or later, adjust for this
-     * year too */
-    if (year & 0x03 && month >= 3)
-        nleap++;
+        /* no match, extract the long name and compare with that instead */
+        GetDirLongName(de, buf, &buflen);
+        if (namelen == buflen && strnicmp((char *) name, (char *) buf, buflen) == 0) {
+            D(bug("[fat] matched long name '%.*s' at entry %ld, returning\n", buflen, buf, dh->cur_index));
+            return 0;
+        }
+    }
 
-    /* calculate days since 1978-01-01 (DOS epoch):
-     *   730 days in 1978+1979, getting us to the FAT epoch 1980-01-01
-     *   years * 365 days
-     *   leap days
-     *   days in all the months before this one
-     *   day of this month */
-    ds->ds_Days = 730 + year * 365 + nleap + mdays[month-1] + day-1;
-
-    /* minutes since midnight */
-    ds->ds_Minute = hours * 60 + mins;
-
-    /* 1/50 sec ticks. FAT dates are 0-29, so we have to multiply them by two
-     * as well */
-    ds->ds_Tick = (secs << 1) * 50;
-
-    D(bug("[fat] convert date: days %ld minutes %ld ticks %ld\n", ds->ds_Days, ds->ds_Minute, ds->ds_Tick));
+    return err;
 }
+
+LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct DirEntry *de) {
+    LONG err;
+    ULONG len;
+
+    D(bug("[fat] looking for entry with path '%.*s' from dir at cluster %ld\n", pathlen, path, dh->first_cluster));
+
+    /* get back to the start of the dir */
+    RESET_HANDLE(dh);
+
+    /* eat up leading slashes */
+    while (pathlen >= 0 && path[0] == '/') {
+        D(bug("[fat] leading '/', moving up to eat it\n"));
+
+        if ((err = GetParentDir(dh, de)) != 0)
+            return err;
+
+        path++;
+        pathlen--;
+
+        /* if we ate the whole path, bail out now with the current entry
+         * pointing to its parent dir */
+        if (pathlen == 0) {
+            D(bug("[fat] explicit request for parent dir, returning it\n"));
+            return 0;
+        }
+    }
+
+    /* eat up trailing slashes */
+    while (pathlen > 0) {
+        if (path[pathlen-1] != '/')
+            break;
+        pathlen--;
+    }
+
+    D(bug("[fat] now looking for entry with path '%.*s' from dir at cluster %ld\n", pathlen, path, dh->first_cluster));
+
+    /* each time around the loop we find one dir/file in the full path */
+    while (pathlen > 0) {
+
+        /* zoom forward and find the first dir separator */
+        for (len = 0; len < pathlen && path[len] != '/'; len++);
+
+        D(bug("[fat] remaining path is '%.*s' (%d bytes), current chunk is '%.*s' (%d bytes)\n", pathlen, path, pathlen, len, path, len));
+
+        /* if the first character is a /, or they've asked for '..', then we
+         * have to go up a level */
+        if (len == 0) {
+
+            /* get the parent dir, and bail if we've gone past it (ie we are
+             * the root) */
+            if ((err = GetParentDir(dh, de)) != 0)
+                break;
+        }
+
+        /* otherwise, we want to search the current directory for this name */
+        else {
+            if ((err = GetDirEntryByName(dh, path, len, de)) != 0)
+                return ERROR_OBJECT_NOT_FOUND;
+
+            /* if the current chunk if all the name we have left, then we found it */
+            if (len == pathlen) {
+                D(bug("[fat] found the entry, returning it\n"));
+                return 0;
+            }
+
+            /* more to do, so this entry had better be a directory */
+            if (!(de->e.entry.attr & ATTR_DIRECTORY)) {
+                D(bug("[fat] '%.*s' is not a directory, so can't go any further\n", len, path));
+                return ERROR_OBJECT_WRONG_TYPE;
+            }
+
+            InitDirHandle(dh->sb, FIRST_FILE_CLUSTER(de), dh);
+        }
+
+        /* move up the buffer */
+        path += len;
+        pathlen -= len;
+
+        /* a / here is either the path seperator or the directory we just went
+         * up. either way, we have to ignore it */
+        if (pathlen > 0 && path[0] == '/') {
+            path++;
+            pathlen--;
+        }
+    }
+
+    D(bug("[fat] empty path supplied, so naturally not found\n"));
+
+    return ERROR_OBJECT_NOT_FOUND;
+}
+
+
 
 #define sb glob->sb
 
 LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
-    struct DirEntry *de;
+    struct DirHandle dh;
+    struct DirEntry de;
     LONG result = 0;
 
     kprintf("\tFilling FIB data.\n");
@@ -178,12 +388,10 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
     if (fib->fib_DirEntryType == ST_ROOT)
         CopyMem(&sb->volume.create_time, &fib->fib_Date, sizeof(struct DateStamp));
     else {
-        if (! fl->dircache_active) {
-            SetupDirCache(sb, fl->dircache, fl->data_ext, fl->first_cluster);
-            fl->dircache_active = TRUE;
-        }
-        GetDirCacheEntry(sb, fl->dircache, fl->entry, &de);
-        ConvertDate(de->write_date, de->write_time, &fib->fib_Date);
+        InitDirHandle(sb, fl->dir_cluster, &dh);
+        GetDirEntry(&dh, fl->dir_entry, &de);
+        ConvertDate(de.e.entry.write_date, de.e.entry.write_time, &fib->fib_Date);
+        ReleaseDirHandle(&dh);
     }
 
     memcpy(fib->fib_FileName, fl->name, 108);
@@ -196,198 +404,4 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
     fib->fib_Comment[0] = '\0';
 
     return result;
-}
-
-LONG ReadNextDirEntry(struct ExtFileLock *fl, struct FileInfoBlock *fib) {
-    LONG err = 0;
-    struct DirEntry *de;
-    ULONG entry = fib->fib_DiskKey + 1;
-
-    if (! fl->dircache_active) {
-        SetupDirCache(sb, fl->dircache, fl->data_ext, fl->first_cluster);
-        fl->dircache_active = TRUE;
-    }
-
-    if (entry == 0 && fl->first_cluster != 0)
-        entry = 2;    /* skip "." and ".." entries */
-
-    while (entry < 65536) {
-        if ((err = GetDirCacheEntry(sb, fl->dircache, entry, &de)) != 0) {
-            if (err == ERROR_OBJECT_NOT_FOUND)
-                err = ERROR_NO_MORE_ENTRIES;
-            break;
-        }
-
-        if (de->name[0] == 0xE5 || de->attr & ATTR_VOLUME_ID) {
-            entry++;
-            continue;
-        }
-
-        if (de->name[0] == 0)
-        {
-            kprintf("\tDirEntry %ld - EOD Marker found\n", entry);
-            err = ERROR_NO_MORE_ENTRIES;
-            break;
-        }
-
-        kprintf("\tFound valid dir entry %ld. Filling FIB data.\n", entry);
-
-        if (de->attr & ATTR_DIRECTORY)
-            fib->fib_DirEntryType = ST_USERDIR;
-        else
-            fib->fib_DirEntryType = ST_FILE;
-
-        fib->fib_Size = AROS_LE2LONG(de->file_size);
-        fib->fib_NumBlocks = ((AROS_LE2LONG(de->file_size) + (sb->clustersize - 1)) >> sb->clustersize_bits) << sb->cluster_sectors_bits;
-        fib->fib_EntryType = fib->fib_DirEntryType;
-        fib->fib_DiskKey = entry;
-
-        ConvertDate(de->write_date, de->write_time, &fib->fib_Date);
-
-        GetShortName(de, &fib->fib_FileName[1], &fib->fib_FileName[0]);
-        GetLongName(sb, fl->dircache, de, entry, &fib->fib_FileName[1], &fib->fib_FileName[0]); /* replaces short name only if long name has been found */
-
-        fib->fib_Protection = 0;
-        if (de->attr & ATTR_READ_ONLY) fib->fib_Protection |= (FIBF_DELETE | FIBF_WRITE);
-        if (de->attr & ATTR_ARCHIVE)   fib->fib_Protection |= FIBF_ARCHIVE;
-
-        fib->fib_Comment[0] = '\0';
-
-        break;
-    }
-
-    return err;
-}
-
-
-LONG FindEntryByName(struct DirCache *dc, STRPTR name, ULONG namelen, ULONG *result) {
-    static UBYTE namebuff[108];
-    struct DirEntry *de;
-    ULONG entry = 0;
-
-    kprintf("\tFindEntryByName: namelen %ld name ", namelen); knprints(name, namelen);
-
-    while (entry < 65536) {
-        LONG res, err;
-
-        kprintf("\n\tentry %ld\n", entry);
-
-        if ((err = GetDirCacheEntry(sb, dc, entry, &de)) != 0) {
-            kprintf("\tGetDirCacheEntry error\n");
-            return err;
-        }
-
-        if (de->name[0] == 0xE5 || de->attr & ATTR_VOLUME_ID) {
-            entry++;
-            continue;
-        }
-        if (de->name[0] == 0) {
-            kprintf("\tDirEntry %ld - EOD Marker found\n", entry);
-            break;
-        }
-
-        GetShortName(de, &namebuff[1], &namebuff[0]);
-        if (namelen == namebuff[0] && strnicmp(&namebuff[1], name, namelen) == 0) {
-            *result = entry;
-            kprintf("\tFound entry %ld\n\n", entry);
-            return 0;
-        }
-
-        res = GetLongName(sb, dc, de, entry, &namebuff[1], &namebuff[0]); /* replaces short name only if long name has been found */
-        if (res == 0 && namelen == namebuff[0] && strnicmp(&namebuff[1], name, namelen) == 0) {
-            *result = entry;
-            kprintf("\tFound entry %ld\n\n", entry);
-            return 0;
-        }
-        entry++;
-    } 
-
-    return ERROR_OBJECT_NOT_FOUND;
-}
-
-LONG FindEntryByPath(ULONG start_cluster, UBYTE *path, LONG pathlen, ULONG *dst_cluster, ULONG *dst_entry) {
-    LONG err = 0;
-    struct Extent ext;
-    struct DirCache dc;
-    struct DirEntry *de;
-
-    while (err == 0) {
-        ULONG len;
-        kprintf("\tFindEntryByPath: start cluster %ld pathlen %ld path ", start_cluster, pathlen); knprints(path, pathlen);
-
-        SetupDirCache(sb, &dc, &ext, start_cluster);
-
-        for (len=0; len < pathlen && path[len] != '/'; len++);
-
-        *dst_cluster = start_cluster;
-
-        if (pathlen && *path == '/') {
-            kprintf("\tGetting parent directory.\n");
-
-            if ((err = GetDirCacheEntry(sb, &dc, 1, &de)) == 0) {
-                if (strncmp("..         ", de->name, 11) == 0) {
-                    ULONG parent_cluster = GetFirstCluster(de);
-
-                    if (parent_cluster == 0) {
-                        *dst_entry = FAT_ROOTDIR_MARK;
-                    }
-
-                    else {
-                        FreeDirCache(sb, &dc);
-
-                        SetupDirCache(sb, &dc, &ext, parent_cluster); /* find grandparent cluster */
-
-                        if ((err = GetDirCacheEntry(sb, &dc, 1, &de)) == 0) {
-
-                            if (strncmp("..         ", de->name, 11) == 0) {
-                                ULONG grandparent_cluster = GetFirstCluster(de);
-                                ULONG entry;
-
-                                FreeDirCache(sb, &dc);
-
-                                SetupDirCache(sb, &dc, &ext, grandparent_cluster);
-
-                                for (entry=0; entry<65535; entry++) { /* entries in rootdir starts from 0!! */
-                                    if ((err = GetDirCacheEntry(sb, &dc, entry, &de)) != 0)
-                                        break;
-
-                                    if (de->name[0] != 0xE5 && (de->attr & ATTR_VOLUME_ID) == 0 &&
-                                        de->attr & ATTR_DIRECTORY && GetFirstCluster(de) == parent_cluster)
-                                        break;
-                                }
-
-                                *dst_entry = entry;
-                                *dst_cluster = grandparent_cluster;
-                                err = 0;
-                            }
-                            else
-                                err = ERROR_OBJECT_NOT_FOUND;
-                        }
-
-                    }
-                    start_cluster = parent_cluster;
-                }
-                else
-                    err = ERROR_OBJECT_NOT_FOUND;
-            }
-        }
-
-        else if (pathlen && (err = FindEntryByName(&dc, path, len, dst_entry)) == 0) {
-            if ((err = GetDirCacheEntry(sb, &dc, *dst_entry, &de)) == 0)
-                start_cluster = GetFirstCluster(de);
-        }
-
-        FreeDirCache(sb, &dc);
-        if (err == 0) {
-            while (pathlen > 0) {
-                pathlen--;
-                if (*path++ == '/')
-                    break;
-            }
-            if (pathlen == 0)
-                break;
-        }
-    }
-
-    return err;
 }

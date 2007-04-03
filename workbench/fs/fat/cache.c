@@ -62,7 +62,7 @@
 
 #include "cache.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /* prototypes for lowlevel block functions */

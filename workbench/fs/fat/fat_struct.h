@@ -10,7 +10,7 @@
  * $Id$
  */
 
-struct BootSector {
+struct FATBootSector {
     UBYTE bs_jmp_boot[3];
     UBYTE bs_oem_name[8];
     UWORD bpb_bytes_per_sect;
@@ -55,7 +55,7 @@ struct BootSector {
 
 } __attribute__ ((__packed__));
 
-struct FSInfo {
+struct FATFSInfo {
     ULONG lead_sig;
     UBYTE reserved1[480];
     ULONG struct_sig;
@@ -65,7 +65,7 @@ struct FSInfo {
     ULONG trial_sig;
 };
 
-struct DirEntry {
+struct FATDirEntry {
     UBYTE name[11];
     UBYTE attr;
     UBYTE nt_res;
@@ -93,7 +93,7 @@ struct DirEntry {
 #define ATTR_LONG_NAME (ATTR_READ_ONLY | ATTR_HIDDEN | ATTR_SYSTEM | ATTR_VOLUME_ID)
 #define ATTR_LONG_NAME_MASK (ATTR_READ_ONLY | ATTR_HIDDEN | ATTR_SYSTEM | ATTR_VOLUME_ID | ATTR_DIRECTORY | ATTR_ARCHIVE)
 
-struct LongDirEntry {
+struct FATLongDirEntry {
     UBYTE order;
     UBYTE name1[10];
     UBYTE attr;

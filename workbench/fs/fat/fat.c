@@ -56,7 +56,7 @@ static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n) {
 LONG ReadFATSuper(struct FSSuper *sb ) {
     LONG err;
     UBYTE *bh;
-    struct BootSector *boot;
+    struct FATBootSector *boot;
     BOOL invalid = FALSE;
 
     kprintf("\tReading FAT boot block.\n");
@@ -70,7 +70,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         FS_FreeMem(bh);
         return err;
     }
-    boot = (struct BootSector *) bh;
+    boot = (struct FATBootSector *) bh;
 
     kprintf("\tBoot sector:\n");
 
@@ -79,6 +79,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     kprintf("\tSectorSize = %ld\n", sb->sectorsize);
     kprintf("\tSectorSize Bits = %ld\n", sb->sectorsize_bits);
 
+    sb->cluster_sectors = boot->bpb_sect_per_clust;
     sb->clustersize = sb->sectorsize * boot->bpb_sect_per_clust;
     sb->clustersize_bits = log2(sb->clustersize);
     sb->cluster_sectors_bits = sb->clustersize_bits - sb->sectorsize_bits;
@@ -103,7 +104,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->total_sectors = AROS_LE2LONG(boot->bpb_total_sectors_32);
     kprintf("\tTotal Sectors = %ld\n", sb->total_sectors);
 
-    sb->rootdir_sectors = ((AROS_LE2WORD(boot->bpb_root_entries_count) * sizeof(struct DirEntry)) + (sb->sectorsize - 1)) >> sb->sectorsize_bits;
+    sb->rootdir_sectors = ((AROS_LE2WORD(boot->bpb_root_entries_count) * sizeof(struct FATDirEntry)) + (sb->sectorsize - 1)) >> sb->sectorsize_bits;
     kprintf("\tRootDir Sectors = %ld\n", sb->rootdir_sectors);
 
     sb->data_sectors = sb->total_sectors - (sb->first_fat_sector + (boot->bpb_num_fats * sb->fat_size) + sb->rootdir_sectors);
@@ -183,13 +184,9 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->fat = FS_AllocMem(sb->fat_size * sb->sectorsize);
         FS_GetBlocks(sb->first_fat_sector, sb->fat, sb->fat_size);
         
-        /* setup rootdir extent */
-        sb->first_rootdir_extent->sector = sb->first_rootdir_sector;
-        sb->first_rootdir_extent->count = sb->rootdir_sectors;
-        sb->first_rootdir_extent->offset = 0;
-        sb->first_rootdir_extent->cur_cluster = 0;
-        sb->first_rootdir_extent->next_cluster = sb->eoc_mark;
-        sb->first_rootdir_extent->start_cluster = 0;
+        /* location of root directory */
+        sb->rootdir_cluster = 0;
+        sb->rootdir_sector = sb->first_rootdir_sector;
     }
     else {
         /* setup volume id */
@@ -202,34 +199,12 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->fat32_cache_block = 0;
         FS_GetBlocks(sb->first_fat_sector, sb->fat, sb->fat32_cachesize >> sb->sectorsize_bits);
  
-        /* setup rootdir extent */
-        {
-            struct Extent *ext = sb->first_rootdir_extent;
-            ULONG block = AROS_LE2LONG(boot->type.fat32.bpb_root_cluster);
-            ULONG prev, count=0;
-
-            ext->start_cluster = block;
-            ext->cur_cluster = block;
-            ext->sector = Cluster2Sector(sb, block);
-            ext->offset = 0;
-
-            do {
-                prev = block;
-                block = GetFat32Entry(sb, block);
-                count++;
-            } while (block == prev+1);
-
-            ext->next_cluster = block;
-            ext->count = count << sb->cluster_sectors_bits;
-        }
+        /* location of root directory */
+        sb->rootdir_cluster = AROS_LE2LONG(boot->type.fat32.bpb_root_cluster);
+        sb->rootdir_sector = 0;
     }
 
-    kprintf("\tRootDir extent:\n");
-    kprintf("\t\tsector = %ld\n", sb->first_rootdir_extent->sector);
-    kprintf("\t\tcount = %ld\n", sb->first_rootdir_extent->count);
-    kprintf("\t\toffset = %ld\n", sb->first_rootdir_extent->offset);
-    kprintf("\t\tcur cluster = 0x%08lx\n", sb->first_rootdir_extent->cur_cluster);
-    kprintf("\t\tnext cluster = 0x%08lx\n", sb->first_rootdir_extent->next_cluster);
+    D(bug("[fat] rootdir at cluster %ld sector %ld\n", sb->rootdir_cluster, sb->rootdir_sector));
 
     if (GetVolumeInfo(sb, &(sb->volume)) != 0) {
         LONG i;
@@ -261,59 +236,55 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
 }
 
 LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume) {
-    struct Extent ext;
-    struct DirCache dc;
-    struct DirEntry *de;
-    ULONG entry = 0;
+    struct DirHandle dh;
+    struct DirEntry de;
     LONG err;
+    int i;
 
-    D(bug("[fat] reading volume data\n"));
+    D(bug("[fat] searching root directory for volume name\n"));
 
-    err = SetupDirCache(sb, &dc, &ext, 0);
+    /* search the directory for the volume id entry. it would've been nice to
+     * just use GetNextDirEntry but I didn't want a flag or something to tell
+     * it not to skip the volume name */
+    InitDirHandle(sb, 0, &dh);
 
-    while (err == 0 && entry < 65536) {
-        if ((err = GetDirCacheEntry(sb, &dc, entry, &de)) != 0) {
-            D(bug("[fat] couldn't get root dir entry (%ld)\n", err));
-            break;
-        }
+    while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de)) == 0) {
 
-        D(bug("[fat] got root dir entry %ld, attr 0x%02x\n", entry, de->attr));
+        /* match the volume id entry */
+        if ((de.e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_VOLUME_ID) {
+            D(bug("[fat] found volume id entry %ld\n", dh.cur_index));
 
-        if ((de->attr & (ATTR_DIRECTORY | ATTR_VOLUME_ID | ATTR_SYSTEM | ATTR_READ_ONLY | ATTR_HIDDEN)) == ATTR_VOLUME_ID) {
-            int i;
+            /* copy the name in. volume->name is a BSTR */
 
-            D(bug("[fat] found the volume name entry\n"));
-
-            volume->name[1] = de->name[0];
+            volume->name[1] = de.e.entry.name[0];
             volume->name[12] = '\0';
 
-            for (i=1; i<11; i++)
-                volume->name[i+1] = tolower(de->name[i]);
+            for (i = 1; i < 11; i++)
+                volume->name[i+1] = tolower(de.e.entry.name[i]);
 
-            for (i=10; i>1; i--)
+            for (i = 10; i > 1; i--)
                 if (volume->name[i+1] == ' ')
                     volume->name[i+1] = '\0';
 
             volume->name[0] = strlen(&(volume->name[1]));
 
+            /* get the volume creation date date too */
+            ConvertDate(de.e.entry.create_date, de.e.entry.create_time, &volume->create_time);
+
             D(bug("[fat] volume name is '%s'\n", &(volume->name[1])));
 
-            ConvertDate(de->create_date, de->create_time, &volume->create_time);
-
-            break;
+            return 0;
         }
 
-        if (de->name[0] == 0) {
+        /* bail out if we hit the end of the dir */
+        if (de.e.entry.name[0] == 0x00) {
             D(bug("[fat] found end-of-directory marker, volume name entry not found\n"));
             err = ERROR_OBJECT_NOT_FOUND;
             break;
         }
-
-        entry++;
     }
 
-    FreeDirCache(sb, &dc);
-
+    ReleaseDirHandle(&dh);
     return err;
 }
 
@@ -423,4 +394,51 @@ void CountFreeClusters(struct FSSuper *sb) {
     sb->free_clusters = free;
 
     kprintf("\tfree clusters: %ld\n", free);
+}
+
+static const UWORD mdays[] = { 0, 31, 59, 90, 120, 151, 181, 212, 143, 273, 304, 334 };
+
+void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds) {
+    UBYTE year, month, day, hours, mins, secs;
+    UBYTE nleap;
+
+    /* date bits: yyyy yyym mmmd dddd */
+    year = (date & 0xfe00) >> 9;    /* bits 15-9 */
+    month = (date & 0x01e0) >> 5;   /* bits 8-5 */
+    day = date & 0x001f;            /* bits 4-0 */
+
+    /* time bits: hhhh hmmm mmms ssss */
+    hours = (time & 0xf800) >> 11;  /* bits 15-11 */
+    mins = (time & 0x07e0) >> 5;    /* bits 8-5 */
+    secs = time & 0x001f;           /* bits 4-0 */
+
+    D(bug("[fat] convert date: year %d month %d day %d hours %d mins %d secs %d\n", year, month, day, hours, mins, secs));
+
+    /* number of leap years in before this year. note this is only dividing by
+     * four, which is fine because FAT dates range 1980-2107. The only year in
+     * that range that is divisible by four but not a leap year is 2100. If
+     * this code is still being used then, feel free to fix it :) */
+    nleap = year >> 2;
+    
+    /* if this year is a leap year and its March or later, adjust for this
+     * year too */
+    if (year & 0x03 && month >= 3)
+        nleap++;
+
+    /* calculate days since 1978-01-01 (DOS epoch):
+     *   730 days in 1978+1979, getting us to the FAT epoch 1980-01-01
+     *   years * 365 days
+     *   leap days
+     *   days in all the months before this one
+     *   day of this month */
+    ds->ds_Days = 730 + year * 365 + nleap + mdays[month-1] + day-1;
+
+    /* minutes since midnight */
+    ds->ds_Minute = hours * 60 + mins;
+
+    /* 1/50 sec ticks. FAT dates are 0-29, so we have to multiply them by two
+     * as well */
+    ds->ds_Tick = (secs << 1) * 50;
+
+    D(bug("[fat] convert date: days %ld minutes %ld ticks %ld\n", ds->ds_Days, ds->ds_Minute, ds->ds_Tick));
 }
