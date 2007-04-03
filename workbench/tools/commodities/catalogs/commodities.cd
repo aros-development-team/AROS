@@ -221,3 +221,15 @@ NoCapsLock:
 MSG_NOCAPSLOCK_CXDESCR (//39)
 Renders the CAPS LOCK key ineffective
 ;
+; ===============================================
+; DepthMenu
+;
+MSG_DEPTHMENU_CXNAME (//23)
+DepthMenu
+;
+MSG_DEPTHMENU_CXTITLE (//39)
+DepthMenu:
+;
+MSG_DEPTHMENU_CXDESCR (//39)
+Popup menu for depth gadgets
+;
