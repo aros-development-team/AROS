@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Exchange -- controls commodities.
@@ -51,7 +51,7 @@
 
 #include <cxintern.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <libraries/mui.h>
@@ -71,7 +71,7 @@
 #define CATALOG_NAME     "System/Tools/Commodities.catalog"
 #define CATALOG_VERSION  2
 
-TEXT version[] = "$VER: Exchange 0.5 (29.04.2006)";
+TEXT version[] = "$VER: Exchange 0.6 (03.04.2007)";
 
 #define ARG_TEMPLATE "CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S"
 #define DEF_POPKEY "ctrl alt h"
@@ -353,11 +353,6 @@ AROS_UFH3(void, inform_broker_func,
     if (bc)
     {
 	D(bug("Exchange: Broker inform %s\n", bc->bc_Node.ln_Name));
-	if (*command == CXCMD_ENABLE)
-	{
-	    if (XGET(cyclegad, MUIA_Cycle_Active) == 1)
-		*command = CXCMD_DISABLE;
-	}
 	CxNotify(bc->bc_Node.ln_Name, *command);
     }
 
@@ -462,8 +457,11 @@ static void MakeGUI(void)
     DoMethod(listgad, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
 	    (IPTR)listgad, 2, MUIM_CallHook, (IPTR)&list_select_hook);
 
-    DoMethod(cyclegad, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+    DoMethod(cyclegad, MUIM_Notify, MUIA_Cycle_Active, 0 /* Enable */,
 	(IPTR)app, 3, MUIM_CallHook, (IPTR)&inform_broker_hook, CXCMD_ENABLE);
+
+    DoMethod(cyclegad, MUIM_Notify, MUIA_Cycle_Active, 1 /* Disable */,
+	(IPTR)app, 3, MUIM_CallHook, (IPTR)&inform_broker_hook, CXCMD_DISABLE);
 
     DoMethod(hidegad, MUIM_Notify, MUIA_Pressed, FALSE,
 	(IPTR)app, 3, MUIM_CallHook, (IPTR)&inform_broker_hook, CXCMD_DISAPPEAR);
