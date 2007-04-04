@@ -123,6 +123,8 @@ AROS_LH0(IPTR, OpenWorkBench,
             {
 	        width  = BOUND(dim.MinRasterWidth,  width,  dim.MaxRasterWidth);
 		height = BOUND(dim.MinRasterHeight, height, dim.MaxRasterHeight);
+		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width = width;
+		GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height = height;
             }
 	    screenTags[3].ti_Data = modeid;
         }
