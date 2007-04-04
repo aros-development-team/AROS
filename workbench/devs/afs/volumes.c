@@ -37,7 +37,7 @@ LONG error;
 		blockbuffer=getBlock(afsbase, volume, 1);
 		volume->dostype=OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
 	}
-	volume->dosflags |= OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
+	volume->dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 	if (volume->dostype != 0x444F5300)
 		return ERROR_NOT_A_DOS_DISK;
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
