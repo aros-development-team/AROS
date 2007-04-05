@@ -20,20 +20,12 @@ LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
 
 LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume);
 
-LONG InitExtent(struct FSSuper *sb, struct Extent *ext, ULONG start_cluster);
-LONG NextExtent(struct FSSuper *sb, struct Extent *ext);
-LONG SeekExtent(struct FSSuper *sb, struct Extent *ext, ULONG dst_sector);
-
 void CountFreeClusters(struct FSSuper *sb);
 
 /* file */
 LONG File_Read(struct ExtFileLock *fl, ULONG togo, void *buffer, LONG *result);
 
 /* names.c */
-/*
-LONG GetLongName(struct FSSuper *sb, struct DirCache *dc, struct FATDirEntry *de, ULONG entry, STRPTR dest, UBYTE *dlen);
-LONG GetShortName(struct FATDirEntry *de, STRPTR dest, UBYTE *dlen);
-*/
 
 /* diskchange */
 void ProcessDiskChange (void);
@@ -84,6 +76,9 @@ LONG GetDirLongName(struct DirEntry *de, STRPTR name, ULONG *len);
 /* fat.c */
 void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds);
 LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib);
+
+/* file.c */
+LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nread);
 
 #endif
 

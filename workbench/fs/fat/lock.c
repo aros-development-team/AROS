@@ -25,30 +25,28 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-#define sb glob->sb
-
 LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, BPTR *result) {
     LONG err = ERROR_OBJECT_NOT_FOUND;
     struct DirHandle dh;
     struct DirEntry de;
-    ULONG start_cluster;
+    ULONG dir_cluster;
 
     if (fl && (fl->attr & ATTR_DIRECTORY) == 0)
         return ERROR_OBJECT_WRONG_TYPE;
 
-    start_cluster = (fl) ? fl->first_cluster : 0;
+    dir_cluster = (fl) ? fl->ioh.first_cluster : 0;
     
     kprintf("\tSearching for: "); knprints(name, namelen);
     SkipColon(name, namelen);
 
-    InitDirHandle(sb, start_cluster, &dh);
+    InitDirHandle(glob->sb, dir_cluster, &dh);
     err = GetDirEntryByPath(&dh, name, namelen, &de);
 
     if (err == 0) {
         if (FIRST_FILE_CLUSTER(&de) == 0)
             err = LockRoot(access, result);
         else
-            err = LockFile(de.index, dh.cur_cluster, access, result);
+            err = LockFile(de.index, dh.ioh.cur_cluster, access, result);
     }
 
     ReleaseDirHandle(&dh);
@@ -66,22 +64,26 @@ LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res) {
         struct DirEntry de;
         ULONG len;
 
-        InitDirHandle(sb, cluster, &dh);
+        InitDirHandle(glob->sb, cluster, &dh);
         GetDirEntry(&dh, entry, &de);
 
         fl->fl_Access = axs;
         fl->fl_Task = glob->ourport;
-        fl->fl_Volume = MKBADDR(sb->doslist);
-        fl->fl_Link = sb->doslist->dol_misc.dol_volume.dol_LockList;
+        fl->fl_Volume = MKBADDR(glob->sb->doslist);
+        fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
         fl->magic = ID_FAT_DISK;
 
-        sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
+        glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
 
         fl->dir_entry = entry;
         fl->dir_cluster = cluster;
         fl->attr = de.e.entry.attr | ATTR_REALENTRY;
-        fl->first_cluster = FIRST_FILE_CLUSTER(&de);
         fl->size = AROS_LE2LONG(de.e.entry.file_size);
+
+        fl->ioh.sb = glob->sb;
+        fl->ioh.first_cluster = FIRST_FILE_CLUSTER(&de);
+        fl->ioh.block = NULL;
+        RESET_HANDLE(&(fl->ioh));
 
         GetDirShortName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
         GetDirLongName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
@@ -103,19 +105,23 @@ LONG LockRoot(LONG axs, BPTR *res) {
     if ((fl = FS_AllocMem(sizeof(struct ExtFileLock)))) {
         fl->fl_Access = axs;
         fl->fl_Task = glob->ourport;
-        fl->fl_Volume = MKBADDR(sb->doslist);
-        fl->fl_Link = sb->doslist->dol_misc.dol_volume.dol_LockList;
+        fl->fl_Volume = MKBADDR(glob->sb->doslist);
+        fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
         fl->magic = ID_FAT_DISK;
 
-        sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
+        glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
 
         fl->dir_entry = FAT_ROOTDIR_MARK;
         fl->dir_cluster = FAT_ROOTDIR_MARK;
         fl->attr = ATTR_DIRECTORY | ATTR_ROOTDIR;
-        fl->first_cluster = 0;
         fl->size = 0;
 
-        memcpy(fl->name, sb->volume.name, 32);
+        fl->ioh.sb = glob->sb;
+        fl->ioh.first_cluster = 0;
+        fl->ioh.block = NULL;
+        RESET_HANDLE(&(fl->ioh));
+
+        memcpy(fl->name, glob->sb->volume.name, 32);
 
         *res = MKBADDR(fl);
         return 0;
@@ -133,17 +139,21 @@ LONG CopyLock(struct ExtFileLock *src_fl, BPTR *res) {
     if ((fl = FS_AllocMem(sizeof(struct ExtFileLock)))) {
         fl->fl_Access = src_fl->fl_Access;
         fl->fl_Task = glob->ourport;
-        fl->fl_Volume = MKBADDR(sb->doslist);
-        fl->fl_Link = sb->doslist->dol_misc.dol_volume.dol_LockList;
+        fl->fl_Volume = MKBADDR(glob->sb->doslist);
+        fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
         fl->magic = ID_FAT_DISK;
 
-        sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
+        glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
 
         fl->dir_entry = src_fl->dir_entry;
         fl->dir_cluster = src_fl->dir_cluster;
         fl->attr = src_fl->attr;
-        fl->first_cluster = src_fl->first_cluster;
         fl->size = src_fl->size;
+
+        fl->ioh.sb = glob->sb;
+        fl->ioh.first_cluster = src_fl->ioh.first_cluster;
+        fl->ioh.block = NULL;
+        RESET_HANDLE(&(fl->ioh));
 
         memcpy(fl->name, src_fl->name, 108);
 
@@ -164,7 +174,7 @@ LONG LockParent(struct ExtFileLock *fl, LONG axs, BPTR *res) {
         return LockRoot(axs, res);
 
     /* get the parent dir */
-    InitDirHandle(sb, fl->dir_cluster, &dh);
+    InitDirHandle(glob->sb, fl->dir_cluster, &dh);
     if ((err = GetDirEntryByPath(&dh, "/", 1, &de)) != 0) {
         ReleaseDirHandle(&dh);
         return err;
@@ -176,7 +186,7 @@ LONG LockParent(struct ExtFileLock *fl, LONG axs, BPTR *res) {
     /* then we go through the parent dir, looking for a link back to us. we do
      * this so that we have an entry with the proper name for copying by
      * LockFile() */
-    InitDirHandle(sb, parent_cluster, &dh);
+    InitDirHandle(glob->sb, parent_cluster, &dh);
     while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de)) == 0) {
         /* don't go past the end */
         if (de.e.entry.name[0] == 0x00) {
@@ -199,8 +209,6 @@ LONG LockParent(struct ExtFileLock *fl, LONG axs, BPTR *res) {
     ReleaseDirHandle(&dh);
     return err;
 }
-
-#undef sb
 
 LONG FreeLockSB(struct ExtFileLock *fl, struct FSSuper *sb) {
     LONG found = FALSE;
@@ -232,6 +240,9 @@ LONG FreeLockSB(struct ExtFileLock *fl, struct FSSuper *sb) {
         kprintf("\tFreeing lock.\n");
 
         fl->fl_Task = NULL;
+
+        if (fl->ioh.block != NULL)
+            cache_put_block(glob->cache, fl->ioh.block, 0);
 
         FS_FreeMem(fl);
 
