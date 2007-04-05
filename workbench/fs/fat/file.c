@@ -21,87 +21,176 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-#define sb glob->sb
+#undef DEBUG_DUMP
 
-LONG File_Read(struct ExtFileLock *fl, ULONG togo, void *buffer, LONG *result) {
-    struct Extent *ext = fl->data_ext;
-    ULONG start_block, start_offset, block;
-    APTR p = buffer;
+#ifdef DEBUG_DUMP
+#include <ctype.h>
+
+#define CHUNK 16
+
+static void fat_hexdump(unsigned char *buf, int bufsz) {
+  int i,j;
+  int count;
+
+  /* do this in chunks of CHUNK bytes */
+  for (i=0; i<bufsz; i+=CHUNK) {
+    /* show the offset */
+    bug("0x%06x  ", i);
+
+    /* max of CHUNK or remaining bytes */
+    count = ((bufsz-i) > CHUNK ? CHUNK : bufsz-i);
+
+    /* show the bytes */
+    for (j=0; j<count; j++) {
+      if (j==CHUNK/2) bug(" ");
+      bug("%02x ",buf[i+j]);
+    }
+
+    /* pad with spaces if less than CHUNK */
+    for (j=count; j<CHUNK; j++) {
+      if (j==CHUNK/2) bug(" ");
+      bug("   ");
+    }
+
+    /* divider between hex and ascii */
+    bug(" ");
+
+    for (j=0; j<count; j++)
+      bug("%c",(isprint(buf[i+j]) ? buf[i+j] : '.'));
+
+    bug("\n");
+  }
+}
+#else
+#define fat_hexdump(b,c)
+#endif
+
+LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nread) {
     LONG err = 0;
+    ULONG sector_offset, byte_offset, cluster_offset;
+    struct cache_block *b;
+    ULONG pos, ncopy;
 
-    start_block = fl->pos >> sb->sectorsize_bits;
-    start_offset = fl->pos & (sb->sectorsize - 1);
+    /* figure out how far into the file to look for the requested data */
+    sector_offset = file_pos >> ioh->sb->sectorsize_bits;
+    byte_offset = file_pos & (ioh->sb->sectorsize-1);
 
-    kprintf("\tReading file data from offset %ld length %ld, starting from file block %ld\n", fl->pos, togo, start_block);
+    /* loop until we get all we want */
+    pos = 0;
+    while (nwant > 0) {
 
-    if (start_block < ext->offset || start_block >= ext->offset + ext->count) {
-        if ((err = SeekExtent(sb, ext, start_block)) != 0) {
-            kprintf("\tExtent seek error: %ld\n", err);
-            *result = 0;
-            return err;
-        }
-    }
+        D(bug("[fat] trying to read %ld bytes (%ld sectors + %ld bytes into the file)\n", nwant, sector_offset, byte_offset));
 
-    while (togo) {
-        kprintf("\tDoing read loop - extent offset %ld\n", ext->offset);
+        /* move clusters if necessary */
+        cluster_offset = sector_offset >> ioh->sb->cluster_sectors_bits;
+        if (ioh->cluster_offset != cluster_offset) {
+            ULONG i;
 
-        if (start_offset || togo < sb->sectorsize) {
-            void *buff;
-            ULONG bytes;
+            /* if we're already ahead of the wanted cluster, then we need to
+             * back to the start of the cluster list */
+            if (ioh->cluster_offset > cluster_offset) {
+                ioh->cur_cluster = ioh->first_cluster;
+                ioh->cluster_offset = 0;
+            }
 
-            block = ext->sector + start_block - ext->offset;
-            bytes = sb->sectorsize - start_offset;
+            D(bug("[fat] moving forward %ld clusters from cluster %ld\n", cluster_offset - ioh->cluster_offset, ioh->cur_cluster));
 
-            if (bytes > togo)
-                bytes = togo;
+            /* find it */
+            for (i = 0; i < cluster_offset - ioh->cluster_offset; i++) {
+                /* get the next one */
+                ioh->cur_cluster = GetFatEntry(ioh->cur_cluster);
 
-            kprintf("\tReading %ld bytes from block %ld offset %ld\n", bytes, block, start_offset);
+                /* if it was free (shouldn't happen) or we hit the end of the
+                 * chain, the requested data isn't here */
+                if (ioh->cur_cluster == 0) {
+                    D(bug("[fat] hit empty or eoc cluster, no more file left\n"));
 
-            if ((buff=FS_AllocBlock()) != NULL) {
-                if ((err = FS_GetBlock(block, buff)) == 0) {
-                    CopyMem(buff + start_offset, p, bytes);
+                    RESET_HANDLE(ioh);
 
-                    start_offset = 0;
-                    p += bytes;
-                    togo -= bytes;
-                    start_block++;
+                    return ERROR_OBJECT_NOT_FOUND;
                 }
-                FS_FreeBlock(buff);            
             }
+
+            /* remember how far in we are now */
+            ioh->cluster_offset = cluster_offset;
+
+            D(bug("[fat] moved to cluster %ld\n", ioh->cur_cluster));
+
+            /* reset the sector offset so the sector recalc gets triggered */
+            ioh->sector_offset = 0xffffffff;
+        }
+
+        /* recalculate the sector location if we moved */
+        if (ioh->sector_offset != (sector_offset & (ioh->sb->cluster_sectors-1))) {
+
+            /* work out how many sectors in we should be looking */
+            ioh->sector_offset = sector_offset & (ioh->sb->cluster_sectors-1);
+
+            /* simple math to find the absolute sector number */
+            ioh->cur_sector = SECTOR_FROM_CLUSTER(ioh->sb, ioh->cur_cluster) + ioh->sector_offset;
+
+            /* if this is cluster 0 and the first sector has been set, adjust
+             * for it. this is hack to support fat12/16 root dirs, which live
+             * in the first cluster. there's no checks to make sure we have
+             * adjusted off the end of the cluster */
+            if (ioh->cur_cluster == 0 && ioh->first_sector > 0) {
+                ioh->sector_offset = sector_offset - ioh->first_sector;
+                ioh->cur_sector = ioh->first_sector + sector_offset;
+
+                D(bug("[fat] adjusted for cluster 0, chunks starts in sector %ld\n", ioh->cur_sector));
+            }
+            
             else
-                err = ERROR_NO_FREE_STORE;
+                D(bug("[fat] chunk starts %ld sectors into the cluster, which is sector %ld\n", ioh->sector_offset, ioh->cur_sector));
         }
 
-        else if (togo >= sb->sectorsize) {
-            ULONG ex_left;
-            ULONG togo_blocks = togo >> sb->sectorsize_bits;
-            ULONG bytes;
-
-            block = ext->sector + start_block - ext->offset;
-            ex_left = ext->count - start_block + ext->offset;
-
-            if (togo_blocks > ex_left)
-                togo_blocks = ex_left;
-
-            kprintf("\tReading %ld blocks, starting from block %ld\n", togo_blocks, block);
-
-            FS_GetBlocks(block, p, togo_blocks);
-
-            bytes = togo_blocks << sb->sectorsize_bits;
-            togo -= bytes;
-            p += bytes;
-            start_block += togo_blocks;
-        }
-
-        if (err == 0 && togo != 0 && start_block == ext->offset + ext->count) {
-            if ((err = NextExtent(sb, ext)) != 0) {
-                kprintf("\tNextExtent failed %ld\n", err);
-                break;
+        /* if we don't have the wanted block kicking around, we need to bring it
+         * in from the cache */
+        if (ioh->block == NULL || ioh->cur_sector != ioh->block->num) {
+            if (ioh->block != NULL) {
+                cache_put_block(glob->cache, ioh->block, 0);
+                ioh->block = NULL;
             }
+
+            D(bug("[fat] requesting sector %ld from cache\n", ioh->cur_sector));
+
+            err = cache_get_block(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, ioh->cur_sector, 0, &b);
+            if (err > 0) {
+                RESET_HANDLE(ioh);
+
+                D(bug("[fat] couldn't load sector, returning error %ld\n", err));
+
+                return err;
+            }
+
+            ioh->block = b;
+        }
+
+        else
+            D(bug("[fat] using cached sector %ld\n", ioh->cur_sector));
+
+        /* now copy in the data */
+        ncopy = ioh->sb->sectorsize - byte_offset;
+        if (ncopy > nwant) ncopy = nwant;
+        CopyMem(&(ioh->block->data[byte_offset]), &(data[pos]), ncopy);
+
+#ifdef DEBUG_DUMP
+        D(bug("[fat] dump of last read, %ld bytes:\n", ncopy));
+        fat_hexdump(&(data[pos]), ncopy);
+#endif
+
+        pos += ncopy;
+        nwant -= ncopy;
+
+        D(bug("[fat] copied %ld bytes, want %ld more\n", ncopy, nwant));
+
+        if (nwant > 0) {
+            sector_offset++;
+            byte_offset = 0;
         }
     }
 
-    *result = (p-buffer);
+    *nread = pos;
 
-    return err;
+    return 0;
 }

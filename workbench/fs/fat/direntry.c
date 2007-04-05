@@ -19,152 +19,63 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-#define RESET_HANDLE(dh)                                     \
-    do {                                                     \
-        dh->cluster_offset = dh->sector_offset = 0xffffffff; \
-        dh->cur_index = 0xffffffff;                          \
-        if (dh->block != NULL) {                             \
-            cache_put_block(glob->cache, dh->block, 0);      \
-            dh->block = NULL;                                \
-        }                                                    \
-    } while (0);
+#define RESET_DIRHANDLE(dh)         \
+    do {                            \
+        RESET_HANDLE(&(dh->ioh));   \
+        dh->cur_index = 0xffffffff; \
+    } while(0);
 
 LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh) {
-    dh->sb = sb;
+    dh->ioh.sb = sb;
 
     if (cluster == 0) {
-        dh->first_cluster = sb->rootdir_cluster;
-        dh->first_sector = sb->rootdir_sector;
+        dh->ioh.first_cluster = sb->rootdir_cluster;
+        dh->ioh.first_sector = sb->rootdir_sector;
     }
     else {
-        dh->first_cluster = cluster;
-        dh->first_sector = 0;
+        dh->ioh.first_cluster = cluster;
+        dh->ioh.first_sector = 0;
     }
 
-    dh->block = NULL;
+    dh->ioh.block = NULL;
 
-    RESET_HANDLE(dh);
+    RESET_DIRHANDLE(dh);
 
-    D(bug("[fat] initialised dir handle, first cluster is %ld, first sector is %ld\n", dh->first_cluster, dh->first_sector));
+    D(bug("[fat] initialised dir handle, first cluster is %ld, first sector is %ld\n", dh->ioh.first_cluster, dh->ioh.first_sector));
 
     return 0;
 }
 
 LONG ReleaseDirHandle(struct DirHandle *dh) {
-    RESET_HANDLE(dh);
+    RESET_DIRHANDLE(dh);
     return 0;
 }
 
 LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de) {
     LONG err = 0;
-    ULONG offset;
-    struct cache_block *b;
+    ULONG nread;
 
-    D(bug("[fat] looking for dir entry %ld in dir starting at cluster %ld\n", index, dh->first_cluster));
+    D(bug("[fat] looking for dir entry %ld in dir starting at cluster %ld\n", index, dh->ioh.first_cluster));
 
     /* fat dirs are limited to 2^16 entries */
     if (index >= 0x10000) {
         D(bug("[fat] request for out-of-range index, returning not found\n"));
         return ERROR_OBJECT_NOT_FOUND;
     }
-    
-    /* figure out how many sectors into the directory this entry is */
-    offset = (index * sizeof(struct FATDirEntry)) >> dh->sb->sectorsize_bits;
-
-    D(bug("[fat] entry is %ld sectors into the dir\n", offset));
-
-    /* if we're not at the right sector, we need to move */
-    if (!((dh->cluster_offset == offset >> dh->sb->cluster_sectors_bits) &&
-          (dh->sector_offset == (offset & (dh->sb->cluster_sectors_bits-1))))) {
-
-        ULONG i;
-
-        /* if the first cluster is 0 then this is a fat12/16 rootdir then we
-         * have the absolute first rootdir sector available so we can just
-         * bounce off that */
-        if (dh->first_cluster == 0) {
-            /* XXX use BPB_RootEntCnt to detect us going out of bounds and
-             * return not found */
-            dh->cluster_offset = offset >> dh->sb->cluster_sectors_bits;
-            dh->cur_cluster = 0;
-            dh->sector_offset = offset - dh->first_sector;
-            dh->cur_sector = dh->first_sector + offset;
-        }
-
-        /* otherwise we've gotta try a bit harder */
-        else {
-            /* back to the start */
-            dh->cur_cluster = dh->first_cluster;
-
-            /* work out how many clusters in we should be looking */
-            dh->cluster_offset = offset >> dh->sb->cluster_sectors_bits;
-
-            D(bug("[fat] entry is %ld clusters in, finding it\n", dh->cluster_offset));
-
-            /* find it */
-            for (i = 0; i < dh->cluster_offset; i++) {
-                /* get the next one */
-                dh->cur_cluster = GetFatEntry(dh->cur_cluster);
-
-                /* if it was free (shouldn't happen) or we hit the end of the
-                 * chain, then the requested entry doesn't exist */
-                if (dh->cur_cluster == 0 || dh->cur_cluster > dh->sb->eoc_mark) {
-                    D(bug("[fat] hit empty or eoc cluster %ld, entry not found\n", dh->cur_cluster));
-
-                    RESET_HANDLE(dh);
-
-                    return ERROR_OBJECT_NOT_FOUND;
-                }
-            }
-
-            D(bug("[fat] moved to cluster %ld\n", dh->cur_cluster));
-
-            /* work out how many sectors in we should be looking */
-            dh->sector_offset = offset & (dh->sb->cluster_sectors-1);
-
-            /* simple math to find the absolute sector number */
-            dh->cur_sector = SECTOR_FROM_CLUSTER(dh->sb, dh->cur_cluster) + dh->sector_offset;
-
-            D(bug("[fat] entry is %ld sectors into the cluster, which is sector %ld\n", dh->sector_offset, dh->cur_sector));
-        }
-    }
-
-    /* if we don't have the wanted block kicking around, we need to bring it
-     * in from the cache */
-    if (dh->block == NULL || dh->cur_sector != dh->block->num) {
-        if (dh->block != NULL) {
-            cache_put_block(glob->cache, dh->block, 0);
-            dh->block = NULL;
-        }
-
-        D(bug("[fat] loading dir sector %ld\n", dh->cur_sector));
-
-        err = cache_get_block(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, dh->cur_sector, 0, &b);
-        if (err > 0) {
-            RESET_HANDLE(dh);
-
-            D(bug("[fat] couldn't load sector, return error %ld\n", err));
-
-            return err;
-        }
-
-        dh->block = b;
-    }
-
-    else
-        D(bug("[fat] using cached sector %ld\n", dh->cur_sector));
-
 
     /* setup the return object */
-    de->sb = dh->sb;
-    de->cluster = dh->first_cluster;
+    de->sb = dh->ioh.sb;
+    de->cluster = dh->ioh.first_cluster;
     de->index = index;
-    de->sector = dh->cur_sector;
-    de->offset = (index * sizeof(struct FATDirEntry)) & (dh->sb->sectorsize-1);
 
-    /* copy the data in */
-    CopyMem(&(dh->block->data[de->offset]), &(de->e.entry), sizeof(struct FATDirEntry));
+    /* get the data directly into the entry */
+    err = ReadFileChunk(&(dh->ioh), index * sizeof(struct FATDirEntry), sizeof(struct FATDirEntry), (UBYTE *) &(de->e.entry), &nread);
+    if (err != 0) {
+        D(bug("[fat] dir entry lookup failed\n"));
+        return err;
+    }
 
+    /* remember where we are for GetNextDirEntry() */
     dh->cur_index = index;
 
     /* done! */
@@ -195,7 +106,7 @@ LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de) {
         /* end of directory, there is no next entry */
         if (de->e.entry.name[0] == 0x00) {
             D(bug("[fat] entry %ld is end-of-directory marker, we're done\n", dh->cur_index));
-            RESET_HANDLE(dh);
+            RESET_DIRHANDLE(dh);
             return ERROR_OBJECT_NOT_FOUND;
         }
 
@@ -208,10 +119,10 @@ LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de) {
 }
 
 LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
-    D(bug("[fat] getting parent for directory at cluster %ld\n", dh->first_cluster));
+    D(bug("[fat] getting parent for directory at cluster %ld\n", dh->ioh.first_cluster));
 
     /* if we're already at the root, then we can't go any further */
-    if (dh->first_cluster == dh->sb->rootdir_cluster) {
+    if (dh->ioh.first_cluster == dh->ioh.sb->rootdir_cluster) {
         D(bug("[fat] trying go up past the root, so entry not found\n"));
         return ERROR_OBJECT_NOT_FOUND;
     }
@@ -228,7 +139,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
     }
 
     /* take us up */
-    InitDirHandle(dh->sb, FIRST_FILE_CLUSTER(de), dh);
+    InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh);
 
     return 0;
 }
@@ -241,7 +152,7 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct 
     D(bug("[fat] looking for dir entry with name '%.*s'\n", namelen, name));
 
     /* start at the start */
-    RESET_HANDLE(dh);
+    RESET_DIRHANDLE(dh);
 
     /* loop through the entries until we find a match */
     while ((err = GetNextDirEntry(dh, de)) == 0) {
@@ -267,10 +178,10 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
     LONG err;
     ULONG len;
 
-    D(bug("[fat] looking for entry with path '%.*s' from dir at cluster %ld\n", pathlen, path, dh->first_cluster));
+    D(bug("[fat] looking for entry with path '%.*s' from dir at cluster %ld\n", pathlen, path, dh->ioh.first_cluster));
 
     /* get back to the start of the dir */
-    RESET_HANDLE(dh);
+    RESET_DIRHANDLE(dh);
 
     /* eat up leading slashes */
     while (pathlen >= 0 && path[0] == '/') {
@@ -297,7 +208,7 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
         pathlen--;
     }
 
-    D(bug("[fat] now looking for entry with path '%.*s' from dir at cluster %ld\n", pathlen, path, dh->first_cluster));
+    D(bug("[fat] now looking for entry with path '%.*s' from dir at cluster %ld\n", pathlen, path, dh->ioh.first_cluster));
 
     /* each time around the loop we find one dir/file in the full path */
     while (pathlen > 0) {
@@ -334,7 +245,7 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
                 return ERROR_OBJECT_WRONG_TYPE;
             }
 
-            InitDirHandle(dh->sb, FIRST_FILE_CLUSTER(de), dh);
+            InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh);
         }
 
         /* move up the buffer */

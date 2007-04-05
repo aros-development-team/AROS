@@ -153,7 +153,7 @@ void ProcessPackets(void) {
                 if ((err = TestLock(fl)))
                     break;
 
-                if ((err = InitDirHandle(glob->sb, fl->first_cluster, &dh)))
+                if ((err = InitDirHandle(glob->sb, fl->ioh.first_cluster, &dh)))
                     break;
 
                 dh.cur_index = fib->fib_DiskKey;
@@ -165,7 +165,7 @@ void ProcessPackets(void) {
                     break;
                 }
 
-                if ((err = LockFile(dh.cur_index, fl->first_cluster, SHARED_LOCK, &b))) {
+                if ((err = LockFile(dh.cur_index, fl->ioh.first_cluster, SHARED_LOCK, &b))) {
                     ReleaseDirHandle(&dh);
                     break;
                 }
@@ -224,8 +224,6 @@ void ProcessPackets(void) {
                         fh->fh_Port = DOSFALSE;
 
                         fl_new->pos = 0;
-                        if (fl_new->first_cluster)
-                            InitExtent(glob->sb, fl_new->data_ext, fl_new->first_cluster);
 
                         res = DOSTRUE;
                         break;
@@ -257,7 +255,7 @@ void ProcessPackets(void) {
                     break;
                 }
 
-                if ((err = File_Read(fl, togo, buffer, &res)) == 0)
+                if ((err = ReadFileChunk(&(fl->ioh), fl->pos, togo, buffer, &res)) == 0)
                     fl->pos += res;
                 else
                     res = -1;

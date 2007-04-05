@@ -39,48 +39,31 @@ extern struct Globals *glob;
 #define DEF_POOL_TRESHOLD DEF_POOL_SIZE
 #define DEF_BUFF_LINES 128
 #define DEF_READ_AHEAD 16*1024
-/*
-struct CacheBuffer {
-    struct CacheBuffer *next;
-    ULONG count;
-    ULONG block;
-    void *data;
-    ULONG magic;
-};
-*/
-
-/* extent is a reference to a chunk of a single file/dir that is held in one
- * or more consecutive clusters */
-struct Extent {
-    ULONG sector;           /* first sector of cur_cluster */
-    ULONG count;            /* number of sectors in the extent */
-    ULONG offset;           /* distance (sectors) into the file of the current extent */
-    ULONG cur_cluster;      /* first cluster in the extent */
-    ULONG next_cluster;     /* cluster at beginning of next extent */
-    ULONG start_cluster;    /* first cluster in the file (or at least where we
-                               started searching from) */
-    ULONG last_cluster;     /* last cluster in the extent */
-};
 
 
-/* a handle on a directory */
-struct DirHandle {
+/* a handle on something, file or directory */
+struct IOHandle {
     struct FSSuper      *sb;            /* filesystem data */
 
-    ULONG               first_cluster;  /* first cluster of this directory */
+    ULONG               first_cluster;  /* first cluster of this file */
     ULONG               cur_cluster;    /* cluster that the current sector is within */
 
-    ULONG               cluster_offset; /* cluster number of this cluster within the current dir */
+    ULONG               cluster_offset; /* cluster number of this cluster within the current file */
 
     ULONG               first_sector;   /* first sector in the first cluster, for fat12/16 root dir */
-    ULONG               cur_sector;     /* sector number the current entry is within */
+    ULONG               cur_sector;     /* sector number our block is currently in */
 
     ULONG               sector_offset;  /* current sector as an offset in the current cluster
                                            ie cur = sector(cur_cluster) + offset */
 
-    ULONG               cur_index;      /* last entry returned, for GetNextDirEntry */
-
     struct cache_block  *block;         /* current block from the cache */
+};
+
+/* a handle on a directory */
+struct DirHandle {
+    struct IOHandle     ioh;
+
+    ULONG               cur_index;      /* last entry returned, for GetNextDirEntry */
 };
 
 /* single directory entry */
@@ -105,29 +88,26 @@ struct DirEntry {
 
 struct ExtFileLock {
     /* struct FileLock */
-    BPTR            fl_Link;
-    ULONG           dir_entry;  /* was fl_Key. this is our dir entry within dir_cluster */
-    LONG            fl_Access;
-    struct MsgPort *fl_Task;
-    BPTR            fl_Volume;
+    BPTR                fl_Link;
+    ULONG               dir_entry;      /* was fl_Key. this is our dir entry within dir_cluster */
+    LONG                fl_Access;
+    struct MsgPort *    fl_Task;
+    BPTR                fl_Volume;
 
     /* coinsistency check */
-    ULONG           magic;   
+    ULONG               magic;   
 
-    ULONG           dir_cluster;    /* first cluster of directory we're in */
+    ULONG               dir_cluster;    /* first cluster of directory we're in */
 
-    ULONG           attr;
-    ULONG           size;
-    ULONG           first_cluster;
+    ULONG               attr;
+    ULONG               size;
 
-    struct Extent   data_ext[1];
+    struct IOHandle     ioh;
 
     /* used in directory scanning and file reading */
-    ULONG           pos;
+    ULONG               pos;
 
-    UBYTE           name[108];
-
-    struct DirHandle *dirhandle;
+    UBYTE               name[108];
 };
 
 struct VolumeInfo {
@@ -217,5 +197,15 @@ struct Globals {
 #define FIRST_FILE_CLUSTER(de)                                       \
     (AROS_LE2WORD((de)->e.entry.first_cluster_lo) |                  \
      (((ULONG) AROS_LE2WORD((de)->e.entry.first_cluster_hi)) << 16))
+
+#define RESET_HANDLE(ioh)                                          \
+    do {                                                           \
+        (ioh)->cluster_offset = (ioh)->sector_offset = 0xffffffff; \
+        if ((ioh)->block != NULL) {                                \
+            cache_put_block(glob->cache, (ioh)->block, 0);         \
+            (ioh)->block = NULL;                                   \
+        }                                                          \
+    } while (0);
+
 
 #endif

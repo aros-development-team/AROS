@@ -31,7 +31,7 @@ LONG GetDirShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
         return 0;
     }
 
-    D(bug("[fat] original name is '%10s'\n", raw));
+    D(bug("[fat] extracting short name for name '%.11s' (index %ld)\n", raw, de->index));
 
     /* copy the chars into the return string */
     c = name;
@@ -101,7 +101,7 @@ LONG GetDirLongName(struct DirEntry *short_de, UBYTE *name, ULONG *len) {
         return 0;
     }
 
-    D(bug("[fat] looking for long name for name '%10s' (index %ld)\n", raw, short_de->index));
+    D(bug("[fat] looking for long name for name '%.11s' (index %ld)\n", raw, short_de->index));
 
     /* compute the short name checksum. this value is held in every associated
      * long name entry to help us identify it. see FATdoc 1.03 p28 */
@@ -162,6 +162,9 @@ LONG GetDirLongName(struct DirEntry *short_de, UBYTE *name, ULONG *len) {
             *c = 0;
             *len = strlen((char *) buf);
             CopyMem(buf, name, *len);
+
+            D(bug("[fat] extracted long name '%.*s'\n", *len, name));
+
             return 0;
         }
 
