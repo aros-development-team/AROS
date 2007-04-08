@@ -12,7 +12,7 @@ cd      $SOURCE_CONTRIB
 execute svn update
 
 printi  "Updating necessary module sources..."
-cd      $SOURCE_NECESSARY
+cd      $SOURCE_NECESSARY/necessary
 execute svn update
 
 #OLD
