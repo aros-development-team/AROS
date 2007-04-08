@@ -583,7 +583,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         data->wd_NoMenus ?
             WA_RMBTrap   :
             TAG_IGNORE,         (IPTR) TRUE,
-        WA_Gadgets,             (IPTR) data->wd_VertProp,
+        WA_Gadgets,             (IPTR) (data->wd_VertProp ? data->wd_VertProp : data->wd_HorizProp),
         data->wd_ZoomGadget ?
             WA_Zoom         :
             TAG_IGNORE,         (IPTR) &altdims,
