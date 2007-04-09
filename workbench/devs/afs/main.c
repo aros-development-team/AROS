@@ -136,6 +136,14 @@ LONG retval;
 				case FSA_IS_FILESYSTEM :
 					iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem=TRUE;
 					break;
+				case FSA_INHIBIT :
+					error=inhibit
+						(
+							afsbase,
+							afshandle->volume,
+							iofs->io_Union.io_INHIBIT.io_Inhibit
+						);
+					break;
 				default:
 					if (mediumPresent(&afshandle->volume->ioh))
 					{
@@ -303,14 +311,6 @@ LONG retval;
 								);
 							break;
 /* morecache */
-						case FSA_INHIBIT :
-							error=inhibit
-								(
-									afsbase,
-									afshandle->volume,
-									iofs->io_Union.io_INHIBIT.io_Inhibit
-								);
-							break;
 						case FSA_FORMAT :
 							error=format
 								(
@@ -366,7 +366,6 @@ LONG retval;
 						case FSA_SET_PROTECT :
 						case FSA_SET_OWNER :
 						case FSA_SET_DATE :
-						case FSA_INHIBIT :
 						case FSA_FORMAT :
 						case FSA_RELABEL :
 						case FSA_DISK_INFO :

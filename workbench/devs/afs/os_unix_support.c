@@ -90,6 +90,10 @@ struct IOHandle *ioh;
 	return 1;
 }
 
+UBYTE diskPresent(struct AFSBase *afsbase, struct IOHandle *ioh) {
+	return ioh->fh ? 1 : 0;
+}
+
 void check64BitSupport(struct AFSBase *afsbase, struct Volume *volume) {
 	printf("%s: We just support 64Bit (or not ...)\n", __FUNCTION__);
 }
@@ -108,6 +112,8 @@ struct IOHandle *openBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh) 
 
 void closeBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh) {
 	fclose(ioh->fh);
+	ioh->fh = NULL;
+	ioh->ioflags &= ~IOHF_DISK_IN;
 }
 
 BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
