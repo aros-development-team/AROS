@@ -24,6 +24,7 @@ struct Volume {
 	struct BlockCache *blockcache;
 	ULONG cachecounter;           /* Keeps track of cache usage */
 	ULONG state;                 /* Read-only, read/write or validating */
+	ULONG inhibitcounter;
 
 	ULONG usedblockscount;       /* nr of used blocks */
 	ULONG countblocks;           /* nr of blocks in filesystem */

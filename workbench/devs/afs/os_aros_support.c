@@ -355,12 +355,15 @@ struct IOHandle *ioh;
 			motorOff(afsbase, ioh);
 			ioh->ioflags &= ~IOHF_MOTOR_OFF;
 		}
-		else if (ioh->ioflags & IOHF_MEDIA_CHANGE)
+		else if ((ioh->ioflags & IOHF_MEDIA_CHANGE) && (!volume->inhibitcounter))
 		{
-			if (diskPresent(afsbase, ioh))
+			if (diskPresent(afsbase, ioh)) 
 			{
+			    if (!(ioh->ioflags & IOHF_DISK_IN))
+			    {
 				newMedium(afsbase, volume);
 				ioh->ioflags |= IOHF_DISK_IN;
+			    }
 			}
 			else
 			{
