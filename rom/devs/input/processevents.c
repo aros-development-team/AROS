@@ -335,6 +335,30 @@ void ProcessEvents (struct inputbase *InputDevice)
                         {
                             ie->ie_NextEvent = NULL;
                             
+                            if (ie->ie_Class == IECLASS_RAWKEY)
+                            {
+                                if (!IsQualifierKey(ie->ie_Code))
+                                {
+                                    if (keyrepeat_state > 0)
+                                    {
+                                        ABORT_KEYTIMER_REQUEST;
+                                        keyrepeat_state = 0;
+                                    }
+
+                                    if (!(ie->ie_Code & IECODE_UP_PREFIX))
+                                    {
+                                        if (IsRepeatableKey(ie->ie_Code))
+                                        {
+                                            keyrepeatie = *ie;
+
+                                            SEND_KEYTIMER_REQUEST(keytimerio, InputDevice->KeyRepeatThreshold);
+                                            keyrepeat_state = 1;
+
+                                        }
+                                    }
+                                } /* if (!IsQualifierKey(ie->ie_Code)) */
+                            }
+                            
                             /* If the event's qualifier differs from the current one, fire the events */
                             if (InputDevice->ActQualifier == ie->ie_Qualifier) {
                                 UWORD q = ie->ie_Qualifier;
