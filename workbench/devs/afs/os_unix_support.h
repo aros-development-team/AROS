@@ -103,6 +103,7 @@ struct InfoData {
 	BPTR id_VolumeNode;
 	LONG id_InUse;
 };
+#define ID_WRITE_PROTECTED 80
 #define ID_VALIDATING 81
 #define ID_VALIDATED  82
 #define ID_DOS_DISK         MAKE_ID('D','O','S',0)
