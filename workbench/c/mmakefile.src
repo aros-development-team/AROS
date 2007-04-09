@@ -1,4 +1,4 @@
-# Copyright  2003, The AROS Development Team. All rights reserved.
+# Copyright © 2003, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -20,6 +20,7 @@ FILES := \
     Delete \
     DevList \
     Dir \
+    DiskChange \
     Eval \
     Filenote \
     IconX \
