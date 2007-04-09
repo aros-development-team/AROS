@@ -12,7 +12,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(struct Device *, DeviceProc,
+	AROS_LH1(struct MsgPort *, DeviceProc,
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, name, D1),
@@ -57,7 +57,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    struct Device *res = NULL;
+    struct MsgPort *res = NULL;
     struct DosList *dl;
 
     dl = LockDosList(LDF_READ|LDF_ALL);
@@ -65,15 +65,15 @@
     if(dl != NULL)
     {
 	/* If it is a device, return the Device */
-	if(dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME)
+	if(dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME ||
+	   dl->dol_Type == DLT_DIRECTORY)
 	{
-	    res = dl->dol_Device;
+	    res = (struct MsgPort *)dl->dol_Device;
 	}
 
 	/* If it is an assign, return device and lock */
-	else if(dl->dol_Type == DLT_DIRECTORY)
+	if(dl->dol_Type == DLT_DIRECTORY)
 	{
-	    res = dl->dol_Device;
 	    SetIoErr((ULONG)dl->dol_Lock);
 	}
     }
