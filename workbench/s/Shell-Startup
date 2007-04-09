@@ -1,3 +1,3 @@
 Alias Edit SYS:Tools/Editor
 
-Prompt "*E[42m*E[31m%N.*E[44m*E[32m%s*E[42m*E[31m>*E[40m*E[31m "
+Prompt "*E[42m*E[31m%N.*E[43m*E[32m%s*E[42m*E[31m>*E[40m*E[31m "
