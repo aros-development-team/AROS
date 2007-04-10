@@ -3,7 +3,7 @@
 
 /*
     Copyright  1995-2001, The AROS Development Team. All rights reserved.
-    $Id: workbench.h 23386 2005-06-23 08:17:21Z neil $
+    $Id: wanderer.h 23386 2005-06-23 08:17:21Z NicJA $
 
     Desc: wanderer prefs definitions
     Lang: English
@@ -20,11 +20,21 @@
 #define PATHLENGTHSIZE 256 
 #define ICON_TEXT_MAXLEN_DEFAULT    20
 
+struct WandererPrefsIFFChunkHeader
+{
+	char	wpIFFch_ChunkType[100];
+	IPTR    wpIFFch_ChunkSize;
+};
+
 struct WandererPrefs
 {
     UBYTE wpd_WorkbenchBackground[PATHLENGTHSIZE],
           wpd_DrawerBackground[PATHLENGTHSIZE];
-         
+
+	
+	ULONG wpd_BackgroundRenderMode;
+	ULONG wpd_BackgroundTileMode;
+
     ULONG wpd_NavigationMethod;  // Are we using the toolbar or not for navigation
     ULONG wpd_ToolbarEnabled; // Is the toolbar enabled?
     

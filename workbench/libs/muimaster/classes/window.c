@@ -2850,6 +2850,8 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->wd_RefWindow = (Object *)tag->ti_Data;
 		break;
 
+#warning "TODO: obsolete hacked atribute - remove"
+#if defined(MUIA_Window_WandererBackdrop)
 	    case MUIA_Window_WandererBackdrop:
 		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
 		_handle_bool_tag(data->wd_CrtFlags, !tag->ti_Data, WFLG_DRAGBAR);
@@ -2869,6 +2871,7 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		    data->wd_Y = (LONG)MUIV_Window_TopEdge_Delta(0);
 		}
 		break;
+#endif
 
 	    case MUIA_Window_LeftEdge:
 		data->wd_X = tag->ti_Data;

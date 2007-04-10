@@ -110,7 +110,6 @@ struct  MUIP_Window_SetMenuState    {ULONG MethodID; ULONG MenuID; LONG stat;};
 #define MUIA_Window_Window                  (MUIB_MUI|0x00426a42) /* MUI: V4  ..g struct Window *     */
 
 #define MUIA_Window_EraseArea               (MUIB_Window | 0x00000000) /* Zune only i.. BOOL (default: TRUE) */
-#define MUIA_Window_WandererBackdrop	    (MUIB_Window | 0x00000001) /* ZUNE .s. BOOL */
 #define MUIA_Window_ZoomGadget              (MUIB_Window | 0x00000002)
 
 #define MUIV_Window_ActiveObject_None       0
