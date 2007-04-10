@@ -45,7 +45,7 @@ static char __intern_wintitle_wanderer[] = "Wanderer";
 /*** Private Global Data *********************************************************/
 
 static struct List                     iconwindow_BackFillNodes;
-struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
+struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active = NULL;
 
 /*** Hook functions *********************************************************/
 
@@ -645,6 +645,25 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Setup: Setting up window background 
 				MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 			);
 		}
+		
+		DoMethod
+		(
+			data->iwd_BackGround_PrefsNotificationObject, MUIM_Notify, MUIA_WandererPrefs_Background_TileMode, MUIV_EveryTime,
+			(IPTR) self, 3, 
+			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
+		);
+		DoMethod
+		(
+			data->iwd_BackGround_PrefsNotificationObject, MUIM_Notify, MUIA_WandererPrefs_Background_XOffset, MUIV_EveryTime,
+			(IPTR) self, 3, 
+			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
+		);
+		DoMethod
+		(
+			data->iwd_BackGround_PrefsNotificationObject, MUIM_Notify, MUIA_WandererPrefs_Background_YOffset, MUIV_EveryTime,
+			(IPTR) self, 3, 
+			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
+		);
 	}
 	
 D(bug("[iconwindow] IconWindow__MUIM_Window_Setup: Setup complete!\n"));
@@ -864,7 +883,7 @@ IPTR IconWindow__MUIM_IconWindow_BackFill_Register
     Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_Register *message
 )
 {
-    SETUP_ICONWINDOW_INST_DATA;
+//    SETUP_ICONWINDOW_INST_DATA;
 	
 D(bug("[IconWindow] IconWindow__MUIM_IconWindow_BackFill_Register('%s')\n", message->register_Node->bfd_BackFillID));
 
