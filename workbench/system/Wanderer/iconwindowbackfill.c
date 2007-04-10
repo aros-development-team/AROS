@@ -520,8 +520,12 @@ check_imagebuffer:
 		{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED mode\n"));
 			
-			SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, FALSE);
-			SET(_IconWindows_IconListObj, MUIA_IconListview_ScaledBackground, TRUE);
+			if (this_BFI->bfi_Options.bfo_TileMode == WPD_BackgroundTileMode_Float)
+				SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, FALSE);
+			else
+				SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, TRUE);
+
+			SET(_IconWindows_IconListObj, MUIA_IconListview_ScaledBackground, FALSE);
 
 			if ((BOOL)XGET(self, MUIA_IconWindow_IsRoot))
 			{
