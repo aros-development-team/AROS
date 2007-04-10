@@ -25,7 +25,7 @@ int main(void)
 {
     Object *application, *window;
     int rc = RETURN_OK;
-    D(bug("[WANPREFS] Starting...\n"));
+D(bug("[WPEditor.exe] Starting...\n"));
     Locale_Initialize();
     
     application = ApplicationObject,
@@ -53,10 +53,10 @@ int main(void)
         MUI_DisposeObject(application);
     } else {
         rc = RETURN_FAIL;
-        D(bug("[WANPREFS] Can't create application!\n"));
+D(bug("[WPEditor.exe] Can't create application!\n"));
     }
 
     Locale_Deinitialize();
-    D(bug("[WANPREFS] Quitting...\n"));
+D(bug("[WPEditor.exe] Quitting...\n"));
     return rc;
 }

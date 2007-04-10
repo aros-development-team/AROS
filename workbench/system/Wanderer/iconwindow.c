@@ -74,19 +74,20 @@ AROS_UFH3(
 
 #warning "TODO: Signal that it is a wrong path"
     /* so that the user understands (here where we abort with return) */
-    if ( !( fp = Lock ( str, &fib ) ) )
+    if (!(fp = Lock(str, &fib)))
         return;
 
-    if ( !( Examine ( fp, &fib ) ) )
+    if (!(Examine(fp, &fib)))
     {
         UnLock (fp );
         return;
     }
-    /* Change directory! */
-    if ( fib.fib_DirEntryType >= 0 )
-        SET( self, MUIA_IconWindow_Location, (IPTR)str );
 
-    UnLock ( fp );
+    /* Change directory! */
+    if (fib.fib_DirEntryType >= 0)
+        SET(self, MUIA_IconWindow_Location, (IPTR)str);
+
+    UnLock(fp);
     
     AROS_USERFUNC_EXIT
 }
@@ -157,7 +158,7 @@ D(bug("[IconWindow.ImageBackFill] IconWindow__HookFunc_WandererBackFillFunc()\n"
 }
 
 /*** Methods ****************************************************************/
-void IconWindow__SetupToolbar (Class *CLASS, Object *self)
+void IconWindow__SetupToolbar(Class *CLASS, Object *self)
 {
     SETUP_ICONWINDOW_INST_DATA;
 
@@ -729,6 +730,23 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Cleanup()\n"));
 
 	if (data->iwd_BackGround_PrefsNotificationObject)
 	{
+			DoMethod
+			(
+				data->iwd_BackGround_PrefsNotificationObject,
+				MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_YOffset, (IPTR) self
+			);
+		
+			DoMethod
+			(
+				data->iwd_BackGround_PrefsNotificationObject,
+				MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_XOffset, (IPTR) self
+			);
+		
+			DoMethod
+			(
+				data->iwd_BackGround_PrefsNotificationObject,
+				MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_TileMode, (IPTR) self
+			);
 		if (data->iwd_Flag_ISROOT)
 		{
 			DoMethod

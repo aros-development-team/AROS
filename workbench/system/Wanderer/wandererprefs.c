@@ -93,9 +93,6 @@ IPTR WandererPrefs__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
     SETUP_INST_DATA;
     
-//    FreeVec(data->wpd_WorkbenchBackground);
-//    FreeVec(data->wpd_DrawerBackground);
-    
     return DoSuperMethodA(CLASS, self, (Msg) message);
 }
 
@@ -128,28 +125,6 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
             case MUIA_WandererPrefs_Icon_TextMaxLen:
                 data->wpd_IconTextMaxLen = (ULONG) tag->ti_Data;
                 break;
-
-/*            case MUIA_WandererPrefs_WorkbenchBackground:
-                if ( !SetString (&data->wpd_WorkbenchBackground, (STRPTR) tag->ti_Data) )
-                {
-                    tag->ti_Tag = TAG_IGNORE;
-                }                
-                break;
-                
-            case MUIA_WandererPrefs_DrawerBackground:
-                if ( !SetString (&data->wpd_DrawerBackground, (STRPTR) tag->ti_Data)  )
-                {
-                    tag->ti_Tag = TAG_IGNORE;
-                }                
-                break;
-
-			case MUIA_WandererPrefs_BackgroundRenderMode:
-                data->wpd_BackgroundRenderMode = (LONG) tag->ti_Data;
-                break;
-
-			case MUIA_WandererPrefs_BackgroundTileMode:
-				data->wpd_BackgroundTileMode = (LONG) tag->ti_Data;
-				break;*/
         }
     }
     
@@ -183,26 +158,6 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
         case MUIA_WandererPrefs_Icon_TextMaxLen:
             *store = (IPTR) data->wpd_IconTextMaxLen;
             break;
-
-/*        case MUIA_WandererPrefs_Background:
-            *store = (IPTR) data->wpd_DrawerBackground;
-            break;
-
-		case MUIA_WandererPrefs_Background_RenderMode:
-            *store = (IPTR) data->wpd_BackgroundRenderMode;
-            break;
-
-		case MUIA_WandererPrefs_Background_TileMode:
-            *store = (IPTR) data->wpd_BackgroundTileMode;
-            break;
-
-		case MUIA_WandererPrefs_Background_XOffset:
-            *store = (IPTR) data->wpd_BackgroundTileMode;
-            break;
-
-		case MUIA_WandererPrefs_Background_YOffset:
-            *store = (IPTR) data->wpd_BackgroundTileMode;
-            break;*/
 
         default:
             rv = DoSuperMethodA(CLASS, self, (Msg) message);
@@ -274,20 +229,35 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Creating new node
 	if (chunk_size > (strlen(background_chunk) + 1))
 	{
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Chunk has options Tag data ..\n"));
-		IPTR bgtag_count = ((chunk_size - (strlen(background_chunk) + 1))/sizeof(struct TagItem));
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: %d Tags ..\n", bgtag_count));
+		UBYTE bgtag_offset = ((strlen(background_chunk)  + 1)/4);
+
+		if ((bgtag_offset * 4) != (strlen(background_chunk)  + 1))
+		{
+			bgtag_offset = (bgtag_offset + 1) * 4;
+D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length unalined - rounding up (length %d, rounded %d) \n", strlen(background_chunk) + 1, bgtag_offset ));
+		}
+		else
+		{
+			bgtag_offset = bgtag_offset * 4;
+D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length doesnt need aligned (length %d) \n", strlen(background_chunk) + 1));
+		}
+
+		IPTR bgtag_count  = ((chunk_size - bgtag_offset)/sizeof(struct TagItem));
+
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: %d Tags at offset %d ..\n", bgtag_count, bgtag_offset));
 
 		if (background_Node->wpbn_Options) FreeVec(background_Node->wpbn_Options);
 		
 		background_Node->wpbn_Options = AllocVec((bgtag_count + 1) * sizeof(struct TagItem), MEMF_CLEAR|MEMF_PUBLIC);
-		CopyMem(background_chunk + strlen(background_chunk) + 1, background_Node->wpbn_Options, (bgtag_count) * sizeof(struct TagItem));
+		CopyMem(background_chunk + bgtag_offset, background_Node->wpbn_Options, (bgtag_count) * sizeof(struct TagItem));
 		background_Node->wpbn_Options[bgtag_count + 1].ti_Tag = TAG_DONE;
 
-		do
+		int i = 0;
+		for (i = 0; i < bgtag_count; i++)
 		{
-			SET(background_Node->wpbn_NotifyObject, background_Node->wpbn_Options[bgtag_count].ti_Tag, background_Node->wpbn_Options[bgtag_count].ti_Data);
-			bgtag_count--;
-		}while(bgtag_count > 0);
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Setting Tag %x Value %d\n", background_Node->wpbn_Options[i].ti_Tag, background_Node->wpbn_Options[i].ti_Data));
+			SET(background_Node->wpbn_NotifyObject, background_Node->wpbn_Options[i].ti_Tag, background_Node->wpbn_Options[i].ti_Data);
+		}
 	}
 	return TRUE;
 }
@@ -388,7 +358,6 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of Data ch
 				{
 D(bug("[WANDERER.PREFS] ParseIFF() failed, returncode %ld!\n", error));
 					success = FALSE;
-					//break;
 				}
 
 			} while (error != IFFERR_EOF);

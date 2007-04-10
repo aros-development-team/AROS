@@ -26,10 +26,10 @@
 
 struct BackFillOptions
 {
-	WORD                      bfo_MaxCopyWidth;
-	WORD                      bfo_MaxCopyHeight;
-	WORD                      bfo_OffsetX;
-	WORD                      bfo_OffsetY;
+	IPTR                      bfo_MaxCopyWidth;
+	IPTR                      bfo_MaxCopyHeight;
+	IPTR                      bfo_OffsetX;
+	IPTR                      bfo_OffsetY;
 	IPTR                      bfo_TileMode;
 };
 
