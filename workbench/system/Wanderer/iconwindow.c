@@ -5,6 +5,8 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#define ICONWINDOW_OPTION_NOSEARCHBUTTON
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -161,46 +163,72 @@ void IconWindow__SetupToolbar (Class *CLASS, Object *self)
 
 D(bug("[IconWindow] IconWindow__SetupToolbar()\n"));
 
-    Object *strObj = NULL;
-    Object *bt_dirup = NULL, *bt_search = NULL;
-    
-    /* the toolbar panel */
-    Object *toolbarPanel = MUI_NewObject ( MUIC_Group,
-        InnerSpacing(0,0),
-        MUIA_Group_Horiz, TRUE,
-        MUIA_Weight, 100,
-        Child, (IPTR)GroupObject,
-            InnerSpacing(0,0),
-            MUIA_Weight, 100,
-            MUIA_Group_Horiz, TRUE,
-            Child, (IPTR)( strObj = StringObject,
-                MUIA_String_Contents, (IPTR)"",
-                MUIA_Frame, MUIV_Frame_String,
-            End ),
-        End,
+    Object          *strObj = NULL,
+                    *bt_dirup = NULL,
+                    *bt_search = NULL;
+
+    /* Create the "ToolBar" panel object .. */
+    Object *toolbarPanel = VGroup,
+        InnerSpacing(0, 0),
+        MUIA_Frame, MUIV_Frame_None,
         Child, (IPTR)HGroup,
-            InnerSpacing(0,0),
-            MUIA_Weight, 1,
-            Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
-            Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
-        End,
-    TAG_DONE );
+            InnerSpacing(4, 4),
+	        MUIA_Frame, MUIV_Frame_None,
+            MUIA_Weight, 100,
+			Child, (IPTR)HGroup,
+				InnerSpacing(0, 0),
+				MUIA_Weight, 100,
+				Child, (IPTR)( strObj = StringObject,
+					MUIA_String_Contents, (IPTR)"",
+					MUIA_Frame, MUIV_Frame_String,
+				End ),
+			End,
+			Child, (IPTR)HGroup,
+				InnerSpacing(0,0),
+				MUIA_Weight, 1,
+				Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
+#if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
+				Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
+#endif
+			End,
+		End,
+		Child, (IPTR)HGroup,
+			InnerSpacing(0, 0),
+			MUIA_Group_Spacing, 0,
+			MUIA_FixHeight, 1,
+	        MUIA_Frame, MUIV_Frame_None,
+			MUIA_Background, MUII_SHADOW,
+            Child, (IPTR)RectangleObject,
+				MUIA_FixHeight, 1,
+				MUIA_Frame, MUIV_Frame_None,
+			End,
+            Child, (IPTR)RectangleObject,
+				MUIA_FixHeight, 1,
+				MUIA_Frame, MUIV_Frame_None,
+			End,
+		End,
+	End;
     
     /* Got a toolbarpanel? setup notifies and other values are 
        copied to the data of the object */
     if ( toolbarPanel != NULL )
     {
-        SET( data->iwd_ExtensionContainerObj, MUIA_Frame, MUIV_Frame_Group );
-        SET( data->iwd_ExtensionContainerObj, MUIA_Group_HorizSpacing, 3 );
-        SET( data->iwd_ExtensionContainerObj, MUIA_Group_VertSpacing, 3 );
+        SET( data->iwd_ExtensionContainerObj, MUIA_Frame, MUIV_Frame_None );
+        SET( data->iwd_ExtensionContainerObj, MUIA_Group_Spacing, 3 );
     
         SET( bt_dirup, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
         SET( bt_dirup, MUIA_Frame, MUIV_Frame_None );
+#if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
         SET( bt_search, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
         SET( bt_search, MUIA_Frame, MUIV_Frame_None );
-        DoMethod( data->iwd_ExtensionGroupObj, MUIM_Group_InitChange );
-        DoMethod( data->iwd_ExtensionGroupObj, OM_ADDMEMBER, (IPTR)toolbarPanel );
-        DoMethod( data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange );
+#endif
+
+        if (DoMethod( data->iwd_ExtensionGroupObj, MUIM_Group_InitChange ))
+		{
+			DoMethod( data->iwd_ExtensionGroupObj, OM_ADDMEMBER, (IPTR)toolbarPanel );
+			DoMethod( data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange );
+		}
+
         DoMethod( 
             bt_dirup, MUIM_Notify, MUIA_Pressed, FALSE, 
             (IPTR)self, 1, MUIM_IconWindow_DirectoryUp
@@ -330,14 +358,10 @@ D(bug("[iconwindow] IconWindow__OM_NEW: Directory Window\n"));
 		End;
 
         _newIconWin__ExtensionContainerObj = HGroup,
+            InnerSpacing(0,0),
+            MUIA_Group_Spacing, 0,
 			/* extension on top of the list */
 			Child, (IPTR)_newIconWin__ExtensionGroupObj,
-			
-			Child, (IPTR)RectangleObject,
-				InnerSpacing(0,0),
-				MUIA_Frame, MUIV_Frame_None,
-				MUIA_Weight, 1,
-			End,
 		End;
 		
 		_newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
@@ -448,8 +472,23 @@ D(bug("[iconwindow] IconWindow__OM_NEW: Window BackFill_Data @ %x for '%s'\n", d
 		}
 
         /* no tool bar when root */
-        if (!isRoot && hasToolbar) IconWindow__SetupToolbar(CLASS,self);
-            
+        if (!isRoot && hasToolbar)
+			IconWindow__SetupToolbar(CLASS,self);
+		else
+		{
+			Object *__voidRect = RectangleObject,
+									InnerSpacing(0,0),
+									MUIA_Weight, 1,
+									MUIA_Frame, MUIV_Frame_None,
+								End;
+			
+			if (DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_InitChange))
+			{
+				DoMethod(data->iwd_ExtensionGroupObj, OM_ADDMEMBER, (IPTR)__voidRect);
+				DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange);
+			}
+		}
+
         /* If double clicked then we call our own private methods, that's 
 		   easier then using Hooks */
         DoMethod
@@ -457,28 +496,28 @@ D(bug("[iconwindow] IconWindow__OM_NEW: Window BackFill_Data @ %x for '%s'\n", d
             _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, 
             (IPTR) self, 1, MUIM_IconWindow_DoubleClicked
         );
-        
+
         /* notify when icons dropped on another (wanderer) window */
         DoMethod
         (
             _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_IconsDropped, MUIV_EveryTime,
             (IPTR) self, 1, MUIM_IconWindow_IconsDropped
         );
-  
+
         /* notify when icons dropped on custom application */
         DoMethod
         (
             _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_AppWindowDrop, MUIV_EveryTime,
             (IPTR) self, 1, MUIM_IconWindow_AppWindowDrop
         );
-      
+
         DoMethod
         (
             _newIconWin__IconListObj, MUIM_Notify, MUIA_IconList_Clicked, MUIV_EveryTime,
             (IPTR) self, 1, MUIM_IconWindow_Clicked
         );
     }
-        
+
     return self;
 }
 
@@ -652,12 +691,14 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Setup: Setting up window background 
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 		);
+
 		DoMethod
 		(
 			data->iwd_BackGround_PrefsNotificationObject, MUIM_Notify, MUIA_WandererPrefs_Background_XOffset, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 		);
+
 		DoMethod
 		(
 			data->iwd_BackGround_PrefsNotificationObject, MUIM_Notify, MUIA_WandererPrefs_Background_YOffset, MUIV_EveryTime,
