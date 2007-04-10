@@ -28,13 +28,6 @@ struct WandererPrefsIFFChunkHeader
 
 struct WandererPrefs
 {
-    UBYTE wpd_WorkbenchBackground[PATHLENGTHSIZE],
-          wpd_DrawerBackground[PATHLENGTHSIZE];
-
-	
-	ULONG wpd_BackgroundRenderMode;
-	ULONG wpd_BackgroundTileMode;
-
     ULONG wpd_NavigationMethod;  // Are we using the toolbar or not for navigation
     ULONG wpd_ToolbarEnabled; // Is the toolbar enabled?
     
