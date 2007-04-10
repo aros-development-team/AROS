@@ -46,7 +46,7 @@ LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, 
         if (FIRST_FILE_CLUSTER(&de) == 0)
             err = LockRoot(access, result);
         else
-            err = LockFile(de.index, dh.ioh.cur_cluster, access, result);
+            err = LockFile(de.index, dh.ioh.first_cluster, access, result);
     }
 
     ReleaseDirHandle(&dh);
@@ -77,7 +77,7 @@ LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res) {
 
         fl->dir_entry = entry;
         fl->dir_cluster = cluster;
-        fl->attr = de.e.entry.attr | ATTR_REALENTRY;
+        fl->attr = de.e.entry.attr;
         fl->size = AROS_LE2LONG(de.e.entry.file_size);
 
         fl->ioh.sb = glob->sb;
@@ -113,7 +113,7 @@ LONG LockRoot(LONG axs, BPTR *res) {
 
         fl->dir_entry = FAT_ROOTDIR_MARK;
         fl->dir_cluster = FAT_ROOTDIR_MARK;
-        fl->attr = ATTR_DIRECTORY | ATTR_ROOTDIR;
+        fl->attr = ATTR_DIRECTORY;
         fl->size = 0;
 
         fl->ioh.sb = glob->sb;

@@ -276,13 +276,13 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
 
     kprintf("\tFilling FIB data.\n");
 
-    if ((fl->attr & (ATTR_DIRECTORY | ATTR_REALENTRY)) == (ATTR_DIRECTORY | ATTR_REALENTRY)) {
-        kprintf("\t\ttype: directory\n");
-        fib->fib_DirEntryType = ST_USERDIR;
-    }
-    else if (fl->attr & ATTR_ROOTDIR) {
+    if (fl->dir_cluster == 0xffffffff) {
         kprintf("\t\ttype: root directory\n");
         fib->fib_DirEntryType = ST_ROOT;
+    }
+    else if (fl->attr & ATTR_DIRECTORY) {
+        kprintf("\t\ttype: directory\n");
+        fib->fib_DirEntryType = ST_USERDIR;
     }
     else {
         kprintf("\t\ttype: file\n");
