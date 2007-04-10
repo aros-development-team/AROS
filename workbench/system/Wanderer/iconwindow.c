@@ -788,11 +788,17 @@ D(bug("[IconWindow] IconWindow__MUIM_IconWindow_Open()\n"));
     {
         DoMethod(data->iwd_IconListObj, MUIM_IconList_Clear);
         SET(self, MUIA_Window_Open, TRUE);
-    }
 
-	DoMethod(self, MUIM_IconWindow_BackFill_ProcessBackground, data->iwd_BackFillInfo, data->iwd_RootViewObj);
+D(bug("[IconWindow] IconWindow__MUIM_IconWindow_Open: Process the background ..\n"));
+		DoMethod(self, MUIM_IconWindow_BackFill_ProcessBackground, data->iwd_BackFillInfo, data->iwd_RootViewObj);
+    }
+D(bug("[IconWindow] IconWindow__MUIM_IconWindow_Open: Force an update of the list ..\n"));
     DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
-    
+
+D(bug("[IconWindow] IconWindow__MUIM_IconWindow_Open: Setting window as active ..\n"));
+    SET(self, MUIA_Window_Activate, TRUE);
+
+D(bug("[IconWindow] IconWindow__MUIM_IconWindow_Open: All done\n"));
     return TRUE;
 }
 
