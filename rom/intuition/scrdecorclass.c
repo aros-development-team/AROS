@@ -388,6 +388,9 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
     SetAPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
     RectFill(rp, left + 1, 0, right - 1, msg->sdp_Screen->BarHeight - 1);
 
+    SetAPen(rp, pens[beeping ? BARDETAILPEN : BARTRIMPEN]);
+    RectFill(rp, 0, msg->sdp_Screen->BarHeight, msg->sdp_Screen->Width - 1, msg->sdp_Screen->BarHeight);
+
     SetAPen(rp, pens[beeping ? BARBLOCKPEN: BARDETAILPEN]);
     SetBPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
 
