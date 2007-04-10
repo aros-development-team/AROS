@@ -401,10 +401,6 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: ex
 		}
 	}
 
-	if ((this_BFI->bfi_Options.bfo_TileMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
-														BackGround_Attrib, MUIA_WandererPrefs_Background_TileMode)) == -1)
-		this_BFI->bfi_Options.bfo_TileMode = WPD_BackgroundTileMode_Float;
-
 	if (!(this_BFI->bfi_Source)) this_BFI->bfi_Source = ImageBackFill_FindSourceRecord(this_ImageName, BackGround_Mode);
 
 	if (!(this_BFI->bfi_Source))
@@ -519,13 +515,11 @@ check_imagebuffer:
 		case WPD_BackgroundRenderMode_Scale:
 		{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED mode\n"));
-			
-			if (this_BFI->bfi_Options.bfo_TileMode == WPD_BackgroundTileMode_Float)
-				SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, FALSE);
-			else
-				SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, TRUE);
 
-			SET(_IconWindows_IconListObj, MUIA_IconListview_ScaledBackground, FALSE);
+			this_BFI->bfi_Options.bfo_TileMode = WPD_BackgroundTileMode_Fixed;
+			
+			SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, TRUE);
+			SET(_IconWindows_IconListObj, MUIA_IconListview_ScaledBackground, TRUE);
 
 			if ((BOOL)XGET(self, MUIA_IconWindow_IsRoot))
 			{
@@ -616,8 +610,24 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SC
 		default:
 		{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TILED mode\n"));
-			SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, FALSE);
-			SET(_IconWindows_IconListObj, MUIA_IconListview_ScaledBackground, TRUE);
+			if ((this_BFI->bfi_Options.bfo_TileMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
+																BackGround_Attrib, MUIA_WandererPrefs_Background_TileMode)) == -1)
+				this_BFI->bfi_Options.bfo_TileMode = WPD_BackgroundTileMode_Float;
+
+			if ((this_BFI->bfi_Options.bfo_OffsetX = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
+																BackGround_Attrib, MUIA_WandererPrefs_Background_XOffset)) == -1)
+				this_BFI->bfi_Options.bfo_OffsetX = 0;
+			
+			if ((this_BFI->bfi_Options.bfo_OffsetY = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
+																BackGround_Attrib, MUIA_WandererPrefs_Background_YOffset)) == -1)
+				this_BFI->bfi_Options.bfo_OffsetY = 0;
+
+			if (this_BFI->bfi_Options.bfo_TileMode == WPD_BackgroundTileMode_Float)
+				SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, FALSE);
+			else
+				SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, TRUE);
+
+			SET(_IconWindows_IconListObj, MUIA_IconListview_ScaledBackground, FALSE);
 
 			struct BackFillSourceImageBuffer *this_Buffer = NULL;
 
