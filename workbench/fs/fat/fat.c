@@ -61,13 +61,13 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
 
     kprintf("\tReading FAT boot block.\n");
 
-    if ((bh = FS_AllocMem(512)) == NULL)
+    if ((bh = AllocVecPooled(glob->mempool, 512)) == NULL)
         return ERROR_NO_FREE_STORE;
 
     if ((err = DoRawRead(0, bh)) != 0) {
         kprintf("Can't read boot sector!\n");
         ErrorReq("Can't read boot sector on specified device! Error code %ld", &err);
-        FS_FreeMem(bh);
+        FreeVecPooled(glob->mempool, bh);
         return err;
     }
     boot = (struct FATBootSector *) bh;
@@ -150,7 +150,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
  
     if (invalid) {
         kprintf("\tInvalid FAT Boot Sector\n");
-        FS_FreeMem(bh);
+        FreeVecPooled(glob->mempool, bh);
         return ERROR_NOT_A_DOS_DISK;
     }
  
@@ -181,7 +181,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->volume_id = AROS_LE2LONG(boot->type.fat16.bs_volid);
 
         /* setup FAT */
-        sb->fat = FS_AllocMem(sb->fat_size * sb->sectorsize);
+        sb->fat = AllocVecPooled(glob->mempool, sb->fat_size * sb->sectorsize);
         FS_GetBlocks(sb->first_fat_sector, sb->fat, sb->fat_size);
         
         /* location of root directory */
@@ -195,7 +195,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         /* setup FAT */
         sb->fat32_cachesize = 4096;
         sb->fat32_cachesize_bits = log2(sb->fat32_cachesize);
-        sb->fat = FS_AllocMem(sb->fat32_cachesize);
+        sb->fat = AllocVecPooled(glob->mempool, sb->fat32_cachesize);
         sb->fat32_cache_block = 0;
         FS_GetBlocks(sb->first_fat_sector, sb->fat, sb->fat32_cachesize >> sb->sectorsize_bits);
  
@@ -228,7 +228,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->volume.name[0] = 9;
     }
 
-    FS_FreeMem(bh);
+    FreeVecPooled(glob->mempool, bh);
 
     kprintf("\tFAT Filesystem succesfully detected.\n");
 
@@ -290,7 +290,7 @@ LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume) {
 
 void FreeFATSuper(struct FSSuper *sb) {
     kprintf("\tRemoving Super Block from memory\n");
-    FS_FreeMem(sb->fat);
+    FreeVecPooled(glob->mempool, sb->fat);
     sb->fat = NULL;
 }
 

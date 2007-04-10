@@ -40,37 +40,9 @@ static inline LONG TestLock(struct ExtFileLock *fl) {
         }                              \
 }
 
-/* Mem... */
-
-static inline void *FS_AllocMem(ULONG bytes) {
-    return AllocVecPooled(glob->mempool, bytes);
-}
-
-static inline void FS_FreeMem(void *mem) {
-    FreeVecPooled(glob->mempool, mem);
-}
-
-static inline UBYTE *FS_AllocBlock() {
-    kprintf("\tAllocating block buffer\n");
-    return FS_AllocMem(glob->sb->sectorsize);
-}
-
-static inline void FS_FreeBlock(UBYTE *block) {
-    kprintf("\tFreeing block buffer\n");
-    FS_FreeMem(block);
-}
- 
-
-static inline ULONG Cluster2Sector(struct FSSuper *sb, ULONG n) {
-    return ((n-2) << sb->cluster_sectors_bits) + sb->first_data_sector;
-}
 
 static inline ULONG GetFatEntry(ULONG n) {
     return glob->sb->func_get_fat_entry(glob->sb, n);
-}
-
-static inline ULONG GetFirstCluster(struct FATDirEntry *de) {
-    return AROS_LE2WORD(de->first_cluster_lo) | (((ULONG)AROS_LE2WORD(de->first_cluster_hi)) << 16);
 }
 
 /* IO layer */

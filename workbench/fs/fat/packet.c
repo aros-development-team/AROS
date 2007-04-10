@@ -426,7 +426,7 @@ void ProcessPackets(void) {
                         }
                         else if (type == ACTION_VOLUME_REMOVE) {
                             RemDosEntry(vol);
-                            FS_FreeMem(vol);
+                            FreeVecPooled(glob->mempool, vol);
                             UnLockDosList(LDF_VOLUMES|LDF_WRITE);
 
                             SendEvent(IECLASS_DISKREMOVED);
