@@ -102,7 +102,7 @@ void SendVolumePacket(struct DosList *vol, ULONG action) {
 void DoDiskInsert(void) {
     struct FSSuper *sb;
 
-    if (glob->sb == NULL && (sb = FS_AllocMem(sizeof(struct FSSuper)))) {
+    if (glob->sb == NULL && (sb = AllocVecPooled(glob->mempool, sizeof(struct FSSuper)))) {
         memset(sb, 0, sizeof(struct FSSuper));
 
         if (ReadFATSuper(sb) == 0) {
@@ -132,7 +132,7 @@ void DoDiskInsert(void) {
                         glob->sblist = ptr->next;
 
                     FreeFATSuper(ptr);
-                    FS_FreeMem(ptr);
+                    FreeVecPooled(glob->mempool, ptr);
 
                     found = TRUE;
                 }
@@ -143,7 +143,7 @@ void DoDiskInsert(void) {
 
                 kprintf("\tCreating new volume.\n");
 
-                if ((newvol = FS_AllocMem(sizeof(struct DosList)))) {
+                if ((newvol = AllocVecPooled(glob->mempool, sizeof(struct DosList)))) {
                     newvol->dol_Next = NULL;
                     newvol->dol_Type = DLT_VOLUME;
                     newvol->dol_Task = glob->ourport;
@@ -182,7 +182,7 @@ void DoDiskInsert(void) {
             return;
         }
 
-        FS_FreeMem(sb);
+        FreeVecPooled(glob->mempool, sb);
     }
 
     SendEvent(IECLASS_DISKINSERTED);       
@@ -204,7 +204,7 @@ void DoDiskRemove(void) {
 
             sb->doslist = NULL;
             FreeFATSuper(sb);
-            FS_FreeMem(sb);
+            FreeVecPooled(glob->mempool, sb);
         }
         else {
             sb->next = glob->sblist;

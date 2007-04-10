@@ -56,45 +56,43 @@ LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, 
 
 LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res) {
     struct ExtFileLock *fl;
+    struct DirHandle dh;
+    struct DirEntry de;
+    ULONG len;
 
     kprintf("\tLockFile entry %ld cluster %ld\n", entry, cluster);
 
-    if ((fl = FS_AllocMem(sizeof(struct ExtFileLock)))) {
-        struct DirHandle dh;
-        struct DirEntry de;
-        ULONG len;
+    if ((fl = AllocVecPooled(glob->mempool, sizeof(struct ExtFileLock))) == NULL)
+        return ERROR_NO_FREE_STORE;
 
-        InitDirHandle(glob->sb, cluster, &dh);
-        GetDirEntry(&dh, entry, &de);
+    InitDirHandle(glob->sb, cluster, &dh);
+    GetDirEntry(&dh, entry, &de);
 
-        fl->fl_Access = axs;
-        fl->fl_Task = glob->ourport;
-        fl->fl_Volume = MKBADDR(glob->sb->doslist);
-        fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
-        fl->magic = ID_FAT_DISK;
+    fl->fl_Access = axs;
+    fl->fl_Task = glob->ourport;
+    fl->fl_Volume = MKBADDR(glob->sb->doslist);
+    fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
+    fl->magic = ID_FAT_DISK;
 
-        glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
+    glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
 
-        fl->dir_entry = entry;
-        fl->dir_cluster = cluster;
-        fl->attr = de.e.entry.attr;
-        fl->size = AROS_LE2LONG(de.e.entry.file_size);
+    fl->dir_entry = entry;
+    fl->dir_cluster = cluster;
+    fl->attr = de.e.entry.attr;
+    fl->size = AROS_LE2LONG(de.e.entry.file_size);
 
-        fl->ioh.sb = glob->sb;
-        fl->ioh.first_cluster = FIRST_FILE_CLUSTER(&de);
-        fl->ioh.block = NULL;
-        RESET_HANDLE(&(fl->ioh));
+    fl->ioh.sb = glob->sb;
+    fl->ioh.first_cluster = FIRST_FILE_CLUSTER(&de);
+    fl->ioh.block = NULL;
+    RESET_HANDLE(&(fl->ioh));
 
-        GetDirShortName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
-        GetDirLongName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
+    GetDirShortName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
+    GetDirLongName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
 
-        ReleaseDirHandle(&dh);
+    ReleaseDirHandle(&dh);
 
-        *res = MKBADDR(fl);
-        return 0;
-    }
-
-    return ERROR_NO_FREE_STORE;
+    *res = MKBADDR(fl);
+    return 0;
 }
 
 LONG LockRoot(LONG axs, BPTR *res) {
@@ -102,32 +100,31 @@ LONG LockRoot(LONG axs, BPTR *res) {
 
     kprintf("\tLockRoot()\n");
 
-    if ((fl = FS_AllocMem(sizeof(struct ExtFileLock)))) {
-        fl->fl_Access = axs;
-        fl->fl_Task = glob->ourport;
-        fl->fl_Volume = MKBADDR(glob->sb->doslist);
-        fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
-        fl->magic = ID_FAT_DISK;
+    if ((fl = AllocVecPooled(glob->mempool, sizeof(struct ExtFileLock))) == NULL)
+        return ERROR_NO_FREE_STORE;
 
-        glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
+    fl->fl_Access = axs;
+    fl->fl_Task = glob->ourport;
+    fl->fl_Volume = MKBADDR(glob->sb->doslist);
+    fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
+    fl->magic = ID_FAT_DISK;
 
-        fl->dir_entry = FAT_ROOTDIR_MARK;
-        fl->dir_cluster = FAT_ROOTDIR_MARK;
-        fl->attr = ATTR_DIRECTORY;
-        fl->size = 0;
+    glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
 
-        fl->ioh.sb = glob->sb;
-        fl->ioh.first_cluster = 0;
-        fl->ioh.block = NULL;
-        RESET_HANDLE(&(fl->ioh));
+    fl->dir_entry = FAT_ROOTDIR_MARK;
+    fl->dir_cluster = FAT_ROOTDIR_MARK;
+    fl->attr = ATTR_DIRECTORY;
+    fl->size = 0;
 
-        memcpy(fl->name, glob->sb->volume.name, 32);
+    fl->ioh.sb = glob->sb;
+    fl->ioh.first_cluster = 0;
+    fl->ioh.block = NULL;
+    RESET_HANDLE(&(fl->ioh));
 
-        *res = MKBADDR(fl);
-        return 0;
-    }
+    CopyMem(glob->sb->volume.name, fl->name, 32);
 
-    return ERROR_NO_FREE_STORE;
+    *res = MKBADDR(fl);
+    return 0;
 }
 
 LONG CopyLock(struct ExtFileLock *src_fl, BPTR *res) {
@@ -136,32 +133,31 @@ LONG CopyLock(struct ExtFileLock *src_fl, BPTR *res) {
     if (src_fl->fl_Access == EXCLUSIVE_LOCK)
         return ERROR_OBJECT_IN_USE;
 
-    if ((fl = FS_AllocMem(sizeof(struct ExtFileLock)))) {
-        fl->fl_Access = src_fl->fl_Access;
-        fl->fl_Task = glob->ourport;
-        fl->fl_Volume = MKBADDR(glob->sb->doslist);
-        fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
-        fl->magic = ID_FAT_DISK;
+    if ((fl = AllocVecPooled(glob->mempool, sizeof(struct ExtFileLock))) == NULL)
+        return ERROR_NO_FREE_STORE;
 
-        glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
+    fl->fl_Access = src_fl->fl_Access;
+    fl->fl_Task = glob->ourport;
+    fl->fl_Volume = MKBADDR(glob->sb->doslist);
+    fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
+    fl->magic = ID_FAT_DISK;
 
-        fl->dir_entry = src_fl->dir_entry;
-        fl->dir_cluster = src_fl->dir_cluster;
-        fl->attr = src_fl->attr;
-        fl->size = src_fl->size;
+    glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
 
-        fl->ioh.sb = glob->sb;
-        fl->ioh.first_cluster = src_fl->ioh.first_cluster;
-        fl->ioh.block = NULL;
-        RESET_HANDLE(&(fl->ioh));
+    fl->dir_entry = src_fl->dir_entry;
+    fl->dir_cluster = src_fl->dir_cluster;
+    fl->attr = src_fl->attr;
+    fl->size = src_fl->size;
 
-        memcpy(fl->name, src_fl->name, 108);
+    fl->ioh.sb = glob->sb;
+    fl->ioh.first_cluster = src_fl->ioh.first_cluster;
+    fl->ioh.block = NULL;
+    RESET_HANDLE(&(fl->ioh));
 
-        *res = MKBADDR(fl);
-        return 0;
-    }
+    memcpy(fl->name, src_fl->name, 108);
 
-    return ERROR_NO_FREE_STORE;
+    *res = MKBADDR(fl);
+    return 0;
 }
 
 LONG LockParent(struct ExtFileLock *fl, LONG axs, BPTR *res) {
@@ -244,7 +240,7 @@ LONG FreeLockSB(struct ExtFileLock *fl, struct FSSuper *sb) {
         if (fl->ioh.block != NULL)
             cache_put_block(glob->cache, fl->ioh.block, 0);
 
-        FS_FreeMem(fl);
+        FreeVecPooled(glob->mempool, fl);
 
         return 0;
     }
@@ -280,7 +276,7 @@ void FreeLock(struct ExtFileLock *fl) {
             else
                 glob->sblist = ptr->next;
 
-            FS_FreeMem(ptr);
+            FreeVecPooled(glob->mempool, ptr);
         }
     }
 }
