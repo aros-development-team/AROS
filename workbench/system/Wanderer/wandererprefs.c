@@ -6,6 +6,7 @@
 #include <aros/debug.h>
 
 #define MUIMASTER_YES_INLINE_STDARG
+#define IFF_CHUNK_BUFFER_SIZE 1024
 
 #include <exec/types.h>
 #include <libraries/mui.h>
@@ -28,17 +29,23 @@
 /*** Instance Data **********************************************************/
 struct WandererPrefs_DATA
 {
-    STRPTR wpd_WorkbenchBackground,
-           wpd_DrawerBackground;
-           
     ULONG  wpd_NavigationMethod;
     ULONG  wpd_ToolbarEnabled;
 
     ULONG  wpd_IconListMode;
     ULONG  wpd_IconTextMode;
     ULONG  wpd_IconTextMaxLen;
-	
-	ULONG wpd_BackgroundRenderMode;
+
+	struct List wpd_Backgrounds;
+};
+
+struct WandererPrefs_BackgroundNode
+{
+	struct Node    wpbn_Node;
+	char           *wpbn_Name;
+	IPTR		   wpbn_Background;
+    struct TagItem *wpbn_Options;
+	Object         *wpbn_NotifyObject;
 };
 
 /*** Macros *****************************************************************/
@@ -73,6 +80,9 @@ Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     
     if (self != NULL)
     {
+		SETUP_INST_DATA;
+
+		NewList(&data->wpd_Backgrounds);
         DoMethod(self, MUIM_WandererPrefs_Reload);
     }
     
@@ -83,8 +93,8 @@ IPTR WandererPrefs__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
     SETUP_INST_DATA;
     
-    FreeVec(data->wpd_WorkbenchBackground);
-    FreeVec(data->wpd_DrawerBackground);
+//    FreeVec(data->wpd_WorkbenchBackground);
+//    FreeVec(data->wpd_DrawerBackground);
     
     return DoSuperMethodA(CLASS, self, (Msg) message);
 }
@@ -99,24 +109,6 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     {
         switch (tag->ti_Tag)
         {
-            case MUIA_WandererPrefs_WorkbenchBackground:
-                if ( !SetString (&data->wpd_WorkbenchBackground, (STRPTR) tag->ti_Data) )
-                {
-                    tag->ti_Tag = TAG_IGNORE;
-                }                
-                break;
-                
-            case MUIA_WandererPrefs_DrawerBackground:
-                if ( !SetString (&data->wpd_DrawerBackground, (STRPTR) tag->ti_Data)  )
-                {
-                    tag->ti_Tag = TAG_IGNORE;
-                }                
-                break;
-
-			case MUIA_WandererPrefs_BackgroundRenderMode:
-                data->wpd_BackgroundRenderMode = (LONG) tag->ti_Data;
-                break;
-
             case MUIA_WandererPrefs_NavigationMethod:
                 data->wpd_NavigationMethod = (LONG) tag->ti_Data;
                 break;
@@ -136,6 +128,28 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
             case MUIA_WandererPrefs_Icon_TextMaxLen:
                 data->wpd_IconTextMaxLen = (ULONG) tag->ti_Data;
                 break;
+
+/*            case MUIA_WandererPrefs_WorkbenchBackground:
+                if ( !SetString (&data->wpd_WorkbenchBackground, (STRPTR) tag->ti_Data) )
+                {
+                    tag->ti_Tag = TAG_IGNORE;
+                }                
+                break;
+                
+            case MUIA_WandererPrefs_DrawerBackground:
+                if ( !SetString (&data->wpd_DrawerBackground, (STRPTR) tag->ti_Data)  )
+                {
+                    tag->ti_Tag = TAG_IGNORE;
+                }                
+                break;
+
+			case MUIA_WandererPrefs_BackgroundRenderMode:
+                data->wpd_BackgroundRenderMode = (LONG) tag->ti_Data;
+                break;
+
+			case MUIA_WandererPrefs_BackgroundTileMode:
+				data->wpd_BackgroundTileMode = (LONG) tag->ti_Data;
+				break;*/
         }
     }
     
@@ -150,18 +164,6 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     
     switch (message->opg_AttrID)
     {
-        case MUIA_WandererPrefs_WorkbenchBackground:
-            *store = (IPTR) data->wpd_WorkbenchBackground;
-            break;
-
-        case MUIA_WandererPrefs_DrawerBackground:
-            *store = (IPTR) data->wpd_DrawerBackground;
-            break;
-
-		case MUIA_WandererPrefs_BackgroundRenderMode:
-            *store = (IPTR) data->wpd_BackgroundRenderMode;
-            break;
-		
         case MUIA_WandererPrefs_NavigationMethod:
             *store = (IPTR) data->wpd_NavigationMethod;
             break;
@@ -182,6 +184,26 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
             *store = (IPTR) data->wpd_IconTextMaxLen;
             break;
 
+/*        case MUIA_WandererPrefs_Background:
+            *store = (IPTR) data->wpd_DrawerBackground;
+            break;
+
+		case MUIA_WandererPrefs_Background_RenderMode:
+            *store = (IPTR) data->wpd_BackgroundRenderMode;
+            break;
+
+		case MUIA_WandererPrefs_Background_TileMode:
+            *store = (IPTR) data->wpd_BackgroundTileMode;
+            break;
+
+		case MUIA_WandererPrefs_Background_XOffset:
+            *store = (IPTR) data->wpd_BackgroundTileMode;
+            break;
+
+		case MUIA_WandererPrefs_Background_YOffset:
+            *store = (IPTR) data->wpd_BackgroundTileMode;
+            break;*/
+
         default:
             rv = DoSuperMethodA(CLASS, self, (Msg) message);
     }
@@ -189,19 +211,100 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     return rv;
 }
 
+BOOL WandererPrefs_ProccessGlobalChunk(Class *CLASS, Object *self, struct WandererPrefs *global_chunk)
+{
+    SETUP_INST_DATA;
+	
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessGlobalChunk()\n"));
+#warning "TODO: fix problems with endian-ness?"
+	SetAttrs(self, MUIA_WandererPrefs_NavigationMethod, global_chunk->wpd_NavigationMethod,
+				   MUIA_WandererPrefs_Toolbar_Enabled, global_chunk->wpd_ToolbarEnabled,
+				   MUIA_WandererPrefs_Icon_ListMode, global_chunk->wpd_IconListMode,
+				   MUIA_WandererPrefs_Icon_TextMode, global_chunk->wpd_IconTextMode, 
+				   MUIA_WandererPrefs_Icon_TextMaxLen, global_chunk->wpd_IconTextMaxLen,
+                       TAG_DONE);
+
+	return TRUE;
+}
+
+struct WandererPrefs_BackgroundNode *WandererPrefs_FindBackgroundNode(struct WandererPrefs_DATA *data, char *node_Name)
+{
+	struct WandererPrefs_BackgroundNode *current_Node = NULL;
+
+	ForeachNode(&data->wpd_Backgrounds, current_Node)
+	{
+		if ((strcmp(current_Node->wpbn_Name, node_Name)) == 0) return current_Node;
+	}
+	return NULL;
+}
+
+BOOL WandererPrefs_ProccessBackgroundChunk(Class *CLASS, Object *self, char *background_name, UBYTE *background_chunk, IPTR chunk_size)
+{
+    SETUP_INST_DATA;
+
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk()\n"));
+	BOOL                                 background_node_found = FALSE;
+	struct WandererPrefs_BackgroundNode  *background_Node = NULL;
+
+	background_Node = WandererPrefs_FindBackgroundNode(data, background_name);
+
+	if (background_Node)
+	{
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Updating Existing node @ %x\n", background_Node));
+		if (background_Node->wpbn_Background) FreeVec(background_Node->wpbn_Background);
+	}
+	else
+	{
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Creating new node for '%s'\n", background_name));
+		background_Node = AllocMem(sizeof(struct WandererPrefs_BackgroundNode), MEMF_CLEAR|MEMF_PUBLIC);
+
+		background_Node->wpbn_Name = AllocVec(strlen(background_name) + 1, MEMF_CLEAR|MEMF_PUBLIC);
+		strcpy(background_Node->wpbn_Name, background_name);
+
+		background_Node->wpbn_NotifyObject = NotifyObject, End;
+
+		AddTail(&data->wpd_Backgrounds, &background_Node->wpbn_Node);
+	}
+
+	background_Node->wpbn_Background = AllocVec(strlen(background_chunk) + 1, MEMF_CLEAR|MEMF_PUBLIC);
+	strcpy(background_Node->wpbn_Background, background_chunk);
+
+	SET(background_Node->wpbn_NotifyObject, MUIA_Background, background_chunk);
+	
+	if (chunk_size > (strlen(background_chunk) + 1))
+	{
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Chunk has options Tag data ..\n"));
+		IPTR bgtag_count = ((chunk_size - (strlen(background_chunk) + 1))/sizeof(struct TagItem));
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: %d Tags ..\n", bgtag_count));
+
+		if (background_Node->wpbn_Options) FreeVec(background_Node->wpbn_Options);
+		
+		background_Node->wpbn_Options = AllocVec((bgtag_count + 1) * sizeof(struct TagItem), MEMF_CLEAR|MEMF_PUBLIC);
+		CopyMem(background_chunk + strlen(background_chunk) + 1, background_Node->wpbn_Options, (bgtag_count) * sizeof(struct TagItem));
+		background_Node->wpbn_Options[bgtag_count + 1].ti_Tag = TAG_DONE;
+
+		do
+		{
+			SET(background_Node->wpbn_NotifyObject, background_Node->wpbn_Options[bgtag_count].ti_Tag, background_Node->wpbn_Options[bgtag_count].ti_Data);
+			bgtag_count--;
+		}while(bgtag_count > 0);
+	}
+	return TRUE;
+}
 
 IPTR WandererPrefs__MUIM_WandererPrefs_Reload
 (
     Class *CLASS, Object *self, Msg message
 )
 {
-    struct ContextNode     *context;    
+    struct ContextNode     *context;
     struct IFFHandle       *handle;
-    struct WandererPrefs    wpd;  
     BOOL                    success = TRUE;
     LONG                    error;
-    
-                    
+	IPTR                    iff_parse_mode = IFFPARSE_SCAN;
+	
+	UBYTE                    chunk_buffer[IFF_CHUNK_BUFFER_SIZE];
+
     if (!(handle = AllocIFF()))
         return FALSE;
     
@@ -211,80 +314,172 @@ IPTR WandererPrefs__MUIM_WandererPrefs_Reload
     
     InitIFFasDOS(handle);
 
-    if ((error = OpenIFF(handle, IFFF_READ)) == 0)
+     if ((error = OpenIFF(handle, IFFF_READ)) == 0)
     {
-	
-        BYTE i;
-        
-        // FIXME: We want some sanity checking here!
-        for (i = 0; i < 1; i++)
-        {
-            if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
-            {
-                if ((error = ParseIFF(handle, IFFPARSE_SCAN)) == 0)
-                {
-                    context = CurrentChunk(handle);
-                    
-                    error = ReadChunkBytes( handle, &wpd, sizeof(struct WandererPrefs) );
-                    
-                    if (error < 0)
-                    {
-                        Printf("Error: ReadChunkBytes() returned %ld!\n", error);
-                    }                    
-                }
-                else
-                {
-                    Printf("ParseIFF() failed, returncode %ld!\n", error);
-                    success = FALSE;
-                    break;
-                }
-            }
-            else
-            {
-                Printf("StopChunk() failed, returncode %ld!\n", error);
-                success = FALSE;
-            }
-        }
+		if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
+		{
+			
+			do
+			{				
+				if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
+				{
+					context = CurrentChunk(handle);
+					iff_parse_mode = IFFPARSE_STEP;
+
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Context %x\n", context));
+					
+					error = ReadChunkBytes
+					(
+						handle, chunk_buffer, IFF_CHUNK_BUFFER_SIZE
+					);
+					
+					if (error == sizeof(struct WandererPrefsIFFChunkHeader))
+					{
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Header size ..\n"));
+						struct WandererPrefsIFFChunkHeader *this_header = chunk_buffer;
+						char                               *this_chunk_name = NULL;
+						IPTR                               this_chunk_size = this_header->wpIFFch_ChunkSize;
+						
+						if (this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,MEMF_CLEAR|MEMF_PUBLIC))
+						{
+							strcpy(this_chunk_name, this_header->wpIFFch_ChunkType);
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Prefs Header for '%s' data size %d bytes\n", this_chunk_name, this_chunk_size));
+
+							if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
+							{
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of header chunk ..\n"));
+
+								if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
+								{
+									context = CurrentChunk(handle);
+
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Context %x\n", context));
+
+									error = ReadChunkBytes
+									(
+										handle, chunk_buffer, this_chunk_size
+									);
+									
+									if (error == this_chunk_size)
+									{
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Data size .. (%d)\n", error));
+										if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
+										{
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer global chunk ..\n"));
+											WandererPrefs_ProccessGlobalChunk(CLASS, self, chunk_buffer);
+										}
+										else if ((strncmp(this_chunk_name, "wanderer:background", strlen("wanderer:background"))) == 0)
+										{
+											char *bg_name = this_chunk_name + strlen("wanderer:background") + 1;
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer background chunk '%s'..\n", bg_name));
+											WandererPrefs_ProccessBackgroundChunk(CLASS, self, bg_name, chunk_buffer, this_chunk_size);
+										}
+									}	
+									if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
+									{
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of Data chunk ..\n"));
+									}
+								}
+							}				
+						}
+					}
+				}
+				else
+				{
+D(bug("[WANDERER.PREFS] ParseIFF() failed, returncode %ld!\n", error));
+					success = FALSE;
+					//break;
+				}
+
+			} while (error != IFFERR_EOF);
+		}
+		else
+		{
+D(bug("[WANDERER.PREFS] StopChunk() failed, returncode %ld!\n", error));
+			success = FALSE;
+		}
 
         CloseIFF(handle);
     }
     else
     {
+D(bug("[WANDERER.PREFS] Failed to open stream!, returncode %ld!\n", error));
         //ShowError(_(MSG_CANT_OPEN_STREAM));
     }
 
     Close((APTR)handle->iff_Stream);
+
     FreeIFF(handle);
-    
-    
-    if (success)
-    {
-        /* TODO: fix problems with endianess?? */
-        //SMPByteSwap(&wpd);
-        
-        SetAttrs(self, MUIA_WandererPrefs_WorkbenchBackground, (STRPTR)wpd.wpd_WorkbenchBackground,
-                       MUIA_WandererPrefs_DrawerBackground, (STRPTR)wpd.wpd_DrawerBackground,
-                       MUIA_WandererPrefs_NavigationMethod, wpd.wpd_NavigationMethod,
-                       MUIA_WandererPrefs_Toolbar_Enabled, wpd.wpd_ToolbarEnabled,
-                       MUIA_WandererPrefs_Icon_ListMode, wpd.wpd_IconListMode,
-                       MUIA_WandererPrefs_Icon_TextMode, wpd.wpd_IconTextMode, 
-                       MUIA_WandererPrefs_Icon_TextMaxLen, wpd.wpd_IconTextMaxLen,
-                       TAG_DONE);
-
-        return TRUE;       
-    }
-
     
     return FALSE;
 }
 
+IPTR WandererPrefs__MUIM_WandererPrefs_Background_GetNotifyObject
+(
+    Class *CLASS, Object *self, struct MUIP_WandererPrefs_Background_GetNotifyObject *message
+)
+{
+	SETUP_INST_DATA;
+	struct WandererPrefs_BackgroundNode *current_Node = NULL;
+
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetNotifyObject()\n"));
+
+    if (current_Node = WandererPrefs_FindBackgroundNode(data, message->Background_Name))
+	{
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetNotifyObject: Returning Object for existing record\n"));
+		return current_Node->wpbn_NotifyObject;
+	}
+
+	current_Node = AllocMem(sizeof(struct WandererPrefs_BackgroundNode), MEMF_CLEAR|MEMF_PUBLIC);
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetNotifyObject: Created new node ..\n"));
+
+	current_Node->wpbn_Name = AllocVec(strlen(message->Background_Name) + 1, MEMF_CLEAR|MEMF_PUBLIC);
+	strcpy(current_Node->wpbn_Name, message->Background_Name);
+
+	current_Node->wpbn_NotifyObject = NotifyObject, End;
+	
+	AddTail(&data->wpd_Backgrounds, &current_Node->wpbn_Node);
+
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetNotifyObject: Notify Object @ %x\n", current_Node->wpbn_NotifyObject));
+
+	return current_Node->wpbn_NotifyObject;
+}
+
+
+IPTR WandererPrefs__MUIM_WandererPrefs_Background_GetAttribute
+(
+    Class *CLASS, Object *self, struct MUIP_WandererPrefs_Background_GetAttribute *message
+)
+{
+	SETUP_INST_DATA;
+	struct WandererPrefs_BackgroundNode *current_Node = NULL;
+
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetAttribute()\n"));
+
+    if (current_Node = WandererPrefs_FindBackgroundNode(data, message->Background_Name))
+	{
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetAttribute: Found Background Record ..\n"));
+		if (message->AttributeID == MUIA_Background)
+		{
+			if (current_Node->wpbn_Background) return current_Node->wpbn_Background;
+		}
+		else if (current_Node->wpbn_Options)
+		{
+			return GetTagData(message->AttributeID, (IPTR)-1, current_Node->wpbn_Options);
+		}
+	}
+	return -1;
+}
+
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_7
 (
     WandererPrefs, NULL, MUIC_Notify, NULL,
-    OM_NEW,                    struct opSet *,
-    OM_DISPOSE,                Msg,
-    OM_SET,                    struct opSet *,
-    OM_GET,                    struct opGet *,
-    MUIM_WandererPrefs_Reload, Msg
+    OM_NEW,                                              struct opSet *,
+    OM_DISPOSE,                                          Msg,
+    OM_SET,                                              struct opSet *,
+    OM_GET,                                              struct opGet *,
+    MUIM_WandererPrefs_Reload,                           Msg,
+    MUIM_WandererPrefs_Background_GetNotifyObject,       struct MUIP_WandererPrefs_Background_GetNotifyObject *,
+    MUIM_WandererPrefs_Background_GetAttribute,          struct MUIP_WandererPrefs_Background_GetAttribute *
 );

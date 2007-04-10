@@ -5,6 +5,9 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <libraries/mui.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -14,15 +17,22 @@
 #include "locale.h"
 #include "wanderer.h"
 
+/* External Calls to configure our inbuilt classes */
+extern BOOL	         IconWindow__SetupClass();
+extern BOOL	         ImageBackFill__SetupClass();
+
 /* global variables */
-Object *app;
+Object 				 *_WandererIntern_AppObj = NULL;
+Class 				 *_WandererIntern_CLASS = NULL;
 
 /* Don't output errors to the console, open requesters instead */
-int __forceerrorrequester = 1;
+int                  __forceerrorrequester = 1;
 
 int main(void)
 {
-    LONG retval = RETURN_ERROR;
+    LONG             retval = RETURN_ERROR;
+
+D(bug("[Wanderer.EXE] Wanderer Initialising .. \n"));
 
     OpenWorkbenchObject
 	(
@@ -30,11 +40,19 @@ int main(void)
 	 0, 0
 	);
 
-    if ((app = WandererObject, End) != NULL)
+	/* To be moved at a later date .. */
+	IconWindow__SetupClass();
+	ImageBackFill__SetupClass();
+	
+    if ((_WandererIntern_AppObj = WandererObject, End) != NULL)
     {
-	retval = DoMethod(app, MUIM_Application_Execute);        
-	MUI_DisposeObject(app);
+D(bug("[Wanderer.EXE] Handing control over to Zune .. \n"));
+		retval = DoMethod(_WandererIntern_AppObj, MUIM_Application_Execute);
+D(bug("[Wanderer.EXE] Returned from Zune's control .. \n"));
+		MUI_DisposeObject(_WandererIntern_AppObj);
     }
+
+D(bug("[Wanderer.EXE] Exiting .. \n"));
 
     return retval;
 }

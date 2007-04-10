@@ -5,6 +5,9 @@
     $Id$
 */
 
+//#define MYDEBUG
+#include "debug.h"
+
 #include <exec/memory.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
@@ -198,6 +201,10 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
         MUIA_Group_Horiz, FALSE,
+		MUIA_Group_HorizSpacing, 0,
+		MUIA_Group_VertSpacing, 0,
+		MUIA_Frame, MUIV_Frame_None,
+
         Child, (IPTR) (
             group = GroupObject,
                 usewinborder ? TAG_IGNORE : MUIA_Group_LayoutHook, layout_hook,
@@ -224,6 +231,9 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     data = INST_DATA(cl, obj);
+
+D(bug("[IconListview] IconListview__OM_NEW: SELF = %x\n", obj));
+
     data->vert = vert;
     data->horiz = horiz;
     data->button = button;
@@ -249,8 +259,28 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 IPTR IconListview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct IconListview_DATA *data = INST_DATA(cl, obj);
+
     mui_free(data->layout_hook);
+
     return DoSuperMethodA(cl,obj,msg);
+}
+
+IPTR IconListview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct IconListview_DATA *data = INST_DATA(cl, obj);
+    struct TagItem  	     *tag, *tags;
+    
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    {
+        switch (tag->ti_Tag)
+        {
+			case MUIA_Background:
+D(bug("[IconListview] IconListview__OM_SET: MUIA_Background!\n"));
+				break;
+		}
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 IPTR IconListview__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
@@ -293,6 +323,8 @@ BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
             return IconListview__OM_DISPOSE(cl, obj, msg);
         case MUIM_Show: 
             return IconListview__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
+		case OM_SET:
+			return IconListview__OM_SET(cl, obj, (struct opSet *) msg);
     }
     return DoSuperMethodA(cl, obj, msg);
 }

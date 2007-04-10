@@ -4,7 +4,11 @@
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
+
 #define DEBUG 0
+#include <aros/debug.h>
+
+#define WANDERER_DEFAULT_BACKDROP
 
 #include <exec/types.h>
 #include <libraries/gadtools.h>
@@ -12,6 +16,7 @@
 #include <zune/customclasses.h>
 #include <dos/notify.h>
 #include <workbench/handler.h>
+#include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -24,11 +29,11 @@
 #include <stdio.h>
 #include <time.h>
 
-#include <aros/debug.h>
 #include <aros/detach.h>
 #include <prefs/wanderer.h>
 
 #include "iconwindow.h"
+#include "iconwindowcontents.h"
 #include "wandererprefs.h"
 #include "wandererprefsintern.h"
 #include "filesystems.h"
@@ -37,27 +42,54 @@
 
 #include "locale.h"
 
-#define VERSION "$VER: Wanderer 0.4(22.10.2006)  AROS Dev Team"
+#define VERSION "$VER: Wanderer 0.62 (09.04.2007) The AROS Dev Team"
 
 #define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, End
 
 extern IPTR InitWandererPrefs(void);
-VOID DoAllMenuNotifies(Object *strip, STRPTR path);
-Object *FindMenuitem(Object* strip, int id);
-Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot );
-void window_update(void);
-void execute_open_with_command(BPTR cd, STRPTR contents);
-void DisposeCopyDisplay(struct MUIDisplayObjects *d);
-BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d);
+VOID        DoAllMenuNotifies(Object *strip, STRPTR path);
+Object      *FindMenuitem(Object* strip, int id);
+Object      *__CreateWandererIntuitionMenu__(BOOL isRoot, BOOL useBackdrop);
+void        wanderer_menufunc_window_update(void);
+void        execute_open_with_command(BPTR cd, STRPTR contents);
+void        DisposeCopyDisplay(struct MUIDisplayObjects *d);
+BOOL        CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d);
 
-extern Object *app;
-struct Hook hook_standard;
-struct Hook hook_action;
+/* Stored in the main wanderer executable */
+extern Object        *_WandererIntern_AppObj;
+extern Class 		 *_WandererIntern_CLASS;
+/* Internal Hooks */
+struct Hook          _WandererIntern_hook_standard;
+struct Hook          _WandererIntern_hook_action;
+struct Hook          _WandererIntern_hook_backdrop;
 
 static unsigned char strtochar(STRPTR st)
 {
     return *st++;
 }
+
+/*** Instance Data **********************************************************/
+struct Wanderer_DATA
+{
+	struct Screen 				*wd_Screen;
+
+    Object                      *wd_Prefs,
+                                *wd_ActiveWindow,
+                                *wd_WorkbenchWindow;
+
+    struct MUI_InputHandlerNode  wd_TimerIHN;
+    struct MsgPort              *wd_CommandPort;
+    struct MUI_InputHandlerNode  wd_CommandIHN;
+    struct MsgPort              *wd_NotifyPort;
+    struct MUI_InputHandlerNode  wd_NotifyIHN;
+    struct NotifyRequest         pnr;
+
+    IPTR                         wd_PrefsIntern;
+	BOOL                         wd_Option_BackDropMode;
+};
+
+/*** Macros *****************************************************************/
+#define SETUP_WANDERER_INST_DATA struct Wanderer_DATA *data = INST_DATA(CLASS, self)
 
 /**************************************************************************
 * HOOK FUNCS                                                              *
@@ -65,7 +97,7 @@ static unsigned char strtochar(STRPTR st)
 
 AROS_UFH3
 (
-    BOOL, displayCopyFunc,
+    BOOL, Wanderer__HookFunc_DisplayCopyFunc,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(struct dCopyStruct *, obj, A2),
     AROS_UFHA(APTR, unused_param, A1)
@@ -95,8 +127,8 @@ AROS_UFH3
         if (d->smallobjects > 0) d->updateme = FALSE;
         if (d->updateme)
         {
-            set(d->fileObject, MUIA_Text_Contents, obj->file);
-            set(d->sourceObject, MUIA_Text_Contents, obj->spath);
+            SET(d->fileObject, MUIA_Text_Contents, obj->file);
+            SET(d->sourceObject, MUIA_Text_Contents, obj->spath);
         }
     }
     if (d->action != ACTION_DELETE) 
@@ -107,8 +139,8 @@ AROS_UFH3
         {
             if (d->updateme)
             {
-                set(d->gauge, MUIA_Gauge_Current, 0);
-                set(d->destObject, MUIA_Text_Contents, obj->dpath);
+                SET(d->gauge, MUIA_Gauge_Current, 0);
+                SET(d->destObject, MUIA_Text_Contents, obj->dpath);
             }
             d->numfiles++;
         }
@@ -128,7 +160,7 @@ AROS_UFH3
                 d->Buffer, "# of files: %ld   Actual: %.2f kBytes   Total: %.2f kBytes", 
                 d->numfiles, (double) obj->filelen / 1024.0, (double) d->bytes / 1024.0
             );
-            set(d->performanceObject, MUIA_Text_Contents, d->Buffer);
+            SET(d->performanceObject, MUIA_Text_Contents, d->Buffer);
         }
     }
     
@@ -143,7 +175,7 @@ AROS_UFH3
 
 AROS_UFH3
 (
-    ULONG, askDeleteFunc,
+    ULONG, Wanderer__HookFunc_AskDeleteFunc,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(struct dCopyStruct *, obj, A2),
     AROS_UFHA(APTR, unused_param, A1)
@@ -206,11 +238,9 @@ AROS_UFH3
     AROS_USERFUNC_EXIT
 }
 
-
-
 AROS_UFH3
 (
-    void, hook_func_action,
+    void, Wanderer__HookFunc_ActionFunc,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, obj, A2),
     AROS_UFHA(struct IconWindow_ActionMsg *, msg, A1)
@@ -250,7 +280,7 @@ AROS_UFH3
                 {
                     if (XGET(child, MUIA_UserData))
                     {
-                        STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Drawer);
+                        STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Location);
                         if (child_drawer && !Stricmp(buf,child_drawer))
                         {
                             int is_open = XGET(child, MUIA_Window_Open);
@@ -262,7 +292,7 @@ AROS_UFH3
                             else
                             {
                                 DoMethod(child, MUIM_Window_ToFront);
-                                set(child, MUIA_Window_Activate, TRUE);
+                                SET(child, MUIA_Window_Activate, TRUE);
                             }
                             
                             return;
@@ -271,13 +301,13 @@ AROS_UFH3
                 } 
         
                 /* Check if the window for this drawer is already opened */
-                DoMethod(app, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
+                DoMethod(_WandererIntern_AppObj, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
                         // FIXME: error handling
             }
             else
             {
                 /* open drawer in same window */
-                set(obj, MUIA_IconWindow_Drawer, (IPTR) buf);
+                SET(obj, MUIA_IconWindow_Location, (IPTR) buf);
             }
 
         } 
@@ -306,7 +336,7 @@ AROS_UFH3
     else  if (msg->type == ICONWINDOW_ACTION_DIRUP)
     {     
                     
-        STRPTR actual_drawer = (STRPTR)XGET(obj, MUIA_IconWindow_Drawer);
+        STRPTR actual_drawer = (STRPTR)XGET(obj, MUIA_IconWindow_Location);
         STRPTR parent_drawer = strrchr(actual_drawer,'/');
         STRPTR root_drawer = strrchr(actual_drawer,':');
         
@@ -317,23 +347,22 @@ AROS_UFH3
             if (!parent_drawer)
             {
                 (*(root_drawer+1)) = 0;
-                set(obj, MUIA_IconWindow_Drawer, actual_drawer);
+                SET(obj, MUIA_IconWindow_Location, actual_drawer);
                 
             }
             else
             {
                 (*parent_drawer) = 0;
-                set(obj, MUIA_IconWindow_Drawer, actual_drawer);
+                SET(obj, MUIA_IconWindow_Location, actual_drawer);
             } 
             
         }
-    
     } 
     else if (msg->type == ICONWINDOW_ACTION_CLICK)
     {
         if (!msg->click->shift)
         {
-            Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
+            Object *cstate = (Object*)(((struct List*)XGET(_WandererIntern_AppObj, MUIA_Application_WindowList))->lh_Head);
             Object *child;
     
             while ((child = NextObject(&cstate)))
@@ -364,8 +393,8 @@ AROS_UFH3
             struct Hook displayCopyHook;
             struct Hook displayDelHook;
 
-            displayCopyHook.h_Entry = (HOOKFUNC) displayCopyFunc;
-            displayDelHook.h_Entry = (HOOKFUNC) askDeleteFunc;
+            displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
+            displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
             
 
             if (CreateCopyDisplay(ACTION_COPY, &dobjects))
@@ -380,10 +409,10 @@ AROS_UFH3
                     /* if not end of selection, process */
                     if ( (int)ent != MUIV_IconList_NextSelected_End )
                     {
-                        D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, destination_path);)
+D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, destination_path);)
 
                         /* copy via filesystems.c */
-                        D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path );)
+D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path );)
                         CopyContent(NULL, ent->filename, destination_path, TRUE, ACTION_COPY, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
                     }
                 } 
@@ -396,7 +425,7 @@ AROS_UFH3
     }
     else if (msg->type == ICONWINDOW_ACTION_APPWINDOWDROP)
     {
-        struct Screen *wscreen;
+        struct Screen *wscreen = NULL;
         struct Layer *layer;
 
         /* get wanderers screen struct and the layer located at cursor position afterwards */
@@ -458,7 +487,7 @@ AROS_UFH3
                                 s =  succ;
                             }
 
-                            D(bug("[WANDERER] AppWindowMsg: win:%s files:%s mx:%d my:%d\n",win->Title, filelist, wscreen->MouseX, wscreen->MouseY);)
+D(bug("[WANDERER] AppWindowMsg: win:%s files:%s mx:%d my:%d\n",win->Title, filelist, wscreen->MouseX, wscreen->MouseY);)
                             /* send appwindow msg struct containing selected files to destination */
                             SendAppWindowMessage(win, files, filelist, 0, wscreen->MouseX, wscreen->MouseY, 0, 0);
 
@@ -491,7 +520,7 @@ AROS_UFH3
 
 AROS_UFH3
 (
-    void, hook_func_standard,
+    void, Wanderer__HookFunc_StandardFunc,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(void *, dummy, A2),
     AROS_UFHA(void **, funcptr, A1)
@@ -505,8 +534,94 @@ AROS_UFH3
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3
+(
+    void, Wanderer__HookFunc_BackdropFunc,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(void *, dummy, A2),
+    AROS_UFHA(void **, funcptr, A1)
+)
+{
+    AROS_USERFUNC_INIT
 
+D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc()\n"));
+	struct Wanderer_DATA *data = INST_DATA(_WandererIntern_CLASS, _WandererIntern_AppObj);
 
+D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Private data @ %x\n", data));
+
+	if (!data->wd_WorkbenchWindow)
+	{
+D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: No Workbench Window\n"));
+		return;
+	}
+	
+	BOOL    wb_iscurrentlybd = (BOOL)XGET(data->wd_WorkbenchWindow, MUIA_IconWindow_IsBackdrop);
+
+	if (wb_iscurrentlybd != data->wd_Option_BackDropMode)
+	{
+D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Backdrop mode change requested!\n"));
+
+		BOOL          isOpen = (BOOL)XGET(data->wd_WorkbenchWindow, MUIA_Window_Open);
+		Object        *win_Active = NULL;
+
+D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Disposing of existing Workbench window Obj ..\n"));
+		if (isOpen)
+			SET(data->wd_WorkbenchWindow, MUIA_Window_Open, FALSE);
+
+		if (data->wd_WorkbenchWindow == data->wd_ActiveWindow)
+		{
+			data->wd_ActiveWindow = NULL;
+		}
+		else
+		{
+			win_Active = data->wd_ActiveWindow;
+		}
+
+		/* Kill our close request notification .. */
+        DoMethod
+        (
+            data->wd_WorkbenchWindow, MUIM_KillNotify, MUIA_Window_CloseRequest
+        );
+		
+		/* .. And dispose of the window */
+		DoMethod(_WandererIntern_AppObj, OM_REMMEMBER, data->wd_WorkbenchWindow);
+        MUI_DisposeObject(data->wd_WorkbenchWindow);
+		data->wd_WorkbenchWindow = NULL;
+
+#if defined(DEBUG)
+		if (data->wd_Option_BackDropMode)
+		{
+D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Creating new Workbench window Obj (BACKDROP MODE)..\n"));
+		}
+		else
+		{
+D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Creating new Workbench window Obj (NORMAL MODE)..\n"));
+		}
+#endif
+
+		data->wd_WorkbenchWindow = (Object *) DoMethod
+		(
+			_WandererIntern_AppObj, MUIM_Wanderer_CreateDrawerWindow, (IPTR) NULL
+		);
+
+		if ((data->wd_WorkbenchWindow) && (isOpen))
+		{
+D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Making Workbench window visable..\n"));
+			DoMethod(data->wd_WorkbenchWindow, MUIM_IconWindow_Open);
+			DoMethod(data->wd_WorkbenchWindow, MUIM_Window_ToBack);
+		}
+
+		if (win_Active)
+		{
+			SET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow, win_Active);
+		}
+		else if (data->wd_WorkbenchWindow)
+		{
+			SET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow, data->wd_WorkbenchWindow);
+		}
+	}
+    AROS_USERFUNC_EXIT
+}
 
 /******** code from workbench/c/Info.c *******************/
 static void fmtlarge(UBYTE *buf, ULONG num)
@@ -648,14 +763,14 @@ Open the execute window
 
 This function will always get the current drawer as argument
 **************************************************************************/
-VOID execute_open(STRPTR *cdptr)
+VOID wanderer_menufunc_wanderer_execute(STRPTR *cdptr)
 {
     //TODO: remove the STRPTR *cdptr from top
     //TODO:remove this commented out stuff
     //BPTR lock = NULL;
     //if (cdptr != NULL) lock = Lock(*cdptr, SHARED_LOCK);
-    Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
-    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Drawer );
+    Object *win = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Location );
     BPTR cd = Lock(dr,SHARED_LOCK);
     execute_open_with_command(cd, NULL);
     if (cd) UnLock(cd);
@@ -663,13 +778,13 @@ VOID execute_open(STRPTR *cdptr)
 
 /*******************************/
 
-void shell_open(STRPTR *cd_ptr)
+void wanderer_menufunc_wanderer_shell(STRPTR *cd_ptr)
 {
     //TODO: remove the STRPTR *cdptr from top
     //TODO:remove this commented out stuff
     //BPTR cd = Lock(*cd_ptr,ACCESS_READ);
-    Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
-    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Drawer );
+    Object *win = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Location );
     BPTR cd = Lock(dr,ACCESS_READ);
     if (SystemTags("NewShell", NP_CurrentDir, (IPTR)cd, TAG_DONE) == -1)
     {
@@ -677,39 +792,40 @@ void shell_open(STRPTR *cd_ptr)
     }
 }
 
-void wanderer_backdrop(Object **pstrip)
+void wanderer_menufunc_wanderer_backdrop(Object **pstrip)
 {
+	struct Wanderer_DATA *data = INST_DATA(_WandererIntern_CLASS, _WandererIntern_AppObj);
     Object *strip = *pstrip;
     Object *item = FindMenuitem(strip, MEN_WANDERER_BACKDROP);
-    Object *window = (Object *) XGET(app, MUIA_Wanderer_WorkbenchWindow);
-    
+
+D(bug("[WANDERER] wanderer_menufunc_wanderer_backdrop()\n"));
+
     if (item != NULL)
     {
-        SET(window, MUIA_Window_Open, FALSE);
-	    SET(window, MUIA_IconWindow_IsBackdrop, XGET(item, MUIA_Menuitem_Checked));
-        SET(window, MUIA_Window_Open, TRUE);
+		data->wd_Option_BackDropMode = (BOOL)XGET(item, MUIA_Menuitem_Checked);
+	    SET(data->wd_WorkbenchWindow, MUIA_IconWindow_IsBackdrop, data->wd_Option_BackDropMode);
     }
 }
 
-void window_new_drawer(STRPTR *cdptr)
+void wanderer_menufunc_window_newdrawer(STRPTR *cdptr)
 {
     //TODO: remove the STRPTR *cdptr from top
     
-    Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
-    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Drawer );
-    D(bug("[wanderer] NewDrawer %s\n", dr));
+    Object *win = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Location );
+D(bug("[wanderer] wanderer_menufunc_window_newdrawer(%s)\n", dr));
 
-    Object *actwindow = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
-    Object *wbwindow = (Object *) XGET(app, MUIA_Wanderer_WorkbenchWindow);
+    Object *actwindow = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    Object *wbwindow = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
     if (actwindow == wbwindow)
     {
         /* This check is necessary because WorkbenchWindow has path RAM: */
-        D(bug("[wanderer] Can't call WBNewDrawer for WorkbenchWindow\n"));
+D(bug("[wanderer] wanderer_menufunc_window_newdrawer: Can't call WBNewDrawer for WorkbenchWindow\n"));
         return;
     }
     if ( XGET(actwindow, MUIA_Window_Open) == FALSE )
     {
-        D(bug("[wanderer] Can't call WBNewDrawer: the active window isn't open\n"));
+D(bug("[wanderer] wanderer_menufunc_window_newdrawer: Can't call WBNewDrawer: the active window isn't open\n"));
         return;
     }
 
@@ -724,11 +840,11 @@ void window_new_drawer(STRPTR *cdptr)
     UnLock(lock);
 }
 
-void window_open_parent(STRPTR *cdptr)
+void wanderer_menufunc_window_openparent(STRPTR *cdptr)
 {
     //TODO: Remove the **cdptr stuff from top
-    Object *win = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
-    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Drawer );
+    Object *win = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Location );
         
     IPTR	path_len=0;
 	STRPTR	last_letter=NULL;
@@ -748,7 +864,7 @@ void window_open_parent(STRPTR *cdptr)
 	STRPTR buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);	
 	CopyMem(dr, buf, path_len);
 	
-	Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
+	Object *cstate = (Object*)(((struct List*)XGET(_WandererIntern_AppObj, MUIA_Application_WindowList))->lh_Head);
 	Object *child;
 	
     // Make sure we have a correct path   
@@ -771,7 +887,7 @@ void window_open_parent(STRPTR *cdptr)
 	{
 		if (XGET(child, MUIA_UserData))
 		{      
-			STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Drawer);
+			STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Location);
 			if (child_drawer && !Stricmp(buf,child_drawer))
 			{
 				int is_open = XGET(child, MUIA_Window_Open);
@@ -780,7 +896,7 @@ void window_open_parent(STRPTR *cdptr)
 				else
 				{
 					DoMethod(child, MUIM_Window_ToFront);
-					set(child, MUIA_Window_Activate, TRUE);
+					SET(child, MUIA_Window_Activate, TRUE);
 				}
 			    FreeVec(buf);
 			    return; 
@@ -788,19 +904,19 @@ void window_open_parent(STRPTR *cdptr)
 		}
 	}
 	   
-	DoMethod(app, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
+	DoMethod(_WandererIntern_AppObj, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
 	FreeVec(buf);
 }
 
-void window_close()
+void wanderer_menufunc_window_close()
 {
-	Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
-	set(window, MUIA_Window_CloseRequest, TRUE);
+	Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+	SET(window, MUIA_Window_CloseRequest, TRUE);
 }
 
-void window_update()
+void wanderer_menufunc_window_update()
 {
-    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
     if (iconList != NULL)
@@ -809,9 +925,9 @@ void window_update()
     }
 }
 
-void window_clear_selection()
+void wanderer_menufunc_window_clear()
 {
-    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
     if (iconList != NULL)
@@ -820,9 +936,9 @@ void window_clear_selection()
     }
 }
 
-void window_select_contents()
+void wanderer_menufunc_window_select()
 {
-    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
     if (iconList != NULL)
@@ -831,9 +947,9 @@ void window_select_contents()
     }
 }
 
-void window_sort_name(Object **pstrip)
+void wanderer_menufunc_window_sort_name(Object **pstrip)
 {
-    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
     if ( iconList != NULL)
@@ -851,9 +967,9 @@ void window_sort_name(Object **pstrip)
     }
 }
 
-void window_sort_date(Object **pstrip)
+void wanderer_menufunc_window_sort_date(Object **pstrip)
 {
-    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
     if ( iconList != NULL)
@@ -873,9 +989,9 @@ void window_sort_date(Object **pstrip)
     }
 }
 
-void window_sort_size(Object **pstrip)
+void wanderer_menufunc_window_sort_size(Object **pstrip)
 {
-    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
     if ( iconList != NULL)
@@ -895,9 +1011,9 @@ void window_sort_size(Object **pstrip)
     }
 }
 
-void window_sort_type(Object **pstrip)
+void wanderer_menufunc_window_sort_type(Object **pstrip)
 {
-    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
     if ( iconList != NULL)
@@ -912,11 +1028,11 @@ void window_sort_type(Object **pstrip)
     }
 }
 
-void window_sort_reverse(Object **pstrip)
+void wanderer_menufunc_window_sort_reverse(Object **pstrip)
 {
     Object *strip = *pstrip;
     Object *item = FindMenuitem(strip, MEN_WINDOW_SORT_REVERSE);
-    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
     if (item != NULL && iconList != NULL)
@@ -937,11 +1053,11 @@ void window_sort_reverse(Object **pstrip)
     }
 }
 
-void window_sort_topdrawers(Object **pstrip)
+void wanderer_menufunc_window_sort_topdrawers(Object **pstrip)
 {
 	Object *strip = *pstrip;
 	Object *item = FindMenuitem(strip, MEN_WINDOW_SORT_TOPDRAWERS);
-	Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+	Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
 	Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
     if (item != NULL && iconList != NULL)
@@ -962,15 +1078,15 @@ void window_sort_topdrawers(Object **pstrip)
     }
 }
 
-void icon_open()
+void wanderer_menufunc_icon_open()
 {
-    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     DoMethod(window, MUIM_IconWindow_DoubleClicked);
 }
 
-void icon_rename(void)
+void wanderer_menufunc_icon_rename(void)
 {
-    Object                *window   = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextSelected_Start;
     
@@ -1005,9 +1121,9 @@ void icon_rename(void)
     } while (TRUE);
 }
 
-void icon_information()
+void wanderer_menufunc_icon_information()
 {
-    Object                *window   = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);   
+    Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextSelected_Start;
     
@@ -1040,7 +1156,7 @@ void DisposeCopyDisplay(struct MUIDisplayObjects *d)
 {
     if (d->copyApp) 
     {
-        set(d->win,MUIA_Window_Open,FALSE);
+        SET(d->win,MUIA_Window_Open,FALSE);
         MUI_DisposeObject(d->copyApp);
     }
 }
@@ -1138,22 +1254,22 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
     {
         if ((flags & (ACTION_COPY|ACTION_DELETE)) == (ACTION_COPY|ACTION_DELETE)) 
         {
-            set(fromObject, MUIA_Text_Contents, (IPTR)"move from");
-            set(toObject, MUIA_Text_Contents, (IPTR)"move to");
-            set(fileTextObject, MUIA_Text_Contents, (IPTR)"file");
-            set(fileLengthObject, MUIA_Text_Contents, (IPTR)"traffic");
+            SET(fromObject, MUIA_Text_Contents, (IPTR)"move from");
+            SET(toObject, MUIA_Text_Contents, (IPTR)"move to");
+            SET(fileTextObject, MUIA_Text_Contents, (IPTR)"file");
+            SET(fileLengthObject, MUIA_Text_Contents, (IPTR)"traffic");
         } 
         else if ((flags & ACTION_COPY) == ACTION_COPY) 
         {
-            set(fromObject, MUIA_Text_Contents, (IPTR)"copy from");
-            set(toObject, MUIA_Text_Contents, (IPTR)"copy to");
-            set(fileTextObject, MUIA_Text_Contents, (IPTR)"file");
-            set(fileLengthObject, MUIA_Text_Contents, (IPTR)"traffic");
+            SET(fromObject, MUIA_Text_Contents, (IPTR)"copy from");
+            SET(toObject, MUIA_Text_Contents, (IPTR)"copy to");
+            SET(fileTextObject, MUIA_Text_Contents, (IPTR)"file");
+            SET(fileLengthObject, MUIA_Text_Contents, (IPTR)"traffic");
 
         } 
         else if ((flags & ACTION_DELETE) == ACTION_DELETE) 
         {
-            set(fromObject, MUIA_Text_Contents, "delete from");
+            SET(fromObject, MUIA_Text_Contents, "delete from");
             DoMethod(group, MUIM_Group_InitChange);
             DoMethod(group, OM_REMMEMBER, toObject);
             DoMethod(group, OM_REMMEMBER, fileLengthObject);
@@ -1161,19 +1277,19 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
             DoMethod(group, OM_REMMEMBER, d->destObject);
             DoMethod(group, OM_REMMEMBER, gaugeGroup);
             DoMethod(group, MUIM_Group_ExitChange);
-            set(fileTextObject, MUIA_Text_Contents, "file to delete");
+            SET(fileTextObject, MUIA_Text_Contents, "file to delete");
         }
 
-        set(d->win,MUIA_Window_Open,TRUE);
+        SET(d->win,MUIA_Window_Open,TRUE);
         DoMethod(d->stopObject,MUIM_Notify, MUIA_Pressed, FALSE, d->stopObject, 3, MUIM_WriteLong, 1 ,&d->stopflag);
         back = TRUE;
     }
     return back;
 }
 
-void icon_delete(void)
+void wanderer_menufunc_icon_delete(void)
 {
-    Object                *window   = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextSelected_Start;
     DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
@@ -1181,8 +1297,8 @@ void icon_delete(void)
     struct MUIDisplayObjects dobjects;
     struct Hook displayCopyHook;
     struct Hook displayDelHook;
-    displayCopyHook.h_Entry = (HOOKFUNC) displayCopyFunc;
-    displayDelHook.h_Entry = (HOOKFUNC) askDeleteFunc;
+    displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
+    displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
     
     ULONG updatedIcons = 0;
     
@@ -1211,23 +1327,23 @@ void icon_delete(void)
     }
 }
 
-void wanderer_guisettings(void)
+void wanderer_menufunc_wanderer_guisettings(void)
 {
-    //DoMethod(app, MUIM_Application_OpenConfigWindow);
+    //DoMethod(_WandererIntern_AppObj, MUIM_Application_OpenConfigWindow);
     OpenWorkbenchObject("SYS:Prefs/Zune",
                 WBOPENA_ArgName, (IPTR) "WANDERER",
                 TAG_DONE);
 }
 
-void wanderer_about(void)
+void wanderer_menufunc_wanderer_about(void)
 {
     OpenWorkbenchObject("SYS:System/About", TAG_DONE);
 }
 
-void wanderer_quit(void)
+void wanderer_menufunc_wanderer_quit(void)
 {
-    //if (MUI_RequestA(app, NULL, 0, "Wanderer", _(MSG_YESNO), _(MSG_REALLYQUIT), NULL))
-	//DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    //if (MUI_RequestA(_WandererIntern_AppObj, NULL, 0, "Wanderer", _(MSG_YESNO), _(MSG_REALLYQUIT), NULL))
+	//DoMethod(_WandererIntern_AppObj, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     OpenWorkbenchObject("WANDERER:Tools/Quit", TAG_DONE);
 }
 
@@ -1251,7 +1367,7 @@ VOID DoMenuNotify(Object* strip, int id, void *function, void *arg)
 	DoMethod
         (
             entry, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, 
-            (IPTR) entry, 4, MUIM_CallHook, (IPTR) &hook_standard,
+            (IPTR) entry, 4, MUIM_CallHook, (IPTR) &_WandererIntern_hook_standard,
             (IPTR) function, (IPTR) arg
         );
     }
@@ -1263,65 +1379,47 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
 
     if (!strip) return;
 
-    DoMenuNotify(strip, MEN_WANDERER_EXECUTE,       execute_open,           path);
-    DoMenuNotify(strip, MEN_WANDERER_SHELL,         shell_open,             path);
-    DoMenuNotify(strip, MEN_WANDERER_GUISETTINGS,   wanderer_guisettings,   NULL);
-    DoMenuNotify(strip, MEN_WANDERER_ABOUT,         wanderer_about,         NULL);
-    DoMenuNotify(strip, MEN_WANDERER_QUIT,          wanderer_quit,          NULL);
+    DoMenuNotify(strip, MEN_WANDERER_EXECUTE,       wanderer_menufunc_wanderer_execute,       path);
+    DoMenuNotify(strip, MEN_WANDERER_SHELL,         wanderer_menufunc_wanderer_shell,         path);
+    DoMenuNotify(strip, MEN_WANDERER_GUISETTINGS,   wanderer_menufunc_wanderer_guisettings,   NULL);
+    DoMenuNotify(strip, MEN_WANDERER_ABOUT,         wanderer_menufunc_wanderer_about,   NULL);
+    DoMenuNotify(strip, MEN_WANDERER_QUIT,          wanderer_menufunc_wanderer_quit,          NULL);
 
-    DoMenuNotify(strip, MEN_WINDOW_NEW_DRAWER,      window_new_drawer,      path);
-    DoMenuNotify(strip, MEN_WINDOW_OPEN_PARENT,     window_open_parent,     path);
-    DoMenuNotify(strip, MEN_WINDOW_CLOSE,           window_close,           NULL);
-    DoMenuNotify(strip, MEN_WINDOW_UPDATE,          window_update,          NULL);
-    DoMenuNotify(strip, MEN_WINDOW_CLEAR,           window_clear_selection, NULL);
-    DoMenuNotify(strip, MEN_WINDOW_SELECT,          window_select_contents, NULL);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_NAME,       window_sort_name,       strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_TYPE,       window_sort_type,       strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_DATE,       window_sort_date,       strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_SIZE,       window_sort_size,       strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_REVERSE,    window_sort_reverse,    strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_TOPDRAWERS, window_sort_topdrawers, strip);
+    DoMenuNotify(strip, MEN_WINDOW_NEW_DRAWER,      wanderer_menufunc_window_newdrawer,       path);
+    DoMenuNotify(strip, MEN_WINDOW_OPEN_PARENT,     wanderer_menufunc_window_openparent,      path);
+    DoMenuNotify(strip, MEN_WINDOW_CLOSE,           wanderer_menufunc_window_close,           NULL);
+    DoMenuNotify(strip, MEN_WINDOW_UPDATE,          wanderer_menufunc_window_update,          NULL);
+    DoMenuNotify(strip, MEN_WINDOW_CLEAR,           wanderer_menufunc_window_clear,           NULL);
+    DoMenuNotify(strip, MEN_WINDOW_SELECT,          wanderer_menufunc_window_select,          NULL);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_NAME,       wanderer_menufunc_window_sort_name,       strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_TYPE,       wanderer_menufunc_window_sort_type,       strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_DATE,       wanderer_menufunc_window_sort_date,       strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_SIZE,       wanderer_menufunc_window_sort_size,       strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_REVERSE,    wanderer_menufunc_window_sort_reverse,    strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_TOPDRAWERS, wanderer_menufunc_window_sort_topdrawers, strip);
 
-    DoMenuNotify(strip, MEN_ICON_OPEN,              icon_open,              NULL);
-    DoMenuNotify(strip, MEN_ICON_RENAME,            icon_rename,            NULL);
-    DoMenuNotify(strip, MEN_ICON_INFORMATION,       icon_information,       NULL);
-    DoMenuNotify(strip, MEN_ICON_DELETE,            icon_delete,            NULL);
+    DoMenuNotify(strip, MEN_ICON_OPEN,              wanderer_menufunc_icon_open,              NULL);
+    DoMenuNotify(strip, MEN_ICON_RENAME,            wanderer_menufunc_icon_rename,            NULL);
+    DoMenuNotify(strip, MEN_ICON_INFORMATION,       wanderer_menufunc_icon_information,       NULL);
+    DoMenuNotify(strip, MEN_ICON_DELETE,            wanderer_menufunc_icon_delete,            NULL);
     
     if ((item = FindMenuitem(strip, MEN_WANDERER_BACKDROP)))
     {
 	    DoMethod
         (
             item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, 
-            (IPTR) app, 7, MUIM_Application_PushMethod, 
-            (IPTR) app, 4, MUIM_CallHook, (IPTR) &hook_standard, 
-            (IPTR) wanderer_backdrop, (IPTR) strip
+            (IPTR) _WandererIntern_AppObj, 7, MUIM_Application_PushMethod, 
+            (IPTR) _WandererIntern_AppObj, 4, MUIM_CallHook, (IPTR) &_WandererIntern_hook_standard, 
+            (IPTR) wanderer_menufunc_wanderer_backdrop, (IPTR) strip
         );
     }
 }
 
-/*** Instance Data **********************************************************/
-struct Wanderer_DATA
-{
-    Object                      *wd_Prefs,
-                                *wd_ActiveWindow,
-                                *wd_WorkbenchWindow;
-
-    struct MUI_InputHandlerNode  wd_TimerIHN;
-    struct MsgPort              *wd_CommandPort;
-    struct MUI_InputHandlerNode  wd_CommandIHN;
-    struct MsgPort              *wd_NotifyPort;
-    struct MUI_InputHandlerNode  wd_NotifyIHN;
-    struct NotifyRequest         pnr;
-    IPTR                         wd_PrefsIntern;
-    
-};
-
-/*** Macros *****************************************************************/
-#define SETUP_INST_DATA struct Wanderer_DATA *data = INST_DATA(CLASS, self)
-
 /*** Methods ****************************************************************/
 Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
+D(bug("[Wanderer] Wanderer__OM_NEW()\n"));
+
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
@@ -1337,12 +1435,33 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     
     if (self != NULL)
     {
-        SETUP_INST_DATA;
-        
+        SETUP_WANDERER_INST_DATA;
+
+D(bug("[Wanderer] Wanderer__OM_NEW: SELF = %d, Private data @ %x\n", self, data));
+
+		data->wd_Screen = LockPubScreen(NULL);
+		_WandererIntern_CLASS = CLASS;
+
+#if defined(WANDERER_DEFAULT_BACKDROP)
+		data->wd_Option_BackDropMode = TRUE;
+#else
+		data->wd_Option_BackDropMode = FALSE;
+#endif
+
+		if(data->wd_Screen == NULL)
+		{
+D(bug("[Wanderer] Wanderer__OM_NEW: Couldn't lock screen!\n"));
+            CoerceMethod(CLASS, self, OM_DISPOSE);
+            return NULL;
+		}
+
+D(bug("[Wanderer] Wanderer__OM_NEW: Using Screen @ %x\n", data->wd_Screen));
+
         /*-- Setup hooks structures ----------------------------------------*/
-        hook_standard.h_Entry = (HOOKFUNC) hook_func_standard;
-        hook_action.h_Entry   = (HOOKFUNC) hook_func_action;
-        
+        _WandererIntern_hook_standard.h_Entry = (HOOKFUNC) Wanderer__HookFunc_StandardFunc;
+        _WandererIntern_hook_action.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_ActionFunc;
+		_WandererIntern_hook_backdrop.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_BackdropFunc;
+
         // ---
         if ((data->wd_CommandPort = CreateMsgPort()) == NULL)
         {
@@ -1395,18 +1514,21 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->pnr.nr_Name                 = "ENV:SYS/Wanderer.prefs";
         data->pnr.nr_Flags                = NRF_SEND_MESSAGE;
         data->pnr.nr_stuff.nr_Msg.nr_Port = data->wd_NotifyPort;
-        
+
+#if defined(DEBUG)
         if (StartNotify(&data->pnr))
         {
-            D(bug("Wanderer: prefs notification setup ok\n"));
+D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-notification setup\n"));
         }
         else
         {
-            D(bug("Wanderer: prefs notification setup FAILED\n"));
+D(bug("[Wanderer] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
         }
-        
-        data->wd_Prefs = WandererPrefsObject, End; // FIXME: error handling
-        data->wd_PrefsIntern = InitWandererPrefs();
+#endif
+        data->wd_Prefs = WandererPrefsObject,
+						 End; // FIXME: error handling
+
+		if (data->wd_Prefs) data->wd_PrefsIntern = InitWandererPrefs();
     }
     
     return self;
@@ -1414,7 +1536,7 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
-    SETUP_INST_DATA;
+    SETUP_WANDERER_INST_DATA;
     
     if (data->wd_CommandPort)
     {
@@ -1445,16 +1567,24 @@ IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 
 IPTR Wanderer__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
-    SETUP_INST_DATA;
+    SETUP_WANDERER_INST_DATA;
     struct TagItem *tstate = message->ops_AttrList, *tag;
 
     while ((tag = NextTagItem((const struct TagItem**)&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
-            case MUIA_Wanderer_ActiveWindow:
+		case MUIA_Wanderer_Screen:
+D(bug("[Wanderer] Wanderer__OM_SET: MUIA_Wanderer_Screen = %p\n", tag->ti_Data));
+D(bug("[Wanderer] Wanderer__OM_SET: setting MUIA_Wanderer_Screen isnt yet handled!\n"));
+                break;
+
+		case MUIA_Wanderer_ActiveWindow:
                 data->wd_ActiveWindow = (Object *) tag->ti_Data;
-                bug("*** wanderer active window: %p\n", tag->ti_Data);
+D(bug("[Wanderer] Wanderer__OM_SET: MUIA_Wanderer_ActiveWindow = %p\n", tag->ti_Data));
+				if (!(XGET(data->wd_ActiveWindow, MUIA_Window_Activate)))
+					NNSET(data->wd_ActiveWindow, MUIA_Window_Activate, TRUE);
+
                 break;
 		
 	    case MUIA_Application_Iconified:
@@ -1471,12 +1601,16 @@ IPTR Wanderer__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
 IPTR Wanderer__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 {
-    SETUP_INST_DATA;
+    SETUP_WANDERER_INST_DATA;
     IPTR *store = message->opg_Storage;
     IPTR  rv    = TRUE;
     
     switch (message->opg_AttrID)
     {
+		case MUIA_Wanderer_Screen:
+            *store = (IPTR) data->wd_Screen;
+			break;
+
         case MUIA_Wanderer_Prefs:
             *store = (IPTR) data->wd_Prefs;
             break;
@@ -1496,13 +1630,21 @@ IPTR Wanderer__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     return rv;
 }
 
+/* Main entry point for Wanderer Application Object */
+/*
+	When the executable creates our object it calls zune 
+    to handle basic "control" ... which results in Zune 
+    calling this method ..
+*/
 IPTR Wanderer__MUIM_Application_Execute
 (
     Class *CLASS, Object *self, Msg message 
 )
 {
-    SETUP_INST_DATA;
+    SETUP_WANDERER_INST_DATA;
     
+D(bug("[Wanderer] Wanderer__MUIM_Application_Execute() ##\n[Wanderer] Wanderer__MUIM_Application_Execute: Creating 'Workbench' Window..\n"));
+
     data->wd_WorkbenchWindow = (Object *) DoMethod
     (
         self, MUIM_Wanderer_CreateDrawerWindow, (IPTR) NULL
@@ -1510,25 +1652,18 @@ IPTR Wanderer__MUIM_Application_Execute
     
     if (data->wd_WorkbenchWindow != NULL)
     {
-        DoMethod
-        (
-            data->wd_WorkbenchWindow, MUIM_KillNotify, MUIA_Window_CloseRequest
-        );
-        
-        DoMethod
-        (
-            data->wd_WorkbenchWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-            (IPTR) self, 3, MUIM_CallHook, (IPTR) &hook_standard, (IPTR) wanderer_quit
-        );
+D(bug("[Wanderer] Wanderer__MUIM_Application_Execute: Workbench Window Obj @ %x\n", data->wd_WorkbenchWindow));
 
         Detach();
-        
+
+D(bug("[Wanderer] Wanderer__MUIM_Application_Execute: Really handing control to Zune ..\n"));
+
 	    DoSuperMethodA(CLASS, self, message);
         
         return RETURN_OK;
     }
     
-    // FIXME: report error...
+#warning "TODO: Report an error if we fail to create the Workbench's window ..."
     
     return RETURN_ERROR;
 }
@@ -1539,11 +1674,11 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer
 )
 {
     Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
-    Object *child;
+    Object *child = NULL;
     STRPTR scr_title = GetScreenTitle();
 
     while ((child = NextObject(&cstate)))
-	   set(child, MUIA_Window_ScreenTitle, (IPTR) scr_title);
+	   SET(child, MUIA_Window_ScreenTitle, (IPTR) scr_title);
     
     return TRUE;
 }
@@ -1553,29 +1688,29 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
     Class *CLASS, Object *self, Msg message
 )
 {
-    SETUP_INST_DATA;
-    struct WBHandlerMessage *wbhm;
+    SETUP_WANDERER_INST_DATA;
+    struct WBHandlerMessage *wbhm = NULL;
     
-    D(bug("Wanderer: Recieved signal at notify port\n"));
+D(bug("[Wanderer] Recieved signal at notify port\n"));
     
     while ((wbhm = WBHM(GetMsg(data->wd_CommandPort))) != NULL)
     {
-        D(bug("Wanderer: Recieved message from handler, type = %ld\n", wbhm->wbhm_Type));
+D(bug("[Wanderer] Recieved message from handler, type = %ld\n", wbhm->wbhm_Type));
         
         switch (wbhm->wbhm_Type)
         {
             case WBHM_TYPE_SHOW:
-                D(bug("Wanderer: WBHM_TYPE_SHOW\n"));
-                set(self, MUIA_ShowMe, TRUE);
+D(bug("[Wanderer] WBHM_TYPE_SHOW\n"));
+                SET(self, MUIA_ShowMe, TRUE);
                 break;
             
             case WBHM_TYPE_HIDE:
-                D(bug("Wanderer: WBHM_TYPE_HIDE\n"));
-                set(self, MUIA_ShowMe, FALSE);
+D(bug("[Wanderer] WBHM_TYPE_HIDE\n"));
+                SET(self, MUIA_ShowMe, FALSE);
                 break;
                 
             case WBHM_TYPE_UPDATE:
-                D(bug("Wanderer: WBHM_TYPE_UPDATE\n"));
+D(bug("[Wanderer] WBHM_TYPE_UPDATE\n"));
                 {
                     CONST_STRPTR name = wbhm->wbhm_Data.Update.Name;
                     ULONG        length;
@@ -1593,17 +1728,17 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
                             break;
                     }
                     
-                    D(bug("Wanderer: name = %s, length = %ld\n", name, length));
+D(bug("[Wanderer] name = %s, length = %ld\n", name, length));
                     
                     {
                         Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
-                        Object *child;
+                        Object *child = NULL;
                         
                         while ((child = NextObject(&cstate)))
                         {
                             if (XGET(child, MUIA_UserData))
                             {
-                                STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Drawer);
+                                STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Location);
                                 
                                 if
                                 (
@@ -1614,7 +1749,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
                                 {
                                     Object *iconlist = (Object *) XGET(child, MUIA_IconWindow_IconList);
                                     
-                                    D(bug("Wanderer: Drawer found: %s!\n", child_drawer));
+D(bug("[Wanderer] Drawer found: %s!\n", child_drawer));
                                     
                                     if (iconlist != NULL)
                                     {
@@ -1629,7 +1764,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
                 break;
                 
             case WBHM_TYPE_OPEN:
-                D(bug("Wanderer: WBHM_TYPE_OPEN\n"));
+D(bug("[Wanderer] WBHM_TYPE_OPEN\n"));
             
                 {
                     Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
@@ -1640,7 +1775,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
                     {
                         if (XGET(child, MUIA_UserData))
                         {
-                            STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Drawer);
+                            STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Location);
                             if (child_drawer && !Stricmp(buf,child_drawer))
                             {
                                 int is_open = XGET(child, MUIA_Window_Open);
@@ -1649,7 +1784,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
                                 else
                                 {
                                     DoMethod(child, MUIM_Window_ToFront);
-                                    set(child, MUIA_Window_Activate, TRUE);
+                                    SET(child, MUIA_Window_Activate, TRUE);
                                 }
                                 return 0; 
                             }
@@ -1658,7 +1793,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
                     
                     DoMethod
                     (
-                        app, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf
+                        _WandererIntern_AppObj, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf
                     );
                 }
                 break;
@@ -1676,10 +1811,10 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
     Class *CLASS, Object *self, Msg message
 )
 {
-    SETUP_INST_DATA;
-    struct Message *notifyMessage;
+    SETUP_WANDERER_INST_DATA;
+    struct Message *notifyMessage = NULL;
     
-    D(bug("Wanderer: got prefs change notify!\n"));
+D(bug("[Wanderer] Wanderer__MUIM_Wanderer_HandleNotify: got prefs change notification!\n"));
     
     while ((notifyMessage = GetMsg(data->wd_NotifyPort)) != NULL)
     {
@@ -1698,14 +1833,15 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
         if (XGET(child, MUIA_UserData))
         {
             /* update the toolbar prefs for every open window*/
-            set(child, MUIA_IconWindow_Toolbar_Enabled, XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled) );
-            set(child, MUIA_Window_Activate, TRUE);
+            SET(child, MUIA_IconWindow_Toolbar_Enabled, XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled) );
+#warning "Do we really need to activate the window here?"
+//            SET(child, MUIA_Window_Activate, TRUE);
             Object *iconList = ( Object *)XGET(child, MUIA_IconWindow_IconList);
             if ( iconList != NULL )
             {
-                set(iconList, MUIA_IconList_ListMode, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_ListMode));
-                set(iconList, MUIA_IconList_TextMode, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_TextMode));
-                set(iconList, MUIA_IconList_TextMaxLen, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_TextMaxLen));
+                SET(iconList, MUIA_IconList_ListMode, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_ListMode));
+                SET(iconList, MUIA_IconList_TextMode, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_TextMode));
+                SET(iconList, MUIA_IconList_TextMaxLen, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_TextMaxLen));
                 DoMethod(iconList, MUIM_IconList_Update );
             }
         }
@@ -1714,15 +1850,22 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
     return 0;
 }
 
-Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot )
+/* Some differences here between volumes and subwindows */
+Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
 {
-    Object *menustrip;
-    // Some differences here between volumes and subwindows
+    Object   *_NewWandIntMenu__menustrip = NULL;
+	IPTR     _NewWandIntMenu__OPTION_BACKDROP = CHECKIT|MENUTOGGLE;
+
+	if (isBackdrop)
+	{
+		_NewWandIntMenu__OPTION_BACKDROP |= CHECKED;
+	}
+
     if ( isRoot )
     {
         struct NewMenu nm[] = {
         {NM_TITLE,     _(MSG_MEN_WANDERER)},
-            {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WANDERER_BACKDROP},
+            {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), _NewWandIntMenu__OPTION_BACKDROP, 0, (APTR) MEN_WANDERER_BACKDROP},
             {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                         , 0, (APTR) MEN_WANDERER_EXECUTE},
     
             {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                         , 0, (APTR) MEN_WANDERER_SHELL},
@@ -1776,7 +1919,7 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot )
     //    {NM_ITEM,  "ResetWanderer" },
         {NM_END}
         };
-        menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
+        _NewWandIntMenu__menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
     }
     else
     {
@@ -1839,9 +1982,9 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot )
     //    {NM_ITEM,  "ResetWanderer" },
         {NM_END}
         };
-        menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
+        _NewWandIntMenu__menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
     }
-    return menustrip;
+    return _NewWandIntMenu__menustrip;
 }
 
 Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
@@ -1850,11 +1993,21 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     struct MUIP_Wanderer_CreateDrawerWindow *message
 )
 {
-    SETUP_INST_DATA;
-    Object *window = NULL;
-    BOOL    isWorkbenchWindow = message->drawer == NULL ? TRUE : FALSE;
-    BOOL    hasToolbar = XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled);
-    
+    SETUP_WANDERER_INST_DATA;
+
+D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
+
+    Object *window                = NULL;
+    BOOL    isWorkbenchWindow     = FALSE;
+    BOOL    useBackdrop           = FALSE;
+
+	if (isWorkbenchWindow = (message->drawer == NULL ? TRUE : FALSE))
+	{
+		useBackdrop = data->wd_Option_BackDropMode;
+	}
+
+    BOOL    hasToolbar            = XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled);
+    IPTR    TAG_IconWindow_Drawer = isWorkbenchWindow ? TAG_IGNORE : MUIA_IconWindow_Location;
 
     IPTR    useFont = (IPTR)NULL;
     if (data->wd_PrefsIntern)
@@ -1862,22 +2015,22 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
     }
 
-    Object *menustrip = __CreateWandererIntuitionMenu__ ( isWorkbenchWindow );
+    Object *_NewWandDrawerMenu__menustrip = __CreateWandererIntuitionMenu__ (isWorkbenchWindow, useBackdrop);
     
     /* Create a new icon drawer window with the correct drawer being set */
     window = IconWindowObject,
         MUIA_UserData,                     1,
+		MUIA_Wanderer_Prefs,               data->wd_Prefs,
+		MUIA_Wanderer_Screen,              data->wd_Screen,
+        MUIA_Window_ScreenTitle,           (IPTR) GetScreenTitle(),
+        MUIA_Window_Menustrip,             (IPTR) _NewWandDrawerMenu__menustrip,
+		TAG_IconWindow_Drawer,             (IPTR) message->drawer,
         MUIA_IconWindow_Font,              useFont,
-        MUIA_Window_ScreenTitle,    (IPTR) GetScreenTitle(),
-        MUIA_Window_Menustrip,      (IPTR) menustrip,
-        MUIA_IconWindow_ActionHook, (IPTR) &hook_action,
+        MUIA_IconWindow_ActionHook,        (IPTR) &_WandererIntern_hook_action,
         MUIA_IconWindow_IsRoot,            isWorkbenchWindow ? TRUE : FALSE,
+		isWorkbenchWindow ? MUIA_IconWindow_IsBackdrop : TAG_IGNORE, useBackdrop,
         MUIA_Window_IsSubWindow,           isWorkbenchWindow ? FALSE : TRUE,
-        MUIA_IconWindow_IsBackdrop,        isWorkbenchWindow ? TRUE : FALSE,
         MUIA_IconWindow_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
-        isWorkbenchWindow ? 
-            TAG_IGNORE    : 
-            MUIA_IconWindow_Drawer, (IPTR) message->drawer,
     End;
     
     if (window != NULL)
@@ -1886,7 +2039,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         STRPTR drw = NULL;
         BOOL freeDrwStr = FALSE;
         
-        if (!isWorkbenchWindow) drw = (STRPTR) XGET(window, MUIA_IconWindow_Drawer);
+        if (!isWorkbenchWindow) drw = (STRPTR) XGET(window, MUIA_IconWindow_Location);
         else
         {
             drw = AllocVec ( 5, MEMF_CLEAR );
@@ -1894,27 +2047,44 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
             freeDrwStr = TRUE;    
         }
         
-        DoMethod
-        (
-            window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-            (IPTR) window, 1, MUIM_IconWindow_Remove
-        );
+		if (isWorkbenchWindow)
+		{
+			DoMethod
+			(
+				window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+				(IPTR) self, 3, MUIM_CallHook, (IPTR) &_WandererIntern_hook_standard, (IPTR) wanderer_menufunc_wanderer_quit
+			);
+		}
+		else
+		{
+			DoMethod
+			(
+				window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+				(IPTR) window, 1, MUIM_IconWindow_Remove
+			);
+		}
         
         DoMethod
         (
             window, MUIM_Notify, MUIA_Window_Activate, TRUE,
             (IPTR) _app(self), 3, MUIM_Set, MUIA_Wanderer_ActiveWindow, (IPTR) window
         );
-        
+
+        DoMethod
+        (
+            window, MUIM_Notify, MUIA_IconWindow_IsBackdrop, MUIV_EveryTime,
+            (IPTR) _app(self), 2, MUIM_CallHook, (IPTR) &_WandererIntern_hook_backdrop
+        );
+		
         /* If "Execute Command" entry is clicked open the execute window */
-        DoAllMenuNotifies(menustrip, drw);        
+        DoAllMenuNotifies(_NewWandDrawerMenu__menustrip, drw);        
         
         /* Add the window to the application */
         DoMethod(_app(self), OM_ADDMEMBER, (IPTR) window);
         
         /* And now open it */
         DoMethod(window, MUIM_IconWindow_Open);
-        
+
         /* Clean up ram string */
         if ( freeDrwStr && drw ) FreeVec ( drw );
     }

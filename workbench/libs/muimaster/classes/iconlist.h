@@ -38,18 +38,18 @@ struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
 #define MUIV_IconList_NextSelected_End   0
 
 /*** Attributes *************************************************************/
-#define MUIA_IconList_DoubleClick       (MUIB_IconList | 0x00000000) /* Zune: V1 ..G BOOL */
-#define MUIA_IconList_Left              (MUIB_IconList | 0x00000001) /* Zune: V1 ..G LONG */
-#define MUIA_IconList_Top               (MUIB_IconList | 0x00000002) /* Zune: V1 ..G LONG */
-#define MUIA_IconList_Width             (MUIB_IconList | 0x00000003) /* Zune: V1 ..G LONG */
-#define MUIA_IconList_Height            (MUIB_IconList | 0x00000004) /* Zune: V1 ..G LONG */
-#define MUIA_IconList_IconsDropped      (MUIB_IconList | 0x00000005) /* Zune: V1 ..G struct IconList_Entry * */
-#define MUIA_IconList_Clicked           (MUIB_IconList | 0x00000006) /* Zune: V1 ..G struct IconList_Click * */
-#define MUIA_IconList_IconsMoved        (MUIB_IconList | 0x00000007) /* Zune: V1 ..G struct IconList_Entry * */
-#define MUIA_IconList_AppWindowDrop     (MUIB_IconList | 0x00000008) /* Zune: V1 ..G struct IconList_Entry * */
-#define MUIA_IconList_ListMode          (MUIB_IconList | 0x00000009) /* Zune: V1 ..G struct IconList_Entry * */
-#define MUIA_IconList_TextMode          (MUIB_IconList | 0x0000000A) /* Zune: V1 ..G struct IconList_Entry * */
-#define MUIA_IconList_TextMaxLen        (MUIB_IconList | 0x0000000B) /* Zune: V1 ..G struct IconList_Entry * */
+#define MUIA_IconList_DoubleClick               (MUIB_IconList | 0x00000000) /* Zune: V1 ..G BOOL */
+#define MUIA_IconList_Left                      (MUIB_IconList | 0x00000001) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_Top                       (MUIB_IconList | 0x00000002) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_Width                     (MUIB_IconList | 0x00000003) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_Height                    (MUIB_IconList | 0x00000004) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_IconsDropped              (MUIB_IconList | 0x00000005) /* Zune: V1 ..G struct IconList_Entry * */
+#define MUIA_IconList_Clicked                   (MUIB_IconList | 0x00000006) /* Zune: V1 ..G struct IconList_Click * */
+#define MUIA_IconList_IconsMoved                (MUIB_IconList | 0x00000007) /* Zune: V1 ..G struct IconList_Entry * */
+#define MUIA_IconList_AppWindowDrop             (MUIB_IconList | 0x00000008) /* Zune: V1 ..G struct IconList_Entry * */
+#define MUIA_IconList_ListMode                  (MUIB_IconList | 0x00000009) /* Zune: V1 ..G struct IconList_Entry * */
+#define MUIA_IconList_TextMode                  (MUIB_IconList | 0x0000000A) /* Zune: V1 ..G struct IconList_Entry * */
+#define MUIA_IconList_TextMaxLen                (MUIB_IconList | 0x0000000B) /* Zune: V1 ..G struct IconList_Entry * */
 
 /* used by MUIM_IconList_NextSelected */
 struct IconList_Entry

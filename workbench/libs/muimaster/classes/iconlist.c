@@ -4,6 +4,9 @@ Copyright  2002-2006, The AROS Development Team. All rights reserved.
 $Id$
 */
 
+//#define MYDEBUG
+#include "debug.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,11 +38,6 @@ $Id$
 #include <prefs/wanderer.h>
 #include <proto/cybergraphics.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
-
-#define MYDEBUG
-#include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -140,6 +138,8 @@ struct MUI_IconData
     UBYTE wpd_IconListMode;
     UBYTE wpd_IconTextMode;
     ULONG wpd_IconTextMaxLen;
+	BOOL  wpd_IconListFixedBackground;
+	BOOL  wpd_IconListScaledBackground;
 
     /* lasso data */
     BOOL lasso_active;
@@ -812,12 +812,19 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     WindowFont = (struct TextFont *) GetTagData(MUIA_Font, (IPTR) NULL, msg->ops_AttrList);
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
+	    MUIA_FillArea, FALSE,
         MUIA_Dropable, TRUE,
         MUIA_Font, MUIV_Font_Tiny,
         TAG_MORE, (IPTR) msg->ops_AttrList);
+
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
+
+D(bug("[IconList] IconList__OM_NEW: SELF = %x\n", obj));
+
+	data->wpd_IconListFixedBackground = TRUE;
+	
     data->last_selected = NULL;
     
     // Get some initial values
@@ -834,7 +841,7 @@ IPTR IconList__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (WindowFont == NULL) data->IconFont = _font(obj);
     else data->IconFont = WindowFont;
 
-    D(bug("[iconlist] Used Font = %x\n", data->IconFont));
+D(bug("[IconList] Used Font = %x\n", data->IconFont));
 
     data->pool =  CreatePool(0,4096,4096);
     if (!data->pool)
@@ -916,6 +923,49 @@ IPTR IconList__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 if (data->view_y != tag->ti_Data)
                     data->view_y = tag->ti_Data;
                 break;
+
+			/* Settings defined by the view class */
+			case MUIA_IconListview_FixedBackground:
+				data->wpd_IconListFixedBackground = (BOOL)tag->ti_Data;
+                break;
+
+			case MUIA_IconListview_ScaledBackground:
+				data->wpd_IconListScaledBackground = (BOOL)tag->ti_Data;
+                break;
+
+			/* We also listen for this and manually adjust for known stuff */
+			case MUIA_Background:
+D(bug("[IconList] IconList__OM_SET: MUIA_Background\n"));
+			{
+				char *bgmode_string = tag->ti_Data;
+				BYTE this_mode = bgmode_string[0] - 48;
+
+D(bug("[IconList] IconList__OM_SET: MUIA_Background | MUI BG Mode = %d\n", this_mode));
+				switch (this_mode)
+				{
+				case 0:
+					//MUI Pattern
+					data->wpd_IconListFixedBackground = FALSE;
+					data->wpd_IconListScaledBackground = FALSE;
+					break;
+				case 2:
+					//MUI RGB color
+					data->wpd_IconListFixedBackground = FALSE;
+					data->wpd_IconListScaledBackground = FALSE;
+					break;
+				case 7:
+					//Zune Gradient
+					data->wpd_IconListFixedBackground = TRUE;
+					data->wpd_IconListScaledBackground = TRUE;
+					break;
+				case 5:
+					//Image
+					data->wpd_IconListFixedBackground = FALSE;
+					data->wpd_IconListScaledBackground = FALSE;
+					break;
+				}
+				return 0;
+			}
         }
     }
 
@@ -950,6 +1000,9 @@ IPTR IconList__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         case MUIA_IconList_ListMode: STORE = (ULONG)&data->wpd_IconListMode; return 1;
         case MUIA_IconList_TextMode: STORE = (ULONG)&data->wpd_IconTextMode; return 1;
         case MUIA_IconList_TextMaxLen: STORE = (ULONG)&data->wpd_IconTextMaxLen; return 1;
+		/* Settings defined by the view class */
+		case MUIA_IconListview_FixedBackground: STORE = (IPTR)data->wpd_IconListFixedBackground; return 1;
+		case MUIA_IconListview_ScaledBackground: STORE = (IPTR)data->wpd_IconListScaledBackground; return 1;
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg)) 
@@ -1085,11 +1138,22 @@ MUIM_Draw - draw the IconList
 **************************************************************************/
 IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {   
-    struct MUI_IconData *data = INST_DATA(cl, obj);
-    APTR clip;
-    struct IconEntry *icon;
-    ULONG update_oldwidth = 0, update_oldheight = 0;
+    struct MUI_IconData    *data = INST_DATA(cl, obj);
+    APTR                   clip;
+    struct IconEntry       *icon;
+    ULONG                  update_oldwidth = 0,
+                           update_oldheight = 0;
+
+	ULONG                  clear_xoffset = 0,
+                           clear_yoffset = 0;
+
     DoSuperMethodA(cl, obj, (Msg) msg);
+
+	if (!data->wpd_IconListFixedBackground)
+	{
+		clear_xoffset = data->view_x;
+		clear_yoffset = data->view_y;
+	}
 
     // If window size changes, only update needed areas
     if (data->update_oldwidth == 0) data->update_oldwidth = data->view_width;
@@ -1114,26 +1178,20 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     
             IconList_GetIconRectangle(obj, data, data->update_icon, &rect);
     
-            rect.MinX += _mleft(obj) - data->view_x + data->update_icon->x;
-            rect.MaxX += _mleft(obj) - data->view_x + data->update_icon->x;
-            rect.MinY += _mtop(obj) - data->view_y + data->update_icon->y;
-            rect.MaxY += _mtop(obj) - data->view_y + data->update_icon->y;
+            rect.MinX += _mleft(obj) + (data->update_icon->x - data->view_x);
+            rect.MaxX += _mleft(obj) + (data->update_icon->x - data->view_x);
+            rect.MinY += _mtop(obj) + (data->update_icon->y - data->view_y);
+            rect.MaxY += _mtop(obj) + (data->update_icon->y - data->view_y);
     
             clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
-#if 1
-            DoMethod(
-                obj, MUIM_DrawBackground, 
-                rect.MinX, rect.MinY,
-                rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
-                data->view_x + (rect.MinX - _mleft(obj)), data->view_y + (rect.MinY - _mtop(obj)), 
-                0
-            );
-#else
-            DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
-                _mwidth(obj), _mheight(obj),
-                data->view_x, data->view_y, 0);
-#endif
+D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (A)\n"));
+			DoMethod(obj, MUIM_DrawBackground, 
+				rect.MinX, rect.MinY,
+				rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
+				clear_xoffset, clear_yoffset, 
+				0);
+D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
 
             /* We could have deleted also other icons so they must be redrawn */
             icon = List_First(&data->icon_list);
@@ -1169,106 +1227,111 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             struct Rectangle 	 xrect, yrect;
             BOOL    	    	 scroll_caused_damage;
             
-            scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
-    
-            data->update = 0;
+			if (!data->wpd_IconListFixedBackground)
+			{
+				scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
+		
+				data->update = 0;
 
-            
-            if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
-                (abs(data->update_scrolldy) >= _mheight(obj)))
-            {
-                MUI_Redraw(obj, MADF_DRAWOBJECT);
-                return 0;
+				
+				if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
+					(abs(data->update_scrolldy) >= _mheight(obj)))
+				{
+					MUI_Redraw(obj, MADF_DRAWOBJECT);
+					return 0;
+				}
+
+				if (!(region = NewRegion()))
+				{
+					MUI_Redraw(obj, MADF_DRAWOBJECT);
+					return 0;
+				}
+
+				if (data->update_scrolldx > 0)
+				{
+					xrect.MinX = _mright(obj) - data->update_scrolldx;
+					xrect.MinY = _mtop(obj);
+					xrect.MaxX = _mright(obj);
+					xrect.MaxY = _mbottom(obj);
+			
+					OrRectRegion(region, &xrect);
+			
+					data->update_rect1 = &xrect;
+				}
+				else if (data->update_scrolldx < 0)
+				{
+					xrect.MinX = _mleft(obj);
+					xrect.MinY = _mtop(obj);
+					xrect.MaxX = _mleft(obj) - data->update_scrolldx;
+					xrect.MaxY = _mbottom(obj);
+
+					OrRectRegion(region, &xrect);
+
+					data->update_rect1 = &xrect;
+				}
+
+				if (data->update_scrolldy > 0)
+				{
+					yrect.MinX = _mleft(obj);
+					yrect.MinY = _mbottom(obj) - data->update_scrolldy;
+					yrect.MaxX = _mright(obj);
+					yrect.MaxY = _mbottom(obj);
+			
+					OrRectRegion(region, &yrect);
+			
+					data->update_rect2 = &yrect;
+				}
+				else if (data->update_scrolldy < 0)
+				{
+					yrect.MinX = _mleft(obj);
+					yrect.MinY = _mtop(obj);
+					yrect.MaxX = _mright(obj);
+					yrect.MaxY = _mtop(obj) - data->update_scrolldy;
+			
+					OrRectRegion(region, &yrect);
+			
+					data->update_rect2 = &yrect;
+				}
+
+				ScrollRasterBF(_rp(obj),
+					data->update_scrolldx,
+					data->update_scrolldy,
+					_mleft(obj),
+					_mtop(obj),
+					_mright(obj),
+					_mbottom(obj));
+
+				scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+
+				clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
             }
-
-            if (!(region = NewRegion()))
-            {
-                MUI_Redraw(obj, MADF_DRAWOBJECT);
-                return 0;
-            }
-
-            if (data->update_scrolldx > 0)
-            {
-                xrect.MinX = _mright(obj) - data->update_scrolldx;
-                xrect.MinY = _mtop(obj);
-                xrect.MaxX = _mright(obj);
-                xrect.MaxY = _mbottom(obj);
-        
-                OrRectRegion(region, &xrect);
-        
-                data->update_rect1 = &xrect;
-            }
-            else if (data->update_scrolldx < 0)
-            {
-                xrect.MinX = _mleft(obj);
-                xrect.MinY = _mtop(obj);
-                xrect.MaxX = _mleft(obj) - data->update_scrolldx;
-                xrect.MaxY = _mbottom(obj);
-
-                OrRectRegion(region, &xrect);
-
-                data->update_rect1 = &xrect;
-            }
-
-            if (data->update_scrolldy > 0)
-            {
-                yrect.MinX = _mleft(obj);
-                yrect.MinY = _mbottom(obj) - data->update_scrolldy;
-                yrect.MaxX = _mright(obj);
-                yrect.MaxY = _mbottom(obj);
-        
-                OrRectRegion(region, &yrect);
-        
-                data->update_rect2 = &yrect;
-            }
-            else if (data->update_scrolldy < 0)
-            {
-                yrect.MinX = _mleft(obj);
-                yrect.MinY = _mtop(obj);
-                yrect.MaxX = _mright(obj);
-                yrect.MaxY = _mtop(obj) - data->update_scrolldy;
-        
-                OrRectRegion(region, &yrect);
-        
-                data->update_rect2 = &yrect;
-            }
-
-            ScrollRasterBF(_rp(obj),
-                data->update_scrolldx,
-                data->update_scrolldy,
-                _mleft(obj),
-                _mtop(obj),
-                _mright(obj),
-                _mbottom(obj));
-
-            scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
-
-            clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
 
             MUI_Redraw(obj, MADF_DRAWOBJECT);
 
             data->update_rect1 = data->update_rect2 = NULL;
 
-            MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-    
-            if (scroll_caused_damage)
-            {
-                if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
-                {
-                    /* Theoretically it might happen that more damage is caused
-                    after ScrollRaster. By something else, like window movement
-                    in front of our window. Therefore refresh root object of
-                    window, not just this object */
-        
-                    Object *o = NULL;
-        
-                    get(_win(obj),MUIA_Window_RootObject, &o);
-                    MUI_Redraw(o, MADF_DRAWOBJECT);
-        
-                    MUI_EndRefresh(muiRenderInfo(obj), 0);
-                }
-            }
-
+			if (!data->wpd_IconListFixedBackground)
+			{
+				MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+		
+				if (scroll_caused_damage)
+				{
+					if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
+					{
+						/* Theoretically it might happen that more damage is caused
+						after ScrollRaster. By something else, like window movement
+						in front of our window. Therefore refresh root object of
+						window, not just this object */
+			
+						Object *o = NULL;
+			
+						get(_win(obj),MUIA_Window_RootObject, &o);
+						MUI_Redraw(o, MADF_DRAWOBJECT);
+			
+						MUI_EndRefresh(muiRenderInfo(obj), 0);
+					}
+				}
+			}
             return 0;
         }
         else if (data->update == UPDATE_RESCALE)
@@ -1279,74 +1342,87 @@ IPTR IconList__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             
             data->update = 0;
 
-            
-            if (!(region = NewRegion()))
-            {
-                MUI_Redraw(obj, MADF_DRAWOBJECT);
-                return 0;
-            }
-            
-            if ( data->view_width > update_oldwidth )
-                diffw = data->view_width - update_oldwidth;
-            if ( data->view_height > update_oldheight )
-                diffh = data->view_height - update_oldheight;            
+            if (!data->wpd_IconListScaledBackground)
+			{
+				if (!(region = NewRegion()))
+				{
+					MUI_Redraw(obj, MADF_DRAWOBJECT);
+					return 0;
+				}
+				
+				if ( data->view_width > update_oldwidth )
+					diffw = data->view_width - update_oldwidth;
+				if ( data->view_height > update_oldheight )
+					diffh = data->view_height - update_oldheight;            
 
-            if (diffw)
-            {
-                wrect.MinX = _mright(obj) - diffw;
-                wrect.MinY = _mtop(obj);
-                wrect.MaxX = _mright(obj);
-                wrect.MaxY = _mbottom(obj);
-                OrRectRegion(region, &wrect);
-                data->update_rect1 = &wrect;
-            }
+				if (diffw)
+				{
+					wrect.MinX = _mright(obj) - diffw;
+					wrect.MinY = _mtop(obj);
+					wrect.MaxX = _mright(obj);
+					wrect.MaxY = _mbottom(obj);
+					OrRectRegion(region, &wrect);
+					data->update_rect1 = &wrect;
+				}
 
-            if (diffh)
-            {
-                hrect.MinX = _mleft(obj);
-                hrect.MinY = _mbottom(obj) - diffh;
-                hrect.MaxX = _mright(obj);
-                hrect.MaxY = _mbottom(obj);
-                OrRectRegion(region, &hrect);
-                data->update_rect2 = &hrect;
-            }
-            
-            if (diffh||diffw)
-            {
-                clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
-                MUI_Redraw(obj, MADF_DRAWOBJECT);
-                data->update_rect1 = data->update_rect2 = NULL;
-                MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-            } else DisposeRegion(region);
+				if (diffh)
+				{
+					hrect.MinX = _mleft(obj);
+					hrect.MinY = _mbottom(obj) - diffh;
+					hrect.MaxX = _mright(obj);
+					hrect.MaxX = _mright(obj);
+					hrect.MaxY = _mbottom(obj);
+					OrRectRegion(region, &hrect);
+					data->update_rect2 = &hrect;
+				}
+				if (diffh||diffw)
+				{
+					clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+				}
+			}
+
+			MUI_Redraw(obj, MADF_DRAWOBJECT);
+
+			if (!data->wpd_IconListScaledBackground)
+			{
+				if (diffh||diffw)
+				{
+						data->update_rect1 = data->update_rect2 = NULL;
+						MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+				} else DisposeRegion(region);
+			}
             
             return 0;
         }
     }
-   
-    DoMethod(
-        obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
-        data->view_x, data->view_y, 0
-    );
 
     /* At we see if there any Icons without proper position, this is the wrong place here,
     * it should be done after all icons have been loaded */
 
     /*ric - no need!: IconList_FixNoPositionIcons(obj, data);*/
+	if (msg->flags & MADF_DRAWOBJECT)
+	{
+		clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
-    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
+D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (B)\n"));
+		DoMethod(
+			obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
+			clear_xoffset, clear_yoffset, 0
+		);
+D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (B) returns\n"));
 
-    icon = List_First(&data->icon_list);
-    while (icon)
-    {
-        if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
-        {
-            IconList_DrawIcon(obj, data, icon, NULL, DRAWICON_DODRAW);
-        }
-        icon = Node_Next(icon);
-    }
+		icon = List_First(&data->icon_list);
+		while (icon)
+		{
+			if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
+			{
+				IconList_DrawIcon(obj, data, icon, NULL, DRAWICON_DODRAW);
+			}
+			icon = Node_Next(icon);
+		}
 
-    MUI_RemoveClipping(muiRenderInfo(obj),clip);
-
+		MUI_RemoveClipping(muiRenderInfo(obj),clip);
+	}
     data->update = 0;
 
     return 0;
@@ -1492,7 +1568,7 @@ IPTR IconList__MUIM_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Add
     entry->x = dob->do_CurrentX;
     entry->y = dob->do_CurrentY;
 
-    /* Use a geticonrectanble routine that gets textwidth! */
+    /* Use a geticonrectangle routine that gets textwidth! */
     IconList_GetIconRectangle(obj, data, entry, &rect);
 
     
@@ -2101,7 +2177,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
    
             /* icon moved, dropped in the same window */
             set(obj, MUIA_IconList_IconsMoved, (IPTR) &(data->first_selected->entry)); /* Now notify */
-            D( bug("[ICONLIST] move entry: %s dropped in same window\n", data->first_selected->entry.filename); )
+D(bug("[IconList] move entry: %s dropped in same window\n", data->first_selected->entry.filename); )
                 
             IconList_GetIconRectangle(obj, data, icon, &old);
     
@@ -2118,6 +2194,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
             IconList_GetIconRectangle(obj, data, data->first_selected, &new);
     
             new.MinX += _mleft(obj) - data->view_x + icon->x;
+            new.MaxX += _mleft(obj) - data->view_x + icon->x;
             new.MaxX += _mleft(obj) - data->view_x + icon->x;
             new.MinY += _mtop(obj) - data->view_y + icon->y;
             new.MaxY += _mtop(obj) - data->view_y + icon->y;
@@ -2195,7 +2272,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
                data->update_icon = drop_target_node;
                MUI_Redraw(obj,MADF_DRAWUPDATE);
 
-               D( bug("[ICONLIST] drop entry: %s dropped on disk icon %s\n", entry->filename, drop_target_node->entry.filename); )
+ D(bug("[IconList] drop entry: %s dropped on disk icon %s\n", entry->filename, drop_target_node->entry.filename); )
            }
            /* check if dropped on a drawer icon in iconlist */
            else if (drop_target_node && drop_target_node->entry.type == ST_USERDIR )
@@ -2209,12 +2286,12 @@ IPTR IconList__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDro
                data->update_icon = drop_target_node;
                MUI_Redraw(obj,MADF_DRAWUPDATE);
 
-               D( bug("[ICONLIST] drop entry: %s dropped on dir %s icon in window %s\n", entry->filename, drop_target_node->entry.filename,  directory_path); )
+D(bug("[IconList] drop entry: %s dropped on dir %s icon in window %s\n", entry->filename, drop_target_node->entry.filename,  directory_path); )
            }
            else
            {
                /* not dropped on icon -> get path of DESTINATION iconlist */
-               D( bug("[ICONLIST] drop entry: %s dropped in window %s\n", entry->filename, directory_path); )
+D(bug("[IconList] drop entry: %s dropped in window %s\n", entry->filename, directory_path); )
                /* copy path */
                strcpy(data->drop_entry.destination_string, directory_path);
            }
@@ -2598,7 +2675,7 @@ IPTR IconList__MUIM_DragReport(struct IClass *cl, Object *obj, struct MUIP_DragR
 
 IPTR IconList__MUIM_UnknownDropDestination(struct IClass *cl, Object *obj, struct MUIP_UnknownDropDestination *msg)
 {
-    D(bug("[ICONLIST] icons dropped on custom window \n");)
+    D(bug("[IconList] icons dropped on custom window \n");)
     set(obj, MUIA_IconList_AppWindowDrop, (IPTR)msg); /* Now notify */
 
     return 0;
