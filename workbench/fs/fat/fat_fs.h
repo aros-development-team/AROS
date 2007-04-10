@@ -94,20 +94,18 @@ struct ExtFileLock {
     struct MsgPort *    fl_Task;
     BPTR                fl_Volume;
 
-    /* coinsistency check */
-    ULONG               magic;   
+    ULONG               magic;          /* we set this to ID_FAT_DISK so we can tell
+                                           our locks from those of other filesystems */
 
     ULONG               dir_cluster;    /* first cluster of directory we're in */
 
-    ULONG               attr;
-    ULONG               size;
+    struct IOHandle     ioh;            /* handle for reads and writes */
+    ULONG               pos;            /* current seek position within the file */
 
-    struct IOHandle     ioh;
+    ULONG               attr;           /* file attributes, from the dir entry */
+    ULONG               size;           /* file size, from the dir entry */
 
-    /* used in directory scanning and file reading */
-    ULONG               pos;
-
-    UBYTE               name[108];
+    UBYTE               name[108];      /* copy of the name */
 };
 
 struct VolumeInfo {
