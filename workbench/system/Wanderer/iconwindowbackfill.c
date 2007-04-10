@@ -327,8 +327,10 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 {
 
 	LONG                  Depth;
-    Object                *prefs = NULL,
-	                      *this_Win = NULL;
+    Object                *_IconWindows_PrefsObj = NULL,
+	                      *_IconWindows_WindowObj = NULL;
+	Object 				  *_IconWindows_IconListObj = NULL;
+
 	IPTR                  BackGround_Attrib = 0,
 	                      BackGround_Base   = 0,
 	                      BackGround_Mode   = 0;
@@ -337,26 +339,27 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground()\n"));
 	
-	GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+	GET(_app(self), MUIA_Wanderer_Prefs, &_IconWindows_PrefsObj);
 
-D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: PrefsObj @ %x\n", prefs));
-	GET(self, MUIA_IconWindow_Window, &this_Win);
+D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: PrefsObj @ %x\n", _IconWindows_PrefsObj));
+	GET(self, MUIA_IconWindow_Window, &_IconWindows_WindowObj);
+	GET(self, MUIA_IconWindow_IconList, &_IconWindows_IconListObj);
 
-D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: MUIA_IconWindow_Window = %x\n", this_Win));
+D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: MUIA_IconWindow_Window = %x\n", _IconWindows_WindowObj));
 
-	if ((prefs == NULL) || (this_Win == NULL)) return FALSE;
+	if ((_IconWindows_PrefsObj == NULL) || (_IconWindows_WindowObj == NULL) || (_IconWindows_IconListObj == NULL)) return FALSE;
 
-	GET(this_Win, MUIA_IconWindow_BackgroundAttrib, &BackGround_Attrib);
-
+	GET(_IconWindows_WindowObj, MUIA_IconWindow_BackgroundAttrib, &BackGround_Attrib);
+	
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background Attrib = %x\n", BackGround_Attrib));
 
 	if (BackGround_Attrib == NULL) return FALSE;
 	
-	if ((BackGround_Base = DoMethod(prefs, MUIM_WandererPrefs_Background_GetAttribute,
+	if ((BackGround_Base = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
 									BackGround_Attrib, MUIA_Background)) == -1)
 		return FALSE;
 
-	if ((BackGround_Mode = DoMethod(prefs, MUIM_WandererPrefs_Background_GetAttribute,
+	if ((BackGround_Mode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
 									BackGround_Attrib, MUIA_WandererPrefs_Background_RenderMode)) == -1)
 		BackGround_Mode = WPD_BackgroundRenderMode_Tiled;
 
@@ -398,7 +401,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: ex
 		}
 	}
 
-	if ((this_BFI->bfi_Options.bfo_TileMode = DoMethod(prefs, MUIM_WandererPrefs_Background_GetAttribute,
+	if ((this_BFI->bfi_Options.bfo_TileMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
 														BackGround_Attrib, MUIA_WandererPrefs_Background_TileMode)) == -1)
 		this_BFI->bfi_Options.bfo_TileMode = WPD_BackgroundTileMode_Float;
 
@@ -516,6 +519,10 @@ check_imagebuffer:
 		case WPD_BackgroundRenderMode_Scale:
 		{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED mode\n"));
+			
+			SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, FALSE);
+			SET(_IconWindows_IconListObj, MUIA_IconListview_ScaledBackground, TRUE);
+
 			if ((BOOL)XGET(self, MUIA_IconWindow_IsRoot))
 			{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Root Window = TRUE!\n"));
@@ -605,6 +612,9 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SC
 		default:
 		{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TILED mode\n"));
+			SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, FALSE);
+			SET(_IconWindows_IconListObj, MUIA_IconListview_ScaledBackground, TRUE);
+
 			struct BackFillSourceImageBuffer *this_Buffer = NULL;
 
 			if (this_BFI->bfi_Buffer)
