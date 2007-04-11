@@ -43,6 +43,7 @@ void CleanupDiskHandler(ULONG diskchgsig_bit);
 void FillDiskInfo (struct InfoData *id);
  
 /* lock.c */
+LONG TestLock(struct ExtFileLock *fl);
 LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, BPTR *result);
 LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res);
 LONG LockRoot(LONG axs, BPTR *res);
