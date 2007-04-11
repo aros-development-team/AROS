@@ -98,7 +98,7 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
             /* find it */
             for (i = 0; i < cluster_offset - ioh->cluster_offset; i++) {
                 /* get the next one */
-                ioh->cur_cluster = GetFatEntry(ioh->cur_cluster);
+                ioh->cur_cluster = NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
 
                 /* if it was free (shouldn't happen) or we hit the end of the
                  * chain, the requested data isn't here */

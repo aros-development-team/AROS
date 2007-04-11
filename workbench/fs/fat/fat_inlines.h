@@ -30,21 +30,6 @@ static inline LONG TestLock(struct ExtFileLock *fl) {
     return 0;
 }
 
-#define SkipColon(name, namelen) {     \
-    int i;                             \
-    for (i=0; i < namelen; i++)        \
-        if (name[i] == ':') {          \
-            namelen = namelen - (i+1); \
-            name = &name[i+1];         \
-            break;                     \
-        }                              \
-}
-
-
-static inline ULONG GetFatEntry(ULONG n) {
-    return glob->sb->func_get_fat_entry(glob->sb, n);
-}
-
 /* IO layer */
 
 #include "cache.h"

@@ -30,6 +30,7 @@ LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, 
     struct DirHandle dh;
     struct DirEntry de;
     ULONG dir_cluster;
+    int i;
 
     if (fl && (fl->attr & ATTR_DIRECTORY) == 0)
         return ERROR_OBJECT_WRONG_TYPE;
@@ -37,7 +38,13 @@ LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, 
     dir_cluster = (fl) ? fl->ioh.first_cluster : 0;
     
     kprintf("\tSearching for: "); knprints(name, namelen);
-    SkipColon(name, namelen);
+
+    for (i = 0; i < namelen; i++)
+        if (name[i] == ':') {
+            namelen -= (i+1);
+            name = &name[i+1];
+            break;
+        }
 
     InitDirHandle(glob->sb, dir_cluster, &dh);
     err = GetDirEntryByPath(&dh, name, namelen, &de);
