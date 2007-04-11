@@ -185,8 +185,9 @@ D(bug("[IconWindow] IconWindow__SetupToolbar()\n"));
 				End ),
 			End,
 			Child, (IPTR)HGroup,
-				InnerSpacing(0,0),
-				MUIA_Weight, 1,
+				InnerSpacing(0, 0),
+				MUIA_HorizWeight,   0,
+				MUIA_VertWeight,    100,
 				Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
 #if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
 				Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
@@ -200,11 +201,6 @@ D(bug("[IconWindow] IconWindow__SetupToolbar()\n"));
 	        MUIA_Frame, MUIV_Frame_None,
 			MUIA_Background, MUII_SHADOW,
             Child, (IPTR)RectangleObject,
-				MUIA_FixHeight, 1,
-				MUIA_Frame, MUIV_Frame_None,
-			End,
-            Child, (IPTR)RectangleObject,
-				MUIA_FixHeight, 1,
 				MUIA_Frame, MUIV_Frame_None,
 			End,
 		End,
@@ -214,10 +210,7 @@ D(bug("[IconWindow] IconWindow__SetupToolbar()\n"));
        copied to the data of the object */
     if ( toolbarPanel != NULL )
     {
-        SET( data->iwd_ExtensionContainerObj, MUIA_Frame, MUIV_Frame_None );
-        SET( data->iwd_ExtensionContainerObj, MUIA_Group_Spacing, 3 );
-    
-        SET( bt_dirup, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
+         SET( bt_dirup, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
         SET( bt_dirup, MUIA_Frame, MUIV_Frame_None );
 #if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
         SET( bt_search, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
@@ -226,27 +219,38 @@ D(bug("[IconWindow] IconWindow__SetupToolbar()\n"));
 
         if (DoMethod( data->iwd_ExtensionGroupObj, MUIM_Group_InitChange ))
 		{
-			DoMethod( data->iwd_ExtensionGroupObj, OM_ADDMEMBER, (IPTR)toolbarPanel );
-			DoMethod( data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange );
+			DoMethod(data->iwd_ExtensionGroupObj, OM_ADDMEMBER, (IPTR)toolbarPanel);
+			if (data->iwd_ExtensionGroupSpacerObj)
+			{
+				DoMethod(data->iwd_ExtensionGroupObj, OM_REMMEMBER, (IPTR)data->iwd_ExtensionGroupSpacerObj);
+				data->iwd_ExtensionGroupSpacerObj = NULL;
+			}
+
+			DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange);
+			data->iwd_ToolbarPanelObj = toolbarPanel;
 		}
 
-        DoMethod( 
-            bt_dirup, MUIM_Notify, MUIA_Pressed, FALSE, 
-            (IPTR)self, 1, MUIM_IconWindow_DirectoryUp
-        );
-        data->iwd_ToolbarPanelObj = toolbarPanel;
-        data->iwd_ToolbarLocationStringObj = strObj;
-        data->iwd_pathStrHook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_ToolbarLocationStringFunc;
-        SET(
-            data->iwd_ToolbarLocationStringObj, MUIA_String_Contents, 
-            XGET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer)
-        );
+		if (data->iwd_ToolbarPanelObj)
+		{
+			DoMethod( 
+				bt_dirup, MUIM_Notify, MUIA_Pressed, FALSE, 
+				(IPTR)self, 1, MUIM_IconWindow_DirectoryUp
+			);
 
-        /* Make changes to string contents change dir on enter */
-        DoMethod ( 
-            strObj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, 
-            (IPTR)self, 3, MUIM_CallHook, &data->iwd_pathStrHook, (IPTR)CLASS
-        );
+			data->iwd_ToolbarLocationStringObj = strObj;
+
+			data->iwd_pathStrHook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_ToolbarLocationStringFunc;
+			SET(
+				data->iwd_ToolbarLocationStringObj, MUIA_String_Contents, 
+				XGET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer)
+			);
+
+			/* Make changes to string contents change dir on enter */
+			DoMethod ( 
+				strObj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, 
+				(IPTR)self, 3, MUIM_CallHook, &data->iwd_pathStrHook, (IPTR)CLASS
+			);
+		}
     }
     else
     {
@@ -259,8 +263,9 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	struct Screen 	                *_newIconWin__Screen = NULL;
     Object                          *_newIconWin__IconListObj = NULL,
 		                            *_newIconWin__RootViewObj = NULL, 
-                                    *_newIconWin__ExtensionGroupObj = NULL,     // extension group top
                                     *_newIconWin__ExtensionContainerObj = NULL, // around extension group
+                                    *_newIconWin__ExtensionGroupObj = NULL,     // extension group top
+                                    *_newIconWin__ExtensionGroupSpacerObj = NULL,     // extension group top
 									*prefs = NULL;
 
     char                            *_newIconWin__Title = NULL;
@@ -355,22 +360,28 @@ D(bug("[iconwindow] IconWindow__OM_NEW: Directory Window\n"));
             InnerSpacing(0,0),
             MUIA_Frame, MUIV_Frame_None,
             MUIA_Group_Spacing, 0,
-            MUIA_Weight, 100,
+			Child, (_newIconWin__ExtensionGroupSpacerObj = HSpace(0)),
 		End;
 
-        _newIconWin__ExtensionContainerObj = HGroup,
-            InnerSpacing(0,0),
-            MUIA_Group_Spacing, 0,
-			/* extension on top of the list */
-			Child, (IPTR)_newIconWin__ExtensionGroupObj,
-		End;
-		
+		if (_newIconWin__ExtensionGroupObj)
+		{
+			_newIconWin__ExtensionContainerObj = HGroup,
+				InnerSpacing(0,0),
+				MUIA_HorizWeight,   100,
+				MUIA_VertWeight,    0,
+				MUIA_Frame,         MUIV_Frame_None,
+				MUIA_Group_Spacing, 3,
+				/* extension on top of the list */
+				Child, (IPTR)_newIconWin__ExtensionGroupObj,
+			End;
+		}
 		_newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
 		_newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
     }
 D(bug("[iconwindow] IconWindow__OM_NEW: Using dimensions ..  %d x %d\n", _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
 	_newIconWin__RootViewObj = (IPTR) IconListviewObject,
+			MUIA_Weight,                           100,
 			MUIA_IconListview_UseWinBorder,        TRUE,
 			MUIA_IconListview_IconList,     (IPTR) _newIconWin__IconListObj,
 		End;
@@ -407,12 +418,13 @@ D(bug("[iconwindow] IconWindow__OM_NEW: Font @ %x\n", _newIconWin__WindowFont));
         MUIA_Font,                          	               (IPTR) _newIconWin__WindowFont,
 
         WindowContents, (IPTR) VGroup,
-            MUIA_Group_Spacing, 0,
+            MUIA_Group_Spacing,  0,
+			MUIA_Group_SameSize, FALSE,
             InnerSpacing(0,0),
-            
+
             /* "Extension" group */
-            _newIconWin__ExtensionContainerObj ? Child : TAG_IGNORE, ( IPTR )_newIconWin__ExtensionContainerObj,
-            
+            _newIconWin__ExtensionContainerObj ? Child : TAG_IGNORE, (IPTR)_newIconWin__ExtensionContainerObj,
+
             /* icon list */
             Child, (IPTR) _newIconWin__RootViewObj,
             
@@ -439,6 +451,7 @@ D(bug("[iconwindow] IconWindow__OM_NEW: SELF = %x\n", self));
 
         data->iwd_ExtensionGroupObj       = _newIconWin__ExtensionGroupObj;
         data->iwd_ExtensionContainerObj   = _newIconWin__ExtensionContainerObj;
+        data->iwd_ExtensionGroupSpacerObj = _newIconWin__ExtensionGroupSpacerObj;
 
         data->iwd_ToolbarPanelObj         = NULL;
 
@@ -457,11 +470,14 @@ D(bug("[iconwindow] IconWindow__OM_NEW: SELF = %x\n", self));
                                                          		MUIM_WandererPrefs_Background_GetNotifyObject,
 																data->iwd_BackGround_Attrib);
 
-			DoMethod
-			(
-				prefs, MUIM_Notify, MUIA_WandererPrefs_Toolbar_Enabled, MUIV_EveryTime, 
-				(IPTR)self, 3, MUIM_Set, MUIA_IconWindow_Toolbar_Enabled, MUIV_TriggerValue
-			);
+			if (data->iwd_ExtensionContainerObj)
+			{
+				DoMethod
+				(
+					prefs, MUIM_Notify, MUIA_WandererPrefs_Toolbar_Enabled, MUIV_EveryTime, 
+					(IPTR)self, 3, MUIM_Set, MUIA_IconWindow_Toolbar_Enabled, MUIV_TriggerValue
+				);
+			}
 		}
 
 		data->iwd_ProcessBackground_hook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_ProcessBackgroundFunc;
@@ -479,22 +495,8 @@ D(bug("[iconwindow] IconWindow__OM_NEW: Window BackFill_Data @ %x for '%s'\n", d
 		}
 
         /* no tool bar when root */
-        if (!isRoot && hasToolbar)
+        if (!isRoot && hasToolbar && data->iwd_ExtensionContainerObj)
 			IconWindow__SetupToolbar(CLASS,self);
-		else
-		{
-			Object *__voidRect = RectangleObject,
-									InnerSpacing(0,0),
-									MUIA_Weight, 1,
-									MUIA_Frame, MUIV_Frame_None,
-								End;
-			
-			if (DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_InitChange))
-			{
-				DoMethod(data->iwd_ExtensionGroupObj, OM_ADDMEMBER, (IPTR)__voidRect);
-				DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange);
-			}
-		}
 
         /* If double clicked then we call our own private methods, that's 
 		   easier then using Hooks */
@@ -577,23 +579,29 @@ D(bug("[iconwindow] IconWindow__OM_SET: MUIA_IconWindow_BackgroundAttrib (not im
 			break;
 
 		case MUIA_IconWindow_Toolbar_Enabled:   
-			 if (!(data->iwd_Flag_ISROOT))
-			 {               
-				 // remove toolbar
-				 if (!(( BOOL )tag->ti_Data))
-				 {
+			if ((!(data->iwd_Flag_ISROOT)) && (data->iwd_ExtensionContainerObj))
+			{
+				// remove toolbar
+				if (!(( BOOL )tag->ti_Data))
+				{
 					if (data->iwd_ToolbarPanelObj != NULL)
 					{
+						data->iwd_ExtensionGroupSpacerObj = HSpace(0);
+						
 						SET(data->iwd_ExtensionContainerObj, MUIA_Frame, MUIV_Frame_None);
 						SET(data->iwd_ExtensionContainerObj, MUIA_Group_Spacing, 0);
-						DoMethod ( data->iwd_ExtensionGroupObj, MUIM_Group_InitChange );
-						DoMethod ( data->iwd_ExtensionGroupObj, OM_REMMEMBER, ( IPTR )data->iwd_ToolbarPanelObj );
-						DoMethod ( data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange );
-						data->iwd_ToolbarPanelObj = NULL;
+
+						if ((data->iwd_ExtensionGroupSpacerObj) && (DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_InitChange)))
+						{
+							DoMethod(data->iwd_ExtensionGroupObj, OM_REMMEMBER, (IPTR)data->iwd_ToolbarPanelObj);
+							DoMethod(data->iwd_ExtensionGroupObj, OM_ADDMEMBER, (IPTR)data->iwd_ExtensionGroupSpacerObj);
+							DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange);
+							data->iwd_ToolbarPanelObj = NULL;
+						}
 					}
-				 }
-				 else
-				 {
+				}
+				else
+				{
 					// setup toolbar
 					if (data->iwd_ToolbarPanelObj == NULL)
 						IconWindow__SetupToolbar ( CLASS, self );

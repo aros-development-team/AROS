@@ -127,8 +127,10 @@ struct IconWindow_DATA
     Object                               *iwd_IconListObj;
     Object                               *iwd_ToolbarPanelObj;
     Object                               *iwd_ToolbarLocationStringObj;
-    Object                               *iwd_ExtensionGroupObj;
+
     Object                               *iwd_ExtensionContainerObj;
+    Object                               *iwd_ExtensionGroupObj;
+    Object                               *iwd_ExtensionGroupSpacerObj;
 
     struct Hook                          *iwd_ActionHook;
     struct Hook                          iwd_pathStrHook;
