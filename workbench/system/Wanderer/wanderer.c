@@ -9,6 +9,8 @@
 #include <aros/debug.h>
 
 #define WANDERER_DEFAULT_BACKDROP
+#define WANDERER_DEFAULT_SHOWALL
+//#define WANDERER_DEFAULT_SHOWHIDDEN
 
 #include <exec/types.h>
 #include <libraries/gadtools.h>
@@ -1830,29 +1832,6 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_HandleNotify: got prefs change notific
     /* reload prefs file */
     DoMethod(data->wd_Prefs, MUIM_WandererPrefs_Reload);
 
-    /* upadte prefs for all open windows */
-    Object *cstate = (Object*)(((struct List*)XGET(_app(self), MUIA_Application_WindowList))->lh_Head);
-    Object *child;
-    
-    while ((child = NextObject(&cstate)))
-    { 
-        if (XGET(child, MUIA_UserData))
-        {
-            /* update the toolbar prefs for every open window*/
-            SET(child, MUIA_IconWindow_Toolbar_Enabled, XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled) );
-#warning "Do we really need to activate the window here?"
-//            SET(child, MUIA_Window_Activate, TRUE);
-            Object *iconList = ( Object *)XGET(child, MUIA_IconWindow_IconList);
-            if ( iconList != NULL )
-            {
-                SET(iconList, MUIA_IconList_ListMode, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_ListMode));
-                SET(iconList, MUIA_IconList_TextMode, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_TextMode));
-                SET(iconList, MUIA_IconList_TextMaxLen, XGET(data->wd_Prefs, MUIA_WandererPrefs_Icon_TextMaxLen));
-                DoMethod(iconList, MUIM_IconList_Update );
-            }
-        }
-    } 
-
     return 0;
 }
 
@@ -1861,11 +1840,16 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
 {
     Object   *_NewWandIntMenu__menustrip = NULL;
 	IPTR     _NewWandIntMenu__OPTION_BACKDROP = CHECKIT|MENUTOGGLE;
+	IPTR     _NewWandIntMenu__OPTION_SHOWALL  = CHECKIT|MENUTOGGLE;
 
 	if (isBackdrop)
 	{
 		_NewWandIntMenu__OPTION_BACKDROP |= CHECKED;
 	}
+
+#if defined(WANDERER_DEFAULT_SHOWALL)
+	_NewWandIntMenu__OPTION_SHOWALL |= CHECKED;
+#endif
 
     if ( isRoot )
     {
@@ -1894,7 +1878,7 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
             {NM_SUB,   _(MSG_MEN_ICVIEW),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_VIEW_ICON},
             {NM_SUB,   _(MSG_MEN_DCVIEW),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_VIEW_DETAIL},
             {NM_SUB, NM_BARLABEL},
-            {NM_SUB,   _(MSG_MEN_ALLFIL),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_VIEW_ALL},
+            {NM_SUB,   _(MSG_MEN_ALLFIL),  NULL                  , _NewWandIntMenu__OPTION_SHOWALL, 0, (APTR) MEN_WINDOW_VIEW_ALL},
             {NM_ITEM,  _(MSG_MEN_SORTIC)},
             {NM_SUB,   _(MSG_MEN_CLNUP),   _(MSG_MEN_SC_CLNUP)   , 0                         , 0, (APTR) MEN_WINDOW_SORT_NOW},
             {NM_SUB, NM_BARLABEL},
@@ -1931,7 +1915,7 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
     {
         struct NewMenu nm[] = {
         {NM_TITLE,     _(MSG_MEN_WANDERER)},
-            {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WANDERER_BACKDROP},
+            {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), _NewWandIntMenu__OPTION_BACKDROP, 0, (APTR) MEN_WANDERER_BACKDROP},
             {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                         , 0, (APTR) MEN_WANDERER_EXECUTE},
     
             {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                         , 0, (APTR) MEN_WANDERER_SHELL},
@@ -1957,7 +1941,7 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
             {NM_SUB,   _(MSG_MEN_ICVIEW),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_VIEW_ICON},
             {NM_SUB,   _(MSG_MEN_DCVIEW),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_VIEW_DETAIL},
             {NM_SUB, NM_BARLABEL},
-            {NM_SUB,   _(MSG_MEN_ALLFIL),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_VIEW_ALL},
+            {NM_SUB,   _(MSG_MEN_ALLFIL),  NULL                  , _NewWandIntMenu__OPTION_SHOWALL, 0, (APTR) MEN_WINDOW_VIEW_ALL},
             {NM_ITEM,  _(MSG_MEN_SORTIC)},
             {NM_SUB,   _(MSG_MEN_CLNUP),   _(MSG_MEN_SC_CLNUP)   , 0                         , 0, (APTR) MEN_WINDOW_SORT_NOW},
             {NM_SUB, NM_BARLABEL},
@@ -2069,7 +2053,29 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
 				(IPTR)window, 1, MUIM_IconWindow_Remove
 			);
 		}
-        
+
+#if defined(WANDERER_DEFAULT_SHOWALL) || defined(WANDERER_DEFAULT_SHOWHIDDEN)
+		Object *window_IconList = NULL;
+		ULONG  current_DispFlags = 0;
+
+		GET(window, MUIA_IconListview_IconList, &window_IconList);
+		
+		if (window_IconList != NULL)
+		{
+			GET(window_IconList, MUIA_IconList_DisplayFlags, &current_DispFlags);
+
+#if defined(WANDERER_DEFAULT_SHOWALL)
+D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Telling IconList to Show 'ALL' Files\n"));
+			current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
+#endif
+#if defined(WANDERER_DEFAULT_SHOWHIDDEN)
+D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Telling IconList to Show 'Hidden' Files\n"));
+			current_DispFlags |= ICONLIST_DISP_SHOWHIDDEN;
+#endif
+			SET(window_IconList, MUIA_IconList_DisplayFlags, current_DispFlags);
+		}
+#endif
+		
         DoMethod
         (
             window, MUIM_Notify, MUIA_Window_Activate, TRUE,

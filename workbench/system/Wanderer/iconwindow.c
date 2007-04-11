@@ -456,6 +456,12 @@ D(bug("[iconwindow] IconWindow__OM_NEW: SELF = %x\n", self));
 			data->iwd_BackGround_PrefsNotificationObject = DoMethod(prefs,
                                                          		MUIM_WandererPrefs_Background_GetNotifyObject,
 																data->iwd_BackGround_Attrib);
+
+			DoMethod
+			(
+				prefs, MUIM_Notify, MUIA_WandererPrefs_Toolbar_Enabled, MUIV_EveryTime, 
+				(IPTR)self, 3, MUIM_Set, MUIA_IconWindow_Toolbar_Enabled, MUIV_TriggerValue
+			);
 		}
 
 		data->iwd_ProcessBackground_hook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_ProcessBackgroundFunc;
@@ -730,23 +736,24 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Cleanup()\n"));
 
 	if (data->iwd_BackGround_PrefsNotificationObject)
 	{
-			DoMethod
-			(
-				data->iwd_BackGround_PrefsNotificationObject,
-				MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_YOffset, (IPTR) self
-			);
-		
-			DoMethod
-			(
-				data->iwd_BackGround_PrefsNotificationObject,
-				MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_XOffset, (IPTR) self
-			);
-		
-			DoMethod
-			(
-				data->iwd_BackGround_PrefsNotificationObject,
-				MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_TileMode, (IPTR) self
-			);
+		DoMethod
+		(
+			data->iwd_BackGround_PrefsNotificationObject,
+			MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_YOffset, (IPTR) self
+		);
+	
+		DoMethod
+		(
+			data->iwd_BackGround_PrefsNotificationObject,
+			MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_XOffset, (IPTR) self
+		);
+	
+		DoMethod
+		(
+			data->iwd_BackGround_PrefsNotificationObject,
+			MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_TileMode, (IPTR) self
+		);
+
 		if (data->iwd_Flag_ISROOT)
 		{
 			DoMethod

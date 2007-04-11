@@ -870,7 +870,8 @@ D(bug("[IconList] IconList__OM_NEW: SELF = %x\n", obj));
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = CLASS;
 
-    data->icld_SortFlags = 0;
+    data->icld_SortFlags    = 0;
+    data->icld_DisplayFlags = ICONLIST_DISP_SHOWINFO;
 
     return (IPTR)obj;
 }
