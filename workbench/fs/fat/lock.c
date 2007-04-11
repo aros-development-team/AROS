@@ -25,6 +25,23 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
+LONG TestLock(struct ExtFileLock *fl) {
+    if (fl == 0 && glob->sb == NULL) {
+        if (glob->disk_inserted == FALSE)
+            return ERROR_NO_DISK;
+        else
+            return ERROR_NOT_A_DOS_DISK;
+    }
+ 
+    if (glob->sb == NULL || glob->disk_inhibited || (fl && fl->fl_Volume != MKBADDR(glob->sb->doslist)))
+        return ERROR_DEVICE_NOT_MOUNTED;
+
+    if (fl && fl->magic != ID_FAT_DISK)
+        return ERROR_OBJECT_WRONG_TYPE;
+
+    return 0;
+}
+
 LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, BPTR *result) {
     LONG err = ERROR_OBJECT_NOT_FOUND;
     struct DirHandle dh;

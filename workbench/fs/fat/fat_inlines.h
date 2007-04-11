@@ -13,52 +13,9 @@
 #ifndef __FAT_HANDLER_INLINES_H
 #define __FAT_HANDLER_INLINES_H
 
-static inline LONG TestLock(struct ExtFileLock *fl) {
-    if (fl == 0 && glob->sb == NULL) {
-        if (glob->disk_inserted == FALSE)
-            return ERROR_NO_DISK;
-        else
-            return ERROR_NOT_A_DOS_DISK;
-    }
- 
-    if (glob->sb == NULL || glob->disk_inhibited || (fl && fl->fl_Volume != MKBADDR(glob->sb->doslist)))
-        return ERROR_DEVICE_NOT_MOUNTED;
-
-    if (fl && fl->magic != ID_FAT_DISK)
-        return ERROR_OBJECT_WRONG_TYPE;
-
-    return 0;
-}
-
 /* IO layer */
 
 #include "cache.h"
-
-static inline LONG FS_GetBlock (ULONG n, UBYTE *dst) {
-    struct cache_block *b;
-    ULONG err;
-
-    if ((err = cache_get_block(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, n, 0, &b)) != 0)
-        return err;
-
-    CopyMem(b->data, dst, glob->blocksize);
-
-    cache_put_block(glob->cache, b, 0);
-
-    return 0;
-
-    /*
-    glob->diskioreq->iotd_Req.io_Command = CMD_READ;
-    glob->diskioreq->iotd_Req.io_Data = dst;
-    glob->diskioreq->iotd_Req.io_Offset = n * glob->blocksize;
-    glob->diskioreq->iotd_Req.io_Length = glob->blocksize;
-    glob->diskioreq->iotd_Req.io_Flags = IOF_QUICK;
-    
-    DoIO((struct IORequest *) glob->diskioreq);
-
-    return glob->diskioreq->iotd_Req.io_Error;
-    */
-}
 
 static inline LONG FS_GetBlocks (ULONG n, UBYTE *dst, ULONG count) {
     struct cache_block *b;
@@ -86,18 +43,6 @@ static inline LONG FS_GetBlocks (ULONG n, UBYTE *dst, ULONG count) {
 
     return glob->diskioreq->iotd_Req.io_Error;
     */
-}
-
-static inline LONG FS_PutBlock (ULONG n, UBYTE *dst) {
-    glob->diskioreq->iotd_Req.io_Command = CMD_WRITE;
-    glob->diskioreq->iotd_Req.io_Data = dst;
-    glob->diskioreq->iotd_Req.io_Offset = n * glob->blocksize;
-    glob->diskioreq->iotd_Req.io_Length = glob->blocksize;
-    glob->diskioreq->iotd_Req.io_Flags = IOF_QUICK;
-    
-    DoIO((struct IORequest *) glob->diskioreq);
-
-    return glob->diskioreq->iotd_Req.io_Error;
 }
 
 #endif
