@@ -70,13 +70,13 @@ AROS_UFH3(
 
 	SETUP_INST_DATA;
 
-D(bug("[IconWindow.ImageBackFill] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc()\n"));
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc()\n"));
 
 	GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 
 	if (prefs)
 	{
-D(bug("[IconWindow.ImageBackFill] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Setting IconList options ..\n"));
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Setting IconList options ..\n"));
 		SET(self, MUIA_IconList_ListMode, XGET(prefs, MUIA_WandererPrefs_Icon_ListMode));
 		SET(self, MUIA_IconList_TextMode, XGET(prefs, MUIA_WandererPrefs_Icon_TextMode));
 		SET(self, MUIA_IconList_TextMaxLen, XGET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen));
