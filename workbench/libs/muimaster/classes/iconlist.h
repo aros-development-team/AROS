@@ -20,8 +20,6 @@
 #define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000003) /* Zune: V1 */
 #define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000004) /* Zune: V1 */
 #define MUIM_IconList_Sort              (MUIB_IconList | 0x00000005) /* Zune: V1 */
-//#define MUIM_IconList_GetSortBits       (MUIB_IconList | 0x00000006) /* Zune: V1 */
-//#define MUIM_IconList_SetSortBits       (MUIB_IconList | 0x00000007) /* Zune: V1 */
 #define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000008) /* Zune: V1 */
 #define MUIM_IconList_SelectAll         (MUIB_IconList | 0x00000009) /* Zune: V1 */
 
@@ -30,8 +28,6 @@ struct MUIP_IconList_Update             {ULONG MethodID;};
 struct MUIP_IconList_Add                {ULONG MethodID; char *filename; char *label; struct FileInfoBlock *fib;};/* void *udata; More file attrs to add };*/
 struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
 struct MUIP_IconList_Sort               {ULONG MethodID;};
-//struct MUIP_IconList_SetSortBits        {ULONG MethodID; ULONG sort_bits; };
-//struct MUIP_IconList_GetSortBits        {ULONG MethodID;};
 struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
 
 #define MUIV_IconList_NextSelected_Start 0

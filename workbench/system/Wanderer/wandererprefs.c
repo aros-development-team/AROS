@@ -93,7 +93,7 @@ IPTR WandererPrefs__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
     SETUP_INST_DATA;
     
-    return DoSuperMethodA(CLASS, self, (Msg) message);
+    return DoSuperMethodA(CLASS, self, (Msg)message);
 }
 
 IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
@@ -107,28 +107,28 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
         switch (tag->ti_Tag)
         {
             case MUIA_WandererPrefs_NavigationMethod:
-                data->wpd_NavigationMethod = (LONG) tag->ti_Data;
+                data->wpd_NavigationMethod = (LONG)tag->ti_Data;
                 break;
 
             case MUIA_WandererPrefs_Toolbar_Enabled:
-                data->wpd_ToolbarEnabled = (LONG) tag->ti_Data;
+                data->wpd_ToolbarEnabled = (LONG)tag->ti_Data;
 			    break;
 
             case MUIA_WandererPrefs_Icon_ListMode:
-                data->wpd_IconListMode = (LONG) tag->ti_Data;
+                data->wpd_IconListMode = (LONG)tag->ti_Data;
                 break;
 
             case MUIA_WandererPrefs_Icon_TextMode:
-                data->wpd_IconTextMode = (ULONG) tag->ti_Data;
+                data->wpd_IconTextMode = (ULONG)tag->ti_Data;
                 break;
 
             case MUIA_WandererPrefs_Icon_TextMaxLen:
-                data->wpd_IconTextMaxLen = (ULONG) tag->ti_Data;
+                data->wpd_IconTextMaxLen = (ULONG)tag->ti_Data;
                 break;
         }
     }
     
-    return DoSuperMethodA(CLASS, self, (Msg) message);
+    return DoSuperMethodA(CLASS, self, (Msg)message);
 }
 
 IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
@@ -140,27 +140,27 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     switch (message->opg_AttrID)
     {
         case MUIA_WandererPrefs_NavigationMethod:
-            *store = (IPTR) data->wpd_NavigationMethod;
+            *store = (IPTR)data->wpd_NavigationMethod;
             break;
 
         case MUIA_WandererPrefs_Toolbar_Enabled:
-            *store = (IPTR) data->wpd_ToolbarEnabled;
+            *store = (IPTR)data->wpd_ToolbarEnabled;
             break;
 
         case MUIA_WandererPrefs_Icon_ListMode:
-            *store = (IPTR) data->wpd_IconListMode;
+            *store = (IPTR)data->wpd_IconListMode;
             break;
 
         case MUIA_WandererPrefs_Icon_TextMode:
-            *store = (IPTR) data->wpd_IconTextMode;
+            *store = (IPTR)data->wpd_IconTextMode;
             break;
             
         case MUIA_WandererPrefs_Icon_TextMaxLen:
-            *store = (IPTR) data->wpd_IconTextMaxLen;
+            *store = (IPTR)data->wpd_IconTextMaxLen;
             break;
 
         default:
-            rv = DoSuperMethodA(CLASS, self, (Msg) message);
+            rv = DoSuperMethodA(CLASS, self, (Msg)message);
     }
     
     return rv;
