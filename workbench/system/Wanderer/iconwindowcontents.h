@@ -28,12 +28,16 @@ and temporarily placed here */
                            m1, m1_msg_type,                          \
                            m2, m2_msg_type,                          \
                            m3, m3_msg_type,                          \
-                           m4, m4_msg_type)                        \
+                           m4, m4_msg_type,                          \
+                           m5, m5_msg_type,                          \
+                           m6, m6_msg_type)                        \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
     __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m1, m1, m1_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m2, m2, m2_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m3, m3, m3_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m4, m4, m4_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m5, m5, m5_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(funcnamebase ## __ ## m6, m6, m6_msg_type);    \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
 #define ICONWINDOWICONVOLUMELIST_CUSTOMCLASS(name, funcnamebase, base, parent_name, parent_class,   \

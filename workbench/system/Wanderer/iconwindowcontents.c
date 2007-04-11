@@ -124,6 +124,17 @@ IPTR IconWindowIconList__MUIM_Setup
 
     if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
 
+    Object *prefs = NULL;
+
+	GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+
+	if (prefs)
+	{
+		SET(self, MUIA_IconList_ListMode, XGET(prefs, MUIA_WandererPrefs_Icon_ListMode));
+		SET(self, MUIA_IconList_TextMode, XGET(prefs, MUIA_WandererPrefs_Icon_TextMode));
+		SET(self, MUIA_IconList_TextMaxLen, XGET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen));
+	}
+	
 	if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
 	{
 		if (muiRenderInfo(self))
@@ -262,6 +273,8 @@ ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
     OM_NEW,                        struct opSet *,
     OM_SET,                        struct opSet *,
     OM_GET,                        struct opGet *,
+    MUIM_Setup,                    Msg,
+    MUIM_Cleanup,                  Msg,
 	MUIM_DrawBackground,           Msg
 );
 
