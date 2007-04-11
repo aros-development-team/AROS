@@ -20,8 +20,8 @@
 #define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000003) /* Zune: V1 */
 #define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000004) /* Zune: V1 */
 #define MUIM_IconList_Sort              (MUIB_IconList | 0x00000005) /* Zune: V1 */
-#define MUIM_IconList_GetSortBits       (MUIB_IconList | 0x00000006) /* Zune: V1 */
-#define MUIM_IconList_SetSortBits       (MUIB_IconList | 0x00000007) /* Zune: V1 */
+//#define MUIM_IconList_GetSortBits       (MUIB_IconList | 0x00000006) /* Zune: V1 */
+//#define MUIM_IconList_SetSortBits       (MUIB_IconList | 0x00000007) /* Zune: V1 */
 #define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000008) /* Zune: V1 */
 #define MUIM_IconList_SelectAll         (MUIB_IconList | 0x00000009) /* Zune: V1 */
 
@@ -30,8 +30,8 @@ struct MUIP_IconList_Update             {ULONG MethodID;};
 struct MUIP_IconList_Add                {ULONG MethodID; char *filename; char *label; struct FileInfoBlock *fib;};/* void *udata; More file attrs to add };*/
 struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
 struct MUIP_IconList_Sort               {ULONG MethodID;};
-struct MUIP_IconList_SetSortBits        {ULONG MethodID; ULONG sort_bits; };
-struct MUIP_IconList_GetSortBits        {ULONG MethodID;};
+//struct MUIP_IconList_SetSortBits        {ULONG MethodID; ULONG sort_bits; };
+//struct MUIP_IconList_GetSortBits        {ULONG MethodID;};
 struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
 
 #define MUIV_IconList_NextSelected_Start 0
@@ -47,9 +47,13 @@ struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
 #define MUIA_IconList_Clicked                   (MUIB_IconList | 0x00000006) /* Zune: V1 ..G (struct IconList_Click *) */
 #define MUIA_IconList_IconsMoved                (MUIB_IconList | 0x00000007) /* Zune: V1 ..G (struct IconList_Entry *) */
 #define MUIA_IconList_AppWindowDrop             (MUIB_IconList | 0x00000008) /* Zune: V1 ..G (struct IconList_Entry *) */
-#define MUIA_IconList_ListMode                  (MUIB_IconList | 0x00000009) /* Zune: V1 ..G (struct IconList_Entry *) */
-#define MUIA_IconList_TextMode                  (MUIB_IconList | 0x0000000A) /* Zune: V1 ..G (struct IconList_Entry *) */
-#define MUIA_IconList_TextMaxLen                (MUIB_IconList | 0x0000000B) /* Zune: V1 ..G (struct IconList_Entry *) */
+
+#define MUIA_IconList_DisplayFlags              (MUIB_IconList | 0x00000020) /* Zune: V1 ISG ULONG                     */
+#define MUIA_IconList_SortFlags                 (MUIB_IconList | 0x00000021) /* Zune: V1 ISG ULONG                     */
+
+#define MUIA_IconList_ListMode                  (MUIB_IconList | 0x00000030) /* Zune: V1 ISG UBYTE */
+#define MUIA_IconList_TextMode                  (MUIB_IconList | 0x00000031) /* Zune: V1 ISG UBYTE */
+#define MUIA_IconList_TextMaxLen                (MUIB_IconList | 0x00000032) /* Zune: V1 ISG ULONG */
 
 #define MUIA_IconList_Rastport                  (MUIB_IconList | 0x000000FF) /* Zune: V1 ISG (struct RastPort *)       */
 
@@ -76,20 +80,21 @@ struct IconList_Drop
 };
 
 /****************************************************************************/
-/* iconlist sort bits - a value of zero sets: sort by name + drawers at top */
-
+/* iconlist rendering control flags */
+/* SORTFLAGS - a value of zero sets: sort by name + drawers at top */
 #define ICONLIST_SORT_DRAWERS_MIXED  (1<<0)		/*mix folders and files when sorting*/
 #define ICONLIST_SORT_DRAWERS_LAST   (1<<1)		/*ignored if mixed is set*/
 #define ICONLIST_SORT_REVERSE		 (1<<2)		/*reverse sort direction*/
 #define ICONLIST_SORT_BY_DATE	     (1<<3)		/*both date and size = sort by type*/
 #define ICONLIST_SORT_BY_SIZE	     (1<<4)		/*neither = sort by name*/
 
-#define ICONLIST_SHOW_HIDDEN	     (1<<5)		/*needs to be globally overridable*/
-#define ICONLIST_SHOW_INFO		     (1<<6)		/*show icon *.info files*/
+/* DISPLAYFLAGS */
+#define ICONLIST_DISP_SHOWHIDDEN     (1<<0)		/* show system "hidden" files */
+#define ICONLIST_DISP_SHOWINFO	     (1<<1)		/* only show icon(s) which have *.info files */
 
-#define ICONLIST_DISP_VERTICAL	     (1<<7)		/*tile icons vertically*/
-#define ICONLIST_DISP_NOICONS	     (1<<8)		/*name only mode*/
-#define ICONLIST_DISP_DETAILS	     (1<<9)		/*name=details mode, icon=??*/
+#define ICONLIST_DISP_VERTICAL	     (1<<7)		/* tile icons vertically */
+#define ICONLIST_DISP_NOICONS	     (1<<8)		/* name only mode*/
+#define ICONLIST_DISP_DETAILS	     (1<<9)		/* name=details mode, icon=?? */
 
 
 

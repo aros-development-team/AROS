@@ -954,7 +954,8 @@ void wanderer_menufunc_window_sort_name(Object **pstrip)
 
     if ( iconList != NULL)
     {
-		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+		ULONG sort_bits = 0;
+		GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
 		/*name = date and size bit both NOT set*/
 		if( (sort_bits & ICONLIST_SORT_BY_DATE) || (sort_bits & ICONLIST_SORT_BY_SIZE) )
@@ -962,7 +963,7 @@ void wanderer_menufunc_window_sort_name(Object **pstrip)
 			sort_bits &= ~(ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE);
 		}
 
-        DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+        SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
 }
@@ -974,7 +975,8 @@ void wanderer_menufunc_window_sort_date(Object **pstrip)
 
     if ( iconList != NULL)
     {
-		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+		ULONG sort_bits = 0;
+		GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
 		/*exclude size bit*/
 		if( sort_bits & ICONLIST_SORT_BY_SIZE )
@@ -984,7 +986,7 @@ void wanderer_menufunc_window_sort_date(Object **pstrip)
 
 		sort_bits |= ICONLIST_SORT_BY_DATE;
 
-        DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+        SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
 }
@@ -996,7 +998,8 @@ void wanderer_menufunc_window_sort_size(Object **pstrip)
 
     if ( iconList != NULL)
     {
-		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+		ULONG sort_bits = 0;
+		GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
 		/*exclude date bit*/
 		if( sort_bits & ICONLIST_SORT_BY_DATE )
@@ -1006,7 +1009,7 @@ void wanderer_menufunc_window_sort_size(Object **pstrip)
 
 		sort_bits |= ICONLIST_SORT_BY_SIZE;
 
-        DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+        SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
 }
@@ -1018,12 +1021,13 @@ void wanderer_menufunc_window_sort_type(Object **pstrip)
 
     if ( iconList != NULL)
     {
-		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+		ULONG sort_bits = 0;
+		GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
 		/*type = both date and size bits set*/
 		sort_bits |= (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE);
 
-        DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+        SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
 }
@@ -1037,7 +1041,8 @@ void wanderer_menufunc_window_sort_reverse(Object **pstrip)
 
     if (item != NULL && iconList != NULL)
     {
-		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+		ULONG sort_bits = 0;
+		GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
 		if( XGET(item, MUIA_Menuitem_Checked) )
 		{
@@ -1048,7 +1053,7 @@ void wanderer_menufunc_window_sort_reverse(Object **pstrip)
 			sort_bits &= ~ICONLIST_SORT_REVERSE;
 		}
 
-        DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+        SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
 }
@@ -1062,7 +1067,8 @@ void wanderer_menufunc_window_sort_topdrawers(Object **pstrip)
 
     if (item != NULL && iconList != NULL)
     {
-		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+		ULONG sort_bits = 0;
+		GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
 		if( XGET(item, MUIA_Menuitem_Checked) )
 		{
@@ -1073,7 +1079,7 @@ void wanderer_menufunc_window_sort_topdrawers(Object **pstrip)
 			sort_bits |= ICONLIST_SORT_DRAWERS_MIXED;
 		}
 
-        DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+        SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
 }
@@ -2052,7 +2058,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
 			DoMethod
 			(
 				window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-				(IPTR) self, 3, MUIM_CallHook, (IPTR) &_WandererIntern_hook_standard, (IPTR) wanderer_menufunc_wanderer_quit
+				(IPTR)self, 3, MUIM_CallHook, (IPTR)&_WandererIntern_hook_standard, (IPTR)wanderer_menufunc_wanderer_quit
 			);
 		}
 		else
@@ -2060,22 +2066,30 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
 			DoMethod
 			(
 				window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-				(IPTR) window, 1, MUIM_IconWindow_Remove
+				(IPTR)window, 1, MUIM_IconWindow_Remove
 			);
 		}
         
         DoMethod
         (
             window, MUIM_Notify, MUIA_Window_Activate, TRUE,
-            (IPTR) _app(self), 3, MUIM_Set, MUIA_Wanderer_ActiveWindow, (IPTR) window
+            (IPTR)_app(self), 3, MUIM_Set, MUIA_Wanderer_ActiveWindow, (IPTR) window
         );
 
+#if 1
         DoMethod
         (
             window, MUIM_Notify, MUIA_IconWindow_IsBackdrop, MUIV_EveryTime,
-            (IPTR) _app(self), 2, MUIM_CallHook, (IPTR) &_WandererIntern_hook_backdrop
+            (IPTR)_app(self), 5, MUIM_Application_PushMethod, (IPTR)_app(self), 2, MUIM_CallHook, (IPTR)&_WandererIntern_hook_backdrop
         );
-		
+#else
+        DoMethod
+        (
+            window, MUIM_Notify, MUIA_IconWindow_IsBackdrop, MUIV_EveryTime,
+            (IPTR)_app(self), 2, MUIM_CallHook, (IPTR) &_WandererIntern_hook_backdrop
+        );
+#endif
+
         /* If "Execute Command" entry is clicked open the execute window */
         DoAllMenuNotifies(_NewWandDrawerMenu__menustrip, drw);        
         

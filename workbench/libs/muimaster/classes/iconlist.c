@@ -137,10 +137,11 @@ struct MUI_IconData
     ULONG                         last_mics;
 
     /* RENDERING DATA! ###### */
-    ULONG                         icld_SortBits;                          /* Internal Sorting related stuff */
+    ULONG                         icld_DisplayFlags;                  /* Internal Sorting related stuff */
+    ULONG                         icld_SortFlags;
     ULONG                         icld_IconLargestWidth;
     ULONG                         icld_IconLargestHeight;
-    
+
     /* values for icld_UpdateMode - :
 
        UPDATE_SINGLEICON = draw the given single icon only
@@ -308,7 +309,7 @@ D(bug("[IconList] IconList_GetIconRectangle()\n"));
         only list regular files like this (drawers have no size/date output) */
     if(
         icon->ile_IconListEntry.type != WBDRAWER && 
-        ((data->icld_SortBits & ICONLIST_SORT_BY_SIZE) || (data->icld_SortBits & ICONLIST_SORT_BY_DATE))
+        ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE))
     )
     {
         icon->ile_AreaHeight += data->icld_IconFont->tf_YSize + ( ICONLIST_TEXTMARGIN * 2 );
@@ -478,9 +479,9 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
 
         /*date/size sorting has the date/size appended under the icon label*/
 
-        if( icon->ile_IconListEntry.type != WBDRAWER && ((data->icld_SortBits & ICONLIST_SORT_BY_SIZE) || (data->icld_SortBits & ICONLIST_SORT_BY_DATE)) )
+        if( icon->ile_IconListEntry.type != WBDRAWER && ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE)) )
         {
-            if( (data->icld_SortBits & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortBits & ICONLIST_SORT_BY_DATE) )
+            if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
             {
                 int i = icon->ile_FileInfoBlock.fib_Size;
         
@@ -492,7 +493,7 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
             }
             else
             {
-                if( !(data->icld_SortBits & ICONLIST_SORT_BY_SIZE) && (data->icld_SortBits & ICONLIST_SORT_BY_DATE) )
+                if( !(data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && (data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
                 {
                     struct DateStamp now;
                     DateStamp(&now);
@@ -738,7 +739,7 @@ D(bug("[IconList] IconList__MUIM_PositionIcons()\n"));
                 gridy = icon->ile_AreaHeight + spacing;
             }
     
-            if( data->icld_SortBits & ICONLIST_DISP_VERTICAL )
+            if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
             {
                 if ( maxw < gridx ) maxw = gridx;
                 cur_y += gridy;
@@ -869,7 +870,7 @@ D(bug("[IconList] IconList__OM_NEW: SELF = %x\n", obj));
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = CLASS;
 
-    data->icld_SortBits = 0;
+    data->icld_SortFlags = 0;
 
     return (IPTR)obj;
 }
@@ -931,6 +932,14 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
                 data->icld_IconFont = (struct TextFont*)tag->ti_Data;
                 break;
 
+			case MUIA_IconList_DisplayFlags:
+				data->icld_DisplayFlags = tag->ti_Data;
+                break;
+
+			case MUIA_IconList_SortFlags:
+				data->icld_SortFlags = tag->ti_Data;
+                break;
+				
             case MUIA_IconList_ListMode:
                 data->icld__Option_IconListMode = (UBYTE)tag->ti_Data;
                 break;
@@ -1020,6 +1029,8 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
         case MUIA_IconList_ListMode:             STORE = (ULONG)&data->icld__Option_IconListMode; return 1;
         case MUIA_IconList_TextMode:             STORE = (ULONG)&data->icld__Option_IconTextMode; return 1;
         case MUIA_IconList_TextMaxLen:           STORE = (ULONG)&data->icld__Option_IconTextMaxLen; return 1;
+        case MUIA_IconList_DisplayFlags:         STORE = data->icld_DisplayFlags; return 1;
+        case MUIA_IconList_SortFlags:            STORE = data->icld_SortFlags; return 1;
 
 		/* Settings defined by the view class */
 		case MUIA_IconListview_FixedBackground:  STORE = (IPTR)data->icld__Option_IconListFixedBackground; return 1;
@@ -1044,10 +1055,10 @@ IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
-	/* Get Internal Objects to use .. */
+	/* Get Internal Objects to use if not set .. */
 	if (data->icld_BufferRastPort == NULL) data->icld_BufferRastPort = _rp(obj);
 	if (data->icld_IconFont == NULL)       data->icld_IconFont = _font(obj);
-D(bug("[IconList] IconList__MUIM_Setup: Used Font @ %x, RastPort @ %x\n", data->icld_IconFont, data->icld_BufferRastPort ));
+D(bug("[IconList] IconList__MUIM_Setup: Use Font @ %x, RastPort @ %x\n", data->icld_IconFont, data->icld_BufferRastPort ));
 
 	/* Set our base options .. */
     data->icld_LabelPen = _pens(obj)[MPEN_SHINE];
@@ -1055,18 +1066,6 @@ D(bug("[IconList] IconList__MUIM_Setup: Used Font @ %x, RastPort @ %x\n", data->
     data->icld_InfoPen = _pens(obj)[MPEN_SHINE];
 	data->icld_InfoShadowPen = _pens(obj)[MPEN_SHADOW];
 	
-#warning "TODO: we shouldnt directly ask for this data but instead get it set on us .. "
-/*    Object *prefs = NULL;
-
-	GET(_app(obj), MUIA_Wanderer_Prefs, &prefs);
-
-	if (prefs)
-	{
-		GET(prefs, MUIA_WandererPrefs_Icon_ListMode,   &data->icld__Option_IconListMode);
-		GET(prefs, MUIA_WandererPrefs_Icon_TextMode,   &data->icld__Option_IconTextMode);
-		GET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen, &data->icld__Option_IconTextMaxLen);
-	}*/
-
     ForeachNode(&data->icld_IconList, node)
     {
         if (!node->ile_DiskObj)
@@ -1093,25 +1092,33 @@ IPTR IconList__MUIM_Show(struct IClass *CLASS, Object *obj, struct MUIP_Show *me
                         newtop;
     IPTR                rc;
 
-    rc = DoSuperMethodA(CLASS, obj, (Msg)message);
+    if (rc = DoSuperMethodA(CLASS, obj, (Msg)message))
+	{
 
-    newleft = data->icld_ViewX;
-    newtop = data->icld_ViewY;
+		newleft = data->icld_ViewX;
+		newtop = data->icld_ViewY;
 
-    if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
-    if (newleft < 0) newleft = 0;
+		if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
+		if (newleft < 0) newleft = 0;
 
-    if (newtop + _mheight(obj) > data->height) newtop = data->height - _mheight(obj);
-    if (newtop < 0) newtop = 0;
+		if (newtop + _mheight(obj) > data->height) newtop = data->height - _mheight(obj);
+		if (newtop < 0) newtop = 0;
 
-    if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
-    {    
-        SetAttrs(obj, MUIA_IconList_Left, newleft,
-            MUIA_IconList_Top, newtop,
-            TAG_DONE);
-    }
+		if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
+		{    
+			SetAttrs(obj, MUIA_IconList_Left, newleft,
+				MUIA_IconList_Top, newtop,
+				TAG_DONE);
+		}
 
-    SetFont(data->icld_BufferRastPort, data->icld_IconFont);
+		/* Get Internal Objects to use if not set .. */
+		if (data->icld_BufferRastPort == NULL) data->icld_BufferRastPort = _rp(obj);
+		if (data->icld_IconFont == NULL)       data->icld_IconFont = _font(obj);
+D(bug("[IconList] IconList__MUIM_Show: Use Font @ %x, RastPort @ %x\n", data->icld_IconFont, data->icld_BufferRastPort ));
+
+		if ((data->icld_BufferRastPort) && (data->icld_IconFont))
+			SetFont(data->icld_BufferRastPort, data->icld_IconFont);
+	}
     return rc;
 }
 
@@ -1495,7 +1502,7 @@ IPTR IconList__MUIM_Clear(struct IClass *CLASS, Object *obj, struct MUIP_IconLis
 
     data->icld_SelectionFirst = NULL;
     data->icld_ViewX = data->icld_ViewY = data->width = data->height = 0;
-    /*data->icld_SortBits = 0;*/
+    /*data->icld_SortFlags = 0;*/
 
     data->icld_IconLargestWidth = data->icld_IconLargestHeight = 32;	/*default icon size*/
 
@@ -2558,7 +2565,7 @@ IPTR IconList__MUIM_Sort(struct IClass *CLASS, Object *obj, struct MUIP_IconList
     
         while (icon1)
         {
-            if(data->icld_SortBits & ICONLIST_SORT_DRAWERS_MIXED)
+            if(data->icld_SortFlags & ICONLIST_SORT_DRAWERS_MIXED)
             {
 				/*drawers mixed*/
 
@@ -2596,7 +2603,7 @@ IPTR IconList__MUIM_Sort(struct IClass *CLASS, Object *obj, struct MUIP_IconList
             {
                 i = 0;
         
-                if( (data->icld_SortBits & ICONLIST_SORT_BY_DATE) && !(data->icld_SortBits & ICONLIST_SORT_BY_SIZE) )
+                if( (data->icld_SortFlags & ICONLIST_SORT_BY_DATE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) )
                 {
 					/* Sort by Date */
                     i = CompareDates((const struct DateStamp *)&entry->ile_FileInfoBlock.fib_Date,(const struct DateStamp *)&icon1->ile_FileInfoBlock.fib_Date);
@@ -2604,13 +2611,13 @@ IPTR IconList__MUIM_Sort(struct IClass *CLASS, Object *obj, struct MUIP_IconList
                 }
                 else
                 {
-                    if( (data->icld_SortBits & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortBits & ICONLIST_SORT_BY_DATE) )
+                    if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
                     {
 						/* Sort by Size .. */
                         i = entry->ile_FileInfoBlock.fib_Size - icon1->ile_FileInfoBlock.fib_Size;
 //D(bug("     -  %i\n",i));
                     }
-                    else if( data->icld_SortBits & (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE) )
+                    else if( data->icld_SortFlags & (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE) )
                     {
                        /* Sort by Type .. */
                     }
@@ -2621,10 +2628,10 @@ IPTR IconList__MUIM_Sort(struct IClass *CLASS, Object *obj, struct MUIP_IconList
                     }
                 }
 
-                if (!(data->icld_SortBits & ICONLIST_SORT_REVERSE) && (i < 0))
+                if (!(data->icld_SortFlags & ICONLIST_SORT_REVERSE) && (i < 0))
                     break;
 
-                if ((data->icld_SortBits & ICONLIST_SORT_REVERSE) && (i > 0))
+                if ((data->icld_SortFlags & ICONLIST_SORT_REVERSE) && (i > 0))
                     break;
             }
             icon2 = icon1;
@@ -2643,28 +2650,6 @@ IPTR IconList__MUIM_Sort(struct IClass *CLASS, Object *obj, struct MUIP_IconList
     MUI_Redraw(obj, MADF_DRAWOBJECT);
 
     return 1;
-}
-
-/**************************************************************************
-MUIM_SetSortBits - set our sorting bits
-**************************************************************************/
-IPTR IconList__MUIM_SetSortBits(struct IClass *CLASS, Object *obj, struct MUIP_IconList_SetSortBits *message)
-{
-    struct MUI_IconData *data = INST_DATA(CLASS, obj);
-
-    data->icld_SortBits = message->sort_bits;
-
-    return 1;
-}
-
-/**************************************************************************
-MUIM_GetSortBits - return our sorting bits
-**************************************************************************/
-IPTR IconList__MUIM_GetSortBits(struct IClass *CLASS, Object *obj, struct MUIP_IconList_GetSortBits *message)
-{
-    struct MUI_IconData *data = INST_DATA(CLASS, obj);
-
-    return data->icld_SortBits;
 }
 
 /**************************************************************************
@@ -2729,8 +2714,6 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_IconList_NextSelected:  return IconList__MUIM_NextSelected(CLASS, obj, (APTR)message);
         case MUIM_IconList_UnselectAll:   return IconList__MUIM_UnselectAll(CLASS, obj, (APTR)message);
         case MUIM_IconList_Sort:          return IconList__MUIM_Sort(CLASS, obj, (APTR)message);
-        case MUIM_IconList_GetSortBits:   return IconList__MUIM_GetSortBits(CLASS, obj, (APTR)message);
-        case MUIM_IconList_SetSortBits:   return IconList__MUIM_SetSortBits(CLASS, obj, (APTR)message);
         case MUIM_IconList_PositionIcons: return IconList__MUIM_PositionIcons(CLASS, obj, (APTR)message);
         case MUIM_IconList_SelectAll:     return IconList__MUIM_SelectAll(CLASS, obj, (APTR)message);
     }
@@ -3040,10 +3023,9 @@ IPTR IconVolumeList__MUIM_Update(struct IClass *CLASS, Object *obj, struct MUIP_
         IconVolumeList__DestroyDOSList(ndl);
     }
 
-    /*deault display bits*/
-    ULONG sort_bits = ICONLIST_DISP_VERTICAL;
-
-    DoMethod(obj, MUIM_IconList_SetSortBits, sort_bits);
+    /* default display/sorting flags */
+	SET(obj, MUIA_IconList_DisplayFlags, ICONLIST_DISP_VERTICAL);
+    SET(obj, MUIA_IconList_SortFlags, 0);
     DoMethod(obj, MUIM_IconList_Sort);
 
     return 1;
