@@ -317,7 +317,7 @@ void CountFreeClusters(struct FSSuper *sb) {
     for (cluster = 2; cluster < sb->clusters_count + 2; cluster++)
 
         /* record the free ones */
-        if (GetFatEntry(cluster) == 0)
+        if (NEXT_CLUSTER(sb, cluster) == 0)
             free++;
 
     /* put the value away for later */

@@ -205,5 +205,6 @@ struct Globals {
         }                                                          \
     } while (0);
 
+#define NEXT_CLUSTER(sb,cl) (sb->func_get_fat_entry(sb,cl))
 
 #endif
