@@ -65,7 +65,7 @@ void ProcessPackets(void) {
                 struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
 
                 kprintf("\nGot FREE_LOCK\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, fl->fl_Key);
+                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
 
                 if(fl)
                     FreeLock(fl);
@@ -79,7 +79,7 @@ void ProcessPackets(void) {
                 struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
 
                 kprintf("\nGot ACTION_COPY_DIR\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, fl->fl_Key);
+                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
                 
                 if ((err = TestLock(fl)))
                     break;
@@ -97,7 +97,7 @@ void ProcessPackets(void) {
                 struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
 
                 kprintf("\nGot ACTION_Parent\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, fl->fl_Key);
+                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
                 
                 if ((err = TestLock(fl)))
                     break;
@@ -129,7 +129,7 @@ void ProcessPackets(void) {
                 struct FileInfoBlock *fib = BADDR(packet->dp_Arg2);                     
 
                 kprintf("\nGot ACTION_EXAMINE_OBJECT\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, fl->fl_Key);
+                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -148,7 +148,7 @@ void ProcessPackets(void) {
                 BPTR b; struct ExtFileLock *temp_lock;
 
                 kprintf("\nGot ACTION_EXAMINE_NEXT\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, fl->fl_Key);
+                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
 
                 if ((err = TestLock(fl)))
                     break;
