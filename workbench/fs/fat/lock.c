@@ -166,6 +166,7 @@ LONG LockParent(struct ExtFileLock *fl, LONG axs, BPTR *res) {
     struct DirEntry de;
     ULONG parent_cluster;
 
+    /* if we're in the root directory, then the root is our parent */
     if (fl->dir_cluster == 0)
         return LockRoot(axs, res);
 
