@@ -91,11 +91,13 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
 
 		ULONG   prefs_ListMode = 0,
                 prefs_TextMode = 0,
-                prefs_TextMaxLen = 0;
+                prefs_TextMaxLen = 0,
+				prefs_Processing = 0;
 
 		GET(prefs, MUIA_WandererPrefs_Icon_ListMode, &prefs_ListMode);
 		GET(prefs, MUIA_WandererPrefs_Icon_TextMode, &prefs_TextMode);
 		GET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen, &prefs_TextMaxLen);		
+		GET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen, &prefs_Processing);		
 
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Prefs = %d %d %d\n", prefs_ListMode, prefs_TextMode, prefs_TextMaxLen));
 
@@ -118,10 +120,14 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
 			SET(self, MUIA_IconList_TextMaxLen, prefs_TextMaxLen);
 		}
 
-		if (options_changed)
+		if ((options_changed) && !(prefs_Processing))
 		{
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList Options have changed, causing an update ..\n"));
 			DoMethod(self, MUIM_IconList_Update);
+		}
+		else if (data->iwcd_IconWindow)
+		{
+			SET(data->iwcd_IconWindow, MUIA_IconWindow_Changed, TRUE);
 		}
 	}
     AROS_USERFUNC_EXIT

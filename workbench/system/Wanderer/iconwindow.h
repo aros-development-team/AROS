@@ -17,17 +17,20 @@
 
 /*** Public Attributes ******************************************************/
 
-#define MUIA_IconWindow_IsRoot                             (MUIB_IconWindow | 0x00000000) /* I-G */
 #define MUIA_IconWindow_Location                           (MUIB_IconWindow | 0x00000001) /* ISG */
-#define MUIA_IconWindow_ActionHook                         (MUIB_IconWindow | 0x00000002) /* I-- */ /* Hook to call when some action happens */
-#define MUIA_IconWindow_IsBackdrop                         (MUIB_IconWindow | 0x00000003) /* ISG */ /* is Backdrop window ? */
+#define MUIA_IconWindow_Window                             (MUIB_IconWindow | 0x00000002) /* I-G */
+#define MUIA_IconWindow_Font                               (MUIB_IconWindow | 0x00000003) /* ISG */
 #define MUIA_IconWindow_IconList                           (MUIB_IconWindow | 0x00000004) /* --G */
-#define MUIA_IconWindow_Toolbar_Enabled                    (MUIB_IconWindow | 0x00000005) /* ISG */
 
-#define MUIA_IconWindow_Window                             (MUIB_IconWindow | 0x00000010) /* I-G */
-#define MUIA_IconWindow_Font                               (MUIB_IconWindow | 0x00000011) /* ISG */
-#define MUIA_IconWindow_BackgroundAttrib                   (MUIB_IconWindow | 0x00000012) /* --G */
-#define MUIA_IconWindow_BackFillData                       (MUIB_IconWindow | 0x00000020) /* --G */
+#define MUIA_IconWindow_ActionHook                         (MUIB_IconWindow | 0x00000010) /* I-- */ /* Hook to call when some action happens */
+
+#define MUIA_IconWindow_BackgroundAttrib                   (MUIB_IconWindow | 0x00000020) /* --G */
+#define MUIA_IconWindow_BackFillData                       (MUIB_IconWindow | 0x00000021) /* --G */
+
+#define MUIA_IconWindow_IsRoot                             (MUIB_IconWindow | 0x000000A1) /* I-G */
+#define MUIA_IconWindow_IsBackdrop                         (MUIB_IconWindow | 0x000000A2) /* ISG */ /* is Backdrop window ? */
+#define MUIA_IconWindow_Toolbar_Enabled                    (MUIB_IconWindow | 0x000000E1) /* ISG */
+
 #define MUIA_IconWindow_Changed                            (MUIB_IconWindow | 0x000000FF) /* -SG (TRUE) if the window(s) settings
 																								 have changed (ie window needs refereshed)
 																								 used in combination with MUIA_WandererPrefs_Processing
@@ -136,6 +139,7 @@ struct IconWindow_DATA
     Object                               *iwd_ExtensionGroupObj;
     Object                               *iwd_ExtensionGroupSpacerObj;
 
+	struct Hook                          iwd_PrefsUpdated_hook;
     struct Hook                          *iwd_ActionHook;
     struct Hook                          iwd_pathStrHook;
 	struct Hook		                     iwd_ProcessBackground_hook;
@@ -145,6 +149,7 @@ struct IconWindow_DATA
 	
     struct TextFont                      *iwd_WindowFont;
     
+    BOOL                                 iwd_Flag_NEEDSUPDATE;
     BOOL                                 iwd_Flag_ISROOT;
     BOOL                                 iwd_Flag_ISBACKDROP;
     BOOL                                 iwd_Flag_EXT_TOOLBARENABLED;
