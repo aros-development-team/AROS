@@ -172,6 +172,7 @@ BOOL WandererPrefs_ProccessGlobalChunk(Class *CLASS, Object *self, struct Wander
 	
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessGlobalChunk()\n"));
 #warning "TODO: fix problems with endian-ness?"
+
 	SetAttrs(self, MUIA_WandererPrefs_NavigationMethod, global_chunk->wpd_NavigationMethod,
 				   MUIA_WandererPrefs_Toolbar_Enabled, global_chunk->wpd_ToolbarEnabled,
 				   MUIA_WandererPrefs_Icon_ListMode, global_chunk->wpd_IconListMode,
@@ -284,11 +285,11 @@ IPTR WandererPrefs__MUIM_WandererPrefs_Reload
     
     InitIFFasDOS(handle);
 
-     if ((error = OpenIFF(handle, IFFF_READ)) == 0)
+    if ((error = OpenIFF(handle, IFFF_READ)) == 0)
     {
 		if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
 		{
-			
+			SET(self, MUIA_WandererPrefs_Processing, TRUE);
 			do
 			{				
 				if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
@@ -361,6 +362,7 @@ D(bug("[WANDERER.PREFS] ParseIFF() failed, returncode %ld!\n", error));
 				}
 
 			} while (error != IFFERR_EOF);
+			SET(self, MUIA_WandererPrefs_Processing, FALSE);
 		}
 		else
 		{
