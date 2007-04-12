@@ -35,13 +35,16 @@ struct Globals global_data;
 struct Globals *glob = &global_data;
 
 void handler(void) {
+    struct Message *msg;
     struct DosPacket *startuppacket;
     LONG error = ERROR_NO_FREE_STORE;
 
     glob->ourtask = FindTask(NULL);
     glob->ourport = &((struct Process *)glob->ourtask)->pr_MsgPort;
     WaitPort(glob->ourport);
-    startuppacket = GetPacket(glob->ourport);
+
+    msg = GetMsg(glob->ourport);
+    startuppacket = (struct DosPacket *) msg->mn_Node.ln_Name;
     glob->devnode = BADDR(startuppacket->dp_Arg3);
 
     kprintf("\nFATFS: opening libraries.\n");
@@ -60,13 +63,20 @@ void handler(void) {
                         ULONG diskchgsig = 1 << diskchgsig_bit;
                         ULONG mask = pktsig | diskchgsig;
                         ULONG sigs;
+                        struct MsgPort *rp;
 
                         kprintf("\tInitiated device: ");
                         knprints(AROS_BSTR_ADDR(glob->devnode->dol_Name), AROS_BSTR_strlen(glob->devnode->dol_Name));
 
                         glob->devnode->dol_Task = glob->ourport;
 
-                        ReturnPacket(startuppacket, DOSTRUE, 0);
+                        D(bug("[fat] returning startup packet\n"));
+
+                        rp = startuppacket->dp_Port;
+                        startuppacket->dp_Port = glob->ourport;
+                        startuppacket->dp_Res1 = DOSTRUE;
+                        startuppacket->dp_Res2 = 0;
+                        PutMsg(rp, startuppacket->dp_Link);
 
                         kprintf("Handler init finished.\n");
 
@@ -108,8 +118,17 @@ void handler(void) {
 
     kprintf("The end.\n");
 
-    if (startuppacket)
-        ReturnPacket(startuppacket, DOSFALSE, error);
+    if (startuppacket != NULL) {
+        struct MsgPort *rp;
+
+        D(bug("[fat] returning startup packet\n"));
+
+        rp = startuppacket->dp_Port;
+        startuppacket->dp_Port = glob->ourport;
+        startuppacket->dp_Res1 = DOSTRUE;
+        startuppacket->dp_Res2 = 0;
+        PutMsg(rp, startuppacket->dp_Link);
+    }
 
     return;
 }
