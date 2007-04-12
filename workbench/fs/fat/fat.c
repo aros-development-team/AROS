@@ -26,73 +26,82 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-#define LOAD_FAT_BLOCKS(sb,cache_block) do {\
-    if (sb->fat_cache_block != cache_block) { \
-        sb->fat_cache_block = cache_block;    \
-        cache_put_blocks(glob->cache, sb->fat_blocks, sb->fat_blocks_count, 0); \
-        cache_get_blocks(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, sb->first_fat_sector + (entry_cache_block << (sb->fat_cachesize_bits - sb->sectorsize_bits)), sb->fat_blocks_count, 0, sb->fat_blocks); \
-    } \
-} while(0)
-
-static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
-    ULONG offset = n + n/2;
+/* helper function to get the location of a fat entry for a cluster. it used
+ * to be a define until it got too crazy */
+static inline UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset) {
     ULONG entry_cache_block = offset >> sb->fat_cachesize_bits;
     ULONG entry_cache_offset = offset & (sb->fat_cachesize - 1);
-    UWORD val;
 
-    LOAD_FAT_BLOCKS(sb, entry_cache_block);
+    /* if the target cluster is not within the currently loaded chunk of fat,
+     * we need to get the right data in */
+    if (sb->fat_cache_block != entry_cache_block) {
+        D(bug("[fat] loading %ld FAT sectors starting at sector %ld\n", sb->fat_blocks_count, entry_cache_block));
+        /* put the old ones back */
+        cache_put_blocks(glob->cache, sb->fat_blocks, sb->fat_blocks_count, 0);
 
-    //val = AROS_LE2WORD(*((UWORD *) (sb->fat + offset)));
-    val = AROS_LE2WORD(*((UWORD *) (sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits]->data + (entry_cache_offset & (sb->sectorsize-1)))));
+        /* load some more */
+        cache_get_blocks(glob->cache,
+                         glob->diskioreq->iotd_Req.io_Device,
+                         glob->diskioreq->iotd_Req.io_Unit,
+                         sb->first_fat_sector +
+                            (entry_cache_block << (sb->fat_cachesize_bits - sb->sectorsize_bits)),
+                         sb->fat_blocks_count,
+                         0,
+                         sb->fat_blocks);
+
+        /* remember where we are for next time */
+        sb->fat_cache_block = entry_cache_block;
+    }
+
+    /* compute the pointer location and return it */
+    return sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits]->data +
+           (entry_cache_offset & (sb->sectorsize-1));
+}
+
+static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
+    UWORD val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, n + n/2)));
 
     if (n & 1)
         val >>= 4;
     else
         val &= 0x0FFF;
 
-    return (val);
+    return val;
 }
 
 static ULONG GetFat16Entry(struct FSSuper *sb, ULONG n) {
-    ULONG offset = n << 1;
-    ULONG entry_cache_block = offset >> sb->fat_cachesize_bits;
-    ULONG entry_cache_offset = offset & (sb->fat_cachesize - 1);
-
-    LOAD_FAT_BLOCKS(sb, entry_cache_block);
-
-    //return AROS_LE2WORD(*((UWORD*)(sb->fat + offset)));
-    return AROS_LE2WORD(*((UWORD *) (sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits]->data + (entry_cache_offset & (sb->sectorsize-1)))));
+    return AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, n << 1)));
 }
 
 static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n) {
-    ULONG offset = n << 2;
-    ULONG entry_cache_block = offset >> sb->fat_cachesize_bits;
-    ULONG entry_cache_offset = offset & (sb->fat_cachesize - 1);
-
-    LOAD_FAT_BLOCKS(sb, entry_cache_block);
-
-    //return AROS_LE2LONG(*((ULONG*)(sb->fat + entry_cache_offset)));
-    return AROS_LE2LONG(*((ULONG *) (sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits]->data + (entry_cache_offset & (sb->sectorsize-1)))));
+    return AROS_LE2LONG(*((ULONG *) GetFatEntryPtr(sb, n << 2)));
 }
  
 LONG ReadFATSuper(struct FSSuper *sb ) {
     LONG err;
-    UBYTE *bh;
-    struct FATBootSector *boot;
+    UBYTE raw[512];
+    struct FATBootSector *boot = (struct FATBootSector *) &raw;
     BOOL invalid = FALSE;
 
-    kprintf("\tReading FAT boot block.\n");
+    D(bug("[fat] reading boot sector\n"));
 
-    if ((bh = AllocVecPooled(glob->mempool, 512)) == NULL)
-        return ERROR_NO_FREE_STORE;
+    /*
+     * Read the boot sector. We go direct because we don't have a cache yet,
+     * and can't create one until we know the sector size, which is held in
+     * the boot sector. In practice it doesn't matter - we're going use this
+     * once and once only.
+     */
 
-    if ((err = DoRawRead(0, bh)) != 0) {
-        kprintf("Can't read boot sector!\n");
-        ErrorReq("Can't read boot sector on specified device! Error code %ld", &err);
-        FreeVecPooled(glob->mempool, bh);
+    glob->diskioreq->iotd_Req.io_Command = CMD_READ;
+    glob->diskioreq->iotd_Req.io_Offset = 0;
+    glob->diskioreq->iotd_Req.io_Length = 512;
+    glob->diskioreq->iotd_Req.io_Data = &raw;
+    glob->diskioreq->iotd_Req.io_Flags = IOF_QUICK;
+
+    if ((err = DoIO((struct IORequest *) glob->diskioreq)) != 0) {
+        D(bug("[fat] couldn't read boot block (%ld)\n", err));
         return err;
     }
-    boot = (struct FATBootSector *) bh;
 
     kprintf("\tBoot sector:\n");
 
@@ -167,12 +176,11 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         invalid = TRUE;
 
     /* FAT "signature" */
-    if (bh[510] != 0x55 || bh[511] != 0xAA)
+    if (raw[510] != 0x55 || raw[511] != 0xaa)
         invalid = TRUE;
  
     if (invalid) {
         kprintf("\tInvalid FAT Boot Sector\n");
-        FreeVecPooled(glob->mempool, bh);
         return ERROR_NOT_A_DOS_DISK;
     }
  
@@ -248,8 +256,6 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->volume.name[i] = '\0';
         sb->volume.name[0] = 9;
     }
-
-    FreeVecPooled(glob->mempool, bh);
 
     kprintf("\tFAT Filesystem succesfully detected.\n");
 
