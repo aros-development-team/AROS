@@ -2012,7 +2012,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 								{
 									if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)  /* if not catched by lasso and selected before -> unselect */
 									{
-										node->ile_Flags = ~ICONENTRY_FLAG_SELECTED;
+										node->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
 										data->icld_UpdateMode = UPDATE_SINGLEICON;
 										data->update_icon = node;
 										MUI_Redraw(obj, MADF_DRAWUPDATE);
