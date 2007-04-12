@@ -77,12 +77,49 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
 	if (prefs)
 	{
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Setting IconList options ..\n"));
-		SET(self, MUIA_IconList_ListMode, XGET(prefs, MUIA_WandererPrefs_Icon_ListMode));
-		SET(self, MUIA_IconList_TextMode, XGET(prefs, MUIA_WandererPrefs_Icon_TextMode));
-		SET(self, MUIA_IconList_TextMaxLen, XGET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen));
-		DoMethod(self, MUIM_IconList_Update );
+		BOOL    options_changed = FALSE;
+
+		ULONG   current_ListMode = 0,
+                current_TextMode = 0,
+                current_TextMaxLen = 0;
+
+		GET(self, MUIA_IconList_ListMode, &current_ListMode);
+		GET(self, MUIA_IconList_TextMode, &current_TextMode);
+		GET(self, MUIA_IconList_TextMaxLen, &current_TextMaxLen);
+
+		ULONG   prefs_ListMode = 0,
+                prefs_TextMode = 0,
+                prefs_TextMaxLen = 0;
+
+		GET(prefs, MUIA_WandererPrefs_Icon_ListMode, &prefs_ListMode);
+		GET(prefs, MUIA_WandererPrefs_Icon_TextMode, &prefs_TextMode);
+		GET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen, &prefs_TextMaxLen);		
+
+		if (current_ListMode != prefs_ListMode)
+		{
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList ListMode changed - updating ..\n"));
+			options_changed = TRUE;
+			SET(self, MUIA_IconList_ListMode, prefs_ListMode);
+		}
+		if (current_TextMode != prefs_TextMode)
+		{
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList TextRenderMode changed - updating ..\n"));
+			options_changed = TRUE;
+			SET(self, MUIA_IconList_TextMode, prefs_TextMode);
+		}
+		if (current_TextMaxLen != prefs_TextMaxLen)
+		{
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList Max Text Length changed - updating ..\n"));
+			options_changed = TRUE;
+			SET(self, MUIA_IconList_TextMaxLen, prefs_TextMaxLen);
+		}
+
+		if (options_changed)
+		{
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList Options have changed, causing an update ..\n"));
+			DoMethod(self, MUIM_IconList_Update);
+		}
 	}
-    
     AROS_USERFUNC_EXIT
 }
 

@@ -630,30 +630,38 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     {
 		case MUIA_IconWindow_Window:
             *store = (IPTR)self;
-            break; 	
+            break;
+
         case MUIA_IconWindow_Location:
             *store = !data->iwd_Flag_ISROOT
                 ? XGET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer)
                 : (IPTR)NULL;
-            break;      
+            break;
+
         case MUIA_IconWindow_IconList:
             *store = (IPTR)data->iwd_IconListObj;
-            break;;
+            break;
+
         case MUIA_IconWindow_Toolbar_Enabled:
             *store = (IPTR)data->iwd_Flag_EXT_TOOLBARENABLED;
-            break; 
+            break;
+
         case MUIA_IconWindow_IsRoot:
             *store = (IPTR)data->iwd_Flag_ISROOT;
             break;
+
 		case MUIA_IconWindow_IsBackdrop:
 			*store = (IPTR)data->iwd_Flag_ISBACKDROP;
 			break;
+
 		case MUIA_IconWindow_BackFillData:
 			*store = (IPTR)data->iwd_BackFillInfo;
             break;
+
 		case MUIA_IconWindow_BackgroundAttrib:
 			*store = (IPTR)data->iwd_BackGround_Attrib;
             break;
+
         default:
             rv = DoSuperMethodA(CLASS, self, (Msg) message);
     }
