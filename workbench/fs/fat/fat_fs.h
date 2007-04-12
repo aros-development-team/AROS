@@ -141,10 +141,12 @@ struct FSSuper {
     ULONG type;
     ULONG eoc_mark;
 
-    UBYTE *fat;
-    ULONG fat32_cachesize;
-    ULONG fat32_cachesize_bits;
-    ULONG fat32_cache_block;
+    struct cache_block  **fat_blocks;
+    ULONG               fat_blocks_count;
+
+    ULONG fat_cachesize;
+    ULONG fat_cachesize_bits;
+    ULONG fat_cache_block;
 
     ULONG rootdir_cluster;
     ULONG rootdir_sector;

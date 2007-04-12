@@ -17,7 +17,7 @@
  *
  * The idea is that we have pile of blocks (struct cache_block), a hashtable
  * and a free list. Initially all the blocks are free, and reside on the free
- * list (a doubly-lined list). The hashtable is empty.
+ * list (a doubly-linked list). The hashtable is empty.
  *
  * When a request for a block comes in (cache_get_block()), we extract the
  * bottom N bits of the block number, and then scan the linked-list in that
@@ -239,7 +239,7 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
 }
 
 ULONG cache_put_block(struct cache *c, struct cache_block *b, ULONG flags) {
-    D(bug("cache_put_block: block num %ld\n", b->num));
+    D(bug("cache_put_block: returning block %d, flags 0x%08x\n", b->num, flags));
 
     /* if its still in use, then we've got it easy */
     b->use_count--;
@@ -273,6 +273,38 @@ ULONG cache_put_block(struct cache *c, struct cache_block *b, ULONG flags) {
     c->num_in_use--;
 
     D(bug("cache_put_block: no longer in use, moved to free list, total %ld blocks in use\n", c->num_in_use));
+
+    return 0;
+}
+
+ULONG cache_get_blocks(struct cache *c, struct Device *dev, struct Unit *unit, ULONG num, ULONG nblocks, ULONG flags, struct cache_block **rb) {
+    ULONG err, i;
+
+    D(bug("cache_get_blocks: loading %d blocks starting at %d, flags 0x%08x\n", nblocks, num, flags));
+
+    /* XXX optimise this to get contiguous blocks in one hit */
+    for (i = 0; i < nblocks; i++) {
+        if ((err = cache_get_block(c, dev, unit, num+i, flags, &rb[i])) != 0) {
+            D(bug("cache_get_blocks: block load failed, freeing everything we got so far\n"));
+
+            for (; i >= 0; i--)
+                cache_put_block(c, rb[i], 0);
+
+            return err;
+        }
+    
+    }
+
+    return 0;
+}
+
+ULONG cache_put_blocks(struct cache *c, struct cache_block **b, ULONG nblocks, ULONG flags) {
+    ULONG i;
+
+    D(bug("cache_put_blocks: returning %d blocks starting at %d, flags 0x%08x\n", nblocks, b[0]->num, flags));
+
+    for (i = 0; i < nblocks; i++)
+        cache_put_block(c, b[i], 0);
 
     return 0;
 }

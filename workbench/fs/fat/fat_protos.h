@@ -55,8 +55,6 @@ LONG CopyLock(struct ExtFileLock *src_fl, BPTR *res);
 /* packet.c */
 void ProcessPackets(void);
 
-#include "fat_inlines.h"
-
 /* new definitions as we refactor the code */
 
 /* direntry.c */
