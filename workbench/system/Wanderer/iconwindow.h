@@ -28,6 +28,10 @@
 #define MUIA_IconWindow_Font                               (MUIB_IconWindow | 0x00000011) /* ISG */
 #define MUIA_IconWindow_BackgroundAttrib                   (MUIB_IconWindow | 0x00000012) /* --G */
 #define MUIA_IconWindow_BackFillData                       (MUIB_IconWindow | 0x00000020) /* --G */
+#define MUIA_IconWindow_Changed                            (MUIB_IconWindow | 0x000000FF) /* -SG (TRUE) if the window(s) settings
+																								 have changed (ie window needs refereshed)
+																								 used in combination with MUIA_WandererPrefs_Processing
+																								 to determine if we need to redraw */
 
 /*** Public Methods *********************************************************/
 

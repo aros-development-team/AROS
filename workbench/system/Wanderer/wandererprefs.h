@@ -13,6 +13,7 @@
 #define MUIB_WandererPrefs                      (TAG_USER | 0x12000000)
 
 /*** Public Attributes ******************************************************/
+#define MUIA_WandererPrefs_Processing                        (MUIB_WandererPrefs | 0x00000001) /* --G Set (TRUE) while processing/ cleared (FALSE) when complete*/
 #define MUIA_WandererPrefs_NavigationMethod                  (MUIB_WandererPrefs | 0x00000002) /* -SG */
 #define MUIA_WandererPrefs_Toolbar_Enabled                   (MUIB_WandererPrefs | 0x00000003) /* -SG */
 
