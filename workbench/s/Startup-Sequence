@@ -20,7 +20,6 @@ Assign FONTS:   SYS:Fonts
 Assign >NIL: Fonts: SYS:Fonts/Russian ADD
 Assign HELP:    LOCALE:Help DEFER
 Assign THEMES:  SYS:System/Themes
-Assign THEME:   THEMES:ice
 Assign IMAGES:  SYS:System/Images DEFER
 ;Assign PRINTERS: DEVS:Printers
 Assign WANDERER: SYS:System/Wanderer DEFER
@@ -51,6 +50,8 @@ If EXISTS Sys:Rexxc
 Endif
 
 Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
+
+Assign THEME: $SYS/theme.var
 
 Touch >NIL: FONTS:__TEST__
 If WARN
