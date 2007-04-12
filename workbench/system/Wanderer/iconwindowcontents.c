@@ -87,6 +87,8 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
 		GET(self, MUIA_IconList_TextMode, &current_TextMode);
 		GET(self, MUIA_IconList_TextMaxLen, &current_TextMaxLen);
 
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Current = %d %d %d\n", current_ListMode, current_TextMode, current_TextMaxLen));
+
 		ULONG   prefs_ListMode = 0,
                 prefs_TextMode = 0,
                 prefs_TextMaxLen = 0;
@@ -94,6 +96,8 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
 		GET(prefs, MUIA_WandererPrefs_Icon_ListMode, &prefs_ListMode);
 		GET(prefs, MUIA_WandererPrefs_Icon_TextMode, &prefs_TextMode);
 		GET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen, &prefs_TextMaxLen);		
+
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Prefs = %d %d %d\n", prefs_ListMode, prefs_TextMode, prefs_TextMaxLen));
 
 		if (current_ListMode != prefs_ListMode)
 		{
