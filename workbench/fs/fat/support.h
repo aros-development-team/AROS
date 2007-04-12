@@ -16,10 +16,7 @@
 #include <exec/types.h>
 #include <dos/dosextens.h>
 
-void ReturnPacket(struct DosPacket *packet, LONG res1, LONG res2);
-struct DosPacket *GetPacket(struct MsgPort *port);
 void SendEvent(LONG event);
-int ErrorReq (STRPTR text, ULONG args[]);
 
 int ilog2(ULONG data);
 #define log2 ilog2

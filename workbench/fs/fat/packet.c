@@ -25,21 +25,27 @@
 #include "fat_protos.h"
 
 void ProcessPackets(void) {
-    struct DosPacket *packet;
+    struct Message *msg;
+    struct DosPacket *pkt;
+    struct MsgPort *rp;
 
-    while((packet = GetPacket(glob->ourport))) {
+    while ((msg = GetMsg(glob->ourport)) != NULL) {
         LONG res = DOSFALSE;
         LONG err = 0;
 
-        switch(packet->dp_Type) {
-            case ACTION_LOCATE_OBJECT: {
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
-                UBYTE *path = BADDR(packet->dp_Arg2);
-                LONG access = packet->dp_Arg3;
+        pkt = (struct DosPacket *) msg->mn_Node.ln_Name;
 
-                kprintf("\nGot ACTION_LOCATE_OBJECT\n");
-                kprintf("\tfl = %lx key %lx ", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
-                kprintf("type: %s\n", (packet->dp_Arg3 == EXCLUSIVE_LOCK) ? (LONG)"exclusive" : (LONG)"shared");
+        switch(pkt->dp_Type) {
+            case ACTION_LOCATE_OBJECT: {
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                UBYTE *path = BADDR(pkt->dp_Arg2);
+                LONG access = pkt->dp_Arg3;
+
+                D(bug("[fat] LOCATE_OBJECT: lock 0x%08x (dir %ld/%ld) name '%.*s' type %s\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      path[0], &path[1],
+                      pkt->dp_Arg3 == EXCLUSIVE_LOCK ? "EXCLUSIVE" : "SHARED"));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -62,10 +68,11 @@ void ProcessPackets(void) {
             }
 
             case ACTION_FREE_LOCK: {
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
 
-                kprintf("\nGot FREE_LOCK\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
+                D(bug("[fat] FREE_LOCK: lock 0x%08x (dir %ld/%ld)\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
 
                 if(fl)
                     FreeLock(fl);
@@ -76,11 +83,12 @@ void ProcessPackets(void) {
 
             case ACTION_COPY_DIR:
             case ACTION_COPY_DIR_FH: {
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
 
-                kprintf("\nGot ACTION_COPY_DIR\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
-                
+                D(bug("[fat] COPY_DIR: lock 0x%08x (dir %ld/%ld)\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
+
                 if ((err = TestLock(fl)))
                     break;
  
@@ -94,10 +102,11 @@ void ProcessPackets(void) {
 
             case ACTION_PARENT:
             case ACTION_PARENT_FH: {
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
 
-                kprintf("\nGot ACTION_Parent\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
+                D(bug("[fat] ACTION_PARENT: lock 0x%08x (dir %ld/%ld)\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
                 
                 if ((err = TestLock(fl)))
                     break;
@@ -111,10 +120,15 @@ void ProcessPackets(void) {
             }
 
             case ACTION_SAME_LOCK: {
-                struct ExtFileLock *fl1 = BADDR(packet->dp_Arg1);
-                struct ExtFileLock *fl2 = BADDR(packet->dp_Arg2);
+                struct ExtFileLock *fl1 = BADDR(pkt->dp_Arg1);
+                struct ExtFileLock *fl2 = BADDR(pkt->dp_Arg2);
 
-                kprintf("\nGot ACTION_SAME_LOCK\n");
+                D(bug("[fat] ACTION_SAME_LOCK: lock #1 0x%08x (dir %ld/%ld) lock #2 0x%08x (dir %ld/%ld)\n",
+                      pkt->dp_Arg1,
+                      fl1 != NULL ? fl1->dir_cluster : 0, fl1 != NULL ? fl1->dir_entry : 0,
+                      pkt->dp_Arg2,
+                      fl2 != NULL ? fl2->dir_cluster : 0, fl2 != NULL ? fl2->dir_entry : 0));
+
                 err = 0;
 
                 if (fl1 == fl2 || ((fl1->fl_Volume == fl2->fl_Volume) && fl1->fl_Key == fl2->fl_Key))
@@ -125,11 +139,12 @@ void ProcessPackets(void) {
 
             case ACTION_EXAMINE_OBJECT:
             case ACTION_EXAMINE_FH: {
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
-                struct FileInfoBlock *fib = BADDR(packet->dp_Arg2);                     
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                struct FileInfoBlock *fib = BADDR(pkt->dp_Arg2);                     
 
-                kprintf("\nGot ACTION_EXAMINE_OBJECT\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
+                D(bug("[fat] EXAMINE_OBJECT: lock 0x%08x (dir %ld/%ld)\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -141,14 +156,15 @@ void ProcessPackets(void) {
             }
 
             case ACTION_EXAMINE_NEXT: {
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
-                struct FileInfoBlock *fib = BADDR(packet->dp_Arg2);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                struct FileInfoBlock *fib = BADDR(pkt->dp_Arg2);
                 struct DirHandle dh;
                 struct DirEntry de;
                 BPTR b; struct ExtFileLock *temp_lock;
 
-                kprintf("\nGot ACTION_EXAMINE_NEXT\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg1, (fl ? fl->fl_Key : 0));
+                D(bug("[fat] EXAMINE_NEXT: lock 0x%08x (dir %ld/%ld)\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -189,14 +205,15 @@ void ProcessPackets(void) {
             }
 
             case ACTION_FINDINPUT: {
-                struct FileHandle *fh = BADDR(packet->dp_Arg1);
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg2);
-
+                struct FileHandle *fh = BADDR(pkt->dp_Arg1);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg2);
+                UBYTE *path = BADDR(pkt->dp_Arg3);
                 BPTR lock;
-                UBYTE *path = BADDR(packet->dp_Arg3);
 
-                kprintf("\nGot ACTION_FINDINPUT\n");
-                kprintf("\tfl = %lx ino %lx\n", packet->dp_Arg2, (fl ? fl->fl_Key : 0));
+                D(bug("[fat] FINDINPUT: lock 0x%08x (dir %ld/%ld) path '%.*s'\n",
+                      pkt->dp_Arg2,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      path[0], &path[1]));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -240,22 +257,25 @@ void ProcessPackets(void) {
             }
 
             case ACTION_READ: {
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
-                APTR buffer = (APTR)packet->dp_Arg2;
-                ULONG togo = packet->dp_Arg3;
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                APTR buffer = (APTR)pkt->dp_Arg2;
+                ULONG want = pkt->dp_Arg3;
 
-                kprintf("\nGot ACTION_READ\n");
-                kprintf("\tfl = %lx pos %ld toread %ld\n", packet->dp_Arg1, fl->pos, togo);
+                D(bug("[fat] READ: lock 0x%08x (dir %ld/%ld pos %ld) want %ld\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      fl->pos,
+                      want));
 
-                if (togo + fl->pos > fl->size)
-                    togo = fl->size - fl->pos;
+                if (want + fl->pos > fl->size)
+                    want = fl->size - fl->pos;
  
                 if ((err = TestLock(fl))) {
                     res = -1;
                     break;
                 }
 
-                if ((err = ReadFileChunk(&(fl->ioh), fl->pos, togo, buffer, &res)) == 0)
+                if ((err = ReadFileChunk(&(fl->ioh), fl->pos, want, buffer, &res)) == 0)
                     fl->pos += res;
                 else
                     res = -1;
@@ -264,12 +284,19 @@ void ProcessPackets(void) {
             }
 
             case ACTION_SEEK: {
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
-                LONG newpos = packet->dp_Arg2;
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                LONG offset = pkt->dp_Arg2;
+                ULONG whence = pkt->dp_Arg3;
 
-                kprintf("\nGot ACTION_SEEK\n");
-                kprintf("\tfl = %lx move %ld type %lx\n", packet->dp_Arg1, newpos, packet->dp_Arg3);
-
+                D(bug("[fat] SEEK: lock 0x%08x (dir %ld/%ld pos %ld) offset %ld whence %s\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      fl->pos,
+                      offset,
+                      whence == OFFSET_BEGINNING ? "BEGINNING" :
+                      whence == OFFSET_END       ? "END"       :
+                      whence == OFFSET_CURRENT   ? "CURRENT"   :
+                                                   "(unknown)"));
                 if ((err = TestLock(fl))) {
                     res = -1;
                     break;
@@ -278,12 +305,12 @@ void ProcessPackets(void) {
                 res = fl->pos;
                 err = 0;
 
-                if (packet->dp_Arg3 == OFFSET_BEGINNING && newpos >= 0 && newpos <= fl->size)
-                    fl->pos = newpos;
-                else if (packet->dp_Arg3 == OFFSET_CURRENT && newpos + fl->pos >= 0 && newpos + fl->pos <= fl->size)
-                    fl->pos += newpos;
-                else if (packet->dp_Arg3 == OFFSET_END && newpos <= 0 && fl->size + newpos >= 0)
-                    fl->pos = fl->size + newpos;
+                if (whence == OFFSET_BEGINNING && offset >= 0 && offset <= fl->size)
+                    fl->pos = offset;
+                else if (whence == OFFSET_CURRENT && offset + fl->pos >= 0 && offset + fl->pos <= fl->size)
+                    fl->pos += offset;
+                else if (whence == OFFSET_END && offset <= 0 && fl->size + offset >= 0)
+                    fl->pos = fl->size + offset;
                 else {
                     res = -1;
                     err = ERROR_SEEK_ERROR;
@@ -293,10 +320,11 @@ void ProcessPackets(void) {
             }
 
             case ACTION_END: {
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
 
-                kprintf("\nGot ACTION_END\n");
-                kprintf("\tfl = %lx\n", packet->dp_Arg1);
+                D(bug("[fat] END: lock 0x%08x (dir %ld/%ld)\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -308,15 +336,16 @@ void ProcessPackets(void) {
             }
 
             case ACTION_IS_FILESYSTEM:
-                kprintf("\nGot ACTION_IS_FS\n");
+                D(bug("[fat] IS_FILESYSTEM\n"));
 
                 res = DOSTRUE;
                 break;
 
             case ACTION_CURRENT_VOLUME: {
-                struct ExtFileLock *fl = BADDR(packet->dp_Arg1);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
 
-                kprintf("\nGot ACTION_CURRENT_VOLUME\n");
+                D(bug("[fat] CURRENT_VOLUME: lock 0x%08x\n",
+                      pkt->dp_Arg1));
 
                 res = (fl) ? fl->fl_Volume : ((glob->sb != NULL) ? MKBADDR(glob->sb->doslist) : NULL);
                 break;
@@ -326,21 +355,23 @@ void ProcessPackets(void) {
             case ACTION_DISK_INFO: {
                 struct InfoData *id;
 
-                if (packet->dp_Type == ACTION_INFO) {
-                    struct FileLock *fl = BADDR(packet->dp_Arg1);
+                if (pkt->dp_Type == ACTION_INFO) {
+                    struct FileLock *fl = BADDR(pkt->dp_Arg1);
 
-                    kprintf("\nGot ACTION_INFO\n");
+                    D(bug("[fat] INFO: lock 0x%08x\n",
+                          pkt->dp_Arg1));
 
                     if (fl && (glob->sb == NULL || fl->fl_Volume != MKBADDR(glob->sb->doslist))) {
                         err = ERROR_DEVICE_NOT_MOUNTED;
                         break;
                     }
 
-                    id = BADDR(packet->dp_Arg2);
+                    id = BADDR(pkt->dp_Arg2);
                 }
                 else {
-                    kprintf("\nGot ACTION_DISK_INFO\n");
-                    id = BADDR(packet->dp_Arg1);
+                    D(bug("[fat] DISK_INFO\n"));
+
+                    id = BADDR(pkt->dp_Arg1);
                 }
 
                 FillDiskInfo(id);
@@ -350,8 +381,10 @@ void ProcessPackets(void) {
             }
 
             case ACTION_INHIBIT: {
-                LONG inhibit = packet->dp_Arg1;
-                kprintf("\nGot ACTION_INHIBIT\n");
+                LONG inhibit = pkt->dp_Arg1;
+
+                D(bug("[fat] INHIBIT: %sinhibit\n",
+                    inhibit == DOSTRUE ? "" : "un"));
 
                 if (inhibit == DOSTRUE) {
                     glob->disk_inhibited++;
@@ -369,7 +402,8 @@ void ProcessPackets(void) {
             }
 
             case ACTION_DIE: {
-                kprintf("\nGot ACTION_DIE\n");
+                D(bug("[fat] DIE\n"));
+
                 if (glob->sblist != NULL || (glob->sb != NULL && glob->sb->doslist->dol_misc.dol_volume.dol_LockList != NULL)) {
                     kprintf("\tThere are some locks/volumes left. Shutting down is not possible\n");
                     err = ERROR_OBJECT_IN_USE;
@@ -407,12 +441,12 @@ void ProcessPackets(void) {
 #endif
 
             case ACTION_DISK_CHANGE: { /* internal */
-                struct DosList *vol = (struct DosList *)packet->dp_Arg2;
-                ULONG type = packet->dp_Arg3;
+                struct DosList *vol = (struct DosList *)pkt->dp_Arg2;
+                ULONG type = pkt->dp_Arg3;
 
-                kprintf("\nGot ACTION_DISK_CHANGE\n");
+                D(bug("[fat] DISK_CHANGE [INTERNAL]\n"));
 
-                if (packet->dp_Arg1 == ID_FAT_DISK) { /* security check */
+                if (pkt->dp_Arg1 == ID_FAT_DISK) { /* security check */
 
                     if (AttemptLockDosList(LDF_VOLUMES|LDF_WRITE)) {
 
@@ -434,17 +468,17 @@ void ProcessPackets(void) {
                             kprintf("\tVolume removed successfuly.\n");
                         }
 
-                        FreeDosObject(DOS_STDPKT, packet); /* cleanup */
+                        FreeDosObject(DOS_STDPKT, pkt); /* cleanup */
 
-                        packet = NULL;
+                        pkt = NULL;
                         kprintf("Packet destroyed\n");
                     }
 
                     else {
                         kprintf("\tDosList is locked\n");
                         Delay(5);
-                        PutMsg(glob->ourport, packet->dp_Link);
-                        packet = NULL;
+                        PutMsg(glob->ourport, pkt->dp_Link);
+                        pkt = NULL;
                         kprintf("Message moved to the end of the queue\n");
                     }
                 }
@@ -455,27 +489,61 @@ void ProcessPackets(void) {
             }
 
             case ACTION_FINDOUTPUT:
-            case ACTION_FINDUPDATE:
-            case ACTION_RENAME_DISK:
-            case ACTION_WRITE:
-            case ACTION_DELETE_OBJECT:
-            case ACTION_RENAME_OBJECT:
-            case ACTION_CREATE_DIR:
-            case ACTION_SET_FILE_SIZE: {
-                kprintf("\nGot unsupported write packet\n");
-
+                D(bug("[fat] FINDOUTPUT [WRITE]\n"));
                 err = ERROR_DISK_WRITE_PROTECTED;
                 break;
-            }
+
+            case ACTION_FINDUPDATE:
+                D(bug("[fat] FINDUPDATE [WRITE]\n"));
+                err = ERROR_DISK_WRITE_PROTECTED;
+                break;
+
+            case ACTION_RENAME_DISK:
+                D(bug("[fat] RENAME_DISK [WRITE]\n"));
+                err = ERROR_DISK_WRITE_PROTECTED;
+                break;
+
+            case ACTION_WRITE:
+                D(bug("[fat] WRITE [WRITE]\n"));
+                err = ERROR_DISK_WRITE_PROTECTED;
+                break;
+
+            case ACTION_DELETE_OBJECT:
+                D(bug("[fat] DELETE_OBJECT [WRITE]\n"));
+                err = ERROR_DISK_WRITE_PROTECTED;
+                break;
+
+            case ACTION_RENAME_OBJECT:
+                D(bug("[fat] RENAME_OBJECT [WRITE]\n"));
+                err = ERROR_DISK_WRITE_PROTECTED;
+                break;
+
+            case ACTION_CREATE_DIR:
+                D(bug("[fat] CREATE_DIR [WRITE]\n"));
+                err = ERROR_DISK_WRITE_PROTECTED;
+                break;
+
+            case ACTION_SET_FILE_SIZE:
+                D(bug("[fat] SET_FILE_SIZE [WRITE]\n"));
+                err = ERROR_DISK_WRITE_PROTECTED;
+                break;
 
             default:
-                kprintf("\nGot UNKNOWN %ld\n", packet->dp_Type);
+                D(bug("[fat] got unknown packet type %ld\n", pkt->dp_Type));
 
                 err = ERROR_ACTION_NOT_KNOWN;
-                break;
         }
 
-        if (packet)
-            ReturnPacket(packet, res, err);
+        if (pkt != NULL) {
+            D(bug("[fat] replying to packet: result 0x%x, error 0x%x\n", res, err));
+
+            rp = pkt->dp_Port;
+
+            pkt->dp_Port = glob->ourport;
+            pkt->dp_Res1 = res;
+            pkt->dp_Res2 = err;
+
+            PutMsg(rp, pkt->dp_Link);
+        }
     }
 }

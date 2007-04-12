@@ -26,31 +26,6 @@
 
 #include "fat_fs.h"
 
-/*-------------------------------------------------------------------------*/
-
-void ReturnPacket(struct DosPacket *packet, LONG res1, LONG res2) {
-    struct MsgPort *mp = packet->dp_Port;
-
-    kprintf("Returning packet: %lx %lx\n", res1, res2);
-
-    packet->dp_Port = glob->ourport;
-    packet->dp_Res1 = res1;
-    packet->dp_Res2 = res2;
-
-    PutMsg(mp, packet->dp_Link);
-}
-
-struct DosPacket *GetPacket(struct MsgPort *port) {
-    struct Message *msg;
-
-    if((msg = GetMsg(port)))
-        return (struct DosPacket *) msg->mn_Node.ln_Name;
-
-    return NULL;
-}
-
-/*-------------------------------------------------------------------------*/  
-
 void SendEvent(LONG event) {
     struct IOStdReq *InputRequest;
     struct MsgPort *InputPort;
@@ -78,21 +53,6 @@ void SendEvent(LONG event) {
         }
         DeleteMsgPort (InputPort);
     }
-}
-
-int ErrorReq (STRPTR text, ULONG args[]) {
-    struct EasyStruct req = {
-        sizeof(struct EasyStruct),
-        0,
-        "SGIXFilesystem Error",
-        text,
-        "Ok" /* see REQ_ defines at the top of the file */
-    };
-
-    if (IntuitionBase->FirstScreen != NULL)
-        return EasyRequestArgs(NULL, &req, NULL, args);
-
-    return 0;
 }
 
 /*-------------------------------------------------------------------------*/  
