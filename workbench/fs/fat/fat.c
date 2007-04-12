@@ -18,15 +18,32 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include <clib/macros.h>
+
 #include <string.h>   
 #include <ctype.h>
 
 #include "fat_fs.h"
 #include "fat_protos.h"
 
+#define LOAD_FAT_BLOCKS(sb,cache_block) do {\
+    if (sb->fat_cache_block != cache_block) { \
+        sb->fat_cache_block = cache_block;    \
+        cache_put_blocks(glob->cache, sb->fat_blocks, sb->fat_blocks_count, 0); \
+        cache_get_blocks(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, sb->first_fat_sector + (entry_cache_block << (sb->fat_cachesize_bits - sb->sectorsize_bits)), sb->fat_blocks_count, 0, sb->fat_blocks); \
+    } \
+} while(0)
+
 static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
     ULONG offset = n + n/2;
-    UWORD val = AROS_LE2WORD(*((UWORD*)(sb->fat + offset)));
+    ULONG entry_cache_block = offset >> sb->fat_cachesize_bits;
+    ULONG entry_cache_offset = offset & (sb->fat_cachesize - 1);
+    UWORD val;
+
+    LOAD_FAT_BLOCKS(sb, entry_cache_block);
+
+    //val = AROS_LE2WORD(*((UWORD *) (sb->fat + offset)));
+    val = AROS_LE2WORD(*((UWORD *) (sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits]->data + (entry_cache_offset & (sb->sectorsize-1)))));
 
     if (n & 1)
         val >>= 4;
@@ -38,19 +55,24 @@ static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
 
 static ULONG GetFat16Entry(struct FSSuper *sb, ULONG n) {
     ULONG offset = n << 1;
-    return AROS_LE2WORD(*((UWORD*)(sb->fat + offset)));
+    ULONG entry_cache_block = offset >> sb->fat_cachesize_bits;
+    ULONG entry_cache_offset = offset & (sb->fat_cachesize - 1);
+
+    LOAD_FAT_BLOCKS(sb, entry_cache_block);
+
+    //return AROS_LE2WORD(*((UWORD*)(sb->fat + offset)));
+    return AROS_LE2WORD(*((UWORD *) (sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits]->data + (entry_cache_offset & (sb->sectorsize-1)))));
 }
 
 static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n) {
     ULONG offset = n << 2;
-    ULONG entry_cache_block = offset >> sb->fat32_cachesize_bits;
-    ULONG entry_cache_offset = offset & (sb->fat32_cachesize - 1);
+    ULONG entry_cache_block = offset >> sb->fat_cachesize_bits;
+    ULONG entry_cache_offset = offset & (sb->fat_cachesize - 1);
 
-    if (sb->fat32_cache_block != entry_cache_block) {
-        sb->fat32_cache_block = entry_cache_block;
-        FS_GetBlocks(sb->first_fat_sector + (entry_cache_block << (sb->fat32_cachesize_bits - sb->sectorsize_bits)), sb->fat, sb->fat32_cachesize >> sb->sectorsize_bits);
-    }
-    return AROS_LE2LONG(*((ULONG*)(sb->fat + entry_cache_offset)));
+    LOAD_FAT_BLOCKS(sb, entry_cache_block);
+
+    //return AROS_LE2LONG(*((ULONG*)(sb->fat + entry_cache_offset)));
+    return AROS_LE2LONG(*((ULONG *) (sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits]->data + (entry_cache_offset & (sb->sectorsize-1)))));
 }
  
 LONG ReadFATSuper(struct FSSuper *sb ) {
@@ -176,14 +198,20 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->func_get_fat_entry = GetFat32Entry;
     }
 
+    /* setup the FAT cache and load the first blocks */
+    sb->fat_cachesize = 4096;
+    sb->fat_cachesize_bits = log2(sb->fat_cachesize);
+    sb->fat_cache_block = 0;
+
+    sb->fat_blocks_count = MIN(sb->fat_size, sb->fat_cachesize >> sb->sectorsize_bits);
+    sb->fat_blocks = AllocVecPooled(glob->mempool, sizeof(struct cache_block *) * sb->fat_blocks_count);
+
+    cache_get_blocks(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, sb->first_fat_sector, sb->fat_blocks_count, 0, sb->fat_blocks);
+
     if (sb->type != 32) { /* FAT 12/16 */
         /* setup volume id */
         sb->volume_id = AROS_LE2LONG(boot->type.fat16.bs_volid);
 
-        /* setup FAT */
-        sb->fat = AllocVecPooled(glob->mempool, sb->fat_size * sb->sectorsize);
-        FS_GetBlocks(sb->first_fat_sector, sb->fat, sb->fat_size);
-        
         /* location of root directory */
         sb->rootdir_cluster = 0;
         sb->rootdir_sector = sb->first_rootdir_sector;
@@ -191,13 +219,6 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     else {
         /* setup volume id */
         sb->volume_id = AROS_LE2LONG(boot->type.fat32.bs_volid);
- 
-        /* setup FAT */
-        sb->fat32_cachesize = 4096;
-        sb->fat32_cachesize_bits = log2(sb->fat32_cachesize);
-        sb->fat = AllocVecPooled(glob->mempool, sb->fat32_cachesize);
-        sb->fat32_cache_block = 0;
-        FS_GetBlocks(sb->first_fat_sector, sb->fat, sb->fat32_cachesize >> sb->sectorsize_bits);
  
         /* location of root directory */
         sb->rootdir_cluster = AROS_LE2LONG(boot->type.fat32.bpb_root_cluster);
@@ -290,8 +311,8 @@ LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume) {
 
 void FreeFATSuper(struct FSSuper *sb) {
     kprintf("\tRemoving Super Block from memory\n");
-    FreeVecPooled(glob->mempool, sb->fat);
-    sb->fat = NULL;
+    FreeVecPooled(glob->mempool, sb->fat_blocks);
+    sb->fat_blocks = NULL;
 }
 
 LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2) {

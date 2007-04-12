@@ -57,4 +57,7 @@ void cache_free(struct cache *c);
 ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, ULONG num, ULONG flags, struct cache_block **rb);
 ULONG cache_put_block(struct cache *c, struct cache_block *b, ULONG flags);
 
+ULONG cache_get_blocks(struct cache *c, struct Device *dev, struct Unit *unit, ULONG num, ULONG nblocks, ULONG flags, struct cache_block **rb);
+ULONG cache_put_blocks(struct cache *c, struct cache_block **b, ULONG nblocks, ULONG flags);
+
 #endif
