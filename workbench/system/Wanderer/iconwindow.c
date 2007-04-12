@@ -92,6 +92,37 @@ AROS_UFH3(
     AROS_USERFUNC_EXIT
 }
 
+
+AROS_UFH3(
+    void, IconWindow__HookFunc_PrefsUpdatedFunc,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+    
+    /* Get our private data */
+    Object *self = ( Object *)obj;
+    Class *CLASS = *( Class **)param;
+
+    SETUP_ICONWINDOW_INST_DATA;
+
+D(bug("[IconWindow] IconWindow__HookFunc_PrefsUpdatedFunc()\n"));
+
+	IPTR changed_state = 0;
+	GET(self, MUIA_IconWindow_Changed, &changed_state);
+
+	if ((changed_state) && (data->iwd_IconListObj))
+	{
+D(bug("[IconWindow] IconWindow__HookFunc_PrefsUpdatedFunc: Window contents have changed .. updating display ..\n"));
+		DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+
 AROS_UFH3(
     void, IconWindow__HookFunc_ProcessBackgroundFunc,
     AROS_UFHA(struct Hook *,    hook,   A0),
@@ -107,7 +138,7 @@ AROS_UFH3(
 
     SETUP_ICONWINDOW_INST_DATA;
 
-D(bug("[IconWindow.ImageBackFill] IconWindow__HookFunc_ProcessBackgroundFunc()\n"));
+D(bug("[IconWindow] IconWindow__HookFunc_ProcessBackgroundFunc()\n"));
 
 	DoMethod(self, MUIM_IconWindow_BackFill_ProcessBackground, data->iwd_BackFillInfo, data->iwd_RootViewObj);
     
@@ -123,7 +154,7 @@ AROS_UFH3(
 {
     AROS_USERFUNC_INIT
 	
-D(bug("[IconWindow.ImageBackFill] IconWindow__HookFunc_WandererBackFillFunc()\n"));
+D(bug("[IconWindow] IconWindow__HookFunc_WandererBackFillFunc()\n"));
 	struct IconWindow_BackFillHookData *HookData = NULL;
 		
 	if ((HookData = Hook->h_Data) && (iconwindow_BackFill_Active != NULL))
@@ -466,6 +497,15 @@ D(bug("[iconwindow] IconWindow__OM_NEW: SELF = %x\n", self));
 
 		if (prefs)
 		{
+			data->iwd_PrefsUpdated_hook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_PrefsUpdatedFunc;
+
+			DoMethod
+			(
+				prefs, MUIM_Notify, MUIA_WandererPrefs_Processing, FALSE,
+				(IPTR) self, 3, 
+				MUIM_CallHook, &data->iwd_PrefsUpdated_hook, (IPTR)CLASS
+			);
+
 			data->iwd_BackGround_PrefsNotificationObject = DoMethod(prefs,
                                                          		MUIM_WandererPrefs_Background_GetNotifyObject,
 																data->iwd_BackGround_Attrib);
@@ -541,6 +581,10 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     {
         switch (tag->ti_Tag)
         {
+		case MUIA_IconWindow_Changed:
+			data->iwd_Flag_NEEDSUPDATE = (BOOL)tag->ti_Data;
+			break;
+
 		case MUIA_Window_Open:
 			{
 				/* Commented out for unknown reason - please elaborate here!
@@ -628,6 +672,10 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     
     switch (message->opg_AttrID)
     {
+		case MUIA_IconWindow_Changed:
+			*store = (IPTR)data->iwd_Flag_NEEDSUPDATE;
+			break;
+
 		case MUIA_IconWindow_Window:
             *store = (IPTR)self;
             break;
