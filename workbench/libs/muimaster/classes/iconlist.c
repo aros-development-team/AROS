@@ -1032,9 +1032,9 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
         case MUIA_IconList_Height:               STORE = data->height; return 1;
         case MUIA_IconList_IconsDropped:         STORE = (IPTR)&data->drop_entry; return 1;
         case MUIA_IconList_Clicked:              STORE = (ULONG)&data->icon_click; return 1;
-        case MUIA_IconList_ListMode:             STORE = (ULONG)&data->icld__Option_IconListMode; return 1;
-        case MUIA_IconList_TextMode:             STORE = (ULONG)&data->icld__Option_IconTextMode; return 1;
-        case MUIA_IconList_TextMaxLen:           STORE = (ULONG)&data->icld__Option_IconTextMaxLen; return 1;
+        case MUIA_IconList_ListMode:             STORE = (ULONG)data->icld__Option_IconListMode; return 1;
+        case MUIA_IconList_TextMode:             STORE = (ULONG)data->icld__Option_IconTextMode; return 1;
+        case MUIA_IconList_TextMaxLen:           STORE = (ULONG)data->icld__Option_IconTextMaxLen; return 1;
         case MUIA_IconList_DisplayFlags:         STORE = data->icld_DisplayFlags; return 1;
         case MUIA_IconList_SortFlags:            STORE = data->icld_SortFlags; return 1;
 
