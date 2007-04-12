@@ -35,7 +35,6 @@ void SendVolumePacket(struct DosList *vol, ULONG action);
 
 /* diskio */
 LONG InitDevice(struct FileSysStartupMsg *fssm, LONG blocksize);
-LONG DoRawRead (ULONG n, void *buff);
 LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *ressigbit);
 void CleanupDiskHandler(ULONG diskchgsig_bit);
 
