@@ -191,7 +191,7 @@ LONG LockParent(struct ExtFileLock *fl, LONG axs, BPTR *res) {
     ULONG parent_cluster;
 
     /* if we're in the root directory, then the root is our parent */
-    if (fl->dir_cluster == 0)
+    if (fl->dir_cluster == glob->sb->rootdir_cluster)
         return LockRoot(axs, res);
 
     /* get the parent dir */
