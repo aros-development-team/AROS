@@ -16,7 +16,7 @@
 /*** Methods ****************************************************************/
 #define MUIM_IconList_Clear             (MUIB_IconList | 0x00000000) /* Zune: V1 */
 #define MUIM_IconList_Update            (MUIB_IconList | 0x00000001) /* Zune: V1 */
-#define MUIM_IconList_Add               (MUIB_IconList | 0x00000002) /* Zune: V1 returns BOOL */
+#define MUIM_IconList_Add               (MUIB_IconList | 0x00000002) /* Zune: V1 returns 0 For Failure or (struct IconEntry *) */
 #define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000003) /* Zune: V1 */
 #define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000004) /* Zune: V1 */
 #define MUIM_IconList_Sort              (MUIB_IconList | 0x00000005) /* Zune: V1 */
@@ -76,6 +76,12 @@ struct IconList_Drop
 };
 
 /****************************************************************************/
+/* Internal Icon state flags */
+#define ICONENTRY_FLAG_SELECTED      (1<<1)		/* icon selected state         */
+#define ICONENTRY_FLAG_FOCUS         (1<<2)		/* icon input focus state      */
+#define ICONENTRY_FLAG_VISIBLE		 (1<<3)		/* icon should be drawn        */
+#define ICONENTRY_FLAG_HASICON	     (1<<4)		/* icon has an '.info' file    */
+
 /* iconlist rendering control flags */
 /* SORTFLAGS - a value of zero sets: sort by name + drawers at top */
 #define ICONLIST_SORT_DRAWERS_MIXED  (1<<0)		/*mix folders and files when sorting*/

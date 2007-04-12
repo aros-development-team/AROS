@@ -91,13 +91,13 @@ struct IconEntry
 							      ile_IconHeight,
                                   ile_AreaWidth,
 	                              ile_AreaHeight;                     /* <- includes textwidth and everything */
-	
+
+    ULONG                         ile_Flags;
+
     UBYTE   	    	          ile_TxtBuf_DATE[LEN_DATSTRING];
     UBYTE   	    	          ile_TxtBuf_TIME[LEN_DATSTRING];
     UBYTE   	    	          ile_TxtBuf_SIZE[30];
     UBYTE   	    	          ile_TxtBuf_PROT[8];
-
-    BOOL                          ile_isSelected;
 };
 
 struct MUI_IconData
@@ -341,6 +341,8 @@ static BOOL IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 
 D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
 
+	if (!(icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)) return FALSE;
+	
     /* Get the dimensions and affected area of icon */
     IconList_GetIconRectangle(obj, data, icon, &iconrect);
 
@@ -404,7 +406,7 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
     (
         data->icld_BufferRastPort ? data->icld_BufferRastPort : data->icld_BufferRastPort, icon->ile_DiskObj, NULL,
         iconX, iconY, 
-        icon->ile_isSelected ? IDS_SELECTED : IDS_NORMAL, 
+        ((icon->ile_Flags & ICONENTRY_FLAG_SELECTED)||(icon->ile_Flags & ICONENTRY_FLAG_FOCUS)) ? IDS_SELECTED : IDS_NORMAL, 
         ICONDRAWA_EraseBackground, FALSE, 
         TAG_DONE
     );
@@ -414,7 +416,7 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
         data->icld_BufferRastPort ? data->icld_BufferRastPort : data->icld_BufferRastPort, icon->ile_DiskObj, NULL,
         iconX, 
         iconY, 
-        icon->ile_isSelected ? IDS_SELECTED : IDS_NORMAL, 
+        ((icon->ile_Flags & ICONENTRY_FLAG_SELECTED)||(icon->ile_Flags & ICONENTRY_FLAG_FOCUS)) ? IDS_SELECTED : IDS_NORMAL, 
         TAG_DONE
     );
 #endif
@@ -674,7 +676,7 @@ if (toplace_rect.MaxY - data->icld_ViewY > data->height)
 MUIM_PositionIcons - Place icons with NO_ICON_POSITION coords somewhere
 **************************************************************************/
 
-IPTR IconList__MUIM_PositionIcons(struct IClass *CLASS, Object *obj, struct MUIP_IconList_PositionIcons *message)
+IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, struct MUIP_IconList_PositionIcons *message)
 {
     struct MUI_IconData *data = INST_DATA(CLASS, obj);
     struct IconEntry    *icon = NULL;
@@ -690,7 +692,7 @@ IPTR IconList__MUIM_PositionIcons(struct IClass *CLASS, Object *obj, struct MUIP
     int maxh = 0; //  or the max icon height recorded in a row depending
     int listMode = (int)data->icld__Option_IconListMode;
 
-D(bug("[IconList] IconList__MUIM_PositionIcons()\n"));
+D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
 
 	BOOL  next = TRUE;
     int   maxWidth = 0,
@@ -701,15 +703,18 @@ D(bug("[IconList] IconList__MUIM_PositionIcons()\n"));
     {
         ForeachNode(&data->icld_IconList, icon)
         {
-            struct Rectangle  iconrect;
+			if (icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)
+			{
+				struct Rectangle  iconrect;
 
-            IconList_GetIconRectangle(obj, data, icon, &iconrect);
+				IconList_GetIconRectangle(obj, data, icon, &iconrect);
 
-            if ( icon->ile_AreaWidth > maxWidth )
-                maxWidth = icon->ile_AreaWidth;
+				if ( icon->ile_AreaWidth > maxWidth )
+					maxWidth = icon->ile_AreaWidth;
 
-            if ( icon->ile_AreaHeight > maxHeight )
-                maxHeight = icon->ile_AreaHeight;
+				if ( icon->ile_AreaHeight > maxHeight )
+					maxHeight = icon->ile_AreaHeight;
+			}
         }
     }
     
@@ -717,7 +722,7 @@ D(bug("[IconList] IconList__MUIM_PositionIcons()\n"));
     icon = List_First(&data->icld_IconList);
     while (icon != NULL)
     {
-        if (icon->ile_DiskObj != NULL)
+        if ((icon->ile_DiskObj != NULL) && (icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
         {
             icon->ile_IconX = cur_x;
             icon->ile_IconY = cur_y;
@@ -1245,7 +1250,7 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
             /* We could have deleted also other icons so they must be redrawn */
             ForeachNode(&data->icld_IconList, icon)
             {
-                if (icon != data->update_icon)
+                if ((icon != data->update_icon) && (icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
                 {
                     struct Rectangle rect2;
                     IconList_GetIconRectangle(obj, data, icon, &rect2);
@@ -1463,7 +1468,7 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (B) returns\n"));
 
 		ForeachNode(&data->icld_IconList, icon)
 		{
-			if (icon->ile_DiskObj && icon->ile_IconX != NO_ICON_POSITION && icon->ile_IconY != NO_ICON_POSITION)
+			if ((icon->ile_Flags & ICONENTRY_FLAG_VISIBLE) && (icon->ile_DiskObj && icon->ile_IconX != NO_ICON_POSITION && icon->ile_IconY != NO_ICON_POSITION))
 			{
 				IconList_DrawIcon(obj, data, icon, DRAWICON_DODRAW);
 			}
@@ -1480,7 +1485,7 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (B) returns\n"));
 MUIM_IconList_Refresh
 Implemented by subclasses
 **************************************************************************/
-IPTR IconList__MUIM_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
+IPTR IconList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
 {
     return 1;
 }
@@ -1488,7 +1493,7 @@ IPTR IconList__MUIM_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconLi
 /**************************************************************************
 MUIM_IconList_Clear
 **************************************************************************/
-IPTR IconList__MUIM_Clear(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Clear *message)
+IPTR IconList__MUIM_IconList_Clear(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Clear *message)
 {
     struct MUI_IconData *data = INST_DATA(CLASS, obj);
     struct IconEntry    *node = NULL;
@@ -1519,9 +1524,9 @@ IPTR IconList__MUIM_Clear(struct IClass *CLASS, Object *obj, struct MUIP_IconLis
 
 /**************************************************************************
 MUIM_IconList_Add.
-Returns 0 on failure otherwise 1
+Returns 0 on failure otherwise it returns the icons entry ..
 **************************************************************************/
-IPTR IconList__MUIM_Add(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Add *message)
+IPTR IconList__MUIM_IconList_Add(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Add *message)
 {
     struct MUI_IconData  *data = INST_DATA(CLASS, obj);
     struct IconEntry     *entry = NULL;
@@ -1630,7 +1635,7 @@ IPTR IconList__MUIM_Add(struct IClass *CLASS, Object *obj, struct MUIP_IconList_
 
     AddHead((struct List*)&data->icld_IconList, (struct Node*)entry);
 
-    return 1;
+    return entry;
 }
 /* fib_DirEntryType,ST_USERDIR; LONG type */
 
@@ -1750,23 +1755,26 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         /* check if clicked on icon */
                         ForeachNode(&data->icld_IconList, node)
                         {
-                            /* count all OLD selections */
-                            if (node->ile_isSelected) selections++;
+							if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
+							{
+								/* count all OLD selections */
+								if (node->ile_Flags & ICONENTRY_FLAG_SELECTED) selections++;
 
-                            if (mx >= node->ile_IconX - data->icld_ViewX && mx < node->ile_IconX - data->icld_ViewX + node->ile_AreaWidth &&
-                                my >= node->ile_IconY - data->icld_ViewY && my < node->ile_IconY - data->icld_ViewY + node->ile_AreaHeight && !new_selected)
-                            {
-                                new_selected = node;
+								if (mx >= node->ile_IconX - data->icld_ViewX && mx < node->ile_IconX - data->icld_ViewX + node->ile_AreaWidth &&
+									my >= node->ile_IconY - data->icld_ViewY && my < node->ile_IconY - data->icld_ViewY + node->ile_AreaHeight && !new_selected)
+								{
+									new_selected = node;
 
-                                if (!node->ile_isSelected)
-                                {
-                                    node->ile_isSelected = TRUE;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = node;
-                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-                                }
-                                data->icld_SelectionFirst = node;
-                            } 
+									if (!(node->ile_Flags & ICONENTRY_FLAG_SELECTED))
+									{
+										node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
+										data->icld_UpdateMode = UPDATE_SINGLEICON;
+										data->update_icon = node;
+										MUI_Redraw(obj, MADF_DRAWUPDATE);
+									}
+									data->icld_SelectionFirst = node;
+								}
+							}
                         }
 
                         /* if not cliked on icon set lasso as active */
@@ -1791,7 +1799,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             /* remove last single selection if clicked on different file*/
                             if (data->icld_SelectionLast && new_selected != data->icld_SelectionLast && selections < 2)
                             {
-                                data->icld_SelectionLast->ile_isSelected = FALSE;
+                                data->icld_SelectionLast->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
                                 data->icld_UpdateMode = UPDATE_SINGLEICON;
                                 data->update_icon = data->icld_SelectionLast;
                                 MUI_Redraw(obj,MADF_DRAWUPDATE);
@@ -1865,17 +1873,20 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 
                             ForeachNode(&data->icld_IconList, node)
                             {
-                                /* unselect all other nodes if mouse released on icon and lasso was not selected during mouse press */
-                                if ( ( node->ile_isSelected && data->icld_LassoActive == FALSE) &&
-                                     ( mx < node->ile_IconX - data->icld_ViewX || mx > node->ile_IconX - data->icld_ViewX + node->ile_AreaWidth ||
-                                       my < node->ile_IconY - data->icld_ViewY || my > node->ile_IconY - data->icld_ViewY + node->ile_AreaHeight ) )
-                                       
-                                {
-                                      node->ile_isSelected = FALSE;
-                                      data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                      data->update_icon = node;
-                                      MUI_Redraw(obj,MADF_DRAWUPDATE);
-                                }
+								if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
+								{
+									/* unselect all other nodes if mouse released on icon and lasso was not selected during mouse press */
+									if ( ( (node->ile_Flags & ICONENTRY_FLAG_SELECTED) && data->icld_LassoActive == FALSE) &&
+										 ( mx < node->ile_IconX - data->icld_ViewX || mx > node->ile_IconX - data->icld_ViewX + node->ile_AreaWidth ||
+										   my < node->ile_IconY - data->icld_ViewY || my > node->ile_IconY - data->icld_ViewY + node->ile_AreaHeight ) )
+										   
+									{
+										  node->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
+										  data->icld_UpdateMode = UPDATE_SINGLEICON;
+										  data->update_icon = node;
+										  MUI_Redraw(obj,MADF_DRAWUPDATE);
+									}
+								}
                             }
                         }                                           
 
@@ -1962,7 +1973,6 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             {
                                 SetAttrs(obj, MUIA_IconList_Left, newleft, MUIA_IconList_Top, newtop, TAG_DONE);
                             }
-
                         } 
 
                         /* update lasso coordinates */
@@ -1976,38 +1986,39 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 
                         ForeachNode(&data->icld_IconList, node)
                         {
-
-                             /* check if clicked on icon */
-                            if (new_lasso.MaxX >= node->ile_IconX - data->icld_ViewX 
-                                 && new_lasso.MinX < node->ile_IconX - data->icld_ViewX + node->ile_AreaWidth &&
-                                 new_lasso.MaxY >= node->ile_IconY - data->icld_ViewY 
-                                 && new_lasso.MinY < node->ile_IconY - data->icld_ViewY + node->ile_AreaHeight) 
-                            {
-                                 new_selected = node;
-         
-                                 /* check if icon was already selected before */
-                                 if (!node->ile_isSelected)
-                                 {
-                                     node->ile_isSelected = TRUE;
-                                     data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                     data->update_icon = node;
-                                     data->icld_SelectionLast = node; // <- I'm the latest addition to your flock! =)
-                                     MUI_Redraw(obj, MADF_DRAWUPDATE);
-                                 }
-                
-                                 data->icld_SelectionFirst = node;
-
-                            } 
-                            else
-                            {
-                                if (node->ile_isSelected)  /* if not catched by lasso and selected before -> unselect */
-                                {
-                                    node->ile_isSelected = FALSE;
-                                    data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                    data->update_icon = node;
-                                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-                                }
-                            } 
+							if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
+							{
+								 /* check if clicked on icon */
+								if (new_lasso.MaxX >= node->ile_IconX - data->icld_ViewX 
+									 && new_lasso.MinX < node->ile_IconX - data->icld_ViewX + node->ile_AreaWidth &&
+									 new_lasso.MaxY >= node->ile_IconY - data->icld_ViewY 
+									 && new_lasso.MinY < node->ile_IconY - data->icld_ViewY + node->ile_AreaHeight) 
+								{
+									 new_selected = node;
+			 
+									 /* check if icon was already selected before */
+									 if (!(node->ile_Flags & ICONENTRY_FLAG_SELECTED))
+									 {
+										 node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
+										 data->icld_UpdateMode = UPDATE_SINGLEICON;
+										 data->update_icon = node;
+										 data->icld_SelectionLast = node; // <- I'm the latest addition to your flock! =)
+										 MUI_Redraw(obj, MADF_DRAWUPDATE);
+									 }
+					
+									 data->icld_SelectionFirst = node;
+								} 
+								else
+								{
+									if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)  /* if not catched by lasso and selected before -> unselect */
+									{
+										node->ile_Flags = ~ICONENTRY_FLAG_SELECTED;
+										data->icld_UpdateMode = UPDATE_SINGLEICON;
+										data->update_icon = node;
+										MUI_Redraw(obj, MADF_DRAWUPDATE);
+									}
+								} 
+							}
                         }
                         /* set lasso borders */                         
 			            IconList_InvertLassoOutlines(obj, &new_lasso);                        
@@ -2049,7 +2060,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 /**************************************************************************
 MUIM_IconList_NextSelected
 **************************************************************************/
-IPTR IconList__MUIM_NextSelected(struct IClass *CLASS, Object *obj, struct MUIP_IconList_NextSelected *message)
+IPTR IconList__MUIM_IconList_NextSelected(struct IClass *CLASS, Object *obj, struct MUIP_IconList_NextSelected *message)
 {
     struct MUI_IconData    *data = INST_DATA(CLASS, obj);
     struct IconEntry       *node = NULL;
@@ -2062,14 +2073,14 @@ IPTR IconList__MUIM_NextSelected(struct IClass *CLASS, Object *obj, struct MUIP_
     {
         if (!(node = data->icld_SelectionLast))
         {
-D(bug("[IconList] IconList__MUIM_NextSelected: No selected entries!!!\n"));
+D(bug("[IconList] IconList__MUIM_IconList_NextSelected: No selected entries!!!\n"));
             *message->entry = (struct IconList_Entry*)MUIV_IconList_NextSelected_End;
         } 
         else
         {
             /* get the first selected entry in list */
             node = List_First(&data->icld_IconList);
-            while (!node->ile_isSelected)
+            while (!(node->ile_Flags & ICONENTRY_FLAG_SELECTED))
             {
                 node = Node_Next(node);
             }
@@ -2086,7 +2097,7 @@ D(bug("[IconList] IconList__MUIM_NextSelected: No selected entries!!!\n"));
 
     while (node)
     {
-        if (node->ile_isSelected)
+        if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
         {
             *message->entry = &node->ile_IconListEntry;
             return 0;
@@ -2126,9 +2137,9 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
             temprp.BitMap = img->bm;
     
 #ifndef __AROS__
-            DrawIconState(&temprp, node->ile_DiskObj, NULL, 0, 0, node->ile_isSelected ? IDS_SELECTED : IDS_NORMAL, ICONDRAWA_EraseBackground, TRUE, TAG_DONE);
+            DrawIconState(&temprp, node->ile_DiskObj, NULL, 0, 0, (node->ile_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL, ICONDRAWA_EraseBackground, TRUE, TAG_DONE);
 #else
-            DrawIconStateA(&temprp, node->ile_DiskObj, NULL, 0, 0, node->ile_isSelected ? IDS_SELECTED : IDS_NORMAL, NULL);
+            DrawIconStateA(&temprp, node->ile_DiskObj, NULL, 0, 0, (node->ile_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL, NULL);
 #endif
             DeinitRastPort(&temprp);
         }
@@ -2289,7 +2300,7 @@ D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window
                strncpy(data->drop_entry.destination_string, drop_target_node->ile_IconListEntry.filename, tmplen);
 
                /* mark the drive the icon was dropped on*/
-               drop_target_node->ile_isSelected = TRUE;
+               drop_target_node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
                data->icld_UpdateMode = UPDATE_SINGLEICON;
                data->update_icon = drop_target_node;
                MUI_Redraw(obj,MADF_DRAWUPDATE);
@@ -2303,7 +2314,7 @@ D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window
                strcpy(data->drop_entry.destination_string, drop_target_node->ile_IconListEntry.filename);
 
                /* mark the directory the icon was dropped on*/
-               drop_target_node->ile_isSelected = TRUE;
+               drop_target_node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
                data->icld_UpdateMode = UPDATE_SINGLEICON;
                data->update_icon = drop_target_node;
                MUI_Redraw(obj,MADF_DRAWUPDATE);
@@ -2338,16 +2349,16 @@ D(bug("[IconList] IconList__MUIM_DragDrop: drop entry: %s dropped in window %s\n
 /**************************************************************************
 MUIM_UnselectAll
 **************************************************************************/
-IPTR IconList__MUIM_UnselectAll(struct IClass *CLASS, Object *obj, Msg message)
+IPTR IconList__MUIM_IconList_UnselectAll(struct IClass *CLASS, Object *obj, Msg message)
 {
     struct MUI_IconData *data = INST_DATA(CLASS, obj);
     struct IconEntry    *node = NULL;
 
     ForeachNode(&data->icld_IconList, node)
     {
-        if (node->ile_isSelected)
+        if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
         {
-            node->ile_isSelected = FALSE;
+            node->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
             data->icld_UpdateMode = UPDATE_SINGLEICON;
             data->update_icon = node;
             MUI_Redraw(obj, MADF_DRAWUPDATE);
@@ -2361,7 +2372,7 @@ IPTR IconList__MUIM_UnselectAll(struct IClass *CLASS, Object *obj, Msg message)
 /**************************************************************************
 MUIM_SelectAll
 **************************************************************************/
-IPTR IconList__MUIM_SelectAll(struct IClass *CLASS, Object *obj, Msg message)
+IPTR IconList__MUIM_IconList_SelectAll(struct IClass *CLASS, Object *obj, Msg message)
 {
     struct MUI_IconData *data = INST_DATA(CLASS, obj);
     struct IconEntry    *node = NULL;
@@ -2370,9 +2381,9 @@ IPTR IconList__MUIM_SelectAll(struct IClass *CLASS, Object *obj, Msg message)
     data->icld_SelectionFirst = node;
     while (node)
     {
-        if (!node->ile_isSelected)
+        if (!(node->ile_Flags & ICONENTRY_FLAG_SELECTED))
         {
-            node->ile_isSelected = TRUE;
+            node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
             data->icld_UpdateMode = UPDATE_SINGLEICON;
             data->update_icon = node;
             data->icld_SelectionLast = node;
@@ -2395,9 +2406,11 @@ Read icons in
 static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
 {
     struct MUI_IconDrawerData *data = INST_DATA(CLASS, obj);
-    BPTR                      lock = NULL;
+    BPTR                      lock = NULL, tmplock = NULL;
     char                      filename[256];
-
+	char                      namebuffer[512];
+    ULONG                     list_DisplayFlags = 0;
+	
     if (!data->drawer) return 1;
 
     lock = Lock(data->drawer, SHARED_LOCK);
@@ -2409,26 +2422,67 @@ static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
         {
             if (Examine(lock, fib))
             {
+				GET(obj, MUIA_IconList_DisplayFlags, &list_DisplayFlags);
+D(bug("[IconList] IconDrawerList__ParseContents: DisplayFlags = %x\n", list_DisplayFlags));
+
                 while(ExNext(lock, fib))
                 {
                     int len = strlen(fib->fib_FileName);
-        
+					memset(namebuffer, 0, 512);
                     strcpy(filename, fib->fib_FileName);
-        
+
+D(bug("[IconList] IconDrawerList__ParseContents: '%s', len = %d\n", filename, len));
+
                     if (len >= 5)
                     {
-                        /* reject all .info files, so we have a Show All mode */
                         if (!Stricmp(&filename[len-5],".info"))
-                            continue;
+						{
+							/* Its a .info file .. skip "disk.info" and just ".info" files*/
+							if ((len == 5) || (!Stricmp(filename,"Disk")))
+							{
+D(bug("[IconList] IconDrawerList__ParseContents: Skiping file named disk.info or just .info ('%s')\n", filename));
+								continue;
+							}
+
+							strcpy(namebuffer, data->drawer);
+							memset((filename + len - 5), 0, 1); //Remove the .info section
+							AddPart(namebuffer, filename, sizeof(namebuffer));
+D(bug("[IconList] IconDrawerList__ParseContents: Checking for .info files real file '%s'\n", namebuffer));
+							
+							if (tmplock = Lock(namebuffer, SHARED_LOCK))
+							{
+								/* We have a real file so skip it for now and let it be found seperately */
+D(bug("[IconList] IconDrawerList__ParseContents: File found .. skipping\n"));
+								UnLock(tmplock); 
+								continue;
+							}
+						}
                     }
-        
-                    if (Stricmp(filename,"Disk")) /* skip disk.info */
-                    {
-                        char buf[ 512 ];
-                        strcpy(buf, data->drawer);
-                        AddPart(buf, filename, sizeof(buf));
-                        DoMethod(obj, MUIM_IconList_Add, (IPTR)buf, (IPTR)filename, (IPTR)fib);
-                    }
+
+D(bug("[IconList] IconDrawerList__ParseContents: Registering file '%s'\n", filename));
+					strcpy(namebuffer, data->drawer);
+					AddPart(namebuffer, filename, sizeof(namebuffer));
+
+					struct IconEntry *this_Icon = DoMethod(obj, MUIM_IconList_Add, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib);
+					
+					sprintf(namebuffer + strlen(namebuffer), ".info");
+					if (tmplock = Lock(namebuffer, SHARED_LOCK))
+					{
+D(bug("[IconList] IconDrawerList__ParseContents: File has a .info file .. updating info\n"));
+						UnLock(tmplock); 
+						if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON)) 
+							this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+					}
+
+					if (list_DisplayFlags & ICONLIST_DISP_SHOWINFO)
+					{
+						if ((this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON) && !(this_Icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
+							this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
+					}
+					else if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
+					{
+						this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
+					}
                 }
             }
     
@@ -2537,109 +2591,139 @@ return 1;
 /**************************************************************************
 MUIM_Sort - sortsort
 **************************************************************************/
-IPTR IconList__MUIM_Sort(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Sort *message)
+IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Sort *message)
 {
     struct MUI_IconData *data = INST_DATA(CLASS, obj);
     struct IconEntry    *entry = NULL,
 		                *icon1 = NULL,
 	                    *icon2 = NULL;
-    struct List         list;
-    BOOL                sortme;
-    int                 i;
+    struct List         list_VisibleIcons,
+		                list_HiddenIcons;
 
-    NewList((struct List*)&list);
+    BOOL                sortme;
+    int                 i, visible_count = 0;
+
+    NewList((struct List*)&list_VisibleIcons);
+    NewList((struct List*)&list_HiddenIcons);
 
     /*move list int out local list struct*/
-    while( (entry = (struct IconEntry *)RemTail((struct List*)&data->icld_IconList)) )
-        AddHead( (struct List*)&list , (struct Node *)entry );
+//    entry = List_First(&data->icld_IconList);
+    while ((entry = (struct IconEntry *)RemTail((struct List*)&data->icld_IconList)))
+	{
+		if (!(entry->ile_Flags & ICONENTRY_FLAG_HASICON))
+		{
+
+			if (data->icld_DisplayFlags & ICONLIST_DISP_SHOWINFO)
+			{
+				if (entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)
+					entry->ile_Flags &= ~ICONENTRY_FLAG_VISIBLE;
+			}
+			else if (!(entry->ile_Flags & ICONENTRY_FLAG_VISIBLE))
+				entry->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
+		}
+		else
+		{
+			if (!(entry->ile_Flags & ICONENTRY_FLAG_VISIBLE))
+				entry->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
+		}
+		
+		/* Now we have fixed visibility lets dump them into the correct list for sorting */
+        if (entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)
+		{
+			AddHead((struct List*)&list_VisibleIcons, (struct Node *)entry);
+			visible_count++;
+		}
+        else AddHead((struct List*)&list_HiddenIcons, (struct Node *)entry);
+	}
 
     /*now copy each one back to the main list, sorting as we go*/
-    entry = List_First(&list);
-
-    while ((entry = (struct IconEntry *)RemTail((struct List*)&list)))
+//    entry = List_First(&list_VisibleIcons);
+    while ((entry = (struct IconEntry *)RemTail((struct List*)&list_VisibleIcons)))
     {
         icon1 = List_First(&data->icld_IconList);
         icon2 = NULL;
         sortme = FALSE;
-    
+		
+		if (visible_count > 1)
+		{
 //D(bug(" - %s %s %s %i\n",entry->ile_IconListEntry.label,entry->ile_TxtBuf_DATE,entry->ile_TxtBuf_TIME,entry->ile_FileInfoBlock.fib_Size));
-    
-        while (icon1)
-        {
-            if(data->icld_SortFlags & ICONLIST_SORT_DRAWERS_MIXED)
-            {
-				/*drawers mixed*/
+		
+			while (icon1)
+			{
+				if(data->icld_SortFlags & ICONLIST_SORT_DRAWERS_MIXED)
+				{
+					/*drawers mixed*/
 
-                sortme = TRUE;
-            }
-            else
-            {
-				/*drawers first*/
+					sortme = TRUE;
+				}
+				else
+				{
+					/*drawers first*/
 
-                if ((icon1->ile_IconListEntry.type == WBDRAWER) && (entry->ile_IconListEntry.type == WBDRAWER))
-                {
-                    sortme = TRUE;
-                }
-                else
-                {
-                    if ((icon1->ile_IconListEntry.type != WBDRAWER) && (entry->ile_IconListEntry.type != WBDRAWER))
-                        sortme = TRUE;
-                    else
-                    {
-                        /* we are the first drawer to arrive or we need to insert ourselves
-						   due to being sorted to the end of the drawers*/
+					if ((icon1->ile_IconListEntry.type == WBDRAWER) && (entry->ile_IconListEntry.type == WBDRAWER))
+					{
+						sortme = TRUE;
+					}
+					else
+					{
+						if ((icon1->ile_IconListEntry.type != WBDRAWER) && (entry->ile_IconListEntry.type != WBDRAWER))
+							sortme = TRUE;
+						else
+						{
+							/* we are the first drawer to arrive or we need to insert ourselves
+							   due to being sorted to the end of the drawers*/
 
-                        if ((!icon2 || icon2->ile_IconListEntry.type == WBDRAWER) &&
-							(entry->ile_IconListEntry.type == WBDRAWER) &&
-						    (icon1->ile_IconListEntry.type != WBDRAWER))
-                        {
+							if ((!icon2 || icon2->ile_IconListEntry.type == WBDRAWER) &&
+								(entry->ile_IconListEntry.type == WBDRAWER) &&
+								(icon1->ile_IconListEntry.type != WBDRAWER))
+							{
 //D(bug("force %s\n",entry->ile_IconListEntry.label));
-                            break;
-                        }
-                    }
-                }
-            }
-    
-            if (sortme)
-            {
-                i = 0;
-        
-                if( (data->icld_SortFlags & ICONLIST_SORT_BY_DATE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) )
-                {
-					/* Sort by Date */
-                    i = CompareDates((const struct DateStamp *)&entry->ile_FileInfoBlock.fib_Date,(const struct DateStamp *)&icon1->ile_FileInfoBlock.fib_Date);
+								break;
+							}
+						}
+					}
+				}
+		
+				if (sortme)
+				{
+					i = 0;
+			
+					if( (data->icld_SortFlags & ICONLIST_SORT_BY_DATE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) )
+					{
+						/* Sort by Date */
+						i = CompareDates((const struct DateStamp *)&entry->ile_FileInfoBlock.fib_Date,(const struct DateStamp *)&icon1->ile_FileInfoBlock.fib_Date);
 //D(bug("     -  %i\n",i));
-                }
-                else
-                {
-                    if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
-                    {
-						/* Sort by Size .. */
-                        i = entry->ile_FileInfoBlock.fib_Size - icon1->ile_FileInfoBlock.fib_Size;
+					}
+					else
+					{
+						if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
+						{
+							/* Sort by Size .. */
+							i = entry->ile_FileInfoBlock.fib_Size - icon1->ile_FileInfoBlock.fib_Size;
 //D(bug("     -  %i\n",i));
-                    }
-                    else if( data->icld_SortFlags & (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE) )
-                    {
-                       /* Sort by Type .. */
-                    }
-                    else
-                    {
-                        /* Sort by Name .. */
-                        i = Stricmp(entry->ile_IconListEntry.label, icon1->ile_IconListEntry.label);
-                    }
-                }
+						}
+						else if( data->icld_SortFlags & (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE) )
+						{
+						   /* Sort by Type .. */
+						}
+						else
+						{
+							/* Sort by Name .. */
+							i = Stricmp(entry->ile_IconListEntry.label, icon1->ile_IconListEntry.label);
+						}
+					}
 
-                if (!(data->icld_SortFlags & ICONLIST_SORT_REVERSE) && (i < 0))
-                    break;
+					if (!(data->icld_SortFlags & ICONLIST_SORT_REVERSE) && (i < 0))
+						break;
 
-                if ((data->icld_SortFlags & ICONLIST_SORT_REVERSE) && (i > 0))
-                    break;
-            }
-            icon2 = icon1;
-            icon1 = Node_Next( icon1 );
-        }
-
-        Insert((struct List*)&data->icld_IconList , (struct Node *)entry , (struct Node *)icon2);
+					if ((data->icld_SortFlags & ICONLIST_SORT_REVERSE) && (i > 0))
+						break;
+				}
+				icon2 = icon1;
+				icon1 = Node_Next( icon1 );
+			}
+		}
+        Insert((struct List*)&data->icld_IconList, (struct Node *)entry, (struct Node *)icon2);
     }
 
 /* debug, stomp it back in in reverse order instead
@@ -2649,6 +2733,12 @@ IPTR IconList__MUIM_Sort(struct IClass *CLASS, Object *obj, struct MUIP_IconList
 
     DoMethod(obj, MUIM_IconList_PositionIcons);
     MUI_Redraw(obj, MADF_DRAWOBJECT);
+
+//    entry = List_First(&list_HiddenIcons);
+    while ((entry = (struct IconEntry *)RemTail((struct List*)&list_HiddenIcons)))
+	{
+		AddTail((struct List*)&data->icld_IconList, (struct Node *)entry);
+	}
 
     return 1;
 }
@@ -2677,7 +2767,7 @@ IPTR IconList__MUIM_DragReport(struct IClass *CLASS, Object *obj, struct MUIP_Dr
 
 IPTR IconList__MUIM_UnknownDropDestination(struct IClass *CLASS, Object *obj, struct MUIP_UnknownDropDestination *message)
 {
-D(bug("[IconList] IconList__MUIM_UnknownDropDestination: icons dropped on custom window \n");)
+D(bug("[IconList] IconList__MUIM_UnknownDropDestination: icons dropped on custom window \n"));
 
     SET(obj, MUIA_IconList_AppWindowDrop, (IPTR)message); /* Now notify */
 
@@ -2709,14 +2799,14 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_DragReport:             return IconList__MUIM_DragReport(CLASS, obj, (APTR)message);
         case MUIM_DragDrop:               return IconList__MUIM_DragDrop(CLASS, obj, (APTR)message);
         case MUIM_UnknownDropDestination: return IconList__MUIM_UnknownDropDestination(CLASS, obj, (APTR)message);       
-        case MUIM_IconList_Update:        return IconList__MUIM_Update(CLASS, obj, (APTR)message);
-        case MUIM_IconList_Clear:         return IconList__MUIM_Clear(CLASS, obj, (APTR)message);
-        case MUIM_IconList_Add:           return IconList__MUIM_Add(CLASS, obj, (APTR)message);
-        case MUIM_IconList_NextSelected:  return IconList__MUIM_NextSelected(CLASS, obj, (APTR)message);
-        case MUIM_IconList_UnselectAll:   return IconList__MUIM_UnselectAll(CLASS, obj, (APTR)message);
-        case MUIM_IconList_Sort:          return IconList__MUIM_Sort(CLASS, obj, (APTR)message);
-        case MUIM_IconList_PositionIcons: return IconList__MUIM_PositionIcons(CLASS, obj, (APTR)message);
-        case MUIM_IconList_SelectAll:     return IconList__MUIM_SelectAll(CLASS, obj, (APTR)message);
+        case MUIM_IconList_Update:        return IconList__MUIM_IconList_Update(CLASS, obj, (APTR)message);
+        case MUIM_IconList_Clear:         return IconList__MUIM_IconList_Clear(CLASS, obj, (APTR)message);
+        case MUIM_IconList_Add:           return IconList__MUIM_IconList_Add(CLASS, obj, (APTR)message);
+        case MUIM_IconList_NextSelected:  return IconList__MUIM_IconList_NextSelected(CLASS, obj, (APTR)message);
+        case MUIM_IconList_UnselectAll:   return IconList__MUIM_IconList_UnselectAll(CLASS, obj, (APTR)message);
+        case MUIM_IconList_Sort:          return IconList__MUIM_IconList_Sort(CLASS, obj, (APTR)message);
+        case MUIM_IconList_PositionIcons: return IconList__MUIM_IconList_PositionIcons(CLASS, obj, (APTR)message);
+        case MUIM_IconList_SelectAll:     return IconList__MUIM_IconList_SelectAll(CLASS, obj, (APTR)message);
     }
 
     return DoSuperMethodA(CLASS, obj, message);
@@ -2979,13 +3069,8 @@ IPTR IconVolumeList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *mes
 
     data = INST_DATA(CLASS, obj);
 
-    /* parse initial taglist */
-    for (tags = message->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
-    {
-        switch (tag->ti_Tag)
-        {
-        }
-    }
+	SET(obj, MUIA_IconList_DisplayFlags, ICONLIST_DISP_VERTICAL);
+    SET(obj, MUIA_IconList_SortFlags, 0);
 
     return (IPTR)obj;
 }
@@ -2996,13 +3081,13 @@ MUIM_IconList_Update
 IPTR IconVolumeList__MUIM_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
 {
     //struct MUI_IconVolumeData *data = INST_DATA(CLASS, obj);
-    //struct IconEntry *node;
+    struct IconEntry  *this_Icon = NULL;
     struct NewDosList *ndl = NULL;
 
     DoMethod(obj, MUIM_IconList_Clear);
 
     /* If not in setup do nothing */
-    if (!(_flags(obj)&MADF_SETUP)) return 1;
+    if (!(_flags(obj) & MADF_SETUP)) return 1;
 
     if ((ndl = IconVolumeList__CreateDOSList()))
     {
@@ -3015,18 +3100,18 @@ IPTR IconVolumeList__MUIM_Update(struct IClass *CLASS, Object *obj, struct MUIP_
                 strcpy(buf, nd->name);
                 strcat(buf, ":Disk");
         
-                if (!(DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)nd->name, (IPTR)NULL)))
+                if (!(this_Icon = DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)nd->name, (IPTR)NULL)))
                 {
+D(bug("[IconList]: IconVolumeList__MUIM_Update: Failed to Add IconEntry for '%s'\n", nd->name));
                 }
-    
+				else if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
+						this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
             }
         }
         IconVolumeList__DestroyDOSList(ndl);
     }
 
     /* default display/sorting flags */
-	SET(obj, MUIA_IconList_DisplayFlags, ICONLIST_DISP_VERTICAL);
-    SET(obj, MUIA_IconList_SortFlags, 0);
     DoMethod(obj, MUIM_IconList_Sort);
 
     return 1;
