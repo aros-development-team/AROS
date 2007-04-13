@@ -153,6 +153,10 @@ $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/confi
 	$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts test \
 	kernel workbench rom compiler contrib sdk
 
+# Workaround for bug in make v3.81 (should normally be handled by .DEFAULT)
+default tools test kernel workbench rom compiler contrib :
+	@$(CALL) $(MMAKE) AROS.$@
+
 # Map MetaTargets to make targets : Call mmake with AROS.target
 # This does not allow to check for dependancies, so it is not suitable for
 # Calling standard main targets, but is usable as a shortcut for MetaMake
