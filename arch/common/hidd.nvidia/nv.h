@@ -46,6 +46,7 @@ typedef enum {
     NV11,       NV11M,  NV15,	    NV17,   NV17M,
     NV18,       NV18M,  NV20,	    NV25,   NV28,
     NV30,       NV31,   NV34,	    NV35,   NV36,
+    NV43,
 
     CardType_Sizeof
 } CardType;
