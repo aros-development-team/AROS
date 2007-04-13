@@ -154,7 +154,7 @@ $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/confi
 	kernel workbench rom compiler contrib sdk
 
 # Workaround for bug in make v3.81 (should normally be handled by .DEFAULT)
-default tools test kernel workbench rom compiler contrib :
+tools test kernel workbench rom compiler contrib :
 	@$(CALL) $(MMAKE) AROS.$@
 
 # Map MetaTargets to make targets : Call mmake with AROS.target
