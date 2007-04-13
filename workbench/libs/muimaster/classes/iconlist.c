@@ -85,9 +85,9 @@ struct IconEntry
     struct DiskObject             *ile_DiskObj;                           /* The icons disk objects */
     struct FileInfoBlock          ile_FileInfoBlock;
 
-    ULONG                         ile_IconX,
-					              ile_IconY,
-                                  ile_IconWidth,
+    LONG                          ile_IconX,
+					              ile_IconY;
+    ULONG                         ile_IconWidth,
 							      ile_IconHeight,
                                   ile_AreaWidth,
 	                              ile_AreaHeight;                     /* <- includes textwidth and everything */
@@ -109,9 +109,9 @@ struct MUI_IconData
 
     struct List                   icld_IconList;                      /* IconEntry */
 
-    ULONG                         icld_ViewX,                         /* the leftmost/upper coordinates of the view */
-	                              icld_ViewY,
-                                  icld_ViewWidth,                     /* dimensions of the view (_mwidth(obj) and _mheight(obj)) */
+    LONG                          icld_ViewX,                         /* the leftmost/upper coordinates of the view */
+	                              icld_ViewY;
+    ULONG                         icld_ViewWidth,                     /* dimensions of the view (_mwidth(obj) and _mheight(obj)) */
 	                              icld_ViewHeight,
                                   width,                              /* The whole width/height */
 	                              height;
@@ -127,11 +127,11 @@ struct MUI_IconData
     /* Input / Event Information */
     struct MUI_EventHandlerNode   ehn;
 
-    ULONG                         touch_x;
-    ULONG                         touch_y;
+    LONG                          touch_x;
+    LONG                          touch_y;
 
-    ULONG                         click_x;
-    ULONG                         click_y;
+    LONG                          click_x;
+    LONG                          click_y;
 
     ULONG                         last_secs;                          /* DoubleClick stuff */
     ULONG                         last_mics;
@@ -541,9 +541,9 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
                     break;
             }
         }
+		// Free up icontext memory
+		FreeVec(buf);
     }
-    // Free up icontext memory
-    FreeVec(buf);
     
     return TRUE;
 }
@@ -1704,38 +1704,124 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
     {
         LONG mx = message->imsg->MouseX - _mleft(obj);
         LONG my = message->imsg->MouseY - _mtop(obj);
+
         LONG wheelx = 0;
         LONG wheely = 0;
     
         switch (message->imsg->Class)
         {
             case IDCMP_RAWKEY:
-            {		
-                switch(message->imsg->Code)
-                {
-                    case RAWKEY_NM_WHEEL_UP:
-                        wheely = -1;
-                        break;
-
-                    case RAWKEY_NM_WHEEL_DOWN:
-                        wheely = 1;
-                        break;
-
-                    case RAWKEY_NM_WHEEL_LEFT:
-                        wheelx = -1;
-                        break;
-
-                    case RAWKEY_NM_WHEEL_RIGHT:
-                        wheelx = 1;
-                        break;
-                }
-            }
-    
-            if (_isinobject(message->imsg->MouseX, message->imsg->MouseY) &&
-                (wheelx || wheely))
             {
-                DoWheelMove(CLASS, obj, wheelx, wheely, message->imsg->Qualifier);
-            }
+				BOOL rawkey_handled = FALSE;
+
+				if (message->imsg->Code & 0x80)
+				{
+					switch(message->imsg->Code)
+					{
+						case RAWKEY_NM_WHEEL_UP:
+							wheely = -1;
+							rawkey_handled = TRUE;
+							break;
+
+						case RAWKEY_NM_WHEEL_DOWN:
+							wheely = 1;
+							rawkey_handled = TRUE;
+							break;
+
+						case RAWKEY_NM_WHEEL_LEFT:
+							wheelx = -1;
+							rawkey_handled = TRUE;
+							break;
+
+						case RAWKEY_NM_WHEEL_RIGHT:
+							wheelx = 1;
+							rawkey_handled = TRUE;
+							break;
+					}
+
+					if (_isinobject(message->imsg->MouseX, message->imsg->MouseY) &&
+						(wheelx || wheely))
+					{
+						DoWheelMove(CLASS, obj, wheelx, wheely, message->imsg->Qualifier);
+					}
+				}
+				else
+				{
+					LONG new_ViewY = data->icld_ViewY;
+					switch(message->imsg->Code)
+					{
+						case 0x44:
+							//'ENTER' key pressed
+							rawkey_handled = TRUE;
+							break;
+
+						case 0x48:
+							//'PAGE UP' key pressed
+							rawkey_handled = TRUE;
+
+							if (data->height > data->icld_ViewHeight)
+							{
+								new_ViewY -= data->icld_ViewHeight;
+								if (new_ViewY< 0)
+									new_ViewY = 0;
+							}
+
+							if (new_ViewY != data->icld_ViewY)
+							{
+								SET(obj, MUIA_IconList_Top, new_ViewY);
+							}
+							break;
+
+						case 0x49:
+							//'PAGE DOWN' key pressed
+							rawkey_handled = TRUE;
+
+							if (data->height > data->icld_ViewHeight)
+							{
+								new_ViewY += data->icld_ViewHeight;
+								if (new_ViewY > (data->height - data->icld_ViewHeight))
+									new_ViewY = data->height - data->icld_ViewHeight;
+							}
+
+							if (new_ViewY != data->icld_ViewY)
+							{
+								SET(obj, MUIA_IconList_Top, new_ViewY);
+							}
+							break;
+
+						case 0x4C:
+							//'UP CURSOR' key pressed
+							rawkey_handled = TRUE;
+							break;
+
+						case 0x4D:
+							//'DOWN CURSOR' key pressed
+							rawkey_handled = TRUE;
+							break;
+
+						case 0x4F:
+							//'LEFT CURSOR' key pressed
+							rawkey_handled = TRUE;
+							break;
+
+						case 0x4E:
+							//'RIGHT CURSOR' key pressed
+							rawkey_handled = TRUE;
+							break;
+
+						case 0x70:
+							//'HOME' key pressed
+							rawkey_handled = TRUE;
+							break;
+
+						case 0x71:
+							//'END' key pressed
+							rawkey_handled = TRUE;
+							break;
+					}
+				}
+				if (rawkey_handled) return MUI_EventHandlerRC_Eat;
+			}
             break;
     
             case IDCMP_MOUSEBUTTONS:
@@ -1760,8 +1846,9 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 								/* count all OLD selections */
 								if (node->ile_Flags & ICONENTRY_FLAG_SELECTED) selections++;
 
-								if (mx >= node->ile_IconX - data->icld_ViewX && mx < node->ile_IconX - data->icld_ViewX + node->ile_AreaWidth &&
-									my >= node->ile_IconY - data->icld_ViewY && my < node->ile_IconY - data->icld_ViewY + node->ile_AreaHeight && !new_selected)
+								if (((mx + data->icld_ViewX) >= node->ile_IconX  && (mx + data->icld_ViewX) < node->ile_IconX + node->ile_AreaWidth) &&
+									((my + data->icld_ViewY) >= node->ile_IconY  && (my + data->icld_ViewY) < node->ile_IconY + node->ile_AreaHeight) &&
+									!new_selected)
 								{
 									new_selected = node;
 
@@ -1781,6 +1868,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         if (!new_selected)
                         {
                             data->icld_LassoActive = TRUE;
+
                             data->icld_LassoRectangle.MinX = mx - data->view_rect.MinX + data->icld_ViewX;  
                             data->icld_LassoRectangle.MinY = my - data->view_rect.MinY + data->icld_ViewY;
                             data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
@@ -1807,7 +1895,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         }                       
 
                         data->icon_click.shift = !!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
-                        data->icon_click.entry = new_selected?&new_selected->ile_IconListEntry:NULL;
+                        data->icon_click.entry = new_selected ? &new_selected->ile_IconListEntry : NULL;
                         SET(obj, MUIA_IconList_Clicked, (IPTR)&data->icon_click);
 
                         if (DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros) && data->icld_SelectionLast == new_selected)
@@ -1839,7 +1927,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         data->click_x = mx;
                         data->click_y = my;
 
-                        return 0;
+                        return MUI_EventHandlerRC_Eat;
                     }
                 }
                 else if (message->imsg->Code == MIDDLEDOWN)
@@ -2024,7 +2112,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 			            IconList_InvertLassoOutlines(obj, &new_lasso);                        
                     }
                             
-                    return 0;
+                    return MUI_EventHandlerRC_Eat;
                 }
                 else if (data->mouse_pressed & MIDDLE_BUTTON)
                 {
@@ -2047,7 +2135,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             TAG_DONE);
                     }
         
-                    return 0;
+                    return MUI_EventHandlerRC_Eat;
                 }
     
             break;
