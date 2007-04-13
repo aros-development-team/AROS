@@ -341,7 +341,9 @@ static BOOL IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 
 D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
 
-	if (!(icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)) return FALSE;
+	if ((!(icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)) ||
+		(!(icon->ile_DiskObj)))
+		return FALSE;
 	
     /* Get the dimensions and affected area of icon */
     IconList_GetIconRectangle(obj, data, icon, &iconrect);
@@ -1076,13 +1078,11 @@ D(bug("[IconList] IconList__MUIM_Setup: Use Font @ %x, RastPort @ %x\n", data->i
     {
         if (!node->ile_DiskObj)
         {
-            node->ile_DiskObj = GetIconTags
-            (
-                node->ile_IconListEntry.filename, 
-                ICONGETA_FailIfUnavailable,        FALSE, 
-                ICONGETA_Label,             (IPTR) node->ile_IconListEntry.label,
-                TAG_DONE
-            );
+            if (!(node->ile_DiskObj = GetIconTags(node->ile_IconListEntry.filename, ICONGETA_FailIfUnavailable, FALSE, ICONGETA_Label, (IPTR) node->ile_IconListEntry.label, TAG_DONE)))
+			{
+D(bug("[IconList] IconList__MUIM_Setup: Failed to obtain Icon '%s's diskobj!!\n", node->ile_IconListEntry.filename));
+				/*	We should proabbly remove this node if the icon cant be obtained ? */
+			}
         }
     }
     return 1;
@@ -2463,25 +2463,32 @@ D(bug("[IconList] IconDrawerList__ParseContents: Registering file '%s'\n", filen
 					strcpy(namebuffer, data->drawer);
 					AddPart(namebuffer, filename, sizeof(namebuffer));
 
-					struct IconEntry *this_Icon = DoMethod(obj, MUIM_IconList_Add, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib);
-					
-					sprintf(namebuffer + strlen(namebuffer), ".info");
-					if (tmplock = Lock(namebuffer, SHARED_LOCK))
+					struct IconEntry *this_Icon = NULL;
+						
+					if (this_Icon = DoMethod(obj, MUIM_IconList_Add, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib))
 					{
+						sprintf(namebuffer + strlen(namebuffer), ".info");
+						if (tmplock = Lock(namebuffer, SHARED_LOCK))
+						{
 D(bug("[IconList] IconDrawerList__ParseContents: File has a .info file .. updating info\n"));
-						UnLock(tmplock); 
-						if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON)) 
-							this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
-					}
+							UnLock(tmplock); 
+							if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON)) 
+								this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+						}
 
-					if (list_DisplayFlags & ICONLIST_DISP_SHOWINFO)
-					{
-						if ((this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON) && !(this_Icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
+						if (list_DisplayFlags & ICONLIST_DISP_SHOWINFO)
+						{
+							if ((this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON) && !(this_Icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
+								this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
+						}
+						else if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
+						{
 							this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
+						}
 					}
-					else if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
+					else
 					{
-						this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
+D(bug("[IconList] IconDrawerList__ParseContents: Failed to Register file!!!\n"));
 					}
                 }
             }
@@ -3100,7 +3107,7 @@ IPTR IconVolumeList__MUIM_Update(struct IClass *CLASS, Object *obj, struct MUIP_
                 strcpy(buf, nd->name);
                 strcat(buf, ":Disk");
         
-                if (!(this_Icon = DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)nd->name, (IPTR)NULL)))
+                if (!(this_Icon = DoMethod(obj, MUIM_IconList_Add, (IPTR)buf, (IPTR)nd->name, (IPTR)NULL)))
                 {
 D(bug("[IconList]: IconVolumeList__MUIM_Update: Failed to Add IconEntry for '%s'\n", nd->name));
                 }
