@@ -214,7 +214,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
         /* move clusters if necessary */
         cluster_offset = sector_offset >> ioh->sb->cluster_sectors_bits;
         if (ioh->cluster_offset != cluster_offset) {
-            ULONG i, j;
+            ULONG i;
 
             /* if we're already ahead of the wanted cluster, then we need to
              * back to the start of the cluster list */
@@ -334,7 +334,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
         fat_hexdump(&(ioh->block->data[pos]), ncopy);
 #endif
 
-        cache_mark_block_dirty(ioh->block);
+        cache_mark_block_dirty(glob->cache, ioh->block);
 
         pos += ncopy;
         nwant -= ncopy;
