@@ -1094,7 +1094,7 @@ MUIM_Show
 IPTR IconList__MUIM_Show(struct IClass *CLASS, Object *obj, struct MUIP_Show *message)
 {
     struct MUI_IconData *data = INST_DATA(CLASS, obj);
-    WORD                newleft,
+    LONG                newleft,
                         newtop;
     IPTR                rc;
 
@@ -1198,7 +1198,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
     ULONG                  update_oldwidth = 0,
                            update_oldheight = 0;
 
-	ULONG                  clear_xoffset = 0,
+	LONG                  clear_xoffset = 0,
                            clear_yoffset = 0;
 
     DoSuperMethodA(CLASS, obj, (Msg)message);
@@ -1245,7 +1245,6 @@ D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (A)\n"));
 				rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
 				clear_xoffset, clear_yoffset, 
 				0);
-D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
 
             /* We could have deleted also other icons so they must be redrawn */
             ForeachNode(&data->icld_IconList, icon)
@@ -1254,12 +1253,12 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
                 {
                     struct Rectangle rect2;
                     IconList_GetIconRectangle(obj, data, icon, &rect2);
-        
+
                     rect2.MinX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
                     rect2.MaxX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
                     rect2.MinY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
                     rect2.MaxY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
-        
+
                     if (RectAndRect(&rect,&rect2))
                     {  
                         // Update icon here
@@ -1279,14 +1278,13 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
             struct Rectangle 	xrect,
 								yrect;
             BOOL    	    	scroll_caused_damage;
-            
+
 			if (!data->icld__Option_IconListFixedBackground)
 			{
 				scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
 		
 				data->icld_UpdateMode = 0;
 
-				
 				if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
 					(abs(data->update_scrolldy) >= _mheight(obj)))
 				{
@@ -1306,9 +1304,9 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
 					xrect.MinY = _mtop(obj);
 					xrect.MaxX = _mright(obj);
 					xrect.MaxY = _mbottom(obj);
-			
+
 					OrRectRegion(region, &xrect);
-			
+
 					data->update_rect1 = &xrect;
 				}
 				else if (data->update_scrolldx < 0)
@@ -1329,9 +1327,9 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
 					yrect.MinY = _mbottom(obj) - data->update_scrolldy;
 					yrect.MaxX = _mright(obj);
 					yrect.MaxY = _mbottom(obj);
-			
+
 					OrRectRegion(region, &yrect);
-			
+
 					data->update_rect2 = &yrect;
 				}
 				else if (data->update_scrolldy < 0)
@@ -1340,9 +1338,9 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
 					yrect.MinY = _mtop(obj);
 					yrect.MaxX = _mright(obj);
 					yrect.MaxY = _mtop(obj) - data->update_scrolldy;
-			
+
 					OrRectRegion(region, &yrect);
-			
+
 					data->update_rect2 = &yrect;
 				}
 
@@ -1394,7 +1392,7 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
                                 hrect;
             ULONG               diffw = 0,
                                 diffh = 0;
-            
+
             data->icld_UpdateMode = 0;
 
             if (!data->icld__Option_IconListScaledBackground)
@@ -1404,7 +1402,7 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
 					MUI_Redraw(obj, MADF_DRAWOBJECT);
 					return 0;
 				}
-				
+
 				if ( data->icld_ViewWidth > update_oldwidth )
 					diffw = data->icld_ViewWidth - update_oldwidth;
 				if ( data->icld_ViewHeight > update_oldheight )
@@ -1446,7 +1444,7 @@ D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (A) returns\n"));
 						MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
 				} else DisposeRegion(region);
 			}
-            
+
             return 0;
         }
     }
@@ -1464,7 +1462,6 @@ D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (B)\n"));
 			obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
 			clear_xoffset, clear_yoffset, 0
 		);
-D(bug("[IconList] IconList__MUIM_Draw: MUIM_DrawBackground (B) returns\n"));
 
 		ForeachNode(&data->icld_IconList, icon)
 		{
@@ -1623,7 +1620,6 @@ IPTR IconList__MUIM_IconList_Add(struct IClass *CLASS, Object *obj, struct MUIP_
     /* Use a geticonrectangle routine that gets textwidth! */
     IconList_GetIconRectangle(obj, data, entry, &rect);
 
-    
     entry->ile_IconWidth = rect.MaxX - rect.MinX + 1;
     entry->ile_IconHeight = rect.MaxY - rect.MinY + 1;
 
@@ -1639,13 +1635,12 @@ IPTR IconList__MUIM_IconList_Add(struct IClass *CLASS, Object *obj, struct MUIP_
 }
 /* fib_DirEntryType,ST_USERDIR; LONG type */
 
-static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG wheely,
-    UWORD qual)
+static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG wheely, UWORD qual)
 {
     struct MUI_IconData *data = INST_DATA(CLASS, obj);
 
-    WORD newleft = data->icld_ViewX;
-    WORD newtop = data->icld_ViewY;
+    LONG    newleft = data->icld_ViewX,
+			newtop = data->icld_ViewY;
 
     /* Use horizontal scrolling if any of the following cases are true ...
 
@@ -1714,48 +1709,52 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
             {
 				BOOL rawkey_handled = FALSE;
 
-				if (message->imsg->Code & 0x80)
+				switch(message->imsg->Code)
 				{
-					switch(message->imsg->Code)
-					{
-						case RAWKEY_NM_WHEEL_UP:
-							wheely = -1;
-							rawkey_handled = TRUE;
-							break;
+					case RAWKEY_NM_WHEEL_UP:
+						wheely = -1;
+						rawkey_handled = TRUE;
+						break;
 
-						case RAWKEY_NM_WHEEL_DOWN:
-							wheely = 1;
-							rawkey_handled = TRUE;
-							break;
+					case RAWKEY_NM_WHEEL_DOWN:
+						wheely = 1;
+						rawkey_handled = TRUE;
+						break;
 
-						case RAWKEY_NM_WHEEL_LEFT:
-							wheelx = -1;
-							rawkey_handled = TRUE;
-							break;
+					case RAWKEY_NM_WHEEL_LEFT:
+						wheelx = -1;
+						rawkey_handled = TRUE;
+						break;
 
-						case RAWKEY_NM_WHEEL_RIGHT:
-							wheelx = 1;
-							rawkey_handled = TRUE;
-							break;
-					}
+					case RAWKEY_NM_WHEEL_RIGHT:
+						wheelx = 1;
+						rawkey_handled = TRUE;
+						break;
+				}
 
+				if (rawkey_handled)
+				{
+D(bug("[IconList] IconList__MUIM_HandleEvent: Processing mouse wheel event\n"));
 					if (_isinobject(message->imsg->MouseX, message->imsg->MouseY) &&
 						(wheelx || wheely))
 					{
 						DoWheelMove(CLASS, obj, wheelx, wheely, message->imsg->Qualifier);
 					}
 				}
-				else
+				else if (!(message->imsg->Code & 0x80))
 				{
 					LONG new_ViewY = data->icld_ViewY;
+
+D(bug("[IconList] IconList__MUIM_HandleEvent: Processing key up event\n"));
+
 					switch(message->imsg->Code)
 					{
-						case 0x44:
+						case RAWKEY_RETURN:
 							//'ENTER' key pressed
 							rawkey_handled = TRUE;
 							break;
 
-						case 0x48:
+						case RAWKEY_PAGEUP:
 							//'PAGE UP' key pressed
 							rawkey_handled = TRUE;
 
@@ -1772,7 +1771,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 							}
 							break;
 
-						case 0x49:
+						case RAWKEY_PAGEDOWN:
 							//'PAGE DOWN' key pressed
 							rawkey_handled = TRUE;
 
@@ -1789,32 +1788,32 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 							}
 							break;
 
-						case 0x4C:
+						case RAWKEY_UP:
 							//'UP CURSOR' key pressed
 							rawkey_handled = TRUE;
 							break;
 
-						case 0x4D:
+						case RAWKEY_DOWN:
 							//'DOWN CURSOR' key pressed
 							rawkey_handled = TRUE;
 							break;
 
-						case 0x4F:
+						case RAWKEY_LEFT:
 							//'LEFT CURSOR' key pressed
 							rawkey_handled = TRUE;
 							break;
 
-						case 0x4E:
+						case RAWKEY_RIGHT:
 							//'RIGHT CURSOR' key pressed
 							rawkey_handled = TRUE;
 							break;
 
-						case 0x70:
+						case RAWKEY_HOME:
 							//'HOME' key pressed
 							rawkey_handled = TRUE;
 							break;
 
-						case 0x71:
+						case RAWKEY_END:
 							//'END' key pressed
 							rawkey_handled = TRUE;
 							break;
@@ -2010,9 +2009,9 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 
                 if (data->mouse_pressed & LEFT_BUTTON)
                 {
-                    int move_x = mx;
-                    int move_y = my;
-        
+                    LONG    move_x = mx;
+                    LONG    move_y = my;
+
                     /* check if clicked on icon, or update lasso coords if lasso activated */
                     if (
                         data->icld_SelectionFirst && data->icld_LassoActive == FALSE && 
@@ -2116,7 +2115,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                 }
                 else if (data->mouse_pressed & MIDDLE_BUTTON)
                 {
-                    WORD     newleft,
+                    LONG     newleft,
 					         newtop;
         
                     newleft = data->click_x - mx;
@@ -2210,7 +2209,7 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
 
     if ((img = (struct MUI_DragImage *)AllocVec(sizeof(struct MUIP_CreateDragImage), MEMF_CLEAR)))
     {
-        struct IconEntry *node;
+        struct IconEntry *node = NULL;
         LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH);
     
         node = data->icld_SelectionFirst;
@@ -3160,6 +3159,7 @@ IPTR IconVolumeList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *mes
 
     obj = (Object *)DoSuperNewTags(CLASS, obj, NULL,
         TAG_MORE, (IPTR) message->ops_AttrList);
+
     if (!obj) return FALSE;
 
     data = INST_DATA(CLASS, obj);
