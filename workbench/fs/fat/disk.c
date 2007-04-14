@@ -79,13 +79,6 @@ void FillDiskInfo (struct InfoData *id) {
     }
 }
 
-LONG InitDevice(struct FileSysStartupMsg *fssm, LONG blocksize) {
-    glob->blocksize = blocksize;
-    glob->cache = cache_new(64, 256, blocksize, 0);
-
-    return 0;
-}
-
 void SendVolumePacket(struct DosList *vol, ULONG action) {
     struct DosPacket *dospacket;
 
