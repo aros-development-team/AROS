@@ -233,16 +233,23 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
                 /* if it was free (shouldn't happen) or we hit the end of the
                  * chain, there is no next cluster, so we have to allocate a
                  * new one */
-
-                /* XXX this should be optimised to allocate a group of
-                 * clusters at once. unused ones will be freed when the file
-                 * is closed */
                 if (next_cluster == 0 || next_cluster > ioh->sb->eoc_mark) {
                     D(bug("[fat] hit empty or eoc cluster, allocating another\n"));
 
+                    /*
+                     * XXX this implementation is extremely naive. things we
+                     * could do to make it better:
+                     *
+                     *  - don't start looking for a free cluster at the start
+                     *    each time. start from the current cluster and wrap
+                     *    around when we hit the end
+                     *  - track where we last found a free cluster and start
+                     *    from there
+                     *  - allocate several contiguous clusters at a time to
+                     *    reduce fragmentation
+                     */
+
                     /* search for a free cluster */
-                    /* XXX this is extremely naive. at the very least we
-                     * should start from our current position */
                     for (next_cluster = 0;
                          next_cluster < ioh->sb->clusters_count &&
                          GET_NEXT_CLUSTER(ioh->sb, next_cluster) != 0; next_cluster++);
